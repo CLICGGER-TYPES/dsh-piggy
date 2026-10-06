@@ -7298,7 +7298,12 @@
     return vertical + "|" + horizontal + "|" + Math.round(pigBox.width / 4);
   }
   function validOpenBox(openBoxes, vertical, horizontal, pigBox) {
-    const saved = openBoxes[openBoxKey(vertical, horizontal, pigBox)];
+    let saved = openBoxes[openBoxKey(vertical, horizontal, pigBox)];
+    if (saved === void 0) {
+      const prefix = vertical + "|" + horizontal + "|";
+      const key = Object.keys(openBoxes).find((name) => name.startsWith(prefix));
+      saved = key === void 0 ? void 0 : openBoxes[key];
+    }
     if (saved === null || saved === void 0 || ![saved.l, saved.t, saved.r, saved.b].every(Number.isFinite)) return void 0;
     if (saved.l >= saved.r || saved.t >= saved.b) return void 0;
     if (vertical === "bottom" && saved.t >= -pigBox.height) return void 0;
@@ -7313,17 +7318,6 @@
     if (above !== void 0 && pigTop + above.t - PAD >= area.y) return "bottom";
     if (below !== void 0 && pigTop + below.b + PAD <= area.y + area.height) return "top";
     return current;
-  }
-  function fittingOpenBox(openBoxes, vertical, horizontal, pigBox, pigScreen, area) {
-    const other = vertical === "top" ? "bottom" : "top";
-    for (const side of [vertical, other]) {
-      const box = validOpenBox(openBoxes, side, horizontal, pigBox);
-      if (box === void 0) continue;
-      if (pigScreen === null || area === null || area === void 0) return { vertical: side, box };
-      const fits = pigScreen.x + box.l - PAD >= area.x && pigScreen.x + box.r + PAD <= area.x + area.width && pigScreen.y + box.t - PAD >= area.y && pigScreen.y + box.b + PAD <= area.y + area.height;
-      if (fits) return { vertical: side, box };
-    }
-    return null;
   }
   function panelSide(cardBox, pigBox) {
     return {
@@ -7448,17 +7442,8 @@
             }
           }
         } else if (!open && !state2.compact) {
-          const anchor = typeof env.anchor === "function" ? env.anchor() : null;
-          const pigScreen = anchor ?? (geometry2 === null ? null : { x: geometry2.window.x + pigBox.x, y: geometry2.window.y + pigBox.y });
-          const chosen = fittingOpenBox(openBoxes, state2.vertical, state2.horizontal, pigBox, pigScreen, geometry2?.workArea);
-          if (chosen !== null && chosen.vertical !== state2.vertical) {
-            state2.vertical = chosen.vertical;
-            try {
-              localStorage.setItem(SIDES_KEY, JSON.stringify({ vertical: state2.vertical, horizontal: state2.horizontal }));
-            } catch {
-            }
-          }
-          outline = reservedOutline(outline, chosen?.box, pigBox, state2.compact);
+          const saved = validOpenBox(openBoxes, state2.vertical, state2.horizontal, pigBox);
+          outline = reservedOutline(outline, saved, pigBox, state2.compact);
         }
       }
       let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
@@ -7889,9 +7874,7 @@
       beginDrag: function() {
         const h = host();
         if (h !== null && h.getAttribute("data-open") === "false") {
-          measure.state.compact = true;
           resetShift();
-          tick();
         }
         const info = readGeometry();
         const pig = info && info.window ? pigInWindow(info.window) : null;
@@ -7902,16 +7885,14 @@
       },
       endDrag: function() {
         shell.endDrag();
-        const compact = measure.state.compact;
         const info = readGeometry();
         if (info && info.window) {
           const pig = pigInWindow(info.window);
           if (pig !== null) {
             placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
-            if (compact) measure.collapsedSide(pig, info);
+            measure.collapsedSide(pig, info);
           }
         }
-        measure.state.compact = false;
         lastKey = null;
         tick();
       },

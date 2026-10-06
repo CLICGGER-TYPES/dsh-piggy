@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { createMeasure, reservedOutline, chooseCollapsedVertical, validOpenBox, fittingOpenBox } from '../src/client/desktop/measure.js'
+import { createMeasure, reservedOutline, chooseCollapsedVertical, validOpenBox } from '../src/client/desktop/measure.js'
 
 test('紧凑拖动不加收起面板的预留框，气泡预留区仍保留', () => {
   const content = { x: 20, y: 80, r: 90, b: 140 }
@@ -118,15 +118,37 @@ test('面板范围存储：认不出的版本直接丢掉，不让它撑大收�
   }
 })
 
-test('收起时的面板预留放不进工作区就换朝向，都放不下就不留（低处一点猪就被拽上去的回归）', () => {
-  // 用户机器上的数字：工作区 0,29,1920,985；面板朝下开时整块范围相对猪 {l:-232,t:-104,r:60,b:594}
-  const area = { x: 0, y: 29, width: 1920, height: 985 }
-  const pig = { width: 54, height: 54 }
-  const down = { l: -232, t: -104, r: 60, b: 594 }
-  const up = { l: -232, t: -640, r: 60, b: 70 }
-  assert.deepEqual(fittingOpenBox({ 'top|right|14': down }, 'top', 'right', pig, { x: 1400, y: 300 }, area), { vertical: 'top', box: down })
-  assert.equal(fittingOpenBox({ 'top|right|14': down }, 'top', 'right', pig, { x: 1400, y: 500 }, area), null, '往下放不下、也没往上开过：不留')
-  assert.deepEqual(fittingOpenBox({ 'top|right|14': down, 'bottom|right|14': up }, 'top', 'right', pig, { x: 1400, y: 800 }, area),
-    { vertical: 'bottom', box: up }, '往上放得下就按往上留')
-  assert.equal(fittingOpenBox({ 'top|right|14': down }, 'top', 'right', pig, { x: 100, y: 300 }, area), null, '横向也要放得下')
+test('测量不许改收起朝向（2026-10-07 窗口在两个几何之间反复横跳的回归）', () => {
+  // 以前每量一次就重新挑「上/下哪个放得下」，放不下就翻朝向；翻完窗口挪了、猪的屏幕位置变了，
+  // 下一轮又翻回来 —— 自激振荡，用户看到「猪瞬移到上面去再瞬移下来」。
+  // 现在朝向只由用户动作改（拖动松手走 collapsedSide），测量只管按当前朝向挂预留区。
+  const oldStorage = globalThis.localStorage
+  const oldDocument = globalThis.document
+  const oldStyle = globalThis.getComputedStyle
+  const saved = { l: -232, t: -104, r: 60, b: 594 }
+  const memory = new Map([
+    ['dsh-piggy:desktop-open-box', JSON.stringify({ v: 2, boxes: { 'top|right|14': saved } })],
+    ['dsh-piggy:desktop-sides', JSON.stringify({ vertical: 'top', horizontal: 'right' })],
+  ])
+  globalThis.localStorage = { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value) }
+  globalThis.document = { body: {} }
+  globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible', opacity: '1' })
+  const pig = { offsetLeft: 250, offsetTop: 610, offsetWidth: 54, offsetHeight: 54, offsetParent: document.body,
+    hidden: false, closest: () => null }
+  // 猪贴屏幕底边：旧逻辑在这里会翻朝向
+  const host = { offsetLeft: 0, offsetTop: 0, offsetWidth: 320, offsetHeight: 680, offsetParent: document.body,
+    closest: () => null, getAttribute: key => key === 'data-open' ? 'false' : '',
+    querySelectorAll: () => [pig], querySelector: key => key === '.dp-pig' ? pig : null }
+  try {
+    const measure = createMeasure({ platform: 'linux', geometry: () => ({ window: { x: 0, y: 700, width: 320, height: 680 }, workArea: { x: 0, y: 29, width: 1920, height: 985 } }) })
+    const first = measure.boxes(host)
+    const sideAfterFirst = measure.state.vertical
+    const second = measure.boxes(host)
+    assert.equal(measure.state.vertical, sideAfterFirst, '测量不该改朝向')
+    assert.deepEqual(second.content, first.content, '同样的布局量两次必须一样（不然窗口会来回跳）')
+  } finally {
+    globalThis.localStorage = oldStorage
+    globalThis.document = oldDocument
+    globalThis.getComputedStyle = oldStyle
+  }
 })

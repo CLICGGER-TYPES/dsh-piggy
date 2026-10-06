@@ -34,7 +34,16 @@ export function openBoxKey(vertical, horizontal, pigBox) {
 
 /** 旧存档可能把另一朝向的范围写进当前 key；只读确实向该侧伸出的范围。 */
 export function validOpenBox(openBoxes, vertical, horizontal, pigBox) {
-  const saved = openBoxes[openBoxKey(vertical, horizontal, pigBox)]
+  let saved = openBoxes[openBoxKey(vertical, horizontal, pigBox)]
+  if (saved === undefined) {
+    // 这一个方向的记录里，猪宽那一档对不上（启动时先画占位纸盒、换皮肤改了立绘宽度、
+    // 更新换了素材……）：退回到同朝向的任意一条。预留区只是「留多少位置」的估计，
+    // 差一两档可以接受；不退回的话第一轮就没预留，窗口先缩后长，玩家看到猪跳一下
+    // （2026-10-07 win11 日志：shown 是 476 高 → 106ms 后缩到 204 → 再长回 476）。
+    const prefix = vertical + '|' + horizontal + '|'
+    const key = Object.keys(openBoxes).find(name => name.startsWith(prefix))
+    saved = key === undefined ? undefined : openBoxes[key]
+  }
   if (saved === null || saved === undefined || ![saved.l, saved.t, saved.r, saved.b].every(Number.isFinite)) return undefined
   if (saved.l >= saved.r || saved.t >= saved.b) return undefined
   if (vertical === 'bottom' && saved.t >= -pigBox.height) return undefined
@@ -53,25 +62,6 @@ export function chooseCollapsedVertical(openBoxes, horizontal, width, height, pi
   return current
 }
 
-/**
- * 收起时按哪个面板范围留位置：当前朝向放得下就用它，放不下换另一朝向，都放不下就不留。
- * 留出来的范围放不进工作区时，窗口会被系统（或我们自己）整块推回屏幕里，猪就跟着跳走——
- * 用户 2026-10-06 的日志：猪放在屏幕下半部，一点就被拽上去 143～452px。预留只是为了开面板时
- * 不改窗口，不能拿猪的位置去换。
- * @returns {{vertical:string, box:{l:number,t:number,r:number,b:number}}|null}
- */
-export function fittingOpenBox(openBoxes, vertical, horizontal, pigBox, pigScreen, area) {
-  const other = vertical === 'top' ? 'bottom' : 'top'
-  for (const side of [vertical, other]) {
-    const box = validOpenBox(openBoxes, side, horizontal, pigBox)
-    if (box === undefined) continue
-    if (pigScreen === null || area === null || area === undefined) return { vertical: side, box }
-    const fits = pigScreen.x + box.l - PAD >= area.x && pigScreen.x + box.r + PAD <= area.x + area.width
-      && pigScreen.y + box.t - PAD >= area.y && pigScreen.y + box.b + PAD <= area.y + area.height
-    if (fits) return { vertical: side, box }
-  }
-  return null
-}
 
 /** 从卡片和猪的实际位置判断面板朝向，供量框和锚边共用。 */
 function panelSide(cardBox, pigBox) {
@@ -209,15 +199,16 @@ export function createMeasure(env) {
           try { localStorage.setItem(OPEN_BOX_KEY, JSON.stringify({ v: OPEN_BOX_VERSION, boxes: openBoxes })) } catch { /* 存不下就每次启动重新量 */ }
         }
       } else if (!open && !state.compact) {
-        // 猪要落在哪：收起那一轮要摆回开面板前的原位（面板两边都放不下时猪被挪开过），按原位判断放不放得下。
-        const anchor = typeof env.anchor === 'function' ? env.anchor() : null
-        const pigScreen = anchor ?? (geometry === null ? null : { x: geometry.window.x + pigBox.x, y: geometry.window.y + pigBox.y })
-        const chosen = fittingOpenBox(openBoxes, state.vertical, state.horizontal, pigBox, pigScreen, geometry?.workArea)
-        if (chosen !== null && chosen.vertical !== state.vertical) {
-          state.vertical = chosen.vertical
-          try { localStorage.setItem(SIDES_KEY, JSON.stringify({ vertical: state.vertical, horizontal: state.horizontal })) } catch { /* 下次启动从默认朝向恢复 */ }
-        }
-        outline = reservedOutline(outline, chosen?.box, pigBox, state.compact)
+        // 收起态挂回上次的面板预留区，按**当前**朝向，不再每轮重新挑朝向。
+        //
+        // 以前这里每量一次就调 fittingOpenBox 重新判断「上/下哪个放得下」，放不下就翻转朝向。
+        // 朝向决定挂哪块预留区（上下差 272px），一翻窗口就挪，挪完猪的屏幕位置变了，
+        // 「放不放得下」的判断又翻回来 —— 自激振荡：窗口在两个几何之间反复横跳，用户看到的就是
+        // 「猪瞬移到上面去再瞬移下来」（2026-10-07 在 win11 虚拟机上抓到：日志里
+        // (258,392,304x204) 与 (226,120,324x476) 每 200ms 来回一次）。
+        // 朝向该由**用户动作**决定：拖动松手时走 collapsedSide()，那里才允许改。
+        const saved = validOpenBox(openBoxes, state.vertical, state.horizontal, pigBox)
+        outline = reservedOutline(outline, saved, pigBox, state.compact)
       }
     }
     let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity

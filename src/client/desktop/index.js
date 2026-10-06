@@ -241,10 +241,15 @@ export function install(shell) {
     beginDrag: function () {
       const h = host()
       if (h !== null && h.getAttribute('data-open') === 'false') {
-        // 收起时拖：窗口先缩成只包住猪（和气泡区），猪不动。
-        measure.state.compact = true
+        // 收起时拖：不再把窗口缩成「只包住猪」。
+        //
+        // 以前这里缩一次（204 高）、松手再长回预留面板的大小（476 高、向上长 272px）。
+        // 那是**跨进程的两次改动**：窗口已经在新的位置/尺寸了，页面还没重排完，
+        // 中间那一两帧猪就画在错的地方 —— 用户看到「松手后猪瞬移到上面去再瞬移下来」
+        // （2026-10-07 win11 虚拟机日志：drag end 之后 20ms 内 bounds place
+        //  (226,120,324x476)，341ms 后又回到 (259,390,304x208)）。
+        // 拖动期间保持窗口尺寸不变，松手就没有这一步，也就没有那一帧。
         resetShift()
-        tick()
       }
       // 告诉主进程猪在窗口里哪儿：刚缩完窗口页面多半还没重排，按家和窗口算，不量旧布局。
       const info = readGeometry()
@@ -254,7 +259,6 @@ export function install(shell) {
     dragHeartbeat: function () { if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat() },
     endDrag: function () {
       shell.endDrag()
-      const compact = measure.state.compact
       // 拖动结束和同步读几何按 IPC 顺序处理，读到的就是最后一帧之后的窗口。
       const info = readGeometry()
       if (info && info.window) {
@@ -262,10 +266,10 @@ export function install(shell) {
         const pig = pigInWindow(info.window)
         if (pig !== null) {
           placement.rehome(info.window, pig, info.workAreas ?? [info.workArea])
-          if (compact) measure.collapsedSide(pig, info)
+          // 朝向只在这里（用户松手）才允许改：放到测量里会自激振荡。
+          measure.collapsedSide(pig, info)
         }
       }
-      measure.state.compact = false
       lastKey = null
       tick()
     },
