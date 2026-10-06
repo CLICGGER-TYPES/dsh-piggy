@@ -263,8 +263,11 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
     - 已装好：Node 24.21.0（免安装 zip 解在 `C:\Users\pig\node-v24.21.0-win-x64`）、Electron 44.5.1（解在 `C:\Users\pig\piggy\electron`）、代码在 `C:\Users\pig\piggy\code`、`apps/desktop` 已 `npm install --omit=dev`（electron-updater 就位）。
     - 怎么传文件进去：虚拟机**入站全被挡**，只能「虚拟机主动拉/推」。主机侧脚本（都在 `/zyx/DSH/workspaces/`，不在仓库里）：`vmtransfer/` 用 `python3 -m http.server 8000 --bind 192.168.123.1` 给虚拟机下载；`vm-upload-server.py`（8001 端口）收虚拟机 POST 上来的日志/截图；`vm-proxy-forward.py` 把主机的 2080 代理转成 `192.168.123.1:2081` 给虚拟机出网；`type-into-vm.py` 用 `virsh send-key` 在虚拟机里打字（**注意先按一下 Shift 把输入法切到英文，否则 `cd ~` 会变成「成都~」**）。
     - **2026-10-07 首次在 Windows 上跑桌面版的结果（重要）**：应用能起来，几何管线在 Windows 上也确实在跑——`piggy.log` 里有 `start 0.6.0 win32`、显示器清单（`scale:1`、workArea 高 752 = 1280x800 扣掉任务栏）、`home`、`move`、`drag start/end` 全套记录，数值看着正常。
-    - **但是猪没画出来**：进程在（窗口标题 `dsh-piggy`），桌面截图里看不到猪；从控制台前台启动时约 10~30 秒后自己退出（`exit=0`），`Start-Process` 分离启动时窗口停在 `show:false`、`ready-to-show` 一直不来（日志只有 `start` + `displays` 两行）。
-    - 该虚拟机**没有 GPU**（日志里 `GetGpuDriverOverlayInfo: Failed to retrieve video device`、`Gpu Cache Creation failed: -2`、`disk_cache ... 拒绝访问`），所以「不显示/自己退出」很可能是软件渲染下透明分层窗口的问题，**但也可能是应用自己的问题（比如那个 10 秒显示器对账定时器）——没定论，下一次先查这个**。
+    - **猪画得好好的**（上面那版「猪没画出来」是我看漏了，2026-10-07 更正）：新装的猪是**纸盒**状态，我把截图里那个纸盒当成桌面快捷方式了。用户点开拆箱之后就是猪。
+    - Windows 上拖动、开关面板都在正常工作，日志实录：`drag start 窗口(740,542) 猪在屏幕(968,664)` → `drag end 窗口(928,225) movedBy(188,-317)`；开面板窗口变 `(720,270,324,476)`、关面板精确回到 `(740,542,304,204)`。
+    - 该虚拟机**没有 GPU**（日志里 `GetGpuDriverOverlayInfo: Failed to retrieve video device`、`Gpu Cache Creation failed: -2`），但不影响猪的显示。
+    - 另一个 Windows 上观察到的现象（不算 bug，环境问题）：虚拟机上没配代理时，扩展市场拉 `raw.githubusercontent.com` 会超时失败——和 HANDOFF 里那条「插件进程不读系统代理」是同一件事。
+    - 控制鼠标的办法：虚拟机有 **QEMU HID Tablet（绝对坐标）**，用 QMP `input-send-event` 可以按像素定位（脚本 `/zyx/DSH/workspaces/vm-mouse.py`）。
 - DeepSeek 在 020f463 之前没提交的改动（`placement.clamped()` 那版）放在 `git stash@{0}`（deepseek-uncommitted-20261006-clamped-target），方向已被 020f463 取代，确认不要后可 `git stash drop`。
 - 本轮没发版、外壳没改（还是未发布的 0.6.0）。用户验收通过后按发版规矩走。
 
