@@ -259,7 +259,12 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 - **还没验证**：用户本机实际使用（已请用户 `npm start` 试，等反馈）；Windows；macOS；多屏（上下叠放）；分数缩放。
 - 测试机（都在用户本机 libvirt 里，`virsh -c qemu:///system list --all`）：
   - `ubuntu26.04`：GNOME Wayland，账号 z / 123456，IP **192.168.123.45**（装桌面后从 .44 变的），代码在 `~/dsh-piggy`，跑 `node tools/desktop-geometry-check.mjs all`（环境变量从 `systemctl --user show-environment` 取）。屏保激活时真鼠标会失效，先 `gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.SetActive false`。目前已关机。
-  - `win11`：本地离线账户 **pig / 123456**（安全问题答案都是 a）。初始化做到「此操作可能需要几分钟」时用户叫停，**是否进了桌面没确认**；还没装 Node/开 SSH，桌面版也没在上面跑过。
+  - `win11`：本地离线账户 **pig / 123456**（安全问题答案都是 a）。**2026-10-07 凌晨已初始化完、进了桌面**（IP 192.168.123.138，出站可用、入站被防火墙全挡）。
+    - 已装好：Node 24.21.0（免安装 zip 解在 `C:\Users\pig\node-v24.21.0-win-x64`）、Electron 44.5.1（解在 `C:\Users\pig\piggy\electron`）、代码在 `C:\Users\pig\piggy\code`、`apps/desktop` 已 `npm install --omit=dev`（electron-updater 就位）。
+    - 怎么传文件进去：虚拟机**入站全被挡**，只能「虚拟机主动拉/推」。主机侧脚本（都在 `/zyx/DSH/workspaces/`，不在仓库里）：`vmtransfer/` 用 `python3 -m http.server 8000 --bind 192.168.123.1` 给虚拟机下载；`vm-upload-server.py`（8001 端口）收虚拟机 POST 上来的日志/截图；`vm-proxy-forward.py` 把主机的 2080 代理转成 `192.168.123.1:2081` 给虚拟机出网；`type-into-vm.py` 用 `virsh send-key` 在虚拟机里打字（**注意先按一下 Shift 把输入法切到英文，否则 `cd ~` 会变成「成都~」**）。
+    - **2026-10-07 首次在 Windows 上跑桌面版的结果（重要）**：应用能起来，几何管线在 Windows 上也确实在跑——`piggy.log` 里有 `start 0.6.0 win32`、显示器清单（`scale:1`、workArea 高 752 = 1280x800 扣掉任务栏）、`home`、`move`、`drag start/end` 全套记录，数值看着正常。
+    - **但是猪没画出来**：进程在（窗口标题 `dsh-piggy`），桌面截图里看不到猪；从控制台前台启动时约 10~30 秒后自己退出（`exit=0`），`Start-Process` 分离启动时窗口停在 `show:false`、`ready-to-show` 一直不来（日志只有 `start` + `displays` 两行）。
+    - 该虚拟机**没有 GPU**（日志里 `GetGpuDriverOverlayInfo: Failed to retrieve video device`、`Gpu Cache Creation failed: -2`、`disk_cache ... 拒绝访问`），所以「不显示/自己退出」很可能是软件渲染下透明分层窗口的问题，**但也可能是应用自己的问题（比如那个 10 秒显示器对账定时器）——没定论，下一次先查这个**。
 - DeepSeek 在 020f463 之前没提交的改动（`placement.clamped()` 那版）放在 `git stash@{0}`（deepseek-uncommitted-20261006-clamped-target），方向已被 020f463 取代，确认不要后可 `git stash drop`。
 - 本轮没发版、外壳没改（还是未发布的 0.6.0）。用户验收通过后按发版规矩走。
 
