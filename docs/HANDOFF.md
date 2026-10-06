@@ -266,8 +266,11 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
     - **猪画得好好的**（上面那版「猪没画出来」是我看漏了，2026-10-07 更正）：新装的猪是**纸盒**状态，我把截图里那个纸盒当成桌面快捷方式了。用户点开拆箱之后就是猪。
     - Windows 上拖动、开关面板都在正常工作，日志实录：`drag start 窗口(740,542) 猪在屏幕(968,664)` → `drag end 窗口(928,225) movedBy(188,-317)`；开面板窗口变 `(720,270,324,476)`、关面板精确回到 `(740,542,304,204)`。
     - 该虚拟机**没有 GPU**（日志里 `GetGpuDriverOverlayInfo: Failed to retrieve video device`、`Gpu Cache Creation failed: -2`），但不影响猪的显示。
-    - 另一个 Windows 上观察到的现象（不算 bug，环境问题）：虚拟机上没配代理时，扩展市场拉 `raw.githubusercontent.com` 会超时失败——和 HANDOFF 里那条「插件进程不读系统代理」是同一件事。
-    - 控制鼠标的办法：虚拟机有 **QEMU HID Tablet（绝对坐标）**，用 QMP `input-send-event` 可以按像素定位（脚本 `/zyx/DSH/workspaces/vm-mouse.py`）。
+    - **代理（2026-10-07）**：主机的 v2rayN 本来就监听 `*:2080`，所以虚拟机直接 `http://192.168.123.1:2080` 就能出网，不用在虚拟机里装 v2rayN。已在虚拟机里设好系统代理 + `HTTP_PROXY/HTTPS_PROXY/NODE_USE_ENV_PROXY=1`。
+      **顺带解决了交接里那条未解风险**：插件进程用 Node 的 `fetch`（undici）不读系统代理，但**认 `HTTP_PROXY/HTTPS_PROXY` + `NODE_USE_ENV_PROXY=1`**（Node 24 起）。虚拟机实测：`node fetch` 直连 GitHub 从「连接被中断」变成 **OK 4073 字节**；应用日志里 `extension registry failed` 从每次启动必现变成 **0 次**。**这是可以发版修的东西**：桌面外壳启动插件宿主时带上 `NODE_USE_ENV_PROXY=1`（读系统代理地址即可）。
+    - **首次 Windows 系统性位置检查（2026-10-07，用户手动 + QMP 绝对鼠标）**：拖动到屏幕中段误差 **(0,3)px**；右键开面板 (−1,−3)px、再右键收起 **(0,0)px**；左/右/下边缘拖动后**猪整只在屏内**，误差 1~7px（含待机动画 ±7px）；上边缘窗口被夹到 `y=0` 且内容反向挪，猪留在原地。**开关面板前后各 6 次采样，位置区间完全相同**（x 352–353、y 44–48，那 4px 就是待机动画本身）。
+    - **仍未复现**：交接里那条 Windows「抽动 + 一帧叠影」。上面这些测试里位置都稳，要复现得拿用户那台机器的 `%APPDATA%\dsh-piggy-desktop\piggy.log`，或者在虚拟机上做更激进的连拖连点。
+    - 控制鼠标的办法：虚拟机有 **QEMU HID Tablet（绝对坐标）**，用 QMP `input-send-event` 可以按像素定位（`/zyx/DSH/workspaces/vm-mouse.py`）；找猪的像素位置用 `/zyx/DSH/workspaces/pig-locate.py`（特征色 255,209,175，**注意猪在 y<120 和做戳一戳动作时会被手掌盖住，检测要放宽**）；整套检查脚本 `/zyx/DSH/workspaces/win-check.py`。
 - DeepSeek 在 020f463 之前没提交的改动（`placement.clamped()` 那版）放在 `git stash@{0}`（deepseek-uncommitted-20261006-clamped-target），方向已被 020f463 取代，确认不要后可 `git stash drop`。
 - 本轮没发版、外壳没改（还是未发布的 0.6.0）。用户验收通过后按发版规矩走。
 
