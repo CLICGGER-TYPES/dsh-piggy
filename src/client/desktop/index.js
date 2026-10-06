@@ -266,8 +266,13 @@ export function install(shell) {
         const pig = pigInWindow(info.window)
         if (pig !== null) {
           placement.rehome(info.window, pig, info.workAreas ?? [info.workArea])
-          // 朝向只在这里（用户松手）才允许改：放到测量里会自激振荡。
-          measure.collapsedSide(pig, info)
+          // 这里**不再**重挑收起朝向。
+          //
+          // 每挑一次就可能换一块预留区（上下差 156~272px），窗口尺寸跟着变；模型虽然会把猪
+          // 补偿回原位，但窗口是按新几何先画的、页面晚一拍才重排，中间那一两帧猪就画在错的地方
+          // —— 用户看到的「松手偶尔瞬移一下」（2026-10-07 win11 日志：drag end 之后 18ms
+          // 窗口从 476 高跳到 632 高）。
+          // 朝向改由「面板真正打开时」决定（sides()），那时窗口本来就在变；收起态保持稳定。
         }
       }
       lastKey = null

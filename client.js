@@ -7310,15 +7310,6 @@
     if (vertical === "top" && saved.b <= pigBox.height * 2) return void 0;
     return saved;
   }
-  function chooseCollapsedVertical(openBoxes, horizontal, width, height, pigTop, area, current) {
-    if (area === null || area === void 0) return current;
-    const pigBox = { width, height };
-    const above = validOpenBox(openBoxes, "bottom", horizontal, pigBox);
-    const below = validOpenBox(openBoxes, "top", horizontal, pigBox);
-    if (above !== void 0 && pigTop + above.t - PAD >= area.y) return "bottom";
-    if (below !== void 0 && pigTop + below.b + PAD <= area.y + area.height) return "top";
-    return current;
-  }
   function panelSide(cardBox, pigBox) {
     return {
       vertical: cardBox.y + cardBox.height / 2 < pigBox.y + pigBox.height / 2 ? "bottom" : "top",
@@ -7492,17 +7483,6 @@
       state2.horizontal = horizontal;
       return { vertical: state2.vertical, horizontal: state2.horizontal };
     }
-    function collapsedSide(pigBox, info) {
-      if (info === null || info.window === void 0 || info.workArea === void 0) return;
-      const pigTop = info.window.y + pigBox.y;
-      const vertical = chooseCollapsedVertical(openBoxes, state2.horizontal, pigBox.width, pigBox.height, pigTop, info.workArea, state2.vertical);
-      if (vertical === state2.vertical) return;
-      state2.vertical = vertical;
-      try {
-        localStorage.setItem(SIDES_KEY, JSON.stringify({ vertical, horizontal: state2.horizontal }));
-      } catch {
-      }
-    }
     function pin(host2, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
       const shift = state2.shift;
@@ -7531,7 +7511,7 @@
       for (const s of next.shape) tail.push(s.x, s.y, s.width, s.height);
       return head.concat(tail.map((n) => Math.floor(n / STEP))).join(",");
     }
-    return { boxes, sides, collapsedSide, pin, keyOf, state: state2 };
+    return { boxes, sides, pin, keyOf, state: state2 };
   }
 
   // src/client/desktop/place.js
@@ -7890,7 +7870,6 @@
           const pig = pigInWindow(info.window);
           if (pig !== null) {
             placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
-            measure.collapsedSide(pig, info);
           }
         }
         lastKey = null;

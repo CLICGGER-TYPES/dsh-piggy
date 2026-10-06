@@ -51,16 +51,6 @@ export function validOpenBox(openBoxes, vertical, horizontal, pigBox) {
   return saved
 }
 
-/** 根据猪在工作区的位置选收起朝向；面板在上优先，两边都放不下就保留原朝向。 */
-export function chooseCollapsedVertical(openBoxes, horizontal, width, height, pigTop, area, current) {
-  if (area === null || area === undefined) return current
-  const pigBox = { width, height }
-  const above = validOpenBox(openBoxes, 'bottom', horizontal, pigBox)
-  const below = validOpenBox(openBoxes, 'top', horizontal, pigBox)
-  if (above !== undefined && pigTop + above.t - PAD >= area.y) return 'bottom'
-  if (below !== undefined && pigTop + below.b + PAD <= area.y + area.height) return 'top'
-  return current
-}
 
 
 /** 从卡片和猪的实际位置判断面板朝向，供量框和锚边共用。 */
@@ -206,7 +196,7 @@ export function createMeasure(env) {
         // 「放不放得下」的判断又翻回来 —— 自激振荡：窗口在两个几何之间反复横跳，用户看到的就是
         // 「猪瞬移到上面去再瞬移下来」（2026-10-07 在 win11 虚拟机上抓到：日志里
         // (258,392,304x204) 与 (226,120,324x476) 每 200ms 来回一次）。
-        // 朝向该由**用户动作**决定：拖动松手时走 collapsedSide()，那里才允许改。
+        // 朝向只在**面板真正打开时**（sides()）改：那时窗口本来就在变，不会有额外的一帧跳动。
         const saved = validOpenBox(openBoxes, state.vertical, state.horizontal, pigBox)
         outline = reservedOutline(outline, saved, pigBox, state.compact)
       }
@@ -248,15 +238,6 @@ export function createMeasure(env) {
     return { vertical: state.vertical, horizontal: state.horizontal }
   }
 
-  /** 松手时根据当前猪的位置更新收起朝向，下次打开面板沿这个方向。 */
-  function collapsedSide(pigBox, info) {
-    if (info === null || info.window === undefined || info.workArea === undefined) return
-    const pigTop = info.window.y + pigBox.y
-    const vertical = chooseCollapsedVertical(openBoxes, state.horizontal, pigBox.width, pigBox.height, pigTop, info.workArea, state.vertical)
-    if (vertical === state.vertical) return
-    state.vertical = vertical
-    try { localStorage.setItem(SIDES_KEY, JSON.stringify({ vertical, horizontal: state.horizontal })) } catch { /* 下次启动从默认朝向恢复 */ }
-  }
 
   /** 让整块内容离窗口锚边正好 PAD。 @param {any} host */
   function pin(host, side, hostBox, contentBox) {
@@ -284,5 +265,5 @@ export function createMeasure(env) {
     return head.concat(tail.map(n => Math.floor(n / STEP))).join(',')
   }
 
-  return { boxes, sides, collapsedSide, pin, keyOf, state }
+  return { boxes, sides, pin, keyOf, state }
 }
