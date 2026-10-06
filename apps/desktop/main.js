@@ -29,11 +29,16 @@ const { autoUpdater } = updaterPackage
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
-/** 静止时窗口合成上限：Windows 上每帧合成整窗的代价高，30fps 足够猪动，CPU/GPU 掉一大截。 */
-const FRAME_RATE = 30
-/** 拖动时提到 60：窗口是按 60Hz setBounds 移动的，合成只有 30fps 的话猪会「一跳一跳地跟」
- *（用户 2026-10-07：拖动时抽帧）。只在拖动那几百毫秒里贵一点，松手就降回去。 */
-const FRAME_RATE_DRAGGING = 60
+/**
+ * 帧率：**不设上限，跟显示器刷新率同步**（Chromium 默认就是 vsync）。
+ *
+ * 这里以前写死 30fps（163c040「修 Windows 上开着猪整机变卡」时定的，注释写「30fps 足够猪动」）。
+ * 但拖动时窗口是按 60Hz setBounds 移动的：窗口在动、画面 30fps 才更新一次，猪就一跳一跳地跟，
+ * 用户看到的就是抽帧。那次真正治住卡顿的是同一次提交里「窗口只框住猪那一小块」，
+ * 30fps 是捎带的，现在它只跟「跟手」冲突，撤掉。
+ * 要在弱机器上压帧率可以用 PIGGY_FPS 环境变量兜底（排查用）。
+ */
+const FRAME_CAP = Number(process.env.PIGGY_FPS) || 0
 /** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
 const BOUNDS_TOLERANCE = 2
 
@@ -57,6 +62,8 @@ function log(...parts) {
 let hostJournal = null
 /** 显示器兜底对账的定时器（见 app.whenReady 里的 displayWatchTimer）。 */
 let displayWatchTimer = null
+/** 拖动期间 tick 的统计（松手时写一行日志，用来判断跟不跟得上刷新率）。 */
+let dragStats = null
 
 /**
  * Start again with `args`. Inside an AppImage the running copy is a temporary
@@ -276,7 +283,7 @@ function createWindow() {
   })
   win.setAlwaysOnTop(true, 'floating')
   // 30fps：猪的动画够看，整窗合成的次数砍一半（D1 第 3 条）。
-  win.webContents.setFrameRate(FRAME_RATE)
+  if (FRAME_CAP > 0) win.webContents.setFrameRate(FRAME_CAP)
   // Until the page reports where the pig is, the window takes no clicks at all.
   applyShape([])
   if (PASSTHROUGH) { passthroughHit = true; setHit(false) }
@@ -389,8 +396,21 @@ ipcMain.on('piggy:content', (event, content) => {
 /** Drag against a fixed cursor/window sample; only the pig is clamped. */
 let dragSession = null
 let dragTimer = null
+/** 这块屏的刷新率；拿不到就按 60。 */
+function refreshRateAt(point) {
+  const display = point === null || point === undefined ? screen.getPrimaryDisplay() : screen.getDisplayNearestPoint(point)
+  const hz = Number(display?.displayFrequency)
+  return Number.isFinite(hz) && hz >= 30 ? Math.min(240, Math.round(hz)) : 60
+}
+
 function dragTick() {
   if (win === null || win.isDestroyed() || dragSession === null) return
+  if (dragStats !== null) {
+    const now = Date.now()
+    dragStats.ticks += 1
+    dragStats.maxGap = Math.max(dragStats.maxGap, now - dragStats.last)
+    dragStats.last = now
+  }
   if (dragHeartbeatExpired(dragSession.lastHeartbeat, Date.now())) { stopDrag(); return }
   const cursor = screen.getCursorScreenPoint()
   // 夹取按「所有屏」算，不按鼠标当前在哪块屏：鼠标一过两块屏的缝就换夹取范围，
@@ -405,8 +425,7 @@ function stopDrag() {
   if (dragTimer !== null) clearInterval(dragTimer)
   dragTimer = null
   dragSession = null
-  // 松手回到省电的 30fps（见 FRAME_RATE）。
-  if (win !== null && !win.isDestroyed()) win.webContents.setFrameRate(FRAME_RATE)
+  dragStats = null
 }
 
 /** 页面要几何：给它推一次（订阅晚于 did-finish-load 时靠这个）。 */
@@ -436,9 +455,11 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   // 拖动期间每一帧都不写日志（60Hz 会刷爆），但起止各记一行：出问题时能看出拖了多远、
   // 起始窗口和猪的位置对不对得上（2026-10-06 的偏移排查就是缺这一段）。
   log('drag start', JSON.stringify({ bounds, pigScreen: dragSession.pigScreen, pigFromPage: pigFromPage !== null }))
-  // 拖动期间把窗口合成提到 60fps：不然窗口 60Hz 在动、画面 30fps 才更新，猪看起来一抽一抽。
-  if (win !== null && !win.isDestroyed()) win.webContents.setFrameRate(FRAME_RATE_DRAGGING)
-  dragTimer = setInterval(dragTick, 1000 / 60)
+  // tick 频率跟显示器刷新率走，不再写死 60Hz：144Hz 屏上窗口 60Hz 地动、画面 144Hz 地刷，
+  // 一样是抽帧（用户 2026-10-07：「帧数应该跟显示器同步」）。
+  const hz = refreshRateAt(dragSession.cursor)
+  dragTimer = setInterval(dragTick, 1000 / hz)
+  dragStats = { hz, ticks: 0, last: Date.now(), maxGap: 0 }
 })
 ipcMain.on('piggy:drag:heartbeat', event => {
   if (!fromPage(event) || dragSession === null) return
@@ -457,6 +478,8 @@ ipcMain.on('piggy:drag:end', event => {
     const startWindow = { x: dragSession.pigScreen.x - pig.x, y: dragSession.pigScreen.y - pig.y }
     log('drag end', JSON.stringify({ bounds, from: startWindow, movedBy: bounds === null ? null
       : { x: bounds.x - startWindow.x, y: bounds.y - startWindow.y } }))
+    // tick 是不是跟得上刷新率：maxGap 远大于 1000/hz 就说明主进程被别的活挡住了。
+    if (dragStats !== null) log('drag ticks', JSON.stringify(dragStats))
   }
   stopDrag()
   restingPigScreen = null
