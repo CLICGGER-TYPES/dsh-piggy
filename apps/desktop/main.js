@@ -29,8 +29,11 @@ const { autoUpdater } = updaterPackage
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
-/** Windows 上每帧合成整窗的代价高：30fps 足够猪动，CPU/GPU 掉一大截。 */
+/** 静止时窗口合成上限：Windows 上每帧合成整窗的代价高，30fps 足够猪动，CPU/GPU 掉一大截。 */
 const FRAME_RATE = 30
+/** 拖动时提到 60：窗口是按 60Hz setBounds 移动的，合成只有 30fps 的话猪会「一跳一跳地跟」
+ *（用户 2026-10-07：拖动时抽帧）。只在拖动那几百毫秒里贵一点，松手就降回去。 */
+const FRAME_RATE_DRAGGING = 60
 /** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
 const BOUNDS_TOLERANCE = 2
 
@@ -402,6 +405,8 @@ function stopDrag() {
   if (dragTimer !== null) clearInterval(dragTimer)
   dragTimer = null
   dragSession = null
+  // 松手回到省电的 30fps（见 FRAME_RATE）。
+  if (win !== null && !win.isDestroyed()) win.webContents.setFrameRate(FRAME_RATE)
 }
 
 /** 页面要几何：给它推一次（订阅晚于 did-finish-load 时靠这个）。 */
@@ -431,6 +436,8 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   // 拖动期间每一帧都不写日志（60Hz 会刷爆），但起止各记一行：出问题时能看出拖了多远、
   // 起始窗口和猪的位置对不对得上（2026-10-06 的偏移排查就是缺这一段）。
   log('drag start', JSON.stringify({ bounds, pigScreen: dragSession.pigScreen, pigFromPage: pigFromPage !== null }))
+  // 拖动期间把窗口合成提到 60fps：不然窗口 60Hz 在动、画面 30fps 才更新，猪看起来一抽一抽。
+  if (win !== null && !win.isDestroyed()) win.webContents.setFrameRate(FRAME_RATE_DRAGGING)
   dragTimer = setInterval(dragTick, 1000 / 60)
 })
 ipcMain.on('piggy:drag:heartbeat', event => {
