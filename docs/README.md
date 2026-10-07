@@ -20,6 +20,7 @@
 
 ## 开发者：怎么加 X
 
+- [**开发新功能：流程、放哪、预留的扩展点（先读）**](guides/adding-features.md)
 - [写一个在线扩展](guides/writing-extensions.md)
 - [给猪加台词](guides/adding-lines.md)
 - [加一项成就和徽章](guides/adding-achievements.md)

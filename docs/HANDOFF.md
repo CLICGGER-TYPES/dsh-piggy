@@ -11,7 +11,7 @@
 - **是什么**：一只「QQ 宠物」式的电子猪。同一份代码有两种形态：**DSH 插件**（住在 DeepSeek Harness 网页里）和**桌面版**（Electron，Windows / Linux / macOS）。
 - **代码在哪**：`/zyx/DSH/workspaces/dsh-piggy/code`（本机），远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy`，**都只有 `main` 一个分支**。
 - **每次改完必跑**：`npm run build && npm test && npm run typecheck`（700 多个测试，全绿才算完）。
-- **「怎么加 X」先看 `docs/guides/`**：[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
+- **「怎么加 X」先看 `docs/guides/`**：[开发新功能（总则）](guides/adding-features.md)、[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
 - **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 发 GitHub、并构建 Gitee 渠道的包 → **本机**跑 `scripts/gitee-publish.sh` 推 Gitee → npm 由人手动发。详见第 9 节。
 - **最重要的三条规矩**：数值/玩法设计先问用户再做；提交信息用中文、不加 AI 署名；改了界面一定要在真实浏览器 / 桌面窗口里看一眼（测试通过 ≠ 显示正确）。
@@ -278,7 +278,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 **风险**
 - **扩展下载在国内直连 GitHub 会超时**（2026-10-06 查清）：插件进程用的是 Node 的 `fetch`（undici），它**不读系统代理**，而浏览器会读，所以网页上能开 GitHub、插件下载却卡住。已经做的：每个文件 12 秒超时、最多 3 次重试、并行下载、失败说清是哪一步，界面立刻显示「下载中…」并留可重试的失败提示。**没做的**：让插件的出网走系统代理（用户当时选了「只做超时重试反馈」，没要 Gitee 镜像兜底）。下次再有人报「下载不了」，先看导出日志里的 `ext` 行，确认是不是这类超时。
   已验证可行的修法（未做，要用户点头）：Node 24 起 `fetch` 认 `HTTP_PROXY/HTTPS_PROXY` + `NODE_USE_ENV_PROXY=1`，桌面外壳启动宿主时读系统代理带上即可（Win11 虚拟机实测从「连接被中断」变成正常下载）。
-- Gitee Windows 安装包：外壳 0.6.0 起去掉了只给 WebGPU 用的 `dxcompiler.dll` / `dxil.dll`（`electron-builder.gitee.cjs` 的 afterPack），约 98.4MiB；再超要继续瘦身。
+- Gitee Windows 安装包：外壳 0.6.0 起去掉了只给 WebGPU 用的 `dxcompiler.dll` / `dxil.dll`（`electron-builder.gitee.cjs` 的 afterPack），0.6.1 安装版 98,395,909 字节（约 93.8MiB），离 100MiB 上限约 6MiB；再超要继续瘦身。
 - Gitee 附件总量：一版约 472MB，发版时新旧并存约 944MB，贴近 1GB。
 
 **待用户决定 / 待拆卡**

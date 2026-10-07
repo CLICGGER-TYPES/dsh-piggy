@@ -52,6 +52,7 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 想做什么 | 读这个 |
 |---|---|
 | 了解现状、发版流程、已知问题、测试机 | [docs/HANDOFF.md](docs/HANDOFF.md) |
+| **做任何新功能**（新玩法、音效、动画、走路、动图、联网……）：流程、放哪、预留的扩展点、完工清单 | [docs/guides/adding-features.md](docs/guides/adding-features.md) |
 | 编码规范、提交格式 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
 | 写/改在线扩展 | [docs/guides/writing-extensions.md](docs/guides/writing-extensions.md) |
 | 给猪加台词 | [docs/guides/adding-lines.md](docs/guides/adding-lines.md) |
