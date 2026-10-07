@@ -42,55 +42,8 @@ export function createLayout(ctx) {
         if (desktopRole() === 'panel') { fitPanelWindow(ctx); return }
         // 猪窗口里没有面板：isOpen 只表示另一个窗口开着，这里什么都不排（排了会把气泡区挪到另一边、撑大猪窗口）
         if (desktopRole() === 'pet') return
-        var shell = desktopShell()
-        if (shell !== null) {
-          if (ctx.host.getAttribute('data-panel-side-locked') === 'true') return
-          // 桌面版：窗口就贴着猪，`innerWidth` 是窗口不是屏幕 —— 用外壳报来的屏幕几何
-          // 决定面板朝哪边开。窗口会自己长到装下面板，所以不需要横向挪。
-          var room = shell.room()
-          if (room !== null) {
-            var opensBelow = room.above < room.below
-            // 桌面版面板最高 520（列表再长也在面板里滚）。窗口按这个最高值留位置
-            // （见 apps/desktop/renderer/shell.js 的 PANEL_RESERVE），切换 App 时面板变矮变高
-            // 只改可点区域、不改窗口大小 —— Windows 上透明窗口改一次大小会有一帧画在旧位置。
-            var fixedHeight = function (space) {
-              return Math.max(PANEL_MIN_HEIGHT, Math.min(PANEL_MAX_HEIGHT, Math.round(space - PANEL_GAP - PANEL_MARGIN - 42))) + 'px'
-            }
-            ctx.host.setAttribute('data-panel-vertical', opensBelow ? 'below' : 'above')
-            if (!opensBelow) {
-              ctx.card.style.top = 'auto'
-              ctx.card.style.bottom = 'calc(100% + ' + PANEL_GAP + 'px)'
-              ctx.card.style.maxHeight = fixedHeight(room.above)
-            } else {
-              ctx.card.style.bottom = 'auto'
-              ctx.card.style.top = 'calc(100% + ' + PANEL_GAP + 'px)'
-              ctx.card.style.maxHeight = fixedHeight(room.below)
-            }
-            // 横向同理：猪靠屏幕右边就朝左开（默认），靠左边就改成朝右开。
-            var width = Math.round(Math.min(PANEL_WIDTH, room.width - 2 * PANEL_MARGIN))
-            var opensRight = typeof room.left === 'number' && typeof room.right === 'number'
-              && room.left < width + PANEL_MARGIN && room.right > room.left
-            // 面板朝哪边开，猪就待在场景的哪一端。老 CSS 是「场景一开就撑到面板那么宽，
-            // 猪永远靠右」（[data-open] .dp-scene{width:...} + justify-content:flex-end），
-            // 朝右开时猪已经贴在右端了，一展开就横移整个面板宽度。
-            ctx.host.setAttribute('data-panel-side', opensRight ? 'right' : 'left')
-            if (opensRight) {
-              ctx.card.style.right = 'auto'
-              ctx.card.style.left = '0px'
-            } else {
-              ctx.card.style.left = 'auto'
-              ctx.card.style.right = '0px'
-            }
-            ctx.card.style.maxWidth = width + 'px'
-            // HUD 贴着猪：朝右开时猪在场景左端，HUD 也从左边起。
-            // 朝右开时猪在场景左端：名字框放到猪的右边，不然正好压在猪身上。
-            ctx.hud.style.left = (opensRight
-              ? Math.round((ctx.pig.offsetLeft || 0) + (ctx.pig.offsetWidth || 0) + 8)
-              : 9) + 'px'
-            ctx.host.setAttribute('data-panel-side-locked', 'true')
-            return
-          }
-        }
+        // 外壳 0.6.0 以前的单窗口桌面版已不支持（猪和面板拆成两个窗口后那套挑边逻辑删了）。
+        if (desktopShell() !== null) return
         var vw = window.innerWidth || 0
         var vh = window.innerHeight || 0
         if (vw <= 0 || vh <= 0) return

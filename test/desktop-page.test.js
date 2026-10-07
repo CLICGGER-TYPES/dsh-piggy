@@ -161,7 +161,6 @@ test('游戏包导出桌面模块；更新页只推荐正式版、测试版折�
 test('气泡不进窗口外框，猪头上方一直留气泡位置（面板朝下开时冒气泡会让整块内容挪一下，Windows 上出重影）', () => {
   const src = readFileSync(new URL('../src/client/desktop/measure.js', import.meta.url), 'utf8')
   assert.match(src, /if \(bubble !== null\) bubbleRects\.push\(rect\)/)
-  assert.match(src, /let outline = rects\.concat\(zone === null \? \[\] : \[zone\], bubbleZone === null \? \[\] : \[bubbleZone\]\)/)
+  assert.match(src, /const outline = rects\.concat\(bubbleZone === null \? \[\] : \[bubbleZone\]\)/)
   assert.match(src, /const shape = rects\.concat\(bubbleRects\)/)
-  assert.match(src, /dsh-piggy:desktop-sides/)
 })

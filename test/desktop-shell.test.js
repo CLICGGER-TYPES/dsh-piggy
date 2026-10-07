@@ -4,8 +4,9 @@
  * 假的外壳（window.__dshPiggyShell）模拟「窗口贴着猪、屏幕还有多少地方」，
  * 这里验证：
  * 1. 外壳在时，拖猪把起止交给主进程采样，不写 localStorage 的坐标；
- * 2. 面板朝屏幕里侧开（用外壳报的屏幕空间，而不是小窗口的 innerWidth）；
- * 3. 网页版（没有外壳）行为不变：坐标照旧写盘、面板照旧按视口挑边。
+ * 2. 网页版（没有外壳）行为不变：坐标照旧写盘、面板照旧按视口挑边。
+ * （单窗口时代「面板按屏幕空间挑边」那几条随单窗口代码一起删了：外壳 0.6.0 起面板在自己的窗口里，
+ *   贴哪边由主进程定，见 test/panel-geometry.test.js。）
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -110,64 +111,6 @@ test('按住 1.5 秒不移动后再拖，桌面窗口仍跟着鼠标，松开即
   assert.equal(beats, before)
 })
 
-test('桌面版：面板按屏幕空间朝上开（小窗口的 innerWidth 不算数）', async () => {
-  const { shell } = fakeShell({ above: 900, below: 100, width: 1920, height: 1040 })
-  const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-  openPanel(dom, 'status')
-  const card = hostOf(dom).children[0]
-  assert.ok(String(card.style.bottom).includes('100%'), `该朝上开：${card.style.bottom}`)
-  assert.equal(card.style.right, '0px', '桌面版窗口会自己长，不横向挪')
-  assert.equal(card.style.maxWidth, '292px')
-})
-
-test('F10 top-edge pig uses the compact scene when its panel opens below', async () => {
-  const { shell } = fakeShell({ above: 16, below: 890, left: 16, right: 1800, width: 1920, height: 985 })
-  const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-  openPanel(dom, 'status')
-  assert.equal(hostOf(dom).getAttribute('data-panel-vertical'), 'below')
-})
-
-test('F10 below-opening panel reserves native window padding before the screen edge', async () => {
-  const { shell } = fakeShell({ above: 460, below: 469, left: 900, right: 900, width: 1920, height: 985 })
-  const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-  openPanel(dom, 'status')
-  const card = hostOf(dom).children[0]
-  assert.equal(hostOf(dom).getAttribute('data-panel-vertical'), 'below')
-  assert.ok(parseInt(card.style.maxHeight) <= 433, `panel needs 36px for its gap and native margin: ${card.style.maxHeight}`)
-})
-
-test('F10 native window resize does not reverse the panel side mid-toggle', async () => {
-  const room = { above: 880, below: 40, left: 900, right: 900, width: 1920, height: 985 }
-  const { shell } = fakeShell(room)
-  const { dom, windowListeners } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-  openPanel(dom, 'status')
-  assert.equal(hostOf(dom).getAttribute('data-panel-vertical'), 'above')
-  room.above = 20; room.below = 860
-  for (const listener of windowListeners.resize ?? []) listener()
-  assert.equal(hostOf(dom).getAttribute('data-panel-vertical'), 'above')
-})
-
-test('F10 rendering another app does not reverse the chosen desktop panel side', async () => {
-  const room = { above: 880, below: 40, left: 900, right: 900, width: 1920, height: 985 }
-  const { shell } = fakeShell(room)
-  const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-  openPanel(dom, 'status')
-  assert.equal(hostOf(dom).getAttribute('data-panel-vertical'), 'above')
-  room.above = 20; room.below = 860
-  findByAttr(hostOf(dom), 'data-tab', 'bag').fire('click')
-  assert.equal(hostOf(dom).getAttribute('data-panel-vertical'), 'above')
-})
-
-test('F10 samples the pig room before open-state CSS moves its local box', async () => {
-  const room = { above: 880, below: 40, left: 900, right: 900, width: 1920, height: 985 }
-  const { shell } = fakeShell(room)
-  const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-  const states = []
-  shell.room = () => { states.push(hostOf(dom).getAttribute('data-open')); return room }
-  openPanel(dom, 'status')
-  assert.equal(states[0], 'false')
-})
-
 test('F10 panel toggle flushes desktop geometry before the browser paints', async () => {
   const { shell, calls } = fakeShell({ above: 900, below: 100, width: 1920, height: 985 })
   const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
@@ -200,43 +143,6 @@ test('桌面版：窗口跟随鼠标时，拖拽松开不能误判成摸猪', as
   scene.fire('pointermove', { clientX: 60, clientY: 60, screenX: 1040, screenY: 800, pointerId: 1 })
   scene.fire('pointerup', { pointerId: 1 })
   assert.equal(pig.getAttribute('data-react'), null)
-})
-
-test('桌面版：四个角挑边，host 上写 data-panel-side（猪才能待在对应那端）', async () => {
-  const corners = [
-    { name: '左上', room: { above: 40, below: 887, left: 28, right: 1819, width: 1920, height: 985 }, side: 'right' },
-    { name: '右上', room: { above: 40, below: 887, left: 1819, right: 28, width: 1920, height: 985 }, side: 'left' },
-    { name: '左下', room: { above: 887, below: 40, left: 28, right: 1819, width: 1920, height: 985 }, side: 'right' },
-    { name: '右下', room: { above: 887, below: 40, left: 1819, right: 28, width: 1920, height: 985 }, side: 'left' },
-  ]
-  for (const corner of corners) {
-    const { shell } = fakeShell(corner.room)
-    const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
-    const host = hostOf(dom)
-    assert.equal(host.getAttribute('data-panel-side'), null, `${corner.name}：没开面板不该写属性`)
-    openPanel(dom, 'status')
-    assert.equal(host.getAttribute('data-panel-side'), corner.side, `${corner.name}：面板该朝${corner.side === 'right' ? '右' : '左'}开`)
-    const card = host.children[0]
-    if (corner.side === 'right') {
-      assert.equal(card.style.left, '0px', `${corner.name}：面板贴猪右边`)
-      assert.equal(card.style.right, 'auto')
-    } else {
-      assert.equal(card.style.right, '0px', `${corner.name}：面板在猪左边`)
-    }
-    // 朝右开时猪在场景左端：HUD 挪到猪右边（不然压在猪身上）；朝左开时照旧从 9px 起
-    const hud = findByClass(host, 'dp-hud')
-    assert.ok(hud !== undefined, 'HUD 要在')
-    if (corner.side === 'right') {
-      const pig = findByClass(host, 'dp-pig')
-      const want = Math.round((pig.offsetLeft || 0) + (pig.offsetWidth || 0) + 8) + 'px'
-      assert.equal(hud.style.left, want, `${corner.name}：HUD 在猪右边`)
-    } else {
-      assert.equal(hud.style.left, '9px', `${corner.name}：HUD 从场景左边起`)
-    }
-    // 纵向：上方有地方就朝上开
-    const above = corner.room.above > corner.room.below
-    assert.ok(String(card.style.bottom).includes('100%') === above, `${corner.name}：纵向挑边`)
-  }
 })
 
 test('网页版：没有外壳时行为不变（坐标写盘、面板按视口挑边）', async () => {

@@ -10,8 +10,7 @@
  *     几套记账互相推，任何一处差一点都会被继承，用户看到的就是越用越偏、拖完弹回去）。
  *   - 用脚底中心而不是左上角：立绘换大小（占位纸盒 → 真猪、73x58 ↔ 54x54）脚底中心不变，不用特殊处理。
  *
- * 面板开着、两边都放不下时 contentBoundsForPig 会把窗口连猪挪开——这是唯一允许猪离开家的情况，
- * 收起后下一轮自然按家摆回去。
+ * 猪窗口里没有面板（外壳 0.6.0 起面板单独一个窗口），所以猪永远在家。
  */
 import { contentBoundsForPig, nearestArea } from './geometry.js'
 
@@ -29,9 +28,7 @@ function areaOf(point, areas) {
   return areas.find(area => inside(area, point)) ?? nearestArea(point, areas)
 }
 
-/** @param {{ platform?: string }} [options] */
-export function createPlacement(options = {}) {
-  void options
+export function createPlacement() {
   /** 猪脚底中心的屏幕点；还不知道就是 null。 */
   let home = null
   /** 存档里读出来、还没换算成家的位置（v2 旧格式存的是左上角，要等知道猪多大才能换算）。 */
@@ -94,7 +91,7 @@ export function createPlacement(options = {}) {
    * 按家算这一轮窗口该在哪。
    * @param {any} report 页面这一轮量到的：width/height（内容=窗口大小）、pig（猪的大小）、
    *   pigWindow（换成这个窗口大小后猪在窗口里的左上角，含 shift）、pigNow（猪现在在当前窗口里的左上角）、
-   *   panelOpen、shift（内容在窗口里被挪了多少）
+   *   shift（内容在窗口里被挪了多少）
    * @param {{x:number,y:number,width:number,height:number}} bounds 当前窗口
    * @param {Array<any>} areas 所有屏的工作区
    * @returns {{x:number,y:number,width:number,height:number}} 窗口应该在的位置和大小
@@ -122,7 +119,7 @@ export function createPlacement(options = {}) {
     const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize }
     const topLeft = { x: home.x - pigSize.width / 2, y: home.y - pigSize.height }
     const area = nearestArea(home, areas) ?? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
-    const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain, panelOpen: report.panelOpen === true }, topLeft, area)
+    const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain }, topLeft)
     // 永远不请求会被系统拒绝的窗口矩形：系统（mutter 等）会把伸出工作区的窗口整块推回来，
     // 而页面不知道（用户 2026-10-06 日志里的 143px）。收起时页面会把内容反向挪回去，猪不动。
     const rawX = next.x

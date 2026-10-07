@@ -47,8 +47,6 @@ export function createPanel(ctx) {
       function setOpen(next) {
         if (splitSetOpen(ctx, next)) return
         if (!next) { closeFishing(ctx); if (ctx.isOpen) animatePanelClose(ctx) }
-        if (next && !ctx.isOpen) desktopShell()?.room?.()
-        ctx.host.removeAttribute('data-panel-side-locked')
         ctx.isOpen = next
         ctx.host.setAttribute('data-open', next ? 'true' : 'false')
         // Collapsed must be the pig and *nothing else*. One switch hides the

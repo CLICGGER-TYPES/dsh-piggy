@@ -1,65 +1,22 @@
 // @ts-check
 /**
- * 桌面版：量「猪 + 面板 + 气泡」占多大、把整块内容钉在窗口锚边上（从桌面程序 renderer/shell.js 搬进游戏包）。
+ * 桌面版猪窗口：量「猪 + 气泡」占多大、把整块内容钉在窗口锚边上（从桌面程序 renderer/shell.js 搬进游戏包）。
+ *
+ * 外壳 0.6.0 起面板在另一个窗口里（见 panel-window.js），这里只管猪窗口：一块只跟猪大小有关的
+ * 固定框，冒气泡、飘爱心、出道具都不改窗口大小。以前单窗口时给面板预留位置、记面板朝向的那套
+ * （2026-10-07 前）已删掉。
  *
  * 量框一律用布局盒（offsetLeft/offsetTop 累加），不用 getBoundingClientRect：呼吸、浮动动画只改
- * transform，rect 每帧都在抖。面板（.dp-card）自己裁掉溢出，只量面板本身，不进去量几百个子节点。
+ * transform，rect 每帧都在抖。
  */
 import { PAD, STEP } from './geometry.js'
-import { PANEL_MAX_HEIGHT } from '../constants.js'
 
-/** 收起时猪头上方预留的气泡区：冒气泡只改可点区域，不改窗口大小。 */
+/** 猪头上方预留的气泡区：冒气泡只改可点区域，不改窗口大小。 */
 const BUBBLE_ZONE = { width: 272, height: 104 }
 /** 可点区域四周放宽几像素：礼包浮动、猪摇摆会越出布局盒一点。 */
 const SHAPE_SLACK = 6
-/** 面板打开时整块内容相对猪的外框，按朝向和猪大小记在本机；收起时窗口仍按它留位置。
- *  v2（2026-10-06）：加存储版本 + 猪宽按 4px 量化——更新可能改立绘/字体/CSS 让猪宽差一两像素，
- *  旧实现用整数像素做 key，一差就整条记录作废，收起态不再预留面板，于是「更新后第一次右键」
- *  成了第一次真的改窗口（用户报的偏移就是这么显形的）。 */
-const OPEN_BOX_KEY = 'dsh-piggy:desktop-open-box'
-const OPEN_BOX_VERSION = 2
-/** 面板上次朝哪边开：启动后第一次打开就按它留位置，不用先变一次窗口。 */
-const SIDES_KEY = 'dsh-piggy:desktop-sides'
-
-/** 收起时按需加回上次打开的面板范围；拖动时只保留本轮可见内容和气泡区。 */
-export function reservedOutline(outline, saved, pigBox, compact) {
-  if (compact || saved === undefined) return outline
-  return outline.concat([{ x: pigBox.x + saved.l, y: pigBox.y + saved.t, r: pigBox.x + saved.r, b: pigBox.y + saved.b }])
-}
-
-/** 存放 key：朝向 + 猪宽（4px 一档，抖动不算变）。 */
-export function openBoxKey(vertical, horizontal, pigBox) {
-  return vertical + '|' + horizontal + '|' + Math.round(pigBox.width / 4)
-}
-
-/** 旧存档可能把另一朝向的范围写进当前 key；只读确实向该侧伸出的范围。 */
-export function validOpenBox(openBoxes, vertical, horizontal, pigBox) {
-  let saved = openBoxes[openBoxKey(vertical, horizontal, pigBox)]
-  if (saved === undefined) {
-    // 这一个方向的记录里，猪宽那一档对不上（启动时先画占位纸盒、换皮肤改了立绘宽度、
-    // 更新换了素材……）：退回到同朝向的任意一条。预留区只是「留多少位置」的估计，
-    // 差一两档可以接受；不退回的话第一轮就没预留，窗口先缩后长，玩家看到猪跳一下
-    // （2026-10-07 win11 日志：shown 是 476 高 → 106ms 后缩到 204 → 再长回 476）。
-    const prefix = vertical + '|' + horizontal + '|'
-    const key = Object.keys(openBoxes).find(name => name.startsWith(prefix))
-    saved = key === undefined ? undefined : openBoxes[key]
-  }
-  if (saved === null || saved === undefined || ![saved.l, saved.t, saved.r, saved.b].every(Number.isFinite)) return undefined
-  if (saved.l >= saved.r || saved.t >= saved.b) return undefined
-  if (vertical === 'bottom' && saved.t >= -pigBox.height) return undefined
-  if (vertical === 'top' && saved.b <= pigBox.height * 2) return undefined
-  return saved
-}
-
-
-
-/** 从卡片和猪的实际位置判断面板朝向，供量框和锚边共用。 */
-function panelSide(cardBox, pigBox) {
-  return {
-    vertical: cardBox.y + cardBox.height / 2 < pigBox.y + pigBox.height / 2 ? 'bottom' : 'top',
-    horizontal: cardBox.x + cardBox.width / 2 < pigBox.x + pigBox.width / 2 ? 'right' : 'left',
-  }
-}
+/** 内容永远钉在窗口右下角（猪窗口里没有面板，不用挑边）。 */
+const SIDE = Object.freeze({ vertical: 'bottom', horizontal: 'right' })
 
 /** @param {any} node */
 export function layoutBox(node) {
@@ -81,25 +38,11 @@ function visible(node) {
 }
 
 /**
- * @param {{ platform: string, split?: boolean, geometry: () => any, anchor?: () => ({x:number,y:number}|null) }} env
+ * @param {{ platform: string, geometry: () => any }} env
  */
 export function createMeasure(env) {
-  let openBoxes = {}
-  try {
-    const raw = JSON.parse(localStorage.getItem(OPEN_BOX_KEY) || 'null')
-    // v2：{ v: 2, boxes: {...} }；旧格式就是一个平铺的 map（键还是老算法），
-    // 读进来照用（validOpenBox 会校验朝向），下次写入自动升级。
-    openBoxes = raw !== null && typeof raw === 'object' && raw.v === OPEN_BOX_VERSION && typeof raw.boxes === 'object'
-      ? raw.boxes ?? {} : (raw !== null && typeof raw === 'object' && raw.v === undefined ? raw : {})
-    if (raw !== null && typeof raw === 'object' && raw.v !== undefined && raw.v !== OPEN_BOX_VERSION) openBoxes = {}
-  } catch { openBoxes = {} }
-  /** shift：收起时窗口被夹回工作区，整块内容在窗口里反向挪多少（猪的屏幕位置不变，只裁掉透明留白）。 */
-  const state = { vertical: 'bottom', horizontal: 'right', pinned: '', compact: false, bubbleHeight: null, shift: { x: 0, y: 0 } }
-  try {
-    const sides = JSON.parse(localStorage.getItem(SIDES_KEY) || 'null')
-    if (sides && (sides.vertical === 'top' || sides.vertical === 'bottom')) state.vertical = sides.vertical
-    if (sides && (sides.horizontal === 'left' || sides.horizontal === 'right')) state.horizontal = sides.horizontal
-  } catch { /* 用默认的右下角 */ }
+  /** shift：窗口被夹回工作区时，整块内容在窗口里反向挪多少（猪的屏幕位置不变，只裁掉透明留白）。 */
+  const state = { pinned: '', bubbleHeight: null, shift: { x: 0, y: 0 } }
   const reserves = env.platform !== 'darwin'
 
   /** @param {any} host */
@@ -131,7 +74,6 @@ export function createMeasure(env) {
     const hostBox = layoutBox(host)
     const pigNode = host.querySelector('.dp-pig')
     const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode)
-    const open = host.getAttribute('data-open') === 'true'
     // 气泡预留区：收起、打开都留，气泡出现/消失不改外框。离屏幕顶边不够高就只留到顶边。
     let bubbleZone = null
     if (reserves && pigNode !== null) {
@@ -147,7 +89,6 @@ export function createMeasure(env) {
       const zoneLeft = host.getAttribute('data-panel-side') === 'right' ? hostBox.x : hostBox.x + hostBox.width - BUBBLE_ZONE.width
       if (height > 0) bubbleZone = { x: zoneLeft, y: pigBox.y - height, r: zoneLeft + BUBBLE_ZONE.width, b: pigBox.y }
     }
-    let zone = null
     let merged = true
     while (merged) {
       merged = false
@@ -164,50 +105,12 @@ export function createMeasure(env) {
         }
       }
     }
-    // 面板打开时按它的最高高度留位置：切到内容少的 App 面板变矮，窗口不跟着缩。
-    const card = /** @type {any} */ (host.querySelector('.dp-card'))
-    const cardBox = card === null ? null : layoutBox(card)
-    if (reserves && open && cardBox !== null && card.hidden !== true) {
-      const maxHeight = Math.min(PANEL_MAX_HEIGHT, parseFloat(card.style.maxHeight) || 0)
-      if (maxHeight > cardBox.height && cardBox.width > 0) {
-        zone = cardBox.y > pigBox.y
-          ? { x: cardBox.x, y: cardBox.y, r: cardBox.x + cardBox.width, b: cardBox.y + maxHeight }
-          : { x: cardBox.x, y: cardBox.y + cardBox.height - maxHeight, r: cardBox.x + cardBox.width, b: cardBox.y + cardBox.height }
-      }
-    }
-    let outline = rects.concat(zone === null ? [] : [zone], bubbleZone === null ? [] : [bubbleZone])
-    // 拆窗口之后（外壳 0.6.0 起）猪窗口用一块**固定大小**的框：猪头上留气泡区、左边留签到小气泡和
-    // 打工道具、两侧留摸猪时飘的爱心。框只跟猪的大小有关，冒气泡、飘爱心、出道具都不再改窗口大小
-    // （改大小就有一帧画在旧位置，Windows 上最明显）。
-    if (env.split && pigNode !== null) {
+    const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone])
+    // 猪窗口用一块**固定大小**的框：猪头上留气泡区、左边留签到小气泡和打工道具、两侧留摸猪时飘的爱心。
+    // 框只跟猪的大小有关，冒气泡、飘爱心、出道具都不改窗口大小（改大小就有一帧画在旧位置，Windows 上最明显）。
+    if (pigNode !== null) {
       outline.push({ x: pigBox.x + pigBox.width + 40 - BUBBLE_ZONE.width - 40, y: pigBox.y - BUBBLE_ZONE.height - 24,
         r: pigBox.x + pigBox.width + 40, b: pigBox.y + pigBox.height + 12 })
-    }
-    // 拆窗口之后（外壳 0.6.0 起）猪窗口里永远没有面板：不记、也不预留面板的范围。
-    if (reserves && !env.split && pigNode !== null) {
-      if (open && cardBox !== null && card.hidden !== true && cardBox.width > 0 && cardBox.height > 0) {
-        const side = panelSide(cardBox, pigBox)
-        const key = openBoxKey(side.vertical, side.horizontal, pigBox)
-        let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity
-        for (const o of outline) { l = Math.min(l, o.x); t = Math.min(t, o.y); r = Math.max(r, o.r); b = Math.max(b, o.b) }
-        const rel = { l: Math.round(l - pigBox.x), t: Math.round(t - pigBox.y), r: Math.round(r - pigBox.x), b: Math.round(b - pigBox.y) }
-        const old = openBoxes[key]
-        if (old === undefined || old.l !== rel.l || old.t !== rel.t || old.r !== rel.r || old.b !== rel.b) {
-          openBoxes[key] = rel
-          try { localStorage.setItem(OPEN_BOX_KEY, JSON.stringify({ v: OPEN_BOX_VERSION, boxes: openBoxes })) } catch { /* 存不下就每次启动重新量 */ }
-        }
-      } else if (!open && !state.compact) {
-        // 收起态挂回上次的面板预留区，按**当前**朝向，不再每轮重新挑朝向。
-        //
-        // 以前这里每量一次就调 fittingOpenBox 重新判断「上/下哪个放得下」，放不下就翻转朝向。
-        // 朝向决定挂哪块预留区（上下差 272px），一翻窗口就挪，挪完猪的屏幕位置变了，
-        // 「放不放得下」的判断又翻回来 —— 自激振荡：窗口在两个几何之间反复横跳，用户看到的就是
-        // 「猪瞬移到上面去再瞬移下来」（2026-10-07 在 win11 虚拟机上抓到：日志里
-        // (258,392,304x204) 与 (226,120,324x476) 每 200ms 来回一次）。
-        // 朝向只在**面板真正打开时**（sides()）改：那时窗口本来就在变，不会有额外的一帧跳动。
-        const saved = validOpenBox(openBoxes, state.vertical, state.horizontal, pigBox)
-        outline = reservedOutline(outline, saved, pigBox, state.compact)
-      }
     }
     let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity
     for (const o of outline) { left = Math.min(left, o.x); top = Math.min(top, o.y); right = Math.max(right, o.r); bottom = Math.max(bottom, o.b) }
@@ -229,23 +132,8 @@ export function createMeasure(env) {
     return { content, shape, pig, hostBox, pigBox, contentBox: { left, top, right, bottom } }
   }
 
-  /** 面板在猪哪一侧 → 整块内容钉在窗口哪两条边；收起时保持上一次。 @param {any} host */
-  function sides(host) {
-    const card = /** @type {any} */ (host.querySelector('.dp-card'))
-    const pigNode = host.querySelector('.dp-pig')
-    if (card === null || pigNode === null || card.hidden === true) return { vertical: state.vertical, horizontal: state.horizontal }
-    const cardBox = layoutBox(card)
-    const pigBox = layoutBox(pigNode)
-    if (cardBox.width < 1 || cardBox.height < 1) return { vertical: state.vertical, horizontal: state.horizontal }
-    const { vertical, horizontal } = panelSide(cardBox, pigBox)
-    if (vertical !== state.vertical || horizontal !== state.horizontal) {
-      try { localStorage.setItem(SIDES_KEY, JSON.stringify({ vertical, horizontal })) } catch { /* 下次启动从默认开始 */ }
-    }
-    state.vertical = vertical
-    state.horizontal = horizontal
-    return { vertical: state.vertical, horizontal: state.horizontal }
-  }
-
+  /** 整块内容钉在窗口哪两条边（固定右下角）。 */
+  function sides() { return SIDE }
 
   /** 让整块内容离窗口锚边正好 PAD。 @param {any} host */
   function pin(host, side, hostBox, contentBox) {

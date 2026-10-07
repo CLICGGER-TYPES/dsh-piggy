@@ -14,39 +14,17 @@ export const MIN_WINDOW = Object.freeze({ width: 96, height: 96 })
 const round = value => Math.round(Number(value) || 0)
 
 /**
- * 内容变了：按「猪在屏幕上的目标位置」一次算出窗口位置和大小。
- * 面板收起时透明留白可以越出工作区；面板打开时两边都放不下面板才挪猪。
- * @param {{width:number,height:number,pigWindow:{x:number,y:number,width:number,height:number},panelOpen?:boolean,allowPanelOverflow?:boolean}} content
+ * 内容变了：按「猪在屏幕上的目标位置」一次算出窗口位置和大小（透明留白可以越出工作区，
+ * 由 place.js 夹回来、页面把内容反向挪）。
+ * @param {{width:number,height:number,pigWindow:{x:number,y:number,width:number,height:number}}} content
  * @param {{x:number,y:number}} targetPigScreen
- * @param {{x:number,y:number,width:number,height:number}} area
  */
-export function contentBoundsForPig(content, targetPigScreen, area) {
-  const width = Math.max(MIN_WINDOW.width, round(content.width))
-  const height = Math.max(MIN_WINDOW.height, round(content.height))
-  const pig = content.pigWindow
-  function axis(target, pigOffset, pigSize, windowSize, areaStart, areaSize) {
-    const desired = round(target) - round(pigOffset)
-    if (!content.panelOpen) return desired
-    if (content.allowPanelOverflow) {
-      const minStart = round(areaStart) - round(pigOffset)
-      const maxStart = round(areaStart + areaSize) - round(pigOffset) - round(pigSize)
-      return Math.max(minStart, Math.min(desired, maxStart))
-    }
-    const before = round(pigOffset)
-    const after = windowSize - before - round(pigSize)
-    const availableBefore = round(target) - round(areaStart)
-    const availableAfter = round(areaStart + areaSize - target - pigSize)
-    const chosenFits = availableBefore >= before && availableAfter >= after
-    const otherFits = availableBefore >= after && availableAfter >= before
-    if (chosenFits || otherFits) return desired
-    const lastStart = round(areaStart + areaSize - windowSize)
-    return Math.max(round(areaStart), Math.min(desired, lastStart))
-  }
+export function contentBoundsForPig(content, targetPigScreen) {
   return {
-    x: axis(targetPigScreen.x, pig.x, pig.width, width, area.x, area.width),
-    y: axis(targetPigScreen.y, pig.y, pig.height, height, area.y, area.height),
-    width,
-    height,
+    x: round(targetPigScreen.x) - round(content.pigWindow.x),
+    y: round(targetPigScreen.y) - round(content.pigWindow.y),
+    width: Math.max(MIN_WINDOW.width, round(content.width)),
+    height: Math.max(MIN_WINDOW.height, round(content.height)),
   }
 }
 

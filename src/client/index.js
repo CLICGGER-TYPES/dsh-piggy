@@ -293,8 +293,6 @@ import { partAt } from './pet-parts.js'
         clampPig()
         // 桌面版的位置归窗口管（主进程会存），页面不写自己的坐标。
         if (deskShell === null) writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }))
-        deskShell?.refreshRoom?.()
-        host.removeAttribute('data-panel-side-locked')
         fitPanel()
         return moved
       }

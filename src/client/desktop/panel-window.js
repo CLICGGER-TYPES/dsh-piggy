@@ -79,8 +79,6 @@ export function installPanel(bridge) {
     beginDrag: function () {},
     endDrag: function () {},
     dragHeartbeat: function () {},
-    room: function () { return null },
-    refreshRoom: function () {},
     syncGeometry: schedule,
     setAnchor: function (next) { anchor = next },
   }

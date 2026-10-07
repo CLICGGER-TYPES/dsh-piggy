@@ -714,11 +714,6 @@
       },
       dragHeartbeat: function() {
       },
-      room: function() {
-        return null;
-      },
-      refreshRoom: function() {
-      },
       syncGeometry: schedule2,
       setAnchor: function(next) {
         anchor = next;
@@ -826,41 +821,7 @@
         return;
       }
       if (desktopRole() === "pet") return;
-      var shell2 = desktopShell();
-      if (shell2 !== null) {
-        if (ctx.host.getAttribute("data-panel-side-locked") === "true") return;
-        var room2 = shell2.room();
-        if (room2 !== null) {
-          var opensBelow = room2.above < room2.below;
-          var fixedHeight = function(space) {
-            return Math.max(PANEL_MIN_HEIGHT, Math.min(PANEL_MAX_HEIGHT, Math.round(space - PANEL_GAP - PANEL_MARGIN - 42))) + "px";
-          };
-          ctx.host.setAttribute("data-panel-vertical", opensBelow ? "below" : "above");
-          if (!opensBelow) {
-            ctx.card.style.top = "auto";
-            ctx.card.style.bottom = "calc(100% + " + PANEL_GAP + "px)";
-            ctx.card.style.maxHeight = fixedHeight(room2.above);
-          } else {
-            ctx.card.style.bottom = "auto";
-            ctx.card.style.top = "calc(100% + " + PANEL_GAP + "px)";
-            ctx.card.style.maxHeight = fixedHeight(room2.below);
-          }
-          var width = Math.round(Math.min(PANEL_WIDTH, room2.width - 2 * PANEL_MARGIN));
-          var opensRight = typeof room2.left === "number" && typeof room2.right === "number" && room2.left < width + PANEL_MARGIN && room2.right > room2.left;
-          ctx.host.setAttribute("data-panel-side", opensRight ? "right" : "left");
-          if (opensRight) {
-            ctx.card.style.right = "auto";
-            ctx.card.style.left = "0px";
-          } else {
-            ctx.card.style.left = "auto";
-            ctx.card.style.right = "0px";
-          }
-          ctx.card.style.maxWidth = width + "px";
-          ctx.hud.style.left = (opensRight ? Math.round((ctx.pig.offsetLeft || 0) + (ctx.pig.offsetWidth || 0) + 8) : 9) + "px";
-          ctx.host.setAttribute("data-panel-side-locked", "true");
-          return;
-        }
-      }
+      if (desktopShell() !== null) return;
       var vw = window.innerWidth || 0;
       var vh = window.innerHeight || 0;
       if (vw <= 0 || vh <= 0) return;
@@ -6991,8 +6952,6 @@
         closeFishing(ctx);
         if (ctx.isOpen) animatePanelClose(ctx);
       }
-      if (next && !ctx.isOpen) desktopShell()?.room?.();
-      ctx.host.removeAttribute("data-panel-side-locked");
       ctx.isOpen = next;
       ctx.host.setAttribute("data-open", next ? "true" : "false");
       ctx.card.hidden = !next;
@@ -7425,33 +7384,12 @@
   var STEP = 4;
   var MIN_WINDOW = Object.freeze({ width: 96, height: 96 });
   var round = (value) => Math.round(Number(value) || 0);
-  function contentBoundsForPig(content, targetPigScreen, area) {
-    const width = Math.max(MIN_WINDOW.width, round(content.width));
-    const height = Math.max(MIN_WINDOW.height, round(content.height));
-    const pig = content.pigWindow;
-    function axis(target, pigOffset, pigSize2, windowSize, areaStart, areaSize) {
-      const desired = round(target) - round(pigOffset);
-      if (!content.panelOpen) return desired;
-      if (content.allowPanelOverflow) {
-        const minStart = round(areaStart) - round(pigOffset);
-        const maxStart = round(areaStart + areaSize) - round(pigOffset) - round(pigSize2);
-        return Math.max(minStart, Math.min(desired, maxStart));
-      }
-      const before = round(pigOffset);
-      const after = windowSize - before - round(pigSize2);
-      const availableBefore = round(target) - round(areaStart);
-      const availableAfter = round(areaStart + areaSize - target - pigSize2);
-      const chosenFits = availableBefore >= before && availableAfter >= after;
-      const otherFits = availableBefore >= after && availableAfter >= before;
-      if (chosenFits || otherFits) return desired;
-      const lastStart = round(areaStart + areaSize - windowSize);
-      return Math.max(round(areaStart), Math.min(desired, lastStart));
-    }
+  function contentBoundsForPig(content, targetPigScreen) {
     return {
-      x: axis(targetPigScreen.x, pig.x, pig.width, width, area.x, area.width),
-      y: axis(targetPigScreen.y, pig.y, pig.height, height, area.y, area.height),
-      width,
-      height
+      x: round(targetPigScreen.x) - round(content.pigWindow.x),
+      y: round(targetPigScreen.y) - round(content.pigWindow.y),
+      width: Math.max(MIN_WINDOW.width, round(content.width)),
+      height: Math.max(MIN_WINDOW.height, round(content.height))
     };
   }
   function nearestArea(point, areas) {
@@ -7475,35 +7413,7 @@
   // src/client/desktop/measure.js
   var BUBBLE_ZONE = { width: 272, height: 104 };
   var SHAPE_SLACK = 6;
-  var OPEN_BOX_KEY = "dsh-piggy:desktop-open-box";
-  var OPEN_BOX_VERSION = 2;
-  var SIDES_KEY = "dsh-piggy:desktop-sides";
-  function reservedOutline(outline, saved, pigBox, compact) {
-    if (compact || saved === void 0) return outline;
-    return outline.concat([{ x: pigBox.x + saved.l, y: pigBox.y + saved.t, r: pigBox.x + saved.r, b: pigBox.y + saved.b }]);
-  }
-  function openBoxKey(vertical, horizontal, pigBox) {
-    return vertical + "|" + horizontal + "|" + Math.round(pigBox.width / 4);
-  }
-  function validOpenBox(openBoxes, vertical, horizontal, pigBox) {
-    let saved = openBoxes[openBoxKey(vertical, horizontal, pigBox)];
-    if (saved === void 0) {
-      const prefix = vertical + "|" + horizontal + "|";
-      const key = Object.keys(openBoxes).find((name) => name.startsWith(prefix));
-      saved = key === void 0 ? void 0 : openBoxes[key];
-    }
-    if (saved === null || saved === void 0 || ![saved.l, saved.t, saved.r, saved.b].every(Number.isFinite)) return void 0;
-    if (saved.l >= saved.r || saved.t >= saved.b) return void 0;
-    if (vertical === "bottom" && saved.t >= -pigBox.height) return void 0;
-    if (vertical === "top" && saved.b <= pigBox.height * 2) return void 0;
-    return saved;
-  }
-  function panelSide(cardBox, pigBox) {
-    return {
-      vertical: cardBox.y + cardBox.height / 2 < pigBox.y + pigBox.height / 2 ? "bottom" : "top",
-      horizontal: cardBox.x + cardBox.width / 2 < pigBox.x + pigBox.width / 2 ? "right" : "left"
-    };
-  }
+  var SIDE = Object.freeze({ vertical: "bottom", horizontal: "right" });
   function layoutBox(node) {
     let x = 0;
     let y = 0;
@@ -7520,21 +7430,7 @@
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.01;
   }
   function createMeasure(env) {
-    let openBoxes = {};
-    try {
-      const raw = JSON.parse(localStorage.getItem(OPEN_BOX_KEY) || "null");
-      openBoxes = raw !== null && typeof raw === "object" && raw.v === OPEN_BOX_VERSION && typeof raw.boxes === "object" ? raw.boxes ?? {} : raw !== null && typeof raw === "object" && raw.v === void 0 ? raw : {};
-      if (raw !== null && typeof raw === "object" && raw.v !== void 0 && raw.v !== OPEN_BOX_VERSION) openBoxes = {};
-    } catch {
-      openBoxes = {};
-    }
-    const state2 = { vertical: "bottom", horizontal: "right", pinned: "", compact: false, bubbleHeight: null, shift: { x: 0, y: 0 } };
-    try {
-      const sides2 = JSON.parse(localStorage.getItem(SIDES_KEY) || "null");
-      if (sides2 && (sides2.vertical === "top" || sides2.vertical === "bottom")) state2.vertical = sides2.vertical;
-      if (sides2 && (sides2.horizontal === "left" || sides2.horizontal === "right")) state2.horizontal = sides2.horizontal;
-    } catch {
-    }
+    const state2 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
     function boxes(host3) {
       const nodes = [host3];
@@ -7561,7 +7457,6 @@
       const hostBox = layoutBox(host3);
       const pigNode = host3.querySelector(".dp-pig");
       const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode);
-      const open = host3.getAttribute("data-open") === "true";
       let bubbleZone = null;
       if (reserves && pigNode !== null) {
         const above = geometry2 === null ? BUBBLE_ZONE.height : geometry2.window.y + pigBox.y - geometry2.workArea.y - PAD;
@@ -7571,7 +7466,6 @@
         const zoneLeft = host3.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - BUBBLE_ZONE.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: pigBox.y - height, r: zoneLeft + BUBBLE_ZONE.width, b: pigBox.y };
       }
-      let zone = null;
       let merged = true;
       while (merged) {
         merged = false;
@@ -7588,50 +7482,14 @@
           }
         }
       }
-      const card2 = (
-        /** @type {any} */
-        host3.querySelector(".dp-card")
-      );
-      const cardBox = card2 === null ? null : layoutBox(card2);
-      if (reserves && open && cardBox !== null && card2.hidden !== true) {
-        const maxHeight = Math.min(PANEL_MAX_HEIGHT, parseFloat(card2.style.maxHeight) || 0);
-        if (maxHeight > cardBox.height && cardBox.width > 0) {
-          zone = cardBox.y > pigBox.y ? { x: cardBox.x, y: cardBox.y, r: cardBox.x + cardBox.width, b: cardBox.y + maxHeight } : { x: cardBox.x, y: cardBox.y + cardBox.height - maxHeight, r: cardBox.x + cardBox.width, b: cardBox.y + cardBox.height };
-        }
-      }
-      let outline = rects.concat(zone === null ? [] : [zone], bubbleZone === null ? [] : [bubbleZone]);
-      if (env.split && pigNode !== null) {
+      const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone]);
+      if (pigNode !== null) {
         outline.push({
           x: pigBox.x + pigBox.width + 40 - BUBBLE_ZONE.width - 40,
           y: pigBox.y - BUBBLE_ZONE.height - 24,
           r: pigBox.x + pigBox.width + 40,
           b: pigBox.y + pigBox.height + 12
         });
-      }
-      if (reserves && !env.split && pigNode !== null) {
-        if (open && cardBox !== null && card2.hidden !== true && cardBox.width > 0 && cardBox.height > 0) {
-          const side = panelSide(cardBox, pigBox);
-          const key = openBoxKey(side.vertical, side.horizontal, pigBox);
-          let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
-          for (const o of outline) {
-            l = Math.min(l, o.x);
-            t = Math.min(t, o.y);
-            r = Math.max(r, o.r);
-            b = Math.max(b, o.b);
-          }
-          const rel = { l: Math.round(l - pigBox.x), t: Math.round(t - pigBox.y), r: Math.round(r - pigBox.x), b: Math.round(b - pigBox.y) };
-          const old = openBoxes[key];
-          if (old === void 0 || old.l !== rel.l || old.t !== rel.t || old.r !== rel.r || old.b !== rel.b) {
-            openBoxes[key] = rel;
-            try {
-              localStorage.setItem(OPEN_BOX_KEY, JSON.stringify({ v: OPEN_BOX_VERSION, boxes: openBoxes }));
-            } catch {
-            }
-          }
-        } else if (!open && !state2.compact) {
-          const saved = validOpenBox(openBoxes, state2.vertical, state2.horizontal, pigBox);
-          outline = reservedOutline(outline, saved, pigBox, state2.compact);
-        }
       }
       let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
       for (const o of outline) {
@@ -7658,26 +7516,8 @@
       }
       return { content, shape, pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
     }
-    function sides(host3) {
-      const card2 = (
-        /** @type {any} */
-        host3.querySelector(".dp-card")
-      );
-      const pigNode = host3.querySelector(".dp-pig");
-      if (card2 === null || pigNode === null || card2.hidden === true) return { vertical: state2.vertical, horizontal: state2.horizontal };
-      const cardBox = layoutBox(card2);
-      const pigBox = layoutBox(pigNode);
-      if (cardBox.width < 1 || cardBox.height < 1) return { vertical: state2.vertical, horizontal: state2.horizontal };
-      const { vertical, horizontal } = panelSide(cardBox, pigBox);
-      if (vertical !== state2.vertical || horizontal !== state2.horizontal) {
-        try {
-          localStorage.setItem(SIDES_KEY, JSON.stringify({ vertical, horizontal }));
-        } catch {
-        }
-      }
-      state2.vertical = vertical;
-      state2.horizontal = horizontal;
-      return { vertical: state2.vertical, horizontal: state2.horizontal };
+    function sides() {
+      return SIDE;
     }
     function pin(host3, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
@@ -7720,8 +7560,7 @@
     if (!Array.isArray(areas) || areas.length === 0) return null;
     return areas.find((area) => inside(area, point)) ?? nearestArea(point, areas);
   }
-  function createPlacement(options = {}) {
-    void options;
+  function createPlacement() {
     let home = null;
     let pending = (
       /** @type {any} */
@@ -7798,7 +7637,7 @@
       const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize2 };
       const topLeft = { x: home.x - pigSize2.width / 2, y: home.y - pigSize2.height };
       const area = nearestArea(home, areas) ?? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
-      const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain, panelOpen: report.panelOpen === true }, topLeft, area);
+      const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain }, topLeft);
       const rawX = next.x;
       const rawY = next.y;
       next.x = Math.max(area.x, Math.min(next.x, area.x + area.width - next.width));
@@ -7860,7 +7699,6 @@
     null
   );
   var lastKey = null;
-  var closedRoom = null;
   var hitRects = [];
   var lastHit = null;
   var mouse = { x: -1, y: -1 };
@@ -7882,27 +7720,6 @@
   function dragging() {
     const scene3 = document.querySelector("[data-dsh-pig] .dp-scene");
     return scene3 !== null && scene3.getAttribute("data-dragging") === "true";
-  }
-  function room() {
-    const h = host2();
-    if (h !== null && h.getAttribute("data-open") === "true" && closedRoom !== null) return closedRoom;
-    const info = geometry();
-    if (info === null || h === null) return null;
-    const pigNode = h.querySelector(".dp-pig");
-    if (pigNode === null) return null;
-    const box = layoutBox(pigNode);
-    const left = info.window.x + box.x;
-    const top = info.window.y + box.y;
-    const result = {
-      above: Math.round(top - info.workArea.y),
-      below: Math.round(info.workArea.y + info.workArea.height - (top + box.height)),
-      left: Math.round(left - info.workArea.x),
-      right: Math.round(info.workArea.x + info.workArea.width - (left + box.width)),
-      width: info.workArea.width,
-      height: info.workArea.height
-    };
-    if (h.getAttribute("data-open") === "false") closedRoom = result;
-    return result;
   }
   function updateHit(x, y) {
     mouse = { x, y };
@@ -7934,9 +7751,7 @@
     staleSince = null;
     let next = measure.boxes(h);
     if (next === null) return;
-    const side = measure.sides(h);
-    const open = h.getAttribute("data-open") === "true";
-    if (open) resetShift();
+    const side = measure.sides();
     measure.pin(h, side, next.hostBox, next.contentBox);
     next = measure.boxes(h);
     if (next === null) return;
@@ -7960,13 +7775,12 @@
       pig: next.pig,
       pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
       pigNow: { x: next.pigBox.x, y: next.pigBox.y },
-      shift: measure.state.shift,
-      panelOpen: open
+      shift: measure.state.shift
     }, bounds, areas);
     placement.persist(areas);
     const clamp = placement.clamp();
     const old = measure.state.shift;
-    const fresh = open ? { x: 0, y: 0 } : { x: -clamp.dx, y: -clamp.dy };
+    const fresh = { x: -clamp.dx, y: -clamp.dy };
     if (fresh.x !== old.x || fresh.y !== old.y) {
       measure.state.shift = fresh;
       measure.pin(h, side, next.hostBox, next.contentBox);
@@ -7980,7 +7794,7 @@
     if (!move && key === lastKey) return;
     lastKey = key;
     const request = { shape: next.shape, bounds: move ? want : void 0, pig: void 0 };
-    const pigNode = role === "pet" ? h.querySelector(".dp-pig") : null;
+    const pigNode = h.querySelector(".dp-pig");
     if (pigNode) request.pig = layoutBox(pigNode);
     if (move) {
       console.warn("[piggy-desktop] move " + JSON.stringify({
@@ -8037,7 +7851,12 @@
   function install2(shell2) {
     bridge2 = shell2;
     const split = shell2.panel !== void 0 && typeof shell2.panel.toggle === "function";
-    role = split ? shell2.role === "panel" ? "panel" : "pet" : null;
+    if (!split) {
+      console.warn("[piggy-desktop] shell has no split windows\uFF08\u8BF7\u628A\u684C\u9762\u7A0B\u5E8F\u66F4\u65B0\u5230 0.6.0 \u4EE5\u4E0A\uFF09");
+      window.__dshPiggyShellOutdated = true;
+      return;
+    }
+    role = shell2.role === "panel" ? "panel" : "pet";
     if (role === "panel") {
       const style2 = document.createElement("style");
       style2.setAttribute("data-piggy-desktop-style", "");
@@ -8046,14 +7865,14 @@
       installPanel(shell2);
       return;
     }
-    if (role === "pet") document.documentElement.setAttribute("data-piggy-role", "pet");
+    document.documentElement.setAttribute("data-piggy-role", "pet");
     const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell2[name] !== "function");
     if (missing.length > 0) {
       console.warn("[piggy-desktop] shell is too old, missing: " + missing.join(", ") + "\uFF08\u8BF7\u66F4\u65B0\u684C\u9762\u7A0B\u5E8F\uFF09");
       window.__dshPiggyShellOutdated = true;
     }
-    placement = createPlacement({ platform: shell2.platform || "" });
-    measure = createMeasure({ platform: shell2.platform || "", geometry, anchor: () => placement.homeTopLeft(), split: role === "pet" });
+    placement = createPlacement();
+    measure = createMeasure({ platform: shell2.platform || "", geometry });
     const style = document.createElement("style");
     style.setAttribute("data-piggy-desktop-style", "");
     style.textContent = DESKTOP_CSS;
@@ -8061,7 +7880,7 @@
     if (typeof shell2.onGeometry === "function") shell2.onGeometry(function() {
       schedule3();
     });
-    if (role === "pet" && typeof shell2.onDragSlide === "function") {
+    if (typeof shell2.onDragSlide === "function") {
       shell2.onDragSlide(function(slide) {
         if (!dragging()) return;
         dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 };
@@ -8071,24 +7890,18 @@
     }
     if (typeof shell2.askGeometry === "function") shell2.askGeometry();
     window.__dshPiggyShell = {
-      // 外壳 0.6.0 起：面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
-      ...role === "pet" ? {
-        role: "pet",
-        split: true,
-        onStateChanged: shell2.onStateChanged,
-        panel: {
-          toggle: function(open) {
-            const info = readGeometry();
-            const pig = info && info.window ? pigInWindow(info.window) : null;
-            shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
-          },
-          on: shell2.panel.on,
-          onFx: shell2.panel.onFx
-        }
-      } : {},
-      room,
-      refreshRoom: function() {
-        closedRoom = null;
+      // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
+      role: "pet",
+      split: true,
+      onStateChanged: shell2.onStateChanged,
+      panel: {
+        toggle: function(open) {
+          const info = readGeometry();
+          const pig = info && info.window ? pigInWindow(info.window) : null;
+          shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
+        },
+        on: shell2.panel.on,
+        onFx: shell2.panel.onFx
       },
       beginDrag: function() {
         const h = host2();
@@ -8103,7 +7916,7 @@
           y: pig.y,
           width: pig.width,
           height: pig.height,
-          slide: role === "pet" && typeof shell2.onDragSlide === "function"
+          slide: typeof shell2.onDragSlide === "function"
         });
       },
       dragHeartbeat: function() {
@@ -8511,8 +8324,6 @@
           scene3.removeAttribute("data-dragging");
           clampPig();
           if (deskShell === null) writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }));
-          deskShell?.refreshRoom?.();
-          host3.removeAttribute("data-panel-side-locked");
           fitPanel();
           return moved;
         }

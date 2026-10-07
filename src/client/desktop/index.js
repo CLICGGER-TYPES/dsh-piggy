@@ -36,14 +36,13 @@ const DESKTOP_CSS = [
 const TOLERANCE = 2
 
 let bridge = /** @type {any} */ (null)
-/** 这个页面在哪个窗口里：老外壳单窗口时是 null。 */
+/** 这个页面在哪个窗口里（外壳 0.6.0 起猪和面板各一个窗口）。 */
 let role = /** @type {'pet'|'panel'|null} */ (null)
 /** 拖动中窗口被夹在屏幕里时，猪在窗口里滑了多少（主进程推来的，见 main.js dragTick）。 */
 let dragSlide = { x: 0, y: 0 }
 let measure = /** @type {any} */ (null)
 let placement = /** @type {any} */ (null)
 let lastKey = null
-let closedRoom = null
 let hitRects = []
 let lastHit = null
 let mouse = { x: -1, y: -1 }
@@ -58,29 +57,6 @@ function geometry() { return typeof bridge.geometry === 'function' ? bridge.geom
 function dragging() {
   const scene = document.querySelector('[data-dsh-pig] .dp-scene')
   return scene !== null && scene.getAttribute('data-dragging') === 'true'
-}
-
-/** 猪在屏幕上的位置与四周可用空间：面板按这个决定朝哪边开。 */
-function room() {
-  const h = host()
-  if (h !== null && h.getAttribute('data-open') === 'true' && closedRoom !== null) return closedRoom
-  const info = geometry()
-  if (info === null || h === null) return null
-  const pigNode = h.querySelector('.dp-pig')
-  if (pigNode === null) return null
-  const box = layoutBox(pigNode)
-  const left = info.window.x + box.x
-  const top = info.window.y + box.y
-  const result = {
-    above: Math.round(top - info.workArea.y),
-    below: Math.round(info.workArea.y + info.workArea.height - (top + box.height)),
-    left: Math.round(left - info.workArea.x),
-    right: Math.round(info.workArea.x + info.workArea.width - (left + box.width)),
-    width: info.workArea.width,
-    height: info.workArea.height,
-  }
-  if (h.getAttribute('data-open') === 'false') closedRoom = result
-  return result
 }
 
 function updateHit(x, y) {
@@ -120,10 +96,7 @@ function tick() {
   staleSince = null
   let next = measure.boxes(h)
   if (next === null) return
-  const side = measure.sides(h)
-  const open = h.getAttribute('data-open') === 'true'
-  // 面板开着不做「内容在窗口里挪」：那时放不下就是挪猪（收起后按家摆回去）。
-  if (open) resetShift()
+  const side = measure.sides()
   measure.pin(h, side, next.hostBox, next.contentBox)
   next = measure.boxes(h)
   if (next === null) return
@@ -145,7 +118,6 @@ function tick() {
     pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
     pigNow: { x: next.pigBox.x, y: next.pigBox.y },
     shift: measure.state.shift,
-    panelOpen: open,
   }, bounds, areas)
   placement.persist(areas)
   // want 是按「内容没挪过」的布局算的。收起时窗口被夹回工作区（猪贴着屏幕边，窗口的透明留白伸出去了）：
@@ -153,7 +125,7 @@ function tick() {
   // 以前是窗口连猪一起被推回来——拖到屏幕边上一松手猪就弹开 30～200 多像素（2026-10-06 虚拟机真拖复现）。
   const clamp = placement.clamp()
   const old = measure.state.shift
-  const fresh = open ? { x: 0, y: 0 } : { x: -clamp.dx, y: -clamp.dy }
+  const fresh = { x: -clamp.dx, y: -clamp.dy }
   if (fresh.x !== old.x || fresh.y !== old.y) {
     measure.state.shift = fresh
     measure.pin(h, side, next.hostBox, next.contentBox)
@@ -168,7 +140,7 @@ function tick() {
   lastKey = key
   const request = { shape: next.shape, bounds: move ? want : undefined, pig: undefined }
   // 拆窗口时顺带报猪在窗口里的框（内容可能刚在窗口里挪过）：外壳 0.6.1 起面板按它贴着猪。
-  const pigNode = role === 'pet' ? h.querySelector('.dp-pig') : null
+  const pigNode = h.querySelector('.dp-pig')
   if (pigNode) request.pig = layoutBox(pigNode)
   // 每次要挪窗口都写进桌面程序日志（piggy.log）：平时开关面板、摸猪不会挪窗口，所以很少写；
   // 万一玩家看到「整块跳一下」，日志里就能看出是哪次、为什么挪。
@@ -231,7 +203,14 @@ function schedule() {
 export function install(shell) {
   bridge = shell
   const split = shell.panel !== undefined && typeof shell.panel.toggle === 'function'
-  role = split ? (shell.role === 'panel' ? 'panel' : 'pet') : null
+  if (!split) {
+    // 外壳 0.6.0 以前是单窗口（猪和面板挤一个窗口），这一版游戏包不再支持（manifest 的 minShell 拦着，
+    // 正常走不到这里）。万一走到了，不挂桌面接口，页面按网页版跑：猪和面板都在这个窗口里，至少能用。
+    console.warn('[piggy-desktop] shell has no split windows（请把桌面程序更新到 0.6.0 以上）')
+    ;/** @type {any} */ (window).__dshPiggyShellOutdated = true
+    return
+  }
+  role = shell.role === 'panel' ? 'panel' : 'pet'
   if (role === 'panel') {
     const style = document.createElement('style')
     style.setAttribute('data-piggy-desktop-style', '')
@@ -240,7 +219,7 @@ export function install(shell) {
     installPanel(shell)
     return
   }
-  if (role === 'pet') document.documentElement.setAttribute('data-piggy-role', 'pet')
+  document.documentElement.setAttribute('data-piggy-role', 'pet')
   // 外壳能力探测（2026-10-06）：几何逻辑在游戏包里、执行在外壳里，两边版本错配时
   // 以前完全看不出来（minShell 一直是 0.1.0，data-piggy-desktop 也没人读）。
   // 缺关键动作就明确说出来，并且不去做兑现不了的摆放。
@@ -249,14 +228,14 @@ export function install(shell) {
     console.warn('[piggy-desktop] shell is too old, missing: ' + missing.join(', ') + '（请更新桌面程序）')
     ;/** @type {any} */ (window).__dshPiggyShellOutdated = true
   }
-  placement = createPlacement({ platform: shell.platform || '' })
-  measure = createMeasure({ platform: shell.platform || '', geometry, anchor: () => placement.homeTopLeft(), split: role === 'pet' })
+  placement = createPlacement()
+  measure = createMeasure({ platform: shell.platform || '', geometry })
   const style = document.createElement('style')
   style.setAttribute('data-piggy-desktop-style', '')
   style.textContent = DESKTOP_CSS
   document.head.appendChild(style)
   if (typeof shell.onGeometry === 'function') shell.onGeometry(function () { schedule() })
-  if (role === 'pet' && typeof shell.onDragSlide === 'function') {
+  if (typeof shell.onDragSlide === 'function') {
     shell.onDragSlide(function (slide) {
       // 松手之后才到的那条不要（松手时已经从同步几何里拿到最终值了）
       if (!dragging()) return
@@ -267,23 +246,19 @@ export function install(shell) {
   }
   if (typeof shell.askGeometry === 'function') shell.askGeometry()
   ;/** @type {any} */ (window).__dshPiggyShell = {
-    // 外壳 0.6.0 起：面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
-    ...(role === 'pet' ? {
-      role: 'pet',
-      split: true,
-      onStateChanged: shell.onStateChanged,
-      panel: {
-        toggle: function (open) {
-          const info = readGeometry()
-          const pig = info && info.window ? pigInWindow(info.window) : null
-          shell.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height })
-        },
-        on: shell.panel.on,
-        onFx: shell.panel.onFx,
+    // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
+    role: 'pet',
+    split: true,
+    onStateChanged: shell.onStateChanged,
+    panel: {
+      toggle: function (open) {
+        const info = readGeometry()
+        const pig = info && info.window ? pigInWindow(info.window) : null
+        shell.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height })
       },
-    } : {}),
-    room,
-    refreshRoom: function () { closedRoom = null },
+      on: shell.panel.on,
+      onFx: shell.panel.onFx,
+    },
     beginDrag: function () {
       const h = host()
       if (h !== null && h.getAttribute('data-open') === 'false') {
@@ -303,7 +278,7 @@ export function install(shell) {
       dragSlide = { x: 0, y: 0 }
       // slide：这个页面会接「猪在窗口里滑」（窗口被夹在屏幕里时），主进程才夹窗口
       shell.beginDrag(pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height,
-        slide: role === 'pet' && typeof shell.onDragSlide === 'function' })
+        slide: typeof shell.onDragSlide === 'function' })
     },
     dragHeartbeat: function () { if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat() },
     endDrag: function () {
