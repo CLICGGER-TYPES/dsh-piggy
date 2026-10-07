@@ -4,6 +4,7 @@
 # 用法（在仓库根目录）：
 #   GITEE_TOKEN=<Gitee 私人令牌> bash scripts/gitee-publish.sh v0.33.1 [--run <GitHub Actions run id>]
 #   （--run：指定用哪次构建的产物，不要求那次整体成功；不给就找该标签最近一次构建并等它成功）
+#   （--dir：用本机已经下载好的 artifact 目录，不再从 GitHub 下载）
 #
 # 做的事，按顺序，任何一步失败就停（不会删旧安装包）：
 #   1. 等 GitHub 上该标签的 release-gitee 构建跑完，下载它的 artifact（gitee-game、gitee-dist-*）；
@@ -16,7 +17,10 @@ set -euo pipefail
 
 TAG="${1:?用法：GITEE_TOKEN=… bash scripts/gitee-publish.sh vX.Y.Z [--run <id>]}"
 RUN=""
+DIR=""
 if [ "${2:-}" = "--run" ]; then RUN="${3:?--run 后面要给 run id}"; fi
+# --dir：已经下载好的 artifact 目录（里面是 gitee-game/、gitee-dist-*/），从 GitHub 下载慢时用
+if [ "${2:-}" = "--dir" ]; then DIR="${3:?--dir 后面要给目录}"; fi
 [ -n "${GITEE_TOKEN:-}" ] || { echo "先设 GITEE_TOKEN（Gitee 私人令牌）"; exit 1; }
 cd "$(git rev-parse --show-toplevel)"
 REPO=CLICGGER-TYPES/dsh-piggy
@@ -26,6 +30,10 @@ LIMIT=104857600
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || { echo "本机没有标签 $TAG"; exit 1; }
 
 # 1. 找到并等 GitHub 上的构建
+if [ -n "$DIR" ]; then
+  WORK="$DIR"
+  echo "== 用本机已下载的构建产物 $WORK"
+else
 if [ -z "$RUN" ]; then
   RUN=$(gh run list -R "$REPO" --workflow release-gitee.yml --limit 20 --json databaseId,headBranch \
     --jq "[.[] | select(.headBranch == \"$TAG\")][0].databaseId")
@@ -40,8 +48,9 @@ else
 fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
-echo "== 下载构建产物到 $WORK"
+echo "== 下载构建产物到 $WORK（几百 MB，GitHub 下载可能要十几分钟）"
 gh run download "$RUN" -R "$REPO" -D "$WORK"
+fi
 
 GAME_FILES=()
 for f in "$WORK"/gitee-game/game-*; do [ -f "$f" ] && GAME_FILES+=("$f"); done
@@ -52,10 +61,10 @@ for list in "$WORK"/gitee-dist-*/upload-list.txt; do
   dir=$(dirname "$list")
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
+    case "$rel" in *.blockmap) continue ;; esac   # 增量更新用不上，artifact 里也没存
     f="$dir/$rel"
     [ -f "$f" ] || { echo "清单里的 $rel 不在 artifact 里"; exit 1; }
     case "$(basename "$f")" in
-      *.blockmap) ;;                       # 增量更新用不上，Gitee 也不需要
       latest*.yml) MANIFESTS+=("$f") ;;
       *) INSTALLERS+=("$f") ;;
     esac
