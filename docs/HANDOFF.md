@@ -183,7 +183,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 |---|---|---|
 | 游戏版本 | 根 `package.json` `version` | 每次发版 |
 | 别名包 | `packages/dsh-plugin-piggy/package.json` 的 `version` 和 `dependencies.dsh-piggy` | 和游戏版本同步 |
-| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.5.0；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
+| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.0；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
 | 存档 | `STATE_VERSION` | 只有存档结构变了才升（配迁移） |
 | 扩展 | `extensions/<key>/manifest.json` | 扩展改了就升，`minGame` 写需要的最低游戏版本 |
 
