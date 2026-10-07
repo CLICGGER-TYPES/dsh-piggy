@@ -57,7 +57,7 @@ npm run dist:mac
 
 ## 扩展
 
-番茄钟、钓鱼这类可整体开关的玩法是**扩展**。注册表在 `packages/pet-core/src/data/extensions.js`，每条声明自己占的 App、路由动作、图鉴分区和商品种类；开关在存档 `state.extensions` 里，核心用 `extensionOn(state, key)` 判断。路由层统一拦截关闭扩展的动作，快照里撤下相关商品，客户端（`src/client/extensions.js`）隐藏 App、图鉴分区和角标。新加扩展的步骤见 `docs/design/extension-center.md` 第 8 节。
+番茄钟、钓鱼这类可整体开关的玩法是**扩展**。注册表在 `packages/pet-core/src/data/extensions.js`，每条声明自己占的 App、路由动作、图鉴分区和商品种类；开关在存档 `state.extensions` 里，核心用 `extensionOn(state, key)` 判断。路由层统一拦截关闭扩展的动作，快照里撤下相关商品，客户端（`src/client/extensions.js`）隐藏 App、图鉴分区和角标。这是**内置扩展**（代码在游戏里）。菜园、矿洞这类**在线扩展**（玩家下载安装，代码在 `extensions/<key>/`）怎么写、怎么发，见 [guides/writing-extensions.md](guides/writing-extensions.md)。
 
 ## 发布
 

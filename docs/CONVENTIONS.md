@@ -6,9 +6,15 @@
 
 | 通用规范 | 本项目 | 为什么 |
 |---|---|---|
-| 文件 ≤ 约 400 行 | 源码遵守；**构建产物豁免** | `client.js` 是 esbuild 产物，行数由源码决定 |
-| 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留** | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
+| 文件 ≤ 约 400 行 | 源码、外壳模块（`apps/desktop/lib/`）、在线扩展都遵守；**豁免**：构建产物 `client.js`、外壳主进程 `apps/desktop/main.js`（约 1000 行，待拆，见 HANDOFF） | `client.js` 是 esbuild 产物；`main.js` 里窗口、拖动、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
+| 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留**；在线扩展注释里的 ★（星级）保留 | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
 | 不引入构建步骤 | **允许**，且只用于客户端插件 | DSH 的客户端插件按 classic `<script src>` 加载，不打包就没法拆文件 |
+
+## 先读哪些
+
+- 人和 agent 的总入口：仓库根目录 [AGENTS.md](../AGENTS.md)（红线、流程、文档地图）。
+- 「怎么加 X」：`docs/guides/` 下的 [writing-extensions](guides/writing-extensions.md)、[adding-lines](guides/adding-lines.md)、
+  [adding-achievements](guides/adding-achievements.md)、[ui-style](guides/ui-style.md)、[desktop-architecture](guides/desktop-architecture.md)。
 
 ## 分层
 
@@ -73,19 +79,28 @@
 - 修 bug 先写能复现的失败测试，再修代码。
 - 新逻辑覆盖正常路径 + 边界（空值、0、上限、极端时间跨度）。
 - 测试不依赖真实时钟、网络、执行顺序。
-- **UI 改动必须在真实浏览器确认**（`tools/preview.html` + `dshPigDev.on()`），测试通过 ≠ 显示正确。
+- **UI 改动必须在真实浏览器确认**（浏览器打开 `tools/preview.html`，或桌面版里看），测试通过 ≠ 显示正确。
+- **桌面窗口/拖动改动必须真鼠标拖 + 录屏逐帧看**（[desktop-architecture.md](guides/desktop-architecture.md)「怎么验收」），只比起止坐标会漏掉中间的跳动。
+- 能静态守住的规范写成测试（`test/conventions.test.js`、`lines-guard`、`achievements-guard`、`extensions-registry`），别只写在文档里。
 - 提交前 `node --test` 全绿。
 
 ## 注释
 
 - 只解释"为什么"，不重复"是什么"；公共函数写文档注释。
+- **注释用中文**（新代码一律中文；老代码里的英文注释改到那段时顺手换，不专门批量改）。
 - 代码标识符、注释、日志、提交信息不用 emoji；界面文案与 `data/` 游戏数据不受限。
+- 每个文件开头一段中文说明「这个文件管什么、为什么这样」；踩过的坑写进对应代码的注释（带日期），别只留在聊天里。
 - `TODO` / `FIXME` 带日期和原因。
 
 ## Git
 
-- Conventional Commits：`<type>(<scope>): <描述>`，type 用 `feat|fix|refactor|test|docs|style|perf|chore`，scope 固定 `pig`。
+- 格式：`<type>(<scope>): <中文描述>`，正文中文，写清「为什么」和怎么验证的。
+  - type：`feat|fix|refactor|test|docs|style|perf|chore`。
+  - scope 按模块（可省略）：`desktop`（外壳和桌面页面）、`panel`（面板界面）、`core`（养成规则）、`lines`（台词）、
+    `ach`（成就）、`ext`（扩展宿主）、`ext-<key>`（某个在线扩展，如 `ext-farm`）、`store`、`release`（发版流程/工作流）。
+  - 例：`fix(desktop): 开着面板拖猪，面板越跑越远（Windows 分数缩放）`。
+- 发版提交：`release: vX.Y.Z — <一句话>`（版本号、CHANGELOG、README 同步都在这一个提交里）。
+- **不署 AI 名字**：提交信息里不加 Co-Authored-By 之类的 AI 署名（维护者要求）。
 - **每个提交只做一件事**，重构与功能不混提。
-- 版本号与 CHANGELOG 更新放在 `chore(pig): 发布 x.y.z` 或对应功能提交的 body 里，不再写进标题。
 - 用户能感知的变化必须更新 `CHANGELOG.md`。
 - 不提交本机绝对路径、临时文件、无关文件。

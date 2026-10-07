@@ -1,6 +1,6 @@
-# dsh-piggy 维护交接文档（2026-10-06，v0.32.0）
+# dsh-piggy 维护交接文档（2026-10-07，v0.33.1 / 外壳 0.6.1）
 
-> 给接手维护的 DeepSeek / 任何 agent / 开发者。**先读这一页**，它是入口；细节都链到对应文档。
+> 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
 > 本页取代 [2026-10-03 的交接记录](HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
 > 有冲突时以：用户最新的话 > 本页 > 其它文档 > 旧任务卡 为准。开工前先看最新 `git log`，别假设还是本页写的状态。
 
@@ -10,7 +10,8 @@
 
 - **是什么**：一只「QQ 宠物」式的电子猪。同一份代码有两种形态：**DSH 插件**（住在 DeepSeek Harness 网页里）和**桌面版**（Electron，Windows / Linux / macOS）。
 - **代码在哪**：`/zyx/DSH/workspaces/dsh-piggy/code`（本机），远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy`，**都只有 `main` 一个分支**。
-- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（675 个测试，全绿才算完）。
+- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（700 多个测试，全绿才算完）。
+- **「怎么加 X」先看 `docs/guides/`**：[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
 - **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 自动发 GitHub 和 Gitee 两套 → npm 由人手动发。详见第 9 节。
 - **最重要的三条规矩**：数值/玩法设计先问用户再做；提交信息用中文、不加 AI 署名；改了界面一定要在真实浏览器 / 桌面窗口里看一眼（测试通过 ≠ 显示正确）。
@@ -81,14 +82,14 @@
 - **内置扩展**：番茄钟、钓鱼——可在「设置 → 🧩 扩展」开关 / 删除，注册表在 `packages/pet-core/src/data/extensions.js`。关掉后对应 App、商品、图鉴分区都隐藏，数据保留。
 - **下载扩展**：`extensions/<key>/` 里 `manifest.json` + `server.js` + `client.js`。运行时 `store/ext-runtime.js`：
   - 只从本渠道的在线目录读（`CHANNEL.registry`），每个文件核对 sha256，`minGame` 高于当前游戏版本不装；
-  - 扩展只能改自己的 `state.extData[key]`，其它一律走 `api`：`now`、`coins()`、`spend()`、`earn()`、`give()`、`say()`、`count()`、`take()`；
+  - 扩展只能改自己的 `state.extData[key]`，其它一律走 `api`：`now`、`coins()`、`spend()`、`earn()`、`give()`、`say()`、`count()`、`take()`、`emit()`（成就事件）；
   - `view()` 可以返回 `shelf`（往商店加货架）、`dex`（往图鉴加分区，`style: 'holo'` 是闪卡）；
   - 出错只影响它自己。
-- 写法和发布步骤：[扩展删除与在线下载](design/extension-download.md)、[盲盒设计](design/blindbox.md)、数值单 `docs/tasks/numbers/X1–X4`。
+- 写法和发布步骤：[写一个在线扩展](guides/writing-extensions.md)；设计背景：[扩展删除与在线下载](design/extension-download.md)、[扩展成就](design/extension-achievements.md)、[盲盒设计](design/blindbox.md)、数值单 `docs/tasks/numbers/X1–X4`。
 
 ### 4.4 桌面版：外壳和游戏包分开
 
-- **外壳**（`apps/desktop/`，当前 **0.4.0**）：窗口、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。
+- **外壳**（`apps/desktop/`，当前 **0.6.1**）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
 - **游戏包**（= 插件那份代码，`apps/desktop/scripts/pack-game.mjs` 复制、`release-game.mjs` 打成 `game-<版本>.json.gz` + manifest）：在「设置 → 更新」里直接下载切换、可回退，不用重装。
 - 窗口摆放、可点区域、桌面样式都放在游戏包里（`src/client/desktop/`），所以这类修复走游戏包更新就到。
 - 详见 [更新机制](guides/updates.md)、[桌面版指南](guides/desktop.md)、`docs/DEVELOPMENT.md`「桌面程序和游戏包怎么分工」。
@@ -183,7 +184,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 |---|---|---|
 | 游戏版本 | 根 `package.json` `version` | 每次发版 |
 | 别名包 | `packages/dsh-plugin-piggy/package.json` 的 `version` 和 `dependencies.dsh-piggy` | 和游戏版本同步 |
-| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.0；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
+| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.1；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
 | 存档 | `STATE_VERSION` | 只有存档结构变了才升（配迁移） |
 | 扩展 | `extensions/<key>/manifest.json` | 扩展改了就升，`minGame` 写需要的最低游戏版本 |
 
@@ -192,8 +193,8 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 ### 9.2 正式发版步骤
 
 1. 改上表里的版本号；在 `CHANGELOG.md` 写 `## [x.y.z] — 日期 · 主题` 小节（发布说明从这里取，写全改动）；README 同步。
-2. `npm run build && npm test && npm run typecheck` → 提交（如 `release: v0.32.0`）→ 推 main。
-3. 打标签推送：`git tag v0.32.0 && git push origin v0.32.0`。两条工作流自动跑：
+2. `npm run build && npm test && npm run typecheck` → 提交（如 `release: v0.33.1 — 一句话`）→ 推 main。
+3. 打标签推送：`git tag v0.33.1 && git push origin v0.33.1`。两条工作流自动跑：
    - `.github/workflows/release.yml` → **GitHub Release**：游戏包 + Windows 安装 / 便携版 + Linux AppImage + macOS dmg + 更新清单；
    - `.github/workflows/release-gitee.yml` → **Gitee 发行版**（见 9.4）。
 4. 等两边都绿，核对两边的附件齐全（GitHub `gh release view vX`；Gitee 看发行版页面）。
@@ -245,34 +246,23 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 - **说话要实**：没核实的事别说「已完成」；自测（真实浏览器 / 桌面像素）过再报完工；做不到、没做的要直说。
 - **给路径用绝对路径**，并说明在哪个分支 / 目录。
 - **验收通过后再发版**；别频繁发测试版；能不升外壳就不升。
-- **提交规矩**：中文提交、不加 AI 署名、功能变了改 README、发版写全 CHANGELOG。
+- **提交规矩**：`type(scope): 中文描述`、不加 AI 署名、功能变了改 README、发版写全 CHANGELOG（见 [CONVENTIONS](CONVENTIONS.md)「Git」）。
 - 用户自己常在 3080 的 DSH 里玩，测试别占它的端口、别改它的存档。
 
 ---
 
-## 12. 已知问题与待办（2026-10-06）
+## 12. 已知问题与待办（2026-10-07）
 
-**桌面版窗口（I 批次）—— 2026-10-07 Claude 交回时的状态（v0.33.0 / 外壳 0.6.0 发布）**
-- **猪和面板是两个窗口**（详见 [I-round 第 15 节](tasks/I-round.md)）：猪窗口固定大小只装猪和气泡；面板窗口由主进程摆在猪上方或下方。同一份游戏包两边都跑，按 `piggyShell.role`（`pet` / `panel`）各显示一半，见 `src/client/split.js`、`src/client/desktop/panel-window.js`、`apps/desktop/main.js` 的「面板窗口」一节。
-  **别再把面板塞回猪窗口、也别加「改窗口大小后把猪补回原位」的记账**——那条路修了四轮（e614abc、d360358、020f463、DeepSeek 的覆盖模式）都在补同一个结构问题。
-- 拖到屏幕边：主进程把窗口夹在屏幕里，把超出去的量发给页面（`piggy:drag-slide`），猪在窗口里滑过去，窗口形状同步滑（Linux 的形状会裁画面）。
-- 已验证：Linux GNOME 真鼠标拖动 + 录屏逐帧（`tools/drag-film.py`），9 组（四条屏幕边、面板开着拖、长距离）拖动中不丢猪、不回跳、松手后 0px；用户本机亲测通过。**Windows 还没做录屏逐帧检查**（虚拟机里自动操作没跑通，用户在真机上试过可以）。
-- 已知：GNOME 启动桌面版时会弹一条「dsh-piggy is ready」（猪窗口不抢焦点显示引起，拆窗口之前就有），未处理。
-- 测试机（都在用户本机 libvirt 里，`virsh -c qemu:///system list --all`）：
-  - **`ubuntu26.04-2`**：GNOME Wayland 测试机，账号 z / 123456，IP 会变（见过 .44 / .45，`virsh domifaddr ubuntu26.04-2 --source lease` 查），代码在 `~/dsh-piggy`。跑 `node tools/desktop-geometry-check.mjs all`，加 `PIGGY_FILM_DIR=/tmp/film` 录每次真拖，再在主机上 `uv run --with numpy --with scipy python tools/drag-film.py <目录>` 逐帧检查。屏保激活时真鼠标和录屏都会失效，先 `gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.SetActive false`。
-  - ⚠️ **`ubuntu26.04`（不带 -2）是用户的旧演示环境（192.168.123.71），不是测试机，别启动、别动。**
-  - `win11`：本地离线账户 **pig / 123456**（安全问题答案都是 a）。**2026-10-07 凌晨已初始化完、进了桌面**（IP 192.168.123.138，出站可用、入站被防火墙全挡）。
-    - 已装好：Node 24.21.0（免安装 zip 解在 `C:\Users\pig\node-v24.21.0-win-x64`）、Electron 44.5.1（解在 `C:\Users\pig\piggy\electron`）、代码在 `C:\Users\pig\piggy\code`、`apps/desktop` 已 `npm install --omit=dev`（electron-updater 就位）。
-    - 怎么传文件进去：虚拟机**入站全被挡**，只能「虚拟机主动拉/推」。主机侧脚本（都在 `/zyx/DSH/workspaces/`，不在仓库里）：`vmtransfer/` 用 `python3 -m http.server 8000 --bind 192.168.123.1` 给虚拟机下载；`vm-upload-server.py`（8001 端口）收虚拟机 POST 上来的日志/截图；`vm-proxy-forward.py` 把主机的 2080 代理转成 `192.168.123.1:2081` 给虚拟机出网；`type-into-vm.py` 用 `virsh send-key` 在虚拟机里打字（**注意先按一下 Shift 把输入法切到英文，否则 `cd ~` 会变成「成都~」**）。
-    - **2026-10-07 首次在 Windows 上跑桌面版的结果（重要）**：应用能起来，几何管线在 Windows 上也确实在跑——`piggy.log` 里有 `start 0.6.0 win32`、显示器清单（`scale:1`、workArea 高 752 = 1280x800 扣掉任务栏）、`home`、`move`、`drag start/end` 全套记录，数值看着正常。
-    - **猪画得好好的**（上面那版「猪没画出来」是我看漏了，2026-10-07 更正）：新装的猪是**纸盒**状态，我把截图里那个纸盒当成桌面快捷方式了。用户点开拆箱之后就是猪。
-    - Windows 上拖动、开关面板都在正常工作，日志实录：`drag start 窗口(740,542) 猪在屏幕(968,664)` → `drag end 窗口(928,225) movedBy(188,-317)`；开面板窗口变 `(720,270,324,476)`、关面板精确回到 `(740,542,304,204)`。
-    - 该虚拟机**没有 GPU**（日志里 `GetGpuDriverOverlayInfo: Failed to retrieve video device`、`Gpu Cache Creation failed: -2`），但不影响猪的显示。
-    - **代理（2026-10-07）**：主机的 v2rayN 本来就监听 `*:2080`，所以虚拟机直接 `http://192.168.123.1:2080` 就能出网，不用在虚拟机里装 v2rayN。已在虚拟机里设好系统代理 + `HTTP_PROXY/HTTPS_PROXY/NODE_USE_ENV_PROXY=1`。
-      **顺带解决了交接里那条未解风险**：插件进程用 Node 的 `fetch`（undici）不读系统代理，但**认 `HTTP_PROXY/HTTPS_PROXY` + `NODE_USE_ENV_PROXY=1`**（Node 24 起）。虚拟机实测：`node fetch` 直连 GitHub 从「连接被中断」变成 **OK 4073 字节**；应用日志里 `extension registry failed` 从每次启动必现变成 **0 次**。**这是可以发版修的东西**：桌面外壳启动插件宿主时带上 `NODE_USE_ENV_PROXY=1`（读系统代理地址即可）。
-    - **首次 Windows 系统性位置检查（2026-10-07，用户手动 + QMP 绝对鼠标）**：拖动到屏幕中段误差 **(0,3)px**；右键开面板 (−1,−3)px、再右键收起 **(0,0)px**；左/右/下边缘拖动后**猪整只在屏内**，误差 1~7px（含待机动画 ±7px）；上边缘窗口被夹到 `y=0` 且内容反向挪，猪留在原地。**开关面板前后各 6 次采样，位置区间完全相同**（x 352–353、y 44–48，那 4px 就是待机动画本身）。
-    - **仍未复现**：交接里那条 Windows「抽动 + 一帧叠影」。上面这些测试里位置都稳，要复现得拿用户那台机器的 `%APPDATA%\dsh-piggy-desktop\piggy.log`，或者在虚拟机上做更激进的连拖连点。
-    - 控制鼠标的办法：虚拟机有 **QEMU HID Tablet（绝对坐标）**，用 QMP `input-send-event` 可以按像素定位（`/zyx/DSH/workspaces/vm-mouse.py`）；找猪的像素位置用 `/zyx/DSH/workspaces/pig-locate.py`（特征色 255,209,175，**注意猪在 y<120 和做戳一戳动作时会被手掌盖住，检测要放宽**）；整套检查脚本 `/zyx/DSH/workspaces/win-check.py`。
+**桌面版窗口——v0.33.1 / 外壳 0.6.1 的状态**
+- **猪和面板是两个窗口**，结构、IPC、验收方法见 [桌面架构](guides/desktop-architecture.md)，来龙去脉见 [I-round 第 15 节](tasks/I-round.md)。
+  **别再把面板塞回猪窗口、也别加「改窗口大小后把猪补回原位」的记账**——那条路修了四轮都在补同一个结构问题。
+- 0.33.1 修了「开着面板拖猪，面板越跑越远」（Windows 分数缩放）：根因是拖动时把猪窗口读回的大小再设回去，125% 下每帧涨 1px。
+  修后在 Win11 虚拟机 125% 下真拖录屏逐帧量过（面板偏差 90% 的帧 ≤2px、不随时间增长；修前 204px），Linux GNOME 9 组真拖回归通过。
+- 已知：GNOME 启动桌面版时会弹一条「dsh-piggy is ready」（猪窗口不抢焦点显示引起），未处理。
+- 已知：拖到屏幕顶边时面板被夹在屏幕里，会和猪叠住一部分；松手后面板换到下方。
+- 待办：`apps/desktop/main.js` 约 1000 行（规范豁免），「面板窗口」一节可以拆到 `lib/`；拆完要两个平台重新真拖录屏验收。
+- 测试机（Linux GNOME、Win11）在维护者本机虚拟机里；账号、IP、操作脚本在维护者本机笔记，**不进仓库**。
+  测试方法写在 [桌面架构](guides/desktop-architecture.md)「怎么验收」。非测试用的虚拟机不要碰。
 - 被取代的方案留了底：DeepSeek 的覆盖模式在分支 `backup/deepseek-overlay-20261007`，更早的未提交改动在 `git stash@{0}`；确认不要后可删。
 
 **用户反馈、未解决**
@@ -282,7 +272,8 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 
 **风险**
 - **扩展下载在国内直连 GitHub 会超时**（2026-10-06 查清）：插件进程用的是 Node 的 `fetch`（undici），它**不读系统代理**，而浏览器会读，所以网页上能开 GitHub、插件下载却卡住。已经做的：每个文件 12 秒超时、最多 3 次重试、并行下载、失败说清是哪一步，界面立刻显示「下载中…」并留可重试的失败提示。**没做的**：让插件的出网走系统代理（用户当时选了「只做超时重试反馈」，没要 Gitee 镜像兜底）。下次再有人报「下载不了」，先看导出日志里的 `ext` 行，确认是不是这类超时。
-- Gitee Windows 安装包离 100MiB 只剩约 0.5MiB；下次再超要继续瘦身（如 Windows 的 WebGPU 组件 dxcompiler / dxil）。
+  已验证可行的修法（未做，要用户点头）：Node 24 起 `fetch` 认 `HTTP_PROXY/HTTPS_PROXY` + `NODE_USE_ENV_PROXY=1`，桌面外壳启动宿主时读系统代理带上即可（Win11 虚拟机实测从「连接被中断」变成正常下载）。
+- Gitee Windows 安装包：外壳 0.6.0 起去掉了只给 WebGPU 用的 `dxcompiler.dll` / `dxil.dll`（`electron-builder.gitee.cjs` 的 afterPack），约 98.4MiB；再超要继续瘦身。
 - Gitee 附件总量：一版约 472MB，发版时新旧并存约 944MB，贴近 1GB。
 
 **待用户决定 / 待拆卡**
@@ -316,5 +307,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 ## 14. 文档索引
 
 - 玩家：[怎么玩](guides/gameplay.md) · [桌面版](guides/desktop.md) · [更新机制](guides/updates.md) · [换肤](guides/skins.md) · [做皮肤](guides/creating-skins.md) · [皮肤包格式](guides/skin-pack-format.md)
-- 开发：[开发指南](DEVELOPMENT.md) · [编码规范](CONVENTIONS.md) · [设计说明](DESIGN.md) · [美术规格](ART-SPEC.md) · [扩展下载](design/extension-download.md) · [扩展中心设计](design/extension-center.md) · [日志与导出](design/log-export.md)
+- 入口：[AGENTS.md](../AGENTS.md)
+- 怎么加 X：[写扩展](guides/writing-extensions.md) · [加台词](guides/adding-lines.md) · [加成就](guides/adding-achievements.md) · [界面规范](guides/ui-style.md) · [桌面架构与 IPC](guides/desktop-architecture.md)
+- 开发：[开发指南](DEVELOPMENT.md) · [编码规范](CONVENTIONS.md) · [设计说明](DESIGN.md) · [美术规格](ART-SPEC.md) · [扩展下载](design/extension-download.md) · [扩展成就](design/extension-achievements.md) · [扩展中心设计](design/extension-center.md) · [日志与导出](design/log-export.md)
 - 历史：[CHANGELOG](../CHANGELOG.md) · [任务卡](tasks/README.md) · [数值单](tasks/numbers/) · [开发过程记录](PROCESS.md) · [旧交接 2026-10-03](HANDOFF-2026-10-03.md)

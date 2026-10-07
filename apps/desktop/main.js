@@ -1,12 +1,14 @@
 // @ts-check
 /**
- * dsh-piggy 桌面版的主进程。
+ * dsh-piggy 桌面版的主进程（外壳）。整体结构和全部 IPC 消息见 docs/guides/desktop-architecture.md。
  *
- * - 窗口**只框住「猪 + 面板 + 气泡」的外接矩形**，四周留 16px（D1）。以前窗口铺满整个
- *   工作区，Windows 上每帧都要合成一整块全屏透明层，整机都跟着卡。现在页面把内容框报上来
- *   （布局盒，不受动画影响），这里用 lib/window-geometry.js 算窗口位置：以右下角为锚，
- *   夹在工作区内；拖猪时主进程按固定起点采样鼠标，仅约束猪本身。
- * - 页面里的猪和 DSH 网页里一模一样；可点区域仍然只包住内容（setShape），其余点击落到桌面。
+ * - 两个透明置顶窗口（外壳 0.6.0 起）：猪窗口 win（固定大小，只装猪和气泡）和面板窗口 panelWin
+ *   （贴在猪旁边，见文件后半「面板窗口」一节和 lib/panel-geometry.js）。同一份游戏包在两边各跑一份，
+ *   按 piggyShell.role 各显示一半。
+ * - 窗口摆哪、哪里可点由游戏包算（src/client/desktop/），这里只照做（piggy:place）；拖动由这里按
+ *   鼠标位置算（dragTick），因为页面在拖动中拿不到可靠的屏幕坐标。
+ * - 几何一律以「请求值」为准，不把 getBounds() 读回来再设回去：Windows 分数缩放下读回值有 1px 误差，
+ *   读了再设就会一帧帧累加（2026-10-07 面板越跑越远就是这么来的，见 petAsked）。
  * - 宿主是插件自己的 store.js + routes.js（lib/host.js），经 piggy:// 协议访问，不开端口。
  * - 存档在 userData/dsh-piggy/state.json，跟 DSH 里那只各养各的；托盘里可以导入。
  */

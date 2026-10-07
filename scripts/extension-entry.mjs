@@ -1,7 +1,7 @@
 // 生成在线扩展目录（extensions/registry.json）里的一条：读扩展的 manifest，算每个文件的 sha256，
 // 地址指向本仓库的发行版「ext-<key>-<版本>」：默认 GitHub，加 --host gitee 指向 Gitee（写进 extensions/registry-gitee.json）。
 // 用法：node scripts/extension-entry.mjs blindbox [--host gitee]   → 打印这一条（JSON）
-// 发布步骤见 docs/design/extension-download.md 第 3 节。
+// 发布步骤见 docs/guides/writing-extensions.md「发版」和 docs/HANDOFF.md 9.3。
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { CHANNEL as GITHUB } from '../channels/github.js'

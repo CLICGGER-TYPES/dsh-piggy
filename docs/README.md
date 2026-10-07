@@ -17,9 +17,18 @@
 - [美术规格](ART-SPEC.md)
 - [完整示例目录](examples/skin-pack/)
 
+## 开发者：怎么加 X
+
+- [写一个在线扩展](guides/writing-extensions.md)
+- [给猪加台词](guides/adding-lines.md)
+- [加一项成就和徽章](guides/adding-achievements.md)
+- [界面规范：面板、按钮、扩展页面](guides/ui-style.md)
+- [桌面版架构与 IPC 参考](guides/desktop-architecture.md)
+
 ## 项目资料
 
-- [**维护交接文档（接手先读这份）**](HANDOFF.md)
+- [**AGENTS.md：人和 agent 的总入口（红线、文档地图）**](../AGENTS.md)
+- [**维护交接文档（现状、发版流程、已知问题）**](HANDOFF.md)
 - [旧交接记录（2026-10-03，历史参考）](HANDOFF-2026-10-03.md)
 - [开发、调试与打包](DEVELOPMENT.md)
 - [设计说明](DESIGN.md)
