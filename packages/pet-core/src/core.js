@@ -106,3 +106,5 @@ export { SKINS, SKIN_SCENES, REQUIRED_SKIN_SCENES, skinByKey } from './data.js'
 export { allSkins, ensureSkins, registerCustomSkin, selectSkin, skinStageView, skinView } from './core/skins.js'
 
 export { ensureAchievements, settleAchievements, achievementsView } from './core/achievements.js'
+
+export { validateExtensionEvent, recordExtensionEvent, resetExtensionEventBaselines } from './core/extension-events.js'

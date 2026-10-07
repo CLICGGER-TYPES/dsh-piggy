@@ -58,6 +58,6 @@ function renderAchievementDetail(ui, entry) {
   card.appendChild(el('h3', null, entry.label))
   card.appendChild(el('p', null, entry.description))
   card.appendChild(el('b', null, entry.acquired ? '已获得' : entry.progress + ' / ' + entry.target + ' ' + entry.unit))
-  card.appendChild(el('small', null, entry.acquired ? dateLabel(entry) : '解锁后永久保留这枚小猪徽章'))
+  card.appendChild(el('small', null, entry.acquired ? dateLabel(entry) : entry.availability === 'update-required' ? '更新对应扩展后可记录这项成就' : entry.availability === 'not-installed' ? '重新安装对应扩展后可继续积累' : entry.availability === 'off' ? '启用对应扩展后可继续积累' : '解锁后永久保留这枚小猪徽章'))
   ui.content.appendChild(card)
 }

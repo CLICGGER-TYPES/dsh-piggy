@@ -14,8 +14,9 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, s
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { announce, ensureExtensions, extensionOn, installExtension, removeExtension } from '../core.js'
-import { BOX_TICKET, itemByKey } from '../data.js'
+import { extensionOn, installExtension, removeExtension } from '../core.js'
+import { apiFor } from './ext-api.js'
+import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
 
 /** 在线扩展目录：GitHub 或 Gitee，看打包时的渠道（channel.js）。 */
@@ -163,6 +164,7 @@ export function createExtRuntime(store, options) {
       const imported = await import(url)
       const module = imported.default ?? imported
       loaded.set(key, { manifest, module, error: null })
+      backfillExtensionEvents(store, { module }, { key, nowMs: now() })
     } catch (error) {
       loaded.set(key, { manifest, module: null, error: error instanceof Error ? error.message : String(error) })
     }
@@ -172,43 +174,6 @@ export function createExtRuntime(store, options) {
   /** 启动时把硬盘上的扩展都加载一遍。 */
   const ready = Promise.all(installedKeys().map(load)).catch(() => {})
 
-  /** 给扩展用的口子：只能花钱、挣钱、给东西、说话；数据只能动自己的那份。 */
-  function apiFor(state, key) {
-    const nowMs = now()
-    return {
-      now: nowMs,
-      coins: () => state.coins,
-      spend: amount => {
-        const n = Math.floor(Number(amount))
-        if (!(n >= 0) || state.coins < n) return false
-        state.coins -= n
-        return true
-      },
-      earn: amount => { state.coins += Math.max(0, Math.min(100_000, Math.floor(Number(amount) || 0))) },
-      give: (itemKey, count = 1) => {
-        // 盲盒券不在商店里，但盲盒的凭证商店要能发。
-        if (itemByKey(itemKey) === null && itemKey !== BOX_TICKET.key) return false
-        const n = Math.max(1, Math.min(99, Math.floor(Number(count) || 1)))
-        state.inventory = { ...(state.inventory ?? {}), [itemKey]: (state.inventory?.[itemKey] ?? 0) + n }
-        return true
-      },
-      say: text => { announce(state, 'line', String(text).slice(0, 80), nowMs, { scene: 'ext:' + key, replies: [] }) },
-      /** 背包里某样东西有几个。 */
-      count: itemKey => Math.max(0, Math.floor(Number(state.inventory?.[itemKey]) || 0)),
-      /** 用掉背包里的东西；不够就不动，返回 false。 */
-      take: (itemKey, amount = 1) => {
-        const n = Math.max(1, Math.floor(Number(amount) || 1))
-        const have = Math.floor(Number(state.inventory?.[itemKey]) || 0)
-        if (have < n) return false
-        const inventory = { ...state.inventory }
-        if (have === n) delete inventory[itemKey]
-        else inventory[itemKey] = have - n
-        state.inventory = inventory
-        return true
-      },
-    }
-  }
-
   /** 快照里的扩展列表（下载来的那部分）。 */
   function list(state) {
     return [...loaded.entries()].filter(([key]) => state?.extData?.[key] !== undefined).map(([key, entry]) => ({
@@ -217,6 +182,7 @@ export function createExtRuntime(store, options) {
       emoji: String(entry.manifest.emoji ?? '🧩'),
       description: String(entry.manifest.description ?? ''),
       version: String(entry.manifest.version ?? ''),
+      eventVersion: entry.module?.eventVersion === 1 || typeof entry.module?.progress === 'function' ? 1 : 0,
       on: extensionOn(state, key),
       installed: true,
       builtin: false,
@@ -231,7 +197,7 @@ export function createExtRuntime(store, options) {
     const out = {}
     for (const [key, entry] of loaded) {
       if (state?.extData?.[key] === undefined || !extensionOn(state, key) || typeof entry.module?.view !== 'function') continue
-      try { out[key] = entry.module.view(structuredClone(state.extData[key]), apiFor(structuredClone(state), key)) } catch { out[key] = { error: true } }
+      try { out[key] = entry.module.view(structuredClone(state.extData[key]), apiFor(structuredClone(state), key, { nowMs: now() })) } catch { out[key] = { error: true } }
     }
     return out
   }
@@ -353,18 +319,7 @@ export function createExtRuntime(store, options) {
     if (entry.module === null) return { ok: false, reason: 'broken-extension' }
     const handler = entry.module.actions?.[op]
     if (typeof handler !== 'function') return { ok: false, reason: 'unknown' }
-    return store.mutate(state => {
-      ensureExtensions(state)
-      if (state.extData[key] === undefined) return { ok: false, reason: 'not-installed' }
-      if (!extensionOn(state, key)) return { ok: false, reason: 'extension-off' }
-      const data = structuredClone(state.extData[key])
-      let result
-      try { result = handler(data, payload ?? {}, apiFor(state, key)) } catch (error) {
-        return { ok: false, reason: 'extension-error', message: error instanceof Error ? error.message : String(error) }
-      }
-      state.extData[key] = data
-      return result !== null && typeof result === 'object' ? { ok: result.ok !== false, ...result } : { ok: true }
-    })
+    return store.mutate(state => runExtensionAction(state, handler, { key, payload, nowMs: now() }))
   }
 
   /** 扩展的面板脚本（GET /dsh-piggy/ext/<key>/client.js）。 */

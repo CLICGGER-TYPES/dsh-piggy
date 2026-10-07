@@ -69,6 +69,8 @@ https://raw.githubusercontent.com/CLICGGER-TYPES/dsh-piggy/main/extensions/regis
 - 面板按 `ext:<key>:<动作>` 把操作发给宿主，宿主找到这个扩展的 `actions[动作]` 来执行；扩展的 `view` 放进快照的 `extViews[key]` 给它的 App 页用。
 - 扩展出错（抛异常、文件坏了）只影响它自己：动作返回失败，App 页显示「这个扩展出错了」，猪和其他玩法照常。
 
+扩展可通过可选的 `api.emit(name, payload)` 和只读 `progress(data)` 报告已完成经历，宿主统一记录成就；协议、版本兼容和四扩展发布顺序见[扩展成就与公共进度事件](extension-achievements.md)。
+
 ## 5. 界面
 
 「扩展」App 分两段：

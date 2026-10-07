@@ -3,8 +3,10 @@
 import { ACHIEVEMENTS, ALL_SOUVENIRS, FISH } from '../data.js'
 import { levelFor } from './clock.js'
 import { announce } from './effects.js'
+import { ensureExtensionEvents, extensionEventProgress } from './extension-events.js'
+import { extensionInstalled, extensionOn } from './extensions.js'
 const SPECIAL = new Set(['fishKinds', 'souvenirKinds', 'king', 'devil', 'level'])
-const COUNTERS = [...new Set(ACHIEVEMENTS.map(item => item.metric).filter(key => !SPECIAL.has(key)))]
+const COUNTERS = [...new Set(ACHIEVEMENTS.filter(item => !item.extension).map(item => item.metric).filter(key => !SPECIAL.has(key)))]
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {}
 const count = value => Number.isFinite(value) ? Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value))) : 0
 
@@ -21,7 +23,8 @@ export function ensureAchievements(state) {
     const firstAt = Number.isFinite(record.firstAt) && record.firstAt >= 0 ? record.firstAt : null
     unlocked[item.key] = { firstAt, recovered: record.recovered === true || firstAt === null }
   }
-  state.achievements = { unlocked, totals: {}, seen: {} }
+  state.achievements = { unlocked, totals: {}, seen: {}, events: raw.events }
+  ensureExtensionEvents(state)
   for (const key of COUNTERS) {
     state.achievements.totals[key] = count(object(raw.totals)[key])
     state.achievements.seen[key] = count(object(raw.seen)[key])
@@ -39,6 +42,7 @@ function discovered(state, section, keys) {
 }
 
 function progressFor(state, item) {
+  if (item.extension) return extensionEventProgress(state, item)
   if (COUNTERS.includes(item.metric)) return count(state.achievements?.totals?.[item.metric])
   if (item.metric === 'level') return levelFor(state.xp)
   if (item.metric === 'fishKinds') return discovered(state, 'fish', FISH.map(fish => fish.key))
@@ -85,10 +89,12 @@ export function settleAchievements(state, nowMs, options = {}) {
  * @returns {object[]}
  */
 export function achievementsView(state) {
-  return ACHIEVEMENTS.map(item => {
+  return ACHIEVEMENTS.filter(item => !item.extension || (state !== null && (extensionInstalled(state, item.extension) ||
+    state.achievements?.events?.[item.extension] !== undefined || state.achievements?.unlocked?.[item.key] !== undefined))).map(item => {
     const record = state?.achievements?.unlocked?.[item.key]
     const acquired = record !== null && typeof record === 'object'
     return { ...item, acquired, progress: acquired ? item.target : Math.min(item.target, state === null ? 0 : progressFor(state,item)),
-      firstAt: acquired ? record.firstAt : null, recovered: acquired && record.recovered === true }
+      firstAt: acquired ? record.firstAt : null, recovered: acquired && record.recovered === true,
+      availability: !item.extension || extensionOn(state, item.extension) ? 'ready' : extensionInstalled(state, item.extension) ? 'off' : 'not-installed' }
   })
 }

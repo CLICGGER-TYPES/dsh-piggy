@@ -8,6 +8,7 @@ import { test } from 'node:test'
 
 import { hatchEgg, removeExtension, installExtension, extensionOn } from '../core.js'
 import { createStore } from '../store.js'
+import { createJournal } from '../store/journal.js'
 import { createExtRuntime, versionAtLeast } from '../store/ext-runtime.js'
 
 const HOUR = 3_600_000
@@ -35,7 +36,7 @@ function setup({ minGame, corrupt, pkg = PACKAGE, flaky = 0, dead = false } = {}
   const seed = hatchEgg(Date.now() - 2 * HOUR)
   seed.coins = 100
   writeFileSync(join(dir, 'state.json'), JSON.stringify(seed))
-  const store = createStore(join(dir, 'state.json'))
+  const store = createStore(join(dir, 'state.json'), { journal: createJournal() })
   const filesOf = () => Object.fromEntries(Object.entries(pkg).map(([name, text]) => [name, { url: 'https://example.test/' + name, sha256: sha(corrupt === name ? text + ' ' : text) }]))
   const files = filesOf()
   const registry = { version: 1, extensions: [

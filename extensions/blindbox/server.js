@@ -1,3 +1,4 @@
+// @ts-check
 // 盲盒扩展 2.1 · 宿主部分：照明日方舟寻访的规矩（用户 2026-10-05）。
 // 设计 docs/design/blindbox.md，数值 docs/tasks/numbers/X1-blindbox.md。
 // 只出摆件。星级 3★～6★；常驻寻访 + 限时寻访，每 14 天轮换 UP；50 抽后每抽 6★ +2%；
@@ -175,7 +176,22 @@ const SHOP = [
   { key: 'baicaodan', emoji: '💊', label: '百草丹', cost: 30, note: '什么病都能治，放进背包' },
 ]
 
+
+/** Collection proofs also include certificate exchanges. */
+export function progress(data) {
+  const saved = normalize(structuredClone(data))
+  const figures = CATALOG.filter(figure => Number.isSafeInteger(saved.owned[figure.key]) && saved.owned[figure.key] > 0)
+  return [{ name: 'figure', items: figures.map(figure => figure.key) }, { name: 'six-star', items: figures.filter(figure => figure.stars === 6).map(figure => figure.key) }]
+}
+
+function reportProgress(data, api) {
+  if (typeof api.emit !== 'function') return
+  for (const { name, ...payload } of progress(data)) api.emit(name, payload)
+}
+
 export default {
+  eventVersion: 1,
+  progress,
   init() { return normalize({}) },
 
   actions: {
@@ -199,6 +215,7 @@ export default {
       }
       data.pulls += count
       remember(data, banner.key, items)
+      reportProgress(data, api)
       api.say(lineFor(items))
       return { ok: true }
     },
@@ -216,6 +233,7 @@ export default {
         data.certs -= entry.cost
         data.owned[figure.key] = 1
         remember(data, 'shop', [{ key: figure.key, stars: figure.stars, isNew: true, potential: 1, certs: 0 }])
+        reportProgress(data, api)
         api.say('用凭证换来了' + figure.label + '！')
         return { ok: true }
       }

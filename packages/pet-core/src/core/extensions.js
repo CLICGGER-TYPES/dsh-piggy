@@ -9,6 +9,7 @@ import { abandonPomodoro, emptyPomodoro, ensurePomodoro } from './pomodoro.js'
 import { emptyFishing, ensureFishing, keepFish } from './fishing.js'
 import { ensureDex } from './dex.js'
 import { callOffActivity } from './activity.js'
+import { resetExtensionEventBaselines } from './extension-events.js'
 
 /** @param {any} state */
 export function ensureExtensions(state) {
@@ -116,7 +117,10 @@ export function installExtension(state, key, initial) {
     state.extensionsRemoved = state.extensionsRemoved.filter(entry => entry !== key)
   } else {
     if (typeof key !== 'string' || !/^[a-z0-9-]{2,24}$/.test(key)) return { ok: false, reason: 'unknown-extension' }
-    if (state.extData[key] === undefined) state.extData[key] = initial !== null && typeof initial === 'object' ? initial : {}
+    if (state.extData[key] === undefined) {
+      resetExtensionEventBaselines(state, key)
+      state.extData[key] = initial !== null && typeof initial === 'object' ? initial : {}
+    }
   }
   state.extensions[key] = true
   return { ok: true, key, installed: true }

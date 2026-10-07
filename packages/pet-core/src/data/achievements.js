@@ -1,6 +1,7 @@
 // @ts-check
-/** Draft milestones. Rewards are pig badges only; no economic effects. */
-/** @typedef {{key:string, label:string, group:string, emoji:string, art:string, metric:string, target:number, unit:string, description:string}} Achievement */
+import { EXTENSION_ACHIEVEMENTS } from './extension-achievements.js'
+/** Milestones. Rewards are pig badges only; no economic effects. */
+/** @typedef {{key:string, label:string, group:string, emoji:string, art:string, metric:string, target:number, unit:string, description:string, extension?:string, event?:string, mode?:string}} Achievement */
 /** @type {Array<[string,string,string,string,string,number,string,string]>} */
 const rows = [
   ['first-meal', '开饭啦', '照顾', '🍎', 'feeds', 1, '次', '第一次成功喂食，把肚子填得暖暖的。'],
@@ -20,5 +21,6 @@ const rows = [
   ['devil', '小小恶魔', '晋升', '😈', 'devil', 1, '次', '亲自完成恶魔契约，调皮也有自己的徽章。'],
   ['grown-up', '长大啦', '成长', '🐷', 'level', 40, '级', '成长到四十级，迎来成年。'],
 ]
-export const ACHIEVEMENTS = Object.freeze(rows.map(([key,label,group,emoji,metric,target,unit,description]) =>
-  Object.freeze({key,label,group,emoji,metric,target,unit,description,art:'badge-pig-'+key})))
+/** @type {readonly Readonly<Achievement>[]} */
+export const ACHIEVEMENTS = Object.freeze([...rows.map(([key,label,group,emoji,metric,target,unit,description]) =>
+  Object.freeze({key,label,group,emoji,metric,target,unit,description,art:'badge-pig-'+key})), ...EXTENSION_ACHIEVEMENTS])

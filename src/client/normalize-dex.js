@@ -17,6 +17,7 @@ export function normalizeDex(raw) {
         acquired: entry.acquired === true,
         firstAt: typeof entry.firstAt === 'number' ? entry.firstAt : null,
         count: num(entry.count, 0), condition: str(entry.condition, ''),
+        availability: ['ready', 'off', 'not-installed', 'update-required'].includes(entry.availability) ? entry.availability : 'ready',
         group: str(entry.group, ''), progress: Math.max(0, num(entry.progress, 0)), target: Math.max(1, num(entry.target, 1)), unit: str(entry.unit, ''), recovered: entry.recovered === true,
         maxSizeCm: typeof entry.maxSizeCm === 'number' ? entry.maxSizeCm : null,
         requirements: arr(entry.requirements).map(function (value) {

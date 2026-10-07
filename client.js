@@ -1643,6 +1643,7 @@
           firstAt: typeof entry.firstAt === "number" ? entry.firstAt : null,
           count: num(entry.count, 0),
           condition: str(entry.condition, ""),
+          availability: ["ready", "off", "not-installed", "update-required"].includes(entry.availability) ? entry.availability : "ready",
           group: str(entry.group, ""),
           progress: Math.max(0, num(entry.progress, 0)),
           target: Math.max(1, num(entry.target, 1)),
@@ -2838,7 +2839,7 @@
     // The second layer's top row: back, title, one grey line.
     ".dp-drill{position:sticky;top:-12px;z-index:5;display:flex;align-items:center;gap:7px;",
     "margin:-12px 0 10px;padding:12px 0 0;background:var(--ac-bg)}",
-    ".dp-drill-back{font:inherit;font-size:16px;font-weight:800;line-height:1;width:26px;height:26px;",
+    ".dp-drill-back{padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font:inherit;font-size:16px;font-weight:800;line-height:1;width:26px;height:26px;",
     "flex:none;cursor:pointer;color:var(--ac-text);border-radius:50%;",
     "border:2px solid var(--ac-border-light);background:var(--ac-bg-input)}",
     ".dp-drill-back:hover{border-color:var(--ac-border-hover)}",
@@ -3815,7 +3816,7 @@
     card2.appendChild(el("h3", null, entry.label));
     card2.appendChild(el("p", null, entry.description));
     card2.appendChild(el("b", null, entry.acquired ? "\u5DF2\u83B7\u5F97" : entry.progress + " / " + entry.target + " " + entry.unit));
-    card2.appendChild(el("small", null, entry.acquired ? dateLabel(entry) : "\u89E3\u9501\u540E\u6C38\u4E45\u4FDD\u7559\u8FD9\u679A\u5C0F\u732A\u5FBD\u7AE0"));
+    card2.appendChild(el("small", null, entry.acquired ? dateLabel(entry) : entry.availability === "update-required" ? "\u66F4\u65B0\u5BF9\u5E94\u6269\u5C55\u540E\u53EF\u8BB0\u5F55\u8FD9\u9879\u6210\u5C31" : entry.availability === "not-installed" ? "\u91CD\u65B0\u5B89\u88C5\u5BF9\u5E94\u6269\u5C55\u540E\u53EF\u7EE7\u7EED\u79EF\u7D2F" : entry.availability === "off" ? "\u542F\u7528\u5BF9\u5E94\u6269\u5C55\u540E\u53EF\u7EE7\u7EED\u79EF\u7D2F" : "\u89E3\u9501\u540E\u6C38\u4E45\u4FDD\u7559\u8FD9\u679A\u5C0F\u732A\u5FBD\u7AE0"));
     ui.content.appendChild(card2);
   }
 

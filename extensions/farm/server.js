@@ -1,3 +1,4 @@
+// @ts-check
 // 菜园扩展 1.0：只保存菜园数据，金币、背包和说话都经过宿主 api。
 export const PLOT_PRICES = [0, 0, 500, 1200, 2500, 5000]
 
@@ -57,7 +58,22 @@ function sayHarvest(crop) {
   return '收了' + crop.yield + '个' + crop.label + '，菜园有收成啦！'
 }
 
+
+/** Historical totals come from acquired crops, not the current warehouse. */
+export function progress(data) {
+  const saved = normalize(structuredClone(data))
+  const crops = CROPS.filter(crop => Number.isSafeInteger(saved.acquired[crop.key]) && saved.acquired[crop.key] >= crop.yield)
+  return [{ name: 'harvest', total: crops.reduce((sum, crop) => Math.min(Number.MAX_SAFE_INTEGER, sum + Math.floor(saved.acquired[crop.key] / crop.yield)), 0), items: crops.map(crop => crop.key) }]
+}
+
+function reportProgress(data, api) {
+  if (typeof api.emit !== 'function') return
+  for (const { name, ...payload } of progress(data)) api.emit(name, payload)
+}
+
 export default {
+  eventVersion: 1,
+  progress,
   init() { return normalize({}) },
 
   actions: {
@@ -107,6 +123,7 @@ export default {
       data.harvest[crop.key] = amountFor(data, 'harvest', crop.key) + crop.yield
       data.acquired[crop.key] = amountFor(data, 'acquired', crop.key) + crop.yield
       data.plots[payload.plot] = null
+      reportProgress(data, api)
       api.say(sayHarvest(crop))
       return { ok: true }
     },

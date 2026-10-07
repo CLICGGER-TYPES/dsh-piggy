@@ -18,6 +18,7 @@ import { decay, die } from './settlement.js'
 import { ensureDex, recordDex } from './dex.js'
 import { ensureDaily } from './daily.js'
 import { setBodyWeightClass } from './weight.js'
+import { resetExtensionEventBaselines } from './extension-events.js'
 
 /**
  * Wipe the pig and start from a fresh box, whatever state it was in.
@@ -46,6 +47,7 @@ export function inherit(oldState, fresh, nowMs) {
   for (const key of INHERITED) {
     if (oldState[key] !== undefined) fresh[key] = structuredCloneish(oldState[key])
   }
+  resetExtensionEventBaselines(fresh)
   if (Array.isArray(oldState.memories)) fresh.memories = oldState.memories.slice(-MEMORY_LIMIT)
   remember(fresh, '🐖 新的小猪来了，本事和收藏都留下了', nowMs)
   return fresh

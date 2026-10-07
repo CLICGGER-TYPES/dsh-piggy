@@ -6,9 +6,9 @@ import { adopt, hatchEgg, migrate, reset, settleAchievements, achievementsView }
 const NOW = 1_800_000_000_000
 const entry = (state, key) => achievementsView(state).find(item => item.key === key)
 
-test('sixteen draft achievements have distinct keys and pig badge art', () => {
-  assert.equal(ACHIEVEMENTS.length, 16)
-  assert.equal(new Set(ACHIEVEMENTS.map(item => item.key)).size, 16)
+test('twenty-eight achievements have distinct keys and pig badge art', () => {
+  assert.equal(ACHIEVEMENTS.length, 28)
+  assert.equal(new Set(ACHIEVEMENTS.map(item => item.key)).size, 28)
   assert.ok(ACHIEVEMENTS.every(item => item.art.startsWith('badge-pig-')))
 })
 test('first successful care unlocks once and viewing never mutates', () => {

@@ -63,6 +63,15 @@ function activityProgress(activity, nowMs) {
   return Math.max(0, Math.min(100, Math.round(((nowMs - activity.startedAt) / span) * 100)))
 }
 
+/** The runtime knows capability; the domain never opens extension modules. */
+function achievementViews(store, state) {
+  const installed = store.ext?.list(state) ?? []
+  return achievementsView(state).map(item => {
+    const source = installed.find(extension => extension.key === item.extension)
+    return source?.eventVersion === 0 && item.availability === 'ready' ? { ...item, availability: 'update-required' } : item
+  })
+}
+
 export function snapshot(store, options = {}) {
   const drain = options.drain !== false
   const state = store.freshen()
@@ -119,7 +128,7 @@ export function snapshot(store, options = {}) {
     // 加冕: every form and how close the pig is to it.
     forms,
     skins: skinView(state),
-    dex: { ...dexView(state, forms, nowMs), achievements: achievementsView(state) },
+    dex: { ...dexView(state, forms, nowMs), achievements: achievementViews(store, state) },
     timeScale: Number.isFinite(state.timeScale) ? state.timeScale : 1,
     pig: {
       name: state.name,

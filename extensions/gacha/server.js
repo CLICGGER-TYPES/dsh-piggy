@@ -1,3 +1,4 @@
+// @ts-check
 // 扭蛋扩展 1.0；数值见 docs/tasks/numbers/X2-gacha.md。
 // 扩展只保存自己的幸运值和记录；金币、背包和说话都经宿主 api。
 
@@ -53,7 +54,31 @@ function roll(data, machine, random) {
   return { key: picked.key, label: picked.label, emoji: picked.emoji, count, rarity }
 }
 
+
+/** The old 30-entry history is a lower bound, never an invented lifetime total. */
+function milestones(data) {
+  const saved = data.milestones !== null && typeof data.milestones === 'object' && !Array.isArray(data.milestones) ? data.milestones : {}
+  const history = (Array.isArray(data.history) ? data.history : []).filter(got =>
+    got !== null && typeof got === 'object' && Number.isSafeInteger(got.count) && got.count > 0 && Object.values(POOLS).some(pool => pool[got.rarity]?.some(item => item.key === got.key)))
+  const counter = value => Number.isSafeInteger(value) && value >= 0 ? value : 0
+  const machines = Array.isArray(saved.machines) ? saved.machines.filter(key => Object.hasOwn(POOLS, key)) : []
+  if (Object.hasOwn(POOLS, data.last?.machine) && Array.isArray(data.last?.items) && data.last.items.some(got => got !== null && typeof got === 'object' && Number.isSafeInteger(got.count) && got.count > 0 && POOLS[data.last.machine][got.rarity]?.some(item => item.key === got.key))) machines.push(data.last.machine)
+  return { spins: Math.max(counter(saved.spins), history.length), gold: Math.max(counter(saved.gold), history.filter(item => item.rarity === 'gold').length), machines: [...new Set(machines)] }
+}
+
+export function progress(data) {
+  const saved = milestones(data)
+  return [{ name: 'spin', total: saved.spins }, { name: 'machine', items: saved.machines }, { name: 'gold', total: saved.gold }]
+}
+
+function reportProgress(data, api) {
+  if (typeof api.emit !== 'function') return
+  for (const { name, ...payload } of progress(data)) api.emit(name, payload)
+}
+
 export default {
+  eventVersion: 1,
+  progress,
   init() { return { luck: 0, freeDay: '', history: [], last: null, seq: 0 } },
 
   actions: {
@@ -61,6 +86,7 @@ export default {
       if (!Object.hasOwn(POOLS, payload.machine)) return { ok: false, reason: 'unknown-machine' }
       if (payload.count !== 1 && payload.count !== 10) return { ok: false, reason: 'unknown-count' }
       normalize(data)
+      data.milestones = milestones(data)
       const day = gameDay(api.now)
       const free = payload.count === 1 && data.freeDay !== day
       if (!free && !api.spend(payload.count === 10 ? 540 : 60)) return { ok: false, reason: 'poor' }
@@ -71,9 +97,13 @@ export default {
         if (!api.give(got.key, got.count)) throw new Error('物品不存在：' + got.key)
         items.push(got)
       }
+      data.milestones.spins = Math.min(Number.MAX_SAFE_INTEGER, data.milestones.spins + items.length)
+      data.milestones.gold = Math.min(Number.MAX_SAFE_INTEGER, data.milestones.gold + items.filter(item => item.rarity === 'gold').length)
+      data.milestones.machines = [...new Set([...data.milestones.machines, payload.machine])]
       data.seq += 1
       data.last = { id: data.seq, machine: payload.machine, items }
       data.history = items.concat(data.history).slice(0, 30)
+      reportProgress(data, api)
       const best = items.find(got => got.rarity === 'gold')
       api.say(best ? '金色的！！是' + best.label + '！' : items.length === 1 ? '又是' + items[0].label + '……' : '十颗扭蛋都放进背包啦！')
       return { ok: true }

@@ -59,3 +59,5 @@ export * from './data/extensions.js'
 export * from './data/skins.js'
 
 export { ACHIEVEMENTS } from './data/achievements.js'
+
+export { EXTENSION_EVENT_VERSION, EXTENSION_EVENT_LIMITS, EXTENSION_EVENTS } from './data/extension-events.js'

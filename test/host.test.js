@@ -10,6 +10,7 @@
 
 import assert from 'node:assert/strict'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -36,6 +37,7 @@ function boot(seed, options = {}) {
   const nowMs = Date.now()
   if (seed) writeFileSync(statePath, JSON.stringify(seed(nowMs)))
 
+  const disposers = []
   const listeners = {}
   const routes = {}
   let command = null
@@ -44,7 +46,7 @@ function boot(seed, options = {}) {
 
   const ctx = {
     on: (event, fn) => { (listeners[event] ??= []).push(fn) },
-    effect: fn => { const dispose = fn(); return () => dispose?.() },
+    effect: fn => { const dispose = fn(); disposers.push(dispose); return () => dispose?.() },
     // Deliberately absent: the plugin must not depend on `ctx.get` at all.
     get: () => undefined,
     inject: (deps, fn) => {
@@ -72,7 +74,11 @@ function boot(seed, options = {}) {
   // Keep the HTTP status alongside the body so status assertions work.
   const get = async () => withStatus(await call(routes['/dsh-piggy/state'], 'GET'))
   const post = async body => withStatus(await call(routes['/dsh-piggy/act'], 'POST', body))
-  const cleanup = () => rmSync(dir, { recursive: true, force: true })
+  const cleanup = async () => {
+    for (const dispose of disposers) dispose?.()
+    if (routes['/dsh-piggy/logs/export']) await call(routes['/dsh-piggy/logs/export'], 'GET')
+    await rm(dir, { recursive: true, force: true, maxRetries: 3 })
+  }
   return { routes, listeners, command, fire, get, post, releaseWebServer, statePath, cleanup }
 }
 
@@ -130,7 +136,7 @@ test('an operation that throws answers 500 and names the action, instead of losi
   assert.ok(warnings.some(line => line.includes('dev')), `the log must name the action: ${warnings.join(' | ')}`)
 })
 
-test('the host registers both routes, the four diet events and the command', () => {
+test('the host registers both routes, the four diet events and the command', async () => {
   const app = boot()
   try {
     assert.notEqual(app.routes['/dsh-piggy/state'], undefined)
@@ -142,7 +148,7 @@ test('the host registers both routes, the four diet events and the command', () 
     assert.equal(app.command.name, 'pig')
     assert.equal(typeof app.command.handler, 'function')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -153,7 +159,7 @@ test('the host registers both routes, the four diet events and the command', () 
  * 404 forever — while the plugin itself reported a clean activation. Waiting
  * through `ctx.inject` is the fix.
  */
-test('routes still register when the web seam arrives after activation', () => {
+test('routes still register when the web seam arrives after activation', async () => {
   const app = boot(null, { webServer: 'later' })
   try {
     assert.deepEqual(app.routes, {}, 'nothing to register against yet')
@@ -161,11 +167,11 @@ test('routes still register when the web seam arrives after activation', () => {
     assert.notEqual(app.routes['/dsh-piggy/state'], undefined, 'state route must register late')
     assert.notEqual(app.routes['/dsh-piggy/act'], undefined, 'act route must register late')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
-test('the plugin never depends on ctx.get for its routes', () => {
+test('the plugin never depends on ctx.get for its routes', async () => {
   // boot() deliberately exposes a `get` that always returns undefined. If the
   // plugin used it, neither mode below could ever register a route.
   const immediate = boot()
@@ -175,12 +181,12 @@ test('the plugin never depends on ctx.get for its routes', () => {
     late.releaseWebServer()
     assert.notEqual(late.routes['/dsh-piggy/state'], undefined)
   } finally {
-    immediate.cleanup()
-    late.cleanup()
+    await immediate.cleanup()
+    await late.cleanup()
   }
 })
 
-test('a host with no web seam stays command-only and does not throw', () => {
+test('a host with no web seam stays command-only and does not throw', async () => {
   let app
   assert.doesNotThrow(() => { app = boot(null, { webServer: 'never' }) })
   try {
@@ -191,7 +197,7 @@ test('a host with no web seam stays command-only and does not throw', () => {
     const result = app.command.handler({ rawInput: 'about' })
     assert.equal(result.kind, 'success')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -205,7 +211,7 @@ test('routes reject the wrong method and unknown operations', async () => {
     assert.ok(bad.allowed.includes('work'))
     assert.ok(bad.allowed.includes('buy'))
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -216,7 +222,7 @@ test('an oversized action body is rejected', async () => {
     const result = await app.post(huge)
     assert.equal(result.status, 413)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -236,7 +242,7 @@ test('the snapshot reports the unhatched state before anything exists', async ()
     assert.equal(snap.jobs.length, JOBS.length)
     assert.equal(snap.shop.length, SHOP.length)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -258,7 +264,7 @@ test('the snapshot exposes everything the panel draws', async () => {
     assert.equal(snap.dress.length, 13, 'and the 装扮 shelf is its own list')
     assert.equal(snap.maxHealth, 5)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -270,7 +276,7 @@ test('the snapshot reports the package version', async () => {
     // is answerable without guessing.
     assert.equal((await app.get()).version, manifest.version)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -297,7 +303,7 @@ test('a refused operation reports ok:false instead of the snapshot\'s ok', async
     assert.notEqual(again.pig, null)
     assert.equal(typeof again.actions.feed.ready, 'boolean')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -318,7 +324,7 @@ test('an away pig reports how far through its activity it is', async () => {
     assert.equal(snap.activity.progress, 50)
     assert.ok(snap.activity.secondsLeft > 7000 && snap.activity.secondsLeft < 7300, 'about two hours left')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -350,7 +356,7 @@ test('care is refused while working, and the refusal is honest', async () => {
     assert.equal((await app.post({ action: 'calloff' })).ok, true)
     assert.equal((await app.get()).activity, null)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -371,7 +377,7 @@ test('the route refuses an unqualified job and hands back what it is missing', a
     assert.match(board.lockText, /Lv\.5、🔢数学 9 节/)
     assert.equal(refused.jobs.find(job => job.key === 'bricks').qualified, true)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -400,7 +406,7 @@ test('the snapshot offers the interest courses, and taking one feeds a trait', a
     assert.equal(unknown.reason, 'unknown')
     assert.deepEqual((await app.get()).pig.traits, before, 'the trait lands only when the lesson ends')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -435,7 +441,7 @@ test('the sell route pays the rarity price and is honest about what is not owned
 
     assert.equal((await app.post({ action: 'sell', souvenir: 'nope' })).reason, 'not-owned')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -452,7 +458,7 @@ test('daily action responses include the earned reward for a collapsed pig', asy
     const gift = await app.post({ action: 'openGift' })
     assert.equal(gift.ok, true)
     assert.ok(typeof gift.reward === 'string' && gift.reward.length > 0)
-  } finally { app.cleanup() }
+  } finally { await app.cleanup() }
 })
 
 test('the wear route dresses and undresses, and the shop is honest about 家当', async () => {
@@ -491,7 +497,7 @@ test('the wear route dresses and undresses, and the shop is honest about 家当'
     // A dress is worn, never eaten.
     assert.equal((await app.post({ action: 'use', item: 'scarf' })).reason, 'not-consumable')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -504,7 +510,7 @@ test('the debug giveAll route hands over everything at once', async () => {
     assert.equal(res.inventory.apple, 20, 'consumables land in the bag')
     assert.equal(res.dress.filter(entry => entry.owned).length, 13, 'and every 装扮 is owned')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -517,7 +523,7 @@ test('buying is refused when broke, and the refusal is honest', async () => {
     assert.equal(poor.pig.coins, 2, 'nothing was spent')
     assert.equal(poor.shop.find(i => i.key === 'bone').affordable, false)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -549,7 +555,7 @@ test('a finished shift pays out on the next read and is announced once', async (
     const second = await app.get()
     assert.deepEqual(second.pending, [])
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -566,7 +572,7 @@ test('snapshot() can be asked not to drain the queue', async () => {
     const snap = snapshot(store, { drain: false })
     assert.equal(snap.hatched, false)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -597,7 +603,7 @@ test('a neglected pig falls ill, and the shop marks the right medicine', async (
     assert.equal(wanted[0].key, snap.pig.illness.cureKey, 'and it is the cure for this very stage')
     assert.equal(wanted[0].tier, snap.pig.illness.stage)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -627,7 +633,7 @@ test('the whole illness loop works through the routes: sick → buy → cure', a
     assert.equal(wrong.ok, false)
     assert.equal(wrong.reason, 'not-sick')
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -660,7 +666,7 @@ test('a dead pig only answers to the revive item', async () => {
     // And now normal life resumes.
     assert.equal((await app.post({ action: 'feed' })).ok, true)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -668,7 +674,7 @@ test('a dead pig only answers to the revive item', async () => {
 // Slash command (the fallback path)
 // ===========================================================================
 
-test('the slash command answers about, shop and status', () => {
+test('the slash command answers about, shop and status', async () => {
   const app = boot(nowMs => hatchEgg(nowMs))
   try {
     const run = input => app.command.handler({ rawInput: input })
@@ -679,11 +685,11 @@ test('the slash command answers about, shop and status', () => {
     assert.equal(run('nonsense').kind, 'error')
     assert.match(run('').text, /金币/)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
-test('the slash command line for work and the shop agree with the tables', () => {
+test('the slash command line for work and the shop agree with the tables', async () => {
   const app = boot(nowMs => hatchEgg(nowMs))
   try {
     const run = input => app.command.handler({ rawInput: input })
@@ -695,11 +701,11 @@ test('the slash command line for work and the shop agree with the tables', () =>
     assert.match(work.text, /搬砖/)
     assert.match(run('calloff').text, /提前回来/)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
-test('the pure dispatch helper routes every documented subcommand', () => {
+test('the pure dispatch helper routes every documented subcommand', async () => {
   const store = makeFakeStore(hatchEgg(Date.now()))
   assert.equal(dispatch(store, 'pig', 'about').kind, 'success')
   assert.equal(dispatch(store, 'pig', 'status').kind, 'success')
@@ -709,7 +715,7 @@ test('the pure dispatch helper routes every documented subcommand', () => {
   assert.equal(dispatch(store, 'pig', 'bogus').kind, 'error')
 })
 
-test('the slash command covers what the panel covers', () => {
+test('the slash command covers what the panel covers', async () => {
   // The GUI is the primary path, but the command is the fallback and it was
   // missing half the verbs: 兴趣课、卖纪念品、穿脱家当、领养、回话（B1 小缺口）。
   const pig = hatchEgg(Date.now())
@@ -774,7 +780,7 @@ test('the cordis patch names the package exactly as package.json does', async ()
   }
 })
 
-test('a box reports that it cannot go out, and says why', () => {
+test('a box reports that it cannot go out, and says why', async () => {
   const now = Date.now()
   const box = layEgg(now)
   const store = { freshen: () => box, drainPending: () => {} }
@@ -783,7 +789,7 @@ test('a box reports that it cannot go out, and says why', () => {
   assert.equal(snap.awayBlocked, 'box')
 })
 
-test('the souvenir shelf shows the whole collection, not just the last 40', () => {
+test('the souvenir shelf shows the whole collection, not just the last 40', async () => {
   const now = Date.now()
   const pig = hatchEgg(now)
   pig.souvenirs = Array.from({ length: 41 }, (_, index) => ({
@@ -796,7 +802,7 @@ test('the souvenir shelf shows the whole collection, not just the last 40', () =
   assert.equal(snap.pig.souvenirs[0].key, 'shell-0', 'the oldest one must still be sellable')
 })
 
-test('a tombstone reports how long the pig lived, not when it hatched', () => {
+test('a tombstone reports how long the pig lived, not when it hatched', async () => {
   const now = Date.now()
   const HOUR = 3_600_000
   const store = pig => ({ freshen: () => pig, drainPending: () => {} })
@@ -833,7 +839,7 @@ test('加冕 works from the slash command and over HTTP, and the snapshot carrie
     assert.match(refused.text, /商店.*晋升.*王冠|王冠.*商店/)
     assert.match(early.command.handler({ rawInput: 'crown 恐龙' }).text, /没有这种形态/)
   } finally {
-    early.cleanup()
+    await early.cleanup()
   }
   const app = boot(ready)
   try {
@@ -849,7 +855,7 @@ test('加冕 works from the slash command and over HTTP, and the snapshot carrie
     assert.equal(after.pig.stage.actionArt, true)
     assert.match(app.command.handler({ rawInput: 'crown 猪猪王' }).text, /猪猪王/)
   } finally {
-    app.cleanup()
+    await app.cleanup()
   }
 })
 
@@ -898,6 +904,6 @@ test('the devil is signed for, not crowned: 加冕 refuses it and the contract d
         assert.equal(used.inventory.contract, 0, 'a signed contract is spent')
         assert.match(app.command.handler({ rawInput: 'crown 恶魔猪' }).text, /恶魔猪/)
       }
-    } finally { app.cleanup() }
+    } finally { await app.cleanup() }
   }
 })

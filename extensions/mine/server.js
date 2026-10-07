@@ -1,3 +1,4 @@
+// @ts-check
 // 矿洞扩展：地图和时间计算只依赖传入参数，存档只保留已挖进度。
 const WIDTH = 6
 const SIZE = 48
@@ -101,6 +102,11 @@ export function normalize(data) {
     if (!value || typeof value !== 'object' || !Array.isArray(value.open)) { delete data.maps[layer]; continue }
     if (!value.hits || typeof value.hits !== 'object' || Array.isArray(value.hits)) value.hits = {}
   }
+  if (!Number.isSafeInteger(data.oreCount) || data.oreCount < 0) {
+    data.oreCount = ORES.reduce((sum, ore) => Math.min(Number.MAX_SAFE_INTEGER, sum + (Number.isSafeInteger(data.bag[ore.key]) && data.bag[ore.key] > 0 ? data.bag[ore.key] : 0)), 0)
+    if (data.found.gem === true) data.oreCount = Math.max(1, data.oreCount)
+  }
+  data.deepest = Math.max(data.layer, Number.isInteger(data.deepest) && data.deepest <= 10 ? data.deepest : 1)
   return data
 }
 
@@ -118,7 +124,7 @@ export function refresh(data, now) {
   return data
 }
 
-function progress(data) {
+function layerProgress(data) {
   return data.maps[data.layer] ?? (data.maps[data.layer] = { open: [0, 1, 2, 3, 4, 5], hits: {} })
 }
 
@@ -129,6 +135,7 @@ function adjacent(index, open) {
 
 function reveal(data, cell, index, api) {
   if (cell.kind === 'ore') {
+    data.oreCount = Math.min(Number.MAX_SAFE_INTEGER, data.oreCount + 1)
     data.bag[cell.key] = (data.bag[cell.key] ?? 0) + 1
     if (cell.key === 'gem') data.found.gem = true
     api.say('挖到了' + ORES.find(ore => ore.key === cell.key).label + '！')
@@ -139,7 +146,25 @@ function reveal(data, cell, index, api) {
   data.last = { layer: data.layer, index, kind: cell.kind, key: cell.key ?? null, at: api.now, id: (data.last?.id ?? 0) + 1 }
 }
 
+
+/** Sold ore without a historical counter cannot be reconstructed. */
+export function progress(data) {
+  const saved = normalize(structuredClone(data))
+  return [
+    { name: 'ore', total: saved.oreCount },
+    { name: 'fossil', items: FOSSILS.filter(fossil => saved.found[fossil.key] === true).map(fossil => fossil.key) },
+    { name: 'depth', maximum: saved.deepest },
+  ]
+}
+
+function reportProgress(data, api) {
+  if (typeof api.emit !== 'function') return
+  for (const { name, ...payload } of progress(data)) api.emit(name, payload)
+}
+
 export default {
+  eventVersion: 1,
+  progress,
   init() { return { day: null, layer: 1, maps: {}, surface: false, energy: MAX_ENERGY, energyAt: 0, drinks: 0, pickaxe: 1, bag: {}, found: {}, last: null } },
   actions: {
     dig(data, payload, api) {
@@ -147,7 +172,7 @@ export default {
       const index = payload?.cell
       if (!Number.isInteger(index) || index < WIDTH || index >= SIZE) return { ok: false, reason: 'unknown' }
       if (data.surface) return { ok: false, reason: 'surface' }
-      const p = progress(data)
+      const p = layerProgress(data)
       if (p.open.includes(index)) return { ok: false, reason: 'already-open' }
       if (!adjacent(index, p.open)) return { ok: false, reason: 'not-adjacent' }
       if (data.energy < 1) return { ok: false, reason: 'tired' }
@@ -159,14 +184,17 @@ export default {
       if (p.hits[index] >= hitsNeeded(cell.kind, data.pickaxe)) {
         p.open.push(index); delete p.hits[index]; reveal(data, cell, index, api)
       } else data.last = { layer: data.layer, index, kind: 'crack', at: api.now, id: (data.last?.id ?? 0) + 1 }
+      reportProgress(data, api)
       return { ok: true }
     },
     descend(data, _payload, api) {
       refresh(data, api.now)
       if (data.layer >= 10) return { ok: false, reason: 'deepest' }
       const ladder = generateMap(data.layer, data.day).findIndex(cell => cell.kind === 'ladder')
-      if (!progress(data).open.includes(ladder)) return { ok: false, reason: 'no-ladder' }
+      if (!layerProgress(data).open.includes(ladder)) return { ok: false, reason: 'no-ladder' }
       data.layer += 1; data.surface = false
+      data.deepest = Math.max(data.deepest, data.layer)
+      reportProgress(data, api)
       return { ok: true }
     },
     surface(data, _payload, api) { refresh(data, api.now); data.surface = true; return { ok: true } },
@@ -194,7 +222,7 @@ export default {
   },
   view(data, api) {
     const d = refresh(structuredClone(data), api.now)
-    const p = progress(d)
+    const p = layerProgress(d)
     const map = generateMap(d.layer, d.day)
     return {
       day: d.day, layer: d.layer, surface: d.surface, energy: d.energy, energyAt: d.energyAt,

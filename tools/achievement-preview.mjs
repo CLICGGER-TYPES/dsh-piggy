@@ -7,6 +7,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createStore } from '../store.js'
 import { registerRoutes } from '../routes.js'
+import { createExtRuntime } from '../store/ext-runtime.js'
+import { installPreviewExtensions, seedExtensionPreview } from './extension-achievement-fixtures.mjs'
 import { hatchEgg, xpForLevel, FISH, ALL_SOUVENIRS, settleAchievements } from '../packages/pet-core/src/index.js'
 const root=fileURLToPath(new URL('../',import.meta.url))
 const folder=mkdtempSync(join(tmpdir(),'pig-achievement-preview-'))
@@ -25,17 +27,22 @@ function demo(mode) {
     if(mode==='all') for(const key of ['king','devil']) state.dex.forms[key]={firstAt:now,count:1}
     settleAchievements(state,now,{silent:true})
   }
+  seedExtensionPreview(state,mode)
+  settleAchievements(state,now,{silent:true})
   return state
 }
+installPreviewExtensions(folder)
 writeFileSync(join(folder,'state.json'),JSON.stringify(demo('sample')))
 const store=createStore(join(folder,'state.json'))
+store.ext=createExtRuntime(store,{gameVersion:'0.32.0'})
+await store.ext.ready
 const routes=[]
 registerRoutes({inject(deps,fn){fn({webServer:{register(route){routes.push(route);return ()=>{}}}})}},store)
 const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>小猪成就 · 可试玩初稿</title>
-<style>body{margin:0;background:#fbf7ef;font:16px system-ui;color:#514341}header{padding:32px;max-width:600px}h1{font-size:26px}p{line-height:1.8}button{border:1px solid #c7d8cc;background:#f1f7ed;border-radius:14px;padding:12px 18px;color:#514341;cursor:pointer;margin:8px 8px 8px 0}small{display:block;line-height:1.8;color:#827569}</style>
-<header><h1>每一枚徽章，都是一只小猪</h1><p>16 项成就初稿，覆盖照顾、学习、工作、旅行、收藏、晋升和成长。<br>右键小猪打开主菜单，进入「图鉴 → 成就」。</p>
+<style>body{margin:0;background:#fbf7ef;font:16px system-ui;color:#514341}header{padding:32px;max-width:600px}h1{font-size:26px}p{line-height:1.8}header button{border:1px solid #c7d8cc;background:#f1f7ed;border-radius:14px;padding:12px 18px;color:#514341;cursor:pointer;margin:8px 8px 8px 0}header small{display:block;line-height:1.8;color:#827569}</style>
+<header><h1>每一枚徽章，都是一只小猪</h1><p>28 项小猪成就，包含菜园、矿洞、扭蛋和盲盒。<br>右键小猪打开主菜单，进入「图鉴 → 成就」。</p>
 <button data-fixture="sample">查看示例进度</button><button data-fixture="fresh">从零试玩</button><button data-fixture="all">查看全部徽章</button>
-<small>这是隔离的演示存档；名字、门槛、图案和页面都还可以调整。<br>从零试玩后，可以喂食、摸摸或玩耍，观察成就解锁。示例数据不是你的真实游戏记录。</small></header>
+<small>这是隔离的演示存档；名字、门槛、图案和页面都还可以调整。<br>从零试玩后，进入菜园收获一块已成熟的作物，观察成就解锁。示例数据不是你的真实游戏记录。</small></header>
 <script>window.__ModuleLoader__={load(entry){window.entry=entry}}</script><script src="/client.js"></script>
 <script>window.entry.factory(()=>{}).apply({});document.querySelectorAll('[data-fixture]').forEach(button=>button.addEventListener('click',async()=>{await fetch('/fixture/'+button.dataset.fixture,{method:'POST'});location.reload()}))</script></html>`
 const server=http.createServer(async(req,res)=>{

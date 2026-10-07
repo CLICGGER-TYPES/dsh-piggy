@@ -20,7 +20,7 @@ function boot() {
   registerRoutes({ inject: (deps, fn) => { if (deps.includes('webServer')) fn({ webServer: { register: route => { routes[route.path] = route; return () => {} } } }) } }, store)
   return {
     store, routes, dir,
-    done: () => { store.dispose(); rmSync(dir, { recursive: true, force: true }) },
+    done: async () => { store.dispose(); await store.journal.flush(); rmSync(dir, { recursive: true, force: true }) },
   }
 }
 
@@ -50,7 +50,7 @@ test('GET /dsh-piggy/logs/export hands back the text the user will save', async 
     assert.match(result.text, /a line to find/)
     // 导出后立刻删掉日志文件：导出前已经 flush，内容不能丢。
     assert.equal(result.status, 200)
-  } finally { app.done() }
+  } finally { await app.done() }
 })
 
 test('POST /dsh-piggy/logs/client merges the browser half and refuses junk', async () => {
@@ -67,7 +67,7 @@ test('POST /dsh-piggy/logs/client merges the browser half and refuses junk', asy
     assert.equal(bad.status, 400)
     const exported = await call(app.routes['/dsh-piggy/logs/export'], 'GET')
     assert.match(exported.text, /ERROR client\s+uncaught: boom\s+line="3"/)
-  } finally { app.done() }
+  } finally { await app.done() }
 })
 
 test('every action leaves a line: what was asked, how long, and why it was refused', async () => {
@@ -82,7 +82,7 @@ test('every action leaves a line: what was asked, how long, and why it was refus
     const exported = await call(app.routes['/dsh-piggy/logs/export'], 'GET')
     assert.match(exported.text, /signIn ok\s+ms="\d+"/)
     assert.match(exported.text, /feed refused\s+ms="\d+" reason="no-item" item="apple"/)
-  } finally { app.done() }
+  } finally { await app.done() }
 })
 
 test('the export route is GET-only and tolerates a host without a journal', async () => {
@@ -96,5 +96,5 @@ test('the export route is GET-only and tolerates a host without a journal', asyn
     const result = await call(routes['/dsh-piggy/logs/export'], 'GET')
     assert.equal(result.status, 200)
     assert.match(result.text, /没有开日志/)
-  } finally { app.done() }
+  } finally { await app.done() }
 })

@@ -66,7 +66,7 @@ v0.27.3 起窗口摆放、可点区域、桌面样式等都放进了游戏包，
 
 详细玩法、体型、美术图标设置和命令见[玩法指南](docs/guides/gameplay.md)。换肤可直接阅读[玩家换肤教程](docs/guides/skins.md)，制作皮肤从[自定义皮肤制作教程](docs/guides/creating-skins.md)开始。
 
-图鉴里的「成就」初稿收录十六枚小猪徽章，记录日常照顾、学习、工作、旅行、收藏与晋升。规则及试玩方法见[成就草案](docs/design/achievements.md)。
+图鉴里的「成就」记录日常照顾、学习、工作、旅行、收藏与晋升；基础十六枚小猪徽章之外，菜园、矿洞、扭蛋和盲盒各有三枚扩展徽章，安装并更新对应扩展后可积累。规则及试玩方法见[成就设计](docs/design/achievements.md)和[扩展成就](docs/design/extension-achievements.md)。
 
 ## 文档
 
