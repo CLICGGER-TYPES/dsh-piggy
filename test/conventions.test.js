@@ -51,6 +51,9 @@ test('code identifiers, comments and logs carry no emoji', () => {
     ...jsFiles(new URL('core/', coreRoot)),
     ...jsFiles(new URL('store/', packageRoot)),
     ...jsFiles(new URL('src/client/', packageRoot)),
+    ...jsFiles(new URL('apps/desktop/lib/', packageRoot)),
+    new URL('apps/desktop/main.js', packageRoot),
+    // extensions/ 不查：注释里用 ★ 表示星级（盲盒 3★～6★），是领域写法；改它还得重新发扩展
   ]
   const offenders = []
   for (const url of files) {
@@ -76,10 +79,19 @@ test('source files stay under the 400-line ceiling', () => {
     ...jsFiles(new URL('core/', coreRoot)),
     ...jsFiles(new URL('store/', packageRoot)),
     ...jsFiles(new URL('src/client/', packageRoot)),
+    // 桌面外壳的模块和在线扩展同样受限；apps/desktop/main.js 暂时豁免（见 CONVENTIONS「豁免」）
+    ...jsFiles(new URL('apps/desktop/lib/', packageRoot)),
+    ...jsFiles(new URL('extensions/', packageRoot)),
   ]
   const lineCount = url => read(url).replace(/\n$/, '').split('\n').length
   const offenders = files.filter(url => lineCount(url) > 400).map(url => `${shortName(url)}:${lineCount(url)}`)
   assert.deepEqual(offenders, [], 'split the file instead of growing past 400 lines (CONVENTIONS §分层)')
+})
+
+test('外壳模块和在线扩展的规则文件开头都有 // @ts-check', () => {
+  const files = [...jsFiles(new URL('apps/desktop/lib/', packageRoot)), new URL('apps/desktop/main.js', packageRoot),
+    ...jsFiles(new URL('extensions/', packageRoot)).filter(url => url.pathname.endsWith('server.js'))]
+  assert.deepEqual(files.filter(url => !read(url).startsWith('// @ts-check')).map(shortName), [])
 })
 
 test('package.json ships every module the runtime imports', () => {
