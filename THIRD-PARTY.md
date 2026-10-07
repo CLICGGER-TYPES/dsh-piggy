@@ -1,7 +1,7 @@
 # 第三方致谢与许可
 
-本插件（`dsh-piggy`）的代码与美术以 MIT 发布。下面列出它参考、依赖或提及的第三方内容。
-**没有复制任何第三方代码、文档或游戏原版素材** —— 用到的数值与名称属于事实性数据。
+本插件（`dsh-piggy`）的代码与美术以 MIT 发布；**小猪立绘例外，见下面「美术」**（改自 Noto Emoji，Apache 2.0）。
+下面列出它参考、依赖或提及的第三方内容。没有复制任何第三方代码、文档或游戏原版素材——用到的数值与名称属于事实性数据。
 
 ## 设计参考资料
 
@@ -20,9 +20,13 @@
 
 ## 美术
 
-- `assets/piglet.svg`、`assets/elder.svg`：**原创矢量重绘**，由项目作者提供。
-  造型取自通用的 🐖 emoji 形象（侧视、卷尾、圆耳），路径、配色与描边为本项目自绘，
-  不是任何 emoji 素材集或游戏原版素材的路径拷贝。
+- **小猪立绘改自 [Noto Emoji](https://github.com/googlefonts/noto-emoji) 的 🐖**（`2D/svg/emoji_u1f416.svg`，
+  © Google，**Apache License 2.0**）：项目作者以 Noto 🐖 的截图为参考重绘了 `assets/piglet.svg`；
+  `assets/elder.svg`（老年猪）、各张皮肤 / 职业 / 形态立绘（`assets/skin-*`、`career-*`、`pig-*`）和成就徽章（`assets/badge-pig-*`）
+  都在 `piglet.svg` 的基础上改画，同属衍生作品。这些文件按 Apache 2.0 发布（可以自由使用、修改、再分发，
+  需保留本说明和许可全文），许可全文和原始声明见 [`LICENSE-noto-emoji.txt`](LICENSE-noto-emoji.txt)。
+  改动：重新描成 64×64 视框的平涂路径，调整配色，加了表情、服饰、道具等。
+- 以后新画的猪图只要是在 `piglet.svg` 上改的，同样属于这一条；完全另起炉灶、不参照任何素材的才算 MIT 原创。
 - 界面里的其它图形一律用系统 emoji 字体渲染，不附带图形文件。
 
 ## 商标

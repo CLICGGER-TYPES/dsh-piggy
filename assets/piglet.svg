@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="小猪">
   <title>小猪</title>
   <!-- 蜜桃色的小猪。平涂、无描边，耳朵和尾巴用洋红/浅橙的圆头线条。 -->
+  <!-- 参照 Noto Emoji 的 🐖（emoji_u1f416，© Google，Apache License 2.0）截图重绘，见 THIRD-PARTY.md 与 LICENSE-noto-emoji.txt。 -->
   <!-- 内容坐标取自参考图，缩放到 64 视框并居中（原图 301×279 → 60×55.6）。 -->
   <g transform="translate(-7.17 -0.78) scale(0.1993)" stroke-linecap="round" stroke-linejoin="round">
     <!-- 远侧后腿 -->
