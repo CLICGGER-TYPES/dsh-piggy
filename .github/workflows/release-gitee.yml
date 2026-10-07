@@ -1,10 +1,12 @@
-# Gitee 发版：和 release.yml（GitHub）各管各的。推 v* 标签时两个都会跑；也可以手动对某个版本只发 Gitee。
+# Gitee 渠道的构建：推 v* 标签时和 release.yml（GitHub）各跑各的。**只构建，不往 Gitee 推任何东西。**
+#   - 维护者要求（2026-10-07）：代码、标签、发行版附件一律从维护者本机推 Gitee——GitHub 机房连 Gitee 经常
+#     卡死或被重置，CI 的清理步骤还曾先删了旧安装包，Gitee 一段时间没有可下载的安装包。
+#   - 这里产出的 artifact：gitee-game（游戏包 + 发布说明）、gitee-dist-<系统>（安装包）。
+#     本机执行 `GITEE_TOKEN=… bash scripts/gitee-publish.sh vX.Y.Z` 下载它们并推到 Gitee（见 docs/HANDOFF.md 9.4）。
 #   - 构建前切到 gitee 渠道（scripts/set-channel.mjs gitee）：游戏包和桌面外壳里的检查更新、游戏包下载、
 #     在线扩展全部指向 gitee.com，构建后扫描，发现 GitHub 地址就失败（第三方库 node_modules 除外）。
-#   - Gitee 发行版附件单个 ≤100MB、单仓库附件总量 ≤1GB：安装包用 electron-builder.gitee.cjs（最大压缩、
-#     只留中英文语言包）+ tools/slim-emoji-font.py 瘦 emoji 字体；mac 的 dmg 再用 hdiutil 转成 lzma（ULMO）；
-#     超过 100MiB 的不上传；发完删掉旧版本的安装包附件。
-#   - 需要仓库密钥 GITEE_TOKEN（Gitee 私人令牌，账号 clicgger）。
+#   - Gitee 发行版附件单个 ≤100MiB：安装包用 electron-builder.gitee.cjs（最大压缩、只留中英文语言包）
+#     + tools/slim-emoji-font.py 瘦 emoji 字体；mac 的 dmg 再用 hdiutil 转成 lzma（ULMO）；超过的不放进上传清单。
 name: release-gitee
 
 on:
@@ -28,8 +30,6 @@ env:
 jobs:
   game:
     runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.release.outputs.id }}
     steps:
       - uses: actions/checkout@v5
         with: { fetch-depth: 0 }
@@ -37,14 +37,6 @@ jobs:
         with: { node-version: 22 }
       - name: 版本号要和标签一致
         run: test "v$(node -p "require('./package.json').version")" = "$TAG"
-      - name: 代码和标签推到 Gitee
-        env: { GITEE_TOKEN: '${{ secrets.GITEE_TOKEN }}' }
-        run: |
-          remote="https://clicgger:${GITEE_TOKEN}@gitee.com/${GITEE_REPO}.git"
-          git push "$remote" "refs/remotes/origin/main:refs/heads/main" --force
-          git tag -f "$TAG" HEAD
-          git push "$remote" "refs/tags/$TAG" --force
-          git push "$remote" --tags || true
       - name: 测试（默认渠道，和 GitHub 发版同一套）
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
@@ -56,12 +48,10 @@ jobs:
           npm run build
           node apps/desktop/scripts/release-game.mjs dist-game
           node scripts/scan-channel.mjs gitee client.js channel.js store dist-game
-      - name: 建 Gitee 发行版并上传游戏包
-        id: release
-        env: { GITEE_TOKEN: '${{ secrets.GITEE_TOKEN }}' }
+      - name: 写 Gitee 发布说明
         run: |
-          node scripts/release-notes.mjs "$TAG" > notes.md
-          cat >> notes.md <<'NOTES'
+          node scripts/release-notes.mjs "$TAG" > dist-game/notes.md
+          cat >> dist-game/notes.md <<'NOTES'
 
           ### 下载（Gitee 版：检查更新、游戏包、在线扩展都走 Gitee）
           - **Windows**：`dsh-piggy-setup-*.exe`（安装版）或 `dsh-piggy-portable-*.exe`（免安装）
@@ -69,9 +59,12 @@ jobs:
           - **macOS**：`dsh-piggy-*-arm64.dmg`（M 系列）/ `-x64.dmg`（Intel），没签名，第一次要在访达里右键 → 打开
           - 已装 Gitee 版桌面程序的：主屏「🔄 更新」直接从 Gitee 升级
           NOTES
-          id=$(node scripts/gitee-release.mjs ensure "$TAG" notes.md)
-          echo "id=$id" >> "$GITHUB_OUTPUT"
-          node scripts/gitee-release.mjs upload "$id" dist-game/*
+      - name: 保存游戏包和发布说明（本机推 Gitee 时用）
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitee-game
+          path: dist-game/*
+          retention-days: 30
 
   desktop:
     needs: game
@@ -132,9 +125,7 @@ jobs:
           done
           printf '%s\n' "${keep[@]}" > upload-list.txt
           cat upload-list.txt
-      # 2026-10-06：GitHub 机房连 Gitee 传大包会 30 分钟零字节然后失败（连着两次）。
-      # 先把构建产物存成 artifact：Gitee 传不上去时，还能从网速好的机器补传。
-      - name: 保存构建产物（Gitee 传不上去时用来补传）
+      - name: 保存构建产物（本机推 Gitee 时用）
         uses: actions/upload-artifact@v4
         with:
           name: gitee-dist-${{ matrix.os }}
@@ -145,24 +136,4 @@ jobs:
             apps/desktop/dist/*.dmg
             apps/desktop/dist/latest*.yml
           if-no-files-found: warn
-          retention-days: 14
-      - name: 上传到 Gitee 发行版
-        shell: bash
-        env: { GITEE_TOKEN: '${{ secrets.GITEE_TOKEN }}' }
-        run: |
-          files=()
-          while IFS= read -r line; do [ -n "$line" ] && files+=("$line"); done < upload-list.txt
-          test "${#files[@]}" -gt 0
-          node scripts/gitee-release.mjs upload "${{ needs.game.outputs.release_id }}" "${files[@]}"
-
-  cleanup:
-    needs: [game, desktop]
-    if: always() && needs.game.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with: { node-version: 22 }
-      - name: 删掉旧版本的安装包附件（Gitee 单仓库附件总量 1GB）
-        env: { GITEE_TOKEN: '${{ secrets.GITEE_TOKEN }}' }
-        run: node scripts/gitee-release.mjs prune "$TAG"
+          retention-days: 30

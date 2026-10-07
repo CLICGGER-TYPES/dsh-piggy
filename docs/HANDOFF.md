@@ -13,7 +13,7 @@
 - **每次改完必跑**：`npm run build && npm test && npm run typecheck`（700 多个测试，全绿才算完）。
 - **「怎么加 X」先看 `docs/guides/`**：[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
-- **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 自动发 GitHub 和 Gitee 两套 → npm 由人手动发。详见第 9 节。
+- **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 发 GitHub、并构建 Gitee 渠道的包 → **本机**跑 `scripts/gitee-publish.sh` 推 Gitee → npm 由人手动发。详见第 9 节。
 - **最重要的三条规矩**：数值/玩法设计先问用户再做；提交信息用中文、不加 AI 署名；改了界面一定要在真实浏览器 / 桌面窗口里看一眼（测试通过 ≠ 显示正确）。
 
 ---
@@ -196,7 +196,8 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 2. `npm run build && npm test && npm run typecheck` → 提交（如 `release: v0.33.1 — 一句话`）→ 推 main。
 3. 打标签推送：`git tag v0.33.1 && git push origin v0.33.1`。两条工作流自动跑：
    - `.github/workflows/release.yml` → **GitHub Release**：游戏包 + Windows 安装 / 便携版 + Linux AppImage + macOS dmg + 更新清单；
-   - `.github/workflows/release-gitee.yml` → **Gitee 发行版**（见 9.4）。
+   - `.github/workflows/release-gitee.yml` → **只构建** Gitee 渠道的游戏包和安装包，存成 artifact，不往 Gitee 推。
+   然后在**本机**：`GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`（推代码和标签、建发行版、传附件、核对、删旧安装包，见 9.4）。
 4. 等两边都绿，核对两边的附件齐全（GitHub `gh release view vX`；Gitee 看发行版页面）。
 5. **npm 手动发**（CI 不发）：
    ```bash
@@ -210,7 +211,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 1. 改扩展、升 `manifest.json` 版本。
 2. GitHub：`node scripts/extension-entry.mjs <key>` 生成目录条目；`gh release create ext-<key>-<版本> extensions/<key>/{manifest.json,server.js,client.js} --prerelease --latest=false`（**一定要预发布 + 不设 latest**，否则会抢掉游戏正式版的「最新」）；更新 `extensions/registry.json`。
 3. Gitee：`node scripts/extension-entry.mjs <key> --host gitee` 更新 `extensions/registry-gitee.json`；`GITEE_TOKEN=… node scripts/gitee-release.mjs ensure ext-<key>-<版本>` 拿到 id，再 `upload <id> extensions/<key>/manifest.json extensions/<key>/server.js extensions/<key>/client.js`。
-4. 提交两个 registry 文件、推 main（GitHub 和 Gitee 的 main 都要有；Gitee 的 main 由发版工作流同步，也可以 `git push gitee main`）。
+4. 提交两个 registry 文件、推 main（GitHub 和 Gitee 的 main 都要有：本机 `git push gitee main`）。
 5. 新附件刚传上去约 1 分钟后才能下载；用全新存档实际在线装一次验证。
 
 ### 9.4 两个发布渠道（GitHub / Gitee）
@@ -219,7 +220,11 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 - 地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 复制成 `channel.js` 和 `apps/desktop/lib/channel.js`。**仓库里提交的永远是 github**（`test/channel.test.js` 守着）。
 - Gitee 工作流先用默认渠道跑测试，再切 gitee 打包，构建后用 `scripts/scan-channel.mjs` 扫描，发现 GitHub 地址就失败。
 - Gitee 限制：发行版附件**单个 ≤ 100MiB（104,857,600 字节，实测）**、单仓库附件**总量 ≤ 1GB**。所以 Gitee 安装包另有瘦身：`apps/desktop/electron-builder.gitee.cjs`（最大压缩、只留中英文语言包）、`tools/slim-emoji-font.py`（emoji 字体只留用到的）、macOS dmg 用 `hdiutil` 转 lzma（ULMO）。当前大小：Windows 99.5MiB（**只剩约 0.5MiB 余量**）、Linux 94.3、mac 85.2 / 93.2。超限的文件 CI 不上传并给警告。发版后自动删除旧版本的安装包附件（游戏包保留）。
-- GitHub 机房连 Gitee 偶尔 SSL 超时：失败了到 Actions 手动运行 `release-gitee`（workflow_dispatch，填 tag），或在本机用 `scripts/gitee-release.mjs` 补传。补传安装包时注意 `latest.yml` 里的 sha512 / size 必须和实际文件一致。
+- **Gitee 一律从维护者本机推**（用户 2026-10-07 定）：GitHub Actions 不再碰 Gitee（机房连 Gitee 经常卡死或被重置，旧流程的清理步骤还在上传失败时删了旧安装包，Gitee 一段时间没有安装包可下）。
+  流程：CI 构建出 artifact（`gitee-game`、`gitee-dist-<系统>`）→ 本机 `GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`：
+  等构建成功、下载 artifact、核对 `latest*.yml` 的 sha512 和安装包一致 → `git push gitee main` 和标签 → 建发行版、传游戏包和安装包、最后传更新清单 →
+  核对 Gitee 上每个附件的名字和大小 → **全对了才**删旧版本的安装包。某次构建上传那步被取消但产物还在时，用 `--run <run id>` 指定。
+  令牌由维护者在命令里给，不存文件、不放 GitHub Secrets 之外的地方。
 - Gitee 的原始文件地址（raw）会 302 跳到 `raw.giteeusercontent.com`，附件会跳到 `foruda.gitee.com`，fetch 默认跟随即可。
 
 ---
@@ -230,7 +235,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 |---|---|
 | GitHub 仓库 | `CLICGGER-TYPES/dsh-piggy`（用户账号，本机 `gh` 已登录） |
 | Gitee 仓库 | `clicgger/dsh-piggy`（公开） |
-| `GITEE_TOKEN` | GitHub 仓库 Actions 密钥（Gitee 私人令牌）。**不要写进仓库、文档或日志** |
+| `GITEE_TOKEN` | Gitee 私人令牌，维护者本机发 Gitee 时在命令里给（GitHub Secrets 里那份已不再被工作流使用，可以删）。**不要写进仓库、文档或日志** |
 | npm | 包 `dsh-piggy`、`dsh-plugin-piggy`，由用户在本机 `npm login` 后手动发布 |
 | 社区目录 | [dsh-plugin.org](https://dsh-plugin.org) 收录 Issue、[awesome-dsh-plugin](https://github.com/bruc3van/awesome-dsh-plugin) 自荐 PR（第三方维护，不是官方市场） |
 | 音乐素材 | 宣传片 BGM 用 Mixkit 免费曲库（Mixkit Stock Music Free License） |
