@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 /** 最近一次主进程报来的窗口与工作区（同步读，页面随时能用）。 */
 let geometry = null
+/** 这个页面在哪个窗口里：猪窗口（pet）还是面板窗口（panel，外壳 0.6.0 起）。 */
+const role = (typeof process === 'undefined' ? [] : process.argv).includes('--piggy-role=panel') ? 'panel' : 'pet'
 
 contextBridge.exposeInMainWorld('piggyShell', {
   /** 内容（猪 + 面板 + 气泡）的外接框：主进程据此把窗口调成那么大，并抠出可点区域。 */
@@ -61,4 +63,23 @@ contextBridge.exposeInMainWorld('piggyShell', {
   },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
+  /** 这个页面在哪个窗口里：'pet' 或 'panel'。 */
+  role,
+  /**
+   * 面板窗口（外壳 0.6.0 起）：面板不再和猪挤在一个窗口里，见 main.js 的 panelWin。
+   * 猪页面用 toggle 开关；面板页面报尺寸、收起、把对猪的反应转过去。
+   */
+  panel: {
+    toggle: (open, pig) => ipcRenderer.send('piggy:panel:toggle', { open: open === true, pig: pig ?? null }),
+    size: (width, height) => ipcRenderer.send('piggy:panel:size', { width: Number(width) || 0, height: Number(height) || 0 }),
+    close: () => ipcRenderer.send('piggy:panel:close'),
+    fx: (name, args) => ipcRenderer.send('piggy:pig-fx', { name: String(name), args: Array.isArray(args) ? args : [] }),
+    /** 主进程的面板消息：{type:'open', vertical, maxHeight} / {type:'closed'} / {type:'blur', toPet}。 */
+    on: callback => { ipcRenderer.on('piggy:panel', (event, message) => callback(message)) },
+    onFx: callback => { ipcRenderer.on('piggy:pig-fx', (event, fx) => callback(fx)) },
+  },
+  /** 拖动中窗口被夹在屏幕里时，猪要在窗口里滑多少（外壳 0.6.0 起，见 main.js dragTick）。 */
+  onDragSlide: callback => { ipcRenderer.on('piggy:drag-slide', (event, slide) => callback(slide)) },
+  /** 存档变了（两个窗口任一个做了动作）：马上刷新，别等轮询。 */
+  onStateChanged: callback => { ipcRenderer.on('piggy:state-changed', () => callback()) },
 })

@@ -9,10 +9,12 @@
 import { sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
+import { installPanel, startPanel } from './panel-window.js'
 
 /** 页面 ↔ 桌面程序的约定版本：以后桌面程序加新的基础动作时加一。
- * v3：外壳支持 piggyShell.logs.save（导出日志时弹系统「另存为」）。 */
-export const DESKTOP_VERSION = 3
+ * v3：外壳支持 piggyShell.logs.save（导出日志时弹系统「另存为」）。
+ * v4：外壳 0.6.0 起猪和面板各一个窗口（piggyShell.role / panel / onStateChanged）。 */
+export const DESKTOP_VERSION = 4
 
 const FONT_STACK = 'Nunito,"Noto Sans SC",-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif'
 /** 桌面版专用样式：内置 emoji 字体栈；投影不越出可见区域；面板底栏限高。 */
@@ -25,6 +27,8 @@ const DESKTOP_CSS = [
   '[data-dsh-pig] .dp-panel-footer{max-height:270px!important}',
   // 收起时拖猪，窗口缩到只包住猪；头顶的签到/礼包小气泡会被窗口边裁成半块白色，拖的时候先藏起来。
   '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-daily,[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-poke-hint{visibility:hidden!important}',
+  // 猪窗口（外壳 0.6.0 起）：面板和名牌在另一个窗口里，这里永远只有猪。
+  '[data-piggy-role="pet"] .dp-card,[data-piggy-role="pet"] .dp-hud{display:none!important}',
 ].join('\n')
 
 /** 窗口差这么多以内就不改。取 2 而不是 0/1：Windows 分数缩放下读回来常差 1px，Electron 源码自己也说
@@ -32,6 +36,10 @@ const DESKTOP_CSS = [
 const TOLERANCE = 2
 
 let bridge = /** @type {any} */ (null)
+/** 这个页面在哪个窗口里：老外壳单窗口时是 null。 */
+let role = /** @type {'pet'|'panel'|null} */ (null)
+/** 拖动中窗口被夹在屏幕里时，猪在窗口里滑了多少（主进程推来的，见 main.js dragTick）。 */
+let dragSlide = { x: 0, y: 0 }
 let measure = /** @type {any} */ (null)
 let placement = /** @type {any} */ (null)
 let lastKey = null
@@ -219,6 +227,17 @@ function schedule() {
 /** loader.js 在挂载游戏之前调用：挂上 __dshPiggyShell，客户端挂载时就按桌面版走。 */
 export function install(shell) {
   bridge = shell
+  const split = shell.panel !== undefined && typeof shell.panel.toggle === 'function'
+  role = split ? (shell.role === 'panel' ? 'panel' : 'pet') : null
+  if (role === 'panel') {
+    const style = document.createElement('style')
+    style.setAttribute('data-piggy-desktop-style', '')
+    style.textContent = DESKTOP_CSS
+    document.head.appendChild(style)
+    installPanel(shell)
+    return
+  }
+  if (role === 'pet') document.documentElement.setAttribute('data-piggy-role', 'pet')
   // 外壳能力探测（2026-10-06）：几何逻辑在游戏包里、执行在外壳里，两边版本错配时
   // 以前完全看不出来（minShell 一直是 0.1.0，data-piggy-desktop 也没人读）。
   // 缺关键动作就明确说出来，并且不去做兑现不了的摆放。
@@ -228,14 +247,38 @@ export function install(shell) {
     ;/** @type {any} */ (window).__dshPiggyShellOutdated = true
   }
   placement = createPlacement({ platform: shell.platform || '' })
-  measure = createMeasure({ platform: shell.platform || '', geometry, anchor: () => placement.homeTopLeft() })
+  measure = createMeasure({ platform: shell.platform || '', geometry, anchor: () => placement.homeTopLeft(), split: role === 'pet' })
   const style = document.createElement('style')
   style.setAttribute('data-piggy-desktop-style', '')
   style.textContent = DESKTOP_CSS
   document.head.appendChild(style)
   if (typeof shell.onGeometry === 'function') shell.onGeometry(function () { schedule() })
+  if (role === 'pet' && typeof shell.onDragSlide === 'function') {
+    shell.onDragSlide(function (slide) {
+      // 松手之后才到的那条不要（松手时已经从同步几何里拿到最终值了）
+      if (!dragging()) return
+      dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 }
+      const h = host()
+      if (h !== null) h.style.translate = dragSlide.x === 0 && dragSlide.y === 0 ? '' : dragSlide.x + 'px ' + dragSlide.y + 'px'
+    })
+  }
   if (typeof shell.askGeometry === 'function') shell.askGeometry()
   ;/** @type {any} */ (window).__dshPiggyShell = {
+    // 外壳 0.6.0 起：面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
+    ...(role === 'pet' ? {
+      role: 'pet',
+      split: true,
+      onStateChanged: shell.onStateChanged,
+      panel: {
+        toggle: function (open) {
+          const info = readGeometry()
+          const pig = info && info.window ? pigInWindow(info.window) : null
+          shell.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height })
+        },
+        on: shell.panel.on,
+        onFx: shell.panel.onFx,
+      },
+    } : {}),
     room,
     refreshRoom: function () { closedRoom = null },
     beginDrag: function () {
@@ -254,7 +297,10 @@ export function install(shell) {
       // 告诉主进程猪在窗口里哪儿：刚缩完窗口页面多半还没重排，按家和窗口算，不量旧布局。
       const info = readGeometry()
       const pig = info && info.window ? pigInWindow(info.window) : null
-      shell.beginDrag(pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height })
+      dragSlide = { x: 0, y: 0 }
+      // slide：这个页面会接「猪在窗口里滑」（窗口被夹在屏幕里时），主进程才夹窗口
+      shell.beginDrag(pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height,
+        slide: role === 'pet' && typeof shell.onDragSlide === 'function' })
     },
     dragHeartbeat: function () { if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat() },
     endDrag: function () {
@@ -263,7 +309,10 @@ export function install(shell) {
       const info = readGeometry()
       if (info && info.window) {
         // 猪的新家 = 它此刻真实画在哪（窗口 + 猪在窗口里的框）。拖动是唯一由用户决定位置的事。
-        const pig = pigInWindow(info.window)
+        if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) dragSlide = info.dragSlide
+        const inWindow = pigInWindow(info.window)
+        // 猪真正画在哪 = 窗口 + 猪在窗口里的框 + 拖到屏幕边时在窗口里滑的那一截
+        const pig = inWindow === null ? null : { ...inWindow, x: inWindow.x + dragSlide.x, y: inWindow.y + dragSlide.y }
         if (pig !== null) {
           placement.rehome(info.window, pig, info.workAreas ?? [info.workArea])
           // 这里**不再**重挑收起朝向。
@@ -275,6 +324,10 @@ export function install(shell) {
           // 朝向改由「面板真正打开时」决定（sides()），那时窗口本来就在变；收起态保持稳定。
         }
       }
+      // 滑动交还给常规摆放：同一轮里去掉 translate、按新家摆（贴边时由钉边偏移接手），中间不会画出一帧
+      dragSlide = { x: 0, y: 0 }
+      const h = host()
+      if (h !== null) h.style.translate = ''
       lastKey = null
       tick()
     },
@@ -307,6 +360,7 @@ export function install(shell) {
 
 /** 游戏挂载之后调用：只在内容真的变了时量（DOM 变化、窗口改大小、松手），另有 1 秒兜底。 */
 export function start() {
+  if (role === 'panel') { startPanel(); return }
   const h = host()
   if (h !== null && typeof MutationObserver === 'function') {
     new MutationObserver(schedule).observe(h, { subtree: true, childList: true, attributes: true, characterData: true })

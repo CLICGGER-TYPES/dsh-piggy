@@ -89,7 +89,7 @@
     "electron@44.5.1": true
   },
   "piggy": {
-    "minShell": "0.1.0"
+    "minShell": "0.6.0"
   },
   "dependencies": {
     "electron-updater": "^6.7.3"

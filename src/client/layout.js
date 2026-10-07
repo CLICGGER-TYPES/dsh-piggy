@@ -6,7 +6,8 @@
  * @module dsh-piggy/client/layout
  */
 import { DEV_TAB, PANEL_GAP, PANEL_MARGIN, PANEL_MAX_HEIGHT, PANEL_MIN_HEIGHT, PANEL_WIDTH, PIG_PADDING_X, SCENE_RESERVE, TABS } from './constants.js'
-import { desktopShell } from './desktop-shell.js'
+import { desktopRole, desktopShell } from './desktop-shell.js'
+import { fitPanelWindow } from './desktop/panel-window.js'
 import { enabledTabs } from './extensions.js'
 import { button, el } from './dom.js'
 
@@ -37,6 +38,10 @@ export function createLayout(ctx) {
 
       function fitPanel() {
         if (!ctx.isOpen) return
+        // 外壳 0.6.0 起面板有自己的窗口：窗口贴在猪哪边由主进程定，这里只按给的高度排版。
+        if (desktopRole() === 'panel') { fitPanelWindow(ctx); return }
+        // 猪窗口里没有面板：isOpen 只表示另一个窗口开着，这里什么都不排（排了会把气泡区挪到另一边、撑大猪窗口）
+        if (desktopRole() === 'pet') return
         var shell = desktopShell()
         if (shell !== null) {
           if (ctx.host.getAttribute('data-panel-side-locked') === 'true') return

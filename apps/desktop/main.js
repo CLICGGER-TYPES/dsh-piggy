@@ -118,6 +118,14 @@ let versions = null
 /** @type {ReturnType<typeof createShellUpdates> | null} */
 let shellUpdates = null
 let win = null
+/**
+ * 面板窗口（外壳 0.6.0 起）：面板不再和猪挤在同一个窗口里。
+ * 以前开面板、冒气泡、拖动都要改猪那个窗口的大小，再靠计算把猪补回原位，差一拍猪就跳
+ * （2026-10-06～07 修了四轮）。网上的桌宠（Clawd、Shimeji、eSheep）都是猪一个固定大小的
+ * 小窗口、菜单另开窗口：开面板时猪的窗口一动不动，拖动只挪窗口。见 docs/tasks/I-round.md。
+ * 只有新游戏包会叫它（piggyShell.panel.toggle）；老游戏包照旧单窗口。
+ */
+let panelWin = null
 /** 正在退出/重启：关掉窗口前先置位，之后到达的页面消息一律不处理。 */
 let quitting = false
 /**
@@ -126,7 +134,17 @@ let quitting = false
  * 主进程直接弹了错误框（用户 2026-10-05 实测）。所以先查 isDestroyed。
  */
 function fromPage(event) {
+  return fromPet(event) || (!quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents)
+}
+/** 只有猪窗口能挪猪、改形状（面板窗口的页面也装了同一套游戏包，不许它动猪窗口）。 */
+function fromPet(event) {
   return !quitting && win !== null && !win.isDestroyed() && event.sender === win.webContents
+}
+/** 发给两个窗口的页面（下载进度、存档变了这类两边都要知道的事）。 */
+function toPages(channel, ...args) {
+  for (const target of [win, panelWin]) {
+    if (target !== null && !target.isDestroyed()) target.webContents.send(channel, ...args)
+  }
 }
 let tray = null
 
@@ -137,6 +155,9 @@ function registerProtocol(gameDir) {
     if (path.startsWith('/dsh-piggy/')) {
       const body = request.method === 'POST' ? await request.text() : undefined
       const out = await host.handle(request.method, path + url.search, body)
+      // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
+      // 不然面板里喂完食，猪要过几秒才有反应。
+      if (request.method === 'POST') announceStateChanged()
       return new Response(out.body, { status: out.status, headers: out.headers })
     }
     if (path === '/client.js') return serveFile(gameDir, 'client.js')
@@ -205,6 +226,7 @@ function geometryOf(bounds, seq) {
     // 把这些发给游戏包，日志里才能看出「是哪块屏、什么缩放」。
     displays: displays.map(display => ({ id: display.id, label: display.label,
       bounds: display.bounds, workArea: display.workArea, scaleFactor: display.scaleFactor, internal: display.internal })),
+    dragSlide: lastDragSlide,
     seq,
   }
 }
@@ -222,6 +244,7 @@ function applyBounds(next, why) {
   if (Math.abs(delta.x) <= tolerance && Math.abs(delta.y) <= tolerance
     && Math.abs(delta.width) <= tolerance && Math.abs(delta.height) <= tolerance) return null
   win.setBounds(next)
+  followPig(delta)
   // 拖动时每秒要挪几十次：别每次都写日志（Windows 上同步写盘会卡住主进程）。
   if (why !== 'drag' && why !== 'move') log('bounds', why, JSON.stringify(next))
   scheduleWindowStateSave()
@@ -292,6 +315,8 @@ function createWindow() {
   win.once('ready-to-show', () => { setTimeout(() => { savedPigScreen = null }, 3000) })
   win.once('ready-to-show', () => { log('ready-to-show'); win.showInactive(); log('shown', JSON.stringify(win.getBounds()), win.isVisible()) })
   win.webContents.on('did-finish-load', () => log('page loaded'))
+  // 面板开着时焦点离开猪窗口、也没进面板：当作点到别处（见 panelFocusLeft）
+  win.on('blur', () => panelFocusLeft())
   win.webContents.on('render-process-gone', (e, d) => { stopDrag(); log('renderer gone', JSON.stringify(d)) })
   win.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('page:', message) })
   if (process.env.PIGGY_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' })
@@ -299,6 +324,8 @@ function createWindow() {
 }
 
 let lastShape = []
+/** 页面最近一次摆放时给的可点区域（拖动中猪在窗口里滑时要跟着挪，见 dragTick）。 */
+let placedShape = []
 /** Last renderer-reported local pig origin; always measured after pinPig. */
 let lastPigWindow = null
 let lastPigSize = { width: 56, height: 56 }
@@ -312,7 +339,7 @@ let lastContent = null
  * Position and resize the window in one setBounds call around that pig point.
  */
 ipcMain.on('piggy:content', (event, content) => {
-  if (!fromPage(event)) {
+  if (!fromPet(event)) {
     if (content?.immediate === true) event.returnValue = null
     return
   }
@@ -395,6 +422,8 @@ ipcMain.on('piggy:content', (event, content) => {
 
 /** Drag against a fixed cursor/window sample; only the pig is clamped. */
 let dragSession = null
+/** 最近一次拖动里猪在窗口里滑了多少：页面松手时同步读几何会带上它（异步推的那条可能晚到）。 */
+let lastDragSlide = { x: 0, y: 0 }
 let dragTimer = null
 /** 这块屏的刷新率；拿不到就按 60。 */
 function refreshRateAt(point) {
@@ -419,7 +448,25 @@ function dragTick() {
   // 按「猪」算，不按起始窗口算：拖动中窗口大小可能变（冒气泡、面板换页），
   // 用起始窗口的大小去 setBounds 会把窗口来回改大改小，猪就一抽一抽的。
   const pig = dragSession.pig ?? { ...(lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }), ...lastPigSize }
-  applyBounds(dragPigBounds(win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas), 'drag')
+  const wanted = dragPigBounds(win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas)
+  if (!dragSession.slide) { applyBounds(wanted, 'drag'); return }
+  // 窗口不出屏幕，猪在窗口里滑过去（外壳 0.6.0 起，新游戏包要求时）：
+  // GNOME 等窗口管理器不让程序把窗口摆到屏幕外，猪窗口四周又有透明留白（气泡区），
+  // 拖到屏幕边上时窗口被卡住、猪就停在离边一大截的地方，松手才瞬移过去
+  // （2026-10-07 虚拟机真拖录像逐帧看到的）。现在窗口夹在工作区里，超出去的那一截
+  // 告诉页面，让它把猪在窗口里挪过去——猪一路跟着鼠标走到边上。
+  const center = { x: Math.round(wanted.x + pig.x + pig.width / 2), y: Math.round(wanted.y + pig.y + pig.height / 2) }
+  const held = clampBounds(wanted, screen.getDisplayNearestPoint(center).workArea)
+  const slide = { x: wanted.x - held.x, y: wanted.y - held.y }
+  applyBounds(held, 'drag')
+  if (slide.x !== dragSession.lastSlide.x || slide.y !== dragSession.lastSlide.y) {
+    dragSession.lastSlide = slide
+    lastDragSlide = slide
+    win.webContents.send('piggy:drag-slide', slide)
+    // Linux 的窗口形状不只管点击、也裁画面：猪滑出原来那块形状就被裁没了（录像里拖到边上猪消失）。
+    // 形状跟着滑同样多。
+    applyShape(placedShape.map(r => ({ ...r, x: Math.max(0, r.x + slide.x), y: Math.max(0, r.y + slide.y) })))
+  }
 }
 function stopDrag() {
   if (dragTimer !== null) clearInterval(dragTimer)
@@ -430,12 +477,12 @@ function stopDrag() {
 
 /** 页面要几何：给它推一次（订阅晚于 did-finish-load 时靠这个）。 */
 ipcMain.on('piggy:geometry:ask', (event) => {
-  if (!fromPage(event)) return
+  if (!fromPet(event)) return
   pushGeometry()
 })
 
 ipcMain.on('piggy:drag:start', (event, given) => {
-  if (!fromPage(event)) return
+  if (!fromPet(event)) return
   stopDrag()
   const bounds = win.getBounds()
   // 新游戏包会把猪在窗口里的位置和大小一起带过来（它自己量的，不再经过 piggy:content）。
@@ -447,7 +494,11 @@ ipcMain.on('piggy:drag:start', (event, given) => {
     pigScreen: { x: bounds.x + pig.x, y: bounds.y + pig.y },
     pig: pigFromPage,
     lastHeartbeat: Date.now(),
+    // 页面说它会接 piggy:drag-slide（猪在窗口里滑），主进程才把窗口夹在屏幕里
+    slide: given?.slide === true,
+    lastSlide: { x: 0, y: 0 },
   }
+  lastDragSlide = { x: 0, y: 0 }
   // 猪被拖走了：面板打开时记下的「原位」作废，否则下一次内容变化（比如点商店）
   // 会把窗口拽回原位 —— 用户看到的「瞬移」「拖着拖着卡在原地」。
   restingPigScreen = null
@@ -462,14 +513,14 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   dragStats = { hz, ticks: 0, last: Date.now(), maxGap: 0 }
 })
 ipcMain.on('piggy:drag:heartbeat', event => {
-  if (!fromPage(event) || dragSession === null) return
+  if (!fromPet(event) || dragSession === null) return
   dragSession.lastHeartbeat = Date.now()
   // 页面每次 pointermove 都会发心跳，跟着屏幕刷新走；顺手挪一次窗口，
   // 比只靠主进程定时器（Windows 上计时精度约 15.6ms）更顺。
   dragTick()
 })
 ipcMain.on('piggy:drag:end', event => {
-  if (!fromPage(event)) return
+  if (!fromPet(event)) return
   dragTick()
   if (dragSession !== null) {
     const bounds = win === null || win.isDestroyed() ? null : win.getBounds()
@@ -483,6 +534,7 @@ ipcMain.on('piggy:drag:end', event => {
   }
   stopDrag()
   restingPigScreen = null
+  reanchorPanel()
 })
 
 /**
@@ -490,7 +542,7 @@ ipcMain.on('piggy:drag:end', event => {
  * 同步返回改完后的几何，页面同一轮里就能接着用。以后这类调整只发游戏包，不用再发桌面程序。
  */
 ipcMain.on('piggy:place', (event, request) => {
-  if (!fromPage(event)) { event.returnValue = null; return }
+  if (!fromPet(event)) { event.returnValue = null; return }
   const b = request?.bounds
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
     applyBounds({ x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }, 'place')
@@ -505,38 +557,228 @@ ipcMain.on('piggy:place', (event, request) => {
     }
   }
   if (Array.isArray(request?.shape)) {
-    applyShape(request.shape.slice(0, 64).map(r => ({
+    placedShape = request.shape.slice(0, 64).map(r => ({
       x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
       width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
-    })))
+    }))
+    applyShape(placedShape)
   }
   event.returnValue = geometryOf(win.getBounds(), geometrySeq)
 })
 
 /** 页面判断鼠标在不在猪/面板上（只在 Windows 穿透模式下生效）。 */
 ipcMain.on('piggy:hit', (event, hit) => {
-  if (!fromPage(event)) return
+  if (!fromPet(event)) return
   setHit(hit === true)
 })
 
 /** 旧游戏包（0.27.2 及以前）只会发鼠标增量：照旧支持，回退版本时拖动不坏。 */
 ipcMain.on('piggy:move', (event, delta) => {
-  if (!fromPage(event)) return
+  if (!fromPet(event)) return
   const dx = Number(delta?.dx)
   const dy = Number(delta?.dy)
   if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return
   restingPigScreen = null
   applyBounds(moveAcrossDisplays(win.getBounds(), dx, dy, screen.getAllDisplays().map(display => display.workArea)), 'move')
+  reanchorPanel()
 })
 
 ipcMain.on('piggy:shape', (event, rects) => {
   if (lastShape.length === 0 && Array.isArray(rects) && rects.length > 0) log('first shape', JSON.stringify(rects))
-  if (!fromPage(event) || !Array.isArray(rects)) return
+  if (!fromPet(event) || !Array.isArray(rects)) return
   lastShape = rects
   applyShape(rects.slice(0, 64).map(r => ({
     x: Math.round(Number(r.x) || 0), y: Math.round(Number(r.y) || 0),
     width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
   })))
+})
+
+// ---------------------------------------------------------------------------
+// 面板窗口（外壳 0.6.0 起，见文件头 panelWin 的说明）
+// ---------------------------------------------------------------------------
+
+/** 面板贴着猪：和猪隔多远、离屏幕边至少多远、最高多高（跟游戏包 constants.js 一致）。 */
+const PANEL_GAP = 8
+const PANEL_MARGIN = 10
+const PANEL_MAX_HEIGHT = 520
+const PANEL_MIN_HEIGHT = 120
+/** 面板页面还没报尺寸之前先按这个大小摆。 */
+const PANEL_FALLBACK = { width: 292, height: 420 }
+
+/** 面板现在开着没有（用户眼里的「开」，窗口可能还在等页面报尺寸）。 */
+let panelOpen = false
+/** 猪在猪窗口里的框（打开面板时猪页面报上来的）；面板按它贴在猪旁边。 */
+let panelPig = null
+/** 这次面板朝哪边开、最高多高：打开时定一次，拖动松手后重新定。 */
+let panelAnchor = null
+/** 面板页面最近报的尺寸。 */
+let panelSize = null
+/** 面板页面加载好没有：没好之前的「打开」先记着，加载完再发。 */
+let panelReady = false
+
+let stateTimer = null
+/** 存档变了：两个窗口都刷新（合并 30ms 内的多次，一次动作可能连发几个请求）。 */
+function announceStateChanged() {
+  if (stateTimer !== null) return
+  stateTimer = setTimeout(() => { stateTimer = null; toPages('piggy:state-changed') }, 30)
+}
+
+/** 猪在屏幕上的框。 */
+function pigOnScreen() {
+  if (win === null || win.isDestroyed() || panelPig === null) return null
+  const bounds = win.getBounds()
+  return { x: bounds.x + panelPig.x, y: bounds.y + panelPig.y, width: panelPig.width, height: panelPig.height }
+}
+
+/** 按猪现在的位置决定面板朝哪边开：上面空间大就往上，否则往下（和网页版 fitPanel 一个规则）。 */
+function decidePanelAnchor() {
+  const pig = pigOnScreen()
+  if (pig === null) return null
+  const area = screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea
+  const above = pig.y - area.y
+  const below = area.y + area.height - (pig.y + pig.height)
+  const vertical = above >= below ? 'above' : 'below'
+  const room = (vertical === 'above' ? above : below) - PANEL_GAP - PANEL_MARGIN
+  return { vertical, maxHeight: Math.max(PANEL_MIN_HEIGHT, Math.min(PANEL_MAX_HEIGHT, Math.round(room))), area }
+}
+
+/** 面板窗口该在哪：竖向贴着猪（上方时底边贴猪头，下方时顶边贴猪脚），横向右边对齐猪、放不下就左边对齐，最后夹进工作区。 */
+function panelBounds() {
+  const pig = pigOnScreen()
+  if (pig === null || panelAnchor === null) return null
+  const area = panelAnchor.area
+  const width = Math.round(panelSize?.width ?? PANEL_FALLBACK.width)
+  const height = Math.round(Math.min(panelSize?.height ?? PANEL_FALLBACK.height, area.height - 2 * PANEL_MARGIN))
+  let x = Math.round(pig.x + pig.width - width)
+  if (x < area.x + PANEL_MARGIN) x = Math.round(pig.x)
+  x = Math.max(area.x + PANEL_MARGIN, Math.min(x, area.x + area.width - width - PANEL_MARGIN))
+  let y = panelAnchor.vertical === 'above' ? Math.round(pig.y - PANEL_GAP - height) : Math.round(pig.y + pig.height + PANEL_GAP)
+  y = Math.max(area.y, Math.min(y, area.y + area.height - height))
+  return { x, y, width, height }
+}
+
+function sendPanel(message) {
+  if (panelWin !== null && !panelWin.isDestroyed() && panelReady) panelWin.webContents.send('piggy:panel', message)
+}
+
+function ensurePanelWindow() {
+  if (panelWin !== null && !panelWin.isDestroyed()) return panelWin
+  panelReady = false
+  panelWin = new BrowserWindow({
+    width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
+    transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
+    alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
+    backgroundColor: '#00000000',
+    webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
+      additionalArguments: ['--piggy-role=panel'] },
+  })
+  panelWin.setAlwaysOnTop(true, 'floating')
+  if (FRAME_CAP > 0) panelWin.webContents.setFrameRate(FRAME_CAP)
+  panelWin.loadURL('piggy://app/index.html')
+  panelWin.webContents.on('did-finish-load', () => {
+    panelReady = true
+    log('panel page loaded')
+    if (panelOpen && panelAnchor !== null) sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
+  })
+  panelWin.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('panel:', message) })
+  panelWin.webContents.on('render-process-gone', (e, d) => { log('panel renderer gone', JSON.stringify(d)); panelWin = null; closePanel('crash') })
+  // 点到别处（焦点离开面板、也没到猪身上）：告诉面板页面，它按「点外面自动收起」的设置决定收不收。
+  panelWin.on('blur', panelFocusLeft)
+  if (process.env.PIGGY_DEVTOOLS === '1') panelWin.webContents.openDevTools({ mode: 'detach' })
+  return panelWin
+}
+
+/**
+ * 焦点离开了猪窗口或面板窗口：如果也没落到另一个上，就是点到别处了。
+ * 面板打开时不抢焦点（见 placePanel），焦点多半还在猪窗口上，所以两个窗口的失焦都要听。
+ */
+function panelFocusLeft() {
+  if (!panelOpen) return
+  setTimeout(() => {
+    if (!panelOpen) return
+    const focused = BrowserWindow.getFocusedWindow()
+    if (focused !== null && (focused === win || focused === panelWin)) return
+    sendPanel({ type: 'blur', toPet: false })
+  }, 0)
+}
+
+/** 把面板窗口放到该在的地方；第一次有尺寸时才显示（免得先闪一个空窗口）。 */
+function placePanel() {
+  if (!panelOpen || panelWin === null || panelWin.isDestroyed()) return
+  const next = panelBounds()
+  if (next === null) return
+  panelWin.setBounds(next)
+  if (panelSize !== null && !panelWin.isVisible()) {
+    // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
+    //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
+    panelWin.showInactive()
+    log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical }))
+  }
+}
+
+function openPanel(pig) {
+  if (Number.isFinite(pig?.x) && Number.isFinite(pig?.y) && pig?.width > 0 && pig?.height > 0) {
+    panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
+  }
+  if (panelPig === null) return
+  ensurePanelWindow()
+  panelOpen = true
+  panelAnchor = decidePanelAnchor()
+  if (panelAnchor === null) return
+  sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
+  placePanel()
+}
+
+function closePanel(why) {
+  if (!panelOpen) return
+  panelOpen = false
+  if (panelWin !== null && !panelWin.isDestroyed()) panelWin.hide()
+  sendPanel({ type: 'closed' })
+  if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:panel', { type: 'closed' })
+  log('panel closed', why)
+}
+
+/** 猪窗口挪了（拖动、散步、贴边修正）：面板跟着挪同样多，不重新挑朝向（松手后再挑）。 */
+function followPig(delta) {
+  if (!panelOpen || panelWin === null || panelWin.isDestroyed() || !panelWin.isVisible()) return
+  if (delta === null || (delta.x === 0 && delta.y === 0)) return
+  const at = panelWin.getBounds()
+  panelWin.setBounds({ ...at, x: at.x + delta.x, y: at.y + delta.y })
+}
+
+/** 拖完 / 散步完：猪到了新地方，重新决定面板朝哪边开（放不下就换边）。 */
+function reanchorPanel() {
+  if (!panelOpen) return
+  const next = decidePanelAnchor()
+  if (next === null) return
+  const changed = panelAnchor === null || next.vertical !== panelAnchor.vertical || next.maxHeight !== panelAnchor.maxHeight
+  panelAnchor = next
+  if (changed) sendPanel({ type: 'open', vertical: next.vertical, maxHeight: next.maxHeight })
+  placePanel()
+}
+
+/** 猪页面：右键开/关面板（带上猪在窗口里的框）。 */
+ipcMain.on('piggy:panel:toggle', (event, request) => {
+  if (!fromPet(event)) return
+  if (request?.open === true) openPanel(request.pig)
+  else closePanel('pet')
+})
+/** 面板页面：内容量好了多大。 */
+ipcMain.on('piggy:panel:size', (event, size) => {
+  if (!fromPage(event) || event.sender !== panelWin?.webContents) return
+  const width = Number(size?.width)
+  const height = Number(size?.height)
+  if (!(width > 0) || !(height > 0)) return
+  panelSize = { width: Math.ceil(width), height: Math.ceil(height) }
+  placePanel()
+})
+/** 任一页面：收起面板（面板里点了收起、点外面自动收起）。 */
+ipcMain.on('piggy:panel:close', event => { if (fromPage(event)) closePanel('page') })
+/** 面板页面里对猪的反应（喂食时猪的动作、冒气泡）：转给猪窗口去演。 */
+ipcMain.on('piggy:pig-fx', (event, fx) => {
+  if (!fromPage(event) || event.sender !== panelWin?.webContents) return
+  if (win === null || win.isDestroyed() || typeof fx?.name !== 'string') return
+  win.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
 })
 
 /** Where the DSH plugin keeps its pig (the folder moved from dsh-pig to dsh-piggy). */
@@ -591,9 +833,9 @@ function createTray(gameDir) {
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
   tray.setToolTip('dsh-piggy')
   // Windows：单击托盘图标叫猪出来 / 藏起来（右键是菜单）
-  tray.on('click', () => { win?.isVisible() ? win.hide() : win?.showInactive() })
+  tray.on('click', () => { if (win?.isVisible()) { closePanel('tray'); win.hide() } else win?.showInactive() })
   const menu = () => Menu.buildFromTemplate([
-    { label: win?.isVisible() ? '藏起来' : '叫猪出来', click: () => { win?.isVisible() ? win.hide() : win?.showInactive(); tray?.setContextMenu(menu()) } },
+    { label: win?.isVisible() ? '藏起来' : '叫猪出来', click: () => { if (win?.isVisible()) { closePanel('tray'); win.hide() } else win?.showInactive(); tray?.setContextMenu(menu()) } },
     { label: '开机自启', type: 'checkbox', checked: autostartOn(), click: item => setAutostart(item.checked) },
     { label: '从 DSH 导入猪…', click: () => { importFromDsh() } },
     { type: 'separator' },
@@ -643,7 +885,7 @@ ipcMain.handle('piggy:updates:install', async (event, version) => {
   if (target.blocked !== null) return { ok: false, reason: target.blocked === 'shell' ? '要先装新的安装包' : '存档太新，这个版本读不了' }
   try {
     backupSave('v' + target.version)
-    await versions.install(target, fraction => win?.webContents.send('piggy:progress', fraction))
+    await versions.install(target, fraction => toPages('piggy:progress', fraction))
     setTimeout(restartGame, 600)
     return { ok: true, version: target.version }
   } catch (error) {
@@ -707,7 +949,7 @@ app.whenReady().then(async () => {
     mode: shellUpdateMode({ platform: process.platform, packaged: app.isPackaged,
       portable: Boolean(process.env.PORTABLE_EXECUTABLE_FILE), appImage: process.env.APPIMAGE }),
     currentVersion: app.getVersion(), updater: autoUpdater,
-    onProgress: fraction => { if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:shell-progress', fraction) },
+    onProgress: fraction => toPages('piggy:shell-progress', fraction),
   })
   versions = createVersions({
     userData: app.getPath('userData'), bundledDir: bundledGameDir(), shellVersion: app.getVersion(),

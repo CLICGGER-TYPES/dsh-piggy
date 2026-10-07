@@ -4,11 +4,12 @@
  * 只通过 ctx 读写外壳的状态与元素（getter/setter 转发），不直接碰全局。
  * @module dsh-piggy/client/panel
  */
-import { showMilestoneNotice } from './milestone-notice.js'
 import { syncPigArt } from './art.js'
 import { DEV_TAB, OPEN_KEY, QUIT_TAB, TABS, UPDATE_TAB } from './constants.js'
 import { button, el } from './dom.js'
-import { desktopShell } from './desktop-shell.js'
+import { desktopRole, desktopShell } from './desktop-shell.js'
+import { processPending } from './pending.js'
+import { splitSetOpen } from './split.js'
 import { normalize } from './normalize.js'
 import { displayedPigSize } from './pig-size.js'
 import { applyEmojiStyle } from './emoji-style.js'
@@ -34,8 +35,6 @@ import { renderTravelTab } from './tabs/travel.js'
 import { renderWorkTab } from './tabs/work.js'
 import { str } from './values.js'
 
-/** News that gets through 免打扰. */
-var URGENT_KINDS = ['sick', 'worse', 'death', 'cured', 'revived']
 
 export function createPanel(ctx) {
       var AWAY_LINE = {
@@ -46,6 +45,7 @@ export function createPanel(ctx) {
       }
 
       function setOpen(next) {
+        if (splitSetOpen(ctx, next)) return
         if (!next) { closeFishing(ctx); if (ctx.isOpen) animatePanelClose(ctx) }
         if (next && !ctx.isOpen) desktopShell()?.room?.()
         ctx.host.removeAttribute('data-panel-side-locked')
@@ -205,7 +205,8 @@ export function createPanel(ctx) {
         // The 兴趣 button is not a stage; leave it selected.
         if (!ctx.stagePicked && firstOpen !== null && (stageEntry === null || stageEntry.unlocked === false)) ctx.stage = firstOpen
         ctx.host.setAttribute('data-dead', ctx.view.dead ? 'true' : 'false')
-        ctx.host.setAttribute('data-open', ctx.isOpen ? 'true' : 'false')
+        // 猪窗口里 isOpen 只表示「另一个窗口的面板开着」，自己永远按收起排版（不然会撑大猪窗口）
+        ctx.host.setAttribute('data-open', ctx.isOpen && desktopRole() !== 'pet' ? 'true' : 'false')
         ctx.host.setAttribute('data-dev', ctx.devMode ? 'true' : 'false')
         // Drives both the prop and the pig's own activity animation.
         ctx.host.setAttribute('data-away', ctx.view.activity === null ? 'false' : ctx.view.activity.kind)
@@ -306,7 +307,8 @@ export function createPanel(ctx) {
         ctx.pomoHint.setAttribute('data-pomo', pomoOn ? 'on' : '')
         ctx.pomoHint.hidden = !pomoOn || ctx.bubble.hidden === false
         if (pomoOn) ctx.pomoHint.textContent = '🍅 ' + clockText(pomo.secondsLeft)
-        noticePomodoro(pomo)
+        // 番茄钟结束的通知只在猪窗口发（拆窗口后两边都在渲染，不然会弹两次）。
+        if (desktopRole() !== 'panel') noticePomodoro(pomo)
         if (typeof ctx.pomoTick === 'function') ctx.pomoTick()
 
         // 猪头上的日常提示：能签到就先显示签到，否则显示礼包。
@@ -343,33 +345,7 @@ export function createPanel(ctx) {
         ctx.icons.dex.setAttribute('data-alert', 'false')
         ctx.icons.travel.setAttribute('data-alert', ctx.view.pig !== null && ctx.view.pig.coins >= 400 ? 'true' : 'false')
 
-        for (var i = 0; i < ctx.view.pending.length; i += 1) {
-          var event = ctx.view.pending[i]
-          // Messages carry an id that only goes up; two from the same instant
-          // ("病情加重" then "走了") used to collapse into the first one.
-          // Hosts older than the id still dedupe on the timestamp.
-          if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue
-          if (event.id > 0) ctx.lastPendingId = event.id
-          ctx.lastPendingAt = Math.max(ctx.lastPendingAt, event.at)
-          if (event.kind === 'line') {
-            showPigLine(event)
-            continue
-          }
-          // 免打扰: routine news stays quiet; illness and death still speak.
-          if (ctx.view.dialogue.quiet && URGENT_KINDS.indexOf(event.kind) < 0) continue
-          if (showMilestoneNotice(ctx, event)) continue
-          if (event.kind === 'gift') continue // 签到/礼包的结果由猪头气泡说（io.js），不重复弹提示条
-          ctx.toast(str(event.text, '猪有新消息'))
-          if (event.kind === 'coronation') { ctx.react('levelup', 950); ctx.transform('crown') }
-          else if (event.kind === 'contract') { ctx.react('levelup', 950); ctx.transform('contract') }
-          else if (event.kind === 'levelup') { ctx.react('levelup', 950); ctx.burst(['✨', '🎉'], 3) }
-          else if (event.kind === 'cured') { ctx.react('cure', 900); ctx.burst(['💚', '✨'], 3) }
-          else if (event.kind === 'death') ctx.react('refuse', 700)
-          else if (event.kind === 'work') { ctx.react('away', 900); ctx.burst(['🪙', '💰'], 3) }
-          else if (event.kind === 'study') { ctx.react('away', 900); ctx.burst(['📚', '✨'], 3) }
-          else if (event.kind === 'trip') { ctx.react('away', 900); ctx.burst(['🧳', '🎁'], 3) }
-        }
-        ctx.updateNotice?.maybeBubble()
+        processPending(ctx, showPigLine)
 
         // Typing a new name: a repaint would drop the input and its focus.
         if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return

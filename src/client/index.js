@@ -13,13 +13,6 @@
  * screen full of `undefined`.
  */
 
-import { renderBagTab } from './tabs/bag.js'
-import { renderDevTab } from './tabs/dev.js'
-import { renderShopTab } from './tabs/shop.js'
-import { renderStatusTab } from './tabs/status.js'
-import { renderStudyTab } from './tabs/study.js'
-import { renderTravelTab } from './tabs/travel.js'
-import { renderWorkTab } from './tabs/work.js'
 import { createEffects } from './effects.js'
 import { createIo } from './io.js'
 import { installCapture, record } from './journal.js'
@@ -31,6 +24,7 @@ import { ACT_URL, ART_URL, BOX_POKES_TO_OPEN, BOX_POKE_LINES, CARE_LABEL, DEV_TA
 import { button, el, meter } from './dom.js'
 import { normalize } from './normalize.js'
 import { desktopShell } from './desktop-shell.js'
+import { wireSplit } from './split.js'
 import { startDragHeartbeat } from './drag-heartbeat.js'
 import { attachAutoCollapse } from './auto-collapse.js'
 import { readPosition } from './position.js'
@@ -221,6 +215,8 @@ import { partAt } from './pet-parts.js'
       ctx.flash = flash
 
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)
+      // 外壳 0.6.0 起猪和面板各一个窗口（split.js）；老外壳和网页版是 null。
+      var splitRole = wireSplit(ctx, { refresh: function () { refresh() }, isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' } })
 
       // 日常气泡（签到/礼包）的点击只在这里绑一次；它压在猪上面，事件不能冒泡给
       // 拖动和摸摸。
@@ -341,7 +337,7 @@ import { partAt } from './pet-parts.js'
         setOpen(!isOpen)
       })
 
-      var autoCollapse = attachAutoCollapse({
+      var autoCollapse = splitRole !== null ? { dispose: function () {} } : attachAutoCollapse({
         host: host, isOpen: function () { return isOpen }, setOpen: setOpen,
         isDragging: function () { return drag !== null },
         isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' },
@@ -356,7 +352,7 @@ import { partAt } from './pet-parts.js'
       pollTimer = window.setInterval(refresh, POLL_MS)
 
       // 打招呼、闲聊、按时间说话、自己找事做、桌面散步（G 批次）都在 life.js。
-      var life = attachLife({
+      var life = splitRole === 'panel' ? null : attachLife({
         send: send, isStopped: function () { return stopped }, isBusy: function () { return busy },
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return drag !== null },
         pig: pig, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: desktopShell,
@@ -381,7 +377,7 @@ import { partAt } from './pet-parts.js'
         // panel that had already been disposed.
         dev.dispose()
         if (pollTimer !== null) window.clearInterval(pollTimer)
-        life.dispose()
+        life?.dispose()
         fx.dispose()
         pollTimer = null
         host.remove()

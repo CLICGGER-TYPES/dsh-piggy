@@ -81,7 +81,7 @@ function visible(node) {
 }
 
 /**
- * @param {{ platform: string, geometry: () => any, anchor?: () => ({x:number,y:number}|null) }} env
+ * @param {{ platform: string, split?: boolean, geometry: () => any, anchor?: () => ({x:number,y:number}|null) }} env
  */
 export function createMeasure(env) {
   let openBoxes = {}
@@ -176,7 +176,15 @@ export function createMeasure(env) {
       }
     }
     let outline = rects.concat(zone === null ? [] : [zone], bubbleZone === null ? [] : [bubbleZone])
-    if (reserves && pigNode !== null) {
+    // 拆窗口之后（外壳 0.6.0 起）猪窗口用一块**固定大小**的框：猪头上留气泡区、左边留签到小气泡和
+    // 打工道具、两侧留摸猪时飘的爱心。框只跟猪的大小有关，冒气泡、飘爱心、出道具都不再改窗口大小
+    // （改大小就有一帧画在旧位置，Windows 上最明显）。
+    if (env.split && pigNode !== null) {
+      outline.push({ x: pigBox.x + pigBox.width + 40 - BUBBLE_ZONE.width - 40, y: pigBox.y - BUBBLE_ZONE.height - 24,
+        r: pigBox.x + pigBox.width + 40, b: pigBox.y + pigBox.height + 12 })
+    }
+    // 拆窗口之后（外壳 0.6.0 起）猪窗口里永远没有面板：不记、也不预留面板的范围。
+    if (reserves && !env.split && pigNode !== null) {
       if (open && cardBox !== null && card.hidden !== true && cardBox.width > 0 && cardBox.height > 0) {
         const side = panelSide(cardBox, pigBox)
         const key = openBoxKey(side.vertical, side.horizontal, pigBox)

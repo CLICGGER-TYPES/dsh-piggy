@@ -34,7 +34,9 @@ test('心跳顺带挪窗口；拖动不写逐帧日志；旧游戏包的 moveBy 
 
 test('窗口销毁后到达的页面消息不处理（Windows 上切换版本时弹过「Object has been destroyed」）', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  assert.match(main, /function fromPage\(event\) \{\s*return !quitting && win !== null && !win\.isDestroyed\(\) && event\.sender === win\.webContents/)
+  // 外壳 0.6.0 起有两个窗口：猪窗口（fromPet，只有它能挪猪）和面板窗口，两边都先查 isDestroyed。
+  assert.match(main, /function fromPet\(event\) \{\s*return !quitting && win !== null && !win\.isDestroyed\(\) && event\.sender === win\.webContents/)
+  assert.match(main, /function fromPage\(event\) \{\s*return fromPet\(event\) \|\| \(!quitting && panelWin !== null && !panelWin\.isDestroyed\(\) && event\.sender === panelWin\.webContents\)/)
   assert.doesNotMatch(main, /event\.sender !== win\.webContents/)
   // 只查 null 不查 isDestroyed 的地方都不该再有
   assert.doesNotMatch(main, /if \(win === null\) return/)

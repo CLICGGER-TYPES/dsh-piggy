@@ -67,6 +67,51 @@
     { key: "graduate", label: "\u7814\u7A76\u751F" }
   ];
 
+  // src/client/art.js
+  var REACTION_ART = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
+  var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
+  function syncPigArt(pig, image) {
+    var base = pig.getAttribute("data-art");
+    if (!base) return;
+    var art = base;
+    if (pig.getAttribute("data-art-actions") === "true") {
+      var action = REACTION_ART[pig.getAttribute("data-react")] || ACTIVITY_ART[pig.getAttribute("data-activity")];
+      var scenes = String(pig.getAttribute("data-art-scenes") || "").split(",");
+      if (action && (scenes[0] === "" || scenes.indexOf(action) >= 0)) art += "-" + action;
+    }
+    var src = ART_URL + art + ".svg";
+    if (image.getAttribute("src") !== src) image.src = src;
+  }
+
+  // src/client/pet-parts.js
+  var PART_FX = {
+    head: ["\u2764\uFE0F"],
+    ears: ["\u3030\uFE0F", "\u2764\uFE0F"],
+    nose: ["\u{1F4A6}"],
+    belly: ["\u{1F606}", "\u2764\uFE0F"],
+    back: ["\u2728"],
+    tail: ["\u{1F300}"],
+    feet: ["\u{1F43E}"]
+  };
+  function partFor(fx, fy) {
+    if (fy > 0.8) return "feet";
+    if (fx > 0.8 && fy < 0.45) return "tail";
+    if (fx < 0.42 && fy > 0.58) return "nose";
+    if (fx < 0.45 && fy < 0.38) return "ears";
+    if (fx < 0.5) return "head";
+    if (fy > 0.6) return "belly";
+    return "back";
+  }
+  function partAt(pig, event) {
+    if (!pig || typeof pig.getBoundingClientRect !== "function" || typeof event?.clientX !== "number") return "head";
+    var box = pig.getBoundingClientRect();
+    if (!box || box.width <= 0 || box.height <= 0) return "head";
+    var fx = (event.clientX - box.left) / box.width;
+    var fy = (event.clientY - box.top) / box.height;
+    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return "head";
+    return partFor(fx, fy);
+  }
+
   // src/client/values.js
   var isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
   var obj = (v) => isObj(v) ? v : {};
@@ -111,1957 +156,6 @@
     if (active && typeof active.offsetLeft === "number") {
       strip.scrollLeft = Math.max(0, active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2);
     }
-  }
-
-  // src/client/widgets.js
-  function labelledBar(ui, label, value, valueText, variant) {
-    var row = el("div", "dp-row");
-    row.appendChild(el("span", null, label));
-    row.appendChild(el("b", null, valueText));
-    ui.content.appendChild(row);
-    ui.content.appendChild(meter(value, variant));
-  }
-  function statStrip(ui) {
-    var p = ui.view.pig;
-    if (p === null) return;
-    var strip = el("div", "dp-statstrip");
-    var cells = [
-      ["\u{1F35A} \u9971\u98DF", p.satiety, p.satiety + "%", ""],
-      ["\u2764\uFE0F \u5FC3\u60C5", p.happiness, p.happiness + "%", "dp-mood"],
-      ["\u{1FAE7} \u6E05\u6D01", p.cleanliness, p.cleanliness + "%", "dp-clean"],
-      ["\u{1F49A} \u5065\u5EB7", p.healthPercent, p.health + "/" + ui.view.maxHealth, "dp-health"]
-    ];
-    for (var i = 0; i < cells.length; i += 1) {
-      var cell = el("div", "dp-statcell");
-      var head = el("div", "dp-row");
-      head.appendChild(el("span", null, cells[i][0]));
-      head.appendChild(el("b", null, cells[i][2]));
-      cell.appendChild(head);
-      cell.appendChild(meter(cells[i][1], cells[i][3]));
-      strip.appendChild(cell);
-    }
-    strip.appendChild(el("div", "dp-statweight", "\u2696\uFE0F \u4F53\u91CD " + p.weight));
-    ui.content.appendChild(strip);
-  }
-  function careEffectLine(action, item) {
-    var parts = [];
-    if (action === "feed") {
-      parts.push("\u9971\u98DF +" + item.satiety);
-      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
-    } else if (action === "bathe") {
-      parts.push("\u6E05\u6D01 +" + item.cleanliness);
-      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
-    } else {
-      parts.push("\u5FC3\u60C5 +" + item.happiness);
-      if (item.satiety) parts.push("\u9971\u98DF " + item.satiety);
-    }
-    return parts.join(" \xB7 ");
-  }
-  function tileGrid() {
-    return el("div", "dp-tiles");
-  }
-  function tile(spec) {
-    var node = button("dp-tile" + (spec.soft ? " dp-tile-soft" : ""), spec.data ?? {}, function() {
-      spec.onPick();
-    });
-    node.setAttribute("data-color", spec.color);
-    if (spec.locked) node.setAttribute("data-locked", "true");
-    if (spec.dim) node.setAttribute("data-dim", "true");
-    if (spec.active) node.setAttribute("data-active", "true");
-    if (spec.disabled === true) node.disabled = true;
-    var icon = el("span", "dp-tile-icon");
-    icon.appendChild(spec.icon ?? el("span", "dp-tile-e", spec.emoji));
-    if (spec.badge) icon.appendChild(el("b", "dp-tile-badge", spec.badge));
-    if (spec.tag) icon.appendChild(el("b", "dp-tile-tag", spec.tag));
-    node.appendChild(icon);
-    node.appendChild(el("span", "dp-tile-n", spec.label));
-    if (spec.note) node.appendChild(el("span", "dp-tile-note", spec.note));
-    return node;
-  }
-  function drillTo(ui, tab, key) {
-    ui.drill[tab] = key;
-    ui.drill.pick = null;
-    ui.renderContent();
-    ui.content.scrollTop = 0;
-  }
-  function drillHeader(ui, tab, title, info) {
-    var row = el("div", "dp-drill");
-    var back = button("dp-drill-back", { "data-back": tab }, function() {
-      if (ui.drill.from) ui.select(ui.drill.from);
-      else drillTo(ui, tab, null);
-    });
-    back.textContent = "\u2039";
-    row.appendChild(back);
-    row.appendChild(el("b", "dp-drill-title", title));
-    if (info) row.appendChild(el("span", "dp-drill-info", info));
-    ui.content.appendChild(row);
-  }
-
-  // src/client/interaction-motion.js
-  function canAnimate(node) {
-    return typeof node.animate === "function" && !(typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }
-  var appEntry = null;
-  function animateAppEntry(content) {
-    if (!canAnimate(content)) return;
-    appEntry?.cancel();
-    appEntry = content.animate([
-      { opacity: 0.7, transform: "translateY(5px)" },
-      { opacity: 1, transform: "translateY(0)" }
-    ], { duration: 170, easing: "cubic-bezier(.2,.8,.2,1)" });
-  }
-  function animatePurchase(tile2) {
-    if (!canAnimate(tile2)) return;
-    tile2.animate([
-      { transform: "scale(0.94)", opacity: 0.72 },
-      { transform: "scale(1.04)", opacity: 1, offset: 0.5 },
-      { transform: "scale(1)", opacity: 1 }
-    ], { duration: 320, easing: "ease-out" });
-  }
-  function panelOrigin(ctx) {
-    const below = ctx.host.getAttribute("data-panel-vertical") === "below" || ctx.card.style.top !== "auto" && ctx.card.style.top !== "";
-    const right = ctx.host.getAttribute("data-panel-side") === "right";
-    return { below, origin: (below ? "top " : "bottom ") + (right ? "left" : "right") };
-  }
-  function animatePanelOpen(ctx) {
-    const { below, origin } = panelOrigin(ctx);
-    for (const node of [ctx.card, ctx.hud]) {
-      if (!node || node.hidden || !canAnimate(node)) continue;
-      node.style.transformOrigin = origin;
-      node.animate([
-        { opacity: 0, transform: `translateY(${below ? -6 : 6}px) scale(.94)` },
-        { opacity: 1, transform: "none" }
-      ], { duration: 180, easing: "cubic-bezier(.2,.8,.2,1)" });
-    }
-  }
-  function animatePanelClose(ctx) {
-    const { below, origin } = panelOrigin(ctx);
-    const host2 = ctx.host;
-    for (const node of [ctx.card, ctx.hud]) {
-      if (!node || node.hidden || !canAnimate(node) || typeof node.cloneNode !== "function") continue;
-      const ghost = node.cloneNode(true);
-      ghost.setAttribute("data-ghost", "true");
-      ghost.setAttribute("aria-hidden", "true");
-      const fromTop = host2.style.top !== "" && host2.style.top !== "auto";
-      const fromLeft = host2.style.left !== "" && host2.style.left !== "auto";
-      const style = ghost.style;
-      style.pointerEvents = "none";
-      style.margin = "0";
-      style.width = node.offsetWidth + "px";
-      style.height = node.offsetHeight + "px";
-      style.maxHeight = "none";
-      style.top = fromTop ? node.offsetTop + "px" : "auto";
-      style.bottom = fromTop ? "auto" : host2.offsetHeight - node.offsetTop - node.offsetHeight + "px";
-      style.left = fromLeft ? node.offsetLeft + "px" : "auto";
-      style.right = fromLeft ? "auto" : host2.offsetWidth - node.offsetLeft - node.offsetWidth + "px";
-      style.transformOrigin = origin;
-      node.parentNode.insertBefore(ghost, node.nextSibling);
-      const fade = ghost.animate([
-        { opacity: 1, transform: "none" },
-        { opacity: 0, transform: `translateY(${below ? -4 : 4}px) scale(.96)` }
-      ], { duration: 140, easing: "cubic-bezier(.4,0,1,1)", fill: "forwards" });
-      fade.onfinish = () => ghost.remove();
-      setTimeout(() => ghost.remove(), 400);
-    }
-  }
-
-  // src/client/tabs/shop.js
-  var SHELF_COLOR = { food: "red", bath: "teal", toy: "yellow", bait: "blue", medicine: "green", revive: "purple", promotion: "blue" };
-  function shelfParts(kind) {
-    var title = KIND_TITLE[kind] ?? kind;
-    var space = title.indexOf(" ");
-    return space < 0 ? ["\u{1F6D2}", title] : [title.slice(0, space), title.slice(space + 1)];
-  }
-  function renderShopTab(ui) {
-    const extShelves = ui.view.extShelves ?? [];
-    if (ui.view.shop.length === 0 && extShelves.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u8D27\u67B6\u3002"));
-      return;
-    }
-    var coins = "\u{1FA99} " + ui.view.pig.coins;
-    var shelf = ui.drill.shop;
-    const extShelf = extShelves.find((entry) => "ext:" + entry.extension === shelf);
-    if (extShelf) {
-      renderExtShelf(ui, extShelf);
-      return;
-    }
-    if (shelf === null || KIND_ORDER.indexOf(shelf) < 0) {
-      renderShelves(ui);
-      return;
-    }
-    var parts = shelfParts(shelf);
-    drillHeader(ui, "shop", parts[0] + " " + parts[1], coins);
-    var grid = tileGrid();
-    var items = ui.view.shop.filter(function(item) {
-      return shelfOf(item.kind) === shelf;
-    });
-    var boughtTile = null;
-    for (var i = 0; i < items.length; i += 1) {
-      var node = itemTile(ui, items[i], SHELF_COLOR[shelf]);
-      grid.appendChild(node);
-      if (items[i].key === ui.justBought) boughtTile = node;
-    }
-    ui.content.appendChild(grid);
-    if (boughtTile !== null) animatePurchase(boughtTile);
-  }
-  function renderShelves(ui) {
-    var grid = tileGrid();
-    for (var k = 0; k < KIND_ORDER.length; k += 1) {
-      (function(kind) {
-        var items = ui.view.shop.filter(function(item) {
-          return shelfOf(item.kind) === kind;
-        });
-        if (items.length === 0) return;
-        var parts = shelfParts(kind);
-        var needed = items.some(function(item) {
-          return item.needed;
-        });
-        grid.appendChild(tile({
-          emoji: parts[0],
-          label: parts[1],
-          color: SHELF_COLOR[kind] ?? "blue",
-          tag: needed ? "\u9700\u8981" : "",
-          data: { "data-shelf": kind },
-          onPick: function() {
-            drillTo(ui, "shop", kind);
-          }
-        }));
-      })(KIND_ORDER[k]);
-    }
-    for (const shelf of ui.view.extShelves ?? []) {
-      grid.appendChild(tile({
-        emoji: shelf.emoji,
-        label: shelf.label,
-        color: shelf.color || "orange",
-        // 跟内置货架一样只写名字；不用金币买的才在下面注明货币。
-        note: shelf.currency && shelf.currency.label !== "\u91D1\u5E01" ? shelf.currency.label : void 0,
-        data: { "data-shelf": "ext:" + shelf.extension },
-        onPick: function() {
-          drillTo(ui, "shop", "ext:" + shelf.extension);
-        }
-      }));
-    }
-    ui.content.appendChild(grid);
-  }
-  function renderExtShelf(ui, shelf) {
-    const currency = shelf.currency ?? { label: "\u8D27\u5E01", emoji: "\u{1FA99}", balance: 0 };
-    drillHeader(ui, "shop", shelf.emoji + " " + shelf.label, currency.emoji + " " + currency.balance);
-    ui.content.appendChild(el("div", "dp-ext-shelf-note", "\u7528" + currency.label + "\u4E70 \xB7 " + currency.emoji + " \u4F59\u989D " + currency.balance));
-    const list = el("div", "dp-ext-goods");
-    for (const item of shelf.items ?? []) {
-      const row = el("div", "dp-ext-good");
-      row.appendChild(el("span", "dp-ext-good-emoji", item.emoji));
-      const copy = el("div", "dp-ext-good-copy");
-      copy.appendChild(el("b", null, item.label));
-      copy.appendChild(el("small", null, item.note));
-      row.appendChild(copy);
-      const hasPick = Array.isArray(item.pick);
-      const buy = button("dp-mini", { "data-ext-buy": item.key }, function() {
-        if (hasPick) {
-          ui.drill.pick = ui.drill.pick === item.key ? null : item.key;
-          ui.renderContent();
-          return;
-        }
-        ui.send("ext", { key: shelf.extension, op: "buy", data: { item: item.key, pick: null } });
-      });
-      buy.textContent = item.price + " " + currency.emoji;
-      buy.disabled = item.disabled === true;
-      row.appendChild(buy);
-      if (hasPick && ui.drill.pick === item.key) {
-        const choices = el("div", "dp-ext-picks");
-        for (const pick of item.pick) {
-          const choose = button("dp-mini dp-mini-plain", { "data-ext-pick": pick.key }, function() {
-            ui.drill.pick = null;
-            ui.send("ext", { key: shelf.extension, op: "buy", data: { item: item.key, pick: pick.key } });
-          });
-          choose.textContent = pick.emoji + " " + pick.label;
-          choices.appendChild(choose);
-        }
-        row.appendChild(choices);
-      }
-      list.appendChild(row);
-    }
-    ui.content.appendChild(list);
-  }
-  function itemTile(ui, item, color) {
-    var owned = num(ui.view.inventory[item.key], 0);
-    var note = item.price + " \u{1FA99}";
-    if (item.owned) note = "\u5DF2\u62E5\u6709";
-    else if (item.kind === "dress" && item.unlocked === false) note = "\u{1F512} Lv." + item.level;
-    return tile({
-      emoji: item.emoji,
-      label: item.label,
-      color,
-      soft: true,
-      note,
-      badge: owned > 0 ? "\xD7" + owned : "",
-      tag: item.needed ? "\u9700\u8981" : item.owned && item.worn ? "\u7A7F\u7740" : "",
-      dim: !item.owned && (!item.affordable || item.kind === "dress" && item.unlocked === false),
-      disabled: item.owned === true,
-      data: { "data-buy": item.key },
-      onPick: function() {
-        ui.send("buy", { item: item.key });
-      }
-    });
-  }
-
-  // src/client/tabs/bag.js
-  var CONSUMABLES = KIND_ORDER;
-  var CARE_ACTION = { food: "feed", bath: "bathe", toy: "play" };
-  var STAT_SHELVES = ["food", "bath", "toy", "medicine"];
-  var EXTRA = {
-    worn: { emoji: "\u{1F455}", label: "\u5DF2\u7A7F\u6234", color: "pink" },
-    diary: { emoji: "\u{1F4D4}", label: "\u65E5\u8BB0", color: "brown" },
-    souvenir: { emoji: "\u{1F381}", label: "\u7EAA\u5FF5\u54C1", color: "blue" },
-    fish: { emoji: "\u{1F41F}", label: "\u9C7C\u7BD3", color: "teal" }
-  };
-  function shortDay(day) {
-    return day.length >= 10 ? day.slice(5) : day;
-  }
-  function renderBagTab(ui) {
-    var open = ui.drill.bag;
-    if (open === "worn") renderWorn(ui);
-    else if (open === "diary") renderDiary(ui);
-    else if (open === "souvenir") renderSouvenirs(ui);
-    else if (open === "fish") renderFish(ui);
-    else if (open !== null && CONSUMABLES.indexOf(open) >= 0) renderItems(ui, open);
-    else renderCategories(ui);
-  }
-  function ownedOf(ui, kind) {
-    var action = CARE_ACTION[kind];
-    if (action !== void 0 && Array.isArray(ui.view.care[action]) && ui.view.care[action].length > 0) return ui.view.care[action];
-    return ui.view.shop.filter(function(item) {
-      return shelfOf(item.kind) === kind && num(ui.view.inventory[item.key], 0) > 0;
-    });
-  }
-  function renderCategories(ui) {
-    var grid = tileGrid();
-    for (var k = 0; k < CONSUMABLES.length; k += 1) {
-      (function(kind) {
-        var items = ownedOf(ui, kind);
-        var count = items.reduce(function(sum, item) {
-          return sum + num(ui.view.inventory[item.key], 0);
-        }, 0);
-        var hasFree = items.some(function(item) {
-          return item.default === true;
-        });
-        var parts = shelfParts(kind);
-        grid.appendChild(tile({
-          emoji: parts[0],
-          label: parts[1],
-          color: SHELF_COLOR[kind] ?? "blue",
-          badge: count > 0 ? String(count) : "",
-          dim: count === 0 && !hasFree,
-          tag: items.some(function(item) {
-            return item.needed;
-          }) ? "\u9700\u8981" : "",
-          data: { "data-bag": kind },
-          onPick: function() {
-            drillTo(ui, "bag", kind);
-          }
-        }));
-      })(CONSUMABLES[k]);
-    }
-    var counts = {
-      worn: ui.view.dress.filter(function(item) {
-        return item.worn;
-      }).length,
-      diary: ui.view.diary.length,
-      souvenir: ui.view.pig.souvenirs.length,
-      fish: ui.view.fishing.bag.length
-    };
-    for (var key in EXTRA) {
-      (function(category) {
-        if (category === "worn" && counts.worn === 0) return;
-        var spec = EXTRA[category];
-        grid.appendChild(tile({
-          emoji: spec.emoji,
-          label: spec.label,
-          color: spec.color,
-          badge: counts[category] > 0 ? String(counts[category]) : "",
-          dim: counts[category] === 0,
-          data: { "data-bag": category },
-          onPick: function() {
-            drillTo(ui, "bag", category);
-          }
-        }));
-      })(key);
-    }
-    ui.content.appendChild(grid);
-  }
-  function renderWorn(ui) {
-    var worn = ui.view.dress.filter(function(item) {
-      return item.worn;
-    });
-    drillHeader(ui, "bag", "\u{1F455} \u5DF2\u7A7F\u6234", worn.length + " \u4EF6");
-    if (worn.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u73B0\u5728\u6CA1\u6709\u7A7F\u6234\u88C5\u626E"));
-      return;
-    }
-    for (var i = 0; i < worn.length; i += 1) {
-      (function(item) {
-        var row = el("div", "dp-item");
-        row.appendChild(el("span", "dp-item-emoji", item.emoji));
-        row.appendChild(el("span", "dp-grow", item.label + (item.slotLabel ? " \xB7 " + item.slotLabel : "")));
-        var off = button("dp-mini", { "data-take-off": item.key }, function() {
-          ui.send("wear", { item: item.key, on: false });
-        });
-        off.textContent = "\u8131\u4E0B";
-        row.appendChild(off);
-        ui.content.appendChild(row);
-      })(worn[i]);
-    }
-  }
-  function renderFish(ui) {
-    const list = ui.view.fishing.bag;
-    drillHeader(ui, "bag", "\u{1F41F} \u9C7C\u7BD3", list.length + " \u6761");
-    if (list.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u9C7C\u7BD3\u8FD8\u662F\u7A7A\u7684"));
-      return;
-    }
-    for (var i = 0; i < list.length; i += 1) {
-      (function(fish2) {
-        var card2 = el("div", "dp-pick dp-tile-card");
-        card2.appendChild(el("div", "dp-pick-head", fish2.emoji + " " + fish2.label));
-        card2.appendChild(el("div", null, fish2.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish2.price));
-        var actions = el("div", "dp-dev-row");
-        var feed = button("dp-mini", { "data-fish-feed": fish2.id }, function() {
-          ui.send("fishFeed", { id: fish2.id });
-        });
-        feed.textContent = "\u{1F37D} \u5582";
-        var sell = button("dp-mini", { "data-fish-sell": fish2.id }, function() {
-          ui.send("fishSell", { id: fish2.id });
-        });
-        sell.textContent = "\u{1FA99} \u5356";
-        actions.appendChild(feed);
-        actions.appendChild(sell);
-        card2.appendChild(actions);
-        ui.content.appendChild(card2);
-      })(list[i]);
-    }
-  }
-  function renderItems(ui, kind) {
-    var parts = shelfParts(kind);
-    drillHeader(ui, "bag", parts[0] + " " + parts[1], "\u70B9\u4E00\u4E0B\u5C31\u7528");
-    if (STAT_SHELVES.indexOf(kind) >= 0) statStrip(ui);
-    var items = ownedOf(ui, kind);
-    var action = CARE_ACTION[kind];
-    if (items.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u7A7A\u7684"));
-      if (action !== void 0) {
-        var buy = button("dp-btn dp-btn-wide", { "data-bag-shop": kind }, function() {
-          ui.select("shop");
-          drillTo(ui, "shop", kind);
-        });
-        buy.textContent = "\u{1F6D2} \u53BB\u5546\u5E97\u4E70\u4E00\u70B9";
-        ui.content.appendChild(buy);
-      }
-      return;
-    }
-    var grid = tileGrid();
-    for (var i = 0; i < items.length; i += 1) {
-      (function(item) {
-        grid.appendChild(tile({
-          emoji: item.emoji,
-          label: item.label,
-          color: SHELF_COLOR[kind] ?? "blue",
-          soft: true,
-          badge: item.default === true ? "\u514D\u8D39" : "\xD7" + num(ui.view.inventory[item.key], 0),
-          tag: item.needed ? "\u9700\u8981" : "",
-          note: action !== void 0 ? careEffectLine(action, item) : item.kind === "promotion" ? item.useLabel : "",
-          data: { "data-use": item.key },
-          // 照料货架发喂食 / 洗澡 / 玩耍本身（猪的动作和台词都对得上），其他货架照旧「使用」。
-          onPick: function() {
-            ui.send(action ?? "use", { item: item.key });
-          }
-        }));
-      })(items[i]);
-    }
-    ui.content.appendChild(grid);
-  }
-  function renderDiary(ui) {
-    drillHeader(ui, "bag", "\u{1F4D4} \u65E5\u8BB0", ui.view.diary.length + " \u7BC7");
-    if (ui.view.diary.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u8FD8\u6CA1\u6709\u65E5\u8BB0"));
-      return;
-    }
-    var grid = tileGrid();
-    var picked = null;
-    for (var d = 0; d < ui.view.diary.length; d += 1) {
-      (function(entry) {
-        var active = ui.drill.pick === entry.day;
-        if (active) picked = entry;
-        grid.appendChild(tile({
-          emoji: "\u{1F4D4}",
-          label: shortDay(entry.day),
-          color: EXTRA.diary.color,
-          soft: true,
-          active,
-          data: { "data-diary": entry.day },
-          onPick: function() {
-            ui.drill.pick = active ? null : entry.day;
-            ui.renderContent();
-          }
-        }));
-      })(ui.view.diary[d]);
-    }
-    ui.content.appendChild(grid);
-    if (picked !== null) {
-      var page = el("div", "dp-pick dp-tile-card dp-diary-page");
-      page.appendChild(el("div", "dp-pick-head", picked.day));
-      page.appendChild(el("div", null, picked.text));
-      ui.content.appendChild(page);
-    }
-  }
-  function renderSouvenirs(ui) {
-    var list = ui.view.pig.souvenirs;
-    drillHeader(ui, "bag", "\u{1F381} \u7EAA\u5FF5\u54C1", list.length + " \u4EF6");
-    if (list.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u6536\u85CF\u518C\u8FD8\u7A7A\u7740"));
-      return;
-    }
-    var grid = tileGrid();
-    var picked = null;
-    for (var s = 0; s < list.length; s += 1) {
-      (function(entry, index) {
-        var id = entry.key + "#" + index;
-        var active = ui.drill.pick === id;
-        if (active) picked = entry;
-        grid.appendChild(tile({
-          emoji: entry.emoji,
-          label: entry.label,
-          color: EXTRA.souvenir.color,
-          soft: true,
-          active,
-          note: entry.rarityEmoji + entry.rarityLabel,
-          data: { "data-souvenir": id },
-          onPick: function() {
-            ui.drill.pick = active ? null : id;
-            ui.renderContent();
-          }
-        }));
-      })(list[s], s);
-    }
-    ui.content.appendChild(grid);
-    if (picked === null) return;
-    var story = el("div", "dp-pick dp-tile-card");
-    story.appendChild(el("div", "dp-pick-head", picked.emoji + " " + picked.label + (picked.fromLabel === "" ? "" : " \xB7 " + picked.fromLabel)));
-    story.appendChild(el("div", null, picked.story === "" ? "\uFF08\u65E7\u7248\u672C\u5E26\u56DE\u6765\u7684\uFF0C\u6CA1\u6709\u6545\u4E8B\uFF09" : "\u300C" + picked.story + "\u300D"));
-    if (picked.price > 0) {
-      var sold = picked;
-      var sell = button("dp-mini", { "data-sell": sold.key }, function() {
-        ui.drill.pick = null;
-        ui.send("sell", { souvenir: sold.key });
-      });
-      sell.textContent = "\u5356\u6389 +" + sold.price + " \u{1FA99}";
-      sell.style.marginTop = "6px";
-      story.appendChild(sell);
-    }
-    ui.content.appendChild(story);
-  }
-
-  // src/client/desktop-shell.js
-  function desktopShell() {
-    var shell = typeof window !== "undefined" ? (
-      /** @type {any} */
-      window.__dshPiggyShell
-    ) : null;
-    return shell !== null && typeof shell === "object" && (typeof shell.beginDrag === "function" || typeof shell.moveBy === "function") ? shell : null;
-  }
-
-  // packages/pet-core/src/data/fish.js
-  var FISH = Object.freeze([
-    { key: "fish_crucian", label: "\u9CAB\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon", "evening"], behavior: "smooth", difficulty: 12, minCm: 12, maxCm: 32, price: 8 },
-    { key: "fish_carp", label: "\u9CA4\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["noon", "evening"], behavior: "smooth", difficulty: 18, minCm: 20, maxCm: 55, price: 12 },
-    { key: "fish_sardine", label: "\u6C99\u4E01\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon"], behavior: "dash", difficulty: 22, minCm: 10, maxCm: 26, price: 14 },
-    { key: "fish_anchovy", label: "\u9CC0\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "evening"], behavior: "dash", difficulty: 25, minCm: 8, maxCm: 22, price: 16 },
-    { key: "fish_perch", label: "\u6CB3\u9C88", emoji: "\u{1F420}", rarity: "common", times: ["noon", "evening"], behavior: "sink", difficulty: 28, minCm: 16, maxCm: 38, price: 18 },
-    { key: "fish_bream", label: "\u9CCA\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon"], behavior: "rise", difficulty: 30, minCm: 18, maxCm: 42, price: 20 },
-    { key: "fish_catfish", label: "\u9CB6\u9C7C", emoji: "\u{1F421}", rarity: "common", times: ["evening", "night"], behavior: "sink", difficulty: 34, minCm: 24, maxCm: 68, price: 24 },
-    { key: "fish_mackerel", label: "\u9752\u82B1\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["noon", "evening"], behavior: "mixed", difficulty: 38, minCm: 22, maxCm: 48, price: 28 },
-    { key: "fish_salmon", label: "\u9C91\u9C7C", emoji: "\u{1F41F}", rarity: "uncommon", times: ["early", "evening"], behavior: "dash", difficulty: 48, minCm: 38, maxCm: 92, price: 48 },
-    { key: "fish_puffer", label: "\u6CB3\u8C5A", emoji: "\u{1F421}", rarity: "uncommon", times: ["noon"], behavior: "mixed", difficulty: 55, minCm: 18, maxCm: 40, price: 62 },
-    { key: "fish_eel", label: "\u9CD7\u9C7C", emoji: "\u{1F40D}", rarity: "uncommon", times: ["evening", "night"], behavior: "rise", difficulty: 61, minCm: 42, maxCm: 110, price: 78 },
-    { key: "fish_tuna", label: "\u91D1\u67AA\u9C7C", emoji: "\u{1F41F}", rarity: "uncommon", times: ["early", "noon"], behavior: "dash", difficulty: 66, minCm: 70, maxCm: 180, price: 96 },
-    { key: "fish_sturgeon", label: "\u9C9F\u9C7C", emoji: "\u{1F41F}", rarity: "rare", times: ["night"], behavior: "sink", difficulty: 78, minCm: 85, maxCm: 220, price: 160 },
-    { key: "fish_koi", label: "\u9EC4\u91D1\u9526\u9CA4", emoji: "\u{1F38F}", rarity: "rare", times: ["early", "evening"], behavior: "mixed", difficulty: 86, minCm: 30, maxCm: 88, price: 220 },
-    { key: "fish_moon", label: "\u6708\u5F71\u9C7C", emoji: "\u{1F319}", rarity: "legend", times: ["night"], behavior: "mixed", difficulty: 100, minCm: 60, maxCm: 160, price: 300 }
-  ]);
-  var FISH_FIGHTS = Object.freeze(["ring", "bar", "pull"]);
-
-  // packages/pet-core/src/data/skins.js
-  var SKIN_SCENES = Object.freeze(["idle", "eat", "bathe", "play", "pet", "relaxed", "work", "study", "trip", "fish"]);
-  var REQUIRED_SKIN_SCENES = Object.freeze(SKIN_SCENES.slice(0, 5));
-  var CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter((scene3) => scene3 !== "fish"));
-  var SKINS = Object.freeze([
-    Object.freeze({
-      key: "mint",
-      label: "\u8584\u8377\u5C0F\u732A",
-      emoji: "\u{1F33F}",
-      art: "skin-mint",
-      author: "dsh-piggy",
-      description: "\u50CF\u4E00\u53E3\u8584\u8377\u6C7D\u6C34\uFF0C\u6E05\u6E05\u51C9\u51C9\u3002",
-      scenes: Object.freeze(["idle", "eat", "bathe", "play", "pet"]),
-      custom: false
-    }),
-    Object.freeze({
-      key: "chef",
-      label: "\u53A8\u5E08\u732A",
-      emoji: "\u{1F468}\u200D\u{1F373}",
-      art: "career-chef",
-      unlockJob: "chef",
-      author: "dsh-piggy",
-      description: "\u638C\u52FA\u5F52\u6765\uFF0C\u5E3D\u5B50\u4E0A\u8FD8\u6CBE\u7740\u4E00\u70B9\u9762\u7C89\u3002",
-      hint: "\u53A8\u623F\u91CC\u7684\u7B2C\u4E00\u73ED\u70DF\u706B\uFF0C\u4F1A\u9001\u6765\u4E00\u9876\u767D\u5E3D\u5B50\u3002",
-      scenes: CHARACTER_SCENES,
-      custom: false
-    }),
-    Object.freeze({
-      key: "astronaut",
-      label: "\u5B87\u822A\u5458\u732A",
-      emoji: "\u{1F680}",
-      art: "career-astronaut",
-      unlockJob: "astronaut",
-      author: "dsh-piggy",
-      description: "\u628A\u5730\u7403\u88C5\u8FDB\u5934\u76D4\u7684\u5012\u5F71\u91CC\u3002",
-      hint: "\u5B8C\u6210\u90A3\u8D9F\u79BB\u5929\u7A7A\u6700\u8FD1\u7684\u5DE5\u4F5C\uFF0C\u624D\u6709\u8D44\u683C\u6234\u4E0A\u5934\u76D4\u3002",
-      scenes: CHARACTER_SCENES,
-      custom: false
-    }),
-    Object.freeze({
-      key: "detective",
-      label: "\u4FA6\u63A2\u732A",
-      emoji: "\u{1F50E}",
-      art: "skin-detective",
-      author: "dsh-piggy",
-      description: "\u5C0F\u7EBF\u7D22\u603B\u8EB2\u4E0D\u8FC7\u5B83\u7684\u773C\u775B\u3002",
-      scenes: CHARACTER_SCENES,
-      custom: false
-    }),
-    Object.freeze({
-      key: "angel",
-      label: "\u5929\u4F7F\u732A",
-      emoji: "\u{1F607}",
-      art: "skin-angel",
-      author: "dsh-piggy",
-      description: "\u5149\u73AF\u5F88\u4EAE\uFF0C\u813E\u6C14\u8FD8\u662F\u8F6F\u8F6F\u7684\u3002",
-      scenes: CHARACTER_SCENES,
-      custom: false
-    }),
-    Object.freeze({
-      key: "pirate",
-      label: "\u6D77\u76D7\u732A",
-      emoji: "\u{1F3F4}\u200D\u2620\uFE0F",
-      art: "skin-pirate",
-      author: "dsh-piggy",
-      description: "\u51FA\u95E8\u627E\u5B9D\u85CF\uFF0C\u56DE\u5BB6\u627E\u665A\u996D\u3002",
-      scenes: CHARACTER_SCENES,
-      custom: false
-    }),
-    Object.freeze({
-      key: "wizard",
-      label: "\u5DEB\u5E08\u732A",
-      emoji: "\u{1FA84}",
-      art: "skin-wizard",
-      author: "dsh-piggy",
-      description: "\u5E3D\u5B50\u91CC\u6CA1\u6709\u9B54\u6CD5\uFF0C\u53EA\u6709\u597D\u5947\u5FC3\u3002",
-      scenes: CHARACTER_SCENES,
-      custom: false
-    })
-  ]);
-
-  // packages/pet-core/src/data/lines-more.js
-  var line = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
-  var scene = (...lines) => Object.freeze(lines);
-  var MORE_LINES = Object.freeze({
-    // ---- 原有场景翻倍 -----------------------------------------------------------
-    eat: scene(
-      line("\u4ECA\u5929\u7684\u996D\u6709[\u4E3B\u4EBA]\u7684\u5473\u9053\uFF08\u662F\u5938\u4F60\uFF09"),
-      line("\u6162\u70B9\u6162\u70B9\uFF0C\u6211\u8FD8\u6CA1\u56BC\u5B8C"),
-      line("\u5403\u4E00\u53E3\uFF0C\u957F\u4E00\u4E24\uFF0C\u6CA1\u5173\u7CFB\uFF0C\u6211\u4E0D\u6015"),
-      line("\u8FD9\u4E2A\u597D\u5403\uFF0C\u4E0B\u6B21\u8FD8\u8981\u8FD9\u4E2A", "\u8BB0\u4F4F\u4E86"),
-      line("\u6211\u5BA3\u5E03\uFF1A\u8FD9\u662F\u4ECA\u5929\u6700\u597D\u7684\u4E00\u987F"),
-      line("\u5403\u996D\u7684\u65F6\u5019\u522B\u770B\u6211\uFF0C\u6211\u4F1A\u5BB3\u7F9E")
-    ),
-    full: scene(line("\u9971\u4E86\uFF0C\u53EF\u4EE5\u5F00\u59CB\u53D1\u5446\u4E86"), line("\u809A\u5B50\u91CC\u88C5\u6EE1\u4E86\uFF0C\u5FC3\u91CC\u4E5F\u662F"), line("\u9971\u9971\u7684\uFF0C\u4ECA\u5929\u4E0D\u4F1A\u60F3\u522B\u7684\u4E8B\u4E86")),
-    overfull: scene(line("\u518D\u5403\u6211\u5C31\u8981\u88AB\u79F0\u91CD\u4E86\u2026\u2026"), line("\u4F60\u662F\u4E0D\u662F\u5728\u7ED9\u6211\u517B\u8198\uFF1F", "\u6CA1\u6709\u6CA1\u6709"), line("\u6211\u7684\u809A\u5B50\u5728\u6297\u8BAE\uFF0C\u542C\u89C1\u4E86\u5417")),
-    bathe: scene(
-      line("\u6C34\u6E29\u521A\u597D\uFF0C\u4E0D\u662F\u5728\u712F\u6C34\u5427\uFF1F", "\u653E\u5FC3"),
-      line("\u6211\u73B0\u5728\u662F\u4E00\u53EA\u4F53\u9762\u7684\u732A\u4E86"),
-      line("\u6CE5\u5DF4\u518D\u89C1\uFF0C\u6CE5\u5DF4\u6211\u4F1A\u60F3\u4F60\u7684"),
-      line("\u522B\u6D17\u8033\u6735\u540E\u9762\uFF0C\u90A3\u91CC\u6709\u6211\u7684\u79D8\u5BC6"),
-      line("\u6D17\u5B8C\u522B\u95FB\u6211\u8BF4\u300C\u597D\u9999\u300D\uFF0C\u6709\u70B9\u5413\u4EBA")
-    ),
-    play: scene(
-      line("\u4F60\u6254\uFF0C\u6211\u6361\uFF0C\u6211\u4EEC\u914D\u5408\u5F97\u5929\u8863\u65E0\u7F1D"),
-      line("\u54C7\uFF01\u5DEE\u70B9\u63A5\u5230\uFF01"),
-      line("\u518D\u6765\u518D\u6765\uFF0C\u6211\u521A\u70ED\u5B8C\u8EAB", "\u6765\uFF01"),
-      line("\u73A9\u800D\u4F7F\u6211\u5FEB\u4E50\uFF0C\u4E5F\u4F7F\u6211\u53D8\u7626"),
-      line("\u4F60\u4E5F\u52A8\u52A8\u5427\uFF0C\u5750\u592A\u4E45\u4E86")
-    ),
-    pet: scene(
-      line("\u624B\u611F\u662F\u4E0D\u662F\u5F88\u597D\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u50CF\u4E94\u82B1\u8089\u300D"),
-      line("\u518D\u6478\u6211\u5C31\u8981\u7761\u7740\u4E86"),
-      line("\u55EF\u2026\u2026\u8FD9\u6837\u5F88\u597D"),
-      line("\u4F60\u4ECA\u5929\u6478\u5F97\u7279\u522B\u8BA4\u771F"),
-      line("[\u4E3B\u4EBA]\uFF0C\u6211\u4EEC\u7B97\u4E0D\u7B97\u597D\u670B\u53CB\uFF1F", "\u5F53\u7136\u7B97"),
-      line("\u8FD9\u662F\u6211\u4E00\u5929\u91CC\u6700\u559C\u6B22\u7684\u65F6\u523B"),
-      line("\u6478\u732A\u53EF\u4EE5\u964D\u8840\u538B\uFF0C\u8FD9\u662F\u79D1\u5B66\uFF08\u6211\u7F16\u7684\uFF09")
-    ),
-    hungry: scene(line("\u6211\u997F\u5F97\u80FD\u770B\u89C1\u5E7B\u89C9\u4E86\uFF0C\u4F60\u5934\u4E0A\u6709\u4E2A\u5305\u5B50"), line("\u518D\u4E0D\u5403\u996D\uFF0C\u6211\u5C31\u8981\u5F00\u59CB\u5403\u81EA\u5DF1\u7684\u5F71\u5B50\u4E86"), line("\u996D\u996D\u2026\u2026\u996D\u996D\u2026\u2026", "\u9A6C\u4E0A\u6765")),
-    dirty: scene(line("\u6211\u8EAB\u4E0A\u7684\u6CE5\u5DF4\u5DF2\u7ECF\u53EF\u4EE5\u79CD\u82B1\u4E86"), line("\u82CD\u8747\u7ED5\u7740\u6211\u98DE\uFF0C\u5B83\u4EEC\u5728\u5F00\u4F1A\u8BA8\u8BBA\u6211"), line("\u6211\u9700\u8981\u4E00\u4E2A\u6FA1\uFF0C\u4E00\u4E2A\u70ED\u7684\uFF08\u4E0D\u8981\u592A\u70ED\uFF09", "\u597D")),
-    lonely: scene(line("\u6211\u521A\u624D\u8DDF\u5899\u804A\u4E86\u4E00\u4F1A\u513F\uFF0C\u5899\u4E0D\u592A\u4F1A\u804A\u5929"), line("\u4F60\u8FD8\u8BB0\u5F97\u4F60\u517B\u4E86\u4E00\u53EA\u732A\u5417", "\u8BB0\u5F97"), line("\u6CA1\u4E8B\uFF0C\u6211\u5C31\u662F\u60F3\u770B\u770B\u4F60\u8FD8\u5728\u4E0D\u5728")),
-    idle: scene(
-      line("\u6211\u6570\u4E86\u4E00\u4E0B\uFF0C\u5C4F\u5E55\u4E0A\u6709\u5F88\u591A\u5B57\uFF0C\u6211\u4E00\u4E2A\u90FD\u6CA1\u5199"),
-      line("\u4F60\u5199\u7684\u4E1C\u897F\u597D\u957F\uFF0C\u6211\u80FD\u7761\u4E00\u89C9\u5417"),
-      line("\u6211\u521A\u624D\u68A6\u89C1\u81EA\u5DF1\u4F1A\u98DE\uFF0C\u9192\u4E86\u53D1\u73B0\u4F1A\u7684\u53EA\u6709\u5403"),
-      line("\u5916\u9762\u6709\u4EBA\u5728\u7092\u83DC\uFF0C\u6211\u7D27\u5F20\u4E86\u4E00\u4E0B"),
-      line("\u5750\u76F4\uFF0C[\u4E3B\u4EBA]\uFF0C\u4F60\u7684\u80CC\u5728\u54ED"),
-      line("\u8981\u4E0D\u8981\u559D\u53E3\u6C34\uFF1F\u6211\u66FF\u4F60\u8BB0\u7740", "\u597D"),
-      line("\u4F60\u7684\u5C4F\u5E55\u597D\u4EAE\uFF0C\u6211\u772F\u4E00\u4F1A\u513F"),
-      line("\u521A\u624D\u90A3\u4E2A\u529F\u80FD\u6211\u89C9\u5F97\u5199\u5F97\u4E0D\u9519\uFF08\u6211\u770B\u4E0D\u61C2\uFF0C\u4F46\u6211\u652F\u6301\u4F60\uFF09")
-    ),
-    workDone: scene(line("\u8001\u677F\u95EE\u6211\u80FD\u4E0D\u80FD\u957F\u671F\u5E72\uFF0C\u6211\u8BF4\u8981\u95EE[\u4E3B\u4EBA]"), line("\u8D5A\u7684\u94B1\u7ED9\u4F60\uFF0C\u8BF7\u6211\u5403\u987F\u597D\u7684\u5C31\u884C", "\u6210\u4EA4"), line("\u6253\u5DE5\u597D\u7D2F\uFF0C\u4EBA\u7C7B\u6BCF\u5929\u90FD\u8FD9\u6837\u5417")),
-    tired: scene(line("\u6211\u9700\u8981\u8EBA\u5E73\uFF0C\u73B0\u5728\uFF0C\u7ACB\u523B"), line("\u6211\u7684\u56DB\u6761\u817F\u5DF2\u7ECF\u5404\u81EA\u4E0B\u73ED\u4E86"), line("\u7D2F\u5F97\u8FDE\u996D\u90FD\u2026\u2026\u4E0D\uFF0C\u996D\u8FD8\u662F\u8981\u5403\u7684")),
-    study: scene(line("\u4ECA\u5929\u5B66\u4E86\u4E00\u4E2A\u65B0\u8BCD\uFF0C\u5FD8\u4E86"), line("\u8001\u5E08\u8BF4\u6211\u5F88\u6709\u6F5C\u529B\uFF0C\u6F5C\u5728\u54EA\u6211\u4E5F\u4E0D\u77E5\u9053"), line("\u5B66\u4E60\u4F7F\u6211\u8FDB\u6B65\uFF0C\u4E5F\u4F7F\u6211\u997F", "\u53BB\u5403\u5427")),
-    graduate: scene(line("\u8BC1\u4E66\u6302\u5899\u4E0A\uFF0C\u522B\u6302\u83DC\u5200\u65C1\u8FB9"), line("\u6211\u662F\u5168\u73ED\u6700\u5BBD\u7684\u6BD5\u4E1A\u751F"), line("\u6709\u6587\u5316\u7684\u732A\uFF0C\u4E0D\u5BB9\u6613\u88AB\u9A97\u8FDB\u53A8\u623F")),
-    tripBack: scene(line("\u5916\u9762\u5230\u5904\u90FD\u662F\u996D\u9986\uFF0C\u6211\u4E00\u8DEF\u4F4E\u7740\u5934\u8D70\u7684"), line("\u6211\u770B\u89C1\u6D77\u4E86\uFF01\u6D77\u91CC\u6CA1\u6709\u732A"), line("\u62CD\u4E86\u597D\u591A\u7167\u7247\uFF0C\u6BCF\u5F20\u90FD\u5728\u7B11\uFF08\u5176\u5B9E\u5F88\u997F\uFF09")),
-    sick: scene(line("\u6211\u89C9\u5F97\u6211\u9700\u8981\u4E00\u4E2A\u62B1\u62B1\uFF0C\u548C\u4E00\u9897\u836F", "\u90FD\u7ED9\u4F60"), line("\u8EAB\u4F53\u91CC\u6709\u4E2A\u5C0F\u574F\u86CB\u5728\u641E\u88C5\u4FEE"), line("\u6211\u751F\u75C5\u4E86\uFF0C\u75C5\u732A\u8089\u4E0D\u80FD\u5403\u2014\u2014\u8FD9\u662F\u597D\u6D88\u606F")),
-    wrongMedicine: scene(line("\u8FD9\u4E2A\u836F\u2026\u2026\u597D\u50CF\u662F\u7ED9\u72D7\u5403\u7684"), line("\u6211\u539F\u8C05\u4F60\uFF0C\u4F60\u770B\u8D77\u6765\u6BD4\u6211\u8FD8\u96BE\u53D7"), line("\u4E0B\u6B21\u770B\u6E05\u695A\u8BF4\u660E\u4E66\u597D\u4E0D\u597D", "\u597D")),
-    cured: scene(line("\u6211\u6D3B\u8FC7\u6765\u4E86\uFF01\u7B2C\u4E00\u4EF6\u4E8B\uFF1A\u5403\u996D"), line("\u960E\u738B\u7237\u770B\u4E86\u770B\u6211\u7684\u4F53\u91CD\uFF0C\u8BF4\u300C\u518D\u517B\u517B\u300D"), line("\u5065\u5EB7\u771F\u597D\uFF0C\u6211\u73B0\u5728\u53EF\u4EE5\u91CD\u65B0\u62C5\u5FC3\u522B\u7684\u4E8B\u4E86")),
-    levelup: scene(line("\u5347\u7EA7\u4E86\uFF0C\u5956\u52B1\u662F\u66F4\u5927\u7684\u996D\u91CF"), line("\u6211\u53D8\u5F3A\u4E86\uFF0C\u81F3\u5C11\u6570\u5B57\u4E0A\u662F\u8FD9\u6837"), line("\u4F60\u770B\u89C1\u4E86\u5417\uFF1F\u6211\u5347\u7EA7\u4E86\uFF01", "\u770B\u89C1\u4E86")),
-    growUp: scene(line("\u957F\u5927\u7684\u611F\u89C9\uFF0C\u5C31\u662F\u9505\u53D8\u591A\u4E86"), line("\u6211\u957F\u5F00\u4E86\u2026\u2026\u4F60\u522B\u7528\u8FD9\u4E2A\u8BCD"), line("[\u4E3B\u4EBA]\uFF0C\u4F60\u4E5F\u8981\u4E00\u8D77\u957F\u5927\u54E6")),
-    coronation: scene(line("\u672C\u738B\u4ECA\u65E5\u5F00\u6069\uFF0C\u514D\u4F60\u4E00\u987F\u4E0D\u5582\u4E4B\u7F6A"), line("\u738B\u51A0\u597D\u91CD\uFF0C\u8116\u5B50\u8981\u53D8\u957F\u4E86"), line("\u81E3\u6C11\u4EEC\uFF0C\u5F00\u996D\uFF01"), line("[\u4E3B\u4EBA]\u662F\u672C\u738B\u7684\u9996\u5E2D\u5582\u996D\u5B98", "\u9075\u547D")),
-    contract: scene(line("\u6211\u73B0\u5728\u662F\u6076\u9B54\u4E86\uFF0C\u4F46\u8FD8\u662F\u6015\u70ED\u6C34"), line("\u89D2\u662F\u65B0\u7684\uFF0C\u6492\u5A07\u662F\u65E7\u7684"), line("\u6076\u9B54\u4E5F\u9700\u8981\u88AB\u6478\u6478"), line("\u7B7E\u4E86\u5951\u7EA6\uFF0C\u4EE5\u540E\u8C01\u4E5F\u4E0D\u80FD\u628A\u6211\u505A\u6210\u83DC", "\u90A3\u5F53\u7136")),
-    enter: scene(line("\u4F60\u7EC8\u4E8E\u56DE\u6765\u4E86\uFF0C\u6211\u6570\u4E86\u597D\u4E45\u7684\u50CF\u7D20"), line("\u6B22\u8FCE\u56DE\u6765\uFF0C\u4ECA\u5929\u4E5F\u62DC\u6258\u591A\u5582\u6211\u4E00\u70B9"), line("\u6211\u521A\u521A\u4E00\u76F4\u5728\u8FD9\u91CC\uFF0C\u4E00\u52A8\u4E0D\u52A8\uFF0C\u5F88\u4E56", "\u771F\u4E56")),
-    death: scene(line("\u8BB0\u5F97\u7ED9\u6211\u70E7\u70B9\u9972\u6599\u2026\u2026"), line("[\u4E3B\u4EBA]\uFF0C\u522B\u96BE\u8FC7\uFF0C\u6211\u53EA\u662F\u53BB\u4E0B\u4E00\u4E2A\u732A\u5708\u4E86")),
-    revive: scene(line("\u90A3\u8FB9\u7684\u732A\u90FD\u5F88\u7626\uFF0C\u6211\u8FD8\u662F\u56DE\u6765\u5427"), line("\u6211\u56DE\u6765\u4E86\uFF0C\u996D\u8FD8\u5728\u5417"), line("\u5DEE\u4E00\u70B9\u5C31\u89C1\u5230\u732A\u516B\u6212\u4E86")),
-    signIn: scene(line("\u53C8\u662F\u65B0\u7684\u4E00\u5929\uFF0C\u6211\u8FD8\u5728\uFF0C\u4F60\u4E5F\u5728"), line("\u7B2C 7 \u5929\u6709\u5927\u793C\uFF0C\u575A\u6301\u4F4F")),
-    gift: scene(line("\u6253\u5F00\u770B\u770B\uFF1F\u6211\u4E5F\u4E0D\u77E5\u9053\u662F\u4EC0\u4E48"), line("\u6211\u66FF\u4F60\u5B88\u7740\u5B83\u597D\u4E45\u4E86")),
-    pomodoroStart: scene(line("\u6211\u95ED\u5634\u4E86\uFF0C\u4ECE\u73B0\u5728\u5F00\u59CB"), line("\u4E13\u5FC3\uFF01\u6211\u5E2E\u4F60\u77AA\u7740\u5C4F\u5E55"), line("\u6211\u5F53\u4E00\u5757\u5B89\u9759\u7684\u4E94\u82B1\u8089")),
-    pomodoroDone: scene(line("\u505A\u5B8C\u4E86\uFF01\u5956\u52B1\u81EA\u5DF1\u6478\u4E00\u4E0B\u732A"), line("\u4F60\u597D\u5389\u5BB3\uFF0C\u6211\u90FD\u770B\u7761\u7740\u4E86"), line("\u8D77\u6765\u8D70\u8D70\uFF0C\u987A\u4FBF\u770B\u770B\u6211")),
-    pomodoroAbandon: scene(line("\u6CA1\u5173\u7CFB\uFF0C\u756A\u8304\u4E5F\u4F1A\u7D2F"), line("\u90A3\u6211\u4EEC\u5148\u5403\u70B9\u4E1C\u897F\uFF1F"), line("\u4E0B\u6B21\u518D\u4E00\u8D77\u52AA\u529B")),
-    // ---- 新场景 ----------------------------------------------------------------
-    workStart: scene(line("\u51FA\u95E8\u642C\u7816\u53BB\u4E86"), line("\u6211\u53BB\u7ED9\u5BB6\u91CC\u6323\u9972\u6599\u94B1"), line("\u8001\u677F\uFF0C\u6211\u6765\u4E86\uFF01")),
-    studyStart: scene(line("\u4E0A\u5B66\u53BB\uFF01\u4E66\u5305\u91CC\u88C5\u7684\u662F\u96F6\u98DF"), line("\u4ECA\u5929\u4E5F\u8981\u542C\u61C2\u4E00\u53E5"), line("\u8001\u5E08\u522B\u70B9\u6211\u540D")),
-    tripStart: scene(line("\u51FA\u53D1\u5566\uFF01"), line("\u6211\u4F1A\u7ED9\u4F60\u5E26\u7279\u4EA7\u7684\uFF08\u4E0D\u662F\u814A\u8089\uFF09"), line("\u8DEF\u4E0A\u522B\u60F3\u6211")),
-    buy: scene(line("\u4E70\u5230\u4E86\uFF01"), line("\u8FD9\u4E2A\u94B1\u82B1\u5F97\u503C"), line("\u8C22\u8C22\u8001\u677F\uFF08\u6211\u8BF4\u7684\u662F\u4F60\uFF09")),
-    poor: scene(line("\u94B1\u5305\u7A7A\u7A7A\uFF0C\u8DDF\u6211\u7684\u996D\u76C6\u4E00\u6837"), line("\u6211\u4EEC\u597D\u50CF\u6709\u70B9\u7A77"), line("\u8981\u4E0D\u2026\u2026\u6211\u53BB\u6253\u5DE5\uFF1F")),
-    fishCatch: scene(line("\u9493\u5230\u5566\uFF01"), line("\u665A\u996D\u6709\u7740\u843D\u4E86"), line("\u8FD9\u6761\u9C7C\u770B\u6211\u7684\u773C\u795E\u4E0D\u592A\u53CB\u597D")),
-    fishRare: scene(line("\u662F\u5927\u7684\uFF01\u662F\u5927\u7684\uFF01"), line("\u8FD9\u6761\u9C7C\u503C\u5F97\u5199\u8FDB\u65E5\u8BB0"), line("\u5FEB\u62CD\u7167\uFF01")),
-    fishEscape: scene(line("\u5B83\u8DD1\u4E86\u2026\u2026"), line("\u4E0B\u4E00\u6761\u4E00\u5B9A\u662F\u6211\u7684"), line("\u9C7C\u4E5F\u662F\u8981\u9762\u5B50\u7684")),
-    skin: scene(line("\u597D\u770B\u5417\uFF1F"), line("\u65B0\u8863\u670D\uFF01\u8F6C\u4E2A\u5708\u7ED9\u4F60\u770B"), line("\u6211\u89C9\u5F97\u6211\u53D8\u5E05\u4E86")),
-    bodyChange: scene(line("\u6211\u597D\u50CF\u2026\u2026\u5706\u4E86\u4E00\u70B9"), line("\u8FD9\u4E0D\u662F\u80D6\uFF0C\u662F\u53EF\u7231\u7684\u5BC6\u5EA6\u53D8\u5927\u4E86"), line("\u79E4\u8BF4\u7684\u8BDD\u4E0D\u80FD\u5168\u4FE1")),
-    // ---- 按时间说话（core/talk.js 决定什么时候说）---------------------------------
-    morning: scene(line("\u65E9\u4E0A\u597D\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u5403\u996D"), line("\u8D77\u8FD9\u4E48\u65E9\uFF0C\u4F60\u662F\u8981\u53BB\u5F53\u65E9\u9910\u5417\uFF08\u6211\u5F00\u73A9\u7B11\u7684\uFF09"), line("\u65E9\u5B89\uFF0C[\u4E3B\u4EBA]\uFF0C\u6211\u6628\u665A\u68A6\u89C1\u4F60\u4E86")),
-    noon: scene(line("\u4E2D\u5348\u4E86\uFF0C\u5403\u996D\u5403\u996D\uFF01"), line("\u4F60\u5403\u4E86\u5417\uFF1F\u6211\u997F\u4E86\uFF0C\u4F60\u80AF\u5B9A\u4E5F\u997F\u4E86"), line("\u5348\u996D\u522B\u5403\u732A\u8089\u597D\u4E0D\u597D", "\u597D")),
-    afternoon: scene(line("\u4E0B\u5348\u597D\u56F0\u2026\u2026\u6211\u5148\u7761\u4E3A\u656C"), line("\u559D\u676F\u8336\u5427\uFF0C\u6211\u966A\u4F60\u53D1\u4F1A\u513F\u5446"), line("\u4E0B\u5348\u6700\u9002\u5408\u6253\u76F9\uFF0C\u79D1\u5B66\u7814\u7A76\uFF08\u6211\u7F16\u7684\uFF09")),
-    evening: scene(line("\u5929\u9ED1\u4E86\uFF0C\u4ECA\u5929\u8F9B\u82E6\u5566"), line("\u665A\u996D\u5403\u4EC0\u4E48\uFF1F\u6211\u6295\u7968\u7ED9\u82F9\u679C"), line("\u4E0B\u73ED\u4E86\u5417\uFF1F\u8FD8\u6CA1\uFF1F\u6211\u7B49\u4F60")),
-    lateNight: scene(line("\u8FD9\u4E48\u665A\u4E86\u8FD8\u4E0D\u7761\uFF1F", "\u9A6C\u4E0A\u7761"), line("\u71AC\u591C\u7684\u4EBA\u4F1A\u53D8\u6210\u718A\u732B\uFF0C\u71AC\u591C\u7684\u732A\u4F1A\u53D8\u6210\u814A\u8089"), line("\u6211\u5148\u7761\u4E86\uFF0C\u4F60\u4E5F\u65E9\u70B9")),
-    deepNight: scene(line("[\u4E3B\u4EBA]\u2026\u2026\u73B0\u5728\u662F\u51CC\u6668\uFF0C\u4F60\u662F\u8BA4\u771F\u7684\u5417"), line("\u6211\u5DF2\u7ECF\u7761\u9192\u4E00\u89C9\u4E86\uFF0C\u4F60\u8FD8\u5728"), line("\u5929\u5FEB\u4EAE\u4E86\uFF0C\u6C42\u4F60\u7761\u4E00\u4F1A\u513F")),
-    water: scene(line("\u559D\u53E3\u6C34\u5427\uFF0C\u6211\u66FF\u4F60\u559D\u4E0D\u4E86"), line("\u5634\u5507\u5E72\u4E86\u5427\uFF1F\u53BB\u5012\u676F\u6C34"), line("\u559D\u6C34\u65F6\u95F4\u5230\uFF01\u5495\u561F\u5495\u561F")),
-    eyes: scene(line("\u770B\u770B\u8FDC\u5904\uFF0C\u4E09\u5341\u79D2\u5C31\u597D"), line("\u773C\u775B\u7D2F\u4E86\uFF0C\u95ED\u4E00\u4F1A\u513F\uFF0C\u6211\u5E2E\u4F60\u770B\u7740"), line("\u7AD9\u8D77\u6765\u4F38\u4E2A\u61D2\u8170\uFF0C\u6211\u4E5F\u4F38\u4E00\u4E2A")),
-    weekend: scene(line("\u5468\u672B\u4E86\u8FD8\u6765\u770B\u6211\uFF0C\u4F60\u771F\u597D"), line("\u4ECA\u5929\u4E0D\u4E0A\u73ED\u5427\uFF1F\u90A3\u5C31\u591A\u966A\u6211\u4E00\u4F1A\u513F")),
-    newYear: scene(line("\u65B0\u5E74\u5FEB\u4E50\uFF01\u4ECA\u5E74\u4E5F\u8BF7\u591A\u591A\u5582\u6211")),
-    valentine: scene(line("\u4ECA\u5929\u7684\u6211\u662F\u9650\u91CF\u7248\u7684\uFF0C\u9001\u7ED9\u4F60")),
-    springFestival: scene(line("\u8FC7\u5E74\u597D\uFF01\u2026\u2026\u4ECA\u5E74\u8BF7\u4E00\u5B9A\u4E0D\u8981\u5403\u732A\u8089", "\u4E0D\u5403")),
-    lantern: scene(line("\u5403\u6C64\u5706\u5417\uFF1F\u6C64\u5706\u6CA1\u6709\u732A\uFF0C\u6211\u653E\u5FC3\u4E86")),
-    qingming: scene(line("\u60F3\u5FF5\u4E00\u4E0B\u4EE5\u524D\u7684\u732A\u2026\u2026\u6211\u662F\u8BF4\u670B\u53CB\u4EEC")),
-    labour: scene(line("\u52B3\u52A8\u8282\uFF01\u6211\u51B3\u5B9A\u4ECA\u5929\u4E0D\u52B3\u52A8")),
-    children: scene(line("\u6211\u4E5F\u662F\u5C0F\u670B\u53CB\uFF0C\u793C\u7269\u5728\u54EA\uFF1F")),
-    dragonBoat: scene(line("\u7CBD\u5B50\u91CC\u6709\u8089\uFF0C\u6211\u9009\u62E9\u770B\u4E0D\u89C1")),
-    qixi: scene(line("\u4ECA\u5929\u8981\u548C\u6700\u91CD\u8981\u7684\u4EBA\u5728\u4E00\u8D77\uFF0C\u6240\u4EE5\u6211\u5728\u8FD9\u91CC")),
-    midAutumn: scene(line("\u6708\u4EAE\u597D\u5706\uFF0C\u50CF\u6211\u7684\u809A\u5B50")),
-    national: scene(line("\u56FD\u5E86\u5FEB\u4E50\uFF01\u653E\u5047\u8BB0\u5F97\u966A\u966A\u6211")),
-    christmas: scene(line("\u5723\u8BDE\u5FEB\u4E50\uFF01\u5723\u8BDE\u8001\u4EBA\u4F1A\u7ED9\u732A\u9001\u793C\u7269\u5417")),
-    pigBirthday: scene(line("\u4ECA\u5929\u662F\u6211\u7684\u751F\u65E5\uFF01[\u4E3B\u4EBA]\u8BB0\u5F97\u5417\uFF1F", "\u751F\u65E5\u5FEB\u4E50")),
-    // ---- 摸不同部位（客户端按点的位置告诉核心是哪儿）----------------------------
-    petHead: scene(line("\u6478\u5934\u4F1A\u957F\u4E0D\u9AD8\u7684\u2026\u2026\u7B97\u4E86\uFF0C\u957F\u4E0D\u9AD8\u4E5F\u597D"), line("\u518D\u6478\u6478\u5934\uFF5E"), line("\u6211\u7684\u5934\u5F88\u5706\uFF0C\u662F\u4E0D\u662F\u5F88\u597D\u6478")),
-    petEars: scene(line("\u8033\u6735\u597D\u75D2\uFF01"), line("\u522B\u63EA\uFF0C\u4F1A\u53D8\u6210\u732A\u8033\u6735\u2026\u2026\u6211\u672C\u6765\u5C31\u662F"), line("\u5618\uFF0C\u8033\u6735\u5728\u542C\u4F60\u8BF4\u8BDD")),
-    petNose: scene(line("\u963F\u2014\u2014\u568F\uFF01"), line("\u9F3B\u5B50\u662F\u7528\u6765\u95FB\u996D\u7684\uFF0C\u4E0D\u662F\u7528\u6765\u6309\u7684"), line("\u54FC\u54FC\uFF01\uFF08\u8FD9\u662F\u6297\u8BAE\uFF09")),
-    petBelly: scene(line("\u54C8\u54C8\u54C8\u597D\u75D2\uFF01"), line("\u522B\u6309\u809A\u5B50\uFF0C\u521A\u5403\u9971"), line("\u8F6F\u5427\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u4E94\u82B1\u300D")),
-    petBack: scene(line("\u80CC\u4E0A\u90A3\u5757\uFF0C\u5BF9\uFF0C\u5C31\u662F\u90A3\u91CC"), line("\u6309\u6469\u670D\u52A1\uFF0C\u4E94\u661F\u597D\u8BC4"), line("\u4F60\u7684\u624B\u6CD5\u5F88\u4E13\u4E1A")),
-    petTail: scene(line("\u522B\u78B0\u5C3E\u5DF4\uFF01\u2026\u2026\u597D\u5427\u53EF\u4EE5\u78B0\u4E00\u4E0B"), line("\u6211\u7684\u5C3E\u5DF4\u4F1A\u81EA\u5DF1\u8F6C\uFF0C\u4F60\u770B"), line("\u5C3E\u5DF4\u662F\u732A\u7684\u79D8\u5BC6\u6B66\u5668")),
-    petFeet: scene(line("\u811A\u4E0D\u80FD\u6478\uFF0C\u4F1A\u75D2"), line("\u6211\u7684\u8E44\u5B50\u521A\u8D70\u8FC7\u6CE5\u5DF4\u54E6"), line("\u5E72\u561B\uFF0C\u60F3\u8DDF\u6211\u63E1\u624B\uFF1F", "\u63E1\u624B")),
-    petTooMuch: scene(line("\u591F\u4E86\u591F\u4E86\uFF0C\u6BDB\u8981\u6389\u4E86"), line("\u4F60\u662F\u4E0D\u662F\u5728\u627E\u54EA\u5757\u6700\u5AE9\uFF1F"), line("\u6211\u8981\u6536\u8D39\u4E86\uFF0C\u4E00\u4E0B\u4E00\u4E2A\u82F9\u679C"), line("\u518D\u6478\u6211\u5C31\u751F\u6C14\u4E86\uFF01\uFF08\u5176\u5B9E\u6CA1\u6709\uFF09"), line("\u8BA9\u6211\u4F11\u606F\u4E00\u4E0B\u2026\u2026"))
-  });
-  var TALK_SLOTS = Object.freeze([
-    Object.freeze({ scene: "morning", from: 6, to: 9 }),
-    Object.freeze({ scene: "noon", from: 11, to: 13 }),
-    Object.freeze({ scene: "afternoon", from: 14, to: 16 }),
-    Object.freeze({ scene: "evening", from: 18, to: 20 }),
-    Object.freeze({ scene: "lateNight", from: 23, to: 2 }),
-    Object.freeze({ scene: "deepNight", from: 2, to: 5 })
-  ]);
-  var SOLAR_HOLIDAYS = Object.freeze({
-    "01-01": "newYear",
-    "02-14": "valentine",
-    "05-01": "labour",
-    "06-01": "children",
-    "10-01": "national",
-    "12-25": "christmas"
-  });
-  var DATED_HOLIDAYS = Object.freeze({
-    "2026-02-17": "springFestival",
-    "2026-03-03": "lantern",
-    "2026-04-05": "qingming",
-    "2026-06-19": "dragonBoat",
-    "2026-08-19": "qixi",
-    "2026-09-25": "midAutumn",
-    "2027-02-06": "springFestival",
-    "2027-02-20": "lantern",
-    "2027-04-05": "qingming",
-    "2027-06-09": "dragonBoat",
-    "2027-08-08": "qixi",
-    "2027-09-15": "midAutumn",
-    "2028-01-26": "springFestival",
-    "2028-02-09": "lantern",
-    "2028-04-04": "qingming",
-    "2028-05-28": "dragonBoat",
-    "2028-08-26": "qixi",
-    "2028-10-03": "midAutumn",
-    "2029-02-13": "springFestival",
-    "2029-02-27": "lantern",
-    "2029-04-04": "qingming",
-    "2029-06-16": "dragonBoat",
-    "2029-08-16": "qixi",
-    "2029-09-22": "midAutumn"
-  });
-  var PET_PARTS = Object.freeze({
-    head: "petHead",
-    ears: "petEars",
-    nose: "petNose",
-    belly: "petBelly",
-    back: "petBack",
-    tail: "petTail",
-    feet: "petFeet"
-  });
-  var PET_ANNOYED = Object.freeze({ windowMs: 3e4, after: 8, calmMs: 6e4 });
-
-  // packages/pet-core/src/data/lines.js
-  var IDLE_CHAT_MINUTES2 = Object.freeze({ min: 20, max: 40 });
-  var line2 = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
-  var scene2 = (...lines) => Object.freeze(lines);
-  var BASE_LINES = Object.freeze({
-    // --- 照顾 -----------------------------------------------------------------
-    eat: scene2(
-      line2("\u597D\u5403\uFF01\u8FD8\u6709\u5417\uFF1F", "\u771F\u4E56"),
-      line2("\u5427\u5527\u5427\u5527\u2026\u2026"),
-      line2("[\u4E3B\u4EBA]\u6700\u597D\u4E86\uFF5E"),
-      line2("\u8FD9\u4E2A\u5473\u9053\u6211\u8BB0\u4F4F\u4E86"),
-      line2("\u5403\u9971\u9971\u624D\u6709\u529B\u6C14\u966A\u4F60\u52A0\u73ED"),
-      line2("\u55DD\u2014\u2014\uFF08\u4E0D\u597D\u610F\u601D\uFF09")
-    ),
-    full: scene2(
-      line2("\u5403\u9971\u5566\uFF0C\u809A\u5B50\u5706\u6EDA\u6EDA\u7684"),
-      line2("\u597D\u9971\u597D\u9971\uFF0C\u518D\u5403\u5C31\u8981\u6491\u7740\u4E86"),
-      line2("\u55DD\u2014\u2014\u8C22\u8C22[\u4E3B\u4EBA]\uFF0C\u9971\u9971\u7684")
-    ),
-    overfull: scene2(
-      line2("\u6491\u2026\u2026\u6491\u4F4F\u4E86\u2026\u2026"),
-      line2("\u771F\u7684\u5403\u4E0D\u4E0B\u4E86\uFF0C\u4F60\u770B\u6211\u809A\u5B50"),
-      line2("\u518D\u5582\u6211\u5C31\u8981\u53D8\u6210\u7403\u4E86", "\u6700\u540E\u4E00\u53E3")
-    ),
-    bathe: scene2(
-      line2("\u9999\u55B7\u55B7\u7684\uFF01"),
-      line2("\u6C34\u6709\u70B9\u51C9\u2026\u2026", "\u9A6C\u4E0A\u64E6\u5E72"),
-      line2("\u6413\u6413\u80CC\uFF0C\u8212\u670D\uFF5E"),
-      line2("\u6CE1\u6CE1\uFF01\u662F\u6CE1\u6CE1\uFF01"),
-      line2("\u6D17\u5E72\u51C0\u4E86\uFF0C\u53EF\u4EE5\u62B1\u4E86")
-    ),
-    play: scene2(
-      line2("\u518D\u6765\u4E00\u6B21\uFF01"),
-      line2("\u63A5\u4F4F\u5566\uFF01", "\u771F\u68D2"),
-      line2("\u54C8\u54C8\u54C8\u597D\u597D\u73A9"),
-      line2("\u6211\u8DD1\u5F97\u6BD4\u7403\u5FEB"),
-      line2("\u73A9\u7D2F\u4E86\u2026\u2026\u518D\u73A9\u4E94\u5206\u949F")
-    ),
-    pet: scene2(
-      line2("\u597D\u8212\u670D\u2026\u2026"),
-      line2("\u518D\u6478\u6478\uFF5E", "\u597D"),
-      line2("\u547C\u565C\u547C\u565C\u2026\u2026"),
-      line2("\uFF08\u772F\u8D77\u773C\u775B\uFF09"),
-      line2("\u8FD9\u91CC\u8FD9\u91CC\uFF01\u5DE6\u8FB9\u4E00\u70B9\uFF01"),
-      line2("\u5514\u2026\u2026\u597D\u75D2"),
-      line2("[\u4E3B\u4EBA]\u7684\u624B\u6696\u6696\u7684")
-    ),
-    // --- 状态提醒（闲着时优先说这些）-------------------------------------------
-    hungry: scene2(
-      line2("\u809A\u5B50\u5495\u5495\u53EB\u4E86\u2026\u2026"),
-      line2("[\u4E3B\u4EBA]\uFF0C\u996D\u996D\uFF01", "\u9A6C\u4E0A\u6765"),
-      line2("\u6211\u53EF\u4EE5\u5403\u4E00\u6574\u4E2A\u82F9\u679C\u6811")
-    ),
-    dirty: scene2(
-      line2("\u8EAB\u4E0A\u6709\u70B9\u75D2\u75D2\u7684"),
-      line2("\u6211\u662F\u4E0D\u662F\u6709\u70B9\u5473\u9053\u4E86\u2026\u2026"),
-      line2("\u60F3\u6D17\u6CE1\u6CE1\u6D74", "\u597D\uFF0C\u8FD9\u5C31\u6D17")
-    ),
-    lonely: scene2(
-      line2("[\u4E3B\u4EBA]\u5728\u5FD9\u4EC0\u4E48\u5440\uFF1F"),
-      line2("\u4F60\u597D\u4E45\u6CA1\u7406\u6211\u4E86\u2026\u2026", "\u966A\u4F60\u4E00\u4F1A\u513F"),
-      line2("\u6211\u4E00\u4E2A\u4EBA\u5728\u8FD9\u513F\u6570\u50CF\u7D20")
-    ),
-    idle: scene2(
-      line2("\uFF08\u6253\u4E86\u4E2A\u54C8\u6B20\uFF09"),
-      line2("\u4ECA\u5929\u5929\u6C14\u597D\u50CF\u4E0D\u9519"),
-      line2("\u4F60\u5199\u7684\u4EE3\u7801\u6211\u770B\u61C2\u4E86\u4E00\u884C\uFF01"),
-      line2("\u8981\u4E0D\u8981\u4F11\u606F\u4E00\u4E0B\u773C\u775B\uFF1F", "\u597D"),
-      line2("\u6211\u5728\u60F3\u665A\u996D\u5403\u4EC0\u4E48"),
-      line2("\uFF08\u5728\u89D2\u843D\u91CC\u6EDA\u4E86\u4E00\u5708\uFF09"),
-      line2("[\u4E3B\u4EBA]\u52A0\u6CB9\uFF0C\u6211\u5728\u65C1\u8FB9\u770B\u7740"),
-      line2("\u521A\u624D\u90A3\u4E2A\u62A5\u9519\u6211\u4E5F\u770B\u89C1\u4E86\u2026\u2026")
-    ),
-    // --- 出门 -----------------------------------------------------------------
-    workDone: scene2(
-      line2("\u6211\u56DE\u6765\u5566\uFF01\u8D5A\u5230\u94B1\u4E86\uFF01", "\u8F9B\u82E6\u4E86"),
-      line2("\u4ECA\u5929\u8001\u677F\u5938\u6211\u4E86"),
-      line2("\u7D2F\u662F\u7D2F\u4E86\u70B9\uFF0C\u4F46\u662F\u6709\u94B1\u4E86")
-    ),
-    tired: scene2(
-      line2("\u597D\u7D2F\u554A\u2026\u2026", "\u6B47\u4F1A\u513F\u5427"),
-      line2("\u80FD\u4E0D\u80FD\u5148\u8BA9\u6211\u8EBA\u4E00\u4E0B"),
-      line2("\u518D\u5E72\u4E0B\u53BB\u6211\u8981\u5934\u6655\u4E86")
-    ),
-    study: scene2(
-      line2("\u4ECA\u5929\u5B66\u5230\u597D\u591A\uFF01", "\u771F\u4E56"),
-      line2("\u8001\u5E08\u8BB2\u7684\u6211\u90FD\u542C\u61C2\u4E86\uFF08\u5927\u6982\uFF09"),
-      line2("\u4F5C\u4E1A\u2026\u2026\u660E\u5929\u518D\u8BF4")
-    ),
-    graduate: scene2(
-      line2("\u6211\u6BD5\u4E1A\u5566\uFF01\u6211\u6CA1\u6709\u7559\u7EA7\uFF01", "\u771F\u68D2"),
-      line2("\u770B\uFF0C\u6211\u7684\u6BD5\u4E1A\u7167\uFF01"),
-      line2("\u4E0B\u4E00\u6BB5\u6211\u4E5F\u80FD\u5FF5\u5B8C")
-    ),
-    tripBack: scene2(
-      line2("\u6211\u7ED9\u4F60\u5E26\u4E86\u4E1C\u897F\uFF01", "\u662F\u4EC0\u4E48\uFF1F"),
-      line2("\u5916\u9762\u597D\u5927\u554A"),
-      line2("\u4E0B\u6B21\u5E26\u4F60\u4E00\u8D77\u53BB")
-    ),
-    // --- 生病 -----------------------------------------------------------------
-    sick: scene2(
-      line2("\u963F\u2014\u2014\u568F\uFF01[\u4E3B\u4EBA]\uFF0C\u6211\u597D\u50CF\u75C5\u4E86\u2026\u2026", "\u4E56\uFF0C\u5403\u836F"),
-      line2("\u5934\u6709\u70B9\u6655\u6655\u7684"),
-      line2("\u6211\u4E0D\u60F3\u52A8\u2026\u2026")
-    ),
-    wrongMedicine: scene2(
-      line2("\u8FD9\u836F\u597D\u82E6\u2026\u2026\u597D\u50CF\u4E0D\u662F\u8FD9\u4E2A", "\u5BF9\u4E0D\u8D77"),
-      line2("\u545C\uFF0C\u66F4\u96BE\u53D7\u4E86"),
-      line2("[\u4E3B\u4EBA]\u4F60\u662F\u4E0D\u662F\u770B\u9519\u8BF4\u660E\u4E66\u4E86")
-    ),
-    cured: scene2(
-      line2("\u6211\u597D\u5566\uFF01\u8C22\u8C22[\u4E3B\u4EBA]\uFF5E", "\u771F\u4E56"),
-      line2("\u53C8\u80FD\u8DD1\u80FD\u8DF3\u4E86\uFF01"),
-      line2("\u4EE5\u540E\u6211\u4F1A\u4E56\u4E56\u5403\u996D\u7684")
-    ),
-    // --- 成长与生死 -------------------------------------------------------------
-    levelup: scene2(
-      line2("\u6211\u53C8\u957F\u5927\u4E86\u4E00\u70B9\uFF01", "\u771F\u4E56"),
-      line2("\u611F\u89C9\u81EA\u5DF1\u53D8\u5389\u5BB3\u4E86"),
-      line2("\u4F60\u770B\u6211\u662F\u4E0D\u662F\u9AD8\u4E86\u4E00\u70B9")
-    ),
-    growUp: scene2(
-      line2("\u6211\u957F\u5927\u5566\uFF01"),
-      line2("\u4EE5\u524D\u7684\u8863\u670D\u597D\u50CF\u7A7F\u4E0D\u4E0B\u4E86"),
-      line2("[\u4E3B\u4EBA]\uFF0C\u6211\u73B0\u5728\u662F\u5927\u732A\u4E86")
-    ),
-    coronation: scene2(
-      line2("\u738B\u51A0\u6709\u70B9\u91CD\uFF0C\u4F46\u6211\u4F1A\u597D\u597D\u6234\u7740\u7684\uFF0C[\u4E3B\u4EBA]\u3002", "\u4F60\u53EF\u4EE5\u7684"),
-      line2("\u4ECE\u4ECA\u5929\u8D77\uFF0C\u96F6\u98DF\u4E5F\u7B97\u738B\u5BA4\u4E8B\u52A1\uFF01"),
-      line2("\u6211\u5BA3\u5E03\uFF1A[\u4E3B\u4EBA]\u6C38\u8FDC\u662F\u6211\u7684\u7B2C\u4E00\u4F4D\u8D35\u5BA2\u3002"),
-      line2("\u54B3\u54B3\uFF0C\u672C\u738B\u60F3\u5148\u5403\u4E2A\u82F9\u679C\u3002")
-    ),
-    contract: scene2(
-      line2("\u5951\u7EA6\u7B7E\u597D\u4E86\u3002\u5148\u8BF4\u597D\uFF0C\u6211\u8FD8\u662F\u4F60\u90A3\u53EA\u732A\u3002", "\u5F53\u7136"),
-      line2("\u89D2\u957F\u51FA\u6765\u4E86\uFF0C\u6492\u5A07\u7684\u672C\u4E8B\u53EF\u6CA1\u4E22\u3002"),
-      line2("\u6076\u9B54\u4E5F\u8981\u5403\u996D\u5440\uFF0C[\u4E3B\u4EBA]\u3002"),
-      line2("\u8FD9\u7B14\u4EA4\u6613\u6211\u8D5A\u4E86\uFF1A\u4EE5\u540E\u8FD8\u80FD\u548C\u4F60\u5728\u4E00\u8D77\u3002")
-    ),
-    enter: scene2(
-      line2("[\u4E3B\u4EBA]\u4F60\u56DE\u6765\u5566\uFF01", "\u56DE\u6765\u4E86"),
-      line2("\u7B49\u4F60\u597D\u4E45\u4E86\uFF5E"),
-      line2("\u4ECA\u5929\u4E5F\u8981\u4E00\u8D77\u52A0\u6CB9\u54E6")
-    ),
-    death: scene2(
-      line2("[\u4E3B\u4EBA]\u4FDD\u91CD\uFF0C\u6211\u8D70\u4E86\uFF0C\u4E0D\u5E26\u8D70\u4E00\u7247\u4E91\u5F69\uFF5E"),
-      line2("\u4E0B\u8F88\u5B50\u8FD8\u7ED9\u4F60\u5F53\u732A")
-    ),
-    revive: scene2(
-      line2("\u6211\u2026\u2026\u6211\u56DE\u6765\u4E86\uFF1F"),
-      line2("\u90A3\u8FB9\u597D\u51B7\uFF0C\u8FD8\u662F\u8FD9\u91CC\u597D"),
-      line2("\u8C22\u8C22\u4F60\u6CA1\u653E\u5F03\u6211", "\u6B22\u8FCE\u56DE\u6765")
-    ),
-    // --- B5 用 ------------------------------------------------------------------
-    signIn: scene2(
-      line2("\u7B7E\u5230\u5566\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u7684"),
-      line2("\u8FD9\u662F\u4ECA\u5929\u7684\u793C\u7269\uFF0C\u7ED9\u4F60\uFF5E")
-    ),
-    gift: scene2(
-      line2("\u6211\u5728\u5730\u4E0A\u6361\u5230\u4E00\u4E2A\u76D2\u5B50\uFF01"),
-      line2("\u966A\u4F60\u8FD9\u4E48\u4E45\uFF0C\u8FD9\u662F\u5956\u52B1")
-    ),
-    // --- C2 番茄钟 --------------------------------------------------------------
-    pomodoroStart: scene2(
-      line2("[\u4E3B\u4EBA]\u5FD9\u5427\uFF0C\u6211\u8DB4\u8FD9\u513F\u4E0D\u52A8"),
-      line2("\u4E13\u6CE8\u6A21\u5F0F\uFF01\u6211\u5E2E\u4F60\u770B\u7740\u65F6\u95F4"),
-      line2("\u8FD9 25 \u5206\u949F\u6211\u4E5F\u4E0D\u5435\u4F60\uFF0C\u8BF4\u597D\u4E86")
-    ),
-    pomodoroDone: scene2(
-      line2("\u65F6\u95F4\u5230\uFF01[\u4E3B\u4EBA]\u771F\u5389\u5BB3"),
-      line2("\u505A\u5B8C\u4E00\u4E2A\u5566\uFF0C\u8D77\u6765\u52A8\u52A8\u8116\u5B50"),
-      line2("\u6211\u966A\u4F60\u6570\u7740\u5462\uFF0C\u4E00\u4E2A\u90FD\u4E0D\u5C11")
-    ),
-    pomodoroAbandon: scene2(
-      line2("\u4E0D\u505A\u4E86\u5440\uFF1F\u90A3\u5C31\u6B47\u4F1A\u513F"),
-      line2("\u6CA1\u4E8B\uFF0C\u7B49\u4F60\u51C6\u5907\u597D\u518D\u6765"),
-      line2("\u6211\u5148\u628A\u756A\u8304\u6536\u8D77\u6765\u5566")
-    )
-  });
-  var LINES = Object.freeze(Object.fromEntries(
-    [.../* @__PURE__ */ new Set([...Object.keys(BASE_LINES), ...Object.keys(MORE_LINES)])].map((key) => [key, Object.freeze([...BASE_LINES[key] ?? [], ...MORE_LINES[key] ?? []])])
-  ));
-  var LINE_SCENES = Object.freeze(Object.keys(LINES));
-
-  // src/client/tabs/dev.js
-  var SCENE_NAMES = {
-    eat: "\u5403\u996D",
-    full: "\u5403\u9971",
-    overfull: "\u6491\u7740",
-    bathe: "\u6D17\u6FA1",
-    play: "\u73A9\u800D",
-    pet: "\u6478\u6478",
-    hungry: "\u997F\u4E86",
-    dirty: "\u810F\u4E86",
-    lonely: "\u5B64\u5355",
-    idle: "\u95F2\u804A",
-    workDone: "\u6253\u5DE5\u56DE\u6765",
-    tired: "\u7D2F\u4E86",
-    study: "\u4E0A\u5B66",
-    graduate: "\u6BD5\u4E1A",
-    tripBack: "\u65C5\u884C\u56DE\u6765",
-    sick: "\u751F\u75C5",
-    wrongMedicine: "\u5403\u9519\u836F",
-    cured: "\u6CBB\u597D",
-    levelup: "\u5347\u7EA7",
-    growUp: "\u957F\u5927",
-    coronation: "\u52A0\u5195",
-    contract: "\u7B7E\u7EA6",
-    enter: "\u8FDB\u95E8",
-    death: "\u53BB\u4E16",
-    revive: "\u590D\u6D3B",
-    signIn: "\u7B7E\u5230",
-    gift: "\u793C\u5305",
-    pomodoroStart: "\u756A\u8304\u5F00\u59CB",
-    pomodoroDone: "\u756A\u8304\u5B8C\u6210",
-    pomodoroAbandon: "\u756A\u8304\u653E\u5F03"
-  };
-  var currentPage = "status";
-  function renderDevTab(ui) {
-    var topBar = el("div", "dp-dev-row");
-    var off = button("dp-mini dp-dev-btn", { "data-dev": "devOff" }, function() {
-      ui.devOff();
-    });
-    off.textContent = "\u{1F527} \u5173\u95ED\u8C03\u8BD5";
-    topBar.appendChild(off);
-    ui.content.appendChild(topBar);
-    ui.content.appendChild(el("div", "dp-dev-note", "\u{1F527} \u5F00\u53D1\u8005\u6A21\u5F0F \xB7 \u6784\u5EFA v" + (ui.view.version === "" ? "\u672A\u77E5" : ui.view.version)));
-    if (ui.view.pig !== null && ui.view.pig.ageForced) {
-      ui.content.appendChild(el(
-        "div",
-        "dp-dev-note",
-        "\u26A0\uFE0F \u5E74\u9F84\u662F\u8C03\u8BD5\u6539\u7684\uFF08HUD \u4E0A\u6709 \u{1F527}\uFF09\u2014\u2014 \u6309\u300C\u23EA \u5929\u6570\u5F52\u96F6\u300D\u624D\u4F1A\u91CD\u65B0\u6309\u771F\u5B9E\u65F6\u95F4\u7B97"
-      ));
-    }
-    var patch = function(body) {
-      ui.send("dev", { patch: body });
-    };
-    var pages = [];
-    function page(key, label) {
-      var body = el("div", "dp-dev-page");
-      body.setAttribute("data-dev-page-body", key);
-      pages.push({ key, label, body });
-      return function group(title, entries2, note) {
-        var head = el("div", "dp-title");
-        head.appendChild(el("b", null, title));
-        body.appendChild(head);
-        if (note !== void 0 && note !== "") body.appendChild(el("div", "dp-dev-note", note));
-        var wrap = el("div", "dp-dev-list");
-        for (var i = 0; i < entries2.length; i += 1) {
-          (function(entry) {
-            var item = el("div", "dp-dev-item");
-            var btn = button("dp-mini dp-dev-btn", { "data-dev": entry.key }, function() {
-              entry.run();
-            });
-            btn.textContent = entry.label;
-            if (entry.off === true) btn.disabled = true;
-            item.appendChild(btn);
-            if (entry.desc) item.appendChild(el("small", "dp-dev-desc", entry.desc));
-            wrap.appendChild(item);
-          })(entries2[i]);
-        }
-        body.appendChild(wrap);
-      };
-    }
-    var boxed = ui.view.hatched !== true || ui.view.pig === null;
-    var dead = ui.view.dead === true;
-    var why = boxed ? "\u5148\u5B75\u5316" : dead ? "\u5148\u590D\u6D3B" : "";
-    var forms = ui.view.forms === null ? [] : ui.view.forms.forms;
-    var looks = page("looks", "\u5F62\u6001\u76AE\u80A4");
-    var formEntries = forms.map(function(form) {
-      return {
-        key: "form:" + form.key,
-        label: form.emoji + " " + form.label,
-        off: boxed || dead,
-        desc: "\u76F4\u63A5\u53D8\u6210" + form.label + "\uFF0C\u4E0D\u770B\u6761\u4EF6\uFF1B\u7B49\u7EA7\u4E0D\u591F\u4F1A\u987A\u624B\u8865\u5230\u8FD9\u4E00\u9636\u6BB5",
-        run: function() {
-          var body = { form: form.key };
-          var level = ui.view.pig === null ? 0 : ui.view.pig.level.level;
-          if (level < form.fromLevel) body.level = form.fromLevel;
-          patch(body);
-        }
-      };
-    });
-    formEntries.push({ key: "form:none", label: "\u{1F416} \u6062\u590D\u666E\u901A", desc: "\u53BB\u6389\u5F62\u6001\uFF0C\u56DE\u5230\u666E\u901A\u5C0F\u732A", run: function() {
-      patch({ form: null });
-    } });
-    looks("\u5F62\u6001", formEntries, why);
-    var p = ui.view.pig;
-    if (p === null) {
-      currentPage = "looks";
-      renderPages(ui, pages);
-      ui.content.appendChild(el("div", "dp-empty", "\u8FD8\u6CA1\u6709\u732A\u3002\u5148\u300C\u62C6\u5F00\u7EB8\u76D2\u300D\u518D\u8C03\u3002"));
-      return;
-    }
-    var skinRows = ui.view.skins?.entries?.length > 0 ? ui.view.skins.entries : SKINS;
-    looks("\u76AE\u80A4", skinRows.map(function(skin) {
-      return {
-        key: "skin:" + skin.key,
-        label: skin.emoji + " " + skin.label,
-        desc: skin.unlockJob ? "\u804C\u4E1A\u76AE\u80A4\uFF1A\u4E0D\u7528\u6253\u5DE5\u76F4\u63A5\u8BD5\u7A7F" : "\u6362\u4E0A\u8FD9\u6B3E\u76AE\u80A4",
-        run: function() {
-          if (skin.unlockJob) patch({ skin: skin.key });
-          else ui.send("skin", { skin: skin.key });
-        }
-      };
-    }), "\u5F62\u6001\u663E\u793A\u4F18\u5148\u4E8E\u76AE\u80A4\uFF1B\u6062\u590D\u666E\u901A\u5F62\u6001\u5373\u53EF\u770B\u5230\u76AE\u80A4\u3002");
-    looks("\u9053\u5177", forms.filter(function(form) {
-      return form.item !== "";
-    }).map(function(form) {
-      return {
-        key: "item:" + form.item,
-        label: form.emoji + " \u7ED9" + form.label + "\u9053\u5177",
-        desc: "\u80CC\u5305\u91CC\u52A0\u4E00\u4E2A\u664B\u5347\u9053\u5177\uFF0C\u7528\u6765\u6D4B\u6B63\u5E38\u7684\u664B\u5347\u6D41\u7A0B",
-        run: function() {
-          patch({ inventory: { [form.item]: num(ui.view.inventory[form.item], 0) + 1 } });
-        }
-      };
-    }));
-    var status = page("status", "\u72B6\u6001");
-    status("\u72B6\u6001", [
-      { key: "full", label: "\u{1F60A} \u6EE1\u72B6\u6001", desc: "\u9971\u98DF\u3001\u5FC3\u60C5\u3001\u6E05\u6D01 100\uFF0C\u5065\u5EB7\u6EE1\u683C", run: function() {
-        patch({ satiety: 100, happiness: 100, cleanliness: 100, health: 5 });
-      } },
-      { key: "hungry", label: "\u{1F34E} \u997F", desc: "\u9971\u98DF 10\uFF1A\u770B\u997F\u4E86\u7684\u53F0\u8BCD\u548C\u751F\u75C5\u98CE\u9669", run: function() {
-        patch({ satiety: 10 });
-      } },
-      { key: "dirty", label: "\u{1FAE7} \u810F", desc: "\u6E05\u6D01 10", run: function() {
-        patch({ cleanliness: 10 });
-      } },
-      { key: "lonely", label: "\u{1F97A} \u5B64\u5355", desc: "\u5FC3\u60C5 10", run: function() {
-        patch({ happiness: 10 });
-      } },
-      { key: "sleepy", label: "\u{1F4A4} \u56F0", desc: "\u4E09\u9879\u90FD 90\uFF0C\u6D4B\u8BD5\u56F0\u4E86\u7684\u95F2\u804A", run: function() {
-        patch({ satiety: 90, happiness: 90, cleanliness: 90 });
-      } }
-    ]);
-    status("\u8D44\u6E90", [
-      { key: "coin100", label: "\u{1FA99} +100", desc: "\u91D1\u5E01\u52A0 100", run: function() {
-        patch({ coins: p.coins + 100 });
-      } },
-      { key: "coin999", label: "\u{1FA99} 9999", desc: "\u91D1\u5E01\u8BBE\u6210 9999", run: function() {
-        patch({ coins: 9999 });
-      } },
-      { key: "traits", label: "\u{1F9E0}+5 \u2728+5 \u{1F4AA}+5", desc: "\u667A\u529B\u3001\u9B45\u529B\u3001\u6B66\u529B\u5404 +5", run: function() {
-        patch({ traits: { intel: 5, charm: 5, strong: 5 } });
-      } },
-      { key: "all", label: "\u{1F381} \u4E00\u952E\u62FF\u9F50", desc: "\u5546\u5E97\u91CC\u6BCF\u6837\u4E1C\u897F\u90FD\u7ED9\u51E0\u4E2A", run: function() {
-        ui.send("giveAll");
-      } }
-    ]);
-    status("\u751F\u6B7B", [
-      { key: "kill", label: "\u{1F480} \u5F04\u6B7B", desc: "\u76F4\u63A5\u53BB\u4E16\uFF08\u53D8\u5893\u7891\uFF09\uFF0C\u6D4B\u590D\u6D3B\u548C\u9886\u517B", run: function() {
-        patch({ dead: true });
-      } },
-      { key: "revive", label: "\u2728 \u590D\u6D3B", desc: "\u4E0D\u7528\u8FD8\u9B42\u4E39\u76F4\u63A5\u590D\u6D3B", run: function() {
-        patch({ dead: false, health: 5 });
-      } },
-      { key: "adopt", label: "\u{1F4E6} \u9886\u517B", desc: "\u9886\u517B\u4E00\u53EA\u65B0\u732A\uFF08\u65E7\u732A\u7684\u6545\u4E8B\u7559\u5728\u8BB0\u5FC6\u91CC\uFF09", run: function() {
-        ui.send("adopt");
-      } },
-      { key: "reset", label: "\u{1F504} \u91CD\u7F6E", desc: "\u6E05\u7A7A\u5B58\u6863\uFF0C\u4ECE\u7EB8\u76D2\u91CD\u65B0\u5F00\u59CB", run: function() {
-        ui.send("reset");
-      } }
-    ]);
-    var growth = page("growth", "\u6210\u957F\u751F\u75C5");
-    growth("\u7B49\u7EA7", [
-      { key: "box", label: "\u{1F4E6} \u7EB8\u76D2", desc: "\u56DE\u5230\u6CA1\u62C6\u7684\u7EB8\u76D2", run: function() {
-        patch({ hatched: false });
-      } },
-      { key: "lv1", label: "\u5E7C\u5E74 Lv1", desc: "\u62C6\u76D2\u5E76\u8BBE\u6210 1 \u7EA7", run: function() {
-        patch({ hatched: true, level: 1 });
-      } },
-      { key: "lv10", label: "\u9752\u5E74 Lv10", desc: "\u8BBE\u6210 10 \u7EA7\uFF08\u9752\u5E74\u4F53\u578B\uFF09", run: function() {
-        patch({ level: 10 });
-      } },
-      { key: "lv40", label: "\u6210\u5E74 Lv40", desc: "\u8BBE\u6210 40 \u7EA7\uFF08\u6210\u5E74\u4F53\u578B\uFF09", run: function() {
-        patch({ level: 40 });
-      } },
-      { key: "lv60", label: "\u6EE1\u7EA7 Lv60", desc: "\u8BBE\u6210\u6EE1\u7EA7", run: function() {
-        patch({ level: 60 });
-      } },
-      { key: "real", label: "\u23EA \u5929\u6570\u5F52\u96F6", desc: "\u53D6\u6D88\u8C03\u8BD5\u6539\u8FC7\u7684\u5E74\u9F84\uFF0C\u6309\u771F\u5B9E\u65F6\u95F4\u91CD\u65B0\u7B97", run: function() {
-        ui.send("ageFromNow");
-      } }
-    ]);
-    growth("\u4F53\u91CD", [
-      { key: "weight:normal", label: "\u2696\uFE0F \u6B63\u5E38", desc: "\u4F53\u91CD\u8BBE\u5230\u7406\u60F3\u4F53\u91CD", run: function() {
-        patch({ weightClass: "normal" });
-      } },
-      { key: "weight:round", label: "\u{1F437} \u5706\u6DA6", desc: "\u4F53\u91CD\u8BBE\u5230\u5706\u6DA6\u6863\uFF08\u6362\u5706\u6DA6\u7ACB\u7ED8\uFF09", run: function() {
-        patch({ weightClass: "round" });
-      } },
-      { key: "weight:fat", label: "\u{1F416} \u80D6\u80D6", desc: "\u4F53\u91CD\u8BBE\u5230\u80D6\u80D6\u6863\uFF08\u6362\u80D6\u80D6\u52A8\u4F5C\u7ACB\u7ED8\uFF09", run: function() {
-        patch({ weightClass: "fat" });
-      } }
-    ]);
-    growth("\u751F\u75C5", [
-      { key: "cold1", label: "\u{1F927} \u611F\u5192", desc: "\u611F\u5192\u7B2C 1 \u671F\uFF0C\u5065\u5EB7 4", run: function() {
-        patch({ illness: { chain: 0, stage: 1 }, health: 4 });
-      } },
-      { key: "cough1", label: "\u{1F637} \u54B3\u55FD", desc: "\u54B3\u55FD\u7B2C 1 \u671F", run: function() {
-        patch({ illness: { chain: 1, stage: 1 }, health: 4 });
-      } },
-      { key: "belly1", label: "\u{1F922} \u809A\u5B50\u80C0", desc: "\u80A0\u80C3\u7B2C 1 \u671F\uFF08\u80C3\u80C0\u6C14\u90A3\u6761\uFF09", run: function() {
-        patch({ illness: { chain: 2, stage: 1 }, health: 4 });
-      } },
-      { key: "dizzy1", label: "\u{1F635} \u5934\u6655", desc: "\u5934\u6655\u7B2C 1 \u671F\uFF08\u8FDE\u7EED\u51FA\u95E8\u592A\u591A\u90A3\u6761\uFF09", run: function() {
-        patch({ illness: { chain: 3, stage: 1 }, health: 4 });
-      } },
-      { key: "skin1", label: "\u{1FA79} \u7619\u75D2", desc: "\u76AE\u80A4\u7B2C 1 \u671F\uFF08\u592A\u810F\u90A3\u6761\uFF09", run: function() {
-        patch({ illness: { chain: 4, stage: 1 }, health: 4 });
-      } },
-      { key: "cold4", label: "\u2620\uFE0F \u80BA\u708E", desc: "\u611F\u5192\u6700\u540E\u4E00\u671F\uFF0C\u5065\u5EB7 1\uFF1A\u518D\u62D6\u5C31\u4F1A\u6B7B", run: function() {
-        patch({ illness: { chain: 0, stage: 4 }, health: 1 });
-      } },
-      { key: "cure", label: "\u{1F49A} \u6CBB\u597D", desc: "\u76F4\u63A5\u75C5\u597D\uFF0C\u5065\u5EB7\u6EE1\u683C", run: function() {
-        patch({ illness: null, health: 5 });
-      } }
-    ]);
-    page("pomodoro", "\u756A\u8304\u949F")("\u756A\u8304\u949F", [
-      { key: "pomoDone", label: "\u{1F345} \u5B8C\u6210\u5F53\u524D", desc: "\u6B63\u5728\u4E13\u6CE8\u7684\u8FD9\u4E00\u4E2A\u7ACB\u523B\u5230\u70B9\uFF0C\u7167\u5E38\u53D1\u5956", run: function() {
-        patch({ pomodoro: { finish: true } });
-      } },
-      { key: "pomoCap", label: "\u{1F522} \u4ECA\u5929=8", desc: "\u4ECA\u5929\u5B8C\u6210\u6570\u8BBE\u6210 8\uFF0C\u6D4B\u300C\u6BCF\u5929\u524D 8 \u4E2A\u6709\u5956\u52B1\u300D\u7684\u4E0A\u9650", run: function() {
-        patch({ pomodoro: { todayDone: 8 } });
-      } }
-    ]);
-    var fishEntries = FISH.map(function(fish2) {
-      return { key: "fish:" + fish2.key, label: fish2.emoji + " " + fish2.label, desc: "\u9C7C\u7BD3\u91CC\u76F4\u63A5\u653E\u4E00\u6761", run: function() {
-        ui.send("fishGive", { fish: fish2.key });
-      } };
-    });
-    fishEntries.push({ key: "fish:skip", label: "\u2757 \u8DF3\u8FC7\u7B49\u5F85", desc: "\u629B\u7AFF\u540E\u4E0D\u7528\u7B49\uFF0C\u9A6C\u4E0A\u54AC\u94A9", run: function() {
-      ui.send("fishSkip");
-    } });
-    page("fishing", "\u9493\u9C7C")("\u9493\u9C7C", fishEntries);
-    var dailyView = ui.view.daily ?? { cycle: 7, signInDay: 1, canSignIn: true, signInTotal: 0, unclaimed: 0 };
-    var extensions = ui.view.extensions ?? [];
-    var daily = page("daily", "\u7B7E\u5230\u793C\u5305");
-    var days = [];
-    for (var d = 1; d <= dailyView.cycle; d += 1) {
-      (function(day) {
-        days.push({ key: "signin:" + day, label: "\u{1F4C5} \u7B2C " + day + " \u5929", desc: "\u4E0B\u4E00\u6B21\u7B7E\u5230\u9886\u7B2C " + day + " \u5929\uFF0C\u4ECA\u5929\u53EF\u4EE5\u518D\u7B7E", run: function() {
-          patch({ signInDay: day });
-        } });
-      })(d);
-    }
-    daily("\u7B7E\u5230", days, "\u73B0\u5728\uFF1A\u7B2C " + dailyView.signInDay + "/" + dailyView.cycle + " \u5929" + (dailyView.canSignIn ? " \xB7 \u4ECA\u5929\u8FD8\u6CA1\u7B7E" : " \xB7 \u4ECA\u5929\u5DF2\u7B7E"));
-    daily("\u5728\u7EBF\u793C\u5305", [
-      { key: "gifts:1", label: "\u{1F381} \u6512 1 \u4E2A", desc: "\u732A\u5934\u4E0A\u51FA\u73B0\u793C\u5305\u6309\u94AE", run: function() {
-        patch({ gifts: 1 });
-      } },
-      { key: "gifts:3", label: "\u{1F381} \u6512\u6EE1 3 \u4E2A", desc: "\u793C\u5305\u4E0A\u9650\u662F 3 \u4E2A", run: function() {
-        patch({ gifts: 3 });
-      } },
-      { key: "gifts:0", label: "\u{1F6AB} \u6E05\u7A7A", desc: "\u6CA1\u6709\u5F85\u9886\u7684\u793C\u5305", run: function() {
-        patch({ gifts: 0 });
-      } }
-    ]);
-    var system = page("system", "\u66F4\u65B0\u6269\u5C55");
-    var notice = ui.updateNotice;
-    system("\u66F4\u65B0", [
-      {
-        key: "update:fake",
-        label: "\u{1F534} \u5047\u88C5\u6709\u65B0\u7248",
-        desc: "\u8BA9\u8BBE\u7F6E\u56FE\u6807\u548C\u8BBE\u7F6E\u9875\u5192\u7EA2\u70B9\uFF08\u4E0D\u4F1A\u771F\u7684\u4E0B\u8F7D\uFF09",
-        off: !notice || typeof notice.simulate !== "function",
-        run: function() {
-          notice.simulate("9.9.9");
-          ui.renderContent();
-        }
-      },
-      {
-        key: "update:read",
-        label: "\u2705 \u6807\u4E3A\u5DF2\u8BFB",
-        desc: "\u7EA2\u70B9\u6D88\u5931\uFF08\u548C\u6253\u5F00\u66F4\u65B0\u9875\u4E00\u6837\uFF09",
-        off: !notice,
-        run: function() {
-          notice.markRead();
-          ui.renderContent();
-        }
-      }
-    ]);
-    system("\u6269\u5C55", extensions.map(function(extension) {
-      return {
-        key: "ext:" + extension.key,
-        label: extension.emoji + " " + (extension.on ? "\u5173\u6389" : "\u6253\u5F00") + extension.label,
-        desc: extension.on ? "\u548C\u6269\u5C55 App \u91CC\u5173\u6389\u4E00\u6837\uFF08\u8FDB\u884C\u4E2D\u7684\u4F1A\u6536\u5C3E\uFF09" : "\u91CD\u65B0\u6253\u5F00\uFF0C\u6570\u636E\u539F\u6837\u56DE\u6765",
-        run: function() {
-          ui.send("setExtension", { key: extension.key, on: !extension.on });
-        }
-      };
-    }));
-    page("lines", "\u53F0\u8BCD")("\u8BA9\u732A\u8BF4\u4E00\u53E5", Object.keys(LINES).map(function(scene3) {
-      return {
-        key: "say:" + scene3,
-        label: "\u{1F4AC} " + (SCENE_NAMES[scene3] ?? scene3),
-        desc: "\u968F\u673A\u8BF4\u300C" + scene3 + "\u300D\u573A\u666F\u91CC\u7684\u4E00\u53E5\uFF08\u514D\u6253\u6270\u65F6\u4E0D\u8BF4\uFF09",
-        run: function() {
-          patch({ say: scene3 });
-        }
-      };
-    }));
-    var time = page("time", "\u65F6\u95F4\u9762\u677F");
-    time("\u65F6\u95F4", [
-      { key: "real", label: "\xD71 \u771F\u5B9E", desc: "\u65F6\u95F4\u6309\u771F\u5B9E\u901F\u5EA6\u8D70", run: function() {
-        ui.send("timeScale", { scale: 1 });
-      } },
-      { key: "fast12", label: "\xD712", desc: "1 \u5206\u949F = \u732A\u7684 12 \u5206\u949F", run: function() {
-        ui.send("timeScale", { scale: 12 });
-      } },
-      { key: "fast30", label: "\xD730", desc: "1 \u5206\u949F = \u732A\u7684\u534A\u5C0F\u65F6", run: function() {
-        ui.send("timeScale", { scale: 30 });
-      } },
-      { key: "fast60", label: "\xD760", desc: "1 \u5206\u949F = \u732A\u7684 1 \u5C0F\u65F6", run: function() {
-        ui.send("timeScale", { scale: 60 });
-      } }
-    ]);
-    time("\u9762\u677F", [
-      { key: "open", label: "\u5C55\u5F00/\u6536\u8D77", desc: "\u5207\u6362\u9762\u677F\u5F00\u5173\uFF08\u6D4B\u5F00\u5173\u52A8\u753B\uFF09", run: function() {
-        ui.setOpen(ui.host.getAttribute("data-open") !== "true");
-      } },
-      { key: "away1", label: "\u23E9 +1 \u5C0F\u65F6", desc: "\u65F6\u95F4\u76F4\u63A5\u8FC7\u53BB 1 \u5C0F\u65F6\uFF08\u7ED3\u7B97\u6570\u503C\u3001\u6210\u957F\u3001\u6253\u5DE5\uFF09", run: function() {
-        patch({ __advanceMs: 36e5 });
-      } },
-      { key: "away24", label: "\u23E9 +1 \u5929", desc: "\u65F6\u95F4\u76F4\u63A5\u8FC7\u53BB 1 \u5929\uFF08\u6362\u5929\u3001\u7B7E\u5230\u3001\u65E5\u8BB0\uFF09", run: function() {
-        patch({ __advanceMs: 864e5 });
-      } }
-    ]);
-    time("\u732A\u81EA\u5DF1\u627E\u4E8B\u505A", [
-      { key: "idle", label: "\u{1F437} \u5C0F\u52A8\u4F5C", desc: "\u9A6C\u4E0A\u505A\u4E00\u4E2A\u5C0F\u52A8\u4F5C\uFF08\u6253\u6EDA\u3001\u6253\u76F9\u3001\u8FFD\u8774\u8776\u2026\u2026\uFF09", off: !ui.life, run: function() {
-        ui.setOpen(false);
-        ui.life.idleNow();
-      } },
-      { key: "walk", label: "\u{1F6B6} \u6563\u6B65\u4E00\u6B21", desc: "\u9A6C\u4E0A\u6CBF\u5C4F\u5E55\u5E95\u8FB9\u8D70\u4E00\u8D9F\uFF08\u53EA\u6709\u684C\u9762\u7248\uFF09", off: !ui.life || typeof desktopShell()?.moveBy !== "function", run: function() {
-        ui.setOpen(false);
-        ui.life.walkNow();
-      } },
-      { key: "timeTalk", label: "\u{1F550} \u6309\u65F6\u95F4\u8BF4", desc: "\u95EE\u4E00\u6B21\u300C\u73B0\u5728\u6709\u6CA1\u6709\u6309\u65F6\u95F4\u8BE5\u8BF4\u7684\u8BDD\u300D\uFF08\u4E00\u5929\u4E00\u6B21\u7684\u5DF2\u7ECF\u8BF4\u8FC7\u5C31\u4E0D\u8BF4\uFF09", run: function() {
-        ui.send("chat", { reason: "time" });
-      } }
-    ]);
-    var values = el("div", "dp-dev-page");
-    values.setAttribute("data-dev-page-body", "values");
-    pages.push({ key: "values", label: "\u6570\u503C", body: values });
-    var rows = [
-      ["\u9636\u6BB5", p.stage?.label ?? "\u2014"],
-      ["\u7B49\u7EA7", p.level ? "Lv." + p.level.level + "\uFF08\u8FD8\u5DEE " + Math.ceil(p.level.toNext) + "\uFF09" : "\u2014"],
-      ["\u9971\u98DF", p.satiety],
-      ["\u5FC3\u60C5", p.happiness],
-      ["\u6E05\u6D01", p.cleanliness],
-      ["\u5065\u5EB7", p.health + "/" + (ui.view.maxHealth ?? 5)],
-      ["\u4F53\u91CD", p.weight + (p.bodyWeight ? "\uFF08" + p.bodyWeight.weightG + " g \xB7 " + p.bodyWeight.label + "\uFF09" : "")],
-      ["\u91D1\u5E01", p.coins],
-      ["\u667A\u529B / \u9B45\u529B / \u6B66\u529B", p.traits ? p.traits.intel + " / " + p.traits.charm + " / " + p.traits.strong : "\u2014"],
-      ["\u751F\u75C5", p.illness ? p.illness.name : "\u2014"],
-      ["\u5728\u5916\u9762", ui.view.activity ? ui.view.activity.label : "\u2014"],
-      ["\u7B7E\u5230", "\u7B2C " + dailyView.signInDay + " \u5929 \xB7 \u7D2F\u8BA1 " + dailyView.signInTotal + " \u6B21"],
-      ["\u5F85\u9886\u793C\u5305", dailyView.unclaimed],
-      ["\u6269\u5C55", extensions.map(function(e) {
-        return e.label + (e.on ? "\u5F00" : "\u5173");
-      }).join(" \xB7 ")],
-      ["\u514D\u6253\u6270", ui.view.dialogue?.quiet ? "\u5F00" : "\u5173"],
-      ["\u65F6\u95F4\u500D\u7387", "\xD7" + (ui.view.timeScale ?? 1)]
-    ];
-    for (var r = 0; r < rows.length; r += 1) {
-      var row = el("div", "dp-row");
-      row.appendChild(el("span", null, rows[r][0]));
-      row.appendChild(el("b", null, String(rows[r][1])));
-      values.appendChild(row);
-    }
-    renderPages(ui, pages);
-  }
-  function renderPages(ui, pages) {
-    if (!pages.some(function(entry) {
-      return entry.key === currentPage;
-    })) currentPage = pages[0].key;
-    var index = pages.findIndex(function(entry) {
-      return entry.key === currentPage;
-    });
-    var go = function(to) {
-      currentPage = pages[(to + pages.length) % pages.length].key;
-      ui.renderContent();
-    };
-    var nav = el("div", "dp-dev-nav");
-    var prev = button("dp-mini dp-mini-plain", { "data-dev-prev": "true" }, function() {
-      go(index - 1);
-    });
-    prev.textContent = "\u2039";
-    nav.appendChild(prev);
-    var tabs = el("div", "dp-dev-tabs");
-    for (var i = 0; i < pages.length; i += 1) {
-      (function(entry, at) {
-        var tab = button("dp-dev-tab", { "data-dev-page": entry.key, "aria-pressed": String(at === index) }, function() {
-          go(at);
-        });
-        tab.textContent = entry.label;
-        tabs.appendChild(tab);
-      })(pages[i], i);
-    }
-    nav.appendChild(tabs);
-    var next = button("dp-mini dp-mini-plain", { "data-dev-next": "true" }, function() {
-      go(index + 1);
-    });
-    next.textContent = "\u203A";
-    nav.appendChild(next);
-    ui.content.appendChild(nav);
-    sideScroller(tabs, tabs.children ? tabs.children[index] : null);
-    var start2 = null;
-    for (var k = 0; k < pages.length; k += 1) {
-      var body = pages[k].body;
-      body.hidden = k !== index;
-      if (typeof body.addEventListener === "function") {
-        body.addEventListener("pointerdown", function(event) {
-          start2 = event.clientX;
-        });
-        body.addEventListener("pointerup", function(event) {
-          if (start2 === null || typeof event.clientX !== "number") return;
-          var dx = event.clientX - start2;
-          start2 = null;
-          if (Math.abs(dx) > 50) go(dx < 0 ? index + 1 : index - 1);
-        });
-      }
-      ui.content.appendChild(body);
-    }
-  }
-
-  // src/client/tabs/status.js
-  function renderStatusTab(ui) {
-    var p = ui.view.pig;
-    if (p === null) return;
-    renderBanners(ui);
-    var lv = p.level;
-    labelledBar(
-      ui,
-      "\u2B50 Lv." + lv.level + " " + lv.titleEmoji + lv.titleLabel,
-      lv.maxed ? 100 : lv.percent,
-      lv.maxed ? "\u6EE1\u7EA7" : "\u8FD8\u5DEE " + Math.ceil(lv.toNext) + " \u6210\u957F",
-      "dp-level"
-    );
-    labelledBar(ui, "\u{1F35A} \u9971\u98DF", p.satiety, p.satiety + "%");
-    labelledBar(ui, "\u2764\uFE0F \u5FC3\u60C5", p.happiness, p.happiness + "%", "dp-mood");
-    labelledBar(ui, "\u{1FAE7} \u6E05\u6D01", p.cleanliness, p.cleanliness + "%", "dp-clean");
-    labelledBar(ui, "\u{1F49A} \u5065\u5EB7", p.healthPercent, p.health + "/" + ui.view.maxHealth, "dp-health");
-    var traits = el("div", "dp-traits");
-    traits.appendChild(el("span", null, "\u{1F9E0} \u667A\u529B " + p.traits.intel));
-    traits.appendChild(el("span", null, "\u2728 \u9B45\u529B " + p.traits.charm));
-    traits.appendChild(el("span", null, "\u{1F4AA} \u6B66\u529B " + p.traits.strong));
-    ui.content.appendChild(traits);
-    renderWeight(ui, p);
-    var daily = ui.view.daily;
-    var dailyLine = el("div", "dp-row");
-    dailyLine.appendChild(el("span", null, "\u{1F4C5} \u7B7E\u5230"));
-    dailyLine.appendChild(el("b", null, "\u7B2C " + daily.signInDay + "/" + daily.cycle + " \u5929" + (daily.canSignIn ? " \xB7 \u4ECA\u5929\u8FD8\u6CA1\u7B7E" : "") + (daily.unclaimed > 0 ? " \xB7 \u{1F381} " + daily.unclaimed : "")));
-    ui.content.appendChild(dailyLine);
-    var grid = el("div", "dp-actions");
-    for (var i = 0; i < MODES.length; i += 1) {
-      (function(key) {
-        var info = ui.view.actions[key];
-        var shelf = ui.view.care[key] ?? [];
-        var needsItem = shelf.length > 0;
-        var btn = button("dp-btn", { "data-action": key }, function() {
-          if (BAG_SHELF[key] !== void 0) {
-            ui.select("bag");
-            ui.drill.from = "status";
-            drillTo(ui, "bag", BAG_SHELF[key]);
-          } else {
-            ui.send(key);
-          }
-        });
-        btn.appendChild(el("span", null, CARE_LABEL[key][1]));
-        btn.appendChild(el("span", null, CARE_LABEL[key][0]));
-        if (needsItem) btn.appendChild(el("span", "dp-count", String(shelf.length)));
-        if (!info.ready || ui.view.dead) {
-          btn.disabled = true;
-          if (ui.view.dead) btn.appendChild(el("span", "dp-wait", "\u2014"));
-          else if (info.waitSeconds > 0) btn.appendChild(el("span", "dp-wait", info.waitSeconds + "s"));
-          else if (info.blocked === "away") btn.appendChild(el("span", "dp-wait", "\u4E0D\u5728\u5BB6"));
-        }
-        grid.appendChild(btn);
-      })(MODES[i]);
-    }
-    ui.content.appendChild(grid);
-    if (p.memories.length > 0) {
-      ui.content.appendChild(el("div", "dp-memo", p.memories.slice(-3).join("\n")));
-    }
-  }
-  var BAG_SHELF = { feed: "food", bathe: "bath", play: "toy" };
-  function renderWeight(ui, p) {
-    var row = el("div", "dp-row");
-    row.appendChild(el("span", null, "\u2696\uFE0F \u4F53\u91CD"));
-    row.appendChild(el("b", null, p.weight + (p.bodyWeight !== null ? " \xB7 " + p.bodyWeight.label : "")));
-    ui.content.appendChild(row);
-  }
-  function renderBanners(ui) {
-    if (ui.view.pig !== null && ui.view.dead) {
-      var dead = el("div", "dp-alert dp-dead");
-      dead.appendChild(el("b", null, "\u{1FAA6} " + ui.view.pig.name + " \u8D70\u4E86" + (ui.view.pig.soul ? "\uFF0C\u7075\u9B42\u8FD8\u7559\u5728\u5893\u7891\u4E0A \u{1F47B}" : "")));
-      dead.appendChild(el("div", null, ui.view.pig.soul ? "\u7528\u8FD8\u9B42\u4E39\u53EF\u4EE5\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u4E5F\u53EF\u4EE5\u9886\u517B\u65B0\u7684" : "\u80CC\u5305\u91CC\u7684\u8FD8\u9B42\u4E39\u5C31\u80FD\u6551\u56DE\u6765"));
-      ui.content.appendChild(dead);
-      var adoptWrap = el("div", "dp-actions");
-      var adopt = button("dp-btn dp-btn-wide", { "data-action": "adopt" }, function() {
-        ui.send("adopt");
-      });
-      adopt.appendChild(el("span", null, "\u{1F4E6}"));
-      adopt.appendChild(el("span", null, "\u9886\u517B\u65B0\u732A"));
-      adoptWrap.appendChild(adopt);
-      ui.content.appendChild(adoptWrap);
-    } else if (ui.view.pig !== null && ui.view.pig.illness !== null) {
-      var illness = ui.view.pig.illness;
-      var sick = el("div", "dp-alert dp-sick");
-      sick.appendChild(el("b", null, "\u{1F912} " + illness.name + "\uFF08\u7B2C " + illness.stage + "/4 \u671F\uFF09"));
-      sick.appendChild(el("div", null, "\u9700\u8981\u300C" + illness.cureEmoji + illness.cure + "\u300D\u2014\u2014 \u5403\u9519\u836F\u4F1A\u52A0\u91CD"));
-      var needed = null;
-      var shelf = ui.view.shop || [];
-      for (var c = 0; c < shelf.length; c += 1) {
-        if (shelf[c].needed) needed = shelf[c];
-      }
-      for (var t = 0; needed === null && t < shelf.length; t += 1) {
-        if (shelf[t].kind === "medicine" && shelf[t].tier === illness.stage) needed = shelf[t];
-      }
-      for (var n = 0; needed === null && n < shelf.length; n += 1) {
-        if (shelf[n].label === illness.cure) needed = shelf[n];
-      }
-      if (ui.view.canGoOut) {
-        sick.appendChild(el("div", "dp-dim", "\u5E26\u75C5\u51FA\u95E8\u62A5\u916C\u51CF\u534A\u3001\u75C5\u60C5\u66F4\u5FEB"));
-      }
-      if (needed !== null && ui.view.canGoOut && ui.view.pig.coins < needed.price) {
-        sick.appendChild(el("div", "dp-dim", "\u8FD8\u5DEE " + needed.price + " \u{1FA99} \u4E70\u300C" + needed.label + "\u300D\uFF0C\u5148\u53BB\u6253\u5DE5"));
-      }
-      ui.content.appendChild(sick);
-      if (illness.doctorFee !== null) {
-        var clinic = el("div", "dp-actions");
-        var doctor = button("dp-btn dp-btn-wide", { "data-action": "doctor" }, function() {
-          ui.send("doctor");
-        });
-        doctor.appendChild(el("span", null, "\u{1F3E5}"));
-        doctor.appendChild(el("span", null, "\u770B\u533B\u751F\uFF08" + illness.doctorFee + " \u{1FA99}\uFF09"));
-        clinic.appendChild(doctor);
-        ui.content.appendChild(clinic);
-      }
-    } else if (ui.view.pig !== null && ui.view.activity !== null) {
-      var away = el("div", "dp-alert dp-work");
-      away.appendChild(el("b", null, ui.view.activity.emoji + " \u5728\u5916\u9762\uFF1A" + ui.view.activity.label));
-      away.appendChild(el("div", null, "\u8FD8\u6709 " + ui.view.activity.secondsLeft + " \u79D2"));
-      ui.content.appendChild(away);
-      var wrap = el("div", "dp-actions");
-      var call = button("dp-btn dp-btn-wide", { "data-action": "calloff" }, function() {
-        ui.send("calloff");
-      });
-      call.appendChild(el("span", null, "\u21A9\uFE0F"));
-      call.appendChild(el("span", null, "\u53EB\u5B83\u56DE\u6765"));
-      wrap.appendChild(call);
-      ui.content.appendChild(wrap);
-    }
-  }
-
-  // src/client/switch-activity.js
-  function canStart(ui) {
-    return ui.view.canGoOut === true || ui.view.awayBlocked === "away" && ui.view.activity !== null;
-  }
-  function startOrSwitch(ui, label, action, payload) {
-    if (ui.view.activity === null) {
-      ui.send(action, payload);
-      return;
-    }
-    ui.switchAsk = { label, action, payload };
-    ui.renderContent();
-    if (ui.content) ui.content.scrollTop = 0;
-  }
-  function lossOf(activity) {
-    if (activity.kind === "work") return "\u6253\u5DE5\u5230\u4E00\u534A\u53EB\u56DE\u6765\uFF0C\u8FD9\u4E00\u73ED\u7684\u5DE5\u94B1\u5C31\u6CA1\u4E86";
-    if (activity.kind === "fishing") return "\u9C7C\u9975\u4F1A\u9000\u56DE\u6765";
-    return activity.cost > 0 ? "\u82B1\u7684\u94B1\u4F1A\u9000\u56DE\u6765" : "";
-  }
-  function renderSwitchAsk(ui) {
-    var ask = ui.switchAsk;
-    var activity = ui.view.activity;
-    if (!ask) return;
-    if (activity === null) {
-      ui.switchAsk = null;
-      return;
-    }
-    var box = el("div", "dp-alert dp-switch-ask");
-    var left = Math.max(1, Math.ceil(activity.secondsLeft / 60));
-    box.appendChild(el("b", null, "\u732A\u6B63\u5728" + activity.label.replace(/^兴趣·/, "\u5B66") + "\uFF08\u8FD8\u6709 " + left + " \u5206\u949F\uFF09"));
-    var loss = lossOf(activity);
-    box.appendChild(el("div", null, "\u8981\u7ED3\u675F\u5B83\uFF0C\u6539\u53BB" + ask.label + "\u5417\uFF1F" + (loss ? loss + "\u3002" : "")));
-    var row = el("div", "dp-switch-ask-row");
-    var go = button("dp-mini", { "data-switch-go": ask.action }, function() {
-      ui.switchAsk = null;
-      Promise.resolve(ui.send("calloff")).then(function() {
-        return ui.send(ask.action, ask.payload);
-      });
-    });
-    go.textContent = "\u6539\u53BB" + ask.label;
-    var no = button("dp-mini dp-mini-plain", { "data-switch-cancel": "true" }, function() {
-      ui.switchAsk = null;
-      ui.renderContent();
-    });
-    no.textContent = "\u7B97\u4E86";
-    row.appendChild(go);
-    row.appendChild(no);
-    box.appendChild(row);
-    ui.content.appendChild(box);
-  }
-
-  // src/client/tabs/study.js
-  var INTEREST_TAB = "interest";
-  var STAGE_COLOR = { primary: "yellow", middle: "teal", college: "blue", graduate: "purple", beyond: "pink" };
-  var INTEREST_COLOR = "orange";
-  var FALLBACK_COLORS = ["yellow", "teal", "blue", "purple", "pink", "green", "lime"];
-  function standing(sub, stage) {
-    if (stage === null || sub.stageKey === "") return "current";
-    if (sub.stageKey === stage.key) return "current";
-    if (stage.upTo !== null && sub.lessons >= stage.upTo) return "done";
-    return "ahead";
-  }
-  function renderStudyTab(ui) {
-    renderSwitchAsk(ui);
-    if (ui.view.activity?.kind === "interest") {
-      var active = ui.view.activity;
-      var left = Math.max(1, Math.ceil(active.secondsLeft / 60));
-      ui.content.appendChild(el("div", "dp-alert", active.emoji + " \u6B63\u5728\u5B66" + active.label.replace(/^兴趣·/, "") + " \xB7 \u8FD8\u6709 " + left + " \u5206\u949F"));
-    }
-    if (ui.view.subjects.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u8BFE\u7A0B\u8868\u3002"));
-      return;
-    }
-    var open = ui.drill.study;
-    if (open === INTEREST_TAB && ui.view.interests.length > 0) {
-      renderInterests(ui);
-      return;
-    }
-    var stage = null;
-    for (var d = 0; d < ui.view.stages.length; d += 1) if (ui.view.stages[d].key === open) stage = ui.view.stages[d];
-    if (stage === null) {
-      renderStages(ui);
-      return;
-    }
-    renderSubjects(ui, stage);
-  }
-  function renderStages(ui) {
-    var stageList = ui.view.stages.length > 0 ? ui.view.stages : STAGES;
-    var grid = tileGrid();
-    for (var s = 0; s < stageList.length; s += 1) {
-      (function(entry, index) {
-        var locked = entry.unlocked === false;
-        var finished = entry.upTo === null || entry.upTo === void 0 ? 0 : ui.view.subjects.filter(function(sub) {
-          return sub.lessons >= entry.upTo;
-        }).length;
-        grid.appendChild(tile({
-          emoji: entry.emoji || "\u{1F4DA}",
-          label: entry.label,
-          color: STAGE_COLOR[entry.key] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length],
-          locked,
-          tag: locked ? "\u{1F512}" : "",
-          badge: finished > 0 ? "\u2713" + finished : "",
-          data: { "data-stage": entry.key },
-          onPick: function() {
-            drillTo(ui, "study", entry.key);
-          }
-        }));
-      })(stageList[s], s);
-    }
-    if (ui.view.interests.length > 0) {
-      var certified = ui.view.interests.filter(function(entry) {
-        return entry.certified;
-      }).length;
-      grid.appendChild(tile({
-        emoji: "\u{1F3AF}",
-        label: "\u5174\u8DA3",
-        color: INTEREST_COLOR,
-        badge: certified > 0 ? "\u{1F4DC}" + certified : "",
-        data: { "data-stage": INTEREST_TAB },
-        onPick: function() {
-          drillTo(ui, "study", INTEREST_TAB);
-        }
-      }));
-    }
-    ui.content.appendChild(grid);
-  }
-  function renderSubjects(ui, stage) {
-    drillHeader(
-      ui,
-      "study",
-      stage.emoji + " " + stage.label,
-      stage.minutes + " \u5206\u949F \xB7 " + stage.tuition + " \u{1FA99} \xB7 +" + stage.gain
-    );
-    var color = STAGE_COLOR[stage.key] ?? FALLBACK_COLORS[Math.max(0, ui.view.stages.indexOf(stage)) % FALLBACK_COLORS.length];
-    var grid = tileGrid();
-    for (var i = 0; i < ui.view.subjects.length; i += 1) {
-      (function(sub) {
-        var where = standing(sub, stage);
-        var note;
-        if (where === "done") note = "\u2713 \u6BD5\u4E1A";
-        else if (where === "ahead") note = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
-        else if (stage.upTo !== null) note = sub.lessons - stage.from + "/" + (stage.upTo - stage.from) + " \u8282";
-        else note = sub.lessons + " \u8282";
-        grid.appendChild(tile({
-          emoji: sub.emoji,
-          label: sub.label,
-          color,
-          soft: true,
-          note,
-          disabled: where !== "current" || !canStart(ui),
-          dim: where === "current" && !sub.affordable,
-          data: { "data-subject": sub.key },
-          onPick: function() {
-            startOrSwitch(ui, "\u4E0A" + sub.label + "\u8BFE", "study", { subject: sub.key });
-          }
-        }));
-      })(ui.view.subjects[i]);
-    }
-    ui.content.appendChild(grid);
-  }
-  function renderInterests(ui) {
-    var after = ui.view.interests[0].certificateAfter;
-    drillHeader(ui, "study", "\u{1F3AF} \u5174\u8DA3", after > 0 ? "\u4E0A\u6EE1 " + after + " \u6B21\u62FF\u8BC1" : "");
-    var grid = tileGrid();
-    for (var n = 0; n < ui.view.interests.length; n += 1) {
-      (function(entry) {
-        var note = entry.cost + " \u{1FA99} \xB7 \u7EA6 " + entry.minutes + " \u5206\u949F\u540E " + entry.traitLabel + " +" + entry.gain;
-        var badge2 = entry.certificate === "" ? "" : entry.certified ? "\u{1F4DC}" : entry.times + "/" + entry.certificateAfter;
-        grid.appendChild(tile({
-          emoji: entry.emoji,
-          label: entry.label,
-          color: INTEREST_COLOR,
-          soft: true,
-          note,
-          badge: badge2,
-          disabled: !canStart(ui),
-          dim: !entry.affordable,
-          data: { "data-interest": entry.key },
-          onPick: function() {
-            startOrSwitch(ui, "\u5B66" + entry.label, "interest", { interest: entry.key });
-          }
-        }));
-      })(ui.view.interests[n]);
-    }
-    ui.content.appendChild(grid);
-  }
-
-  // src/client/format.js
-  function formatMinutes(minutes) {
-    if (minutes < 60) return minutes + " \u5206\u949F";
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-    return rest === 0 ? hours + " \u5C0F\u65F6" : hours + " \u5C0F\u65F6" + rest + " \u5206";
-  }
-
-  // src/client/tabs/travel.js
-  function renderTravelTab(ui) {
-    renderSwitchAsk(ui);
-    if (ui.view.trips.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u76EE\u7684\u5730\u3002"));
-      return;
-    }
-    var list = el("div", "dp-list");
-    for (var i = 0; i < ui.view.trips.length; i += 1) {
-      (function(trip) {
-        var row = el("div", "dp-item");
-        row.appendChild(el("span", null, trip.emoji));
-        var grow = el("div", "dp-grow");
-        grow.appendChild(el("div", null, trip.label));
-        grow.appendChild(el("div", "dp-dim", formatMinutes(trip.minutes) + " \xB7 " + trip.cost + " \u{1FA99}" + (trip.bestRarity ? " \xB7 \u53EF\u5E26\u56DE " + trip.bestRarityEmoji + trip.bestRarity : "")));
-        row.appendChild(grow);
-        var go = button("dp-mini", { "data-trip": trip.key }, function() {
-          startOrSwitch(ui, "\u65C5\u884C\uFF08" + trip.label + "\uFF09", "trip", { trip: trip.key });
-        });
-        go.textContent = "\u51FA\u53D1";
-        go.disabled = !canStart(ui) || !trip.affordable;
-        row.appendChild(go);
-        list.appendChild(row);
-      })(ui.view.trips[i]);
-    }
-    ui.content.appendChild(list);
-  }
-
-  // src/client/tabs/work.js
-  var SKILLS = [
-    { key: "strong", emoji: "\u{1F4AA}", label: "\u6B66\u529B", color: "orange" },
-    { key: "charm", emoji: "\u2728", label: "\u9B45\u529B", color: "pink" },
-    { key: "intel", emoji: "\u{1F9E0}", label: "\u667A\u529B", color: "blue" }
-  ];
-  function renderWorkTab(ui) {
-    renderSwitchAsk(ui);
-    if (ui.view.jobs.length === 0) {
-      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u5DE5\u4F5C\u5217\u8868\u3002"));
-      return;
-    }
-    var bySkill = ui.view.jobs.some(function(job) {
-      return job.trait !== "";
-    });
-    if (!bySkill) {
-      renderJobs(ui, ui.view.jobs, "orange");
-      return;
-    }
-    var skill = SKILLS.find(function(entry) {
-      return entry.key === ui.drill.work;
-    });
-    if (skill === void 0) {
-      renderSkills(ui);
-      return;
-    }
-    var chosen = skill;
-    drillHeader(ui, "work", chosen.emoji + " " + chosen.label, "");
-    renderJobs(ui, ui.view.jobs.filter(function(job) {
-      return job.trait === chosen.key;
-    }), chosen.color);
-  }
-  function renderSkills(ui) {
-    var grid = tileGrid();
-    for (var s = 0; s < SKILLS.length; s += 1) {
-      (function(skill) {
-        var open = ui.view.jobs.filter(function(job) {
-          return job.trait === skill.key && job.qualified;
-        }).length;
-        grid.appendChild(tile({
-          emoji: skill.emoji,
-          label: skill.label,
-          color: skill.color,
-          badge: open > 0 ? String(open) : "",
-          data: { "data-skill": skill.key },
-          onPick: function() {
-            drillTo(ui, "work", skill.key);
-          }
-        }));
-      })(SKILLS[s]);
-    }
-    ui.content.appendChild(grid);
-  }
-  function renderJobs(ui, jobs, color) {
-    var grid = tileGrid();
-    var picked = null;
-    for (var i = 0; i < jobs.length; i += 1) {
-      (function(job) {
-        var active = ui.drill.pick === job.key;
-        if (active) picked = job;
-        var locked = job.qualified === false;
-        grid.appendChild(tile({
-          emoji: job.emoji,
-          label: job.label,
-          color,
-          soft: true,
-          active,
-          note: job.minutes + "\u5206\xB7" + job.coins + "\u{1FA99}",
-          tag: locked ? "\u{1F512}" : "",
-          dim: locked,
-          data: { "data-job-tile": job.key },
-          onPick: function() {
-            ui.drill.pick = active ? null : job.key;
-            ui.renderContent();
-          }
-        }));
-      })(jobs[i]);
-    }
-    ui.content.appendChild(grid);
-    if (picked !== null) {
-      ui.footer.appendChild(jobDetails(ui, picked));
-      ui.footer.hidden = false;
-    }
-  }
-  function jobDetails(ui, job) {
-    var box = el("div", "dp-pick dp-tile-card dp-job-detail");
-    box.appendChild(el("div", "dp-pick-head", job.emoji + " " + job.label + " \xB7 " + (job.qualified ? "\u6761\u4EF6\u90FD\u591F\u4E86" : "\u8FD8\u5DEE\u8FD9\u4E9B")));
-    for (var r = 0; r < job.requirements.length; r += 1) {
-      var need = job.requirements[r];
-      var have = need.kind === "level" ? "\uFF08\u73B0\u5728 Lv." + need.have + "\uFF09" : need.kind === "certificate" ? "\uFF08" + need.have + "/" + need.need + " \u6B21\uFF09" : need.kind === "every" || need.kind === "anyOf" ? "\uFF08" + need.have + "/" + need.need + " \u95E8\uFF09" : "\uFF08\u73B0\u5728 " + need.have + " \u8282\uFF09";
-      box.appendChild(el("div", need.met ? "dp-req dp-req-ok" : "dp-req", (need.met ? "\u2713 " : "\u2717 ") + need.text + (need.met ? "" : " " + have)));
-    }
-    if (job.requirements.length === 0 && job.lockText) box.appendChild(el("div", "dp-req", "\u2717 " + job.lockText));
-    box.appendChild(el("div", "dp-dim", job.minutes + " \u5206\u949F \xB7 " + job.coins + " \u{1FA99} \xB7 " + job.traitEmoji + job.traitLabel + " " + job.traitPoints + (job.payPercent > 0 ? "\uFF08+" + job.payPercent + "%\uFF09" : "") + " \xB7 \u9971\u98DF " + job.satiety + " \xB7 \u6E05\u6D01 " + job.cleanliness));
-    var go = button("dp-btn dp-btn-wide dp-job-go", { "data-job": job.key }, function() {
-      startOrSwitch(ui, "\u6253\u5DE5\uFF08" + job.label + "\uFF09", "work", { job: job.key });
-    });
-    go.textContent = "\u{1F4BC} \u51FA\u53D1";
-    go.disabled = !canStart(ui) || job.qualified === false;
-    box.appendChild(go);
-    return box;
-  }
-
-  // src/client/art.js
-  var REACTION_ART = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
-  var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
-  function syncPigArt(pig, image) {
-    var base = pig.getAttribute("data-art");
-    if (!base) return;
-    var art = base;
-    if (pig.getAttribute("data-art-actions") === "true") {
-      var action = REACTION_ART[pig.getAttribute("data-react")] || ACTIVITY_ART[pig.getAttribute("data-activity")];
-      var scenes = String(pig.getAttribute("data-art-scenes") || "").split(",");
-      if (action && (scenes[0] === "" || scenes.indexOf(action) >= 0)) art += "-" + action;
-    }
-    var src = ART_URL + art + ".svg";
-    if (image.getAttribute("src") !== src) image.src = src;
-  }
-
-  // src/client/pet-parts.js
-  var PART_FX = {
-    head: ["\u2764\uFE0F"],
-    ears: ["\u3030\uFE0F", "\u2764\uFE0F"],
-    nose: ["\u{1F4A6}"],
-    belly: ["\u{1F606}", "\u2764\uFE0F"],
-    back: ["\u2728"],
-    tail: ["\u{1F300}"],
-    feet: ["\u{1F43E}"]
-  };
-  function partFor(fx, fy) {
-    if (fy > 0.8) return "feet";
-    if (fx > 0.8 && fy < 0.45) return "tail";
-    if (fx < 0.42 && fy > 0.58) return "nose";
-    if (fx < 0.45 && fy < 0.38) return "ears";
-    if (fx < 0.5) return "head";
-    if (fy > 0.6) return "belly";
-    return "back";
-  }
-  function partAt(pig, event) {
-    if (!pig || typeof pig.getBoundingClientRect !== "function" || typeof event?.clientX !== "number") return "head";
-    var box = pig.getBoundingClientRect();
-    if (!box || box.width <= 0 || box.height <= 0) return "head";
-    var fx = (event.clientX - box.left) / box.width;
-    var fy = (event.clientY - box.top) / box.height;
-    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return "head";
-    return partFor(fx, fy);
   }
 
   // src/client/effects.js
@@ -2535,6 +629,114 @@
     return { send, refresh: refresh2 };
   }
 
+  // src/client/desktop-shell.js
+  function desktopShell() {
+    var shell2 = typeof window !== "undefined" ? (
+      /** @type {any} */
+      window.__dshPiggyShell
+    ) : null;
+    return shell2 !== null && typeof shell2 === "object" && (typeof shell2.beginDrag === "function" || typeof shell2.moveBy === "function") ? shell2 : null;
+  }
+  function desktopRole() {
+    var shell2 = desktopShell();
+    var role2 = shell2 === null ? null : shell2.role;
+    return role2 === "pet" || role2 === "panel" ? role2 : null;
+  }
+
+  // src/client/desktop/panel-window.js
+  var PANEL_CSS = [
+    "html,body{margin:0;padding:0;background:transparent;overflow:hidden}",
+    '[data-piggy-role="panel"] [data-dsh-pig]{position:static!important;inset:auto!important;width:max-content!important;',
+    // 名牌在 DOM 里排在卡片前面：面板在猪上方时名牌放底下（靠猪），在猪下方时放上面。
+    "height:auto!important;display:flex!important;flex-direction:column-reverse;gap:6px;align-items:flex-end;pointer-events:auto!important;transform:none!important}",
+    '[data-piggy-role="panel"] [data-dsh-pig][data-panel-vertical="below"]{flex-direction:column}',
+    '[data-piggy-role="panel"] .dp-scene{display:none!important}',
+    '[data-piggy-role="panel"] .dp-card{position:relative!important;inset:auto!important;margin:0!important}',
+    '[data-piggy-role="panel"] .dp-hud{position:relative!important;inset:auto!important;flex-direction:row!important;gap:10px!important;margin:0!important}'
+  ].join("\n");
+  var shell = (
+    /** @type {any} */
+    null
+  );
+  var anchor = { vertical: "above", maxHeight: 520 };
+  var lastSize = "";
+  var scheduled = false;
+  function host() {
+    return (
+      /** @type {any} */
+      document.querySelector("[data-dsh-pig]")
+    );
+  }
+  function reportSize() {
+    const h = host();
+    if (h === null || typeof shell?.panel?.size !== "function") return;
+    if (h.getAttribute("data-open") !== "true") return;
+    const width = Math.ceil(h.offsetWidth || 0);
+    const height = Math.ceil(h.offsetHeight || 0);
+    if (width < 1 || height < 1) return;
+    const key = width + "x" + height;
+    if (key === lastSize) return;
+    lastSize = key;
+    shell.panel.size(width, height);
+  }
+  function schedule2() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(function() {
+      scheduled = false;
+      reportSize();
+    });
+  }
+  function fitPanelWindow(ctx) {
+    const vertical = anchor.vertical === "below" ? "below" : "above";
+    ctx.host.setAttribute("data-panel-vertical", vertical);
+    ctx.host.setAttribute("data-panel-side", "left");
+    const hudHeight = ctx.hud && !ctx.hud.hidden ? (ctx.hud.offsetHeight || 0) + 6 : 0;
+    ctx.card.style.maxHeight = Math.max(120, Math.round(anchor.maxHeight - hudHeight)) + "px";
+    schedule2();
+  }
+  function installPanel(bridge3) {
+    shell = bridge3;
+    document.documentElement.setAttribute("data-piggy-role", "panel");
+    const style = document.createElement("style");
+    style.setAttribute("data-piggy-panel-style", "");
+    style.textContent = PANEL_CSS;
+    document.head.appendChild(style);
+    window.__dshPiggyShell = {
+      role: "panel",
+      split: true,
+      panel: bridge3.panel,
+      onStateChanged: bridge3.onStateChanged,
+      // 面板窗口里没有猪可拖：这些是给「认桌面版」用的空动作（desktop-shell.js 按 beginDrag 认）。
+      beginDrag: function() {
+      },
+      endDrag: function() {
+      },
+      dragHeartbeat: function() {
+      },
+      room: function() {
+        return null;
+      },
+      refreshRoom: function() {
+      },
+      syncGeometry: schedule2,
+      setAnchor: function(next) {
+        anchor = next;
+      }
+    };
+  }
+  function startPanel() {
+    const h = host();
+    if (h === null) return;
+    const hud = h.querySelector(".dp-hud");
+    if (hud !== null) h.insertBefore(hud, h.firstChild);
+    if (typeof MutationObserver === "function") {
+      new MutationObserver(schedule2).observe(h, { subtree: true, childList: true, attributes: true, characterData: true });
+    }
+    window.addEventListener("resize", schedule2);
+    schedule2();
+  }
+
   // src/client/extensions.js
   var DEFAULTS = [
     { key: "pomodoro", label: "\u756A\u8304\u949F", emoji: "\u{1F345}", description: "", on: true, apps: ["pomodoro"], dexSections: [], shopKinds: [], installed: true, builtin: true, version: "", app: null, error: null },
@@ -2619,10 +821,15 @@
     }
     function fitPanel() {
       if (!ctx.isOpen) return;
-      var shell = desktopShell();
-      if (shell !== null) {
+      if (desktopRole() === "panel") {
+        fitPanelWindow(ctx);
+        return;
+      }
+      if (desktopRole() === "pet") return;
+      var shell2 = desktopShell();
+      if (shell2 !== null) {
         if (ctx.host.getAttribute("data-panel-side-locked") === "true") return;
-        var room2 = shell.room();
+        var room2 = shell2.room();
         if (room2 !== null) {
           var opensBelow = room2.above < room2.below;
           var fixedHeight = function(space) {
@@ -2721,6 +928,696 @@
     if (event.kind === "interest") {
       ctx.showBubble(str(event.text, "\u5174\u8DA3\u8BFE\u5B66\u5B8C\u5566"), 4e3);
       ctx.react("away", 900);
+      return true;
+    }
+    return false;
+  }
+
+  // src/client/pending.js
+  var URGENT_KINDS = ["sick", "worse", "death", "cured", "revived"];
+  function processPending(ctx, showPigLine) {
+    var role2 = desktopRole();
+    var pigSide = role2 !== "panel";
+    var cardSide = role2 !== "pet";
+    for (var i = 0; i < ctx.view.pending.length; i += 1) {
+      var event = ctx.view.pending[i];
+      if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue;
+      if (event.id > 0) ctx.lastPendingId = event.id;
+      ctx.lastPendingAt = Math.max(ctx.lastPendingAt, event.at);
+      if (event.kind === "line") {
+        if (pigSide) showPigLine(event);
+        continue;
+      }
+      if (ctx.view.dialogue.quiet && URGENT_KINDS.indexOf(event.kind) < 0) continue;
+      if (event.kind === "achievement" || event.kind === "interest") {
+        if (pigSide) showMilestoneNotice(ctx, event);
+        continue;
+      }
+      if (event.kind === "gift") continue;
+      if (cardSide) ctx.toast(str(event.text, "\u732A\u6709\u65B0\u6D88\u606F"));
+      if (!pigSide) continue;
+      if (event.kind === "coronation") {
+        ctx.react("levelup", 950);
+        ctx.transform("crown");
+      } else if (event.kind === "contract") {
+        ctx.react("levelup", 950);
+        ctx.transform("contract");
+      } else if (event.kind === "levelup") {
+        ctx.react("levelup", 950);
+        ctx.burst(["\u2728", "\u{1F389}"], 3);
+      } else if (event.kind === "cured") {
+        ctx.react("cure", 900);
+        ctx.burst(["\u{1F49A}", "\u2728"], 3);
+      } else if (event.kind === "death") ctx.react("refuse", 700);
+      else if (event.kind === "work") {
+        ctx.react("away", 900);
+        ctx.burst(["\u{1FA99}", "\u{1F4B0}"], 3);
+      } else if (event.kind === "study") {
+        ctx.react("away", 900);
+        ctx.burst(["\u{1F4DA}", "\u2728"], 3);
+      } else if (event.kind === "trip") {
+        ctx.react("away", 900);
+        ctx.burst(["\u{1F9F3}", "\u{1F381}"], 3);
+      }
+    }
+    if (pigSide) ctx.updateNotice?.maybeBubble();
+  }
+
+  // src/client/storage.js
+  function readStore(key) {
+    try {
+      var value = window.localStorage.getItem(key);
+      return value !== null ? value : window.localStorage.getItem(key.replace(/^dsh-piggy:/, "dsh-pig:"));
+    } catch (error) {
+      return null;
+    }
+  }
+  function writeStore(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (error) {
+    }
+  }
+
+  // src/client/auto-collapse.js
+  var AUTO_COLLAPSE_KEY = "dsh-piggy:auto-collapse";
+  function autoCollapseEnabled() {
+    return readStore(AUTO_COLLAPSE_KEY) !== "false";
+  }
+  function setAutoCollapse(enabled) {
+    writeStore(AUTO_COLLAPSE_KEY, enabled ? "true" : "false");
+  }
+  function attachAutoCollapse(context) {
+    function focusedInput() {
+      const active = document.activeElement;
+      const tag2 = active?.tagName?.toLowerCase?.() ?? "";
+      return tag2 === "input" || tag2 === "textarea" || active?.getAttribute?.("contenteditable") === "true";
+    }
+    function canClose() {
+      return context.isOpen() && autoCollapseEnabled() && !context.isDragging() && !focusedInput() && !context.isFishing();
+    }
+    function onOutsidePointer(event) {
+      if (!canClose() || event.button !== 0) return;
+      for (let node = event.target; node !== null && node !== void 0; node = node.parentNode) {
+        if (node === context.host) return;
+      }
+      context.setOpen(false);
+    }
+    function onWindowBlur() {
+      if (context.isDesktop() && canClose()) context.setOpen(false);
+    }
+    document.addEventListener("pointerdown", onOutsidePointer, true);
+    window.addEventListener?.("blur", onWindowBlur);
+    return {
+      dispose() {
+        document.removeEventListener("pointerdown", onOutsidePointer, true);
+        window.removeEventListener?.("blur", onWindowBlur);
+      }
+    };
+  }
+
+  // src/client/tabs/fishing-fight.js
+  var frame = 0;
+  var activeUi = null;
+  var resolving = false;
+  var session = null;
+  var raf = (fn) => typeof requestAnimationFrame === "function" ? requestAnimationFrame(fn) : 0;
+  var caf = (id) => {
+    if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(id);
+  };
+  var releaseHold = null;
+  function stopFight(clear = false) {
+    if (frame) caf(frame);
+    frame = 0;
+    activeUi = null;
+    if (releaseHold !== null) {
+      releaseHold();
+      releaseHold = null;
+    }
+    if (clear) session = null;
+  }
+  function fightActive(ui) {
+    return activeUi === ui;
+  }
+  function resetFightResolve() {
+    resolving = false;
+  }
+  function difficultyOf(fish2) {
+    return Math.max(1, Math.min(100, Number(fish2.difficulty) || 1));
+  }
+  function renderFight(ui, fish2) {
+    const mode = fish2.fight === "bar" || fish2.fight === "pull" ? fish2.fight : "ring";
+    if (session?.id !== fish2.id || session.mode !== mode) session = { id: fish2.id, mode };
+    activeUi = ui;
+    const finish = (success) => {
+      if (resolving) return;
+      resolving = true;
+      stopFight(true);
+      ui.send("fishResolve", { success });
+    };
+    if (mode === "bar") return renderBar(ui, fish2, session, finish);
+    if (mode === "pull") return renderPull(ui, fish2, session, finish);
+    return renderRing(ui, fish2, session, finish);
+  }
+  function stillOpen(ui) {
+    return activeUi === ui && ui.host.getAttribute("data-open") === "true";
+  }
+  function holdControls(stage, s) {
+    stage.addEventListener("pointerdown", function(event) {
+      event?.preventDefault?.();
+      s.holding = true;
+    });
+    stage.addEventListener("keydown", function(event) {
+      if (event.code === "Space" || event.key === " ") {
+        event.preventDefault?.();
+        s.holding = true;
+      }
+    });
+    stage.addEventListener("keyup", function(event) {
+      if (event.code === "Space" || event.key === " ") s.holding = false;
+    });
+    const up = function() {
+      s.holding = false;
+    };
+    if (typeof window.addEventListener === "function") {
+      window.addEventListener("pointerup", up);
+      releaseHold = function() {
+        if (typeof window.removeEventListener === "function") window.removeEventListener("pointerup", up);
+      };
+    }
+  }
+  function ringRules(difficulty) {
+    return {
+      zoneDegrees: Math.round(115 - difficulty * 0.38),
+      perfectDegrees: Math.round(16 - difficulty * 0.06),
+      rotationsPerSecond: 0.28 + difficulty * 18e-4,
+      hitsNeeded: difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2
+    };
+  }
+  function newRingRound(s) {
+    s.zoneStart = 105 + Math.random() * 135;
+    s.angle = 0;
+    s.completedCircles = 0;
+    s.startedAt = 0;
+    s.locked = false;
+    s.feedback = "\u770B\u51C6\u7EFF\u8272\u533A\u57DF";
+  }
+  function renderRing(ui, fish2, s, finish) {
+    if (s.hits === void 0) {
+      Object.assign(s, { hits: 0, misses: 0 }, ringRules(difficultyOf(fish2)));
+      newRingRound(s);
+    }
+    let lastPointerAt = -Infinity;
+    const wrap = button("dp-fish-qte", {
+      "data-fish-qte": "true",
+      "data-fish-fight": "ring",
+      "data-qte-difficulty": String(fish2.difficulty),
+      "data-qte-needed": String(s.hitsNeeded),
+      "aria-label": "\u9493\u9C7C\u6280\u80FD\u68C0\u5B9A\uFF0C\u6307\u9488\u8FDB\u5165\u7EFF\u8272\u533A\u57DF\u65F6\u70B9\u51FB"
+    }, function(event) {
+      if (event.detail > 0 && event.timeStamp - lastPointerAt < 700) return;
+      hit(event);
+    });
+    wrap.addEventListener("pointerdown", function(event) {
+      lastPointerAt = event.timeStamp;
+      hit(event);
+    });
+    const ring = el("div", "dp-fish-qte-ring");
+    const needle = el("i", "dp-fish-qte-needle");
+    const score = el("b", "dp-fish-qte-score");
+    const feedback = el("span", "dp-fish-qte-feedback");
+    ring.appendChild(needle);
+    ring.appendChild(el("span", "dp-fish-qte-core", fish2.emoji));
+    wrap.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    wrap.appendChild(ring);
+    wrap.appendChild(score);
+    wrap.appendChild(feedback);
+    wrap.appendChild(el("div", "dp-fish-help", "\u6307\u9488\u8FDB\u5165\u7EFF\u8272\u533A\u57DF\u65F6\u70B9\u51FB\u6216\u6309\u7A7A\u683C \xB7 \u9EC4\u8272\u4E3A\u5B8C\u7F8E\u5224\u5B9A"));
+    wrap.setAttribute("tabindex", "0");
+    ui.content.appendChild(wrap);
+    function paint() {
+      const angle = s.angle % 360;
+      const perfectEnd = s.zoneStart + s.perfectDegrees;
+      const zoneEnd = s.zoneStart + s.zoneDegrees;
+      ring.style.background = `conic-gradient(from 0deg,#dce8e9 0deg ${s.zoneStart}deg,#ffd45d ${s.zoneStart}deg ${perfectEnd}deg,#6bd47b ${perfectEnd}deg ${zoneEnd}deg,#dce8e9 ${zoneEnd}deg 360deg)`;
+      needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+      score.textContent = `\u6280\u80FD\u68C0\u5B9A ${Math.min(s.hits, s.hitsNeeded)} / ${s.hitsNeeded}`;
+      feedback.textContent = `${s.feedback} \xB7 \u673A\u4F1A ${"\u2665".repeat(3 - s.misses)}${"\u2661".repeat(s.misses)}`;
+      wrap.setAttribute("data-qte-angle", angle.toFixed(1));
+      wrap.setAttribute("data-qte-zone-start", s.zoneStart.toFixed(1));
+      wrap.setAttribute("data-qte-zone-size", String(s.zoneDegrees));
+      wrap.setAttribute("data-qte-misses", String(s.misses));
+      wrap.setAttribute("data-qte-speed", String(s.rotationsPerSecond));
+      wrap.setAttribute("data-qte-feedback", s.feedback);
+    }
+    function hit(event) {
+      event?.preventDefault?.();
+      if (s.locked || activeUi !== ui) return;
+      const offset = s.angle % 360 - s.zoneStart;
+      if (offset < 0 || offset > s.zoneDegrees) {
+        s.feedback = offset < 0 ? "\u8FD8\u6CA1\u5230\u65F6\u673A\uFF0C\u518D\u7B49\u7B49" : "\u5DF2\u7ECF\u5212\u8FC7\u53BB\u4E86\uFF0C\u7B49\u4E0B\u4E00\u5708";
+        paint();
+        return;
+      }
+      const perfect = offset <= s.perfectDegrees;
+      s.hits += perfect ? 2 : 1;
+      s.misses = 0;
+      s.feedback = perfect ? "\u5B8C\u7F8E\uFF01\u8FDB\u5EA6 +2" : "\u547D\u4E2D\uFF01";
+      s.locked = true;
+      paint();
+      if (s.hits >= s.hitsNeeded) return setTimeout(() => finish(true), 260);
+      setTimeout(() => {
+        if (session !== s || resolving) return;
+        newRingRound(s);
+        paint();
+      }, 380);
+    }
+    function tick2(now) {
+      if (!stillOpen(ui)) return finish(false);
+      if (!s.startedAt) s.startedAt = now;
+      if (!s.locked) s.angle = (now - s.startedAt) * s.rotationsPerSecond * 0.36;
+      const circles = Math.floor(s.angle / 360);
+      if (!s.locked && circles > s.completedCircles) {
+        s.misses += circles - s.completedCircles;
+        s.completedCircles = circles;
+        s.feedback = s.misses >= 3 ? "\u8FDE\u7EED\u7A7A\u4E86\u4E09\u5708\uFF0C\u9C7C\u8DD1\u6389\u4E86\u2026" : `\u7A7A\u4E86\u4E00\u5708\uFF0C\u8FD8\u5269 ${3 - s.misses} \u5708\u673A\u4F1A`;
+        paint();
+        if (s.misses >= 3) return finish(false);
+      }
+      paint();
+      frame = raf(tick2);
+    }
+    paint();
+    frame = raf(tick2);
+  }
+  var BAR_HEIGHT = 220;
+  function renderBar(ui, fish2, s, finish) {
+    const d = difficultyOf(fish2);
+    if (s.progress === void 0) {
+      Object.assign(s, {
+        zoneH: Math.round(Math.max(46, 96 - d * 0.5)),
+        zone: 0,
+        vel: 0,
+        fishY: BAR_HEIGHT * 0.3,
+        target: BAR_HEIGHT * 0.3,
+        wait: 0,
+        progress: 30,
+        holding: false,
+        last: 0
+      });
+    }
+    const stage = button("dp-fish-stage", { "data-fish-fight": "bar", "data-fish-bar": "true", "aria-label": "\u6309\u4F4F\u8BA9\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC" }, function() {
+    });
+    stage.setAttribute("tabindex", "0");
+    const bar = el("div", "dp-fish-bar");
+    const track = el("div", "dp-fish-track");
+    const zone = el("i", "dp-fish-zone");
+    const swimmer = el("span", "dp-fish-swimmer", fish2.emoji);
+    const meter2 = el("div", "dp-fish-vmeter");
+    const fill = el("i");
+    track.appendChild(zone);
+    track.appendChild(swimmer);
+    meter2.appendChild(fill);
+    bar.appendChild(track);
+    bar.appendChild(meter2);
+    stage.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    stage.appendChild(bar);
+    const hint = el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u677E\u5F00\u4E0B\u6C89 \xB7 \u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC");
+    stage.appendChild(hint);
+    ui.content.appendChild(stage);
+    holdControls(stage, s);
+    function moveFish(dt) {
+      s.wait -= dt;
+      if (s.wait <= 0) {
+        const calm = fish2.behavior === "smooth";
+        let target = s.fishY + (Math.random() - 0.5) * (calm ? 90 : 60 + d * 1.6);
+        if (fish2.behavior === "rise") target += 30;
+        if (fish2.behavior === "sink") target -= 30;
+        s.target = Math.max(8, Math.min(BAR_HEIGHT - 8, target));
+        s.wait = calm ? 900 : Math.max(250, 900 - d * 6);
+      }
+      const dash = (fish2.behavior === "dash" || fish2.behavior === "mixed") && Math.random() < 0.02 ? 6 : 1;
+      s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * dash);
+    }
+    function tick2(now) {
+      if (!stillOpen(ui)) return finish(false);
+      const dt = s.last ? Math.min(50, now - s.last) : 16;
+      s.last = now;
+      s.vel = Math.max(-0.5, Math.min(0.5, s.vel + (s.holding ? 16e-4 : -13e-4) * dt));
+      s.zone += s.vel * dt;
+      if (s.zone < 0) {
+        s.zone = 0;
+        s.vel = s.vel < 0 ? -s.vel * 0.3 : s.vel;
+      }
+      if (s.zone > BAR_HEIGHT - s.zoneH) {
+        s.zone = BAR_HEIGHT - s.zoneH;
+        s.vel = Math.min(0, s.vel);
+      }
+      moveFish(dt);
+      const inside2 = s.fishY >= s.zone && s.fishY <= s.zone + s.zoneH;
+      s.progress = Math.max(0, Math.min(100, s.progress + (inside2 ? 0.028 : -0.022 - d * 1e-4) * dt));
+      zone.style.bottom = s.zone + "px";
+      zone.style.height = s.zoneH + "px";
+      swimmer.style.bottom = s.fishY + "px";
+      fill.style.height = s.progress + "%";
+      stage.setAttribute("data-inside", inside2 ? "true" : "false");
+      stage.setAttribute("data-progress", s.progress.toFixed(0));
+      if (s.progress >= 100) return finish(true);
+      if (s.progress <= 0) return finish(false);
+      frame = raf(tick2);
+    }
+    frame = raf(tick2);
+  }
+  function renderPull(ui, fish2, s, finish) {
+    const d = difficultyOf(fish2);
+    if (s.distance === void 0) {
+      Object.assign(s, { tension: 40, distance: 100, loose: 0, surge: 0, surgeCd: 1500, holding: false, last: 0 });
+    }
+    const stage = button("dp-fish-stage", { "data-fish-fight": "pull", "data-fish-pull": "true", "aria-label": "\u6309\u4F4F\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF\uFF0C\u6307\u9488\u522B\u8FDB\u7EA2\u533A" }, function() {
+    });
+    stage.setAttribute("tabindex", "0");
+    const line3 = el("div", "dp-fish-line");
+    const rod = el("span", "dp-fish-rod", "\u{1F3A3}");
+    line3.appendChild(rod);
+    line3.appendChild(el("span", "dp-fish-string", "\u3030\u3030\u3030"));
+    line3.appendChild(el("span", "dp-fish-rod", fish2.emoji));
+    const gauge = el("div", "dp-fish-gauge");
+    const pin = el("b");
+    gauge.appendChild(pin);
+    const state2 = el("div", "dp-fish-pull-state");
+    const meter2 = el("div", "dp-fish-hmeter");
+    const fill = el("i");
+    meter2.appendChild(fill);
+    stage.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    stage.appendChild(line3);
+    stage.appendChild(gauge);
+    stage.appendChild(state2);
+    stage.appendChild(meter2);
+    stage.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
+    ui.content.appendChild(stage);
+    holdControls(stage, s);
+    function tick2(now) {
+      if (!stillOpen(ui)) return finish(false);
+      const dt = s.last ? Math.min(50, now - s.last) : 16;
+      s.last = now;
+      s.surgeCd -= dt;
+      if (s.surgeCd <= 0) {
+        s.surge = 10 + d * 0.28;
+        s.surgeCd = Math.max(700, 2600 - d * 16) + Math.random() * 900;
+      }
+      s.tension = Math.max(0, Math.min(100, s.tension + ((s.holding ? 0.055 : -0.05) + s.surge * 4e-3) * dt));
+      s.surge = Math.max(0, s.surge - dt * 0.02);
+      const green = s.tension >= 30 && s.tension < 85;
+      const sweet = s.tension >= 72 && s.tension < 85;
+      if (green) {
+        s.distance -= (sweet ? 0.022 : 0.012) * dt * (1 - d * 4e-3);
+        s.loose = Math.max(0, s.loose - dt);
+      }
+      if (s.tension < 30) s.loose += dt;
+      pin.style.left = s.tension + "%";
+      rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
+      fill.style.width = 100 - Math.max(0, s.distance) + "%";
+      state2.textContent = (s.surge > 2 ? fish2.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= 85 ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
+      stage.setAttribute("data-tension", s.tension.toFixed(0));
+      if (s.tension >= 100) return finish(false);
+      if (s.loose > 2600) return finish(false);
+      if (s.distance <= 0) return finish(true);
+      frame = raf(tick2);
+    }
+    frame = raf(tick2);
+  }
+
+  // src/client/switch-activity.js
+  function canStart(ui) {
+    return ui.view.canGoOut === true || ui.view.awayBlocked === "away" && ui.view.activity !== null;
+  }
+  function startOrSwitch(ui, label, action, payload) {
+    if (ui.view.activity === null) {
+      ui.send(action, payload);
+      return;
+    }
+    ui.switchAsk = { label, action, payload };
+    ui.renderContent();
+    if (ui.content) ui.content.scrollTop = 0;
+  }
+  function lossOf(activity) {
+    if (activity.kind === "work") return "\u6253\u5DE5\u5230\u4E00\u534A\u53EB\u56DE\u6765\uFF0C\u8FD9\u4E00\u73ED\u7684\u5DE5\u94B1\u5C31\u6CA1\u4E86";
+    if (activity.kind === "fishing") return "\u9C7C\u9975\u4F1A\u9000\u56DE\u6765";
+    return activity.cost > 0 ? "\u82B1\u7684\u94B1\u4F1A\u9000\u56DE\u6765" : "";
+  }
+  function renderSwitchAsk(ui) {
+    var ask = ui.switchAsk;
+    var activity = ui.view.activity;
+    if (!ask) return;
+    if (activity === null) {
+      ui.switchAsk = null;
+      return;
+    }
+    var box = el("div", "dp-alert dp-switch-ask");
+    var left = Math.max(1, Math.ceil(activity.secondsLeft / 60));
+    box.appendChild(el("b", null, "\u732A\u6B63\u5728" + activity.label.replace(/^兴趣·/, "\u5B66") + "\uFF08\u8FD8\u6709 " + left + " \u5206\u949F\uFF09"));
+    var loss = lossOf(activity);
+    box.appendChild(el("div", null, "\u8981\u7ED3\u675F\u5B83\uFF0C\u6539\u53BB" + ask.label + "\u5417\uFF1F" + (loss ? loss + "\u3002" : "")));
+    var row = el("div", "dp-switch-ask-row");
+    var go = button("dp-mini", { "data-switch-go": ask.action }, function() {
+      ui.switchAsk = null;
+      Promise.resolve(ui.send("calloff")).then(function() {
+        return ui.send(ask.action, ask.payload);
+      });
+    });
+    go.textContent = "\u6539\u53BB" + ask.label;
+    var no = button("dp-mini dp-mini-plain", { "data-switch-cancel": "true" }, function() {
+      ui.switchAsk = null;
+      ui.renderContent();
+    });
+    no.textContent = "\u7B97\u4E86";
+    row.appendChild(go);
+    row.appendChild(no);
+    box.appendChild(row);
+    ui.content.appendChild(box);
+  }
+
+  // src/client/tabs/fishing.js
+  var selectedBait = null;
+  var autoOpen = false;
+  var waitFrame = 0;
+  var waitUi = null;
+  var raf2 = (fn) => typeof requestAnimationFrame === "function" ? requestAnimationFrame(fn) : 0;
+  var caf2 = (id) => {
+    if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(id);
+  };
+  function stopWait() {
+    if (waitFrame) caf2(waitFrame);
+    waitFrame = 0;
+    waitUi = null;
+  }
+  function closeFishing(ui) {
+    const playing = fightActive(ui) && ui.view.fishing.pending?.phase === "hooked";
+    stopFight(true);
+    stopWait();
+    if (playing) ui.send("fishResolve", { success: false });
+  }
+  function renderFishingTab(ui) {
+    stopFight();
+    stopWait();
+    const pending = ui.view.fishing.pending;
+    if (pending?.phase !== "hooked") resetFightResolve();
+    if (ui.view.activity?.kind === "fishing") {
+      stopFight(true);
+      return renderAway(ui);
+    }
+    renderSwitchAsk(ui);
+    if (pending?.phase === "waiting") {
+      stopFight(true);
+      return renderWaiting(ui, pending);
+    }
+    if (pending?.phase === "hooked") return renderFight(ui, pending);
+    stopFight(true);
+    if (pending?.phase === "caught") return renderResult(ui, pending);
+    renderReady(ui);
+  }
+  var BAIT_NOTE = { bait_worm: "\u666E\u901A\u9C7C", bait_shrimp: "\u5C11\u89C1\u7684\u591A\u4E00\u70B9", bait_glow: "\u7A00\u6709\u7684\u591A\u5F88\u591A" };
+  function renderReady(ui) {
+    const baits = ui.view.shop.filter((item) => item.kind === "bait");
+    const owned = (key) => ui.view.inventory[key] ?? 0;
+    if (!baits.some((item) => item.key === selectedBait && owned(item.key) > 0)) selectedBait = baits.find((item) => owned(item.key) > 0)?.key ?? null;
+    ui.content.appendChild(el("div", "dp-fish-label", "\u9009\u9C7C\u9975"));
+    const choices = el("div", "dp-fish-baits");
+    for (const bait of baits) {
+      const choice = button("dp-fish-bait", { "data-fish-bait": bait.key }, function() {
+        selectedBait = bait.key;
+        ui.renderContent();
+      });
+      choice.appendChild(el("em", null, bait.emoji));
+      choice.appendChild(el("b", null, bait.label.replace(/鱼饵$/, "") + " \xD7" + owned(bait.key)));
+      choice.appendChild(el("small", null, BAIT_NOTE[bait.key] ?? ""));
+      choice.setAttribute("aria-pressed", String(selectedBait === bait.key));
+      choice.disabled = owned(bait.key) === 0;
+      choices.appendChild(choice);
+    }
+    ui.content.appendChild(choices);
+    if (selectedBait === null) ui.content.appendChild(el("div", "dp-fish-blocked", "\u6CA1\u6709\u9C7C\u9975\u4E86\uFF0C\u5148\u53BB\u5546\u5E97\u7684\u9C7C\u9975\u8D27\u67B6\u4E70\u3002"));
+    const hungry = (ui.view.pig?.satiety ?? 0) < 1;
+    if (hungry) {
+      ui.content.appendChild(el("div", "dp-fish-blocked", "\u9971\u98DF\u4E3A 0\uFF0C\u5148\u5582\u98DF\u624D\u80FD\u629B\u7AFF\u3002"));
+      const care = button("dp-mini dp-fish-care", { "data-fish-care": "feed" }, function() {
+        ui.select("status");
+      });
+      care.textContent = "\u53BB\u72B6\u6001\u9875\u5582\u98DF \u2192";
+      ui.content.appendChild(care);
+    }
+    const cast = button("dp-btn dp-btn-wide dp-fish-cast", { "data-fish": "cast" }, function() {
+      ui.send("fishCast", { power: 0.7, bait: selectedBait });
+    });
+    cast.textContent = hungry ? "\u{1F35A} \u5582\u98DF\u540E\u624D\u80FD\u629B\u7AFF" : "\u{1F3A3} \u629B\u7AFF";
+    cast.disabled = selectedBait === null || hungry;
+    ui.content.appendChild(cast);
+    renderAuto(ui);
+  }
+  function renderAuto(ui) {
+    const auto = el("details", "dp-fish-auto");
+    if (autoOpen) auto.setAttribute("open", "");
+    auto.addEventListener("toggle", function() {
+      autoOpen = auto.open === true;
+    });
+    auto.appendChild(el("summary", null, "\u{1F437} \u8BA9\u732A\u81EA\u5DF1\u53BB\u9493"));
+    auto.appendChild(el("span", null, "\u732A\u51FA\u95E8 30 / 60 \u5206\u949F\uFF0C\u6BCF 3 \u5206\u949F\u7528 1 \u4E2A\u9009\u4E2D\u7684\u9C7C\u9975\uFF0C\u9493\u5230\u7684\u653E\u8FDB\u9C7C\u7BD3\u3002"));
+    const row = el("div", "dp-fish-auto-row");
+    const reasons = [];
+    for (const minutes of [30, 60]) {
+      const need = minutes / 3;
+      const have = ui.view.inventory[selectedBait] ?? 0;
+      const go = button("dp-mini", { "data-fish-auto": String(minutes) }, function() {
+        startOrSwitch(ui, "\u81EA\u52A8\u9493\u9C7C " + minutes + " \u5206\u949F", "fishAuto", { minutes, bait: selectedBait });
+      });
+      go.textContent = `${minutes} \u5206\u949F\uFF08\u9C7C\u9975 ${need} \u4E2A\uFF09`;
+      go.disabled = !canStart(ui) || have < need;
+      if (go.disabled && minutes === 30) {
+        if (!canStart(ui)) reasons.push("\u732A\u73B0\u5728\u4E0D\u80FD\u51FA\u95E8");
+        else reasons.push("\u9C7C\u9975\u53EA\u5269 " + have + " \u4E2A\uFF0C\u4E0D\u591F " + need + " \u4E2A");
+      }
+      row.appendChild(go);
+    }
+    auto.appendChild(row);
+    if (reasons.length > 0) auto.appendChild(el("span", "dp-fish-why", "\u70B9\u4E0D\u4E86\uFF1A" + reasons[0] + "\u3002"));
+    ui.content.appendChild(auto);
+  }
+  function renderWaiting(ui, pending) {
+    const water = button("dp-fish-waiting", { "data-fish": "hook" }, function() {
+      if (Date.now() < pending.bitesAt) {
+        line3.textContent = "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
+        return;
+      }
+      ui.send("fishHook");
+    });
+    const mark = el("span", "dp-fish-bobber", "\u{1F3A3}");
+    const line3 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
+    water.appendChild(mark);
+    water.appendChild(line3);
+    ui.content.appendChild(water);
+    waitUi = ui;
+    function tick2() {
+      if (waitUi !== ui) return;
+      const now = Date.now();
+      if (now >= pending.bitesAt && now <= pending.hookUntil) {
+        mark.textContent = "\u2757";
+        line3.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
+        water.setAttribute("data-bite", "true");
+      } else if (now > pending.hookUntil) {
+        stopWait();
+        ui.send("fishHook");
+        return;
+      }
+      waitFrame = raf2(tick2);
+    }
+    waitFrame = raf2(tick2);
+  }
+  var STARS = { common: 1, uncommon: 2, rare: 3, legend: 4 };
+  function renderResult(ui, fish2) {
+    const card2 = el("div", "dp-fish-result");
+    card2.appendChild(el("div", "dp-fish-result-emoji", fish2.emoji));
+    card2.appendChild(el("b", null, "\u9493\u5230\u4E86 " + fish2.label + "\uFF01"));
+    const stars2 = STARS[fish2.rarity] ?? 1;
+    card2.appendChild(el("span", "dp-fish-stars", "\u2605".repeat(stars2) + "\u2606".repeat(4 - stars2)));
+    const record2 = fish2.maxCm > 0 && fish2.sizeCm >= fish2.maxCm * 0.85 ? " \xB7 \u5927\u4E2A\u7684\uFF01" : "";
+    card2.appendChild(el("span", null, fish2.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish2.price + record2));
+    const keep = button("dp-btn dp-btn-wide", { "data-fish": "keep" }, function() {
+      ui.send("fishKeep");
+    });
+    keep.textContent = "\u{1F392} \u653E\u8FDB\u9C7C\u7BD3";
+    card2.appendChild(keep);
+    ui.content.appendChild(card2);
+  }
+  function renderAway(ui) {
+    ui.content.appendChild(el("div", "dp-fish-away", "\u{1F3A3}"));
+    ui.content.appendChild(el("div", "dp-empty", ui.view.activity.label + " \xB7 \u9493\u5230\u7684\u9C7C\u4F1A\u653E\u8FDB\u9C7C\u7BD3"));
+  }
+
+  // src/client/split.js
+  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform"];
+  function wireSplit(ctx, hooks) {
+    var role2 = desktopRole();
+    var shell2 = desktopShell();
+    if (role2 === null || shell2 === null || shell2.panel === void 0) return null;
+    if (typeof shell2.onStateChanged === "function") shell2.onStateChanged(function() {
+      hooks.refresh();
+    });
+    if (role2 === "pet") {
+      shell2.panel.onFx(function(fx) {
+        if (fx === null || typeof fx !== "object" || PIG_FX.indexOf(fx.name) < 0) return;
+        var run = ctx[fx.name];
+        if (typeof run === "function") run.apply(null, Array.isArray(fx.args) ? fx.args : []);
+      });
+      shell2.panel.on(function(message) {
+        if (message && message.type === "closed") ctx.isOpen = false;
+      });
+      return role2;
+    }
+    PIG_FX.forEach(function(name) {
+      ctx[name] = function() {
+        shell2.panel.fx(name, Array.prototype.slice.call(arguments));
+      };
+    });
+    shell2.panel.on(function(message) {
+      if (message === null || typeof message !== "object") return;
+      if (message.type === "open") {
+        shell2.setAnchor({ vertical: message.vertical === "below" ? "below" : "above", maxHeight: Number(message.maxHeight) || 520 });
+        if (!ctx.isOpen) ctx.setOpen(true);
+        else ctx.fitPanel();
+        shell2.syncGeometry();
+      } else if (message.type === "closed") {
+        if (ctx.isOpen) ctx.setOpen(false);
+      } else if (message.type === "blur") {
+        if (message.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks.isFishing() || typing()) return;
+        ctx.setOpen(false);
+      }
+    });
+    return role2;
+  }
+  function typing() {
+    var active = (
+      /** @type {any} */
+      document.activeElement
+    );
+    var tag2 = active?.tagName?.toLowerCase?.() ?? "";
+    return tag2 === "input" || tag2 === "textarea" || active?.getAttribute?.("contenteditable") === "true";
+  }
+  function splitSetOpen(ctx, next) {
+    var role2 = desktopRole();
+    if (role2 === "pet") {
+      var changed = next !== ctx.isOpen;
+      ctx.isOpen = next;
+      ctx.host.setAttribute("data-open", "false");
+      ctx.card.hidden = true;
+      ctx.hud.hidden = true;
+      if (changed) desktopShell().panel.toggle(next);
+      return true;
+    }
+    if (role2 === "panel" && !next) {
+      var wasOpen = ctx.isOpen;
+      closeFishing(ctx);
+      ctx.isOpen = false;
+      if (wasOpen) desktopShell().panel.close();
       return true;
     }
     return false;
@@ -3203,22 +2100,6 @@
     return out;
   }
 
-  // src/client/storage.js
-  function readStore(key) {
-    try {
-      var value = window.localStorage.getItem(key);
-      return value !== null ? value : window.localStorage.getItem(key.replace(/^dsh-piggy:/, "dsh-pig:"));
-    } catch (error) {
-      return null;
-    }
-  }
-  function writeStore(key, value) {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch (error) {
-    }
-  }
-
   // src/client/pig-size.js
   var PIG_SIZE_KEY = "dsh-piggy:pig-size";
   var PIG_SIZES = Object.freeze(["small", "standard", "large", "extra"]);
@@ -3241,11 +2122,11 @@
   // src/client/pat-cursor.js
   var SIZE = 32;
   var drawnFor = null;
-  function applyPatCursor(host2) {
+  function applyPatCursor(host3) {
     if (typeof document === "undefined" || typeof document.createElement !== "function" || typeof getComputedStyle !== "function") return;
     let family = "sans-serif";
     try {
-      family = String(getComputedStyle(host2).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
+      family = String(getComputedStyle(host3).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
     } catch {
       return;
     }
@@ -3268,7 +2149,7 @@
         ctx.textBaseline = "middle";
         ctx.fillText("\u{1F44B}", SIZE / 2, SIZE / 2 + 1);
         const url = canvas.toDataURL("image/png");
-        if (typeof url === "string" && url.startsWith("data:image/png")) host2.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
+        if (typeof url === "string" && url.startsWith("data:image/png")) host3.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
       } catch {
       }
     };
@@ -3307,9 +2188,9 @@
       return false;
     }
   }
-  function applyEmojiStyle(host2) {
-    host2.setAttribute("data-emoji", emojiStyle());
-    applyPatCursor(host2);
+  function applyEmojiStyle(host3) {
+    host3.setAttribute("data-emoji", emojiStyle());
+    applyPatCursor(host3);
   }
 
   // src/client/css-achievements.js
@@ -4217,6 +3098,553 @@
   // src/client/styles.js
   var CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS;
 
+  // src/client/interaction-motion.js
+  function canAnimate(node) {
+    return typeof node.animate === "function" && !(typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  var appEntry = null;
+  function animateAppEntry(content) {
+    if (!canAnimate(content)) return;
+    appEntry?.cancel();
+    appEntry = content.animate([
+      { opacity: 0.7, transform: "translateY(5px)" },
+      { opacity: 1, transform: "translateY(0)" }
+    ], { duration: 170, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+  function animatePurchase(tile2) {
+    if (!canAnimate(tile2)) return;
+    tile2.animate([
+      { transform: "scale(0.94)", opacity: 0.72 },
+      { transform: "scale(1.04)", opacity: 1, offset: 0.5 },
+      { transform: "scale(1)", opacity: 1 }
+    ], { duration: 320, easing: "ease-out" });
+  }
+  function panelOrigin(ctx) {
+    const below = ctx.host.getAttribute("data-panel-vertical") === "below" || ctx.card.style.top !== "auto" && ctx.card.style.top !== "";
+    const right = ctx.host.getAttribute("data-panel-side") === "right";
+    return { below, origin: (below ? "top " : "bottom ") + (right ? "left" : "right") };
+  }
+  function animatePanelOpen(ctx) {
+    const { below, origin } = panelOrigin(ctx);
+    for (const node of [ctx.card, ctx.hud]) {
+      if (!node || node.hidden || !canAnimate(node)) continue;
+      node.style.transformOrigin = origin;
+      node.animate([
+        { opacity: 0, transform: `translateY(${below ? -6 : 6}px) scale(.94)` },
+        { opacity: 1, transform: "none" }
+      ], { duration: 180, easing: "cubic-bezier(.2,.8,.2,1)" });
+    }
+  }
+  function animatePanelClose(ctx) {
+    const { below, origin } = panelOrigin(ctx);
+    const host3 = ctx.host;
+    for (const node of [ctx.card, ctx.hud]) {
+      if (!node || node.hidden || !canAnimate(node) || typeof node.cloneNode !== "function") continue;
+      const ghost = node.cloneNode(true);
+      ghost.setAttribute("data-ghost", "true");
+      ghost.setAttribute("aria-hidden", "true");
+      const fromTop = host3.style.top !== "" && host3.style.top !== "auto";
+      const fromLeft = host3.style.left !== "" && host3.style.left !== "auto";
+      const style = ghost.style;
+      style.pointerEvents = "none";
+      style.margin = "0";
+      style.width = node.offsetWidth + "px";
+      style.height = node.offsetHeight + "px";
+      style.maxHeight = "none";
+      style.top = fromTop ? node.offsetTop + "px" : "auto";
+      style.bottom = fromTop ? "auto" : host3.offsetHeight - node.offsetTop - node.offsetHeight + "px";
+      style.left = fromLeft ? node.offsetLeft + "px" : "auto";
+      style.right = fromLeft ? "auto" : host3.offsetWidth - node.offsetLeft - node.offsetWidth + "px";
+      style.transformOrigin = origin;
+      node.parentNode.insertBefore(ghost, node.nextSibling);
+      const fade = ghost.animate([
+        { opacity: 1, transform: "none" },
+        { opacity: 0, transform: `translateY(${below ? -4 : 4}px) scale(.96)` }
+      ], { duration: 140, easing: "cubic-bezier(.4,0,1,1)", fill: "forwards" });
+      fade.onfinish = () => ghost.remove();
+      setTimeout(() => ghost.remove(), 400);
+    }
+  }
+
+  // src/client/widgets.js
+  function labelledBar(ui, label, value, valueText, variant) {
+    var row = el("div", "dp-row");
+    row.appendChild(el("span", null, label));
+    row.appendChild(el("b", null, valueText));
+    ui.content.appendChild(row);
+    ui.content.appendChild(meter(value, variant));
+  }
+  function statStrip(ui) {
+    var p = ui.view.pig;
+    if (p === null) return;
+    var strip = el("div", "dp-statstrip");
+    var cells = [
+      ["\u{1F35A} \u9971\u98DF", p.satiety, p.satiety + "%", ""],
+      ["\u2764\uFE0F \u5FC3\u60C5", p.happiness, p.happiness + "%", "dp-mood"],
+      ["\u{1FAE7} \u6E05\u6D01", p.cleanliness, p.cleanliness + "%", "dp-clean"],
+      ["\u{1F49A} \u5065\u5EB7", p.healthPercent, p.health + "/" + ui.view.maxHealth, "dp-health"]
+    ];
+    for (var i = 0; i < cells.length; i += 1) {
+      var cell = el("div", "dp-statcell");
+      var head = el("div", "dp-row");
+      head.appendChild(el("span", null, cells[i][0]));
+      head.appendChild(el("b", null, cells[i][2]));
+      cell.appendChild(head);
+      cell.appendChild(meter(cells[i][1], cells[i][3]));
+      strip.appendChild(cell);
+    }
+    strip.appendChild(el("div", "dp-statweight", "\u2696\uFE0F \u4F53\u91CD " + p.weight));
+    ui.content.appendChild(strip);
+  }
+  function careEffectLine(action, item) {
+    var parts = [];
+    if (action === "feed") {
+      parts.push("\u9971\u98DF +" + item.satiety);
+      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
+    } else if (action === "bathe") {
+      parts.push("\u6E05\u6D01 +" + item.cleanliness);
+      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
+    } else {
+      parts.push("\u5FC3\u60C5 +" + item.happiness);
+      if (item.satiety) parts.push("\u9971\u98DF " + item.satiety);
+    }
+    return parts.join(" \xB7 ");
+  }
+  function tileGrid() {
+    return el("div", "dp-tiles");
+  }
+  function tile(spec) {
+    var node = button("dp-tile" + (spec.soft ? " dp-tile-soft" : ""), spec.data ?? {}, function() {
+      spec.onPick();
+    });
+    node.setAttribute("data-color", spec.color);
+    if (spec.locked) node.setAttribute("data-locked", "true");
+    if (spec.dim) node.setAttribute("data-dim", "true");
+    if (spec.active) node.setAttribute("data-active", "true");
+    if (spec.disabled === true) node.disabled = true;
+    var icon = el("span", "dp-tile-icon");
+    icon.appendChild(spec.icon ?? el("span", "dp-tile-e", spec.emoji));
+    if (spec.badge) icon.appendChild(el("b", "dp-tile-badge", spec.badge));
+    if (spec.tag) icon.appendChild(el("b", "dp-tile-tag", spec.tag));
+    node.appendChild(icon);
+    node.appendChild(el("span", "dp-tile-n", spec.label));
+    if (spec.note) node.appendChild(el("span", "dp-tile-note", spec.note));
+    return node;
+  }
+  function drillTo(ui, tab, key) {
+    ui.drill[tab] = key;
+    ui.drill.pick = null;
+    ui.renderContent();
+    ui.content.scrollTop = 0;
+  }
+  function drillHeader(ui, tab, title, info) {
+    var row = el("div", "dp-drill");
+    var back = button("dp-drill-back", { "data-back": tab }, function() {
+      if (ui.drill.from) ui.select(ui.drill.from);
+      else drillTo(ui, tab, null);
+    });
+    back.textContent = "\u2039";
+    row.appendChild(back);
+    row.appendChild(el("b", "dp-drill-title", title));
+    if (info) row.appendChild(el("span", "dp-drill-info", info));
+    ui.content.appendChild(row);
+  }
+
+  // src/client/tabs/shop.js
+  var SHELF_COLOR = { food: "red", bath: "teal", toy: "yellow", bait: "blue", medicine: "green", revive: "purple", promotion: "blue" };
+  function shelfParts(kind) {
+    var title = KIND_TITLE[kind] ?? kind;
+    var space = title.indexOf(" ");
+    return space < 0 ? ["\u{1F6D2}", title] : [title.slice(0, space), title.slice(space + 1)];
+  }
+  function renderShopTab(ui) {
+    const extShelves = ui.view.extShelves ?? [];
+    if (ui.view.shop.length === 0 && extShelves.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u8D27\u67B6\u3002"));
+      return;
+    }
+    var coins = "\u{1FA99} " + ui.view.pig.coins;
+    var shelf = ui.drill.shop;
+    const extShelf = extShelves.find((entry) => "ext:" + entry.extension === shelf);
+    if (extShelf) {
+      renderExtShelf(ui, extShelf);
+      return;
+    }
+    if (shelf === null || KIND_ORDER.indexOf(shelf) < 0) {
+      renderShelves(ui);
+      return;
+    }
+    var parts = shelfParts(shelf);
+    drillHeader(ui, "shop", parts[0] + " " + parts[1], coins);
+    var grid = tileGrid();
+    var items = ui.view.shop.filter(function(item) {
+      return shelfOf(item.kind) === shelf;
+    });
+    var boughtTile = null;
+    for (var i = 0; i < items.length; i += 1) {
+      var node = itemTile(ui, items[i], SHELF_COLOR[shelf]);
+      grid.appendChild(node);
+      if (items[i].key === ui.justBought) boughtTile = node;
+    }
+    ui.content.appendChild(grid);
+    if (boughtTile !== null) animatePurchase(boughtTile);
+  }
+  function renderShelves(ui) {
+    var grid = tileGrid();
+    for (var k = 0; k < KIND_ORDER.length; k += 1) {
+      (function(kind) {
+        var items = ui.view.shop.filter(function(item) {
+          return shelfOf(item.kind) === kind;
+        });
+        if (items.length === 0) return;
+        var parts = shelfParts(kind);
+        var needed = items.some(function(item) {
+          return item.needed;
+        });
+        grid.appendChild(tile({
+          emoji: parts[0],
+          label: parts[1],
+          color: SHELF_COLOR[kind] ?? "blue",
+          tag: needed ? "\u9700\u8981" : "",
+          data: { "data-shelf": kind },
+          onPick: function() {
+            drillTo(ui, "shop", kind);
+          }
+        }));
+      })(KIND_ORDER[k]);
+    }
+    for (const shelf of ui.view.extShelves ?? []) {
+      grid.appendChild(tile({
+        emoji: shelf.emoji,
+        label: shelf.label,
+        color: shelf.color || "orange",
+        // 跟内置货架一样只写名字；不用金币买的才在下面注明货币。
+        note: shelf.currency && shelf.currency.label !== "\u91D1\u5E01" ? shelf.currency.label : void 0,
+        data: { "data-shelf": "ext:" + shelf.extension },
+        onPick: function() {
+          drillTo(ui, "shop", "ext:" + shelf.extension);
+        }
+      }));
+    }
+    ui.content.appendChild(grid);
+  }
+  function renderExtShelf(ui, shelf) {
+    const currency = shelf.currency ?? { label: "\u8D27\u5E01", emoji: "\u{1FA99}", balance: 0 };
+    drillHeader(ui, "shop", shelf.emoji + " " + shelf.label, currency.emoji + " " + currency.balance);
+    ui.content.appendChild(el("div", "dp-ext-shelf-note", "\u7528" + currency.label + "\u4E70 \xB7 " + currency.emoji + " \u4F59\u989D " + currency.balance));
+    const list = el("div", "dp-ext-goods");
+    for (const item of shelf.items ?? []) {
+      const row = el("div", "dp-ext-good");
+      row.appendChild(el("span", "dp-ext-good-emoji", item.emoji));
+      const copy = el("div", "dp-ext-good-copy");
+      copy.appendChild(el("b", null, item.label));
+      copy.appendChild(el("small", null, item.note));
+      row.appendChild(copy);
+      const hasPick = Array.isArray(item.pick);
+      const buy = button("dp-mini", { "data-ext-buy": item.key }, function() {
+        if (hasPick) {
+          ui.drill.pick = ui.drill.pick === item.key ? null : item.key;
+          ui.renderContent();
+          return;
+        }
+        ui.send("ext", { key: shelf.extension, op: "buy", data: { item: item.key, pick: null } });
+      });
+      buy.textContent = item.price + " " + currency.emoji;
+      buy.disabled = item.disabled === true;
+      row.appendChild(buy);
+      if (hasPick && ui.drill.pick === item.key) {
+        const choices = el("div", "dp-ext-picks");
+        for (const pick of item.pick) {
+          const choose = button("dp-mini dp-mini-plain", { "data-ext-pick": pick.key }, function() {
+            ui.drill.pick = null;
+            ui.send("ext", { key: shelf.extension, op: "buy", data: { item: item.key, pick: pick.key } });
+          });
+          choose.textContent = pick.emoji + " " + pick.label;
+          choices.appendChild(choose);
+        }
+        row.appendChild(choices);
+      }
+      list.appendChild(row);
+    }
+    ui.content.appendChild(list);
+  }
+  function itemTile(ui, item, color) {
+    var owned = num(ui.view.inventory[item.key], 0);
+    var note = item.price + " \u{1FA99}";
+    if (item.owned) note = "\u5DF2\u62E5\u6709";
+    else if (item.kind === "dress" && item.unlocked === false) note = "\u{1F512} Lv." + item.level;
+    return tile({
+      emoji: item.emoji,
+      label: item.label,
+      color,
+      soft: true,
+      note,
+      badge: owned > 0 ? "\xD7" + owned : "",
+      tag: item.needed ? "\u9700\u8981" : item.owned && item.worn ? "\u7A7F\u7740" : "",
+      dim: !item.owned && (!item.affordable || item.kind === "dress" && item.unlocked === false),
+      disabled: item.owned === true,
+      data: { "data-buy": item.key },
+      onPick: function() {
+        ui.send("buy", { item: item.key });
+      }
+    });
+  }
+
+  // src/client/tabs/bag.js
+  var CONSUMABLES = KIND_ORDER;
+  var CARE_ACTION = { food: "feed", bath: "bathe", toy: "play" };
+  var STAT_SHELVES = ["food", "bath", "toy", "medicine"];
+  var EXTRA = {
+    worn: { emoji: "\u{1F455}", label: "\u5DF2\u7A7F\u6234", color: "pink" },
+    diary: { emoji: "\u{1F4D4}", label: "\u65E5\u8BB0", color: "brown" },
+    souvenir: { emoji: "\u{1F381}", label: "\u7EAA\u5FF5\u54C1", color: "blue" },
+    fish: { emoji: "\u{1F41F}", label: "\u9C7C\u7BD3", color: "teal" }
+  };
+  function shortDay(day) {
+    return day.length >= 10 ? day.slice(5) : day;
+  }
+  function renderBagTab(ui) {
+    var open = ui.drill.bag;
+    if (open === "worn") renderWorn(ui);
+    else if (open === "diary") renderDiary(ui);
+    else if (open === "souvenir") renderSouvenirs(ui);
+    else if (open === "fish") renderFish(ui);
+    else if (open !== null && CONSUMABLES.indexOf(open) >= 0) renderItems(ui, open);
+    else renderCategories(ui);
+  }
+  function ownedOf(ui, kind) {
+    var action = CARE_ACTION[kind];
+    if (action !== void 0 && Array.isArray(ui.view.care[action]) && ui.view.care[action].length > 0) return ui.view.care[action];
+    return ui.view.shop.filter(function(item) {
+      return shelfOf(item.kind) === kind && num(ui.view.inventory[item.key], 0) > 0;
+    });
+  }
+  function renderCategories(ui) {
+    var grid = tileGrid();
+    for (var k = 0; k < CONSUMABLES.length; k += 1) {
+      (function(kind) {
+        var items = ownedOf(ui, kind);
+        var count = items.reduce(function(sum, item) {
+          return sum + num(ui.view.inventory[item.key], 0);
+        }, 0);
+        var hasFree = items.some(function(item) {
+          return item.default === true;
+        });
+        var parts = shelfParts(kind);
+        grid.appendChild(tile({
+          emoji: parts[0],
+          label: parts[1],
+          color: SHELF_COLOR[kind] ?? "blue",
+          badge: count > 0 ? String(count) : "",
+          dim: count === 0 && !hasFree,
+          tag: items.some(function(item) {
+            return item.needed;
+          }) ? "\u9700\u8981" : "",
+          data: { "data-bag": kind },
+          onPick: function() {
+            drillTo(ui, "bag", kind);
+          }
+        }));
+      })(CONSUMABLES[k]);
+    }
+    var counts = {
+      worn: ui.view.dress.filter(function(item) {
+        return item.worn;
+      }).length,
+      diary: ui.view.diary.length,
+      souvenir: ui.view.pig.souvenirs.length,
+      fish: ui.view.fishing.bag.length
+    };
+    for (var key in EXTRA) {
+      (function(category) {
+        if (category === "worn" && counts.worn === 0) return;
+        var spec = EXTRA[category];
+        grid.appendChild(tile({
+          emoji: spec.emoji,
+          label: spec.label,
+          color: spec.color,
+          badge: counts[category] > 0 ? String(counts[category]) : "",
+          dim: counts[category] === 0,
+          data: { "data-bag": category },
+          onPick: function() {
+            drillTo(ui, "bag", category);
+          }
+        }));
+      })(key);
+    }
+    ui.content.appendChild(grid);
+  }
+  function renderWorn(ui) {
+    var worn = ui.view.dress.filter(function(item) {
+      return item.worn;
+    });
+    drillHeader(ui, "bag", "\u{1F455} \u5DF2\u7A7F\u6234", worn.length + " \u4EF6");
+    if (worn.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u73B0\u5728\u6CA1\u6709\u7A7F\u6234\u88C5\u626E"));
+      return;
+    }
+    for (var i = 0; i < worn.length; i += 1) {
+      (function(item) {
+        var row = el("div", "dp-item");
+        row.appendChild(el("span", "dp-item-emoji", item.emoji));
+        row.appendChild(el("span", "dp-grow", item.label + (item.slotLabel ? " \xB7 " + item.slotLabel : "")));
+        var off = button("dp-mini", { "data-take-off": item.key }, function() {
+          ui.send("wear", { item: item.key, on: false });
+        });
+        off.textContent = "\u8131\u4E0B";
+        row.appendChild(off);
+        ui.content.appendChild(row);
+      })(worn[i]);
+    }
+  }
+  function renderFish(ui) {
+    const list = ui.view.fishing.bag;
+    drillHeader(ui, "bag", "\u{1F41F} \u9C7C\u7BD3", list.length + " \u6761");
+    if (list.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u9C7C\u7BD3\u8FD8\u662F\u7A7A\u7684"));
+      return;
+    }
+    for (var i = 0; i < list.length; i += 1) {
+      (function(fish2) {
+        var card2 = el("div", "dp-pick dp-tile-card");
+        card2.appendChild(el("div", "dp-pick-head", fish2.emoji + " " + fish2.label));
+        card2.appendChild(el("div", null, fish2.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish2.price));
+        var actions = el("div", "dp-dev-row");
+        var feed = button("dp-mini", { "data-fish-feed": fish2.id }, function() {
+          ui.send("fishFeed", { id: fish2.id });
+        });
+        feed.textContent = "\u{1F37D} \u5582";
+        var sell = button("dp-mini", { "data-fish-sell": fish2.id }, function() {
+          ui.send("fishSell", { id: fish2.id });
+        });
+        sell.textContent = "\u{1FA99} \u5356";
+        actions.appendChild(feed);
+        actions.appendChild(sell);
+        card2.appendChild(actions);
+        ui.content.appendChild(card2);
+      })(list[i]);
+    }
+  }
+  function renderItems(ui, kind) {
+    var parts = shelfParts(kind);
+    drillHeader(ui, "bag", parts[0] + " " + parts[1], "\u70B9\u4E00\u4E0B\u5C31\u7528");
+    if (STAT_SHELVES.indexOf(kind) >= 0) statStrip(ui);
+    var items = ownedOf(ui, kind);
+    var action = CARE_ACTION[kind];
+    if (items.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u7A7A\u7684"));
+      if (action !== void 0) {
+        var buy = button("dp-btn dp-btn-wide", { "data-bag-shop": kind }, function() {
+          ui.select("shop");
+          drillTo(ui, "shop", kind);
+        });
+        buy.textContent = "\u{1F6D2} \u53BB\u5546\u5E97\u4E70\u4E00\u70B9";
+        ui.content.appendChild(buy);
+      }
+      return;
+    }
+    var grid = tileGrid();
+    for (var i = 0; i < items.length; i += 1) {
+      (function(item) {
+        grid.appendChild(tile({
+          emoji: item.emoji,
+          label: item.label,
+          color: SHELF_COLOR[kind] ?? "blue",
+          soft: true,
+          badge: item.default === true ? "\u514D\u8D39" : "\xD7" + num(ui.view.inventory[item.key], 0),
+          tag: item.needed ? "\u9700\u8981" : "",
+          note: action !== void 0 ? careEffectLine(action, item) : item.kind === "promotion" ? item.useLabel : "",
+          data: { "data-use": item.key },
+          // 照料货架发喂食 / 洗澡 / 玩耍本身（猪的动作和台词都对得上），其他货架照旧「使用」。
+          onPick: function() {
+            ui.send(action ?? "use", { item: item.key });
+          }
+        }));
+      })(items[i]);
+    }
+    ui.content.appendChild(grid);
+  }
+  function renderDiary(ui) {
+    drillHeader(ui, "bag", "\u{1F4D4} \u65E5\u8BB0", ui.view.diary.length + " \u7BC7");
+    if (ui.view.diary.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u8FD8\u6CA1\u6709\u65E5\u8BB0"));
+      return;
+    }
+    var grid = tileGrid();
+    var picked = null;
+    for (var d = 0; d < ui.view.diary.length; d += 1) {
+      (function(entry) {
+        var active = ui.drill.pick === entry.day;
+        if (active) picked = entry;
+        grid.appendChild(tile({
+          emoji: "\u{1F4D4}",
+          label: shortDay(entry.day),
+          color: EXTRA.diary.color,
+          soft: true,
+          active,
+          data: { "data-diary": entry.day },
+          onPick: function() {
+            ui.drill.pick = active ? null : entry.day;
+            ui.renderContent();
+          }
+        }));
+      })(ui.view.diary[d]);
+    }
+    ui.content.appendChild(grid);
+    if (picked !== null) {
+      var page = el("div", "dp-pick dp-tile-card dp-diary-page");
+      page.appendChild(el("div", "dp-pick-head", picked.day));
+      page.appendChild(el("div", null, picked.text));
+      ui.content.appendChild(page);
+    }
+  }
+  function renderSouvenirs(ui) {
+    var list = ui.view.pig.souvenirs;
+    drillHeader(ui, "bag", "\u{1F381} \u7EAA\u5FF5\u54C1", list.length + " \u4EF6");
+    if (list.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u6536\u85CF\u518C\u8FD8\u7A7A\u7740"));
+      return;
+    }
+    var grid = tileGrid();
+    var picked = null;
+    for (var s = 0; s < list.length; s += 1) {
+      (function(entry, index) {
+        var id = entry.key + "#" + index;
+        var active = ui.drill.pick === id;
+        if (active) picked = entry;
+        grid.appendChild(tile({
+          emoji: entry.emoji,
+          label: entry.label,
+          color: EXTRA.souvenir.color,
+          soft: true,
+          active,
+          note: entry.rarityEmoji + entry.rarityLabel,
+          data: { "data-souvenir": id },
+          onPick: function() {
+            ui.drill.pick = active ? null : id;
+            ui.renderContent();
+          }
+        }));
+      })(list[s], s);
+    }
+    ui.content.appendChild(grid);
+    if (picked === null) return;
+    var story = el("div", "dp-pick dp-tile-card");
+    story.appendChild(el("div", "dp-pick-head", picked.emoji + " " + picked.label + (picked.fromLabel === "" ? "" : " \xB7 " + picked.fromLabel)));
+    story.appendChild(el("div", null, picked.story === "" ? "\uFF08\u65E7\u7248\u672C\u5E26\u56DE\u6765\u7684\uFF0C\u6CA1\u6709\u6545\u4E8B\uFF09" : "\u300C" + picked.story + "\u300D"));
+    if (picked.price > 0) {
+      var sold = picked;
+      var sell = button("dp-mini", { "data-sell": sold.key }, function() {
+        ui.drill.pick = null;
+        ui.send("sell", { souvenir: sold.key });
+      });
+      sell.textContent = "\u5356\u6389 +" + sold.price + " \u{1FA99}";
+      sell.style.marginTop = "6px";
+      story.appendChild(sell);
+    }
+    ui.content.appendChild(story);
+  }
+
   // src/client/tabs/card.js
   var LIMITS = { catchphrase: 6, motto: 24, name: 16, owner: 12 };
   function renderCardTab(ui) {
@@ -4766,473 +4194,6 @@
     });
   }
 
-  // src/client/tabs/fishing-fight.js
-  var frame = 0;
-  var activeUi = null;
-  var resolving = false;
-  var session = null;
-  var raf = (fn) => typeof requestAnimationFrame === "function" ? requestAnimationFrame(fn) : 0;
-  var caf = (id) => {
-    if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(id);
-  };
-  var releaseHold = null;
-  function stopFight(clear = false) {
-    if (frame) caf(frame);
-    frame = 0;
-    activeUi = null;
-    if (releaseHold !== null) {
-      releaseHold();
-      releaseHold = null;
-    }
-    if (clear) session = null;
-  }
-  function fightActive(ui) {
-    return activeUi === ui;
-  }
-  function resetFightResolve() {
-    resolving = false;
-  }
-  function difficultyOf(fish2) {
-    return Math.max(1, Math.min(100, Number(fish2.difficulty) || 1));
-  }
-  function renderFight(ui, fish2) {
-    const mode = fish2.fight === "bar" || fish2.fight === "pull" ? fish2.fight : "ring";
-    if (session?.id !== fish2.id || session.mode !== mode) session = { id: fish2.id, mode };
-    activeUi = ui;
-    const finish = (success) => {
-      if (resolving) return;
-      resolving = true;
-      stopFight(true);
-      ui.send("fishResolve", { success });
-    };
-    if (mode === "bar") return renderBar(ui, fish2, session, finish);
-    if (mode === "pull") return renderPull(ui, fish2, session, finish);
-    return renderRing(ui, fish2, session, finish);
-  }
-  function stillOpen(ui) {
-    return activeUi === ui && ui.host.getAttribute("data-open") === "true";
-  }
-  function holdControls(stage, s) {
-    stage.addEventListener("pointerdown", function(event) {
-      event?.preventDefault?.();
-      s.holding = true;
-    });
-    stage.addEventListener("keydown", function(event) {
-      if (event.code === "Space" || event.key === " ") {
-        event.preventDefault?.();
-        s.holding = true;
-      }
-    });
-    stage.addEventListener("keyup", function(event) {
-      if (event.code === "Space" || event.key === " ") s.holding = false;
-    });
-    const up = function() {
-      s.holding = false;
-    };
-    if (typeof window.addEventListener === "function") {
-      window.addEventListener("pointerup", up);
-      releaseHold = function() {
-        if (typeof window.removeEventListener === "function") window.removeEventListener("pointerup", up);
-      };
-    }
-  }
-  function ringRules(difficulty) {
-    return {
-      zoneDegrees: Math.round(115 - difficulty * 0.38),
-      perfectDegrees: Math.round(16 - difficulty * 0.06),
-      rotationsPerSecond: 0.28 + difficulty * 18e-4,
-      hitsNeeded: difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2
-    };
-  }
-  function newRingRound(s) {
-    s.zoneStart = 105 + Math.random() * 135;
-    s.angle = 0;
-    s.completedCircles = 0;
-    s.startedAt = 0;
-    s.locked = false;
-    s.feedback = "\u770B\u51C6\u7EFF\u8272\u533A\u57DF";
-  }
-  function renderRing(ui, fish2, s, finish) {
-    if (s.hits === void 0) {
-      Object.assign(s, { hits: 0, misses: 0 }, ringRules(difficultyOf(fish2)));
-      newRingRound(s);
-    }
-    let lastPointerAt = -Infinity;
-    const wrap = button("dp-fish-qte", {
-      "data-fish-qte": "true",
-      "data-fish-fight": "ring",
-      "data-qte-difficulty": String(fish2.difficulty),
-      "data-qte-needed": String(s.hitsNeeded),
-      "aria-label": "\u9493\u9C7C\u6280\u80FD\u68C0\u5B9A\uFF0C\u6307\u9488\u8FDB\u5165\u7EFF\u8272\u533A\u57DF\u65F6\u70B9\u51FB"
-    }, function(event) {
-      if (event.detail > 0 && event.timeStamp - lastPointerAt < 700) return;
-      hit(event);
-    });
-    wrap.addEventListener("pointerdown", function(event) {
-      lastPointerAt = event.timeStamp;
-      hit(event);
-    });
-    const ring = el("div", "dp-fish-qte-ring");
-    const needle = el("i", "dp-fish-qte-needle");
-    const score = el("b", "dp-fish-qte-score");
-    const feedback = el("span", "dp-fish-qte-feedback");
-    ring.appendChild(needle);
-    ring.appendChild(el("span", "dp-fish-qte-core", fish2.emoji));
-    wrap.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
-    wrap.appendChild(ring);
-    wrap.appendChild(score);
-    wrap.appendChild(feedback);
-    wrap.appendChild(el("div", "dp-fish-help", "\u6307\u9488\u8FDB\u5165\u7EFF\u8272\u533A\u57DF\u65F6\u70B9\u51FB\u6216\u6309\u7A7A\u683C \xB7 \u9EC4\u8272\u4E3A\u5B8C\u7F8E\u5224\u5B9A"));
-    wrap.setAttribute("tabindex", "0");
-    ui.content.appendChild(wrap);
-    function paint() {
-      const angle = s.angle % 360;
-      const perfectEnd = s.zoneStart + s.perfectDegrees;
-      const zoneEnd = s.zoneStart + s.zoneDegrees;
-      ring.style.background = `conic-gradient(from 0deg,#dce8e9 0deg ${s.zoneStart}deg,#ffd45d ${s.zoneStart}deg ${perfectEnd}deg,#6bd47b ${perfectEnd}deg ${zoneEnd}deg,#dce8e9 ${zoneEnd}deg 360deg)`;
-      needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-      score.textContent = `\u6280\u80FD\u68C0\u5B9A ${Math.min(s.hits, s.hitsNeeded)} / ${s.hitsNeeded}`;
-      feedback.textContent = `${s.feedback} \xB7 \u673A\u4F1A ${"\u2665".repeat(3 - s.misses)}${"\u2661".repeat(s.misses)}`;
-      wrap.setAttribute("data-qte-angle", angle.toFixed(1));
-      wrap.setAttribute("data-qte-zone-start", s.zoneStart.toFixed(1));
-      wrap.setAttribute("data-qte-zone-size", String(s.zoneDegrees));
-      wrap.setAttribute("data-qte-misses", String(s.misses));
-      wrap.setAttribute("data-qte-speed", String(s.rotationsPerSecond));
-      wrap.setAttribute("data-qte-feedback", s.feedback);
-    }
-    function hit(event) {
-      event?.preventDefault?.();
-      if (s.locked || activeUi !== ui) return;
-      const offset = s.angle % 360 - s.zoneStart;
-      if (offset < 0 || offset > s.zoneDegrees) {
-        s.feedback = offset < 0 ? "\u8FD8\u6CA1\u5230\u65F6\u673A\uFF0C\u518D\u7B49\u7B49" : "\u5DF2\u7ECF\u5212\u8FC7\u53BB\u4E86\uFF0C\u7B49\u4E0B\u4E00\u5708";
-        paint();
-        return;
-      }
-      const perfect = offset <= s.perfectDegrees;
-      s.hits += perfect ? 2 : 1;
-      s.misses = 0;
-      s.feedback = perfect ? "\u5B8C\u7F8E\uFF01\u8FDB\u5EA6 +2" : "\u547D\u4E2D\uFF01";
-      s.locked = true;
-      paint();
-      if (s.hits >= s.hitsNeeded) return setTimeout(() => finish(true), 260);
-      setTimeout(() => {
-        if (session !== s || resolving) return;
-        newRingRound(s);
-        paint();
-      }, 380);
-    }
-    function tick2(now) {
-      if (!stillOpen(ui)) return finish(false);
-      if (!s.startedAt) s.startedAt = now;
-      if (!s.locked) s.angle = (now - s.startedAt) * s.rotationsPerSecond * 0.36;
-      const circles = Math.floor(s.angle / 360);
-      if (!s.locked && circles > s.completedCircles) {
-        s.misses += circles - s.completedCircles;
-        s.completedCircles = circles;
-        s.feedback = s.misses >= 3 ? "\u8FDE\u7EED\u7A7A\u4E86\u4E09\u5708\uFF0C\u9C7C\u8DD1\u6389\u4E86\u2026" : `\u7A7A\u4E86\u4E00\u5708\uFF0C\u8FD8\u5269 ${3 - s.misses} \u5708\u673A\u4F1A`;
-        paint();
-        if (s.misses >= 3) return finish(false);
-      }
-      paint();
-      frame = raf(tick2);
-    }
-    paint();
-    frame = raf(tick2);
-  }
-  var BAR_HEIGHT = 220;
-  function renderBar(ui, fish2, s, finish) {
-    const d = difficultyOf(fish2);
-    if (s.progress === void 0) {
-      Object.assign(s, {
-        zoneH: Math.round(Math.max(46, 96 - d * 0.5)),
-        zone: 0,
-        vel: 0,
-        fishY: BAR_HEIGHT * 0.3,
-        target: BAR_HEIGHT * 0.3,
-        wait: 0,
-        progress: 30,
-        holding: false,
-        last: 0
-      });
-    }
-    const stage = button("dp-fish-stage", { "data-fish-fight": "bar", "data-fish-bar": "true", "aria-label": "\u6309\u4F4F\u8BA9\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC" }, function() {
-    });
-    stage.setAttribute("tabindex", "0");
-    const bar = el("div", "dp-fish-bar");
-    const track = el("div", "dp-fish-track");
-    const zone = el("i", "dp-fish-zone");
-    const swimmer = el("span", "dp-fish-swimmer", fish2.emoji);
-    const meter2 = el("div", "dp-fish-vmeter");
-    const fill = el("i");
-    track.appendChild(zone);
-    track.appendChild(swimmer);
-    meter2.appendChild(fill);
-    bar.appendChild(track);
-    bar.appendChild(meter2);
-    stage.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
-    stage.appendChild(bar);
-    const hint = el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u677E\u5F00\u4E0B\u6C89 \xB7 \u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC");
-    stage.appendChild(hint);
-    ui.content.appendChild(stage);
-    holdControls(stage, s);
-    function moveFish(dt) {
-      s.wait -= dt;
-      if (s.wait <= 0) {
-        const calm = fish2.behavior === "smooth";
-        let target = s.fishY + (Math.random() - 0.5) * (calm ? 90 : 60 + d * 1.6);
-        if (fish2.behavior === "rise") target += 30;
-        if (fish2.behavior === "sink") target -= 30;
-        s.target = Math.max(8, Math.min(BAR_HEIGHT - 8, target));
-        s.wait = calm ? 900 : Math.max(250, 900 - d * 6);
-      }
-      const dash = (fish2.behavior === "dash" || fish2.behavior === "mixed") && Math.random() < 0.02 ? 6 : 1;
-      s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * dash);
-    }
-    function tick2(now) {
-      if (!stillOpen(ui)) return finish(false);
-      const dt = s.last ? Math.min(50, now - s.last) : 16;
-      s.last = now;
-      s.vel = Math.max(-0.5, Math.min(0.5, s.vel + (s.holding ? 16e-4 : -13e-4) * dt));
-      s.zone += s.vel * dt;
-      if (s.zone < 0) {
-        s.zone = 0;
-        s.vel = s.vel < 0 ? -s.vel * 0.3 : s.vel;
-      }
-      if (s.zone > BAR_HEIGHT - s.zoneH) {
-        s.zone = BAR_HEIGHT - s.zoneH;
-        s.vel = Math.min(0, s.vel);
-      }
-      moveFish(dt);
-      const inside2 = s.fishY >= s.zone && s.fishY <= s.zone + s.zoneH;
-      s.progress = Math.max(0, Math.min(100, s.progress + (inside2 ? 0.028 : -0.022 - d * 1e-4) * dt));
-      zone.style.bottom = s.zone + "px";
-      zone.style.height = s.zoneH + "px";
-      swimmer.style.bottom = s.fishY + "px";
-      fill.style.height = s.progress + "%";
-      stage.setAttribute("data-inside", inside2 ? "true" : "false");
-      stage.setAttribute("data-progress", s.progress.toFixed(0));
-      if (s.progress >= 100) return finish(true);
-      if (s.progress <= 0) return finish(false);
-      frame = raf(tick2);
-    }
-    frame = raf(tick2);
-  }
-  function renderPull(ui, fish2, s, finish) {
-    const d = difficultyOf(fish2);
-    if (s.distance === void 0) {
-      Object.assign(s, { tension: 40, distance: 100, loose: 0, surge: 0, surgeCd: 1500, holding: false, last: 0 });
-    }
-    const stage = button("dp-fish-stage", { "data-fish-fight": "pull", "data-fish-pull": "true", "aria-label": "\u6309\u4F4F\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF\uFF0C\u6307\u9488\u522B\u8FDB\u7EA2\u533A" }, function() {
-    });
-    stage.setAttribute("tabindex", "0");
-    const line3 = el("div", "dp-fish-line");
-    const rod = el("span", "dp-fish-rod", "\u{1F3A3}");
-    line3.appendChild(rod);
-    line3.appendChild(el("span", "dp-fish-string", "\u3030\u3030\u3030"));
-    line3.appendChild(el("span", "dp-fish-rod", fish2.emoji));
-    const gauge = el("div", "dp-fish-gauge");
-    const pin = el("b");
-    gauge.appendChild(pin);
-    const state2 = el("div", "dp-fish-pull-state");
-    const meter2 = el("div", "dp-fish-hmeter");
-    const fill = el("i");
-    meter2.appendChild(fill);
-    stage.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
-    stage.appendChild(line3);
-    stage.appendChild(gauge);
-    stage.appendChild(state2);
-    stage.appendChild(meter2);
-    stage.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
-    ui.content.appendChild(stage);
-    holdControls(stage, s);
-    function tick2(now) {
-      if (!stillOpen(ui)) return finish(false);
-      const dt = s.last ? Math.min(50, now - s.last) : 16;
-      s.last = now;
-      s.surgeCd -= dt;
-      if (s.surgeCd <= 0) {
-        s.surge = 10 + d * 0.28;
-        s.surgeCd = Math.max(700, 2600 - d * 16) + Math.random() * 900;
-      }
-      s.tension = Math.max(0, Math.min(100, s.tension + ((s.holding ? 0.055 : -0.05) + s.surge * 4e-3) * dt));
-      s.surge = Math.max(0, s.surge - dt * 0.02);
-      const green = s.tension >= 30 && s.tension < 85;
-      const sweet = s.tension >= 72 && s.tension < 85;
-      if (green) {
-        s.distance -= (sweet ? 0.022 : 0.012) * dt * (1 - d * 4e-3);
-        s.loose = Math.max(0, s.loose - dt);
-      }
-      if (s.tension < 30) s.loose += dt;
-      pin.style.left = s.tension + "%";
-      rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
-      fill.style.width = 100 - Math.max(0, s.distance) + "%";
-      state2.textContent = (s.surge > 2 ? fish2.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= 85 ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
-      stage.setAttribute("data-tension", s.tension.toFixed(0));
-      if (s.tension >= 100) return finish(false);
-      if (s.loose > 2600) return finish(false);
-      if (s.distance <= 0) return finish(true);
-      frame = raf(tick2);
-    }
-    frame = raf(tick2);
-  }
-
-  // src/client/tabs/fishing.js
-  var selectedBait = null;
-  var autoOpen = false;
-  var waitFrame = 0;
-  var waitUi = null;
-  var raf2 = (fn) => typeof requestAnimationFrame === "function" ? requestAnimationFrame(fn) : 0;
-  var caf2 = (id) => {
-    if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(id);
-  };
-  function stopWait() {
-    if (waitFrame) caf2(waitFrame);
-    waitFrame = 0;
-    waitUi = null;
-  }
-  function closeFishing(ui) {
-    const playing = fightActive(ui) && ui.view.fishing.pending?.phase === "hooked";
-    stopFight(true);
-    stopWait();
-    if (playing) ui.send("fishResolve", { success: false });
-  }
-  function renderFishingTab(ui) {
-    stopFight();
-    stopWait();
-    const pending = ui.view.fishing.pending;
-    if (pending?.phase !== "hooked") resetFightResolve();
-    if (ui.view.activity?.kind === "fishing") {
-      stopFight(true);
-      return renderAway(ui);
-    }
-    renderSwitchAsk(ui);
-    if (pending?.phase === "waiting") {
-      stopFight(true);
-      return renderWaiting(ui, pending);
-    }
-    if (pending?.phase === "hooked") return renderFight(ui, pending);
-    stopFight(true);
-    if (pending?.phase === "caught") return renderResult(ui, pending);
-    renderReady(ui);
-  }
-  var BAIT_NOTE = { bait_worm: "\u666E\u901A\u9C7C", bait_shrimp: "\u5C11\u89C1\u7684\u591A\u4E00\u70B9", bait_glow: "\u7A00\u6709\u7684\u591A\u5F88\u591A" };
-  function renderReady(ui) {
-    const baits = ui.view.shop.filter((item) => item.kind === "bait");
-    const owned = (key) => ui.view.inventory[key] ?? 0;
-    if (!baits.some((item) => item.key === selectedBait && owned(item.key) > 0)) selectedBait = baits.find((item) => owned(item.key) > 0)?.key ?? null;
-    ui.content.appendChild(el("div", "dp-fish-label", "\u9009\u9C7C\u9975"));
-    const choices = el("div", "dp-fish-baits");
-    for (const bait of baits) {
-      const choice = button("dp-fish-bait", { "data-fish-bait": bait.key }, function() {
-        selectedBait = bait.key;
-        ui.renderContent();
-      });
-      choice.appendChild(el("em", null, bait.emoji));
-      choice.appendChild(el("b", null, bait.label.replace(/鱼饵$/, "") + " \xD7" + owned(bait.key)));
-      choice.appendChild(el("small", null, BAIT_NOTE[bait.key] ?? ""));
-      choice.setAttribute("aria-pressed", String(selectedBait === bait.key));
-      choice.disabled = owned(bait.key) === 0;
-      choices.appendChild(choice);
-    }
-    ui.content.appendChild(choices);
-    if (selectedBait === null) ui.content.appendChild(el("div", "dp-fish-blocked", "\u6CA1\u6709\u9C7C\u9975\u4E86\uFF0C\u5148\u53BB\u5546\u5E97\u7684\u9C7C\u9975\u8D27\u67B6\u4E70\u3002"));
-    const hungry = (ui.view.pig?.satiety ?? 0) < 1;
-    if (hungry) {
-      ui.content.appendChild(el("div", "dp-fish-blocked", "\u9971\u98DF\u4E3A 0\uFF0C\u5148\u5582\u98DF\u624D\u80FD\u629B\u7AFF\u3002"));
-      const care = button("dp-mini dp-fish-care", { "data-fish-care": "feed" }, function() {
-        ui.select("status");
-      });
-      care.textContent = "\u53BB\u72B6\u6001\u9875\u5582\u98DF \u2192";
-      ui.content.appendChild(care);
-    }
-    const cast = button("dp-btn dp-btn-wide dp-fish-cast", { "data-fish": "cast" }, function() {
-      ui.send("fishCast", { power: 0.7, bait: selectedBait });
-    });
-    cast.textContent = hungry ? "\u{1F35A} \u5582\u98DF\u540E\u624D\u80FD\u629B\u7AFF" : "\u{1F3A3} \u629B\u7AFF";
-    cast.disabled = selectedBait === null || hungry;
-    ui.content.appendChild(cast);
-    renderAuto(ui);
-  }
-  function renderAuto(ui) {
-    const auto = el("details", "dp-fish-auto");
-    if (autoOpen) auto.setAttribute("open", "");
-    auto.addEventListener("toggle", function() {
-      autoOpen = auto.open === true;
-    });
-    auto.appendChild(el("summary", null, "\u{1F437} \u8BA9\u732A\u81EA\u5DF1\u53BB\u9493"));
-    auto.appendChild(el("span", null, "\u732A\u51FA\u95E8 30 / 60 \u5206\u949F\uFF0C\u6BCF 3 \u5206\u949F\u7528 1 \u4E2A\u9009\u4E2D\u7684\u9C7C\u9975\uFF0C\u9493\u5230\u7684\u653E\u8FDB\u9C7C\u7BD3\u3002"));
-    const row = el("div", "dp-fish-auto-row");
-    const reasons = [];
-    for (const minutes of [30, 60]) {
-      const need = minutes / 3;
-      const have = ui.view.inventory[selectedBait] ?? 0;
-      const go = button("dp-mini", { "data-fish-auto": String(minutes) }, function() {
-        startOrSwitch(ui, "\u81EA\u52A8\u9493\u9C7C " + minutes + " \u5206\u949F", "fishAuto", { minutes, bait: selectedBait });
-      });
-      go.textContent = `${minutes} \u5206\u949F\uFF08\u9C7C\u9975 ${need} \u4E2A\uFF09`;
-      go.disabled = !canStart(ui) || have < need;
-      if (go.disabled && minutes === 30) {
-        if (!canStart(ui)) reasons.push("\u732A\u73B0\u5728\u4E0D\u80FD\u51FA\u95E8");
-        else reasons.push("\u9C7C\u9975\u53EA\u5269 " + have + " \u4E2A\uFF0C\u4E0D\u591F " + need + " \u4E2A");
-      }
-      row.appendChild(go);
-    }
-    auto.appendChild(row);
-    if (reasons.length > 0) auto.appendChild(el("span", "dp-fish-why", "\u70B9\u4E0D\u4E86\uFF1A" + reasons[0] + "\u3002"));
-    ui.content.appendChild(auto);
-  }
-  function renderWaiting(ui, pending) {
-    const water = button("dp-fish-waiting", { "data-fish": "hook" }, function() {
-      if (Date.now() < pending.bitesAt) {
-        line3.textContent = "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
-        return;
-      }
-      ui.send("fishHook");
-    });
-    const mark = el("span", "dp-fish-bobber", "\u{1F3A3}");
-    const line3 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
-    water.appendChild(mark);
-    water.appendChild(line3);
-    ui.content.appendChild(water);
-    waitUi = ui;
-    function tick2() {
-      if (waitUi !== ui) return;
-      const now = Date.now();
-      if (now >= pending.bitesAt && now <= pending.hookUntil) {
-        mark.textContent = "\u2757";
-        line3.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
-        water.setAttribute("data-bite", "true");
-      } else if (now > pending.hookUntil) {
-        stopWait();
-        ui.send("fishHook");
-        return;
-      }
-      waitFrame = raf2(tick2);
-    }
-    waitFrame = raf2(tick2);
-  }
-  var STARS = { common: 1, uncommon: 2, rare: 3, legend: 4 };
-  function renderResult(ui, fish2) {
-    const card2 = el("div", "dp-fish-result");
-    card2.appendChild(el("div", "dp-fish-result-emoji", fish2.emoji));
-    card2.appendChild(el("b", null, "\u9493\u5230\u4E86 " + fish2.label + "\uFF01"));
-    const stars2 = STARS[fish2.rarity] ?? 1;
-    card2.appendChild(el("span", "dp-fish-stars", "\u2605".repeat(stars2) + "\u2606".repeat(4 - stars2)));
-    const record2 = fish2.maxCm > 0 && fish2.sizeCm >= fish2.maxCm * 0.85 ? " \xB7 \u5927\u4E2A\u7684\uFF01" : "";
-    card2.appendChild(el("span", null, fish2.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish2.price + record2));
-    const keep = button("dp-btn dp-btn-wide", { "data-fish": "keep" }, function() {
-      ui.send("fishKeep");
-    });
-    keep.textContent = "\u{1F392} \u653E\u8FDB\u9C7C\u7BD3";
-    card2.appendChild(keep);
-    ui.content.appendChild(card2);
-  }
-  function renderAway(ui) {
-    ui.content.appendChild(el("div", "dp-fish-away", "\u{1F3A3}"));
-    ui.content.appendChild(el("div", "dp-empty", ui.view.activity.label + " \xB7 \u9493\u5230\u7684\u9C7C\u4F1A\u653E\u8FDB\u9C7C\u7BD3"));
-  }
-
   // src/client/icon-style.js
   var BUNDLED = /* @__PURE__ */ new Set([
     "status",
@@ -5274,12 +4235,12 @@
   var requested = {};
   var rerender = null;
   function bridge() {
-    var host2 = (
+    var host3 = (
       /** @type {any} */
       window
     );
-    if (!host2.dshPiggyExtensions) {
-      host2.dshPiggyExtensions = {
+    if (!host3.dshPiggyExtensions) {
+      host3.dshPiggyExtensions = {
         register: function(key, impl) {
           if (typeof key !== "string" || impl === null || typeof impl !== "object") return;
           registry[key] = impl;
@@ -5287,7 +4248,7 @@
         }
       };
     }
-    return host2.dshPiggyExtensions;
+    return host3.dshPiggyExtensions;
   }
   function ensureScript(key, version) {
     bridge();
@@ -5712,6 +4673,901 @@
     ui.content.appendChild(row);
   }
 
+  // packages/pet-core/src/data/fish.js
+  var FISH = Object.freeze([
+    { key: "fish_crucian", label: "\u9CAB\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon", "evening"], behavior: "smooth", difficulty: 12, minCm: 12, maxCm: 32, price: 8 },
+    { key: "fish_carp", label: "\u9CA4\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["noon", "evening"], behavior: "smooth", difficulty: 18, minCm: 20, maxCm: 55, price: 12 },
+    { key: "fish_sardine", label: "\u6C99\u4E01\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon"], behavior: "dash", difficulty: 22, minCm: 10, maxCm: 26, price: 14 },
+    { key: "fish_anchovy", label: "\u9CC0\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "evening"], behavior: "dash", difficulty: 25, minCm: 8, maxCm: 22, price: 16 },
+    { key: "fish_perch", label: "\u6CB3\u9C88", emoji: "\u{1F420}", rarity: "common", times: ["noon", "evening"], behavior: "sink", difficulty: 28, minCm: 16, maxCm: 38, price: 18 },
+    { key: "fish_bream", label: "\u9CCA\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon"], behavior: "rise", difficulty: 30, minCm: 18, maxCm: 42, price: 20 },
+    { key: "fish_catfish", label: "\u9CB6\u9C7C", emoji: "\u{1F421}", rarity: "common", times: ["evening", "night"], behavior: "sink", difficulty: 34, minCm: 24, maxCm: 68, price: 24 },
+    { key: "fish_mackerel", label: "\u9752\u82B1\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["noon", "evening"], behavior: "mixed", difficulty: 38, minCm: 22, maxCm: 48, price: 28 },
+    { key: "fish_salmon", label: "\u9C91\u9C7C", emoji: "\u{1F41F}", rarity: "uncommon", times: ["early", "evening"], behavior: "dash", difficulty: 48, minCm: 38, maxCm: 92, price: 48 },
+    { key: "fish_puffer", label: "\u6CB3\u8C5A", emoji: "\u{1F421}", rarity: "uncommon", times: ["noon"], behavior: "mixed", difficulty: 55, minCm: 18, maxCm: 40, price: 62 },
+    { key: "fish_eel", label: "\u9CD7\u9C7C", emoji: "\u{1F40D}", rarity: "uncommon", times: ["evening", "night"], behavior: "rise", difficulty: 61, minCm: 42, maxCm: 110, price: 78 },
+    { key: "fish_tuna", label: "\u91D1\u67AA\u9C7C", emoji: "\u{1F41F}", rarity: "uncommon", times: ["early", "noon"], behavior: "dash", difficulty: 66, minCm: 70, maxCm: 180, price: 96 },
+    { key: "fish_sturgeon", label: "\u9C9F\u9C7C", emoji: "\u{1F41F}", rarity: "rare", times: ["night"], behavior: "sink", difficulty: 78, minCm: 85, maxCm: 220, price: 160 },
+    { key: "fish_koi", label: "\u9EC4\u91D1\u9526\u9CA4", emoji: "\u{1F38F}", rarity: "rare", times: ["early", "evening"], behavior: "mixed", difficulty: 86, minCm: 30, maxCm: 88, price: 220 },
+    { key: "fish_moon", label: "\u6708\u5F71\u9C7C", emoji: "\u{1F319}", rarity: "legend", times: ["night"], behavior: "mixed", difficulty: 100, minCm: 60, maxCm: 160, price: 300 }
+  ]);
+  var FISH_FIGHTS = Object.freeze(["ring", "bar", "pull"]);
+
+  // packages/pet-core/src/data/skins.js
+  var SKIN_SCENES = Object.freeze(["idle", "eat", "bathe", "play", "pet", "relaxed", "work", "study", "trip", "fish"]);
+  var REQUIRED_SKIN_SCENES = Object.freeze(SKIN_SCENES.slice(0, 5));
+  var CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter((scene3) => scene3 !== "fish"));
+  var SKINS = Object.freeze([
+    Object.freeze({
+      key: "mint",
+      label: "\u8584\u8377\u5C0F\u732A",
+      emoji: "\u{1F33F}",
+      art: "skin-mint",
+      author: "dsh-piggy",
+      description: "\u50CF\u4E00\u53E3\u8584\u8377\u6C7D\u6C34\uFF0C\u6E05\u6E05\u51C9\u51C9\u3002",
+      scenes: Object.freeze(["idle", "eat", "bathe", "play", "pet"]),
+      custom: false
+    }),
+    Object.freeze({
+      key: "chef",
+      label: "\u53A8\u5E08\u732A",
+      emoji: "\u{1F468}\u200D\u{1F373}",
+      art: "career-chef",
+      unlockJob: "chef",
+      author: "dsh-piggy",
+      description: "\u638C\u52FA\u5F52\u6765\uFF0C\u5E3D\u5B50\u4E0A\u8FD8\u6CBE\u7740\u4E00\u70B9\u9762\u7C89\u3002",
+      hint: "\u53A8\u623F\u91CC\u7684\u7B2C\u4E00\u73ED\u70DF\u706B\uFF0C\u4F1A\u9001\u6765\u4E00\u9876\u767D\u5E3D\u5B50\u3002",
+      scenes: CHARACTER_SCENES,
+      custom: false
+    }),
+    Object.freeze({
+      key: "astronaut",
+      label: "\u5B87\u822A\u5458\u732A",
+      emoji: "\u{1F680}",
+      art: "career-astronaut",
+      unlockJob: "astronaut",
+      author: "dsh-piggy",
+      description: "\u628A\u5730\u7403\u88C5\u8FDB\u5934\u76D4\u7684\u5012\u5F71\u91CC\u3002",
+      hint: "\u5B8C\u6210\u90A3\u8D9F\u79BB\u5929\u7A7A\u6700\u8FD1\u7684\u5DE5\u4F5C\uFF0C\u624D\u6709\u8D44\u683C\u6234\u4E0A\u5934\u76D4\u3002",
+      scenes: CHARACTER_SCENES,
+      custom: false
+    }),
+    Object.freeze({
+      key: "detective",
+      label: "\u4FA6\u63A2\u732A",
+      emoji: "\u{1F50E}",
+      art: "skin-detective",
+      author: "dsh-piggy",
+      description: "\u5C0F\u7EBF\u7D22\u603B\u8EB2\u4E0D\u8FC7\u5B83\u7684\u773C\u775B\u3002",
+      scenes: CHARACTER_SCENES,
+      custom: false
+    }),
+    Object.freeze({
+      key: "angel",
+      label: "\u5929\u4F7F\u732A",
+      emoji: "\u{1F607}",
+      art: "skin-angel",
+      author: "dsh-piggy",
+      description: "\u5149\u73AF\u5F88\u4EAE\uFF0C\u813E\u6C14\u8FD8\u662F\u8F6F\u8F6F\u7684\u3002",
+      scenes: CHARACTER_SCENES,
+      custom: false
+    }),
+    Object.freeze({
+      key: "pirate",
+      label: "\u6D77\u76D7\u732A",
+      emoji: "\u{1F3F4}\u200D\u2620\uFE0F",
+      art: "skin-pirate",
+      author: "dsh-piggy",
+      description: "\u51FA\u95E8\u627E\u5B9D\u85CF\uFF0C\u56DE\u5BB6\u627E\u665A\u996D\u3002",
+      scenes: CHARACTER_SCENES,
+      custom: false
+    }),
+    Object.freeze({
+      key: "wizard",
+      label: "\u5DEB\u5E08\u732A",
+      emoji: "\u{1FA84}",
+      art: "skin-wizard",
+      author: "dsh-piggy",
+      description: "\u5E3D\u5B50\u91CC\u6CA1\u6709\u9B54\u6CD5\uFF0C\u53EA\u6709\u597D\u5947\u5FC3\u3002",
+      scenes: CHARACTER_SCENES,
+      custom: false
+    })
+  ]);
+
+  // packages/pet-core/src/data/lines-more.js
+  var line = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
+  var scene = (...lines) => Object.freeze(lines);
+  var MORE_LINES = Object.freeze({
+    // ---- 原有场景翻倍 -----------------------------------------------------------
+    eat: scene(
+      line("\u4ECA\u5929\u7684\u996D\u6709[\u4E3B\u4EBA]\u7684\u5473\u9053\uFF08\u662F\u5938\u4F60\uFF09"),
+      line("\u6162\u70B9\u6162\u70B9\uFF0C\u6211\u8FD8\u6CA1\u56BC\u5B8C"),
+      line("\u5403\u4E00\u53E3\uFF0C\u957F\u4E00\u4E24\uFF0C\u6CA1\u5173\u7CFB\uFF0C\u6211\u4E0D\u6015"),
+      line("\u8FD9\u4E2A\u597D\u5403\uFF0C\u4E0B\u6B21\u8FD8\u8981\u8FD9\u4E2A", "\u8BB0\u4F4F\u4E86"),
+      line("\u6211\u5BA3\u5E03\uFF1A\u8FD9\u662F\u4ECA\u5929\u6700\u597D\u7684\u4E00\u987F"),
+      line("\u5403\u996D\u7684\u65F6\u5019\u522B\u770B\u6211\uFF0C\u6211\u4F1A\u5BB3\u7F9E")
+    ),
+    full: scene(line("\u9971\u4E86\uFF0C\u53EF\u4EE5\u5F00\u59CB\u53D1\u5446\u4E86"), line("\u809A\u5B50\u91CC\u88C5\u6EE1\u4E86\uFF0C\u5FC3\u91CC\u4E5F\u662F"), line("\u9971\u9971\u7684\uFF0C\u4ECA\u5929\u4E0D\u4F1A\u60F3\u522B\u7684\u4E8B\u4E86")),
+    overfull: scene(line("\u518D\u5403\u6211\u5C31\u8981\u88AB\u79F0\u91CD\u4E86\u2026\u2026"), line("\u4F60\u662F\u4E0D\u662F\u5728\u7ED9\u6211\u517B\u8198\uFF1F", "\u6CA1\u6709\u6CA1\u6709"), line("\u6211\u7684\u809A\u5B50\u5728\u6297\u8BAE\uFF0C\u542C\u89C1\u4E86\u5417")),
+    bathe: scene(
+      line("\u6C34\u6E29\u521A\u597D\uFF0C\u4E0D\u662F\u5728\u712F\u6C34\u5427\uFF1F", "\u653E\u5FC3"),
+      line("\u6211\u73B0\u5728\u662F\u4E00\u53EA\u4F53\u9762\u7684\u732A\u4E86"),
+      line("\u6CE5\u5DF4\u518D\u89C1\uFF0C\u6CE5\u5DF4\u6211\u4F1A\u60F3\u4F60\u7684"),
+      line("\u522B\u6D17\u8033\u6735\u540E\u9762\uFF0C\u90A3\u91CC\u6709\u6211\u7684\u79D8\u5BC6"),
+      line("\u6D17\u5B8C\u522B\u95FB\u6211\u8BF4\u300C\u597D\u9999\u300D\uFF0C\u6709\u70B9\u5413\u4EBA")
+    ),
+    play: scene(
+      line("\u4F60\u6254\uFF0C\u6211\u6361\uFF0C\u6211\u4EEC\u914D\u5408\u5F97\u5929\u8863\u65E0\u7F1D"),
+      line("\u54C7\uFF01\u5DEE\u70B9\u63A5\u5230\uFF01"),
+      line("\u518D\u6765\u518D\u6765\uFF0C\u6211\u521A\u70ED\u5B8C\u8EAB", "\u6765\uFF01"),
+      line("\u73A9\u800D\u4F7F\u6211\u5FEB\u4E50\uFF0C\u4E5F\u4F7F\u6211\u53D8\u7626"),
+      line("\u4F60\u4E5F\u52A8\u52A8\u5427\uFF0C\u5750\u592A\u4E45\u4E86")
+    ),
+    pet: scene(
+      line("\u624B\u611F\u662F\u4E0D\u662F\u5F88\u597D\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u50CF\u4E94\u82B1\u8089\u300D"),
+      line("\u518D\u6478\u6211\u5C31\u8981\u7761\u7740\u4E86"),
+      line("\u55EF\u2026\u2026\u8FD9\u6837\u5F88\u597D"),
+      line("\u4F60\u4ECA\u5929\u6478\u5F97\u7279\u522B\u8BA4\u771F"),
+      line("[\u4E3B\u4EBA]\uFF0C\u6211\u4EEC\u7B97\u4E0D\u7B97\u597D\u670B\u53CB\uFF1F", "\u5F53\u7136\u7B97"),
+      line("\u8FD9\u662F\u6211\u4E00\u5929\u91CC\u6700\u559C\u6B22\u7684\u65F6\u523B"),
+      line("\u6478\u732A\u53EF\u4EE5\u964D\u8840\u538B\uFF0C\u8FD9\u662F\u79D1\u5B66\uFF08\u6211\u7F16\u7684\uFF09")
+    ),
+    hungry: scene(line("\u6211\u997F\u5F97\u80FD\u770B\u89C1\u5E7B\u89C9\u4E86\uFF0C\u4F60\u5934\u4E0A\u6709\u4E2A\u5305\u5B50"), line("\u518D\u4E0D\u5403\u996D\uFF0C\u6211\u5C31\u8981\u5F00\u59CB\u5403\u81EA\u5DF1\u7684\u5F71\u5B50\u4E86"), line("\u996D\u996D\u2026\u2026\u996D\u996D\u2026\u2026", "\u9A6C\u4E0A\u6765")),
+    dirty: scene(line("\u6211\u8EAB\u4E0A\u7684\u6CE5\u5DF4\u5DF2\u7ECF\u53EF\u4EE5\u79CD\u82B1\u4E86"), line("\u82CD\u8747\u7ED5\u7740\u6211\u98DE\uFF0C\u5B83\u4EEC\u5728\u5F00\u4F1A\u8BA8\u8BBA\u6211"), line("\u6211\u9700\u8981\u4E00\u4E2A\u6FA1\uFF0C\u4E00\u4E2A\u70ED\u7684\uFF08\u4E0D\u8981\u592A\u70ED\uFF09", "\u597D")),
+    lonely: scene(line("\u6211\u521A\u624D\u8DDF\u5899\u804A\u4E86\u4E00\u4F1A\u513F\uFF0C\u5899\u4E0D\u592A\u4F1A\u804A\u5929"), line("\u4F60\u8FD8\u8BB0\u5F97\u4F60\u517B\u4E86\u4E00\u53EA\u732A\u5417", "\u8BB0\u5F97"), line("\u6CA1\u4E8B\uFF0C\u6211\u5C31\u662F\u60F3\u770B\u770B\u4F60\u8FD8\u5728\u4E0D\u5728")),
+    idle: scene(
+      line("\u6211\u6570\u4E86\u4E00\u4E0B\uFF0C\u5C4F\u5E55\u4E0A\u6709\u5F88\u591A\u5B57\uFF0C\u6211\u4E00\u4E2A\u90FD\u6CA1\u5199"),
+      line("\u4F60\u5199\u7684\u4E1C\u897F\u597D\u957F\uFF0C\u6211\u80FD\u7761\u4E00\u89C9\u5417"),
+      line("\u6211\u521A\u624D\u68A6\u89C1\u81EA\u5DF1\u4F1A\u98DE\uFF0C\u9192\u4E86\u53D1\u73B0\u4F1A\u7684\u53EA\u6709\u5403"),
+      line("\u5916\u9762\u6709\u4EBA\u5728\u7092\u83DC\uFF0C\u6211\u7D27\u5F20\u4E86\u4E00\u4E0B"),
+      line("\u5750\u76F4\uFF0C[\u4E3B\u4EBA]\uFF0C\u4F60\u7684\u80CC\u5728\u54ED"),
+      line("\u8981\u4E0D\u8981\u559D\u53E3\u6C34\uFF1F\u6211\u66FF\u4F60\u8BB0\u7740", "\u597D"),
+      line("\u4F60\u7684\u5C4F\u5E55\u597D\u4EAE\uFF0C\u6211\u772F\u4E00\u4F1A\u513F"),
+      line("\u521A\u624D\u90A3\u4E2A\u529F\u80FD\u6211\u89C9\u5F97\u5199\u5F97\u4E0D\u9519\uFF08\u6211\u770B\u4E0D\u61C2\uFF0C\u4F46\u6211\u652F\u6301\u4F60\uFF09")
+    ),
+    workDone: scene(line("\u8001\u677F\u95EE\u6211\u80FD\u4E0D\u80FD\u957F\u671F\u5E72\uFF0C\u6211\u8BF4\u8981\u95EE[\u4E3B\u4EBA]"), line("\u8D5A\u7684\u94B1\u7ED9\u4F60\uFF0C\u8BF7\u6211\u5403\u987F\u597D\u7684\u5C31\u884C", "\u6210\u4EA4"), line("\u6253\u5DE5\u597D\u7D2F\uFF0C\u4EBA\u7C7B\u6BCF\u5929\u90FD\u8FD9\u6837\u5417")),
+    tired: scene(line("\u6211\u9700\u8981\u8EBA\u5E73\uFF0C\u73B0\u5728\uFF0C\u7ACB\u523B"), line("\u6211\u7684\u56DB\u6761\u817F\u5DF2\u7ECF\u5404\u81EA\u4E0B\u73ED\u4E86"), line("\u7D2F\u5F97\u8FDE\u996D\u90FD\u2026\u2026\u4E0D\uFF0C\u996D\u8FD8\u662F\u8981\u5403\u7684")),
+    study: scene(line("\u4ECA\u5929\u5B66\u4E86\u4E00\u4E2A\u65B0\u8BCD\uFF0C\u5FD8\u4E86"), line("\u8001\u5E08\u8BF4\u6211\u5F88\u6709\u6F5C\u529B\uFF0C\u6F5C\u5728\u54EA\u6211\u4E5F\u4E0D\u77E5\u9053"), line("\u5B66\u4E60\u4F7F\u6211\u8FDB\u6B65\uFF0C\u4E5F\u4F7F\u6211\u997F", "\u53BB\u5403\u5427")),
+    graduate: scene(line("\u8BC1\u4E66\u6302\u5899\u4E0A\uFF0C\u522B\u6302\u83DC\u5200\u65C1\u8FB9"), line("\u6211\u662F\u5168\u73ED\u6700\u5BBD\u7684\u6BD5\u4E1A\u751F"), line("\u6709\u6587\u5316\u7684\u732A\uFF0C\u4E0D\u5BB9\u6613\u88AB\u9A97\u8FDB\u53A8\u623F")),
+    tripBack: scene(line("\u5916\u9762\u5230\u5904\u90FD\u662F\u996D\u9986\uFF0C\u6211\u4E00\u8DEF\u4F4E\u7740\u5934\u8D70\u7684"), line("\u6211\u770B\u89C1\u6D77\u4E86\uFF01\u6D77\u91CC\u6CA1\u6709\u732A"), line("\u62CD\u4E86\u597D\u591A\u7167\u7247\uFF0C\u6BCF\u5F20\u90FD\u5728\u7B11\uFF08\u5176\u5B9E\u5F88\u997F\uFF09")),
+    sick: scene(line("\u6211\u89C9\u5F97\u6211\u9700\u8981\u4E00\u4E2A\u62B1\u62B1\uFF0C\u548C\u4E00\u9897\u836F", "\u90FD\u7ED9\u4F60"), line("\u8EAB\u4F53\u91CC\u6709\u4E2A\u5C0F\u574F\u86CB\u5728\u641E\u88C5\u4FEE"), line("\u6211\u751F\u75C5\u4E86\uFF0C\u75C5\u732A\u8089\u4E0D\u80FD\u5403\u2014\u2014\u8FD9\u662F\u597D\u6D88\u606F")),
+    wrongMedicine: scene(line("\u8FD9\u4E2A\u836F\u2026\u2026\u597D\u50CF\u662F\u7ED9\u72D7\u5403\u7684"), line("\u6211\u539F\u8C05\u4F60\uFF0C\u4F60\u770B\u8D77\u6765\u6BD4\u6211\u8FD8\u96BE\u53D7"), line("\u4E0B\u6B21\u770B\u6E05\u695A\u8BF4\u660E\u4E66\u597D\u4E0D\u597D", "\u597D")),
+    cured: scene(line("\u6211\u6D3B\u8FC7\u6765\u4E86\uFF01\u7B2C\u4E00\u4EF6\u4E8B\uFF1A\u5403\u996D"), line("\u960E\u738B\u7237\u770B\u4E86\u770B\u6211\u7684\u4F53\u91CD\uFF0C\u8BF4\u300C\u518D\u517B\u517B\u300D"), line("\u5065\u5EB7\u771F\u597D\uFF0C\u6211\u73B0\u5728\u53EF\u4EE5\u91CD\u65B0\u62C5\u5FC3\u522B\u7684\u4E8B\u4E86")),
+    levelup: scene(line("\u5347\u7EA7\u4E86\uFF0C\u5956\u52B1\u662F\u66F4\u5927\u7684\u996D\u91CF"), line("\u6211\u53D8\u5F3A\u4E86\uFF0C\u81F3\u5C11\u6570\u5B57\u4E0A\u662F\u8FD9\u6837"), line("\u4F60\u770B\u89C1\u4E86\u5417\uFF1F\u6211\u5347\u7EA7\u4E86\uFF01", "\u770B\u89C1\u4E86")),
+    growUp: scene(line("\u957F\u5927\u7684\u611F\u89C9\uFF0C\u5C31\u662F\u9505\u53D8\u591A\u4E86"), line("\u6211\u957F\u5F00\u4E86\u2026\u2026\u4F60\u522B\u7528\u8FD9\u4E2A\u8BCD"), line("[\u4E3B\u4EBA]\uFF0C\u4F60\u4E5F\u8981\u4E00\u8D77\u957F\u5927\u54E6")),
+    coronation: scene(line("\u672C\u738B\u4ECA\u65E5\u5F00\u6069\uFF0C\u514D\u4F60\u4E00\u987F\u4E0D\u5582\u4E4B\u7F6A"), line("\u738B\u51A0\u597D\u91CD\uFF0C\u8116\u5B50\u8981\u53D8\u957F\u4E86"), line("\u81E3\u6C11\u4EEC\uFF0C\u5F00\u996D\uFF01"), line("[\u4E3B\u4EBA]\u662F\u672C\u738B\u7684\u9996\u5E2D\u5582\u996D\u5B98", "\u9075\u547D")),
+    contract: scene(line("\u6211\u73B0\u5728\u662F\u6076\u9B54\u4E86\uFF0C\u4F46\u8FD8\u662F\u6015\u70ED\u6C34"), line("\u89D2\u662F\u65B0\u7684\uFF0C\u6492\u5A07\u662F\u65E7\u7684"), line("\u6076\u9B54\u4E5F\u9700\u8981\u88AB\u6478\u6478"), line("\u7B7E\u4E86\u5951\u7EA6\uFF0C\u4EE5\u540E\u8C01\u4E5F\u4E0D\u80FD\u628A\u6211\u505A\u6210\u83DC", "\u90A3\u5F53\u7136")),
+    enter: scene(line("\u4F60\u7EC8\u4E8E\u56DE\u6765\u4E86\uFF0C\u6211\u6570\u4E86\u597D\u4E45\u7684\u50CF\u7D20"), line("\u6B22\u8FCE\u56DE\u6765\uFF0C\u4ECA\u5929\u4E5F\u62DC\u6258\u591A\u5582\u6211\u4E00\u70B9"), line("\u6211\u521A\u521A\u4E00\u76F4\u5728\u8FD9\u91CC\uFF0C\u4E00\u52A8\u4E0D\u52A8\uFF0C\u5F88\u4E56", "\u771F\u4E56")),
+    death: scene(line("\u8BB0\u5F97\u7ED9\u6211\u70E7\u70B9\u9972\u6599\u2026\u2026"), line("[\u4E3B\u4EBA]\uFF0C\u522B\u96BE\u8FC7\uFF0C\u6211\u53EA\u662F\u53BB\u4E0B\u4E00\u4E2A\u732A\u5708\u4E86")),
+    revive: scene(line("\u90A3\u8FB9\u7684\u732A\u90FD\u5F88\u7626\uFF0C\u6211\u8FD8\u662F\u56DE\u6765\u5427"), line("\u6211\u56DE\u6765\u4E86\uFF0C\u996D\u8FD8\u5728\u5417"), line("\u5DEE\u4E00\u70B9\u5C31\u89C1\u5230\u732A\u516B\u6212\u4E86")),
+    signIn: scene(line("\u53C8\u662F\u65B0\u7684\u4E00\u5929\uFF0C\u6211\u8FD8\u5728\uFF0C\u4F60\u4E5F\u5728"), line("\u7B2C 7 \u5929\u6709\u5927\u793C\uFF0C\u575A\u6301\u4F4F")),
+    gift: scene(line("\u6253\u5F00\u770B\u770B\uFF1F\u6211\u4E5F\u4E0D\u77E5\u9053\u662F\u4EC0\u4E48"), line("\u6211\u66FF\u4F60\u5B88\u7740\u5B83\u597D\u4E45\u4E86")),
+    pomodoroStart: scene(line("\u6211\u95ED\u5634\u4E86\uFF0C\u4ECE\u73B0\u5728\u5F00\u59CB"), line("\u4E13\u5FC3\uFF01\u6211\u5E2E\u4F60\u77AA\u7740\u5C4F\u5E55"), line("\u6211\u5F53\u4E00\u5757\u5B89\u9759\u7684\u4E94\u82B1\u8089")),
+    pomodoroDone: scene(line("\u505A\u5B8C\u4E86\uFF01\u5956\u52B1\u81EA\u5DF1\u6478\u4E00\u4E0B\u732A"), line("\u4F60\u597D\u5389\u5BB3\uFF0C\u6211\u90FD\u770B\u7761\u7740\u4E86"), line("\u8D77\u6765\u8D70\u8D70\uFF0C\u987A\u4FBF\u770B\u770B\u6211")),
+    pomodoroAbandon: scene(line("\u6CA1\u5173\u7CFB\uFF0C\u756A\u8304\u4E5F\u4F1A\u7D2F"), line("\u90A3\u6211\u4EEC\u5148\u5403\u70B9\u4E1C\u897F\uFF1F"), line("\u4E0B\u6B21\u518D\u4E00\u8D77\u52AA\u529B")),
+    // ---- 新场景 ----------------------------------------------------------------
+    workStart: scene(line("\u51FA\u95E8\u642C\u7816\u53BB\u4E86"), line("\u6211\u53BB\u7ED9\u5BB6\u91CC\u6323\u9972\u6599\u94B1"), line("\u8001\u677F\uFF0C\u6211\u6765\u4E86\uFF01")),
+    studyStart: scene(line("\u4E0A\u5B66\u53BB\uFF01\u4E66\u5305\u91CC\u88C5\u7684\u662F\u96F6\u98DF"), line("\u4ECA\u5929\u4E5F\u8981\u542C\u61C2\u4E00\u53E5"), line("\u8001\u5E08\u522B\u70B9\u6211\u540D")),
+    tripStart: scene(line("\u51FA\u53D1\u5566\uFF01"), line("\u6211\u4F1A\u7ED9\u4F60\u5E26\u7279\u4EA7\u7684\uFF08\u4E0D\u662F\u814A\u8089\uFF09"), line("\u8DEF\u4E0A\u522B\u60F3\u6211")),
+    buy: scene(line("\u4E70\u5230\u4E86\uFF01"), line("\u8FD9\u4E2A\u94B1\u82B1\u5F97\u503C"), line("\u8C22\u8C22\u8001\u677F\uFF08\u6211\u8BF4\u7684\u662F\u4F60\uFF09")),
+    poor: scene(line("\u94B1\u5305\u7A7A\u7A7A\uFF0C\u8DDF\u6211\u7684\u996D\u76C6\u4E00\u6837"), line("\u6211\u4EEC\u597D\u50CF\u6709\u70B9\u7A77"), line("\u8981\u4E0D\u2026\u2026\u6211\u53BB\u6253\u5DE5\uFF1F")),
+    fishCatch: scene(line("\u9493\u5230\u5566\uFF01"), line("\u665A\u996D\u6709\u7740\u843D\u4E86"), line("\u8FD9\u6761\u9C7C\u770B\u6211\u7684\u773C\u795E\u4E0D\u592A\u53CB\u597D")),
+    fishRare: scene(line("\u662F\u5927\u7684\uFF01\u662F\u5927\u7684\uFF01"), line("\u8FD9\u6761\u9C7C\u503C\u5F97\u5199\u8FDB\u65E5\u8BB0"), line("\u5FEB\u62CD\u7167\uFF01")),
+    fishEscape: scene(line("\u5B83\u8DD1\u4E86\u2026\u2026"), line("\u4E0B\u4E00\u6761\u4E00\u5B9A\u662F\u6211\u7684"), line("\u9C7C\u4E5F\u662F\u8981\u9762\u5B50\u7684")),
+    skin: scene(line("\u597D\u770B\u5417\uFF1F"), line("\u65B0\u8863\u670D\uFF01\u8F6C\u4E2A\u5708\u7ED9\u4F60\u770B"), line("\u6211\u89C9\u5F97\u6211\u53D8\u5E05\u4E86")),
+    bodyChange: scene(line("\u6211\u597D\u50CF\u2026\u2026\u5706\u4E86\u4E00\u70B9"), line("\u8FD9\u4E0D\u662F\u80D6\uFF0C\u662F\u53EF\u7231\u7684\u5BC6\u5EA6\u53D8\u5927\u4E86"), line("\u79E4\u8BF4\u7684\u8BDD\u4E0D\u80FD\u5168\u4FE1")),
+    // ---- 按时间说话（core/talk.js 决定什么时候说）---------------------------------
+    morning: scene(line("\u65E9\u4E0A\u597D\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u5403\u996D"), line("\u8D77\u8FD9\u4E48\u65E9\uFF0C\u4F60\u662F\u8981\u53BB\u5F53\u65E9\u9910\u5417\uFF08\u6211\u5F00\u73A9\u7B11\u7684\uFF09"), line("\u65E9\u5B89\uFF0C[\u4E3B\u4EBA]\uFF0C\u6211\u6628\u665A\u68A6\u89C1\u4F60\u4E86")),
+    noon: scene(line("\u4E2D\u5348\u4E86\uFF0C\u5403\u996D\u5403\u996D\uFF01"), line("\u4F60\u5403\u4E86\u5417\uFF1F\u6211\u997F\u4E86\uFF0C\u4F60\u80AF\u5B9A\u4E5F\u997F\u4E86"), line("\u5348\u996D\u522B\u5403\u732A\u8089\u597D\u4E0D\u597D", "\u597D")),
+    afternoon: scene(line("\u4E0B\u5348\u597D\u56F0\u2026\u2026\u6211\u5148\u7761\u4E3A\u656C"), line("\u559D\u676F\u8336\u5427\uFF0C\u6211\u966A\u4F60\u53D1\u4F1A\u513F\u5446"), line("\u4E0B\u5348\u6700\u9002\u5408\u6253\u76F9\uFF0C\u79D1\u5B66\u7814\u7A76\uFF08\u6211\u7F16\u7684\uFF09")),
+    evening: scene(line("\u5929\u9ED1\u4E86\uFF0C\u4ECA\u5929\u8F9B\u82E6\u5566"), line("\u665A\u996D\u5403\u4EC0\u4E48\uFF1F\u6211\u6295\u7968\u7ED9\u82F9\u679C"), line("\u4E0B\u73ED\u4E86\u5417\uFF1F\u8FD8\u6CA1\uFF1F\u6211\u7B49\u4F60")),
+    lateNight: scene(line("\u8FD9\u4E48\u665A\u4E86\u8FD8\u4E0D\u7761\uFF1F", "\u9A6C\u4E0A\u7761"), line("\u71AC\u591C\u7684\u4EBA\u4F1A\u53D8\u6210\u718A\u732B\uFF0C\u71AC\u591C\u7684\u732A\u4F1A\u53D8\u6210\u814A\u8089"), line("\u6211\u5148\u7761\u4E86\uFF0C\u4F60\u4E5F\u65E9\u70B9")),
+    deepNight: scene(line("[\u4E3B\u4EBA]\u2026\u2026\u73B0\u5728\u662F\u51CC\u6668\uFF0C\u4F60\u662F\u8BA4\u771F\u7684\u5417"), line("\u6211\u5DF2\u7ECF\u7761\u9192\u4E00\u89C9\u4E86\uFF0C\u4F60\u8FD8\u5728"), line("\u5929\u5FEB\u4EAE\u4E86\uFF0C\u6C42\u4F60\u7761\u4E00\u4F1A\u513F")),
+    water: scene(line("\u559D\u53E3\u6C34\u5427\uFF0C\u6211\u66FF\u4F60\u559D\u4E0D\u4E86"), line("\u5634\u5507\u5E72\u4E86\u5427\uFF1F\u53BB\u5012\u676F\u6C34"), line("\u559D\u6C34\u65F6\u95F4\u5230\uFF01\u5495\u561F\u5495\u561F")),
+    eyes: scene(line("\u770B\u770B\u8FDC\u5904\uFF0C\u4E09\u5341\u79D2\u5C31\u597D"), line("\u773C\u775B\u7D2F\u4E86\uFF0C\u95ED\u4E00\u4F1A\u513F\uFF0C\u6211\u5E2E\u4F60\u770B\u7740"), line("\u7AD9\u8D77\u6765\u4F38\u4E2A\u61D2\u8170\uFF0C\u6211\u4E5F\u4F38\u4E00\u4E2A")),
+    weekend: scene(line("\u5468\u672B\u4E86\u8FD8\u6765\u770B\u6211\uFF0C\u4F60\u771F\u597D"), line("\u4ECA\u5929\u4E0D\u4E0A\u73ED\u5427\uFF1F\u90A3\u5C31\u591A\u966A\u6211\u4E00\u4F1A\u513F")),
+    newYear: scene(line("\u65B0\u5E74\u5FEB\u4E50\uFF01\u4ECA\u5E74\u4E5F\u8BF7\u591A\u591A\u5582\u6211")),
+    valentine: scene(line("\u4ECA\u5929\u7684\u6211\u662F\u9650\u91CF\u7248\u7684\uFF0C\u9001\u7ED9\u4F60")),
+    springFestival: scene(line("\u8FC7\u5E74\u597D\uFF01\u2026\u2026\u4ECA\u5E74\u8BF7\u4E00\u5B9A\u4E0D\u8981\u5403\u732A\u8089", "\u4E0D\u5403")),
+    lantern: scene(line("\u5403\u6C64\u5706\u5417\uFF1F\u6C64\u5706\u6CA1\u6709\u732A\uFF0C\u6211\u653E\u5FC3\u4E86")),
+    qingming: scene(line("\u60F3\u5FF5\u4E00\u4E0B\u4EE5\u524D\u7684\u732A\u2026\u2026\u6211\u662F\u8BF4\u670B\u53CB\u4EEC")),
+    labour: scene(line("\u52B3\u52A8\u8282\uFF01\u6211\u51B3\u5B9A\u4ECA\u5929\u4E0D\u52B3\u52A8")),
+    children: scene(line("\u6211\u4E5F\u662F\u5C0F\u670B\u53CB\uFF0C\u793C\u7269\u5728\u54EA\uFF1F")),
+    dragonBoat: scene(line("\u7CBD\u5B50\u91CC\u6709\u8089\uFF0C\u6211\u9009\u62E9\u770B\u4E0D\u89C1")),
+    qixi: scene(line("\u4ECA\u5929\u8981\u548C\u6700\u91CD\u8981\u7684\u4EBA\u5728\u4E00\u8D77\uFF0C\u6240\u4EE5\u6211\u5728\u8FD9\u91CC")),
+    midAutumn: scene(line("\u6708\u4EAE\u597D\u5706\uFF0C\u50CF\u6211\u7684\u809A\u5B50")),
+    national: scene(line("\u56FD\u5E86\u5FEB\u4E50\uFF01\u653E\u5047\u8BB0\u5F97\u966A\u966A\u6211")),
+    christmas: scene(line("\u5723\u8BDE\u5FEB\u4E50\uFF01\u5723\u8BDE\u8001\u4EBA\u4F1A\u7ED9\u732A\u9001\u793C\u7269\u5417")),
+    pigBirthday: scene(line("\u4ECA\u5929\u662F\u6211\u7684\u751F\u65E5\uFF01[\u4E3B\u4EBA]\u8BB0\u5F97\u5417\uFF1F", "\u751F\u65E5\u5FEB\u4E50")),
+    // ---- 摸不同部位（客户端按点的位置告诉核心是哪儿）----------------------------
+    petHead: scene(line("\u6478\u5934\u4F1A\u957F\u4E0D\u9AD8\u7684\u2026\u2026\u7B97\u4E86\uFF0C\u957F\u4E0D\u9AD8\u4E5F\u597D"), line("\u518D\u6478\u6478\u5934\uFF5E"), line("\u6211\u7684\u5934\u5F88\u5706\uFF0C\u662F\u4E0D\u662F\u5F88\u597D\u6478")),
+    petEars: scene(line("\u8033\u6735\u597D\u75D2\uFF01"), line("\u522B\u63EA\uFF0C\u4F1A\u53D8\u6210\u732A\u8033\u6735\u2026\u2026\u6211\u672C\u6765\u5C31\u662F"), line("\u5618\uFF0C\u8033\u6735\u5728\u542C\u4F60\u8BF4\u8BDD")),
+    petNose: scene(line("\u963F\u2014\u2014\u568F\uFF01"), line("\u9F3B\u5B50\u662F\u7528\u6765\u95FB\u996D\u7684\uFF0C\u4E0D\u662F\u7528\u6765\u6309\u7684"), line("\u54FC\u54FC\uFF01\uFF08\u8FD9\u662F\u6297\u8BAE\uFF09")),
+    petBelly: scene(line("\u54C8\u54C8\u54C8\u597D\u75D2\uFF01"), line("\u522B\u6309\u809A\u5B50\uFF0C\u521A\u5403\u9971"), line("\u8F6F\u5427\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u4E94\u82B1\u300D")),
+    petBack: scene(line("\u80CC\u4E0A\u90A3\u5757\uFF0C\u5BF9\uFF0C\u5C31\u662F\u90A3\u91CC"), line("\u6309\u6469\u670D\u52A1\uFF0C\u4E94\u661F\u597D\u8BC4"), line("\u4F60\u7684\u624B\u6CD5\u5F88\u4E13\u4E1A")),
+    petTail: scene(line("\u522B\u78B0\u5C3E\u5DF4\uFF01\u2026\u2026\u597D\u5427\u53EF\u4EE5\u78B0\u4E00\u4E0B"), line("\u6211\u7684\u5C3E\u5DF4\u4F1A\u81EA\u5DF1\u8F6C\uFF0C\u4F60\u770B"), line("\u5C3E\u5DF4\u662F\u732A\u7684\u79D8\u5BC6\u6B66\u5668")),
+    petFeet: scene(line("\u811A\u4E0D\u80FD\u6478\uFF0C\u4F1A\u75D2"), line("\u6211\u7684\u8E44\u5B50\u521A\u8D70\u8FC7\u6CE5\u5DF4\u54E6"), line("\u5E72\u561B\uFF0C\u60F3\u8DDF\u6211\u63E1\u624B\uFF1F", "\u63E1\u624B")),
+    petTooMuch: scene(line("\u591F\u4E86\u591F\u4E86\uFF0C\u6BDB\u8981\u6389\u4E86"), line("\u4F60\u662F\u4E0D\u662F\u5728\u627E\u54EA\u5757\u6700\u5AE9\uFF1F"), line("\u6211\u8981\u6536\u8D39\u4E86\uFF0C\u4E00\u4E0B\u4E00\u4E2A\u82F9\u679C"), line("\u518D\u6478\u6211\u5C31\u751F\u6C14\u4E86\uFF01\uFF08\u5176\u5B9E\u6CA1\u6709\uFF09"), line("\u8BA9\u6211\u4F11\u606F\u4E00\u4E0B\u2026\u2026"))
+  });
+  var TALK_SLOTS = Object.freeze([
+    Object.freeze({ scene: "morning", from: 6, to: 9 }),
+    Object.freeze({ scene: "noon", from: 11, to: 13 }),
+    Object.freeze({ scene: "afternoon", from: 14, to: 16 }),
+    Object.freeze({ scene: "evening", from: 18, to: 20 }),
+    Object.freeze({ scene: "lateNight", from: 23, to: 2 }),
+    Object.freeze({ scene: "deepNight", from: 2, to: 5 })
+  ]);
+  var SOLAR_HOLIDAYS = Object.freeze({
+    "01-01": "newYear",
+    "02-14": "valentine",
+    "05-01": "labour",
+    "06-01": "children",
+    "10-01": "national",
+    "12-25": "christmas"
+  });
+  var DATED_HOLIDAYS = Object.freeze({
+    "2026-02-17": "springFestival",
+    "2026-03-03": "lantern",
+    "2026-04-05": "qingming",
+    "2026-06-19": "dragonBoat",
+    "2026-08-19": "qixi",
+    "2026-09-25": "midAutumn",
+    "2027-02-06": "springFestival",
+    "2027-02-20": "lantern",
+    "2027-04-05": "qingming",
+    "2027-06-09": "dragonBoat",
+    "2027-08-08": "qixi",
+    "2027-09-15": "midAutumn",
+    "2028-01-26": "springFestival",
+    "2028-02-09": "lantern",
+    "2028-04-04": "qingming",
+    "2028-05-28": "dragonBoat",
+    "2028-08-26": "qixi",
+    "2028-10-03": "midAutumn",
+    "2029-02-13": "springFestival",
+    "2029-02-27": "lantern",
+    "2029-04-04": "qingming",
+    "2029-06-16": "dragonBoat",
+    "2029-08-16": "qixi",
+    "2029-09-22": "midAutumn"
+  });
+  var PET_PARTS = Object.freeze({
+    head: "petHead",
+    ears: "petEars",
+    nose: "petNose",
+    belly: "petBelly",
+    back: "petBack",
+    tail: "petTail",
+    feet: "petFeet"
+  });
+  var PET_ANNOYED = Object.freeze({ windowMs: 3e4, after: 8, calmMs: 6e4 });
+
+  // packages/pet-core/src/data/lines.js
+  var IDLE_CHAT_MINUTES2 = Object.freeze({ min: 20, max: 40 });
+  var line2 = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
+  var scene2 = (...lines) => Object.freeze(lines);
+  var BASE_LINES = Object.freeze({
+    // --- 照顾 -----------------------------------------------------------------
+    eat: scene2(
+      line2("\u597D\u5403\uFF01\u8FD8\u6709\u5417\uFF1F", "\u771F\u4E56"),
+      line2("\u5427\u5527\u5427\u5527\u2026\u2026"),
+      line2("[\u4E3B\u4EBA]\u6700\u597D\u4E86\uFF5E"),
+      line2("\u8FD9\u4E2A\u5473\u9053\u6211\u8BB0\u4F4F\u4E86"),
+      line2("\u5403\u9971\u9971\u624D\u6709\u529B\u6C14\u966A\u4F60\u52A0\u73ED"),
+      line2("\u55DD\u2014\u2014\uFF08\u4E0D\u597D\u610F\u601D\uFF09")
+    ),
+    full: scene2(
+      line2("\u5403\u9971\u5566\uFF0C\u809A\u5B50\u5706\u6EDA\u6EDA\u7684"),
+      line2("\u597D\u9971\u597D\u9971\uFF0C\u518D\u5403\u5C31\u8981\u6491\u7740\u4E86"),
+      line2("\u55DD\u2014\u2014\u8C22\u8C22[\u4E3B\u4EBA]\uFF0C\u9971\u9971\u7684")
+    ),
+    overfull: scene2(
+      line2("\u6491\u2026\u2026\u6491\u4F4F\u4E86\u2026\u2026"),
+      line2("\u771F\u7684\u5403\u4E0D\u4E0B\u4E86\uFF0C\u4F60\u770B\u6211\u809A\u5B50"),
+      line2("\u518D\u5582\u6211\u5C31\u8981\u53D8\u6210\u7403\u4E86", "\u6700\u540E\u4E00\u53E3")
+    ),
+    bathe: scene2(
+      line2("\u9999\u55B7\u55B7\u7684\uFF01"),
+      line2("\u6C34\u6709\u70B9\u51C9\u2026\u2026", "\u9A6C\u4E0A\u64E6\u5E72"),
+      line2("\u6413\u6413\u80CC\uFF0C\u8212\u670D\uFF5E"),
+      line2("\u6CE1\u6CE1\uFF01\u662F\u6CE1\u6CE1\uFF01"),
+      line2("\u6D17\u5E72\u51C0\u4E86\uFF0C\u53EF\u4EE5\u62B1\u4E86")
+    ),
+    play: scene2(
+      line2("\u518D\u6765\u4E00\u6B21\uFF01"),
+      line2("\u63A5\u4F4F\u5566\uFF01", "\u771F\u68D2"),
+      line2("\u54C8\u54C8\u54C8\u597D\u597D\u73A9"),
+      line2("\u6211\u8DD1\u5F97\u6BD4\u7403\u5FEB"),
+      line2("\u73A9\u7D2F\u4E86\u2026\u2026\u518D\u73A9\u4E94\u5206\u949F")
+    ),
+    pet: scene2(
+      line2("\u597D\u8212\u670D\u2026\u2026"),
+      line2("\u518D\u6478\u6478\uFF5E", "\u597D"),
+      line2("\u547C\u565C\u547C\u565C\u2026\u2026"),
+      line2("\uFF08\u772F\u8D77\u773C\u775B\uFF09"),
+      line2("\u8FD9\u91CC\u8FD9\u91CC\uFF01\u5DE6\u8FB9\u4E00\u70B9\uFF01"),
+      line2("\u5514\u2026\u2026\u597D\u75D2"),
+      line2("[\u4E3B\u4EBA]\u7684\u624B\u6696\u6696\u7684")
+    ),
+    // --- 状态提醒（闲着时优先说这些）-------------------------------------------
+    hungry: scene2(
+      line2("\u809A\u5B50\u5495\u5495\u53EB\u4E86\u2026\u2026"),
+      line2("[\u4E3B\u4EBA]\uFF0C\u996D\u996D\uFF01", "\u9A6C\u4E0A\u6765"),
+      line2("\u6211\u53EF\u4EE5\u5403\u4E00\u6574\u4E2A\u82F9\u679C\u6811")
+    ),
+    dirty: scene2(
+      line2("\u8EAB\u4E0A\u6709\u70B9\u75D2\u75D2\u7684"),
+      line2("\u6211\u662F\u4E0D\u662F\u6709\u70B9\u5473\u9053\u4E86\u2026\u2026"),
+      line2("\u60F3\u6D17\u6CE1\u6CE1\u6D74", "\u597D\uFF0C\u8FD9\u5C31\u6D17")
+    ),
+    lonely: scene2(
+      line2("[\u4E3B\u4EBA]\u5728\u5FD9\u4EC0\u4E48\u5440\uFF1F"),
+      line2("\u4F60\u597D\u4E45\u6CA1\u7406\u6211\u4E86\u2026\u2026", "\u966A\u4F60\u4E00\u4F1A\u513F"),
+      line2("\u6211\u4E00\u4E2A\u4EBA\u5728\u8FD9\u513F\u6570\u50CF\u7D20")
+    ),
+    idle: scene2(
+      line2("\uFF08\u6253\u4E86\u4E2A\u54C8\u6B20\uFF09"),
+      line2("\u4ECA\u5929\u5929\u6C14\u597D\u50CF\u4E0D\u9519"),
+      line2("\u4F60\u5199\u7684\u4EE3\u7801\u6211\u770B\u61C2\u4E86\u4E00\u884C\uFF01"),
+      line2("\u8981\u4E0D\u8981\u4F11\u606F\u4E00\u4E0B\u773C\u775B\uFF1F", "\u597D"),
+      line2("\u6211\u5728\u60F3\u665A\u996D\u5403\u4EC0\u4E48"),
+      line2("\uFF08\u5728\u89D2\u843D\u91CC\u6EDA\u4E86\u4E00\u5708\uFF09"),
+      line2("[\u4E3B\u4EBA]\u52A0\u6CB9\uFF0C\u6211\u5728\u65C1\u8FB9\u770B\u7740"),
+      line2("\u521A\u624D\u90A3\u4E2A\u62A5\u9519\u6211\u4E5F\u770B\u89C1\u4E86\u2026\u2026")
+    ),
+    // --- 出门 -----------------------------------------------------------------
+    workDone: scene2(
+      line2("\u6211\u56DE\u6765\u5566\uFF01\u8D5A\u5230\u94B1\u4E86\uFF01", "\u8F9B\u82E6\u4E86"),
+      line2("\u4ECA\u5929\u8001\u677F\u5938\u6211\u4E86"),
+      line2("\u7D2F\u662F\u7D2F\u4E86\u70B9\uFF0C\u4F46\u662F\u6709\u94B1\u4E86")
+    ),
+    tired: scene2(
+      line2("\u597D\u7D2F\u554A\u2026\u2026", "\u6B47\u4F1A\u513F\u5427"),
+      line2("\u80FD\u4E0D\u80FD\u5148\u8BA9\u6211\u8EBA\u4E00\u4E0B"),
+      line2("\u518D\u5E72\u4E0B\u53BB\u6211\u8981\u5934\u6655\u4E86")
+    ),
+    study: scene2(
+      line2("\u4ECA\u5929\u5B66\u5230\u597D\u591A\uFF01", "\u771F\u4E56"),
+      line2("\u8001\u5E08\u8BB2\u7684\u6211\u90FD\u542C\u61C2\u4E86\uFF08\u5927\u6982\uFF09"),
+      line2("\u4F5C\u4E1A\u2026\u2026\u660E\u5929\u518D\u8BF4")
+    ),
+    graduate: scene2(
+      line2("\u6211\u6BD5\u4E1A\u5566\uFF01\u6211\u6CA1\u6709\u7559\u7EA7\uFF01", "\u771F\u68D2"),
+      line2("\u770B\uFF0C\u6211\u7684\u6BD5\u4E1A\u7167\uFF01"),
+      line2("\u4E0B\u4E00\u6BB5\u6211\u4E5F\u80FD\u5FF5\u5B8C")
+    ),
+    tripBack: scene2(
+      line2("\u6211\u7ED9\u4F60\u5E26\u4E86\u4E1C\u897F\uFF01", "\u662F\u4EC0\u4E48\uFF1F"),
+      line2("\u5916\u9762\u597D\u5927\u554A"),
+      line2("\u4E0B\u6B21\u5E26\u4F60\u4E00\u8D77\u53BB")
+    ),
+    // --- 生病 -----------------------------------------------------------------
+    sick: scene2(
+      line2("\u963F\u2014\u2014\u568F\uFF01[\u4E3B\u4EBA]\uFF0C\u6211\u597D\u50CF\u75C5\u4E86\u2026\u2026", "\u4E56\uFF0C\u5403\u836F"),
+      line2("\u5934\u6709\u70B9\u6655\u6655\u7684"),
+      line2("\u6211\u4E0D\u60F3\u52A8\u2026\u2026")
+    ),
+    wrongMedicine: scene2(
+      line2("\u8FD9\u836F\u597D\u82E6\u2026\u2026\u597D\u50CF\u4E0D\u662F\u8FD9\u4E2A", "\u5BF9\u4E0D\u8D77"),
+      line2("\u545C\uFF0C\u66F4\u96BE\u53D7\u4E86"),
+      line2("[\u4E3B\u4EBA]\u4F60\u662F\u4E0D\u662F\u770B\u9519\u8BF4\u660E\u4E66\u4E86")
+    ),
+    cured: scene2(
+      line2("\u6211\u597D\u5566\uFF01\u8C22\u8C22[\u4E3B\u4EBA]\uFF5E", "\u771F\u4E56"),
+      line2("\u53C8\u80FD\u8DD1\u80FD\u8DF3\u4E86\uFF01"),
+      line2("\u4EE5\u540E\u6211\u4F1A\u4E56\u4E56\u5403\u996D\u7684")
+    ),
+    // --- 成长与生死 -------------------------------------------------------------
+    levelup: scene2(
+      line2("\u6211\u53C8\u957F\u5927\u4E86\u4E00\u70B9\uFF01", "\u771F\u4E56"),
+      line2("\u611F\u89C9\u81EA\u5DF1\u53D8\u5389\u5BB3\u4E86"),
+      line2("\u4F60\u770B\u6211\u662F\u4E0D\u662F\u9AD8\u4E86\u4E00\u70B9")
+    ),
+    growUp: scene2(
+      line2("\u6211\u957F\u5927\u5566\uFF01"),
+      line2("\u4EE5\u524D\u7684\u8863\u670D\u597D\u50CF\u7A7F\u4E0D\u4E0B\u4E86"),
+      line2("[\u4E3B\u4EBA]\uFF0C\u6211\u73B0\u5728\u662F\u5927\u732A\u4E86")
+    ),
+    coronation: scene2(
+      line2("\u738B\u51A0\u6709\u70B9\u91CD\uFF0C\u4F46\u6211\u4F1A\u597D\u597D\u6234\u7740\u7684\uFF0C[\u4E3B\u4EBA]\u3002", "\u4F60\u53EF\u4EE5\u7684"),
+      line2("\u4ECE\u4ECA\u5929\u8D77\uFF0C\u96F6\u98DF\u4E5F\u7B97\u738B\u5BA4\u4E8B\u52A1\uFF01"),
+      line2("\u6211\u5BA3\u5E03\uFF1A[\u4E3B\u4EBA]\u6C38\u8FDC\u662F\u6211\u7684\u7B2C\u4E00\u4F4D\u8D35\u5BA2\u3002"),
+      line2("\u54B3\u54B3\uFF0C\u672C\u738B\u60F3\u5148\u5403\u4E2A\u82F9\u679C\u3002")
+    ),
+    contract: scene2(
+      line2("\u5951\u7EA6\u7B7E\u597D\u4E86\u3002\u5148\u8BF4\u597D\uFF0C\u6211\u8FD8\u662F\u4F60\u90A3\u53EA\u732A\u3002", "\u5F53\u7136"),
+      line2("\u89D2\u957F\u51FA\u6765\u4E86\uFF0C\u6492\u5A07\u7684\u672C\u4E8B\u53EF\u6CA1\u4E22\u3002"),
+      line2("\u6076\u9B54\u4E5F\u8981\u5403\u996D\u5440\uFF0C[\u4E3B\u4EBA]\u3002"),
+      line2("\u8FD9\u7B14\u4EA4\u6613\u6211\u8D5A\u4E86\uFF1A\u4EE5\u540E\u8FD8\u80FD\u548C\u4F60\u5728\u4E00\u8D77\u3002")
+    ),
+    enter: scene2(
+      line2("[\u4E3B\u4EBA]\u4F60\u56DE\u6765\u5566\uFF01", "\u56DE\u6765\u4E86"),
+      line2("\u7B49\u4F60\u597D\u4E45\u4E86\uFF5E"),
+      line2("\u4ECA\u5929\u4E5F\u8981\u4E00\u8D77\u52A0\u6CB9\u54E6")
+    ),
+    death: scene2(
+      line2("[\u4E3B\u4EBA]\u4FDD\u91CD\uFF0C\u6211\u8D70\u4E86\uFF0C\u4E0D\u5E26\u8D70\u4E00\u7247\u4E91\u5F69\uFF5E"),
+      line2("\u4E0B\u8F88\u5B50\u8FD8\u7ED9\u4F60\u5F53\u732A")
+    ),
+    revive: scene2(
+      line2("\u6211\u2026\u2026\u6211\u56DE\u6765\u4E86\uFF1F"),
+      line2("\u90A3\u8FB9\u597D\u51B7\uFF0C\u8FD8\u662F\u8FD9\u91CC\u597D"),
+      line2("\u8C22\u8C22\u4F60\u6CA1\u653E\u5F03\u6211", "\u6B22\u8FCE\u56DE\u6765")
+    ),
+    // --- B5 用 ------------------------------------------------------------------
+    signIn: scene2(
+      line2("\u7B7E\u5230\u5566\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u7684"),
+      line2("\u8FD9\u662F\u4ECA\u5929\u7684\u793C\u7269\uFF0C\u7ED9\u4F60\uFF5E")
+    ),
+    gift: scene2(
+      line2("\u6211\u5728\u5730\u4E0A\u6361\u5230\u4E00\u4E2A\u76D2\u5B50\uFF01"),
+      line2("\u966A\u4F60\u8FD9\u4E48\u4E45\uFF0C\u8FD9\u662F\u5956\u52B1")
+    ),
+    // --- C2 番茄钟 --------------------------------------------------------------
+    pomodoroStart: scene2(
+      line2("[\u4E3B\u4EBA]\u5FD9\u5427\uFF0C\u6211\u8DB4\u8FD9\u513F\u4E0D\u52A8"),
+      line2("\u4E13\u6CE8\u6A21\u5F0F\uFF01\u6211\u5E2E\u4F60\u770B\u7740\u65F6\u95F4"),
+      line2("\u8FD9 25 \u5206\u949F\u6211\u4E5F\u4E0D\u5435\u4F60\uFF0C\u8BF4\u597D\u4E86")
+    ),
+    pomodoroDone: scene2(
+      line2("\u65F6\u95F4\u5230\uFF01[\u4E3B\u4EBA]\u771F\u5389\u5BB3"),
+      line2("\u505A\u5B8C\u4E00\u4E2A\u5566\uFF0C\u8D77\u6765\u52A8\u52A8\u8116\u5B50"),
+      line2("\u6211\u966A\u4F60\u6570\u7740\u5462\uFF0C\u4E00\u4E2A\u90FD\u4E0D\u5C11")
+    ),
+    pomodoroAbandon: scene2(
+      line2("\u4E0D\u505A\u4E86\u5440\uFF1F\u90A3\u5C31\u6B47\u4F1A\u513F"),
+      line2("\u6CA1\u4E8B\uFF0C\u7B49\u4F60\u51C6\u5907\u597D\u518D\u6765"),
+      line2("\u6211\u5148\u628A\u756A\u8304\u6536\u8D77\u6765\u5566")
+    )
+  });
+  var LINES = Object.freeze(Object.fromEntries(
+    [.../* @__PURE__ */ new Set([...Object.keys(BASE_LINES), ...Object.keys(MORE_LINES)])].map((key) => [key, Object.freeze([...BASE_LINES[key] ?? [], ...MORE_LINES[key] ?? []])])
+  ));
+  var LINE_SCENES = Object.freeze(Object.keys(LINES));
+
+  // src/client/tabs/dev.js
+  var SCENE_NAMES = {
+    eat: "\u5403\u996D",
+    full: "\u5403\u9971",
+    overfull: "\u6491\u7740",
+    bathe: "\u6D17\u6FA1",
+    play: "\u73A9\u800D",
+    pet: "\u6478\u6478",
+    hungry: "\u997F\u4E86",
+    dirty: "\u810F\u4E86",
+    lonely: "\u5B64\u5355",
+    idle: "\u95F2\u804A",
+    workDone: "\u6253\u5DE5\u56DE\u6765",
+    tired: "\u7D2F\u4E86",
+    study: "\u4E0A\u5B66",
+    graduate: "\u6BD5\u4E1A",
+    tripBack: "\u65C5\u884C\u56DE\u6765",
+    sick: "\u751F\u75C5",
+    wrongMedicine: "\u5403\u9519\u836F",
+    cured: "\u6CBB\u597D",
+    levelup: "\u5347\u7EA7",
+    growUp: "\u957F\u5927",
+    coronation: "\u52A0\u5195",
+    contract: "\u7B7E\u7EA6",
+    enter: "\u8FDB\u95E8",
+    death: "\u53BB\u4E16",
+    revive: "\u590D\u6D3B",
+    signIn: "\u7B7E\u5230",
+    gift: "\u793C\u5305",
+    pomodoroStart: "\u756A\u8304\u5F00\u59CB",
+    pomodoroDone: "\u756A\u8304\u5B8C\u6210",
+    pomodoroAbandon: "\u756A\u8304\u653E\u5F03"
+  };
+  var currentPage = "status";
+  function renderDevTab(ui) {
+    var topBar = el("div", "dp-dev-row");
+    var off = button("dp-mini dp-dev-btn", { "data-dev": "devOff" }, function() {
+      ui.devOff();
+    });
+    off.textContent = "\u{1F527} \u5173\u95ED\u8C03\u8BD5";
+    topBar.appendChild(off);
+    ui.content.appendChild(topBar);
+    ui.content.appendChild(el("div", "dp-dev-note", "\u{1F527} \u5F00\u53D1\u8005\u6A21\u5F0F \xB7 \u6784\u5EFA v" + (ui.view.version === "" ? "\u672A\u77E5" : ui.view.version)));
+    if (ui.view.pig !== null && ui.view.pig.ageForced) {
+      ui.content.appendChild(el(
+        "div",
+        "dp-dev-note",
+        "\u26A0\uFE0F \u5E74\u9F84\u662F\u8C03\u8BD5\u6539\u7684\uFF08HUD \u4E0A\u6709 \u{1F527}\uFF09\u2014\u2014 \u6309\u300C\u23EA \u5929\u6570\u5F52\u96F6\u300D\u624D\u4F1A\u91CD\u65B0\u6309\u771F\u5B9E\u65F6\u95F4\u7B97"
+      ));
+    }
+    var patch = function(body) {
+      ui.send("dev", { patch: body });
+    };
+    var pages = [];
+    function page(key, label) {
+      var body = el("div", "dp-dev-page");
+      body.setAttribute("data-dev-page-body", key);
+      pages.push({ key, label, body });
+      return function group(title, entries2, note) {
+        var head = el("div", "dp-title");
+        head.appendChild(el("b", null, title));
+        body.appendChild(head);
+        if (note !== void 0 && note !== "") body.appendChild(el("div", "dp-dev-note", note));
+        var wrap = el("div", "dp-dev-list");
+        for (var i = 0; i < entries2.length; i += 1) {
+          (function(entry) {
+            var item = el("div", "dp-dev-item");
+            var btn = button("dp-mini dp-dev-btn", { "data-dev": entry.key }, function() {
+              entry.run();
+            });
+            btn.textContent = entry.label;
+            if (entry.off === true) btn.disabled = true;
+            item.appendChild(btn);
+            if (entry.desc) item.appendChild(el("small", "dp-dev-desc", entry.desc));
+            wrap.appendChild(item);
+          })(entries2[i]);
+        }
+        body.appendChild(wrap);
+      };
+    }
+    var boxed = ui.view.hatched !== true || ui.view.pig === null;
+    var dead = ui.view.dead === true;
+    var why = boxed ? "\u5148\u5B75\u5316" : dead ? "\u5148\u590D\u6D3B" : "";
+    var forms = ui.view.forms === null ? [] : ui.view.forms.forms;
+    var looks = page("looks", "\u5F62\u6001\u76AE\u80A4");
+    var formEntries = forms.map(function(form) {
+      return {
+        key: "form:" + form.key,
+        label: form.emoji + " " + form.label,
+        off: boxed || dead,
+        desc: "\u76F4\u63A5\u53D8\u6210" + form.label + "\uFF0C\u4E0D\u770B\u6761\u4EF6\uFF1B\u7B49\u7EA7\u4E0D\u591F\u4F1A\u987A\u624B\u8865\u5230\u8FD9\u4E00\u9636\u6BB5",
+        run: function() {
+          var body = { form: form.key };
+          var level = ui.view.pig === null ? 0 : ui.view.pig.level.level;
+          if (level < form.fromLevel) body.level = form.fromLevel;
+          patch(body);
+        }
+      };
+    });
+    formEntries.push({ key: "form:none", label: "\u{1F416} \u6062\u590D\u666E\u901A", desc: "\u53BB\u6389\u5F62\u6001\uFF0C\u56DE\u5230\u666E\u901A\u5C0F\u732A", run: function() {
+      patch({ form: null });
+    } });
+    looks("\u5F62\u6001", formEntries, why);
+    var p = ui.view.pig;
+    if (p === null) {
+      currentPage = "looks";
+      renderPages(ui, pages);
+      ui.content.appendChild(el("div", "dp-empty", "\u8FD8\u6CA1\u6709\u732A\u3002\u5148\u300C\u62C6\u5F00\u7EB8\u76D2\u300D\u518D\u8C03\u3002"));
+      return;
+    }
+    var skinRows = ui.view.skins?.entries?.length > 0 ? ui.view.skins.entries : SKINS;
+    looks("\u76AE\u80A4", skinRows.map(function(skin) {
+      return {
+        key: "skin:" + skin.key,
+        label: skin.emoji + " " + skin.label,
+        desc: skin.unlockJob ? "\u804C\u4E1A\u76AE\u80A4\uFF1A\u4E0D\u7528\u6253\u5DE5\u76F4\u63A5\u8BD5\u7A7F" : "\u6362\u4E0A\u8FD9\u6B3E\u76AE\u80A4",
+        run: function() {
+          if (skin.unlockJob) patch({ skin: skin.key });
+          else ui.send("skin", { skin: skin.key });
+        }
+      };
+    }), "\u5F62\u6001\u663E\u793A\u4F18\u5148\u4E8E\u76AE\u80A4\uFF1B\u6062\u590D\u666E\u901A\u5F62\u6001\u5373\u53EF\u770B\u5230\u76AE\u80A4\u3002");
+    looks("\u9053\u5177", forms.filter(function(form) {
+      return form.item !== "";
+    }).map(function(form) {
+      return {
+        key: "item:" + form.item,
+        label: form.emoji + " \u7ED9" + form.label + "\u9053\u5177",
+        desc: "\u80CC\u5305\u91CC\u52A0\u4E00\u4E2A\u664B\u5347\u9053\u5177\uFF0C\u7528\u6765\u6D4B\u6B63\u5E38\u7684\u664B\u5347\u6D41\u7A0B",
+        run: function() {
+          patch({ inventory: { [form.item]: num(ui.view.inventory[form.item], 0) + 1 } });
+        }
+      };
+    }));
+    var status = page("status", "\u72B6\u6001");
+    status("\u72B6\u6001", [
+      { key: "full", label: "\u{1F60A} \u6EE1\u72B6\u6001", desc: "\u9971\u98DF\u3001\u5FC3\u60C5\u3001\u6E05\u6D01 100\uFF0C\u5065\u5EB7\u6EE1\u683C", run: function() {
+        patch({ satiety: 100, happiness: 100, cleanliness: 100, health: 5 });
+      } },
+      { key: "hungry", label: "\u{1F34E} \u997F", desc: "\u9971\u98DF 10\uFF1A\u770B\u997F\u4E86\u7684\u53F0\u8BCD\u548C\u751F\u75C5\u98CE\u9669", run: function() {
+        patch({ satiety: 10 });
+      } },
+      { key: "dirty", label: "\u{1FAE7} \u810F", desc: "\u6E05\u6D01 10", run: function() {
+        patch({ cleanliness: 10 });
+      } },
+      { key: "lonely", label: "\u{1F97A} \u5B64\u5355", desc: "\u5FC3\u60C5 10", run: function() {
+        patch({ happiness: 10 });
+      } },
+      { key: "sleepy", label: "\u{1F4A4} \u56F0", desc: "\u4E09\u9879\u90FD 90\uFF0C\u6D4B\u8BD5\u56F0\u4E86\u7684\u95F2\u804A", run: function() {
+        patch({ satiety: 90, happiness: 90, cleanliness: 90 });
+      } }
+    ]);
+    status("\u8D44\u6E90", [
+      { key: "coin100", label: "\u{1FA99} +100", desc: "\u91D1\u5E01\u52A0 100", run: function() {
+        patch({ coins: p.coins + 100 });
+      } },
+      { key: "coin999", label: "\u{1FA99} 9999", desc: "\u91D1\u5E01\u8BBE\u6210 9999", run: function() {
+        patch({ coins: 9999 });
+      } },
+      { key: "traits", label: "\u{1F9E0}+5 \u2728+5 \u{1F4AA}+5", desc: "\u667A\u529B\u3001\u9B45\u529B\u3001\u6B66\u529B\u5404 +5", run: function() {
+        patch({ traits: { intel: 5, charm: 5, strong: 5 } });
+      } },
+      { key: "all", label: "\u{1F381} \u4E00\u952E\u62FF\u9F50", desc: "\u5546\u5E97\u91CC\u6BCF\u6837\u4E1C\u897F\u90FD\u7ED9\u51E0\u4E2A", run: function() {
+        ui.send("giveAll");
+      } }
+    ]);
+    status("\u751F\u6B7B", [
+      { key: "kill", label: "\u{1F480} \u5F04\u6B7B", desc: "\u76F4\u63A5\u53BB\u4E16\uFF08\u53D8\u5893\u7891\uFF09\uFF0C\u6D4B\u590D\u6D3B\u548C\u9886\u517B", run: function() {
+        patch({ dead: true });
+      } },
+      { key: "revive", label: "\u2728 \u590D\u6D3B", desc: "\u4E0D\u7528\u8FD8\u9B42\u4E39\u76F4\u63A5\u590D\u6D3B", run: function() {
+        patch({ dead: false, health: 5 });
+      } },
+      { key: "adopt", label: "\u{1F4E6} \u9886\u517B", desc: "\u9886\u517B\u4E00\u53EA\u65B0\u732A\uFF08\u65E7\u732A\u7684\u6545\u4E8B\u7559\u5728\u8BB0\u5FC6\u91CC\uFF09", run: function() {
+        ui.send("adopt");
+      } },
+      { key: "reset", label: "\u{1F504} \u91CD\u7F6E", desc: "\u6E05\u7A7A\u5B58\u6863\uFF0C\u4ECE\u7EB8\u76D2\u91CD\u65B0\u5F00\u59CB", run: function() {
+        ui.send("reset");
+      } }
+    ]);
+    var growth = page("growth", "\u6210\u957F\u751F\u75C5");
+    growth("\u7B49\u7EA7", [
+      { key: "box", label: "\u{1F4E6} \u7EB8\u76D2", desc: "\u56DE\u5230\u6CA1\u62C6\u7684\u7EB8\u76D2", run: function() {
+        patch({ hatched: false });
+      } },
+      { key: "lv1", label: "\u5E7C\u5E74 Lv1", desc: "\u62C6\u76D2\u5E76\u8BBE\u6210 1 \u7EA7", run: function() {
+        patch({ hatched: true, level: 1 });
+      } },
+      { key: "lv10", label: "\u9752\u5E74 Lv10", desc: "\u8BBE\u6210 10 \u7EA7\uFF08\u9752\u5E74\u4F53\u578B\uFF09", run: function() {
+        patch({ level: 10 });
+      } },
+      { key: "lv40", label: "\u6210\u5E74 Lv40", desc: "\u8BBE\u6210 40 \u7EA7\uFF08\u6210\u5E74\u4F53\u578B\uFF09", run: function() {
+        patch({ level: 40 });
+      } },
+      { key: "lv60", label: "\u6EE1\u7EA7 Lv60", desc: "\u8BBE\u6210\u6EE1\u7EA7", run: function() {
+        patch({ level: 60 });
+      } },
+      { key: "real", label: "\u23EA \u5929\u6570\u5F52\u96F6", desc: "\u53D6\u6D88\u8C03\u8BD5\u6539\u8FC7\u7684\u5E74\u9F84\uFF0C\u6309\u771F\u5B9E\u65F6\u95F4\u91CD\u65B0\u7B97", run: function() {
+        ui.send("ageFromNow");
+      } }
+    ]);
+    growth("\u4F53\u91CD", [
+      { key: "weight:normal", label: "\u2696\uFE0F \u6B63\u5E38", desc: "\u4F53\u91CD\u8BBE\u5230\u7406\u60F3\u4F53\u91CD", run: function() {
+        patch({ weightClass: "normal" });
+      } },
+      { key: "weight:round", label: "\u{1F437} \u5706\u6DA6", desc: "\u4F53\u91CD\u8BBE\u5230\u5706\u6DA6\u6863\uFF08\u6362\u5706\u6DA6\u7ACB\u7ED8\uFF09", run: function() {
+        patch({ weightClass: "round" });
+      } },
+      { key: "weight:fat", label: "\u{1F416} \u80D6\u80D6", desc: "\u4F53\u91CD\u8BBE\u5230\u80D6\u80D6\u6863\uFF08\u6362\u80D6\u80D6\u52A8\u4F5C\u7ACB\u7ED8\uFF09", run: function() {
+        patch({ weightClass: "fat" });
+      } }
+    ]);
+    growth("\u751F\u75C5", [
+      { key: "cold1", label: "\u{1F927} \u611F\u5192", desc: "\u611F\u5192\u7B2C 1 \u671F\uFF0C\u5065\u5EB7 4", run: function() {
+        patch({ illness: { chain: 0, stage: 1 }, health: 4 });
+      } },
+      { key: "cough1", label: "\u{1F637} \u54B3\u55FD", desc: "\u54B3\u55FD\u7B2C 1 \u671F", run: function() {
+        patch({ illness: { chain: 1, stage: 1 }, health: 4 });
+      } },
+      { key: "belly1", label: "\u{1F922} \u809A\u5B50\u80C0", desc: "\u80A0\u80C3\u7B2C 1 \u671F\uFF08\u80C3\u80C0\u6C14\u90A3\u6761\uFF09", run: function() {
+        patch({ illness: { chain: 2, stage: 1 }, health: 4 });
+      } },
+      { key: "dizzy1", label: "\u{1F635} \u5934\u6655", desc: "\u5934\u6655\u7B2C 1 \u671F\uFF08\u8FDE\u7EED\u51FA\u95E8\u592A\u591A\u90A3\u6761\uFF09", run: function() {
+        patch({ illness: { chain: 3, stage: 1 }, health: 4 });
+      } },
+      { key: "skin1", label: "\u{1FA79} \u7619\u75D2", desc: "\u76AE\u80A4\u7B2C 1 \u671F\uFF08\u592A\u810F\u90A3\u6761\uFF09", run: function() {
+        patch({ illness: { chain: 4, stage: 1 }, health: 4 });
+      } },
+      { key: "cold4", label: "\u2620\uFE0F \u80BA\u708E", desc: "\u611F\u5192\u6700\u540E\u4E00\u671F\uFF0C\u5065\u5EB7 1\uFF1A\u518D\u62D6\u5C31\u4F1A\u6B7B", run: function() {
+        patch({ illness: { chain: 0, stage: 4 }, health: 1 });
+      } },
+      { key: "cure", label: "\u{1F49A} \u6CBB\u597D", desc: "\u76F4\u63A5\u75C5\u597D\uFF0C\u5065\u5EB7\u6EE1\u683C", run: function() {
+        patch({ illness: null, health: 5 });
+      } }
+    ]);
+    page("pomodoro", "\u756A\u8304\u949F")("\u756A\u8304\u949F", [
+      { key: "pomoDone", label: "\u{1F345} \u5B8C\u6210\u5F53\u524D", desc: "\u6B63\u5728\u4E13\u6CE8\u7684\u8FD9\u4E00\u4E2A\u7ACB\u523B\u5230\u70B9\uFF0C\u7167\u5E38\u53D1\u5956", run: function() {
+        patch({ pomodoro: { finish: true } });
+      } },
+      { key: "pomoCap", label: "\u{1F522} \u4ECA\u5929=8", desc: "\u4ECA\u5929\u5B8C\u6210\u6570\u8BBE\u6210 8\uFF0C\u6D4B\u300C\u6BCF\u5929\u524D 8 \u4E2A\u6709\u5956\u52B1\u300D\u7684\u4E0A\u9650", run: function() {
+        patch({ pomodoro: { todayDone: 8 } });
+      } }
+    ]);
+    var fishEntries = FISH.map(function(fish2) {
+      return { key: "fish:" + fish2.key, label: fish2.emoji + " " + fish2.label, desc: "\u9C7C\u7BD3\u91CC\u76F4\u63A5\u653E\u4E00\u6761", run: function() {
+        ui.send("fishGive", { fish: fish2.key });
+      } };
+    });
+    fishEntries.push({ key: "fish:skip", label: "\u2757 \u8DF3\u8FC7\u7B49\u5F85", desc: "\u629B\u7AFF\u540E\u4E0D\u7528\u7B49\uFF0C\u9A6C\u4E0A\u54AC\u94A9", run: function() {
+      ui.send("fishSkip");
+    } });
+    page("fishing", "\u9493\u9C7C")("\u9493\u9C7C", fishEntries);
+    var dailyView = ui.view.daily ?? { cycle: 7, signInDay: 1, canSignIn: true, signInTotal: 0, unclaimed: 0 };
+    var extensions = ui.view.extensions ?? [];
+    var daily = page("daily", "\u7B7E\u5230\u793C\u5305");
+    var days = [];
+    for (var d = 1; d <= dailyView.cycle; d += 1) {
+      (function(day) {
+        days.push({ key: "signin:" + day, label: "\u{1F4C5} \u7B2C " + day + " \u5929", desc: "\u4E0B\u4E00\u6B21\u7B7E\u5230\u9886\u7B2C " + day + " \u5929\uFF0C\u4ECA\u5929\u53EF\u4EE5\u518D\u7B7E", run: function() {
+          patch({ signInDay: day });
+        } });
+      })(d);
+    }
+    daily("\u7B7E\u5230", days, "\u73B0\u5728\uFF1A\u7B2C " + dailyView.signInDay + "/" + dailyView.cycle + " \u5929" + (dailyView.canSignIn ? " \xB7 \u4ECA\u5929\u8FD8\u6CA1\u7B7E" : " \xB7 \u4ECA\u5929\u5DF2\u7B7E"));
+    daily("\u5728\u7EBF\u793C\u5305", [
+      { key: "gifts:1", label: "\u{1F381} \u6512 1 \u4E2A", desc: "\u732A\u5934\u4E0A\u51FA\u73B0\u793C\u5305\u6309\u94AE", run: function() {
+        patch({ gifts: 1 });
+      } },
+      { key: "gifts:3", label: "\u{1F381} \u6512\u6EE1 3 \u4E2A", desc: "\u793C\u5305\u4E0A\u9650\u662F 3 \u4E2A", run: function() {
+        patch({ gifts: 3 });
+      } },
+      { key: "gifts:0", label: "\u{1F6AB} \u6E05\u7A7A", desc: "\u6CA1\u6709\u5F85\u9886\u7684\u793C\u5305", run: function() {
+        patch({ gifts: 0 });
+      } }
+    ]);
+    var system = page("system", "\u66F4\u65B0\u6269\u5C55");
+    var notice = ui.updateNotice;
+    system("\u66F4\u65B0", [
+      {
+        key: "update:fake",
+        label: "\u{1F534} \u5047\u88C5\u6709\u65B0\u7248",
+        desc: "\u8BA9\u8BBE\u7F6E\u56FE\u6807\u548C\u8BBE\u7F6E\u9875\u5192\u7EA2\u70B9\uFF08\u4E0D\u4F1A\u771F\u7684\u4E0B\u8F7D\uFF09",
+        off: !notice || typeof notice.simulate !== "function",
+        run: function() {
+          notice.simulate("9.9.9");
+          ui.renderContent();
+        }
+      },
+      {
+        key: "update:read",
+        label: "\u2705 \u6807\u4E3A\u5DF2\u8BFB",
+        desc: "\u7EA2\u70B9\u6D88\u5931\uFF08\u548C\u6253\u5F00\u66F4\u65B0\u9875\u4E00\u6837\uFF09",
+        off: !notice,
+        run: function() {
+          notice.markRead();
+          ui.renderContent();
+        }
+      }
+    ]);
+    system("\u6269\u5C55", extensions.map(function(extension) {
+      return {
+        key: "ext:" + extension.key,
+        label: extension.emoji + " " + (extension.on ? "\u5173\u6389" : "\u6253\u5F00") + extension.label,
+        desc: extension.on ? "\u548C\u6269\u5C55 App \u91CC\u5173\u6389\u4E00\u6837\uFF08\u8FDB\u884C\u4E2D\u7684\u4F1A\u6536\u5C3E\uFF09" : "\u91CD\u65B0\u6253\u5F00\uFF0C\u6570\u636E\u539F\u6837\u56DE\u6765",
+        run: function() {
+          ui.send("setExtension", { key: extension.key, on: !extension.on });
+        }
+      };
+    }));
+    page("lines", "\u53F0\u8BCD")("\u8BA9\u732A\u8BF4\u4E00\u53E5", Object.keys(LINES).map(function(scene3) {
+      return {
+        key: "say:" + scene3,
+        label: "\u{1F4AC} " + (SCENE_NAMES[scene3] ?? scene3),
+        desc: "\u968F\u673A\u8BF4\u300C" + scene3 + "\u300D\u573A\u666F\u91CC\u7684\u4E00\u53E5\uFF08\u514D\u6253\u6270\u65F6\u4E0D\u8BF4\uFF09",
+        run: function() {
+          patch({ say: scene3 });
+        }
+      };
+    }));
+    var time = page("time", "\u65F6\u95F4\u9762\u677F");
+    time("\u65F6\u95F4", [
+      { key: "real", label: "\xD71 \u771F\u5B9E", desc: "\u65F6\u95F4\u6309\u771F\u5B9E\u901F\u5EA6\u8D70", run: function() {
+        ui.send("timeScale", { scale: 1 });
+      } },
+      { key: "fast12", label: "\xD712", desc: "1 \u5206\u949F = \u732A\u7684 12 \u5206\u949F", run: function() {
+        ui.send("timeScale", { scale: 12 });
+      } },
+      { key: "fast30", label: "\xD730", desc: "1 \u5206\u949F = \u732A\u7684\u534A\u5C0F\u65F6", run: function() {
+        ui.send("timeScale", { scale: 30 });
+      } },
+      { key: "fast60", label: "\xD760", desc: "1 \u5206\u949F = \u732A\u7684 1 \u5C0F\u65F6", run: function() {
+        ui.send("timeScale", { scale: 60 });
+      } }
+    ]);
+    time("\u9762\u677F", [
+      { key: "open", label: "\u5C55\u5F00/\u6536\u8D77", desc: "\u5207\u6362\u9762\u677F\u5F00\u5173\uFF08\u6D4B\u5F00\u5173\u52A8\u753B\uFF09", run: function() {
+        ui.setOpen(ui.host.getAttribute("data-open") !== "true");
+      } },
+      { key: "away1", label: "\u23E9 +1 \u5C0F\u65F6", desc: "\u65F6\u95F4\u76F4\u63A5\u8FC7\u53BB 1 \u5C0F\u65F6\uFF08\u7ED3\u7B97\u6570\u503C\u3001\u6210\u957F\u3001\u6253\u5DE5\uFF09", run: function() {
+        patch({ __advanceMs: 36e5 });
+      } },
+      { key: "away24", label: "\u23E9 +1 \u5929", desc: "\u65F6\u95F4\u76F4\u63A5\u8FC7\u53BB 1 \u5929\uFF08\u6362\u5929\u3001\u7B7E\u5230\u3001\u65E5\u8BB0\uFF09", run: function() {
+        patch({ __advanceMs: 864e5 });
+      } }
+    ]);
+    time("\u732A\u81EA\u5DF1\u627E\u4E8B\u505A", [
+      { key: "idle", label: "\u{1F437} \u5C0F\u52A8\u4F5C", desc: "\u9A6C\u4E0A\u505A\u4E00\u4E2A\u5C0F\u52A8\u4F5C\uFF08\u6253\u6EDA\u3001\u6253\u76F9\u3001\u8FFD\u8774\u8776\u2026\u2026\uFF09", off: !ui.life, run: function() {
+        ui.setOpen(false);
+        ui.life.idleNow();
+      } },
+      { key: "walk", label: "\u{1F6B6} \u6563\u6B65\u4E00\u6B21", desc: "\u9A6C\u4E0A\u6CBF\u5C4F\u5E55\u5E95\u8FB9\u8D70\u4E00\u8D9F\uFF08\u53EA\u6709\u684C\u9762\u7248\uFF09", off: !ui.life || typeof desktopShell()?.moveBy !== "function", run: function() {
+        ui.setOpen(false);
+        ui.life.walkNow();
+      } },
+      { key: "timeTalk", label: "\u{1F550} \u6309\u65F6\u95F4\u8BF4", desc: "\u95EE\u4E00\u6B21\u300C\u73B0\u5728\u6709\u6CA1\u6709\u6309\u65F6\u95F4\u8BE5\u8BF4\u7684\u8BDD\u300D\uFF08\u4E00\u5929\u4E00\u6B21\u7684\u5DF2\u7ECF\u8BF4\u8FC7\u5C31\u4E0D\u8BF4\uFF09", run: function() {
+        ui.send("chat", { reason: "time" });
+      } }
+    ]);
+    var values = el("div", "dp-dev-page");
+    values.setAttribute("data-dev-page-body", "values");
+    pages.push({ key: "values", label: "\u6570\u503C", body: values });
+    var rows = [
+      ["\u9636\u6BB5", p.stage?.label ?? "\u2014"],
+      ["\u7B49\u7EA7", p.level ? "Lv." + p.level.level + "\uFF08\u8FD8\u5DEE " + Math.ceil(p.level.toNext) + "\uFF09" : "\u2014"],
+      ["\u9971\u98DF", p.satiety],
+      ["\u5FC3\u60C5", p.happiness],
+      ["\u6E05\u6D01", p.cleanliness],
+      ["\u5065\u5EB7", p.health + "/" + (ui.view.maxHealth ?? 5)],
+      ["\u4F53\u91CD", p.weight + (p.bodyWeight ? "\uFF08" + p.bodyWeight.weightG + " g \xB7 " + p.bodyWeight.label + "\uFF09" : "")],
+      ["\u91D1\u5E01", p.coins],
+      ["\u667A\u529B / \u9B45\u529B / \u6B66\u529B", p.traits ? p.traits.intel + " / " + p.traits.charm + " / " + p.traits.strong : "\u2014"],
+      ["\u751F\u75C5", p.illness ? p.illness.name : "\u2014"],
+      ["\u5728\u5916\u9762", ui.view.activity ? ui.view.activity.label : "\u2014"],
+      ["\u7B7E\u5230", "\u7B2C " + dailyView.signInDay + " \u5929 \xB7 \u7D2F\u8BA1 " + dailyView.signInTotal + " \u6B21"],
+      ["\u5F85\u9886\u793C\u5305", dailyView.unclaimed],
+      ["\u6269\u5C55", extensions.map(function(e) {
+        return e.label + (e.on ? "\u5F00" : "\u5173");
+      }).join(" \xB7 ")],
+      ["\u514D\u6253\u6270", ui.view.dialogue?.quiet ? "\u5F00" : "\u5173"],
+      ["\u65F6\u95F4\u500D\u7387", "\xD7" + (ui.view.timeScale ?? 1)]
+    ];
+    for (var r = 0; r < rows.length; r += 1) {
+      var row = el("div", "dp-row");
+      row.appendChild(el("span", null, rows[r][0]));
+      row.appendChild(el("b", null, String(rows[r][1])));
+      values.appendChild(row);
+    }
+    renderPages(ui, pages);
+  }
+  function renderPages(ui, pages) {
+    if (!pages.some(function(entry) {
+      return entry.key === currentPage;
+    })) currentPage = pages[0].key;
+    var index = pages.findIndex(function(entry) {
+      return entry.key === currentPage;
+    });
+    var go = function(to) {
+      currentPage = pages[(to + pages.length) % pages.length].key;
+      ui.renderContent();
+    };
+    var nav = el("div", "dp-dev-nav");
+    var prev = button("dp-mini dp-mini-plain", { "data-dev-prev": "true" }, function() {
+      go(index - 1);
+    });
+    prev.textContent = "\u2039";
+    nav.appendChild(prev);
+    var tabs = el("div", "dp-dev-tabs");
+    for (var i = 0; i < pages.length; i += 1) {
+      (function(entry, at) {
+        var tab = button("dp-dev-tab", { "data-dev-page": entry.key, "aria-pressed": String(at === index) }, function() {
+          go(at);
+        });
+        tab.textContent = entry.label;
+        tabs.appendChild(tab);
+      })(pages[i], i);
+    }
+    nav.appendChild(tabs);
+    var next = button("dp-mini dp-mini-plain", { "data-dev-next": "true" }, function() {
+      go(index + 1);
+    });
+    next.textContent = "\u203A";
+    nav.appendChild(next);
+    ui.content.appendChild(nav);
+    sideScroller(tabs, tabs.children ? tabs.children[index] : null);
+    var start2 = null;
+    for (var k = 0; k < pages.length; k += 1) {
+      var body = pages[k].body;
+      body.hidden = k !== index;
+      if (typeof body.addEventListener === "function") {
+        body.addEventListener("pointerdown", function(event) {
+          start2 = event.clientX;
+        });
+        body.addEventListener("pointerup", function(event) {
+          if (start2 === null || typeof event.clientX !== "number") return;
+          var dx = event.clientX - start2;
+          start2 = null;
+          if (Math.abs(dx) > 50) go(dx < 0 ? index + 1 : index - 1);
+        });
+      }
+      ui.content.appendChild(body);
+    }
+  }
+
   // channel.js
   var CHANNEL = {
     name: "github",
@@ -5922,32 +5778,32 @@
     shellListening: false
   };
   function updatesBridge() {
-    var shell = (
+    var shell2 = (
       /** @type {any} */
       window.piggyShell
     );
-    return shell && shell.updates ? shell : null;
+    return shell2 && shell2.updates ? shell2 : null;
   }
   function refresh(ui) {
-    var shell = updatesBridge();
-    if (shell === null || state.loading) return;
+    var shell2 = updatesBridge();
+    if (shell2 === null || state.loading) return;
     state.loading = true;
     state.error = null;
     if (!state.listening) {
       state.listening = true;
-      shell.updates.onProgress(function(fraction) {
+      shell2.updates.onProgress(function(fraction) {
         state.fraction = fraction;
         ui.renderContent();
       });
     }
-    if (shell.shellUpdates && !state.shellListening) {
+    if (shell2.shellUpdates && !state.shellListening) {
       state.shellListening = true;
-      shell.shellUpdates.onProgress(function(fraction) {
+      shell2.shellUpdates.onProgress(function(fraction) {
         state.shellFraction = fraction;
         ui.renderContent();
       });
     }
-    Promise.all([shell.updates.current(), shell.updates.list(), shell.shellUpdates ? shell.shellUpdates.status() : null]).then(function(got) {
+    Promise.all([shell2.updates.current(), shell2.updates.list(), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
       state.current = got[0];
       if (got[1] && got[1].ok) state.list = got[1].releases;
       else state.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
@@ -5960,13 +5816,13 @@
     });
   }
   function downloadShell(ui, version) {
-    var shell = updatesBridge();
-    if (!shell || !shell.shellUpdates || state.shellBusy) return;
+    var shell2 = updatesBridge();
+    if (!shell2 || !shell2.shellUpdates || state.shellBusy) return;
     state.shellBusy = true;
     state.shellFraction = 0;
     state.shellMessage = null;
     ui.renderContent();
-    shell.shellUpdates.download(version).then(function(result) {
+    shell2.shellUpdates.download(version).then(function(result) {
       if (result.ok) {
         state.shellReady = result.version;
         state.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
@@ -5980,9 +5836,9 @@
     });
   }
   function installShell(ui) {
-    var shell = updatesBridge();
-    if (!shell || !shell.shellUpdates) return;
-    shell.shellUpdates.install().then(function(result) {
+    var shell2 = updatesBridge();
+    if (!shell2 || !shell2.shellUpdates) return;
+    shell2.shellUpdates.install().then(function(result) {
       if (!result.ok) {
         state.shellMessage = result.reason;
         ui.renderContent();
@@ -5997,24 +5853,24 @@
     return "\u5F53\u524D\u7248\u672C\u8FD8\u4E0D\u652F\u6301\u5E94\u7528\u5185\u66F4\u65B0\u5916\u58F3\uFF0C\u9700\u8981\u624B\u52A8\u5B89\u88C5\u4E00\u6B21\u65B0\u7248\u3002";
   }
   function install(ui, version) {
-    var shell = updatesBridge();
-    if (shell === null) return;
+    var shell2 = updatesBridge();
+    if (shell2 === null) return;
     state.busy = version;
     state.fraction = 0;
     state.message = null;
     ui.renderContent();
-    shell.updates.install(version).then(function(result) {
+    shell2.updates.install(version).then(function(result) {
       state.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
       if (!result.ok) state.busy = null;
       ui.renderContent();
     });
   }
   function rollback(ui) {
-    var shell = updatesBridge();
-    if (shell === null) return;
+    var shell2 = updatesBridge();
+    if (shell2 === null) return;
     state.busy = "rollback";
     ui.renderContent();
-    shell.updates.rollback().then(function(result) {
+    shell2.updates.rollback().then(function(result) {
       state.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
       if (!result.ok) state.busy = null;
       ui.renderContent();
@@ -6258,6 +6114,272 @@
     return box;
   }
 
+  // src/client/tabs/status.js
+  function renderStatusTab(ui) {
+    var p = ui.view.pig;
+    if (p === null) return;
+    renderBanners(ui);
+    var lv = p.level;
+    labelledBar(
+      ui,
+      "\u2B50 Lv." + lv.level + " " + lv.titleEmoji + lv.titleLabel,
+      lv.maxed ? 100 : lv.percent,
+      lv.maxed ? "\u6EE1\u7EA7" : "\u8FD8\u5DEE " + Math.ceil(lv.toNext) + " \u6210\u957F",
+      "dp-level"
+    );
+    labelledBar(ui, "\u{1F35A} \u9971\u98DF", p.satiety, p.satiety + "%");
+    labelledBar(ui, "\u2764\uFE0F \u5FC3\u60C5", p.happiness, p.happiness + "%", "dp-mood");
+    labelledBar(ui, "\u{1FAE7} \u6E05\u6D01", p.cleanliness, p.cleanliness + "%", "dp-clean");
+    labelledBar(ui, "\u{1F49A} \u5065\u5EB7", p.healthPercent, p.health + "/" + ui.view.maxHealth, "dp-health");
+    var traits = el("div", "dp-traits");
+    traits.appendChild(el("span", null, "\u{1F9E0} \u667A\u529B " + p.traits.intel));
+    traits.appendChild(el("span", null, "\u2728 \u9B45\u529B " + p.traits.charm));
+    traits.appendChild(el("span", null, "\u{1F4AA} \u6B66\u529B " + p.traits.strong));
+    ui.content.appendChild(traits);
+    renderWeight(ui, p);
+    var daily = ui.view.daily;
+    var dailyLine = el("div", "dp-row");
+    dailyLine.appendChild(el("span", null, "\u{1F4C5} \u7B7E\u5230"));
+    dailyLine.appendChild(el("b", null, "\u7B2C " + daily.signInDay + "/" + daily.cycle + " \u5929" + (daily.canSignIn ? " \xB7 \u4ECA\u5929\u8FD8\u6CA1\u7B7E" : "") + (daily.unclaimed > 0 ? " \xB7 \u{1F381} " + daily.unclaimed : "")));
+    ui.content.appendChild(dailyLine);
+    var grid = el("div", "dp-actions");
+    for (var i = 0; i < MODES.length; i += 1) {
+      (function(key) {
+        var info = ui.view.actions[key];
+        var shelf = ui.view.care[key] ?? [];
+        var needsItem = shelf.length > 0;
+        var btn = button("dp-btn", { "data-action": key }, function() {
+          if (BAG_SHELF[key] !== void 0) {
+            ui.select("bag");
+            ui.drill.from = "status";
+            drillTo(ui, "bag", BAG_SHELF[key]);
+          } else {
+            ui.send(key);
+          }
+        });
+        btn.appendChild(el("span", null, CARE_LABEL[key][1]));
+        btn.appendChild(el("span", null, CARE_LABEL[key][0]));
+        if (needsItem) btn.appendChild(el("span", "dp-count", String(shelf.length)));
+        if (!info.ready || ui.view.dead) {
+          btn.disabled = true;
+          if (ui.view.dead) btn.appendChild(el("span", "dp-wait", "\u2014"));
+          else if (info.waitSeconds > 0) btn.appendChild(el("span", "dp-wait", info.waitSeconds + "s"));
+          else if (info.blocked === "away") btn.appendChild(el("span", "dp-wait", "\u4E0D\u5728\u5BB6"));
+        }
+        grid.appendChild(btn);
+      })(MODES[i]);
+    }
+    ui.content.appendChild(grid);
+    if (p.memories.length > 0) {
+      ui.content.appendChild(el("div", "dp-memo", p.memories.slice(-3).join("\n")));
+    }
+  }
+  var BAG_SHELF = { feed: "food", bathe: "bath", play: "toy" };
+  function renderWeight(ui, p) {
+    var row = el("div", "dp-row");
+    row.appendChild(el("span", null, "\u2696\uFE0F \u4F53\u91CD"));
+    row.appendChild(el("b", null, p.weight + (p.bodyWeight !== null ? " \xB7 " + p.bodyWeight.label : "")));
+    ui.content.appendChild(row);
+  }
+  function renderBanners(ui) {
+    if (ui.view.pig !== null && ui.view.dead) {
+      var dead = el("div", "dp-alert dp-dead");
+      dead.appendChild(el("b", null, "\u{1FAA6} " + ui.view.pig.name + " \u8D70\u4E86" + (ui.view.pig.soul ? "\uFF0C\u7075\u9B42\u8FD8\u7559\u5728\u5893\u7891\u4E0A \u{1F47B}" : "")));
+      dead.appendChild(el("div", null, ui.view.pig.soul ? "\u7528\u8FD8\u9B42\u4E39\u53EF\u4EE5\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u4E5F\u53EF\u4EE5\u9886\u517B\u65B0\u7684" : "\u80CC\u5305\u91CC\u7684\u8FD8\u9B42\u4E39\u5C31\u80FD\u6551\u56DE\u6765"));
+      ui.content.appendChild(dead);
+      var adoptWrap = el("div", "dp-actions");
+      var adopt = button("dp-btn dp-btn-wide", { "data-action": "adopt" }, function() {
+        ui.send("adopt");
+      });
+      adopt.appendChild(el("span", null, "\u{1F4E6}"));
+      adopt.appendChild(el("span", null, "\u9886\u517B\u65B0\u732A"));
+      adoptWrap.appendChild(adopt);
+      ui.content.appendChild(adoptWrap);
+    } else if (ui.view.pig !== null && ui.view.pig.illness !== null) {
+      var illness = ui.view.pig.illness;
+      var sick = el("div", "dp-alert dp-sick");
+      sick.appendChild(el("b", null, "\u{1F912} " + illness.name + "\uFF08\u7B2C " + illness.stage + "/4 \u671F\uFF09"));
+      sick.appendChild(el("div", null, "\u9700\u8981\u300C" + illness.cureEmoji + illness.cure + "\u300D\u2014\u2014 \u5403\u9519\u836F\u4F1A\u52A0\u91CD"));
+      var needed = null;
+      var shelf = ui.view.shop || [];
+      for (var c = 0; c < shelf.length; c += 1) {
+        if (shelf[c].needed) needed = shelf[c];
+      }
+      for (var t = 0; needed === null && t < shelf.length; t += 1) {
+        if (shelf[t].kind === "medicine" && shelf[t].tier === illness.stage) needed = shelf[t];
+      }
+      for (var n = 0; needed === null && n < shelf.length; n += 1) {
+        if (shelf[n].label === illness.cure) needed = shelf[n];
+      }
+      if (ui.view.canGoOut) {
+        sick.appendChild(el("div", "dp-dim", "\u5E26\u75C5\u51FA\u95E8\u62A5\u916C\u51CF\u534A\u3001\u75C5\u60C5\u66F4\u5FEB"));
+      }
+      if (needed !== null && ui.view.canGoOut && ui.view.pig.coins < needed.price) {
+        sick.appendChild(el("div", "dp-dim", "\u8FD8\u5DEE " + needed.price + " \u{1FA99} \u4E70\u300C" + needed.label + "\u300D\uFF0C\u5148\u53BB\u6253\u5DE5"));
+      }
+      ui.content.appendChild(sick);
+      if (illness.doctorFee !== null) {
+        var clinic = el("div", "dp-actions");
+        var doctor = button("dp-btn dp-btn-wide", { "data-action": "doctor" }, function() {
+          ui.send("doctor");
+        });
+        doctor.appendChild(el("span", null, "\u{1F3E5}"));
+        doctor.appendChild(el("span", null, "\u770B\u533B\u751F\uFF08" + illness.doctorFee + " \u{1FA99}\uFF09"));
+        clinic.appendChild(doctor);
+        ui.content.appendChild(clinic);
+      }
+    } else if (ui.view.pig !== null && ui.view.activity !== null) {
+      var away = el("div", "dp-alert dp-work");
+      away.appendChild(el("b", null, ui.view.activity.emoji + " \u5728\u5916\u9762\uFF1A" + ui.view.activity.label));
+      away.appendChild(el("div", null, "\u8FD8\u6709 " + ui.view.activity.secondsLeft + " \u79D2"));
+      ui.content.appendChild(away);
+      var wrap = el("div", "dp-actions");
+      var call = button("dp-btn dp-btn-wide", { "data-action": "calloff" }, function() {
+        ui.send("calloff");
+      });
+      call.appendChild(el("span", null, "\u21A9\uFE0F"));
+      call.appendChild(el("span", null, "\u53EB\u5B83\u56DE\u6765"));
+      wrap.appendChild(call);
+      ui.content.appendChild(wrap);
+    }
+  }
+
+  // src/client/tabs/study.js
+  var INTEREST_TAB = "interest";
+  var STAGE_COLOR = { primary: "yellow", middle: "teal", college: "blue", graduate: "purple", beyond: "pink" };
+  var INTEREST_COLOR = "orange";
+  var FALLBACK_COLORS = ["yellow", "teal", "blue", "purple", "pink", "green", "lime"];
+  function standing(sub, stage) {
+    if (stage === null || sub.stageKey === "") return "current";
+    if (sub.stageKey === stage.key) return "current";
+    if (stage.upTo !== null && sub.lessons >= stage.upTo) return "done";
+    return "ahead";
+  }
+  function renderStudyTab(ui) {
+    renderSwitchAsk(ui);
+    if (ui.view.activity?.kind === "interest") {
+      var active = ui.view.activity;
+      var left = Math.max(1, Math.ceil(active.secondsLeft / 60));
+      ui.content.appendChild(el("div", "dp-alert", active.emoji + " \u6B63\u5728\u5B66" + active.label.replace(/^兴趣·/, "") + " \xB7 \u8FD8\u6709 " + left + " \u5206\u949F"));
+    }
+    if (ui.view.subjects.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u8BFE\u7A0B\u8868\u3002"));
+      return;
+    }
+    var open = ui.drill.study;
+    if (open === INTEREST_TAB && ui.view.interests.length > 0) {
+      renderInterests(ui);
+      return;
+    }
+    var stage = null;
+    for (var d = 0; d < ui.view.stages.length; d += 1) if (ui.view.stages[d].key === open) stage = ui.view.stages[d];
+    if (stage === null) {
+      renderStages(ui);
+      return;
+    }
+    renderSubjects(ui, stage);
+  }
+  function renderStages(ui) {
+    var stageList = ui.view.stages.length > 0 ? ui.view.stages : STAGES;
+    var grid = tileGrid();
+    for (var s = 0; s < stageList.length; s += 1) {
+      (function(entry, index) {
+        var locked = entry.unlocked === false;
+        var finished = entry.upTo === null || entry.upTo === void 0 ? 0 : ui.view.subjects.filter(function(sub) {
+          return sub.lessons >= entry.upTo;
+        }).length;
+        grid.appendChild(tile({
+          emoji: entry.emoji || "\u{1F4DA}",
+          label: entry.label,
+          color: STAGE_COLOR[entry.key] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+          locked,
+          tag: locked ? "\u{1F512}" : "",
+          badge: finished > 0 ? "\u2713" + finished : "",
+          data: { "data-stage": entry.key },
+          onPick: function() {
+            drillTo(ui, "study", entry.key);
+          }
+        }));
+      })(stageList[s], s);
+    }
+    if (ui.view.interests.length > 0) {
+      var certified = ui.view.interests.filter(function(entry) {
+        return entry.certified;
+      }).length;
+      grid.appendChild(tile({
+        emoji: "\u{1F3AF}",
+        label: "\u5174\u8DA3",
+        color: INTEREST_COLOR,
+        badge: certified > 0 ? "\u{1F4DC}" + certified : "",
+        data: { "data-stage": INTEREST_TAB },
+        onPick: function() {
+          drillTo(ui, "study", INTEREST_TAB);
+        }
+      }));
+    }
+    ui.content.appendChild(grid);
+  }
+  function renderSubjects(ui, stage) {
+    drillHeader(
+      ui,
+      "study",
+      stage.emoji + " " + stage.label,
+      stage.minutes + " \u5206\u949F \xB7 " + stage.tuition + " \u{1FA99} \xB7 +" + stage.gain
+    );
+    var color = STAGE_COLOR[stage.key] ?? FALLBACK_COLORS[Math.max(0, ui.view.stages.indexOf(stage)) % FALLBACK_COLORS.length];
+    var grid = tileGrid();
+    for (var i = 0; i < ui.view.subjects.length; i += 1) {
+      (function(sub) {
+        var where = standing(sub, stage);
+        var note;
+        if (where === "done") note = "\u2713 \u6BD5\u4E1A";
+        else if (where === "ahead") note = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
+        else if (stage.upTo !== null) note = sub.lessons - stage.from + "/" + (stage.upTo - stage.from) + " \u8282";
+        else note = sub.lessons + " \u8282";
+        grid.appendChild(tile({
+          emoji: sub.emoji,
+          label: sub.label,
+          color,
+          soft: true,
+          note,
+          disabled: where !== "current" || !canStart(ui),
+          dim: where === "current" && !sub.affordable,
+          data: { "data-subject": sub.key },
+          onPick: function() {
+            startOrSwitch(ui, "\u4E0A" + sub.label + "\u8BFE", "study", { subject: sub.key });
+          }
+        }));
+      })(ui.view.subjects[i]);
+    }
+    ui.content.appendChild(grid);
+  }
+  function renderInterests(ui) {
+    var after = ui.view.interests[0].certificateAfter;
+    drillHeader(ui, "study", "\u{1F3AF} \u5174\u8DA3", after > 0 ? "\u4E0A\u6EE1 " + after + " \u6B21\u62FF\u8BC1" : "");
+    var grid = tileGrid();
+    for (var n = 0; n < ui.view.interests.length; n += 1) {
+      (function(entry) {
+        var note = entry.cost + " \u{1FA99} \xB7 \u7EA6 " + entry.minutes + " \u5206\u949F\u540E " + entry.traitLabel + " +" + entry.gain;
+        var badge2 = entry.certificate === "" ? "" : entry.certified ? "\u{1F4DC}" : entry.times + "/" + entry.certificateAfter;
+        grid.appendChild(tile({
+          emoji: entry.emoji,
+          label: entry.label,
+          color: INTEREST_COLOR,
+          soft: true,
+          note,
+          badge: badge2,
+          disabled: !canStart(ui),
+          dim: !entry.affordable,
+          data: { "data-interest": entry.key },
+          onPick: function() {
+            startOrSwitch(ui, "\u5B66" + entry.label, "interest", { interest: entry.key });
+          }
+        }));
+      })(ui.view.interests[n]);
+    }
+    ui.content.appendChild(grid);
+  }
+
   // src/client/tabs/skin-guide.js
   var GUIDE_URL = CHANNEL.blobBase + "/docs/guides/creating-skins.md";
   var EXAMPLE_URL = CHANNEL.rawBase + "/docs/examples/skin-pack-example.zip";
@@ -6274,8 +6396,8 @@
     { file: "fish.svg", need: false, when: "\u9493\u9C7C", art: "skin-detective" }
   ];
   function openLink(url) {
-    const shell = updatesBridge();
-    if (shell !== null && typeof shell.openPage === "function") shell.openPage(url);
+    const shell2 = updatesBridge();
+    if (shell2 !== null && typeof shell2.openPage === "function") shell2.openPage(url);
     else window.open(url, "_blank", "noopener");
   }
   function renderSkinGuide(ui) {
@@ -6403,43 +6525,6 @@
     return wrap;
   }
 
-  // src/client/auto-collapse.js
-  var AUTO_COLLAPSE_KEY = "dsh-piggy:auto-collapse";
-  function autoCollapseEnabled() {
-    return readStore(AUTO_COLLAPSE_KEY) !== "false";
-  }
-  function setAutoCollapse(enabled) {
-    writeStore(AUTO_COLLAPSE_KEY, enabled ? "true" : "false");
-  }
-  function attachAutoCollapse(context) {
-    function focusedInput() {
-      const active = document.activeElement;
-      const tag2 = active?.tagName?.toLowerCase?.() ?? "";
-      return tag2 === "input" || tag2 === "textarea" || active?.getAttribute?.("contenteditable") === "true";
-    }
-    function canClose() {
-      return context.isOpen() && autoCollapseEnabled() && !context.isDragging() && !focusedInput() && !context.isFishing();
-    }
-    function onOutsidePointer(event) {
-      if (!canClose() || event.button !== 0) return;
-      for (let node = event.target; node !== null && node !== void 0; node = node.parentNode) {
-        if (node === context.host) return;
-      }
-      context.setOpen(false);
-    }
-    function onWindowBlur() {
-      if (context.isDesktop() && canClose()) context.setOpen(false);
-    }
-    document.addEventListener("pointerdown", onOutsidePointer, true);
-    window.addEventListener?.("blur", onWindowBlur);
-    return {
-      dispose() {
-        document.removeEventListener("pointerdown", onOutsidePointer, true);
-        window.removeEventListener?.("blur", onWindowBlur);
-      }
-    };
-  }
-
   // src/client/life.js
   var TIME_TALK_MS = 5 * 6e4;
   var WALK_KEY = "dsh-piggy:walk";
@@ -6513,12 +6598,12 @@
     function scheduleWalk() {
       later(function() {
         if (c.isStopped()) return;
-        var shell = c.desktopShell();
-        if (walkEnabled() && !quiet() && home() && shell !== null && typeof shell.moveBy === "function") walk(shell);
+        var shell2 = c.desktopShell();
+        if (walkEnabled() && !quiet() && home() && shell2 !== null && typeof shell2.moveBy === "function") walk(shell2);
         scheduleWalk();
       }, between(10, 20));
     }
-    function walk(shell) {
+    function walk(shell2) {
       var screenWidth = window.screen?.availWidth ?? 0;
       var toLeft = screenWidth > 0 && (window.screenX ?? 0) > screenWidth / 2;
       var distance = 120 + Math.floor(Math.random() * 180);
@@ -6530,7 +6615,7 @@
       if (!quiet() && Math.random() < 0.5) c.showBubble("\u6211\u53BB\u5DE1\u903B\u4E00\u4E0B", 2e3);
       var timer2 = window.setInterval(function() {
         if (c.isStopped() || c.isOpen() || c.isDragging()) return stop();
-        shell.moveBy(back ? -step : step, 0);
+        shell2.moveBy(back ? -step : step, 0);
         walked += 2;
         if (!back && walked >= distance) {
           back = true;
@@ -6548,9 +6633,9 @@
     return {
       /** 调试页「散步一次」：不等计时，马上走一趟（只有桌面版能走）。 */
       walkNow: function() {
-        var shell = c.desktopShell();
-        if (shell === null || typeof shell.moveBy !== "function") return false;
-        walk(shell);
+        var shell2 = c.desktopShell();
+        if (shell2 === null || typeof shell2.moveBy !== "function") return false;
+        walk(shell2);
         return true;
       },
       /** 调试页「做个小动作」。 */
@@ -6575,11 +6660,11 @@
   }
   var isCancel = (error) => error?.name === "AbortError" || error?.name === "NotAllowedError";
   async function saveViaShell(name, text) {
-    const shell = typeof window === "object" ? (
+    const shell2 = typeof window === "object" ? (
       /** @type {any} */
       window.piggyShell
     ) : void 0;
-    const bridge3 = shell?.logs;
+    const bridge3 = shell2?.logs;
     if (bridge3 === void 0 || typeof bridge3.save !== "function") return null;
     const result = await bridge3.save(name, text);
     if (result?.ok === true) return { ok: true, path: String(result.path ?? "") };
@@ -6752,8 +6837,146 @@
     });
   }
 
+  // src/client/format.js
+  function formatMinutes(minutes) {
+    if (minutes < 60) return minutes + " \u5206\u949F";
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return rest === 0 ? hours + " \u5C0F\u65F6" : hours + " \u5C0F\u65F6" + rest + " \u5206";
+  }
+
+  // src/client/tabs/travel.js
+  function renderTravelTab(ui) {
+    renderSwitchAsk(ui);
+    if (ui.view.trips.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u76EE\u7684\u5730\u3002"));
+      return;
+    }
+    var list = el("div", "dp-list");
+    for (var i = 0; i < ui.view.trips.length; i += 1) {
+      (function(trip) {
+        var row = el("div", "dp-item");
+        row.appendChild(el("span", null, trip.emoji));
+        var grow = el("div", "dp-grow");
+        grow.appendChild(el("div", null, trip.label));
+        grow.appendChild(el("div", "dp-dim", formatMinutes(trip.minutes) + " \xB7 " + trip.cost + " \u{1FA99}" + (trip.bestRarity ? " \xB7 \u53EF\u5E26\u56DE " + trip.bestRarityEmoji + trip.bestRarity : "")));
+        row.appendChild(grow);
+        var go = button("dp-mini", { "data-trip": trip.key }, function() {
+          startOrSwitch(ui, "\u65C5\u884C\uFF08" + trip.label + "\uFF09", "trip", { trip: trip.key });
+        });
+        go.textContent = "\u51FA\u53D1";
+        go.disabled = !canStart(ui) || !trip.affordable;
+        row.appendChild(go);
+        list.appendChild(row);
+      })(ui.view.trips[i]);
+    }
+    ui.content.appendChild(list);
+  }
+
+  // src/client/tabs/work.js
+  var SKILLS = [
+    { key: "strong", emoji: "\u{1F4AA}", label: "\u6B66\u529B", color: "orange" },
+    { key: "charm", emoji: "\u2728", label: "\u9B45\u529B", color: "pink" },
+    { key: "intel", emoji: "\u{1F9E0}", label: "\u667A\u529B", color: "blue" }
+  ];
+  function renderWorkTab(ui) {
+    renderSwitchAsk(ui);
+    if (ui.view.jobs.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u5DE5\u4F5C\u5217\u8868\u3002"));
+      return;
+    }
+    var bySkill = ui.view.jobs.some(function(job) {
+      return job.trait !== "";
+    });
+    if (!bySkill) {
+      renderJobs(ui, ui.view.jobs, "orange");
+      return;
+    }
+    var skill = SKILLS.find(function(entry) {
+      return entry.key === ui.drill.work;
+    });
+    if (skill === void 0) {
+      renderSkills(ui);
+      return;
+    }
+    var chosen = skill;
+    drillHeader(ui, "work", chosen.emoji + " " + chosen.label, "");
+    renderJobs(ui, ui.view.jobs.filter(function(job) {
+      return job.trait === chosen.key;
+    }), chosen.color);
+  }
+  function renderSkills(ui) {
+    var grid = tileGrid();
+    for (var s = 0; s < SKILLS.length; s += 1) {
+      (function(skill) {
+        var open = ui.view.jobs.filter(function(job) {
+          return job.trait === skill.key && job.qualified;
+        }).length;
+        grid.appendChild(tile({
+          emoji: skill.emoji,
+          label: skill.label,
+          color: skill.color,
+          badge: open > 0 ? String(open) : "",
+          data: { "data-skill": skill.key },
+          onPick: function() {
+            drillTo(ui, "work", skill.key);
+          }
+        }));
+      })(SKILLS[s]);
+    }
+    ui.content.appendChild(grid);
+  }
+  function renderJobs(ui, jobs, color) {
+    var grid = tileGrid();
+    var picked = null;
+    for (var i = 0; i < jobs.length; i += 1) {
+      (function(job) {
+        var active = ui.drill.pick === job.key;
+        if (active) picked = job;
+        var locked = job.qualified === false;
+        grid.appendChild(tile({
+          emoji: job.emoji,
+          label: job.label,
+          color,
+          soft: true,
+          active,
+          note: job.minutes + "\u5206\xB7" + job.coins + "\u{1FA99}",
+          tag: locked ? "\u{1F512}" : "",
+          dim: locked,
+          data: { "data-job-tile": job.key },
+          onPick: function() {
+            ui.drill.pick = active ? null : job.key;
+            ui.renderContent();
+          }
+        }));
+      })(jobs[i]);
+    }
+    ui.content.appendChild(grid);
+    if (picked !== null) {
+      ui.footer.appendChild(jobDetails(ui, picked));
+      ui.footer.hidden = false;
+    }
+  }
+  function jobDetails(ui, job) {
+    var box = el("div", "dp-pick dp-tile-card dp-job-detail");
+    box.appendChild(el("div", "dp-pick-head", job.emoji + " " + job.label + " \xB7 " + (job.qualified ? "\u6761\u4EF6\u90FD\u591F\u4E86" : "\u8FD8\u5DEE\u8FD9\u4E9B")));
+    for (var r = 0; r < job.requirements.length; r += 1) {
+      var need = job.requirements[r];
+      var have = need.kind === "level" ? "\uFF08\u73B0\u5728 Lv." + need.have + "\uFF09" : need.kind === "certificate" ? "\uFF08" + need.have + "/" + need.need + " \u6B21\uFF09" : need.kind === "every" || need.kind === "anyOf" ? "\uFF08" + need.have + "/" + need.need + " \u95E8\uFF09" : "\uFF08\u73B0\u5728 " + need.have + " \u8282\uFF09";
+      box.appendChild(el("div", need.met ? "dp-req dp-req-ok" : "dp-req", (need.met ? "\u2713 " : "\u2717 ") + need.text + (need.met ? "" : " " + have)));
+    }
+    if (job.requirements.length === 0 && job.lockText) box.appendChild(el("div", "dp-req", "\u2717 " + job.lockText));
+    box.appendChild(el("div", "dp-dim", job.minutes + " \u5206\u949F \xB7 " + job.coins + " \u{1FA99} \xB7 " + job.traitEmoji + job.traitLabel + " " + job.traitPoints + (job.payPercent > 0 ? "\uFF08+" + job.payPercent + "%\uFF09" : "") + " \xB7 \u9971\u98DF " + job.satiety + " \xB7 \u6E05\u6D01 " + job.cleanliness));
+    var go = button("dp-btn dp-btn-wide dp-job-go", { "data-job": job.key }, function() {
+      startOrSwitch(ui, "\u6253\u5DE5\uFF08" + job.label + "\uFF09", "work", { job: job.key });
+    });
+    go.textContent = "\u{1F4BC} \u51FA\u53D1";
+    go.disabled = !canStart(ui) || job.qualified === false;
+    box.appendChild(go);
+    return box;
+  }
+
   // src/client/panel.js
-  var URGENT_KINDS = ["sick", "worse", "death", "cured", "revived"];
   function createPanel(ctx) {
     var AWAY_LINE = {
       work: "\u5728\u5FD9",
@@ -6762,6 +6985,7 @@
       trip: "\u5728\u8DEF\u4E0A"
     };
     function setOpen(next) {
+      if (splitSetOpen(ctx, next)) return;
       if (!next) {
         closeFishing(ctx);
         if (ctx.isOpen) animatePanelClose(ctx);
@@ -6857,8 +7081,8 @@
         ctx.content.appendChild(grid);
         return;
       }
-      var shell = updatesBridge();
-      var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell !== null && shell.quit ? [QUIT_TAB] : [], ctx.devMode ? [DEV_TAB] : []));
+      var shell2 = updatesBridge();
+      var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell2 !== null && shell2.quit ? [QUIT_TAB] : [], ctx.devMode ? [DEV_TAB] : []));
       if (ctx.tab === "home") {
         renderHome(ctx, apps.filter(function(a) {
           return a.key !== "update" && a.key !== "extensions";
@@ -6902,7 +7126,7 @@
       }
       if (!ctx.stagePicked && firstOpen !== null && (stageEntry === null || stageEntry.unlocked === false)) ctx.stage = firstOpen;
       ctx.host.setAttribute("data-dead", ctx.view.dead ? "true" : "false");
-      ctx.host.setAttribute("data-open", ctx.isOpen ? "true" : "false");
+      ctx.host.setAttribute("data-open", ctx.isOpen && desktopRole() !== "pet" ? "true" : "false");
       ctx.host.setAttribute("data-dev", ctx.devMode ? "true" : "false");
       ctx.host.setAttribute("data-away", ctx.view.activity === null ? "false" : ctx.view.activity.kind);
       if (ctx.view.activity === null) {
@@ -6986,7 +7210,7 @@
       ctx.pomoHint.setAttribute("data-pomo", pomoOn ? "on" : "");
       ctx.pomoHint.hidden = !pomoOn || ctx.bubble.hidden === false;
       if (pomoOn) ctx.pomoHint.textContent = "\u{1F345} " + clockText(pomo.secondsLeft);
-      noticePomodoro(pomo);
+      if (desktopRole() !== "panel") noticePomodoro(pomo);
       if (typeof ctx.pomoTick === "function") ctx.pomoTick();
       var daily = ctx.view.daily;
       var dailyAction = daily.canSignIn ? "signIn" : daily.unclaimed > 0 ? "openGift" : null;
@@ -7009,44 +7233,7 @@
       ctx.icons.shop.setAttribute("data-alert", ctx.view.pig !== null && ctx.view.pig.illness !== null ? "true" : "false");
       ctx.icons.dex.setAttribute("data-alert", "false");
       ctx.icons.travel.setAttribute("data-alert", ctx.view.pig !== null && ctx.view.pig.coins >= 400 ? "true" : "false");
-      for (var i = 0; i < ctx.view.pending.length; i += 1) {
-        var event = ctx.view.pending[i];
-        if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue;
-        if (event.id > 0) ctx.lastPendingId = event.id;
-        ctx.lastPendingAt = Math.max(ctx.lastPendingAt, event.at);
-        if (event.kind === "line") {
-          showPigLine(event);
-          continue;
-        }
-        if (ctx.view.dialogue.quiet && URGENT_KINDS.indexOf(event.kind) < 0) continue;
-        if (showMilestoneNotice(ctx, event)) continue;
-        if (event.kind === "gift") continue;
-        ctx.toast(str(event.text, "\u732A\u6709\u65B0\u6D88\u606F"));
-        if (event.kind === "coronation") {
-          ctx.react("levelup", 950);
-          ctx.transform("crown");
-        } else if (event.kind === "contract") {
-          ctx.react("levelup", 950);
-          ctx.transform("contract");
-        } else if (event.kind === "levelup") {
-          ctx.react("levelup", 950);
-          ctx.burst(["\u2728", "\u{1F389}"], 3);
-        } else if (event.kind === "cured") {
-          ctx.react("cure", 900);
-          ctx.burst(["\u{1F49A}", "\u2728"], 3);
-        } else if (event.kind === "death") ctx.react("refuse", 700);
-        else if (event.kind === "work") {
-          ctx.react("away", 900);
-          ctx.burst(["\u{1FA99}", "\u{1F4B0}"], 3);
-        } else if (event.kind === "study") {
-          ctx.react("away", 900);
-          ctx.burst(["\u{1F4DA}", "\u2728"], 3);
-        } else if (event.kind === "trip") {
-          ctx.react("away", 900);
-          ctx.burst(["\u{1F9F3}", "\u{1F381}"], 3);
-        }
-      }
-      ctx.updateNotice?.maybeBubble();
+      processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return;
       if (ctx.cardEdit !== null && ctx.tab === "card") return;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
@@ -7073,8 +7260,8 @@
     var style = document.createElement("style");
     style.textContent = (desktopShell() === null ? WEB_EMOJI_FACE : "") + CSS;
     document.head.appendChild(style);
-    var host2 = document.createElement("div");
-    host2.setAttribute(MOUNTED, "");
+    var host3 = document.createElement("div");
+    host3.setAttribute(MOUNTED, "");
     var card2 = el("div", "dp-card");
     var scene3 = el("div", "dp-scene");
     var hud = el("div", "dp-hud");
@@ -7131,27 +7318,27 @@
     card2.appendChild(content);
     card2.appendChild(footer);
     card2.appendChild(bar);
-    host2.appendChild(card2);
-    host2.appendChild(scene3);
+    host3.appendChild(card2);
+    host3.appendChild(scene3);
     if (document.body !== null && document.body !== void 0) {
-      document.body.appendChild(host2);
+      document.body.appendChild(host3);
     } else {
       document.addEventListener("DOMContentLoaded", function() {
         try {
-          document.body.appendChild(host2);
+          document.body.appendChild(host3);
         } catch (error) {
         }
       }, { once: true });
     }
-    return { font, style, host: host2, card: card2, scene: scene3, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigEmoji, pig, dressSlots, bar, content, footer };
+    return { font, style, host: host3, card: card2, scene: scene3, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigEmoji, pig, dressSlots, bar, content, footer };
   }
 
   // src/client/drag-heartbeat.js
-  function startDragHeartbeat(shell, isDragging) {
-    if (typeof shell?.dragHeartbeat !== "function") return () => {
+  function startDragHeartbeat(shell2, isDragging) {
+    if (typeof shell2?.dragHeartbeat !== "function") return () => {
     };
     const timer2 = window.setInterval(() => {
-      if (isDragging()) shell.dragHeartbeat();
+      if (isDragging()) shell2.dragHeartbeat();
     }, 250);
     return () => window.clearInterval(timer2);
   }
@@ -7348,9 +7535,9 @@
     } catch {
     }
     const reserves = env.platform !== "darwin";
-    function boxes(host2) {
-      const nodes = [host2];
-      const all = host2.querySelectorAll("*");
+    function boxes(host3) {
+      const nodes = [host3];
+      const all = host3.querySelectorAll("*");
       for (let a = 0; a < all.length; a += 1) {
         const candidate = all[a];
         const inCard = candidate.closest(".dp-card");
@@ -7370,17 +7557,17 @@
         else rects.push(rect);
       }
       if (rects.length === 0) return null;
-      const hostBox = layoutBox(host2);
-      const pigNode = host2.querySelector(".dp-pig");
+      const hostBox = layoutBox(host3);
+      const pigNode = host3.querySelector(".dp-pig");
       const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode);
-      const open = host2.getAttribute("data-open") === "true";
+      const open = host3.getAttribute("data-open") === "true";
       let bubbleZone = null;
       if (reserves && pigNode !== null) {
         const above = geometry2 === null ? BUBBLE_ZONE.height : geometry2.window.y + pigBox.y - geometry2.workArea.y - PAD;
         const want = Math.max(0, Math.min(BUBBLE_ZONE.height, Math.round(above)));
         if (state2.bubbleHeight === null || Math.abs(want - state2.bubbleHeight) >= STEP * 2) state2.bubbleHeight = want;
         const height = state2.bubbleHeight;
-        const zoneLeft = host2.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - BUBBLE_ZONE.width;
+        const zoneLeft = host3.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - BUBBLE_ZONE.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: pigBox.y - height, r: zoneLeft + BUBBLE_ZONE.width, b: pigBox.y };
       }
       let zone = null;
@@ -7402,7 +7589,7 @@
       }
       const card2 = (
         /** @type {any} */
-        host2.querySelector(".dp-card")
+        host3.querySelector(".dp-card")
       );
       const cardBox = card2 === null ? null : layoutBox(card2);
       if (reserves && open && cardBox !== null && card2.hidden !== true) {
@@ -7412,7 +7599,15 @@
         }
       }
       let outline = rects.concat(zone === null ? [] : [zone], bubbleZone === null ? [] : [bubbleZone]);
-      if (reserves && pigNode !== null) {
+      if (env.split && pigNode !== null) {
+        outline.push({
+          x: pigBox.x + pigBox.width + 40 - BUBBLE_ZONE.width - 40,
+          y: pigBox.y - BUBBLE_ZONE.height - 24,
+          r: pigBox.x + pigBox.width + 40,
+          b: pigBox.y + pigBox.height + 12
+        });
+      }
+      if (reserves && !env.split && pigNode !== null) {
         if (open && cardBox !== null && card2.hidden !== true && cardBox.width > 0 && cardBox.height > 0) {
           const side = panelSide(cardBox, pigBox);
           const key = openBoxKey(side.vertical, side.horizontal, pigBox);
@@ -7456,18 +7651,18 @@
         const y = Math.max(0, Math.floor(rect.y) - SHAPE_SLACK);
         return { x, y, width: Math.ceil(rect.r) + SHAPE_SLACK - x, height: Math.ceil(rect.b) + SHAPE_SLACK - y };
       });
-      if (pigNode !== null && host2.querySelector(".dp-fx") !== null) {
+      if (pigNode !== null && host3.querySelector(".dp-fx") !== null) {
         const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) };
         shape.push({ x: fx.x, y: fx.y, width: Math.ceil(pigBox.x + pigBox.width + 36) - fx.x, height: Math.ceil(pigBox.y + 12) - fx.y });
       }
       return { content, shape, pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
     }
-    function sides(host2) {
+    function sides(host3) {
       const card2 = (
         /** @type {any} */
-        host2.querySelector(".dp-card")
+        host3.querySelector(".dp-card")
       );
-      const pigNode = host2.querySelector(".dp-pig");
+      const pigNode = host3.querySelector(".dp-pig");
       if (card2 === null || pigNode === null || card2.hidden === true) return { vertical: state2.vertical, horizontal: state2.horizontal };
       const cardBox = layoutBox(card2);
       const pigBox = layoutBox(pigNode);
@@ -7483,7 +7678,7 @@
       state2.horizontal = horizontal;
       return { vertical: state2.vertical, horizontal: state2.horizontal };
     }
-    function pin(host2, side, hostBox, contentBox) {
+    function pin(host3, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
       const shift = state2.shift;
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
@@ -7493,10 +7688,10 @@
       const key = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
       if (key === state2.pinned) return;
       state2.pinned = key;
-      host2.style.left = want.left;
-      host2.style.right = want.right;
-      host2.style.top = want.top;
-      host2.style.bottom = want.bottom;
+      host3.style.left = want.left;
+      host3.style.right = want.right;
+      host3.style.top = want.top;
+      host3.style.bottom = want.bottom;
     }
     function keyOf(next) {
       const head = [
@@ -7631,7 +7826,7 @@
   }
 
   // src/client/desktop/index.js
-  var DESKTOP_VERSION = 3;
+  var DESKTOP_VERSION = 4;
   var FONT_STACK = 'Nunito,"Noto Sans SC",-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif';
   var DESKTOP_CSS = [
     `[data-dsh-pig][data-dsh-pig]{--ac-font:"Piggy Emoji",${FONT_STACK}}`,
@@ -7641,13 +7836,20 @@
     "[data-dsh-pig] .dp-card{box-shadow:inset 0 1px 2px rgba(61,52,40,.09)!important}",
     "[data-dsh-pig] .dp-panel-footer{max-height:270px!important}",
     // 收起时拖猪，窗口缩到只包住猪；头顶的签到/礼包小气泡会被窗口边裁成半块白色，拖的时候先藏起来。
-    '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-daily,[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-poke-hint{visibility:hidden!important}'
+    '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-daily,[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-poke-hint{visibility:hidden!important}',
+    // 猪窗口（外壳 0.6.0 起）：面板和名牌在另一个窗口里，这里永远只有猪。
+    '[data-piggy-role="pet"] .dp-card,[data-piggy-role="pet"] .dp-hud{display:none!important}'
   ].join("\n");
   var TOLERANCE = 2;
   var bridge2 = (
     /** @type {any} */
     null
   );
+  var role = (
+    /** @type {'pet'|'panel'|null} */
+    null
+  );
+  var dragSlide = { x: 0, y: 0 };
   var measure = (
     /** @type {any} */
     null
@@ -7661,13 +7863,13 @@
   var hitRects = [];
   var lastHit = null;
   var mouse = { x: -1, y: -1 };
-  var scheduled = false;
+  var scheduled2 = false;
   var staleSince = (
     /** @type {number|null} */
     null
   );
   var STALE_WAIT_MS = 500;
-  function host() {
+  function host2() {
     return (
       /** @type {any} */
       document.querySelector("[data-dsh-pig]")
@@ -7681,7 +7883,7 @@
     return scene3 !== null && scene3.getAttribute("data-dragging") === "true";
   }
   function room() {
-    const h = host();
+    const h = host2();
     if (h !== null && h.getAttribute("data-open") === "true" && closedRoom !== null) return closedRoom;
     const info = geometry();
     if (info === null || h === null) return null;
@@ -7717,7 +7919,7 @@
     return Math.abs(window.innerWidth - win.width) > 1 || Math.abs(window.innerHeight - win.height) > 1;
   }
   function tick() {
-    const h = host();
+    const h = host2();
     if (h === null) return;
     const info = readGeometry();
     if (info !== null && info.window && layoutStale(info.window)) {
@@ -7794,7 +7996,7 @@
     bridge2.place(request);
   }
   function pigInWindow(win) {
-    const h = host();
+    const h = host2();
     const pigNode = h?.querySelector(".dp-pig");
     const size = placement.pigSize();
     const homeTL = placement.homeTopLeft();
@@ -7821,57 +8023,103 @@
     if (measure.state.shift.x === 0 && measure.state.shift.y === 0) return;
     measure.state.shift = { x: 0, y: 0 };
   }
-  function schedule2() {
-    if (scheduled) return;
-    scheduled = true;
+  function schedule3() {
+    if (scheduled2) return;
+    scheduled2 = true;
     requestAnimationFrame(function() {
-      scheduled = false;
+      scheduled2 = false;
       if (!dragging()) tick();
     });
   }
-  function install2(shell) {
-    bridge2 = shell;
-    const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell[name] !== "function");
+  function install2(shell2) {
+    bridge2 = shell2;
+    const split = shell2.panel !== void 0 && typeof shell2.panel.toggle === "function";
+    role = split ? shell2.role === "panel" ? "panel" : "pet" : null;
+    if (role === "panel") {
+      const style2 = document.createElement("style");
+      style2.setAttribute("data-piggy-desktop-style", "");
+      style2.textContent = DESKTOP_CSS;
+      document.head.appendChild(style2);
+      installPanel(shell2);
+      return;
+    }
+    if (role === "pet") document.documentElement.setAttribute("data-piggy-role", "pet");
+    const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell2[name] !== "function");
     if (missing.length > 0) {
       console.warn("[piggy-desktop] shell is too old, missing: " + missing.join(", ") + "\uFF08\u8BF7\u66F4\u65B0\u684C\u9762\u7A0B\u5E8F\uFF09");
       window.__dshPiggyShellOutdated = true;
     }
-    placement = createPlacement({ platform: shell.platform || "" });
-    measure = createMeasure({ platform: shell.platform || "", geometry, anchor: () => placement.homeTopLeft() });
+    placement = createPlacement({ platform: shell2.platform || "" });
+    measure = createMeasure({ platform: shell2.platform || "", geometry, anchor: () => placement.homeTopLeft(), split: role === "pet" });
     const style = document.createElement("style");
     style.setAttribute("data-piggy-desktop-style", "");
     style.textContent = DESKTOP_CSS;
     document.head.appendChild(style);
-    if (typeof shell.onGeometry === "function") shell.onGeometry(function() {
-      schedule2();
+    if (typeof shell2.onGeometry === "function") shell2.onGeometry(function() {
+      schedule3();
     });
-    if (typeof shell.askGeometry === "function") shell.askGeometry();
+    if (role === "pet" && typeof shell2.onDragSlide === "function") {
+      shell2.onDragSlide(function(slide) {
+        if (!dragging()) return;
+        dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 };
+        const h = host2();
+        if (h !== null) h.style.translate = dragSlide.x === 0 && dragSlide.y === 0 ? "" : dragSlide.x + "px " + dragSlide.y + "px";
+      });
+    }
+    if (typeof shell2.askGeometry === "function") shell2.askGeometry();
     window.__dshPiggyShell = {
+      // 外壳 0.6.0 起：面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
+      ...role === "pet" ? {
+        role: "pet",
+        split: true,
+        onStateChanged: shell2.onStateChanged,
+        panel: {
+          toggle: function(open) {
+            const info = readGeometry();
+            const pig = info && info.window ? pigInWindow(info.window) : null;
+            shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
+          },
+          on: shell2.panel.on,
+          onFx: shell2.panel.onFx
+        }
+      } : {},
       room,
       refreshRoom: function() {
         closedRoom = null;
       },
       beginDrag: function() {
-        const h = host();
+        const h = host2();
         if (h !== null && h.getAttribute("data-open") === "false") {
           resetShift();
         }
         const info = readGeometry();
         const pig = info && info.window ? pigInWindow(info.window) : null;
-        shell.beginDrag(pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
+        dragSlide = { x: 0, y: 0 };
+        shell2.beginDrag(pig === null ? null : {
+          x: pig.x,
+          y: pig.y,
+          width: pig.width,
+          height: pig.height,
+          slide: role === "pet" && typeof shell2.onDragSlide === "function"
+        });
       },
       dragHeartbeat: function() {
-        if (typeof shell.dragHeartbeat === "function") shell.dragHeartbeat();
+        if (typeof shell2.dragHeartbeat === "function") shell2.dragHeartbeat();
       },
       endDrag: function() {
-        shell.endDrag();
+        shell2.endDrag();
         const info = readGeometry();
         if (info && info.window) {
-          const pig = pigInWindow(info.window);
+          if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) dragSlide = info.dragSlide;
+          const inWindow = pigInWindow(info.window);
+          const pig = inWindow === null ? null : { ...inWindow, x: inWindow.x + dragSlide.x, y: inWindow.y + dragSlide.y };
           if (pig !== null) {
             placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
           }
         }
+        dragSlide = { x: 0, y: 0 };
+        const h = host2();
+        if (h !== null) h.style.translate = "";
         lastKey = null;
         tick();
       },
@@ -7879,8 +8127,8 @@
         tick();
       },
       // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
-      moveBy: typeof shell.moveBy === "function" ? function(dx, dy) {
-        shell.moveBy(dx, dy);
+      moveBy: typeof shell2.moveBy === "function" ? function(dx, dy) {
+        shell2.moveBy(dx, dy);
         const info = readGeometry();
         const pig = info && info.window ? pigInWindow(info.window) : null;
         if (pig !== null) placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
@@ -7903,16 +8151,20 @@
       if (dragging()) return;
       mouse = { x: -1, y: -1 };
       lastHit = false;
-      if (typeof shell.setHit === "function") shell.setHit(false);
+      if (typeof shell2.setHit === "function") shell2.setHit(false);
     });
   }
   function start() {
-    const h = host();
-    if (h !== null && typeof MutationObserver === "function") {
-      new MutationObserver(schedule2).observe(h, { subtree: true, childList: true, attributes: true, characterData: true });
+    if (role === "panel") {
+      startPanel();
+      return;
     }
-    window.addEventListener("resize", schedule2);
-    window.addEventListener("pointerup", schedule2);
+    const h = host2();
+    if (h !== null && typeof MutationObserver === "function") {
+      new MutationObserver(schedule3).observe(h, { subtree: true, childList: true, attributes: true, characterData: true });
+    }
+    window.addEventListener("resize", schedule3);
+    window.addEventListener("pointerup", schedule3);
     setInterval(function() {
       if (!dragging()) tick();
     }, 1e3);
@@ -7948,7 +8200,7 @@
         var {
           font,
           style,
-          host: host2,
+          host: host3,
           card: card2,
           scene: scene3,
           hud,
@@ -7977,11 +8229,11 @@
         var userRight = savedPos === null ? 18 : savedPos.right;
         var userBottom = savedPos === null ? 18 : savedPos.bottom;
         if (deskShell === null) {
-          host2.style.right = userRight + "px";
-          host2.style.bottom = userBottom + "px";
+          host3.style.right = userRight + "px";
+          host3.style.bottom = userBottom + "px";
         } else {
-          host2.style.right = "auto";
-          host2.style.bottom = "auto";
+          host3.style.right = "auto";
+          host3.style.bottom = "auto";
         }
         var icons = {};
         var view = normalize(null);
@@ -8014,7 +8266,7 @@
         var stopped = false;
         var busy = false;
         var ctx = {
-          host: host2,
+          host: host3,
           card: card2,
           content,
           footer,
@@ -8180,6 +8432,11 @@
         ctx.fitPanel = fitPanel;
         ctx.flash = flash;
         var updateNotice = attachUpdateNotice(ctx, updatesBridge);
+        var splitRole = wireSplit(ctx, { refresh: function() {
+          refresh2();
+        }, isFishing: function() {
+          return tab === "fishing" && view.fishing.pending?.phase === "hooked";
+        } });
         ["pointerdown", "pointerup"].forEach(function(type) {
           dailyHint.addEventListener(type, function(event) {
             event.stopPropagation();
@@ -8203,8 +8460,8 @@
             startY: typeof event.screenY === "number" ? event.screenY : event.clientY,
             lastX: typeof event.screenX === "number" ? event.screenX : event.clientX,
             lastY: typeof event.screenY === "number" ? event.screenY : event.clientY,
-            right: parseFloat(getComputedStyle(host2).right) || 18,
-            bottom: parseFloat(getComputedStyle(host2).bottom) || 18,
+            right: parseFloat(getComputedStyle(host3).right) || 18,
+            bottom: parseFloat(getComputedStyle(host3).bottom) || 18,
             moved: false
           };
           scene3.setAttribute("data-dragging", "true");
@@ -8252,7 +8509,7 @@
           clampPig();
           if (deskShell === null) writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }));
           deskShell?.refreshRoom?.();
-          host2.removeAttribute("data-panel-side-locked");
+          host3.removeAttribute("data-panel-side-locked");
           fitPanel();
           return moved;
         }
@@ -8262,13 +8519,13 @@
           react("poke", 560);
           if (boxPokes >= BOX_POKES_TO_OPEN) {
             boxPokes = 0;
-            host2.removeAttribute("data-poke");
+            host3.removeAttribute("data-poke");
             showBubble("\u54C7\u2014\u2014\uFF01", 1200);
             burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
             send("hatch");
             return;
           }
-          host2.setAttribute("data-poke", String(boxPokes));
+          host3.setAttribute("data-poke", String(boxPokes));
           burst(["\u{1F4A8}"], 2);
           showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
         }
@@ -8291,8 +8548,9 @@
           if (!isOpen && view.pig !== null) flash("pet");
           setOpen(!isOpen);
         });
-        var autoCollapse = attachAutoCollapse({
-          host: host2,
+        var autoCollapse = splitRole !== null ? { dispose: function() {
+        } } : attachAutoCollapse({
+          host: host3,
           isOpen: function() {
             return isOpen;
           },
@@ -8312,7 +8570,7 @@
         render(view);
         refresh2();
         pollTimer = window.setInterval(refresh2, POLL_MS);
-        var life = attachLife({
+        var life = splitRole === "panel" ? null : attachLife({
           send,
           isStopped: function() {
             return stopped;
@@ -8346,7 +8604,7 @@
           setEnabled: function(next) {
             devMode = next;
           },
-          host: host2,
+          host: host3,
           paintBar,
           setOpen,
           select,
@@ -8364,10 +8622,10 @@
           autoCollapse.dispose();
           dev.dispose();
           if (pollTimer !== null) window.clearInterval(pollTimer);
-          life.dispose();
+          life?.dispose();
           fx.dispose();
           pollTimer = null;
-          host2.remove();
+          host3.remove();
           style.remove();
           font.remove();
         }

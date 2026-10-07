@@ -14,3 +14,4 @@ node_modules/
 # local backups made while editing
 *.bak
 *.orig
+__pycache__/
