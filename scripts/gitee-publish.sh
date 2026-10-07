@@ -80,8 +80,13 @@ done
 
 # 2. 代码和标签
 echo "== git push gitee"
-git push gitee main
-git push gitee "refs/tags/$TAG"
+# 本机一般没存 Gitee 的推送凭据：用同一个令牌当密码，经凭据助手从环境变量读（不进命令行参数、不写进 git 配置）
+gitee_push() {
+  git -c credential.helper= -c 'credential.helper=!f() { echo username=clicgger; echo "password=$GITEE_TOKEN"; }; f' \
+    push https://gitee.com/clicgger/dsh-piggy.git "$@"
+}
+gitee_push main
+gitee_push "refs/tags/$TAG"
 
 # 3. 发行版和附件（先传安装包，最后传更新清单：清单一出现，老用户就会按它来下载）
 echo "== Gitee 发行版"
