@@ -15,6 +15,7 @@
 
 - [皮肤包格式规范](guides/skin-pack-format.md)
 - [美术规格](ART-SPEC.md)
+- [千奇百怪的小猪：画图规范与验收](design/pig-kitchen-art.md)
 - [完整示例目录](examples/skin-pack/)
 
 ## 开发者：怎么加 X

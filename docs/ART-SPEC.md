@@ -236,7 +236,7 @@
 ### 并排检查的命令
 
 ```sh
-cd /home/clicgger/Documents/deepseek-harness/default-workspace/dsh-pig
+cd <仓库根目录>
 xdg-open tools/style-check.html
 ```
 

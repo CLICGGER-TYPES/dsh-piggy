@@ -24,9 +24,9 @@
    「规则改了」不等于可以顺手改界面。
 2. **大功能先出完整设计**给用户确认再整体做；修 bug 的版本只修 bug，不夹带新功能、不「预留」半成品。
 3. **提交信息不署 AI 名字**（不加 Co-Authored-By 等）。格式见 [CONVENTIONS.md](docs/CONVENTIONS.md)「Git」。
-4. **发版**：用户验收通过后才发；发版前 CHANGELOG 写好该版小节、README 同步（文字和截图）；GitHub、Gitee 两个渠道都要齐。
+4. **发版**：用户验收通过后才发；发版前 CHANGELOG 写好该版小节、README 同步（文字和截图）；GitHub、Gitee 两个渠道都要齐；**Gitee 一律从维护者本机推**（`scripts/gitee-publish.sh`），不让 GitHub Actions 往 Gitee 推。
    **npm 由维护者手动发**，不要替他发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
-5. **不提交凭据**：令牌（如 `GITEE_TOKEN`）只放 GitHub Secrets；测试机账号密码不进仓库。
+5. **不提交凭据**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。
 6. 改存档结构必须加迁移（`core/upgrades.js` + `STATE_VERSION` + 迁移测试），旧存档不能丢数据。
 
 ## 做事的方法
@@ -60,4 +60,5 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 改桌面窗口、拖动、IPC | [docs/guides/desktop-architecture.md](docs/guides/desktop-architecture.md) |
 | 玩法和数值的来源、视觉规范的来源 | [docs/DESIGN.md](docs/DESIGN.md) |
 | 立绘、皮肤 | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
+| 画「千奇百怪的小猪」（猪 + emoji 主题） | [docs/design/pig-kitchen-art.md](docs/design/pig-kitchen-art.md)（规范、许可、验收；图要用户确认） |
 | 开发环境、打包、Gitee 渠道 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
