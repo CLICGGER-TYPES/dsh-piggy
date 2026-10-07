@@ -252,13 +252,15 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 
 ## 12. 已知问题与待办（2026-10-06）
 
-**桌面版位置（I 批次）—— 2026-10-06 深夜 Claude 交回时的状态**
-- 现在 main 上的是 020f463「家」模型（详见 [I-round 第 13 节](tasks/I-round.md)）：猪脚底中心是唯一真相，每轮从头算窗口。
-  **之前三轮（DeepSeek 的 e614abc、Claude 的 d360358）都是记账互相继承误差，别往回改，也别再加「核对补正 / 记住上一轮」。**
-- 已验证：Linux GNOME（Wayland/XWayland）。本机 17 项 + Ubuntu 测试虚拟机真鼠标 41 项（点击、开关面板、重启、四条屏幕边、长距离拖动）全部 ≤2px。
-- **还没验证**：用户本机实际使用（已请用户 `npm start` 试，等反馈）；Windows；macOS；多屏（上下叠放）；分数缩放。
+**桌面版窗口（I 批次）—— 2026-10-07 Claude 交回时的状态（v0.33.0 / 外壳 0.6.0 发布）**
+- **猪和面板是两个窗口**（详见 [I-round 第 15 节](tasks/I-round.md)）：猪窗口固定大小只装猪和气泡；面板窗口由主进程摆在猪上方或下方。同一份游戏包两边都跑，按 `piggyShell.role`（`pet` / `panel`）各显示一半，见 `src/client/split.js`、`src/client/desktop/panel-window.js`、`apps/desktop/main.js` 的「面板窗口」一节。
+  **别再把面板塞回猪窗口、也别加「改窗口大小后把猪补回原位」的记账**——那条路修了四轮（e614abc、d360358、020f463、DeepSeek 的覆盖模式）都在补同一个结构问题。
+- 拖到屏幕边：主进程把窗口夹在屏幕里，把超出去的量发给页面（`piggy:drag-slide`），猪在窗口里滑过去，窗口形状同步滑（Linux 的形状会裁画面）。
+- 已验证：Linux GNOME 真鼠标拖动 + 录屏逐帧（`tools/drag-film.py`），9 组（四条屏幕边、面板开着拖、长距离）拖动中不丢猪、不回跳、松手后 0px；用户本机亲测通过。**Windows 还没做录屏逐帧检查**（虚拟机里自动操作没跑通，用户在真机上试过可以）。
+- 已知：GNOME 启动桌面版时会弹一条「dsh-piggy is ready」（猪窗口不抢焦点显示引起，拆窗口之前就有），未处理。
 - 测试机（都在用户本机 libvirt 里，`virsh -c qemu:///system list --all`）：
-  - `ubuntu26.04`：GNOME Wayland，账号 z / 123456，IP **192.168.123.45**（装桌面后从 .44 变的），代码在 `~/dsh-piggy`，跑 `node tools/desktop-geometry-check.mjs all`（环境变量从 `systemctl --user show-environment` 取）。屏保激活时真鼠标会失效，先 `gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.SetActive false`。目前已关机。
+  - **`ubuntu26.04-2`**：GNOME Wayland 测试机，账号 z / 123456，IP 会变（见过 .44 / .45，`virsh domifaddr ubuntu26.04-2 --source lease` 查），代码在 `~/dsh-piggy`。跑 `node tools/desktop-geometry-check.mjs all`，加 `PIGGY_FILM_DIR=/tmp/film` 录每次真拖，再在主机上 `uv run --with numpy --with scipy python tools/drag-film.py <目录>` 逐帧检查。屏保激活时真鼠标和录屏都会失效，先 `gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver --method org.gnome.ScreenSaver.SetActive false`。
+  - ⚠️ **`ubuntu26.04`（不带 -2）是用户的旧演示环境（192.168.123.71），不是测试机，别启动、别动。**
   - `win11`：本地离线账户 **pig / 123456**（安全问题答案都是 a）。**2026-10-07 凌晨已初始化完、进了桌面**（IP 192.168.123.138，出站可用、入站被防火墙全挡）。
     - 已装好：Node 24.21.0（免安装 zip 解在 `C:\Users\pig\node-v24.21.0-win-x64`）、Electron 44.5.1（解在 `C:\Users\pig\piggy\electron`）、代码在 `C:\Users\pig\piggy\code`、`apps/desktop` 已 `npm install --omit=dev`（electron-updater 就位）。
     - 怎么传文件进去：虚拟机**入站全被挡**，只能「虚拟机主动拉/推」。主机侧脚本（都在 `/zyx/DSH/workspaces/`，不在仓库里）：`vmtransfer/` 用 `python3 -m http.server 8000 --bind 192.168.123.1` 给虚拟机下载；`vm-upload-server.py`（8001 端口）收虚拟机 POST 上来的日志/截图；`vm-proxy-forward.py` 把主机的 2080 代理转成 `192.168.123.1:2081` 给虚拟机出网；`type-into-vm.py` 用 `virsh send-key` 在虚拟机里打字（**注意先按一下 Shift 把输入法切到英文，否则 `cd ~` 会变成「成都~」**）。
@@ -271,8 +273,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
     - **首次 Windows 系统性位置检查（2026-10-07，用户手动 + QMP 绝对鼠标）**：拖动到屏幕中段误差 **(0,3)px**；右键开面板 (−1,−3)px、再右键收起 **(0,0)px**；左/右/下边缘拖动后**猪整只在屏内**，误差 1~7px（含待机动画 ±7px）；上边缘窗口被夹到 `y=0` 且内容反向挪，猪留在原地。**开关面板前后各 6 次采样，位置区间完全相同**（x 352–353、y 44–48，那 4px 就是待机动画本身）。
     - **仍未复现**：交接里那条 Windows「抽动 + 一帧叠影」。上面这些测试里位置都稳，要复现得拿用户那台机器的 `%APPDATA%\dsh-piggy-desktop\piggy.log`，或者在虚拟机上做更激进的连拖连点。
     - 控制鼠标的办法：虚拟机有 **QEMU HID Tablet（绝对坐标）**，用 QMP `input-send-event` 可以按像素定位（`/zyx/DSH/workspaces/vm-mouse.py`）；找猪的像素位置用 `/zyx/DSH/workspaces/pig-locate.py`（特征色 255,209,175，**注意猪在 y<120 和做戳一戳动作时会被手掌盖住，检测要放宽**）；整套检查脚本 `/zyx/DSH/workspaces/win-check.py`。
-- DeepSeek 在 020f463 之前没提交的改动（`placement.clamped()` 那版）放在 `git stash@{0}`（deepseek-uncommitted-20261006-clamped-target），方向已被 020f463 取代，确认不要后可 `git stash drop`。
-- 本轮没发版、外壳没改（还是未发布的 0.6.0）。用户验收通过后按发版规矩走。
+- 被取代的方案留了底：DeepSeek 的覆盖模式在分支 `backup/deepseek-overlay-20261007`，更早的未提交改动在 `git stash@{0}`；确认不要后可删。
 
 **用户反馈、未解决**
 - Windows 桌面版猪「抽动」：录屏在 `/zyx/DSH/workspaces/dsh-piggy/feedback/`（上下跳 + 一帧叠影，像窗口移动和页面重排不同步）。要那台机器的 `%APPDATA%\dsh-piggy-desktop\piggy.log` 才能定位。
@@ -306,7 +307,8 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 - 截图验证大文件要等几秒再截，否则截到加载中的空白。
 - DSH 本身更新后要 `pnpm install && pnpm build`，否则启动时会报找不到 `lib/*.js`。
 - **桌面版几何的验收只看一条：猪的屏幕点有没有动**（点猪、开关面板、重启前后差 ≤2px）。「窗口在工作区内」「核对 0 次不符」「测试全绿」都不等于猪没动——2026-10-06 就是这么三次误判「修好了」。改完跑 `tools/desktop-geometry-check.mjs`，它跑不过就是没修好；在 GNOME（Wayland）桌面上它会用 `tools/gnome-pointer.py` 真鼠标拖（别在自己正用的机器上跑真拖，放虚拟机）。多屏、Windows 还要人工在真机上试。
-- 桌面几何的模型见 `docs/tasks/I-round.md` 第 13 节：猪只有一个「家」（脚底中心），每轮从头算窗口。**不要再加「记住上一轮」「核对补正」之类的记账**——之前三轮跑位全是这类记账互相继承误差。
+- 桌面版是两个窗口（`docs/tasks/I-round.md` 第 15 节）：面板改动不许影响猪窗口的大小；猪窗口里「家」模型（第 13 节）仍然是每轮从头算窗口，**不要再加「记住上一轮」「核对补正」之类的记账**。
+- 桌面拖动的验收要**真鼠标拖 + 录屏逐帧看**（`tools/drag-film.py`）：只看起止坐标看不出「拖到边上猪停住、松手瞬移」「拖动中猪消失一段」，这两个都是只在中间帧里出现的真 bug（2026-10-07）。
 - 桌面页面里 `piggyShell.place({})` 回读的窗口尺寸在 setBounds 后立刻就是新的，但页面要等 resize 才重排：两者对不上的那一拍不能量（`index.js` 的 `layoutStale`），否则算出的猪位置差一个尺寸变化量。
 
 ---

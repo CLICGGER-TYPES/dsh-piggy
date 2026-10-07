@@ -15,7 +15,7 @@
 - **菜园**（在线扩展）：开垦地块、买种子、每个阶段浇一次水，按真实时间生长（离线照算），收获卖钱或放进背包
 - **矿洞**（在线扩展）：10 层矿洞往下挖，越深矿越值钱，化石和宝石进图鉴；体力 100，每 3 分钟回 1 点
 - **钓鱼**：咬钩后随机是圆盘、竖条拉锯、拉力收线三种玩法之一，也能让猪自己出门钓
-- **桌面版**：Windows、Linux 和 macOS 可独立运行
+- **桌面版**：Windows、Linux 和 macOS 可独立运行；猪和面板各一个窗口，开面板、拖到屏幕边、冒气泡，猪都稳稳待在原地
 - **角色外观**：完成厨师或宇航员工作解锁职业外观，另有免费内置皮肤，也可导入自己的 SVG 皮肤包
 - **Emoji 可选**：网页版和桌面版都自带整套彩色 emoji 字体，「设置 → Emoji 样式」可以在「内置」和「系统自带」之间切，机器上缺字也不会变方框
 - **出问题能查**：「设置 → 日志 → 导出日志」一键导出运行日志（桌面版弹系统「另存为」），里面记着版本、动作、扩展下载和报错
@@ -23,9 +23,13 @@
 - **零 token**：不注册模型工具，不向对话注入宠物状态
 
 <p align="center">
-  <img src="docs/screenshots/readme-home.png" width="260" alt="主菜单">
-  <img src="docs/screenshots/c4-dex-dashboard.png" width="260" alt="图鉴">
-  <img src="docs/screenshots/c6-skins.png" width="260" alt="换肤">
+  <img src="docs/screenshots/readme-desktop.png" width="250" alt="桌面版：猪和贴在它上方的面板">
+  <img src="docs/screenshots/readme-home.png" width="250" alt="主菜单">
+  <img src="docs/screenshots/extension-achievement-badges.png" width="300" alt="扩展成就的十二枚小猪徽章">
+</p>
+<p align="center">
+  <img src="docs/screenshots/c4-dex-dashboard.png" width="250" alt="图鉴">
+  <img src="docs/screenshots/c6-skins.png" width="250" alt="换肤">
 </p>
 
 ## 安装
@@ -54,7 +58,7 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 「设置 → 更新」会分别显示游戏版本和桌面外壳版本（有新正式版时设置图标上有红点）。游戏包可在 App 内更新；桌面外壳从 v0.2.0 起，Windows 安装版和 Linux AppImage 可在 App 内下载并重启安装。Windows 便携版、未签名 macOS 版需到发布页手动替换；旧版外壳需先手动升级一次。详见[更新说明](docs/guides/updates.md)。
 
-v0.27.3 起窗口摆放、可点区域、桌面样式等都放进了游戏包，这类修复在「更新」里点一下就到，不用重装桌面程序。当前桌面外壳是 v0.5.0（比 v0.4.0 多一个「导出日志」用的系统另存为；旧外壳会自动退回浏览器下载，功能仍可用）。从 v0.3.0 之前的版本升级需要先手动升级一次外壳。
+当前桌面外壳是 **v0.6.0**：猪和面板拆成了两个窗口（面板单独一个窗口贴在猪旁边，开面板、拖动时猪不再跳）。游戏 v0.33.0 起需要这个外壳——旧外壳会继续用自带的游戏包，并在「设置 → 更新」里提示先更新桌面程序（Windows 安装版和 Linux AppImage 可在 App 内更新，其余到发布页下载）。窗口摆放、可点区域、桌面样式等仍在游戏包里，这类修复在「更新」里点一下就到。
 
 在线扩展从本仓库的 [`extensions/registry.json`](extensions/registry.json) 读，文件挂在本仓库的 GitHub Release（`ext-<名字>-<版本>`），下载后逐个核对校验值；只会安装我们自己发布的扩展。格式和写法见[扩展删除与在线下载](docs/design/extension-download.md)。
 
@@ -97,7 +101,7 @@ npm run typecheck
 
 | 贡献者 | 贡献 |
 |---|---|
-| [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)） |
+| [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)） |
 | [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题（[#5](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/5)） |
 
 想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)（Gitee 用户可以在 [Gitee 仓库](https://gitee.com/clicgger/dsh-piggy) 提 Issue）。合并进来的贡献会记在这张表里。

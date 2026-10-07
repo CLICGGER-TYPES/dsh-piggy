@@ -34,7 +34,7 @@ function demo(mode) {
 installPreviewExtensions(folder)
 writeFileSync(join(folder,'state.json'),JSON.stringify(demo('sample')))
 const store=createStore(join(folder,'state.json'))
-store.ext=createExtRuntime(store,{gameVersion:'0.32.0'})
+store.ext=createExtRuntime(store,{gameVersion:'0.33.0'})
 await store.ext.ready
 const routes=[]
 registerRoutes({inject(deps,fn){fn({webServer:{register(route){routes.push(route);return ()=>{}}}})}},store)
