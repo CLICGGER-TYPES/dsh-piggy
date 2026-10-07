@@ -11,6 +11,16 @@ import { announce, clamp100 } from './effects.js'
 import { chance, rollerFor } from './random.js'
 import { cleanPetTimes, cleanTalk, emptyTalk, timeTalkScene } from './talk.js'
 
+/**
+ * 代码里让猪说一个台词表里没有的场景时怎么办。默认不说话（玩家那边不能因为一句台词崩掉），
+ * 测试里换成直接抛错（test/helpers/strict-lines.js），写错场景名当场就红。
+ * @type {(scene: string) => void}
+ */
+let onUnknownScene = () => {}
+
+/** @param {(scene: string) => void} handler */
+export function setUnknownSceneHandler(handler) { onUnknownScene = handler }
+
 /** The dialogue record every pig carries; older saves get it filled in. */
 export function emptyDialogue() {
   return { ownerName: DEFAULT_OWNER_NAME, lastByScene: {}, open: null, quiet: false, greetedAt: 0, talk: emptyTalk(), petTimes: [], petAnnoyed: false }
@@ -25,7 +35,7 @@ export function emptyDialogue() {
  */
 export function pickLine(state, scene, next = rollerFor(state)) {
   const pool = LINES[scene]
-  if (pool === undefined || pool.length === 0) return null
+  if (pool === undefined || pool.length === 0) { onUnknownScene(scene); return null }
   const dialogue = ensureDialogue(state)
   // 老存档里记的是一个数字（上一句），G 批次起记最近几句。
   const raw = dialogue.lastByScene[scene]

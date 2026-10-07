@@ -48,7 +48,7 @@
   "scripts": {
     "build": "node scripts/build-client.mjs",
     "typecheck": "node scripts/typecheck.mjs",
-    "test": "node --test \"test/**/*.test.js\" \"apps/desktop/test/*.test.js\"",
+    "test": "node --import ./test/helpers/strict-lines.js --test \"test/**/*.test.js\" \"apps/desktop/test/*.test.js\"",
     "preview": "echo \"open tools/preview.html in a browser\""
   },
   "dsh": {

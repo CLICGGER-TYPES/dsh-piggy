@@ -6,11 +6,8 @@ import { adopt, hatchEgg, migrate, reset, settleAchievements, achievementsView }
 const NOW = 1_800_000_000_000
 const entry = (state, key) => achievementsView(state).find(item => item.key === key)
 
-test('twenty-eight achievements have distinct keys and pig badge art', () => {
-  assert.equal(ACHIEVEMENTS.length, 28)
-  assert.equal(new Set(ACHIEVEMENTS.map(item => item.key)).size, 28)
-  assert.ok(ACHIEVEMENTS.every(item => item.art.startsWith('badge-pig-')))
-})
+// 成就数量、key 不重复、徽章文件这些由 test/achievements-guard.test.js 按数据推算检查，这里不写死个数。
+const CORE_COUNT = ACHIEVEMENTS.filter(item => item.metric !== 'extension').length
 test('first successful care unlocks once and viewing never mutates', () => {
   const state = hatchEgg(NOW)
   settleAchievements(state, NOW)
@@ -65,7 +62,7 @@ test('malformed save records are sanitized, unknown keys never appear', () => {
   settleAchievements(state, NOW)
   assert.equal(entry(state, 'first-meal').acquired, false)
   assert.equal(entry(state, 'clean-ten').progress, 0)
-  assert.equal(achievementsView(state).length, 16)
+  assert.equal(achievementsView(state).length, CORE_COUNT)
   assert.ok(!('bogus' in state.achievements.unlocked))
 })
 test('simultaneous unlocks give one combined notice and never change economy', () => {

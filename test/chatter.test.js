@@ -15,13 +15,7 @@ const MIN = 60_000
 const lastScene = pig => [...pig.pending].reverse().find(entry => entry.kind === 'line')?.scene ?? null
 const wellPig = () => Object.assign(hatchEgg(T0), { satiety: 80, cleanliness: 80, happiness: 80 })
 
-test('every scene the code asks for has lines', () => {
-  for (const scene of ['eat', 'overfull', 'bathe', 'play', 'pet', 'hungry', 'dirty', 'lonely', 'idle',
-    'workDone', 'tired', 'study', 'graduate', 'tripBack', 'sick', 'wrongMedicine', 'cured',
-    'levelup', 'growUp', 'enter', 'death', 'revive', 'signIn', 'gift']) {
-    assert.ok((LINES[scene] ?? []).length > 0, scene)
-  }
-})
+// 「代码里点名的场景台词表里都有」由 test/lines-guard.test.js 扫源码检查，不在这里手写场景清单。
 
 test('feeding a stuffed pig gets the overfull line, a hungry one the eating line', () => {
   const stuffed = wellPig()

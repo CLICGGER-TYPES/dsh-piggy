@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { existsSync } from 'node:fs'
 import { ACHIEVEMENTS } from '../data.js'
+
+const CORE_COUNT = ACHIEVEMENTS.filter(item => item.metric !== 'extension').length
 import { adopt, achievementsView, hatchEgg, installExtension, migrate, recordExtensionEvent, removeExtension, reset, settleAchievements, validateExtensionEvent } from '../core.js'
 import { runExtensionAction } from '../store/ext-actions.js'
 const NOW = 1_800_000_000_000
@@ -55,7 +57,7 @@ test('counter baselines reset only for a new installation; memories survive dele
   settleAchievements(state, NOW + 3)
   assert.equal(entry(state, 'farm-ten').acquired, true)
   assert.equal(entry(state, 'farm-ten').firstAt, NOW + 3)
-  assert.equal(achievementsView(reset(NOW)).length, 16)
+  assert.equal(achievementsView(reset(NOW)).length, CORE_COUNT)
 })
 
 test('migration sanitizes optional event saves and silently retains valid historical proof', () => {
@@ -105,7 +107,7 @@ test('successful actions commit reports once, bound their source and merge notif
 
 test('uninstalled unseen goals stay out of the catalogue; twelve new pig badge files exist', () => {
   const state = hatchEgg(NOW)
-  assert.equal(achievementsView(state).length, 16)
+  assert.equal(achievementsView(state).length, CORE_COUNT)
   installExtension(state, 'farm', {})
   assert.equal(achievementsView(state).length, 19)
   for (const item of ACHIEVEMENTS.filter(item => item.extension)) assert.equal(existsSync(new URL('../assets/' + item.art + '.svg', import.meta.url)), true)

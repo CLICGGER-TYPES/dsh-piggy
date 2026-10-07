@@ -36,7 +36,8 @@ test('the same line is never picked twice in a row, and [主人] is filled in', 
   assert.notEqual(first?.text, second?.text)
   const hello = pickLine(pig, 'enter', always)
   assert.equal(hello?.text, '小明你回来啦！')
-  assert.equal(pickLine(pig, 'no-such-scene', always), null)
+  // 未知场景：正式运行时不说话（返回 null）；测试里 strict-lines.js 让它直接抛错，免得写错场景名没人发现
+  assert.throws(() => pickLine(pig, 'no-such-scene', always), /unknown line scene/)
 })
 
 test('messages from the same instant each get their own increasing id', () => {

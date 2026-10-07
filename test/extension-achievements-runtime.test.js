@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { achievementsView, migrate } from '../core.js'
+import { ACHIEVEMENTS } from '../data.js'
 import farm from '../extensions/farm/server.js'
 import mine, { dayKey, generateMap, hitsNeeded } from '../extensions/mine/server.js'
 import gacha from '../extensions/gacha/server.js'
@@ -16,7 +17,7 @@ test('all four real extensions download and install with compatible manifests', 
   const setup = await setupExtensions()
   try {
     for (const key of KEYS) assert.equal((await setup.runtime.install(key)).ok, true)
-    assert.equal(achievementsView(setup.store.state).length, 28)
+    assert.equal(achievementsView(setup.store.state).length, ACHIEVEMENTS.length)
     assert.equal(setup.runtime.list(setup.store.state).length, 4)
   } finally { setup.dispose() }
 })
