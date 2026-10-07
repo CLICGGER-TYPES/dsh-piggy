@@ -7979,7 +7979,9 @@
     const key = measure.keyOf(next);
     if (!move && key === lastKey) return;
     lastKey = key;
-    const request = { shape: next.shape, bounds: move ? want : void 0 };
+    const request = { shape: next.shape, bounds: move ? want : void 0, pig: void 0 };
+    const pigNode = role === "pet" ? h.querySelector(".dp-pig") : null;
+    if (pigNode) request.pig = layoutBox(pigNode);
     if (move) {
       console.warn("[piggy-desktop] move " + JSON.stringify({
         open: h.getAttribute("data-open"),

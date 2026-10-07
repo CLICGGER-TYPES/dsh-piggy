@@ -7,9 +7,15 @@
      录像和鼠标时间轴按「猪开始动的那一帧」对齐；
   3. 报：猪消失（闪一帧）、拖动中落后鼠标多少、有没有往回跳、松手后有没有动。
 
-用法：uv run --with numpy --with scipy python tools/drag-film.py 目录或文件.mkv …
+用法：uv run --with numpy --with scipy python tools/drag-film.py [--panel] 目录或文件.mkv …
 判定（默认阈值）：拖动中没有一帧丢猪、没有往回跳 >3px；松手后的每一帧离最终位置 ≤2px。
 落后鼠标的像素数只报告不判定（虚拟机没有显卡，合成本身就慢，真机另看）。
+
+--panel：录的是「开着面板拖猪」。每帧再找面板（米白卡片），量「面板右下角 − 猪」相对按下前的偏差，
+判失败：后三分之一的偏差中位数比前三分之一大 4px 以上（越拖越远）、90% 分位超过 24px、或松手后不在原位。
+两个窗口由系统各自异步挪，快拖时面板落后一两帧（十几像素）是正常的，不随时间涨。
+（外壳 0.6.0 在 Windows 125% 下面板被甩开 200px，就是靠这个量出来的。）
+贴着屏幕边、面板被夹住时偏差是应该的：录这种时别走到屏幕边。
 """
 import json
 import subprocess
@@ -71,6 +77,27 @@ def find_pig(img, near, radius=140):
         if best is None or d < best[0]:
             best = (d, cx, cy, int(len(xs)))
     return None if best is None else best[1:]
+
+
+def panel_mask(img):
+    # 面板卡片和名牌的底色（248,248,240）
+    r, g, b = (img[..., i].astype(np.int16) for i in range(3))
+    return (abs(r - 248) <= 3) & (abs(g - 248) <= 3) & (abs(b - 240) <= 4)
+
+
+def find_panel(img):
+    """整帧里最大的一块面板底色，返回外接框 (左, 上, 右, 下)；找不到返回 None。"""
+    from scipy import ndimage
+    mask = panel_mask(img)
+    labels, n = ndimage.label(ndimage.binary_dilation(mask, iterations=4))
+    if n == 0:
+        return None
+    sizes = ndimage.sum(mask, labels, range(1, n + 1))
+    k = int(np.argmax(sizes)) + 1
+    if sizes[k - 1] < 20000:
+        return None
+    ys, xs = np.nonzero((labels == k) & mask)
+    return (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))
 
 
 def cursor_at(timeline, t):
@@ -151,12 +178,51 @@ def analyse(mkv):
     if end is not None and final is not None:
         result['final_vs_expected_px'] = round(((final[0] - (end[0] + pig_off[0])) ** 2 + (final[1] - (end[1] + pig_off[1])) ** 2) ** 0.5, 1)
     result['ok'] = (not lost and not back and (result['after_release_max_move_px'] or 0) <= 2)
+    if WITH_PANEL:
+        # 面板右下角相对猪中心的偏移：按下前取基准，拖动中每帧和它比
+        offsets = []
+        for i in range(first, len(track)):
+            t = times[i] - offset
+            if track[i] is None:
+                continue
+            box = find_panel(video[i])
+            if box is None:
+                continue
+            offsets.append((t, box[2] - track[i][0], box[3] - track[i][1]))
+        base = [(dx, dy) for t, dx, dy in offsets if t < down]
+        during = [(t, dx, dy) for t, dx, dy in offsets if down <= t <= up]
+        if not base or not during:
+            result['panel'] = {'error': '按下前或拖动中没找到面板'}
+            result['ok'] = False
+        else:
+            bx, by = np.median([b[0] for b in base]), np.median([b[1] for b in base])
+            errs = [max(abs(dx - bx), abs(dy - by)) for _, dx, dy in during]
+            third = max(1, len(errs) // 3)
+            end = [max(abs(dx - bx), abs(dy - by)) for t, dx, dy in offsets if t > up + 0.5]
+            result['panel'] = {
+                'frames': len(during), 'max_px': round(float(max(errs)), 1), 'p90_px': round(float(np.percentile(errs, 90)), 1),
+                # 越拖越远 = 后三分之一比前三分之一大；两个窗口异步挪造成的一两帧落后不会随时间涨
+                'first_third_median_px': round(float(np.median(errs[:third])), 1),
+                'last_third_median_px': round(float(np.median(errs[-third:])), 1),
+                # 松手后取中位数：猪落地会弹一下（猪的外接框在动，面板没动），取最大值会误报
+                'after_release_px': round(float(np.median(end)), 1) if end else None,
+            }
+            grows = result['panel']['last_third_median_px'] - result['panel']['first_third_median_px'] > 4
+            result['ok'] = bool(result['ok'] and not grows and result['panel']['p90_px'] <= 24 and (result['panel']['after_release_px'] or 0) <= 2)
     return result
 
 
+WITH_PANEL = False
+
+
 def main():
+    global WITH_PANEL
     files = []
-    for arg in sys.argv[1:]:
+    args = sys.argv[1:]
+    if '--panel' in args:
+        WITH_PANEL = True
+        args.remove('--panel')
+    for arg in args:
         p = Path(arg)
         files += sorted(p.glob('*.mkv')) if p.is_dir() else [p]
     bad = 0

@@ -24,6 +24,7 @@ import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBo
 import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
+import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
 
 const { autoUpdater } = updaterPackage
 
@@ -118,6 +119,12 @@ let versions = null
 /** @type {ReturnType<typeof createShellUpdates> | null} */
 let shellUpdates = null
 let win = null
+/**
+ * 最近一次请求给猪窗口的位置和大小。拖动和面板都按它算，不按 getBounds() 回读：
+ * Windows 125%/150% 缩放下回读的尺寸常比设的大 1px，「读回来再设回去」每帧涨 1px，
+ * 拖一次窗口能从 345 宽涨到 482，钉在窗口右下角的猪就被越推越远（2026-10-07 虚拟机 125% 录屏 + 日志）。
+ */
+let petAsked = null
 /**
  * 面板窗口（外壳 0.6.0 起）：面板不再和猪挤在同一个窗口里。
  * 以前开面板、冒气泡、拖动都要改猪那个窗口的大小，再靠计算把猪补回原位，差一拍猪就跳
@@ -244,7 +251,8 @@ function applyBounds(next, why) {
   if (Math.abs(delta.x) <= tolerance && Math.abs(delta.y) <= tolerance
     && Math.abs(delta.width) <= tolerance && Math.abs(delta.height) <= tolerance) return null
   win.setBounds(next)
-  followPig(delta)
+  petAsked = { ...next }
+  followPig()
   // 拖动时每秒要挪几十次：别每次都写日志（Windows 上同步写盘会卡住主进程）。
   if (why !== 'drag' && why !== 'move') log('bounds', why, JSON.stringify(next))
   scheduleWindowStateSave()
@@ -294,6 +302,7 @@ function createWindow() {
   const start = saved === null
     ? clampBounds({ x: area.x + area.width - width - anchorRight, y: area.y + area.height - height - anchorRight, width, height }, area)
     : clampBounds({ ...saved, width, height }, area)
+  petAsked = { ...start }
   win = new BrowserWindow({
     ...start,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
@@ -448,7 +457,8 @@ function dragTick() {
   // 按「猪」算，不按起始窗口算：拖动中窗口大小可能变（冒气泡、面板换页），
   // 用起始窗口的大小去 setBounds 会把窗口来回改大改小，猪就一抽一抽的。
   const pig = dragSession.pig ?? { ...(lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }), ...lastPigSize }
-  const wanted = dragPigBounds(win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas)
+  // 窗口大小用请求值，不用回读值（见 petAsked 的说明）
+  const wanted = dragPigBounds(petAsked ?? win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas)
   if (!dragSession.slide) { applyBounds(wanted, 'drag'); return }
   // 窗口不出屏幕，猪在窗口里滑过去（外壳 0.6.0 起，新游戏包要求时）：
   // GNOME 等窗口管理器不让程序把窗口摆到屏幕外，猪窗口四周又有透明留白（气泡区），
@@ -463,6 +473,7 @@ function dragTick() {
     dragSession.lastSlide = slide
     lastDragSlide = slide
     win.webContents.send('piggy:drag-slide', slide)
+    followPig()
     // Linux 的窗口形状不只管点击、也裁画面：猪滑出原来那块形状就被裁没了（录像里拖到边上猪消失）。
     // 形状跟着滑同样多。
     applyShape(placedShape.map(r => ({ ...r, x: Math.max(0, r.x + slide.x), y: Math.max(0, r.y + slide.y) })))
@@ -563,6 +574,13 @@ ipcMain.on('piggy:place', (event, request) => {
     }))
     applyShape(placedShape)
   }
+  // 游戏包 0.33.1 起顺带报猪在窗口里的框（贴屏幕边时内容在窗口里挪过）：面板按它贴猪。
+  const pig = request?.pig
+  if (pig && [pig.x, pig.y, pig.width, pig.height].every(Number.isFinite) && pig.width > 0 && pig.height > 0) {
+    const changed = panelPig === null || panelPig.x !== pig.x || panelPig.y !== pig.y || panelPig.width !== pig.width || panelPig.height !== pig.height
+    panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
+    if (changed && dragSession === null) followPig()
+  }
   event.returnValue = geometryOf(win.getBounds(), geometrySeq)
 })
 
@@ -597,14 +615,6 @@ ipcMain.on('piggy:shape', (event, rects) => {
 // 面板窗口（外壳 0.6.0 起，见文件头 panelWin 的说明）
 // ---------------------------------------------------------------------------
 
-/** 面板贴着猪：和猪隔多远、离屏幕边至少多远、最高多高（跟游戏包 constants.js 一致）。 */
-const PANEL_GAP = 8
-const PANEL_MARGIN = 10
-const PANEL_MAX_HEIGHT = 520
-const PANEL_MIN_HEIGHT = 120
-/** 面板页面还没报尺寸之前先按这个大小摆。 */
-const PANEL_FALLBACK = { width: 292, height: 420 }
-
 /** 面板现在开着没有（用户眼里的「开」，窗口可能还在等页面报尺寸）。 */
 let panelOpen = false
 /** 猪在猪窗口里的框（打开面板时猪页面报上来的）；面板按它贴在猪旁边。 */
@@ -613,6 +623,8 @@ let panelPig = null
 let panelAnchor = null
 /** 面板页面最近报的尺寸。 */
 let panelSize = null
+/** 最近一次给面板窗口设的位置：没变就不再 setBounds。 */
+let panelAsked = null
 /** 面板页面加载好没有：没好之前的「打开」先记着，加载完再发。 */
 let panelReady = false
 
@@ -623,38 +635,25 @@ function announceStateChanged() {
   stateTimer = setTimeout(() => { stateTimer = null; toPages('piggy:state-changed') }, 30)
 }
 
-/** 猪在屏幕上的框。 */
+/** 猪在屏幕上的框（拖到屏幕边时加上猪在窗口里滑出去的那一截）。 */
 function pigOnScreen() {
   if (win === null || win.isDestroyed() || panelPig === null) return null
-  const bounds = win.getBounds()
-  return { x: bounds.x + panelPig.x, y: bounds.y + panelPig.y, width: panelPig.width, height: panelPig.height }
+  return pigScreenBox(petAsked, win.getBounds(), panelPig, dragSession !== null ? { dragging: true, slide: lastDragSlide } : {})
 }
 
-/** 按猪现在的位置决定面板朝哪边开：上面空间大就往上，否则往下（和网页版 fitPanel 一个规则）。 */
+/** 按猪现在的位置决定面板朝哪边开、最高多高。 */
 function decidePanelAnchor() {
   const pig = pigOnScreen()
   if (pig === null) return null
-  const area = screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea
-  const above = pig.y - area.y
-  const below = area.y + area.height - (pig.y + pig.height)
-  const vertical = above >= below ? 'above' : 'below'
-  const room = (vertical === 'above' ? above : below) - PANEL_GAP - PANEL_MARGIN
-  return { vertical, maxHeight: Math.max(PANEL_MIN_HEIGHT, Math.min(PANEL_MAX_HEIGHT, Math.round(room))), area }
+  return panelAnchorFor(pig, screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea,
+    panelSize?.width ?? PANEL_FALLBACK.width, panelAnchor?.horizontal)
 }
 
-/** 面板窗口该在哪：竖向贴着猪（上方时底边贴猪头，下方时顶边贴猪脚），横向右边对齐猪、放不下就左边对齐，最后夹进工作区。 */
+/** 面板窗口该在哪：每次都从猪现在在哪直接算（见 lib/panel-geometry.js 文件头）。 */
 function panelBounds() {
   const pig = pigOnScreen()
   if (pig === null || panelAnchor === null) return null
-  const area = panelAnchor.area
-  const width = Math.round(panelSize?.width ?? PANEL_FALLBACK.width)
-  const height = Math.round(Math.min(panelSize?.height ?? PANEL_FALLBACK.height, area.height - 2 * PANEL_MARGIN))
-  let x = Math.round(pig.x + pig.width - width)
-  if (x < area.x + PANEL_MARGIN) x = Math.round(pig.x)
-  x = Math.max(area.x + PANEL_MARGIN, Math.min(x, area.x + area.width - width - PANEL_MARGIN))
-  let y = panelAnchor.vertical === 'above' ? Math.round(pig.y - PANEL_GAP - height) : Math.round(pig.y + pig.height + PANEL_GAP)
-  y = Math.max(area.y, Math.min(y, area.y + area.height - height))
-  return { x, y, width, height }
+  return panelBoundsFor(pig, panelAnchor, panelSize)
 }
 
 function sendPanel(message) {
@@ -664,6 +663,7 @@ function sendPanel(message) {
 function ensurePanelWindow() {
   if (panelWin !== null && !panelWin.isDestroyed()) return panelWin
   panelReady = false
+  panelAsked = null
   panelWin = new BrowserWindow({
     width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
@@ -707,7 +707,11 @@ function placePanel() {
   if (!panelOpen || panelWin === null || panelWin.isDestroyed()) return
   const next = panelBounds()
   if (next === null) return
-  panelWin.setBounds(next)
+  if (panelAsked === null || panelAsked.x !== next.x || panelAsked.y !== next.y
+    || panelAsked.width !== next.width || panelAsked.height !== next.height) {
+    panelWin.setBounds(next)
+    panelAsked = next
+  }
   if (panelSize !== null && !panelWin.isVisible()) {
     // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
     //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
@@ -723,6 +727,8 @@ function openPanel(pig) {
   if (panelPig === null) return
   ensurePanelWindow()
   panelOpen = true
+  // 每次打开都按默认规则重新挑对齐边（保持对齐只在拖完重定时用）
+  panelAnchor = null
   panelAnchor = decidePanelAnchor()
   if (panelAnchor === null) return
   sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
@@ -738,12 +744,10 @@ function closePanel(why) {
   log('panel closed', why)
 }
 
-/** 猪窗口挪了（拖动、散步、贴边修正）：面板跟着挪同样多，不重新挑朝向（松手后再挑）。 */
-function followPig(delta) {
+/** 猪窗口挪了（拖动、散步、贴边修正）：面板按猪的新位置重摆，不重新挑朝向（松手后再挑）。 */
+function followPig() {
   if (!panelOpen || panelWin === null || panelWin.isDestroyed() || !panelWin.isVisible()) return
-  if (delta === null || (delta.x === 0 && delta.y === 0)) return
-  const at = panelWin.getBounds()
-  panelWin.setBounds({ ...at, x: at.x + delta.x, y: at.y + delta.y })
+  placePanel()
 }
 
 /** 拖完 / 散步完：猪到了新地方，重新决定面板朝哪边开（放不下就换边）。 */
