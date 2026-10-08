@@ -429,6 +429,11 @@ test('mood: dead beats sick beats working beats everything else', () => {
   pig.activity = { kind: 'trip', key: 'suburb', label: '郊游', emoji: '🏞', startedAt: T0, endsAt: T0 + MIN }
   assert.equal(mood(pig, T0).key, 'traveling')
 
+  // 外出时脏了也要看得出（和生病一样压过外出），饿了仍让位给外出。
+  pig.cleanliness = 10
+  assert.equal(mood(pig, T0).key, 'dirty')
+  pig.cleanliness = 90
+
   pig.activity = null
   pig.dead = true
   assert.equal(mood(pig, T0).key, 'dead')

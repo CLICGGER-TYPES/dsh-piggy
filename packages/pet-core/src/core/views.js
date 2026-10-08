@@ -25,12 +25,13 @@ export function mood(state, nowMs) {
     const ill = currentIllness(state)
     return { key: 'sick', emoji: '🤒', label: ill === null ? '生病了' : `得了${ill.name}` }
   }
+  if (state.cleanliness < THRESHOLDS.dirty) return { key: 'dirty', emoji: '🫧', label: '该洗澡了' }
+
   if (state.activity !== null) {
     const base = AWAY_MOODS[state.activity.kind] ?? AWAY_MOODS.work
     return { ...base, emoji: state.activity.emoji || base.emoji }
   }
   if (state.satiety < THRESHOLDS.hungry) return { key: 'hungry', emoji: '🍎', label: '饿了' }
-  if (state.cleanliness < THRESHOLDS.dirty) return { key: 'dirty', emoji: '🫧', label: '该洗澡了' }
   if (nowMs - state.lastActiveAt > SLEEPY_AFTER_MINUTES * 60000) return { key: 'sleepy', emoji: '💤', label: '睡着了' }
   if (state.happiness >= 75) return { key: 'happy', emoji: '❤️', label: '很开心' }
   if (state.happiness < THRESHOLDS.lonely) return { key: 'lonely', emoji: '🥺', label: '有点孤单' }
