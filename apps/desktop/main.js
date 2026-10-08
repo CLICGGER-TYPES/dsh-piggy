@@ -662,6 +662,17 @@ function sendPanel(message) {
   if (panelWin !== null && !panelWin.isDestroyed() && panelReady) panelWin.webContents.send('piggy:panel', message)
 }
 
+/**
+ * 把猪窗口抬到面板窗口上面（用户 2026-10-08 反馈）。
+ * 两个窗口同为 floating 置顶，点面板时系统把面板抬到最上，猪的动作和气泡被盖住；
+ * 所以面板转来反应（piggy:pig-fx）时抬一次。
+ * 只改 z 序不改大小；猪窗口除猪本体外都穿透点击，压在上面不挡面板操作。
+ */
+function raisePetAbovePanel() {
+  if (win === null || win.isDestroyed() || !win.isVisible()) return
+  win.moveTop()
+}
+
 function ensurePanelWindow() {
   if (panelWin !== null && !panelWin.isDestroyed()) return panelWin
   panelReady = false
@@ -785,6 +796,7 @@ ipcMain.on('piggy:pig-fx', (event, fx) => {
   if (!fromPage(event) || event.sender !== panelWin?.webContents) return
   if (win === null || win.isDestroyed() || typeof fx?.name !== 'string') return
   win.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
+  raisePetAbovePanel()
 })
 
 /** Where the DSH plugin keeps its pig (the folder moved from dsh-pig to dsh-piggy). */
