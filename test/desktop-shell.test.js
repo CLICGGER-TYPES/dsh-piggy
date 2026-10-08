@@ -286,6 +286,20 @@ test('CSS：朝右开时场景改左对齐，气泡/道具跟着镜像（网页�
   assert.ok(!/\[data-panel-side/.test(css.replace(/\[data-dsh-pig\]\[data-panel-side/g, '')), '规则都要挂在 data-dsh-pig 上')
 })
 
+test('桌面版关掉投影时保留状态变色（生病/脏/死/老/墓碑），且不带回投影', () => {
+  const src = readFileSync(new URL('../src/client/desktop/index.js', import.meta.url), 'utf8')
+  const rules = {
+    sick: /data-mood="sick"\][^{]*\{filter:hue-rotate\(-28deg\) saturate\(\.75\)!important\}/,
+    dirty: /data-mood="dirty"\][^{]*\{filter:sepia\(\.4\)!important\}/,
+    dead: /data-mood="dead"\][^{]*\{filter:grayscale\(1\)!important\}/,
+    faded: /data-faded="true"\][^{]*\{filter:grayscale\(\.5\) opacity\(\.72\)!important\}/,
+    grave: /data-stage="grave"\][^{]*\{filter:grayscale\(\.35\)!important\}/,
+  }
+  for (const [state, rule] of Object.entries(rules)) assert.match(src, rule, state + ' 在桌面版要有颜色')
+  const block = src.slice(src.indexOf('const DESKTOP_CSS'), src.indexOf('].join', src.indexOf('const DESKTOP_CSS')))
+  assert.ok(!/drop-shadow/.test(block), '桌面版不能带回会被可点区域裁掉的投影（F11）')
+})
+
 test('桌面版启动时面板总是收起（不按上次记住的「开着」恢复）', () => {
   const src = readFileSync(new URL('../src/client/index.js', import.meta.url), 'utf8')
   assert.match(src, /var isOpen = desktopShell\(\) === null && readStore\(OPEN_KEY\) === 'true'/)
