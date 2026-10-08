@@ -8344,6 +8344,7 @@
           showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
         }
         scene3.addEventListener("pointerup", function(event) {
+          if (drag === null) return;
           if (endDrag()) return;
           if (view.hatched !== true) {
             pokeBox();
@@ -8359,7 +8360,6 @@
         });
         scene3.addEventListener("contextmenu", function(event) {
           event.preventDefault();
-          if (!isOpen && view.pig !== null) flash("pet");
           setOpen(!isOpen);
         });
         var autoCollapse = splitRole !== null ? { dispose: function() {

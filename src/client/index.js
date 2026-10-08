@@ -316,6 +316,8 @@ import { partAt } from './pet-parts.js'
 
       // Left click pats; context menu opens the panel.
       scene.addEventListener('pointerup', function (event) {
+        // 只有左键按下才算摸（drag 只在左键 pointerdown 时建）：右键开面板别顺带摸猪（2026-10-08 用户反馈刷屏）。
+        if (drag === null) return
         if (endDrag()) return
         // An unhatched save is a box, whether or not one exists yet.
         if (view.hatched !== true) {
@@ -329,9 +331,6 @@ import { partAt } from './pet-parts.js'
       scene.addEventListener('lostpointercapture', function () { endDrag() })
       scene.addEventListener('contextmenu', function (event) {
         event.preventDefault()
-        // Include the opening reaction bubble in the first native window
-        // measurement. Showing it afterwards would force a second resize.
-        if (!isOpen && view.pig !== null) flash('pet')
         setOpen(!isOpen)
       })
 
