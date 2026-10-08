@@ -21,6 +21,7 @@
 ## 开发者：怎么加 X
 
 - [**开发新功能：流程、放哪、预留的扩展点（先读）**](guides/adding-features.md)
+- [参考项目总表（玩法、卡片、界面、动效库，各自许可和能怎么用）](guides/references.md)
 - [写一个在线扩展](guides/writing-extensions.md)
 - [给猪加台词](guides/adding-lines.md)
 - [加一项成就和徽章](guides/adding-achievements.md)

@@ -5,6 +5,8 @@
 
 ## 参考的是谁
 
+（全部参考项目和各自许可见 [参考项目总表](references.md)。）
+
 | 方面 | 参考 | 用在哪 |
 |---|---|---|
 | **玩法与数值** | QQ 宠物（怀旧服逆向 [xuemian168/qqpet_automation](https://github.com/xuemian168/qqpet_automation)、浏览器版 [ice-cream-headache](https://github.com/ice-cream-headache/ice-cream-headache.github.io)） | 属性、饥饿/清洁/心情、生病链、打工上学旅行、台词分类（见 `docs/DESIGN.md` 第 2～4 节） |

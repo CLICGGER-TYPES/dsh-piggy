@@ -83,6 +83,7 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 做动画、手感、爆点特效、手绘点缀、配色计算（先用 Motion、mo.js、Rough.js、Chroma.js 等成熟库，别自己造轮子） | [docs/guides/motion-libraries.md](docs/guides/motion-libraries.md) |
 | 改桌面窗口、拖动、IPC | [docs/guides/desktop-architecture.md](docs/guides/desktop-architecture.md) |
 | 玩法和数值的来源、视觉规范的来源 | [docs/DESIGN.md](docs/DESIGN.md) |
+| **参考过哪些项目**（玩法、卡片、界面、动效库……各自许可和能怎么用；做新东西先查） | [docs/guides/references.md](docs/guides/references.md) |
 | 立绘、皮肤 | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
 | 画「千奇百怪的小猪」（猪 + emoji 主题） | [docs/design/pig-kitchen-art.md](docs/design/pig-kitchen-art.md)（规范、许可、验收；图要用户确认） |
 | 开发环境、打包、Gitee 渠道 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
