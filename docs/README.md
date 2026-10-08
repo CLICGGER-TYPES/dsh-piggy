@@ -25,7 +25,7 @@
 - [给猪加台词](guides/adding-lines.md)
 - [加一项成就和徽章](guides/adding-achievements.md)
 - [界面规范：面板、按钮、扩展页面](guides/ui-style.md)
-- [动效、渲染和配色：先用成熟的库（Motion / GSAP / PixiJS / Three.js / Chroma.js 怎么选）](guides/motion-libraries.md)
+- [动效、渲染和配色：先用成熟的库（Motion / GSAP / PixiJS / Three.js / Rough.js / mo.js / Chroma.js 怎么选）](guides/motion-libraries.md)
 - [桌面版架构与 IPC 参考](guides/desktop-architecture.md)
 
 ## 项目资料

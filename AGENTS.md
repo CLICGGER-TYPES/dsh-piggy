@@ -27,7 +27,10 @@
 4. **发版**：用户验收通过后才发；发版前 CHANGELOG 写好该版小节、README 同步（文字和截图）；GitHub、Gitee 两个渠道都要齐；**Gitee 一律从维护者本机推**（`scripts/gitee-publish.sh`），不让 GitHub Actions 往 Gitee 推。
    **npm 由维护者手动发**，不要替他发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
 5. **不提交凭据**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。
-6. 改存档结构必须加迁移（`core/upgrades.js` + `STATE_VERSION` + 迁移测试），旧存档不能丢数据。
+6. **emoji**：本项目以 emoji 为主——界面图标、物品、气泡、特效、游戏数据都可以用 emoji，参考项目里「不许用 emoji 当图标」之类的规定不适用。
+   **不许用 emoji 的是给用户的回复和汇报**（聊天里说明进度、总结时不用）。代码注释、日志、提交信息也不用（见 CONVENTIONS）。
+7. **参考项目和本项目冲突时，一律以本项目现在的做法为准**（设计系统、组件库、动效库都是）。
+8. 改存档结构必须加迁移（`core/upgrades.js` + `STATE_VERSION` + 迁移测试），旧存档不能丢数据。
 
 ## 做事的方法
 
@@ -77,7 +80,7 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 给猪加台词 | [docs/guides/adding-lines.md](docs/guides/adding-lines.md) |
 | 加成就和徽章 | [docs/guides/adding-achievements.md](docs/guides/adding-achievements.md) |
 | 改面板、按钮、扩展页面的样子（新组件先查动森 UI 设计系统 animal-island-ui 的规格） | [docs/guides/ui-style.md](docs/guides/ui-style.md) |
-| 做动画、手感、粒子特效、配色计算（先用 Motion、Chroma.js 等成熟库，别自己造轮子） | [docs/guides/motion-libraries.md](docs/guides/motion-libraries.md) |
+| 做动画、手感、爆点特效、手绘点缀、配色计算（先用 Motion、mo.js、Rough.js、Chroma.js 等成熟库，别自己造轮子） | [docs/guides/motion-libraries.md](docs/guides/motion-libraries.md) |
 | 改桌面窗口、拖动、IPC | [docs/guides/desktop-architecture.md](docs/guides/desktop-architecture.md) |
 | 玩法和数值的来源、视觉规范的来源 | [docs/DESIGN.md](docs/DESIGN.md) |
 | 立绘、皮肤 | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
