@@ -128,7 +128,7 @@ export function renderDevTab(ui) {
     { key: 'all', label: '🎁 一键拿齐', desc: '商店里每样东西都给几个', run: function () { ui.send('giveAll') } },
   ])
   status('生死', [
-    { key: 'kill', label: '💀 弄死', desc: '直接去世（变墓碑），测复活和领养', run: function () { patch({ dead: true }) } },
+    { key: 'kill', label: '💀 弄死', desc: '当天保留遗体，次日出现墓碑与灵魂；测复活和领养', run: function () { patch({ dead: true }) } },
     { key: 'revive', label: '✨ 复活', desc: '不用还魂丹直接复活', run: function () { patch({ dead: false, health: 5 }) } },
     { key: 'adopt', label: '📦 领养', desc: '领养一只新猪（旧猪的故事留在记忆里）', run: function () { ui.send('adopt') } },
     { key: 'reset', label: '🔄 重置', desc: '清空存档，从纸盒重新开始', run: function () { ui.send('reset') } },

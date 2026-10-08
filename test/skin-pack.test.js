@@ -17,6 +17,12 @@ test('C6 accepts the documented five-scene skin pack', () => {
   assert.deepEqual(result.metadata.scenes, ['idle', 'eat', 'bathe', 'play', 'pet'])
 })
 
+test('an imported sleep pose is optional and retained in skin metadata', () => {
+  const result = validateSkinFiles(files([['sleep.svg', Buffer.from(svg)]]))
+  assert.equal(result.ok, true)
+  assert.ok(result.metadata.scenes.includes('sleep'))
+})
+
 test('C6 rejects missing scenes and unsafe SVG features', () => {
   const missing = files()
   missing.delete('pet.svg')

@@ -209,7 +209,10 @@ test('a soul settles on a grave nobody came back for', () => {
   const pig = hatchEgg(T0)
   pig.dead = true
   pig.diedAt = T0
+  assert.equal(lifeStageFor(pig, T0).key, 'dead-day', '离世当天仍是小猪')
+  assert.equal(lifeStageFor(pig, T0 + DAY - 1).key, 'dead-day', '满一天前不能出现墓碑')
   assert.equal(hasSoul(pig, T0 + 0.5 * DAY), false)
+  assert.equal(lifeStageFor(pig, T0 + DAY).key, 'grave', '满一天出现墓碑与幽灵')
   assert.equal(hasSoul(pig, T0 + 1.1 * DAY), true)
 })
 
@@ -428,6 +431,11 @@ test('mood: dead beats sick beats working beats everything else', () => {
 
   pig.activity = { kind: 'trip', key: 'suburb', label: '郊游', emoji: '🏞', startedAt: T0, endsAt: T0 + MIN }
   assert.equal(mood(pig, T0).key, 'traveling')
+
+  // 外出时脏了也要看得出（和生病一样压过外出），饿了仍让位给外出。
+  pig.cleanliness = 10
+  assert.equal(mood(pig, T0).key, 'dirty')
+  pig.cleanliness = 90
 
   pig.activity = null
   pig.dead = true

@@ -96,7 +96,7 @@ function renderWeight(ui, p) {
 function renderBanners(ui) {
   if (ui.view.pig !== null && ui.view.dead) {
     var dead = el('div', 'dp-alert dp-dead')
-    dead.appendChild(el('b', null, '🪦 ' + ui.view.pig.name + ' 走了' + (ui.view.pig.soul ? '，灵魂还留在墓碑上 👻' : '')))
+    dead.appendChild(el('b', null, (ui.view.pig.stage.key === 'grave' ? '🪦 ' : '🐖 ') + ui.view.pig.name + ' 走了' + (ui.view.pig.soul ? '，灵魂还留在墓碑旁 👻' : '')))
     dead.appendChild(el('div', null, ui.view.pig.soul
       ? '用还魂丹可以把它叫回来，也可以领养新的'
       : '背包里的还魂丹就能救回来'))
@@ -158,5 +158,4 @@ function renderBanners(ui) {
     ui.content.appendChild(wrap)
   }
 }
-
 

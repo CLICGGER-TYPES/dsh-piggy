@@ -10,6 +10,7 @@
  */
 import { GREET_DELAY_MS, IDLE_CHAT_MINUTES } from './constants.js'
 import { readStore, writeStore } from './storage.js'
+import { syncPigArt } from './art.js'
 
 var TIME_TALK_MS = 5 * 60_000
 var WALK_KEY = 'dsh-piggy:walk'
@@ -17,7 +18,7 @@ var WALK_KEY = 'dsh-piggy:walk'
 /** 小动作：样子（CSS 里的 data-idle）、冒的东西、偶尔配的一句。 */
 export var IDLE_ACTIONS = [
   { key: 'roll', fx: ['💫'], say: '（滚了一圈）这样比较舒服', ms: 1400 },
-  { key: 'nap', fx: ['💤', '💤'], say: '我就眯一下……', ms: 4000 },
+  { key: 'nap', fx: [], say: '我就眯一下……', ms: 4000 },
   { key: 'butterfly', fx: ['🦋'], say: '等等我！', ms: 3000 },
   { key: 'scratch', fx: ['〰️'], say: '背上痒痒的', ms: 2000 },
   { key: 'stretch', fx: ['✨'], say: '嗯——伸个懒腰', ms: 1800 },
@@ -38,6 +39,8 @@ export function setWalk(on) { writeStore(WALK_KEY, on ? 'on' : 'off') }
  * @param {() => any} c.getView
  * @param {() => boolean} c.isDragging
  * @param {Element} c.pig
+ * @param {Element} c.pigArt
+ * @param {Element} c.pigEmoji
  * @param {(fx: string[], count: number) => void} c.burst
  * @param {(text: string, ms?: number) => void} c.showBubble
  * @param {() => any} c.desktopShell
@@ -79,9 +82,10 @@ export function attachLife(c) {
 
   function doIdle(action) {
     c.pig.setAttribute('data-idle', action.key)
-    c.burst(action.fx, action.fx.length)
+    syncPigArt(c.pig, c.pigArt, c.pigEmoji)
+    if (action.fx.length > 0) c.burst(action.fx, action.fx.length)
     if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3000, action.ms))
-    later(function () { c.pig.removeAttribute('data-idle') }, action.ms)
+    later(function () { c.pig.removeAttribute('data-idle'); syncPigArt(c.pig, c.pigArt, c.pigEmoji) }, action.ms)
   }
 
   function scheduleWalk() {
@@ -102,6 +106,7 @@ export function attachLife(c) {
     var walked = 0
     var back = false
     c.pig.setAttribute('data-idle', 'walk')
+    syncPigArt(c.pig, c.pigArt, c.pigEmoji)
     c.pig.setAttribute('data-walk', toLeft ? 'left' : 'right')
     if (!quiet() && Math.random() < 0.5) c.showBubble('我去巡逻一下', 2000)
     var timer = window.setInterval(function () {
@@ -116,6 +121,7 @@ export function attachLife(c) {
     function stop() {
       window.clearInterval(timer)
       c.pig.removeAttribute('data-idle')
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji)
       c.pig.removeAttribute('data-walk')
     }
   }

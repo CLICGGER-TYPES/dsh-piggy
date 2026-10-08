@@ -70,7 +70,7 @@ import { partAt } from './pet-parts.js'
       // instead of breaking the panel.
       var parts = createScene()
       var { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
-        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigEmoji, pig, dressSlots, bar, content, footer } = parts
+        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, dressSlots, bar, content, footer } = parts
 
       // 桌面版外壳：用时现取（外壳脚本比 client 先跑，但晚到也不能当网页版 —— 那样拖动
       // 只挪页面里的猪、窗口不跟）。
@@ -129,7 +129,7 @@ import { partAt } from './pet-parts.js'
       var lastPendingId = 0
       var pollTimer = null
       var fx = createEffects({
-        scene: scene, pig: pig, pigArt: pigArt, card: card, bubble: bubble, pomoHint: pomoHint,
+        scene: scene, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, card: card, bubble: bubble, pomoHint: pomoHint,
         isStopped: function () { return stopped },
       })
       var react = fx.react, burst = fx.burst, flash = fx.flash
@@ -158,6 +158,7 @@ import { partAt } from './pet-parts.js'
         pomoHint: pomoHint,
         soul: soul,
         pigArt: pigArt,
+        pigSleep: pigSleep,
         pigEmoji: pigEmoji,
         pig: pig,
         dressSlots: dressSlots,
@@ -316,6 +317,8 @@ import { partAt } from './pet-parts.js'
 
       // Left click pats; context menu opens the panel.
       scene.addEventListener('pointerup', function (event) {
+        // Right click has no drag session; it only opens the menu.
+        if (drag === null) return
         if (endDrag()) return
         // An unhatched save is a box, whether or not one exists yet.
         if (view.hatched !== true) {
@@ -329,9 +332,6 @@ import { partAt } from './pet-parts.js'
       scene.addEventListener('lostpointercapture', function () { endDrag() })
       scene.addEventListener('contextmenu', function (event) {
         event.preventDefault()
-        // Include the opening reaction bubble in the first native window
-        // measurement. Showing it afterwards would force a second resize.
-        if (!isOpen && view.pig !== null) flash('pet')
         setOpen(!isOpen)
       })
 
@@ -353,7 +353,7 @@ import { partAt } from './pet-parts.js'
       var life = splitRole === 'panel' ? null : attachLife({
         send: send, isStopped: function () { return stopped }, isBusy: function () { return busy },
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return drag !== null },
-        pig: pig, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: desktopShell,
+        pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: desktopShell,
       })
       ctx.life = life // 调试页「散步一次」「做个小动作」用
       var stopResize = layout.attachResize()

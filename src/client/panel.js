@@ -4,7 +4,7 @@
  * 只通过 ctx 读写外壳的状态与元素（getter/setter 转发），不直接碰全局。
  * @module dsh-piggy/client/panel
  */
-import { syncPigArt } from './art.js'
+import { syncPigArt, syncSleepArt } from './art.js'
 import { DEV_TAB, OPEN_KEY, QUIT_TAB, TABS, UPDATE_TAB } from './constants.js'
 import { button, el } from './dom.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
@@ -219,12 +219,13 @@ export function createPanel(ctx) {
         }
 
         if (ctx.view.hatched !== true) {
-          ctx.pigArt.hidden = true
-          ctx.pigArt.removeAttribute('src')
-          ctx.pigEmoji.hidden = false
+          ctx.pig.setAttribute('data-stage', 'box')
+          ctx.pig.setAttribute('data-art', '')
+          ctx.pig.setAttribute('data-activity', '')
+          ctx.pig.setAttribute('data-activity-key', '')
           ctx.pigEmoji.textContent = ctx.view.boxStage.emoji
-          ctx.pig.removeAttribute('data-art')
           ctx.pig.setAttribute('data-mood', 'box')
+          syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji)
           // Size comes from the host so the box and the pig can never drift.
           ctx.host.style.setProperty('--pig-size', displayedPigSize(ctx.view.boxStage.size) + 'px')
           applyEmojiStyle(ctx.host)
@@ -239,37 +240,26 @@ export function createPanel(ctx) {
           ctx.lastStage = null
         } else {
           const pigStage = ctx.view.pig.stage
-          // A drawn stage shows its sprite; everything else is the emoji.
-          if (pigStage.art !== null) {
-            ctx.pigArt.hidden = false
-            ctx.pigEmoji.hidden = true
-            ctx.pig.setAttribute('data-art', pigStage.art)
-            ctx.pig.setAttribute('data-art-actions', pigStage.actionArt ? 'true' : 'false')
-            ctx.pig.setAttribute('data-art-scenes', pigStage.artScenes.join(','))
-            ctx.host.setAttribute('data-art-actions', pigStage.actionArt ? 'true' : 'false')
-            ctx.pig.setAttribute('data-activity', ctx.view.activity === null ? '' : ctx.view.activity.kind)
-            syncPigArt(ctx.pig, ctx.pigArt)
-          } else {
-            ctx.pigArt.hidden = true
-            ctx.pigArt.removeAttribute('src')
-            ctx.pigEmoji.hidden = false
-            ctx.pigEmoji.textContent = pigStage.emoji
-            ctx.pig.removeAttribute('data-art')
-            ctx.pig.removeAttribute('data-art-actions')
-            ctx.pig.removeAttribute('data-art-scenes')
-            ctx.host.removeAttribute('data-art-actions')
-          }
+          syncSleepArt(pigStage.art, pigStage.artScenes, ctx.pigSleep)
+          ctx.pig.setAttribute('data-stage', pigStage.key)
+          ctx.pig.setAttribute('data-art', pigStage.art || '')
+          ctx.pig.setAttribute('data-art-actions', pigStage.actionArt ? 'true' : 'false')
+          ctx.pig.setAttribute('data-art-scenes', pigStage.artScenes.join(','))
+          ctx.host.setAttribute('data-art-actions', pigStage.actionArt ? 'true' : 'false')
+          ctx.pig.setAttribute('data-activity', ctx.view.activity === null ? '' : ctx.view.activity.kind)
+          ctx.pig.setAttribute('data-activity-key', ctx.view.activity === null ? '' : ctx.view.activity.key)
+          ctx.pig.setAttribute('data-mood', ctx.view.pig.mood)
+          ctx.pigEmoji.textContent = pigStage.emoji
+          syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji)
           // Display scale is a device preference; the stage remains save data.
           ctx.host.style.setProperty('--pig-size', displayedPigSize(pigStage.size) + 'px')
           applyEmojiStyle(ctx.host)
-          ctx.pig.setAttribute('data-mood', ctx.view.pig.mood)
           ctx.host.setAttribute('data-soul', ctx.view.pig.soul ? 'true' : 'false')
           // Old age reads as a faded coat, since every stage is the same pig.
           ctx.host.setAttribute('data-faded', pigStage.faded ? 'true' : 'false')
           ctx.host.setAttribute('data-unhatched', 'false')
           ctx.pokeHint.hidden = true
-          ctx.soul.hidden = ctx.view.pig.soul !== true
-          ctx.pig.setAttribute('data-stage', pigStage.key)
+          ctx.soul.hidden = ctx.view.pig.soul !== true || pigStage.key === 'grave'
           // 装扮挂在猪身上（见 .dp-slot），名字牌上不再重复一遍。
           ctx.dressSlots.textContent = ''
           for (var wd = 0; wd < ctx.view.dress.length; wd += 1) {

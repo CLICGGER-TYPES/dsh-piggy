@@ -13,7 +13,7 @@ import { CHANNEL } from '../../../channel.js'
 export const GUIDE_URL = CHANNEL.blobBase + '/docs/guides/creating-skins.md'
 export const EXAMPLE_URL = CHANNEL.rawBase + '/docs/examples/skin-pack-example.zip'
 
-/** 十张图：文件名、必须/可选、什么时候出现、示意用哪张内置图。 */
+/** 十一张图：文件名、必须/可选、什么时候出现、示意用哪张内置图。 */
 const POSES = [
   { file: 'idle.svg', need: true, when: '平时待着；缺少可选动作时也用它', art: 'skin-detective' },
   { file: 'eat.svg', need: true, when: '吃东西', art: 'skin-detective-eat' },
@@ -25,6 +25,7 @@ const POSES = [
   { file: 'study.svg', need: false, when: '上学', art: 'skin-detective-study' },
   { file: 'trip.svg', need: false, when: '旅行', art: 'skin-detective-trip' },
   { file: 'fish.svg', need: false, when: '钓鱼', art: 'skin-detective' },
+  { file: 'sleep.svg', need: false, when: '打盹时横躺睡觉', art: 'skin-detective-sleep', ext: '.png' },
 ]
 
 function openLink(url) {
@@ -34,13 +35,13 @@ function openLink(url) {
 }
 
 export function renderSkinGuide(ui) {
-  drillHeader(ui, 'skins', '📐 怎么做皮肤', '10 张图')
-  ui.content.appendChild(el('div', 'dp-hint', '一套皮肤 = 一个 ZIP：里面放 skin.json 和下面这些 SVG 图。前 5 张必须有，后 5 张可以不画（没有就用 idle）。'))
+  drillHeader(ui, 'skins', '📐 怎么做皮肤', '11 张图')
+  ui.content.appendChild(el('div', 'dp-hint', '一套皮肤 = 一个 ZIP：里面放 skin.json 和下面这些 SVG 图。前 5 张必须有，后 6 张可以不画。动作图缺少时用 idle；sleep 缺少时用默认睡姿。'))
   const grid = el('div', 'dp-guide-grid')
   for (const pose of POSES) {
     const cell = el('div', 'dp-guide-cell' + (pose.need ? '' : ' dp-guide-optional'))
     const img = /** @type {HTMLImageElement} */ (el('img', 'dp-guide-img'))
-    img.src = ART_URL + pose.art + '.svg'
+    img.src = ART_URL + pose.art + (pose.ext || '.svg')
     img.alt = ''
     cell.appendChild(img)
     cell.appendChild(el('b', null, pose.file))

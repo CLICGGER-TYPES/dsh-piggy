@@ -6,7 +6,7 @@
  * @module dsh-piggy/core/clock
  */
 
-import { DAYS_PER_MONTH, DAY_STARTS_AT_HOUR, GRAVE, GROWTH_PER_HOUR, LEVEL_TITLES, LIFE_STAGES, MAX_LEVEL, SOUL_AFTER_DAYS, xpForLevel } from '../data.js'
+import { DAYS_PER_MONTH, DAY_STARTS_AT_HOUR, DEAD_DAY, GRAVE, GROWTH_PER_HOUR, LEVEL_TITLES, LIFE_STAGES, MAX_LEVEL, SOUL_AFTER_DAYS, xpForLevel } from '../data.js'
 import { DAY_MS } from './constants.js'
 
 /**
@@ -36,7 +36,7 @@ export const ageMonths = (state, nowMs) => ageDays(state, nowMs) / DAYS_PER_MONT
  */
 export function lifeStageFor(state, nowMs) {
   if (state === null) return LIFE_STAGES[0]
-  if (state.dead === true) return GRAVE
+  if (state.dead === true) return hasSoul(state, nowMs) ? GRAVE : DEAD_DAY
   if (state.hatched !== true) return LIFE_STAGES[0]
   const level = levelFor(state.xp)
   let stage = LIFE_STAGES[1]

@@ -102,7 +102,7 @@ test('king follows upstream growth; death uses grave, revival keeps form, adopti
   assert.equal(state.dead, false, 'upstream removed death from old age')
   state.dead = true
   state.health = 0
-  assert.equal(formStageView(state, NOW + 60_000).key, 'grave')
+  assert.equal(formStageView(state, NOW + 60_000).key, 'dead-day')
   assert.equal(crown(state, NOW + 60_000).ok, false)
   revive(state, NOW + 60_000)
   assert.equal(state.form, 'king')

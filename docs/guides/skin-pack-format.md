@@ -17,7 +17,7 @@
 
 必需场景：`idle`、`eat`、`bathe`、`play`、`pet`。
 
-可选场景：`relaxed`、`work`、`study`、`trip`、`fish`。缺少可选场景时回退到 `idle`。
+可选场景：`relaxed`、`work`、`study`、`trip`、`fish`、`sleep`。前五种缺少时回退到 `idle`；缺少 `sleep.svg` 时，打盹显示默认小猪睡姿。`sleep.svg` 是横躺睡觉的专用图，与放松时的 `relaxed.svg` 不同。
 
 ## skin.json 字段
 
