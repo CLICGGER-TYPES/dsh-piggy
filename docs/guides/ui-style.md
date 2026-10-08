@@ -12,6 +12,42 @@
 | **台词口吻** | QQ 宠物 + 动森村民 | 见 [adding-lines.md](adding-lines.md) |
 | **猪的立绘** | 项目自己的 `piglet.svg` | 见 `docs/ART-SPEC.md` |
 
+## 动森 UI 设计系统：做新组件先查它
+
+视觉规范的源头是 [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui)（MIT）的 `docs/design-system/`，
+本项目的 `--ac-*` 设计变量就是照它的 `css-variables.md` 抄过来的（见 `docs/DESIGN.md` 5.4）。**要做项目里还没有的界面元素时，先去查它有没有对应的规格，照规格做，不要自己发明样式。**
+
+| 文件 | 看什么 |
+|---|---|
+| `README.md` | 设计系统总览 |
+| `design-rules.md` | **七条设计法则 + 十几条硬规则 + 反模式速查**（动手前必读） |
+| `design-tokens.md`、`css-variables.md` | 颜色、圆角、阴影、字体、缓动的取值（本项目 `--ac-*` 的来源） |
+| `components/general.md` | 按钮等通用组件 |
+| `components/form-controls.md`、`Form.md` | 输入框、开关、单选多选、表单 |
+| `components/data-display.md` | 卡片、列表、标签、进度这类展示组件 |
+| `components/feedback.md`、`Notification.md` | 提示、通知、加载 |
+| `components/overlays.md` | 弹窗、气泡提示、浮层 |
+| `components/layout.md`、`decorative.md`、`upload.md` | 布局、装饰元素（如燕尾标题条）、上传 |
+
+**怎么用**：
+
+1. 项目里已有的组件（见下面「现成组件」）→ 直接用。
+2. 没有的 → 读它对应组件的规格（尺寸、圆角、阴影、悬停 / 按下 / 禁用态、动效时长），在本项目里用**原生 DOM + `--ac-*` 变量**实现。
+   它是 React 组件库，**不要把 React 或它的包引进来**；它是 MIT，照抄 CSS 片段可以，但要在 `THIRD-PARTY.md` 那一行补上「参考 / 照抄了哪些组件的样式」。
+3. 做完在预览页里和现有组件并排看，像不像同一套东西。
+
+**它的硬规则里本项目照办的**（和下面「设计变量」「现成组件」一致）：不用纯黑文字和冷灰底色；可交互元素圆角至少 12px，按钮和输入框是 50px 药丸；
+**厚 3D 底边只给主按钮**（次要按钮只用柔和浮起）；字重不低于 400（按钮、标题 600～700）；动效 0.15～0.35s、统一 `cubic-bezier(.4,0,.2,1)`；卡片用边框不用投影。
+
+**和本项目已定规矩冲突的地方，以本项目为准**（用户定过的，不要「照规范改回去」）：
+
+| 它的规则 | 本项目 | 为什么 |
+|---|---|---|
+| 不用 emoji 充当界面图标 | **主菜单 App 图标一律 emoji**，扩展图标也是 emoji | 用户明确要求（手绘 SVG 图标那版被否了） |
+| 输入框 / 开关的焦点色用黄色 `#ffcc00` | 焦点环统一用主色青 `--ac-primary` | 现状如此；要改成它的黄色先问用户 |
+
+以后发现新的冲突，加进这张表，并问用户以哪边为准。
+
 ## 设计变量（`src/client/css-base.js`，声明在面板根节点，不在 `:root`）
 
 **颜色一律用变量**，不写色值。扩展页面里用变量时给兜底值：`var(--ac-text,#794f27)`（旧宿主没有某个变量时不至于没颜色）。

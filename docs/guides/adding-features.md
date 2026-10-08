@@ -88,6 +88,7 @@
 
 - 能独立开关的整块玩法 → 在线扩展（[写扩展](writing-extensions.md)）。
 - 改核心的（新属性、新状态、新外出类型）→ 数值进 `data/`、规则进 `core/`，面板加 App 页（`src/client/tabs/<名字>.js`，在 `TABS` 里登记，主菜单图标用 emoji）。
+  界面先用现成组件；没有的照动森 UI 设计系统（animal-island-ui）的规格做，见 [界面规范](ui-style.md)「动森 UI 设计系统」。
 - 配套要想到的：猪说什么（[加台词](adding-lines.md)）、有没有成就（[加成就](adding-achievements.md)）、图鉴要不要收、免打扰时怎么办、关掉 / 卸载后数据怎么办。
 
 ### 4.2 音效（现在没有，预留）
