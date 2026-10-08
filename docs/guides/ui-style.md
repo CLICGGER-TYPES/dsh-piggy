@@ -29,7 +29,7 @@
 | `--tile-pink` … `--tile-brown`（`css-tiles.js`） | 11 种 | 主菜单 App 方块底色、属性条颜色、扩展货架/图鉴分区的 `color` |
 
 **字号**：正文 11px，次要 10～10.5px，小注 9.5px，标题 12px；大 emoji 和插画按需要。不低于 8.5px，字重不低于 400（按钮和标题 700）。
-**动效**：缓动 `--ac-ease`，0.15～0.35s；有动画的地方加 `prefers-reduced-motion` 关掉。
+**动效**：缓动 `--ac-ease`，0.15～0.35s；有动画的地方加 `prefers-reduced-motion` 关掉。更灵动的动效（弹簧、编排、粒子）和配色计算（调色板、渐变、对比度）用成熟的库和做法，不要自己造：见 [motion-libraries.md](motion-libraries.md)。
 
 ## 现成组件（先找这里，没有再问）
 

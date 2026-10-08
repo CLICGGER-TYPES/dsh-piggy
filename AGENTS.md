@@ -77,6 +77,7 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 给猪加台词 | [docs/guides/adding-lines.md](docs/guides/adding-lines.md) |
 | 加成就和徽章 | [docs/guides/adding-achievements.md](docs/guides/adding-achievements.md) |
 | 改面板、按钮、扩展页面的样子 | [docs/guides/ui-style.md](docs/guides/ui-style.md) |
+| 做动画、手感、粒子特效、配色计算（先用 Motion、Chroma.js 等成熟库，别自己造轮子） | [docs/guides/motion-libraries.md](docs/guides/motion-libraries.md) |
 | 改桌面窗口、拖动、IPC | [docs/guides/desktop-architecture.md](docs/guides/desktop-architecture.md) |
 | 玩法和数值的来源、视觉规范的来源 | [docs/DESIGN.md](docs/DESIGN.md) |
 | 立绘、皮肤 | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
