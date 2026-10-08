@@ -2328,6 +2328,16 @@
     '.dp-pig[data-mood="hungry"]{animation-name:dp-shake;animation-duration:2.4s}',
     '.dp-pig[data-mood="dirty"]{animation-name:dp-breathe;animation-duration:2.6s}',
     '.dp-pig[data-mood="dirty"] .dp-pig-img,.dp-pig[data-mood="dirty"] .dp-pig-emoji{filter:sepia(.4) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
+    // 脏了绕着苍蝇、病了绕着病毒（用户 2026-10-08）：变色之外再给一眼能认的记号，两只错开快慢和方向。
+    '.dp-pig[data-mood="dirty"]::before,.dp-pig[data-mood="dirty"]::after,',
+    '.dp-pig[data-mood="sick"]::before,.dp-pig[data-mood="sick"]::after{content:"\u{1FAB0}";position:absolute;z-index:4;',
+    "font-size:calc(var(--pig-size) * .16);line-height:1;pointer-events:none;",
+    "top:6%;left:22%;animation:dp-fly 2.4s ease-in-out infinite}",
+    '.dp-pig[data-mood="sick"]::before,.dp-pig[data-mood="sick"]::after{content:"\u{1F9A0}";animation-duration:3.2s}',
+    '.dp-pig[data-mood="dirty"]::after,.dp-pig[data-mood="sick"]::after{top:20%;left:62%;animation-duration:3.1s;animation-direction:reverse;animation-delay:-.9s}',
+    "@keyframes dp-fly{0%,100%{transform:translate(0,0) rotate(-10deg)}25%{transform:translate(14px,-6px) rotate(15deg)}",
+    "50%{transform:translate(22px,4px) rotate(-5deg)}75%{transform:translate(6px,8px) rotate(20deg)}}",
+    "@media (prefers-reduced-motion:reduce){.dp-pig[data-mood]::before,.dp-pig[data-mood]::after{animation:none}}",
     '.dp-pig[data-mood="sick"]{animation-name:dp-cough;animation-duration:2.2s}',
     '.dp-pig[data-mood="sick"] .dp-pig-img,.dp-pig[data-mood="sick"] .dp-pig-emoji{filter:hue-rotate(-28deg) saturate(.75) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
     // One pose per activity, so being away reads as a thing the pig is doing.

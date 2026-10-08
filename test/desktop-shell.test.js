@@ -300,6 +300,13 @@ test('桌面版关掉投影时保留状态变色（生病/脏/死/老/墓碑）�
   assert.ok(!/drop-shadow/.test(block), '桌面版不能带回会被可点区域裁掉的投影（F11）')
 })
 
+test('脏了绕着小苍蝇、病了绕着病毒（变色照旧保留）', () => {
+  const css = readFileSync(new URL('../src/client/css-base.js', import.meta.url), 'utf8')
+  assert.match(css, /data-mood="dirty"\]::before[^{]*\{content:"🪰"/)
+  assert.match(css, /data-mood="sick"\]::before[^{]*\{content:"🦠"/)
+  assert.match(css, /data-mood="dirty"\][^{]*\{filter:sepia\(\.4\)/, '脏了的发黄滤镜要保留')
+})
+
 test('桌面版启动时面板总是收起（不按上次记住的「开着」恢复）', () => {
   const src = readFileSync(new URL('../src/client/index.js', import.meta.url), 'utf8')
   assert.match(src, /var isOpen = desktopShell\(\) === null && readStore\(OPEN_KEY\) === 'true'/)
