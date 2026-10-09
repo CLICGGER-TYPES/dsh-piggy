@@ -19,4 +19,7 @@ for (const line of lines) {
 }
 const body = out.join('\n').trim()
 if (!body) { console.error(`CHANGELOG 里没有 ${version} 的小节`); process.exit(1) }
-console.log(body)
+// 贡献者要用纯文本 @名字，GitHub 才会在发布页底部列出头像；CHANGELOG 里写的是 [@名字](链接)，这里补一行（用户 2026-10-09：0.34.0 漏了 @tetezi）。
+const people = [...new Set([...body.matchAll(/\(https:\/\/github\.com\/([A-Za-z0-9-]+)\)/g)].map(match => match[1]))]
+  .filter(login => login !== 'CLICGGER-TYPES')
+console.log(people.length > 0 ? `${body}\n\n感谢贡献者：${people.map(login => '@' + login).join(' ')}` : body)
