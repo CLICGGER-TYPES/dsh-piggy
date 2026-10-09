@@ -172,7 +172,8 @@ export const CSS_TILES = [
   // Banners only live on the status tab now, with room to breathe below.
   '[data-dsh-pig] .dp-alert{margin-bottom:14px}',
   '[data-dsh-pig] .dp-alert + .dp-actions{margin-bottom:14px}',
-  '.dp-job-go{display:block;width:100%;margin-top:9px}',
+  '.dp-job-go,.dp-job-short{display:block;width:100%;margin-top:9px}',
+  '.dp-job-short{margin-top:6px;font-size:.92em}',
   // A picked tile's details (a diary page, a souvenir's story) sit under the grid.
   '.dp-tile-card{margin-top:12px}',
   // 更新 App: the release notes keep their line breaks but stay short.

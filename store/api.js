@@ -145,7 +145,7 @@ export function createApi(control) {
     act: (action, itemKey) => mutate(live => coreAct(live, action, now(), itemKey)),
 
     /** Send the pig out to work. */
-    startWork: jobKey => mutate(live => coreSayAfter(live, coreStartWork(live, jobKey, now()), 'workStart', now())),
+    startWork: (jobKey, short = false) => mutate(live => coreSayAfter(live, coreStartWork(live, jobKey, now(), short === true), 'workStart', now())),
 
     /** Send the pig to class. */
     startStudy: (subjectKey, stageKey) => mutate(live => coreSayAfter(live, coreStartStudy(live, subjectKey, stageKey, now()), 'studyStart', now())),

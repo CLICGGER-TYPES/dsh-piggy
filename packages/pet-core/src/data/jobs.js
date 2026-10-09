@@ -88,6 +88,12 @@ export const JOBS = Object.freeze([
 export const jobByKey = key => JOBS.find(entry => entry.key === key) ?? null
 
 /**
+ * 短班（J1 第 1 节，用户 2026-10-09「不限制游玩、轻度上头」）：每个职业都能只去 10 分钟，
+ * 金币、饱食、清洁按时长比例算。短班不算「完整一班」：不进打工次数、不解锁职业外观、不累积连续出门。
+ */
+export const SHORT_SHIFT_MINUTES = 10
+
+/**
  * @typedef {object} Condition
  * @property {'level'|'lesson'|'every'|'anyOf'|'certificate'} kind
  * @property {string} text - 给面板看的一小段，如「🔢数学 9 节」

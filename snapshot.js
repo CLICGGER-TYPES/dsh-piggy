@@ -8,7 +8,7 @@
 import { PACKAGE_VERSION } from './environment.js'
 import { achievementsView, disabledParts, extensionsView, tripUnlocked } from './core.js'
 import { ACTIONS, ACTION_ORDER, bodyWeightView, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
-import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SIGN_IN_CYCLE, SEXES, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
+import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SHORT_SHIFT_MINUTES, SIGN_IN_CYCLE, SEXES, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
 
 /** 版本号只有一个来源：environment.js（它也是导出日志表头的那一份）。 */
 export { PACKAGE_VERSION }
@@ -249,6 +249,9 @@ function jobsFor(state) {
       coins: Math.round(job.coins * bonus.pay),
       baseCoins: job.coins,
       payPercent: Math.round((bonus.pay - 1) * 100),
+      // 10 分钟短班：时长和金币都按比例（J1 第 1 节）。
+      shortMinutes: Math.max(1, Math.round(Math.min(SHORT_SHIFT_MINUTES, job.minutes) * bonus.minutes)),
+      shortCoins: Math.max(1, Math.round(job.coins * bonus.pay * Math.min(SHORT_SHIFT_MINUTES, job.minutes) / job.minutes)),
       speedPercent: Math.round((1 - bonus.minutes) * 100),
       satiety: job.satiety,
       available: open,

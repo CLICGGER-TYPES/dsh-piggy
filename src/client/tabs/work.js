@@ -107,5 +107,11 @@ function jobDetails(ui, job) {
   go.textContent = '💼 出发'
   go.disabled = !canStart(ui) || job.qualified === false
   box.appendChild(go)
+  if (job.shortMinutes > 0 && job.shortMinutes < job.minutes) {
+    var quick = button('dp-btn dp-btn-wide dp-job-short', { 'data-job-short': job.key }, function () { startOrSwitch(ui, '短班（' + job.label + '）', 'work', { job: job.key, short: true }) })
+    quick.textContent = '⏱ 短班 ' + job.shortMinutes + ' 分钟 · ' + job.shortCoins + ' 🪙'
+    quick.disabled = go.disabled
+    box.appendChild(quick)
+  }
   return box
 }

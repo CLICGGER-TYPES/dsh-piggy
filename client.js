@@ -2052,6 +2052,9 @@
         baseMinutes: num(obj(job2).baseMinutes, 0),
         baseCoins: num(obj(job2).baseCoins, 0),
         payPercent: num(obj(job2).payPercent, 0),
+        // 短班；老宿主没有，就是 0，不显示按钮。
+        shortMinutes: num(obj(job2).shortMinutes, 0),
+        shortCoins: num(obj(job2).shortCoins, 0),
         speedPercent: num(obj(job2).speedPercent, 0),
         // An old host has no gate at all, so a missing flag must read as
         // "qualified" — the opposite default would lock every job on upgrade.
@@ -3151,7 +3154,8 @@
     // Banners only live on the status tab now, with room to breathe below.
     "[data-dsh-pig] .dp-alert{margin-bottom:14px}",
     "[data-dsh-pig] .dp-alert + .dp-actions{margin-bottom:14px}",
-    ".dp-job-go{display:block;width:100%;margin-top:9px}",
+    ".dp-job-go,.dp-job-short{display:block;width:100%;margin-top:9px}",
+    ".dp-job-short{margin-top:6px;font-size:.92em}",
     // A picked tile's details (a diary page, a souvenir's story) sit under the grid.
     ".dp-tile-card{margin-top:12px}",
     // 更新 App: the release notes keep their line breaks but stay short.
@@ -7817,6 +7821,14 @@
     go.textContent = "\u{1F4BC} \u51FA\u53D1";
     go.disabled = !canStart(ui) || job2.qualified === false;
     box.appendChild(go);
+    if (job2.shortMinutes > 0 && job2.shortMinutes < job2.minutes) {
+      var quick = button("dp-btn dp-btn-wide dp-job-short", { "data-job-short": job2.key }, function() {
+        startOrSwitch(ui, "\u77ED\u73ED\uFF08" + job2.label + "\uFF09", "work", { job: job2.key, short: true });
+      });
+      quick.textContent = "\u23F1 \u77ED\u73ED " + job2.shortMinutes + " \u5206\u949F \xB7 " + job2.shortCoins + " \u{1FA99}";
+      quick.disabled = go.disabled;
+      box.appendChild(quick);
+    }
     return box;
   }
 

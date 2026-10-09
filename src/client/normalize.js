@@ -125,6 +125,9 @@ export function normalize(raw) {
       baseMinutes: num(obj(job).baseMinutes, 0),
       baseCoins: num(obj(job).baseCoins, 0),
       payPercent: num(obj(job).payPercent, 0),
+      // 短班；老宿主没有，就是 0，不显示按钮。
+      shortMinutes: num(obj(job).shortMinutes, 0),
+      shortCoins: num(obj(job).shortCoins, 0),
       speedPercent: num(obj(job).speedPercent, 0),
       // An old host has no gate at all, so a missing flag must read as
       // "qualified" — the opposite default would lock every job on upgrade.

@@ -6,7 +6,7 @@
  * @module dsh-piggy/core/work
  */
 
-import { TRAITS, jobByKey, jobRequirement, traitBonus } from '../data.js'
+import { SHORT_SHIFT_MINUTES, TRAITS, jobByKey, jobRequirement, traitBonus } from '../data.js'
 import { begin } from './activity.js'
 import { levelFor } from './clock.js'
 import { TOO_WEAK_HEALTH } from './constants.js'
@@ -20,7 +20,8 @@ export function jobFacts(state) {
   return { level: levelFor(state.xp), lessons: state.lessons ?? {}, interests: state.interests ?? {} }
 }
 
-export function startWork(state, jobKey, nowMs) {
+/** @param {boolean} [short] 只去 10 分钟的短班 */
+export function startWork(state, jobKey, nowMs, short = false) {
   const job = jobByKey(jobKey)
   if (job === null) return { ok: false, reason: 'unknown' }
   if (state.hatched !== true) return { ok: false, reason: 'box' }
@@ -37,14 +38,16 @@ export function startWork(state, jobKey, nowMs) {
   // The pig's trait shortens the shift; the pay bonus is applied on the way out.
   const points = state.traits?.[job.trait] ?? 0
   const bonus = traitBonus(job.trait, points)
-  const minutes = Math.max(1, Math.round(job.minutes * bonus.minutes))
+  const nominal = short ? Math.min(SHORT_SHIFT_MINUTES, job.minutes) : job.minutes
+  const minutes = Math.max(1, Math.round(nominal * bonus.minutes))
   const result = begin(state, {
-    kind: 'work', key: job.key, label: job.label, emoji: job.emoji, minutes, cost: 0,
+    kind: 'work', key: job.key, label: short ? `${job.label}（短班）` : job.label, emoji: job.emoji, minutes, cost: 0,
     trait: job.trait ?? null,
+    ...(short ? { share: nominal / job.minutes } : {}),
   }, nowMs)
   if (result.ok) {
-    const saved = job.minutes - minutes
-    remember(state, `${job.emoji} 出门${job.label}去了${saved > 0 ? `（${TRAITS[job.trait].label} ${points}，省了 ${saved} 分钟）` : ''}`, nowMs)
+    const saved = nominal - minutes
+    remember(state, `${job.emoji} 出门${job.label}去了${short ? `（短班 ${nominal} 分钟）` : ''}${saved > 0 ? `（${TRAITS[job.trait].label} ${points}，省了 ${saved} 分钟）` : ''}`, nowMs)
   }
   return result
 }

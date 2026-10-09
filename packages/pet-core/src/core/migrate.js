@@ -246,6 +246,8 @@ export function sanitizeActivity(raw) {
     ...(kind === 'fishing' && itemByKey(source.baitKey)?.kind === 'bait'
       ? { baitKey: source.baitKey, baitCount: Math.max(0, Math.min(20, Math.floor(Number(source.baitCount) || 0))) } : {}),
     ...(Number.isFinite(source.legacyCoins) ? { legacyCoins: source.legacyCoins, minutes: Number(source.minutes) || 0 } : {}),
+    // 短班：只拿这一班的几分之几（0～1）。
+    ...(kind === 'work' && Number.isFinite(source.share) && source.share > 0 && source.share < 1 ? { share: source.share } : {}),
   }
 }
 

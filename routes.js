@@ -99,7 +99,7 @@ const OPERATIONS = {
   crown: (store, body) => store.crown(str(body.form)),
   // 改猪的名字（和斜杠命令 /pig name 同一条路）。
   name: (store, body) => ({ ok: Boolean(store.rename(str(body.name))), name: true }),
-  work: (store, body) => store.startWork(str(body.job)),
+  work: (store, body) => store.startWork(str(body.job), body.short === true),
   study: (store, body) => store.startStudy(str(body.subject), str(body.stage)),
   interest: (store, body) => store.startInterest(str(body.interest)),
   trip: (store, body) => store.startTrip(str(body.trip)),

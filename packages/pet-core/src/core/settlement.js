@@ -228,19 +228,25 @@ export function finishWork(state, activity, nowMs, next = rollerFor(state)) {
   const sick = state.illness !== null
   const points = trait === null ? 0 : (state.traits?.[trait] ?? 0)
   const withTrait = trait === null ? base : base * traitBonus(trait, points).pay
-  const coins = sick ? Math.max(1, Math.round(withTrait * SICK_PAY_MULTIPLIER)) : Math.round(withTrait)
+  // 短班（SHORT_SHIFT_MINUTES）只拿这一班的几分之几：金币、饱食、清洁、成长都按比例。
+  const share = Number.isFinite(activity.share) && activity.share > 0 && activity.share < 1 ? activity.share : 1
+  const short = share < 1
+  const paid = withTrait * share
+  const coins = sick ? Math.max(1, Math.round(paid * SICK_PAY_MULTIPLIER)) : Math.max(1, Math.round(paid))
   earnCoins(state, coins, 'work', nowMs)
   if (job !== null) {
-    state.satiety = clamp100(state.satiety + job.satiety)
-    state.cleanliness = clamp100(state.cleanliness + job.cleanliness)
+    state.satiety = clamp100(state.satiety + Math.round(job.satiety * share))
+    state.cleanliness = clamp100(state.cleanliness + Math.round(job.cleanliness * share))
   }
   reduceWorkWeight(state, Math.max(0, (activity.endsAt - activity.startedAt) / 60_000))
-  state.stats.jobs += 1
+  // 短班不算「完整一班」：不进打工次数（成就、形态条件看它），也不算连续出门（过劳生病看它）。
+  if (short) state.stats.shortShifts = (state.stats.shortShifts ?? 0) + 1
+  else state.stats.jobs += 1
   state.stats.coinsEarned += coins
   noteToday(state, 'work')
   noteToday(state, 'coinsEarned', coins)
-  noteOuting(state)
-  grow(state, outingGrowth(job === null ? activity.minutes ?? 0 : job.minutes), nowMs)
+  if (!short) noteOuting(state)
+  grow(state, outingGrowth(job === null ? activity.minutes ?? 0 : job.minutes * share), nowMs)
   const brought = workDrops(state, coins, next, nowMs)
   const label = job === null ? activity.label : job.label
   const emoji = job === null ? activity.emoji : job.emoji
@@ -251,7 +257,7 @@ export function finishWork(state, activity, nowMs, next = rollerFor(state)) {
     ? `${state.name} 带病打工回来了，只赚到 ${coins} 金币 🤒${extra}`
     : `${state.name} 打工回来了！赚到 ${coins} 金币 💰${extra}`, nowMs)
   say(state, (state.outingStreak ?? 0) >= ILLNESS_ONSET.overworkStreak ? 'tired' : 'workDone', nowMs)
-  const career = unlockCareerLook(state, activity.key, nowMs)
+  const career = short ? null : unlockCareerLook(state, activity.key, nowMs)
   if (career !== null) {
     remember(state, `${career.emoji} 完成${label}工作，解锁了${career.label}外观`, nowMs)
     announce(state, 'career', `${state.name} 解锁了${career.label}！去换肤或图鉴看看 ${career.emoji}`, nowMs)
