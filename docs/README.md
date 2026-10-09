@@ -32,13 +32,17 @@
 ## 项目资料
 
 - [**AGENTS.md：人和 agent 的总入口（红线、文档地图）**](../AGENTS.md)
-- [**维护交接文档（现状、发版流程、已知问题）**](HANDOFF.md)
-- [旧交接记录（2026-10-03，历史参考）](HANDOFF-2026-10-03.md)
+- [**维护交接文档（现状、架构、发版流程）**](HANDOFF.md)
+- [**路线图与待办（唯一的待办清单）**](ROADMAP.md)
+- [**素材总表（每类图放哪、怎么命名、出处）**](ASSETS.md)
+- [用户确认过的数值单](numbers/)
 - [开发、调试与打包](DEVELOPMENT.md)
-- [设计说明](DESIGN.md)
+- [设计说明](DESIGN.md) · [各功能设计稿](design/)
 - [开发约定](CONVENTIONS.md)
-- [源码重构计划](REFACTOR-PLAN.md)
-- [任务卡](tasks/README.md)
 - [版本变更历史](../CHANGELOG.md)
+
+### 历史（只作参考，不再更新）
+
+- [旧交接记录（2026-10-03）](archive/HANDOFF-2026-10-03.md) · [源码重构计划](archive/REFACTOR-PLAN.md) · [旧路线图（09-30）](archive/ROADMAP-2026-09-30.md) · [开发过程记录](archive/PROCESS.md) · [各轮任务卡](archive/tasks/README.md)
 
 [返回项目 README](../README.md)

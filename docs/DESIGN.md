@@ -1,7 +1,7 @@
 # 设计说明
 
 > 这份文档回答两个问题：**为什么是现在这个样子**，以及**每个数值从哪来**。
-> 改动历史见 [CHANGELOG](../CHANGELOG.md)，开发过程见 [PROCESS](PROCESS.md)。
+> 改动历史见 [CHANGELOG](../CHANGELOG.md)，开发过程见 [PROCESS](archive/PROCESS.md)。
 
 ---
 

@@ -119,6 +119,6 @@ test('量几何稳定性不能量精灵本身：它一直在做待机动画（dp
   // 量到的是动画（±2px 平滑周期），会误判成窗口几何在漂。要量就量 window.screenX/screenY
   // 或 geometry().window。
   assert.match(css, /animation:dp-bob 1\.8s ease-in-out infinite/, '猪有待机上下晃的动画')
-  const doc = readFileSync(new URL('../../../docs/tasks/I-round.md', import.meta.url), 'utf8')
+  const doc = readFileSync(new URL('../../../docs/archive/tasks/I-round.md', import.meta.url), 'utf8')
   assert.match(doc, /量几何稳定性\*\*不能量精灵自己/, '任务卡里写明正确的测量方法')
 })

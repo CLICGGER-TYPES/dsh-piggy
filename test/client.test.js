@@ -20,7 +20,7 @@ import { test } from 'node:test'
  *
  * Static assertions (CSS shape, guards) read this; the behaviour tests below
  * load the built bundle instead, so they exercise exactly what DSH ships.
- * Stage 2 of docs/REFACTOR-PLAN.md split the client into modules, so this joins
+ * Stage 2 of docs/archive/REFACTOR-PLAN.md split the client into modules, so this joins
  * them back into the one text those assertions used to see.
  */
 async function readSource() {

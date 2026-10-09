@@ -2,7 +2,7 @@
 /**
  * 九门课与课时学段 —— 静态数值表（零逻辑、零 IO，见 docs/CONVENTIONS.md）。
  *
- * 数字全部来自 docs/tasks/numbers/B4-study-jobs.md（用户 2026-10-01 确认）。
+ * 数字全部来自 docs/numbers/B4-study-jobs.md（用户 2026-10-01 确认）。
  * 照 QQ 宠物怀旧服 GrowUp.js：九门课各算各的课时，一门课上到第 9 / 20 / 40 / 95 节
  * 就算这门课小学 / 中学 / 大学 / 研究生毕业，不需要九门一起升。
  *

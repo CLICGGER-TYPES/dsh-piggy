@@ -1,6 +1,6 @@
 # 盲盒扩展 2.0
 
-> 2026-10-05 · 状态：**已确认**。用户：「盲盒设计要跟明日方舟那样」。数字见 `docs/tasks/numbers/X1-blindbox.md`，代码 `extensions/blindbox/`。
+> 2026-10-05 · 状态：**已确认**。用户：「盲盒设计要跟明日方舟那样」。数字见 `docs/numbers/X1-blindbox.md`，代码 `extensions/blindbox/`。
 > 第一个从「在线扩展」下载的扩展（格式见 `docs/design/extension-download.md`）。只出摆件；装扮没有图，先不碰。
 
 ## 1. 玩法一句话

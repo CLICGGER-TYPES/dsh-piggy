@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * B2 成长：时间自己长、照顾好坏定快慢、陪主人干活有每日上限的加成、升级和换形态。
- * 数字对照 docs/tasks/numbers/B2-growth.md。
+ * 数字对照 docs/numbers/B2-growth.md。
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'

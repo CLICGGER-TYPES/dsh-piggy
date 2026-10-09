@@ -1,7 +1,7 @@
 # dsh-piggy 维护交接文档（2026-10-07，v0.33.1 / 外壳 0.6.1）
 
 > 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
-> 本页取代 [2026-10-03 的交接记录](HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
+> 本页取代 [2026-10-03 的交接记录](archive/HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
 > 有冲突时以：用户最新的话 > 本页 > 其它文档 > 旧任务卡 为准。开工前先看最新 `git log`，别假设还是本页写的状态。
 
 ---
@@ -54,7 +54,7 @@
 | `channels/` + `channel.js` | 发布渠道（github / gitee）的地址，见第 9.4 节 |
 | `packages/dsh-plugin-piggy/` | npm 别名包（给社区目录检索用，只依赖 `dsh-piggy`） |
 | `cordis.patch.yml` | DSH 加载插件用的配置层；`name` 必须和 package.json 的 `name` 一致 |
-| `docs/` | 文档；`docs/tasks/` 历次任务卡，`docs/tasks/numbers/` 用户确认过的数值单 |
+| `docs/` | 文档；`docs/ROADMAP.md` 路线图和待办，`docs/numbers/` 用户确认过的数值单，`docs/ASSETS.md` 素材总表，`docs/archive/` 历史文档（旧交接、各轮任务卡） |
 | `test/`、`apps/desktop/test/` | node:test 测试 |
 | `tools/` | 预览页（`tools/preview.html`）、字体工具等 |
 
@@ -85,7 +85,7 @@
   - 扩展只能改自己的 `state.extData[key]`，其它一律走 `api`：`now`、`coins()`、`spend()`、`earn()`、`give()`、`say()`、`count()`、`take()`、`emit()`（成就事件）；
   - `view()` 可以返回 `shelf`（往商店加货架）、`dex`（往图鉴加分区，`style: 'holo'` 是闪卡）；
   - 出错只影响它自己。
-- 写法和发布步骤：[写一个在线扩展](guides/writing-extensions.md)；设计背景：[扩展删除与在线下载](design/extension-download.md)、[扩展成就](design/extension-achievements.md)、[盲盒设计](design/blindbox.md)、数值单 `docs/tasks/numbers/X1–X4`。
+- 写法和发布步骤：[写一个在线扩展](guides/writing-extensions.md)；设计背景：[扩展删除与在线下载](design/extension-download.md)、[扩展成就](design/extension-achievements.md)、[盲盒设计](design/blindbox.md)、数值单 `docs/numbers/X1–X4`。
 
 ### 4.4 桌面版：外壳和游戏包分开
 
@@ -121,7 +121,7 @@ node node_modules/electron/install.js
 4. `npm run build && npm test && npm run typecheck` 全绿。
 5. **界面改动要在真实环境看**：网页版起一个隔离 DSH 实例（第 8 节），桌面版启动真窗口截图看像素；只看代码或只量坐标不算验收。
 6. 提交：中文、一个提交只做一件事、不加 AI 署名（不要 `Co-Authored-By: Claude/AI`）、用户能感知的变化写进 `CHANGELOG.md`、功能变了同步改 `README.md` 和玩家文档。
-7. 新玩法 / 改数值：先出**数值确认单**（放 `docs/tasks/numbers/`）给用户确认，确认过的数字不要擅自改。
+7. 新玩法 / 改数值：先出**数值确认单**（放 `docs/numbers/`）给用户确认，确认过的数字不要擅自改。
 
 ---
 
@@ -265,40 +265,9 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 
 ---
 
-## 12. 已知问题与待办（2026-10-07）
+## 12. 已知问题与待办
 
-**桌面版窗口——v0.33.1 / 外壳 0.6.1 的状态**
-- **猪和面板是两个窗口**，结构、IPC、验收方法见 [桌面架构](guides/desktop-architecture.md)，来龙去脉见 [I-round 第 15 节](tasks/I-round.md)。
-  **别再把面板塞回猪窗口、也别加「改窗口大小后把猪补回原位」的记账**——那条路修了四轮都在补同一个结构问题。
-- 0.33.1 修了「开着面板拖猪，面板越跑越远」（Windows 分数缩放）：根因是拖动时把猪窗口读回的大小再设回去，125% 下每帧涨 1px。
-  修后在 Win11 虚拟机 125% 下真拖录屏逐帧量过（面板偏差 90% 的帧 ≤2px、不随时间增长；修前 204px），Linux GNOME 9 组真拖回归通过。
-- 已知：GNOME 启动桌面版时会弹一条「dsh-piggy is ready」（猪窗口不抢焦点显示引起），未处理。
-- 已知：拖到屏幕顶边时面板被夹在屏幕里，会和猪叠住一部分；松手后面板换到下方。
-- 待办：`apps/desktop/main.js` 约 1000 行（规范豁免），「面板窗口」一节可以拆到 `lib/`；拆完要两个平台重新真拖录屏验收。
-- 测试机（Linux GNOME、Win11）在维护者本机虚拟机里；账号、IP、操作脚本在维护者本机笔记，**不进仓库**。
-  测试方法写在 [桌面架构](guides/desktop-architecture.md)「怎么验收」。非测试用的虚拟机不要碰。
-- 被取代的方案留了底：DeepSeek 的覆盖模式在分支 `backup/deepseek-overlay-20261007`，更早的未提交改动在 `git stash@{0}`；确认不要后可删。
-
-**用户反馈、未解决**
-- Windows 桌面版猪「抽动」：录屏在 `/zyx/DSH/workspaces/dsh-piggy/feedback/`（上下跳 + 一帧叠影，像窗口移动和页面重排不同步）。要那台机器的 `%APPDATA%\dsh-piggy-desktop\piggy.log` 才能定位。
-- 换皮肤后猪变小：本机没复现（皮肤立绘身子和默认猪一样大，体重放大系数也保留）。要具体皮肤、平台、截图。
-- Linux 桌面版面板收起时拖猪，猪前面出现白块：已在拖动时隐藏礼包 / 戳一戳气泡，用户说还在，暂时搁置。
-
-**风险**
-- **扩展下载在国内直连 GitHub 会超时**（2026-10-06 查清）：插件进程用的是 Node 的 `fetch`（undici），它**不读系统代理**，而浏览器会读，所以网页上能开 GitHub、插件下载却卡住。已经做的：每个文件 12 秒超时、最多 3 次重试、并行下载、失败说清是哪一步，界面立刻显示「下载中…」并留可重试的失败提示。**没做的**：让插件的出网走系统代理（用户当时选了「只做超时重试反馈」，没要 Gitee 镜像兜底）。下次再有人报「下载不了」，先看导出日志里的 `ext` 行，确认是不是这类超时。
-  已验证可行的修法（未做，要用户点头）：Node 24 起 `fetch` 认 `HTTP_PROXY/HTTPS_PROXY` + `NODE_USE_ENV_PROXY=1`，桌面外壳启动宿主时读系统代理带上即可（Win11 虚拟机实测从「连接被中断」变成正常下载）。
-- Gitee Windows 安装包：外壳 0.6.0 起去掉了只给 WebGPU 用的 `dxcompiler.dll` / `dxil.dll`（`electron-builder.gitee.cjs` 的 afterPack），0.6.1 安装版 98,395,909 字节（约 93.8MiB），离 100MiB 上限约 6MiB；再超要继续瘦身。
-- Gitee 附件总量：一版约 472MB，发版时新旧并存约 944MB，贴近 1GB。
-
-**待用户决定 / 待拆卡**
-- 学校改版（[G3 数值单](tasks/numbers/G3-school.md)：学制按年级升级）。
-- E 批次现实作息 / 城市天气（[E-round](tasks/E-round.md)，需用户先拍板）。
-- 「装扮」入口重设计（商店和背包入口暂时隐藏，数据保留，别删别升存档）。
-- 自定义导演系统、游戏内社区（好友 / 联机）：延期。
-
-**已解决（2026-10-06）**
-- 网页版也自带 emoji 字体子集，「设置 → Emoji 样式」在网页版也能选了（以前只有桌面版有），见 CHANGELOG 的 Unreleased。
-- 主菜单图标**保持一律用 emoji**：手绘 SVG 那一版（旧「主菜单图标」设置）用户明确说不要，别再恢复。
+**统一记在 [ROADMAP.md](ROADMAP.md)**（当前版本、进行中、待用户决定、技术待办、未解决的用户反馈、已定下来别再改的事）。这里不再另记，免得两边对不上。
 
 ---
 
@@ -312,7 +281,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 - 截图验证大文件要等几秒再截，否则截到加载中的空白。
 - DSH 本身更新后要 `pnpm install && pnpm build`，否则启动时会报找不到 `lib/*.js`。
 - **桌面版几何的验收只看一条：猪的屏幕点有没有动**（点猪、开关面板、重启前后差 ≤2px）。「窗口在工作区内」「核对 0 次不符」「测试全绿」都不等于猪没动——2026-10-06 就是这么三次误判「修好了」。改完跑 `tools/desktop-geometry-check.mjs`，它跑不过就是没修好；在 GNOME（Wayland）桌面上它会用 `tools/gnome-pointer.py` 真鼠标拖（别在自己正用的机器上跑真拖，放虚拟机）。多屏、Windows 还要人工在真机上试。
-- 桌面版是两个窗口（`docs/tasks/I-round.md` 第 15 节）：面板改动不许影响猪窗口的大小；猪窗口里「家」模型（第 13 节）仍然是每轮从头算窗口，**不要再加「记住上一轮」「核对补正」之类的记账**。
+- 桌面版是两个窗口（`docs/archive/tasks/I-round.md` 第 15 节）：面板改动不许影响猪窗口的大小；猪窗口里「家」模型（第 13 节）仍然是每轮从头算窗口，**不要再加「记住上一轮」「核对补正」之类的记账**。
 - 桌面拖动的验收要**真鼠标拖 + 录屏逐帧看**（`tools/drag-film.py`）：只看起止坐标看不出「拖到边上猪停住、松手瞬移」「拖动中猪消失一段」，这两个都是只在中间帧里出现的真 bug（2026-10-07）。
 - 桌面页面里 `piggyShell.place({})` 回读的窗口尺寸在 setBounds 后立刻就是新的，但页面要等 resize 才重排：两者对不上的那一拍不能量（`index.js` 的 `layoutStale`），否则算出的猪位置差一个尺寸变化量。
 
@@ -324,4 +293,5 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 - 入口：[AGENTS.md](../AGENTS.md)
 - 怎么加 X：[写扩展](guides/writing-extensions.md) · [加台词](guides/adding-lines.md) · [加成就](guides/adding-achievements.md) · [界面规范](guides/ui-style.md) · [桌面架构与 IPC](guides/desktop-architecture.md)
 - 开发：[开发指南](DEVELOPMENT.md) · [编码规范](CONVENTIONS.md) · [设计说明](DESIGN.md) · [美术规格](ART-SPEC.md) · [扩展下载](design/extension-download.md) · [扩展成就](design/extension-achievements.md) · [扩展中心设计](design/extension-center.md) · [日志与导出](design/log-export.md)
-- 历史：[CHANGELOG](../CHANGELOG.md) · [任务卡](tasks/README.md) · [数值单](tasks/numbers/) · [开发过程记录](PROCESS.md) · [旧交接 2026-10-03](HANDOFF-2026-10-03.md)
+- 规划与素材：[路线图与待办](ROADMAP.md) · [素材总表](ASSETS.md) · [数值单](numbers/)
+- 历史：[CHANGELOG](../CHANGELOG.md) · [任务卡](archive/tasks/README.md) · [数值单](numbers/) · [开发过程记录](archive/PROCESS.md) · [旧交接 2026-10-03](archive/HANDOFF-2026-10-03.md)

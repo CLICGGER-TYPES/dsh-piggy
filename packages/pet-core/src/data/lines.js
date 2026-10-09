@@ -4,7 +4,7 @@
  *
  * 场景照 QQ 宠物的台词分类来（enter / eat / clean / toHeartTolk / levUp /
  * 生病 tolk / errTolk / successTolk ……）。`[主人]` 会换成主人的称呼。
- * 文案来自 docs/tasks/numbers/B6-lines.md（用户 2026-10-01：按稿直接上）。
+ * 文案来自 docs/numbers/B6-lines.md（用户 2026-10-01：按稿直接上）。
  *
  * @module dsh-piggy/data/lines
  */

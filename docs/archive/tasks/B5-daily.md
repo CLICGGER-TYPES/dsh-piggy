@@ -1,6 +1,6 @@
 # B5 日常：签到、在线礼包、宠物日记
 
-**前置**：B1 做完。**数值全部以 [numbers/B5-daily.md](numbers/B5-daily.md) 为准**（用户 2026-10-01 已确认，按建议值）。
+**前置**：B1 做完。**数值全部以 [numbers/B5-daily.md](../../numbers/B5-daily.md) 为准**（用户 2026-10-01 已确认，按建议值）。
 下面只写「怎么做」，数字一律查数值单，**不要自己改数**。
 
 ## 和 Claude 的分工边界（重要）
@@ -75,7 +75,7 @@ B2（成长）/ B3（疾病）/ B4（学习→职业）**都已合入 main**（�
 - `npm run build && npm test`：**275 / 275 通过**（B5 开工前 231 → 新增 44 条，全部先红后绿）
 - `npm run typecheck`：**0 错误**
 - 提交：`2816e61` 签到 · `cdcde57` 在线礼包 · `6e9e3b0` 日记 · `c0d55a8` 界面
-- 数值：只读 `docs/tasks/numbers/B5-daily.md`，一个数字都没改；12 天表、8/天、
+- 数值：只读 `docs/numbers/B5-daily.md`，一个数字都没改；12 天表、8/天、
   攒 3 个、概率表（40/25/20/10/4/1）逐条落进 `data/daily.js`
 - 与 Claude 的边界：**没碰** `core/upgrades.js`、`STATE_VERSION`；
   `daily` / `diary` 走 `ensureDaily` / `ensureDiary` 补默认值（migrate 末尾各一行）；

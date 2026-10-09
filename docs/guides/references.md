@@ -20,7 +20,7 @@
 |---|---|---|---|
 | [xuemian168/qqpet_automation](https://github.com/xuemian168/qqpet_automation)（QQ 宠物怀旧服逆向） | MIT（原创部分） | 只参考数值和名称 | 属性阈值、疾病链、科目、物品名（`docs/DESIGN.md` 第 2～4 节） |
 | [ice-cream-headache.github.io](https://github.com/ice-cream-headache/ice-cream-headache.github.io)（浏览器版 QQ 宠物） | MIT | 只参考界面截图 | 宠物在上、图标栏在下、属性条的布局 |
-| 明日方舟「寻访」（游戏） | 商业游戏 | 只参考规则（星级、出率、50 抽保底递增、UP、潜能、资质凭证） | 盲盒扩展（`docs/tasks/numbers/X1-blindbox.md`）；不用任何原版素材 |
+| 明日方舟「寻访」（游戏） | 商业游戏 | 只参考规则（星级、出率、50 抽保底递增、UP、潜能、资质凭证） | 盲盒扩展（`docs/numbers/X1-blindbox.md`）；不用任何原版素材 |
 | [Mantan21/Genshin-Impact-Wish-Simulator](https://github.com/Mantan21/Genshin-Impact-Wish-Simulator)、[mtfn/genshin-pity-calculator](https://github.com/mtfn/genshin-pity-calculator) | MIT | 可引用（实际只借了保底计数思路） | 盲盒保底（软保底 / 硬保底计数） |
 | [mant0u0/Gashapon](https://github.com/mant0u0/Gashapon)（转蛋机网页） | **没有许可证** | 只看效果，不抄代码和素材 | 扭蛋机的手感（摇机器、转把手、胶囊弹出），动画是自己写的 |
 | [jeremyckahn/farmhand](https://github.com/jeremyckahn/farmhand) | **GPL-2.0** | 只借思路，不抄代码 | 菜园（按真实时间长、浇水、离线照算） |
@@ -66,4 +66,4 @@
 |---|---|
 | [DeepSeek Harness（DSH）](https://github.com/deepseek-ai/deepseek-harness) | 插件宿主：插件格式、面板加载方式 |
 | [Electron](https://www.electronjs.org)、[electron-builder](https://github.com/electron-userland/electron-builder) | 桌面外壳和打包 |
-| [Open-Meteo](https://open-meteo.com)（天气、地理编码接口） | 待定的城市天气功能（`docs/tasks/E-round.md`），用前先看它的使用条款 |
+| [Open-Meteo](https://open-meteo.com)（天气、地理编码接口） | 待定的城市天气功能（`docs/archive/tasks/E-round.md`），用前先看它的使用条款 |

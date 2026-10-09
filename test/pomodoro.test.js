@@ -1,7 +1,7 @@
 /**
  * C2：番茄钟。
  *
- * 数值照 docs/tasks/C-round.md：15/25/45 分钟、休息 5 分钟、完成 +8 🪙 +6 心情、
+ * 数值照 docs/archive/tasks/C-round.md：15/25/45 分钟、休息 5 分钟、完成 +8 🪙 +6 心情、
  * 每天前 8 个给奖励、放弃不给。
  *
  * Run: node --test test/*.test.js

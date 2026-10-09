@@ -177,7 +177,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
   - 重复的加潜能（最多 6 潜）并给资质凭证；凭证商店换盲盒券、指定五星 / 六星、豪华大餐、百草丹。
   - 开盒：补给箱落下，箱缝透出星级颜色的光再打开；十连两行小箱子逐个翻开，可以跳过；六星撒彩纸。
   - 1.0 的收集自动换算：摆件保留为潜能，碎片 1 换 2 资质凭证。
-  - 数值单 `docs/tasks/numbers/X1-blindbox.md`。
+  - 数值单 `docs/numbers/X1-blindbox.md`。
 
 ## [0.30.0-rc.2] — 2026-10-05 · 盲盒上线 + rc.1 反馈修复（测试版）
 
@@ -189,7 +189,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
   - 重复的变碎片，10 碎片换一个没有的普通款，40 碎片换隐藏款。
   - 开盒：盒子摇两下打开，摆件一个个弹出来，新的标 NEW；隐藏款带金光、撒彩纸。展示柜里每个系列一排小底座，没抽到的是剪影，点一下看介绍，集齐有 🏅。
   - 装了盲盒以后，签到有 15%、在线礼包有 12% 的机会多送一张🎟 盲盒券，免费开 1 个。
-  - 数值单 `docs/tasks/numbers/X1-blindbox.md`，代码 `extensions/blindbox/`。
+  - 数值单 `docs/numbers/X1-blindbox.md`，代码 `extensions/blindbox/`。
 - 猪在外面时也能直接点打工、上课、旅行、自动钓鱼：先问「结束 xxx，改去 yyy 吗？」，确认后叫回来再出发（打工到一半没有这一班工钱，上学、旅行退钱，自动钓鱼退鱼饵）。
 
 ### Changed
@@ -208,7 +208,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ### Added
 - **钓鱼三种搏斗玩法**：鱼咬钩后随机是圆盘、竖条拉锯、拉力收线之一（原型见 `docs/prototypes/fishing-fight.html`）。
-- **台词翻倍**：原有 32 个场景每个翻倍，新增出门打工 / 上学 / 旅行、买东西、钱不够、钓到鱼 / 稀有鱼 / 鱼跑了、换皮肤、体型变化（审稿单 `docs/tasks/numbers/G4-lines.md`）。同一场景最近 3 句不重复。
+- **台词翻倍**：原有 32 个场景每个翻倍，新增出门打工 / 上学 / 旅行、买东西、钱不够、钓到鱼 / 稀有鱼 / 鱼跑了、换皮肤、体型变化（审稿单 `docs/numbers/G4-lines.md`）。同一场景最近 3 句不重复。
 - **按时间说话**：早上、中午、下午、傍晚、深夜、凌晨各问候一次；在线满 90 分钟提醒喝水、满 2 小时提醒休息眼睛；元旦、情人节、春节、元宵、清明、劳动节、儿童节、端午、七夕、中秋、国庆、圣诞和猪的生日（农历日期写到 2029 年）；周末问候。
 - **摸不同部位**：左键点猪会真的摸它，头、耳朵、鼻子、肚子、背、尾巴、脚各有反应和台词；30 秒内第 8 下开始不耐烦、不再加心情，停手 1 分钟消气。
 - **猪自己找事做**：面板收着、猪在家时，每 3–8 分钟打滚、打盹、追蝴蝶、挠痒、伸懒腰、看屏幕或吹泡泡。
@@ -245,7 +245,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 - **还魂丹放进药品货架**（商店、背包、图鉴都一样），不再单独一个「复活」格子。
 - 图鉴道具的筛选页签横着放不下时，可以用鼠标滚轮左右滚。
 - **更新入口收进设置**：主菜单去掉「更新」格子；有新正式版时设置格子冒红点，设置页顶部「🔄 更新」带红点。更新面板按正式版分组，测试版收在对应正式版下面、默认折叠，标「手动安装」；红点和「更新到最新」只看正式版。
-- **照顾数值调整**（确认单 `docs/tasks/numbers/G2-care-balance.md`）：吃东西不再扣清洁；洗澡扣饱食、玩耍和玩具扣清洁都减半左右；只有饱食已经 100% 还硬喂才可能胀气，概率 15%；心情每小时掉 2.4（原 3.6），清洁每小时掉 3.6（原 4.2）。
+- **照顾数值调整**（确认单 `docs/numbers/G2-care-balance.md`）：吃东西不再扣清洁；洗澡扣饱食、玩耍和玩具扣清洁都减半左右；只有饱食已经 100% 还硬喂才可能胀气，概率 15%；心情每小时掉 2.4（原 3.6），清洁每小时掉 3.6（原 4.2）。
 
 ### Fixed
 - **桌面版导入皮肤 ZIP 总是失败**（提示「ZIP 目录损坏」或一串英文）：桌面程序把上传的文件当文字读坏了。现在游戏改用文本方式上传，DSH 网页版和桌面版都能导入，不用更新桌面程序。ZIP 损坏时提示「ZIP 文件损坏，请重新压缩后再导入」。
@@ -482,7 +482,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [0.25.0] — 2026-10-01 · — B6 台词
 
-- 24 个场景、90 多句台词（文案见 `docs/tasks/numbers/B6-lines.md`）：吃撑、打工回来/累了、上完课、毕业、旅行回来、长大、复活等都会说话。
+- 24 个场景、90 多句台词（文案见 `docs/numbers/B6-lines.md`）：吃撑、打工回来/累了、上完课、毕业、旅行回来、长大、复活等都会说话。
 - 闲着每 20–40 分钟冒一句，先说需要什么（饿/脏/孤单），不需要才闲聊；离开半小时以上再打开会打招呼。
 - 状态页：「🙋 叫你「主人」 改」可以改称呼；「🔔 免打扰」开了不闲聊、不弹日常消息，生病和死亡照样提醒。
 - 学习页：「🎯 兴趣」成了学段旁边的一个按钮。
@@ -490,7 +490,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [0.25.0] — 2026-10-01 · — B2 成长 · B3 疾病 · B4 学习→职业
 
-数值全部照 `docs/tasks/numbers/` 里用户 2026-10-01 确认的单子。存档 8 → 11，每一级升级前都会原样备份。
+数值全部照 `docs/numbers/` 里用户 2026-10-01 确认的单子。存档 8 → 11，每一级升级前都会原样备份。
 
 ### B2 成长
 - 成长值（存档里的 `xp`）按猪时间自己长：每小时 +100，乘照顾系数（心情、饿脏、健康）。
@@ -556,7 +556,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ### Changed（内部，界面无变化）
 - 客户端源码移到 `src/client/`，`client.js` 改为 esbuild 产物；`npm run build` 生成，
-  `test/bundle.test.js` 守住产物新鲜度。详见 [docs/REFACTOR-PLAN.md](docs/REFACTOR-PLAN.md)。
+  `test/bundle.test.js` 守住产物新鲜度。详见 [docs/archive/REFACTOR-PLAN.md](docs/archive/REFACTOR-PLAN.md)。
 - 新增 [docs/CONVENTIONS.md](docs/CONVENTIONS.md)（项目版编码规范）。
 - 分层拆分（均保留同名 barrel，导入路径零改动）：`data.js` → `data/` 9 个模块、
   `core.js` → `core/` 15 个模块、`index.js` → `snapshot/commands/routes`、
@@ -869,7 +869,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [0.15.0] — 2026-09-30
 
-改造计划的第一批（手感 + 商店）。完整计划见 [docs/ROADMAP.md](docs/ROADMAP.md)。
+改造计划的第一批（手感 + 商店）。完整计划见 [docs/archive/ROADMAP-2026-09-30.md](docs/archive/ROADMAP-2026-09-30.md)。
 
 ### Added
 - **小猪大了一圈。** 40px 在面板里太小了，整套尺寸重排：

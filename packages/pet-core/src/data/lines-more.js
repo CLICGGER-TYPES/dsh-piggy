@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * G 批次的台词（docs/tasks/numbers/G4-lines.md，用户 2026-10-05：按稿直接上）。
+ * G 批次的台词（docs/numbers/G4-lines.md，用户 2026-10-05：按稿直接上）。
  *
  * - MORE_LINES：原有场景翻倍加的句子，和新场景（出门、买东西、钓鱼、换皮肤……）；
  *   data/lines.js 把它们并进 LINES。

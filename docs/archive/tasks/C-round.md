@@ -26,7 +26,7 @@
 | C7 | 胖猪（体重分档换立绘） | Codex | **等用户给圆猪图**，先不开工 |
 | C8 | 六款角色外观：厨师／宇航员职业解锁，侦探／天使／海盗／巫师内置皮肤 | Codex | C6；用户 2026-10-03 确认 2 职业 + 4 皮肤 |
 
-协作规则（沿用 `docs/tasks/README.md`，以下为本轮补充）：
+协作规则（沿用 `docs/archive/tasks/README.md`，以下为本轮补充）：
 - DSH 在原目录 main 直接提交；Codex 用 worktree `/zyx/DSH/workspaces/dsh-pig-codex` 分支 `codex/next`，每卡完成 rebase 到 main 再快进合入。
 - **本轮不升存档版本**：新字段一律 `ensureXxx(state)` 补默认值（参考 `core/lines.js` 的 `ensureDialogue`）。确需升版本只能由 Codex 做，且先在卡里写明。
 - 提交**不加任何 AI 署名行**；外部贡献者（PR #3）的作者/Co-Authored-By 保留。
@@ -83,7 +83,7 @@
 - 服务端在抛竿时用 `roll(state)` 决定鱼和尺寸，存 `state.fishing.pending`（60 秒过期）；客户端只上报成功/失败。禁止 `Math.random()` 进 core（小游戏动画在客户端可以用）。
 - 每次抛竿饱食 −1；猪在打工/学习/旅行时不能钓。
 - 自动模式：选 30/60 分钟，猪去钓鱼（占用状态同打工，复用 `core/activity.js`），每 3 分钟按鱼难度判一次成功率（难度越高越低，最低 20%），售价按 **70%**；每天最多 2 次。
-- 鱼表 `data/fish.js`：15 种，普通 8 / 少见 4 / 稀有 2 / 传说 1；按真实时间分早/午/晚/夜出现；售价 8–300；可喂（饱食 = 售价/2，上限 60）；key 统一 `fish_` 前缀（避开已有 `fish` 小鱼干）。具体表 Codex 写进 `docs/tasks/numbers/C5-fish.md`，用户验收时看。
+- 鱼表 `data/fish.js`：15 种，普通 8 / 少见 4 / 稀有 2 / 传说 1；按真实时间分早/午/晚/夜出现；售价 8–300；可喂（饱食 = 售价/2，上限 60）；key 统一 `fish_` 前缀（避开已有 `fish` 小鱼干）。具体表 Codex 写进 `docs/numbers/C5-fish.md`，用户验收时看。
 - 背包鱼：「喂」「卖」两个按钮；图鉴「鱼」分区记最大尺寸。调试页加「钓鱼」组（一键给每种鱼、跳过等待）。
 - 小游戏 60fps 用 requestAnimationFrame；同一条鱼的连续命中进度跨状态轮询保留，面板关掉自动判失败并停循环。
 
@@ -91,7 +91,7 @@
 
 ### 验证记录 — C5（Codex，2026-10-02）
 - `npm run build` 通过并重新生成 `client.js`（219445 bytes）；`npm test` 437/437；`npm run typecheck` 0 错误。核心随机只经 `rollerFor` / `chance`，小游戏的 `Math.random()` 仅在客户端生成每轮判定区位置。
-- 鱼表见 `docs/tasks/numbers/C5-fish.md`：15 种，普通 8 / 少见 4 / 稀有 2 / 传说 1。存档仍为 v12；`ensureFishing(state)` 给老存档补 `pending`、鱼篓、序号和每日自动次数，并清洗坏数据，没有升存档版本。
+- 鱼表见 `docs/numbers/C5-fish.md`：15 种，普通 8 / 少见 4 / 稀有 2 / 传说 1。存档仍为 v12；`ensureFishing(state)` 给老存档补 `pending`、鱼篓、序号和每日自动次数，并清洗坏数据，没有升存档版本。
 - 3084 隔离实例 + Python Playwright + `/usr/bin/chromium` 实测：抛竿页只有单击「🎣 抛竿」，蓄力条为 0 个；2–8 秒内出现「❗」，1 秒窗口内提竿进入圆盘技能检定。提前点击后 QTE 保持，完整空一圈和两圈后仍保持，第三圈全空才回到抛竿页；界面用三颗心显示剩余圈数。难度 86 的客户端用例确认需要连续命中 4 次，旧蓄力与竖条界面均已移除；关闭面板仍会失败并停止 rAF。
 - 抛竿后刷新仍读到同一个 `pending.id`，不会重新抽鱼；成功只先进入结果卡，点「放进背包」后才记录鱼篓与图鉴，因此重复刷新/重复点击不会多发鱼。
 - 30 分钟自动钓鱼实测从 `activity.kind=fishing` 开始；调试快进 30 分钟后 `activity=null`，金币 90333→90449，已点亮鱼种 1→5。验收时同时发现并修复了调试快进没有推进活动结束时间的问题，新增红测守住。
@@ -162,7 +162,7 @@ my-skin.zip
 
 - 先写测试并确认会红：核心测试因缺少 `WEIGHT_RULES` 失败，客户端测试因状态页和调试入口不存在失败；补实现后又用“调试胖胖预设经过一分钟仍留在胖胖档”的回归测试复现临界值回落问题，再把调试预设从精确边界改为 1.31 / 1.61 倍。
 - `npm run build` 通过，重新生成 `client.js`（201035 bytes）；`npm test` 425/425 通过；`npm run typecheck` 通过。完整测试同时检查 core 没有 `Math.random()`、生成包与源码一致、源码不超过 400 行。
-- 三档边界实测与自动测试一致：正常 `< 1.3×`，圆润 `≥ 1.3× 且 < 1.6×`，胖胖 `≥ 1.6×`。Lv1/10/20/40/60 的理想体重和分档表记录在 `docs/tasks/numbers/C7-weight.md`。
+- 三档边界实测与自动测试一致：正常 `< 1.3×`，圆润 `≥ 1.3× 且 < 1.6×`，胖胖 `≥ 1.6×`。Lv1/10/20/40/60 的理想体重和分档表记录在 `docs/numbers/C7-weight.md`。
 - 减重实测：成功玩耍减少超重部分 3%，同一游戏日最多计 10 次；完成打工按实际小时复利减少 3%；在线、离线及倍速结算均按每猪日 2% 自然回落；三种方式都不会低于理想体重。C5 尚未落地，因此钓鱼减重留到 C5 的真实钓鱼动作接入。
 - 立绘实测：只有普通形态 + 默认皮肤 + 胖胖档切换 PR #4 的 `pig-fat` 待机与动作立绘，王、恶魔和其他皮肤不变；9 张 `pig-fat*.svg` 在 3084 均返回 HTTP 200。PR #4 没有圆润图，圆润档按卡记录状态并暂用普通立绘。
 - 调试页有“正常 / 圆润 / 胖胖”三个入口；状态页显示当前体型、理想体重、下一档阈值或当天剩余玩耍减重次数。
@@ -175,7 +175,7 @@ my-skin.zip
 
 ### 给 DSH agent
 ```
-你在 dsh-piggy 仓库 /zyx/DSH/workspaces/dsh-pig 的 main 上工作。先读 docs/tasks/README.md 和 docs/tasks/C-round.md（本轮任务卡），按顺序做 C1 → C2 → C4（C4 要等 Codex 的 C3 合进 main 再开工，开工前 git log --oneline -15 确认）。
+你在 dsh-piggy 仓库 /zyx/DSH/workspaces/dsh-pig 的 main 上工作。先读 docs/archive/tasks/README.md 和 docs/archive/tasks/C-round.md（本轮任务卡），按顺序做 C1 → C2 → C4（C4 要等 Codex 的 C3 合进 main 再开工，开工前 git log --oneline -15 确认）。
 硬规则：
 - 每卡先写会红的测试，再改代码；完成后 npm run build && npm test && npm run typecheck 全绿。
 - 只 git add 自己改的文件，不要 git add -A；不要碰 codex/* 和 claude/* 分支；提交信息 feat(pig)/fix(pig) 开头，不加任何 AI 署名行。
@@ -183,20 +183,20 @@ my-skin.zip
 - 不改现有页面排版，只加新 App；数值照卡上写的，不合理写到卡末「疑问」，不要自己改。
 - 随机数只用 core/random.js，禁止 Math.random() 进 core。
 - 每卡同步更新 README 和 CHANGELOG（未发布小节）。
-- 界面截图：起隔离实例（DSH_HOME 用拷贝，端口 3082，见 docs/tasks/README.md 验收段），Playwright 截图存 docs/screenshots/c<N>-*.png；不要动 3080 上用户在用的 dsh。
+- 界面截图：起隔离实例（DSH_HOME 用拷贝，端口 3082，见 docs/archive/tasks/README.md 验收段），Playwright 截图存 docs/screenshots/c<N>-*.png；不要动 3080 上用户在用的 dsh。
 - 每卡做完在卡末「验证记录」写测试结果、截图路径，然后停下告诉我，等验收后再做下一张。
 ```
 
 ### 给 Codex
 ```
-你在 dsh-piggy 仓库工作。先建 worktree：git -C /zyx/DSH/workspaces/dsh-pig worktree add /zyx/DSH/workspaces/dsh-pig-codex -b codex/next main，之后都在 /zyx/DSH/workspaces/dsh-pig-codex 里干活。先读 docs/tasks/README.md、docs/tasks/C-round.md、docs/ART-SPEC.md、docs/CONVENTIONS.md。
+你在 dsh-piggy 仓库工作。先建 worktree：git -C /zyx/DSH/workspaces/dsh-pig worktree add /zyx/DSH/workspaces/dsh-pig-codex -b codex/next main，之后都在 /zyx/DSH/workspaces/dsh-pig-codex 里干活。先读 docs/archive/tasks/README.md、docs/archive/tasks/C-round.md、docs/ART-SPEC.md、docs/CONVENTIONS.md。
 顺序：C3 → C5 → C6（C7 等我给图再做）。
 C3 第一步：gh pr checkout 3 拿到 PR #3（作者 1nuoiscute）的提交，保留原作者，在其上按卡改成「王冠/契约都是商店道具」。
 每卡完成：npm run build && npm test && npm run typecheck 全绿 → git rebase main → 在主目录 git merge --ff-only codex/next 合进 main（DSH agent 也在 main 上提交，冲突你解决，不要覆盖他们的改动）。
 硬规则：
 - 先写会红的测试再改；随机只用 core/random.js 的 roll/chance/pickOne，core 里禁止 Math.random()。
 - 不升存档版本，新字段 ensureXxx(state)；真要升先停下问我。
-- 不改现有页面排版，只加新 App / 新货架；数值照卡写，C5 鱼表写进 docs/tasks/numbers/C5-fish.md。
+- 不改现有页面排版，只加新 App / 新货架；数值照卡写，C5 鱼表写进 docs/numbers/C5-fish.md。
 - 每加一种形态/皮肤/鱼，调试页（src/client/tabs/dev.js）都要有对应入口，test/dev-coverage.test.js 会检查。
 - 提交 feat(pig)/fix(pig) 开头，不加任何 AI 署名行；同步更新 README 和 CHANGELOG。
 - 界面截图：隔离实例 3082 + Playwright + /usr/bin/chromium，存 docs/screenshots/c<N>-*.png；钓鱼小游戏另录一段 10 秒 GIF/webm。不要动 3080 上用户在用的 dsh。
@@ -473,7 +473,7 @@ C3 第一步：gh pr checkout 3 拿到 PR #3（作者 1nuoiscute）的提交，�
     残余位移跟「收起时猪离锚边多少」有关。
 - 重叠检查：HUD∩猪 0px²、HUD∩面板 0px²、气泡∩面板 0px²、角标∩HUD 0px²、角标∩气泡 0px² ✓
   （注意：这次是新鲜存档，猪还是纸盒，气泡/番茄角标都是隐藏的，这几项证据偏弱）
-- 截图：面板朝右开（猪在左上角）[`docs/screenshots/c-round-panel-right.png`](../screenshots/c-round-panel-right.png) —— 纸盒在左上、
+- 截图：面板朝右开（猪在左上角）[`docs/screenshots/c-round-panel-right.png`](../../screenshots/c-round-panel-right.png) —— 纸盒在左上、
   面板在它下面、`戳三下` 提示在面板上方，目视不重叠 ✓
 
 **残余位移的原因（我的判断，供 Claude 复核）**：外壳 `pinPig` 把猪钉在「离锚边 16px」，可收起时猪离窗口
@@ -523,7 +523,7 @@ bounds content {"x":1596,"y":743,"width":324,"height":271}   ← 第一步：改
 bounds anchor  {"x":1584,"y":743,"width":324,"height":271}   ← 第二步：补 12px 平移
 ```
 （补的这 12px 就是上一轮残余的十几像素。）截图（朝右开、猪在左上角）：
-[`docs/screenshots/c-round-panel-right.png`](../screenshots/c-round-panel-right.png)。
+[`docs/screenshots/c-round-panel-right.png`](../../screenshots/c-round-panel-right.png)。
 
 **上一轮的教训**：桌面版加载的是 `apps/desktop/game/` 里打包好的 `client.js`，改 `src/client` 后必须
 `npm run pack-game` 再实机，否则测的是旧前端。
@@ -666,4 +666,4 @@ DSH 的判断方向对：剩下的 13/25 DIP 是「翻锚边」那一步没被�
 - 职业外观解锁后在换肤和图鉴切换，未解锁时换肤列表禁用按钮、图鉴显示灰影和谜面。晋升形态仍优先；调试页每套都有入口，职业按钮可一次解锁并预览。
 - 职业解锁沿用 `state.dex.skins` 记录，不增加存档字段，版本保持 v12。旧存档此前没有按职业保存完成次数，需再完成对应工作一次；已选外观及已有图鉴记录读档后保留。
 - `npm run build`、`npm test`（40 个测试文件全部通过）、`npm run typecheck` 通过。3084 隔离实例 + `/usr/bin/chromium` 的 Playwright 实测：两款职业图加载成功、四款免费皮肤可见、未解锁厨师不可选、图鉴灰影和提示正常、调试按钮切换立绘，浏览器 page error 为 0。
-- 截图：[未解锁职业列表](../screenshots/c8-career-locked.png)、[图鉴九宫格](../screenshots/c8-looks-dex.png)、[厨师调试预览](../screenshots/c8-chef-preview.png)、[宇航员调试预览](../screenshots/c8-astronaut-preview.png)。
+- 截图：[未解锁职业列表](../../screenshots/c8-career-locked.png)、[图鉴九宫格](../../screenshots/c8-looks-dex.png)、[厨师调试预览](../../screenshots/c8-chef-preview.png)、[宇航员调试预览](../../screenshots/c8-astronaut-preview.png)。

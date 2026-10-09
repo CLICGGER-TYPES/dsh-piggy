@@ -5,7 +5,7 @@
 
 ## 形象
 
-![猪猪王](../assets/pig-king.svg)
+![猪猪王](../../assets/pig-king.svg)
 
 参考用户提供的“猪猪王”形象：金冠、红披风、细权杖、闭眼的从容表情。
 按现有 piglet.svg / elder.svg 的朝左、蜜桃色、平涂风格重新画成可编辑路径；

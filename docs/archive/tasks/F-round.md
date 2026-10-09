@@ -53,7 +53,7 @@ Claude 已核对过代码的根因写在每张卡里；**动手前仍要先复�
   3. 在本机执行 `npm publish --access public`；
   4. 用 `npm view dsh-piggy version` 核对；
   5. 别名包 `dsh-plugin-piggy` 同步发布。
-- 交接记录 `docs/HANDOFF-2026-10-03.md` 里关于 npm job 的那段也同步更新。
+- 交接记录 `docs/archive/HANDOFF-2026-10-03.md` 里关于 npm job 的那段也同步更新。
 
 ## 共同规矩
 - 先写会失败的测试再修；`npm run build && npm test && npm run typecheck` 全绿；客户端源码改了要重新生成 `client.js`。
@@ -67,37 +67,37 @@ Claude 已核对过代码的根因写在每张卡里；**动手前仍要先复�
 ### F1 · 气泡
 
 - 先用拼接后 CSS 的逐规则括号测试复现：旧样式把镜像 `::after` 规则嵌进 `.dp-bubble`，测试失败；修复后通过。长文限制两行、按面板宽度折行，锚点固定在猪头上方。3084 实测短句、45 字长句、番茄钟开始和面板朝右开，气泡圆角、背景与尾巴正常；桌面版用 `python-xlib` 读 Electron 窗口真实像素。
-- 截图：[短句](../screenshots/f1-bubble-short.png)、[长句](../screenshots/f1-bubble-long.png)、[番茄钟](../screenshots/f1-bubble-pomodoro.png)、[朝右开](../screenshots/f1-bubble-right.png)、[桌面版](../screenshots/f1-desktop-bubble.png)。
+- 截图：[短句](../../screenshots/f1-bubble-short.png)、[长句](../../screenshots/f1-bubble-long.png)、[番茄钟](../../screenshots/f1-bubble-pomodoro.png)、[朝右开](../../screenshots/f1-bubble-right.png)、[桌面版](../../screenshots/f1-desktop-bubble.png)。
 
 ### F2 · 角色皮肤尺寸
 
 - 先用 54 张 SVG 的身体变换和脚底线测量测试复现原包装缩放为 0.88，超出 4% 容差；删除外层 `translate(3 9) scale(.88)` 后全部通过。这层仅影响角色立绘，直接修素材可让网页、图鉴与桌面使用同一尺度。54 张均由 `rsvg-convert` 解析通过。默认小猪与六款角色并排比较，身体宽高与脚底对齐；王、恶魔、圆润、胖胖也量过像素外框，衣饰/翅膀会越过身体顶部，但脚底处在同一基线。自定义皮肤按导入包自身画布与现有规范显示，本次没有改玩家素材。
-- 截图：[主屏](../screenshots/f2-main-angel.png)、[换肤页](../screenshots/f2-skins-six.png)、[图鉴卡](../screenshots/f2-dex-cards.png)、[六款并排](../screenshots/f2-compare-six.png)、[桌面版实窗](../screenshots/f2-desktop-angel.png)。
+- 截图：[主屏](../../screenshots/f2-main-angel.png)、[换肤页](../../screenshots/f2-skins-six.png)、[图鉴卡](../../screenshots/f2-dex-cards.png)、[六款并排](../../screenshots/f2-compare-six.png)、[桌面版实窗](../../screenshots/f2-desktop-angel.png)。
 
 ### F3 · 老装扮脱下
 
 - 先用围巾与草帽均已穿戴的旧档状态写失败测试；背包现在只在有穿戴物时出现「已穿戴」，每件调用原有 `wear` 动作并传 `on:false`。没有恢复商店装扮货架，也没有删除拥有记录。3084 网页和隔离桌面存档各脱下装扮并刷新，穿戴状态保持已脱，物品仍在存档；桌面图由 `python-xlib` 截取实窗像素。
-- 截图：[网页版穿戴前](../screenshots/f3-worn-before.png)、[网页版脱下后](../screenshots/f3-worn-after.png)、[桌面版穿戴前](../screenshots/f3-desktop-worn-before.png)、[桌面版脱下一件后](../screenshots/f3-desktop-worn-after.png)。
+- 截图：[网页版穿戴前](../../screenshots/f3-worn-before.png)、[网页版脱下后](../../screenshots/f3-worn-after.png)、[桌面版穿戴前](../../screenshots/f3-desktop-worn-before.png)、[桌面版脱下一件后](../../screenshots/f3-desktop-worn-after.png)。
 
 ### F4 · 兴趣课结算提示
 
 - 复现结果是规则未讲清，并非结算 bug：摄影开课时魅力不变，29 分钟仍不变，30 分钟完成时 +2。3084 实测魅力由 0 到 2，课程记录从 0/5 到 1/5；真实界面显示「约 30 分钟后 魅力 +2」和「还有 30 分钟」。补上结课事件的猪头气泡；在隔离实例通过调试页快进结课，实际读到「猪猪 学会了摄影，魅力 +2 📷」。对应计时、结算与气泡测试先红后绿。
-- 截图：[课程时间与奖励](../screenshots/f4-interest-wait.png)、[上课剩余时间](../screenshots/f4-interest-active.png)。
+- 截图：[课程时间与奖励](../../screenshots/f4-interest-wait.png)、[上课剩余时间](../../screenshots/f4-interest-active.png)。
 
 ### F5 · 收起面板后的操作结果
 
 - 先写失败的客户端与路由测试；动作响应现在包含实际 `reward`，面板收起时签到、开礼包会用猪头气泡报出结果。3084 实测签到得到板蓝根、消食片、枇杷糖浆，礼包得到 61 枚金币；面板展开时沿用原横幅。
-- 截图：[签到](../screenshots/f5-signin-collapsed.png)、[礼包](../screenshots/f5-gift-collapsed.png)。
+- 截图：[签到](../../screenshots/f5-signin-collapsed.png)、[礼包](../../screenshots/f5-gift-collapsed.png)。
 
 ### F6 · 图鉴按钮
 
 - 先写失败的图鉴结构/样式测试；使用按钮现在有 16px 上间距，并在独立一行水平居中。3084 实测。
-- 截图：[皮肤详情](../screenshots/f6-dex-skin-action.png)。
+- 截图：[皮肤详情](../../screenshots/f6-dex-skin-action.png)。
 
 ### F7 · 点击别处收起
 
 - 先写失败测试覆盖网页默认开、手动关、桌面失焦，以及输入聚焦、拖猪、钓鱼 QTE 三种保护。设置写当前设备本地偏好，旧存档默认开启，不改存档结构。3084 网页实测开时点外面收起、关时保持展开；实际抛竿进入 QTE 后点击面板外仍保持展开。隔离 Electron 用 X11 改变窗口焦点：开时 `data-open=false`，关时 `data-open=true`，两种状态均由 `python-xlib` 读取实窗像素。
-- 截图：[网页开](../screenshots/f7-web-on.png)、[网页关](../screenshots/f7-web-off.png)、[桌面开](../screenshots/f7-desktop-on.png)、[桌面失焦后收起](../screenshots/f7-desktop-blurred-on.png)、[桌面关且失焦后仍展开](../screenshots/f7-desktop-off.png)。
+- 截图：[网页开](../../screenshots/f7-web-on.png)、[网页关](../../screenshots/f7-web-off.png)、[桌面开](../../screenshots/f7-desktop-on.png)、[桌面失焦后收起](../../screenshots/f7-desktop-blurred-on.png)、[桌面关且失焦后仍展开](../../screenshots/f7-desktop-off.png)。
 
 ### F8 · npm 手动发布
 
@@ -169,29 +169,29 @@ Claude 已核对过代码的根因写在每张卡里；**动手前仍要先复�
 
 - 先用旧 `moveAcrossDisplays` 复现：面板展开的 320px 窗口在 1920px 工作区右缘被夹住，继续向外的增量丢失；反向 20px 后窗口立刻移动 20px，鼠标和猪错位。新增绝对拖动和四边只夹猪的几何测试，旧代码因缺少绝对拖动接口而失败，修复后通过。
 - 页面按下/松开时通知主进程，主进程以按下时的窗口和鼠标屏幕坐标为固定起点，按约 60Hz 读取鼠标。只让猪的布局框留在指针所在屏的工作区；面板保持展开，允许暂时越界。网页版仍走原拖动路径。
-- `npm run build && npm test && npm run typecheck` 全绿（45 个测试文件，0 失败）；`client.js` 已重新生成。隔离 Electron 展开面板的实窗像素：[f9-desktop-panel-open.png](../screenshots/f9-desktop-panel-open.png)。当前 Linux 会话是 Wayland/XWayland，XTest 合成鼠标移动被合成器拦截，无法在这里替代 Windows 100%/125%/150% 的十秒画圈与多屏实测；这些平台验收项留给 Claude/Windows 实机，不把纯函数测试冒充实机结果。
+- `npm run build && npm test && npm run typecheck` 全绿（45 个测试文件，0 失败）；`client.js` 已重新生成。隔离 Electron 展开面板的实窗像素：[f9-desktop-panel-open.png](../../screenshots/f9-desktop-panel-open.png)。当前 Linux 会话是 Wayland/XWayland，XTest 合成鼠标移动被合成器拦截，无法在这里替代 Windows 100%/125%/150% 的十秒画圈与多屏实测；这些平台验收项留给 Claude/Windows 实机，不把纯函数测试冒充实机结果。
 
 ### F10 · 面板开合时固定小猪屏幕坐标
 
 - 旧版隔离 Electron 实测：面板展开时猪的屏幕坐标从 `(1791,888)` 瞬间到 `(1565,358)`，约 120ms 后才补正。实际主因确是先改窗口尺寸、下一次 120ms 上报再调用 `anchorCorrection`；整窗夹进工作区又会放大贴边偏移。渲染时还发现开合产生的粒子会撑宽测量框，顶边气泡会撑高测量框。各问题都先补了失败测试。
 - 页面在切换面板的同一轮事件中量出新内容框、预测钉边后的小猪局部坐标，主进程据固定屏幕坐标一次 `setBounds`。复验又查到三个原因：同步 IPC 在主进程设置 `returnValue` 时会立刻唤醒渲染进程，因此只在完成定位后回执；打开面板后才出现的摸猪气泡会造成第二次扩窗，因此先显示气泡再测量；面板裁掉的子内容仍被算进窗口外框，因此对子元素按面板盒裁剪。展开方向取收起时的猪位置，开合过程中锁定方向，拖动结束后才重算。
-- 曾误用左键 `.click()` 做采样；它不会打开面板，那份记录已废弃并替换。最终以真实的右键 `contextmenu` 事件在四角和中心分别开合 10 次，每约 16ms 采一次位置；[逐帧记录](numbers/F10-position-frames.csv) 共 1015 帧，`panel_open=true` 的采样也在其中。左上 `(22,48)`、右上 `(1809,48)`、左下 `(22,927)`、右下 `(1809,920)`、中心 `(933,491)`，每组 X/Y 波动均为 0 DIP。这里采的是渲染端屏幕坐标，Linux Wayland/XWayland 下仍需 Windows 实机核对可见像素。实窗像素：[收起](../screenshots/f10-desktop-closed.png)、[展开](../screenshots/f10-desktop-open.png)。
+- 曾误用左键 `.click()` 做采样；它不会打开面板，那份记录已废弃并替换。最终以真实的右键 `contextmenu` 事件在四角和中心分别开合 10 次，每约 16ms 采一次位置；[逐帧记录](../../numbers/F10-position-frames.csv) 共 1015 帧，`panel_open=true` 的采样也在其中。左上 `(22,48)`、右上 `(1809,48)`、左下 `(22,927)`、右下 `(1809,920)`、中心 `(933,491)`，每组 X/Y 波动均为 0 DIP。这里采的是渲染端屏幕坐标，Linux Wayland/XWayland 下仍需 Windows 实机核对可见像素。实窗像素：[收起](../../screenshots/f10-desktop-closed.png)、[展开](../../screenshots/f10-desktop-open.png)。
 - `npm run build && npm test && npm run typecheck` 全绿（46 个测试文件，0 失败）；`client.js` 已重新生成。
 
 ### F11 · 桌面版阴影硬边
 
 - 用 python-xlib 读取修复前原生窗口的 RGBA 像素。收起状态下阴影一直延伸到可点区域底边：第 165 行仍有 alpha=3，第 166 行突然为 0；白底合成时形成截断线。实际原因是 `setShape` 按布局盒裁掉 `filter:drop-shadow(...)` 的越界像素，和卡里推测一致。面板外投影也有同样风险。
 - 采用卡的方案②：仅在桌面外壳 CSS 中关掉会越过可点盒的小猪/立绘投影，面板改为盒内的浅色阴影。网页版 CSS 不变。先写了桌面专属样式测试，旧样式下失败，修复后通过。
-- 修复后用 python-xlib 重拍 [收起原生 RGBA](../screenshots/f11-desktop-closed-raw.png)、[展开原生 RGBA](../screenshots/f11-desktop-open-raw.png)；收起状态可见像素 bbox 为 `(52,30)–(157,131)`，距窗口底边 65px，不再有触边黑色渐变。将这些真实窗口像素分别合成到[白底收起](../screenshots/f11-desktop-closed-white.png)、[黑底收起](../screenshots/f11-desktop-closed-black.png)、[白底展开](../screenshots/f11-desktop-open-white.png)、[黑底展开](../screenshots/f11-desktop-open-black.png) 检查，四张图均未见硬边。合成底色只用于检视；没有修改用户的全局壁纸，Windows 实机白/黑壁纸仍待验收。
+- 修复后用 python-xlib 重拍 [收起原生 RGBA](../../screenshots/f11-desktop-closed-raw.png)、[展开原生 RGBA](../../screenshots/f11-desktop-open-raw.png)；收起状态可见像素 bbox 为 `(52,30)–(157,131)`，距窗口底边 65px，不再有触边黑色渐变。将这些真实窗口像素分别合成到[白底收起](../../screenshots/f11-desktop-closed-white.png)、[黑底收起](../../screenshots/f11-desktop-closed-black.png)、[白底展开](../../screenshots/f11-desktop-open-white.png)、[黑底展开](../../screenshots/f11-desktop-open-black.png) 检查，四张图均未见硬边。合成底色只用于检视；没有修改用户的全局壁纸，Windows 实机白/黑壁纸仍待验收。
 - `npm run build && npm test && npm run typecheck` 全绿（47 个测试文件，0 失败）；`client.js` 未变。
 
 ### F12 · 设置小猪大小
 
 - 先写失败测试覆盖四档、默认值、无效偏好回退、设置入口和本机存储，再实现 `dsh-piggy:pig-size`。旧客户端每次刷新都会用成长阶段的 `size` 覆盖 CSS 变量；现在四档直接决定 `--pig-size`，不改阶段或存档。标准档严格为 56px，旧幼年猪约 54px 的显示值按卡统一到 56px。没有提升存档版本。
-- [3084 隔离实例](http://127.0.0.1:3084/) 运行本分支打包的真实 `store.js`、`routes.js` 和 `client.js`，使用独立的 `/tmp/dsh-pig-f12-web/state.json`，没有伪造快照。`/usr/bin/chromium` 中逐档点击设置按钮，四档网页截图：[48](../screenshots/f12-web-48.png)、[56](../screenshots/f12-web-56.png)、[72](../screenshots/f12-web-72.png)、[96](../screenshots/f12-web-96.png)。猪的脚底 Y 均为 770px，面板宽度均为 292px；气泡高于头顶 8px、番茄钟角标高于头顶 2px，签到图标的中心在 48/96 档均比猪中心低 13px。
-- 桌面版四档用 python-xlib 截原生窗口：[48](../screenshots/f12-desktop-48.png)、[56](../screenshots/f12-desktop-56.png)、[72](../screenshots/f12-desktop-72.png)、[96](../screenshots/f12-desktop-96.png)。实际点击设置按钮后，猪脚底中心的屏幕坐标四档均为 `(968,547)` DIP；窗口尺寸和可点区域随档位变化，宽度仍为 324 DIP（含外壳留白）。
-- 追加右下角贴边复验：四档脚底中心均为 `(1870,983)` DIP，允许透明外框少量越界而保持猪完整可见；[特大档原生窗口像素](../screenshots/f12-desktop-edge-96.png) 可见面板和猪均在工作区内。
-- [96px 立绘对照](../screenshots/f12-art-96.png) 在真实美术路由加载了胖胖、猪猪王、恶魔、厨师、宇航员、侦探、天使、海盗、巫师及薄荷，共 10 张 SVG；每张均成功解码并以 96px 显示，边缘清晰。该对照图只用于美术检查，设置页仍是实际产品界面。
+- [3084 隔离实例](http://127.0.0.1:3084/) 运行本分支打包的真实 `store.js`、`routes.js` 和 `client.js`，使用独立的 `/tmp/dsh-pig-f12-web/state.json`，没有伪造快照。`/usr/bin/chromium` 中逐档点击设置按钮，四档网页截图：[48](../../screenshots/f12-web-48.png)、[56](../../screenshots/f12-web-56.png)、[72](../../screenshots/f12-web-72.png)、[96](../../screenshots/f12-web-96.png)。猪的脚底 Y 均为 770px，面板宽度均为 292px；气泡高于头顶 8px、番茄钟角标高于头顶 2px，签到图标的中心在 48/96 档均比猪中心低 13px。
+- 桌面版四档用 python-xlib 截原生窗口：[48](../../screenshots/f12-desktop-48.png)、[56](../../screenshots/f12-desktop-56.png)、[72](../../screenshots/f12-desktop-72.png)、[96](../../screenshots/f12-desktop-96.png)。实际点击设置按钮后，猪脚底中心的屏幕坐标四档均为 `(968,547)` DIP；窗口尺寸和可点区域随档位变化，宽度仍为 324 DIP（含外壳留白）。
+- 追加右下角贴边复验：四档脚底中心均为 `(1870,983)` DIP，允许透明外框少量越界而保持猪完整可见；[特大档原生窗口像素](../../screenshots/f12-desktop-edge-96.png) 可见面板和猪均在工作区内。
+- [96px 立绘对照](../../screenshots/f12-art-96.png) 在真实美术路由加载了胖胖、猪猪王、恶魔、厨师、宇航员、侦探、天使、海盗、巫师及薄荷，共 10 张 SVG；每张均成功解码并以 96px 显示，边缘清晰。该对照图只用于美术检查，设置页仍是实际产品界面。
 - `npm run build && npm test && npm run typecheck` 全绿（48 个测试文件，0 失败）；`client.js` 已重新生成。
 
 ## 验收意见（Claude，F9–F12）
@@ -230,8 +230,8 @@ Claude 已核对过代码的根因写在每张卡里；**动手前仍要先复�
 
 - 原 F12 验证记录中的固定像素截图是返工前的基线，不再代表当前档位。小 / 标准 / 大 / 特大现在分别乘成长阶段尺寸 ×0.85 / ×1 / ×1.3 / ×1.7；纸盒、幼年、青年、成年在标准档仍用 58 / 54 / 60 / 68px。成年特大为 115.6px。
 - 本机旧偏好 48/56/72/96 自动迁到对应档位；其他值迁到标准，不改变存档版本。
-- 先写失败测试并确认缺少 `displayedPigSize` 导致测试红，再实现倍率与迁移。3084 真实宿主用 Chromium 逐档点击设置，幼年猪显示为 45.9 / 54 / 70.2 / 91.8px；[小](../screenshots/f12-web-small.png)、[标准](../screenshots/f12-web-standard.png)、[大](../screenshots/f12-web-large.png)、[特大](../screenshots/f12-web-extra.png)四张截图均只显示档位名。
-- 独立桌面存档孵化后逐档切换，python-xlib 截真实窗口像素：[小](../screenshots/f12-desktop-small-native.png)、[标准](../screenshots/f12-desktop-standard-native.png)、[大](../screenshots/f12-desktop-large-native.png)、[特大](../screenshots/f12-desktop-extra-native.png)。CSS 尺寸与网页一致，原生窗口为 648×1516 像素（当前系统 2× 缩放）；猪始终在面板下方。
+- 先写失败测试并确认缺少 `displayedPigSize` 导致测试红，再实现倍率与迁移。3084 真实宿主用 Chromium 逐档点击设置，幼年猪显示为 45.9 / 54 / 70.2 / 91.8px；[小](../../screenshots/f12-web-small.png)、[标准](../../screenshots/f12-web-standard.png)、[大](../../screenshots/f12-web-large.png)、[特大](../../screenshots/f12-web-extra.png)四张截图均只显示档位名。
+- 独立桌面存档孵化后逐档切换，python-xlib 截真实窗口像素：[小](../../screenshots/f12-desktop-small-native.png)、[标准](../../screenshots/f12-desktop-standard-native.png)、[大](../../screenshots/f12-desktop-large-native.png)、[特大](../../screenshots/f12-desktop-extra-native.png)。CSS 尺寸与网页一致，原生窗口为 648×1516 像素（当前系统 2× 缩放）；猪始终在面板下方。
 
 ### 旧桌面外壳兼容
 

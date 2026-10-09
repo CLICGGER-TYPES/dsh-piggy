@@ -52,7 +52,7 @@
 
 桌面版实测（2026-10-06，外壳 0.5.0）：
 
-![设置里的日志入口](screenshots/log-export-settings.png)
+![设置里的日志入口](../screenshots/log-export-settings.png)
 
 点「导出日志」后按钮变灰，主进程的 `dialog.showSaveDialog` 挂住等待用户选路径——功能与外壳那条路都通。
 网页版在隔离 DSH 实例上验过同一个入口和导出内容（`GET /dsh-piggy/logs/export` 直接可取整份文本）。

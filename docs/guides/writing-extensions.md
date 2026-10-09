@@ -3,7 +3,7 @@
 菜园、矿洞、扭蛋、盲盒都是**在线扩展**：代码不在游戏包里，玩家在「设置 → 🧩 扩展」里下载安装，可以单独更新、删除。
 番茄钟、钓鱼是**内置扩展**（代码在游戏里，只是能开关，见 `packages/pet-core/src/data/extensions.js`），本文不讲。
 
-做新扩展前：**玩法、数值、价格、概率由用户拍板**。先写数值单（参考 `docs/tasks/numbers/X1-blindbox.md` ~ `X4-mine.md`）给用户确认。
+做新扩展前：**玩法、数值、价格、概率由用户拍板**。先写数值单（参考 `docs/numbers/X1-blindbox.md` ~ `X4-mine.md`）给用户确认。
 设计背景见 `docs/design/extension-download.md`（下载与安全）、`docs/design/extension-achievements.md`（成就事件）。
 
 ## 目录

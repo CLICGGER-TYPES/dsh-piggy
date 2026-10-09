@@ -2,7 +2,7 @@
 /**
  * 打工、上课回来带的东西 —— 静态数值表（零逻辑、零 IO，见 docs/CONVENTIONS.md）。
  *
- * 数字来自 docs/tasks/numbers/B4-study-jobs.md §4（用户 2026-10-01 确认）。
+ * 数字来自 docs/numbers/B4-study-jobs.md §4（用户 2026-10-01 确认）。
  * 参考 QQ 宠物：打工回来 75% 带 1 件、25% 带 2 件；这里给得少一点，因为钱多。
  *
  * @module dsh-piggy/data/drops

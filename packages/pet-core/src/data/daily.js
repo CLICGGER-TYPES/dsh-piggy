@@ -2,7 +2,7 @@
 /**
  * 日常玩法：签到 7 天、在线礼包、宠物日记的数值与文案。
  *
- * 数值以 docs/tasks/numbers/B5-daily.md（用户 2026-10-01 确认）为准 —— 不要随手改，
+ * 数值以 docs/numbers/B5-daily.md（用户 2026-10-01 确认）为准 —— 不要随手改，
  * 觉得不合理就写进任务卡等人拍板。零逻辑、零 IO（见 docs/CONVENTIONS.md）。
  *
  * @module dsh-piggy/data/daily
@@ -19,7 +19,7 @@
 /** @param {number} coins @param {Array<[string, number]>} [items] @returns {DailyReward} */
 const reward = (coins, items = []) => Object.freeze({ coins, items: Object.freeze(items.map(([key, count]) => Object.freeze({ key, count }))) })
 /**
- * 7 天签到礼包（G1，用户 2026-10-05 确认，见 docs/tasks/numbers/G1-signin-7.md），价值由低到高，
+ * 7 天签到礼包（G1，用户 2026-10-05 确认，见 docs/numbers/G1-signin-7.md），价值由低到高，
  * 第 7 天大礼含还魂丹。领完第 7 天回到第 1 天；断签不清零。
  * @type {ReadonlyArray<DailyReward>}
  */

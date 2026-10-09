@@ -1,6 +1,6 @@
 # 重构计划（阶段 0–3）
 
-目标：让代码符合 [CONVENTIONS.md](CONVENTIONS.md)，**不改任何行为**。
+目标：让代码符合 [CONVENTIONS.md](../CONVENTIONS.md)，**不改任何行为**。
 
 原则：每一步独立提交、测试全绿、仓库随时可跑。Node 侧拆分后**保留同名 barrel**，
 `import ... from '../core.js'` 这类路径一行都不用改 —— 这是把风险压到最低的关键。

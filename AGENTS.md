@@ -7,7 +7,7 @@
 **dsh-piggy**：一只养在桌面上的小猪（复刻 QQ 宠物的玩法，界面是动森 NookPhone 风格）。同一份代码两种形态：
 
 - **DSH 插件**（网页面板）：根目录 `index.js` / `routes.js` / `store/` 是宿主，`src/client/` 打包成 `client.js`。
-- **桌面版**（Electron）：`apps/desktop/` 是外壳，内置一份游戏包；游戏包可单独热更新，外壳要下载安装包更新。
+- **桌面版**（Electron）：`apps/desktop/` 是外壳，内置一份游戏包（Gitee 的 Windows 安装包除外：首次启动下载，见 HANDOFF 9.4）；游戏包可单独热更新，外壳要下载安装包更新。
 
 | 目录 | 内容 |
 |---|---|
@@ -16,7 +16,8 @@
 | `src/client/` | 面板界面（构建成 `client.js`，**改了源码要 `npm run build` 并提交 `client.js`**） |
 | `apps/desktop/` | 桌面外壳（主进程、preload、打包配置） |
 | `extensions/<key>/` | 在线扩展（菜园、矿洞、扭蛋、盲盒），玩家下载安装 |
-| `docs/` | 文档；`docs/tasks/numbers/` 是用户确认过的数值单 |
+| `assets/` | 游戏里的图和字体；每类放哪、怎么命名、出处见 [docs/ASSETS.md](docs/ASSETS.md)（新增素材要登记，测试会查） |
+| `docs/` | 文档；`docs/ROADMAP.md` 是**唯一的待办清单**，`docs/numbers/` 是用户确认过的数值单，`docs/archive/` 是历史文档（不再更新） |
 
 ## 红线（必须先问用户）
 
@@ -76,7 +77,9 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 
 | 想做什么 | 读这个 |
 |---|---|
-| 了解现状、发版流程、已知问题、测试机 | [docs/HANDOFF.md](docs/HANDOFF.md) |
+| 了解现状、发版流程、测试机 | [docs/HANDOFF.md](docs/HANDOFF.md) |
+| **现在该做什么、有什么待用户决定、已知问题** | [docs/ROADMAP.md](docs/ROADMAP.md)（做完一项就更新它） |
+| 加图、找图、图的出处 | [docs/ASSETS.md](docs/ASSETS.md) |
 | **做任何新功能**（新玩法、音效、动画、走路、动图、联网……）：流程、放哪、预留的扩展点、完工清单 | [docs/guides/adding-features.md](docs/guides/adding-features.md) |
 | 编码规范、提交格式 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
 | 写/改在线扩展 | [docs/guides/writing-extensions.md](docs/guides/writing-extensions.md) |

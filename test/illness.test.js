@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * B3 疾病：按条件概率发病、五条链、吃错药加重、百草丹、看医生、旧药退款。
- * 数字对照 docs/tasks/numbers/B3-illness.md。
+ * 数字对照 docs/numbers/B3-illness.md。
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'

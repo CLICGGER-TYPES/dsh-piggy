@@ -135,7 +135,7 @@ let petAsked = null
  * 面板窗口（外壳 0.6.0 起）：面板不再和猪挤在同一个窗口里。
  * 以前开面板、冒气泡、拖动都要改猪那个窗口的大小，再靠计算把猪补回原位，差一拍猪就跳
  * （2026-10-06～07 修了四轮）。网上的桌宠（Clawd、Shimeji、eSheep）都是猪一个固定大小的
- * 小窗口、菜单另开窗口：开面板时猪的窗口一动不动，拖动只挪窗口。见 docs/tasks/I-round.md。
+ * 小窗口、菜单另开窗口：开面板时猪的窗口一动不动，拖动只挪窗口。见 docs/archive/tasks/I-round.md。
  * 只有新游戏包会叫它（piggyShell.panel.toggle）；老游戏包照旧单窗口。
  */
 let panelWin = null

@@ -1,4 +1,4 @@
-// G2 照料数值（docs/tasks/numbers/G2-care-balance.md，用户 2026-10-05 确认）
+// G2 照料数值（docs/numbers/G2-care-balance.md，用户 2026-10-05 确认）
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ACTIONS, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, SATIETY_DECAY_PER_MIN } from '../packages/pet-core/src/core/constants.js'

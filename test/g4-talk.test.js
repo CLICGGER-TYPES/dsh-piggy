@@ -1,4 +1,4 @@
-// G 批次：对话与互动（docs/tasks/numbers/G4-lines.md）。
+// G 批次：对话与互动（docs/numbers/G4-lines.md）。
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 

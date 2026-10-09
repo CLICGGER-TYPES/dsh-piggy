@@ -2,7 +2,7 @@
 /**
  * 职业与门槛 —— 静态数值表（零逻辑、零 IO，见 docs/CONVENTIONS.md）。
  *
- * 数字全部来自 docs/tasks/numbers/B4-study-jobs.md（用户 2026-10-01 确认）：
+ * 数字全部来自 docs/numbers/B4-study-jobs.md（用户 2026-10-01 确认）：
  * 原版 18 种 + 新增 15 种，门槛 = 等级 + 某几门课的课时（+ 兴趣证书）。
  * 三维不再是门槛，只决定报酬加成（`trait` 是算加成用的那一维）。
  *

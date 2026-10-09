@@ -3,7 +3,7 @@
  * 生病与治病：按条件概率发病、病情推进与自愈、吃药（对症 / 吃错 / 百草丹）、看医生、死亡。
  *
  * 纯函数领域逻辑：时间由 nowMs 传入，随机数来自 core/random.js（见 docs/CONVENTIONS.md）。
- * 数字见 data/illness.js（docs/tasks/numbers/B3-illness.md）。
+ * 数字见 data/illness.js（docs/numbers/B3-illness.md）。
  * @module dsh-piggy/core/illness
  */
 

@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * B4 学习 → 职业：九门课各算课时、毕业、33 种职业的门槛、证书、掉落、旧存档折算。
- * 数字对照 docs/tasks/numbers/B4-study-jobs.md。
+ * 数字对照 docs/numbers/B4-study-jobs.md。
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'

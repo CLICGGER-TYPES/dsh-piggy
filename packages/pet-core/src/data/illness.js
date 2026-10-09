@@ -2,7 +2,7 @@
 /**
  * 疾病链、药与发病 —— 静态数值表（零逻辑、零 IO，见 docs/CONVENTIONS.md）。
  *
- * 数字全部来自 docs/tasks/numbers/B3-illness.md（用户 2026-10-01 确认）。
+ * 数字全部来自 docs/numbers/B3-illness.md（用户 2026-10-01 确认）。
  * 链与药名照 QQ 宠物怀旧服 State.js；头晕、皮肤两条是原版有药没接上的链，
  * 头晕缺的第 3 级补了「神经衰弱 · 噗噗神水」。
  *

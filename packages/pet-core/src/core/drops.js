@@ -3,7 +3,7 @@
  * 打工、上课回来随手带的东西。
  *
  * 纯函数领域逻辑：随机数来自 core/random.js（见 docs/CONVENTIONS.md）。
- * 数字见 data/drops.js（docs/tasks/numbers/B4-study-jobs.md §4）。
+ * 数字见 data/drops.js（docs/numbers/B4-study-jobs.md §4）。
  * @module dsh-piggy/core/drops
  */
 

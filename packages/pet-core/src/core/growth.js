@@ -3,7 +3,7 @@
  * 成长：时间自己长、照顾好坏定快慢、陪主人干活有加成、升级和换形态。
  *
  * 纯函数领域逻辑：时间由 nowMs 传入，不读写文件、不碰 DOM（见 docs/CONVENTIONS.md）。
- * 数字见 data/growth.js（docs/tasks/numbers/B2-growth.md）。
+ * 数字见 data/growth.js（docs/numbers/B2-growth.md）。
  * @module dsh-piggy/core/growth
  */
 

@@ -2,7 +2,7 @@
 /**
  * 成长值与等级 —— 静态数值表（零逻辑、零 IO，见 docs/CONVENTIONS.md）。
  *
- * 数字全部来自 docs/tasks/numbers/B2-growth.md（用户 2026-10-01 确认）。
+ * 数字全部来自 docs/numbers/B2-growth.md（用户 2026-10-01 确认）。
  * 参考 QQ 宠物 GrowUp.js：成长值随时间自己涨，心情、健康、饿、脏会拖慢它 ——
  * 照顾得好就长得快。去掉的是原版 400 级的肝和粉钻加速。
  *

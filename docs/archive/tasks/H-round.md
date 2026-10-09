@@ -14,7 +14,7 @@
 - **别动桌面程序 `apps/desktop/main.js`、`preload.cjs`**（外壳要保持 0.3.0），窗口相关都改游戏包里的 `src/client/desktop/*`。
 - 扩展的代码在 `extensions/<名字>/`（`manifest.json`、`server.js`、`client.js`），格式见 `docs/design/extension-download.md`；扩展只能改自己的数据，动猪身上的东西只能走 `api`（`store/ext-runtime.js` 的 `apiFor`）。
 - 界面风格跟猪猪面板统一：奶油底（`--ac-bg-input` 等变量）、圆角卡片、青绿主按钮（`.dp-btn`）、浅色次按钮（`.dp-mini.dp-mini-plain`）。**不要用深色大块背景。**
-- 数值一律按 `docs/tasks/numbers/` 里对应的单子，不要自己改数。
+- 数值一律按 `docs/numbers/` 里对应的单子，不要自己改数。
 
 ---
 
@@ -97,7 +97,7 @@
 
 ## H4 · 扭蛋扩展（新，`extensions/gacha/`）
 
-数值单：`docs/tasks/numbers/X2-gacha.md`。参考：Hack Club 的扭蛋机（摇机器、转把手、胶囊弹出，只借手感）；不用任何付费素材。
+数值单：`docs/numbers/X2-gacha.md`。参考：Hack Club 的扭蛋机（摇机器、转把手、胶囊弹出，只借手感）；不用任何付费素材。
 
 - 一台扭蛋机（扩展 App「扭蛋」），三个口味可选（零食 / 杂货 / 药箱），按数值单的池子出**现有物品**（`api.give` 放进背包）。
 - 界面：奶油底；中间一台用 CSS 画的扭蛋机（透明圆罩里一堆彩色胶囊、底座、右边把手、出口）。点「扭一次」：把手转一圈（0.6s）→ 罩里的胶囊抖动 → 一颗胶囊从出口滚出来（颜色 = 稀有度：白普通、蓝稀有、金超稀有）→ 点胶囊（或自动 0.6s 后）上下两半分开 → 物品弹出，写名字和「放进背包」；金色胶囊加一圈闪光。
@@ -107,7 +107,7 @@
 
 ## H5 · 种菜扩展（新，`extensions/farm/`）
 
-数值单：`docs/tasks/numbers/X3-farm.md`。参考 Farmhand 的玩法思路（GPL，只看不抄代码）。
+数值单：`docs/numbers/X3-farm.md`。参考 Farmhand 的玩法思路（GPL，只看不抄代码）。
 
 - 扩展 App「菜园」：上面一块土地，地块按 2×3 排（一开始 2 块，其余上锁写「🔒 N 🪙 开垦」）。
 - 种子在**商店的扩展货架**「种子」里买（用 H2 的 shelf 口子，`currency` 用金币：`{ label:'金币', emoji:'🪙', balance }`，买的时候扩展自己 `api.spend`）。种子放在扩展自己的仓库里。
@@ -118,7 +118,7 @@
 
 ## H6 · 挖矿扩展（新，`extensions/mine/`）
 
-数值单：`docs/tasks/numbers/X4-mine.md`。参考原版 Motherload 的规则（往下挖、越深越值钱、回地面卖矿、升级），代码全部自己写。
+数值单：`docs/numbers/X4-mine.md`。参考原版 Motherload 的规则（往下挖、越深越值钱、回地面卖矿、升级），代码全部自己写。
 
 - 扩展 App「矿洞」：一块 6 列 × 8 行的格子地图（当前层），顶上一排是地面。每格是土 / 石头 / 硬岩 / 矿 / 梯子（往下一层）/ 化石。没挖开的格子是盖着的（只露出土的颜色，看不出里面是什么），挖开才知道。
 - 点一个和已挖开区域相邻的格子就挖：每次挖消耗 1 体力，土 1 下、石头 2 下、硬岩 3 下（镐子升级后少挖几下，见数值单），挖的时候格子裂开、碎屑飞一下。
