@@ -373,8 +373,8 @@ function registerLogRoutes(webServer, store) {
  * degrades on a host with no web seam, but only *after* the service has
  * actually been waited for.
  */
-export function registerRoutes(ctx, store) {
-  if (store.ext === undefined) store.ext = createExtRuntime(store, { gameVersion: PACKAGE_VERSION })
+export function registerRoutes(ctx, store, options = {}) {
+  if (store.ext === undefined) store.ext = createExtRuntime(store, { gameVersion: PACKAGE_VERSION, fetch: options.fetch })
   ctx.inject(['webServer'], (webCtx) => {
     const webServer = webCtx.webServer
     if (webServer === undefined) return () => {}

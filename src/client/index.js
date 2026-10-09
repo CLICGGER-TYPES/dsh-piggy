@@ -217,6 +217,7 @@ import { attachSizePreference } from './pig-size.js'
       // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
       ctx.previewArt = function (name) { forceFeedbackArt(name); syncPigArt(pig, pigArt, pigEmoji) }
       ctx.idleNow = function (key) { if (ctx.life) ctx.life.idleNow(key) }
+      ctx.walkNow = function () { if (ctx.life) ctx.life.walkNow() }
       var birthday = createBirthday({ ctx: ctx, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: burst, render: function () { refresh() } })
       // 外壳 0.6.0 起猪和面板各一个窗口（split.js）；老外壳和网页版是 null。
       var splitRole = wireSplit(ctx, { refresh: function () { refresh() }, isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' } })

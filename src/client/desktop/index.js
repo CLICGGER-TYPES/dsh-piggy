@@ -254,6 +254,7 @@ export function install(shell) {
   ;/** @type {any} */ (window).__dshPiggyShell = {
     // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
     role: 'pet',
+    proxy: shell.proxy,
     split: true,
     onStateChanged: shell.onStateChanged,
     panel: {

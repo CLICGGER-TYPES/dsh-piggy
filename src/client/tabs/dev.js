@@ -268,8 +268,8 @@ export function renderDevTab(ui) {
     { key: 'away24', label: '⏩ +1 天', desc: '时间直接过去 1 天（换天、签到、日记）', run: function () { patch({ __advanceMs: 86400000 }) } },
   ])
   time('猪自己找事做', [
-    { key: 'idle', label: '🐷 小动作', desc: '马上做一个小动作（打滚、打盹、追蝴蝶……）', off: !ui.life, run: function () { ui.setOpen(false); ui.life.idleNow() } },
-    { key: 'walk', label: '🚶 散步一次', desc: '马上沿屏幕底边走一趟（只有桌面版）', off: !ui.life || typeof desktopShell()?.moveBy !== 'function', run: function () { ui.setOpen(false); ui.life.walkNow() } },
+    { key: 'idle', label: '🐷 小动作', desc: '马上做一个小动作（打滚、打盹、追蝴蝶……）', off: typeof ui.idleNow !== 'function', run: function () { ui.setOpen(false); ui.idleNow() } },
+    { key: 'walk', label: '🚶 散步一次', desc: '马上沿屏幕底边走一趟（只有桌面版）', off: typeof ui.walkNow !== 'function' || desktopShell() === null, run: function () { ui.setOpen(false); ui.walkNow() } },
     { key: 'timeTalk', label: '🕐 按时间说', desc: '问一次「现在有没有按时间该说的话」（一天一次的已经说过就不说）', run: function () { ui.send('chat', { reason: 'time' }) } },
   ])
 

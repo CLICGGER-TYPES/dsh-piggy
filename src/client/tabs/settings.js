@@ -12,6 +12,7 @@ import { PIG_SIZES, displayedPigSize, pigSize, setPigSize } from '../pig-size.js
 import { setWalk, walkEnabled } from '../life.js'
 import { exportLogs } from '../log-export.js'
 import { str } from '../values.js'
+import { renderProxySettings } from './proxy.js'
 import { extensionUpdateAvailable } from './extensions.js'
 
 /** 一项设置：标题、说明，下面放控件。 */
@@ -110,6 +111,9 @@ export function renderSettingsTab(ui) {
     walkToggle.appendChild(el('span', 'dp-switch-text', walking ? '开' : '关'))
     walk.head.appendChild(walkToggle)
   }
+
+  const proxy = desktopShell()?.proxy
+  if (proxy) renderProxySettings(ui, section, proxy)
 
   // 日志：猪出问题时导出这一份，里面记着做了什么、哪一步失败了。
   const logs = section(ui, '日志', '遇到问题导出这一份，里面有版本、动作和报错')

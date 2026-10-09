@@ -399,3 +399,25 @@ test('调试页「经济」列出每个来源，扩展删掉了也照样显示�
   assert.match(text('ext.mine.sell'), /矿洞 · sell/)
   assert.match(text('ext.farm.sell'), /farm（已删除） · sell/)
 })
+
+test('desktop panel debug idle and walk stay enabled without a local life instance', () => {
+  const calls = []
+  const { document } = fakeDom()
+  globalThis.document = document
+  globalThis.window = { __dshPiggyShell: { role: 'panel', beginDrag() {} } }
+  const ui = {
+    view: { ...SNAPSHOT, pig: PIG }, content: document.createElement('div'), life: null,
+    send() {}, devOff() {}, setOpen() {}, host: { getAttribute: () => 'false' },
+    idleNow: () => calls.push('idleNow'), walkNow: () => calls.push('walkNow'),
+  }
+  try {
+    renderDevTab(ui)
+    const idle = findByAttr(ui.content, 'data-dev', 'idle')
+    const walk = findByAttr(ui.content, 'data-dev', 'walk')
+    assert.equal(idle.disabled, false)
+    assert.equal(walk.disabled, false)
+    idle.fire('click')
+    walk.fire('click')
+    assert.deepEqual(calls, ['idleNow', 'walkNow'])
+  } finally { delete globalThis.window }
+})

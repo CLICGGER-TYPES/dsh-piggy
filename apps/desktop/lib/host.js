@@ -12,8 +12,9 @@ import { pathToFileURL } from 'node:url'
  * Load the game from `gameDir` and serve its routes.
  * @param {string} gameDir  a folder laid out like apps/desktop/game (see scripts/pack-game.mjs)
  * @param {string} statePath where this pig's save lives
+ * @param {{ fetch?: typeof globalThis.fetch, onSnapshot?: (view: any) => void }} [options]
  */
-export async function startHost(gameDir, statePath) {
+export async function startHost(gameDir, statePath, options = {}) {
   const load = name => import(pathToFileURL(join(gameDir, name)).href)
   const { createStore } = await load('store.js')
   const { registerRoutes } = await load('routes.js')
@@ -30,7 +31,7 @@ export async function startHost(gameDir, statePath) {
   /** @type {{ kind: string, path: string, handler: Function }[]} */
   const routes = []
   const webServer = { register: route => { routes.push(route); return () => {} } }
-  registerRoutes({ inject: (deps, fn) => { if (deps.includes('webServer')) fn({ webServer }) } }, store)
+  registerRoutes({ inject: (deps, fn) => { if (deps.includes('webServer')) fn({ webServer }) } }, store, options)
 
   /**
    * Answer one request the way DSH's web server would.
@@ -54,7 +55,14 @@ export async function startHost(gameDir, statePath) {
       const res = {
         writeHead(code, extra) { status = code; headers = { ...headers, ...(extra ?? {}) }; return res },
         setHeader(name, value) { headers[name.toLowerCase()] = String(value) },
-        end(chunk) { resolve({ status, headers, body: chunk ?? '' }) },
+        end(chunk) {
+          // A snapshot drains the store queue. Fan it out before either window consumes the response.
+          if (options.onSnapshot && String(headers['content-type'] ?? '').includes('application/json')) {
+            const view = JSON.parse(String(chunk))
+            if (Array.isArray(view.pending) && view.pending.length > 0) options.onSnapshot(view)
+          }
+          resolve({ status, headers, body: chunk ?? '' })
+        },
       }
       Promise.resolve(route.handler(req, res)).catch(reject)
     })

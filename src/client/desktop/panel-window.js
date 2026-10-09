@@ -72,6 +72,7 @@ export function installPanel(bridge) {
   document.head.appendChild(style)
   ;/** @type {any} */ (window).__dshPiggyShell = {
     role: 'panel',
+    proxy: bridge.proxy,
     split: true,
     panel: bridge.panel,
     onStateChanged: bridge.onStateChanged,

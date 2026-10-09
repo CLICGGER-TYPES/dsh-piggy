@@ -158,30 +158,157 @@
   }
 
   // src/client/feedback-framing.js
+  var FRAME_HEIGHT = 0.84375;
   var FEEDBACK_FRAMING = Object.freeze({
-    "allergy": [1.4142, -0.83, -0.55],
-    "collection-badge": [1.0575, 0, 0.21],
-    "collection-cage": [1.0302, 0.2, 4.02],
-    "collection-check": [1.0529, -0.62, 2.06],
-    "collection-chicken": [1.0814, -3.38, -0.21],
-    "collection-courier": [1.5321, 5.39, 0.6],
-    "collection-scallion": [1.1116, -1.52, 1.52],
-    "collection-throne": [1.0127, -0.2, 1.19],
-    "courier": [1.5321, 5.39, 0.6],
-    "death-day": [1.1659, -6.6, -1.82],
-    "faint": [1.2646, -0.25, 0],
-    "fishing": [1.358, 2.65, 4.24],
-    "ghost-grave": [1.4937, -0.58, 1.46],
-    "hungry": [1.2132, -2.13, 1.42],
-    "lie-flat": [1.5933, 0, -2.49],
-    "music-earbuds": [1.4059, 0.55, -2.75],
-    "music-headphones-v2": [1.0346, -1.01, -0.61],
-    "music-rainbow": [1.1168, -9.16, -1.09],
-    "painting": [1.2713, 0.5, -3.23],
-    "sleep-cloud": [1.195, 0, -2.57],
-    "study-book": [1.3427, 0, -2.62],
-    "study-pink-book": [1.1274, 0, -4.18],
-    "suspended": [1.1602, 1.36, 11.33]
+    "allergy": [1.44, -0.84, -0.56],
+    "birthday": [0.8438, 0, 0],
+    "collection-badge": [0.9774, 0, 0.19],
+    "collection-bubbles": [1.0189, 0, -0.4],
+    "collection-cage": [0.931, 0.18, 3.64],
+    "collection-check": [1.0485, -0.61, 2.05],
+    "collection-chicken": [0.9774, -3.05, -0.19],
+    "collection-courier": [1.44, 5.06, 0.56],
+    "collection-fever": [1.1077, -0.43, 2.38],
+    "collection-fitness": [1.1739, 0, 1.83],
+    "collection-letter": [1.1429, -0.89, 1.56],
+    "collection-mosquito": [1.1803, 0.23, 2.54],
+    "collection-scallion": [1.0746, -1.47, 1.47],
+    "collection-snack": [1.1368, -0.44, 0.44],
+    "collection-soup": [0.8816, 0, 1.21],
+    "collection-stack": [0.9, 0.88, 0],
+    "collection-taro": [1.0385, -0.2, -2.03],
+    "collection-throne": [0.9153, -0.18, 1.07],
+    "courier": [1.44, 5.06, 0.56],
+    "death-day": [1.6119, -9.13, -2.52],
+    "faint": [1.3012, -0.25, 0],
+    "fishing": [1.44, 2.81, 4.5],
+    "ghost-grave": [1.6744, -0.65, 1.64],
+    "hungry": [1.1613, -2.04, 1.36],
+    "lie-flat": [1.7705, 0, -2.77],
+    "music-earbuds": [1.3671, 0.53, -2.67],
+    "music-headphones-v2": [1.2343, -1.21, -0.72],
+    "music-rainbow": [1.8462, -15.14, -1.8],
+    "painting": [1.2632, 0.49, -3.21],
+    "recruit": [0.931, 0, 2.55],
+    "runny-nose": [0.864, 0.17, -1.01],
+    "sleep-cloud": [1.4305, 0, -3.07],
+    "study-book": [1.5, 0, -2.93],
+    "study-determined": [1.0964, -0.21, 0.21],
+    "study-pink-book": [1.0854, 0, -4.03],
+    "suspended": [1.0485, 1.23, 10.24],
+    "turning": [1.0746, 0.84, -4.41],
+    "twitch": [1.102, -1.08, -6.03]
+  });
+  var BUILTIN_FRAMING = Object.freeze({
+    "career-astronaut-bathe.svg": [0.973, 1.33, -1.9],
+    "career-astronaut-eat.svg": [1.1489, -1.8, -8.08],
+    "career-astronaut-pet.svg": [0.9515, 2.23, 2.42],
+    "career-astronaut-play.svg": [0.931, -6.36, -1.45],
+    "career-astronaut-relaxed.svg": [0.9515, 0.74, 0.56],
+    "career-astronaut-sleep.png": [1.1613, -0.91, -3.81],
+    "career-astronaut-study.svg": [1.0093, -2.56, -6.7],
+    "career-astronaut-trip.svg": [1.0189, -3.98, -4.78],
+    "career-astronaut-work.svg": [1.0047, -2.35, -4.91],
+    "career-astronaut.svg": [0.9515, 0.74, 0.56],
+    "career-chef-bathe.svg": [0.973, 1.33, -1.9],
+    "career-chef-eat.svg": [1.08, 1.05, -5.06],
+    "career-chef-pet.svg": [0.9558, 0, 4.11],
+    "career-chef-play.svg": [0.8816, -3.79, 0.86],
+    "career-chef-relaxed.svg": [0.9191, 0.54, 3.77],
+    "career-chef-sleep.png": [1.0112, -0.2, 0.24],
+    "career-chef-study.svg": [0.9114, -0.53, -1.96],
+    "career-chef-trip.svg": [0.9774, -5.35, 4.01],
+    "career-chef-work.svg": [0.9076, -2.13, -0.35],
+    "career-chef.svg": [0.9191, 0.54, 3.77],
+    "pig-devil-bathe.svg": [1.0335, -0.81, -3.43],
+    "pig-devil-eat.svg": [1.2706, -2.73, -2.48],
+    "pig-devil-fly.svg": [1.08, -1.05, 3.8],
+    "pig-devil-pet.svg": [1.0286, -0.8, -2.41],
+    "pig-devil-play.svg": [1.0237, -0.8, -3.8],
+    "pig-devil-relaxed.svg": [1.0047, -0.98, -0.98],
+    "pig-devil-sleep.png": [1.1111, 0, -2.86],
+    "pig-devil-study.svg": [1.3012, 1.52, -5.08],
+    "pig-devil-trip.svg": [1.0189, -1.99, -3.98],
+    "pig-devil-work.svg": [1.1676, 2.28, -10.72],
+    "pig-devil.svg": [1.0047, -0.98, -0.98],
+    "pig-fat-bathe.svg": [1.0435, 0, -5.1],
+    "pig-fat-eat.svg": [1.3585, -0.27, -17.25],
+    "pig-fat-pet.svg": [0.9432, 0.74, 2.03],
+    "pig-fat-play.svg": [0.973, -2.09, -2.28],
+    "pig-fat-relaxed.svg": [1.0435, -0.2, -0.2],
+    "pig-fat-sleep.png": [1.1043, -0.43, -3.62],
+    "pig-fat-study.svg": [1.1934, -0.47, -15.62],
+    "pig-fat-trip.svg": [1.2135, -8.77, -12.32],
+    "pig-fat-work.svg": [1.2934, -0.76, -18.44],
+    "pig-fat.svg": [1.0435, -0.2, -0.2],
+    "pig-king-bathe.svg": [1.08, -2.32, -5.06],
+    "pig-king-eat.svg": [1.125, -7.47, 0],
+    "pig-king-pet.svg": [1.0093, -7.49, 0],
+    "pig-king-play.svg": [0.9153, -1.97, 0.72],
+    "pig-king-relaxed.svg": [0.9391, -0.73, -1.83],
+    "pig-king-sleep.png": [1.0976, 0, -1.8],
+    "pig-king-study.svg": [1.0964, -4.5, -0.64],
+    "pig-king-trip.svg": [1.0385, -5.07, 2.84],
+    "pig-king-work.svg": [1.1192, -0.87, -6.78],
+    "pig-king.svg": [0.9391, -0.73, -1.83],
+    "pig-round-bathe.svg": [1.0485, 0, -3.69],
+    "pig-round-eat.svg": [1.0693, 1.46, -0.84],
+    "pig-round-pet.svg": [1.0286, 1.21, 0.8],
+    "pig-round-play.svg": [1.0093, 0, -3.55],
+    "pig-round-relaxed.svg": [1.0237, -0.2, 1],
+    "pig-round-sleep.png": [1.0909, 0, -3.58],
+    "pig-round-study.svg": [1.0189, -0.8, -5.57],
+    "pig-round-trip.svg": [1.2135, 0, -2.37],
+    "pig-round-work.svg": [1.2414, 0, -12.12],
+    "pig-round.svg": [1.0237, -0.2, 1],
+    "piglet-sleep.png": [1.1688, -0.46, -3.56],
+    "piglet.svg": [1, 0.59, 0.39],
+    "skin-angel-bathe.svg": [0.8852, 1.21, 2.07],
+    "skin-angel-eat.svg": [1.102, 1.94, -6.03],
+    "skin-angel-pet.svg": [0.973, 0, 3.42],
+    "skin-angel-play.svg": [0.9, -3.16, 0],
+    "skin-angel-relaxed.svg": [0.9191, 0.54, 3.77],
+    "skin-angel-sleep.png": [1.118, -1.09, -4.19],
+    "skin-angel-study.svg": [0.9351, -0.55, -3.1],
+    "skin-angel-trip.svg": [0.931, -3.09, -0.73],
+    "skin-angel-work.svg": [0.927, -2.17, -1.27],
+    "skin-angel.svg": [0.9191, 0.54, 3.77],
+    "skin-detective-bathe.svg": [0.973, 1.33, -1.9],
+    "skin-detective-eat.svg": [1.1429, 1.12, -7.81],
+    "skin-detective-pet.svg": [0.973, 0, 3.42],
+    "skin-detective-play.svg": [0.927, -3.98, -1.27],
+    "skin-detective-relaxed.svg": [0.9191, 0.54, 3.77],
+    "skin-detective-sleep.png": [1.0843, 0, -1.27],
+    "skin-detective-study.svg": [0.9686, -0.57, -4.73],
+    "skin-detective-trip.svg": [1.0537, -5.76, 1.03],
+    "skin-detective-work.svg": [0.96, -2.25, -2.81],
+    "skin-detective.svg": [0.9191, 0.54, 3.77],
+    "skin-mint-bathe.svg": [1, 0.59, 0.39],
+    "skin-mint-eat.svg": [1, 0.59, 0.39],
+    "skin-mint-pet.svg": [1, 0.59, 0.39],
+    "skin-mint-play.svg": [1, 0.59, 0.39],
+    "skin-mint-sleep.png": [1.0843, 0, -2.8],
+    "skin-mint.svg": [1, 0.59, 0.39],
+    "skin-pirate-bathe.svg": [0.973, 1.33, -1.9],
+    "skin-pirate-eat.svg": [1.1489, 1.12, -8.08],
+    "skin-pirate-pet.svg": [0.973, 0, 3.42],
+    "skin-pirate-play.svg": [0.931, -4, -1.45],
+    "skin-pirate-relaxed.svg": [1, 0.59, 0.39],
+    "skin-pirate-sleep.png": [1.1538, -0.45, -4.6],
+    "skin-pirate-study.svg": [1.0093, -0.59, -6.7],
+    "skin-pirate-trip.svg": [1.1551, -6.32, -2.93],
+    "skin-pirate-work.svg": [1.0286, -2.41, -6.03],
+    "skin-pirate.svg": [1, 0.59, 0.39],
+    "skin-wizard-bathe.svg": [0.973, 1.33, -1.9],
+    "skin-wizard-eat.svg": [1.0385, 1.01, -3.25],
+    "skin-wizard-pet.svg": [0.9391, 0, 4.77],
+    "skin-wizard-play.svg": [0.871, -3.74, 1.36],
+    "skin-wizard-relaxed.svg": [0.9191, 0.54, 3.77],
+    "skin-wizard-sleep.png": [1.0286, -0.2, -0.48],
+    "skin-wizard-study.svg": [0.8852, -0.52, -0.69],
+    "skin-wizard-trip.svg": [0.9474, -5.18, 5.18],
+    "skin-wizard-work.svg": [0.8852, -2.07, 0.69],
+    "skin-wizard.svg": [0.9191, 0.54, 3.77]
   });
 
   // src/client/art.js
@@ -203,16 +330,15 @@
   ]);
   var CUSTOM_FRAME_CACHE = /* @__PURE__ */ new Map();
   var CUSTOM_FRAME_PENDING = /* @__PURE__ */ new WeakMap();
-  var FRAME_TARGET = 239 / 256;
   function applyFrame(image, frame2) {
     if (typeof image.style?.setProperty !== "function") return;
     image.style.setProperty("--art-zoom", frame2 ? String(frame2[0]) : "1");
     image.style.setProperty("--art-x", frame2 ? frame2[1] + "%" : "0%");
     image.style.setProperty("--art-y", frame2 ? frame2[2] + "%" : "0%");
   }
-  function frameCustomImage(image, src) {
+  function frameCustomImage(image, src, sleep = false) {
     if (!src.includes("/custom-")) {
-      applyFrame(image, null);
+      applyFrame(image, BUILTIN_FRAMING[src.slice(ART_URL.length)] ?? null);
       return;
     }
     const cached = CUSTOM_FRAME_CACHE.get(src);
@@ -228,25 +354,28 @@
       if (image.getAttribute("src") !== src) return;
       try {
         const canvas = document.createElement("canvas");
-        canvas.width = canvas.height = 128;
+        canvas.height = 128;
+        canvas.width = sleep ? Math.round(128 * 1.2) : 128;
         const context = canvas.getContext?.("2d", { willReadFrequently: true });
         if (!context) return;
-        context.drawImage(image, 0, 0, 128, 128);
-        const pixels = context.getImageData(0, 0, 128, 128).data;
-        let left = 128, top = 128, right = 0, bottom = 0;
-        for (let y = 0; y < 128; y += 1) for (let x = 0; x < 128; x += 1) {
-          if (pixels[(y * 128 + x) * 4 + 3] <= 16) continue;
+        const fit = Math.min(canvas.width / image.naturalWidth, canvas.height / (image.naturalHeight || image.naturalWidth));
+        const width = image.naturalWidth * fit, height = (image.naturalHeight || image.naturalWidth) * fit;
+        context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let left = canvas.width, top = canvas.height, right = 0, bottom = 0;
+        for (let y = 0; y < canvas.height; y += 1) for (let x = 0; x < canvas.width; x += 1) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] <= 16) continue;
           left = Math.min(left, x);
           top = Math.min(top, y);
           right = Math.max(right, x + 1);
           bottom = Math.max(bottom, y + 1);
         }
         if (right <= left || bottom <= top) return;
-        const zoom = Math.max(1, FRAME_TARGET / (Math.max(right - left, bottom - top) / 128));
-        const frame2 = zoom < 1.01 ? null : [
+        const zoom = FRAME_HEIGHT / ((bottom - top) / canvas.height);
+        const frame2 = [
           zoom,
-          (0.5 - (left + right) / 256) * zoom * 100,
-          (0.5 - (top + bottom) / 256) * zoom * 100
+          (0.5 - (left + right) / (2 * canvas.width)) * zoom * 100,
+          (0.5 - (top + bottom) / (2 * canvas.height)) * zoom * 100
         ];
         CUSTOM_FRAME_CACHE.set(src, frame2);
         applyFrame(image, frame2);
@@ -261,7 +390,7 @@
     var name = SLEEP_ART.has(art) ? art : "piglet";
     var src = ART_URL + (custom ? art + "-sleep.svg" : name + "-sleep.png");
     if (image.getAttribute("src") !== src) image.src = src;
-    frameCustomImage(image, src);
+    frameCustomImage(image, src, true);
   }
   var forcedFeedback = null;
   function forceFeedbackArt(name) {
@@ -663,14 +792,14 @@
     const text = String(value ?? "");
     return text.length > limit ? text.slice(0, limit) + "\u2026" : text;
   };
-  function record(level, scope, message, fields = {}) {
+  function record(level, scope, message2, fields = {}) {
     seq += 1;
     entries.push({
       id: "c" + seq,
       at: Date.now(),
       level: ["debug", "info", "warn", "error"].includes(level) ? level : "info",
       scope: clip(scope, 32),
-      message: clip(message, MAX_TEXT),
+      message: clip(message2, MAX_TEXT),
       fields: fields !== null && typeof fields === "object" ? fields : {}
     });
     if (entries.length > LIMIT) entries.splice(0, entries.length - LIMIT);
@@ -938,6 +1067,7 @@
     document.head.appendChild(style);
     window.__dshPiggyShell = {
       role: "panel",
+      proxy: bridge3.proxy,
       split: true,
       panel: bridge3.panel,
       onStateChanged: bridge3.onStateChanged,
@@ -1836,13 +1966,14 @@
   }
 
   // src/client/split.js
-  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform", "previewArt", "idleNow", "birthdayNow"];
+  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform", "previewArt", "idleNow", "walkNow", "birthdayNow"];
   function wireSplit(ctx, hooks) {
     var role2 = desktopRole();
     var shell2 = desktopShell();
     if (role2 === null || shell2 === null || shell2.panel === void 0) return null;
-    if (typeof shell2.onStateChanged === "function") shell2.onStateChanged(function() {
-      hooks.refresh();
+    if (typeof shell2.onStateChanged === "function") shell2.onStateChanged(function(view) {
+      if (view && Array.isArray(view.pending)) ctx.render(view);
+      else hooks.refresh();
     });
     if (role2 === "pet") {
       shell2.panel.onFx(function(fx) {
@@ -1850,8 +1981,8 @@
         var run = ctx[fx.name];
         if (typeof run === "function") run.apply(null, Array.isArray(fx.args) ? fx.args : []);
       });
-      shell2.panel.on(function(message) {
-        if (message && message.type === "closed") ctx.isOpen = false;
+      shell2.panel.on(function(message2) {
+        if (message2 && message2.type === "closed") ctx.isOpen = false;
       });
       return role2;
     }
@@ -1860,17 +1991,17 @@
         shell2.panel.fx(name, Array.prototype.slice.call(arguments));
       };
     });
-    shell2.panel.on(function(message) {
-      if (message === null || typeof message !== "object") return;
-      if (message.type === "open") {
-        shell2.setAnchor({ vertical: message.vertical === "below" ? "below" : "above", maxHeight: Number(message.maxHeight) || 520 });
+    shell2.panel.on(function(message2) {
+      if (message2 === null || typeof message2 !== "object") return;
+      if (message2.type === "open") {
+        shell2.setAnchor({ vertical: message2.vertical === "below" ? "below" : "above", maxHeight: Number(message2.maxHeight) || 520 });
         if (!ctx.isOpen) ctx.setOpen(true);
         else ctx.fitPanel();
         shell2.syncGeometry();
-      } else if (message.type === "closed") {
+      } else if (message2.type === "closed") {
         if (ctx.isOpen) ctx.setOpen(false);
-      } else if (message.type === "blur") {
-        if (message.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks.isFishing() || typing()) return;
+      } else if (message2.type === "blur") {
+        if (message2.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks.isFishing() || typing()) return;
         ctx.setOpen(false);
       }
     });
@@ -2711,9 +2842,9 @@
     ".dp-pig{line-height:1;transform-origin:50% 85%;cursor:pointer;position:relative;",
     "animation:dp-bob 1.8s ease-in-out infinite}",
     ".dp-pig-img,.dp-pig-emoji{filter:drop-shadow(0 4px 6px rgba(61,52,40,.28))}",
-    ".dp-pig-sleep{display:none;position:absolute;top:0;left:50%;z-index:1;",
+    ".dp-pig-sleep{display:none;position:absolute;top:0;left:calc(50% - var(--pig-size) * .6);z-index:1;",
     "width:calc(var(--pig-size) * 1.2);height:var(--pig-size);object-fit:contain;",
-    "transform:translateX(-50%);scale:var(--art-zoom,1);",
+    "scale:var(--art-zoom,1);",
     "translate:var(--art-x,0%) var(--art-y,0%);pointer-events:none;-webkit-user-drag:none;user-select:none}",
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-img,',
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
@@ -6528,13 +6659,13 @@
       } }
     ]);
     time("\u732A\u81EA\u5DF1\u627E\u4E8B\u505A", [
-      { key: "idle", label: "\u{1F437} \u5C0F\u52A8\u4F5C", desc: "\u9A6C\u4E0A\u505A\u4E00\u4E2A\u5C0F\u52A8\u4F5C\uFF08\u6253\u6EDA\u3001\u6253\u76F9\u3001\u8FFD\u8774\u8776\u2026\u2026\uFF09", off: !ui.life, run: function() {
+      { key: "idle", label: "\u{1F437} \u5C0F\u52A8\u4F5C", desc: "\u9A6C\u4E0A\u505A\u4E00\u4E2A\u5C0F\u52A8\u4F5C\uFF08\u6253\u6EDA\u3001\u6253\u76F9\u3001\u8FFD\u8774\u8776\u2026\u2026\uFF09", off: typeof ui.idleNow !== "function", run: function() {
         ui.setOpen(false);
-        ui.life.idleNow();
+        ui.idleNow();
       } },
-      { key: "walk", label: "\u{1F6B6} \u6563\u6B65\u4E00\u6B21", desc: "\u9A6C\u4E0A\u6CBF\u5C4F\u5E55\u5E95\u8FB9\u8D70\u4E00\u8D9F\uFF08\u53EA\u6709\u684C\u9762\u7248\uFF09", off: !ui.life || typeof desktopShell()?.moveBy !== "function", run: function() {
+      { key: "walk", label: "\u{1F6B6} \u6563\u6B65\u4E00\u6B21", desc: "\u9A6C\u4E0A\u6CBF\u5C4F\u5E55\u5E95\u8FB9\u8D70\u4E00\u8D9F\uFF08\u53EA\u6709\u684C\u9762\u7248\uFF09", off: typeof ui.walkNow !== "function" || desktopShell() === null, run: function() {
         ui.setOpen(false);
-        ui.life.walkNow();
+        ui.walkNow();
       } },
       { key: "timeTalk", label: "\u{1F550} \u6309\u65F6\u95F4\u8BF4", desc: "\u95EE\u4E00\u6B21\u300C\u73B0\u5728\u6709\u6CA1\u6709\u6309\u65F6\u95F4\u8BE5\u8BF4\u7684\u8BDD\u300D\uFF08\u4E00\u5929\u4E00\u6B21\u7684\u5DF2\u7ECF\u8BF4\u8FC7\u5C31\u4E0D\u8BF4\uFF09", run: function() {
         ui.send("chat", { reason: "time" });
@@ -7709,6 +7840,109 @@
     return { ...saved, bytes: text.length };
   }
 
+  // src/client/tabs/proxy.js
+  var preference = null;
+  var loading = false;
+  var busy = false;
+  var draft = null;
+  var message = "";
+  var failure = false;
+  function renderProxySettings(ui, section2, api) {
+    const setting = section2(ui, "\u7F51\u7EDC\u4EE3\u7406", "\u7528\u4E8E\u6E38\u620F\u66F4\u65B0\u3001\u5916\u58F3\u66F4\u65B0\u548C\u5728\u7EBF\u6269\u5C55\uFF1B\u53EA\u6539\u5C0F\u732A\uFF0C\u4E0D\u6539\u7CFB\u7EDF");
+    if (preference === null) {
+      setting.box.appendChild(el("small", "dp-dim", message || "\u6B63\u5728\u8BFB\u53D6\u4EE3\u7406\u914D\u7F6E\u2026"));
+      if (!loading && !message) {
+        loading = true;
+        api.get().then((value) => {
+          if (value?.mode) {
+            preference = value;
+            message = value.warning || "";
+          } else message = value?.reason || "\u4EE3\u7406\u914D\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
+        }).catch((error) => {
+          message = String(error);
+        }).finally(() => {
+          loading = false;
+          if (ui.tab === "settings") ui.renderContent();
+        });
+      }
+      return;
+    }
+    if (draft === null) draft = { ...preference };
+    const modes = el("div", "dp-seg");
+    const endpoint = (
+      /** @type {HTMLInputElement} */
+      el("input", "dp-input")
+    );
+    endpoint.disabled = busy;
+    endpoint.type = "text";
+    endpoint.placeholder = "127.0.0.1:\u7AEF\u53E3";
+    endpoint.setAttribute("aria-label", "\u4EE3\u7406\u5730\u5740\u548C\u7AEF\u53E3");
+    endpoint.setAttribute("data-proxy-address", "true");
+    endpoint.value = draft.address;
+    endpoint.addEventListener("input", () => {
+      draft.address = endpoint.value;
+    });
+    let mode = draft.mode;
+    const picks = [];
+    function choose2(value) {
+      mode = value;
+      draft.mode = value;
+      for (const pick of picks) pick.setAttribute("aria-pressed", String(pick.getAttribute("data-proxy-mode") === mode));
+      endpoint.hidden = mode === "system" || mode === "direct";
+    }
+    for (const [key, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF"], ["direct", "\u76F4\u8FDE"], ["http", "HTTP"], ["socks5", "SOCKS5"]]) {
+      const pick = button("dp-seg-btn", { "data-proxy-mode": key }, () => choose2(key));
+      pick.textContent = label;
+      modes.appendChild(pick);
+      pick.disabled = busy;
+      picks.push(pick);
+    }
+    setting.box.appendChild(modes);
+    setting.box.appendChild(endpoint);
+    choose2(mode);
+    const controls = el("div", "dp-seg");
+    const status = el("div", failure ? "dp-dim dp-proxy-error" : "dp-dim", message);
+    status.setAttribute("role", "status");
+    const actions = [];
+    async function run(action) {
+      if (busy) return;
+      busy = true;
+      for (const control of actions) control.disabled = true;
+      for (const pick of picks) pick.disabled = true;
+      endpoint.disabled = true;
+      status.textContent = "\u5904\u7406\u4E2D\u2026";
+      try {
+        const result = await action();
+        failure = result?.ok !== true;
+        if (result?.preference) {
+          preference = result.preference;
+          draft = { ...preference };
+        }
+        message = failure ? result?.reason || "\u4EE3\u7406\u64CD\u4F5C\u5931\u8D25" : result.route ? "\u8FDE\u63A5\u6210\u529F \xB7 " + result.route : "\u4EE3\u7406\u914D\u7F6E\u5DF2\u751F\u6548";
+      } catch (error) {
+        failure = true;
+        message = error instanceof Error ? error.message : String(error);
+      } finally {
+        busy = false;
+        if (ui.tab === "settings") ui.renderContent();
+      }
+    }
+    for (const [key, label, action] of [
+      ["save", "\u5E94\u7528", () => api.set({ mode, address: endpoint.value })],
+      ["test", "\u6D4B\u8BD5\u5DF2\u5E94\u7528\u914D\u7F6E", () => api.test()],
+      ["clear", "\u6E05\u9664\u914D\u7F6E", () => api.clear()]
+    ]) {
+      const control = button("dp-mini", { "data-proxy-action": key }, () => run(action));
+      control.textContent = label;
+      control.disabled = busy;
+      actions.push(control);
+      controls.appendChild(control);
+    }
+    setting.box.appendChild(controls);
+    setting.box.appendChild(el("div", "dp-dim", "\u6E05\u9664\u540E\u6062\u590D\u8DDF\u968F\u7CFB\u7EDF\uFF1B\u76F4\u8FDE\u53EF\u5FFD\u7565\u7CFB\u7EDF\u4EE3\u7406"));
+    setting.box.appendChild(status);
+  }
+
   // src/client/tabs/settings.js
   function section(ui, title, note) {
     const box = el("div", "dp-set");
@@ -7798,6 +8032,8 @@
       walkToggle.appendChild(el("span", "dp-switch-text", walking ? "\u5F00" : "\u5173"));
       walk.head.appendChild(walkToggle);
     }
+    const proxy = desktopShell()?.proxy;
+    if (proxy) renderProxySettings(ui, section, proxy);
     const logs = section(ui, "\u65E5\u5FD7", "\u9047\u5230\u95EE\u9898\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u91CC\u9762\u6709\u7248\u672C\u3001\u52A8\u4F5C\u548C\u62A5\u9519");
     const exportButton = button("dp-mini", { "data-export-logs": "true" }, function() {
       runExport(ui, exportButton);
@@ -8225,6 +8461,7 @@
       processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return;
       if (ctx.cardEdit !== null && ctx.tab === "card") return;
+      if (ctx.tab === "settings" && document.activeElement?.getAttribute?.("data-proxy-address") === "true") return;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
       var currentFishing = ctx.view.fishing.pending;
       if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return;
@@ -8935,6 +9172,7 @@
     window.__dshPiggyShell = {
       // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
       role: "pet",
+      proxy: shell2.proxy,
       split: true,
       onStateChanged: shell2.onStateChanged,
       panel: {
@@ -9130,7 +9368,7 @@
         var react = fx.react, burst = fx.burst, flash = fx.flash;
         var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
         var stopped = false;
-        var busy = false;
+        var busy2 = false;
         var ctx = {
           host: host3,
           card: card2,
@@ -9260,10 +9498,10 @@
             userBottom = next;
           },
           get busy() {
-            return busy;
+            return busy2;
           },
           set busy(next) {
-            busy = next;
+            busy2 = next;
           },
           justBought: null,
           homePage: 0,
@@ -9305,6 +9543,9 @@
         };
         ctx.idleNow = function(key) {
           if (ctx.life) ctx.life.idleNow(key);
+        };
+        ctx.walkNow = function() {
+          if (ctx.life) ctx.life.walkNow();
         };
         var birthday = createBirthday({ ctx, pig, pigArt, pigEmoji, burst, render: function() {
           refresh2();
@@ -9452,7 +9693,7 @@
             return stopped;
           },
           isBusy: function() {
-            return busy;
+            return busy2;
           },
           isOpen: function() {
             return isOpen;

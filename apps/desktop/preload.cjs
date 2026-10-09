@@ -51,6 +51,12 @@ contextBridge.exposeInMainWorld('piggyShell', {
     rollback: () => ipcRenderer.invoke('piggy:updates:rollback'),
     onProgress: callback => { ipcRenderer.on('piggy:progress', (event, fraction) => callback(fraction)) },
   },
+  proxy: {
+    get: () => ipcRenderer.invoke('piggy:proxy:get'),
+    set: preference => ipcRenderer.invoke('piggy:proxy:set', preference),
+    clear: () => ipcRenderer.invoke('piggy:proxy:clear'),
+    test: () => ipcRenderer.invoke('piggy:proxy:test'),
+  },
   shellUpdates: {
     status: () => ipcRenderer.invoke('piggy:shell:status'),
     download: version => ipcRenderer.invoke('piggy:shell:download', String(version)),
@@ -82,5 +88,5 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 拖动中窗口被夹在屏幕里时，猪要在窗口里滑多少（外壳 0.6.0 起，见 main.js dragTick）。 */
   onDragSlide: callback => { ipcRenderer.on('piggy:drag-slide', (event, slide) => callback(slide)) },
   /** 存档变了（两个窗口任一个做了动作）：马上刷新，别等轮询。 */
-  onStateChanged: callback => { ipcRenderer.on('piggy:state-changed', () => callback()) },
+  onStateChanged: callback => { ipcRenderer.on('piggy:state-changed', (event, view) => callback(view)) },
 })

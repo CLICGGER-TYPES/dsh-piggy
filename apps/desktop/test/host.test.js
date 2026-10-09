@@ -35,3 +35,21 @@ test('the desktop host serves the plugin routes from a packed game folder, with 
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('a line consumed by the settings window is broadcast before the store queue drains', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'piggy-fanout-'))
+  const broadcasts = []
+  let host
+  try {
+    host = await startHost(ROOT, join(dir, 'state.json'), { onSnapshot: view => broadcasts.push(view) })
+    await host.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'hatch' }))
+    broadcasts.length = 0
+    const response = await host.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'dev', patch: { say: 'eat' } }))
+    const view = JSON.parse(response.body)
+    assert.equal(view.pending.filter(event => event.kind === 'line').length, 1)
+    assert.equal(broadcasts.length, 1)
+    assert.deepEqual(broadcasts[0].pending, view.pending)
+    assert.deepEqual(JSON.parse((await host.handle('GET', '/dsh-piggy/state')).body).pending, [])
+    assert.equal(broadcasts.length, 1)
+  } finally { host?.dispose(); rmSync(dir, { recursive: true, force: true }) }
+})

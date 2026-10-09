@@ -18,11 +18,12 @@ import { homedir } from 'node:os'
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, shell } from 'electron'
+import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
 
 import { startHost } from './lib/host.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
+import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
@@ -980,8 +981,19 @@ ipcMain.handle('piggy:open', (event, url) => {
   if (fromPage(event) && typeof url === 'string' && url.startsWith(RELEASES_PAGE.replace(/\/releases$/, '/'))) shell.openExternal(url)
 })
 
+let proxySettings = null
+for (const action of ['get', 'set', 'clear', 'test']) {
+  ipcMain.handle('piggy:proxy:' + action, async (event, value) => {
+    if (!fromPage(event) || proxySettings === null) return { ok: false, reason: '代理设置不可用' }
+    return proxySettings[action](value)
+  })
+}
+
 app.whenReady().then(async () => {
   if (needsX11) return
+  proxySettings = createProxy({ path: join(app.getPath('userData'), 'proxy.json'),
+    sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
+  await proxySettings.init()
   log('start', app.getVersion(), process.platform, process.env.XDG_SESSION_TYPE ?? '')
   shellUpdates = createShellUpdates({
     mode: shellUpdateMode({ platform: process.platform, packaged: app.isPackaged,
@@ -1002,7 +1014,7 @@ app.whenReady().then(async () => {
     if (firstRun === null) { app.quit(); return }
   }
   const gameDir = versions.activeDir()
-  host = await startHost(gameDir, statePath())
+  host = await startHost(gameDir, statePath(), { fetch: net.fetch.bind(net), onSnapshot: view => toPages('piggy:state-changed', view) })
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)

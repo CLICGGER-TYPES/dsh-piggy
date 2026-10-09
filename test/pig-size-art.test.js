@@ -10,7 +10,7 @@ test('an imported skin is framed from its transparent pixels after loading', () 
     setAttribute: (key, value) => { attrs[key] = value },
   }
   const pixels = new Uint8ClampedArray(128 * 128 * 4)
-  for (let y = 32; y < 96; y++) for (let x = 32; x < 96; x++) pixels[(y * 128 + x) * 4 + 3] = 255
+  for (let y = 32; y < 96; y++) for (let x = 16; x < 112; x++) pixels[(y * 128 + x) * 4 + 3] = 255
   let load
   const image = {
     src: '', complete: false, naturalWidth: 0, hidden: false,
@@ -28,7 +28,7 @@ test('an imported skin is framed from its transparent pixels after loading', () 
     image.complete = true
     image.naturalWidth = 64
     load()
-    assert.ok(Number(values.get('--art-zoom')) > 1.8)
+    assert.equal(Number(values.get('--art-zoom')), 1.6875)
     assert.equal(values.get('--art-x'), '0%')
     assert.equal(values.get('--art-y'), '0%')
   } finally {

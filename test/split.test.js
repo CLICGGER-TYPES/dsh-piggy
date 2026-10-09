@@ -122,3 +122,17 @@ test('排队消息两边各管一半：猪的反应只在猪窗口演，提示�
   assert.deepEqual(panel.lines, [])
   assert.deepEqual(panel.kinds, ['toast'])
 })
+
+test('drained snapshot messages reach both windows and duplicate events are ignored', () => {
+  for (const role of ['pet', 'panel']) {
+    const { emit } = fakeShell(role)
+    const ctx = fakeCtx()
+    const lines = []
+    ctx.render = view => { ctx.view = view; processPending(ctx, event => lines.push(event.text)) }
+    wireSplit(ctx, { refresh() { assert.fail('a consumed event cannot be refetched') }, isFishing: () => false })
+    const view = { pending: [{ id: 123, at: 1000, kind: 'line', text: 'hello' }], dialogue: { quiet: false } }
+    emit('state', view)
+    ctx.render(view)
+    assert.deepEqual(lines, role === 'pet' ? ['hello'] : [])
+  }
+})
