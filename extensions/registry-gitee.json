@@ -73,9 +73,9 @@
       "key": "farm",
       "label": "菜园",
       "emoji": "🥬",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "minGame": "0.35.0",
-      "description": "16 种作物、8 块地，点地块就种、浇、收；大水壶、收割镰、播种器解锁一键操作，洒水器自动浇水。用自己的菜币，随时和金币互换。",
+      "description": "16 种作物、8 块地；买工具解锁一键操作，可雇帮工猪收菜补种并浇水，升级管地数和谷仓，仓满或缺种子就停。用自己的菜币。",
       "economy": {
         "currency": {
           "label": "菜币",
@@ -85,16 +85,16 @@
       },
       "files": {
         "manifest.json": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.0.0/manifest.json",
-          "sha256": "bd0f46d913d33055846e73eec73b3381fbd1af2778063eba74ec577074631f8b"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.1.0/manifest.json",
+          "sha256": "1063f397a63186652ff8b1c627b378024bf8ed2a94447f8d6d16cdf2459bb41b"
         },
         "server.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.0.0/server.js",
-          "sha256": "f6d5f760f24af79a4d46a41520e0e86e91d2d82f206ae09d85298d3c306ee94d"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.1.0/server.js",
+          "sha256": "4cd3b6955412a68304369cce29f028c157af99e6549dbeadedbfe3b3fc96526a"
         },
         "client.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.0.0/client.js",
-          "sha256": "1d8ce41427686ad71f2bf294e525bd2f864d38ae971892030c4fa5d38274d23c"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.1.0/client.js",
+          "sha256": "9e6f5736a92563add77ee932a30ec63963a79bf5af0190ea145644ccf37bde1b"
         }
       }
     },
@@ -102,9 +102,9 @@
       "key": "mine",
       "label": "矿洞",
       "emoji": "⛏️",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "minGame": "0.35.0",
-      "description": "20 层矿洞，随时能再下一趟：矿成堆、连挖有加成，宝箱和炸弹；镐越好挖得越深。用自己的矿石币，随时和金币互换。",
+      "description": "20 层矿洞、连挖和宝藏；可雇小矿工猪，升级矿车、头灯，离线按时间挖矿，矿车满了就停。用自己的矿石币。",
       "economy": {
         "currency": {
           "label": "矿石币",
@@ -114,16 +114,16 @@
       },
       "files": {
         "manifest.json": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.0.0/manifest.json",
-          "sha256": "c42837ad845bce2b4f5d173683e196a7832db8a0f48bb0c0a57bf4c07b672617"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.1.0/manifest.json",
+          "sha256": "d9d91dd364a2db523fba7707cfd9d151bc8efc6d97f70dd0992e25c75f1f3451"
         },
         "server.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.0.0/server.js",
-          "sha256": "f6eb9258d8eb806acf8c28d38ab5c1fedcac1129aae396fd533abef9d99f23c8"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.1.0/server.js",
+          "sha256": "0913414f7ea12f3e1543a0dc9eaa502498996c14a9f4ea80a14b18fd421b11f7"
         },
         "client.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.0.0/client.js",
-          "sha256": "3e24023815521dc123e3de107bace034a71d5602e33cb4ddf13843b0c717c330"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.1.0/client.js",
+          "sha256": "0b43a9d62cc8443a3b559bca6783d6413f6dcae657e2664bd568dbbfd1da0a47"
         }
       }
     }

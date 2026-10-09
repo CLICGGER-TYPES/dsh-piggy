@@ -234,7 +234,7 @@ test('缺字段的存档在 view 和动作中自动补齐；view 不改存档', 
   assert.equal(first.cells.length, 48)
   assert.equal(first.pickaxe.label, '木镐')
   assert.equal(first.shelf.currency.label, '矿石币')
-  assert.deepEqual(first.shelf.items.map(item => item.key), ['pickaxe', 'bomb'])
+  assert.deepEqual(first.shelf.items.map(item => item.key), ['helper-hire', 'pickaxe', 'bomb'])
   assert.equal(mine.actions.dig(empty, { cell: 6 }, t.api).ok, true)
   assert.equal(mine.actions.surface(empty, {}, t.api).ok, true)
   assert.equal(mine.actions.sell(empty, {}, t.api).reason, 'empty')

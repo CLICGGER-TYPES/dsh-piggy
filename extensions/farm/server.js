@@ -86,6 +86,7 @@ export function normalize(data) {
   if (!Array.isArray(data.sprinklers)) data.sprinklers = []
   data.sprinklers = Array.from({ length: PLOTS }, (_, index) => data.sprinklers[index] === true)
   data.fertilizer = count(data.fertilizer)
+  normalizeHelper(data)
   return data
 }
 
@@ -145,7 +146,7 @@ function plantPlot(data, index, crop, api) {
   return true
 }
 
-export default {
+const game = {
   eventVersion: 1,
   progress,
   init() { return normalize({}) },
@@ -155,6 +156,7 @@ export default {
     buy(data, payload, api) {
       normalize(data)
       const wallet = purse(api)
+      if (String(payload?.item).startsWith('helper-')) return helperBuy(data, payload, api)
       const crop = cropFor(payload.item)
       if (crop !== null) {
         const n = payload.count === undefined ? 1 : payload.count
@@ -294,10 +296,12 @@ export default {
 
   view(data, api) {
     const d = normalize(structuredClone(data))
+    settleHelper(d, api.now)
     const wallet = purse(api)
     const balance = wallet.balance()
     const minutesText = minutes => minutes >= 60 ? minutes / 60 + ' 小时' : minutes + ' 分钟'
     return {
+      helper: helperView(d),
       now: api.now,
       balance,
       currency: wallet.currency,
@@ -329,6 +333,7 @@ export default {
         key: 'farm', label: '菜园商店', emoji: '🌱', color: 'green',
         currency: { label: wallet.currency.label, emoji: wallet.currency.emoji, balance },
         items: [
+          ...helperShelf(d, balance),
           ...CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label + '种子', note: minutesText(crop.minutes) + '成熟 · 收 ' + crop.yield + ' 个 · 卖 ' + crop.sell, price: crop.price, disabled: balance < crop.price, pick: null })),
           ...TOOLS.map(tool => {
             const owned = tool.key !== 'fertilizer' && tool.key !== 'sprinkler' && owns(d, tool.key)
@@ -343,3 +348,160 @@ export default {
     }
   },
 }
+
+/** K1：实物收成保留；帮工轮流处理地块，六小时有效工作封仓。 */
+export const HELPER_PLOTS = [2, 4, 8]
+export const HELPER_BUDGETS = [90, 180, 300]
+export const HELPER_SPEEDS = [1, 1.1, 1.2, 4 / 3]
+export const HELPER_WINDOW = 6 * 3600000
+export const HELPER_PRICES = { hire: 2500, level: [0, 2000, 6000], barn: [0, 1000, 3000, 9000] }
+
+/** 收成先按起步预算定小批次，六小时内排整数批，升级只增加批次数。 */
+export function helperRecipe(key, level = 0, barn = 0) {
+  const crop = cropFor(key)
+  if (!crop) return null
+  const manual = plots => plots * (crop.yield * crop.sell - crop.price - 5 * EXERT * 10 / 32) / (crop.minutes / 60)
+  const starter = Math.min(90, manual(2) * 0.7)
+  const yieldCount = Math.min(crop.yield, Math.floor((starter * 6 + crop.price) / crop.sell))
+  const profit = yieldCount * crop.sell - crop.price
+  const budget = Math.min(400, HELPER_BUDGETS[level] * HELPER_SPEEDS[barn], manual(HELPER_PLOTS[level]) * 0.7)
+  const batches = Math.max(1, Math.floor((budget * 6 + 0.00001) / profit))
+  return { yield: yieldCount, intervalMs: HELPER_WINDOW / batches, net: profit * batches / 6, itemsPerHour: yieldCount * batches / 6, batches }
+}
+
+function normalizeHelper(data) {
+  const raw = data.helper && typeof data.helper === 'object' ? data.helper : {}
+  const pending = raw.pending && cropFor(raw.pending.crop) && Number.isFinite(raw.pending.remainingMs) ? { ...raw.pending } : null
+  data.helper = {
+    hired: raw.hired === true,
+    level: Math.min(2, count(raw.level)),
+    barn: Math.min(3, count(raw.barn)),
+    lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
+    usedMs: Number.isFinite(raw.usedMs) ? Math.max(0, Math.min(HELPER_WINDOW, raw.usedMs)) : 0,
+    cursor: count(raw.cursor) % PLOTS,
+    pending,
+    targets: Array.from({ length: PLOTS }, (_, index) => cropFor(raw.targets?.[index]) ? raw.targets[index] : null),
+    stock: Object.fromEntries(CROPS.map(crop => [crop.key, count(raw.stock?.[crop.key])])),
+  }
+}
+
+const helperCount = data => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0)
+const helperPlots = data => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS[data.helper.level]) : 0
+
+/** 没种子的空地跳过；恢复时从当前动作时间开始，不补停工收益。 */
+function prepareHelper(data, at) {
+  const helper = data.helper
+  const managed = helperPlots(data)
+  for (let offset = 0; offset < managed; offset += 1) {
+    const index = (helper.cursor + offset) % managed
+    let plot = data.plots[index]
+    const crop = cropFor(plot?.crop ?? helper.targets[index])
+    if (!crop) continue
+    helper.targets[index] = crop.key
+    if (!plot) {
+      if (!plantPlot(data, index, crop, { now: at })) continue
+      plot = data.plots[index]
+    }
+    if (plot.wateredAt === null) plot.wateredAt = at
+    const recipe = helperRecipe(crop.key, helper.level, helper.barn)
+    helper.pending = { index, crop: crop.key, plantedAt: plot.plantedAt, remainingMs: recipe.intervalMs, yield: recipe.yield }
+    return true
+  }
+  return false
+}
+
+/** 时间差只用于当前小批次，满六小时停；批次进度随地块保存，收仓不复制进度。 */
+export function settleHelper(data, now) {
+  const helper = data.helper
+  if (!helperPlots(data) || !Number.isFinite(now)) return
+  const start = helper.lastAt ?? now
+  if (now < start) return
+  const pendingPlot = helper.pending ? data.plots[helper.pending.index] : null
+  if (helper.pending && (!pendingPlot || pendingPlot.plantedAt !== helper.pending.plantedAt || pendingPlot.crop !== helper.pending.crop)) helper.pending = null
+  let remaining = Math.min(now - start, HELPER_WINDOW - helper.usedMs)
+  let at = start
+  if (!helper.pending) prepareHelper(data, start)
+  while (remaining > 0 && helper.pending) {
+    const pending = helper.pending
+    const elapsed = Math.min(remaining, pending.remainingMs)
+    pending.remainingMs -= elapsed
+    helper.usedMs += elapsed
+    remaining -= elapsed
+    at += elapsed
+    if (pending.remainingMs > 0.00001) break
+    helper.stock[pending.crop] += pending.yield
+    data.acquired[pending.crop] = amountFor(data, 'acquired', pending.crop) + pending.yield
+    data.plots[pending.index] = null
+    helper.cursor = (pending.index + 1) % helperPlots(data)
+    helper.pending = null
+    if (helper.usedMs >= HELPER_WINDOW - 0.00001) {
+      helper.usedMs = HELPER_WINDOW
+      break
+    }
+    plantPlot(data, pending.index, cropFor(pending.crop), { now: at })
+    if (!prepareHelper(data, at)) break
+  }
+  helper.lastAt = now
+}
+
+function helperView(data) {
+  const helper = data.helper
+  const missing = helper.targets.slice(0, helperPlots(data)).filter((key, index) => key && !data.plots[index] && amountFor(data, 'seeds', key) === 0)
+  return { hired: helper.hired, plots: helperPlots(data), stored: helperCount(data), usedHours: helper.usedMs / 3600000,
+    capacityHours: 6, full: helper.usedMs >= HELPER_WINDOW, missing: [...new Set(missing)].map(key => cropFor(key).label) }
+}
+
+function helperShelf(data, balance) {
+  const helper = data.helper
+  if (!helper.hired) return [{ key: 'helper-hire', emoji: '🐷', label: '雇帮工猪', note: '管 2 块地，六小时封仓', price: HELPER_PRICES.hire, disabled: balance < HELPER_PRICES.hire, pick: null }]
+  return ['level', 'barn'].flatMap(kind => {
+    const level = helper[kind] + 1
+    const price = HELPER_PRICES[kind][level]
+    if (price === undefined) return []
+    const label = kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][level] : ['小谷仓', '顺手农具', '轻巧农具', '高效农具'][level]
+    const note = kind === 'level' ? '管 ' + HELPER_PLOTS[level] + ' 块地' : '提高自动收成效率'
+    return [{ key: 'helper-' + kind, emoji: kind === 'level' ? '🐷' : '🧺', label, note, price, disabled: balance < price, pick: null }]
+  })
+}
+
+function helperBuy(data, payload, api) {
+  const helper = data.helper
+  const kind = String(payload?.item).replace('helper-', '')
+  if (kind === 'hire') {
+    if (helper.hired) return { ok: false, reason: 'owned' }
+    if (!purse(api).spend(HELPER_PRICES.hire, 'helper')) return { ok: false, reason: 'poor' }
+    helper.hired = true
+    helper.lastAt = api.now
+  } else {
+    if (!helper.hired || !['level', 'barn'].includes(kind)) return { ok: false, reason: 'locked' }
+    const price = HELPER_PRICES[kind][helper[kind] + 1]
+    if (price === undefined) return { ok: false, reason: 'owned' }
+    if (!purse(api).spend(price, 'helper')) return { ok: false, reason: 'poor' }
+    helper[kind] += 1
+  }
+  return { ok: true }
+}
+
+game.actions.hire = (data, payload, api) => helperBuy(data, { item: 'helper-hire' }, api)
+game.actions.upgrade = (data, payload, api) => helperBuy(data, { item: 'helper-' + payload?.kind }, api)
+game.actions.collect = (data, payload) => {
+  if (!helperCount(data) && data.helper.usedMs === 0) return { ok: false, reason: 'empty' }
+  for (const crop of CROPS) data.harvest[crop.key] = amountFor(data, 'harvest', crop.key) + data.helper.stock[crop.key]
+  data.helper.stock = Object.fromEntries(CROPS.map(crop => [crop.key, 0]))
+  data.helper.usedMs = 0
+  return { ok: true }
+}
+
+for (const [key, action] of Object.entries(game.actions)) {
+  game.actions[key] = (data, payload, api) => {
+    normalize(data)
+    settleHelper(data, api?.now)
+    const result = action(data, payload, api)
+    if (result.ok) {
+      settleHelper(data, api?.now)
+      reportProgress(data, api)
+    }
+    return result
+  }
+}
+export default game

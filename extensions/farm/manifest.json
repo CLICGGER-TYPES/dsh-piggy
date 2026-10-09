@@ -2,14 +2,18 @@
   "key": "farm",
   "label": "菜园",
   "emoji": "🥬",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "minGame": "0.35.0",
-  "description": "16 种作物、8 块地，点地块就种、浇、收；大水壶、收割镰、播种器解锁一键操作，洒水器自动浇水。用自己的菜币，随时和金币互换。",
+  "description": "16 种作物、8 块地；买工具解锁一键操作，可雇帮工猪收菜补种并浇水，升级管地数和谷仓，仓满或缺种子就停。用自己的菜币。",
   "app": {
     "emoji": "🥬",
     "label": "菜园"
   },
   "economy": {
-    "currency": { "label": "菜币", "emoji": "🥬", "rate": 1 }
+    "currency": {
+      "label": "菜币",
+      "emoji": "🥬",
+      "rate": 1
+    }
   }
 }

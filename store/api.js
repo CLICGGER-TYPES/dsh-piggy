@@ -58,6 +58,8 @@ import {
   resolveFishing as coreResolveFishing,
   sellFish as coreSellFish,
   buyRod as coreBuyRod,
+  buyFishingAutomation as coreBuyFishingAutomation,
+  collectAutoFish as coreCollectAutoFish,
   chooseSpot as coreChooseSpot,
   exchangeCurrency as coreExchange,
   skipFishingWait as coreSkipFishingWait,
@@ -165,6 +167,8 @@ export function createApi(control) {
     feedFish: id => mutate(live => coreFeedFish(live, id, now())),
     sellFish: id => mutate(live => coreSellFish(live, id, now())),
     buyRod: () => mutate(live => coreBuyRod(live, now())),
+    buyFishingAutomation: kind => mutate(live => coreBuyFishingAutomation(live, kind, now())),
+    collectAutoFish: () => mutate(live => coreCollectAutoFish(live, now())),
     chooseSpot: key => mutate(live => coreChooseSpot(live, key, now())),
     /** 扩展币 ↔ 金币（规则 1）。 */
     exchange: (key, direction, amount) => mutate(live => coreExchange(live, key, direction === 'fromGold' ? 'fromGold' : 'toGold', amount, now())),

@@ -10,6 +10,7 @@
   var CSS = [
     '.mn{display:grid;gap:9px;color:var(--ac-text,#794f27)}',
     '.mn-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px}',
+    '.mn-top select{width:78px;flex:none;padding:3px 6px;font-size:10px}',
     '.mn-chip{display:inline-flex;align-items:center;gap:3px;border-radius:999px;background:var(--ac-bg-input,#fffbe7);border:2px solid var(--ac-border-light,#e5dcc6);padding:3px 9px;font-size:10.5px;font-weight:800}',
     '.mn-chip.mn-floor{font-size:12px}',
     '.mn-combo{background:#fff1c9;border-color:#f0c35a;animation:mn-pulse .6s ease-out}',
@@ -53,6 +54,30 @@
   }
 
   function goShop(app) { if (typeof app.openShop === 'function') app.openShop() }
+
+  function renderHelper(app, d, root) {
+    var helper = d.helper
+    if (!helper) return
+    var row = app.el('div', 'mn-top')
+    if (!helper.hired) {
+      row.appendChild(button(app, 'dp-mini', '雇小矿工猪 3000 ⛏️', { 'data-mine-helper': 'hire' }, function () { app.send('hire', {}) }))
+    } else {
+      row.appendChild(app.el('span', 'mn-muted', '⛏️ ' + (helper.full ? '仓满' : '干活中') + ' · ' + helper.usedHours.toFixed(1) + '/6时'))
+      var floor = app.el('select', 'dp-input')
+      floor.setAttribute('aria-label', '矿工电梯站')
+      helper.stops.forEach(function (stop) {
+        var option = app.el('option', null, '第 ' + stop + ' 层')
+        option.value = String(stop); option.selected = stop === helper.floor
+        floor.appendChild(option)
+      })
+      floor.addEventListener('change', function () { app.send('workerFloor', { floor: Number(floor.value) }) })
+      row.appendChild(floor)
+      var collect = button(app, 'dp-mini', '收一下', { 'data-mine-helper': 'collect' }, function () { app.send('collect', {}) })
+      collect.disabled = helper.stored === 0 && helper.usedHours === 0
+      row.appendChild(collect)
+    }
+    root.appendChild(row)
+  }
 
   /** 顶上一行：第几层、镐、炸弹（点了进入炸格子模式）、连挖。 */
   function renderTop(app, d, root) {
@@ -140,6 +165,7 @@
     if (!d || !Array.isArray(d.cells)) { app.content.appendChild(app.el('div', 'dp-empty', '矿洞还在准备……')); return }
     if (d.bombs < 1) bombing = false
     var root = app.el('div', 'mn')
+    renderHelper(app, d, root)
     renderTop(app, d, root)
     renderGrid(app, d, root)
     renderBag(app, d, root)

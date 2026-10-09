@@ -23,10 +23,21 @@ function fish(value) {
   }
 }
 
+/** 升级入口只读宿主的档位和价格，页面不重复计算玩法。 */
+function automation(value) {
+  if (!isObj(value)) return null
+  return { unlocked: value.unlocked === true, stored: num(value.stored, 0), usedHours: num(value.usedHours, 0), capacityHours: 6, full: value.full === true,
+    baitLimit: num(value.baitLimit, 0),
+    choices: arr(value.choices).filter(isObj).map(choice => ({ minutes: num(choice.minutes, 30), attempts: num(choice.attempts, 6), legacy: choice.minutes <= 60 })),
+    upgrades: arr(value.upgrades).filter(isObj).map(upgrade => ({ kind: str(upgrade.kind, ''), label: str(upgrade.label, ''), price: num(upgrade.price, 0) }))
+      .filter(upgrade => ['basket', 'duration', 'baitBox'].includes(upgrade.kind)) }
+}
+
 export function normalizeFishing(raw) {
   const source = obj(raw)
   const rod = obj(source.rod)
   return {
+    automation: automation(source.automation),
     pending: isObj(source.pending) ? fish(source.pending) : null,
     bag: arr(source.bag).map(fish).filter(entry => entry.id !== ''),
     period: str(source.period, ''), autoTrips: num(source.autoTrips, 0),

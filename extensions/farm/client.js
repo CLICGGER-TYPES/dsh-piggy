@@ -89,6 +89,23 @@
     if (typeof app.openShop === 'function') app.openShop()
   }
 
+  function renderHelper(app, data, root) {
+    var helper = data.helper
+    if (!helper) return
+    var row = app.el('div', 'fm-stock')
+    if (!helper.hired) {
+      row.appendChild(button(app, 'dp-mini', { 'data-farm-helper': 'hire' }, '雇帮工猪 2500 🥬', function () { app.send('hire', {}) }))
+    } else {
+      var state = helper.full ? '谷仓满了' : helper.missing.length ? '没有' + helper.missing.join('、') + '种子了' : '帮工猪在干活'
+      row.appendChild(app.el('span', 'fm-note', '🐷 ' + state + ' · 谷仓 ' + helper.usedHours.toFixed(1) + '/6时'))
+      var collect = button(app, 'dp-mini', { 'data-farm-helper': 'collect' }, '收一下', function () { app.send('collect', {}) })
+      collect.disabled = helper.stored === 0 && helper.usedHours === 0
+      row.appendChild(collect)
+      if (helper.missing.length) row.appendChild(button(app, 'dp-mini dp-mini-plain', { 'data-farm-helper': 'seed' }, '买种子', function () { goShop(app) }))
+    }
+    root.appendChild(row)
+  }
+
   function toolOf(data, key) {
     return (data.tools || []).find(function (tool) { return tool.key === key }) || { owned: false, emoji: '', label: key }
   }
@@ -221,6 +238,7 @@
     if (!data || !Array.isArray(data.plots)) { app.content.appendChild(app.el('div', 'dp-empty', '菜园还在准备……')); return }
     if (!data.currency) data.currency = { emoji: '🪙', label: '金币' }
     var root = app.el('div', 'fm')
+    renderHelper(app, data, root)
     renderHand(app, data, root)
     renderTools(app, data, root)
     var grid = app.el('div', 'fm-grid')

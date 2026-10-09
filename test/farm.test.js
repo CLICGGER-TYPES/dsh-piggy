@@ -147,7 +147,7 @@ test('货架列种子和工具，用菜币标价；view 不改存档', () => {
   assert.deepEqual(data, before)
   assert.equal(view.shelf.currency.label, '菜币')
   assert.equal(view.shelf.currency.balance, 15)
-  assert.equal(view.shelf.items.length, 16 + 5)
+  assert.equal(view.shelf.items.length, 16 + 5 + 1)
   assert.equal(view.shelf.items.find(c => c.key === 'cabbage').disabled, false)
   assert.equal(view.shelf.items.find(c => c.key === 'can').note, '解锁一键浇水')
   assert.equal(view.dex.entries.length, 16)

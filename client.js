@@ -1550,6 +1550,7 @@
     stopFight();
     stopWait();
     const pending = ui.view.fishing.pending;
+    renderAutoStock(ui);
     if (pending?.phase !== "hooked") resetFightResolve();
     if (ui.view.activity?.kind === "fishing") {
       stopFight(true);
@@ -1635,32 +1636,54 @@
     renderAuto(ui);
   }
   function renderAuto(ui) {
+    const automation2 = ui.view.fishing.automation;
     const auto = el("details", "dp-fish-auto");
     if (autoOpen) auto.setAttribute("open", "");
     auto.addEventListener("toggle", function() {
       autoOpen = auto.open === true;
     });
     auto.appendChild(el("summary", null, "\u{1F437} \u8BA9\u732A\u81EA\u5DF1\u53BB\u9493"));
-    auto.appendChild(el("span", null, "\u732A\u51FA\u95E8 30 / 60 \u5206\u949F\uFF0C\u6BCF 3 \u5206\u949F\u7528 1 \u4E2A\u9009\u4E2D\u7684\u9C7C\u9975\uFF0C\u9493\u5230\u7684\u653E\u8FDB\u9C7C\u7BD3\u3002"));
     const row = el("div", "dp-fish-auto-row");
     const reasons = [];
-    for (const minutes of [30, 60]) {
-      const need = minutes / 3;
+    const choices = automation2?.choices ?? [30, 60].map((minutes) => ({ minutes, attempts: minutes / 3 }));
+    for (const { minutes, attempts, legacy = minutes <= 60 } of choices) {
+      const boxed = !legacy && automation2?.baitLimit > 0;
+      const need = boxed ? 1 : attempts;
       const have = ui.view.inventory[selectedBait] ?? 0;
       const go = button("dp-mini", { "data-fish-auto": String(minutes) }, function() {
         startOrSwitch(ui, "\u81EA\u52A8\u9493\u9C7C " + minutes + " \u5206\u949F", "fishAuto", { minutes, bait: selectedBait });
       });
-      go.textContent = `${minutes} \u5206\u949F\uFF08\u9C7C\u9975 ${need} \u4E2A\uFF09`;
-      go.disabled = !canStart(ui) || have < need;
+      go.textContent = `${minutes} \u5206\u949F` + (boxed ? "\uFF08\u81EA\u52A8\u8865\u9975\uFF09" : `\uFF08\u9C7C\u9975 ${need} \u4E2A\uFF09`);
+      const closed = ui.view.fishing.spots?.find((spot) => spot.key === ui.view.fishing.spot)?.open === false;
+      go.disabled = !canStart(ui) || have < need || !legacy && automation2?.full === true || closed;
       if (go.disabled && minutes === 30) {
         if (!canStart(ui)) reasons.push("\u732A\u73B0\u5728\u4E0D\u80FD\u51FA\u95E8");
+        else if (!legacy && automation2?.full) reasons.push("\u9C7C\u7BD3\u6EE1\u4E86\uFF0C\u5148\u6536\u4E00\u4E0B");
+        else if (closed) reasons.push("\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u6709\u5F00");
         else reasons.push("\u9C7C\u9975\u53EA\u5269 " + have + " \u4E2A\uFF0C\u4E0D\u591F " + need + " \u4E2A");
       }
       row.appendChild(go);
     }
     auto.appendChild(row);
+    for (const upgrade of automation2?.upgrades ?? []) {
+      const buy = button("dp-mini", { "data-fish-upgrade": upgrade.kind }, () => ui.send("fishAutomation", { kind: upgrade.kind }));
+      buy.textContent = upgrade.label + " \u{1FA99} " + upgrade.price;
+      buy.disabled = (ui.view.pig?.coins ?? 0) < upgrade.price;
+      auto.appendChild(buy);
+    }
     if (reasons.length > 0) auto.appendChild(el("span", "dp-fish-why", "\u70B9\u4E0D\u4E86\uFF1A" + reasons[0] + "\u3002"));
     ui.content.appendChild(auto);
+  }
+  function renderAutoStock(ui) {
+    const automation2 = ui.view.fishing.automation;
+    if (!automation2 || !automation2.unlocked && automation2.stored === 0 && automation2.usedHours === 0) return;
+    const row = el("div", "dp-fish-rodrow");
+    row.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + "/6\u65F6"));
+    const collect = button("dp-mini", { "data-fish-collect": "true" }, () => ui.send("fishCollect"));
+    collect.textContent = "\u6536\u4E00\u4E0B";
+    collect.disabled = automation2.stored === 0 && automation2.usedHours === 0;
+    row.appendChild(collect);
+    ui.content.appendChild(row);
   }
   function renderWaiting(ui, pending) {
     const water = button("dp-fish-waiting", { "data-fish": "hook" }, function() {
@@ -1871,10 +1894,24 @@
       feel: feel(entry.feel, difficulty)
     };
   }
+  function automation(value) {
+    if (!isObj(value)) return null;
+    return {
+      unlocked: value.unlocked === true,
+      stored: num(value.stored, 0),
+      usedHours: num(value.usedHours, 0),
+      capacityHours: 6,
+      full: value.full === true,
+      baitLimit: num(value.baitLimit, 0),
+      choices: arr(value.choices).filter(isObj).map((choice) => ({ minutes: num(choice.minutes, 30), attempts: num(choice.attempts, 6), legacy: choice.minutes <= 60 })),
+      upgrades: arr(value.upgrades).filter(isObj).map((upgrade) => ({ kind: str(upgrade.kind, ""), label: str(upgrade.label, ""), price: num(upgrade.price, 0) })).filter((upgrade) => ["basket", "duration", "baitBox"].includes(upgrade.kind))
+    };
+  }
   function normalizeFishing(raw) {
     const source = obj(raw);
     const rod = obj(source.rod);
     return {
+      automation: automation(source.automation),
       pending: isObj(source.pending) ? fish(source.pending) : null,
       bag: arr(source.bag).map(fish).filter((entry) => entry.id !== ""),
       period: str(source.period, ""),

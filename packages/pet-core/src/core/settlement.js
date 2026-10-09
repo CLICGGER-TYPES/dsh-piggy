@@ -20,6 +20,7 @@ import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
 import { finishAutoFishing } from './fishing.js'
+import { settleAutoFishing } from './fishing-auto.js'
 import { earnCoins } from './economy.js'
 
 export { currentIllness, die } from './illness.js'
@@ -65,6 +66,7 @@ export function decay(state, nowMs, options = {}) {
   let cursor = fromMs
   const activity = state.activity
   if (activity !== null && activity !== undefined) {
+    settleAutoFishing(state, activity, nowMs)
     const untilMs = Math.min(nowMs, Math.max(cursor, activity.endsAt))
     passTime(state, { fromMs: cursor, toMs: untilMs, away: true }, next)
     cursor = untilMs

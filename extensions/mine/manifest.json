@@ -2,14 +2,18 @@
   "key": "mine",
   "label": "矿洞",
   "emoji": "⛏️",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "minGame": "0.35.0",
-  "description": "20 层矿洞，随时能再下一趟：矿成堆、连挖有加成，宝箱和炸弹；镐越好挖得越深。用自己的矿石币，随时和金币互换。",
+  "description": "20 层矿洞、连挖和宝藏；可雇小矿工猪，升级矿车、头灯，离线按时间挖矿，矿车满了就停。用自己的矿石币。",
   "app": {
     "emoji": "⛏️",
     "label": "矿洞"
   },
   "economy": {
-    "currency": { "label": "矿石币", "emoji": "⛏️", "rate": 1 }
+    "currency": {
+      "label": "矿石币",
+      "emoji": "⛏️",
+      "rate": 1
+    }
   }
 }
