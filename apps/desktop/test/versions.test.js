@@ -120,3 +120,77 @@ test('a download that fails its checksum, or climbs out of its folder, changes n
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+// ---------------------------------------------------------------------------
+// 分卷游戏包 + 不带游戏的安装包（Gitee Windows，2026-10-09）
+// ---------------------------------------------------------------------------
+
+test('a package over the attachment limit is split into parts, listed, downloaded in order and checked', async () => {
+  const { dir, bundled, statePath } = setup()
+  try {
+    const out = join(dir, 'rel')
+    const manifest = await releaseGame(ROOT, out, '0.1.0', '0.6.3', 500_000)
+    assert.ok(manifest.parts.length > 1, 'small limit must split')
+    assert.equal(manifest.minShell, '0.6.3', 'old shells cannot read parts, so the floor is raised')
+    assert.throws(() => readFileSync(join(out, `game-${manifest.version}.json.gz`)), 'no whole-package file next to the parts')
+    assert.ok(manifest.parts.every(part => part.size <= 500_000))
+    const files = { [`m-${manifest.version}`]: JSON.stringify(manifest) }
+    const assets = [{ name: `game-${manifest.version}.manifest.json`, browser_download_url: `m-${manifest.version}` }]
+    // Gitee may list attachments in any order; the manifest decides the order.
+    for (const part of [...manifest.parts].reverse()) {
+      files['u-' + part.name] = readFileSync(join(out, part.name))
+      assets.push({ name: part.name, browser_download_url: 'u-' + part.name })
+    }
+    const gh = fakeGithub(files, [{ ...release(manifest.version), assets }])
+    const versions = createVersions({ userData: dir, bundledDir: bundled, shellVersion: '0.6.3', statePath, fetch: gh.fetch, releasesUrl: 'releases' })
+    const [target] = await versions.list()
+    assert.deepEqual(target.packUrls, manifest.parts.map(part => 'u-' + part.name))
+    const seen = []
+    assert.deepEqual(await versions.install(target, f => seen.push(f)), { ok: true, version: manifest.version })
+    assert.equal(seen.at(-1), 1)
+    assert.equal(readFileSync(join(versions.activeDir(), 'client.js'), 'utf8'), readFileSync(join(ROOT, 'client.js'), 'utf8'))
+
+    // A release missing one part is not offered; a corrupted part is refused before anything changes.
+    const missing = fakeGithub(files, [{ ...release(manifest.version), assets: assets.slice(0, -1) }])
+    const v2 = createVersions({ userData: dir, bundledDir: bundled, shellVersion: '0.6.3', statePath, fetch: missing.fetch, releasesUrl: 'releases' })
+    assert.deepEqual(await v2.list(), [])
+    const broken = { ...files, ['u-' + manifest.parts[1].name]: Buffer.from('nope') }
+    const bad = createVersions({ userData: join(dir, 'other'), bundledDir: bundled, shellVersion: '0.6.3', statePath, fetch: fakeGithub(broken, []).fetch, releasesUrl: 'releases' })
+    await assert.rejects(bad.install({ ...target }), /第 2 卷校验不对/)
+    assert.equal(bad.activeDir(), bundled)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('an installer without a game downloads the pinned one first and keeps it across shell updates', async () => {
+  const { dir, statePath } = setup()
+  try {
+    const out = join(dir, 'rel')
+    const manifest = await releaseGame(ROOT, out, '0.1.0', '0.6.3')
+    const { gamePin } = await import('../scripts/write-game-pin.mjs')
+    const pin = gamePin(out, 'https://gitee.example/releases/download')
+    assert.deepEqual(pin.urls, [`https://gitee.example/releases/download/v${manifest.version}/game-${manifest.version}.json.gz`])
+    const files = { [pin.urls[0]]: readFileSync(join(out, `game-${manifest.version}.json.gz`)) }
+    const noGame = join(dir, 'resources', 'game') // not created: the Windows Gitee installer ships only game-pin.json
+    const make = (shellVersion, fetchFiles = files) => createVersions({ userData: dir, bundledDir: noGame, shellVersion, statePath, fetch: fakeGithub(fetchFiles, []).fetch, releasesUrl: 'releases' })
+
+    const first = make('0.6.3')
+    assert.equal(first.needsGame(), true)
+    assert.equal(first.current().bundledVersion, null)
+    await assert.rejects(make('0.6.3', {}).installPinned(pin), /下载失败/)
+    assert.equal(first.needsGame(), true, 'a failed download leaves nothing half-installed')
+    await assert.rejects(first.installPinned(/** @type {any} */ ({ version: '1' })), /清单坏了/)
+    assert.deepEqual(await first.installPinned(pin), { ok: true, version: manifest.version })
+    assert.equal(first.needsGame(), false)
+    assert.equal(first.current().previousIsBundled, false)
+    assert.equal(first.rollback().ok, false, 'there is no bundled game to go back to')
+
+    // The shell updates itself: with no bundled game to fall back on, keep using the downloaded one.
+    const updated = make('0.6.4')
+    assert.equal(updated.needsGame(), false)
+    assert.equal(updated.activeDir(), join(dir, 'versions', manifest.version))
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

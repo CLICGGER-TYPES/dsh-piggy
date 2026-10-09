@@ -2,3 +2,4 @@ node_modules/
 game/
 dist/
 dist-game/
+game-pin.json

@@ -7,6 +7,8 @@
 #     在线扩展全部指向 gitee.com，构建后扫描，发现 GitHub 地址就失败（第三方库 node_modules 除外）。
 #   - Gitee 发行版附件单个 ≤100MiB：安装包用 electron-builder.gitee.cjs（最大压缩、只留中英文语言包）
 #     + tools/slim-emoji-font.py 瘦 emoji 字体；mac 的 dmg 再用 hdiutil 转成 lzma（ULMO）；超过的不放进上传清单。
+#   - Windows 安装包不带游戏（2026-10-09 起）：先取本次的 gitee-game，写 game-pin.json（版本、校验值、Gitee 下载地址）
+#     放进安装包，第一次启动下载（apps/desktop/lib/first-run.js）。游戏包大到超过 95MiB 时 release-game 自动分卷。
 name: release-gitee
 
 on:
@@ -93,6 +95,16 @@ jobs:
           npm run build
           python -m pip install --quiet fonttools
           python tools/slim-emoji-font.py
+      - name: 取本次的游戏包（Windows 安装包不带游戏，要写下载清单）
+        if: matrix.target == '--win'
+        uses: actions/download-artifact@v4
+        with:
+          name: gitee-game
+          path: dist-game
+      - name: 写 game-pin.json
+        if: matrix.target == '--win'
+        shell: bash
+        run: node apps/desktop/scripts/write-game-pin.mjs dist-game apps/desktop/game-pin.json
       - name: 打包
         shell: bash
         working-directory: apps/desktop

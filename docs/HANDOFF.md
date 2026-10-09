@@ -163,6 +163,8 @@ PIGGY_RELEASES_URL=...                # 换更新源（测试用）
 PIGGY_WAYLAND=1                       # Linux 强制走 Wayland（默认在 Wayland 下自动加 --ozone-platform=x11）
 PIGGY_SHAPE=1                         # Windows 退回旧的窗口形状做法（对比排查）
 PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
+PIGGY_BUNDLED_GAME=/不存在的目录          # 模拟「安装包不带游戏」（Gitee Windows 包），走首次下载
+PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/write-game-pin.mjs 生成，可指本机 http 服务）
 # 加 --remote-debugging-port=9333 可以用 Playwright 连上去操作页面
 ```
 - 日志：外壳的窗口 / 更新记录写在 userData 下 `piggy.log`（Windows `%APPDATA%\dsh-piggy-desktop\piggy.log`）；**这些行现在也会同步进游戏日志**，所以让用户「设置 → 日志 → 导出日志」一份就够，不用再手工找两个文件。
@@ -184,7 +186,7 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
 |---|---|---|
 | 游戏版本 | 根 `package.json` `version` | 每次发版 |
 | 别名包 | `packages/dsh-plugin-piggy/package.json` 的 `version` 和 `dependencies.dsh-piggy` | 和游戏版本同步 |
-| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.1；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
+| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.3；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
 | 存档 | `STATE_VERSION` | 只有存档结构变了才升（配迁移） |
 | 扩展 | `extensions/<key>/manifest.json` | 扩展改了就升，`minGame` 写需要的最低游戏版本 |
 
@@ -225,6 +227,13 @@ PIGGY_CAPTURE=<文件> / PIGGY_CAPTURE_STEPS  # 截图自检模式
   等构建成功、下载 artifact、核对 `latest*.yml` 的 sha512 和安装包一致 → `git push gitee main` 和标签 → 建发行版、传游戏包和安装包、最后传更新清单 →
   核对 Gitee 上每个附件的名字和大小 → **全对了才**删旧版本的安装包。某次构建上传那步被取消但产物还在时，用 `--run <run id>` 指定。
   令牌由维护者在命令里给，不存文件、不放 GitHub Secrets 之外的地方。
+- **Gitee 的 Windows 安装包不带游戏**（2026-10-09 用户定，外壳 0.6.3 起）：Windows 包离 100MiB 只剩约 0.5MiB，加图就超。
+  CI 的 Windows 任务先取本次的 `gitee-game`，用 `apps/desktop/scripts/write-game-pin.mjs` 写 `game-pin.json`（版本、manifest、
+  `<Gitee downloadBase>/v<版本>/<文件>`）放进安装包（`electron-builder.gitee.cjs` 里 win 只带它，linux/mac 照旧带 `game/`）。
+  外壳启动时没有能跑的游戏就弹下载窗口（`lib/first-run.js`），装好再开猪；换外壳版本时继续用已下载的游戏（没有自带的可回）。
+  ⚠️ 所以 **Gitee 发行版必须先把游戏包传上去**，不然新装的 Windows 用户第一次打开会 404（`gitee-publish.sh` 本来就先传游戏包）。
+- **游戏包分卷**：`release-game.mjs` 生成的整包超过 95MiB 时自动拆成 `game-<版本>.part-01.gz`…，manifest 里 `parts` 记顺序和校验值，
+  minShell 自动抬到 0.6.3；`gitee-publish.sh` 按 `game-*` 一起上传。外壳逐卷下载、逐卷校验、拼起来再校验整包。
 - Gitee 的原始文件地址（raw）会 302 跳到 `raw.giteeusercontent.com`，附件会跳到 `foruda.gitee.com`，fetch 默认跟随即可。
 
 ---

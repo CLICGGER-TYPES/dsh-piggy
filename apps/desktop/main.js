@@ -28,6 +28,7 @@ import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
+import { downloadFirstGame, gamePinPath } from './lib/first-run.js'
 
 const { autoUpdater } = updaterPackage
 
@@ -98,6 +99,8 @@ if (!needsX11 && !app.requestSingleInstanceLock()) app.quit()
 
 /** The game shipped inside the app; downloaded versions live under userData (lib/versions.js). */
 function bundledGameDir() {
+  // PIGGY_BUNDLED_GAME：开发时模拟「安装包不带游戏」（指一个不存在的目录）。
+  if (process.env.PIGGY_BUNDLED_GAME) return resolve(process.env.PIGGY_BUNDLED_GAME)
   return app.isPackaged ? join(process.resourcesPath, 'game') : join(HERE, 'game')
 }
 
@@ -992,12 +995,19 @@ app.whenReady().then(async () => {
     // Chromium's network stack: follows the system proxy, which plain fetch does not.
     fetch: /** @type {any} */ (net.fetch.bind(net)),
   })
+  // Gitee 的 Windows 安装包不带游戏：第一次先下载（lib/first-run.js）。
+  let firstRun = null
+  if (versions.needsGame()) {
+    firstRun = await downloadFirstGame({ versions, pinPath: gamePinPath(app, HERE), here: HERE, releasesPage: RELEASES_PAGE, log })
+    if (firstRun === null) { app.quit(); return }
+  }
   const gameDir = versions.activeDir()
   host = await startHost(gameDir, statePath())
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
   createWindow()
+  firstRun?.destroy()
   createTray(gameDir)
   // 用户机器上到底是什么显示器、什么缩放：以前日志里没有，Windows 的问题只能靠猜。
   log('displays', JSON.stringify(screen.getAllDisplays().map(display => ({ id: display.id, label: display.label,
