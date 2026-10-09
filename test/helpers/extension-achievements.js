@@ -7,6 +7,8 @@ import { createStore } from '../../store.js'
 import { createJournal } from '../../store/journal.js'
 import { createExtRuntime } from '../../store/ext-runtime.js'
 import { hatchEgg } from '../../core.js'
+/** 用当前游戏版本装扩展：扩展的 minGame 跟着游戏升，写死旧版本会被拒装。 */
+const GAME_VERSION = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version
 export const NOW = 1_800_000_000_000
 export const KEYS = ['farm', 'mine', 'gacha', 'blindbox']
 
@@ -30,7 +32,7 @@ export async function setupExtensions(initial = {}, overrides = {}) {
   const store = createStore(join(dir, 'state.json'), { now: () => NOW, journal: createJournal({ now: () => NOW }) })
   const entries = KEYS.map(key => ({ ...JSON.parse(packages[key]['manifest.json']), files: Object.fromEntries(Object.entries(packages[key]).map(([file, value]) =>
     [file, { url: 'https://example.test/' + key + '/' + file, sha256: createHash('sha256').update(value).digest('hex') }])) }))
-  const runtime = createExtRuntime(store, { gameVersion: '0.32.0', now: () => NOW, registryUrl: 'https://example.test/registry.json',
+  const runtime = createExtRuntime(store, { gameVersion: GAME_VERSION, now: () => NOW, registryUrl: 'https://example.test/registry.json',
     fetch: async url => {
       if (url === 'https://example.test/registry.json') return new Response(JSON.stringify({ extensions: entries }))
       const [key, file] = String(url).replace('https://example.test/', '').split('/')
