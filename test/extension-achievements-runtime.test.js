@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { achievementsView, migrate } from '../core.js'
 import { ACHIEVEMENTS } from '../data.js'
 import farm from '../extensions/farm/server.js'
-import mine, { dayKey, generateMap, hitsNeeded } from '../extensions/mine/server.js'
+import mine, { generateMap, hitsNeeded } from '../extensions/mine/server.js'
 import gacha from '../extensions/gacha/server.js'
 import blindbox, { CATALOG } from '../extensions/blindbox/server.js'
 import { snapshot } from '../snapshot.js'
@@ -42,22 +42,24 @@ test('real farm harvest unlocks; unripe/duplicate attempts and sale do not add p
 })
 
 test('real mine cracks are not ore; discovery and descent report completed facts', async () => {
-  const data = mine.init(); data.day = dayKey(NOW)
-  const map = generateMap(1, data.day)
+  // 矿洞 2.0：地图按「第几趟」生成，矿要敲几下看镐（木镐 3 下）。
+  const data = mine.init()
+  let map = generateMap(1, data.run)
+  while (map.findIndex(cell => cell.kind === 'ore') < 6) { data.run += 1; map = generateMap(1, data.run) }
   const ore = map.findIndex(cell => cell.kind === 'ore')
-  assert.ok(ore >= 6)
   data.maps[1] = { open: map.map((_, index) => index).filter(index => index !== ore), hits: {} }
   const setup = await setupExtensions({ mine: data })
   try {
     const { runtime, store } = setup
-    assert.equal(runtime.act('mine', 'dig', { cell: ore }).ok, true)
-    assert.equal(entry(store.state, 'mine-first').acquired, false)
+    for (let hit = 1; hit < hitsNeeded('ore', 1); hit += 1) assert.equal(runtime.act('mine', 'dig', { cell: ore }).ok, true)
+    assert.equal(entry(store.state, 'mine-first').acquired, false, 'cracks are not ore')
     assert.equal(runtime.act('mine', 'dig', { cell: ore }).ok, true)
     assert.equal(entry(store.state, 'mine-first').acquired, true)
     assert.equal(runtime.act('mine', 'dig', { cell: ore }).ok, false)
     const current = store.state.extData.mine
     current.layer = 9
-    const ladder = generateMap(9, current.day).findIndex(cell => cell.kind === 'ladder')
+    current.pickaxe = 2 // 第 10 层要铁镐
+    const ladder = generateMap(9, current.run, current.pickaxe).findIndex(cell => cell.kind === 'ladder')
     current.maps[9] = { open: [0, 1, 2, 3, 4, 5, ladder], hits: {} }
     assert.equal(runtime.act('mine', 'descend', {}).ok, true)
     assert.equal(entry(store.state, 'mine-deep').acquired, true)
