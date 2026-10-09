@@ -83,6 +83,8 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | **做任何新功能**（新玩法、音效、动画、走路、动图、联网……）：流程、放哪、预留的扩展点、完工清单 | [docs/guides/adding-features.md](docs/guides/adding-features.md) |
 | 编码规范、提交格式 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
 | 写/改在线扩展 | [docs/guides/writing-extensions.md](docs/guides/writing-extensions.md) |
+| **动钱、动数值**（金币进出、扩展币钱包、收入区间；改完跑 `node tools/economy-sim.mjs`） | [docs/design/economy.md](docs/design/economy.md)、[docs/numbers/J1-economy.md](docs/numbers/J1-economy.md) |
+| 扩展自动化（K1 任务卡：小矿工猪、帮工猪、自动钓鱼加长） | [docs/design/automation.md](docs/design/automation.md) |
 | 给猪加台词 | [docs/guides/adding-lines.md](docs/guides/adding-lines.md) |
 | 加成就和徽章 | [docs/guides/adding-achievements.md](docs/guides/adding-achievements.md) |
 | 改面板、按钮、扩展页面的样子（新组件先查动森 UI 设计系统 animal-island-ui 的规格） | [docs/guides/ui-style.md](docs/guides/ui-style.md) |

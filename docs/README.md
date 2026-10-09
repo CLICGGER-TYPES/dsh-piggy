@@ -35,6 +35,8 @@
 - [**维护交接文档（现状、架构、发版流程）**](HANDOFF.md)
 - [**路线图与待办（唯一的待办清单）**](ROADMAP.md)
 - [**素材总表（每类图放哪、怎么命名、出处）**](ASSETS.md)
+- [**经济体系设计（金币、扩展币钱包、收入区间）**](design/economy.md) · [当前数值单 J1](numbers/J1-economy.md) · [纪念品故事审稿单](numbers/J1-souvenir-stories.md)
+- [扩展自动化（K1，交给 codex 做）](design/automation.md)
 - [用户确认过的数值单](numbers/)
 - [开发、调试与打包](DEVELOPMENT.md)
 - [设计说明](DESIGN.md) · [各功能设计稿](design/)

@@ -1,4 +1,4 @@
-# dsh-piggy 维护交接文档（2026-10-07，v0.33.1 / 外壳 0.6.1）
+# dsh-piggy 维护交接文档（2026-10-09，已发 v0.34.1 / 外壳 0.6.3；main 上有待发的 0.35.0 经济体系）
 
 > 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
 > 本页取代 [2026-10-03 的交接记录](archive/HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
@@ -10,7 +10,7 @@
 
 - **是什么**：一只「QQ 宠物」式的电子猪。同一份代码有两种形态：**DSH 插件**（住在 DeepSeek Harness 网页里）和**桌面版**（Electron，Windows / Linux / macOS）。
 - **代码在哪**：`/zyx/DSH/workspaces/dsh-piggy/code`（本机），远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy`，**都只有 `main` 一个分支**。
-- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（700 多个测试，全绿才算完）。
+- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（近 800 个测试，全绿才算完）。
 - **「怎么加 X」先看 `docs/guides/`**：[开发新功能（总则）](guides/adding-features.md)、[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
 - **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 发 GitHub、并构建 Gitee 渠道的包 → **本机**跑 `scripts/gitee-publish.sh` 推 Gitee → npm 由人手动发。详见第 9 节。
@@ -82,17 +82,24 @@
 - **内置扩展**：番茄钟、钓鱼——可在「设置 → 🧩 扩展」开关 / 删除，注册表在 `packages/pet-core/src/data/extensions.js`。关掉后对应 App、商品、图鉴分区都隐藏，数据保留。
 - **下载扩展**：`extensions/<key>/` 里 `manifest.json` + `server.js` + `client.js`。运行时 `store/ext-runtime.js`：
   - 只从本渠道的在线目录读（`CHANNEL.registry`），每个文件核对 sha256，`minGame` 高于当前游戏版本不装；
-  - 扩展只能改自己的 `state.extData[key]`，其它一律走 `api`：`now`、`coins()`、`spend()`、`earn()`、`give()`、`say()`、`count()`、`take()`、`emit()`（成就事件）；
+  - 扩展只能改自己的 `state.extData[key]`，其它一律走 `api`：`now`、`coins()`、`spend()`、`earn()`、`give()`、`say()`、`count()`、`take()`、`emit()`（成就事件）、`exert()`（玩累了扣饱食）、`wallet`（自己的币，见 4.5）；
   - `view()` 可以返回 `shelf`（往商店加货架）、`dex`（往图鉴加分区，`style: 'holo'` 是闪卡）；
   - 出错只影响它自己。
 - 写法和发布步骤：[写一个在线扩展](guides/writing-extensions.md)；设计背景：[扩展删除与在线下载](design/extension-download.md)、[扩展成就](design/extension-achievements.md)、[盲盒设计](design/blindbox.md)、数值单 `docs/numbers/X1–X4`。
 
 ### 4.4 桌面版：外壳和游戏包分开
 
-- **外壳**（`apps/desktop/`，当前 **0.6.1**）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
+- **外壳**（`apps/desktop/`，当前 **0.6.3**）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
 - **游戏包**（= 插件那份代码，`apps/desktop/scripts/pack-game.mjs` 复制、`release-game.mjs` 打成 `game-<版本>.json.gz` + manifest）：在「设置 → 更新」里直接下载切换、可回退，不用重装。
 - 窗口摆放、可点区域、桌面样式都放在游戏包里（`src/client/desktop/`），所以这类修复走游戏包更新就到。
 - 详见 [更新机制](guides/updates.md)、[桌面版指南](guides/desktop.md)、`docs/DEVELOPMENT.md`「桌面程序和游戏包怎么分工」。
+
+### 4.5 经济体系（0.35.0 起，[设计](design/economy.md)）
+
+- **金币只走一个入口**：`core/economy.js` 的 `earnCoins` / `spendCoins` / `refundCoins`，每笔按来源记账（调试页「经济」能看）。直接写 `state.coins +=` 会被 `test/economy.test.js` 拦下。
+- **扩展币钱包**：钱包在宿主 `state.wallets[扩展名]`，扩展在 manifest 声明 `economy.currency`（名字、图标、汇率；`buyable: false` 表示只能挣不能用金币买），用 `api.wallet` 加减。换成金币不收费、用金币买多收 5%；删扩展时按存着的汇率自动结清。
+- **不设每天上限**，靠「玩累了」（`exert`）和收入区间控节奏：主动玩法 300～2500 金币/小时，挂机 60～1200。改数值先跑 `node tools/economy-sim.mjs` 看区间，各玩法的区间测试会守着。
+- 当前数字：[J1 数值单](numbers/J1-economy.md)；扩展自动化（K1，交给 codex）：[design/automation.md](design/automation.md)。
 
 ---
 
@@ -137,6 +144,8 @@ node node_modules/electron/install.js
 ---
 
 ## 8. 调试与测试环境
+
+> **界面验证去虚拟机里做**（用户 2026-10-09）：别在维护者自己正用的电脑上开桌面版窗口截图——会打扰用户工作。Linux、Windows 各有一台测试虚拟机，账号和地址不进仓库，问维护者。纯逻辑照旧 `npm test`。
 
 ### 8.1 网页版（DSH 插件）——用隔离实例，别碰用户正在用的 DSH
 
@@ -274,6 +283,9 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 ## 13. 常见坑
 
 - `client.js` 忘了重建 → `test/bundle.test.js` 失败。
+- 改了扩展的 `manifest.json` / `server.js` / `client.js` 却没升版本、没重算目录 → 校验值对不上，玩家下载失败。用 `node scripts/extension-entry.mjs <key> [--host gitee]` 重算两份目录里那一条。
+- 游戏里加了新 emoji 没重新裁网页版字体 → 网页上显示系统表情或方框。`test/emoji-coverage.test.js` 会报，按它开头的命令重新裁。
+- 往桌面测试虚拟机 rsync 代码会把 Electron 的 `chrome-sandbox` 权限冲掉，启动报 SUID sandbox：要 `sudo chown root` 加 `chmod 4755` 改回来。
 - `cordis.patch.yml` 的 `name` 和 package.json `name` 不一致 → 插件前端静默不挂载。
 - 网页里 `window.confirm()` 会冻住页面；DSH 面板里不要用原生弹窗。
 - 在线扩展 GitHub Release 忘了 `--prerelease --latest=false` → 「最新正式版」被扩展抢走，更新检查出错。
@@ -293,5 +305,5 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 - 入口：[AGENTS.md](../AGENTS.md)
 - 怎么加 X：[写扩展](guides/writing-extensions.md) · [加台词](guides/adding-lines.md) · [加成就](guides/adding-achievements.md) · [界面规范](guides/ui-style.md) · [桌面架构与 IPC](guides/desktop-architecture.md)
 - 开发：[开发指南](DEVELOPMENT.md) · [编码规范](CONVENTIONS.md) · [设计说明](DESIGN.md) · [美术规格](ART-SPEC.md) · [扩展下载](design/extension-download.md) · [扩展成就](design/extension-achievements.md) · [扩展中心设计](design/extension-center.md) · [日志与导出](design/log-export.md)
-- 规划与素材：[路线图与待办](ROADMAP.md) · [素材总表](ASSETS.md) · [数值单](numbers/)
+- 规划与素材：[路线图与待办](ROADMAP.md) · [素材总表](ASSETS.md) · [数值单](numbers/) · [经济设计](design/economy.md) · [扩展自动化（K1）](design/automation.md)
 - 历史：[CHANGELOG](../CHANGELOG.md) · [任务卡](archive/tasks/README.md) · [数值单](numbers/) · [开发过程记录](archive/PROCESS.md) · [旧交接 2026-10-03](archive/HANDOFF-2026-10-03.md)
