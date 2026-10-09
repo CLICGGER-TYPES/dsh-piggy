@@ -1,6 +1,6 @@
 // @ts-check
 /** C5 manual and automatic fishing; all core randomness comes through random.js. */
-import { FISH, FISH_FIGHTS, fishByKey, itemByKey } from '../data.js'
+import { FISH, FISH_FEEL, FISH_FIGHTS, FISH_SPOTS, RODS, fishByKey, fishSpotByKey, itemByKey, rodByLevel } from '../data.js'
 import { begin, awayBlockedReason } from './activity.js'
 import { dayKeyFor } from './clock.js'
 import { clamp100, remember } from './effects.js'
@@ -8,10 +8,14 @@ import { ensureDex } from './dex.js'
 import { chance, pickOne, rollerFor } from './random.js'
 import { reduceFishingWeight } from './weight.js'
 import { say } from './lines.js'
-import { earnCoins } from './economy.js'
+import { earnCoins, exert, spendCoins } from './economy.js'
 
-const WEIGHT = { common: 60, uncommon: 24, rare: 8, legend: 1 }
-export const emptyFishing = () => ({ pending: null, bag: [], seq: 0, autoDay: '', autoTrips: 0 })
+/** 稀有度权重（钓鱼 2.0 调过：稀有、传说是偶尔的惊喜，见 docs/numbers/J1-economy.md 第 4 节）。 */
+export const FISH_WEIGHT = { common: 60, uncommon: 14, rare: 2.5, legend: 0.2 }
+/** 抛一竿让猪累多少（J1：0.5 饱食）。 */
+export const CAST_EXERT = 0.5
+/** 新猪：竹竿、只有小河。 */
+export const emptyFishing = () => ({ pending: null, bag: [], seq: 0, autoDay: '', autoTrips: 0, rod: 1, spots: ['river'], spot: 'river' })
 
 function cleanCatch(value) {
   if (!value || typeof value !== 'object' || fishByKey(value.key) === null || typeof value.id !== 'string') return null
@@ -24,7 +28,8 @@ function cleanPending(value) {
   if (caught === null || !['waiting', 'hooked', 'caught'].includes(value.phase)) return null
   if (![value.castPower, value.bitesAt, value.hookUntil, value.expiresAt].every(Number.isFinite)) return null
   const fight = FISH_FIGHTS.includes(value.fight) ? { fight: value.fight } : {}
-  return { ...caught, phase: value.phase, castPower: Math.max(0, Math.min(1, value.castPower)), bitesAt: value.bitesAt, hookUntil: value.hookUntil, expiresAt: value.expiresAt, ...fight }
+  const feel = value.feel && typeof value.feel === 'object' && Number.isFinite(value.feel.difficulty) ? { feel: { ...value.feel } } : {}
+  return { ...caught, phase: value.phase, castPower: Math.max(0, Math.min(1, value.castPower)), bitesAt: value.bitesAt, hookUntil: value.hookUntil, expiresAt: value.expiresAt, ...fight, ...feel }
 }
 
 export function ensureFishing(state) {
@@ -35,7 +40,13 @@ export function ensureFishing(state) {
     seq: Number.isInteger(raw.seq) && raw.seq >= 0 ? raw.seq : 0,
     autoDay: typeof raw.autoDay === 'string' ? raw.autoDay : '',
     autoTrips: Number.isFinite(raw.autoTrips) ? Math.max(0, Math.floor(raw.autoTrips)) : 0,
+    // 钓鱼 2.0 以前的老存档没有鱼竿：送一把碳素竿（J1：免得一更新就觉得钓得变慢）。新猪由 emptyFishing 给竹竿。
+    rod: RODS.some(rod => rod.level === raw.rod) ? raw.rod : 2,
+    spots: ['river', ...(Array.isArray(raw.spots) ? raw.spots : []).filter(key => key !== 'river' && fishSpotByKey(key) !== null)],
+    spot: 'river',
   }
+  clean.spots = [...new Set(clean.spots)]
+  clean.spot = clean.spots.includes(raw.spot) ? raw.spot : 'river'
   Object.assign(raw, clean)
   state.fishing = raw
   return raw
@@ -46,12 +57,21 @@ export function fishingPeriod(nowMs) {
   return hour >= 5 && hour < 10 ? 'early' : hour >= 10 && hour < 16 ? 'noon' : hour >= 16 && hour < 21 ? 'evening' : 'night'
 }
 
-function weightedFish(nowMs, power, next, baitBoost = 0) {
-  const entries = FISH.filter(fish => fish.times.includes(fishingPeriod(nowMs))).map(fish => ({
+/** 这个钓点现在开着吗（夜潭只在晚上开）。 */
+export function spotOpen(spotKey, nowMs) {
+  const spot = fishSpotByKey(spotKey)
+  return spot !== null && (spot.times === null || spot.times.includes(fishingPeriod(nowMs)))
+}
+
+/** 这个钓点、这个时段能钓到的鱼，按稀有度、抛竿力度、鱼饵、鱼竿配权重；没有鱼返回 null。 */
+function weightedFish(nowMs, power, next, baitBoost = 0, spotKey = 'river', rodRare = 1) {
+  const entries = FISH.filter(fish => fish.spot === spotKey && fish.times.includes(fishingPeriod(nowMs))).map(fish => ({
     fish,
-    weight: WEIGHT[fish.rarity] * (fish.rarity === 'legend' ? 1 + power * 8 : fish.rarity === 'rare' ? 1 + power * 4 : fish.rarity === 'uncommon' ? 1 + power : 1)
-      * (fish.rarity === 'legend' ? 1 + baitBoost * 3 : fish.rarity === 'rare' ? 1 + baitBoost * 2 : fish.rarity === 'uncommon' ? 1 + baitBoost : 1),
+    weight: FISH_WEIGHT[fish.rarity] * (fish.rarity === 'legend' ? 1 + power * 2 : fish.rarity === 'rare' ? 1 + power : fish.rarity === 'uncommon' ? 1 + power * 0.5 : 1)
+      * (fish.rarity === 'legend' ? 1 + baitBoost * 3 : fish.rarity === 'rare' ? 1 + baitBoost * 2 : fish.rarity === 'uncommon' ? 1 + baitBoost : 1)
+      * (fish.rarity === 'legend' || fish.rarity === 'rare' ? rodRare : 1),
   }))
+  if (entries.length === 0) return null
   let cursor = next() * entries.reduce((sum, entry) => sum + entry.weight, 0)
   for (const entry of entries) { cursor -= entry.weight; if (cursor < 0) return entry.fish }
   return entries[entries.length - 1].fish
@@ -60,7 +80,9 @@ function weightedFish(nowMs, power, next, baitBoost = 0) {
 function makeCatch(state, fish, nowMs, next) {
   const fishing = ensureFishing(state)
   fishing.seq += 1
-  return { id: `catch-${nowMs}-${fishing.seq}`, key: fish.key, sizeCm: Number((fish.minCm + next() * (fish.maxCm - fish.minCm)).toFixed(1)), price: fish.price, caughtAt: nowMs }
+  const ratio = next()
+  // 越大越值钱：最小的七折、最大的一点三倍，平均还是表上的价（规则 4）。
+  return { id: `catch-${nowMs}-${fishing.seq}`, key: fish.key, sizeCm: Number((fish.minCm + ratio * (fish.maxCm - fish.minCm)).toFixed(1)), price: Math.max(1, Math.round(fish.price * (0.7 + 0.6 * ratio))), caughtAt: nowMs }
 }
 
 export function castFishing(state, power, nowMs, next = rollerFor(state), baitKey) {
@@ -73,15 +95,30 @@ export function castFishing(state, power, nowMs, next = rollerFor(state), baitKe
   if (state.satiety < 1) return { ok: false, reason: 'hungry' }
   const bait = itemByKey(baitKey)
   if (bait?.kind !== 'bait' || (state.inventory?.[baitKey] ?? 0) < 1) return { ok: false, reason: 'no-bait' }
+  if (!spotOpen(fishing.spot, nowMs)) return { ok: false, reason: 'closed' }
+  const rod = rodByLevel(fishing.rod)
   const castPower = Number.isFinite(power) ? Math.max(0, Math.min(1, power)) : 0
-  const fish = weightedFish(nowMs, castPower, next, bait.rarityBoost ?? 0)
+  const fish = weightedFish(nowMs, castPower, next, bait.rarityBoost ?? 0, fishing.spot, rod.rare)
+  if (fish === null) return { ok: false, reason: 'closed' }
   const caught = makeCatch(state, fish, nowMs, next)
-  const bitesAt = nowMs + 2000 + Math.floor(next() * 6001)
-  fishing.pending = { ...caught, phase: 'waiting', castPower, bitesAt, hookUntil: bitesAt + 2000, expiresAt: nowMs + 60_000 }
+  // 咬钩等多久看鱼竿：竹竿 14～32 秒，传说竿 8～18 秒（J1 第 4 节）。
+  const bitesAt = nowMs + rod.bite[0] + Math.floor(next() * (rod.bite[1] - rod.bite[0] + 1))
+  fishing.pending = { ...caught, phase: 'waiting', castPower, bitesAt, hookUntil: bitesAt + 2000, expiresAt: Math.max(nowMs + 60_000, bitesAt + 10_000) }
   state.inventory[baitKey] -= 1
   if (state.inventory[baitKey] === 0) delete state.inventory[baitKey]
-  state.satiety = clamp100(state.satiety - 1)
+  exert(state, CAST_EXERT)
   return { ok: true, fish, pending: fishing.pending }
+}
+
+/**
+ * 这条鱼、这把竿的搏斗手感（用户 2026-10-09：按鱼的种类和鱼竿调手感和速度区间），界面照着演：
+ * difficulty 乘上鱼竿的难度乘数；speed 在这种游法的速度区间里按难度取值；zone / hold 来自鱼竿。
+ */
+export function fightFeel(fish, rod) {
+  const base = FISH_FEEL[fish?.behavior] ?? FISH_FEEL.smooth
+  const difficulty = Math.max(1, Math.min(100, Math.round((Number(fish?.difficulty) || 1) * rod.difficulty)))
+  const speed = Number((base.speed[0] + (base.speed[1] - base.speed[0]) * difficulty / 100).toFixed(3))
+  return { difficulty, speed, burst: base.burst, burstScale: base.burstScale, drift: base.drift, jitter: base.jitter, zone: rod.zone, hold: rod.hold, rod: rod.key }
 }
 
 export function hookFishing(state, nowMs) {
@@ -94,6 +131,7 @@ export function hookFishing(state, nowMs) {
   pending.phase = 'hooked'
   // 三种搏斗玩法随机一种；竖条和拉力要拉一会儿，给足一分钟。
   pending.fight = pickOne(rollerFor(state), FISH_FIGHTS) ?? 'ring'
+  pending.feel = fightFeel(fishByKey(pending.key), rodByLevel(fishing.rod))
   pending.expiresAt = Math.max(pending.expiresAt, nowMs + 60_000)
   return { ok: true, fish: fishByKey(pending.key), pending }
 }
@@ -176,6 +214,7 @@ export function startAutoFishing(state, minutes, nowMs, baitKey) {
   const fishing = ensureFishing(state)
   resetAutoDay(fishing, nowMs)
   if (![30, 60].includes(minutes)) return { ok: false, reason: 'minutes' }
+  if (!spotOpen(fishing.spot, nowMs)) return { ok: false, reason: 'closed' }
   // rc.1 反馈：自动钓鱼不限每天次数，只看鱼饵够不够（autoTrips 仍记今天去了几次）。
   const bait = itemByKey(baitKey)
   const attempts = minutes / 3
@@ -193,10 +232,14 @@ export function finishAutoFishing(state, activity, nowMs, next = rollerFor(state
   const attempts = Math.max(1, Math.floor((activity.endsAt - activity.startedAt) / 180_000))
   let count = 0
   const bait = itemByKey(activity.baitKey)
+  const fishing = ensureFishing(state)
+  const rod = rodByLevel(fishing.rod)
   for (let index = 0; index < attempts; index += 1) {
     const at = activity.startedAt + index * 180_000
-    const fish = weightedFish(at, 0.45, next, bait?.rarityBoost ?? 0)
-    if (!chance(next, Math.max(0.2, 0.95 - fish.difficulty * 0.0075))) continue
+    // 在当前钓点钓；夜潭白天没鱼，那一竿就空着。
+    const fish = weightedFish(at, 0.45, next, bait?.rarityBoost ?? 0, fishing.spot, rod.rare)
+    if (fish === null) continue
+    if (!chance(next, Math.max(0.2, 0.95 - fish.difficulty * rod.difficulty * 0.0075))) continue
     const caught = makeCatch(state, fish, at, next)
     recordFish(state, caught, nowMs)
     ensureFishing(state).bag.push(caught)
@@ -213,8 +256,43 @@ export function fishingView(state, nowMs) {
   const fishing = ensureFishing(state)
   resetAutoDay(fishing, nowMs)
   if (fishing.pending !== null && nowMs > fishing.pending.expiresAt) fishing.pending = null
-  const enrich = caught => ({ ...caught, ...fishByKey(caught.key) })
-  return { pending: fishing.pending === null ? null : enrich(fishing.pending), bag: fishing.bag.map(enrich), period: fishingPeriod(nowMs), autoTrips: fishing.autoTrips, autoLeft: null }
+  // 鱼表里的 price 是基准价；鱼篓里每条按大小算的实际价要盖在上面。
+  const enrich = caught => ({ ...fishByKey(caught.key), ...caught })
+  const rod = rodByLevel(fishing.rod)
+  const next = RODS.find(entry => entry.level === fishing.rod + 1) ?? null
+  return {
+    pending: fishing.pending === null ? null : enrich(fishing.pending), bag: fishing.bag.map(enrich), period: fishingPeriod(nowMs), autoTrips: fishing.autoTrips, autoLeft: null,
+    rod: { level: rod.level, key: rod.key, label: rod.label, emoji: rod.emoji },
+    nextRod: next === null ? null : { level: next.level, key: next.key, label: next.label, emoji: next.emoji, price: next.price },
+    spot: fishing.spot,
+    spots: FISH_SPOTS.map(spot => ({ key: spot.key, label: spot.label, emoji: spot.emoji, price: spot.price, unlocked: fishing.spots.includes(spot.key), open: spotOpen(spot.key, nowMs), kinds: FISH.filter(entry => entry.spot === spot.key).length })),
+  }
+}
+
+/** 买下一把鱼竿（金币，一把一把升）。 */
+export function buyRod(state, nowMs) {
+  const fishing = ensureFishing(state)
+  const next = RODS.find(rod => rod.level === fishing.rod + 1)
+  if (next === undefined) return { ok: false, reason: 'owned' }
+  if (!spendCoins(state, next.price, 'fish.rod', nowMs)) return { ok: false, reason: 'poor', price: next.price }
+  fishing.rod = next.level
+  remember(state, `${next.emoji} 换上了${next.label}`, nowMs)
+  return { ok: true, rod: next.key }
+}
+
+/** 去某个钓点：没开过的先花金币开。 */
+export function chooseSpot(state, key, nowMs) {
+  const fishing = ensureFishing(state)
+  const spot = fishSpotByKey(key)
+  if (spot === null) return { ok: false, reason: 'unknown' }
+  if (fishing.pending !== null) return { ok: false, reason: 'pending' }
+  if (!fishing.spots.includes(spot.key)) {
+    if (!spendCoins(state, spot.price, 'fish.spot', nowMs)) return { ok: false, reason: 'poor', price: spot.price }
+    fishing.spots = [...fishing.spots, spot.key]
+    remember(state, `${spot.emoji} 开了新钓点：${spot.label}`, nowMs)
+  }
+  fishing.spot = spot.key
+  return { ok: true, spot: spot.key }
 }
 
 export function skipFishingWait(state, nowMs) {

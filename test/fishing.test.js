@@ -10,14 +10,14 @@ import { FISH, FISH_FIGHTS, SHOP } from '../packages/pet-core/src/data.js'
 const NOW = new Date(2026, 9, 2, 19, 0).getTime()
 const fresh = () => { const state = hatchEgg(NOW); state.inventory.bait_worm = 40; return state }
 
-test('fish table has the promised 15 fish and rarity split', () => {
-  assert.equal(FISH.length, 15)
-  assert.deepEqual(Object.fromEntries(['common', 'uncommon', 'rare', 'legend'].map(rarity => [rarity, FISH.filter(f => f.rarity === rarity).length])), {
-    common: 8, uncommon: 4, rare: 2, legend: 1,
-  })
+test('fish table: the 15 C5 fish plus 25 new ones (J1), every fish lives in one of the four spots', () => {
+  assert.equal(FISH.length, 40)
+  assert.deepEqual(Object.fromEntries(['river', 'lake', 'sea', 'night'].map(spot => [spot, FISH.filter(f => f.spot === spot).length])), { river: 12, lake: 10, sea: 11, night: 7 })
+  assert.deepEqual(FISH.filter(f => f.rarity === 'legend').map(f => f.label), ['月影鱼', '湖中巨影', '小鲸鲨', '夜之鲸'])
+  assert.ok(FISH.filter(f => f.spot === 'night').every(f => f.times.length === 1 && f.times[0] === 'night'), 'the night pond only has night fish')
   for (const fish of FISH) {
     assert.match(fish.key, /^fish_/)
-    assert.ok(fish.price >= 8 && fish.price <= 300)
+    assert.ok(fish.price >= 6 && fish.price <= 1500)
     assert.ok(fish.difficulty >= 1 && fish.difficulty <= 100)
     assert.ok(fish.times.length > 0)
   }
@@ -69,17 +69,20 @@ test('better bait increases rare and legendary catches for the same rolls', () =
   assert.ok(rareCount('bait_shrimp') > rareCount('bait_worm'))
 })
 
-test('cast spends one satiety and server pins one pending fish for 60 seconds', () => {
+test('a cast tires the pig by half a point and pins one pending fish; the bamboo rod bites in 14–32 s', () => {
   const state = fresh()
   const before = state.satiety
   const result = castFishing(state, 0.8, NOW, () => 0.25, 'bait_worm')
   assert.equal(result.ok, true)
-  assert.equal(state.satiety, before - 1)
+  assert.equal(state.satiety, before, 'half a point is saved up, not taken yet')
   assert.equal(state.fishing.pending.key, result.fish.key)
   assert.equal(state.fishing.pending.expiresAt, NOW + 60_000)
-  assert.ok(state.fishing.pending.bitesAt >= NOW + 2_000)
-  assert.ok(state.fishing.pending.bitesAt <= NOW + 8_000)
+  assert.ok(state.fishing.pending.bitesAt >= NOW + 14_000)
+  assert.ok(state.fishing.pending.bitesAt <= NOW + 32_000)
   assert.equal(castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm').reason, 'pending')
+  state.fishing.pending = null
+  castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm')
+  assert.equal(state.satiety, before - 1, 'two casts make one whole point')
   // 用户 2026-10-09：猪在打工也能钓；只有猪正在自动钓鱼时不能再手动钓。
   state.activity = { kind: 'work', key: 'x', startedAt: NOW, endsAt: NOW + 60_000 }
   state.fishing.pending = null

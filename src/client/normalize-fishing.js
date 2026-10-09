@@ -1,23 +1,41 @@
 // @ts-check
 import { arr, isObj, num, obj, str } from './values.js'
 
-function fish(value) {
+/** 搏斗手感（钓鱼 2.0，宿主 core/fishing.js 的 fightFeel）；老宿主没有就按难度现算。 */
+function feel(value, difficulty) {
   const entry = obj(value)
   return {
+    difficulty: num(entry.difficulty, difficulty), speed: num(entry.speed, 1), burst: num(entry.burst, 0), burstScale: num(entry.burstScale, 1),
+    drift: num(entry.drift, 0), jitter: num(entry.jitter, 0), zone: num(entry.zone, 1), hold: num(entry.hold, 1), rod: str(entry.rod, ''),
+  }
+}
+
+function fish(value) {
+  const entry = obj(value)
+  const difficulty = num(entry.difficulty, 1)
+  return {
     id: str(entry.id, ''), key: str(entry.key, ''), label: str(entry.label, '鱼'), emoji: str(entry.emoji, '🐟'),
-    rarity: str(entry.rarity, 'common'), behavior: str(entry.behavior, 'smooth'), difficulty: num(entry.difficulty, 1),
+    rarity: str(entry.rarity, 'common'), behavior: str(entry.behavior, 'smooth'), difficulty,
     sizeCm: num(entry.sizeCm, 0), price: num(entry.price, 0), phase: str(entry.phase, ''),
     castPower: num(entry.castPower, 0), bitesAt: num(entry.bitesAt, 0), hookUntil: num(entry.hookUntil, 0), expiresAt: num(entry.expiresAt, 0),
     // 搏斗玩法（ring / bar / pull，没有就是老宿主：圆盘）；maxCm 用来说「大个的」。
-    fight: str(entry.fight, 'ring'), maxCm: num(entry.maxCm, 0),
+    fight: str(entry.fight, 'ring'), maxCm: num(entry.maxCm, 0), feel: feel(entry.feel, difficulty),
   }
 }
 
 export function normalizeFishing(raw) {
   const source = obj(raw)
+  const rod = obj(source.rod)
   return {
     pending: isObj(source.pending) ? fish(source.pending) : null,
     bag: arr(source.bag).map(fish).filter(entry => entry.id !== ''),
     period: str(source.period, ''), autoTrips: num(source.autoTrips, 0),
+    rod: { level: num(rod.level, 1), label: str(rod.label, '鱼竿'), emoji: str(rod.emoji, '🎣') },
+    nextRod: isObj(source.nextRod) ? { level: num(source.nextRod.level, 2), label: str(source.nextRod.label, ''), emoji: str(source.nextRod.emoji, '🎣'), price: num(source.nextRod.price, 0) } : null,
+    spot: str(source.spot, 'river'),
+    spots: arr(source.spots).map(value => {
+      const spot = obj(value)
+      return { key: str(spot.key, ''), label: str(spot.label, ''), emoji: str(spot.emoji, '🏞'), price: num(spot.price, 0), unlocked: spot.unlocked === true, open: spot.open !== false, kinds: num(spot.kinds, 0) }
+    }).filter(spot => spot.key !== ''),
   }
 }

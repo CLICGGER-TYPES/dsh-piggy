@@ -59,8 +59,8 @@ export const SHOP = Object.freeze([
   Object.freeze({ key: 'seafoodrice', label: '海鲜饭', emoji: '🥘', price: 76, kind: 'food', satiety: 88, happiness: 27 }),
   // --- fishing bait: one consumed for every cast or auto attempt -----------
   Object.freeze({ key: 'bait_worm', label: '蚯蚓鱼饵', emoji: '🪱', price: 5, kind: 'bait', rarityBoost: 0 }),
-  Object.freeze({ key: 'bait_shrimp', label: '鲜虾鱼饵', emoji: '🦐', price: 15, kind: 'bait', rarityBoost: 0.6 }),
-  Object.freeze({ key: 'bait_glow', label: '夜光鱼饵', emoji: '✨', price: 40, kind: 'bait', rarityBoost: 1.5 }),
+  Object.freeze({ key: 'bait_shrimp', label: '鲜虾鱼饵', emoji: '🦐', price: 8, kind: 'bait', rarityBoost: 0.6 }),
+  Object.freeze({ key: 'bait_glow', label: '夜光鱼饵', emoji: '✨', price: 18, kind: 'bait', rarityBoost: 1.5 }),
   // --- bath ---------------------------------------------------------------
   Object.freeze({ key: 'soap', label: '香皂', emoji: '🧼', price: 6, kind: 'bath', cleanliness: 35, happiness: 2 }),
   Object.freeze({ key: 'shower', label: '冲个澡', emoji: '🚿', price: 10, kind: 'bath', cleanliness: 50, happiness: 3 }),

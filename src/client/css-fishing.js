@@ -24,4 +24,12 @@ export const CSS_FISHING = `
 .dp-fish-gauge b{position:absolute;top:-6px;width:6px;height:36px;border-radius:4px;background:#794f27;transform:translateX(-50%)}
 .dp-fish-pull-state{font-size:12px;font-weight:800;min-height:16px}
 .dp-fish-hmeter{width:100%;height:10px;border-radius:50px;background:#dce8e9;overflow:hidden}.dp-fish-hmeter i{display:block;height:100%;width:0;background:#6bd47b}
+.dp-fish-spots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 8px}
+.dp-fish-spot{display:grid;justify-items:center;gap:1px;padding:6px 2px;border-radius:14px;font:inherit;color:inherit;cursor:pointer;background:var(--ac-bg-content);border:2px solid var(--ac-border-light)}
+.dp-fish-spot em{font-style:normal;font-size:20px;line-height:1.1}.dp-fish-spot b{font-size:10.5px}.dp-fish-spot small{font-size:9.5px;color:var(--ac-text-2)}
+.dp-fish-spot[aria-pressed="true"]{background:#e3f4f6;border-color:#7cc7d1;box-shadow:0 2px 0 #7cc7d1}.dp-fish-spot:disabled{opacity:.55;cursor:default}
+.dp-fish-rodrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0 0 10px;font-size:11px;font-weight:800}
+.dp-fish-rodrow small{width:100%;font-weight:600;font-size:10px;color:var(--ac-text-2)}
+.dp-fish-waiting[data-nibble="true"] .dp-fish-bobber{animation:dp-fish-nibble .42s ease-in-out}
+@keyframes dp-fish-nibble{0%,100%{transform:translateY(0)}30%{transform:translateY(5px) rotate(-6deg)}60%{transform:translateY(-2px) rotate(4deg)}}
 `

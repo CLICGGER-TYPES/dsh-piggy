@@ -46,7 +46,39 @@ export function renderFishingTab(ui) {
 /** 鱼饵说明：越贵的饵，稀有鱼越多。 */
 var BAIT_NOTE = { bait_worm: '普通鱼', bait_shrimp: '少见的多一点', bait_glow: '稀有的多很多' }
 
+/**
+ * 钓点和鱼竿（钓鱼 2.0）：钓点一排小卡片，没开的写开启价、点了就开；鱼竿写现在用的和下一把多少钱。
+ * 增量游戏的成长线：好竿咬钩快、搏斗顺手、稀有鱼多；新钓点有新鱼。
+ */
+function renderGear(ui) {
+  const fishing = ui.view.fishing
+  if (!Array.isArray(fishing.spots) || fishing.spots.length === 0) return
+  const coins = ui.view.pig?.coins ?? 0
+  const spots = el('div', 'dp-fish-spots')
+  for (const spot of fishing.spots) {
+    const here = spot.key === fishing.spot
+    const pick = button('dp-fish-spot', { 'data-fish-spot': spot.key, 'aria-pressed': String(here) }, function () { if (!here) ui.send('fishSpot', { spot: spot.key }) })
+    pick.appendChild(el('em', null, spot.emoji))
+    pick.appendChild(el('b', null, spot.label))
+    pick.appendChild(el('small', null, !spot.unlocked ? '🪙 ' + spot.price + ' 开' : !spot.open ? '晚上才开' : spot.kinds + ' 种鱼'))
+    pick.disabled = !spot.unlocked && coins < spot.price
+    spots.appendChild(pick)
+  }
+  ui.content.appendChild(spots)
+  const rod = el('div', 'dp-fish-rodrow')
+  rod.appendChild(el('span', null, fishing.rod.emoji + ' ' + fishing.rod.label))
+  if (fishing.nextRod) {
+    const up = button('dp-mini', { 'data-fish-rod': fishing.nextRod.key || String(fishing.nextRod.level) }, function () { ui.send('fishRod') })
+    up.textContent = '换' + fishing.nextRod.label + ' 🪙 ' + fishing.nextRod.price
+    up.disabled = coins < fishing.nextRod.price
+    rod.appendChild(up)
+    rod.appendChild(el('small', null, '好竿咬钩更快、绿区更宽、更耐拉，稀有鱼更多'))
+  } else rod.appendChild(el('small', null, '已经是最好的鱼竿'))
+  ui.content.appendChild(rod)
+}
+
 function renderReady(ui) {
+  renderGear(ui)
   const baits = ui.view.shop.filter(item => item.kind === 'bait')
   const owned = key => ui.view.inventory[key] ?? 0
   if (!baits.some(item => item.key === selectedBait && owned(item.key) > 0)) selectedBait = baits.find(item => owned(item.key) > 0)?.key ?? null
@@ -70,7 +102,7 @@ function renderReady(ui) {
     care.textContent = '去状态页喂食 →'
     ui.content.appendChild(care)
   }
-  const cast = button('dp-btn dp-btn-wide dp-fish-cast', { 'data-fish': 'cast' }, function () { ui.send('fishCast', { power: .7, bait: selectedBait }) })
+  const cast = button('dp-btn dp-btn-wide dp-fish-cast', { 'data-fish': 'cast' }, function () { ui.send('fishCast', { power: .5, bait: selectedBait }) })
   cast.textContent = hungry ? '🍚 喂食后才能抛竿' : '🎣 抛竿'
   cast.disabled = selectedBait === null || hungry
   ui.content.appendChild(cast)
@@ -106,9 +138,12 @@ function renderAuto(ui) {
 
 function renderWaiting(ui, pending) {
   const water = button('dp-fish-waiting', { 'data-fish': 'hook' }, function () {
-    if (Date.now() < pending.bitesAt) { line.textContent = '还没上钩，继续等…'; return }
+    if (Date.now() < pending.bitesAt) { line.textContent = nibbleUntil > Date.now() ? '只是试探，还没咬实…' : '还没上钩，继续等…'; return }
     ui.send('fishHook')
   })
+  // 等咬钩时浮漂会被「试探」几下（动森的钓鱼手感）：盯着看才有意思，提前点也不罚。
+  let nextNibble = Date.now() + 1500 + Math.random() * 2500
+  let nibbleUntil = 0
   const mark = el('span', 'dp-fish-bobber', '🎣')
   const line = el('b', null, '安静等鱼咬钩…')
   water.appendChild(mark)
@@ -118,6 +153,12 @@ function renderWaiting(ui, pending) {
   function tick() {
     if (waitUi !== ui) return
     const now = Date.now()
+    if (now < pending.bitesAt - 900 && now >= nextNibble) {
+      nibbleUntil = now + 420
+      nextNibble = now + 1800 + Math.random() * 3200
+      water.setAttribute('data-nibble', 'true')
+      line.textContent = Math.random() < 0.5 ? '浮漂动了一下…' : '咕嘟，冒了个泡…'
+    } else if (nibbleUntil > 0 && now > nibbleUntil + 900) { nibbleUntil = 0; water.setAttribute('data-nibble', 'false'); line.textContent = '安静等鱼咬钩…' }
     if (now >= pending.bitesAt && now <= pending.hookUntil) { mark.textContent = '❗'; line.textContent = '上钩了！快点！'; water.setAttribute('data-bite', 'true') }
     else if (now > pending.hookUntil) { stopWait(); ui.send('fishHook'); return }
     waitFrame = raf(tick)

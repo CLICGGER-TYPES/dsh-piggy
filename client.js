@@ -723,7 +723,8 @@
             "no-ticket": "\u6CA1\u6709\u76F2\u76D2\u5238\u4E86",
             "no-shards": "\u788E\u7247\u8FD8\u4E0D\u591F",
             "no-certs": "\u8D44\u8D28\u51ED\u8BC1\u4E0D\u591F",
-            "too-small": "\u592A\u5C11\u4E86\uFF0C\u6362\u4E0D\u51FA 1 \u4E2A\u91D1\u5E01"
+            "too-small": "\u592A\u5C11\u4E86\uFF0C\u6362\u4E0D\u51FA 1 \u4E2A\u91D1\u5E01",
+            closed: "\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u5F00\uFF0C\u591C\u6F6D\u53EA\u5728\u665A\u4E0A"
           };
           ctx.showBubble(reasons[next.reason] ?? "\u8FD9\u4E2A\u64CD\u4F5C\u6CA1\u6210", 2400);
         }
@@ -1173,12 +1174,22 @@
   function resetFightResolve() {
     resolving = false;
   }
-  function difficultyOf(fish2) {
-    return Math.max(1, Math.min(100, Number(fish2.difficulty) || 1));
+  function difficultyOf(fish3) {
+    return Math.max(1, Math.min(100, Number(fish3.feel?.difficulty ?? fish3.difficulty) || 1));
   }
-  function renderFight(ui, fish2) {
-    const mode = fish2.fight === "bar" || fish2.fight === "pull" ? fish2.fight : "ring";
-    if (session?.id !== fish2.id || session.mode !== mode) session = { id: fish2.id, mode };
+  function feelOf(fish3) {
+    const f = fish3.feel || {};
+    return { speed: f.speed || 1, burst: f.burst || 0, burstScale: f.burstScale || 1, drift: f.drift || 0, jitter: f.jitter || 0, zone: f.zone || 1, hold: f.hold || 1 };
+  }
+  function surgeOf(s, feel2, now, dt) {
+    if ((s.burstLeft || 0) > 0) s.burstLeft -= dt;
+    else if (feel2.burst > 0 && Math.random() < feel2.burst * dt / 16) s.burstLeft = 260 + Math.random() * 240;
+    const wobble = 1 + feel2.jitter * Math.sin(now / 380 + (s.phase || 0));
+    return feel2.speed * wobble * ((s.burstLeft || 0) > 0 ? feel2.burstScale : 1);
+  }
+  function renderFight(ui, fish3) {
+    const mode = fish3.fight === "bar" || fish3.fight === "pull" ? fish3.fight : "ring";
+    if (session?.id !== fish3.id || session.mode !== mode) session = { id: fish3.id, mode };
     activeUi = ui;
     const finish = (success) => {
       if (resolving) return;
@@ -1186,9 +1197,9 @@
       stopFight(true);
       ui.send("fishResolve", { success });
     };
-    if (mode === "bar") return renderBar(ui, fish2, session, finish);
-    if (mode === "pull") return renderPull(ui, fish2, session, finish);
-    return renderRing(ui, fish2, session, finish);
+    if (mode === "bar") return renderBar(ui, fish3, session, finish);
+    if (mode === "pull") return renderPull(ui, fish3, session, finish);
+    return renderRing(ui, fish3, session, finish);
   }
   function stillOpen(ui) {
     return activeUi === ui && ui.host.getAttribute("data-open") === "true";
@@ -1217,9 +1228,9 @@
       };
     }
   }
-  function ringRules(difficulty) {
+  function ringRules(difficulty, feel2) {
     return {
-      zoneDegrees: Math.round(115 - difficulty * 0.38),
+      zoneDegrees: Math.round((115 - difficulty * 0.38) * feel2.zone),
       perfectDegrees: Math.round(16 - difficulty * 0.06),
       rotationsPerSecond: 0.28 + difficulty * 18e-4,
       hitsNeeded: difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2
@@ -1233,16 +1244,16 @@
     s.locked = false;
     s.feedback = "\u770B\u51C6\u7EFF\u8272\u533A\u57DF";
   }
-  function renderRing(ui, fish2, s, finish) {
+  function renderRing(ui, fish3, s, finish) {
     if (s.hits === void 0) {
-      Object.assign(s, { hits: 0, misses: 0 }, ringRules(difficultyOf(fish2)));
+      Object.assign(s, { hits: 0, misses: 0, phase: Math.random() * 6 }, ringRules(difficultyOf(fish3), feelOf(fish3)));
       newRingRound(s);
     }
     let lastPointerAt = -Infinity;
     const wrap = button("dp-fish-qte", {
       "data-fish-qte": "true",
       "data-fish-fight": "ring",
-      "data-qte-difficulty": String(fish2.difficulty),
+      "data-qte-difficulty": String(fish3.difficulty),
       "data-qte-needed": String(s.hitsNeeded),
       "aria-label": "\u9493\u9C7C\u6280\u80FD\u68C0\u5B9A\uFF0C\u6307\u9488\u8FDB\u5165\u7EFF\u8272\u533A\u57DF\u65F6\u70B9\u51FB"
     }, function(event) {
@@ -1258,8 +1269,8 @@
     const score = el("b", "dp-fish-qte-score");
     const feedback = el("span", "dp-fish-qte-feedback");
     ring.appendChild(needle);
-    ring.appendChild(el("span", "dp-fish-qte-core", fish2.emoji));
-    wrap.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    ring.appendChild(el("span", "dp-fish-qte-core", fish3.emoji));
+    wrap.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
     wrap.appendChild(ring);
     wrap.appendChild(score);
     wrap.appendChild(feedback);
@@ -1303,10 +1314,13 @@
         paint();
       }, 380);
     }
+    const feel2 = feelOf(fish3);
     function tick2(now) {
       if (!stillOpen(ui)) return finish(false);
       if (!s.startedAt) s.startedAt = now;
-      if (!s.locked) s.angle = (now - s.startedAt) * s.rotationsPerSecond * 0.36;
+      const dt = s.last ? Math.min(50, now - s.last) : 16;
+      s.last = now;
+      if (!s.locked) s.angle += dt * s.rotationsPerSecond * 0.36 * surgeOf(s, feel2, now, dt);
       const circles = Math.floor(s.angle / 360);
       if (!s.locked && circles > s.completedCircles) {
         s.misses += circles - s.completedCircles;
@@ -1322,13 +1336,15 @@
     frame = raf(tick2);
   }
   var BAR_HEIGHT = 220;
-  function renderBar(ui, fish2, s, finish) {
-    const d = difficultyOf(fish2);
+  function renderBar(ui, fish3, s, finish) {
+    const d = difficultyOf(fish3);
+    const feel2 = feelOf(fish3);
     if (s.progress === void 0) {
       Object.assign(s, {
-        zoneH: Math.round(Math.max(46, 96 - d * 0.5)),
+        zoneH: Math.round(Math.max(46, 96 - d * 0.5) * feel2.zone),
         zone: 0,
         vel: 0,
+        phase: Math.random() * 6,
         fishY: BAR_HEIGHT * 0.3,
         target: BAR_HEIGHT * 0.3,
         wait: 0,
@@ -1343,7 +1359,7 @@
     const bar = el("div", "dp-fish-bar");
     const track = el("div", "dp-fish-track");
     const zone = el("i", "dp-fish-zone");
-    const swimmer = el("span", "dp-fish-swimmer", fish2.emoji);
+    const swimmer = el("span", "dp-fish-swimmer", fish3.emoji);
     const meter2 = el("div", "dp-fish-vmeter");
     const fill = el("i");
     track.appendChild(zone);
@@ -1351,24 +1367,21 @@
     meter2.appendChild(fill);
     bar.appendChild(track);
     bar.appendChild(meter2);
-    stage2.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    stage2.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
     stage2.appendChild(bar);
     const hint = el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u677E\u5F00\u4E0B\u6C89 \xB7 \u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC");
     stage2.appendChild(hint);
     ui.content.appendChild(stage2);
     holdControls(stage2, s);
-    function moveFish(dt) {
+    function moveFish(dt, now) {
       s.wait -= dt;
       if (s.wait <= 0) {
-        const calm = fish2.behavior === "smooth";
-        let target = s.fishY + (Math.random() - 0.5) * (calm ? 90 : 60 + d * 1.6);
-        if (fish2.behavior === "rise") target += 30;
-        if (fish2.behavior === "sink") target -= 30;
+        const calm = fish3.behavior === "smooth";
+        const target = s.fishY + (Math.random() - 0.5) * (calm ? 90 : 60 + d * 1.6) * feel2.speed + feel2.drift * 1.2;
         s.target = Math.max(8, Math.min(BAR_HEIGHT - 8, target));
-        s.wait = calm ? 900 : Math.max(250, 900 - d * 6);
+        s.wait = (calm ? 900 : Math.max(250, 900 - d * 6)) / feel2.speed;
       }
-      const dash = (fish2.behavior === "dash" || fish2.behavior === "mixed") && Math.random() < 0.02 ? 6 : 1;
-      s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * dash);
+      s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * surgeOf(s, feel2, now, dt));
     }
     function tick2(now) {
       if (!stillOpen(ui)) return finish(false);
@@ -1384,7 +1397,7 @@
         s.zone = BAR_HEIGHT - s.zoneH;
         s.vel = Math.min(0, s.vel);
       }
-      moveFish(dt);
+      moveFish(dt, now);
       const inside2 = s.fishY >= s.zone && s.fishY <= s.zone + s.zoneH;
       s.progress = Math.max(0, Math.min(100, s.progress + (inside2 ? 0.028 : -0.022 - d * 1e-4) * dt));
       zone.style.bottom = s.zone + "px";
@@ -1399,8 +1412,10 @@
     }
     frame = raf(tick2);
   }
-  function renderPull(ui, fish2, s, finish) {
-    const d = difficultyOf(fish2);
+  function renderPull(ui, fish3, s, finish) {
+    const d = difficultyOf(fish3);
+    const feel2 = feelOf(fish3);
+    const snap = Math.min(95, 85 + (feel2.hold - 1) * 50);
     if (s.distance === void 0) {
       Object.assign(s, { tension: 40, distance: 100, loose: 0, surge: 0, surgeCd: 1500, holding: false, last: 0 });
     }
@@ -1411,15 +1426,16 @@
     const rod = el("span", "dp-fish-rod", "\u{1F3A3}");
     line3.appendChild(rod);
     line3.appendChild(el("span", "dp-fish-string", "\u3030\u3030\u3030"));
-    line3.appendChild(el("span", "dp-fish-rod", fish2.emoji));
+    line3.appendChild(el("span", "dp-fish-rod", fish3.emoji));
     const gauge = el("div", "dp-fish-gauge");
+    gauge.style.background = `linear-gradient(90deg,#dce8e9 0 30%,#6bd47b 30% ${snap - 13}%,#ffd45d ${snap - 13}% ${snap}%,#e05a5a ${snap}%)`;
     const pin = el("b");
     gauge.appendChild(pin);
     const state2 = el("div", "dp-fish-pull-state");
     const meter2 = el("div", "dp-fish-hmeter");
     const fill = el("i");
     meter2.appendChild(fill);
-    stage2.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    stage2.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
     stage2.appendChild(line3);
     stage2.appendChild(gauge);
     stage2.appendChild(state2);
@@ -1433,13 +1449,13 @@
       s.last = now;
       s.surgeCd -= dt;
       if (s.surgeCd <= 0) {
-        s.surge = 10 + d * 0.28;
-        s.surgeCd = Math.max(700, 2600 - d * 16) + Math.random() * 900;
+        s.surge = (10 + d * 0.28) * feel2.speed * (feel2.burst > 0.015 ? 1.25 : 1);
+        s.surgeCd = (Math.max(700, 2600 - d * 16) + Math.random() * 900) / (feel2.burst > 0 ? 1 + feel2.burst * 20 : 0.8);
       }
       s.tension = Math.max(0, Math.min(100, s.tension + ((s.holding ? 0.055 : -0.05) + s.surge * 4e-3) * dt));
       s.surge = Math.max(0, s.surge - dt * 0.02);
-      const green = s.tension >= 30 && s.tension < 85;
-      const sweet = s.tension >= 72 && s.tension < 85;
+      const green = s.tension >= 30 && s.tension < snap;
+      const sweet = s.tension >= snap - 13 && s.tension < snap;
       if (green) {
         s.distance -= (sweet ? 0.022 : 0.012) * dt * (1 - d * 4e-3);
         s.loose = Math.max(0, s.loose - dt);
@@ -1448,7 +1464,7 @@
       pin.style.left = s.tension + "%";
       rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
       fill.style.width = 100 - Math.max(0, s.distance) + "%";
-      state2.textContent = (s.surge > 2 ? fish2.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= 85 ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
+      state2.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
       stage2.setAttribute("data-tension", s.tension.toFixed(0));
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
@@ -1548,7 +1564,38 @@
     renderReady(ui);
   }
   var BAIT_NOTE = { bait_worm: "\u666E\u901A\u9C7C", bait_shrimp: "\u5C11\u89C1\u7684\u591A\u4E00\u70B9", bait_glow: "\u7A00\u6709\u7684\u591A\u5F88\u591A" };
+  function renderGear(ui) {
+    const fishing = ui.view.fishing;
+    if (!Array.isArray(fishing.spots) || fishing.spots.length === 0) return;
+    const coins = ui.view.pig?.coins ?? 0;
+    const spots = el("div", "dp-fish-spots");
+    for (const spot of fishing.spots) {
+      const here = spot.key === fishing.spot;
+      const pick = button("dp-fish-spot", { "data-fish-spot": spot.key, "aria-pressed": String(here) }, function() {
+        if (!here) ui.send("fishSpot", { spot: spot.key });
+      });
+      pick.appendChild(el("em", null, spot.emoji));
+      pick.appendChild(el("b", null, spot.label));
+      pick.appendChild(el("small", null, !spot.unlocked ? "\u{1FA99} " + spot.price + " \u5F00" : !spot.open ? "\u665A\u4E0A\u624D\u5F00" : spot.kinds + " \u79CD\u9C7C"));
+      pick.disabled = !spot.unlocked && coins < spot.price;
+      spots.appendChild(pick);
+    }
+    ui.content.appendChild(spots);
+    const rod = el("div", "dp-fish-rodrow");
+    rod.appendChild(el("span", null, fishing.rod.emoji + " " + fishing.rod.label));
+    if (fishing.nextRod) {
+      const up = button("dp-mini", { "data-fish-rod": fishing.nextRod.key || String(fishing.nextRod.level) }, function() {
+        ui.send("fishRod");
+      });
+      up.textContent = "\u6362" + fishing.nextRod.label + " \u{1FA99} " + fishing.nextRod.price;
+      up.disabled = coins < fishing.nextRod.price;
+      rod.appendChild(up);
+      rod.appendChild(el("small", null, "\u597D\u7AFF\u54AC\u94A9\u66F4\u5FEB\u3001\u7EFF\u533A\u66F4\u5BBD\u3001\u66F4\u8010\u62C9\uFF0C\u7A00\u6709\u9C7C\u66F4\u591A"));
+    } else rod.appendChild(el("small", null, "\u5DF2\u7ECF\u662F\u6700\u597D\u7684\u9C7C\u7AFF"));
+    ui.content.appendChild(rod);
+  }
   function renderReady(ui) {
+    renderGear(ui);
     const baits = ui.view.shop.filter((item) => item.kind === "bait");
     const owned = (key) => ui.view.inventory[key] ?? 0;
     if (!baits.some((item) => item.key === selectedBait && owned(item.key) > 0)) selectedBait = baits.find((item) => owned(item.key) > 0)?.key ?? null;
@@ -1578,7 +1625,7 @@
       ui.content.appendChild(care);
     }
     const cast = button("dp-btn dp-btn-wide dp-fish-cast", { "data-fish": "cast" }, function() {
-      ui.send("fishCast", { power: 0.7, bait: selectedBait });
+      ui.send("fishCast", { power: 0.5, bait: selectedBait });
     });
     cast.textContent = hungry ? "\u{1F35A} \u5582\u98DF\u540E\u624D\u80FD\u629B\u7AFF" : "\u{1F3A3} \u629B\u7AFF";
     cast.disabled = selectedBait === null || hungry;
@@ -1616,11 +1663,13 @@
   function renderWaiting(ui, pending) {
     const water = button("dp-fish-waiting", { "data-fish": "hook" }, function() {
       if (Date.now() < pending.bitesAt) {
-        line3.textContent = "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
+        line3.textContent = nibbleUntil > Date.now() ? "\u53EA\u662F\u8BD5\u63A2\uFF0C\u8FD8\u6CA1\u54AC\u5B9E\u2026" : "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
         return;
       }
       ui.send("fishHook");
     });
+    let nextNibble = Date.now() + 1500 + Math.random() * 2500;
+    let nibbleUntil = 0;
     const mark = el("span", "dp-fish-bobber", "\u{1F3A3}");
     const line3 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
     water.appendChild(mark);
@@ -1630,6 +1679,16 @@
     function tick2() {
       if (waitUi !== ui) return;
       const now = Date.now();
+      if (now < pending.bitesAt - 900 && now >= nextNibble) {
+        nibbleUntil = now + 420;
+        nextNibble = now + 1800 + Math.random() * 3200;
+        water.setAttribute("data-nibble", "true");
+        line3.textContent = Math.random() < 0.5 ? "\u6D6E\u6F02\u52A8\u4E86\u4E00\u4E0B\u2026" : "\u5495\u561F\uFF0C\u5192\u4E86\u4E2A\u6CE1\u2026";
+      } else if (nibbleUntil > 0 && now > nibbleUntil + 900) {
+        nibbleUntil = 0;
+        water.setAttribute("data-nibble", "false");
+        line3.textContent = "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026";
+      }
       if (now >= pending.bitesAt && now <= pending.hookUntil) {
         mark.textContent = "\u2757";
         line3.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
@@ -1644,14 +1703,14 @@
     waitFrame = raf2(tick2);
   }
   var STARS = { common: 1, uncommon: 2, rare: 3, legend: 4 };
-  function renderResult(ui, fish2) {
+  function renderResult(ui, fish3) {
     const card2 = el("div", "dp-fish-result");
-    card2.appendChild(el("div", "dp-fish-result-emoji", fish2.emoji));
-    card2.appendChild(el("b", null, "\u9493\u5230\u4E86 " + fish2.label + "\uFF01"));
-    const stars2 = STARS[fish2.rarity] ?? 1;
+    card2.appendChild(el("div", "dp-fish-result-emoji", fish3.emoji));
+    card2.appendChild(el("b", null, "\u9493\u5230\u4E86 " + fish3.label + "\uFF01"));
+    const stars2 = STARS[fish3.rarity] ?? 1;
     card2.appendChild(el("span", "dp-fish-stars", "\u2605".repeat(stars2) + "\u2606".repeat(4 - stars2)));
-    const record2 = fish2.maxCm > 0 && fish2.sizeCm >= fish2.maxCm * 0.85 ? " \xB7 \u5927\u4E2A\u7684\uFF01" : "";
-    card2.appendChild(el("span", null, fish2.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish2.price + record2));
+    const record2 = fish3.maxCm > 0 && fish3.sizeCm >= fish3.maxCm * 0.85 ? " \xB7 \u5927\u4E2A\u7684\uFF01" : "";
+    card2.appendChild(el("span", null, fish3.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish3.price + record2));
     const keep = button("dp-btn dp-btn-wide", { "data-fish": "keep" }, function() {
       ui.send("fishKeep");
     });
@@ -1772,8 +1831,23 @@
   }
 
   // src/client/normalize-fishing.js
+  function feel(value, difficulty) {
+    const entry = obj(value);
+    return {
+      difficulty: num(entry.difficulty, difficulty),
+      speed: num(entry.speed, 1),
+      burst: num(entry.burst, 0),
+      burstScale: num(entry.burstScale, 1),
+      drift: num(entry.drift, 0),
+      jitter: num(entry.jitter, 0),
+      zone: num(entry.zone, 1),
+      hold: num(entry.hold, 1),
+      rod: str(entry.rod, "")
+    };
+  }
   function fish(value) {
     const entry = obj(value);
+    const difficulty = num(entry.difficulty, 1);
     return {
       id: str(entry.id, ""),
       key: str(entry.key, ""),
@@ -1781,7 +1855,7 @@
       emoji: str(entry.emoji, "\u{1F41F}"),
       rarity: str(entry.rarity, "common"),
       behavior: str(entry.behavior, "smooth"),
-      difficulty: num(entry.difficulty, 1),
+      difficulty,
       sizeCm: num(entry.sizeCm, 0),
       price: num(entry.price, 0),
       phase: str(entry.phase, ""),
@@ -1791,16 +1865,25 @@
       expiresAt: num(entry.expiresAt, 0),
       // 搏斗玩法（ring / bar / pull，没有就是老宿主：圆盘）；maxCm 用来说「大个的」。
       fight: str(entry.fight, "ring"),
-      maxCm: num(entry.maxCm, 0)
+      maxCm: num(entry.maxCm, 0),
+      feel: feel(entry.feel, difficulty)
     };
   }
   function normalizeFishing(raw) {
     const source = obj(raw);
+    const rod = obj(source.rod);
     return {
       pending: isObj(source.pending) ? fish(source.pending) : null,
       bag: arr(source.bag).map(fish).filter((entry) => entry.id !== ""),
       period: str(source.period, ""),
-      autoTrips: num(source.autoTrips, 0)
+      autoTrips: num(source.autoTrips, 0),
+      rod: { level: num(rod.level, 1), label: str(rod.label, "\u9C7C\u7AFF"), emoji: str(rod.emoji, "\u{1F3A3}") },
+      nextRod: isObj(source.nextRod) ? { level: num(source.nextRod.level, 2), label: str(source.nextRod.label, ""), emoji: str(source.nextRod.emoji, "\u{1F3A3}"), price: num(source.nextRod.price, 0) } : null,
+      spot: str(source.spot, "river"),
+      spots: arr(source.spots).map((value) => {
+        const spot = obj(value);
+        return { key: str(spot.key, ""), label: str(spot.label, ""), emoji: str(spot.emoji, "\u{1F3DE}"), price: num(spot.price, 0), unlocked: spot.unlocked === true, open: spot.open !== false, kinds: num(spot.kinds, 0) };
+      }).filter((spot) => spot.key !== "")
     };
   }
 
@@ -3280,6 +3363,14 @@
 .dp-fish-gauge b{position:absolute;top:-6px;width:6px;height:36px;border-radius:4px;background:#794f27;transform:translateX(-50%)}
 .dp-fish-pull-state{font-size:12px;font-weight:800;min-height:16px}
 .dp-fish-hmeter{width:100%;height:10px;border-radius:50px;background:#dce8e9;overflow:hidden}.dp-fish-hmeter i{display:block;height:100%;width:0;background:#6bd47b}
+.dp-fish-spots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 8px}
+.dp-fish-spot{display:grid;justify-items:center;gap:1px;padding:6px 2px;border-radius:14px;font:inherit;color:inherit;cursor:pointer;background:var(--ac-bg-content);border:2px solid var(--ac-border-light)}
+.dp-fish-spot em{font-style:normal;font-size:20px;line-height:1.1}.dp-fish-spot b{font-size:10.5px}.dp-fish-spot small{font-size:9.5px;color:var(--ac-text-2)}
+.dp-fish-spot[aria-pressed="true"]{background:#e3f4f6;border-color:#7cc7d1;box-shadow:0 2px 0 #7cc7d1}.dp-fish-spot:disabled{opacity:.55;cursor:default}
+.dp-fish-rodrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0 0 10px;font-size:11px;font-weight:800}
+.dp-fish-rodrow small{width:100%;font-weight:600;font-size:10px;color:var(--ac-text-2)}
+.dp-fish-waiting[data-nibble="true"] .dp-fish-bobber{animation:dp-fish-nibble .42s ease-in-out}
+@keyframes dp-fish-nibble{0%,100%{transform:translateY(0)}30%{transform:translateY(5px) rotate(-6deg)}60%{transform:translateY(-2px) rotate(4deg)}}
 `;
 
   // src/client/css-skins.js
@@ -3789,17 +3880,17 @@
       return;
     }
     for (var i = 0; i < list.length; i += 1) {
-      (function(fish2) {
+      (function(fish3) {
         var card2 = el("div", "dp-pick dp-tile-card");
-        card2.appendChild(el("div", "dp-pick-head", fish2.emoji + " " + fish2.label));
-        card2.appendChild(el("div", null, fish2.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish2.price));
+        card2.appendChild(el("div", "dp-pick-head", fish3.emoji + " " + fish3.label));
+        card2.appendChild(el("div", null, fish3.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish3.price));
         var actions = el("div", "dp-dev-row");
-        var feed = button("dp-mini", { "data-fish-feed": fish2.id }, function() {
-          ui.send("fishFeed", { id: fish2.id });
+        var feed = button("dp-mini", { "data-fish-feed": fish3.id }, function() {
+          ui.send("fishFeed", { id: fish3.id });
         });
         feed.textContent = "\u{1F37D} \u5582";
-        var sell = button("dp-mini", { "data-fish-sell": fish2.id }, function() {
-          ui.send("fishSell", { id: fish2.id });
+        var sell = button("dp-mini", { "data-fish-sell": fish3.id }, function() {
+          ui.send("fishSell", { id: fish3.id });
         });
         sell.textContent = "\u{1FA99} \u5356";
         actions.appendChild(feed);
@@ -4979,24 +5070,72 @@
   }
 
   // packages/pet-core/src/data/fish.js
+  var fish2 = (key, label, emoji, spot, rarity, times, behavior, difficulty, minCm, maxCm, price) => Object.freeze({ key, label, emoji, spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price });
+  var ALL_DAY = ["early", "noon", "evening", "night"];
   var FISH = Object.freeze([
-    { key: "fish_crucian", label: "\u9CAB\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon", "evening"], behavior: "smooth", difficulty: 12, minCm: 12, maxCm: 32, price: 8 },
-    { key: "fish_carp", label: "\u9CA4\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["noon", "evening"], behavior: "smooth", difficulty: 18, minCm: 20, maxCm: 55, price: 12 },
-    { key: "fish_sardine", label: "\u6C99\u4E01\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon"], behavior: "dash", difficulty: 22, minCm: 10, maxCm: 26, price: 14 },
-    { key: "fish_anchovy", label: "\u9CC0\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "evening"], behavior: "dash", difficulty: 25, minCm: 8, maxCm: 22, price: 16 },
-    { key: "fish_perch", label: "\u6CB3\u9C88", emoji: "\u{1F420}", rarity: "common", times: ["noon", "evening"], behavior: "sink", difficulty: 28, minCm: 16, maxCm: 38, price: 18 },
-    { key: "fish_bream", label: "\u9CCA\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["early", "noon"], behavior: "rise", difficulty: 30, minCm: 18, maxCm: 42, price: 20 },
-    { key: "fish_catfish", label: "\u9CB6\u9C7C", emoji: "\u{1F421}", rarity: "common", times: ["evening", "night"], behavior: "sink", difficulty: 34, minCm: 24, maxCm: 68, price: 24 },
-    { key: "fish_mackerel", label: "\u9752\u82B1\u9C7C", emoji: "\u{1F41F}", rarity: "common", times: ["noon", "evening"], behavior: "mixed", difficulty: 38, minCm: 22, maxCm: 48, price: 28 },
-    { key: "fish_salmon", label: "\u9C91\u9C7C", emoji: "\u{1F41F}", rarity: "uncommon", times: ["early", "evening"], behavior: "dash", difficulty: 48, minCm: 38, maxCm: 92, price: 48 },
-    { key: "fish_puffer", label: "\u6CB3\u8C5A", emoji: "\u{1F421}", rarity: "uncommon", times: ["noon"], behavior: "mixed", difficulty: 55, minCm: 18, maxCm: 40, price: 62 },
-    { key: "fish_eel", label: "\u9CD7\u9C7C", emoji: "\u{1F40D}", rarity: "uncommon", times: ["evening", "night"], behavior: "rise", difficulty: 61, minCm: 42, maxCm: 110, price: 78 },
-    { key: "fish_tuna", label: "\u91D1\u67AA\u9C7C", emoji: "\u{1F41F}", rarity: "uncommon", times: ["early", "noon"], behavior: "dash", difficulty: 66, minCm: 70, maxCm: 180, price: 96 },
-    { key: "fish_sturgeon", label: "\u9C9F\u9C7C", emoji: "\u{1F41F}", rarity: "rare", times: ["night"], behavior: "sink", difficulty: 78, minCm: 85, maxCm: 220, price: 160 },
-    { key: "fish_koi", label: "\u9EC4\u91D1\u9526\u9CA4", emoji: "\u{1F38F}", rarity: "rare", times: ["early", "evening"], behavior: "mixed", difficulty: 86, minCm: 30, maxCm: 88, price: 220 },
-    { key: "fish_moon", label: "\u6708\u5F71\u9C7C", emoji: "\u{1F319}", rarity: "legend", times: ["night"], behavior: "mixed", difficulty: 100, minCm: 60, maxCm: 160, price: 300 }
+    // C5 的 15 种（价格、时段、手感都不改，只按水域分到钓点）
+    fish2("fish_crucian", "\u9CAB\u9C7C", "\u{1F41F}", "river", "common", ["early", "noon", "evening"], "smooth", 12, 12, 32, 8),
+    fish2("fish_carp", "\u9CA4\u9C7C", "\u{1F41F}", "river", "common", ["noon", "evening"], "smooth", 18, 20, 55, 12),
+    fish2("fish_sardine", "\u6C99\u4E01\u9C7C", "\u{1F41F}", "sea", "common", ["early", "noon"], "dash", 22, 10, 26, 14),
+    fish2("fish_anchovy", "\u9CC0\u9C7C", "\u{1F41F}", "sea", "common", ["early", "evening"], "dash", 25, 8, 22, 16),
+    fish2("fish_perch", "\u6CB3\u9C88", "\u{1F420}", "river", "common", ["noon", "evening"], "sink", 28, 16, 38, 18),
+    fish2("fish_bream", "\u9CCA\u9C7C", "\u{1F41F}", "river", "common", ["early", "noon"], "rise", 30, 18, 42, 20),
+    fish2("fish_catfish", "\u9CB6\u9C7C", "\u{1F421}", "river", "common", ["evening", "night"], "sink", 34, 24, 68, 24),
+    fish2("fish_mackerel", "\u9752\u82B1\u9C7C", "\u{1F41F}", "sea", "common", ["noon", "evening"], "mixed", 38, 22, 48, 28),
+    fish2("fish_salmon", "\u9C91\u9C7C", "\u{1F41F}", "river", "uncommon", ["early", "evening"], "dash", 48, 38, 92, 48),
+    fish2("fish_puffer", "\u6CB3\u8C5A", "\u{1F421}", "sea", "uncommon", ["noon"], "mixed", 55, 18, 40, 62),
+    fish2("fish_eel", "\u9CD7\u9C7C", "\u{1F40D}", "river", "uncommon", ["evening", "night"], "rise", 61, 42, 110, 78),
+    fish2("fish_tuna", "\u91D1\u67AA\u9C7C", "\u{1F41F}", "sea", "uncommon", ["early", "noon"], "dash", 66, 70, 180, 96),
+    fish2("fish_sturgeon", "\u9C9F\u9C7C", "\u{1F41F}", "river", "rare", ["night"], "sink", 78, 85, 220, 160),
+    fish2("fish_koi", "\u9EC4\u91D1\u9526\u9CA4", "\u{1F38F}", "river", "rare", ["early", "evening"], "mixed", 86, 30, 88, 220),
+    fish2("fish_moon", "\u6708\u5F71\u9C7C", "\u{1F319}", "night", "legend", ["night"], "mixed", 100, 60, 160, 300),
+    // 钓鱼 2.0 新加的 25 种
+    fish2("fish_loach", "\u6CE5\u9CC5", "\u{1F41F}", "river", "common", ALL_DAY, "smooth", 8, 8, 20, 6),
+    fish2("fish_crayfish", "\u5C0F\u9F99\u867E", "\u{1F99E}", "river", "common", ["noon", "evening", "night"], "sink", 14, 8, 15, 10),
+    fish2("fish_ricefield_eel", "\u9EC4\u9CDD", "\u{1F40D}", "river", "uncommon", ["evening", "night"], "rise", 45, 25, 70, 40),
+    fish2("fish_goldfish", "\u91D1\u9C7C", "\u{1F420}", "lake", "common", ["early", "noon"], "smooth", 10, 5, 15, 6),
+    fish2("fish_grass_carp", "\u8349\u9C7C", "\u{1F41F}", "lake", "common", ["early", "noon", "evening"], "smooth", 20, 30, 90, 10),
+    fish2("fish_silver_carp", "\u9CA2\u9C7C", "\u{1F41F}", "lake", "common", ["noon", "evening"], "rise", 24, 30, 80, 12),
+    fish2("fish_icefish", "\u94F6\u9C7C", "\u{1F41F}", "lake", "common", ["early", "evening"], "dash", 26, 5, 12, 14),
+    fish2("fish_trout", "\u8679\u9CDF", "\u{1F41F}", "lake", "uncommon", ["early", "evening"], "dash", 44, 30, 70, 40),
+    fish2("fish_crab", "\u5927\u95F8\u87F9", "\u{1F980}", "lake", "uncommon", ["evening", "night"], "sink", 48, 8, 15, 45),
+    fish2("fish_mandarin", "\u9CDC\u9C7C", "\u{1F41F}", "lake", "uncommon", ["evening", "night"], "mixed", 54, 25, 60, 50),
+    fish2("fish_pike", "\u72D7\u9C7C", "\u{1F41F}", "lake", "uncommon", ["noon", "evening"], "dash", 62, 40, 120, 60),
+    fish2("fish_paddlefish", "\u767D\u9C9F", "\u{1F41F}", "lake", "rare", ["night"], "sink", 82, 100, 300, 200),
+    fish2("fish_lake_shadow", "\u6E56\u4E2D\u5DE8\u5F71", "\u{1F311}", "lake", "legend", ["night"], "mixed", 98, 200, 500, 600),
+    fish2("fish_ribbonfish", "\u5E26\u9C7C", "\u{1F41F}", "sea", "common", ["evening", "night"], "rise", 30, 50, 120, 16),
+    fish2("fish_croaker", "\u9EC4\u82B1\u9C7C", "\u{1F41F}", "sea", "common", ["early", "noon"], "smooth", 32, 20, 45, 18),
+    fish2("fish_flounder", "\u6BD4\u76EE\u9C7C", "\u{1F41F}", "sea", "uncommon", ["noon", "evening"], "sink", 46, 25, 60, 50),
+    fish2("fish_octopus", "\u7AE0\u9C7C", "\u{1F419}", "sea", "uncommon", ["evening", "night"], "mixed", 58, 30, 90, 60),
+    fish2("fish_swordfish", "\u65D7\u9C7C", "\u{1F41F}", "sea", "rare", ["noon"], "dash", 84, 150, 300, 220),
+    fish2("fish_whale_shark", "\u5C0F\u9CB8\u9CA8", "\u{1F988}", "sea", "legend", ["early", "noon"], "smooth", 95, 300, 600, 700),
+    fish2("fish_firefly", "\u8424\u5149\u9C7C", "\u2728", "night", "common", ["night"], "dash", 28, 5, 15, 10),
+    fish2("fish_lantern", "\u706F\u7B3C\u9C7C", "\u{1F3EE}", "night", "common", ["night"], "rise", 34, 6, 18, 12),
+    fish2("fish_ghost", "\u5E7D\u7075\u9C7C", "\u{1F47B}", "night", "uncommon", ["night"], "mixed", 60, 20, 50, 55),
+    fish2("fish_star_ray", "\u661F\u6591\u9CD0", "\u2B50", "night", "rare", ["night"], "sink", 80, 60, 150, 160),
+    fish2("fish_arowana", "\u9F99\u9C7C", "\u{1F409}", "night", "rare", ["night"], "dash", 88, 60, 120, 200),
+    fish2("fish_night_whale", "\u591C\u4E4B\u9CB8", "\u{1F40B}", "night", "legend", ["night"], "mixed", 100, 400, 900, 600)
   ]);
   var FISH_FIGHTS = Object.freeze(["ring", "bar", "pull"]);
+  var FISH_SPOTS = Object.freeze([
+    Object.freeze({ key: "river", label: "\u5C0F\u6CB3", emoji: "\u{1F3DE}", price: 0, times: null }),
+    Object.freeze({ key: "lake", label: "\u6E56", emoji: "\u{1F3D5}", price: 1500, times: null }),
+    Object.freeze({ key: "sea", label: "\u6D77\u8FB9", emoji: "\u{1F3D6}", price: 4e3, times: null }),
+    Object.freeze({ key: "night", label: "\u591C\u6F6D", emoji: "\u{1F30C}", price: 9e3, times: Object.freeze(["night"]) })
+  ]);
+  var RODS = Object.freeze([
+    Object.freeze({ level: 1, key: "bamboo", label: "\u7AF9\u7AFF", emoji: "\u{1F38B}", price: 0, bite: Object.freeze([14e3, 32e3]), difficulty: 1.2, rare: 0.8, zone: 0.9, hold: 0.9 }),
+    Object.freeze({ level: 2, key: "carbon", label: "\u78B3\u7D20\u7AFF", emoji: "\u{1F3A3}", price: 800, bite: Object.freeze([1e4, 24e3]), difficulty: 1, rare: 1, zone: 1, hold: 1 }),
+    Object.freeze({ level: 3, key: "pro", label: "\u4E13\u4E1A\u7AFF", emoji: "\u{1FA9D}", price: 2500, bite: Object.freeze([9e3, 21e3]), difficulty: 0.85, rare: 1.3, zone: 1.12, hold: 1.1 }),
+    Object.freeze({ level: 4, key: "legend", label: "\u4F20\u8BF4\u7AFF", emoji: "\u{1F531}", price: 7e3, bite: Object.freeze([8e3, 18e3]), difficulty: 0.7, rare: 1.5, zone: 1.25, hold: 1.2 })
+  ]);
+  var FISH_FEEL = Object.freeze({
+    smooth: Object.freeze({ speed: Object.freeze([0.6, 0.95]), burst: 0, burstScale: 1, drift: 0, jitter: 0 }),
+    dash: Object.freeze({ speed: Object.freeze([0.75, 1.2]), burst: 0.025, burstScale: 5, drift: 0, jitter: 0.1 }),
+    sink: Object.freeze({ speed: Object.freeze([0.8, 1.1]), burst: 6e-3, burstScale: 3, drift: -26, jitter: 0.05 }),
+    rise: Object.freeze({ speed: Object.freeze([0.8, 1.1]), burst: 6e-3, burstScale: 3, drift: 26, jitter: 0.05 }),
+    mixed: Object.freeze({ speed: Object.freeze([0.85, 1.45]), burst: 0.018, burstScale: 4, drift: 0, jitter: 0.35 })
+  });
 
   // packages/pet-core/src/data/skins.js
   var SKIN_SCENES = Object.freeze(["idle", "eat", "bathe", "play", "pet", "relaxed", "work", "study", "trip", "fish", "sleep"]);
@@ -6137,9 +6276,9 @@
         patch({ pomodoro: { finish: true } });
       } }
     ]);
-    var fishEntries = FISH.map(function(fish2) {
-      return { key: "fish:" + fish2.key, label: fish2.emoji + " " + fish2.label, desc: "\u9C7C\u7BD3\u91CC\u76F4\u63A5\u653E\u4E00\u6761", run: function() {
-        ui.send("fishGive", { fish: fish2.key });
+    var fishEntries = FISH.map(function(fish3) {
+      return { key: "fish:" + fish3.key, label: fish3.emoji + " " + fish3.label, desc: "\u9C7C\u7BD3\u91CC\u76F4\u63A5\u653E\u4E00\u6761", run: function() {
+        ui.send("fishGive", { fish: fish3.key });
       } };
     });
     fishEntries.push({ key: "fish:skip", label: "\u2757 \u8DF3\u8FC7\u7B49\u5F85", desc: "\u629B\u7AFF\u540E\u4E0D\u7528\u7B49\uFF0C\u9A6C\u4E0A\u54AC\u94A9", run: function() {

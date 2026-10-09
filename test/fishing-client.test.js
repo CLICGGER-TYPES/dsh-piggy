@@ -17,7 +17,7 @@ test('C5 home has a one-click cast and keeps both auto choices', async () => {
   assert.equal(findByClass(contentOf(dom), 'dp-fish-charge'), undefined)
   cast.fire('click')
   await settle()
-  assert.deepEqual(JSON.parse(calls.at(-1).body), { action: 'fishCast', power: .7, bait: 'bait_worm' })
+  assert.deepEqual(JSON.parse(calls.at(-1).body), { action: 'fishCast', power: .5, bait: 'bait_worm' })
   assert.notEqual(findByAttr(contentOf(dom), 'data-fish-auto', '30'), undefined)
   assert.notEqual(findByAttr(contentOf(dom), 'data-fish-auto', '60'), undefined)
 })
