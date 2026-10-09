@@ -25,7 +25,7 @@ export function downloadFirstGame(c) {
   let pin = null
   try { pin = JSON.parse(readFileSync(c.pinPath, 'utf8')) } catch { /* 下面报「清单坏了」 */ }
   const boot = new BrowserWindow({
-    width: 380, height: 230, resizable: false, maximizable: false, fullscreenable: false, title: 'dsh-piggy',
+    width: 380, height: 230, useContentSize: true, resizable: false, maximizable: false, fullscreenable: false, title: 'dsh-piggy',
     icon: join(c.here, 'build', 'icon.png'), backgroundColor: '#f8f8f0',
     webPreferences: { preload: join(c.here, 'first-run-preload.cjs'), contextIsolation: true, sandbox: true },
   })
@@ -57,6 +57,11 @@ export function downloadFirstGame(c) {
     }
     function onAct(event, action) {
       if (event.sender !== boot.webContents) return
+      // 页面量出内容多高，窗口跟着调（Win11 125% 下固定高度装不下，三个按钮被挤到滚动条下面）。
+      if (typeof action === 'number') {
+        if (Number.isFinite(action) && action > 0) boot.setContentSize(380, Math.min(480, Math.ceil(action)))
+        return
+      }
       if (action === 'retry') attempt()
       else if (action === 'page') shell.openExternal(c.releasesPage)
       else if (action === 'quit') { finish(null); boot.destroy() }

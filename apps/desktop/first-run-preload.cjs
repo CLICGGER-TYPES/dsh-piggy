@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld('piggyFirstRun', {
   onStatus: callback => { ipcRenderer.on('piggy:first-run', (event, status) => callback(status)) },
   /** 'retry' | 'page' | 'quit' */
   act: action => ipcRenderer.send('piggy:first-run-act', String(action)),
+  /** 内容的高度（CSS 像素），窗口按它调大小。 */
+  fit: height => ipcRenderer.send('piggy:first-run-act', Number(height)),
 })

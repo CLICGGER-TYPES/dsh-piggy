@@ -39,7 +39,7 @@ test('the Gitee workflow writes the pin before packaging Windows', () => {
 
 test('first-run download errors read as plain words, keeping the original for logs', async () => {
   const { friendlyError } = await import('../lib/first-run-errors.js')
-  assert.match(friendlyError('net::ERR_CONNECTION_REFUSED'), /^连不上下载地址（net::ERR_CONNECTION_REFUSED）/)
-  assert.match(friendlyError('下载失败（404）'), /^下载页上还没有这个版本/)
+  assert.equal(friendlyError('net::ERR_CONNECTION_REFUSED'), '连不上下载地址，检查一下网络或代理（net::ERR_CONNECTION_REFUSED）')
+  assert.equal(friendlyError('下载失败（404）'), '下载页上还没有这个版本，过一会儿再试，或者去下载页看看（404）')
   assert.equal(friendlyError('下载的文件校验不对，没换'), '下载的文件校验不对，没换')
 })
