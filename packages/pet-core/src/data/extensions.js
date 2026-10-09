@@ -15,7 +15,7 @@ export const EXTENSIONS = Object.freeze([
     key: 'pomodoro',
     label: '番茄钟',
     emoji: '🍅',
-    description: '专注 15 / 25 / 45 分钟，猪安静陪着你，每天前几个有奖励。',
+    description: '专注 15 / 25 / 45 分钟，猪安静陪着你，每完成一个都有奖励。',
     defaultOn: true,
     builtin: true,
     apps: Object.freeze(['pomodoro']),

@@ -57,6 +57,7 @@ export * from './data/weight.js'
 export * from './data/fish.js'
 export * from './data/extensions.js'
 export * from './data/skins.js'
+export * from './data/economy.js'
 
 export { ACHIEVEMENTS } from './data/achievements.js'
 

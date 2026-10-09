@@ -15,6 +15,7 @@ import { decay } from './settlement.js'
 import { revive } from './state.js'
 import { recordDex } from './dex.js'
 import { act } from './care.js'
+import { spendCoins } from './economy.js'
 
 /** Inventory counts, always including zeroes so the UI can render a grid. */
 export function inventoryView(state) {
@@ -64,8 +65,7 @@ export function buy(state, itemKey, nowMs) {
     const have = levelProgress(state.xp).level
     const need = item.level ?? 1
     if (have < need) return { ok: false, reason: 'low-level', need, have, item }
-    if (state.coins < item.price) return { ok: false, reason: 'poor', price: item.price }
-    state.coins -= item.price
+    if (!spendCoins(state, item.price, 'dress', nowMs)) return { ok: false, reason: 'poor', price: item.price }
     recordDex(state, 'items', item.key, nowMs)
     state.dress = [...(state.dress ?? []), item.key]
     state.stats.purchases += 1
@@ -73,9 +73,8 @@ export function buy(state, itemKey, nowMs) {
     return { ok: true, item }
   }
 
-  if (state.coins < item.price) return { ok: false, reason: 'poor', price: item.price }
+  if (!spendCoins(state, item.price, 'shop', nowMs)) return { ok: false, reason: 'poor', price: item.price }
 
-  state.coins -= item.price
   state.inventory = { ...(state.inventory ?? {}) }
   recordDex(state, 'items', item.key, nowMs)
   state.inventory[item.key] = (state.inventory[item.key] ?? 0) + 1

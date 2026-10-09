@@ -14,11 +14,12 @@
 
 import {
   MAX, POMODORO_BREAK_MINUTES, POMODORO_MAX_MINUTES, POMODORO_MINUTES,
-  POMODORO_REWARD, POMODORO_REWARDED_PER_DAY,
+  POMODORO_REWARD,
 } from '../data.js'
 import { dayKeyFor } from './clock.js'
 import { announce, clamp, remember } from './effects.js'
 import { ensureDialogue, say } from './lines.js'
+import { earnCoins } from './economy.js'
 
 /** @returns {{startedAt: number|null, minutes: number, todayDone: number, day: string|null, restUntil: number|null, finishedAt: number|null, quietBefore: boolean|null}} */
 export function emptyPomodoro() {
@@ -135,9 +136,10 @@ export function settlePomodoro(state, nowMs) {
   p.todayDone += 1
   p.finishedAt = nowMs
   p.restUntil = nowMs + POMODORO_BREAK_MINUTES * 60_000
-  const rewarded = p.todayDone <= POMODORO_REWARDED_PER_DAY
+  // 每个都给（用户 2026-10-09：不设每天的次数上限；专注要花真实时间，刷不了）。
+  const rewarded = true
   if (rewarded) {
-    state.coins += POMODORO_REWARD.coins
+    earnCoins(state, POMODORO_REWARD.coins, 'pomodoro', nowMs)
     state.happiness = clamp(state.happiness + POMODORO_REWARD.happiness, 0, MAX.happiness)
   }
   const dialogue = ensureDialogue(state)
@@ -192,8 +194,8 @@ export function pomodoroView(state, nowMs) {
     secondsLeft: active ? Math.max(0, Math.ceil((endsAt - nowMs) / 1000)) : 0,
     breakSecondsLeft: p.restUntil === null ? 0 : Math.max(0, Math.ceil((p.restUntil - nowMs) / 1000)),
     todayDone: p.todayDone,
-    rewardedToday: Math.min(p.todayDone, POMODORO_REWARDED_PER_DAY),
-    cap: POMODORO_REWARDED_PER_DAY,
+    rewardedToday: p.todayDone,
+    cap: null,
     reward: { coins: POMODORO_REWARD.coins, happiness: POMODORO_REWARD.happiness },
     breakMinutes: POMODORO_BREAK_MINUTES,
     options: POMODORO_MINUTES,

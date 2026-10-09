@@ -42,8 +42,6 @@ export const SIGN_IN_CYCLE = SIGN_IN_REWARDS.length
 export const ONLINE_GIFT = Object.freeze({
   /** 每在线满这么久给一个。 */
   perGiftMs: 60 * 60 * 1000,
-  /** 每天最多几个（06:00 刷新）。 */
-  perDay: 8,
   /** 没领的最多攒几个，攒满就不再给。 */
   unclaimedMax: 3,
   /** 两次轮询间隔超过这个值，中间那段不算在线。 */

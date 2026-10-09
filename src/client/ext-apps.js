@@ -65,6 +65,13 @@ export function renderDownloadedApp(ui, key) {
         ui.drill.dex = 'ext:' + key + ':' + section
         ui.renderContent()
       },
+      // 跳到商店里这个扩展的货架（比如菜园缺种子 → 种子货架），按返回回到扩展页（用户 2026-10-09）。
+      openShop: function () {
+        ui.select('shop')
+        ui.drill.shop = 'ext:' + key
+        ui.drill.from = 'ext:' + key
+        ui.renderContent()
+      },
     })
   } catch (error) {
     ui.content.appendChild(el('div', 'dp-empty', '这个扩展出错了：' + (error instanceof Error ? error.message : String(error))))

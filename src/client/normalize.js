@@ -10,6 +10,7 @@ import { arr, isObj, num, obj, str } from './values.js'
 import { normalizeDex } from './normalize-dex.js'
 import { normalizeFishing } from './normalize-fishing.js'
 import { normalizeSkins } from './normalize-skins.js'
+import { normalizeEconomy } from './normalize-economy.js'
 import { normalizeExtensionParts } from './extensions.js'
 export function normalize(raw) {
   var d = obj(raw)
@@ -248,6 +249,7 @@ export function normalize(raw) {
     inventory: obj(d.inventory),
     dex: normalizeDex(d.dex),
     skins: normalizeSkins(d.skins),
+    economy: normalizeEconomy(d.economy),
     fishing: normalizeFishing(d.fishing),
     ...normalizeExtensionParts(d), // 下载扩展的 App、货架和图鉴入口
     daily: {

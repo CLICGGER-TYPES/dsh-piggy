@@ -14,7 +14,7 @@ import {
   STATE_VERSION, abandonPomodoro, applyDevPatch, chat, decay, ensurePomodoro,
   hatchEgg, layEgg, migrate, pomodoroView, settlePomodoro, startPomodoro,
 } from '../packages/pet-core/src/core.js'
-import { POMODORO_MINUTES, POMODORO_REWARD, POMODORO_REWARDED_PER_DAY } from '../packages/pet-core/src/data.js'
+import { POMODORO_MINUTES, POMODORO_REWARD } from '../packages/pet-core/src/data.js'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -97,18 +97,16 @@ test('到点之前不结算，到点结算：+8 金币 +6 心情、计数 +1、�
   assert.equal(pomodoroView(state, at(10) + 25 * MIN).breakSecondsLeft, 5 * 60, '休息 5 分钟')
 })
 
-test('每天前 8 个给奖励，第 9 个只计数', () => {
+test('每个都给奖励，不设每天上限（用户 2026-10-09）', () => {
   const state = piggy()
   const start = state.coins
-  const cursor = finish(state, at(10), POMODORO_REWARDED_PER_DAY)
-  assert.equal(state.pomodoro.todayDone, 8)
-  assert.equal(state.coins, start + 8 * POMODORO_REWARD.coins, '前 8 个都给钱')
-
+  const cursor = finish(state, at(10), 8)
   startPomodoro(state, 15, cursor)
   const done = settlePomodoro(state, cursor + 15 * MIN)
-  assert.equal(done.rewarded, false, '第 9 个不给钱')
-  assert.equal(state.pomodoro.todayDone, 9, '但要计数')
-  assert.equal(state.coins, start + 8 * POMODORO_REWARD.coins, '金币没变')
+  assert.equal(done.rewarded, true, '第 9 个照样给钱')
+  assert.equal(state.pomodoro.todayDone, 9)
+  assert.equal(state.coins, start + 9 * POMODORO_REWARD.coins)
+  assert.equal(state.economy.totals.pomodoro.in, 9 * POMODORO_REWARD.coins, '记在番茄钟名下')
 })
 
 test('换天之后重新数（和签到同一个 06:00 口径）', () => {
@@ -196,7 +194,7 @@ test('时间往前走（decay）不会把番茄钟弄丢：还在跑，到点由
   assert.equal(settlePomodoro(state, at(10) + 30 * MIN).rewarded, true)
 })
 
-test('调试补丁：一键完成当前番茄会照常结算发奖，今天=8 之后第 9 个不给钱', () => {
+test('调试补丁：一键完成当前番茄会照常结算发奖，第 9 个照样给钱', () => {
   const state = piggy()
   const coins = state.coins
   startPomodoro(state, 45, at(10))
@@ -209,7 +207,7 @@ test('调试补丁：一键完成当前番茄会照常结算发奖，今天=8 �
   startPomodoro(state, 15, at(13))
   applyDevPatch(state, { pomodoro: { finish: true } }, at(14))
   assert.equal(state.pomodoro.todayDone, 9)
-  assert.equal(state.coins, coins + POMODORO_REWARD.coins, '第 9 个不再给钱')
+  assert.equal(state.coins, coins + 2 * POMODORO_REWARD.coins, '不设每天上限，第 9 个照样给钱')
 })
 
 test('调试快进一小时：番茄钟到点、结算发奖（验收项）', () => {
@@ -257,7 +255,8 @@ test('主屏有番茄钟 App，点进去是三个时长', async () => {
   for (const minutes of POMODORO_MINUTES) {
     assert.notEqual(findByAttr(contentOf(dom), 'data-pomo-start', String(minutes)), undefined, `${minutes} 分钟按钮`)
   }
-  assert.ok(contentOf(dom).allText().includes('每天前 8 个给奖励'), contentOf(dom).allText())
+  assert.ok(contentOf(dom).allText().includes('每完成一个 +8 🪙'), contentOf(dom).allText())
+  assert.ok(!contentOf(dom).allText().includes('每天前'), '不再写每天上限')
 })
 
 test('点 25 分钟会发 pomodoro 动作', async () => {
@@ -346,7 +345,7 @@ test('同一个番茄只弹一次通知（轮询不重复弹）', async () => {
   }
 })
 
-test('调试页有番茄钟组：完成当前 / 今天=8', async () => {
+test('调试页有番茄钟组：完成当前（「今天=8」随每日上限一起去掉了）', async () => {
   const realNow = Date.now
   let now = 11_000_000
   Date.now = () => now
@@ -360,7 +359,7 @@ test('调试页有番茄钟组：完成当前 / 今天=8', async () => {
     const home = findByAttr(contentOf(mounted.dom), 'data-home', 'true')
     if (home !== undefined) home.fire('click')
     findByAttr(contentOf(mounted.dom), 'data-app', 'dev').fire('click')
-    for (const key of ['pomoDone', 'pomoCap']) {
+    for (const key of ['pomoDone']) {
       assert.notEqual(findByAttr(contentOf(mounted.dom), 'data-dev', key), undefined, `调试页要有 ${key}`)
     }
     findByAttr(contentOf(mounted.dom), 'data-dev', 'pomoDone').fire('click')

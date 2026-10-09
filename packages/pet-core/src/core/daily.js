@@ -14,6 +14,7 @@ import { rollerFor } from './random.js'
 import { announce, remember } from './effects.js'
 import { say } from './lines.js'
 import { recordDex } from './dex.js'
+import { earnCoins } from './economy.js'
 
 export { dayKeyFor }
 
@@ -73,7 +74,7 @@ export function ensureDaily(state) {
 export function grantReward(state, reward, nowMs = 0) {
   const parts = []
   if (reward.coins > 0) {
-    state.coins += reward.coins
+    earnCoins(state, reward.coins, 'daily', nowMs)
     parts.push(`🪙 ${reward.coins}`)
   }
   for (const entry of reward.items) {
@@ -141,10 +142,10 @@ export function recordOnline(state, lastPollMs, nowMs) {
   }
   const gap = nowMs - lastPollMs
   if (lastPollMs > 0 && gap > 0 && gap <= ONLINE_GIFT.pollGapMaxMs) daily.online.onlineMs += gap
-  // 每满一小时一个。到了当天的上限（或攒满 3 个）就只消耗时长，不再给。
+  // 每满一小时一个，不设每天上限（用户 2026-10-09）；没领的攒满 3 个就先不给，领了再攒。
   while (daily.online.onlineMs >= ONLINE_GIFT.perGiftMs) {
     daily.online.onlineMs -= ONLINE_GIFT.perGiftMs
-    if (daily.online.given < ONLINE_GIFT.perDay && daily.online.unclaimed < ONLINE_GIFT.unclaimedMax) {
+    if (daily.online.unclaimed < ONLINE_GIFT.unclaimedMax) {
       daily.online.given += 1
       daily.online.unclaimed += 1
     }

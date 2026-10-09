@@ -383,3 +383,19 @@ test('调试页「立绘」：点图会让猪换图，小动作按指定的做',
   }
   assert.deepEqual(idled, IDLE_ACTIONS.map(action => action.key))
 })
+
+test('调试页「经济」列出每个来源，扩展删掉了也照样显示并标「已删除」', () => {
+  const { document } = fakeDom()
+  globalThis.document = document
+  const content = document.createElement('div')
+  renderDevTab({
+    content, view: { ...SNAPSHOT, pig: PIG,
+      extensions: [{ key: 'mine', label: '矿洞', emoji: '⛏️', on: true }],
+      economy: { sources: [{ source: 'work', label: '打工', in: 120, out: 0 }, { source: 'ext.mine.sell', label: null, in: 70, out: 0 }, { source: 'ext.farm.sell', label: null, in: 50, out: 0 }], days: [{ day: '2026-10-09', in: 240, out: 0 }] } },
+    send() {}, devOff() {}, setOpen() {}, host: { getAttribute: () => 'false' },
+  })
+  const text = key => findByAttr(content, 'data-economy-source', key).allText()
+  assert.match(text('work'), /打工.*\+120/)
+  assert.match(text('ext.mine.sell'), /矿洞 · sell/)
+  assert.match(text('ext.farm.sell'), /farm（已删除） · sell/)
+})

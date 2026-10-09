@@ -509,12 +509,12 @@
     }
     var today2 = el("div", "dp-row");
     today2.appendChild(el("span", null, "\u4ECA\u5929\u5B8C\u6210"));
-    today2.appendChild(el("b", null, view.todayDone + " \u4E2A" + (view.todayDone >= view.cap ? " \xB7 \u5956\u52B1\u5DF2\u62FF\u6EE1" : "")));
+    today2.appendChild(el("b", null, view.todayDone + " \u4E2A"));
     ui.content.appendChild(today2);
     ui.content.appendChild(el(
       "div",
       "dp-dim",
-      "\u6BCF\u4E2A +" + view.reward.coins + " \u{1FA99} \xB7 \u5FC3\u60C5 +" + view.reward.happiness + "\uFF0C\u6BCF\u5929\u524D " + view.cap + " \u4E2A\u7ED9\u5956\u52B1"
+      "\u6BCF\u5B8C\u6210\u4E00\u4E2A +" + view.reward.coins + " \u{1FA99} \xB7 \u5FC3\u60C5 +" + view.reward.happiness
     ));
   }
 
@@ -1822,6 +1822,22 @@
     };
   }
 
+  // src/client/normalize-economy.js
+  function normalizeEconomy(raw) {
+    if (raw === null || typeof raw !== "object") return null;
+    const source = obj(raw);
+    return {
+      sources: arr(source.sources).map(function(value) {
+        const entry = obj(value);
+        return { source: str(entry.source, "other"), label: typeof entry.label === "string" ? entry.label : null, in: num(entry.in, 0), out: num(entry.out, 0) };
+      }),
+      days: arr(source.days).map(function(value) {
+        const day = obj(value);
+        return { day: str(day.day, ""), in: num(day.in, 0), out: num(day.out, 0) };
+      })
+    };
+  }
+
   // src/client/normalize.js
   function normalize(raw) {
     var d = obj(raw);
@@ -2070,6 +2086,7 @@
       inventory: obj(d.inventory),
       dex: normalizeDex(d.dex),
       skins: normalizeSkins(d.skins),
+      economy: normalizeEconomy(d.economy),
       fishing: normalizeFishing(d.fishing),
       ...normalizeExtensionParts(d),
       // 下载扩展的 App、货架和图鉴入口
@@ -4489,6 +4506,13 @@
           ui.select("dex");
           ui.drill.dex = "ext:" + key + ":" + section2;
           ui.renderContent();
+        },
+        // 跳到商店里这个扩展的货架（比如菜园缺种子 → 种子货架），按返回回到扩展页（用户 2026-10-09）。
+        openShop: function() {
+          ui.select("shop");
+          ui.drill.shop = "ext:" + key;
+          ui.drill.from = "ext:" + key;
+          ui.renderContent();
         }
       });
     } catch (error) {
@@ -5673,6 +5697,44 @@
     };
   }
 
+  // src/client/tabs/dev-economy.js
+  function sourceLabel(ui, entry) {
+    if (entry.label) return entry.label;
+    var match = /^ext\.([a-z0-9-]+)\.(.+)$/.exec(entry.source);
+    if (match === null) return entry.source;
+    var extension = (ui.view.extensions ?? []).find(function(item) {
+      return item.key === match[1];
+    });
+    return (extension ? extension.emoji + " " + extension.label : match[1] + "\uFF08\u5DF2\u5220\u9664\uFF09") + " \xB7 " + match[2];
+  }
+  function renderEconomy(ui, body) {
+    var economy = ui.view.economy;
+    if (!economy) {
+      body.appendChild(el("div", "dp-dev-note", "\u5BBF\u4E3B\u592A\u65E7\uFF0C\u6CA1\u6709\u8D26\u672C"));
+      return;
+    }
+    var head = el("div", "dp-title");
+    head.appendChild(el("b", null, "\u6700\u8FD1\u51E0\u5929"));
+    body.appendChild(head);
+    for (var d = economy.days.length - 1; d >= 0; d -= 1) {
+      var day = el("div", "dp-row");
+      day.appendChild(el("span", null, economy.days[d].day));
+      day.appendChild(el("b", null, "+" + economy.days[d].in + " / -" + economy.days[d].out));
+      body.appendChild(day);
+    }
+    var title = el("div", "dp-title");
+    title.appendChild(el("b", null, "\u6309\u6765\u6E90\uFF08\u7D2F\u8BA1\uFF09"));
+    body.appendChild(title);
+    if (economy.sources.length === 0) body.appendChild(el("div", "dp-dev-note", "\u8FD8\u6CA1\u6709\u6536\u652F"));
+    for (var i = 0; i < economy.sources.length; i += 1) {
+      var row = el("div", "dp-row");
+      row.setAttribute("data-economy-source", economy.sources[i].source);
+      row.appendChild(el("span", null, sourceLabel(ui, economy.sources[i])));
+      row.appendChild(el("b", null, (economy.sources[i].in ? "+" + economy.sources[i].in : "") + (economy.sources[i].out ? " -" + economy.sources[i].out : "")));
+      body.appendChild(row);
+    }
+  }
+
   // src/client/tabs/dev.js
   var SCENE_NAMES = {
     eat: "\u5403\u996D",
@@ -5980,9 +6042,6 @@
     page("pomodoro", "\u756A\u8304\u949F")("\u756A\u8304\u949F", [
       { key: "pomoDone", label: "\u{1F345} \u5B8C\u6210\u5F53\u524D", desc: "\u6B63\u5728\u4E13\u6CE8\u7684\u8FD9\u4E00\u4E2A\u7ACB\u523B\u5230\u70B9\uFF0C\u7167\u5E38\u53D1\u5956", run: function() {
         patch({ pomodoro: { finish: true } });
-      } },
-      { key: "pomoCap", label: "\u{1F522} \u4ECA\u5929=8", desc: "\u4ECA\u5929\u5B8C\u6210\u6570\u8BBE\u6210 8\uFF0C\u6D4B\u300C\u6BCF\u5929\u524D 8 \u4E2A\u6709\u5956\u52B1\u300D\u7684\u4E0A\u9650", run: function() {
-        patch({ pomodoro: { todayDone: 8 } });
       } }
     ]);
     var fishEntries = FISH.map(function(fish2) {
@@ -6133,6 +6192,10 @@
         }
       };
     }), "\u9762\u677F\u5F00\u7740\u4E5F\u80FD\u770B\uFF1A\u684C\u9762\u7248\u7684\u732A\u5728\u81EA\u5DF1\u7684\u7A97\u53E3\u91CC\u3002");
+    var money = el("div", "dp-dev-page");
+    money.setAttribute("data-dev-page-body", "economy");
+    pages.push({ key: "economy", label: "\u7ECF\u6D4E", body: money });
+    renderEconomy(ui, money);
     var values = el("div", "dp-dev-page");
     values.setAttribute("data-dev-page-body", "values");
     pages.push({ key: "values", label: "\u6570\u503C", body: values });

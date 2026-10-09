@@ -3,7 +3,7 @@
  * 番茄钟 App（C2）。
  *
  * 主人挑一个时长，猪就在旁边陪着、自己进免打扰；倒计时存在服务端，所以关面板、
- * 刷新、重启都接着走。到点由服务端结算（8 金币、心情 +6，每天前 8 个给奖励），
+ * 刷新、重启都接着走。到点由服务端结算（8 金币、心情 +6，每个都给），
  * 客户端只负责显示和发一条浏览器通知。
  * @module dsh-piggy/client/tabs/pomodoro
  */
@@ -62,8 +62,8 @@ export function renderPomodoroTab(ui) {
   // 今天做了几个、还有几个给钱。
   var today = el('div', 'dp-row')
   today.appendChild(el('span', null, '今天完成'))
-  today.appendChild(el('b', null, view.todayDone + ' 个' + (view.todayDone >= view.cap ? ' · 奖励已拿满' : '')))
+  today.appendChild(el('b', null, view.todayDone + ' 个'))
   ui.content.appendChild(today)
   ui.content.appendChild(el('div', 'dp-dim',
-    '每个 +' + view.reward.coins + ' 🪙 · 心情 +' + view.reward.happiness + '，每天前 ' + view.cap + ' 个给奖励'))
+    '每完成一个 +' + view.reward.coins + ' 🪙 · 心情 +' + view.reward.happiness))
 }

@@ -25,6 +25,7 @@ import { announce, remember } from './effects.js'
 import { say } from './lines.js'
 import { chance, rollerFor } from './random.js'
 import { noteToday } from './diary.js'
+import { spendCoins } from './economy.js'
 
 /**
  * Let the pig go. Only accidents kill it (the end of an illness chain, or a
@@ -224,8 +225,7 @@ export function seeDoctor(state, nowMs) {
   if (state.dead === true) return { ok: false, reason: 'dead' }
   const fee = doctorFee(state)
   if (fee === null) return { ok: false, reason: 'not-sick' }
-  if (state.coins < fee) return { ok: false, reason: 'poor', need: fee, have: state.coins }
-  state.coins -= fee
+  if (!spendCoins(state, fee, 'doctor', nowMs)) return { ok: false, reason: 'poor', need: fee, have: state.coins }
   recover(state, nowMs)
   state.stats.cures = (state.stats.cures ?? 0) + 1
   state.stats.doctorVisits = (state.stats.doctorVisits ?? 0) + 1

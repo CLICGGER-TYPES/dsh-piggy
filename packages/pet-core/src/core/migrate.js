@@ -23,6 +23,7 @@ import { ensureDex } from './dex.js'
 import { ensureBodyWeight } from './weight.js'
 import { ensureFishing } from './fishing.js'
 import { ensureSkins } from './skins.js'
+import { ensureEconomy } from './economy.js'
 
 /** Fill in anything a hand-edited or older save is missing. */
 export function migrate(input, nowMs) {
@@ -93,6 +94,7 @@ export function migrate(input, nowMs) {
   ensureBodyWeight(state)
   ensureFishing(state)
   ensureSkins(state)
+  ensureEconomy(state)
   ensureExtensions(state)
   settleAchievements(state, nowMs, { silent: true })
   return state

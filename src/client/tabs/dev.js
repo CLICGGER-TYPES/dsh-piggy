@@ -19,6 +19,7 @@ import { INTERESTS } from '../../../packages/pet-core/src/data/interests.js'
 import { FEEDBACK_ART_TABLES, UNUSED_FEEDBACK_ART } from '../feedback-art.js'
 import { ILLNESS_CHAINS } from '../../../packages/pet-core/src/data/illness.js'
 import { IDLE_ACTIONS } from '../life.js'
+import { renderEconomy } from './dev-economy.js'
 
 /** 台词场景的中文名（调试页按钮上用）。 */
 var SCENE_NAMES = {
@@ -205,7 +206,6 @@ export function renderDevTab(ui) {
   // ---- 番茄钟 ----
   page('pomodoro', '番茄钟')('番茄钟', [
     { key: 'pomoDone', label: '🍅 完成当前', desc: '正在专注的这一个立刻到点，照常发奖', run: function () { patch({ pomodoro: { finish: true } }) } },
-    { key: 'pomoCap', label: '🔢 今天=8', desc: '今天完成数设成 8，测「每天前 8 个有奖励」的上限', run: function () { patch({ pomodoro: { todayDone: 8 } }) } },
   ])
 
   // ---- 钓鱼 ----
@@ -288,6 +288,12 @@ export function renderDevTab(ui) {
       desc: action.key === 'nap' ? '打盹：换成睡姿立绘，头顶冒 Zzz' : '马上做这个小动作（会先恢复自动选图）',
       run: function () { ui.previewArt(null); ui.idleNow(action.key) } }
   }), '面板开着也能看：桌面版的猪在自己的窗口里。')
+
+  // ---- 经济：钱从哪来、花到哪去（docs/design/economy.md） ----
+  var money = el('div', 'dp-dev-page')
+  money.setAttribute('data-dev-page-body', 'economy')
+  pages.push({ key: 'economy', label: '经济', body: money })
+  renderEconomy(ui, money)
 
   // ---- 数值（只看不改） ----
   var values = el('div', 'dp-dev-page')

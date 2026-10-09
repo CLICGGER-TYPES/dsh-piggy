@@ -1,23 +1,36 @@
 // @ts-check
-import { announce } from '../core.js'
-import { BOX_TICKET, itemByKey } from '../data.js'
+import { announce, earnCoins, exert, extensionSource, spendCoins } from '../core.js'
+import { BOX_TICKET, EXT_EARN_PER_ACTION, itemByKey } from '../data.js'
 import { EXTENSION_EVENT_VERSION } from '../packages/pet-core/src/data/extension-events.js'
-/** 给扩展用的口子：只能花钱、挣钱、给东西、说话；数据只能动自己的那份。 */
-/** @param {any} state @param {string} key @param {{nowMs:number, emit?:Function}} options */
+/**
+ * 给扩展用的口子：只能花钱、挣钱、给东西、说话；数据只能动自己的那份。
+ * 金币一律走 core/economy.js 记账，来源强制记在 `ext.<扩展名>.` 下（docs/guides/writing-extensions.md「经济」）。
+ * 一次动作最多挣 EXT_EARN_PER_ACTION，写错的扩展冲不垮经济。
+ * @param {any} state @param {string} key @param {{nowMs:number, emit?:Function}} options
+ */
 export function apiFor(state, key, options) {
   const nowMs = options.nowMs
+  let earned = 0
   return {
     now: nowMs,
     eventVersion: EXTENSION_EVENT_VERSION,
     emit: options.emit ?? (() => false),
     coins: () => state.coins,
-    spend: amount => {
+    /** 花钱：不够返回 false、什么都不动。sink 是去处名（如 'seed'），不写记成 spend。 */
+    spend: (amount, sink = 'spend') => {
       const n = Math.floor(Number(amount))
-      if (!(n >= 0) || state.coins < n) return false
-      state.coins -= n
-      return true
+      if (!(n >= 0)) return false
+      return spendCoins(state, n, extensionSource(state, key, sink), nowMs)
     },
-    earn: amount => { state.coins += Math.max(0, Math.min(100_000, Math.floor(Number(amount) || 0))) },
+    /** 挣钱：source 是来源名（如 'sell'），不写记成 earn。返回实际加了多少（超过单次动作上限的部分不给）。 */
+    earn: (amount, source = 'earn') => {
+      const n = Math.min(Math.max(0, Math.floor(Number(amount) || 0)), EXT_EARN_PER_ACTION - earned)
+      if (n <= 0) return 0
+      earned += n
+      return earnCoins(state, n, extensionSource(state, key, source), nowMs)
+    },
+    /** 「玩会累」：主动玩一下扣一点饱食（data/economy.js 的建议值），最多一次 5 点。 */
+    exert: points => exert(state, Math.min(5, Math.max(0, Number(points) || 0))),
     give: (itemKey, count = 1) => {
       // 盲盒券不在商店里，但盲盒的凭证商店要能发。
       if (itemByKey(itemKey) === null && itemKey !== BOX_TICKET.key) return false

@@ -35,6 +35,7 @@
 - 随机数用 `core/random.js`（种子存在 `state.seed`），领域层禁止 `Math.random()`。
 - 改存档结构：`core/upgrades.js` 表尾加一级 + `STATE_VERSION` +1 + 迁移测试。
 - 数值集中在 `data/`，不许在逻辑里写裸数字。
+- **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
 - 文件超过 400 行、或开始承担第二种职责，就拆。
 
 ## 命名

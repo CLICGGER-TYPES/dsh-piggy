@@ -183,19 +183,19 @@ function pollFor(pig, fromMs, hours) {
   return clock
 }
 
-test('one hour online hands out one gift, and the day caps at 8', () => {
+test('one hour online hands out one gift, with no daily cap (2026-10-09)', () => {
   const pig = hatchEgg(at(2026, 10, 1, 9))
   let clock = pollFor(pig, at(2026, 10, 1, 9), 1)
   assert.equal(pig.daily.online.unclaimed, 1, 'one full hour, one gift')
   assert.equal(pig.daily.online.given, 1)
 
-  // Open each gift as it arrives; 8 is the daily cap.
+  // Open each gift as it arrives: every online hour pays, there is no cap of 8 any more.
   openGift(pig, clock)
   for (let hour = 0; hour < 12; hour += 1) {
     clock = pollFor(pig, clock, 1)
     if (pig.daily.online.unclaimed > 0) openGift(pig, clock)
   }
-  assert.equal(pig.daily.online.given, ONLINE_GIFT.perDay, '8 a day')
+  assert.equal(pig.daily.online.given, 13, 'thirteen hours online, thirteen gifts')
 })
 
 test('at most three gifts wait to be opened', () => {

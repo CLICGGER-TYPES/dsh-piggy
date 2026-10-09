@@ -8,6 +8,7 @@ import { ensureDex } from './dex.js'
 import { chance, pickOne, rollerFor } from './random.js'
 import { reduceFishingWeight } from './weight.js'
 import { say } from './lines.js'
+import { earnCoins } from './economy.js'
 
 const WEIGHT = { common: 60, uncommon: 24, rare: 8, legend: 1 }
 export const emptyFishing = () => ({ pending: null, bag: [], seq: 0, autoDay: '', autoTrips: 0 })
@@ -66,8 +67,9 @@ export function castFishing(state, power, nowMs, next = rollerFor(state), baitKe
   const fishing = ensureFishing(state)
   if (fishing.pending !== null && nowMs <= fishing.pending.expiresAt) return { ok: false, reason: 'pending' }
   fishing.pending = null
+  // 猪在打工、上学、旅行也能钓（用户 2026-10-09：外出不挡扩展玩法）；只有自动钓鱼时不能手动钓。
   const blocked = awayBlockedReason(state)
-  if (blocked !== null) return { ok: false, reason: blocked }
+  if (blocked !== null && !(blocked === 'away' && state.activity?.kind !== 'fishing')) return { ok: false, reason: blocked }
   if (state.satiety < 1) return { ok: false, reason: 'hungry' }
   const bait = itemByKey(baitKey)
   if (bait?.kind !== 'bait' || (state.inventory?.[baitKey] ?? 0) < 1) return { ok: false, reason: 'no-bait' }
@@ -158,7 +160,7 @@ export function feedFish(state, id, nowMs) {
 export function sellFish(state, id, nowMs) {
   const caught = takeFish(state, id)
   if (caught === null) return { ok: false, reason: 'missing' }
-  state.coins += caught.price
+  earnCoins(state, caught.price, 'sell.fish', nowMs)
   state.stats.sales = (state.stats.sales ?? 0) + 1
   state.stats.coinsEarned = (state.stats.coinsEarned ?? 0) + caught.price
   remember(state, `🪙 卖掉${fishByKey(caught.key)?.label ?? '鱼'}，得到 ${caught.price} 金币`, nowMs)

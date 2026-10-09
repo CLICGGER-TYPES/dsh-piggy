@@ -10,6 +10,7 @@ import { GRADUATION_LESSONS, SUBJECTS, TRAITS, graduatedStage, stageForNextLesso
 import { begin } from './activity.js'
 import { TOO_WEAK_HEALTH } from './constants.js'
 import { remember } from './effects.js'
+import { refundCoins, spendCoins } from './economy.js'
 
 /** Lessons taken per subject, always including every subject (0 = never). */
 export function courseView(state) {
@@ -66,14 +67,14 @@ export function startStudy(state, subjectKey, _stageKey, nowMs) {
   if (state.coins < stage.tuition) return { ok: false, reason: 'poor', price: stage.tuition }
   if (state.satiety < 15) return { ok: false, reason: 'hungry' }
 
-  state.coins -= stage.tuition
+  spendCoins(state, stage.tuition, 'school', nowMs)
   const result = begin(state, {
     kind: 'study', key: subject.key, stage: stage.key,
     label: `${subject.label}（${stage.label}第 ${taken + 1} 节）`, emoji: subject.emoji,
     minutes: stage.minutes, cost: stage.tuition,
   }, nowMs)
   if (!result.ok) {
-    state.coins += stage.tuition // refund if the pig turned out to be unavailable
+    refundCoins(state, stage.tuition, 'school', nowMs) // the pig turned out to be unavailable
     return result
   }
   remember(state, `${subject.emoji} 去上${subject.label}第 ${taken + 1} 节（学费 ${stage.tuition}）`, nowMs)

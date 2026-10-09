@@ -10,6 +10,7 @@ import { INTERESTS, interestByKey } from '../data.js'
 import { begin } from './activity.js'
 import { TOO_WEAK_HEALTH } from './constants.js'
 import { remember } from './effects.js'
+import { refundCoins, spendCoins } from './economy.js'
 
 /**
 /**
@@ -40,14 +41,14 @@ export function startInterest(state, interestKey, nowMs) {
   if (state.coins < interest.cost) return { ok: false, reason: 'poor', price: interest.cost }
   if (state.satiety < 15) return { ok: false, reason: 'hungry' }
 
-  state.coins -= interest.cost
+  spendCoins(state, interest.cost, 'interest', nowMs)
   const result = begin(state, {
     kind: 'interest', key: interest.key,
     label: `兴趣·${interest.label}`, emoji: interest.emoji,
     minutes: interest.minutes, cost: interest.cost,
   }, nowMs)
   if (!result.ok) {
-    state.coins += interest.cost
+    refundCoins(state, interest.cost, 'interest', nowMs)
     return result
   }
   remember(state, `${interest.emoji} 去学${interest.label}（花了 ${interest.cost} 金币）`, nowMs)

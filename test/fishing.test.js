@@ -80,9 +80,13 @@ test('cast spends one satiety and server pins one pending fish for 60 seconds', 
   assert.ok(state.fishing.pending.bitesAt >= NOW + 2_000)
   assert.ok(state.fishing.pending.bitesAt <= NOW + 8_000)
   assert.equal(castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm').reason, 'pending')
+  // 用户 2026-10-09：猪在打工也能钓；只有猪正在自动钓鱼时不能再手动钓。
   state.activity = { kind: 'work', key: 'x', startedAt: NOW, endsAt: NOW + 60_000 }
   state.fishing.pending = null
-  assert.equal(castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm').reason, 'away')
+  assert.equal(castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm').ok, true, 'fishing while the pig is at work')
+  state.activity = { kind: 'fishing', key: 'auto-30', startedAt: NOW, endsAt: NOW + 60_000 }
+  state.fishing.pending = null
+  assert.equal(castFishing(state, 0.2, NOW + 200, () => 0.9, 'bait_worm').reason, 'away')
 })
 
 test('hook window, minigame verdict and bag transfer cannot duplicate a fish', () => {

@@ -20,6 +20,7 @@ import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
 import { finishAutoFishing } from './fishing.js'
+import { earnCoins } from './economy.js'
 
 export { currentIllness, die } from './illness.js'
 
@@ -228,7 +229,7 @@ export function finishWork(state, activity, nowMs, next = rollerFor(state)) {
   const points = trait === null ? 0 : (state.traits?.[trait] ?? 0)
   const withTrait = trait === null ? base : base * traitBonus(trait, points).pay
   const coins = sick ? Math.max(1, Math.round(withTrait * SICK_PAY_MULTIPLIER)) : Math.round(withTrait)
-  state.coins += coins
+  earnCoins(state, coins, 'work', nowMs)
   if (job !== null) {
     state.satiety = clamp100(state.satiety + job.satiety)
     state.cleanliness = clamp100(state.cleanliness + job.cleanliness)

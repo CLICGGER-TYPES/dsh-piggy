@@ -10,6 +10,7 @@ import { TOO_WEAK_HEALTH } from './constants.js'
 import { itemByKey } from '../data.js'
 import { remember } from './effects.js'
 import { decay } from './settlement.js'
+import { refundCoins } from './economy.js'
 
 /**
  * Why the pig cannot head out right now, or null when it can.
@@ -70,7 +71,7 @@ export function callOffActivity(state, nowMs) {
     return { ok: true, baitRefunded: activity.baitCount }
   }
   if (activity.kind !== 'work' && activity.cost > 0) {
-    state.coins += activity.cost
+    refundCoins(state, activity.cost, activity.kind === 'trip' ? 'trip' : activity.kind === 'study' ? 'school' : activity.kind === 'interest' ? 'interest' : 'other', nowMs)
     remember(state, `${activity.emoji} 从${activity.label}提前回来了，钱退回来了`, nowMs)
     return { ok: true, refunded: activity.cost }
   }
