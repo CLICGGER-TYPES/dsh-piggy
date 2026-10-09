@@ -207,3 +207,53 @@ test('an unreachable registry is reported instead of leaving the list empty and 
   assert.deepEqual(view.entries, [])
   assert.match(view.error, /连不上 GitHub|域名 example\.test 解析不了/)
 })
+
+// ---------------------------------------------------------------------------
+// 在线目录只问一次（用户 2026-10-09：本地有了就别一直问，免得撞 GitHub 上限）
+// ---------------------------------------------------------------------------
+
+test('the online catalog is asked once, kept on disk, and re-checked with its ETag', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-piggy-reg-'))
+  try {
+    writeFileSync(join(dir, 'state.json'), JSON.stringify(hatchEgg(Date.now())))
+    const store = createStore(join(dir, 'state.json'), { journal: createJournal() })
+    const catalog = { extensions: [{ key: 'piggybank', label: '存钱罐', version: '1.0.0', files: {} }] }
+    const calls = []
+    let offline = false
+    const fetch = async (url, init) => {
+      calls.push(init?.headers?.['if-none-match'] ?? null)
+      if (offline) throw new Error('fetch failed')
+      if (init?.headers?.['if-none-match'] === '"v1"') return { ok: false, status: 304, headers: new Headers() }
+      return { ok: true, status: 200, headers: new Headers({ etag: '"v1"' }), json: async () => catalog }
+    }
+    let clock = 1_000_000
+    const make = () => createExtRuntime(store, { gameVersion: '0.30.0', fetch, registryUrl: 'https://example.test/registry.json', now: () => clock, sleep: async () => {} })
+    const first = make()
+    const [a, b] = await Promise.all([first.onlineView(), first.onlineView()])
+    assert.equal(calls.length, 1, 'two windows asking at once share one request')
+    assert.deepEqual([a.entries.length, b.entries.length], [1, 1])
+    await first.onlineView()
+    assert.equal(calls.length, 1, 'within an hour nothing is asked again')
+    assert.ok(existsSync(join(dir, 'extensions', 'registry-cache.json')))
+
+    // Restart: the saved catalog shows at once; once stale, a conditional request (304) keeps it.
+    const second = make()
+    assert.equal((await second.onlineView()).entries.length, 1)
+    assert.equal(calls.length, 1, 'a restart within the hour uses the saved catalog')
+    clock += 61 * 60_000
+    assert.equal((await second.onlineView()).entries.length, 1)
+    assert.deepEqual(calls.slice(1), ['"v1"'], 'asked again with the ETag; 304 keeps the saved list')
+
+    // Offline: keep showing the saved list, say why, and do not retry on every open.
+    offline = true
+    clock += 61 * 60_000
+    const down = await second.onlineView()
+    assert.equal(down.entries.length, 1)
+    assert.match(down.error, /连不上/)
+    const asked = calls.length
+    await second.onlineView()
+    assert.equal(calls.length, asked, 'a failure waits a few minutes before asking again')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})

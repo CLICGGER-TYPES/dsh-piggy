@@ -907,10 +907,10 @@ function restartGame() {
 // ---- 更新 App（页面里的 tabs/update.js）通过这几个口子调用 ----
 let releases = []
 ipcMain.handle('piggy:updates:current', event => (fromPage(event) ? versions?.current() : null))
-ipcMain.handle('piggy:updates:list', async event => {
+ipcMain.handle('piggy:updates:list', async (event, fresh) => {
   if (!fromPage(event) || versions === null) return { ok: false, reason: '不在桌面版里' }
   try {
-    releases = await versions.list()
+    releases = await versions.list({ fresh: fresh === true })
     return { ok: true, releases: releases.map(({ manifest, packUrl, ...rest }) => rest) }
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : String(error) }

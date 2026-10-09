@@ -69,3 +69,20 @@ test('an update found while its app is open is immediately treated as read', asy
   assert.equal(notice.unread, false)
   assert.equal(bubbles.length, 0)
 })
+
+test('web mode asks for the latest release at most once per six hours and falls back to the saved one', async () => {
+  const { cachedLatest, LATEST_CACHE_MS } = await import('../src/client/update-notice.js')
+  const box = new Map()
+  let clock = 1_000_000
+  let calls = 0
+  let failing = false
+  const store = { read: key => box.get(key) ?? null, write: (key, value) => box.set(key, value), now: () => clock }
+  const fetchLatest = async () => { calls += 1; if (failing) throw new Error('GitHub 403'); return { version: '0.34.1' } }
+  assert.equal((await cachedLatest(fetchLatest, store)).version, '0.34.1')
+  assert.equal((await cachedLatest(fetchLatest, store)).version, '0.34.1')
+  assert.equal(calls, 1, 'a page reload within six hours does not ask again')
+  clock += LATEST_CACHE_MS + 1
+  failing = true
+  assert.equal((await cachedLatest(fetchLatest, store)).version, '0.34.1', 'rate limited: keep the saved answer')
+  assert.equal(calls, 2)
+})

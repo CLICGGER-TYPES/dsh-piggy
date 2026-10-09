@@ -152,7 +152,7 @@ test('a package over the attachment limit is split into parts, listed, downloade
 
     // A release missing one part is not offered; a corrupted part is refused before anything changes.
     const missing = fakeGithub(files, [{ ...release(manifest.version), assets: assets.slice(0, -1) }])
-    const v2 = createVersions({ userData: dir, bundledDir: bundled, shellVersion: '0.6.3', statePath, fetch: missing.fetch, releasesUrl: 'releases' })
+    const v2 = createVersions({ userData: join(dir, 'fresh'), bundledDir: bundled, shellVersion: '0.6.3', statePath, fetch: missing.fetch, releasesUrl: 'releases' })
     assert.deepEqual(await v2.list(), [])
     const broken = { ...files, ['u-' + manifest.parts[1].name]: Buffer.from('nope') }
     const bad = createVersions({ userData: join(dir, 'other'), bundledDir: bundled, shellVersion: '0.6.3', statePath, fetch: fakeGithub(broken, []).fetch, releasesUrl: 'releases' })
@@ -190,6 +190,48 @@ test('an installer without a game downloads the pinned one first and keeps it ac
     const updated = make('0.6.4')
     assert.equal(updated.needsGame(), false)
     assert.equal(updated.activeDir(), join(dir, 'versions', manifest.version))
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// 版本列表少问 GitHub（用户 2026-10-09：撞到每小时上限）
+// ---------------------------------------------------------------------------
+
+test('the release list is asked once per half hour, kept on disk, re-checked with its ETag, and survives a rate limit', async () => {
+  const { dir, bundled, statePath } = setup()
+  try {
+    const manifest = JSON.stringify({ version: '0.25.0', stateVersion: 12, minShell: '0.1.0', sha256: 'x', size: 1 })
+    const calls = []
+    let limited = false
+    const fetch = async (url, init) => {
+      const etag = init?.headers?.['if-none-match'] ?? null
+      calls.push(url + (etag ? ' ' + etag : ''))
+      if (url === 'releases' && limited) return new Response('rate limited', { status: 403 })
+      if (url === 'releases' && etag === '"r1"') return new Response(null, { status: 304 })
+      if (url === 'releases') return new Response(JSON.stringify([release('0.25.0')]), { headers: { etag: '"r1"' } })
+      if (url === 'm-0.25.0') return new Response(manifest)
+      return new Response('nope', { status: 404 })
+    }
+    let clock = 1_000_000
+    const make = () => createVersions({ userData: dir, bundledDir: bundled, shellVersion: '0.1.0', statePath, fetch: /** @type {any} */ (fetch), releasesUrl: 'releases', now: () => clock })
+    const first = make()
+    const [a, b] = await Promise.all([first.list(), first.list()])
+    assert.deepEqual([a.length, b.length], [1, 1])
+    assert.deepEqual(calls, ['releases', 'm-0.25.0'], 'both windows share one request; the manifest is fetched once')
+    await first.list()
+    assert.equal(calls.length, 2, 'within half an hour nothing is asked again')
+
+    const restarted = make()
+    assert.equal((await restarted.list()).length, 1)
+    assert.equal(calls.length, 2, 'a restart uses the saved list and manifests')
+    await restarted.list({ fresh: true })
+    assert.deepEqual(calls.slice(2), ['releases "r1"'], 'refresh asks with the ETag; 304 does not count and the manifest is not refetched')
+
+    limited = true
+    clock += 31 * 60_000
+    assert.equal((await restarted.list()).length, 1, 'rate limited: keep showing the saved list instead of an error')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

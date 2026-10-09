@@ -45,7 +45,8 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 更新 App: versions on GitHub, switching between them, and going back. */
   updates: {
     current: () => ipcRenderer.invoke('piggy:updates:current'),
-    list: () => ipcRenderer.invoke('piggy:updates:list'),
+    /** fresh：点了刷新，跳过外壳的本地缓存（lib/versions.js）。 */
+    list: fresh => ipcRenderer.invoke('piggy:updates:list', fresh === true),
     install: version => ipcRenderer.invoke('piggy:updates:install', String(version)),
     rollback: () => ipcRenderer.invoke('piggy:updates:rollback'),
     onProgress: callback => { ipcRenderer.on('piggy:progress', (event, fraction) => callback(fraction)) },

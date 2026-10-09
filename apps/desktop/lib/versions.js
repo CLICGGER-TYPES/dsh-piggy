@@ -22,6 +22,8 @@ import { gunzipSync } from 'node:zlib'
 import { CHANNEL } from './channel.js'
 
 export const RELEASES_URL = CHANNEL.releasesList
+/** 版本列表问到之后半小时内不再问（GitHub 不登录每小时只给 60 次，两个窗口 + 重启很快就用完）。 */
+export const RELEASES_TTL_MS = 30 * 60_000
 export const RELEASES_PAGE = CHANNEL.releasesPage
 
 /** `1.2.10` vs `1.2.9`, ignoring a leading v; missing parts count as 0. */
@@ -53,6 +55,7 @@ export function compareVersions(a, b) {
  * @param {string} options.shellVersion this app's own version
  * @param {string} options.statePath  the pig's save, to refuse versions too old to read it
  * @param {typeof fetch} [options.fetch]
+ * @param {() => number} [options.now] 测试用的时钟
  * @param {string} [options.releasesUrl]
  */
 export function createVersions(options) {
@@ -60,6 +63,13 @@ export function createVersions(options) {
   const releasesUrl = options.releasesUrl ?? RELEASES_URL
   const root = join(options.userData, 'versions')
   const activeFile = join(root, 'active.json')
+  /** 版本列表和各版本 manifest 存在本地：{ at, etag, releases, manifests: { 地址: manifest } }。 */
+  const cacheFile = join(root, 'releases-cache.json')
+  const now = options.now ?? (() => Date.now())
+  /** @type {{ at: number, etag: string|null, releases: any[]|null, manifests: Record<string, any> }|null} */
+  let cache = null
+  /** @type {Promise<any[]>|null} 正在问的那一次，两个窗口同时来就共用 */
+  let asking = null
 
   const readJson = file => { try { return JSON.parse(readFileSync(file, 'utf8')) } catch { return null } }
   const gameVersion = dir => readJson(join(dir, 'package.json'))?.version ?? '?'
@@ -112,18 +122,85 @@ export function createVersions(options) {
   }
 
   /** Fetch JSON, with a clear message instead of an exception for the panel. */
-  async function getJson(url) {
-    const res = await doFetch(url, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-piggy-desktop' } })
+  async function getJson(url, etag = null) {
+    const headers = { accept: 'application/vnd.github+json', 'user-agent': 'dsh-piggy-desktop', ...(etag ? { 'if-none-match': etag } : {}) }
+    const res = await doFetch(url, { headers })
+    if (res.status === 304) return { notModified: true, body: null, etag }
     if (!res.ok) throw new Error(res.status === 403 ? 'GitHub 暂时不让查了（每小时次数用完），过会儿再试' : `GitHub 回了 ${res.status}`)
-    return res.json()
+    return { notModified: false, body: await res.json(), etag: res.headers?.get?.('etag') ?? null }
+  }
+
+  function loadCache() {
+    if (cache !== null) return cache
+    const saved = readJson(cacheFile)
+    cache = {
+      at: Number.isFinite(saved?.at) ? saved.at : 0,
+      etag: typeof saved?.etag === 'string' ? saved.etag : null,
+      releases: Array.isArray(saved?.releases) ? saved.releases : null,
+      manifests: saved?.manifests !== null && typeof saved?.manifests === 'object' ? saved.manifests : {},
+    }
+    return cache
+  }
+
+  function saveCache() {
+    try {
+      mkdirSync(root, { recursive: true })
+      writeFileSync(cacheFile + '.tmp', JSON.stringify(cache))
+      renameSync(cacheFile + '.tmp', cacheFile)
+    } catch { /* 存不下也不影响这次 */ }
+  }
+
+  /**
+   * 发行版列表：半小时内用本地那份；过期或 `fresh`（点刷新）时带 ETag 去问，没变（304，不算次数）就接着用。
+   * 问不到（限流、断网）但本地有，就先用本地的，不报错。
+   */
+  async function releaseList(fresh) {
+    const saved = loadCache()
+    if (!fresh && saved.releases !== null && now() - saved.at < RELEASES_TTL_MS) return saved.releases
+    if (asking !== null) return asking
+    asking = (async () => {
+      try {
+        const got = await getJson(releasesUrl, saved.releases !== null ? saved.etag : null)
+        if (!got.notModified) {
+          Object.assign(saved, { releases: Array.isArray(got.body) ? got.body : [], etag: got.etag })
+          // 只留还在列表里的版本的 manifest，免得越攒越多。
+          const live = new Set(saved.releases.flatMap(release => (Array.isArray(release?.assets) ? release.assets : []).map(asset => asset.browser_download_url)))
+          saved.manifests = Object.fromEntries(Object.entries(saved.manifests).filter(([url]) => live.has(url)))
+        }
+        saved.at = now()
+        saveCache()
+        return /** @type {any[]} */ (saved.releases)
+      } catch (error) {
+        if (saved.releases !== null) return saved.releases
+        throw error
+      }
+    })()
+    try { return await asking } finally { asking = null }
+  }
+
+  /** @type {Map<string, Promise<any>>} 正在下的 manifest，同时来的共用 */
+  const fetchingManifests = new Map()
+
+  /** 某个发行版的 manifest：发布后不会变，下过一次就记住。 */
+  async function manifestFor(url) {
+    const saved = loadCache()
+    if (saved.manifests[url] !== undefined) return saved.manifests[url]
+    if (!fetchingManifests.has(url)) {
+      fetchingManifests.set(url, getJson(url).then(got => {
+        saved.manifests[url] = got.body
+        saveCache()
+        return got.body
+      }).finally(() => fetchingManifests.delete(url)))
+    }
+    return fetchingManifests.get(url)
   }
 
   /**
    * Every release that carries a game package, newest first, with whether it
    * can be installed here and why not.
    */
-  async function list() {
-    const releases = await getJson(releasesUrl)
+  async function list({ fresh = false } = {}) {
+    const releases = await releaseList(fresh)
     const here = current()
     const save = saveVersion()
     const out = []
@@ -135,7 +212,7 @@ export function createVersions(options) {
       const hasParts = assets.some(a => /^game-.+\.part-\d+\.gz$/.test(a.name))
       if (!manifestAsset || (!packAsset && !hasParts)) continue
       let manifest
-      try { manifest = await getJson(manifestAsset.browser_download_url) } catch { continue }
+      try { manifest = await manifestFor(manifestAsset.browser_download_url) } catch { continue }
       const packUrls = packUrlsFor(manifest, assets, packAsset)
       if (packUrls === null) continue
       const version = String(manifest.version ?? release.tag_name).replace(/^v/, '')

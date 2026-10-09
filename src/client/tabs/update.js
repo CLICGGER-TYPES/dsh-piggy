@@ -24,7 +24,8 @@ export function updatesBridge() {
   return shell && shell.updates ? shell : null
 }
 
-function refresh(ui) {
+/** @param {boolean} [fresh] 点了「刷新」：外壳跳过本地缓存去问（仍带 ETag，没变不算次数） */
+function refresh(ui, fresh) {
   var shell = updatesBridge()
   if (shell === null || state.loading) return
   state.loading = true
@@ -37,7 +38,7 @@ function refresh(ui) {
     state.shellListening = true
     shell.shellUpdates.onProgress(function (fraction) { state.shellFraction = fraction; ui.renderContent() })
   }
-  Promise.all([shell.updates.current(), shell.updates.list(), shell.shellUpdates ? shell.shellUpdates.status() : null]).then(function (got) {
+  Promise.all([shell.updates.current(), shell.updates.list(fresh === true), shell.shellUpdates ? shell.shellUpdates.status() : null]).then(function (got) {
     state.current = got[0]
     if (got[1] && got[1].ok) state.list = got[1].releases
     else state.error = (got[1] && got[1].reason) || '没问到'
@@ -130,7 +131,7 @@ export function renderUpdateTab(ui) {
   var again = button('dp-mini dp-update-refresh', { 'data-update-refresh': '' }, function () {
     state.message = null
     state.shellMessage = null
-    refresh(ui)
+    refresh(ui, true)
   })
   again.textContent = state.loading ? '正在刷新…' : '🔄 刷新'
   again.disabled = state.loading || state.busy !== null || state.shellBusy
@@ -188,7 +189,7 @@ export function renderUpdateTab(ui) {
   if (state.loading && state.list === null) ui.content.appendChild(el('div', 'dp-empty', '正在问 GitHub…'))
   if (state.error !== null) {
     ui.content.appendChild(el('div', 'dp-empty', state.error))
-    var again = button('dp-btn dp-btn-wide', { 'data-update-retry': '' }, function () { refresh(ui) })
+    var again = button('dp-btn dp-btn-wide', { 'data-update-retry': '' }, function () { refresh(ui, true) })
     again.textContent = '再试一次'
     ui.content.appendChild(again)
   }

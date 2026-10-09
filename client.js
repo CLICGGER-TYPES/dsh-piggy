@@ -6239,6 +6239,8 @@
   // src/client/update-notice.js
   var READ_KEY = "dsh-piggy:update-read";
   var NOTIFIED_KEY = "dsh-piggy:update-notified";
+  var LATEST_CACHE_KEY = "dsh-piggy:latest-release";
+  var LATEST_CACHE_MS = 6 * 60 * 60 * 1e3;
   var GITHUB_LATEST = CHANNEL.latestRelease;
   function compareVersions(a, b) {
     const split = (value) => {
@@ -6389,11 +6391,29 @@
       }
     };
   }
+  async function cachedLatest(fetchLatest, store) {
+    const now = store.now ? store.now() : Date.now();
+    let saved = null;
+    try {
+      saved = JSON.parse(store.read(LATEST_CACHE_KEY) || "null");
+    } catch {
+      saved = null;
+    }
+    if (saved !== null && typeof saved.at === "number" && now - saved.at < LATEST_CACHE_MS) return saved.release ?? null;
+    try {
+      const release = await fetchLatest();
+      store.write(LATEST_CACHE_KEY, JSON.stringify({ at: now, release }));
+      return release;
+    } catch (error) {
+      if (saved !== null) return saved.release ?? null;
+      throw error;
+    }
+  }
   function attachUpdateNotice(ctx, getDesktop, doFetch = fetch) {
     const notice = createUpdateNotice({
       currentVersion: () => ctx.view.version,
       getDesktop,
-      fetchLatest: () => fetchGithubLatest(doFetch),
+      fetchLatest: () => cachedLatest(() => fetchGithubLatest(doFetch), { read: readStore, write: writeStore }),
       read: readStore,
       write: writeStore,
       canBubble: () => ctx.view.pig !== null && ctx.bubble.hidden !== false,
@@ -6434,7 +6454,7 @@
     );
     return shell2 && shell2.updates ? shell2 : null;
   }
-  function refresh(ui) {
+  function refresh(ui, fresh) {
     var shell2 = updatesBridge();
     if (shell2 === null || state.loading) return;
     state.loading = true;
@@ -6453,7 +6473,7 @@
         ui.renderContent();
       });
     }
-    Promise.all([shell2.updates.current(), shell2.updates.list(), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
+    Promise.all([shell2.updates.current(), shell2.updates.list(fresh === true), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
       state.current = got[0];
       if (got[1] && got[1].ok) state.list = got[1].releases;
       else state.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
@@ -6542,7 +6562,7 @@
     var again = button("dp-mini dp-update-refresh", { "data-update-refresh": "" }, function() {
       state.message = null;
       state.shellMessage = null;
-      refresh(ui);
+      refresh(ui, true);
     });
     again.textContent = state.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
     again.disabled = state.loading || state.busy !== null || state.shellBusy;
@@ -6598,7 +6618,7 @@
     if (state.error !== null) {
       ui.content.appendChild(el("div", "dp-empty", state.error));
       var again = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
-        refresh(ui);
+        refresh(ui, true);
       });
       again.textContent = "\u518D\u8BD5\u4E00\u6B21";
       ui.content.appendChild(again);

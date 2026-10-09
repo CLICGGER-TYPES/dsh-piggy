@@ -6,6 +6,9 @@ import { CHANNEL } from '../../channel.js'
 
 const READ_KEY = 'dsh-piggy:update-read'
 const NOTIFIED_KEY = 'dsh-piggy:update-notified'
+/** 网页版问到的最新正式版存在这台设备上，6 小时内刷新页面不再问（GitHub 不登录每小时 60 次）。 */
+const LATEST_CACHE_KEY = 'dsh-piggy:latest-release'
+export const LATEST_CACHE_MS = 6 * 60 * 60 * 1000
 /** 最新正式版的接口：GitHub 或 Gitee，看打包时的渠道（channel.js）。 */
 export const GITHUB_LATEST = CHANNEL.latestRelease
 
@@ -180,12 +183,32 @@ export function createUpdateNotice(options) {
   }
 }
 
+/**
+ * 网页版的「最新正式版」：6 小时内用这台设备上存的那份，过期才去问；问不到就先用旧的。
+ * @param {() => Promise<any>} fetchLatest
+ * @param {{ read: (key: string) => string|null, write: (key: string, value: string) => void, now?: () => number }} store
+ */
+export async function cachedLatest(fetchLatest, store) {
+  const now = store.now ? store.now() : Date.now()
+  let saved = null
+  try { saved = JSON.parse(store.read(LATEST_CACHE_KEY) || 'null') } catch { saved = null }
+  if (saved !== null && typeof saved.at === 'number' && now - saved.at < LATEST_CACHE_MS) return saved.release ?? null
+  try {
+    const release = await fetchLatest()
+    store.write(LATEST_CACHE_KEY, JSON.stringify({ at: now, release }))
+    return release
+  } catch (error) {
+    if (saved !== null) return saved.release ?? null
+    throw error
+  }
+}
+
 /** Wire the release checker into the mounted client and start its timers. */
 export function attachUpdateNotice(ctx, getDesktop, doFetch = fetch) {
   const notice = createUpdateNotice({
     currentVersion: () => ctx.view.version,
     getDesktop,
-    fetchLatest: () => fetchGithubLatest(doFetch),
+    fetchLatest: () => cachedLatest(() => fetchGithubLatest(doFetch), { read: readStore, write: writeStore }),
     read: readStore,
     write: writeStore,
     canBubble: () => ctx.view.pig !== null && ctx.bubble.hidden !== false,
