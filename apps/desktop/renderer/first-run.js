@@ -1,5 +1,5 @@
 // @ts-check
-/** 第一次启动下载游戏的小窗口：显示进度，出错时给重试 / 打开下载页 / 退出（lib/first-run.js）。 */
+/** 第一次启动下载游戏的小窗口：显示进度，出错时给重试 / 打开下载页 / 退出（../first-run.js）。 */
 /** @type {{ onStatus: (callback: (status: any) => void) => void, act: (action: string) => void, fit: (height: number) => void }} */
 const bridge = /** @type {any} */ (window).piggyFirstRun
 const text = /** @type {HTMLElement} */ (document.getElementById('text'))

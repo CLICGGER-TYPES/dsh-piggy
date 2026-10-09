@@ -28,7 +28,7 @@ import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
-import { downloadFirstGame, gamePinPath } from './lib/first-run.js'
+import { downloadFirstGame, gamePinPath } from './first-run.js'
 
 const { autoUpdater } = updaterPackage
 
@@ -995,7 +995,7 @@ app.whenReady().then(async () => {
     // Chromium's network stack: follows the system proxy, which plain fetch does not.
     fetch: /** @type {any} */ (net.fetch.bind(net)),
   })
-  // Gitee 的 Windows 安装包不带游戏：第一次先下载（lib/first-run.js）。
+  // Gitee 的 Windows 安装包不带游戏：第一次先下载（first-run.js）。
   let firstRun = null
   if (versions.needsGame()) {
     firstRun = await downloadFirstGame({ versions, pinPath: gamePinPath(app, HERE), here: HERE, releasesPage: RELEASES_PAGE, log })

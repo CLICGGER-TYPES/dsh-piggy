@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * 第一次启动下载游戏失败时给用户看的话（lib/first-run.js）。纯函数，测试直接跑。
+ * 第一次启动下载游戏失败时给用户看的话（../first-run.js）。纯函数，测试直接跑。
  * @module dsh-piggy-desktop/first-run-errors
  */
 

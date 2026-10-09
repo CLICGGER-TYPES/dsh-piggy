@@ -24,9 +24,9 @@ test('Gitee Windows installer ships the pin instead of the game; Linux and macOS
 
 test('the first-run window files are packaged', () => {
   const files = JSON.parse(readFileSync(new URL('package.json', here), 'utf8')).build.files
-  assert.ok(files.includes('first-run-preload.cjs'))
+  assert.ok(files.includes('first-run.js') && files.includes('first-run-preload.cjs'))
   assert.ok(files.includes('renderer/**') && files.includes('lib/**'))
-  for (const file of ['first-run-preload.cjs', 'renderer/first-run.html', 'renderer/first-run.js', 'lib/first-run.js']) {
+  for (const file of ['first-run-preload.cjs', 'renderer/first-run.html', 'renderer/first-run.js', 'first-run.js', 'lib/first-run-errors.js']) {
     assert.ok(existsSync(new URL(file, here)), file)
   }
 })

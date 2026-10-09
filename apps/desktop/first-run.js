@@ -10,7 +10,7 @@ import { join } from 'node:path'
 
 import { BrowserWindow, ipcMain, shell } from 'electron'
 
-import { friendlyError } from './first-run-errors.js'
+import { friendlyError } from './lib/first-run-errors.js'
 
 /** 安装包里那份游戏清单；开发时可以用 PIGGY_GAME_PIN 指一份来测。 */
 export function gamePinPath(app, here) {

@@ -86,9 +86,9 @@ function sources(dir = packageRoot, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'test') continue
     const path = join(dir, entry.name)
-    // The desktop app's Electron entry needs Electron's types, which only apps/desktop installs;
-    // its build output and packed game copy are not sources.
-    if (dir === join(packageRoot, 'apps', 'desktop') && ['main.js', 'dist', 'dist-game', 'game'].includes(entry.name)) continue
+    // The desktop app's Electron entry (and first-run.js, its first-start download window) needs Electron's types,
+    // which only apps/desktop installs; its build output and packed game copy are not sources.
+    if (dir === join(packageRoot, 'apps', 'desktop') && ['main.js', 'first-run.js', 'dist', 'dist-game', 'game'].includes(entry.name)) continue
     if (entry.isDirectory()) sources(path, out)
     else if (/\.(js|mjs)$/.test(entry.name) && entry.name !== 'client.js') out.push(path)
   }

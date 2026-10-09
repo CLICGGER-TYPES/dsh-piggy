@@ -9,7 +9,7 @@ module.exports = {
   ...base,
   compression: 'maximum',
   // Windows 包不带游戏（2026-10-09 用户定：Gitee Windows 安装包离 100MiB 只剩约 0.5MiB）：只带 game-pin.json，
-  // 第一次启动下载配套的游戏包（lib/first-run.js）。打 Windows 包前先跑 scripts/write-game-pin.mjs，缺这个文件打包会失败。
+  // 第一次启动下载配套的游戏包（first-run.js）。打 Windows 包前先跑 scripts/write-game-pin.mjs，缺这个文件打包会失败。
   // Linux、macOS 还有余量，照旧自带游戏。electron-builder 会把平台里的 extraResources 并到顶层的上面，所以顶层清空、各平台各写各的。
   extraResources: [],
   linux: { ...base.linux, extraResources: [GAME] },

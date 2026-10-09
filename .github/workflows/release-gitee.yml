@@ -8,7 +8,7 @@
 #   - Gitee 发行版附件单个 ≤100MiB：安装包用 electron-builder.gitee.cjs（最大压缩、只留中英文语言包）
 #     + tools/slim-emoji-font.py 瘦 emoji 字体；mac 的 dmg 再用 hdiutil 转成 lzma（ULMO）；超过的不放进上传清单。
 #   - Windows 安装包不带游戏（2026-10-09 起）：先取本次的 gitee-game，写 game-pin.json（版本、校验值、Gitee 下载地址）
-#     放进安装包，第一次启动下载（apps/desktop/lib/first-run.js）。游戏包大到超过 95MiB 时 release-game 自动分卷。
+#     放进安装包，第一次启动下载（apps/desktop/first-run.js）。游戏包大到超过 95MiB 时 release-game 自动分卷。
 name: release-gitee
 
 on:

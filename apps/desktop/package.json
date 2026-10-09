@@ -27,6 +27,7 @@
     "files": [
       "main.js",
       "preload.cjs",
+      "first-run.js",
       "first-run-preload.cjs",
       "lib/**",
       "renderer/**",

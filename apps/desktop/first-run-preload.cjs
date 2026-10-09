@@ -1,4 +1,4 @@
-// 第一次启动下载游戏的小窗口（lib/first-run.js）只用这两个口子。
+// 第一次启动下载游戏的小窗口（first-run.js）只用这两个口子。
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('piggyFirstRun', {

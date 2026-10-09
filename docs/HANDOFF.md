@@ -230,7 +230,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 - **Gitee 的 Windows 安装包不带游戏**（2026-10-09 用户定，外壳 0.6.3 起）：Windows 包离 100MiB 只剩约 0.5MiB，加图就超。
   CI 的 Windows 任务先取本次的 `gitee-game`，用 `apps/desktop/scripts/write-game-pin.mjs` 写 `game-pin.json`（版本、manifest、
   `<Gitee downloadBase>/v<版本>/<文件>`）放进安装包（`electron-builder.gitee.cjs` 里 win 只带它，linux/mac 照旧带 `game/`）。
-  外壳启动时没有能跑的游戏就弹下载窗口（`lib/first-run.js`），装好再开猪；换外壳版本时继续用已下载的游戏（没有自带的可回）。
+  外壳启动时没有能跑的游戏就弹下载窗口（`apps/desktop/first-run.js`），装好再开猪；换外壳版本时继续用已下载的游戏（没有自带的可回）。
   ⚠️ 所以 **Gitee 发行版必须先把游戏包传上去**，不然新装的 Windows 用户第一次打开会 404（`gitee-publish.sh` 本来就先传游戏包）。
 - **游戏包分卷**：`release-game.mjs` 生成的整包超过 95MiB 时自动拆成 `game-<版本>.part-01.gz`…，manifest 里 `parts` 记顺序和校验值，
   minShell 自动抬到 0.6.3；`gitee-publish.sh` 按 `game-*` 一起上传。外壳逐卷下载、逐卷校验、拼起来再校验整包。
