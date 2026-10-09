@@ -214,6 +214,7 @@ export function normalize(raw) {
       bestRarityEmoji: str(obj(trip).bestRarityEmoji, ''),
       affordable: obj(trip).affordable === true,
       available: obj(trip).available === true,
+      locked: str(obj(trip).locked, ''),
     })).filter(trip => trip.key !== ''),
     // 家当: owned and worn, never counted. An old host sends none.
     dress: arr(d.dress).map(entry => ({

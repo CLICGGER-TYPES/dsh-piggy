@@ -965,7 +965,7 @@ test('the souvenir rotation is deterministic, so every keepsake is reachable', (
   assert.equal(collected[trip.souvenirs.length].key, trip.souvenirs[0].key, 'it wraps around')
 })
 
-test('selling a souvenir pays its rarity price and takes it out of the collection', () => {
+test('selling a souvenir pays its price and takes it out of the collection', () => {
   const pig = hatchEgg(T0)
   pig.coins = 5000
   const trip = TRIPS[0]
@@ -975,7 +975,7 @@ test('selling a souvenir pays its rarity price and takes it out of the collectio
   const before = pig.coins
   const sold = sellSouvenir(pig, kept.key, T0)
   assert.equal(sold.ok, true)
-  assert.equal(sold.coins, rarityByKey(kept.rarity).price)
+  assert.equal(sold.coins, trip.souvenirs.find(entry => entry.key === kept.key).price, 'the price on the trip table')
   assert.equal(pig.coins, before + sold.coins)
   assert.equal(pig.souvenirs.length, 0)
   assert.equal(pig.stats.sales, 1)

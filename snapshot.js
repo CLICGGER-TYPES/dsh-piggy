@@ -6,9 +6,9 @@
  * @module dsh-piggy/snapshot
  */
 import { PACKAGE_VERSION } from './environment.js'
-import { achievementsView, disabledParts, extensionsView } from './core.js'
+import { achievementsView, disabledParts, extensionsView, tripUnlocked } from './core.js'
 import { ACTIONS, ACTION_ORDER, bodyWeightView, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
-import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SIGN_IN_CYCLE, SEXES, jobChecklist, jobRequirement, rarityByKey, traitBonus } from './data.js'
+import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SIGN_IN_CYCLE, SEXES, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
 
 /** 版本号只有一个来源：environment.js（它也是导出日志表头的那一份）。 */
 export { PACKAGE_VERSION }
@@ -331,6 +331,8 @@ function tripsFor(state) {
       bestRarityEmoji: best.emoji,
       available: open,
       affordable: state === null ? false : state.coins >= trip.cost,
+      // 有条件的地点没解锁时写出要什么（「当过宇航员」）；解锁了是空串。
+      locked: tripUnlocked(state, trip) ? '' : tripRequirement(trip)?.label ?? '',
     }
   })
 }
@@ -344,7 +346,7 @@ function souvenirsFor(state) {
       key: entry.key,
       emoji: typeof entry.emoji === 'string' && entry.emoji !== '' ? entry.emoji : '🎁',
       label: typeof entry.label === 'string' && entry.label !== '' ? entry.label : entry.key,
-      rarity: tier.key, rarityLabel: tier.label, rarityEmoji: tier.emoji, price: tier.price,
+      rarity: tier.key, rarityLabel: tier.label, rarityEmoji: tier.emoji, price: souvenirPrice(entry),
       story: typeof entry.story === 'string' ? entry.story : '',
       from: typeof entry.from === 'string' ? entry.from : null,
       fromLabel: typeof entry.fromLabel === 'string' ? entry.fromLabel : '',

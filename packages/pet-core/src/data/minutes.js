@@ -7,11 +7,13 @@
 export const MINUTES = Object.freeze({
   quarter: 15,
   half: 30,
+  fortyFive: 45,
   hour: 60,
   ninety: 90,
   twoHours: 120,
   threeHours: 180,
   fourHours: 240,
+  fiveHours: 300,
   sixHours: 360,
   eightHours: 480,
   halfDay: 720,

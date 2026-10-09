@@ -699,6 +699,7 @@
             away: "\u5B83\u5728\u5916\u9762",
             weak: "\u592A\u865A\u5F31\u4E86\uFF0C\u5148\u517B\u597D\u518D\u51FA\u95E8",
             hungry: "\u592A\u997F\u4E86",
+            "trip-locked": "\u8FD9\u91CC\u8981" + str(next.need, "\u6EE1\u8DB3\u6761\u4EF6") + "\u624D\u80FD\u53BB",
             "no-bait": "\u9C7C\u9975\u4E0D\u591F" + (next.need ? "\uFF0C\u672C\u6B21\u9700\u8981 " + num(next.need, 0) + " \u4E2A" : "") + "\uFF0C\u53BB\u5546\u5E97\u7684\u9C7C\u9975\u8D27\u67B6\u4E70",
             escaped: "\u9C7C\u8DD1\u6389\u4E86\uFF0C\u518D\u629B\u4E00\u6B21\u5427",
             "wrong-medicine": "\u836F\u4E0D\u5BF9\u75C7\uFF0C\u75C5\u60C5\u52A0\u91CD\u4E86\u2026",
@@ -2139,7 +2140,8 @@
         bestRarity: str(obj(trip).bestRarity, ""),
         bestRarityEmoji: str(obj(trip).bestRarityEmoji, ""),
         affordable: obj(trip).affordable === true,
-        available: obj(trip).available === true
+        available: obj(trip).available === true,
+        locked: str(obj(trip).locked, "")
       })).filter((trip) => trip.key !== ""),
       // 家当: owned and worn, never counted. An old host sends none.
       dress: arr(d.dress).map((entry) => ({
@@ -5573,11 +5575,13 @@
   var MINUTES = Object.freeze({
     quarter: 15,
     half: 30,
+    fortyFive: 45,
     hour: 60,
     ninety: 90,
     twoHours: 120,
     threeHours: 180,
     fourHours: 240,
+    fiveHours: 300,
     sixHours: 360,
     eightHours: 480,
     halfDay: 720,
@@ -7699,12 +7703,13 @@
         var grow = el("div", "dp-grow");
         grow.appendChild(el("div", null, trip.label));
         grow.appendChild(el("div", "dp-dim", formatMinutes(trip.minutes) + " \xB7 " + trip.cost + " \u{1FA99}" + (trip.bestRarity ? " \xB7 \u53EF\u5E26\u56DE " + trip.bestRarityEmoji + trip.bestRarity : "")));
+        if (trip.locked) grow.appendChild(el("div", "dp-dim", "\u{1F512} " + trip.locked + "\u624D\u80FD\u53BB"));
         row.appendChild(grow);
         var go = button("dp-mini", { "data-trip": trip.key }, function() {
           startOrSwitch(ui, "\u65C5\u884C\uFF08" + trip.label + "\uFF09", "trip", { trip: trip.key });
         });
         go.textContent = "\u51FA\u53D1";
-        go.disabled = !canStart(ui) || !trip.affordable;
+        go.disabled = !canStart(ui) || !trip.affordable || trip.locked !== "";
         row.appendChild(go);
         list.appendChild(row);
       })(ui.view.trips[i]);

@@ -24,7 +24,7 @@ codex 正在重画立绘，**以后的底图（阶段、形态、皮肤、职业
 | 反馈小猪 | `feedback/<名字>.png` | 38 | 透明 PNG 长边 256，≤ 80KB，共 1.7MB | `src/client/feedback-art.js`（按状态选图）；盲盒寻访页 `recruit.png` | 灵感来自 [PigHub](https://pighub.top/)，AI 重新生成，见 [feedback/PROVENANCE.md](../assets/feedback/PROVENANCE.md) |
 | 成就徽章 | `badge-pig-<成就 key>.svg` | 28 | SVG 64×64，≤ 4KB | `data/achievements.js`、`data/extension-achievements.js` 用 `'badge-pig-' + key` 拼 | 在 `piglet.svg` 上改画（含 [@1nuoiscute](https://github.com/1nuoiscute) 的 #6、#7） |
 | 主菜单图标 | `ui-<App>.svg` | 15 | SVG，≤ 1KB | **不再使用**，见下 | — |
-| 字体 | `piggy-emoji.woff2` | 1 | 905KB | 网页版 emoji 字体子集（「设置 → Emoji 样式」） | Noto Color Emoji 子集，SIL OFL 1.1（[THIRD-PARTY](../THIRD-PARTY.md)） |
+| 字体 | `piggy-emoji.woff2` | 1 | 1.0MB | 网页版 emoji 字体子集（「设置 → Emoji 样式」）；加了新 emoji 要重新裁，`test/emoji-coverage.test.js` 守着 | Noto Color Emoji 子集，SIL OFL 1.1（[THIRD-PARTY](../THIRD-PARTY.md)） |
 
 动作后缀：`eat` `bathe` `play` `pet` `relaxed` `work` `study` `trip` `fish`，缺哪个就回退到不带后缀的那张（[皮肤包格式](guides/skin-pack-format.md)）。
 

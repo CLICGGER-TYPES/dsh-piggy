@@ -6,7 +6,7 @@
  * @module dsh-piggy/core/travel
  */
 
-import { rarityByKey, tripByKey } from '../data.js'
+import { SKINS, rarityByKey, souvenirPrice, tripByKey, tripRequirement } from '../data.js'
 import { begin } from './activity.js'
 import { TOO_WEAK_HEALTH } from './constants.js'
 import { remember } from './effects.js'
@@ -28,11 +28,20 @@ export function sellSouvenir(state, souvenirKey, nowMs) {
   if (index < 0) return { ok: false, reason: 'not-owned' }
   const entry = list[index]
   const tier = rarityByKey(entry.rarity)
+  const price = souvenirPrice(entry)
   state.souvenirs = [...list.slice(0, index), ...list.slice(index + 1)]
-  earnCoins(state, tier.price, 'sell.souvenir', nowMs)
+  earnCoins(state, price, 'sell.souvenir', nowMs)
   state.stats.sales = (state.stats.sales ?? 0) + 1
-  remember(state, `把「${entry.label}」卖了 ${tier.price} 金币`, nowMs)
-  return { ok: true, sold: entry.key, coins: tier.price, rarity: tier.key }
+  remember(state, `把「${entry.label}」卖了 ${price} 金币`, nowMs)
+  return { ok: true, sold: entry.key, coins: price, rarity: tier.key }
+}
+
+/** 有条件的地点（太空站要当过宇航员）：干完过那份工作、解锁过它的职业外观就算。 */
+export function tripUnlocked(state, trip) {
+  const job = tripRequirement(trip)?.job
+  if (job === undefined) return true
+  const skin = SKINS.find(entry => 'unlockJob' in entry && entry.unlockJob === job)
+  return skin !== undefined && state?.dex?.skins?.[skin.key] !== undefined
 }
 
 export function startTrip(state, tripKey, nowMs) {
@@ -41,6 +50,7 @@ export function startTrip(state, tripKey, nowMs) {
   if (trip === null) return { ok: false, reason: 'unknown' }
   if (state.dead) return { ok: false, reason: 'dead' }
   if (state.activity !== null) return { ok: false, reason: 'away' }
+  if (!tripUnlocked(state, trip)) return { ok: false, reason: 'trip-locked', need: tripRequirement(trip)?.label }
   if (state.health <= TOO_WEAK_HEALTH) return { ok: false, reason: 'weak' }
   if (state.coins < trip.cost) return { ok: false, reason: 'poor', price: trip.cost }
   if (state.satiety < 15) return { ok: false, reason: 'hungry' }

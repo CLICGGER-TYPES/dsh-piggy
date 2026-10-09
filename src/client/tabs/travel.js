@@ -25,10 +25,11 @@ export function renderTravelTab(ui) {
       grow.appendChild(el('div', null, trip.label))
       grow.appendChild(el('div', 'dp-dim', formatMinutes(trip.minutes) + ' · ' + trip.cost + ' 🪙'
         + (trip.bestRarity ? ' · 可带回 ' + trip.bestRarityEmoji + trip.bestRarity : '')))
+      if (trip.locked) grow.appendChild(el('div', 'dp-dim', '🔒 ' + trip.locked + '才能去'))
       row.appendChild(grow)
       var go = button('dp-mini', { 'data-trip': trip.key }, function () { startOrSwitch(ui, '旅行（' + trip.label + '）', 'trip', { trip: trip.key }) })
       go.textContent = '出发'
-      go.disabled = !canStart(ui) || !trip.affordable
+      go.disabled = !canStart(ui) || !trip.affordable || trip.locked !== ''
       row.appendChild(go)
       list.appendChild(row)
     })(ui.view.trips[i])
