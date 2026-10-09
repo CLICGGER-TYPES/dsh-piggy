@@ -1,14 +1,14 @@
 // @ts-check
 /**
  * 设置：都是这台设备上的显示偏好，不进存档。
- * 每项一行：标题 + 一句说明 + 一排分段按钮（或一个开关）。以前每个选项单独占一行、
+ * 每项一行：标题 + 一句说明 + 对应控件。大小用连续比例，代理用下拉选择。以前每个选项单独占一行、
  * 各带一个「使用」按钮，小猪大小一项就四行，用户反馈「菜单设计不合理」（2026-10-04）。
  */
 import { button, el } from '../dom.js'
 import { autoCollapseEnabled, setAutoCollapse } from '../auto-collapse.js'
 import { desktopShell } from '../desktop-shell.js'
 import { emojiStyle, hasBundledEmoji, setEmojiStyle, applyEmojiStyle } from '../emoji-style.js'
-import { PIG_SIZES, displayedPigSize, pigSize, setPigSize } from '../pig-size.js'
+import { displayedPigSize, pigSize, setPigSize } from '../pig-size.js'
 import { setWalk, walkEnabled } from '../life.js'
 import { exportLogs } from '../log-export.js'
 import { str } from '../values.js'
@@ -56,15 +56,40 @@ export function renderSettingsTab(ui) {
   extensions.head.appendChild(openExtensions)
 
   const size = section(ui, '小猪大小', '普通猪、皮肤和睡姿一起调整；只改这台设备，不改存档')
-  const sizeLabels = { small: '小', standard: '标准', large: '大', extra: '特大' }
-  segmented(size, 'data-pig-size', PIG_SIZES.map(key => ({ key, label: sizeLabels[key] })), pigSize(), function (key) {
-    setPigSize(key)
+  const sizeRow = el('div', 'dp-size-control')
+  const percent = /** @type {HTMLInputElement} */ (el('input', 'dp-size-value'))
+  percent.type = 'number'
+  percent.value = String(Math.round(pigSize() * 100))
+  percent.setAttribute('aria-label', '小猪大小百分比')
+  percent.setAttribute('data-pig-scale', 'true')
+  function applySize(value) {
+    if (!Number.isFinite(value) || value <= 0) { percent.value = String(Math.round(pigSize() * 100)); return }
     const stageSize = ui.view.hatched ? ui.view.pig.stage.size : ui.view.boxStage.size
+    const geometry = desktopShell()?.geometry?.()
+    const area = geometry?.workArea
+    const available = Math.min(area?.width || window.screen?.availWidth || window.innerWidth, area?.height || window.screen?.availHeight || window.innerHeight)
+    const scale = Math.min(value / 100, available / (stageSize * 2))
+    setPigSize(scale)
+    percent.value = String(Math.round(scale * 100))
     ui.host.style.setProperty('--pig-size', displayedPigSize(stageSize) + 'px')
-    ui.renderContent()
     ui.fitPanel()
     desktopShell()?.syncGeometry?.()
-  })
+  }
+  for (const { key, label, delta } of [{ key: 'minus', label: '−', delta: -10 }, { key: 'plus', label: '+', delta: 10 }]) {
+    const control = button('dp-size-step', { 'data-pig-size-step': key, 'aria-label': delta < 0 ? '缩小小猪' : '放大小猪' }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)))
+    control.textContent = label
+    if (delta < 0) sizeRow.appendChild(control)
+    else {
+      const value = el('label', 'dp-size-percent')
+      value.appendChild(percent)
+      value.appendChild(el('span', null, '%'))
+      sizeRow.appendChild(value)
+      sizeRow.appendChild(control)
+    }
+  }
+  percent.addEventListener('change', () => applySize(Number(percent.value)))
+  percent.addEventListener('keydown', event => { if (event.key === 'Enter') { applySize(Number(percent.value)); percent.blur() } })
+  size.box.appendChild(sizeRow)
 
   // 网页版和桌面版都自带了这套 emoji，所以两边都能选（旧外壳没有这个字体，就不显示）。
   if (hasBundledEmoji()) {

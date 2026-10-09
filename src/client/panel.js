@@ -344,7 +344,7 @@ export function createPanel(ctx) {
         if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return
         if (ctx.cardEdit !== null && ctx.tab === 'card') return
         // Replacing a focused input drops the caret (including IME composition).
-        if (ctx.tab === 'settings' && document.activeElement?.getAttribute?.('data-proxy-address') === 'true') return
+        if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true')) return
         if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return
         // The QTE and waiting animation own their DOM until the phase changes.
         // A four-second poll must not restart them or discard keyboard focus.

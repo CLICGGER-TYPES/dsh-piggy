@@ -3,25 +3,26 @@
 import { readStore, writeStore } from './storage.js'
 
 export const PIG_SIZE_KEY = 'dsh-piggy:pig-size'
-export const PIG_SIZES = Object.freeze(['small', 'standard', 'large', 'extra'])
-const SCALE = Object.freeze({ small: .85, standard: 1, large: 1.3, extra: 1.7 })
-const OLD_SIZE_TIER = Object.freeze({ 48: 'small', 56: 'standard', 72: 'large', 96: 'extra' })
+const OLD_SCALE = { small: .85, standard: 1, large: 1.3, extra: 1.7, 48: .85, 56: 1, 72: 1.3, 96: 1.7 }
 
 export function pigSize() {
   const saved = readStore(PIG_SIZE_KEY)
-  if (saved !== null && PIG_SIZES.includes(saved)) return saved
-  const tier = (saved === null ? undefined : OLD_SIZE_TIER[saved]) ?? 'standard'
-  if (saved !== null) writeStore(PIG_SIZE_KEY, tier)
-  return tier
+  if (saved?.startsWith('scale:')) {
+    const value = Number(saved.slice(6))
+    if (Number.isFinite(value) && value > 0) return value
+  }
+  const scale = OLD_SCALE[saved] ?? 1
+  if (saved !== null) setPigSize(scale)
+  return scale
 }
 
 export function setPigSize(value) {
-  writeStore(PIG_SIZE_KEY, PIG_SIZES.includes(value) ? value : 'standard')
+  const scale = Number(value)
+  writeStore(PIG_SIZE_KEY, 'scale:' + (Number.isFinite(scale) && scale > 0 ? scale : 1))
 }
 
-/** Keep the life-stage size intact at the standard setting. */
 export function displayedPigSize(stageSize) {
-  return stageSize * SCALE[pigSize()]
+  return stageSize * pigSize()
 }
 
 /** The desktop settings panel and pet use separate windows and storage events. */

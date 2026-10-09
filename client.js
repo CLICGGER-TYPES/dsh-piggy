@@ -1068,6 +1068,7 @@
     window.__dshPiggyShell = {
       role: "panel",
       proxy: bridge3.proxy,
+      geometry: bridge3.geometry,
       split: true,
       panel: bridge3.panel,
       onStateChanged: bridge3.onStateChanged,
@@ -2577,21 +2578,23 @@
 
   // src/client/pig-size.js
   var PIG_SIZE_KEY = "dsh-piggy:pig-size";
-  var PIG_SIZES = Object.freeze(["small", "standard", "large", "extra"]);
-  var SCALE = Object.freeze({ small: 0.85, standard: 1, large: 1.3, extra: 1.7 });
-  var OLD_SIZE_TIER = Object.freeze({ 48: "small", 56: "standard", 72: "large", 96: "extra" });
+  var OLD_SCALE = { small: 0.85, standard: 1, large: 1.3, extra: 1.7, 48: 0.85, 56: 1, 72: 1.3, 96: 1.7 };
   function pigSize() {
     const saved = readStore(PIG_SIZE_KEY);
-    if (saved !== null && PIG_SIZES.includes(saved)) return saved;
-    const tier = (saved === null ? void 0 : OLD_SIZE_TIER[saved]) ?? "standard";
-    if (saved !== null) writeStore(PIG_SIZE_KEY, tier);
-    return tier;
+    if (saved?.startsWith("scale:")) {
+      const value = Number(saved.slice(6));
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+    const scale = OLD_SCALE[saved] ?? 1;
+    if (saved !== null) setPigSize(scale);
+    return scale;
   }
   function setPigSize(value) {
-    writeStore(PIG_SIZE_KEY, PIG_SIZES.includes(value) ? value : "standard");
+    const scale = Number(value);
+    writeStore(PIG_SIZE_KEY, "scale:" + (Number.isFinite(scale) && scale > 0 ? scale : 1));
   }
   function displayedPigSize(stageSize) {
-    return stageSize * SCALE[pigSize()];
+    return stageSize * pigSize();
   }
   function attachSizePreference(host3, getStage, onChanged) {
     function onStorage(event) {
@@ -3161,6 +3164,29 @@
     "border-color:var(--ac-border-light);box-shadow:none;cursor:not-allowed}",
     ".dp-btn-wide{grid-column:1/-1}",
     ".dp-btn .dp-wait{color:var(--ac-text-2);font-size:10px;font-weight:600}",
+    /* ---------- settings inputs ---------- */
+    ".dp-size-control{display:flex;align-items:center;width:max-content;gap:8px;margin:4px 0 8px}",
+    ".dp-size-step{width:34px;height:34px;border:1px solid var(--ac-border-light);border-radius:10px;",
+    "background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;font-size:20px;cursor:pointer}",
+    ".dp-size-step:hover{border-color:var(--ac-primary);color:var(--ac-primary)}",
+    ".dp-size-percent{display:flex;align-items:center;gap:3px;color:var(--ac-text-muted)}",
+    ".dp-size-value{width:64px;text-align:center;appearance:textfield;border:0;border-bottom:1px solid var(--ac-border-light);",
+    "background:transparent;color:var(--ac-text-body);font:inherit;font-size:15px;padding:5px 0}",
+    ".dp-size-value::-webkit-inner-spin-button,.dp-size-value::-webkit-outer-spin-button{appearance:none;margin:0}",
+    ".dp-size-value:focus{outline:none;border-color:var(--ac-primary)}",
+    ".dp-proxy-form{display:grid;gap:10px;margin:4px 0 12px}",
+    ".dp-setting-field{width:100%;box-sizing:border-box;font:inherit;font-size:11px;color:var(--ac-text-body);",
+    "background:var(--ac-bg-input);border:1px solid var(--ac-border-light);border-radius:9px;padding:8px 10px}",
+    ".dp-setting-field:focus{outline:2px solid var(--ac-primary);outline-offset:1px}",
+    ".dp-proxy-endpoint{display:grid;gap:5px;font-size:10px}",
+    ".dp-proxy-endpoint[hidden]{display:none}",
+    ".dp-proxy-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+    ".dp-proxy-actions .dp-mini{border-radius:8px;box-shadow:none;padding:6px 10px;font-size:10px}",
+    ".dp-proxy-actions .dp-proxy-save{background:var(--ac-primary);border-color:var(--ac-primary);color:#fff}",
+    ".dp-proxy-actions .dp-proxy-clear{margin-left:auto;border-color:transparent;background:transparent;color:var(--ac-text-muted)}",
+    ".dp-proxy-status{font-size:10px;line-height:1.5;margin-top:9px;color:var(--ac-text-muted);overflow-wrap:anywhere}",
+    ".dp-proxy-actions .dp-proxy-test{background:transparent;border-color:var(--ac-border-light);color:var(--ac-text-body)}",
+    ".dp-proxy-error{color:var(--ac-error)}",
     /* ---------- segmented control ---------- */
     ".dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}",
     ".dp-seg button{font:inherit;font-size:10.5px;font-weight:600;color:var(--ac-text-muted);",
@@ -7848,7 +7874,7 @@
   var message = "";
   var failure = false;
   function renderProxySettings(ui, section2, api) {
-    const setting = section2(ui, "\u7F51\u7EDC\u4EE3\u7406", "\u7528\u4E8E\u6E38\u620F\u66F4\u65B0\u3001\u5916\u58F3\u66F4\u65B0\u548C\u5728\u7EBF\u6269\u5C55\uFF1B\u53EA\u6539\u5C0F\u732A\uFF0C\u4E0D\u6539\u7CFB\u7EDF");
+    const setting = section2(ui, "\u7F51\u7EDC\u4EE3\u7406", "\u7528\u4E8E\u66F4\u65B0\u4E0B\u8F7D\u548C\u5728\u7EBF\u6269\u5C55");
     if (preference === null) {
       setting.box.appendChild(el("small", "dp-dim", message || "\u6B63\u5728\u8BFB\u53D6\u4EE3\u7406\u914D\u7F6E\u2026"));
       if (!loading && !message) {
@@ -7868,48 +7894,60 @@
       return;
     }
     if (draft === null) draft = { ...preference };
-    const modes = el("div", "dp-seg");
+    const form = el("div", "dp-proxy-form");
+    const mode = (
+      /** @type {HTMLSelectElement} */
+      el("select", "dp-setting-field")
+    );
+    mode.setAttribute("aria-label", "\u4EE3\u7406\u6A21\u5F0F");
+    mode.setAttribute("data-proxy-mode", "true");
+    for (const [key, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF\u4EE3\u7406"], ["direct", "\u76F4\u8FDE\uFF08\u4E0D\u4F7F\u7528\u4EE3\u7406\uFF09"], ["http", "HTTP \u4EE3\u7406"], ["socks5", "SOCKS5 \u4EE3\u7406"]]) {
+      const option = (
+        /** @type {HTMLOptionElement} */
+        el("option", null, label)
+      );
+      option.value = key;
+      mode.appendChild(option);
+    }
+    mode.value = draft.mode;
+    mode.disabled = busy;
     const endpoint = (
       /** @type {HTMLInputElement} */
-      el("input", "dp-input")
+      el("input", "dp-setting-field")
     );
     endpoint.disabled = busy;
     endpoint.type = "text";
-    endpoint.placeholder = "127.0.0.1:\u7AEF\u53E3";
+    endpoint.placeholder = "\u4F8B\u5982 127.0.0.1:7890";
     endpoint.setAttribute("aria-label", "\u4EE3\u7406\u5730\u5740\u548C\u7AEF\u53E3");
     endpoint.setAttribute("data-proxy-address", "true");
     endpoint.value = draft.address;
     endpoint.addEventListener("input", () => {
       draft.address = endpoint.value;
     });
-    let mode = draft.mode;
-    const picks = [];
-    function choose2(value) {
-      mode = value;
-      draft.mode = value;
-      for (const pick of picks) pick.setAttribute("aria-pressed", String(pick.getAttribute("data-proxy-mode") === mode));
-      endpoint.hidden = mode === "system" || mode === "direct";
+    const address = el("label", "dp-proxy-endpoint");
+    address.appendChild(el("span", "dp-dim", "\u4EE3\u7406\u5730\u5740"));
+    address.appendChild(endpoint);
+    function choose2() {
+      draft.mode = mode.value;
+      address.hidden = mode.value === "system" || mode.value === "direct";
     }
-    for (const [key, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF"], ["direct", "\u76F4\u8FDE"], ["http", "HTTP"], ["socks5", "SOCKS5"]]) {
-      const pick = button("dp-seg-btn", { "data-proxy-mode": key }, () => choose2(key));
-      pick.textContent = label;
-      modes.appendChild(pick);
-      pick.disabled = busy;
-      picks.push(pick);
-    }
-    setting.box.appendChild(modes);
-    setting.box.appendChild(endpoint);
-    choose2(mode);
-    const controls = el("div", "dp-seg");
-    const status = el("div", failure ? "dp-dim dp-proxy-error" : "dp-dim", message);
+    mode.addEventListener("change", choose2);
+    choose2();
+    form.appendChild(mode);
+    form.appendChild(address);
+    setting.box.appendChild(form);
+    const controls = el("div", "dp-proxy-actions");
+    const status = el("div", failure ? "dp-proxy-status dp-proxy-error" : "dp-proxy-status", message);
+    status.hidden = !message;
     status.setAttribute("role", "status");
     const actions = [];
     async function run(action) {
       if (busy) return;
       busy = true;
       for (const control of actions) control.disabled = true;
-      for (const pick of picks) pick.disabled = true;
+      mode.disabled = true;
       endpoint.disabled = true;
+      status.hidden = false;
       status.textContent = "\u5904\u7406\u4E2D\u2026";
       try {
         const result = await action();
@@ -7918,7 +7956,7 @@
           preference = result.preference;
           draft = { ...preference };
         }
-        message = failure ? result?.reason || "\u4EE3\u7406\u64CD\u4F5C\u5931\u8D25" : result.route ? "\u8FDE\u63A5\u6210\u529F \xB7 " + result.route : "\u4EE3\u7406\u914D\u7F6E\u5DF2\u751F\u6548";
+        message = failure ? result?.reason || "\u4EE3\u7406\u64CD\u4F5C\u5931\u8D25" : result.route ? "\u8FDE\u63A5\u6B63\u5E38" : "\u4EE3\u7406\u914D\u7F6E\u5DF2\u751F\u6548";
       } catch (error) {
         failure = true;
         message = error instanceof Error ? error.message : String(error);
@@ -7928,18 +7966,17 @@
       }
     }
     for (const [key, label, action] of [
-      ["save", "\u5E94\u7528", () => api.set({ mode, address: endpoint.value })],
-      ["test", "\u6D4B\u8BD5\u5DF2\u5E94\u7528\u914D\u7F6E", () => api.test()],
-      ["clear", "\u6E05\u9664\u914D\u7F6E", () => api.clear()]
+      ["save", "\u5E94\u7528", () => api.set({ mode: mode.value, address: endpoint.value })],
+      ["test", "\u6D4B\u8BD5\u8FDE\u63A5", () => api.test()],
+      ["clear", "\u6062\u590D\u7CFB\u7EDF", () => api.clear()]
     ]) {
-      const control = button("dp-mini", { "data-proxy-action": key }, () => run(action));
+      const control = button("dp-mini dp-proxy-" + key, { "data-proxy-action": key }, () => run(action));
       control.textContent = label;
       control.disabled = busy;
       actions.push(control);
       controls.appendChild(control);
     }
     setting.box.appendChild(controls);
-    setting.box.appendChild(el("div", "dp-dim", "\u6E05\u9664\u540E\u6062\u590D\u8DDF\u968F\u7CFB\u7EDF\uFF1B\u76F4\u8FDE\u53EF\u5FFD\u7565\u7CFB\u7EDF\u4EE3\u7406"));
     setting.box.appendChild(status);
   }
 
@@ -7984,15 +8021,51 @@
     if (extFresh) openExtensions.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
     extensions.head.appendChild(openExtensions);
     const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
-    const sizeLabels = { small: "\u5C0F", standard: "\u6807\u51C6", large: "\u5927", extra: "\u7279\u5927" };
-    segmented(size, "data-pig-size", PIG_SIZES.map((key) => ({ key, label: sizeLabels[key] })), pigSize(), function(key) {
-      setPigSize(key);
+    const sizeRow = el("div", "dp-size-control");
+    const percent = (
+      /** @type {HTMLInputElement} */
+      el("input", "dp-size-value")
+    );
+    percent.type = "number";
+    percent.value = String(Math.round(pigSize() * 100));
+    percent.setAttribute("aria-label", "\u5C0F\u732A\u5927\u5C0F\u767E\u5206\u6BD4");
+    percent.setAttribute("data-pig-scale", "true");
+    function applySize(value) {
+      if (!Number.isFinite(value) || value <= 0) {
+        percent.value = String(Math.round(pigSize() * 100));
+        return;
+      }
       const stageSize = ui.view.hatched ? ui.view.pig.stage.size : ui.view.boxStage.size;
+      const geometry2 = desktopShell()?.geometry?.();
+      const area = geometry2?.workArea;
+      const available = Math.min(area?.width || window.screen?.availWidth || window.innerWidth, area?.height || window.screen?.availHeight || window.innerHeight);
+      const scale = Math.min(value / 100, available / (stageSize * 2));
+      setPigSize(scale);
+      percent.value = String(Math.round(scale * 100));
       ui.host.style.setProperty("--pig-size", displayedPigSize(stageSize) + "px");
-      ui.renderContent();
       ui.fitPanel();
       desktopShell()?.syncGeometry?.();
+    }
+    for (const { key, label, delta } of [{ key: "minus", label: "\u2212", delta: -10 }, { key: "plus", label: "+", delta: 10 }]) {
+      const control = button("dp-size-step", { "data-pig-size-step": key, "aria-label": delta < 0 ? "\u7F29\u5C0F\u5C0F\u732A" : "\u653E\u5927\u5C0F\u732A" }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)));
+      control.textContent = label;
+      if (delta < 0) sizeRow.appendChild(control);
+      else {
+        const value = el("label", "dp-size-percent");
+        value.appendChild(percent);
+        value.appendChild(el("span", null, "%"));
+        sizeRow.appendChild(value);
+        sizeRow.appendChild(control);
+      }
+    }
+    percent.addEventListener("change", () => applySize(Number(percent.value)));
+    percent.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        applySize(Number(percent.value));
+        percent.blur();
+      }
     });
+    size.box.appendChild(sizeRow);
     if (hasBundledEmoji()) {
       const emoji = section(ui, "Emoji \u6837\u5F0F", "\u5185\u7F6E\u662F\u968F\u6E38\u620F\u9644\u5E26\u7684\u4E00\u6574\u5957 Noto \u5F69\u8272 emoji\uFF0C\u5404\u7CFB\u7EDF\u770B\u8D77\u6765\u4E00\u6837");
       segmented(emoji, "data-emoji-style", [
@@ -8461,7 +8534,7 @@
       processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return;
       if (ctx.cardEdit !== null && ctx.tab === "card") return;
-      if (ctx.tab === "settings" && document.activeElement?.getAttribute?.("data-proxy-address") === "true") return;
+      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
       var currentFishing = ctx.view.fishing.pending;
       if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return;
