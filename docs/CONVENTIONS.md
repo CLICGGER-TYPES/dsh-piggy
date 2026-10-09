@@ -6,7 +6,7 @@
 
 | 通用规范 | 本项目 | 为什么 |
 |---|---|---|
-| 文件 ≤ 约 400 行 | 源码、外壳模块（`apps/desktop/lib/`）、在线扩展都遵守；**豁免**：构建产物 `client.js`、外壳主进程 `apps/desktop/main.js`（约 1000 行，待拆，见 HANDOFF） | `client.js` 是 esbuild 产物；`main.js` 里窗口、拖动、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
+| 文件 ≤ 约 400 行 | 源码、外壳模块（`apps/desktop/lib/`）、扩展 client.js 都遵守；扩展 `extensions/*/server.js` 单独允许 ≤600 行，因扩展是单文件下载的，不能拆模块；**豁免**：构建产物 `client.js`、外壳主进程 `apps/desktop/main.js`（约 1000 行，待拆，见 HANDOFF） | `client.js` 是 esbuild 产物；`main.js` 里窗口、拖动、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
 | 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留**；在线扩展注释里的 ★（星级）保留 | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
 | 不引入构建步骤 | **允许**，且只用于客户端插件 | DSH 的客户端插件按 classic `<script src>` 加载，不打包就没法拆文件 |
 
@@ -36,7 +36,7 @@
 - 改存档结构：`core/upgrades.js` 表尾加一级 + `STATE_VERSION` +1 + 迁移测试。
 - 数值集中在 `data/`，不许在逻辑里写裸数字。
 - **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
-- 文件超过 400 行、或开始承担第二种职责，就拆。
+- 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 server.js 无法拆模块，允许 600 行，不能靠压行或删注释满足上限。
 
 ## 命名
 

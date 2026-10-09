@@ -9,6 +9,7 @@ import { chance, pickOne, rollerFor } from './random.js'
 import { reduceFishingWeight } from './weight.js'
 import { say } from './lines.js'
 import { earnCoins, exert, spendCoins } from './economy.js'
+import { automationView, beginAutoFishing, cleanAutomation, finishAutomation } from './fishing-auto.js'
 
 /** 稀有度权重（钓鱼 2.0 调过：稀有、传说是偶尔的惊喜，见 docs/numbers/J1-economy.md 第 4 节）。 */
 export const FISH_WEIGHT = { common: 60, uncommon: 14, rare: 2.5, legend: 0.2 }
@@ -44,6 +45,7 @@ export function ensureFishing(state) {
     rod: RODS.some(rod => rod.level === raw.rod) ? raw.rod : 2,
     spots: ['river', ...(Array.isArray(raw.spots) ? raw.spots : []).filter(key => key !== 'river' && fishSpotByKey(key) !== null)],
     spot: 'river',
+    automation: cleanAutomation(raw.automation, cleanCatch),
   }
   clean.spots = [...new Set(clean.spots)]
   clean.spot = clean.spots.includes(raw.spot) ? raw.spot : 'river'
@@ -64,7 +66,7 @@ export function spotOpen(spotKey, nowMs) {
 }
 
 /** 这个钓点、这个时段能钓到的鱼，按稀有度、抛竿力度、鱼饵、鱼竿配权重；没有鱼返回 null。 */
-function weightedFish(nowMs, power, next, baitBoost = 0, spotKey = 'river', rodRare = 1) {
+export function weightedFish(nowMs, power, next, baitBoost = 0, spotKey = 'river', rodRare = 1) {
   const entries = FISH.filter(fish => fish.spot === spotKey && fish.times.includes(fishingPeriod(nowMs))).map(fish => ({
     fish,
     weight: FISH_WEIGHT[fish.rarity] * (fish.rarity === 'legend' ? 1 + power * 2 : fish.rarity === 'rare' ? 1 + power : fish.rarity === 'uncommon' ? 1 + power * 0.5 : 1)
@@ -77,7 +79,7 @@ function weightedFish(nowMs, power, next, baitBoost = 0, spotKey = 'river', rodR
   return entries[entries.length - 1].fish
 }
 
-function makeCatch(state, fish, nowMs, next) {
+export function makeCatch(state, fish, nowMs, next) {
   const fishing = ensureFishing(state)
   fishing.seq += 1
   const ratio = next()
@@ -147,7 +149,7 @@ export function resolveFishing(state, success, nowMs) {
   return { ok: true, caught: true, pending }
 }
 
-function recordFish(state, caught, nowMs) {
+export function recordFish(state, caught, nowMs) {
   const dex = ensureDex(state, nowMs)
   const before = dex.fish[caught.key]
   dex.fish[caught.key] = { firstAt: before?.firstAt ?? nowMs, count: (before?.count ?? 0) + 1, maxSizeCm: Math.max(before?.maxSizeCm ?? 0, caught.sizeCm) }
@@ -213,6 +215,7 @@ function resetAutoDay(fishing, nowMs) {
 export function startAutoFishing(state, minutes, nowMs, baitKey) {
   const fishing = ensureFishing(state)
   resetAutoDay(fishing, nowMs)
+  if ([120, 240].includes(minutes)) return beginAutoFishing(state, minutes, nowMs, baitKey)
   if (![30, 60].includes(minutes)) return { ok: false, reason: 'minutes' }
   if (!spotOpen(fishing.spot, nowMs)) return { ok: false, reason: 'closed' }
   // rc.1 反馈：自动钓鱼不限每天次数，只看鱼饵够不够（autoTrips 仍记今天去了几次）。
@@ -229,6 +232,7 @@ export function startAutoFishing(state, minutes, nowMs, baitKey) {
 }
 
 export function finishAutoFishing(state, activity, nowMs, next = rollerFor(state)) {
+  if (activity.auto?.version === 1) return finishAutomation(state, activity, nowMs)
   const attempts = Math.max(1, Math.floor((activity.endsAt - activity.startedAt) / 180_000))
   let count = 0
   const bait = itemByKey(activity.baitKey)
@@ -261,6 +265,7 @@ export function fishingView(state, nowMs) {
   const rod = rodByLevel(fishing.rod)
   const next = RODS.find(entry => entry.level === fishing.rod + 1) ?? null
   return {
+    automation: automationView(state),
     pending: fishing.pending === null ? null : enrich(fishing.pending), bag: fishing.bag.map(enrich), period: fishingPeriod(nowMs), autoTrips: fishing.autoTrips, autoLeft: null,
     rod: { level: rod.level, key: rod.key, label: rod.label, emoji: rod.emoji },
     nextRod: next === null ? null : { level: next.level, key: next.key, label: next.label, emoji: next.emoji, price: next.price },

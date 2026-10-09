@@ -234,7 +234,7 @@ test('缺字段的存档在 view 和动作中自动补齐；view 不改存档', 
   assert.equal(first.cells.length, 48)
   assert.equal(first.pickaxe.label, '木镐')
   assert.equal(first.shelf.currency.label, '矿石币')
-  assert.deepEqual(first.shelf.items.map(item => item.key), ['pickaxe', 'bomb'])
+  assert.deepEqual(first.shelf.items.map(item => item.key), ['helper-hire', 'pickaxe', 'bomb'])
   assert.equal(mine.actions.dig(empty, { cell: 6 }, t.api).ok, true)
   assert.equal(mine.actions.surface(empty, {}, t.api).ok, true)
   assert.equal(mine.actions.sell(empty, {}, t.api).reason, 'empty')
@@ -288,6 +288,19 @@ function renderMine(view) {
   }
   return { find, sent, shops: () => shop, body: dom.body }
 }
+
+test('矿车空仓停工显示休息和接着干，不写仓满', () => {
+  const t = fake()
+  const data = mine.init()
+  mine.actions.hire(data, {}, t.api)
+  data.helper.usedMs = 21600000
+  const ui = renderMine(mine.view(data, t.api))
+  assert.match(ui.body.allText(), /矿工歇了/)
+  assert.doesNotMatch(ui.body.allText(), /仓满/)
+  assert.equal(ui.find('data-mine-helper', 'collect').textContent, '接着干')
+  assert.equal(mine.actions.collect(data, {}, t.api).ok, true)
+  assert.equal(data.helper.usedMs, 0)
+})
 
 test('界面：点能挖的格子就敲；缺镐时写清楚要哪把并能去商店；矿石袋写出全卖多少', () => {
   const t = fake()

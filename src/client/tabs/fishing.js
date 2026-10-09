@@ -33,6 +33,7 @@ export function renderFishingTab(ui) {
   stopFight()
   stopWait()
   const pending = ui.view.fishing.pending
+  renderAutoStock(ui)
   if (pending?.phase !== 'hooked') resetFightResolve()
   if (ui.view.activity?.kind === 'fishing') { stopFight(true); return renderAway(ui) }
   renderSwitchAsk(ui)
@@ -111,29 +112,53 @@ function renderReady(ui) {
 
 /** 自动钓鱼收在下面：点不了的时候写清楚为什么。 */
 function renderAuto(ui) {
+  const automation = ui.view.fishing.automation
   const auto = el('details', 'dp-fish-auto')
   // 面板每几秒重画一次：记住展开过，不然一刷新就自己缩回去（rc.1 反馈）。
   if (autoOpen) auto.setAttribute('open', '')
   auto.addEventListener('toggle', function () { autoOpen = auto.open === true })
   auto.appendChild(el('summary', null, '🐷 让猪自己去钓'))
-  auto.appendChild(el('span', null, '猪出门 30 / 60 分钟，每 3 分钟用 1 个选中的鱼饵，钓到的放进鱼篓。'))
   const row = el('div', 'dp-fish-auto-row')
   const reasons = []
-  for (const minutes of [30, 60]) {
-    const need = minutes / 3
+  const choices = automation?.choices ?? [30, 60].map(minutes => ({ minutes, attempts: minutes / 3 }))
+  for (const { minutes, attempts, legacy = minutes <= 60 } of choices) {
+    const boxed = !legacy && automation?.baitLimit > 0
+    const need = boxed ? 1 : attempts
     const have = ui.view.inventory[selectedBait] ?? 0
     const go = button('dp-mini', { 'data-fish-auto': String(minutes) }, function () { startOrSwitch(ui, '自动钓鱼 ' + minutes + ' 分钟', 'fishAuto', { minutes, bait: selectedBait }) })
-    go.textContent = `${minutes} 分钟（鱼饵 ${need} 个）`
-    go.disabled = !canStart(ui) || have < need
+    go.textContent = `${minutes} 分钟` + (boxed ? '（自动补饵）' : `（鱼饵 ${need} 个）`)
+    const closed = ui.view.fishing.spots?.find(spot => spot.key === ui.view.fishing.spot)?.open === false
+    go.disabled = !canStart(ui) || have < need || (!legacy && automation?.full === true) || closed
     if (go.disabled && minutes === 30) {
       if (!canStart(ui)) reasons.push('猪现在不能出门')
+      else if (!legacy && automation?.full) reasons.push(automation.stored > 0 ? '鱼篓满了，先收一下' : '钓鱼歇了，先接着干')
+      else if (closed) reasons.push('这个钓点现在没有开')
       else reasons.push('鱼饵只剩 ' + have + ' 个，不够 ' + need + ' 个')
     }
     row.appendChild(go)
   }
   auto.appendChild(row)
+  for (const upgrade of automation?.upgrades ?? []) {
+    const buy = button('dp-mini', { 'data-fish-upgrade': upgrade.kind }, () => ui.send('fishAutomation', { kind: upgrade.kind }))
+    buy.textContent = upgrade.label + ' 🪙 ' + upgrade.price
+    buy.disabled = (ui.view.pig?.coins ?? 0) < upgrade.price
+    auto.appendChild(buy)
+  }
   if (reasons.length > 0) auto.appendChild(el('span', 'dp-fish-why', '点不了：' + reasons[0] + '。'))
   ui.content.appendChild(auto)
+}
+
+/** 自动仓与背包分开，行程中也能收；旧背包不受仓容量限制。 */
+function renderAutoStock(ui) {
+  const automation = ui.view.fishing.automation
+  if (!automation || (!automation.unlocked && automation.stored === 0 && automation.usedHours === 0)) return
+  const row = el('div', 'dp-fish-rodrow')
+  row.appendChild(el('span', null, '🧺 ' + (automation.full ? automation.stored > 0 ? '鱼篓满了' : '钓鱼歇了' : '鱼篓') + ' ' + automation.usedHours.toFixed(1) + '/6时'))
+  const collect = button('dp-mini', { 'data-fish-collect': 'true' }, () => ui.send('fishCollect'))
+  collect.textContent = automation.stored > 0 ? '收一下' : automation.full ? '接着干' : '暂无收成'
+  collect.disabled = automation.stored === 0 && !automation.full
+  row.appendChild(collect)
+  ui.content.appendChild(row)
 }
 
 function renderWaiting(ui, pending) {

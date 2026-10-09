@@ -8,6 +8,52 @@ const bait = { key: 'bait_worm', kind: 'bait', label: '蚯蚓鱼饵', emoji: '�
 const status = extra => ({ ...SNAPSHOT, fishing: { ...fishing, ...extra }, canGoOut: true,
   shop: [...SNAPSHOT.shop, bait], inventory: { ...SNAPSHOT.inventory, bait_worm: 20 } })
 
+test('K1 自动仓收取、升级和长时出发走宿主动作，鱼饵盒允许少量鱼饵', async () => {
+  const automation = { stored: 3, capacity: 48, full: false, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 6 }, { minutes: 240, attempts: 53 }],
+    upgrades: [{ kind: 'duration', label: '四小时自动钓', price: 5000 }] }
+  const { dom, calls } = await mount({ status: { ...status({ automation }), pig: { ...SNAPSHOT.pig, coins: 6000 },
+    inventory: { ...SNAPSHOT.inventory, bait_worm: 2 } } })
+  openPanel(dom, 'fishing')
+  assert.doesNotMatch(contentOf(dom).allText(), /每 4\.5 分钟一竿/)
+  findByAttr(contentOf(dom), 'data-fish-collect', 'true').fire('click')
+  await settle()
+  assert.equal(JSON.parse(calls.at(-1).body).action, 'fishCollect')
+  findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration').fire('click')
+  await settle()
+  assert.deepEqual(JSON.parse(calls.at(-1).body), { action: 'fishAutomation', kind: 'duration' })
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '240')
+  assert.equal(go.disabled, false)
+  go.fire('click')
+  await settle()
+  assert.deepEqual(JSON.parse(calls.at(-1).body), { action: 'fishAuto', minutes: 240, bait: 'bait_worm' })
+})
+
+test('未开长时自动钓不显示新鱼篓，短行程仍按原饵数出发', async () => {
+  const automation = { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [] }
+  const { dom } = await mount({ status: status({ automation }) })
+  openPanel(dom, 'fishing')
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-collect', 'true'), undefined)
+  assert.match(findByAttr(contentOf(dom), 'data-fish-auto', '30').textContent, /鱼饵 10 个/)
+  assert.match(findByAttr(contentOf(dom), 'data-fish-auto', '60').textContent, /鱼饵 20 个/)
+})
+
+test('新鱼篓空仓停工不写满，接着干仍走收取动作', async () => {
+  const automation = { unlocked: true, stored: 0, usedHours: 6, full: true, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 120, attempts: 26 }], upgrades: [] }
+  const { dom, calls } = await mount({ status: status({ automation }) })
+  openPanel(dom, 'fishing')
+  assert.match(contentOf(dom).allText(), /钓鱼歇了/)
+  assert.doesNotMatch(contentOf(dom).allText(), /鱼篓满了/)
+  const resume = findByAttr(contentOf(dom), 'data-fish-collect', 'true')
+  assert.equal(resume.textContent, '接着干')
+  assert.equal(resume.disabled, false)
+  resume.fire('click')
+  await settle()
+  assert.equal(JSON.parse(calls.at(-1).body).action, 'fishCollect')
+})
+
 test('C5 home has a one-click cast and keeps both auto choices', async () => {
   const { dom, calls } = await mount({ status: status() })
   openPanel(dom)

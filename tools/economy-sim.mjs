@@ -4,14 +4,15 @@
  *
  * 假设：每 2 秒操作一次（ACTIONS_PER_HOUR = 1800）；吃饭按面包算（饱食 32 点 10 金币）；扩展币按汇率折金币。
  * 用法：node tools/economy-sim.mjs        打印各玩法、各工具档的时薪
- *      test/economy-bands.test.js 用同一套函数检查区间。
+ *      test/automation-economy.test.js 检查 J2 实施基准；帮工速度直接引用玩法常量。
  */
 import { fileURLToPath } from 'node:url'
 
-import mine, { CHECKPOINTS, FLOORS, ORES, generateMap, hitsNeeded, pickaxeFor } from '../extensions/mine/server.js'
-import { CROPS } from '../extensions/farm/server.js'
+import mine, { CHECKPOINTS, FLOORS, HELPER_RATES, HELPER_SPEEDS, ORES, generateMap, hitsNeeded, pickaxeFor } from '../extensions/mine/server.js'
+import { CROPS, HELPER_PLOTS, helperRecipe } from '../extensions/farm/server.js'
 import { FISH, RODS, SHOP } from '../data.js'
 import { FISH_WEIGHT } from '../packages/pet-core/src/core/fishing.js'
+import { AUTO_FISH_INTERVAL, AUTO_FISH_GEAR, AUTO_FISH_SUCCESS_FACTOR } from '../packages/pet-core/src/data/fishing-auto.js'
 
 export const ACTIONS_PER_HOUR = 1800
 /** 一点饱食值多少金币（面包：32 点 10 金币）。 */
@@ -85,6 +86,99 @@ export function farmPlotPerHour(key) {
 /** 一块地一季要操作几次（种 1 + 浇 3 + 收 1），用来估「人一直点」时能照看几块地。 */
 export const FARM_ACTIONS_PER_SEASON = 5
 
+/** J2 当前基准：矿工每小时产矿数，镐沿用玩家已有的等级。 */
+export const MINE_HELPER_RATES = HELPER_RATES
+/** J2 当前基准：帮工普通矿的稀有度权重；不抽手动的宝藏格。 */
+export const MINE_HELPER_WEIGHT_POWER = 2
+/** J2 当前基准：管地升级同时减少帮工收、补种的等待；肥料不缩短这个间隔。 */
+export const AUTOMATION_HOURS = 6
+/** J2 当前基准：每 4.5 分钟一竿，避免夜间湖泊超过挂机线。 */
+export const AUTO_FISH_SECONDS = AUTO_FISH_INTERVAL / 1000
+
+/**
+ * 矿工：在电梯站对应的五层间轮流挖普通矿；按各层矿池求均值，不给连挖、宝箱和化石。
+ * @param {{pickaxe: number, floor: number, cart?: number}} options
+ */
+export function mineHelperPerHour({ pickaxe, floor, cart = 0 }) {
+  const oresPerHour = MINE_HELPER_RATES[pickaxe - 1] * HELPER_SPEEDS[cart]
+  if (!oresPerHour || !CHECKPOINTS.includes(floor) || pickaxeFor(floor) > pickaxe) return null
+  const values = Array.from({ length: 5 }, (_, index) => {
+    const depth = floor + index
+    const pool = ORES.filter(ore => ore.unlock <= depth)
+    const weights = pool.map(ore => ore.price ** -MINE_HELPER_WEIGHT_POWER * (pickaxe >= 4 && depth >= 11 && ore.price >= 200 ? 1.6 : 1))
+    return pool.reduce((sum, ore, index) => sum + ore.price * weights[index], 0) / weights.reduce((sum, weight) => sum + weight, 0)
+  })
+  const meanPrice = values.reduce((sum, value) => sum + value, 0) / values.length
+  return { oresPerHour, meanPrice, net: oresPerHour * meanPrice, fullHours: AUTOMATION_HOURS }
+}
+
+/**
+ * 菜园帮工：扣种子；不施肥、不扣猪饱食；实物收成按帮工小批次处理，手动作物不改。
+ * 扣每批种子，六小时内安排整数批自动收成。
+ * @param {{cropKey: string, plots: number, efficiency?: number}} options
+ */
+export function farmHelperPerHour({ cropKey, plots, efficiency = 0 }) {
+  const level = HELPER_PLOTS.indexOf(plots)
+  if (level < 0) return null
+  const recipe = helperRecipe(cropKey, level, efficiency)
+  if (!recipe) return null
+  return { ...recipe, cycleHours: recipe.intervalMs / 3600000, fullHours: AUTOMATION_HOURS, storedItems: recipe.batches * recipe.yield }
+}
+
+/**
+ * 自动钓鱼：复用现有 0.45 力度、稀有权重及自动成功率；失败竿也扣鱼饵。
+ * 时薪按固定时段计算，均值只平均钓点开着的时段；新仓固定六小时，旧短行程单列。
+ * @param {{rodLevel: number, spot: string, baitKey?: string, period?: string, basket?: number, legacy?: boolean}} options
+ */
+export function autoFishingPerHour({ rodLevel, spot, baitKey = 'bait_worm', period, basket = 2, legacy = false }) {
+  const rod = RODS.find(entry => entry.level === rodLevel)
+  const bait = SHOP.find(item => item.key === baitKey && item.kind === 'bait')
+  if (!rod || !bait) return null
+  const periods = period ? [period] : ['early', 'noon', 'evening', 'night'].filter(value => FISH.some(fish => fish.spot === spot && fish.times.includes(value)))
+  if (periods.length === 0) return null
+  const seconds = legacy ? 180 : AUTO_FISH_SECONDS
+  const successFactor = legacy ? 1 : AUTO_FISH_SUCCESS_FACTOR * AUTO_FISH_GEAR.basket[basket].value
+  const rates = periods.map(value => {
+    const pool = FISH.filter(fish => fish.spot === spot && fish.times.includes(value))
+    if (pool.length === 0) return { net: 0, catches: 0 }
+    const boost = bait.rarityBoost ?? 0
+    const weights = pool.map(fish => FISH_WEIGHT[fish.rarity] * (fish.rarity === 'legend' ? 1.9 * (1 + boost * 3) * rod.rare : fish.rarity === 'rare' ? 1.45 * (1 + boost * 2) * rod.rare : fish.rarity === 'uncommon' ? 1.225 * (1 + boost) : 1))
+    const sum = weights.reduce((total, weight) => total + weight, 0)
+    let earned = 0, catches = 0
+    for (const [index, fish] of pool.entries()) {
+      const probability = weights[index] / sum * Math.max(0.2, 0.95 - fish.difficulty * rod.difficulty * 0.0075) * successFactor
+      // makeCatch 的售价先四舍五入；对 [0.7, 1.3] 连续均匀大小，整数基准价的期望仍是 fish.price。
+      earned += probability * fish.price
+      catches += probability
+    }
+    return { net: (earned - bait.price) * 3600 / seconds, catches: catches * 3600 / seconds }
+  })
+  const net = rates.reduce((sum, rate) => sum + rate.net, 0) / rates.length
+  const catchesPerHour = rates.reduce((sum, rate) => sum + rate.catches, 0) / rates.length
+  return { net, catchesPerHour, attemptsPerHour: 3600 / seconds, fullHours: legacy ? Infinity : AUTOMATION_HOURS }
+}
+
+/** 打印 J2 的核算表；仓恒定六小时，效率工具提高速度；旧短行程单列。 */
+function printAutomation() {
+  console.log('J2 当前基准：已用于玩法；扩展币汇率均为 1；不含一次性工具购置费')
+  for (let pickaxe = 1; pickaxe <= 5; pickaxe += 1) {
+    console.log('矿工', pickaxe, CHECKPOINTS.filter(floor => pickaxeFor(floor) <= pickaxe).map(floor => {
+      const rate = mineHelperPerHour({ pickaxe, floor })
+      return `${floor}层 ${rate.net.toFixed(2)}/时 ${rate.oresPerHour}块/时 六小时仓${rate.fullHours.toFixed(2)}时`
+    }).join(' · '))
+  }
+  for (const crop of CROPS) {
+    console.log('帮工', crop.label, [2, 4, 8].map(plots => {
+      const rate = farmHelperPerHour({ cropKey: crop.key, plots })
+      return `${plots}地 ${rate.net.toFixed(2)}/时 ${rate.itemsPerHour.toFixed(2)}件/时 六小时仓${rate.fullHours.toFixed(2)}时`
+    }).join(' · '))
+  }
+  for (const rod of RODS) {
+    console.log('自动钓', rod.label, ['river', 'lake', 'sea', 'night'].map(spot =>
+      spot + ' ' + ['bait_worm', 'bait_shrimp', 'bait_glow'].map(baitKey => autoFishingPerHour({ rodLevel: rod.level, spot, baitKey }).net.toFixed(2)).join('/')).join(' · '))
+  }
+  console.log('自动钓：传说竿、湖、鲜虾、夜间', autoFishingPerHour({ rodLevel: 4, spot: 'lake', baitKey: 'bait_shrimp', period: 'night' }))
+}
 
 /** 玩家搏斗的成功率：按（鱼的难度 × 鱼竿的难度乘数）估。 */
 export const fightSuccess = difficulty => Math.max(0.3, Math.min(0.95, 0.95 - difficulty / 110))
@@ -137,4 +231,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log('菜园（单块地理论时薪）')
   console.log(' ', CROPS.map(crop => `${crop.label} ${farmPlotPerHour(crop.key).toFixed(0)}`).join(' · '))
   console.log('矿价', ORES.map(ore => ore.label + ore.price).join(' '), '· hits(木)', ['soil', 'rock', 'hard', 'ore'].map(kind => kind + hitsNeeded(kind, 1)).join(' '))
+  printAutomation()
 }

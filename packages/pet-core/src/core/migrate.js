@@ -22,6 +22,7 @@ import { applyUpgrades } from './upgrades.js'
 import { ensureDex } from './dex.js'
 import { ensureBodyWeight } from './weight.js'
 import { ensureFishing } from './fishing.js'
+import { cleanAutoTrip } from './fishing-auto.js'
 import { ensureSkins } from './skins.js'
 import { ensureEconomy } from './economy.js'
 import { ensureWallets } from './wallets.js'
@@ -231,7 +232,7 @@ export function sanitizeActivity(raw) {
       : kind === 'interest'
         ? interestByKey(source.key) !== null
         : kind === 'fishing'
-          ? ['auto-30', 'auto-60'].includes(source.key)
+          ? ['auto-30', 'auto-60', 'auto-120', 'auto-240'].includes(source.key)
           : tripByKey(source.key) !== null
   if (!known) return null
   return {
@@ -244,7 +245,8 @@ export function sanitizeActivity(raw) {
     endsAt: source.endsAt,
     cost: Number(source.cost) || 0,
     ...(kind === 'fishing' && itemByKey(source.baitKey)?.kind === 'bait'
-      ? { baitKey: source.baitKey, baitCount: Math.max(0, Math.min(20, Math.floor(Number(source.baitCount) || 0))) } : {}),
+      ? { baitKey: source.baitKey, baitCount: Math.max(0, Math.min(source.auto?.version === 1 ? 64 : 20, Math.floor(Number(source.baitCount) || 0))) } : {}),
+    ...(kind === 'fishing' && source.auto?.version === 1 ? { auto: cleanAutoTrip(source.auto, source) } : {}),
     ...(Number.isFinite(source.legacyCoins) ? { legacyCoins: source.legacyCoins, minutes: Number(source.minutes) || 0 } : {}),
     // 短班：只拿这一班的几分之几（0～1）。
     ...(kind === 'work' && Number.isFinite(source.share) && source.share > 0 && source.share < 1 ? { share: source.share } : {}),

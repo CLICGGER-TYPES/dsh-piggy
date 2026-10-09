@@ -82,9 +82,9 @@ function randomFor(floor, run) {
 }
 
 /** 选一种矿：越值钱越少见；钻石镐以上在 11 层以下宝石类多六成。 */
-function pickOre(floor, random, pickaxe) {
+function pickOre(floor, random, pickaxe, power = 1.35) {
   const pool = ORES.filter(ore => ore.unlock <= floor)
-  const weights = pool.map(ore => (1 / ore.price ** 1.35) * (pickaxe >= 4 && floor >= 11 && ore.price >= 200 ? 1.6 : 1))
+  const weights = pool.map(ore => (1 / ore.price ** power) * (pickaxe >= 4 && floor >= 11 && ore.price >= 200 ? 1.6 : 1))
   let roll = random() * weights.reduce((a, b) => a + b, 0)
   for (let i = 0; i < pool.length; i++) { roll -= weights[i]; if (roll < 0) return pool[i] }
   return pool[pool.length - 1]
@@ -175,6 +175,7 @@ export function normalize(data) {
     data.oreCount = ORES.reduce((sum, ore) => Math.min(Number.MAX_SAFE_INTEGER, sum + count(data.bag[ore.key])), 0)
   }
   data.deepest = Math.max(data.layer, Number.isInteger(data.deepest) && data.deepest <= FLOORS ? data.deepest : 1)
+  normalizeHelper(data)
   return data
 }
 
@@ -244,7 +245,7 @@ function reportProgress(data, api) {
   for (const { name, ...payload } of progress(data)) api.emit(name, payload)
 }
 
-export default {
+const game = {
   eventVersion: 1,
   progress,
   init() { return normalize({ v: 2, layer: 1, maps: {}, pickaxe: 1, bag: {}, found: {}, last: null, run: 0, bombs: 0 }) },
@@ -332,6 +333,7 @@ export default {
     buy(data, payload, api) {
       normalize(data)
       const wallet = purse(api)
+      if (String(payload?.item).startsWith('helper-')) return helperBuy(data, payload, api)
       if (payload?.item === BOMB.key) {
         if (!wallet.spend(BOMB.price, 'bomb')) return { ok: false, reason: 'poor' }
         data.bombs += 1
@@ -348,6 +350,7 @@ export default {
   },
   view(data, api) {
     const d = normalize(structuredClone(data))
+    settleHelper(d, api.now)
     const p = floorProgress(d)
     const map = mapFor(d)
     const wallet = purse(api)
@@ -359,6 +362,7 @@ export default {
       layer: d.layer, floors: FLOORS, deepest: d.deepest, run: d.run,
       balance, currency: wallet.currency,
       pickaxe: { level: pick.level, emoji: pick.emoji, label: pick.label },
+      helper: helperView(d),
       bombs: d.bombs,
       combo: comboLive ? { n: d.combo.n, msLeft: COMBO_MS - (api.now - d.combo.at) } : null,
       checkpoints: CHECKPOINTS.map(floor => ({ floor, unlocked: floor <= d.deepest && d.pickaxe >= pickaxeFor(floor) })),
@@ -378,6 +382,7 @@ export default {
         key: 'mine', label: '矿工用品', emoji: '⛏️', color: 'teal',
         currency: { label: wallet.currency.label, emoji: wallet.currency.emoji, balance },
         items: [
+          ...helperShelf(d, balance),
           ...(next ? [{ key: 'pickaxe', emoji: next.emoji, label: next.label, note: next.note, price: next.price, disabled: balance < next.price, pick: null }] : []),
           { key: BOMB.key, emoji: BOMB.emoji, label: BOMB.label, note: BOMB.note + ' · 有 ' + d.bombs + ' 颗', price: BOMB.price, disabled: balance < BOMB.price, pick: null },
         ],
@@ -386,3 +391,124 @@ export default {
     }
   },
 }
+
+/** K1 第二轮：仓按六小时有效工作封顶，矿车升级只提高速度。 */
+export const HELPER_RATES = [8, 14, 18, 22, 26]
+export const HELPER_SPEEDS = [1, 1.05, 1.1, 1.15]
+export const HELPER_WINDOW = 6 * 3600000
+export const HELPER_PRICES = { hire: 3000, cart: [0, 1000, 3000, 9000], lamp: [0, 1500, 4000, 10000] }
+
+export function helperRate(data) {
+  return HELPER_RATES[data.pickaxe - 1] * HELPER_SPEEDS[data.helper.cart]
+}
+
+function normalizeHelper(data) {
+  const raw = data.helper && typeof data.helper === 'object' ? data.helper : {}
+  data.helper = {
+    hired: raw.hired === true,
+    cart: Math.min(3, count(raw.cart)),
+    lamp: Math.min(3, count(raw.lamp)),
+    floor: CHECKPOINTS.includes(raw.floor) ? raw.floor : 1,
+    lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
+    remainder: Number.isFinite(raw.remainder) ? Math.max(0, Math.min(3600000, raw.remainder)) : 0,
+    sequence: count(raw.sequence),
+    usedMs: Number.isFinite(raw.usedMs) ? Math.max(0, Math.min(HELPER_WINDOW, raw.usedMs)) : 0,
+    stock: Object.fromEntries(ORES.map(ore => [ore.key, count(raw.stock?.[ore.key])])),
+  }
+}
+
+const helperCount = data => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0)
+
+/** 时间单调递增；六小时后的离线时间作废，收取后从当前时间继续。 */
+export function settleHelper(data, now) {
+  const helper = data.helper
+  if (!helper.hired || !Number.isFinite(now)) return
+  if (helper.lastAt === null) helper.lastAt = now
+  if (now < helper.lastAt) return
+  const duration = Math.min(now - helper.lastAt, HELPER_WINDOW - helper.usedMs)
+  const interval = 3600000 / helperRate(data)
+  const elapsed = duration + helper.remainder
+  const amount = Math.floor((elapsed + 0.00001) / interval)
+  for (let index = 0; index < amount; index += 1) {
+    const floor = helper.floor + helper.sequence % 5
+    const ore = pickOre(floor, randomFor(floor, 'helper:' + helper.sequence), data.pickaxe, 2)
+    helper.stock[ore.key] += 1
+    helper.sequence += 1
+  }
+  helper.usedMs += duration
+  helper.lastAt = now
+  helper.remainder = elapsed - amount * interval
+}
+
+function helperView(data) {
+  const helper = data.helper
+  return {
+    hired: helper.hired, floor: helper.floor, stored: helperCount(data),
+    usedHours: helper.usedMs / 3600000, capacityHours: 6, full: helper.usedMs >= HELPER_WINDOW,
+    stops: CHECKPOINTS.filter((floor, index) => index <= helper.lamp && floor <= data.deepest && pickaxeFor(floor) <= data.pickaxe),
+  }
+}
+
+function helperShelf(data, balance) {
+  const helper = data.helper
+  if (!helper.hired) return [{ key: 'helper-hire', emoji: '⛏️', label: '雇小矿工猪', note: '矿车最多攒六小时产出', price: HELPER_PRICES.hire, disabled: balance < HELPER_PRICES.hire, pick: null }]
+  return ['cart', 'lamp'].flatMap(kind => {
+    const level = helper[kind] + 1
+    const price = HELPER_PRICES[kind][level]
+    if (price === undefined) return []
+    const label = kind === 'cart' ? ['小矿车', '轻便矿车', '顺滑矿车', '飞驰矿车'][level] : ['小头灯', '明亮头灯', '探矿头灯', '深井头灯'][level]
+    const note = kind === 'cart' ? '产矿速度 +' + Math.round((HELPER_SPEEDS[level] - 1) * 100) + '%' : '解锁第 ' + CHECKPOINTS[level] + ' 站'
+    return [{ key: 'helper-' + kind, emoji: kind === 'cart' ? '🧺' : '💡', label, note, price, disabled: balance < price, pick: null }]
+  })
+}
+
+function helperBuy(data, payload, api) {
+  const helper = data.helper
+  const kind = String(payload?.item).replace('helper-', '')
+  if (kind === 'hire') {
+    if (helper.hired) return { ok: false, reason: 'owned' }
+    if (!purse(api).spend(HELPER_PRICES.hire, 'helper')) return { ok: false, reason: 'poor' }
+    helper.hired = true
+    helper.lastAt = api.now
+  } else {
+    if (!helper.hired || !['cart', 'lamp'].includes(kind)) return { ok: false, reason: 'locked' }
+    const price = HELPER_PRICES[kind][helper[kind] + 1]
+    if (price === undefined) return { ok: false, reason: 'owned' }
+    if (!purse(api).spend(price, 'helper')) return { ok: false, reason: 'poor' }
+    helper[kind] += 1
+  }
+  return { ok: true }
+}
+
+game.actions.hire = (data, payload, api) => helperBuy(data, { item: 'helper-hire' }, api)
+game.actions.upgrade = (data, payload, api) => helperBuy(data, { item: 'helper-' + payload?.kind }, api)
+game.actions.workerFloor = (data, payload) => {
+  if (!data.helper.hired || !helperView(data).stops.includes(payload?.floor)) return { ok: false, reason: 'locked' }
+  data.helper.floor = payload.floor
+  return { ok: true }
+}
+game.actions.collect = (data, payload, api) => {
+  if (!helperCount(data) && data.helper.usedMs === 0) return { ok: false, reason: 'empty' }
+  for (const ore of ORES) {
+    data.bag[ore.key] = count(data.bag[ore.key]) + data.helper.stock[ore.key]
+    if (ore.price >= 200 && data.helper.stock[ore.key] > 0) data.found[ore.key] = true
+  }
+  data.oreCount = Math.min(Number.MAX_SAFE_INTEGER, data.oreCount + helperCount(data))
+  data.helper.stock = Object.fromEntries(ORES.map(ore => [ore.key, 0]))
+  data.helper.usedMs = 0
+  reportProgress(data, api)
+  return { ok: true }
+}
+
+// 每个动作先结旧速度的收益；view 只在副本里结算，不写存档。
+for (const [key, action] of Object.entries(game.actions)) {
+  game.actions[key] = (data, payload, api) => {
+    normalize(data)
+    settleHelper(data, api?.now)
+    const oldRate = helperRate(data)
+    const result = action(data, payload, api)
+    if (result.ok) data.helper.remainder *= oldRate / helperRate(data)
+    return result
+  }
+}
+export default game
