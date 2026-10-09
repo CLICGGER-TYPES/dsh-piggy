@@ -15,6 +15,7 @@
     '.bx-banner[data-b="limited"]{background:linear-gradient(170deg,#fff0f4,#fffbe7 60%);border-color:#f3c8d4;box-shadow:0 3px 0 #f3c8d4}.bx-track{display:grid}.bx-track .bx-banner{grid-area:1/1}.bx-track .bx-banner[data-active="false"]{visibility:hidden;pointer-events:none}',
     '.bx-banner[data-slide="left"]{animation:bx-slide-left .35s ease-out both}.bx-banner[data-slide="right"]{animation:bx-slide-right .35s ease-out both}',
     '.bx-btop{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:900}.bx-btop b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bx-days{flex:none;margin-left:auto;font-size:10px;font-weight:800;color:var(--soft);white-space:nowrap}',
+    '.bx-recruit{width:38px;height:38px;flex:none;object-fit:contain}',
     '.bx-ribbon{flex:none;white-space:nowrap;padding:2px 8px;border-radius:50px;background:#8fb9e8;color:#fff;font-size:10px;font-weight:900}.bx-banner[data-b="limited"] .bx-ribbon{background:#f38bab}',
     '.bx-ups{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px;align-items:end;margin:10px 0 8px}',
     '.bx-up{animation:bx-float 3s ease-in-out infinite;animation-delay:var(--phase);cursor:default}.bx-up[data-big="true"] .dp-holo-doll{font-size:44px}',
@@ -236,6 +237,11 @@
       })
       card.addEventListener('pointercancel', function () { startX = null })
       var top = app.el('div', 'bx-btop')
+      var recruit = document.createElement('img')
+      recruit.className = 'bx-recruit'
+      recruit.src = '/dsh-piggy/art/feedback/recruit.png'
+      recruit.alt = ''
+      top.appendChild(recruit)
       top.appendChild(app.el('span', 'bx-ribbon', b.key === 'limited' ? '限时' : '常驻')); top.appendChild(app.el('b', null, b.key === 'limited' ? b.label.replace(/^限时寻访 · /, '') : b.label))
       top.appendChild(app.el('span', 'bx-days', '还剩 ' + b.daysLeft + ' 天')); card.appendChild(top)
       var ups = app.el('div', 'bx bx-ups')

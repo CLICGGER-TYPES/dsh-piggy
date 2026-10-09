@@ -424,7 +424,8 @@ test('the collapsed widget contains the pig and nothing else', async () => {
   // Treat `hidden` as display:none so "visible text" means something.
   const visibleText = node => (node.hidden ? '' : [node.textContent, ...node.children.map(visibleText)].join(' '))
   const text = visibleText(hostOf(dom))
-  assert.ok(text.includes('🐖'), `the pig should still show: ${text}`)
+  const pigImage = findByClass(hostOf(dom), 'dp-pig-img')
+  assert.ok((pigImage && !pigImage.hidden && pigImage.src) || text.includes('🐖'), `the pig should still show: ${text}`)
   assert.ok(!text.includes('状态'), `the icons should be gone: ${text}`)
   assert.ok(!text.includes('大花'), `the hud should be gone: ${text}`)
   assert.ok(!text.includes('🪙'), `no coin readout while collapsed: ${text}`)
@@ -1560,7 +1561,7 @@ test('a drawn stage shows a sprite, the others show the emoji', async () => {
   const drawn = await loadClient({
     status: {
       ...SNAPSHOT,
-      pig: { ...PIG, stage: { key: 'piglet', label: '小猪', emoji: '🐖', size: 40, art: 'piglet' } },
+      pig: { ...PIG, mood: 'fine', stage: { key: 'piglet', label: '小猪', emoji: '🐖', size: 40, art: 'piglet' } },
     },
   })
   drawn.registration.factory(() => {}).apply({})
@@ -1572,13 +1573,13 @@ test('a drawn stage shows a sprite, the others show the emoji', async () => {
   assert.equal(img.src, '/dsh-piggy/art/piglet.svg', 'the sprite points at the plugin art route')
   assert.equal(emoji.hidden, true, 'and the emoji is hidden')
 
-  const plain = await loadClient()
+  const plain = await loadClient({ status: { ...SNAPSHOT, pig: { ...PIG, mood: 'fine' } } })
   plain.registration.factory(() => {}).apply({})
   await settle()
   const img2 = findByClass(hostOf(plain.dom), 'dp-pig-img')
   const emoji2 = findByClass(hostOf(plain.dom), 'dp-pig-emoji')
   assert.equal(img2.hidden, true, 'a stage with no art keeps the emoji')
-  assert.ok(!img2.src, 'and no sprite is requested at all')
+  assert.equal(img2.getAttribute('src'), null, 'and no sprite is requested at all')
   assert.equal(emoji2.hidden, false)
 })
 

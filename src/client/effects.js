@@ -11,7 +11,7 @@ import { PART_FX } from './pet-parts.js'
 import { el } from './dom.js'
 
 /**
- * @param {{ scene: object, pig: object, pigArt: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean }} deps
+ * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean }} deps
  * @returns {{ react: Function, burst: Function, transform: Function, flash: Function, showBubble: Function, showLine: Function, toast: Function, dispose: Function }}
  */
 export function createEffects(deps) {
@@ -65,10 +65,10 @@ function react(kind, ms) {
   pig.removeAttribute('data-react')
   void pig.offsetWidth
   pig.setAttribute('data-react', kind)
-  syncPigArt(pig, deps.pigArt)
+  syncPigArt(pig, deps.pigArt, deps.pigEmoji)
   reactTimer = window.setTimeout(function () {
     pig.removeAttribute('data-react')
-    syncPigArt(pig, deps.pigArt)
+    syncPigArt(pig, deps.pigArt, deps.pigEmoji)
     reactTimer = null
   }, ms || 900)
 }

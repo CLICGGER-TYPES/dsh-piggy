@@ -120,6 +120,25 @@ export const CSS_BASE = [
   '.dp-pig{line-height:1;transform-origin:50% 85%;cursor:pointer;position:relative;',
   'animation:dp-bob 1.8s ease-in-out infinite}',
   '.dp-pig-img,.dp-pig-emoji{filter:drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
+  '.dp-pig-sleep{display:none;position:absolute;top:0;left:50%;z-index:1;',
+  'width:calc(var(--pig-size) * 1.2);height:var(--pig-size);object-fit:contain;',
+  'transform:translateX(-50%);pointer-events:none;-webkit-user-drag:none;user-select:none}',
+  '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-img,',
+  '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
+  '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-sleep{display:block}',
+  '.dp-pig[data-idle="nap"]:not([data-react]) .dp-dress{visibility:hidden}',
+  // 打盹时在头顶轻轻冒两次 Zzz；位置落在桌面猪窗口已预留的气泡区。
+  '.dp-nap-zzz{display:none;position:absolute;left:calc(50% - 14px);top:-25px;z-index:4;',
+  'padding:3px 7px;border:2px solid var(--ac-border-light);border-radius:11px;',
+  'background:var(--ac-bg-input);color:var(--ac-text-body);box-shadow:var(--ac-shadow-sm);',
+  'font:800 11px/1.2 var(--ac-font);letter-spacing:.04em;white-space:nowrap;pointer-events:none}',
+  '.dp-nap-zzz::after{content:"";position:absolute;left:8px;top:calc(100% - 3px);',
+  'width:7px;height:7px;background:var(--ac-bg-input);border-right:2px solid var(--ac-border-light);',
+  'border-bottom:2px solid var(--ac-border-light);transform:rotate(45deg)}',
+  '.dp-pig[data-idle="nap"]:not([data-react]) .dp-nap-zzz{display:block;',
+  'animation:dp-nap-zzz-pop 2s ease-in-out 2 both}',
+  '@keyframes dp-nap-zzz-pop{0%,8%,65%,100%{opacity:0;transform:translateY(3px) scale(.86)}',
+  '18%,50%{opacity:1;transform:translateY(-2px) scale(1)}}',
   // 装扮点位：猪身上固定的几个锚点，每个点位挂一件。
   // 以后换真立绘时，只改这里的偏移/尺寸，逻辑和存档都不用动。
   '.dp-dress{position:absolute;inset:0;pointer-events:none;z-index:3}',
@@ -131,6 +150,7 @@ export const CSS_BASE = [
   '.dp-slot[data-slot="back"]{left:14%;top:42%;font-size:19px}',
   '.dp-slot[data-slot="feet"]{left:50%;top:99%}',
   '[data-dsh-pig][data-open="false"] .dp-pig{filter:drop-shadow(0 5px 9px rgba(61,52,40,.26))}',
+  '[data-dsh-pig][data-open="false"] .dp-pig[data-feedback="true"]{filter:none}',
   // A petting hand rather than an arrow. Drawn inline as an SVG data URI so
   // it needs no asset and can carry the palette's warm outline; the hotspot
   // sits in the palm, which is where a pat actually lands. The `pointer`
@@ -150,9 +170,18 @@ export const CSS_BASE = [
   '@keyframes dp-shake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-4px) rotate(-5deg)}60%{transform:translateX(4px) rotate(5deg)}}',
   '@keyframes dp-spin{0%{transform:rotate(0)}50%{transform:rotate(180deg) scale(1.2)}100%{transform:rotate(360deg)}}',
   '@keyframes dp-jump{0%{transform:translateY(0)}30%{transform:translateY(-26px) scale(1.12)}60%{transform:translateY(0) scale(.92)}100%{transform:translateY(0)}}',
+  // 照料反应从脚边发力、落地后轻轻回弹；幅度留在猪窗口原有的固定范围内。
+  '@keyframes dp-feed-hop{0%,100%{transform:translateY(0) scale(1)}',
+  '14%{transform:translateY(2px) scale(1.07,.91)}38%{transform:translateY(-12px) scale(.96,1.07)}',
+  '58%{transform:translateY(0) scale(1.1,.88)}76%{transform:translateY(-4px) scale(.98,1.03)}}',
+  '@keyframes dp-play-hop{0%,100%{transform:translate(0,0) rotate(0) scale(1)}',
+  '18%{transform:translate(-3px,-5px) rotate(-7deg) scale(1.02)}',
+  '38%{transform:translate(0,0) rotate(3deg) scale(1.08,.92)}',
+  '60%{transform:translate(4px,-9px) rotate(8deg) scale(.97,1.06)}',
+  '80%{transform:translate(0,0) rotate(-2deg) scale(1.05,.96)}}',
   // G 批次：猪自己找事做（life.js 设 data-idle），桌面散步时朝走的方向。
   '.dp-pig[data-idle="roll"]:not([data-react]){animation:dp-spin 1.4s ease-in-out}',
-  '.dp-pig[data-idle="nap"]:not([data-react]){animation:dp-idle-nod 2s ease-in-out 2}',
+  '.dp-pig[data-idle="nap"]:not([data-react]){animation:dp-breathe 2s ease-in-out 2}',
   '.dp-pig[data-idle="butterfly"]:not([data-react]){animation:dp-jump .9s ease-out 3}',
   '.dp-pig[data-idle="scratch"]:not([data-react]){animation:dp-shake .5s ease-in-out 4}',
   '.dp-pig[data-idle="stretch"]:not([data-react]){animation:dp-idle-stretch 1.8s ease-in-out}',
@@ -163,7 +192,8 @@ export const CSS_BASE = [
   '@keyframes dp-idle-nod{0%,100%{transform:rotate(0)}40%,60%{transform:translateY(3px) rotate(6deg)}}',
   '@keyframes dp-idle-stretch{0%,100%{transform:scale(1)}45%{transform:scaleX(1.16) scaleY(.88)}}',
   '@keyframes dp-idle-look{0%,100%{transform:rotate(0)}30%,70%{transform:rotate(-8deg) translateX(-3px)}}',
-  '@media (prefers-reduced-motion:reduce){.dp-pig[data-idle]{animation:none!important}}',
+  '@media (prefers-reduced-motion:reduce){.dp-pig[data-idle],.dp-pig[data-react]{animation:none!important}',
+  '.dp-pig[data-idle="nap"] .dp-nap-zzz{animation:none!important;opacity:1!important;transform:none!important}}',
   '@keyframes dp-wobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}55%{transform:rotate(14deg)}}',
   '@keyframes dp-cough{0%,100%{transform:translateX(0)}30%{transform:translateX(-4px) rotate(-7deg)}70%{transform:translateX(4px) rotate(6deg)}}',
   '.dp-pig[data-mood="happy"]{animation-duration:1.15s}',
@@ -171,6 +201,16 @@ export const CSS_BASE = [
   '.dp-pig[data-mood="hungry"]{animation-name:dp-shake;animation-duration:2.4s}',
   '.dp-pig[data-mood="dirty"]{animation-name:dp-breathe;animation-duration:2.6s}'
   ,'.dp-pig[data-mood="dirty"] .dp-pig-img,.dp-pig[data-mood="dirty"] .dp-pig-emoji{filter:sepia(.4) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
+  // Dirty and sick pigs keep their color cue and gain small orbiting markers.
+  '.dp-pig[data-mood="dirty"]::before,.dp-pig[data-mood="dirty"]::after,',
+  '.dp-pig[data-mood="sick"]::before,.dp-pig[data-mood="sick"]::after{content:"🪰";position:absolute;z-index:4;',
+  'font-size:calc(var(--pig-size) * .16);line-height:1;pointer-events:none;',
+  'top:6%;left:22%;animation:dp-fly 2.4s ease-in-out infinite}',
+  '.dp-pig[data-mood="sick"]::before,.dp-pig[data-mood="sick"]::after{content:"🦠";animation-duration:3.2s}',
+  '.dp-pig[data-mood="dirty"]::after,.dp-pig[data-mood="sick"]::after{top:20%;left:62%;animation-duration:3.1s;animation-direction:reverse;animation-delay:-.9s}',
+  '@keyframes dp-fly{0%,100%{transform:translate(0,0) rotate(-10deg)}25%{transform:translate(14px,-6px) rotate(15deg)}',
+  '50%{transform:translate(22px,4px) rotate(-5deg)}75%{transform:translate(6px,8px) rotate(20deg)}}',
+  '@media (prefers-reduced-motion:reduce){.dp-pig[data-mood]::before,.dp-pig[data-mood]::after{animation:none}}',
   '.dp-pig[data-mood="sick"]{animation-name:dp-cough;animation-duration:2.2s}'
   ,'.dp-pig[data-mood="sick"] .dp-pig-img,.dp-pig[data-mood="sick"] .dp-pig-emoji{filter:hue-rotate(-28deg) saturate(.75) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   // One pose per activity, so being away reads as a thing the pig is doing.
@@ -183,9 +223,9 @@ export const CSS_BASE = [
   '.dp-pig[data-mood="dead"]{animation:none}'
   ,'.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   '.dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}',
-  '.dp-pig[data-react="feed"]{animation-name:dp-jump}',
+  '.dp-pig[data-react="feed"]{animation-name:dp-feed-hop}',
   '.dp-pig[data-react="bathe"]{animation-name:dp-wobble;animation-duration:1.05s}',
-  '.dp-pig[data-react="play"]{animation-name:dp-spin;animation-duration:.9s}',
+  '.dp-pig[data-react="play"]{animation-name:dp-play-hop;animation-duration:.9s}',
   '.dp-pig[data-react="away"]{animation-name:dp-jump;animation-duration:.9s}',
   '.dp-pig[data-react="cure"]{animation-name:dp-spin;animation-duration:.9s}',
   '.dp-pig[data-react="levelup"]{animation-name:dp-jump;animation-duration:.95s}',
@@ -230,6 +270,9 @@ export const CSS_BASE = [
   // works identically either way.
   '.dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;',
   '-webkit-user-drag:none;user-select:none}',
+  // 反馈立绘在打包前离线处理为透明 PNG。
+  '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
+  '.dp-pig[data-feedback="true"] .dp-dress{display:none}',
   '.dp-pig-emoji{font-size:var(--pig-size);line-height:1}',
 
   // No drawings yet — every stage is the same pig, so age reads as size plus

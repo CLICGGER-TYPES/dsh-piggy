@@ -59,6 +59,8 @@ export const TIME_SCALES = Object.freeze([1, 12, 30, 60])
 /** The tombstone and the soul that settles on an unclaimed one. */
 /** @type {LifeStage} */
 export const GRAVE = Object.freeze({ key: 'grave', label: '墓碑', emoji: '🪦', size: 56, line: '这里躺着一只猪' })
+/** 离世当天仍保留小猪的身影，满一天后才出现墓碑。 */
+export const DEAD_DAY = Object.freeze({ key: 'dead-day', label: '离世', emoji: '🐖', size: 56, line: '小猪今天离开了' })
 
 export const SOUL = Object.freeze({ emoji: '👻', label: '灵魂' })
 

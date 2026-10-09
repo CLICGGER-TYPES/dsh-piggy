@@ -92,7 +92,7 @@ export function installSkinPack(savePath, zip) {
 }
 
 export function customSkinArt(savePath, name) {
-  if (!/^custom-[a-z0-9-]{1,31}(?:-(?:eat|bathe|play|pet|relaxed|work|study|trip|fish))?\.svg$/.test(name)) return null
+  if (!/^custom-[a-z0-9-]{1,31}(?:-(?:eat|bathe|play|pet|relaxed|work|study|trip|fish|sleep))?\.svg$/.test(name)) return null
   const path = join(dirname(savePath), 'skins', name)
   return existsSync(path) ? readFileSync(path) : null
 }

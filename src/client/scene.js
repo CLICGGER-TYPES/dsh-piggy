@@ -86,10 +86,18 @@ var pigArt = document.createElement('img')
 pigArt.className = 'dp-pig-img'
 pigArt.alt = ''
 pigArt.hidden = true
+var pigSleep = document.createElement('img')
+pigSleep.className = 'dp-pig-sleep'
+pigSleep.alt = ''
+pigSleep.draggable = false
 var pigEmoji = el('span', 'dp-pig-emoji', '🐖')
 var pig = el('div', 'dp-pig')
 pig.appendChild(pigArt)
 pig.appendChild(pigEmoji)
+pig.appendChild(pigSleep)
+var napBubble = el('span', 'dp-nap-zzz', 'Zzz')
+napBubble.setAttribute('aria-hidden', 'true')
+pig.appendChild(napBubble)
 // 装扮点位：每个点位挂一件，位置全在 CSS 里（.dp-slot[data-slot=…]）。
 var dressSlots = el('div', 'dp-dress')
 pig.appendChild(dressSlots)
@@ -126,5 +134,5 @@ if (document.body !== null && document.body !== undefined) {
   }, { once: true })
 }
 
-  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigEmoji, pig, dressSlots, bar, content, footer }
+  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, dressSlots, bar, content, footer }
 }

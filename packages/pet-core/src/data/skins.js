@@ -1,9 +1,9 @@
 // @ts-check
 
-export const SKIN_SCENES = Object.freeze(['idle', 'eat', 'bathe', 'play', 'pet', 'relaxed', 'work', 'study', 'trip', 'fish'])
+export const SKIN_SCENES = Object.freeze(['idle', 'eat', 'bathe', 'play', 'pet', 'relaxed', 'work', 'study', 'trip', 'fish', 'sleep'])
 export const REQUIRED_SKIN_SCENES = Object.freeze(SKIN_SCENES.slice(0, 5))
 /** The supplied character pack has all nine poses except fishing. */
-const CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter(scene => scene !== 'fish'))
+const CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter(scene => scene !== 'fish' && scene !== 'sleep'))
 
 export const SKINS = Object.freeze([
   Object.freeze({

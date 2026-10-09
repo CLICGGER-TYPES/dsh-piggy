@@ -27,6 +27,7 @@ import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
+import { pointerHitsShape } from './lib/pointer-hit.js'
 
 const { autoUpdater } = updaterPackage
 
@@ -270,10 +271,18 @@ function applyBounds(next, why) {
  */
 const PASSTHROUGH = process.platform === 'win32' && process.env.PIGGY_SHAPE !== '1'
 let passthroughHit = false
+let hitTimer = null
 function setHit(hit) {
   if (!PASSTHROUGH || win === null || win.isDestroyed() || hit === passthroughHit) return
   passthroughHit = hit
   win.setIgnoreMouseEvents(!hit, { forward: true })
+}
+
+/** Forwarded mousemove can be missed when crossing directly onto an ignored window.
+ * Read the cursor in the main process so the first click already reaches the pig. */
+function refreshHit() {
+  if (!PASSTHROUGH || !hasPlacedShape || win === null || win.isDestroyed() || dragSession !== null) return
+  setHit(pointerHitsShape(screen.getCursorScreenPoint(), win.getBounds(), placedShape))
 }
 
 /**
@@ -321,6 +330,10 @@ function createWindow() {
   // Until the page reports where the pig is, the window takes no clicks at all.
   applyShape([])
   if (PASSTHROUGH) { passthroughHit = true; setHit(false) }
+  if (PASSTHROUGH) {
+    hitTimer = setInterval(refreshHit, 16)
+    hitTimer.unref?.()
+  }
   win.loadURL('piggy://app/index.html')
   // 启动摆放最多管 3 秒：之后一律按猪当前位置算，免得哪次没对上就一直往回拽。
   win.once('ready-to-show', () => { setTimeout(() => { savedPigScreen = null }, 3000) })
@@ -337,6 +350,7 @@ function createWindow() {
 let lastShape = []
 /** 页面最近一次摆放时给的可点区域（拖动中猪在窗口里滑时要跟着挪，见 dragTick）。 */
 let placedShape = []
+let hasPlacedShape = false
 /** Last renderer-reported local pig origin; always measured after pinPig. */
 let lastPigWindow = null
 let lastPigSize = { width: 56, height: 56 }
@@ -570,11 +584,13 @@ ipcMain.on('piggy:place', (event, request) => {
     }
   }
   if (Array.isArray(request?.shape)) {
+    hasPlacedShape = true
     placedShape = request.shape.slice(0, 64).map(r => ({
       x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
       width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
     }))
     applyShape(placedShape)
+    refreshHit()
   }
   // 游戏包 0.33.1 起顺带报猪在窗口里的框（贴屏幕边时内容在窗口里挪过）：面板按它贴猪。
   const pig = request?.pig
@@ -589,6 +605,7 @@ ipcMain.on('piggy:place', (event, request) => {
 /** 页面判断鼠标在不在猪/面板上（只在 Windows 穿透模式下生效）。 */
 ipcMain.on('piggy:hit', (event, hit) => {
   if (!fromPet(event)) return
+  if (hasPlacedShape) return
   setHit(hit === true)
 })
 
@@ -660,6 +677,17 @@ function panelBounds() {
 
 function sendPanel(message) {
   if (panelWin !== null && !panelWin.isDestroyed() && panelReady) panelWin.webContents.send('piggy:panel', message)
+}
+
+/**
+ * 把猪窗口抬到面板窗口上面（用户 2026-10-08 反馈）。
+ * 两个窗口同为 floating 置顶，点面板时系统把面板抬到最上，猪的动作和气泡被盖住；
+ * 所以面板转来反应（piggy:pig-fx）时抬一次。
+ * 只改 z 序不改大小；猪窗口除猪本体外都穿透点击，压在上面不挡面板操作。
+ */
+function raisePetAbovePanel() {
+  if (win === null || win.isDestroyed() || !win.isVisible()) return
+  win.moveTop()
 }
 
 function ensurePanelWindow() {
@@ -785,6 +813,7 @@ ipcMain.on('piggy:pig-fx', (event, fx) => {
   if (!fromPage(event) || event.sender !== panelWin?.webContents) return
   if (win === null || win.isDestroyed() || typeof fx?.name !== 'string') return
   win.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
+  raisePetAbovePanel()
 })
 
 /** Where the DSH plugin keeps its pig (the folder moved from dsh-pig to dsh-piggy). */
@@ -1040,5 +1069,5 @@ async function captureForCheck(dir) {
 process.on('uncaughtException', error => { log('uncaught', error?.stack ?? String(error)) })
 
 app.on('second-instance', () => win?.showInactive())
-app.on('before-quit', () => { quitting = true; stopDrag(); try { host?.dispose() } catch { /* best effort */ } })
+app.on('before-quit', () => { quitting = true; stopDrag(); if (hitTimer !== null) clearInterval(hitTimer); try { host?.dispose() } catch { /* best effort */ } })
 app.on('window-all-closed', () => app.quit())

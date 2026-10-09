@@ -44,13 +44,13 @@ test('every App icon in the bundle has a real SVG asset', () => {
   }
 })
 
-test('换肤 App 有「怎么做皮肤」页：十张图的文件名、必须/可选，和完整教程、示例包的链接', async () => {
+test('换肤 App 有「怎么做皮肤」页：十一张图的文件名、必须/可选，和完整教程、示例包的链接', async () => {
   const { dom } = await mount()
   openPanel(dom)
   findByAttr(contentOf(dom), 'data-app', 'skins').fire('click')
   findByAttr(contentOf(dom), 'data-skin-guide', 'true').fire('click')
   const text = contentOf(dom).allText()
-  for (const file of ['idle.svg', 'eat.svg', 'bathe.svg', 'play.svg', 'pet.svg', 'relaxed.svg', 'work.svg', 'study.svg', 'trip.svg', 'fish.svg']) assert.ok(text.includes(file), file)
+  for (const file of ['idle.svg', 'eat.svg', 'bathe.svg', 'play.svg', 'pet.svg', 'relaxed.svg', 'work.svg', 'study.svg', 'trip.svg', 'fish.svg', 'sleep.svg']) assert.ok(text.includes(file), file)
   assert.ok(text.includes('viewBox="0 0 64 64"'))
   assert.ok(findByAttr(contentOf(dom), 'data-skin-guide-open', 'true'))
   assert.ok(findByAttr(contentOf(dom), 'data-skin-example', 'true'))

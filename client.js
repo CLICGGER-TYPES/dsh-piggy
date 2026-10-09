@@ -67,20 +67,140 @@
     { key: "graduate", label: "\u7814\u7A76\u751F" }
   ];
 
+  // src/client/feedback-art.js
+  var MOOD_ART = {
+    sick: ["collection-fever", "allergy", "runny-nose", "collection-mosquito", "collection-check"],
+    hungry: ["hungry", "collection-snack", "collection-soup"],
+    sleepy: ["sleep-cloud", "lie-flat"],
+    lonely: ["lie-flat", "collection-cage", "suspended"],
+    dirty: ["collection-mosquito"],
+    happy: ["birthday", "collection-stack", "music-rainbow", "collection-throne"]
+  };
+  var REACTION_ART = {
+    feed: ["collection-snack", "collection-soup", "hungry"],
+    bathe: ["collection-bubbles"],
+    play: ["collection-fitness", "collection-chicken", "turning"],
+    pet: ["collection-stack", "collection-badge"],
+    cure: ["collection-check", "faint"],
+    levelup: ["collection-throne", "birthday"]
+  };
+  var IDLE_ART = {
+    roll: ["turning", "collection-taro"],
+    butterfly: ["collection-chicken", "collection-scallion"],
+    scratch: ["collection-mosquito", "twitch"],
+    stretch: ["collection-fitness", "collection-scallion"],
+    look: ["collection-letter", "collection-cage"],
+    bubbles: ["collection-bubbles", "music-rainbow"],
+    walk: ["collection-chicken", "collection-scallion"]
+  };
+  var WORK_ART = {
+    courier: "courier",
+    delivery: "collection-courier",
+    flyers: "collection-letter",
+    chef: "collection-soup",
+    singer: "music-headphones-v2",
+    songwriter: "music-earbuds",
+    cartoonist: "painting",
+    photographer: "painting",
+    athlete: "collection-fitness",
+    coach: "collection-fitness",
+    gardener: "collection-scallion",
+    florist: "collection-scallion",
+    guard: "collection-cage",
+    nurse: "collection-check",
+    doctor: "collection-check",
+    dancer: "turning",
+    ceo: "collection-throne",
+    star: "music-rainbow"
+  };
+  function choose(options, hour) {
+    return options[Math.abs(Math.floor(hour)) % options.length];
+  }
+  function feedbackArtFor(state2) {
+    if (state2.stage === "box") return "courier";
+    if (state2.stage === "dead-day") return "death-day";
+    if (state2.stage === "grave") return "ghost-grave";
+    if (state2.base && state2.base !== "piglet") return null;
+    if (REACTION_ART[state2.reaction]) return choose(REACTION_ART[state2.reaction], state2.hour);
+    if (state2.mood === "sick") return choose(MOOD_ART.sick, state2.hour);
+    if (state2.mood === "dirty") return choose(MOOD_ART.dirty, state2.hour);
+    if (state2.activityKind === "work" && WORK_ART[state2.activityKey]) return WORK_ART[state2.activityKey];
+    if (state2.activityKind === "study") return choose(["study-book", "study-pink-book", "study-determined"], state2.hour);
+    if (state2.activityKind === "interest") {
+      if (state2.activityKey === "fitness") return "collection-fitness";
+      if (state2.activityKey === "guitar" || state2.activityKey === "dancing") return choose(["music-earbuds", "music-headphones-v2"], state2.hour);
+      if (state2.activityKey === "calligraphy" || state2.activityKey === "photography") return "painting";
+      return "study-determined";
+    }
+    if (state2.activityKind === "fishing") return "fishing";
+    if (state2.activityKind === "trip") return choose(["collection-chicken", "collection-taro", "collection-scallion"], state2.hour);
+    if (IDLE_ART[state2.idle]) return choose(IDLE_ART[state2.idle], state2.hour);
+    if (MOOD_ART[state2.mood]) return choose(MOOD_ART[state2.mood], state2.hour);
+    return null;
+  }
+
   // src/client/art.js
-  var REACTION_ART = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
+  var REACTION_ART2 = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
   var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
-  function syncPigArt(pig, image) {
-    var base = pig.getAttribute("data-art");
-    if (!base) return;
+  var SLEEP_ART = /* @__PURE__ */ new Set([
+    "piglet",
+    "pig-round",
+    "pig-fat",
+    "pig-king",
+    "pig-devil",
+    "skin-mint",
+    "career-chef",
+    "career-astronaut",
+    "skin-detective",
+    "skin-angel",
+    "skin-pirate",
+    "skin-wizard"
+  ]);
+  function syncSleepArt(art, scenes, image) {
+    var custom = typeof art === "string" && art.startsWith("custom-") && scenes.includes("sleep");
+    var name = SLEEP_ART.has(art) ? art : "piglet";
+    var src = ART_URL + (custom ? art + "-sleep.svg" : name + "-sleep.png");
+    if (image.getAttribute("src") !== src) image.src = src;
+  }
+  function syncPigArt(pig, image, emoji) {
+    var base = pig.getAttribute("data-art") || "";
+    var feedback = feedbackArtFor({
+      stage: pig.getAttribute("data-stage") || "",
+      base,
+      mood: pig.getAttribute("data-mood") || "",
+      reaction: pig.getAttribute("data-react") || "",
+      idle: pig.getAttribute("data-idle") || "",
+      activityKind: pig.getAttribute("data-activity") || "",
+      activityKey: pig.getAttribute("data-activity-key") || "",
+      hour: Math.floor(Date.now() / 36e5)
+    });
+    if (feedback) {
+      var feedbackSrc = ART_URL + "feedback/" + feedback + ".png";
+      if (image.getAttribute("src") !== feedbackSrc) image.src = feedbackSrc;
+      image.hidden = false;
+      pig.setAttribute("data-feedback", "true");
+      if (emoji) emoji.hidden = true;
+      return true;
+    }
+    if (!base) {
+      image.hidden = true;
+      if (image.getAttribute("src")) image.removeAttribute("src");
+      pig.setAttribute("data-feedback", "false");
+      if (emoji) emoji.hidden = false;
+      return false;
+    }
     var art = base;
     if (pig.getAttribute("data-art-actions") === "true") {
-      var action = REACTION_ART[pig.getAttribute("data-react")] || ACTIVITY_ART[pig.getAttribute("data-activity")];
+      var action = REACTION_ART2[pig.getAttribute("data-react")] || ACTIVITY_ART[pig.getAttribute("data-activity")];
       var scenes = String(pig.getAttribute("data-art-scenes") || "").split(",");
       if (action && (scenes[0] === "" || scenes.indexOf(action) >= 0)) art += "-" + action;
     }
     var src = ART_URL + art + ".svg";
     if (image.getAttribute("src") !== src) image.src = src;
+    image.hidden = false;
+    pig.setAttribute("data-feedback", "false");
+    if (emoji) emoji.hidden = true;
+    return true;
   }
 
   // src/client/pet-parts.js
@@ -201,10 +321,10 @@
       pig.removeAttribute("data-react");
       void pig.offsetWidth;
       pig.setAttribute("data-react", kind);
-      syncPigArt(pig, deps.pigArt);
+      syncPigArt(pig, deps.pigArt, deps.pigEmoji);
       reactTimer = window.setTimeout(function() {
         pig.removeAttribute("data-react");
-        syncPigArt(pig, deps.pigArt);
+        syncPigArt(pig, deps.pigArt, deps.pigEmoji);
         reactTimer = null;
       }, ms || 900);
     }
@@ -2283,6 +2403,25 @@
     ".dp-pig{line-height:1;transform-origin:50% 85%;cursor:pointer;position:relative;",
     "animation:dp-bob 1.8s ease-in-out infinite}",
     ".dp-pig-img,.dp-pig-emoji{filter:drop-shadow(0 4px 6px rgba(61,52,40,.28))}",
+    ".dp-pig-sleep{display:none;position:absolute;top:0;left:50%;z-index:1;",
+    "width:calc(var(--pig-size) * 1.2);height:var(--pig-size);object-fit:contain;",
+    "transform:translateX(-50%);pointer-events:none;-webkit-user-drag:none;user-select:none}",
+    '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-img,',
+    '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
+    '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-sleep{display:block}',
+    '.dp-pig[data-idle="nap"]:not([data-react]) .dp-dress{visibility:hidden}',
+    // 打盹时在头顶轻轻冒两次 Zzz；位置落在桌面猪窗口已预留的气泡区。
+    ".dp-nap-zzz{display:none;position:absolute;left:calc(50% - 14px);top:-25px;z-index:4;",
+    "padding:3px 7px;border:2px solid var(--ac-border-light);border-radius:11px;",
+    "background:var(--ac-bg-input);color:var(--ac-text-body);box-shadow:var(--ac-shadow-sm);",
+    "font:800 11px/1.2 var(--ac-font);letter-spacing:.04em;white-space:nowrap;pointer-events:none}",
+    '.dp-nap-zzz::after{content:"";position:absolute;left:8px;top:calc(100% - 3px);',
+    "width:7px;height:7px;background:var(--ac-bg-input);border-right:2px solid var(--ac-border-light);",
+    "border-bottom:2px solid var(--ac-border-light);transform:rotate(45deg)}",
+    '.dp-pig[data-idle="nap"]:not([data-react]) .dp-nap-zzz{display:block;',
+    "animation:dp-nap-zzz-pop 2s ease-in-out 2 both}",
+    "@keyframes dp-nap-zzz-pop{0%,8%,65%,100%{opacity:0;transform:translateY(3px) scale(.86)}",
+    "18%,50%{opacity:1;transform:translateY(-2px) scale(1)}}",
     // 装扮点位：猪身上固定的几个锚点，每个点位挂一件。
     // 以后换真立绘时，只改这里的偏移/尺寸，逻辑和存档都不用动。
     ".dp-dress{position:absolute;inset:0;pointer-events:none;z-index:3}",
@@ -2294,6 +2433,7 @@
     '.dp-slot[data-slot="back"]{left:14%;top:42%;font-size:19px}',
     '.dp-slot[data-slot="feet"]{left:50%;top:99%}',
     '[data-dsh-pig][data-open="false"] .dp-pig{filter:drop-shadow(0 5px 9px rgba(61,52,40,.26))}',
+    '[data-dsh-pig][data-open="false"] .dp-pig[data-feedback="true"]{filter:none}',
     // A petting hand rather than an arrow. Drawn inline as an SVG data URI so
     // it needs no asset and can carry the palette's warm outline; the hotspot
     // sits in the palm, which is where a pat actually lands. The `pointer`
@@ -2307,9 +2447,18 @@
     "@keyframes dp-shake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-4px) rotate(-5deg)}60%{transform:translateX(4px) rotate(5deg)}}",
     "@keyframes dp-spin{0%{transform:rotate(0)}50%{transform:rotate(180deg) scale(1.2)}100%{transform:rotate(360deg)}}",
     "@keyframes dp-jump{0%{transform:translateY(0)}30%{transform:translateY(-26px) scale(1.12)}60%{transform:translateY(0) scale(.92)}100%{transform:translateY(0)}}",
+    // 照料反应从脚边发力、落地后轻轻回弹；幅度留在猪窗口原有的固定范围内。
+    "@keyframes dp-feed-hop{0%,100%{transform:translateY(0) scale(1)}",
+    "14%{transform:translateY(2px) scale(1.07,.91)}38%{transform:translateY(-12px) scale(.96,1.07)}",
+    "58%{transform:translateY(0) scale(1.1,.88)}76%{transform:translateY(-4px) scale(.98,1.03)}}",
+    "@keyframes dp-play-hop{0%,100%{transform:translate(0,0) rotate(0) scale(1)}",
+    "18%{transform:translate(-3px,-5px) rotate(-7deg) scale(1.02)}",
+    "38%{transform:translate(0,0) rotate(3deg) scale(1.08,.92)}",
+    "60%{transform:translate(4px,-9px) rotate(8deg) scale(.97,1.06)}",
+    "80%{transform:translate(0,0) rotate(-2deg) scale(1.05,.96)}}",
     // G 批次：猪自己找事做（life.js 设 data-idle），桌面散步时朝走的方向。
     '.dp-pig[data-idle="roll"]:not([data-react]){animation:dp-spin 1.4s ease-in-out}',
-    '.dp-pig[data-idle="nap"]:not([data-react]){animation:dp-idle-nod 2s ease-in-out 2}',
+    '.dp-pig[data-idle="nap"]:not([data-react]){animation:dp-breathe 2s ease-in-out 2}',
     '.dp-pig[data-idle="butterfly"]:not([data-react]){animation:dp-jump .9s ease-out 3}',
     '.dp-pig[data-idle="scratch"]:not([data-react]){animation:dp-shake .5s ease-in-out 4}',
     '.dp-pig[data-idle="stretch"]:not([data-react]){animation:dp-idle-stretch 1.8s ease-in-out}',
@@ -2320,7 +2469,8 @@
     "@keyframes dp-idle-nod{0%,100%{transform:rotate(0)}40%,60%{transform:translateY(3px) rotate(6deg)}}",
     "@keyframes dp-idle-stretch{0%,100%{transform:scale(1)}45%{transform:scaleX(1.16) scaleY(.88)}}",
     "@keyframes dp-idle-look{0%,100%{transform:rotate(0)}30%,70%{transform:rotate(-8deg) translateX(-3px)}}",
-    "@media (prefers-reduced-motion:reduce){.dp-pig[data-idle]{animation:none!important}}",
+    "@media (prefers-reduced-motion:reduce){.dp-pig[data-idle],.dp-pig[data-react]{animation:none!important}",
+    '.dp-pig[data-idle="nap"] .dp-nap-zzz{animation:none!important;opacity:1!important;transform:none!important}}',
     "@keyframes dp-wobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}55%{transform:rotate(14deg)}}",
     "@keyframes dp-cough{0%,100%{transform:translateX(0)}30%{transform:translateX(-4px) rotate(-7deg)}70%{transform:translateX(4px) rotate(6deg)}}",
     '.dp-pig[data-mood="happy"]{animation-duration:1.15s}',
@@ -2328,6 +2478,16 @@
     '.dp-pig[data-mood="hungry"]{animation-name:dp-shake;animation-duration:2.4s}',
     '.dp-pig[data-mood="dirty"]{animation-name:dp-breathe;animation-duration:2.6s}',
     '.dp-pig[data-mood="dirty"] .dp-pig-img,.dp-pig[data-mood="dirty"] .dp-pig-emoji{filter:sepia(.4) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
+    // Dirty and sick pigs keep their color cue and gain small orbiting markers.
+    '.dp-pig[data-mood="dirty"]::before,.dp-pig[data-mood="dirty"]::after,',
+    '.dp-pig[data-mood="sick"]::before,.dp-pig[data-mood="sick"]::after{content:"\u{1FAB0}";position:absolute;z-index:4;',
+    "font-size:calc(var(--pig-size) * .16);line-height:1;pointer-events:none;",
+    "top:6%;left:22%;animation:dp-fly 2.4s ease-in-out infinite}",
+    '.dp-pig[data-mood="sick"]::before,.dp-pig[data-mood="sick"]::after{content:"\u{1F9A0}";animation-duration:3.2s}',
+    '.dp-pig[data-mood="dirty"]::after,.dp-pig[data-mood="sick"]::after{top:20%;left:62%;animation-duration:3.1s;animation-direction:reverse;animation-delay:-.9s}',
+    "@keyframes dp-fly{0%,100%{transform:translate(0,0) rotate(-10deg)}25%{transform:translate(14px,-6px) rotate(15deg)}",
+    "50%{transform:translate(22px,4px) rotate(-5deg)}75%{transform:translate(6px,8px) rotate(20deg)}}",
+    "@media (prefers-reduced-motion:reduce){.dp-pig[data-mood]::before,.dp-pig[data-mood]::after{animation:none}}",
     '.dp-pig[data-mood="sick"]{animation-name:dp-cough;animation-duration:2.2s}',
     '.dp-pig[data-mood="sick"] .dp-pig-img,.dp-pig[data-mood="sick"] .dp-pig-emoji{filter:hue-rotate(-28deg) saturate(.75) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
     // One pose per activity, so being away reads as a thing the pig is doing.
@@ -2340,9 +2500,9 @@
     '.dp-pig[data-mood="dead"]{animation:none}',
     '.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
     ".dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}",
-    '.dp-pig[data-react="feed"]{animation-name:dp-jump}',
+    '.dp-pig[data-react="feed"]{animation-name:dp-feed-hop}',
     '.dp-pig[data-react="bathe"]{animation-name:dp-wobble;animation-duration:1.05s}',
-    '.dp-pig[data-react="play"]{animation-name:dp-spin;animation-duration:.9s}',
+    '.dp-pig[data-react="play"]{animation-name:dp-play-hop;animation-duration:.9s}',
     '.dp-pig[data-react="away"]{animation-name:dp-jump;animation-duration:.9s}',
     '.dp-pig[data-react="cure"]{animation-name:dp-spin;animation-duration:.9s}',
     '.dp-pig[data-react="levelup"]{animation-name:dp-jump;animation-duration:.95s}',
@@ -2384,6 +2544,9 @@
     // works identically either way.
     ".dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;",
     "-webkit-user-drag:none;user-select:none}",
+    // 反馈立绘在打包前离线处理为透明 PNG。
+    '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
+    '.dp-pig[data-feedback="true"] .dp-dress{display:none}',
     ".dp-pig-emoji{font-size:var(--pig-size);line-height:1}",
     // No drawings yet — every stage is the same pig, so age reads as size plus
     // a faded coat on the last one.
@@ -2427,13 +2590,15 @@
     "50%{transform:translate(-50%,-9px) scale(1.08);opacity:1}}",
     // A grave does not bob about like a living pig.
     '.dp-pig[data-stage="grave"]{animation:none;filter:grayscale(.35) drop-shadow(0 4px 6px rgba(61,52,40,.3))}',
+    '.dp-pig[data-stage="grave"][data-feedback="true"]{filter:none}',
     '.dp-pig[data-stage="box"]{animation:dp-box-wobble 3.2s ease-in-out infinite}',
     "@keyframes dp-box-wobble{0%,100%{transform:rotate(0)}30%{transform:rotate(-4deg)}",
     "45%{transform:rotate(3deg)}60%{transform:rotate(-2deg)}}",
-    // Patting squashes the pig flat. Short, so rapid clicking keeps up.
+    // 摸头时先压扁再轻轻回弹；保留短时长，连续点击也能每次从头播放。
     '[data-dsh-pig] .dp-pig[data-react="pet"]{animation-name:dp-squash;animation-duration:.42s}',
-    "@keyframes dp-squash{0%{transform:scale(1,1)}35%{transform:scale(1.16,.74) translateY(2px)}",
-    "60%{transform:scale(.94,1.08) translateY(-3px)}100%{transform:scale(1,1)}}",
+    "@keyframes dp-squash{0%,100%{transform:translateY(0) scale(1)}",
+    "16%{transform:translateY(1px) scale(1.04,.95)}38%{transform:translateY(3px) scale(1.14,.82)}",
+    "67%{transform:translateY(-4px) scale(.95,1.09)}84%{transform:translateY(0) scale(1.04,.97)}}",
     /* ---------- speech bubble ---------- */
     // `z-index` matters: the pig comes later in the DOM, so without it the pig
     // paints over the bubble whenever the two boxes overlap — which is exactly
@@ -2721,7 +2886,7 @@
     ".dp-guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 10px}",
     ".dp-guide-cell{display:grid;grid-template-columns:40px 1fr;grid-template-rows:auto auto auto;column-gap:6px;align-items:center;align-content:center;",
     "padding:6px;border-radius:var(--ac-radius-sm);border:2px solid var(--ac-border-light);background:var(--ac-bg-input)}",
-    ".dp-guide-img{grid-row:1 / 4;width:40px;height:40px}.dp-guide-cell b{font-size:11px}",
+    ".dp-guide-img{grid-row:1 / 4;width:40px;height:40px;object-fit:contain}.dp-guide-cell b{font-size:11px}",
     ".dp-guide-need{font-size:9.5px;font-weight:800;color:#c7781a}.dp-guide-optional .dp-guide-need{color:var(--ac-text-2)}",
     ".dp-guide-cell small{font-size:9.5px;line-height:1.35;color:var(--ac-text-2)}",
     ".dp-guide-rule{font-size:10.5px;line-height:1.6}",
@@ -3317,12 +3482,12 @@
       if (hasPick && ui.drill.pick === item.key) {
         const choices = el("div", "dp-ext-picks");
         for (const pick of item.pick) {
-          const choose = button("dp-mini dp-mini-plain", { "data-ext-pick": pick.key }, function() {
+          const choose2 = button("dp-mini dp-mini-plain", { "data-ext-pick": pick.key }, function() {
             ui.drill.pick = null;
             ui.send("ext", { key: shelf.extension, op: "buy", data: { item: item.key, pick: pick.key } });
           });
-          choose.textContent = pick.emoji + " " + pick.label;
-          choices.appendChild(choose);
+          choose2.textContent = pick.emoji + " " + pick.label;
+          choices.appendChild(choose2);
         }
         row.appendChild(choices);
       }
@@ -4656,9 +4821,9 @@
   var FISH_FIGHTS = Object.freeze(["ring", "bar", "pull"]);
 
   // packages/pet-core/src/data/skins.js
-  var SKIN_SCENES = Object.freeze(["idle", "eat", "bathe", "play", "pet", "relaxed", "work", "study", "trip", "fish"]);
+  var SKIN_SCENES = Object.freeze(["idle", "eat", "bathe", "play", "pet", "relaxed", "work", "study", "trip", "fish", "sleep"]);
   var REQUIRED_SKIN_SCENES = Object.freeze(SKIN_SCENES.slice(0, 5));
-  var CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter((scene3) => scene3 !== "fish"));
+  var CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter((scene3) => scene3 !== "fish" && scene3 !== "sleep"));
   var SKINS = Object.freeze([
     Object.freeze({
       key: "mint",
@@ -5254,7 +5419,7 @@
       } }
     ]);
     status("\u751F\u6B7B", [
-      { key: "kill", label: "\u{1F480} \u5F04\u6B7B", desc: "\u76F4\u63A5\u53BB\u4E16\uFF08\u53D8\u5893\u7891\uFF09\uFF0C\u6D4B\u590D\u6D3B\u548C\u9886\u517B", run: function() {
+      { key: "kill", label: "\u{1F480} \u5F04\u6B7B", desc: "\u5F53\u5929\u4FDD\u7559\u9057\u4F53\uFF0C\u6B21\u65E5\u51FA\u73B0\u5893\u7891\u4E0E\u7075\u9B42\uFF1B\u6D4B\u590D\u6D3B\u548C\u9886\u517B", run: function() {
         patch({ dead: true });
       } },
       { key: "revive", label: "\u2728 \u590D\u6D3B", desc: "\u4E0D\u7528\u8FD8\u9B42\u4E39\u76F4\u63A5\u590D\u6D3B", run: function() {
@@ -6146,7 +6311,7 @@
   function renderBanners(ui) {
     if (ui.view.pig !== null && ui.view.dead) {
       var dead = el("div", "dp-alert dp-dead");
-      dead.appendChild(el("b", null, "\u{1FAA6} " + ui.view.pig.name + " \u8D70\u4E86" + (ui.view.pig.soul ? "\uFF0C\u7075\u9B42\u8FD8\u7559\u5728\u5893\u7891\u4E0A \u{1F47B}" : "")));
+      dead.appendChild(el("b", null, (ui.view.pig.stage.key === "grave" ? "\u{1FAA6} " : "\u{1F416} ") + ui.view.pig.name + " \u8D70\u4E86" + (ui.view.pig.soul ? "\uFF0C\u7075\u9B42\u8FD8\u7559\u5728\u5893\u7891\u65C1 \u{1F47B}" : "")));
       dead.appendChild(el("div", null, ui.view.pig.soul ? "\u7528\u8FD8\u9B42\u4E39\u53EF\u4EE5\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u4E5F\u53EF\u4EE5\u9886\u517B\u65B0\u7684" : "\u80CC\u5305\u91CC\u7684\u8FD8\u9B42\u4E39\u5C31\u80FD\u6551\u56DE\u6765"));
       ui.content.appendChild(dead);
       var adoptWrap = el("div", "dp-actions");
@@ -6355,7 +6520,8 @@
     { file: "work.svg", need: false, when: "\u6253\u5DE5", art: "skin-detective-work" },
     { file: "study.svg", need: false, when: "\u4E0A\u5B66", art: "skin-detective-study" },
     { file: "trip.svg", need: false, when: "\u65C5\u884C", art: "skin-detective-trip" },
-    { file: "fish.svg", need: false, when: "\u9493\u9C7C", art: "skin-detective" }
+    { file: "fish.svg", need: false, when: "\u9493\u9C7C", art: "skin-detective" },
+    { file: "sleep.svg", need: false, when: "\u6253\u76F9\u65F6\u6A2A\u8EBA\u7761\u89C9", art: "skin-detective-sleep", ext: ".png" }
   ];
   function openLink(url) {
     const shell2 = updatesBridge();
@@ -6363,8 +6529,8 @@
     else window.open(url, "_blank", "noopener");
   }
   function renderSkinGuide(ui) {
-    drillHeader(ui, "skins", "\u{1F4D0} \u600E\u4E48\u505A\u76AE\u80A4", "10 \u5F20\u56FE");
-    ui.content.appendChild(el("div", "dp-hint", "\u4E00\u5957\u76AE\u80A4 = \u4E00\u4E2A ZIP\uFF1A\u91CC\u9762\u653E skin.json \u548C\u4E0B\u9762\u8FD9\u4E9B SVG \u56FE\u3002\u524D 5 \u5F20\u5FC5\u987B\u6709\uFF0C\u540E 5 \u5F20\u53EF\u4EE5\u4E0D\u753B\uFF08\u6CA1\u6709\u5C31\u7528 idle\uFF09\u3002"));
+    drillHeader(ui, "skins", "\u{1F4D0} \u600E\u4E48\u505A\u76AE\u80A4", "11 \u5F20\u56FE");
+    ui.content.appendChild(el("div", "dp-hint", "\u4E00\u5957\u76AE\u80A4 = \u4E00\u4E2A ZIP\uFF1A\u91CC\u9762\u653E skin.json \u548C\u4E0B\u9762\u8FD9\u4E9B SVG \u56FE\u3002\u524D 5 \u5F20\u5FC5\u987B\u6709\uFF0C\u540E 6 \u5F20\u53EF\u4EE5\u4E0D\u753B\u3002\u52A8\u4F5C\u56FE\u7F3A\u5C11\u65F6\u7528 idle\uFF1Bsleep \u7F3A\u5C11\u65F6\u7528\u9ED8\u8BA4\u7761\u59FF\u3002"));
     const grid = el("div", "dp-guide-grid");
     for (const pose of POSES) {
       const cell = el("div", "dp-guide-cell" + (pose.need ? "" : " dp-guide-optional"));
@@ -6372,7 +6538,7 @@
         /** @type {HTMLImageElement} */
         el("img", "dp-guide-img")
       );
-      img.src = ART_URL + pose.art + ".svg";
+      img.src = ART_URL + pose.art + (pose.ext || ".svg");
       img.alt = "";
       cell.appendChild(img);
       cell.appendChild(el("b", null, pose.file));
@@ -6492,7 +6658,7 @@
   var WALK_KEY = "dsh-piggy:walk";
   var IDLE_ACTIONS = [
     { key: "roll", fx: ["\u{1F4AB}"], say: "\uFF08\u6EDA\u4E86\u4E00\u5708\uFF09\u8FD9\u6837\u6BD4\u8F83\u8212\u670D", ms: 1400 },
-    { key: "nap", fx: ["\u{1F4A4}", "\u{1F4A4}"], say: "\u6211\u5C31\u772F\u4E00\u4E0B\u2026\u2026", ms: 4e3 },
+    { key: "nap", fx: [], say: "\u6211\u5C31\u772F\u4E00\u4E0B\u2026\u2026", ms: 4e3 },
     { key: "butterfly", fx: ["\u{1F98B}"], say: "\u7B49\u7B49\u6211\uFF01", ms: 3e3 },
     { key: "scratch", fx: ["\u3030\uFE0F"], say: "\u80CC\u4E0A\u75D2\u75D2\u7684", ms: 2e3 },
     { key: "stretch", fx: ["\u2728"], say: "\u55EF\u2014\u2014\u4F38\u4E2A\u61D2\u8170", ms: 1800 },
@@ -6551,10 +6717,12 @@
     }
     function doIdle(action) {
       c.pig.setAttribute("data-idle", action.key);
-      c.burst(action.fx, action.fx.length);
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      if (action.fx.length > 0) c.burst(action.fx, action.fx.length);
       if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3e3, action.ms));
       later(function() {
         c.pig.removeAttribute("data-idle");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
       }, action.ms);
     }
     function scheduleWalk() {
@@ -6573,6 +6741,7 @@
       var walked = 0;
       var back = false;
       c.pig.setAttribute("data-idle", "walk");
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
       c.pig.setAttribute("data-walk", toLeft ? "left" : "right");
       if (!quiet() && Math.random() < 0.5) c.showBubble("\u6211\u53BB\u5DE1\u903B\u4E00\u4E0B", 2e3);
       var timer2 = window.setInterval(function() {
@@ -6589,6 +6758,7 @@
       function stop() {
         window.clearInterval(timer2);
         c.pig.removeAttribute("data-idle");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
         c.pig.removeAttribute("data-walk");
       }
     }
@@ -7099,12 +7269,13 @@
         ctx.work.title = (AWAY_LINE[ctx.view.activity.kind] ?? "\u5728\u5916\u9762") + "\uFF1A" + ctx.view.activity.label;
       }
       if (ctx.view.hatched !== true) {
-        ctx.pigArt.hidden = true;
-        ctx.pigArt.removeAttribute("src");
-        ctx.pigEmoji.hidden = false;
+        ctx.pig.setAttribute("data-stage", "box");
+        ctx.pig.setAttribute("data-art", "");
+        ctx.pig.setAttribute("data-activity", "");
+        ctx.pig.setAttribute("data-activity-key", "");
         ctx.pigEmoji.textContent = ctx.view.boxStage.emoji;
-        ctx.pig.removeAttribute("data-art");
         ctx.pig.setAttribute("data-mood", "box");
+        syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
         ctx.host.style.setProperty("--pig-size", displayedPigSize(ctx.view.boxStage.size) + "px");
         applyEmojiStyle(ctx.host);
         ctx.soul.hidden = true;
@@ -7118,34 +7289,24 @@
         ctx.lastStage = null;
       } else {
         const pigStage = ctx.view.pig.stage;
-        if (pigStage.art !== null) {
-          ctx.pigArt.hidden = false;
-          ctx.pigEmoji.hidden = true;
-          ctx.pig.setAttribute("data-art", pigStage.art);
-          ctx.pig.setAttribute("data-art-actions", pigStage.actionArt ? "true" : "false");
-          ctx.pig.setAttribute("data-art-scenes", pigStage.artScenes.join(","));
-          ctx.host.setAttribute("data-art-actions", pigStage.actionArt ? "true" : "false");
-          ctx.pig.setAttribute("data-activity", ctx.view.activity === null ? "" : ctx.view.activity.kind);
-          syncPigArt(ctx.pig, ctx.pigArt);
-        } else {
-          ctx.pigArt.hidden = true;
-          ctx.pigArt.removeAttribute("src");
-          ctx.pigEmoji.hidden = false;
-          ctx.pigEmoji.textContent = pigStage.emoji;
-          ctx.pig.removeAttribute("data-art");
-          ctx.pig.removeAttribute("data-art-actions");
-          ctx.pig.removeAttribute("data-art-scenes");
-          ctx.host.removeAttribute("data-art-actions");
-        }
+        syncSleepArt(pigStage.art, pigStage.artScenes, ctx.pigSleep);
+        ctx.pig.setAttribute("data-stage", pigStage.key);
+        ctx.pig.setAttribute("data-art", pigStage.art || "");
+        ctx.pig.setAttribute("data-art-actions", pigStage.actionArt ? "true" : "false");
+        ctx.pig.setAttribute("data-art-scenes", pigStage.artScenes.join(","));
+        ctx.host.setAttribute("data-art-actions", pigStage.actionArt ? "true" : "false");
+        ctx.pig.setAttribute("data-activity", ctx.view.activity === null ? "" : ctx.view.activity.kind);
+        ctx.pig.setAttribute("data-activity-key", ctx.view.activity === null ? "" : ctx.view.activity.key);
+        ctx.pig.setAttribute("data-mood", ctx.view.pig.mood);
+        ctx.pigEmoji.textContent = pigStage.emoji;
+        syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
         ctx.host.style.setProperty("--pig-size", displayedPigSize(pigStage.size) + "px");
         applyEmojiStyle(ctx.host);
-        ctx.pig.setAttribute("data-mood", ctx.view.pig.mood);
         ctx.host.setAttribute("data-soul", ctx.view.pig.soul ? "true" : "false");
         ctx.host.setAttribute("data-faded", pigStage.faded ? "true" : "false");
         ctx.host.setAttribute("data-unhatched", "false");
         ctx.pokeHint.hidden = true;
-        ctx.soul.hidden = ctx.view.pig.soul !== true;
-        ctx.pig.setAttribute("data-stage", pigStage.key);
+        ctx.soul.hidden = ctx.view.pig.soul !== true || pigStage.key === "grave";
         ctx.dressSlots.textContent = "";
         for (var wd = 0; wd < ctx.view.dress.length; wd += 1) {
           var piece = ctx.view.dress[wd];
@@ -7259,10 +7420,18 @@
     pigArt.className = "dp-pig-img";
     pigArt.alt = "";
     pigArt.hidden = true;
+    var pigSleep = document.createElement("img");
+    pigSleep.className = "dp-pig-sleep";
+    pigSleep.alt = "";
+    pigSleep.draggable = false;
     var pigEmoji = el("span", "dp-pig-emoji", "\u{1F416}");
     var pig = el("div", "dp-pig");
     pig.appendChild(pigArt);
     pig.appendChild(pigEmoji);
+    pig.appendChild(pigSleep);
+    var napBubble = el("span", "dp-nap-zzz", "Zzz");
+    napBubble.setAttribute("aria-hidden", "true");
+    pig.appendChild(napBubble);
     var dressSlots = el("div", "dp-dress");
     pig.appendChild(dressSlots);
     var pomoHint = el("div", "dp-pomo");
@@ -7290,7 +7459,7 @@
         }
       }, { once: true });
     }
-    return { font, style, host: host3, card: card2, scene: scene3, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigEmoji, pig, dressSlots, bar, content, footer };
+    return { font, style, host: host3, card: card2, scene: scene3, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, dressSlots, bar, content, footer };
   }
 
   // src/client/drag-heartbeat.js
@@ -7673,6 +7842,12 @@
     `[data-dsh-pig][data-dsh-pig][data-emoji="system"]{--ac-font:${FONT_STACK}}`,
     '[data-dsh-pig][data-open="false"] .dp-pig{filter:none!important}',
     "[data-dsh-pig] .dp-pig-img,[data-dsh-pig] .dp-pig-emoji{filter:none!important}",
+    // 上面两条只为去投影（F11），却把状态变色一起关了（2026-10-08 发现）：这里把变色补回来，不带投影。
+    '[data-dsh-pig] .dp-pig[data-mood="sick"] .dp-pig-img,[data-dsh-pig] .dp-pig[data-mood="sick"] .dp-pig-emoji{filter:hue-rotate(-28deg) saturate(.75)!important}',
+    '[data-dsh-pig] .dp-pig[data-mood="dirty"] .dp-pig-img,[data-dsh-pig] .dp-pig[data-mood="dirty"] .dp-pig-emoji{filter:sepia(.4)!important}',
+    '[data-dsh-pig] .dp-pig[data-mood="dead"] .dp-pig-img,[data-dsh-pig] .dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1)!important}',
+    '[data-dsh-pig][data-faded="true"] .dp-pig-emoji{filter:grayscale(.5) opacity(.72)!important}',
+    '[data-dsh-pig][data-dsh-pig] .dp-pig[data-stage="grave"]{filter:grayscale(.35)!important}',
     "[data-dsh-pig] .dp-card{box-shadow:inset 0 1px 2px rgba(61,52,40,.09)!important}",
     "[data-dsh-pig] .dp-panel-footer{max-height:270px!important}",
     // 收起时拖猪，窗口缩到只包住猪；头顶的签到/礼包小气泡会被窗口边裁成半块白色，拖的时候先藏起来。
@@ -8033,6 +8208,7 @@
           pomoHint,
           soul,
           pigArt,
+          pigSleep,
           pigEmoji,
           pig,
           dressSlots,
@@ -8070,6 +8246,7 @@
           scene: scene3,
           pig,
           pigArt,
+          pigEmoji,
           card: card2,
           bubble,
           pomoHint,
@@ -8101,6 +8278,7 @@
           pomoHint,
           soul,
           pigArt,
+          pigSleep,
           pigEmoji,
           pig,
           dressSlots,
@@ -8344,6 +8522,7 @@
           showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
         }
         scene3.addEventListener("pointerup", function(event) {
+          if (drag === null) return;
           if (endDrag()) return;
           if (view.hatched !== true) {
             pokeBox();
@@ -8359,7 +8538,6 @@
         });
         scene3.addEventListener("contextmenu", function(event) {
           event.preventDefault();
-          if (!isOpen && view.pig !== null) flash("pet");
           setOpen(!isOpen);
         });
         var autoCollapse = splitRole !== null ? { dispose: function() {
@@ -8402,6 +8580,8 @@
             return drag !== null;
           },
           pig,
+          pigArt,
+          pigEmoji,
           burst: (
             /** @type {any} */
             burst

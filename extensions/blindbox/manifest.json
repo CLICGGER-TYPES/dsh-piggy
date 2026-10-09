@@ -2,7 +2,7 @@
   "key": "blindbox",
   "label": "盲盒",
   "emoji": "🎁",
-  "version": "2.2.0",
+  "version": "2.2.2",
   "minGame": "0.31.0",
   "description": "照明日方舟寻访的盲盒：3★～6★ 摆件，常驻和限时卡池轮换 UP，50 抽后六星概率逐抽提升，重复的加潜能、换资质凭证。",
   "app": {

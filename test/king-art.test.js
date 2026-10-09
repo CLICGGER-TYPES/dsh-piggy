@@ -7,7 +7,7 @@ import { syncPigArt } from '../src/client/art.js'
 
 test('care reactions temporarily replace activity sprites and restore afterward', () => {
   const attrs = { 'data-art': 'pig-king', 'data-art-actions': 'true', 'data-activity': 'work' }
-  const pig = { getAttribute: key => attrs[key] ?? null }
+  const pig = { getAttribute: key => attrs[key] ?? null, setAttribute: (key, value) => { attrs[key] = value } }
   let source = ''
   let assigned = 0
   const image = {
@@ -35,5 +35,5 @@ test('care reactions temporarily replace activity sprites and restore afterward'
   attrs['data-art-actions'] = 'false'
   attrs['data-react'] = 'pet'
   syncPigArt(pig, image)
-  assert.ok(image.src.endsWith('piglet.svg'), 'ordinary pigs keep their original sprite')
+  assert.match(image.src, /\/feedback\/collection-(?:stack|badge)\.png$/, 'ordinary pigs use the approved reaction art')
 })

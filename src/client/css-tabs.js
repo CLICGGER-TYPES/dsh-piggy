@@ -24,14 +24,16 @@ export const CSS_TABS = [
   '50%{transform:translate(-50%,-9px) scale(1.08);opacity:1}}',
   // A grave does not bob about like a living pig.
   '.dp-pig[data-stage="grave"]{animation:none;filter:grayscale(.35) drop-shadow(0 4px 6px rgba(61,52,40,.3))}',
+  '.dp-pig[data-stage="grave"][data-feedback="true"]{filter:none}',
   '.dp-pig[data-stage="box"]{animation:dp-box-wobble 3.2s ease-in-out infinite}',
   '@keyframes dp-box-wobble{0%,100%{transform:rotate(0)}30%{transform:rotate(-4deg)}',
   '45%{transform:rotate(3deg)}60%{transform:rotate(-2deg)}}',
 
-  // Patting squashes the pig flat. Short, so rapid clicking keeps up.
+  // 摸头时先压扁再轻轻回弹；保留短时长，连续点击也能每次从头播放。
   '[data-dsh-pig] .dp-pig[data-react="pet"]{animation-name:dp-squash;animation-duration:.42s}',
-  '@keyframes dp-squash{0%{transform:scale(1,1)}35%{transform:scale(1.16,.74) translateY(2px)}',
-  '60%{transform:scale(.94,1.08) translateY(-3px)}100%{transform:scale(1,1)}}',
+  '@keyframes dp-squash{0%,100%{transform:translateY(0) scale(1)}',
+  '16%{transform:translateY(1px) scale(1.04,.95)}38%{transform:translateY(3px) scale(1.14,.82)}',
+  '67%{transform:translateY(-4px) scale(.95,1.09)}84%{transform:translateY(0) scale(1.04,.97)}}',
 
   /* ---------- speech bubble ---------- */
   // `z-index` matters: the pig comes later in the DOM, so without it the pig
