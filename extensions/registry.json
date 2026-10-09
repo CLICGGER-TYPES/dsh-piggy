@@ -65,21 +65,28 @@
       "key": "farm",
       "label": "菜园",
       "emoji": "🥬",
-      "version": "1.1.0",
-      "minGame": "0.31.0",
-      "description": "买种、开垦、浇水，作物按真实时间生长；收获后可以卖出或放进背包。",
+      "version": "2.0.0",
+      "minGame": "0.35.0",
+      "description": "16 种作物、8 块地，点地块就种、浇、收；大水壶、收割镰、播种器解锁一键操作，洒水器自动浇水。用自己的菜币，随时和金币互换。",
+      "economy": {
+        "currency": {
+          "label": "菜币",
+          "emoji": "🥬",
+          "rate": 1
+        }
+      },
       "files": {
         "manifest.json": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-1.1.0/manifest.json",
-          "sha256": "bb6219bd783c4d95d8602cc1c80d53e241c2888b70aec19f58c054b55728d1ed"
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-2.0.0/manifest.json",
+          "sha256": "bd0f46d913d33055846e73eec73b3381fbd1af2778063eba74ec577074631f8b"
         },
         "server.js": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-1.1.0/server.js",
-          "sha256": "1d4cb0512782fee873d22c4b7fab0588c5f643f9dc03f17f6cff55644abbd8d1"
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-2.0.0/server.js",
+          "sha256": "f6d5f760f24af79a4d46a41520e0e86e91d2d82f206ae09d85298d3c306ee94d"
         },
         "client.js": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-1.1.0/client.js",
-          "sha256": "88422b61cb7c279faac79dc8292467d0b673ddaedc43cc8475e1a52c82ce21a5"
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-2.0.0/client.js",
+          "sha256": "1d8ce41427686ad71f2bf294e525bd2f864d38ae971892030c4fa5d38274d23c"
         }
       }
     },
