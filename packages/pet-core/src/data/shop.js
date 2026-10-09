@@ -57,6 +57,19 @@ export const SHOP = Object.freeze([
   Object.freeze({ key: 'strawberry', label: '草莓', emoji: '🍓', price: 9, kind: 'food', satiety: 18, happiness: 8 }),
   Object.freeze({ key: 'sweetpotato', label: '烤红薯', emoji: '🍠', price: 19, kind: 'food', satiety: 42, happiness: 9 }),
   Object.freeze({ key: 'seafoodrice', label: '海鲜饭', emoji: '🥘', price: 76, kind: 'food', satiety: 88, happiness: 27 }),
+  // J1 第 6 节新加的 12 种
+  Object.freeze({ key: 'onigiri', label: '饭团', emoji: '🍙', price: 8, kind: 'food', satiety: 26, happiness: 3 }),
+  Object.freeze({ key: 'baozi', label: '包子', emoji: '🧆', price: 9, kind: 'food', satiety: 30, happiness: 4 }),
+  Object.freeze({ key: 'corn', label: '玉米棒', emoji: '🌽', price: 11, kind: 'food', satiety: 34, happiness: 5 }),
+  Object.freeze({ key: 'jianbing', label: '煎饼果子', emoji: '🫓', price: 16, kind: 'food', satiety: 48, happiness: 8 }),
+  Object.freeze({ key: 'dumplings', label: '饺子', emoji: '🥟', price: 22, kind: 'food', satiety: 55, happiness: 10 }),
+  Object.freeze({ key: 'fruitplate', label: '水果拼盘', emoji: '🍉', price: 26, kind: 'food', satiety: 40, happiness: 16 }),
+  Object.freeze({ key: 'burger', label: '汉堡', emoji: '🍔', price: 30, kind: 'food', satiety: 64, happiness: 12 }),
+  Object.freeze({ key: 'pizza', label: '披萨', emoji: '🍕', price: 38, kind: 'food', satiety: 70, happiness: 16 }),
+  Object.freeze({ key: 'hotpot', label: '火锅', emoji: '🍲', price: 88, kind: 'food', satiety: 92, happiness: 30 }),
+  Object.freeze({ key: 'sushi', label: '寿司拼盘', emoji: '🍣', price: 82, kind: 'food', satiety: 84, happiness: 28 }),
+  Object.freeze({ key: 'banquet', label: '满汉全席', emoji: '🍗', price: 180, kind: 'food', satiety: 100, happiness: 40 }),
+  Object.freeze({ key: 'birthdaycake', label: '生日蛋糕', emoji: '🎂', price: 150, kind: 'food', satiety: 90, happiness: 45 }),
   // --- fishing bait: one consumed for every cast or auto attempt -----------
   Object.freeze({ key: 'bait_worm', label: '蚯蚓鱼饵', emoji: '🪱', price: 5, kind: 'bait', rarityBoost: 0 }),
   Object.freeze({ key: 'bait_shrimp', label: '鲜虾鱼饵', emoji: '🦐', price: 8, kind: 'bait', rarityBoost: 0.6 }),
@@ -72,6 +85,13 @@ export const SHOP = Object.freeze([
   Object.freeze({ key: 'deadsea', label: '死海泥', emoji: '🫧', price: 78, kind: 'bath', cleanliness: 100, happiness: 27, satiety: -3 }),
   Object.freeze({ key: 'citrusbath', label: '柚子浴', emoji: '🍊', price: 32, kind: 'bath', cleanliness: 76, happiness: 15 }),
   Object.freeze({ key: 'flowerbath', label: '花瓣浴', emoji: '🌸', price: 64, kind: 'bath', cleanliness: 100, happiness: 25 }),
+  // J1 第 6 节新加的 6 种
+  Object.freeze({ key: 'scrubber', label: '搓澡巾', emoji: '🧽', price: 8, kind: 'bath', cleanliness: 45, happiness: 1 }),
+  Object.freeze({ key: 'hairwash', label: '洗发水', emoji: '🪮', price: 12, kind: 'bath', cleanliness: 55, happiness: 4 }),
+  Object.freeze({ key: 'mintbath', label: '薄荷澡', emoji: '🌿', price: 20, kind: 'bath', cleanliness: 70, happiness: 8 }),
+  Object.freeze({ key: 'duckbath', label: '小黄鸭浴', emoji: '🐤', price: 36, kind: 'bath', cleanliness: 80, happiness: 16 }),
+  Object.freeze({ key: 'steamroom', label: '桑拿', emoji: '♨️', price: 52, kind: 'bath', cleanliness: 100, happiness: 20 }),
+  Object.freeze({ key: 'forestbath', label: '森林浴', emoji: '🌲', price: 90, kind: 'bath', cleanliness: 100, happiness: 30 }),
   // --- toys ---------------------------------------------------------------
   Object.freeze({ key: 'yoyo', label: '悠悠球', emoji: '🪀', price: 30, kind: 'toy', happiness: 22, satiety: -4 }),
   Object.freeze({ key: 'blocks', label: '积木', emoji: '🎲', price: 45, kind: 'toy', happiness: 30, satiety: -5 }),
@@ -86,6 +106,16 @@ export const SHOP = Object.freeze([
   Object.freeze({ key: 'frisbee', label: '飞盘', emoji: '🥏', price: 55, kind: 'toy', happiness: 32, satiety: -6 }),
   Object.freeze({ key: 'drum', label: '小鼓', emoji: '🥁', price: 110, kind: 'toy', happiness: 50, satiety: -7 }),
   Object.freeze({ key: 'trampoline', label: '蹦床', emoji: '🤸', price: 320, kind: 'toy', happiness: 86, satiety: -14, cleanliness: -4 }),
+  // J1 第 6 节新加的 9 种
+  Object.freeze({ key: 'yarnball', label: '毛线球', emoji: '🧶', price: 18, kind: 'toy', happiness: 20, satiety: -3 }),
+  Object.freeze({ key: 'marbles', label: '弹珠', emoji: '🔮', price: 28, kind: 'toy', happiness: 26, satiety: -3 }),
+  Object.freeze({ key: 'jumprope', label: '跳绳', emoji: '🪢', price: 50, kind: 'toy', happiness: 36, satiety: -8 }),
+  Object.freeze({ key: 'watergun', label: '水枪', emoji: '🔫', price: 70, kind: 'toy', happiness: 44, satiety: -6 }),
+  Object.freeze({ key: 'rubikcube', label: '魔方', emoji: '🟥', price: 85, kind: 'toy', happiness: 46, satiety: -4 }),
+  Object.freeze({ key: 'swing', label: '秋千', emoji: '🛝', price: 140, kind: 'toy', happiness: 60, satiety: -8 }),
+  Object.freeze({ key: 'toytrain', label: '小火车', emoji: '🚂', price: 200, kind: 'toy', happiness: 70, satiety: -8 }),
+  Object.freeze({ key: 'castleblocks', label: '城堡积木', emoji: '🏰', price: 280, kind: 'toy', happiness: 82, satiety: -10 }),
+  Object.freeze({ key: 'gameconsole', label: '游戏机', emoji: '🎮', price: 450, kind: 'toy', happiness: 95, satiety: -6 }),
   // --- dress (家当) --------------------------------------------------------
   // Not consumables: buy once, own forever, wear them. Each one needs a level,
   // which is what ties 装扮 to the level axis instead of to the wallet.

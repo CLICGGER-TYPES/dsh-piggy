@@ -469,7 +469,7 @@ test('the wear route dresses and undresses, and the shop is honest about 家当'
   })
   try {
     const board = await app.get()
-    assert.equal(board.shop.length, 76)
+    assert.equal(board.shop.length, 103)
     assert.equal(board.dress.length, 13)
     assert.equal(board.shop.find(item => item.key === 'scarf').owned, true)
     const wings = board.shop.find(item => item.key === 'wings')

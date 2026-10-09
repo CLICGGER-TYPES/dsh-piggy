@@ -1090,8 +1090,8 @@ test('trait and course views always list everything', () => {
 // Shop
 // ===========================================================================
 
-test('the shop is well formed: 76 items across eight shelves, every cure stocked', () => {
-  assert.equal(SHOP.length, 76, 'the expanded food, bath, toy and dress shelves are available')
+test('the shop is well formed: 103 items across eight shelves, every cure stocked', () => {
+  assert.equal(SHOP.length, 103, 'the expanded food, bath, toy and dress shelves are available')
   const counts = {}
   for (const item of SHOP) {
     assert.equal(typeof item.key, 'string')
@@ -1099,7 +1099,7 @@ test('the shop is well formed: 76 items across eight shelves, every cure stocked
     assert.ok(['food', 'bath', 'toy', 'bait', 'dress', 'medicine', 'revive', 'promotion'].includes(item.kind))
     counts[item.kind] = (counts[item.kind] ?? 0) + 1
   }
-  assert.deepEqual(counts, { food: 13, bath: 10, toy: 13, bait: 3, dress: 13, medicine: 21, revive: 1, promotion: 2 })
+  assert.deepEqual(counts, { food: 25, bath: 16, toy: 22, bait: 3, dress: 13, medicine: 21, revive: 1, promotion: 2 })
   // 装扮 is a different economy: level-gated, owned once, never counted.
   for (const item of SHOP.filter(entry => entry.kind === 'dress')) {
     assert.ok(Number.isInteger(item.level) && item.level >= 1, `${item.label} needs a level`)
