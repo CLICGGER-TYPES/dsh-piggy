@@ -325,6 +325,7 @@ const game = {
           remainingMs: left,
           /** 这一季整体走到哪了（0～1），给进度条用。 */
           progress: current.stage >= 3 ? 1 : Math.min(1, (current.stage + inStage) / 3),
+          ...helperPlotView(d, index, current),
         }
       }),
       seeds: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'seeds', crop.key), price: crop.price, minutes: crop.minutes })),
@@ -371,7 +372,12 @@ export function helperRecipe(key, level = 0, barn = 0) {
 
 function normalizeHelper(data) {
   const raw = data.helper && typeof data.helper === 'object' ? data.helper : {}
-  const pending = raw.pending && cropFor(raw.pending.crop) && Number.isFinite(raw.pending.remainingMs) ? { ...raw.pending } : null
+  const recipe = helperRecipe(raw.pending?.crop, Math.min(2, count(raw.level)), Math.min(3, count(raw.barn)))
+  const pending = recipe && Number.isFinite(raw.pending.remainingMs) ? {
+    ...raw.pending,
+    remainingMs: Math.max(0, Math.min(recipe.intervalMs, raw.pending.remainingMs)),
+    yield: recipe.yield,
+  } : null
   data.helper = {
     hired: raw.hired === true,
     level: Math.min(2, count(raw.level)),
@@ -449,6 +455,28 @@ function helperView(data) {
   const missing = helper.targets.slice(0, helperPlots(data)).filter((key, index) => key && !data.plots[index] && amountFor(data, 'seeds', key) === 0)
   return { hired: helper.hired, plots: helperPlots(data), stored: helperCount(data), usedHours: helper.usedMs / 3600000,
     capacityHours: 6, full: helper.usedMs >= HELPER_WINDOW, missing: [...new Set(missing)].map(key => cropFor(key).label) }
+}
+
+/** 管理地块显示批次进度；手动成熟 / 浇水条件单独保留，不能改显示就复制果实。 */
+function helperPlotView(data, index, current) {
+  if (index >= helperPlots(data)) return {}
+  const pending = data.helper.pending?.index === index ? data.helper.pending : null
+  const recipe = helperRecipe(current.crop, data.helper.level, data.helper.barn)
+  if (!recipe) return {}
+  const remainingMs = pending?.remainingMs ?? recipe.intervalMs
+  const progress = pending ? Math.max(0, Math.min(1, 1 - remainingMs / recipe.intervalMs)) : 0
+  const stage = Math.min(2, Math.floor(progress * 3))
+  return {
+    helperManaged: true,
+    helperNote: data.helper.usedMs >= HELPER_WINDOW ? '等帮工接着干' : pending ? '帮工处理中' : '等帮工',
+    manualRipe: current.stage === 3,
+    manualThirsty: current.stage < 3 && current.wateredAt === null,
+    thirsty: false,
+    stage,
+    emoji: ['🟫', '🌱', '🌿'][stage],
+    progress,
+    remainingMs,
+  }
 }
 
 function helperShelf(data, balance) {

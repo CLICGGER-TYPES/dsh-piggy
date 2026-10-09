@@ -39,6 +39,21 @@ test('未开长时自动钓不显示新鱼篓，短行程仍按原饵数出发',
   assert.match(findByAttr(contentOf(dom), 'data-fish-auto', '60').textContent, /鱼饵 20 个/)
 })
 
+test('新鱼篓空仓停工不写满，接着干仍走收取动作', async () => {
+  const automation = { unlocked: true, stored: 0, usedHours: 6, full: true, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 120, attempts: 26 }], upgrades: [] }
+  const { dom, calls } = await mount({ status: status({ automation }) })
+  openPanel(dom, 'fishing')
+  assert.match(contentOf(dom).allText(), /钓鱼歇了/)
+  assert.doesNotMatch(contentOf(dom).allText(), /鱼篓满了/)
+  const resume = findByAttr(contentOf(dom), 'data-fish-collect', 'true')
+  assert.equal(resume.textContent, '接着干')
+  assert.equal(resume.disabled, false)
+  resume.fire('click')
+  await settle()
+  assert.equal(JSON.parse(calls.at(-1).body).action, 'fishCollect')
+})
+
 test('C5 home has a one-click cast and keeps both auto choices', async () => {
   const { dom, calls } = await mount({ status: status() })
   openPanel(dom)

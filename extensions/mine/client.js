@@ -62,7 +62,7 @@
     if (!helper.hired) {
       row.appendChild(button(app, 'dp-mini', '雇小矿工猪 3000 ⛏️', { 'data-mine-helper': 'hire' }, function () { app.send('hire', {}) }))
     } else {
-      row.appendChild(app.el('span', 'mn-muted', '⛏️ ' + (helper.full ? '仓满' : '干活中') + ' · ' + helper.usedHours.toFixed(1) + '/6时'))
+      row.appendChild(app.el('span', 'mn-muted', '⛏️ ' + (helper.full ? helper.stored > 0 ? '仓满' : '矿工歇了' : '干活中') + ' · ' + helper.usedHours.toFixed(1) + '/6时'))
       var floor = app.el('select', 'dp-input')
       floor.setAttribute('aria-label', '矿工电梯站')
       helper.stops.forEach(function (stop) {
@@ -72,8 +72,8 @@
       })
       floor.addEventListener('change', function () { app.send('workerFloor', { floor: Number(floor.value) }) })
       row.appendChild(floor)
-      var collect = button(app, 'dp-mini', '收一下', { 'data-mine-helper': 'collect' }, function () { app.send('collect', {}) })
-      collect.disabled = helper.stored === 0 && helper.usedHours === 0
+      var collect = button(app, 'dp-mini', helper.stored > 0 ? '收一下' : helper.full ? '接着干' : '暂无收成', { 'data-mine-helper': 'collect' }, function () { app.send('collect', {}) })
+      collect.disabled = helper.stored === 0 && !helper.full
       row.appendChild(collect)
     }
     root.appendChild(row)

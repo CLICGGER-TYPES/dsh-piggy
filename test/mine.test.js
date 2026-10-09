@@ -289,6 +289,19 @@ function renderMine(view) {
   return { find, sent, shops: () => shop, body: dom.body }
 }
 
+test('矿车空仓停工显示休息和接着干，不写仓满', () => {
+  const t = fake()
+  const data = mine.init()
+  mine.actions.hire(data, {}, t.api)
+  data.helper.usedMs = 21600000
+  const ui = renderMine(mine.view(data, t.api))
+  assert.match(ui.body.allText(), /矿工歇了/)
+  assert.doesNotMatch(ui.body.allText(), /仓满/)
+  assert.equal(ui.find('data-mine-helper', 'collect').textContent, '接着干')
+  assert.equal(mine.actions.collect(data, {}, t.api).ok, true)
+  assert.equal(data.helper.usedMs, 0)
+})
+
 test('界面：点能挖的格子就敲；缺镐时写清楚要哪把并能去商店；矿石袋写出全卖多少', () => {
   const t = fake()
   const data = mine.init()

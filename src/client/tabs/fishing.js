@@ -131,7 +131,7 @@ function renderAuto(ui) {
     go.disabled = !canStart(ui) || have < need || (!legacy && automation?.full === true) || closed
     if (go.disabled && minutes === 30) {
       if (!canStart(ui)) reasons.push('猪现在不能出门')
-      else if (!legacy && automation?.full) reasons.push('鱼篓满了，先收一下')
+      else if (!legacy && automation?.full) reasons.push(automation.stored > 0 ? '鱼篓满了，先收一下' : '钓鱼歇了，先接着干')
       else if (closed) reasons.push('这个钓点现在没有开')
       else reasons.push('鱼饵只剩 ' + have + ' 个，不够 ' + need + ' 个')
     }
@@ -153,10 +153,10 @@ function renderAutoStock(ui) {
   const automation = ui.view.fishing.automation
   if (!automation || (!automation.unlocked && automation.stored === 0 && automation.usedHours === 0)) return
   const row = el('div', 'dp-fish-rodrow')
-  row.appendChild(el('span', null, '🧺 ' + (automation.full ? '鱼篓满了' : '鱼篓') + ' ' + automation.usedHours.toFixed(1) + '/6时'))
+  row.appendChild(el('span', null, '🧺 ' + (automation.full ? automation.stored > 0 ? '鱼篓满了' : '钓鱼歇了' : '鱼篓') + ' ' + automation.usedHours.toFixed(1) + '/6时'))
   const collect = button('dp-mini', { 'data-fish-collect': 'true' }, () => ui.send('fishCollect'))
-  collect.textContent = '收一下'
-  collect.disabled = automation.stored === 0 && automation.usedHours === 0
+  collect.textContent = automation.stored > 0 ? '收一下' : automation.full ? '接着干' : '暂无收成'
+  collect.disabled = automation.stored === 0 && !automation.full
   row.appendChild(collect)
   ui.content.appendChild(row)
 }

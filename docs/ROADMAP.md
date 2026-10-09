@@ -20,7 +20,7 @@
   - 跟 J1 初稿不一样、要用户点头的：鱼饵降价（鲜虾 8、夜光 18）、等咬钩变长（竹竿 14～32 秒）、传说竿稀有 ×1.5；短途纪念品单独标便宜价；「工具」总货架不做；扭蛋不开自己的币。
   - 发版时要发的扩展：ext-farm 2.0.0、ext-mine 2.0.0、ext-blindbox 3.0.0、ext-gacha 1.2.0（都要游戏 0.35.0），GitHub 和 Gitee 都要传。
 
-- **扩展自动化 K1**（[任务卡](design/automation.md)，[J2](numbers/J2-automation.md)）：PR #10 首轮未通过，按用户本轮拍板修正：仓恒定六小时、满级净时薪 ≤400、旧短时自动钓完全保留；扩展 server.js 上限 600 行并恢复原格式 / 导出，不升存档版本。构建、818 项测试、类型检查通过；Linux / Win11 第二轮复测完成，旧 30 分钟预扣 10 饵并直接入背包，新仓计时不变。截图 / 验收记录在仓库外的 /zyx/DSH/workspaces/dsh/k1-automation-review/round-2/；整理本 PR 分支历史后再次提交验收。
+- **扩展自动化 K1**（[任务卡](design/automation.md)，[J2](numbers/J2-automation.md)）：PR #10 第二轮八条已通过，菜园进度专项修正待再次验收；保持：仓恒定六小时、满级净时薪 ≤400、旧短时自动钓完全保留；扩展 server.js 上限 600 行并恢复原格式 / 导出，不升存档版本。构建、826 项测试、类型检查通过；Linux / Win11 菜园专项复测完成，旧 30 分钟预扣 10 饵并直接入背包，新仓计时不变。截图 / 验收记录在仓库外的 /zyx/DSH/workspaces/dsh/k1-automation-review/round-3/；本次追加菜园进度修复提交，更新原 PR 再次验收。
 - **Gitee 发 v0.34.1**：维护者本机 `GITEE_TOKEN=… bash scripts/gitee-publish.sh v0.34.1`（先传游戏包再传安装包——Gitee 的 Windows 安装包不带游戏，首次启动要从 Gitee 下）；再传盲盒 2.2.2 的 Gitee 附件（[HANDOFF 9.3](HANDOFF.md)）。传完在 Win11 虚拟机用真的 Gitee 地址验一次首次下载。
 - **项目规范化**（2026-10-09 体检）：
   - 第 1 批 文档和规划：已完成——本页、[素材总表](ASSETS.md)、`docs/archive/`、数值单挪到 `docs/numbers/`、文档链接检查测试。

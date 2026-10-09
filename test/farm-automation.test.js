@@ -93,3 +93,73 @@ test('帮工：哈密瓜六小时有实物产出并封仓，不改手动作物�
   farm.actions.collect(data, {}, api)
   assert.equal(data.harvest.melon, 1)
 })
+
+test('旧超长批次不会把六小时工作耗成空仓，管理地块不显示手动缺水', () => {
+  const { data, api } = setup()
+  data.seeds.melon = 20
+  for (const plot of [0, 1]) farm.actions.plant(data, { plot, item: 'melon' }, api)
+  farm.actions.hire(data, {}, api)
+  data.helper.pending.remainingMs = 18 * 3600000
+  api.now += 100 * 3600000
+  const view = farm.view(data, api)
+  assert.equal(view.helper.stored, 1)
+  assert.ok(view.plots.slice(0, 2).filter(Boolean).every(plot => !plot.thirsty))
+})
+
+test('哈密瓜与葡萄跨四个六小时仓期的实物产出符合 J2', () => {
+  for (const key of ['melon', 'grape']) {
+    const { data, api } = setup()
+    data.seeds[key] = 100
+    for (const plot of [0, 1]) farm.actions.plant(data, { plot, item: key }, api)
+    farm.actions.hire(data, {}, api)
+    for (let period = 1; period <= 4; period += 1) {
+      api.now = NOW + period * 6 * 3600000
+      assert.equal(farm.actions.collect(data, {}, api).ok, true)
+      assert.equal(data.harvest[key], period * helperRecipe(key).batches * helperRecipe(key).yield)
+    }
+  }
+})
+
+test('手动浇水不重置批次；手动收掉当前作物后不重复发果，空仓休息后可续做', () => {
+  const { data, api } = setup()
+  data.seeds.melon = 20
+  for (const plot of [0, 1]) farm.actions.plant(data, { plot, item: 'melon' }, api)
+  data.plots[0].stage = 2
+  data.plots[0].wateredAt = NOW - 3 * 3600000
+  farm.actions.hire(data, {}, api)
+  api.now += 3600000
+  const projected = farm.view(data, api)
+  assert.equal(projected.plots[0].helperManaged, true)
+  assert.ok(Math.abs(projected.plots[0].progress - 1 / 6) < 1e-10)
+  assert.equal(projected.plots[0].manualRipe, true)
+  assert.equal(farm.actions.water(data, { plot: 1 }, api).ok, true)
+  assert.equal(data.helper.pending.remainingMs, 5 * 3600000)
+  assert.equal(farm.actions.harvest(data, { plot: 0 }, api).ok, true)
+  assert.equal(data.harvest.melon, 2)
+  api.now = NOW + 6 * 3600000
+  const stopped = farm.view(data, api)
+  assert.equal(stopped.helper.full, true)
+  assert.equal(stopped.helper.stored, 0)
+  assert.equal(stopped.plots[0].helperNote, '等帮工接着干')
+  assert.equal(farm.actions.collect(data, {}, api).ok, true)
+  assert.equal(data.harvest.melon, 2)
+  api.now += 3600000
+  farm.actions.collect(data, {}, api)
+  assert.equal(data.harvest.melon, 3)
+})
+
+test('旧仓期已停且空仓、再回拨一百小时：不倒扣也不显示缺水，继续后可出货', () => {
+  const { data, api } = setup()
+  data.seeds.melon = 20
+  for (const plot of [0, 1]) farm.actions.plant(data, { plot, item: 'melon' }, api)
+  farm.actions.hire(data, {}, api)
+  data.helper.usedMs = 21600000
+  data.helper.pending.remainingMs = 18 * 3600000
+  api.now -= 100 * 3600000
+  assert.equal(farm.view(data, api).helper.stored, 0)
+  assert.equal(farm.view(data, api).plots[1].thirsty, false)
+  assert.equal(farm.actions.collect(data, {}, api).ok, true)
+  api.now = NOW + 21600000
+  farm.actions.collect(data, {}, api)
+  assert.equal(data.harvest.melon, 1)
+})

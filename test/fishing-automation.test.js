@@ -133,3 +133,12 @@ test('旧 30/60 在新仓满、鱼饵盒已升满时仍预付 10/20 饵，直接
     assert.equal(state.fishing.automation.usedMs, 21600000)
   }
 })
+
+test('长时鱼篓空仓停工可重启仓期，不写收了零条鱼的记录', () => {
+  const state = upgraded()
+  state.fishing.automation.usedMs = 21600000
+  const diary = structuredClone(state.diary)
+  assert.equal(collectAutoFish(state, NOW).count, 0)
+  assert.equal(state.fishing.automation.usedMs, 0)
+  assert.deepEqual(state.diary, diary)
+})

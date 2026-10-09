@@ -90,11 +90,11 @@
         },
         "server.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.1.0/server.js",
-          "sha256": "4cd3b6955412a68304369cce29f028c157af99e6549dbeadedbfe3b3fc96526a"
+          "sha256": "f50ba928bc38f3df4b86777859e3cb34227339319aa8be9aa14c247c3d1c41cc"
         },
         "client.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-2.1.0/client.js",
-          "sha256": "9e6f5736a92563add77ee932a30ec63963a79bf5af0190ea145644ccf37bde1b"
+          "sha256": "a79855c6ab2d735de5fccff0cf766565b4c6bbab0e962ad26750522e09753629"
         }
       }
     },
@@ -123,7 +123,7 @@
         },
         "client.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-mine-2.1.0/client.js",
-          "sha256": "0b43a9d62cc8443a3b559bca6783d6413f6dcae657e2664bd568dbbfd1da0a47"
+          "sha256": "126dd7a830be1bed925bb8e08191bd5eb3920f667512ac69e3d1e717bf6381e6"
         }
       }
     }

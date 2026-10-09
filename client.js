@@ -1658,7 +1658,7 @@
       go.disabled = !canStart(ui) || have < need || !legacy && automation2?.full === true || closed;
       if (go.disabled && minutes === 30) {
         if (!canStart(ui)) reasons.push("\u732A\u73B0\u5728\u4E0D\u80FD\u51FA\u95E8");
-        else if (!legacy && automation2?.full) reasons.push("\u9C7C\u7BD3\u6EE1\u4E86\uFF0C\u5148\u6536\u4E00\u4E0B");
+        else if (!legacy && automation2?.full) reasons.push(automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86\uFF0C\u5148\u6536\u4E00\u4E0B" : "\u9493\u9C7C\u6B47\u4E86\uFF0C\u5148\u63A5\u7740\u5E72");
         else if (closed) reasons.push("\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u6709\u5F00");
         else reasons.push("\u9C7C\u9975\u53EA\u5269 " + have + " \u4E2A\uFF0C\u4E0D\u591F " + need + " \u4E2A");
       }
@@ -1678,10 +1678,10 @@
     const automation2 = ui.view.fishing.automation;
     if (!automation2 || !automation2.unlocked && automation2.stored === 0 && automation2.usedHours === 0) return;
     const row = el("div", "dp-fish-rodrow");
-    row.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + "/6\u65F6"));
+    row.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9493\u9C7C\u6B47\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + "/6\u65F6"));
     const collect = button("dp-mini", { "data-fish-collect": "true" }, () => ui.send("fishCollect"));
-    collect.textContent = "\u6536\u4E00\u4E0B";
-    collect.disabled = automation2.stored === 0 && automation2.usedHours === 0;
+    collect.textContent = automation2.stored > 0 ? "\u6536\u4E00\u4E0B" : automation2.full ? "\u63A5\u7740\u5E72" : "\u6682\u65E0\u6536\u6210";
+    collect.disabled = automation2.stored === 0 && !automation2.full;
     row.appendChild(collect);
     ui.content.appendChild(row);
   }

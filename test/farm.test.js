@@ -189,8 +189,25 @@ function renderFarm(view) {
     dom.body.walk(node => { if (node.getAttribute(attr) === key) result = node })
     return result
   }
-  return { find, sent, shops: () => shop }
+  return { find, sent, shops: () => shop, text: () => dom.body.allText() }
 }
+
+test('空谷仓停工显示休息和接着干，管理地块不显示缺水提示', () => {
+  const data = farm.init()
+  const t = fakeApi()
+  data.seeds.melon = 10
+  for (const plot of [0, 1]) farm.actions.plant(data, { plot, item: 'melon' }, t.api)
+  farm.actions.hire(data, {}, t.api)
+  data.helper.usedMs = 21600000
+  const ui = renderFarm(farm.view(data, t.api))
+  assert.match(ui.text(), /帮工歇了/)
+  assert.doesNotMatch(ui.text(), /谷仓满了|渴了，点一下浇/)
+  const resume = ui.find('data-farm-helper', 'collect')
+  assert.equal(resume.textContent, '接着干')
+  assert.equal(resume.disabled, false)
+  resume.fire('click')
+  assert.equal(ui.sent[0].op, 'collect')
+})
 
 test('界面：点空地种手里的种子，没种子就去商店；锁着的工具点了去商店', () => {
   const data = farm.init()

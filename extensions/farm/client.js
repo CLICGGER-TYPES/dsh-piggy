@@ -96,10 +96,10 @@
     if (!helper.hired) {
       row.appendChild(button(app, 'dp-mini', { 'data-farm-helper': 'hire' }, '雇帮工猪 2500 🥬', function () { app.send('hire', {}) }))
     } else {
-      var state = helper.full ? '谷仓满了' : helper.missing.length ? '没有' + helper.missing.join('、') + '种子了' : '帮工猪在干活'
+      var state = helper.full ? helper.stored > 0 ? '谷仓满了' : '帮工歇了' : helper.missing.length ? '没有' + helper.missing.join('、') + '种子了' : '帮工猪在干活'
       row.appendChild(app.el('span', 'fm-note', '🐷 ' + state + ' · 谷仓 ' + helper.usedHours.toFixed(1) + '/6时'))
-      var collect = button(app, 'dp-mini', { 'data-farm-helper': 'collect' }, '收一下', function () { app.send('collect', {}) })
-      collect.disabled = helper.stored === 0 && helper.usedHours === 0
+      var collect = button(app, 'dp-mini', { 'data-farm-helper': 'collect' }, helper.stored > 0 ? '收一下' : helper.full ? '接着干' : '暂无收成', function () { app.send('collect', {}) })
+      collect.disabled = helper.stored === 0 && !helper.full
       row.appendChild(collect)
       if (helper.missing.length) row.appendChild(button(app, 'dp-mini dp-mini-plain', { 'data-farm-helper': 'seed' }, '买种子', function () { goShop(app) }))
     }
@@ -132,8 +132,8 @@
   /** 四个一键工具：锁着的点了去商店买；角标是现在有几块地用得上。 */
   function renderTools(app, data, root) {
     var unlocked = data.plots.slice(0, data.unlocked)
-    var thirsty = unlocked.filter(function (plot) { return plot && plot.thirsty }).length
-    var ripe = unlocked.filter(function (plot) { return plot && plot.stage === 3 }).length
+    var thirsty = unlocked.filter(function (plot) { return plot && (plot.manualThirsty || plot.thirsty) }).length
+    var ripe = unlocked.filter(function (plot) { return plot && (plot.manualRipe || plot.stage === 3) }).length
     var empty = unlocked.filter(function (plot) { return plot === null }).length
     var growing = unlocked.filter(function (plot) { return plot && plot.stage < 3 && !plot.fertilized }).length
     var specs = [
@@ -174,10 +174,10 @@
       } else if (fertilizing && plot.stage < 3 && !plot.fertilized) {
         fertilizing = data.fertilizer > 1
         app.send('fertilize', { plot: index })
-      } else if (plot.stage === 3) {
+      } else if (plot.manualRipe || plot.stage === 3) {
         effect(index, 'harvest')
         app.send('harvest', { plot: index })
-      } else if (plot.thirsty) {
+      } else if (plot.manualThirsty || plot.thirsty) {
         effect(index, 'water')
         app.send('water', { plot: index })
       }
@@ -197,7 +197,7 @@
       fill.style.width = Math.round(plot.progress * 100) + '%'
       bar.appendChild(fill)
       card.appendChild(bar)
-      card.appendChild(app.el('div', 'fm-note', plot.stage === 3 ? '熟了，点一下收' : plot.thirsty ? '渴了，点一下浇' : '还要 ' + shortTime(plot.remainingMs)))
+      card.appendChild(app.el('div', 'fm-note', plot.helperManaged ? plot.helperNote + (plot.helperNote === '帮工处理中' ? ' · ' + shortTime(plot.remainingMs) : '') : plot.stage === 3 ? '熟了，点一下收' : plot.thirsty ? '渴了，点一下浇' : '还要 ' + shortTime(plot.remainingMs)))
       if (plot.fertilized) card.appendChild(app.el('span', 'fm-badge fm-badge-left', '🧪'))
     }
     if (!locked && data.sprinklers && data.sprinklers[index]) card.appendChild(app.el('span', 'fm-badge', '💦'))

@@ -47,7 +47,7 @@ export function collectAutoFish(state, nowMs) {
   fishing.bag.push(...fishing.automation.stock)
   fishing.automation.stock = []
   fishing.automation.usedMs = 0
-  remember(state, `🎣 收了 ${count} 条鱼，放进背包`, nowMs)
+  if (count > 0) remember(state, `🎣 收了 ${count} 条鱼，放进背包`, nowMs)
   return { ok: true, count }
 }
 
