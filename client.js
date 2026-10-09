@@ -1230,12 +1230,13 @@
       };
     }
   }
+  var FIGHT_LENGTH = 1.5;
   function ringRules(difficulty, feel2) {
     return {
       zoneDegrees: Math.round((115 - difficulty * 0.38) * feel2.zone),
       perfectDegrees: Math.round(16 - difficulty * 0.06),
       rotationsPerSecond: 0.28 + difficulty * 18e-4,
-      hitsNeeded: difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2
+      hitsNeeded: Math.round((difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2) * FIGHT_LENGTH)
     };
   }
   function newRingRound(s) {
@@ -1401,7 +1402,7 @@
       }
       moveFish(dt, now);
       const inside2 = s.fishY >= s.zone && s.fishY <= s.zone + s.zoneH;
-      s.progress = Math.max(0, Math.min(100, s.progress + (inside2 ? 0.028 : -0.022 - d * 1e-4) * dt));
+      s.progress = Math.max(0, Math.min(100, s.progress + (inside2 ? 0.028 / FIGHT_LENGTH : -0.022 - d * 1e-4) * dt));
       zone.style.bottom = s.zone + "px";
       zone.style.height = s.zoneH + "px";
       swimmer.style.bottom = s.fishY + "px";
@@ -1459,7 +1460,7 @@
       const green = s.tension >= 30 && s.tension < snap;
       const sweet = s.tension >= snap - 13 && s.tension < snap;
       if (green) {
-        s.distance -= (sweet ? 0.022 : 0.012) * dt * (1 - d * 4e-3);
+        s.distance -= (sweet ? 0.022 : 0.012) / FIGHT_LENGTH * dt * (1 - d * 4e-3);
         s.loose = Math.max(0, s.loose - dt);
       }
       if (s.tension < 30) s.loose += dt;
@@ -5169,10 +5170,10 @@
     Object.freeze({ key: "night", label: "\u591C\u6F6D", emoji: "\u{1F30C}", price: 9e3, times: Object.freeze(["night"]) })
   ]);
   var RODS = Object.freeze([
-    Object.freeze({ level: 1, key: "bamboo", label: "\u7AF9\u7AFF", emoji: "\u{1F38B}", price: 0, bite: Object.freeze([14e3, 32e3]), difficulty: 1.2, rare: 0.8, zone: 0.9, hold: 0.9 }),
-    Object.freeze({ level: 2, key: "carbon", label: "\u78B3\u7D20\u7AFF", emoji: "\u{1F3A3}", price: 800, bite: Object.freeze([1e4, 24e3]), difficulty: 1, rare: 1, zone: 1, hold: 1 }),
-    Object.freeze({ level: 3, key: "pro", label: "\u4E13\u4E1A\u7AFF", emoji: "\u{1FA9D}", price: 2500, bite: Object.freeze([9e3, 21e3]), difficulty: 0.85, rare: 1.3, zone: 1.12, hold: 1.1 }),
-    Object.freeze({ level: 4, key: "legend", label: "\u4F20\u8BF4\u7AFF", emoji: "\u{1F531}", price: 7e3, bite: Object.freeze([8e3, 18e3]), difficulty: 0.7, rare: 1.5, zone: 1.25, hold: 1.2 })
+    Object.freeze({ level: 1, key: "bamboo", label: "\u7AF9\u7AFF", emoji: "\u{1F38B}", price: 0, bite: Object.freeze([3e3, 8e3]), difficulty: 1.6, rare: 0.8, zone: 0.9, hold: 0.9 }),
+    Object.freeze({ level: 2, key: "carbon", label: "\u78B3\u7D20\u7AFF", emoji: "\u{1F3A3}", price: 800, bite: Object.freeze([2500, 6500]), difficulty: 1.4, rare: 1, zone: 1, hold: 1 }),
+    Object.freeze({ level: 3, key: "pro", label: "\u4E13\u4E1A\u7AFF", emoji: "\u{1FA9D}", price: 2500, bite: Object.freeze([2e3, 5e3]), difficulty: 1.25, rare: 1.3, zone: 1.12, hold: 1.1 }),
+    Object.freeze({ level: 4, key: "legend", label: "\u4F20\u8BF4\u7AFF", emoji: "\u{1F531}", price: 7e3, bite: Object.freeze([1500, 4e3]), difficulty: 1.1, rare: 1.5, zone: 1.25, hold: 1.2 })
   ]);
   var FISH_FEEL = Object.freeze({
     smooth: Object.freeze({ speed: Object.freeze([0.6, 0.95]), burst: 0, burstScale: 1, drift: 0, jitter: 0 }),

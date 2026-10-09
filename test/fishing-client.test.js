@@ -108,7 +108,7 @@ test('C5 hooked fish uses a circular skill-check QTE scaled by difficulty', asyn
   openPanel(dom, 'fishing')
   const qte = findByAttr(contentOf(dom), 'data-fish-qte', 'true')
   assert.notEqual(qte, undefined)
-  assert.equal(qte.getAttribute('data-qte-needed'), '4')
+  assert.equal(qte.getAttribute('data-qte-needed'), '6', 'C5 的 4 下 × 搏斗时长 1.5（用户 2026-10-10）')
   assert.equal(qte.getAttribute('data-qte-difficulty'), '86')
   assert.equal(findByClass(contentOf(dom), 'dp-fish-track'), undefined)
   assert.equal(qte.getAttribute('data-qte-misses'), '0')

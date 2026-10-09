@@ -85,6 +85,9 @@ function holdControls(stage, s) {
   }
 }
 
+/** 搏斗要多久：C5 的 1.5 倍（用户 2026-10-10：等待短，难度放在搏斗上）。三种玩法都按它放慢收鱼。 */
+const FIGHT_LENGTH = 1.5
+
 // ---- 圆盘 ------------------------------------------------------------------
 
 function ringRules(difficulty, feel) {
@@ -92,7 +95,7 @@ function ringRules(difficulty, feel) {
     zoneDegrees: Math.round((115 - difficulty * .38) * feel.zone),
     perfectDegrees: Math.round(16 - difficulty * .06),
     rotationsPerSecond: .28 + difficulty * .0018,
-    hitsNeeded: difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2,
+    hitsNeeded: Math.round((difficulty >= 80 ? 4 : difficulty >= 45 ? 3 : 2) * FIGHT_LENGTH),
   }
 }
 
@@ -248,7 +251,7 @@ function renderBar(ui, fish, s, finish) {
     if (s.zone > BAR_HEIGHT - s.zoneH) { s.zone = BAR_HEIGHT - s.zoneH; s.vel = Math.min(0, s.vel) }
     moveFish(dt, now)
     const inside = s.fishY >= s.zone && s.fishY <= s.zone + s.zoneH
-    s.progress = Math.max(0, Math.min(100, s.progress + (inside ? .028 : -.022 - d * .0001) * dt))
+    s.progress = Math.max(0, Math.min(100, s.progress + (inside ? .028 / FIGHT_LENGTH : -.022 - d * .0001) * dt))
     zone.style.bottom = s.zone + 'px'
     zone.style.height = s.zoneH + 'px'
     swimmer.style.bottom = s.fishY + 'px'
@@ -308,7 +311,7 @@ function renderPull(ui, fish, s, finish) {
     s.surge = Math.max(0, s.surge - dt * .02)
     const green = s.tension >= 30 && s.tension < snap
     const sweet = s.tension >= snap - 13 && s.tension < snap
-    if (green) { s.distance -= (sweet ? .022 : .012) * dt * (1 - d * .004); s.loose = Math.max(0, s.loose - dt) }
+    if (green) { s.distance -= (sweet ? .022 : .012) / FIGHT_LENGTH * dt * (1 - d * .004); s.loose = Math.max(0, s.loose - dt) }
     if (s.tension < 30) s.loose += dt
     pin.style.left = s.tension + '%'
     rod.style.transform = s.holding ? 'rotate(-12deg)' : 'none'

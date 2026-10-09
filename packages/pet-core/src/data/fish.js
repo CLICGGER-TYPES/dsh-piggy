@@ -72,13 +72,14 @@ export const fishSpotByKey = key => FISH_SPOTS.find(spot => spot.key === key) ??
 
 /**
  * 鱼竿（用户 2026-10-09：根据鱼竿优化手感）。bite 咬钩等多久（毫秒），difficulty 搏斗难度乘数，
+ * 用户 2026-10-10：等咬钩要快，收入靠后面的搏斗难度压，不靠拖长等待——所以等待短、难度乘数都在 1 以上。
  * rare 稀有 / 传说鱼的权重乘数，zone 搏斗时绿区宽度乘数，hold 拉力玩法的耐拉乘数。
  */
 export const RODS = Object.freeze([
-  Object.freeze({ level: 1, key: 'bamboo', label: '竹竿', emoji: '🎋', price: 0, bite: Object.freeze([14000, 32000]), difficulty: 1.2, rare: 0.8, zone: 0.9, hold: 0.9 }),
-  Object.freeze({ level: 2, key: 'carbon', label: '碳素竿', emoji: '🎣', price: 800, bite: Object.freeze([10000, 24000]), difficulty: 1, rare: 1, zone: 1, hold: 1 }),
-  Object.freeze({ level: 3, key: 'pro', label: '专业竿', emoji: '🪝', price: 2500, bite: Object.freeze([9000, 21000]), difficulty: 0.85, rare: 1.3, zone: 1.12, hold: 1.1 }),
-  Object.freeze({ level: 4, key: 'legend', label: '传说竿', emoji: '🔱', price: 7000, bite: Object.freeze([8000, 18000]), difficulty: 0.7, rare: 1.5, zone: 1.25, hold: 1.2 }),
+  Object.freeze({ level: 1, key: 'bamboo', label: '竹竿', emoji: '🎋', price: 0, bite: Object.freeze([3000, 8000]), difficulty: 1.6, rare: 0.8, zone: 0.9, hold: 0.9 }),
+  Object.freeze({ level: 2, key: 'carbon', label: '碳素竿', emoji: '🎣', price: 800, bite: Object.freeze([2500, 6500]), difficulty: 1.4, rare: 1, zone: 1, hold: 1 }),
+  Object.freeze({ level: 3, key: 'pro', label: '专业竿', emoji: '🪝', price: 2500, bite: Object.freeze([2000, 5000]), difficulty: 1.25, rare: 1.3, zone: 1.12, hold: 1.1 }),
+  Object.freeze({ level: 4, key: 'legend', label: '传说竿', emoji: '🔱', price: 7000, bite: Object.freeze([1500, 4000]), difficulty: 1.1, rare: 1.5, zone: 1.25, hold: 1.2 }),
 ])
 export const rodByLevel = level => RODS.find(rod => rod.level === level) ?? RODS[0]
 

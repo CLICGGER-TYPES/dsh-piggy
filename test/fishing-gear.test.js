@@ -93,10 +93,11 @@ test('手感：按游法取速度区间，难的鱼更快；好竿降难度、�
   const easy = fightFeel(FISH.find(f => f.key === 'fish_loach'), RODS[1])
   const hard = fightFeel(FISH.find(f => f.key === 'fish_crucian'), RODS[1])
   assert.ok(hard.speed > easy.speed)
-  const moon = FISH.find(f => f.key === 'fish_moon')
-  const [bamboo, legend] = [fightFeel(moon, RODS[0]), fightFeel(moon, RODS[3])]
-  assert.equal(bamboo.difficulty, 100, 'capped at 100')
-  assert.equal(legend.difficulty, 70)
+  assert.equal(fightFeel(FISH.find(f => f.key === 'fish_moon'), RODS[0]).difficulty, 100, 'capped at 100')
+  const eel = FISH.find(f => f.key === 'fish_eel')
+  const [bamboo, legend] = [fightFeel(eel, RODS[0]), fightFeel(eel, RODS[3])]
+  assert.equal(bamboo.difficulty, 98)
+  assert.equal(legend.difficulty, 67)
   assert.ok(legend.zone > bamboo.zone && legend.hold > bamboo.hold)
   assert.equal(fightFeel(FISH.find(f => f.behavior === 'sink'), RODS[1]).drift < 0, true)
   assert.equal(fightFeel(FISH.find(f => f.behavior === 'rise'), RODS[1]).drift > 0, true)

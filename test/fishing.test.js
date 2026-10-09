@@ -69,7 +69,7 @@ test('better bait increases rare and legendary catches for the same rolls', () =
   assert.ok(rareCount('bait_shrimp') > rareCount('bait_worm'))
 })
 
-test('a cast tires the pig by half a point and pins one pending fish; the bamboo rod bites in 14–32 s', () => {
+test('a cast tires the pig by half a point and pins one pending fish; the bamboo rod bites in 3–8 s', () => {
   const state = fresh()
   const before = state.satiety
   const result = castFishing(state, 0.8, NOW, () => 0.25, 'bait_worm')
@@ -77,8 +77,8 @@ test('a cast tires the pig by half a point and pins one pending fish; the bamboo
   assert.equal(state.satiety, before, 'half a point is saved up, not taken yet')
   assert.equal(state.fishing.pending.key, result.fish.key)
   assert.equal(state.fishing.pending.expiresAt, NOW + 60_000)
-  assert.ok(state.fishing.pending.bitesAt >= NOW + 14_000)
-  assert.ok(state.fishing.pending.bitesAt <= NOW + 32_000)
+  assert.ok(state.fishing.pending.bitesAt >= NOW + 3_000)
+  assert.ok(state.fishing.pending.bitesAt <= NOW + 8_000)
   assert.equal(castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm').reason, 'pending')
   state.fishing.pending = null
   castFishing(state, 0.2, NOW + 100, () => 0.9, 'bait_worm')

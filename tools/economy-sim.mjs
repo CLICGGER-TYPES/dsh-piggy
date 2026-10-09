@@ -181,7 +181,9 @@ function printAutomation() {
 }
 
 /** 玩家搏斗的成功率：按（鱼的难度 × 鱼竿的难度乘数）估。 */
-export const fightSuccess = difficulty => Math.max(0.3, Math.min(0.95, 0.95 - difficulty / 110))
+/** 搏斗时间是 C5 的几倍（跟 src/client/tabs/fishing-fight.js 的 FIGHT_LENGTH 一致）。 */
+export const FIGHT_LENGTH = 1.5
+export const fightSuccess = difficulty => Math.max(0.15, Math.min(0.95, 0.95 - difficulty / 100))
 
 /**
  * 手动钓鱼的净时薪（金币）：某把竿、某个钓点，几个开着的时段平均。一竿 = 抛竿 1.5 秒 + 等咬钩（看鱼竿）
@@ -206,7 +208,7 @@ export function fishingPerHour(rodLevel, spot, baitKey = 'bait_worm') {
     for (const { fish, weight } of pool) {
       const difficulty = Math.min(100, fish.difficulty * rod.difficulty)
       value += weight / sum * fish.price * fightSuccess(difficulty)
-      seconds += weight / sum * (3 + difficulty * 0.03)
+      seconds += weight / sum * (3 + difficulty * 0.05) * FIGHT_LENGTH
     }
     const cycle = 1.5 + (rod.bite[0] + rod.bite[1]) / 2000 + 0.5 + seconds + 1
     total += (value - bait.price - 0.5 * FOOD_PER_POINT) * 3600 / cycle

@@ -57,6 +57,7 @@ test('新长时自动钓：全部时段、竿、饵、抄网档净时薪至多 4
       max = Math.max(max, rate.net)
     }
   }
-  assert.equal(Number(max.toFixed(2)), 361.96)
+  // 2026-10-10 钓鱼改成等待短、搏斗难以后，最高从 361.96 降到约 223；只守上限，不钉死具体值。
+  assert.ok(max > 150 && max <= 400, `max ${max.toFixed(2)}`)
   assert.ok(autoFishingPerHour({ rodLevel: 4, spot: 'lake', baitKey: 'bait_shrimp', period: 'night', legacy: true }).net > 400)
 })
