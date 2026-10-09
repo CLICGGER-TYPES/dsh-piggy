@@ -1,8 +1,10 @@
 // @ts-check
 // 盲盒扩展 2.1 · 宿主部分：照明日方舟寻访的规矩（用户 2026-10-05）。
-// 设计 docs/design/blindbox.md，数值 docs/tasks/numbers/X1-blindbox.md。
+// 设计 docs/design/blindbox.md，数值 docs/numbers/X1-blindbox.md。
 // 只出摆件。星级 3★～6★；常驻寻访 + 限时寻访，每 14 天轮换 UP；50 抽后每抽 6★ +2%；
 // 重复的加潜能（最多 6 潜）并给资质凭证，凭证在商店换东西。只能改自己的数据，别的都走 api。
+// 3.0（游戏 0.35.0）：资质凭证放进宿主钱包（api.wallet，manifest 里 buyable: false，只能挣不能用金币买），
+// 删掉盲盒时按 1 张 15 金币结清。data.certs 只剩「还没搬进钱包的」，每次动作开头搬走。
 
 const PRICE_ONE = 300
 const PRICE_TEN = 2700
@@ -153,6 +155,25 @@ function grant(data, figure) {
   return { isNew: false, potential: data.owned[figure.key], certs }
 }
 
+/** 把 data.certs 里攒着的凭证搬进钱包（老存档的、这次重复给的）；老宿主没有钱包就留在 data 里。 */
+function settleCerts(data, api, source) {
+  if (!api.wallet || data.certs <= 0) return
+  api.wallet.earn(data.certs, source)
+  data.certs = 0
+}
+
+/** 手里一共多少凭证。 */
+const certBalance = (data, api) => (api.wallet ? api.wallet.balance() : 0) + data.certs
+
+/** 花凭证；不够返回 false。 */
+function spendCerts(data, api, amount) {
+  settleCerts(data, api, 'migrate')
+  if (api.wallet) return api.wallet.spend(amount, 'shop')
+  if (data.certs < amount) return false
+  data.certs -= amount
+  return true
+}
+
 function remember(data, banner, items) {
   data.seq += 1
   data.last = { id: data.seq, banner, items }
@@ -198,6 +219,7 @@ export default {
     /** 寻访：banner 是 standard / limited，count 1 或 10；ticket 为真时用一张盲盒券抽 1 次。 */
     open(data, payload, api, random = Math.random) {
       normalize(data)
+      settleCerts(data, api, 'migrate')
       const banner = banners(api.now).find(entry => entry.key === payload.banner)
       if (banner === undefined) return { ok: false, reason: 'unknown' }
       const count = payload.count === 10 ? 10 : 1
@@ -214,9 +236,17 @@ export default {
         items.push({ key: figure.key, stars, ...grant(data, figure) })
       }
       data.pulls += count
+      settleCerts(data, api, 'duplicate')
       remember(data, banner.key, items)
       reportProgress(data, api)
       api.say(lineFor(items))
+      return { ok: true }
+    },
+
+    /** 把老存档里的凭证搬进钱包（打开盲盒页时客户端调一次）。 */
+    sync(data, _payload, api) {
+      normalize(data)
+      settleCerts(data, api, 'migrate')
       return { ok: true }
     },
 
@@ -225,21 +255,22 @@ export default {
       normalize(data)
       const entry = SHOP.find(item => item.key === payload.item)
       if (entry === undefined) return { ok: false, reason: 'unknown' }
-      if (data.certs < entry.cost) return { ok: false, reason: 'no-certs' }
+      if (certBalance(data, api) < entry.cost) return { ok: false, reason: 'no-certs' }
       if (entry.key === 'pick5' || entry.key === 'pick6') {
         const figure = byKey(payload.pick)
         if (figure === null || figure.stars !== (entry.key === 'pick6' ? 6 : 5)) return { ok: false, reason: 'unknown' }
         if ((data.owned[figure.key] ?? 0) > 0) return { ok: false, reason: 'owned' }
-        data.certs -= entry.cost
+        if (!spendCerts(data, api, entry.cost)) return { ok: false, reason: 'no-certs' }
         data.owned[figure.key] = 1
         remember(data, 'shop', [{ key: figure.key, stars: figure.stars, isNew: true, potential: 1, certs: 0 }])
         reportProgress(data, api)
         api.say('用凭证换来了' + figure.label + '！')
         return { ok: true }
       }
+      // 先扣凭证再给东西；给不出去（物品不存在）就整笔撤回——宿主对出错的动作会回滚。
+      if (!spendCerts(data, api, entry.cost)) return { ok: false, reason: 'no-certs' }
       const given = entry.key === 'ticket' ? api.give(TICKET, 1) : api.give(entry.key, 1)
-      if (!given) return { ok: false, reason: 'unknown' }
-      data.certs -= entry.cost
+      if (!given) throw new Error('物品不存在：' + entry.key)
       return { ok: true }
     },
   },
@@ -247,11 +278,14 @@ export default {
   view(data, api) {
     const d = normalize(structuredClone(data))
     const catalog = CATALOG.map(entry => ({ ...entry, potential: d.owned[entry.key] ?? 0, acquired: (d.owned[entry.key] ?? 0) > 0 }))
+    const certs = certBalance(d, api)
     return {
       prices: { one: PRICE_ONE, ten: PRICE_TEN },
       tickets: api.count(TICKET),
       coins: api.coins(),
-      certs: d.certs,
+      certs,
+      /** 还没搬进钱包的凭证（老存档）。 */
+      pendingCerts: api.wallet ? d.certs : 0,
       pulls: d.pulls,
       last: d.last,
       banners: banners(api.now).map(banner => {
@@ -261,12 +295,12 @@ export default {
       catalog,
       shop: SHOP,
       shelf: { key: 'blindbox', label: '盲盒', emoji: '🎁', color: 'orange',
-        currency: { label: '资质凭证', emoji: '📜', balance: d.certs },
+        currency: { label: '资质凭证', emoji: '📜', balance: certs },
         items: SHOP.map(item => {
           const stars = item.key === 'pick5' ? 5 : item.key === 'pick6' ? 6 : 0
           const pick = stars ? catalog.filter(entry => entry.stars === stars && !entry.acquired).map(({ key, emoji, label }) => ({ key, emoji, label })) : null
           return { key: item.key, emoji: item.emoji, label: item.label, note: item.note, price: item.cost,
-            disabled: d.certs < item.cost || (pick !== null && pick.length === 0), pick }
+            disabled: certs < item.cost || (pick !== null && pick.length === 0), pick }
         }) },
       dex: { key: 'figures', label: '摆件', emoji: '🧸', color: 'orange', style: 'holo', entries: catalog },
     }

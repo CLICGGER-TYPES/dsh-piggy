@@ -1,5 +1,6 @@
 // @ts-check
-// 扭蛋扩展 1.0；数值见 docs/tasks/numbers/X2-gacha.md。
+// 扭蛋扩展 1.2；数值见 docs/numbers/X2-gacha.md。1.2（游戏 0.35.0）：机器里加进商店新上的食物、洗浴和玩具。
+// 扭蛋没有自己的币：它不存任何值钱的东西（一抽直接花金币、东西直接进背包），开钱包只会让一抽多收 5% 手续费。
 // 扩展只保存自己的幸运值和记录；金币、背包和说话都经宿主 api。
 
 const item = (key, label, emoji, count = 1) => ({ key, label, emoji, count })
@@ -7,15 +8,21 @@ const item = (key, label, emoji, count = 1) => ({ key, label, emoji, count })
 export const POOLS = {
   snack: {
     label: '零食机', emoji: '🍬',
-    normal: [item('apple', '苹果', '🍎'), item('bread', '面包', '🍞'), item('strawberry', '草莓', '🍓'), item('fish', '小鱼干', '🐟'), item('sweetpotato', '烤红薯', '🍠'), item('bone', '肉骨头', '🍖')],
-    rare: [item('rice', '蛋炒饭', '🍚'), item('pumpkin', '南瓜粥', '🎃'), item('cake', '奶油蛋糕', '🎂'), item('skewer', '烤肉串', '🍢'), item('noodle', '大碗拉面', '🍜')],
-    gold: [item('feast', '豪华大餐', '🍱', 3), item('seafoodrice', '海鲜饭', '🥘', 3), item('feast', '豪华大餐', '🍱', 5)],
+    normal: [item('apple', '苹果', '🍎'), item('bread', '面包', '🍞'), item('strawberry', '草莓', '🍓'), item('fish', '小鱼干', '🐟'), item('sweetpotato', '烤红薯', '🍠'), item('bone', '肉骨头', '🍖'),
+      item('onigiri', '饭团', '🍙'), item('baozi', '包子', '🧆'), item('corn', '玉米棒', '🌽'), item('jianbing', '煎饼果子', '🫓')],
+    rare: [item('rice', '蛋炒饭', '🍚'), item('pumpkin', '南瓜粥', '🎃'), item('cake', '奶油蛋糕', '🎂'), item('skewer', '烤肉串', '🍢'), item('noodle', '大碗拉面', '🍜'),
+      item('dumplings', '饺子', '🥟'), item('burger', '汉堡', '🍔'), item('pizza', '披萨', '🍕'), item('fruitplate', '水果拼盘', '🍉')],
+    gold: [item('feast', '豪华大餐', '🍱', 3), item('seafoodrice', '海鲜饭', '🥘', 3), item('feast', '豪华大餐', '🍱', 5),
+      item('hotpot', '火锅', '🍲', 3), item('sushi', '寿司拼盘', '🍣', 3), item('birthdaycake', '生日蛋糕', '🎂', 2)],
   },
   goods: {
     label: '杂货机', emoji: '🧸',
-    normal: [item('soap', '香皂', '🧼'), item('shower', '冲个澡', '🚿'), item('shampoo', '沐浴露', '🧴'), item('balloon', '气球', '🎈'), item('candle', '香薰', '🕯'), item('bait_worm', '蚯蚓鱼饵', '🪱')],
-    rare: [item('bubble', '泡泡浴', '🛁'), item('yoyo', '悠悠球', '🪀'), item('citrusbath', '柚子浴', '🍊'), item('blocks', '积木', '🎲'), item('frisbee', '飞盘', '🥏'), item('bait_shrimp', '鲜虾鱼饵', '🦐')],
-    gold: [item('trampoline', '蹦床', '🤸'), item('carousel', '旋转木马', '🎠'), item('bubbles', '泡泡机', '🫧'), item('deadsea', '死海泥', '🫧', 2), item('bait_glow', '夜光鱼饵', '✨', 5)],
+    normal: [item('soap', '香皂', '🧼'), item('shower', '冲个澡', '🚿'), item('shampoo', '沐浴露', '🧴'), item('balloon', '气球', '🎈'), item('candle', '香薰', '🕯'), item('bait_worm', '蚯蚓鱼饵', '🪱'),
+      item('scrubber', '搓澡巾', '🧽'), item('hairwash', '洗发水', '🪮'), item('yarnball', '毛线球', '🧶')],
+    rare: [item('bubble', '泡泡浴', '🛁'), item('yoyo', '悠悠球', '🪀'), item('citrusbath', '柚子浴', '🍊'), item('blocks', '积木', '🎲'), item('frisbee', '飞盘', '🥏'), item('bait_shrimp', '鲜虾鱼饵', '🦐'),
+      item('mintbath', '薄荷澡', '🌿'), item('marbles', '弹珠', '🔮'), item('duckbath', '小黄鸭浴', '🐤')],
+    gold: [item('trampoline', '蹦床', '🤸'), item('carousel', '旋转木马', '🎠'), item('bubbles', '泡泡机', '🫧'), item('deadsea', '死海泥', '🫧', 2), item('bait_glow', '夜光鱼饵', '✨', 5),
+      item('toytrain', '小火车', '🚂'), item('castleblocks', '城堡积木', '🏰'), item('forestbath', '森林浴', '🌲', 2)],
   },
   medicine: {
     label: '药箱', emoji: '💊',

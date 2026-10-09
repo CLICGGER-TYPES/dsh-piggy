@@ -37,7 +37,7 @@ extensions/<key>/
 - `minGame`：用到的宿主能力从哪个游戏版本起有，就写那个版本（例如用了 `api.emit` 写 `0.32.0` 以上）；拿不准写当前版本。
   游戏版本低于它时安装会提示「要先把游戏更新到 vX」。
 - `app`：主菜单上的 App 图标（**一律用 emoji**，见 [ui-style.md](ui-style.md)）。
-- `economy.currency`：**扩展自己的币**（见下面「经济」第 1 条），例如菜园 `{ "economy": { "currency": { "label": "菜币", "emoji": "🥬", "rate": 0.5 } } }`。`label` 最多 8 个字，`rate` 是 1 个币值多少金币，只认 0.01～100。
+- `economy.currency`：**扩展自己的币**（见下面「经济」第 1 条），例如菜园 `{ "economy": { "currency": { "label": "菜币", "emoji": "🥬", "rate": 0.5 } } }`。`label` 最多 8 个字，`rate` 是 1 个币值多少金币，只认 0.01～100。加 `"buyable": false` 表示这种币只能在扩展里挣、不能用金币买（还是能换成金币，删扩展时也照样结清），比如盲盒的资质凭证——能买就等于花金币直接买六星。
 
 ## server.js
 

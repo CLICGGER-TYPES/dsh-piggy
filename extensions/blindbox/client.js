@@ -283,11 +283,14 @@
       }
       setTimeout(function () { var card = track.querySelector('[data-active="true"]'); if (card && card.isConnected && !card.matches(':hover') && bannerHover) { bannerHover = false; armBannerTimer() } }, 0)
   }
+  var synced = false
   function render(app) {
     ensureStyle()
     var data = app.data
     if (!data || !Array.isArray(data.banners)) { app.content.appendChild(app.el('div', 'dp-empty', '盲盒还在准备……')); return }
     if (seenId === null) seenId = data.last ? data.last.id : 0
+    // 3.0：老存档里的资质凭证还没搬进钱包，打开盲盒时搬一次（背包「钱包」页才对得上）。
+    if (data.pendingCerts > 0 && !synced) { synced = true; app.send('sync') }
     var outer = app.content
     var root = app.el('div', 'bx')
     app.content = root

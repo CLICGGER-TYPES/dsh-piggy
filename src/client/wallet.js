@@ -21,7 +21,7 @@ export var CSS_WALLET = [
 
 /**
  * @param {any} ui 面板 ctx（要有 view、send、renderContent、drill）
- * @param {{ key: string, label: string, emoji: string, balance: number, rate: number, buyRate: number }} wallet
+ * @param {{ key: string, label: string, emoji: string, balance: number, rate: number, buyRate: number, buyable?: boolean }} wallet
  * @param {{ open?: boolean }} [options] open：一直展开（背包钱包页）
  */
 export function walletBar(ui, wallet, options) {
@@ -63,6 +63,8 @@ export function walletBar(ui, wallet, options) {
   if (wallet.balance === 0) out.appendChild(el('span', 'dp-wallet-name', '还没有' + wallet.label))
   box.appendChild(out)
 
+  // 只能挣、不能买的币（盲盒的资质凭证）没有这一行。
+  if (wallet.buyable === false) return box
   var back = el('div', 'dp-wallet-row')
   back.appendChild(el('small', null, '用金币换 · 1 ' + wallet.label + ' = ' + wallet.buyRate + ' 🪙（含 5% 手续费）'))
   for (var j = 0; j < FROM_GOLD.length; j += 1) {

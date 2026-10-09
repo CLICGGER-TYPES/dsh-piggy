@@ -48,7 +48,7 @@ export function normalizeExtensionParts(d) {
     // 扩展币钱包（规则 1）：扩展关掉了也列出来，可以把币换成金币。
     wallets: arr(d.wallets).map(value => {
       const wallet = obj(value)
-      return { key: str(wallet.key, ''), label: str(wallet.label, '币'), emoji: str(wallet.emoji, '🪙'), balance: num(wallet.balance, 0), rate: num(wallet.rate, 1), buyRate: num(wallet.buyRate, 1) }
+      return { key: str(wallet.key, ''), label: str(wallet.label, '币'), emoji: str(wallet.emoji, '🪙'), balance: num(wallet.balance, 0), rate: num(wallet.rate, 1), buyRate: num(wallet.buyRate, 1), buyable: wallet.buyable !== false }
     }).filter(wallet => wallet.key !== '') }
 }
 

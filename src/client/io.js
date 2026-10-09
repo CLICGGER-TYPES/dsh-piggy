@@ -108,6 +108,7 @@ export function createIo(ctx) {
               'no-shards': '碎片还不够',
               'no-certs': '资质凭证不够',
               'too-small': '太少了，换不出 1 个金币',
+              'not-buyable': '这种币只能在扩展里挣，不能用金币买',
               closed: '这个钓点现在没开，夜潭只在晚上',
             }
             ctx.showBubble(reasons[next.reason] ?? '这个操作没成', 2400)

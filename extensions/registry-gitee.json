@@ -7,7 +7,7 @@
       "emoji": "🍅",
       "version": "1.0.0",
       "builtin": true,
-      "description": "专注 15 / 25 / 45 分钟，猪安静陪着你，每天前几个有奖励。"
+      "description": "专注 15 / 25 / 45 分钟，猪安静陪着你，每个都有奖励。"
     },
     {
       "key": "fishing",
@@ -21,21 +21,29 @@
       "key": "blindbox",
       "label": "盲盒",
       "emoji": "🎁",
-      "version": "2.2.2",
-      "minGame": "0.34.0",
-      "description": "照明日方舟寻访的盲盒：3★～6★ 摆件，常驻和限时卡池轮换 UP，50 抽后六星概率逐抽提升，重复的加潜能、换资质凭证。",
+      "version": "3.0.0",
+      "minGame": "0.35.0",
+      "description": "照明日方舟寻访的盲盒：3★～6★ 摆件，常驻和限时卡池轮换 UP，50 抽后六星概率逐抽提升，重复的加潜能、换资质凭证。凭证放在钱包里，只能抽卡挣，删掉盲盒时按 1 张 15 金币换成金币。",
+      "economy": {
+        "currency": {
+          "label": "资质凭证",
+          "emoji": "📜",
+          "rate": 15,
+          "buyable": false
+        }
+      },
       "files": {
         "manifest.json": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-blindbox-2.2.2/manifest.json",
-          "sha256": "f6b02c3e59e5729405053840f4c2637df0957c5400c935d38a44295f79185418"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-blindbox-3.0.0/manifest.json",
+          "sha256": "32bfe7c72107ed0894de8998d89a4892eea19813387127883a7c27c8791a6ae0"
         },
         "server.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-blindbox-2.2.2/server.js",
-          "sha256": "b7a6be033b4f499b76946250196a8d64b19540a28f320b1ad0caf28baffe7bcf"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-blindbox-3.0.0/server.js",
+          "sha256": "f989389be352700f1fb666e2feb7bb590240f1f081f9cbaf1d79a282ed4964e4"
         },
         "client.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-blindbox-2.2.2/client.js",
-          "sha256": "a114564fef8bf2c6c9bb2646af3d05f35824dd2f51724a219b28560fae4f0a77"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-blindbox-3.0.0/client.js",
+          "sha256": "741f00e8b8cf27ba44ef398d41a6b9b4b1012122c0d66f38601afff4572ceac7"
         }
       }
     },
@@ -43,20 +51,20 @@
       "key": "gacha",
       "label": "扭蛋",
       "emoji": "🎰",
-      "version": "1.1.0",
-      "minGame": "0.31.0",
-      "description": "零食、杂货和药箱三台扭蛋机，每天第一颗免费，幸运值攒到 20 后下一颗必出金色。",
+      "version": "1.2.0",
+      "minGame": "0.35.0",
+      "description": "零食、杂货和药箱三台扭蛋机，每天第一颗免费，幸运值攒到 20 后下一颗必出金色。机器里有商店新上的饭团、火锅、小火车、森林浴等。",
       "files": {
         "manifest.json": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-gacha-1.1.0/manifest.json",
-          "sha256": "859a8eda2de98255c4d7fad9502dd3df8330748f77bfb12cb4f67a2ad311fff1"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-gacha-1.2.0/manifest.json",
+          "sha256": "5c2f7f06263247b8e04ed9277baf966a98cf31a030b981f88b00b151e63da060"
         },
         "server.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-gacha-1.1.0/server.js",
-          "sha256": "4e864e687b4c9663e28dee0718b463243518ebdec4d59282b6589e145b290805"
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-gacha-1.2.0/server.js",
+          "sha256": "e133a6c0c3700e7c7cc7a63784b49a083014847f6454e74644f197c0fed9981d"
         },
         "client.js": {
-          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-gacha-1.1.0/client.js",
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-gacha-1.2.0/client.js",
           "sha256": "d99034335f193d29bed7412f5fd9e2a3719818a0b2e5a5005b76c89e5c9269b3"
         }
       }

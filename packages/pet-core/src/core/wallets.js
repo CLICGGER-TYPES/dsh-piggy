@@ -6,6 +6,7 @@
  * - 钱包里存着币的名字、图标和汇率（1 个币值多少金币），每次扩展动作时按 manifest 刷新；
  *   删扩展时按存着的汇率把余额全部换成金币（不收费），所以扩展文件坏了也能结清。
  * - 换成金币按汇率不收费；用金币换多收 EXCHANGE.buyFee，来回倒腾会亏。
+ * - 扩展可以声明 `buyable: false`：这种币只能在扩展里挣，不能拿金币买（盲盒的资质凭证——能买就等于花钱直接买六星）。
  * @module dsh-piggy/core/wallets
  */
 
@@ -23,7 +24,7 @@ const whole = value => Math.max(0, Math.floor(Number(value) || 0))
 /**
  * manifest 里的 `economy.currency` → 干净的币信息；不合法返回 null。
  * @param {any} raw
- * @returns {{ label: string, emoji: string, rate: number }|null}
+ * @returns {{ label: string, emoji: string, rate: number, buyable: boolean }|null}
  */
 export function currencyInfo(raw) {
   if (!isObject(raw)) return null
@@ -31,7 +32,7 @@ export function currencyInfo(raw) {
   if (!Number.isFinite(rate) || rate < EXCHANGE.minRate || rate > EXCHANGE.maxRate) return null
   const label = String(raw.label ?? '').trim().slice(0, 8)
   const emoji = String(raw.emoji ?? '').trim().slice(0, 8) || '🪙'
-  return label === '' ? null : { label, emoji, rate }
+  return label === '' ? null : { label, emoji, rate, buyable: raw.buyable !== false }
 }
 
 /** 补齐 / 修好钱包；坏的丢掉。 @param {any} state */
@@ -111,6 +112,7 @@ export function exchangeCurrency(state, key, direction, amount, nowMs) {
     return { ok: true, amount: n, gold }
   }
   if (direction === 'fromGold') {
+    if (!wallet.buyable) return { ok: false, reason: 'not-buyable' }
     const gold = Math.ceil(n * wallet.rate * (1 + EXCHANGE.buyFee))
     if (!spendCoins(state, gold, source, nowMs)) return { ok: false, reason: 'poor', price: gold }
     walletEarn(state, key, n, `ext.${key}.exchange`, nowMs)
@@ -141,7 +143,7 @@ export function cashOutWallet(state, key, nowMs) {
 export function walletsView(state) {
   if (state === null) return []
   return Object.entries(ensureWallets(state)).map(([key, wallet]) => ({
-    key, label: wallet.label, emoji: wallet.emoji, balance: wallet.balance, rate: wallet.rate,
+    key, label: wallet.label, emoji: wallet.emoji, balance: wallet.balance, rate: wallet.rate, buyable: wallet.buyable,
     /** 用金币买 1 个要多少（含手续费），给界面显示。 */
     buyRate: Number((wallet.rate * (1 + EXCHANGE.buyFee)).toFixed(4)),
   }))

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import gacha, { POOLS, gameDay } from '../extensions/gacha/server.js'
+import { itemByKey } from '../packages/pet-core/src/data.js'
 
 function fakeApi(now, startCoins = 10000) {
   let coins = startCoins
@@ -18,12 +19,21 @@ function fakeApi(now, startCoins = 10000) {
   }
 }
 
-test('三个口味使用数值单中的现有物品、数量和概率', () => {
-  assert.deepEqual(POOLS.snack.normal.map(item => item.key), ['apple', 'bread', 'strawberry', 'fish', 'sweetpotato', 'bone'])
-  assert.deepEqual(POOLS.snack.rare.map(item => item.key), ['rice', 'pumpkin', 'cake', 'skewer', 'noodle'])
-  assert.deepEqual(POOLS.snack.gold.map(item => [item.key, item.count]), [['feast', 3], ['seafoodrice', 3], ['feast', 5]])
-  assert.deepEqual(POOLS.goods.gold.map(item => [item.key, item.count]), [['trampoline', 1], ['carousel', 1], ['bubbles', 1], ['deadsea', 2], ['bait_glow', 5]])
+test('三个口味：原来的物品都还在，新加的都是商店里有的；一抽的平均价值低于 60（扭蛋是花钱的地方）', () => {
+  const keys = pool => pool.map(item => item.key)
+  for (const key of ['apple', 'bread', 'strawberry', 'fish', 'sweetpotato', 'bone']) assert.ok(keys(POOLS.snack.normal).includes(key), key)
+  for (const key of ['rice', 'pumpkin', 'cake', 'skewer', 'noodle']) assert.ok(keys(POOLS.snack.rare).includes(key), key)
+  assert.deepEqual(POOLS.snack.gold.slice(0, 3).map(item => [item.key, item.count]), [['feast', 3], ['seafoodrice', 3], ['feast', 5]])
+  assert.deepEqual(POOLS.goods.gold.slice(0, 5).map(item => [item.key, item.count]), [['trampoline', 1], ['carousel', 1], ['bubbles', 1], ['deadsea', 2], ['bait_glow', 5]])
   assert.deepEqual(POOLS.medicine.gold.map(item => item.key), ['baicaodan', 'soul'])
+  const price = key => itemByKey(key)?.price ?? NaN
+  for (const [machine, pool] of Object.entries(POOLS)) {
+    for (const entry of [...pool.normal, ...pool.rare, ...pool.gold]) assert.ok(Number.isFinite(price(entry.key)), `${machine} ${entry.key} is a shop item`)
+    const many = machine === 'medicine' ? [1, 1] : [3, 2]
+    const average = (list, count) => list.reduce((sum, entry) => sum + price(entry.key) * (count ?? entry.count), 0) / list.length
+    const value = 0.77 * average(pool.normal, many[0]) + 0.2 * average(pool.rare, many[1]) + 0.03 * average(pool.gold)
+    assert.ok(value < 60, `${machine} ${value.toFixed(1)}`)
+  }
 })
 
 test('首次免费，第二次 60；十连 540，余额不足不动数据', () => {

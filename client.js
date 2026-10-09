@@ -725,6 +725,7 @@
             "no-shards": "\u788E\u7247\u8FD8\u4E0D\u591F",
             "no-certs": "\u8D44\u8D28\u51ED\u8BC1\u4E0D\u591F",
             "too-small": "\u592A\u5C11\u4E86\uFF0C\u6362\u4E0D\u51FA 1 \u4E2A\u91D1\u5E01",
+            "not-buyable": "\u8FD9\u79CD\u5E01\u53EA\u80FD\u5728\u6269\u5C55\u91CC\u6323\uFF0C\u4E0D\u80FD\u7528\u91D1\u5E01\u4E70",
             closed: "\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u5F00\uFF0C\u591C\u6F6D\u53EA\u5728\u665A\u4E0A"
           };
           ctx.showBubble(reasons[next.reason] ?? "\u8FD9\u4E2A\u64CD\u4F5C\u6CA1\u6210", 2400);
@@ -924,7 +925,7 @@
       // 扩展币钱包（规则 1）：扩展关掉了也列出来，可以把币换成金币。
       wallets: arr(d.wallets).map((value) => {
         const wallet = obj(value);
-        return { key: str(wallet.key, ""), label: str(wallet.label, "\u5E01"), emoji: str(wallet.emoji, "\u{1FA99}"), balance: num(wallet.balance, 0), rate: num(wallet.rate, 1), buyRate: num(wallet.buyRate, 1) };
+        return { key: str(wallet.key, ""), label: str(wallet.label, "\u5E01"), emoji: str(wallet.emoji, "\u{1FA99}"), balance: num(wallet.balance, 0), rate: num(wallet.rate, 1), buyRate: num(wallet.buyRate, 1), buyable: wallet.buyable !== false };
       }).filter((wallet) => wallet.key !== "")
     };
   }
@@ -3456,6 +3457,7 @@
     }
     if (wallet.balance === 0) out.appendChild(el("span", "dp-wallet-name", "\u8FD8\u6CA1\u6709" + wallet.label));
     box.appendChild(out);
+    if (wallet.buyable === false) return box;
     var back = el("div", "dp-wallet-row");
     back.appendChild(el("small", null, "\u7528\u91D1\u5E01\u6362 \xB7 1 " + wallet.label + " = " + wallet.buyRate + " \u{1FA99}\uFF08\u542B 5% \u624B\u7EED\u8D39\uFF09"));
     for (var j = 0; j < FROM_GOLD.length; j += 1) {
