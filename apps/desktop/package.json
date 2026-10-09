@@ -1,6 +1,6 @@
 {
   "name": "dsh-piggy-desktop",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "description": "dsh-piggy 桌面版：DSH 之外，双击就有一只猪",
   "type": "module",
