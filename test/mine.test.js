@@ -297,7 +297,7 @@ test('矿车空仓停工显示休息和接着干，不写仓满', () => {
   const ui = renderMine(mine.view(data, t.api))
   assert.match(ui.body.allText(), /矿工歇了/)
   assert.doesNotMatch(ui.body.allText(), /仓满/)
-  assert.equal(ui.find('data-mine-helper', 'collect').textContent, '接着干')
+  assert.match(ui.find('data-mine-helper', 'collect').allText(), /接着干/)
   assert.equal(mine.actions.collect(data, {}, t.api).ok, true)
   assert.equal(data.helper.usedMs, 0)
 })
@@ -317,6 +317,7 @@ test('界面：点能挖的格子就敲；缺镐时写清楚要哪把并能去�
   assert.equal(ui.find('data-mine-op', 'need-pickaxe').textContent, '🔒 要铁镐才挖得动下一层')
   ui.find('data-mine-op', 'need-pickaxe').fire('click')
   assert.equal(ui.shops(), 1)
+  ui.find('data-mine-panel', 'bag').fire('click')
   assert.equal(ui.find('data-mine-op', 'sell').textContent, '全卖 ⛏️ 24')
 })
 
