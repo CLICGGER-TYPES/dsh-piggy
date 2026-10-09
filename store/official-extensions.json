@@ -1,0 +1,85 @@
+{
+  "blindbox": {
+    "1.0.0": {
+      "manifest.json": "011df1681b1a17cc353027788dbf14d9c47662a5c2a1540a1ffa64ba47587f1a",
+      "server.js": "bb543387ef1b1acf400245bd699499f1315140faaf62a1a4d36f8fbf7c480290",
+      "client.js": "b8a80ec65a4ffcd1ac39ce45e3f8d551bf027fff928910573caff1c3a4e0925b"
+    },
+    "2.0.0": {
+      "manifest.json": "02e960350ecf5a02735bd1b4e25fc5b844e3aa8c0c313added3dcf2012c605f0",
+      "server.js": "5ff0caacc2d557cabe23efba8734f9abc0e7d3ff858e91523d6dc9496e26502b",
+      "client.js": "3b86d43ebbd8c10235ed0d6b603c06b40b1dfda1b2a120bc8bc065c937357582"
+    },
+    "2.1.0": {
+      "manifest.json": "6ae80d7463a8c9732c7243673d0e1a18ec97922ae3ab2345f1753335a4dd7c68",
+      "server.js": "bf26046f8f1849e0999d463974cd2f812fbdf60f6c8c3b5b0bcd77a66d2e95dc",
+      "client.js": "6345556ae4d7a8a4613170d322d98a722340b34fa1333868b2c8ffbd88c8876c"
+    },
+    "2.2.0": {
+      "manifest.json": "75d1f12a1ce2e5943731a325e3c38578278c912d96af96fdc5b1fa3b96da9790",
+      "server.js": "b7a6be033b4f499b76946250196a8d64b19540a28f320b1ad0caf28baffe7bcf",
+      "client.js": "6345556ae4d7a8a4613170d322d98a722340b34fa1333868b2c8ffbd88c8876c"
+    },
+    "2.2.2": {
+      "manifest.json": "f6b02c3e59e5729405053840f4c2637df0957c5400c935d38a44295f79185418",
+      "server.js": "b7a6be033b4f499b76946250196a8d64b19540a28f320b1ad0caf28baffe7bcf",
+      "client.js": "a114564fef8bf2c6c9bb2646af3d05f35824dd2f51724a219b28560fae4f0a77"
+    },
+    "3.0.0": {
+      "manifest.json": "32bfe7c72107ed0894de8998d89a4892eea19813387127883a7c27c8791a6ae0",
+      "server.js": "f989389be352700f1fb666e2feb7bb590240f1f081f9cbaf1d79a282ed4964e4",
+      "client.js": "741f00e8b8cf27ba44ef398d41a6b9b4b1012122c0d66f38601afff4572ceac7"
+    }
+  },
+  "farm": {
+    "1.0.0": {
+      "manifest.json": "9e03569e550d806d2e98038289ea5c6f554e6fe60ae3d5d9315db24f78d4a8e3",
+      "server.js": "31e5f6d1438dcbbda551959efecb980cc029ecd6a2d1862f4c91fbca526d15ce",
+      "client.js": "88422b61cb7c279faac79dc8292467d0b673ddaedc43cc8475e1a52c82ce21a5"
+    },
+    "1.1.0": {
+      "manifest.json": "bb6219bd783c4d95d8602cc1c80d53e241c2888b70aec19f58c054b55728d1ed",
+      "server.js": "1d4cb0512782fee873d22c4b7fab0588c5f643f9dc03f17f6cff55644abbd8d1",
+      "client.js": "88422b61cb7c279faac79dc8292467d0b673ddaedc43cc8475e1a52c82ce21a5"
+    },
+    "2.1.0": {
+      "manifest.json": "1063f397a63186652ff8b1c627b378024bf8ed2a94447f8d6d16cdf2459bb41b",
+      "server.js": "f50ba928bc38f3df4b86777859e3cb34227339319aa8be9aa14c247c3d1c41cc",
+      "client.js": "1ff21005a0b7b729e761d50b47f3a1942dc3a56000668a7f3a6020f4cf1298e9"
+    }
+  },
+  "gacha": {
+    "1.0.0": {
+      "manifest.json": "a52165e5984aef9f3874569b7b43a05e60b67d2cc0a54895c5ed2b3ac71ff5f0",
+      "server.js": "5d500546623495f38cec3be7570eca32bb8657e4d3c972732bbfb91ea34bacce",
+      "client.js": "d99034335f193d29bed7412f5fd9e2a3719818a0b2e5a5005b76c89e5c9269b3"
+    },
+    "1.1.0": {
+      "manifest.json": "859a8eda2de98255c4d7fad9502dd3df8330748f77bfb12cb4f67a2ad311fff1",
+      "server.js": "4e864e687b4c9663e28dee0718b463243518ebdec4d59282b6589e145b290805",
+      "client.js": "d99034335f193d29bed7412f5fd9e2a3719818a0b2e5a5005b76c89e5c9269b3"
+    },
+    "1.2.0": {
+      "manifest.json": "5c2f7f06263247b8e04ed9277baf966a98cf31a030b981f88b00b151e63da060",
+      "server.js": "e133a6c0c3700e7c7cc7a63784b49a083014847f6454e74644f197c0fed9981d",
+      "client.js": "d99034335f193d29bed7412f5fd9e2a3719818a0b2e5a5005b76c89e5c9269b3"
+    }
+  },
+  "mine": {
+    "1.0.0": {
+      "manifest.json": "799ed172df15f70b14b31755278123bd98ec6c3737b3f33fe6852b03d895e2a3",
+      "server.js": "4aeace348fa2bb232417b60bdfd335634ec41f1904e279f9a04755f75cd40bdf",
+      "client.js": "9eb1e574a566d1594fc646182a90795b5d17093dd274ccc7e32a8a08967ce4c2"
+    },
+    "1.1.0": {
+      "manifest.json": "6b3e820b69a20c7e5878b88af3eea80f4528687db256f36cbe43aada4fd0cb4d",
+      "server.js": "3e527c2f7c172a1b0d99e461294d192e8891a87baa4f8f72c307951f4363b63f",
+      "client.js": "9eb1e574a566d1594fc646182a90795b5d17093dd274ccc7e32a8a08967ce4c2"
+    },
+    "2.1.0": {
+      "manifest.json": "d9d91dd364a2db523fba7707cfd9d151bc8efc6d97f70dd0992e25c75f1f3451",
+      "server.js": "0913414f7ea12f3e1543a0dc9eaa502498996c14a9f4ea80a14b18fd421b11f7",
+      "client.js": "20280bab10340c6f9179b3f6836d259f5da8f8098b66052a44175ce7fa5f911f"
+    }
+  }
+}

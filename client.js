@@ -863,7 +863,7 @@
   function createIo(ctx) {
     var actionSeq = 0;
     var hostDown = false;
-    async function send(action, extra) {
+    async function send2(action, extra) {
       if (ctx.busy || ctx.stopped) return null;
       if (ctx.view.pig === null && action !== "hatch") return null;
       actionSeq += 1;
@@ -989,7 +989,7 @@
         return ctx.stopped === true;
       }
     ).tick;
-    return { send, refresh: refresh2 };
+    return { send: send2, refresh: refresh2 };
   }
 
   // src/client/desktop-shell.js
@@ -1122,6 +1122,8 @@
         installed: entry.installed !== false,
         builtin: entry.builtin !== false,
         version: str(entry.version, ""),
+        // 本地导入的非官方扩展（不会被在线目录提示更新）。
+        local: entry.local === true,
         app: entry.app ? { emoji: str(app.emoji, "\u{1F9E9}"), label: str(app.label, str(entry.label, "")) } : null,
         error: typeof entry.error === "string" ? entry.error : null
       };
@@ -1767,21 +1769,21 @@
   function renderFishingTab(ui) {
     stopFight();
     stopWait();
-    const pending = ui.view.fishing.pending;
+    const pending2 = ui.view.fishing.pending;
     renderAutoStock(ui);
-    if (pending?.phase !== "hooked") resetFightResolve();
+    if (pending2?.phase !== "hooked") resetFightResolve();
     if (ui.view.activity?.kind === "fishing") {
       stopFight(true);
       return renderAway(ui);
     }
     renderSwitchAsk(ui);
-    if (pending?.phase === "waiting") {
+    if (pending2?.phase === "waiting") {
       stopFight(true);
-      return renderWaiting(ui, pending);
+      return renderWaiting(ui, pending2);
     }
-    if (pending?.phase === "hooked") return renderFight(ui, pending);
+    if (pending2?.phase === "hooked") return renderFight(ui, pending2);
     stopFight(true);
-    if (pending?.phase === "caught") return renderResult(ui, pending);
+    if (pending2?.phase === "caught") return renderResult(ui, pending2);
     renderReady(ui);
   }
   var BAIT_NOTE = { bait_worm: "\u666E\u901A\u9C7C", bait_shrimp: "\u5C11\u89C1\u7684\u591A\u4E00\u70B9", bait_glow: "\u7A00\u6709\u7684\u591A\u5F88\u591A" };
@@ -1903,9 +1905,9 @@
     row.appendChild(collect);
     ui.content.appendChild(row);
   }
-  function renderWaiting(ui, pending) {
+  function renderWaiting(ui, pending2) {
     const water = button("dp-fish-waiting", { "data-fish": "hook" }, function() {
-      if (Date.now() < pending.bitesAt) {
+      if (Date.now() < pending2.bitesAt) {
         line3.textContent = nibbleUntil > Date.now() ? "\u53EA\u662F\u8BD5\u63A2\uFF0C\u8FD8\u6CA1\u54AC\u5B9E\u2026" : "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
         return;
       }
@@ -1922,7 +1924,7 @@
     function tick2() {
       if (waitUi !== ui) return;
       const now = Date.now();
-      if (now < pending.bitesAt - 900 && now >= nextNibble) {
+      if (now < pending2.bitesAt - 900 && now >= nextNibble) {
         nibbleUntil = now + 420;
         nextNibble = now + 1800 + Math.random() * 3200;
         water.setAttribute("data-nibble", "true");
@@ -1932,11 +1934,11 @@
         water.setAttribute("data-nibble", "false");
         line3.textContent = "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026";
       }
-      if (now >= pending.bitesAt && now <= pending.hookUntil) {
+      if (now >= pending2.bitesAt && now <= pending2.hookUntil) {
         mark.textContent = "\u2757";
         line3.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
         water.setAttribute("data-bite", "true");
-      } else if (now > pending.hookUntil) {
+      } else if (now > pending2.hookUntil) {
         stopWait();
         ui.send("fishHook");
         return;
@@ -3380,6 +3382,10 @@
     ".dp-ext-actions .dp-switch{margin:0}",
     ".dp-ext-warn{flex-basis:100%;order:-1;font-size:10px;font-weight:700;color:#c0503f}",
     ".dp-mini.dp-ext-danger{background:#e05a5a;box-shadow:none}",
+    // 从文件导入：文件框藏在按钮下面，点按钮就是选文件。
+    ".dp-ext-import-pick{position:relative;display:inline-flex;margin-top:8px;cursor:pointer;overflow:hidden}",
+    ".dp-ext-import-pick input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}",
+    ".dp-ext-import .dp-ext-warn{order:0;margin-top:6px}",
     ".dp-mini.dp-ext-remove{padding:4px 12px}",
     ".dp-mini.dp-ext-remove:hover:not(:disabled){color:#c0503f;border-color:#e3a79c}",
     ".dp-ext-card [data-ext-install]{margin-left:auto;flex:none}",
@@ -3732,7 +3738,7 @@
     box.appendChild(head);
     if (!open) return box;
     var coins = Number(ui.view.pig && ui.view.pig.coins) || 0;
-    var send = function(direction, amount) {
+    var send2 = function(direction, amount) {
       ui.send("exchange", { key: wallet.key, direction, amount });
     };
     var out = el("div", "dp-wallet-row");
@@ -3744,7 +3750,7 @@
       (function(n, all) {
         var gold = Math.floor(n * wallet.rate);
         var go = button("dp-mini", { "data-wallet-out": all ? "all" : String(n) }, function() {
-          send("toGold", n);
+          send2("toGold", n);
         });
         go.textContent = (all ? "\u5168\u90E8 " : "") + n + " \u2192 \u{1FA99} " + gold;
         go.disabled = gold === 0;
@@ -3760,7 +3766,7 @@
       (function(n) {
         var cost = Math.ceil(n * wallet.buyRate - 1e-9);
         var buy = button("dp-mini dp-mini-plain", { "data-wallet-in": String(n) }, function() {
-          send("fromGold", n);
+          send2("fromGold", n);
         });
         buy.textContent = "\u{1FA99} " + cost + " \u2192 " + n;
         buy.disabled = coins < cost;
@@ -5008,6 +5014,119 @@
     }
   }
 
+  // src/client/ext-import.js
+  var NAMES = ["manifest.json", "server.js", "client.js"];
+  var pending = null;
+  var busy = false;
+  async function bundleOf(files) {
+    if (files.length === 1) return files[0].text();
+    const texts = {};
+    for (const file of files) if (NAMES.includes(file.name)) texts[file.name] = await file.text();
+    if (!NAMES.every((name) => typeof texts[name] === "string")) return null;
+    let key = "";
+    try {
+      key = str(obj(JSON.parse(texts["manifest.json"])).key, "");
+    } catch {
+      return null;
+    }
+    return JSON.stringify({ format: "dsh-piggy-extension", version: 1, key, files: texts });
+  }
+  function base64(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 32768)));
+    return btoa(binary);
+  }
+  var REASONS = {
+    "invalid-bundle": "\u8BFB\u4E0D\u61C2\u8FD9\u4E2A\u6587\u4EF6",
+    "game-too-old": "\u8FD9\u4E2A\u6269\u5C55\u8981\u66F4\u65B0\u7684\u6E38\u620F",
+    "too-large": "\u6269\u5C55\u5305\u592A\u5927",
+    "broken-extension": "\u6269\u5C55\u88C5\u4E0A\u4E86\u4F46\u52A0\u8F7D\u51FA\u9519",
+    "download-failed": "\u6CA1\u80FD\u5199\u8FDB\u6269\u5C55\u76EE\u5F55",
+    absent: "\u8FD8\u6CA1\u6709\u732A"
+  };
+  function send(ui, bundle, confirm) {
+    busy = true;
+    ui.renderContent();
+    fetch("/dsh-piggy/extensions/import", { method: "POST", headers: { "content-type": "text/plain" }, body: base64(JSON.stringify({ bundle, confirm })) }).then((response) => response.json()).then((data) => {
+      busy = false;
+      const result = obj(data);
+      if (result.ok === true) {
+        pending = null;
+        if (typeof ui.render === "function") ui.render(result);
+        else {
+          ui.view = result;
+          ui.renderContent();
+        }
+        ui.showBubble("\u88C5\u597D\u4E86\uFF1A" + str(result.label, "\u6269\u5C55") + (result.official === true ? "" : "\uFF08\u672C\u5730\u5BFC\u5165\uFF09"));
+        return;
+      }
+      if (result.reason === "unofficial") {
+        pending = { bundle, label: str(result.label, str(result.key, "\u6269\u5C55")), version: str(result.version, "") };
+        ui.renderContent();
+        return;
+      }
+      pending = null;
+      ui.renderContent();
+      const why = REASONS[str(result.reason, "")] ?? "\u5BFC\u5165\u5931\u8D25";
+      ui.showBubble(why + (result.need ? "\uFF08\u8981\u6E38\u620F v" + str(result.need, "") + "\uFF09" : "") + (result.message ? "\uFF1A" + str(result.message, "") : ""));
+    }).catch(() => {
+      busy = false;
+      ui.renderContent();
+      ui.showBubble("\u5BFC\u5165\u5931\u8D25\uFF1A\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B");
+    });
+  }
+  function importCard(ui) {
+    const card2 = el("div", "dp-set dp-ext-card dp-ext-import");
+    const head = el("div", "dp-set-head");
+    head.appendChild(el("span", "dp-ext-emoji", "\u{1F4E6}"));
+    head.appendChild(el("b", null, "\u4ECE\u6587\u4EF6\u5BFC\u5165"));
+    head.appendChild(el("small", "dp-dim", "\u4E0B\u8F7D\u4E0D\u4E86\u65F6\uFF0C\u7528\u522B\u5904\u62FF\u5230\u7684\u6269\u5C55\u5305\uFF08.piggyext\uFF09\uFF0C\u6216\u4E00\u8D77\u9009\u4E2D\u6269\u5C55\u7684\u4E09\u4E2A\u6587\u4EF6\u3002"));
+    card2.appendChild(head);
+    if (pending !== null) {
+      const ask = pending;
+      card2.appendChild(el("div", "dp-ext-note dp-ext-warn", "\u300C" + ask.label + (ask.version ? " " + ask.version : "") + "\u300D\u4E0D\u662F\u5B98\u65B9\u6269\u5C55\u3002\u6269\u5C55\u91CC\u7684\u4EE3\u7801\u5728\u6E38\u620F\u91CC\u4EC0\u4E48\u90FD\u80FD\u505A\uFF0C\u53EA\u88C5\u4F60\u4FE1\u5F97\u8FC7\u7684\u4EBA\u7ED9\u7684\u3002"));
+      const row = el("div", "dp-ext-actions");
+      const yes = button("dp-mini dp-ext-danger", { "data-ext-import-confirm": "true" }, () => send(ui, ask.bundle, true));
+      yes.textContent = busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u4ECD\u8981\u5BFC\u5165";
+      yes.disabled = busy;
+      const no = button("dp-mini dp-mini-plain", { "data-ext-import-cancel": "true" }, () => {
+        pending = null;
+        ui.renderContent();
+      });
+      no.textContent = "\u7B97\u4E86";
+      row.appendChild(yes);
+      row.appendChild(no);
+      card2.appendChild(row);
+      return card2;
+    }
+    const pick = el("label", "dp-mini dp-ext-import-pick");
+    pick.appendChild(el("span", null, busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u9009\u62E9\u6587\u4EF6"));
+    const input = (
+      /** @type {HTMLInputElement} */
+      el("input")
+    );
+    input.type = "file";
+    input.multiple = true;
+    input.setAttribute("accept", ".piggyext,.json,.js");
+    input.setAttribute("data-ext-import", "file");
+    input.disabled = busy;
+    input.addEventListener("change", () => {
+      const files = Array.from(input.files ?? []);
+      if (files.length === 0) return;
+      bundleOf(files).then((bundle) => {
+        if (bundle === null) {
+          ui.showBubble("\u8981\u9009\u4E00\u4E2A .piggyext\uFF0C\u6216\u8005 manifest.json\u3001server.js\u3001client.js \u4E09\u4E2A\u4E00\u8D77\u9009");
+          return;
+        }
+        send(ui, bundle, false);
+      }).catch(() => ui.showBubble("\u8BFB\u4E0D\u4E86\u8FD9\u4E2A\u6587\u4EF6"));
+    });
+    pick.appendChild(input);
+    card2.appendChild(pick);
+    return card2;
+  }
+
   // src/client/tabs/extensions.js
   var confirming = null;
   var online = { loading: false, loaded: false, error: "", entries: (
@@ -5085,6 +5204,7 @@
     });
     if (local.length === 0) ui.content.appendChild(el("div", "dp-ext-later", "\u4E00\u4E2A\u6269\u5C55\u90FD\u6CA1\u88C5"));
     for (var i = 0; i < local.length; i += 1) ui.content.appendChild(localCard(ui, local[i]));
+    ui.content.appendChild(importCard(ui));
     var head = el("div", "dp-ext-section dp-ext-online-head");
     head.appendChild(el("span", null, "\u5728\u7EBF\u6269\u5C55"));
     var refresh2 = button("dp-mini dp-mini-plain", { "data-ext-refresh": "true" }, function() {
@@ -5102,7 +5222,7 @@
     card2.setAttribute("data-extension", extension.key);
     var head = el("div", "dp-set-head");
     head.appendChild(el("span", "dp-ext-emoji", extension.emoji));
-    head.appendChild(el("b", null, extension.label + (extension.builtin ? "" : " " + extension.version)));
+    head.appendChild(el("b", null, extension.label + (extension.builtin ? "" : " " + extension.version) + (extension.local ? " \xB7 \u672C\u5730\u5BFC\u5165" : "")));
     if (extension.description) head.appendChild(el("small", "dp-dim", extension.description));
     card2.appendChild(head);
     var note = extension.on ? closingNote(ui.view, extension.key) : "";
@@ -7733,7 +7853,7 @@
     const grid = el("div", "dp-skin-grid");
     for (const skin of ui.view.skins.entries) grid.appendChild(skinCard(ui, skin));
     ui.content.appendChild(grid);
-    ui.content.appendChild(importCard(ui));
+    ui.content.appendChild(importCard2(ui));
     const howto = button("dp-btn dp-skin-howto", { "data-skin-guide": "true" }, function() {
       drillTo(ui, "skins", "guide");
     });
@@ -7762,7 +7882,7 @@
     card2.appendChild(pick);
     return card2;
   }
-  function importCard(ui) {
+  function importCard2(ui) {
     const wrap = el("label", "dp-pick dp-tile-card dp-skin-import");
     wrap.appendChild(el("b", "dp-pick-head", "\u{1F4E6} \u5BFC\u5165\u81EA\u5DF1\u7684\u76AE\u80A4"));
     wrap.appendChild(el("span", "dp-dim", "\u9009\u62E9\u6309\u6559\u7A0B\u5236\u4F5C\u7684 ZIP\uFF1B\u5BFC\u5165\u6210\u529F\u540E\u4F1A\u81EA\u52A8\u4F7F\u7528\u3002"));
@@ -7869,7 +7989,7 @@
   // src/client/tabs/proxy.js
   var preference = null;
   var loading = false;
-  var busy = false;
+  var busy2 = false;
   var draft = null;
   var message = "";
   var failure = false;
@@ -7910,12 +8030,12 @@
       mode.appendChild(option);
     }
     mode.value = draft.mode;
-    mode.disabled = busy;
+    mode.disabled = busy2;
     const endpoint = (
       /** @type {HTMLInputElement} */
       el("input", "dp-setting-field")
     );
-    endpoint.disabled = busy;
+    endpoint.disabled = busy2;
     endpoint.type = "text";
     endpoint.placeholder = "\u4F8B\u5982 127.0.0.1:7890";
     endpoint.setAttribute("aria-label", "\u4EE3\u7406\u5730\u5740\u548C\u7AEF\u53E3");
@@ -7942,8 +8062,8 @@
     status.setAttribute("role", "status");
     const actions = [];
     async function run(action) {
-      if (busy) return;
-      busy = true;
+      if (busy2) return;
+      busy2 = true;
       for (const control of actions) control.disabled = true;
       mode.disabled = true;
       endpoint.disabled = true;
@@ -7961,7 +8081,7 @@
         failure = true;
         message = error instanceof Error ? error.message : String(error);
       } finally {
-        busy = false;
+        busy2 = false;
         if (ui.tab === "settings") ui.renderContent();
       }
     }
@@ -7972,7 +8092,7 @@
     ]) {
       const control = button("dp-mini dp-proxy-" + key, { "data-proxy-action": key }, () => run(action));
       control.textContent = label;
-      control.disabled = busy;
+      control.disabled = busy2;
       actions.push(control);
       controls.appendChild(control);
     }
@@ -8909,7 +9029,7 @@
   }
   function createPlacement() {
     let home = null;
-    let pending = (
+    let pending2 = (
       /** @type {any} */
       void 0
     );
@@ -8964,10 +9084,10 @@
     function decide(report, bounds, areas) {
       const pigSize2 = report.pig.width > 0 && report.pig.height > 0 ? { width: report.pig.width, height: report.pig.height } : lastPigSize;
       lastPigSize = pigSize2;
-      if (pending === void 0) pending = readSaved();
+      if (pending2 === void 0) pending2 = readSaved();
       if (home === null) {
-        home = pending !== null ? homeFromSaved(pending, pigSize2, areas) : { x: Math.round(bounds.x + report.pigNow.x + pigSize2.width / 2), y: Math.round(bounds.y + report.pigNow.y + pigSize2.height) };
-        pending = null;
+        home = pending2 !== null ? homeFromSaved(pending2, pigSize2, areas) : { x: Math.round(bounds.x + report.pigNow.x + pigSize2.width / 2), y: Math.round(bounds.y + report.pigNow.y + pigSize2.height) };
+        pending2 = null;
       }
       const list = Array.isArray(areas) ? areas : [];
       if (list.length > 0 && !list.some((area2) => inside(area2, home))) {
@@ -8994,7 +9114,7 @@
     }
     function rehome(windowPos, pigLocal, areas) {
       home = { x: Math.round(windowPos.x + pigLocal.x + pigLocal.width / 2), y: Math.round(windowPos.y + pigLocal.y + pigLocal.height) };
-      pending = null;
+      pending2 = null;
       persist(areas);
     }
     return {
@@ -9441,7 +9561,7 @@
         var react = fx.react, burst = fx.burst, flash = fx.flash;
         var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
         var stopped = false;
-        var busy2 = false;
+        var busy3 = false;
         var ctx = {
           host: host3,
           card: card2,
@@ -9571,10 +9691,10 @@
             userBottom = next;
           },
           get busy() {
-            return busy2;
+            return busy3;
           },
           set busy(next) {
-            busy2 = next;
+            busy3 = next;
           },
           justBought: null,
           homePage: 0,
@@ -9602,8 +9722,8 @@
         var paintBar = layout.paintBar, buildIcon = layout.buildIcon;
         for (var t = 0; t < TABS.length; t += 1) buildIcon(TABS[t]);
         var io = createIo(ctx);
-        var send = io.send, refresh2 = io.refresh;
-        ctx.send = send;
+        var send2 = io.send, refresh2 = io.refresh;
+        ctx.send = send2;
         ctx.render = render;
         ctx.renderContent = renderContent;
         ctx.setOpen = setOpen;
@@ -9637,7 +9757,7 @@
           event.stopPropagation();
           var action = dailyHint.getAttribute("data-action");
           if (action === "cake") birthday.celebrate();
-          else if (action !== null && action !== "") send(action);
+          else if (action !== null && action !== "") send2(action);
         });
         var drag = null;
         var stopDragHeartbeat = function() {
@@ -9712,7 +9832,7 @@
             host3.removeAttribute("data-poke");
             showBubble("\u54C7\u2014\u2014\uFF01", 1200);
             burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
-            send("hatch");
+            send2("hatch");
             return;
           }
           host3.setAttribute("data-poke", String(boxPokes));
@@ -9726,7 +9846,7 @@
             pokeBox();
             return;
           }
-          if (!view.dead) send("pet", { part: partAt(pig, event) });
+          if (!view.dead) send2("pet", { part: partAt(pig, event) });
         });
         scene3.addEventListener("pointercancel", function() {
           endDrag();
@@ -9761,12 +9881,12 @@
         refresh2();
         pollTimer = window.setInterval(refresh2, POLL_MS);
         var life = splitRole === "panel" ? null : attachLife({
-          send,
+          send: send2,
           isStopped: function() {
             return stopped;
           },
           isBusy: function() {
-            return busy2;
+            return busy3;
           },
           isOpen: function() {
             return isOpen;

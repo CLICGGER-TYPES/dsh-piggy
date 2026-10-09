@@ -100,6 +100,10 @@ export const CSS_TILES = [
   '.dp-ext-actions .dp-switch{margin:0}',
   '.dp-ext-warn{flex-basis:100%;order:-1;font-size:10px;font-weight:700;color:#c0503f}',
   '.dp-mini.dp-ext-danger{background:#e05a5a;box-shadow:none}',
+  // 从文件导入：文件框藏在按钮下面，点按钮就是选文件。
+  '.dp-ext-import-pick{position:relative;display:inline-flex;margin-top:8px;cursor:pointer;overflow:hidden}',
+  '.dp-ext-import-pick input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}',
+  '.dp-ext-import .dp-ext-warn{order:0;margin-top:6px}',
   '.dp-mini.dp-ext-remove{padding:4px 12px}',
   '.dp-mini.dp-ext-remove:hover:not(:disabled){color:#c0503f;border-color:#e3a79c}',
   '.dp-ext-card [data-ext-install]{margin-left:auto;flex:none}',

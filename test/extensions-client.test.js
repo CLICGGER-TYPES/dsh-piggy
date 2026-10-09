@@ -145,3 +145,15 @@ test('H2 关掉下载扩展后，货架与图鉴分区隐藏', async () => {
   openPanel(second.dom, 'dex')
   assert.equal(findByAttr(contentOf(second.dom), 'data-dex-section', 'ext:blindbox:figures'), undefined)
 })
+
+test('扩展页有「从文件导入」；本地导入的非官方扩展卡片标「本地导入」', async () => {
+  const extensions = [...ext(true, true),
+    { key: 'piggybank', label: '存钱罐', emoji: '🏺', on: true, installed: true, builtin: false, local: true, version: '1.0.0', app: { emoji: '🏺', label: '存钱罐' }, apps: [], dexSections: [], shopKinds: [] }]
+  const { dom } = await mount({ status: { ...SNAPSHOT, extensions, extViews: { piggybank: { saved: 0 } } } })
+  openExtensions(dom)
+  const input = findByAttr(contentOf(dom), 'data-ext-import', 'file')
+  assert.notEqual(input, undefined, 'the import picker is there')
+  assert.equal(input.getAttribute('accept'), '.piggyext,.json,.js')
+  assert.match(findByAttr(contentOf(dom), 'data-extension', 'piggybank').allText(), /存钱罐 1\.0\.0 · 本地导入/)
+  assert.doesNotMatch(findByAttr(contentOf(dom), 'data-extension', 'pomodoro').allText(), /本地导入/)
+})

@@ -171,4 +171,5 @@ export default {
 ## 发版
 
 见 [HANDOFF.md 9.3](../HANDOFF.md)：升 `manifest.json` 版本 → `node scripts/extension-entry.mjs <key>`（和 `--host gitee`）更新两份目录 →
+`node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包（`.piggyext`，跟三个文件一起传）→
 GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 提交目录、推 main → 用全新存档在线装一次验证。

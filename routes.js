@@ -11,6 +11,7 @@ import { PACKAGE_VERSION, snapshot } from './snapshot.js'
 import { extensionForAction } from './core.js'
 import { customSkinArt, installSkinPack } from './store/skin-pack.js'
 import { createExtRuntime } from './store/ext-runtime.js'
+import { registerExtImportRoute } from './store/ext-import-route.js'
 
 const STATE_ROUTE = '/dsh-piggy/state'
 const ACT_ROUTE = '/dsh-piggy/act'
@@ -385,6 +386,7 @@ export function registerRoutes(ctx, store, options = {}) {
       disposers.push(registerSkinRoute(webServer, store))
       disposers.push(registerActRoute(webServer, store))
       disposers.push(registerExtRoutes(webServer, store))
+      disposers.push(registerExtImportRoute(webServer, store, snapshot))
       disposers.push(registerLogRoutes(webServer, store))
       disposers.push(registerEmojiRoute(webServer))
     } catch (error) {

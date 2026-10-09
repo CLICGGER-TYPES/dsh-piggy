@@ -15,6 +15,7 @@ import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { extensionOn, installExtension, openWallet, removeExtension } from '../core.js'
+import { LOCAL_MARK, makeImporter } from './ext-import.js'
 import { apiFor } from './ext-api.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
@@ -216,6 +217,7 @@ export function createExtRuntime(store, options) {
       on: extensionOn(state, key),
       installed: true,
       builtin: false,
+      local: existsSync(join(root(), key, LOCAL_MARK)),
       app: entry.manifest.app ? { emoji: String(entry.manifest.app.emoji ?? entry.manifest.emoji ?? '🧩'), label: String(entry.manifest.app.label ?? entry.manifest.label ?? key) } : null,
       error: entry.error,
       apps: [], dexSections: [], shopKinds: [],
@@ -307,6 +309,7 @@ export function createExtRuntime(store, options) {
         // 已装的下载扩展：目录里版本更新就可以「更新」（重新下载，数据保留）。
         const local = loaded.get(entry.key)?.manifest?.version ?? null
         const update = installed && entry.builtin !== true && local !== null && typeof entry.version === 'string' && !versionAtLeast(local, entry.version)
+          && !existsSync(join(root(), entry.key, LOCAL_MARK))
         return {
           local, update,
           key: entry.key, label: String(entry.label ?? entry.key), emoji: String(entry.emoji ?? '🧩'),
@@ -330,20 +333,25 @@ export function createExtRuntime(store, options) {
       if (spec === undefined || typeof spec.url !== 'string' || typeof spec.sha256 !== 'string') return { ok: false, reason: 'download-failed', message: '目录里缺少 ' + name }
       if (!ALLOWED_SOURCES.some(prefix => spec.url.startsWith(prefix)) && options.registryUrl === undefined) return { ok: false, reason: 'download-failed', message: '来源不对：' + name }
     }
+    // 三个文件一起下：慢的那个只拖自己，不把另外两个的时间叠上去。
+    const buffers = await Promise.all(specs.map(({ name, spec }) => downloadFile(name, spec))).catch(error => (error instanceof Error ? error : new Error(String(error))))
+    if (buffers instanceof Error) { warn(`extension install failed: key="${key}" reason="${buffers.message}"`); return { ok: false, reason: 'download-failed', message: buffers.message } }
+    return place(key, buffers, false)
+  }
+
+  /** 把三个文件放进扩展目录（先放临时目录再换名，坏了不留半截）、加载、在存档里建数据。local 是本地导入的非官方扩展。 */
+  async function place(key, buffers, local) {
     const staging = join(root(), '.' + key + '-' + now())
     try {
       mkdirSync(staging, { recursive: true })
-      // 三个文件一起下：慢的那个只拖自己，不把另外两个的时间叠上去。
-      const buffers = await Promise.all(specs.map(({ name, spec }) => downloadFile(name, spec)))
-      for (let index = 0; index < specs.length; index += 1) writeFileSync(join(staging, specs[index].name), buffers[index])
+      for (let index = 0; index < FILES.length; index += 1) writeFileSync(join(staging, FILES[index]), buffers[index])
+      if (local) writeFileSync(join(staging, LOCAL_MARK), JSON.stringify({ importedAt: now() }))
       const target = join(root(), key)
       rmSync(target, { recursive: true, force: true })
       renameSync(staging, target)
     } catch (error) {
       rmSync(staging, { recursive: true, force: true })
-      const message = error instanceof Error ? error.message : String(error)
-      warn(`extension install failed: key="${key}" reason="${message}"`)
-      return { ok: false, reason: 'download-failed', message }
+      return { ok: false, reason: 'download-failed', message: error instanceof Error ? error.message : String(error) }
     }
     const entryLoaded = await load(key)
     if (entryLoaded === null || entryLoaded.module === null) return { ok: false, reason: 'broken-extension', message: entryLoaded?.error ?? '' }
@@ -355,6 +363,9 @@ export function createExtRuntime(store, options) {
       return result
     })
   }
+
+  /** 本地导入扩展包（store/ext-import.js）：官方的直接装；不是官方的先说明，用户确认后才装。 */
+  const importBundle = makeImporter({ ready: () => store.state !== null && root() !== '', gameVersion: options.gameVersion, versionAtLeast, online, place, warn })
 
   /** 删除：核心清数据；下载的再把文件删掉。 */
   function remove(key) {
@@ -382,5 +393,5 @@ export function createExtRuntime(store, options) {
     try { return readFileSync(join(root(), key, 'client.js'), 'utf8') } catch { return null }
   }
 
-  return { ready, list, views, shelves, dex, onlineView, install, remove, act, clientScript }
+  return { ready, list, views, shelves, dex, onlineView, install, importBundle, remove, act, clientScript }
 }

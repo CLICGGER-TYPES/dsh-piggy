@@ -220,9 +220,9 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 ### 9.3 在线扩展发版
 
 1. 改扩展、升 `manifest.json` 版本。
-2. GitHub：`node scripts/extension-entry.mjs <key>` 生成目录条目；`gh release create ext-<key>-<版本> extensions/<key>/{manifest.json,server.js,client.js} --prerelease --latest=false`（**一定要预发布 + 不设 latest**，否则会抢掉游戏正式版的「最新」）；更新 `extensions/registry.json`。
-3. Gitee：`node scripts/extension-entry.mjs <key> --host gitee` 更新 `extensions/registry-gitee.json`；`GITEE_TOKEN=… node scripts/gitee-release.mjs ensure ext-<key>-<版本>` 拿到 id，再 `upload <id> extensions/<key>/manifest.json extensions/<key>/server.js extensions/<key>/client.js`。
-4. 提交两个 registry 文件、推 main（GitHub 和 Gitee 的 main 都要有：本机 `git push gitee main`）。
+2. GitHub：`node scripts/extension-entry.mjs <key>` 生成目录条目，更新 `extensions/registry.json`；再 `node scripts/official-extensions.mjs` 把新版本并进游戏自带的官方清单 `store/official-extensions.json`（本地导入靠它认官方扩展，`test/ext-import.test.js` 会查漏）；`node scripts/extension-bundle.mjs <key>` 生成扩展包 `dist/ext-<key>-<版本>.piggyext`；`gh release create ext-<key>-<版本> extensions/<key>/{manifest.json,server.js,client.js} dist/ext-<key>-<版本>.piggyext --prerelease --latest=false`（**一定要预发布 + 不设 latest**，否则会抢掉游戏正式版的「最新」）。
+3. Gitee：`node scripts/extension-entry.mjs <key> --host gitee` 更新 `extensions/registry-gitee.json`；`GITEE_TOKEN=… node scripts/gitee-release.mjs ensure ext-<key>-<版本>` 拿到 id，再 `upload <id> extensions/<key>/manifest.json extensions/<key>/server.js extensions/<key>/client.js dist/ext-<key>-<版本>.piggyext`。
+4. 提交两个 registry 文件和官方清单、推 main（GitHub 和 Gitee 的 main 都要有：本机 `git push gitee main`）。
 5. 新附件刚传上去约 1 分钟后才能下载；用全新存档实际在线装一次验证。
 
 ### 9.4 两个发布渠道（GitHub / Gitee）

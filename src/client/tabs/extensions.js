@@ -9,6 +9,7 @@
  */
 import { button, el } from '../dom.js'
 import { renderDownloadedApp } from '../ext-apps.js'
+import { importCard } from '../ext-import.js'
 import { arr, obj, str } from '../values.js'
 
 /** 正在确认删除哪个扩展。 */
@@ -94,6 +95,7 @@ export function renderExtensionsTab(ui) {
   var local = ui.view.extensions.filter(function (extension) { return extension.installed })
   if (local.length === 0) ui.content.appendChild(el('div', 'dp-ext-later', '一个扩展都没装'))
   for (var i = 0; i < local.length; i += 1) ui.content.appendChild(localCard(ui, local[i]))
+  ui.content.appendChild(importCard(ui))
 
   var head = el('div', 'dp-ext-section dp-ext-online-head')
   head.appendChild(el('span', null, '在线扩展'))
@@ -110,7 +112,7 @@ function localCard(ui, extension) {
   card.setAttribute('data-extension', extension.key)
   var head = el('div', 'dp-set-head')
   head.appendChild(el('span', 'dp-ext-emoji', extension.emoji))
-  head.appendChild(el('b', null, extension.label + (extension.builtin ? '' : ' ' + extension.version)))
+  head.appendChild(el('b', null, extension.label + (extension.builtin ? '' : ' ' + extension.version) + (extension.local ? ' · 本地导入' : '')))
   if (extension.description) head.appendChild(el('small', 'dp-dim', extension.description))
   card.appendChild(head)
   var note = extension.on ? closingNote(ui.view, extension.key) : ''
