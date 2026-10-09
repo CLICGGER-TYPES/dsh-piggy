@@ -113,33 +113,6 @@
     ceo: "collection-throne",
     star: "music-rainbow"
   };
-  var OPAQUE_FEEDBACK_ART = /* @__PURE__ */ new Set([
-    "allergy",
-    "birthday",
-    "collection-badge",
-    "collection-courier",
-    "collection-soup",
-    "collection-stack",
-    "courier",
-    "death-day",
-    "faint",
-    "fishing",
-    "ghost-grave",
-    "hungry",
-    "lie-flat",
-    "music-earbuds",
-    "music-headphones-v2",
-    "music-rainbow",
-    "recruit",
-    "runny-nose",
-    "sleep-cloud",
-    "study-book",
-    "study-determined",
-    "study-pink-book",
-    "suspended",
-    "turning",
-    "twitch"
-  ]);
   function choose(options, hour) {
     return options[Math.abs(Math.floor(hour)) % options.length];
   }
@@ -206,7 +179,6 @@
       if (image.getAttribute("src") !== feedbackSrc) image.src = feedbackSrc;
       image.hidden = false;
       pig.setAttribute("data-feedback", "true");
-      pig.setAttribute("data-feedback-opaque", OPAQUE_FEEDBACK_ART.has(feedback) ? "true" : "false");
       if (emoji) emoji.hidden = true;
       return true;
     }
@@ -214,7 +186,6 @@
       image.hidden = true;
       if (image.getAttribute("src")) image.removeAttribute("src");
       pig.setAttribute("data-feedback", "false");
-      pig.setAttribute("data-feedback-opaque", "false");
       if (emoji) emoji.hidden = false;
       return false;
     }
@@ -228,7 +199,6 @@
     if (image.getAttribute("src") !== src) image.src = src;
     image.hidden = false;
     pig.setAttribute("data-feedback", "false");
-    pig.setAttribute("data-feedback-opaque", "false");
     if (emoji) emoji.hidden = true;
     return true;
   }
@@ -2574,9 +2544,8 @@
     // works identically either way.
     ".dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;",
     "-webkit-user-drag:none;user-select:none}",
-    // 白底生图用场景内的 SVG 滤镜抠掉近白背景，原 PNG 不改；透明图直接显示。
+    // 反馈立绘在打包前离线处理为透明 PNG。
     '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
-    '.dp-pig[data-feedback-opaque="true"] .dp-pig-img{filter:url(#dp-feedback-knockout)}',
     '.dp-pig[data-feedback="true"] .dp-dress{display:none}',
     ".dp-pig-emoji{font-size:var(--pig-size);line-height:1}",
     // No drawings yet — every stage is the same pig, so age reads as size plus
@@ -7414,40 +7383,6 @@
     document.head.appendChild(style);
     var host3 = document.createElement("div");
     host3.setAttribute(MOUNTED, "");
-    var namespace = "http://www.w3.org/2000/svg";
-    var svgElement = function(tag2) {
-      return typeof document.createElementNS === "function" ? document.createElementNS(namespace, tag2) : document.createElement(tag2);
-    };
-    var filterSvg = svgElement("svg");
-    filterSvg.setAttribute("width", "0");
-    filterSvg.setAttribute("height", "0");
-    filterSvg.setAttribute("aria-hidden", "true");
-    filterSvg.style.position = "absolute";
-    filterSvg.style.pointerEvents = "none";
-    var knockout = svgElement("filter");
-    knockout.setAttribute("id", "dp-feedback-knockout");
-    knockout.setAttribute("color-interpolation-filters", "sRGB");
-    var whiteMask = svgElement("feColorMatrix");
-    whiteMask.setAttribute("in", "SourceGraphic");
-    whiteMask.setAttribute("type", "matrix");
-    whiteMask.setAttribute("values", "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1 -1 -1 0 3");
-    whiteMask.setAttribute("result", "white-mask");
-    var threshold = svgElement("feComponentTransfer");
-    threshold.setAttribute("in", "white-mask");
-    threshold.setAttribute("result", "cutout-mask");
-    var alpha = svgElement("feFuncA");
-    alpha.setAttribute("type", "linear");
-    alpha.setAttribute("slope", "10");
-    alpha.setAttribute("intercept", "-0.2");
-    threshold.appendChild(alpha);
-    var cutout = svgElement("feComposite");
-    cutout.setAttribute("in", "SourceGraphic");
-    cutout.setAttribute("in2", "cutout-mask");
-    cutout.setAttribute("operator", "in");
-    knockout.appendChild(whiteMask);
-    knockout.appendChild(threshold);
-    knockout.appendChild(cutout);
-    filterSvg.appendChild(knockout);
     var card2 = el("div", "dp-card");
     var scene3 = el("div", "dp-scene");
     var hud = el("div", "dp-hud");
@@ -7499,7 +7434,6 @@
     pig.appendChild(napBubble);
     var dressSlots = el("div", "dp-dress");
     pig.appendChild(dressSlots);
-    pig.appendChild(filterSvg);
     var pomoHint = el("div", "dp-pomo");
     pomoHint.setAttribute("data-pomo-pill", "true");
     pomoHint.hidden = true;

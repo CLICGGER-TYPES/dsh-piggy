@@ -32,40 +32,6 @@ document.head.appendChild(style)
 var host = document.createElement('div')
 host.setAttribute(MOUNTED, '')
 
-// 只在显示时去掉审定 RGB 图片的白底；原文件保留，透明 PNG 不经过滤镜。
-var namespace = 'http://www.w3.org/2000/svg'
-var svgElement = function (tag) { return typeof document.createElementNS === 'function' ? document.createElementNS(namespace, tag) : document.createElement(tag) }
-var filterSvg = svgElement('svg')
-filterSvg.setAttribute('width', '0')
-filterSvg.setAttribute('height', '0')
-filterSvg.setAttribute('aria-hidden', 'true')
-filterSvg.style.position = 'absolute'
-filterSvg.style.pointerEvents = 'none'
-var knockout = svgElement('filter')
-knockout.setAttribute('id', 'dp-feedback-knockout')
-knockout.setAttribute('color-interpolation-filters', 'sRGB')
-var whiteMask = svgElement('feColorMatrix')
-whiteMask.setAttribute('in', 'SourceGraphic')
-whiteMask.setAttribute('type', 'matrix')
-whiteMask.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1 -1 -1 0 3')
-whiteMask.setAttribute('result', 'white-mask')
-var threshold = svgElement('feComponentTransfer')
-threshold.setAttribute('in', 'white-mask')
-threshold.setAttribute('result', 'cutout-mask')
-var alpha = svgElement('feFuncA')
-alpha.setAttribute('type', 'linear')
-alpha.setAttribute('slope', '10')
-alpha.setAttribute('intercept', '-0.2')
-threshold.appendChild(alpha)
-var cutout = svgElement('feComposite')
-cutout.setAttribute('in', 'SourceGraphic')
-cutout.setAttribute('in2', 'cutout-mask')
-cutout.setAttribute('operator', 'in')
-knockout.appendChild(whiteMask)
-knockout.appendChild(threshold)
-knockout.appendChild(cutout)
-filterSvg.appendChild(knockout)
-
 var card = el('div', 'dp-card')
 // The pig lives beside the panel, not inside it, so it stays transparent
 // and unmoved when the panel opens.
@@ -135,7 +101,6 @@ pig.appendChild(napBubble)
 // 装扮点位：每个点位挂一件，位置全在 CSS 里（.dp-slot[data-slot=…]）。
 var dressSlots = el('div', 'dp-dress')
 pig.appendChild(dressSlots)
-pig.appendChild(filterSvg)
 
 // 番茄钟（C2）：专注中贴在猪立绘右上角的小角标，挂在猪身上所以跟着它走。
 // 位置别越出猪头上方 20px，也不能高过说话气泡 —— 面板打开时它就够不着面板。

@@ -6,7 +6,7 @@
  * @module dsh-piggy/client/art
  */
 import { ART_URL } from './constants.js'
-import { feedbackArtFor, OPAQUE_FEEDBACK_ART } from './feedback-art.js'
+import { feedbackArtFor } from './feedback-art.js'
 
 var REACTION_ART = { feed: 'eat', bathe: 'bathe', play: 'play', pet: 'pet', cure: 'relaxed', levelup: 'relaxed' }
 var ACTIVITY_ART = { work: 'work', study: 'study', interest: 'study', trip: 'trip', fishing: 'fish' }
@@ -44,7 +44,6 @@ export function syncPigArt(pig, image, emoji) {
     if (image.getAttribute('src') !== feedbackSrc) image.src = feedbackSrc
     image.hidden = false
     pig.setAttribute('data-feedback', 'true')
-    pig.setAttribute('data-feedback-opaque', OPAQUE_FEEDBACK_ART.has(feedback) ? 'true' : 'false')
     if (emoji) emoji.hidden = true
     return true
   }
@@ -52,7 +51,6 @@ export function syncPigArt(pig, image, emoji) {
     image.hidden = true
     if (image.getAttribute('src')) image.removeAttribute('src')
     pig.setAttribute('data-feedback', 'false')
-    pig.setAttribute('data-feedback-opaque', 'false')
     if (emoji) emoji.hidden = false
     return false
   }
@@ -66,7 +64,6 @@ export function syncPigArt(pig, image, emoji) {
   if (image.getAttribute('src') !== src) image.src = src
   image.hidden = false
   pig.setAttribute('data-feedback', 'false')
-  pig.setAttribute('data-feedback-opaque', 'false')
   if (emoji) emoji.hidden = true
   return true
 }

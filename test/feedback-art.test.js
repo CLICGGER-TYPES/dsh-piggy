@@ -1,11 +1,26 @@
 // 审定 PNG 的状态选择与真实资源路由：避免切换到不存在的文件或越过资源目录。
 import assert from 'node:assert/strict'
-import { statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { test } from 'node:test'
 import { feedbackArtFor } from '../src/client/feedback-art.js'
 import { registerRoutes } from '../routes.js'
 
 const base = { stage: 'piglet', base: 'piglet', mood: 'fine', reaction: '', idle: '', activityKind: '', activityKey: '', hour: 0 }
+
+test('反馈立绘保持透明 PNG 和游戏包体积预算', () => {
+  const directory = new URL('../assets/feedback/', import.meta.url)
+  const names = readdirSync(directory).filter(name => name.endsWith('.png'))
+  assert.equal(names.length, 38)
+  let total = 0
+  for (const name of names) {
+    const data = readFileSync(new URL(name, directory))
+    assert.equal(data.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', name)
+    assert.ok(Math.max(data.readUInt32BE(16), data.readUInt32BE(20)) <= 256, name)
+    assert.equal(data[25], 6, `${name} must be RGBA, not RGB with a white canvas`)
+    total += data.length
+  }
+  assert.ok(total < 3_000_000, `feedback art is ${total} bytes`)
+})
 
 test('审定图片按真实状态切换，已有皮肤保留自己的立绘', () => {
   const cases = [

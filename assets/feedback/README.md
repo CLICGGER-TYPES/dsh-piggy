@@ -8,4 +8,4 @@
 
 生成图片的使用条款见 [OpenAI Terms of Use](https://openai.com/policies/terms-of-use/)。原始用户参考图片位于工作区 `feedback/`，审图总览和所选原尺寸 PNG 位于工作区 `dsh-piggy-artwork/feedback-static-svg/ai-drafts/selected-png/`；仓库只保存游戏使用的所选素材。来源为用户参考图与图像生成输出，没有从第三方插画包复制成品。
 
-有些原图是 RGB 白底。场景中的 SVG 滤镜只在显示这些图片时去掉近白背景，原 PNG 不改；带透明通道的 PNG 直接显示。滤镜元素必须绝对定位，否则零尺寸 SVG 仍会形成一行高度，推走桌面猪。
+仓库中的 38 张图均为长边不超过 256px 的透明 PNG。原尺寸图留在上述素材工作区；制作脚本、抠底范围及检查方法见 [PROVENANCE.md](PROVENANCE.md)。桌面和网页直接显示 PNG，不在运行时抠白。

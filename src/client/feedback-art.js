@@ -42,15 +42,6 @@ const WORK_ART = {
   dancer: 'turning', ceo: 'collection-throne', star: 'music-rainbow',
 }
 
-// 原始生图里这些 PNG 是 RGB 白底；其余文件已经带透明通道。
-export const OPAQUE_FEEDBACK_ART = new Set([
-  'allergy', 'birthday', 'collection-badge', 'collection-courier', 'collection-soup',
-  'collection-stack', 'courier', 'death-day', 'faint', 'fishing', 'ghost-grave',
-  'hungry', 'lie-flat', 'music-earbuds', 'music-headphones-v2', 'music-rainbow',
-  'recruit', 'runny-nose', 'sleep-cloud', 'study-book', 'study-determined',
-  'study-pink-book', 'suspended', 'turning', 'twitch',
-])
-
 /** @param {string[]} options @param {number} hour */
 function choose(options, hour) {
   return options[Math.abs(Math.floor(hour)) % options.length]

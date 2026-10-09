@@ -270,9 +270,8 @@ export const CSS_BASE = [
   // works identically either way.
   '.dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;',
   '-webkit-user-drag:none;user-select:none}',
-  // 白底生图用场景内的 SVG 滤镜抠掉近白背景，原 PNG 不改；透明图直接显示。
+  // 反馈立绘在打包前离线处理为透明 PNG。
   '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
-  '.dp-pig[data-feedback-opaque="true"] .dp-pig-img{filter:url(#dp-feedback-knockout)}',
   '.dp-pig[data-feedback="true"] .dp-dress{display:none}',
   '.dp-pig-emoji{font-size:var(--pig-size);line-height:1}',
 
