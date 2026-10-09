@@ -7,7 +7,7 @@
  */
 import { PACKAGE_VERSION } from './environment.js'
 import { achievementsView, disabledParts, extensionsView } from './core.js'
-import { ACTIONS, ACTION_ORDER, bodyWeightView, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
+import { ACTIONS, ACTION_ORDER, bodyWeightView, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
 import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SIGN_IN_CYCLE, SEXES, jobChecklist, jobRequirement, rarityByKey, traitBonus } from './data.js'
 
 /** 版本号只有一个来源：environment.js（它也是导出日志表头的那一份）。 */
@@ -158,8 +158,9 @@ export function snapshot(store, options = {}) {
       courses: courseView(state),
       souvenirs: souvenirsFor(state),
       stageLine: life.line,
+      birthdayToday: state.dead !== true && isPigBirthday(state, nowMs),
       illness: illness === null ? null : {
-        name: illness.name, chain: illness.chain, stage: illness.stage,
+        name: illness.name, chain: illness.chain, chainKey: illness.chainKey, stage: illness.stage,
         cure: illness.cure, cureKey: illness.cureKey, cureEmoji: illness.cureEmoji,
         doctorFee: doctorFee(state),
       },

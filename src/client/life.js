@@ -135,7 +135,11 @@ export function attachLife(c) {
       return true
     },
     /** 调试页「做个小动作」。 */
-    idleNow: function () { doIdle(IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]) },
+    /** @param {string} [key] 指定哪个小动作（调试页用），不给就随机。 */
+    idleNow: function (key) {
+      var picked = IDLE_ACTIONS.find(function (action) { return action.key === key })
+      doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)])
+    },
     dispose: function () {
       for (var i = 0; i < timers.length; i += 1) { window.clearTimeout(timers[i]); window.clearInterval(timers[i]) }
       timers = []

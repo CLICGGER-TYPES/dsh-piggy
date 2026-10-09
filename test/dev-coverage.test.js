@@ -345,3 +345,41 @@ test('G 批次：调试页按模块分页，只显示当前页；左右箭头能
   assert.notEqual(after[0], before, '右箭头切到下一页')
   for (const key of ['signin:7', 'gifts:3', 'update:fake', 'say:eat']) assert.notEqual(findByAttr(contentOf(dom), 'data-dev', key), undefined, key)
 })
+
+// ---------------------------------------------------------------------------
+// 立绘页：每张反馈图、每个小动作都要有入口（2026-10-09 用户：调试看不到新图）
+// ---------------------------------------------------------------------------
+
+test('调试页「立绘」列出 assets/feedback 里的每张图，且列出的图都真实存在', async () => {
+  const { readdirSync } = await import('node:fs')
+  const { feedbackArtUses } = await import('../src/client/tabs/dev.js')
+  const files = readdirSync(new URL('../assets/feedback/', import.meta.url))
+    .filter(name => name.endsWith('.png')).map(name => name.slice(0, -4)).sort()
+  const listed = Object.keys(feedbackArtUses()).sort()
+  assert.deepEqual(listed, files, '新加或删了反馈图，调试页和用图表要一起改')
+  for (const [name, where] of Object.entries(feedbackArtUses())) assert.ok(where.every(w => w !== ''), `${name} 的用途说明不能是空的`)
+})
+
+test('调试页「立绘」：点图会让猪换图，小动作按指定的做', async () => {
+  const { IDLE_ACTIONS } = await import('../src/client/life.js')
+  const shown = []
+  const idled = []
+  const { document } = fakeDom()
+  globalThis.document = document
+  const ui = {
+    view: { ...SNAPSHOT, pig: PIG },
+    content: document.createElement('div'),
+    send() {}, renderContent() {}, devOff() {}, setOpen() {}, host: { getAttribute: () => 'false' },
+    previewArt: name => shown.push(name), idleNow: key => idled.push(key),
+  }
+  renderDevTab(ui)
+  findByAttr(ui.content, 'data-dev', 'art:birthday').fire('click')
+  findByAttr(ui.content, 'data-dev', 'art:auto').fire('click')
+  assert.deepEqual(shown, ['birthday', null])
+  for (const action of IDLE_ACTIONS) {
+    const btn = findByAttr(ui.content, 'data-dev', 'idle:' + action.key)
+    assert.ok(btn && !btn.disabled, `小动作 ${action.key} 要有入口`)
+    btn.fire('click')
+  }
+  assert.deepEqual(idled, IDLE_ACTIONS.map(action => action.key))
+})

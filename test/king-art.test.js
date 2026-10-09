@@ -33,7 +33,7 @@ test('care reactions temporarily replace activity sprites and restore afterward'
   assert.ok(image.src.endsWith('pig-king.svg'))
   attrs['data-art'] = 'piglet'
   attrs['data-art-actions'] = 'false'
-  attrs['data-react'] = 'pet'
+  attrs['data-react'] = 'bathe'
   syncPigArt(pig, image)
-  assert.match(image.src, /\/feedback\/collection-(?:stack|badge)\.png$/, 'ordinary pigs use the approved reaction art')
+  assert.match(image.src, /\/feedback\/collection-bubbles\.png$/, 'ordinary pigs use the approved reaction art')
 })

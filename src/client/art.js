@@ -25,6 +25,14 @@ export function syncSleepArt(art, scenes, image) {
   if (image.getAttribute('src') !== src) image.src = src
 }
 
+/** 调试页「立绘」指定的反馈图；null 表示照常按状态自动选。只在这个页面里，不进存档。 */
+var forcedFeedback = null
+
+/** @param {string|null} name 反馈图文件名（不带 .png），null 恢复自动 */
+export function forceFeedbackArt(name) {
+  forcedFeedback = typeof name === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null
+}
+
 /**
  * Point the pig's <img> at the sprite its attributes call for. Only touches
  * `src` when it changes, so polling never refetches the image.
@@ -33,11 +41,12 @@ export function syncSleepArt(art, scenes, image) {
  */
 export function syncPigArt(pig, image, emoji) {
   var base = pig.getAttribute('data-art') || ''
-  var feedback = feedbackArtFor({
+  var feedback = forcedFeedback || feedbackArtFor({
     stage: pig.getAttribute('data-stage') || '', base: base,
     mood: pig.getAttribute('data-mood') || '', reaction: pig.getAttribute('data-react') || '',
     idle: pig.getAttribute('data-idle') || '', activityKind: pig.getAttribute('data-activity') || '',
-    activityKey: pig.getAttribute('data-activity-key') || '', hour: Math.floor(Date.now() / 3_600_000),
+    activityKey: pig.getAttribute('data-activity-key') || '', illness: pig.getAttribute('data-illness') || '',
+    party: pig.getAttribute('data-party') === 'true', hour: Math.floor(Date.now() / 3_600_000),
   })
   if (feedback) {
     var feedbackSrc = ART_URL + 'feedback/' + feedback + '.png'

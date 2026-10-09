@@ -47,6 +47,14 @@ export function slotFor(nowMs) {
   return null
 }
 
+/** 今天是不是猪的生日（出生满一天后，每年同月同日）。 */
+export function isPigBirthday(state, nowMs) {
+  if (state === null || typeof state.bornAt !== 'number' || nowMs - state.bornAt <= 86_400_000) return false
+  const now = new Date(nowMs)
+  const born = new Date(state.bornAt)
+  return born.getMonth() === now.getMonth() && born.getDate() === now.getDate()
+}
+
 /** 今天是什么节日（含猪的生日），没有返回 null。 */
 export function holidayFor(state, nowMs) {
   const now = new Date(nowMs)
@@ -54,11 +62,7 @@ export function holidayFor(state, nowMs) {
   const dated = DATED_HOLIDAYS[now.getFullYear() + '-' + md]
   if (dated !== undefined) return dated
   if (SOLAR_HOLIDAYS[md] !== undefined) return SOLAR_HOLIDAYS[md]
-  if (typeof state.bornAt === 'number' && nowMs - state.bornAt > 86_400_000) {
-    const born = new Date(state.bornAt)
-    if (born.getMonth() === now.getMonth() && born.getDate() === now.getDate()) return 'pigBirthday'
-  }
-  return null
+  return isPigBirthday(state, nowMs) ? 'pigBirthday' : null
 }
 
 /**

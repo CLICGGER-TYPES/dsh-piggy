@@ -25,23 +25,44 @@ test('反馈立绘保持透明 PNG 和游戏包体积预算', () => {
 test('审定图片按真实状态切换，已有皮肤保留自己的立绘', () => {
   const cases = [
     [{ ...base, stage: 'box' }, 'courier'],
+    [{ ...base, stage: 'box', hour: 1 }, 'collection-courier'],
     [{ ...base, stage: 'dead-day' }, 'death-day'],
     [{ ...base, stage: 'grave' }, 'ghost-grave'],
-    [{ ...base, activityKind: 'work', activityKey: 'courier' }, 'courier'],
+    // 用户 2026-10-09：猪递只给没拆的纸盒；快递员不用它。
+    [{ ...base, activityKind: 'work', activityKey: 'courier' }, null],
     [{ ...base, activityKind: 'study' }, 'study-book'],
     [{ ...base, activityKind: 'fishing' }, 'fishing'],
-    [{ ...base, mood: 'sick' }, 'collection-fever'],
+    [{ ...base, activityKind: 'interest', activityKey: 'fitness' }, 'collection-fitness'],
+    // 生病按病种和阶段：发烧是感冒第 2 期，红疹是皮肤病，晕是头晕；咳嗽、肠胃没图。
+    [{ ...base, mood: 'sick', illness: 'cold:2' }, 'collection-fever'],
+    [{ ...base, mood: 'sick', illness: 'cold:1' }, 'runny-nose'],
+    [{ ...base, mood: 'sick', illness: 'skin:1' }, 'allergy'],
+    [{ ...base, mood: 'sick', illness: 'dizzy:1' }, 'faint'],
+    [{ ...base, mood: 'sick', illness: 'cough:1' }, null],
+    [{ ...base, mood: 'sick', illness: 'cold:4' }, null],
     [{ ...base, reaction: 'bathe' }, 'collection-bubbles'],
-    [{ ...base, idle: 'scratch', hour: 1 }, 'twitch'],
+    // 治病、摸头不再用晕倒图和待定的徽章图；吹泡泡、挠痒没有对应的图。
+    [{ ...base, reaction: 'cure' }, null],
+    [{ ...base, reaction: 'pet' }, null],
+    [{ ...base, idle: 'bubbles' }, null],
+    [{ ...base, idle: 'scratch' }, null],
     [{ ...base, base: 'skin-angel', reaction: 'bathe' }, null],
+    // 生日蛋糕是场景图：形态、皮肤也照样显示。
+    [{ ...base, base: 'pig-fat', party: true }, 'birthday'],
   ]
-  for (const [state, expected] of cases) assert.equal(feedbackArtFor(state), expected)
+  for (const [state, expected] of cases) assert.equal(feedbackArtFor(state), expected, JSON.stringify(state))
   for (let hour = 0; hour < 24; hour += 1) {
-    for (const mood of ['sick', 'hungry', 'sleepy', 'lonely', 'dirty', 'happy']) {
+    for (const mood of ['hungry', 'sleepy', 'lonely', 'dirty', 'happy']) {
       const art = feedbackArtFor({ ...base, mood, hour })
       assert.ok(statSync(new URL(`../assets/feedback/${art}.png`, import.meta.url)).size > 1000)
     }
   }
+})
+
+test('待定的图一张都不会被选中', async () => {
+  const { FEEDBACK_ART_TABLES, UNUSED_FEEDBACK_ART } = await import('../src/client/feedback-art.js')
+  const used = JSON.stringify(FEEDBACK_ART_TABLES)
+  for (const name of UNUSED_FEEDBACK_ART) assert.ok(!used.includes(`"${name}"`), `${name} 是待定图，不该出现在用图表里`)
 })
 
 test('资源路由提供 PNG，拒绝跨目录路径', async () => {

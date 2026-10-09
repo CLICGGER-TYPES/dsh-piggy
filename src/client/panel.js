@@ -14,6 +14,7 @@ import { normalize } from './normalize.js'
 import { displayedPigSize } from './pig-size.js'
 import { applyEmojiStyle } from './emoji-style.js'
 import { writeStore } from './storage.js'
+import { cakeTakenToday } from './birthday.js'
 import { CSS } from './styles.js'
 import { animateAppEntry, animatePanelClose, animatePanelOpen } from './interaction-motion.js'
 import { renderBagTab } from './tabs/bag.js'
@@ -249,6 +250,8 @@ export function createPanel(ctx) {
           ctx.pig.setAttribute('data-activity', ctx.view.activity === null ? '' : ctx.view.activity.kind)
           ctx.pig.setAttribute('data-activity-key', ctx.view.activity === null ? '' : ctx.view.activity.key)
           ctx.pig.setAttribute('data-mood', ctx.view.pig.mood)
+          var ill = ctx.view.pig.illness
+          ctx.pig.setAttribute('data-illness', ill === null || ill.chainKey === '' ? '' : ill.chainKey + ':' + ill.stage)
           ctx.pigEmoji.textContent = pigStage.emoji
           syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji)
           // Display scale is a device preference; the stage remains save data.
@@ -302,13 +305,15 @@ export function createPanel(ctx) {
         // 猪头上的日常提示：能签到就先显示签到，否则显示礼包。
         // 点一下直接领；点击不再冒泡到场景，免得同时被当成摸猪/拖动。
         var daily = ctx.view.daily
-        var dailyAction = daily.canSignIn ? 'signIn' : (daily.unclaimed > 0 ? 'openGift' : null)
+        // 生日当天（或调试页「过生日」）头顶冒蛋糕，点了当天就不再冒，见 index.js 的 celebrate。
+        var cake = ctx.view.pig !== null && (ctx.view.pig.birthdayToday || ctx.cakeForced === true) && !cakeTakenToday()
+        var dailyAction = daily.canSignIn ? 'signIn' : (daily.unclaimed > 0 ? 'openGift' : (cake ? 'cake' : null))
         ctx.dailyHint.hidden = dailyAction === null || ctx.view.pig === null
         if (dailyAction !== null) {
-          ctx.dailyHint.textContent = dailyAction === 'signIn' ? '📅' : '🎁'
+          ctx.dailyHint.textContent = dailyAction === 'signIn' ? '📅' : (dailyAction === 'cake' ? '🎂' : '🎁')
           ctx.dailyHint.title = dailyAction === 'signIn'
             ? '签到第 ' + daily.signInDay + '/' + daily.cycle + ' 天'
-            : '有 ' + daily.unclaimed + ' 个在线礼包'
+            : (dailyAction === 'cake' ? '今天是' + ctx.view.pig.name + '的生日' : '有 ' + daily.unclaimed + ' 个在线礼包')
           // 动作放在 data-action 上，监听只在外壳里注册一次（见 index.js），
           // 免得每 4 秒重绘都往上挂一个 listener。
           ctx.dailyHint.setAttribute('data-action', dailyAction)

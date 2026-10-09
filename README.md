@@ -19,7 +19,8 @@
 - **角色外观**：完成厨师或宇航员工作解锁职业外观，另有免费内置皮肤，也可导入自己的 SVG 皮肤包
 - **Emoji 可选**：网页版和桌面版都自带整套彩色 emoji 字体，「设置 → Emoji 样式」可以在「内置」和「系统自带」之间切，机器上缺字也不会变方框
 - **出问题能查**：「设置 → 日志 → 导出日志」一键导出运行日志（桌面版弹系统「另存为」），里面记着版本、动作、扩展下载和报错
-- **会自己过日子**：按时间问候、提醒喝水休息、过节；点不同部位反应不同；闲着会打滚、打盹、追蝴蝶，桌面版还能出去散步（默认关）；每天写一篇带点黑色幽默的日记
+- **会自己过日子**：按时间问候、提醒喝水休息、过节；点不同部位反应不同；闲着会打滚、打盹（换成睡姿，头顶冒 Zzz）、追蝴蝶，桌面版还能出去散步（默认关）；每天写一篇带点黑色幽默的日记
+- **一猪多图**：普通小猪饿了、困了、发烧、起红疹、洗澡、上学、听歌、健身、钓鱼时换成对应的图；还没拆的纸盒是「猪递」；生日当天头顶冒蛋糕，点一下开个小派对
 - **零 token**：不注册模型工具，不向对话注入宠物状态
 
 <p align="center">
@@ -30,6 +31,9 @@
 <p align="center">
   <img src="docs/screenshots/c4-dex-dashboard.png" width="250" alt="图鉴">
   <img src="docs/screenshots/c6-skins.png" width="250" alt="换肤">
+</p>
+<p align="center">
+  <img src="docs/screenshots/readme-feedback-pigs.png" width="560" alt="不同状态下的小猪：猪递、饿了、发烧、红疹、洗澡、上学、听歌、健身、钓鱼、生日">
 </p>
 
 ## 安装
@@ -103,9 +107,12 @@ npm run typecheck
 |---|---|
 | [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)） |
 | [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题（[#5](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/5)） |
+| [@tetezi](https://github.com/tetezi) | 面板动作时猪窗口置顶、右键不误摸、脏和生病状态的苍蝇/病毒图标、恢复桌面版状态变色与心情优先级调整，附回归测试（[#8](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/8)，随 [#9](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/9) 合入） |
 
 想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)（Gitee 用户可以在 [Gitee 仓库](https://gitee.com/clicgger/dsh-piggy) 提 Issue）。合并进来的贡献会记在这张表里。
 
 ## 致谢与许可
+
+**不同状态的小猪图**（`assets/feedback/`）的灵感来自 [PigHub](https://pighub.top/) 上的猪猪图片：以那里的猪猪为参考，由 AI（OpenAI 图像生成，codex 操作）重新画成本项目的样子，没有直接复制原图。谢谢 PigHub 和图片作者！如果你是原图作者，觉得侵犯了你的权利或不喜欢这样使用，请[开 issue](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 告诉我们，我们会删除相关图片。
 
 视觉风格参考 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)，玩法数值参考资料见 [THIRD-PARTY.md](THIRD-PARTY.md)。项目采用 [MIT License](LICENSE)；小猪立绘改自 [Noto Emoji](https://github.com/googlefonts/noto-emoji) 的 🐖，按 Apache 2.0 发布（见 [THIRD-PARTY.md](THIRD-PARTY.md)）。

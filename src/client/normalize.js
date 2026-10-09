@@ -74,11 +74,13 @@ export function normalize(raw) {
         }
       })(pig.levelInfo),
       stageLine: str(pig.stageLine, ''),
+      birthdayToday: pig.birthdayToday === true,
       illness: isObj(pig.illness) ? {
         name: str(pig.illness.name, '生病'),
         cure: str(pig.illness.cure, '药'),
         cureEmoji: str(pig.illness.cureEmoji, '💊'),
         stage: num(pig.illness.stage, 1),
+        chainKey: str(pig.illness.chainKey, ''),
         doctorFee: typeof pig.illness.doctorFee === 'number' ? pig.illness.doctorFee : null,
       } : null,
       traits: {

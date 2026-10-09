@@ -15,7 +15,7 @@ import { desktopRole, desktopShell } from './desktop-shell.js'
 import { closeFishing } from './tabs/fishing.js'
 
 /** 面板窗口里会转给猪窗口的反应（参数都能直接过进程边界）。 */
-export var PIG_FX = ['flash', 'react', 'burst', 'showBubble', 'transform']
+export var PIG_FX = ['flash', 'react', 'burst', 'showBubble', 'transform', 'previewArt', 'idleNow', 'birthdayNow']
 
 /**
  * @param {any} ctx 挂载后的上下文（index.js 的 ctx）

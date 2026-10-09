@@ -35,6 +35,8 @@ import { updatesBridge } from './tabs/update.js'
 import { arr, num, obj, str } from './values.js'
 import { desktop } from './desktop/index.js'
 import { attachLife } from './life.js'
+import { forceFeedbackArt, syncPigArt } from './art.js'
+import { createBirthday } from './birthday.js'
 import { partAt } from './pet-parts.js'
 /** @type {any} */ (window).__ModuleLoader__.load({
   id: 'dsh-piggy',
@@ -216,6 +218,10 @@ import { partAt } from './pet-parts.js'
       ctx.flash = flash
 
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)
+      // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
+      ctx.previewArt = function (name) { forceFeedbackArt(name); syncPigArt(pig, pigArt, pigEmoji) }
+      ctx.idleNow = function (key) { if (ctx.life) ctx.life.idleNow(key) }
+      var birthday = createBirthday({ ctx: ctx, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: burst, render: function () { refresh() } })
       // 外壳 0.6.0 起猪和面板各一个窗口（split.js）；老外壳和网页版是 null。
       var splitRole = wireSplit(ctx, { refresh: function () { refresh() }, isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' } })
 
@@ -225,7 +231,8 @@ import { partAt } from './pet-parts.js'
       dailyHint.addEventListener('click', function (event) {
         event.stopPropagation()
         var action = dailyHint.getAttribute('data-action')
-        if (action !== null && action !== '') send(action)
+        if (action === 'cake') birthday.celebrate()
+        else if (action !== null && action !== '') send(action)
       })
 
       /**

@@ -69,71 +69,89 @@
 
   // src/client/feedback-art.js
   var MOOD_ART = {
-    sick: ["collection-fever", "allergy", "runny-nose", "collection-mosquito", "collection-check"],
-    hungry: ["hungry", "collection-snack", "collection-soup"],
+    hungry: ["hungry"],
     sleepy: ["sleep-cloud", "lie-flat"],
-    lonely: ["lie-flat", "collection-cage", "suspended"],
+    lonely: ["lie-flat"],
     dirty: ["collection-mosquito"],
-    happy: ["birthday", "collection-stack", "music-rainbow", "collection-throne"]
+    happy: ["music-rainbow", "collection-stack"]
+  };
+  var ILLNESS_ART = {
+    "cold:1": ["runny-nose"],
+    "cold:2": ["collection-fever"],
+    "cold:3": ["runny-nose"],
+    "skin:1": ["allergy"],
+    "skin:2": ["allergy"],
+    "skin:3": ["allergy"],
+    "skin:4": ["allergy"],
+    "dizzy:1": ["faint"],
+    "dizzy:2": ["faint"],
+    "dizzy:3": ["faint"]
   };
   var REACTION_ART = {
-    feed: ["collection-snack", "collection-soup", "hungry"],
+    feed: ["collection-snack", "collection-soup"],
     bathe: ["collection-bubbles"],
-    play: ["collection-fitness", "collection-chicken", "turning"],
-    pet: ["collection-stack", "collection-badge"],
-    cure: ["collection-check", "faint"],
-    levelup: ["collection-throne", "birthday"]
+    play: ["collection-chicken", "turning"],
+    levelup: ["collection-throne"]
   };
   var IDLE_ART = {
     roll: ["turning", "collection-taro"],
     butterfly: ["collection-chicken", "collection-scallion"],
-    scratch: ["collection-mosquito", "twitch"],
-    stretch: ["collection-fitness", "collection-scallion"],
-    look: ["collection-letter", "collection-cage"],
-    bubbles: ["collection-bubbles", "music-rainbow"],
+    look: ["collection-letter"],
     walk: ["collection-chicken", "collection-scallion"]
   };
   var WORK_ART = {
-    courier: "courier",
-    delivery: "collection-courier",
     flyers: "collection-letter",
-    chef: "collection-soup",
     singer: "music-headphones-v2",
     songwriter: "music-earbuds",
     cartoonist: "painting",
-    photographer: "painting",
     athlete: "collection-fitness",
     coach: "collection-fitness",
     gardener: "collection-scallion",
     florist: "collection-scallion",
-    guard: "collection-cage",
-    nurse: "collection-check",
-    doctor: "collection-check",
-    dancer: "turning",
     ceo: "collection-throne",
     star: "music-rainbow"
   };
+  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
+  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
+  var INTEREST_ART = {
+    fitness: ["collection-fitness"],
+    guitar: ["music-earbuds", "music-headphones-v2"],
+    dancing: ["music-earbuds", "music-headphones-v2"],
+    calligraphy: ["painting"],
+    photography: ["painting"],
+    other: ["study-determined"]
+  };
+  var TRIP_ART = ["collection-chicken", "collection-taro", "collection-scallion"];
+  var BIRTHDAY_ART = "birthday";
+  var FEEDBACK_ART_TABLES = Object.freeze({
+    stage: STAGE_ART,
+    birthday: [BIRTHDAY_ART],
+    reaction: REACTION_ART,
+    illness: ILLNESS_ART,
+    mood: MOOD_ART,
+    work: WORK_ART,
+    study: STUDY_ART,
+    interest: INTEREST_ART,
+    fishing: ["fishing"],
+    trip: TRIP_ART,
+    idle: IDLE_ART
+  });
+  var UNUSED_FEEDBACK_ART = Object.freeze(["collection-badge", "collection-check", "collection-cage", "suspended", "twitch"]);
   function choose(options, hour) {
     return options[Math.abs(Math.floor(hour)) % options.length];
   }
   function feedbackArtFor(state2) {
-    if (state2.stage === "box") return "courier";
-    if (state2.stage === "dead-day") return "death-day";
-    if (state2.stage === "grave") return "ghost-grave";
+    if (STAGE_ART[state2.stage]) return choose(STAGE_ART[state2.stage], state2.hour);
+    if (state2.party === true) return BIRTHDAY_ART;
     if (state2.base && state2.base !== "piglet") return null;
     if (REACTION_ART[state2.reaction]) return choose(REACTION_ART[state2.reaction], state2.hour);
-    if (state2.mood === "sick") return choose(MOOD_ART.sick, state2.hour);
+    if (state2.mood === "sick") return ILLNESS_ART[state2.illness ?? ""] ? choose(ILLNESS_ART[state2.illness ?? ""], state2.hour) : null;
     if (state2.mood === "dirty") return choose(MOOD_ART.dirty, state2.hour);
-    if (state2.activityKind === "work" && WORK_ART[state2.activityKey]) return WORK_ART[state2.activityKey];
-    if (state2.activityKind === "study") return choose(["study-book", "study-pink-book", "study-determined"], state2.hour);
-    if (state2.activityKind === "interest") {
-      if (state2.activityKey === "fitness") return "collection-fitness";
-      if (state2.activityKey === "guitar" || state2.activityKey === "dancing") return choose(["music-earbuds", "music-headphones-v2"], state2.hour);
-      if (state2.activityKey === "calligraphy" || state2.activityKey === "photography") return "painting";
-      return "study-determined";
-    }
+    if (state2.activityKind === "work") return WORK_ART[state2.activityKey] ?? null;
+    if (state2.activityKind === "study") return choose(STUDY_ART, state2.hour);
+    if (state2.activityKind === "interest") return choose(INTEREST_ART[state2.activityKey] ?? INTEREST_ART.other, state2.hour);
     if (state2.activityKind === "fishing") return "fishing";
-    if (state2.activityKind === "trip") return choose(["collection-chicken", "collection-taro", "collection-scallion"], state2.hour);
+    if (state2.activityKind === "trip") return choose(TRIP_ART, state2.hour);
     if (IDLE_ART[state2.idle]) return choose(IDLE_ART[state2.idle], state2.hour);
     if (MOOD_ART[state2.mood]) return choose(MOOD_ART[state2.mood], state2.hour);
     return null;
@@ -162,9 +180,13 @@
     var src = ART_URL + (custom ? art + "-sleep.svg" : name + "-sleep.png");
     if (image.getAttribute("src") !== src) image.src = src;
   }
+  var forcedFeedback = null;
+  function forceFeedbackArt(name) {
+    forcedFeedback = typeof name === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null;
+  }
   function syncPigArt(pig, image, emoji) {
     var base = pig.getAttribute("data-art") || "";
-    var feedback = feedbackArtFor({
+    var feedback = forcedFeedback || feedbackArtFor({
       stage: pig.getAttribute("data-stage") || "",
       base,
       mood: pig.getAttribute("data-mood") || "",
@@ -172,6 +194,8 @@
       idle: pig.getAttribute("data-idle") || "",
       activityKind: pig.getAttribute("data-activity") || "",
       activityKey: pig.getAttribute("data-activity-key") || "",
+      illness: pig.getAttribute("data-illness") || "",
+      party: pig.getAttribute("data-party") === "true",
       hour: Math.floor(Date.now() / 36e5)
     });
     if (feedback) {
@@ -483,10 +507,10 @@
       }
       ui.content.appendChild(row);
     }
-    var today = el("div", "dp-row");
-    today.appendChild(el("span", null, "\u4ECA\u5929\u5B8C\u6210"));
-    today.appendChild(el("b", null, view.todayDone + " \u4E2A" + (view.todayDone >= view.cap ? " \xB7 \u5956\u52B1\u5DF2\u62FF\u6EE1" : "")));
-    ui.content.appendChild(today);
+    var today2 = el("div", "dp-row");
+    today2.appendChild(el("span", null, "\u4ECA\u5929\u5B8C\u6210"));
+    today2.appendChild(el("b", null, view.todayDone + " \u4E2A" + (view.todayDone >= view.cap ? " \xB7 \u5956\u52B1\u5DF2\u62FF\u6EE1" : "")));
+    ui.content.appendChild(today2);
     ui.content.appendChild(el(
       "div",
       "dp-dim",
@@ -1163,18 +1187,18 @@
   function stillOpen(ui) {
     return activeUi === ui && ui.host.getAttribute("data-open") === "true";
   }
-  function holdControls(stage, s) {
-    stage.addEventListener("pointerdown", function(event) {
+  function holdControls(stage2, s) {
+    stage2.addEventListener("pointerdown", function(event) {
       event?.preventDefault?.();
       s.holding = true;
     });
-    stage.addEventListener("keydown", function(event) {
+    stage2.addEventListener("keydown", function(event) {
       if (event.code === "Space" || event.key === " ") {
         event.preventDefault?.();
         s.holding = true;
       }
     });
-    stage.addEventListener("keyup", function(event) {
+    stage2.addEventListener("keyup", function(event) {
       if (event.code === "Space" || event.key === " ") s.holding = false;
     });
     const up = function() {
@@ -1307,9 +1331,9 @@
         last: 0
       });
     }
-    const stage = button("dp-fish-stage", { "data-fish-fight": "bar", "data-fish-bar": "true", "aria-label": "\u6309\u4F4F\u8BA9\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC" }, function() {
+    const stage2 = button("dp-fish-stage", { "data-fish-fight": "bar", "data-fish-bar": "true", "aria-label": "\u6309\u4F4F\u8BA9\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC" }, function() {
     });
-    stage.setAttribute("tabindex", "0");
+    stage2.setAttribute("tabindex", "0");
     const bar = el("div", "dp-fish-bar");
     const track = el("div", "dp-fish-track");
     const zone = el("i", "dp-fish-zone");
@@ -1321,12 +1345,12 @@
     meter2.appendChild(fill);
     bar.appendChild(track);
     bar.appendChild(meter2);
-    stage.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
-    stage.appendChild(bar);
+    stage2.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    stage2.appendChild(bar);
     const hint = el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u7EFF\u6761\u4E0A\u6D6E\uFF0C\u677E\u5F00\u4E0B\u6C89 \xB7 \u8BA9\u9C7C\u5F85\u5728\u7EFF\u6761\u91CC");
-    stage.appendChild(hint);
-    ui.content.appendChild(stage);
-    holdControls(stage, s);
+    stage2.appendChild(hint);
+    ui.content.appendChild(stage2);
+    holdControls(stage2, s);
     function moveFish(dt) {
       s.wait -= dt;
       if (s.wait <= 0) {
@@ -1361,8 +1385,8 @@
       zone.style.height = s.zoneH + "px";
       swimmer.style.bottom = s.fishY + "px";
       fill.style.height = s.progress + "%";
-      stage.setAttribute("data-inside", inside2 ? "true" : "false");
-      stage.setAttribute("data-progress", s.progress.toFixed(0));
+      stage2.setAttribute("data-inside", inside2 ? "true" : "false");
+      stage2.setAttribute("data-progress", s.progress.toFixed(0));
       if (s.progress >= 100) return finish(true);
       if (s.progress <= 0) return finish(false);
       frame = raf(tick2);
@@ -1374,9 +1398,9 @@
     if (s.distance === void 0) {
       Object.assign(s, { tension: 40, distance: 100, loose: 0, surge: 0, surgeCd: 1500, holding: false, last: 0 });
     }
-    const stage = button("dp-fish-stage", { "data-fish-fight": "pull", "data-fish-pull": "true", "aria-label": "\u6309\u4F4F\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF\uFF0C\u6307\u9488\u522B\u8FDB\u7EA2\u533A" }, function() {
+    const stage2 = button("dp-fish-stage", { "data-fish-fight": "pull", "data-fish-pull": "true", "aria-label": "\u6309\u4F4F\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF\uFF0C\u6307\u9488\u522B\u8FDB\u7EA2\u533A" }, function() {
     });
-    stage.setAttribute("tabindex", "0");
+    stage2.setAttribute("tabindex", "0");
     const line3 = el("div", "dp-fish-line");
     const rod = el("span", "dp-fish-rod", "\u{1F3A3}");
     line3.appendChild(rod);
@@ -1389,14 +1413,14 @@
     const meter2 = el("div", "dp-fish-hmeter");
     const fill = el("i");
     meter2.appendChild(fill);
-    stage.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
-    stage.appendChild(line3);
-    stage.appendChild(gauge);
-    stage.appendChild(state2);
-    stage.appendChild(meter2);
-    stage.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
-    ui.content.appendChild(stage);
-    holdControls(stage, s);
+    stage2.appendChild(el("div", "dp-fish-qte-title", fish2.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
+    stage2.appendChild(line3);
+    stage2.appendChild(gauge);
+    stage2.appendChild(state2);
+    stage2.appendChild(meter2);
+    stage2.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
+    ui.content.appendChild(stage2);
+    holdControls(stage2, s);
     function tick2(now) {
       if (!stillOpen(ui)) return finish(false);
       const dt = s.last ? Math.min(50, now - s.last) : 16;
@@ -1419,7 +1443,7 @@
       rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
       fill.style.width = 100 - Math.max(0, s.distance) + "%";
       state2.textContent = (s.surge > 2 ? fish2.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= 85 ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
-      stage.setAttribute("data-tension", s.tension.toFixed(0));
+      stage2.setAttribute("data-tension", s.tension.toFixed(0));
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
       if (s.distance <= 0) return finish(true);
@@ -1635,7 +1659,7 @@
   }
 
   // src/client/split.js
-  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform"];
+  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform", "previewArt", "idleNow", "birthdayNow"];
   function wireSplit(ctx, hooks) {
     var role2 = desktopRole();
     var shell2 = desktopShell();
@@ -1872,11 +1896,13 @@
           };
         })(pig.levelInfo),
         stageLine: str(pig.stageLine, ""),
+        birthdayToday: pig.birthdayToday === true,
         illness: isObj(pig.illness) ? {
           name: str(pig.illness.name, "\u751F\u75C5"),
           cure: str(pig.illness.cure, "\u836F"),
           cureEmoji: str(pig.illness.cureEmoji, "\u{1F48A}"),
           stage: num(pig.illness.stage, 1),
+          chainKey: str(pig.illness.chainKey, ""),
           doctorFee: typeof pig.illness.doctorFee === "number" ? pig.illness.doctorFee : null
         } : null,
         traits: {
@@ -1906,37 +1932,37 @@
         memories: arr(pig.memories).filter((m) => typeof m === "string")
       },
       actions: normalizeActions(d.actions),
-      jobs: arr(d.jobs).map((job) => ({
-        key: str(obj(job).key, ""),
-        label: str(obj(job).label, "\u5DE5\u4F5C"),
-        emoji: str(obj(job).emoji, "\u{1F4BC}"),
-        minutes: num(obj(job).minutes, 0),
-        coins: num(obj(job).coins, 0),
-        available: obj(job).available === true,
+      jobs: arr(d.jobs).map((job2) => ({
+        key: str(obj(job2).key, ""),
+        label: str(obj(job2).label, "\u5DE5\u4F5C"),
+        emoji: str(obj(job2).emoji, "\u{1F4BC}"),
+        minutes: num(obj(job2).minutes, 0),
+        coins: num(obj(job2).coins, 0),
+        available: obj(job2).available === true,
         // What schooling has bought this job.
-        traitLabel: str(obj(job).traitLabel, ""),
-        traitEmoji: str(obj(job).traitEmoji, ""),
-        traitPoints: num(obj(job).traitPoints, 0),
-        baseMinutes: num(obj(job).baseMinutes, 0),
-        baseCoins: num(obj(job).baseCoins, 0),
-        payPercent: num(obj(job).payPercent, 0),
-        speedPercent: num(obj(job).speedPercent, 0),
+        traitLabel: str(obj(job2).traitLabel, ""),
+        traitEmoji: str(obj(job2).traitEmoji, ""),
+        traitPoints: num(obj(job2).traitPoints, 0),
+        baseMinutes: num(obj(job2).baseMinutes, 0),
+        baseCoins: num(obj(job2).baseCoins, 0),
+        payPercent: num(obj(job2).payPercent, 0),
+        speedPercent: num(obj(job2).speedPercent, 0),
         // An old host has no gate at all, so a missing flag must read as
         // "qualified" — the opposite default would lock every job on upgrade.
-        qualified: obj(job).qualified !== false,
-        lockText: str(obj(job).lockText, ""),
-        level: num(obj(job).level, 1),
-        trait: str(obj(job).trait, ""),
-        satiety: num(obj(job).satiety, 0),
-        cleanliness: num(obj(job).cleanliness, 0),
-        requirements: arr(obj(job).requirements).filter(isObj).map((entry) => ({
+        qualified: obj(job2).qualified !== false,
+        lockText: str(obj(job2).lockText, ""),
+        level: num(obj(job2).level, 1),
+        trait: str(obj(job2).trait, ""),
+        satiety: num(obj(job2).satiety, 0),
+        cleanliness: num(obj(job2).cleanliness, 0),
+        requirements: arr(obj(job2).requirements).filter(isObj).map((entry) => ({
           text: str(entry.text, ""),
           need: num(entry.need, 0),
           have: num(entry.have, 0),
           kind: str(entry.kind, ""),
           met: entry.met === true
         }))
-      })).filter((job) => job.key !== ""),
+      })).filter((job2) => job2.key !== ""),
       // B4: nine subjects, each with its own lesson count and stage.
       subjects: arr(d.subjects).map((sub) => ({
         key: str(obj(sub).key, ""),
@@ -1974,28 +2000,28 @@
         available: obj(entry).available === true,
         affordable: obj(entry).affordable === true
       })).filter((entry) => entry.key !== ""),
-      stages: arr(d.stages).map((stage) => ({
-        key: str(obj(stage).key, ""),
-        label: str(obj(stage).label, "\u5B66\u6BB5"),
-        emoji: str(obj(stage).emoji, "\u{1F4DA}"),
-        minutes: num(obj(stage).minutes, 0),
-        tuition: num(obj(stage).tuition, 0),
-        gain: num(obj(stage).gain, 0),
+      stages: arr(d.stages).map((stage2) => ({
+        key: str(obj(stage2).key, ""),
+        label: str(obj(stage2).label, "\u5B66\u6BB5"),
+        emoji: str(obj(stage2).emoji, "\u{1F4DA}"),
+        minutes: num(obj(stage2).minutes, 0),
+        tuition: num(obj(stage2).tuition, 0),
+        gain: num(obj(stage2).gain, 0),
         // B4: the lesson numbers this stage covers (upTo null = no end).
-        from: num(obj(stage).from, 0),
-        upTo: typeof obj(stage).upTo === "number" ? obj(stage).upTo : null,
+        from: num(obj(stage2).from, 0),
+        upTo: typeof obj(stage2).upTo === "number" ? obj(stage2).upTo : null,
         // Which courses this stage teaches — empty on an old host, in which
         // case the panel shows every subject rather than none.
-        subjects: arr(obj(stage).subjects).filter((key) => typeof key === "string"),
+        subjects: arr(obj(stage2).subjects).filter((key) => typeof key === "string"),
         // The school ladder: a stage with `unlocked === false` is gated behind
         // finishing the previous one, and says by how much.
-        unlocked: obj(stage).unlocked !== false,
-        progress: isObj(obj(stage).progress) ? {
-          done: num(obj(stage).progress.done, 0),
-          need: num(obj(stage).progress.need, 0),
-          label: str(obj(stage).progress.label, "")
+        unlocked: obj(stage2).unlocked !== false,
+        progress: isObj(obj(stage2).progress) ? {
+          done: num(obj(stage2).progress.done, 0),
+          need: num(obj(stage2).progress.need, 0),
+          label: str(obj(stage2).progress.label, "")
         } : null
-      })).filter((stage) => stage.key !== ""),
+      })).filter((stage2) => stage2.key !== ""),
       trips: arr(d.trips).map((trip) => ({
         key: str(obj(trip).key, ""),
         label: str(obj(trip).label, "\u76EE\u7684\u5730"),
@@ -2273,6 +2299,41 @@
   function applyEmojiStyle(host3) {
     host3.setAttribute("data-emoji", emojiStyle());
     applyPatCursor(host3);
+  }
+
+  // src/client/birthday.js
+  var CAKE_KEY = "dsh-piggy:cake";
+  var PARTY_MS = 15e3;
+  function today() {
+    var now = /* @__PURE__ */ new Date();
+    return now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
+  }
+  function cakeTakenToday() {
+    return readStore(CAKE_KEY) === today();
+  }
+  function createBirthday(c) {
+    var timer2 = null;
+    c.ctx.birthdayNow = function() {
+      c.ctx.cakeForced = true;
+      c.render();
+    };
+    return {
+      /** 点了蛋糕：猪短暂换成生日图、冒彩带，蛋糕今天不再冒。 */
+      celebrate: function() {
+        writeStore(CAKE_KEY, today());
+        c.ctx.cakeForced = false;
+        c.pig.setAttribute("data-party", "true");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        c.burst(["\u{1F382}", "\u{1F389}", "\u{1F388}"], 6);
+        c.render();
+        if (timer2 !== null) window.clearTimeout(timer2);
+        timer2 = window.setTimeout(function() {
+          timer2 = null;
+          c.pig.removeAttribute("data-party");
+          syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        }, PARTY_MS);
+      }
+    };
   }
 
   // src/client/css-achievements.js
@@ -5252,6 +5313,366 @@
   ));
   var LINE_SCENES = Object.freeze(Object.keys(LINES));
 
+  // packages/pet-core/src/data/minutes.js
+  var MINUTES = Object.freeze({
+    quarter: 15,
+    half: 30,
+    hour: 60,
+    ninety: 90,
+    twoHours: 120,
+    threeHours: 180,
+    fourHours: 240,
+    sixHours: 360,
+    eightHours: 480,
+    halfDay: 720,
+    day: 1440
+  });
+
+  // packages/pet-core/src/data/interests.js
+  var INTERESTS = Object.freeze([
+    Object.freeze({ key: "photography", label: "\u6444\u5F71", emoji: "\u{1F4F7}", trait: "charm", minutes: MINUTES.half, cost: 40, gain: 2, certificate: "\u6444\u5F71\u8BC1", blurb: "\u4F1A\u62CD\u7167\u7684\u732A\uFF0C\u8D70\u5230\u54EA\u90FD\u4E0A\u76F8" }),
+    Object.freeze({ key: "coding", label: "\u7F16\u7A0B", emoji: "\u{1F4BB}", trait: "intel", minutes: MINUTES.hour, cost: 80, gain: 2, certificate: "\u7F16\u7A0B\u8BC1", blurb: "\u5B66\u4F1A\u8BA9\u522B\u7684\u732A\u5E72\u6D3B" }),
+    Object.freeze({ key: "dancing", label: "\u8DF3\u821E", emoji: "\u{1F483}", trait: "charm", minutes: MINUTES.half, cost: 45, gain: 2, certificate: "\u8DF3\u821E\u8BC1", blurb: "\u4F1A\u8DF3\u821E\u7684\u732A\u4E0D\u602F\u573A" }),
+    Object.freeze({ key: "fitness", label: "\u5065\u8EAB", emoji: "\u{1F3CB}", trait: "strong", minutes: MINUTES.half, cost: 35, gain: 2, certificate: "\u5065\u8EAB\u8BC1", blurb: "\u4E3E\u5F97\u52A8\u66F4\u91CD\u7684\u4E1C\u897F" }),
+    // --- 2026-10-01 用户要求多一些：每一维各加四门，证书先当收藏，以后可以挂新职业 ---
+    // 🧠 智力
+    Object.freeze({ key: "weiqi", label: "\u56F4\u68CB", emoji: "\u265F\uFE0F", trait: "intel", minutes: MINUTES.half, cost: 45, gain: 2, certificate: "\u56F4\u68CB\u8BC1", blurb: "\u4E0B\u68CB\u7684\u65F6\u5019\u4E00\u52A8\u4E0D\u52A8\uFF0C\u50CF\u7761\u7740\u4E86" }),
+    Object.freeze({ key: "english", label: "\u82F1\u8BED", emoji: "\u{1F524}", trait: "intel", minutes: MINUTES.half, cost: 40, gain: 2, certificate: "\u82F1\u8BED\u8BC1", blurb: "Oink oink, hello" }),
+    Object.freeze({ key: "astronomy", label: "\u5929\u6587", emoji: "\u{1F52D}", trait: "intel", minutes: MINUTES.hour, cost: 90, gain: 2, certificate: "\u5929\u6587\u8BC1", blurb: "\u8BA4\u5F97\u51FA\u54EA\u9897\u661F\u661F\u50CF\u732A\u9F3B\u5B50" }),
+    Object.freeze({ key: "cube", label: "\u9B54\u65B9", emoji: "\u{1F9E9}", trait: "intel", minutes: MINUTES.half, cost: 35, gain: 2, certificate: "\u9B54\u65B9\u8BC1", blurb: "\u8E44\u5B50\u8F6C\u5F97\u6BD4\u624B\u8FD8\u5FEB" }),
+    // ✨ 魅力
+    Object.freeze({ key: "calligraphy", label: "\u4E66\u6CD5", emoji: "\u{1F58C}\uFE0F", trait: "charm", minutes: MINUTES.half, cost: 40, gain: 2, certificate: "\u4E66\u6CD5\u8BC1", blurb: "\u5199\u7684\u300C\u732A\u300D\u5B57\u7279\u522B\u6709\u795E" }),
+    Object.freeze({ key: "guitar", label: "\u5409\u4ED6", emoji: "\u{1F3B8}", trait: "charm", minutes: MINUTES.half, cost: 50, gain: 2, certificate: "\u5409\u4ED6\u8BC1", blurb: "\u4F1A\u5F39\u4E09\u4E2A\u548C\u5F26\u5C31\u591F\u7528\u4E86" }),
+    Object.freeze({ key: "magic", label: "\u9B54\u672F", emoji: "\u{1F3A9}", trait: "charm", minutes: MINUTES.hour, cost: 85, gain: 2, certificate: "\u9B54\u672F\u8BC1", blurb: "\u80FD\u4ECE\u5E3D\u5B50\u91CC\u53D8\u51FA\u4E00\u4E2A\u82F9\u679C" }),
+    Object.freeze({ key: "ikebana", label: "\u63D2\u82B1", emoji: "\u{1F490}", trait: "charm", minutes: MINUTES.half, cost: 35, gain: 2, certificate: "\u63D2\u82B1\u8BC1", blurb: "\u63D2\u7740\u63D2\u7740\u628A\u82B1\u5403\u4E86" }),
+    // 💪 武力
+    Object.freeze({ key: "swimming", label: "\u6E38\u6CF3", emoji: "\u{1F3CA}", trait: "strong", minutes: MINUTES.half, cost: 40, gain: 2, certificate: "\u6E38\u6CF3\u8BC1", blurb: "\u4F1A\u72D7\u5228\uFF0C\u4E0D\u5BF9\uFF0C\u732A\u5228" }),
+    Object.freeze({ key: "skating", label: "\u8F6E\u6ED1", emoji: "\u{1F6FC}", trait: "strong", minutes: MINUTES.half, cost: 45, gain: 2, certificate: "\u8F6E\u6ED1\u8BC1", blurb: "\u56DB\u53EA\u8E44\u5B50\uFF0C\u56DB\u53CC\u978B" }),
+    Object.freeze({ key: "climbing", label: "\u6500\u5CA9", emoji: "\u{1F9D7}", trait: "strong", minutes: MINUTES.hour, cost: 90, gain: 2, certificate: "\u6500\u5CA9\u8BC1", blurb: "\u722C\u5F97\u4E0A\u53BB\uFF0C\u4E0B\u6765\u8981\u4EBA\u62B1" }),
+    Object.freeze({ key: "football", label: "\u8DB3\u7403", emoji: "\u26BD", trait: "strong", minutes: MINUTES.half, cost: 35, gain: 2, certificate: "\u8DB3\u7403\u8BC1", blurb: "\u6700\u559C\u6B22\u7528\u5934\u9876\u7403" })
+  ]);
+
+  // packages/pet-core/src/data/school.js
+  var subject = (key, label, emoji, trait, secondary = null) => Object.freeze({ key, label, emoji, trait, secondary });
+  var SUBJECTS = Object.freeze([
+    subject("chinese", "\u8BED\u6587", "\u{1F4D6}", "intel", "charm"),
+    subject("mathematics", "\u6570\u5B66", "\u{1F522}", "intel"),
+    subject("politics", "\u653F\u6CBB", "\u2696\uFE0F", "intel", "strong"),
+    subject("music", "\u97F3\u4E50", "\u{1F3B5}", "charm"),
+    subject("art", "\u827A\u672F", "\u{1F3A8}", "charm", "intel"),
+    subject("manners", "\u793C\u4EEA", "\u{1F3A9}", "charm"),
+    subject("pe", "\u4F53\u80B2", "\u{1F3C3}", "strong", "charm"),
+    subject("labour", "\u52B3\u6280", "\u{1F527}", "strong", "intel"),
+    subject("wushu", "\u6B66\u672F", "\u{1F94B}", "strong")
+  ]);
+  var SCHOOL_STAGES = Object.freeze([
+    Object.freeze({ key: "primary", label: "\u5C0F\u5B66", emoji: "\u{1F4DA}", upTo: 9, minutes: 20, tuition: 10, gain: 1, secondaryGain: 0, satiety: -5, happiness: -1 }),
+    Object.freeze({ key: "middle", label: "\u4E2D\u5B66", emoji: "\u{1F3EB}", upTo: 20, minutes: 30, tuition: 25, gain: 2, secondaryGain: 1, satiety: -7, happiness: -2 }),
+    Object.freeze({ key: "college", label: "\u5927\u5B66", emoji: "\u{1F3DB}", upTo: 40, minutes: 45, tuition: 60, gain: 3, secondaryGain: 1, satiety: -10, happiness: -3 }),
+    Object.freeze({ key: "graduate", label: "\u7814\u7A76\u751F", emoji: "\u{1F52C}", upTo: 95, minutes: 60, tuition: 120, gain: 4, secondaryGain: 2, satiety: -12, happiness: -4 }),
+    Object.freeze({ key: "beyond", label: "\u5B66\u65E0\u6B62\u5883", emoji: "\u{1F30C}", upTo: Infinity, minutes: 60, tuition: 150, gain: 5, secondaryGain: 2, satiety: -12, happiness: -4 })
+  ]);
+  var GRADUATION_LESSONS = Object.freeze(SCHOOL_STAGES.filter((stage2) => Number.isFinite(stage2.upTo)).map((stage2) => stage2.upTo));
+
+  // packages/pet-core/src/data/traits.js
+  var TRAIT_PAY_PER_POINT = 1 / 150;
+  var TRAITS = Object.freeze({
+    intel: Object.freeze({ key: "intel", label: "\u667A\u529B", emoji: "\u{1F9E0}" }),
+    charm: Object.freeze({ key: "charm", label: "\u9B45\u529B", emoji: "\u2728" }),
+    strong: Object.freeze({ key: "strong", label: "\u6B66\u529B", emoji: "\u{1F4AA}" })
+  });
+  var TRAIT_ORDER = Object.freeze(["intel", "charm", "strong"]);
+
+  // packages/pet-core/src/data/jobs.js
+  var COST_BY_MINUTES = Object.freeze({
+    30: Object.freeze({ satiety: -6, cleanliness: -4 }),
+    45: Object.freeze({ satiety: -8, cleanliness: -6 }),
+    60: Object.freeze({ satiety: -15, cleanliness: -12 }),
+    120: Object.freeze({ satiety: -18, cleanliness: -10 }),
+    240: Object.freeze({ satiety: -34, cleanliness: -26 }),
+    480: Object.freeze({ satiety: -60, cleanliness: -40 })
+  });
+  var job = (key, label, emoji, trait, minutes, coins, requires) => Object.freeze({ key, label, emoji, trait, minutes, coins, ...COST_BY_MINUTES[minutes], requires: Object.freeze(requires) });
+  var JOBS = Object.freeze([
+    // --- 起步：不用上学 · 30–45 分钟 ------------------------------------------
+    job("bricks", "\u642C\u7816", "\u{1F9F1}", "strong", 30, 40, { level: 1 }),
+    job("flyers", "\u53D1\u4F20\u5355", "\u{1F4C4}", "charm", 30, 40, { level: 1 }),
+    job("dishes", "\u6D17\u7897\u5DE5", "\u{1F37D}", "strong", 30, 45, { level: 3 }),
+    job("delivery", "\u9001\u5916\u5356", "\u{1F6F5}", "strong", 45, 70, { level: 5, lessons: { pe: 3 } }),
+    // --- 小学毕业（某门课 9 节）· 1 小时 --------------------------------------
+    job("mason", "\u6CE5\u74E6\u5DE5", "\u{1F9F1}", "strong", 60, 150, { level: 3, lessons: { labour: 9 } }),
+    job("cashier", "\u6536\u94F6\u5458", "\u{1F9FE}", "intel", 60, 150, { level: 5, lessons: { mathematics: 9 } }),
+    job("florist", "\u82B1\u5320", "\u{1F490}", "charm", 60, 160, { level: 6, lessons: { manners: 9 } }),
+    job("carpenter", "\u6728\u5320", "\u{1FA9A}", "strong", 60, 160, { level: 6, lessons: { labour: 9 } }),
+    job("courier", "\u5FEB\u9012\u5458", "\u{1F4E6}", "strong", 60, 170, { level: 8, lessons: { pe: 9, wushu: 9 } }),
+    job("gardener", "\u56ED\u4E01", "\u{1F333}", "charm", 60, 180, { level: 9, lessons: { chinese: 9, art: 9 } }),
+    job("guard", "\u4FDD\u5B89", "\u{1F6E1}", "strong", 60, 180, { level: 9, lessons: { politics: 9, wushu: 9 } }),
+    job("actor", "\u6F14\u5458", "\u{1F3AD}", "charm", 60, 180, { level: 9, lessons: { manners: 9, labour: 9 } }),
+    // --- 中学毕业（20 节）· 2 小时 --------------------------------------------
+    job("chef", "\u53A8\u5E08", "\u{1F468}\u200D\u{1F373}", "strong", 120, 480, { level: 12, lessons: { labour: 20, manners: 9 } }),
+    job("singer", "\u6B4C\u624B", "\u{1F3A4}", "charm", 120, 500, { level: 12, lessons: { music: 20 } }),
+    job("lawyer", "\u5F8B\u5E08", "\u2696\uFE0F", "intel", 120, 520, { level: 12, lessons: { politics: 20 } }),
+    job("nurse", "\u62A4\u58EB", "\u{1F489}", "charm", 120, 520, { level: 14, lessons: { chinese: 20, manners: 20 } }),
+    job("athlete", "\u8FD0\u52A8\u5458", "\u{1F3C5}", "strong", 120, 540, { level: 14, lessons: { pe: 20, wushu: 20 } }),
+    job("cartoonist", "\u6F2B\u753B\u5BB6", "\u270F\uFE0F", "charm", 120, 560, { level: 15, lessons: { art: 20, labour: 20 } }),
+    job("police", "\u8B66\u5BDF", "\u{1F46E}", "strong", 120, 560, { level: 15, lessons: { politics: 20, wushu: 20 } }),
+    job("songwriter", "\u8BCD\u66F2\u4F5C\u8005", "\u{1F3BC}", "charm", 120, 560, { level: 15, lessons: { chinese: 20, music: 20 } }),
+    // --- 大学毕业（40 节）· 4 小时 --------------------------------------------
+    job("editor", "\u7F16\u8F91", "\u{1F4F0}", "intel", 240, 1500, { level: 18, lessons: { chinese: 40 } }),
+    job("photographer", "\u6444\u5F71\u5E08", "\u{1F4F7}", "charm", 240, 1600, { level: 18, lessons: { art: 40 }, certificate: "photography" }),
+    job("coach", "\u6559\u7EC3", "\u{1F3CB}", "strong", 240, 1500, { level: 20, lessons: { pe: 40 }, certificate: "fitness" }),
+    job("programmer", "\u7A0B\u5E8F\u5458", "\u{1F4BB}", "intel", 240, 1800, { level: 22, lessons: { mathematics: 40 }, certificate: "coding" }),
+    job("dancer", "\u821E\u8E48\u5BB6", "\u{1F483}", "charm", 240, 1800, { level: 22, lessons: { music: 40, pe: 40 }, certificate: "dancing" }),
+    job("architect", "\u5EFA\u7B51\u5E08", "\u{1F4D0}", "intel", 240, 1800, { level: 24, lessons: { art: 40, mathematics: 40 } }),
+    job("doctor", "\u533B\u751F", "\u{1FA7A}", "intel", 240, 2e3, { level: 26, lessons: { chinese: 40, mathematics: 40, politics: 20 } }),
+    // --- 研究生（95 节，或九门都到 40）· 8 小时 -------------------------------
+    job("scientist", "\u79D1\u7814\u4EBA\u5458", "\u{1F52C}", "intel", 480, 4800, { level: 30, lessons: { chinese: 40, mathematics: 40, art: 40, pe: 40 } }),
+    job("official", "\u516C\u52A1\u5458", "\u{1F3DB}", "intel", 480, 5200, { level: 35, every: 40 }),
+    job("professor", "\u5927\u5B66\u6559\u6388", "\u{1F468}\u200D\u{1F3EB}", "intel", 480, 5600, { level: 40, anyOf: { count: 3, lessons: 95 } }),
+    job("star", "\u660E\u661F", "\u{1F31F}", "charm", 480, 6e3, { level: 40, lessons: { music: 95, manners: 95, art: 40 } }),
+    job("astronaut", "\u5B87\u822A\u5458", "\u{1F680}", "strong", 480, 6400, { level: 45, lessons: { mathematics: 95, pe: 95, wushu: 40 } }),
+    job("ceo", "\u603B\u88C1", "\u{1F4BC}", "intel", 480, 8e3, { level: 50, lessons: { mathematics: 95, chinese: 95, manners: 95, politics: 40 } })
+  ]);
+
+  // packages/pet-core/src/data/illness.js
+  var THRESHOLDS = Object.freeze({
+    hungry: 25,
+    dirty: 35,
+    lonely: 35
+  });
+  var ILLNESS_STAGE_HOURS = Object.freeze([24, 36, 48, 72]);
+  var ILLNESS_STAGE_MINUTES = ILLNESS_STAGE_HOURS[0] * 60;
+  var SELF_HEAL_CHANCE = Object.freeze([0.25, 0.12, 0.05, 0]);
+  var STAGE_HEALTH = Object.freeze([4, 3, 2, 1]);
+  var MEDICINE_PRICE_BY_TIER = Object.freeze([30, 70, 140, 260]);
+  var medicine = (key, label, emoji, tier) => Object.freeze({ key, label, emoji, tier, price: MEDICINE_PRICE_BY_TIER[tier - 1], kind: "medicine" });
+  var stage = (name, cure) => Object.freeze({ name, cure });
+  var ILLNESS_CHAINS = Object.freeze([
+    Object.freeze({
+      key: "cold",
+      name: "\u611F\u5192",
+      emoji: "\u{1F927}",
+      cause: "\u997F",
+      stages: Object.freeze([
+        stage("\u611F\u5192", medicine("banlangen", "\u677F\u84DD\u6839", "\u{1F33F}", 1)),
+        stage("\u53D1\u70E7", medicine("tuishaoyao", "\u9000\u70E7\u836F", "\u{1F48A}", 2)),
+        stage("\u91CD\u611F\u5192", medicine("yinqiaowan", "\u94F6\u7FD8\u4E38", "\u{1F7E4}", 3)),
+        stage("\u80BA\u708E", medicine("jinse-xiaoyan", "\u91D1\u8272\u6D88\u708E\u6C34", "\u{1F9EA}", 4))
+      ])
+    }),
+    Object.freeze({
+      key: "cough",
+      name: "\u54B3\u55FD",
+      emoji: "\u{1F637}",
+      cause: "\u810F",
+      stages: Object.freeze([
+        stage("\u54B3\u55FD", medicine("pipa-syrup", "\u6787\u6777\u7CD6\u6D46", "\u{1F36F}", 1)),
+        stage("\u652F\u6C14\u7BA1\u708E", medicine("gancaoji", "\u7518\u8349\u5242", "\u{1F33E}", 2)),
+        stage("\u54EE\u5598", medicine("dingchuanwan", "\u5B9A\u5598\u4E38", "\u26AA", 3)),
+        stage("\u80BA\u7ED3\u6838", medicine("tongfengsan", "\u901A\u98CE\u6563", "\u{1FAD9}", 4))
+      ])
+    }),
+    Object.freeze({
+      key: "stomach",
+      name: "\u80A0\u80C3",
+      emoji: "\u{1F922}",
+      cause: "\u5403\u6491",
+      stages: Object.freeze([
+        stage("\u809A\u5B50\u80C0", medicine("xiaoshipian", "\u6D88\u98DF\u7247", "\u{1F48A}", 1)),
+        stage("\u80C3\u708E", medicine("lanse-xiaoyan", "\u84DD\u8272\u6D88\u708E\u6C34", "\u{1F9EA}", 2)),
+        stage("\u80C3\u6E83\u75A1", medicine("longdancao", "\u9F99\u80C6\u8349", "\u{1F331}", 3)),
+        stage("\u80C3\u764C", medicine("xianrentang", "\u4ED9\u4EBA\u6C64", "\u{1F375}", 4))
+      ])
+    }),
+    Object.freeze({
+      key: "dizzy",
+      name: "\u5934\u6655",
+      emoji: "\u{1F635}",
+      cause: "\u5FC3\u60C5\u5DEE\u3001\u8FDE\u7EED\u6253\u5DE5\u4E0A\u8BFE",
+      stages: Object.freeze([
+        stage("\u5934\u6655", medicine("qingliangyou", "\u6E05\u51C9\u6CB9", "\u{1F7E2}", 1)),
+        stage("\u504F\u5934\u75DB", medicine("zhitongpian", "\u6B62\u75DB\u7247", "\u{1F48A}", 2)),
+        stage("\u795E\u7ECF\u8870\u5F31", medicine("pupu-shenshui", "\u5657\u5657\u795E\u6C34", "\u{1FAE7}", 3)),
+        stage("\u5FC3\u529B\u8870\u7AED", medicine("heshouwu", "\u4F55\u9996\u4E4C", "\u{1F954}", 4))
+      ])
+    }),
+    Object.freeze({
+      key: "skin",
+      name: "\u76AE\u80A4",
+      emoji: "\u{1FA79}",
+      cause: "\u5F88\u810F",
+      stages: Object.freeze([
+        stage("\u7619\u75D2", medicine("runfulu", "\u6DA6\u80A4\u9732", "\u{1F9F4}", 1)),
+        stage("\u5E72\u88C2", medicine("bohe-you", "\u8584\u8377\u6CB9", "\u{1F343}", 2)),
+        stage("\u6E83\u75A1", medicine("shengjigao", "\u751F\u808C\u818F", "\u{1FA79}", 3)),
+        stage("\u611F\u67D3", medicine("chashu-you", "\u8336\u6811\u6CB9", "\u{1F333}", 4))
+      ])
+    })
+  ]);
+  var CHAIN_INDEX = Object.freeze(Object.fromEntries(ILLNESS_CHAINS.map((chain, index) => [chain.key, index])));
+  var CURE_ALL = Object.freeze({ key: "baicaodan", label: "\u767E\u8349\u4E39", emoji: "\u{1F33F}", price: 500, kind: "medicine", cureAll: true });
+  var MEDICINES = Object.freeze([
+    ...ILLNESS_CHAINS.flatMap((chain) => chain.stages.map((entry) => entry.cure)),
+    CURE_ALL
+  ]);
+  var REVIVE_ITEM = Object.freeze({ key: "soul", label: "\u8FD8\u9B42\u4E39", emoji: "\u2728", price: 800, kind: "revive" });
+  var ILLNESS_ONSET = Object.freeze({
+    /** Even a well-kept pig: about one small illness every three weeks. */
+    basePerHour: 2e-3,
+    /** Hungry (satiety < THRESHOLDS.hungry) → 感冒. */
+    hungryPerHour: 0.03,
+    /** Dirty (cleanliness < THRESHOLDS.dirty) → 咳嗽; below veryDirty → 皮肤. */
+    dirtyPerHour: 0.03,
+    veryDirty: 15,
+    /** Mood below sadBelow → 头晕. */
+    sadBelow: 30,
+    sadPerHour: 0.05,
+    /** This many outings in a row with no rest between → 头晕. */
+    overworkStreak: 3,
+    overworkPerHour: 0.05,
+    /** Minutes at home that count as a rest and reset the streak. */
+    restMinutes: 60,
+    /** Feeding a pig already at overfullAt satiety → 肠胃, with this chance.
+     *  G2（用户 2026-10-05 确认）：已经 100% 还硬喂才可能胀气，概率 25% → 15%。 */
+    overfullAt: 100,
+    overfeedChance: 0.15
+  });
+
+  // src/client/life.js
+  var TIME_TALK_MS = 5 * 6e4;
+  var WALK_KEY = "dsh-piggy:walk";
+  var IDLE_ACTIONS = [
+    { key: "roll", fx: ["\u{1F4AB}"], say: "\uFF08\u6EDA\u4E86\u4E00\u5708\uFF09\u8FD9\u6837\u6BD4\u8F83\u8212\u670D", ms: 1400 },
+    { key: "nap", fx: [], say: "\u6211\u5C31\u772F\u4E00\u4E0B\u2026\u2026", ms: 4e3 },
+    { key: "butterfly", fx: ["\u{1F98B}"], say: "\u7B49\u7B49\u6211\uFF01", ms: 3e3 },
+    { key: "scratch", fx: ["\u3030\uFE0F"], say: "\u80CC\u4E0A\u75D2\u75D2\u7684", ms: 2e3 },
+    { key: "stretch", fx: ["\u2728"], say: "\u55EF\u2014\u2014\u4F38\u4E2A\u61D2\u8170", ms: 1800 },
+    { key: "look", fx: ["\u2753"], say: "\u4F60\u5728\u5199\u4EC0\u4E48\u5440", ms: 2600 },
+    { key: "bubbles", fx: ["\u{1FAE7}", "\u{1FAE7}", "\u{1FAE7}"], say: "\u5657\u565C\u565C\u2026\u2026", ms: 2400 }
+  ];
+  function walkEnabled() {
+    return readStore(WALK_KEY) === "on";
+  }
+  function setWalk(on) {
+    writeStore(WALK_KEY, on ? "on" : "off");
+  }
+  function attachLife(c) {
+    var timers = [];
+    var later = function(fn, ms) {
+      var id = window.setTimeout(fn, ms);
+      timers.push(id);
+      return id;
+    };
+    var between = function(min, max) {
+      return (min + Math.random() * (max - min)) * 6e4;
+    };
+    var hasPig = function() {
+      return c.getView().pig !== null && c.getView().hatched === true && !c.getView().dead;
+    };
+    var home = function() {
+      return hasPig() && c.getView().activity === null && !c.isOpen() && !c.isDragging();
+    };
+    var quiet = function() {
+      return c.getView().dialogue?.quiet === true;
+    };
+    later(function() {
+      if (!c.isStopped() && hasPig()) c.send("chat", { reason: "enter" });
+    }, GREET_DELAY_MS);
+    later(timeTalk, GREET_DELAY_MS + 4e3);
+    scheduleChat();
+    scheduleIdle();
+    scheduleWalk();
+    function scheduleChat() {
+      later(function() {
+        if (!c.isStopped() && !c.isBusy() && hasPig()) c.send("chat", { reason: "idle" });
+        scheduleChat();
+      }, between(IDLE_CHAT_MINUTES.min, IDLE_CHAT_MINUTES.max));
+    }
+    function timeTalk() {
+      if (c.isStopped()) return;
+      if (!c.isBusy() && hasPig()) c.send("chat", { reason: "time" });
+      later(timeTalk, TIME_TALK_MS);
+    }
+    function scheduleIdle() {
+      later(function() {
+        if (c.isStopped()) return;
+        if (home()) doIdle(IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
+        scheduleIdle();
+      }, between(3, 8));
+    }
+    function doIdle(action) {
+      c.pig.setAttribute("data-idle", action.key);
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      if (action.fx.length > 0) c.burst(action.fx, action.fx.length);
+      if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3e3, action.ms));
+      later(function() {
+        c.pig.removeAttribute("data-idle");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      }, action.ms);
+    }
+    function scheduleWalk() {
+      later(function() {
+        if (c.isStopped()) return;
+        var shell2 = c.desktopShell();
+        if (walkEnabled() && !quiet() && home() && shell2 !== null && typeof shell2.moveBy === "function") walk(shell2);
+        scheduleWalk();
+      }, between(10, 20));
+    }
+    function walk(shell2) {
+      var screenWidth = window.screen?.availWidth ?? 0;
+      var toLeft = screenWidth > 0 && (window.screenX ?? 0) > screenWidth / 2;
+      var distance = 120 + Math.floor(Math.random() * 180);
+      var step = toLeft ? -2 : 2;
+      var walked = 0;
+      var back = false;
+      c.pig.setAttribute("data-idle", "walk");
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      c.pig.setAttribute("data-walk", toLeft ? "left" : "right");
+      if (!quiet() && Math.random() < 0.5) c.showBubble("\u6211\u53BB\u5DE1\u903B\u4E00\u4E0B", 2e3);
+      var timer2 = window.setInterval(function() {
+        if (c.isStopped() || c.isOpen() || c.isDragging()) return stop();
+        shell2.moveBy(back ? -step : step, 0);
+        walked += 2;
+        if (!back && walked >= distance) {
+          back = true;
+          walked = 0;
+          c.pig.setAttribute("data-walk", toLeft ? "right" : "left");
+        } else if (back && walked >= distance) stop();
+      }, 16);
+      timers.push(timer2);
+      function stop() {
+        window.clearInterval(timer2);
+        c.pig.removeAttribute("data-idle");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        c.pig.removeAttribute("data-walk");
+      }
+    }
+    return {
+      /** 调试页「散步一次」：不等计时，马上走一趟（只有桌面版能走）。 */
+      walkNow: function() {
+        var shell2 = c.desktopShell();
+        if (shell2 === null || typeof shell2.moveBy !== "function") return false;
+        walk(shell2);
+        return true;
+      },
+      /** 调试页「做个小动作」。 */
+      /** @param {string} [key] 指定哪个小动作（调试页用），不给就随机。 */
+      idleNow: function(key) {
+        var picked = IDLE_ACTIONS.find(function(action) {
+          return action.key === key;
+        });
+        doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
+      },
+      dispose: function() {
+        for (var i = 0; i < timers.length; i += 1) {
+          window.clearTimeout(timers[i]);
+          window.clearInterval(timers[i]);
+        }
+        timers = [];
+      }
+    };
+  }
+
   // src/client/tabs/dev.js
   var SCENE_NAMES = {
     eat: "\u5403\u996D",
@@ -5285,6 +5706,72 @@
     pomodoroDone: "\u756A\u8304\u5B8C\u6210",
     pomodoroAbandon: "\u756A\u8304\u653E\u5F03"
   };
+  var ART_SCENE_NAMES = {
+    box: "\u7EB8\u76D2",
+    "dead-day": "\u53BB\u4E16\u5F53\u5929",
+    grave: "\u5893\u7891\uFF08\u6EE1\u4E00\u5929\uFF09",
+    feed: "\u5582\u98DF",
+    bathe: "\u6D17\u6FA1",
+    play: "\u73A9\u800D",
+    pet: "\u6478\u5934",
+    cure: "\u6CBB\u75C5",
+    levelup: "\u5347\u7EA7",
+    sick: "\u751F\u75C5",
+    hungry: "\u997F",
+    sleepy: "\u56F0",
+    lonely: "\u5B64\u5355",
+    dirty: "\u810F",
+    happy: "\u5F00\u5FC3",
+    roll: "\u6253\u6EDA",
+    butterfly: "\u8FFD\u8774\u8776",
+    scratch: "\u6320\u75D2",
+    stretch: "\u4F38\u61D2\u8170",
+    look: "\u5F20\u671B",
+    bubbles: "\u5439\u6CE1\u6CE1",
+    walk: "\u6563\u6B65",
+    nap: "\u6253\u76F9",
+    other: "\u5176\u4ED6\u5174\u8DA3\u73ED"
+  };
+  var ART_KIND_NAMES = { stage: "", birthday: "\u751F\u65E5\u5F53\u5929\u70B9\u86CB\u7CD5", illness: "\u751F\u75C5\xB7", reaction: "\u4E92\u52A8\xB7", mood: "\u5FC3\u60C5\xB7", work: "\u6253\u5DE5\xB7", study: "\u4E0A\u5B66", interest: "\u5174\u8DA3\u73ED\xB7", fishing: "\u9493\u9C7C", trip: "\u65C5\u884C", idle: "\u5C0F\u52A8\u4F5C\xB7" };
+  function feedbackArtUses() {
+    var jobNames = {};
+    JOBS.forEach(function(job2) {
+      jobNames[job2.key] = job2.label;
+    });
+    INTERESTS.forEach(function(lesson) {
+      jobNames["interest:" + lesson.key] = lesson.label;
+    });
+    ILLNESS_CHAINS.forEach(function(chain) {
+      chain.stages.forEach(function(entry, at) {
+        jobNames["illness:" + chain.key + ":" + (at + 1)] = chain.name + "\xB7" + entry.name;
+      });
+    });
+    var uses = {};
+    var add = function(name, where) {
+      (uses[name] = uses[name] || []).push(where);
+    };
+    Object.keys(FEEDBACK_ART_TABLES).forEach(function(kind) {
+      var table = FEEDBACK_ART_TABLES[kind];
+      var prefix = ART_KIND_NAMES[kind];
+      if (Array.isArray(table)) {
+        table.forEach(function(name) {
+          add(name, prefix);
+        });
+        return;
+      }
+      Object.keys(table).forEach(function(key) {
+        var label = kind === "work" ? jobNames[key] ?? key : kind === "illness" ? jobNames["illness:" + key] ?? key : kind === "interest" ? jobNames["interest:" + key] ?? ART_SCENE_NAMES[key] ?? key : ART_SCENE_NAMES[key] ?? key;
+        [].concat(table[key]).forEach(function(name) {
+          add(name, prefix + label);
+        });
+      });
+    });
+    add("recruit", "\u76F2\u76D2\u5BFB\u8BBF\u9875");
+    UNUSED_FEEDBACK_ART.forEach(function(name) {
+      add(name, "\u6682\u4E0D\u4F7F\u7528\uFF08\u5F85\u5B9A\uFF09");
+    });
+    return uses;
+  }
   var currentPage = "status";
   function renderDevTab(ui) {
     var topBar = el("div", "dp-dev-row");
@@ -5468,6 +5955,9 @@
       { key: "cold1", label: "\u{1F927} \u611F\u5192", desc: "\u611F\u5192\u7B2C 1 \u671F\uFF0C\u5065\u5EB7 4", run: function() {
         patch({ illness: { chain: 0, stage: 1 }, health: 4 });
       } },
+      { key: "fever", label: "\u{1F912} \u53D1\u70E7", desc: "\u611F\u5192\u7B2C 2 \u671F\uFF08\u53D1\u70E7\u56FE\uFF09", run: function() {
+        patch({ illness: { chain: 0, stage: 2 }, health: 3 });
+      } },
       { key: "cough1", label: "\u{1F637} \u54B3\u55FD", desc: "\u54B3\u55FD\u7B2C 1 \u671F", run: function() {
         patch({ illness: { chain: 1, stage: 1 }, health: 4 });
       } },
@@ -5610,6 +6100,39 @@
         ui.send("chat", { reason: "time" });
       } }
     ]);
+    var art = page("art", "\u7ACB\u7ED8");
+    var uses = feedbackArtUses();
+    var artEntries = [{ key: "art:auto", label: "\u{1F504} \u6062\u590D\u81EA\u52A8", desc: "\u6309\u72B6\u6001\u81EA\u52A8\u9009\u56FE\uFF08\u540C\u4E00\u72B6\u6001\u51E0\u5F20\u56FE\u6309\u5C0F\u65F6\u8F6E\u6362\uFF09", run: function() {
+      ui.previewArt(null);
+    } }];
+    Object.keys(uses).sort().forEach(function(name) {
+      artEntries.push({ key: "art:" + name, label: "\u{1F5BC}\uFE0F " + name, desc: uses[name].join("\u3001"), run: function() {
+        ui.previewArt(name);
+      } });
+    });
+    art("\u53CD\u9988\u56FE", artEntries, "\u70B9\u4E00\u5F20\uFF0C\u732A\u5C31\u4E00\u76F4\u663E\u793A\u8FD9\u5F20\uFF0C\u76F4\u5230\u300C\u6062\u590D\u81EA\u52A8\u300D\uFF1B\u53EA\u5F71\u54CD\u753B\u9762\uFF0C\u4E0D\u6539\u5B58\u6863\u3002\u4E13\u5C5E\u5F62\u6001\u548C\u5BFC\u5165\u76AE\u80A4\u5E73\u65F6\u4E0D\u7528\u8FD9\u4E9B\u56FE\u3002");
+    art("\u751F\u65E5", [{
+      key: "birthday",
+      label: "\u{1F382} \u8FC7\u751F\u65E5",
+      desc: "\u732A\u5934\u9876\u9A6C\u4E0A\u5192\u86CB\u7CD5\uFF08\u7B7E\u5230\u3001\u793C\u5305\u6CA1\u9886\u65F6\u6392\u5728\u5B83\u4EEC\u540E\u9762\uFF09\uFF0C\u70B9\u86CB\u7CD5\u770B\u751F\u65E5\u56FE",
+      off: typeof ui.birthdayNow !== "function",
+      run: function() {
+        ui.previewArt(null);
+        ui.birthdayNow();
+      }
+    }]);
+    art("\u5C0F\u52A8\u4F5C", IDLE_ACTIONS.map(function(action) {
+      return {
+        key: "idle:" + action.key,
+        label: "\u{1F437} " + (ART_SCENE_NAMES[action.key] ?? action.key),
+        off: typeof ui.idleNow !== "function",
+        desc: action.key === "nap" ? "\u6253\u76F9\uFF1A\u6362\u6210\u7761\u59FF\u7ACB\u7ED8\uFF0C\u5934\u9876\u5192 Zzz" : "\u9A6C\u4E0A\u505A\u8FD9\u4E2A\u5C0F\u52A8\u4F5C\uFF08\u4F1A\u5148\u6062\u590D\u81EA\u52A8\u9009\u56FE\uFF09",
+        run: function() {
+          ui.previewArt(null);
+          ui.idleNow(action.key);
+        }
+      };
+    }), "\u9762\u677F\u5F00\u7740\u4E5F\u80FD\u770B\uFF1A\u684C\u9762\u7248\u7684\u732A\u5728\u81EA\u5DF1\u7684\u7A97\u53E3\u91CC\u3002");
     var values = el("div", "dp-dev-page");
     values.setAttribute("data-dev-page-body", "values");
     pages.push({ key: "values", label: "\u6570\u503C", body: values });
@@ -6376,10 +6899,10 @@
   var STAGE_COLOR = { primary: "yellow", middle: "teal", college: "blue", graduate: "purple", beyond: "pink" };
   var INTEREST_COLOR = "orange";
   var FALLBACK_COLORS = ["yellow", "teal", "blue", "purple", "pink", "green", "lime"];
-  function standing(sub, stage) {
-    if (stage === null || sub.stageKey === "") return "current";
-    if (sub.stageKey === stage.key) return "current";
-    if (stage.upTo !== null && sub.lessons >= stage.upTo) return "done";
+  function standing(sub, stage2) {
+    if (stage2 === null || sub.stageKey === "") return "current";
+    if (sub.stageKey === stage2.key) return "current";
+    if (stage2.upTo !== null && sub.lessons >= stage2.upTo) return "done";
     return "ahead";
   }
   function renderStudyTab(ui) {
@@ -6398,13 +6921,13 @@
       renderInterests(ui);
       return;
     }
-    var stage = null;
-    for (var d = 0; d < ui.view.stages.length; d += 1) if (ui.view.stages[d].key === open) stage = ui.view.stages[d];
-    if (stage === null) {
+    var stage2 = null;
+    for (var d = 0; d < ui.view.stages.length; d += 1) if (ui.view.stages[d].key === open) stage2 = ui.view.stages[d];
+    if (stage2 === null) {
       renderStages(ui);
       return;
     }
-    renderSubjects(ui, stage);
+    renderSubjects(ui, stage2);
   }
   function renderStages(ui) {
     var stageList = ui.view.stages.length > 0 ? ui.view.stages : STAGES;
@@ -6446,22 +6969,22 @@
     }
     ui.content.appendChild(grid);
   }
-  function renderSubjects(ui, stage) {
+  function renderSubjects(ui, stage2) {
     drillHeader(
       ui,
       "study",
-      stage.emoji + " " + stage.label,
-      stage.minutes + " \u5206\u949F \xB7 " + stage.tuition + " \u{1FA99} \xB7 +" + stage.gain
+      stage2.emoji + " " + stage2.label,
+      stage2.minutes + " \u5206\u949F \xB7 " + stage2.tuition + " \u{1FA99} \xB7 +" + stage2.gain
     );
-    var color = STAGE_COLOR[stage.key] ?? FALLBACK_COLORS[Math.max(0, ui.view.stages.indexOf(stage)) % FALLBACK_COLORS.length];
+    var color = STAGE_COLOR[stage2.key] ?? FALLBACK_COLORS[Math.max(0, ui.view.stages.indexOf(stage2)) % FALLBACK_COLORS.length];
     var grid = tileGrid();
     for (var i = 0; i < ui.view.subjects.length; i += 1) {
       (function(sub) {
-        var where = standing(sub, stage);
+        var where = standing(sub, stage2);
         var note;
         if (where === "done") note = "\u2713 \u6BD5\u4E1A";
         else if (where === "ahead") note = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
-        else if (stage.upTo !== null) note = sub.lessons - stage.from + "/" + (stage.upTo - stage.from) + " \u8282";
+        else if (stage2.upTo !== null) note = sub.lessons - stage2.from + "/" + (stage2.upTo - stage2.from) + " \u8282";
         else note = sub.lessons + " \u8282";
         grid.appendChild(tile({
           emoji: sub.emoji,
@@ -6608,7 +7131,7 @@
     card2.appendChild(img);
     const copy = el("span", "dp-grow dp-skin-copy");
     copy.appendChild(el("b", null, (skin.unlocked ? skin.emoji : "\u{1F512}") + " " + (skin.unlockJob ? "\u804C\u4E1A \xB7 " : "") + skin.label));
-    copy.appendChild(el("small", "dp-dim", skin.unlocked ? skin.description || "\u4F5C\u8005\uFF1A" + skin.author : "\u5B8C\u6210" + (ui.view.jobs.find((job) => job.key === skin.unlockJob)?.label ?? skin.label.replace(/猪$/, "")) + "\u5DE5\u4F5C\u540E\u89E3\u9501"));
+    copy.appendChild(el("small", "dp-dim", skin.unlocked ? skin.description || "\u4F5C\u8005\uFF1A" + skin.author : "\u5B8C\u6210" + (ui.view.jobs.find((job2) => job2.key === skin.unlockJob)?.label ?? skin.label.replace(/猪$/, "")) + "\u5DE5\u4F5C\u540E\u89E3\u9501"));
     card2.appendChild(copy);
     const pick = button("dp-mini", { "data-skin": skin.key }, function() {
       if (skin.unlocked) ui.send("skin", { skin: skin.key });
@@ -6651,137 +7174,6 @@
     wrap.appendChild(input);
     wrap.appendChild(el("span", "dp-mini dp-skin-file", "\u9009\u62E9 ZIP"));
     return wrap;
-  }
-
-  // src/client/life.js
-  var TIME_TALK_MS = 5 * 6e4;
-  var WALK_KEY = "dsh-piggy:walk";
-  var IDLE_ACTIONS = [
-    { key: "roll", fx: ["\u{1F4AB}"], say: "\uFF08\u6EDA\u4E86\u4E00\u5708\uFF09\u8FD9\u6837\u6BD4\u8F83\u8212\u670D", ms: 1400 },
-    { key: "nap", fx: [], say: "\u6211\u5C31\u772F\u4E00\u4E0B\u2026\u2026", ms: 4e3 },
-    { key: "butterfly", fx: ["\u{1F98B}"], say: "\u7B49\u7B49\u6211\uFF01", ms: 3e3 },
-    { key: "scratch", fx: ["\u3030\uFE0F"], say: "\u80CC\u4E0A\u75D2\u75D2\u7684", ms: 2e3 },
-    { key: "stretch", fx: ["\u2728"], say: "\u55EF\u2014\u2014\u4F38\u4E2A\u61D2\u8170", ms: 1800 },
-    { key: "look", fx: ["\u2753"], say: "\u4F60\u5728\u5199\u4EC0\u4E48\u5440", ms: 2600 },
-    { key: "bubbles", fx: ["\u{1FAE7}", "\u{1FAE7}", "\u{1FAE7}"], say: "\u5657\u565C\u565C\u2026\u2026", ms: 2400 }
-  ];
-  function walkEnabled() {
-    return readStore(WALK_KEY) === "on";
-  }
-  function setWalk(on) {
-    writeStore(WALK_KEY, on ? "on" : "off");
-  }
-  function attachLife(c) {
-    var timers = [];
-    var later = function(fn, ms) {
-      var id = window.setTimeout(fn, ms);
-      timers.push(id);
-      return id;
-    };
-    var between = function(min, max) {
-      return (min + Math.random() * (max - min)) * 6e4;
-    };
-    var hasPig = function() {
-      return c.getView().pig !== null && c.getView().hatched === true && !c.getView().dead;
-    };
-    var home = function() {
-      return hasPig() && c.getView().activity === null && !c.isOpen() && !c.isDragging();
-    };
-    var quiet = function() {
-      return c.getView().dialogue?.quiet === true;
-    };
-    later(function() {
-      if (!c.isStopped() && hasPig()) c.send("chat", { reason: "enter" });
-    }, GREET_DELAY_MS);
-    later(timeTalk, GREET_DELAY_MS + 4e3);
-    scheduleChat();
-    scheduleIdle();
-    scheduleWalk();
-    function scheduleChat() {
-      later(function() {
-        if (!c.isStopped() && !c.isBusy() && hasPig()) c.send("chat", { reason: "idle" });
-        scheduleChat();
-      }, between(IDLE_CHAT_MINUTES.min, IDLE_CHAT_MINUTES.max));
-    }
-    function timeTalk() {
-      if (c.isStopped()) return;
-      if (!c.isBusy() && hasPig()) c.send("chat", { reason: "time" });
-      later(timeTalk, TIME_TALK_MS);
-    }
-    function scheduleIdle() {
-      later(function() {
-        if (c.isStopped()) return;
-        if (home()) doIdle(IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
-        scheduleIdle();
-      }, between(3, 8));
-    }
-    function doIdle(action) {
-      c.pig.setAttribute("data-idle", action.key);
-      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-      if (action.fx.length > 0) c.burst(action.fx, action.fx.length);
-      if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3e3, action.ms));
-      later(function() {
-        c.pig.removeAttribute("data-idle");
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-      }, action.ms);
-    }
-    function scheduleWalk() {
-      later(function() {
-        if (c.isStopped()) return;
-        var shell2 = c.desktopShell();
-        if (walkEnabled() && !quiet() && home() && shell2 !== null && typeof shell2.moveBy === "function") walk(shell2);
-        scheduleWalk();
-      }, between(10, 20));
-    }
-    function walk(shell2) {
-      var screenWidth = window.screen?.availWidth ?? 0;
-      var toLeft = screenWidth > 0 && (window.screenX ?? 0) > screenWidth / 2;
-      var distance = 120 + Math.floor(Math.random() * 180);
-      var step = toLeft ? -2 : 2;
-      var walked = 0;
-      var back = false;
-      c.pig.setAttribute("data-idle", "walk");
-      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-      c.pig.setAttribute("data-walk", toLeft ? "left" : "right");
-      if (!quiet() && Math.random() < 0.5) c.showBubble("\u6211\u53BB\u5DE1\u903B\u4E00\u4E0B", 2e3);
-      var timer2 = window.setInterval(function() {
-        if (c.isStopped() || c.isOpen() || c.isDragging()) return stop();
-        shell2.moveBy(back ? -step : step, 0);
-        walked += 2;
-        if (!back && walked >= distance) {
-          back = true;
-          walked = 0;
-          c.pig.setAttribute("data-walk", toLeft ? "right" : "left");
-        } else if (back && walked >= distance) stop();
-      }, 16);
-      timers.push(timer2);
-      function stop() {
-        window.clearInterval(timer2);
-        c.pig.removeAttribute("data-idle");
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-        c.pig.removeAttribute("data-walk");
-      }
-    }
-    return {
-      /** 调试页「散步一次」：不等计时，马上走一趟（只有桌面版能走）。 */
-      walkNow: function() {
-        var shell2 = c.desktopShell();
-        if (shell2 === null || typeof shell2.moveBy !== "function") return false;
-        walk(shell2);
-        return true;
-      },
-      /** 调试页「做个小动作」。 */
-      idleNow: function() {
-        doIdle(IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
-      },
-      dispose: function() {
-        for (var i = 0; i < timers.length; i += 1) {
-          window.clearTimeout(timers[i]);
-          window.clearInterval(timers[i]);
-        }
-        timers = [];
-      }
-    };
   }
 
   // src/client/log-export.js
@@ -7017,8 +7409,8 @@
       ui.content.appendChild(el("div", "dp-empty", "\u5BBF\u4E3B\u8FD8\u6CA1\u63D0\u4F9B\u5DE5\u4F5C\u5217\u8868\u3002"));
       return;
     }
-    var bySkill = ui.view.jobs.some(function(job) {
-      return job.trait !== "";
+    var bySkill = ui.view.jobs.some(function(job2) {
+      return job2.trait !== "";
     });
     if (!bySkill) {
       renderJobs(ui, ui.view.jobs, "orange");
@@ -7033,16 +7425,16 @@
     }
     var chosen = skill;
     drillHeader(ui, "work", chosen.emoji + " " + chosen.label, "");
-    renderJobs(ui, ui.view.jobs.filter(function(job) {
-      return job.trait === chosen.key;
+    renderJobs(ui, ui.view.jobs.filter(function(job2) {
+      return job2.trait === chosen.key;
     }), chosen.color);
   }
   function renderSkills(ui) {
     var grid = tileGrid();
     for (var s = 0; s < SKILLS.length; s += 1) {
       (function(skill) {
-        var open = ui.view.jobs.filter(function(job) {
-          return job.trait === skill.key && job.qualified;
+        var open = ui.view.jobs.filter(function(job2) {
+          return job2.trait === skill.key && job2.qualified;
         }).length;
         grid.appendChild(tile({
           emoji: skill.emoji,
@@ -7062,22 +7454,22 @@
     var grid = tileGrid();
     var picked = null;
     for (var i = 0; i < jobs.length; i += 1) {
-      (function(job) {
-        var active = ui.drill.pick === job.key;
-        if (active) picked = job;
-        var locked = job.qualified === false;
+      (function(job2) {
+        var active = ui.drill.pick === job2.key;
+        if (active) picked = job2;
+        var locked = job2.qualified === false;
         grid.appendChild(tile({
-          emoji: job.emoji,
-          label: job.label,
+          emoji: job2.emoji,
+          label: job2.label,
           color,
           soft: true,
           active,
-          note: job.minutes + "\u5206\xB7" + job.coins + "\u{1FA99}",
+          note: job2.minutes + "\u5206\xB7" + job2.coins + "\u{1FA99}",
           tag: locked ? "\u{1F512}" : "",
           dim: locked,
-          data: { "data-job-tile": job.key },
+          data: { "data-job-tile": job2.key },
           onPick: function() {
-            ui.drill.pick = active ? null : job.key;
+            ui.drill.pick = active ? null : job2.key;
             ui.renderContent();
           }
         }));
@@ -7089,21 +7481,21 @@
       ui.footer.hidden = false;
     }
   }
-  function jobDetails(ui, job) {
+  function jobDetails(ui, job2) {
     var box = el("div", "dp-pick dp-tile-card dp-job-detail");
-    box.appendChild(el("div", "dp-pick-head", job.emoji + " " + job.label + " \xB7 " + (job.qualified ? "\u6761\u4EF6\u90FD\u591F\u4E86" : "\u8FD8\u5DEE\u8FD9\u4E9B")));
-    for (var r = 0; r < job.requirements.length; r += 1) {
-      var need = job.requirements[r];
+    box.appendChild(el("div", "dp-pick-head", job2.emoji + " " + job2.label + " \xB7 " + (job2.qualified ? "\u6761\u4EF6\u90FD\u591F\u4E86" : "\u8FD8\u5DEE\u8FD9\u4E9B")));
+    for (var r = 0; r < job2.requirements.length; r += 1) {
+      var need = job2.requirements[r];
       var have = need.kind === "level" ? "\uFF08\u73B0\u5728 Lv." + need.have + "\uFF09" : need.kind === "certificate" ? "\uFF08" + need.have + "/" + need.need + " \u6B21\uFF09" : need.kind === "every" || need.kind === "anyOf" ? "\uFF08" + need.have + "/" + need.need + " \u95E8\uFF09" : "\uFF08\u73B0\u5728 " + need.have + " \u8282\uFF09";
       box.appendChild(el("div", need.met ? "dp-req dp-req-ok" : "dp-req", (need.met ? "\u2713 " : "\u2717 ") + need.text + (need.met ? "" : " " + have)));
     }
-    if (job.requirements.length === 0 && job.lockText) box.appendChild(el("div", "dp-req", "\u2717 " + job.lockText));
-    box.appendChild(el("div", "dp-dim", job.minutes + " \u5206\u949F \xB7 " + job.coins + " \u{1FA99} \xB7 " + job.traitEmoji + job.traitLabel + " " + job.traitPoints + (job.payPercent > 0 ? "\uFF08+" + job.payPercent + "%\uFF09" : "") + " \xB7 \u9971\u98DF " + job.satiety + " \xB7 \u6E05\u6D01 " + job.cleanliness));
-    var go = button("dp-btn dp-btn-wide dp-job-go", { "data-job": job.key }, function() {
-      startOrSwitch(ui, "\u6253\u5DE5\uFF08" + job.label + "\uFF09", "work", { job: job.key });
+    if (job2.requirements.length === 0 && job2.lockText) box.appendChild(el("div", "dp-req", "\u2717 " + job2.lockText));
+    box.appendChild(el("div", "dp-dim", job2.minutes + " \u5206\u949F \xB7 " + job2.coins + " \u{1FA99} \xB7 " + job2.traitEmoji + job2.traitLabel + " " + job2.traitPoints + (job2.payPercent > 0 ? "\uFF08+" + job2.payPercent + "%\uFF09" : "") + " \xB7 \u9971\u98DF " + job2.satiety + " \xB7 \u6E05\u6D01 " + job2.cleanliness));
+    var go = button("dp-btn dp-btn-wide dp-job-go", { "data-job": job2.key }, function() {
+      startOrSwitch(ui, "\u6253\u5DE5\uFF08" + job2.label + "\uFF09", "work", { job: job2.key });
     });
     go.textContent = "\u{1F4BC} \u51FA\u53D1";
-    go.disabled = !canStart(ui) || job.qualified === false;
+    go.disabled = !canStart(ui) || job2.qualified === false;
     box.appendChild(go);
     return box;
   }
@@ -7298,6 +7690,8 @@
         ctx.pig.setAttribute("data-activity", ctx.view.activity === null ? "" : ctx.view.activity.kind);
         ctx.pig.setAttribute("data-activity-key", ctx.view.activity === null ? "" : ctx.view.activity.key);
         ctx.pig.setAttribute("data-mood", ctx.view.pig.mood);
+        var ill = ctx.view.pig.illness;
+        ctx.pig.setAttribute("data-illness", ill === null || ill.chainKey === "" ? "" : ill.chainKey + ":" + ill.stage);
         ctx.pigEmoji.textContent = pigStage.emoji;
         syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
         ctx.host.style.setProperty("--pig-size", displayedPigSize(pigStage.size) + "px");
@@ -7334,11 +7728,12 @@
       if (desktopRole() !== "panel") noticePomodoro(pomo);
       if (typeof ctx.pomoTick === "function") ctx.pomoTick();
       var daily = ctx.view.daily;
-      var dailyAction = daily.canSignIn ? "signIn" : daily.unclaimed > 0 ? "openGift" : null;
+      var cake = ctx.view.pig !== null && (ctx.view.pig.birthdayToday || ctx.cakeForced === true) && !cakeTakenToday();
+      var dailyAction = daily.canSignIn ? "signIn" : daily.unclaimed > 0 ? "openGift" : cake ? "cake" : null;
       ctx.dailyHint.hidden = dailyAction === null || ctx.view.pig === null;
       if (dailyAction !== null) {
-        ctx.dailyHint.textContent = dailyAction === "signIn" ? "\u{1F4C5}" : "\u{1F381}";
-        ctx.dailyHint.title = dailyAction === "signIn" ? "\u7B7E\u5230\u7B2C " + daily.signInDay + "/" + daily.cycle + " \u5929" : "\u6709 " + daily.unclaimed + " \u4E2A\u5728\u7EBF\u793C\u5305";
+        ctx.dailyHint.textContent = dailyAction === "signIn" ? "\u{1F4C5}" : dailyAction === "cake" ? "\u{1F382}" : "\u{1F381}";
+        ctx.dailyHint.title = dailyAction === "signIn" ? "\u7B7E\u5230\u7B2C " + daily.signInDay + "/" + daily.cycle + " \u5929" : dailyAction === "cake" ? "\u4ECA\u5929\u662F" + ctx.view.pig.name + "\u7684\u751F\u65E5" : "\u6709 " + daily.unclaimed + " \u4E2A\u5728\u7EBF\u793C\u5305";
         ctx.dailyHint.setAttribute("data-action", dailyAction);
       }
       var studyStage = null;
@@ -7346,9 +7741,9 @@
         if (ctx.view.stages[st].key === ctx.stage) studyStage = ctx.view.stages[st];
       }
       var studyOpen = ctx.view.canGoOut && (studyStage === null || studyStage.unlocked !== false);
-      var hasCourse = studyOpen && ctx.view.subjects.some(function(subject) {
-        var onStage = studyStage === null || studyStage.subjects.length === 0 || studyStage.subjects.indexOf(subject.key) >= 0;
-        return onStage && subject.affordable;
+      var hasCourse = studyOpen && ctx.view.subjects.some(function(subject2) {
+        var onStage = studyStage === null || studyStage.subjects.length === 0 || studyStage.subjects.indexOf(subject2.key) >= 0;
+        return onStage && subject2.affordable;
       });
       ctx.icons.study.setAttribute("data-alert", hasCourse ? "true" : "false");
       ctx.icons.shop.setAttribute("data-alert", ctx.view.pig !== null && ctx.view.pig.illness !== null ? "true" : "false");
@@ -8230,7 +8625,7 @@
         var icons = {};
         var view = normalize(null);
         var tab = "home";
-        var stage = "primary";
+        var stage2 = "primary";
         var stagePicked = false;
         var drill = { study: null, shop: null, bag: null, work: null, dex: null, skins: null, pick: null, from: null };
         var picker = null;
@@ -8304,10 +8699,10 @@
             tab = next;
           },
           get stage() {
-            return stage;
+            return stage2;
           },
           set stage(next) {
-            stage = next;
+            stage2 = next;
           },
           get stagePicked() {
             return stagePicked;
@@ -8426,6 +8821,16 @@
         ctx.fitPanel = fitPanel;
         ctx.flash = flash;
         var updateNotice = attachUpdateNotice(ctx, updatesBridge);
+        ctx.previewArt = function(name) {
+          forceFeedbackArt(name);
+          syncPigArt(pig, pigArt, pigEmoji);
+        };
+        ctx.idleNow = function(key) {
+          if (ctx.life) ctx.life.idleNow(key);
+        };
+        var birthday = createBirthday({ ctx, pig, pigArt, pigEmoji, burst, render: function() {
+          refresh2();
+        } });
         var splitRole = wireSplit(ctx, { refresh: function() {
           refresh2();
         }, isFishing: function() {
@@ -8439,7 +8844,8 @@
         dailyHint.addEventListener("click", function(event) {
           event.stopPropagation();
           var action = dailyHint.getAttribute("data-action");
-          if (action !== null && action !== "") send(action);
+          if (action === "cake") birthday.celebrate();
+          else if (action !== null && action !== "") send(action);
         });
         var drag = null;
         var stopDragHeartbeat = function() {

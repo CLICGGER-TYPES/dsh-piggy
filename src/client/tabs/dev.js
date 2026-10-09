@@ -14,6 +14,11 @@ import { num } from '../values.js'
 import { FISH } from '../../../packages/pet-core/src/data/fish.js'
 import { SKINS } from '../../../packages/pet-core/src/data/skins.js'
 import { LINES } from '../../../packages/pet-core/src/data/lines.js'
+import { JOBS } from '../../../packages/pet-core/src/data/jobs.js'
+import { INTERESTS } from '../../../packages/pet-core/src/data/interests.js'
+import { FEEDBACK_ART_TABLES, UNUSED_FEEDBACK_ART } from '../feedback-art.js'
+import { ILLNESS_CHAINS } from '../../../packages/pet-core/src/data/illness.js'
+import { IDLE_ACTIONS } from '../life.js'
 
 /** 台词场景的中文名（调试页按钮上用）。 */
 var SCENE_NAMES = {
@@ -22,6 +27,43 @@ var SCENE_NAMES = {
   tripBack: '旅行回来', sick: '生病', wrongMedicine: '吃错药', cured: '治好', levelup: '升级', growUp: '长大',
   coronation: '加冕', contract: '签约', enter: '进门', death: '去世', revive: '复活', signIn: '签到', gift: '礼包',
   pomodoroStart: '番茄开始', pomodoroDone: '番茄完成', pomodoroAbandon: '番茄放弃',
+}
+
+/** 「立绘」页的场景名。 */
+var ART_SCENE_NAMES = {
+  box: '纸盒', 'dead-day': '去世当天', grave: '墓碑（满一天）',
+  feed: '喂食', bathe: '洗澡', play: '玩耍', pet: '摸头', cure: '治病', levelup: '升级',
+  sick: '生病', hungry: '饿', sleepy: '困', lonely: '孤单', dirty: '脏', happy: '开心',
+  roll: '打滚', butterfly: '追蝴蝶', scratch: '挠痒', stretch: '伸懒腰', look: '张望', bubbles: '吹泡泡', walk: '散步', nap: '打盹',
+  other: '其他兴趣班',
+}
+var ART_KIND_NAMES = { stage: '', birthday: '生日当天点蛋糕', illness: '生病·', reaction: '互动·', mood: '心情·', work: '打工·', study: '上学', interest: '兴趣班·', fishing: '钓鱼', trip: '旅行', idle: '小动作·' }
+
+/** 每张反馈图用在哪些场景：{ 图名: ['心情·开心', '升级', …] }，按表里出现的先后排。 */
+export function feedbackArtUses() {
+  var jobNames = {}
+  JOBS.forEach(function (job) { jobNames[job.key] = job.label })
+  INTERESTS.forEach(function (lesson) { jobNames['interest:' + lesson.key] = lesson.label })
+  ILLNESS_CHAINS.forEach(function (chain) {
+    chain.stages.forEach(function (entry, at) { jobNames['illness:' + chain.key + ':' + (at + 1)] = chain.name + '·' + entry.name })
+  })
+  var uses = {}
+  var add = function (name, where) { (uses[name] = uses[name] || []).push(where) }
+  Object.keys(FEEDBACK_ART_TABLES).forEach(function (kind) {
+    var table = FEEDBACK_ART_TABLES[kind]
+    var prefix = ART_KIND_NAMES[kind]
+    if (Array.isArray(table)) { table.forEach(function (name) { add(name, prefix) }); return }
+    Object.keys(table).forEach(function (key) {
+      var label = kind === 'work' ? jobNames[key] ?? key
+        : kind === 'illness' ? jobNames['illness:' + key] ?? key
+        : kind === 'interest' ? jobNames['interest:' + key] ?? ART_SCENE_NAMES[key] ?? key
+          : ART_SCENE_NAMES[key] ?? key
+      ;[].concat(table[key]).forEach(function (name) { add(name, prefix + label) })
+    })
+  })
+  add('recruit', '盲盒寻访页')
+  UNUSED_FEEDBACK_ART.forEach(function (name) { add(name, '暂不使用（待定）') })
+  return uses
 }
 
 /** 当前在哪一页（只在内存里，刷新回到第一页）。 */
@@ -151,6 +193,7 @@ export function renderDevTab(ui) {
   ])
   growth('生病', [
     { key: 'cold1', label: '🤧 感冒', desc: '感冒第 1 期，健康 4', run: function () { patch({ illness: { chain: 0, stage: 1 }, health: 4 }) } },
+    { key: 'fever', label: '🤒 发烧', desc: '感冒第 2 期（发烧图）', run: function () { patch({ illness: { chain: 0, stage: 2 }, health: 3 }) } },
     { key: 'cough1', label: '😷 咳嗽', desc: '咳嗽第 1 期', run: function () { patch({ illness: { chain: 1, stage: 1 }, health: 4 }) } },
     { key: 'belly1', label: '🤢 肚子胀', desc: '肠胃第 1 期（胃胀气那条）', run: function () { patch({ illness: { chain: 2, stage: 1 }, health: 4 }) } },
     { key: 'dizzy1', label: '😵 头晕', desc: '头晕第 1 期（连续出门太多那条）', run: function () { patch({ illness: { chain: 3, stage: 1 }, health: 4 }) } },
@@ -229,6 +272,22 @@ export function renderDevTab(ui) {
     { key: 'walk', label: '🚶 散步一次', desc: '马上沿屏幕底边走一趟（只有桌面版）', off: !ui.life || typeof desktopShell()?.moveBy !== 'function', run: function () { ui.setOpen(false); ui.life.walkNow() } },
     { key: 'timeTalk', label: '🕐 按时间说', desc: '问一次「现在有没有按时间该说的话」（一天一次的已经说过就不说）', run: function () { ui.send('chat', { reason: 'time' }) } },
   ])
+
+  // ---- 立绘：逐张看反馈图、指定小动作 ----
+  var art = page('art', '立绘')
+  var uses = feedbackArtUses()
+  var artEntries = [{ key: 'art:auto', label: '🔄 恢复自动', desc: '按状态自动选图（同一状态几张图按小时轮换）', run: function () { ui.previewArt(null) } }]
+  Object.keys(uses).sort().forEach(function (name) {
+    artEntries.push({ key: 'art:' + name, label: '🖼️ ' + name, desc: uses[name].join('、'), run: function () { ui.previewArt(name) } })
+  })
+  art('反馈图', artEntries, '点一张，猪就一直显示这张，直到「恢复自动」；只影响画面，不改存档。专属形态和导入皮肤平时不用这些图。')
+  art('生日', [{ key: 'birthday', label: '🎂 过生日', desc: '猪头顶马上冒蛋糕（签到、礼包没领时排在它们后面），点蛋糕看生日图', off: typeof ui.birthdayNow !== 'function',
+    run: function () { ui.previewArt(null); ui.birthdayNow() } }])
+  art('小动作', IDLE_ACTIONS.map(function (action) {
+    return { key: 'idle:' + action.key, label: '🐷 ' + (ART_SCENE_NAMES[action.key] ?? action.key), off: typeof ui.idleNow !== 'function',
+      desc: action.key === 'nap' ? '打盹：换成睡姿立绘，头顶冒 Zzz' : '马上做这个小动作（会先恢复自动选图）',
+      run: function () { ui.previewArt(null); ui.idleNow(action.key) } }
+  }), '面板开着也能看：桌面版的猪在自己的窗口里。')
 
   // ---- 数值（只看不改） ----
   var values = el('div', 'dp-dev-page')

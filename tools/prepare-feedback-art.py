@@ -13,8 +13,16 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 MAX_SIDE = 256
 WHITE_MIN = 242
 
+# 被线条围住、却仍是背景的白区（用户 2026-10-09 指出两张听歌图抠得不干净）。
+# 每个点落在一块要去掉的白区里（原图 1254px 坐标）：耳机线和身体之间、两腿之间、
+# 尾巴卷里、头箍和头顶之间、音符和高音谱号的空心。耳塞、播放器、电线本身是白色，不在这里。
+CLEAR_SEEDS = {
+    "music-earbuds.png": [(986, 353), (300, 798), (497, 871), (373, 875)],
+    "music-headphones-v2.png": [(900, 287), (587, 448), (1025, 531), (1159, 565), (122, 788), (107, 907), (155, 902)],
+}
 
-def remove_connected_white(image, clear_enclosed=False):
+
+def remove_connected_white(image, clear_enclosed=False, seeds=()):
     """只去掉从画布边缘连通的近白区域，保留眼白和衣服里的白色。"""
     red, green, blue = image.convert("RGB").split()
     white = ImageChops.multiply(
@@ -28,6 +36,9 @@ def remove_connected_white(image, clear_enclosed=False):
             ImageDraw.floodfill(white, (x, 0), 128)
         if white.getpixel((x, height - 1)) == 255:
             ImageDraw.floodfill(white, (x, height - 1), 128)
+    for seed in seeds:
+        if white.getpixel(seed) == 255:
+            ImageDraw.floodfill(white, seed, 128)
     for y in range(height):
         if white.getpixel((0, y)) == 255:
             ImageDraw.floodfill(white, (0, y), 128)
@@ -48,7 +59,7 @@ def prepare(source, output):
     with Image.open(source) as original:
         image = original.convert("RGBA")
         if original.mode != "RGBA" or original.getchannel("A").getextrema() == (255, 255):
-            image = remove_connected_white(image, source.name == "badge.png")
+            image = remove_connected_white(image, source.name == "badge.png", CLEAR_SEEDS.get(source.name, ()))
         image.thumbnail((MAX_SIDE, MAX_SIDE), Image.Resampling.LANCZOS)
         output.parent.mkdir(parents=True, exist_ok=True)
         image.save(output, optimize=True, compress_level=9)
