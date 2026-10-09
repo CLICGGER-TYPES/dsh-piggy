@@ -54,7 +54,7 @@ export function renderSettingsTab(ui) {
   if (extFresh) openExtensions.appendChild(el('b', 'dp-tile-badge dp-update-dot', '!'))
   extensions.head.appendChild(openExtensions)
 
-  const size = section(ui, '小猪大小', '只改这台设备上的显示大小，不改存档')
+  const size = section(ui, '小猪大小', '普通猪、皮肤和睡姿一起调整；只改这台设备，不改存档')
   const sizeLabels = { small: '小', standard: '标准', large: '大', extra: '特大' }
   segmented(size, 'data-pig-size', PIG_SIZES.map(key => ({ key, label: sizeLabels[key] })), pigSize(), function (key) {
     setPigSize(key)

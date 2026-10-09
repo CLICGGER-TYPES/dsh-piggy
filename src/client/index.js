@@ -1,16 +1,8 @@
 /**
  * dsh-piggy · client — the floating pig.
  *
- * Hand-written browser bundle: DSH loads it through `window.__ModuleLoader__`,
- * bundled by esbuild from the modules beside it: raw DOM and `fetch` only, no framework.
- *
- * Layout follows the original QQ 宠物: the pet sits at the top, and a cream icon
- * bar sits directly beneath it. Six icons — 状态 · 学习 · 打工 · 商店 · 旅行 ·
- * 背包 — switch what the area below the bar shows, so nothing ever needs typing.
- *
- * Every value the host sends goes through `normalize()` first. A host/client
- * version mismatch must degrade to sane defaults and an explanation, never to a
- * screen full of `undefined`.
+ * The DSH loader receives the bundle built from src/client/. The pet and its
+ * app panel use raw DOM. Host values pass through normalize() before rendering.
  */
 
 import { createEffects } from './effects.js'
@@ -38,6 +30,7 @@ import { attachLife } from './life.js'
 import { forceFeedbackArt, syncPigArt } from './art.js'
 import { createBirthday } from './birthday.js'
 import { partAt } from './pet-parts.js'
+import { attachSizePreference } from './pig-size.js'
 /** @type {any} */ (window).__ModuleLoader__.load({
   id: 'dsh-piggy',
   factory: (require) => {
@@ -107,6 +100,9 @@ import { partAt } from './pet-parts.js'
 
       // ---- state ----
       var view = normalize(null)
+      var stopSizePreference = attachSizePreference(host,
+        () => view.hatched ? view.pig?.stage : view.boxStage,
+        () => desktopShell()?.syncGeometry?.())
       // B9: the panel opens on the home screen of app tiles.
       var tab = 'home'
       var stage = 'primary'
@@ -374,6 +370,7 @@ import { partAt } from './pet-parts.js'
 
       function dispose() {
         stopped = true
+        stopSizePreference()
         stopDragHeartbeat()
         updateNotice.stop()
         stopResize()

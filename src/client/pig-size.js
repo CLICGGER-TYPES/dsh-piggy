@@ -23,3 +23,16 @@ export function setPigSize(value) {
 export function displayedPigSize(stageSize) {
   return stageSize * SCALE[pigSize()]
 }
+
+/** The desktop settings panel and pet use separate windows and storage events. */
+export function attachSizePreference(host, getStage, onChanged) {
+  function onStorage(event) {
+    if (event.key !== PIG_SIZE_KEY) return
+    const stage = getStage()
+    if (!stage) return
+    host.style.setProperty('--pig-size', displayedPigSize(stage.size) + 'px')
+    onChanged?.()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
+}

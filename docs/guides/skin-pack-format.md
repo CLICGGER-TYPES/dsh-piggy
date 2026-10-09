@@ -48,5 +48,6 @@
 - 导入成功后皮肤立即加入列表并成为当前皮肤。
 - 显示优先级为“晋升形态 → 当前皮肤 → 默认猪”。晋升形态结束后会恢复之前选择的皮肤。
 - 皮肤字段由 `ensureSkins(state)` 为旧存档补齐，不需要提升存档版本。
+- 设置中的“小猪大小”使用同一档位控制普通猪、导入皮肤和睡姿；导入的 SVG 首次加载时按透明部分的可见范围校准显示大小，不修改原文件。
 
 实现以 [`store/skin-pack.js`](../../store/skin-pack.js) 和 [`packages/pet-core/src/data/skins.js`](../../packages/pet-core/src/data/skins.js) 为准。

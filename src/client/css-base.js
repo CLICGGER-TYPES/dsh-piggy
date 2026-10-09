@@ -122,7 +122,8 @@ export const CSS_BASE = [
   '.dp-pig-img,.dp-pig-emoji{filter:drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   '.dp-pig-sleep{display:none;position:absolute;top:0;left:50%;z-index:1;',
   'width:calc(var(--pig-size) * 1.2);height:var(--pig-size);object-fit:contain;',
-  'transform:translateX(-50%);pointer-events:none;-webkit-user-drag:none;user-select:none}',
+  'transform:translateX(-50%);scale:var(--art-zoom,1);',
+  'translate:var(--art-x,0%) var(--art-y,0%);pointer-events:none;-webkit-user-drag:none;user-select:none}',
   '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-img,',
   '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
   '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-sleep{display:block}',
@@ -269,9 +270,12 @@ export const CSS_BASE = [
   // A drawn sprite is sized by the same variable as the emoji, so growing up
   // works identically either way.
   '.dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;',
+  'scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);',
   '-webkit-user-drag:none;user-select:none}',
   // 反馈立绘在打包前离线处理为透明 PNG。
+  // 只放大图片里的可见部分；元素的布局盒和桌面命中区域仍由 --pig-size 决定。
   '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
+  '.dp-pig[data-walk="right"] .dp-pig-img{translate:calc(-1 * var(--art-x,0%)) var(--art-y,0%)}',
   '.dp-pig[data-feedback="true"] .dp-dress{display:none}',
   '.dp-pig-emoji{font-size:var(--pig-size);line-height:1}',
 

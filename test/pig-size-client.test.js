@@ -48,3 +48,12 @@ test('F12 settings exposes four sizes and saves selection locally', async () => 
   assert.equal(findByAttr(host, 'data-pig-size', 'extra').disabled, true)
   assert.doesNotMatch(host.allText(), /(?:48|56|72|96)px/)
 })
+
+test('F12 desktop pet window applies a size changed in the settings window immediately', async () => {
+  const { dom, store, windowListeners } = await mount()
+  const host = hostOf(dom)
+  assert.equal(host.style.getPropertyValue('--pig-size'), '62px')
+  store.set('dsh-piggy:pig-size', 'extra')
+  for (const listener of windowListeners.storage ?? []) listener({ key: 'dsh-piggy:pig-size' })
+  assert.equal(host.style.getPropertyValue('--pig-size'), String(62 * 1.7) + 'px')
+})

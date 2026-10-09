@@ -157,6 +157,33 @@
     return null;
   }
 
+  // src/client/feedback-framing.js
+  var FEEDBACK_FRAMING = Object.freeze({
+    "allergy": [1.4142, -0.83, -0.55],
+    "collection-badge": [1.0575, 0, 0.21],
+    "collection-cage": [1.0302, 0.2, 4.02],
+    "collection-check": [1.0529, -0.62, 2.06],
+    "collection-chicken": [1.0814, -3.38, -0.21],
+    "collection-courier": [1.5321, 5.39, 0.6],
+    "collection-scallion": [1.1116, -1.52, 1.52],
+    "collection-throne": [1.0127, -0.2, 1.19],
+    "courier": [1.5321, 5.39, 0.6],
+    "death-day": [1.1659, -6.6, -1.82],
+    "faint": [1.2646, -0.25, 0],
+    "fishing": [1.358, 2.65, 4.24],
+    "ghost-grave": [1.4937, -0.58, 1.46],
+    "hungry": [1.2132, -2.13, 1.42],
+    "lie-flat": [1.5933, 0, -2.49],
+    "music-earbuds": [1.4059, 0.55, -2.75],
+    "music-headphones-v2": [1.0346, -1.01, -0.61],
+    "music-rainbow": [1.1168, -9.16, -1.09],
+    "painting": [1.2713, 0.5, -3.23],
+    "sleep-cloud": [1.195, 0, -2.57],
+    "study-book": [1.3427, 0, -2.62],
+    "study-pink-book": [1.1274, 0, -4.18],
+    "suspended": [1.1602, 1.36, 11.33]
+  });
+
   // src/client/art.js
   var REACTION_ART2 = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
   var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
@@ -174,11 +201,67 @@
     "skin-pirate",
     "skin-wizard"
   ]);
+  var CUSTOM_FRAME_CACHE = /* @__PURE__ */ new Map();
+  var CUSTOM_FRAME_PENDING = /* @__PURE__ */ new WeakMap();
+  var FRAME_TARGET = 239 / 256;
+  function applyFrame(image, frame2) {
+    if (typeof image.style?.setProperty !== "function") return;
+    image.style.setProperty("--art-zoom", frame2 ? String(frame2[0]) : "1");
+    image.style.setProperty("--art-x", frame2 ? frame2[1] + "%" : "0%");
+    image.style.setProperty("--art-y", frame2 ? frame2[2] + "%" : "0%");
+  }
+  function frameCustomImage(image, src) {
+    if (!src.includes("/custom-")) {
+      applyFrame(image, null);
+      return;
+    }
+    const cached = CUSTOM_FRAME_CACHE.get(src);
+    if (cached !== void 0) {
+      applyFrame(image, cached);
+      return;
+    }
+    if (CUSTOM_FRAME_PENDING.get(image) === src) return;
+    applyFrame(image, null);
+    CUSTOM_FRAME_PENDING.set(image, src);
+    function measure2() {
+      CUSTOM_FRAME_PENDING.delete(image);
+      if (image.getAttribute("src") !== src) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 128;
+        const context = canvas.getContext?.("2d", { willReadFrequently: true });
+        if (!context) return;
+        context.drawImage(image, 0, 0, 128, 128);
+        const pixels = context.getImageData(0, 0, 128, 128).data;
+        let left = 128, top = 128, right = 0, bottom = 0;
+        for (let y = 0; y < 128; y += 1) for (let x = 0; x < 128; x += 1) {
+          if (pixels[(y * 128 + x) * 4 + 3] <= 16) continue;
+          left = Math.min(left, x);
+          top = Math.min(top, y);
+          right = Math.max(right, x + 1);
+          bottom = Math.max(bottom, y + 1);
+        }
+        if (right <= left || bottom <= top) return;
+        const zoom = Math.max(1, FRAME_TARGET / (Math.max(right - left, bottom - top) / 128));
+        const frame2 = zoom < 1.01 ? null : [
+          zoom,
+          (0.5 - (left + right) / 256) * zoom * 100,
+          (0.5 - (top + bottom) / 256) * zoom * 100
+        ];
+        CUSTOM_FRAME_CACHE.set(src, frame2);
+        applyFrame(image, frame2);
+      } catch {
+      }
+    }
+    if (image.complete && image.naturalWidth > 0) measure2();
+    else image.addEventListener?.("load", measure2, { once: true });
+  }
   function syncSleepArt(art, scenes, image) {
     var custom = typeof art === "string" && art.startsWith("custom-") && scenes.includes("sleep");
     var name = SLEEP_ART.has(art) ? art : "piglet";
     var src = ART_URL + (custom ? art + "-sleep.svg" : name + "-sleep.png");
     if (image.getAttribute("src") !== src) image.src = src;
+    frameCustomImage(image, src);
   }
   var forcedFeedback = null;
   function forceFeedbackArt(name) {
@@ -201,12 +284,14 @@
     if (feedback) {
       var feedbackSrc = ART_URL + "feedback/" + feedback + ".png";
       if (image.getAttribute("src") !== feedbackSrc) image.src = feedbackSrc;
+      applyFrame(image, FEEDBACK_FRAMING[feedback] ?? null);
       image.hidden = false;
       pig.setAttribute("data-feedback", "true");
       if (emoji) emoji.hidden = true;
       return true;
     }
     if (!base) {
+      applyFrame(image, null);
       image.hidden = true;
       if (image.getAttribute("src")) image.removeAttribute("src");
       pig.setAttribute("data-feedback", "false");
@@ -221,6 +306,7 @@
     }
     var src = ART_URL + art + ".svg";
     if (image.getAttribute("src") !== src) image.src = src;
+    frameCustomImage(image, src);
     image.hidden = false;
     pig.setAttribute("data-feedback", "false");
     if (emoji) emoji.hidden = true;
@@ -2376,6 +2462,17 @@
   function displayedPigSize(stageSize) {
     return stageSize * SCALE[pigSize()];
   }
+  function attachSizePreference(host3, getStage, onChanged) {
+    function onStorage(event) {
+      if (event.key !== PIG_SIZE_KEY) return;
+      const stage2 = getStage();
+      if (!stage2) return;
+      host3.style.setProperty("--pig-size", displayedPigSize(stage2.size) + "px");
+      onChanged?.();
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }
 
   // src/client/pat-cursor.js
   var SIZE = 32;
@@ -2616,7 +2713,8 @@
     ".dp-pig-img,.dp-pig-emoji{filter:drop-shadow(0 4px 6px rgba(61,52,40,.28))}",
     ".dp-pig-sleep{display:none;position:absolute;top:0;left:50%;z-index:1;",
     "width:calc(var(--pig-size) * 1.2);height:var(--pig-size);object-fit:contain;",
-    "transform:translateX(-50%);pointer-events:none;-webkit-user-drag:none;user-select:none}",
+    "transform:translateX(-50%);scale:var(--art-zoom,1);",
+    "translate:var(--art-x,0%) var(--art-y,0%);pointer-events:none;-webkit-user-drag:none;user-select:none}",
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-img,',
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-sleep{display:block}',
@@ -2754,9 +2852,12 @@
     // A drawn sprite is sized by the same variable as the emoji, so growing up
     // works identically either way.
     ".dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;",
+    "scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);",
     "-webkit-user-drag:none;user-select:none}",
     // 反馈立绘在打包前离线处理为透明 PNG。
+    // 只放大图片里的可见部分；元素的布局盒和桌面命中区域仍由 --pig-size 决定。
     '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
+    '.dp-pig[data-walk="right"] .dp-pig-img{translate:calc(-1 * var(--art-x,0%)) var(--art-y,0%)}',
     '.dp-pig[data-feedback="true"] .dp-dress{display:none}',
     ".dp-pig-emoji{font-size:var(--pig-size);line-height:1}",
     // No drawings yet — every stage is the same pig, so age reads as size plus
@@ -7648,7 +7749,7 @@
     openExtensions.textContent = "\u{1F9E9} \u6269\u5C55";
     if (extFresh) openExtensions.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
     extensions.head.appendChild(openExtensions);
-    const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u663E\u793A\u5927\u5C0F\uFF0C\u4E0D\u6539\u5B58\u6863");
+    const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
     const sizeLabels = { small: "\u5C0F", standard: "\u6807\u51C6", large: "\u5927", extra: "\u7279\u5927" };
     segmented(size, "data-pig-size", PIG_SIZES.map((key) => ({ key, label: sizeLabels[key] })), pigSize(), function(key) {
       setPigSize(key);
@@ -8996,6 +9097,11 @@
         }
         var icons = {};
         var view = normalize(null);
+        var stopSizePreference = attachSizePreference(
+          host3,
+          () => view.hatched ? view.pig?.stage : view.boxStage,
+          () => desktopShell()?.syncGeometry?.()
+        );
         var tab = "home";
         var stage2 = "primary";
         var stagePicked = false;
@@ -9388,6 +9494,7 @@
         devMode = false;
         function dispose() {
           stopped = true;
+          stopSizePreference();
           stopDragHeartbeat();
           updateNotice.stop();
           stopResize();
