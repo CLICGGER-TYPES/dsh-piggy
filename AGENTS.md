@@ -31,6 +31,9 @@
    **不许用 emoji 的是给用户的回复和汇报**（聊天里说明进度、总结时不用）。代码注释、日志、提交信息也不用（见 CONVENTIONS）。
 7. **参考项目和本项目冲突时，一律以本项目现在的做法为准**（设计系统、组件库、动效库都是）。
 8. 改存档结构必须加迁移（`core/upgrades.js` + `STATE_VERSION` + 迁移测试），旧存档不能丢数据。
+9. **需要图就直接用 AI 出**：立绘、动作图、图标都可以用你自带的生图工具（如 codex 的 `image_gen`）出，不用手画、不用描成 SVG。
+   交**透明底 PNG**（离线抠底，不靠运行时滤镜）、缩到显示尺寸约 2 倍（立绘长边 ≤ 256px）、记 `PROVENANCE.md`；**图要用户过目才进 `assets/`**。
+   规格见 [adding-features.md](docs/guides/adding-features.md) 3.5。
 
 ## 做事的方法
 
@@ -84,6 +87,6 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 改桌面窗口、拖动、IPC | [docs/guides/desktop-architecture.md](docs/guides/desktop-architecture.md) |
 | 玩法和数值的来源、视觉规范的来源 | [docs/DESIGN.md](docs/DESIGN.md) |
 | **参考过哪些项目**（玩法、卡片、界面、动效库……各自许可和能怎么用；做新东西先查） | [docs/guides/references.md](docs/guides/references.md) |
-| 立绘、皮肤 | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
+| 立绘、皮肤（可以直接 AI 出图，规格见 adding-features 3.5） | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
 | 画「千奇百怪的小猪」（猪 + emoji 主题） | [docs/design/pig-kitchen-art.md](docs/design/pig-kitchen-art.md)（规范、许可、验收；图要用户确认） |
 | 开发环境、打包、Gitee 渠道 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
