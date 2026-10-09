@@ -9,6 +9,7 @@
  * @module dsh-piggy/client/ext-apps
  */
 import { button, el } from './dom.js'
+import { walletBar } from './wallet.js'
 
 /** @type {Record<string, any>} */
 var registry = {}
@@ -52,6 +53,9 @@ export function renderDownloadedApp(ui, key) {
   var impl = registry[key]
   if (!impl || typeof impl.render !== 'function') { ui.content.appendChild(el('div', 'dp-empty', '正在加载……')); return }
   var data = ui.view.extViews ? ui.view.extViews[key] : undefined
+  // 有自己的币就在顶上放余额条，兑换由宿主管（扩展不用自己画）。
+  var wallet = (ui.view.wallets || []).find(function (entry) { return entry.key === key })
+  if (wallet) ui.content.appendChild(walletBar(ui, wallet))
   try {
     impl.render({
       content: ui.content,

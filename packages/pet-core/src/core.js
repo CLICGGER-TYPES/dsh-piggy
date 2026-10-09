@@ -73,6 +73,7 @@ export { DEX_SECTIONS, dexView, emptyDex, ensureDex, recordDex } from './core/de
 export { ageDays, ageMonths, dayKeyFor, daysToNextStage, hasSoul, levelFor, levelProgress, levelTitle, lifeStageFor, nextLifeStage } from './core/clock.js'
 export { careFactor, grow, growFromRealWork, outingGrowth } from './core/growth.js'
 export { cleanSource, earnCoins, economyView, ensureEconomy, exert, extensionSource, refundCoins, spendCoins } from './core/economy.js'
+export { cashOutWallet, currencyInfo, ensureWallets, exchangeCurrency, openWallet, walletBalance, walletEarn, walletSpend, walletsView } from './core/wallets.js'
 export { hatch, hatchEgg, layEgg } from './core/egg.js'
 export { adopt, ageFromNow, applyDevPatch, inherit, rename, reset, revive, setTimeScale } from './core/state.js'
 export { migrate } from './core/migrate.js'

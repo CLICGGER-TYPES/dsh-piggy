@@ -12,6 +12,7 @@ import { button, el } from '../dom.js'
 import { num } from '../values.js'
 import { careEffectLine, drillHeader, drillTo, statStrip, tile, tileGrid } from '../widgets.js'
 import { SHELF_COLOR, shelfParts } from './shop.js'
+import { walletBar } from '../wallet.js'
 
 /** The consumable shelves, in shop order. */
 var CONSUMABLES = KIND_ORDER
@@ -28,6 +29,7 @@ var EXTRA = {
   diary: { emoji: '📔', label: '日记', color: 'brown' },
   souvenir: { emoji: '🎁', label: '纪念品', color: 'blue' },
   fish: { emoji: '🐟', label: '鱼篓', color: 'teal' },
+  wallet: { emoji: '👛', label: '钱包', color: 'yellow' },
 }
 
 /** 「2026-10-01」 → 「10-01」: the tile only has room for the month and day. */
@@ -41,6 +43,7 @@ export function renderBagTab(ui) {
   else if (open === 'diary') renderDiary(ui)
   else if (open === 'souvenir') renderSouvenirs(ui)
   else if (open === 'fish') renderFish(ui)
+  else if (open === 'wallet') renderWallets(ui)
   else if (open !== null && CONSUMABLES.indexOf(open) >= 0) renderItems(ui, open)
   else renderCategories(ui)
 }
@@ -76,10 +79,11 @@ function renderCategories(ui) {
     diary: ui.view.diary.length,
     souvenir: ui.view.pig.souvenirs.length,
     fish: ui.view.fishing.bag.length,
+    wallet: (ui.view.wallets || []).length,
   }
   for (var key in EXTRA) {
     (function (category) {
-      if (category === 'worn' && counts.worn === 0) return
+      if ((category === 'worn' || category === 'wallet') && counts[category] === 0) return
       var spec = EXTRA[category]
       grid.appendChild(tile({
         emoji: spec.emoji, label: spec.label, color: spec.color,
@@ -242,4 +246,13 @@ function renderSouvenirs(ui) {
     story.appendChild(sell)
   }
   ui.content.appendChild(story)
+}
+
+/** 扩展币钱包（规则 1）：每种币一条，都展开着，在这里换成金币或用金币换。 */
+function renderWallets(ui) {
+  var wallets = ui.view.wallets || []
+  drillHeader(ui, 'bag', '👛 钱包', '🪙 ' + ui.view.pig.coins)
+  if (wallets.length === 0) { ui.content.appendChild(el('div', 'dp-empty', '还没有扩展币')); return }
+  for (var i = 0; i < wallets.length; i += 1) ui.content.appendChild(walletBar(ui, wallets[i], { open: true }))
+  ui.content.appendChild(el('div', 'dp-dim', '删掉一个扩展时，它的币会按汇率自动换成金币。'))
 }

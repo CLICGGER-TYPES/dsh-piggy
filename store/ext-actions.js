@@ -43,7 +43,7 @@ export function runExtensionAction(state, handler, context) {
   const reports = reporter(context.key)
   let result
   try {
-    result = handler(working.extData[context.key], context.payload ?? {}, apiFor(working, context.key, { nowMs: context.nowMs, emit: reports.emit }))
+    result = handler(working.extData[context.key], context.payload ?? {}, apiFor(working, context.key, { nowMs: context.nowMs, emit: reports.emit, currency: context.currency }))
     if (typeof result?.then === 'function') {
       Promise.resolve(result).catch(error => console.warn('[dsh-piggy] rejected async extension action: key=' + context.key + ' reason=' + String(error)))
       throw new Error('Extension actions must be synchronous')

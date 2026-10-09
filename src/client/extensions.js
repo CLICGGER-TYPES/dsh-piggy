@@ -6,7 +6,7 @@
  * 老宿主不发就当全部打开。关掉的扩展：主菜单格子、App 页、番茄钟角标、图鉴分区都不出现；
  * 商店里的相关商品由宿主直接撤下。
  */
-import { arr, obj, str } from './values.js'
+import { arr, num, obj, str } from './values.js'
 
 /** 老宿主没有扩展列表时，按「全部打开」处理。 */
 const DEFAULTS = [
@@ -44,7 +44,12 @@ export function normalizeExtensionParts(d) {
   }
   return { extensions, extViews: obj(d.extViews),
     extShelves: arr(d.extShelves).filter(visible).map(part => ({ ...part, currency: obj(part.currency), items: arr(part.items) })),
-    extDex: arr(d.extDex).filter(visible).map(part => ({ ...part, entries: arr(part.entries) })) }
+    extDex: arr(d.extDex).filter(visible).map(part => ({ ...part, entries: arr(part.entries) })),
+    // 扩展币钱包（规则 1）：扩展关掉了也列出来，可以把币换成金币。
+    wallets: arr(d.wallets).map(value => {
+      const wallet = obj(value)
+      return { key: str(wallet.key, ''), label: str(wallet.label, '币'), emoji: str(wallet.emoji, '🪙'), balance: num(wallet.balance, 0), rate: num(wallet.rate, 1), buyRate: num(wallet.buyRate, 1) }
+    }).filter(wallet => wallet.key !== '') }
 }
 
 /** 关掉的扩展占的 App / 图鉴分区。 @param {any} view */

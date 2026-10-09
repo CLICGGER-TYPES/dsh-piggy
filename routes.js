@@ -109,6 +109,7 @@ const OPERATIONS = {
   fishKeep: store => store.keepFish(),
   fishFeed: (store, body) => store.feedFish(str(body.id)),
   fishSell: (store, body) => store.sellFish(str(body.id)),
+  exchange: (store, body) => store.exchange(str(body.key), str(body.direction), Number(body.amount)),
   fishAuto: (store, body) => store.startAutoFishing(Number(body.minutes), str(body.bait)),
   fishGive: (store, body) => store.grantFish(str(body.fish)),
   fishSkip: store => store.skipFishingWait(),

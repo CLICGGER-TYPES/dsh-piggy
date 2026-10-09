@@ -106,6 +106,7 @@ export function createIo(ctx) {
               'no-ticket': '没有盲盒券了',
               'no-shards': '碎片还不够',
               'no-certs': '资质凭证不够',
+              'too-small': '太少了，换不出 1 个金币',
             }
             ctx.showBubble(reasons[next.reason] ?? '这个操作没成', 2400)
           }

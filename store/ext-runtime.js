@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, s
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { extensionOn, installExtension, removeExtension } from '../core.js'
+import { extensionOn, installExtension, openWallet, removeExtension } from '../core.js'
 import { apiFor } from './ext-api.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
@@ -189,6 +189,12 @@ export function createExtRuntime(store, options) {
       const module = imported.default ?? imported
       loaded.set(key, { manifest, module, error: null })
       backfillExtensionEvents(store, { module }, { key, nowMs: now() })
+      // 已经装着的扩展更新后才声明货币：启动时就把钱包开好（汇率变了也在这里刷新）。
+      const currency = manifest.economy?.currency
+      const wallet = store.state?.wallets?.[key]
+      if (currency && store.state?.extData?.[key] !== undefined && (wallet === undefined || wallet.rate !== Number(currency.rate) || wallet.label !== currency.label)) {
+        store.mutate(state => { openWallet(state, key, currency); return { ok: true } })
+      }
     } catch (error) {
       loaded.set(key, { manifest, module: null, error: error instanceof Error ? error.message : String(error) })
     }
@@ -221,7 +227,7 @@ export function createExtRuntime(store, options) {
     const out = {}
     for (const [key, entry] of loaded) {
       if (state?.extData?.[key] === undefined || !extensionOn(state, key) || typeof entry.module?.view !== 'function') continue
-      try { out[key] = entry.module.view(structuredClone(state.extData[key]), apiFor(structuredClone(state), key, { nowMs: now() })) } catch { out[key] = { error: true } }
+      try { out[key] = entry.module.view(structuredClone(state.extData[key]), apiFor(structuredClone(state), key, { nowMs: now(), currency: entry.manifest?.economy?.currency })) } catch { out[key] = { error: true } }
     }
     return out
   }
@@ -342,7 +348,12 @@ export function createExtRuntime(store, options) {
     const entryLoaded = await load(key)
     if (entryLoaded === null || entryLoaded.module === null) return { ok: false, reason: 'broken-extension', message: entryLoaded?.error ?? '' }
     const initial = typeof entryLoaded.module.init === 'function' ? entryLoaded.module.init() : {}
-    return store.mutate(state => installExtension(state, key, initial))
+    // 装上就开钱包（声明了货币的），扩展页顶上马上有余额条。
+    return store.mutate(state => {
+      const result = installExtension(state, key, initial)
+      if (result.ok) openWallet(state, key, entryLoaded.manifest?.economy?.currency)
+      return result
+    })
   }
 
   /** 删除：核心清数据；下载的再把文件删掉。 */
@@ -362,7 +373,7 @@ export function createExtRuntime(store, options) {
     if (entry.module === null) return { ok: false, reason: 'broken-extension' }
     const handler = entry.module.actions?.[op]
     if (typeof handler !== 'function') return { ok: false, reason: 'unknown' }
-    return store.mutate(state => runExtensionAction(state, handler, { key, payload, nowMs: now() }))
+    return store.mutate(state => runExtensionAction(state, handler, { key, payload, nowMs: now(), currency: entry.manifest?.economy?.currency }))
   }
 
   /** 扩展的面板脚本（GET /dsh-piggy/ext/<key>/client.js）。 */

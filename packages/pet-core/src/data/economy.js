@@ -44,6 +44,12 @@ export const LEDGER = Object.freeze({
 /** 扩展一次动作最多能加多少金币（防止写错的扩展把经济冲垮；菜园整仓出售按 10 万一笔分开加，远在这之下）。 */
 export const EXT_EARN_PER_ACTION = 1_000_000
 
+/**
+ * 扩展币和金币的兑换（规则 1）：汇率是「1 个扩展币值多少金币」，宿主只认这个区间；
+ * 扩展币换成金币按汇率不收费，用金币换扩展币多收 5%，来回倒腾会亏。一次最多换这么多个。
+ */
+export const EXCHANGE = Object.freeze({ minRate: 0.01, maxRate: 100, buyFee: 0.05, maxAmount: 10_000_000 })
+
 /** 游戏本身的收支来源名 → 中文（调试页「经济」用）。扩展的来源显示成「扩展名 · 来源」。 */
 export const SOURCE_LABELS = Object.freeze({
   work: '打工', 'sell.fish': '卖鱼', 'sell.souvenir': '卖纪念品', daily: '签到和礼包', pomodoro: '番茄钟',

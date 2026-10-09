@@ -10,6 +10,7 @@ import { emptyFishing, ensureFishing, keepFish } from './fishing.js'
 import { ensureDex } from './dex.js'
 import { callOffActivity } from './activity.js'
 import { resetExtensionEventBaselines } from './extension-events.js'
+import { cashOutWallet } from './wallets.js'
 
 /** @param {any} state */
 export function ensureExtensions(state) {
@@ -95,7 +96,11 @@ export function removeExtension(state, key, nowMs) {
     state.inventory = inventory
   }
   if (builtin !== null) state.extensionsRemoved = [...state.extensionsRemoved, key]
-  else delete state.extData[key]
+  else {
+    delete state.extData[key]
+    // 它的币按存着的汇率全部换成金币（规则 1：删扩展不让玩家亏）。
+    cashOutWallet(state, key, nowMs)
+  }
   // 盲盒券是盲盒的东西：删盲盒时一起收走。
   if (key === BOX_TICKET.extension && state.inventory?.[BOX_TICKET.key] !== undefined) {
     const inventory = { ...state.inventory }

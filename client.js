@@ -722,7 +722,8 @@
             "unknown-extension": "\u6CA1\u6709\u8FD9\u4E2A\u6269\u5C55",
             "no-ticket": "\u6CA1\u6709\u76F2\u76D2\u5238\u4E86",
             "no-shards": "\u788E\u7247\u8FD8\u4E0D\u591F",
-            "no-certs": "\u8D44\u8D28\u51ED\u8BC1\u4E0D\u591F"
+            "no-certs": "\u8D44\u8D28\u51ED\u8BC1\u4E0D\u591F",
+            "too-small": "\u592A\u5C11\u4E86\uFF0C\u6362\u4E0D\u51FA 1 \u4E2A\u91D1\u5E01"
           };
           ctx.showBubble(reasons[next.reason] ?? "\u8FD9\u4E2A\u64CD\u4F5C\u6CA1\u6210", 2400);
         }
@@ -917,7 +918,12 @@
       extensions,
       extViews: obj(d.extViews),
       extShelves: arr(d.extShelves).filter(visible2).map((part) => ({ ...part, currency: obj(part.currency), items: arr(part.items) })),
-      extDex: arr(d.extDex).filter(visible2).map((part) => ({ ...part, entries: arr(part.entries) }))
+      extDex: arr(d.extDex).filter(visible2).map((part) => ({ ...part, entries: arr(part.entries) })),
+      // 扩展币钱包（规则 1）：扩展关掉了也列出来，可以把币换成金币。
+      wallets: arr(d.wallets).map((value) => {
+        const wallet = obj(value);
+        return { key: str(wallet.key, ""), label: str(wallet.label, "\u5E01"), emoji: str(wallet.emoji, "\u{1FA99}"), balance: num(wallet.balance, 0), rate: num(wallet.rate, 1), buyRate: num(wallet.buyRate, 1) };
+      }).filter((wallet) => wallet.key !== "")
     };
   }
   function offParts(view) {
@@ -3300,8 +3306,78 @@
     "@media (prefers-reduced-motion:reduce){.dp-holo,.dp-holo-face::after{animation:none!important;transition:none!important;transform:none!important}}"
   ].join("");
 
+  // src/client/wallet.js
+  var TO_GOLD = [10, 100];
+  var FROM_GOLD = [10, 100, 1e3];
+  var CSS_WALLET = [
+    ".dp-wallet{display:grid;gap:8px;margin:0 0 10px;padding:9px 11px;border-radius:16px;background:var(--ac-bg-input);border:2px solid var(--ac-border-light)}",
+    ".dp-wallet-head{display:flex;align-items:center;gap:8px;font-weight:800}",
+    ".dp-wallet-emoji{font-size:22px;line-height:1}.dp-wallet-name{font-size:11px;color:var(--ac-text-2);font-weight:700}",
+    ".dp-wallet-balance{flex:1;font-size:15px;letter-spacing:.02em}",
+    ".dp-wallet-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}",
+    ".dp-wallet-row>small{width:100%;font-size:10px;color:var(--ac-text-2)}"
+  ].join("");
+  function walletBar(ui, wallet, options) {
+    var always = options && options.open === true;
+    var open = always || ui.drill.wallet === wallet.key;
+    var box = el("div", "dp-wallet");
+    box.setAttribute("data-wallet", wallet.key);
+    var head = el("div", "dp-wallet-head");
+    head.appendChild(el("span", "dp-wallet-emoji", wallet.emoji));
+    var name = el("span", "dp-wallet-balance", String(wallet.balance));
+    name.appendChild(el("span", "dp-wallet-name", " " + wallet.label));
+    head.appendChild(name);
+    if (!always) {
+      var toggle = button("dp-mini dp-mini-plain", { "data-wallet-toggle": wallet.key }, function() {
+        ui.drill.wallet = open ? null : wallet.key;
+        ui.renderContent();
+      });
+      toggle.textContent = open ? "\u6536\u8D77" : "\u6362";
+      head.appendChild(toggle);
+    }
+    box.appendChild(head);
+    if (!open) return box;
+    var coins = Number(ui.view.pig && ui.view.pig.coins) || 0;
+    var send = function(direction, amount) {
+      ui.send("exchange", { key: wallet.key, direction, amount });
+    };
+    var out = el("div", "dp-wallet-row");
+    out.appendChild(el("small", null, "\u6362\u6210\u91D1\u5E01 \xB7 1 " + wallet.label + " = " + wallet.rate + " \u{1FA99}"));
+    var amounts = TO_GOLD.filter(function(n) {
+      return n < wallet.balance;
+    }).concat(wallet.balance > 0 ? [wallet.balance] : []);
+    for (var i = 0; i < amounts.length; i += 1) {
+      (function(n, all) {
+        var gold = Math.floor(n * wallet.rate);
+        var go = button("dp-mini", { "data-wallet-out": all ? "all" : String(n) }, function() {
+          send("toGold", n);
+        });
+        go.textContent = (all ? "\u5168\u90E8 " : "") + n + " \u2192 \u{1FA99} " + gold;
+        go.disabled = gold === 0;
+        out.appendChild(go);
+      })(amounts[i], i === amounts.length - 1 && wallet.balance > 0);
+    }
+    if (wallet.balance === 0) out.appendChild(el("span", "dp-wallet-name", "\u8FD8\u6CA1\u6709" + wallet.label));
+    box.appendChild(out);
+    var back = el("div", "dp-wallet-row");
+    back.appendChild(el("small", null, "\u7528\u91D1\u5E01\u6362 \xB7 1 " + wallet.label + " = " + wallet.buyRate + " \u{1FA99}\uFF08\u542B 5% \u624B\u7EED\u8D39\uFF09"));
+    for (var j = 0; j < FROM_GOLD.length; j += 1) {
+      (function(n) {
+        var cost = Math.ceil(n * wallet.buyRate - 1e-9);
+        var buy = button("dp-mini dp-mini-plain", { "data-wallet-in": String(n) }, function() {
+          send("fromGold", n);
+        });
+        buy.textContent = "\u{1FA99} " + cost + " \u2192 " + n;
+        buy.disabled = coins < cost;
+        back.appendChild(buy);
+      })(FROM_GOLD[j]);
+    }
+    box.appendChild(back);
+    return box;
+  }
+
   // src/client/styles.js
-  var CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS;
+  var CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS + CSS_WALLET;
 
   // src/client/interaction-motion.js
   function canAnimate(node) {
@@ -3603,7 +3679,8 @@
     worn: { emoji: "\u{1F455}", label: "\u5DF2\u7A7F\u6234", color: "pink" },
     diary: { emoji: "\u{1F4D4}", label: "\u65E5\u8BB0", color: "brown" },
     souvenir: { emoji: "\u{1F381}", label: "\u7EAA\u5FF5\u54C1", color: "blue" },
-    fish: { emoji: "\u{1F41F}", label: "\u9C7C\u7BD3", color: "teal" }
+    fish: { emoji: "\u{1F41F}", label: "\u9C7C\u7BD3", color: "teal" },
+    wallet: { emoji: "\u{1F45B}", label: "\u94B1\u5305", color: "yellow" }
   };
   function shortDay(day) {
     return day.length >= 10 ? day.slice(5) : day;
@@ -3614,6 +3691,7 @@
     else if (open === "diary") renderDiary(ui);
     else if (open === "souvenir") renderSouvenirs(ui);
     else if (open === "fish") renderFish(ui);
+    else if (open === "wallet") renderWallets(ui);
     else if (open !== null && CONSUMABLES.indexOf(open) >= 0) renderItems(ui, open);
     else renderCategories(ui);
   }
@@ -3658,11 +3736,12 @@
       }).length,
       diary: ui.view.diary.length,
       souvenir: ui.view.pig.souvenirs.length,
-      fish: ui.view.fishing.bag.length
+      fish: ui.view.fishing.bag.length,
+      wallet: (ui.view.wallets || []).length
     };
     for (var key in EXTRA) {
       (function(category) {
-        if (category === "worn" && counts.worn === 0) return;
+        if ((category === "worn" || category === "wallet") && counts[category] === 0) return;
         var spec = EXTRA[category];
         grid.appendChild(tile({
           emoji: spec.emoji,
@@ -3848,6 +3927,16 @@
       story.appendChild(sell);
     }
     ui.content.appendChild(story);
+  }
+  function renderWallets(ui) {
+    var wallets = ui.view.wallets || [];
+    drillHeader(ui, "bag", "\u{1F45B} \u94B1\u5305", "\u{1FA99} " + ui.view.pig.coins);
+    if (wallets.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u8FD8\u6CA1\u6709\u6269\u5C55\u5E01"));
+      return;
+    }
+    for (var i = 0; i < wallets.length; i += 1) ui.content.appendChild(walletBar(ui, wallets[i], { open: true }));
+    ui.content.appendChild(el("div", "dp-dim", "\u5220\u6389\u4E00\u4E2A\u6269\u5C55\u65F6\uFF0C\u5B83\u7684\u5E01\u4F1A\u6309\u6C47\u7387\u81EA\u52A8\u6362\u6210\u91D1\u5E01\u3002"));
   }
 
   // src/client/tabs/card.js
@@ -4490,6 +4579,10 @@
       return;
     }
     var data = ui.view.extViews ? ui.view.extViews[key] : void 0;
+    var wallet = (ui.view.wallets || []).find(function(entry) {
+      return entry.key === key;
+    });
+    if (wallet) ui.content.appendChild(walletBar(ui, wallet));
     try {
       impl.render({
         content: ui.content,

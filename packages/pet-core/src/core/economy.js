@@ -73,8 +73,11 @@ export function extensionSource(state, key, source) {
   return used >= LEDGER.maxSourcesPerExtension ? prefix + 'other' : wanted
 }
 
-/** @param {any} state @param {'in'|'out'} side @param {string} source @param {number} amount @param {number} nowMs */
-function record(state, side, source, amount, nowMs) {
+/**
+ * 记一笔账（金币或扩展币；扩展币的来源都在 ext.<扩展名>. 下，单位看前缀）。amount 可以是负数（退款冲掉支出）。
+ * @param {any} state @param {'in'|'out'} side @param {string} source @param {number} amount @param {number} nowMs
+ */
+export function record(state, side, source, amount, nowMs) {
   const ledger = ensureEconomy(state)
   let name = cleanSource(source)
   if (ledger.totals[name] === undefined && Object.keys(ledger.totals).length >= LEDGER.maxSources) name = 'other'

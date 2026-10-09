@@ -13,6 +13,7 @@ import { CSS_DEX } from './css-dex.js'
 import { CSS_FISHING } from './css-fishing.js'
 import { CSS_SKINS } from './css-skins.js'
 import { CSS_HOLO } from './css-holo.js'
+import { CSS_WALLET } from './wallet.js'
 
 /** The whole stylesheet, in the order it must be applied. */
-export const CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS
+export const CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS + CSS_WALLET
