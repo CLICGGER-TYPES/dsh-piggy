@@ -1,12 +1,14 @@
 # Gitee 渠道的构建：推 v* 标签时和 release.yml（GitHub）各跑各的。**只构建，不往 Gitee 推任何东西。**
 #   - 维护者要求（2026-10-07）：代码、标签、发行版附件一律从维护者本机推 Gitee——GitHub 机房连 Gitee 经常
 #     卡死或被重置，CI 的清理步骤还曾先删了旧安装包，Gitee 一段时间没有可下载的安装包。
-#   - 这里产出的 artifact：gitee-game（游戏包 + 发布说明）、gitee-dist-<系统>（安装包）。
+#   - 这里产出的 artifact：gitee-game（游戏包 + 发布说明）、gitee-dist-windows-latest（Windows 安装包）。
+#   - **Gitee 只发 Windows 安装包**（用户 2026-10-10：「gitee 不发 linux 和 mac 了」）：Linux / macOS 到 GitHub 下载。
+#     游戏包不分系统，照样每版都发，已装 Gitee 版的 Linux / mac 外壳仍能在 App 里更新游戏。
 #     本机执行 `GITEE_TOKEN=… bash scripts/gitee-publish.sh vX.Y.Z` 下载它们并推到 Gitee（见 docs/HANDOFF.md 9.4）。
 #   - 构建前切到 gitee 渠道（scripts/set-channel.mjs gitee）：游戏包和桌面外壳里的检查更新、游戏包下载、
 #     在线扩展全部指向 gitee.com，构建后扫描，发现 GitHub 地址就失败（第三方库 node_modules 除外）。
 #   - Gitee 发行版附件单个 ≤100MiB：安装包用 electron-builder.gitee.cjs（最大压缩、只留中英文语言包）
-#     + tools/slim-emoji-font.py 瘦 emoji 字体；mac 的 dmg 再用 hdiutil 转成 lzma（ULMO）；超过的不放进上传清单。
+#     + tools/slim-emoji-font.py 瘦 emoji 字体；超过的不放进上传清单。
 #   - Windows 安装包不带游戏（2026-10-09 起）：先取本次的 gitee-game，写 game-pin.json（版本、校验值、Gitee 下载地址）
 #     放进安装包，第一次启动下载（apps/desktop/first-run.js）。游戏包大到超过 95MiB 时 release-game 自动分卷。
 name: release-gitee
@@ -56,10 +58,9 @@ jobs:
           cat >> dist-game/notes.md <<'NOTES'
 
           ### 下载（Gitee 版：检查更新、游戏包、在线扩展都走 Gitee）
-          - **Windows**：`dsh-piggy-setup-*.exe`（安装版）或 `dsh-piggy-portable-*.exe`（免安装）
-          - **Linux**：`dsh-piggy-*.AppImage`（加执行权限后双击）
-          - **macOS**：`dsh-piggy-*-arm64.dmg`（M 系列）/ `-x64.dmg`（Intel），没签名，第一次要在访达里右键 → 打开
-          - 已装 Gitee 版桌面程序的：主屏「🔄 更新」直接从 Gitee 升级
+          - **Windows**：`dsh-piggy-setup-*.exe`（安装版）或 `dsh-piggy-portable-*.exe`（免安装）；第一次打开会从 Gitee 下载游戏
+          - **Linux / macOS**：到 [GitHub 发布页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest) 下载
+          - 已装 Gitee 版桌面程序的：主屏「🔄 更新」直接从 Gitee 升级游戏
           NOTES
       - name: 保存游戏包和发布说明（本机推 Gitee 时用）
         uses: actions/upload-artifact@v4
@@ -74,12 +75,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: --linux
+          # Gitee 只发 Windows（用户 2026-10-10）；Linux / macOS 只在 GitHub（release.yml）。
           - os: windows-latest
             target: --win
-          - os: macos-latest
-            target: --mac
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -112,26 +110,13 @@ jobs:
           npm ci
           node scripts/pack-game.mjs
           npx electron-builder ${{ matrix.target }} --publish never --config electron-builder.gitee.cjs
-      - name: mac 的 dmg 转成 lzma 压缩（macOS 10.15+ 原生能开，比 bzip2 小）
-        if: matrix.target == '--mac'
-        shell: bash
-        working-directory: apps/desktop/dist
-        run: |
-          for f in *.dmg; do
-            hdiutil convert "$f" -format ULMO -o "lzma-$f"
-            mv -f "lzma-$f" "$f"
-            rm -f "$f.blockmap"
-            ls -l "$f"
-          done
-          # mac 版不走自动更新（未签名，手动下载），转换后清单里的校验值也对不上，不上传
-          rm -f latest-mac.yml
       - name: 扫描 GitHub 地址、检查大小
         shell: bash
         run: |
           node scripts/scan-channel.mjs gitee apps/desktop/dist
           shopt -s nullglob
           keep=()
-          for f in apps/desktop/dist/*.AppImage apps/desktop/dist/*.exe apps/desktop/dist/*.dmg apps/desktop/dist/latest*.yml apps/desktop/dist/*.blockmap; do
+          for f in apps/desktop/dist/*.exe apps/desktop/dist/latest*.yml apps/desktop/dist/*.blockmap; do
             size=$(node -p "require('fs').statSync(process.argv[1]).size" "$f")
             if [ "$size" -gt "$LIMIT" ]; then echo "::warning::$(basename "$f") 有 $size 字节，超过 Gitee 单附件 100MB，不上传"; else keep+=("$f"); fi
           done
@@ -143,9 +128,7 @@ jobs:
           name: gitee-dist-${{ matrix.os }}
           path: |
             upload-list.txt
-            apps/desktop/dist/*.AppImage
             apps/desktop/dist/*.exe
-            apps/desktop/dist/*.dmg
             apps/desktop/dist/latest*.yml
           if-no-files-found: warn
           retention-days: 30

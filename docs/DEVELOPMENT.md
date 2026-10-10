@@ -74,7 +74,7 @@ npm run dist:mac
 Gitee（[clicgger/dsh-piggy](https://gitee.com/clicgger/dsh-piggy)）是独立的一套发行：Gitee 发出去的游戏包和桌面外壳里，检查更新、下载游戏包、在线扩展都只走 gitee.com，不依赖 GitHub。
 
 - **渠道**：地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 把选中的复制成 `channel.js`（游戏）和 `apps/desktop/lib/channel.js`（外壳）。仓库里提交的永远是 github，`test/channel.test.js` 守着。
-- **发版**：推 `v*` 标签时 `.github/workflows/release-gitee.yml` 只负责构建：先用默认渠道跑测试，再切到 gitee 渠道打游戏包和三平台安装包，用 `scripts/scan-channel.mjs` 扫掉 GitHub 地址，存成 artifact。**往 Gitee 推一律在维护者本机做**：`GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`（推代码和标签、建发行版、上传、核对、删旧安装包）。
+- **发版**：推 `v*` 标签时 `.github/workflows/release-gitee.yml` 只负责构建：先用默认渠道跑测试，再切到 gitee 渠道打游戏包和 Windows 安装包（Gitee 只发 Windows，Linux / macOS 只在 GitHub），用 `scripts/scan-channel.mjs` 扫掉 GitHub 地址，存成 artifact。**往 Gitee 推一律在维护者本机做**：`GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`（推代码和标签、建发行版、上传、核对、删旧安装包）。
 - **大小限制**：Gitee 发行版附件单个 ≤100MB、单仓库总量 ≤1GB。Gitee 安装包用 `apps/desktop/electron-builder.gitee.cjs`（最大压缩、只留中英文语言包）和 `tools/slim-emoji-font.py`（只留游戏里用到的 emoji + 常用表情，约 1MB）；GitHub 安装包不受影响，仍带整套 emoji。超过 100MB 的文件 CI 不上传并给出警告。
 - **在线扩展**：每个扩展在 GitHub、Gitee 各发一个 `ext-<key>-<版本>` 发行版；`node scripts/extension-entry.mjs <key> --host gitee` 生成 `extensions/registry-gitee.json` 的条目（校验值和 GitHub 那份相同）。Gitee 上传：`GITEE_TOKEN=… node scripts/gitee-release.mjs ensure ext-<key>-<版本>`，再 `upload <id> extensions/<key>/{manifest.json,server.js,client.js}`。
 

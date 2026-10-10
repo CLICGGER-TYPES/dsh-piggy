@@ -53,7 +53,7 @@ dsh plugin --profile web add dsh-piggy
 
 ### 桌面版
 
-从 [GitHub Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest) 下载对应系统的文件（国内可以用 [Gitee 发行版](https://gitee.com/clicgger/dsh-piggy/releases)：Gitee 版的检查更新、游戏包和在线扩展都走 Gitee）：
+从 [GitHub Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest) 下载对应系统的文件（国内的 Windows 用户可以用 [Gitee 发行版](https://gitee.com/clicgger/dsh-piggy/releases)：Gitee 版的检查更新、游戏包和在线扩展都走 Gitee；Gitee 只发 Windows 安装包，Linux 和 macOS 请用 GitHub）：
 
 - Windows：`setup.exe` 安装版或 `portable.exe` 便携版
 - Linux：`AppImage`
