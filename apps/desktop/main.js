@@ -813,6 +813,12 @@ ipcMain.on('piggy:panel:size', (event, size) => {
 /** 任一页面：收起面板（面板里点了收起、点外面自动收起）。 */
 ipcMain.on('piggy:panel:close', event => { if (fromPage(event)) closePanel('page') })
 /** 面板页面里对猪的反应（喂食时猪的动作、冒气泡）：转给猪窗口去演。 */
+// 猪窗口自己冒气泡（签到、点猪的反应）时也抬一次，跟面板转来的反应一样（用户 2026-10-10：气泡被面板盖住）。
+ipcMain.on('piggy:pet-raise', event => {
+  if (!fromPage(event) || event.sender !== win?.webContents) return
+  raisePetAbovePanel()
+})
+
 ipcMain.on('piggy:pig-fx', (event, fx) => {
   if (!fromPage(event) || event.sender !== panelWin?.webContents) return
   if (win === null || win.isDestroyed() || typeof fx?.name !== 'string') return

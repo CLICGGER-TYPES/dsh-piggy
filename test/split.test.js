@@ -24,6 +24,7 @@ function fakeShell(role) {
       toggle(open) { sent.push(['toggle', open]) },
       close() { sent.push(['close']) },
       fx(name, args) { sent.push(['fx', name, args]) },
+      raisePet() { sent.push(['raise']) },
       on(fn) { listeners.panel.push(fn) },
       onFx(fn) { listeners.fx.push(fn) },
     },
@@ -66,6 +67,19 @@ test('猪窗口：开关只叫主进程，自己永远不显示面板；状态�
   assert.deepEqual(sent, [['toggle', true]])
   assert.equal(ctx.host.attrs['data-open'], 'false')
   assert.equal(ctx.card.hidden, true)
+})
+
+test('猪窗口：面板开着时标 data-panel-open，签到气泡挪到猪旁边，往屏幕中间那侧放', () => {
+  const { shell } = fakeShell('pet')
+  const ctx = fakeCtx()
+  splitSetOpen(ctx, true)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'true')
+  assert.equal(ctx.host.attrs['data-daily-side'], 'left', 'no window position known: left of the pig')
+  Object.assign(globalThis.window, { __dshPiggyShell: shell, screenX: 40, innerWidth: 200, screen: { availLeft: 0, availWidth: 1280 } })
+  splitSetOpen(ctx, false)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'false')
+  splitSetOpen(ctx, true)
+  assert.equal(ctx.host.attrs['data-daily-side'], 'right', 'pig near the left edge: bubble goes to its right')
 })
 
 test('猪窗口：面板窗口转来的反应照演，名单外的不演', () => {
@@ -135,4 +149,16 @@ test('drained snapshot messages reach both windows and duplicate events are igno
     ctx.render(view)
     assert.deepEqual(lines, role === 'pet' ? ['hello'] : [])
   }
+})
+
+test('猪窗口：面板开着时猪自己冒气泡，先请主进程把猪窗口抬到面板上面；面板收着时不抬', () => {
+  const { sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  ctx.showBubble('签到好啦', 1200)
+  assert.deepEqual(sent, [], 'panel closed: nothing to cover the bubble')
+  ctx.isOpen = true
+  ctx.showBubble('签到好啦', 1200)
+  assert.deepEqual(sent, [['raise']])
+  assert.deepEqual(ctx.calls.filter(call => call[0] === 'showBubble').length, 2, 'the bubble itself still shows')
 })

@@ -2362,6 +2362,15 @@
       else hooks.refresh();
     });
     if (role2 === "pet") {
+      ;
+      ["showBubble", "showLine"].forEach(function(name) {
+        var own = ctx[name];
+        if (typeof own !== "function") return;
+        ctx[name] = function() {
+          if (ctx.isOpen && typeof shell2.panel.raisePet === "function") shell2.panel.raisePet();
+          return own.apply(null, arguments);
+        };
+      });
       shell2.panel.onFx(function(fx) {
         if (fx === null || typeof fx !== "object" || PIG_FX.indexOf(fx.name) < 0) return;
         var run = ctx[fx.name];
@@ -2393,6 +2402,15 @@
     });
     return role2;
   }
+  function dailySide() {
+    var w = (
+      /** @type {any} */
+      globalThis.window
+    );
+    var s = w?.screen;
+    if (!s || typeof w.screenX !== "number" || typeof s.availWidth !== "number") return "left";
+    return w.screenX + (w.innerWidth || 0) / 2 < (s.availLeft || 0) + s.availWidth / 2 ? "right" : "left";
+  }
   function typing() {
     var active = (
       /** @type {any} */
@@ -2407,6 +2425,8 @@
       var changed = next !== ctx.isOpen;
       ctx.isOpen = next;
       ctx.host.setAttribute("data-open", "false");
+      ctx.host.setAttribute("data-panel-open", String(next));
+      ctx.host.setAttribute("data-daily-side", dailySide());
       ctx.card.hidden = true;
       ctx.hud.hidden = true;
       if (changed) desktopShell().panel.toggle(next);
@@ -3468,6 +3488,10 @@
     "right:calc(6px + var(--pig-size) + 10px);bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px)}",
     // 桌面版面板朝右开时猪在左端：日历跟着镜像到猪右边。
     '[data-dsh-pig][data-panel-side="right"][data-open="true"] .dp-daily{right:auto;left:calc(6px + var(--pig-size) + 10px)}',
+    // 桌面版拆成两个窗口：猪窗口自己永远是「收着」，面板开着时（split.js 标 data-panel-open）气泡挪到猪身子旁边，
+    // 不然顶在猪头上正好压住面板窗口的底栏（用户 2026-10-10 Win11 截图）。
+    '[data-dsh-pig][data-panel-open="true"] .dp-daily{left:auto;margin-left:0;right:calc(100% + 6px);bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px)}',
+    '[data-dsh-pig][data-panel-open="true"][data-daily-side="right"] .dp-daily{right:auto;left:calc(100% + 6px)}',
     ".dp-daily:hover{border-color:var(--ac-border-hover)}",
     ".dp-daily:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}",
     // 名字必须独占：叫 dp-bob 会覆盖猪的待机动画（css-base.js），

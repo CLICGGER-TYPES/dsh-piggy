@@ -84,6 +84,8 @@ contextBridge.exposeInMainWorld('piggyShell', {
     /** 主进程的面板消息：{type:'open', vertical, maxHeight} / {type:'closed'} / {type:'blur', toPet}。 */
     on: callback => { ipcRenderer.on('piggy:panel', (event, message) => callback(message)) },
     onFx: callback => { ipcRenderer.on('piggy:pig-fx', (event, fx) => callback(fx)) },
+    /** 猪窗口自己冒气泡时把自己抬到面板上面（外壳 0.6.4 起），不然气泡被面板盖住。 */
+    raisePet: () => ipcRenderer.send('piggy:pet-raise'),
   },
   /** 拖动中窗口被夹在屏幕里时，猪要在窗口里滑多少（外壳 0.6.0 起，见 main.js dragTick）。 */
   onDragSlide: callback => { ipcRenderer.on('piggy:drag-slide', (event, slide) => callback(slide)) },

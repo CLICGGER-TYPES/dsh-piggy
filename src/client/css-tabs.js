@@ -73,6 +73,10 @@ export const CSS_TABS = [
   'right:calc(6px + var(--pig-size) + 10px);bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px)}',
   // 桌面版面板朝右开时猪在左端：日历跟着镜像到猪右边。
   '[data-dsh-pig][data-panel-side="right"][data-open="true"] .dp-daily{right:auto;left:calc(6px + var(--pig-size) + 10px)}',
+  // 桌面版拆成两个窗口：猪窗口自己永远是「收着」，面板开着时（split.js 标 data-panel-open）气泡挪到猪身子旁边，
+  // 不然顶在猪头上正好压住面板窗口的底栏（用户 2026-10-10 Win11 截图）。
+  '[data-dsh-pig][data-panel-open="true"] .dp-daily{left:auto;margin-left:0;right:calc(100% + 6px);bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px)}',
+  '[data-dsh-pig][data-panel-open="true"][data-daily-side="right"] .dp-daily{right:auto;left:calc(100% + 6px)}',
   '.dp-daily:hover{border-color:var(--ac-border-hover)}',
   '.dp-daily:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}',
   // 名字必须独占：叫 dp-bob 会覆盖猪的待机动画（css-base.js），

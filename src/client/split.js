@@ -29,6 +29,15 @@ export function wireSplit(ctx, hooks) {
   if (typeof shell.onStateChanged === 'function') shell.onStateChanged(function (view) { if (view && Array.isArray(view.pending)) ctx.render(view); else hooks.refresh() })
 
   if (role === 'pet') {
+    // 面板开着时猪自己冒气泡：先把猪窗口抬到面板上面，不然气泡被面板窗口盖住（外壳 0.6.4 起才有）。
+    ;['showBubble', 'showLine'].forEach(function (name) {
+      var own = ctx[name]
+      if (typeof own !== 'function') return
+      ctx[name] = function () {
+        if (ctx.isOpen && typeof shell.panel.raisePet === 'function') shell.panel.raisePet()
+        return own.apply(null, arguments)
+      }
+    })
     shell.panel.onFx(function (fx) {
       if (fx === null || typeof fx !== 'object' || PIG_FX.indexOf(fx.name) < 0) return
       var run = ctx[fx.name]
@@ -62,6 +71,14 @@ export function wireSplit(ctx, hooks) {
   return role
 }
 
+/** 猪在屏幕左半边就把签到气泡放猪右边，否则放左边。拿不到窗口位置（测试里）时放左边。 */
+function dailySide() {
+  var w = /** @type {any} */ (globalThis.window)
+  var s = w?.screen
+  if (!s || typeof w.screenX !== 'number' || typeof s.availWidth !== 'number') return 'left'
+  return w.screenX + (w.innerWidth || 0) / 2 < (s.availLeft || 0) + s.availWidth / 2 ? 'right' : 'left'
+}
+
 function typing() {
   var active = /** @type {any} */ (document.activeElement)
   var tag = active?.tagName?.toLowerCase?.() ?? ''
@@ -82,6 +99,10 @@ export function splitSetOpen(ctx, next) {
     var changed = next !== ctx.isOpen
     ctx.isOpen = next
     ctx.host.setAttribute('data-open', 'false')
+    // 面板开着时签到 / 礼包小气泡别顶在猪头上：面板窗口的底栏就在那儿，会被压住（用户 2026-10-10）。
+    // 挪到猪身子旁边，往屏幕中间那一侧挪，免得挤到屏幕外。
+    ctx.host.setAttribute('data-panel-open', String(next))
+    ctx.host.setAttribute('data-daily-side', dailySide())
     ctx.card.hidden = true
     ctx.hud.hidden = true
     if (changed) desktopShell().panel.toggle(next)
