@@ -230,7 +230,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 - 规则：**GitHub 那套保持原样；Gitee 是独立的一套**——Gitee 发出去的游戏包和外壳，检查更新、下载游戏包、在线扩展只走 gitee.com，不能依赖 GitHub（用户明确要求）。
 - 地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 复制成 `channel.js` 和 `apps/desktop/lib/channel.js`。**仓库里提交的永远是 github**（`test/channel.test.js` 守着）。
 - Gitee 工作流先用默认渠道跑测试，再切 gitee 打包，构建后用 `scripts/scan-channel.mjs` 扫描，发现 GitHub 地址就失败。
-- Gitee 限制：发行版附件**单个 ≤ 100MiB（104,857,600 字节，实测）**、单仓库附件**总量 ≤ 1GB**。所以 Gitee 安装包另有瘦身：`apps/desktop/electron-builder.gitee.cjs`（最大压缩、只留中英文语言包）、`tools/slim-emoji-font.py`（emoji 字体只留用到的）、macOS dmg 用 `hdiutil` 转 lzma（ULMO）。当前大小（0.34.1 / 外壳 0.6.3）：Windows 92.5MiB（**不带游戏**，见下）、Linux 97.3、mac x64 96.2 / arm64 88.2——Linux 和 mac 自带游戏，余量也只剩 3～4MiB，再涨就要照 Windows 的做法分装。超限的文件 CI 不上传并给警告。发版后自动删除旧版本的安装包附件（游戏包保留）。
+- Gitee 限制：发行版附件**单个 ≤ 100MiB（104,857,600 字节，实测）**、单仓库附件**总量 ≤ 1GB**。所以 Gitee 安装包另有瘦身：`apps/desktop/electron-builder.gitee.cjs`（最大压缩、只留中英文语言包）、`tools/slim-emoji-font.py`（emoji 字体只留用到的）、macOS dmg 用 `hdiutil` 转 lzma（ULMO）。当前大小（0.35.0 / 外壳 0.6.4）：Windows 92.7MiB（**不带游戏**，见下）、Linux 96.9、mac x64 95.9 / arm64 87.9——Linux 和 mac 自带游戏，余量只剩 3～4MiB，再涨就要照 Windows 的做法分装。超限的文件 CI 不上传并给警告。发版后自动删除旧版本的安装包附件（游戏包保留）。
 - **Gitee 一律从维护者本机推**（用户 2026-10-07 定）：GitHub Actions 不再碰 Gitee（机房连 Gitee 经常卡死或被重置，旧流程的清理步骤还在上传失败时删了旧安装包，Gitee 一段时间没有安装包可下）。
   流程：CI 构建出 artifact（`gitee-game`、`gitee-dist-<系统>`）→ 本机 `GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`：
   等构建成功、下载 artifact、核对 `latest*.yml` 的 sha512 和安装包一致 → `git push gitee main` 和标签 → 建发行版、传游戏包和安装包、最后传更新清单 →
