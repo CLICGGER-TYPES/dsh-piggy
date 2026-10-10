@@ -1,4 +1,4 @@
-# dsh-piggy 维护交接文档（2026-10-09，已发 v0.34.1 / 外壳 0.6.3；main 上有待发的 0.35.0 经济体系）
+# dsh-piggy 维护交接文档（2026-10-10，v0.35.0 / 外壳 0.6.4）
 
 > 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
 > 本页取代 [2026-10-03 的交接记录](archive/HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
@@ -89,7 +89,7 @@
 
 ### 4.4 桌面版：外壳和游戏包分开
 
-- **外壳**（`apps/desktop/`，当前 **0.6.3**）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
+- **外壳**（`apps/desktop/`，当前 **0.6.4**）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
 - **游戏包**（= 插件那份代码，`apps/desktop/scripts/pack-game.mjs` 复制、`release-game.mjs` 打成 `game-<版本>.json.gz` + manifest）：在「设置 → 更新」里直接下载切换、可回退，不用重装。
 - 窗口摆放、可点区域、桌面样式都放在游戏包里（`src/client/desktop/`），所以这类修复走游戏包更新就到。
 - 详见 [更新机制](guides/updates.md)、[桌面版指南](guides/desktop.md)、`docs/DEVELOPMENT.md`「桌面程序和游戏包怎么分工」。
@@ -195,7 +195,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 |---|---|---|
 | 游戏版本 | 根 `package.json` `version` | 每次发版 |
 | 别名包 | `packages/dsh-plugin-piggy/package.json` 的 `version` 和 `dependencies.dsh-piggy` | 和游戏版本同步 |
-| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.3；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
+| 桌面外壳 | `apps/desktop/package.json` `version` | 只有改了外壳代码才升（当前 0.6.4；加基础动作时同时升 `src/client/desktop/index.js` 的 `DESKTOP_VERSION`） |
 | 存档 | `STATE_VERSION` | 只有存档结构变了才升（配迁移） |
 | 扩展 | `extensions/<key>/manifest.json` | 扩展改了就升，`minGame` 写需要的最低游戏版本 |
 
