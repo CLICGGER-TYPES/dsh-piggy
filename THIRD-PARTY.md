@@ -29,7 +29,7 @@
 - 以后新画的猪图只要是在 `piglet.svg` 上改的，同样属于这一条；完全另起炉灶、不参照任何素材的才算 MIT 原创。
 - **不同状态的小猪图（`assets/feedback/*.png`）**：灵感来自 [PigHub](https://pighub.top/) 上的猪猪图片，
   以其为参考由 AI（OpenAI 图像生成，codex 操作）重新生成，经维护者逐张审定；没有直接复制、描摹或拼贴原图。
-  生成过程、处理步骤见 [`assets/feedback/PROVENANCE.md`](assets/feedback/PROVENANCE.md)。
+  生成过程、处理步骤见 [`assets/pigs/feedback/PROVENANCE.md`](assets/pigs/feedback/PROVENANCE.md)。
   如果原图作者认为侵权或不希望这样使用，请开 issue，我们会删除相关图片。
 - 界面里的其它图形一律用系统 emoji 字体渲染，不附带图形文件。
 

@@ -40,6 +40,41 @@ test('C6 custom keys cannot shadow the default or a built-in skin', () => {
   assert.equal(validateSkinFiles(defaultSkin).ok, false)
 })
 
+test('PNG skin packs keep scene metadata and reject damaged or duplicate scene files', async () => {
+  const { readFileSync } = await import('node:fs')
+  const png = readFileSync(new URL('../assets/pigs/base/piglet/idle.png', import.meta.url))
+  const pack = new Map([['skin.json', Buffer.from(JSON.stringify({ key: 'png-demo', label: 'PNG demo' }))]])
+  for (const scene of ['idle', 'eat', 'bathe', 'play', 'pet', 'sleep']) pack.set(scene + '.png', png)
+  const accepted = validateSkinFiles(pack)
+  assert.equal(accepted.ok, true)
+  assert.equal(accepted.metadata.art, 'custom-png-demo')
+  assert.ok(accepted.metadata.scenes.includes('sleep'))
+  const damaged = new Map(pack)
+  const broken = Buffer.from(png)
+  broken[30] ^= 1
+  damaged.set('play.png', broken)
+  assert.equal(validateSkinFiles(damaged).ok, false, 'PNG chunk integrity is checked')
+  pack.set('idle.svg', Buffer.from(svg))
+  assert.equal(validateSkinFiles(pack).ok, false, 'one format per scene')
+})
+
+test('extensionless imported-art URLs read PNGs and retain installed legacy SVGs', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { customSkinArt } = await import('../store/skin-pack.js')
+  const dir = mkdtempSync(join(tmpdir(), 'pig-skin-format-'))
+  try {
+    mkdirSync(join(dir, 'skins'))
+    const png = readFileSync(new URL('../assets/pigs/base/piglet/idle.png', import.meta.url))
+    writeFileSync(join(dir, 'skins/custom-new.png'), png)
+    writeFileSync(join(dir, 'skins/custom-old.svg'), svg)
+    assert.ok(customSkinArt(join(dir, 'state.json'), 'custom-new').equals(png))
+    assert.equal(customSkinArt(join(dir, 'state.json'), 'custom-old').toString(), svg)
+    assert.equal(customSkinArt(join(dir, 'state.json'), '../custom-old'), null)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
 // 桌面版的本地协议把请求体当文本读，原始二进制 ZIP 会被读坏；客户端改成发 base64。
 // 两种请求体都要能导入，嵌套目录要报看得懂的错。
 test('skin import accepts a raw ZIP body and a base64 body, and explains nested folders', async () => {

@@ -87,9 +87,11 @@ test('关掉钓鱼：外面自动钓鱼的猪召回、鱼饵退还；钓上来�
   assert.equal(again.fishing.pending, null)
 })
 
-test('存档里：关闭后动作被拒、番茄钟不结算、鱼饵下架且买不了；快照带扩展列表', () => {
+test('存档里：关闭后动作被拒、番茄钟不结算、鱼饵下架且买不了；快照带扩展列表', context => {
   const dir = mkdtempSync(join(tmpdir(), 'pig-ext-'))
   let clock = NOW
+  // 快照的规则视图也读取当前时间；与存档的测试时钟保持一致。
+  context.mock.method(Date, 'now', () => clock)
   const store = createStore(join(dir, 'state.json'), { now: () => clock, setTimer: () => 0, clearTimer: () => {} })
   try {
     store.hatch()

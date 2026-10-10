@@ -8,7 +8,7 @@
  * @module dsh-piggy/client/tabs/crown
  */
 
-import { ART_URL } from '../constants.js'
+import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
 
 export function renderCrownTab(ui) {
@@ -32,7 +32,7 @@ function formBlock(ui, form) {
   var pic = el('div', 'dp-crown-pic')
   if (form.art !== '') {
     var img = /** @type {HTMLImageElement} */ (el('img', 'dp-crown-img'))
-    img.src = ART_URL + form.art + '.svg'
+    img.src = artSource(form.art)
     img.alt = ''
     pic.appendChild(img)
   } else {

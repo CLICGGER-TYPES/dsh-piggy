@@ -10,6 +10,25 @@
  * transform，rect 每帧都在抖。
  */
 import { PAD, STEP } from './geometry.js'
+import { ART_BOUNDS, MAX_ART_ASPECT, FRAME_HEIGHT } from '../feedback-framing.js'
+
+/** Stable image bounds include framing, without measuring animated transforms. */
+export function framedBox(node, box) {
+  if (!node.matches?.('.dp-pig-img,.dp-pig-sleep')) return box
+  const path = (node.getAttribute('src') || '').split('/art/')[1]
+  const bounds = ART_BOUNDS[path]
+  if (!bounds) return box
+  const zoom = Number(node.style.getPropertyValue('--art-zoom')) || 1
+  const shiftX = parseFloat(node.style.getPropertyValue('--art-x')) || 0
+  const shiftY = parseFloat(node.style.getPropertyValue('--art-y')) || 0
+  const mirrored = node.closest('.dp-pig')?.getAttribute('data-walk') === 'right'
+  const fit = Math.min(box.width, box.height)
+  const left = mirrored ? 1 - bounds[2] : bounds[0]
+  const right = mirrored ? 1 - bounds[0] : bounds[2]
+  return { x: box.x + box.width / 2 + (left - .5) * fit * zoom + (mirrored ? -shiftX : shiftX) * box.width / 100,
+    y: box.y + box.height / 2 + (bounds[1] - .5) * fit * zoom + shiftY * box.height / 100,
+    width: (right - left) * fit * zoom, height: (bounds[3] - bounds[1]) * fit * zoom }
+}
 
 /** 猪头上方预留的气泡区：冒气泡只改可点区域，不改窗口大小。 */
 const BUBBLE_ZONE = { width: 272, height: 104 }
@@ -64,7 +83,7 @@ export function createMeasure(env) {
     for (const node of nodes) {
       if (node.closest('[hidden]') !== null || !visible(node)) continue
       const bubble = node.closest('.dp-bubble')
-      const box = layoutBox(node)
+      const box = framedBox(node, layoutBox(node))
       if (box.width < 1 || box.height < 1) continue
       const rect = { x: box.x, y: box.y, r: box.x + box.width, b: box.y + box.height }
       if (bubble !== null) bubbleRects.push(rect)
@@ -109,8 +128,10 @@ export function createMeasure(env) {
     // 猪窗口用一块**固定大小**的框：猪头上留气泡区、左边留签到小气泡和打工道具、两侧留摸猪时飘的爱心。
     // 框只跟猪的大小有关，冒气泡、飘爱心、出道具都不改窗口大小（改大小就有一帧画在旧位置，Windows 上最明显）。
     if (pigNode !== null) {
-      outline.push({ x: pigBox.x + pigBox.width + 40 - BUBBLE_ZONE.width - 40, y: pigBox.y - BUBBLE_ZONE.height - 24,
-        r: pigBox.x + pigBox.width + 40, b: pigBox.y + pigBox.height + 12 })
+      // Reserve the widest reviewed sprite for every action: action changes never resize the window.
+      const artMargin = Math.max(40, (MAX_ART_ASPECT * FRAME_HEIGHT - 1) * pigBox.width / 2 + SHAPE_SLACK)
+      outline.push({ x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, pigBox.x - artMargin), y: pigBox.y - BUBBLE_ZONE.height - 24,
+        r: pigBox.x + pigBox.width + artMargin, b: pigBox.y + pigBox.height + 12 })
     }
     let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity
     for (const o of outline) { left = Math.min(left, o.x); top = Math.min(top, o.y); right = Math.max(right, o.r); bottom = Math.max(bottom, o.b) }

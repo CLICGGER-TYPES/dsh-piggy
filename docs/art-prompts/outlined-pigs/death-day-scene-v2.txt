@@ -1,0 +1,3 @@
+Use case: precise-object-edit
+Edit target: upside-down dead pig with halo below right.
+Correct ONLY the color of the entire pig to muted GREY, as the death-day state requires. All pig skin/body/four upward feet/tail become pale neutral grey, ears and snout darker soft grey, blush subtle grey; remove ALL peach or pink pig coloration. Keep exactly the same inverted whole-body pose, head on RIGHT, snout two nostrils, black X eyes, four feet up, grey halo below right, one small curly tail, black outlines and gentle flat shading. Do not alter geometry or orientation, do not add a grave or props, no gore. Preserve real transparent background.

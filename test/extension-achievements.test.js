@@ -1,3 +1,4 @@
+import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 // @ts-check
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
@@ -110,7 +111,7 @@ test('uninstalled unseen goals stay out of the catalogue; twelve new pig badge f
   assert.equal(achievementsView(state).length, CORE_COUNT)
   installExtension(state, 'farm', {})
   assert.equal(achievementsView(state).length, 19)
-  for (const item of ACHIEVEMENTS.filter(item => item.extension)) assert.equal(existsSync(new URL('../assets/' + item.art + '.svg', import.meta.url)), true)
+  for (const item of ACHIEVEMENTS.filter(item => item.extension)) assert.equal(existsSync(new URL('../assets/' + PIG_ART_ASSETS[item.art], import.meta.url)), true)
 })
 
 

@@ -9,7 +9,7 @@
  * @module dsh-piggy/client/tabs/card
  */
 
-import { ART_URL } from '../constants.js'
+import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
 
 /** How long each editable field may be (mirrors data/profile.js). */
@@ -30,7 +30,7 @@ export function renderCardTab(ui) {
   var avatar = el('div', 'dp-vcard-avatar')
   if (p.stage.art !== null) {
     var img = /** @type {HTMLImageElement} */ (el('img', 'dp-vcard-img'))
-    img.src = ART_URL + p.stage.art + '.svg'
+    img.src = artSource(p.stage.art)
     img.alt = ''
     avatar.appendChild(img)
   } else {

@@ -2,7 +2,7 @@
 
 这里保存已确认素材的**可复用提示词**，下次续画从这里开始，并以对应的已确认 PNG 作视觉参考。
 
-- [反馈小猪](feedback-pigs.md)：`assets/feedback/` 的独立图与合集图。
+- [反馈小猪](feedback-pigs.md)：`assets/pigs/feedback/` 的独立图与合集图。
 - [睡姿小猪](sleep-poses.md)：`assets/*-sleep.png` 的普通猪和 11 种内置形态。
 
 ## 记录的准确性

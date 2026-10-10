@@ -1,3 +1,5 @@
+import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
+import { BUILTIN_FRAMING, FRAME_HEIGHT } from '../src/client/feedback-framing.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
@@ -166,27 +168,17 @@ test('tag release has no token-gated npm job and documents manual publishing', (
   }
 })
 
-test('all 54 character scenes keep the pig body within 4% of default size and foot line', () => {
+test('all 54 character scenes share one visible height and visual center', () => {
+  const entries = JSON.parse(readFileSync(new URL('../assets/pigs/manifest.json', import.meta.url), 'utf8'))
   const families = ['career-chef', 'career-astronaut', 'skin-detective', 'skin-angel', 'skin-pirate', 'skin-wizard']
   const scenes = ['', '-eat', '-bathe', '-play', '-pet', '-relaxed', '-work', '-study', '-trip']
   for (const family of families) for (const scene of scenes) {
-    const name = `${family}${scene}.svg`
-    const svg = readFileSync(new URL(`../assets/${name}`, import.meta.url), 'utf8')
-    assert.match(svg, /viewBox="0 0 64 64"/, name)
-    // The generated role art shares the default pig body. Measure its extra
-    // wrapper's affine scale and the resulting foot displacement in the 64px
-    // viewBox; costumes may extend beyond the body, so their outer alpha box
-    // is not a reliable measure of the pig itself.
-    const core = svg.indexOf('<g transform="translate(-7.17 -0.78) scale(0.1993)"')
-    assert.ok(core >= 0, `${name}: default body missing`)
-    const wrapperStart = svg.lastIndexOf('<g', core - 1)
-    const wrapperTag = svg.slice(wrapperStart, svg.indexOf('>', wrapperStart) + 1)
-    const wrapper = wrapperTag.match(/transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)"/)
-    const x = Number(wrapper?.[1] ?? 0)
-    const y = Number(wrapper?.[2] ?? 0)
-    const scale = Number(wrapper?.[3] ?? 1)
-    assert.ok(Math.abs(scale - 1) <= .04, `${name}: body scale ${scale}`)
-    assert.ok(Math.abs(y + 59 * scale - 59) <= 64 * .04, `${name}: foot at ${y + 59 * scale}`)
-    assert.ok(Math.abs(x) <= 64 * .04, `${name}: horizontal offset ${x}`)
+    const path = PIG_ART_ASSETS[family + scene]
+    const entry = entries.find(item => item.path === path)
+    const [zoom, x, y] = BUILTIN_FRAMING[path]
+    const [left, top, right, bottom] = entry.bounds
+    assert.ok(Math.abs((bottom - top) / 256 * zoom - FRAME_HEIGHT) < .001, path)
+    assert.ok(Math.abs(.5 + ((left + right) / 512 - .5) * zoom + x / 100 - .5) < .001, path)
+    assert.ok(Math.abs(.5 + ((top + bottom) / 512 - .5) * zoom + y / 100 - .5) < .001, path)
   }
 })

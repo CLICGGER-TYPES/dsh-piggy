@@ -1,3 +1,4 @@
+import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 // @ts-check
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
@@ -110,13 +111,13 @@ test('C7 round uses the original contributed artwork and fat uses the new larger
   }
 })
 
-test('both weight tiers ship every action sprite as distinct SVG art', () => {
+test('both weight tiers ship every action sprite as distinct PNG art', () => {
   for (const suffix of ['', '-relaxed', '-pet', '-eat', '-bathe', '-play', '-work', '-study', '-trip']) {
-    const round = readFileSync(new URL(`../assets/pig-round${suffix}.svg`, import.meta.url), 'utf8')
-    const fat = readFileSync(new URL(`../assets/pig-fat${suffix}.svg`, import.meta.url), 'utf8')
-    assert.match(round, /<svg\b/)
-    assert.match(fat, /<svg\b/)
-    assert.notEqual(round, fat)
+    const round = readFileSync(new URL('../assets/' + PIG_ART_ASSETS['pig-round' + suffix], import.meta.url))
+    const fat = readFileSync(new URL('../assets/' + PIG_ART_ASSETS['pig-fat' + suffix], import.meta.url))
+    assert.equal(round.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
+    assert.equal(fat.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
+    assert.equal(round.equals(fat), false)
   }
 })
 

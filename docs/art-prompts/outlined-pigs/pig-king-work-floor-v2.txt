@@ -1,0 +1,5 @@
+Use case: precise-object-edit
+Edit target: pig-king floor-computer sprite.
+User instruction: preserve original simple soft rounded pig legs; do NOT invent separate hooves or human hands.
+Change ONLY foot rendering: remove newly added contrasting PINK/Jade hoof-tip caps and any split-toe/notched black lines on the forefeet. Continue the pig's normal peach skin color (peach for ordinary pig) smoothly all the way to the rounded ends. Forefeet are plain short soft rounded leg ends extending naturally from the existing body, NOT separate gloves or grasping hooves, no fingers or cut-in toe crease. Do not draw extra feet or increase size/length of current forelegs. Keep existing rear-leg locations and round ends; remove invented toe-cap decoration there too, without altering leg number. 
+Preserve body pose, full convex back, head/body proportions (fat pig HUGE belly SMALL face), exactly the same existing four limbs including occluded ones, costume/hat/halo/wings/horns, eyes, snout two nostrils, tail, laptop on ground and alpha transparency. No table/chair/stool, mouth or new props. Black outline style and soft shading unchanged.

@@ -353,7 +353,7 @@ test('G 批次：调试页按模块分页，只显示当前页；左右箭头能
 test('调试页「立绘」列出 assets/feedback 里的每张图，且列出的图都真实存在', async () => {
   const { readdirSync } = await import('node:fs')
   const { feedbackArtUses } = await import('../src/client/tabs/dev.js')
-  const files = readdirSync(new URL('../assets/feedback/', import.meta.url))
+  const files = readdirSync(new URL('../assets/pigs/feedback/', import.meta.url))
     .filter(name => name.endsWith('.png')).map(name => name.slice(0, -4)).sort()
   const listed = Object.keys(feedbackArtUses()).sort()
   assert.deepEqual(listed, files, '新加或删了反馈图，调试页和用图表要一起改')

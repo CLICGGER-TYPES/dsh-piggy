@@ -28,7 +28,7 @@ test('the desktop host serves the plugin routes from a packed game folder, with 
     assert.equal(JSON.parse(hatched.body).hatched, true)
     const art = await host.handle('GET', '/dsh-piggy/art/pig-king.svg')
     assert.equal(art.status, 200)
-    assert.match(String(art.headers['content-type']), /svg/)
+    assert.equal(art.headers['content-type'], 'image/png', 'legacy URL serves the reviewed PNG')
     assert.equal((await host.handle('GET', '/elsewhere')).status, 404)
   } finally {
     host?.dispose()

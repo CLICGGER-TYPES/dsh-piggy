@@ -1570,7 +1570,7 @@ test('a drawn stage shows a sprite, the others show the emoji', async () => {
   const emoji = findByClass(hostOf(drawn.dom), 'dp-pig-emoji')
   assert.notEqual(img, undefined, 'the sprite element must exist')
   assert.equal(img.hidden, false, 'the sprite is shown')
-  assert.equal(img.src, '/dsh-piggy/art/piglet.svg', 'the sprite points at the plugin art route')
+  assert.equal(img.src, '/dsh-piggy/art/pigs/base/piglet/idle.png', 'the sprite points at the plugin art route')
   assert.equal(emoji.hidden, true, 'and the emoji is hidden')
 
   const plain = await loadClient({ status: { ...SNAPSHOT, pig: { ...PIG, mood: 'fine' } } })

@@ -1,3 +1,4 @@
+import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 // @ts-check
 /**
  * 成就数据的守卫（规则见 docs/guides/adding-achievements.md）：加一条成就时最容易漏的几处，
@@ -38,12 +39,12 @@ test('扩展成就引用的事件和字段在公共事件目录里', () => {
   }
 })
 
-test('每个成就都有自己的小猪徽章 SVG（64×64，≤ 6KB）', () => {
+test('每个成就都有自己的小猪徽章 PNG（256×256，≤ 96KB）', () => {
   for (const item of ACHIEVEMENTS) {
     assert.match(item.art, /^badge-pig-[a-z0-9-]+$/, item.key)
-    const file = new URL(item.art + '.svg', ASSETS)
+    const file = new URL(PIG_ART_ASSETS[item.art], ASSETS)
     assert.ok(existsSync(file), item.key + ' 缺 assets/' + item.art + '.svg')
-    assert.match(readFileSync(file, 'utf8'), /viewBox="0 0 64 64"/, item.art)
-    assert.ok(statSync(file).size <= 6 * 1024, item.art + ' 超过 6KB')
+    assert.equal(readFileSync(file).subarray(0, 8).toString('hex'), '89504e470d0a1a0a', item.art)
+    assert.ok(statSync(file).size <= 96 * 1024, item.art + ' 超过 96KB')
   }
 })

@@ -1,0 +1,5070 @@
+[
+  {
+    "key": "piglet",
+    "path": "pigs/base/piglet/idle.png",
+    "actor": "piglet",
+    "action": "idle",
+    "version": "piglet-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/piglet-idle-v1.txt",
+    "sourceSha256": "e6b1776de2304b6766aa002bd600ec73ad39ae64d97750a525268ab3c3f4387a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      106,
+      235,
+      1182,
+      1083
+    ],
+    "bounds": [
+      16,
+      39,
+      240,
+      216
+    ],
+    "sha256": "897d2f1fd15e51df74c8c0942a8e9e980d436eddc0b8f1b384ba0f328e23bb99",
+    "bytes": 6686
+  },
+  {
+    "key": "career-chef",
+    "path": "pigs/skins/career-chef/idle.png",
+    "actor": "career-chef",
+    "action": "idle",
+    "version": "career-chef-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-idle-v1.txt",
+    "sourceSha256": "a2954638afb6340fbcc20ba8afe71c46e260387241c8dcbad4da87273468c1c4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      79,
+      83,
+      1177,
+      1129
+    ],
+    "bounds": [
+      16,
+      21,
+      240,
+      234
+    ],
+    "sha256": "d6046d6efb7a40ae83300cdeb0350a201500196a2a61d2417c7b54c957228cc5",
+    "bytes": 9959
+  },
+  {
+    "key": "skin-angel",
+    "path": "pigs/skins/skin-angel/idle.png",
+    "actor": "skin-angel",
+    "action": "idle",
+    "version": "skin-angel-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-idle-v1.txt",
+    "sourceSha256": "14ffe62771aa321b3974ee2568da8eb01e5c6f587752caf37325a2d176fbfc2b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      87,
+      145,
+      1194,
+      1129
+    ],
+    "bounds": [
+      16,
+      28,
+      240,
+      227
+    ],
+    "sha256": "6713705c5972f9ecbfa5a09fb8fd2d5e7b7bf35f5d58f253fcd3f9e76ab0a7fc",
+    "bytes": 10355
+  },
+  {
+    "key": "pig-round",
+    "path": "pigs/forms/pig-round/idle.png",
+    "actor": "pig-round",
+    "action": "idle",
+    "version": "pig-round-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-idle-v1.txt",
+    "sourceSha256": "ab485bedbbb809b8df5dd726684e2e497f11ffa36e59ce8fe8c4a01eef2b8252",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      101,
+      183,
+      1199,
+      1078
+    ],
+    "bounds": [
+      16,
+      36,
+      240,
+      219
+    ],
+    "sha256": "a88f6cd490cdd0380b5ca89f255ac944519cc62bc35a79c2d945428af061dcce",
+    "bytes": 9441
+  },
+  {
+    "key": "pig-fat",
+    "path": "pigs/forms/pig-fat/idle.png",
+    "actor": "pig-fat",
+    "action": "idle",
+    "version": "pig-fat-idle-v4",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-idle-v4.txt",
+    "sourceSha256": "eca2af4bcc3a317bdf8565ae68e9515ee7c571d0b5e96a48ef406a3c33ae6b57",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      159,
+      221,
+      1175,
+      1013
+    ],
+    "bounds": [
+      16,
+      40,
+      240,
+      215
+    ],
+    "sha256": "6415622fd61d3c2a713e1afc84b201c121b9bf3ee12420d996ff4c494cd23b29",
+    "bytes": 6400
+  },
+  {
+    "key": "pig-king",
+    "path": "pigs/forms/pig-king/idle.png",
+    "actor": "pig-king",
+    "action": "idle",
+    "version": "pig-king-idle-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-idle-v5.txt",
+    "sourceSha256": "90d835bb1bace6715c4282f4d57c14fdf9e033c34d0604a50d74a38b98f8a664",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      43,
+      75,
+      1213,
+      1145
+    ],
+    "bounds": [
+      16,
+      25,
+      240,
+      230
+    ],
+    "sha256": "aac61deaea3a65fdd24fe7bf064cf772d5a75421c831c07875d9c76881d14a11",
+    "bytes": 11384
+  },
+  {
+    "key": "skin-mint",
+    "path": "pigs/skins/skin-mint/idle.png",
+    "actor": "skin-mint",
+    "action": "idle",
+    "version": "skin-mint-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-idle-v1.txt",
+    "sourceSha256": "5261f4542b307522b11009d3402fa73d406ff3cd8df714202345d458b7c45f71",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      70,
+      181,
+      1221,
+      1096
+    ],
+    "bounds": [
+      16,
+      39,
+      240,
+      217
+    ],
+    "sha256": "18f6711db3e014afd72e3ca10f3f370584bafd4f5791afea724c307107b3ec30",
+    "bytes": 6765
+  },
+  {
+    "key": "pig-devil",
+    "path": "pigs/forms/pig-devil/idle.png",
+    "actor": "pig-devil",
+    "action": "idle",
+    "version": "pig-devil-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-idle-v1.txt",
+    "sourceSha256": "ab48dec1d229d81d40d2369438e704257ebd98cc6af2668ea9ff6ca10ddf93d2",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      97,
+      224,
+      1220,
+      1058
+    ],
+    "bounds": [
+      16,
+      45,
+      240,
+      211
+    ],
+    "sha256": "7636f27b7441bee1d776241bd529a9a7df19bb84731b8abf465d6b613404a055",
+    "bytes": 7771
+  },
+  {
+    "key": "career-astronaut",
+    "path": "pigs/skins/career-astronaut/idle.png",
+    "actor": "career-astronaut",
+    "action": "idle",
+    "version": "career-astronaut-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-idle-v1.txt",
+    "sourceSha256": "25398421682123d897272a6d675697ab47efc6a270449caffe5051b7e244c0c5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      104,
+      152,
+      1193,
+      1115
+    ],
+    "bounds": [
+      16,
+      29,
+      240,
+      227
+    ],
+    "sha256": "842a2015ebc3b93c1fd3e9551816057e3da238a98ecbfa0bb5901b1c4b250ea3",
+    "bytes": 11285
+  },
+  {
+    "key": "skin-detective",
+    "path": "pigs/skins/skin-detective/idle.png",
+    "actor": "skin-detective",
+    "action": "idle",
+    "version": "skin-detective-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-idle-v1.txt",
+    "sourceSha256": "edef131d9866729a90a944bc9b0a6977f2bc3508b2d4bab077cdc850c8f9eadd",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      91,
+      166,
+      1180,
+      1095
+    ],
+    "bounds": [
+      16,
+      32,
+      240,
+      223
+    ],
+    "sha256": "95c4e0143be79122bda0f16eb66439d845d557cbcaa92417cf9abdd737fb9084",
+    "bytes": 8802
+  },
+  {
+    "key": "skin-pirate",
+    "path": "pigs/skins/skin-pirate/idle.png",
+    "actor": "skin-pirate",
+    "action": "idle",
+    "version": "skin-pirate-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-idle-v1.txt",
+    "sourceSha256": "ae23b0511214b5e56dee742bbc5312b8585abd45c21bccb3c9ea296cbc2b494f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      82,
+      199,
+      1213,
+      1078
+    ],
+    "bounds": [
+      16,
+      41,
+      240,
+      215
+    ],
+    "sha256": "3084eda8696c1127b50f4506414523de632cbd2d20339c7bbbf6db44b8443bbd",
+    "bytes": 9848
+  },
+  {
+    "key": "skin-wizard",
+    "path": "pigs/skins/skin-wizard/idle.png",
+    "actor": "skin-wizard",
+    "action": "idle",
+    "version": "skin-wizard-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-idle-v1.txt",
+    "sourceSha256": "57c3fa3d77943feda0bfb7813db753db22fd4a3e1853cc0482f78db4f5f2cc97",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      82,
+      60,
+      1174,
+      1142
+    ],
+    "bounds": [
+      16,
+      17,
+      240,
+      239
+    ],
+    "sha256": "0ef6fc31323ad9c20e4631b20e9d6bb4aa4c7a016cb3facd05f5b9ee80fe3e90",
+    "bytes": 10943
+  },
+  {
+    "key": "piglet-eat",
+    "path": "pigs/base/piglet/eat.png",
+    "actor": "piglet",
+    "action": "eat",
+    "version": "piglet-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/piglet-eat-v1.txt",
+    "sourceSha256": "48cce29c4fb7f37fc3106d1d6b1d3bf5d3bc6f1ea0cd0cee469834d78dccc481",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      108,
+      257,
+      1183,
+      1067
+    ],
+    "bounds": [
+      16,
+      43,
+      240,
+      212
+    ],
+    "sha256": "cc4648daf800c3b453bbc8deea872e9afc82cd16b68ee1d69b3414ac8e82d325",
+    "bytes": 7105
+  },
+  {
+    "key": "piglet-play",
+    "path": "pigs/base/piglet/play.png",
+    "actor": "piglet",
+    "action": "play",
+    "version": "piglet-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/piglet-play-v1.txt",
+    "sourceSha256": "3ba360cf2e51b9df5be3bc26b86040600e9d0de683d7e521cd8843fc58db85b4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      123,
+      213,
+      1189,
+      1139
+    ],
+    "bounds": [
+      16,
+      30,
+      240,
+      225
+    ],
+    "sha256": "0897391456d4973e89b82759f30cf1787769d788a81d741fe40dd2ade142cf3b",
+    "bytes": 9213
+  },
+  {
+    "key": "piglet-sleep",
+    "path": "pigs/base/piglet/sleep.png",
+    "actor": "piglet",
+    "action": "sleep",
+    "version": "piglet-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/piglet-sleep-v1.txt",
+    "sourceSha256": "e73816025613682804b59c557c296eb30f607e24a1e950e1f63a1de0f72a939a",
+    "sourceDimensions": [
+      1452,
+      1083
+    ],
+    "sourceBounds": [
+      103,
+      151,
+      1348,
+      980
+    ],
+    "bounds": [
+      16,
+      53,
+      240,
+      202
+    ],
+    "sha256": "05f4103104207819ca90c88751034e455b39e374b2d72419bbdb479059694b7c",
+    "bytes": 6146
+  },
+  {
+    "key": "career-chef-eat",
+    "path": "pigs/skins/career-chef/eat.png",
+    "actor": "career-chef",
+    "action": "eat",
+    "version": "career-chef-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-eat-v1.txt",
+    "sourceSha256": "b41649ffb64d1bc7521d431357c12b73ef1465f7c9ae69f9278d782a19dbff96",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      137,
+      183,
+      1151,
+      1104
+    ],
+    "bounds": [
+      16,
+      26,
+      240,
+      229
+    ],
+    "sha256": "f1d08be64cceca1fa2c649aa8945530efd6b720a28a2a88e5fc5e58367b18969",
+    "bytes": 10428
+  },
+  {
+    "key": "career-chef-play",
+    "path": "pigs/skins/career-chef/play.png",
+    "actor": "career-chef",
+    "action": "play",
+    "version": "career-chef-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-play-v1.txt",
+    "sourceSha256": "c16af3b5d6853dbda748a564a7434e5f2c79d7b54716a383518f3b1c71e4374a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      150,
+      59,
+      1133,
+      1180
+    ],
+    "bounds": [
+      30,
+      16,
+      226,
+      240
+    ],
+    "sha256": "884eb732095ef1b731b1e6fbadbc15c4c9ef175c0c5d50d4c22238e0eba7f060",
+    "bytes": 8840
+  },
+  {
+    "key": "career-chef-sleep",
+    "path": "pigs/skins/career-chef/sleep.png",
+    "actor": "career-chef",
+    "action": "sleep",
+    "version": "career-chef-sleep-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-sleep-v2.txt",
+    "sourceSha256": "600c63554d927ca1dd5d43a9580e377fe942e555b1925f4bd8261c3dfa91e6cd",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      71,
+      197,
+      1191,
+      1072
+    ],
+    "bounds": [
+      16,
+      40,
+      240,
+      215
+    ],
+    "sha256": "53eace8ba1c3da46db7fa64594bf8eb0d0d92b68e81253b45ab2b76a04296c8d",
+    "bytes": 8851
+  },
+  {
+    "key": "skin-pirate-eat",
+    "path": "pigs/skins/skin-pirate/eat.png",
+    "actor": "skin-pirate",
+    "action": "eat",
+    "version": "skin-pirate-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-eat-v1.txt",
+    "sourceSha256": "411af330f34bca4811ce8cc300b4df172001a8198e90eea7817f3387010b0793",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      106,
+      280,
+      1206,
+      1050
+    ],
+    "bounds": [
+      16,
+      49,
+      240,
+      206
+    ],
+    "sha256": "8bfe09e1aa7a403625758ea878f150092023d4d1557e80c0202a13077b9a1546",
+    "bytes": 8980
+  },
+  {
+    "key": "skin-pirate-play",
+    "path": "pigs/skins/skin-pirate/play.png",
+    "actor": "skin-pirate",
+    "action": "play",
+    "version": "skin-pirate-play-v3",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-play-v3.txt",
+    "sourceSha256": "6a568fec96b67d750ef6b0dcf446fa8421ad84536745719ca73c400583de0639",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      41,
+      198,
+      1213,
+      1094
+    ],
+    "bounds": [
+      16,
+      42,
+      240,
+      213
+    ],
+    "sha256": "4b93b96a9a3148a6d907459220402e376f2af34de3cb0dfa687866fa557dff55",
+    "bytes": 9889
+  },
+  {
+    "key": "skin-pirate-sleep",
+    "path": "pigs/skins/skin-pirate/sleep.png",
+    "actor": "skin-pirate",
+    "action": "sleep",
+    "version": "skin-pirate-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-sleep-v1.txt",
+    "sourceSha256": "c5f70bc3991ab1c0250d0fcd241746bdbe2eff207e0cfe1b7bf9c719334d5431",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      48,
+      308,
+      1207,
+      1039
+    ],
+    "bounds": [
+      16,
+      57,
+      240,
+      198
+    ],
+    "sha256": "b5f5f20932b3b9f2901e7c42299937a0bebb75e873f343f8cc1e232e04caf7bf",
+    "bytes": 8103
+  },
+  {
+    "key": "skin-wizard-eat",
+    "path": "pigs/skins/skin-wizard/eat.png",
+    "actor": "skin-wizard",
+    "action": "eat",
+    "version": "skin-wizard-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-eat-v1.txt",
+    "sourceSha256": "cb11e57f077a12092cf8bca0568f170146b263551ed16e59c318c3ffbcd6938f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      97,
+      130,
+      1180,
+      1117
+    ],
+    "bounds": [
+      16,
+      26,
+      240,
+      230
+    ],
+    "sha256": "6ca6b3af76884f176835694f8aa96ccda4ce6527fdc97cc3c375e54b1b74ec9e",
+    "bytes": 10048
+  },
+  {
+    "key": "skin-wizard-play",
+    "path": "pigs/skins/skin-wizard/play.png",
+    "actor": "skin-wizard",
+    "action": "play",
+    "version": "skin-wizard-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-play-v1.txt",
+    "sourceSha256": "d87e598061ff50510a078d24abf68b74b45fdfb0d3e3eba7aad7e3a7350c7682",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      136,
+      82,
+      1188,
+      1164
+    ],
+    "bounds": [
+      19,
+      16,
+      237,
+      240
+    ],
+    "sha256": "ffdb285d63c4734ea4be5bc4efb7dbc52f15568d140cbccf9fae6250d6647527",
+    "bytes": 10016
+  },
+  {
+    "key": "skin-wizard-sleep",
+    "path": "pigs/skins/skin-wizard/sleep.png",
+    "actor": "skin-wizard",
+    "action": "sleep",
+    "version": "skin-wizard-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-sleep-v1.txt",
+    "sourceSha256": "7b4edd6a67f8238c8c2b08b3897deb65b1aada62b1cdf9efb5292037b34ccf2d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      68,
+      189,
+      1197,
+      1096
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      218
+    ],
+    "sha256": "a263e1d687ab54cb5bb50c475cae60325e958d597c25406ffbd0b5542b69f397",
+    "bytes": 8449
+  },
+  {
+    "key": "pig-round-eat",
+    "path": "pigs/forms/pig-round/eat.png",
+    "actor": "pig-round",
+    "action": "eat",
+    "version": "pig-round-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-eat-v1.txt",
+    "sourceSha256": "84c54e0607274df962667a53c377e83b8e7f73ae1620ed1bd5a4ee370e5289ad",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      66,
+      202,
+      1191,
+      1075
+    ],
+    "bounds": [
+      16,
+      41,
+      240,
+      215
+    ],
+    "sha256": "f691a00f3378ea1dfd348369e3d03a893a63a0ad645a5c2e4abaa3b718bf5d70",
+    "bytes": 7402
+  },
+  {
+    "key": "pig-round-play",
+    "path": "pigs/forms/pig-round/play.png",
+    "actor": "pig-round",
+    "action": "play",
+    "version": "pig-round-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-play-v1.txt",
+    "sourceSha256": "10ca141f27037b0900341ddde1d8783cd18cab9ccf587f71870522745361f047",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      46,
+      157,
+      1213,
+      1141
+    ],
+    "bounds": [
+      16,
+      33,
+      240,
+      222
+    ],
+    "sha256": "1abff596499e82bb1de88c89872bce948a778c425263d3c13e05ed5ef9966042",
+    "bytes": 7184
+  },
+  {
+    "key": "pig-round-sleep",
+    "path": "pigs/forms/pig-round/sleep.png",
+    "actor": "pig-round",
+    "action": "sleep",
+    "version": "pig-round-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-sleep-v1.txt",
+    "sourceSha256": "e24fa70d187b3aef3a463b0af06bdc035d8d56a27260f803030d5fc45b3ff140",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      30,
+      208,
+      1227,
+      1064
+    ],
+    "bounds": [
+      16,
+      48,
+      240,
+      208
+    ],
+    "sha256": "22c773b3816b211cf0f67c3ef36a4d734c90978d781318065cd592b01e2c327a",
+    "bytes": 6875
+  },
+  {
+    "key": "pig-fat-eat",
+    "path": "pigs/forms/pig-fat/eat.png",
+    "actor": "pig-fat",
+    "action": "eat",
+    "version": "pig-fat-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-eat-v1.txt",
+    "sourceSha256": "1418721c52ff8f57d2df9ac4fdcb71adb3628002e0fa76e084e876dba03c8ee9",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      93,
+      248,
+      1232,
+      1050
+    ],
+    "bounds": [
+      16,
+      49,
+      240,
+      207
+    ],
+    "sha256": "f818156a6a06e557bcb95ba4fcbfb5059d6dfb0ba8bf155ffebd200bfeafb152",
+    "bytes": 8484
+  },
+  {
+    "key": "pig-fat-play",
+    "path": "pigs/forms/pig-fat/play.png",
+    "actor": "pig-fat",
+    "action": "play",
+    "version": "pig-fat-play-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-play-v2.txt",
+    "sourceSha256": "edc1cd1b84f6208cb10c8410f0afaa040c0e75e8203ace3830454a5d1efca734",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      80,
+      222,
+      1243,
+      1019
+    ],
+    "bounds": [
+      16,
+      51,
+      240,
+      205
+    ],
+    "sha256": "4dd2a424ca0c9adad47fa8cc4ee67c000ac15bc2e7e8a7f46135bbd8538a6c0b",
+    "bytes": 6180
+  },
+  {
+    "key": "pig-fat-sleep",
+    "path": "pigs/forms/pig-fat/sleep.png",
+    "actor": "pig-fat",
+    "action": "sleep",
+    "version": "pig-fat-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-sleep-v1.txt",
+    "sourceSha256": "8ebce7adde73e458c0ab66919b4c7923f0c8f49ba7558cb638832bcf5b5b0f11",
+    "sourceDimensions": [
+      1452,
+      1083
+    ],
+    "sourceBounds": [
+      56,
+      118,
+      1399,
+      997
+    ],
+    "bounds": [
+      16,
+      54,
+      240,
+      201
+    ],
+    "sha256": "d339361d003effbfa35d95289591ff3fdca0f6d4b7270ac3eee684a117ae5c5d",
+    "bytes": 6215
+  },
+  {
+    "key": "skin-mint-eat",
+    "path": "pigs/skins/skin-mint/eat.png",
+    "actor": "skin-mint",
+    "action": "eat",
+    "version": "skin-mint-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-eat-v1.txt",
+    "sourceSha256": "36e0a7ef2b63d410ad9ba40c0ccb2c66549581c8440f30c2c27cb45cc86e918d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      77,
+      231,
+      1199,
+      1065
+    ],
+    "bounds": [
+      16,
+      44,
+      240,
+      211
+    ],
+    "sha256": "ebe00a0344508bcf9cfdf80b77354a6570517e51f2832534fe5bbb48fe8117d3",
+    "bytes": 9326
+  },
+  {
+    "key": "skin-mint-play",
+    "path": "pigs/skins/skin-mint/play.png",
+    "actor": "skin-mint",
+    "action": "play",
+    "version": "skin-mint-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-play-v1.txt",
+    "sourceSha256": "3e9aca06abc5d9d5c81877549564a9cd26bdf9a01555c6652772f8bb89a11203",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      75,
+      190,
+      1211,
+      1139
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      221
+    ],
+    "sha256": "6a495515d966f00546104344b9bcbf0f1edb905146ba0d7007bab4de0173132c",
+    "bytes": 7337
+  },
+  {
+    "key": "skin-mint-sleep",
+    "path": "pigs/skins/skin-mint/sleep.png",
+    "actor": "skin-mint",
+    "action": "sleep",
+    "version": "skin-mint-sleep-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-sleep-v2.txt",
+    "sourceSha256": "bf93c08a686333f6cf5911cfa760e6192e90ed313372b38cb6e417240066271c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      37,
+      221,
+      1215,
+      1057
+    ],
+    "bounds": [
+      16,
+      48,
+      240,
+      207
+    ],
+    "sha256": "6e06af36df9de258edecae3faca6f6a862f56aa9cc9bfbca810096d44c9185d7",
+    "bytes": 7579
+  },
+  {
+    "key": "skin-detective-eat",
+    "path": "pigs/skins/skin-detective/eat.png",
+    "actor": "skin-detective",
+    "action": "eat",
+    "version": "skin-detective-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-eat-v1.txt",
+    "sourceSha256": "033dbd9f90d5110e1e4584f12bb2677d3396c44b519377eab56d39d05c54b847",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      105,
+      214,
+      1202,
+      1096
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      218
+    ],
+    "sha256": "f10e781e5db062d46dd7d6e97b53f71ce72bec056e0ab85cdaa93cc3482b97c5",
+    "bytes": 9133
+  },
+  {
+    "key": "skin-detective-play",
+    "path": "pigs/skins/skin-detective/play.png",
+    "actor": "skin-detective",
+    "action": "play",
+    "version": "skin-detective-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-play-v1.txt",
+    "sourceSha256": "4f0c79e7a70c92cddc83211d6e74df154933f462efc0dd96a7de8c142977881e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      74,
+      80,
+      1207,
+      1178
+    ],
+    "bounds": [
+      16,
+      19,
+      240,
+      236
+    ],
+    "sha256": "9b821a58ec133d5dd19476530cead3dabc208226bd5f232ee9719440fb36cd2e",
+    "bytes": 9399
+  },
+  {
+    "key": "skin-detective-sleep",
+    "path": "pigs/skins/skin-detective/sleep.png",
+    "actor": "skin-detective",
+    "action": "sleep",
+    "version": "skin-detective-sleep-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-sleep-v2.txt",
+    "sourceSha256": "dd9f6a8963488c40e187118fadc953e5253a81b5f3c7858b89f4f018a7534bb4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      48,
+      245,
+      1206,
+      1073
+    ],
+    "bounds": [
+      16,
+      48,
+      240,
+      208
+    ],
+    "sha256": "96570e1dc153852ba5dfb69358c9763ff069a39f8c0c5b7e0b7ad7ab03b50d56",
+    "bytes": 7994
+  },
+  {
+    "key": "pig-king-eat",
+    "path": "pigs/forms/pig-king/eat.png",
+    "actor": "pig-king",
+    "action": "eat",
+    "version": "pig-king-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-eat-v1.txt",
+    "sourceSha256": "4e3a2c515918da9ac49d32ee89ca2621386514ee94e94293c97ffbc87558a0e5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      86,
+      162,
+      1177,
+      1078
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "6ddb34a5cddfb73987c77d05e22bf8e573acc2865d4ef4877ffae793031fc0a9",
+    "bytes": 12739
+  },
+  {
+    "key": "pig-king-sleep",
+    "path": "pigs/forms/pig-king/sleep.png",
+    "actor": "pig-king",
+    "action": "sleep",
+    "version": "pig-king-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-sleep-v1.txt",
+    "sourceSha256": "e3f99c31e6e2c219610324902bfe4081ae7221392c2a3f0ca7c9f071c4807ffa",
+    "sourceDimensions": [
+      1452,
+      1083
+    ],
+    "sourceBounds": [
+      116,
+      119,
+      1360,
+      980
+    ],
+    "bounds": [
+      16,
+      50,
+      240,
+      205
+    ],
+    "sha256": "355d9cade39a103df1dd4525dd839759a14d70a88644517f0cf6210ad0970960",
+    "bytes": 8893
+  },
+  {
+    "key": "pig-devil-eat",
+    "path": "pigs/forms/pig-devil/eat.png",
+    "actor": "pig-devil",
+    "action": "eat",
+    "version": "pig-devil-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-eat-v1.txt",
+    "sourceSha256": "ff2ac59ca78860edc24ddf48b7b344f24d83f6d60c207882a2b55682152b4ea3",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      103,
+      255,
+      1224,
+      1019
+    ],
+    "bounds": [
+      16,
+      51,
+      240,
+      204
+    ],
+    "sha256": "29d97b447b3e8d4b8d6345e5d0214d0525b70593db93f6bfe172b9d4b0b351bf",
+    "bytes": 8966
+  },
+  {
+    "key": "pig-devil-play",
+    "path": "pigs/forms/pig-devil/play.png",
+    "actor": "pig-devil",
+    "action": "play",
+    "version": "pig-devil-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-play-v1.txt",
+    "sourceSha256": "a692ab9f1fccebcf2d18d6e2947e307f7aa0fd6db2f1db1b3bde9e3bd8216f5f",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      116,
+      172,
+      1236,
+      1078
+    ],
+    "bounds": [
+      16,
+      37,
+      240,
+      218
+    ],
+    "sha256": "3d5699355b01ee5e4e8d083caa54b419ce8dcd3175d6912174d3d1bfb0467fff",
+    "bytes": 9142
+  },
+  {
+    "key": "pig-devil-sleep",
+    "path": "pigs/forms/pig-devil/sleep.png",
+    "actor": "pig-devil",
+    "action": "sleep",
+    "version": "pig-devil-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-sleep-v1.txt",
+    "sourceSha256": "8b503042fce274709ffc9564862e8da5db4072f77cabd860058076c9fa1e6219",
+    "sourceDimensions": [
+      1452,
+      1083
+    ],
+    "sourceBounds": [
+      118,
+      168,
+      1366,
+      957
+    ],
+    "bounds": [
+      16,
+      57,
+      240,
+      199
+    ],
+    "sha256": "4b360c445fa1b88b3991bee2dff81ae8cbd5706a9c9a21f5f88c13f9ab13f6d7",
+    "bytes": 7165
+  },
+  {
+    "key": "skin-angel-eat",
+    "path": "pigs/skins/skin-angel/eat.png",
+    "actor": "skin-angel",
+    "action": "eat",
+    "version": "skin-angel-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-eat-v1.txt",
+    "sourceSha256": "2b99fa5b20e88aeb0540f85f2d04d91eba3020bd10b1e3a095d0bc9e7e741f9e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      99,
+      146,
+      1204,
+      1116
+    ],
+    "bounds": [
+      16,
+      29,
+      240,
+      226
+    ],
+    "sha256": "f878e68209cba9eb9c59f15674118b70733c3fd1b7b769c9e060a58dfdb551ee",
+    "bytes": 10428
+  },
+  {
+    "key": "skin-angel-play",
+    "path": "pigs/skins/skin-angel/play.png",
+    "actor": "skin-angel",
+    "action": "play",
+    "version": "skin-angel-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-play-v1.txt",
+    "sourceSha256": "b08d3d1ee8deac60b0c8824607c82b9fff5a4bedf40d83e5707f3635e11ad97a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      104,
+      101,
+      1206,
+      1186
+    ],
+    "bounds": [
+      16,
+      17,
+      240,
+      238
+    ],
+    "sha256": "4025d116a6f3a26fdabab1d0e2bd217b8d05783d676147e319ec8953a1d7bebf",
+    "bytes": 10259
+  },
+  {
+    "key": "skin-angel-sleep",
+    "path": "pigs/skins/skin-angel/sleep.png",
+    "actor": "skin-angel",
+    "action": "sleep",
+    "version": "skin-angel-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-sleep-v1.txt",
+    "sourceSha256": "64a7a1d6293132c8715cd3e330fca9b4cbac8679c4ea88135cefe54d1eade293",
+    "sourceDimensions": [
+      1452,
+      1083
+    ],
+    "sourceBounds": [
+      101,
+      117,
+      1377,
+      1003
+    ],
+    "bounds": [
+      16,
+      50,
+      240,
+      206
+    ],
+    "sha256": "2f663fcf3c95281bddf493cfe11e2c3ded5937ee9e662269514bfc8cc570098a",
+    "bytes": 7696
+  },
+  {
+    "key": "career-astronaut-eat",
+    "path": "pigs/skins/career-astronaut/eat.png",
+    "actor": "career-astronaut",
+    "action": "eat",
+    "version": "career-astronaut-eat-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-eat-v1.txt",
+    "sourceSha256": "fcb211e187b13250be731f71f16067d0744256a34be68d6d36f10fc035219422",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      161,
+      272,
+      1223,
+      1090
+    ],
+    "bounds": [
+      16,
+      41,
+      240,
+      214
+    ],
+    "sha256": "98e59854a02cc66c7fb74ebd33a1a713ede0e02258004d30f75ef4caf28a4d99",
+    "bytes": 9547
+  },
+  {
+    "key": "career-astronaut-play",
+    "path": "pigs/skins/career-astronaut/play.png",
+    "actor": "career-astronaut",
+    "action": "play",
+    "version": "career-astronaut-play-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-play-v1.txt",
+    "sourceSha256": "3848e4b7b98cdbf43e688474055176335fc9efc7cd8c16c9f583fa8fa1fbda73",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      120,
+      107,
+      1203,
+      1172
+    ],
+    "bounds": [
+      16,
+      18,
+      240,
+      238
+    ],
+    "sha256": "01dee32522914f381ca3810ff884eb51891c7ca787877dcd2da112be7054ec36",
+    "bytes": 11730
+  },
+  {
+    "key": "career-astronaut-sleep",
+    "path": "pigs/skins/career-astronaut/sleep.png",
+    "actor": "career-astronaut",
+    "action": "sleep",
+    "version": "career-astronaut-sleep-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-sleep-v1.txt",
+    "sourceSha256": "d9186bed1eaeae3db3fe7826b8f5b0492694225a343ba2fabc788107e7a46fd6",
+    "sourceDimensions": [
+      1452,
+      1083
+    ],
+    "sourceBounds": [
+      102,
+      144,
+      1350,
+      966
+    ],
+    "bounds": [
+      16,
+      54,
+      240,
+      202
+    ],
+    "sha256": "bac2e81f2225c086c66516ed045a382c5feed96cdd986dae404c3e57db6512bd",
+    "bytes": 9152
+  },
+  {
+    "key": "pig-king-play",
+    "path": "pigs/forms/pig-king/play.png",
+    "actor": "pig-king",
+    "action": "play",
+    "version": "pig-king-play-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-play-v2.txt",
+    "sourceSha256": "ed51a60088a7d65bbd8b53f7df43222a2e5a451779902ac59a7ec48b1580f5d0",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      101,
+      62,
+      1207,
+      1190
+    ],
+    "bounds": [
+      18,
+      16,
+      238,
+      240
+    ],
+    "sha256": "603769b0463e3ed947d9daa24b119a73fbb180c3e3594ceeafdf28897a8d4c72",
+    "bytes": 11684
+  },
+  {
+    "key": "career-chef-pet",
+    "path": "pigs/skins/career-chef/pet.png",
+    "actor": "career-chef",
+    "action": "pet",
+    "version": "career-chef-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-pet-v1.txt",
+    "sourceSha256": "47f6dd76cb666fb679ccee4ba19f4a6e4f86793ad588a4c594b7e9b8d9907ac5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      97,
+      77,
+      1173,
+      1171
+    ],
+    "bounds": [
+      18,
+      16,
+      238,
+      240
+    ],
+    "sha256": "6e2f96fb3241f535546ede1180498d5790f70cb9e1ee98d00456a4da699376e9",
+    "bytes": 9155
+  },
+  {
+    "key": "career-chef-relaxed",
+    "path": "pigs/skins/career-chef/relaxed.png",
+    "actor": "career-chef",
+    "action": "relaxed",
+    "version": "career-chef-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-relaxed-v1.txt",
+    "sourceSha256": "8c1131ef1116469c690c0ead31ff5a1cc5eeaac0db8b25833626e38e11d896e4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      78,
+      82,
+      1186,
+      1139
+    ],
+    "bounds": [
+      16,
+      21,
+      240,
+      235
+    ],
+    "sha256": "bd1635bdc9d95b07cb9d111b67d6885c682778e1114d3c0dac701ef05f54da43",
+    "bytes": 8915
+  },
+  {
+    "key": "skin-pirate-pet",
+    "path": "pigs/skins/skin-pirate/pet.png",
+    "actor": "skin-pirate",
+    "action": "pet",
+    "version": "skin-pirate-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-pet-v1.txt",
+    "sourceSha256": "24cadda1ee64c9b796b961bd04724b419cf4d63932bc166655098ca86e9ca14c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      98,
+      79,
+      1186,
+      1091
+    ],
+    "bounds": [
+      16,
+      24,
+      240,
+      232
+    ],
+    "sha256": "2b2a8d9de260d5d1fa05e9cde390d4670a4cfa26d1b77bb122413f0653c816a4",
+    "bytes": 10534
+  },
+  {
+    "key": "skin-pirate-relaxed",
+    "path": "pigs/skins/skin-pirate/relaxed.png",
+    "actor": "skin-pirate",
+    "action": "relaxed",
+    "version": "skin-pirate-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-relaxed-v1.txt",
+    "sourceSha256": "92382d179dab852533eea9658a322d29d0ac91908b2223a5a17c16b44156a71b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      59,
+      188,
+      1221,
+      1084
+    ],
+    "bounds": [
+      16,
+      41,
+      240,
+      214
+    ],
+    "sha256": "7adc26dce8ca0cfb5c0f9493112aff2cfe0ba375202b41c3779988ea86f19837",
+    "bytes": 9644
+  },
+  {
+    "key": "skin-wizard-pet",
+    "path": "pigs/skins/skin-wizard/pet.png",
+    "actor": "skin-wizard",
+    "action": "pet",
+    "version": "skin-wizard-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-pet-v1.txt",
+    "sourceSha256": "90b6f4fd96629910486f82684ec143b7f3cd6b76149398dbbb5e2b6ab72542ba",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      83,
+      89,
+      1190,
+      1136
+    ],
+    "bounds": [
+      16,
+      22,
+      240,
+      234
+    ],
+    "sha256": "46ec5cfea662405c92e70bbc4eb92c1af58eedcaad38f9aa21b8755198341479",
+    "bytes": 9624
+  },
+  {
+    "key": "skin-wizard-relaxed",
+    "path": "pigs/skins/skin-wizard/relaxed.png",
+    "actor": "skin-wizard",
+    "action": "relaxed",
+    "version": "skin-wizard-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-relaxed-v1.txt",
+    "sourceSha256": "062968bb2a1b0061ea36de5771cb5d93e6bdbd3396312f8e02d0b62452b5ecd6",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      72,
+      60,
+      1196,
+      1155
+    ],
+    "bounds": [
+      16,
+      19,
+      240,
+      237
+    ],
+    "sha256": "70f7e601dfd649fd72b814ba2c68e201647282d2218a511b43c3a2657e6701e9",
+    "bytes": 10480
+  },
+  {
+    "key": "career-astronaut-pet",
+    "path": "pigs/skins/career-astronaut/pet.png",
+    "actor": "career-astronaut",
+    "action": "pet",
+    "version": "career-astronaut-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-pet-v1.txt",
+    "sourceSha256": "d107b0eb9b7d550a3bd9344953d8d33f048da5ff31fa772ae49825203c5c3c4d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      100,
+      87,
+      1167,
+      1173
+    ],
+    "bounds": [
+      18,
+      16,
+      238,
+      240
+    ],
+    "sha256": "650098a8a9a6066865d4b079ede8e2a28704aaeb3151b1a0b2568a9ea6da58e5",
+    "bytes": 11759
+  },
+  {
+    "key": "career-astronaut-relaxed",
+    "path": "pigs/skins/career-astronaut/relaxed.png",
+    "actor": "career-astronaut",
+    "action": "relaxed",
+    "version": "career-astronaut-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-relaxed-v1.txt",
+    "sourceSha256": "470ef936a3c7a33750277a84caa33f2603f740c3c4ac3f3246d56c5b05682b43",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      99,
+      161,
+      1190,
+      1113
+    ],
+    "bounds": [
+      16,
+      30,
+      240,
+      225
+    ],
+    "sha256": "72c1df869e33a8e1def6b07dde038519775e492df73412c84bc921baa2963895",
+    "bytes": 11409
+  },
+  {
+    "key": "pig-round-pet",
+    "path": "pigs/forms/pig-round/pet.png",
+    "actor": "pig-round",
+    "action": "pet",
+    "version": "pig-round-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-pet-v1.txt",
+    "sourceSha256": "32b13282388dc15890b510b54d0f344e42d2a371c1e3ba35359ce409e297fe56",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      52,
+      122,
+      1218,
+      1154
+    ],
+    "bounds": [
+      16,
+      29,
+      240,
+      227
+    ],
+    "sha256": "60da3346cda6ef445344d0ea352f4d4c7c952d9d30a90d856404488e8f1b3b6c",
+    "bytes": 7673
+  },
+  {
+    "key": "pig-fat-pet",
+    "path": "pigs/forms/pig-fat/pet.png",
+    "actor": "pig-fat",
+    "action": "pet",
+    "version": "pig-fat-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-pet-v1.txt",
+    "sourceSha256": "9f6e65f9ea6a2cceed6201812314c06e2250fb23bd7579617565f5ade13232c8",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      117,
+      70,
+      1205,
+      1102
+    ],
+    "bounds": [
+      16,
+      22,
+      240,
+      234
+    ],
+    "sha256": "a0ac43d5c6e29d769bad4036447f1b563aea4fbadd84a6c20e3ab207add295b1",
+    "bytes": 6753
+  },
+  {
+    "key": "pig-round-relaxed",
+    "path": "pigs/forms/pig-round/relaxed.png",
+    "actor": "pig-round",
+    "action": "relaxed",
+    "version": "pig-round-relaxed-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-relaxed-v2.txt",
+    "sourceSha256": "b73f874c019efb33c0e78a4bfe1f611a33dce356d8fa8a8456dfdf1786574669",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      100,
+      182,
+      1200,
+      1079
+    ],
+    "bounds": [
+      16,
+      36,
+      240,
+      219
+    ],
+    "sha256": "4f61acc5b6954f946f6cb926e66bd840e33f050afdc81a6dbb1195c03815e505",
+    "bytes": 9336
+  },
+  {
+    "key": "pig-fat-relaxed",
+    "path": "pigs/forms/pig-fat/relaxed.png",
+    "actor": "pig-fat",
+    "action": "relaxed",
+    "version": "pig-fat-relaxed-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-relaxed-v2.txt",
+    "sourceSha256": "af5d3cec60b8af064fb4de2f9b2d852cf118d559adcf742a334e9dc7e9774b75",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      159,
+      221,
+      1175,
+      1014
+    ],
+    "bounds": [
+      16,
+      40,
+      240,
+      215
+    ],
+    "sha256": "a8d7583525693e0dc7e284fe506dbcbae6469a30b37ea3890d528d7b8366fc9a",
+    "bytes": 5936
+  },
+  {
+    "key": "pig-king-pet",
+    "path": "pigs/forms/pig-king/pet.png",
+    "actor": "pig-king",
+    "action": "pet",
+    "version": "pig-king-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-pet-v1.txt",
+    "sourceSha256": "60390008ae3ab19061e39553f8397ea912b7c786b9e450b41777a48e70b1b1a4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      158,
+      82,
+      1201,
+      1166
+    ],
+    "bounds": [
+      20,
+      16,
+      236,
+      240
+    ],
+    "sha256": "d0835921fbe0b6de5fd8b65108417a43c5cf6c6575fa9eb9243e0c643931a960",
+    "bytes": 11192
+  },
+  {
+    "key": "pig-king-relaxed",
+    "path": "pigs/forms/pig-king/relaxed.png",
+    "actor": "pig-king",
+    "action": "relaxed",
+    "version": "pig-king-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-relaxed-v1.txt",
+    "sourceSha256": "aa07723f2958ee467f549ed1db04e7194c51255cc04cfe7594e2b4b5f2da35bc",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      42,
+      74,
+      1214,
+      1145
+    ],
+    "bounds": [
+      16,
+      25,
+      240,
+      230
+    ],
+    "sha256": "a2ad16fddb83aad4e923703367f99f15a0a1b9b5e69b72b7f0fd240640d26644",
+    "bytes": 12670
+  },
+  {
+    "key": "pig-devil-pet",
+    "path": "pigs/forms/pig-devil/pet.png",
+    "actor": "pig-devil",
+    "action": "pet",
+    "version": "pig-devil-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-pet-v1.txt",
+    "sourceSha256": "85f2285555a179fef8d08b63f26457fd0c06725c2a529565a23c01c9da317034",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      108,
+      163,
+      1212,
+      1053
+    ],
+    "bounds": [
+      16,
+      37,
+      240,
+      218
+    ],
+    "sha256": "3fdcccef5cbf9d9ba87c150914ae7b47925ec014489b229ab7ff37527db085f9",
+    "bytes": 7958
+  },
+  {
+    "key": "pig-devil-relaxed",
+    "path": "pigs/forms/pig-devil/relaxed.png",
+    "actor": "pig-devil",
+    "action": "relaxed",
+    "version": "pig-devil-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-relaxed-v1.txt",
+    "sourceSha256": "7fa7dc1e10da0790336d724ee2edafa263324957f940bb3e9bd12854acfd61dd",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      93,
+      221,
+      1237,
+      1051
+    ],
+    "bounds": [
+      16,
+      46,
+      240,
+      209
+    ],
+    "sha256": "116ef363c168c410c730acc385ce1f9043605733843b20a69a9b8f6088496661",
+    "bytes": 7787
+  },
+  {
+    "key": "skin-angel-pet",
+    "path": "pigs/skins/skin-angel/pet.png",
+    "actor": "skin-angel",
+    "action": "pet",
+    "version": "skin-angel-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-pet-v1.txt",
+    "sourceSha256": "0231137059eb0aa2e411a07b2d016d8e25da628d90abe4ab0df983170c869313",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      88,
+      107,
+      1211,
+      1164
+    ],
+    "bounds": [
+      16,
+      22,
+      240,
+      233
+    ],
+    "sha256": "14ccd674e9b780e17cc6bf930a5251dae1216e6d8f1f86ec8b7ec23db5593990",
+    "bytes": 10578
+  },
+  {
+    "key": "skin-angel-relaxed",
+    "path": "pigs/skins/skin-angel/relaxed.png",
+    "actor": "skin-angel",
+    "action": "relaxed",
+    "version": "skin-angel-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-relaxed-v1.txt",
+    "sourceSha256": "680144e02265b593fa9c73b58dbb455e899afee39f76ce5ae427a6b2640c4b86",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      86,
+      145,
+      1194,
+      1129
+    ],
+    "bounds": [
+      16,
+      28,
+      240,
+      227
+    ],
+    "sha256": "06a1637f2800721cfa7ddf8e81e3d6c9c2aab3b11f2b5ab8e3adff27d96cb39d",
+    "bytes": 10153
+  },
+  {
+    "key": "skin-mint-pet",
+    "path": "pigs/skins/skin-mint/pet.png",
+    "actor": "skin-mint",
+    "action": "pet",
+    "version": "skin-mint-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-pet-v1.txt",
+    "sourceSha256": "ac3a4f2aa9a50ce18aa1851e7b8dfb315c9c9f88b431d928a4a8eec24f2ef8b3",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      68,
+      112,
+      1215,
+      1180
+    ],
+    "bounds": [
+      16,
+      23,
+      240,
+      232
+    ],
+    "sha256": "329a8aa38d21fdc92baff3d762d99b0c8379012fcd596da787c9f6c2405c9987",
+    "bytes": 8295
+  },
+  {
+    "key": "skin-detective-pet",
+    "path": "pigs/skins/skin-detective/pet.png",
+    "actor": "skin-detective",
+    "action": "pet",
+    "version": "skin-detective-pet-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-pet-v1.txt",
+    "sourceSha256": "177d282ef66aace6afe4ff592d953de89d3ba52d2fc25d9079891771e9aeea1d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      92,
+      95,
+      1212,
+      1116
+    ],
+    "bounds": [
+      16,
+      26,
+      240,
+      230
+    ],
+    "sha256": "db71c36674191386a8e7eebafa48845c57a58780b11b9da493d4a46a0c95dede",
+    "bytes": 10194
+  },
+  {
+    "key": "skin-detective-relaxed",
+    "path": "pigs/skins/skin-detective/relaxed.png",
+    "actor": "skin-detective",
+    "action": "relaxed",
+    "version": "skin-detective-relaxed-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-relaxed-v1.txt",
+    "sourceSha256": "43e3ea07a1bad5f30f080b4001a1557909c2cda2a0548db0d1d8764b63c91db7",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      90,
+      165,
+      1181,
+      1096
+    ],
+    "bounds": [
+      16,
+      32,
+      240,
+      223
+    ],
+    "sha256": "3de47d09e119d3b971577b9769a5970db7dc0256743d757a0b0e93662b0ba1a8",
+    "bytes": 8769
+  },
+  {
+    "key": "pig-round-bathe",
+    "path": "pigs/forms/pig-round/bathe.png",
+    "actor": "pig-round",
+    "action": "bathe",
+    "version": "pig-round-bathe-v3",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-bathe-v3.txt",
+    "sourceSha256": "9863edec447cd6efbe949ab330faeed3db377ba6d824dd9d6fc79b8c616ba090",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      33,
+      272,
+      1223,
+      1084
+    ],
+    "bounds": [
+      16,
+      51,
+      240,
+      204
+    ],
+    "sha256": "76782ed43cda360d1853431c60b66db1edcbeaebee179492cf32f5270d4169d1",
+    "bytes": 8242
+  },
+  {
+    "key": "pig-fat-bathe",
+    "path": "pigs/forms/pig-fat/bathe.png",
+    "actor": "pig-fat",
+    "action": "bathe",
+    "version": "pig-fat-bathe-v3",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-bathe-v3.txt",
+    "sourceSha256": "4660f5e02f93996550f734dbb5fedd22b9deb10c24d27dd62cbf4ce8e120a87b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      36,
+      288,
+      1231,
+      1055
+    ],
+    "bounds": [
+      16,
+      56,
+      240,
+      200
+    ],
+    "sha256": "f4dcb264c5cc6514bc47b1b5a5270bd7fc0f1d516fa65a13abd9114ea723543d",
+    "bytes": 6858
+  },
+  {
+    "key": "piglet-bathe",
+    "path": "pigs/base/piglet/bathe.png",
+    "actor": "piglet",
+    "action": "bathe",
+    "version": "piglet-bathe-v3",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/piglet-bathe-v3.txt",
+    "sourceSha256": "177e3c7a56883251152ced4cf5e6e4c6ba9793d3bffc8d3039f1b04cac79f04c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      34,
+      278,
+      1223,
+      1062
+    ],
+    "bounds": [
+      16,
+      54,
+      240,
+      202
+    ],
+    "sha256": "31cbd544b29b015999b18f0019d9c61f12fb531099f1955d8431af9899b51dd6",
+    "bytes": 7530
+  },
+  {
+    "key": "career-chef-bathe",
+    "path": "pigs/skins/career-chef/bathe.png",
+    "actor": "career-chef",
+    "action": "bathe",
+    "version": "career-chef-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-bathe-v5.txt",
+    "sourceSha256": "d5fb421e8db0d7745cb374ddc6e1bcb02fa370f75cb4cdb2a2d134868ec3aa41",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "sourceBounds": [
+      29,
+      137,
+      1516,
+      933
+    ],
+    "bounds": [
+      16,
+      68,
+      240,
+      188
+    ],
+    "sha256": "cc858c062c220d3a38cf776089652c1e6b06a7d7b61ede2d4996f0c1de051dac",
+    "bytes": 7923
+  },
+  {
+    "key": "skin-pirate-bathe",
+    "path": "pigs/skins/skin-pirate/bathe.png",
+    "actor": "skin-pirate",
+    "action": "bathe",
+    "version": "skin-pirate-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-bathe-v5.txt",
+    "sourceSha256": "600fca57a5b0be20e544ca423c7c1eb424f07b5f65eb882227e3360aa3d3f6bc",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "sourceBounds": [
+      16,
+      166,
+      1520,
+      905
+    ],
+    "bounds": [
+      16,
+      73,
+      240,
+      183
+    ],
+    "sha256": "ce94804eb4fa537c68586aea303dabacea9d5c1d8450907892c3b989687ed395",
+    "bytes": 7725
+  },
+  {
+    "key": "skin-wizard-bathe",
+    "path": "pigs/skins/skin-wizard/bathe.png",
+    "actor": "skin-wizard",
+    "action": "bathe",
+    "version": "skin-wizard-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-bathe-v5.txt",
+    "sourceSha256": "9628a402f2cc27c2530f0971901a07fcb27897b8633979caa8a699998dc4c8d3",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "sourceBounds": [
+      38,
+      170,
+      1505,
+      909
+    ],
+    "bounds": [
+      16,
+      71,
+      240,
+      184
+    ],
+    "sha256": "76621d8e60fa3328490814d89d06704c203215fb830cb169748531c4e6f2a54f",
+    "bytes": 8492
+  },
+  {
+    "key": "skin-detective-bathe",
+    "path": "pigs/skins/skin-detective/bathe.png",
+    "actor": "skin-detective",
+    "action": "bathe",
+    "version": "skin-detective-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-bathe-v5.txt",
+    "sourceSha256": "0abf0e0dead4a44e2d00c2daa8e49bf45587f672cef4ee0a69dc99d930b6aa84",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "sourceBounds": [
+      32,
+      201,
+      1522,
+      927
+    ],
+    "bounds": [
+      16,
+      73,
+      240,
+      182
+    ],
+    "sha256": "433886d0529b4be41b3b5f17d345887132f8fb99134c0718609933206aea86aa",
+    "bytes": 7544
+  },
+  {
+    "key": "pig-king-bathe",
+    "path": "pigs/forms/pig-king/bathe.png",
+    "actor": "pig-king",
+    "action": "bathe",
+    "version": "pig-king-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-bathe-v5.txt",
+    "sourceSha256": "fab21b82cf9628b3ca3a8260b45a8f09c97ba6c6ef5cc34a072324b13e58cbe7",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "sourceBounds": [
+      24,
+      131,
+      1536,
+      949
+    ],
+    "bounds": [
+      16,
+      67,
+      240,
+      188
+    ],
+    "sha256": "70dc54edc7c52029ec14d576b88d359dc77218a0ef50a11765a5505f114cd586",
+    "bytes": 8954
+  },
+  {
+    "key": "skin-mint-bathe",
+    "path": "pigs/skins/skin-mint/bathe.png",
+    "actor": "skin-mint",
+    "action": "bathe",
+    "version": "skin-mint-bathe-v4",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-bathe-v4.txt",
+    "sourceSha256": "9ea7e53e423383c31bfb2a33364694b66ecc68a08d491833c6b78bc4a4ccd9d1",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      33,
+      277,
+      1223,
+      1063
+    ],
+    "bounds": [
+      16,
+      54,
+      240,
+      202
+    ],
+    "sha256": "8f45f785bbeb023e8df9623c3577c6fe7ee8edb4322f63a7e9c96faaf6bae414",
+    "bytes": 8921
+  },
+  {
+    "key": "career-astronaut-bathe",
+    "path": "pigs/skins/career-astronaut/bathe.png",
+    "actor": "career-astronaut",
+    "action": "bathe",
+    "version": "career-astronaut-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-bathe-v5.txt",
+    "sourceSha256": "714e21eff2dc78b142f80005506726d19386a7486216fd71107b6274b5e00617",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      17,
+      325,
+      1238,
+      977
+    ],
+    "bounds": [
+      16,
+      68,
+      240,
+      188
+    ],
+    "sha256": "9843a4441ee9e6e90ec6c3f05c1727e137b578eb793ab290f2814f62824beffb",
+    "bytes": 7965
+  },
+  {
+    "key": "pig-devil-bathe",
+    "path": "pigs/forms/pig-devil/bathe.png",
+    "actor": "pig-devil",
+    "action": "bathe",
+    "version": "pig-devil-bathe-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-bathe-v5.txt",
+    "sourceSha256": "916fdd55766a9fdd9bea04a98b133b7962074501a1040c35ce37c19f01532f7b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      34,
+      251,
+      1230,
+      1061
+    ],
+    "bounds": [
+      16,
+      52,
+      240,
+      204
+    ],
+    "sha256": "4efdef83c16a030423b3d80a99e8e849dbb28ce028e0d23261ace89ba85f7a59",
+    "bytes": 8179
+  },
+  {
+    "key": "skin-angel-bathe",
+    "path": "pigs/skins/skin-angel/bathe.png",
+    "actor": "skin-angel",
+    "action": "bathe",
+    "version": "skin-angel-bathe-v6",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-bathe-v6.txt",
+    "sourceSha256": "52b356eafb1c89e0d8b23e4af9ed80f871000e8ffedbf15c3e60500c5660adee",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      31,
+      183,
+      1233,
+      1122
+    ],
+    "bounds": [
+      16,
+      40,
+      240,
+      215
+    ],
+    "sha256": "9058b852e457cca26843151b8af82bc456d5a4e0eaba22336e4462e3b67de354",
+    "bytes": 9043
+  },
+  {
+    "key": "career-chef-study",
+    "path": "pigs/skins/career-chef/study.png",
+    "actor": "career-chef",
+    "action": "study",
+    "version": "career-chef-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-study-v1.txt",
+    "sourceSha256": "2bc0373475c9425fbaec21cfe4a72b36c0d485fa2b1136b2946c6e547bfe838d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      92,
+      73,
+      1192,
+      1189
+    ],
+    "bounds": [
+      17,
+      16,
+      238,
+      240
+    ],
+    "sha256": "369329e0a78930eb6c70264ce816c1b5f8bd0b7a7f2c66671b52a5c09d2fda20",
+    "bytes": 10376
+  },
+  {
+    "key": "career-chef-trip",
+    "path": "pigs/skins/career-chef/trip.png",
+    "actor": "career-chef",
+    "action": "trip",
+    "version": "career-chef-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-trip-v1.txt",
+    "sourceSha256": "8e0740c3d27b17e0a78142991c9a4ef51e52b3fdafd7a4e6bf2e717769428c23",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      81,
+      82,
+      1175,
+      1129
+    ],
+    "bounds": [
+      16,
+      21,
+      240,
+      235
+    ],
+    "sha256": "d68ca79ff782e8bfc65045fef501557d4a6010727d48c039c815a3223339dd04",
+    "bytes": 11279
+  },
+  {
+    "key": "skin-pirate-work",
+    "path": "pigs/skins/skin-pirate/work.png",
+    "actor": "skin-pirate",
+    "action": "work",
+    "version": "skin-pirate-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-work-floor-v2.txt",
+    "sourceSha256": "1701c3ecd7780e213e7aac7b842d2c9f88e2d3e6b358f9ed62bdbdc2ce7e2a5e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      47,
+      330,
+      1204,
+      1000
+    ],
+    "bounds": [
+      16,
+      63,
+      240,
+      193
+    ],
+    "sha256": "215dbbc4b0c21170c672e7823114f0645339e291c41b10f9f2cb3eb83828e73b",
+    "bytes": 9066
+  },
+  {
+    "key": "skin-pirate-study",
+    "path": "pigs/skins/skin-pirate/study.png",
+    "actor": "skin-pirate",
+    "action": "study",
+    "version": "skin-pirate-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-study-v1.txt",
+    "sourceSha256": "48f864cff1cf27d8bb8fc7a45d9c8501db7e00b55c6a61e66f5877f1f8dd1569",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      77,
+      167,
+      1208,
+      1106
+    ],
+    "bounds": [
+      16,
+      35,
+      240,
+      221
+    ],
+    "sha256": "48e633a2b7a2d5d9c57ae64fc995dfd839de90027f67e5c49e01cca5e1b7975a",
+    "bytes": 10881
+  },
+  {
+    "key": "skin-pirate-trip",
+    "path": "pigs/skins/skin-pirate/trip.png",
+    "actor": "skin-pirate",
+    "action": "trip",
+    "version": "skin-pirate-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-pirate-trip-v1.txt",
+    "sourceSha256": "3db18867f928bbb9727f5de27022ee41e7554c37e070ff8fbd4e849e77c8dfe0",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      78,
+      199,
+      1211,
+      1061
+    ],
+    "bounds": [
+      16,
+      43,
+      240,
+      213
+    ],
+    "sha256": "3b3b255898b3dee198f7c4955159a224a2381c806796d881c20eb3a3b29ae5ad",
+    "bytes": 9866
+  },
+  {
+    "key": "skin-wizard-work",
+    "path": "pigs/skins/skin-wizard/work.png",
+    "actor": "skin-wizard",
+    "action": "work",
+    "version": "skin-wizard-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-work-floor-v2.txt",
+    "sourceSha256": "7d049d9844e1e93197145664a321729cb38741b3160904affcc9b28397a99340",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      42,
+      249,
+      1226,
+      1042
+    ],
+    "bounds": [
+      16,
+      53,
+      240,
+      203
+    ],
+    "sha256": "7028bf27adb00141d21a253cd95a53dc15baed457fa498ff6d19995a539310ce",
+    "bytes": 9333
+  },
+  {
+    "key": "skin-wizard-study",
+    "path": "pigs/skins/skin-wizard/study.png",
+    "actor": "skin-wizard",
+    "action": "study",
+    "version": "skin-wizard-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-study-v1.txt",
+    "sourceSha256": "9a421298d9da6ab491e51923c9850b053a41ead4c17895be61a3a99487f7e85d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      68,
+      84,
+      1195,
+      1150
+    ],
+    "bounds": [
+      16,
+      22,
+      240,
+      234
+    ],
+    "sha256": "318ec49a0bfb85f6e2a0e779201b419ed92fa572d49999c03b989cf25decca4b",
+    "bytes": 10481
+  },
+  {
+    "key": "skin-wizard-trip",
+    "path": "pigs/skins/skin-wizard/trip.png",
+    "actor": "skin-wizard",
+    "action": "trip",
+    "version": "skin-wizard-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-wizard-trip-v1.txt",
+    "sourceSha256": "80525d85e7b7e47eeee39b5235a28ca69eb317aace3f68a17b809e4d3c235144",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      94,
+      68,
+      1175,
+      1125
+    ],
+    "bounds": [
+      16,
+      18,
+      240,
+      237
+    ],
+    "sha256": "171b82644ce0b5d67bf4ed5385acfa5e5101ebf0b32abcdc4fad9b2e1c9e7af0",
+    "bytes": 11314
+  },
+  {
+    "key": "career-astronaut-work",
+    "path": "pigs/skins/career-astronaut/work.png",
+    "actor": "career-astronaut",
+    "action": "work",
+    "version": "career-astronaut-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-work-floor-v2.txt",
+    "sourceSha256": "26d65226678e4ac20e414fa7d38dc273b74e831c1fb982f3850316b59d2795bb",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      49,
+      329,
+      1208,
+      1002
+    ],
+    "bounds": [
+      16,
+      63,
+      240,
+      193
+    ],
+    "sha256": "f945c8723f77e893be17c2012c0384223685d6da504f7c6ada9f6c5ae5705d92",
+    "bytes": 9402
+  },
+  {
+    "key": "career-astronaut-study",
+    "path": "pigs/skins/career-astronaut/study.png",
+    "actor": "career-astronaut",
+    "action": "study",
+    "version": "career-astronaut-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-study-v1.txt",
+    "sourceSha256": "c52774c5b37a7612722d6a9f66235a335232ce3a645065d3b063a2a99d584339",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      99,
+      161,
+      1202,
+      1134
+    ],
+    "bounds": [
+      16,
+      29,
+      240,
+      227
+    ],
+    "sha256": "7be5c71f7e532d1374b665d25acab3d49cd4add019e50e98f6453d9598af9853",
+    "bytes": 12564
+  },
+  {
+    "key": "career-astronaut-trip",
+    "path": "pigs/skins/career-astronaut/trip.png",
+    "actor": "career-astronaut",
+    "action": "trip",
+    "version": "career-astronaut-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-astronaut-trip-v1.txt",
+    "sourceSha256": "ef128c200e855dbb433650e7d975b0c0431b8148e88dcd38731930c77d3ab097",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      90,
+      172,
+      1219,
+      1096
+    ],
+    "bounds": [
+      16,
+      36,
+      240,
+      219
+    ],
+    "sha256": "90884051cd9db60fe143872924c987a2e039aaba42f3b591c58318075c11c66c",
+    "bytes": 11385
+  },
+  {
+    "key": "career-chef-work",
+    "path": "pigs/skins/career-chef/work.png",
+    "actor": "career-chef",
+    "action": "work",
+    "version": "career-chef-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/career-chef-work-floor-v2.txt",
+    "sourceSha256": "9afb3786afd8416e97b20e43348fc0714a711ec5487ecbf7aaa1446d4c56c57e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      39,
+      176,
+      1210,
+      1042
+    ],
+    "bounds": [
+      16,
+      45,
+      240,
+      211
+    ],
+    "sha256": "1b6ecb109592e12cfc916c09b3ac37291741d5e5cb6e26c21120379bb9a65701",
+    "bytes": 8417
+  },
+  {
+    "key": "pig-round-work",
+    "path": "pigs/forms/pig-round/work.png",
+    "actor": "pig-round",
+    "action": "work",
+    "version": "pig-round-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-work-floor-v2.txt",
+    "sourceSha256": "929f61221d52831de5ab03ed1fdf6e07c834e417374f86dbe678fec2c11287ea",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      49,
+      345,
+      1203,
+      999
+    ],
+    "bounds": [
+      16,
+      64,
+      240,
+      191
+    ],
+    "sha256": "739413ae58a1ce8ace39b8670e1b010ee6be003d1caf5a04da0dfcf34843e705",
+    "bytes": 6889
+  },
+  {
+    "key": "pig-round-study",
+    "path": "pigs/forms/pig-round/study.png",
+    "actor": "pig-round",
+    "action": "study",
+    "version": "pig-round-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-study-v1.txt",
+    "sourceSha256": "11d590b5299644b34a7cd6ee35ff0920ac5ffc65c79229e6cd60ed9dd73db609",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      64,
+      161,
+      1215,
+      1166
+    ],
+    "bounds": [
+      16,
+      30,
+      240,
+      226
+    ],
+    "sha256": "05b6fbcb3db1b3d8d2d3af32045f8ee626b18d070cef2ccffdd9bdbcab216312",
+    "bytes": 8885
+  },
+  {
+    "key": "pig-round-trip",
+    "path": "pigs/forms/pig-round/trip.png",
+    "actor": "pig-round",
+    "action": "trip",
+    "version": "pig-round-trip-v3",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-round-trip-v3.txt",
+    "sourceSha256": "38b70291e29658f3c833bccb0a07bf0a167d3cec55ea3f3e97e748396755ac7c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      72,
+      192,
+      1172,
+      1076
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      218
+    ],
+    "sha256": "4dbbfaace0d8da16f4cb32aed78683357710a21a8d594ac2848c21e01617b906",
+    "bytes": 8343
+  },
+  {
+    "key": "pig-fat-work",
+    "path": "pigs/forms/pig-fat/work.png",
+    "actor": "pig-fat",
+    "action": "work",
+    "version": "pig-fat-work-floor-v5",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-work-floor-v5.txt",
+    "sourceSha256": "fd03430fcc44b98d3dae712504c1d415fc93b68f2a67da612af5e37a3d48b3d5",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "sourceBounds": [
+      112,
+      203,
+      1449,
+      862
+    ],
+    "bounds": [
+      16,
+      73,
+      240,
+      183
+    ],
+    "sha256": "aba619cdfd3536123ee16d7b0624dd0d18eb060e0a78f7d08145b68f1cc499ff",
+    "bytes": 7046
+  },
+  {
+    "key": "pig-fat-study",
+    "path": "pigs/forms/pig-fat/study.png",
+    "actor": "pig-fat",
+    "action": "study",
+    "version": "pig-fat-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-study-v1.txt",
+    "sourceSha256": "d9c643d08ddbd1e5c955621fa9867199fd7a8857e50a2af6e30caaeb3b448330",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      74,
+      239,
+      1240,
+      1055
+    ],
+    "bounds": [
+      16,
+      49,
+      240,
+      206
+    ],
+    "sha256": "76d49a7a2165056d182ab35577410ed663a58803762207e89602d1b3ef353577",
+    "bytes": 7461
+  },
+  {
+    "key": "pig-fat-trip",
+    "path": "pigs/forms/pig-fat/trip.png",
+    "actor": "pig-fat",
+    "action": "trip",
+    "version": "pig-fat-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-fat-trip-v1.txt",
+    "sourceSha256": "0691f500c85baec67d26c993fb172b3a8e9f54bce535e2bb4d2b00a55820c2db",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      147,
+      224,
+      1232,
+      1018
+    ],
+    "bounds": [
+      16,
+      46,
+      240,
+      210
+    ],
+    "sha256": "510bc4b9766943cd1aa54ae370118b9a68ad4e63a561cf21579cb8b12e64e114",
+    "bytes": 9678
+  },
+  {
+    "key": "pig-king-work",
+    "path": "pigs/forms/pig-king/work.png",
+    "actor": "pig-king",
+    "action": "work",
+    "version": "pig-king-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-work-floor-v2.txt",
+    "sourceSha256": "007b81060af4844ad4590e51d447da57d791e904a8784b11acc7bb453bef1c6b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      49,
+      244,
+      1223,
+      1019
+    ],
+    "bounds": [
+      16,
+      54,
+      240,
+      202
+    ],
+    "sha256": "4c480a846e8bae3506f80e6cdd430dc73d95b3b355328c7caf7d7509e3515419",
+    "bytes": 10534
+  },
+  {
+    "key": "pig-king-study",
+    "path": "pigs/forms/pig-king/study.png",
+    "actor": "pig-king",
+    "action": "study",
+    "version": "pig-king-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-study-v1.txt",
+    "sourceSha256": "c47d363743cfe141f879fe81501b3691c2e7e937cef075bfb40ff932a0cd79dc",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      53,
+      81,
+      1224,
+      1157
+    ],
+    "bounds": [
+      16,
+      25,
+      240,
+      231
+    ],
+    "sha256": "a80cfbb32632b8320d8dd43ac0f37c63cd4f776694cd8fa993fc7484f30fb0a3",
+    "bytes": 12142
+  },
+  {
+    "key": "pig-king-trip",
+    "path": "pigs/forms/pig-king/trip.png",
+    "actor": "pig-king",
+    "action": "trip",
+    "version": "pig-king-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-king-trip-v1.txt",
+    "sourceSha256": "378226441f8e8dda21adf8cf34a3a6ab80443781cc8d67327c766c765a2d9df8",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      64,
+      72,
+      1208,
+      1142
+    ],
+    "bounds": [
+      16,
+      23,
+      240,
+      233
+    ],
+    "sha256": "7f664485b3165745df97ff5df1b8a0df92a70c53545f15c4a8b03f4c0e43b4a7",
+    "bytes": 12169
+  },
+  {
+    "key": "pig-devil-work",
+    "path": "pigs/forms/pig-devil/work.png",
+    "actor": "pig-devil",
+    "action": "work",
+    "version": "pig-devil-work-floor-v4",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-work-floor-v4.txt",
+    "sourceSha256": "1d331cd046165cd5574bbb4e3516f3130a3a713fc3cc4eeef59573090d36e8ff",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      49,
+      260,
+      1226,
+      1015
+    ],
+    "bounds": [
+      16,
+      56,
+      240,
+      200
+    ],
+    "sha256": "3f14cb66015503b143a0271200693b71172764b333a6a8421ef09a3ac9676a82",
+    "bytes": 8720
+  },
+  {
+    "key": "pig-devil-study",
+    "path": "pigs/forms/pig-devil/study.png",
+    "actor": "pig-devil",
+    "action": "study",
+    "version": "pig-devil-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-study-v1.txt",
+    "sourceSha256": "030eb59613bb75ae51c1a297bffa2ca4fdc78a4eb4da807eb33f2b25d7201e9a",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      112,
+      220,
+      1251,
+      1064
+    ],
+    "bounds": [
+      16,
+      45,
+      240,
+      211
+    ],
+    "sha256": "bf51d48f18e3d189adc099b10ed0bf73798d1683d16e3a5c422c5cdd3b1ab9bc",
+    "bytes": 8262
+  },
+  {
+    "key": "pig-devil-trip",
+    "path": "pigs/forms/pig-devil/trip.png",
+    "actor": "pig-devil",
+    "action": "trip",
+    "version": "pig-devil-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-trip-v1.txt",
+    "sourceSha256": "071f99be894229726ef6b2a846dac6bd13c272977e4612c9d7999af83adf0173",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      52,
+      253,
+      1229,
+      1094
+    ],
+    "bounds": [
+      16,
+      48,
+      240,
+      208
+    ],
+    "sha256": "5407185857a24c0701812d3aec27045754ec79007641d2d825f74ed4c206a274",
+    "bytes": 9289
+  },
+  {
+    "key": "skin-angel-work",
+    "path": "pigs/skins/skin-angel/work.png",
+    "actor": "skin-angel",
+    "action": "work",
+    "version": "skin-angel-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-work-floor-v2.txt",
+    "sourceSha256": "b47011d5e2e058a0b07e8ec47f9df4fddd67faa8a4a85ee77deacc1e0f421fea",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      41,
+      248,
+      1230,
+      1044
+    ],
+    "bounds": [
+      16,
+      53,
+      240,
+      203
+    ],
+    "sha256": "3436fda8e1234aa32f7bb01b3f6dcc83610e9df5010abf5e84dbad7806f7f600",
+    "bytes": 8215
+  },
+  {
+    "key": "skin-angel-study",
+    "path": "pigs/skins/skin-angel/study.png",
+    "actor": "skin-angel",
+    "action": "study",
+    "version": "skin-angel-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-study-v1.txt",
+    "sourceSha256": "ea4c190b2d3b89fd6dfef8621de8e3b5512651dba53c2813cdcfa163cdb078d8",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      66,
+      81,
+      1206,
+      1177
+    ],
+    "bounds": [
+      16,
+      20,
+      240,
+      235
+    ],
+    "sha256": "266718025cf00165a3379010a1d9876f4e888d519413d1367d5815562ee224c2",
+    "bytes": 10769
+  },
+  {
+    "key": "skin-angel-trip",
+    "path": "pigs/skins/skin-angel/trip.png",
+    "actor": "skin-angel",
+    "action": "trip",
+    "version": "skin-angel-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-angel-trip-v1.txt",
+    "sourceSha256": "7f75353a465848aa382be3ff60989ae8ce3acce72cf41b69c4f627ba5ba4bcfa",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      78,
+      155,
+      1231,
+      1123
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "3805c6c3805b5d3bab4df0bdcf4be6cff7b2b0eee28b5e1e8f932296636205e1",
+    "bytes": 8581
+  },
+  {
+    "key": "skin-detective-work",
+    "path": "pigs/skins/skin-detective/work.png",
+    "actor": "skin-detective",
+    "action": "work",
+    "version": "skin-detective-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-work-floor-v2.txt",
+    "sourceSha256": "b80009220fd40f01d9d0727d4be5103941933461fbbab4cc20bdfc56812afb33",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      48,
+      305,
+      1205,
+      1034
+    ],
+    "bounds": [
+      16,
+      57,
+      240,
+      198
+    ],
+    "sha256": "f8c6056b9ba44a95bbee5ba8f0be19c592ae3c340ed2947f9f91aa817fb6b68f",
+    "bytes": 8575
+  },
+  {
+    "key": "skin-detective-study",
+    "path": "pigs/skins/skin-detective/study.png",
+    "actor": "skin-detective",
+    "action": "study",
+    "version": "skin-detective-study-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-study-v1.txt",
+    "sourceSha256": "65836bcc5eebbd539cf5bde6af5e68acbf90e2602ab45a529f79dfa87f44148c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      58,
+      133,
+      1209,
+      1127
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      224
+    ],
+    "sha256": "c11d690beff9afe6fee81e64f5bc75af6bcd08da9eb3889c7143172419baa3a9",
+    "bytes": 10216
+  },
+  {
+    "key": "skin-detective-trip",
+    "path": "pigs/skins/skin-detective/trip.png",
+    "actor": "skin-detective",
+    "action": "trip",
+    "version": "skin-detective-trip-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-detective-trip-v1.txt",
+    "sourceSha256": "293bdb91d7dc49f0a28f1c9d44bfa8cbaa2f69251661fc981144a443efc3bf2f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      89,
+      162,
+      1186,
+      1098
+    ],
+    "bounds": [
+      16,
+      32,
+      240,
+      223
+    ],
+    "sha256": "35b1e2eb3b16fd46b164f87c99569407623cdc7bd00b3c1ea4cc0d02c1748a76",
+    "bytes": 10068
+  },
+  {
+    "key": "elder",
+    "path": "pigs/base/elder/idle.png",
+    "actor": "elder",
+    "action": "idle",
+    "version": "elder-idle-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/elder-idle-v1.txt",
+    "sourceSha256": "956882b9e2feb1e11dc47bc146b213c4e4ba3e0e77de90b595afd69df7321e22",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      97,
+      254,
+      1193,
+      1096
+    ],
+    "bounds": [
+      16,
+      42,
+      240,
+      214
+    ],
+    "sha256": "d777dab5daecc696a42090843f2be67c70b67b4f4751732862f3f95dc76c3b72",
+    "bytes": 6932
+  },
+  {
+    "key": "pig-devil-fly",
+    "path": "pigs/forms/pig-devil/fly.png",
+    "actor": "pig-devil",
+    "action": "fly",
+    "version": "pig-devil-fly-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/pig-devil-fly-v1.txt",
+    "sourceSha256": "85bce177b280fc9dd578ca5059b50e313f8b29d71f0b3d44ed9ef599d3579d44",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      117,
+      195,
+      1229,
+      1026
+    ],
+    "bounds": [
+      16,
+      44,
+      240,
+      211
+    ],
+    "sha256": "7997144cad284b20368742d04f5ddd12000d8f5a251c0e38b5318cf3bc1e0292",
+    "bytes": 8719
+  },
+  {
+    "key": "piglet-work",
+    "path": "pigs/base/piglet/work.png",
+    "actor": "piglet",
+    "action": "work",
+    "version": "piglet-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/piglet-work-floor-v2.txt",
+    "sourceSha256": "3fbfe20ed537728e7c1f634a56d33cefcb8450994301213def11bbb86187c61b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      49,
+      344,
+      1204,
+      999
+    ],
+    "bounds": [
+      16,
+      64,
+      240,
+      191
+    ],
+    "sha256": "01d017ed46792a2d8b4af0069601d7e55e0aa72a2f1c7e1433011e88b842dce6",
+    "bytes": 6775
+  },
+  {
+    "key": "feedback/allergy",
+    "path": "pigs/feedback/allergy.png",
+    "actor": "allergy",
+    "action": "scene",
+    "version": "allergy-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/allergy-scene-v1.txt",
+    "sourceSha256": "d3e4d6c64058679367a7707e7ebdc73ad6151a3f9dac994dab04fd9261e169af",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      112,
+      231,
+      1184,
+      1054
+    ],
+    "bounds": [
+      16,
+      42,
+      240,
+      214
+    ],
+    "sha256": "71fefc60cc8aa49e478b986755aaee152a71d1b4ca4b947a7ace34a306a4ed82",
+    "bytes": 9093
+  },
+  {
+    "key": "feedback/birthday",
+    "path": "pigs/feedback/birthday.png",
+    "actor": "birthday",
+    "action": "scene",
+    "version": "birthday-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/birthday-scene-v1.txt",
+    "sourceSha256": "8a9e2c9b8ddd4fb636fbc16c8959adfb3385a66986f30ef6df8b9e0dcb5d1e09",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      50,
+      84,
+      1254,
+      1167
+    ],
+    "bounds": [
+      16,
+      27,
+      240,
+      228
+    ],
+    "sha256": "edca02db97b7715f39e1a46e951efea662da8731fb9232d2c9e7daab8b8d7589",
+    "bytes": 14446
+  },
+  {
+    "key": "feedback/collection-badge",
+    "path": "pigs/feedback/collection-badge.png",
+    "actor": "collection-badge",
+    "action": "scene",
+    "version": "collection-badge-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-badge-scene-v1.txt",
+    "sourceSha256": "0d870474599987ba28f82a02374151cece1494383872262179ded2678590fc25",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      74,
+      97,
+      1174,
+      1167
+    ],
+    "bounds": [
+      16,
+      19,
+      240,
+      237
+    ],
+    "sha256": "c96f8fd56839fa8cfa43481a2617d7db12d2292099084ba13c286d9cc56860e5",
+    "bytes": 8551
+  },
+  {
+    "key": "feedback/collection-bubbles",
+    "path": "pigs/feedback/collection-bubbles.png",
+    "actor": "collection-bubbles",
+    "action": "scene",
+    "version": "collection-bubbles-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-bubbles-scene-v1.txt",
+    "sourceSha256": "1bcd63c27480926084133ba570eb521715d013b85ace7e6cf510dbf480379522",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      40,
+      131,
+      1236,
+      1161
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      224
+    ],
+    "sha256": "9db17b6bc3746cfe4e8024da23cb0bbda8ca27df7e621040ac75ced7967d2af2",
+    "bytes": 10541
+  },
+  {
+    "key": "feedback/collection-cage",
+    "path": "pigs/feedback/collection-cage.png",
+    "actor": "collection-cage",
+    "action": "scene",
+    "version": "collection-cage-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-cage-scene-v1.txt",
+    "sourceSha256": "c981cfc55e55c0770ba7555fe1615be5a0b9ae05f43e545505a84075be791636",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      118,
+      43,
+      1140,
+      1152
+    ],
+    "bounds": [
+      25,
+      16,
+      231,
+      240
+    ],
+    "sha256": "a9d1820029d2ba48fe160866bc8ee42586e0a3b1870a87c34e51d3c05288d283",
+    "bytes": 11239
+  },
+  {
+    "key": "skin-mint-work",
+    "path": "pigs/skins/skin-mint/work.png",
+    "actor": "skin-mint",
+    "action": "work",
+    "version": "skin-mint-work-floor-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/skin-mint-work-floor-v2.txt",
+    "sourceSha256": "d25d6dcc3d9bd24675dd6a6f82442a1c77f2efe00efefa9ebabad57aaeb60b3f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      48,
+      344,
+      1204,
+      1001
+    ],
+    "bounds": [
+      16,
+      64,
+      240,
+      191
+    ],
+    "sha256": "ca4efa8e19d46b139cc181cd11627b107770bd52910cda68eb03ade20c846dc0",
+    "bytes": 6570
+  },
+  {
+    "key": "badge-pig-blindbox-first",
+    "path": "pigs/badges/badge-pig-blindbox-first.png",
+    "actor": "badge-pig-blindbox-first",
+    "action": "badge",
+    "version": "badge-pig-blindbox-first-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-blindbox-first-badge-v1.txt",
+    "sourceSha256": "ddf58daa015d6e3e0bf92355aec0e6142af289b89f2f0cb7b2ed48baf9deca61",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      129,
+      46,
+      1125,
+      1210
+    ],
+    "bounds": [
+      32,
+      16,
+      224,
+      240
+    ],
+    "sha256": "9fcbed1ac826335219b27035f6154b90c5fe30353e74d04a0eb083968197faec",
+    "bytes": 11340
+  },
+  {
+    "key": "badge-pig-blindbox-six",
+    "path": "pigs/badges/badge-pig-blindbox-six.png",
+    "actor": "badge-pig-blindbox-six",
+    "action": "badge",
+    "version": "badge-pig-blindbox-six-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-blindbox-six-badge-v1.txt",
+    "sourceSha256": "edfe9ae4e7dc33a4b54ef4fe670376849c32f5f1167f4db57066374e45fe5074",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      151,
+      73,
+      1103,
+      1173
+    ],
+    "bounds": [
+      31,
+      16,
+      225,
+      240
+    ],
+    "sha256": "32231e02949ffd3d3b3176bdfc11e92a6d56a4bd3d4f215e5fe46fc34cfd843a",
+    "bytes": 10700
+  },
+  {
+    "key": "badge-pig-blindbox-ten",
+    "path": "pigs/badges/badge-pig-blindbox-ten.png",
+    "actor": "badge-pig-blindbox-ten",
+    "action": "badge",
+    "version": "badge-pig-blindbox-ten-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-blindbox-ten-badge-v1.txt",
+    "sourceSha256": "ec2a29eac7d91f18520cfa3fff3946efd720495442f23caf6ee3f65c99347bfa",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      150,
+      49,
+      1102,
+      1194
+    ],
+    "bounds": [
+      35,
+      16,
+      221,
+      240
+    ],
+    "sha256": "1f99e465c4e19f7dc69fa7be89f01819b6fc903f5b6a58205fc6bfbe76ece293",
+    "bytes": 11319
+  },
+  {
+    "key": "badge-pig-clean-ten",
+    "path": "pigs/badges/badge-pig-clean-ten.png",
+    "actor": "badge-pig-clean-ten",
+    "action": "badge",
+    "version": "badge-pig-clean-ten-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-clean-ten-badge-v1.txt",
+    "sourceSha256": "c5b32145483396da2f03b21dd52fa277d90b410ea6bad26b9eef928b52ae8eff",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      153,
+      69,
+      1101,
+      1185
+    ],
+    "bounds": [
+      33,
+      16,
+      223,
+      240
+    ],
+    "sha256": "5d332c2a5eaf38325d5e2744b2a653a10e0296442b85bd699e45272e1c522a79",
+    "bytes": 9085
+  },
+  {
+    "key": "badge-pig-devil",
+    "path": "pigs/badges/badge-pig-devil.png",
+    "actor": "badge-pig-devil",
+    "action": "badge",
+    "version": "badge-pig-devil-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-devil-badge-v1.txt",
+    "sourceSha256": "89ba3811677e26fc48593ecfcd03f05e9ecb9bce18956d49704d9dbcbaac8d18",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      138,
+      79,
+      1114,
+      1187
+    ],
+    "bounds": [
+      29,
+      16,
+      226,
+      240
+    ],
+    "sha256": "3d66e1bff82ea27acc1020f947cdc4f3e8f8099387d02819a4e1b3755114370d",
+    "bytes": 10865
+  },
+  {
+    "key": "badge-pig-farm-first",
+    "path": "pigs/badges/badge-pig-farm-first.png",
+    "actor": "badge-pig-farm-first",
+    "action": "badge",
+    "version": "badge-pig-farm-first-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-farm-first-badge-v1.txt",
+    "sourceSha256": "62370963b88e78cfc111de9cdbc2717ec16f9c8298ba236ff1a93581ca590b8f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      156,
+      48,
+      1098,
+      1202
+    ],
+    "bounds": [
+      36,
+      16,
+      219,
+      240
+    ],
+    "sha256": "e71b950dffd66af59f1a304a55880834cef6fa997a9ba98ac86caa97e4c80683",
+    "bytes": 10057
+  },
+  {
+    "key": "badge-pig-farm-five",
+    "path": "pigs/badges/badge-pig-farm-five.png",
+    "actor": "badge-pig-farm-five",
+    "action": "badge",
+    "version": "badge-pig-farm-five-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-farm-five-badge-v1.txt",
+    "sourceSha256": "73f145c5ebef76e5e293ee09fd973e73f720bc44061dbef1c3bebb3994b31e85",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      161,
+      75,
+      1109,
+      1194
+    ],
+    "bounds": [
+      33,
+      16,
+      223,
+      240
+    ],
+    "sha256": "70c955c2c41adbc1b4f45f2487dd5b6c24be751227d4647bf03bf3d4a3cebad7",
+    "bytes": 9879
+  },
+  {
+    "key": "badge-pig-farm-ten",
+    "path": "pigs/badges/badge-pig-farm-ten.png",
+    "actor": "badge-pig-farm-ten",
+    "action": "badge",
+    "version": "badge-pig-farm-ten-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-farm-ten-badge-v1.txt",
+    "sourceSha256": "18e42c545f41c1179a21c5b584b174a951f91912ed78e3987f7ffc56fe4374b5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      149,
+      54,
+      1105,
+      1194
+    ],
+    "bounds": [
+      34,
+      16,
+      222,
+      240
+    ],
+    "sha256": "9d201ef889388ffd06035fe9a92678bb25cf366e659704553789b46d6e31a46e",
+    "bytes": 10102
+  },
+  {
+    "key": "badge-pig-first-class",
+    "path": "pigs/badges/badge-pig-first-class.png",
+    "actor": "badge-pig-first-class",
+    "action": "badge",
+    "version": "badge-pig-first-class-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-first-class-badge-v1.txt",
+    "sourceSha256": "3f58aa31526e68e70d8f1045951ecc6d50da2575851836a970c4f0b5a5f5e40a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      132,
+      50,
+      1121,
+      1203
+    ],
+    "bounds": [
+      32,
+      16,
+      224,
+      240
+    ],
+    "sha256": "2241f912ab3108f4dfd74f182f27ebf1fcf128557729f531e4af41a8aca306f6",
+    "bytes": 9412
+  },
+  {
+    "key": "badge-pig-first-fish",
+    "path": "pigs/badges/badge-pig-first-fish.png",
+    "actor": "badge-pig-first-fish",
+    "action": "badge",
+    "version": "badge-pig-first-fish-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-first-fish-badge-v1.txt",
+    "sourceSha256": "5d8e9e704ec20ff67c884c77177be16bb4572b5d59f8d4d05a7978b1e0c865a3",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      134,
+      53,
+      1120,
+      1193
+    ],
+    "bounds": [
+      31,
+      16,
+      225,
+      240
+    ],
+    "sha256": "5fb9964f142569760cae38de48bffc60f8019c3db1d09a9f34415d82705be24a",
+    "bytes": 10714
+  },
+  {
+    "key": "badge-pig-first-job",
+    "path": "pigs/badges/badge-pig-first-job.png",
+    "actor": "badge-pig-first-job",
+    "action": "badge",
+    "version": "badge-pig-first-job-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-first-job-badge-v1.txt",
+    "sourceSha256": "c7b3f6dda0ac9b029ca0d2032383714b22a6ee1701bafa83d73d5c5126924cb4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      156,
+      67,
+      1097,
+      1192
+    ],
+    "bounds": [
+      34,
+      16,
+      221,
+      240
+    ],
+    "sha256": "2906513b89971661f5cdb18c8fb156a4cad0d64ad257058a0bd5ebdb01d6adf3",
+    "bytes": 10968
+  },
+  {
+    "key": "badge-pig-first-meal",
+    "path": "pigs/badges/badge-pig-first-meal.png",
+    "actor": "badge-pig-first-meal",
+    "action": "badge",
+    "version": "badge-pig-first-meal-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-first-meal-badge-v1.txt",
+    "sourceSha256": "ff6d0ea4889a74c516a62c04a71748ced280da5a70f8ccf1783ff8efeed9d803",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      141,
+      69,
+      1103,
+      1194
+    ],
+    "bounds": [
+      32,
+      16,
+      224,
+      240
+    ],
+    "sha256": "1f291997f6c04c9179c8e8ff7dbc0793ff3e4128c3aecfcb50c1cd6d17f16377",
+    "bytes": 9422
+  },
+  {
+    "key": "badge-pig-first-trip",
+    "path": "pigs/badges/badge-pig-first-trip.png",
+    "actor": "badge-pig-first-trip",
+    "action": "badge",
+    "version": "badge-pig-first-trip-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-first-trip-badge-v1.txt",
+    "sourceSha256": "ba8f413504844e57e405a7b8fa9ddaf190f05fb74cc79e2eb506c2edaefa419e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      127,
+      33,
+      1125,
+      1199
+    ],
+    "bounds": [
+      32,
+      16,
+      224,
+      240
+    ],
+    "sha256": "9f147bd227be673531c8d3e8d182affd935e2c75f1b8be5b32114c4fd54d36c6",
+    "bytes": 9416
+  },
+  {
+    "key": "badge-pig-fish-five",
+    "path": "pigs/badges/badge-pig-fish-five.png",
+    "actor": "badge-pig-fish-five",
+    "action": "badge",
+    "version": "badge-pig-fish-five-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-fish-five-badge-v1.txt",
+    "sourceSha256": "3a2b5bffb71b538defb9502403f53ee0a090dcdf9fbc6179ee4b68b9f6f235e6",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      156,
+      64,
+      1098,
+      1194
+    ],
+    "bounds": [
+      34,
+      16,
+      221,
+      240
+    ],
+    "sha256": "177f471f12438cb100d9755e55a7dc41452c0ec8ef79c2aa7eab0ef0a65c6fab",
+    "bytes": 10360
+  },
+  {
+    "key": "badge-pig-gacha-first",
+    "path": "pigs/badges/badge-pig-gacha-first.png",
+    "actor": "badge-pig-gacha-first",
+    "action": "badge",
+    "version": "badge-pig-gacha-first-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-gacha-first-badge-v1.txt",
+    "sourceSha256": "bd3205a356c3e89c46459cc672801fb7e15d1f93b23dd6f6290f0e4f4141d9fb",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      132,
+      77,
+      1119,
+      1182
+    ],
+    "bounds": [
+      28,
+      16,
+      228,
+      240
+    ],
+    "sha256": "030d40da5ef1b159c438bb63108ccfa6ebb3e86bdfeef3dc04e590975f47172c",
+    "bytes": 10946
+  },
+  {
+    "key": "badge-pig-gacha-gold",
+    "path": "pigs/badges/badge-pig-gacha-gold.png",
+    "actor": "badge-pig-gacha-gold",
+    "action": "badge",
+    "version": "badge-pig-gacha-gold-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-gacha-gold-badge-v1.txt",
+    "sourceSha256": "7dfd525ccd6b6d4a66109cd917fd0918704c987cc02c711f9b1f5d64051d77d0",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      145,
+      62,
+      1109,
+      1195
+    ],
+    "bounds": [
+      32,
+      16,
+      223,
+      240
+    ],
+    "sha256": "99c0f28b2543723a36ace1390d6b6279714597b704e327b1f7a74d34c4ac6f7e",
+    "bytes": 10552
+  },
+  {
+    "key": "badge-pig-gacha-machines",
+    "path": "pigs/badges/badge-pig-gacha-machines.png",
+    "actor": "badge-pig-gacha-machines",
+    "action": "badge",
+    "version": "badge-pig-gacha-machines-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-gacha-machines-badge-v1.txt",
+    "sourceSha256": "c294e623417346e97745ec33d90b0d4323836d5cbc36b6aebb8b15ff790ec236",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      139,
+      52,
+      1148,
+      1205
+    ],
+    "bounds": [
+      30,
+      16,
+      226,
+      240
+    ],
+    "sha256": "1487c64ea94bb0d22c675acb0001c713977b580cb4de72c15686155e4b4269e3",
+    "bytes": 11250
+  },
+  {
+    "key": "badge-pig-grown-up",
+    "path": "pigs/badges/badge-pig-grown-up.png",
+    "actor": "badge-pig-grown-up",
+    "action": "badge",
+    "version": "badge-pig-grown-up-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-grown-up-badge-v1.txt",
+    "sourceSha256": "c4a6f4894410a82d409e097ea8f3e264ebf0f6e4bad197d2027345933b05572f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      132,
+      32,
+      1122,
+      1202
+    ],
+    "bounds": [
+      33,
+      16,
+      223,
+      240
+    ],
+    "sha256": "8a25153082b28453f9660ce471f4293361d87eab2e794662d415c042b8ca5462",
+    "bytes": 10232
+  },
+  {
+    "key": "badge-pig-jobs-ten",
+    "path": "pigs/badges/badge-pig-jobs-ten.png",
+    "actor": "badge-pig-jobs-ten",
+    "action": "badge",
+    "version": "badge-pig-jobs-ten-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-jobs-ten-badge-v1.txt",
+    "sourceSha256": "a6b6f52b87c3bbc968be283ec4ea153a8d9728f6417c512007af1f06db93f0ed",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      144,
+      56,
+      1110,
+      1194
+    ],
+    "bounds": [
+      33,
+      16,
+      223,
+      240
+    ],
+    "sha256": "d4d9bb3f7ada2c9a4e8da0fabd3e61ee77fd187243f40f2b92287799b0477564",
+    "bytes": 10735
+  },
+  {
+    "key": "badge-pig-king",
+    "path": "pigs/badges/badge-pig-king.png",
+    "actor": "badge-pig-king",
+    "action": "badge",
+    "version": "badge-pig-king-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-king-badge-v1.txt",
+    "sourceSha256": "37ad3f7434cc926113876a3ea116f52d9c52a6dda8ec960be9e4561ac4109e89",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      168,
+      116,
+      1091,
+      1170
+    ],
+    "bounds": [
+      30,
+      16,
+      226,
+      240
+    ],
+    "sha256": "84c237923a748b49066250643fd4531955daf5f0245d266b5545a9a3aa90a8c2",
+    "bytes": 10682
+  },
+  {
+    "key": "badge-pig-mine-deep",
+    "path": "pigs/badges/badge-pig-mine-deep.png",
+    "actor": "badge-pig-mine-deep",
+    "action": "badge",
+    "version": "badge-pig-mine-deep-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-mine-deep-badge-v1.txt",
+    "sourceSha256": "fe5fa306a00deaf4a14c6ceb80b2a59aa10da07ce81cd1a46d21d081a4b2f54d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      124,
+      39,
+      1130,
+      1210
+    ],
+    "bounds": [
+      32,
+      16,
+      224,
+      240
+    ],
+    "sha256": "5942d22a974ec44a06a9dcf5221c522bc1879e5613766aa29fa6164dddc6c12d",
+    "bytes": 10581
+  },
+  {
+    "key": "badge-pig-mine-first",
+    "path": "pigs/badges/badge-pig-mine-first.png",
+    "actor": "badge-pig-mine-first",
+    "action": "badge",
+    "version": "badge-pig-mine-first-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-mine-first-badge-v1.txt",
+    "sourceSha256": "a2e2290d77d50d9d8ed65fa0d8ee05be93ee7bb6257ebd38bdea6346be52e8f5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      147,
+      74,
+      1107,
+      1188
+    ],
+    "bounds": [
+      31,
+      16,
+      224,
+      240
+    ],
+    "sha256": "eafc1bc505a8dcc31205a8775fe6104bb595e1acdaf9d0a596e212c856784f7c",
+    "bytes": 9899
+  },
+  {
+    "key": "badge-pig-mine-fossils",
+    "path": "pigs/badges/badge-pig-mine-fossils.png",
+    "actor": "badge-pig-mine-fossils",
+    "action": "badge",
+    "version": "badge-pig-mine-fossils-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-mine-fossils-badge-v1.txt",
+    "sourceSha256": "573c6bdcf6a6119f3e531544dceb91c4720202ae2a847f3ea2b3c66b85cc281b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      162,
+      74,
+      1091,
+      1180
+    ],
+    "bounds": [
+      34,
+      16,
+      222,
+      240
+    ],
+    "sha256": "3afc779e473fb5258c73f3907a548bf4c36b431d5cd1d02c7b59942bb3fc202d",
+    "bytes": 10898
+  },
+  {
+    "key": "badge-pig-pet-hundred",
+    "path": "pigs/badges/badge-pig-pet-hundred.png",
+    "actor": "badge-pig-pet-hundred",
+    "action": "badge",
+    "version": "badge-pig-pet-hundred-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-pet-hundred-badge-v1.txt",
+    "sourceSha256": "e0e609ebd0212d771d61b1843f8e691d5752418b13828e46adebab08fb485d9e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      151,
+      75,
+      1101,
+      1185
+    ],
+    "bounds": [
+      32,
+      16,
+      224,
+      240
+    ],
+    "sha256": "e14e51ee4669297e871d30f97cb563fab5c292c694a726e15ef2a071da38063c",
+    "bytes": 10365
+  },
+  {
+    "key": "badge-pig-play-twenty",
+    "path": "pigs/badges/badge-pig-play-twenty.png",
+    "actor": "badge-pig-play-twenty",
+    "action": "badge",
+    "version": "badge-pig-play-twenty-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-play-twenty-badge-v1.txt",
+    "sourceSha256": "ad617628e4633e0e6bb44f932dfacbddffbf3c3641cfc887920ad176aa76d335",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      144,
+      58,
+      1109,
+      1194
+    ],
+    "bounds": [
+      33,
+      16,
+      223,
+      240
+    ],
+    "sha256": "ac87ddafc37fec31695730d46aa214fb2d4251ec2d56b86472433280a400d488",
+    "bytes": 10372
+  },
+  {
+    "key": "badge-pig-souvenirs-three",
+    "path": "pigs/badges/badge-pig-souvenirs-three.png",
+    "actor": "badge-pig-souvenirs-three",
+    "action": "badge",
+    "version": "badge-pig-souvenirs-three-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-souvenirs-three-badge-v1.txt",
+    "sourceSha256": "9fbc6dbe5e735f554ce1c106140d0068a86cf26cb4a24035aa49857119a6c561",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      150,
+      52,
+      1105,
+      1199
+    ],
+    "bounds": [
+      34,
+      16,
+      221,
+      240
+    ],
+    "sha256": "6fa97acebf5dd104f1f3956a25e202d3a77e958053a82961f743ef992faae0b7",
+    "bytes": 10840
+  },
+  {
+    "key": "badge-pig-trips-ten",
+    "path": "pigs/badges/badge-pig-trips-ten.png",
+    "actor": "badge-pig-trips-ten",
+    "action": "badge",
+    "version": "badge-pig-trips-ten-badge-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-trips-ten-badge-v1.txt",
+    "sourceSha256": "f20eb6b3b3bef5472672494180a470a17bfc50e9f12ffd379ccccd22142a1264",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      135,
+      47,
+      1119,
+      1202
+    ],
+    "bounds": [
+      32,
+      16,
+      223,
+      240
+    ],
+    "sha256": "8a0a686136dfb518a6bbd68f28e571e8395fc8c429dec97af17f3f64bcfa512a",
+    "bytes": 11157
+  },
+  {
+    "key": "feedback/collection-check",
+    "path": "pigs/feedback/collection-check.png",
+    "actor": "collection-check",
+    "action": "scene",
+    "version": "collection-check-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-check-scene-v1.txt",
+    "sourceSha256": "d1dd811f6bcdcca2c9a71e37b805b1483b0e7302b112db2a64b6d1ed7dcfc461",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      83,
+      128,
+      1192,
+      1111
+    ],
+    "bounds": [
+      16,
+      28,
+      240,
+      227
+    ],
+    "sha256": "98f43d4dee8362ef79a7860f465678fc3c76eb2a8d227393071be26c99e51330",
+    "bytes": 10505
+  },
+  {
+    "key": "feedback/collection-chicken",
+    "path": "pigs/feedback/collection-chicken.png",
+    "actor": "collection-chicken",
+    "action": "scene",
+    "version": "collection-chicken-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-chicken-scene-v1.txt",
+    "sourceSha256": "67edfc3c9e688f58346b36b22bcd4a9dfcd1252262bbeab522773cda2c331862",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      188,
+      112,
+      1180,
+      1173
+    ],
+    "bounds": [
+      23,
+      16,
+      232,
+      240
+    ],
+    "sha256": "8acca3a8a7ed1f8f7b4568808f5f0564064f37f8b6b1b8b4450801754ab87e19",
+    "bytes": 9141
+  },
+  {
+    "key": "feedback/collection-courier",
+    "path": "pigs/feedback/collection-courier.png",
+    "actor": "collection-courier",
+    "action": "scene",
+    "version": "collection-courier-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-courier-scene-v1.txt",
+    "sourceSha256": "c7e8138b2bc13a329da334146b0821552df9153b76ca1144f42c1f9568ef5cf5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      114,
+      214,
+      1195,
+      1098
+    ],
+    "bounds": [
+      16,
+      36,
+      240,
+      219
+    ],
+    "sha256": "09f542542dec9a885ad363d3ffee1eab1d8d5ea11335a3fb4fca6b291092227d",
+    "bytes": 6432
+  },
+  {
+    "key": "feedback/collection-fever",
+    "path": "pigs/feedback/collection-fever.png",
+    "actor": "collection-fever",
+    "action": "scene",
+    "version": "collection-fever-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-fever-scene-v1.txt",
+    "sourceSha256": "8ecfa24485ce396c00e3c86938c8bb471d6ac333f6e10b7bb9f65ef7e39852fc",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      55,
+      157,
+      1223,
+      1110
+    ],
+    "bounds": [
+      16,
+      36,
+      240,
+      219
+    ],
+    "sha256": "f259e9b4eda11495f37156fc33d333f5a01f60bcebf51812c67ca522d4b58f17",
+    "bytes": 7864
+  },
+  {
+    "key": "feedback/collection-fitness",
+    "path": "pigs/feedback/collection-fitness.png",
+    "actor": "collection-fitness",
+    "action": "scene",
+    "version": "collection-fitness-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-fitness-scene-v1.txt",
+    "sourceSha256": "225d612738333e397423d64a6ffe27011c53ad74b4603a6ab9cd311e5e8de23f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      49,
+      245,
+      1188,
+      1078
+    ],
+    "bounds": [
+      16,
+      46,
+      240,
+      210
+    ],
+    "sha256": "35a282efc0b4bcc53fb0e8adb1336fb1b353cf0d6a22399f8d7614f44c86cd82",
+    "bytes": 9097
+  },
+  {
+    "key": "feedback/collection-letter",
+    "path": "pigs/feedback/collection-letter.png",
+    "actor": "collection-letter",
+    "action": "scene",
+    "version": "collection-letter-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-letter-scene-v1.txt",
+    "sourceSha256": "c89715a6ceb4d4b5c47eb6d5786e3be0ebd48f44d23a22dedfcab9cb07b569c6",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      105,
+      246,
+      1189,
+      1074
+    ],
+    "bounds": [
+      16,
+      42,
+      240,
+      213
+    ],
+    "sha256": "9954ce7f028b1c0836718b1635e54ecf6b23110b8da47b40077a442fb60d5cb0",
+    "bytes": 8288
+  },
+  {
+    "key": "feedback/collection-mosquito",
+    "path": "pigs/feedback/collection-mosquito.png",
+    "actor": "collection-mosquito",
+    "action": "scene",
+    "version": "collection-mosquito-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-mosquito-scene-v1.txt",
+    "sourceSha256": "c0c71b8f4bd96665b82a33511b8f73cef38f07534af7216eb78e6fc241188fb5",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      38,
+      199,
+      1216,
+      1074
+    ],
+    "bounds": [
+      16,
+      45,
+      240,
+      211
+    ],
+    "sha256": "61718832e4fa94e08300fd20873df8a074d65f65cf21b5a22f4417170c910989",
+    "bytes": 8379
+  },
+  {
+    "key": "feedback/collection-scallion",
+    "path": "pigs/feedback/collection-scallion.png",
+    "actor": "collection-scallion",
+    "action": "scene",
+    "version": "collection-scallion-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-scallion-scene-v1.txt",
+    "sourceSha256": "998b5feee63de5065562b1aec9500d645aabc356e61291e5c765e3e2402144e9",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      112,
+      122,
+      1183,
+      1118
+    ],
+    "bounds": [
+      16,
+      24,
+      240,
+      232
+    ],
+    "sha256": "24396c2cd2c95e69c03ca456a04c64d0a2f1ef40f67a13cc859c9ca5f15f7897",
+    "bytes": 8183
+  },
+  {
+    "key": "feedback/collection-snack",
+    "path": "pigs/feedback/collection-snack.png",
+    "actor": "collection-snack",
+    "action": "scene",
+    "version": "collection-snack-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-snack-scene-v1.txt",
+    "sourceSha256": "d7daa6b3cfe45aa848d3e0a48ed0982ad13c70899a6ef4f3d6093073ab28589d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      51,
+      211,
+      1230,
+      1112
+    ],
+    "bounds": [
+      16,
+      42,
+      240,
+      213
+    ],
+    "sha256": "0caa9a600512958fc2c759ae607276298753666c1b2310073b59c78f8c57af1e",
+    "bytes": 9730
+  },
+  {
+    "key": "feedback/collection-soup",
+    "path": "pigs/feedback/collection-soup.png",
+    "actor": "collection-soup",
+    "action": "scene",
+    "version": "collection-soup-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-soup-scene-v1.txt",
+    "sourceSha256": "7347caba79d0e5f7714b16bc37602061d23c6e92b8af9c4331eb06933abcbc01",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      78,
+      20,
+      1199,
+      1226
+    ],
+    "bounds": [
+      24,
+      16,
+      232,
+      240
+    ],
+    "sha256": "c3483f57c9eca68c4fd8c0d2ebc3aa390ec792c8751b4d2d98a3f64d10113981",
+    "bytes": 8538
+  },
+  {
+    "key": "feedback/collection-stack",
+    "path": "pigs/feedback/collection-stack.png",
+    "actor": "collection-stack",
+    "action": "scene",
+    "version": "collection-stack-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-stack-scene-v1.txt",
+    "sourceSha256": "a282d17954da16708dceff0ffa68b0836dae7eb547b53de42cc3171f45315ef7",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      203,
+      57,
+      1048,
+      1213
+    ],
+    "bounds": [
+      46,
+      16,
+      210,
+      240
+    ],
+    "sha256": "db7b28f0564a9b2a1a0884d106f5394f019f4eb423f50e243328fb9cbe462ee7",
+    "bytes": 7880
+  },
+  {
+    "key": "feedback/collection-taro",
+    "path": "pigs/feedback/collection-taro.png",
+    "actor": "collection-taro",
+    "action": "scene",
+    "version": "collection-taro-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-taro-scene-v1.txt",
+    "sourceSha256": "05e721955dd24423560d42c3521f0619292c7e9a1a5b91443a1c0e18b59b703d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      41,
+      184,
+      1222,
+      1176
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "f0a779c12106ec2526f9e227e2cb7646b4b19859b2962e8a70f5115f4488e7c4",
+    "bytes": 11849
+  },
+  {
+    "key": "feedback/collection-throne",
+    "path": "pigs/feedback/collection-throne.png",
+    "actor": "collection-throne",
+    "action": "scene",
+    "version": "collection-throne-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/collection-throne-scene-v1.txt",
+    "sourceSha256": "1507f6d4534e4a046f047a56ef31ef9ff1b91ff43e916bc67ccd2738c7160f4c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      106,
+      51,
+      1185,
+      1181
+    ],
+    "bounds": [
+      21,
+      16,
+      235,
+      240
+    ],
+    "sha256": "849d63598d4f924eec21ed1c626c7503a83c7aa26013cd687401240d560ab5d0",
+    "bytes": 12736
+  },
+  {
+    "key": "feedback/courier",
+    "path": "pigs/feedback/courier.png",
+    "actor": "courier",
+    "action": "scene",
+    "version": "courier-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/courier-scene-v1.txt",
+    "sourceSha256": "c7ff650538ed5470c37d4a226d4e2723fad6c954757a1ef99d0457a6a105b86d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      156,
+      217,
+      1099,
+      1099
+    ],
+    "bounds": [
+      16,
+      23,
+      240,
+      233
+    ],
+    "sha256": "72d8e8b942394fc979baa7af1f9cc874f47eca2265683181c2adbca1eb1dca3e",
+    "bytes": 6059
+  },
+  {
+    "key": "feedback/faint",
+    "path": "pigs/feedback/faint.png",
+    "actor": "faint",
+    "action": "scene",
+    "version": "faint-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/faint-scene-v1.txt",
+    "sourceSha256": "3a402c233ab595d29f886bf81e8772aaceb63eef04cc4f3df12c84940905592e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      129,
+      205,
+      1182,
+      1084
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      221
+    ],
+    "sha256": "99a4fd33468de15e6972b3d27bac9b63503a2985bd1022445502877a3d2c9b8b",
+    "bytes": 9141
+  },
+  {
+    "key": "feedback/fishing",
+    "path": "pigs/feedback/fishing.png",
+    "actor": "fishing",
+    "action": "scene",
+    "version": "fishing-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/fishing-scene-v1.txt",
+    "sourceSha256": "ee7ad5f2a09632b81eb80c1ef8b42ed71b8305017ebf6cc6ec22b7c238ae853a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      74,
+      133,
+      1194,
+      1082
+    ],
+    "bounds": [
+      16,
+      33,
+      240,
+      223
+    ],
+    "sha256": "9164a31f82ee363df07e53f77220c23ad872fdb266999ede284c2c10ff971af8",
+    "bytes": 8899
+  },
+  {
+    "key": "feedback/ghost-grave",
+    "path": "pigs/feedback/ghost-grave.png",
+    "actor": "ghost-grave",
+    "action": "scene",
+    "version": "ghost-grave-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/ghost-grave-scene-v1.txt",
+    "sourceSha256": "02708331705da4b59abefe11e78e76b8a3262399006d0cc65950e818dc697719",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      221,
+      292,
+      1078,
+      986
+    ],
+    "bounds": [
+      16,
+      37,
+      240,
+      218
+    ],
+    "sha256": "28aa7e8d53a170d39e0c508b306470477d412c64ce1801a3d7a6ccabf36a996a",
+    "bytes": 7664
+  },
+  {
+    "key": "feedback/hungry",
+    "path": "pigs/feedback/hungry.png",
+    "actor": "hungry",
+    "action": "scene",
+    "version": "hungry-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/hungry-scene-v1.txt",
+    "sourceSha256": "eb6246426df8d3977ade19b2929d39754bd092816b68b03896e09dd7f2737705",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      130,
+      136,
+      1206,
+      1105
+    ],
+    "bounds": [
+      16,
+      27,
+      240,
+      229
+    ],
+    "sha256": "08ca1e9eb4235175715bf22121e0e707f489cafcd14e0759441a8a28d239b971",
+    "bytes": 8582
+  },
+  {
+    "key": "feedback/lie-flat",
+    "path": "pigs/feedback/lie-flat.png",
+    "actor": "lie-flat",
+    "action": "scene",
+    "version": "lie-flat-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/lie-flat-scene-v1.txt",
+    "sourceSha256": "e5932d145237036fa0ea012aa0641570d1b84817dec9acc9fd7162eb2a1c4095",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      244,
+      342,
+      1078,
+      975
+    ],
+    "bounds": [
+      16,
+      43,
+      240,
+      213
+    ],
+    "sha256": "70b6835b2980d15c46aec2af2d5a1c374dbc4542a2d3609f62d57a47ec76b123",
+    "bytes": 8973
+  },
+  {
+    "key": "feedback/music-earbuds",
+    "path": "pigs/feedback/music-earbuds.png",
+    "actor": "music-earbuds",
+    "action": "scene",
+    "version": "music-earbuds-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/music-earbuds-scene-v1.txt",
+    "sourceSha256": "e38c21b3d5a3d87de28d175dadf209ad2a1872f997810b221f8ee083d00acdd1",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      163,
+      250,
+      1172,
+      1122
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      225
+    ],
+    "sha256": "21ac3544248f0a0f88d85028e2b272193b6c87fd8c5efdc64916bb1e625c3313",
+    "bytes": 8636
+  },
+  {
+    "key": "feedback/music-headphones-v2",
+    "path": "pigs/feedback/music-headphones-v2.png",
+    "actor": "music-headphones-v2",
+    "action": "scene",
+    "version": "music-headphones-v2-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/music-headphones-v2-scene-v1.txt",
+    "sourceSha256": "e5eee79773f78da2358170e3d35aabed38f1d6c9052b1f86e50b25bf03cb45c7",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      80,
+      182,
+      1221,
+      1074
+    ],
+    "bounds": [
+      16,
+      40,
+      240,
+      215
+    ],
+    "sha256": "4e1535cd5add63a3db70c5e3a2dbb07db67b6fa1f1b75d6835a6d000b40251c2",
+    "bytes": 9618
+  },
+  {
+    "key": "feedback/music-rainbow",
+    "path": "pigs/feedback/music-rainbow.png",
+    "actor": "music-rainbow",
+    "action": "scene",
+    "version": "music-rainbow-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/music-rainbow-scene-v1.txt",
+    "sourceSha256": "1ceb176db4163a9e7d724e5b01dbd80cf32b2b66585224ff2b8d51a2c6e452db",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      136,
+      369,
+      1254,
+      934
+    ],
+    "bounds": [
+      16,
+      71,
+      240,
+      184
+    ],
+    "sha256": "ace1f1cade7dcc78cb111756d993698800837fa93c98d23fc62a92b146f628aa",
+    "bytes": 6182
+  },
+  {
+    "key": "feedback/painting",
+    "path": "pigs/feedback/painting.png",
+    "actor": "painting",
+    "action": "scene",
+    "version": "painting-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/painting-scene-v1.txt",
+    "sourceSha256": "d1ae4ecc9bc1a5788c3e2a2e630c49ca909a35cbd83bdeb0c203fd5cd89731c6",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      167,
+      253,
+      1183,
+      1119
+    ],
+    "bounds": [
+      16,
+      32,
+      240,
+      223
+    ],
+    "sha256": "fdd4fc69eefac23a9f172b7fba0ac8481916bf87472f7dbbd0417bd0db6a2eda",
+    "bytes": 6755
+  },
+  {
+    "key": "feedback/recruit",
+    "path": "pigs/feedback/recruit.png",
+    "actor": "recruit",
+    "action": "scene",
+    "version": "recruit-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/recruit-scene-v1.txt",
+    "sourceSha256": "99135e630a8cf0dc192e173946743d9fecfb765ae0299583d17b51530c9f66a2",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      33,
+      32,
+      1241,
+      1189
+    ],
+    "bounds": [
+      16,
+      20,
+      240,
+      235
+    ],
+    "sha256": "5d9facff7898ee944acb3ffb81b84caa644727e110c7b237f85f71782d52e9b9",
+    "bytes": 10769
+  },
+  {
+    "key": "feedback/runny-nose",
+    "path": "pigs/feedback/runny-nose.png",
+    "actor": "runny-nose",
+    "action": "scene",
+    "version": "runny-nose-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/runny-nose-scene-v1.txt",
+    "sourceSha256": "6dd2beca7c57dd33fb2c25b4fbecaeaa883df2ecd1cb9fb5c5128538fef58d18",
+    "sourceDimensions": [
+      1312,
+      1199
+    ],
+    "sourceBounds": [
+      30,
+      188,
+      1287,
+      1104
+    ],
+    "bounds": [
+      16,
+      46,
+      240,
+      209
+    ],
+    "sha256": "70f99d438fc8c2f364c564b1b3340e99a90e8ded500c902fdfedb75dba8b9c83",
+    "bytes": 8928
+  },
+  {
+    "key": "feedback/sleep-cloud",
+    "path": "pigs/feedback/sleep-cloud.png",
+    "actor": "sleep-cloud",
+    "action": "scene",
+    "version": "sleep-cloud-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/sleep-cloud-scene-v1.txt",
+    "sourceSha256": "90fc9a154309ebee24e3db657ca4d1a7dcbc72075df32b57403d7b8f1954ea39",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      119,
+      282,
+      1184,
+      1020
+    ],
+    "bounds": [
+      16,
+      50,
+      240,
+      205
+    ],
+    "sha256": "c860fd7480880686e49fcdbd67162f09921b8f4a8cf5fd28ed362929494cd195",
+    "bytes": 6860
+  },
+  {
+    "key": "feedback/study-book",
+    "path": "pigs/feedback/study-book.png",
+    "actor": "study-book",
+    "action": "scene",
+    "version": "study-book-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/study-book-scene-v1.txt",
+    "sourceSha256": "1692d2a2de93ccc92d77e9ee55d5f76a54fe42355352827db74e0f0621508757",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      111,
+      261,
+      1180,
+      1078
+    ],
+    "bounds": [
+      16,
+      42,
+      240,
+      213
+    ],
+    "sha256": "52c8d3f63ce628076a59d896994d4048f71943db4a6719ba8d78bf2fb7cb2284",
+    "bytes": 8371
+  },
+  {
+    "key": "feedback/study-determined",
+    "path": "pigs/feedback/study-determined.png",
+    "actor": "study-determined",
+    "action": "scene",
+    "version": "study-determined-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/study-determined-scene-v1.txt",
+    "sourceSha256": "1e200046a7af897ba6737d065758f7cad2ea8fbdc8935dfd21e9c116e66d90e9",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      34,
+      171,
+      1221,
+      1124
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      218
+    ],
+    "sha256": "c92111b0d7dc7e719e363fdf8efb525a35a7b536fb6ad8d2c96e73f6b7bce25d",
+    "bytes": 11189
+  },
+  {
+    "key": "feedback/study-pink-book",
+    "path": "pigs/feedback/study-pink-book.png",
+    "actor": "study-pink-book",
+    "action": "scene",
+    "version": "study-pink-book-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/study-pink-book-scene-v1.txt",
+    "sourceSha256": "b7652dbc5b2a64d974ab691ee8a25f7de2a147f5bdc8c778f50e8ec2784dccac",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      97,
+      191,
+      1166,
+      1123
+    ],
+    "bounds": [
+      16,
+      30,
+      240,
+      225
+    ],
+    "sha256": "0dcf68e11aeb25c1c40481c56456509f1f0f3436eb83398f87333e61ddf43b93",
+    "bytes": 7873
+  },
+  {
+    "key": "feedback/suspended",
+    "path": "pigs/feedback/suspended.png",
+    "actor": "suspended",
+    "action": "scene",
+    "version": "suspended-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/suspended-scene-v1.txt",
+    "sourceSha256": "efa92ea03de602e4886a7142c40fcda8296a140eded70cc2ce82707f4297da3d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      212,
+      0,
+      1093,
+      1098
+    ],
+    "bounds": [
+      38,
+      16,
+      218,
+      240
+    ],
+    "sha256": "d99ff9e105741805b88b820787aa0e22ef6f24861d89b2223636ef5d1823b1b8",
+    "bytes": 7465
+  },
+  {
+    "key": "feedback/turning",
+    "path": "pigs/feedback/turning.png",
+    "actor": "turning",
+    "action": "scene",
+    "version": "turning-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/turning-scene-v1.txt",
+    "sourceSha256": "a4801320c7e70342be092407123994f95555557582bdb1b25f42427392a19b65",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      71,
+      256,
+      1191,
+      1074
+    ],
+    "bounds": [
+      16,
+      46,
+      240,
+      210
+    ],
+    "sha256": "40c2e682336ef1ecb43947838983e6606b8ac90a2f54ac8925ba2ec1041e7f51",
+    "bytes": 8880
+  },
+  {
+    "key": "feedback/twitch",
+    "path": "pigs/feedback/twitch.png",
+    "actor": "twitch",
+    "action": "scene",
+    "version": "twitch-scene-v1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/twitch-scene-v1.txt",
+    "sourceSha256": "18f56bedcc1c569af82e4bd0b93d8a925b7429e25d8fcc5fa1ccc8417957bc8a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      53,
+      253,
+      1220,
+      1128
+    ],
+    "bounds": [
+      16,
+      44,
+      240,
+      212
+    ],
+    "sha256": "d70d92590e0c4b23a27873a67aa1f4277b2c562bebb8421f922722ca947e60cf",
+    "bytes": 5446
+  },
+  {
+    "key": "badge-pig-jobs-hundred",
+    "path": "pigs/badges/badge-pig-jobs-hundred.png",
+    "actor": "badge-pig-jobs-hundred",
+    "action": "badge",
+    "version": "badge-pig-jobs-hundred-badge-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/badge-pig-jobs-hundred-badge-v2.txt",
+    "sourceSha256": "8340d6c4005ada6560d996c53daebf42769e38fd2be2d10338a6465d7613f443",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      140,
+      33,
+      1112,
+      1208
+    ],
+    "bounds": [
+      35,
+      16,
+      220,
+      240
+    ],
+    "sha256": "7583653b0a079a46e1c31d781d5a929304945db235d8e696afec64d332b9b76b",
+    "bytes": 8751
+  },
+  {
+    "key": "feedback/death-day",
+    "path": "pigs/feedback/death-day.png",
+    "actor": "death-day",
+    "action": "scene",
+    "version": "death-day-scene-v2",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/outlined-pigs/death-day-scene-v2.txt",
+    "sourceSha256": "1317d3084353cde82763cde5e45b86355d95613146c871f05218dd73b9303012",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      142,
+      308,
+      1189,
+      962
+    ],
+    "bounds": [
+      16,
+      58,
+      240,
+      198
+    ],
+    "sha256": "03c1b68cfdd9b57c9247f56edc7d03bc0b24d0f8b7bcf9358dc2d36e1f49a1c1",
+    "bytes": 5559
+  }
+]

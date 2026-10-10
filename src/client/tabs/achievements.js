@@ -1,6 +1,6 @@
 // @ts-check
 /** Pig badges live in the catalogue, next to the memories they celebrate. */
-import { ART_URL } from '../constants.js'
+import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
 import { drillHeader } from '../widgets.js'
 
@@ -33,7 +33,7 @@ function achievementCard(ui, entry) {
 
 function badge(entry) {
   const image = /** @type {HTMLImageElement} */ (el('img', 'dp-ach-badge'))
-  image.src = ART_URL + entry.art + '.svg'
+  image.src = artSource(entry.art)
   image.alt = entry.label + ' · 小猪徽章'
   return image
 }

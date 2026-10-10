@@ -273,7 +273,7 @@ export const CSS_BASE = [
   'scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);',
   '-webkit-user-drag:none;user-select:none}',
   // 反馈立绘在打包前离线处理为透明 PNG。
-  // 只放大图片里的可见部分；元素的布局盒和桌面命中区域仍由 --pig-size 决定。
+  // 校准可见高度；桌面命中区域另按 PNG 的静态透明边界计算。
   '.dp-pig[data-feedback="true"] .dp-pig-img{filter:none;object-fit:contain}',
   '.dp-pig[data-walk="right"] .dp-pig-img{translate:calc(-1 * var(--art-x,0%)) var(--art-y,0%)}',
   '.dp-pig[data-feedback="true"] .dp-dress{display:none}',

@@ -9,7 +9,8 @@ import { readFileSync } from 'node:fs'
 
 import { PACKAGE_VERSION, snapshot } from './snapshot.js'
 import { extensionForAction } from './core.js'
-import { customSkinArt, installSkinPack } from './store/skin-pack.js'
+import { installSkinPack } from './store/skin-pack.js'
+import { registerArtRoute } from './store/art-route.js'
 import { createExtRuntime } from './store/ext-runtime.js'
 import { registerExtImportRoute } from './store/ext-import-route.js'
 
@@ -147,37 +148,6 @@ function registerStateRoute(webServer, store) {
   })
 }
 
-/**
- * GET /dsh-piggy/art/<name>.svg, <name>-sleep.png or feedback/<name>.png.
- *
- * Serving them from the package keeps the art as real .svg files in the
- * repository rather than a blob embedded in the client bundle.
- */
-function registerArtRoute(webServer, store) {
-  return webServer.register({
-    kind: 'prefix',
-    path: ART_ROUTE,
-    handler: (req, res) => {
-      if (req.method !== 'GET') return sendJson(res, 405, { error: 'method not allowed; use GET' }, { allow: 'GET' })
-      const raw = String(req.url ?? '').split('?')[0]
-      const name = raw.startsWith(ART_ROUTE + '/') ? raw.slice(ART_ROUTE.length + 1) : ''
-      // Only the files this package ships: a fixed, boring name pattern, so
-      // nothing from the request can ever walk out of ./assets.
-      if (!/^(?:[a-z][a-z0-9-]{0,63}(?:\.svg|-sleep\.png)|feedback\/[a-z][a-z0-9-]{0,63}\.png)$/.test(name)) return sendJson(res, 404, { error: 'not found' })
-      try {
-        const custom = name.endsWith('.svg') && name.startsWith('custom-') ? customSkinArt(store.filePath, name) : null
-        const art = custom ?? readFileSync(new URL('./assets/' + name, import.meta.url))
-        // 自带立绘可以缓存一小时：摸猪、喂食时立绘来回换，每次都重新取会空一帧（猪闪一下）。
-        // 自定义皮肤玩家随时会换，仍然每次都问。
-        res.writeHead(200, { 'content-type': name.endsWith('.png') ? 'image/png' : 'image/svg+xml; charset=utf-8', 'cache-control': custom === null ? 'max-age=3600' : 'no-cache' })
-        res.end(art)
-      } catch (error) {
-        console.warn(`[dsh-piggy] sprite missing: name="${name}" reason="${error instanceof Error ? error.message : String(error)}"`)
-        sendJson(res, 404, { error: 'not found' })
-      }
-    },
-  })
-}
 
 function registerSkinRoute(webServer, store) {
   return webServer.register({
@@ -382,7 +352,7 @@ export function registerRoutes(ctx, store, options = {}) {
     const disposers = []
     try {
       disposers.push(registerStateRoute(webServer, store))
-      disposers.push(registerArtRoute(webServer, store))
+      disposers.push(registerArtRoute(webServer, store, sendJson))
       disposers.push(registerSkinRoute(webServer, store))
       disposers.push(registerActRoute(webServer, store))
       disposers.push(registerExtRoutes(webServer, store))

@@ -1,12 +1,14 @@
 # 反馈小猪：续画提示词
 
-以下是**复用稿，不是历史逐字原文**。已确认结果在 `assets/feedback/`；用户原始参考在素材工作区的 `feedback/`，审图原尺寸图在 `dsh-piggy-artwork/feedback-static-svg/ai-drafts/selected-png/`。优先把目标原图和已确认的同系列 PNG 一起交给 imagegen，提示词中的“原图”指目标原图。生成后先和原图并排看整只猪的姿势、轮廓、表情、遮挡、道具比例，再交用户审图。
+最新续画统一使用 [黑色轮廓线风格](../art/pig-style.md)，保持下列各图姿势和玩法语义。新生成稿保存逐字提示词，下面仍是历史复用摘要。
+
+以下是**复用稿，不是历史逐字原文**。已确认结果在 `assets/pigs/feedback/`；用户原始参考在素材工作区的 `feedback/`，审图原尺寸图在 `dsh-piggy-artwork/feedback-static-svg/ai-drafts/selected-png/`。优先把目标原图和已确认的同系列 PNG 一起交给 imagegen，提示词中的“原图”指目标原图。生成后先和原图并排看整只猪的姿势、轮廓、表情、遮挡、道具比例，再交用户审图。
 
 ## 独立图通用提示词
 
 > 参考我提供的这张原始小猪图，生成一张同主题的 Q 版静态小猪插画。尽量保留原图整只猪的身体轮廓、胖瘦和长短、朝向、姿势、腿与尾巴、眼睛和鼻子的相对位置、线条气质、柔和配色，以及道具和身体的前后遮挡。重点复现“猪正在做什么”的构图关系，不要把它改成统一站姿再往旁边摆道具。画面可爱、简洁、平涂，深色柔和轮廓线，完整主体入框；去掉原图的舞台、杂乱背景、截图界面和无关文字。需要保留的道具、象征符号和有意的玩梗内容必须保留。不要增加肢体、改变猪的身份或凭空添加装饰。输出单张高清 PNG；透明底优先，若边缘质量受损可用纯白底并在审图时注明。
 
-| 已确认文件（`assets/feedback/`） | 追加到通用提示词的主题约束 |
+| 已确认文件（`assets/pigs/feedback/`） | 追加到通用提示词的主题约束 |
 | --- | --- |
 | `courier.png` | 猪的身体本身是三面可见的纸箱；脸在箱体前面，小耳朵跨箱顶，胶带跨顶部与侧面。箱体和脸的比例参考原图。 |
 | `death-day.png` | 整只灰猪倒转，脚向上、头在右，X 眼；光环在右下方。死亡当天仍显示死猪，不提前画墓碑。 |
@@ -32,7 +34,7 @@
 
 > 参考提供的《集合》原图对应一格，以及项目已确认的小猪图片，画这一格主题的独立 Q 版静态插画。基础猪形是长条桃色身体、扁椭圆鼻子、短腿、小耳朵、卷尾和深色粗线。保留这一格特有的姿势、道具、玩梗和黑色幽默，不随意正能量化；注意身体与道具的前后关系，腿数准确。背景为纯白或干净透明底，完整入框，不加无关文字。截图、照片中的界面或现成图形改为原创表达，但主题不能变。
 
-合集已确认文件（均在 `assets/feedback/`）：`collection-badge.png`（圆章）、`collection-mosquito.png`（蚊子）、`collection-courier.png`（猪递）、`collection-fever.png`（发烧）、`collection-chicken.png`（骑小鸡）、`collection-throne.png`（王座）、`collection-taro.png`（芋头）、`collection-fitness.png`（健身）、`collection-snack.png`（点心）、`collection-cage.png`（笼子）、`collection-scallion.png`（扛葱）、`collection-letter.png`（纸条）、`collection-bubbles.png`（泡泡浴）、`collection-stack.png`（叠猪）、`collection-soup.png`（汤碗）、`collection-check.png`（检疫）。其中猪递与独立图是同一主题的不同版式。
+合集已确认文件（均在 `assets/pigs/feedback/`）：`collection-badge.png`（圆章）、`collection-mosquito.png`（蚊子）、`collection-courier.png`（猪递）、`collection-fever.png`（发烧）、`collection-chicken.png`（骑小鸡）、`collection-throne.png`（王座）、`collection-taro.png`（芋头）、`collection-fitness.png`（健身）、`collection-snack.png`（点心）、`collection-cage.png`（笼子）、`collection-scallion.png`（扛葱）、`collection-letter.png`（纸条）、`collection-bubbles.png`（泡泡浴）、`collection-stack.png`（叠猪）、`collection-soup.png`（汤碗）、`collection-check.png`（检疫）。其中猪递与独立图是同一主题的不同版式。
 
 三处经过用户明确纠正，续画时把对应句子直接追加到合集提示词：
 

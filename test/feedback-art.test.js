@@ -8,7 +8,7 @@ import { registerRoutes } from '../routes.js'
 const base = { stage: 'piglet', base: 'piglet', mood: 'fine', reaction: '', idle: '', activityKind: '', activityKey: '', hour: 0 }
 
 test('反馈立绘保持透明 PNG 和游戏包体积预算', () => {
-  const directory = new URL('../assets/feedback/', import.meta.url)
+  const directory = new URL('../assets/pigs/feedback/', import.meta.url)
   const names = readdirSync(directory).filter(name => name.endsWith('.png'))
   assert.equal(names.length, 38)
   let total = 0
@@ -16,7 +16,7 @@ test('反馈立绘保持透明 PNG 和游戏包体积预算', () => {
     const data = readFileSync(new URL(name, directory))
     assert.equal(data.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', name)
     assert.ok(Math.max(data.readUInt32BE(16), data.readUInt32BE(20)) <= 256, name)
-    assert.equal(data[25], 6, `${name} must be RGBA, not RGB with a white canvas`)
+    assert.ok(data[25] === 6 || (data[25] === 3 && data.includes(Buffer.from('tRNS'))), `${name} must carry alpha transparency`)
     total += data.length
   }
   assert.ok(total < 3_000_000, `feedback art is ${total} bytes`)
@@ -54,7 +54,7 @@ test('审定图片按真实状态切换，已有皮肤保留自己的立绘', ()
   for (let hour = 0; hour < 24; hour += 1) {
     for (const mood of ['hungry', 'sleepy', 'lonely', 'dirty', 'happy']) {
       const art = feedbackArtFor({ ...base, mood, hour })
-      assert.ok(statSync(new URL(`../assets/feedback/${art}.png`, import.meta.url)).size > 1000)
+      assert.ok(statSync(new URL(`../assets/pigs/feedback/${art}.png`, import.meta.url)).size > 1000)
     }
   }
 })

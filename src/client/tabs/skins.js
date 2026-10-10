@@ -1,7 +1,7 @@
 // @ts-check
 /** C6 换肤：内置与玩家皮肤共用一张货架，导入 ZIP 后立即穿上。 */
 
-import { ART_URL } from '../constants.js'
+import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
 import { drillTo } from '../widgets.js'
 import { renderSkinGuide } from './skin-guide.js'
@@ -27,7 +27,7 @@ function skinCard(ui, skin) {
   const card = el('div', 'dp-item dp-skin-row' + (skin.current ? ' dp-skin-current' : ''))
   if (!skin.unlocked) card.setAttribute('data-locked', 'true')
   const img = /** @type {HTMLImageElement} */ (el('img', 'dp-skin-art'))
-  img.src = ART_URL + skin.art + '.svg'
+  img.src = artSource(skin.art)
   img.alt = skin.label
   card.appendChild(img)
   const copy = el('span', 'dp-grow dp-skin-copy')

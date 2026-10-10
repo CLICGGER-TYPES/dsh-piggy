@@ -1,0 +1,5 @@
+Use case: precise-object-edit
+Asset type: single transparent PNG black-outline chibi pig game pet sprite.
+Input images: Image 1 is the character identity/edit target.
+Request: Edit the character in Image 1: change ONLY the eyes to happy upward curved arcs and add exactly two small floating pink hearts above head, separated from hat or halo. Preserve character's exact anatomy, silhouette, all four original short feet, ears, nose with two nostrils, blush, curly tail, costume, headwear, outlines, colors and pose. Keep tan checked deerstalker hat and tan brown cape coat with collar and one button. No chef costume or props. No new mouth or tongue, no hands.
+Style unchanged: clean smooth black shape outlines, rounded cute 2D Q proportions, gentle soft warm pastel shading, simple inner lines. Transparent background, no white frame, no sticker border, white wings/foam/costumes remain opaque. Keep complete wings, halo, hat, tail and hearts within canvas with clear margin; enlarge transparent canvas if needed instead of cropping. No extra limb, fifth hoof, duplicated features, unrelated objects, text or watermark.

@@ -1,0 +1,3 @@
+Use case: precise-object-edit
+Input image: edit target, pig king playing transparent PNG.
+Primary request: Remove ONLY the extra open smiling mouth (the black triangular cavity and pink tongue below the snout). Replace that small mouth area with uninterrupted peach-pink face skin matching its surroundings, no mouth line or substitute expression. The face must have ONLY the existing two happy curved eyes, pink oval snout with two nostrils, and blush. Keep the crown, ears, snout, cheeks, black outlines, body proportions, four limbs, tail, red cream cape, teal cream ball, hopping pose, all colors and composition unchanged. No other changes. Preserve transparent background; no background, text, new props or scepter.

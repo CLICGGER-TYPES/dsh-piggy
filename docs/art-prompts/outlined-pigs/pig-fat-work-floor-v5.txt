@@ -1,0 +1,3 @@
+Use case: precise-object-edit
+Edit target: the corrected fat pig with laptop on ground. Preserve its new balanced face/body proportions EXACTLY.
+Change ONLY the TWO small PINK foot patches at the BOTTOM beneath the belly (around x=690..765,y=780..820 and x=1170..1260,y=760..820 in this 1536x1024 image) to the same PEACH body skin as the adjacent short legs. Plain round leg ends, no hoof caps or splits. Do NOT change PINK nose, ears or cheeks; those stay pink. Do NOT add, remove, move or resize any leg, head, body or laptop. Exactly the same four limb shapes, full rounded back, eyes, nose two nostrils, tail, black outlines and pose remain. Actual alpha transparent background with no glow, no outer shadow; white highlights opaque.

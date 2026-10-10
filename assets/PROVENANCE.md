@@ -9,3 +9,7 @@
 源图及审图拼图保存在工作区的 `dsh-piggy-artwork/sleep-mat/rework-v3/` 和 `dsh-piggy-artwork/sleep-mat/sleep-poses-contact-sheet-v3.png`。本目录中的 PNG 是游戏使用的缩小版。
 
 资源预算：12 张 256 × 191 PNG 共 462,234 字节（约 452 KiB），随游戏包热更新分发，不单独增加桌面外壳资源。256 像素宽度覆盖最大约 163 像素的睡姿显示宽度。
+
+## 2026-10-10 黑色轮廓 PNG 迁移
+
+本页以上为历史睡姿记录。当前全部猪素材按类型放在assets/pigs/，详见[pigs/PROVENANCE.md](pigs/PROVENANCE.md)及manifest.json；原尺寸图与历史版本保存在仓库外。

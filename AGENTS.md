@@ -35,6 +35,7 @@
 9. **需要图就直接用 AI 出**：立绘、动作图、图标都可以用你自带的生图工具（如 codex 的 `image_gen`）出，不用手画、不用描成 SVG。
    交**透明底 PNG**（离线抠底，不靠运行时滤镜）、缩到显示尺寸约 2 倍（立绘长边 ≤ 256px）、记 `PROVENANCE.md`；**图要用户过目才进 `assets/`**。
    规格见 [adding-features.md](docs/guides/adding-features.md) 3.5。
+   **小猪、形态、皮肤、动作统一采用黑色轮廓线**，按 [pig-style.md](docs/art/pig-style.md) 保存逐字提示词、分类素材并逐图自查；该用户要求覆盖旧“零描边”条款。先出样图给用户看，通过后再批量替换。
 
 ## 做事的方法
 

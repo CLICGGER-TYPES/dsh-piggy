@@ -111,7 +111,7 @@
 ### 4.3 动作和动画（现有机制）
 
 - **立绘按场景切换**：每套立绘有 `idle` 和动作场景（`eat`、`bathe`、`play`、`pet`、`relaxed`、`work`、`study`、`trip`、`fish`、`sleep`，见 `data/skins.js` 的 `SKIN_SCENES`），
-  一般文件名是 `<立绘>-<场景>.svg`，缺的动作图回退到 `idle`。睡姿单独处理：内置形态用 `*-sleep.png`，自定义皮肤可提供 `sleep.svg`，缺少时用默认小猪睡姿。切换逻辑在 `src/client/art.js`。
+  内置图片按类型放入 `assets/pigs/`，角色目录内使用 `<场景>.png`，缺的动作图回退到 `idle`。睡姿单独处理：内置形态用 `sleep.png`，自定义皮肤可提供 `sleep.png`（兼容旧 `sleep.svg`），缺少时用默认小猪睡姿。切换逻辑在 `src/client/art.js`。
 - **加一个新动作场景**：在 `SKIN_SCENES` 末尾加（可选场景，不进必需列表）→ `art.js` 里接上触发 → 皮肤包格式文档同步 → 现有皮肤缺这张就回退，不强制补画。
 - **小动作和反应**用 CSS（`data-idle`、`data-react` 属性 + `css-*.js` 里的关键帧）；短的界面反馈用 `src/client/interaction-motion.js`。
 - **要更灵动的手感（弹簧、回弹、编排）**：先用成熟的库和做法，不要自己写缓动、弹簧、粒子——见 [动效和渲染库](motion-libraries.md)（首选 Motion，GSAP 只参考不引入）。

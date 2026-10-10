@@ -41,11 +41,11 @@
 扩展成就的 `event` + `mode` 对应扩展用 `api.emit` 报的公共事件（`total` 累计、`kinds` 种类、`maximum` 最高值）：
 事件和字段先登记在 `packages/pet-core/src/data/extension-events.js`，扩展里再 `emit`（见 [writing-extensions.md](writing-extensions.md)）。
 
-## 徽章 SVG
+## 徽章 PNG
 
-放 `assets/badge-pig-<key>.svg`。规格（照现有 28 枚）：
+放 `assets/pigs/badges/badge-pig-<key>.png`。规格（照现有 28 枚）：
 
-- `viewBox="0 0 64 64"`，文件 ≤ 6KB（现有最大约 3.7KB），纯矢量、不嵌位图、不引外部字体。
+- 透明底 PNG，长边 ≤256px，原尺寸图和逐字提示词留素材工作区，按 `tools/prepare-pig-art.py` 离线处理并登记素材表。
 - **小猪是主图案**（沿用原作小猪轮廓和配色），用颜色、绶带、书本、鱼、王冠这类小配件区分主题。
 - 未解锁时图鉴会把它画成灰色，不用另做灰版。
 

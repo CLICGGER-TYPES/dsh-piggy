@@ -9,7 +9,7 @@ export const SKINS = Object.freeze([
   Object.freeze({
     key: 'mint', label: '薄荷小猪', emoji: '🌿', art: 'skin-mint',
     author: 'dsh-piggy', description: '像一口薄荷汽水，清清凉凉。',
-    scenes: Object.freeze(['idle', 'eat', 'bathe', 'play', 'pet']), custom: false,
+    scenes: Object.freeze(['idle', 'eat', 'bathe', 'play', 'pet', 'work']), custom: false,
   }),
   Object.freeze({
     key: 'chef', label: '厨师猪', emoji: '👨‍🍳', art: 'career-chef', unlockJob: 'chef',

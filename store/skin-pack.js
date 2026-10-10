@@ -1,7 +1,7 @@
 // @ts-check
-/** C6 玩家皮肤包：读取 ZIP、校验清单与 SVG，并安装到存档旁边。 */
+/** Player PNG skin packs, with legacy sanitized SVG compatibility. */
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { inflateRawSync } from 'node:zlib'
 
@@ -29,18 +29,48 @@ export function parseSkinZip(buffer) {
     const commentLength = buffer.readUInt16LE(cursor + 32)
     const local = buffer.readUInt32LE(cursor + 42)
     const name = buffer.subarray(cursor + 46, cursor + 46 + nameLength).toString('utf8')
-    if ((flags & 1) !== 0 || !/^(skin\.json|[a-z]+\.svg)$/.test(name)) throw new Error('ZIP 只能在根目录放 skin.json 和 SVG')
+    if ((flags & 1) !== 0 || !/^(skin\.json|[a-z]+\.(?:png|svg))$/.test(name)) throw new Error('ZIP 只能在根目录放 skin.json 和 PNG（兼容旧 SVG）')
     if (size > MAX_FILE || ![0, 8].includes(method)) throw new Error(`${name} 太大或压缩方式不支持`)
     const localName = buffer.readUInt16LE(local + 26)
     const localExtra = buffer.readUInt16LE(local + 28)
     const start = local + 30 + localName + localExtra
     const packed = buffer.subarray(start, start + buffer.readUInt32LE(cursor + 20))
-    const value = method === 0 ? packed : inflateRawSync(packed)
+    const value = method === 0 ? packed : inflateRawSync(packed, { maxOutputLength: MAX_FILE })
     if (value.length !== size || value.length > MAX_FILE) throw new Error(`${name} 解压大小异常`)
     files.set(name, value)
     cursor += 46 + nameLength + extraLength + commentLength
   }
   return files
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff
+  for (const byte of bytes) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0)
+  }
+  return (crc ^ 0xffffffff) >>> 0
+}
+
+function validPng(body) {
+  if (body.length < 57 || body.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a'
+    || body.readUInt32BE(8) !== 13 || body.subarray(12, 16).toString('ascii') !== 'IHDR') return false
+  const width = body.readUInt32BE(16), height = body.readUInt32BE(20)
+  if (width === 0 || height === 0 || width > 1024 || height > 1024) return false
+  const type = body[25]
+  if (![0, 2, 3, 4, 6].includes(type)) return false
+  let at = 8, data = false, transparent = type === 4 || type === 6
+  while (at + 12 <= body.length) {
+    const size = body.readUInt32BE(at)
+    if (size > body.length - at - 12) return false
+    if (body.readUInt32BE(at + 8 + size) !== crc32(body.subarray(at + 4, at + 8 + size))) return false
+    const chunk = body.subarray(at + 4, at + 8).toString('ascii')
+    if (chunk === 'IDAT') data = true
+    if (chunk === 'tRNS') transparent = true
+    at += size + 12
+    if (chunk === 'IEND') return size === 0 && at === body.length && data && transparent
+  }
+  return false
 }
 
 export function validateSkinFiles(files) {
@@ -51,9 +81,15 @@ export function validateSkinFiles(files) {
   if (!KEY.test(key)) errors.push('key 只能用小写字母、数字和短横线，最长 24 位')
   if (key === 'default' || skinByKey(key) !== null) errors.push('key 与内置皮肤重名')
   if (typeof manifest?.label !== 'string' || manifest.label.trim() === '') errors.push('缺少皮肤名称 label')
-  const scenes = SKIN_SCENES.filter(scene => files.has(`${scene}.svg`))
-  for (const scene of REQUIRED_SKIN_SCENES) if (!scenes.includes(scene)) errors.push(`缺少 ${scene}.svg`)
+  const scenes = SKIN_SCENES.filter(scene => files.has(`${scene}.png`) || files.has(`${scene}.svg`))
+  for (const scene of REQUIRED_SKIN_SCENES) if (!scenes.includes(scene)) errors.push(`缺少 ${scene}.png（旧包也可用 ${scene}.svg）`)
+  for (const scene of scenes) if (files.has(`${scene}.png`) && files.has(`${scene}.svg`)) errors.push(`${scene} 只能放 PNG 或 SVG 中的一种`)
   for (const [name, body] of files) {
+    if (body.length > MAX_FILE) errors.push(`${name} 不能超过 96 KB`)
+    if (name.endsWith('.png')) {
+      if (!validPng(body)) errors.push(`${name} 必须是完整、带透明通道的 PNG，长边不超过 1024px`)
+      continue
+    }
     if (!name.endsWith('.svg')) continue
     const svg = body.toString('utf8')
     if (!/<svg\b/i.test(svg) || !/viewBox\s*=\s*["']0\s+0\s+64\s+64["']/i.test(svg)) errors.push(`${name} 必须使用 viewBox="0 0 64 64"`)
@@ -83,16 +119,24 @@ export function installSkinPack(savePath, zip) {
   const root = join(dirname(savePath), 'skins')
   mkdirSync(root, { recursive: true })
   for (const scene of metadata.scenes) {
-    const target = join(root, `${metadata.art}${scene === 'idle' ? '' : '-' + scene}.svg`)
+    const ext = files.has(`${scene}.png`) ? 'png' : 'svg'
+    const stem = `${metadata.art}${scene === 'idle' ? '' : '-' + scene}`
+    const target = join(root, `${stem}.${ext}`)
     const temp = target + '.tmp'
-    writeFileSync(temp, files.get(`${scene}.svg`))
+    writeFileSync(temp, files.get(`${scene}.${ext}`))
     renameSync(temp, target)
+    rmSync(join(root, `${stem}.${ext === 'png' ? 'svg' : 'png'}`), { force: true })
   }
   return checked
 }
 
 export function customSkinArt(savePath, name) {
-  if (!/^custom-[a-z0-9-]{1,31}(?:-(?:eat|bathe|play|pet|relaxed|work|study|trip|fish|sleep))?\.svg$/.test(name)) return null
-  const path = join(dirname(savePath), 'skins', name)
-  return existsSync(path) ? readFileSync(path) : null
+  if (!/^custom-[a-z0-9-]{1,41}(?:\.(?:png|svg))?$/.test(name)) return null
+  const stem = name.replace(/\.(?:png|svg)$/, '')
+  const extensions = name.endsWith('.svg') ? ['svg', 'png'] : ['png', 'svg']
+  for (const ext of extensions) {
+    const path = join(dirname(savePath), 'skins', `${stem}.${ext}`)
+    if (existsSync(path)) return readFileSync(path)
+  }
+  return null
 }

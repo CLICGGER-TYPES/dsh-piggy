@@ -6,6 +6,7 @@
  * @module dsh-piggy/client/art
  */
 import { ART_URL } from './constants.js'
+import { artSource, hasBuiltinArt } from './art-path.js'
 import { feedbackArtFor } from './feedback-art.js'
 import { FEEDBACK_FRAMING, BUILTIN_FRAMING, FRAME_HEIGHT } from './feedback-framing.js'
 
@@ -28,7 +29,7 @@ function applyFrame(image, frame) {
   image.style.setProperty('--art-y', frame ? frame[2] + '%' : '0%')
 }
 
-/** Imported skins are not known at build time; measure their sanitized SVG once after loading. */
+/** Imported PNG or legacy SVG skins are measured once after loading. */
 function frameCustomImage(image, src, sleep = false) {
   if (!src.includes('/custom-')) { applyFrame(image, BUILTIN_FRAMING[src.slice(ART_URL.length)] ?? null); return }
   const cached = CUSTOM_FRAME_CACHE.get(src)
@@ -72,7 +73,7 @@ function frameCustomImage(image, src, sleep = false) {
 export function syncSleepArt(art, scenes, image) {
   var custom = typeof art === 'string' && art.startsWith('custom-') && scenes.includes('sleep')
   var name = SLEEP_ART.has(art) ? art : 'piglet'
-  var src = ART_URL + (custom ? art + '-sleep.svg' : name + '-sleep.png')
+  var src = artSource((custom ? art : name) + '-sleep')
   if (image.getAttribute('src') !== src) image.src = src
   frameCustomImage(image, src, true)
 }
@@ -101,7 +102,7 @@ export function syncPigArt(pig, image, emoji) {
     party: pig.getAttribute('data-party') === 'true', hour: Math.floor(Date.now() / 3_600_000),
   })
   if (feedback) {
-    var feedbackSrc = ART_URL + 'feedback/' + feedback + '.png'
+    var feedbackSrc = artSource('feedback/' + feedback)
     if (image.getAttribute('src') !== feedbackSrc) image.src = feedbackSrc
     applyFrame(image, FEEDBACK_FRAMING[feedback] ?? null)
     image.hidden = false
@@ -118,12 +119,13 @@ export function syncPigArt(pig, image, emoji) {
     return false
   }
   var art = base
-  if (pig.getAttribute('data-art-actions') === 'true') {
+  if (pig.getAttribute('data-art-actions') === 'true' || base === 'piglet') {
     var action = REACTION_ART[pig.getAttribute('data-react')] || ACTIVITY_ART[pig.getAttribute('data-activity')]
     var scenes = String(pig.getAttribute('data-art-scenes') || '').split(',')
-    if (action && (scenes[0] === '' || scenes.indexOf(action) >= 0)) art += '-' + action
+    if (action && (base === 'piglet' || scenes[0] === '' || scenes.indexOf(action) >= 0)
+      && (base.startsWith('custom-') || hasBuiltinArt(base + '-' + action))) art += '-' + action
   }
-  var src = ART_URL + art + '.svg'
+  var src = artSource(art)
   if (image.getAttribute('src') !== src) image.src = src
   frameCustomImage(image, src)
   image.hidden = false

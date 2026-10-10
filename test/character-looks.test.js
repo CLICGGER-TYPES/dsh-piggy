@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { applyDevPatch, decay, formStageView, hatchEgg, migrate, selectSkin, skinView, startWork } from '../core.js'
 import { SKINS, xpForLevel } from '../data.js'
+import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 import { finishWork } from '../packages/pet-core/src/core/settlement.js'
 import { dexView } from '../packages/pet-core/src/core/dex.js'
 import { renderDevTab } from '../src/client/tabs/dev.js'
@@ -12,7 +13,7 @@ import { PIG, SNAPSHOT, fakeDom, findByAttr } from './helpers/bundle.js'
 const NOW = 1_800_000_000_000
 const actions = ['', '-relaxed', '-pet', '-eat', '-bathe', '-play', '-work', '-study', '-trip']
 
-test('six supplied characters have nine real action SVGs, with fishing falling back to idle', () => {
+test('six supplied characters have nine real action PNGs, with fishing falling back to idle', () => {
   const expected = new Map([
     ['chef', 'chef'], ['astronaut', 'astronaut'],
     ['detective', null], ['angel', null], ['pirate', null], ['wizard', null],
@@ -23,8 +24,8 @@ test('six supplied characters have nine real action SVGs, with fishing falling b
     assert.equal(skin.unlockJob ?? null, job)
     assert.equal(skin.scenes.includes('fish'), false, 'missing fish art must use idle')
     for (const suffix of actions) {
-      const svg = readFileSync(new URL(`../assets/${skin.art}${suffix}.svg`, import.meta.url), 'utf8')
-      assert.match(svg, /viewBox="0 0 64 64"/)
+      const png = readFileSync(new URL('../assets/' + PIG_ART_ASSETS[skin.art + suffix], import.meta.url))
+      assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
     }
   }
 })

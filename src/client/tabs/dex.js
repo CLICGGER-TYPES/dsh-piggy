@@ -2,7 +2,8 @@
 /** C4 图鉴。形态/皮肤用小闪卡，其余收藏按动森博物馆与目录呈现。 */
 
 import { offParts } from '../extensions.js'
-import { ART_URL, shelfOf } from '../constants.js'
+import { shelfOf } from '../constants.js'
+import { artSource } from '../art-path.js'
 import { button, el, sideScroller } from '../dom.js'
 import { drillHeader, drillTo, tile, tileGrid } from '../widgets.js'
 import { renderAchievements } from './achievements.js'
@@ -258,7 +259,7 @@ function openDetail(ui, key) {
 function appendArt(parent, entry, large) {
   if (entry.art) {
     const img = /** @type {HTMLImageElement} */ (el('img', 'dp-dex-art'))
-    img.src = ART_URL + entry.art + '.svg'
+    img.src = artSource(entry.art)
     img.alt = entry.acquired ? entry.label : ''
     parent.appendChild(img)
   } else {
