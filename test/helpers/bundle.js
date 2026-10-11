@@ -56,6 +56,17 @@ export function fakeDom() {
 
     addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn) }
     setPointerCapture() {}
+    get src() { return this.getAttribute('src') || '' }
+    set src(value) { this.setAttribute('src', value) }
+    matches(selector) {
+      return selector.split(',').some(part => part.startsWith('.')
+        ? this.className.split(/\s+/).includes(part.slice(1)) : this.tagName === part)
+    }
+    querySelectorAll(selector) {
+      const found = []
+      for (const child of this.children) child.walk(node => { if (node.matches(selector)) found.push(node) })
+      return found
+    }
     querySelector() { return null }
     getBoundingClientRect() { return this.rect }
 
@@ -154,6 +165,7 @@ export async function mount(options = {}) {
     innerWidth: 1280,
     innerHeight: 800,
     addEventListener: (name, fn) => { (windowListeners[name] ??= []).push(fn) },
+    dispatchEvent: event => { for (const fn of windowListeners[event.type] ?? []) fn(event) },
     removeEventListener: (name, fn) => {
       const list = windowListeners[name]
       if (list) windowListeners[name] = list.filter(entry => entry !== fn)
@@ -161,6 +173,7 @@ export async function mount(options = {}) {
   }
   // Extra window globals, e.g. the desktop shell seam (apps/desktop).
   Object.assign(globalThis.window, options?.windowExtra ?? {})
+  globalThis.MutationObserver = class { observe() {} disconnect() {} }
   globalThis.document = dom.document
   // 字体：自带 emoji 的开关按 document.fonts 里有没有 'Piggy Emoji' 决定。
   if (options?.fonts !== undefined) {

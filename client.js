@@ -1,71 +1,10 @@
 // GENERATED FILE. Edit src/client/ and run `npm run build`; do not edit by hand.
 (() => {
-  // src/client/constants.js
-  var STATE_URL = "/dsh-piggy/state";
-  var ART_URL = "/dsh-piggy/art/";
-  var ACT_URL = "/dsh-piggy/act";
-  var POLL_MS = 4e3;
-  var IDLE_CHAT_MINUTES = { min: 20, max: 40 };
-  var GREET_DELAY_MS = 1500;
-  var MOUNTED = "data-dsh-pig";
-  var OPEN_KEY = "dsh-piggy:open";
-  var POSITION_KEY = "dsh-piggy:position";
-  var PANEL_WIDTH = 292;
-  var PANEL_GAP = 8;
-  var PANEL_MARGIN = 10;
-  var PANEL_MIN_HEIGHT = 120;
-  var PANEL_MAX_HEIGHT = 520;
-  var SCENE_RESERVE = 132;
-  var PIG_PADDING_X = 6;
-  var TABS = [
-    { key: "status", label: "\u72B6\u6001", emoji: "\u{1F4CB}" },
-    { key: "card", label: "\u5C45\u6C11\u5361", emoji: "\u{1FAAA}" },
-    { key: "dex", label: "\u56FE\u9274", emoji: "\u{1F4D6}" },
-    { key: "skins", label: "\u6362\u80A4", emoji: "\u{1F3A8}" },
-    { key: "study", label: "\u5B66\u4E60", emoji: "\u{1F4DA}" },
-    { key: "work", label: "\u6253\u5DE5", emoji: "\u{1F4BC}" },
-    { key: "shop", label: "\u5546\u5E97", emoji: "\u{1F6D2}" },
-    { key: "travel", label: "\u65C5\u884C", emoji: "\u{1F9F3}" },
-    { key: "bag", label: "\u80CC\u5305", emoji: "\u{1F392}" },
-    { key: "pomodoro", label: "\u756A\u8304\u949F", emoji: "\u{1F345}" },
-    { key: "fishing", label: "\u9493\u9C7C", emoji: "\u{1F3A3}" },
-    { key: "extensions", label: "\u6269\u5C55", emoji: "\u{1F9E9}" },
-    { key: "settings", label: "\u8BBE\u7F6E", emoji: "\u2699\uFE0F" }
-  ];
-  var DEV_TAPS_TO_UNLOCK = 7;
-  var DEV_TAP_WINDOW_MS = 3e3;
-  var DEV_TAP_HINT_FROM = 4;
-  var DEV_TAP_HINT_MS = 1200;
-  var DEV_KEY = "dsh-piggy:dev";
-  var DEV_TAB = { key: "dev", label: "\u8C03\u8BD5", emoji: "\u{1F527}" };
-  var UPDATE_TAB = { key: "update", label: "\u66F4\u65B0", emoji: "\u{1F504}" };
-  var QUIT_TAB = { key: "quit", label: "\u9000\u51FA", emoji: "\u{1F44B}" };
-  var MODES = ["feed", "bathe", "play", "pet"];
-  var CARE_LABEL = { feed: ["\u5582\u98DF", "\u{1F34E}"], bathe: ["\u6D17\u6FA1", "\u{1F6C1}"], play: ["\u73A9\u800D", "\u{1F3BE}"], pet: ["\u6478\u6478", "\u2764\uFE0F"] };
-  var BOX_POKES_TO_OPEN = 3;
-  var BOX_POKE_LINES = [
-    "\u91CC\u9762\u597D\u50CF\u6709\u4E1C\u897F\u2026",
-    "\u52A8\u4E86\uFF01\u518D\u6233\u4E00\u4E0B\uFF01"
-  ];
-  var NO_ITEM_LINE = {
-    food: "\u6CA1\u6709\u5403\u7684\u5566\uFF0C\u5FEB\u53BB\u4E70\u4E00\u70B9 \u{1F34E}",
-    bath: "\u6CA1\u6709\u6D17\u6D74\u7528\u54C1\u4E86\uFF0C\u53BB\u4E70\u70B9\u5427 \u{1F9FC}",
-    toy: "\u6CA1\u6709\u73A9\u5177\u4E86\uFF0C\u53BB\u5546\u5E97\u770B\u770B \u{1FA80}"
+  var __defProp = Object.defineProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
   };
-  var KIND_TITLE = { food: "\u{1F34E} \u98DF\u7269", bath: "\u{1F9FC} \u6D17\u6D74", toy: "\u{1FA80} \u73A9\u5177", bait: "\u{1F3A3} \u9C7C\u9975", dress: "\u{1F455} \u88C5\u626E", medicine: "\u{1F48A} \u836F\u54C1", revive: "\u2728 \u590D\u6D3B", promotion: "\u2728 \u664B\u5347" };
-  var KIND_ORDER = ["food", "bath", "toy", "bait", "medicine", "promotion"];
-  function shelfOf(kind) {
-    return kind === "revive" ? "medicine" : kind;
-  }
-  var STAGES = [
-    { key: "preschool", label: "\u5E7C\u513F\u56ED" },
-    { key: "extracurricular", label: "\u8BFE\u5916" },
-    { key: "primary", label: "\u5C0F\u5B66" },
-    { key: "middle", label: "\u4E2D\u5B66" },
-    { key: "high", label: "\u9AD8\u4E2D" },
-    { key: "college", label: "\u5927\u5B66" },
-    { key: "graduate", label: "\u7814\u7A76\u751F" }
-  ];
 
   // packages/pet-core/src/data/art-assets.js
   var PIG_ART_ASSETS = Object.freeze({
@@ -251,106 +190,102 @@
     "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
     "skin-wizard-work": "pigs/skins/skin-wizard/work.png"
   });
+  var NO_OUTLINE_ART_ASSETS = Object.freeze(Object.fromEntries(
+    Object.entries(PIG_ART_ASSETS).map(([key, path]) => [key, path.replace(/^pigs\//, "pigs/no-outline/")])
+  ));
 
-  // src/client/art-path.js
-  function artSource(key) {
-    return ART_URL + (PIG_ART_ASSETS[key] ?? (key.startsWith("custom-") ? key : key + ".svg"));
+  // src/client/storage.js
+  function readStore(key) {
+    try {
+      var value = window.localStorage.getItem(key);
+      return value !== null ? value : window.localStorage.getItem(key.replace(/^dsh-piggy:/, "dsh-pig:"));
+    } catch (error) {
+      return null;
+    }
   }
-  function hasBuiltinArt(key) {
-    return Object.hasOwn(PIG_ART_ASSETS, key);
+  function writeStore(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (error) {
+    }
   }
 
-  // src/client/feedback-art.js
-  var MOOD_ART = {
-    hungry: ["hungry"],
-    sleepy: ["sleep-cloud", "lie-flat"],
-    lonely: ["lie-flat"],
-    dirty: ["collection-mosquito"],
-    happy: ["music-rainbow", "collection-stack"]
+  // src/client/constants.js
+  var STATE_URL = "/dsh-piggy/state";
+  var ART_URL = "/dsh-piggy/art/";
+  var ACT_URL = "/dsh-piggy/act";
+  var POLL_MS = 4e3;
+  var IDLE_CHAT_MINUTES = { min: 20, max: 40 };
+  var GREET_DELAY_MS = 1500;
+  var MOUNTED = "data-dsh-pig";
+  var OPEN_KEY = "dsh-piggy:open";
+  var POSITION_KEY = "dsh-piggy:position";
+  var PANEL_WIDTH = 292;
+  var PANEL_GAP = 8;
+  var PANEL_MARGIN = 10;
+  var PANEL_MIN_HEIGHT = 120;
+  var PANEL_MAX_HEIGHT = 520;
+  var SCENE_RESERVE = 132;
+  var PIG_PADDING_X = 6;
+  var TABS = [
+    { key: "status", label: "\u72B6\u6001", emoji: "\u{1F4CB}" },
+    { key: "card", label: "\u5C45\u6C11\u5361", emoji: "\u{1FAAA}" },
+    { key: "dex", label: "\u56FE\u9274", emoji: "\u{1F4D6}" },
+    { key: "skins", label: "\u6362\u80A4", emoji: "\u{1F3A8}" },
+    { key: "study", label: "\u5B66\u4E60", emoji: "\u{1F4DA}" },
+    { key: "work", label: "\u6253\u5DE5", emoji: "\u{1F4BC}" },
+    { key: "shop", label: "\u5546\u5E97", emoji: "\u{1F6D2}" },
+    { key: "travel", label: "\u65C5\u884C", emoji: "\u{1F9F3}" },
+    { key: "bag", label: "\u80CC\u5305", emoji: "\u{1F392}" },
+    { key: "pomodoro", label: "\u756A\u8304\u949F", emoji: "\u{1F345}" },
+    { key: "fishing", label: "\u9493\u9C7C", emoji: "\u{1F3A3}" },
+    { key: "extensions", label: "\u6269\u5C55", emoji: "\u{1F9E9}" },
+    { key: "settings", label: "\u8BBE\u7F6E", emoji: "\u2699\uFE0F" }
+  ];
+  var DEV_TAPS_TO_UNLOCK = 7;
+  var DEV_TAP_WINDOW_MS = 3e3;
+  var DEV_TAP_HINT_FROM = 4;
+  var DEV_TAP_HINT_MS = 1200;
+  var DEV_KEY = "dsh-piggy:dev";
+  var DEV_TAB = { key: "dev", label: "\u8C03\u8BD5", emoji: "\u{1F527}" };
+  var UPDATE_TAB = { key: "update", label: "\u66F4\u65B0", emoji: "\u{1F504}" };
+  var QUIT_TAB = { key: "quit", label: "\u9000\u51FA", emoji: "\u{1F44B}" };
+  var MODES = ["feed", "bathe", "play", "pet"];
+  var CARE_LABEL = { feed: ["\u5582\u98DF", "\u{1F34E}"], bathe: ["\u6D17\u6FA1", "\u{1F6C1}"], play: ["\u73A9\u800D", "\u{1F3BE}"], pet: ["\u6478\u6478", "\u2764\uFE0F"] };
+  var BOX_POKES_TO_OPEN = 3;
+  var BOX_POKE_LINES = [
+    "\u91CC\u9762\u597D\u50CF\u6709\u4E1C\u897F\u2026",
+    "\u52A8\u4E86\uFF01\u518D\u6233\u4E00\u4E0B\uFF01"
+  ];
+  var NO_ITEM_LINE = {
+    food: "\u6CA1\u6709\u5403\u7684\u5566\uFF0C\u5FEB\u53BB\u4E70\u4E00\u70B9 \u{1F34E}",
+    bath: "\u6CA1\u6709\u6D17\u6D74\u7528\u54C1\u4E86\uFF0C\u53BB\u4E70\u70B9\u5427 \u{1F9FC}",
+    toy: "\u6CA1\u6709\u73A9\u5177\u4E86\uFF0C\u53BB\u5546\u5E97\u770B\u770B \u{1FA80}"
   };
-  var ILLNESS_ART = {
-    "cold:1": ["runny-nose"],
-    "cold:2": ["collection-fever"],
-    "cold:3": ["runny-nose"],
-    "skin:1": ["allergy"],
-    "skin:2": ["allergy"],
-    "skin:3": ["allergy"],
-    "skin:4": ["allergy"],
-    "dizzy:1": ["faint"],
-    "dizzy:2": ["faint"],
-    "dizzy:3": ["faint"]
-  };
-  var REACTION_ART = {
-    feed: ["collection-snack", "collection-soup"],
-    bathe: ["collection-bubbles"],
-    play: ["collection-chicken", "turning"],
-    levelup: ["collection-throne"]
-  };
-  var IDLE_ART = {
-    roll: ["turning", "collection-taro"],
-    butterfly: ["collection-chicken", "collection-scallion"],
-    look: ["collection-letter"],
-    walk: ["collection-chicken", "collection-scallion"]
-  };
-  var WORK_ART = {
-    flyers: "collection-letter",
-    singer: "music-headphones-v2",
-    songwriter: "music-earbuds",
-    cartoonist: "painting",
-    athlete: "collection-fitness",
-    coach: "collection-fitness",
-    gardener: "collection-scallion",
-    florist: "collection-scallion",
-    ceo: "collection-throne",
-    star: "music-rainbow"
-  };
-  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
-  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
-  var INTEREST_ART = {
-    fitness: ["collection-fitness"],
-    guitar: ["music-earbuds", "music-headphones-v2"],
-    dancing: ["music-earbuds", "music-headphones-v2"],
-    calligraphy: ["painting"],
-    photography: ["painting"],
-    other: ["study-determined"]
-  };
-  var TRIP_ART = ["collection-chicken", "collection-taro", "collection-scallion"];
-  var BIRTHDAY_ART = "birthday";
-  var FEEDBACK_ART_TABLES = Object.freeze({
-    stage: STAGE_ART,
-    birthday: [BIRTHDAY_ART],
-    reaction: REACTION_ART,
-    illness: ILLNESS_ART,
-    mood: MOOD_ART,
-    work: WORK_ART,
-    study: STUDY_ART,
-    interest: INTEREST_ART,
-    fishing: ["fishing"],
-    trip: TRIP_ART,
-    idle: IDLE_ART
-  });
-  var UNUSED_FEEDBACK_ART = Object.freeze(["collection-badge", "collection-check", "collection-cage", "suspended", "twitch"]);
-  function choose(options, hour) {
-    return options[Math.abs(Math.floor(hour)) % options.length];
+  var KIND_TITLE = { food: "\u{1F34E} \u98DF\u7269", bath: "\u{1F9FC} \u6D17\u6D74", toy: "\u{1FA80} \u73A9\u5177", bait: "\u{1F3A3} \u9C7C\u9975", dress: "\u{1F455} \u88C5\u626E", medicine: "\u{1F48A} \u836F\u54C1", revive: "\u2728 \u590D\u6D3B", promotion: "\u2728 \u664B\u5347" };
+  var KIND_ORDER = ["food", "bath", "toy", "bait", "medicine", "promotion"];
+  function shelfOf(kind) {
+    return kind === "revive" ? "medicine" : kind;
   }
-  function feedbackArtFor(state2) {
-    if (STAGE_ART[state2.stage]) return choose(STAGE_ART[state2.stage], state2.hour);
-    if (state2.party === true) return BIRTHDAY_ART;
-    if (state2.base && state2.base !== "piglet") return null;
-    if (REACTION_ART[state2.reaction]) return choose(REACTION_ART[state2.reaction], state2.hour);
-    if (state2.mood === "sick") return ILLNESS_ART[state2.illness ?? ""] ? choose(ILLNESS_ART[state2.illness ?? ""], state2.hour) : null;
-    if (state2.mood === "dirty") return choose(MOOD_ART.dirty, state2.hour);
-    if (state2.activityKind === "work") return WORK_ART[state2.activityKey] ?? null;
-    if (state2.activityKind === "study") return choose(STUDY_ART, state2.hour);
-    if (state2.activityKind === "interest") return choose(INTEREST_ART[state2.activityKey] ?? INTEREST_ART.other, state2.hour);
-    if (state2.activityKind === "fishing") return "fishing";
-    if (state2.activityKind === "trip") return choose(TRIP_ART, state2.hour);
-    if (IDLE_ART[state2.idle]) return choose(IDLE_ART[state2.idle], state2.hour);
-    if (MOOD_ART[state2.mood]) return choose(MOOD_ART[state2.mood], state2.hour);
-    return null;
-  }
+  var STAGES = [
+    { key: "preschool", label: "\u5E7C\u513F\u56ED" },
+    { key: "extracurricular", label: "\u8BFE\u5916" },
+    { key: "primary", label: "\u5C0F\u5B66" },
+    { key: "middle", label: "\u4E2D\u5B66" },
+    { key: "high", label: "\u9AD8\u4E2D" },
+    { key: "college", label: "\u5927\u5B66" },
+    { key: "graduate", label: "\u7814\u7A76\u751F" }
+  ];
 
   // src/client/feedback-framing.js
+  var feedback_framing_exports = {};
+  __export(feedback_framing_exports, {
+    ART_BOUNDS: () => ART_BOUNDS,
+    BUILTIN_FRAMING: () => BUILTIN_FRAMING,
+    FEEDBACK_FRAMING: () => FEEDBACK_FRAMING,
+    FRAME_HEIGHT: () => FRAME_HEIGHT,
+    MAX_ART_ASPECT: () => MAX_ART_ASPECT
+  });
   var FRAME_HEIGHT = 0.84375;
   var FEEDBACK_FRAMING = Object.freeze({
     "allergy": [1.2558, 0, 0],
@@ -694,6 +629,527 @@
   });
   var MAX_ART_ASPECT = 2.055046;
 
+  // src/client/no-outline-framing.js
+  var no_outline_framing_exports = {};
+  __export(no_outline_framing_exports, {
+    ART_BOUNDS: () => ART_BOUNDS2,
+    BUILTIN_FRAMING: () => BUILTIN_FRAMING2,
+    FEEDBACK_FRAMING: () => FEEDBACK_FRAMING2,
+    FRAME_HEIGHT: () => FRAME_HEIGHT2,
+    MAX_ART_ASPECT: () => MAX_ART_ASPECT2
+  });
+  var FRAME_HEIGHT2 = 0.84375;
+  var FEEDBACK_FRAMING2 = Object.freeze({
+    "allergy": [1.2857, 0, 0],
+    "birthday": [1.08, 0, 0],
+    "collection-badge": [0.9954, 0, 0.19],
+    "collection-bubbles": [1.1192, 0, 0.22],
+    "collection-cage": [0.9643, 0.19, 0],
+    "collection-check": [1.1134, 0, 0],
+    "collection-chicken": [0.9643, 0, 0],
+    "collection-courier": [1.2, 0, 0],
+    "collection-fever": [1.1868, 0, 0],
+    "collection-fitness": [1.3846, 0, 0],
+    "collection-letter": [1.3171, 0, 0],
+    "collection-mosquito": [1.3091, 0, 0.26],
+    "collection-scallion": [1.0435, 0, 0.2],
+    "collection-snack": [1.2632, 0, 0.25],
+    "collection-soup": [0.9643, 0.19, 0],
+    "collection-stack": [0.9643, 0.19, 0],
+    "collection-taro": [1.1676, 0, 0.23],
+    "collection-throne": [0.9643, 0.19, 0],
+    "courier": [1.0537, 0, 0.21],
+    "death-day": [1.554, 0, 0.3],
+    "faint": [1.2203, 0, 0.24],
+    "fishing": [1.1613, 0, 0],
+    "ghost-grave": [1.2, 0, 0],
+    "hungry": [1.0693, 0, 0],
+    "lie-flat": [1.4026, 0, 0],
+    "music-earbuds": [1.1429, 0, 0.22],
+    "music-headphones-v2": [1.2343, 0, 0.24],
+    "music-rainbow": [1.8621, 0, 0],
+    "painting": [1.1934, 0, 0.23],
+    "recruit": [1.0286, 0, 0],
+    "runny-nose": [1.3252, 0, 0.26],
+    "sleep-cloud": [1.4118, 0, 0.28],
+    "study-book": [1.3091, 0, 0.26],
+    "study-determined": [1.2067, 0, 0.24],
+    "study-pink-book": [1.1309, 0, 0.22],
+    "suspended": [0.9643, 0, 0],
+    "turning": [1.3758, 0, 0.27],
+    "twitch": [1.3171, 0, 0]
+  });
+  var BUILTIN_FRAMING2 = Object.freeze({
+    "pigs/no-outline/skins/career-astronaut/idle.png": [1.1077, 0, 0.22],
+    "pigs/no-outline/skins/career-astronaut/bathe.png": [1.6744, 0, 0.33],
+    "pigs/no-outline/skins/career-astronaut/eat.png": [1.3252, 0, 0.26],
+    "pigs/no-outline/skins/career-astronaut/pet.png": [0.9643, 0, 0],
+    "pigs/no-outline/skins/career-astronaut/play.png": [1.064, 0, 0.21],
+    "pigs/no-outline/skins/career-astronaut/relaxed.png": [1.1077, 0, 0.22],
+    "pigs/no-outline/skins/career-astronaut/sleep.png": [1.4694, 0, 0.29],
+    "pigs/no-outline/skins/career-astronaut/study.png": [1.1077, 0, 0.22],
+    "pigs/no-outline/skins/career-astronaut/trip.png": [1.2067, 0, 0.24],
+    "pigs/no-outline/skins/career-astronaut/work.png": [1.6489, 0, 0.32],
+    "pigs/no-outline/skins/career-chef/idle.png": [1.0189, 0, 0],
+    "pigs/no-outline/skins/career-chef/bathe.png": [1.7851, 0, 0.35],
+    "pigs/no-outline/skins/career-chef/eat.png": [1.1368, 0, 0],
+    "pigs/no-outline/skins/career-chef/pet.png": [0.9643, 0.19, 0],
+    "pigs/no-outline/skins/career-chef/play.png": [0.9643, 0, 0],
+    "pigs/no-outline/skins/career-chef/relaxed.png": [1.0693, 0, 0],
+    "pigs/no-outline/skins/career-chef/sleep.png": [1.2857, 0, 0],
+    "pigs/no-outline/skins/career-chef/study.png": [0.9643, 0, 0],
+    "pigs/no-outline/skins/career-chef/trip.png": [1.0485, 0, 0],
+    "pigs/no-outline/skins/career-chef/work.png": [1.2781, 0, 0.25],
+    "pigs/no-outline/base/elder/idle.png": [1.2857, 0, 0],
+    "pigs/no-outline/forms/pig-devil/idle.png": [1.3416, 0, 0.26],
+    "pigs/no-outline/forms/pig-devil/bathe.png": [1.44, 0, 0],
+    "pigs/no-outline/forms/pig-devil/eat.png": [1.44, 0, 0],
+    "pigs/no-outline/forms/pig-devil/fly.png": [1.3171, 0, 0],
+    "pigs/no-outline/forms/pig-devil/pet.png": [1.2067, 0, 0.24],
+    "pigs/no-outline/forms/pig-devil/play.png": [1.2, 0, 0],
+    "pigs/no-outline/forms/pig-devil/relaxed.png": [1.3416, 0, 0.26],
+    "pigs/no-outline/forms/pig-devil/sleep.png": [1.5652, 0, 0],
+    "pigs/no-outline/forms/pig-devil/study.png": [1.3171, 0, 0],
+    "pigs/no-outline/forms/pig-devil/trip.png": [1.3585, 0, 0.27],
+    "pigs/no-outline/forms/pig-devil/work.png": [1.5, 0, 0],
+    "pigs/no-outline/forms/pig-fat/idle.png": [1.44, 0, 0],
+    "pigs/no-outline/forms/pig-fat/bathe.png": [1.4595, 0, 0],
+    "pigs/no-outline/forms/pig-fat/eat.png": [1.4026, 0, 0],
+    "pigs/no-outline/forms/pig-fat/pet.png": [1.0537, 0, 0.21],
+    "pigs/no-outline/forms/pig-fat/play.png": [1.4897, 0, 0.29],
+    "pigs/no-outline/forms/pig-fat/relaxed.png": [1.4211, 0, 0],
+    "pigs/no-outline/forms/pig-fat/sleep.png": [1.5211, 0, 0],
+    "pigs/no-outline/forms/pig-fat/study.png": [1.3671, 0, 0],
+    "pigs/no-outline/forms/pig-fat/trip.png": [1.4595, 0, 0],
+    "pigs/no-outline/forms/pig-fat/work.png": [2.0377, 0, 0],
+    "pigs/no-outline/forms/pig-king/idle.png": [1.064, 0, 0.21],
+    "pigs/no-outline/forms/pig-king/bathe.png": [1.7561, 0, 0.34],
+    "pigs/no-outline/forms/pig-king/eat.png": [1.1934, 0, 0.23],
+    "pigs/no-outline/forms/pig-king/pet.png": [0.9643, 0, 0],
+    "pigs/no-outline/forms/pig-king/play.png": [0.9686, 0, 0.19],
+    "pigs/no-outline/forms/pig-king/relaxed.png": [1.0693, 0, 0],
+    "pigs/no-outline/forms/pig-king/sleep.png": [1.3846, 0, 0],
+    "pigs/no-outline/forms/pig-king/study.png": [1.0485, 0, 0],
+    "pigs/no-outline/forms/pig-king/trip.png": [1.0286, 0, 0],
+    "pigs/no-outline/forms/pig-king/work.png": [1.4595, 0, 0],
+    "pigs/no-outline/forms/pig-round/idle.png": [1.2273, 0, 0],
+    "pigs/no-outline/forms/pig-round/bathe.png": [1.4026, 0, 0],
+    "pigs/no-outline/forms/pig-round/eat.png": [1.3252, 0, 0.26],
+    "pigs/no-outline/forms/pig-round/pet.png": [1.0854, 0, 0.21],
+    "pigs/no-outline/forms/pig-round/play.png": [1.2067, 0, 0.24],
+    "pigs/no-outline/forms/pig-round/relaxed.png": [1.2343, 0, 0.24],
+    "pigs/no-outline/forms/pig-round/sleep.png": [1.3935, 0, 0.27],
+    "pigs/no-outline/forms/pig-round/study.png": [1.1077, 0, 0.22],
+    "pigs/no-outline/forms/pig-round/trip.png": [1.2414, 0, 0],
+    "pigs/no-outline/forms/pig-round/work.png": [1.7008, 0, 0.33],
+    "pigs/no-outline/base/piglet/idle.png": [1.2781, 0, 0.25],
+    "pigs/no-outline/base/piglet/bathe.png": [1.44, 0, 0],
+    "pigs/no-outline/base/piglet/eat.png": [1.3333, 0, 0],
+    "pigs/no-outline/base/piglet/play.png": [1.1192, 0, 0.22],
+    "pigs/no-outline/base/piglet/sleep.png": [1.4897, 0, 0.29],
+    "pigs/no-outline/base/piglet/work.png": [1.728, 0, 0.34],
+    "pigs/no-outline/skins/skin-angel/idle.png": [1.102, 0, 0],
+    "pigs/no-outline/skins/skin-angel/bathe.png": [1.2343, 0, 0.24],
+    "pigs/no-outline/skins/skin-angel/eat.png": [1.1309, 0, 0.22],
+    "pigs/no-outline/skins/skin-angel/pet.png": [1.0693, 0, 0],
+    "pigs/no-outline/skins/skin-angel/play.png": [1.0141, 0, 0.2],
+    "pigs/no-outline/skins/skin-angel/relaxed.png": [1.1309, 0, 0.22],
+    "pigs/no-outline/skins/skin-angel/sleep.png": [1.44, 0, 0],
+    "pigs/no-outline/skins/skin-angel/study.png": [1.0189, 0, 0],
+    "pigs/no-outline/skins/skin-angel/trip.png": [1.1429, 0, 0.22],
+    "pigs/no-outline/skins/skin-angel/work.png": [1.4497, 0, 0.28],
+    "pigs/no-outline/skins/skin-detective/idle.png": [1.1613, 0, 0],
+    "pigs/no-outline/skins/skin-detective/bathe.png": [1.9286, 0, 0],
+    "pigs/no-outline/skins/skin-detective/eat.png": [1.2273, 0, 0],
+    "pigs/no-outline/skins/skin-detective/pet.png": [1.0909, 0, 0],
+    "pigs/no-outline/skins/skin-detective/play.png": [1.0335, 0, 0.2],
+    "pigs/no-outline/skins/skin-detective/relaxed.png": [1.1489, 0, 0],
+    "pigs/no-outline/skins/skin-detective/sleep.png": [1.35, 0, 0],
+    "pigs/no-outline/skins/skin-detective/study.png": [1.1134, 0, 0],
+    "pigs/no-outline/skins/skin-detective/trip.png": [1.1803, 0, 0.23],
+    "pigs/no-outline/skins/skin-detective/work.png": [1.5105, 0, 0.3],
+    "pigs/no-outline/skins/skin-mint/idle.png": [1.2414, 0, 0],
+    "pigs/no-outline/skins/skin-mint/bathe.png": [1.4026, 0, 0],
+    "pigs/no-outline/skins/skin-mint/eat.png": [1.3585, 0, 0.27],
+    "pigs/no-outline/skins/skin-mint/pet.png": [1.0485, 0, 0],
+    "pigs/no-outline/skins/skin-mint/play.png": [1.1739, 0, 0],
+    "pigs/no-outline/skins/skin-mint/sleep.png": [1.3846, 0, 0],
+    "pigs/no-outline/skins/skin-mint/work.png": [1.7143, 0, 0],
+    "pigs/no-outline/skins/skin-pirate/idle.png": [1.2632, 0, 0.25],
+    "pigs/no-outline/skins/skin-pirate/bathe.png": [1.9636, 0, 0],
+    "pigs/no-outline/skins/skin-pirate/eat.png": [1.4305, 0, 0.28],
+    "pigs/no-outline/skins/skin-pirate/pet.png": [1.0537, 0, 0.21],
+    "pigs/no-outline/skins/skin-pirate/play.png": [1.2857, 0, 0],
+    "pigs/no-outline/skins/skin-pirate/relaxed.png": [1.2632, 0, 0.25],
+    "pigs/no-outline/skins/skin-pirate/sleep.png": [1.6, 0, 0.31],
+    "pigs/no-outline/skins/skin-pirate/study.png": [1.1803, 0, 0.23],
+    "pigs/no-outline/skins/skin-pirate/trip.png": [1.2857, 0, 0],
+    "pigs/no-outline/skins/skin-pirate/work.png": [1.6489, 0, 0.32],
+    "pigs/no-outline/skins/skin-wizard/idle.png": [1.0189, 0, 0],
+    "pigs/no-outline/skins/skin-wizard/bathe.png": [1.9115, 0, 0.37],
+    "pigs/no-outline/skins/skin-wizard/eat.png": [1.0537, 0, 0.21],
+    "pigs/no-outline/skins/skin-wizard/pet.png": [1.0385, 0, 0],
+    "pigs/no-outline/skins/skin-wizard/play.png": [0.9774, 0, 0.19],
+    "pigs/no-outline/skins/skin-wizard/relaxed.png": [1.0047, 0, 0.2],
+    "pigs/no-outline/skins/skin-wizard/sleep.png": [1.2203, 0, 0.24],
+    "pigs/no-outline/skins/skin-wizard/study.png": [1.0286, 0, 0],
+    "pigs/no-outline/skins/skin-wizard/trip.png": [1.0141, 0, 0.2],
+    "pigs/no-outline/skins/skin-wizard/work.png": [1.4026, 0, 0]
+  });
+  var ART_BOUNDS2 = Object.freeze({
+    "pigs/no-outline/base/piglet/idle.png": [0.0625, 0.167969, 0.9375, 0.828125],
+    "pigs/no-outline/skins/career-chef/idle.png": [0.0625, 0.085938, 0.9375, 0.914062],
+    "pigs/no-outline/skins/skin-angel/idle.png": [0.0625, 0.117188, 0.9375, 0.882812],
+    "pigs/no-outline/forms/pig-round/idle.png": [0.0625, 0.15625, 0.9375, 0.84375],
+    "pigs/no-outline/forms/pig-fat/idle.png": [0.0625, 0.207031, 0.9375, 0.792969],
+    "pigs/no-outline/forms/pig-king/idle.png": [0.0625, 0.101562, 0.9375, 0.894531],
+    "pigs/no-outline/skins/skin-mint/idle.png": [0.0625, 0.160156, 0.9375, 0.839844],
+    "pigs/no-outline/forms/pig-devil/idle.png": [0.0625, 0.183594, 0.9375, 0.8125],
+    "pigs/no-outline/skins/career-astronaut/idle.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/no-outline/skins/skin-detective/idle.png": [0.0625, 0.136719, 0.9375, 0.863281],
+    "pigs/no-outline/skins/skin-pirate/idle.png": [0.0625, 0.164062, 0.9375, 0.832031],
+    "pigs/no-outline/skins/skin-wizard/idle.png": [0.0625, 0.085938, 0.9375, 0.914062],
+    "pigs/no-outline/base/piglet/eat.png": [0.0625, 0.183594, 0.9375, 0.816406],
+    "pigs/no-outline/base/piglet/play.png": [0.0625, 0.121094, 0.9375, 0.875],
+    "pigs/no-outline/base/piglet/sleep.png": [0.0625, 0.214844, 0.9375, 0.78125],
+    "pigs/no-outline/skins/career-chef/eat.png": [0.0625, 0.128906, 0.9375, 0.871094],
+    "pigs/no-outline/skins/career-chef/play.png": [0.09375, 0.0625, 0.90625, 0.9375],
+    "pigs/no-outline/skins/career-chef/sleep.png": [0.0625, 0.171875, 0.9375, 0.828125],
+    "pigs/no-outline/skins/skin-pirate/eat.png": [0.0625, 0.203125, 0.9375, 0.792969],
+    "pigs/no-outline/skins/skin-pirate/play.png": [0.0625, 0.171875, 0.9375, 0.828125],
+    "pigs/no-outline/skins/skin-pirate/sleep.png": [0.0625, 0.234375, 0.9375, 0.761719],
+    "pigs/no-outline/skins/skin-wizard/eat.png": [0.0625, 0.097656, 0.9375, 0.898438],
+    "pigs/no-outline/skins/skin-wizard/play.png": [0.0625, 0.066406, 0.9375, 0.929688],
+    "pigs/no-outline/skins/skin-wizard/sleep.png": [0.0625, 0.152344, 0.9375, 0.84375],
+    "pigs/no-outline/forms/pig-round/eat.png": [0.0625, 0.179688, 0.9375, 0.816406],
+    "pigs/no-outline/forms/pig-round/play.png": [0.0625, 0.148438, 0.9375, 0.847656],
+    "pigs/no-outline/forms/pig-round/sleep.png": [0.0625, 0.195312, 0.9375, 0.800781],
+    "pigs/no-outline/forms/pig-fat/eat.png": [0.0625, 0.199219, 0.9375, 0.800781],
+    "pigs/no-outline/forms/pig-fat/play.png": [0.0625, 0.214844, 0.9375, 0.78125],
+    "pigs/no-outline/forms/pig-fat/sleep.png": [0.0625, 0.222656, 0.9375, 0.777344],
+    "pigs/no-outline/skins/skin-mint/eat.png": [0.0625, 0.1875, 0.9375, 0.808594],
+    "pigs/no-outline/skins/skin-mint/play.png": [0.0625, 0.140625, 0.9375, 0.859375],
+    "pigs/no-outline/skins/skin-mint/sleep.png": [0.0625, 0.195312, 0.9375, 0.804688],
+    "pigs/no-outline/skins/skin-detective/eat.png": [0.0625, 0.15625, 0.9375, 0.84375],
+    "pigs/no-outline/skins/skin-detective/play.png": [0.0625, 0.089844, 0.9375, 0.90625],
+    "pigs/no-outline/skins/skin-detective/sleep.png": [0.0625, 0.1875, 0.9375, 0.8125],
+    "pigs/no-outline/forms/pig-king/eat.png": [0.0625, 0.144531, 0.9375, 0.851562],
+    "pigs/no-outline/forms/pig-king/sleep.png": [0.0625, 0.195312, 0.9375, 0.804688],
+    "pigs/no-outline/forms/pig-devil/eat.png": [0.0625, 0.207031, 0.9375, 0.792969],
+    "pigs/no-outline/forms/pig-devil/play.png": [0.0625, 0.148438, 0.9375, 0.851562],
+    "pigs/no-outline/forms/pig-devil/sleep.png": [0.0625, 0.230469, 0.9375, 0.769531],
+    "pigs/no-outline/skins/skin-angel/eat.png": [0.0625, 0.125, 0.9375, 0.871094],
+    "pigs/no-outline/skins/skin-angel/play.png": [0.0625, 0.082031, 0.9375, 0.914062],
+    "pigs/no-outline/skins/skin-angel/sleep.png": [0.0625, 0.207031, 0.9375, 0.792969],
+    "pigs/no-outline/skins/career-astronaut/eat.png": [0.0625, 0.179688, 0.9375, 0.816406],
+    "pigs/no-outline/skins/career-astronaut/play.png": [0.0625, 0.101562, 0.9375, 0.894531],
+    "pigs/no-outline/skins/career-astronaut/sleep.png": [0.0625, 0.210938, 0.9375, 0.785156],
+    "pigs/no-outline/forms/pig-king/play.png": [0.0625, 0.0625, 0.9375, 0.933594],
+    "pigs/no-outline/skins/career-chef/pet.png": [0.0625, 0.0625, 0.933594, 0.9375],
+    "pigs/no-outline/skins/career-chef/relaxed.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/no-outline/skins/skin-pirate/pet.png": [0.0625, 0.097656, 0.9375, 0.898438],
+    "pigs/no-outline/skins/skin-pirate/relaxed.png": [0.0625, 0.164062, 0.9375, 0.832031],
+    "pigs/no-outline/skins/skin-wizard/pet.png": [0.0625, 0.09375, 0.9375, 0.90625],
+    "pigs/no-outline/skins/skin-wizard/relaxed.png": [0.0625, 0.078125, 0.9375, 0.917969],
+    "pigs/no-outline/skins/career-astronaut/pet.png": [0.0625, 0.0625, 0.9375, 0.9375],
+    "pigs/no-outline/skins/career-astronaut/relaxed.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/no-outline/forms/pig-round/pet.png": [0.0625, 0.109375, 0.9375, 0.886719],
+    "pigs/no-outline/forms/pig-fat/pet.png": [0.0625, 0.097656, 0.9375, 0.898438],
+    "pigs/no-outline/forms/pig-round/relaxed.png": [0.0625, 0.15625, 0.9375, 0.839844],
+    "pigs/no-outline/forms/pig-fat/relaxed.png": [0.0625, 0.203125, 0.9375, 0.796875],
+    "pigs/no-outline/forms/pig-king/pet.png": [0.082031, 0.0625, 0.917969, 0.9375],
+    "pigs/no-outline/forms/pig-king/relaxed.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/no-outline/forms/pig-devil/pet.png": [0.0625, 0.148438, 0.9375, 0.847656],
+    "pigs/no-outline/forms/pig-devil/relaxed.png": [0.0625, 0.183594, 0.9375, 0.8125],
+    "pigs/no-outline/skins/skin-angel/pet.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/no-outline/skins/skin-angel/relaxed.png": [0.0625, 0.125, 0.9375, 0.871094],
+    "pigs/no-outline/skins/skin-mint/pet.png": [0.0625, 0.097656, 0.9375, 0.902344],
+    "pigs/no-outline/skins/skin-detective/pet.png": [0.0625, 0.113281, 0.9375, 0.886719],
+    "pigs/no-outline/skins/skin-detective/relaxed.png": [0.0625, 0.132812, 0.9375, 0.867188],
+    "pigs/no-outline/forms/pig-round/bathe.png": [0.0625, 0.199219, 0.9375, 0.800781],
+    "pigs/no-outline/forms/pig-fat/bathe.png": [0.0625, 0.210938, 0.9375, 0.789062],
+    "pigs/no-outline/base/piglet/bathe.png": [0.0625, 0.207031, 0.9375, 0.792969],
+    "pigs/no-outline/skins/career-chef/bathe.png": [0.0625, 0.261719, 0.9375, 0.734375],
+    "pigs/no-outline/skins/skin-pirate/bathe.png": [0.0625, 0.285156, 0.9375, 0.714844],
+    "pigs/no-outline/skins/skin-wizard/bathe.png": [0.0625, 0.277344, 0.9375, 0.71875],
+    "pigs/no-outline/skins/skin-detective/bathe.png": [0.0625, 0.28125, 0.9375, 0.71875],
+    "pigs/no-outline/forms/pig-king/bathe.png": [0.0625, 0.257812, 0.9375, 0.738281],
+    "pigs/no-outline/skins/skin-mint/bathe.png": [0.0625, 0.199219, 0.9375, 0.800781],
+    "pigs/no-outline/skins/career-astronaut/bathe.png": [0.0625, 0.246094, 0.9375, 0.75],
+    "pigs/no-outline/forms/pig-devil/bathe.png": [0.0625, 0.207031, 0.9375, 0.792969],
+    "pigs/no-outline/skins/skin-angel/bathe.png": [0.0625, 0.15625, 0.9375, 0.839844],
+    "pigs/no-outline/skins/career-chef/study.png": [0.070312, 0.0625, 0.929688, 0.9375],
+    "pigs/no-outline/skins/career-chef/trip.png": [0.0625, 0.097656, 0.9375, 0.902344],
+    "pigs/no-outline/skins/skin-pirate/work.png": [0.0625, 0.242188, 0.9375, 0.753906],
+    "pigs/no-outline/skins/skin-pirate/study.png": [0.0625, 0.140625, 0.9375, 0.855469],
+    "pigs/no-outline/skins/skin-pirate/trip.png": [0.0625, 0.171875, 0.9375, 0.828125],
+    "pigs/no-outline/skins/skin-wizard/work.png": [0.0625, 0.199219, 0.9375, 0.800781],
+    "pigs/no-outline/skins/skin-wizard/study.png": [0.0625, 0.089844, 0.9375, 0.910156],
+    "pigs/no-outline/skins/skin-wizard/trip.png": [0.0625, 0.082031, 0.9375, 0.914062],
+    "pigs/no-outline/skins/career-astronaut/work.png": [0.0625, 0.242188, 0.9375, 0.753906],
+    "pigs/no-outline/skins/career-astronaut/study.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/no-outline/skins/career-astronaut/trip.png": [0.0625, 0.148438, 0.9375, 0.847656],
+    "pigs/no-outline/skins/career-chef/work.png": [0.0625, 0.167969, 0.9375, 0.828125],
+    "pigs/no-outline/forms/pig-round/work.png": [0.0625, 0.25, 0.9375, 0.746094],
+    "pigs/no-outline/forms/pig-round/study.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/no-outline/forms/pig-round/trip.png": [0.0625, 0.160156, 0.9375, 0.839844],
+    "pigs/no-outline/forms/pig-fat/work.png": [0.0625, 0.292969, 0.9375, 0.707031],
+    "pigs/no-outline/forms/pig-fat/study.png": [0.0625, 0.191406, 0.9375, 0.808594],
+    "pigs/no-outline/forms/pig-fat/trip.png": [0.0625, 0.210938, 0.9375, 0.789062],
+    "pigs/no-outline/forms/pig-king/work.png": [0.0625, 0.210938, 0.9375, 0.789062],
+    "pigs/no-outline/forms/pig-king/study.png": [0.0625, 0.097656, 0.9375, 0.902344],
+    "pigs/no-outline/forms/pig-king/trip.png": [0.0625, 0.089844, 0.9375, 0.910156],
+    "pigs/no-outline/forms/pig-devil/work.png": [0.0625, 0.21875, 0.9375, 0.78125],
+    "pigs/no-outline/forms/pig-devil/study.png": [0.0625, 0.179688, 0.9375, 0.820312],
+    "pigs/no-outline/forms/pig-devil/trip.png": [0.0625, 0.1875, 0.9375, 0.808594],
+    "pigs/no-outline/skins/skin-angel/work.png": [0.0625, 0.207031, 0.9375, 0.789062],
+    "pigs/no-outline/skins/skin-angel/study.png": [0.0625, 0.085938, 0.9375, 0.914062],
+    "pigs/no-outline/skins/skin-angel/trip.png": [0.0625, 0.128906, 0.9375, 0.867188],
+    "pigs/no-outline/skins/skin-detective/work.png": [0.0625, 0.21875, 0.9375, 0.777344],
+    "pigs/no-outline/skins/skin-detective/study.png": [0.0625, 0.121094, 0.9375, 0.878906],
+    "pigs/no-outline/skins/skin-detective/trip.png": [0.0625, 0.140625, 0.9375, 0.855469],
+    "pigs/no-outline/base/elder/idle.png": [0.0625, 0.171875, 0.9375, 0.828125],
+    "pigs/no-outline/forms/pig-devil/fly.png": [0.0625, 0.179688, 0.9375, 0.820312],
+    "pigs/no-outline/base/piglet/work.png": [0.0625, 0.253906, 0.9375, 0.742188],
+    "pigs/no-outline/feedback/allergy.png": [0.0625, 0.171875, 0.9375, 0.828125],
+    "pigs/no-outline/feedback/birthday.png": [0.0625, 0.109375, 0.9375, 0.890625],
+    "pigs/no-outline/feedback/collection-badge.png": [0.0625, 0.074219, 0.9375, 0.921875],
+    "pigs/no-outline/feedback/collection-bubbles.png": [0.0625, 0.121094, 0.9375, 0.875],
+    "pigs/no-outline/feedback/collection-cage.png": [0.085938, 0.0625, 0.910156, 0.9375],
+    "pigs/no-outline/skins/skin-mint/work.png": [0.0625, 0.253906, 0.9375, 0.746094],
+    "pigs/no-outline/badges/badge-pig-blindbox-first.png": [0.125, 0.0625, 0.871094, 0.9375],
+    "pigs/no-outline/badges/badge-pig-blindbox-six.png": [0.117188, 0.0625, 0.878906, 0.9375],
+    "pigs/no-outline/badges/badge-pig-blindbox-ten.png": [0.125, 0.0625, 0.875, 0.9375],
+    "pigs/no-outline/badges/badge-pig-clean-ten.png": [0.121094, 0.0625, 0.875, 0.9375],
+    "pigs/no-outline/badges/badge-pig-devil.png": [0.101562, 0.0625, 0.898438, 0.9375],
+    "pigs/no-outline/badges/badge-pig-farm-first.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/no-outline/badges/badge-pig-farm-five.png": [0.121094, 0.0625, 0.875, 0.9375],
+    "pigs/no-outline/badges/badge-pig-farm-ten.png": [0.128906, 0.0625, 0.871094, 0.9375],
+    "pigs/no-outline/badges/badge-pig-first-class.png": [0.121094, 0.0625, 0.878906, 0.9375],
+    "pigs/no-outline/badges/badge-pig-first-fish.png": [0.121094, 0.0625, 0.878906, 0.9375],
+    "pigs/no-outline/badges/badge-pig-first-job.png": [0.128906, 0.0625, 0.867188, 0.9375],
+    "pigs/no-outline/badges/badge-pig-first-meal.png": [0.105469, 0.0625, 0.890625, 0.9375],
+    "pigs/no-outline/badges/badge-pig-first-trip.png": [0.117188, 0.0625, 0.882812, 0.9375],
+    "pigs/no-outline/badges/badge-pig-fish-five.png": [0.117188, 0.0625, 0.882812, 0.9375],
+    "pigs/no-outline/badges/badge-pig-gacha-first.png": [0.101562, 0.0625, 0.898438, 0.9375],
+    "pigs/no-outline/badges/badge-pig-gacha-gold.png": [0.128906, 0.0625, 0.871094, 0.9375],
+    "pigs/no-outline/badges/badge-pig-gacha-machines.png": [0.113281, 0.0625, 0.886719, 0.9375],
+    "pigs/no-outline/badges/badge-pig-grown-up.png": [0.128906, 0.0625, 0.871094, 0.9375],
+    "pigs/no-outline/badges/badge-pig-jobs-ten.png": [0.125, 0.0625, 0.875, 0.9375],
+    "pigs/no-outline/badges/badge-pig-king.png": [0.109375, 0.0625, 0.886719, 0.9375],
+    "pigs/no-outline/badges/badge-pig-mine-deep.png": [0.117188, 0.0625, 0.882812, 0.9375],
+    "pigs/no-outline/badges/badge-pig-mine-first.png": [0.097656, 0.0625, 0.898438, 0.9375],
+    "pigs/no-outline/badges/badge-pig-mine-fossils.png": [0.128906, 0.0625, 0.867188, 0.9375],
+    "pigs/no-outline/badges/badge-pig-pet-hundred.png": [0.121094, 0.0625, 0.878906, 0.9375],
+    "pigs/no-outline/badges/badge-pig-play-twenty.png": [0.121094, 0.0625, 0.878906, 0.9375],
+    "pigs/no-outline/badges/badge-pig-souvenirs-three.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/no-outline/badges/badge-pig-trips-ten.png": [0.125, 0.0625, 0.875, 0.9375],
+    "pigs/no-outline/feedback/collection-check.png": [0.0625, 0.121094, 0.9375, 0.878906],
+    "pigs/no-outline/feedback/collection-chicken.png": [0.082031, 0.0625, 0.917969, 0.9375],
+    "pigs/no-outline/feedback/collection-courier.png": [0.0625, 0.148438, 0.9375, 0.851562],
+    "pigs/no-outline/feedback/collection-fever.png": [0.0625, 0.144531, 0.9375, 0.855469],
+    "pigs/no-outline/feedback/collection-fitness.png": [0.0625, 0.195312, 0.9375, 0.804688],
+    "pigs/no-outline/feedback/collection-letter.png": [0.0625, 0.179688, 0.9375, 0.820312],
+    "pigs/no-outline/feedback/collection-mosquito.png": [0.0625, 0.175781, 0.9375, 0.820312],
+    "pigs/no-outline/feedback/collection-scallion.png": [0.0625, 0.09375, 0.9375, 0.902344],
+    "pigs/no-outline/feedback/collection-snack.png": [0.0625, 0.164062, 0.9375, 0.832031],
+    "pigs/no-outline/feedback/collection-soup.png": [0.09375, 0.0625, 0.902344, 0.9375],
+    "pigs/no-outline/feedback/collection-stack.png": [0.175781, 0.0625, 0.820312, 0.9375],
+    "pigs/no-outline/feedback/collection-taro.png": [0.0625, 0.136719, 0.9375, 0.859375],
+    "pigs/no-outline/feedback/collection-throne.png": [0.082031, 0.0625, 0.914062, 0.9375],
+    "pigs/no-outline/feedback/courier.png": [0.0625, 0.097656, 0.9375, 0.898438],
+    "pigs/no-outline/feedback/faint.png": [0.0625, 0.152344, 0.9375, 0.84375],
+    "pigs/no-outline/feedback/fishing.png": [0.0625, 0.136719, 0.9375, 0.863281],
+    "pigs/no-outline/feedback/ghost-grave.png": [0.0625, 0.148438, 0.9375, 0.851562],
+    "pigs/no-outline/feedback/hungry.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/no-outline/feedback/lie-flat.png": [0.0625, 0.199219, 0.9375, 0.800781],
+    "pigs/no-outline/feedback/music-earbuds.png": [0.0625, 0.128906, 0.9375, 0.867188],
+    "pigs/no-outline/feedback/music-headphones-v2.png": [0.0625, 0.15625, 0.9375, 0.839844],
+    "pigs/no-outline/feedback/music-rainbow.png": [0.0625, 0.273438, 0.9375, 0.726562],
+    "pigs/no-outline/feedback/painting.png": [0.0625, 0.144531, 0.9375, 0.851562],
+    "pigs/no-outline/feedback/recruit.png": [0.0625, 0.089844, 0.9375, 0.910156],
+    "pigs/no-outline/feedback/runny-nose.png": [0.0625, 0.179688, 0.9375, 0.816406],
+    "pigs/no-outline/feedback/sleep-cloud.png": [0.0625, 0.199219, 0.9375, 0.796875],
+    "pigs/no-outline/feedback/study-book.png": [0.0625, 0.175781, 0.9375, 0.820312],
+    "pigs/no-outline/feedback/study-determined.png": [0.0625, 0.148438, 0.9375, 0.847656],
+    "pigs/no-outline/feedback/study-pink-book.png": [0.0625, 0.125, 0.9375, 0.871094],
+    "pigs/no-outline/feedback/suspended.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/no-outline/feedback/turning.png": [0.0625, 0.191406, 0.9375, 0.804688],
+    "pigs/no-outline/feedback/twitch.png": [0.0625, 0.179688, 0.9375, 0.820312],
+    "pigs/no-outline/badges/badge-pig-jobs-hundred.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/no-outline/feedback/death-day.png": [0.0625, 0.226562, 0.9375, 0.769531]
+  });
+  var MAX_ART_ASPECT2 = 2.113208;
+
+  // src/client/art-framing.js
+  var FRAME_HEIGHT3 = FRAME_HEIGHT;
+  var ART_BOUNDS3 = Object.freeze({ ...ART_BOUNDS, ...ART_BOUNDS2 });
+  var MAX_ART_ASPECT3 = Math.max(MAX_ART_ASPECT, MAX_ART_ASPECT2);
+  function builtinFrame(src) {
+    const path = src.slice(ART_URL.length);
+    const data = path.startsWith("pigs/no-outline/") ? no_outline_framing_exports : feedback_framing_exports;
+    const name = path.split("/").pop()?.replace(/\.png$/, "");
+    return data.BUILTIN_FRAMING[path] ?? data.FEEDBACK_FRAMING[name] ?? null;
+  }
+  function applyFrame(image, frame2) {
+    if (typeof image.style?.setProperty !== "function") return;
+    image.style.setProperty("--art-zoom", frame2 ? String(frame2[0]) : "1");
+    image.style.setProperty("--art-x", frame2 ? frame2[1] + "%" : "0%");
+    image.style.setProperty("--art-y", frame2 ? frame2[2] + "%" : "0%");
+  }
+  function artMarginFor(width) {
+    return Math.max(40, (MAX_ART_ASPECT3 * FRAME_HEIGHT3 - 1) * width / 2 + 6);
+  }
+
+  // src/client/art-style.js
+  var ART_STYLE_KEY = "dsh-piggy:art-style";
+  var CHANGE_EVENT = "dsh-piggy:art-style-changed";
+  var PATH_KEYS = /* @__PURE__ */ new Map();
+  for (const [key, path] of Object.entries(PIG_ART_ASSETS)) {
+    PATH_KEYS.set(path, key);
+    PATH_KEYS.set(NO_OUTLINE_ART_ASSETS[key], key);
+    PATH_KEYS.set(key + ".png", key);
+    PATH_KEYS.set(key + ".svg", key);
+  }
+  function artStyle() {
+    return readStore(ART_STYLE_KEY) === "no-outline" ? "no-outline" : "outlined";
+  }
+  function setArtStyle(style) {
+    writeStore(ART_STYLE_KEY, style === "no-outline" ? style : "outlined");
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }
+  function builtinArtPath(key) {
+    return (artStyle() === "no-outline" ? NO_OUTLINE_ART_ASSETS : PIG_ART_ASSETS)[key];
+  }
+  function refreshArtImages(host3) {
+    for (const image of host3.querySelectorAll("img")) {
+      const src = image.getAttribute("src") || "";
+      if (!src.startsWith(ART_URL)) continue;
+      const key = PATH_KEYS.get(src.slice(ART_URL.length));
+      if (!key) continue;
+      const next = ART_URL + builtinArtPath(key);
+      if (src !== next) image.setAttribute("src", next);
+      if (image.matches(".dp-pig-img,.dp-pig-sleep")) applyFrame(image, builtinFrame(next));
+    }
+  }
+  function attachArtPreference(host3, onChanged) {
+    function refresh2() {
+      refreshArtImages(host3);
+      onChanged?.();
+    }
+    function onStorage(event) {
+      if (event.key === ART_STYLE_KEY || event.key === null) refresh2();
+    }
+    const observer = new MutationObserver(() => refreshArtImages(host3));
+    observer.observe(host3, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(CHANGE_EVENT, refresh2);
+    refreshArtImages(host3);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(CHANGE_EVENT, refresh2);
+    };
+  }
+
+  // src/client/art-path.js
+  function artSource(key) {
+    return ART_URL + (builtinArtPath(key) ?? (key.startsWith("custom-") ? key : key + ".svg"));
+  }
+  function hasBuiltinArt(key) {
+    return Object.hasOwn(PIG_ART_ASSETS, key);
+  }
+
+  // src/client/feedback-art.js
+  var MOOD_ART = {
+    hungry: ["hungry"],
+    sleepy: ["sleep-cloud", "lie-flat"],
+    lonely: ["lie-flat"],
+    dirty: ["collection-mosquito"],
+    happy: ["music-rainbow", "collection-stack"]
+  };
+  var ILLNESS_ART = {
+    "cold:1": ["runny-nose"],
+    "cold:2": ["collection-fever"],
+    "cold:3": ["runny-nose"],
+    "skin:1": ["allergy"],
+    "skin:2": ["allergy"],
+    "skin:3": ["allergy"],
+    "skin:4": ["allergy"],
+    "dizzy:1": ["faint"],
+    "dizzy:2": ["faint"],
+    "dizzy:3": ["faint"]
+  };
+  var REACTION_ART = {
+    feed: ["collection-snack", "collection-soup"],
+    bathe: ["collection-bubbles"],
+    play: ["collection-chicken", "turning"],
+    levelup: ["collection-throne"]
+  };
+  var IDLE_ART = {
+    roll: ["turning", "collection-taro"],
+    butterfly: ["collection-chicken", "collection-scallion"],
+    look: ["collection-letter"],
+    walk: ["collection-chicken", "collection-scallion"]
+  };
+  var WORK_ART = {
+    flyers: "collection-letter",
+    singer: "music-headphones-v2",
+    songwriter: "music-earbuds",
+    cartoonist: "painting",
+    athlete: "collection-fitness",
+    coach: "collection-fitness",
+    gardener: "collection-scallion",
+    florist: "collection-scallion",
+    ceo: "collection-throne",
+    star: "music-rainbow"
+  };
+  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
+  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
+  var INTEREST_ART = {
+    fitness: ["collection-fitness"],
+    guitar: ["music-earbuds", "music-headphones-v2"],
+    dancing: ["music-earbuds", "music-headphones-v2"],
+    calligraphy: ["painting"],
+    photography: ["painting"],
+    other: ["study-determined"]
+  };
+  var TRIP_ART = ["collection-chicken", "collection-taro", "collection-scallion"];
+  var BIRTHDAY_ART = "birthday";
+  var FEEDBACK_ART_TABLES = Object.freeze({
+    stage: STAGE_ART,
+    birthday: [BIRTHDAY_ART],
+    reaction: REACTION_ART,
+    illness: ILLNESS_ART,
+    mood: MOOD_ART,
+    work: WORK_ART,
+    study: STUDY_ART,
+    interest: INTEREST_ART,
+    fishing: ["fishing"],
+    trip: TRIP_ART,
+    idle: IDLE_ART
+  });
+  var UNUSED_FEEDBACK_ART = Object.freeze(["collection-badge", "collection-check", "collection-cage", "suspended", "twitch"]);
+  function choose(options, hour) {
+    return options[Math.abs(Math.floor(hour)) % options.length];
+  }
+  function feedbackArtFor(state2) {
+    if (STAGE_ART[state2.stage]) return choose(STAGE_ART[state2.stage], state2.hour);
+    if (state2.party === true) return BIRTHDAY_ART;
+    if (state2.base && state2.base !== "piglet") return null;
+    if (REACTION_ART[state2.reaction]) return choose(REACTION_ART[state2.reaction], state2.hour);
+    if (state2.mood === "sick") return ILLNESS_ART[state2.illness ?? ""] ? choose(ILLNESS_ART[state2.illness ?? ""], state2.hour) : null;
+    if (state2.mood === "dirty") return choose(MOOD_ART.dirty, state2.hour);
+    if (state2.activityKind === "work") return WORK_ART[state2.activityKey] ?? null;
+    if (state2.activityKind === "study") return choose(STUDY_ART, state2.hour);
+    if (state2.activityKind === "interest") return choose(INTEREST_ART[state2.activityKey] ?? INTEREST_ART.other, state2.hour);
+    if (state2.activityKind === "fishing") return "fishing";
+    if (state2.activityKind === "trip") return choose(TRIP_ART, state2.hour);
+    if (IDLE_ART[state2.idle]) return choose(IDLE_ART[state2.idle], state2.hour);
+    if (MOOD_ART[state2.mood]) return choose(MOOD_ART[state2.mood], state2.hour);
+    return null;
+  }
+
   // src/client/art.js
   var REACTION_ART2 = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
   var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
@@ -713,15 +1169,9 @@
   ]);
   var CUSTOM_FRAME_CACHE = /* @__PURE__ */ new Map();
   var CUSTOM_FRAME_PENDING = /* @__PURE__ */ new WeakMap();
-  function applyFrame(image, frame2) {
-    if (typeof image.style?.setProperty !== "function") return;
-    image.style.setProperty("--art-zoom", frame2 ? String(frame2[0]) : "1");
-    image.style.setProperty("--art-x", frame2 ? frame2[1] + "%" : "0%");
-    image.style.setProperty("--art-y", frame2 ? frame2[2] + "%" : "0%");
-  }
   function frameCustomImage(image, src, sleep = false) {
     if (!src.includes("/custom-")) {
-      applyFrame(image, BUILTIN_FRAMING[src.slice(ART_URL.length)] ?? null);
+      applyFrame(image, builtinFrame(src));
       return;
     }
     const cached = CUSTOM_FRAME_CACHE.get(src);
@@ -754,7 +1204,7 @@
           bottom = Math.max(bottom, y + 1);
         }
         if (right <= left || bottom <= top) return;
-        const zoom = FRAME_HEIGHT / ((bottom - top) / canvas.height);
+        const zoom = FRAME_HEIGHT3 / ((bottom - top) / canvas.height);
         const frame2 = [
           zoom,
           (0.5 - (left + right) / (2 * canvas.width)) * zoom * 100,
@@ -796,7 +1246,7 @@
     if (feedback) {
       var feedbackSrc = artSource("feedback/" + feedback);
       if (image.getAttribute("src") !== feedbackSrc) image.src = feedbackSrc;
-      applyFrame(image, FEEDBACK_FRAMING[feedback] ?? null);
+      applyFrame(image, builtinFrame(feedbackSrc));
       image.hidden = false;
       pig.setAttribute("data-feedback", "true");
       if (emoji) emoji.hidden = true;
@@ -1697,22 +2147,6 @@
       }
     }
     if (pigSide) ctx.updateNotice?.maybeBubble();
-  }
-
-  // src/client/storage.js
-  function readStore(key) {
-    try {
-      var value = window.localStorage.getItem(key);
-      return value !== null ? value : window.localStorage.getItem(key.replace(/^dsh-piggy:/, "dsh-pig:"));
-    } catch (error) {
-      return null;
-    }
-  }
-  function writeStore(key, value) {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch (error) {
-    }
   }
 
   // src/client/auto-collapse.js
@@ -8603,6 +9037,13 @@
       }
     });
     size.box.appendChild(sizeRow);
+    const art = section(ui, "\u5C0F\u732A\u753B\u98CE", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u3001\u52A8\u4F5C\u548C\u7761\u59FF\u4E00\u8D77\u5207\u6362\uFF1B\u5BFC\u5165\u76AE\u80A4\u4FDD\u6301\u539F\u56FE");
+    segmented(art, "data-art-style", [
+      { key: "no-outline", label: "\u65E0\u63CF\u8FB9" },
+      { key: "outlined", label: "\u9ED1\u8272\u63CF\u8FB9" }
+    ], artStyle(), function(key) {
+      setArtStyle(key);
+    });
     if (hasBundledEmoji()) {
       const emoji = section(ui, "Emoji \u6837\u5F0F", "\u5185\u7F6E\u662F\u968F\u6E38\u620F\u9644\u5E26\u7684\u4E00\u6574\u5957 Noto \u5F69\u8272 emoji\uFF0C\u5404\u7CFB\u7EDF\u770B\u8D77\u6765\u4E00\u6837");
       segmented(emoji, "data-emoji-style", [
@@ -9298,7 +9739,7 @@
   function framedBox(node, box) {
     if (!node.matches?.(".dp-pig-img,.dp-pig-sleep")) return box;
     const path = (node.getAttribute("src") || "").split("/art/")[1];
-    const bounds = ART_BOUNDS[path];
+    const bounds = ART_BOUNDS3[path];
     if (!bounds) return box;
     const zoom = Number(node.style.getPropertyValue("--art-zoom")) || 1;
     const shiftX = parseFloat(node.style.getPropertyValue("--art-x")) || 0;
@@ -9387,7 +9828,7 @@
       }
       const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone]);
       if (pigNode !== null) {
-        const artMargin = Math.max(40, (MAX_ART_ASPECT * FRAME_HEIGHT - 1) * pigBox.width / 2 + SHAPE_SLACK);
+        const artMargin = artMarginFor(pigBox.width);
         outline.push({
           x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, pigBox.x - artMargin),
           y: pigBox.y - BUBBLE_ZONE.height - 24,
@@ -9537,6 +9978,11 @@
           y: Math.round(Math.max(area2.y + pigSize2.height, Math.min(home.y, area2.y + area2.height)))
         };
       }
+      if (report.artMargin > 0 && list.length > 0) {
+        const area2 = areaOf(home, list);
+        const reach = Math.min(area2.width / 2, pigSize2.width / 2 + report.artMargin);
+        home.x = Math.round(Math.max(area2.x + reach, Math.min(home.x, area2.x + area2.width - reach)));
+      }
       const shift = report.shift ?? { x: 0, y: 0 };
       const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize2 };
       const topLeft = { x: home.x - pigSize2.width / 2, y: home.y - pigSize2.height };
@@ -9683,6 +10129,7 @@
       width: next.content.width,
       height: next.content.height,
       pig: next.pig,
+      artMargin: artMarginFor(next.pig.width),
       pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
       pigNow: { x: next.pigBox.x, y: next.pigBox.y },
       shift: measure.state.shift
@@ -10163,6 +10610,10 @@
         ctx.send = send2;
         ctx.render = render;
         ctx.renderContent = renderContent;
+        var stopArtPreference = attachArtPreference(host3, () => {
+          renderContent();
+          desktopShell()?.syncGeometry?.();
+        });
         ctx.setOpen = setOpen;
         ctx.fitPanel = fitPanel;
         ctx.flash = flash;
@@ -10366,6 +10817,7 @@
         function dispose() {
           stopped = true;
           stopSizePreference();
+          stopArtPreference();
           stopDragHeartbeat();
           updateNotice.stop();
           stopResize();

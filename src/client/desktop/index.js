@@ -6,6 +6,7 @@
  * 现在桌面程序只提供基础动作（piggyShell.place / setHit / beginDrag …），量尺寸、钉位置、
  * 窗口摆哪、哪里可点都在这里，跟着游戏包热更新。
  */
+import { artMarginFor } from '../art-framing.js'
 import { sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
@@ -120,7 +121,7 @@ function tick() {
   const grownX = side.horizontal === 'right' ? next.content.width - bounds.width : 0
   const grownY = side.vertical === 'bottom' ? next.content.height - bounds.height : 0
   const want = placement.decide({
-    width: next.content.width, height: next.content.height, pig: next.pig,
+    width: next.content.width, height: next.content.height, pig: next.pig, artMargin: artMarginFor(next.pig.width),
     pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
     pigNow: { x: next.pigBox.x, y: next.pigBox.y },
     shift: measure.state.shift,

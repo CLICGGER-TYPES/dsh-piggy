@@ -30,6 +30,7 @@ import { attachLife } from './life.js'
 import { forceFeedbackArt, syncPigArt } from './art.js'
 import { createBirthday } from './birthday.js'
 import { partAt } from './pet-parts.js'
+import { attachArtPreference } from './art-style.js'
 import { attachSizePreference } from './pig-size.js'
 /** @type {any} */ (window).__ModuleLoader__.load({
   id: 'dsh-piggy',
@@ -103,7 +104,6 @@ import { attachSizePreference } from './pig-size.js'
       var stopSizePreference = attachSizePreference(host,
         () => view.hatched ? view.pig?.stage : view.boxStage,
         () => desktopShell()?.syncGeometry?.())
-      // B9: the panel opens on the home screen of app tiles.
       var tab = 'home'
       var stage = 'primary'
       // 用户自己点过学段之后，轮询就不许再替他改（B1 的「默认学段」只在没选过时生效）。
@@ -209,6 +209,7 @@ import { attachSizePreference } from './pig-size.js'
       ctx.send = send
       ctx.render = render
       ctx.renderContent = renderContent
+      var stopArtPreference = attachArtPreference(host, () => { renderContent(); desktopShell()?.syncGeometry?.() })
       ctx.setOpen = setOpen
       ctx.fitPanel = fitPanel
       ctx.flash = flash
@@ -372,6 +373,7 @@ import { attachSizePreference } from './pig-size.js'
       function dispose() {
         stopped = true
         stopSizePreference()
+        stopArtPreference()
         stopDragHeartbeat()
         updateNotice.stop()
         stopResize()

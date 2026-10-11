@@ -1,10 +1,10 @@
 // @ts-check
 /** Classified PNG artwork and compatibility aliases. */
 import { readFileSync } from 'node:fs'
-import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
+import { PIG_ART_ASSETS, NO_OUTLINE_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 import { customSkinArt } from './skin-pack.js'
 const ART_ROUTE = '/dsh-piggy/art'
-const PIG_ART_PATHS = new Set(Object.values(PIG_ART_ASSETS))
+const PIG_ART_PATHS = new Set([...Object.values(PIG_ART_ASSETS), ...Object.values(NO_OUTLINE_ART_ASSETS)])
 
 /**
  * Classified PNGs, imported skins and legacy artwork URL aliases.
