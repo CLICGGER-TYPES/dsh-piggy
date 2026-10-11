@@ -164,3 +164,18 @@ test('气泡不进窗口外框，猪头上方一直留气泡位置（面板朝�
   assert.match(src, /const outline = rects\.concat\(bubbleZone === null \? \[\] : \[bubbleZone\]\)/)
   assert.match(src, /const shape = rects\.concat\(bubbleRects\)/)
 })
+
+test('two-style artwork reserve keeps wide sprites on screen and does not move on action changes', () => {
+  memory.clear()
+  const place = createPlacement()
+  const area = [{ x: 0, y: 32, width: 1280, height: 748 }]
+  const size = { width: 204, height: 204 }
+  const at = { x: 160, y: 140 }
+  const state = report(416, 376, at, { pig: size, artMargin: 86 })
+  const next = place.decide(state, { x: 864, y: 404, width: 416, height: 376 }, area)
+  const center = landed(place, next, at, size).x
+  assert.ok(center + size.width / 2 + 86 <= 1280)
+  const home = { ...place.home() }
+  for (let i = 0; i < 8; i += 1) place.decide(state, next, area)
+  assert.deepEqual(place.home(), home)
+})

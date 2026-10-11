@@ -5,10 +5,9 @@
  * 立绘来自 PR #2（作者 1nuoiscute）。
  * @module dsh-piggy/client/art
  */
-import { ART_URL } from './constants.js'
 import { artSource, hasBuiltinArt } from './art-path.js'
 import { feedbackArtFor } from './feedback-art.js'
-import { FEEDBACK_FRAMING, BUILTIN_FRAMING, FRAME_HEIGHT } from './feedback-framing.js'
+import { applyFrame, builtinFrame, FRAME_HEIGHT } from './art-framing.js'
 
 var REACTION_ART = { feed: 'eat', bathe: 'bathe', play: 'play', pet: 'pet', cure: 'relaxed', levelup: 'relaxed' }
 var ACTIVITY_ART = { work: 'work', study: 'study', interest: 'study', trip: 'trip', fishing: 'fish' }
@@ -22,16 +21,9 @@ var SLEEP_ART = new Set([
 const CUSTOM_FRAME_CACHE = new Map()
 const CUSTOM_FRAME_PENDING = new WeakMap()
 
-function applyFrame(image, frame) {
-  if (typeof image.style?.setProperty !== 'function') return
-  image.style.setProperty('--art-zoom', frame ? String(frame[0]) : '1')
-  image.style.setProperty('--art-x', frame ? frame[1] + '%' : '0%')
-  image.style.setProperty('--art-y', frame ? frame[2] + '%' : '0%')
-}
-
 /** Imported PNG or legacy SVG skins are measured once after loading. */
 function frameCustomImage(image, src, sleep = false) {
-  if (!src.includes('/custom-')) { applyFrame(image, BUILTIN_FRAMING[src.slice(ART_URL.length)] ?? null); return }
+  if (!src.includes('/custom-')) { applyFrame(image, builtinFrame(src)); return }
   const cached = CUSTOM_FRAME_CACHE.get(src)
   if (cached !== undefined) { applyFrame(image, cached); return }
   if (CUSTOM_FRAME_PENDING.get(image) === src) return
@@ -104,7 +96,7 @@ export function syncPigArt(pig, image, emoji) {
   if (feedback) {
     var feedbackSrc = artSource('feedback/' + feedback)
     if (image.getAttribute('src') !== feedbackSrc) image.src = feedbackSrc
-    applyFrame(image, FEEDBACK_FRAMING[feedback] ?? null)
+    applyFrame(image, builtinFrame(feedbackSrc))
     image.hidden = false
     pig.setAttribute('data-feedback', 'true')
     if (emoji) emoji.hidden = true

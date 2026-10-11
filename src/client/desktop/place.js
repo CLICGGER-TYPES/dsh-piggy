@@ -3,8 +3,8 @@
  * 桌面版：窗口摆哪（从桌面程序 main.js 的 piggy:content 搬进游戏包）。
  *
  * 只有一个真相：猪的「家」= 猪脚底中心在屏幕上的点（home）。
- *   - 只有三件事能改它：用户拖动（松手时按猪真实落点重定）、散步（挪完按真实位置重定）、启动时读存档。
- *   - 开关面板、冒气泡、切页、换皮肤/换立绘大小、更新、预留面板范围变化，一律不改它。
+ *   - 用户拖动、散步和启动读存档重定位置；放大或拖到边缘时，按最大可见图向内夹回。
+ *   - 开关面板、冒气泡、切页、换皮肤/换立绘大小、更新、预留面板范围变化，一律不改它；放大后最大可见图越出屏幕时向内夹回。
  *   - 每一轮都按「家 − 猪现在在窗口里的位置」重新算窗口，不在上一轮的结果上累加：
  *     算错一次下一轮就自己纠正，误差攒不起来（2026-10-06 之前的版本靠「上一轮猪在哪」「原位」「目标点」
  *     几套记账互相推，任何一处差一点都会被继承，用户看到的就是越用越偏、拖完弹回去）。
@@ -113,6 +113,13 @@ export function createPlacement() {
         x: Math.round(Math.max(area.x + pigSize.width / 2, Math.min(home.x, area.x + area.width - pigSize.width / 2))),
         y: Math.round(Math.max(area.y + pigSize.height, Math.min(home.y, area.y + area.height))),
       }
+    }
+    // The widest reviewed artwork must fit as well as the square layout box.
+    // Use the same reserve for every action/style, so a switch never moves the pig.
+    if (report.artMargin > 0 && list.length > 0) {
+      const area = areaOf(home, list)
+      const reach = Math.min(area.width / 2, pigSize.width / 2 + report.artMargin)
+      home.x = Math.round(Math.max(area.x + reach, Math.min(home.x, area.x + area.width - reach)))
     }
     const shift = report.shift ?? { x: 0, y: 0 }
     // 按「内容没在窗口里挪过」的布局算窗口；被夹了多少交给页面去挪内容（只在收起时）。
