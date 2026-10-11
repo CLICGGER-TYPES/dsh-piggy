@@ -10,7 +10,7 @@
  * transform，rect 每帧都在抖。
  */
 import { PAD, STEP } from './geometry.js'
-import { ART_BOUNDS, MAX_ART_ASPECT, FRAME_HEIGHT } from '../feedback-framing.js'
+import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -129,7 +129,7 @@ export function createMeasure(env) {
     // 框只跟猪的大小有关，冒气泡、飘爱心、出道具都不改窗口大小（改大小就有一帧画在旧位置，Windows 上最明显）。
     if (pigNode !== null) {
       // Reserve the widest reviewed sprite for every action: action changes never resize the window.
-      const artMargin = Math.max(40, (MAX_ART_ASPECT * FRAME_HEIGHT - 1) * pigBox.width / 2 + SHAPE_SLACK)
+      const artMargin = artMarginFor(pigBox.width)
       outline.push({ x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, pigBox.x - artMargin), y: pigBox.y - BUBBLE_ZONE.height - 24,
         r: pigBox.x + pigBox.width + artMargin, b: pigBox.y + pigBox.height + 12 })
     }

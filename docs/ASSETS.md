@@ -1,6 +1,6 @@
 # 素材总表
 
-`assets/` 每个文件按本页登记；`test/assets-registry.test.js` 检查漏登记和空登记。当前猪素材统一使用黑色轮廓透明 PNG（2026-10-10 用户确认接入）。
+`assets/` 每个文件按本页登记；`test/assets-registry.test.js` 检查漏登记和空登记。当前猪素材支持黑色描边与无描边两套透明 PNG（2026-10-11 用户确认整套并要求设置切换）。
 
 ## 分类与使用
 
@@ -15,11 +15,13 @@
 | 主菜单图标 | `ui-*.svg` | 15 | 历史未使用素材，保留现状 |
 | 字体 | `piggy-emoji.woff2` | 1 | 网页 emoji 子集，Noto Color Emoji / OFL |
 
-共181张 PNG，长边不超过256px，总计 1,666,848 字节。RGBA 或带 tRNS 的透明调色板均是真正透明 PNG；白衣、眼白和高光保留。原图不进游戏包。
+每套181张，共362张 PNG，长边不超过256px，黑色描边 1,666,848 字节，无描边 1,363,636 字节。RGBA 或带 tRNS 的透明调色板均是真正透明 PNG；白衣、眼白和高光保留。原图不进游戏包。
 
 数据中的 `art` key 不变，统一通过 `packages/pet-core/src/data/art-assets.js` 对应分类路径。主猪、睡姿、换肤、图鉴、居民卡、徽章与盲盒寻访都使用同一份映射。旧内置 SVG / 平铺 PNG URL 保留路由别名，返回当前 PNG；不再复制旧图到游戏目录。
 
 导入皮肤推荐透明 PNG：根目录 `skin.json` 和动作图；兼容原安全 SVG 包，支持同一皮肤不同动作分别用新旧格式，但单个动作只放一种。存档 art key / scene 数据不变，无需迁移。见[格式规范](guides/skin-pack-format.md)和[制作教程](guides/creating-skins.md)。
+
+无描边成品按同样分类放在 `pigs/no-outline/`；设置「小猪画风」切换，默认保留黑色描边。偏好只保存在本机，桌面双窗口同步，不改变存档。来源见 [无描边记录](../assets/pigs/no-outline/PROVENANCE.md)。
 
 ## 原稿、逐字提示词与导出
 
@@ -36,6 +38,13 @@
 ## 登记
 
 ```assets
+pigs/no-outline/base/*/*.png
+pigs/no-outline/forms/*/*.png
+pigs/no-outline/skins/*/*.png
+pigs/no-outline/feedback/*.png
+pigs/no-outline/badges/*.png
+pigs/no-outline/manifest.json
+pigs/no-outline/PROVENANCE.md
 pigs/base/*/*.png
 pigs/forms/*/*.png
 pigs/skins/*/*.png

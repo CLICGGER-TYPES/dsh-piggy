@@ -126,6 +126,15 @@ function fakeDom() {
 
     addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn) }
     setPointerCapture() {}
+    matches(selector) {
+      return selector.split(',').some(part => part.startsWith('.')
+        ? this.className.split(/\s+/).includes(part.slice(1)) : this.tagName === part)
+    }
+    querySelectorAll(selector) {
+      const found = []
+      for (const child of this.children) child.walk(node => { if (node.matches(selector)) found.push(node) })
+      return found
+    }
     querySelector() { return null }
 
     /** Fire a listener with `this` bound like a real DOM. */
@@ -200,6 +209,7 @@ async function loadClient(options) {
   // Extra window globals, e.g. the desktop app's bridge.
   Object.assign(globalThis.window, options?.windowExtra ?? {})
   const resize = () => { for (const fn of windowListeners.resize ?? []) fn() }
+  globalThis.MutationObserver = class { observe() {} disconnect() {} }
   globalThis.document = dom.document
   globalThis.fetch = net.fetch
   // Read the real inline style back. A constant stub makes every drag start from

@@ -184,3 +184,8 @@ export const PIG_ART_ASSETS = Object.freeze({
   "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
   "skin-wizard-work": "pigs/skins/skin-wizard/work.png",
 })
+
+/** User-approved alternative style; keys and gameplay identities remain stable. */
+export const NO_OUTLINE_ART_ASSETS = Object.freeze(Object.fromEntries(
+  Object.entries(PIG_ART_ASSETS).map(([key, path]) => [key, path.replace(/^pigs\//, 'pigs/no-outline/')]),
+))
