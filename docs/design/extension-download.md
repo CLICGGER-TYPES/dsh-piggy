@@ -124,4 +124,5 @@ https://raw.githubusercontent.com/CLICGGER-TYPES/dsh-piggy/main/extensions/regis
 - **本地导入**：扩展包 `.piggyext` 多一个 `assets: { 名字: base64 }`；官方识别要所有文件（含图片）都对上，换一张图就算非官方。
 - **取图**：`GET /dsh-piggy/ext/<key>/assets/<name>`，只给 manifest 名单里的，地址带 `?v=版本` 所以缓存一天；面板里 `app.asset(name)` 拼好地址，`app.pigArt()` 给玩家现在的猪图。
 - **兼容**：带图片的扩展 `minGame` 设成 0.36.0，老游戏看到的是「要更新游戏」，不会装出一个缺图的版本。
+- **整包下载（v0.36.1，2026-10-11）**：用户嫌发行版堆几十张图、请求太多。目录条目加 `bundle: { url, sha256 }`，指向同一发行版的 `ext-<key>-<版本>.piggyext`；新游戏只下这一个文件（超时 60 秒、重试同上），核对 sha256 后用本地导入同一个 `parseBundle` 拆开，再核对名字和版本（`store/ext-download.js`）。`files` 照旧保留：0.36.0 及更早的游戏只认它，官方识别也按它对。`minGame` ≥ 0.36.1 的扩展版本发行版只传整包，`files` 里的地址不会有人下载。
 - **素材来源**：菜园、矿洞的原稿、逐字提示词、审图拼图和切图脚本在总目录 `art-source/ext-ui/`（不进仓库），`tools/pack-assets.py` 把审过的图缩成两倍显示大小的 WebP 放进 `extensions/<key>/assets/`。

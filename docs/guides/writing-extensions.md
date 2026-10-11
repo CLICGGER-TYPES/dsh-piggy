@@ -176,6 +176,6 @@ export default {
 ## 发版
 
 见 [HANDOFF.md 9.3](../HANDOFF.md)：升 `manifest.json` 版本 → `node scripts/extension-entry.mjs <key>`（和 `--host gitee`）更新两份目录 →
-`node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包（`.piggyext`，跟三个文件一起传；带图片的扩展包里也带着图）→
-有图片的扩展把 `assets/` 里的图**平铺**传到同一个发行版（附件名就是图片名，不带 `assets/`）→
+`node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包 `.piggyext`（代码和图片都在里面）→
+发行版**只传这一个 `.piggyext`**：0.36.1 起游戏在线安装只下整包（目录条目的 `bundle`）。例外：`minGame` 还低于 0.36.1 的版本（0.36.0 及更早的游戏也能装），要照旧把三个文件和 `assets/` 里的图**平铺**一起传，老游戏按 `files` 逐个下 →
 GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 提交目录、推 main → 用全新存档在线装一次验证。

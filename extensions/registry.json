@@ -32,6 +32,10 @@
           "buyable": false
         }
       },
+      "bundle": {
+        "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-blindbox-3.0.0/ext-blindbox-3.0.0.piggyext",
+        "sha256": "c1b4cc24c80c34fa4916d602e83b00dfc1f8dc77c9ee20f70aa35b55d1267756"
+      },
       "files": {
         "manifest.json": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-blindbox-3.0.0/manifest.json",
@@ -54,6 +58,10 @@
       "version": "1.2.0",
       "minGame": "0.35.0",
       "description": "零食、杂货和药箱三台扭蛋机，每天第一颗免费，幸运值攒到 20 后下一颗必出金色。机器里有商店新上的饭团、火锅、小火车、森林浴等。",
+      "bundle": {
+        "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-gacha-1.2.0/ext-gacha-1.2.0.piggyext",
+        "sha256": "628519c8904ee322fb29e2f8cbc68cd9fc94ace62ecd8c5e0e8ee4010b5b4c03"
+      },
       "files": {
         "manifest.json": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-gacha-1.2.0/manifest.json",
@@ -82,6 +90,10 @@
           "emoji": "🥬",
           "rate": 1
         }
+      },
+      "bundle": {
+        "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-3.0.0/ext-farm-3.0.0.piggyext",
+        "sha256": "51b8701d66100531e3470c9419a259d9de19f8f64e33f6760775df992c5aed92"
       },
       "files": {
         "manifest.json": {
@@ -451,6 +463,10 @@
           "emoji": "⛏️",
           "rate": 1
         }
+      },
+      "bundle": {
+        "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-mine-3.0.0/ext-mine-3.0.0.piggyext",
+        "sha256": "8d5cfdbe0fd5cbee38a8ee07d54c8eeacdedcb73610e282edf70eea3ca05ab9c"
       },
       "files": {
         "manifest.json": {

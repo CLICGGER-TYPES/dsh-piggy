@@ -15,6 +15,8 @@ import { test } from 'node:test'
 import { EXTENSIONS } from '../packages/pet-core/src/data/extensions.js'
 import { EXTENSION_EVENTS } from '../packages/pet-core/src/data/extension-events.js'
 import { versionAtLeast } from '../store/ext-runtime.js'
+import { makeBundle } from '../store/ext-import.js'
+import { extensionFiles } from '../scripts/extension-files.mjs'
 
 const ROOT = new URL('../extensions/', import.meta.url)
 const FILES = ['manifest.json', 'server.js', 'client.js']
@@ -63,6 +65,9 @@ test('在线目录里每个下载扩展的版本、文案、校验值和仓库�
     const { app, assets, ...manifest } = manifestOf(key)
     void app
     for (const [field, value] of Object.entries(manifest)) assert.deepEqual(entry[field], value, key + ' 的 ' + field + ' 和 manifest 不一致')
+    const tag = 'ext-' + key + '-' + manifest.version
+    assert.ok(entry.bundle?.url?.endsWith('/' + tag + '/' + tag + '.piggyext'), key + ' 缺整包地址：node scripts/extension-entry.mjs ' + key)
+    assert.equal(entry.bundle.sha256, createHash('sha256').update(makeBundle(extensionFiles(key))).digest('hex'), key + ' 的整包校验值和仓库里的文件不一致')
     const names = fileList(assetNames({ assets }) ?? [])
     assert.deepEqual(Object.keys(entry.files ?? {}).sort(), [...names].sort(), key + ' 目录里的文件（含图片）和 manifest 对不上')
     for (const name of names) {

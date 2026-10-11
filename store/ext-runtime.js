@@ -3,21 +3,21 @@
  * 下载来的扩展（v0.30，设计见 docs/design/extension-download.md）。
  *
  * - 在线目录只从仓库的固定地址读（REGISTRY_URL），只装我们自己发布的；
- * - 每个文件下载后核对 sha256，`minGame` 高于当前游戏版本不装；
+ * - 下载（整包或逐个文件，见 store/ext-download.js）后核对 sha256，`minGame` 高于当前游戏版本不装；
  * - 扩展可以带图片（`assets/`，规则见 store/ext-files.js），跟代码一起下载、核对、放好；
  * - 装在存档旁边的 `extensions/<key>/`，`server.js` 用动态 import 加载；
  * - 扩展只能改 `state.extData[key]`，动别的只能走这里给的 api（花钱、给东西、说话）；
  * - 扩展出错只影响它自己。
  * @module dsh-piggy/store/ext-runtime
  */
-import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { extensionOn, installExtension, openWallet, removeExtension } from '../core.js'
 import { LOCAL_MARK, makeImporter } from './ext-import.js'
-import { ASSET_NAME, ASSET_TYPES, CODE_FILES, MAX_ASSETS_BYTES, MAX_FILE_BYTES, assetNames, describeFetchError, fileList, inBatches } from './ext-files.js'
+import { createDownloads } from './ext-download.js'
+import { ASSET_NAME, ASSET_TYPES, CODE_FILES, MAX_ASSETS_BYTES, assetNames, describeFetchError } from './ext-files.js'
 import { apiFor } from './ext-api.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
@@ -31,14 +31,7 @@ const KEY = /^[a-z0-9-]{2,24}$/
 const REGISTRY_TTL_MS = 60 * 60_000
 /** 读失败后多久再试；这段时间里先用存在本地的那份。 */
 const REGISTRY_RETRY_MS = 5 * 60_000
-/** 同时下载几个文件。 */
-const DOWNLOAD_PARALLEL = 6
-/**
- * 国内直连 GitHub 很抖：同一个地址常常第一次连不上、几秒后就好了。
- * 所以每个文件都要有超时和重试，别让一次抖动变成「点了没反应」。
- */
-const DOWNLOAD_ATTEMPTS = 3
-const DOWNLOAD_TIMEOUT_MS = 12_000
+/** 读目录失败后隔多久再试。 */
 const RETRY_BACKOFF_MS = [400, 1200]
 const REGISTRY_ATTEMPTS = 2
 const REGISTRY_TIMEOUT_MS = 10_000
@@ -59,8 +52,6 @@ export function versionAtLeast(have, need) {
   return true
 }
 
-const sha256 = buffer => createHash('sha256').update(buffer).digest('hex')
-
 /**
  * @param {any} store - createStore 的结果（要 filePath、state、mutate）
  * @param {object} options
@@ -75,6 +66,7 @@ export function createExtRuntime(store, options) {
   const registryUrl = options.registryUrl ?? REGISTRY_URL
   const now = options.now ?? (() => Date.now())
   const wait = options.sleep ?? sleep
+  const downloads = createDownloads({ fetch: doFetch, wait, warn, sourceOk: url => options.registryUrl !== undefined || ALLOWED_SOURCES.some(prefix => url.startsWith(prefix)) })
   // 没有存档路径（测试里的假存档）就当一个扩展都没装。
   const root = () => typeof store.filePath === 'string' ? join(dirname(store.filePath), 'extensions') : ''
   /** @type {Map<string, {manifest: any, module: any, error: string|null}>} */
@@ -106,44 +98,6 @@ export function createExtRuntime(store, options) {
   function warn(message) {
     console.warn(`[dsh-piggy] ${message}`)
     if (typeof store.journal === 'function') store.journal('warn', 'ext', message)
-  }
-
-  /** 拉一个文件：超时、网络抖动、坏包都再试；HTTP 4xx 和超大文件不重试。
-   * @returns {Promise<{ok:boolean, retryable:boolean, message:string, buffer?:Buffer}>} */
-  async function downloadOnce(name, spec) {
-    let response
-    try {
-      response = await doFetch(spec.url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
-    } catch (error) {
-      return { ok: false, retryable: true, message: `${name} 下载失败：${describeFetchError(error, spec.url)}` }
-    }
-    if (!response.ok) {
-      return { ok: false, retryable: response.status >= 500, message: `${name} 下载失败：HTTP ${response.status}` }
-    }
-    let buffer
-    try {
-      buffer = Buffer.from(await response.arrayBuffer())
-    } catch (error) {
-      return { ok: false, retryable: true, message: `${name} 下载中断：${describeFetchError(error, spec.url)}` }
-    }
-    if (buffer.length > MAX_FILE_BYTES) return { ok: false, retryable: false, message: `${name} 太大（${buffer.length} 字节）` }
-    if (sha256(buffer) !== spec.sha256.toLowerCase()) return { ok: false, retryable: true, message: `${name} 校验不对，可能下载坏了` }
-    return { ok: true, retryable: false, message: '', buffer }
-  }
-
-  /** 带重试的下载。每次失败都留一行日志，事后能看出是哪一步、试了几次。
-   * @returns {Promise<Buffer>} 试完还不行就抛错，错误文案直接给用户看。 */
-  async function downloadFile(name, spec) {
-    let result = { ok: false, retryable: false, message: `${name} 没有下载` }
-    let attempt = 0
-    for (attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt += 1) {
-      result = await downloadOnce(name, spec)
-      if (result.ok === true && result.buffer !== undefined) return result.buffer
-      warn(`extension download failed: file="${name}" attempt=${attempt}/${DOWNLOAD_ATTEMPTS} url="${spec.url}" reason="${result.message}"`)
-      if (result.retryable !== true || attempt === DOWNLOAD_ATTEMPTS) break
-      await wait(RETRY_BACKOFF_MS[attempt - 1] ?? 1200)
-    }
-    throw new Error(result.message + (attempt > 1 ? `（试了 ${attempt} 次）` : ''))
   }
 
   function readManifest(key) {
@@ -307,22 +261,9 @@ export function createExtRuntime(store, options) {
     if (entry === undefined) return { ok: false, reason: 'unknown-extension' }
     if (entry.builtin === true) return store.mutate(state => installExtension(state, key))
     if (typeof entry.minGame === 'string' && !versionAtLeast(options.gameVersion, entry.minGame)) return { ok: false, reason: 'game-too-old', need: entry.minGame }
-    const assets = Object.keys(entry.files ?? {}).filter(name => name.startsWith('assets/')).map(name => name.slice('assets/'.length))
-    if (!assets.every(name => ASSET_NAME.test(name))) return { ok: false, reason: 'download-failed', message: '目录里的图片名不对' }
-    const specs = fileList(assets).map(name => ({ name, spec: entry.files?.[name] }))
-    for (const { name, spec } of specs) {
-      if (spec === undefined || typeof spec.url !== 'string' || typeof spec.sha256 !== 'string') return { ok: false, reason: 'download-failed', message: '目录里缺少 ' + name }
-      if (!ALLOWED_SOURCES.some(prefix => spec.url.startsWith(prefix)) && options.registryUrl === undefined) return { ok: false, reason: 'download-failed', message: '来源不对：' + name }
-    }
-    // 几个文件一起下：慢的那个只拖自己，不把别的时间叠上去。
-    const buffers = await inBatches(specs.map(({ name, spec }) => () => downloadFile(name, spec)), DOWNLOAD_PARALLEL).catch(error => (error instanceof Error ? error : new Error(String(error))))
-    if (buffers instanceof Error) { warn(`extension install failed: key="${key}" reason="${buffers.message}"`); return { ok: false, reason: 'download-failed', message: buffers.message } }
-    const files = new Map(specs.map(({ name }, index) => [name, buffers[index]]))
-    let manifest = null
-    try { manifest = JSON.parse(String(files.get('manifest.json'))) } catch { /* 下面按坏包处理 */ }
-    const declared = assetNames(manifest)
-    if (declared === null || declared.length !== assets.length || !declared.every(name => assets.includes(name))) return { ok: false, reason: 'download-failed', message: '扩展的图片清单和目录对不上' }
-    return place(key, files, false)
+    const got = await downloads.fetchExtension(key, entry)
+    if (!got.ok) return got
+    return place(key, got.files, false)
   }
 
   /** 把扩展的文件（相对路径 → 内容）放进扩展目录（先放临时目录再换名，坏了不留半截）、加载、在存档里建数据。local 是本地导入的非官方扩展。

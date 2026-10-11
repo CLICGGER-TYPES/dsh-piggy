@@ -28,13 +28,17 @@ function pkg(assets = ['bg.webp', 'carrot.png']) {
 }
 
 /** 断网宿主 + 一个只认 example.test 的假目录；`registryFiles` 改目录里那条的文件清单。 */
-function setup(files = pkg(), registryFiles = names => names) {
+function setup(files = pkg(), registryFiles = names => names, bundleBody = null) {
   const dir = mkdtempSync(join(tmpdir(), 'dsh-piggy-assets-'))
   writeFileSync(join(dir, 'state.json'), JSON.stringify(hatchEgg(Date.now())))
   const store = createStore(join(dir, 'state.json'), { journal: createJournal() })
   const listed = registryFiles(Object.keys(files))
   const entry = { key: 'garden', label: '小园子', version: '1.0.0', files: Object.fromEntries(listed.map(name => [name, { url: 'https://example.test/' + name.replace(/^assets\//, ''), sha256: sha(files[name] ?? '') }])) }
+  const fetched = []
+  if (bundleBody !== null) entry.bundle = { url: 'https://example.test/ext-garden-1.0.0.piggyext', sha256: sha(bundleBody) }
   const fetch = async url => {
+    fetched.push(url)
+    if (url === entry.bundle?.url) return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(Buffer.from(bundleBody)).buffer }
     if (url === 'https://example.test/registry.json') return { ok: true, status: 200, json: async () => ({ version: 1, extensions: [entry] }) }
     const name = url.replace('https://example.test/', '')
     const body = files[name] ?? files['assets/' + name]
@@ -42,7 +46,7 @@ function setup(files = pkg(), registryFiles = names => names) {
     return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(Buffer.from(body)).buffer }
   }
   store.ext = createExtRuntime(store, { gameVersion: '0.36.0', fetch, registryUrl: 'https://example.test/registry.json', sleep: async () => {} })
-  return { dir, store, runtime: store.ext, done: () => { store.dispose(); rmSync(dir, { recursive: true, force: true }) } }
+  return { dir, store, fetched, runtime: store.ext, done: () => { store.dispose(); rmSync(dir, { recursive: true, force: true }) } }
 }
 
 test('图片名单：只认小写名字加 webp/png，不许重复、不许带路径', () => {
@@ -128,4 +132,32 @@ test('本地导入带图片的扩展包：跟在线目录那条对得上就是�
     assert.ok(existsSync(join(dir, 'extensions', 'garden', 'assets', 'carrot.png')))
     assert.deepEqual(runtime.assetFile('garden', 'carrot.png').body, PNG)
   } finally { done() }
+})
+
+test('目录带整包（0.36.1 起）：只下一个 .piggyext，拆开放好，不再逐个下图片', async () => {
+  const { dir, runtime, fetched, done } = setup(pkg(), names => names, makeBundle(pkg()))
+  try {
+    const result = await runtime.install('garden')
+    assert.equal(result.ok, true, JSON.stringify(result))
+    assert.deepEqual(fetched.filter(url => !url.endsWith('registry.json')), ['https://example.test/ext-garden-1.0.0.piggyext'])
+    assert.ok(existsSync(join(dir, 'extensions', 'garden', 'server.js')))
+    assert.deepEqual(runtime.assetFile('garden', 'carrot.png').body, PNG)
+  } finally { done() }
+})
+
+test('整包坏了、版本对不上、名字不对，都不装', async () => {
+  const cases = [
+    [Buffer.from('not a bundle'), /打不开/],
+    [makeBundle({ ...pkg(), 'manifest.json': JSON.stringify({ key: 'garden', version: '2.0.0', assets: ['bg.webp', 'carrot.png'] }) }), /版本对不上/],
+    [makeBundle({ ...pkg(), 'manifest.json': JSON.stringify({ key: 'other', version: '1.0.0', assets: ['bg.webp', 'carrot.png'] }) }), /版本对不上/],
+  ]
+  for (const [body, message] of cases) {
+    const { dir, runtime, done } = setup(pkg(), names => names, body)
+    try {
+      const result = await runtime.install('garden')
+      assert.equal(result.ok, false)
+      assert.match(result.message, message)
+      assert.equal(existsSync(join(dir, 'extensions', 'garden')), false)
+    } finally { done() }
+  }
 })
