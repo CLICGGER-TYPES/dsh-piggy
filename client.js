@@ -5403,6 +5403,15 @@
         rerender: function() {
           ui.renderContent();
         },
+        // 玩家现在用的猪图（随皮肤和形态变）；没有立绘时是 null，扩展自己退回 emoji。
+        pigArt: function() {
+          var art = ui.view.pig && ui.view.pig.stage ? ui.view.pig.stage.art : null;
+          return art ? artSource(art) : null;
+        },
+        // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
+        asset: function(name) {
+          return "/dsh-piggy/ext/" + encodeURIComponent(key) + "/assets/" + encodeURIComponent(String(name)) + "?v=" + encodeURIComponent(extension.version);
+        },
         openDex: function(section2) {
           ui.select("dex");
           ui.drill.dex = "ext:" + key + ":" + section2;

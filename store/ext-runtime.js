@@ -4,6 +4,7 @@
  *
  * - 在线目录只从仓库的固定地址读（REGISTRY_URL），只装我们自己发布的；
  * - 每个文件下载后核对 sha256，`minGame` 高于当前游戏版本不装；
+ * - 扩展可以带图片（`assets/`，规则见 store/ext-files.js），跟代码一起下载、核对、放好；
  * - 装在存档旁边的 `extensions/<key>/`，`server.js` 用动态 import 加载；
  * - 扩展只能改 `state.extData[key]`，动别的只能走这里给的 api（花钱、给东西、说话）；
  * - 扩展出错只影响它自己。
@@ -16,6 +17,7 @@ import { pathToFileURL } from 'node:url'
 
 import { extensionOn, installExtension, openWallet, removeExtension } from '../core.js'
 import { LOCAL_MARK, makeImporter } from './ext-import.js'
+import { ASSET_NAME, ASSET_TYPES, CODE_FILES, MAX_ASSETS_BYTES, MAX_FILE_BYTES, assetNames, describeFetchError, fileList, inBatches } from './ext-files.js'
 import { apiFor } from './ext-api.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
@@ -24,13 +26,13 @@ import { CHANNEL } from '../channel.js'
 export const REGISTRY_URL = CHANNEL.registry
 /** 扩展文件只许从本渠道的发行版附件和仓库原始文件下载。 */
 export const ALLOWED_SOURCES = [CHANNEL.downloadBase + '/', CHANNEL.rawBase + '/']
-const FILES = ['manifest.json', 'server.js', 'client.js']
 const KEY = /^[a-z0-9-]{2,24}$/
 /** 在线目录读到之后一小时内不再问（用户 2026-10-09：请求一次本地有了就别一直问，免得撞 GitHub 上限）。 */
 const REGISTRY_TTL_MS = 60 * 60_000
 /** 读失败后多久再试；这段时间里先用存在本地的那份。 */
 const REGISTRY_RETRY_MS = 5 * 60_000
-const MAX_FILE_BYTES = 512 * 1024
+/** 同时下载几个文件。 */
+const DOWNLOAD_PARALLEL = 6
 /**
  * 国内直连 GitHub 很抖：同一个地址常常第一次连不上、几秒后就好了。
  * 所以每个文件都要有超时和重试，别让一次抖动变成「点了没反应」。
@@ -43,29 +45,6 @@ const REGISTRY_TIMEOUT_MS = 10_000
 
 /** 渠道名给日志和错误文案用（Gitee 包里不能写 GitHub）。 */
 const CHANNEL_LABEL = { github: 'GitHub', gitee: 'Gitee' }[CHANNEL.name] ?? CHANNEL.name
-
-/** 顺着 cause 链找最里层的错误码：fetch 失败时真正的原因藏在 cause 里。 */
-function causeCode(error) {
-  let current = error
-  for (let depth = 0; depth < 5 && current !== null && typeof current === 'object'; depth += 1) {
-    if (typeof current.code === 'string' && current.code !== '') return current.code
-    current = current.cause
-  }
-  return ''
-}
-
-/** 一句话说清「为什么连不上」，给用户看也留给日志。 */
-function describeFetchError(error, url) {
-  let host = url
-  try { host = new URL(url).host } catch { /* 地址本身就不成形时原样写出来 */ }
-  const code = causeCode(error)
-  if (error?.name === 'TimeoutError' || code === 'UND_ERR_CONNECT_TIMEOUT' || code === 'ETIMEDOUT') return `连接 ${host} 超时`
-  if (code === 'ECONNRESET' || code === 'UND_ERR_SOCKET') return `连接 ${host} 被中断`
-  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return `域名 ${host} 解析不了`
-  if (error?.name === 'AbortError') return `${host} 响应太慢`
-  const detail = code !== '' ? code : (error instanceof Error ? error.message : String(error))
-  return `连不上 ${host}（${detail}）`
-}
 
 const sleep = ms => new Promise(resolve => { setTimeout(resolve, ms) })
 
@@ -328,23 +307,37 @@ export function createExtRuntime(store, options) {
     if (entry === undefined) return { ok: false, reason: 'unknown-extension' }
     if (entry.builtin === true) return store.mutate(state => installExtension(state, key))
     if (typeof entry.minGame === 'string' && !versionAtLeast(options.gameVersion, entry.minGame)) return { ok: false, reason: 'game-too-old', need: entry.minGame }
-    const specs = FILES.map(name => ({ name, spec: entry.files?.[name] }))
+    const assets = Object.keys(entry.files ?? {}).filter(name => name.startsWith('assets/')).map(name => name.slice('assets/'.length))
+    if (!assets.every(name => ASSET_NAME.test(name))) return { ok: false, reason: 'download-failed', message: '目录里的图片名不对' }
+    const specs = fileList(assets).map(name => ({ name, spec: entry.files?.[name] }))
     for (const { name, spec } of specs) {
       if (spec === undefined || typeof spec.url !== 'string' || typeof spec.sha256 !== 'string') return { ok: false, reason: 'download-failed', message: '目录里缺少 ' + name }
       if (!ALLOWED_SOURCES.some(prefix => spec.url.startsWith(prefix)) && options.registryUrl === undefined) return { ok: false, reason: 'download-failed', message: '来源不对：' + name }
     }
-    // 三个文件一起下：慢的那个只拖自己，不把另外两个的时间叠上去。
-    const buffers = await Promise.all(specs.map(({ name, spec }) => downloadFile(name, spec))).catch(error => (error instanceof Error ? error : new Error(String(error))))
+    // 几个文件一起下：慢的那个只拖自己，不把别的时间叠上去。
+    const buffers = await inBatches(specs.map(({ name, spec }) => () => downloadFile(name, spec)), DOWNLOAD_PARALLEL).catch(error => (error instanceof Error ? error : new Error(String(error))))
     if (buffers instanceof Error) { warn(`extension install failed: key="${key}" reason="${buffers.message}"`); return { ok: false, reason: 'download-failed', message: buffers.message } }
-    return place(key, buffers, false)
+    const files = new Map(specs.map(({ name }, index) => [name, buffers[index]]))
+    let manifest = null
+    try { manifest = JSON.parse(String(files.get('manifest.json'))) } catch { /* 下面按坏包处理 */ }
+    const declared = assetNames(manifest)
+    if (declared === null || declared.length !== assets.length || !declared.every(name => assets.includes(name))) return { ok: false, reason: 'download-failed', message: '扩展的图片清单和目录对不上' }
+    return place(key, files, false)
   }
 
-  /** 把三个文件放进扩展目录（先放临时目录再换名，坏了不留半截）、加载、在存档里建数据。local 是本地导入的非官方扩展。 */
-  async function place(key, buffers, local) {
+  /** 把扩展的文件（相对路径 → 内容）放进扩展目录（先放临时目录再换名，坏了不留半截）、加载、在存档里建数据。local 是本地导入的非官方扩展。
+   * @param {string} key @param {Map<string, Buffer>} files @param {boolean} local */
+  async function place(key, files, local) {
     const staging = join(root(), '.' + key + '-' + now())
     try {
-      mkdirSync(staging, { recursive: true })
-      for (let index = 0; index < FILES.length; index += 1) writeFileSync(join(staging, FILES[index]), buffers[index])
+      let imageBytes = 0
+      for (const [name, buffer] of files) if (name.startsWith('assets/')) imageBytes += buffer.length
+      if (imageBytes > MAX_ASSETS_BYTES) throw new Error('图片合计太大')
+      mkdirSync(join(staging, 'assets'), { recursive: true })
+      for (const [name, buffer] of files) {
+        if (!CODE_FILES.includes(name) && !(name.startsWith('assets/') && ASSET_NAME.test(name.slice('assets/'.length)))) throw new Error('不认识的文件：' + name)
+        writeFileSync(join(staging, name), buffer)
+      }
       if (local) writeFileSync(join(staging, LOCAL_MARK), JSON.stringify({ importedAt: now() }))
       const target = join(root(), key)
       rmSync(target, { recursive: true, force: true })
@@ -393,5 +386,12 @@ export function createExtRuntime(store, options) {
     try { return readFileSync(join(root(), key, 'client.js'), 'utf8') } catch { return null }
   }
 
-  return { ready, list, views, shelves, dex, onlineView, install, importBundle, remove, act, clientScript }
+  /** 扩展的图片（GET /dsh-piggy/ext/<key>/assets/<name>）：只给 manifest 里列了的。 */
+  function assetFile(key, name) {
+    const entry = loaded.get(key)
+    if (!KEY.test(key) || entry === undefined || !ASSET_NAME.test(name) || !(assetNames(entry.manifest) ?? []).includes(name)) return null
+    try { return { body: readFileSync(join(root(), key, 'assets', name)), type: ASSET_TYPES[name.split('.').pop() ?? ''] } } catch { return null }
+  }
+
+  return { ready, list, views, shelves, dex, onlineView, install, importBundle, remove, act, clientScript, assetFile }
 }

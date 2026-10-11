@@ -10,11 +10,18 @@ import { createStore } from '../store.js'
 import { createJournal } from '../store/journal.js'
 import { BUNDLE_FILES, LOCAL_MARK, makeBundle, officialList, parseBundle } from '../store/ext-import.js'
 import { createExtRuntime } from '../store/ext-runtime.js'
+import { assetNames } from '../store/ext-files.js'
 
-const files = key => Object.fromEntries(BUNDLE_FILES.map(name => [name, readFileSync(new URL(`../extensions/${key}/${name}`, import.meta.url), 'utf8')]))
+/** 扩展目录里的全部文件：代码是文本，图片是 Buffer。 */
+const files = key => {
+  const read = name => readFileSync(new URL(`../extensions/${key}/${name}`, import.meta.url))
+  const code = Object.fromEntries(BUNDLE_FILES.map(name => [name, read(name).toString('utf8')]))
+  const images = (assetNames(JSON.parse(code['manifest.json'])) ?? []).map(name => ['assets/' + name, read('assets/' + name)])
+  return { ...code, ...Object.fromEntries(images) }
+}
 
 /** 断网的宿主：在线目录读不到，只能靠游戏自带的官方清单认官方扩展。 */
-function setup(gameVersion = '0.35.0') {
+function setup(gameVersion = '0.36.0') {
   const dir = mkdtempSync(join(tmpdir(), 'dsh-piggy-import-'))
   writeFileSync(join(dir, 'state.json'), JSON.stringify(hatchEgg(Date.now())))
   const store = createStore(join(dir, 'state.json'), { journal: createJournal() })
@@ -29,7 +36,8 @@ test('官方清单收着扩展目录里每个下载扩展的当前版本（漏�
   for (const entry of registry.extensions.filter(entry => !entry.builtin)) {
     const listed = official[entry.key]?.[entry.version]
     assert.ok(listed, `${entry.key} ${entry.version} 不在官方清单里`)
-    for (const name of BUNDLE_FILES) assert.equal(listed[name], entry.files[name].sha256, `${entry.key} ${entry.version} ${name}`)
+    for (const name of Object.keys(entry.files)) assert.equal(listed[name], entry.files[name].sha256, `${entry.key} ${entry.version} ${name}`)
+    assert.equal(Object.keys(listed).length, Object.keys(entry.files).length, `${entry.key} ${entry.version} lists the same files, images included`)
   }
 })
 
@@ -76,10 +84,10 @@ test('不是官方的：先说明、不装；确认后才装，标「本地导�
 })
 
 test('要更新的游戏才能装的扩展包，导入时也照样拒绝', async () => {
-  const { store, done } = setup('0.34.0')
+  const { store, done } = setup('0.35.0')
   try {
     const result = await store.ext.importBundle(makeBundle(files('farm')), true)
     assert.equal(result.reason, 'game-too-old')
-    assert.equal(result.need, '0.35.0')
+    assert.equal(result.need, '0.36.0')
   } finally { done() }
 })

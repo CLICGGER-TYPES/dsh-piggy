@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { CHANNEL as GITHUB } from '../channels/github.js'
 import { CHANNEL as GITEE } from '../channels/gitee.js'
+import { assetNames, fileList } from '../store/ext-files.js'
 
 const key = process.argv[2]
 const host = process.argv.includes('--host') ? process.argv[process.argv.indexOf('--host') + 1] : 'github'
@@ -15,12 +16,13 @@ const dir = new URL(`../extensions/${key}/`, import.meta.url)
 const manifest = JSON.parse(readFileSync(new URL('manifest.json', dir), 'utf8'))
 const tag = `ext-${key}-${manifest.version}`
 const files = {}
-for (const name of ['manifest.json', 'server.js', 'client.js']) {
+// 图片在发行版里平铺（附件名不能带斜杠），在目录里记作 assets/<名字>。
+for (const name of fileList(assetNames(manifest) ?? [])) {
   const buffer = readFileSync(new URL(name, dir))
   files[name] = {
-    url: `${base}/${tag}/${name}`,
+    url: `${base}/${tag}/${name.replace(/^assets\//, '')}`,
     sha256: createHash('sha256').update(buffer).digest('hex'),
   }
 }
-const { app, ...rest } = manifest
+const { app, assets, ...rest } = manifest
 console.log(JSON.stringify({ ...rest, files }, null, 2))

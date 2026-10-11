@@ -215,7 +215,6 @@ test('界面：点空地种手里的种子，没种子就去商店；锁着的�
   const empty = renderFarm(farm.view(data, t.api))
   empty.find('data-farm-plot', '0').fire('click')
   assert.equal(empty.shops(), 1, 'no seed in hand: go buy some')
-  empty.find('data-farm-panel', 'tools').fire('click')
   empty.find('data-farm-tool', 'can').fire('click')
   assert.equal(empty.shops(), 2, 'locked tool: go buy it')
 
@@ -234,7 +233,6 @@ test('界面：渴了的地点一下浇，熟了的点一下收；工具角标�
   farm.actions.plant(data, { plot: 0, item: 'sprout' }, t.api)
   farm.actions.plant(data, { plot: 1, item: 'sprout' }, t.api)
   let ui = renderFarm(farm.view(data, t.api))
-  ui.find('data-farm-panel', 'tools').fire('click')
   assert.equal(ui.find('data-farm-tool', 'can').allText().includes('2'), true, 'two thirsty plots')
   ui.find('data-farm-plot', '0').fire('click')
   assert.deepEqual(JSON.parse(JSON.stringify(ui.sent.at(-1))), { op: 'water', payload: { plot: 0 } })

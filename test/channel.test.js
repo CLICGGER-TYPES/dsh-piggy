@@ -30,7 +30,8 @@ test('Gitee 在线扩展目录：下载地址都在 Gitee 发行版，校验值�
     if (!entry.files) continue
     const twin = github.extensions.find(e => e.key === entry.key)
     for (const [name, spec] of Object.entries(entry.files)) {
-      assert.equal(spec.url, `${GITEE.downloadBase}/ext-${entry.key}-${entry.version}/${name}`)
+      // 图片在发行版里平铺：目录里叫 assets/x.webp，附件名是 x.webp
+      assert.equal(spec.url, `${GITEE.downloadBase}/ext-${entry.key}-${entry.version}/${name.replace(/^assets\//, '')}`)
       assert.equal(spec.sha256, twin.files[name].sha256)
     }
   }

@@ -13,9 +13,13 @@ extensions/<key>/
   manifest.json   名字、版本、最低游戏版本、App 图标
   server.js       规则：数据怎么变（在宿主进程里跑，ES module）
   client.js       面板页面（普通脚本，在面板里跑）
+  assets/         可选：界面用的图片（0.36 起，manifest 里 `assets` 列出）
 ```
 
 - `key`：小写字母、数字、`-`，2～24 个字，**等于文件夹名**。
+- **图片**（可选）：放 `assets/`，在 manifest 写 `"assets": ["bg.webp", "coin.webp"]`，`minGame` 至少 `0.36.0`。名字只许小写字母、数字、`-` 加 `.webp` / `.png`，
+  单张 ≤ 512KB，最多 96 张、合计 ≤ 4MB；名单和文件夹里的文件要一一对应（下载、导入都会核对，对不上整个不装）。面板宽 292px，图按显示大小的两倍出就够。
+  页面里用 `app.asset('bg.webp')` 拿地址。菜园、矿洞的素材原稿和切图脚本在总目录 `art-source/ext-ui/`。
 - 三个文件各 ≤ 512KB（宿主拒绝更大的）。不能引别的文件，`server.js` 也不能 `import` 游戏代码——
   它只能通过下面的 `api` 碰主存档。
 
@@ -149,7 +153,8 @@ export default {
       // app.content：往里画；app.data：view() 的返回值（还没到时是 null）
       // app.send(op, payload)：调自己的动作；app.rerender()：只改了页面里的临时状态时重画
       // app.el(tag, className, text)、app.button(className, attrs, onClick)：和面板同一套小工具
-      // app.openDex(section)：跳到图鉴里自己的分区
+      // app.openDex(section)：跳到图鉴里自己的分区；app.openShop()：跳到商店里自己的货架
+      // app.asset(name)：自己 assets/ 里图片的地址；app.pigArt()：玩家现在的猪图（没有立绘时 null）
     },
   })
 })()
@@ -171,5 +176,6 @@ export default {
 ## 发版
 
 见 [HANDOFF.md 9.3](../HANDOFF.md)：升 `manifest.json` 版本 → `node scripts/extension-entry.mjs <key>`（和 `--host gitee`）更新两份目录 →
-`node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包（`.piggyext`，跟三个文件一起传）→
+`node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包（`.piggyext`，跟三个文件一起传；带图片的扩展包里也带着图）→
+有图片的扩展把 `assets/` 里的图**平铺**传到同一个发行版（附件名就是图片名，不带 `assets/`）→
 GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 提交目录、推 main → 用全新存档在线装一次验证。

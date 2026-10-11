@@ -21,10 +21,12 @@ export async function setupExtensions(initial = {}, overrides = {}) {
   for (const key of KEYS) {
     packages[key] = {}
     for (const file of ['manifest.json', 'server.js', 'client.js']) packages[key][file] = readFileSync(new URL('../../extensions/' + key + '/' + file, import.meta.url), 'utf8')
+    // 带图片的扩展：图片也要在目录里、也要下载（store/ext-files.js）
+    for (const name of JSON.parse(packages[key]['manifest.json']).assets ?? []) packages[key]['assets/' + name] = readFileSync(new URL('../../extensions/' + key + '/assets/' + name, import.meta.url))
     if (overrides[key]) Object.assign(packages[key], overrides[key])
     if (Object.hasOwn(initial, key)) {
       const target = join(dir, 'extensions', key)
-      mkdirSync(target, { recursive: true })
+      mkdirSync(join(target, 'assets'), { recursive: true })
       for (const [file, value] of Object.entries(packages[key])) writeFileSync(join(target, file), value)
     }
   }
@@ -35,7 +37,8 @@ export async function setupExtensions(initial = {}, overrides = {}) {
   const runtime = createExtRuntime(store, { gameVersion: GAME_VERSION, now: () => NOW, registryUrl: 'https://example.test/registry.json',
     fetch: async url => {
       if (url === 'https://example.test/registry.json') return new Response(JSON.stringify({ extensions: entries }))
-      const [key, file] = String(url).replace('https://example.test/', '').split('/')
+      const [key, ...rest] = String(url).replace('https://example.test/', '').split('/')
+      const file = rest.join('/')
       return new Response(packages[key]?.[file] ?? '', { status: packages[key]?.[file] === undefined ? 404 : 200 })
     } })
   store.ext = runtime

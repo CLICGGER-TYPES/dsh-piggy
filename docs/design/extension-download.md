@@ -113,3 +113,15 @@ https://raw.githubusercontent.com/CLICGGER-TYPES/dsh-piggy/main/extensions/regis
 - 下载可靠性：模拟「前两次连不上、第三次成功」要能装上；三次都失败时错误里要有文件名和重试次数；目录读不到要有 error 文案。
 - 界面：点下载立刻显示「下载中…」并挡住重复点击；失败留在卡片上并能重试；装上后卡片消失。
 - 网页版（DSH 隔离实例）和桌面版都实际点一遍：删除钓鱼 → 数据没了 → 重新安装；在线装一个真实扩展（2026-10-06 已在隔离实例上装成菜园）。
+
+## 8. 扩展自带图片（v0.36，2026-10-11）
+
+用户要求扩展界面换成画好的素材（动森风，codex 出图、用户逐轮审），扩展格式因此加了图片文件夹，不往 `client.js` 里塞 data URI。
+
+- **格式**：`extensions/<key>/assets/*.webp|png`，manifest 的 `assets` 列出全部名字。规则集中在 `store/ext-files.js`：名字 `[a-z0-9-]+.(webp|png)`、单张 ≤512KB、最多 96 张、合计 ≤4MB。
+- **在线目录**：`files` 里记作 `"assets/<名字>"`，地址指向同一个 `ext-<key>-<版本>` 发行版里平铺的附件（附件名不能带斜杠）。`scripts/extension-entry.mjs` 自动生成。
+- **下载**：代码和图片一起下（同时最多 6 个），逐个核对 sha256；下完核对 manifest 的名单和目录的文件一一对应，对不上整个不装。放好时跟原来一样先写临时目录再换名。
+- **本地导入**：扩展包 `.piggyext` 多一个 `assets: { 名字: base64 }`；官方识别要所有文件（含图片）都对上，换一张图就算非官方。
+- **取图**：`GET /dsh-piggy/ext/<key>/assets/<name>`，只给 manifest 名单里的，地址带 `?v=版本` 所以缓存一天；面板里 `app.asset(name)` 拼好地址，`app.pigArt()` 给玩家现在的猪图。
+- **兼容**：带图片的扩展 `minGame` 设成 0.36.0，老游戏看到的是「要更新游戏」，不会装出一个缺图的版本。
+- **素材来源**：菜园、矿洞的原稿、逐字提示词、审图拼图和切图脚本在总目录 `art-source/ext-ui/`（不进仓库），`tools/pack-assets.py` 把审过的图缩成两倍显示大小的 WebP 放进 `extensions/<key>/assets/`。

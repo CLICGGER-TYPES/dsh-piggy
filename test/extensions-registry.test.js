@@ -8,6 +8,7 @@
  */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { MAX_ASSETS_BYTES, assetNames, fileList } from '../store/ext-files.js'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { test } from 'node:test'
 
@@ -36,6 +37,16 @@ test('每个扩展目录三件套齐全，manifest 合规', () => {
       assert.ok(statSync(file).size <= MAX_FILE_BYTES, key + '/' + name + ' 超过 512KB（宿主拒绝下载）')
     }
     const manifest = manifestOf(key)
+    const images = assetNames(manifest)
+    assert.ok(images !== null, key + ' 的 assets 名单不对')
+    let imageBytes = 0
+    for (const name of images ?? []) {
+      const file = new URL(key + '/assets/' + name, ROOT)
+      assert.ok(existsSync(file), key + ' 缺图片 ' + name)
+      assert.ok(statSync(file).size <= MAX_FILE_BYTES, key + '/assets/' + name + ' 超过 512KB')
+      imageBytes += statSync(file).size
+    }
+    assert.ok(imageBytes <= MAX_ASSETS_BYTES, key + ' 的图片合计超过 4MB')
     assert.equal(manifest.key, key, 'manifest.key 必须等于文件夹名')
     assert.match(key, KEY)
     assert.match(manifest.version, SEMVER, key + ' version')
@@ -49,13 +60,15 @@ test('在线目录里每个下载扩展的版本、文案、校验值和仓库�
   for (const key of folders) {
     const entry = registry.extensions.find(candidate => candidate.key === key)
     assert.ok(entry, 'registry.json 里没有 ' + key + '：node scripts/extension-entry.mjs ' + key)
-    const { app, ...manifest } = manifestOf(key)
+    const { app, assets, ...manifest } = manifestOf(key)
     void app
     for (const [field, value] of Object.entries(manifest)) assert.deepEqual(entry[field], value, key + ' 的 ' + field + ' 和 manifest 不一致')
-    for (const name of FILES) {
+    const names = fileList(assetNames({ assets }) ?? [])
+    assert.deepEqual(Object.keys(entry.files ?? {}).sort(), [...names].sort(), key + ' 目录里的文件（含图片）和 manifest 对不上')
+    for (const name of names) {
       assert.equal(entry.files?.[name]?.sha256, sha256(new URL(key + '/' + name, ROOT)),
         key + '/' + name + ' 和目录里的校验值不一致：改了文件要升 manifest.version 并重新生成条目')
-      assert.ok(entry.files[name].url.endsWith('/ext-' + key + '-' + manifest.version + '/' + name), key + ' 下载地址的版本不对')
+      assert.ok(entry.files[name].url.endsWith('/ext-' + key + '-' + manifest.version + '/' + name.replace(/^assets\//, '')), key + ' 下载地址的版本不对')
     }
   }
   const downloads = registry.extensions.filter(entry => entry.builtin !== true).map(entry => entry.key).sort()

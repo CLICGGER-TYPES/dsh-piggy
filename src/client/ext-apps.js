@@ -5,11 +5,13 @@
  * 扩展包里的 client.js 是普通脚本，加载后调用
  *   window.dshPiggyExtensions.register('<key>', { render(app) { … } })
  * `app` 给它：content（往里画）、data（宿主 view 给的数据）、send(op, data)（发给它自己的动作）、
- * el / button（和面板一样的小工具）、rerender()（只改了面板里的状态时重画）、openDex(section)。出错只影响它自己的页面。
+ * el / button（和面板一样的小工具）、rerender()（只改了面板里的状态时重画）、openDex(section)、
+ * asset(name)（扩展自带图片的地址，见 store/ext-files.js）、pigArt()（玩家现在的猪图地址）。出错只影响它自己的页面。
  * @module dsh-piggy/client/ext-apps
  */
 import { button, el } from './dom.js'
 import { walletBar } from './wallet.js'
+import { artSource } from './art-path.js'
 
 /** @type {Record<string, any>} */
 var registry = {}
@@ -64,6 +66,10 @@ export function renderDownloadedApp(ui, key) {
       el: el,
       button: button,
       rerender: function () { ui.renderContent() },
+      // 玩家现在用的猪图（随皮肤和形态变）；没有立绘时是 null，扩展自己退回 emoji。
+      pigArt: function () { var art = ui.view.pig && ui.view.pig.stage ? ui.view.pig.stage.art : null; return art ? artSource(art) : null },
+      // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
+      asset: function (name) { return '/dsh-piggy/ext/' + encodeURIComponent(key) + '/assets/' + encodeURIComponent(String(name)) + '?v=' + encodeURIComponent(extension.version) },
       openDex: function (section) {
         ui.select('dex')
         ui.drill.dex = 'ext:' + key + ':' + section

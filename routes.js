@@ -236,9 +236,10 @@ function registerActRoute(webServer, store) {
 }
 
 /**
- * 扩展的两个 GET：在线目录（?force=1 重新读）和下载扩展的面板脚本。
+ * 扩展的 GET：在线目录（?force=1 重新读）、下载扩展的面板脚本和图片。
  *   GET /dsh-piggy/extensions/online
  *   GET /dsh-piggy/ext/<key>/client.js
+ *   GET /dsh-piggy/ext/<key>/assets/<name>
  */
 function registerExtRoutes(webServer, store) {
   const offOnline = webServer.register({
@@ -255,7 +256,16 @@ function registerExtRoutes(webServer, store) {
   const offScript = webServer.register({
     kind: 'prefix', path: '/dsh-piggy/ext',
     handler: async (req, res) => {
-      const match = /^\/dsh-piggy\/ext\/([a-z0-9-]+)\/client\.js$/.exec(String(req.url ?? '').split('?')[0])
+      const path = String(req.url ?? '').split('?')[0]
+      const image = /^\/dsh-piggy\/ext\/([a-z0-9-]+)\/assets\/([a-z0-9.-]+)$/.exec(path)
+      if (image !== null) {
+        // 地址带 ?v=版本，扩展更新就换地址，所以可以放心缓存。
+        const file = store.ext.assetFile(image[1], image[2])
+        if (file === null) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('not found') }
+        res.writeHead(200, { 'content-type': file.type, 'cache-control': 'max-age=86400' })
+        return res.end(file.body)
+      }
+      const match = /^\/dsh-piggy\/ext\/([a-z0-9-]+)\/client\.js$/.exec(path)
       const script = match === null ? null : store.ext.clientScript(match[1])
       if (script === null) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('not found') }
       res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'no-store' })
