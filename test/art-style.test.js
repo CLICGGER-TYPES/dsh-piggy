@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { PIG_ART_ASSETS, NO_OUTLINE_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 import { ART_STYLE_KEY, refreshArtImages } from '../src/client/art-style.js'
 import { ART_BOUNDS, builtinFrame, FRAME_HEIGHT, MAX_ART_ASPECT } from '../src/client/art-framing.js'
-import { findByAttr, findByClass, hostOf, mount, openPanel } from './helpers/bundle.js'
+import { SNAPSHOT, findByAttr, findByClass, hostOf, mount, openPanel } from './helpers/bundle.js'
 
 test('all approved alternative PNGs have matching provenance and the same visible height', () => {
   const entries = JSON.parse(readFileSync(new URL('../assets/pigs/no-outline/manifest.json', import.meta.url)))
@@ -32,8 +32,11 @@ test('all approved alternative PNGs have matching provenance and the same visibl
   assert.ok(total < 2_000_000)
 })
 
+// 开心的反馈图撤回以后（用户 2026-10-13），夹具里的猪要有立绘才看得到画风。
+const WITH_ART = { status: { ...SNAPSHOT, pig: { ...SNAPSHOT.pig, stage: { ...SNAPSHOT.pig.stage, art: 'piglet' } } } }
+
 test('settings switches both ways immediately, persists the choice, and defaults to the existing style', async () => {
-  const { dom, store } = await mount()
+  const { dom, store } = await mount(WITH_ART)
   openPanel(dom, 'settings')
   const host = hostOf(dom)
   assert.equal(findByAttr(host, 'data-art-style', 'outlined').disabled, true)
@@ -44,7 +47,7 @@ test('settings switches both ways immediately, persists the choice, and defaults
   findByAttr(host, 'data-art-style', 'outlined').fire('click')
   assert.equal(store.get(ART_STYLE_KEY), 'outlined')
   assert.doesNotMatch(findByClass(host, 'dp-pig-img').src, /no-outline/)
-  const reopened = await mount({ store: { [ART_STYLE_KEY]: 'no-outline' } })
+  const reopened = await mount({ ...WITH_ART, store: { [ART_STYLE_KEY]: 'no-outline' } })
   assert.match(findByClass(hostOf(reopened.dom), 'dp-pig-img').src, /no-outline/)
 })
 

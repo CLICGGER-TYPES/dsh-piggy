@@ -11,7 +11,6 @@ const MOOD_ART = {
   sleepy: ['sleep-cloud', 'lie-flat'],
   lonely: ['lie-flat'],
   dirty: ['collection-mosquito'],
-  happy: ['music-rainbow', 'collection-stack'],
 }
 
 /** 生病按「病种:阶段」选图；没列出的病（咳嗽、肠胃、病危）保持原立绘加病色。 */
@@ -21,19 +20,18 @@ const ILLNESS_ART = {
   'dizzy:1': ['faint'], 'dizzy:2': ['faint'], 'dizzy:3': ['faint'],
 }
 
-const REACTION_ART = {
-  feed: ['collection-snack', 'collection-soup'],
-  bathe: ['collection-bubbles'],
-  play: ['collection-chicken', 'turning'],
-  levelup: ['collection-throne'],
-}
-
-const IDLE_ART = {
-  roll: ['turning', 'collection-taro'],
-  butterfly: ['collection-chicken', 'collection-scallion'],
-  look: ['collection-letter'],
-  walk: ['collection-chicken', 'collection-scallion'],
-}
+/**
+ * 开心、喂饭 / 洗澡 / 玩耍 / 升级时的反应、闲着时的小动作、旅行途中：先撤回，照常显示立绘和动作图
+ * （用户 2026-10-13：三只猪叠在一起这类图影响体验，以后再看怎么解决）。原来的选图记在 WITHDRAWN_FEEDBACK_ART。
+ */
+const REACTION_ART = {}
+const IDLE_ART = {}
+export const WITHDRAWN_FEEDBACK_ART = Object.freeze({
+  happy: ['music-rainbow', 'collection-stack'],
+  feed: ['collection-snack', 'collection-soup'], bathe: ['collection-bubbles'], play: ['collection-chicken', 'turning'], levelup: ['collection-throne'],
+  roll: ['turning', 'collection-taro'], butterfly: ['collection-chicken', 'collection-scallion'], look: ['collection-letter'], walk: ['collection-chicken', 'collection-scallion'],
+  trip: ['collection-chicken', 'collection-taro', 'collection-scallion'],
+})
 
 const WORK_ART = {
   flyers: 'collection-letter', singer: 'music-headphones-v2', songwriter: 'music-earbuds',
@@ -48,7 +46,7 @@ const INTEREST_ART = {
   fitness: ['collection-fitness'], guitar: ['music-earbuds', 'music-headphones-v2'], dancing: ['music-earbuds', 'music-headphones-v2'],
   calligraphy: ['painting'], photography: ['painting'], other: ['study-determined'],
 }
-const TRIP_ART = ['collection-chicken', 'collection-taro', 'collection-scallion']
+const TRIP_ART = []
 /** 生日当天点了头顶的蛋糕，短暂显示这张。 */
 export const BIRTHDAY_ART = 'birthday'
 
@@ -80,7 +78,7 @@ export function feedbackArtFor(state) {
   if (state.activityKind === 'study') return choose(STUDY_ART, state.hour)
   if (state.activityKind === 'interest') return choose(INTEREST_ART[state.activityKey] ?? INTEREST_ART.other, state.hour)
   if (state.activityKind === 'fishing') return 'fishing'
-  if (state.activityKind === 'trip') return choose(TRIP_ART, state.hour)
+  if (state.activityKind === 'trip') return TRIP_ART.length ? choose(TRIP_ART, state.hour) : null
   if (IDLE_ART[state.idle]) return choose(IDLE_ART[state.idle], state.hour)
   if (MOOD_ART[state.mood]) return choose(MOOD_ART[state.mood], state.hour)
   return null
