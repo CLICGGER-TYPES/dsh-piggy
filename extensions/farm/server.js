@@ -436,11 +436,10 @@ const game = {
     }
   },
 }
-/**
- * 帮工猪（D，数值和规矩照 J2 不变：管 2 / 4 / 8 块地、六小时封仓、每小时至多 400、比自己种少赚）。
- * 帮工用自己的小批次周期（helperRecipe），不按作物的手动成熟时间；它管的地不长草不生虫，收成进自己的谷仓。
- */
-export const HELPER_PLOTS = [2, 4, 8]
+/** 帮工猪（D，规矩照 J2：六小时封仓、每小时至多 400、比自己种少赚；4.0 管 4/8/16 块地）。用自己的小批次周期，管的地不长草不生虫，收成进自己的谷仓。 */
+export const HELPER_PLOTS = [4, 8, 16]
+/** 帮工能赚到同样地数自己种的几成（用户 2026-10-13 要求调高：0.7 → 0.9，仍比自己种少）。 */
+export const HELPER_SHARE = 0.9
 export const HELPER_BUDGETS = [90, 180, 300]
 export const HELPER_SPEEDS = [1, 1.1, 1.2, 4 / 3]
 export const HELPER_WINDOW = 6 * 3600000
@@ -450,10 +449,10 @@ export function helperRecipe(key, level = 0, barn = 0) {
   const crop = cropFor(key)
   if (!crop) return null
   const manual = plots => plots * (crop.yield * crop.sell - crop.price - 5 * EXERT * 10 / 32) / crop.hours
-  const starter = Math.min(90, manual(2) * 0.7)
+  const starter = Math.min(90, manual(HELPER_PLOTS[0]) * HELPER_SHARE)
   const yieldCount = Math.max(1, Math.min(crop.yield, Math.floor((starter * 6 + crop.price) / crop.sell)))
   const profit = yieldCount * crop.sell - crop.price
-  const budget = Math.min(400, HELPER_BUDGETS[level] * HELPER_SPEEDS[barn], manual(HELPER_PLOTS[level]) * 0.7)
+  const budget = Math.min(400, HELPER_BUDGETS[level] * HELPER_SPEEDS[barn], manual(HELPER_PLOTS[level]) * HELPER_SHARE)
   const batches = Math.max(1, Math.floor((budget * 6 + 0.00001) / profit))
   return { yield: yieldCount, intervalMs: HELPER_WINDOW / batches, net: profit * batches / 6, itemsPerHour: yieldCount * batches / 6, batches }
 }
@@ -547,7 +546,7 @@ function helperPlotView(data, index, state) {
 }
 function helperShelf(data, balance) {
   const helper = data.helper
-  if (!helper.hired) return [{ key: 'helper-hire', emoji: '🐷', label: '雇帮工猪', note: '管 2 块地，六小时封仓', price: HELPER_PRICES.hire, disabled: balance < HELPER_PRICES.hire, pick: null }]
+  if (!helper.hired) return [{ key: 'helper-hire', emoji: '🐷', label: '雇帮工猪', note: '管 ' + HELPER_PLOTS[0] + ' 块地，六小时封仓', price: HELPER_PRICES.hire, disabled: balance < HELPER_PRICES.hire, pick: null }]
   return ['level', 'barn'].flatMap(kind => {
     const next = helper[kind] + 1
     const price = HELPER_PRICES[kind][next]

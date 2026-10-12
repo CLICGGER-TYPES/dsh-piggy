@@ -168,7 +168,7 @@ function printAutomation() {
     }).join(' · '))
   }
   for (const crop of CROPS) {
-    console.log('帮工', crop.label, [2, 4, 8].map(plots => {
+    console.log('帮工', crop.label, [4, 8, 16].map(plots => {
       const rate = farmHelperPerHour({ cropKey: crop.key, plots })
       return `${plots}地 ${rate.net.toFixed(2)}/时 ${rate.itemsPerHour.toFixed(2)}件/时 六小时仓${rate.fullHours.toFixed(2)}时`
     }).join(' · '))
