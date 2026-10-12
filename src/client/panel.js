@@ -13,7 +13,7 @@ import { splitSetOpen } from './split.js'
 import { normalize } from './normalize.js'
 import { displayedPigSize } from './pig-size.js'
 import { applyEmojiStyle } from './emoji-style.js'
-import { writeStore } from './storage.js'
+import { readStore, writeStore } from './storage.js'
 import { cakeTakenToday } from './birthday.js'
 import { CSS } from './styles.js'
 import { animateAppEntry, animatePanelClose, animatePanelOpen } from './interaction-motion.js'
@@ -107,10 +107,16 @@ export function createPanel(ctx) {
        * offset, a long shelf jumped back to the top every four seconds.
        */
       // 番茄钟完成的通知：同一个 finishedAt 只弹一次；没权限就退回猪的气泡。
-      var pomodoroNotifiedAt = null
+      // 提醒过的那一次专注记在本机：以前只记在内存里，每次重新打开猪都会把上一次的「专注结束」再报一遍（用户 2026-10-13）。
+      var POMODORO_NOTIFIED_KEY = 'dsh-piggy:pomodoro-notified'
+      var pomodoroNotifiedAt = Number(readStore(POMODORO_NOTIFIED_KEY)) || null
+      /** 结束超过这么久才打开的，不再补报（换了电脑、清了本机数据也不会冒出一条旧提醒）。 */
+      var POMODORO_STALE_MS = 10 * 60 * 1000
       function noticePomodoro(pomodoro) {
         if (pomodoro === null || pomodoro.finishedAt === null || pomodoro.finishedAt === pomodoroNotifiedAt) return
         pomodoroNotifiedAt = pomodoro.finishedAt
+        writeStore(POMODORO_NOTIFIED_KEY, String(pomodoro.finishedAt))
+        if (Date.now() - pomodoro.finishedAt > POMODORO_STALE_MS) return
         var paid = pomodoro.todayDone <= pomodoro.cap
         var text = '今天第 ' + pomodoro.todayDone + ' 个' + (paid ? ' · +' + pomodoro.reward.coins + ' 🪙' : ' · 今天奖励已拿满')
         try {

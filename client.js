@@ -9412,10 +9412,14 @@
       }
       for (var k in ctx.icons) ctx.icons[k].setAttribute("data-active", k === ctx.tab ? "true" : "false");
     }
-    var pomodoroNotifiedAt = null;
+    var POMODORO_NOTIFIED_KEY = "dsh-piggy:pomodoro-notified";
+    var pomodoroNotifiedAt = Number(readStore(POMODORO_NOTIFIED_KEY)) || null;
+    var POMODORO_STALE_MS = 10 * 60 * 1e3;
     function noticePomodoro(pomodoro) {
       if (pomodoro === null || pomodoro.finishedAt === null || pomodoro.finishedAt === pomodoroNotifiedAt) return;
       pomodoroNotifiedAt = pomodoro.finishedAt;
+      writeStore(POMODORO_NOTIFIED_KEY, String(pomodoro.finishedAt));
+      if (Date.now() - pomodoro.finishedAt > POMODORO_STALE_MS) return;
       var paid = pomodoro.todayDone <= pomodoro.cap;
       var text = "\u4ECA\u5929\u7B2C " + pomodoro.todayDone + " \u4E2A" + (paid ? " \xB7 +" + pomodoro.reward.coins + " \u{1FA99}" : " \xB7 \u4ECA\u5929\u5956\u52B1\u5DF2\u62FF\u6EE1");
       try {

@@ -293,7 +293,7 @@ test('状态页不显示番茄钟（G 批次反馈：状态页保持简洁）', 
 })
 
 test('完成时：有通知权限就发浏览器通知，没有就退回猪的气泡', async () => {
-  const finished = { ...POMO_OFF, todayDone: 1, finishedAt: at(10) }
+  const finished = { ...POMO_OFF, todayDone: 1, finishedAt: Date.now() - 1000 }
   const notices = []
   class FakeNotification {
     static permission = 'granted'
@@ -314,8 +314,8 @@ test('完成时：有通知权限就发浏览器通知，没有就退回猪的�
     delete globalThis.Notification
   }
 
-  // 没权限：走气泡。
-  const bubbleCase = await mount({ status: { ...SNAPSHOT, pomodoro: finished } })
+  // 没权限：走气泡（换一个番茄，上一个已经报过了）。
+  const bubbleCase = await mount({ status: { ...SNAPSHOT, pomodoro: { ...finished, finishedAt: Date.now() - 500 } } })
   openPanel(bubbleCase.dom)
   await settle()
   assert.ok(findByAttr(sceneOf(bubbleCase.dom), 'data-bubble-shown', 'true') !== undefined
@@ -323,7 +323,7 @@ test('完成时：有通知权限就发浏览器通知，没有就退回猪的�
 })
 
 test('同一个番茄只弹一次通知（轮询不重复弹）', async () => {
-  const finished = { ...POMO_OFF, todayDone: 1, finishedAt: at(10) }
+  const finished = { ...POMO_OFF, todayDone: 1, finishedAt: Date.now() - 2000 }
   const notices = []
   class FakeNotification {
     static permission = 'granted'
@@ -448,4 +448,16 @@ test('猪说话的时候角标让位（气泡和角标挨着，宁可角标先�
   // 气泡收起后由下一次重绘放回来，这里只确认面板记着「专注中」这个事实
   // （真机采样：气泡消失约 3 秒后角标回来，见卡末验证记录）。
   assert.equal(pill.getAttribute('data-pomo'), 'on', '面板要知道专注还在，好把角标放回来')
+})
+
+test('重新打开猪：报过的那个番茄不再报；结束很久才打开的也不补报（用户 2026-10-13）', async () => {
+  const finishedAt = Date.now() - 3000
+  const reopened = await mount({ status: { ...SNAPSHOT, pomodoro: { ...POMO_OFF, todayDone: 1, finishedAt } }, store: { 'dsh-piggy:pomodoro-notified': String(finishedAt) } })
+  openPanel(reopened.dom)
+  await settle()
+  assert.equal(sceneOf(reopened.dom).allText().includes('专注结束'), false, 'already told on the last launch')
+  const old = await mount({ status: { ...SNAPSHOT, pomodoro: { ...POMO_OFF, todayDone: 1, finishedAt: Date.now() - 3600000 } } })
+  openPanel(old.dom)
+  await settle()
+  assert.equal(sceneOf(old.dom).allText().includes('专注结束'), false, 'an hour-old session is not news')
 })
