@@ -70,6 +70,8 @@ export function createIo(ctx) {
               return next
             }
             var reasons = {
+              'no-edits': '改简介的机会已经用过了',
+              'bad-date': '没有这一天',
               box: '先把纸盒拆开',
               'needs-item': '还没有王冠，去商店的晋升货架买',
               'coronation-ineligible': '加冕条件还没齐',

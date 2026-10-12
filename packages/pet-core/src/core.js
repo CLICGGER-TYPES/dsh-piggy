@@ -77,7 +77,7 @@ export { cashOutWallet, currencyInfo, ensureWallets, exchangeCurrency, openWalle
 export { hatch, hatchEgg, layEgg } from './core/egg.js'
 export { adopt, ageFromNow, applyDevPatch, inherit, rename, reset, revive, setTimeScale } from './core/state.js'
 export { migrate } from './core/migrate.js'
-export { assignPersonality, ensureProfile, profileView, setCatchphrase, setMotto, zodiacFor } from './core/profile.js'
+export { assignPersonality, editProfile, ensureProfile, profileView, setCatchphrase, setMotto, zodiacFor } from './core/profile.js'
 export { crown, formStageView, formsView, signContract } from './core/evolution.js'
 export { chat, pickLine, replyToLine, say, sayAfter, setOwnerName, setQuiet } from './core/lines.js'
 export { holidayFor, isPigBirthday, notePet, slotFor, timeTalkScene } from './core/talk.js'

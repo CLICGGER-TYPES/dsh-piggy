@@ -23,9 +23,14 @@ export function assignPersonality(state) {
   state.motto = personality.motto
 }
 
+/** 每只猪送一次改简介（性格、生日）的机会，老猪也补一次（用户 2026-10-13）。 */
+export const FREE_PROFILE_EDITS = 1
+
 /** Make sure a hatched pig has every profile field (older saves, hand edits). */
 export function ensureProfile(state) {
   if (state.hatched !== true) return
+  if (!Number.isInteger(state.profileEdits) || state.profileEdits < 0) state.profileEdits = FREE_PROFILE_EDITS
+  if (!validBirthday(state.birthday)) delete state.birthday
   if (personalityByKey(state.personality) === null) {
     assignPersonality(state)
     return
@@ -59,6 +64,41 @@ export function setMotto(state, raw) {
   return { ok: true, motto: text }
 }
 
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+const validBirthday = b => b !== null && typeof b === 'object' && Number.isInteger(b.month) && b.month >= 1 && b.month <= 12
+  && Number.isInteger(b.day) && b.day >= 1 && b.day <= DAYS_IN_MONTH[b.month - 1]
+
+/** 猪的生日：改过就用改的，没改过是拆纸盒那天。 */
+export function birthdayOf(state, nowMs) {
+  if (validBirthday(state.birthday)) return { month: state.birthday.month, day: state.birthday.day }
+  const born = new Date(typeof state.bornAt === 'number' ? state.bornAt : nowMs)
+  return { month: born.getMonth() + 1, day: born.getDate() }
+}
+
+/**
+ * 用掉那次改简介的机会：性格、生日一起改（只改给了的）。性格换了，口头禅和签名如果还是原来性格的默认句子，就跟着换。
+ * @param {object} state @param {{personality?: string, month?: number, day?: number}} change
+ */
+export function editProfile(state, change) {
+  if (state === null || state.hatched !== true) return { ok: false, reason: 'absent' }
+  if (!(state.profileEdits > 0)) return { ok: false, reason: 'no-edits' }
+  const next = change?.personality === undefined ? null : personalityByKey(change.personality)
+  if (change?.personality !== undefined && next === null) return { ok: false, reason: 'unknown' }
+  const wantsBirthday = change?.month !== undefined || change?.day !== undefined
+  const birthday = { month: Number(change?.month), day: Number(change?.day) }
+  if (wantsBirthday && !validBirthday(birthday)) return { ok: false, reason: 'bad-date' }
+  if (next === null && !wantsBirthday) return { ok: false, reason: 'empty' }
+  if (next !== null) {
+    const old = personalityByKey(state.personality)
+    if (old === null || state.catchphrase === old.catchphrase) state.catchphrase = next.catchphrase
+    if (old === null || state.motto === old.motto) state.motto = next.motto
+    state.personality = next.key
+  }
+  if (wantsBirthday) state.birthday = birthday
+  state.profileEdits -= 1
+  return { ok: true, profileEdits: state.profileEdits }
+}
+
 /**
  * The star sign for a month (1–12) and day.
  * @returns {{label: string, emoji: string}}
@@ -79,9 +119,7 @@ export function zodiacFor(month, day) {
 export function profileView(state, nowMs) {
   if (state === null || state.hatched !== true) return null
   const personality = personalityByKey(state.personality)
-  const born = new Date(typeof state.bornAt === 'number' ? state.bornAt : nowMs)
-  const month = born.getMonth() + 1
-  const day = born.getDate()
+  const { month, day } = birthdayOf(state, nowMs)
   const lessons = state.lessons ?? {}
   const graduated = Object.values(lessons).reduce(
     (sum, count) => sum + GRADUATION_LESSONS.filter(mark => count >= mark).length, 0)
@@ -92,6 +130,9 @@ export function profileView(state, nowMs) {
     motto: typeof state.motto === 'string' ? state.motto : '',
     birthday: `${month} 月 ${day} 日`,
     zodiac: zodiacFor(month, day),
+    birthdayParts: { month, day },
+    editsLeft: Number.isInteger(state.profileEdits) ? state.profileEdits : FREE_PROFILE_EDITS,
+    personalities: PERSONALITIES.map(entry => ({ key: entry.key, label: entry.label, emoji: entry.emoji })),
     counts: {
       days: Math.floor(ageDays(state, nowMs)),
       certificates,

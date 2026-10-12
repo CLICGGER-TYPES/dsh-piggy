@@ -117,7 +117,7 @@ import { attachSizePreference } from './pig-size.js'
       // 猪的名字草稿（同上：编辑期间轮询不许重绘，否则输入框会丢焦点）。
       var pigNameEdit = null
       // 居民卡: { field: 'catchphrase'|'motto', draft } while one is being edited.
-      var cardEdit = null
+      var cardEdit = null, profileDraft = null
 
       /** The tabs get an explicit context instead of closing over the shell locals. */
       // 桌面版启动总是收起（几何未到时按「开着」摆面板，窗口会连翻几次）；网页版照旧。
@@ -179,7 +179,7 @@ import { attachSizePreference } from './pig-size.js'
         get picker() { return picker }, set picker(next) { picker = next },
         get ownerEdit() { return ownerEdit }, set ownerEdit(next) { ownerEdit = next },
         get pigNameEdit() { return pigNameEdit }, set pigNameEdit(next) { pigNameEdit = next },
-        get cardEdit() { return cardEdit }, set cardEdit(next) { cardEdit = next },
+        get cardEdit() { return cardEdit }, set cardEdit(next) { cardEdit = next }, get profileDraft() { return profileDraft }, set profileDraft(next) { profileDraft = next },
         get isOpen() { return isOpen }, set isOpen(next) { isOpen = next },
         get lastStage() { return lastStage }, set lastStage(next) { lastStage = next },
         get lastPendingAt() { return lastPendingAt }, set lastPendingAt(next) { lastPendingAt = next },

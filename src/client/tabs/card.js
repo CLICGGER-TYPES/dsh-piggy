@@ -54,6 +54,8 @@ export function renderCardTab(ui) {
   card.appendChild(editableField(ui, 'catchphrase', '口头禅', profile.catchphrase))
   card.appendChild(editableField(ui, 'motto', '签名', profile.motto))
 
+  if (profile.editsLeft > 0 && profile.birthdayParts !== null && profile.personalities.length) card.appendChild(profileEditor(ui, profile))
+
   var c = profile.counts
   card.appendChild(el('div', 'dp-vcard-foot',
     '养了 ' + c.days + ' 天 · 证书 ' + c.certificates + ' · 纪念品 ' + c.souvenirs + ' · 毕业 ' + c.graduations))
@@ -134,4 +136,60 @@ function appendEditor(ui, parent, key) {
   parent.appendChild(input)
   parent.appendChild(save)
   parent.appendChild(cancel)
+}
+
+/**
+ * 每只猪送一次的改简介（用户 2026-10-13）：性格、生日一起改，点「就这样」才用掉这次机会。
+ * 平时只显示一个入口按钮；点开以后草稿留在 ui.profileDraft，轮询不重画（同 cardEdit）。
+ */
+function profileEditor(ui, profile) {
+  var box = el('div', 'dp-vcard-row dp-vcard-once')
+  var draft = ui.profileDraft
+  if (!draft) {
+    var open = button('dp-mini', { 'data-card-once': 'open' }, function () {
+      ui.profileDraft = { personality: profile.personality ? profile.personality.key : profile.personalities[0].key, month: profile.birthdayParts.month, day: profile.birthdayParts.day }
+      ui.renderContent()
+    })
+    open.textContent = '✏️ 改性格和生日（送 ' + profile.editsLeft + ' 次）'
+    box.appendChild(open)
+    return box
+  }
+  var pick = /** @type {HTMLSelectElement} */ (el('select', 'dp-setting-field'))
+  pick.setAttribute('data-card-once', 'personality')
+  profile.personalities.forEach(function (p) {
+    var option = /** @type {HTMLOptionElement} */ (el('option', null, p.emoji + ' ' + p.label))
+    option.value = p.key
+    pick.appendChild(option)
+  })
+  pick.value = draft.personality
+  pick.addEventListener('change', function () { draft.personality = pick.value })
+  var number = function (key, max, value) {
+    var input = /** @type {HTMLInputElement} */ (el('input', 'dp-input dp-vcard-date'))
+    input.type = 'number'
+    input.min = '1'
+    input.max = String(max)
+    input.value = String(value)
+    input.setAttribute('data-card-once', key)
+    input.addEventListener('input', function () { draft[key] = Number(input.value) })
+    return input
+  }
+  box.appendChild(el('span', 'dp-vcard-label', '性格：'))
+  box.appendChild(pick)
+  box.appendChild(el('span', 'dp-vcard-label', '生日：'))
+  box.appendChild(number('month', 12, draft.month))
+  box.appendChild(el('span', null, '月'))
+  box.appendChild(number('day', 31, draft.day))
+  box.appendChild(el('span', null, '日'))
+  var save = button('dp-mini', { 'data-card-once': 'save' }, function () {
+    var change = ui.profileDraft
+    ui.profileDraft = null
+    ui.send('editProfile', { personality: change.personality, month: change.month, day: change.day })
+    ui.renderContent()
+  })
+  save.textContent = '就这样（只能改这一次）'
+  var cancel = button('dp-mini dp-mini-plain', { 'data-card-once': 'cancel' }, function () { ui.profileDraft = null; ui.renderContent() })
+  cancel.textContent = '算了'
+  box.appendChild(save)
+  box.appendChild(cancel)
+  return box
 }

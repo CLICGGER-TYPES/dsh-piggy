@@ -321,7 +321,11 @@ export function normalize(raw) {
     awayBlocked: typeof d.awayBlocked === 'string' ? d.awayBlocked : null,
     // B9: the villager card. Older hosts send none, and the card says so.
     profile: isObj(d.profile) ? {
-      personality: isObj(d.profile.personality) ? { label: str(d.profile.personality.label, ''), emoji: str(d.profile.personality.emoji, '') } : null,
+      personality: isObj(d.profile.personality) ? { key: str(d.profile.personality.key, ''), label: str(d.profile.personality.label, ''), emoji: str(d.profile.personality.emoji, '') } : null,
+      // 送一次的改简介（游戏 0.37.0 起）：老宿主没有就是 0，界面不出入口。
+      editsLeft: num(d.profile.editsLeft, 0),
+      birthdayParts: isObj(d.profile.birthdayParts) ? { month: num(d.profile.birthdayParts.month, 1), day: num(d.profile.birthdayParts.day, 1) } : null,
+      personalities: Array.isArray(d.profile.personalities) ? d.profile.personalities.filter(isObj).map(p => ({ key: str(p.key, ''), label: str(p.label, ''), emoji: str(p.emoji, '') })) : [],
       catchphrase: str(d.profile.catchphrase, ''),
       motto: str(d.profile.motto, ''),
       birthday: str(d.profile.birthday, ''),

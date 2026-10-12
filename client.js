@@ -1736,6 +1736,8 @@
             return next;
           }
           var reasons = {
+            "no-edits": "\u6539\u7B80\u4ECB\u7684\u673A\u4F1A\u5DF2\u7ECF\u7528\u8FC7\u4E86",
+            "bad-date": "\u6CA1\u6709\u8FD9\u4E00\u5929",
             box: "\u5148\u628A\u7EB8\u76D2\u62C6\u5F00",
             "needs-item": "\u8FD8\u6CA1\u6709\u738B\u51A0\uFF0C\u53BB\u5546\u5E97\u7684\u664B\u5347\u8D27\u67B6\u4E70",
             "coronation-ineligible": "\u52A0\u5195\u6761\u4EF6\u8FD8\u6CA1\u9F50",
@@ -3362,7 +3364,11 @@
       awayBlocked: typeof d.awayBlocked === "string" ? d.awayBlocked : null,
       // B9: the villager card. Older hosts send none, and the card says so.
       profile: isObj(d.profile) ? {
-        personality: isObj(d.profile.personality) ? { label: str(d.profile.personality.label, ""), emoji: str(d.profile.personality.emoji, "") } : null,
+        personality: isObj(d.profile.personality) ? { key: str(d.profile.personality.key, ""), label: str(d.profile.personality.label, ""), emoji: str(d.profile.personality.emoji, "") } : null,
+        // 送一次的改简介（游戏 0.37.0 起）：老宿主没有就是 0，界面不出入口。
+        editsLeft: num(d.profile.editsLeft, 0),
+        birthdayParts: isObj(d.profile.birthdayParts) ? { month: num(d.profile.birthdayParts.month, 1), day: num(d.profile.birthdayParts.day, 1) } : null,
+        personalities: Array.isArray(d.profile.personalities) ? d.profile.personalities.filter(isObj).map((p) => ({ key: str(p.key, ""), label: str(p.label, ""), emoji: str(p.emoji, "") })) : [],
         catchphrase: str(d.profile.catchphrase, ""),
         motto: str(d.profile.motto, ""),
         birthday: str(d.profile.birthday, ""),
@@ -4374,6 +4380,7 @@
     ".dp-vcard-sub{font-size:10.5px;font-weight:600;color:var(--ac-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     // 「标签：值」 rows.
     ".dp-vcard-row{display:flex;align-items:center;gap:6px;margin-top:7px;min-width:0}",
+    ".dp-vcard-once{flex-wrap:wrap}.dp-vcard-once select{max-width:110px}.dp-vcard-date{width:46px}",
     ".dp-vcard-label{flex:none;width:44px;font-size:10.5px;font-weight:700;color:var(--ac-text)}",
     ".dp-vcard-value{flex:1;min-width:0;padding:5px 11px;border-radius:var(--ac-pill);background:#faf8f2;",
     "font-size:11px;font-weight:600;color:var(--ac-text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -5240,6 +5247,7 @@
     card2.appendChild(editableField(ui, "owner", "\u53EB\u4F60", ui.view.dialogue.ownerName));
     card2.appendChild(editableField(ui, "catchphrase", "\u53E3\u5934\u7985", profile.catchphrase));
     card2.appendChild(editableField(ui, "motto", "\u7B7E\u540D", profile.motto));
+    if (profile.editsLeft > 0 && profile.birthdayParts !== null && profile.personalities.length) card2.appendChild(profileEditor(ui, profile));
     var c = profile.counts;
     card2.appendChild(el(
       "div",
@@ -5312,6 +5320,73 @@
     parent.appendChild(input);
     parent.appendChild(save);
     parent.appendChild(cancel);
+  }
+  function profileEditor(ui, profile) {
+    var box = el("div", "dp-vcard-row dp-vcard-once");
+    var draft2 = ui.profileDraft;
+    if (!draft2) {
+      var open = button("dp-mini", { "data-card-once": "open" }, function() {
+        ui.profileDraft = { personality: profile.personality ? profile.personality.key : profile.personalities[0].key, month: profile.birthdayParts.month, day: profile.birthdayParts.day };
+        ui.renderContent();
+      });
+      open.textContent = "\u270F\uFE0F \u6539\u6027\u683C\u548C\u751F\u65E5\uFF08\u9001 " + profile.editsLeft + " \u6B21\uFF09";
+      box.appendChild(open);
+      return box;
+    }
+    var pick = (
+      /** @type {HTMLSelectElement} */
+      el("select", "dp-setting-field")
+    );
+    pick.setAttribute("data-card-once", "personality");
+    profile.personalities.forEach(function(p) {
+      var option = (
+        /** @type {HTMLOptionElement} */
+        el("option", null, p.emoji + " " + p.label)
+      );
+      option.value = p.key;
+      pick.appendChild(option);
+    });
+    pick.value = draft2.personality;
+    pick.addEventListener("change", function() {
+      draft2.personality = pick.value;
+    });
+    var number = function(key, max, value) {
+      var input = (
+        /** @type {HTMLInputElement} */
+        el("input", "dp-input dp-vcard-date")
+      );
+      input.type = "number";
+      input.min = "1";
+      input.max = String(max);
+      input.value = String(value);
+      input.setAttribute("data-card-once", key);
+      input.addEventListener("input", function() {
+        draft2[key] = Number(input.value);
+      });
+      return input;
+    };
+    box.appendChild(el("span", "dp-vcard-label", "\u6027\u683C\uFF1A"));
+    box.appendChild(pick);
+    box.appendChild(el("span", "dp-vcard-label", "\u751F\u65E5\uFF1A"));
+    box.appendChild(number("month", 12, draft2.month));
+    box.appendChild(el("span", null, "\u6708"));
+    box.appendChild(number("day", 31, draft2.day));
+    box.appendChild(el("span", null, "\u65E5"));
+    var save = button("dp-mini", { "data-card-once": "save" }, function() {
+      var change = ui.profileDraft;
+      ui.profileDraft = null;
+      ui.send("editProfile", { personality: change.personality, month: change.month, day: change.day });
+      ui.renderContent();
+    });
+    save.textContent = "\u5C31\u8FD9\u6837\uFF08\u53EA\u80FD\u6539\u8FD9\u4E00\u6B21\uFF09";
+    var cancel = button("dp-mini dp-mini-plain", { "data-card-once": "cancel" }, function() {
+      ui.profileDraft = null;
+      ui.renderContent();
+    });
+    cancel.textContent = "\u7B97\u4E86";
+    box.appendChild(save);
+    box.appendChild(cancel);
+    return box;
   }
 
   // src/client/tabs/achievements.js
@@ -9623,7 +9698,7 @@
       ctx.icons.travel.setAttribute("data-alert", ctx.view.pig !== null && ctx.view.pig.coins >= 400 ? "true" : "false");
       processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return;
-      if (ctx.cardEdit !== null && ctx.tab === "card") return;
+      if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return;
       if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
       var currentFishing = ctx.view.fishing.pending;
@@ -10584,7 +10659,7 @@
         var picker = null;
         var ownerEdit = null;
         var pigNameEdit = null;
-        var cardEdit = null;
+        var cardEdit = null, profileDraft = null;
         var isOpen = desktopShell() === null && readStore(OPEN_KEY) === "true";
         var lastStage = null;
         var lastPendingAt = 0;
@@ -10697,6 +10772,12 @@
           },
           set cardEdit(next) {
             cardEdit = next;
+          },
+          get profileDraft() {
+            return profileDraft;
+          },
+          set profileDraft(next) {
+            profileDraft = next;
           },
           get isOpen() {
             return isOpen;

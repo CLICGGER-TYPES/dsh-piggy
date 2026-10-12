@@ -74,3 +74,30 @@ test('the pig sometimes ends a line with its catchphrase, never in serious momen
   assert.ok(!pickLine(fresh(), 'sick', always).text.includes('噜噜'), 'not when ill')
   assert.ok(!pickLine(fresh(), 'eat', () => 0.99).text.includes('噜噜'), 'and not every time')
 })
+
+test('每只猪送一次改简介：性格和生日一起改，用掉就没了；默认的口头禅签名跟着性格换，自己改过的不动', async () => {
+  const { editProfile, ensureProfile, profileView } = await import('../packages/pet-core/src/core/profile.js')
+  const { hatchEgg } = await import('../packages/pet-core/src/core/egg.js')
+  const { isPigBirthday } = await import('../packages/pet-core/src/core/talk.js')
+  const now = Date.UTC(2026, 9, 13, 4)
+  const pig = hatchEgg(now - 400 * 86_400_000)
+  assert.equal(pig.profileEdits, 1)
+  pig.personality = 'lazy'; pig.catchphrase = '呼噜'; pig.motto = '我自己写的'
+  assert.equal(editProfile(pig, { personality: 'nope' }).reason, 'unknown')
+  assert.equal(editProfile(pig, { month: 2, day: 30 }).reason, 'bad-date')
+  assert.equal(editProfile(pig, {}).reason, 'empty')
+  const today = new Date(now)
+  assert.equal(editProfile(pig, { personality: 'peppy', month: today.getMonth() + 1, day: today.getDate() }).ok, true)
+  assert.equal(pig.personality, 'peppy')
+  assert.equal(pig.catchphrase, '嘿嘿', 'the default catchphrase follows the new personality')
+  assert.equal(pig.motto, '我自己写的', 'a motto the owner wrote stays')
+  assert.equal(isPigBirthday(pig, now), true, 'the chosen birthday drives the birthday')
+  const view = profileView(pig, now)
+  assert.equal(view.editsLeft, 0)
+  assert.equal(view.birthday, `${today.getMonth() + 1} 月 ${today.getDate()} 日`)
+  assert.equal(editProfile(pig, { personality: 'lazy' }).reason, 'no-edits')
+  const old = { ...hatchEgg(now) }
+  delete old.profileEdits
+  ensureProfile(old)
+  assert.equal(old.profileEdits, 1, 'older pigs get their one free edit too')
+})

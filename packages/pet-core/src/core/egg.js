@@ -12,7 +12,7 @@ import { remember } from './effects.js'
 import { emptyDex } from './dex.js'
 import { emptyFishing } from './fishing.js'
 import { emptyDialogue } from './lines.js'
-import { assignPersonality } from './profile.js'
+import { FREE_PROFILE_EDITS, assignPersonality } from './profile.js'
 
 export function layEgg(nowMs) {
   return {
@@ -96,6 +96,9 @@ export function hatch(state, nowMs) {
   // (older saves let it eat real work) does not count toward growing up.
   state.xp = 0
   assignPersonality(state)
+  // 新猪送一次改简介（性格、生日）的机会，上一只猪改过的生日不带过来。
+  state.profileEdits = FREE_PROFILE_EDITS
+  delete state.birthday
   state.bornAt = nowMs
   state.ageForced = false
   state.dead = false
@@ -111,6 +114,9 @@ export function hatchEgg(nowMs) {
   const state = layEgg(nowMs)
   state.hatched = true
   assignPersonality(state)
+  // 新猪送一次改简介（性格、生日）的机会，上一只猪改过的生日不带过来。
+  state.profileEdits = FREE_PROFILE_EDITS
+  delete state.birthday
   state.bornAt = nowMs
   state.ageForced = false
   state.weightG += HATCH_WEIGHT_G

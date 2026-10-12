@@ -38,6 +38,7 @@ import {
   seeDoctor as coreSeeDoctor,
   setCatchphrase as coreSetCatchphrase,
   setMotto as coreSetMotto,
+  editProfile as coreEditProfile,
   crown as coreCrown,
   setOwnerName as coreSetOwnerName,
   setQuiet as coreSetQuiet,
@@ -214,6 +215,8 @@ export function createApi(control) {
 
     /** The line on the pig's card (居民卡). */
     setMotto: text => mutate(live => coreSetMotto(live, text)),
+    /** 每只猪送一次：改性格、生日（用户 2026-10-13）。 */
+    editProfile: change => mutate(live => coreEditProfile(live, change)),
 
     /** 加冕: the owner picks a form the pig qualifies for. */
     crown: formKey => mutate(live => coreCrown(live, now(), formKey || undefined)),

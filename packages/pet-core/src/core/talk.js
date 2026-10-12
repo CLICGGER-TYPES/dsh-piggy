@@ -9,6 +9,7 @@
  * @module dsh-piggy/core/talk
  */
 
+import { birthdayOf } from './profile.js'
 import {
   DATED_HOLIDAYS, EYES_EVERY_MINUTES, PET_ANNOYED, SOLAR_HOLIDAYS, TALK_SLOTS, WATER_EVERY_MINUTES,
 } from '../data.js'
@@ -51,8 +52,8 @@ export function slotFor(nowMs) {
 export function isPigBirthday(state, nowMs) {
   if (state === null || typeof state.bornAt !== 'number' || nowMs - state.bornAt <= 86_400_000) return false
   const now = new Date(nowMs)
-  const born = new Date(state.bornAt)
-  return born.getMonth() === now.getMonth() && born.getDate() === now.getDate()
+  const birthday = birthdayOf(state, nowMs)
+  return birthday.month === now.getMonth() + 1 && birthday.day === now.getDate()
 }
 
 /** 今天是什么节日（含猪的生日），没有返回 null。 */
