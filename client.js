@@ -4380,7 +4380,8 @@
     ".dp-vcard-sub{font-size:10.5px;font-weight:600;color:var(--ac-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     // 「标签：值」 rows.
     ".dp-vcard-row{display:flex;align-items:center;gap:6px;margin-top:7px;min-width:0}",
-    ".dp-vcard-once{flex-wrap:wrap}.dp-vcard-once select{max-width:110px}.dp-vcard-date{width:46px}",
+    ".dp-vcard-once{flex-direction:column;align-items:stretch;gap:6px}.dp-vcard-once-line{display:flex;align-items:center;gap:6px}.dp-vcard-once select{flex:1;min-width:0}",
+    ".dp-vcard-once .dp-vcard-date{width:52px;height:26px;border-radius:8px;padding:0 6px;text-align:center}",
     ".dp-vcard-label{flex:none;width:44px;font-size:10.5px;font-weight:700;color:var(--ac-text)}",
     ".dp-vcard-value{flex:1;min-width:0;padding:5px 11px;border-radius:var(--ac-pill);background:#faf8f2;",
     "font-size:11px;font-weight:600;color:var(--ac-text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -5365,13 +5366,21 @@
       });
       return input;
     };
-    box.appendChild(el("span", "dp-vcard-label", "\u6027\u683C\uFF1A"));
-    box.appendChild(pick);
-    box.appendChild(el("span", "dp-vcard-label", "\u751F\u65E5\uFF1A"));
-    box.appendChild(number("month", 12, draft2.month));
-    box.appendChild(el("span", null, "\u6708"));
-    box.appendChild(number("day", 31, draft2.day));
-    box.appendChild(el("span", null, "\u65E5"));
+    var line3 = function() {
+      var row = el("div", "dp-vcard-once-line");
+      box.appendChild(row);
+      return row;
+    };
+    var first = line3();
+    first.appendChild(el("span", "dp-vcard-label", "\u6027\u683C\uFF1A"));
+    first.appendChild(pick);
+    var second = line3();
+    second.appendChild(el("span", "dp-vcard-label", "\u751F\u65E5\uFF1A"));
+    second.appendChild(number("month", 12, draft2.month));
+    second.appendChild(el("span", null, "\u6708"));
+    second.appendChild(number("day", 31, draft2.day));
+    second.appendChild(el("span", null, "\u65E5"));
+    var third = line3();
     var save = button("dp-mini", { "data-card-once": "save" }, function() {
       var change = ui.profileDraft;
       ui.profileDraft = null;
@@ -5384,8 +5393,8 @@
       ui.renderContent();
     });
     cancel.textContent = "\u7B97\u4E86";
-    box.appendChild(save);
-    box.appendChild(cancel);
+    third.appendChild(save);
+    third.appendChild(cancel);
     return box;
   }
 

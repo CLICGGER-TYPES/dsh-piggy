@@ -173,13 +173,17 @@ function profileEditor(ui, profile) {
     input.addEventListener('input', function () { draft[key] = Number(input.value) })
     return input
   }
-  box.appendChild(el('span', 'dp-vcard-label', '性格：'))
-  box.appendChild(pick)
-  box.appendChild(el('span', 'dp-vcard-label', '生日：'))
-  box.appendChild(number('month', 12, draft.month))
-  box.appendChild(el('span', null, '月'))
-  box.appendChild(number('day', 31, draft.day))
-  box.appendChild(el('span', null, '日'))
+  var line = function () { var row = el('div', 'dp-vcard-once-line'); box.appendChild(row); return row }
+  var first = line()
+  first.appendChild(el('span', 'dp-vcard-label', '性格：'))
+  first.appendChild(pick)
+  var second = line()
+  second.appendChild(el('span', 'dp-vcard-label', '生日：'))
+  second.appendChild(number('month', 12, draft.month))
+  second.appendChild(el('span', null, '月'))
+  second.appendChild(number('day', 31, draft.day))
+  second.appendChild(el('span', null, '日'))
+  var third = line()
   var save = button('dp-mini', { 'data-card-once': 'save' }, function () {
     var change = ui.profileDraft
     ui.profileDraft = null
@@ -189,7 +193,7 @@ function profileEditor(ui, profile) {
   save.textContent = '就这样（只能改这一次）'
   var cancel = button('dp-mini dp-mini-plain', { 'data-card-once': 'cancel' }, function () { ui.profileDraft = null; ui.renderContent() })
   cancel.textContent = '算了'
-  box.appendChild(save)
-  box.appendChild(cancel)
+  third.appendChild(save)
+  third.appendChild(cancel)
   return box
 }

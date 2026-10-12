@@ -35,7 +35,8 @@ export const CSS_CARD = [
 
   // 「标签：值」 rows.
   '.dp-vcard-row{display:flex;align-items:center;gap:6px;margin-top:7px;min-width:0}',
-  '.dp-vcard-once{flex-wrap:wrap}.dp-vcard-once select{max-width:110px}.dp-vcard-date{width:46px}',
+  '.dp-vcard-once{flex-direction:column;align-items:stretch;gap:6px}.dp-vcard-once-line{display:flex;align-items:center;gap:6px}.dp-vcard-once select{flex:1;min-width:0}',
+  '.dp-vcard-once .dp-vcard-date{width:52px;height:26px;border-radius:8px;padding:0 6px;text-align:center}',
   '.dp-vcard-label{flex:none;width:44px;font-size:10.5px;font-weight:700;color:var(--ac-text)}',
   '.dp-vcard-value{flex:1;min-width:0;padding:5px 11px;border-radius:var(--ac-pill);background:#faf8f2;',
   'font-size:11px;font-weight:600;color:var(--ac-text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
