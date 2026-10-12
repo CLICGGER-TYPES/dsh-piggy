@@ -140,7 +140,7 @@
     "4.0.0": {
       "manifest.json": "3af07172fcaa3e5ffeafd382c23b9a7f908cf81975d64aa1409f5740f590815b",
       "server.js": "09160570879dcefbc320ecc3b778170b3156e7ae326b7d7b7047d2521c6a0088",
-      "client.js": "5c1f9a75f5c26d7aeb9e8526855a1f6f2b09455112a2541757b1aa07f89d6dda",
+      "client.js": "3bc3ff2dcdd1b8168de789fafca96dcebd8d645d94983b28a5faa1e01480806d",
       "assets/bg-big.webp": "9fa601c6c551a2e46d1644f106d2e67291e6be37defd98971b746d74b083f771",
       "assets/bg-small.webp": "75ea357244f52e14b5c66974ec149774d8a887de76977ca14f3a73c5961511c8",
       "assets/big-plot-dry.webp": "4a4c62a1747b042df5c38a790e8941ebb86d6073d4970f5d6bfe453a25a81bb2",

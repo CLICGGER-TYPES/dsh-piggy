@@ -12,7 +12,8 @@ const EXT_CSS = [
   '[data-piggy-role="ext"] [data-dsh-pig]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;transform:none!important;pointer-events:auto!important}',
   '[data-piggy-role="ext"] .dp-scene,[data-piggy-role="ext"] .dp-hud,[data-piggy-role="ext"] .dp-bar,[data-piggy-role="ext"] .dp-panel-footer{display:none!important}',
   '[data-piggy-role="ext"] .dp-card{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-height:none!important;max-width:none!important;',
-  'border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important;background:#7fae5a!important}',
+  'border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important}',
+  '[data-piggy-role="ext"] [data-ext-view="big"] .dp-card{background:#7fae5a!important}',
   '[data-piggy-role="ext"] [data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;height:100%}',
 ].join('\n')
 

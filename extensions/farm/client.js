@@ -36,19 +36,19 @@
     '.fm-stock{display:flex;flex-wrap:wrap;gap:6px}.fm-note{font-size:10.5px;color:#8a6a46;line-height:1.4}.fm-cropbtn{display:inline-flex;align-items:center;gap:3px;padding:3px 9px 3px 4px;border-radius:14px;font:inherit;font-size:11px;font-weight:800;cursor:pointer;background:#fffdf3;color:inherit;border:2px solid #e5d3ad}',
     '.fm-cropbtn img{width:24px;height:24px;object-fit:contain}.fm-cropbtn[aria-pressed="true"],.fm-cropbtn[aria-expanded="true"]{border-color:#7fbf55;box-shadow:0 0 0 1px #7fbf55}.fm-cropbtn:disabled{opacity:.45;cursor:default}',
     '.fm-sellbar{width:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:7px 9px;border-radius:12px;background:#fffdf3;border:2px solid #e5d3ad;font-size:10.5px}.fm .dp-mini{padding:4px 10px;font-size:10px}.fm-plot:focus-visible,.fm-slot:focus-visible,.fm-sign:focus-visible,.fm-main:focus-visible{outline:3px solid #7fbf55;outline-offset:2px}',
-    '.fm-s-scene{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:760/700;background:#a8d07c center top/cover no-repeat;box-shadow:inset 0 0 0 2px rgba(121,79,39,.12)}.fm-s-board{position:absolute;left:4%;width:70%;top:-1%;aspect-ratio:1200/476;background:center/100% 100% no-repeat;z-index:3}',
-    '.fm-s-board-in{position:absolute;left:12%;right:9%;top:44%;bottom:15%;display:flex;align-items:center;justify-content:space-between;gap:6px}.fm-s-big{position:absolute;right:3%;top:0;width:24%;aspect-ratio:225/206;background:center/100% 100% no-repeat;z-index:3;border:0;padding:30% 0 0;font:inherit;font-size:12px;font-weight:900;color:#6b4a2b;cursor:pointer}',
-    '.fm-s-field{position:absolute;left:5%;right:22%;top:27%;bottom:3%}.fm-s-field .fm-plot{width:48%;height:31%}.fm-s-field .fm-crop{bottom:26%;width:56%}.fm-s-field .fm-pest{left:6%;top:8%;width:26%}.fm-s-field .fm-pest[data-pest="bug"]{left:auto;right:8%;top:16%;width:22%}.fm-s-field .fm-chip{bottom:4%}.fm-s-field .fm-prog{bottom:12%}',
-    '.fm-s-pig{position:absolute;right:3%;top:44%;width:17%;object-fit:contain;z-index:2;font-size:34px;text-align:center}.fm-s-note{position:relative;justify-self:center;width:78%;aspect-ratio:256/52;background:center/100% 100% no-repeat;display:grid;place-items:center;font-size:11px;font-weight:900;color:#6b4a2b;margin-top:-4px}',
+    '.fm-s-scene{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:760/600;background:#a8d07c center top/cover no-repeat;box-shadow:inset 0 0 0 2px rgba(121,79,39,.12)}.fm-s-board{position:absolute;left:3%;width:75%;top:-1%;aspect-ratio:1200/476;background:center/100% 100% no-repeat;z-index:3}',
+    '.fm-s-board-in{position:absolute;left:12%;right:9%;top:44%;bottom:15%;display:flex;align-items:center;justify-content:space-between;gap:6px}.fm-s-big{position:absolute;right:3%;top:0;width:19%;aspect-ratio:225/206;background:center/100% 100% no-repeat;z-index:3;border:0;padding:48% 0 0;font:inherit;font-size:11px;line-height:1;font-weight:900;color:#6b4a2b;cursor:pointer}',
+    '.fm-s-field{position:absolute;left:5%;right:22%;top:33%;bottom:2%}.fm-s-field .fm-plot{width:48%;height:31%}.fm-s-field .fm-crop{bottom:26%;width:56%}.fm-s-field .fm-pest{left:6%;top:8%;width:26%}.fm-s-field .fm-pest[data-pest="bug"]{left:auto;right:8%;top:16%;width:22%}.fm-s-field .fm-chip{bottom:4%}.fm-s-field .fm-prog{bottom:12%}',
+    '.fm-s-pig{position:absolute;right:3%;top:52%;width:17%;object-fit:contain;z-index:2;font-size:34px;text-align:center}.fm-s-note{position:relative;justify-self:center;width:78%;aspect-ratio:256/52;background:center/100% 100% no-repeat;display:grid;place-items:center;font-size:11px;font-weight:900;color:#6b4a2b;margin-top:-4px}',
     '.fm-pocket{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 3px;scrollbar-width:none}.fm-pocket::-webkit-scrollbar{display:none}.fm-pocket .fm-slot{width:40px;height:40px}.fm-s-plank{display:grid;gap:8px;padding:12px 10px 13px;background:center/100% 100% no-repeat}.fm-s-tools{display:flex;justify-content:space-around}',
     '.fm-s-acts{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:6px;align-items:center}.fm-s-acts .fm-sign{aspect-ratio:256/101}.fm-s-acts .fm-main{aspect-ratio:256/102}.fm-big{width:100%;height:100%;display:grid;place-items:center;background:#7fae5a}',
     '.fm-b-scene{position:relative;width:min(100%,150vh);aspect-ratio:3/2;max-height:100%;background:center/100% 100% no-repeat;overflow:hidden;container-type:inline-size}.fm-b-top{position:absolute;left:1.5%;top:1.5%;width:34%;aspect-ratio:1200/297;background:center/100% 100% no-repeat;display:flex;align-items:center;gap:3%;padding:0 4% 0 3%;box-sizing:border-box;z-index:4}',
     '.fm-b-top .fm-stat{font-size:clamp(11px,1.5cqw,22px)}.fm-b-top .fm-stat img{width:clamp(18px,2.4cqw,36px);height:clamp(18px,2.4cqw,36px)}.fm-b-top .fm-exp{width:clamp(50px,7cqw,110px);height:clamp(10px,1.2cqw,18px)}.fm-b-face{width:clamp(26px,4cqw,60px);height:clamp(26px,4cqw,60px);object-fit:contain;font-size:26px}',
-    '.fm-b-weather{position:absolute;left:46%;top:1%;width:7%;z-index:4}.fm-b-field{position:absolute;inset:0}.fm-b-field .fm-plot{width:14.5%;aspect-ratio:512/336;background-color:transparent}.fm-b-field .fm-crop{bottom:26%;width:60%}.fm-b-field .fm-pest{left:10%;top:6%;width:26%}.fm-b-field .fm-pest[data-pest="bug"]{left:auto;right:14%;top:18%;width:20%}',
-    '.fm-b-field .fm-chip{bottom:2%;font-size:clamp(9px,.95cqw,14px)}.fm-b-field .fm-prog{bottom:14%}.fm-b-sign{width:56%;left:22%;bottom:30%}.fm-b-pig{position:absolute;left:79%;top:31%;width:7%;z-index:3;object-fit:contain;font-size:34px}',
+    '.fm-b-weather{position:absolute;left:46%;top:1%;width:7%;z-index:4}.fm-b-field{position:absolute;inset:0}.fm-b-field .fm-plot{width:13.2%;aspect-ratio:512/336;background-color:transparent}.fm-b-field .fm-crop{bottom:26%;width:60%}.fm-b-field .fm-pest{left:10%;top:6%;width:26%}.fm-b-field .fm-pest[data-pest="bug"]{left:auto;right:14%;top:18%;width:20%}',
+    '.fm-b-field .fm-chip{bottom:2%;font-size:clamp(9px,.95cqw,14px)}.fm-b-field .fm-prog{bottom:14%}.fm-b-sign{width:34%;left:33%;bottom:34%}.fm-b-pig{position:absolute;left:79%;top:31%;width:7%;z-index:3;object-fit:contain;font-size:34px}',
     '.fm-b-helper{position:absolute;left:84%;top:15%;width:13%;z-index:4;border:0;padding:4px 6px;border-radius:10px;font:inherit;font-size:clamp(10px,1cqw,15px);font-weight:900;color:#6b4a2b;',
     'background:#fff6dc;box-shadow:0 1px 0 rgba(107,74,43,.3);cursor:pointer;display:flex;align-items:center;gap:4px;justify-content:center}.fm-b-helper img{width:30%;object-fit:contain}.fm-b-helper:disabled{cursor:default}',
-    '.fm-b-bar{position:absolute;left:1.5%;right:1.5%;bottom:1.5%;aspect-ratio:1200/110;background:center/100% 100% no-repeat;display:flex;align-items:center;gap:1%;padding:0 2%;box-sizing:border-box;z-index:4}.fm-b-bar .fm-slot{width:6.2%;height:auto;aspect-ratio:1;padding:.7%}.fm-b-gap{flex:1}.fm-b-bar .fm-sign{width:8.5%;aspect-ratio:256/101;font-size:clamp(10px,1.1cqw,16px)}',
+    '.fm-b-bar{position:absolute;left:1.5%;right:1.5%;bottom:1.5%;aspect-ratio:1200/110;background:center/100% 100% no-repeat;display:flex;align-items:center;gap:1%;padding:0 2%;box-sizing:border-box;z-index:4}.fm-b-bar .fm-slot{width:6.2%;height:auto;aspect-ratio:1;padding:.7%}.fm-b-gap{flex:1}.fm-b-bar .fm-sign{width:9.5%;aspect-ratio:256/101;white-space:nowrap;padding:0 2px;font-size:clamp(9px,1cqw,15px)}.fm-b-bar .fm-sign img{width:30%;height:auto}',
     '.fm-b-tip{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);padding:3px 12px;border-radius:12px;background:rgba(255,248,227,.92);font-size:clamp(11px,1.1cqw,16px);font-weight:900;z-index:5;pointer-events:none}.fm-b-pop{position:absolute;right:2%;bottom:12%;width:38%;max-height:70%;overflow:auto;z-index:6}',
     '.fm-effect{position:absolute;inset:0;pointer-events:none;display:grid;place-items:center;font-size:22px;z-index:2;animation:fm-pop .6s cubic-bezier(.4,0,.2,1) both}@keyframes fm-pop{0%{opacity:0;transform:translateY(6px) scale(.7)}35%{opacity:1;transform:translateY(-6px) scale(1.1)}100%{opacity:0;transform:translateY(-18px) scale(.9)}}',
     '@media (prefers-reduced-motion:reduce){.fm-effect,.fm-plot,.fm-main,.fm-sign,.fm-slot{animation:none!important;transition:none!important}.fm-effect{opacity:0}}',
@@ -294,10 +294,11 @@
       var parts = [[rest.ripe, ' 块熟了'], [rest.pests, ' 块要照料'], [rest.withered, ' 块枯了'], [rest.empty, ' 块空着']].filter(function (p) { return p[0].length }).map(function (p) { return p[0].length + p[1] })
       put(root, bg(app, app.el('div', 'fm-s-note', '另外 ' + (data.unlocked - shown) + ' 块地：' + (parts.join('，') || '都在长')), 'ui-note'))
     }
-    put(root, app.el('div', 'fm-tip', tip || ''))
+    if (tip) put(root, app.el('div', 'fm-tip', tip))
     tip = null
-    var pocket = put(root, app.el('div', 'fm-pocket'))
-    data.seeds.filter(function (seed) { return seed.count > 0 && !seed.locked }).forEach(function (seed) {
+    var owned = data.seeds.filter(function (seed) { return seed.count > 0 && !seed.locked })
+    var pocket = owned.length ? put(root, app.el('div', 'fm-pocket')) : app.el('div')
+    owned.forEach(function (seed) {
       put(pocket, toolSlot(app, { key: 'seed-' + seed.key, art: 'produce-' + seed.key, emoji: seed.emoji, label: seed.label + '种子 ' + seed.count + ' 颗', hand: { kind: 'seed', key: seed.key }, count: seed.count, hint: '点空地种' + seed.label }))
     })
     put(pocket, bg(app, button(app, 'fm-slot', { 'data-farm-shop': 'seed', 'aria-label': '买种子', title: '买种子' }, '＋', function () { goShop(app) }), 'ui-slot'))
@@ -323,7 +324,7 @@
   function bigSpot(index) {
     var col = index % 3
     var row = Math.floor(index / 3)
-    return { left: 37.5 - col * 7.25 + row * 7.25, top: 22 + row * 7.6 + col * 7.6 }
+    return { left: 36.5 - col * 6.6 + row * 6.6, top: 28 + row * 5.6 + col * 5.6 }
   }
   function renderBig(app, data) {
     var root = app.el('div', 'fm fm-big')
@@ -338,7 +339,7 @@
       var spot = bigSpot(index)
       card.style.left = spot.left + '%'
       card.style.top = spot.top + '%'
-      card.style.zIndex = String(1 + Math.floor(index / 3) + index % 3)
+      card.style.zIndex = String(data.plots[index].next ? 30 : 1 + Math.floor(index / 3) + index % 3)
     }
     put(scene, pigOf(app, 'fm-b-pig'))
     // 帮工猪住在右上角的猪窝（替原版的狗窝）
