@@ -74,6 +74,7 @@ export function installPanel(bridge) {
     role: 'panel',
     proxy: bridge.proxy,
     ext: bridge.ext,
+    fullscreen: bridge.fullscreen,
     geometry: bridge.geometry,
     split: true,
     panel: bridge.panel,

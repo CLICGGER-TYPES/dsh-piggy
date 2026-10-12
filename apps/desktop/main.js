@@ -29,6 +29,7 @@ import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
+import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
 
 const { autoUpdater } = updaterPackage
@@ -1033,6 +1034,107 @@ ipcMain.handle('piggy:open', (event, url) => {
   if (fromPage(event) && typeof url === 'string' && url.startsWith(RELEASES_PAGE.replace(/\/releases$/, '/'))) shell.openExternal(url)
 })
 
+// ---- 全屏时隐藏 / 照常显示，以及置顶守护（外壳 0.6.5，见 lib/fullscreen.js） ----
+/** @type {ReturnType<typeof createFullscreenWatch> | null} */
+let fullscreenWatch = null
+/** 是不是因为全屏才把猪藏起来的（托盘「藏起来」不算，全屏结束时不去动它）。 */
+let hiddenForFullscreen = false
+/** 上一次探测：猪所在的屏是不是有程序全屏。 */
+let pigScreenFullscreen = false
+let topGuardTimer = null
+/** 重设置顶时会先关再开，自己会触发 always-on-top-changed(false)；这段时间里的事件不当作「被系统清掉」。 */
+let reassertingUntil = 0
+
+/**
+ * 重新置顶。Windows 上别的程序全屏、退出时，系统有时把猪窗口的置顶清掉，之后猪就一直压在别的窗口下面；
+ * 光调一次 setAlwaysOnTop(true) 在 Electron 里可能因为「状态没变」被跳过，所以先关再开。
+ */
+function reassertTop(why) {
+  reassertingUntil = Date.now() + 1000
+  for (const target of [panelWin, win]) {
+    if (target === null || target.isDestroyed() || !target.isVisible()) continue
+    target.setAlwaysOnTop(false)
+    target.setAlwaysOnTop(true, 'floating')
+  }
+  if (win !== null && !win.isDestroyed() && win.isVisible()) win.moveTop()
+  log('top reasserted', why)
+}
+
+/** macOS：「照常显示」时让猪跟进全屏程序的桌面空间；「隐藏」就留在原来的空间（系统默认）。 */
+function applyMacSpaces() {
+  if (process.platform !== 'darwin' || fullscreenWatch === null) return
+  const show = fullscreenWatch.mode() === 'show'
+  for (const target of [win, panelWin]) {
+    if (target === null || target.isDestroyed()) continue
+    target.setVisibleOnAllWorkspaces(show, { visibleOnFullScreen: show })
+  }
+}
+
+/** @param {{fullscreen:boolean, samePigScreen:boolean} | null} probe */
+function onFullscreenProbe(probe) {
+  if (win === null || win.isDestroyed() || fullscreenWatch === null) return
+  const covering = probe !== null && probe.fullscreen === true && probe.samePigScreen === true
+  const ended = pigScreenFullscreen && !covering
+  pigScreenFullscreen = covering
+  if (shouldHide(fullscreenWatch.mode(), probe)) {
+    if (!hiddenForFullscreen && win.isVisible() && dragSession === null) {
+      hiddenForFullscreen = true
+      closePanel('fullscreen')
+      win.hide()
+      log('fullscreen: pig hidden')
+    }
+    return
+  }
+  if (hiddenForFullscreen) {
+    hiddenForFullscreen = false
+    win.showInactive()
+    log('fullscreen: pig back')
+    reassertTop('fullscreen-ended')
+    return
+  }
+  if (ended) reassertTop('fullscreen-ended')
+  // 「照常显示」：全屏程序自己也是置顶窗口，每秒把猪抬回它上面一次。
+  else if (covering && win.isVisible()) win.moveTop()
+}
+
+function startFullscreenWatch() {
+  fullscreenWatch = createFullscreenWatch({
+    path: join(app.getPath('userData'), 'fullscreen.json'), platform: process.platform, selfPid: process.pid, log,
+    pigHwnd: () => {
+      try {
+        const handle = win.getNativeWindowHandle()
+        return String(handle.length >= 8 ? handle.readBigUInt64LE(0) : handle.readUInt32LE(0))
+      } catch { return '0' }
+    },
+    pigDisplayBounds: () => {
+      if (win === null || win.isDestroyed()) return null
+      const display = screen.getDisplayMatching(win.getBounds())
+      const scale = display.scaleFactor || 1
+      return { x: display.bounds.x * scale, y: display.bounds.y * scale, width: display.bounds.width * scale, height: display.bounds.height * scale }
+    },
+    onProbe: onFullscreenProbe,
+  })
+  fullscreenWatch.start()
+  applyMacSpaces()
+  // 置顶守护：系统把置顶清掉时马上抢回来；有的情况下没有事件，再每 3 秒核对一次。
+  win.on('always-on-top-changed', (event, on) => {
+    if (!on && !quitting && Date.now() > reassertingUntil) setTimeout(() => reassertTop('lost'), 200)
+  })
+  topGuardTimer = setInterval(() => {
+    if (win === null || win.isDestroyed() || !win.isVisible()) return
+    if (!win.isAlwaysOnTop() || (panelWin !== null && !panelWin.isDestroyed() && panelWin.isVisible() && !panelWin.isAlwaysOnTop())) reassertTop('check')
+  }, 3000)
+  topGuardTimer.unref?.()
+}
+
+ipcMain.handle('piggy:fullscreen:get', event => (fromPage(event) && fullscreenWatch !== null ? fullscreenWatch.get() : null))
+ipcMain.handle('piggy:fullscreen:set', (event, mode) => {
+  if (!fromPage(event) || fullscreenWatch === null) return { ok: false, reason: '这个外壳不支持' }
+  const result = fullscreenWatch.set(mode)
+  applyMacSpaces()
+  return result
+})
+
 let proxySettings = null
 for (const action of ['get', 'set', 'clear', 'test']) {
   ipcMain.handle('piggy:proxy:' + action, async (event, value) => {
@@ -1071,6 +1173,7 @@ app.whenReady().then(async () => {
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
   createWindow()
+  startFullscreenWatch()
   firstRun?.destroy()
   createTray(gameDir)
   // 用户机器上到底是什么显示器、什么缩放：以前日志里没有，Windows 的问题只能靠猜。
@@ -1143,5 +1246,5 @@ async function captureForCheck(dir) {
 process.on('uncaughtException', error => { log('uncaught', error?.stack ?? String(error)) })
 
 app.on('second-instance', () => win?.showInactive())
-app.on('before-quit', () => { quitting = true; stopDrag(); if (hitTimer !== null) clearInterval(hitTimer); try { host?.dispose() } catch { /* best effort */ } })
+app.on('before-quit', () => { quitting = true; stopDrag(); fullscreenWatch?.stop(); if (topGuardTimer !== null) clearInterval(topGuardTimer); if (hitTimer !== null) clearInterval(hitTimer); try { host?.dispose() } catch { /* best effort */ } })
 app.on('window-all-closed', () => app.quit())

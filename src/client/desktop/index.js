@@ -266,6 +266,7 @@ export function install(shell) {
     role: 'pet',
     proxy: shell.proxy,
     ext: shell.ext,
+    fullscreen: shell.fullscreen,
     split: true,
     onStateChanged: shell.onStateChanged,
     panel: {
