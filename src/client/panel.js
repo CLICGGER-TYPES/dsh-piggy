@@ -31,6 +31,7 @@ import { renderStudyTab } from './tabs/study.js'
 import { renderSkinsTab } from './tabs/skins.js'
 import { renderSettingsTab } from './tabs/settings.js'
 import { renderExtensionsTab } from './tabs/extensions.js'
+import { renderDownloadedApp } from './ext-apps.js'
 import { applyExtensions, enabledTabs } from './extensions.js'
 import { renderTravelTab } from './tabs/travel.js'
 import { renderWorkTab } from './tabs/work.js'
@@ -155,6 +156,11 @@ export function createPanel(ctx) {
           ctx.content.appendChild(grid)
           return
         }
+
+        // 扩展的大界面（大窗口里，或网页里铺满）：只画它，不要页头。
+        var bigView = Boolean(ctx.extBig) && ctx.tab === 'ext:' + ctx.extBig
+        ctx.host.setAttribute('data-ext-view', bigView ? 'big' : '')
+        if (bigView) { renderDownloadedApp(ctx, ctx.extBig, 'big'); return }
 
         // B9: home first; every app's top layer gets a 「‹」 back (inside a category it goes up a layer).
         var shell = updatesBridge()
@@ -299,7 +305,7 @@ export function createPanel(ctx) {
         ctx.pomoHint.hidden = !pomoOn || ctx.bubble.hidden === false
         if (pomoOn) ctx.pomoHint.textContent = '🍅 ' + clockText(pomo.secondsLeft)
         // 番茄钟结束的通知只在猪窗口发（拆窗口后两边都在渲染，不然会弹两次）。
-        if (desktopRole() !== 'panel') noticePomodoro(pomo)
+        if (desktopRole() !== 'panel' && desktopRole() !== 'ext') noticePomodoro(pomo)
         if (typeof ctx.pomoTick === 'function') ctx.pomoTick()
 
         // 猪头上的日常提示：能签到就先显示签到，否则显示礼包。

@@ -11,6 +11,7 @@ import { sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
 import { installPanel, startPanel } from './panel-window.js'
+import { installExt } from './ext-window.js'
 
 /** 页面 ↔ 桌面程序的约定版本：以后桌面程序加新的基础动作时加一。
  * v3：外壳支持 piggyShell.logs.save（导出日志时弹系统「另存为」）。
@@ -44,7 +45,7 @@ const TOLERANCE = 2
 
 let bridge = /** @type {any} */ (null)
 /** 这个页面在哪个窗口里（外壳 0.6.0 起猪和面板各一个窗口）。 */
-let role = /** @type {'pet'|'panel'|null} */ (null)
+let role = /** @type {'pet'|'panel'|'ext'|null} */ (null)
 /** 拖动中窗口被夹在屏幕里时，猪在窗口里滑了多少（主进程推来的，见 main.js dragTick）。 */
 let dragSlide = { x: 0, y: 0 }
 let measure = /** @type {any} */ (null)
@@ -217,7 +218,15 @@ export function install(shell) {
     ;/** @type {any} */ (window).__dshPiggyShellOutdated = true
     return
   }
-  role = shell.role === 'panel' ? 'panel' : 'pet'
+  role = shell.role === 'panel' ? 'panel' : shell.role === 'ext' ? 'ext' : 'pet'
+  if (role === 'ext') {
+    const style = document.createElement('style')
+    style.setAttribute('data-piggy-desktop-style', '')
+    style.textContent = DESKTOP_CSS
+    document.head.appendChild(style)
+    installExt(shell)
+    return
+  }
   if (role === 'panel') {
     const style = document.createElement('style')
     style.setAttribute('data-piggy-desktop-style', '')
@@ -256,6 +265,7 @@ export function install(shell) {
     // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
     role: 'pet',
     proxy: shell.proxy,
+    ext: shell.ext,
     split: true,
     onStateChanged: shell.onStateChanged,
     panel: {
@@ -347,6 +357,7 @@ export function install(shell) {
 /** 游戏挂载之后调用：只在内容真的变了时量（DOM 变化、窗口改大小、松手），另有 1 秒兜底。 */
 export function start() {
   if (role === 'panel') { startPanel(); return }
+  if (role === 'ext') return
   const h = host()
   if (h !== null && typeof MutationObserver === 'function') {
     new MutationObserver(schedule).observe(h, { subtree: true, childList: true, attributes: true, characterData: true })

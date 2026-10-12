@@ -16,11 +16,11 @@ export function desktopShell() {
 
 /**
  * 桌面版外壳 0.6.0 起，猪和面板各在一个窗口里，同一份游戏包两边都跑：
- * 'pet'（猪窗口：只有猪和气泡）、'panel'（面板窗口：只有面板）。老外壳单窗口，返回 null。
- * @returns {'pet'|'panel'|null}
+ * 'pet'（猪窗口：只有猪和气泡）、'panel'（面板窗口：只有面板）、'ext'（外壳 0.6.5 起扩展的大窗口）。老外壳单窗口，返回 null。
+ * @returns {'pet'|'panel'|'ext'|null}
  */
 export function desktopRole() {
   var shell = desktopShell()
   var role = shell === null ? null : shell.role
-  return role === 'pet' || role === 'panel' ? role : null
+  return role === 'pet' || role === 'panel' || role === 'ext' ? role : null
 }

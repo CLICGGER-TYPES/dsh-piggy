@@ -41,7 +41,7 @@ export function createLayout(ctx) {
         // 外壳 0.6.0 起面板有自己的窗口：窗口贴在猪哪边由主进程定，这里只按给的高度排版。
         if (desktopRole() === 'panel') { fitPanelWindow(ctx); return }
         // 猪窗口里没有面板：isOpen 只表示另一个窗口开着，这里什么都不排（排了会把气泡区挪到另一边、撑大猪窗口）
-        if (desktopRole() === 'pet') return
+        if (desktopRole() === 'pet' || desktopRole() === 'ext') return
         // 外壳 0.6.0 以前的单窗口桌面版已不支持（猪和面板拆成两个窗口后那套挑边逻辑删了）。
         if (desktopShell() !== null) return
         var vw = window.innerWidth || 0

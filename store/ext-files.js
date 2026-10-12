@@ -5,14 +5,14 @@
  * - 代码三件：manifest.json、server.js、client.js，每个 ≤512KB。
  * - 图片（v0.36 起，用户 2026-10-11：扩展界面要用画好的素材）：manifest 里 `assets: ["bg.webp", …]` 列出，
  *   放在扩展目录的 `assets/` 里；在线目录的 `files` 里对应 `"assets/bg.webp": { url, sha256 }`。
- *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB，一个扩展最多 96 张、合计 ≤4MB。
+ *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB，一个扩展最多 256 张（游戏 0.37.0 起，之前 96）、合计 ≤4MB。
  *   面板里用 `app.asset('bg.webp')` 拿地址（GET /dsh-piggy/ext/<key>/assets/<name>）。
  * @module dsh-piggy/store/ext-files
  */
 
 export const CODE_FILES = Object.freeze(['manifest.json', 'server.js', 'client.js'])
 export const MAX_FILE_BYTES = 512 * 1024
-export const MAX_ASSETS = 96
+export const MAX_ASSETS = 256
 export const MAX_ASSETS_BYTES = 4 * 1024 * 1024
 export const ASSET_NAME = /^[a-z0-9][a-z0-9-]{0,47}\.(?:webp|png)$/
 export const ASSET_TYPES = Object.freeze({ webp: 'image/webp', png: 'image/png' })

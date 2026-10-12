@@ -355,7 +355,7 @@ import { attachSizePreference } from './pig-size.js'
       pollTimer = window.setInterval(refresh, POLL_MS)
 
       // 打招呼、闲聊、按时间说话、自己找事做、桌面散步（G 批次）都在 life.js。
-      var life = splitRole === 'panel' ? null : attachLife({
+      var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife({
         send: send, isStopped: function () { return stopped }, isBusy: function () { return busy },
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return drag !== null },
         pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: desktopShell,

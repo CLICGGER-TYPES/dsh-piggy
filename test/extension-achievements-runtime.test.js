@@ -23,7 +23,7 @@ test('all four real extensions download and install with compatible manifests', 
 })
 
 test('real farm harvest unlocks; unripe/duplicate attempts and sale do not add progress', async () => {
-  const data = farm.init(); data.plots[0] = { crop: 'carrot', stage: 3, wateredAt: null }
+  const data = farm.init(); data.plots[0] = { crop: 'carrot', season: 1, plantedAt: NOW - 20 * 3600000, boostMs: 0, roll: 0, pests: { weed: 1e15, bug: 1e15, dry: 1e15 } }
   const setup = await setupExtensions({ farm: data })
   try {
     const { runtime, store } = setup
@@ -101,7 +101,7 @@ test('real blindbox certificates count as figures/six-star; duplicate trades are
 })
 
 test('historical hooks backfill only available proof, silently and without dates', async () => {
-  const farmData = farm.init(); farmData.acquired = { carrot: 40, cabbage: 3 }
+  const farmData = farm.init(); farmData.acquired = { carrot: 40, cabbage: 3 }; farmData.harvests = { carrot: 10, cabbage: 1 }
   const mineData = mine.init(); mineData.layer = 10; mineData.found = { bone: true, fish: true, trex: true }; mineData.bag = { copper: 1 }
   const gachaData = gacha.init(); gachaData.history = [{ key: 'feast', rarity: 'gold', count: 3 }]; gachaData.last = { machine: 'snack', items: gachaData.history }
   const blindData = blindbox.init(); blindData.owned = Object.fromEntries(CATALOG.slice(0, 10).map(item => [item.key, 1]))
@@ -125,7 +125,7 @@ test('historical hooks backfill only available proof, silently and without dates
 })
 
 test('disabled extensions reject actions; uninstall preserves progress and reinstallation resumes', async () => {
-  const data = farm.init(); data.acquired = { carrot: 24 }
+  const data = farm.init(); data.acquired = { carrot: 24 }; data.harvests = { carrot: 6 }
   const setup = await setupExtensions({ farm: data })
   try {
     const { runtime, store } = setup
@@ -136,7 +136,7 @@ test('disabled extensions reject actions; uninstall preserves progress and reins
     assert.equal(entry(store.state, 'farm-ten').progress, 6)
     assert.equal(entry(store.state, 'farm-ten').availability, 'not-installed')
     assert.equal((await runtime.install('farm')).ok, true)
-    store.state.extData.farm.plots[0] = { crop: 'carrot', stage: 3, wateredAt: null }
+    store.state.extData.farm.plots[0] = { crop: 'carrot', season: 1, plantedAt: NOW - 20 * 3600000, boostMs: 0, roll: 0, pests: { weed: 1e15, bug: 1e15, dry: 1e15 } }
     assert.equal(runtime.act('farm', 'harvest', { plot: 0 }).ok, true)
     assert.equal(entry(store.state, 'farm-ten').progress, 7)
   } finally { setup.dispose() }

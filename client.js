@@ -1836,7 +1836,7 @@
   function desktopRole() {
     var shell2 = desktopShell();
     var role2 = shell2 === null ? null : shell2.role;
-    return role2 === "pet" || role2 === "panel" ? role2 : null;
+    return role2 === "pet" || role2 === "panel" || role2 === "ext" ? role2 : null;
   }
 
   // src/client/desktop/panel-window.js
@@ -1901,6 +1901,7 @@
     window.__dshPiggyShell = {
       role: "panel",
       proxy: bridge3.proxy,
+      ext: bridge3.ext,
       geometry: bridge3.geometry,
       split: true,
       panel: bridge3.panel,
@@ -2025,7 +2026,7 @@
         fitPanelWindow(ctx);
         return;
       }
-      if (desktopRole() === "pet") return;
+      if (desktopRole() === "pet" || desktopRole() === "ext") return;
       if (desktopShell() !== null) return;
       var vw = window.innerWidth || 0;
       var vh = window.innerHeight || 0;
@@ -2103,8 +2104,8 @@
   var URGENT_KINDS = ["sick", "worse", "death", "cured", "revived"];
   function processPending(ctx, showPigLine) {
     var role2 = desktopRole();
-    var pigSide = role2 !== "panel";
-    var cardSide = role2 !== "pet";
+    var pigSide = role2 !== "panel" && role2 !== "ext";
+    var cardSide = role2 !== "pet" && role2 !== "ext";
     for (var i = 0; i < ctx.view.pending.length; i += 1) {
       var event = ctx.view.pending[i];
       if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue;
@@ -2820,6 +2821,11 @@
         shell2.panel.fx(name, Array.prototype.slice.call(arguments));
       };
     });
+    if (role2 === "ext") {
+      ctx.extBig = typeof shell2.extKey === "string" && shell2.extKey ? shell2.extKey : null;
+      if (ctx.extBig) ctx.tab = "ext:" + ctx.extBig;
+      return role2;
+    }
     shell2.panel.on(function(message2) {
       if (message2 === null || typeof message2 !== "object") return;
       if (message2.type === "open") {
@@ -2855,6 +2861,14 @@
   }
   function splitSetOpen(ctx, next) {
     var role2 = desktopRole();
+    if (role2 === "ext") {
+      ctx.isOpen = true;
+      ctx.host.setAttribute("data-open", "true");
+      ctx.card.hidden = false;
+      ctx.hud.hidden = true;
+      if (typeof ctx.renderContent === "function") ctx.renderContent();
+      return true;
+    }
     if (role2 === "pet") {
       var changed = next !== ctx.isOpen;
       ctx.isOpen = next;
@@ -3654,6 +3668,11 @@
     // 面板自己钉住基准字号与字体：不钉就会继承宿主页面的 16px，
     // 详情框那种「没写 font-size 的容器」就会比周围大一倍（用户反馈 #2）。
     "box-shadow:var(--ac-shadow-lg);color:var(--ac-text-body);font-family:var(--ac-font);font-size:11px}",
+    // 扩展的大界面在网页里（没有桌面大窗口时）：面板卡片铺满页面，四周留一点边（游戏 0.37.0 起，菜园大农场）。
+    '[data-dsh-pig][data-ext-view="big"] .dp-card{position:fixed!important;left:2vw!important;right:2vw!important;top:3vh!important;bottom:3vh!important;',
+    "width:auto!important;max-width:none!important;max-height:none!important;height:auto!important;z-index:2147483600}",
+    '[data-dsh-pig][data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;flex:1 1 auto}',
+    '[data-dsh-pig][data-ext-view="big"] .dp-bar,[data-dsh-pig][data-ext-view="big"] .dp-panel-footer{display:none!important}',
     /* ---------- the pig: never moved, never boxed ---------- */
     ".dp-scene{position:relative;height:var(--scene-open);background:none;cursor:grab;",
     "overflow:visible;display:flex;align-items:flex-end;justify-content:flex-end;",
@@ -5799,7 +5818,28 @@
     script.async = true;
     (document.head || document.body)?.appendChild(script);
   }
-  function renderDownloadedApp(ui, key) {
+  function openBigApp(ui, key) {
+    var shell2 = desktopShell();
+    if (shell2 && shell2.ext && typeof shell2.ext.open === "function") {
+      shell2.ext.open(key);
+      return;
+    }
+    ui.extBig = key;
+    ui.tab = "ext:" + key;
+    ui.renderContent();
+  }
+  function closeBigApp(ui) {
+    var shell2 = desktopShell();
+    if (desktopRole() === "ext" && shell2 && shell2.ext && typeof shell2.ext.close === "function") {
+      shell2.ext.close();
+      return;
+    }
+    ui.extBig = null;
+    ui.host.setAttribute("data-ext-view", "");
+    ui.renderContent();
+  }
+  function renderDownloadedApp(ui, key, mode) {
+    var big = mode === "big";
     var extension = (ui.view.extensions || []).find(function(entry) {
       return entry.key === key;
     });
@@ -5824,11 +5864,18 @@
     var wallet = (ui.view.wallets || []).find(function(entry) {
       return entry.key === key;
     });
-    if (wallet) ui.content.appendChild(walletBar(ui, wallet));
+    if (wallet && !big) ui.content.appendChild(walletBar(ui, wallet));
     try {
       impl.render({
         content: ui.content,
         data: data === void 0 ? null : data,
+        mode: big ? "big" : "panel",
+        openBig: big ? void 0 : function() {
+          openBigApp(ui, key);
+        },
+        closeBig: big ? function() {
+          closeBigApp(ui);
+        } : void 0,
         send: function(op, payload) {
           ui.send("ext", { key, op, data: payload || {} });
         },
@@ -5853,6 +5900,10 @@
         },
         // 跳到商店里这个扩展的货架（比如菜园缺种子 → 种子货架），按返回回到扩展页（用户 2026-10-09）。
         openShop: function() {
+          if (big && desktopRole() !== "ext") {
+            ui.extBig = null;
+            ui.host.setAttribute("data-ext-view", "");
+          }
           ui.select("shop");
           ui.drill.shop = "ext:" + key;
           ui.drill.from = "ext:" + key;
@@ -9363,6 +9414,12 @@
         ctx.content.appendChild(grid);
         return;
       }
+      var bigView = Boolean(ctx.extBig) && ctx.tab === "ext:" + ctx.extBig;
+      ctx.host.setAttribute("data-ext-view", bigView ? "big" : "");
+      if (bigView) {
+        renderDownloadedApp(ctx, ctx.extBig, "big");
+        return;
+      }
       var shell2 = updatesBridge();
       var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell2 !== null && shell2.quit ? [QUIT_TAB] : [], ctx.devMode ? [DEV_TAB] : []));
       if (ctx.tab === "home") {
@@ -9485,7 +9542,7 @@
       ctx.pomoHint.setAttribute("data-pomo", pomoOn ? "on" : "");
       ctx.pomoHint.hidden = !pomoOn || ctx.bubble.hidden === false;
       if (pomoOn) ctx.pomoHint.textContent = "\u{1F345} " + clockText(pomo.secondsLeft);
-      if (desktopRole() !== "panel") noticePomodoro(pomo);
+      if (desktopRole() !== "panel" && desktopRole() !== "ext") noticePomodoro(pomo);
       if (typeof ctx.pomoTick === "function") ctx.pomoTick();
       var daily = ctx.view.daily;
       var cake = ctx.view.pig !== null && (ctx.view.pig.birthdayToday || ctx.cakeForced === true) && !cakeTakenToday();
@@ -10015,6 +10072,42 @@
     };
   }
 
+  // src/client/desktop/ext-window.js
+  var EXT_CSS = [
+    "html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#7fae5a}",
+    '[data-piggy-role="ext"] [data-dsh-pig]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;transform:none!important;pointer-events:auto!important}',
+    '[data-piggy-role="ext"] .dp-scene,[data-piggy-role="ext"] .dp-hud,[data-piggy-role="ext"] .dp-bar,[data-piggy-role="ext"] .dp-panel-footer{display:none!important}',
+    '[data-piggy-role="ext"] .dp-card{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-height:none!important;max-width:none!important;',
+    "border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important;background:#7fae5a!important}",
+    '[data-piggy-role="ext"] [data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;height:100%}'
+  ].join("\n");
+  function installExt(bridge3) {
+    document.documentElement.setAttribute("data-piggy-role", "ext");
+    const style = document.createElement("style");
+    style.setAttribute("data-piggy-ext-style", "");
+    style.textContent = EXT_CSS;
+    document.head.appendChild(style);
+    window.__dshPiggyShell = {
+      role: "ext",
+      extKey: typeof bridge3.extKey === "string" ? bridge3.extKey : null,
+      ext: bridge3.ext,
+      proxy: bridge3.proxy,
+      fullscreen: bridge3.fullscreen,
+      split: true,
+      panel: bridge3.panel,
+      onStateChanged: bridge3.onStateChanged,
+      // 这里没有猪可拖：给「认桌面版」用的空动作（desktop-shell.js 按 beginDrag 认）。
+      beginDrag: function() {
+      },
+      endDrag: function() {
+      },
+      dragHeartbeat: function() {
+      },
+      syncGeometry: function() {
+      }
+    };
+  }
+
   // src/client/desktop/index.js
   var DESKTOP_VERSION = 4;
   var FONT_STACK = 'Nunito,"Noto Sans SC",-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif';
@@ -10042,7 +10135,7 @@
     null
   );
   var role = (
-    /** @type {'pet'|'panel'|null} */
+    /** @type {'pet'|'panel'|'ext'|null} */
     null
   );
   var dragSlide = { x: 0, y: 0 };
@@ -10213,7 +10306,15 @@
       window.__dshPiggyShellOutdated = true;
       return;
     }
-    role = shell2.role === "panel" ? "panel" : "pet";
+    role = shell2.role === "panel" ? "panel" : shell2.role === "ext" ? "ext" : "pet";
+    if (role === "ext") {
+      const style2 = document.createElement("style");
+      style2.setAttribute("data-piggy-desktop-style", "");
+      style2.textContent = DESKTOP_CSS;
+      document.head.appendChild(style2);
+      installExt(shell2);
+      return;
+    }
     if (role === "panel") {
       const style2 = document.createElement("style");
       style2.setAttribute("data-piggy-desktop-style", "");
@@ -10250,6 +10351,7 @@
       // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
       role: "pet",
       proxy: shell2.proxy,
+      ext: shell2.ext,
       split: true,
       onStateChanged: shell2.onStateChanged,
       panel: {
@@ -10333,6 +10435,7 @@
       startPanel();
       return;
     }
+    if (role === "ext") return;
     const h = host2();
     if (h !== null && typeof MutationObserver === "function") {
       new MutationObserver(schedule3).observe(h, { subtree: true, childList: true, attributes: true, characterData: true });
@@ -10768,7 +10871,7 @@
         render(view);
         refresh2();
         pollTimer = window.setInterval(refresh2, POLL_MS);
-        var life = splitRole === "panel" ? null : attachLife({
+        var life = splitRole === "panel" || splitRole === "ext" ? null : attachLife({
           send: send2,
           isStopped: function() {
             return stopped;

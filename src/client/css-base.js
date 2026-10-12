@@ -90,6 +90,12 @@ export const CSS_BASE = [
   // 详情框那种「没写 font-size 的容器」就会比周围大一倍（用户反馈 #2）。
   'box-shadow:var(--ac-shadow-lg);color:var(--ac-text-body);font-family:var(--ac-font);font-size:11px}',
 
+  // 扩展的大界面在网页里（没有桌面大窗口时）：面板卡片铺满页面，四周留一点边（游戏 0.37.0 起，菜园大农场）。
+  '[data-dsh-pig][data-ext-view="big"] .dp-card{position:fixed!important;left:2vw!important;right:2vw!important;top:3vh!important;bottom:3vh!important;',
+  'width:auto!important;max-width:none!important;max-height:none!important;height:auto!important;z-index:2147483600}',
+  '[data-dsh-pig][data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;flex:1 1 auto}',
+  '[data-dsh-pig][data-ext-view="big"] .dp-bar,[data-dsh-pig][data-ext-view="big"] .dp-panel-footer{display:none!important}',
+
   /* ---------- the pig: never moved, never boxed ---------- */
   '.dp-scene{position:relative;height:var(--scene-open);background:none;cursor:grab;',
   'overflow:visible;display:flex;align-items:flex-end;justify-content:flex-end;',

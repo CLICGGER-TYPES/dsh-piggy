@@ -1,387 +1,471 @@
 // @ts-check
-// 菜园扩展 2.0（数值见 docs/numbers/J1-economy.md 第 2 节）：用自己的「菜币」，钱包在宿主（api.wallet）。
-// 一键浇水 / 收获 / 种满照增量游戏的做法，一开始锁着，买了大水壶 / 收割镰 / 播种器才解锁（用户 2026-10-09）。
-// 只保存菜园数据；金币、背包、说话、累都经过宿主 api。
-
-/** 第 1～8 块地的开垦价（菜币）。 */
-export const PLOT_PRICES = [0, 0, 500, 1200, 2500, 5000, 10000, 20000]
-export const PLOTS = PLOT_PRICES.length
-
-export const CROPS = [
-  { key: 'sprout', emoji: '🌱', label: '豆芽', price: 4, minutes: 5, yield: 2, sell: 5, food: null },
-  { key: 'scallion', emoji: '🧅', label: '小葱', price: 6, minutes: 10, yield: 3, sell: 5, food: null },
-  { key: 'coriander', emoji: '🌿', label: '香菜', price: 8, minutes: 12, yield: 3, sell: 6, food: null },
-  { key: 'lettuce', emoji: '🥗', label: '生菜', price: 10, minutes: 15, yield: 3, sell: 8, food: null },
-  { key: 'cabbage', emoji: '🥬', label: '小白菜', price: 10, minutes: 30, yield: 3, sell: 12, food: null },
-  { key: 'strawberry', emoji: '🍓', label: '草莓', price: 20, minutes: 60, yield: 3, sell: 25, food: 'strawberry', foodLabel: '草莓' },
-  { key: 'blueberry', emoji: '🫐', label: '蓝莓', price: 30, minutes: 90, yield: 4, sell: 29, food: null },
-  { key: 'carrot', emoji: '🥕', label: '胡萝卜', price: 25, minutes: 120, yield: 4, sell: 36, food: null },
-  { key: 'sweetpotato', emoji: '🍠', label: '红薯', price: 40, minutes: 180, yield: 3, sell: 78, food: 'sweetpotato', foodLabel: '烤红薯' },
-  { key: 'tomato', emoji: '🍅', label: '番茄', price: 60, minutes: 240, yield: 4, sell: 85, food: null },
-  { key: 'corn', emoji: '🌽', label: '玉米', price: 80, minutes: 300, yield: 5, sell: 91, food: null },
-  { key: 'pumpkin', emoji: '🎃', label: '南瓜', price: 90, minutes: 360, yield: 2, sell: 285, food: 'pumpkin', foodLabel: '南瓜粥' },
-  { key: 'sunflower', emoji: '🌻', label: '向日葵', price: 120, minutes: 420, yield: 3, sell: 238, food: null },
-  { key: 'watermelon', emoji: '🍉', label: '西瓜', price: 150, minutes: 480, yield: 2, sell: 435, food: null },
-  { key: 'grape', emoji: '🍇', label: '葡萄', price: 200, minutes: 600, yield: 3, sell: 400, food: null },
-  { key: 'melon', emoji: '🍈', label: '哈密瓜', price: 260, minutes: 720, yield: 2, sell: 790, food: null },
-]
-
-/** 工具：一键操作在增量游戏里一开始锁着，买了才有。洒水器按块买，肥料是消耗品。 */
-export const TOOLS = [
-  { key: 'can', emoji: '🪣', label: '大水壶', price: 600, note: '解锁一键浇水' },
-  { key: 'sickle', emoji: '🌾', label: '收割镰', price: 1000, note: '解锁一键收获' },
-  { key: 'planter', emoji: '🫘', label: '播种器', price: 1800, note: '解锁一键种满' },
-  { key: 'sprinkler', emoji: '💦', label: '洒水器', price: 3000, note: '装在一块地上，以后自动浇水' },
-  { key: 'fertilizer', emoji: '🧪', label: '肥料', price: 20, note: '施在一块地上，这一季快 30%' },
-]
-
-/** 「玩会累」：种、浇、收一块地扣多少饱食（data/economy.js 的建议值）。 */
+// 菜园 4.0：照 QQ 农场改版（设计见 docs/design/farm-qqfarm.md，用户 2026-10-12 定）。用自己的「菜币」，钱包在宿主（api.wallet）。
+// 18 块地（开局 6 块，其余荒地 10000 开垦），作物按真实时间自己长；长的时候会长草、生虫、干旱，不管就减产；
+// 收完留枯萎秆要铲掉；多季作物收完回到「长大」再长一季。等级照原版：升下一级要「等级 × 100」经验，种子按等级解锁。
+// 一键收获 / 照料 / 铲除 / 播种要先买工具解锁（用户定 C）；帮工猪照旧可雇（D）。
+// 随机的东西（产量浮动、灾害什么时候来）都在种下时就定好存进存档，view 只算不写，结果可复现。
+/** 地：一共 18 块，开局 6 块熟地。 */
+export const PLOTS = 18
+export const START_PLOTS = 6
+/** 每开垦一块荒地（原版 10000 元宝）。 */
+export const RECLAIM_PRICE = 10000
+/** 原版 InstallFace：每样灾害平均 4 小时来一次；每样灾害收获时少 2 个；产量浮动 −3～+2。 */
+export const PEST_MS = 4 * 3600000
+export const PEST_LOSS = 2
+/** 照料一次（浇水、除草、杀虫）的经验。 */
+export const CARE_EXP = 2
+/** 升下一级要「当前等级 × 100」经验。 */
+export const EXP_PER_LEVEL = 100
+/** 「玩会累」：种、收、照料一块地扣多少饱食（data/economy.js 的建议值）。 */
 export const EXERT = 0.2
-/** 施了肥的地，这一季每个阶段只要原来的这么多。 */
-export const FERTILIZED = 0.7
-
-const cropFor = key => CROPS.find(crop => crop.key === key) ?? null
+const H = 3600000
+/**
+ * 作物：原版 20 种照 Crop.xml / seed.xml，后 9 种是菜园原有的，按原版规律定（设计稿 3.5）。
+ * level 解锁等级；price 种子价；hours 成熟时间；exp 每次收获经验；yield 基础产量；sell 单价；seasons 收几季。
+ */
+export const CROPS = [
+  { key: 'radish', emoji: '🥕', label: '白萝卜', level: 1, price: 80, hours: 14, exp: 10, yield: 24, sell: 18, seasons: 1 },
+  { key: 'apple', emoji: '🍎', label: '苹果', level: 1, price: 75, hours: 20, exp: 12, yield: 24, sell: 18, seasons: 1 },
+  { key: 'grape', emoji: '🍇', label: '葡萄', level: 1, price: 70, hours: 17, exp: 11, yield: 24, sell: 18, seasons: 1 },
+  { key: 'carrot', emoji: '🥕', label: '胡萝卜', level: 2, price: 90, hours: 16, exp: 12, yield: 25, sell: 20, seasons: 1 },
+  { key: 'peach', emoji: '🍑', label: '桃子', level: 2, price: 85, hours: 16, exp: 14, yield: 25, sell: 20, seasons: 1 },
+  { key: 'watermelon', emoji: '🍉', label: '西瓜', level: 2, price: 90, hours: 19, exp: 15, yield: 25, sell: 20, seasons: 1 },
+  { key: 'potato', emoji: '🥔', label: '土豆', level: 3, price: 120, hours: 17, exp: 14, yield: 22, sell: 22, seasons: 1 },
+  { key: 'chili', emoji: '🌶️', label: '辣椒', level: 3, price: 110, hours: 16, exp: 16, yield: 22, sell: 22, seasons: 1 },
+  { key: 'banana', emoji: '🍌', label: '香蕉', level: 3, price: 95, hours: 20, exp: 18, yield: 22, sell: 22, seasons: 1 },
+  { key: 'tomato', emoji: '🍅', label: '西红柿', level: 4, price: 110, hours: 18, exp: 18, yield: 26, sell: 24, seasons: 1 },
+  { key: 'eggplant', emoji: '🍆', label: '茄子', level: 4, price: 120, hours: 20, exp: 20, yield: 26, sell: 24, seasons: 1 },
+  { key: 'pea', emoji: '🫛', label: '豌豆', level: 4, price: 120, hours: 20, exp: 20, yield: 26, sell: 24, seasons: 1 },
+  { key: 'pineapple', emoji: '🍍', label: '菠萝', level: 4, price: 110, hours: 28, exp: 18, yield: 26, sell: 24, seasons: 1 },
+  { key: 'corn', emoji: '🌽', label: '玉米', level: 5, price: 105, hours: 19, exp: 22, yield: 20, sell: 28, seasons: 1 },
+  { key: 'pomelo', emoji: '🍈', label: '柚子', level: 5, price: 120, hours: 22, exp: 32, yield: 20, sell: 28, seasons: 2 },
+  { key: 'strawberry', emoji: '🍓', label: '草莓', level: 6, price: 130, hours: 24, exp: 26, yield: 24, sell: 18, seasons: 1, food: 'strawberry', foodLabel: '草莓' },
+  { key: 'pumpkin', emoji: '🎃', label: '南瓜', level: 7, price: 300, hours: 22, exp: 28, yield: 28, sell: 30, seasons: 2, food: 'pumpkin', foodLabel: '南瓜粥' },
+  { key: 'orange', emoji: '🍊', label: '橘子', level: 7, price: 160, hours: 24, exp: 26, yield: 28, sell: 30, seasons: 2 },
+  { key: 'pomegranate', emoji: '🍎', label: '石榴', level: 8, price: 170, hours: 27, exp: 20, yield: 30, sell: 32, seasons: 3 },
+  { key: 'coconut', emoji: '🥥', label: '椰子', level: 9, price: 190, hours: 30, exp: 28, yield: 30, sell: 35, seasons: 3 },
+  { key: 'scallion', emoji: '🧅', label: '小葱', level: 1, price: 70, hours: 14, exp: 10, yield: 24, sell: 18, seasons: 1 },
+  { key: 'sprout', emoji: '🌱', label: '豆芽', level: 1, price: 75, hours: 15, exp: 10, yield: 25, sell: 18, seasons: 1 },
+  { key: 'coriander', emoji: '🌿', label: '香菜', level: 2, price: 85, hours: 16, exp: 12, yield: 24, sell: 20, seasons: 1 },
+  { key: 'lettuce', emoji: '🥗', label: '生菜', level: 2, price: 90, hours: 17, exp: 13, yield: 25, sell: 20, seasons: 1 },
+  { key: 'cabbage', emoji: '🥬', label: '小白菜', level: 3, price: 100, hours: 18, exp: 15, yield: 24, sell: 22, seasons: 1 },
+  { key: 'blueberry', emoji: '🫐', label: '蓝莓', level: 5, price: 140, hours: 22, exp: 22, yield: 26, sell: 26, seasons: 1 },
+  { key: 'sweetpotato', emoji: '🍠', label: '红薯', level: 6, price: 150, hours: 24, exp: 24, yield: 26, sell: 28, seasons: 1, food: 'sweetpotato', foodLabel: '烤红薯' },
+  { key: 'sunflower', emoji: '🌻', label: '向日葵', level: 7, price: 170, hours: 26, exp: 26, yield: 28, sell: 30, seasons: 1 },
+  { key: 'melon', emoji: '🍈', label: '哈密瓜', level: 9, price: 200, hours: 30, exp: 28, yield: 30, sell: 34, seasons: 1 },
+]
+/** 解锁一键操作的工具（先买才有，用户定 C）。 */
+export const TOOLS = [{ key: 'sickle', label: '收割镰', price: 1000, note: '解锁一键收获' }, { key: 'sprayer', label: '喷雾桶', price: 600, note: '解锁一键照料' },
+  { key: 'rake', label: '平地耙', price: 800, note: '解锁一键铲除' }, { key: 'planter', label: '播种器', price: 1800, note: '解锁一键播种' }]
+/** 化肥（原版 props.xml）：施一次多长几小时，可以连着施。 */
+export const FERTILIZERS = [{ key: 'fert-1', label: '普通化肥', price: 500, hours: 2 }, { key: 'fert-2', label: '快速化肥', price: 800, hours: 3.5 },
+  { key: 'fert-3', label: '急速化肥', price: 1000, hours: 5 }]
+/** 灾害：长草、生虫、干旱，各自独立。 */
+export const PESTS = ['weed', 'bug', 'dry']
+/** 生长阶段（按这一季走过的比例）：种子、发芽、小苗、长大、开花、成熟。多季作物收完回到「长大」。 */
+export const STAGES = ['seed', 'sprout', 'seedling', 'growing', 'flowering', 'ripe']
+const STAGE_AT = [0, 1 / 6, 2 / 6, 3 / 6, 4 / 6, 1]
+const REGROW_AT = 3 / 6
+/** 3.x 存档的旧数据，迁移时用：旧产量（算历史收获次数）、旧洒水器和旧肥料按原价退成菜币。 */
+const OLD_YIELD = { sprout: 2, scallion: 3, coriander: 3, lettuce: 3, cabbage: 3, strawberry: 3, blueberry: 4, carrot: 4, sweetpotato: 3, tomato: 4, corn: 5, pumpkin: 2, sunflower: 3, watermelon: 2, grape: 3, melon: 2 }
+const OLD_SPRINKLER = 3000
+const OLD_FERTILIZER = 20
+export const cropFor = key => CROPS.find(crop => crop.key === key) ?? null
 const toolFor = key => TOOLS.find(tool => tool.key === key) ?? null
+const fertFor = key => FERTILIZERS.find(fert => fert.key === key) ?? null
 const count = value => Math.max(0, Math.floor(Number(value) || 0))
 const validCount = value => Number.isSafeInteger(value) && value > 0
-
-/** 一个生长阶段需要的浇水后时间；施了肥的打折。 */
-export function stageTime(key, fertilized = false) {
-  const crop = cropFor(key)
-  return crop === null ? 0 : crop.minutes * 60_000 / 3 * (fertilized ? FERTILIZED : 1)
+const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value)
+/** 0～1 的随机数；测试里可以换掉。 */
+let random = Math.random
+export function setRandom(fn) { random = typeof fn === 'function' ? fn : Math.random }
+/** 下一次灾害什么时候来：指数分布，平均 PEST_MS。 */
+const nextPest = from => from + Math.round(-Math.log(1 - Math.min(0.999999, random())) * PEST_MS)
+/** 某个时刻的天气：6～18 点每天随机晴或雨（按日期定，两扇窗口看到的一样），其余时间是夜晚。 */
+export function weatherAt(at) {
+  const date = new Date(at)
+  const hour = date.getHours()
+  if (hour < 6 || hour >= 18) return 'night'
+  const day = date.getFullYear() * 400 + date.getMonth() * 32 + date.getDate()
+  let h = Math.imul(day, 2654435761) >>> 0
+  h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0
+  return (h ^ h >>> 13) % 2 === 0 ? 'rain' : 'sunny'
 }
-
-/**
- * 纯函数：到了边界就进下一阶段。没洒水器时下一阶段要重新浇水，时间再久也不长；
- * 有洒水器时自动浇水，离线久了可以一口气长过好几个阶段。
- */
-export function advancePlot(plot, now, sprinkler = false) {
+/** 雨天不旱：干旱落在下雨的白天，就推到当天 18 点。 */
+function droughtAt(at) { return weatherAt(at) !== 'rain' ? at : new Date(at).setHours(18, 0, 0, 0) }
+/** 一季要多久（毫秒）。 */
+const seasonMs = crop => crop.hours * H
+/** 新种下（或进入下一季）的地：起点、产量浮动、三样灾害什么时候来，都在这时定好。 */
+function sow(crop, at, season = 1, offset = 0) {
+  return { crop: crop.key, season, plantedAt: at - offset, boostMs: 0, roll: Math.floor(random() * 6) - 3, pests: { weed: nextPest(at), bug: nextPest(at), dry: nextPest(at) } }
+}
+/** 这块地这一季走到哪了（0～1）。 */
+const ageOf = (plot, crop, now) => Math.min(1, Math.max(0, (now - plot.plantedAt + plot.boostMs) / seasonMs(crop)))
+/** 成熟的时刻。 */
+const ripeAt = (plot, crop) => plot.plantedAt - plot.boostMs + seasonMs(crop)
+/** 某样灾害在 at 时刻有没有（只在长的时候来；成熟以后不会再来）。 */
+const pestTime = (plot, kind) => kind === 'dry' ? droughtAt(plot.pests[kind]) : plot.pests[kind]
+const pestOn = (plot, crop, kind, at) => pestTime(plot, kind) <= Math.min(at, ripeAt(plot, crop))
+/** 这块地现在的样子（纯函数，不改存档）。 */
+export function plotState(plot, now) {
   if (plot === null) return null
-  let current = { ...plot }
-  const duration = stageTime(current.crop, current.fertilized === true)
-  if (!duration) return current
-  for (let guard = 0; guard < 3; guard += 1) {
-    const stage = Number(current.stage)
-    if (!Number.isInteger(stage) || stage < 0 || stage >= 3) break
-    if (!Number.isFinite(current.wateredAt)) {
-      if (!sprinkler) break
-      current = { ...current, wateredAt: now }
-    }
-    if (now - current.wateredAt < duration) break
-    current = { ...current, stage: stage + 1, wateredAt: sprinkler ? current.wateredAt + duration : null }
-  }
-  if (current.stage >= 3) current.wateredAt = null
-  return current
+  if (plot.withered) return { crop: plot.crop, stage: 'withered', withered: true, pests: [], ripe: false, progress: 0, remainingMs: 0, yield: 0 }
+  const crop = cropFor(plot.crop)
+  if (crop === null) return null
+  const age = ageOf(plot, crop, now)
+  let index = 0
+  for (let i = 0; i < STAGE_AT.length; i += 1) if (age >= STAGE_AT[i]) index = i
+  const ripe = age >= 1
+  const pests = PESTS.filter(kind => pestOn(plot, crop, kind, now))
+  return { crop: crop.key, stage: STAGES[index], ripe, withered: false, season: plot.season, seasons: crop.seasons, pests,
+    progress: age, remainingMs: ripe ? 0 : Math.max(0, ripeAt(plot, crop) - now), yield: ripe ? Math.max(1, crop.yield + plot.roll - PEST_LOSS * pests.length) : 0 }
 }
-
-/** 旧存档（1.x 是 6 块地、用金币）缺字段时补齐；只用于动作中的私有数据。 */
-export function normalize(data) {
-  if (!Array.isArray(data.plots)) data.plots = []
-  data.plots = Array.from({ length: PLOTS }, (_, index) => data.plots[index] ?? null)
-  if (!Number.isInteger(data.unlocked)) data.unlocked = 2
-  data.unlocked = Math.min(PLOTS, Math.max(2, data.unlocked))
-  for (const field of ['seeds', 'harvest', 'acquired', 'tools']) {
-    if (data[field] === null || typeof data[field] !== 'object' || Array.isArray(data[field])) data[field] = {}
+/** 等级：从总经验算出来（升下一级要「等级 × 100」）。 */
+export function levelOf(exp) {
+  let level = 1
+  let left = count(exp)
+  while (left >= level * EXP_PER_LEVEL) { left -= level * EXP_PER_LEVEL; level += 1 }
+  return { level, exp: left, need: level * EXP_PER_LEVEL }
+}
+/** 3.x → 4.0：地数至少 6 块；地里的作物当作长完、按旧产量进仓库；旧洒水器、旧肥料退菜币；大水壶换成喷雾桶。 */
+function migrate(data) {
+  const oldPlots = Array.isArray(data.plots) ? data.plots : []
+  const harvest = isObject(data.harvest) ? data.harvest : {}
+  const acquired = isObject(data.acquired) ? data.acquired : {}
+  const harvests = {}
+  for (const plot of oldPlots) {
+    if (!isObject(plot) || !OLD_YIELD[plot.crop]) continue
+    harvest[plot.crop] = count(harvest[plot.crop]) + OLD_YIELD[plot.crop]
+    acquired[plot.crop] = count(acquired[plot.crop]) + OLD_YIELD[plot.crop]
   }
-  if (!Array.isArray(data.sprinklers)) data.sprinklers = []
-  data.sprinklers = Array.from({ length: PLOTS }, (_, index) => data.sprinklers[index] === true)
-  data.fertilizer = count(data.fertilizer)
+  for (const [key, yieldCount] of Object.entries(OLD_YIELD)) harvests[key] = Math.floor(count(acquired[key]) / yieldCount)
+  const tools = isObject(data.tools) ? data.tools : {}
+  const sprinklers = Array.isArray(data.sprinklers) ? data.sprinklers.filter(on => on === true).length : 0
+  const pastHarvests = Object.values(harvests).reduce((sum, n) => sum + n, 0)
+  const helper = isObject(data.helper) ? data.helper : {}
+  return { version: 4, unlocked: Math.max(START_PLOTS, Math.min(PLOTS, count(data.unlocked))), plots: [], seeds: isObject(data.seeds) ? data.seeds : {}, harvest, acquired, harvests,
+    tools: { sickle: tools.sickle === true, sprayer: tools.can === true, rake: false, planter: tools.planter === true }, fert: {}, exp: pastHarvests * 10,
+    refund: sprinklers * OLD_SPRINKLER + count(data.fertilizer) * OLD_FERTILIZER,
+    helper: { hired: helper.hired === true, level: count(helper.level), barn: count(helper.barn), usedMs: helper.usedMs, lastAt: helper.lastAt, stock: isObject(helper.stock) ? helper.stock : {} },
+  }
+}
+/** 补齐字段（只用于动作里的私有数据，view 先 structuredClone 再调）。 */
+export function normalize(data) {
+  if (data.version !== 4) {
+    const old = { ...data }
+    for (const key of Object.keys(data)) delete data[key]
+    Object.assign(data, migrate(old))
+  }
+  data.unlocked = Math.max(START_PLOTS, Math.min(PLOTS, count(data.unlocked) || START_PLOTS))
+  if (!Array.isArray(data.plots)) data.plots = []
+  data.plots = Array.from({ length: PLOTS }, (_, index) => {
+    const plot = data.plots[index]
+    if (!isObject(plot) || index >= data.unlocked) return null
+    if (plot.withered === true) return cropFor(plot.crop) ? { crop: plot.crop, withered: true } : null
+    if (!cropFor(plot.crop) || !Number.isFinite(plot.plantedAt) || !isObject(plot.pests)) return null
+    return plot
+  })
+  for (const field of ['seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert']) if (!isObject(data[field])) data[field] = {}
+  data.exp = count(data.exp)
+  data.refund = count(data.refund)
   normalizeHelper(data)
   return data
 }
-
 const availablePlot = (data, index) => Number.isInteger(index) && index >= 0 && index < data.unlocked
 const amountFor = (data, field, key) => count(data[field][key])
 const owns = (data, tool) => data.tools[tool] === true
-
+const levelNow = data => levelOf(data.exp).level
 /** 菜币钱包；老宿主（没有 api.wallet）退回金币，免得装上就坏。 */
 function purse(api) {
-  if (api.wallet) return api.wallet
-  return { currency: { label: '金币', emoji: '🪙', rate: 1 }, balance: () => api.coins(), earn: (n, source) => api.earn(n, source), spend: (n, sink) => api.spend(n, sink) }
+  return api.wallet ? api.wallet : { currency: { label: '金币', emoji: '🪙', rate: 1 }, balance: () => api.coins(), earn: (n, source) => api.earn(n, source), spend: (n, sink) => api.spend(n, sink) }
 }
 const tire = (api, plots = 1) => { if (typeof api.exert === 'function') api.exert(EXERT * plots) }
-
-function sayHarvest(crop) {
-  if (crop.key === 'carrot') return '拔了四个胡萝卜，我一个都没偷吃'
-  return '收了' + crop.yield + '个' + crop.label + '，菜园有收成啦！'
+/** 迁移欠下的退款：下一次动作时付。 */
+function payRefund(data, api) {
+  if (data.refund > 0 && api) { purse(api).earn(data.refund, 'refund'); data.refund = 0 }
 }
-
-/** Historical totals come from acquired crops, not the current warehouse. */
+/** 加经验，升级了返回新等级。 */
+function gainExp(data, n) {
+  const before = levelNow(data)
+  data.exp += n
+  return levelNow(data) > before ? levelNow(data) : null
+}
+/** Historical totals count harvests, not crops: a harvest is one plot picked once. */
 export function progress(data) {
   const saved = normalize(structuredClone(data))
-  const crops = CROPS.filter(crop => Number.isSafeInteger(saved.acquired[crop.key]) && saved.acquired[crop.key] >= crop.yield)
-  return [{ name: 'harvest', total: crops.reduce((sum, crop) => Math.min(Number.MAX_SAFE_INTEGER, sum + Math.floor(saved.acquired[crop.key] / crop.yield)), 0), items: crops.map(crop => crop.key) }]
+  const crops = CROPS.filter(crop => amountFor(saved, 'harvests', crop.key) > 0)
+  return [{ name: 'harvest', total: crops.reduce((sum, crop) => Math.min(Number.MAX_SAFE_INTEGER, sum + amountFor(saved, 'harvests', crop.key)), 0), items: crops.map(crop => crop.key) }]
 }
-
 function reportProgress(data, api) {
-  if (typeof api.emit !== 'function') return
-  for (const { name, ...payload } of progress(data)) api.emit(name, payload)
+  if (typeof api?.emit === 'function') for (const { name, ...payload } of progress(data)) api.emit(name, payload)
 }
-
-/** 收一块熟了的地，返回收到的作物（没熟返回 null）。 */
-function harvestPlot(data, index, api) {
-  const plot = advancePlot(data.plots[index], api.now, data.sprinklers[index])
-  if (plot === null || plot.stage !== 3) return null
+/** 收一块熟了的地；收到 into（仓库或帮工的谷仓）。返回 { crop, n, level } 或 null。 */
+function harvestPlot(data, index, at, into = data.harvest) {
+  const plot = data.plots[index]
+  const state = plotState(plot, at)
+  if (state === null || !state.ripe) return null
   const crop = cropFor(plot.crop)
-  if (crop === null) return null
-  data.harvest[crop.key] = amountFor(data, 'harvest', crop.key) + crop.yield
-  data.acquired[crop.key] = amountFor(data, 'acquired', crop.key) + crop.yield
-  data.plots[index] = null
-  return crop
+  into[crop.key] = count(into[crop.key]) + state.yield
+  data.acquired[crop.key] = amountFor(data, 'acquired', crop.key) + state.yield
+  data.harvests[crop.key] = amountFor(data, 'harvests', crop.key) + 1
+  const level = gainExp(data, crop.exp)
+  // 多季作物：回到「长大」再长一季；最后一季收完留枯萎秆。
+  data.plots[index] = plot.season < crop.seasons ? sow(crop, at, plot.season + 1, REGROW_AT * seasonMs(crop)) : { crop: crop.key, withered: true }
+  return { crop, n: state.yield, level }
 }
-
-/** 给一块缺水的地浇水，浇了返回 true。 */
-function waterPlot(data, index, api) {
-  const plot = advancePlot(data.plots[index], api.now, data.sprinklers[index])
-  if (plot === null || plot.stage >= 3 || plot.wateredAt !== null) return false
-  data.plots[index] = { ...plot, wateredAt: api.now }
-  return true
+/** 照料一块地：浇水、除草、杀虫（kind 不给就全治）。返回治了几样。 */
+function carePlot(data, index, at, kind = null) {
+  const plot = data.plots[index]
+  const state = plotState(plot, at)
+  if (state === null || state.ripe || state.withered) return 0
+  const pests = state.pests.filter(pest => kind === null || kind === pest)
+  for (const pest of pests) plot.pests[pest] = nextPest(at)
+  return pests.length
 }
-
-/** 在空地上种一粒种子，种了返回 true。 */
-function plantPlot(data, index, crop, api) {
-  if (data.plots[index] !== null || amountFor(data, 'seeds', crop.key) < 1) return false
+/** 铲掉一块地上的东西（枯萎秆，或者 force 时正在长的作物）。 */
+function clearPlot(data, index, force = false) {
+  const plot = data.plots[index]
+  if (plot !== null && (plot.withered || force)) { data.plots[index] = null; return true }
+  return false
+}
+/** 在空地上种一粒种子。 */
+function plantPlot(data, index, crop, at) {
+  if (data.plots[index] !== null || amountFor(data, 'seeds', crop.key) < 1 || levelNow(data) < crop.level) return false
   data.seeds[crop.key] -= 1
-  data.plots[index] = { crop: crop.key, stage: 0, plantedAt: api.now, wateredAt: data.sprinklers[index] ? api.now : null }
+  data.plots[index] = sow(crop, at)
   return true
 }
-
+function sayHarvest(result) {
+  const head = result.crop.key === 'carrot' ? '拔了' + result.n + '个胡萝卜，我一个都没偷吃' : '收了' + result.n + '个' + result.crop.label + '，菜园有收成啦！'
+  return result.level ? head + '菜园升到 ' + result.level + ' 级了！' : head
+}
 const game = {
-  eventVersion: 1,
-  progress,
-  init() { return normalize({}) },
-
+  eventVersion: 1, progress,
+  init() { return normalize({ version: 4 }) },
   actions: {
-    /** 商店货架：种子（可一次买多颗）和工具。 */
+    /** 商店：种子（可一次买多颗）、工具、化肥、帮工。 */
     buy(data, payload, api) {
-      normalize(data)
       const wallet = purse(api)
-      if (String(payload?.item).startsWith('helper-')) return helperBuy(data, payload, api)
-      const crop = cropFor(payload.item)
+      const item = String(payload?.item ?? '')
+      if (item.startsWith('helper-')) return helperBuy(data, payload, api)
+      const n = payload?.count === undefined ? 1 : payload.count
+      const crop = cropFor(item)
       if (crop !== null) {
-        const n = payload.count === undefined ? 1 : payload.count
-        if (!validCount(n) || n > 999) return { ok: false, reason: 'unavailable' }
+        if (!validCount(n) || n > 999 || levelNow(data) < crop.level) return { ok: false, reason: validCount(n) && n <= 999 ? 'level' : 'unavailable' }
         if (!wallet.spend(crop.price * n, 'seed')) return { ok: false, reason: 'poor' }
         data.seeds[crop.key] = amountFor(data, 'seeds', crop.key) + n
         return { ok: true }
       }
-      const tool = toolFor(payload.item)
-      if (tool === null) return { ok: false, reason: 'unknown' }
-      if (tool.key === 'fertilizer') {
-        if (!wallet.spend(tool.price, 'fertilizer')) return { ok: false, reason: 'poor' }
-        data.fertilizer += 1
+      const fert = fertFor(item)
+      if (fert !== null) {
+        if (!validCount(n) || n > 99) return { ok: false, reason: 'unavailable' }
+        if (!wallet.spend(fert.price * n, 'fertilizer')) return { ok: false, reason: 'poor' }
+        data.fert[fert.key] = amountFor(data, 'fert', fert.key) + n
         return { ok: true }
       }
-      if (tool.key === 'sprinkler') {
-        const index = Number.isInteger(payload.plot) ? payload.plot : data.sprinklers.findIndex((on, at) => !on && at < data.unlocked)
-        if (!availablePlot(data, index) || data.sprinklers[index]) return { ok: false, reason: 'owned' }
-        if (!wallet.spend(tool.price, 'tool')) return { ok: false, reason: 'poor' }
-        data.sprinklers[index] = true
-        const plot = advancePlot(data.plots[index], api.now, false)
-        if (plot !== null && plot.stage < 3 && plot.wateredAt === null) data.plots[index] = { ...plot, wateredAt: api.now }
-        return { ok: true }
-      }
-      if (owns(data, tool.key)) return { ok: false, reason: 'owned' }
+      const tool = toolFor(item)
+      if (tool === null || owns(data, tool.key)) return { ok: false, reason: tool === null ? 'unknown' : 'owned' }
       if (!wallet.spend(tool.price, 'tool')) return { ok: false, reason: 'poor' }
       data.tools[tool.key] = true
       api.say('买到了' + tool.label + '！' + tool.note.replace('解锁', '以后可以'))
       return { ok: true }
     },
-
+    /** 开垦下一块荒地（只能按顺序开）。 */
     unlock(data, payload, api) {
-      normalize(data)
-      if (payload.plot !== data.unlocked || data.unlocked >= PLOTS) return { ok: false, reason: 'locked' }
-      if (!purse(api).spend(PLOT_PRICES[data.unlocked], 'plot')) return { ok: false, reason: 'poor' }
-      data.unlocked += 1
-      return { ok: true }
+      if (payload?.plot !== data.unlocked || data.unlocked >= PLOTS) return { ok: false, reason: 'locked' }
+      if (!purse(api).spend(RECLAIM_PRICE, 'plot')) return { ok: false, reason: 'poor' }
+      return { ok: true, plots: (data.unlocked += 1) }
     },
-
     plant(data, payload, api) {
-      normalize(data)
-      const crop = cropFor(payload.item)
+      const crop = cropFor(payload?.item)
       if (crop === null || !availablePlot(data, payload.plot) || data.plots[payload.plot] !== null) return { ok: false, reason: 'unavailable' }
-      if (!plantPlot(data, payload.plot, crop, api)) return { ok: false, reason: 'no-seed' }
+      if (levelNow(data) < crop.level) return { ok: false, reason: 'level' }
+      if (!plantPlot(data, payload.plot, crop, api.now)) return { ok: false, reason: 'no-seed' }
       tire(api)
       return { ok: true }
     },
-
-    /** 一键种满（要播种器）：同一种种子种满所有空地，种子不够就种到用完。 */
+    /** 照料一块地：kind 是 weed / bug / dry，不给就把这块地的毛病全治了。 */
+    care(data, payload, api) {
+      if (!availablePlot(data, payload?.plot)) return { ok: false, reason: 'locked' }
+      const kind = PESTS.includes(payload.kind) ? payload.kind : null
+      const cured = carePlot(data, payload.plot, api.now, kind)
+      if (cured === 0) return { ok: false, reason: 'unavailable' }
+      const level = gainExp(data, CARE_EXP * cured)
+      tire(api)
+      if (level) api.say('菜园升到 ' + level + ' 级了！')
+      return { ok: true, cured }
+    },
+    fertilize(data, payload, api) {
+      if (!availablePlot(data, payload?.plot)) return { ok: false, reason: 'locked' }
+      const fert = fertFor(payload.item)
+      if (fert === null || amountFor(data, 'fert', fert.key) < 1) return { ok: false, reason: 'empty' }
+      const state = plotState(data.plots[payload.plot], api.now)
+      if (state === null || state.ripe || state.withered) return { ok: false, reason: 'unavailable' }
+      data.fert[fert.key] -= 1
+      data.plots[payload.plot].boostMs += fert.hours * H
+      return { ok: true }
+    },
+    harvest(data, payload, api) {
+      if (!availablePlot(data, payload?.plot)) return { ok: false, reason: 'locked' }
+      const result = harvestPlot(data, payload.plot, api.now)
+      if (result === null) return { ok: false, reason: 'not-ripe' }
+      tire(api)
+      api.say(sayHarvest(result))
+      return { ok: true, n: result.n }
+    },
+    /** 铲地：枯萎秆随便铲；正在长的作物要 force（界面先问一句）。 */
+    clear(data, payload, api) {
+      if (!availablePlot(data, payload?.plot)) return { ok: false, reason: 'locked' }
+      if (!clearPlot(data, payload.plot, payload.force === true)) return { ok: false, reason: 'unavailable' }
+      tire(api)
+      return { ok: true }
+    },
+    /** 一键收获（要收割镰）。 */
+    harvestAll(data, payload, api) {
+      if (!owns(data, 'sickle')) return { ok: false, reason: 'locked' }
+      let harvested = 0, crops = 0, level = null
+      for (let index = 0; index < data.unlocked; index += 1) {
+        const result = harvestPlot(data, index, api.now)
+        if (result !== null) { harvested += 1; crops += result.n; level = result.level ?? level }
+      }
+      if (harvested === 0) return { ok: false, reason: 'not-ripe' }
+      tire(api, harvested)
+      api.say('一口气收了' + harvested + '块地，' + crops + '个果实进了仓库！' + (level ? '菜园升到 ' + level + ' 级了！' : ''))
+      return { ok: true, harvested }
+    },
+    /** 一键照料（要喷雾桶）：所有地的草、虫、旱一次治完。 */
+    careAll(data, payload, api) {
+      if (!owns(data, 'sprayer')) return { ok: false, reason: 'locked' }
+      let cured = 0, plots = 0
+      for (let index = 0; index < data.unlocked; index += 1) { const n = carePlot(data, index, api.now); cured += n; plots += n ? 1 : 0 }
+      if (cured === 0) return { ok: false, reason: 'unavailable' }
+      const level = gainExp(data, CARE_EXP * cured)
+      tire(api, plots)
+      if (level) api.say('菜园升到 ' + level + ' 级了！')
+      return { ok: true, cured }
+    },
+    /** 一键铲除（要平地耙）：只铲枯萎秆，不碰正在长的。 */
+    clearAll(data, payload, api) {
+      if (!owns(data, 'rake')) return { ok: false, reason: 'locked' }
+      let cleared = 0
+      for (let index = 0; index < data.unlocked; index += 1) if (clearPlot(data, index)) cleared += 1
+      if (cleared === 0) return { ok: false, reason: 'unavailable' }
+      tire(api, cleared)
+      return { ok: true, cleared }
+    },
+    /** 一键播种（要播种器）：同一种种子种满所有空地，种子不够就种到用完。 */
     plantAll(data, payload, api) {
-      normalize(data)
       if (!owns(data, 'planter')) return { ok: false, reason: 'locked' }
-      const crop = cropFor(payload.item)
-      if (crop === null) return { ok: false, reason: 'unavailable' }
+      const crop = cropFor(payload?.item)
+      if (crop === null || levelNow(data) < crop.level) return { ok: false, reason: crop === null ? 'unavailable' : 'level' }
       let planted = 0
-      for (let index = 0; index < data.unlocked; index += 1) if (plantPlot(data, index, crop, api)) planted += 1
+      for (let index = 0; index < data.unlocked; index += 1) if (plantPlot(data, index, crop, api.now)) planted += 1
       if (planted === 0) return { ok: false, reason: amountFor(data, 'seeds', crop.key) < 1 ? 'no-seed' : 'unavailable' }
       tire(api, planted)
       return { ok: true, planted }
     },
-
-    water(data, payload, api) {
-      normalize(data)
-      if (!availablePlot(data, payload.plot)) return { ok: false, reason: 'locked' }
-      if (!waterPlot(data, payload.plot, api)) return { ok: false, reason: 'unavailable' }
-      tire(api)
-      return { ok: true }
-    },
-
-    /** 一键浇水（要大水壶）。 */
-    waterAll(data, payload, api) {
-      normalize(data)
-      if (!owns(data, 'can')) return { ok: false, reason: 'locked' }
-      let watered = 0
-      for (let index = 0; index < data.unlocked; index += 1) if (waterPlot(data, index, api)) watered += 1
-      if (watered === 0) return { ok: false, reason: 'unavailable' }
-      tire(api, watered)
-      return { ok: true, watered }
-    },
-
-    /** 施肥：这一季每个阶段快 30%（正在长的阶段从现在起按新速度算）。 */
-    fertilize(data, payload, api) {
-      normalize(data)
-      if (!availablePlot(data, payload.plot)) return { ok: false, reason: 'locked' }
-      if (data.fertilizer < 1) return { ok: false, reason: 'empty' }
-      const plot = advancePlot(data.plots[payload.plot], api.now, data.sprinklers[payload.plot])
-      if (plot === null || plot.stage >= 3 || plot.fertilized === true) return { ok: false, reason: 'unavailable' }
-      data.fertilizer -= 1
-      data.plots[payload.plot] = { ...plot, fertilized: true }
-      return { ok: true }
-    },
-
-    harvest(data, payload, api) {
-      normalize(data)
-      if (!availablePlot(data, payload.plot)) return { ok: false, reason: 'locked' }
-      const crop = harvestPlot(data, payload.plot, api)
-      if (crop === null) return { ok: false, reason: 'not-ripe' }
-      tire(api)
-      reportProgress(data, api)
-      api.say(sayHarvest(crop))
-      return { ok: true }
-    },
-
-    /** 一键收获（要收割镰）。 */
-    harvestAll(data, payload, api) {
-      normalize(data)
-      if (!owns(data, 'sickle')) return { ok: false, reason: 'locked' }
-      let harvested = 0
-      for (let index = 0; index < data.unlocked; index += 1) if (harvestPlot(data, index, api) !== null) harvested += 1
-      if (harvested === 0) return { ok: false, reason: 'not-ripe' }
-      tire(api, harvested)
-      reportProgress(data, api)
-      api.say('一口气收了' + harvested + '块地，仓库都快装不下了！')
-      return { ok: true, harvested }
-    },
-
+    /** 卖：item 是作物；item '*' 是全卖。 */
     sell(data, payload, api) {
-      normalize(data)
-      const crop = cropFor(payload.item)
-      const n = payload.count === undefined ? 1 : payload.count
+      if (payload?.item === '*') {
+        let total = 0
+        for (const crop of CROPS) { total += amountFor(data, 'harvest', crop.key) * crop.sell; data.harvest[crop.key] = 0 }
+        if (total === 0) return { ok: false, reason: 'unavailable' }
+        purse(api).earn(total, 'sell')
+        return { ok: true, earned: total }
+      }
+      const n = payload?.count === undefined ? 1 : payload.count
+      const crop = cropFor(payload?.item)
       if (crop === null || !validCount(n) || !Number.isSafeInteger(crop.sell * n) || amountFor(data, 'harvest', crop.key) < n) return { ok: false, reason: 'unavailable' }
       data.harvest[crop.key] -= n
       purse(api).earn(crop.sell * n, 'sell')
-      return { ok: true }
+      return { ok: true, earned: crop.sell * n }
     },
-
     store(data, payload, api) {
-      normalize(data)
-      const crop = cropFor(payload.item)
-      const n = payload.count === undefined ? 1 : payload.count
-      if (crop === null || crop.food === null || !validCount(n) || n > 99 || amountFor(data, 'harvest', crop.key) < n) return { ok: false, reason: 'unavailable' }
+      const crop = cropFor(payload?.item)
+      const n = payload?.count === undefined ? 1 : payload.count
+      if (crop === null || !crop.food || !validCount(n) || n > 99 || amountFor(data, 'harvest', crop.key) < n) return { ok: false, reason: 'unavailable' }
       if (!api.give(crop.food, n)) return { ok: false, reason: 'unavailable' }
       data.harvest[crop.key] -= n
       return { ok: true }
     },
   },
-
   view(data, api) {
     const d = normalize(structuredClone(data))
     settleHelper(d, api.now)
     const wallet = purse(api)
-    const balance = wallet.balance()
-    const minutesText = minutes => minutes >= 60 ? minutes / 60 + ' 小时' : minutes + ' 分钟'
+    const balance = wallet.balance() + d.refund
+    const level = levelOf(d.exp)
+    const managed = helperPlots(d)
+    const plots = d.plots.map((plot, index) => {
+      if (index >= d.unlocked) return { index, wild: true, next: index === d.unlocked }
+      const state = plotState(plot, api.now)
+      if (state === null) return { index, empty: true, helper: index < managed }
+      const crop = cropFor(state.crop)
+      return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state) }
+    })
+    const tally = test => plots.filter(test).length
+    const counts = { ripe: tally(plot => plot.ripe), pests: tally(plot => plot.pests?.length > 0), withered: tally(plot => plot.withered), empty: tally(plot => plot.empty) }
+    const hoursText = hours => (Number.isInteger(hours) ? hours : hours.toFixed(1)) + ' 小时'
     return {
+      now: api.now, balance, currency: wallet.currency, level: level.level, exp: level.exp, need: level.need, weather: weatherAt(api.now),
+      unlocked: d.unlocked, total: PLOTS, reclaimPrice: RECLAIM_PRICE, plots, counts,
+      tools: TOOLS.map(tool => ({ key: tool.key, label: tool.label, note: tool.note, price: tool.price, owned: owns(d, tool.key) })),
+      fert: FERTILIZERS.map(fert => ({ key: fert.key, label: fert.label, hours: fert.hours, price: fert.price, count: amountFor(d, 'fert', fert.key) })),
+      seeds: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'seeds', crop.key), price: crop.price, hours: crop.hours, level: crop.level, locked: level.level < crop.level, seasons: crop.seasons })),
+      harvest: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'harvest', crop.key), sell: crop.sell, food: crop.food ?? null, foodLabel: crop.foodLabel ?? null })),
       helper: helperView(d),
-      now: api.now,
-      balance,
-      currency: wallet.currency,
-      unlocked: d.unlocked,
-      prices: PLOT_PRICES,
-      tools: TOOLS.map(tool => ({ key: tool.key, emoji: tool.emoji, label: tool.label, note: tool.note, price: tool.price, owned: tool.key === 'fertilizer' ? d.fertilizer > 0 : owns(d, tool.key) })),
-      fertilizer: d.fertilizer,
-      sprinklers: d.sprinklers,
-      plots: d.plots.map((plot, index) => {
-        const current = advancePlot(plot, api.now, d.sprinklers[index])
-        if (current === null) return null
-        const crop = cropFor(current.crop)
-        const duration = stageTime(current.crop, current.fertilized === true)
-        const left = current.stage >= 3 || current.wateredAt === null ? 0 : Math.max(0, duration - (api.now - current.wateredAt))
-        const inStage = current.wateredAt === null || !duration ? 0 : 1 - left / duration
-        return {
-          crop: current.crop, stage: current.stage, fertilized: current.fertilized === true,
-          emoji: current.stage === 0 ? '🟫' : current.stage === 1 ? '🌱' : current.stage === 2 ? '🌿' : crop?.emoji ?? '🟫',
-          cropEmoji: crop?.emoji ?? '', label: crop?.label ?? '',
-          thirsty: current.stage < 3 && current.wateredAt === null,
-          remainingMs: left,
-          /** 这一季整体走到哪了（0～1），给进度条用。 */
-          progress: current.stage >= 3 ? 1 : Math.min(1, (current.stage + inStage) / 3),
-          ...helperPlotView(d, index, current),
-        }
-      }),
-      seeds: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'seeds', crop.key), price: crop.price, minutes: crop.minutes })),
-      harvest: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'harvest', crop.key), sell: crop.sell, food: crop.food, foodLabel: crop.foodLabel ?? null })),
       shelf: {
-        key: 'farm', label: '菜园商店', emoji: '🌱', color: 'green',
-        currency: { label: wallet.currency.label, emoji: wallet.currency.emoji, balance },
+        key: 'farm', label: '菜园商店', emoji: '🌱', color: 'green', currency: { label: wallet.currency.label, emoji: wallet.currency.emoji, balance },
         items: [
           ...helperShelf(d, balance),
-          ...CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label + '种子', note: minutesText(crop.minutes) + '成熟 · 收 ' + crop.yield + ' 个 · 卖 ' + crop.sell, price: crop.price, disabled: balance < crop.price, pick: null })),
+          ...CROPS.map(crop => {
+            const locked = level.level < crop.level
+            const note = locked ? crop.level + ' 级解锁' : hoursText(crop.hours) + '成熟 · 收约 ' + crop.yield + ' 个 · 卖 ' + crop.sell + (crop.seasons > 1 ? ' · ' + crop.seasons + ' 季' : '')
+            return { key: crop.key, emoji: crop.emoji, label: crop.label + '种子', note, price: crop.price, disabled: locked || balance < crop.price, pick: null }
+          }),
+          ...FERTILIZERS.map(fert => ({ key: fert.key, emoji: '🧪', label: fert.label, note: '多长 ' + hoursText(fert.hours), price: fert.price, disabled: balance < fert.price, pick: null })),
           ...TOOLS.map(tool => {
-            const owned = tool.key !== 'fertilizer' && tool.key !== 'sprinkler' && owns(d, tool.key)
-            return { key: tool.key, emoji: tool.emoji, label: tool.label, note: owned ? '已拥有' : tool.note, price: tool.price, disabled: owned || balance < tool.price, pick: null }
+            const owned = owns(d, tool.key)
+            return { key: tool.key, emoji: '🧰', label: tool.label, note: owned ? '已拥有' : tool.note, price: tool.price, disabled: owned || balance < tool.price, pick: null }
           }),
         ],
       },
       dex: {
-        key: 'crops', label: '作物', emoji: '🌾', color: 'green',
-        entries: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, stars: 0, blurb: '收获过 ' + amountFor(d, 'acquired', crop.key) + ' 个', potential: amountFor(d, 'acquired', crop.key), acquired: amountFor(d, 'acquired', crop.key) > 0 })),
+        key: 'crops', label: '作物', emoji: '🌾', color: 'green', entries: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, stars: 0, blurb: '收获过 ' + amountFor(d, 'acquired', crop.key) + ' 个', potential: amountFor(d, 'acquired', crop.key), acquired: amountFor(d, 'acquired', crop.key) > 0 })),
       },
     }
   },
 }
-
-/** K1：实物收成保留；帮工轮流处理地块，六小时有效工作封仓。 */
+/**
+ * 帮工猪（D，数值和规矩照 J2 不变：管 2 / 4 / 8 块地、六小时封仓、每小时至多 400、比自己种少赚）。
+ * 帮工用自己的小批次周期（helperRecipe），不按作物的手动成熟时间；它管的地不长草不生虫，收成进自己的谷仓。
+ */
 export const HELPER_PLOTS = [2, 4, 8]
 export const HELPER_BUDGETS = [90, 180, 300]
 export const HELPER_SPEEDS = [1, 1.1, 1.2, 4 / 3]
 export const HELPER_WINDOW = 6 * 3600000
 export const HELPER_PRICES = { hire: 2500, level: [0, 2000, 6000], barn: [0, 1000, 3000, 9000] }
-
 /** 收成先按起步预算定小批次，六小时内排整数批，升级只增加批次数。 */
 export function helperRecipe(key, level = 0, barn = 0) {
   const crop = cropFor(key)
   if (!crop) return null
-  const manual = plots => plots * (crop.yield * crop.sell - crop.price - 5 * EXERT * 10 / 32) / (crop.minutes / 60)
+  const manual = plots => plots * (crop.yield * crop.sell - crop.price - 5 * EXERT * 10 / 32) / crop.hours
   const starter = Math.min(90, manual(2) * 0.7)
-  const yieldCount = Math.min(crop.yield, Math.floor((starter * 6 + crop.price) / crop.sell))
+  const yieldCount = Math.max(1, Math.min(crop.yield, Math.floor((starter * 6 + crop.price) / crop.sell)))
   const profit = yieldCount * crop.sell - crop.price
   const budget = Math.min(400, HELPER_BUDGETS[level] * HELPER_SPEEDS[barn], manual(HELPER_PLOTS[level]) * 0.7)
   const batches = Math.max(1, Math.floor((budget * 6 + 0.00001) / profit))
   return { yield: yieldCount, intervalMs: HELPER_WINDOW / batches, net: profit * batches / 6, itemsPerHour: yieldCount * batches / 6, batches }
 }
-
 function normalizeHelper(data) {
-  const raw = data.helper && typeof data.helper === 'object' ? data.helper : {}
-  const recipe = helperRecipe(raw.pending?.crop, Math.min(2, count(raw.level)), Math.min(3, count(raw.barn)))
-  const pending = recipe && Number.isFinite(raw.pending.remainingMs) ? {
-    ...raw.pending,
-    remainingMs: Math.max(0, Math.min(recipe.intervalMs, raw.pending.remainingMs)),
-    yield: recipe.yield,
-  } : null
+  const raw = isObject(data.helper) ? data.helper : {}
+  const level = Math.min(2, count(raw.level))
+  const barn = Math.min(3, count(raw.barn))
+  const recipe = helperRecipe(raw.pending?.crop, level, barn)
+  const pending = recipe && Number.isFinite(raw.pending.remainingMs) && Number.isInteger(raw.pending.index)
+    ? { ...raw.pending, remainingMs: Math.max(0, Math.min(recipe.intervalMs, raw.pending.remainingMs)), yield: recipe.yield } : null
   data.helper = {
-    hired: raw.hired === true,
-    level: Math.min(2, count(raw.level)),
-    barn: Math.min(3, count(raw.barn)),
+    hired: raw.hired === true, level, barn,
     lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
     usedMs: Number.isFinite(raw.usedMs) ? Math.max(0, Math.min(HELPER_WINDOW, raw.usedMs)) : 0,
     cursor: count(raw.cursor) % PLOTS,
@@ -390,40 +474,37 @@ function normalizeHelper(data) {
     stock: Object.fromEntries(CROPS.map(crop => [crop.key, count(raw.stock?.[crop.key])])),
   }
 }
-
 const helperCount = data => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0)
 const helperPlots = data => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS[data.helper.level]) : 0
-
-/** 没种子的空地跳过；恢复时从当前动作时间开始，不补停工收益。 */
+/** 没种子的空地跳过；枯萎的先铲；恢复时从当前动作时间开始，不补停工收益。 */
 function prepareHelper(data, at) {
   const helper = data.helper
   const managed = helperPlots(data)
   for (let offset = 0; offset < managed; offset += 1) {
     const index = (helper.cursor + offset) % managed
+    if (data.plots[index]?.withered) data.plots[index] = null
     let plot = data.plots[index]
     const crop = cropFor(plot?.crop ?? helper.targets[index])
     if (!crop) continue
     helper.targets[index] = crop.key
     if (!plot) {
-      if (!plantPlot(data, index, crop, { now: at })) continue
+      if (!plantPlot(data, index, crop, at)) continue
       plot = data.plots[index]
     }
-    if (plot.wateredAt === null) plot.wateredAt = at
     const recipe = helperRecipe(crop.key, helper.level, helper.barn)
     helper.pending = { index, crop: crop.key, plantedAt: plot.plantedAt, remainingMs: recipe.intervalMs, yield: recipe.yield }
     return true
   }
   return false
 }
-
 /** 时间差只用于当前小批次，满六小时停；批次进度随地块保存，收仓不复制进度。 */
 export function settleHelper(data, now) {
   const helper = data.helper
   if (!helperPlots(data) || !Number.isFinite(now)) return
   const start = helper.lastAt ?? now
-  if (now < start) return
+  if (now < start) { helper.lastAt = now; return }
   const pendingPlot = helper.pending ? data.plots[helper.pending.index] : null
-  if (helper.pending && (!pendingPlot || pendingPlot.plantedAt !== helper.pending.plantedAt || pendingPlot.crop !== helper.pending.crop)) helper.pending = null
+  if (helper.pending && (!pendingPlot || pendingPlot.withered || pendingPlot.plantedAt !== helper.pending.plantedAt || pendingPlot.crop !== helper.pending.crop)) helper.pending = null
   let remaining = Math.min(now - start, HELPER_WINDOW - helper.usedMs)
   let at = start
   if (!helper.pending) prepareHelper(data, start)
@@ -437,61 +518,45 @@ export function settleHelper(data, now) {
     if (pending.remainingMs > 0.00001) break
     helper.stock[pending.crop] += pending.yield
     data.acquired[pending.crop] = amountFor(data, 'acquired', pending.crop) + pending.yield
+    data.harvests[pending.crop] = amountFor(data, 'harvests', pending.crop) + 1
     data.plots[pending.index] = null
     helper.cursor = (pending.index + 1) % helperPlots(data)
     helper.pending = null
-    if (helper.usedMs >= HELPER_WINDOW - 0.00001) {
-      helper.usedMs = HELPER_WINDOW
-      break
-    }
-    plantPlot(data, pending.index, cropFor(pending.crop), { now: at })
+    if (helper.usedMs >= HELPER_WINDOW - 0.00001) { helper.usedMs = HELPER_WINDOW; break }
+    plantPlot(data, pending.index, cropFor(pending.crop), at)
     if (!prepareHelper(data, at)) break
   }
   helper.lastAt = now
 }
-
 function helperView(data) {
   const helper = data.helper
   const missing = helper.targets.slice(0, helperPlots(data)).filter((key, index) => key && !data.plots[index] && amountFor(data, 'seeds', key) === 0)
   return { hired: helper.hired, plots: helperPlots(data), stored: helperCount(data), usedHours: helper.usedMs / 3600000,
     capacityHours: 6, full: helper.usedMs >= HELPER_WINDOW, missing: [...new Set(missing)].map(key => cropFor(key).label) }
 }
-
-/** 管理地块显示批次进度；手动成熟 / 浇水条件单独保留，不能改显示就复制果实。 */
-function helperPlotView(data, index, current) {
-  if (index >= helperPlots(data)) return {}
-  const pending = data.helper.pending?.index === index ? data.helper.pending : null
-  const recipe = helperRecipe(current.crop, data.helper.level, data.helper.barn)
+/** 帮工管的地显示它自己的批次进度（不长草不生虫）；手动成熟的照旧可以自己收。 */
+function helperPlotView(data, index, state) {
+  if (index >= helperPlots(data) || state === null || state.ripe || state.withered) return {}
+  const recipe = helperRecipe(state.crop, data.helper.level, data.helper.barn)
   if (!recipe) return {}
+  const pending = data.helper.pending?.index === index ? data.helper.pending : null
   const remainingMs = pending?.remainingMs ?? recipe.intervalMs
   const progress = pending ? Math.max(0, Math.min(1, 1 - remainingMs / recipe.intervalMs)) : 0
-  const stage = Math.min(2, Math.floor(progress * 3))
-  return {
-    helperManaged: true,
-    helperNote: data.helper.usedMs >= HELPER_WINDOW ? '等帮工接着干' : pending ? '帮工处理中' : '等帮工',
-    manualRipe: current.stage === 3,
-    manualThirsty: current.stage < 3 && current.wateredAt === null,
-    thirsty: false,
-    stage,
-    emoji: ['🟫', '🌱', '🌿'][stage],
-    progress,
-    remainingMs,
-  }
+  return { helperNote: data.helper.usedMs >= HELPER_WINDOW ? '等帮工接着干' : pending ? '帮工处理中' : '等帮工',
+    pests: [], stage: STAGES[Math.min(4, Math.floor(progress * 5))], progress, remainingMs }
 }
-
 function helperShelf(data, balance) {
   const helper = data.helper
   if (!helper.hired) return [{ key: 'helper-hire', emoji: '🐷', label: '雇帮工猪', note: '管 2 块地，六小时封仓', price: HELPER_PRICES.hire, disabled: balance < HELPER_PRICES.hire, pick: null }]
   return ['level', 'barn'].flatMap(kind => {
-    const level = helper[kind] + 1
-    const price = HELPER_PRICES[kind][level]
+    const next = helper[kind] + 1
+    const price = HELPER_PRICES[kind][next]
     if (price === undefined) return []
-    const label = kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][level] : ['小谷仓', '顺手农具', '轻巧农具', '高效农具'][level]
-    const note = kind === 'level' ? '管 ' + HELPER_PLOTS[level] + ' 块地' : '提高自动收成效率'
+    const label = kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][next] : ['小谷仓', '顺手农具', '轻巧农具', '高效农具'][next]
+    const note = kind === 'level' ? '管 ' + HELPER_PLOTS[next] + ' 块地' : '提高自动收成效率'
     return [{ key: 'helper-' + kind, emoji: kind === 'level' ? '🐷' : '🧺', label, note, price, disabled: balance < price, pick: null }]
   })
 }
-
 function helperBuy(data, payload, api) {
   const helper = data.helper
   const kind = String(payload?.item).replace('helper-', '')
@@ -509,20 +574,20 @@ function helperBuy(data, payload, api) {
   }
   return { ok: true }
 }
-
 game.actions.hire = (data, payload, api) => helperBuy(data, { item: 'helper-hire' }, api)
 game.actions.upgrade = (data, payload, api) => helperBuy(data, { item: 'helper-' + payload?.kind }, api)
-game.actions.collect = (data, payload) => {
+/** 收仓：帮工谷仓里的东西进仓库，六小时重新算。 */
+game.actions.collect = data => {
   if (!helperCount(data) && data.helper.usedMs === 0) return { ok: false, reason: 'empty' }
   for (const crop of CROPS) data.harvest[crop.key] = amountFor(data, 'harvest', crop.key) + data.helper.stock[crop.key]
   data.helper.stock = Object.fromEntries(CROPS.map(crop => [crop.key, 0]))
   data.helper.usedMs = 0
   return { ok: true }
 }
-
 for (const [key, action] of Object.entries(game.actions)) {
   game.actions[key] = (data, payload, api) => {
     normalize(data)
+    payRefund(data, api)
     settleHelper(data, api?.now)
     const result = action(data, payload, api)
     if (result.ok) {

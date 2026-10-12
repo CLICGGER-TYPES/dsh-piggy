@@ -80,7 +80,7 @@ export function simulateMine(pickaxe, startFloor, seed = 1) {
 export function farmPlotPerHour(key) {
   const crop = CROPS.find(entry => entry.key === key)
   if (!crop) return 0
-  return (crop.yield * crop.sell - crop.price) / (crop.minutes / 60)
+  return (crop.yield * crop.sell - crop.price) / crop.hours
 }
 
 /** 一块地一季要操作几次（种 1 + 浇 3 + 收 1），用来估「人一直点」时能照看几块地。 */

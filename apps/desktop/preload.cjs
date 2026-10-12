@@ -4,7 +4,10 @@ const { contextBridge, ipcRenderer } = require('electron')
 /** 最近一次主进程报来的窗口与工作区（同步读，页面随时能用）。 */
 let geometry = null
 /** 这个页面在哪个窗口里：猪窗口（pet）还是面板窗口（panel，外壳 0.6.0 起）。 */
-const role = (typeof process === 'undefined' ? [] : process.argv).includes('--piggy-role=panel') ? 'panel' : 'pet'
+const argv = typeof process === 'undefined' ? [] : process.argv
+const role = argv.includes('--piggy-role=panel') ? 'panel' : argv.includes('--piggy-role=ext') ? 'ext' : 'pet'
+/** 扩展大窗口（role=ext，外壳 0.6.5 起）显示的是哪个扩展。 */
+const extKey = role === 'ext' ? (argv.find(arg => arg.startsWith('--piggy-ext=')) || '').slice('--piggy-ext='.length) : null
 
 contextBridge.exposeInMainWorld('piggyShell', {
   /** 内容（猪 + 面板 + 气泡）的外接框：主进程据此把窗口调成那么大，并抠出可点区域。 */
@@ -70,8 +73,14 @@ contextBridge.exposeInMainWorld('piggyShell', {
   },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
-  /** 这个页面在哪个窗口里：'pet' 或 'panel'。 */
+  /** 这个页面在哪个窗口里：'pet'、'panel'，或者扩展的大窗口 'ext'（外壳 0.6.5 起）。 */
   role,
+  extKey,
+  /** 扩展的大窗口（外壳 0.6.5 起）：open(key) 开（已开着就拿到前面），close() 只有大窗口自己能叫。 */
+  ext: {
+    open: key => ipcRenderer.send('piggy:ext:open', String(key)),
+    close: () => ipcRenderer.send('piggy:ext:close'),
+  },
   /**
    * 面板窗口（外壳 0.6.0 起）：面板不再和猪挤在一个窗口里，见 main.js 的 panelWin。
    * 猪页面用 toggle 开关；面板页面报尺寸、收起、把对猪的反应转过去。

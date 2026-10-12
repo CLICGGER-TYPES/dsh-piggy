@@ -19,8 +19,8 @@ export function processPending(ctx, showPigLine) {
   // 拆窗口后两边都在处理排队的消息：猪的反应和猪说的话只在猪窗口演，
   // 提示条只在面板窗口出（猪窗口里没有面板）。
   var role = desktopRole()
-  var pigSide = role !== 'panel'
-  var cardSide = role !== 'pet'
+  var pigSide = role !== 'panel' && role !== 'ext'
+  var cardSide = role !== 'pet' && role !== 'ext'
   for (var i = 0; i < ctx.view.pending.length; i += 1) {
     var event = ctx.view.pending[i]
     // Messages carry an id that only goes up; two from the same instant

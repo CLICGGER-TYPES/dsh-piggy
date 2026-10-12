@@ -20,7 +20,7 @@ export var PIG_FX = ['flash', 'react', 'burst', 'showBubble', 'transform', 'prev
 /**
  * @param {any} ctx 挂载后的上下文（index.js 的 ctx）
  * @param {{ refresh: () => void, isFishing: () => boolean }} hooks
- * @returns {'pet'|'panel'|null}
+ * @returns {'pet'|'panel'|'ext'|null}
  */
 export function wireSplit(ctx, hooks) {
   var role = desktopRole()
@@ -49,10 +49,16 @@ export function wireSplit(ctx, hooks) {
     return role
   }
 
-  // 面板窗口：对猪的反应一律转过去。
+  // 面板窗口、扩展大窗口：对猪的反应一律转过去。
   PIG_FX.forEach(function (name) {
     ctx[name] = function () { shell.panel.fx(name, Array.prototype.slice.call(arguments)) }
   })
+  if (role === 'ext') {
+    // 扩展大窗口（外壳 0.6.5 起）：一打开就是这个扩展的大界面，一直开着，关窗口就是关。
+    ctx.extBig = typeof shell.extKey === 'string' && shell.extKey ? shell.extKey : null
+    if (ctx.extBig) ctx.tab = 'ext:' + ctx.extBig
+    return role
+  }
   shell.panel.on(function (message) {
     if (message === null || typeof message !== 'object') return
     if (message.type === 'open') {
@@ -93,6 +99,15 @@ function typing() {
  */
 export function splitSetOpen(ctx, next) {
   var role = desktopRole()
+  if (role === 'ext') {
+    // 扩展大窗口永远是开着的（挂载时那次 setOpen(false) 不能把它关掉）；要关就关窗口（app.closeBig）。
+    ctx.isOpen = true
+    ctx.host.setAttribute('data-open', 'true')
+    ctx.card.hidden = false
+    ctx.hud.hidden = true
+    if (typeof ctx.renderContent === 'function') ctx.renderContent()
+    return true
+  }
   if (role === 'pet') {
     // 猪窗口只记开没开，叫主进程把面板窗口开/关在猪旁边；自己这边永远只有猪。
     // 状态没变就不发（挂载时那次 setOpen(false) 不能去关别人刚打开的面板）。

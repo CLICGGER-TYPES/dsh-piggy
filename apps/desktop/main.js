@@ -140,6 +140,9 @@ let petAsked = null
  * 只有新游戏包会叫它（piggyShell.panel.toggle）；老游戏包照旧单窗口。
  */
 let panelWin = null
+/** 扩展的大窗口（role=ext）和它显示的扩展；一次只开一个。 */
+let extWin = null
+let extKey = null
 /** 正在退出/重启：关掉窗口前先置位，之后到达的页面消息一律不处理。 */
 let quitting = false
 /**
@@ -148,7 +151,11 @@ let quitting = false
  * 主进程直接弹了错误框（用户 2026-10-05 实测）。所以先查 isDestroyed。
  */
 function fromPage(event) {
-  return fromPet(event) || (!quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents)
+  return fromPet(event) || (!quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents) || fromExt(event)
+}
+/** 扩展的大窗口（外壳 0.6.5 起，菜园的大农场）。 */
+function fromExt(event) {
+  return !quitting && extWin !== null && !extWin.isDestroyed() && event.sender === extWin.webContents
 }
 /** 只有猪窗口能挪猪、改形状（面板窗口的页面也装了同一套游戏包，不许它动猪窗口）。 */
 function fromPet(event) {
@@ -156,7 +163,7 @@ function fromPet(event) {
 }
 /** 发给两个窗口的页面（下载进度、存档变了这类两边都要知道的事）。 */
 function toPages(channel, ...args) {
-  for (const target of [win, panelWin]) {
+  for (const target of [win, panelWin, extWin]) {
     if (target !== null && !target.isDestroyed()) target.webContents.send(channel, ...args)
   }
 }
@@ -820,10 +827,49 @@ ipcMain.on('piggy:pet-raise', event => {
 })
 
 ipcMain.on('piggy:pig-fx', (event, fx) => {
-  if (!fromPage(event) || event.sender !== panelWin?.webContents) return
+  if (!fromPage(event) || (event.sender !== panelWin?.webContents && event.sender !== extWin?.webContents)) return
   if (win === null || win.isDestroyed() || typeof fx?.name !== 'string') return
   win.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
   raisePetAbovePanel()
+})
+
+/**
+ * 扩展的大窗口（外壳 0.6.5 起）：菜园的「大农场」要一整幅横版场景，面板放不下，开一扇普通的、带标题栏、能拉大缩小的窗口。
+ * 页面还是同一份游戏包（role=ext），只显示这个扩展的大界面；存档、动作和另外两扇窗口共用主进程里的同一份。
+ */
+const EXT_TITLES = { farm: '菜园 · 大农场' }
+function openExtWindow(key) {
+  if (extWin !== null && !extWin.isDestroyed()) {
+    if (extKey === key) { if (extWin.isMinimized()) extWin.restore(); extWin.show(); extWin.focus(); return }
+    extWin.destroy()
+  }
+  extKey = key
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+  const width = Math.min(1200, Math.round(area.width * 0.9))
+  const height = Math.min(800, Math.round(area.height * 0.9), Math.round(width * 2 / 3))
+  extWin = new BrowserWindow({
+    width, height, useContentSize: true, minWidth: 720, minHeight: 480, center: true, show: false,
+    title: EXT_TITLES[key] ?? '扩展', backgroundColor: '#7fae5a', autoHideMenuBar: true,
+    icon: join(HERE, 'build', 'icon.png'),
+    webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true,
+      additionalArguments: ['--piggy-role=ext', '--piggy-ext=' + key] },
+  })
+  extWin.setMenuBarVisibility(false)
+  extWin.loadURL('piggy://app/index.html')
+  extWin.once('ready-to-show', () => { extWin?.show(); extWin?.focus() })
+  extWin.on('page-title-updated', event => event.preventDefault())
+  extWin.on('closed', () => { extWin = null; extKey = null })
+  extWin.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('ext:', message) })
+  log('ext window', key, width + 'x' + height)
+}
+
+ipcMain.on('piggy:ext:open', (event, key) => {
+  if (!fromPage(event) || typeof key !== 'string' || !/^[a-z0-9-]{1,40}$/.test(key)) return
+  openExtWindow(key)
+})
+ipcMain.on('piggy:ext:close', event => {
+  if (!fromExt(event)) return
+  extWin.close()
 })
 
 /** Where the DSH plugin keeps its pig (the folder moved from dsh-pig to dsh-piggy). */

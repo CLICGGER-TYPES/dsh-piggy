@@ -118,7 +118,7 @@ https://raw.githubusercontent.com/CLICGGER-TYPES/dsh-piggy/main/extensions/regis
 
 用户要求扩展界面换成画好的素材（动森风，codex 出图、用户逐轮审），扩展格式因此加了图片文件夹，不往 `client.js` 里塞 data URI。
 
-- **格式**：`extensions/<key>/assets/*.webp|png`，manifest 的 `assets` 列出全部名字。规则集中在 `store/ext-files.js`：名字 `[a-z0-9-]+.(webp|png)`、单张 ≤512KB、最多 96 张、合计 ≤4MB。
+- **格式**：`extensions/<key>/assets/*.webp|png`，manifest 的 `assets` 列出全部名字。规则集中在 `store/ext-files.js`：名字 `[a-z0-9-]+.(webp|png)`、单张 ≤512KB、最多 256 张（0.37.0 起，之前 96）、合计 ≤4MB。
 - **在线目录**：`files` 里记作 `"assets/<名字>"`，地址指向同一个 `ext-<key>-<版本>` 发行版里平铺的附件（附件名不能带斜杠）。`scripts/extension-entry.mjs` 自动生成。
 - **下载**：代码和图片一起下（同时最多 6 个），逐个核对 sha256；下完核对 manifest 的名单和目录的文件一一对应，对不上整个不装。放好时跟原来一样先写临时目录再换名。
 - **本地导入**：扩展包 `.piggyext` 多一个 `assets: { 名字: base64 }`；官方识别要所有文件（含图片）都对上，换一张图就算非官方。

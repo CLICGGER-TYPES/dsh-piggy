@@ -21,7 +21,7 @@ const files = key => {
 }
 
 /** 断网的宿主：在线目录读不到，只能靠游戏自带的官方清单认官方扩展。 */
-function setup(gameVersion = '0.36.0') {
+function setup(gameVersion = '0.37.0') {
   const dir = mkdtempSync(join(tmpdir(), 'dsh-piggy-import-'))
   writeFileSync(join(dir, 'state.json'), JSON.stringify(hatchEgg(Date.now())))
   const store = createStore(join(dir, 'state.json'), { journal: createJournal() })
@@ -88,6 +88,6 @@ test('要更新的游戏才能装的扩展包，导入时也照样拒绝', async
   try {
     const result = await store.ext.importBundle(makeBundle(files('farm')), true)
     assert.equal(result.reason, 'game-too-old')
-    assert.equal(result.need, '0.36.0')
+    assert.equal(result.need, '0.37.0')
   } finally { done() }
 })
