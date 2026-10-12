@@ -155,6 +155,8 @@ export default {
       // app.el(tag, className, text)、app.button(className, attrs, onClick)：和面板同一套小工具
       // app.openDex(section)：跳到图鉴里自己的分区；app.openShop()：跳到商店里自己的货架
       // app.asset(name)：自己 assets/ 里图片的地址；app.pigArt()：玩家现在的猪图（没有立绘时 null）
+      // 游戏 0.37.0 起：app.mode 是 'panel'（面板里）或 'big'（大界面）；app.openBig() 打开自己的大界面（桌面版外壳 0.6.5 起开一扇大窗口，
+      // 网页版铺满页面；老外壳上没有这个函数，别画入口）；大界面里 app.closeBig() 回去。菜园的大农场就是这样做的。
     },
   })
 })()

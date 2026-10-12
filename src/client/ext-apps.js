@@ -85,7 +85,8 @@ export function renderDownloadedApp(ui, key, mode) {
       content: ui.content,
       data: data === undefined ? null : data,
       mode: big ? 'big' : 'panel',
-      openBig: big ? undefined : function () { openBigApp(ui, key) },
+      // 桌面版外壳 0.6.5 以前没有大窗口，面板窗口又太小，就不给这个入口；网页版在页面里铺满。
+      openBig: big || (desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === 'function')) ? undefined : function () { openBigApp(ui, key) },
       closeBig: big ? function () { closeBigApp(ui) } : undefined,
       send: function (op, payload) { ui.send('ext', { key: key, op: op, data: payload || {} }) },
       el: el,

@@ -5871,7 +5871,8 @@
         content: ui.content,
         data: data === void 0 ? null : data,
         mode: big ? "big" : "panel",
-        openBig: big ? void 0 : function() {
+        // 桌面版外壳 0.6.5 以前没有大窗口，面板窗口又太小，就不给这个入口；网页版在页面里铺满。
+        openBig: big || desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === "function") ? void 0 : function() {
           openBigApp(ui, key);
         },
         closeBig: big ? function() {
