@@ -16,7 +16,7 @@ import { SKINS } from '../../../packages/pet-core/src/data/skins.js'
 import { LINES } from '../../../packages/pet-core/src/data/lines.js'
 import { JOBS } from '../../../packages/pet-core/src/data/jobs.js'
 import { INTERESTS } from '../../../packages/pet-core/src/data/interests.js'
-import { FEEDBACK_ART_TABLES, UNUSED_FEEDBACK_ART } from '../feedback-art.js'
+import { FEEDBACK_ART_TABLES, UNUSED_FEEDBACK_ART, WITHDRAWN_FEEDBACK_ART } from '../feedback-art.js'
 import { ILLNESS_CHAINS } from '../../../packages/pet-core/src/data/illness.js'
 import { IDLE_ACTIONS } from '../life.js'
 import { renderEconomy } from './dev-economy.js'
@@ -64,6 +64,7 @@ export function feedbackArtUses() {
   })
   add('recruit', '盲盒寻访页')
   UNUSED_FEEDBACK_ART.forEach(function (name) { add(name, '暂不使用（待定）') })
+  Object.keys(WITHDRAWN_FEEDBACK_ART).forEach(function (key) { WITHDRAWN_FEEDBACK_ART[key].forEach(function (name) { if (!uses[name]) add(name, '先撤回（' + (ART_SCENE_NAMES[key] ?? key) + '）') }) })
   return uses
 }
 

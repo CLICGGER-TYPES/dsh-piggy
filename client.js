@@ -1065,8 +1065,7 @@
     hungry: ["hungry"],
     sleepy: ["sleep-cloud", "lie-flat"],
     lonely: ["lie-flat"],
-    dirty: ["collection-mosquito"],
-    happy: ["music-rainbow", "collection-stack"]
+    dirty: ["collection-mosquito"]
   };
   var ILLNESS_ART = {
     "cold:1": ["runny-nose"],
@@ -1080,18 +1079,20 @@
     "dizzy:2": ["faint"],
     "dizzy:3": ["faint"]
   };
-  var REACTION_ART = {
+  var REACTION_ART = {};
+  var IDLE_ART = {};
+  var WITHDRAWN_FEEDBACK_ART = Object.freeze({
+    happy: ["music-rainbow", "collection-stack"],
     feed: ["collection-snack", "collection-soup"],
     bathe: ["collection-bubbles"],
     play: ["collection-chicken", "turning"],
-    levelup: ["collection-throne"]
-  };
-  var IDLE_ART = {
+    levelup: ["collection-throne"],
     roll: ["turning", "collection-taro"],
     butterfly: ["collection-chicken", "collection-scallion"],
     look: ["collection-letter"],
-    walk: ["collection-chicken", "collection-scallion"]
-  };
+    walk: ["collection-chicken", "collection-scallion"],
+    trip: ["collection-chicken", "collection-taro", "collection-scallion"]
+  });
   var WORK_ART = {
     flyers: "collection-letter",
     singer: "music-headphones-v2",
@@ -1114,7 +1115,7 @@
     photography: ["painting"],
     other: ["study-determined"]
   };
-  var TRIP_ART = ["collection-chicken", "collection-taro", "collection-scallion"];
+  var TRIP_ART = [];
   var BIRTHDAY_ART = "birthday";
   var FEEDBACK_ART_TABLES = Object.freeze({
     stage: STAGE_ART,
@@ -1144,7 +1145,7 @@
     if (state2.activityKind === "study") return choose(STUDY_ART, state2.hour);
     if (state2.activityKind === "interest") return choose(INTEREST_ART[state2.activityKey] ?? INTEREST_ART.other, state2.hour);
     if (state2.activityKind === "fishing") return "fishing";
-    if (state2.activityKind === "trip") return choose(TRIP_ART, state2.hour);
+    if (state2.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state2.hour) : null;
     if (IDLE_ART[state2.idle]) return choose(IDLE_ART[state2.idle], state2.hour);
     if (MOOD_ART[state2.mood]) return choose(MOOD_ART[state2.mood], state2.hour);
     return null;
@@ -7339,6 +7340,11 @@
     add("recruit", "\u76F2\u76D2\u5BFB\u8BBF\u9875");
     UNUSED_FEEDBACK_ART.forEach(function(name) {
       add(name, "\u6682\u4E0D\u4F7F\u7528\uFF08\u5F85\u5B9A\uFF09");
+    });
+    Object.keys(WITHDRAWN_FEEDBACK_ART).forEach(function(key) {
+      WITHDRAWN_FEEDBACK_ART[key].forEach(function(name) {
+        if (!uses[name]) add(name, "\u5148\u64A4\u56DE\uFF08" + (ART_SCENE_NAMES[key] ?? key) + "\uFF09");
+      });
     });
     return uses;
   }

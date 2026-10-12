@@ -40,7 +40,12 @@ test('审定图片按真实状态切换，已有皮肤保留自己的立绘', ()
     [{ ...base, mood: 'sick', illness: 'dizzy:1' }, 'faint'],
     [{ ...base, mood: 'sick', illness: 'cough:1' }, null],
     [{ ...base, mood: 'sick', illness: 'cold:4' }, null],
-    [{ ...base, reaction: 'bathe' }, 'collection-bubbles'],
+    // 用户 2026-10-13：开心、喂饭洗澡玩耍升级的反应、闲着的小动作、旅行途中的图先撤回，照常显示立绘。
+    [{ ...base, reaction: 'bathe' }, null],
+    [{ ...base, reaction: 'feed' }, null],
+    [{ ...base, mood: 'happy' }, null],
+    [{ ...base, idle: 'roll' }, null],
+    [{ ...base, activityKind: 'trip' }, null],
     // 治病、摸头不再用晕倒图和待定的徽章图；吹泡泡、挠痒没有对应的图。
     [{ ...base, reaction: 'cure' }, null],
     [{ ...base, reaction: 'pet' }, null],
@@ -52,7 +57,7 @@ test('审定图片按真实状态切换，已有皮肤保留自己的立绘', ()
   ]
   for (const [state, expected] of cases) assert.equal(feedbackArtFor(state), expected, JSON.stringify(state))
   for (let hour = 0; hour < 24; hour += 1) {
-    for (const mood of ['hungry', 'sleepy', 'lonely', 'dirty', 'happy']) {
+    for (const mood of ['hungry', 'sleepy', 'lonely', 'dirty']) {
       const art = feedbackArtFor({ ...base, mood, hour })
       assert.ok(statSync(new URL(`../assets/pigs/feedback/${art}.png`, import.meta.url)).size > 1000)
     }
