@@ -14,6 +14,7 @@ import { setWalk, walkEnabled } from '../life.js'
 import { exportLogs } from '../log-export.js'
 import { str } from '../values.js'
 import { renderProxySettings } from './proxy.js'
+import { renderFullscreenSettings } from './fullscreen.js'
 import { extensionUpdateAvailable } from './extensions.js'
 
 /** 一项设置：标题、说明，下面放控件。 */
@@ -143,6 +144,9 @@ export function renderSettingsTab(ui) {
     walkToggle.appendChild(el('span', 'dp-switch-text', walking ? '开' : '关'))
     walk.head.appendChild(walkToggle)
   }
+
+  const fullscreen = desktopShell()?.fullscreen
+  if (fullscreen) renderFullscreenSettings(ui, section, fullscreen)
 
   const proxy = desktopShell()?.proxy
   if (proxy) renderProxySettings(ui, section, proxy)

@@ -1600,8 +1600,8 @@
       }
       if (breakEndsAt > 0) {
         var rest = Math.max(0, Math.ceil((breakEndsAt - now) / 1e3));
-        var note = content.querySelector("[data-pomo-break]");
-        if (note !== null) note.textContent = "\u2615 \u4F11\u606F " + clockText(rest) + "\uFF08\u4E5F\u53EF\u4EE5\u76F4\u63A5\u5F00\u4E0B\u4E00\u4E2A\uFF09";
+        var note2 = content.querySelector("[data-pomo-break]");
+        if (note2 !== null) note2.textContent = "\u2615 \u4F11\u606F " + clockText(rest) + "\uFF08\u4E5F\u53EF\u4EE5\u76F4\u63A5\u5F00\u4E0B\u4E00\u4E2A\uFF09";
         if (rest === 0) breakEndsAt = 0;
       }
     }
@@ -1901,6 +1901,7 @@
     window.__dshPiggyShell = {
       role: "panel",
       proxy: bridge3.proxy,
+      fullscreen: bridge3.fullscreen,
       geometry: bridge3.geometry,
       split: true,
       panel: bridge3.panel,
@@ -4893,15 +4894,15 @@
   }
   function itemTile(ui, item, color) {
     var owned = num(ui.view.inventory[item.key], 0);
-    var note = item.price + " \u{1FA99}";
-    if (item.owned) note = "\u5DF2\u62E5\u6709";
-    else if (item.kind === "dress" && item.unlocked === false) note = "\u{1F512} Lv." + item.level;
+    var note2 = item.price + " \u{1FA99}";
+    if (item.owned) note2 = "\u5DF2\u62E5\u6709";
+    else if (item.kind === "dress" && item.unlocked === false) note2 = "\u{1F512} Lv." + item.level;
     return tile({
       emoji: item.emoji,
       label: item.label,
       color,
       soft: true,
-      note,
+      note: note2,
       badge: owned > 0 ? "\xD7" + owned : "",
       tag: item.needed ? "\u9700\u8981" : item.owned && item.worn ? "\u7A7F\u7740" : "",
       dim: !item.owned && (!item.affordable || item.kind === "dress" && item.unlocked === false),
@@ -5674,12 +5675,12 @@
         if (entry.foot) card2.appendChild(el("div", "dp-dex-foot", entry.foot));
       } else card2.appendChild(el("div", "dp-dex-foot", firstSeen(entry.firstAt) + " \xB7 \u83B7\u5F97 " + entry.count + " \u6B21" + (typeof entry.maxSizeCm === "number" ? " \xB7 \u6700\u5927 " + entry.maxSizeCm.toFixed(1) + " cm" : "")));
       if (section2.key === "skins") {
-        const current = ui.view.skins.current === entry.key;
+        const current2 = ui.view.skins.current === entry.key;
         const pick = button("dp-mini", { "data-dex-skin": entry.key }, function() {
           ui.send("skin", { skin: entry.key });
         });
-        pick.textContent = current ? "\u4F7F\u7528\u4E2D" : "\u4F7F\u7528\u8FD9\u6B3E\u76AE\u80A4";
-        pick.disabled = current;
+        pick.textContent = current2 ? "\u4F7F\u7528\u4E2D" : "\u4F7F\u7528\u8FD9\u6B3E\u76AE\u80A4";
+        pick.disabled = current2;
         const action = el("div", "dp-dex-skin-action");
         action.appendChild(pick);
         card2.appendChild(action);
@@ -6075,8 +6076,8 @@
     head.appendChild(el("b", null, extension.label + (extension.builtin ? "" : " " + extension.version) + (extension.local ? " \xB7 \u672C\u5730\u5BFC\u5165" : "")));
     if (extension.description) head.appendChild(el("small", "dp-dim", extension.description));
     card2.appendChild(head);
-    var note = extension.on ? closingNote(ui.view, extension.key) : "";
-    if (note) card2.appendChild(el("div", "dp-ext-note", note));
+    var note2 = extension.on ? closingNote(ui.view, extension.key) : "";
+    if (note2) card2.appendChild(el("div", "dp-ext-note", note2));
     if (extension.error) card2.appendChild(el("div", "dp-ext-note", "\u52A0\u8F7D\u51FA\u9519\uFF1A" + extension.error));
     if (download.failed === extension.key) card2.appendChild(el("div", "dp-ext-note", "\u6CA1\u88C5\u4E0A\uFF1A" + download.error));
     var newer = online.entries.find(function(entry) {
@@ -7367,11 +7368,11 @@
       var body = el("div", "dp-dev-page");
       body.setAttribute("data-dev-page-body", key);
       pages.push({ key, label, body });
-      return function group(title, entries2, note) {
+      return function group(title, entries2, note2) {
         var head = el("div", "dp-title");
         head.appendChild(el("b", null, title));
         body.appendChild(head);
-        if (note !== void 0 && note !== "") body.appendChild(el("div", "dp-dev-note", note));
+        if (note2 !== void 0 && note2 !== "") body.appendChild(el("div", "dp-dev-note", note2));
         var wrap = el("div", "dp-dev-list");
         for (var i = 0; i < entries2.length; i += 1) {
           (function(entry) {
@@ -7894,10 +7895,10 @@
       try {
         const desktop2 = options.getDesktop();
         if (desktop2 !== null && desktop2?.updates) {
-          const [current, result] = await Promise.all([desktop2.updates.current(), desktop2.updates.list()]);
+          const [current2, result] = await Promise.all([desktop2.updates.current(), desktop2.updates.list()]);
           if (!result?.ok) throw new Error(result?.reason || "\u6CA1\u95EE\u5230 GitHub");
           const newest2 = newestRelease(result.releases);
-          const gameNew = newest2 !== null && compareVersions(newest2.version, current?.version ?? options.currentVersion()) > 0;
+          const gameNew = newest2 !== null && compareVersions(newest2.version, current2?.version ?? options.currentVersion()) > 0;
           const shellNew = newestRelease((result.releases ?? []).filter((release) => release.shellUpdate === true));
           let candidate2 = null;
           if (gameNew) candidate2 = { ...newest2, kind: newest2.blocked === "shell" ? "shell" : "game" };
@@ -8282,10 +8283,10 @@
     row.appendChild(el("b", null, "v" + key));
     row.appendChild(el("small", null, group.stable !== null ? group.stable.date : "\u8FD8\u6CA1\u53D1\u6B63\u5F0F\u7248"));
     var tags = el("span", "dp-rel-tags");
-    var current = group.stable !== null && group.stable.current || group.previews.some(function(r) {
+    var current2 = group.stable !== null && group.stable.current || group.previews.some(function(r) {
       return r.current;
     });
-    if (current) tags.appendChild(tag("current", "\u5728\u7528"));
+    if (current2) tags.appendChild(tag("current", "\u5728\u7528"));
     if (group.stable !== null && newestStable !== null && group.stable.version === newestStable.version) tags.appendChild(tag("latest", "\u6700\u65B0"));
     if (group.stable !== null && group.stable.blocked !== null) tags.appendChild(tag("blocked", "\u{1F512}"));
     row.appendChild(tags);
@@ -8572,17 +8573,17 @@
     for (var i = 0; i < ui.view.subjects.length; i += 1) {
       (function(sub) {
         var where = standing(sub, stage2);
-        var note;
-        if (where === "done") note = "\u2713 \u6BD5\u4E1A";
-        else if (where === "ahead") note = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
-        else if (stage2.upTo !== null) note = sub.lessons - stage2.from + "/" + (stage2.upTo - stage2.from) + " \u8282";
-        else note = sub.lessons + " \u8282";
+        var note2;
+        if (where === "done") note2 = "\u2713 \u6BD5\u4E1A";
+        else if (where === "ahead") note2 = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
+        else if (stage2.upTo !== null) note2 = sub.lessons - stage2.from + "/" + (stage2.upTo - stage2.from) + " \u8282";
+        else note2 = sub.lessons + " \u8282";
         grid.appendChild(tile({
           emoji: sub.emoji,
           label: sub.label,
           color,
           soft: true,
-          note,
+          note: note2,
           disabled: where !== "current" || !canStart(ui),
           dim: where === "current" && !sub.affordable,
           data: { "data-subject": sub.key },
@@ -8600,14 +8601,14 @@
     var grid = tileGrid();
     for (var n = 0; n < ui.view.interests.length; n += 1) {
       (function(entry) {
-        var note = entry.cost + " \u{1FA99} \xB7 \u7EA6 " + entry.minutes + " \u5206\u949F\u540E " + entry.traitLabel + " +" + entry.gain;
+        var note2 = entry.cost + " \u{1FA99} \xB7 \u7EA6 " + entry.minutes + " \u5206\u949F\u540E " + entry.traitLabel + " +" + entry.gain;
         var badge2 = entry.certificate === "" ? "" : entry.certified ? "\u{1F4DC}" : entry.times + "/" + entry.certificateAfter;
         grid.appendChild(tile({
           emoji: entry.emoji,
           label: entry.label,
           color: INTEREST_COLOR,
           soft: true,
-          note,
+          note: note2,
           badge: badge2,
           disabled: !canStart(ui),
           dim: !entry.affordable,
@@ -8951,24 +8952,70 @@
     setting.box.appendChild(status);
   }
 
+  // src/client/tabs/fullscreen.js
+  var current = null;
+  var loading2 = false;
+  var busy3 = false;
+  var OPTIONS = [{ key: "hide", label: "\u9690\u85CF\u5C0F\u732A" }, { key: "show", label: "\u7167\u5E38\u663E\u793A" }];
+  function note(value) {
+    if (value === null) return "\u6B63\u5728\u8BFB\u53D6\u2026";
+    if (!value.supported) return "\u8FD9\u53F0\u7535\u8111\u68C0\u6D4B\u4E0D\u4E86\u5168\u5C4F\uFF08" + (value.reason || "\u539F\u56E0\u672A\u77E5") + "\uFF09\uFF0C\u5C0F\u732A\u4F1A\u4E00\u76F4\u663E\u793A";
+    if (value.mode === "show") return value.platform === "darwin" ? "\u5168\u5C4F\u7A0B\u5E8F\u7684\u684C\u9762\u91CC\u4E5F\u663E\u793A\u5C0F\u732A" : "\u5C0F\u732A\u538B\u5728\u5168\u5C4F\u753B\u9762\u4E0A\u9762\uFF1B\u72EC\u5360\u5168\u5C4F\u7684\u6E38\u620F\u7CFB\u7EDF\u4E0D\u8BA9\u4EFB\u4F55\u7A97\u53E3\u76D6\u4E0A\u53BB";
+    return "\u5C0F\u732A\u6240\u5728\u7684\u5C4F\u5E55\u4E0A\u6709\u7A0B\u5E8F\u5168\u5C4F\u65F6\u5148\u85CF\u8D77\u6765\uFF0C\u9000\u51FA\u5168\u5C4F\u518D\u56DE\u6765";
+  }
+  function renderFullscreenSettings(ui, section2, api) {
+    const setting = section2(ui, "\u5168\u5C4F\u65F6\uFF08\u73A9\u6E38\u620F\u3001\u770B\u89C6\u9891\uFF09", note(current));
+    if (current === null) {
+      if (!loading2) {
+        loading2 = true;
+        api.get().then((value) => {
+          if (value?.mode) current = value;
+        }).catch(() => {
+        }).finally(() => {
+          loading2 = false;
+          if (ui.tab === "settings") ui.renderContent();
+        });
+      }
+      return;
+    }
+    const row = el("div", "dp-seg");
+    for (const option of OPTIONS) {
+      const pick = button("dp-seg-btn", { "data-fullscreen-mode": option.key, "aria-pressed": String(option.key === current.mode) }, function() {
+        if (busy3) return;
+        busy3 = true;
+        api.set(option.key).then((value) => {
+          if (value?.ok) current = value;
+        }).catch(() => {
+        }).finally(() => {
+          busy3 = false;
+          if (ui.tab === "settings") ui.renderContent();
+        });
+      });
+      pick.textContent = option.label;
+      pick.disabled = busy3 || option.key === current.mode;
+      row.appendChild(pick);
+    }
+    setting.box.appendChild(row);
+  }
+
   // src/client/tabs/settings.js
-  function section(ui, title, note) {
+  function section(ui, title, note2) {
     const box = el("div", "dp-set");
     const head = el("div", "dp-set-head");
     head.appendChild(el("b", null, title));
-    if (note) head.appendChild(el("small", "dp-dim", note));
+    if (note2) head.appendChild(el("small", "dp-dim", note2));
     box.appendChild(head);
     ui.content.appendChild(box);
     return { box, head };
   }
-  function segmented({ box }, attr, options, current, onPick) {
+  function segmented({ box }, attr, options, current2, onPick) {
     const row = el("div", "dp-seg");
     for (const option of options) {
-      const pick = button("dp-seg-btn", { [attr]: option.key, "aria-pressed": String(option.key === current) }, function() {
+      const pick = button("dp-seg-btn", { [attr]: option.key, "aria-pressed": String(option.key === current2) }, function() {
         onPick(option.key);
       });
       pick.textContent = option.label;
-      pick.disabled = option.key === current;
+      pick.disabled = option.key === current2;
       row.appendChild(pick);
     }
     box.appendChild(row);
@@ -9083,6 +9130,8 @@
       walkToggle.appendChild(el("span", "dp-switch-text", walking ? "\u5F00" : "\u5173"));
       walk.head.appendChild(walkToggle);
     }
+    const fullscreen = desktopShell()?.fullscreen;
+    if (fullscreen) renderFullscreenSettings(ui, section, fullscreen);
     const proxy = desktopShell()?.proxy;
     if (proxy) renderProxySettings(ui, section, proxy);
     const logs = section(ui, "\u65E5\u5FD7", "\u9047\u5230\u95EE\u9898\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u91CC\u9762\u6709\u7248\u672C\u3001\u52A8\u4F5C\u548C\u62A5\u9519");
@@ -10250,6 +10299,7 @@
       // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
       role: "pet",
       proxy: shell2.proxy,
+      fullscreen: shell2.fullscreen,
       split: true,
       onStateChanged: shell2.onStateChanged,
       panel: {
@@ -10445,7 +10495,7 @@
         var react = fx.react, burst = fx.burst, flash = fx.flash;
         var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
         var stopped = false;
-        var busy3 = false;
+        var busy4 = false;
         var ctx = {
           host: host3,
           card: card2,
@@ -10575,10 +10625,10 @@
             userBottom = next;
           },
           get busy() {
-            return busy3;
+            return busy4;
           },
           set busy(next) {
-            busy3 = next;
+            busy4 = next;
           },
           justBought: null,
           homePage: 0,
@@ -10774,7 +10824,7 @@
             return stopped;
           },
           isBusy: function() {
-            return busy3;
+            return busy4;
           },
           isOpen: function() {
             return isOpen;

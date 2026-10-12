@@ -57,6 +57,11 @@ contextBridge.exposeInMainWorld('piggyShell', {
     clear: () => ipcRenderer.invoke('piggy:proxy:clear'),
     test: () => ipcRenderer.invoke('piggy:proxy:test'),
   },
+  /** 全屏时小猪隐藏还是照常显示（外壳 0.6.5 起）：get → {mode, supported, checking, reason, platform}。 */
+  fullscreen: {
+    get: () => ipcRenderer.invoke('piggy:fullscreen:get'),
+    set: mode => ipcRenderer.invoke('piggy:fullscreen:set', String(mode)),
+  },
   shellUpdates: {
     status: () => ipcRenderer.invoke('piggy:shell:status'),
     download: version => ipcRenderer.invoke('piggy:shell:download', String(version)),
