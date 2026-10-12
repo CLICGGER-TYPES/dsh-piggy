@@ -3069,8 +3069,6 @@
             return str(slot, "");
           })
         },
-        // Older hosts send no sex; the HUD then simply shows none.
-        sex: isObj(pig.sex) ? { key: str(pig.sex.key, ""), label: str(pig.sex.label, ""), symbol: str(pig.sex.symbol, "") } : null,
         ageLabel: str(pig.ageLabel, ""),
         ageForced: pig.ageForced === true,
         daysToNextStage: typeof pig.daysToNextStage === "number" ? pig.daysToNextStage : null,
@@ -4354,8 +4352,6 @@
     "background:radial-gradient(circle,var(--vc-dot) 1.5px,transparent 1.5px),",
     "radial-gradient(circle,var(--vc-dot2) 1px,transparent 1px),var(--vc-bg);",
     "background-size:28px 28px,14px 14px;background-position:0 0,7px 7px;border:1.5px solid var(--vc-line)}",
-    '.dp-vcard[data-sex="girl"]{--vc-dot:rgba(248,166,178,.18);--vc-dot2:rgba(255,200,210,.12);--vc-bg:#fde4e8;--vc-line:#f8a6b2}',
-    '.dp-vcard[data-sex="boy"]{--vc-dot:rgba(136,157,240,.18);--vc-dot2:rgba(180,195,255,.12);--vc-bg:#e8edff;--vc-line:#889df0}',
     // Top: the photo and who it is.
     ".dp-vcard-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}",
     ".dp-vcard-avatar{flex:none;width:72px;height:72px;border-radius:18px;display:flex;align-items:center;",
@@ -5212,7 +5208,6 @@
       return;
     }
     var card2 = el("div", "dp-vcard");
-    card2.setAttribute("data-sex", p.sex !== null ? p.sex.key : "none");
     var top = el("div", "dp-vcard-top");
     var avatar = el("div", "dp-vcard-avatar");
     if (p.stage.art !== null) {
@@ -5277,7 +5272,7 @@
       appendEditor(ui, line3, "name");
       return line3;
     }
-    line3.appendChild(el("b", "dp-vcard-name", p.name + (p.sex !== null ? " " + p.sex.symbol : "")));
+    line3.appendChild(el("b", "dp-vcard-name", p.name));
     line3.appendChild(pencil(ui, "name", "\u540D\u5B57", p.name, "dp-vcard-edit dp-vcard-name-edit"));
     return line3;
   }
@@ -6243,7 +6238,7 @@
   function renderHome(ui, apps) {
     var p = ui.view.pig;
     var head = el("div", "dp-title");
-    head.appendChild(el("b", null, p.name + (p.sex !== null ? " " + p.sex.symbol : "") + " Lv." + p.level.level));
+    head.appendChild(el("b", null, p.name + " Lv." + p.level.level));
     head.appendChild(el("span", null, "\u{1FA99} " + p.coins));
     ui.content.appendChild(head);
     const pages = Math.max(1, Math.ceil(apps.length / 9));
@@ -9577,7 +9572,7 @@
           node.setAttribute("data-slot", piece.slot);
           ctx.dressSlots.appendChild(node);
         }
-        ctx.hudName.textContent = ctx.view.pig.name + (ctx.view.pig.sex !== null ? " " + ctx.view.pig.sex.symbol : "") + " Lv." + ctx.view.pig.level.level + " \xB7 " + pigStage.label + (ctx.view.pig.ageLabel ? " \xB7 " + ctx.view.pig.ageLabel : "") + (ctx.view.pig.ageForced ? " \u{1F527}" : "");
+        ctx.hudName.textContent = ctx.view.pig.name + " Lv." + ctx.view.pig.level.level + " \xB7 " + pigStage.label + (ctx.view.pig.ageLabel ? " \xB7 " + ctx.view.pig.ageLabel : "") + (ctx.view.pig.ageForced ? " \u{1F527}" : "");
         ctx.hudCoins.textContent = "\u{1FA99} " + ctx.view.pig.coins;
         ctx.hudHealth.textContent = "\u{1F49A} " + ctx.view.pig.health + "/" + ctx.view.maxHealth;
         if (ctx.lastStage !== null && pigStage.key !== ctx.lastStage) {

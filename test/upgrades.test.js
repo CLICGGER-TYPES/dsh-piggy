@@ -50,7 +50,7 @@ test('the real v7 save upgrades with its level, money, bag and schooling intact'
   // at 13% on the new one.
   assert.equal(levelFor(after.xp), 8)
   assert.equal(levelProgress(after.xp).percent, 13)
-  assert.ok(after.sex === 'boy' || after.sex === 'girl', 'and it has a sex now')
+  assert.equal(after.sex, undefined, 'pigs have no sex any more')
   assert.equal(after.coins, before.coins)
   assert.deepEqual(after.inventory, before.inventory)
   assert.deepEqual(after.traits, before.traits)

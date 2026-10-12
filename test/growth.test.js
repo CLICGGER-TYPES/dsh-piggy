@@ -118,12 +118,9 @@ test('an unopened box does not grow, whatever happens around it', () => {
   assert.equal(box.xp, 0)
 })
 
-test('every pig gets a sex when it hatches; the panel save keeps it', () => {
-  const seen = new Set()
-  for (let i = 0; i < 40; i += 1) seen.add(hatchEgg(T0 + i * 7919).sex)
-  assert.deepEqual([...seen].sort(), ['boy', 'girl'], 'both come up')
-  const pig = hatchEgg(T0)
-  assert.equal(migrate(JSON.parse(JSON.stringify(pig)), T0).sex, pig.sex)
+test('小猪不分性别（用户 2026-10-13）：拆出来没有性别，老存档的性别读进来就丢掉', () => {
+  assert.equal(hatchEgg(T0).sex, undefined)
+  assert.equal(migrate({ ...hatchEgg(T0), sex: 'girl' }, T0).sex, undefined)
 })
 
 test('the v9 upgrade: elders become grown pigs, boxes get no sex yet', () => {

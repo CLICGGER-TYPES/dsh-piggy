@@ -281,7 +281,6 @@ export function createPanel(ctx) {
             ctx.dressSlots.appendChild(node)
           }
           ctx.hudName.textContent = ctx.view.pig.name
-            + (ctx.view.pig.sex !== null ? ' ' + ctx.view.pig.sex.symbol : '')
             + ' Lv.' + ctx.view.pig.level.level
             + ' · ' + pigStage.label
             + (ctx.view.pig.ageLabel ? ' · ' + ctx.view.pig.ageLabel : '')

@@ -27,7 +27,7 @@ export function orderHomeApps(apps) {
 export function renderHome(ui, apps) {
   var p = ui.view.pig
   var head = el('div', 'dp-title')
-  head.appendChild(el('b', null, p.name + (p.sex !== null ? ' ' + p.sex.symbol : '') + ' Lv.' + p.level.level))
+  head.appendChild(el('b', null, p.name + ' Lv.' + p.level.level))
   head.appendChild(el('span', null, '🪙 ' + p.coins))
   ui.content.appendChild(head)
   const pages = Math.max(1, Math.ceil(apps.length / 9))

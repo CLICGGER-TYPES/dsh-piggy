@@ -13,7 +13,6 @@ import { emptyDex } from './dex.js'
 import { emptyFishing } from './fishing.js'
 import { emptyDialogue } from './lines.js'
 import { assignPersonality } from './profile.js'
-import { roll } from './random.js'
 
 export function layEgg(nowMs) {
   return {
@@ -96,7 +95,6 @@ export function hatch(state, nowMs) {
   // A new body starts at Lv1: anything the box picked up before it opened
   // (older saves let it eat real work) does not count toward growing up.
   state.xp = 0
-  state.sex = pickSex(state)
   assignPersonality(state)
   state.bornAt = nowMs
   state.ageForced = false
@@ -112,7 +110,6 @@ export function hatch(state, nowMs) {
 export function hatchEgg(nowMs) {
   const state = layEgg(nowMs)
   state.hatched = true
-  state.sex = pickSex(state)
   assignPersonality(state)
   state.bornAt = nowMs
   state.ageForced = false
@@ -122,9 +119,3 @@ export function hatchEgg(nowMs) {
   return state
 }
 
-/**
- * Boy or girl, 50/50, from the pig's own random sequence.
- * @param {object} state
- * @returns {'boy'|'girl'}
- */
-export const pickSex = state => (roll(state) < 0.5 ? 'boy' : 'girl')

@@ -65,8 +65,3 @@ export const GRADUATION_GROWTH = 500
 /** 一天从几点算起：06:00 以前还算前一天（签到、在线礼包、日记、每日上限共用）。 */
 export const DAY_STARTS_AT_HOUR = 6
 
-/** 性别：拆纸盒时 50/50 定下来。 */
-export const SEXES = Object.freeze({
-  boy: Object.freeze({ key: 'boy', label: '男孩', symbol: '♂' }),
-  girl: Object.freeze({ key: 'girl', label: '女孩', symbol: '♀' }),
-})

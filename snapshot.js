@@ -8,7 +8,7 @@
 import { PACKAGE_VERSION } from './environment.js'
 import { achievementsView, disabledParts, extensionsView, tripUnlocked } from './core.js'
 import { ACTIONS, ACTION_ORDER, bodyWeightView, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
-import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SHORT_SHIFT_MINUTES, SIGN_IN_CYCLE, SEXES, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
+import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SHORT_SHIFT_MINUTES, SIGN_IN_CYCLE, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
 
 /** 版本号只有一个来源：environment.js（它也是导出日志表头的那一份）。 */
 export { PACKAGE_VERSION }
@@ -30,10 +30,6 @@ function dialogueView(state) {
 }
 
 /** 性别：男孩 ♂ / 女孩 ♀；还没拆开的纸盒没有。 */
-function sexView(state) {
-  const sex = SEXES[state.sex]
-  return sex === undefined ? null : { key: sex.key, label: sex.label, symbol: sex.symbol }
-}
 
 /** "今天刚到家" / "养了 3 天" / "还没拆开" — how long the pig has been here, in words. */
 function formatAge(days, state, nowMs) {
@@ -133,7 +129,8 @@ export function snapshot(store, options = {}) {
     timeScale: Number.isFinite(state.timeScale) ? state.timeScale : 1,
     pig: {
       name: state.name,
-      sex: sexView(state),
+      // 小猪不分性别（用户 2026-10-13）；字段留着给老界面，永远是 null。
+      sex: null,
       // The body follows the level (B2); age is only how long it has been here.
       stage: { key: life.key, label: life.label, emoji: life.emoji, size: life.size, line: life.line, art: life.art ?? null, artScenes: life.artScenes ?? [], faded: life.faded === true, actionArt: life.actionArt === true, hides: life.hides ?? [] },
       ageDays: Number(ageDays(state, nowMs).toFixed(2)),

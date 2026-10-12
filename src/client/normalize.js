@@ -39,8 +39,6 @@ export function normalize(raw) {
         artScenes: arr(obj(pig.stage).artScenes).filter(scene => typeof scene === 'string'),
         hides: arr(obj(pig.stage).hides).map(function (slot) { return str(slot, '') }),
       },
-      // Older hosts send no sex; the HUD then simply shows none.
-      sex: isObj(pig.sex) ? { key: str(pig.sex.key, ''), label: str(pig.sex.label, ''), symbol: str(pig.sex.symbol, '') } : null,
       ageLabel: str(pig.ageLabel, ''),
       ageForced: pig.ageForced === true,
       daysToNextStage: typeof pig.daysToNextStage === 'number' ? pig.daysToNextStage : null,

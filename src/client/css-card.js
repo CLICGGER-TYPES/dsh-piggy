@@ -12,8 +12,6 @@ export const CSS_CARD = [
   'background:radial-gradient(circle,var(--vc-dot) 1.5px,transparent 1.5px),',
   'radial-gradient(circle,var(--vc-dot2) 1px,transparent 1px),var(--vc-bg);',
   'background-size:28px 28px,14px 14px;background-position:0 0,7px 7px;border:1.5px solid var(--vc-line)}',
-  '.dp-vcard[data-sex="girl"]{--vc-dot:rgba(248,166,178,.18);--vc-dot2:rgba(255,200,210,.12);--vc-bg:#fde4e8;--vc-line:#f8a6b2}',
-  '.dp-vcard[data-sex="boy"]{--vc-dot:rgba(136,157,240,.18);--vc-dot2:rgba(180,195,255,.12);--vc-bg:#e8edff;--vc-line:#889df0}',
 
   // Top: the photo and who it is.
   '.dp-vcard-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}',

@@ -11,7 +11,7 @@ import { ensureExtensions } from './extensions.js'
 import { BOX_TICKET, ILLNESS_CHAINS, INTERESTS, formByKey, MAX, SHOP, SOUVENIR_RARITY, TRAIT_ORDER, interestByKey, itemByKey, jobByKey, schoolStageByKey, subjectByKey, tripByKey } from '../data.js'
 import { MEMORY_LIMIT, STATE_VERSION } from './constants.js'
 import { clamp, clamp100 } from './effects.js'
-import { layEgg, pickSex } from './egg.js'
+import { layEgg } from './egg.js'
 import { ensureDaily } from './daily.js'
 import { ensureDiary } from './diary.js'
 import { ensurePomodoro } from './pomodoro.js'
@@ -83,7 +83,8 @@ export function migrate(input, nowMs) {
   state.dead = state.dead === true || state.health <= 0
   state.hatched = state.hatched === true
   if (!isSeed(state.seed)) state.seed = seedFor(state)
-  if (state.hatched && state.sex !== 'boy' && state.sex !== 'girl') state.sex = pickSex(state)
+  // 小猪不分性别（用户 2026-10-13）：老存档里的性别丢掉。
+  delete state.sex
   if (state.stage === 'elder') state.stage = 'middle'
   if (!Number.isInteger(state.pendingSeq) || state.pendingSeq < 0) state.pendingSeq = 0
   ensureDialogue(state)

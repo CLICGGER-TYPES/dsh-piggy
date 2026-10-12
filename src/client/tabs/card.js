@@ -24,7 +24,6 @@ export function renderCardTab(ui) {
     return
   }
   var card = el('div', 'dp-vcard')
-  card.setAttribute('data-sex', p.sex !== null ? p.sex.key : 'none')
 
   var top = el('div', 'dp-vcard-top')
   var avatar = el('div', 'dp-vcard-avatar')
@@ -97,7 +96,7 @@ function nameLine(ui, p) {
     appendEditor(ui, line, 'name')
     return line
   }
-  line.appendChild(el('b', 'dp-vcard-name', p.name + (p.sex !== null ? ' ' + p.sex.symbol : '')))
+  line.appendChild(el('b', 'dp-vcard-name', p.name))
   line.appendChild(pencil(ui, 'name', '名字', p.name, 'dp-vcard-edit dp-vcard-name-edit'))
   return line
 }
