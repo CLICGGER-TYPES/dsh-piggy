@@ -25,7 +25,7 @@ for name, spec in specs.items():
         buf = io.BytesIO()
         tail.save(buf, 'WEBP', lossless=True, method=6)
         packed['card-tail.webp'] = buf.getvalue()
-        records.append({'asset': 'card-tail.webp', 'source': spec['source'], 'source_rect': spec['tail']['source_rect'], 'source_sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'packed_size': list(tail.size), 'packed_bytes': len(packed['card-tail.webp']), 'packed_sha256': hashlib.sha256(packed['card-tail.webp']).hexdigest()})
+        records.append({'asset': 'card-tail.webp', 'source': spec['source'], 'source_rect': spec['tail']['source_rect'], 'export': 'sprites/farm-v4-fix4/' + spec['export'], 'export_sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'packed_size': list(tail.size), 'packed_bytes': len(packed['card-tail.webp']), 'packed_sha256': hashlib.sha256(packed['card-tail.webp']).hexdigest()})
         layout['card-tail.webp'] = {'size': list(tail.size), 'render_mode': 'contain'}
         body = image.crop(spec['nine_slice']['source_rect'])
         # 下边只铺直边样本，尾巴独立绘制一次，不进入九宫格边缘。
@@ -54,7 +54,7 @@ for name, spec in specs.items():
     if 'content_padding' in spec:
         info['content_padding'] = spec['content_padding']
     layout[filename] = info
-    records.append({'asset': filename, 'source': spec['source'], 'source_sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'packed_size': list(size), 'packed_bytes': len(packed[filename]), 'packed_sha256': hashlib.sha256(packed[filename]).hexdigest()})
+    records.append({'asset': filename, 'source': spec['source'], 'export': 'sprites/farm-v4-fix4/' + spec['export'], 'export_sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'packed_size': list(size), 'packed_bytes': len(packed[filename]), 'packed_sha256': hashlib.sha256(packed[filename]).hexdigest()})
 assets = (set(manifest['assets']) - {'bg-big.webp', 'bg-small.webp'}) | set(packed)
 total = sum(len(packed[n]) if n in packed else (output / n).stat().st_size for n in assets)
 assert len(assets) <= 256, len(assets)

@@ -195,6 +195,8 @@ function auditPage() {
     if (Math.abs(r.x) > .5 || Math.abs(r.y) > .5 || Math.abs(r.right - innerWidth) > .5 || Math.abs(r.bottom - innerHeight) > .5) report.pageErrors.push({ reason: '大场景未铺满窗口', rect: r, gapsPx: { left: r.x, top: r.y, right: innerWidth - r.right, bottom: innerHeight - r.bottom } })
   }
   if (!controls.length) report.pageErrors.push('菜园没有可见操作项，不能把空界面算成通过')
+  const purchaseInfo = document.querySelector?.('.fm-buy-columns')
+  if (purchaseInfo && purchaseInfo.clientHeight < 32) report.pageErrors.push('购买信息区被压成零高，滚动也无法查看商品资料')
   if (document.fonts.status !== 'loaded') report.pageErrors.push('字体尚未稳定，稍后重读')
   auditBounds([...new Set([...controls, ...attached])], report)
   auditControls(controls, report)
