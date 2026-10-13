@@ -1,6 +1,7 @@
 // @ts-check
 /** CDP 只读布局验收：不发送鼠标、不改 DOM、不改窗口。Node 22+；输出原始问题供逐项复核。 */
 import { writeFileSync } from 'node:fs'
+import { connectPage } from './lib/cdp-read.js'
 
 const args = process.argv.slice(2)
 const value = (key, fallback = '') => args.indexOf(key) < 0 ? fallback : args[args.indexOf(key) + 1] ?? fallback
@@ -84,34 +85,14 @@ function inspectLayout() {
   return { role: (/** @type {any} */ (window)).piggyShell?.role ?? 'web', url: location.href, viewport: { width: innerWidth, height: innerHeight }, title: document.title, visibleElements: elements.length, visibleControls: controls.length, layoutPeers: peers.length, counts: Object.fromEntries(Object.entries(findings).map(([key, entries]) => [key, entries.length])), findings }
 }
 
-/** 每个 CDP 请求最多等待 3 秒，失败就保留报错而不是无限等。 */
+/** 每个 CDP 查询最多三秒；没有页面或脚本异常必须报错。 */
 async function inspectTarget(target) {
-  const address = new URL(target.webSocketDebuggerUrl)
-  address.host = new URL(endpoint).host
-  const socket = new WebSocket(address)
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { socket.close(); reject(new Error('CDP connection timed out')) }, 3000)
-    socket.onopen = event => { clearTimeout(timer); resolve(event) }
-    socket.onerror = event => { clearTimeout(timer); reject(event) }
-  })
-  const pending = new Map()
-  socket.onmessage = event => {
-    const message = JSON.parse(String(event.data)), request = pending.get(message.id)
-    if (request) { pending.delete(message.id); message.error ? request.reject(new Error(message.error.message)) : request.resolve(message.result) }
-  }
-  const call = (id, method, params) => new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${method} timed out`)) }, 3000)
-    pending.set(id, { resolve: result => { clearTimeout(timer); resolve(result) }, reject: error => { clearTimeout(timer); reject(error) } })
-    socket.send(JSON.stringify({ id, method, params }))
-  })
-  try {
-    const result = await call(1, 'Runtime.evaluate', { expression: `(${inspectLayout.toString()})()`, returnByValue: true })
-    if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
-    return result.result.value
-  } finally { socket.close() }
+  const page = await connectPage(endpoint, target)
+  try { return await page.read(`(${inspectLayout.toString()})()`) }
+  finally { page.close() }
 }
 
-const targets = await (await fetch(endpoint + '/json/list')).json()
+const targets = await (await fetch(endpoint + '/json/list', { signal: AbortSignal.timeout(3000) })).json()
 const reports = []
 for (const target of targets.filter(target => target.type === 'page')) {
   const report = await inspectTarget(target)
