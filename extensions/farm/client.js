@@ -5,18 +5,17 @@
 // 手里拿的工具 / 种子、开着的弹层留在本页。素材是用户批准的 A 方向木质托盘，猪用玩家现在的猪图。
 ;(function () {
   'use strict'
-  /** 手里拿的东西：auto（手套：熟了收、有病治、枯了铲）、seed、care（浇水 / 除草 / 杀虫）、shovel、fert。 */
+  /** 手里拿的东西：auto（手套：只收成熟作物）、seed、care（浇水 / 除草 / 杀虫）、shovel、fert。 */
   var hand = { kind: 'auto', key: null }
   var popup = null
   var openCrop = null
   var confirmClear = null
   var tip = null
   var tipAt = 0, tipPlot = null, shopTab = 'seed', purchase = null, quantity = 1
-  var currentApp = null, keyboardBound = false, pendingAction = null, paintedPopup = null
+  var currentApp = null, keyboardBound = false, pendingAction = null, paintedPopup = null, cancelLayer = null
   var effects = {}
   var styleId = 'dsh-piggy-farm-style-4'
   var SMALL_PLOTS = 6
-  var PEST_ART = { weed: 'weed', bug: 'bug' }
   var PEST_LABEL = { dry: '干了', weed: '长草', bug: '生虫' }
   var ONE_CLICK = [{ key: 'sickle', op: 'harvestAll', label: '一键收获', tool: '收割镰' }, { key: 'sprayer', op: 'careAll', label: '一键照料', tool: '喷雾桶' },
     { key: 'rake', op: 'clearAll', label: '一键铲除', tool: '平地耙' }, { key: 'planter', op: 'plantAll', label: '一键播种', tool: '播种器' }]
@@ -24,29 +23,31 @@
   var AUTO = { kind: 'auto', key: null }
   // 样式：通用件、弹层、小农场（fm-s-）、大农场（fm-b-，整幅 3:2 场景按窗口缩放，里面按百分比摆）
   var css = [
-    '.fm{--animal-primary:#19c8b9;--animal-text:#794f27;--animal-text-body:#725d42;--animal-bg:#f8f8f0;--animal-bg-content:rgb(247,243,223);--animal-focus-yellow:#ffcc00;--animal-radius-sm:12px;--animal-radius-pill:50px;--animal-ease:cubic-bezier(.4,0,.2,1);--animal-duration:.25s;position:relative;display:grid;gap:6px;color:var(--animal-text);font-variant-numeric:tabular-nums;font-weight:700}.fm img{pointer-events:none;-webkit-user-drag:none}.fm button,.fm input{font:inherit;color:inherit;border-radius:var(--animal-radius-pill);transition:transform var(--animal-duration) var(--animal-ease);cursor:pointer}.fm button:active{transform:translateY(2px)}.fm button:focus-visible{outline:2px solid var(--animal-primary);outline-offset:2px}.fm input:focus-visible{outline:2px solid var(--animal-focus-yellow)}',
+    '.fm{font-size:12px;--animal-primary:#19c8b9;--animal-text:#794f27;--animal-text-body:#725d42;--animal-bg:#f8f8f0;--animal-bg-content:rgb(247,243,223);--animal-focus-yellow:#ffcc00;--animal-radius-sm:12px;--animal-radius-pill:50px;--animal-ease:cubic-bezier(.4,0,.2,1);--animal-duration:.25s;position:relative;display:grid;gap:6px;color:var(--animal-text);font-variant-numeric:tabular-nums;font-weight:700}.fm img{pointer-events:none;-webkit-user-drag:none}.fm button,.fm input{font:inherit;color:inherit;border-radius:var(--animal-radius-pill);transition:transform var(--animal-duration) var(--animal-ease);cursor:pointer}.fm button:active{transform:translateY(2px)}.fm button:focus-visible{outline:2px solid var(--animal-primary);outline-offset:2px}.fm input:focus-visible{outline:2px solid var(--animal-focus-yellow)}',
     '.fm-slot{position:relative;flex:none;width:44px;height:44px;border:0;padding:7px;background:center/100% 100% no-repeat}.fm-slot>img{width:100%;height:100%;object-fit:contain}.fm-slot[aria-pressed="true"]{box-shadow:0 0 0 3px var(--animal-primary)}.fm-slot[data-locked="true"]>img{opacity:.4;filter:grayscale(.6)}.fm-n,.fm-count{position:absolute;right:-3px;top:-4px;min-width:17px;height:18px;padding:0 3px;display:grid;place-items:center;font-size:10px;font-weight:900;font-style:normal;color:var(--animal-text);border-radius:50px;background:var(--animal-bg-content)}.fm-lock{position:absolute;right:0;top:0;font-size:10px}',
-    '.fm:not(.fm-big) .fm-tooltip{display:none}.fm-tool-label{position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:10px;white-space:nowrap}.fm-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:16px;background:var(--animal-bg-content);border:2px solid #c4b89e;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s var(--animal-ease);z-index:50}.fm-slot:hover .fm-tooltip,.fm-slot:focus-visible .fm-tooltip{opacity:1}.fm-b-bar>.fm-slot:first-child .fm-tooltip{left:0;transform:none}',
-    '.fm-plot{position:absolute;border:0;padding:0;background:center/100% 100% no-repeat;border-radius:12px!important;cursor:var(--fm-cursor,pointer)!important}.fm-plot>img{position:absolute;pointer-events:none}.fm-crop{left:50%;transform:translateX(-50%);object-fit:contain}.fm-pest{left:6%;bottom:15%;width:28%}.fm-hover{inset:0;width:100%;height:100%;opacity:0}.fm-plot:hover .fm-hover,.fm-plot[data-farm-next="true"] .fm-hover{opacity:1}.fm-ghost{position:absolute;width:45%;height:75%;left:27%;bottom:12%;opacity:0;background:center/contain no-repeat}.fm-ghost>img{position:absolute;left:25%;top:30%;width:50%;height:50%;object-fit:contain}.fm-plot:hover .fm-ghost{opacity:.85;z-index:4}.fm-bubble{top:0;width:23%;max-height:48%;object-fit:contain;z-index:3}',
+    '.fm:not(.fm-big) .fm-tooltip{display:none}.fm-tool-label{position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:10px;white-space:nowrap}.fm-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:16px;background:var(--animal-bg-content);border:2px solid #c4b89e;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s var(--animal-ease);z-index:50}.fm-slot[data-farm-hover="true"] .fm-tooltip,.fm-slot:focus-visible .fm-tooltip{opacity:1}.fm-b-bar>.fm-slot:nth-child(-n+3) .fm-tooltip{left:0;transform:none}',
+    '.fm-plot{position:absolute;border:0;padding:0;background:center/100% 100% no-repeat;border-radius:12px!important;cursor:var(--fm-cursor,pointer)!important}.fm-plot>img{position:absolute;pointer-events:none}.fm-crop{left:50%;transform:translateX(-50%);object-fit:contain}.fm-pest{left:6%;bottom:15%;width:28%}.fm-hover{inset:0;width:100%;height:100%;opacity:0}.fm-plot[data-farm-hover="true"] .fm-hover,.fm-s-field .fm-plot[data-farm-next="true"] .fm-hover{opacity:1}.fm-ghost{position:absolute;width:45%;height:75%;left:27%;bottom:12%;opacity:0;background:center/contain no-repeat}.fm-ghost>img{position:absolute;left:calc(50% - 12px);top:calc(50% - 12px);width:24px;height:24px;object-fit:contain}.fm-plot[data-farm-hover="true"] .fm-ghost{opacity:.85;z-index:2}.fm-bubble{top:0;width:23%;max-height:48%;object-fit:contain;z-index:3}',
     '.fm-chip{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);padding:1px 5px;border-radius:12px;font-size:9px;font-weight:900;white-space:nowrap;background:var(--animal-bg-content);pointer-events:none}.fm-prog{position:absolute;left:30%;right:30%;bottom:10%;height:4px;border-radius:12px;background:#c4b89e;overflow:hidden}.fm-prog>i{display:block;height:100%;background:var(--animal-primary)}.fm-ripe>.fm-crop{filter:drop-shadow(0 0 4px #f5c31c)}',
-    '.fm-stat{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:900}.fm-stat img{width:22px;height:22px;object-fit:contain}.fm-exp{position:relative;display:block;width:58px;height:10px;background:center/100% 100% no-repeat}.fm-exp>i{position:absolute;left:5%;top:18%;bottom:20%;background:center/100% 100% no-repeat;border-radius:12px}.fm-coin{border:0;background:none;padding:0}.fm-main{border:0;padding:5px;display:grid;place-content:center;background:center/100% 100% no-repeat;white-space:nowrap;font-size:12px!important;font-weight:900;color:var(--animal-bg)!important;box-shadow:0 3px 0 #5a9e1e;line-height:1.3}.fm-main small{font-size:9px}.fm-main:disabled{filter:saturate(.6);cursor:default}.fm-sign{position:relative;border:0;padding:3px;display:flex;align-items:center;justify-content:center;gap:3px;background:center/100% 100% no-repeat;font-size:11px!important;font-weight:900;white-space:nowrap}.fm-sign img{width:22px;height:22px;object-fit:contain}',
-    '.fm-s-header{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:6px;background:var(--animal-bg-content);border:2px solid #c4b89e;border-radius:18px}.fm-s-header>span.fm-stat{display:grid;gap:2px}.fm-s-face{width:26px;height:28px;object-fit:contain}.fm-s-weather{width:25px;height:25px;object-fit:contain}.fm-s-big{border:0;position:static;width:53px;height:29px;font-size:10px!important;padding:0;background:center/100% 100% no-repeat}.fm-s-scene{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:1.12;background:#a8d07c center top/cover no-repeat}.fm-s-field{position:absolute;left:4%;right:4%;top:23%;bottom:3%}.fm-s-field .fm-plot{width:49%;height:31%}.fm-s-field .fm-crop{bottom:9%;width:48%;height:88%}.fm-s-field .fm-bubble{top:-3%;width:20%;height:40%}.fm-s-pig{position:absolute;right:6%;top:3%;width:11%;max-height:15%;object-fit:contain}.fm-s-note{font-size:10px;text-align:center}',
+    '.fm-stat{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:900}.fm-stat img{width:22px;height:22px;object-fit:contain}.fm-exp{position:relative;display:block;width:58px;height:10px;background:center/100% 100% no-repeat}.fm-exp>i{position:absolute;left:5%;top:18%;bottom:20%;background:center/100% 100% no-repeat;border-radius:12px}.fm-coin{border:0;background:none;padding:0}.fm-main{border:0;padding:5px;display:grid;place-content:center;background:center/100% 100% no-repeat;white-space:nowrap;font-size:12px!important;font-weight:900;color:var(--animal-bg)!important;box-shadow:0 3px 0 #5a9e1e;line-height:1.3}.fm-main small{font-size:9px}.fm-main:disabled{filter:saturate(.6);cursor:default}.fm-sign{position:relative;border:0;padding:3px;display:flex;align-items:center;justify-content:center;gap:3px;background:center/100% 100% no-repeat;font-size:12px!important;font-weight:900;white-space:nowrap}.fm-sign img{width:24px;height:24px;object-fit:contain}',
+    '.fm-s-header{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:6px;background:var(--animal-bg-content);border:2px solid #c4b89e;border-radius:18px}.fm-s-header>[data-farm-level]{display:grid;gap:2px}.fm-s-face{width:26px;height:28px;object-fit:contain}.fm-s-weather{width:32px;height:32px;object-fit:contain}.fm-s-big{border:0;position:static;width:53px;height:32px;font-size:12px!important;padding:0;background:center/100% 100% no-repeat}.fm-s-scene{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:1.12;background:#a8d07c center top/cover no-repeat}.fm-s-field{position:absolute;left:4%;right:4%;top:23%;bottom:3%}.fm-s-field .fm-plot{width:49%;height:31%}.fm-s-field .fm-crop{bottom:9%;width:48%;height:88%}.fm-s-field .fm-bubble{top:0;width:24px;height:24px;max-height:none}.fm-s-pig{position:absolute;right:6%;top:3%;width:11%;max-height:15%;object-fit:contain}.fm-s-note{font-size:10px;text-align:center}',
     '.fm-s-plank{position:relative;display:grid;gap:12px;padding:8px 8px 10px;background:center/100% 100% no-repeat}.fm-s-tools{display:flex;justify-content:space-around;padding-bottom:8px}.fm-s-acts{display:grid;grid-template-columns:1fr 1.9fr 1fr;gap:5px;align-items:stretch}.fm-s-acts .fm-sign{min-height:32px}',
-    '.fm-big{width:100%;height:100%;display:grid;place-items:center;background:#7fae5a}.fm-b-scene{position:relative;width:min(100%,150vh);aspect-ratio:3/2;max-height:100%;background:center/100% 100% no-repeat;overflow:hidden;container-type:inline-size}.fm-b-top{position:absolute;left:1.5%;top:1.5%;width:34%;aspect-ratio:1200/297;background:center/100% 100% no-repeat;display:flex;align-items:center;gap:3%;padding:0 3%;box-sizing:border-box;z-index:4}.fm-b-top .fm-stat{font-size:clamp(11px,1.5cqw,22px)}.fm-b-top .fm-stat img{width:clamp(18px,2.4cqw,36px);height:auto}.fm-b-top .fm-exp{width:7cqw;height:1.2cqw}.fm-b-face{width:4cqw;height:4cqw;object-fit:contain}.fm-b-weather{position:absolute;left:46%;top:1%;width:7%;z-index:4}',
-    '.fm-hit{position:absolute;inset:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);pointer-events:auto;cursor:inherit;z-index:5}.fm-b-field{position:absolute;inset:0;z-index:1}.fm-b-field .fm-plot{pointer-events:none;width:17.6%;aspect-ratio:512/336;background-color:transparent}.fm-b-field .fm-plot:hover{z-index:40!important}.fm-b-field .fm-crop{bottom:20%;width:60%;height:78%}.fm-b-field .fm-chip{font-size:clamp(9px,.95cqw,14px)}.fm-b-sign{width:34%;left:33%;bottom:34%}.fm-b-pig{position:absolute;left:79%;top:31%;width:7%;z-index:3;object-fit:contain}.fm-b-helper{position:absolute;left:84%;top:15%;width:13%;z-index:4;border:0;padding:4px 6px;font-size:clamp(10px,1cqw,15px)!important;background:var(--animal-bg-content);display:flex;align-items:center;gap:4px}.fm-b-helper img{width:30%;object-fit:contain}',
-    '.fm-b-bar{position:absolute;left:1.5%;right:1.5%;bottom:1.5%;height:12.5%;background:center/100% 100% no-repeat;display:flex;align-items:center;gap:.7%;padding:0 2% 2%;box-sizing:border-box;z-index:4}.fm-b-bar .fm-slot{width:6%;height:auto;aspect-ratio:1;padding:.7%}.fm-b-bar .fm-tool-label{font-size:clamp(9px,1cqw,14px)}.fm-b-gap{flex:1}.fm-b-bar .fm-sign{width:9%;height:60%;font-size:clamp(9px,1cqw,15px)!important}.fm-b-bar .fm-sign img{width:30%;height:auto}',
+    '.fm-big{width:100%;height:100%;display:grid;place-items:center;background:var(--animal-bg-content) center/cover no-repeat;overflow:hidden}.fm-b-scene{position:relative;width:min(100%,150vh);aspect-ratio:3/2;max-height:100%;background:center/100% 100% no-repeat;overflow:hidden;container-type:inline-size}.fm-b-top{position:absolute;left:1.5%;top:1.5%;width:34%;aspect-ratio:1200/297;background:center/100% 100% no-repeat;display:flex;align-items:center;gap:3%;padding:0 3%;box-sizing:border-box;z-index:4}.fm-b-top .fm-stat{font-size:clamp(12px,1.5cqw,22px)}.fm-b-top .fm-stat img{width:clamp(24px,2.4cqw,36px);height:auto}.fm-b-top .fm-exp{width:7cqw;height:1.2cqw}.fm-b-face{width:4cqw;height:4cqw;object-fit:contain}.fm-b-weather{position:absolute;left:46%;top:1%;width:7%;z-index:4}',
+    '.fm-hit{position:absolute;inset:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);pointer-events:auto;cursor:inherit;z-index:5}.fm-b-field{position:absolute;inset:0;z-index:1;pointer-events:none}.fm-b-field .fm-plot{pointer-events:none;background-size:0 0!important;background-color:transparent}.fm-b-field .fm-plot::before{content:"";position:absolute;inset:0;background-image:inherit;background-position:center;background-size:100% 100%;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);pointer-events:none}.fm-b-field .fm-hover{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}.fm-b-field .fm-plot[data-farm-hover="true"]{z-index:40!important}.fm-b-field .fm-crop{z-index:2;bottom:24%;width:42%;height:54%}.fm-b-field .fm-pest{z-index:2;left:calc(50% - 12px);bottom:32%;width:24px;height:24px;max-height:none}.fm-b-field .fm-bubble{top:10%;width:24px;height:24px}.fm-b-field .fm-prog{left:35%;right:35%;bottom:28%;height:4px;z-index:4}.fm-b-field .fm-chip{z-index:4;bottom:2%;width:46px;max-width:calc(100% - 4px);box-sizing:border-box;padding:0 3px;white-space:normal;text-align:center;line-height:1.1;font-size:clamp(12px,1.1cqw,14px)}.fm-b-field .fm-expand{bottom:calc(50% - 13.2px);min-height:32px;border:0;z-index:6;pointer-events:auto;display:grid;place-content:center;background-color:transparent;background-size:100% 150%;background-position:center top;background-repeat:no-repeat}.fm-b-pig{position:absolute;left:79%;top:31%;width:7%;z-index:3;object-fit:contain}.fm-b-helper{position:absolute;left:84%;top:15%;width:13%;z-index:4;border:0;padding:4px;font-size:clamp(12px,1cqw,15px)!important;white-space:nowrap;background:var(--animal-bg-content);display:flex;align-items:center;gap:4px}.fm-b-helper img{width:30%;min-width:24px;min-height:24px;object-fit:contain}',
+    '.fm-b-bar{position:absolute;left:1.5%;right:1.5%;bottom:1.5%;height:max(86px,15%);background:center/100% 100% no-repeat;display:grid;grid-template-columns:repeat(7,minmax(38px,1fr)) repeat(4,minmax(48px,1fr)) repeat(3,minmax(42px,1.3fr));align-items:center;gap:2px;padding:12px 10px 20px;box-sizing:border-box;z-index:4}.fm-b-bar .fm-slot{width:100%;max-width:clamp(38px,5cqw,56px);height:auto;aspect-ratio:1;padding:7px;justify-self:center}.fm-b-bar .fm-tool-label{top:calc(100% + 3px);font-size:clamp(12px,1.1cqw,14px);line-height:1.1}.fm-b-bar .fm-n,.fm-b-bar .fm-lock{top:-13px;right:0;height:14px;line-height:14px;pointer-events:none}.fm-b-bar .fm-lock{font-size:12px}.fm-b-gap{display:none}.fm-b-bar .fm-sign{width:100%;height:52px;padding:2px;flex-direction:column;gap:2px;font-size:clamp(12px,1.1cqw,15px)!important}.fm-b-bar .fm-sign img{width:24px;height:24px;flex:none}',
     '.fm-pop{position:absolute;display:grid;gap:8px;border:18px solid transparent;box-sizing:border-box;z-index:8;color:var(--animal-text-body);background:transparent}.fm-b-pop{left:15%;right:15%;bottom:15%;max-height:68%;overflow:visible}.fm-s-pop{left:0;right:0;bottom:113px;max-height:62%;overflow:visible;border-width:12px}.fm-pop[data-farm-overlay="seeds"]{overflow:visible}.fm-section{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding-right:18px}.fm-stock{max-height:180px;overflow:auto;display:flex;flex-wrap:wrap;gap:6px}.fm-pop[data-farm-overlay="seeds"] .fm-stock{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px}.fm-pop[data-farm-overlay="seeds"] .fm-section{display:none}.fm-pack-title{position:absolute;left:0;top:-36px;padding:6px 15px;font-size:14px;background:center/100% 100% no-repeat}',
-    '.fm-pack-slot{border-radius:12px!important;position:relative;flex:none;width:85px;height:93px;border:0;padding:6px;background:center/100% 100% no-repeat}.fm-packet{position:relative;display:block;width:68%;height:65%;margin:auto;background:center/contain no-repeat}.fm-packet img{position:absolute;left:19%;top:30%;width:63%;height:55%;object-fit:contain}.fm-seed-name{display:block;font-size:11px}.fm-count{right:3px;top:auto;bottom:18px;width:22px;height:24px;background:transparent center/100% 100% no-repeat;color:var(--animal-bg);font-size:11px}.fm-big .fm-pack-slot{width:9cqw;height:10cqw}.fm-big .fm-seed-name{font-size:1.2cqw}.fm-big .fm-count{width:2.6cqw;height:2.7cqw;font-size:1.2cqw}',
-    '.fm-close{position:absolute;right:-13px;top:-14px;width:32px;height:32px;border:0;background:center/100% 100% no-repeat;font-size:20px!important;z-index:2}.fm-cropbtn{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border:2px solid #c4b89e;background:var(--animal-bg-content);font-size:11px!important}.fm-cropbtn img{width:24px;height:24px;object-fit:contain}.fm-sellbar{width:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center}.fm-note{font-size:11px}.fm .dp-mini{font-size:10px;padding:4px 7px}.fm-cropbtn[aria-expanded="true"]{border-color:var(--animal-primary)}',
-    '.fm-shop{bottom:13%;height:70%;max-height:72%;overflow:visible;grid-template-rows:auto auto minmax(0,1fr);border-width:32px}.fm-shop-head{display:flex;align-items:center;gap:6px;min-height:32px;font-size:12px}.fm-title{display:block;padding:8px 16px;background:center/100% 100% no-repeat;font-size:18px;text-align:center}.fm-shop-head .fm-title{margin-right:auto}.fm-shop-coin{width:22px;height:22px}.fm-tabs{display:flex;gap:5px}.fm-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:center/100% 100% no-repeat;border:0;min-height:34px;font-size:13px!important}.fm-tab img{height:25px;width:25px;object-fit:contain}.fm-enter{animation:fm-rise .25s var(--animal-ease)}.fm-shop-grid{align-content:start;grid-auto-rows:150px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;overflow:auto;max-height:36cqw;padding:4px}.fm-shop-item{border-radius:18px!important;display:grid;gap:3px;justify-items:center;padding:9px 4px;border:0;background:center/100% 100% no-repeat;min-height:120px;font-size:12px!important}.fm-product{width:70%;height:75px;object-fit:contain}.fm-price{font-size:12px}.fm-shop-item[aria-disabled="true"]{filter:grayscale(.8);opacity:.6}.fm-unavailable{font-size:10px;background:#c4b89e;border-radius:12px;padding:2px 5px}.fm-s-pop.fm-shop{bottom:10px;height:90%;max-height:95%;border-width:12px}.fm-s-pop .fm-shop-grid{grid-auto-rows:115px;grid-template-columns:repeat(3,minmax(0,1fr));max-height:210px}.fm-s-pop .fm-shop-item{font-size:10px!important;min-height:100px}.fm-s-pop .fm-title{font-size:13px;padding:7px}.fm-s-pop .fm-shop-head{font-size:9px}.fm-s-pop .fm-tab{font-size:10px!important;gap:2px}.fm-s-pop .fm-tab img{width:17px;height:17px}',
-    '.fm-mask{position:absolute;inset:0;z-index:15;background:rgba(61,52,40,.35);display:grid;place-items:center}.fm-buy,.fm-clear-confirm{position:relative;width:62%;max-height:94%;overflow:visible;border:24px solid transparent;box-sizing:border-box}.fm-clear-confirm{width:48%;text-align:center;font-size:16px}.fm-buy-columns{display:grid;grid-template-columns:40% 1fr;gap:12px;margin:8px 0}.fm-buy-art{width:100%;height:220px;max-height:230px;object-fit:contain}.fm-buy-info{display:grid;gap:3px;min-width:0}.fm-info-row{background:center/100% 100% no-repeat;padding:5px 10px;font-size:13px}.fm-stepper{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0}.fm-step{width:36px;height:28px;border:0;background:center/100% 100% no-repeat}.fm-quantity{width:48px;height:28px;box-sizing:border-box;border:0;background:center/100% 100% no-repeat;text-align:center;appearance:textfield}.fm-quantity::-webkit-inner-spin-button{appearance:none}.fm-total{text-align:center;font-size:16px;font-weight:900;margin:8px}.fm-modal-buttons{display:flex;justify-content:center;gap:12px;margin-top:10px}.fm-confirm,.fm-cancel{border:0;background:center/100% 100% no-repeat;width:40%;height:40px;font-size:16px!important;font-weight:900}.fm button:disabled{opacity:.5;cursor:default}.fm:not(.fm-big) .fm-buy,.fm:not(.fm-big) .fm-clear-confirm{width:98%;border-width:13px}.fm:not(.fm-big) .fm-buy-columns{gap:4px}.fm:not(.fm-big) .fm-info-row{padding:3px 5px;font-size:10px}.fm:not(.fm-big) .fm-title{font-size:14px}',
-    '.fm-hover-card{position:absolute;width:28%;box-sizing:border-box;padding:1.8% 2% 3%;background:center/100% 100% no-repeat;z-index:7;pointer-events:none;font-size:clamp(10px,1.2cqw,18px)}.fm-card-crop{float:left;width:24%;height:5cqw;object-fit:contain;margin-right:8px}.fm-card-progress{height:1.5cqw;background:center/100% 100% no-repeat;margin:5px 0}.fm-card-progress>i{display:block;height:100%;background:center/100% 100% no-repeat}.fm-card-status{display:flex;gap:5px;clear:both}.fm-status{flex:1;display:flex;flex-direction:column-reverse;align-items:center;font-size:1.1cqw;background:center/100% 100% no-repeat;padding:5px}.fm-status img{width:3cqw;height:3cqw;object-fit:contain}.fm-status[data-active="false"]{opacity:.5}',
+    '.fm-pack-slot{border-radius:12px!important;position:relative;flex:none;width:85px;height:93px;border:0;padding:6px;background:center/100% 100% no-repeat}.fm-packet{position:relative;display:block;width:68%;height:65%;margin:auto;background:center/contain no-repeat}.fm-packet img{position:absolute;left:19%;top:30%;width:63%;height:55%;object-fit:contain}.fm-seed-name{display:block;font-size:11px}.fm-count{right:3px;top:auto;bottom:18px;width:22px;height:24px;background:transparent center/100% 100% no-repeat;color:var(--animal-bg);font-size:11px}.fm-big .fm-pack-slot{width:max(82px,9cqw);height:max(94px,10cqw)}.fm-big .fm-seed-name{font-size:clamp(12px,1.2cqw,16px)}.fm-big .fm-count{width:max(24px,2.6cqw);height:max(24px,2.7cqw);font-size:clamp(12px,1.2cqw,16px)}',
+    '.fm-close{position:absolute;right:-13px;top:-14px;width:32px;height:32px;border:0;background:center/100% 100% no-repeat;font-size:20px!important;z-index:2}.fm-cropbtn{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border:2px solid #c4b89e;background:var(--animal-bg-content);font-size:12px!important}.fm-cropbtn img{width:24px;height:24px;object-fit:contain}.fm-sellbar{width:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center}.fm-note{font-size:11px}.fm .dp-mini{font-size:10px;padding:4px 7px}.fm-cropbtn[aria-expanded="true"]{border-color:var(--animal-primary)}',
+    '.fm-shop{bottom:13%;height:70%;max-height:72%;overflow:visible;grid-template-rows:auto auto minmax(0,1fr);border-width:32px}.fm-shop-head{padding-right:32px;display:flex;align-items:center;gap:6px;min-height:32px;font-size:12px}.fm-title{display:block;padding:8px 16px;background:center/100% 100% no-repeat;font-size:18px;text-align:center}.fm-shop-head .fm-title{margin-right:auto}.fm-shop-wallet{display:flex;align-items:center;gap:6px;white-space:nowrap}.fm-shop-coin{flex:none;width:24px;height:24px}.fm-tabs{display:flex;gap:5px}.fm-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:center/100% 100% no-repeat;border:0;min-height:34px;font-size:13px!important}.fm-tab img{height:25px;width:25px;object-fit:contain}.fm-enter{animation:fm-rise .25s var(--animal-ease)}.fm-shop-grid{align-content:start;grid-auto-rows:150px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;overflow:auto;max-height:36cqw;padding:4px}.fm-shop-item{border-radius:18px!important;display:grid;gap:3px;justify-items:center;padding:9px 4px;border:0;background:center/100% 100% no-repeat;min-height:120px;font-size:12px!important}.fm-product{width:70%;height:75px;object-fit:contain}.fm-price{font-size:12px}.fm-shop-item[aria-disabled="true"]{filter:grayscale(.8);opacity:.6}.fm-unavailable{font-size:10px;background:#c4b89e;border-radius:12px;padding:2px 5px}.fm-s-pop.fm-shop{bottom:10px;height:90%;max-height:95%;border-width:12px}.fm-s-pop .fm-shop-grid{grid-auto-rows:115px;grid-template-columns:repeat(3,minmax(0,1fr));max-height:210px}.fm-s-pop .fm-shop-item{font-size:10px!important;min-height:100px}.fm-s-pop .fm-title{font-size:13px;padding:7px}.fm-s-pop .fm-shop-head{font-size:9px}.fm-s-pop .fm-tab{font-size:10px!important;gap:2px}.fm-s-pop .fm-tab img{width:17px;height:17px}',
+    '[data-dsh-pig]:has(.fm) .dp-drill-back{width:32px;height:32px;font-size:24px}[data-dsh-pig]:has(.fm) .dp-hud,[data-dsh-pig]:has(.fm) .dp-drill-info{font-size:12px}.fm button,.fm input{min-height:32px;min-width:32px}.fm .fm-note,.fm .fm-n,.fm .fm-unavailable,.fm .fm-seed-name,.fm .dp-mini,.fm .fm-count{font-size:12px}.fm-stat img{width:24px;height:24px}.fm-s-header .fm-exp{width:48px}.fm-s-header .fm-s-face{width:24px}.fm-s-header .fm-stat{min-width:32px;min-height:32px}.fm-s-note,.fm-main small,.fm:not(.fm-big) .fm-tool-label,.fm:not(.fm-big) .fm-chip{font-size:12px}.fm-s-pop .fm-shop-item{font-size:12px!important}.fm-s-pop .fm-shop-grid{grid-auto-rows:136px}.fm-s-pop .fm-product{height:52px}.fm-s-pop .fm-shop-head{font-size:12px;flex-wrap:wrap}.fm-s-pop .fm-tab{font-size:12px!important;padding:2px 4px;white-space:nowrap}.fm-s-pop .fm-tab img{flex:none;width:24px;height:24px}.fm-big .fm-buy-art{height:clamp(120px,18cqw,220px)}.fm-big .fm-info-row{font-size:12px;padding:3px 5px}',
+    '.fm-mask{position:absolute;inset:0;z-index:15;background:rgba(61,52,40,.35);display:grid;place-items:center}.fm-buy,.fm-clear-confirm{position:relative;width:62%;max-height:94%;overflow:auto;border:24px solid transparent;box-sizing:border-box}.fm-buy .fm-close,.fm-clear-confirm .fm-close{right:0;top:0}.fm-buy>.fm-title{padding-right:38px}.fm-clear-confirm{width:48%;text-align:center;font-size:16px}.fm-buy-columns{display:grid;grid-template-columns:40% 1fr;gap:12px;margin:8px 0}.fm-buy-art{width:100%;height:220px;max-height:230px;object-fit:contain}.fm-buy-info{display:grid;gap:3px;min-width:0}.fm-info-row{background:center/100% 100% no-repeat;padding:5px 10px;font-size:13px}.fm-stepper{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0}.fm-step{width:36px;height:28px;border:0;background:center/100% 100% no-repeat}.fm-quantity{width:48px;height:28px;box-sizing:border-box;border:0;background:center/100% 100% no-repeat;text-align:center;appearance:textfield}.fm-quantity::-webkit-inner-spin-button{appearance:none}.fm-total{text-align:center;font-size:16px;font-weight:900;margin:8px}.fm-modal-buttons{display:flex;justify-content:center;gap:12px;margin-top:10px}.fm-confirm,.fm-cancel{border:0;background:center/100% 100% no-repeat;width:40%;height:40px;font-size:16px!important;font-weight:900}.fm button:disabled{opacity:.5;cursor:default}.fm:not(.fm-big) .fm-buy,.fm:not(.fm-big) .fm-clear-confirm{width:98%;border-width:13px}.fm:not(.fm-big) .fm-buy-columns{gap:4px}.fm:not(.fm-big) .fm-info-row{padding:3px 5px;font-size:12px}.fm:not(.fm-big) .fm-title{font-size:14px}',
+    '.fm-hover-card{position:absolute;width:28%;box-sizing:border-box;padding:1.8% 2% 3%;background:center/100% 100% no-repeat;z-index:7;pointer-events:none;font-size:clamp(12px,1.2cqw,18px)}.fm-card-crop{float:left;width:24%;height:5cqw;object-fit:contain;margin-right:8px}.fm-card-progress{height:1.5cqw;background:center/100% 100% no-repeat;margin:5px 0}.fm-card-progress>i{display:block;height:100%;background:center/100% 100% no-repeat}.fm-card-status{display:flex;gap:5px;clear:both}.fm-status{flex:1;display:flex;flex-direction:column-reverse;align-items:center;font-size:clamp(12px,1.1cqw,16px);background:center/100% 100% no-repeat;padding:5px}.fm-status img{width:clamp(24px,3cqw,44px);height:clamp(24px,3cqw,44px);object-fit:contain}.fm-status[data-active="false"]{opacity:.5}',
     '.fm[data-farm-compact="true"] .fm-s-header{padding:4px}.fm[data-farm-compact="true"] .fm-s-scene{aspect-ratio:1.55}.fm[data-farm-compact="true"] .fm-s-field{top:20%;bottom:2%}.fm[data-farm-compact="true"] .fm-s-pig{top:1%;width:11%;max-height:16%}.fm[data-farm-compact="true"] .fm-s-plank{gap:8px;padding:6px}.fm[data-farm-compact="true"] .fm-s-tools .fm-slot{width:38px;height:38px}.fm[data-farm-compact="true"] .fm-s-pop{bottom:100px}',
-    '.fm-toast{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:12px solid transparent;min-width:85px;max-width:250px;text-align:center;font-size:12px;font-weight:900;white-space:nowrap;z-index:30;pointer-events:none;animation:fm-toast 2.4s var(--animal-ease) both}.fm-b-scene>.fm-toast,.fm>.fm-toast{bottom:38%}.fm-effect{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;font-size:22px;animation:fm-pop .6s var(--animal-ease) both}@keyframes fm-pop{0%{opacity:0;transform:translateY(6px) scale(.7)}35%{opacity:1;transform:translateY(-6px) scale(1.1)}100%{opacity:0;transform:translateY(-18px) scale(.9)}}@keyframes fm-toast{0%{opacity:0}10%,75%{opacity:1}100%{opacity:0}}@keyframes fm-rise{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}@media(prefers-reduced-motion:reduce){.fm *{animation:none!important;transition:none!important}.fm-toast{opacity:1}}',
+    '.fm-toast{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:12px solid transparent;min-width:85px;max-width:250px;text-align:center;font-size:12px;font-weight:900;white-space:normal;overflow-wrap:anywhere;z-index:30;pointer-events:none;animation:fm-toast 2.4s var(--animal-ease) both}.fm-b-scene>.fm-toast,.fm>.fm-toast{bottom:38%}.fm-effect{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;font-size:22px;animation:fm-pop .6s var(--animal-ease) both}@keyframes fm-pop{0%{opacity:0;transform:translateY(6px) scale(.7)}35%{opacity:1;transform:translateY(-6px) scale(1.1)}100%{opacity:0;transform:translateY(-18px) scale(.9)}}@keyframes fm-toast{0%{opacity:0}10%,75%{opacity:1}100%{opacity:0}}@keyframes fm-rise{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}@media(prefers-reduced-motion:reduce){.fm *{animation:none!important;transition:none!important}.fm-toast{opacity:1}}',
   ].join('')
   function ensureStyle() {
-    if (document.getElementById(styleId)) return
-    var style = document.createElement('style'); style.id = styleId; style.textContent = css; document.head.appendChild(style)
+    var style = document.getElementById(styleId)
+    if (!style) { style = document.createElement('style'); style.id = styleId; document.head.appendChild(style) }
+    if (style.textContent !== css) style.textContent = css
   }
   /** 扩展自带图片的地址；老宿主没有 app.asset 时给空串，界面退回 emoji。 */
   function art(app, name) { return typeof app.asset === 'function' ? app.asset(name + '.webp') : '' }
@@ -98,15 +99,11 @@
     if (hand.kind === 'fert' && (!fert || fert.count < 1)) hand = AUTO
   }
   function act(app, index, emoji, op, payload) { if (emoji) effect(index, emoji); pendingAction = { op: op, plot: index, before: app.data }; app.send(op, payload) }
-  /** 点一块地：按手里拿的东西做事；拿手套（auto）时做这块地现在该做的事。 */
+  /** 点一块地：按手里拿的东西做事；手套（auto）只收成熟作物。 */
   function clickPlot(app, data, index) {
     var plot = data.plots[index]
     var shovel = hand.kind === 'shovel'
-    if (plot.wild) {
-      if (!plot.next) return say(app, '要先开前一块荒地')
-      if (data.balance < data.reclaimPrice) return say(app, '开垦要 ' + data.currency.emoji + ' ' + data.reclaimPrice)
-      return app.send('unlock', { plot: index })
-    }
+    if (plot.wild) return say(app, plot.next ? '点木牌开垦' : '要先开前一块荒地')
     if (shovel && plot.empty && !plot.stubble) return say(app, '这块地是空的', index)
     if (shovel && !plot.empty && !plot.withered) { confirmClear = index; return app.rerender() }
     if (shovel) { confirmClear = null; return act(app, index, '🪏', 'clear', plot.withered || plot.stubble ? { plot: index } : { plot: index, force: true }) }
@@ -116,26 +113,40 @@
       return say(app, hand.key === 'dry' ? '这块地不用浇水' : '这块地没有' + PEST_LABEL[hand.key], index)
     }
     if (hand.kind === 'fert') return plot.empty || plot.ripe || plot.withered ? say(app, '化肥要施在正在长的地上') : app.send('fertilize', { plot: index, item: hand.key })
-    if (plot.empty && (plot.stubble || pestsOf(plot).indexOf('weed') >= 0)) {
-      if (hand.kind === 'seed') return say(app, '先除草 / 铲掉枯草', index)
-      return plot.stubble ? act(app, index, '🪏', 'clear', { plot: index }) : act(app, index, '✨', 'care', { plot: index, kind: 'weed' })
+    if (hand.kind === 'auto') {
+      if (plot.ripe) return act(app, index, '✨', 'harvest', { plot: index })
+      return say(app, plot.stubble || plot.withered ? '用铁锹铲掉枯草 / 枯苗' : pestsOf(plot).length ? { dry: '干了，用浇水壶', weed: '长草了，用除草剂', bug: '生虫了，用杀虫剂' }[pestsOf(plot)[0]] : plot.empty ? '拿种子播种' : '作物还没成熟', index)
     }
+    if (plot.empty && (plot.stubble || pestsOf(plot).indexOf('weed') >= 0)) return say(app, '先除草 / 铲掉枯草', index)
     if (plot.empty) { var seed = seedInHand(data); return seed ? act(app, index, '🌱', 'plant', { plot: index, item: seed.key }) : goShop(app) }
-    if (plot.ripe) return act(app, index, '✨', 'harvest', { plot: index })
-    if (plot.withered) return act(app, index, '🪏', 'clear', { plot: index })
-    if (pestsOf(plot).length) return act(app, index, '✨', 'care', { plot: index })
-    say(app, plot.label + (plot.seasons > 1 ? ' 第 ' + plot.season + '/' + plot.seasons + ' 季' : '') + ' · ' + (plot.helperNote ? plot.helperNote + ' · ' : '') + '还要 ' + shortTime(plot.remainingMs))
+    say(app, '这块地不是空地', index)
+  }
+  function reclaimPlot(app, data, index) {
+    if (!data.plots[index].next) return say(app, '要先开前一块荒地')
+    if (data.balance < data.reclaimPrice) return say(app, '开垦要 ' + data.currency.emoji + ' ' + data.reclaimPrice)
+    app.send('unlock', { plot: index })
+  }
+  function reclaimSign(app, data, index) {
+    var node = button(app, 'fm-chip fm-expand', { 'data-farm-reclaim': String(index), 'aria-label': '开垦这块荒地 ' + data.reclaimPrice + ' 菜币' }, '开垦 ' + data.reclaimPrice, function (event) { event.stopPropagation(); if (node.parentNode) node.parentNode.removeAttribute('data-farm-hover'); reclaimPlot(app, data, index) })
+    return bg(app, node, 'big-sign-expand')
   }
   /** 一块地的按钮：土、作物、灾害、提示条、进度。 */
   function plotCard(app, data, index, kind) {
     var plot = data.plots[index]
-    var card = app.button('fm-plot' + (plot.ripe ? ' fm-ripe' : ''), { 'data-farm-plot': String(index), 'aria-label': plotLabel(plot) }, function () { clickPlot(app, data, index) })
-    if (kind === 'big') put(card, app.el('span', 'fm-hit'))
+    var attrs = { 'data-farm-plot': String(index), 'aria-label': plotLabel(plot) }
+    var card = plot.wild ? app.el('div', 'fm-plot') : app.button('fm-plot' + (plot.ripe ? ' fm-ripe' : ''), attrs, function () { clickPlot(app, data, index) })
+    if (plot.wild) card.setAttribute('role', 'group')
+    if (plot.wild) Object.keys(attrs).forEach(function (key) { card.setAttribute(key, attrs[key]) })
+    if (plot.wild) card.addEventListener('click', function () { clickPlot(app, data, index) })
+    // 2026-10-13：只记录真实移动；点击和新节点不继承 CSS :hover 的常亮状态。
+    card.addEventListener('mousemove', function () { card.setAttribute('data-farm-hover', 'true') })
+    card.addEventListener('mouseleave', function () { card.removeAttribute('data-farm-hover') })
+    card.addEventListener('click', function () { card.removeAttribute('data-farm-hover') })
+    if (kind === 'big') { put(card, app.el('span', 'fm-hit')); attachHover(app, card, plot) }
     if (plot.wild) {
       bg(app, card, kind === 'big' ? 'big-plot-wild' : 'small-plot-farmed')
       put(card, img(app, 'fm-hover', kind + '-plot-hover'))
-      if (plot.next && kind === 'big') put(card, img(app, 'fm-b-sign', 'big-sign-expand', '🪧'))
-      if (plot.next) put(card, app.el('span', 'fm-chip', '开垦 ' + data.currency.emoji + ' ' + data.reclaimPrice))
+      if (plot.next) put(card, reclaimSign(app, data, index))
       return card
     }
     bg(app, card, kind + '-plot-' + (pestsOf(plot).indexOf('dry') >= 0 ? 'dry' : 'farmed'))
@@ -146,8 +157,7 @@
     }
     if (plot.stubble) put(card, img(app, 'fm-crop', 'withered'))
     if (plot.empty && pestsOf(plot).indexOf('weed') >= 0) put(card, img(app, 'fm-pest', 'weed')).setAttribute('data-pest', 'weed')
-    pestsOf(plot).forEach(function (pest, n) { var bubble = put(card, img(app, 'fm-bubble', 'plot-bubble-' + (pest === 'dry' ? 'water' : pest))); bubble.style.right = (n * 23) + '%'; bubble.setAttribute('data-farm-bubble', pest) })
-    if (kind === 'big') attachHover(app, card, plot)
+    pestsOf(plot).forEach(function (pest, n) { var bubble = put(card, img(app, 'fm-bubble', 'plot-bubble-' + (pest === 'dry' ? 'water' : pest))); bubble.style.right = kind === 'big' ? 'calc(50% - 36px + ' + n * 24 + 'px)' : (n * 23) + '%'; bubble.setAttribute('data-farm-bubble', pest) })
     if (tip && tipPlot === index && Date.now() - tipAt < 2400) renderTip(app, card)
     if (plot.empty) return card
     put(card, img(app, 'fm-crop', cropArt(plot), plot.emoji))
@@ -160,13 +170,13 @@
     return card
   }
   function plotLabel(plot) {
-    if (plot.wild) return plot.next ? '荒地，点一下开垦' : '荒地'
+    if (plot.wild) return plot.next ? '荒地，点木牌开垦' : '荒地'
     if (plot.empty) return '空地'
     return plot.label + (plot.withered ? ' 枯了' : plot.ripe ? ' 熟了' : pestsOf(plot).length ? ' ' + pestText(plot, '、') : '')
   }
   /** 等级、经验条、菜币。 */
   function stats(app, data, box) {
-    var level = put(box, app.el('span', 'fm-stat'))
+    var level = put(box, app.button('fm-stat fm-coin', { 'data-farm-level': 'info', 'aria-label': '等级与经验' }, function () { say(app, '等级 ' + data.level + ' · 经验 ' + data.exp + ' / ' + data.need) }))
     put(level, app.el('b', null, 'Lv.' + data.level))
     var exp = put(level, bg(app, app.el('span', 'fm-exp'), 'ui-exp-frame'))
     exp.setAttribute('title', '经验 ' + data.exp + ' / ' + data.need)
@@ -174,6 +184,11 @@
     var coin = put(box, app.button('fm-stat fm-coin', { 'data-farm-exchange': 'open', 'aria-label': '换菜币' }, function () { popup = popup === 'wallet' ? null : 'wallet'; app.rerender() }))
     put(coin, img(app, null, 'coin-veg', data.currency.emoji))
     put(coin, app.el('span', null, String(data.balance)))
+  }
+  function weatherButton(app, data, className) {
+    var node = app.button(className + ' fm-coin', { 'data-farm-weather': 'info', 'aria-label': '天气' }, function () { say(app, '天气：' + ({ sunny: '晴天', rain: '下雨', night: '夜晚' }[data.weather] || data.weather)) })
+    var image = put(node, img(app, null, 'weather-' + data.weather, WEATHER[data.weather])); image.style.width = '100%'; image.style.height = '100%'
+    return node
   }
   /** 工具格：选中就拿在手里；锁着的一键工具点了去商店。 */
   function toolSlot(app, spec) {
@@ -185,6 +200,9 @@
       hand = pressed ? AUTO : spec.hand
       app.rerender()
     }), 'ui-slot')
+    node.addEventListener('mousemove', function () { node.setAttribute('data-farm-hover', 'true') })
+    node.addEventListener('mouseleave', function () { node.removeAttribute('data-farm-hover') })
+    node.addEventListener('click', function () { node.removeAttribute('data-farm-hover') })
     put(node, img(app, null, spec.art, spec.emoji))
     put(node, app.el('span', 'fm-tool-label', spec.label.split('：')[0].split('（')[0]))
     var tooltip = put(node, app.el('span', 'fm-tooltip', spec.label + (spec.hint ? ' · ' + spec.hint : '')))
@@ -210,7 +228,7 @@
     { key: 'can', art: 'tool-can', emoji: '💧', label: '浇水：点干了的地', hand: { kind: 'care', key: 'dry' }, hint: '点干了的地浇水' },
     { key: 'weedkiller', art: 'tool-weedkiller', emoji: '🌿', label: '除草：点长草的地', hand: { kind: 'care', key: 'weed' }, hint: '点长草的地除草' },
     { key: 'pesticide', art: 'tool-pesticide', emoji: '🐛', label: '杀虫：点生虫的地', hand: { kind: 'care', key: 'bug' }, hint: '点生虫的地杀虫' },
-    { key: 'gloves', art: 'tool-gloves', emoji: '🧤', label: '手套：熟了收、有毛病治、枯了铲', hand: AUTO },
+    { key: 'gloves', art: 'tool-gloves', emoji: '🧤', label: '手套：只收成熟作物', hand: AUTO },
   ]
   function careTools(app, data, to, ripe) {
     return CARE_TOOLS.map(function (spec) {
@@ -232,6 +250,7 @@
     closeButton(app, box, function () { popup = null; app.rerender() })
     var head = put(box, app.el('div', 'fm-section'))
     var list = app.el('div', 'fm-stock')
+    list.setAttribute('data-scroll-key', 'farm-stock:' + popup)
     if (popup === 'seeds') {
       put(head, app.el('span', null, '拿哪种种子'))
       put(head, button(app, 'dp-mini', { 'data-farm-shop': 'seed' }, '去买', function () { goShop(app) }))
@@ -267,18 +286,20 @@
     put(box, list)
   }
   // ---- 小农场（面板） ----
-  /** 主按钮：收获 > 照料 > 铲枯萎 > 种 > 去买种子；买了对应一键工具就一次做完全部地，没有就做一块。 */
-  function mainAction(data, look, all) {
+  /** 主按钮只操作一块；照料先拿工具，批量动作只能明确点击一键工具。 */
+  function mainAction(data, look) {
     var one = function (list, label, op, fx, rest) { return { label: label, sub: list.length > 1 ? '还有 ' + (list.length - 1) + ' 块' + rest : '', op: op, payload: { plot: list[0] }, plot: list[0], fx: fx } }
-    if (look.ripe.length) return owns(data, 'sickle') && all.ripe.length > 1 ? { label: '收菜 ' + all.ripe.length + ' 块', op: 'harvestAll', payload: {} } : one(look.ripe, '收菜', 'harvest', '✨', '熟了')
-    if (look.pests.length) return owns(data, 'sprayer') && all.pests.length > 1 ? { label: '照料 ' + all.pests.length + ' 块', op: 'careAll', payload: {} } : one(look.pests, '照料', 'care', '✨', '')
-    if (look.withered.length) return owns(data, 'rake') && all.withered.length > 1 ? { label: '铲掉 ' + all.withered.length + ' 块枯苗', op: 'clearAll', payload: {} } : one(look.withered, '铲枯苗', 'clear', '🪏', '枯了')
+    if (look.ripe.length) return one(look.ripe, '收菜', 'harvest', '✨', '熟了')
+    if (look.pests.length) {
+      var index = look.pests[0], kind = pestsOf(data.plots[index])[0]
+      return { label: '照料', op: 'care', plot: index, hand: { kind: 'care', key: kind }, hint: '点这块地' + { dry: '浇水', weed: '除草', bug: '杀虫' }[kind] }
+    }
+    if (look.withered.length) return one(look.withered, '铲枯苗', 'clear', '🪏', '枯了')
     var stubble = data.plots.slice(0, SMALL_PLOTS).findIndex(function (plot) { return plot.stubble })
     if (stubble >= 0) return { label: '铲枯草', op: 'clear', payload: { plot: stubble }, plot: stubble, fx: '🪏' }
     if (look.empty.length) {
       var seed = seedInHand(data)
       if (!seed) return { label: '去买种子', shop: true }
-      if (owns(data, 'planter') && all.empty.length > 1) return { label: '种满' + seed.label, sub: all.empty.length + ' 块空地', op: 'plantAll', payload: { item: seed.key } }
       return { label: '种' + seed.label, op: 'plant', payload: { plot: look.empty[0], item: seed.key }, plot: look.empty[0], fx: '🌱' }
     }
     return { label: '都在长', sub: look.soonest < Infinity ? '最快 ' + shortTime(look.soonest) : '', idle: true }
@@ -289,15 +310,14 @@
     var panel = typeof app.content.closest === 'function' ? app.content.closest('.dp-card') : null
     if (panel && parseFloat(panel.style.maxHeight) < 450) root.setAttribute('data-farm-compact', 'true')
     var shown = Math.min(SMALL_PLOTS, data.total)
-    var all = survey(data, 0, data.unlocked)
     var inner = put(root, app.el('div', 'fm-s-header'))
     put(inner, pigOf(app, 'fm-s-face'))
     stats(app, data, inner)
-    put(inner, img(app, 'fm-s-weather', 'weather-' + data.weather, WEATHER[data.weather]))
+    put(inner, weatherButton(app, data, 'fm-s-weather'))
     if (typeof app.openBig === 'function') put(inner, bg(app, button(app, 'fm-s-big', { 'data-farm-big': 'open', 'aria-label': '打开大农场' }, '大农场', function () { app.openBig() }), 'shop-tab'))
     var scene = put(root, bg(app, app.el('div', 'fm-s-scene'), 'bg-small'))
     var field = put(scene, app.el('div', 'fm-s-field'))
-    var action = mainAction(data, survey(data, 0, shown), all)
+    var action = mainAction(data, survey(data, 0, shown))
     for (var index = 0; index < shown; index += 1) {
       var card = put(field, plotCard(app, data, index, 'small'))
       card.style.left = (index % 2 ? 51 : 0) + '%'
@@ -319,6 +339,7 @@
     put(row, stockSign(app, data))
     var main = put(row, bg(app, app.button('fm-main', { 'data-farm-main': action.op || (action.shop ? 'shop' : 'idle') }, function () {
       if (action.shop) return goShop(app)
+      if (action.hand) { hand = action.hand; return say(app, action.hint, action.plot) }
       if (!action.idle) act(app, action.plot, action.fx, action.op, action.payload)
     }), 'ui-main'))
     put(main, app.el('span', null, action.label))
@@ -331,26 +352,27 @@
     app.content.appendChild(root)
   }
   // ---- 大农场（单独窗口） ----
-  /** 18 块菱形地的位置（照原版 InstallFace.farmland 的公式：3 列 × 6 行斜着排），百分比，以地块左上角计。 */
+  /** 18 块等距菱形地：3 列 × 6 行；尺寸和半格步长一起算，不能放大贴图却保留旧行距。 */
   function bigSpot(index) {
-    var col = index % 3
     var row = Math.floor(index / 3)
-    return { left: 28 - col * 8.8 + row * 8.8, top: 15.2 + (row + col) * 7.2 }
+    var width = 13.6, height = width * 0.6 * 1.5
+    return { left: 34, top: 25, width: width, height: height, translate: (row - index % 3) * 50 + '% ' + (row + index % 3) * 50 + '%' }
   }
   function renderBig(app, data) {
-    var root = app.el('div', 'fm fm-big')
+    var root = bg(app, app.el('div', 'fm fm-big'), 'bg-big')
     var scene = put(root, bg(app, app.el('div', 'fm-b-scene'), 'bg-big'))
     var top = put(scene, bg(app, app.el('div', 'fm-b-top'), 'ui-big-topbar'))
     put(top, pigOf(app, 'fm-b-face'))
     stats(app, data, top)
-    put(scene, img(app, 'fm-b-weather', 'weather-' + data.weather, WEATHER[data.weather]))
+    put(scene, weatherButton(app, data, 'fm-b-weather'))
     var field = put(scene, app.el('div', 'fm-b-field'))
     for (var index = 0; index < data.total; index += 1) {
       var card = put(field, plotCard(app, data, index, 'big'))
       var spot = bigSpot(index)
+      card.style.width = spot.width + '%'; card.style.height = spot.height + '%'
       card.style.left = spot.left + '%'
       card.style.top = spot.top + '%'
-      card.style.zIndex = String(data.plots[index].next ? 30 : 1 + Math.floor(index / 3) + index % 3)
+      card.style.translate = spot.translate
     }
     put(scene, pigOf(app, 'fm-b-pig'))
     // 帮工猪住在右上角的猪窝（替原版的狗窝）
@@ -361,10 +383,10 @@
         if (!helper.hired) app.send('hire', {})
         else if (helper.stored > 0 || helper.full) app.send('collect', {})
         else if (helper.missing.length) goShop(app)
+        else say(app, '帮工正在照顾 ' + helper.plots + ' 块地')
       }))
       put(badge, pigOf(app, null))
       put(badge, app.el('span', null, label))
-      badge.disabled = helper.hired && helper.stored === 0 && !helper.full && helper.missing.length === 0
     }
     // 底部工具栏：拿在手里的工具 | 一键工具 | 商店、仓库、小农场
     var bar = put(scene, bg(app, app.el('div', 'fm-b-bar'), 'ui-big-toolbar'))
@@ -375,7 +397,6 @@
     put(bar, toolSlot(app, { key: 'shovel', art: 'tool-shovel', emoji: '🪏', label: '铁锹：铲地', hand: { kind: 'shovel', key: null }, hint: '点地铲掉，正在长的作物要确认', count: all.withered.length }))
     careTools(app, data, data.unlocked, all.ripe.length).slice(0, 3).forEach(function (node) { put(bar, node) })
     put(bar, toolSlot(app, { key: 'fert', art: 'fert-1', emoji: '🧪', label: '化肥', run: toggle('fert'), count: data.fert.reduce(function (s, f) { return s + f.count }, 0) }))
-    put(bar, app.el('span', 'fm-b-gap'))
     ONE_CLICK.forEach(function (spec) {
       var owned = owns(data, spec.key)
       put(bar, toolSlot(app, {
@@ -388,7 +409,6 @@
         },
       }))
     })
-    put(bar, app.el('span', 'fm-b-gap'))
     put(bar, shopSign(app))
     put(bar, stockSign(app, data))
     if (typeof app.closeBig === 'function') put(bar, sign(app, { 'data-farm-big': 'close', 'aria-label': '回小农场' }, 'ui-small-farm', '', '小农场', 0, function () { app.closeBig() }))
@@ -436,12 +456,13 @@
     var hotspots = { seed: [11, 3], shovel: [4, 2], fert: [6, 2], can: [5, 4], spray: [4, 2], pesticide: [4, 2], glove: [5, 2] }
     var url = art(app, 'cursor-' + name)
     if (url) root.style.setProperty('--fm-cursor', 'url("' + url + '") ' + hotspots[name].join(' ') + ', pointer')
-    root.addEventListener('click', function (event) { if (popup === 'seeds' && !event.target.closest('.fm-pop,.fm-slot,.fm-plot')) { popup = null; app.rerender() } })
+    root.addEventListener('click', function (event) { if (popup && !purchase && !event.target.closest('.fm-pop,button,input')) { popup = null; app.rerender() } })
   }
   function bindKeyboard() {
     if (keyboardBound) return
     keyboardBound = true
     document.addEventListener('keydown', function (event) {
+      if (currentApp && event.key === 'Escape') { if (cancelLayer) cancelLayer(); else { popup = null; currentApp.rerender() } return }
       if (!currentApp || currentApp.mode !== 'big' || !currentApp.content.querySelector('.fm-big') || event.ctrlKey || event.altKey || event.metaKey || event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/i.test(event.target.tagName)) return
       var tools = { q: { kind: 'care', key: 'dry' }, w: { kind: 'care', key: 'weed' }, e: { kind: 'care', key: 'bug' }, r: AUTO }
       var chosen = tools[String(event.key).toLowerCase()]
@@ -458,7 +479,7 @@
       hover = put(scene, bg(app, app.el('div', 'fm-hover-card'), 'card-frame'))
       hover.style.zIndex = '45'
       hover.setAttribute('data-farm-card', String(plot.index))
-      hover.style.left = Math.max(2, Math.min(70, parseFloat(card.style.left))) + '%'; hover.style.top = Math.max(12, parseFloat(card.style.top) - 24) + '%'
+      hover.style.left = Math.max(2, Math.min(70, (card.getBoundingClientRect().left - scene.getBoundingClientRect().left) / scene.getBoundingClientRect().width * 100)) + '%'; hover.style.top = Math.max(12, (card.getBoundingClientRect().top - scene.getBoundingClientRect().top) / scene.getBoundingClientRect().height * 100 - 24) + '%'
       put(hover, img(app, 'fm-card-crop', 'produce-' + plot.crop, plot.emoji))
       put(hover, app.el('b', null, plot.label))
       put(hover, app.el('div', null, '阶段：' + ({ seed: '种子', sprout: '发芽', seedling: '小苗', growing: '长大', flowering: '开花' }[plot.stage] || plot.stage)))
@@ -473,7 +494,9 @@
         chip.setAttribute('data-active', String(active))
       })
     })
-    card.addEventListener('mouseleave', function () { if (hover) hover.remove(); hover = null })
+    var clearHover = function () { if (hover) hover.remove(); hover = null }
+    card.addEventListener('mouseleave', clearHover)
+    card.addEventListener('click', clearHover)
   }
   function product(app, item, className) {
     if (item.category !== 'seed') return img(app, className, itemArt(item), item.emoji)
@@ -491,13 +514,15 @@
   function renderShop(app, data, box) {
     var head = put(box, app.el('div', 'fm-shop-head'))
     put(head, bg(app, app.el('b', 'fm-title', '农场商店'), 'shop-title'))
-    put(head, img(app, 'fm-shop-coin', 'coin-veg')); put(head, app.el('span', null, '菜币 ' + data.balance + ' · 等级 ' + data.level))
+    var wallet = put(head, app.el('div', 'fm-shop-wallet'))
+    put(wallet, img(app, 'fm-shop-coin', 'coin-veg')); put(wallet, app.el('span', null, '菜币 ' + data.balance + ' · 等级 ' + data.level))
     var tabs = put(box, app.el('div', 'fm-tabs')); tabs.setAttribute('role', 'tablist')
     ;[['seed', '种子'], ['tool', '工具'], ['fert', '肥料'], ['helper', '帮工']].forEach(function (tab) {
       var node = put(tabs, bg(app, app.button('fm-tab', { role: 'tab', 'data-farm-tab': tab[0], 'aria-selected': String(shopTab === tab[0]) }, function () { shopTab = tab[0]; app.rerender() }), shopTab === tab[0] ? 'shop-tab-active' : 'shop-tab'))
       put(node, img(app, null, 'tab-icon-' + tab[0])); put(node, app.el('span', null, tab[1]))
     })
     var grid = put(box, app.el('div', 'fm-shop-grid')); grid.setAttribute('role', 'tabpanel')
+    grid.setAttribute('data-scroll-key', 'farm-shop:' + shopTab)
     shopItems(data).filter(function (item) { return item.category === shopTab }).sort(function (a, b) { return Number(a.disabled) - Number(b.disabled) }).forEach(function (item) {
       var node = put(grid, bg(app, app.button('fm-shop-item', { 'data-farm-item': item.key, 'aria-disabled': String(!!item.disabled) }, function () { purchase = item; quantity = 1; app.rerender() }), item.disabled ? 'shop-item-locked' : 'shop-item'))
       put(node, product(app, item, 'fm-product')); put(node, app.el('b', null, item.label))
@@ -506,9 +531,11 @@
     })
   }
   function modal(app, root, className, cancel) {
-    var mask = put(root, app.el('div', 'fm-mask')); mask.addEventListener('click', function (event) { if (event.target === mask) cancel() })
+    cancelLayer = cancel
+    var mask = put(root, app.el('div', 'fm-mask')); mask.addEventListener('click', function (event) { if (event.target === mask) { event.stopPropagation(); cancel() } })
     var box = put(mask, frame(app, app.el('div', className), 'buy-frame'))
     box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); closeButton(app, box, cancel)
+    box.setAttribute('data-scroll-key', 'farm-dialog:' + (purchase ? purchase.key : 'clear'))
     return box
   }
   function modalButtons(app, box, run, cancel, disabled) {
@@ -536,6 +563,7 @@
     modalButtons(app, box, function () { pendingAction = { op: 'buy', item: item, count: quantity, before: data }; app.send('buy', { item: item.key, count: quantity }); purchase = null; app.rerender() }, cancel, item.disabled || quantity * item.price > data.balance)
   }
   function renderLayers(app, data, root) {
+    cancelLayer = null
     if (popup) {
       var box = put(root, app.el('div', 'fm-pop' + (app.mode === 'big' ? ' fm-b-pop' : ' fm-s-pop') + (popup === 'shop' ? ' fm-shop' : '')))
       if (paintedPopup !== popup) box.className += ' fm-enter'

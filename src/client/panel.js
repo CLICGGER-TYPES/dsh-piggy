@@ -130,8 +130,17 @@ export function createPanel(ctx) {
 
       function renderContent() {
         var scrollTop = ctx.content.scrollTop
+        // 2026-10-13：内部浮层按稳定名称保留滚动；重绘后同一商品仍在原位置，不串到别的页签。
+        var scrollPositions = new Map()
+        ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
+          scrollPositions.set(node.getAttribute('data-scroll-key'), { top: node.scrollTop, left: node.scrollLeft })
+        })
         paintContent()
         ctx.content.scrollTop = scrollTop
+        ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
+          var saved = scrollPositions.get(node.getAttribute('data-scroll-key'))
+          if (saved) { node.scrollTop = saved.top; node.scrollLeft = saved.left }
+        })
         ctx.justBought = null
       }
 

@@ -30,6 +30,7 @@ import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
+import { createExtensionLayer } from './lib/extension-layer.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
 
 const { autoUpdater } = updaterPackage
@@ -143,6 +144,7 @@ let petAsked = null
 let panelWin = null
 /** 扩展的大窗口（role=ext）和它显示的扩展；一次只开一个。 */
 let extWin = null
+const extensionLayer = createExtensionLayer({ extension: () => extWin, overlays: () => [panelWin, win] })
 let extKey = null
 /** 正在退出/重启：关掉窗口前先置位，之后到达的页面消息一律不处理。 */
 let quitting = false
@@ -698,6 +700,7 @@ function sendPanel(message) {
  * 只改 z 序不改大小；猪窗口除猪本体外都穿透点击，压在上面不挡面板操作。
  */
 function raisePetAbovePanel() {
+  if (extensionLayer.isFocused()) return
   if (win === null || win.isDestroyed() || !win.isVisible()) return
   win.moveTop()
 }
@@ -714,7 +717,7 @@ function ensurePanelWindow() {
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
       additionalArguments: ['--piggy-role=panel'] },
   })
-  panelWin.setAlwaysOnTop(true, 'floating')
+  extensionLayer.sync()
   if (FRAME_CAP > 0) panelWin.webContents.setFrameRate(FRAME_CAP)
   panelWin.loadURL('piggy://app/index.html')
   panelWin.webContents.on('did-finish-load', () => {
@@ -855,11 +858,12 @@ function openExtWindow(key) {
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true,
       additionalArguments: ['--piggy-role=ext', '--piggy-ext=' + key] },
   })
+  for (const event of ['focus', 'blur', 'minimize', 'restore', 'hide']) extWin.on(event, () => extensionLayer.sync())
   extWin.setMenuBarVisibility(false)
   extWin.loadURL('piggy://app/index.html')
   extWin.once('ready-to-show', () => { extWin?.show(); extWin?.focus() })
   extWin.on('page-title-updated', event => event.preventDefault())
-  extWin.on('closed', () => { extWin = null; extKey = null })
+  extWin.on('closed', () => { extWin = null; extKey = null; extensionLayer.sync() })
   extWin.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('ext:', message) })
   log('ext window', key, width + 'x' + height)
 }
@@ -1050,6 +1054,7 @@ let reassertingUntil = 0
  * 光调一次 setAlwaysOnTop(true) 在 Electron 里可能因为「状态没变」被跳过，所以先关再开。
  */
 function reassertTop(why) {
+  if (extensionLayer.isFocused()) { extensionLayer.sync(); return }
   reassertingUntil = Date.now() + 1000
   for (const target of [panelWin, win]) {
     if (target === null || target.isDestroyed() || !target.isVisible()) continue
@@ -1094,7 +1099,7 @@ function onFullscreenProbe(probe) {
   }
   if (ended) reassertTop('fullscreen-ended')
   // 「照常显示」：全屏程序自己也是置顶窗口，每秒把猪抬回它上面一次。
-  else if (covering && win.isVisible()) win.moveTop()
+  else if (covering && win.isVisible()) raisePetAbovePanel()
 }
 
 function startFullscreenWatch() {
