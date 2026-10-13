@@ -1,5 +1,7 @@
 # 反馈小猪游戏图制作记录
 
+> 当前（2026-10-13）只有一套无描边平涂，由旧版 1:1 重画，已放入 `assets/pigs/` 主路径；画风设置已移除。当前来源见 `assets/pigs/PROVENANCE.md` 和 manifest.json。以下为历史记录，不代表当前运行行为。
+
 **灵感与参考**：用户提供的原始小猪参考图取自 [PigHub](https://pighub.top/)。本目录的图是以它们为参考、由 codex 用 AI 重新生成的，没有直接复制原图。若原图作者认为侵权或不喜欢这样使用，请开 issue，我们会删除相关图片。
 
 这 38 张游戏图取自用户审定的 OpenAI `image_gen.imagegen` 输出。工具没有提供具体模型版本，提示词要点和逐图复用稿见 [../../../docs/art-prompts/feedback-pigs.md](../../../docs/art-prompts/feedback-pigs.md)。生成服务条款见 [OpenAI Terms of Use](https://openai.com/policies/terms-of-use/)。原尺寸 PNG 保存在素材工作区 `dsh-piggy-artwork/feedback-static-svg/ai-drafts/selected-png/`，不随游戏包发布。

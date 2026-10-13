@@ -30,7 +30,6 @@ import { attachLife } from './life.js'
 import { forceFeedbackArt, syncPigArt } from './art.js'
 import { createBirthday } from './birthday.js'
 import { partAt } from './pet-parts.js'
-import { attachArtPreference } from './art-style.js'
 import { attachSizePreference } from './pig-size.js'
 /** @type {any} */ (window).__ModuleLoader__.load({
   id: 'dsh-piggy',
@@ -209,7 +208,6 @@ import { attachSizePreference } from './pig-size.js'
       ctx.send = send
       ctx.render = render
       ctx.renderContent = renderContent
-      var stopArtPreference = attachArtPreference(host, () => { renderContent(); desktopShell()?.syncGeometry?.() })
       ctx.setOpen = setOpen
       ctx.fitPanel = fitPanel
       ctx.flash = flash
@@ -373,7 +371,6 @@ import { attachSizePreference } from './pig-size.js'
       function dispose() {
         stopped = true
         stopSizePreference()
-        stopArtPreference()
         stopDragHeartbeat()
         updateNotice.stop()
         stopResize()

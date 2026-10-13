@@ -9,6 +9,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 - 先撤回开心、照料、闲着与旅行的反馈图，保留正常立绘和动作图。
 - 离开时猪猪会自动吃背包里的食物，回来显示摘要并写日记；设置里可关闭，旧存档默认开启。
+- 小猪立绘换回旧版平涂无描边，去掉画风设置。
 
 ## [Unreleased]
 
