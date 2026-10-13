@@ -213,3 +213,51 @@ test('独立猪窗口开面板时，台词跟签到一样放在猪旁边，避�
   assert.match(css, /data-panel-open="true"\] \.dp-bubble\{right:calc\(100% \+ 6px\)/)
   assert.doesNotMatch(css, /data-daily-side="right"\] \.dp-bubble\{right:auto;left:calc\(100% \+ 6px\)/)
 })
+
+test('大小农场：灾害只显示气泡，保留单个收获提示；包袱工具不挂在地上', () => {
+  const data = establishedFarm(), t = api()
+  farm.actions.buy(data, { item: 'radish', count: 2 }, t)
+  farm.actions.plant(data, { plot: 0, item: 'radish' }, t)
+  farm.actions.plant(data, { plot: 1, item: 'radish' }, t)
+  data.plots[0].pests = { dry: T0, weed: T0, bug: T0 }
+  data.plots[1].plantedAt -= 14 * H
+  data.plots[1].pests = { dry: 1e15, weed: 1e15, bug: 1e15 }
+  for (const mode of ['panel', 'big']) {
+    const ui = renderFarm(farm.view(data, t), mode)
+    const afflicted = ui.find('data-farm-plot', '0')
+    assert.equal(afflicted.querySelectorAll('.fm-chip').length, 0, '已有三种气泡，不再画灾害文字条')
+    assert.equal(afflicted.querySelectorAll('.fm-bubble').length, 3)
+    assert.equal(ui.find('data-farm-plot', '1').querySelectorAll('.fm-chip').length, 1, '收获提示只留一项')
+    if (mode === 'panel') {
+      assert.equal(ui.find('data-farm-panel', 'seeds').parentNode.className, 'fm-s-tools')
+      ui.find('data-farm-panel', 'seeds').fire('click')
+      assert.ok(ui.find('data-farm-overlay', 'seeds'))
+    }
+  }
+})
+
+test('经验条使用 levelOf 的当前等级进度：六级零经验、半满及升级后归零', () => {
+  const data = establishedFarm(), t = api()
+  for (const [total, level, exp, need, width] of [[1500, 6, 0, 600, '0%'], [1800, 6, 300, 600, '45%'], [2100, 7, 0, 700, '0%']]) {
+    data.exp = total
+    const view = farm.view(data, t)
+    assert.deepEqual([view.level, view.exp, view.need], [level, exp, need])
+    for (const mode of ['panel', 'big']) {
+      const ui = renderFarm(view, mode)
+      const bar = ui.dom.body.querySelectorAll('.fm-exp')[0]
+      assert.equal(bar.getAttribute('title'), '经验 ' + exp + ' / ' + need)
+      assert.equal(bar.children[0].style.width, width)
+    }
+  }
+})
+
+test('小农场紧凑布局按宿主可用高度决定，不随面板自身内容高度切换', () => {
+  const ui = renderFarm(farm.view(establishedFarm(), api()))
+  const panel = { style: { maxHeight: '400px' } }
+  ui.app.content.closest = selector => selector === '.dp-card' ? panel : null
+  ui.app.rerender()
+  assert.ok(ui.find('data-farm-compact', 'true'))
+  panel.style.maxHeight = '485px'
+  ui.app.rerender()
+  assert.equal(ui.find('data-farm-compact', 'true'), undefined)
+})
