@@ -7,6 +7,8 @@ import farm, {
   levelOf, normalize, plotState, setRandom, weatherAt, helperRecipe, HELPER_PLOTS,
 } from '../extensions/farm/server.js'
 
+// 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。
+function establishedFarm() { return Object.assign(farm.init(), { plots: Array(18).fill(null) }) }
 const H = 3600000
 /** 找一个晴天中午当起点（weatherAt 按日期定晴雨），免得雨天推迟干旱打乱断言。 */
 function sunnyNoon() {
@@ -65,7 +67,7 @@ test('等级：升下一级要「等级 × 100」经验，种子按等级解锁'
   assert.deepEqual(levelOf(100), { level: 2, exp: 0, need: 200 })
   assert.deepEqual(levelOf(299), { level: 2, exp: 199, need: 200 })
   assert.equal(levelOf(300).level, 3)
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   assert.equal(farm.actions.buy(data, { item: 'strawberry' }, t.api).reason, 'level', '6 级才能买草莓')
   assert.equal(farm.actions.buy(data, { item: 'radish', count: 2 }, t.api).ok, true)
@@ -75,7 +77,7 @@ test('等级：升下一级要「等级 × 100」经验，种子按等级解锁'
 })
 
 test('种下按真实时间自己长，不用浇水；14 小时白萝卜 14 小时熟，收进仓库给经验，留下枯萎秆', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish' }, t.api)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
@@ -97,7 +99,7 @@ test('种下按真实时间自己长，不用浇水；14 小时白萝卜 14 小�
 })
 
 test('灾害：长的时候来草、虫、旱，每样少 2 个；治了 +2 经验；成熟以后不再来', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
@@ -123,7 +125,7 @@ test('雨天白天不旱：干旱落在下雨的白天推到 18 点', () => {
   }
   assert.ok(rainy, 'some rainy morning within a month')
   assert.equal(weatherAt(new Date(rainy).setHours(20)), 'night')
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   t.api.now = rainy
   farm.actions.buy(data, { item: 'radish' }, t.api)
@@ -136,7 +138,7 @@ test('雨天白天不旱：干旱落在下雨的白天推到 18 点', () => {
 
 test('产量浮动 −3～+2，至少 1 个', () => {
   setRandom(() => 0)
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
@@ -149,7 +151,7 @@ test('产量浮动 −3～+2，至少 1 个', () => {
 })
 
 test('多季作物：收完回到「长大」再长一季，最后一季才枯萎', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   data.exp = 3600 // 9 级
   const t = fakeApi()
   farm.actions.buy(data, { item: 'coconut' }, t.api)
@@ -171,7 +173,7 @@ test('多季作物：收完回到「长大」再长一季，最后一季才枯�
 })
 
 test('化肥：多长 2 / 3.5 / 5 小时，可以连着施；熟了不能施', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish' }, t.api)
   farm.actions.buy(data, { item: 'fert-3', count: 2 }, t.api)
@@ -184,7 +186,7 @@ test('化肥：多长 2 / 3.5 / 5 小时，可以连着施；熟了不能施', (
 })
 
 test('一键收获 / 照料 / 铲除 / 播种一开始锁着，买了对应工具才能用', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish', count: 6 }, t.api)
   assert.equal(farm.actions.plantAll(data, { item: 'radish' }, t.api).reason, 'locked')
@@ -206,7 +208,7 @@ test('一键收获 / 照料 / 铲除 / 播种一开始锁着，买了对应工�
 })
 
 test('铲掉正在长的作物要 force', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish' }, t.api)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
@@ -215,7 +217,7 @@ test('铲掉正在长的作物要 force', () => {
 })
 
 test('开垦：按顺序开，10000 菜币一块，最多 18 块', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi(25_000)
   assert.equal(farm.actions.unlock(data, { plot: 7 }, t.api).reason, 'locked')
   assert.equal(farm.actions.unlock(data, { plot: 6 }, t.api).ok, true)
@@ -229,7 +231,7 @@ test('开垦：按顺序开，10000 菜币一块，最多 18 块', () => {
 })
 
 test('卖、全卖进菜币；放背包给宿主物品；金币一个不碰', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi(0)
   data.harvest.pumpkin = 2
   data.harvest.radish = 10
@@ -267,7 +269,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
 })
 
 test('view 不改存档；货架列种子、化肥、工具和帮工，用菜币标价', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi(15)
   const before = structuredClone(data)
   const view = farm.view(data, t.api)
@@ -281,7 +283,7 @@ test('view 不改存档；货架列种子、化肥、工具和帮工，用菜币
 })
 
 test('帮工猪（J2 不变）：按自己的小批次收进谷仓、管的地不显示灾害、六小时封仓、收仓后接着干', () => {
-  const data = farm.init()
+  const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
@@ -307,4 +309,57 @@ test('帮工每种作物、每档：净时薪 ≤ 400 且比自己种少赚', ()
     const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours
     assert.ok(recipe.net > 0 && recipe.net <= 400 && recipe.net < manual, crop.key + level + barn)
   }
+})
+
+test('新开荒地：六块全干，每块有草或残株；除草、铲残株和浇水各 +2 经验', () => {
+  let draw = 0
+  setRandom(() => [0.1, 0.1, 0.9, 0.2, 0.9][draw++ % 5])
+  const data = farm.init(), t = fakeApi()
+  const plots = farm.view(data, t.api).plots.slice(0, 6)
+  assert.equal(plots.filter(plot => plot.pests.includes('dry')).length, 6)
+  assert.ok(plots.every(plot => plot.stubble || plot.pests.includes('weed')))
+  assert.ok(plots.filter(plot => plot.pests.includes('weed')).length > 3)
+  farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
+  assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).reason, 'clear-ground')
+  const start = data.exp
+  assert.equal(farm.actions.care(data, { plot: 0, kind: 'weed' }, t.api).ok, true)
+  assert.equal(farm.actions.clear(data, { plot: 0 }, t.api).ok, true)
+  assert.equal(data.exp - start, 4)
+  assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).ok, true)
+  assert.ok(plotState(data.plots[0], t.api.now).pests.includes('dry'), '干土允许播种，种下仍干')
+  assert.equal(farm.actions.care(data, { plot: 0, kind: 'dry' }, t.api).ok, true)
+  assert.equal(data.exp - start, 6)
+  assert.equal(farm.actions.unlock(data, { plot: 6 }, t.api).ok, true)
+  assert.ok(data.plots[6].fallow)
+  assert.ok(data.plots[6].stubble || data.plots[6].pests.weed === 0)
+  data.plots[1] = { fallow: true, stubble: false, pests: { weed: 0, dry: 0 } }
+  assert.equal(farm.actions.clear(data, { plot: 1, force: true }, t.api).reason, 'unavailable', 'force 不绕过去除空地杂草')
+})
+
+test('雨天浇湿已经干的空地和作物；view 不改输入；动作写回后空地不复干', () => {
+  const data = farm.init(), t = fakeApi()
+  data.plots[0] = { crop: 'radish', plantedAt: T0, season: 1, boostMs: 0, roll: 0, pests: { weed: 1e15, bug: 1e15, dry: T0 } }
+  let rain = T0
+  for (let day = 1; day < 30; day += 1) { rain = T0 + day * 24 * H; if (weatherAt(rain) === 'rain') break }
+  t.api.now = rain
+  const before = structuredClone(data)
+  assert.equal(farm.view(data, t.api).plots.filter(plot => plot.pests?.includes('dry')).length, 0)
+  assert.deepEqual(data, before)
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  assert.equal(data.plots[1].pests.dry, null)
+  assert.ok(data.plots[0].pests.dry > rain)
+  t.api.now = new Date(rain).setHours(19)
+  assert.equal(farm.view(data, t.api).plots[1].pests.includes('dry'), false)
+})
+
+test('开荒字段 normalize 兼容；3.x 迁移和既有 4.0 空地不长出草和残株', () => {
+  const old = normalize({ version: 4, unlocked: 8, plots: [] })
+  assert.ok(old.plots.every(plot => plot === null))
+  const migrated = normalize({ version: 3, unlocked: 8, plots: [] })
+  assert.ok(migrated.plots.every(plot => plot === null))
+  const data = farm.init()
+  data.plots[0] = { fallow: true }
+  normalize(data)
+  assert.equal(data.plots[0].stubble, false)
+  assert.equal(data.plots[0].pests.dry, null)
 })

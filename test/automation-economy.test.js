@@ -28,7 +28,7 @@ test('所有作物、管地和农具档：实物菜、扣种子、六小时封�
     const manual = plots * (crop.yield * crop.sell - crop.price - 5 * .2 * 10 / 32) / crop.hours
     assert.ok(rate.net > 0 && rate.net <= 400 && rate.net < manual, crop.key)
     assert.equal(rate.fullHours, 6)
-    const data = farm.init(), host = api()
+    const data = Object.assign(farm.init(), { plots: Array(18).fill(null) }), host = api()
     data.unlocked = plots
     data.seeds[crop.key] = 999
     data.exp = 10000 // 4.0 起种子按等级解锁：直接给到满级

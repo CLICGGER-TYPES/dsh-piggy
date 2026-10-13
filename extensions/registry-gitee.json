@@ -93,20 +93,20 @@
       },
       "bundle": {
         "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/ext-farm-4.0.0.piggyext",
-        "sha256": "bf5720f93a0dd477dfc66f4efb8f0c51b7cacaf9c4a6e954668b8c23177ac3b2"
+        "sha256": "9cb1094dc44f8579fc04d14e32ae99c9f1521e72b926179fe430bc666b4a14a2"
       },
       "files": {
         "manifest.json": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/manifest.json",
-          "sha256": "3af07172fcaa3e5ffeafd382c23b9a7f908cf81975d64aa1409f5740f590815b"
+          "sha256": "5344431d35c94c30a3dd9159874bb2dcaea94ec376b29d3427e47dd54a38d6d7"
         },
         "server.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/server.js",
-          "sha256": "889dc8ab50c70903cfda696606c7b1c54ab4d5314d0ebd10994fb82610101b6f"
+          "sha256": "0f308d9e61815743ae4b6cf7f77b33b35be711f2804172db23343965c1f1abb3"
         },
         "client.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/client.js",
-          "sha256": "23615d3b45f9db063996a54c3703a51bd4bca1055fd6e98df53fe7e861ed3510"
+          "sha256": "ce4e3802c6dc3538e0a4cebf9bd06acfec864d349d78b646df0d2e2a9f7b4281"
         },
         "assets/bg-big.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/bg-big.webp",
@@ -124,6 +124,10 @@
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/big-plot-farmed.webp",
           "sha256": "3f16deb2bc5a3bea0a046a16d2983c9fe20385dce424af6311a070afd11ac0df"
         },
+        "assets/big-plot-hover.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/big-plot-hover.webp",
+          "sha256": "4e67d4bdaef07610272fefcad132085e42e2c78b91acb88860d4c7c7213f748f"
+        },
         "assets/big-plot-wild.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/big-plot-wild.webp",
           "sha256": "e6be403643ecc5c9b30a738875b194f398d23e49881205c1b4586816d80ad9bd"
@@ -132,13 +136,45 @@
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/big-sign-expand.webp",
           "sha256": "7f4ab58582fba157de965a316a9caa019bbe9c502d0ccdeac042e2b6ed9c1d09"
         },
+        "assets/btn-cancel.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/btn-cancel.webp",
+          "sha256": "78c427cb0d0a42ccd5725b612a01b3a16f0028066e1313e1abe530d351b98a9f"
+        },
+        "assets/btn-close.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/btn-close.webp",
+          "sha256": "6838fcc46cf029e661abcd7aab661ea927d32e15e54fe62149a3df771edd9105"
+        },
+        "assets/btn-confirm.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/btn-confirm.webp",
+          "sha256": "a5da3c6d66e56204ea4a302edc0156890f4673aabbbe63d648ce9973030b288f"
+        },
         "assets/bug.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/bug.webp",
           "sha256": "64739f8fb3cf1cefe2f1bc972ceb3ea0d841786e7b86c1ecb234f904213de33d"
         },
+        "assets/buy-frame.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/buy-frame.webp",
+          "sha256": "7da00831863a464a6d6c1f37ae4532a12f7d662fab8b8206b5e1c0619d27988b"
+        },
+        "assets/buy-title.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/buy-title.webp",
+          "sha256": "ea45bf49eb82b18c360bf000471858706fe7410eb99436443c9c8c8b6e795639"
+        },
+        "assets/card-frame.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/card-frame.webp",
+          "sha256": "cc3ec453bff8bab9557b6a53eaf51743de6cced978925e78749a528d7d80ac8b"
+        },
+        "assets/coin-veg.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/coin-veg.webp",
+          "sha256": "edfbce14862a363557cc3a62952fedf979cf3f0b64a2b0c331f8872e92e05d5f"
+        },
         "assets/coin.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/coin.webp",
           "sha256": "b1e22085a698f5844193fdd1e2cb3ccb2e1360fdb6866311600b2a76ea476936"
+        },
+        "assets/count-badge.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/count-badge.webp",
+          "sha256": "0dd89e4b812279fe21e3c646db80de1fa3bfe587949f8ef3f54037a13e08fe27"
         },
         "assets/crop-apple-flowering.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/crop-apple-flowering.webp",
@@ -604,6 +640,34 @@
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/crop-watermelon-seedling.webp",
           "sha256": "9ecfd15a3b0dc6482ee59f2104e0d1cf6a5345d9e8d467b5e3daf3533df7bf47"
         },
+        "assets/cursor-can.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-can.webp",
+          "sha256": "daa143011fe5bcdbb6255a29872476669c7997c5523b704b298a420dd7481c56"
+        },
+        "assets/cursor-fert.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-fert.webp",
+          "sha256": "5e4715f52869ee301658212989c80126f0071eb0c0f9335cad7c52d0e9347053"
+        },
+        "assets/cursor-glove.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-glove.webp",
+          "sha256": "c183306545eaed47f076ebe52c8de6802c3f15ebbc6a282454d35f97966f43f2"
+        },
+        "assets/cursor-pesticide.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-pesticide.webp",
+          "sha256": "117db6502ebd86e61b4ecce7e85f9946746fa1b9d90dbd788a487d8721aa09cc"
+        },
+        "assets/cursor-seed.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-seed.webp",
+          "sha256": "025909c0dfde80b619fdd94c8fb23fed0c421c7411f0f4714635c2df6d239d18"
+        },
+        "assets/cursor-shovel.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-shovel.webp",
+          "sha256": "bfb770d619336dda4118ef5ccc43be68d1378391cb343a6b7d784519da73ba61"
+        },
+        "assets/cursor-spray.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/cursor-spray.webp",
+          "sha256": "9ff977d56d24695d576e526927530a339f5feca5a16775446b3c98ba0206e56f"
+        },
         "assets/fert-1.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/fert-1.webp",
           "sha256": "53318beb9bcb8f83f3c6bc4147ec2a1005e647587c2a792d9762ae7425f945ec"
@@ -615,6 +679,50 @@
         "assets/fert-3.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/fert-3.webp",
           "sha256": "3baff907dea0f278c83450e1ae1e27bae0a3f27610b30985c0bf987934bbb008"
+        },
+        "assets/info-row.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/info-row.webp",
+          "sha256": "3a3ba7635377f0fd5202bd48f031c4e3e5d5b875b1129ac323d6d56cf765df52"
+        },
+        "assets/lock-badge.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/lock-badge.webp",
+          "sha256": "72ece5c54a27fc8ec1e1923463841f97e5e135c029807fd52aa53de24f9564d0"
+        },
+        "assets/lock-strip.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/lock-strip.webp",
+          "sha256": "b711300b63326383fe8cbd1dcd3070665ede540ba7d9cfbff365c31f7854be12"
+        },
+        "assets/pack-bar.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/pack-bar.webp",
+          "sha256": "7c112e89f95b1a835be2f47ec4902bd0cfe59b90650cf29c37d40bdb964b0aa1"
+        },
+        "assets/pack-slot-selected.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/pack-slot-selected.webp",
+          "sha256": "29b683dd4557ee16223063b4190a6880376140713f736e6b6764c1eea0e2e613"
+        },
+        "assets/pack-slot.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/pack-slot.webp",
+          "sha256": "823c9ea898b598ea38ad35141dbdef197e891ca135552f3eeefc07e7929dcd3d"
+        },
+        "assets/pack-title.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/pack-title.webp",
+          "sha256": "2debdae714c3dfb5a68844f99de275ff1da52fd5fe151fee78e24c8918afebca"
+        },
+        "assets/plot-bubble-bug.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/plot-bubble-bug.webp",
+          "sha256": "953f2695027d83beb8c71337eb591a6a7e333773844a2565c656698117a63b6a"
+        },
+        "assets/plot-bubble-water.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/plot-bubble-water.webp",
+          "sha256": "19e6c3b00174b5572121576e8a569d496c4f05ecaa14b417166093651affa920"
+        },
+        "assets/plot-bubble-weed.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/plot-bubble-weed.webp",
+          "sha256": "a8ef92dfb6cab49e1ca2537ee618188f97a563075346cf05047f4cdce9fb51a3"
+        },
+        "assets/plot-ghost-seed.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/plot-ghost-seed.webp",
+          "sha256": "50a6ca8837f5582f563b41eeb21339db9c83bb3b6c242b3b834531904786ca4e"
         },
         "assets/produce-apple.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/produce-apple.webp",
@@ -732,9 +840,45 @@
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/produce-watermelon.webp",
           "sha256": "c93914b826032d62ce462acf6201332f7b061a82d31cdaadfb07448329b594ae"
         },
+        "assets/progress-fill.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/progress-fill.webp",
+          "sha256": "602fb25568085e83b927f7430f5c244279bc23f764c2d7930e1faf41ceb41b2d"
+        },
+        "assets/progress-track.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/progress-track.webp",
+          "sha256": "5f754c0a23ca16e3e53b27bd8c5c78e063cb445419fbd90f25d72554681730c8"
+        },
+        "assets/seed-packet.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/seed-packet.webp",
+          "sha256": "3dabda3d447137011e5a50ae5b006d894008eba366e8ca6bb91c6bda72f1dbc5"
+        },
         "assets/seed.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/seed.webp",
           "sha256": "95423b46d8307423f79b9f67d63cbd5729b8f7c32c184e2b916c8867b6b52785"
+        },
+        "assets/shop-frame.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/shop-frame.webp",
+          "sha256": "15422fbe4cdf600d2d8d6be68d128c72006e3ea4747bab0c4fe01c517c518ed6"
+        },
+        "assets/shop-item-locked.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/shop-item-locked.webp",
+          "sha256": "1fde0bd9c5132221fff3eb085f177894c689df3757a73d339d66208ebcee2a05"
+        },
+        "assets/shop-item.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/shop-item.webp",
+          "sha256": "4c7c026c32cdbb83779057d7a6cd7874eb035df48b6fb7508264030765fc2fee"
+        },
+        "assets/shop-tab-active.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/shop-tab-active.webp",
+          "sha256": "7f326b2e67b558786b60cec0ee50a6af27dbd472b39b8beeceb880988079b155"
+        },
+        "assets/shop-tab.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/shop-tab.webp",
+          "sha256": "5268fb5c34f7b70c9d66f10267f92df3d4dba097ce0504feef9ec13769bea2fa"
+        },
+        "assets/shop-title.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/shop-title.webp",
+          "sha256": "d22ada4bcaa228a7366d638e8c574c1d4625b7bd2b502c0d5135a0cadc62bd3d"
         },
         "assets/small-plot-dry.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/small-plot-dry.webp",
@@ -744,9 +888,65 @@
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/small-plot-farmed.webp",
           "sha256": "20103cb43ce03c995b84dcc03fc153aa6ec767448032560dc02a98a7436f033d"
         },
+        "assets/small-plot-hover.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/small-plot-hover.webp",
+          "sha256": "d2fbf63f08158af6d7eb8e6a229e8957e88f2cef0b1e6e1064251230a1395090"
+        },
         "assets/sprout.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/sprout.webp",
           "sha256": "8072648d0e0be5e9d3d1533803525a90457a77bcf77791dd8cddfd35614dab27"
+        },
+        "assets/status-chip-active.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/status-chip-active.webp",
+          "sha256": "c1aa11048ffa64a8a128ba536ac8c8031f55a7bd1792f1fd79f93ef4f1627b93"
+        },
+        "assets/status-chip.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/status-chip.webp",
+          "sha256": "26690f781ad90a61433ae7230ba65cc28ec96b6c0f1bc7240d74a6dc0131d4a5"
+        },
+        "assets/status-icon-bug.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/status-icon-bug.webp",
+          "sha256": "abb6d8695502f628728b3daa5cd406b0710a24030d099364e22077a70837f92e"
+        },
+        "assets/status-icon-water.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/status-icon-water.webp",
+          "sha256": "2fce7f7afecbcddd1b1e4480dbfd1b6762738faae325c18310c660f037d47a25"
+        },
+        "assets/status-icon-weed.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/status-icon-weed.webp",
+          "sha256": "a7649a055576a69a503cbb64ac22a3398b7d64ff3906f8e51f68c49353f5db41"
+        },
+        "assets/stepper-field.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/stepper-field.webp",
+          "sha256": "d8249778f8796ec65df3980b6551cb5cac6c9a66cebfd5d7efcdb2425a4f0e64"
+        },
+        "assets/stepper-minus.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/stepper-minus.webp",
+          "sha256": "a2e730a88ba5bf13172e40f91f09c212b4f78e817fa163f56f0f71cc97eb78e1"
+        },
+        "assets/stepper-plus.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/stepper-plus.webp",
+          "sha256": "ae46aef8eecd7905cf5ef1ae6ad3cacfd7fe8218a045aaaf0075082ab470c185"
+        },
+        "assets/tab-icon-fert.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/tab-icon-fert.webp",
+          "sha256": "ebddd893785201a7515c22f7870abd279401435cb73c00cbacd6dbe913e8564a"
+        },
+        "assets/tab-icon-helper.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/tab-icon-helper.webp",
+          "sha256": "ea460692c5c0ee9bd43baa29f8c362080002bc7069ed3d921403a9aa746d055e"
+        },
+        "assets/tab-icon-seed.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/tab-icon-seed.webp",
+          "sha256": "7d24794dd38c0355475bcf90ad0c70c197091a4bb14b5fe404d277abcde3bc5d"
+        },
+        "assets/tab-icon-tool.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/tab-icon-tool.webp",
+          "sha256": "da684868f709a9e8aec3279af86f5d125d3ae503156f7e62e123f388479242a3"
+        },
+        "assets/tip-card.webp": {
+          "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/tip-card.webp",
+          "sha256": "0f8c485f7bbf657dca88b5e8fbb56ccf991f6798180cfb8d6c47626a0797b2a0"
         },
         "assets/tool-can.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.0/tool-can.webp",

@@ -79,7 +79,7 @@ export function renderDownloadedApp(ui, key, mode) {
   var data = ui.view.extViews ? ui.view.extViews[key] : undefined
   // 有自己的币就在顶上放余额条，兑换由宿主管（扩展不用自己画）。
   var wallet = (ui.view.wallets || []).find(function (entry) { return entry.key === key })
-  if (wallet && !big) ui.content.appendChild(walletBar(ui, wallet))
+  if (wallet && !big && key !== 'farm') ui.content.appendChild(walletBar(ui, wallet))
   try {
     impl.render({
       content: ui.content,
@@ -89,6 +89,7 @@ export function renderDownloadedApp(ui, key, mode) {
       openBig: big || (desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === 'function')) ? undefined : function () { openBigApp(ui, key) },
       closeBig: big ? function () { closeBigApp(ui) } : undefined,
       send: function (op, payload) { ui.send('ext', { key: key, op: op, data: payload || {} }) },
+      walletContent: wallet ? function () { return walletBar(ui, wallet, { open: true }) } : undefined,
       el: el,
       button: button,
       rerender: function () { ui.renderContent() },
