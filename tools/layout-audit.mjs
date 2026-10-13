@@ -157,7 +157,8 @@ function auditAttachment(element, report) {
 /** @param {Element[]} decorations @param {Element[]} controls @param {any} report */
 function auditDecorations(decorations, controls, report) {
   for (const decoration of decorations) for (const control of controls) {
-    if (control.contains(decoration) || (control.closest('.fm-pop,.fm-mask') && !decoration.closest('.fm-pop,.fm-mask'))) continue
+    const front = decoration.closest('.fm-pop,.fm-mask'), back = control.closest('.fm-pop,.fm-mask')
+    if (control.contains(decoration) || (front !== back && (front || back))) continue
     const area = polygonArea(polygonIntersection(footprint(decoration), footprint(control)))
     if (area > .5) report.decorativeOcclusions.push({ decoration: identify(decoration), control: identify(control), areaPx2: area })
   }
@@ -201,7 +202,7 @@ function auditPage() {
   auditBounds([...new Set([...controls, ...attached])], report)
   auditControls(controls, report)
   auditPairs([...new Set([...controls, ...attached])], report)
-  auditDecorations(visible.filter(e => e.matches('.fm-crop,.fm-pest,.fm-b-pig,.fm-s-pig,.fm-b-face,.fm-s-face')), controls, report)
+  auditDecorations(visible.filter(e => e.matches('.fm-crop,.fm-pest,.fm-b-pig,.fm-s-pig,.fm-b-face,.fm-s-face,.fm-title')), controls, report)
   visible.forEach(e => { auditText(e, report); if (Array.from(e.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) auditTextOcclusion(e, controls, report) })
   attached.forEach(e => auditAttachment(e, report))
   auditProgress(visible, report)

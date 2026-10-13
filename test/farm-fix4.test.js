@@ -107,3 +107,12 @@ test('fix4：跨时区的本地清晨仍使用浇水逻辑的同一份晴雨快�
     assert.match(ui.dom.body.querySelectorAll('.fm-b-scene')[0].style.backgroundImage, new RegExp('bg-big-dawn-' + view.weather))
   } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous }
 })
+
+test('fix4：通用按压反馈不覆盖按钮用于定位的transform', () => {
+  const ui = renderFarm(growing(), 'big', art)
+  const css = ui.dom.head.children.find(node => node.id?.includes('farm-style')).textContent
+  const active = /\.fm button:active\{([^}]*)\}/.exec(css)
+  assert.ok(active)
+  assert.doesNotMatch(active[1], /(?:^|;)\s*transform\s*:/, '开垦牌需保留translate(-50%,-50%)定位')
+  assert.match(css, /\.fm-b-field \.fm-expand\{[^}]*transform:translate\(-50%,-50%\)/)
+})
