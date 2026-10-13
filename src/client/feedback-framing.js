@@ -106,8 +106,10 @@ export const BUILTIN_FRAMING = Object.freeze({
   'pigs/forms/pig-round/work.png': [1.2857, 0.0, 0.0],
   'pigs/base/piglet/idle.png': [1.0693, 0.0, 0.0],
   'pigs/base/piglet/bathe.png': [1.3333, 0.0, 0.0],
+  'pigs/base/piglet/blink.png': [1.0693, 0.0, 0.0],
   'pigs/base/piglet/eat.png': [1.3333, 0.0, 0.0],
   'pigs/base/piglet/play.png': [1.1309, 0.0, 0.22],
+  'pigs/base/piglet/shy-pet.png': [1.0693, 0.0, 0.0],
   'pigs/base/piglet/sleep.png': [1.3585, 0.0, 0.27],
   'pigs/base/piglet/work.png': [1.8783, 0.0, 0.37],
   'pigs/skins/skin-angel/idle.png': [0.9818, 0.0, 0.0],
@@ -340,5 +342,7 @@ export const ART_BOUNDS = Object.freeze({
   'pigs/feedback/twitch.png': [0.0625, 0.136719, 0.9375, 0.859375],
   'pigs/badges/badge-pig-jobs-hundred.png': [0.132812, 0.0625, 0.863281, 0.9375],
   'pigs/feedback/death-day.png': [0.0625, 0.210938, 0.9375, 0.789062],
+  'pigs/base/piglet/blink.png': [0.039062, 0.09375, 0.949219, 0.941406],
+  'pigs/base/piglet/shy-pet.png': [0.050781, 0.09375, 0.949219, 0.90625],
 })
 export const MAX_ART_ASPECT = 1.947826

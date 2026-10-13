@@ -227,6 +227,7 @@ export const CSS_BASE = [
   '.dp-pig[data-mood="working"]{animation-name:dp-typing;animation-duration:.7s}',
   '.dp-pig[data-mood="studying"]{animation-name:dp-reading;animation-duration:2.4s}',
   '.dp-pig[data-mood="traveling"]{animation-name:dp-walking;animation-duration:1s}',
+  '.dp-pig[data-micro-action]{animation-play-state:paused!important}',
   '.dp-pig[data-mood="dead"]{animation:none}'
   ,'.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   '.dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}',

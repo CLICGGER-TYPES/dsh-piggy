@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 普通猪每 8～16 秒眨眼，摸猪成功后短暂害羞；切换状态、隐藏或拖动时停止。
+
 - 小猪立绘换回旧版平涂无描边、去掉画风设置。
 
 ### 菜园 4.0：照 QQ 农场改版（需要游戏 0.37.0）

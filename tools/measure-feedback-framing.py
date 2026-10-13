@@ -15,6 +15,10 @@ THRESHOLD = 16
 
 
 def framing(entry):
+    # 2026-10-13 微动作固定复用 idle 取景，不能按关键帧重新居中。
+    if entry.get('frameReference'):
+        reference = next(row for row in entries if row['path'] == entry['frameReference'])
+        return framing(reference)
     image = Image.open(ROOT / 'assets' / entry['path']).convert('RGBA')
     box_width = 1.2 if entry['action'] == 'sleep' else 1
     left, top, right, bottom = image.getchannel('A').point(lambda a: 255 if a > THRESHOLD else 0).getbbox()

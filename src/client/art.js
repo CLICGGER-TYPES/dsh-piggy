@@ -5,6 +5,7 @@
  * 立绘来自 PR #2（作者 1nuoiscute）。
  * @module dsh-piggy/client/art
  */
+import { pigActionArt } from './pig-actions.js'
 import { artSource, hasBuiltinArt } from './art-path.js'
 import { feedbackArtFor } from './feedback-art.js'
 import { applyFrame, builtinFrame, FRAME_HEIGHT } from './art-framing.js'
@@ -86,6 +87,7 @@ export function forceFeedbackArt(name) {
  */
 export function syncPigArt(pig, image, emoji) {
   var base = pig.getAttribute('data-art') || ''
+  pigActionArt(pig)
   var feedback = forcedFeedback || feedbackArtFor({
     stage: pig.getAttribute('data-stage') || '', base: base,
     mood: pig.getAttribute('data-mood') || '', reaction: pig.getAttribute('data-react') || '',
@@ -109,6 +111,16 @@ export function syncPigArt(pig, image, emoji) {
     pig.setAttribute('data-feedback', 'false')
     if (emoji) emoji.hidden = false
     return false
+  }
+  var microArt = pigActionArt(pig)
+  if (microArt && !forcedFeedback) {
+    var microSrc = artSource(microArt)
+    if (image.getAttribute('src') !== microSrc) image.src = microSrc
+    applyFrame(image, builtinFrame(artSource('piglet')))
+    image.hidden = false
+    pig.setAttribute('data-feedback', 'false')
+    if (emoji) emoji.hidden = true
+    return true
   }
   var art = base
   if (pig.getAttribute('data-art-actions') === 'true' || base === 'piglet') {
