@@ -21,6 +21,8 @@ export function applyAssetFrame(node, info) {
 export function applyModalAssetFrame(node, info, url) {
   const slices = info?.nine_slice?.insets
   if (!Array.isArray(slices) || slices.length !== 4 || !slices.every(value => Number.isFinite(value) && value > 0)) return node
+  const gap = Number.isFinite(info.outer_insets?.[0]) ? info.outer_insets[0] / slices[0] : 0
+  node.style.setProperty('--fm-frame-top-gap-ratio', String(gap))
   node.style.borderImageSource = 'url("' + url + '")'
   node.style.borderImageSlice = slices.join(' ') + ' fill'
   node.style.borderImageRepeat = info.nine_slice.edge_mode === 'round' ? 'round' : 'repeat'

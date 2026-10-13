@@ -55,6 +55,7 @@ export function fakeDom() {
     }
 
     addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn) }
+    removeEventListener(name, fn) { this.listeners[name] = (this.listeners[name] ?? []).filter(entry => entry !== fn) }
     setPointerCapture() {}
     get src() { return this.getAttribute('src') || '' }
     set src(value) { this.setAttribute('src', value) }

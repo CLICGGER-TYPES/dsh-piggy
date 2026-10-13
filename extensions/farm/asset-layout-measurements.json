@@ -80,5 +80,38 @@
       9
     ],
     "measurement": "wood-face inner edges in packed184x192: y31..119,x9..175; runtime uniform cover crops pole"
+  },
+  "card-frame.webp": {
+    "size": [
+      512,
+      264
+    ],
+    "render_mode": "nine_slice_with_tail",
+    "nine_slice": {
+      "insets": [
+        113,
+        113,
+        113,
+        113
+      ],
+      "edge_mode": "repeat"
+    },
+    "inner_insets": [
+      60.80550774526678,
+      22.030981067125644,
+      24,
+      22.030981067125644
+    ],
+    "content_padding": {
+      "big": 8,
+      "small": 6
+    },
+    "outer_insets": [
+      32,
+      0,
+      0,
+      0
+    ],
+    "measurement": "packed512x264: straight top alpha>=128 at y32; bottom paper-to-wood transition at y240; measured after body/tail split"
   }
 }

@@ -5473,6 +5473,8 @@
   function applyModalAssetFrame(node, info, url) {
     const slices = info?.nine_slice?.insets;
     if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return node;
+    const gap = Number.isFinite(info.outer_insets?.[0]) ? info.outer_insets[0] / slices[0] : 0;
+    node.style.setProperty("--fm-frame-top-gap-ratio", String(gap));
     node.style.borderImageSource = 'url("' + url + '")';
     node.style.borderImageSlice = slices.join(" ") + " fill";
     node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
@@ -9073,8 +9075,60 @@
     return box;
   }
 
+  // src/client/pointer-repaint.js
+  function attachPointerRepaint(root, events) {
+    let held = false, readyAt = 0, pending2 = null, timer2 = null;
+    function schedule4() {
+      if (timer2 !== null) clearTimeout(timer2);
+      timer2 = null;
+      if (held || pending2 === null) return;
+      timer2 = setTimeout(() => {
+        timer2 = null;
+        const run = pending2;
+        pending2 = null;
+        run?.();
+      }, Math.max(0, readyAt - Date.now()));
+    }
+    function down() {
+      held = true;
+      schedule4();
+    }
+    function up() {
+      if (!held) return;
+      held = false;
+      readyAt = Date.now() + 150;
+      schedule4();
+    }
+    function blur() {
+      held = false;
+      readyAt = 0;
+      schedule4();
+    }
+    root.addEventListener("pointerdown", down, true);
+    events.addEventListener("pointerup", up, true);
+    events.addEventListener("pointercancel", blur, true);
+    events.addEventListener("blur", blur);
+    return {
+      defer(run) {
+        if (!held && Date.now() >= readyAt) return false;
+        pending2 = run;
+        schedule4();
+        return true;
+      },
+      dispose() {
+        if (timer2 !== null) clearTimeout(timer2);
+        pending2 = null;
+        root.removeEventListener("pointerdown", down, true);
+        events.removeEventListener("pointerup", up, true);
+        events.removeEventListener("pointercancel", blur, true);
+        events.removeEventListener("blur", blur);
+      }
+    };
+  }
+
   // src/client/panel.js
   function createPanel(ctx) {
+    var pointerRepaint = attachPointerRepaint(ctx.host, window);
     var AWAY_LINE = {
       work: "\u5728\u5FD9",
       study: "\u5728\u5FF5\u4E66",
@@ -9231,6 +9285,9 @@
       ctx.fitPanel();
     }
     function render(next) {
+      if (pointerRepaint.defer(function() {
+        render(next);
+      })) return;
       var previousFishing = ctx.view?.fishing?.pending;
       ctx.view = applyExtensions(normalize(next));
       var stageEntry = null;
@@ -9359,7 +9416,7 @@
         ctx.send("reply", { line: lineId, index });
       });
     }
-    return { setOpen, select, renderContent, render };
+    return { setOpen, select, renderContent, render, dispose: pointerRepaint.dispose };
   }
 
   // src/client/scene.js
@@ -10706,6 +10763,7 @@
           updateNotice.stop();
           stopResize();
           autoCollapse.dispose();
+          panel.dispose();
           dev.dispose();
           if (pollTimer !== null) window.clearInterval(pollTimer);
           life?.dispose();

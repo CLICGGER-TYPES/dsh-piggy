@@ -125,6 +125,7 @@ function fakeDom() {
     }
 
     addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn) }
+    removeEventListener(name, fn) { this.listeners[name] = (this.listeners[name] ?? []).filter(entry => entry !== fn) }
     setPointerCapture() {}
     matches(selector) {
       return selector.split(',').some(part => part.startsWith('.')
@@ -2251,4 +2252,22 @@ test('farm quantity keeps focus across the four-second snapshot poll', async () 
     await poll(); await settle()
     assert.notEqual(findByClass(contentOf(dom), 'fm-quantity'), field, 'blur allows ordinary refresh again')
   } finally { globalThis.window.setInterval = realSetInterval }
+})
+
+test('a poll cannot replace a pressed button before mouseup and click', async () => {
+  const { registration, dom, windowListeners } = await loadClient()
+  let poll = null
+  const realSetInterval = globalThis.window.setInterval
+  globalThis.window.setInterval = fn => { poll = fn; return 1 }
+  const dispose = registration.factory(() => {}).apply({})
+  try {
+    await settle(); openPanel(dom, 'shop'); tap(dom, 'data-shelf', 'food')
+    const button = findByAttr(contentOf(dom), 'data-buy', 'apple')
+    hostOf(dom).fire('pointerdown')
+    await poll(); await settle()
+    assert.equal(findByAttr(contentOf(dom), 'data-buy', 'apple'), button, 'the pressed node remains connected')
+    for (const fn of windowListeners.pointerup) fn({})
+    await new Promise(resolve => setTimeout(resolve, 180)); await settle()
+    assert.notEqual(findByAttr(contentOf(dom), 'data-buy', 'apple'), button, 'the latest snapshot paints after click')
+  } finally { dispose(); globalThis.window.setInterval = realSetInterval }
 })

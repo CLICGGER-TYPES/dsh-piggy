@@ -111,6 +111,7 @@ function materialInnerRect(frame, css, info) {
 function auditMaterialPadding(elements, report, catalog) {
   const missing = new Set()
   for (const element of elements) {
+    if (element.matches('.fm-chip:not(.fm-expand)')) { report.exceptions.push({ element: imageIdentify(element), reason: '收获/枯萎提示为自身CSS胶囊，不把后面的土块误作文字框；另查字号、裁切和归属。' }); continue }
     if (!element.closest('.fm') || element.matches('.fm-tool-label,.fm-tooltip,.fm-n,.fm-lock') || !Array.from(element.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) continue
     let frame = element, name = null
     while (frame && frame.closest('.fm')) {

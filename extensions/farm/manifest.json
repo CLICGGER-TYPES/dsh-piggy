@@ -551,13 +551,20 @@
       "inner_insets": [
         60.80550774526678,
         22.030981067125644,
-        0.8812392426850258,
+        24,
         22.030981067125644
       ],
       "content_padding": {
         "big": 8,
         "small": 6
-      }
+      },
+      "outer_insets": [
+        32,
+        0,
+        0,
+        0
+      ],
+      "measurement": "packed512x264: straight top alpha>=128 at y32; bottom paper-to-wood transition at y240; measured after body/tail split"
     },
     "card-tail.webp": {
       "size": [

@@ -36,9 +36,11 @@ import { applyExtensions, enabledTabs } from './extensions.js'
 import { renderTravelTab } from './tabs/travel.js'
 import { renderWorkTab } from './tabs/work.js'
 import { str } from './values.js'
+import { attachPointerRepaint } from './pointer-repaint.js'
 
 
 export function createPanel(ctx) {
+  var pointerRepaint = attachPointerRepaint(ctx.host, window)
       var AWAY_LINE = {
         work: '在忙',
         study: '在念书',
@@ -210,6 +212,7 @@ export function createPanel(ctx) {
       }
 
       function render(next) {
+        if (pointerRepaint.defer(function () { render(next) })) return
         var previousFishing = ctx.view?.fishing?.pending
         ctx.view = applyExtensions(normalize(next))
         // Never leave the study tab parked on a stage the pig cannot attend —
@@ -384,5 +387,5 @@ export function createPanel(ctx) {
     })
   }
 
-  return { setOpen, select, renderContent, render }
+  return { setOpen, select, renderContent, render, dispose: pointerRepaint.dispose }
 }

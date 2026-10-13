@@ -375,6 +375,7 @@ import { attachSizePreference } from './pig-size.js'
         updateNotice.stop()
         stopResize()
         autoCollapse.dispose()
+        panel.dispose()
         // #11: the console handle outlived the pig, so a reload could toggle a
         // panel that had already been disposed.
         dev.dispose()

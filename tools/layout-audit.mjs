@@ -214,7 +214,9 @@ function auditPage() {
         const frame = rectOf(card), plot = rectOf(target), border = card.clientLeft || 0
         const expected = Math.max(frame.x + border + 24, Math.min(frame.right - border - 24, plot.x + plot.width / 2))
         const error = Math.abs(r.x + r.width / 2 - expected)
-        const overlap = card.getAttribute('data-farm-below') === 'true' ? r.bottom - frame.y : frame.bottom - r.y
+        const info = assetCatalog[(card.getAttribute('data-farm-frame') || 'card-frame') + '.webp']
+        const gap = info?.outer_insets?.[0] && info?.nine_slice?.insets?.[0] ? info.outer_insets[0] / info.nine_slice.insets[0] * (card.clientTop || border) : 0
+        const overlap = card.getAttribute('data-farm-below') === 'true' ? r.bottom - frame.y - gap : frame.bottom - r.y
         if (error > 2 || Math.abs(overlap - 2) > 2) report.driftedAttachments.push({ element: identify(element), reason: '尾巴没有指向所属地块或脱离卡框', error, overlap, expected })
       }
       report.exceptions.push({ element: identify(element), reason: '悬停尾巴为24×12装饰；继续检查比例、所属地块中心和框沿连接。' })
