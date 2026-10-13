@@ -13,6 +13,7 @@
  */
 import { button, el } from './dom.js'
 import { walletBar } from './wallet.js'
+import { applyAssetFrame } from './asset-background.js'
 import { artSource } from './art-path.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
 
@@ -96,6 +97,9 @@ export function renderDownloadedApp(ui, key, mode) {
       // 玩家现在用的猪图（随皮肤和形态变）；没有立绘时是 null，扩展自己退回 emoji。
       pigArt: function () { var art = ui.view.pig && ui.view.pig.stage ? ui.view.pig.stage.art : null; return art ? artSource(art) : null },
       // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
+      hasAsset: function (name) { return (extension.assets || []).includes(name) },
+      paintAsset: function (node, name) { applyAssetFrame(node, extension.assetLayout?.[name]) },
+      assetInfo: function (name) { return extension.assetLayout ? extension.assetLayout[name] : null },
       asset: function (name) { return '/dsh-piggy/ext/' + encodeURIComponent(key) + '/assets/' + encodeURIComponent(String(name)) + '?v=' + encodeURIComponent(extension.version) },
       openDex: function (section) {
         ui.select('dex')

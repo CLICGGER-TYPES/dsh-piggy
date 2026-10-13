@@ -152,6 +152,8 @@ export function createExtRuntime(store, options) {
       builtin: false,
       local: existsSync(join(root(), key, LOCAL_MARK)),
       app: entry.manifest.app ? { emoji: String(entry.manifest.app.emoji ?? entry.manifest.emoji ?? '🧩'), label: String(entry.manifest.app.label ?? entry.manifest.label ?? key) } : null,
+      assets: assetNames(entry.manifest) ?? [],
+      assetLayout: entry.manifest.assetLayout ?? {},
       error: entry.error,
       apps: [], dexSections: [], shopKinds: [],
     }))

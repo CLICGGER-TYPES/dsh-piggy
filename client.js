@@ -5453,6 +5453,18 @@
     return img;
   }
 
+  // src/client/asset-background.js
+  function applyAssetFrame(node, info) {
+    const slices = info?.nine_slice?.insets;
+    if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return;
+    if (node.matches(".fm-slot,.fm-packet,.fm-exp,.fm-card-progress") || node.parentElement?.matches(".fm-exp,.fm-card-progress")) return;
+    node.classList.add("fm-framed-art");
+    node.style.borderImageSource = node.style.backgroundImage;
+    node.style.borderImageSlice = slices.join(" ") + " fill";
+    node.style.borderImageRepeat = "repeat";
+    node.style.backgroundImage = "none";
+  }
+
   // src/client/ext-apps.js
   var registry = {};
   var requested = {};
@@ -5562,6 +5574,15 @@
           return art ? artSource(art) : null;
         },
         // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
+        hasAsset: function(name) {
+          return (extension.assets || []).includes(name);
+        },
+        paintAsset: function(node, name) {
+          applyAssetFrame(node, extension.assetLayout?.[name]);
+        },
+        assetInfo: function(name) {
+          return extension.assetLayout ? extension.assetLayout[name] : null;
+        },
         asset: function(name) {
           return "/dsh-piggy/ext/" + encodeURIComponent(key) + "/assets/" + encodeURIComponent(String(name)) + "?v=" + encodeURIComponent(extension.version);
         },

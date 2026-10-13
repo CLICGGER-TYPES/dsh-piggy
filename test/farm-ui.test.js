@@ -155,7 +155,7 @@ test('大农场：Q/W/E/R 切换工具；输入框不响应；悬停卡与三种
   for (const [shortcut, tool] of [['q', 'can'], ['w', 'weedkiller'], ['e', 'pesticide'], ['r', 'gloves']]) { key(shortcut); assert.equal(ui.find('data-farm-tool', tool).getAttribute('aria-pressed'), 'true') }
   key('q', 'INPUT'); assert.equal(ui.find('data-farm-tool', 'gloves').getAttribute('aria-pressed'), 'true')
   const plot = ui.find('data-farm-plot', '0')
-  plot.fire('mouseenter'); assert.ok(ui.find('data-farm-card', '0'))
+  plot.fire('mousemove', { movementX: 1, movementY: 0 }); assert.ok(ui.find('data-farm-card', '0'))
   assert.equal(ui.all('data-farm-bubble').length, 3)
   plot.fire('mouseleave'); assert.equal(ui.find('data-farm-card', '0'), undefined)
 })
@@ -347,7 +347,7 @@ test('fix3追加：18块地同尺寸、相邻只共边，整个网格位于中�
 
 test('fix3追加：进度条和开垦标签位于菱形内部，工具字号至少12px且角标不盖图', () => {
   const source = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
-  assert.match(source, /\.fm-b-field \.fm-prog\{left:35%;right:35%;bottom:28%/)
+  assert.doesNotMatch(source, /app\.el\('(?:div|span)', 'fm-prog'/)
   assert.match(source, /\.fm-b-field \.fm-chip\{[^}]*bottom:2%/)
   assert.match(source, /\.fm-b-bar \.fm-tool-label\{[^}]*font-size:clamp\(12px,/)
   assert.match(source, /\.fm-b-bar \.fm-n,\.fm-b-bar \.fm-lock\{[^}]*top:-13px/)
@@ -412,7 +412,7 @@ test('fix3：大小农场商店标题都为关闭按钮保留32px，钱包保持
     const ui = renderFarm(farm.view(establishedFarm(), api()), mode)
     ui.find('data-farm-shop', 'shelf').fire('click')
     const style = ui.dom.head.children[0].textContent
-    assert.match(style, /\.fm-shop-head\{[^}]*padding-right:32px/)
+    assert.match(style, /\.fm-shop-head[^}]*padding-right:40px/)
     assert.equal(ui.dom.body.querySelectorAll('.fm-shop-wallet').length, 1)
   }
 })

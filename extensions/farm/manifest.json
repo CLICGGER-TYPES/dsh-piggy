@@ -2,7 +2,7 @@
   "key": "farm",
   "label": "菜园",
   "emoji": "🥬",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "minGame": "0.37.0",
   "description": "照 QQ 农场改版：29 种作物、18 块地，会长草生虫干旱；等级解锁种子，多季作物；面板里是小农场，也能开大窗口的大农场。可雇帮工猪。用自己的菜币。",
   "app": {
@@ -258,5 +258,1485 @@
     "weather-sunny.webp",
     "weed.webp",
     "withered.webp"
-  ]
+  ],
+  "assetLayout": {
+    "bg-big.webp": {
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "bg-small.webp": {
+      "size": [
+        600,
+        800
+      ]
+    },
+    "big-plot-dry.webp": {
+      "size": [
+        320,
+        212
+      ]
+    },
+    "big-plot-farmed.webp": {
+      "size": [
+        320,
+        210
+      ]
+    },
+    "big-plot-hover.webp": {
+      "size": [
+        320,
+        210
+      ]
+    },
+    "big-plot-wild.webp": {
+      "size": [
+        320,
+        214
+      ]
+    },
+    "big-sign-expand.webp": {
+      "size": [
+        145,
+        160
+      ]
+    },
+    "btn-cancel.webp": {
+      "size": [
+        256,
+        120
+      ]
+    },
+    "btn-close.webp": {
+      "size": [
+        128,
+        126
+      ]
+    },
+    "btn-confirm.webp": {
+      "size": [
+        256,
+        115
+      ]
+    },
+    "bug.webp": {
+      "size": [
+        128,
+        103
+      ]
+    },
+    "buy-frame.webp": {
+      "size": [
+        512,
+        453
+      ],
+      "nine_slice": {
+        "insets": [
+          96,
+          96,
+          96,
+          96
+        ]
+      }
+    },
+    "buy-title.webp": {
+      "size": [
+        256,
+        73
+      ]
+    },
+    "card-frame.webp": {
+      "size": [
+        512,
+        241
+      ]
+    },
+    "coin-veg.webp": {
+      "size": [
+        127,
+        128
+      ]
+    },
+    "coin.webp": {
+      "size": [
+        126,
+        128
+      ]
+    },
+    "count-badge.webp": {
+      "size": [
+        128,
+        126
+      ]
+    },
+    "crop-apple-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-apple-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-apple-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-apple-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-banana-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-banana-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-banana-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-banana-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-blueberry-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-blueberry-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-blueberry-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-blueberry-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-cabbage-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-cabbage-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-cabbage-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-cabbage-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-carrot-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-carrot-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-carrot-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-carrot-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-chili-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-chili-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-chili-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-chili-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coconut-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coconut-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coconut-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coconut-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coriander-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coriander-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coriander-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-coriander-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-corn-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-corn-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-corn-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-corn-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-eggplant-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-eggplant-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-eggplant-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-eggplant-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-grape-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-grape-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-grape-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-grape-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-lettuce-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-lettuce-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-lettuce-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-lettuce-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-melon-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-melon-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-melon-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-melon-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-orange-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-orange-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-orange-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-orange-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pea-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pea-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pea-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pea-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-peach-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-peach-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-peach-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-peach-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pineapple-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pineapple-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pineapple-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pineapple-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomegranate-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomegranate-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomegranate-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomegranate-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomelo-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomelo-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomelo-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pomelo-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-potato-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-potato-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-potato-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-potato-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pumpkin-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pumpkin-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pumpkin-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-pumpkin-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-radish-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-radish-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-radish-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-radish-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-scallion-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-scallion-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-scallion-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-scallion-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sprout-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sprout-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sprout-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sprout-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-strawberry-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-strawberry-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-strawberry-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-strawberry-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sunflower-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sunflower-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sunflower-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sunflower-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sweetpotato-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sweetpotato-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sweetpotato-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-sweetpotato-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-tomato-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-tomato-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-tomato-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-tomato-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-watermelon-flowering.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-watermelon-growing.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-watermelon-ripe.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "crop-watermelon-seedling.webp": {
+      "size": [
+        200,
+        200
+      ]
+    },
+    "cursor-can.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "cursor-fert.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "cursor-glove.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "cursor-pesticide.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "cursor-seed.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "cursor-shovel.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "cursor-spray.webp": {
+      "size": [
+        48,
+        48
+      ]
+    },
+    "fert-1.webp": {
+      "size": [
+        125,
+        128
+      ]
+    },
+    "fert-2.webp": {
+      "size": [
+        124,
+        128
+      ]
+    },
+    "fert-3.webp": {
+      "size": [
+        124,
+        128
+      ]
+    },
+    "info-row.webp": {
+      "size": [
+        256,
+        71
+      ]
+    },
+    "lock-badge.webp": {
+      "size": [
+        128,
+        127
+      ]
+    },
+    "lock-strip.webp": {
+      "size": [
+        128,
+        29
+      ]
+    },
+    "pack-bar.webp": {
+      "size": [
+        512,
+        133
+      ],
+      "nine_slice": {
+        "insets": [
+          44,
+          44,
+          44,
+          44
+        ]
+      }
+    },
+    "pack-slot-selected.webp": {
+      "size": [
+        192,
+        188
+      ]
+    },
+    "pack-slot.webp": {
+      "size": [
+        192,
+        188
+      ]
+    },
+    "pack-title.webp": {
+      "size": [
+        192,
+        72
+      ]
+    },
+    "plot-bubble-bug.webp": {
+      "size": [
+        124,
+        128
+      ]
+    },
+    "plot-bubble-water.webp": {
+      "size": [
+        113,
+        128
+      ]
+    },
+    "plot-bubble-weed.webp": {
+      "size": [
+        121,
+        128
+      ]
+    },
+    "plot-ghost-seed.webp": {
+      "size": [
+        114,
+        128
+      ]
+    },
+    "produce-apple.webp": {
+      "size": [
+        111,
+        128
+      ]
+    },
+    "produce-banana.webp": {
+      "size": [
+        128,
+        116
+      ]
+    },
+    "produce-blueberry.webp": {
+      "size": [
+        128,
+        115
+      ]
+    },
+    "produce-cabbage.webp": {
+      "size": [
+        118,
+        128
+      ]
+    },
+    "produce-carrot.webp": {
+      "size": [
+        109,
+        128
+      ]
+    },
+    "produce-chili.webp": {
+      "size": [
+        114,
+        128
+      ]
+    },
+    "produce-coconut.webp": {
+      "size": [
+        128,
+        124
+      ]
+    },
+    "produce-coriander.webp": {
+      "size": [
+        128,
+        128
+      ]
+    },
+    "produce-corn.webp": {
+      "size": [
+        108,
+        128
+      ]
+    },
+    "produce-eggplant.webp": {
+      "size": [
+        121,
+        128
+      ]
+    },
+    "produce-grape.webp": {
+      "size": [
+        113,
+        128
+      ]
+    },
+    "produce-lettuce.webp": {
+      "size": [
+        128,
+        111
+      ]
+    },
+    "produce-melon.webp": {
+      "size": [
+        126,
+        128
+      ]
+    },
+    "produce-orange.webp": {
+      "size": [
+        128,
+        121
+      ]
+    },
+    "produce-pea.webp": {
+      "size": [
+        128,
+        100
+      ]
+    },
+    "produce-peach.webp": {
+      "size": [
+        128,
+        112
+      ]
+    },
+    "produce-pineapple.webp": {
+      "size": [
+        82,
+        128
+      ]
+    },
+    "produce-pomegranate.webp": {
+      "size": [
+        116,
+        128
+      ]
+    },
+    "produce-pomelo.webp": {
+      "size": [
+        128,
+        126
+      ]
+    },
+    "produce-potato.webp": {
+      "size": [
+        128,
+        113
+      ]
+    },
+    "produce-pumpkin.webp": {
+      "size": [
+        128,
+        110
+      ]
+    },
+    "produce-radish.webp": {
+      "size": [
+        108,
+        128
+      ]
+    },
+    "produce-scallion.webp": {
+      "size": [
+        117,
+        128
+      ]
+    },
+    "produce-sprout.webp": {
+      "size": [
+        128,
+        119
+      ]
+    },
+    "produce-strawberry.webp": {
+      "size": [
+        112,
+        128
+      ]
+    },
+    "produce-sunflower.webp": {
+      "size": [
+        119,
+        128
+      ]
+    },
+    "produce-sweetpotato.webp": {
+      "size": [
+        128,
+        100
+      ]
+    },
+    "produce-tomato.webp": {
+      "size": [
+        128,
+        99
+      ]
+    },
+    "produce-watermelon.webp": {
+      "size": [
+        119,
+        128
+      ]
+    },
+    "progress-fill.webp": {
+      "size": [
+        236,
+        42
+      ]
+    },
+    "progress-track.webp": {
+      "size": [
+        256,
+        62
+      ]
+    },
+    "seed-packet.webp": {
+      "size": [
+        247,
+        256
+      ]
+    },
+    "seed.webp": {
+      "size": [
+        128,
+        78
+      ]
+    },
+    "shop-frame.webp": {
+      "size": [
+        512,
+        271
+      ],
+      "nine_slice": {
+        "insets": [
+          90,
+          90,
+          90,
+          90
+        ]
+      }
+    },
+    "shop-item-locked.webp": {
+      "size": [
+        207,
+        256
+      ]
+    },
+    "shop-item.webp": {
+      "size": [
+        200,
+        256
+      ]
+    },
+    "shop-tab-active.webp": {
+      "size": [
+        128,
+        40
+      ]
+    },
+    "shop-tab.webp": {
+      "size": [
+        128,
+        40
+      ]
+    },
+    "shop-title.webp": {
+      "size": [
+        256,
+        73
+      ]
+    },
+    "small-plot-dry.webp": {
+      "size": [
+        240,
+        135
+      ]
+    },
+    "small-plot-farmed.webp": {
+      "size": [
+        240,
+        135
+      ]
+    },
+    "small-plot-hover.webp": {
+      "size": [
+        320,
+        181
+      ]
+    },
+    "sprout.webp": {
+      "size": [
+        128,
+        116
+      ]
+    },
+    "status-chip-active.webp": {
+      "size": [
+        128,
+        122
+      ]
+    },
+    "status-chip.webp": {
+      "size": [
+        128,
+        122
+      ]
+    },
+    "status-icon-bug.webp": {
+      "size": [
+        128,
+        108
+      ]
+    },
+    "status-icon-water.webp": {
+      "size": [
+        94,
+        128
+      ]
+    },
+    "status-icon-weed.webp": {
+      "size": [
+        128,
+        118
+      ]
+    },
+    "stepper-field.webp": {
+      "size": [
+        128,
+        60
+      ]
+    },
+    "stepper-minus.webp": {
+      "size": [
+        128,
+        81
+      ]
+    },
+    "stepper-plus.webp": {
+      "size": [
+        128,
+        82
+      ]
+    },
+    "tab-icon-fert.webp": {
+      "size": [
+        106,
+        128
+      ]
+    },
+    "tab-icon-helper.webp": {
+      "size": [
+        128,
+        120
+      ]
+    },
+    "tab-icon-seed.webp": {
+      "size": [
+        128,
+        111
+      ]
+    },
+    "tab-icon-tool.webp": {
+      "size": [
+        90,
+        128
+      ]
+    },
+    "tip-card.webp": {
+      "size": [
+        256,
+        139
+      ],
+      "nine_slice": {
+        "insets": [
+          46,
+          46,
+          46,
+          46
+        ]
+      }
+    },
+    "tool-can.webp": {
+      "size": [
+        128,
+        98
+      ]
+    },
+    "tool-gloves.webp": {
+      "size": [
+        128,
+        116
+      ]
+    },
+    "tool-pesticide.webp": {
+      "size": [
+        73,
+        128
+      ]
+    },
+    "tool-planter.webp": {
+      "size": [
+        128,
+        125
+      ]
+    },
+    "tool-rake.webp": {
+      "size": [
+        118,
+        128
+      ]
+    },
+    "tool-seedbag.webp": {
+      "size": [
+        127,
+        128
+      ]
+    },
+    "tool-shovel.webp": {
+      "size": [
+        112,
+        128
+      ]
+    },
+    "tool-sickle.webp": {
+      "size": [
+        128,
+        122
+      ]
+    },
+    "tool-sprayer.webp": {
+      "size": [
+        128,
+        122
+      ]
+    },
+    "tool-weedkiller.webp": {
+      "size": [
+        80,
+        128
+      ]
+    },
+    "ui-big-farm.webp": {
+      "size": [
+        256,
+        219
+      ]
+    },
+    "ui-big-toolbar.webp": {
+      "size": [
+        1200,
+        156
+      ]
+    },
+    "ui-big-topbar.webp": {
+      "size": [
+        1200,
+        297
+      ]
+    },
+    "ui-button.webp": {
+      "size": [
+        256,
+        101
+      ]
+    },
+    "ui-exp-fill.webp": {
+      "size": [
+        239,
+        56
+      ]
+    },
+    "ui-exp-frame.webp": {
+      "size": [
+        240,
+        69
+      ]
+    },
+    "ui-hang-sign.webp": {
+      "size": [
+        225,
+        206
+      ]
+    },
+    "ui-main.webp": {
+      "size": [
+        256,
+        102
+      ]
+    },
+    "ui-note.webp": {
+      "size": [
+        256,
+        113
+      ]
+    },
+    "ui-panel.webp": {
+      "size": [
+        256,
+        199
+      ]
+    },
+    "ui-shop.webp": {
+      "size": [
+        128,
+        96
+      ]
+    },
+    "ui-slot.webp": {
+      "size": [
+        128,
+        125
+      ]
+    },
+    "ui-small-farm.webp": {
+      "size": [
+        256,
+        158
+      ]
+    },
+    "ui-small-plank.webp": {
+      "size": [
+        600,
+        159
+      ]
+    },
+    "ui-small-scoreboard.webp": {
+      "size": [
+        600,
+        238
+      ]
+    },
+    "ui-storage.webp": {
+      "size": [
+        128,
+        102
+      ]
+    },
+    "weather-night.webp": {
+      "size": [
+        160,
+        156
+      ]
+    },
+    "weather-rain.webp": {
+      "size": [
+        160,
+        158
+      ]
+    },
+    "weather-sunny.webp": {
+      "size": [
+        160,
+        159
+      ]
+    },
+    "weed.webp": {
+      "size": [
+        128,
+        100
+      ]
+    },
+    "withered.webp": {
+      "size": [
+        128,
+        124
+      ]
+    }
+  }
 }

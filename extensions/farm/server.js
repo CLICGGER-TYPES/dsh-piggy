@@ -114,8 +114,7 @@ export function plotState(plot, now) {
   const crop = cropFor(plot.crop)
   if (crop === null) return null
   const age = ageOf(plot, crop, now)
-  let index = 0
-  for (let i = 0; i < STAGE_AT.length; i += 1) if (age >= STAGE_AT[i]) index = i
+  const index = STAGE_AT.filter(threshold => age >= threshold).length - 1
   const ripe = age >= 1
   const pests = PESTS.filter(kind => pestOn(plot, crop, kind, now))
   return { crop: crop.key, stage: STAGES[index], ripe, withered: false, season: plot.season, seasons: crop.seasons, pests,
@@ -404,6 +403,7 @@ const game = {
     const counts = { ripe: tally(plot => plot.ripe), pests: tally(plot => plot.pests?.length > 0), withered: tally(plot => plot.withered), empty: tally(plot => plot.empty) }
     const hoursText = hours => (Number.isInteger(hours) ? hours : hours.toFixed(1)) + ' 小时'
     return {
+      weatherDays: [-1, 0, 1].map(offset => new Date(api.now + offset * 24 * H)).map(date => ({ date: date.toISOString().slice(0, 10), sky: weatherAt(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12).getTime()) })),
       now: api.now, balance, currency: wallet.currency, level: level.level, exp: level.exp, need: level.need, weather: weatherAt(api.now),
       unlocked: d.unlocked, total: PLOTS, reclaimPrice: RECLAIM_PRICE, plots, counts,
       tools: TOOLS.map(tool => ({ key: tool.key, label: tool.label, note: tool.note, price: tool.price, owned: owns(d, tool.key) })),

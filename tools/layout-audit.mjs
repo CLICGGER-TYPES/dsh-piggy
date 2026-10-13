@@ -1,6 +1,8 @@
 // @ts-check
 // 菜园布局验收：只读 CDP/DOM，不点击、不派发事件、不修改页面或存档。真实操作另按 QA-SPEC 执行。
 import { writeFileSync } from 'node:fs'
+import { readAssetLayout } from './asset-layout.mjs'
+import { IMAGE_AUDIT_FUNCTIONS, auditImageRatios, auditMaterialPadding } from './layout-image-audit.mjs'
 import { pathToFileURL } from 'node:url'
 
 /** @param {Element} element */
@@ -170,9 +172,10 @@ function auditBounds(elements, report) {
     else report.overflowingElements.push(detail)
   }
 }
+const assetCatalog = readAssetLayout()
 /** @returns {any} */
 function auditPage() {
-  const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], smallTargets: [], smallIcons: [], missingImages: [], pageErrors: [], exceptions: [], checked: {} }
+  const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], smallTargets: [], smallIcons: [], missingImages: [], stretchedImages: [], framePaddingViolations: [], unknownAssetGeometry: [], pageErrors: [], exceptions: [], checked: {} }
   const visible = Array.from(document.querySelectorAll('body *')).filter(e => visibleRect(e))
   const controls = visible.filter(e => e.matches('button,input,textarea,select,a[href],[role="button"],.fm-plot'))
   const attached = visible.filter(e => e.matches('.fm-chip,.fm-prog,.fm-b-sign,.fm-bubble,.fm-n,.fm-count,.fm-lock,.fm-tool-label,.fm-tooltip'))
@@ -189,17 +192,24 @@ function auditPage() {
   auditDecorations(visible.filter(e => e.matches('.fm-crop,.fm-pest,.fm-b-pig,.fm-s-pig,.fm-b-face,.fm-s-face')), controls, report)
   visible.forEach(e => { auditText(e, report); if (Array.from(e.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) auditTextOcclusion(e, controls, report) })
   attached.forEach(e => auditAttachment(e, report))
+  auditImageRatios(visible, report, assetCatalog)
+  auditMaterialPadding(visible, report, assetCatalog)
   for (const element of visible.filter(e => e.matches('.fm img'))) {
     const r = rectOf(element)
     if (!(element instanceof HTMLImageElement) || !element.complete || !element.naturalWidth) report.missingImages.push({ element: identify(element), src: element.getAttribute('src') })
-    if (r.width < 23.99 || r.height < 23.99) report.smallIcons.push({ element: identify(element), src: element.getAttribute('src'), rect: r })
+    if (element.matches('.fm-card-tail')) report.exceptions.push({ element: identify(element), reason: '悬停卡的装饰尾巴固定24×12；不是图标，仍检查图片比例及与地块的对齐。' })
+    else if (r.width < 23.99 || r.height < 23.99) report.smallIcons.push({ element: identify(element), src: element.getAttribute('src'), rect: r })
   }
   report.checked = { visibleElements: visible.length, controls: controls.length, attachments: attached.length }
-  report.problemCount = ['overlaps','overflowingElements','decorativeOcclusions','driftedAttachments','clippedText','occludedText','wrappedLabels','smallText','blockedControls','smallTargets','smallIcons','missingImages','pageErrors'].reduce((n,key) => n + report[key].length,0)
+  report.problemCount = ['overlaps','overflowingElements','decorativeOcclusions','driftedAttachments','clippedText','occludedText','wrappedLabels','smallText','blockedControls','smallTargets','smallIcons','missingImages','stretchedImages','framePaddingViolations','unknownAssetGeometry','pageErrors'].reduce((n,key) => n + report[key].length,0)
   return report
 }
 const browserFunctions = [rectOf, identify, intersection, visibleRect, effectiveFont, layerOf, scrollOwner, footprint, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditPage]
-export const AUDIT_EXPRESSION = '(function () {' + browserFunctions.map(fn => fn.toString()).join('\n') + '\nreturn auditPage()\n})()'
+/** @param {Record<string, any>} [catalog] */
+export function buildAuditExpression(catalog = readAssetLayout()) {
+  return '(function () {const assetCatalog=' + JSON.stringify(catalog) + ';' + [...browserFunctions, ...IMAGE_AUDIT_FUNCTIONS].map(fn => fn.toString()).join('\n') + '\nreturn auditPage()\n})()'
+}
+export const AUDIT_EXPRESSION = buildAuditExpression()
 
 /** @param {string} endpoint @param {string} expression */
 async function readCdp(endpoint, expression) {

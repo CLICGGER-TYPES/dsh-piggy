@@ -24,5 +24,19 @@ for path in sorted((source / 'export').glob('*.png')):
 manifest_path = output.parent / 'manifest.json'
 manifest = json.loads(manifest_path.read_text())
 manifest['assets'] = sorted(path.name for path in output.glob('*.webp'))
+art_manifest = json.loads((source / 'manifest.json').read_text())
+manifest['assetLayout'] = {}
+for path in output.glob('*.webp'):
+    packed_size = Image.open(path).size
+    spec = art_manifest.get(path.stem, {})
+    scale = packed_size[0] / spec.get('size', packed_size)[0]
+    info = {'size': list(packed_size)}
+    if spec.get('nine_slice', {}).get('insets'):
+        info['nine_slice'] = {'insets': [round(n * scale) for n in spec['nine_slice']['insets']]}
+    if 'inner_insets' in spec:
+        info['inner_insets'] = [n * scale for n in spec['inner_insets']]
+    if 'content_padding' in spec:
+        info['content_padding'] = spec['content_padding']
+    manifest['assetLayout'][path.name] = info
 manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 print(len(manifest['assets']), 'assets,', sum(path.stat().st_size for path in output.glob('*.webp')), 'bytes')

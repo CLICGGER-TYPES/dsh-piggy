@@ -2,13 +2,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
-import { AUDIT_EXPRESSION } from '../tools/layout-audit.mjs'
+import { AUDIT_EXPRESSION, buildAuditExpression } from '../tools/layout-audit.mjs'
 
 function node({ x = 0, y = 0, w = 40, h = 40, tag = 'BUTTON', classes = [], text = '', css = {}, hit = false } = {}) {
   const element = { tagName: tag, classList: classes, parentElement: null, attributes: [],
     textContent: text, childNodes: text ? [{ nodeType: 3, textContent: text }] : [], clientWidth: w, clientHeight: h, scrollWidth: w, scrollHeight: h,
     css: { display: 'block', visibility: 'visible', opacity: '1', overflowX: 'visible', overflowY: 'visible', fontSize: '12px', transform: 'none', zIndex: 'auto', zoom: '1', ...css },
-    getBoundingClientRect: () => ({ x, y, width: w, height: h, right: x + w, bottom: y + h }),
+    getBoundingClientRect: () => ({ x, y, width: w, height: h, right: x + w, bottom: y + h, left: x, top: y }),
     getAttribute() { return null },
     matches(selector) { return selector.split(',').some(s => s.trim().startsWith('.') ? classes.includes(s.trim().slice(1)) : s.trim().toUpperCase() === tag) },
     querySelector(selector) { return hit && selector === '.fm-hit' ? {} : null },
@@ -17,12 +17,12 @@ function node({ x = 0, y = 0, w = 40, h = 40, tag = 'BUTTON', classes = [], text
   }
   return element
 }
-function audit(elements, overrides = {}) {
+function audit(elements, overrides = {}, expression = AUDIT_EXPRESSION) {
   const root = node({ w: 1200, h: 800, tag: 'DIV', classes: ['fm'] })
   elements.forEach(e => { e.parentElement ||= root })
   const document = { title: 'audit fixture', fonts: { status: 'loaded' }, querySelectorAll: () => [root, ...elements],
     elementFromPoint(x,y) { return [...elements].reverse().find(e => { const r = e.getBoundingClientRect(); return e.tagName === 'BUTTON' && x >= r.x && x <= r.right && y >= r.y && y <= r.bottom }) || root }, ...overrides }
-  return runInNewContext(AUDIT_EXPRESSION, { document, location: { href: 'fixture://layout' }, innerWidth: 1200, innerHeight: 800,
+  return runInNewContext(expression, { document, location: { href: 'fixture://layout' }, innerWidth: 1200, innerHeight: 800,
     getComputedStyle: e => e.css, DOMMatrix: class { a = 1; b = 0; c = 0; d = 1 }, HTMLImageElement: class {} })
 }
 
@@ -81,4 +81,28 @@ test('布局审计：大场景的宿主绿色边距不能算铺满', () => {
   const result = audit([scene, node({ x: 60 })])
   assert.ok(result.pageErrors.some(error => error.reason === '大场景未铺满窗口'))
   assert.equal(result.pageErrors.find(error => error.reason)?.gapsPx.left, 24)
+})
+
+test('布局审计8.8：fill压扁图片失败，contain保持原比通过', () => {
+  const graphic = node({ tag: 'IMG', w: 100, h: 30, css: { objectFit: 'fill' } })
+  Object.assign(graphic, { naturalWidth: 100, naturalHeight: 100, complete: true })
+  const before = audit([graphic, node({ x: 200 })])
+  assert.equal(before.stretchedImages?.length, 1)
+  assert.equal(before.stretchedImages[0].distortionPercent, 233.33333333333334)
+  graphic.css.objectFit = 'contain'
+  assert.equal(audit([graphic, node({ x: 200 })]).stretchedImages.length, 0)
+})
+
+test('布局审计8.9：按素材内边线抓贴边文字，不能用框外边界假通过', () => {
+  const frame = node({ tag: 'DIV', w: 200, h: 200, css: { borderImageSource: 'url("fixture-panel.webp")',
+    borderTopWidth: '12px', borderRightWidth: '12px', borderBottomWidth: '12px', borderLeftWidth: '12px' } })
+  const label = node({ tag: 'SPAN', text: '仓库', x: 16, y: 20, w: 24, h: 24 })
+  label.parentElement = frame
+  const catalog = { 'fixture-panel.webp': { size: [200, 200], nine_slice: { insets: [20, 20, 20, 20] }, inner_insets: [20, 20, 20, 20] } }
+  const result = audit([frame, label, node({ x: 300 })], {}, buildAuditExpression(catalog))
+  assert.equal(result.framePaddingViolations?.length, 1)
+  assert.equal(result.framePaddingViolations[0].gaps.left, 4)
+  assert.equal(result.stretchedImages.length, 0)
+  delete catalog['fixture-panel.webp'].inner_insets
+  assert.ok(audit([frame, label, node({ x: 300 })], {}, buildAuditExpression(catalog)).unknownAssetGeometry.some(error => error.reason?.includes('inner_insets')))
 })
