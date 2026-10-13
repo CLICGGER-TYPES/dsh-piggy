@@ -81,18 +81,19 @@ let random = Math.random
 export function setRandom(fn) { random = typeof fn === 'function' ? fn : Math.random }
 /** 下一次灾害什么时候来：指数分布，平均 PEST_MS。 */
 const nextPest = from => from + Math.round(-Math.log(1 - Math.min(0.999999, random())) * PEST_MS)
-/** 某个时刻的天气：6～18 点每天随机晴或雨（按日期定，两扇窗口看到的一样），其余时间是夜晚。 */
+/** 每天随机晴或雨（按日期定，两扇窗口看到的一样），与昼夜时段无关。 */
 export function weatherAt(at) {
   const date = new Date(at)
-  const hour = date.getHours()
-  if (hour < 6 || hour >= 18) return 'night'
   const day = date.getFullYear() * 400 + date.getMonth() * 32 + date.getDate()
   let h = Math.imul(day, 2654435761) >>> 0
   h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0
   return (h ^ h >>> 13) % 2 === 0 ? 'rain' : 'sunny'
 }
-/** 雨天不旱：干旱落在下雨的白天，就推到当天 18 点。 */
-function droughtAt(at) { return weatherAt(at) !== 'rain' ? at : new Date(at).setHours(18, 0, 0, 0) }
+/** 雨天全天不旱：干旱推到下一个晴天的零点。 */
+function droughtAt(at) {
+  while (weatherAt(at) === 'rain') at = new Date(at).setHours(24, 0, 0, 0)
+  return at
+}
 /** 一季要多久（毫秒）。 */
 const seasonMs = crop => crop.hours * H
 /** 新种下（或进入下一季）的地：起点、产量浮动、三样灾害什么时候来，都在这时定好。 */
@@ -104,8 +105,7 @@ const ageOf = (plot, crop, now) => Math.min(1, Math.max(0, (now - plot.plantedAt
 /** 成熟的时刻。 */
 const ripeAt = (plot, crop) => plot.plantedAt - plot.boostMs + seasonMs(crop)
 /** 某样灾害在 at 时刻有没有（只在长的时候来；成熟以后不会再来）。 */
-const pestTime = (plot, kind) => kind === 'dry' ? droughtAt(plot.pests[kind]) : plot.pests[kind]
-const pestOn = (plot, crop, kind, at) => (kind !== 'dry' || weatherAt(at) !== 'rain') && pestTime(plot, kind) <= Math.min(at, ripeAt(plot, crop))
+const pestOn = (plot, crop, kind, at) => (kind !== 'dry' || weatherAt(at) !== 'rain') && (kind === 'dry' ? droughtAt(plot.pests[kind]) : plot.pests[kind]) <= Math.min(at, ripeAt(plot, crop))
 /** 这块地现在的样子（纯函数，不改存档）。 */
 export function plotState(plot, now) {
   if (plot === null) return null
@@ -403,7 +403,6 @@ const game = {
     const counts = { ripe: tally(plot => plot.ripe), pests: tally(plot => plot.pests?.length > 0), withered: tally(plot => plot.withered), empty: tally(plot => plot.empty) }
     const hoursText = hours => (Number.isInteger(hours) ? hours : hours.toFixed(1)) + ' 小时'
     return {
-      weatherDays: [-1, 0, 1].map(offset => new Date(api.now + offset * 24 * H)).map(date => ({ date: date.toISOString().slice(0, 10), sky: weatherAt(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12).getTime()) })),
       now: api.now, balance, currency: wallet.currency, level: level.level, exp: level.exp, need: level.need, weather: weatherAt(api.now),
       unlocked: d.unlocked, total: PLOTS, reclaimPrice: RECLAIM_PRICE, plots, counts,
       tools: TOOLS.map(tool => ({ key: tool.key, label: tool.label, note: tool.note, price: tool.price, owned: owns(d, tool.key) })),
@@ -495,7 +494,7 @@ function prepareHelper(data, at) {
 }
 /** 时间差只用于当前小批次，满六小时停；批次进度随地块保存，收仓不复制进度。 */
 export function settleHelper(data, now) {
-  // 雨把已经干的地浇湿；view 在副本结算，动作时写回，下一次旱灾仍推到 18 点。
+  // 雨把已经干的地浇湿；view 在副本结算，动作时写回，下一次旱灾推到下一个晴天。
   if (weatherAt(now) === 'rain') for (const plot of data.plots) {
     if (plot?.fallow) plot.pests.dry = null
     else if (plot?.pests?.dry <= now) plot.pests.dry = droughtAt(now)

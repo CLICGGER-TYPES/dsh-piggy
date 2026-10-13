@@ -197,7 +197,17 @@ function auditPage() {
   for (const element of visible.filter(e => e.matches('.fm img'))) {
     const r = rectOf(element)
     if (!(element instanceof HTMLImageElement) || !element.complete || !element.naturalWidth) report.missingImages.push({ element: identify(element), src: element.getAttribute('src') })
-    if (element.matches('.fm-card-tail')) report.exceptions.push({ element: identify(element), reason: '悬停卡的装饰尾巴固定24×12；不是图标，仍检查图片比例及与地块的对齐。' })
+    if (element.matches('.fm-card-tail')) {
+      const card = element.closest('.fm-hover-card'), target = card?.closest('.fm')?.querySelector('[data-farm-plot="' + card.getAttribute('data-farm-card') + '"]')
+      if (card && target) {
+        const frame = rectOf(card), plot = rectOf(target), border = card.clientLeft || 0
+        const expected = Math.max(frame.x + border + 24, Math.min(frame.right - border - 24, plot.x + plot.width / 2))
+        const error = Math.abs(r.x + r.width / 2 - expected)
+        const overlap = card.getAttribute('data-farm-below') === 'true' ? r.bottom - frame.y : frame.bottom - r.y
+        if (error > 2 || Math.abs(overlap - 2) > 2) report.driftedAttachments.push({ element: identify(element), reason: '尾巴没有指向所属地块或脱离卡框', error, overlap, expected })
+      }
+      report.exceptions.push({ element: identify(element), reason: '悬停尾巴为24×12装饰；继续检查比例、所属地块中心和框沿连接。' })
+    }
     else if (r.width < 23.99 || r.height < 23.99) report.smallIcons.push({ element: identify(element), src: element.getAttribute('src'), rect: r })
   }
   report.checked = { visibleElements: visible.length, controls: controls.length, attachments: attached.length }

@@ -14,7 +14,7 @@ const H = 3600000
 function sunnyNoon() {
   for (let day = 0; day < 30; day += 1) {
     const at = new Date(2026, 9, 12 + day, 12).getTime()
-    if (weatherAt(at) === 'sunny') return at
+    if (weatherAt(at) === 'sunny' && weatherAt(at + 24 * H) === 'sunny') return at
   }
   throw new Error('no sunny day')
 }
@@ -117,14 +117,14 @@ test('灾害：长的时候来草、虫、旱，每样少 2 个；治了 +2 经�
   assert.equal(plotState(data.plots[0], t.api.now).yield, 24 - 3 * PEST_LOSS, 'nothing new after ripe')
 })
 
-test('雨天白天不旱：干旱落在下雨的白天推到 18 点', () => {
+test('雨天全天不旱：夜里也下雨，干旱推到下一个晴天', () => {
   let rainy = null
   for (let day = 0; day < 30 && rainy === null; day += 1) {
     const at = new Date(2026, 9, 12 + day, 9).getTime()
     if (weatherAt(at) === 'rain') rainy = at
   }
   assert.ok(rainy, 'some rainy morning within a month')
-  assert.equal(weatherAt(new Date(rainy).setHours(20)), 'night')
+  assert.equal(weatherAt(new Date(rainy).setHours(20)), 'rain')
   const data = establishedFarm()
   const t = fakeApi()
   t.api.now = rainy
@@ -133,7 +133,8 @@ test('雨天白天不旱：干旱落在下雨的白天推到 18 点', () => {
   data.plots[0].pests = { weed: rainy + 99 * H, bug: rainy + 99 * H, dry: rainy + H }
   assert.deepEqual(plotState(data.plots[0], rainy + 2 * H).pests, [], 'raining: no drought yet')
   const evening = new Date(rainy).setHours(18, 0, 0, 0)
-  assert.deepEqual(plotState(data.plots[0], evening).pests, ['dry'])
+  assert.deepEqual(plotState(data.plots[0], evening).pests, [])
+  assert.deepEqual(plotState(data.plots[0], new Date(rainy).setHours(23)).pests, [])
 })
 
 test('产量浮动 −3～+2，至少 1 个', () => {
@@ -362,4 +363,20 @@ test('开荒字段 normalize 兼容；3.x 迁移和既有 4.0 空地不长出草
   normalize(data)
   assert.equal(data.plots[0].stubble, false)
   assert.equal(data.plots[0].pests.dry, null)
+})
+
+test('fix4：夜里下雨浇湿已干地，时段不改变天气或浇水', () => {
+  const t = fakeApi(), data = farm.init()
+  let night = new Date(2026, 9, 13, 22).getTime()
+  while (weatherAt(night) !== 'rain') night = new Date(night).setDate(new Date(night).getDate() + 1)
+  data.plots[0] = { fallow: true, stubble: false, pests: { dry: 0, weed: null, bug: null } }
+  data.plots[1] = { crop: 'radish', season: 1, plantedAt: night - H, boostMs: 0, roll: 0, pests: { dry: night - H, weed: 1e15, bug: 1e15 } }
+  t.api.now = night
+  const before = structuredClone(data), view = farm.view(data, t.api)
+  assert.equal(view.weather, 'rain')
+  assert.ok(view.plots.slice(0, 2).every(plot => !plot.pests.includes('dry')))
+  assert.deepEqual(data, before, '只读view不写入存档')
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  assert.equal(data.plots[0].pests.dry, null)
+  assert.ok(data.plots[1].pests.dry > night)
 })

@@ -1,0 +1,635 @@
+[
+  {
+    "asset": "bg-big-dawn-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-dawn-sunny-attempt-01.png",
+    "source_sha256": "f68a27a781e8b799c58aecf78540f3df1c3ba6c954fcfa713116e7d3fcb77d90",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 164374,
+    "packed_sha256": "d0c723b8337db4c6f6919340f401e601e0e77f8fea046ddc1f9f246daf79211f"
+  },
+  {
+    "asset": "bg-big-dawn-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-dawn-rain-attempt-01.png",
+    "source_sha256": "52a4c06cbcd1c11cfd5b164abd291fe0f0658859d69b8053cbc30e587b02e494",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 203950,
+    "packed_sha256": "fd6dc73583cdcb56f9a6ea5f2ed9497be1abc6fcb375002e7fc64a3b6c3d6649"
+  },
+  {
+    "asset": "bg-small-dawn-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-dawn-sunny-attempt-02.png",
+    "source_sha256": "fea45639bcd022900b8c52b74a1ff1400eea002faf236c823fe4597ae3d2b7d9",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 68460,
+    "packed_sha256": "cb6a45b9d9f6943ed21b836016a5c580db54f6f818cf00cf58de27826fbef9e1"
+  },
+  {
+    "asset": "bg-small-dawn-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-dawn-rain-attempt-02.png",
+    "source_sha256": "0f5aca73c5f00752aca596b5eb2e681568ac3a8810c9bce9c306617752cb7e10",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 74642,
+    "packed_sha256": "47d59200846e9f6161121559c77b6cbe840b8e66ff371dacdf2aa3a16aba3479"
+  },
+  {
+    "asset": "bg-big-day-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-day-sunny-attempt-01.png",
+    "source_sha256": "649480510a686c162340027d8ad1ec89e12e9beffdc089b8eedee630138c1c97",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 175020,
+    "packed_sha256": "274f120239db7cab34cae6995199e763e2e57d071fa2c09e3c7c7bc27ec42707"
+  },
+  {
+    "asset": "bg-big-day-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-day-rain-attempt-01.png",
+    "source_sha256": "8700f65b0480e4dcef356eb56402f0ea9065d7e1058c0d83a761fabdf3b75e1d",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 193774,
+    "packed_sha256": "45ff1e363c419517d2a5ddde78f8d6fc04a5ba72b962290725395130885fe6fe"
+  },
+  {
+    "asset": "bg-small-day-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-day-sunny-attempt-02.png",
+    "source_sha256": "3885552776d6cd8841481cdfad93ec68d4ef690c6ac0de181a8723276e4f8986",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 64436,
+    "packed_sha256": "e558cd1047c7c23dd14200774b71fd2155eec3f952f0992337f4a96c20920267"
+  },
+  {
+    "asset": "bg-small-day-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-day-rain-attempt-02.png",
+    "source_sha256": "16e9b7287ed04eb00af76d6cf3bbf5b140cd17cf0dce4e831ae7a5a5407c2695",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 80610,
+    "packed_sha256": "4644b4551216e297507d99cdb30f5482a8e65b1009e3654adeaf9a49664f05a5"
+  },
+  {
+    "asset": "bg-big-dusk-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-dusk-sunny-attempt-01.png",
+    "source_sha256": "bc62e6028409cfc4a7619541cf18c65dafc36feaaba4c97b1d48fe779389e30d",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 162438,
+    "packed_sha256": "ea0b8c0aed9dafb14f5cb9dbaf3fdd34a0c6bc13e55d18734e70ac599960c028"
+  },
+  {
+    "asset": "bg-big-dusk-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-dusk-rain-attempt-01.png",
+    "source_sha256": "0ed0676f926aeda85ffb3f3820b43af6ac8bbe7ade03bfa926b8d9cbcea80078",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 200794,
+    "packed_sha256": "9250e15b91d457d112e5fce28e5417e35cfc8bbf4bc2799b5ed0cfa4f56f7f1e"
+  },
+  {
+    "asset": "bg-small-dusk-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-dusk-sunny-attempt-02.png",
+    "source_sha256": "f56e7483aa098397832b20a9c222d175a98d77a3d2d649ab2586001f0d51f1d7",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 61102,
+    "packed_sha256": "48dfa2dc35df8c8dce8ef93945cb1ccc82bc186c20f8e7534ac09cca8ed884c6"
+  },
+  {
+    "asset": "bg-small-dusk-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-dusk-rain-attempt-02.png",
+    "source_sha256": "9bd1dc92b1d21d73191cf479be9b19d3c288945199d4c5d8af9458d4dd701166",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 71328,
+    "packed_sha256": "7a078de6738c9de1c43e232b2e637e8c51d955633a897d7d41db2b3666679e57"
+  },
+  {
+    "asset": "bg-big-night-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-night-sunny-attempt-01.png",
+    "source_sha256": "4cc5415458981b369faada786bb6ee4f15f218a820711507f2abb2d04260e5ec",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 132748,
+    "packed_sha256": "8d6ed06bc94ffa7955b0c80bf36c655b25394e209a543efd0e467a5f2db5764b"
+  },
+  {
+    "asset": "bg-big-night-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-big-night-rain-attempt-01.png",
+    "source_sha256": "4134e116e37176daa190107c0368e9a340fac773dcf860674d19ef72812915d6",
+    "packed_size": [
+      1152,
+      768
+    ],
+    "packed_bytes": 185010,
+    "packed_sha256": "8604ada7ea87e710a75271bcc66aaed1d96f0b5c5d893e98259c3c28558cd666"
+  },
+  {
+    "asset": "bg-small-night-sunny.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-night-sunny-attempt-02.png",
+    "source_sha256": "4fad788a69ed251340edbe9f7068a65179c660887e2bd85659dabbd3769e1480",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 44760,
+    "packed_sha256": "deee62e271b11de9f4397dd95f93ff9ec2cdedecbcb826b523485ae3f37b0385"
+  },
+  {
+    "asset": "bg-small-night-rain.webp",
+    "source": "sprites/farm-v4-fix4/scenes/bg-small-night-rain-attempt-02.png",
+    "source_sha256": "bea5489a4ef41f3210c73455c2ed6a4c4a552507d312a24ac75ddb0850b7fc24",
+    "packed_size": [
+      560,
+      500
+    ],
+    "packed_bytes": 66336,
+    "packed_sha256": "8e1c25b852ea77090084b9e15ee4869349d3b557b24a778ad78439eee314ec6c"
+  },
+  {
+    "asset": "big-plot-dry.webp",
+    "source": "sprites/farm-v4-fix4/ui/big-plot-dry-attempt-01.png",
+    "source_sha256": "7d2958bdd283cb36d83726351ee2eefb109a20a9cfabc98653a31b958fd64ad6",
+    "packed_size": [
+      320,
+      192
+    ],
+    "packed_bytes": 16054,
+    "packed_sha256": "ef20f2cfa0315cc7ebad1c902a9ce9441b2bbd7eda8d5c2a6e4d2b97c6860f4b"
+  },
+  {
+    "asset": "big-plot-farmed.webp",
+    "source": "sprites/farm-v4-fix4/ui/big-plot-farmed-attempt-02.png",
+    "source_sha256": "5197283b31d0e2611d22c7a21df6307f42db7f640705da3e0d6ad636093e6c1a",
+    "packed_size": [
+      320,
+      192
+    ],
+    "packed_bytes": 17046,
+    "packed_sha256": "05976f1addbb06ccd523213048715ce49a7b7019c168ca06271dd892adb9196b"
+  },
+  {
+    "asset": "big-plot-hover.webp",
+    "source": "sprites/farm-v4-fix4/ui/big-plot-hover-attempt-02.png",
+    "source_sha256": "49ab6d772df77d0d75867f3ac8c7358da27f2a8304d22643b71ad29c74a2e04b",
+    "packed_size": [
+      320,
+      192
+    ],
+    "packed_bytes": 12268,
+    "packed_sha256": "f50c2bc3ce7c0075a59533580d102f7421e366d6743a4aa90af5924ad8109873"
+  },
+  {
+    "asset": "big-plot-wild.webp",
+    "source": "sprites/farm-v4-fix4/ui/big-plot-wild-attempt-02.png",
+    "source_sha256": "199ac62f7d455be901993c69f1bac3e553c2c6b80e1362a4aaf1fcda6bde6106",
+    "packed_size": [
+      320,
+      192
+    ],
+    "packed_bytes": 20352,
+    "packed_sha256": "88aac2ac160c7eb28e6edd806b8d9710c48528fda4dc895e79ce48c2845f1849"
+  },
+  {
+    "asset": "big-sign-expand.webp",
+    "source": "sprites/farm-v4-fix4/ui/big-sign-expand-attempt-02.png",
+    "source_sha256": "71d4407b1ec35c0dd97c208b33772230c526bf6e92f1608bab9c2238d51095df",
+    "packed_size": [
+      184,
+      192
+    ],
+    "packed_bytes": 11610,
+    "packed_sha256": "0051b1ffab5132eae29501c1cf58f1445b4ad92fb7d566932846ed1184dc79c5"
+  },
+  {
+    "asset": "btn-cancel.webp",
+    "source": "sprites/farm-v4-fix4/ui/btn-cancel-attempt-01.png",
+    "source_sha256": "e63afaedd4db164a8f08abfdd9264ef851b81cbefdaed3086971ed0d27d20b78",
+    "packed_size": [
+      476,
+      116
+    ],
+    "packed_bytes": 6198,
+    "packed_sha256": "bc654b8878b8d96981ef89b58e4ab2a457f6a133ec0a80807bef9c916cdb639d"
+  },
+  {
+    "asset": "btn-confirm.webp",
+    "source": "sprites/farm-v4-fix4/ui/btn-confirm-attempt-03.png",
+    "source_sha256": "3e0eadeff1c55733ecb084d22c13f65e506e89746d8202d88afc391c659ebd6f",
+    "packed_size": [
+      287,
+      80
+    ],
+    "packed_bytes": 3856,
+    "packed_sha256": "e637d6cd1060b5c3c9de46538160329a939cefa94b5885bc2d49e43b39ca689d"
+  },
+  {
+    "asset": "buy-title.webp",
+    "source": "sprites/farm-v4-fix4/ui/buy-title-attempt-02.png",
+    "source_sha256": "ebda351c52db046f8d45438268b036e787bef91e14a60eba95b564b9347181a8",
+    "packed_size": [
+      512,
+      70
+    ],
+    "packed_bytes": 6014,
+    "packed_sha256": "8e791b1458022db0a05a6c4148e8f38908e8fa5f51e22ca80aa1e0fdcedc58cb"
+  },
+  {
+    "asset": "card-frame.webp",
+    "source": "sprites/farm-v4-fix4/ui/card-frame-attempt-02.png",
+    "source_sha256": "2e470e3b41cc0f167b9eabe3a9982f7bd1365f35abb99aecf0c8b8b4dbc0f0c1",
+    "packed_size": [
+      512,
+      264
+    ],
+    "packed_bytes": 8038,
+    "packed_sha256": "828e0129d7a344aae4717dcfe145a187be2d2d9d139bebe476aee845edfc4b61"
+  },
+  {
+    "asset": "count-badge.webp",
+    "source": "sprites/farm-v4-fix4/ui/count-badge-attempt-02.png",
+    "source_sha256": "5a7f19197d419c5e5d8dee06d7d09591bc7d84bd9b3cfe6b0fd3ada83a08c18e",
+    "packed_size": [
+      208,
+      208
+    ],
+    "packed_bytes": 13574,
+    "packed_sha256": "783041bc4ec50755f2b35c6c96594836ffe3f5c91ab4f83784e38160498da549"
+  },
+  {
+    "asset": "info-row.webp",
+    "source": "sprites/farm-v4-fix4/ui/info-row-attempt-02.png",
+    "source_sha256": "86d777aff230e53132abf9b4cb1d2ea6a9d602bb8ef8764636d65b4ee3e03ada",
+    "packed_size": [
+      379,
+      49
+    ],
+    "packed_bytes": 4122,
+    "packed_sha256": "1f8a5dd56f6e1df1ba3ed5737705e6cd6c367acd75aac0ca31b91a03aea9e768"
+  },
+  {
+    "asset": "pack-slot-selected.webp",
+    "source": "sprites/farm-v4-fix4/ui/pack-slot-selected-attempt-01.png",
+    "source_sha256": "99ec535f5afcdb0e70454dee0c09d1607cf26b1b6c0c57a05eb6e3d921df5ca0",
+    "packed_size": [
+      256,
+      186
+    ],
+    "packed_bytes": 5164,
+    "packed_sha256": "56809ea84825b3812cdbd28d81f37f4f6a69f135126fbedea4d736da2ca7849f"
+  },
+  {
+    "asset": "pack-slot.webp",
+    "source": "sprites/farm-v4-fix4/ui/pack-slot-attempt-01.png",
+    "source_sha256": "76375feab765821d41bdf927ad3b643d48fd28329769cd1729b53eb129c64033",
+    "packed_size": [
+      256,
+      192
+    ],
+    "packed_bytes": 4044,
+    "packed_sha256": "1f27d1558c8612893ef625a46f98c31ff03b778264bf974fa214157b79399b3b"
+  },
+  {
+    "asset": "pack-title.webp",
+    "source": "sprites/farm-v4-fix4/ui/pack-title-attempt-02.png",
+    "source_sha256": "5875fb9e86ab56379fa971d79519096bc71412d808258520ded6bd29928ee35f",
+    "packed_size": [
+      188,
+      64
+    ],
+    "packed_bytes": 2966,
+    "packed_sha256": "9783d11cf29be15032e790002cc111b9f43d19cacf8019f8c52da9d44d24f20b"
+  },
+  {
+    "asset": "progress-fill.webp",
+    "source": "sprites/farm-v4-fix4/ui/progress-fill-attempt-02.png",
+    "source_sha256": "f8e04e0645a2652cd8dad5cec8b7c0e74f62bf8a34f4a42f6765dbf9df9a5068",
+    "packed_size": [
+      256,
+      35
+    ],
+    "packed_bytes": 1866,
+    "packed_sha256": "f6f2c1485147bdc5974167f381a5e24e62ec3b526368a86633a8e294f1dea294"
+  },
+  {
+    "asset": "progress-track.webp",
+    "source": "sprites/farm-v4-fix4/ui/progress-track-attempt-02.png",
+    "source_sha256": "eecd93894408489d2b6acaf7c364b2176c529d3f9b2ea31ae56f43434bf5765f",
+    "packed_size": [
+      337,
+      32
+    ],
+    "packed_bytes": 3298,
+    "packed_sha256": "e69a26c1b7db200bfbeb8c4d582f606fe66520e0cf3ef371486014feefe81b51"
+  },
+  {
+    "asset": "shop-item-locked.webp",
+    "source": "sprites/farm-v4-fix4/ui/shop-item-locked-attempt-01.png",
+    "source_sha256": "735cd26e0eeed7fbd643c87a5503dfc05381c06b61de4bb77f8c4c1ceb429019",
+    "packed_size": [
+      256,
+      282
+    ],
+    "packed_bytes": 4454,
+    "packed_sha256": "29af5ded6b402ed4c7a891cefb769373f8002d0e89a342f0d758ce2cc31519d3"
+  },
+  {
+    "asset": "shop-item.webp",
+    "source": "sprites/farm-v4-fix4/ui/shop-item-attempt-01.png",
+    "source_sha256": "303c2b569dadfd661951fae30e68ed33192886ecf3a51282d81f8c453e74d639",
+    "packed_size": [
+      256,
+      278
+    ],
+    "packed_bytes": 5820,
+    "packed_sha256": "a5fd67e201063e44b1954d1b8a0838a2ebadbf4c8f2810b7d07eb7699708e16c"
+  },
+  {
+    "asset": "shop-tab-active.webp",
+    "source": "sprites/farm-v4-fix4/ui/shop-tab-active-attempt-01.png",
+    "source_sha256": "23f2a55bbe1d6eea6930699d8e46bcca97cb16cf18cc1ae4bc5687829b122ffa",
+    "packed_size": [
+      324,
+      117
+    ],
+    "packed_bytes": 6458,
+    "packed_sha256": "7a27b0dfb7820107a8cdfc5367b9a97a0b35fb67d1aeaed95c61b8eec2a1af48"
+  },
+  {
+    "asset": "shop-tab.webp",
+    "source": "sprites/farm-v4-fix4/ui/shop-tab-attempt-01.png",
+    "source_sha256": "0accc60ce2a33977256edb8ab1a39b5637da150caa74117d8420c5714effb5be",
+    "packed_size": [
+      324,
+      104
+    ],
+    "packed_bytes": 3986,
+    "packed_sha256": "e4c064154f54f12a84dbb22dc98ee7948521187b7ba45368a4788f1ee3baf5b8"
+  },
+  {
+    "asset": "shop-title.webp",
+    "source": "sprites/farm-v4-fix4/ui/shop-title-attempt-02.png",
+    "source_sha256": "5638599c5c308cf80daf9453134df09c7773e4394eecd0538b1915e21cd94dcd",
+    "packed_size": [
+      346,
+      86
+    ],
+    "packed_bytes": 5916,
+    "packed_sha256": "05b0908a7588a9ef35a3011ba376185f35707a9a9ec7f99d9e6c4a6e5de9b2b3"
+  },
+  {
+    "asset": "small-plot-dry.webp",
+    "source": "sprites/farm-v4-fix4/ui/small-plot-dry-attempt-01.png",
+    "source_sha256": "945e887a3b15cb2b7f77540e4ecb49b25f8f600e3ca8ab050e3185c9c2cd7cc9",
+    "packed_size": [
+      320,
+      146
+    ],
+    "packed_bytes": 17254,
+    "packed_sha256": "7b2a4a0563b52db425481cfb0df6ec898f23fdb6b72119376365c81de89fdbdd"
+  },
+  {
+    "asset": "small-plot-farmed.webp",
+    "source": "sprites/farm-v4-fix4/ui/small-plot-farmed-attempt-01.png",
+    "source_sha256": "11f0500b46c0b30e9fafe2fa42532ad1b3f86c7ee7e981b515ad081fdfb116cf",
+    "packed_size": [
+      320,
+      146
+    ],
+    "packed_bytes": 15064,
+    "packed_sha256": "26a7072e04bf025c95fcb277908c1e1e52dbf6c2887ecce457cdb5912de7070e"
+  },
+  {
+    "asset": "small-plot-hover.webp",
+    "source": "sprites/farm-v4-fix4/ui/small-plot-hover-attempt-02.png",
+    "source_sha256": "6fcbaf4da9fcf39fa85fc99e63afcd54d4e56265ee8ac52bc4ff82cc730980b2",
+    "packed_size": [
+      320,
+      146
+    ],
+    "packed_bytes": 6434,
+    "packed_sha256": "3f8326a35c3f04c0ab6d825a201163db0cb3b0cd761f3c98005f697650e06e69"
+  },
+  {
+    "asset": "status-chip-active.webp",
+    "source": "sprites/farm-v4-fix4/ui/status-chip-active-attempt-02.png",
+    "source_sha256": "dddb72227ade41a4af65f8c56ff34a269d0166ca05813a30a6abc4a43cf7584a",
+    "packed_size": [
+      256,
+      187
+    ],
+    "packed_bytes": 5010,
+    "packed_sha256": "307388152420c25a2313d264f529fdd702259b1a3ec8f6402002942062cfcf13"
+  },
+  {
+    "asset": "status-chip.webp",
+    "source": "sprites/farm-v4-fix4/ui/status-chip-attempt-02.png",
+    "source_sha256": "ff2af34c48c6be8fadebf02975a28d89479394368832fd6afc5cb6911aae7b81",
+    "packed_size": [
+      256,
+      187
+    ],
+    "packed_bytes": 6218,
+    "packed_sha256": "5d21ec0a75928ce0d3cf200ed5f23f93ee8d08afe5fdd8b7a8e4f673a51c6fa1"
+  },
+  {
+    "asset": "stepper-field.webp",
+    "source": "sprites/farm-v4-fix4/ui/stepper-field-attempt-01.png",
+    "source_sha256": "50e06fce75ef5547186eea6bdeb306edf129e763b3cb8d850987c832a9bf69c5",
+    "packed_size": [
+      256,
+      107
+    ],
+    "packed_bytes": 4534,
+    "packed_sha256": "c66ca277421bf9df1113fef1ab76ce4eea8c4ef6bbab967192e944fe2aad6a3b"
+  },
+  {
+    "asset": "stepper-minus.webp",
+    "source": "sprites/farm-v4-fix4/ui/stepper-minus-attempt-02.png",
+    "source_sha256": "a0755057360bf218d986ebd0e47f3194118a04087dda2802720e661360d7d793",
+    "packed_size": [
+      144,
+      128
+    ],
+    "packed_bytes": 4712,
+    "packed_sha256": "d98182020679912cb2a37ae54ffd2ab701877707eb864323ee34eeb5d9204569"
+  },
+  {
+    "asset": "stepper-plus.webp",
+    "source": "sprites/farm-v4-fix4/ui/stepper-plus-attempt-02.png",
+    "source_sha256": "c97af522f74283ea81d38249b72648e528a672f70abd2280b0072c2ed38a3895",
+    "packed_size": [
+      144,
+      128
+    ],
+    "packed_bytes": 5780,
+    "packed_sha256": "f531293189b5197b14c0b678c4c7b474d2c814eefb78ae8337029589159ebb8d"
+  },
+  {
+    "asset": "ui-big-toolbar.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-big-toolbar-attempt-02.png",
+    "source_sha256": "c0d59b7b9d34f58deda05dc2f09fd5a1f43a125b83ea9b0342867c6f2bfc0dbc",
+    "packed_size": [
+      512,
+      67
+    ],
+    "packed_bytes": 9500,
+    "packed_sha256": "e76fdf09dd3c8e27c1cf752a8bbbcfb8e0ab35d103316bdd36555e27201fe995"
+  },
+  {
+    "asset": "ui-button.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-button-attempt-02.png",
+    "source_sha256": "6f9bacc64ce1ae2a3e9ee93a3ba6fe6e6c22fbe5df767bd8f9fb8ab4fad644f0",
+    "packed_size": [
+      302,
+      104
+    ],
+    "packed_bytes": 7620,
+    "packed_sha256": "7fd028a939707a13eb30aaf1b5e1b34ff82a3bc5017d4e07251e296daa5d5e04"
+  },
+  {
+    "asset": "ui-exp-fill.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-exp-fill-attempt-01.png",
+    "source_sha256": "c20b83ed0d7a352c12ae51f4ea4c43cda105faefb8efa7103f474038db56aab0",
+    "packed_size": [
+      256,
+      87
+    ],
+    "packed_bytes": 3886,
+    "packed_sha256": "96a5870fb44c16b635c548c53945ac029d010dc5b36f9ff758a0e1a219930a17"
+  },
+  {
+    "asset": "ui-exp-frame.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-exp-frame-attempt-01.png",
+    "source_sha256": "abdd740ba4d8e25e7e634821eef033a95afae7c464536da614de6f651d27d1f0",
+    "packed_size": [
+      256,
+      105
+    ],
+    "packed_bytes": 3188,
+    "packed_sha256": "e88940cc1e6974cbe3c93e511bf43116363e09c1dfb448ceaf52d0c1658b9919"
+  },
+  {
+    "asset": "ui-main.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-main-attempt-03.png",
+    "source_sha256": "5d50696a0e24feb9d01053cc3a91dc1f4728f26c37aa066541b590e6acfea88a",
+    "packed_size": [
+      484,
+      88
+    ],
+    "packed_bytes": 9246,
+    "packed_sha256": "a9edd06f005c5423766b969ddae72b85baab966c21b00b475254d56620651ce5"
+  },
+  {
+    "asset": "ui-note.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-note-attempt-02.png",
+    "source_sha256": "ef20cd8256d6fd39ac005a546b7430c5941a4051218b33dbd213e3a7fcaa79ed",
+    "packed_size": [
+      373,
+      34
+    ],
+    "packed_bytes": 5906,
+    "packed_sha256": "d7ef6316f5a7de682e57d1d3430518a70978c64cc3d60562a3dde9f17d8b1824"
+  },
+  {
+    "asset": "ui-slot.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-slot-attempt-02.png",
+    "source_sha256": "3fd6bcc245aaecdccbef574600e9cc26e45874ee7d6000d13f1410d3ccdcd41a",
+    "packed_size": [
+      208,
+      208
+    ],
+    "packed_bytes": 9514,
+    "packed_sha256": "815c5605f02d87b7b6fd4af81127f2255c50640db57080b4fd5bcf600994d9b0"
+  },
+  {
+    "asset": "ui-small-plank.webp",
+    "source": "sprites/farm-v4-fix4/ui/ui-small-plank-attempt-03.png",
+    "source_sha256": "c88de411acfae0283f17cc666f9d9f63f900c942526dc843c95fb27ca46e7fe5",
+    "packed_size": [
+      512,
+      230
+    ],
+    "packed_bytes": 20008,
+    "packed_sha256": "0e417dd25c1d9e2918f5f43b4da9052b0d53ef05394ce4aac4271001613485cb"
+  },
+  {
+    "asset": "weather-night.webp",
+    "source": "sprites/farm-v4-fix4/ui/weather-night-attempt-01.png",
+    "source_sha256": "72117219c916e1981658a617dafaf23e1e52344d450dc3fba527c648eb63e29a",
+    "packed_size": [
+      128,
+      128
+    ],
+    "packed_bytes": 6952,
+    "packed_sha256": "975f7c97331902442392e42f72bc780ad3cee35efd2ca9a94a8b198b32ae31b8"
+  },
+  {
+    "asset": "weed.webp",
+    "source": "sprites/farm-v4-fix4/ui/weed-attempt-01.png",
+    "source_sha256": "b6d12ab4dbd89523aa0cd40cdb01ab49eb7e950b1b7471eceb75988082aa4a0d",
+    "packed_size": [
+      96,
+      96
+    ],
+    "packed_bytes": 4444,
+    "packed_sha256": "fc12a0c0022e56b9a5473545d8c8d8e256f52c822eff8234c0e9c2598855319c"
+  },
+  {
+    "asset": "shop-frame.webp",
+    "source": "sprites/farm-v4-fix4/ui/modal-frame-attempt-01.png",
+    "source_sha256": "21071885263ddca4d44de0b375b40394524f4422ad2a4447089448985f5667e3",
+    "packed_size": [
+      512,
+      244
+    ],
+    "packed_bytes": 11284,
+    "packed_sha256": "e58287c7bf32acf6eef8500078cae9cb32170bff0fe5d6c725f605dc8c0c6902"
+  },
+  {
+    "asset": "card-tail.webp",
+    "source": "sprites/farm-v4-fix4/ui/card-frame-attempt-02.png",
+    "source_rect": [
+      245,
+      300,
+      335,
+      338
+    ],
+    "source_sha256": "2e470e3b41cc0f167b9eabe3a9982f7bd1365f35abb99aecf0c8b8b4dbc0f0c1",
+    "packed_size": [
+      90,
+      38
+    ],
+    "packed_bytes": 3540,
+    "packed_sha256": "bd0203af88e47ff44319a4e7c4d9375d5860ed2affbdebce3f2a5de5239ecd71"
+  }
+]

@@ -2230,3 +2230,25 @@ test('更新面板按正式版分组：测试版折叠在对应正式版下，�
   findByAttr(contentOf(dom), 'data-update-install', '0.25.0-rc.2').fire('click')
   assert.deepEqual(calls.at(-1), ['install', '0.25.0-rc.2'])
 })
+
+test('farm quantity keeps focus across the four-second snapshot poll', async () => {
+  const status = { ...SNAPSHOT, extensions: [{ key: 'farm', builtin: false, installed: true, on: true, app: { label: '菜园', emoji: '' } }], extViews: { farm: {} } }
+  const { registration, dom } = await loadClient({ status })
+  let poll = null
+  const realSetInterval = globalThis.window.setInterval
+  globalThis.window.setInterval = fn => { poll = fn; return 1 }
+  try {
+    registration.factory(() => {}).apply({}); await settle()
+    openPanel(dom, 'home')
+    findByAttr(contentOf(dom), 'data-app', 'ext:farm').fire('click')
+    globalThis.window.dshPiggyExtensions.register('farm', { render(app) { app.content.appendChild(app.el('input', 'fm-quantity')) } })
+    const field = findByClass(contentOf(dom), 'fm-quantity')
+    field.value = '5'; dom.document.activeElement = field
+    await poll(); await settle()
+    assert.equal(findByClass(contentOf(dom), 'fm-quantity'), field)
+    assert.equal(field.value, '5')
+    dom.document.activeElement = null
+    await poll(); await settle()
+    assert.notEqual(findByClass(contentOf(dom), 'fm-quantity'), field, 'blur allows ordinary refresh again')
+  } finally { globalThis.window.setInterval = realSetInterval }
+})

@@ -106,3 +106,13 @@ test('布局审计8.9：按素材内边线抓贴边文字，不能用框外边�
   delete catalog['fixture-panel.webp'].inner_insets
   assert.ok(audit([frame, label, node({ x: 300 })], {}, buildAuditExpression(catalog)).unknownAssetGeometry.some(error => error.reason?.includes('inner_insets')))
 })
+
+test('九宫格被CSS清空不能冒充通过；非对称切片按小数像素一致缩放', () => {
+  const erased = node({ tag: 'DIV', classes: ['fm-framed-art'], css: { borderImageSource: 'none' } })
+  assert.ok(audit([erased]).unknownAssetGeometry.some(e => e.reason?.includes('未实际绘制')))
+  const frame = node({ tag: 'DIV', css: { borderImageSource: 'url("fixture.webp")', borderTopWidth: '5px', borderRightWidth: '8px', borderBottomWidth: '5px', borderLeftWidth: '8px', borderImageWidth: '4.875px 8px' } })
+  const catalog = { 'fixture.webp': { size: [287, 80], nine_slice: { insets: [39, 64, 39, 64] } } }
+  assert.equal(audit([frame], {}, buildAuditExpression(catalog)).stretchedImages.length, 0)
+  frame.css.borderImageWidth = '4px 8px'
+  assert.equal(audit([frame], {}, buildAuditExpression(catalog)).stretchedImages.length, 1)
+})

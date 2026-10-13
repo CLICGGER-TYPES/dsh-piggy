@@ -366,6 +366,7 @@ export function createPanel(ctx) {
         // Replacing a focused input drops the caret (including IME composition).
         if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true')) return
         if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return
+        if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return
         // The QTE and waiting animation own their DOM until the phase changes.
         // A four-second poll must not restart them or discard keyboard focus.
         var currentFishing = ctx.view.fishing.pending

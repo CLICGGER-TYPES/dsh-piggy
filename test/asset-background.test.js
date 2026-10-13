@@ -29,3 +29,10 @@ test('无效或缺失切片数据不生成失真的边框', () => {
     assert.equal(node.style.borderImageSource, undefined)
   }
 })
+
+test('非对称切片角保持同一缩放系数，round材料保留完整周期', () => {
+  const node = graphic()
+  applyAssetFrame(node, { nine_slice: { insets: [39, 64, 39, 64], edge_mode: 'round' } })
+  assert.equal(node.style.borderImageWidth, '4.875px 8px 4.875px 8px')
+  assert.equal(node.style.borderImageRepeat, 'round')
+})

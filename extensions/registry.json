@@ -92,53 +92,185 @@
         }
       },
       "assetLayout": {
-        "bg-big.webp": {
+        "bg-big-dawn-rain.webp": {
           "size": [
-            1536,
-            1024
-          ]
+            1152,
+            768
+          ],
+          "render_mode": "cover"
         },
-        "bg-small.webp": {
+        "bg-big-dawn-sunny.webp": {
           "size": [
-            600,
-            800
-          ]
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-big-day-rain.webp": {
+          "size": [
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-big-day-sunny.webp": {
+          "size": [
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-big-dusk-rain.webp": {
+          "size": [
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-big-dusk-sunny.webp": {
+          "size": [
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-big-night-rain.webp": {
+          "size": [
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-big-night-sunny.webp": {
+          "size": [
+            1152,
+            768
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-dawn-rain.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-dawn-sunny.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-day-rain.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-day-sunny.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-dusk-rain.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-dusk-sunny.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-night-rain.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
+        },
+        "bg-small-night-sunny.webp": {
+          "size": [
+            560,
+            500
+          ],
+          "render_mode": "cover"
         },
         "big-plot-dry.webp": {
           "size": [
             320,
-            212
-          ]
+            192
+          ],
+          "render_mode": "contain"
         },
         "big-plot-farmed.webp": {
           "size": [
             320,
-            210
-          ]
+            192
+          ],
+          "render_mode": "contain"
         },
         "big-plot-hover.webp": {
           "size": [
             320,
-            210
-          ]
+            192
+          ],
+          "render_mode": "contain"
         },
         "big-plot-wild.webp": {
           "size": [
             320,
-            214
-          ]
+            192
+          ],
+          "render_mode": "contain"
         },
         "big-sign-expand.webp": {
           "size": [
-            145,
-            160
-          ]
+            184,
+            192
+          ],
+          "render_mode": "contain",
+          "inner_insets": [
+            31,
+            9,
+            73,
+            9
+          ],
+          "measurement": "wood-face inner edges in packed184x192: y31..119,x9..175; runtime uniform cover crops pole"
         },
         "btn-cancel.webp": {
           "size": [
-            256,
-            120
-          ]
+            476,
+            116
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              57,
+              57,
+              57,
+              57
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            18,
+            18,
+            17,
+            18
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "btn-close.webp": {
           "size": [
@@ -148,9 +280,29 @@
         },
         "btn-confirm.webp": {
           "size": [
-            256,
-            115
-          ]
+            287,
+            80
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              39,
+              64,
+              39,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            26,
+            14,
+            18,
+            16
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "bug.webp": {
           "size": [
@@ -174,15 +326,62 @@
         },
         "buy-title.webp": {
           "size": [
-            256,
-            73
-          ]
+            512,
+            70
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              34,
+              34,
+              34,
+              34
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            6.522292993630574,
+            5.707006369426751,
+            6.522292993630574,
+            5.707006369426751
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "card-frame.webp": {
           "size": [
             512,
-            241
-          ]
+            264
+          ],
+          "render_mode": "nine_slice_with_tail",
+          "nine_slice": {
+            "insets": [
+              113,
+              113,
+              113,
+              113
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            60.80550774526678,
+            22.030981067125644,
+            0.8812392426850258,
+            22.030981067125644
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
+        },
+        "card-tail.webp": {
+          "size": [
+            90,
+            38
+          ],
+          "render_mode": "contain"
         },
         "coin-veg.webp": {
           "size": [
@@ -198,9 +397,10 @@
         },
         "count-badge.webp": {
           "size": [
-            128,
-            126
-          ]
+            208,
+            208
+          ],
+          "render_mode": "contain"
         },
         "crop-apple-flowering.webp": {
           "size": [
@@ -960,9 +1160,29 @@
         },
         "info-row.webp": {
           "size": [
-            256,
-            71
-          ]
+            379,
+            49
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              23,
+              23,
+              23,
+              23
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            10,
+            10,
+            9,
+            10
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "lock-badge.webp": {
           "size": [
@@ -992,21 +1212,81 @@
         },
         "pack-slot-selected.webp": {
           "size": [
-            192,
-            188
-          ]
+            256,
+            186
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              64,
+              64,
+              64,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            22,
+            20,
+            22,
+            20
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "pack-slot.webp": {
           "size": [
-            192,
-            188
-          ]
+            256,
+            192
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              64,
+              64,
+              64,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            19,
+            18,
+            18,
+            18
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "pack-title.webp": {
           "size": [
-            192,
-            72
-          ]
+            188,
+            64
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              31,
+              31,
+              31,
+              31
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            6,
+            5,
+            6,
+            3
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "plot-bubble-bug.webp": {
           "size": [
@@ -1208,15 +1488,55 @@
         },
         "progress-fill.webp": {
           "size": [
-            236,
-            42
-          ]
+            256,
+            35
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              16,
+              16,
+              16,
+              16
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            11,
+            3,
+            12,
+            3
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "progress-track.webp": {
           "size": [
-            256,
-            62
-          ]
+            337,
+            32
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              15,
+              15,
+              15,
+              15
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            5,
+            13,
+            10,
+            12
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "seed-packet.webp": {
           "size": [
@@ -1233,64 +1553,179 @@
         "shop-frame.webp": {
           "size": [
             512,
-            271
+            244
           ],
+          "render_mode": "nine_slice",
           "nine_slice": {
             "insets": [
-              90,
-              90,
-              90,
-              90
-            ]
+              64,
+              64,
+              64,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            22,
+            22,
+            21,
+            22
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
           }
         },
         "shop-item-locked.webp": {
           "size": [
-            207,
-            256
-          ]
+            256,
+            282
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              64,
+              64,
+              64,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            24,
+            19,
+            24,
+            19
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "shop-item.webp": {
           "size": [
-            200,
-            256
-          ]
+            256,
+            278
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              64,
+              64,
+              64,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            19,
+            16,
+            17,
+            16
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "shop-tab-active.webp": {
           "size": [
-            128,
-            40
-          ]
+            324,
+            117
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              57,
+              57,
+              57,
+              57
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            19,
+            18,
+            18,
+            18
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "shop-tab.webp": {
           "size": [
-            128,
-            40
-          ]
+            324,
+            104
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              51,
+              51,
+              51,
+              51
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            14,
+            14,
+            14,
+            14
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "shop-title.webp": {
           "size": [
-            256,
-            73
-          ]
+            346,
+            86
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              42,
+              42,
+              42,
+              42
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            7,
+            6,
+            7,
+            5
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "small-plot-dry.webp": {
           "size": [
-            240,
-            135
-          ]
+            320,
+            146
+          ],
+          "render_mode": "contain"
         },
         "small-plot-farmed.webp": {
           "size": [
-            240,
-            135
-          ]
+            320,
+            146
+          ],
+          "render_mode": "contain"
         },
         "small-plot-hover.webp": {
           "size": [
             320,
-            181
-          ]
+            146
+          ],
+          "render_mode": "contain"
         },
         "sprout.webp": {
           "size": [
@@ -1300,15 +1735,49 @@
         },
         "status-chip-active.webp": {
           "size": [
-            128,
-            122
-          ]
+            256,
+            187
+          ],
+          "render_mode": "contain",
+          "inner_insets": [
+            24,
+            16,
+            26.4,
+            16
+          ],
+          "nine_slice": {
+            "insets": [
+              51,
+              51,
+              51,
+              51
+            ],
+            "edge_mode": "repeat"
+          },
+          "measurement": "master320x234 straight inner edges x20/x300,y30/y201; uniformly packed to256px"
         },
         "status-chip.webp": {
           "size": [
-            128,
-            122
-          ]
+            256,
+            187
+          ],
+          "render_mode": "contain",
+          "inner_insets": [
+            24,
+            16,
+            26.4,
+            16
+          ],
+          "nine_slice": {
+            "insets": [
+              51,
+              51,
+              51,
+              51
+            ],
+            "edge_mode": "repeat"
+          },
+          "measurement": "master320x234 straight inner edges x20/x300,y30/y201; uniformly packed to256px"
         },
         "status-icon-bug.webp": {
           "size": [
@@ -1330,21 +1799,43 @@
         },
         "stepper-field.webp": {
           "size": [
-            128,
-            60
-          ]
+            256,
+            107
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              52,
+              52,
+              52,
+              52
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            13,
+            13,
+            13,
+            12
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "stepper-minus.webp": {
           "size": [
-            128,
-            81
-          ]
+            144,
+            128
+          ],
+          "render_mode": "contain"
         },
         "stepper-plus.webp": {
           "size": [
-            128,
-            82
-          ]
+            144,
+            128
+          ],
+          "render_mode": "contain"
         },
         "tab-icon-fert.webp": {
           "size": [
@@ -1452,33 +1943,129 @@
         },
         "ui-big-toolbar.webp": {
           "size": [
-            1200,
-            156
-          ]
+            512,
+            67
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              33,
+              33,
+              33,
+              33
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            5.792583280955374,
+            9.332495285983658,
+            4.50534255185418,
+            1.9308610936517914
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-big-topbar.webp": {
           "size": [
             1200,
             297
-          ]
+          ],
+          "inner_insets": [
+            83,
+            83,
+            67,
+            83
+          ],
+          "measurement": "original straight wood-to-fill edges: y83/y230,x83/x1117; excludes decorative leaves",
+          "nine_slice": {
+            "insets": [
+              128,
+              128,
+              128,
+              128
+            ],
+            "edge_mode": "repeat"
+          }
         },
         "ui-button.webp": {
           "size": [
-            256,
-            101
-          ]
+            302,
+            104
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              51,
+              51,
+              51,
+              51
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            15,
+            10,
+            13,
+            11
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-exp-fill.webp": {
           "size": [
-            239,
-            56
-          ]
+            256,
+            87
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              42,
+              42,
+              42,
+              42
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            26,
+            13,
+            24,
+            13
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-exp-frame.webp": {
           "size": [
-            240,
-            69
-          ]
+            256,
+            105
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              51,
+              51,
+              51,
+              51
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            13,
+            12,
+            13,
+            12
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-hang-sign.webp": {
           "size": [
@@ -1488,15 +2075,55 @@
         },
         "ui-main.webp": {
           "size": [
-            256,
-            102
-          ]
+            484,
+            88
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              43,
+              64,
+              43,
+              64
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            8,
+            40,
+            20,
+            18
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-note.webp": {
           "size": [
-            256,
-            113
-          ]
+            373,
+            34
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              16,
+              48,
+              16,
+              48
+            ],
+            "edge_mode": "repeat"
+          },
+          "inner_insets": [
+            5,
+            7,
+            5,
+            9
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-panel.webp": {
           "size": [
@@ -1512,9 +2139,10 @@
         },
         "ui-slot.webp": {
           "size": [
-            128,
-            125
-          ]
+            208,
+            208
+          ],
+          "render_mode": "contain"
         },
         "ui-small-farm.webp": {
           "size": [
@@ -1524,9 +2152,29 @@
         },
         "ui-small-plank.webp": {
           "size": [
-            600,
-            159
-          ]
+            512,
+            230
+          ],
+          "render_mode": "nine_slice",
+          "nine_slice": {
+            "insets": [
+              114,
+              114,
+              114,
+              114
+            ],
+            "edge_mode": "round"
+          },
+          "inner_insets": [
+            6.4,
+            8.228571428571428,
+            30.17142857142857,
+            4.571428571428571
+          ],
+          "content_padding": {
+            "big": 8,
+            "small": 6
+          }
         },
         "ui-small-scoreboard.webp": {
           "size": [
@@ -1542,9 +2190,10 @@
         },
         "weather-night.webp": {
           "size": [
-            160,
-            156
-          ]
+            128,
+            128
+          ],
+          "render_mode": "contain"
         },
         "weather-rain.webp": {
           "size": [
@@ -1560,9 +2209,10 @@
         },
         "weed.webp": {
           "size": [
-            128,
-            100
-          ]
+            96,
+            96
+          ],
+          "render_mode": "contain"
         },
         "withered.webp": {
           "size": [
@@ -1573,52 +2223,108 @@
       },
       "bundle": {
         "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ext-farm-4.0.2.piggyext",
-        "sha256": "d785070811350f8a3265fb0fc0429825275e83fe067da12b3acb3502dcc0da18"
+        "sha256": "44df3d155c8a479d14af7cecc9049f686495dc2ec4878873e41ad476866bcb16"
       },
       "files": {
         "manifest.json": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/manifest.json",
-          "sha256": "44b4efe7ba2710c2e5d1006d3380c473012c881c5397c662bbb60ce14dca6a5f"
+          "sha256": "89009a3e1983dd31f7415588cd35612149631477271ab432f0c3dfbed7fbf998"
         },
         "server.js": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/server.js",
-          "sha256": "ce0de29ad87437c700a6f73fcc1f2cd1a932f4c67b1c9867778aa794c96231b8"
+          "sha256": "14a5e31fda36fdd7989291d37df1053ffbea66f84d0ada7c4d72224f8c4d9b6b"
         },
         "client.js": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/client.js",
-          "sha256": "96ae0b2598ae30310f22b4be2166107f9e5f8b0901f7ece15056150f865c82c7"
+          "sha256": "2a4730f235f4657404c3e39ce99dccdf8ef759c7185933ec82beda02100a7f8b"
         },
-        "assets/bg-big.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big.webp",
-          "sha256": "9fa601c6c551a2e46d1644f106d2e67291e6be37defd98971b746d74b083f771"
+        "assets/bg-big-dawn-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-dawn-rain.webp",
+          "sha256": "fd6dc73583cdcb56f9a6ea5f2ed9497be1abc6fcb375002e7fc64a3b6c3d6649"
         },
-        "assets/bg-small.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small.webp",
-          "sha256": "75ea357244f52e14b5c66974ec149774d8a887de76977ca14f3a73c5961511c8"
+        "assets/bg-big-dawn-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-dawn-sunny.webp",
+          "sha256": "d0c723b8337db4c6f6919340f401e601e0e77f8fea046ddc1f9f246daf79211f"
+        },
+        "assets/bg-big-day-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-day-rain.webp",
+          "sha256": "45ff1e363c419517d2a5ddde78f8d6fc04a5ba72b962290725395130885fe6fe"
+        },
+        "assets/bg-big-day-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-day-sunny.webp",
+          "sha256": "274f120239db7cab34cae6995199e763e2e57d071fa2c09e3c7c7bc27ec42707"
+        },
+        "assets/bg-big-dusk-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-dusk-rain.webp",
+          "sha256": "9250e15b91d457d112e5fce28e5417e35cfc8bbf4bc2799b5ed0cfa4f56f7f1e"
+        },
+        "assets/bg-big-dusk-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-dusk-sunny.webp",
+          "sha256": "ea0b8c0aed9dafb14f5cb9dbaf3fdd34a0c6bc13e55d18734e70ac599960c028"
+        },
+        "assets/bg-big-night-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-night-rain.webp",
+          "sha256": "8604ada7ea87e710a75271bcc66aaed1d96f0b5c5d893e98259c3c28558cd666"
+        },
+        "assets/bg-big-night-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-night-sunny.webp",
+          "sha256": "8d6ed06bc94ffa7955b0c80bf36c655b25394e209a543efd0e467a5f2db5764b"
+        },
+        "assets/bg-small-dawn-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-dawn-rain.webp",
+          "sha256": "47d59200846e9f6161121559c77b6cbe840b8e66ff371dacdf2aa3a16aba3479"
+        },
+        "assets/bg-small-dawn-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-dawn-sunny.webp",
+          "sha256": "cb6a45b9d9f6943ed21b836016a5c580db54f6f818cf00cf58de27826fbef9e1"
+        },
+        "assets/bg-small-day-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-day-rain.webp",
+          "sha256": "4644b4551216e297507d99cdb30f5482a8e65b1009e3654adeaf9a49664f05a5"
+        },
+        "assets/bg-small-day-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-day-sunny.webp",
+          "sha256": "e558cd1047c7c23dd14200774b71fd2155eec3f952f0992337f4a96c20920267"
+        },
+        "assets/bg-small-dusk-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-dusk-rain.webp",
+          "sha256": "7a078de6738c9de1c43e232b2e637e8c51d955633a897d7d41db2b3666679e57"
+        },
+        "assets/bg-small-dusk-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-dusk-sunny.webp",
+          "sha256": "48dfa2dc35df8c8dce8ef93945cb1ccc82bc186c20f8e7534ac09cca8ed884c6"
+        },
+        "assets/bg-small-night-rain.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-night-rain.webp",
+          "sha256": "8e1c25b852ea77090084b9e15ee4869349d3b557b24a778ad78439eee314ec6c"
+        },
+        "assets/bg-small-night-sunny.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-small-night-sunny.webp",
+          "sha256": "deee62e271b11de9f4397dd95f93ff9ec2cdedecbcb826b523485ae3f37b0385"
         },
         "assets/big-plot-dry.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/big-plot-dry.webp",
-          "sha256": "4a4c62a1747b042df5c38a790e8941ebb86d6073d4970f5d6bfe453a25a81bb2"
+          "sha256": "ef20f2cfa0315cc7ebad1c902a9ce9441b2bbd7eda8d5c2a6e4d2b97c6860f4b"
         },
         "assets/big-plot-farmed.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/big-plot-farmed.webp",
-          "sha256": "3f16deb2bc5a3bea0a046a16d2983c9fe20385dce424af6311a070afd11ac0df"
+          "sha256": "05976f1addbb06ccd523213048715ce49a7b7019c168ca06271dd892adb9196b"
         },
         "assets/big-plot-hover.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/big-plot-hover.webp",
-          "sha256": "4e67d4bdaef07610272fefcad132085e42e2c78b91acb88860d4c7c7213f748f"
+          "sha256": "f50c2bc3ce7c0075a59533580d102f7421e366d6743a4aa90af5924ad8109873"
         },
         "assets/big-plot-wild.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/big-plot-wild.webp",
-          "sha256": "e6be403643ecc5c9b30a738875b194f398d23e49881205c1b4586816d80ad9bd"
+          "sha256": "88aac2ac160c7eb28e6edd806b8d9710c48528fda4dc895e79ce48c2845f1849"
         },
         "assets/big-sign-expand.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/big-sign-expand.webp",
-          "sha256": "7f4ab58582fba157de965a316a9caa019bbe9c502d0ccdeac042e2b6ed9c1d09"
+          "sha256": "0051b1ffab5132eae29501c1cf58f1445b4ad92fb7d566932846ed1184dc79c5"
         },
         "assets/btn-cancel.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/btn-cancel.webp",
-          "sha256": "78c427cb0d0a42ccd5725b612a01b3a16f0028066e1313e1abe530d351b98a9f"
+          "sha256": "bc654b8878b8d96981ef89b58e4ab2a457f6a133ec0a80807bef9c916cdb639d"
         },
         "assets/btn-close.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/btn-close.webp",
@@ -1626,7 +2332,7 @@
         },
         "assets/btn-confirm.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/btn-confirm.webp",
-          "sha256": "a5da3c6d66e56204ea4a302edc0156890f4673aabbbe63d648ce9973030b288f"
+          "sha256": "e637d6cd1060b5c3c9de46538160329a939cefa94b5885bc2d49e43b39ca689d"
         },
         "assets/bug.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bug.webp",
@@ -1638,11 +2344,15 @@
         },
         "assets/buy-title.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/buy-title.webp",
-          "sha256": "ea45bf49eb82b18c360bf000471858706fe7410eb99436443c9c8c8b6e795639"
+          "sha256": "8e791b1458022db0a05a6c4148e8f38908e8fa5f51e22ca80aa1e0fdcedc58cb"
         },
         "assets/card-frame.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/card-frame.webp",
-          "sha256": "cc3ec453bff8bab9557b6a53eaf51743de6cced978925e78749a528d7d80ac8b"
+          "sha256": "828e0129d7a344aae4717dcfe145a187be2d2d9d139bebe476aee845edfc4b61"
+        },
+        "assets/card-tail.webp": {
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/card-tail.webp",
+          "sha256": "bd0203af88e47ff44319a4e7c4d9375d5860ed2affbdebce3f2a5de5239ecd71"
         },
         "assets/coin-veg.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/coin-veg.webp",
@@ -1654,7 +2364,7 @@
         },
         "assets/count-badge.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/count-badge.webp",
-          "sha256": "0dd89e4b812279fe21e3c646db80de1fa3bfe587949f8ef3f54037a13e08fe27"
+          "sha256": "783041bc4ec50755f2b35c6c96594836ffe3f5c91ab4f83784e38160498da549"
         },
         "assets/crop-apple-flowering.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/crop-apple-flowering.webp",
@@ -2162,7 +2872,7 @@
         },
         "assets/info-row.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/info-row.webp",
-          "sha256": "3a3ba7635377f0fd5202bd48f031c4e3e5d5b875b1129ac323d6d56cf765df52"
+          "sha256": "1f8a5dd56f6e1df1ba3ed5737705e6cd6c367acd75aac0ca31b91a03aea9e768"
         },
         "assets/lock-badge.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/lock-badge.webp",
@@ -2178,15 +2888,15 @@
         },
         "assets/pack-slot-selected.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/pack-slot-selected.webp",
-          "sha256": "29b683dd4557ee16223063b4190a6880376140713f736e6b6764c1eea0e2e613"
+          "sha256": "56809ea84825b3812cdbd28d81f37f4f6a69f135126fbedea4d736da2ca7849f"
         },
         "assets/pack-slot.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/pack-slot.webp",
-          "sha256": "823c9ea898b598ea38ad35141dbdef197e891ca135552f3eeefc07e7929dcd3d"
+          "sha256": "1f27d1558c8612893ef625a46f98c31ff03b778264bf974fa214157b79399b3b"
         },
         "assets/pack-title.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/pack-title.webp",
-          "sha256": "2debdae714c3dfb5a68844f99de275ff1da52fd5fe151fee78e24c8918afebca"
+          "sha256": "9783d11cf29be15032e790002cc111b9f43d19cacf8019f8c52da9d44d24f20b"
         },
         "assets/plot-bubble-bug.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/plot-bubble-bug.webp",
@@ -2322,11 +3032,11 @@
         },
         "assets/progress-fill.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/progress-fill.webp",
-          "sha256": "602fb25568085e83b927f7430f5c244279bc23f764c2d7930e1faf41ceb41b2d"
+          "sha256": "f6f2c1485147bdc5974167f381a5e24e62ec3b526368a86633a8e294f1dea294"
         },
         "assets/progress-track.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/progress-track.webp",
-          "sha256": "5f754c0a23ca16e3e53b27bd8c5c78e063cb445419fbd90f25d72554681730c8"
+          "sha256": "e69a26c1b7db200bfbeb8c4d582f606fe66520e0cf3ef371486014feefe81b51"
         },
         "assets/seed-packet.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/seed-packet.webp",
@@ -2338,39 +3048,39 @@
         },
         "assets/shop-frame.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/shop-frame.webp",
-          "sha256": "15422fbe4cdf600d2d8d6be68d128c72006e3ea4747bab0c4fe01c517c518ed6"
+          "sha256": "e58287c7bf32acf6eef8500078cae9cb32170bff0fe5d6c725f605dc8c0c6902"
         },
         "assets/shop-item-locked.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/shop-item-locked.webp",
-          "sha256": "1fde0bd9c5132221fff3eb085f177894c689df3757a73d339d66208ebcee2a05"
+          "sha256": "29af5ded6b402ed4c7a891cefb769373f8002d0e89a342f0d758ce2cc31519d3"
         },
         "assets/shop-item.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/shop-item.webp",
-          "sha256": "4c7c026c32cdbb83779057d7a6cd7874eb035df48b6fb7508264030765fc2fee"
+          "sha256": "a5fd67e201063e44b1954d1b8a0838a2ebadbf4c8f2810b7d07eb7699708e16c"
         },
         "assets/shop-tab-active.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/shop-tab-active.webp",
-          "sha256": "7f326b2e67b558786b60cec0ee50a6af27dbd472b39b8beeceb880988079b155"
+          "sha256": "7a27b0dfb7820107a8cdfc5367b9a97a0b35fb67d1aeaed95c61b8eec2a1af48"
         },
         "assets/shop-tab.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/shop-tab.webp",
-          "sha256": "5268fb5c34f7b70c9d66f10267f92df3d4dba097ce0504feef9ec13769bea2fa"
+          "sha256": "e4c064154f54f12a84dbb22dc98ee7948521187b7ba45368a4788f1ee3baf5b8"
         },
         "assets/shop-title.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/shop-title.webp",
-          "sha256": "d22ada4bcaa228a7366d638e8c574c1d4625b7bd2b502c0d5135a0cadc62bd3d"
+          "sha256": "05b0908a7588a9ef35a3011ba376185f35707a9a9ec7f99d9e6c4a6e5de9b2b3"
         },
         "assets/small-plot-dry.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/small-plot-dry.webp",
-          "sha256": "0f14a539215f94bc23412ccfaa448b5499b5dd5e61aacd838c19b7d3d3719339"
+          "sha256": "7b2a4a0563b52db425481cfb0df6ec898f23fdb6b72119376365c81de89fdbdd"
         },
         "assets/small-plot-farmed.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/small-plot-farmed.webp",
-          "sha256": "20103cb43ce03c995b84dcc03fc153aa6ec767448032560dc02a98a7436f033d"
+          "sha256": "26a7072e04bf025c95fcb277908c1e1e52dbf6c2887ecce457cdb5912de7070e"
         },
         "assets/small-plot-hover.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/small-plot-hover.webp",
-          "sha256": "d2fbf63f08158af6d7eb8e6a229e8957e88f2cef0b1e6e1064251230a1395090"
+          "sha256": "3f8326a35c3f04c0ab6d825a201163db0cb3b0cd761f3c98005f697650e06e69"
         },
         "assets/sprout.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/sprout.webp",
@@ -2378,11 +3088,11 @@
         },
         "assets/status-chip-active.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/status-chip-active.webp",
-          "sha256": "c1aa11048ffa64a8a128ba536ac8c8031f55a7bd1792f1fd79f93ef4f1627b93"
+          "sha256": "307388152420c25a2313d264f529fdd702259b1a3ec8f6402002942062cfcf13"
         },
         "assets/status-chip.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/status-chip.webp",
-          "sha256": "26690f781ad90a61433ae7230ba65cc28ec96b6c0f1bc7240d74a6dc0131d4a5"
+          "sha256": "5d21ec0a75928ce0d3cf200ed5f23f93ee8d08afe5fdd8b7a8e4f673a51c6fa1"
         },
         "assets/status-icon-bug.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/status-icon-bug.webp",
@@ -2398,15 +3108,15 @@
         },
         "assets/stepper-field.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/stepper-field.webp",
-          "sha256": "d8249778f8796ec65df3980b6551cb5cac6c9a66cebfd5d7efcdb2425a4f0e64"
+          "sha256": "c66ca277421bf9df1113fef1ab76ce4eea8c4ef6bbab967192e944fe2aad6a3b"
         },
         "assets/stepper-minus.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/stepper-minus.webp",
-          "sha256": "a2e730a88ba5bf13172e40f91f09c212b4f78e817fa163f56f0f71cc97eb78e1"
+          "sha256": "d98182020679912cb2a37ae54ffd2ab701877707eb864323ee34eeb5d9204569"
         },
         "assets/stepper-plus.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/stepper-plus.webp",
-          "sha256": "ae46aef8eecd7905cf5ef1ae6ad3cacfd7fe8218a045aaaf0075082ab470c185"
+          "sha256": "f531293189b5197b14c0b678c4c7b474d2c814eefb78ae8337029589159ebb8d"
         },
         "assets/tab-icon-fert.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/tab-icon-fert.webp",
@@ -2474,7 +3184,7 @@
         },
         "assets/ui-big-toolbar.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-big-toolbar.webp",
-          "sha256": "b313013651fa4c0ddd47a975d8fbbb466f225075d2a9bd2afcafcd121239ede3"
+          "sha256": "e76fdf09dd3c8e27c1cf752a8bbbcfb8e0ab35d103316bdd36555e27201fe995"
         },
         "assets/ui-big-topbar.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-big-topbar.webp",
@@ -2482,15 +3192,15 @@
         },
         "assets/ui-button.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-button.webp",
-          "sha256": "150f92aba6d71874a16b33147e7b33a9159a31357f1f90cc8c8152daf971f097"
+          "sha256": "7fd028a939707a13eb30aaf1b5e1b34ff82a3bc5017d4e07251e296daa5d5e04"
         },
         "assets/ui-exp-fill.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-exp-fill.webp",
-          "sha256": "8b65f618b9365ee7bde874fe74b44bebca9e887f53e64da60c0df122ea869884"
+          "sha256": "96a5870fb44c16b635c548c53945ac029d010dc5b36f9ff758a0e1a219930a17"
         },
         "assets/ui-exp-frame.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-exp-frame.webp",
-          "sha256": "67896f70145796e37ebaf8af28c30b4525ece38e4ba86e754e81016c44e4b02b"
+          "sha256": "e88940cc1e6974cbe3c93e511bf43116363e09c1dfb448ceaf52d0c1658b9919"
         },
         "assets/ui-hang-sign.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-hang-sign.webp",
@@ -2498,11 +3208,11 @@
         },
         "assets/ui-main.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-main.webp",
-          "sha256": "6ec0d9f5934eff9274385d84745d74c12b1748f071bf62833a04a39e079270e7"
+          "sha256": "a9edd06f005c5423766b969ddae72b85baab966c21b00b475254d56620651ce5"
         },
         "assets/ui-note.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-note.webp",
-          "sha256": "64c8b0f2e77d024e5a7fde7a3e06e269674723d086eb78fb4732ff7438f2fae5"
+          "sha256": "d7ef6316f5a7de682e57d1d3430518a70978c64cc3d60562a3dde9f17d8b1824"
         },
         "assets/ui-panel.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-panel.webp",
@@ -2514,7 +3224,7 @@
         },
         "assets/ui-slot.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-slot.webp",
-          "sha256": "ba3dc0354782f352bff3fa7094dd3d0bc356ec3ae2a9241c062c4b55e82f8f5b"
+          "sha256": "815c5605f02d87b7b6fd4af81127f2255c50640db57080b4fd5bcf600994d9b0"
         },
         "assets/ui-small-farm.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-small-farm.webp",
@@ -2522,7 +3232,7 @@
         },
         "assets/ui-small-plank.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-small-plank.webp",
-          "sha256": "efcb7c9bfd235afdd2a021bb20217570471de7dde327505b99e381ef7c2977b1"
+          "sha256": "0e417dd25c1d9e2918f5f43b4da9052b0d53ef05394ce4aac4271001613485cb"
         },
         "assets/ui-small-scoreboard.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ui-small-scoreboard.webp",
@@ -2534,7 +3244,7 @@
         },
         "assets/weather-night.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/weather-night.webp",
-          "sha256": "8cbd1cccccfc36bef1b8b3eb01467af03838f7a0001513d1678948ed14276517"
+          "sha256": "975f7c97331902442392e42f72bc780ad3cee35efd2ca9a94a8b198b32ae31b8"
         },
         "assets/weather-rain.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/weather-rain.webp",
@@ -2546,7 +3256,7 @@
         },
         "assets/weed.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/weed.webp",
-          "sha256": "b38c98e1f047c1661ef8eaa33baccfffdb41aba81ecb34272c7a9ad38b5afa1e"
+          "sha256": "fc12a0c0022e56b9a5473545d8c8d8e256f52c822eff8234c0e9c2598855319c"
         },
         "assets/withered.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/withered.webp",

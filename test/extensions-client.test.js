@@ -1,6 +1,7 @@
 // 扩展中心的客户端部分：关掉的扩展不在主菜单、图鉴、猪身上出现；「扩展」App 里能开关。
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { normalizeExtensions } from '../src/client/extensions.js'
 import { SNAPSHOT, contentOf, findByAttr, mount, openPanel, settle } from './helpers/bundle.js'
 
 const ext = (pomodoro, fishing) => [
@@ -156,4 +157,11 @@ test('扩展页有「从文件导入」；本地导入的非官方扩展卡片�
   assert.equal(input.getAttribute('accept'), '.piggyext,.json,.js')
   assert.match(findByAttr(contentOf(dom), 'data-extension', 'piggybank').allText(), /存钱罐 1\.0\.0 · 本地导入/)
   assert.doesNotMatch(findByAttr(contentOf(dom), 'data-extension', 'pomodoro').allText(), /本地导入/)
+})
+
+test('下载扩展的图片清单和框材质穿过快照归一化，不回退旧背景', () => {
+  const layout = { 'card-frame.webp': { size: [512, 264], nine_slice: { insets: [113, 113, 113, 113] }, inner_insets: [61, 22, 1, 22] } }
+  const entry = normalizeExtensions([{ key: 'farm', builtin: false, assets: ['bg-big-night-rain.webp', 'card-frame.webp', 123], assetLayout: layout }])[0]
+  assert.deepEqual(entry.assets, ['bg-big-night-rain.webp', 'card-frame.webp'])
+  assert.deepEqual(entry.assetLayout, layout)
 })

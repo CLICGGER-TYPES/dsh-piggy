@@ -17,8 +17,22 @@
     }
   },
   "assets": [
-    "bg-big.webp",
-    "bg-small.webp",
+    "bg-big-dawn-rain.webp",
+    "bg-big-dawn-sunny.webp",
+    "bg-big-day-rain.webp",
+    "bg-big-day-sunny.webp",
+    "bg-big-dusk-rain.webp",
+    "bg-big-dusk-sunny.webp",
+    "bg-big-night-rain.webp",
+    "bg-big-night-sunny.webp",
+    "bg-small-dawn-rain.webp",
+    "bg-small-dawn-sunny.webp",
+    "bg-small-day-rain.webp",
+    "bg-small-day-sunny.webp",
+    "bg-small-dusk-rain.webp",
+    "bg-small-dusk-sunny.webp",
+    "bg-small-night-rain.webp",
+    "bg-small-night-sunny.webp",
     "big-plot-dry.webp",
     "big-plot-farmed.webp",
     "big-plot-hover.webp",
@@ -31,6 +45,7 @@
     "buy-frame.webp",
     "buy-title.webp",
     "card-frame.webp",
+    "card-tail.webp",
     "coin-veg.webp",
     "coin.webp",
     "count-badge.webp",
@@ -260,53 +275,185 @@
     "withered.webp"
   ],
   "assetLayout": {
-    "bg-big.webp": {
+    "bg-big-dawn-rain.webp": {
       "size": [
-        1536,
-        1024
-      ]
+        1152,
+        768
+      ],
+      "render_mode": "cover"
     },
-    "bg-small.webp": {
+    "bg-big-dawn-sunny.webp": {
       "size": [
-        600,
-        800
-      ]
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-big-day-rain.webp": {
+      "size": [
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-big-day-sunny.webp": {
+      "size": [
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-big-dusk-rain.webp": {
+      "size": [
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-big-dusk-sunny.webp": {
+      "size": [
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-big-night-rain.webp": {
+      "size": [
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-big-night-sunny.webp": {
+      "size": [
+        1152,
+        768
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-dawn-rain.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-dawn-sunny.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-day-rain.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-day-sunny.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-dusk-rain.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-dusk-sunny.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-night-rain.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
+    },
+    "bg-small-night-sunny.webp": {
+      "size": [
+        560,
+        500
+      ],
+      "render_mode": "cover"
     },
     "big-plot-dry.webp": {
       "size": [
         320,
-        212
-      ]
+        192
+      ],
+      "render_mode": "contain"
     },
     "big-plot-farmed.webp": {
       "size": [
         320,
-        210
-      ]
+        192
+      ],
+      "render_mode": "contain"
     },
     "big-plot-hover.webp": {
       "size": [
         320,
-        210
-      ]
+        192
+      ],
+      "render_mode": "contain"
     },
     "big-plot-wild.webp": {
       "size": [
         320,
-        214
-      ]
+        192
+      ],
+      "render_mode": "contain"
     },
     "big-sign-expand.webp": {
       "size": [
-        145,
-        160
-      ]
+        184,
+        192
+      ],
+      "render_mode": "contain",
+      "inner_insets": [
+        31,
+        9,
+        73,
+        9
+      ],
+      "measurement": "wood-face inner edges in packed184x192: y31..119,x9..175; runtime uniform cover crops pole"
     },
     "btn-cancel.webp": {
       "size": [
-        256,
-        120
-      ]
+        476,
+        116
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          57,
+          57,
+          57,
+          57
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        18.0,
+        18.0,
+        17.0,
+        18.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "btn-close.webp": {
       "size": [
@@ -316,9 +463,29 @@
     },
     "btn-confirm.webp": {
       "size": [
-        256,
-        115
-      ]
+        287,
+        80
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          39,
+          64,
+          39,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        26.0,
+        14.0,
+        18.0,
+        16.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "bug.webp": {
       "size": [
@@ -342,15 +509,62 @@
     },
     "buy-title.webp": {
       "size": [
-        256,
-        73
-      ]
+        512,
+        70
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        6.522292993630574,
+        5.707006369426751,
+        6.522292993630574,
+        5.707006369426751
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "card-frame.webp": {
       "size": [
         512,
-        241
-      ]
+        264
+      ],
+      "render_mode": "nine_slice_with_tail",
+      "nine_slice": {
+        "insets": [
+          113,
+          113,
+          113,
+          113
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        60.80550774526678,
+        22.030981067125644,
+        0.8812392426850258,
+        22.030981067125644
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
+    },
+    "card-tail.webp": {
+      "size": [
+        90,
+        38
+      ],
+      "render_mode": "contain"
     },
     "coin-veg.webp": {
       "size": [
@@ -366,9 +580,10 @@
     },
     "count-badge.webp": {
       "size": [
-        128,
-        126
-      ]
+        208,
+        208
+      ],
+      "render_mode": "contain"
     },
     "crop-apple-flowering.webp": {
       "size": [
@@ -1128,9 +1343,29 @@
     },
     "info-row.webp": {
       "size": [
-        256,
-        71
-      ]
+        379,
+        49
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          23,
+          23,
+          23,
+          23
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        10.0,
+        10.0,
+        9.0,
+        10.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "lock-badge.webp": {
       "size": [
@@ -1160,21 +1395,81 @@
     },
     "pack-slot-selected.webp": {
       "size": [
-        192,
-        188
-      ]
+        256,
+        186
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        22.0,
+        20.0,
+        22.0,
+        20.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "pack-slot.webp": {
       "size": [
-        192,
-        188
-      ]
+        256,
+        192
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        19.0,
+        18.0,
+        18.0,
+        18.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "pack-title.webp": {
       "size": [
-        192,
-        72
-      ]
+        188,
+        64
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          31,
+          31,
+          31,
+          31
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        6.0,
+        5.0,
+        6.0,
+        3.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "plot-bubble-bug.webp": {
       "size": [
@@ -1376,15 +1671,55 @@
     },
     "progress-fill.webp": {
       "size": [
-        236,
-        42
-      ]
+        256,
+        35
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        11.0,
+        3.0,
+        12.0,
+        3.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "progress-track.webp": {
       "size": [
-        256,
-        62
-      ]
+        337,
+        32
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          15,
+          15,
+          15,
+          15
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        5.0,
+        13.0,
+        10.0,
+        12.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "seed-packet.webp": {
       "size": [
@@ -1401,64 +1736,179 @@
     "shop-frame.webp": {
       "size": [
         512,
-        271
+        244
       ],
+      "render_mode": "nine_slice",
       "nine_slice": {
         "insets": [
-          90,
-          90,
-          90,
-          90
-        ]
+          64,
+          64,
+          64,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        22.0,
+        22.0,
+        21.0,
+        22.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
       }
     },
     "shop-item-locked.webp": {
       "size": [
-        207,
-        256
-      ]
+        256,
+        282
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        24.0,
+        19.0,
+        24.0,
+        19.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "shop-item.webp": {
       "size": [
-        200,
-        256
-      ]
+        256,
+        278
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        19.0,
+        16.0,
+        17.0,
+        16.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "shop-tab-active.webp": {
       "size": [
-        128,
-        40
-      ]
+        324,
+        117
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          57,
+          57,
+          57,
+          57
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        19.0,
+        18.0,
+        18.0,
+        18.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "shop-tab.webp": {
       "size": [
-        128,
-        40
-      ]
+        324,
+        104
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          51,
+          51,
+          51,
+          51
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        14.0,
+        14.0,
+        14.0,
+        14.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "shop-title.webp": {
       "size": [
-        256,
-        73
-      ]
+        346,
+        86
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          42,
+          42,
+          42,
+          42
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        7.0,
+        6.0,
+        7.0,
+        5.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "small-plot-dry.webp": {
       "size": [
-        240,
-        135
-      ]
+        320,
+        146
+      ],
+      "render_mode": "contain"
     },
     "small-plot-farmed.webp": {
       "size": [
-        240,
-        135
-      ]
+        320,
+        146
+      ],
+      "render_mode": "contain"
     },
     "small-plot-hover.webp": {
       "size": [
         320,
-        181
-      ]
+        146
+      ],
+      "render_mode": "contain"
     },
     "sprout.webp": {
       "size": [
@@ -1468,15 +1918,49 @@
     },
     "status-chip-active.webp": {
       "size": [
-        128,
-        122
-      ]
+        256,
+        187
+      ],
+      "render_mode": "contain",
+      "inner_insets": [
+        24,
+        16,
+        26.4,
+        16
+      ],
+      "nine_slice": {
+        "insets": [
+          51,
+          51,
+          51,
+          51
+        ],
+        "edge_mode": "repeat"
+      },
+      "measurement": "master320x234 straight inner edges x20/x300,y30/y201; uniformly packed to256px"
     },
     "status-chip.webp": {
       "size": [
-        128,
-        122
-      ]
+        256,
+        187
+      ],
+      "render_mode": "contain",
+      "inner_insets": [
+        24,
+        16,
+        26.4,
+        16
+      ],
+      "nine_slice": {
+        "insets": [
+          51,
+          51,
+          51,
+          51
+        ],
+        "edge_mode": "repeat"
+      },
+      "measurement": "master320x234 straight inner edges x20/x300,y30/y201; uniformly packed to256px"
     },
     "status-icon-bug.webp": {
       "size": [
@@ -1498,21 +1982,43 @@
     },
     "stepper-field.webp": {
       "size": [
-        128,
-        60
-      ]
+        256,
+        107
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          52,
+          52,
+          52,
+          52
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        13.0,
+        13.0,
+        13.0,
+        12.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "stepper-minus.webp": {
       "size": [
-        128,
-        81
-      ]
+        144,
+        128
+      ],
+      "render_mode": "contain"
     },
     "stepper-plus.webp": {
       "size": [
-        128,
-        82
-      ]
+        144,
+        128
+      ],
+      "render_mode": "contain"
     },
     "tab-icon-fert.webp": {
       "size": [
@@ -1620,33 +2126,129 @@
     },
     "ui-big-toolbar.webp": {
       "size": [
-        1200,
-        156
-      ]
+        512,
+        67
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          33,
+          33,
+          33,
+          33
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        5.792583280955374,
+        9.332495285983658,
+        4.50534255185418,
+        1.9308610936517914
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-big-topbar.webp": {
       "size": [
         1200,
         297
-      ]
+      ],
+      "inner_insets": [
+        83,
+        83,
+        67,
+        83
+      ],
+      "measurement": "original straight wood-to-fill edges: y83/y230,x83/x1117; excludes decorative leaves",
+      "nine_slice": {
+        "insets": [
+          128,
+          128,
+          128,
+          128
+        ],
+        "edge_mode": "repeat"
+      }
     },
     "ui-button.webp": {
       "size": [
-        256,
-        101
-      ]
+        302,
+        104
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          51,
+          51,
+          51,
+          51
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        15.0,
+        10.0,
+        13.0,
+        11.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-exp-fill.webp": {
       "size": [
-        239,
-        56
-      ]
+        256,
+        87
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          42,
+          42,
+          42,
+          42
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        26.0,
+        13.0,
+        24.0,
+        13.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-exp-frame.webp": {
       "size": [
-        240,
-        69
-      ]
+        256,
+        105
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          51,
+          51,
+          51,
+          51
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        13.0,
+        12.0,
+        13.0,
+        12.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-hang-sign.webp": {
       "size": [
@@ -1656,15 +2258,55 @@
     },
     "ui-main.webp": {
       "size": [
-        256,
-        102
-      ]
+        484,
+        88
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          43,
+          64,
+          43,
+          64
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        8.0,
+        40.0,
+        20.0,
+        18.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-note.webp": {
       "size": [
-        256,
-        113
-      ]
+        373,
+        34
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          16,
+          48,
+          16,
+          48
+        ],
+        "edge_mode": "repeat"
+      },
+      "inner_insets": [
+        5.0,
+        7.0,
+        5.0,
+        9.0
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-panel.webp": {
       "size": [
@@ -1680,9 +2322,10 @@
     },
     "ui-slot.webp": {
       "size": [
-        128,
-        125
-      ]
+        208,
+        208
+      ],
+      "render_mode": "contain"
     },
     "ui-small-farm.webp": {
       "size": [
@@ -1692,9 +2335,29 @@
     },
     "ui-small-plank.webp": {
       "size": [
-        600,
-        159
-      ]
+        512,
+        230
+      ],
+      "render_mode": "nine_slice",
+      "nine_slice": {
+        "insets": [
+          114,
+          114,
+          114,
+          114
+        ],
+        "edge_mode": "round"
+      },
+      "inner_insets": [
+        6.4,
+        8.228571428571428,
+        30.17142857142857,
+        4.571428571428571
+      ],
+      "content_padding": {
+        "big": 8,
+        "small": 6
+      }
     },
     "ui-small-scoreboard.webp": {
       "size": [
@@ -1710,9 +2373,10 @@
     },
     "weather-night.webp": {
       "size": [
-        160,
-        156
-      ]
+        128,
+        128
+      ],
+      "render_mode": "contain"
     },
     "weather-rain.webp": {
       "size": [
@@ -1728,9 +2392,10 @@
     },
     "weed.webp": {
       "size": [
-        128,
-        100
-      ]
+        96,
+        96
+      ],
+      "render_mode": "contain"
     },
     "withered.webp": {
       "size": [

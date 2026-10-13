@@ -51,3 +51,5 @@ PROVENANCE.md
 ui-*.svg
 piggy-emoji.woff2
 ```
+
+- 菜园第4轮：已审 farm-v4-fix4 场景/UI V2接入扩展；来源、加工规则和逐图哈希见 extensions/farm/PROVENANCE.md、fix4-art-pack.json，原稿与提示词保留在项目素材工作区。

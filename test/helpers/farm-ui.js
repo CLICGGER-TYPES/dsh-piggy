@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import farm, { weatherAt } from '../../extensions/farm/server.js'
+import { applyModalAssetFrame } from '../../src/client/asset-background.js'
 import { fakeDom } from './bundle.js'
 
 // 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。
@@ -17,6 +18,17 @@ export function api(balance = 50_000) {
 
 export function renderFarm(view, mode = 'panel', extra = {}) {
   const dom = fakeDom()
+  const create = dom.document.createElement
+  dom.document.createElement = tag => {
+    const node = create(tag)
+    node.querySelector = selector => {
+      let found = null
+      const attr = /^\[([a-z0-9-]+)(?:="([^"]*)")?\]$/.exec(selector)
+      node.walk(child => { if (attr ? child.getAttribute(attr[1]) != null && (attr[2] === undefined || child.getAttribute(attr[1]) === attr[2]) : child.matches(selector)) found ||= child })
+      return found
+    }
+    return node
+  }
   dom.document.getElementById = id => dom.head.children.find(node => node.id === id) || null
   let render
   const window = { dshPiggyExtensions: { register(_key, impl) { render = impl.render } } }
@@ -30,6 +42,7 @@ export function renderFarm(view, mode = 'panel', extra = {}) {
     send(op, payload) { sent.push({ op, payload }) },
     rerender() { dom.body.children.length = 0; render(app) },
     openShop() { shop += 1 },
+    paintFrame(node, name) { const layout = JSON.parse(readFileSync(new URL('../../extensions/farm/manifest.json', import.meta.url), 'utf8')).assetLayout; return applyModalAssetFrame(node, layout[name], extra.asset ? extra.asset(name) : '') },
     ...extra,
   }
   render(app)

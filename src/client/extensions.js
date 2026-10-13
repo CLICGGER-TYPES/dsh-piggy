@@ -26,6 +26,7 @@ export function normalizeExtensions(raw) {
       key: str(entry.key, ''), label: str(entry.label, ''), emoji: str(entry.emoji, '🧩'),
       description: str(entry.description, ''), on: entry.on !== false,
       apps: strings('apps'), dexSections: strings('dexSections'), shopKinds: strings('shopKinds'),
+      assets: strings('assets'), assetLayout: obj(entry.assetLayout),
       // v0.30：装没装、是不是内置、下载扩展的版本和主菜单格子、加载出错。
       installed: entry.installed !== false, builtin: entry.builtin !== false, version: str(entry.version, ''),
       // 本地导入的非官方扩展（不会被在线目录提示更新）。

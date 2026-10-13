@@ -1,0 +1,84 @@
+{
+  "ui-big-topbar.webp": {
+    "size": [
+      1200,
+      297
+    ],
+    "inner_insets": [
+      83,
+      83,
+      67,
+      83
+    ],
+    "measurement": "original straight wood-to-fill edges: y83/y230,x83/x1117; excludes decorative leaves",
+    "nine_slice": {
+      "insets": [
+        128,
+        128,
+        128,
+        128
+      ],
+      "edge_mode": "repeat"
+    }
+  },
+  "status-chip.webp": {
+    "size": [
+      256,
+      187
+    ],
+    "render_mode": "contain",
+    "inner_insets": [
+      24,
+      16,
+      26.4,
+      16
+    ],
+    "nine_slice": {
+      "insets": [
+        51,
+        51,
+        51,
+        51
+      ],
+      "edge_mode": "repeat"
+    },
+    "measurement": "master320x234 straight inner edges x20/x300,y30/y201; uniformly packed to256px"
+  },
+  "status-chip-active.webp": {
+    "size": [
+      256,
+      187
+    ],
+    "render_mode": "contain",
+    "inner_insets": [
+      24,
+      16,
+      26.4,
+      16
+    ],
+    "nine_slice": {
+      "insets": [
+        51,
+        51,
+        51,
+        51
+      ],
+      "edge_mode": "repeat"
+    },
+    "measurement": "master320x234 straight inner edges x20/x300,y30/y201; uniformly packed to256px"
+  },
+  "big-sign-expand.webp": {
+    "size": [
+      184,
+      192
+    ],
+    "render_mode": "contain",
+    "inner_insets": [
+      31,
+      9,
+      73,
+      9
+    ],
+    "measurement": "wood-face inner edges in packed184x192: y31..119,x9..175; runtime uniform cover crops pole"
+  }
+}

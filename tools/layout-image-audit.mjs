@@ -41,7 +41,9 @@ function paintedImage(element, css, natural, isImage) {
     if (parts[1] === 'auto') h = w / ratio
     if (parts[0] === 'auto') w = h * ratio
   }
-  return { x: r.x + (r.width - w * scale.x) / 2, y: r.y + (r.height - h * scale.y) / 2, width: w * scale.x, height: h * scale.y }
+  const position = (css.backgroundPosition || '50% 50%').split(' ')
+  const offset = (part, space) => part?.endsWith('px') ? parseFloat(part) : part?.endsWith('%') ? space * parseFloat(part) / 100 : part === 'left' || part === 'top' ? 0 : part === 'right' || part === 'bottom' ? space : space / 2
+  return { x: r.x + (isImage ? (r.width - w * scale.x) / 2 : offset(position[0], r.width - w * scale.x)), y: r.y + (isImage ? (r.height - h * scale.y) / 2 : offset(position[1], r.height - h * scale.y)), width: w * scale.x, height: h * scale.y }
 }
 /** @param {Element[]} elements @param {any} report @param {Record<string,any>} catalog */
 function auditImageRatios(elements, report, catalog) {
@@ -60,6 +62,7 @@ function auditImageRatios(elements, report, catalog) {
     }
     const frame = assetFile(css.borderImageSource)
     if (frame) auditNineSlice(element, css, catalog[frame], report)
+    else if (element.matches('.fm-framed-art')) report.unknownAssetGeometry.push({ element: imageIdentify(element), reason: '九宫格框材质未实际绘制' })
   }
 }
 /** @param {Element} element @param {CSSStyleDeclaration} css @param {number[]} natural @param {boolean} isImage @param {any} report @param {string|null} [pseudo] */
@@ -73,7 +76,10 @@ function recordImageRatio(element, css, natural, isImage, report, pseudo) {
 function auditNineSlice(element, css, info, report) {
   if (!info?.nine_slice?.insets) { report.unknownAssetGeometry.push({ element: imageIdentify(element), reason: '九宫格没有manifest inset' }); return }
   const [top, right, bottom, left] = info.nine_slice.insets
-  const output = [css.borderTopWidth, css.borderRightWidth, css.borderBottomWidth, css.borderLeftWidth].map(parseFloat)
+  const borders = [css.borderTopWidth, css.borderRightWidth, css.borderBottomWidth, css.borderLeftWidth].map(parseFloat)
+  const parts = css.borderImageWidth?.split(' ') || []
+  const values = [parts[0], parts[1] || parts[0], parts[2] || parts[0], parts[3] || parts[1] || parts[0]]
+  const output = borders.map((n, i) => values.length === 4 && values[i]?.endsWith('px') ? parseFloat(values[i]) : n)
   const ratios = [[output[3] / left, output[0] / top], [output[1] / right, output[0] / top], [output[3] / left, output[2] / bottom], [output[1] / right, output[2] / bottom]]
   if (ratios.some(([x, y]) => x > 0 && y > 0 && Math.abs(x / y - 1) > .02001)) report.stretchedImages.push({ element: imageIdentify(element), reason: '九宫格四角缩放比例不一致', insets: info.nine_slice.insets, output })
 }
@@ -92,7 +98,9 @@ function textRects(element) {
 function materialInnerRect(frame, css, info) {
   const r = frame.getBoundingClientRect(), natural = info.size, inset = info.inner_insets
   if (css.borderImageSource && css.borderImageSource !== 'none') {
-    const slices = info.nine_slice.insets, widths = [css.borderTopWidth, css.borderRightWidth, css.borderBottomWidth, css.borderLeftWidth].map(parseFloat)
+    const slices = info.nine_slice.insets, parts = css.borderImageWidth?.split(' ') || []
+    const values = [parts[0], parts[1] || parts[0], parts[2] || parts[0], parts[3] || parts[1] || parts[0]]
+    const widths = [css.borderTopWidth, css.borderRightWidth, css.borderBottomWidth, css.borderLeftWidth].map((n, i) => values.length === 4 && values[i]?.endsWith('px') ? parseFloat(values[i]) : parseFloat(n))
     const map = (value, side, axis, opposite) => value <= slices[side] ? value / slices[side] * widths[side] : widths[side] + (value - slices[side]) / (natural[axis] - slices[side] - slices[opposite]) * ((axis ? r.height : r.width) - widths[side] - widths[opposite])
     return { left: r.left + map(inset[3], 3, 0, 1), right: r.right - map(inset[1], 1, 0, 3), top: r.top + map(inset[0], 0, 1, 2), bottom: r.bottom - map(inset[2], 2, 1, 0) }
   }
@@ -103,7 +111,7 @@ function materialInnerRect(frame, css, info) {
 function auditMaterialPadding(elements, report, catalog) {
   const missing = new Set()
   for (const element of elements) {
-    if (!element.closest('.fm') || element.matches('.fm-tool-label,.fm-tooltip,.fm-n') || !Array.from(element.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) continue
+    if (!element.closest('.fm') || element.matches('.fm-tool-label,.fm-tooltip,.fm-n,.fm-lock') || !Array.from(element.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) continue
     let frame = element, name = null
     while (frame && frame.closest('.fm')) {
       name = frameAsset(frame, getComputedStyle(frame))

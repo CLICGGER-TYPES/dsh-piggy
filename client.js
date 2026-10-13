@@ -1524,6 +1524,8 @@
         apps: strings("apps"),
         dexSections: strings("dexSections"),
         shopKinds: strings("shopKinds"),
+        assets: strings("assets"),
+        assetLayout: obj(entry.assetLayout),
         // v0.30：装没装、是不是内置、下载扩展的版本和主菜单格子、加载出错。
         installed: entry.installed !== false,
         builtin: entry.builtin !== false,
@@ -5459,10 +5461,21 @@
     if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return;
     if (node.matches(".fm-slot,.fm-packet,.fm-exp,.fm-card-progress") || node.parentElement?.matches(".fm-exp,.fm-card-progress")) return;
     node.classList.add("fm-framed-art");
+    const scale = Math.min(0.5, 8 / Math.max(...slices));
+    node.style.borderWidth = slices.map((value) => Math.ceil(value * scale) + "px").join(" ");
+    node.style.borderImageWidth = slices.map((value) => value * scale + "px").join(" ");
     node.style.borderImageSource = node.style.backgroundImage;
     node.style.borderImageSlice = slices.join(" ") + " fill";
-    node.style.borderImageRepeat = "repeat";
+    node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
     node.style.backgroundImage = "none";
+  }
+  function applyModalAssetFrame(node, info, url) {
+    const slices = info?.nine_slice?.insets;
+    if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return node;
+    node.style.borderImageSource = 'url("' + url + '")';
+    node.style.borderImageSlice = slices.join(" ") + " fill";
+    node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
+    return node;
   }
 
   // src/client/ext-apps.js
@@ -5545,6 +5558,12 @@
       return entry.key === key;
     });
     if (wallet && !big && key !== "farm") ui.content.appendChild(walletBar(ui, wallet));
+    var panel = typeof ui.content.closest === "function" ? ui.content.closest(".dp-card") : null;
+    if (panel && !big) {
+      var padding = parseFloat(getComputedStyle(panel.querySelector(".dp-content") || panel).paddingBottom) || 0;
+      var bottom = panel.getBoundingClientRect().top + (parseFloat(panel.style.maxHeight) || panel.clientHeight);
+      ui.content.style.setProperty("--ext-panel-height", Math.max(160, bottom - ui.content.getBoundingClientRect().top - padding - 2) + "px");
+    }
     try {
       impl.render({
         content: ui.content,
@@ -5579,6 +5598,9 @@
         },
         paintAsset: function(node, name) {
           applyAssetFrame(node, extension.assetLayout?.[name]);
+        },
+        paintFrame: function(node, name) {
+          return applyModalAssetFrame(node, extension.assetLayout?.[name], "/dsh-piggy/ext/" + encodeURIComponent(key) + "/assets/" + encodeURIComponent(name) + "?v=" + encodeURIComponent(extension.version));
         },
         assetInfo: function(name) {
           return extension.assetLayout ? extension.assetLayout[name] : null;
@@ -9325,6 +9347,7 @@
       if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return;
       if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
+      if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return;
       var currentFishing = ctx.view.fishing.pending;
       if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return;
       renderContent();

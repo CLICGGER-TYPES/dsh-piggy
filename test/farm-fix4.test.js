@@ -51,7 +51,7 @@ test('fix4：按本地05/08/17/19界线和晴雨选场景，夜雨与夜晴不�
   const phases = [[4, 'night'], [5, 'dawn'], [8, 'day'], [17, 'dusk'], [19, 'night']]
   for (const [hour, phase] of phases) for (const sky of ['sunny', 'rain']) {
     const now = new Date(2026, 9, 13, hour).getTime()
-    const view = { ...growing(), now, weatherDays: [{ date: '2026-10-13', sky }] }
+    const view = { ...growing(), now, weather: sky }
     for (const mode of ['big', 'panel']) {
       const ui = renderFarm(view, mode, { ...art, hasAsset: () => true })
       const scene = ui.dom.body.querySelectorAll(mode === 'big' ? '.fm-b-scene' : '.fm-s-scene')[0]
@@ -60,14 +60,12 @@ test('fix4：按本地05/08/17/19界线和晴雨选场景，夜雨与夜晴不�
   }
 })
 
-test('fix4：天气日历覆盖UTC相邻日期并保持原有夜间照料规则', () => {
+test('fix4：场景读取同一份天气快照，夜间天气与白天一致', () => {
   const data = establishedFarm(), clock = api()
   const view = farm.view(data, clock)
-  assert.equal(view.weatherDays.length, 3)
-  assert.equal(new Set(view.weatherDays.map(day => day.date)).size, 3)
-  assert.ok(view.weatherDays.every(day => ['sunny', 'rain'].includes(day.sky)))
+  assert.ok(['sunny', 'rain'].includes(view.weather))
   clock.now = new Date(2026, 9, 13, 22).getTime()
-  assert.equal(farm.view(data, clock).weather, 'night')
+  assert.equal(farm.view(data, clock).weather, farm.view(data, { ...clock, now: new Date(2026, 9, 13, 12).getTime() }).weather)
 })
 
 test('fix4：每个作物阶段均可查看卡片，成熟/枯萎使用既有中文状态', () => {
@@ -81,4 +79,31 @@ test('fix4：每个作物阶段均可查看卡片，成熟/枯萎使用既有中
     ui.app.rerender()
     assert.equal(ui.dom.body.querySelectorAll('.fm-hover-card').length, 0)
   }
+})
+
+test('fix4：购买输入未失焦时数量先保存、总价更新，重绘不恢复成1颗', () => {
+  const ui = renderFarm(growing(), 'big', art)
+  ui.find('data-farm-shop', 'shelf').fire('click')
+  ui.find('data-farm-item', 'radish').fire('click')
+  const field = ui.find('aria-label', '数量')
+  field.value = '5'; field.fire('input')
+  assert.equal(ui.find('aria-label', '数量'), field, '输入不替换当前控件和光标')
+  assert.ok(ui.find('data-farm-total', '400'))
+  ui.app.rerender()
+  assert.equal(ui.find('aria-label', '数量').value, '5')
+  ui.find('data-farm-confirm', 'true').fire('click')
+  assert.equal(ui.sent.at(-1).payload.count, 5)
+})
+
+test('fix4：跨时区的本地清晨仍使用浇水逻辑的同一份晴雨快照', () => {
+  const previous = process.env.TZ
+  try {
+    process.env.TZ = 'UTC'
+    const clock = api(); clock.now = Date.parse('2026-10-13T23:30:00Z')
+    const view = farm.view(establishedFarm(), clock)
+    view.weatherDays = [{ date: '2026-10-14', sky: view.weather === 'rain' ? 'sunny' : 'rain' }]
+    process.env.TZ = 'Asia/Shanghai'
+    const ui = renderFarm(view, 'big', { ...art, hasAsset: () => true })
+    assert.match(ui.dom.body.querySelectorAll('.fm-b-scene')[0].style.backgroundImage, new RegExp('bg-big-dawn-' + view.weather))
+  } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous }
 })

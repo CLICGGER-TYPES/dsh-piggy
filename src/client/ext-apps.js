@@ -13,7 +13,7 @@
  */
 import { button, el } from './dom.js'
 import { walletBar } from './wallet.js'
-import { applyAssetFrame } from './asset-background.js'
+import { applyAssetFrame, applyModalAssetFrame } from './asset-background.js'
 import { artSource } from './art-path.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
 
@@ -81,6 +81,12 @@ export function renderDownloadedApp(ui, key, mode) {
   // 有自己的币就在顶上放余额条，兑换由宿主管（扩展不用自己画）。
   var wallet = (ui.view.wallets || []).find(function (entry) { return entry.key === key })
   if (wallet && !big && key !== 'farm') ui.content.appendChild(walletBar(ui, wallet))
+  var panel = typeof ui.content.closest === 'function' ? ui.content.closest('.dp-card') : null
+  if (panel && !big) {
+    var padding = parseFloat(getComputedStyle(panel.querySelector('.dp-content') || panel).paddingBottom) || 0
+    var bottom = panel.getBoundingClientRect().top + (parseFloat(panel.style.maxHeight) || panel.clientHeight)
+    ui.content.style.setProperty('--ext-panel-height', Math.max(160, bottom - ui.content.getBoundingClientRect().top - padding - 2) + 'px')
+  }
   try {
     impl.render({
       content: ui.content,
@@ -99,6 +105,7 @@ export function renderDownloadedApp(ui, key, mode) {
       // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
       hasAsset: function (name) { return (extension.assets || []).includes(name) },
       paintAsset: function (node, name) { applyAssetFrame(node, extension.assetLayout?.[name]) },
+      paintFrame: function (node, name) { return applyModalAssetFrame(node, extension.assetLayout?.[name], '/dsh-piggy/ext/' + encodeURIComponent(key) + '/assets/' + encodeURIComponent(name) + '?v=' + encodeURIComponent(extension.version)) },
       assetInfo: function (name) { return extension.assetLayout ? extension.assetLayout[name] : null },
       asset: function (name) { return '/dsh-piggy/ext/' + encodeURIComponent(key) + '/assets/' + encodeURIComponent(String(name)) + '?v=' + encodeURIComponent(extension.version) },
       openDex: function (section) {
