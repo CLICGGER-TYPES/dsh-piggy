@@ -21,6 +21,8 @@ import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
 import { finishAutoFishing } from './fishing.js'
 import { settleAutoFishing } from './fishing-auto.js'
+import { eatOffline, finishOfflineMeals } from './offline-feed.js'
+import { ONLINE_GIFT, THRESHOLDS } from '../data.js'
 import { earnCoins } from './economy.js'
 
 export { currentIllness, die } from './illness.js'
@@ -63,33 +65,40 @@ export function decay(state, nowMs, options = {}) {
   // events settled below cannot be credited to the day the panel reopened.
   rollDiaryAt(state, fromMs)
 
+  const meals = nowMs - fromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
+    ? { counts: {}, isEmpty: false } : null
   let cursor = fromMs
   const activity = state.activity
   if (activity !== null && activity !== undefined) {
     settleAutoFishing(state, activity, nowMs)
     const untilMs = Math.min(nowMs, Math.max(cursor, activity.endsAt))
-    passTime(state, { fromMs: cursor, toMs: untilMs, away: true }, next)
+    passTime(state, { fromMs: cursor, toMs: untilMs, away: true, meals }, next)
     cursor = untilMs
     // Settle at the moment it ended, not at the moment someone looked.
     if (state.dead !== true && state.activity === activity && untilMs >= activity.endsAt) {
       finishActivity(state, untilMs, next)
     }
   }
-  if (state.dead !== true) passTime(state, { fromMs: cursor, toMs: nowMs, away: false }, next)
+  if (state.dead !== true) passTime(state, { fromMs: cursor, toMs: nowMs, away: false, meals }, next)
+  finishOfflineMeals(state, meals, nowMs)
   return state
 }
 
 /**
  * Walk one stretch, all of it either away or at home, in bounded steps.
  * @param {object} state
- * @param {{fromMs: number, toMs: number, away: boolean}} stretch
+ * @param {{fromMs: number, toMs: number, away: boolean, meals?: object|null}} stretch
  * @param {import('./random.js').Roll} next
  */
 function passTime(state, stretch, next) {
   let cursor = stretch.fromMs
   while (cursor < stretch.toMs && state.dead !== true) {
-    const stepEnd = Math.min(stretch.toMs, cursor + SETTLE_STEP_MS)
-    step(state, { elapsedMs: stepEnd - cursor, atMs: stepEnd, away: stretch.away }, next)
+    eatOffline(state, stretch.meals, cursor)
+    const speed = stretch.away ? AWAY_DECAY_MULTIPLIER : 1
+    const toHungerMs = (state.satiety - THRESHOLDS.hungry) / (SATIETY_DECAY_PER_MIN * speed) * 60000
+    const span = stretch.meals && toHungerMs > 0 ? Math.min(SETTLE_STEP_MS, Math.max(1, Math.ceil(toHungerMs))) : SETTLE_STEP_MS
+    const stepEnd = Math.min(stretch.toMs, cursor + span)
+    step(state, { elapsedMs: stepEnd - cursor, atMs: stepEnd, away: stretch.away, meals: stretch.meals }, next)
     cursor = stepEnd
   }
 }
@@ -97,13 +106,14 @@ function passTime(state, stretch, next) {
 /**
  * One step of pig time: bars, sickness risk, illness, age.
  * @param {object} state
- * @param {{elapsedMs: number, atMs: number, away: boolean}} tick
+ * @param {{elapsedMs: number, atMs: number, away: boolean, meals?: object|null}} tick
  * @param {import('./random.js').Roll} next
  */
 function step(state, tick, next) {
   const { elapsedMs, atMs, away } = tick
   rollDiaryAt(state, atMs)
   drainBars(state, elapsedMs / 60000, away)
+  eatOffline(state, tick.meals, atMs)
   trackSicknessRisk(state, elapsedMs / 60000, away, atMs, next)
   progressIllness(state, elapsedMs, { away, atMs }, next)
   if (state.dead !== true) growOlder(state, elapsedMs, atMs)

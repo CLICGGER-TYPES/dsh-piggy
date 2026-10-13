@@ -2122,6 +2122,7 @@
       }
       if (event.kind === "gift") continue;
       if (cardSide) ctx.toast(str(event.text, "\u732A\u6709\u65B0\u6D88\u606F"));
+      if (role2 === "pet" && event.kind === "offline-food") ctx.showBubble(event.text, 8e3);
       if (!pigSide) continue;
       if (event.kind === "coronation") {
         ctx.react("levelup", 950);
@@ -3389,7 +3390,8 @@
       // B6: what the pig calls its owner, and 免打扰. Older hosts send neither.
       dialogue: {
         ownerName: str(obj(d.dialogue).ownerName, "\u4E3B\u4EBA"),
-        quiet: obj(d.dialogue).quiet === true
+        quiet: obj(d.dialogue).quiet === true,
+        isOfflineFeedEnabled: obj(d.dialogue).isOfflineFeedEnabled !== false
       },
       pending: arr(d.pending).filter((e) => isObj(e) && typeof e.at === "number").map((e) => ({
         id: num(e.id, 0),
@@ -4249,6 +4251,7 @@
     ".dp-switch{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:10.5px;font-weight:700;",
     "padding:2px 8px 2px 2px;cursor:pointer;border-radius:var(--ac-pill);border:2px solid var(--ac-border-light);",
     "background:var(--ac-bg-content);color:var(--ac-text-2);transition:background-color .15s var(--ac-ease)}",
+    ".dp-switch[data-offline-feed]{min-height:32px;min-width:32px;font-size:12px;box-sizing:border-box}",
     ".dp-switch-knob{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--ac-border-light);",
     "transition:transform .15s var(--ac-ease)}",
     '.dp-switch[aria-pressed="true"]{background:var(--ac-primary);border-color:var(--ac-primary-active);color:#fff;',
@@ -9069,6 +9072,14 @@
     quietToggle.appendChild(el("span", "dp-switch-knob"));
     quietToggle.appendChild(el("span", "dp-switch-text", quietOn ? "\u5F00" : "\u5173"));
     quiet.head.appendChild(quietToggle);
+    const feeding = section(ui, "\u79BB\u5F00\u65F6\u81EA\u52A8\u5403\u80CC\u5305\u91CC\u7684\u4E1C\u897F", "");
+    const feedingOn = ui.view.dialogue.isOfflineFeedEnabled !== false;
+    const feedingToggle = button("dp-switch", { "data-offline-feed": String(feedingOn), "aria-pressed": String(feedingOn) }, function() {
+      ui.send("offlineFeed", { on: !feedingOn });
+    });
+    feedingToggle.appendChild(el("span", "dp-switch-knob"));
+    feedingToggle.appendChild(el("span", "dp-switch-text", feedingOn ? "\u5F00" : "\u5173"));
+    feeding.head.appendChild(feedingToggle);
     const close = section(ui, "\u70B9\u51FB\u522B\u5904\u65F6\u6536\u8D77\u9762\u677F", "\u7F51\u9875\u7248\u70B9\u9762\u677F\u5916\u3001\u684C\u9762\u7248\u5207\u5230\u5176\u4ED6\u7A97\u53E3\u65F6\u6536\u8D77");
     const on = autoCollapseEnabled();
     const toggle = button("dp-switch", { "data-auto-collapse": String(!on), "aria-pressed": String(on) }, function() {

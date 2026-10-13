@@ -162,3 +162,13 @@ test('猪窗口：面板开着时猪自己冒气泡，先请主进程把猪窗�
   assert.deepEqual(sent, [['raise']])
   assert.deepEqual(ctx.calls.filter(call => call[0] === 'showBubble').length, 2, 'the bubble itself still shows')
 })
+
+test('离线喂食摘要在桌面面板关闭时仍可见，两个窗口分别去重', () => {
+  for (const role of ['pet', 'panel']) {
+    fakeShell(role)
+    const ctx = Object.assign(fakeCtx(), { view: { pending: [{ id: 9, at: 9, kind: 'offline-food', text: '你不在的时候，猪猪自己吃了 苹果×2' }], dialogue: { quiet: false } } })
+    processPending(ctx, () => {})
+    processPending(ctx, () => {})
+    assert.equal(ctx.calls.filter(call => call[0] === (role === 'pet' ? 'showBubble' : 'toast')).length, 1)
+  }
+})

@@ -66,7 +66,7 @@ test('migration sanitizes optional event saves and silently retains valid histor
   state.achievements = { events: { farm: { harvest: { total: 10, seen: 10, items: ['carrot', '../bad', 'carrot'] } },
     mine: { depth: { maximum: -10 }, unknown: { total: 999 } }, evil: { any: {} } } }
   const loaded = migrate(JSON.parse(JSON.stringify(state)), NOW)
-  assert.equal(loaded.version, 12)
+  assert.equal(loaded.version, 13)
   assert.equal(entry(loaded, 'farm-ten').acquired, true)
   assert.equal(entry(loaded, 'farm-ten').firstAt, null)
   assert.equal(entry(loaded, 'farm-five').progress, 1)

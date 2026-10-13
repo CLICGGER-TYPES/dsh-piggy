@@ -125,6 +125,7 @@ export const CSS_TILES = [
   '.dp-switch{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:10.5px;font-weight:700;',
   'padding:2px 8px 2px 2px;cursor:pointer;border-radius:var(--ac-pill);border:2px solid var(--ac-border-light);',
   'background:var(--ac-bg-content);color:var(--ac-text-2);transition:background-color .15s var(--ac-ease)}',
+  '.dp-switch[data-offline-feed]{min-height:32px;min-width:32px;font-size:12px;box-sizing:border-box}',
   '.dp-switch-knob{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--ac-border-light);',
   'transition:transform .15s var(--ac-ease)}',
   '.dp-switch[aria-pressed="true"]{background:var(--ac-primary);border-color:var(--ac-primary-active);color:#fff;',

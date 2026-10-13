@@ -2230,3 +2230,20 @@ test('更新面板按正式版分组：测试版折叠在对应正式版下，�
   findByAttr(contentOf(dom), 'data-update-install', '0.25.0-rc.2').fire('click')
   assert.deepEqual(calls.at(-1), ['install', '0.25.0-rc.2'])
 })
+
+test('离线喂食开关读取快照中的关闭值，并发送相反值', async () => {
+  for (const enabled of [true, false]) {
+    const { registration, dom, net } = await loadClient({ status: { ...SNAPSHOT, dialogue: { isOfflineFeedEnabled: enabled } } })
+    registration.factory(() => {}).apply({})
+    await settle()
+    openPanel(dom, 'settings')
+    const toggle = findByAttr(contentOf(dom), 'data-offline-feed', String(enabled))
+    assert.notEqual(toggle, undefined)
+    assert.equal(toggle.getAttribute('aria-pressed'), String(enabled))
+    toggle.fire('click')
+    await settle()
+    const request = JSON.parse(String(net.calls.filter(call => call.method === 'POST').at(-1).body))
+    assert.equal(request.action, 'offlineFeed')
+    assert.equal(request.on, !enabled)
+  }
+})

@@ -907,3 +907,14 @@ test('the devil is signed for, not crowned: 加冕 refuses it and the contract d
     } finally { await app.cleanup() }
   }
 })
+
+test('离线喂食动作通过宿主回读开关，两次切换均生效', async () => {
+  const app = boot(now => hatchEgg(now))
+  try {
+    assert.equal((await app.get()).dialogue.isOfflineFeedEnabled, true)
+    assert.equal((await app.post({ action: 'offlineFeed', on: false })).ok, true)
+    assert.equal((await app.get()).dialogue.isOfflineFeedEnabled, false)
+    assert.equal((await app.post({ action: 'offlineFeed', on: true })).ok, true)
+    assert.equal((await app.get()).dialogue.isOfflineFeedEnabled, true)
+  } finally { await app.cleanup() }
+})

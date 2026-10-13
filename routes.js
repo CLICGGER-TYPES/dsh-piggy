@@ -92,6 +92,7 @@ const OPERATIONS = {
   setExtension: (store, body) => store.setExtension(str(body.key), body.on === true),
   // The panel's timers ask the pig to speak up; the pig decides whether to.
   chat: (store, body) => store.chat(str(body.reason)),
+  offlineFeed: (store, body) => store.setOfflineFeed(body.on === true),
   quiet: (store, body) => store.setQuiet(body.on === true),
   owner: (store, body) => store.setOwnerName(str(body.name)),
   // 居民卡: the catchphrase and the motto.

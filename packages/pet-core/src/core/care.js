@@ -74,6 +74,12 @@ export function act(state, action, nowMs, itemKey) {
   if (state.dead) return { ok: false, reason: 'dead' }
   if (state.activity !== null && action !== 'pet') return { ok: false, reason: 'away' }
 
+  return applySettledCare(state, { action, nowMs, itemKey })
+}
+
+/** 已推进到发生时刻的照料，离线结算复用同一套消费与效果，避免递归推进时钟。 */
+export function applySettledCare(state, { action, nowMs, itemKey }) {
+  const spec = ACTIONS[action]
   const wait = actionCooldownSeconds(state, action, nowMs)
   if (wait > 0) return { ok: false, reason: 'cooldown', wait }
 

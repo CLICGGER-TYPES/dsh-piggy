@@ -7,7 +7,7 @@
  */
 
 /** Bumped when the saved shape changes in a way migrate() must handle. */
-export const STATE_VERSION = 12
+export const STATE_VERSION = 13
 
 export const BIRTH_WEIGHT_G = 1200
 

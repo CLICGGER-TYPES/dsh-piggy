@@ -170,6 +170,11 @@ export const UPGRADES = Object.freeze([
       return next
     },
   }),
+  Object.freeze({
+    to: 13,
+    why: '离开时自动吃背包食物，旧存档默认开启',
+    up(raw) { return { ...raw, version: 13, isOfflineFeedEnabled: raw.isOfflineFeedEnabled !== false } },
+  }),
 ])
 
 /** The oldest version the step table starts from; earlier saves are cleaned by migrate() alone. */

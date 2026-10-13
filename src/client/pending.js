@@ -41,6 +41,8 @@ export function processPending(ctx, showPigLine) {
     }
     if (event.kind === 'gift') continue // 签到/礼包的结果由猪头气泡说（io.js），不重复弹提示条
     if (cardSide) ctx.toast(str(event.text, '猪有新消息'))
+    // 桌面首次启动时面板还没创建，离线摘要也要能看见。
+    if (role === 'pet' && event.kind === 'offline-food') ctx.showBubble(event.text, 8000)
     if (!pigSide) continue
     if (event.kind === 'coronation') { ctx.react('levelup', 950); ctx.transform('crown') }
     else if (event.kind === 'contract') { ctx.react('levelup', 950); ctx.transform('contract') }
