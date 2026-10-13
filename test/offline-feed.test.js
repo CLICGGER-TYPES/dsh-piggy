@@ -82,3 +82,20 @@ test('离线发生在外出过程中也可吃背包食物，手动喂食仍受�
   assert.equal(pig.stats.feeds, 1)
   assert.ok(pig.satiety > THRESHOLDS.hungry)
 })
+
+test('同一天离线摘要与原日记合在一篇，翻页后仍能按日期读到两者', async () => {
+  const { finishOfflineMeals } = await import('../packages/pet-core/src/core/offline-feed.js')
+  const { dayKeyFor } = await import('../packages/pet-core/src/core/clock.js')
+  const { writeDiaryIfNewDay } = await import('../packages/pet-core/src/core/diary.js')
+  const pig = pigWithFood()
+  const day = dayKeyFor(START)
+  pig.diary = { entries: [{ day, text: '原来的日记' }], today: { day, counts: { feed: 1 } } }
+  finishOfflineMeals(pig, { counts: { apple: 2 } }, START)
+  assert.equal(pig.diary.entries.filter(entry => entry.day === day).length, 1, '日期是日记页的选择键，不能生成重名条目')
+  assert.ok(pig.diary.entries[0].text.includes('原来的日记'))
+  assert.ok(pig.diary.entries[0].text.includes('自己吃了 苹果×2'))
+  writeDiaryIfNewDay(pig, START + DAY)
+  assert.equal(pig.diary.entries.filter(entry => entry.day === day).length, 1, '跨天落笔也不能重复当天摘要的日期')
+  assert.ok(pig.diary.entries[0].text.includes('原来的日记'))
+  assert.ok(pig.diary.entries[0].text.includes('自己吃了 苹果×2'))
+})

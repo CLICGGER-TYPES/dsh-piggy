@@ -1,9 +1,9 @@
 // @ts-check
 /** 离线结算的背包自助餐：只选食物，效果走正常照料，回来时汇总一次。 */
-import { DIARY_MAX, SHOP, THRESHOLDS } from '../data.js'
+import { SHOP, THRESHOLDS } from '../data.js'
 import { applySettledCare } from './care.js'
 import { dayKeyFor } from './clock.js'
-import { ensureDiary } from './diary.js'
+import { appendDiaryEntry } from './diary.js'
 import { announce, remember } from './effects.js'
 
 /** 按价格选能恢复到饥饿线以上的食物；不足时优先回复最多的。 */
@@ -34,9 +34,7 @@ export function finishOfflineMeals(state, meals, nowMs) {
   if (!text) return
   remember(state, text, nowMs)
   announce(state, 'offline-food', text, nowMs)
-  const diary = ensureDiary(state)
-  diary.entries.push({ day: dayKeyFor(nowMs), text })
-  if (diary.entries.length > DIARY_MAX) diary.entries.splice(0, diary.entries.length - DIARY_MAX)
+  appendDiaryEntry(state, dayKeyFor(nowMs), text)
 }
 
 /** 玩法开关跟随存档，两种宿主使用同一个动作。 */
