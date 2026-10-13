@@ -2223,7 +2223,7 @@
       },
       "bundle": {
         "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/ext-farm-4.0.2.piggyext",
-        "sha256": "44df3d155c8a479d14af7cecc9049f686495dc2ec4878873e41ad476866bcb16"
+        "sha256": "929872ffec43d5efa3b8f373b3083802da057d233410ed684745194b2e0cc48e"
       },
       "files": {
         "manifest.json": {
@@ -2232,11 +2232,11 @@
         },
         "server.js": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/server.js",
-          "sha256": "14a5e31fda36fdd7989291d37df1053ffbea66f84d0ada7c4d72224f8c4d9b6b"
+          "sha256": "726b5b82878c174777e35bf13715bca81006b3581d007b987fa6968f67f487dc"
         },
         "client.js": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/client.js",
-          "sha256": "2a4730f235f4657404c3e39ce99dccdf8ef759c7185933ec82beda02100a7f8b"
+          "sha256": "e1f4e1572594ad7ffc44643e1020ce220516b3223222bc506f17bff2c6ddfd34"
         },
         "assets/bg-big-dawn-rain.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-dawn-rain.webp",

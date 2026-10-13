@@ -15,7 +15,7 @@ test('有有效manifest inset的文字框用repeat九宫格，图标保持contai
   assert.equal(node.style.borderImageSlice, '16 16 16 16 fill')
   assert.equal(node.style.borderImageRepeat, 'repeat')
   assert.equal(node.style.backgroundImage, 'none')
-  for (const kind of ['.fm-slot', '.fm-packet', '.fm-exp', '.fm-card-progress']) {
+  for (const kind of ['.fm-slot', '.fm-packet', 'i']) {
     const icon = graphic(kind)
     applyAssetFrame(icon, { nine_slice: { insets: [16, 16, 16, 16] } })
     assert.equal(icon.style.backgroundImage, 'url("/asset.webp")')
@@ -35,4 +35,14 @@ test('非对称切片角保持同一缩放系数，round材料保留完整周期
   applyAssetFrame(node, { nine_slice: { insets: [39, 64, 39, 64], edge_mode: 'round' } })
   assert.equal(node.style.borderImageWidth, '4.875px 8px 4.875px 8px')
   assert.equal(node.style.borderImageRepeat, 'round')
+})
+
+
+test('进度轨道使用完整宽度的九宫格，填充节点不绘制伸缩位图', () => {
+  for (const kind of ['.fm-exp', '.fm-card-progress']) {
+    const track = graphic(kind)
+    applyAssetFrame(track, { nine_slice: { insets: [15, 15, 15, 15] } })
+    assert.equal(track.style.borderWidth, '2px 2px 2px 2px')
+    assert.equal(track.style.borderImageSource, 'url("/asset.webp")')
+  }
 })

@@ -5459,9 +5459,10 @@
   function applyAssetFrame(node, info) {
     const slices = info?.nine_slice?.insets;
     if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return;
-    if (node.matches(".fm-slot,.fm-packet,.fm-exp,.fm-card-progress") || node.parentElement?.matches(".fm-exp,.fm-card-progress")) return;
+    if (node.matches(".fm-slot,.fm-packet,i") || node.parentElement?.matches(".fm-exp,.fm-card-progress")) return;
     node.classList.add("fm-framed-art");
-    const scale = Math.min(0.5, 8 / Math.max(...slices));
+    const limit = node.matches(".fm-exp,.fm-card-progress") ? 2 : 8;
+    const scale = Math.min(0.5, limit / Math.max(...slices));
     node.style.borderWidth = slices.map((value) => Math.ceil(value * scale) + "px").join(" ");
     node.style.borderImageWidth = slices.map((value) => value * scale + "px").join(" ");
     node.style.borderImageSource = node.style.backgroundImage;

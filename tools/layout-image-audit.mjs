@@ -62,7 +62,7 @@ function auditImageRatios(elements, report, catalog) {
     }
     const frame = assetFile(css.borderImageSource)
     if (frame) auditNineSlice(element, css, catalog[frame], report)
-    else if (element.matches('.fm-framed-art')) report.unknownAssetGeometry.push({ element: imageIdentify(element), reason: '九宫格框材质未实际绘制' })
+    else if (element.matches('.fm-framed-art,.fm-frame')) report.unknownAssetGeometry.push({ element: imageIdentify(element), reason: '九宫格框材质未实际绘制' })
   }
 }
 /** @param {Element} element @param {CSSStyleDeclaration} css @param {number[]} natural @param {boolean} isImage @param {any} report @param {string|null} [pseudo] */

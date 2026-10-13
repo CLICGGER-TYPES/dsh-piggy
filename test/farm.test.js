@@ -380,3 +380,10 @@ test('fix4：夜里下雨浇湿已干地，时段不改变天气或浇水', () =
   assert.equal(data.plots[0].pests.dry, null)
   assert.ok(data.plots[1].pests.dry > night)
 })
+
+test('fix4：缺失或越界的旧旱灾时间不导致雨天顺延无限循环', () => {
+  for (const dry of [undefined, NaN, Infinity, 9e15]) {
+    const plot = { crop: 'radish', season: 1, plantedAt: T0, boostMs: 0, roll: 0, pests: { weed: 1e15, bug: 1e15, dry } }
+    assert.deepEqual(plotState(plot, T0).pests, [])
+  }
+})

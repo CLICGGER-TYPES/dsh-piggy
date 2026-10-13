@@ -116,3 +116,14 @@ test('九宫格被CSS清空不能冒充通过；非对称切片按小数像素�
   frame.css.borderImageWidth = '4px 8px'
   assert.equal(audit([frame], {}, buildAuditExpression(catalog)).stretchedImages.length, 1)
 })
+
+test('有数值却透明的进度条不能通过，填充宽度必须对应数值', () => {
+  const track = node({ tag: 'DIV', classes: ['fm-card-progress'], w: 40 })
+  const fill = node({ tag: 'I', w: 20, css: { backgroundColor: 'rgba(0, 0, 0, 0)', backgroundImage: 'none' } })
+  fill.style = { width: '50%' }; fill.parentElement = track; track.firstElementChild = fill
+  assert.ok(audit([track, fill, node({ x: 300 })]).pageErrors.some(e => e.includes('没有绘制填充')))
+  fill.css.backgroundColor = 'rgb(0, 128, 0)'
+  assert.equal(audit([track, fill, node({ x: 300 })]).problemCount, 0)
+  fill.getBoundingClientRect = () => ({ x: 0, y: 0, width: 30, height: 40, left: 0, top: 0, right: 30, bottom: 40 })
+  assert.ok(audit([track, fill, node({ x: 300 })]).driftedAttachments.some(e => e.reason.includes('填充宽度')))
+})

@@ -91,7 +91,7 @@ export function weatherAt(at) {
 }
 /** 雨天全天不旱：干旱推到下一个晴天的零点。 */
 function droughtAt(at) {
-  while (weatherAt(at) === 'rain') at = new Date(at).setHours(24, 0, 0, 0)
+  while (Number.isFinite(at) && weatherAt(at) === 'rain') at = new Date(at).setHours(24, 0, 0, 0)
   return at
 }
 /** 一季要多久（毫秒）。 */

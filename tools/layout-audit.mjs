@@ -174,6 +174,16 @@ function auditBounds(elements, report) {
 }
 const assetCatalog = readAssetLayout()
 /** @returns {any} */
+function auditProgress(elements, report) {
+  for (const track of elements.filter(e => e.matches('.fm-card-progress,.fm-exp'))) {
+    const fill = track.firstElementChild, fraction = parseFloat(fill?.style?.width || '') / 100
+    if (!fill || !(fraction > 0)) continue
+    const css = getComputedStyle(fill)
+    if (['transparent', 'rgba(0, 0, 0, 0)'].includes(css.backgroundColor) && (!css.backgroundImage || css.backgroundImage === 'none')) report.pageErrors.push('进度条有数值却没有绘制填充：' + identify(track))
+    const expected = track.clientWidth * fraction, actual = rectOf(fill).width
+    if (Math.abs(actual - expected) > 2) report.driftedAttachments.push({ element: identify(fill), reason: '进度填充宽度与数值不一致', expected, actual })
+  }
+}
 function auditPage() {
   const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], smallTargets: [], smallIcons: [], missingImages: [], stretchedImages: [], framePaddingViolations: [], unknownAssetGeometry: [], pageErrors: [], exceptions: [], checked: {} }
   const visible = Array.from(document.querySelectorAll('body *')).filter(e => visibleRect(e))
@@ -192,6 +202,7 @@ function auditPage() {
   auditDecorations(visible.filter(e => e.matches('.fm-crop,.fm-pest,.fm-b-pig,.fm-s-pig,.fm-b-face,.fm-s-face')), controls, report)
   visible.forEach(e => { auditText(e, report); if (Array.from(e.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) auditTextOcclusion(e, controls, report) })
   attached.forEach(e => auditAttachment(e, report))
+  auditProgress(visible, report)
   auditImageRatios(visible, report, assetCatalog)
   auditMaterialPadding(visible, report, assetCatalog)
   for (const element of visible.filter(e => e.matches('.fm img'))) {
@@ -214,7 +225,7 @@ function auditPage() {
   report.problemCount = ['overlaps','overflowingElements','decorativeOcclusions','driftedAttachments','clippedText','occludedText','wrappedLabels','smallText','blockedControls','smallTargets','smallIcons','missingImages','stretchedImages','framePaddingViolations','unknownAssetGeometry','pageErrors'].reduce((n,key) => n + report[key].length,0)
   return report
 }
-const browserFunctions = [rectOf, identify, intersection, visibleRect, effectiveFont, layerOf, scrollOwner, footprint, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditPage]
+const browserFunctions = [rectOf, identify, intersection, visibleRect, effectiveFont, layerOf, scrollOwner, footprint, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditProgress, auditPage]
 /** @param {Record<string, any>} [catalog] */
 export function buildAuditExpression(catalog = readAssetLayout()) {
   return '(function () {const assetCatalog=' + JSON.stringify(catalog) + ';' + [...browserFunctions, ...IMAGE_AUDIT_FUNCTIONS].map(fn => fn.toString()).join('\n') + '\nreturn auditPage()\n})()'
