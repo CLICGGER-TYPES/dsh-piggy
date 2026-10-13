@@ -14,6 +14,8 @@
 
 ## 进行中
 
+- **框架无关接入原型**：游戏运行时、DSH 适配器和可选本机工作事件接口已实现，OpenCode 适配在独立仓库接入。当前通过草稿 PR 讨论接口边界、DSH 持久身份和进程内同步提交的取舍；接口见 [agent-adapters](guides/agent-adapters.md)，验证见 [记录](guides/agent-adapters-validation.md)。
+
 - **项目规范化** 第 3 批 代码结构：见下面「技术待办」（第 1 批文档、第 2 批素材整理已随 0.35.0 完成）。
 
 ## 待用户决定

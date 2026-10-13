@@ -9,7 +9,7 @@
  *   鼠标位置算（dragTick），因为页面在拖动中拿不到可靠的屏幕坐标。
  * - 几何一律以「请求值」为准，不把 getBounds() 读回来再设回去：Windows 分数缩放下读回值有 1px 误差，
  *   读了再设就会一帧帧累加（2026-10-07 面板越跑越远就是这么来的，见 petAsked）。
- * - 宿主是插件自己的 store.js + routes.js（lib/host.js），经 piggy:// 协议访问，不开端口。
+ * - 游戏运行时在后台单写者中执行，界面经 piggy:// 访问；--work-events 可启用本机工作事件接口。
  * - 存档在 userData/dsh-piggy/state.json，跟 DSH 里那只各养各的；托盘里可以导入。
  */
 import { spawn } from 'node:child_process'
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
 
-import { startHost } from './lib/host.js'
+import { startBackgroundHost } from './lib/background-host.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE, createVersions } from './lib/versions.js'
@@ -851,7 +851,7 @@ async function importFromDsh() {
   if (response !== 0) return
   quitting = true
   stopDrag()
-  host.dispose()
+  await host.dispose()
   const target = statePath()
   mkdirSync(dirname(target), { recursive: true })
   if (existsSync(target)) copyFileSync(target, `${target}.before-import-${new Date().toISOString().replace(/[:.]/g, '-')}`)
@@ -901,10 +901,10 @@ function backupSave(label) {
 }
 
 /** Load the new game: flush the save first, then start over. */
-function restartGame() {
+async function restartGame() {
   quitting = true
   stopDrag()
-  try { host?.dispose() } catch { /* best effort */ }
+  try { await host?.dispose() } catch (error) { log('host shutdown failed', String(error)); quitting = false; return }
   // Testing runs one launch at a time; the next one is started by hand.
   if (process.env.PIGGY_CAPTURE) return app.exit(0)
   relaunch()
@@ -1020,7 +1020,9 @@ app.whenReady().then(async () => {
     if (firstRun === null) { app.quit(); return }
   }
   const gameDir = versions.activeDir()
-  host = await startHost(gameDir, statePath(), { fetch: net.fetch.bind(net), onSnapshot: view => toPages('piggy:state-changed', view) })
+  const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
+  host = await startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
+    onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
@@ -1059,7 +1061,7 @@ app.whenReady().then(async () => {
   displayWatchTimer.unref?.()
   win.webContents.on('did-finish-load', () => pushGeometry())
   pushGeometry()
-})
+}).catch(error => { log('startup failed', String(error)); app.quit() })
 
 /**
  * Testing: run a list of steps against the page and photograph it (with its
@@ -1097,5 +1099,16 @@ async function captureForCheck(dir) {
 process.on('uncaughtException', error => { log('uncaught', error?.stack ?? String(error)) })
 
 app.on('second-instance', () => win?.showInactive())
-app.on('before-quit', () => { quitting = true; stopDrag(); if (hitTimer !== null) clearInterval(hitTimer); try { host?.dispose() } catch { /* best effort */ } })
+let hostClosed = false
+let hostClosing = null
+app.on('before-quit', event => {
+  quitting = true
+  stopDrag()
+  if (hitTimer !== null) clearInterval(hitTimer)
+  if (!host || hostClosed) return
+  event.preventDefault()
+  if (!hostClosing) hostClosing = host.dispose().then(() => { hostClosed = true; app.quit() }).catch(error => {
+    log('host shutdown failed', String(error)); hostClosing = null; quitting = false
+  })
+})
 app.on('window-all-closed', () => app.quit())

@@ -355,10 +355,13 @@ function registerLogRoutes(webServer, store) {
  * actually been waited for.
  */
 export function registerRoutes(ctx, store, options = {}) {
+  ctx.inject(['webServer'], webCtx => webCtx.webServer === undefined
+    ? () => {} : registerGameRoutes(webCtx.webServer, store, options))
+}
+
+/** 框架无关路由注册；DSH 服务等待和生命周期由适配器负责。 */
+export function registerGameRoutes(webServer, store, options = {}) {
   if (store.ext === undefined) store.ext = createExtRuntime(store, { gameVersion: PACKAGE_VERSION, fetch: options.fetch })
-  ctx.inject(['webServer'], (webCtx) => {
-    const webServer = webCtx.webServer
-    if (webServer === undefined) return () => {}
     const disposers = []
     try {
       disposers.push(registerStateRoute(webServer, store))
@@ -375,5 +378,4 @@ export function registerRoutes(ctx, store, options = {}) {
       console.warn(`[dsh-piggy] 路由注册失败，猪只能用命令访问：${error instanceof Error ? error.message : String(error)}`)
     }
     return () => { for (const dispose of disposers) { try { dispose() } catch { /* best effort */ } } }
-  })
 }

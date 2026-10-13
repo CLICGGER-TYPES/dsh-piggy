@@ -91,6 +91,10 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 ## 开发
 
+### 第三方 agent 接入
+
+本分支提供框架无关的游戏运行时和可选本机工作事件接口。DSH 使用 `adapters/dsh/`；其他框架可通过 `dsh-piggy/runtime` 在同一进程接入，或向使用 `--work-events` 启动的桌面源码投递事件。玩法和游戏存档格式保持不变。接口、投递确认及 OpenCode 示例见[接入其他 agent 框架](docs/guides/agent-adapters.md)。
+
 ```sh
 npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
 npm run build

@@ -1,8 +1,8 @@
 /**
  * dsh-piggy · client — the floating pig.
  *
- * The DSH loader receives the bundle built from src/client/. The pet and its
- * app panel use raw DOM. Host values pass through normalize() before rendering.
+ * The pet and its app panel use raw DOM. Host values pass through normalize()
+ * before rendering. Framework loaders call mountGame through their own adapter.
  */
 
 import { createEffects } from './effects.js'
@@ -32,27 +32,8 @@ import { createBirthday } from './birthday.js'
 import { partAt } from './pet-parts.js'
 import { attachArtPreference } from './art-style.js'
 import { attachSizePreference } from './pig-size.js'
-/** @type {any} */ (window).__ModuleLoader__.load({
-  id: 'dsh-piggy',
-  factory: (require) => {
-    var module = { exports: {} }
-    var exports = module.exports
-
+export function mountGame() {
     var devMode = false
-
-    function apply(ctx) {
-      // 先把浏览器这半边的日志抓起来：挂载失败也要留下现场（设置 → 日志 → 导出）。
-      installCapture()
-      // A client plugin that throws while activating can take the whole web boot
-      // down with it, so the pig never lets an exception escape.
-      try {
-        return mount()
-      } catch (error) {
-        console.warn('[dsh-piggy] 挂载失败，猪先退到一边', error)
-        record('error', 'mount', '挂载失败：' + (error instanceof Error ? error.message : String(error)), { stack: error instanceof Error ? error.stack : '' })
-        return () => {}
-      }
-    }
 
     function mount() {
       if (document.querySelector('[' + MOUNTED + ']') !== null) {
@@ -393,8 +374,20 @@ import { attachSizePreference } from './pig-size.js'
       return dispose
     }
 
-    exports.name = 'dsh-piggy'
-    exports.apply = apply; exports.desktop = desktop // 桌面程序 0.3.0 起用游戏包自带的桌面逻辑
-    return module.exports
-  },
-})
+    installCapture()
+    try { return mount() }
+    catch (error) {
+      console.warn('[dsh-piggy] 挂载失败，猪先退到一边', error)
+      record('error', 'mount', '挂载失败：' + (error instanceof Error ? error.message : String(error)), { stack: error instanceof Error ? error.stack : '' })
+      return () => {}
+    }
+}
+
+export { desktop }
+
+/** 保留原单文件插件的返回形状，宿主加载逻辑留在适配器中。 */
+export function createClientPlugin() {
+  const exports = { name: 'dsh-piggy', apply: mountGame, desktop }
+  exports.desktop = desktop
+  return exports
+}
