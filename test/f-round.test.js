@@ -150,11 +150,11 @@ test('desktop window blur closes only when the setting is on', async () => {
   const first = await mount({ windowExtra: { __dshPiggyShell: shell } })
   openPanel(first.dom)
   assert.equal(typeof first.windowListeners.blur?.[0], 'function')
-  first.windowListeners.blur[0]()
+  for (const blur of first.windowListeners.blur) blur()
   assert.equal(hostOf(first.dom).getAttribute('data-open'), 'false')
   const second = await mount({ windowExtra: { __dshPiggyShell: shell }, store: { 'dsh-piggy:auto-collapse': 'false' } })
   openPanel(second.dom)
-  second.windowListeners.blur[0]()
+  for (const blur of second.windowListeners.blur) blur()
   assert.equal(hostOf(second.dom).getAttribute('data-open'), 'true')
 })
 

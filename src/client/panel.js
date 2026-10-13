@@ -35,9 +35,11 @@ import { applyExtensions, enabledTabs } from './extensions.js'
 import { renderTravelTab } from './tabs/travel.js'
 import { renderWorkTab } from './tabs/work.js'
 import { str } from './values.js'
+import { createRenderHold } from './render-hold.js'
 
 
 export function createPanel(ctx) {
+      const renderHold = createRenderHold(ctx.card)
       var AWAY_LINE = {
         work: '在忙',
         study: '在念书',
@@ -122,6 +124,7 @@ export function createPanel(ctx) {
       }
 
       function renderContent() {
+        if (renderHold.defer(renderContent)) return
         var scrollTop = ctx.content.scrollTop
         paintContent()
         ctx.content.scrollTop = scrollTop
@@ -363,5 +366,5 @@ export function createPanel(ctx) {
     })
   }
 
-  return { setOpen, select, renderContent, render }
+  return { setOpen, select, renderContent, render, dispose: renderHold.dispose }
 }

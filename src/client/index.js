@@ -370,6 +370,7 @@ import { attachSizePreference } from './pig-size.js'
 
       function dispose() {
         stopped = true
+        panel.dispose()
         stopSizePreference()
         stopDragHeartbeat()
         updateNotice.stop()

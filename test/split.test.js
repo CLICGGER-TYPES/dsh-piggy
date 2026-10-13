@@ -172,3 +172,36 @@ test('离线喂食摘要在桌面面板关闭时仍可见，两个窗口分别�
     assert.equal(ctx.calls.filter(call => call[0] === (role === 'pet' ? 'showBubble' : 'toast')).length, 1)
   }
 })
+
+test('原生打开和加载中保持打开的确认恢复猪页状态，不再发送开关请求', () => {
+  const { emit, sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  splitSetOpen(ctx, true)
+  splitSetOpen(ctx, false)
+  const count = sent.length
+  emit('panel', { type: 'open' })
+  assert.equal(ctx.isOpen, true)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'true')
+  assert.equal(sent.length, count)
+  emit('panel', { type: 'closed' })
+  assert.equal(ctx.isOpen, false)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'false')
+})
+
+test('离线进食和徽章同时到达时，最后显示进食摘要而不是被徽章覆盖', () => {
+  fakeShell('pet')
+  const summary = '你不在的时候，猪猪自己吃了 苹果×14'
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false }, pending: [
+    { id: 1, at: 1, kind: 'offline-food', text: summary },
+    { id: 2, at: 2, kind: 'achievement', text: '获得小猪徽章：开饭啦' },
+  ] } })
+  processPending(ctx, () => {})
+  assert.equal(ctx.calls.filter(call => call[0] === 'showBubble').at(-1)[1], summary)
+})
+test('网页面板收起时离线摘要仍在猪上可见', () => {
+  fakeShell(null)
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false }, pending: [{ id: 1, at: 1, kind: 'offline-food', text: '背包里没吃的了' }] } })
+  processPending(ctx, () => {})
+  assert.equal(ctx.calls.filter(call => call[0] === 'showBubble').length, 1)
+})

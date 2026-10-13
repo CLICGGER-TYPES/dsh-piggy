@@ -266,6 +266,7 @@ export function install(shell) {
       },
       on: shell.panel.on,
       onFx: shell.panel.onFx,
+      raisePet: shell.panel.raisePet,
     },
     beginDrag: function () {
       const h = host()

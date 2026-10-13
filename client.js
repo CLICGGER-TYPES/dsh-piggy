@@ -1674,6 +1674,7 @@
     var role2 = desktopRole();
     var pigSide = role2 !== "panel";
     var cardSide = role2 !== "pet";
+    var offlineSummary = null;
     for (var i = 0; i < ctx.view.pending.length; i += 1) {
       var event = ctx.view.pending[i];
       if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue;
@@ -1690,7 +1691,7 @@
       }
       if (event.kind === "gift") continue;
       if (cardSide) ctx.toast(str(event.text, "\u732A\u6709\u65B0\u6D88\u606F"));
-      if (role2 === "pet" && event.kind === "offline-food") ctx.showBubble(event.text, 8e3);
+      if (pigSide && event.kind === "offline-food") offlineSummary = event.text;
       if (!pigSide) continue;
       if (event.kind === "coronation") {
         ctx.react("levelup", 950);
@@ -1716,7 +1717,8 @@
         ctx.burst(["\u{1F9F3}", "\u{1F381}"], 3);
       }
     }
-    if (pigSide) ctx.updateNotice?.maybeBubble();
+    if (offlineSummary !== null && (role2 === "pet" || !ctx.isOpen)) ctx.showBubble(offlineSummary, 8e3);
+    else if (pigSide) ctx.updateNotice?.maybeBubble();
   }
 
   // src/client/storage.js
@@ -2397,7 +2399,7 @@
         if (typeof run === "function") run.apply(null, Array.isArray(fx.args) ? fx.args : []);
       });
       shell2.panel.on(function(message2) {
-        if (message2 && message2.type === "closed") ctx.isOpen = false;
+        if (message2?.type === "closed" || message2?.type === "open") updatePetPanelState(ctx, message2.type === "open");
       });
       return role2;
     }
@@ -2443,12 +2445,7 @@
     var role2 = desktopRole();
     if (role2 === "pet") {
       var changed = next !== ctx.isOpen;
-      ctx.isOpen = next;
-      ctx.host.setAttribute("data-open", "false");
-      ctx.host.setAttribute("data-panel-open", String(next));
-      ctx.host.setAttribute("data-daily-side", dailySide());
-      ctx.card.hidden = true;
-      ctx.hud.hidden = true;
+      updatePetPanelState(ctx, next);
       if (changed) desktopShell().panel.toggle(next);
       return true;
     }
@@ -2460,6 +2457,14 @@
       return true;
     }
     return false;
+  }
+  function updatePetPanelState(ctx, next) {
+    ctx.isOpen = next;
+    ctx.host.setAttribute("data-open", "false");
+    ctx.host.setAttribute("data-panel-open", String(next));
+    ctx.host.setAttribute("data-daily-side", dailySide());
+    ctx.card.hidden = true;
+    ctx.hud.hidden = true;
   }
 
   // src/client/normalize-dex.js
@@ -8854,8 +8859,65 @@
     return box;
   }
 
+  // src/client/render-hold.js
+  function createRenderHold(card2, environment = window) {
+    const active = /* @__PURE__ */ new Set();
+    let pending2 = null;
+    let frame2 = null;
+    let isDisposed = false;
+    function schedule4() {
+      if (active.size || !pending2 || frame2 !== null || isDisposed) return;
+      frame2 = environment.requestAnimationFrame(() => {
+        frame2 = null;
+        if (active.size || !pending2 || isDisposed) return;
+        const render = pending2;
+        pending2 = null;
+        render();
+      });
+    }
+    function down(event) {
+      if (event.button === 0) active.add(event.pointerId);
+    }
+    function up(event) {
+      active.delete(event.pointerId);
+      schedule4();
+    }
+    function blur() {
+      active.clear();
+      schedule4();
+    }
+    card2.addEventListener("pointerdown", down, true);
+    environment.addEventListener?.("pointerup", up, true);
+    environment.addEventListener?.("pointercancel", up, true);
+    environment.addEventListener?.("blur", blur);
+    return {
+      /** 已经有完整的新快照，但按键还没松开时只保留一次最新重绘。 */
+      defer(render) {
+        if (active.size) {
+          pending2 = render;
+          return true;
+        }
+        pending2 = null;
+        if (frame2 !== null) environment.cancelAnimationFrame(frame2);
+        frame2 = null;
+        return false;
+      },
+      dispose() {
+        isDisposed = true;
+        active.clear();
+        pending2 = null;
+        if (frame2 !== null) environment.cancelAnimationFrame(frame2);
+        card2.removeEventListener("pointerdown", down, true);
+        environment.removeEventListener?.("pointerup", up, true);
+        environment.removeEventListener?.("pointercancel", up, true);
+        environment.removeEventListener?.("blur", blur);
+      }
+    };
+  }
+
   // src/client/panel.js
   function createPanel(ctx) {
+    const renderHold = createRenderHold(ctx.card);
     var AWAY_LINE = {
       work: "\u5728\u5FD9",
       study: "\u5728\u5FF5\u4E66",
@@ -8926,6 +8988,7 @@
       ctx.showBubble("\u{1F345} \u4E13\u6CE8\u7ED3\u675F \xB7 " + text, 3200);
     }
     function renderContent() {
+      if (renderHold.defer(renderContent)) return;
       var scrollTop = ctx.content.scrollTop;
       paintContent();
       ctx.content.scrollTop = scrollTop;
@@ -9118,7 +9181,7 @@
         ctx.send("reply", { line: lineId, index });
       });
     }
-    return { setOpen, select, renderContent, render };
+    return { setOpen, select, renderContent, render, dispose: renderHold.dispose };
   }
 
   // src/client/scene.js
@@ -9853,7 +9916,8 @@
           shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
         },
         on: shell2.panel.on,
-        onFx: shell2.panel.onFx
+        onFx: shell2.panel.onFx,
+        raisePet: shell2.panel.raisePet
       },
       beginDrag: function() {
         const h = host2();
@@ -10406,6 +10470,7 @@
         devMode = false;
         function dispose() {
           stopped = true;
+          panel.dispose();
           stopSizePreference();
           stopDragHeartbeat();
           updateNotice.stop();

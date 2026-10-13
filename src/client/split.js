@@ -44,7 +44,7 @@ export function wireSplit(ctx, hooks) {
       if (typeof run === 'function') run.apply(null, Array.isArray(fx.args) ? fx.args : [])
     })
     shell.panel.on(function (message) {
-      if (message && message.type === 'closed') ctx.isOpen = false
+      if (message?.type === 'closed' || message?.type === 'open') updatePetPanelState(ctx, message.type === 'open')
     })
     return role
   }
@@ -97,14 +97,7 @@ export function splitSetOpen(ctx, next) {
     // 猪窗口只记开没开，叫主进程把面板窗口开/关在猪旁边；自己这边永远只有猪。
     // 状态没变就不发（挂载时那次 setOpen(false) 不能去关别人刚打开的面板）。
     var changed = next !== ctx.isOpen
-    ctx.isOpen = next
-    ctx.host.setAttribute('data-open', 'false')
-    // 面板开着时签到 / 礼包小气泡别顶在猪头上：面板窗口的底栏就在那儿，会被压住（用户 2026-10-10）。
-    // 挪到猪身子旁边，往屏幕中间那一侧挪，免得挤到屏幕外。
-    ctx.host.setAttribute('data-panel-open', String(next))
-    ctx.host.setAttribute('data-daily-side', dailySide())
-    ctx.card.hidden = true
-    ctx.hud.hidden = true
+    updatePetPanelState(ctx, next)
     if (changed) desktopShell().panel.toggle(next)
     return true
   }
@@ -118,4 +111,14 @@ export function splitSetOpen(ctx, next) {
     return true
   }
   return false
+}
+
+/** 请求和原生确认使用同一显示状态；确认只同步状态，不再发一次开关请求。 */
+function updatePetPanelState(ctx, next) {
+  ctx.isOpen = next
+  ctx.host.setAttribute('data-open', 'false')
+  ctx.host.setAttribute('data-panel-open', String(next))
+  ctx.host.setAttribute('data-daily-side', dailySide())
+  ctx.card.hidden = true
+  ctx.hud.hidden = true
 }

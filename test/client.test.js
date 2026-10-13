@@ -125,6 +125,7 @@ function fakeDom() {
     }
 
     addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn) }
+    removeEventListener(name, fn) { this.listeners[name] = (this.listeners[name] ?? []).filter(entry => entry !== fn) }
     setPointerCapture() {}
     matches(selector) {
       return selector.split(',').some(part => part.startsWith('.')
@@ -2246,4 +2247,31 @@ test('离线喂食开关读取快照中的关闭值，并发送相反值', async
     assert.equal(request.action, 'offlineFeed')
     assert.equal(request.on, !enabled)
   }
+})
+
+test('按住设置开关时收到轮询快照不替换按钮，松开后的点击只发送一次', async t => {
+  const previousFrame = globalThis.requestAnimationFrame
+  globalThis.requestAnimationFrame = () => 1
+  t.after(() => { globalThis.requestAnimationFrame = previousFrame })
+  let receive
+  const frames = []
+  const shell = { role: 'panel', beginDrag() {}, syncGeometry() {}, setAnchor() {},
+    onStateChanged(fn) { receive = fn }, panel: { on() {}, fx() {}, close() {} } }
+  const status = { ...SNAPSHOT, dialogue: { isOfflineFeedEnabled: true }, pending: [] }
+  const { registration, dom, net, windowListeners } = await loadClient({ status,
+    windowExtra: { __dshPiggyShell: shell, requestAnimationFrame(fn) { frames.push(fn); return frames.length }, cancelAnimationFrame() {} } })
+  registration.factory(() => {}).apply({})
+  await settle()
+  openPanel(dom, 'settings')
+  const toggle = findByAttr(contentOf(dom), 'data-offline-feed', 'true')
+  cardOf(dom).fire('pointerdown', { button: 0, pointerId: 1 })
+  receive(status)
+  assert.equal(findByAttr(contentOf(dom), 'data-offline-feed', 'true'), toggle, '按下到松开间必须保留真实按钮')
+  for (const release of windowListeners.pointerup ?? []) release({ pointerId: 1 })
+  toggle.fire('click')
+  for (const frame of frames) frame()
+  await settle()
+  const requests = net.calls.filter(call => call.method === 'POST')
+  assert.equal(requests.length, 1)
+  assert.equal(JSON.parse(String(requests[0].body)).on, false)
 })
