@@ -5,7 +5,6 @@
  * 各带一个「使用」按钮，小猪大小一项就四行，用户反馈「菜单设计不合理」（2026-10-04）。
  */
 import { button, el } from '../dom.js'
-import { artStyle, setArtStyle } from '../art-style.js'
 import { autoCollapseEnabled, setAutoCollapse } from '../auto-collapse.js'
 import { desktopShell } from '../desktop-shell.js'
 import { emojiStyle, hasBundledEmoji, setEmojiStyle, applyEmojiStyle } from '../emoji-style.js'
@@ -92,12 +91,6 @@ export function renderSettingsTab(ui) {
   percent.addEventListener('change', () => applySize(Number(percent.value)))
   percent.addEventListener('keydown', event => { if (event.key === 'Enter') { applySize(Number(percent.value)); percent.blur() } })
   size.box.appendChild(sizeRow)
-
-  const art = section(ui, '小猪画风', '普通猪、皮肤、动作和睡姿一起切换；导入皮肤保持原图')
-  segmented(art, 'data-art-style', [
-    { key: 'no-outline', label: '无描边' },
-    { key: 'outlined', label: '黑色描边' },
-  ], artStyle(), function (key) { setArtStyle(key) })
 
   // 网页版和桌面版都自带了这套 emoji，所以两边都能选（旧外壳没有这个字体，就不显示）。
   if (hasBundledEmoji()) {

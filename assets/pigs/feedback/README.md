@@ -1,5 +1,7 @@
 # 反馈素材与状态立绘
 
+> 当前（2026-10-13）只有一套无描边平涂，由旧版 1:1 重画，已放入 `assets/pigs/` 主路径；画风设置已移除。当前来源见 `assets/pigs/PROVENANCE.md` 和 manifest.json。以下为历史记录，不代表当前运行行为。
+
 本目录收录用户确认可用的 2026-10 生图 PNG：`single` 组 22 张，`collection` 组 16 张；两组的猪递为不同版式。文件名去掉了 `single/` 层级，合集文件加 `collection-` 前缀。图片由 OpenAI `image_gen.imagegen` 根据用户提供的原始小猪参考图生成，部分版本经多轮修正，所选版本在用户确认后接入。没有手绘、描摹或自动转换成 SVG。
 
 续画用的提示词和逐图约束见 [反馈小猪提示词](../../../docs/art-prompts/feedback-pigs.md)；它是按已确认图片整理的复用稿，历史逐字原文未保存。
