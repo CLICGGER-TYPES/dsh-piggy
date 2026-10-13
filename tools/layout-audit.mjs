@@ -17,7 +17,8 @@ function inspectLayout() {
     const box = element.getBoundingClientRect()
     return { x: box.x, y: box.y, width: box.width, height: box.height, right: box.right, bottom: box.bottom }
   }
-  const label = element => ({ tag: element.tagName.toLowerCase(), id: element.id, class: element.className, text: (element.textContent || '').trim().slice(0, 80) })
+  const label = element => ({ tag: element.tagName.toLowerCase(), id: element.id, class: element.className, text: (element.textContent || '').trim().slice(0, 80),
+    data: Object.fromEntries(Array.from(element.attributes).filter(attribute => attribute.name.startsWith('data-')).map(attribute => [attribute.name, attribute.value])) })
   const area = (left, right) => Math.max(0, Math.min(left.right, right.right) - Math.max(left.x, right.x)) * Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.y, right.y))
   const viewport = { x: 0, y: 0, right: innerWidth, bottom: innerHeight }
   const clippedBy = element => {
@@ -82,7 +83,14 @@ function inspectLayout() {
     }
   }
   const findings = { overlaps, driftedAttachments, clippedText, smallText, smallIcons, smallTargets, occludedControls, outsideContainers }
-  return { role: (/** @type {any} */ (window)).piggyShell?.role ?? 'web', url: location.href, viewport: { width: innerWidth, height: innerHeight }, title: document.title, visibleElements: elements.length, visibleControls: controls.length, layoutPeers: peers.length, counts: Object.fromEntries(Object.entries(findings).map(([key, entries]) => [key, entries.length])), findings }
+  const changedControls = controls.filter(element => element.hasAttribute('data-offline-feed')).map(element => {
+    const box = rect(element), hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+    const title = element.closest('.dp-set')?.querySelector('.dp-set-head b')
+    return { element: label(element), box, fontSize: parseFloat(getComputedStyle(element).fontSize),
+      title: title && label(title), titleFontSize: title && parseFloat(getComputedStyle(title).fontSize),
+      centerHitsSelf: Boolean(hit && (hit === element || element.contains(hit))) }
+  })
+  return { role: (/** @type {any} */ (window)).piggyShell?.role ?? 'web', url: location.href, viewport: { width: innerWidth, height: innerHeight }, title: document.title, visibleElements: elements.length, visibleControls: controls.length, layoutPeers: peers.length, counts: Object.fromEntries(Object.entries(findings).map(([key, entries]) => [key, entries.length])), findings, changedControls }
 }
 
 /** 每个 CDP 查询最多三秒；没有页面或脚本异常必须报错。 */
