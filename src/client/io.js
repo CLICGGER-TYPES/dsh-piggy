@@ -8,6 +8,7 @@
 import { ACT_URL, NO_ITEM_LINE, STATE_URL } from './constants.js'
 import { el } from './dom.js'
 import { createPomodoroClock } from './pomodoro-clock.js'
+import { pollKey } from './poll-key.js'
 import { record } from './journal.js'
 import { num, str } from './values.js'
 
@@ -19,6 +20,8 @@ export function createIo(ctx) {
       var actionSeq = 0
       /** 上一次轮询是不是失败了：只在「断」和「恢复」这两个转折点上记日志。 */
       var hostDown = false
+      /** 上一次画到面板上的那份快照的「画面指纹」（见 poll-key.js）。 */
+      var paintedKey = null
 
       /** 发一个动作。返回宿主回的整份面板数据（被挡下、失败时为 null），
        * 需要看结果的调用方（比如下载扩展）可以直接 await。
@@ -44,6 +47,8 @@ export function createIo(ctx) {
           })
           var next = await res.json()
           if (action === 'buy' && next?.ok === true) ctx.justBought = extra?.item ?? null
+          // 动作结果不是 /state 的正文（多一个 ok/reason）：下一次轮询照旧重画一次，宁可多画也不漏。
+          paintedKey = null
           ctx.render(next)
           if (action === 'pet' && next?.ok === true) ctx.petShy?.()
           // 签到、礼包的结果一律由猪说出来（面板开着时也是）；对应的公告事件不再弹面板顶上的提示条。
@@ -140,7 +145,21 @@ export function createIo(ctx) {
           // An action landed while this poll was in flight: its result is newer
           // than ours, so painting ours would undo what the user just did.
           if (startedAt !== actionSeq) return
-          ctx.render(next)
+          // 快照「画面上」没变就不重画：整块内容（菜园一屏 160 个节点、52 张图）拆了重建是白干，
+          // 顺手还会把悬停卡、开着的弹层抹掉。指纹按显示精度压过（见 poll-key.js）。
+          var key = pollKey(next)
+          if (key !== paintedKey) {
+            // 记账必须等 render 说「真的画了」：焦点在改名框 / 图鉴搜索框 / 菜园购买数量框时，
+            // render 会早退（不重画内容区），早退返回 false —— 这时把指纹打回 null，
+            // 下一轮即使快照没变也再试一次（改前就是靠这个自愈的，别再被短路掉）。
+            try {
+              paintedKey = ctx.render(next) === false ? null : key
+            } catch (error) {
+              // 这轮抛异常＝没画成，同样打回 null 留住「下一轮重试」的性质；错误照旧往上抛。
+              paintedKey = null
+              throw error
+            }
+          }
           if (hostDown) {
             hostDown = false
             record('info', 'poll', '宿主恢复响应')

@@ -1295,6 +1295,48 @@
     } };
   }
 
+  // src/client/poll-key.js
+  var VIEW_RULES = {
+    farm: {
+      now: function(ms) {
+        return Math.floor(ms / 36e5);
+      },
+      remainingMs: function(ms) {
+        return Math.ceil(ms / 6e4);
+      },
+      progress: function(percent) {
+        return Math.round(percent * 100);
+      },
+      usedHours: function() {
+        return 0;
+      }
+    }
+  };
+  function fold(value, rules) {
+    if (Array.isArray(value)) return value.map(function(item) {
+      return fold(item, rules);
+    });
+    if (value === null || typeof value !== "object") return value;
+    var out = {};
+    for (var key in value) {
+      var rule = rules[key];
+      out[key] = rule !== void 0 && typeof value[key] === "number" ? rule(value[key]) : fold(value[key], rules);
+    }
+    return out;
+  }
+  function foldViews(views) {
+    if (views === null || typeof views !== "object") return views;
+    var out = {};
+    for (var key in views) out[key] = VIEW_RULES[key] ? fold(views[key], VIEW_RULES[key]) : views[key];
+    return out;
+  }
+  function pollKey(snapshot) {
+    if (snapshot === null || typeof snapshot !== "object") return String(snapshot);
+    var copy = Object.assign({}, snapshot);
+    copy.extViews = foldViews(snapshot.extViews);
+    return JSON.stringify(copy);
+  }
+
   // src/client/journal.js
   var LOG_URL = "/dsh-piggy/logs/client";
   var LIMIT = 200;
@@ -1380,6 +1422,7 @@
   function createIo(ctx) {
     var actionSeq = 0;
     var hostDown = false;
+    var paintedKey = null;
     async function send2(action, extra) {
       if (ctx.busy || ctx.stopped) return null;
       if (ctx.view.pig === null && action !== "hatch") return null;
@@ -1396,6 +1439,7 @@
         });
         var next = await res.json();
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
+        paintedKey = null;
         ctx.render(next);
         if (action === "pet" && next?.ok === true) ctx.petShy?.();
         if ((action === "signIn" || action === "openGift") && next?.ok === true) {
@@ -1484,7 +1528,15 @@
         if (!res.ok) throw new Error("HTTP " + res.status);
         var next = await res.json();
         if (startedAt !== actionSeq) return;
-        ctx.render(next);
+        var key = pollKey(next);
+        if (key !== paintedKey) {
+          try {
+            paintedKey = ctx.render(next) === false ? null : key;
+          } catch (error) {
+            paintedKey = null;
+            throw error;
+          }
+        }
         if (hostDown) {
           hostDown = false;
           record("info", "poll", "\u5BBF\u4E3B\u6062\u590D\u54CD\u5E94");
@@ -9337,6 +9389,91 @@
     };
   }
 
+  // src/client/hover-restore.js
+  var restorers = /* @__PURE__ */ new WeakMap();
+  function restoreHover(content) {
+    var restore = restorers.get(content);
+    if (restore === void 0) {
+      restore = attach(content);
+      restorers.set(content, restore);
+    }
+    return restore();
+  }
+  function attach(content) {
+    var doc = content.ownerDocument ?? globalThis.document ?? null;
+    var win = doc === null ? globalThis.window ?? null : doc.defaultView ?? globalThis.window ?? null;
+    var x = null;
+    var y = null;
+    var seq2 = 0;
+    var restoring = false;
+    var pending2 = false;
+    function remember(event) {
+      if (restoring) return;
+      x = event.clientX;
+      y = event.clientY;
+      if (event.movementX !== 0 || event.movementY !== 0) seq2 += 1;
+    }
+    function forget() {
+      x = null;
+      y = null;
+    }
+    function targetUnderPointer() {
+      if (x === null || typeof doc?.elementFromPoint !== "function") return null;
+      var node = doc.elementFromPoint(x, y);
+      if (node === null || node === void 0) return null;
+      for (var walk = node; walk !== null && walk !== void 0; walk = walk.parentNode) {
+        if (walk === content) return node;
+      }
+      return null;
+    }
+    function dispatch(target) {
+      var MouseClass = win === null ? null : win.MouseEvent;
+      if (typeof MouseClass !== "function") return;
+      restoring = true;
+      try {
+        target.dispatchEvent(new MouseClass("mousemove", {
+          bubbles: true,
+          clientX: x,
+          clientY: y,
+          movementX: 1,
+          movementY: 1
+        }));
+      } finally {
+        restoring = false;
+      }
+    }
+    function flush2(seen) {
+      pending2 = false;
+      if (restoring || seq2 !== seen) return;
+      var target = targetUnderPointer();
+      if (target === null) return;
+      dispatch(target);
+    }
+    function schedule4(seen) {
+      if (win !== null && typeof win.requestAnimationFrame === "function") {
+        win.requestAnimationFrame(function() {
+          flush2(seen);
+        });
+        return;
+      }
+      if (win !== null && typeof win.setTimeout === "function") {
+        win.setTimeout(function() {
+          flush2(seen);
+        }, 0);
+        return;
+      }
+      flush2(seen);
+    }
+    content.addEventListener("mousemove", remember);
+    content.addEventListener("mouseleave", forget);
+    return function restore() {
+      if (restoring || pending2 || x === null) return false;
+      pending2 = true;
+      schedule4(seq2);
+      return true;
+    };
+  }
+
   // src/client/panel.js
   function createPanel(ctx) {
     var pointerRepaint = attachPointerRepaint(ctx.host, window);
@@ -9419,18 +9556,23 @@
       var scrollTop = ctx.content.scrollTop;
       var scrollPositions = /* @__PURE__ */ new Map();
       ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
-        scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
-      });
-      paintContent();
-      ctx.content.scrollTop = scrollTop;
-      ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
-        var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
-        if (saved) {
-          node.scrollTop = saved.top;
-          node.scrollLeft = saved.left;
+        if (node.scrollTop !== 0 || node.scrollLeft !== 0) {
+          scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
         }
       });
+      paintContent();
+      if (scrollTop !== 0) ctx.content.scrollTop = scrollTop;
+      if (scrollPositions.size > 0) {
+        ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
+          var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
+          if (saved) {
+            node.scrollTop = saved.top;
+            node.scrollLeft = saved.left;
+          }
+        });
+      }
       ctx.justBought = null;
+      restoreHover(ctx.content);
     }
     function paintContent() {
       ctx.content.textContent = "";
@@ -9500,7 +9642,7 @@
     function render(next) {
       if (pointerRepaint.defer(function() {
         render(next);
-      })) return;
+      })) return true;
       var previousFishing = ctx.view?.fishing?.pending;
       ctx.view = applyExtensions(normalize(next));
       var stageEntry = null;
@@ -9614,14 +9756,15 @@
       ctx.icons.dex.setAttribute("data-alert", "false");
       ctx.icons.travel.setAttribute("data-alert", ctx.view.pig !== null && ctx.view.pig.coins >= 400 ? "true" : "false");
       processPending(ctx, showPigLine);
-      if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return;
-      if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return;
-      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return;
-      if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
-      if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return;
+      if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return false;
+      if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return false;
+      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return false;
+      if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return false;
+      if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return false;
       var currentFishing = ctx.view.fishing.pending;
-      if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return;
+      if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return false;
       renderContent();
+      return true;
     }
     function showPigLine(event) {
       var lineId = event.id;
