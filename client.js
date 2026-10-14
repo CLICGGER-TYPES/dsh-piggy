@@ -1180,6 +1180,48 @@
     } };
   }
 
+  // src/client/poll-key.js
+  var VIEW_RULES = {
+    farm: {
+      now: function(ms) {
+        return Math.floor(ms / 36e5);
+      },
+      remainingMs: function(ms) {
+        return Math.ceil(ms / 6e4);
+      },
+      progress: function(percent) {
+        return Math.round(percent * 100);
+      },
+      usedHours: function() {
+        return 0;
+      }
+    }
+  };
+  function fold(value, rules) {
+    if (Array.isArray(value)) return value.map(function(item) {
+      return fold(item, rules);
+    });
+    if (value === null || typeof value !== "object") return value;
+    var out = {};
+    for (var key in value) {
+      var rule = rules[key];
+      out[key] = rule !== void 0 && typeof value[key] === "number" ? rule(value[key]) : fold(value[key], rules);
+    }
+    return out;
+  }
+  function foldViews(views) {
+    if (views === null || typeof views !== "object") return views;
+    var out = {};
+    for (var key in views) out[key] = VIEW_RULES[key] ? fold(views[key], VIEW_RULES[key]) : views[key];
+    return out;
+  }
+  function pollKey(snapshot) {
+    if (snapshot === null || typeof snapshot !== "object") return String(snapshot);
+    var copy = Object.assign({}, snapshot);
+    copy.extViews = foldViews(snapshot.extViews);
+    return JSON.stringify(copy);
+  }
+
   // src/client/journal.js
   var LOG_URL = "/dsh-piggy/logs/client";
   var LIMIT = 200;
@@ -1265,6 +1307,7 @@
   function createIo(ctx) {
     var actionSeq = 0;
     var hostDown = false;
+    var paintedKey = null;
     async function send2(action, extra) {
       if (ctx.busy || ctx.stopped) return null;
       if (ctx.view.pig === null && action !== "hatch") return null;
@@ -1281,6 +1324,7 @@
         });
         var next = await res.json();
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
+        paintedKey = null;
         ctx.render(next);
         if ((action === "signIn" || action === "openGift") && next?.ok === true) {
           var reward = str(next.reward, "");
@@ -1368,7 +1412,11 @@
         if (!res.ok) throw new Error("HTTP " + res.status);
         var next = await res.json();
         if (startedAt !== actionSeq) return;
-        ctx.render(next);
+        var key = pollKey(next);
+        if (key !== paintedKey) {
+          paintedKey = key;
+          ctx.render(next);
+        }
         if (hostDown) {
           hostDown = false;
           record("info", "poll", "\u5BBF\u4E3B\u6062\u590D\u54CD\u5E94");
@@ -9208,17 +9256,21 @@
       var scrollTop = ctx.content.scrollTop;
       var scrollPositions = /* @__PURE__ */ new Map();
       ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
-        scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
-      });
-      paintContent();
-      ctx.content.scrollTop = scrollTop;
-      ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
-        var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
-        if (saved) {
-          node.scrollTop = saved.top;
-          node.scrollLeft = saved.left;
+        if (node.scrollTop !== 0 || node.scrollLeft !== 0) {
+          scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
         }
       });
+      paintContent();
+      if (scrollTop !== 0) ctx.content.scrollTop = scrollTop;
+      if (scrollPositions.size > 0) {
+        ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
+          var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
+          if (saved) {
+            node.scrollTop = saved.top;
+            node.scrollLeft = saved.left;
+          }
+        });
+      }
       ctx.justBought = null;
     }
     function paintContent() {

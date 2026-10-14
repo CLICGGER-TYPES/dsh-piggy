@@ -2249,13 +2249,17 @@ test('farm quantity keeps focus across the four-second snapshot poll', async () 
     assert.equal(findByClass(contentOf(dom), 'fm-quantity'), field)
     assert.equal(field.value, '5')
     dom.document.activeElement = null
+    // 快照真变了才会重画（没变就被轮询短路掉了，见 test/poll-short-circuit.test.js）
+    status.pig = { ...status.pig, coins: status.pig.coins + 1 }
     await poll(); await settle()
     assert.notEqual(findByClass(contentOf(dom), 'fm-quantity'), field, 'blur allows ordinary refresh again')
   } finally { globalThis.window.setInterval = realSetInterval }
 })
 
 test('a poll cannot replace a pressed button before mouseup and click', async () => {
-  const { registration, dom, windowListeners } = await loadClient()
+  // 快照真变了才谈得上重画（没变就被轮询短路掉了）：按住时来了新快照，要等松开再画。
+  const status = structuredClone(SNAPSHOT)
+  const { registration, dom, windowListeners } = await loadClient({ status })
   let poll = null
   const realSetInterval = globalThis.window.setInterval
   globalThis.window.setInterval = fn => { poll = fn; return 1 }
@@ -2263,6 +2267,7 @@ test('a poll cannot replace a pressed button before mouseup and click', async ()
   try {
     await settle(); openPanel(dom, 'shop'); tap(dom, 'data-shelf', 'food')
     const button = findByAttr(contentOf(dom), 'data-buy', 'apple')
+    status.pig = { ...status.pig, coins: status.pig.coins + 1 }
     hostOf(dom).fire('pointerdown')
     await poll(); await settle()
     assert.equal(findByAttr(contentOf(dom), 'data-buy', 'apple'), button, 'the pressed node remains connected')
