@@ -24,12 +24,25 @@ function intersection(a, b) {
   const width = Math.max(0, Math.min(a.right, b.right) - x), height = Math.max(0, Math.min(a.bottom, b.bottom) - y)
   return { x, y, width, height, right: x + width, bottom: y + height }
 }
+/**
+ * 自身或祖先被隐藏（display:none / visibility:hidden / opacity:0 / inert / hidden 属性）——「折叠隐藏」也走这条。
+ * 和「整条在视口外」区分开：这个只管「本该不显示」，视口外是另一类（见 auditOffViewport）。
+ * @param {Element} element
+ */
+function hiddenByStyle(element) {
+  for (let parent = element; parent; parent = parent.parentElement) {
+    const css = getComputedStyle(parent)
+    if (css.display === 'none' || css.visibility === 'hidden' || Number(css.opacity) === 0) return true
+    if (parent.closest('[inert]') || (typeof parent.hasAttribute === 'function' && parent.hasAttribute('hidden'))) return true
+  }
+  return false
+}
 /** @param {Element} element */
 function visibleRect(element) {
+  if (hiddenByStyle(element)) return null
   let r = intersection(rectOf(element), { x: 0, y: 0, right: innerWidth, bottom: innerHeight })
   for (let parent = element; parent; parent = parent.parentElement) {
     const css = getComputedStyle(parent)
-    if (css.display === 'none' || css.visibility === 'hidden' || Number(css.opacity) === 0 || parent.closest('[inert]')) return null
     if (parent !== element && /(hidden|clip|auto|scroll)/.test(css.overflowX + css.overflowY)) r = intersection(r, rectOf(parent))
   }
   return r.width > .01 && r.height > .01 ? r : null
@@ -211,6 +224,13 @@ function auditPairs(nodes, report) {
     const area = pairOverlapArea(a, b)
     const detail = { a: identify(a), b: identify(b), boxAreaPx2: boxArea, areaPx2: area }
     if (area <= .5) { report.exceptions.push({ ...detail, reason: '菱形轴对齐框相交；实际地块与命中多边形只共边，没有内部相交。' }); continue }
+    // 开垦牌（.fm-expand）是浮在地块上的宽木牌按钮，天然比自家菱形宽、会压到邻地。这是设计如此，不算重叠缺陷：
+    // 真正的 E3 是「牌被地块压住、牌面点不到」，那由 auditControls 盯牌自己（blockedControls）。抬地块 z-index（65652cf）后
+    // 牌回到上面，几何重叠面积不变，所以这里必须豁免，否则尺子对已修好的版本常红。
+    if ((a.matches('.fm-expand') && b.matches('.fm-plot')) || (b.matches('.fm-expand') && a.matches('.fm-plot'))) {
+      report.exceptions.push({ ...detail, reason: '开垦牌（.fm-expand）浮在地块上，与邻地的几何重叠是设计如此；只有牌被地块压住才算缺陷（由 blockedControls 盯牌自己）。' })
+      continue
+    }
     if (getComputedStyle(a).zIndex === getComputedStyle(b).zIndex) { report.overlaps.push(detail); continue }
     // z-index 不同不再当成「故意叠放」：用命中测试判谁真在上面，只在上面那侧上色时报（挡掉透明命中层噪声）。
     const top = topSide(a, b, box)
@@ -224,6 +244,7 @@ function auditControls(controls, report) {
   for (const element of controls) {
     const r = rectOf(element), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
     const detail = { element: identify(element), label: element.getAttribute('aria-label') || element.textContent?.trim(), rect: r }
+    const center = { x: Math.round((r.x + r.width / 2) * 100) / 100, y: Math.round((r.y + r.height / 2) * 100) / 100 }
     if (r.width < 31.99 || r.height < 31.99) report.smallTargets.push(detail)
     // 5×5 采样：只数落在控件自己形状内、且被「非祖先」元素抢走的点，量「命中不到自己」的面积占比。
     const ownShape = footprint(element)
@@ -243,10 +264,39 @@ function auditControls(controls, report) {
     const overlay = (centerBlocked ? hit : sampleHit)?.closest('.fm-pop,.fm-mask')
     const scroll = scrollOwner(element)
     const scrolled = scrollBringsIntoView(element)
-    if (overlay && !overlay.contains(element)) report.exceptions.push({ ...detail, hit: hit ? identify(hit) : null, reason: '打开的弹层覆盖背景操作；背景操作不得穿过弹层。关闭后仍必须复测。' })
-    else if (scrolled || (scroll && (intersection(r, rectOf(scroll)).height < r.height - .5 || intersection(r, rectOf(scroll)).width < r.width - .5))) report.exceptions.push({ ...detail, reason: '滚动列表边缘只露出部分商品；滚动后才能操作该商品中心。' })
-    else report.blockedControls.push({ ...detail, hit: hit ? identify(hit) : null, blockedRatio: Math.round(ratio * 100) / 100, blockedPx2: Math.round(ratio * r.width * r.height), sampleHit: sampleHit ? identify(sampleHit) : null })
+    if (overlay && !overlay.contains(element)) {
+      report.exceptions.push({ ...detail, hit: hit ? identify(hit) : null, reason: '打开的弹层覆盖背景操作；背景操作不得穿过弹层。关闭后仍必须复测。' })
+      // 不再静默：把这条豁免显式记进人工复核清单（元素/覆盖物/理由/中心/覆盖层高），不进 problemCount。
+      report.blockedControlsExempt.push({ ...detail, center, overlay: identify(overlay), overlayHeight: Math.round(rectOf(overlay).height * 100) / 100, hit: hit ? identify(hit) : null, reason: '打开的弹层覆盖背景操作；背景操作不得穿过弹层。关闭后仍必须复测。' })
+    } else if (sampleHit && sampleHit.matches('.fm-expand') && element.matches('.fm-plot')) {
+      // 地块被开垦牌（浮在上面的宽木牌）盖住一小块：那是牌子本身可见的地方，不是被藏起来的控件。牌被地块压住才报（见上）。
+      report.exceptions.push({ ...detail, reason: '开垦牌（.fm-expand）浮在这块地上面，被盖的采样点命中的是牌子本身；这不是地块点不到，牌被压住才算缺陷。' })
+    } else if (scrolled || (scroll && (intersection(r, rectOf(scroll)).height < r.height - .5 || intersection(r, rectOf(scroll)).width < r.width - .5))) {
+      report.exceptions.push({ ...detail, reason: '滚动列表边缘只露出部分商品；滚动后才能操作该商品中心。' })
+      // 160px 高的弹层（面板 120px 时商店页签等）以前就是这样被豁免掉的：仍然不算违规，但要显式标记 + 需人工复核。
+      const layer = element.closest('.fm-pop,.fm-mask') || scrolled || scroll
+      report.blockedControlsExempt.push({ ...detail, center, overlay: layer ? identify(layer) : null, overlayHeight: layer ? Math.round(rectOf(layer).height * 100) / 100 : null, reason: '控件在弹层/滚动区里、整块或部分掉在视口外；滚动后才能操作到它的中心。关闭弹层或滚动后仍必须复测。' })
+    } else report.blockedControls.push({ ...detail, hit: hit ? identify(hit) : null, blockedRatio: Math.round(ratio * 100) / 100, blockedPx2: Math.round(ratio * r.width * r.height), sampleHit: sampleHit ? identify(sampleHit) : null })
   }
+}
+/**
+ * 可见但整条落在视口外的操作项：以前被 visibleRect 求交为空直接丢掉，现在显式记进 offViewportControls 供人工复核，不进 problemCount。
+ * 只收「可见」的（display:none / visibility:hidden / opacity:0 / inert / hidden / 0×0 折叠隐藏的都不算），否则会把「本该隐藏的」也刷进来。
+ * @param {Element[]} allElements @param {any} report
+ * @returns {number} 被跳过（隐藏）的视口外操作项条数
+ */
+function auditOffViewport(allElements, report) {
+  let hidden = 0
+  for (const element of allElements) {
+    if (!element.matches('button,input,textarea,select,a[href],[role="button"],.fm-plot')) continue
+    const r = rectOf(element)
+    if (r.width <= .01 || r.height <= .01) continue
+    if (!(r.right <= 0 || r.bottom <= 0 || r.x >= innerWidth || r.y >= innerHeight)) continue
+    if (hiddenByStyle(element)) { hidden += 1; continue }
+    const scroll = scrollOwner(element)
+    report.offViewportControls.push({ element: identify(element), label: element.getAttribute('aria-label') || element.textContent?.trim(), center: { x: Math.round((r.x + r.width / 2) * 100) / 100, y: Math.round((r.y + r.height / 2) * 100) / 100 }, scrollAncestor: scroll ? identify(scroll) : null, hidden: false })
+  }
+  return hidden
 }
 /** @param {Element} element @param {Element[]} controls @param {any} report */
 function auditTextOcclusion(element, controls, report) {
@@ -383,8 +433,10 @@ function auditProgress(elements, report) {
   }
 }
 function auditPage() {
-  const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], cornerClip: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], smallTargets: [], smallIcons: [], missingImages: [], stretchedImages: [], framePaddingViolations: [], unknownAssetGeometry: [], pageErrors: [], exceptions: [], checked: {} }
-  const visible = Array.from(document.querySelectorAll('body *')).filter(e => visibleRect(e))
+  const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], cornerClip: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], blockedControlsExempt: [], offViewportControls: [], smallTargets: [], smallIcons: [], missingImages: [], stretchedImages: [], framePaddingViolations: [], unknownAssetGeometry: [], pageErrors: [], exceptions: [], checked: {} }
+  const allElements = Array.from(document.querySelectorAll('body *'))
+  const visible = allElements.filter(e => visibleRect(e))
+  const offViewportHidden = auditOffViewport(allElements, report)
   const controls = visible.filter(e => e.matches('button,input,textarea,select,a[href],[role="button"],.fm-plot'))
   const attached = visible.filter(e => e.matches('.fm-chip,.fm-prog,.fm-b-sign,.fm-bubble,.fm-n,.fm-count,.fm-lock,.fm-tool-label,.fm-tooltip'))
   if (!visible.some(e => e.matches('.fm'))) report.pageErrors.push('没有可见的菜园，不能把隐藏页面算成通过')
@@ -424,11 +476,13 @@ function auditPage() {
     }
     else if (r.width < 23.99 || r.height < 23.99) report.smallIcons.push({ element: identify(element), src: element.getAttribute('src'), rect: r })
   }
-  report.checked = { visibleElements: visible.length, controls: controls.length, attachments: attached.length }
+  report.checked = { visibleElements: visible.length, controls: controls.length, attachments: attached.length, offViewport: report.offViewportControls.length, offViewportHidden }
   report.problemCount = ['overlaps','cornerClip','overflowingElements','decorativeOcclusions','driftedAttachments','clippedText','occludedText','wrappedLabels','smallText','blockedControls','smallTargets','smallIcons','missingImages','stretchedImages','framePaddingViolations','unknownAssetGeometry','pageErrors'].reduce((n,key) => n + report[key].length,0)
+  // 两类「可疑但无法自动判」的标记：不进 problemCount，但必须在报告里有数字，否则 problemCount=0 会被当成「没问题」。
+  report.humanReview = { blockedControlsExempt: report.blockedControlsExempt.length, offViewportControls: report.offViewportControls.length, needsManualReview: report.blockedControlsExempt.length + report.offViewportControls.length > 0, note: '两类都不进 problemCount：blockedControlsExempt=被弹层/滚动豁免的遮挡；offViewportControls=可见但整条在视口外的操作项。>0 即需人工复核。' }
   return report
 }
-const browserFunctions = [rectOf, identify, intersection, visibleRect, effectiveFont, layerOf, isAncestor, scrollOwner, footprint, shapesOf, pairOverlapArea, topSide, inkRects, textPlate, availableTextArea, scrollBringsIntoView, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditCornerClip, auditProgress, auditPage]
+const browserFunctions = [rectOf, identify, intersection, hiddenByStyle, visibleRect, effectiveFont, layerOf, isAncestor, scrollOwner, footprint, shapesOf, pairOverlapArea, topSide, inkRects, textPlate, availableTextArea, scrollBringsIntoView, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditOffViewport, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditCornerClip, auditProgress, auditPage]
 /** @param {Record<string, any>} [catalog] */
 export function buildAuditExpression(catalog = readAssetLayout()) {
   return '(function () {const assetCatalog=' + JSON.stringify(catalog) + ';' + [...SHAPE_AUDIT_FUNCTIONS, ...browserFunctions, ...IMAGE_AUDIT_FUNCTIONS].map(fn => fn.toString()).join('\n') + '\nreturn auditPage()\n})()'
@@ -467,6 +521,9 @@ async function run(args) {
   const json = JSON.stringify(result, null, 2) + '\n', output = option('--output', '')
   if (output) writeFileSync(output, json)
   process.stdout.write(json)
+  // 报告里必须出现这两类标记的条数：problemCount 之外，单独打印「需人工复核」清单计数（走 stderr，不污染 stdout 的 JSON）。
+  const review = result.humanReview || {}
+  process.stderr.write('需人工复核（不进 problemCount）：blockedControlsExempt=' + (review.blockedControlsExempt || 0) + '，offViewportControls=' + (review.offViewportControls || 0) + (review.needsManualReview ? ' ← >0，需人工复核' : '') + '\n')
   if (result.problemCount) process.exitCode = 1
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

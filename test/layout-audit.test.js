@@ -197,7 +197,7 @@ test('布局审计：中心能点到但大部分面积被盖住要按占比报�
 test('布局审计：视口外的操作项能被任一滚动祖先滚进来时给豁免而不是报点不到', () => {
   const panel = node({ tag: 'DIV', x: 0, y: 0, w: 300, h: 800, css: { overflowY: 'auto' } })
   panel.clientHeight = 700; panel.scrollHeight = 1000
-  const popup = node({ tag: 'DIV', x: 15, y: 700, w: 254, h: 160, css: { overflowY: 'auto' } })
+  const popup = node({ tag: 'DIV', classes: ['fm-pop'], x: 15, y: 700, w: 254, h: 160, css: { overflowY: 'auto' } })
   popup.clientHeight = 160; popup.scrollHeight = 400
   popup.parentElement = panel
   const tab = node({ x: 120, y: 790, w: 80, h: 34 })
@@ -205,4 +205,67 @@ test('布局审计：视口外的操作项能被任一滚动祖先滚进来时�
   const result = audit([panel, popup, tab], { elementFromPoint: (x, y) => (y > 800 ? null : tab) })
   assert.equal(result.blockedControls.length, 0)
   assert.ok(result.exceptions.some(e => e.reason?.includes('滚动')))
+  // 不再静默：这条豁免要显式写成 blockedControlsExempt（160px 弹层里的商店页签就是这样被豁免的），且不进 problemCount。
+  assert.equal(result.blockedControlsExempt.length, 1)
+  assert.equal(result.blockedControlsExempt[0].overlay, 'div.fm-pop')
+  assert.equal(result.blockedControlsExempt[0].overlayHeight, 160)
+  assert.equal(result.humanReview.blockedControlsExempt, 1)
+})
+
+test('布局审计：弹层覆盖背景操作的豁免要写成 blockedControlsExempt，不进 problemCount', () => {
+  const control = node({ x: 10, y: 10, w: 40, h: 40 })
+  const popup = node({ tag: 'DIV', classes: ['fm-pop'], x: 0, y: 0, w: 200, h: 160 })
+  const result = audit([control, popup], { elementFromPoint: () => popup })
+  assert.equal(result.blockedControls.length, 0)
+  assert.equal(result.blockedControlsExempt.length, 1)
+  const record = result.blockedControlsExempt[0]
+  assert.equal(record.element, 'button.')
+  assert.equal(record.overlay, 'div.fm-pop')
+  assert.equal(record.overlayHeight, 160)
+  assert.equal(record.center.x, 30)
+  assert.equal(record.center.y, 30)
+  assert.ok(record.reason.includes('弹层'))
+  assert.equal(result.humanReview.blockedControlsExempt, 1)
+  assert.equal(result.humanReview.needsManualReview, true)
+})
+
+test('布局审计：可见但整条在视口外的操作项要记进 offViewportControls，隐藏的不算', () => {
+  const result = audit([node({ x: 10 }), node({ x: 20, y: 900, w: 60, h: 40 })])
+  assert.equal(result.offViewportControls.length, 1)
+  assert.equal(result.offViewportControls[0].element, 'button.')
+  assert.equal(result.offViewportControls[0].center.y, 920)
+  assert.equal(result.offViewportControls[0].hidden, false)
+  assert.equal(result.humanReview.offViewportControls, 1)
+  assert.equal(result.humanReview.needsManualReview, true)
+  assert.equal(result.checked.offViewportHidden, 0)
+  // display:none / 折叠隐藏的不该被刷进来（否则「本该隐藏的」也会进人工复核清单）。
+  const hidden = audit([node({ x: 10 }), node({ x: 20, y: 900, w: 60, h: 40, css: { display: 'none' } })])
+  assert.equal(hidden.offViewportControls.length, 0)
+  assert.equal(hidden.checked.offViewportHidden, 1)
+  assert.equal(hidden.humanReview.needsManualReview, false)
+})
+
+test('布局审计：开垦牌与邻地块的几何重叠是设计如此，不报 overlaps', () => {
+  const sign = node({ x: 40, y: 20, w: 94, h: 34, classes: ['fm-chip', 'fm-expand'], css: { zIndex: '6' } })
+  const plot = node({ x: 60, y: 0, w: 100, h: 100, classes: ['fm-plot'], hit: true, css: { zIndex: 'auto' } })
+  const result = audit([sign, plot])
+  assert.equal(result.overlaps.length, 0)
+  assert.ok(result.exceptions.some(e => e.reason?.includes('开垦牌')))
+})
+
+test('布局审计：开垦牌压住地块一角不报 blockedControls，牌自己被压住才报', () => {
+  // 牌在上层（元素顺序让牌先被命中）：地块被牌的采样点命中要豁免，牌自己可点。
+  const covered = audit([
+    node({ x: 20, y: 0, w: 200, h: 100, classes: ['fm-plot'], hit: true }),
+    node({ x: 40, y: 20, w: 94, h: 34, classes: ['fm-chip', 'fm-expand'], css: { zIndex: '6' } }),
+  ])
+  assert.equal(covered.blockedControls.length, 0)
+  assert.ok(covered.exceptions.some(e => e.reason?.includes('开垦牌')))
+  // 牌被地块压住（元素顺序让地块先被命中）：这才是 E3，必须报 blockedControls。
+  const signBlocked = audit([
+    node({ x: 40, y: 20, w: 94, h: 34, classes: ['fm-chip', 'fm-expand'], css: { zIndex: '6' } }),
+    node({ x: 20, y: 0, w: 200, h: 100, classes: ['fm-plot'], hit: true }),
+  ])
+  assert.equal(signBlocked.blockedControls.length, 1)
+  assert.ok(signBlocked.blockedControls[0].element.includes('fm-expand'))
 })
