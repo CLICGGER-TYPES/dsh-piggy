@@ -6,12 +6,12 @@
  * @module dsh-piggy/core/settlement
  */
 
-import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
+import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
 import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, DAY_MS, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, MAX_SETTLE_STEPS, MIN_SETTLE_STEP_MS, OFFLINE_GRACE_DAYS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
-import { advanceIllness, noteOuting, restAtHome, rollForIllness } from './illness.js'
+import { advanceIllness, noteOuting, progressIllness, restAtHome, rollForIllness } from './illness.js'
 import { say } from './lines.js'
 import { rollerFor } from './random.js'
 import { noteToday, writeDiaryIfNewDay } from './diary.js'
@@ -193,28 +193,6 @@ function trackSicknessRisk(state, minutes, away, atMs, next) {
   if (away) return
   restAtHome(state, minutes)
   rollForIllness(state, { minutes, atMs }, next)
-}
-
-/**
- * Illness advances on accumulated *effective* time, not wall clock: being out
- * and about while ill runs it at SICK_AWAY_MULTIPLIER, so a day of work costs
- * two days of illness and staying home is the cheap way to wait it out.
- */
-function progressIllness(state, elapsedMs, where, next) {
-  if (state.illness === null || state.illness === undefined) return
-  const rate = where.away ? SICK_AWAY_MULTIPLIER : 1
-  state.illness.progressMs = (state.illness.progressMs ?? 0) + elapsedMs * rate
-  let guard = 0
-  while (state.illness !== null && guard < 16) {
-    // Each stage has its own length, so it has to be re-read after every step.
-    const stageMs = illnessStageMs(state.illness.stage)
-    if (state.illness.progressMs < stageMs) break
-    // Carry the excess into the next stage rather than dropping it.
-    const carried = state.illness.progressMs - stageMs
-    advanceIllness(state, where.atMs, next)
-    if (state.illness !== null) state.illness.progressMs = carried
-    guard += 1
-  }
 }
 
 /**

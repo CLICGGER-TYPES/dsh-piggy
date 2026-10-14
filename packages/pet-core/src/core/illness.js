@@ -16,9 +16,11 @@ import {
   MAX,
   REVIVE_ITEM,
   SELF_HEAL_CHANCE,
+  SICK_AWAY_MULTIPLIER,
   STAGE_HEALTH,
   THRESHOLDS,
   illnessAt,
+  illnessStageMs,
   nextIllness,
 } from '../data.js'
 import { announce, remember } from './effects.js'
@@ -48,6 +50,32 @@ export function die(state, nowMs, why) {
 export function currentIllness(state) {
   if (state.illness === null || state.illness === undefined) return null
   return illnessAt(state.illness.chain, state.illness.stage)
+}
+
+/**
+ * 疾病按累计的「有效时间」推进，不是墙上时钟：生病还出门时按 SICK_AWAY_MULTIPLIER
+ * 加倍，所以在家躺着养病最省。从 settlement.js 搬来这里（返工3：那边 400 行正好撞上
+ * 硬线，本轮又要往里加结算逻辑）——病情推进本来就该和疾病的其它逻辑放在一起。
+ * @param {object} state
+ * @param {number} elapsedMs
+ * @param {{away: boolean, atMs: number}} where
+ * @param {import('./random.js').Roll} next
+ */
+export function progressIllness(state, elapsedMs, where, next) {
+  if (state.illness === null || state.illness === undefined) return
+  const rate = where.away ? SICK_AWAY_MULTIPLIER : 1
+  state.illness.progressMs = (state.illness.progressMs ?? 0) + elapsedMs * rate
+  let guard = 0
+  while (state.illness !== null && guard < 16) {
+    // Each stage has its own length, so it has to be re-read after every step.
+    const stageMs = illnessStageMs(state.illness.stage)
+    if (state.illness.progressMs < stageMs) break
+    // Carry the excess into the next stage rather than dropping it.
+    const carried = state.illness.progressMs - stageMs
+    advanceIllness(state, where.atMs, next)
+    if (state.illness !== null) state.illness.progressMs = carried
+    guard += 1
+  }
 }
 
 // ---------------------------------------------------------------------------
