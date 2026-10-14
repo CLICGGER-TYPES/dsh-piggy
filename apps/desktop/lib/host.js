@@ -69,7 +69,8 @@ async function startLegacyHost(gameDir, statePath, options = {}) {
     })
   }
 
-  return { store, handle, dispose: () => store.dispose() }
+  return { store: { journal: { record: (...args) => store.journal?.record?.(...args) } },
+    record: (...args) => store.journal?.record?.(...args), handle, dispose: () => store.dispose() }
 }
 
 export async function startHost(gameDir, statePath, options = {}) {
