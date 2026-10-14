@@ -148,6 +148,8 @@ export function snapshot(store, options = {}) {
       cleanliness: Math.round(state.cleanliness),
       health: state.health,
       healthPercent: healthPercent(state),
+      // 垂危（没病但健康只剩 1 格）也要能看医生，费用发在顶层；有病时它与 illness.doctorFee 同值。
+      doctorFee: doctorFee(state),
       weight: formatWeight(state.weightG),
       bodyWeight: bodyWeightView(state, nowMs),
       xp: state.xp,

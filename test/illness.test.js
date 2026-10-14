@@ -6,10 +6,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, decay, doctorFee, hatchEgg, migrate, onsetRisks, seeDoctor, useItem } from '../core.js'
-import { CHAIN_INDEX, ILLNESS_CHAINS, ILLNESS_ONSET, REVIVE_ITEM, itemByKey } from '../data.js'
+import { act, adopt, decay, doctorFee, hatchEgg, migrate, onsetRisks, seeDoctor, useItem, awayBlockedReason, startWork } from '../core.js'
+import { CHAIN_INDEX, ILLNESS_CHAINS, ILLNESS_ONSET, MAX, REVIVE_ITEM, itemByKey } from '../data.js'
 import { finishWork, finishStudy } from '../packages/pet-core/src/core/settlement.js'
-import { rollForIllness } from '../packages/pet-core/src/core/illness.js'
+import { catchIllness, die, rollForIllness, worsen } from '../packages/pet-core/src/core/illness.js'
 
 const T0 = Date.parse('2026-10-01T09:00:00')
 const HOUR = 3_600_000
@@ -149,4 +149,113 @@ test('the v10 upgrade refunds the retired generic medicines at the new tier pric
   assert.deepEqual(upgraded.inventory, { apple: 3 })
   assert.equal(upgraded.riskMinutes, undefined)
   assert.equal(upgraded.outingStreak, 0)
+})
+
+// ===========================================================================
+// 返工5：垂危（无病，健康 1 格）也能看医生；发病 / 加重不把 health 往上抬（P3-2）。
+// ===========================================================================
+
+/** 垂危：没病、没死、健康只剩 1 格——`settleStarvation` 落下的那个状态。 */
+const dyingPig = () => {
+  const pig = wellPig()
+  pig.health = 1
+  pig.illness = null
+  return pig
+}
+
+test('返工6：垂危无病看医生按阶梯 0 → 390 → 585 → 780 封顶，计数随次数涨', () => {
+  const pig = dyingPig()
+  pig.coins = 1_000_000
+  const ladder = [0, 390, 585, 780, 780]
+  for (let i = 0; i < ladder.length; i += 1) {
+    assert.equal(pig.criticalDoctorVisits, i, `看诊前计数应为 ${i}`)
+    assert.equal(doctorFee(pig), ladder[i], `第 ${i + 1} 次应收 ${ladder[i]}`)
+    const before = pig.coins
+    assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: ladder[i] })
+    assert.equal(before - pig.coins, ladder[i], `第 ${i + 1} 次实扣 ${ladder[i]}`)
+    assert.equal(pig.criticalDoctorVisits, i + 1, '只有垂危这一支让计数 +1')
+    assert.equal(pig.health, MAX.health, '看一次回满')
+    assert.equal(pig.illness, null)
+    pig.health = 1 // 回到垂危，测下一次
+  }
+  // 垂危本来没病，措辞不能说「病好了」（这里只钉住不谎报）。
+  assert.ok(pig.memories[pig.memories.length - 1].includes('身体恢复了'), pig.memories[pig.memories.length - 1])
+})
+
+test('返工6：垂危看诊第 1 次免费（coins 不变、fee 0）；钱不够按 poor 拦下、need / have 语义不变', () => {
+  const pig = dyingPig()
+  assert.equal(pig.criticalDoctorVisits, 0)
+  assert.equal(doctorFee(pig), 0, '第 1 次免费')
+  pig.coins = 0
+  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 0 }, '免费那次 0 金币也能过')
+  assert.equal(pig.coins, 0, '不花钱')
+  assert.equal(pig.criticalDoctorVisits, 1)
+  pig.health = 1
+  assert.equal(doctorFee(pig), 390, '第 2 次 390')
+  pig.coins = 389
+  assert.deepEqual(seeDoctor(pig, T0), { ok: false, reason: 'poor', need: 390, have: 389 })
+  assert.equal(pig.health, 1, '钱不够还是垂危')
+  assert.equal(pig.criticalDoctorVisits, 1, '钱不够不计数')
+  pig.coins = 390
+  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 390 })
+  assert.equal(pig.coins, 0)
+  assert.equal(pig.criticalDoctorVisits, 2)
+})
+
+test('返工6：有具体疾病时照旧药价 ×1.5（止痛片 105），且不动垂危计数', () => {
+  const pig = wellPig()
+  pig.illness = { chain: CHAIN_INDEX.dizzy, stage: 2, since: T0, progressMs: 0 }
+  pig.health = 3
+  pig.criticalDoctorVisits = 4
+  assert.equal(doctorFee(pig), 105, '止痛片 70 × 1.5')
+  pig.coins = 105
+  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 105 })
+  assert.equal(pig.illness, null)
+  assert.equal(pig.criticalDoctorVisits, 4, '有病的看诊不动垂危计数')
+})
+
+test('返工6：换新猪（adopt）把垂危看诊次数清零；老存档 / 坏值迁移后为 0', () => {
+  const pig = dyingPig()
+  pig.criticalDoctorVisits = 3
+  adopt(pig, T0 + HOUR)
+  assert.equal(pig.criticalDoctorVisits, 0, '领养新猪重新算')
+
+  // 老存档（v13 没有这个字段）：迁移后补 0。
+  const old = { ...hatchEgg(T0), version: 13 }
+  delete old.criticalDoctorVisits
+  assert.equal(migrate(old, T0).criticalDoctorVisits, 0)
+  // 手改的坏值（负数 / 非有限）也归 0。
+  assert.equal(migrate({ ...hatchEgg(T0), version: 13, criticalDoctorVisits: -5 }, T0).criticalDoctorVisits, 0)
+  assert.equal(migrate({ ...hatchEgg(T0), version: 13, criticalDoctorVisits: Number.NaN }, T0).criticalDoctorVisits, 0)
+})
+
+test('返工5：没病不垂危 / 已死的猪，看诊行为逐位不变', () => {
+  const normal = wellPig()
+  assert.equal(doctorFee(normal), null)
+  assert.deepEqual(seeDoctor(normal, T0), { ok: false, reason: 'not-sick' })
+  const dead = wellPig()
+  die(dead, T0, '测试')
+  assert.equal(doctorFee(dead), null)
+  assert.equal(seeDoctor(dead, T0).reason, 'dead')
+})
+
+test('返工5 P3-2：垂危期间发病 / 加重都不抬 health，也不能出门；正常猪取值不变', () => {
+  const pig = dyingPig()
+  catchIllness(pig, CHAIN_INDEX.cold, T0)
+  assert.equal(pig.health, 1, '发病不把垂危抬回 4')
+  assert.equal(pig.illness.stage, 1)
+  assert.equal(startWork(pig, 'bricks', T0).reason, 'weak', '垂危不能出门打工')
+  assert.equal(awayBlockedReason(pig), 'weak')
+  worsen(pig, T0 + HOUR, '没能撑过去')
+  assert.equal(pig.illness.stage, 2, '病情照常加重')
+  assert.equal(pig.health, 1, '加重也不抬，still 垂危')
+  assert.equal(awayBlockedReason(pig), 'weak', '不能出门的拦截继续生效')
+
+  // 正常猪：健康高于任何阶段的格数，取 min 后逐位不变。
+  const normal = wellPig()
+  normal.health = 5
+  catchIllness(normal, CHAIN_INDEX.cold, T0)
+  assert.equal(normal.health, 4, '正常猪发病照旧到 4')
+  worsen(normal, T0 + HOUR, '没能撑过去')
+  assert.equal(normal.health, 3, '正常猪加重照旧到 3')
 })

@@ -1,0 +1,1 @@
+{"version":12,"name":"Piggy","bornAt":1784000000000,"hatched":true,"dead":false,"ageMs":1000000,"timeScale":1,"satiety":50,"happiness":50,"cleanliness":50,"health":5,"lastSeenAt":-1,"activity":{"kind":"work","key":"bricks","startedAt":1784000000000,"endsAt":1790782077081,"cost":0,"label":"搬砖","emoji":"🧱"}}

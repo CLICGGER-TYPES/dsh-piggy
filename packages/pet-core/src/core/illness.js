@@ -14,13 +14,17 @@ import {
   ILLNESS_CHAINS,
   ILLNESS_ONSET,
   MAX,
+  MEDICINE_PRICE_BY_TIER,
   REVIVE_ITEM,
   SELF_HEAL_CHANCE,
+  SICK_AWAY_MULTIPLIER,
   STAGE_HEALTH,
   THRESHOLDS,
   illnessAt,
+  illnessStageMs,
   nextIllness,
 } from '../data.js'
+import { TOO_WEAK_HEALTH } from './constants.js'
 import { announce, remember } from './effects.js'
 import { say } from './lines.js'
 import { chance, rollerFor } from './random.js'
@@ -50,9 +54,48 @@ export function currentIllness(state) {
   return illnessAt(state.illness.chain, state.illness.stage)
 }
 
+/**
+ * 疾病按累计的「有效时间」推进，不是墙上时钟：生病还出门时按 SICK_AWAY_MULTIPLIER
+ * 加倍，所以在家躺着养病最省。从 settlement.js 搬来这里（返工3：那边 400 行正好撞上
+ * 硬线，本轮又要往里加结算逻辑）——病情推进本来就该和疾病的其它逻辑放在一起。
+ * @param {object} state
+ * @param {number} elapsedMs
+ * @param {{away: boolean, atMs: number}} where
+ * @param {import('./random.js').Roll} next
+ */
+export function progressIllness(state, elapsedMs, where, next) {
+  if (state.illness === null || state.illness === undefined) return
+  const rate = where.away ? SICK_AWAY_MULTIPLIER : 1
+  state.illness.progressMs = (state.illness.progressMs ?? 0) + elapsedMs * rate
+  let guard = 0
+  while (state.illness !== null && guard < 16) {
+    // Each stage has its own length, so it has to be re-read after every step.
+    const stageMs = illnessStageMs(state.illness.stage)
+    if (state.illness.progressMs < stageMs) break
+    // Carry the excess into the next stage rather than dropping it.
+    const carried = state.illness.progressMs - stageMs
+    advanceIllness(state, where.atMs, next)
+    if (state.illness !== null) state.illness.progressMs = carried
+    guard += 1
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Falling ill
 // ---------------------------------------------------------------------------
+
+/**
+ * 疾病阶段只会把健康往下带到该阶段的格数，绝不往上抬。
+ *
+ * 垂危（`health` = 1，见 `settleStarvation`）时发病 / 病情加重都必须停在 1：
+ * 否则「再生一场病」会顺手把垂危治好，`work/study/trip/…` 的 `weak` 拦截也被解除
+ * （2026-10-14 用户拍板，P3-2）。正常猪的健康高于任何阶段的格数，取 min 后逐位不变。
+ * @param {object} state
+ * @param {number} stageHealth - `STAGE_HEALTH` 里该阶段的格数
+ */
+function capHealth(state, stageHealth) {
+  return Math.min(Number.isFinite(state.health) ? state.health : MAX.health, stageHealth)
+}
 
 /**
  * What the pig is at risk of right now, per hour, and from which chain.
@@ -128,7 +171,9 @@ export function restAtHome(state, minutes) {
  */
 export function catchIllness(state, chain, nowMs) {
   state.illness = { chain, stage: 1, since: nowMs, progressMs: 0 }
-  state.health = STAGE_HEALTH[0]
+  // 取 min，不覆写：垂危（健康 1 格）时发病不能把 health 抬回 4，否则等于「生一场病治好垂危」
+  // （2026-10-14 交叉审查 P3-2、用户同日拍板）。正常猪 health 高于 4，行为逐位不变。
+  state.health = capHealth(state, STAGE_HEALTH[0])
   state.stats.illnesses = (state.stats.illnesses ?? 0) + 1
   const ill = illnessAt(chain, 1)
   if (ill === null) return
@@ -173,7 +218,8 @@ export function worsen(state, nowMs, why) {
     return
   }
   state.illness = { chain, stage: stage + 1, since: nowMs, progressMs: 0 }
-  state.health = STAGE_HEALTH[stage]
+  // 同样取 min：垂危时病情加重也只停在 1 格（P3-2）。
+  state.health = capHealth(state, STAGE_HEALTH[stage])
   remember(state, `病情加重：${worse.name}`, nowMs)
   announce(state, 'worse', `${state.name} 的病情加重了：${worse.name}，需要${worse.cureEmoji}${worse.cure}`, nowMs)
 }
@@ -213,10 +259,35 @@ export function medicate(state, item, nowMs) {
   return { ok: false, reason: 'wrong-medicine', needs: ill }
 }
 
-/** What seeing the doctor costs for the illness the pig has now. */
+/**
+ * 垂危（无病、没死、健康 ≤ 1 格）看医生的收费阶梯。
+ *
+ * 用户 2026-10-14 定：同一只猪第 1 次 0（免费试一次）、第 2 次 390、第 3 次 585、
+ * 第 4 次起封顶 780——每次 ×1.5、封顶 2 倍（390 = 260 × 1.5、585 = 390 × 1.5、
+ * 780 = 2 × 390）。其中 585、780 是 Claude 按「以此类推、不能太贵」推定的。
+ *
+ * 次数记在猪身上（`state.criticalDoctorVisits`，见 core/egg.js 与 v14 迁移），换新猪清零；
+ * 有具体疾病时走药价 × `DOCTOR_MARKUP` 那条，不碰这个计数。
+ */
+export const CRITICAL_DOCTOR_BASE_FEE = Math.ceil(MEDICINE_PRICE_BY_TIER[3] * DOCTOR_MARKUP)
+
+/** 第 N 次（0 起）垂危看诊费：0、390、585，之后封顶 780。 */
+export function criticalDoctorFee(visits) {
+  const n = Number.isFinite(visits) ? Math.max(0, Math.floor(visits)) : 0
+  if (n === 0) return 0
+  const grown = CRITICAL_DOCTOR_BASE_FEE * 1.5 ** (n - 1)
+  return Math.min(Math.round(grown), CRITICAL_DOCTOR_BASE_FEE * 2)
+}
+
+/** What seeing the doctor costs for the illness the pig has now, or the ladder charge when it is only 垂危. */
 export function doctorFee(state) {
   const ill = currentIllness(state)
-  return ill === null ? null : Math.ceil(ill.curePrice * DOCTOR_MARKUP)
+  if (ill !== null) return Math.ceil(ill.curePrice * DOCTOR_MARKUP)
+  // 没病、没死但健康只剩 1 格（垂危）：也放行看医生（2026-10-14 用户拍板）。
+  if (state.dead !== true && Number.isFinite(state.health) && state.health <= TOO_WEAK_HEALTH) {
+    return criticalDoctorFee(state.criticalDoctorVisits)
+  }
+  return null
 }
 
 /** 看医生：pay the fee, skip the shopping, get well. */
@@ -225,12 +296,16 @@ export function seeDoctor(state, nowMs) {
   if (state.dead === true) return { ok: false, reason: 'dead' }
   const fee = doctorFee(state)
   if (fee === null) return { ok: false, reason: 'not-sick' }
+  const sick = currentIllness(state) !== null
   if (!spendCoins(state, fee, 'doctor', nowMs)) return { ok: false, reason: 'poor', need: fee, have: state.coins }
+  // 只有「垂危（无病）」这一支按阶梯收费，也就只有它让次数 +1；有病的看诊不动计数。
+  if (!sick) state.criticalDoctorVisits = (Number.isFinite(state.criticalDoctorVisits) ? Math.floor(state.criticalDoctorVisits) : 0) + 1
   recover(state, nowMs)
   state.stats.cures = (state.stats.cures ?? 0) + 1
   state.stats.doctorVisits = (state.stats.doctorVisits ?? 0) + 1
-  remember(state, `🏥 看了医生，花了 ${fee} 金币，病好了`, nowMs)
-  announce(state, 'cured', `${state.name} 看了医生，痊愈了 💚（${fee} 🪙）`, nowMs)
+  // 垂危本来没病，别说「病好了」，只说身体恢复了（措辞进 文案稿.md 待用户确认）。
+  remember(state, sick ? `🏥 看了医生，花了 ${fee} 金币，病好了` : `🏥 看了医生，花了 ${fee} 金币，身体恢复了`, nowMs)
+  announce(state, 'cured', sick ? `${state.name} 看了医生，痊愈了 💚（${fee} 🪙）` : `${state.name} 看了医生，身体恢复了 💚（${fee} 🪙）`, nowMs)
   noteToday(state, 'cure')
   return { ok: true, fee }
 }

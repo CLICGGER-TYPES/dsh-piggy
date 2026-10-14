@@ -31,6 +31,55 @@ export function ageDays(state, nowMs) {
 export const ageMonths = (state, nowMs) => ageDays(state, nowMs) / DAYS_PER_MONTH
 
 /**
+ * Is a saved `lastSeenAt` believable? False for a non-number, a non-finite
+ * value, or a moment that is not a positive instant. Such a cursor is corrupt
+ * or hand-edited data, not evidence of an absence — decay() settles nothing for
+ * it and repairs it to nowMs (see core/settlement.js).
+ *
+ * 「早于出生」不再算坏游标（2026-10-14 返工 P2-1）：把那种情况判成坏数据会把猪永久冻住
+ * ——出生时刻在将来（快机器上孵的猪、对表之后）时，修出来的游标仍然早于出生，这条判定
+ * 每次都会命中、又没有出口。出生之前的时间本来也不该补结算，所以改成在 decay() 里把结算
+ * 起点钳到出生时刻；坏值只留「非数字 / 非有限 / 非正数」三条。
+ * @param {unknown} cursor
+ */
+export function isUsableCursor(cursor) {
+  return typeof cursor === 'number' && Number.isFinite(cursor) && cursor > 0
+}
+
+/**
+ * 已结算水位（`state.settledUpTo`）：只增不减的时间戳，表示这一刻（含）以前的猪时间
+ * 都已经结算过了——同一段时间绝不算两遍。
+ *
+ * 为什么需要它：时钟被拨回、或存档游标来自一台走快的机器（B2）时，`lastSeenAt` 会停在
+ * 将来。水位记着真正结算到过的高点，时间要重新越过它才继续结算——「宁可少算」，同一段
+ * 绝不重复结算（返工2 P2-2，用户 2026-10-14 拍板）。
+ *
+ * 缺失或坏值按 `lastSeenAt`（即 `fromMs`）处理——老存档没有这个字段。`settleFloorMs` 返回
+ * 结算起点（这次真正要结算的区间下界），`raiseSettledUpTo` 只用更大的值覆盖它。
+ *
+ * @param {object} state
+ * @param {number} fromMs
+ */
+export function settleFloorMs(state, fromMs) {
+  return Number.isFinite(state.settledUpTo) && state.settledUpTo > fromMs ? state.settledUpTo : fromMs
+}
+
+/**
+ * 把已结算水位抬到 ms；只增不减。
+ *
+ * **唯二**允许把水位写小的写入点在 core/state.js，都是刻意的「重置时间线」，别处一律走这个
+ * 函数（回归守卫见 test/offline-feed.test.js 的「P3-D：settledUpTo 只增不减」与「往下写水位的
+ * 赋值点只有 state.js 的两处重置」）：
+ *   1. `ageFromNow` 年龄归零 —— 旧时间线整个丢掉，水位归到当下；
+ *   2. 调试页 `applyDevPatch` 的 `__advanceMs` 快进 —— 假装这段真的流过，水位跟着退回去，
+ *      否则高水位会把快进挡住（`store/api.js` 的 dev 通道可达，**调试专用**，玩家路径别依赖）。
+ * 除此之外任何地方想下调水位都是 bug。
+ */
+export function raiseSettledUpTo(state, ms) {
+  if (!Number.isFinite(state.settledUpTo) || ms > state.settledUpTo) state.settledUpTo = ms
+}
+
+/**
  * Which stage the pig is at right now: a box, a pig of some size, or a grave.
  * The body follows the level, not the calendar (B2).
  */

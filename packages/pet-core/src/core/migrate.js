@@ -58,10 +58,17 @@ export function migrate(input, nowMs) {
     ? raw.memories.filter(m => typeof m === 'string').slice(-MEMORY_LIMIT)
     : []
 
-  for (const key of ['xp', 'weightG', 'satiety', 'happiness', 'cleanliness', 'health', 'coins', 'outingStreak', 'restMinutes', 'bornAt', 'lastFedAt', 'lastActiveAt', 'lastSeenAt']) {
+  for (const key of ['xp', 'weightG', 'satiety', 'happiness', 'cleanliness', 'health', 'coins', 'outingStreak', 'restMinutes', 'bornAt', 'lastFedAt', 'lastActiveAt', 'lastSeenAt', 'criticalDoctorVisits']) {
     if (typeof state[key] !== 'number' || !Number.isFinite(state[key])) state[key] = egg[key]
   }
+  // 垂危看诊次数：非有限 / 负数一律归 0（手改存档不能靠负数把阶梯压回去）。
+  state.criticalDoctorVisits = Math.max(0, Math.floor(state.criticalDoctorVisits))
   if (typeof raw.cleanliness !== 'number') state.cleanliness = egg.cleanliness
+  // 已结算水位：缺了/坏了就是 null，decay() 按 lastSeenAt 处理（返工2 P2-2）。
+  if (!Number.isFinite(state.settledUpTo)) state.settledUpTo = null
+  // 0.36.2 第二轮的「倒退满一天认新时钟」出口已在返工3 取消，这个冻结标记不再有人写；
+  // 老存档里留下的值直接丢掉（它是当时的临时标记，不是玩家数据）。
+  delete state.clockRollbackAt
   if (typeof raw.health !== 'number') state.health = raw.dead === true ? 0 : MAX.health
   if (typeof raw.coins !== 'number') state.coins = egg.coins
   // Starting money went 60 -> 500. A pig that hatched under the old number is

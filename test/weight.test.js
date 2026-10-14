@@ -44,13 +44,13 @@ test('C7 has exact normal, round and fat boundaries', () => {
   assert.equal(bodyWeightClass(state), 'fat')
 })
 
-test('C7 migrates save version to v13 and ensures its daily exercise record', () => {
-  assert.equal(STATE_VERSION, 13)
+test('C7 migrates save version to v14 and ensures its daily exercise record', () => {
+  assert.equal(STATE_VERSION, 14)
   const old = pig(40, 1.7)
   delete old.bodyWeight
   old.version = 12
   const loaded = migrate(JSON.parse(JSON.stringify(old)), NOW)
-  assert.equal(loaded.version, 13)
+  assert.equal(loaded.version, 14)
   assert.equal(loaded.weightG, old.weightG)
   assert.deepEqual(loaded.bodyWeight, { playDay: '', plays: 0 })
   loaded.bodyWeight = { playDay: [], plays: Infinity }

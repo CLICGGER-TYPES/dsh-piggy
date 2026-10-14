@@ -49,6 +49,9 @@ export function layEgg(nowMs) {
     coins: 500,
     inventory: {},
     isOfflineFeedEnabled: true,
+    // 垂危（没病、健康 1 格）时看过几次医生：看诊费按次数阶梯涨，同一只猪累计。
+    // 换新猪（领养 / 新蛋）从 0 重新算；老存档缺这个字段由 migrate() 补 0。
+    criticalDoctorVisits: 0,
     // 家当: dress items are bought once, owned forever, and worn.
     dress: [],
     worn: [],
@@ -68,6 +71,9 @@ export function layEgg(nowMs) {
     lastFedAt: 0,
     lastActiveAt: nowMs,
     lastSeenAt: nowMs,
+    // 已结算水位（只增不减）：这一刻（含）以前的猪时间都结算过了，时间要越过它才继续，
+    // 同一段时间绝不结算两遍（见 core/clock.js 的 settleFloorMs）。
+    settledUpTo: null,
     cooldowns: {},
     pending: [],
     pendingSeq: 0,

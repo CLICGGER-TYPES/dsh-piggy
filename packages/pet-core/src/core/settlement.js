@@ -6,22 +6,22 @@
  * @module dsh-piggy/core/settlement
  */
 
-import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
-import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
+import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
+import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, DAY_MS, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, MAX_SETTLE_STEPS, MIN_SETTLE_STEP_MS, OFFLINE_GRACE_DAYS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
-import { advanceIllness, noteOuting, restAtHome, rollForIllness } from './illness.js'
+import { advanceIllness, noteOuting, progressIllness, restAtHome, rollForIllness } from './illness.js'
 import { say } from './lines.js'
 import { rollerFor } from './random.js'
 import { noteToday, writeDiaryIfNewDay } from './diary.js'
-import { dayKeyFor } from './clock.js'
+import { dayKeyFor, isUsableCursor, raiseSettledUpTo, settleFloorMs } from './clock.js'
 import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
 import { finishAutoFishing } from './fishing.js'
 import { settleAutoFishing } from './fishing-auto.js'
-import { eatOffline, finishOfflineMeals } from './offline-feed.js'
+import { careOffline, emptyOfflineMeals, finishOfflineMeals, offlineSustainMs, settleStarvation } from './offline-feed.js'
 import { ONLINE_GIFT, THRESHOLDS } from '../data.js'
 import { earnCoins } from './economy.js'
 
@@ -32,42 +32,101 @@ export { currentIllness, die } from './illness.js'
 // ---------------------------------------------------------------------------
 
 /**
+ * 冻结（时钟没前进 / 还没追上已结算水位）时的日志，同一道下界只报一次：面板每 4 秒轮询一次
+ * `decay()`，回拨造成的冻结却可以持续很多天，不挡一下会刷满日志。只压日志、不影响结算，写清
+ * 「冻住、等真实时间追上水位」和两个时间戳，排障才看得出这条跳过路径（返工3 P2-C）。不加界面提示。
+ */
+let frozenAtFloorMs = null
+function warnFrozen(state, floorMs, nowMs) {
+  if (frozenAtFloorMs === floorMs) return
+  frozenAtFloorMs = floorMs
+  console.warn(`[dsh-piggy] settle frozen, pig stands still until the real clock catches up: floorMs=${floorMs} settledUpTo=${String(state.settledUpTo)} nowMs=${nowMs}`)
+}
+
+/**
  * Bring the pig up to `nowMs`, resolving everything that happened in between.
  *
- * The gap is cut into at most two stretches — away until the activity ends,
- * then home — and each stretch is walked in steps of SETTLE_STEP_MS. That is
- * what lets a long absence play out the way it would have live: a job that
- * ended at 18:56 is paid (and stamped) at 18:56, the evening after it is time
- * at home, and a bar that crosses a threshold at 3 a.m. starts its sickness
- * risk at 3 a.m. rather than at whatever moment the panel was next opened.
- *
- * Randomness comes from the pig's own seed (see random.js); pass `roll` to pin
- * the outcome, as the tests and dev mode do.
+ * The gap is cut into at most two stretches — away until the activity ends, then
+ * home — each walked in SETTLE_STEP_MS steps, so a long absence plays out as it
+ * would have live: a job ending at 18:56 is paid at 18:56, and a bar crossing a
+ * threshold at 3 a.m. starts its sickness risk then, not when the panel is next
+ * opened. Randomness comes from the pig's own seed (see random.js); pass `roll` to
+ * pin the outcome, as the tests and dev mode do.
  *
  * @param {object} state
  * @param {number} nowMs
  * @param {{roll?: import('./random.js').Roll}} [options]
  */
 export function decay(state, nowMs, options = {}) {
-  const fromMs = state.lastSeenAt ?? nowMs
+  // 宿主自己把 nowMs 传坏了（NaN / 负数 / Infinity）时什么也别做：写进去会把游标变成坏值，
+  // 而 NaN 会让后面每个比较都判假、猪永久冻住，比不结算更糟。只读，不动状态。
+  if (!Number.isFinite(nowMs) || nowMs < 0) {
+    console.warn(`[dsh-piggy] decay skipped, unusable nowMs: nowMs=${String(nowMs)}`)
+    return state
+  }
+  // 坏游标（非数字 / 非有限 / 非正数）不能当作可信的「上次看到」：没有起点就按刚刚
+  // 看过处理——把游标修到 nowMs，本次不补结算。否则 0 / -1 这类值会让时间差大到
+  // passTime 按 SETTLE_STEP_MS 一步走几百万步（存档模糊测试 4.1）。
+  if (!isUsableCursor(state.lastSeenAt)) {
+    console.warn(`[dsh-piggy] unusable settle cursor, resetting to now: lastSeenAt=${String(state.lastSeenAt)} nowMs=${nowMs}`)
+    state.lastSeenAt = nowMs
+    raiseSettledUpTo(state, nowMs)
+    return state
+  }
+  // 游标早于出生时刻（手改存档、跨机器拷贝）时把结算起点钳到出生：出生之前猪还不存在，
+  // 不该补算那一段，更不该像旧版那样判成坏数据（会永久冻结，返工 P2-1）。出生时刻本身
+  // 在将来（快机器上孵的猪、对表之后）时不抬，否则跨度变负、猪会冻到生日那天。
+  const bornAtMs = Number.isFinite(state.bornAt) && state.bornAt <= nowMs ? state.bornAt : null
+  const fromMs = bornAtMs === null ? state.lastSeenAt : Math.max(state.lastSeenAt, bornAtMs)
+  // 时钟没前进（玩家把系统时间调回去了 / 游标在未来）：猪原地不动，保留游标，本次不结算。
+  // 玩家调时间了就冻结，不自动恢复——等真实时间追上旧水位（settledUpTo）再接着走，
+  // 错表那段本来就没真的流过（2026-10-14 用户拍板，取消了原来的「满一天认新时钟」出口）。
+  if (!(nowMs > fromMs)) {
+    // nowMs 恰好等于 fromMs 是「同一时刻被问了两次」（面板轮询后紧跟着一个动作），不是冻结。
+    if (nowMs < fromMs) warnFrozen(state, fromMs, nowMs)
+    return state
+  }
   state.lastSeenAt = nowMs
+  // 已结算水位（只增不减，见 clock.js）：时间要越过它才继续结算，同一段绝不结算两遍
+  // （宁可少算）。水位在游标前面时（存档被手改 / 从更旧的一份拷来）这条是唯一保护。
+  const floorMs = settleFloorMs(state, fromMs)
+  if (nowMs <= floorMs) {
+    warnFrozen(state, floorMs, nowMs)
+    return state
+  }
   // An unopened box is not a pet yet: it never gets hungry, dirty, sick or
   // older, and it cannot die while it waits to be poked open (#2).
   if (state.hatched !== true) return state
-  if (!(nowMs > fromMs) || state.dead === true) return state
+  if (state.dead === true) return state
+  // 到这里才真的要结算，水位跟着推进（前面的跳过路径只在 lastSeenAt 上走）。承重条件：
+  // 老存档 / 未孵化的盒子水位一直是 null，这行是它们把水位立起来的唯一一步；删了水位永远是
+  // null，`settleFloorMs` 退化成按游标结算，游标一落后就会重复结算（返工3 P3-E，别当冗余删）。
+  raiseSettledUpTo(state, nowMs)
   const next = options.roll ?? rollerFor(state)
-  if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
-    // First tick after loading an old save: seed pig time from the birthday.
-    state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, fromMs - state.bornAt) : 0
+  // 单次结算的推算上限：背包还能撑多久 + 10 天（见 offline-feed.js），再夹在 400 天的
+  // 绝对上限内。超出的时间不逐步走——那正是「几百万步卡住面板」的来源（返工3 A2）。
+  const sustainMs = offlineSustainMs(state)
+  const horizonMs = Math.min(sustainMs + OFFLINE_GRACE_DAYS * DAY_MS, MAX_SETTLE_SPAN_MS)
+  const settleFromMs = Math.max(floorMs, nowMs - horizonMs)
+  // 少结算了就说一声，别让玩家只看到「年龄凭空少了」（P3-3）。
+  if (nowMs - floorMs > horizonMs) {
+    console.warn(`[dsh-piggy] settle span over the offline horizon, only the last ${horizonMs}ms is walked: floorMs=${floorMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
   }
+  const hadAge = Number.isFinite(state.ageMs)
+  if (!hadAge) {
+    // First tick after loading an old save: seed pig time from the birthday.
+    state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, settleFromMs - state.bornAt) : 0
+  }
+  // 被 horizon 截掉的头部（floorMs..settleFromMs）也要算进时间线：判定按完整跨度算「撑不住」
+  // 多久，结算却只走截头那段，活着回来的猪会凭空少长几天（返工4 P2-1）。本段只补一次——日记
+  // 游标一天一篇走到 settleFromMs、年龄在末尾按 timeScale 加回；不重跑步长 / 衰减 / 发病 / 进食。
+  const headMs = Math.min(settleFromMs - floorMs, MAX_SETTLE_SPAN_MS - horizonMs)
+  for (let at = settleFromMs - headMs; at < settleFromMs; at += DAY_MS) rollDiaryAt(state, at)
+  rollDiaryAt(state, settleFromMs)
 
-  // An old save may have no diary yet. Start at the last observed day so
-  // events settled below cannot be credited to the day the panel reopened.
-  rollDiaryAt(state, fromMs)
-
-  const meals = nowMs - fromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
-    ? { counts: {}, isEmpty: false } : null
-  let cursor = fromMs
+  const meals = nowMs - settleFromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
+    ? emptyOfflineMeals() : null
+  let cursor = settleFromMs
   const activity = state.activity
   if (activity !== null && activity !== undefined) {
     settleAutoFishing(state, activity, nowMs)
@@ -81,6 +140,12 @@ export function decay(state, nowMs, options = {}) {
   }
   if (state.dead !== true) passTime(state, { fromMs: cursor, toMs: nowMs, away: false, meals }, next)
   finishOfflineMeals(state, meals, nowMs)
+  // 超过「背包能撑的」那一刻还有剩余时间：没东西撑着满 30 天就是死亡，否则生命垂危
+  // （返工3 A2）。这段时间不逐步推算，正是为了不走上百万步。
+  settleStarvation(state, nowMs, nowMs - floorMs - sustainMs)
+  // 补回被截掉的头部年龄；死亡那档不加（停在 die() 那一刻），老存档上面刚按 settleFromMs 播种、
+  // 本来就含这一段，也不加（返工4）。
+  if (hadAge && state.dead !== true) state.ageMs += headMs * pigScale(state)
   return state
 }
 
@@ -92,11 +157,19 @@ export function decay(state, nowMs, options = {}) {
  */
 function passTime(state, stretch, next) {
   let cursor = stretch.fromMs
+  let steps = 0
   while (cursor < stretch.toMs && state.dead !== true) {
-    eatOffline(state, stretch.meals, cursor)
+    // 步数守卫：正常路径最多 400 天 / 5 分钟 ≈ 11.5 万步，触发说明输入异常（步长被压到
+    // 下限还走不完）。放弃剩余时间并记一条日志，不硬撑占住面板线程（P2-3 第 7 条）。
+    if (steps >= MAX_SETTLE_STEPS) {
+      console.warn(`[dsh-piggy] settle step guard hit, dropping the rest: fromMs=${stretch.fromMs} toMs=${stretch.toMs} steps=${steps} minStepMs=${MIN_SETTLE_STEP_MS}`)
+      return
+    }
+    steps += 1
+    careOffline(state, stretch.meals, cursor)
     const speed = stretch.away ? AWAY_DECAY_MULTIPLIER : 1
     const toHungerMs = (state.satiety - THRESHOLDS.hungry) / (SATIETY_DECAY_PER_MIN * speed) * 60000
-    const span = stretch.meals && toHungerMs > 0 ? Math.min(SETTLE_STEP_MS, Math.max(1, Math.ceil(toHungerMs))) : SETTLE_STEP_MS
+    const span = stretch.meals && toHungerMs > 0 ? Math.min(SETTLE_STEP_MS, Math.max(MIN_SETTLE_STEP_MS, Math.ceil(toHungerMs))) : SETTLE_STEP_MS
     const stepEnd = Math.min(stretch.toMs, cursor + span)
     step(state, { elapsedMs: stepEnd - cursor, atMs: stepEnd, away: stretch.away, meals: stretch.meals }, next)
     cursor = stepEnd
@@ -113,7 +186,7 @@ function step(state, tick, next) {
   const { elapsedMs, atMs, away } = tick
   rollDiaryAt(state, atMs)
   drainBars(state, elapsedMs / 60000, away)
-  eatOffline(state, tick.meals, atMs)
+  careOffline(state, tick.meals, atMs)
   trackSicknessRisk(state, elapsedMs / 60000, away, atMs, next)
   progressIllness(state, elapsedMs, { away, atMs }, next)
   if (state.dead !== true) growOlder(state, elapsedMs, atMs)
@@ -147,37 +220,11 @@ function trackSicknessRisk(state, minutes, away, atMs, next) {
   rollForIllness(state, { minutes, atMs }, next)
 }
 
-/**
- * Illness advances on accumulated *effective* time, not wall clock: being out
- * and about while ill runs it at SICK_AWAY_MULTIPLIER, so a day of work costs
- * two days of illness and staying home is the cheap way to wait it out.
- */
-function progressIllness(state, elapsedMs, where, next) {
-  if (state.illness === null || state.illness === undefined) return
-  const rate = where.away ? SICK_AWAY_MULTIPLIER : 1
-  state.illness.progressMs = (state.illness.progressMs ?? 0) + elapsedMs * rate
-  let guard = 0
-  while (state.illness !== null && guard < 16) {
-    // Each stage has its own length, so it has to be re-read after every step.
-    const stageMs = illnessStageMs(state.illness.stage)
-    if (state.illness.progressMs < stageMs) break
-    // Carry the excess into the next stage rather than dropping it.
-    const carried = state.illness.progressMs - stageMs
-    advanceIllness(state, where.atMs, next)
-    if (state.illness !== null) state.illness.progressMs = carried
-    guard += 1
-  }
-}
+/** 猪时间 = 真实流逝 × timeScale（坏值当作 1）；它同时驱动被动成长。 */
+const pigScale = state => Number.isFinite(state.timeScale) && state.timeScale > 0 ? state.timeScale : DEFAULT_TIME_SCALE
 
-/**
- * Pig time is elapsed real time times the scale. Age only counts days now —
- * the body follows the level — and the same pig time drives passive growth.
- */
 function growOlder(state, elapsedMs, atMs) {
-  const scale = Number.isFinite(state.timeScale) && state.timeScale > 0
-    ? state.timeScale
-    : DEFAULT_TIME_SCALE
-  const pigMs = elapsedMs * scale
+  const pigMs = elapsedMs * pigScale(state)
   settleWeight(state, pigMs)
   state.ageMs += pigMs
   if (state.hatched === true) growWithTime(state, pigMs, atMs)
