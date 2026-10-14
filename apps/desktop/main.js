@@ -28,6 +28,7 @@ import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
+import { panelToggleAction } from './lib/panel-toggle.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
@@ -762,6 +763,7 @@ function placePanel() {
     //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
     panelWin.showInactive()
     log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical }))
+    if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:panel', { type: 'open' })
   }
 }
 
@@ -809,8 +811,15 @@ function reanchorPanel() {
 /** 猪页面：右键开/关面板（带上猪在窗口里的框）。 */
 ipcMain.on('piggy:panel:toggle', (event, request) => {
   if (!fromPet(event)) return
-  if (request?.open === true) openPanel(request.pig)
-  else closePanel('pet')
+  const action = panelToggleAction({ requestedOpen: request?.open === true, isOpen: panelOpen,
+    isVisible: panelWin !== null && !panelWin.isDestroyed() && panelWin.isVisible() })
+  if (action === 'open') openPanel(request.pig)
+  else if (action === 'close') closePanel('pet')
+  else {
+    // 首次加载期间复按只保持打开意图；回传状态，免得猪页面误以为已经关闭。
+    win.webContents.send('piggy:panel', { type: 'open' })
+    log('panel loading click kept')
+  }
 })
 /** 面板页面：内容量好了多大。 */
 ipcMain.on('piggy:panel:size', (event, size) => {
@@ -1178,6 +1187,9 @@ app.whenReady().then(async () => {
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
   createWindow()
+  // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
+  ensurePanelWindow()
+  log('panel preloaded', JSON.stringify({ visible: panelWin.isVisible(), focused: panelWin.isFocused() }))
   startFullscreenWatch()
   firstRun?.destroy()
   createTray(gameDir)

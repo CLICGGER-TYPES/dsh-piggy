@@ -64,6 +64,16 @@ export function noteToday(state, kind, amount = 1) {
   return diary
 }
 
+/** 日记页用日期选篇：当天的摘要和跨天落笔追加到同一篇，保留已有文字。 */
+export function appendDiaryEntry(state, day, text) {
+  const diary = ensureDiary(state)
+  const entry = diary.entries.find(item => item.day === day)
+  if (entry) entry.text += '\n' + text
+  else diary.entries.push({ day, text })
+  if (diary.entries.length > DIARY_MAX) diary.entries.splice(0, diary.entries.length - DIARY_MAX)
+  return diary
+}
+
 /**
  * 这一天该从哪组里挑：最要紧的那件事；有点动静但不特别算「日常」，什么都没有算「没人来」。
  * @param {Record<string, number>} counts
@@ -109,9 +119,8 @@ export function writeDiaryIfNewDay(state, nowMs) {
 
   const owner = ensureDialogue(state).ownerName
   const recent = diary.entries.map(entry => entry.text)
-  diary.entries.push({ day: diary.today.day, text: composeDiary(diary.today.counts, owner, rollerFor(state), recent) })
-  if (diary.entries.length > DIARY_MAX) diary.entries.splice(0, diary.entries.length - DIARY_MAX)
-  diary.today = { day: today, counts: {} }
+  const updated = appendDiaryEntry(state, diary.today.day, composeDiary(diary.today.counts, owner, rollerFor(state), recent))
+  updated.today = { day: today, counts: {} }
   return true
 }
 

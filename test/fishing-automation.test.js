@@ -23,7 +23,7 @@ test('钓鱼升级：顺序买、金币进账本、钱不够不扣、旧档默�
   delete state.fishing.automation
   const before = structuredClone(state.fishing.bag)
   const loaded = migrate(state, NOW)
-  assert.equal(loaded.version, 12)
+  assert.equal(loaded.version, 13)
   assert.deepEqual(loaded.fishing.bag, before)
   assert.deepEqual(loaded.fishing.automation, { basket: 0, duration: 0, baitBox: 0, usedMs: 0, stock: [] })
 })

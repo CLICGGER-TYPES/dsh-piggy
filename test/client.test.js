@@ -2271,3 +2271,47 @@ test('a poll cannot replace a pressed button before mouseup and click', async ()
     assert.notEqual(findByAttr(contentOf(dom), 'data-buy', 'apple'), button, 'the latest snapshot paints after click')
   } finally { dispose(); globalThis.window.setInterval = realSetInterval }
 })
+
+test('离线喂食开关读取快照中的关闭值，并发送相反值', async () => {
+  for (const enabled of [true, false]) {
+    const { registration, dom, net } = await loadClient({ status: { ...SNAPSHOT, dialogue: { isOfflineFeedEnabled: enabled } } })
+    registration.factory(() => {}).apply({})
+    await settle()
+    openPanel(dom, 'settings')
+    const toggle = findByAttr(contentOf(dom), 'data-offline-feed', String(enabled))
+    assert.notEqual(toggle, undefined)
+    assert.equal(toggle.getAttribute('aria-pressed'), String(enabled))
+    toggle.fire('click')
+    await settle()
+    const request = JSON.parse(String(net.calls.filter(call => call.method === 'POST').at(-1).body))
+    assert.equal(request.action, 'offlineFeed')
+    assert.equal(request.on, !enabled)
+  }
+})
+
+test('按住设置开关时收到轮询快照不替换按钮，松开后的点击只发送一次', async t => {
+  const previousFrame = globalThis.requestAnimationFrame
+  globalThis.requestAnimationFrame = () => 1
+  t.after(() => { globalThis.requestAnimationFrame = previousFrame })
+  let receive
+  const frames = []
+  const shell = { role: 'panel', beginDrag() {}, syncGeometry() {}, setAnchor() {},
+    onStateChanged(fn) { receive = fn }, panel: { on() {}, fx() {}, close() {} } }
+  const status = { ...SNAPSHOT, dialogue: { isOfflineFeedEnabled: true }, pending: [] }
+  const { registration, dom, net, windowListeners } = await loadClient({ status,
+    windowExtra: { __dshPiggyShell: shell, requestAnimationFrame(fn) { frames.push(fn); return frames.length }, cancelAnimationFrame() {} } })
+  registration.factory(() => {}).apply({})
+  await settle()
+  openPanel(dom, 'settings')
+  const toggle = findByAttr(contentOf(dom), 'data-offline-feed', 'true')
+  cardOf(dom).fire('pointerdown', { button: 0, pointerId: 1 })
+  receive(status)
+  assert.equal(findByAttr(contentOf(dom), 'data-offline-feed', 'true'), toggle, '按下到松开间必须保留真实按钮')
+  for (const release of windowListeners.pointerup ?? []) release({ pointerId: 1 })
+  toggle.fire('click')
+  for (const frame of frames) frame()
+  await settle()
+  const requests = net.calls.filter(call => call.method === 'POST')
+  assert.equal(requests.length, 1)
+  assert.equal(JSON.parse(String(requests[0].body)).on, false)
+})

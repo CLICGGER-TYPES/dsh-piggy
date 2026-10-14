@@ -20,12 +20,13 @@ function boxStageView() {
   return { key: box.key, label: box.label, emoji: box.emoji, size: box.size, line: box.line }
 }
 
-/** 称呼与免打扰，给状态页的开关用。 */
+/** 称呼、免打扰与离线照料，给设置页的开关用。 */
 function dialogueView(state) {
   const dialogue = state?.dialogue
   return {
     ownerName: typeof dialogue?.ownerName === 'string' ? dialogue.ownerName : DEFAULT_OWNER_NAME,
     quiet: dialogue?.quiet === true,
+    isOfflineFeedEnabled: state?.isOfflineFeedEnabled !== false,
   }
 }
 

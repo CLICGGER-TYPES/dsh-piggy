@@ -360,6 +360,7 @@ export function normalize(raw) {
     dialogue: {
       ownerName: str(obj(d.dialogue).ownerName, '主人'),
       quiet: obj(d.dialogue).quiet === true,
+      isOfflineFeedEnabled: obj(d.dialogue).isOfflineFeedEnabled !== false,
     },
     pending: arr(d.pending).filter(e => isObj(e) && typeof e.at === 'number').map(e => ({
       id: num(e.id, 0),

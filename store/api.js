@@ -42,6 +42,7 @@ import {
   crown as coreCrown,
   setOwnerName as coreSetOwnerName,
   setQuiet as coreSetQuiet,
+  setOfflineFeed as coreSetOfflineFeed,
   sellSouvenir as coreSellSouvenir,
   setTimeScale as coreSetTimeScale,
   startInterest as coreStartInterest,
@@ -208,6 +209,7 @@ export function createApi(control) {
     chat: reason => mutate(live => coreChat(live, reason === 'enter' || reason === 'time' ? reason : 'idle', now())),
 
     /** 免打扰 on or off. */
+    setOfflineFeed: on => mutate(live => coreSetOfflineFeed(live, on)),
     setQuiet: on => mutate(live => coreSetQuiet(live, on)),
 
     /** The pig's catchphrase (居民卡). */

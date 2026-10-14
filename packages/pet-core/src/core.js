@@ -112,3 +112,5 @@ export { ensureAchievements, settleAchievements, achievementsView } from './core
 export { validateExtensionEvent, recordExtensionEvent, resetExtensionEventBaselines } from './core/extension-events.js'
 
 export { buyFishingAutomation, collectAutoFish } from './core/fishing-auto.js'
+
+export { setOfflineFeed } from './core/offline-feed.js'

@@ -37,10 +37,12 @@ import { renderTravelTab } from './tabs/travel.js'
 import { renderWorkTab } from './tabs/work.js'
 import { str } from './values.js'
 import { attachPointerRepaint } from './pointer-repaint.js'
+import { createRenderHold } from './render-hold.js'
 
 
 export function createPanel(ctx) {
-  var pointerRepaint = attachPointerRepaint(ctx.host, window)
+      var pointerRepaint = attachPointerRepaint(ctx.host, window)
+      const renderHold = createRenderHold(ctx.card)
       var AWAY_LINE = {
         work: '在忙',
         study: '在念书',
@@ -131,6 +133,7 @@ export function createPanel(ctx) {
       }
 
       function renderContent() {
+        if (renderHold.defer(renderContent)) return
         var scrollTop = ctx.content.scrollTop
         // 2026-10-13：内部浮层按稳定名称保留滚动；重绘后同一商品仍在原位置，不串到别的页签。
         var scrollPositions = new Map()
@@ -387,5 +390,5 @@ export function createPanel(ctx) {
     })
   }
 
-  return { setOpen, select, renderContent, render, dispose: pointerRepaint.dispose }
+  return { setOpen, select, renderContent, render, dispose: function () { pointerRepaint.dispose(); renderHold.dispose() } }
 }

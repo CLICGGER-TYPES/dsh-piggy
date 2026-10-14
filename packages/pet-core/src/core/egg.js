@@ -48,6 +48,7 @@ export function layEgg(nowMs) {
     // cheapest cure and had nothing left to earn it with.
     coins: 500,
     inventory: {},
+    isOfflineFeedEnabled: true,
     // 家当: dress items are bought once, owned forever, and worn.
     dress: [],
     worn: [],

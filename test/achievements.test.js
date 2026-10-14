@@ -40,7 +40,7 @@ test('old saves backfill provable achievements silently without invented dates',
   state.stats.jobs = 10
   state.stats.plays = 20
   const updated = migrate(state, NOW + 10)
-  assert.equal(updated.version, 12)
+  assert.equal(updated.version, 13)
   assert.equal(entry(updated, 'jobs-ten').acquired, true)
   assert.equal(entry(updated, 'jobs-ten').firstAt, null)
   assert.equal(entry(updated, 'jobs-ten').recovered, true)

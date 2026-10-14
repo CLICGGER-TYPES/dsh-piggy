@@ -137,7 +137,7 @@ test('v11 upgrades add an ordinary form without changing growth, traits or compl
   before.version = 11
   delete before.form
   const after = migrate(before, NOW)
-  assert.equal(after.version, 12)
+  assert.equal(after.version, 13)
   assert.equal(after.form, null)
   assert.equal(after.xp, before.xp)
   assert.equal(after.stats.jobs, 10)
@@ -151,7 +151,7 @@ test('a crowned v8 MVP save survives sequential upstream upgrades', () => {
   before.finalForm = 'king' // PR #2 早期版本的字段名
   before.xp = 20 * 40 * 39
   const after = migrate(before, NOW)
-  assert.equal(after.version, 12)
+  assert.equal(after.version, 13)
   assert.equal(after.form, 'king')
   assert.equal('finalForm' in after, false)
   assert.equal(after.stats.jobs, 10)

@@ -35,6 +35,7 @@ export function migrate(input, nowMs) {
   const raw = /** @type {any} */ (applyUpgrades(input, nowMs))
   const egg = layEgg(typeof raw.bornAt === 'number' ? raw.bornAt : nowMs)
   const state = { ...egg, ...raw }
+  state.isOfflineFeedEnabled = raw.isOfflineFeedEnabled !== false
   state.version = STATE_VERSION
   state.form = formByKey(raw.form)?.key ?? null
   state.stats = { ...egg.stats, ...(asObject(raw.stats) ?? {}) }

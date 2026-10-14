@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * 设置：都是这台设备上的显示偏好，不进存档。
+ * 设置：显示偏好留在本机，免打扰与离线喂食跟随存档。
  * 每项一行：标题 + 一句说明 + 对应控件。大小用连续比例，代理用下拉选择。以前每个选项单独占一行、
  * 各带一个「使用」按钮，小猪大小一项就四行，用户反馈「菜单设计不合理」（2026-10-04）。
  */
@@ -114,6 +114,15 @@ export function renderSettingsTab(ui) {
   quietToggle.appendChild(el('span', 'dp-switch-knob'))
   quietToggle.appendChild(el('span', 'dp-switch-text', quietOn ? '开' : '关'))
   quiet.head.appendChild(quietToggle)
+
+  const feeding = section(ui, '离开时自动吃背包里的东西', '')
+  const feedingOn = ui.view.dialogue.isOfflineFeedEnabled !== false
+  const feedingToggle = button('dp-switch', { 'data-offline-feed': String(feedingOn), 'aria-pressed': String(feedingOn) }, function () {
+    ui.send('offlineFeed', { on: !feedingOn })
+  })
+  feedingToggle.appendChild(el('span', 'dp-switch-knob'))
+  feedingToggle.appendChild(el('span', 'dp-switch-text', feedingOn ? '开' : '关'))
+  feeding.head.appendChild(feedingToggle)
 
   const close = section(ui, '点击别处时收起面板', '网页版点面板外、桌面版切到其他窗口时收起')
   const on = autoCollapseEnabled()
