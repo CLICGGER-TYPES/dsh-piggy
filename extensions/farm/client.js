@@ -91,7 +91,7 @@
       soonest: data.plots.slice(from, to).reduce(function (min, p) { return p.remainingMs > 0 ? Math.min(min, p.remainingMs) : min }, Infinity),
     }
   }
-  /** 手里的种子 / 化肥用完了就放下（空手 = 手套）。 */
+  /** 手里的种子 / 肥料用完了就放下（空手 = 手套）。 */
   function syncHand(data) {
     var seed = hand.kind === 'seed' ? seedOf(data, hand.key) : null
     if (hand.kind === 'seed' && (!seed || seed.count < 1 || seed.locked)) hand = AUTO
@@ -112,12 +112,12 @@
       if (pestsOf(plot).indexOf(hand.key) >= 0) return act(app, index, hand.key === 'dry' ? '💧' : '✨', 'care', { plot: index, kind: hand.key })
       return say(app, hand.key === 'dry' ? '这块地不用浇水' : '这块地没有' + PEST_LABEL[hand.key], index)
     }
-    if (hand.kind === 'fert') return plot.empty || plot.ripe || plot.withered ? say(app, '化肥要施在正在长的地上') : app.send('fertilize', { plot: index, item: hand.key })
+    if (hand.kind === 'fert') return plot.empty || plot.ripe || plot.withered ? say(app, '肥料要施在正在长的地上') : app.send('fertilize', { plot: index, item: hand.key })
     if (hand.kind === 'auto') {
       if (plot.ripe) return act(app, index, '✨', 'harvest', { plot: index })
-      return say(app, plot.stubble || plot.withered ? '用铁锹铲掉枯草 / 枯苗' : pestsOf(plot).length ? { dry: '干了，用浇水壶', weed: '长草了，用除草剂', bug: '生虫了，用杀虫剂' }[pestsOf(plot)[0]] : plot.empty ? '拿种子播种' : '作物还没成熟', index)
+      return say(app, plot.withered ? '用铁锹铲掉枯苗' : plot.stubble ? '用铁锹铲掉杂草' : pestsOf(plot).length ? { dry: '干了，用浇水壶', weed: '长草了，用除草剂', bug: '生虫了，用杀虫剂' }[pestsOf(plot)[0]] : plot.empty ? '拿种子播种' : '作物还没成熟', index)
     }
-    if (plot.empty && (plot.stubble || pestsOf(plot).indexOf('weed') >= 0)) return say(app, '先除草 / 铲掉枯草', index)
+    if (plot.empty && (plot.stubble || pestsOf(plot).indexOf('weed') >= 0)) return say(app, '先除草 / 铲掉杂草', index)
     if (plot.empty) { var seed = seedInHand(data); return seed ? act(app, index, '🌱', 'plant', { plot: index, item: seed.key }) : goShop(app) }
     say(app, '这块地不是空地', index)
   }
@@ -235,28 +235,28 @@
       return toolSlot(app, Object.assign({}, spec, { count: spec.hand.kind === 'care' ? n : ripe }))
     })
   }
-  /** 弹层里的一颗按钮（种子、化肥、作物）。 */
+  /** 弹层里的一颗按钮（种子、肥料、作物）。 */
   function chip(app, attrs, artName, emoji, text, onClick) {
     var node = bg(app, app.button('fm-shop-item fm-cropbtn', attrs, onClick), 'shop-item')
     put(node, artName.indexOf('seed:') === 0 ? product(app, { key: artName.slice(5), category: 'seed' }, 'fm-product') : img(app, 'fm-product', artName, emoji))
     put(node, app.el('b', null, text))
     return node
   }
-  /** 种子 / 化肥 / 仓库弹层。 */
+  /** 种子 / 肥料 / 仓库弹层。 */
   function renderPopup(app, data, box) {
     var head = put(box, app.el('div', 'fm-shop-head'))
-    put(head, bg(app, app.el('b', 'fm-title', { seeds: '包袱', fert: '化肥', stock: '仓库' }[popup]), 'shop-title'))
+    put(head, bg(app, app.el('b', 'fm-title', { seeds: '种子袋', fert: '肥料', stock: '仓库' }[popup]), 'shop-title'))
     var list = app.el('div', 'fm-stock fm-shop-grid')
     list.setAttribute('data-scroll-key', 'farm-stock:' + popup)
     var items = (popup === 'seeds' ? data.seeds : popup === 'fert' ? data.fert : data.harvest).filter(function (item) { return popup === 'fert' || item.count > 0 })
     var worth = popup === 'stock' ? items.reduce(function (sum, crop) { return sum + crop.count * crop.sell }, 0) : 0
     if (popup === 'seeds') put(head, button(app, 'dp-mini', { 'data-farm-shop': 'seed' }, '去买', function () { goShop(app) }))
     if (worth > 0) put(head, button(app, 'dp-mini', { 'data-farm-sell-everything': 'true' }, '全部卖掉 ' + data.currency.emoji + ' ' + worth, function () { openCrop = null; app.send('sell', { item: '*' }) }))
-    if (popup === 'stock' && data.helper && data.helper.stored > 0) put(box, button(app, 'dp-mini', { 'data-farm-helper': 'collect' }, '把帮工谷仓的 ' + data.helper.stored + ' 个搬进来', function () { app.send('collect', {}) }))
+    if (popup === 'stock' && data.helper && data.helper.stored > 0) put(box, button(app, 'dp-mini', { 'data-farm-helper': 'collect' }, '把帮工仓库的 ' + data.helper.stored + ' 个搬进来', function () { app.send('collect', {}) }))
     if (!items.length) put(list, app.el('div', 'fm-note', popup === 'seeds' ? '还没有种子。' : '还没有收成。'))
     items.forEach(function (item, i) {
       if (popup === 'seeds') return put(list, seedSlot(app, item))
-      if (popup === 'fert') return put(list, chip(app, { 'data-farm-fert': item.key, 'aria-pressed': String(hand.kind === 'fert' && hand.key === item.key) }, 'fert-' + (i + 1), '🧪', item.label + '\n×' + item.count + '\n多长' + item.hours + '小时', function () {
+      if (popup === 'fert') return put(list, chip(app, { 'data-farm-fert': item.key, 'aria-pressed': String(hand.kind === 'fert' && hand.key === item.key) }, 'fert-' + (i + 1), '🧪', item.label + '\n× ' + item.count + '\n多长 ' + item.hours + ' 小时', function () {
         if (item.count < 1) return goShop(app)
         hand = { kind: 'fert', key: item.key }; popup = null; say(app, '点正在长的地施' + item.label)
       }))
@@ -282,7 +282,7 @@
     }
     if (look.withered.length) return one(look.withered, '铲枯苗', 'clear', '🪏', '枯了')
     var stubble = look.empty.find(function (index) { return data.plots[index].stubble })
-    if (stubble >= 0) return { label: '铲枯草', op: 'clear', payload: { plot: stubble }, plot: stubble, fx: '🪏' }
+    if (stubble >= 0) return { label: '铲杂草', op: 'clear', payload: { plot: stubble }, plot: stubble, fx: '🪏' }
     if (look.empty.length) {
       var seed = seedInHand(data)
       if (!seed) return { label: '去买种子', shop: true }
@@ -290,8 +290,7 @@
     }
     return { label: '都在长', sub: look.soonest < Infinity ? '最快 ' + shortTime(look.soonest) : '', idle: true }
   }
-  /** 场景图只挑 manifest 里登记过的图（旧图 bg-big / bg-small 没登记，请求它必 404）；退路是同晴雨的白天图，一张都没有就不铺底图。 */
-  function sceneArt(app, size) {
+  function sceneArt(app, size) { // 场景图只挑 manifest 里登记过的图（旧图 bg-big / bg-small 没登记，请求它必 404）；退路是同晴雨的白天图，一张都没有就不铺底图。
     var date = new Date(app.data.now), hour = date.getHours(), sky = app.data.weather === 'rain' ? 'rain' : 'sunny'
     var phase = hour < 5 || hour >= 19 ? 'night' : hour < 8 ? 'dawn' : hour < 17 ? 'day' : 'dusk'
     var names = ['bg-' + size + '-' + phase + '-' + sky, 'bg-' + size + '-day-' + sky]
@@ -327,7 +326,7 @@
     var plank = put(root, bg(app, app.el('div', 'fm-s-plank'), 'ui-small-plank'))
     var tools = put(plank, app.el('div', 'fm-s-tools'))
     careTools(app, data, shown, 0).forEach(function (node) { put(tools, node) })
-    put(tools, toolSlot(app, { key: 'seedbag', art: 'tool-seedbag', label: '包袱', run: function () { popup = popup === 'seeds' ? null : 'seeds'; app.rerender() } })).setAttribute('data-farm-panel', 'seeds')
+    put(tools, toolSlot(app, { key: 'seedbag', art: 'tool-seedbag', label: '种子袋', run: function () { popup = popup === 'seeds' ? null : 'seeds'; app.rerender() } })).setAttribute('data-farm-panel', 'seeds')
     var row = put(plank, app.el('div', 'fm-s-acts'))
     put(row, stockSign(app, data))
     var main = put(row, bg(app, app.button('fm-main', { 'data-farm-main': action.op || (action.shop ? 'shop' : 'idle') }, function () {
@@ -372,7 +371,7 @@
     // 帮工猪住在右上角的猪窝（替原版的狗窝）
     var helper = data.helper
     if (helper) {
-      var label = !helper.hired ? '雇帮工猪' : helper.full ? '谷仓满了' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : '帮工 · ' + helper.plots + ' 块地'
+      var label = !helper.hired ? '雇帮工猪' : helper.full ? '帮工仓库满了' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : '帮工 · ' + helper.plots + ' 块地'
       var badge = put(scene, app.button('fm-b-helper', { 'data-farm-helper': helper.hired ? 'collect' : 'hire', 'aria-label': label }, function () {
         if (!helper.hired) app.send('hire', {})
         else if (helper.stored > 0 || helper.full) app.send('collect', {})
@@ -390,7 +389,7 @@
     put(bar, toolSlot(app, { key: 'seedbag', art: 'tool-seedbag', emoji: '🌰', label: '种子袋', run: toggle('seeds'), count: hand.kind === 'seed' ? (seedOf(data, hand.key) || { count: 0 }).count : 0 }))
     put(bar, toolSlot(app, { key: 'shovel', art: 'tool-shovel', emoji: '🪏', label: '铁锹：铲地', hand: { kind: 'shovel', key: null }, hint: '点地铲掉，正在长的作物要确认', count: all.withered.length }))
     careTools(app, data, data.unlocked, all.ripe.length).slice(0, 3).forEach(function (node) { put(bar, node) })
-    put(bar, toolSlot(app, { key: 'fert', art: 'fert-1', emoji: '🧪', label: '化肥', run: toggle('fert'), count: data.fert.reduce(function (s, f) { return s + f.count }, 0) }))
+    put(bar, toolSlot(app, { key: 'fert', art: 'fert-1', emoji: '🧪', label: '肥料', run: toggle('fert'), count: data.fert.reduce(function (s, f) { return s + f.count }, 0) }))
     ONE_CLICK.forEach(function (spec) {
       var owned = owns(data, spec.key)
       put(bar, toolSlot(app, {

@@ -21,7 +21,7 @@ test('fix4：地块和作物上没有进度条', () => {
   }
 })
 
-test('fix4：商店、包袱、化肥、仓库、购买及确认共用商店框和标题', () => {
+test('fix4：商店、种子袋、肥料、仓库、购买及确认共用商店框和标题', () => {
   for (const [attr, key] of [['data-farm-shop', 'shelf'], ['data-farm-tool', 'seedbag'], ['data-farm-tool', 'fert'], ['data-farm-panel', 'stock']]) {
     const ui = renderFarm(growing(), 'big', art)
     ui.find(attr, key).fire('click')

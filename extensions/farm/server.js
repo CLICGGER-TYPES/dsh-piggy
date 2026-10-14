@@ -1,7 +1,7 @@
 // @ts-check
 // 菜园 4.0：照 QQ 农场改版（设计见 docs/design/farm-qqfarm.md，用户 2026-10-12 定）。用自己的「菜币」，钱包在宿主（api.wallet）。
 // 18 块地（开局 6 块，其余荒地 10000 开垦），作物按真实时间自己长；长的时候会长草、生虫、干旱，不管就减产；
-// 收完留枯萎秆要铲掉；多季作物收完回到「长大」再长一季。等级照原版：升下一级要「等级 × 100」经验，种子按等级解锁。
+// 收完留枯苗要铲掉；多季作物收完回到「长大」再长一季。等级照原版：升下一级要「等级 × 100」经验，种子按等级解锁。
 // 一键收获 / 照料 / 铲除 / 播种要先买工具解锁（用户定 C）；帮工猪照旧可雇（D）。
 // 随机的东西（产量浮动、灾害什么时候来）都在种下时就定好存进存档，view 只算不写，结果可复现。
 /** 地：一共 18 块，开局 6 块熟地。 */
@@ -57,9 +57,9 @@ export const CROPS = [
 /** 解锁一键操作的工具（先买才有，用户定 C）。 */
 export const TOOLS = [{ key: 'sickle', label: '收割镰', price: 1000, note: '解锁一键收获' }, { key: 'sprayer', label: '喷雾桶', price: 600, note: '解锁一键照料' },
   { key: 'rake', label: '平地耙', price: 800, note: '解锁一键铲除' }, { key: 'planter', label: '播种器', price: 1800, note: '解锁一键播种' }]
-/** 化肥（原版 props.xml）：施一次多长几小时，可以连着施。 */
-export const FERTILIZERS = [{ key: 'fert-1', label: '普通化肥', price: 500, hours: 2 }, { key: 'fert-2', label: '快速化肥', price: 800, hours: 3.5 },
-  { key: 'fert-3', label: '急速化肥', price: 1000, hours: 5 }]
+/** 肥料（原版 props.xml）：施一次多长几小时，可以连着施。 */
+export const FERTILIZERS = [{ key: 'fert-1', label: '普通肥料', price: 500, hours: 2 }, { key: 'fert-2', label: '快速肥料', price: 800, hours: 3.5 },
+  { key: 'fert-3', label: '急速肥料', price: 1000, hours: 5 }]
 /** 灾害：长草、生虫、干旱，各自独立。 */
 export const PESTS = ['weed', 'bug', 'dry']
 /** 生长阶段（按这一季走过的比例）：种子、发芽、小苗、长大、开花、成熟。多季作物收完回到「长大」。 */
@@ -172,7 +172,7 @@ export function normalize(data) {
   normalizeHelper(data)
   return data
 }
-/** 新开垦的地：至少有草或残株，多数长草；旧存档不补这些东西。 */
+/** 新开垦的地：至少有杂草，多数长草；旧存档不补这些东西。 */
 function newGround() {
   const weed = random() < 0.8
   return { fallow: true, stubble: !weed || random() < 0.5, pests: { dry: 0, weed: weed ? 0 : null } }
@@ -202,7 +202,7 @@ export function progress(data) {
   const crops = CROPS.filter(crop => amountFor(saved, 'harvests', crop.key) > 0)
   return [{ name: 'harvest', total: crops.reduce((sum, crop) => Math.min(Number.MAX_SAFE_INTEGER, sum + amountFor(saved, 'harvests', crop.key)), 0), items: crops.map(crop => crop.key) }]
 }
-/** 收一块熟了的地；收到 into（仓库或帮工的谷仓）。返回 { crop, n, level } 或 null。 */
+/** 收一块熟了的地；收到 into（仓库或帮工仓库）。返回 { crop, n, level } 或 null。 */
 function harvestPlot(data, index, at, into = data.harvest) {
   const plot = data.plots[index]
   const state = plotState(plot, at)
@@ -212,7 +212,7 @@ function harvestPlot(data, index, at, into = data.harvest) {
   data.acquired[crop.key] = amountFor(data, 'acquired', crop.key) + state.yield
   data.harvests[crop.key] = amountFor(data, 'harvests', crop.key) + 1
   const level = gainExp(data, crop.exp)
-  // 多季作物：回到「长大」再长一季；最后一季收完留枯萎秆。
+  // 多季作物：回到「长大」再长一季；最后一季收完留枯苗。
   data.plots[index] = plot.season < crop.seasons ? sow(crop, at, plot.season + 1, REGROW_AT * seasonMs(crop)) : { crop: crop.key, withered: true }
   return { crop, n: state.yield, level }
 }
@@ -225,7 +225,7 @@ function carePlot(data, index, at, kind = null) {
   for (const pest of pests) plot.pests[pest] = plot.fallow ? null : nextPest(at)
   return pests.length
 }
-/** 铲掉一块地上的东西（枯萎秆，或者 force 时正在长的作物）。 */
+/** 铲掉一块地上的东西（枯苗，或者 force 时正在长的作物）。 */
 function clearPlot(data, index, force = false) {
   const plot = data.plots[index]
   if (plot?.fallow && plot.stubble) { plot.stubble = false; gainExp(data, CARE_EXP); return true }
@@ -254,14 +254,14 @@ function batchAction(data, api, spec) {
   return { ok: true, [spec.key]: total }
 }
 function sayHarvest(result) {
-  const head = result.crop.key === 'carrot' ? '拔了' + result.n + '个胡萝卜，我一个都没偷吃' : '收了' + result.n + '个' + result.crop.label + '，菜园有收成啦！'
+  const head = result.crop.key === 'carrot' ? '收获 ' + result.n + ' 个胡萝卜，我一个都没偷吃' : '收获 ' + result.n + ' 个' + result.crop.label + '，菜园有收成啦！'
   return result.level ? head + '菜园升到 ' + result.level + ' 级了！' : head
 }
 const game = {
   eventVersion: 1, progress,
   init() { return normalize({ version: 4, plots: Array.from({ length: START_PLOTS }, () => newGround()) }) },
   actions: {
-    /** 商店：种子（可一次买多颗）、工具、化肥、帮工。 */
+    /** 商店：种子（可一次买多颗）、工具、肥料、帮工。 */
     buy(data, payload, api) {
       const wallet = purse(api)
       const item = String(payload?.item ?? '')
@@ -325,7 +325,7 @@ const game = {
       api.say(sayHarvest(result))
       return { ok: true, n: result.n }
     },
-    /** 铲地：枯萎秆随便铲；正在长的作物要 force（界面先问一句）。 */
+    /** 铲地：枯苗随便铲；正在长的作物要 force（界面先问一句）。 */
     clear(data, payload, api) {
       if (!availablePlot(data, payload?.plot)) return { ok: false, reason: 'locked' }
       if (!clearPlot(data, payload.plot, payload.force === true)) return { ok: false, reason: 'unavailable' }
@@ -342,14 +342,14 @@ const game = {
       }
       if (harvested === 0) return { ok: false, reason: 'not-ripe' }
       tire(api, harvested)
-      api.say('一口气收了' + harvested + '块地，' + crops + '个果实进了仓库！' + (level ? '菜园升到 ' + level + ' 级了！' : ''))
+      api.say('一口气收获 ' + harvested + ' 块地，' + crops + ' 个果实进了仓库！' + (level ? '菜园升到 ' + level + ' 级了！' : ''))
       return { ok: true, harvested }
     },
     /** 一键照料（要喷雾桶）：所有地的草、虫、旱一次治完。 */
     careAll(data, payload, api) {
       return batchAction(data, api, { tool: 'sprayer', key: 'cured', visit: index => carePlot(data, index, api.now), exp: CARE_EXP })
     },
-    /** 一键铲除（要平地耙）：只铲枯萎秆，不碰正在长的。 */
+    /** 一键铲除（要平地耙）：只铲枯苗，不碰正在长的。 */
     clearAll(data, payload, api) {
       return batchAction(data, api, { tool: 'rake', key: 'cleared', visit: index => Number(clearPlot(data, index)) })
     },
@@ -432,7 +432,7 @@ const game = {
     }
   },
 }
-/** 帮工猪（D，规矩照 J2：六小时封仓、每小时至多 400、比自己种少赚；4.0 管 4/8/16 块地）。用自己的小批次周期，管的地不长草不生虫，收成进自己的谷仓。 */
+/** 帮工猪（D，规矩照 J2：六小时封仓、每小时至多 400、比自己种少赚；4.0 管 4/8/16 块地）。用自己的小批次周期，管的地不长草不生虫，收成进自己的帮工仓库。 */
 export const HELPER_PLOTS = [4, 8, 16]
 /** 帮工能赚到同样地数自己种的几成（用户 2026-10-13 要求调高：0.7 → 0.9，仍比自己种少）。 */
 export const HELPER_SHARE = 0.9
@@ -471,7 +471,7 @@ function normalizeHelper(data) {
 }
 const helperCount = data => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0)
 const helperPlots = data => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS[data.helper.level]) : 0
-/** 没种子的空地跳过；枯萎的先铲；恢复时从当前动作时间开始，不补停工收益。 */
+/** 没种子的空地跳过；枯苗的先铲；恢复时从当前动作时间开始，不补停工收益。 */
 function prepareHelper(data, at) {
   const helper = data.helper
   const managed = helperPlots(data)
@@ -552,7 +552,7 @@ function helperShelf(data, balance) {
     const price = kind === 'hire' ? HELPER_PRICES.hire : HELPER_PRICES[kind][next]
     if (price === undefined) return []
     const label = kind === 'hire' ? '雇帮工猪' : kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][next] : ['小谷仓', '顺手农具', '轻巧农具', '高效农具'][next]
-    const note = kind === 'hire' ? '管 ' + HELPER_PLOTS[0] + ' 块地，六小时封仓' : kind === 'level' ? '管 ' + HELPER_PLOTS[next] + ' 块地' : '提高自动收成效率'
+    const note = kind === 'hire' ? '管 ' + HELPER_PLOTS[0] + ' 块地，6 小时封仓' : kind === 'level' ? '管 ' + HELPER_PLOTS[next] + ' 块地' : '提高自动收成效率'
     return [{ key: 'helper-' + kind, emoji: kind === 'barn' ? '🧺' : '🐷', label, note, price, disabled: balance < price, pick: null }]
   })
 }
@@ -575,7 +575,7 @@ function helperBuy(data, payload, api) {
 }
 game.actions.hire = (data, payload, api) => helperBuy(data, { item: 'helper-hire' }, api)
 game.actions.upgrade = (data, payload, api) => helperBuy(data, { item: 'helper-' + payload?.kind }, api)
-/** 收仓：帮工谷仓里的东西进仓库，六小时重新算。 */
+/** 收仓：帮工仓库里的东西进仓库，六小时重新算。 */
 game.actions.collect = data => {
   if (!helperCount(data) && data.helper.usedMs === 0) return { ok: false, reason: 'empty' }
   for (const crop of CROPS) data.harvest[crop.key] = amountFor(data, 'harvest', crop.key) + data.helper.stock[crop.key]
