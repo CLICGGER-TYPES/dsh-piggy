@@ -2,6 +2,8 @@
 (() => {
   // packages/pet-core/src/data/art-assets.js
   var PIG_ART_ASSETS = Object.freeze({
+    "piglet-shy-pet": "pigs/base/piglet/shy-pet.png",
+    "piglet-blink": "pigs/base/piglet/blink.png",
     "badge-pig-blindbox-first": "pigs/badges/badge-pig-blindbox-first.png",
     "badge-pig-blindbox-six": "pigs/badges/badge-pig-blindbox-six.png",
     "badge-pig-blindbox-ten": "pigs/badges/badge-pig-blindbox-ten.png",
@@ -265,6 +267,104 @@
     return Object.hasOwn(PIG_ART_ASSETS, key);
   }
 
+  // src/client/pig-actions.js
+  var PLAYERS = /* @__PURE__ */ new WeakMap();
+  var BLINK_INTERVAL = { min: 8e3, max: 16e3 };
+  var ACTION_DURATION = { blink: 100, "shy-pet": 420 };
+  var ACTION_ART = { blink: "piglet-blink", "shy-pet": "piglet-shy-pet" };
+  function canPlayPigAction(pig, action) {
+    const read = (name) => pig.getAttribute("data-" + name) || "";
+    return read("art") === "piglet" && !["box", "grave", "dead-day"].includes(read("stage")) && !read("activity") && !read("idle") && !read("illness") && read("party") !== "true" && !["sick", "dirty", "sleepy", "dead", "hungry", "lonely"].includes(read("mood")) && (!read("react") || action === "shy-pet" && read("react") === "pet");
+  }
+  function pigActionArt(pig) {
+    return PLAYERS.get(pig)?.currentArt() || null;
+  }
+  function playPigPet(pig) {
+    PLAYERS.get(pig)?.play("shy-pet");
+  }
+  function attachPigActions(c) {
+    const clock = c.clock || window;
+    const random = c.random || Math.random;
+    const ready = /* @__PURE__ */ new Set();
+    let active = null, frameTimer = null, blinkTimer = null, disposed = false;
+    const isBlocked = () => disposed || c.isStopped() || c.isDragging() || document.hidden === true || c.pig.closest?.('[data-dragging="true"]') != null;
+    const clearFrame = () => {
+      clock.clearTimeout(frameTimer);
+      frameTimer = null;
+      active = null;
+      c.pig.removeAttribute?.("data-micro-action");
+    };
+    function currentArt() {
+      if (active && (isBlocked() || !canPlayPigAction(c.pig, active))) clearFrame();
+      return active ? ACTION_ART[active] : null;
+    }
+    function play(action) {
+      if (isBlocked() || !ready.has(action) || !canPlayPigAction(c.pig, action)) return;
+      if (action === "blink" && active) return;
+      clearFrame();
+      active = action;
+      c.pig.setAttribute?.("data-micro-action", action);
+      c.render();
+      frameTimer = clock.setTimeout(() => {
+        clearFrame();
+        c.render();
+      }, ACTION_DURATION[action]);
+    }
+    function scheduleBlink() {
+      if (isBlocked()) return;
+      blinkTimer = clock.setTimeout(() => {
+        blinkTimer = null;
+        play("blink");
+        scheduleBlink();
+      }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
+    }
+    function cancel() {
+      clearFrame();
+      clock.clearTimeout(blinkTimer);
+      blinkTimer = null;
+      c.render();
+    }
+    function visibility() {
+      cancel();
+      if (!isBlocked()) scheduleBlink();
+    }
+    const player = { currentArt, play };
+    PLAYERS.set(c.pig, player);
+    const preload = c.preload || ((src) => {
+      if (typeof Image !== "function") return Promise.resolve(false);
+      const image = new Image();
+      image.src = src;
+      return image.decode().then(() => true);
+    });
+    for (const action of Object.keys(ACTION_ART)) {
+      preload(artSource(ACTION_ART[action])).then((loaded) => {
+        if (!disposed && loaded !== false) ready.add(action);
+      }).catch((error) => console.error("\u5C0F\u732A\u52A8\u4F5C\u56FE\u7247\u89E3\u7801\u5931\u8D25", action, error));
+    }
+    document.addEventListener?.("visibilitychange", visibility);
+    c.pig.addEventListener?.("pointercancel", visibility);
+    c.pig.addEventListener?.("lostpointercapture", visibility);
+    const observer = typeof MutationObserver === "function" ? new MutationObserver(() => {
+      if (active && !currentArt()) c.render();
+      if (isBlocked()) cancel();
+      else if (blinkTimer === null) scheduleBlink();
+    }) : null;
+    observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
+    scheduleBlink();
+    return {
+      cancel,
+      dispose() {
+        observer?.disconnect();
+        disposed = true;
+        cancel();
+        PLAYERS.delete(c.pig);
+        document.removeEventListener?.("visibilitychange", visibility);
+        c.pig.removeEventListener?.("pointercancel", visibility);
+        c.pig.removeEventListener?.("lostpointercapture", visibility);
+      }
+    };
+  }
+
   // src/client/feedback-art.js
   var MOOD_ART = {
     hungry: ["hungry"],
@@ -463,8 +563,10 @@
     "pigs/forms/pig-round/work.png": [1.2857, 0, 0],
     "pigs/base/piglet/idle.png": [1.0693, 0, 0],
     "pigs/base/piglet/bathe.png": [1.3333, 0, 0],
+    "pigs/base/piglet/blink.png": [1.0693, 0, 0],
     "pigs/base/piglet/eat.png": [1.3333, 0, 0],
     "pigs/base/piglet/play.png": [1.1309, 0, 0.22],
+    "pigs/base/piglet/shy-pet.png": [1.0693, 0, 0],
     "pigs/base/piglet/sleep.png": [1.3585, 0, 0.27],
     "pigs/base/piglet/work.png": [1.8783, 0, 0.37],
     "pigs/skins/skin-angel/idle.png": [0.9818, 0, 0],
@@ -696,7 +798,9 @@
     "pigs/feedback/turning.png": [0.0625, 0.144531, 0.9375, 0.855469],
     "pigs/feedback/twitch.png": [0.0625, 0.136719, 0.9375, 0.859375],
     "pigs/badges/badge-pig-jobs-hundred.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/feedback/death-day.png": [0.0625, 0.210938, 0.9375, 0.789062]
+    "pigs/feedback/death-day.png": [0.0625, 0.210938, 0.9375, 0.789062],
+    "pigs/base/piglet/blink.png": [0.039062, 0.09375, 0.949219, 0.941406],
+    "pigs/base/piglet/shy-pet.png": [0.050781, 0.09375, 0.949219, 0.90625]
   });
   var MAX_ART_ASPECT = 1.947826;
 
@@ -800,6 +904,7 @@
   }
   function syncPigArt(pig, image, emoji) {
     var base = pig.getAttribute("data-art") || "";
+    pigActionArt(pig);
     var feedback = forcedFeedback || feedbackArtFor({
       stage: pig.getAttribute("data-stage") || "",
       base,
@@ -828,6 +933,16 @@
       pig.setAttribute("data-feedback", "false");
       if (emoji) emoji.hidden = false;
       return false;
+    }
+    var microArt = pigActionArt(pig);
+    if (microArt && !forcedFeedback) {
+      var microSrc = artSource(microArt);
+      if (image.getAttribute("src") !== microSrc) image.src = microSrc;
+      applyFrame(image, builtinFrame(artSource("piglet")));
+      image.hidden = false;
+      pig.setAttribute("data-feedback", "false");
+      if (emoji) emoji.hidden = true;
+      return true;
     }
     var art = base;
     if (pig.getAttribute("data-art-actions") === "true" || base === "piglet") {
@@ -1282,6 +1397,7 @@
         var next = await res.json();
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
         ctx.render(next);
+        if (action === "pet" && next?.ok === true) playPigPet(ctx.pig);
         if ((action === "signIn" || action === "openGift") && next?.ok === true) {
           var reward = str(next.reward, "");
           ctx.showBubble((action === "signIn" ? "\u7B7E\u5230\u6210\u529F" : "\u793C\u5305\u6253\u5F00") + (reward ? " \xB7 " + reward : ""), 4e3);
@@ -3397,6 +3513,7 @@
     '.dp-pig[data-mood="working"]{animation-name:dp-typing;animation-duration:.7s}',
     '.dp-pig[data-mood="studying"]{animation-name:dp-reading;animation-duration:2.4s}',
     '.dp-pig[data-mood="traveling"]{animation-name:dp-walking;animation-duration:1s}',
+    ".dp-pig[data-micro-action]{animation-play-state:paused!important}",
     '.dp-pig[data-mood="dead"]{animation:none}',
     '.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
     ".dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}",
@@ -6866,6 +6983,7 @@
     writeStore(WALK_KEY, on ? "on" : "off");
   }
   function attachLife(c) {
+    var actions = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) });
     var timers = [];
     var later = function(fn, ms) {
       var id = window.setTimeout(fn, ms);
@@ -6973,6 +7091,7 @@
         doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
       },
       dispose: function() {
+        actions.dispose();
         for (var i = 0; i < timers.length; i += 1) {
           window.clearTimeout(timers[i]);
           window.clearInterval(timers[i]);

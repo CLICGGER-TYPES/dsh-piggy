@@ -5247,5 +5247,65 @@
     ],
     "sha256": "bfc42c776c3504a88ee9bc0e16b84a5d62ba72142d4b72fdb42c97397db41f3a",
     "bytes": 4580
+  },
+  {
+    "key": "piglet-blink",
+    "path": "pigs/base/piglet/blink.png",
+    "actor": "piglet",
+    "action": "blink",
+    "version": "user-approved-batch1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/blink.md",
+    "reference": "piglet idle",
+    "sourceSha256": "b2bf3dc3f0f159b91ba863a1238f852153b4a8c0d991db53705a95e269bb8994",
+    "sourceDimensions": [
+      256,
+      256
+    ],
+    "sourceBounds": [
+      10,
+      24,
+      243,
+      241
+    ],
+    "bounds": [
+      10,
+      24,
+      243,
+      241
+    ],
+    "sha256": "b2bf3dc3f0f159b91ba863a1238f852153b4a8c0d991db53705a95e269bb8994",
+    "bytes": 43817,
+    "frameReference": "pigs/base/piglet/idle.png"
+  },
+  {
+    "key": "piglet-shy-pet",
+    "path": "pigs/base/piglet/shy-pet.png",
+    "actor": "piglet",
+    "action": "shy-pet",
+    "version": "user-approved-batch1",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/shy-pet.md",
+    "reference": "piglet idle",
+    "sourceSha256": "f1ba917cdafa51894e2c323c277e3bdbfaad18e0636d7ed2ad19fbb6da66b938",
+    "sourceDimensions": [
+      256,
+      256
+    ],
+    "sourceBounds": [
+      13,
+      24,
+      243,
+      232
+    ],
+    "bounds": [
+      13,
+      24,
+      243,
+      232
+    ],
+    "sha256": "f1ba917cdafa51894e2c323c277e3bdbfaad18e0636d7ed2ad19fbb6da66b938",
+    "bytes": 44148,
+    "frameReference": "pigs/base/piglet/idle.png"
   }
 ]
