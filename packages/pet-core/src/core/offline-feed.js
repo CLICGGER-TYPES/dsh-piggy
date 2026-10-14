@@ -61,9 +61,6 @@ export function pickOfflineItem(state, need) {
     ?? items.sort((left, right) => right[need.bar] - left[need.bar] || left.price - right.price)[0]
 }
 
-/** 饱食那一档的选择（老接口，测试和语义都还按食物用）。 */
-export const pickOfflineFood = state => pickOfflineItem(state, OFFLINE_NEEDS[0])
-
 /**
  * 在发生时刻照护一次（三类都走正常照料管线，扣库存、加属性）。只有离线结算才会
  * 传入汇总对象；汇总按类分开，回来时好念成「吃了…洗了…玩了…」。
