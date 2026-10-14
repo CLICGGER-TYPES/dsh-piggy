@@ -58,9 +58,11 @@ export function migrate(input, nowMs) {
     ? raw.memories.filter(m => typeof m === 'string').slice(-MEMORY_LIMIT)
     : []
 
-  for (const key of ['xp', 'weightG', 'satiety', 'happiness', 'cleanliness', 'health', 'coins', 'outingStreak', 'restMinutes', 'bornAt', 'lastFedAt', 'lastActiveAt', 'lastSeenAt']) {
+  for (const key of ['xp', 'weightG', 'satiety', 'happiness', 'cleanliness', 'health', 'coins', 'outingStreak', 'restMinutes', 'bornAt', 'lastFedAt', 'lastActiveAt', 'lastSeenAt', 'criticalDoctorVisits']) {
     if (typeof state[key] !== 'number' || !Number.isFinite(state[key])) state[key] = egg[key]
   }
+  // 垂危看诊次数：非有限 / 负数一律归 0（手改存档不能靠负数把阶梯压回去）。
+  state.criticalDoctorVisits = Math.max(0, Math.floor(state.criticalDoctorVisits))
   if (typeof raw.cleanliness !== 'number') state.cleanliness = egg.cleanliness
   // 已结算水位：缺了/坏了就是 null，decay() 按 lastSeenAt 处理（返工2 P2-2）。
   if (!Number.isFinite(state.settledUpTo)) state.settledUpTo = null

@@ -114,7 +114,7 @@ export function renderSettingsTab(ui) {
   quietToggle.appendChild(el('span', 'dp-switch-text', quietOn ? '开' : '关'))
   quiet.head.appendChild(quietToggle)
 
-  const feeding = section(ui, '离开时自动吃背包里的东西', '')
+  const feeding = section(ui, '离线自动照顾', '')
   const feedingOn = ui.view.dialogue.isOfflineFeedEnabled !== false
   const feedingToggle = button('dp-switch', { 'data-offline-feed': String(feedingOn), 'aria-pressed': String(feedingOn) }, function () {
     ui.send('offlineFeed', { on: !feedingOn })

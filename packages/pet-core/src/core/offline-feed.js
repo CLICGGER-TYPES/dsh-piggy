@@ -116,7 +116,7 @@ export function offlineSustainMs(state) {
  *
  * 「垂危」用现有的健康 1 格表示：那本来就是「太虚弱不能出门」那一档（TOO_WEAK_HEALTH），
  * 面板的健康条会显示 1/5。没有专属的「垂危」心情／立绘，文案见
- * results/fix-offline-clock/文案稿.md（待用户确认）。
+ * results/fix-offline-clock/文案稿.md（2026-10-14 用户已确认）。
  * @param {object} state
  * @param {number} nowMs
  * @param {number} unsupportedMs - 背包撑住之后又多出来的时间（没东西撑着的那段）
@@ -131,7 +131,7 @@ export function settleStarvation(state, nowMs, unsupportedMs) {
   if (state.health > 1) {
     state.health = 1
     remember(state, '💔 生命垂危：太久没有东西吃', nowMs)
-    announce(state, 'weak', `${state.name} 生命垂危了，它现在很虚弱`, nowMs)
+    announce(state, 'weak', `${state.name} 生命垂危了，快带它去看医生`, nowMs)
   }
 }
 

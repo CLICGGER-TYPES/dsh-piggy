@@ -6,8 +6,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, decay, doctorFee, hatchEgg, migrate, onsetRisks, seeDoctor, useItem, awayBlockedReason, startWork } from '../core.js'
-import { CHAIN_INDEX, DOCTOR_MARKUP, ILLNESS_CHAINS, ILLNESS_ONSET, MAX, MEDICINE_PRICE_BY_TIER, REVIVE_ITEM, itemByKey } from '../data.js'
+import { act, adopt, decay, doctorFee, hatchEgg, migrate, onsetRisks, seeDoctor, useItem, awayBlockedReason, startWork } from '../core.js'
+import { CHAIN_INDEX, ILLNESS_CHAINS, ILLNESS_ONSET, MAX, REVIVE_ITEM, itemByKey } from '../data.js'
 import { finishWork, finishStudy } from '../packages/pet-core/src/core/settlement.js'
 import { catchIllness, die, rollForIllness, worsen } from '../packages/pet-core/src/core/illness.js'
 
@@ -163,21 +163,70 @@ const dyingPig = () => {
   return pig
 }
 
-test('返工5：垂危无病看医生收 45（最便宜一档药价 ×1.5），钱不够说 poor、看一次回满', () => {
+test('返工6：垂危无病看医生按阶梯 0 → 390 → 585 → 780 封顶，计数随次数涨', () => {
   const pig = dyingPig()
-  assert.equal(doctorFee(pig), 45, '最便宜一档药价 30 × 1.5')
-  assert.equal(doctorFee(pig), Math.ceil(MEDICINE_PRICE_BY_TIER[0] * DOCTOR_MARKUP), '口径 = 药价 × 看诊加价')
-  pig.coins = 44
-  assert.deepEqual(seeDoctor(pig, T0), { ok: false, reason: 'poor', need: 45, have: 44 })
-  assert.equal(pig.health, 1, '钱不够，还是垂危')
-  assert.equal(pig.illness, null)
-  pig.coins = 45
-  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 45 })
-  assert.equal(pig.coins, 0)
-  assert.equal(pig.health, MAX.health, '看一次回满')
-  assert.equal(pig.illness, null)
-  // 垂危本来没病，措辞不能说「病好了」（文案待用户确认，这里只钉住不谎报）。
+  pig.coins = 1_000_000
+  const ladder = [0, 390, 585, 780, 780]
+  for (let i = 0; i < ladder.length; i += 1) {
+    assert.equal(pig.criticalDoctorVisits, i, `看诊前计数应为 ${i}`)
+    assert.equal(doctorFee(pig), ladder[i], `第 ${i + 1} 次应收 ${ladder[i]}`)
+    const before = pig.coins
+    assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: ladder[i] })
+    assert.equal(before - pig.coins, ladder[i], `第 ${i + 1} 次实扣 ${ladder[i]}`)
+    assert.equal(pig.criticalDoctorVisits, i + 1, '只有垂危这一支让计数 +1')
+    assert.equal(pig.health, MAX.health, '看一次回满')
+    assert.equal(pig.illness, null)
+    pig.health = 1 // 回到垂危，测下一次
+  }
+  // 垂危本来没病，措辞不能说「病好了」（这里只钉住不谎报）。
   assert.ok(pig.memories[pig.memories.length - 1].includes('身体恢复了'), pig.memories[pig.memories.length - 1])
+})
+
+test('返工6：垂危看诊第 1 次免费（coins 不变、fee 0）；钱不够按 poor 拦下、need / have 语义不变', () => {
+  const pig = dyingPig()
+  assert.equal(pig.criticalDoctorVisits, 0)
+  assert.equal(doctorFee(pig), 0, '第 1 次免费')
+  pig.coins = 0
+  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 0 }, '免费那次 0 金币也能过')
+  assert.equal(pig.coins, 0, '不花钱')
+  assert.equal(pig.criticalDoctorVisits, 1)
+  pig.health = 1
+  assert.equal(doctorFee(pig), 390, '第 2 次 390')
+  pig.coins = 389
+  assert.deepEqual(seeDoctor(pig, T0), { ok: false, reason: 'poor', need: 390, have: 389 })
+  assert.equal(pig.health, 1, '钱不够还是垂危')
+  assert.equal(pig.criticalDoctorVisits, 1, '钱不够不计数')
+  pig.coins = 390
+  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 390 })
+  assert.equal(pig.coins, 0)
+  assert.equal(pig.criticalDoctorVisits, 2)
+})
+
+test('返工6：有具体疾病时照旧药价 ×1.5（止痛片 105），且不动垂危计数', () => {
+  const pig = wellPig()
+  pig.illness = { chain: CHAIN_INDEX.dizzy, stage: 2, since: T0, progressMs: 0 }
+  pig.health = 3
+  pig.criticalDoctorVisits = 4
+  assert.equal(doctorFee(pig), 105, '止痛片 70 × 1.5')
+  pig.coins = 105
+  assert.deepEqual(seeDoctor(pig, T0), { ok: true, fee: 105 })
+  assert.equal(pig.illness, null)
+  assert.equal(pig.criticalDoctorVisits, 4, '有病的看诊不动垂危计数')
+})
+
+test('返工6：换新猪（adopt）把垂危看诊次数清零；老存档 / 坏值迁移后为 0', () => {
+  const pig = dyingPig()
+  pig.criticalDoctorVisits = 3
+  adopt(pig, T0 + HOUR)
+  assert.equal(pig.criticalDoctorVisits, 0, '领养新猪重新算')
+
+  // 老存档（v13 没有这个字段）：迁移后补 0。
+  const old = { ...hatchEgg(T0), version: 13 }
+  delete old.criticalDoctorVisits
+  assert.equal(migrate(old, T0).criticalDoctorVisits, 0)
+  // 手改的坏值（负数 / 非有限）也归 0。
+  assert.equal(migrate({ ...hatchEgg(T0), version: 13, criticalDoctorVisits: -5 }, T0).criticalDoctorVisits, 0)
+  assert.equal(migrate({ ...hatchEgg(T0), version: 13, criticalDoctorVisits: Number.NaN }, T0).criticalDoctorVisits, 0)
 })
 
 test('返工5：没病不垂危 / 已死的猪，看诊行为逐位不变', () => {

@@ -50,6 +50,9 @@ export function layEgg(nowMs) {
     coins: 500,
     inventory: {},
     isOfflineFeedEnabled: true,
+    // 垂危（没病、健康 1 格）时看过几次医生：看诊费按次数阶梯涨，同一只猪累计。
+    // 换新猪（领养 / 新蛋）从 0 重新算；老存档缺这个字段由 migrate() 补 0。
+    criticalDoctorVisits: 0,
     // 家当: dress items are bought once, owned forever, and worn.
     dress: [],
     worn: [],

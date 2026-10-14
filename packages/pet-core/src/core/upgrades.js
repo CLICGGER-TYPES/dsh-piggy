@@ -175,6 +175,11 @@ export const UPGRADES = Object.freeze([
     why: '离开时自动吃背包食物，旧存档默认开启',
     up(raw) { return { ...raw, version: 13, isOfflineFeedEnabled: raw.isOfflineFeedEnabled !== false } },
   }),
+  Object.freeze({
+    to: 14,
+    why: '垂危无病看医生的次数记在猪身上（看诊费按次数阶梯涨），老存档从 0 起',
+    up(raw) { return { ...raw, version: 14, criticalDoctorVisits: raw.criticalDoctorVisits ?? 0 } },
+  }),
 ])
 
 /** The oldest version the step table starts from; earlier saves are cleaned by migrate() alone. */

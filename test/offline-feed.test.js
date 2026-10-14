@@ -530,17 +530,20 @@ test('返工3 A2：垂危只公告一次，不重复刷屏', () => {
   assert.equal(pig.health, 1)
 })
 
-test('返工5：离线撑到垂危的猪，「快喂点东西」不再出现；带去看医生花 45 回满、又能出门', () => {
+test('返工6：离线撑到垂危的猪，公告指向看医生（不含「喂」）；第 1 次看诊免费、回满又能出门', () => {
   const pig = hatchEgg(START)
   decay(pig, START + 10 * DAY + HOUR, never)
   assert.equal(pig.health, 1)
   const weak = pig.pending.find(entry => entry.kind === 'weak')
   assert.ok(weak !== undefined && weak.text.includes('生命垂危'))
+  assert.ok(weak.text.includes('快带它去看医生'), `公告要指向看医生（实际：${weak.text}）`)
   assert.ok(!weak.text.includes('喂'), '公告不能指点一个救不回垂危的动作（喂食不加 health）')
-  // 2026-10-14 用户拍板：垂危也能看医生，看一次回满。
+  // 2026-10-14 用户定：垂危看诊费按次数阶梯，第 1 次免费、看一次回满。
   pig.coins = 100
-  assert.equal(doctorFee(pig), 45)
-  assert.deepEqual(seeDoctor(pig, START + 10 * DAY + HOUR), { ok: true, fee: 45 })
+  assert.equal(doctorFee(pig), 0)
+  assert.deepEqual(seeDoctor(pig, START + 10 * DAY + HOUR), { ok: true, fee: 0 })
+  assert.equal(pig.coins, 100, '第 1 次免费：金币不变')
+  assert.equal(pig.criticalDoctorVisits, 1)
   assert.equal(pig.health, 5)
   assert.equal(awayBlockedReason(pig), null, '恢复之后又能出门了')
 })

@@ -260,20 +260,33 @@ export function medicate(state, item, nowMs) {
 }
 
 /**
- * 垂危（无病）看诊费。
+ * 垂危（无病、没死、健康 ≤ 1 格）看医生的收费阶梯。
  *
- * **本轮自定，待用户确认**：垂危没有疾病可对症，就按最便宜一档药价（30）× 现有看诊加价口径
- * （`DOCTOR_MARKUP` = 1.5）= 45。候选方案：把垂危当「健康只剩 1 格」的重症，用 4 级药价
- * 260 × 1.5 = 390——本轮不采用，等用户拍板。
+ * 用户 2026-10-14 定：同一只猪第 1 次 0（免费试一次）、第 2 次 390、第 3 次 585、
+ * 第 4 次起封顶 780——每次 ×1.5、封顶 2 倍（390 = 260 × 1.5、585 = 390 × 1.5、
+ * 780 = 2 × 390）。其中 585、780 是 Claude 按「以此类推、不能太贵」推定的。
+ *
+ * 次数记在猪身上（`state.criticalDoctorVisits`，见 core/egg.js 与 v14 迁移），换新猪清零；
+ * 有具体疾病时走药价 × `DOCTOR_MARKUP` 那条，不碰这个计数。
  */
-export const CRITICAL_DOCTOR_FEE = Math.ceil(MEDICINE_PRICE_BY_TIER[0] * DOCTOR_MARKUP)
+export const CRITICAL_DOCTOR_BASE_FEE = Math.ceil(MEDICINE_PRICE_BY_TIER[3] * DOCTOR_MARKUP)
 
-/** What seeing the doctor costs for the illness the pig has now, or the flat charge when it is only 垂危. */
+/** 第 N 次（0 起）垂危看诊费：0、390、585，之后封顶 780。 */
+export function criticalDoctorFee(visits) {
+  const n = Number.isFinite(visits) ? Math.max(0, Math.floor(visits)) : 0
+  if (n === 0) return 0
+  const grown = CRITICAL_DOCTOR_BASE_FEE * 1.5 ** (n - 1)
+  return Math.min(Math.round(grown), CRITICAL_DOCTOR_BASE_FEE * 2)
+}
+
+/** What seeing the doctor costs for the illness the pig has now, or the ladder charge when it is only 垂危. */
 export function doctorFee(state) {
   const ill = currentIllness(state)
   if (ill !== null) return Math.ceil(ill.curePrice * DOCTOR_MARKUP)
   // 没病、没死但健康只剩 1 格（垂危）：也放行看医生（2026-10-14 用户拍板）。
-  if (state.dead !== true && Number.isFinite(state.health) && state.health <= TOO_WEAK_HEALTH) return CRITICAL_DOCTOR_FEE
+  if (state.dead !== true && Number.isFinite(state.health) && state.health <= TOO_WEAK_HEALTH) {
+    return criticalDoctorFee(state.criticalDoctorVisits)
+  }
   return null
 }
 
@@ -285,6 +298,8 @@ export function seeDoctor(state, nowMs) {
   if (fee === null) return { ok: false, reason: 'not-sick' }
   const sick = currentIllness(state) !== null
   if (!spendCoins(state, fee, 'doctor', nowMs)) return { ok: false, reason: 'poor', need: fee, have: state.coins }
+  // 只有「垂危（无病）」这一支按阶梯收费，也就只有它让次数 +1；有病的看诊不动计数。
+  if (!sick) state.criticalDoctorVisits = (Number.isFinite(state.criticalDoctorVisits) ? Math.floor(state.criticalDoctorVisits) : 0) + 1
   recover(state, nowMs)
   state.stats.cures = (state.stats.cures ?? 0) + 1
   state.stats.doctorVisits = (state.stats.doctorVisits ?? 0) + 1

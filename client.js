@@ -8668,7 +8668,7 @@
     quietToggle.appendChild(el("span", "dp-switch-knob"));
     quietToggle.appendChild(el("span", "dp-switch-text", quietOn ? "\u5F00" : "\u5173"));
     quiet.head.appendChild(quietToggle);
-    const feeding = section(ui, "\u79BB\u5F00\u65F6\u81EA\u52A8\u5403\u80CC\u5305\u91CC\u7684\u4E1C\u897F", "");
+    const feeding = section(ui, "\u79BB\u7EBF\u81EA\u52A8\u7167\u987E", "");
     const feedingOn = ui.view.dialogue.isOfflineFeedEnabled !== false;
     const feedingToggle = button("dp-switch", { "data-offline-feed": String(feedingOn), "aria-pressed": String(feedingOn) }, function() {
       ui.send("offlineFeed", { on: !feedingOn });
