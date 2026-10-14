@@ -31,3 +31,11 @@ A 已将旧包 Store 收窄为日志代理；增强的旧包测试修前 2/3、�
 C 另走真实桌面后台 HTTP：未认证 401、认证 health 200、管理路由 404、首次 applied、重复 duplicate；退出后发现文件及运行时锁删除。使用本机独立 Xvnc :109、临时打包游戏和 userData，无 VM；临时文件和显示会话已清理。本轮未改客户端源码或构建产物。
 
 关闭/恢复可靠性另有 B 5 条、C 1 条故障复现，均在未修实现上失败，等待 WolalaQAQ 推送补丁后折入；详见 [复现记录与命令](agent-adapters-reliability.md)。不能把常规测试全绿解释成这 6 条缺陷已修。Windows 共同六项基线失败是原作者的实机报告，本轮未复测，具体测试名称已请求补充；不在 PR #12 修复，也未直接创建 issue。
+
+## 2026-10-15 可靠性补丁与 Windows 实机复核
+
+WolalaQAQ 的补丁基于 `29d84e4`，拆成 `96fcfd8`（B）和 `9ef3638`（C）。补丁后的 Windows 全量 `npm test` 887/893，剩余 6 项与未修改的 0.36.2 基线相同；作者按平台区分的 SIGTERM 检查在 Windows 通过，本轮没有新增失败。`npm run typecheck` 通过，检查文件未改动。
+
+本机原生 Windows 独立桌宠（Electron 44.5.1、`--work-events`、隔离 userData 和存档副本）：未认证 health 401、认证 200、游戏管理路由 404；首次投递 applied、同进程重复 duplicate，工具计数 1→2；退出 0，endpoint 文件、接口锁、游戏锁和 WAL 均不存在。补丁的 B 5 条、C 1 条复现在本机 5 条通过，其余 1 条只能在 Linux 运行，原因见[复现记录](agent-adapters-reliability.md)。
+
+2026-10-14 的 Windows DSH Desktop 0.2.0-rc.2 复核（A/B/C 和补丁分支各执行一次真实孵化命令与只读任务，消息/工具/成功回合各 1，重开不增加）记录在 PR #12 的评论中，未复制进本文件。
