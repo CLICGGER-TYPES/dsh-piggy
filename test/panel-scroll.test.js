@@ -9,7 +9,7 @@ const source = readFileSync(new URL('../src/client/panel.js', import.meta.url), 
 const renderSource = source.slice(source.indexOf('function renderContent()'), source.indexOf('function paintContent()'))
 function layer(key, top, left = 0) { return { getAttribute: () => key, scrollTop: top, scrollLeft: left } }
 
-test('面板重绘保留购买框、商店列表和包袱横向滚动；不串到不同页签', () => {
+test('面板重绘保留购买框、商店列表和种子袋横向滚动；不串到不同页签', () => {
   let nodes = [layer('farm-dialog:radish', 31), layer('farm-shop:seed', 90), layer('farm-stock:seeds', 0, 44)]
   const ctx = { content: { scrollTop: 10, querySelectorAll: () => nodes }, justBought: 'radish' }
   const paintContent = () => { nodes = [layer('farm-dialog:radish', 0), layer('farm-shop:tool', 0), layer('farm-stock:seeds', 0)] }

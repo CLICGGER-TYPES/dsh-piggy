@@ -153,7 +153,7 @@ function renderAutoStock(ui) {
   const automation = ui.view.fishing.automation
   if (!automation || (!automation.unlocked && automation.stored === 0 && automation.usedHours === 0)) return
   const row = el('div', 'dp-fish-rodrow')
-  row.appendChild(el('span', null, '🧺 ' + (automation.full ? automation.stored > 0 ? '鱼篓满了' : '钓鱼歇了' : '鱼篓') + ' ' + automation.usedHours.toFixed(1) + '/6时'))
+  row.appendChild(el('span', null, '🧺 ' + (automation.full ? automation.stored > 0 ? '鱼篓满了' : '钓鱼歇了' : '鱼篓') + ' ' + automation.usedHours.toFixed(1) + ' / 6 小时'))
   const collect = button('dp-mini', { 'data-fish-collect': 'true' }, () => ui.send('fishCollect'))
   collect.textContent = automation.stored > 0 ? '收一下' : automation.full ? '接着干' : '暂无收成'
   collect.disabled = automation.stored === 0 && !automation.full

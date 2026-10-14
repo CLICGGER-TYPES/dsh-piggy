@@ -174,7 +174,7 @@ test('normalize 把坏 exp 封顶：非有限封到上限，负数/非数字归 
   }
 })
 
-test('种下按真实时间自己长，不用浇水；14 小时白萝卜 14 小时熟，收进仓库给经验，留下枯萎秆', () => {
+test('种下按真实时间自己长，不用浇水；14 小时白萝卜 14 小时熟，收进仓库给经验，留下枯苗', () => {
   const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish' }, t.api)
@@ -271,7 +271,7 @@ test('多季作物：收完回到「长大」再长一季，最后一季才枯�
   assert.equal(data.harvests.coconut, 3)
 })
 
-test('化肥：多长 2 / 3.5 / 5 小时，可以连着施；熟了不能施', () => {
+test('肥料：多长 2 / 3.5 / 5 小时，可以连着施；熟了不能施', () => {
   const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish' }, t.api)
@@ -370,7 +370,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   assert.equal(old.sprinklers, undefined)
 })
 
-test('view 不改存档；货架列种子、化肥、工具和帮工，用菜币标价', () => {
+test('view 不改存档；货架列种子、肥料、工具和帮工，用菜币标价', () => {
   const data = establishedFarm()
   const t = fakeApi(15)
   const before = structuredClone(data)
@@ -384,7 +384,7 @@ test('view 不改存档；货架列种子、化肥、工具和帮工，用菜币
   assert.equal(normalize(structuredClone(data)).plots.length, 18)
 })
 
-test('帮工猪（J2 不变）：按自己的小批次收进谷仓、管的地不显示灾害、六小时封仓、收仓后接着干', () => {
+test('帮工猪（J2 不变）：按自己的小批次收进帮工仓库、管的地不显示灾害、六小时封仓、收仓后接着干', () => {
   const data = establishedFarm()
   const t = fakeApi()
   farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
@@ -413,7 +413,7 @@ test('帮工每种作物、每档管地：净时薪 ≤ 400 且比自己种少�
   }
 })
 
-test('新开荒地：六块全干，每块有草或残株；除草、铲残株和浇水各 +2 经验', () => {
+test('新开荒地：六块全干，每块有草或杂草；除草、铲杂草和浇水各 +2 经验', () => {
   let draw = 0
   setRandom(() => [0.1, 0.1, 0.9, 0.2, 0.9][draw++ % 5])
   const data = farm.init(), t = fakeApi()
@@ -454,7 +454,7 @@ test('雨天浇湿已经干的空地和作物；view 不改输入；动作写回
   assert.equal(farm.view(data, t.api).plots[1].pests.includes('dry'), false)
 })
 
-test('开荒字段 normalize 兼容；3.x 迁移和既有 4.0 空地不长出草和残株', () => {
+test('开荒字段 normalize 兼容；3.x 迁移和既有 4.0 空地不长出草和杂草', () => {
   const old = normalize({ version: 4, unlocked: 8, plots: [] })
   assert.ok(old.plots.every(plot => plot === null))
   const migrated = normalize({ version: 3, unlocked: 8, plots: [] })

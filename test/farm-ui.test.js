@@ -119,7 +119,7 @@ test('大农场：铁锹铲正在长的作物要确认；仓库弹层能全卖',
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'sell', payload: { item: '*' } })
 })
 
-test('包袱：点击格子拿种子可连续播种；移开收起，用完回手套；空地显示淡影', () => {
+test('种子袋：点击格子拿种子可连续播种；移开收起，用完回手套；空地显示淡影', () => {
   const data = establishedFarm(), t = api()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t)
   const ui = renderFarm(farm.view(data, t), 'big', { asset: name => '/assets/' + name })
@@ -183,7 +183,7 @@ test('大农场：Q/W/E/R 切换工具；输入框不响应；悬停卡与三种
   plot.fire('mouseleave'); assert.equal(ui.find('data-farm-card', '0'), undefined)
 })
 
-test('小农场：信息栏在场景外，主操作绿框，包袱和仓库为覆盖层，荒地要先照料', () => {
+test('小农场：信息栏在场景外，主操作绿框，种子袋和仓库为覆盖层，荒地要先照料', () => {
   const data = farm.init(), t = api()
   const ui = renderFarm(farm.view(data, t), 'panel', { asset: name => '/assets/' + name })
   const header = ui.dom.body.querySelectorAll('.fm-s-header')[0]
@@ -204,7 +204,7 @@ test('独立猪窗口开面板时，台词跟签到一样放在猪旁边，避�
   assert.doesNotMatch(css, /data-daily-side="right"\] \.dp-bubble\{right:auto;left:calc\(100% \+ 6px\)/)
 })
 
-test('大小农场：灾害只显示气泡，保留单个收获提示；包袱工具不挂在地上', () => {
+test('大小农场：灾害只显示气泡，保留单个收获提示；种子袋工具不挂在地上', () => {
   const data = establishedFarm(), t = api()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t)

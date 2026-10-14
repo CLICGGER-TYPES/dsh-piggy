@@ -2477,7 +2477,7 @@
     const automation2 = ui.view.fishing.automation;
     if (!automation2 || !automation2.unlocked && automation2.stored === 0 && automation2.usedHours === 0) return;
     const row = el("div", "dp-fish-rodrow");
-    row.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9493\u9C7C\u6B47\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + "/6\u65F6"));
+    row.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9493\u9C7C\u6B47\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + " / 6 \u5C0F\u65F6"));
     const collect = button("dp-mini", { "data-fish-collect": "true" }, () => ui.send("fishCollect"));
     collect.textContent = automation2.stored > 0 ? "\u6536\u4E00\u4E0B" : automation2.full ? "\u63A5\u7740\u5E72" : "\u6682\u65E0\u6536\u6210";
     collect.disabled = automation2.stored === 0 && !automation2.full;
