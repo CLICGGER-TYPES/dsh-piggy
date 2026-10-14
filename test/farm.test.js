@@ -261,10 +261,12 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   assert.equal(old.harvests.carrot, 3, 'acquired 12 carrots at 4 each')
   assert.deepEqual(old.tools, { sickle: true, sprayer: true, rake: false, planter: false })
   assert.equal(old.seeds.carrot, 3)
-  assert.equal(t.balance(), 2 * 3000 + 5 * 20)
+  assert.equal(t.balance(), 2 * 3000 + 5 * 20 + (1000 + 3000), '旧洒水器 + 旧肥料 + 农具档（档位 2 = 1000+3000）')
   assert.deepEqual(old.plots.slice(0, 3), [null, null, null])
   assert.equal(old.helper.hired, true)
-  assert.equal(old.helper.barn, 2, '农具档已下架，但旧存档的 barn 字段保留不删（只读取、不生效）')
+  assert.equal(old.helper.barn, 0, '农具档退完菜币后 barn 清零')
+  assert.equal(old.helperBarnRefunded, true, '留下「已退过」标记，不再退第二次')
+  assert.ok(t.said.some(line => line.includes('农具暂时下架，已退还 4000 菜币')), '退农具时提示一句')
   assert.equal(old.helper.stock.sprout, 4)
   assert.ok(old.exp > 0)
   assert.equal(old.sprinklers, undefined)
@@ -536,7 +538,7 @@ test('玩家主动铲空管区地：帮工按原来指定的作物补种，不�
   assert.equal(data.plots[0]?.crop, 'radish', '补的是原来指定的白萝卜，不是数量最多的胡萝卜')
 })
 
-test('农具档下架：商店不卖、配方不吃 barn、旧存档 barn 字段保留且 barn 0/3 结果完全相同', () => {
+test('农具档下架：商店不卖、配方不吃 barn、旧存档 barn 退款后清零，barn 0/3 结算结果完全相同', () => {
   assert.equal(helperRecipe.length, 2, 'helperRecipe 只剩 (key, level) 两个形参')
   const data = establishedFarm()
   const t = fakeApi()
@@ -562,8 +564,51 @@ test('农具档下架：商店不卖、配方不吃 barn、旧存档 barn 字段
   const host = fakeApi()
   host.api.now = T0 + H
   assert.doesNotThrow(() => farm.actions.buy(old, { item: 'radish' }, host.api), '旧存档 barn:3 + pending 迁移/结算不抛')
-  assert.equal(old.helper.barn, 3, 'barn 字段保留不删')
-  assert.equal(normalize(structuredClone(old)).helper.barn, 3, 'normalize clamp 后仍是 3')
+  assert.equal(old.helper.barn, 0, '旧存档 barn:3 退完菜币后清零（退款口径见下条测试）')
+  assert.equal(old.helperBarnRefunded, true, '留下「已退过」标记')
+})
+
+test('农具档退款：3.0.0 买过的档位 1/2/3 累计退 1000/4000/13000 菜币，barn=0 不退', () => {
+  for (const [barn, amount] of [[1, 1000], [2, 4000], [3, 13000]]) {
+    const t = fakeApi(0)
+    const old = { version: 3, unlocked: 6, plots: [], helper: { hired: true, level: 0, barn } }
+    farm.actions.buy(old, { item: 'nothing' }, t.api)
+    assert.equal(t.balance(), amount, 'barn ' + barn + ' 累计退 ' + amount)
+    assert.equal(old.helper.barn, 0, '退完清零')
+    assert.equal(old.helperBarnRefunded, true, '留下「已退过」标记')
+    assert.ok(t.said.includes('农具暂时下架，已退还 ' + amount + ' 菜币'), '提示退款金额：' + amount)
+  }
+  const zero = fakeApi(0)
+  const fresh = { version: 3, unlocked: 6, plots: [], helper: { hired: true, level: 0, barn: 0 } }
+  farm.actions.buy(fresh, { item: 'nothing' }, zero.api)
+  assert.equal(zero.balance(), 0, 'barn=0 一分不退')
+  assert.equal(fresh.helperBarnRefunded, undefined, '没农具就不写已退标记')
+  assert.deepEqual(zero.said, [], '没农具就不提示')
+})
+
+test('农具档退款：早就迁到 v4、barn 还在的存档也退一次并清零', () => {
+  const t = fakeApi(0)
+  const v4 = { version: 4, unlocked: 6, plots: [], seeds: {}, harvest: {}, acquired: {}, harvests: {}, tools: {}, fert: {}, exp: 0, refund: 0, helper: { hired: true, level: 0, barn: 3 } }
+  farm.actions.buy(v4, { item: 'nothing' }, t.api)
+  assert.equal(t.balance(), 13000, 'v4 存档里遗留的 barn 3 退 13000')
+  assert.equal(v4.helper.barn, 0)
+  assert.equal(v4.helperBarnRefunded, true)
+})
+
+test('农具档退款只发一次：同一存档跑两遍 normalize/migrate、付过之后再来动作都不再退', () => {
+  const raw = { version: 3, unlocked: 6, plots: [], helper: { hired: true, level: 0, barn: 2 } }
+  const first = normalize(structuredClone(raw))
+  assert.equal(first.refund, 4000, 'migrate + 首次 normalize 记下待退 4000')
+  assert.equal(first.helperBarnRefunded, true)
+  const second = normalize(first)
+  assert.equal(second.refund, 4000, '第二遍 normalize 不再累加')
+  assert.equal(second.helper.barn, 0)
+  const t = fakeApi(0)
+  farm.actions.buy(first, { item: 'nothing' }, t.api)
+  assert.equal(t.balance(), 4000, '动作时付一次')
+  t.api.now = T0 + H
+  farm.actions.buy(first, { item: 'nothing' }, t.api)
+  assert.equal(t.balance(), 4000, '付过之后再跑动作不再退')
 })
 
 test('帮工 view：没种子就报「缺种子」/「没种子」，不再只写「帮工 · N 块地」', () => {

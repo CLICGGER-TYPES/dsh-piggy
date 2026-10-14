@@ -66,8 +66,8 @@ const STAGE_AT = [0, 1 / 6, 2 / 6, 3 / 6, 4 / 6, 1]
 const REGROW_AT = 3 / 6
 /** 3.x 存档的旧数据，迁移时用：旧产量（算历史收获次数）、旧洒水器和旧肥料按原价退成菜币。 */
 const OLD_YIELD = { sprout: 2, scallion: 3, coriander: 3, lettuce: 3, cabbage: 3, strawberry: 3, blueberry: 4, carrot: 4, sweetpotato: 3, tomato: 4, corn: 5, pumpkin: 2, sunflower: 3, watermelon: 2, grape: 3, melon: 2 }
-const OLD_SPRINKLER = 3000
-const OLD_FERTILIZER = 20
+const OLD_SPRINKLER = 3000, OLD_FERTILIZER = 20
+export const OLD_HELPER_BARN_PRICES = [0, 1000, 3000, 9000] // 3.0.0 卖过的农具档单价：迁移时按买到的档位 1..barn 累计退菜币
 export const cropFor = key => CROPS.find(crop => crop.key === key) ?? null
 const toolFor = key => TOOLS.find(tool => tool.key === key) ?? null
 const fertFor = key => FERTILIZERS.find(fert => fert.key === key) ?? null
@@ -154,8 +154,7 @@ export function normalize(data) {
     for (const key of Object.keys(data)) delete data[key]
     Object.assign(data, migrate(old))
   }
-  data.unlocked = Math.max(START_PLOTS, Math.min(PLOTS, count(data.unlocked) || START_PLOTS))
-  if (!Array.isArray(data.plots)) data.plots = []
+  data.unlocked = Math.max(START_PLOTS, Math.min(PLOTS, count(data.unlocked) || START_PLOTS)); if (!Array.isArray(data.plots)) data.plots = []
   data.plots = Array.from({ length: PLOTS }, (_, index) => {
     const plot = data.plots[index]
     if (!isObject(plot) || index >= data.unlocked) return null
@@ -165,9 +164,9 @@ export function normalize(data) {
     return plot
   })
   for (const field of ['seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert']) if (!isObject(data[field])) data[field] = {}
-  data.exp = count(data.exp)
-  data.refund = count(data.refund)
+  data.exp = count(data.exp); data.refund = count(data.refund); data.helperBarnRefund = count(data.helperBarnRefund)
   normalizeHelper(data)
+  refundOldBarn(data)
   return data
 }
 /** 新开垦的地：至少有草或残株，多数长草；旧存档不补这些东西。 */
@@ -184,9 +183,14 @@ function purse(api) {
   return api.wallet ? api.wallet : { currency: { label: '金币', emoji: '🪙', rate: 1 }, balance: () => api.coins(), earn: (n, source) => api.earn(n, source), spend: (n, sink) => api.spend(n, sink) }
 }
 const tire = (api, plots = 1) => { if (typeof api.exert === 'function') api.exert(EXERT * plots) }
-/** 迁移欠下的退款：下一次动作时付。 */
+function refundOldBarn(data) { // 3.0.0 的农具档退款只发一次：helperBarnRefunded 标记已退，barn 退完清零
+  if (data.helperBarnRefunded === true || data.helper.barn < 1) return
+  let amount = 0; for (let stage = 1; stage <= data.helper.barn; stage += 1) amount += OLD_HELPER_BARN_PRICES[stage]
+  data.refund += amount; data.helperBarnRefund = amount; data.helper.barn = 0; data.helperBarnRefunded = true
+}
+/** 迁移欠下的退款：下一次动作时付；农具那笔单独提示一句。 */
 function payRefund(data, api) {
-  if (data.refund > 0 && api) { purse(api).earn(data.refund, 'refund'); data.refund = 0 }
+  if (data.refund > 0 && api) { purse(api).earn(data.refund, 'refund'); if (data.helperBarnRefund > 0 && typeof api.say === 'function') api.say('农具暂时下架，已退还 ' + data.helperBarnRefund + ' 菜币'); data.refund = 0; data.helperBarnRefund = 0 }
 }
 /** 加经验，升级了返回新等级。 */
 function gainExp(data, n) {
@@ -386,8 +390,7 @@ const game = {
   view(data, api) {
     const d = normalize(structuredClone(data))
     settleHelper(d, api.now)
-    const wallet = purse(api)
-    const balance = wallet.balance() + d.refund
+    const wallet = purse(api), balance = wallet.balance() + d.refund
     const level = levelOf(d.exp)
     const managed = helperPlots(d)
     const plots = d.plots.map((plot, index) => {
@@ -453,9 +456,8 @@ export function helperRecipe(key, level) {
 function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {}
   const level = Math.min(2, count(raw.level))
-  const barn = Math.min(3, count(raw.barn)) // 农具档已下架：只读取、只 clamp，保留字段免得旧存档丢数据，不再有任何效果
-  const recipe = helperRecipe(raw.pending?.crop, level)
-  const pending = recipe && Number.isFinite(raw.pending.remainingMs) && Number.isInteger(raw.pending.index)
+  const barn = Math.min(3, count(raw.barn)) // 农具档已下架：只读取、只 clamp；紧接着 refundOldBarn 按档位退款并清零
+  const recipe = helperRecipe(raw.pending?.crop, level), pending = recipe && Number.isFinite(raw.pending.remainingMs) && Number.isInteger(raw.pending.index)
     ? { ...raw.pending, remainingMs: Math.max(0, Math.min(recipe.intervalMs, raw.pending.remainingMs)), yield: recipe.yield } : null
   data.helper = {
     hired: raw.hired === true, level, barn,
@@ -498,8 +500,7 @@ export function settleHelper(data, now) {
   }
   const helper = data.helper
   if (!helperPlots(data) || !Number.isFinite(now)) return
-  const start = helper.lastAt ?? now
-  if (now < start) return
+  const start = helper.lastAt ?? now; if (now < start) return
   const pendingPlot = helper.pending ? data.plots[helper.pending.index] : null
   if (helper.pending && (!pendingPlot || pendingPlot.withered || pendingPlot.plantedAt !== helper.pending.plantedAt || pendingPlot.crop !== helper.pending.crop)) helper.pending = null
   let remaining = Math.min(now - start, HELPER_WINDOW - helper.usedMs)
@@ -580,8 +581,7 @@ game.actions.upgrade = (data, payload, api) => helperBuy(data, { item: 'helper-'
 game.actions.collect = data => {
   if (!helperCount(data) && data.helper.usedMs === 0) return { ok: false, reason: 'empty' }
   for (const crop of CROPS) data.harvest[crop.key] = amountFor(data, 'harvest', crop.key) + data.helper.stock[crop.key]
-  data.helper.stock = Object.fromEntries(CROPS.map(crop => [crop.key, 0]))
-  data.helper.usedMs = 0
+  data.helper.stock = Object.fromEntries(CROPS.map(crop => [crop.key, 0])); data.helper.usedMs = 0
   return { ok: true }
 }
 for (const [key, action] of Object.entries(game.actions)) {
