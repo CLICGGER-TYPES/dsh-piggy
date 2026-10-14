@@ -1,9 +1,12 @@
 // 菜园 4.0（docs/design/farm-qqfarm.md；用户 2026-10-12：照 QQ 农场改版，A 照搬时长、B 补多季、C 一键要买工具、D 留帮工、F 留原有 9 种）。
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { test, beforeEach } from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import farm, {
-  CROPS, FERTILIZERS, PEST_LOSS, PEST_MS, PLOTS, RECLAIM_PRICE, START_PLOTS, TOOLS,
+  CROPS, EXP_CAP, EXP_PER_LEVEL, FERTILIZERS, PEST_LOSS, PEST_MS, PLOTS, RECLAIM_PRICE, START_PLOTS, TOOLS,
   levelOf, normalize, plotState, setRandom, weatherAt, helperRecipe, HELPER_PLOTS,
 } from '../extensions/farm/server.js'
 
@@ -74,6 +77,101 @@ test('等级：升下一级要「等级 × 100」经验，种子按等级解锁'
   const view = farm.view(data, t.api)
   assert.equal(view.seeds.find(s => s.key === 'strawberry').locked, true)
   assert.equal(view.shelf.items.find(i => i.key === 'strawberry').note, '6 级解锁')
+})
+
+// 2026-10-14 存档模糊测试（results/save-fuzz/REPORT.md 4.2）发现：exp = 1e308 时逐级扣减要 1e153 次，view 和所有动作都卡死。
+// 02 是模糊测试最小化出来的崩溃记录（存档在 .save 里），04 是按 4.2 节手写的最小存档；两份都原样放 test/fixtures。
+const crashSave = file => {
+  const parsed = JSON.parse(readFileSync(new URL('./fixtures/' + file, import.meta.url), 'utf8'))
+  return parsed.save ?? parsed // 02 是崩溃记录（存档在 .save 里），04 是存档本身
+}
+
+test('等级：levelOf 闭式解与逐级扣减逐个相等，极端 exp 也走常数步', { timeout: 20000 }, () => {
+  // 参考实现就是改动前的逐级扣减（游戏规模的经验用它逐个比；坏 exp 会在这卡死，所以只喂小值）。
+  const stepwise = exp => {
+    let level = 1
+    let left = Math.max(0, Math.floor(Number(exp) || 0))
+    while (left >= level * EXP_PER_LEVEL) { left -= level * EXP_PER_LEVEL; level += 1 }
+    return { level, exp: left, need: level * EXP_PER_LEVEL }
+  }
+  for (let exp = 0; exp <= 3000; exp += 1) assert.deepEqual(levelOf(exp), stepwise(exp), 'exp=' + exp)
+  // 更大范围用整数不等式校验（50 × level × (level − 1) ≤ exp < 50 × (level + 1) × level）：每一处都要对得上。
+  const reach = level => EXP_PER_LEVEL / 2 * level * (level - 1)
+  const check = (exp, note) => {
+    const { level, exp: rest, need } = levelOf(exp)
+    assert.equal(reach(level) <= exp && reach(level + 1) > exp, true, note + ' 等级不对：exp=' + exp + ' level=' + level)
+    assert.deepEqual([rest, need], [exp - reach(level), level * EXP_PER_LEVEL], note + ' 余量不对：exp=' + exp)
+  }
+  for (let level = 2; level <= 20000; level += 1) {
+    const cost = reach(level)
+    check(cost - 1, '边界'); check(cost, '边界'); check(cost + 1, '边界')
+  }
+  let seed = 12345 // 固定种子，失败可复现
+  for (let i = 0; i < 20000; i += 1) { seed = (seed * 1103515245 + 12345) % 2147483648; check(Math.floor(seed / 2147483648 * EXP_CAP), '随机') }
+  for (const exp of [1e10, 1e15, EXP_CAP - 1, EXP_CAP]) check(exp, '大值')
+  assert.deepEqual(levelOf(1e308), levelOf(EXP_CAP), '超过上限按上限算')
+  assert.deepEqual(levelOf(Infinity), levelOf(EXP_CAP))
+  assert.deepEqual(levelOf(-1e308), { level: 1, exp: 0, need: 100 })
+  assert.deepEqual(levelOf(NaN), { level: 1, exp: 0, need: 100 })
+  assert.deepEqual(levelOf('abc'), { level: 1, exp: 0, need: 100 })
+  // 只看「封顶」是不够的：封顶后逐级扣减仍有约 1.3e7 步（一次 14ms，500 次 7 秒），所以放进子进程看门狗。
+  const server = new URL('../extensions/farm/server.js', import.meta.url).href
+  const child = `
+const m = await import(${JSON.stringify(server)})
+const started = Date.now()
+for (let i = 0; i < 500; i += 1) m.levelOf(m.EXP_CAP)
+const elapsed = Date.now() - started
+if (elapsed > 1000) throw new Error('500 次 levelOf(EXP_CAP) 用了 ' + elapsed + 'ms，像是又变回 O(exp) 了')
+console.log('ok', elapsed)`
+  const out = execFileSync(process.execPath, ['-e', child], { timeout: 3000, encoding: 'utf8' })
+  assert.match(out, /^ok \d+/, out)
+})
+
+test('坏 exp 不再卡死：模糊测试的 02、04 号样例 view 和动作都跑得完', { timeout: 20000 }, () => {
+  const server = new URL('../extensions/farm/server.js', import.meta.url).href
+  const fixtures = ['farm-crash-02.json', 'farm-crash-04.json'].map(file => fileURLToPath(new URL('./fixtures/' + file, import.meta.url)))
+  // 进程内先核对结果：坏 exp 按上限算，等级是有限数。
+  for (const file of ['farm-crash-02.json', 'farm-crash-04.json']) {
+    const save = crashSave(file)
+    assert.equal(save.exp, 1e308, file + ' 的存档 exp')
+    assert.equal(normalize(structuredClone(save)).exp, EXP_CAP, file + ' 的 exp 封顶')
+    const view = farm.view(save, fakeApi().api)
+    assert.equal(Number.isFinite(view.level) && view.level > 0, true, file + ' 等级是有限数')
+    assert.equal(view.plots.length, PLOTS)
+  }
+  // levelOf 的死循环是同步的，进程内的测试超时拦不住；把 view 和全部动作放子进程跑，5 秒不返回就判失败。
+  const child = `
+import { readFileSync } from 'node:fs'
+const farm = (await import(${JSON.stringify(server)})).default
+for (const file of ${JSON.stringify(fixtures)}) {
+  const parsed = JSON.parse(readFileSync(file, 'utf8'))
+  const save = parsed.save ?? parsed
+  const wallet = { currency: { label: '菜币', emoji: '🥬', rate: 1 }, balance: () => 100000, earn: () => 0, spend: () => true }
+  const api = { now: 1790780277081, coins: () => 0, earn: () => 0, spend: () => false, wallet, give: () => true, say: () => {}, exert: () => {} }
+  const view = farm.view(save, api)
+  if (!Number.isFinite(view.level) || view.plots.length !== ${PLOTS}) throw new Error(file + ' view 结果不对')
+  for (const [name, payload] of [['buy', { item: 'radish' }], ['plant', { plot: 0, item: 'radish' }], ['harvest', { plot: 0 }],
+    ['care', { plot: 0 }], ['unlock', {}], ['sell', {}], ['store', { item: 'radish' }], ['collect', {}]]) {
+    if (typeof farm.actions[name](save, payload, api) !== 'object') throw new Error(file + ' 的 ' + name + ' 没返回结果')
+  }
+  console.log(file, 'ok')
+}`
+  const started = Date.now()
+  const out = execFileSync(process.execPath, ['-e', child], { timeout: 5000, encoding: 'utf8' })
+  const elapsed = Date.now() - started
+  assert.ok(elapsed < 5000, '子进程用了 ' + elapsed + 'ms')
+  assert.equal(out.trim().split('\n').length, 2, out)
+  assert.match(out, /farm-crash-02\.json ok[\s\S]*farm-crash-04\.json ok/)
+})
+
+test('normalize 把坏 exp 封顶：非有限封到上限，负数/非数字归 0', () => {
+  assert.equal(EXP_CAP, Number.MAX_SAFE_INTEGER)
+  const inputs = [[1e308, EXP_CAP], [Infinity, EXP_CAP], [-Infinity, 0], [NaN, 0], [-1, 0], [1.9, 1], ['abc', 0], [299, 299]]
+  for (const [input, want] of inputs) {
+    const data = normalize({ version: 4, plots: [], exp: input })
+    assert.equal(data.exp, want, String(input))
+    assert.deepEqual(normalize(JSON.parse(JSON.stringify(data))).exp, want, String(input) + ' 再归一化不变')
+  }
 })
 
 test('种下按真实时间自己长，不用浇水；14 小时白萝卜 14 小时熟，收进仓库给经验，留下枯萎秆', () => {

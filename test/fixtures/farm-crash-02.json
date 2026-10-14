@@ -1,0 +1,95 @@
+{
+  "target": "farm",
+  "stage": "farm:view",
+  "error": "Timeout",
+  "message": ">1500ms 未返回",
+  "stack": "",
+  "count": 4,
+  "caseIds": [
+    73,
+    478,
+    916,
+    1123
+  ],
+  "minimized": true,
+  "minimizeTests": 40,
+  "save": {
+    "version": 4,
+    "unlocked": 0,
+    "plots": [
+      null,
+      null,
+      null,
+      {
+        "fallow": true,
+        "stubble": false,
+        "pests": {
+          "dry": 0,
+          "weed": 0
+        }
+      },
+      {
+        "crop": "radish",
+        "season": 1,
+        "plantedAt": 1790683077081,
+        "boostMs": 0,
+        "roll": -3,
+        "pests": {
+          "weed": 1790765877081,
+          "bug": 1790787477081,
+          "dry": 1790776677081
+        }
+      },
+      {
+        "crop": "corn",
+        "withered": true
+      },
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "seeds": {
+      "radish": 4,
+      "carrot": 2
+    },
+    "harvest": {
+      "radish": 16
+    },
+    "acquired": {
+      "radish": 10
+    },
+    "harvests": {
+      "radish": 6
+    },
+    "tools": {
+      "sickle": true,
+      "sprayer": true,
+      "rake": false,
+      "planter": true
+    },
+    "fert": {
+      "fert-1": 3
+    },
+    "exp": 1e+308,
+    "refund": 0,
+    "helper": {
+      "hired": false,
+      "level": 2,
+      "barn": 0,
+      "usedMs": 2052931,
+      "lastAt": 1790780277081,
+      "cursor": 4,
+      "stock": {}
+    },
+    "bombs": ""
+  }
+}

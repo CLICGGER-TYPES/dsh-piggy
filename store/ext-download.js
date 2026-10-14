@@ -8,7 +8,7 @@
  * @module dsh-piggy/store/ext-download
  */
 import { createHash } from 'node:crypto'
-import { ASSET_NAME, MAX_FILE_BYTES, assetNames, describeFetchError, fileList, inBatches } from './ext-files.js'
+import { ASSET_NAME, MAX_FILE_BYTES, assetNames, describeAssetList, describeFetchError, describeFileTooBig, fileList, inBatches } from './ext-files.js'
 import { BUNDLE_BYTES, parseBundle } from './ext-import.js'
 
 /** 同时下载几个文件（只有逐个下载的老条目用得上）。 */
@@ -48,7 +48,7 @@ export function createDownloads(deps) {
     } catch (error) {
       return { ok: false, retryable: true, message: `${name} 下载中断：${describeFetchError(error, spec.url)}` }
     }
-    if (buffer.length > limit) return { ok: false, retryable: false, message: `${name} 太大（${buffer.length} 字节）` }
+    if (buffer.length > limit) return { ok: false, retryable: false, message: describeFileTooBig(name, buffer.length, limit) }
     if (sha256(buffer) !== spec.sha256.toLowerCase()) return { ok: false, retryable: true, message: `${name} 校验不对，可能下载坏了` }
     return { ok: true, retryable: false, message: '', buffer }
   }
@@ -103,7 +103,11 @@ export function createDownloads(deps) {
     let manifest = null
     try { manifest = JSON.parse(String(files.get('manifest.json'))) } catch { /* 下面按坏包处理 */ }
     const declared = assetNames(manifest)
-    if (declared === null || declared.length !== assets.length || !declared.every(name => assets.includes(name))) return failed('扩展的图片清单和目录对不上')
+    if (declared === null) {
+      const why = describeAssetList(manifest)
+      return failed('扩展的 manifest 图片清单不对' + (why === '' ? '' : '（' + why + '）'))
+    }
+    if (declared.length !== assets.length || !declared.every(name => assets.includes(name))) return failed('扩展的图片清单和目录对不上')
     return { ok: /** @type {true} */ (true), files }
   }
 

@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { extensionOn, installExtension, openWallet, removeExtension } from '../core.js'
 import { LOCAL_MARK, makeImporter } from './ext-import.js'
 import { createDownloads } from './ext-download.js'
-import { ASSET_NAME, ASSET_TYPES, CODE_FILES, MAX_ASSETS_BYTES, assetNames, describeFetchError } from './ext-files.js'
+import { ASSET_NAME, ASSET_TYPES, CODE_FILES, MAX_ASSETS_BYTES, assetNames, describeAssetsTooBig, describeFetchError } from './ext-files.js'
 import { apiFor } from './ext-api.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
@@ -275,7 +275,7 @@ export function createExtRuntime(store, options) {
     try {
       let imageBytes = 0
       for (const [name, buffer] of files) if (name.startsWith('assets/')) imageBytes += buffer.length
-      if (imageBytes > MAX_ASSETS_BYTES) throw new Error('图片合计太大')
+      if (imageBytes > MAX_ASSETS_BYTES) throw new Error(describeAssetsTooBig(imageBytes))
       mkdirSync(join(staging, 'assets'), { recursive: true })
       for (const [name, buffer] of files) {
         if (!CODE_FILES.includes(name) && !(name.startsWith('assets/') && ASSET_NAME.test(name.slice('assets/'.length)))) throw new Error('不认识的文件：' + name)
