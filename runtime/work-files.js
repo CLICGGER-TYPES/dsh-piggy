@@ -23,13 +23,20 @@ export function syncDirectory(directory) {
   try { fsyncSync(descriptor) } finally { closeSync(descriptor) }
 }
 
-export function writeWorkJson(path, value) {
+export function writeWorkJson(path, value, onPublished = () => {}) {
   const temporary = `${path}.${randomBytes(8).toString('hex')}.tmp`
   const descriptor = openSync(temporary, 'wx', 0o600)
   try { writeFileSync(descriptor, JSON.stringify(value)); fsyncSync(descriptor) }
   finally { closeSync(descriptor) }
-  try { renameSync(temporary, path); syncDirectory(dirname(path)) }
-  catch (error) { unlinkSync(temporary); throw error }
+  try { renameSync(temporary, path) }
+  catch (error) {
+    // 清理失败不能掩盖发布失败的原始错误。
+    try { unlinkSync(temporary) } catch { /* 保留原始错误 */ }
+    throw error
+  }
+  // rename 已发布文件，即使目录同步失败也必须保留这笔事务。
+  onPublished()
+  syncDirectory(dirname(path))
 }
 
 export function removeWorkFile(path) {

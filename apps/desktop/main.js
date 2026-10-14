@@ -169,6 +169,7 @@ function registerProtocol(gameDir) {
     const path = decodeURIComponent(url.pathname)
     if (path.startsWith('/dsh-piggy/')) {
       const body = request.method === 'POST' ? await request.text() : undefined
+      if (quitting) return new Response('game runtime closing', { status: 503 })
       const out = await host.handle(request.method, path + url.search, body)
       // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
       // 不然面板里喂完食，猪要过几秒才有反应。
@@ -857,10 +858,10 @@ async function importFromDsh() {
     message: '把 DSH 里的猪接过来？',
     detail: `从 ${source} 复制一份过来。桌面版现在这只会先备份，不会丢。`,
   })
-  if (response !== 0) return
-  quitting = true
-  stopDrag()
-  await host.dispose()
+  if (response !== 0 || quitting) return
+  try {
+    if (!(await prepareToQuit()).saved) { app.quit(); return }
+  } catch (error) { log('host shutdown failed', String(error)); return }
   const target = statePath()
   mkdirSync(dirname(target), { recursive: true })
   if (existsSync(target)) copyFileSync(target, `${target}.before-import-${new Date().toISOString().replace(/[:.]/g, '-')}`)
@@ -912,8 +913,8 @@ function backupSave(label) {
 /** Load the new game: flush the save first, then start over. */
 async function restartGame() {
   quitting = true
-  stopDrag()
-  try { await host?.dispose() } catch (error) { log('host shutdown failed', String(error)); quitting = false; return }
+  if (hostClosing) return
+  try { await prepareToQuit() } catch (error) { log('host shutdown failed', String(error)); return }
   // Testing runs one launch at a time; the next one is started by hand.
   if (process.env.PIGGY_CAPTURE) return app.exit(0)
   relaunch()
@@ -964,9 +965,17 @@ ipcMain.handle('piggy:shell:download', async (event, version) => {
 ipcMain.handle('piggy:shell:install', event => {
   if (!fromPage(event) || shellUpdates === null || shellUpdates.status().readyVersion === null) return { ok: false, reason: '还没有下载好桌面外壳' }
   if (process.env.PIGGY_CAPTURE) return { ok: false, reason: '截图测试不会安装更新' }
-  backupSave('shell-v' + shellUpdates.status().readyVersion)
+  const readyVersion = shellUpdates.status().readyVersion
+  // 安装器会替换整个外壳：关掉后台写者、等存档落盘之后再启动安装器。
   setTimeout(() => {
-    try { shellUpdates?.install() } catch (error) { log('shell update install failed', String(error)) }
+    if (!hostClosing) {
+      quitting = true
+      hostClosing = (host ? host.dispose() : Promise.resolve({ saved: true })).then(result => { hostClosed = true; return result })
+    }
+    return hostClosing.then(() => {
+      backupSave('shell-v' + readyVersion)
+      try { shellUpdates?.install() } catch (error) { log('shell update install failed', String(error)) }
+    }).catch(error => { log('shell update shutdown failed', String(error)); app.quit() })
   }, 600)
   return { ok: true }
 })
@@ -1113,14 +1122,23 @@ process.on('uncaughtException', error => { log('uncaught', error?.stack ?? Strin
 app.on('second-instance', () => win?.showInactive())
 let hostClosed = false
 let hostClosing = null
-app.on('before-quit', event => {
+/** 退出与安装共用一次后台关闭；保存失败时允许重试，不提前停命中轮询。 */
+function prepareToQuit() {
+  if (hostClosing) return hostClosing
   quitting = true
   stopDrag()
-  if (hitTimer !== null) clearInterval(hitTimer)
-  if (!host || hostClosed) return
+  hostClosing = (host ? host.dispose() : Promise.resolve({ saved: true })).then(result => {
+    hostClosed = true
+    if (!result.saved) log('host worker exited; WAL retained; shutdown without save')
+    if (hitTimer !== null) clearInterval(hitTimer)
+    hitTimer = null
+    return result
+  }).catch(error => { hostClosing = null; quitting = false; throw error })
+  return hostClosing
+}
+app.on('before-quit', event => {
+  if (!host || hostClosed) { quitting = true; stopDrag(); return }
   event.preventDefault()
-  if (!hostClosing) hostClosing = host.dispose().then(() => { hostClosed = true; app.quit() }).catch(error => {
-    log('host shutdown failed', String(error)); hostClosing = null; quitting = false
-  })
+  if (!hostClosing) void prepareToQuit().then(() => app.quit()).catch(error => log('host shutdown failed', String(error)))
 })
 app.on('window-all-closed', () => app.quit())

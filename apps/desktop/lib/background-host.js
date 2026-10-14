@@ -11,6 +11,7 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
   let sequence = 0
   let closing, failure
   let closed = false
+  let workerDead = false
   let resolveReady, rejectReady
   const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject })
 
@@ -59,12 +60,20 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
       else task.resolve(message.value)
     } else if (message.kind === 'snapshot') options.onSnapshot?.(message.value)
     else if (message.kind === 'changed') options.onStateChanged?.()
-    else if (message.kind === 'fetch') void forwardFetch(message).catch(error => fail(error))
+    // 网络或回复投递失败不代表 writer 死亡，退出时仍须尝试保存。
+    else if (message.kind === 'fetch') void forwardFetch(message).catch(() => {})
     else if (message.kind === 'cancel-fetch') fetches.get(message.id)?.abort()
   })
-  worker.on('error', fail)
-  worker.on('exit', code => { if (!closed) fail(new Error(`game runtime worker exited: ${code}`)) })
+  worker.on('error', error => { workerDead = true; fail(error) })
+  worker.on('exit', code => { workerDead = true; if (!closed) fail(new Error(`game runtime worker exited: ${code}`)) })
   try { await ready } catch (error) { await worker.terminate(); throw error }
+
+  async function terminate() {
+    closed = true
+    for (const controller of fetches.values()) controller.abort()
+    fetches.clear()
+    await worker.terminate()
+  }
 
   return {
     handle: (method, url, body) => request('handle', [method, url, body]),
@@ -72,11 +81,15 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {
       if (closing) return closing
-      closing = request('dispose').then(async () => {
-        closed = true
-        for (const controller of fetches.values()) controller.abort()
-        await worker.terminate()
-      }).catch(error => { closing = null; throw error })
+      closing = (workerDead ? Promise.resolve(false) : request('dispose').then(() => true)).catch(error => {
+        // 死亡的 writer 无法补存；只释放资源，保留磁盘上的 WAL 现场。
+        if (workerDead) return false
+        closing = null
+        throw error
+      }).then(async saved => {
+        await terminate()
+        return { saved }
+      })
       return closing
     },
   }
