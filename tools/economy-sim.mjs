@@ -114,13 +114,13 @@ export function mineHelperPerHour({ pickaxe, floor, cart = 0 }) {
 
 /**
  * 菜园帮工：扣种子；不施肥、不扣猪饱食；实物收成按帮工小批次处理，手动作物不改。
- * 扣每批种子，六小时内安排整数批自动收成。
- * @param {{cropKey: string, plots: number, efficiency?: number}} options
+ * 扣每批种子，六小时内安排整数批自动收成。管地数之外没有档位（农具档已下架）。
+ * @param {{cropKey: string, plots: number}} options
  */
-export function farmHelperPerHour({ cropKey, plots, efficiency = 0 }) {
+export function farmHelperPerHour({ cropKey, plots }) {
   const level = HELPER_PLOTS.indexOf(plots)
   if (level < 0) return null
-  const recipe = helperRecipe(cropKey, level, efficiency)
+  const recipe = helperRecipe(cropKey, level)
   if (!recipe) return null
   return { ...recipe, cycleHours: recipe.intervalMs / 3600000, fullHours: AUTOMATION_HOURS, storedItems: recipe.batches * recipe.yield }
 }
