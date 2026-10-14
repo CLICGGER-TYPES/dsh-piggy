@@ -90,7 +90,7 @@ test('对表式的小幅回拨：冻结到真实时间追上原游标，恢复�
   assert.ok(pig.ageMs > ageMs, '恢复后正常结算')
 })
 
-test('系统时间被永久调回：冻结满一天后接受新时间当新起点，不补结算', () => {
+test('系统时间被永久调回：冻结满一天后接受新时钟，猪不再被拒收；要等真实时间越过旧高点才继续长', () => {
   const pig = pigWithFood()
   decay(pig, START + 10 * DAY, never)
   const held = pig.lastSeenAt
@@ -104,11 +104,18 @@ test('系统时间被永久调回：冻结满一天后接受新时间当新起�
   assert.equal(pig.lastSeenAt, held, '错误时钟不满一天，猪还在冻结')
   decay(pig, START + DAY, never)
   assert.equal(pig.lastSeenAt, START + DAY, '满一天后接受新时间')
+  assert.equal(pig.clockRollbackAt, null, '满一天后不再是「被拒收」状态')
   assert.equal(pig.ageMs, ageMs, '接受新时间也不补结算冻结的那一段')
   assert.equal(pig.satiety, satiety, '冻结期间不衰减')
   assert.equal(pig.stats.feeds, feeds, '冻结期间不自动吃')
+  // 返工2 P2-2「宁可少算」的代价：已结算水位停在旧高点 START+10d，猪要等新时钟越过它才继续长。
   decay(pig, START + DAY + 60_000, never)
-  assert.ok(pig.ageMs > ageMs, '接受新时间之后照新时钟正常结算')
+  assert.equal(pig.lastSeenAt, START + DAY + 60_000, '不再是拒收：游标跟着新时钟走')
+  assert.equal(pig.ageMs, ageMs, '还没越过旧高点，先不结算（这一段不重复算）')
+  decay(pig, START + 10 * DAY, never)
+  assert.equal(pig.ageMs, ageMs, '正好追到旧高点仍不结算——那一段已经算过了')
+  decay(pig, START + 10 * DAY + 60_000, never)
+  assert.ok(Math.abs(pig.ageMs - ageMs - 60_000) < 1000, `越过旧高点后只结算新增的 1 分钟（实际 ${(pig.ageMs - ageMs) / 1000} 秒）`)
 })
 
 test('旧存档默认开启，已有关闭值在迁移后保留', () => {
@@ -248,7 +255,7 @@ test('游标早于出生：从出生时刻起结算，不再判成坏数据（�
   assert.ok(Math.abs(pig.ageMs - DAY) < 1000, `出生前那一天不补（实际 ${pig.ageMs / DAY} 天）`)
 })
 
-test('出生时刻在将来（快机器上孵的猪）：对表回拨满一天就解冻，年龄继续增长', () => {
+test('出生时刻在将来（快机器上孵的猪）：对表回拨满一天就解冻，不再永久冻住', () => {
   // 返工 P2-1 复现 B：旧实现解冻后写出的游标仍早于出生，又落回「坏游标」分支，
   // 于是「满一天接受新时钟」这个出口被自己吃掉、猪永久冻住。
   const pig = pigWithFood()
@@ -259,9 +266,13 @@ test('出生时刻在将来（快机器上孵的猪）：对表回拨满一天�
   assert.equal(pig.lastSeenAt, held, '回拨当下保留游标')
   decay(pig, START + DAY, never)
   assert.equal(pig.lastSeenAt, START + DAY, '满一天后接受新时钟')
+  assert.equal(pig.clockRollbackAt, null, '不再是「被拒收」状态（旧实现这里会永久冻住）')
   const frozen = pig.ageMs
   decay(pig, START + 2 * DAY, never)
-  assert.ok(pig.ageMs > frozen, '解冻后年龄必须继续增长')
+  assert.equal(pig.lastSeenAt, START + 2 * DAY, '解冻后游标跟着新时钟走，不再被拒收')
+  assert.equal(pig.ageMs, frozen, '但已结算水位还在旧高点（返工2 P2-2，宁可少算）')
+  decay(pig, START + 10 * DAY + 60_000, never)
+  assert.ok(pig.ageMs > frozen, '越过旧高点后年龄继续增长')
 })
 
 test('冻结期间有进行中的活动：解冻后只结算一次、工资只发一份', async () => {
@@ -316,6 +327,91 @@ test('回拨跨重启累计：存档往返后接着数满一天才接受新时�
   assert.equal(reloaded.lastSeenAt, START + 25 * HOUR, '重启前 20 小时 + 重启后 5 小时 = 满一天')
   assert.equal(reloaded.clockRollbackAt, null)
   assert.equal(reloaded.ageMs, pig.ageMs, '冻结期间不补结算')
+})
+
+// ===========================================================================
+// 返工2（P2-2）：已结算水位（state.settledUpTo）
+//
+// 用户 2026-10-14 拍板「宁可少算」：认新时钟时水位不回退，时间要重新越过水位才继续
+// 结算，同一段绝不结算两遍。代价是旧高点落在将来时猪会暂停到真实时间追上它。
+// ===========================================================================
+
+test('返工2 P2-2：回拨 10 天、保持 25 小时、再改回真实时间——那 10 天不算第二遍', () => {
+  const pig = pigWithFood()
+  decay(pig, START + 10 * DAY, never)
+  const ageMs = pig.ageMs
+  const feeds = pig.stats.feeds
+  // 错表：拨回 10 天（= START），保持 25 小时，触发「满一天接受新时钟」的出口。
+  decay(pig, START, never)
+  decay(pig, START + 25 * HOUR, never)
+  assert.equal(pig.lastSeenAt, START + 25 * HOUR, '满一天后接受错表的时钟')
+  assert.equal(pig.ageMs, ageMs, '错表期间不结算')
+  // 改回真实时间：比原来还多了一天。
+  const realNow = START + 11 * DAY
+  decay(pig, realNow, never)
+  // 若把错表那 10 天算第二遍，会从 START+25h 一路结算到 realNow（≈9.96 天），ageMs 会到约 20 天。
+  assert.ok(Math.abs(pig.ageMs - ageMs - DAY) < 1000, `只结算新增的 1 天（实际 ${(pig.ageMs - ageMs) / DAY} 天）`)
+  assert.equal(pig.lastSeenAt, realNow)
+  assert.equal(pig.settledUpTo, realNow, '水位跟着推进到新的结算高点')
+  assert.ok(pig.stats.feeds >= feeds, '新增的那一天照常结算（该吃吃、该长长）')
+})
+
+test('返工2 P2-2：永久回拨——满一天不再被拒收，但在旧水位处暂停，量出「最长多久不推进」', () => {
+  const pig = pigWithFood()
+  decay(pig, START + 10 * DAY, never)
+  const highWater = pig.settledUpTo
+  // 永久把系统时钟拨回 10 天。
+  decay(pig, START, never)
+  assert.equal(pig.clockRollbackAt, START, '进入拒收（冻结）窗口')
+  decay(pig, START + DAY, never)
+  assert.equal(pig.clockRollbackAt, null, '满一天后不再是「被拒收」状态，不会永久冻结')
+  assert.equal(pig.lastSeenAt, START + DAY, '游标接受新时钟')
+  assert.equal(pig.settledUpTo, highWater, '已结算水位留在旧高点、不回退')
+  const frozen = pig.ageMs
+  // 一步步走错表的时钟：不崩、不结算，直到越过水位。
+  let waitedMs = DAY
+  for (let h = 2; h <= 10 * 24; h += 1) {
+    decay(pig, START + h * HOUR, never)
+    if (pig.ageMs > frozen) break
+    waitedMs = h * HOUR
+  }
+  assert.equal(pig.ageMs, frozen, '旧高点之前一天都不结算')
+  assert.equal(waitedMs, 10 * DAY, '从被拨回那一刻算，猪整整 10 天不推进（前 1 天拒收 + 后 9 天等水位）')
+  assert.equal(pig.dead, false, '暂停期间猪不崩、不生病到死（时间没在走）')
+  decay(pig, highWater + HOUR, never)
+  assert.ok(pig.ageMs > frozen, '越过水位之后恢复结算')
+})
+
+test('返工2 P2-2：来回多次拨表（+5d / -6d / +2d / +7d）不重复结算任何一段', () => {
+  const pig = pigWithFood()
+  // +5 天：结算 (0, 5d]
+  decay(pig, START + 5 * DAY, never)
+  assert.ok(Math.abs(pig.ageMs - 5 * DAY) < 1000, '先正常结算 5 天')
+  assert.equal(pig.settledUpTo, START + 5 * DAY)
+  // 拨到 -1 天（比出生还早）：拒收，开始数一天
+  decay(pig, START - DAY, never)
+  assert.equal(pig.clockRollbackAt, START - DAY)
+  assert.equal(pig.lastSeenAt, START + 5 * DAY, '拒收期间游标不动')
+  // 拨到 +1 天（比回拨点晚 2 天）→ 满一天，接受新时钟；水位仍停在 5 天
+  decay(pig, START + DAY, never)
+  assert.equal(pig.lastSeenAt, START + DAY, '满一天接受新时钟')
+  assert.equal(pig.settledUpTo, START + 5 * DAY, '水位停在旧高点')
+  // 再拨到 +7 天：只结算 (5d, 7d] 这 2 天
+  decay(pig, START + 7 * DAY, never)
+  assert.equal(pig.lastSeenAt, START + 7 * DAY)
+  assert.equal(pig.settledUpTo, START + 7 * DAY)
+  // 不重叠之和 = 5 天 + 2 天 = 7 天（= START 到最后的真实间隔）。
+  // 若把接受后的 (1d, 5d] 也算一遍，会多 4 天、变成 11 天。
+  assert.ok(Math.abs(pig.ageMs - 7 * DAY) < 1000, `总结算 = 各段不重叠之和 7 天（实际 ${pig.ageMs / DAY} 天）`)
+})
+
+test('返工2 P2-2：老存档没有已结算水位就补 null，坏值当没有，有效值原样留下', () => {
+  const pig = pigWithFood()
+  const before = { ...pig, version: 12 }
+  delete before.settledUpTo
+  assert.equal(migrate(before, START).settledUpTo, null, '老存档：还没结算过，decay 按 lastSeenAt 处理')
+  assert.equal(migrate({ ...pig, settledUpTo: '刚才' }, START).settledUpTo, null, '坏值当没有')
+  assert.equal(migrate({ ...pig, settledUpTo: START - DAY }, START).settledUpTo, START - DAY, '有效值保留，存档重载后不重复结算')
 })
 
 test('关掉离线喂食 + 超长离线：饿到 0、不动背包（产品期望待用户确认）', () => {

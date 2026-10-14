@@ -65,6 +65,8 @@ export function migrate(input, nowMs) {
   // 新字段（0.36.2 修时钟回拨）：老存档没有就补 null，坏值当没有。
   // 不升 STATE_VERSION：没有要换算的数据，缺了就是「没有正在进行的回拨」（先例见 daily.js）。
   if (!Number.isFinite(state.clockRollbackAt)) state.clockRollbackAt = null
+  // 已结算水位同理：缺了/坏了就是 null，decay() 按 lastSeenAt 处理（返工2 P2-2）。
+  if (!Number.isFinite(state.settledUpTo)) state.settledUpTo = null
   if (typeof raw.health !== 'number') state.health = raw.dead === true ? 0 : MAX.health
   if (typeof raw.coins !== 'number') state.coins = egg.coins
   // Starting money went 60 -> 500. A pig that hatched under the old number is

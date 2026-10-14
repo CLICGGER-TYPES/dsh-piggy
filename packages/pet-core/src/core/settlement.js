@@ -15,7 +15,7 @@ import { advanceIllness, noteOuting, restAtHome, rollForIllness } from './illnes
 import { say } from './lines.js'
 import { rollerFor } from './random.js'
 import { noteToday, writeDiaryIfNewDay } from './diary.js'
-import { dayKeyFor, holdClock, isUsableCursor } from './clock.js'
+import { dayKeyFor, holdClock, isUsableCursor, raiseSettledUpTo, settleFloorMs } from './clock.js'
 import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
@@ -62,6 +62,7 @@ export function decay(state, nowMs, options = {}) {
     console.warn(`[dsh-piggy] unusable settle cursor, resetting to now: lastSeenAt=${String(state.lastSeenAt)} nowMs=${nowMs}`)
     state.lastSeenAt = nowMs
     state.clockRollbackAt = null
+    raiseSettledUpTo(state, nowMs)
     return state
   }
   // 游标早于出生时刻（手改存档、跨机器拷贝）时把结算起点钳到出生：出生之前猪还不存在，
@@ -76,17 +77,23 @@ export function decay(state, nowMs, options = {}) {
   }
   state.clockRollbackAt = null
   state.lastSeenAt = nowMs
+  // 已结算水位（只增不减，见 clock.js）：认新时钟后 lastSeenAt 会跳回过去，水位却留在
+  // 旧高点——时间要重新越过它才继续结算，同一段绝不结算两遍（返工2 P2-2，宁可少算）。
+  const floorMs = settleFloorMs(state, fromMs)
+  if (nowMs <= floorMs) return state
   // An unopened box is not a pet yet: it never gets hungry, dirty, sick or
   // older, and it cannot die while it waits to be poked open (#2).
   if (state.hatched !== true) return state
   if (state.dead === true) return state
+  // 到这里才真的要结算，水位跟着推进（前面的跳过路径只在 lastSeenAt 上走）。
+  raiseSettledUpTo(state, nowMs)
   const next = options.roll ?? rollerFor(state)
-  // 单次结算跨度上限（见 constants.js）：游标即使合法也可能久远到走不完，只补最近
+  // 单次结算跨度上限（见 constants.js）：起点即使合法也可能久远到走不完，只补最近
   // MAX_SETTLE_SPAN_MS，更早的时间不结算——那一段当作没有离开过。
-  const settleFromMs = Math.max(fromMs, nowMs - MAX_SETTLE_SPAN_MS)
+  const settleFromMs = Math.max(floorMs, nowMs - MAX_SETTLE_SPAN_MS)
   // 少结算了就说一声，别让玩家只看到「年龄凭空少了」（P3-3）。
-  if (nowMs - fromMs > MAX_SETTLE_SPAN_MS) {
-    console.warn(`[dsh-piggy] settle span over the cap, only the last ${MAX_SETTLE_SPAN_MS}ms is settled: fromMs=${fromMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
+  if (nowMs - floorMs > MAX_SETTLE_SPAN_MS) {
+    console.warn(`[dsh-piggy] settle span over the cap, only the last ${MAX_SETTLE_SPAN_MS}ms is settled: floorMs=${floorMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
   }
   if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
     // First tick after loading an old save: seed pig time from the birthday.

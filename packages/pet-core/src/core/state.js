@@ -75,6 +75,8 @@ export function ageFromNow(state, nowMs) {
   state.ageForced = false
   state.stage = lifeStageFor(state, nowMs).key
   state.lastSeenAt = nowMs
+  // 重置：旧时间线整个丢掉，已结算水位也跟着归到当下（见 core/clock.js 的 settleFloorMs）。
+  state.settledUpTo = nowMs
   remember(state, '🔧 年龄归零，从现在开始按真实时间算', nowMs)
   return state
 }
@@ -135,6 +137,9 @@ export function applyDevPatch(state, patch, nowMs) {
   if (typeof patch.__advanceMs === 'number' && Number.isFinite(patch.__advanceMs) && patch.__advanceMs > 0) {
     const advance = Math.min(patch.__advanceMs, 60 * 86_400_000)
     state.lastSeenAt = nowMs - advance
+    // 快进是在「假装这段真的流过」，已结算水位也要跟着退回去，否则它会把快进挡住
+    // （水位高出新游标时 decay() 会跳过，见 core/clock.js 的 settleFloorMs）。
+    state.settledUpTo = state.lastSeenAt
     // 快进的起点可能早于出生（新猪 + 快进半天）。那只是「这段时间也当作猪在」的
     // 模拟，不是坏游标，所以把生日一起提前，别让 decay() 从出生算起、把这段吃掉
     // （见 core/settlement.js 的 decay）。
