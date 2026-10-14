@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { decay, hatchEgg, migrate, THRESHOLDS, SHOP, REVIVE_ITEM } from '../core.js'
 const START = 1_700_000_000_000
 const DAY = 86_400_000
+const HOUR = 3_600_000
 const never = { roll: () => 0.99 }
 const medicineKey = SHOP.find(item => item.kind === 'medicine').key
 function pigWithFood() {
@@ -44,12 +45,86 @@ test('在线轮询不自动吃食物', () => {
   assert.equal(pig.stats.feeds, 0)
   assert.equal(pig.inventory.apple, 30)
 })
+test('系统时钟回拨时结算游标不能跟着退回', () => {
+  const pig = pigWithFood()
+  decay(pig, START + 2 * DAY, never)
+  const highWater = pig.lastSeenAt
+  decay(pig, START + DAY, never)
+  assert.equal(pig.lastSeenAt, highWater, '回拨只应跳过这一次结算，游标仍指向已结算到的时刻')
+})
+
+test('时钟回拨再恢复不能把已结算的时间重复结算一遍', () => {
+  const pig = pigWithFood()
+  decay(pig, START + 2 * DAY, never)
+  const feeds = pig.stats.feeds
+  const ageMs = pig.ageMs
+  const satiety = pig.satiety
+  const inventory = { ...pig.inventory }
+  decay(pig, START + DAY, never)
+  decay(pig, START + 2 * DAY, never)
+  assert.equal(pig.stats.feeds, feeds, '回拨再恢复不能重复喂食')
+  assert.equal(pig.ageMs, ageMs, '回拨再恢复不能重复长大')
+  assert.equal(pig.satiety, satiety, '回拨再恢复不能重复衰减')
+  assert.deepEqual(pig.inventory, inventory, '回拨再恢复不能重复扣食物')
+})
+
+test('存档游标在未来（负时长）时不能把游标吞到现在', () => {
+  const pig = pigWithFood()
+  pig.lastSeenAt = START + 5 * DAY
+  decay(pig, START, never)
+  assert.equal(pig.lastSeenAt, START + 5 * DAY, '游标在未来时应保留，等真实时间追上再结算')
+})
+
+test('对表式的小幅回拨：冻结到真实时间追上原游标，恢复后不重复结算', () => {
+  const pig = pigWithFood()
+  decay(pig, START + 3 * HOUR, never)
+  const ageMs = pig.ageMs
+  decay(pig, START + 2 * HOUR, never)
+  assert.equal(pig.lastSeenAt, START + 3 * HOUR, '回拨一小时：游标留在高点')
+  decay(pig, START + 3 * HOUR - 1, never)
+  assert.equal(pig.lastSeenAt, START + 3 * HOUR, '没追上原游标之前一直冻结')
+  assert.equal(pig.ageMs, ageMs, '冻结期间不长大')
+  decay(pig, START + 4 * HOUR, never)
+  assert.equal(pig.lastSeenAt, START + 4 * HOUR, '追上之后照常往前走')
+  assert.ok(pig.ageMs > ageMs, '恢复后正常结算')
+})
+
+test('系统时间被永久调回：冻结满一天后接受新时间当新起点，不补结算', () => {
+  const pig = pigWithFood()
+  decay(pig, START + 10 * DAY, never)
+  const held = pig.lastSeenAt
+  const ageMs = pig.ageMs
+  const satiety = pig.satiety
+  const feeds = pig.stats.feeds
+  decay(pig, START, never)
+  assert.equal(pig.lastSeenAt, held, '回拨当下保留游标')
+  assert.equal(pig.ageMs, ageMs, '回拨当下不结算')
+  decay(pig, START + DAY - 1, never)
+  assert.equal(pig.lastSeenAt, held, '错误时钟不满一天，猪还在冻结')
+  decay(pig, START + DAY, never)
+  assert.equal(pig.lastSeenAt, START + DAY, '满一天后接受新时间')
+  assert.equal(pig.ageMs, ageMs, '接受新时间也不补结算冻结的那一段')
+  assert.equal(pig.satiety, satiety, '冻结期间不衰减')
+  assert.equal(pig.stats.feeds, feeds, '冻结期间不自动吃')
+  decay(pig, START + DAY + 60_000, never)
+  assert.ok(pig.ageMs > ageMs, '接受新时间之后照新时钟正常结算')
+})
+
 test('旧存档默认开启，已有关闭值在迁移后保留', () => {
   const pig = pigWithFood()
   const before = { ...pig, version: 12 }
   delete before.isOfflineFeedEnabled
   assert.equal(migrate(before, START).isOfflineFeedEnabled, true)
   assert.equal(migrate({ ...pig, isOfflineFeedEnabled: false }, START).isOfflineFeedEnabled, false)
+})
+
+test('老存档没有回拨标记就补 null，坏值当没有，有效值原样留下', () => {
+  const pig = pigWithFood()
+  const before = { ...pig, version: 12 }
+  delete before.clockRollbackAt
+  assert.equal(migrate(before, START).clockRollbackAt, null, '老存档：没有正在进行的回拨')
+  assert.equal(migrate({ ...pig, clockRollbackAt: '昨天' }, START).clockRollbackAt, null, '坏值当没有')
+  assert.equal(migrate({ ...pig, clockRollbackAt: START - DAY }, START).clockRollbackAt, START - DAY, '有效值保留，存档重载后还能继续判断')
 })
 
 test('优先能越过饥饿线的便宜食物，不足时选回复最多的', async () => {

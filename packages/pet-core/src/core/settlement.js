@@ -7,7 +7,7 @@
  */
 
 import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
-import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
+import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, CLOCK_ROLLBACK_HOLD_MS, HAPPINESS_DECAY_PER_MIN, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
@@ -50,17 +50,22 @@ export { currentIllness, die } from './illness.js'
  */
 export function decay(state, nowMs, options = {}) {
   const fromMs = state.lastSeenAt ?? nowMs
+  // 时钟没前进（回拨 / 游标在未来）：游标只能停在已结算到的高点，见 holdClock。
+  if (!(nowMs > fromMs)) {
+    holdClock(state, nowMs, fromMs)
+    return state
+  }
+  state.clockRollbackAt = null
   state.lastSeenAt = nowMs
   // An unopened box is not a pet yet: it never gets hungry, dirty, sick or
   // older, and it cannot die while it waits to be poked open (#2).
   if (state.hatched !== true) return state
-  if (!(nowMs > fromMs) || state.dead === true) return state
+  if (state.dead === true) return state
   const next = options.roll ?? rollerFor(state)
   if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
     // First tick after loading an old save: seed pig time from the birthday.
     state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, fromMs - state.bornAt) : 0
   }
-
   // An old save may have no diary yet. Start at the last observed day so
   // events settled below cannot be credited to the day the panel reopened.
   rollDiaryAt(state, fromMs)
@@ -82,6 +87,41 @@ export function decay(state, nowMs, options = {}) {
   if (state.dead !== true) passTime(state, { fromMs: cursor, toMs: nowMs, away: false, meals }, next)
   finishOfflineMeals(state, meals, nowMs)
   return state
+}
+
+/**
+ * 时钟比结算游标走得慢时的处理：保留游标、本次不结算。
+ *
+ * 为什么会走到这里：`fromMs` 是已经结算到的高点。时钟回拨、或存档里的游标来自一台
+ * 走快的机器（B2），都会让 `nowMs < fromMs`。这时把游标落到 `nowMs` 就是「吞掉」
+ * 已经结算过的时间，等真实时钟追上来会重复结算。
+ *
+ * 但不能永远保留：用户把系统时间调成错的（笔记本没电池、手动改表）时，游标就永远
+ * 停在未来、猪一直冻结。折中——倒退持续满 CLOCK_ROLLBACK_HOLD_MS（按倒退后的新
+ * 时钟计）就认新时钟当新起点，跳过去、不补结算。回拨出来的那段本来就没真的流过，
+ * 补上等于凭空多给一次离线结算；回拨不超过一天时，真实时钟会在冻结 CLOCK_ROLLBACK_HOLD_MS
+ * 之前追上原游标，所以普通对表不会触发这一步。
+ *
+ * @param {object} state
+ * @param {number} nowMs
+ * @param {number} fromMs
+ */
+function holdClock(state, nowMs, fromMs) {
+  // 游标缺失或已损坏（NaN / Infinity）时没有可比的高点，按老行为落在当前时刻。
+  if (!Number.isFinite(fromMs)) {
+    state.lastSeenAt = nowMs
+    return
+  }
+  // 只认真正的倒退。同一毫秒里的重复调用很常见（describe 等只读路径），
+  // 不能拿它当冻结的起点。
+  if (!(nowMs < fromMs)) return
+  const since = Number.isFinite(state.clockRollbackAt) ? state.clockRollbackAt : nowMs
+  if (nowMs - since >= CLOCK_ROLLBACK_HOLD_MS) {
+    state.lastSeenAt = nowMs
+    state.clockRollbackAt = null
+    return
+  }
+  state.clockRollbackAt = since
 }
 
 /**

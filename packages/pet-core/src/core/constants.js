@@ -96,6 +96,20 @@ export const DAY_MS = 86_400_000
 export const SETTLE_STEP_MS = 5 * 60_000
 
 /**
+ * 时钟回拨的容忍时长。
+ *
+ * 对表（NTP、夏令时、虚拟机挂起）把墙上时钟往回拨一点是常事，这时结算游标必须留在
+ * 高点：拖回去就等于把已经结算过的离线时间再结算一遍（重复喂食、重复长大、重掷疾病）。
+ * 但「用户把系统时间调成错的」（笔记本没电池、手动改表）从存档上看和回拨一模一样，
+ * 一直保留游标会让猪无限期冻在未来，所以倒退持续满这个时长（按倒退后的新时钟计）
+ * 就认新时钟当新起点、跳过去且不补结算——回拨出来的那段本来就没真的流过。
+ *
+ * 效果：回拨不超过一天，猪冻结到真实时间追上原游标（最多一天）；回拨超过一天，
+ * 冻结满一天后接受新时间点。
+ */
+export const CLOCK_ROLLBACK_HOLD_MS = 24 * 60 * 60_000
+
+/**
  * Health at or below which the pig is too weak to leave the house. The scale is
  * 5 = full, and the four illness stages set it to 4/3/2/1, so 1 is the last
  * stage before it dies.

@@ -69,6 +69,9 @@ export function layEgg(nowMs) {
     lastFedAt: 0,
     lastActiveAt: nowMs,
     lastSeenAt: nowMs,
+    // 时钟回拨后第一次被看到的时刻（倒退后的新时钟读数）；只在冻结期间有值，
+    // 用来判断这个倒退是不是「用户改了系统时间」（见 core/settlement.js 的 holdClock）。
+    clockRollbackAt: null,
     cooldowns: {},
     pending: [],
     pendingSeq: 0,
