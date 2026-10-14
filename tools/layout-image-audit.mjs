@@ -107,6 +107,42 @@ function materialInnerRect(frame, css, info) {
   const painted = paintedImage(frame, css, natural, false)
   return { left: painted.x + inset[3] * painted.width / natural[0], right: painted.x + painted.width - inset[1] * painted.width / natural[0], top: painted.y + inset[0] * painted.height / natural[1], bottom: painted.y + painted.height - inset[2] * painted.height / natural[1] }
 }
+/** @param {CSSStyleDeclaration} css */
+function solidBackground(css) {
+  const match = String(css.backgroundColor).match(/rgba?\(([^)]+)\)/)
+  if (!match) return false
+  const parts = match[1].split(',')
+  const alpha = parts.length > 3 ? parseFloat(parts[3]) : 1
+  return alpha > .05
+}
+/**
+ * 最近的「纯色上色、不是素材框」的底牌祖先。素材名找不到、或只有 bg-* 背景图时用它，
+ * 让帮工牌这类纯色底牌也走同一套内边距门槛。
+ * @param {Element} element
+ */
+function solidPlate(element) {
+  for (let plate = element.parentElement; plate && plate.closest('.fm'); plate = plate.parentElement) {
+    if (plate.matches('.fm,.fm-big,.fm-b-scene,.fm-s-scene,.fm-b-field')) continue
+    const css = getComputedStyle(plate)
+    if (css.borderImageSource && css.borderImageSource !== 'none') continue
+    if (css.backgroundImage && css.backgroundImage !== 'none' && css.backgroundSize !== '0px 0px') continue
+    if (!solidBackground(css) && parseFloat(css.borderTopWidth) <= 0) continue
+    return plate
+  }
+  return null
+}
+/** 纯色底牌的可用边（border box；素材框用 materialInnerRect 的内边线）。@param {Element} plate */
+function plateEdgeBox(plate) {
+  const r = plate.getBoundingClientRect()
+  return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+}
+/** @param {Element} element @param {any} inner @param {number} minimum @param {any} extra @param {any} report */
+function checkMaterialGaps(element, inner, minimum, extra, report) {
+  for (const glyph of textRects(element)) {
+    const gaps = { left: glyph.left - inner.left, right: inner.right - glyph.right, top: glyph.top - inner.top, bottom: inner.bottom - glyph.bottom }
+    if (Object.values(gaps).some(gap => gap < minimum - .5)) report.framePaddingViolations.push({ element: imageIdentify(element), text: element.textContent?.trim(), minimum, gaps, inner, ...extra })
+  }
+}
 /** @param {Element[]} elements @param {any} report @param {Record<string,any>} catalog */
 function auditMaterialPadding(elements, report, catalog) {
   const missing = new Set()
@@ -115,23 +151,26 @@ function auditMaterialPadding(elements, report, catalog) {
     if (!element.closest('.fm') || element.matches('.fm-tool-label,.fm-tooltip,.fm-n,.fm-lock') || !Array.from(element.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) continue
     let frame = element, name = null
     while (frame && frame.closest('.fm')) {
-      name = frameAsset(frame, getComputedStyle(frame))
-      if (name && !name.startsWith('bg-')) break
+      const found = frameAsset(frame, getComputedStyle(frame))
+      if (found && !found.startsWith('bg-')) { name = found; break }
       frame = frame.parentElement
     }
-    if (!frame || !name || name.startsWith('bg-')) continue
-    const info = catalog[name]
-    if (!info?.inner_insets || !info?.size) {
-      if (!missing.has(name)) report.unknownAssetGeometry.push({ name, element: imageIdentify(frame), reason: '带文字框缺manifest真实inner_insets，不能按元素外边界假通过' })
-      missing.add(name); continue
-    }
-    const inner = materialInnerRect(frame, getComputedStyle(frame), info), minimum = element.closest('.fm-big') ? 8 : 6
-    for (const glyph of textRects(element)) {
-      const gaps = { left: glyph.left - inner.left, right: inner.right - glyph.right, top: glyph.top - inner.top, bottom: inner.bottom - glyph.bottom }
-      if (Object.values(gaps).some(gap => gap < minimum - .5)) report.framePaddingViolations.push({ element: imageIdentify(element), text: element.textContent?.trim(), name, minimum, gaps, inner })
+    const minimum = element.closest('.fm-big') ? 8 : 6
+    if (frame && name) {
+      const info = catalog[name]
+      if (!info?.inner_insets || !info?.size) {
+        if (!missing.has(name)) report.unknownAssetGeometry.push({ name, element: imageIdentify(frame), reason: '带文字框缺manifest真实inner_insets，不能按元素外边界假通过' })
+        missing.add(name); continue
+      }
+      checkMaterialGaps(element, materialInnerRect(frame, getComputedStyle(frame), info), minimum, { name }, report)
+    } else {
+      // 找不到素材名：纯色底牌也按同一套门槛查（帮工牌那种 background-color 底牌原来一条不查）。
+      // 只查文字直接贴在底牌上的情形，避免把「纯色容器 → 内层布局 div → 文字」整片算进来。
+      const plate = solidPlate(element)
+      if (plate && element.parentElement === plate) checkMaterialGaps(element, plateEdgeBox(plate), minimum, { plate: imageIdentify(plate), solid: true }, report)
     }
   }
 }
-export const IMAGE_AUDIT_FUNCTIONS = [imageIdentify, assetFile, frameAsset, axisScale, paintedImage, auditImageRatios, recordImageRatio, auditNineSlice, textRects, materialInnerRect, auditMaterialPadding]
+export const IMAGE_AUDIT_FUNCTIONS = [imageIdentify, assetFile, frameAsset, axisScale, paintedImage, auditImageRatios, recordImageRatio, auditNineSlice, textRects, materialInnerRect, solidBackground, solidPlate, plateEdgeBox, checkMaterialGaps, auditMaterialPadding]
 
 export { auditImageRatios, auditMaterialPadding }
