@@ -264,6 +264,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   assert.equal(t.balance(), 2 * 3000 + 5 * 20)
   assert.deepEqual(old.plots.slice(0, 3), [null, null, null])
   assert.equal(old.helper.hired, true)
+  assert.equal(old.helper.barn, 2, '农具档已下架，但旧存档的 barn 字段保留不删（只读取、不生效）')
   assert.equal(old.helper.stock.sprout, 4)
   assert.ok(old.exp > 0)
   assert.equal(old.sprinklers, undefined)
@@ -290,7 +291,7 @@ test('帮工猪（J2 不变）：按自己的小批次收进谷仓、管的地�
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
   farm.actions.plant(data, { plot: 1, item: 'radish' }, t.api)
   farm.actions.hire(data, {}, t.api)
-  const recipe = helperRecipe('radish', 0, 0)
+  const recipe = helperRecipe('radish', 0)
   assert.ok(recipe.net > 0 && recipe.net <= 400)
   t.api.now = T0 + FIRST_PEST + 1
   const view = farm.view(data, t.api)
@@ -304,11 +305,11 @@ test('帮工猪（J2 不变）：按自己的小批次收进谷仓、管的地�
   assert.equal(data.helper.usedMs, 0)
 })
 
-test('帮工每种作物、每档：净时薪 ≤ 400 且比自己种少赚', () => {
-  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
-    const recipe = helperRecipe(crop.key, level, barn)
+test('帮工每种作物、每档管地：净时薪 ≤ 400 且比自己种少赚', () => {
+  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) {
+    const recipe = helperRecipe(crop.key, level)
     const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours
-    assert.ok(recipe.net > 0 && recipe.net <= 400 && recipe.net < manual, crop.key + level + barn)
+    assert.ok(recipe.net > 0 && recipe.net <= 400 && recipe.net < manual, crop.key + level)
   }
 })
 
@@ -381,12 +382,12 @@ test('fix4：夜里下雨浇湿已干地，时段不改变天气或浇水', () =
   assert.ok(data.plots[1].pests.dry > night)
 })
 
-test('帮工每种作物、每档：实际净时薪落在自己种的 85%~92%，400 封顶、六小时整数批', () => {
+test('帮工每种作物、每档管地：实际净时薪落在自己种的 85%~92%，400 封顶、六小时整数批', () => {
   const capped = []
-  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
-    const recipe = helperRecipe(crop.key, level, barn)
+  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) {
+    const recipe = helperRecipe(crop.key, level)
     const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours
-    const where = crop.key + '/' + HELPER_PLOTS[level] + '块地/农具' + barn
+    const where = crop.key + '/' + HELPER_PLOTS[level] + '块地'
     assert.ok(Number.isInteger(recipe.batches) && recipe.batches >= 1, where + ' 批数是整数')
     assert.equal(recipe.intervalMs * recipe.batches, HELPER_WINDOW, where + ' 批次正好铺满六小时')
     assert.ok(recipe.yield >= 1 && recipe.yield <= crop.yield, where + ' 单批收成不超过自己种')
@@ -398,14 +399,14 @@ test('帮工每种作物、每档：实际净时薪落在自己种的 85%~92%，
   assert.ok(capped.length > 0, '有被 400 封顶的组合：' + capped.join(','))
 })
 
-test('数值扰动 ±5%：348 个组合都不返回 null、周期/批数/收成可用，净时薪恒 ≤ 400（防崩回归）', () => {
+test('数值扰动 ±5%：87 个组合都不返回 null、周期/批数/收成可用，净时薪恒 ≤ 400（防崩回归）', () => {
   const fields = ['price', 'sell', 'yield', 'hours']
   const before = CROPS.map(crop => ({ ...crop }))
   const check = label => {
     let degraded = 0
-    for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
-      const where = label + ' ' + crop.key + '/' + HELPER_PLOTS[level] + '块地/农具' + barn
-      const recipe = helperRecipe(crop.key, level, barn)
+    for (const crop of CROPS) for (let level = 0; level < 3; level += 1) {
+      const where = label + ' ' + crop.key + '/' + HELPER_PLOTS[level] + '块地'
+      const recipe = helperRecipe(crop.key, level)
       assert.ok(recipe, where + ' 不该返回 null')
       assert.ok(Number.isInteger(recipe.batches) && recipe.batches >= 1, where + ' 批数是正整数')
       assert.ok(Number.isFinite(recipe.intervalMs) && recipe.intervalMs > 0, where + ' 周期是有限正数')
@@ -430,10 +431,10 @@ test('数值扰动 ±5%：348 个组合都不返回 null、周期/批数/收成�
 })
 
 test('400 封顶与退化路径：区间无解时也给出可用配方（带 degraded / share）', () => {
-  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
-    const recipe = helperRecipe(crop.key, level, barn)
+  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) {
+    const recipe = helperRecipe(crop.key, level)
     assert.ok(recipe.net <= 400, crop.key + ' 净时薪必须 ≤ 400')
-    assert.equal(recipe.degraded, false, crop.key + '/' + level + '/' + barn + ' 当前数值表不该退化')
+    assert.equal(recipe.degraded, false, crop.key + '/' + level + ' 当前数值表不该退化')
   }
   // 石榴种子价 170 → 160：16 地自己种净时薪 474 > 400/0.85，85% 下界（402.96）高过 400 封顶，
   // 区间整个落空——旧代码在这条组合上返回 null，prepareHelper 读 recipe.intervalMs 会抛穿整个扩展。
@@ -443,7 +444,7 @@ test('400 封顶与退化路径：区间无解时也给出可用配方（带 deg
     pomegranate.price = 160
     const manual = HELPER_PLOTS[2] * (pomegranate.yield * pomegranate.sell - pomegranate.price) / pomegranate.hours
     assert.ok(manual * 0.85 > 400, '这条组合的 85% 下界确实高过 400 封顶：' + (manual * 0.85).toFixed(2))
-    const recipe = helperRecipe('pomegranate', 2, 0)
+    const recipe = helperRecipe('pomegranate', 2)
     assert.ok(recipe, '无解也不能返回 null')
     assert.equal(recipe.degraded, true, '无解就走退化路径')
     assert.ok(recipe.yield >= 1 && recipe.yield <= pomegranate.yield, '退化配方的单批收成仍可用')
@@ -455,7 +456,7 @@ test('400 封顶与退化路径：区间无解时也给出可用配方（带 deg
     pomegranate.price = price
   }
   // key 不认识时仍返回 null（调用方必须兜底），但整条动作链不能抛。
-  assert.equal(helperRecipe('not-a-crop', 0, 0), null)
+  assert.equal(helperRecipe('not-a-crop', 0), null)
   const data = establishedFarm(), t = fakeApi()
   farm.actions.buy(data, { item: 'radish', count: 4 }, t.api)
   farm.actions.hire(data, {}, t.api)
@@ -484,20 +485,85 @@ test('时钟回拨：结算不挪 lastAt，回拨那一段不重记工时（回�
   assert.deepEqual(data.helper.stock, stock, '时钟走回原处不重复发货')
 })
 
-test('帮工先清理管区里的开荒地（残株、杂草）再补种', () => {
+test('帮工清理管区开荒地（残株、杂草）不给经验、不吃体力；缺指定种子就只清不种', () => {
   setRandom(() => 0.1)
   const data = establishedFarm()
   const t = fakeApi()
-  farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
   data.plots[0] = { fallow: true, stubble: true, pests: { dry: null, weed: null } }
   data.plots[1] = { fallow: true, stubble: false, pests: { dry: null, weed: 0 } }
+  data.plots[2] = { fallow: true, stubble: true, pests: { dry: null, weed: 0 } }
+  data.helper.targets[0] = 'radish' // 指定了白萝卜，但一颗白萝卜种子都没有
+  farm.actions.hire(data, {}, t.api)
+  const exp = data.exp, tired = t.tired()
+  t.api.now = T0 + H
+  farm.actions.buy(data, { item: 'sprout', count: 1 }, t.api) // 有别的种子，帮工也不替玩家挑
+  assert.equal(data.plots[0].fallow, true, '缺种子不补种')
+  assert.equal(data.plots[0].stubble, false, '残株照清')
+  assert.equal(data.plots[1].pests.weed, null, '杂草照拔')
+  assert.equal(data.plots[2].stubble, false, '没指定作物的荒地也只清')
+  assert.equal(data.exp, exp, '帮工清理开荒地不给经验')
+  assert.equal(t.tired(), tired, '帮工干活不吃玩家体力')
+  assert.deepEqual(farm.view(data, t.api).helper.missing, ['白萝卜'], '缺哪种目标种子如实报')
+})
+
+test('帮工清理开荒地后按指定作物补种，不换仓库里数量更多的种子', () => {
+  setRandom(() => 0.1)
+  const data = establishedFarm()
+  const t = fakeApi()
+  data.exp = 10000
+  farm.actions.buy(data, { item: 'radish', count: 5 }, t.api)
+  farm.actions.buy(data, { item: 'carrot', count: 50 }, t.api)
+  data.plots[0] = { fallow: true, stubble: true, pests: { dry: null, weed: 0 } }
+  data.helper.targets[0] = 'radish'
+  farm.actions.hire(data, {}, t.api)
+  t.api.now = T0 + H
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  assert.equal(data.plots[0].crop, 'radish', '清理后按指定的白萝卜补种，不吃数量更多的胡萝卜')
+})
+
+test('玩家主动铲空管区地：帮工按原来指定的作物补种，不换仓库里数量更多的种子', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  data.exp = 10000
+  farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
+  farm.actions.buy(data, { item: 'carrot', count: 200 }, t.api)
+  farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
   farm.actions.hire(data, {}, t.api)
   t.api.now = T0 + 2 * H
   farm.actions.buy(data, { item: 'radish' }, t.api)
-  assert.equal(data.plots[0].crop, 'radish', '残株铲掉后补种')
-  assert.equal(data.plots[1].crop, 'radish', '杂草拔掉后补种')
-  assert.ok(data.exp >= 2 * 2, '清理开荒地给经验：' + data.exp)
-  assert.ok(data.helper.usedMs > 0 && data.helper.stock.radish > 0, '干活了')
+  assert.equal(data.helper.targets[0], 'radish', '帮工认下玩家种的白萝卜')
+  assert.equal(farm.actions.clear(data, { plot: 0, force: true }, t.api).ok, true, '玩家主动铲空')
+  assert.equal(data.plots[0]?.crop, 'radish', '补的是原来指定的白萝卜，不是数量最多的胡萝卜')
+})
+
+test('农具档下架：商店不卖、配方不吃 barn、旧存档 barn 字段保留且 barn 0/3 结果完全相同', () => {
+  assert.equal(helperRecipe.length, 2, 'helperRecipe 只剩 (key, level) 两个形参')
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
+  farm.actions.hire(data, {}, t.api)
+  const keys = farm.view(data, t.api).shelf.items.map(item => item.key)
+  assert.ok(!keys.includes('helper-barn'), '商店不再卖农具档：' + keys.join(','))
+  assert.ok(keys.includes('helper-level'), '管地数一档还在')
+  assert.equal(farm.actions.upgrade(data, { kind: 'barn' }, t.api).reason, 'locked', 'helperBuy 拒收 barn')
+  data.exp = 10000
+  for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
+  data.helper.pending = null
+  const run = barn => {
+    const copy = structuredClone(data), host = fakeApi()
+    copy.helper.barn = barn
+    host.api.now = T0 + 6 * H
+    return { helper: farm.view(copy, host.api).helper, result: JSON.parse(JSON.stringify(farm.actions.collect(copy, {}, host.api))), harvest: structuredClone(copy.harvest), usedMs: copy.helper.usedMs }
+  }
+  assert.deepEqual(run(3), run(0), 'barn 0 与 barn 3 的 view / 结算结果完全相同')
+  const old = structuredClone(data)
+  old.helper.barn = 3
+  old.helper.pending = { index: 0, crop: 'radish', plantedAt: old.plots[0].plantedAt, remainingMs: 900000, yield: 3 }
+  const host = fakeApi()
+  host.api.now = T0 + H
+  assert.doesNotThrow(() => farm.actions.buy(old, { item: 'radish' }, host.api), '旧存档 barn:3 + pending 迁移/结算不抛')
+  assert.equal(old.helper.barn, 3, 'barn 字段保留不删')
+  assert.equal(normalize(structuredClone(old)).helper.barn, 3, 'normalize clamp 后仍是 3')
 })
 
 test('帮工 view：没种子就报「缺种子」/「没种子」，不再只写「帮工 · N 块地」', () => {
@@ -507,16 +573,16 @@ test('帮工 view：没种子就报「缺种子」/「没种子」，不再只�
   let helper = farm.view(data, t.api).helper
   assert.equal(helper.hired, true)
   assert.equal(helper.plots, HELPER_PLOTS[0])
-  assert.equal(helper.seedless, true, '一种种子都没有：没得种')
+  assert.equal(helper.seedless, true, '一种目标种子都没有：没得种')
   assert.deepEqual(helper.missing, [])
   data.helper.targets[0] = 'radish'
   helper = farm.view(data, t.api).helper
   assert.deepEqual(helper.missing, ['白萝卜'], '有目标没种子：报缺哪种')
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
   helper = farm.view(data, t.api).helper
-  assert.equal(helper.seedless, false, '有种子就干活')
+  assert.equal(helper.seedless, false, '有目标作物种子就干活')
   assert.deepEqual(helper.missing, [])
-  assert.ok(data.plots.some(plot => plot?.crop === 'radish'), '空地上自动补种')
+  assert.ok(data.plots.some(plot => plot?.crop === 'radish'), '按指定作物补种')
 })
 
 test('fix4：缺失或越界的旧旱灾时间不导致雨天顺延无限循环', () => {

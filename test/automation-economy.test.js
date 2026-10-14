@@ -22,9 +22,9 @@ test('矿工每个工具、选站、速度档都低于 400 和对应手动，六
   }
 })
 
-test('所有作物、管地和农具档：实物菜、扣种子、六小时封仓、手动更赚', () => {
-  for (const crop of CROPS) for (const plots of [4, 8, 16]) for (let efficiency = 0; efficiency < 4; efficiency += 1) {
-    const rate = farmHelperPerHour({ cropKey: crop.key, plots, efficiency })
+test('所有作物、管地：实物菜、扣种子、六小时封仓、手动更赚', () => {
+  for (const crop of CROPS) for (const plots of [4, 8, 16]) {
+    const rate = farmHelperPerHour({ cropKey: crop.key, plots })
     const manual = plots * (crop.yield * crop.sell - crop.price - 5 * .2 * 10 / 32) / crop.hours
     assert.ok(rate.net > 0 && rate.net <= 400 && rate.net < manual, crop.key)
     assert.equal(rate.fullHours, 6)
@@ -35,11 +35,10 @@ test('所有作物、管地和农具档：实物菜、扣种子、六小时封�
     for (let index = 0; index < plots; index += 1) farm.actions.plant(data, { plot: index, item: crop.key }, host)
     farm.actions.hire(data, {}, host)
     data.helper.level = [4, 8, 16].indexOf(plots)
-    data.helper.barn = efficiency
     data.helper.pending = null
     host.now += 6 * 3600000
     farm.actions.collect(data, {}, host)
-    assert.equal(data.harvest[crop.key], rate.storedItems, crop.key + ' / ' + plots + ' / ' + efficiency)
+    assert.equal(data.harvest[crop.key], rate.storedItems, crop.key + ' / ' + plots)
     assert.equal(data.helper.usedMs, 0)
     assert.equal(data.helper.stock[crop.key], 0)
   }
