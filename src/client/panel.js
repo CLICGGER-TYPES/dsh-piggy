@@ -143,18 +143,14 @@ export function createPanel(ctx) {
           }
         })
         paintContent()
-        // 重绘刚把整棵内容换掉：此刻写 scrollTop 会为整棵树强制一次同步布局（实测 3–4ms，
-        // 读那一下则是在旧布局上读，便宜）。没人滚过就一步都不写——写 0 也一样会强制布局。
+        // 重绘刚把整棵内容换掉：此刻写 scrollTop 会为整棵树强制一次同步布局（实测 3–4ms，读那一下是在旧布局上读、便宜）。没人滚过就一步都不写——写 0 也一样会强制布局。
         if (scrollTop !== 0) ctx.content.scrollTop = scrollTop
-        if (scrollPositions.size > 0) {
-          ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
-            var saved = scrollPositions.get(node.getAttribute('data-scroll-key'))
-            if (saved) { node.scrollTop = saved.top; node.scrollLeft = saved.left }
-          })
-        }
+        if (scrollPositions.size > 0) ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
+          var saved = scrollPositions.get(node.getAttribute('data-scroll-key'))
+          if (saved) { node.scrollTop = saved.top; node.scrollLeft = saved.left }
+        })
         ctx.justBought = null
-        // 重绘把挂在扩展节点上的悬停（菜园的悬停卡）一起换掉了：指针还在原处就补发一次 mousemove，见 hover-restore.js
-        restoreHover(ctx.content)
+        restoreHover(ctx.content) // 重绘把扩展节点上的悬停（菜园的悬停卡）一起换掉了：指针还在原处就补发一次 mousemove，见 hover-restore.js
       }
 
       function paintContent() {

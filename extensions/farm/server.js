@@ -55,11 +55,9 @@ export const CROPS = [
   { key: 'melon', emoji: '🍈', label: '哈密瓜', level: 9, price: 200, hours: 30, exp: 28, yield: 30, sell: 34, seasons: 1 },
 ]
 /** 解锁一键操作的工具（先买才有，用户定 C）。 */
-export const TOOLS = [{ key: 'sickle', label: '收割镰', price: 1000, note: '解锁一键收获' }, { key: 'sprayer', label: '喷雾桶', price: 600, note: '解锁一键照料' },
-  { key: 'rake', label: '平地耙', price: 800, note: '解锁一键铲除' }, { key: 'planter', label: '播种器', price: 1800, note: '解锁一键播种' }]
+export const TOOLS = [{ key: 'sickle', label: '收割镰', price: 1000, note: '解锁一键收获' }, { key: 'sprayer', label: '喷雾桶', price: 600, note: '解锁一键照料' }, { key: 'rake', label: '平地耙', price: 800, note: '解锁一键铲除' }, { key: 'planter', label: '播种器', price: 1800, note: '解锁一键播种' }]
 /** 肥料（原版 props.xml）：施一次多长几小时，可以连着施。 */
-export const FERTILIZERS = [{ key: 'fert-1', label: '普通肥料', price: 500, hours: 2 }, { key: 'fert-2', label: '快速肥料', price: 800, hours: 3.5 },
-  { key: 'fert-3', label: '急速肥料', price: 1000, hours: 5 }]
+export const FERTILIZERS = [{ key: 'fert-1', label: '普通肥料', price: 500, hours: 2 }, { key: 'fert-2', label: '快速肥料', price: 800, hours: 3.5 }, { key: 'fert-3', label: '急速肥料', price: 1000, hours: 5 }]
 /** 灾害：长草、生虫、干旱，各自独立。 */
 export const PESTS = ['weed', 'bug', 'dry']
 /** 生长阶段（按这一季走过的比例）：种子、发芽、小苗、长大、开花、成熟。多季作物收完回到「长大」。 */
@@ -166,8 +164,7 @@ export function normalize(data) {
     return plot
   })
   for (const field of ['seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert']) if (!isObject(data[field])) data[field] = {}
-  data.exp = Math.min(EXP_CAP, count(data.exp))
-  data.refund = count(data.refund); data.helperBarnRefund = count(data.helperBarnRefund)
+  data.exp = Math.min(EXP_CAP, count(data.exp)); data.refund = count(data.refund); data.helperBarnRefund = count(data.helperBarnRefund)
   normalizeHelper(data)
   refundOldBarn(data)
   return data

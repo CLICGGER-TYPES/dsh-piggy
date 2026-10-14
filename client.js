@@ -9562,15 +9562,13 @@
       });
       paintContent();
       if (scrollTop !== 0) ctx.content.scrollTop = scrollTop;
-      if (scrollPositions.size > 0) {
-        ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
-          var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
-          if (saved) {
-            node.scrollTop = saved.top;
-            node.scrollLeft = saved.left;
-          }
-        });
-      }
+      if (scrollPositions.size > 0) ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
+        var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
+        if (saved) {
+          node.scrollTop = saved.top;
+          node.scrollLeft = saved.left;
+        }
+      });
       ctx.justBought = null;
       restoreHover(ctx.content);
     }
@@ -10901,7 +10899,6 @@
         var layout = createLayout(ctx);
         var panel = createPanel(ctx);
         ctx.select = panel.select;
-        ctx.setOpen = panel.setOpen;
         ctx.fitPanel = layout.fitPanel;
         ctx.paintBar = layout.paintBar;
         ctx.buildIcon = layout.buildIcon;
