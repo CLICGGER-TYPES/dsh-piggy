@@ -743,7 +743,7 @@ function panelFocusLeft() {
   setTimeout(() => {
     if (!panelOpen) return
     const focused = BrowserWindow.getFocusedWindow()
-    if (focused !== null && (focused === win || focused === panelWin)) return
+    if (focused !== null && (focused === win || focused === panelWin || focused === extWin)) return
     sendPanel({ type: 'blur', toPet: false })
   }, 0)
 }
@@ -872,7 +872,7 @@ function openExtWindow(key) {
   extWin.loadURL('piggy://app/index.html')
   extWin.once('ready-to-show', () => { extWin?.show(); extWin?.focus() })
   extWin.on('page-title-updated', event => event.preventDefault())
-  extWin.on('closed', () => { extWin = null; extKey = null; extensionLayer.sync() })
+  extWin.on('closed', () => { extWin = null; extKey = null; extensionLayer.sync(); if (panelOpen && panelWin && !panelWin.isDestroyed()) panelWin.focus() })
   extWin.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('ext:', message) })
   log('ext window', key, width + 'x' + height)
 }

@@ -1,6 +1,7 @@
 // @ts-check
 /** Device-local panel preference; old installs default to closing on outside clicks. */
 import { readStore, writeStore } from './storage.js'
+import { desktopRole } from './desktop-shell.js'
 
 export const AUTO_COLLAPSE_KEY = 'dsh-piggy:auto-collapse'
 
@@ -31,7 +32,8 @@ export function attachAutoCollapse(context) {
     context.setOpen(false)
   }
   function onWindowBlur() {
-    if (context.isDesktop() && canClose()) context.setOpen(false)
+    // 拆分面板的焦点归属由主进程判定；原生 blur 不知道是否去了大农场。
+    if (context.isDesktop() && desktopRole() !== 'panel' && canClose()) context.setOpen(false)
   }
   document.addEventListener('pointerdown', onOutsidePointer, true)
   window.addEventListener?.('blur', onWindowBlur)
