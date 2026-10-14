@@ -398,6 +398,71 @@ test('帮工每种作物、每档：实际净时薪落在自己种的 85%~92%，
   assert.ok(capped.length > 0, '有被 400 封顶的组合：' + capped.join(','))
 })
 
+test('数值扰动 ±5%：348 个组合都不返回 null、周期/批数/收成可用，净时薪恒 ≤ 400（防崩回归）', () => {
+  const fields = ['price', 'sell', 'yield', 'hours']
+  const before = CROPS.map(crop => ({ ...crop }))
+  const check = label => {
+    let degraded = 0
+    for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
+      const where = label + ' ' + crop.key + '/' + HELPER_PLOTS[level] + '块地/农具' + barn
+      const recipe = helperRecipe(crop.key, level, barn)
+      assert.ok(recipe, where + ' 不该返回 null')
+      assert.ok(Number.isInteger(recipe.batches) && recipe.batches >= 1, where + ' 批数是正整数')
+      assert.ok(Number.isFinite(recipe.intervalMs) && recipe.intervalMs > 0, where + ' 周期是有限正数')
+      assert.equal(recipe.intervalMs * recipe.batches, HELPER_WINDOW, where + ' 批次铺满六小时')
+      assert.ok(recipe.yield >= 1 && recipe.yield <= crop.yield, where + ' 单批收成在 1~自己种之间')
+      assert.ok(Number.isFinite(recipe.net) && recipe.net <= 400, where + ' 净时薪恒 ≤ 400')
+      assert.ok(Number.isFinite(recipe.share) && Math.abs(recipe.share - recipe.net / (HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours)) < 1e-9, where + ' share = net / 自己种')
+      if (recipe.degraded) degraded += 1
+    }
+    return degraded
+  }
+  let degraded = 0
+  try {
+    for (const factor of [0.95, 1.05]) {
+      CROPS.forEach((crop, index) => { for (const field of fields) crop[field] = before[index][field] * factor })
+      degraded += check('×' + factor)
+    }
+  } finally {
+    CROPS.forEach((crop, index) => { for (const field of fields) crop[field] = before[index][field] })
+  }
+  assert.ok(degraded > 0, '扰动后得有组合走退化路径，否则这条测试没碰到退化代码：' + degraded)
+})
+
+test('400 封顶与退化路径：区间无解时也给出可用配方（带 degraded / share）', () => {
+  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
+    const recipe = helperRecipe(crop.key, level, barn)
+    assert.ok(recipe.net <= 400, crop.key + ' 净时薪必须 ≤ 400')
+    assert.equal(recipe.degraded, false, crop.key + '/' + level + '/' + barn + ' 当前数值表不该退化')
+  }
+  // 石榴种子价 170 → 160：16 地自己种净时薪 474 > 400/0.85，85% 下界（402.96）高过 400 封顶，
+  // 区间整个落空——旧代码在这条组合上返回 null，prepareHelper 读 recipe.intervalMs 会抛穿整个扩展。
+  const pomegranate = CROPS.find(crop => crop.key === 'pomegranate')
+  const price = pomegranate.price
+  try {
+    pomegranate.price = 160
+    const manual = HELPER_PLOTS[2] * (pomegranate.yield * pomegranate.sell - pomegranate.price) / pomegranate.hours
+    assert.ok(manual * 0.85 > 400, '这条组合的 85% 下界确实高过 400 封顶：' + (manual * 0.85).toFixed(2))
+    const recipe = helperRecipe('pomegranate', 2, 0)
+    assert.ok(recipe, '无解也不能返回 null')
+    assert.equal(recipe.degraded, true, '无解就走退化路径')
+    assert.ok(recipe.yield >= 1 && recipe.yield <= pomegranate.yield, '退化配方的单批收成仍可用')
+    assert.ok(Number.isFinite(recipe.intervalMs) && recipe.intervalMs > 0, '退化配方周期有限')
+    assert.equal(recipe.intervalMs * recipe.batches, HELPER_WINDOW, '退化配方照样铺满六小时')
+    assert.ok(recipe.net > 0 && recipe.net <= 400 && recipe.net < manual, '退化配方仍便宜于自己种且 ≤ 400')
+    assert.ok(recipe.share > 0.8 && recipe.share === recipe.net / manual, '退化也尽量贴近九成：' + recipe.share)
+  } finally {
+    pomegranate.price = price
+  }
+  // key 不认识时仍返回 null（调用方必须兜底），但整条动作链不能抛。
+  assert.equal(helperRecipe('not-a-crop', 0, 0), null)
+  const data = establishedFarm(), t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 4 }, t.api)
+  farm.actions.hire(data, {}, t.api)
+  t.api.now = T0 + 6 * H
+  assert.doesNotThrow(() => farm.view(data, t.api), '坏数据下 view 不该崩掉整个扩展')
+})
+
 test('时钟回拨：结算不挪 lastAt，回拨那一段不重记工时（回归）', () => {
   const data = establishedFarm()
   const t = fakeApi()

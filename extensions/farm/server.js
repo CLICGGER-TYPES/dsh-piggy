@@ -436,17 +436,18 @@ export const HELPER_PLOTS = [4, 8, 16]
 export const HELPER_SHARE = 0.9
 export const HELPER_WINDOW = 6 * 3600000
 export const HELPER_PRICES = { hire: 2500, level: [0, 2000, 6000], barn: [0, 1000, 3000, 9000] }
-/** 旧公式的批数向下取整让净时薪只有自己种的 56%~89%；这里从「每批收成」往下试，挑净时薪落进 85%~92% 的组合（400 封顶、六小时整数批；农具档不再改收益）。 */
+/** 帮工配方：从「自己种的 0.9」往下试，挑净时薪落进 85%~92%（400 封顶、六小时整数批）的组合；数值一改可能无解，就取最接近九成的组合、最后保底 1 批 1 个（share/degraded 标出退化）。只有作物 key 不认识才返回 null，调用方要兜底。农具档不改收益。 */
 export function helperRecipe(key, level = 0, barn = 0) {
-  const crop = cropFor(key)
-  if (!crop) return null
+  const crop = cropFor(key); if (!crop) return null
   const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours
-  const target = Math.min(400, manual * HELPER_SHARE)
+  const cap = Math.min(400, manual * 0.92), target = Math.min(400, manual * HELPER_SHARE)
+  let best = null, make = (batches, y, degraded) => { const net = (y * crop.sell - crop.price) * batches / 6; return { yield: y, intervalMs: HELPER_WINDOW / batches, net, itemsPerHour: y * batches / 6, batches, share: manual > 0 ? net / manual : 0, degraded: degraded === true } }, gap = net => Math.abs(net - manual * HELPER_SHARE)
   for (let batches = 1; batches <= 60; batches += 1) {
-    const y = Math.round((target * 6 / batches + crop.price) / crop.sell), net = (y * crop.sell - crop.price) * batches / 6
-    if (y >= 1 && y <= crop.yield && net >= manual * 0.85 && net <= Math.min(manual * 0.92, 400)) return { yield: y, intervalMs: HELPER_WINDOW / batches, net, itemsPerHour: y * batches / 6, batches }
+    const y = Math.round((target * 6 / batches + crop.price) / crop.sell), net = (y * crop.sell - crop.price) * batches / 6, ok = y >= 1 && y <= crop.yield
+    if (ok && net >= manual * 0.85 && net <= cap) return make(batches, y, false)
+    if (ok && net > 0 && net <= cap && (!best || gap(net) < gap(best.net))) best = make(batches, y, true)
   }
-  return null
+  return best ?? make(1, 1, true)
 }
 function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {}
@@ -485,7 +486,7 @@ function prepareHelper(data, at) {
     if (!crop) continue
     helper.targets[index] = crop.key
     if (!plot || plot.fallow) { if (!plantPlot(data, index, crop, at)) continue; plot = data.plots[index] }
-    const recipe = helperRecipe(crop.key, helper.level, helper.barn)
+    const recipe = helperRecipe(crop.key, helper.level, helper.barn); if (!recipe) continue
     helper.pending = { index, crop: crop.key, plantedAt: plot.plantedAt, remainingMs: recipe.intervalMs, yield: recipe.yield }
     return true
   }
@@ -552,7 +553,7 @@ function helperShelf(data, balance) {
     const price = kind === 'hire' ? HELPER_PRICES.hire : HELPER_PRICES[kind][next]
     if (price === undefined) return []
     const label = kind === 'hire' ? '雇帮工猪' : kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][next] : ['小谷仓', '顺手农具', '轻巧农具', '高效农具'][next]
-    const note = kind === 'hire' ? '管 ' + HELPER_PLOTS[0] + ' 块地，六小时封仓' : kind === 'level' ? '管 ' + HELPER_PLOTS[next] + ' 块地' : '提高自动收成效率'
+    const note = kind === 'hire' ? '管 ' + HELPER_PLOTS[0] + ' 块地，六小时封仓' : kind === 'level' ? '管 ' + HELPER_PLOTS[next] + ' 块地' : '暂未生效'
     return [{ key: 'helper-' + kind, emoji: kind === 'barn' ? '🧺' : '🐷', label, note, price, disabled: balance < price, pick: null }]
   })
 }
