@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 
 /** Everything the desktop host imports, plus what the page loads. */
 export const GAME_FILES = [
-  'package.json', 'core.js', 'data.js', 'store.js', 'store', 'routes.js', 'snapshot.js', 'environment.js',
+  'package.json', 'core.js', 'data.js', 'store.js', 'store', 'routes.js', 'snapshot.js', 'environment.js', 'runtime', 'commands.js', 'render.js',
   'packages/pet-core/package.json', 'packages/pet-core/src', 'client.js', 'assets', 'channel.js',
   // 小猪立绘改自 Noto Emoji（Apache 2.0）：许可要跟着素材一起分发
   'THIRD-PARTY.md', 'LICENSE-noto-emoji.txt',

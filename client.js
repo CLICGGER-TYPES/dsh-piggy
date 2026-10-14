@@ -10645,501 +10645,505 @@
   var desktop = { version: DESKTOP_VERSION, install: install2, start };
 
   // src/client/index.js
-  window.__ModuleLoader__.load({
-    id: "dsh-piggy",
-    factory: (require2) => {
-      var module = { exports: {} };
-      var exports = module.exports;
-      var devMode = false;
-      function apply(ctx) {
-        installCapture();
-        try {
-          return mount();
-        } catch (error) {
-          console.warn("[dsh-piggy] \u6302\u8F7D\u5931\u8D25\uFF0C\u732A\u5148\u9000\u5230\u4E00\u8FB9", error);
-          record("error", "mount", "\u6302\u8F7D\u5931\u8D25\uFF1A" + (error instanceof Error ? error.message : String(error)), { stack: error instanceof Error ? error.stack : "" });
-          return () => {
-          };
-        }
+  function mountGame() {
+    var devMode = false;
+    function mount() {
+      if (document.querySelector("[" + MOUNTED + "]") !== null) {
+        console.warn("[dsh-piggy] \u5DF2\u5B58\u5728\u5B9E\u4F8B\uFF0C\u8DF3\u8FC7\u91CD\u590D\u6302\u8F7D");
+        return () => {
+        };
       }
-      function mount() {
-        if (document.querySelector("[" + MOUNTED + "]") !== null) {
-          console.warn("[dsh-piggy] \u5DF2\u5B58\u5728\u5B9E\u4F8B\uFF0C\u8DF3\u8FC7\u91CD\u590D\u6302\u8F7D");
-          return () => {
+      var parts = createScene();
+      var {
+        font,
+        style,
+        host: host3,
+        card: card2,
+        scene: scene3,
+        hud,
+        hudName,
+        hudCoins,
+        hudHealth,
+        bubble,
+        work,
+        prop,
+        progressWrap,
+        progressFill,
+        pokeHint,
+        dailyHint,
+        pomoHint,
+        soul,
+        pigArt,
+        pigSleep,
+        pigEmoji,
+        pig,
+        dressSlots,
+        bar,
+        content,
+        footer
+      } = parts;
+      var deskShell = desktopShell();
+      var savedPos = deskShell === null ? readPosition(readStore(POSITION_KEY)) : null;
+      var userRight = savedPos === null ? 18 : savedPos.right;
+      var userBottom = savedPos === null ? 18 : savedPos.bottom;
+      if (deskShell === null) {
+        host3.style.right = userRight + "px";
+        host3.style.bottom = userBottom + "px";
+      } else {
+        host3.style.right = "auto";
+        host3.style.bottom = "auto";
+      }
+      var icons = {};
+      var view = normalize(null);
+      var stopSizePreference = attachSizePreference(
+        host3,
+        () => view.hatched ? view.pig?.stage : view.boxStage,
+        () => desktopShell()?.syncGeometry?.()
+      );
+      var tab = "home";
+      var stage2 = "primary";
+      var stagePicked = false;
+      var drill = { study: null, shop: null, bag: null, work: null, dex: null, skins: null, pick: null, from: null };
+      var picker = null;
+      var ownerEdit = null;
+      var pigNameEdit = null;
+      var cardEdit = null, profileDraft = null;
+      var isOpen = desktopShell() === null && readStore(OPEN_KEY) === "true";
+      var lastStage = null;
+      var lastPendingAt = 0;
+      var lastPendingId = 0;
+      var pollTimer = null;
+      var fx = createEffects({
+        scene: scene3,
+        pig,
+        pigArt,
+        pigEmoji,
+        card: card2,
+        bubble,
+        pomoHint,
+        isStopped: function() {
+          return stopped;
+        }
+      });
+      var react = fx.react, burst = fx.burst, flash = fx.flash;
+      var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
+      var stopped = false;
+      var busy4 = false;
+      var ctx = {
+        host: host3,
+        card: card2,
+        content,
+        footer,
+        scene: scene3,
+        hud,
+        hudName,
+        hudCoins,
+        hudHealth,
+        bubble,
+        work,
+        prop,
+        progressWrap,
+        progressFill,
+        pokeHint,
+        dailyHint,
+        pomoHint,
+        soul,
+        pigArt,
+        pigSleep,
+        pigEmoji,
+        pig,
+        dressSlots,
+        bar,
+        icons,
+        flash,
+        react,
+        burst,
+        transform: fx.transform,
+        showBubble,
+        showLine,
+        toast,
+        get view() {
+          return view;
+        },
+        set view(next) {
+          view = next;
+        },
+        get tab() {
+          return tab;
+        },
+        set tab(next) {
+          tab = next;
+        },
+        get stage() {
+          return stage2;
+        },
+        set stage(next) {
+          stage2 = next;
+        },
+        get stagePicked() {
+          return stagePicked;
+        },
+        set stagePicked(next) {
+          stagePicked = next;
+        },
+        get tapVersion() {
+          return dev.tap;
+        },
+        get devOff() {
+          return function() {
+            dev.set(false);
           };
+        },
+        get drill() {
+          return drill;
+        },
+        get picker() {
+          return picker;
+        },
+        set picker(next) {
+          picker = next;
+        },
+        get ownerEdit() {
+          return ownerEdit;
+        },
+        set ownerEdit(next) {
+          ownerEdit = next;
+        },
+        get pigNameEdit() {
+          return pigNameEdit;
+        },
+        set pigNameEdit(next) {
+          pigNameEdit = next;
+        },
+        get cardEdit() {
+          return cardEdit;
+        },
+        set cardEdit(next) {
+          cardEdit = next;
+        },
+        get profileDraft() {
+          return profileDraft;
+        },
+        set profileDraft(next) {
+          profileDraft = next;
+        },
+        get isOpen() {
+          return isOpen;
+        },
+        set isOpen(next) {
+          isOpen = next;
+        },
+        get lastStage() {
+          return lastStage;
+        },
+        set lastStage(next) {
+          lastStage = next;
+        },
+        get lastPendingAt() {
+          return lastPendingAt;
+        },
+        set lastPendingAt(next) {
+          lastPendingAt = next;
+        },
+        get lastPendingId() {
+          return lastPendingId;
+        },
+        set lastPendingId(next) {
+          lastPendingId = next;
+        },
+        get userRight() {
+          return userRight;
+        },
+        set userRight(next) {
+          userRight = next;
+        },
+        get userBottom() {
+          return userBottom;
+        },
+        set userBottom(next) {
+          userBottom = next;
+        },
+        get busy() {
+          return busy4;
+        },
+        set busy(next) {
+          busy4 = next;
+        },
+        justBought: null,
+        homePage: 0,
+        get stopped() {
+          return stopped;
+        },
+        set stopped(next) {
+          stopped = next;
+        },
+        get devMode() {
+          return devMode;
         }
-        var parts = createScene();
-        var {
-          font,
-          style,
-          host: host3,
-          card: card2,
-          scene: scene3,
-          hud,
-          hudName,
-          hudCoins,
-          hudHealth,
-          bubble,
-          work,
-          prop,
-          progressWrap,
-          progressFill,
-          pokeHint,
-          dailyHint,
-          pomoHint,
-          soul,
-          pigArt,
-          pigSleep,
-          pigEmoji,
-          pig,
-          dressSlots,
-          bar,
-          content,
-          footer
-        } = parts;
-        var deskShell = desktopShell();
-        var savedPos = deskShell === null ? readPosition(readStore(POSITION_KEY)) : null;
-        var userRight = savedPos === null ? 18 : savedPos.right;
-        var userBottom = savedPos === null ? 18 : savedPos.bottom;
-        if (deskShell === null) {
-          host3.style.right = userRight + "px";
-          host3.style.bottom = userBottom + "px";
-        } else {
-          host3.style.right = "auto";
-          host3.style.bottom = "auto";
-        }
-        var icons = {};
-        var view = normalize(null);
-        var stopSizePreference = attachSizePreference(
-          host3,
-          () => view.hatched ? view.pig?.stage : view.boxStage,
-          () => desktopShell()?.syncGeometry?.()
-        );
-        var tab = "home";
-        var stage2 = "primary";
-        var stagePicked = false;
-        var drill = { study: null, shop: null, bag: null, work: null, dex: null, skins: null, pick: null, from: null };
-        var picker = null;
-        var ownerEdit = null;
-        var pigNameEdit = null;
-        var cardEdit = null, profileDraft = null;
-        var isOpen = desktopShell() === null && readStore(OPEN_KEY) === "true";
-        var lastStage = null;
-        var lastPendingAt = 0;
-        var lastPendingId = 0;
-        var pollTimer = null;
-        var fx = createEffects({
-          scene: scene3,
-          pig,
-          pigArt,
-          pigEmoji,
-          card: card2,
-          bubble,
-          pomoHint,
-          isStopped: function() {
-            return stopped;
-          }
-        });
-        var react = fx.react, burst = fx.burst, flash = fx.flash;
-        var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
-        var stopped = false;
-        var busy4 = false;
-        var ctx = {
-          host: host3,
-          card: card2,
-          content,
-          footer,
-          scene: scene3,
-          hud,
-          hudName,
-          hudCoins,
-          hudHealth,
-          bubble,
-          work,
-          prop,
-          progressWrap,
-          progressFill,
-          pokeHint,
-          dailyHint,
-          pomoHint,
-          soul,
-          pigArt,
-          pigSleep,
-          pigEmoji,
-          pig,
-          dressSlots,
-          bar,
-          icons,
-          flash,
-          react,
-          burst,
-          transform: fx.transform,
-          showBubble,
-          showLine,
-          toast,
-          get view() {
-            return view;
-          },
-          set view(next) {
-            view = next;
-          },
-          get tab() {
-            return tab;
-          },
-          set tab(next) {
-            tab = next;
-          },
-          get stage() {
-            return stage2;
-          },
-          set stage(next) {
-            stage2 = next;
-          },
-          get stagePicked() {
-            return stagePicked;
-          },
-          set stagePicked(next) {
-            stagePicked = next;
-          },
-          get tapVersion() {
-            return dev.tap;
-          },
-          get devOff() {
-            return function() {
-              dev.set(false);
-            };
-          },
-          get drill() {
-            return drill;
-          },
-          get picker() {
-            return picker;
-          },
-          set picker(next) {
-            picker = next;
-          },
-          get ownerEdit() {
-            return ownerEdit;
-          },
-          set ownerEdit(next) {
-            ownerEdit = next;
-          },
-          get pigNameEdit() {
-            return pigNameEdit;
-          },
-          set pigNameEdit(next) {
-            pigNameEdit = next;
-          },
-          get cardEdit() {
-            return cardEdit;
-          },
-          set cardEdit(next) {
-            cardEdit = next;
-          },
-          get profileDraft() {
-            return profileDraft;
-          },
-          set profileDraft(next) {
-            profileDraft = next;
-          },
-          get isOpen() {
-            return isOpen;
-          },
-          set isOpen(next) {
-            isOpen = next;
-          },
-          get lastStage() {
-            return lastStage;
-          },
-          set lastStage(next) {
-            lastStage = next;
-          },
-          get lastPendingAt() {
-            return lastPendingAt;
-          },
-          set lastPendingAt(next) {
-            lastPendingAt = next;
-          },
-          get lastPendingId() {
-            return lastPendingId;
-          },
-          set lastPendingId(next) {
-            lastPendingId = next;
-          },
-          get userRight() {
-            return userRight;
-          },
-          set userRight(next) {
-            userRight = next;
-          },
-          get userBottom() {
-            return userBottom;
-          },
-          set userBottom(next) {
-            userBottom = next;
-          },
-          get busy() {
-            return busy4;
-          },
-          set busy(next) {
-            busy4 = next;
-          },
-          justBought: null,
-          homePage: 0,
-          get stopped() {
-            return stopped;
-          },
-          set stopped(next) {
-            stopped = next;
-          },
-          get devMode() {
-            return devMode;
-          }
-        };
-        var layout = createLayout(ctx);
-        var panel = createPanel(ctx);
-        ctx.select = panel.select;
-        ctx.fitPanel = layout.fitPanel;
-        ctx.paintBar = layout.paintBar;
-        ctx.buildIcon = layout.buildIcon;
-        ctx.clampPig = layout.clampPig;
-        var render = panel.render, renderContent = panel.renderContent;
-        var setOpen = panel.setOpen, select = panel.select;
-        var fitPanel = layout.fitPanel, clampPig = layout.clampPig;
-        var paintBar = layout.paintBar, buildIcon = layout.buildIcon;
-        for (var t = 0; t < TABS.length; t += 1) buildIcon(TABS[t]);
-        var io = createIo(ctx);
-        var send2 = io.send, refresh2 = io.refresh;
-        ctx.send = send2;
-        ctx.render = render;
-        ctx.renderContent = renderContent;
-        ctx.setOpen = setOpen;
-        ctx.fitPanel = fitPanel;
-        ctx.flash = flash;
-        var updateNotice = attachUpdateNotice(ctx, updatesBridge);
-        ctx.petShy = function() {
-          playPigPet(pig);
-        };
-        ctx.previewArt = function(name) {
-          forceFeedbackArt(name);
-          syncPigArt(pig, pigArt, pigEmoji);
-        };
-        ctx.idleNow = function(key) {
-          if (ctx.life) ctx.life.idleNow(key);
-        };
-        ctx.walkNow = function() {
-          if (ctx.life) ctx.life.walkNow();
-        };
-        var birthday = createBirthday({ ctx, pig, pigArt, pigEmoji, burst, render: function() {
-          refresh2();
-        } });
-        var splitRole = wireSplit(ctx, { refresh: function() {
-          refresh2();
-        }, isFishing: function() {
-          return tab === "fishing" && view.fishing.pending?.phase === "hooked";
-        } });
-        ["pointerdown", "pointerup"].forEach(function(type) {
-          dailyHint.addEventListener(type, function(event) {
-            event.stopPropagation();
-          });
-        });
-        dailyHint.addEventListener("click", function(event) {
-          event.stopPropagation();
-          var action = dailyHint.getAttribute("data-action");
-          if (action === "cake") birthday.celebrate();
-          else if (action !== null && action !== "") send2(action);
-        });
-        var drag = null;
-        var stopDragHeartbeat = function() {
-        };
-        scene3.addEventListener("pointerdown", function(event) {
-          if (event.button !== 0) return;
-          stopDragHeartbeat();
-          drag = {
-            x: event.clientX,
-            y: event.clientY,
-            startX: typeof event.screenX === "number" ? event.screenX : event.clientX,
-            startY: typeof event.screenY === "number" ? event.screenY : event.clientY,
-            lastX: typeof event.screenX === "number" ? event.screenX : event.clientX,
-            lastY: typeof event.screenY === "number" ? event.screenY : event.clientY,
-            right: parseFloat(getComputedStyle(host3).right) || 18,
-            bottom: parseFloat(getComputedStyle(host3).bottom) || 18,
-            moved: false
-          };
-          scene3.setAttribute("data-dragging", "true");
-          scene3.setPointerCapture?.(event.pointerId);
-          var shellAtStart = desktopShell();
-          shellAtStart?.beginDrag?.();
-          stopDragHeartbeat = startDragHeartbeat(shellAtStart, function() {
-            return drag !== null;
-          });
-        });
-        scene3.addEventListener("pointermove", function(event) {
-          if (drag === null) return;
-          var dx = event.clientX - drag.x;
-          var dy = event.clientY - drag.y;
-          var shellNow = desktopShell();
-          if (shellNow !== null) {
-            shellNow.dragHeartbeat?.();
-            var screenX = typeof event.screenX === "number" ? event.screenX : event.clientX;
-            var screenY = typeof event.screenY === "number" ? event.screenY : event.clientY;
-            if (Math.abs(screenX - drag.startX) > 3 || Math.abs(screenY - drag.startY) > 3) drag.moved = true;
-            if (typeof shellNow.beginDrag !== "function") {
-              var stepX = screenX - drag.lastX;
-              var stepY = screenY - drag.lastY;
-              drag.lastX = screenX;
-              drag.lastY = screenY;
-              if (stepX !== 0 || stepY !== 0) shellNow.moveBy(stepX, stepY);
-            }
-            return;
-          }
-          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
-          userRight = drag.right - dx;
-          userBottom = drag.bottom - dy;
-          clampPig();
-          fitPanel();
-        });
-        function endDrag() {
-          if (drag === null) return false;
-          var moved = drag.moved;
-          drag = null;
-          stopDragHeartbeat();
-          stopDragHeartbeat = function() {
-          };
-          desktopShell()?.endDrag?.();
-          scene3.removeAttribute("data-dragging");
-          clampPig();
-          if (deskShell === null) writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }));
-          fitPanel();
-          return moved;
-        }
-        var boxPokes = 0;
-        function pokeBox() {
-          boxPokes += 1;
-          react("poke", 560);
-          if (boxPokes >= BOX_POKES_TO_OPEN) {
-            boxPokes = 0;
-            host3.removeAttribute("data-poke");
-            showBubble("\u54C7\u2014\u2014\uFF01", 1200);
-            burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
-            send2("hatch");
-            return;
-          }
-          host3.setAttribute("data-poke", String(boxPokes));
-          burst(["\u{1F4A8}"], 2);
-          showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
-        }
-        scene3.addEventListener("pointerup", function(event) {
-          if (drag === null) return;
-          if (endDrag()) return;
-          if (view.hatched !== true) {
-            pokeBox();
-            return;
-          }
-          if (!view.dead) send2("pet", { part: partAt(pig, event) });
-        });
-        scene3.addEventListener("pointercancel", function() {
-          endDrag();
-        });
-        scene3.addEventListener("lostpointercapture", function() {
-          endDrag();
-        });
-        scene3.addEventListener("contextmenu", function(event) {
-          event.preventDefault();
-          setOpen(!isOpen);
-        });
-        var autoCollapse = splitRole !== null ? { dispose: function() {
-        } } : attachAutoCollapse({
-          host: host3,
-          isOpen: function() {
-            return isOpen;
-          },
-          setOpen,
-          isDragging: function() {
-            return drag !== null;
-          },
-          isFishing: function() {
-            return tab === "fishing" && view.fishing.pending?.phase === "hooked";
-          },
-          isDesktop: function() {
-            return desktopShell() !== null;
-          }
-        });
-        clampPig();
-        setOpen(isOpen);
-        render(view);
+      };
+      var layout = createLayout(ctx);
+      var panel = createPanel(ctx);
+      ctx.select = panel.select;
+      ctx.fitPanel = layout.fitPanel;
+      ctx.paintBar = layout.paintBar;
+      ctx.buildIcon = layout.buildIcon;
+      ctx.clampPig = layout.clampPig;
+      var render = panel.render, renderContent = panel.renderContent;
+      var setOpen = panel.setOpen, select = panel.select;
+      var fitPanel = layout.fitPanel, clampPig = layout.clampPig;
+      var paintBar = layout.paintBar, buildIcon = layout.buildIcon;
+      for (var t = 0; t < TABS.length; t += 1) buildIcon(TABS[t]);
+      var io = createIo(ctx);
+      var send2 = io.send, refresh2 = io.refresh;
+      ctx.send = send2;
+      ctx.render = render;
+      ctx.renderContent = renderContent;
+      ctx.setOpen = setOpen;
+      ctx.fitPanel = fitPanel;
+      ctx.flash = flash;
+      var updateNotice = attachUpdateNotice(ctx, updatesBridge);
+      ctx.petShy = function() {
+        playPigPet(pig);
+      };
+      ctx.previewArt = function(name) {
+        forceFeedbackArt(name);
+        syncPigArt(pig, pigArt, pigEmoji);
+      };
+      ctx.idleNow = function(key) {
+        if (ctx.life) ctx.life.idleNow(key);
+      };
+      ctx.walkNow = function() {
+        if (ctx.life) ctx.life.walkNow();
+      };
+      var birthday = createBirthday({ ctx, pig, pigArt, pigEmoji, burst, render: function() {
         refresh2();
-        pollTimer = window.setInterval(refresh2, POLL_MS);
-        var life = splitRole === "panel" || splitRole === "ext" ? null : attachLife({
-          send: send2,
-          isStopped: function() {
-            return stopped;
-          },
-          isBusy: function() {
-            return busy4;
-          },
-          isOpen: function() {
-            return isOpen;
-          },
-          getView: function() {
-            return view;
-          },
-          isDragging: function() {
-            return drag !== null;
-          },
-          pig,
-          pigArt,
-          pigEmoji,
-          burst: (
-            /** @type {any} */
-            burst
-          ),
-          showBubble: (
-            /** @type {any} */
-            showBubble
-          ),
-          desktopShell
+      } });
+      var splitRole = wireSplit(ctx, { refresh: function() {
+        refresh2();
+      }, isFishing: function() {
+        return tab === "fishing" && view.fishing.pending?.phase === "hooked";
+      } });
+      ["pointerdown", "pointerup"].forEach(function(type) {
+        dailyHint.addEventListener(type, function(event) {
+          event.stopPropagation();
         });
-        ctx.life = life;
-        var stopResize = layout.attachResize();
-        var dev = attachDevMode({
-          setEnabled: function(next) {
-            devMode = next;
-          },
-          host: host3,
-          paintBar,
-          setOpen,
-          select,
-          showBubble,
-          getTab: function() {
-            return tab;
+      });
+      dailyHint.addEventListener("click", function(event) {
+        event.stopPropagation();
+        var action = dailyHint.getAttribute("data-action");
+        if (action === "cake") birthday.celebrate();
+        else if (action !== null && action !== "") send2(action);
+      });
+      var drag = null;
+      var stopDragHeartbeat = function() {
+      };
+      scene3.addEventListener("pointerdown", function(event) {
+        if (event.button !== 0) return;
+        stopDragHeartbeat();
+        drag = {
+          x: event.clientX,
+          y: event.clientY,
+          startX: typeof event.screenX === "number" ? event.screenX : event.clientX,
+          startY: typeof event.screenY === "number" ? event.screenY : event.clientY,
+          lastX: typeof event.screenX === "number" ? event.screenX : event.clientX,
+          lastY: typeof event.screenY === "number" ? event.screenY : event.clientY,
+          right: parseFloat(getComputedStyle(host3).right) || 18,
+          bottom: parseFloat(getComputedStyle(host3).bottom) || 18,
+          moved: false
+        };
+        scene3.setAttribute("data-dragging", "true");
+        scene3.setPointerCapture?.(event.pointerId);
+        var shellAtStart = desktopShell();
+        shellAtStart?.beginDrag?.();
+        stopDragHeartbeat = startDragHeartbeat(shellAtStart, function() {
+          return drag !== null;
+        });
+      });
+      scene3.addEventListener("pointermove", function(event) {
+        if (drag === null) return;
+        var dx = event.clientX - drag.x;
+        var dy = event.clientY - drag.y;
+        var shellNow = desktopShell();
+        if (shellNow !== null) {
+          shellNow.dragHeartbeat?.();
+          var screenX = typeof event.screenX === "number" ? event.screenX : event.clientX;
+          var screenY = typeof event.screenY === "number" ? event.screenY : event.clientY;
+          if (Math.abs(screenX - drag.startX) > 3 || Math.abs(screenY - drag.startY) > 3) drag.moved = true;
+          if (typeof shellNow.beginDrag !== "function") {
+            var stepX = screenX - drag.lastX;
+            var stepY = screenY - drag.lastY;
+            drag.lastX = screenX;
+            drag.lastY = screenY;
+            if (stepX !== 0 || stepY !== 0) shellNow.moveBy(stepX, stepY);
           }
-        });
-        devMode = false;
-        function dispose() {
-          stopped = true;
-          panel.dispose();
-          stopSizePreference();
-          stopDragHeartbeat();
-          updateNotice.stop();
-          stopResize();
-          autoCollapse.dispose();
-          panel.dispose();
-          dev.dispose();
-          if (pollTimer !== null) window.clearInterval(pollTimer);
-          life?.dispose();
-          fx.dispose();
-          pollTimer = null;
-          host3.remove();
-          style.remove();
-          font.remove();
+          return;
         }
-        return dispose;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+        userRight = drag.right - dx;
+        userBottom = drag.bottom - dy;
+        clampPig();
+        fitPanel();
+      });
+      function endDrag() {
+        if (drag === null) return false;
+        var moved = drag.moved;
+        drag = null;
+        stopDragHeartbeat();
+        stopDragHeartbeat = function() {
+        };
+        desktopShell()?.endDrag?.();
+        scene3.removeAttribute("data-dragging");
+        clampPig();
+        if (deskShell === null) writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }));
+        fitPanel();
+        return moved;
       }
-      exports.name = "dsh-piggy";
-      exports.apply = apply;
-      exports.desktop = desktop;
-      return module.exports;
+      var boxPokes = 0;
+      function pokeBox() {
+        boxPokes += 1;
+        react("poke", 560);
+        if (boxPokes >= BOX_POKES_TO_OPEN) {
+          boxPokes = 0;
+          host3.removeAttribute("data-poke");
+          showBubble("\u54C7\u2014\u2014\uFF01", 1200);
+          burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
+          send2("hatch");
+          return;
+        }
+        host3.setAttribute("data-poke", String(boxPokes));
+        burst(["\u{1F4A8}"], 2);
+        showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
+      }
+      scene3.addEventListener("pointerup", function(event) {
+        if (drag === null) return;
+        if (endDrag()) return;
+        if (view.hatched !== true) {
+          pokeBox();
+          return;
+        }
+        if (!view.dead) send2("pet", { part: partAt(pig, event) });
+      });
+      scene3.addEventListener("pointercancel", function() {
+        endDrag();
+      });
+      scene3.addEventListener("lostpointercapture", function() {
+        endDrag();
+      });
+      scene3.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+        setOpen(!isOpen);
+      });
+      var autoCollapse = splitRole !== null ? { dispose: function() {
+      } } : attachAutoCollapse({
+        host: host3,
+        isOpen: function() {
+          return isOpen;
+        },
+        setOpen,
+        isDragging: function() {
+          return drag !== null;
+        },
+        isFishing: function() {
+          return tab === "fishing" && view.fishing.pending?.phase === "hooked";
+        },
+        isDesktop: function() {
+          return desktopShell() !== null;
+        }
+      });
+      clampPig();
+      setOpen(isOpen);
+      render(view);
+      refresh2();
+      pollTimer = window.setInterval(refresh2, POLL_MS);
+      var life = splitRole === "panel" || splitRole === "ext" ? null : attachLife({
+        send: send2,
+        isStopped: function() {
+          return stopped;
+        },
+        isBusy: function() {
+          return busy4;
+        },
+        isOpen: function() {
+          return isOpen;
+        },
+        getView: function() {
+          return view;
+        },
+        isDragging: function() {
+          return drag !== null;
+        },
+        pig,
+        pigArt,
+        pigEmoji,
+        burst: (
+          /** @type {any} */
+          burst
+        ),
+        showBubble: (
+          /** @type {any} */
+          showBubble
+        ),
+        desktopShell
+      });
+      ctx.life = life;
+      var stopResize = layout.attachResize();
+      var dev = attachDevMode({
+        setEnabled: function(next) {
+          devMode = next;
+        },
+        host: host3,
+        paintBar,
+        setOpen,
+        select,
+        showBubble,
+        getTab: function() {
+          return tab;
+        }
+      });
+      devMode = false;
+      function dispose() {
+        stopped = true;
+        panel.dispose();
+        stopSizePreference();
+        stopDragHeartbeat();
+        updateNotice.stop();
+        stopResize();
+        autoCollapse.dispose();
+        panel.dispose();
+        dev.dispose();
+        if (pollTimer !== null) window.clearInterval(pollTimer);
+        life?.dispose();
+        fx.dispose();
+        pollTimer = null;
+        host3.remove();
+        style.remove();
+        font.remove();
+      }
+      return dispose;
     }
-  });
+    installCapture();
+    try {
+      return mount();
+    } catch (error) {
+      console.warn("[dsh-piggy] \u6302\u8F7D\u5931\u8D25\uFF0C\u732A\u5148\u9000\u5230\u4E00\u8FB9", error);
+      record("error", "mount", "\u6302\u8F7D\u5931\u8D25\uFF1A" + (error instanceof Error ? error.message : String(error)), { stack: error instanceof Error ? error.stack : "" });
+      return () => {
+      };
+    }
+  }
+  function createClientPlugin() {
+    const exports = { name: "dsh-piggy", apply: mountGame, desktop };
+    exports.desktop = desktop;
+    return exports;
+  }
+
+  // adapters/dsh/client.js
+  var game = { mount: mountGame, desktop };
+  window.piggyGame = game;
+  if (
+    /** @type {any} */
+    window.__ModuleLoader__
+  ) {
+    window.__ModuleLoader__.load({ id: "dsh-piggy", factory: createClientPlugin });
+  }
 })();

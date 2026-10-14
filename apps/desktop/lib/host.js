@@ -5,6 +5,7 @@
  * 不开任何端口。纯 Node，不依赖 Electron，测试可以直接跑。
  * @module dsh-piggy-desktop/host
  */
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -14,7 +15,7 @@ import { pathToFileURL } from 'node:url'
  * @param {string} statePath where this pig's save lives
  * @param {{ fetch?: typeof globalThis.fetch, onSnapshot?: (view: any) => void }} [options]
  */
-export async function startHost(gameDir, statePath, options = {}) {
+async function startLegacyHost(gameDir, statePath, options = {}) {
   const load = name => import(pathToFileURL(join(gameDir, name)).href)
   const { createStore } = await load('store.js')
   const { registerRoutes } = await load('routes.js')
@@ -69,4 +70,15 @@ export async function startHost(gameDir, statePath, options = {}) {
   }
 
   return { store, handle, dispose: () => store.dispose() }
+}
+
+export async function startHost(gameDir, statePath, options = {}) {
+  if (!existsSync(join(gameDir, 'runtime/index.js'))) return startLegacyHost(gameDir, statePath, options)
+  const { createGameRuntime } = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
+  const { environmentNote } = await import(pathToFileURL(join(gameDir, 'environment.js')).href)
+  const runtime = createGameRuntime({ ...options, statePath, journalHeader: environmentNote({
+    运行形态: '桌面版', 存档路径: statePath, Node: process.version,
+    ...(typeof process.versions.electron === 'string' ? { Electron: process.versions.electron } : {}),
+  }) })
+  return { ...runtime, store: { journal: { record: runtime.record } } }
 }

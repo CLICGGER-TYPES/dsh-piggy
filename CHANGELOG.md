@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 来自 PR #12（WolalaQAQ）：游戏运行时与 DSH 适配器拆分，网页和桌面复用同一挂载入口；现有玩法、存档、命令保持兼容。
+
 ## [0.37.0] — 2026-10-15 · 菜园 4.0：QQ 农场玩法、帮工、离线自动照顾（外壳 0.6.6）
 
 ### 菜园 4.0（需要游戏 0.37.0）
