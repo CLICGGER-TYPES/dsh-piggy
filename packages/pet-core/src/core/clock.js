@@ -67,8 +67,13 @@ export function settleFloorMs(state, fromMs) {
 /**
  * 把已结算水位抬到 ms；只增不减。
  *
- * 唯二允许把水位写小的写入点在 core/state.js（`ageFromNow` 年龄归零、调试页的 `__advanceMs`
- * 快进），那是「重置时间线 / 假装这段真的流过」，不是结算；别处的写入一律走这个函数。
+ * **唯二**允许把水位写小的写入点在 core/state.js，都是刻意的「重置时间线」，别处一律走这个
+ * 函数（回归守卫见 test/offline-feed.test.js 的「P3-D：settledUpTo 只增不减」与「往下写水位的
+ * 赋值点只有 state.js 的两处重置」）：
+ *   1. `ageFromNow` 年龄归零 —— 旧时间线整个丢掉，水位归到当下；
+ *   2. 调试页 `applyDevPatch` 的 `__advanceMs` 快进 —— 假装这段真的流过，水位跟着退回去，
+ *      否则高水位会把快进挡住（`store/api.js` 的 dev 通道可达，**调试专用**，玩家路径别依赖）。
+ * 除此之外任何地方想下调水位都是 bug。
  */
 export function raiseSettledUpTo(state, ms) {
   if (!Number.isFinite(state.settledUpTo) || ms > state.settledUpTo) state.settledUpTo = ms

@@ -1,10 +1,11 @@
 // @ts-check
 /** 离线自动用背包（吃 / 洗 / 玩）、时钟回拨冻结、撑不住之后的垂危与死亡。 */
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { decay, hatchEgg, lifeStageFor, migrate, onsetRisks, THRESHOLDS, SHOP, REVIVE_ITEM } from '../core.js'
+import { ageFromNow, applyDevPatch, decay, hatchEgg, lifeStageFor, migrate, onsetRisks, THRESHOLDS, SHOP, REVIVE_ITEM } from '../core.js'
 import { CHAIN_INDEX } from '../packages/pet-core/src/data/illness.js'
+import { raiseSettledUpTo } from '../packages/pet-core/src/core/clock.js'
 import { emptyOfflineMeals, finishOfflineMeals, offlineSustainMs, pickOfflineItem, OFFLINE_NEEDS } from '../packages/pet-core/src/core/offline-feed.js'
 const START = 1_700_000_000_000
 const DAY = 86_400_000
@@ -243,6 +244,54 @@ test('返工3：不再使用的 clockRollbackAt 迁移时丢掉', () => {
   const pig = pigWithFood()
   const before = { ...pig, version: 12, clockRollbackAt: START - DAY }
   assert.equal('clockRollbackAt' in migrate(before, START), false, '老存档留下的冻结标记不再进内存')
+})
+
+// ===========================================================================
+// 返工3 P2-A：老存档（没有 settledUpTo 水位）在回拨场景下的保护要有会红的测试。
+//
+// 注意夹具：`bornAt` 必须放在很远的过去。decay() 里 `fromMs = max(lastSeenAt, bornAt)`
+// 是一道「生日下界」，生日放近会把重复结算量掩盖掉（xreview 实测只剩 2.04 天）。
+// ===========================================================================
+
+test('返工3 P2-A：老存档（没有水位）回拨后恢复，不把已结算的那段算第二遍', () => {
+  // 先正常结算到 T，再把水位字段删掉、过一遍 migrate：得到「游标在 T、水位为 null」的
+  // 升级后老存档（老版本根本没有这个字段，migrate 会补成 null）。
+  const settled = hatchEgg(START)
+  settled.bornAt = START - 100 * DAY
+  settled.inventory = { apple: 300 }
+  decay(settled, START + 12 * DAY, never)
+  const T = settled.lastSeenAt
+  const raw = JSON.parse(JSON.stringify(settled))
+  delete raw.settledUpTo
+  raw.version = 12
+  const upgraded = migrate(raw, T)
+  assert.equal(upgraded.settledUpTo, null, '老存档升级后水位是 null')
+  const ageMs = upgraded.ageMs
+  const apples = upgraded.inventory.apple
+  // 玩家把系统时间拨回 10 天：冻结，不补结算。
+  decay(upgraded, T - 10 * DAY, never)
+  assert.equal(upgraded.lastSeenAt, T, '回拨当下保留游标——没有水位时这就是唯一保护')
+  assert.equal(upgraded.ageMs, ageMs, '回拨不补结算')
+  assert.equal(upgraded.inventory.apple, apples, '回拨不吃背包')
+  // 真实时间越过旧游标 1 小时：只结算新增的 1 小时，错表那 10 天不算第二遍。
+  decay(upgraded, T + HOUR, never)
+  assert.ok(Math.abs(upgraded.ageMs - ageMs - HOUR) < 1000, `只结算新增的 1 小时（实际 ${(upgraded.ageMs - ageMs) / HOUR} 小时）`)
+  assert.equal(upgraded.settledUpTo, T + HOUR, '从这一轮起水位被立起来')
+  assert.ok(apples - upgraded.inventory.apple <= 2, `重复结算会多吃几十个苹果（实际多吃 ${apples - upgraded.inventory.apple} 个）`)
+})
+
+test('返工3 P2-A：游标落在水位后面（手改存档 / 更旧的拷贝）时，从水位起算，不重算已结算那段', () => {
+  const pig = hatchEgg(START)
+  pig.inventory = { apple: 300 }
+  decay(pig, START + 12 * DAY, never)
+  const watermark = pig.settledUpTo
+  assert.equal(watermark, START + 12 * DAY)
+  // 手改存档：游标被写回 10 天前，水位没动。
+  pig.lastSeenAt = START + 2 * DAY
+  const ageMs = pig.ageMs
+  decay(pig, watermark + HOUR, never)
+  assert.equal(pig.settledUpTo, watermark + HOUR)
+  assert.ok(Math.abs(pig.ageMs - ageMs - HOUR) < 1000, `只结算水位之后新增的 1 小时（实际 ${(pig.ageMs - ageMs) / HOUR} 小时）`)
 })
 
 test('优先能越过饥饿线的便宜食物，不足时选回复最多的', () => {
@@ -606,6 +655,69 @@ test('返工3：老存档没有已结算水位就补 null，坏值当没有，�
   assert.equal(migrate(before, START).settledUpTo, null, '老存档：还没结算过，decay 按 lastSeenAt 处理')
   assert.equal(migrate({ ...pig, settledUpTo: '刚才' }, START).settledUpTo, null, '坏值当没有')
   assert.equal(migrate({ ...pig, settledUpTo: START - DAY }, START).settledUpTo, START - DAY, '有效值保留，存档重载后不重复结算')
+})
+
+// ===========================================================================
+// 返工3 P2-C：冻结不是隐形的——跳过路径要留一条日志（不加界面提示）。
+// 返工3 P3-D：settledUpTo 只增不减，全库的赋值点要受守卫。
+// ===========================================================================
+
+test('返工3 P2-C：冻结时打一条日志，写清水位与两个时间戳', () => {
+  const pig = hatchEgg(START)
+  pig.bornAt = START - 100 * DAY
+  // 这个水位别的用例没出现过，避开日志的「同一道下界只报一次」限流。
+  const held = START + 37 * DAY + 12_345
+  raiseSettledUpTo(pig, held)
+  pig.lastSeenAt = held
+  const warnings = []
+  const original = console.warn
+  console.warn = (...args) => warnings.push(args.map(String).join(' '))
+  try {
+    decay(pig, held - 3 * DAY, never)
+  } finally {
+    console.warn = original
+  }
+  const frozen = warnings.find(line => line.includes('settle frozen'))
+  assert.ok(frozen, `冻结要打日志，实际：${warnings.join(' | ')}`)
+  assert.ok(frozen.includes(String(held)), '日志要有水位 / 下界时间戳')
+  assert.ok(frozen.includes(String(held - 3 * DAY)), '日志要有现在的时间戳')
+  assert.equal(pig.ageMs, 0, '冻结期间不结算')
+})
+
+test('返工3 P3-D：settledUpTo 只增不减，传更小的值不改水位', () => {
+  const pig = hatchEgg(START)
+  raiseSettledUpTo(pig, START + 5 * DAY)
+  assert.equal(pig.settledUpTo, START + 5 * DAY)
+  raiseSettledUpTo(pig, START + DAY)
+  assert.equal(pig.settledUpTo, START + 5 * DAY, '更小的值不写进去（「同一段绝不重算」的地基）')
+  raiseSettledUpTo(pig, START + 5 * DAY)
+  assert.equal(pig.settledUpTo, START + 5 * DAY, '相等的值也不动')
+  raiseSettledUpTo(pig, START + 7 * DAY)
+  assert.equal(pig.settledUpTo, START + 7 * DAY, '更大的值照常抬高')
+})
+
+test('返工3 P3-D：往下写水位的赋值点只有 state.js 的两处重置（年龄归零 / 调试快进）', () => {
+  // 静态守卫：以后谁在别处直接 `state.settledUpTo = ...`（绕过 raiseSettledUpTo 的只增判断）
+  // 就当场变红。state.js 那两处是唯二合法下调点，都在注释里点名了。
+  const dir = new URL('../packages/pet-core/src/core/', import.meta.url)
+  const hits = {}
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith('.js')) continue
+    const count = (readFileSync(new URL(name, dir), 'utf8').match(/\.settledUpTo\s*=/g) ?? []).length
+    if (count > 0) hits[name] = count
+  }
+  assert.deepEqual(hits, { 'clock.js': 1, 'migrate.js': 1, 'state.js': 2 }, '水位只能由 raiseSettledUpTo 抬高；下调仅限 state.js 的两处重置')
+})
+
+test('返工3 P3-D：年龄归零把水位重设到当下，dev 快进不会被高水位挡住', () => {
+  const pig = hatchEgg(START)
+  decay(pig, START + 5 * DAY, never)
+  assert.equal(pig.settledUpTo, START + 5 * DAY)
+  ageFromNow(pig, START + 100 * DAY)
+  assert.equal(pig.settledUpTo, START + 100 * DAY, '年龄归零：旧时间线丢掉，水位跟到当下')
+  assert.equal(pig.ageMs, 0)
+  applyDevPatch(pig, { __advanceMs: 2 * DAY }, START + 100 * DAY)
+  assert.ok(pig.ageMs > 0, 'dev 快进照常结算（水位跟着退回去，没有把它挡住）')
 })
 
 for (const [label, bad] of [['NaN', Number.NaN], ['负数', -1], ['Infinity', Number.POSITIVE_INFINITY]]) {

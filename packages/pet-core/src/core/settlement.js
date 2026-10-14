@@ -32,6 +32,18 @@ export { currentIllness, die } from './illness.js'
 // ---------------------------------------------------------------------------
 
 /**
+ * 冻结（时钟没前进 / 还没追上已结算水位）时的日志，同一道下界只报一次：面板每 4 秒轮询一次
+ * `decay()`，回拨造成的冻结却可以持续很多天，不挡一下会刷满日志。只压日志、不影响结算，写清
+ * 「冻住、等真实时间追上水位」和两个时间戳，排障才看得出这条跳过路径（返工3 P2-C）。不加界面提示。
+ */
+let frozenAtFloorMs = null
+function warnFrozen(state, floorMs, nowMs) {
+  if (frozenAtFloorMs === floorMs) return
+  frozenAtFloorMs = floorMs
+  console.warn(`[dsh-piggy] settle frozen, pig stands still until the real clock catches up: floorMs=${floorMs} settledUpTo=${String(state.settledUpTo)} nowMs=${nowMs}`)
+}
+
+/**
  * Bring the pig up to `nowMs`, resolving everything that happened in between.
  *
  * The gap is cut into at most two stretches — away until the activity ends,
@@ -72,17 +84,26 @@ export function decay(state, nowMs, options = {}) {
   // 时钟没前进（玩家把系统时间调回去了 / 游标在未来）：猪原地不动，保留游标，本次不结算。
   // 玩家调时间了就冻结，不自动恢复——等真实时间追上旧水位（settledUpTo）再接着走，
   // 错表那段本来就没真的流过（2026-10-14 用户拍板，取消了原来的「满一天认新时钟」出口）。
-  if (!(nowMs > fromMs)) return state
+  if (!(nowMs > fromMs)) {
+    // nowMs 恰好等于 fromMs 是「同一时刻被问了两次」（面板轮询后紧跟着一个动作），不是冻结。
+    if (nowMs < fromMs) warnFrozen(state, fromMs, nowMs)
+    return state
+  }
   state.lastSeenAt = nowMs
   // 已结算水位（只增不减，见 clock.js）：时间要越过它才继续结算，同一段绝不结算两遍
-  // （返工2 P2-2，宁可少算）。
+  // （宁可少算）。水位在游标前面时（存档被手改 / 从更旧的一份拷来）这条是唯一保护。
   const floorMs = settleFloorMs(state, fromMs)
-  if (nowMs <= floorMs) return state
+  if (nowMs <= floorMs) {
+    warnFrozen(state, floorMs, nowMs)
+    return state
+  }
   // An unopened box is not a pet yet: it never gets hungry, dirty, sick or
   // older, and it cannot die while it waits to be poked open (#2).
   if (state.hatched !== true) return state
   if (state.dead === true) return state
-  // 到这里才真的要结算，水位跟着推进（前面的跳过路径只在 lastSeenAt 上走）。
+  // 到这里才真的要结算，水位跟着推进（前面的跳过路径只在 lastSeenAt 上走）。承重条件：
+  // 老存档 / 未孵化的盒子水位一直是 null，这行是它们把水位立起来的唯一一步；删了水位永远是
+  // null，`settleFloorMs` 退化成按游标结算，游标一落后就会重复结算（返工3 P3-E，别当冗余删）。
   raiseSettledUpTo(state, nowMs)
   const next = options.roll ?? rollerFor(state)
   // 单次结算的推算上限：背包还能撑多久 + 10 天（见 offline-feed.js），再夹在 400 天的
