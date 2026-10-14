@@ -37,6 +37,7 @@ import { renderTravelTab } from './tabs/travel.js'
 import { renderWorkTab } from './tabs/work.js'
 import { str } from './values.js'
 import { attachPointerRepaint } from './pointer-repaint.js'
+import { restoreHover } from './hover-restore.js'
 
 
 export function createPanel(ctx) {
@@ -150,6 +151,8 @@ export function createPanel(ctx) {
           })
         }
         ctx.justBought = null
+        // 重绘把挂在扩展节点上的悬停（菜园的悬停卡）一起换掉了：指针还在原处就补发一次 mousemove，见 hover-restore.js
+        restoreHover(ctx.content)
       }
 
       function paintContent() {

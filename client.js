@@ -9176,6 +9176,91 @@
     };
   }
 
+  // src/client/hover-restore.js
+  var restorers = /* @__PURE__ */ new WeakMap();
+  function restoreHover(content) {
+    var restore = restorers.get(content);
+    if (restore === void 0) {
+      restore = attach(content);
+      restorers.set(content, restore);
+    }
+    return restore();
+  }
+  function attach(content) {
+    var doc = content.ownerDocument ?? globalThis.document ?? null;
+    var win = doc === null ? globalThis.window ?? null : doc.defaultView ?? globalThis.window ?? null;
+    var x = null;
+    var y = null;
+    var seq2 = 0;
+    var restoring = false;
+    var pending2 = false;
+    function remember(event) {
+      if (restoring) return;
+      x = event.clientX;
+      y = event.clientY;
+      if (event.movementX !== 0 || event.movementY !== 0) seq2 += 1;
+    }
+    function forget() {
+      x = null;
+      y = null;
+    }
+    function targetUnderPointer() {
+      if (x === null || typeof doc?.elementFromPoint !== "function") return null;
+      var node = doc.elementFromPoint(x, y);
+      if (node === null || node === void 0) return null;
+      for (var walk = node; walk !== null && walk !== void 0; walk = walk.parentNode) {
+        if (walk === content) return node;
+      }
+      return null;
+    }
+    function dispatch(target) {
+      var MouseClass = win === null ? null : win.MouseEvent;
+      if (typeof MouseClass !== "function") return;
+      restoring = true;
+      try {
+        target.dispatchEvent(new MouseClass("mousemove", {
+          bubbles: true,
+          clientX: x,
+          clientY: y,
+          movementX: 1,
+          movementY: 1
+        }));
+      } finally {
+        restoring = false;
+      }
+    }
+    function flush2(seen) {
+      pending2 = false;
+      if (restoring || seq2 !== seen) return;
+      var target = targetUnderPointer();
+      if (target === null) return;
+      dispatch(target);
+    }
+    function schedule4(seen) {
+      if (win !== null && typeof win.requestAnimationFrame === "function") {
+        win.requestAnimationFrame(function() {
+          flush2(seen);
+        });
+        return;
+      }
+      if (win !== null && typeof win.setTimeout === "function") {
+        win.setTimeout(function() {
+          flush2(seen);
+        }, 0);
+        return;
+      }
+      flush2(seen);
+    }
+    content.addEventListener("mousemove", remember);
+    content.addEventListener("mouseleave", forget);
+    return function restore() {
+      if (restoring || pending2 || x === null) return false;
+      pending2 = true;
+      schedule4(seq2);
+      return true;
+    };
+  }
+
   // src/client/panel.js
   function createPanel(ctx) {
     var pointerRepaint = attachPointerRepaint(ctx.host, window);
@@ -9272,6 +9357,7 @@
         });
       }
       ctx.justBought = null;
+      restoreHover(ctx.content);
     }
     function paintContent() {
       ctx.content.textContent = "";

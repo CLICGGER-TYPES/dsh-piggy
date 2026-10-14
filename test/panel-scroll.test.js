@@ -13,7 +13,7 @@ test('面板重绘保留购买框、商店列表和包袱横向滚动；不串�
   let nodes = [layer('farm-dialog:radish', 31), layer('farm-shop:seed', 90), layer('farm-stock:seeds', 0, 44)]
   const ctx = { content: { scrollTop: 10, querySelectorAll: () => nodes }, justBought: 'radish' }
   const paintContent = () => { nodes = [layer('farm-dialog:radish', 0), layer('farm-shop:tool', 0), layer('farm-stock:seeds', 0)] }
-  const render = runInNewContext('(' + renderSource + ')', { ctx, paintContent })
+  const render = runInNewContext('(' + renderSource + ')', { ctx, paintContent, restoreHover: () => false })
   render()
   assert.equal(nodes[0].scrollTop, 31)
   assert.equal(nodes[1].scrollTop, 0)
@@ -31,7 +31,7 @@ test('没滚过就不写 scrollTop：写一下就是一次同步布局', () => {
   }
   const ctx = { content, justBought: null }
   const paintContent = () => {}
-  const render = runInNewContext('(' + renderSource + ')', { ctx, paintContent })
+  const render = runInNewContext('(' + renderSource + ')', { ctx, paintContent, restoreHover: () => false })
   render()
   assert.deepEqual(writes, [], '没人滚过就一步都不写')
 })
