@@ -53,3 +53,5 @@ piggy-emoji.woff2
 ```
 
 - 菜园第4轮：已审 farm-v4-fix4 场景/UI V2接入扩展；来源、加工规则和逐图哈希见 extensions/farm/PROVENANCE.md、fix4-art-pack.json，原稿与提示词保留在项目素材工作区。
+
+- 菜园整体重画（4.0.8，未发布）：大农场 B、小农场 C1，新增 7 张花叶/木纹/控件图片；出处、逐图哈希见 extensions/farm/PROVENANCE.md、redraw-art-pack.json。其余容器、标题、按钮采用原生 CSS。

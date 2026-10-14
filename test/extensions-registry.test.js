@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { MAX_ASSETS_BYTES, assetNames, fileList } from '../store/ext-files.js'
+import { assetNames, fileList } from '../store/ext-files.js'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { test } from 'node:test'
 
@@ -41,14 +41,11 @@ test('每个扩展目录三件套齐全，manifest 合规', () => {
     const manifest = manifestOf(key)
     const images = assetNames(manifest)
     assert.ok(images !== null, key + ' 的 assets 名单不对')
-    let imageBytes = 0
     for (const name of images ?? []) {
       const file = new URL(key + '/assets/' + name, ROOT)
       assert.ok(existsSync(file), key + ' 缺图片 ' + name)
       assert.ok(statSync(file).size <= MAX_FILE_BYTES, key + '/assets/' + name + ' 超过 512KB')
-      imageBytes += statSync(file).size
     }
-    assert.ok(imageBytes <= MAX_ASSETS_BYTES, key + ' 的图片合计超过 4MB')
     assert.equal(manifest.key, key, 'manifest.key 必须等于文件夹名')
     assert.match(key, KEY)
     assert.match(manifest.version, SEMVER, key + ' version')

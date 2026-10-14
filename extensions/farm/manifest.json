@@ -2,8 +2,8 @@
   "key": "farm",
   "label": "菜园",
   "emoji": "🥬",
-  "version": "4.0.7",
-  "minGame": "0.37.0",
+  "version": "4.0.8",
+  "minGame": "0.37.1",
   "description": "照 QQ 农场改版：29 种作物、18 块地，会长草生虫干旱；等级解锁种子，多季作物；面板里是小农场，也能开大窗口的大农场。可雇帮工猪。用自己的菜币。",
   "app": {
     "emoji": "🥬",
@@ -272,7 +272,14 @@
     "weather-rain.webp",
     "weather-sunny.webp",
     "weed.webp",
-    "withered.webp"
+    "withered.webp",
+    "redraw-flower-left.webp",
+    "redraw-flower-right.webp",
+    "redraw-wood-strip.webp",
+    "redraw-close.webp",
+    "redraw-plus.webp",
+    "redraw-minus.webp",
+    "redraw-lock.webp"
   ],
   "assetLayout": {
     "bg-big-dawn-rain.webp": {
@@ -2409,6 +2416,55 @@
         128,
         124
       ]
+    },
+    "redraw-flower-left.webp": {
+      "size": [
+        91,
+        96
+      ],
+      "kind": "decoration"
+    },
+    "redraw-flower-right.webp": {
+      "size": [
+        94,
+        96
+      ],
+      "kind": "decoration"
+    },
+    "redraw-wood-strip.webp": {
+      "size": [
+        256,
+        48
+      ],
+      "kind": "decoration"
+    },
+    "redraw-close.webp": {
+      "size": [
+        52,
+        52
+      ],
+      "kind": "icon"
+    },
+    "redraw-plus.webp": {
+      "size": [
+        52,
+        52
+      ],
+      "kind": "icon"
+    },
+    "redraw-minus.webp": {
+      "size": [
+        52,
+        52
+      ],
+      "kind": "icon"
+    },
+    "redraw-lock.webp": {
+      "size": [
+        52,
+        52
+      ],
+      "kind": "icon"
     }
   }
 }

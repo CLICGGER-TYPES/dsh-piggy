@@ -248,11 +248,13 @@ function auditControls(controls, report) {
     if (r.width < 31.99 || r.height < 31.99) report.smallTargets.push(detail)
     // 5×5 采样：只数落在控件自己形状内、且被「非祖先」元素抢走的点，量「命中不到自己」的面积占比。
     const ownShape = footprint(element)
+    const rounded = { rect: r, radius: cornerRadii(getComputedStyle(element), r.width, r.height), poly: null }
     let total = 0, blocked = 0, sampleHit = null
     for (let iy = 0; iy < 5; iy += 1) for (let ix = 0; ix < 5; ix += 1) {
       const px = r.x + r.width * (ix + .5) / 5, py = r.y + r.height * (iy + .5) / 5
       if (px < 0 || py < 0 || px > innerWidth - 1 || py > innerHeight - 1) continue
       if (!pointInPolygon(px, py, ownShape)) continue
+      if (!pointInShape(px, py, rounded)) continue
       total += 1
       const sample = document.elementFromPoint(px, py)
       if (isAncestor(sample, element)) continue
@@ -321,7 +323,11 @@ function auditText(element, report) {
   const detail = { element: identify(element), text, rect: r }, font = effectiveFont(element)
   if (element.tagName !== 'BUTTON' && element.closest('.fm-tab') && ((element.getClientRects().length > 1) || r.height > parseFloat(getComputedStyle(element).fontSize) * 2)) report.wrappedLabels.push({ ...detail, reason: '商店短页签文字折成多行' })
   if (font < 11.99) report.smallText.push({ ...detail, fontPx: font })
-  if (element.clientWidth > 0 && element.scrollWidth > element.clientWidth + .5) report.clippedText.push({ ...detail, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })
+  if (element.clientWidth > 0 && element.scrollWidth > element.clientWidth + .5) {
+    const textOverflow = inkRects(element).some(ink => ink.left < r.x - .5 || ink.right > r.right + .5)
+    if (textOverflow || !element.matches('.fm-title')) report.clippedText.push({ ...detail, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })
+    else report.exceptions.push({ ...detail, reason: '文字墨迹在容器内；燕尾等伪元素扩展了scrollWidth，继续独立检查装饰归属和遮挡。' })
+  }
   const parent = element.parentElement
   if (parent && !element.matches('.fm-tool-label,.fm-tooltip,.fm-toast,.fm-n,.fm-count')) {
     const plate = textPlate(element)

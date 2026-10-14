@@ -21,19 +21,19 @@ test('fix4：地块和作物上没有进度条', () => {
   }
 })
 
-test('fix4：商店、种子袋、肥料、仓库、购买及确认共用商店框和标题', () => {
+test('fix4：商店、种子袋、肥料、仓库、购买及确认共用有机纸面框和燕尾标题', () => {
   for (const [attr, key] of [['data-farm-shop', 'shelf'], ['data-farm-tool', 'seedbag'], ['data-farm-tool', 'fert'], ['data-farm-panel', 'stock']]) {
     const ui = renderFarm(growing(), 'big', art)
     ui.find(attr, key).fire('click')
     const box = ui.all('data-farm-overlay')[0]
-    assert.equal(box.style.borderImageSource, 'url("/assets/shop-frame.webp")')
-    assert.equal(box.getAttribute('data-farm-frame'), 'shop-frame')
+    assert.ok(!box.style.borderImageSource, 'CSS 纸面不再叠旧木框九宫格')
+    assert.equal(box.getAttribute('data-farm-frame'), 'css-paper')
     assert.equal(box.querySelectorAll('.fm-title').length, 1)
   }
   const ui = renderFarm(growing(), 'big', art)
   ui.find('data-farm-shop', 'shelf').fire('click')
   ui.find('data-farm-item', 'radish').fire('click')
-  assert.equal(ui.dom.body.querySelectorAll('.fm-buy')[0].getAttribute('data-farm-frame'), 'shop-frame')
+  assert.equal(ui.dom.body.querySelectorAll('.fm-buy')[0].getAttribute('data-farm-frame'), 'css-paper')
 })
 
 test('fix4：只在真实移动后生成悬停卡，弹层打开时不生成卡', () => {

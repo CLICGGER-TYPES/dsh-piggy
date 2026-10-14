@@ -1,0 +1,128 @@
+[
+  {
+    "asset": "redraw-flower-left.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-decor-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-decor-atlas.md",
+    "cell": [
+      0,
+      0,
+      512,
+      512
+    ],
+    "offline_alpha_cutoff": 200,
+    "packed_size": [
+      91,
+      96
+    ],
+    "packed_bytes": 9742,
+    "packed_sha256": "512b76cf0d7f779fc5cce58e6f01615f9a6434852535f2718a42610280aa5c76"
+  },
+  {
+    "asset": "redraw-flower-right.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-decor-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-decor-atlas.md",
+    "cell": [
+      512,
+      0,
+      1024,
+      512
+    ],
+    "offline_alpha_cutoff": 200,
+    "packed_size": [
+      94,
+      96
+    ],
+    "packed_bytes": 9816,
+    "packed_sha256": "7c8d1f2a50385fc13275e0ea501b95120ed01cc92b0f498aa2e43020d68a0804"
+  },
+  {
+    "asset": "redraw-wood-strip.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-decor-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-decor-atlas.md",
+    "cell": [
+      0,
+      512,
+      512,
+      1024
+    ],
+    "offline_alpha_cutoff": 200,
+    "packed_size": [
+      256,
+      48
+    ],
+    "packed_bytes": 11266,
+    "packed_sha256": "6b5d60a9de4f17692d6650cb6a4ab53ac78f466010e9a6e6b981b0e9d2748302"
+  },
+  {
+    "asset": "redraw-close.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-controls-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-controls-atlas.md",
+    "cell": [
+      0,
+      0,
+      768,
+      512
+    ],
+    "offline_alpha_cutoff": 100,
+    "packed_size": [
+      52,
+      52
+    ],
+    "packed_bytes": 3236,
+    "packed_sha256": "d319ced60557883f9937f6c00a114b347cf4a6652ca62a77dbd6706eec194289"
+  },
+  {
+    "asset": "redraw-plus.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-controls-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-controls-atlas.md",
+    "cell": [
+      768,
+      0,
+      1536,
+      512
+    ],
+    "offline_alpha_cutoff": 100,
+    "packed_size": [
+      52,
+      52
+    ],
+    "packed_bytes": 2324,
+    "packed_sha256": "23da77387869deeae27d30919d2b2ffa4560729c7f334f4a7d94a2cfa7c9d1ef"
+  },
+  {
+    "asset": "redraw-minus.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-controls-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-controls-atlas.md",
+    "cell": [
+      0,
+      512,
+      768,
+      1024
+    ],
+    "offline_alpha_cutoff": 100,
+    "packed_size": [
+      52,
+      52
+    ],
+    "packed_bytes": 1044,
+    "packed_sha256": "2aff6f1dd65fcf85667aecc924975d28dc411b7d89dc38461616bf8bef3479af"
+  },
+  {
+    "asset": "redraw-lock.webp",
+    "source": "sprites/farm-ui-redraw-b/sheets/b-controls-atlas.png",
+    "prompt": "prompts/2026-10-15-farm-ui-redraw/b-controls-atlas.md",
+    "cell": [
+      768,
+      512,
+      1536,
+      1024
+    ],
+    "offline_alpha_cutoff": 100,
+    "packed_size": [
+      52,
+      52
+    ],
+    "packed_bytes": 3092,
+    "packed_sha256": "5b5cfaa6567abdadc375b7db992b568c2df5cde7d0d569a1a1d27e7670f9f48d"
+  }
+]

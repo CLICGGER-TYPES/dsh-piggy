@@ -9,7 +9,7 @@
 |---|---|---|
 | [xuemian168/qqpet_automation](https://github.com/xuemian168/qqpet_automation) | MIT（其原创部分） | 只参考**数值与名称**：属性阈值、三条疾病链的名称与分期、九门科目名、部分物品名。其源代码、数据文件结构与本项目不同，未复制 |
 | [ice-cream-headache/ice-cream-headache.github.io](https://github.com/ice-cream-headache/ice-cream-headache.github.io) | MIT | 只参考**界面截图**（宠物在上、奶油色图标栏在下、带标签的属性条）。截图未随本包分发 |
-| [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui) | MIT | 只参考**设计 token**：颜色、圆角、缓动曲线。按其 `docs/design-system/css-variables.md` 的取值重写为纯 CSS |
+| [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui) | MIT | 参考设计 token 与 Button、Title、Modal、Tabs、Card、Badge、Progress 外观；菜园 4.0.8 沿用 Modal 的有机 clip-path 几何，以原生 DOM/CSS 实现，无 React 依赖 |
 
 ## 运行时依赖
 

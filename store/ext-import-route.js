@@ -6,11 +6,8 @@
  * 跟导入皮肤一样用 base64 才不会把中文读坏。导入成功回快照，好让面板马上看到新扩展。
  * @module dsh-piggy/store/ext-import-route
  */
-import { BUNDLE_BYTES } from './ext-import.js'
 
 export const EXT_IMPORT_ROUTE = '/dsh-piggy/extensions/import'
-/** 扩展包的上限再加上外面这层 base64 的膨胀。 */
-const LIMIT = Math.ceil(BUNDLE_BYTES * 1.4)
 
 /** @param {any} webServer @param {any} store @param {(store: any) => any} snapshot */
 export function registerExtImportRoute(webServer, store, snapshot) {
@@ -19,11 +16,8 @@ export function registerExtImportRoute(webServer, store, snapshot) {
     handler: async (req, res) => {
       const send = (status, body) => { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)) }
       if (req.method !== 'POST') return send(405, { ok: false, reason: 'method' })
-      let size = 0
       const chunks = []
       for await (const chunk of req) {
-        size += chunk.length
-        if (size > LIMIT) return send(413, { ok: false, reason: 'too-large', message: '扩展包太大' })
         chunks.push(Buffer.from(chunk))
       }
       let body

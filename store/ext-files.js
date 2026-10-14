@@ -5,15 +5,13 @@
  * - 代码三件：manifest.json、server.js、client.js，每个 ≤512KB。
  * - 图片（v0.36 起，用户 2026-10-11：扩展界面要用画好的素材）：manifest 里 `assets: ["bg.webp", …]` 列出，
  *   放在扩展目录的 `assets/` 里；在线目录的 `files` 里对应 `"assets/bg.webp": { url, sha256 }`。
- *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB，一个扩展最多 256 张（游戏 0.37.0 起，之前 96）、合计 ≤4MB。
+ *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB；0.37.1 起不限制图片张数和合计大小。
  *   面板里用 `app.asset('bg.webp')` 拿地址（GET /dsh-piggy/ext/<key>/assets/<name>）。
  * @module dsh-piggy/store/ext-files
  */
 
 export const CODE_FILES = Object.freeze(['manifest.json', 'server.js', 'client.js'])
 export const MAX_FILE_BYTES = 512 * 1024
-export const MAX_ASSETS = 256
-export const MAX_ASSETS_BYTES = 4 * 1024 * 1024
 export const ASSET_NAME = /^[a-z0-9][a-z0-9-]{0,47}\.(?:webp|png)$/
 export const ASSET_TYPES = Object.freeze({ webp: 'image/webp', png: 'image/png' })
 
@@ -42,18 +40,8 @@ export function describeFileTooBig(name, bytes, limit = MAX_FILE_BYTES) {
   return `${name} 太大：${size(bytes)}，上限 ${size(limit)}，多了 ${size(bytes - limit)}`
 }
 
-/** 图片张数超过上限时怎么说（写清多少张、上限、多了几张）。 @param {number} count */
-export function describeTooManyAssets(count) {
-  return `图片太多：${count} 张，最多 ${MAX_ASSETS} 张，多了 ${count - MAX_ASSETS} 张`
-}
-
-/** 图片合计超过 4MB 时怎么说（写清合计多大、上限、超了多少）。 @param {number} bytes */
-export function describeAssetsTooBig(bytes) {
-  return `图片合计太大：${size(bytes)}，最多 ${size(MAX_ASSETS_BYTES)}，多了 ${size(bytes - MAX_ASSETS_BYTES)}`
-}
-
 /**
- * `manifest.assets` 哪里不对（张数超 / 名字不合法 / 重复），给报错指出真因；没问题返回 ''。
+ * `manifest.assets` 哪里不对（名字不合法 / 重复），给报错指出真因；没问题返回 ''。
  * 和 assetNames 判为 null 的条件一一对应。
  * @param {any} manifest
  * @returns {string}
@@ -62,7 +50,6 @@ export function describeAssetList(manifest) {
   const list = manifest?.assets
   if (list === undefined) return ''
   if (!Array.isArray(list)) return '图片清单得是一个数组'
-  if (list.length > MAX_ASSETS) return describeTooManyAssets(list.length)
   for (let index = 0; index < list.length; index += 1) {
     const name = list[index]
     if (typeof name !== 'string' || !ASSET_NAME.test(name)) return `第 ${index + 1} 张图片名不对：${String(name)}（只能小写字母、数字、横线加 .webp / .png）`

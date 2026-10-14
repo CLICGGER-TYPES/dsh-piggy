@@ -19,7 +19,7 @@ const DOWNLOAD_PARALLEL = 6
  */
 const DOWNLOAD_ATTEMPTS = 3
 const DOWNLOAD_TIMEOUT_MS = 12_000
-/** 整包最大约 7MB，给慢网多留点时间。 */
+/** 整包不限制合计大小，给慢网多留点时间。 */
 const BUNDLE_TIMEOUT_MS = 60_000
 const RETRY_BACKOFF_MS = [400, 1200]
 

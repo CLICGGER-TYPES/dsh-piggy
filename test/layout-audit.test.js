@@ -269,3 +269,19 @@ test('布局审计：开垦牌压住地块一角不报 blockedControls，牌自�
   assert.equal(signBlocked.blockedControls.length, 1)
   assert.ok(signBlocked.blockedControls[0].element.includes('fm-expand'))
 })
+
+test('布局审计：圆角外的透明角不算被挡，圆内真实遮挡仍报错', () => {
+  const circle = node({ x: 10, y: 10, w: 40, h: 40, css: { borderTopLeftRadius: '20px', borderTopRightRadius: '20px', borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px' } })
+  const corner = node({ x: 10, y: 10, w: 6, h: 6 })
+  assert.equal(audit([circle, corner]).blockedControls.length, 0)
+  const blocker = node({ x: 10, y: 20, w: 10, h: 20 })
+  assert.ok(audit([circle, blocker]).blockedControls.length > 0)
+})
+
+test('布局审计：燕尾的扩展不算文字溢出，真正超宽的标题仍报错', () => {
+  const ribbon = node({ x: 10, w: 100, tag: 'B', text: '标题', classes: ['fm-title'] })
+  ribbon.scrollWidth = 120
+  assert.equal(audit([ribbon]).clippedText.length, 0)
+  ribbon.getClientRects = () => [{ x: 10, y: 0, left: 10, right: 130, top: 0, bottom: 40, width: 120, height: 40 }]
+  assert.equal(audit([ribbon]).clippedText.length, 1)
+})

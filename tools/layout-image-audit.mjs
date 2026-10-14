@@ -11,6 +11,7 @@ function assetFile(value) { return String(value || '').match(/([a-z0-9-]+\.(?:we
 /** @param {Element} element @param {CSSStyleDeclaration} css */
 function frameAsset(element, css) {
   const mark = element.getAttribute('data-farm-frame')
+  if (mark === 'css-paper') return null
   return mark ? mark + '.webp' : assetFile(css.borderImageSource) || assetFile(css.backgroundImage)
 }
 /** @param {Element} element */
@@ -143,6 +144,17 @@ function checkMaterialGaps(element, inner, minimum, extra, report) {
     if (Object.values(gaps).some(gap => gap < minimum - .5)) report.framePaddingViolations.push({ element: imageIdentify(element), text: element.textContent?.trim(), minimum, gaps, inner, ...extra })
   }
 }
+/** 只豁免被真实滚动口裁到的边缘文字；完整项仍检查内边距和有机轮廓。@param {Element} element */
+function scrollCutsText(element) {
+  const rect = (element.closest('.fm-shop-item,.fm-cropbtn') || element).getBoundingClientRect()
+  for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+    const css = getComputedStyle(parent)
+    if (!/(auto|scroll)/.test(css.overflowX + css.overflowY)) continue
+    const box = parent.getBoundingClientRect()
+    if (rect.top < box.top - .5 || rect.bottom > box.bottom + .5 || rect.left < box.left - .5 || rect.right > box.right + .5) return true
+  }
+  return false
+}
 /** @param {Element[]} elements @param {any} report @param {Record<string,any>} catalog */
 function auditMaterialPadding(elements, report, catalog) {
   const missing = new Set()
@@ -151,12 +163,23 @@ function auditMaterialPadding(elements, report, catalog) {
     if (!element.closest('.fm') || element.matches('.fm-tool-label,.fm-tooltip,.fm-n,.fm-lock') || !Array.from(element.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())) continue
     let frame = element, name = null
     while (frame && frame.closest('.fm')) {
+      if (frame.matches('.fm-paper,.fm-expand')) break
       const found = frameAsset(frame, getComputedStyle(frame))
       if (found && !found.startsWith('bg-')) { name = found; break }
       frame = frame.parentElement
     }
     const minimum = element.closest('.fm-big') ? 8 : 6
-    if (frame && name) {
+    if (frame?.matches('.fm-paper')) {
+      if (scrollCutsText(element)) { report.exceptions.push({ element: imageIdentify(element), reason: '文字处在真实滚动口边缘；滚动到完整项后仍需检查CSS纸面轮廓。' }); continue }
+      const rect = frame.getBoundingClientRect()
+      const clip = /** @type {SVGGeometryElement|null} */ (document.querySelector('#farm-redraw-paper path'))
+      if (!clip || typeof clip.isPointInFill !== 'function') { report.unknownAssetGeometry.push({ element: imageIdentify(frame), reason: 'CSS纸面缺真实有机裁切路径' }); continue }
+      checkMaterialGaps(element, rect, minimum, { surface: 'css-paper' }, report)
+      for (const glyph of getComputedStyle(frame).clipPath === 'none' ? [] : textRects(element)) {
+        const corners = [[glyph.left, glyph.top], [glyph.right, glyph.top], [glyph.left, glyph.bottom], [glyph.right, glyph.bottom]]
+        if (corners.some(([x, y]) => !clip.isPointInFill(new DOMPoint((x - rect.left) / rect.width, (y - rect.top) / rect.height)))) report.framePaddingViolations.push({ element: imageIdentify(element), text: element.textContent?.trim(), reason: '文字落到CSS有机纸面轮廓外' })
+      }
+    } else if (frame && name) {
       const info = catalog[name]
       if (!info?.inner_insets || !info?.size) {
         if (!missing.has(name)) report.unknownAssetGeometry.push({ name, element: imageIdentify(frame), reason: '带文字框缺manifest真实inner_insets，不能按元素外边界假通过' })
@@ -171,6 +194,6 @@ function auditMaterialPadding(elements, report, catalog) {
     }
   }
 }
-export const IMAGE_AUDIT_FUNCTIONS = [imageIdentify, assetFile, frameAsset, axisScale, paintedImage, auditImageRatios, recordImageRatio, auditNineSlice, textRects, materialInnerRect, solidBackground, solidPlate, plateEdgeBox, checkMaterialGaps, auditMaterialPadding]
+export const IMAGE_AUDIT_FUNCTIONS = [imageIdentify, assetFile, frameAsset, axisScale, paintedImage, auditImageRatios, recordImageRatio, auditNineSlice, textRects, materialInnerRect, solidBackground, solidPlate, plateEdgeBox, checkMaterialGaps, scrollCutsText, auditMaterialPadding]
 
 export { auditImageRatios, auditMaterialPadding }

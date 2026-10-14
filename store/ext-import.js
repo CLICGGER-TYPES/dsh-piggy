@@ -12,14 +12,14 @@
  */
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { ASSET_NAME, CODE_FILES, MAX_ASSETS_BYTES, MAX_FILE_BYTES, assetNames, describeAssetList, describeFileTooBig, describeAssetsTooBig } from './ext-files.js'
+import { ASSET_NAME, CODE_FILES, MAX_FILE_BYTES, assetNames, describeAssetList, describeFileTooBig } from './ext-files.js'
 
 export const BUNDLE_FORMAT = 'dsh-piggy-extension'
 export const BUNDLE_FILES = CODE_FILES
 /** 每个文件最大多少（跟在线下载一样）。 */
 export const BUNDLE_FILE_BYTES = MAX_FILE_BYTES
-/** 整个扩展包最大多少：三个代码文件加上 base64 后的图片。 */
-export const BUNDLE_BYTES = Math.ceil(MAX_FILE_BYTES * 3 * 2 + MAX_ASSETS_BYTES * 1.4)
+/** 整包不设合计上限；解包后仍校验每个文件、名单和哈希。 */
+export const BUNDLE_BYTES = Infinity
 /** 本地导入的扩展目录里留的标记文件。 */
 export const LOCAL_MARK = 'local.json'
 const KEY = /^[a-z0-9-]{2,24}$/
@@ -66,15 +66,12 @@ export function parseBundle(text) {
     return bad('manifest.json 里的图片清单不对' + (why === '' ? '' : '（' + why + '）'))
   }
   if (Object.keys(images).length !== declared.length || !declared.every(name => typeof images[name] === 'string')) return bad('扩展包里的图片和 manifest 对不上')
-  let imageBytes = 0
   for (const name of declared) {
     if (!ASSET_NAME.test(name)) return bad('图片名不对：' + name)
     const buffer = Buffer.from(images[name], 'base64')
     if (buffer.length > BUNDLE_FILE_BYTES) return bad(describeFileTooBig(name, buffer.length))
-    imageBytes += buffer.length
     files.set('assets/' + name, buffer)
   }
-  if (imageBytes > MAX_ASSETS_BYTES) return bad(describeAssetsTooBig(imageBytes))
   const hashes = Object.fromEntries([...files].map(([name, buffer]) => [name, sha256(buffer)]))
   return { ok: true, key: manifest.key, manifest, files, hashes }
 }

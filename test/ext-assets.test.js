@@ -10,9 +10,10 @@ import { hatchEgg } from '../core.js'
 import { createStore } from '../store.js'
 import { createJournal } from '../store/journal.js'
 import { createExtRuntime } from '../store/ext-runtime.js'
-import { assetNames, describeAssetList, describeAssetsTooBig, describeFileTooBig, describeTooManyAssets, inBatches } from '../store/ext-files.js'
+import { assetNames, describeAssetList, describeFileTooBig, inBatches } from '../store/ext-files.js'
 import { isOfficial, makeBundle, parseBundle } from '../store/ext-import.js'
 import { extensionFiles } from '../scripts/extension-files.mjs'
+import { registerExtImportRoute } from '../store/ext-import-route.js'
 
 const sha = body => createHash('sha256').update(Buffer.from(body)).digest('hex')
 const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex')
@@ -56,40 +57,43 @@ test('图片名单：只认小写名字加 webp/png，不许重复、不许带�
   for (const bad of [['../x.png'], ['A.png'], ['x.gif'], ['x.png', 'x.png'], 'x.png', ['sub/x.png']]) assert.equal(assetNames({ assets: bad }), null, JSON.stringify(bad))
 })
 
-test('素材超限的报错说清真因和超了多少：张数 / 合计字节 / 单张', () => {
-  const count = n => Array.from({ length: n }, (_, index) => 'img-' + index + '.webp')
-  // 名单本身：张数超、名字不对、重复各说各的；没问题的名单不报。
-  assert.equal(describeAssetList({}), '')
-  assert.equal(describeAssetList({ assets: count(256) }), '')
-  assert.equal(describeAssetList({ assets: count(257) }), '图片太多：257 张，最多 256 张，多了 1 张')
-  assert.equal(describeAssetList({ assets: ['a.webp', 'a.webp'] }), '图片清单里有重复的名字')
-  assert.match(describeAssetList({ assets: ['../x.png'] }), /^第 1 张图片名不对：\.\.\/x\.png/)
-  // 上限和超出量都写出来，不用自己去算字节数。
-  assert.equal(describeTooManyAssets(300), '图片太多：300 张，最多 256 张，多了 44 张')
-  assert.equal(describeAssetsTooBig(4.5 * 1024 * 1024), '图片合计太大：4.5MB，最多 4.0MB，多了 512.0KB')
-  assert.equal(describeFileTooBig('bg.webp', 600 * 1024), 'bg.webp 太大：600.0KB，上限 512.0KB，多了 88.0KB')
+test('图片没有张数或合计上限：300 张、9.4MB 经整包、本地导入和旧目录安装均保真', async () => {
+  const names = Array.from({ length: 300 }, (_, index) => 'image-' + index + '.webp')
+  const files = { ...pkg(), 'manifest.json': JSON.stringify({ key: 'garden', version: '1.0.0', assets: names }) }
+  delete files['assets/bg.webp']; delete files['assets/carrot.png']
+  for (const name of names) files['assets/' + name] = Buffer.alloc(32 * 1024, 7)
+  assert.deepEqual(assetNames(JSON.parse(files['manifest.json'])), names)
+  const body = makeBundle(files), parsed = parseBundle(body)
+  assert.equal(parsed.ok, true, parsed.message)
+  for (const bundled of [false, true]) {
+    const instance = setup(files, listed => listed, bundled ? body : null)
+    try {
+      assert.equal((await instance.runtime.install('garden')).ok, true)
+      assert.deepEqual(instance.runtime.assetFile('garden', names.at(-1)).body, files['assets/' + names.at(-1)])
+    } finally { instance.done() }
+  }
+  const instance = setup(files)
+  try {
+    let route
+    registerExtImportRoute({ register(value) { route = value; return () => {} } }, instance.store, () => ({}))
+    const payload = Buffer.from(JSON.stringify({ bundle: body, confirm: false })).toString('base64')
+    let status, response
+    const request = { method: 'POST', async *[Symbol.asyncIterator]() { yield Buffer.from(payload) } }
+    await route.handler(request, { writeHead(value) { status = value }, end(value) { response = JSON.parse(value) } })
+    assert.equal(status, 200, 'HTTP导入不再按旧4MB推算整包上限')
+    assert.equal(response.ok, true)
+    assert.deepEqual(instance.runtime.assetFile('garden', names.at(-1)).body, files['assets/' + names.at(-1)])
+  } finally { instance.done() }
 })
 
-test('张数超 / 合计字节超：扩展包和在线目录都报出真因，不再只说「太大」', async () => {
-  const many = Array.from({ length: 257 }, (_, index) => 'img-' + index + '.webp')
-  const tooMany = { ...pkg(), 'manifest.json': JSON.stringify({ key: 'garden', label: '小园子', version: '1.0.0', assets: many }) }
-  const why = /图片清单不对（图片太多：257 张，最多 256 张，多了 1 张）/
-  assert.match(parseBundle(makeBundle(tooMany)).message, why)
-  const packaged = setup(pkg(), names => names, makeBundle(tooMany))
-  try { assert.match((await packaged.runtime.install('garden')).message, why) } finally { packaged.done() }
-  const legacy = setup(tooMany)
-  try { assert.match((await legacy.runtime.install('garden')).message, /manifest 图片清单不对（图片太多：257 张/) } finally { legacy.done() }
-
-  // 合计字节：9 张 500KB = 4,500KB ≈ 4.4MB（单张都合规，超的是合计）。
-  const names = Array.from({ length: 9 }, (_, index) => 'big-' + index + '.webp')
-  const heavy = { ...pkg(), 'manifest.json': JSON.stringify({ key: 'garden', version: '1.0.0', assets: names }) }
-  delete heavy['assets/bg.webp']; delete heavy['assets/carrot.png']
-  for (const name of names) heavy['assets/' + name] = Buffer.alloc(500 * 1024)
-  assert.match(parseBundle(makeBundle(heavy)).message, /图片合计太大：4\.4MB，最多 4\.0MB，多了 404\.0KB/)
-
-  // 单张超 512KB：指出是哪个文件、多大、超了多少。
-  assert.match(parseBundle(makeBundle({ ...pkg(), 'assets/bg.webp': Buffer.alloc(600 * 1024) })).message,
-    /bg\.webp 太大：600\.0KB，上限 512\.0KB，多了 88\.0KB/)
+test('素材名单仍拒绝重复和路径；单文件大小检查保留', () => {
+  assert.equal(describeAssetList({}), '')
+  assert.equal(describeAssetList({ assets: Array.from({ length: 1000 }, (_, i) => 'img-' + i + '.webp') }), '')
+  assert.equal(describeAssetList({ assets: ['a.webp', 'a.webp'] }), '图片清单里有重复的名字')
+  assert.match(describeAssetList({ assets: ['../x.png'] }), /^第 1 张图片名不对/)
+  assert.equal(describeFileTooBig('server.js', 600 * 1024), 'server.js 太大：600.0KB，上限 512.0KB，多了 88.0KB')
+  assert.match(parseBundle(makeBundle({ ...pkg(), 'server.js': 'x'.repeat(600 * 1024) })).message, /server.js 太大/)
+  assert.match(parseBundle(makeBundle({ ...pkg(), 'assets/bg.webp': Buffer.alloc(600 * 1024) })).message, /bg.webp 太大/)
 })
 
 test('打包脚本遇到写坏的图片名单会停下来，不会悄悄发一个没有图的包', () => {
@@ -101,8 +105,10 @@ test('打包脚本遇到写坏的图片名单会停下来，不会悄悄发一�
     writeFileSync(join(dir, 'client.js'), '// noop')
     const write = assets => writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ key: 'garden', version: '1.0.0', assets }))
     const read = () => extensionFiles('garden', new URL('file://' + root + '/'))
-    write(Array.from({ length: 257 }, (_, index) => 'img-' + index + '.webp'))
-    assert.throws(read, /assets 名单不对/, '超过 256 张要报错，不是当没有图片')
+    const names = Array.from({ length: 300 }, (_, index) => 'img-' + index + '.webp')
+    write(names)
+    for (const name of names) writeFileSync(join(dir, 'assets', name), WEBP)
+    assert.equal(Object.keys(read()).length, 303, '超过原张数上限仍完整打包')
     write(['B.png'])
     assert.throws(read, /assets 名单不对/, '名字不合法要报错')
     write(['ok.webp'])
