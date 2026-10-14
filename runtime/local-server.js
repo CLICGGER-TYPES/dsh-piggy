@@ -109,18 +109,23 @@ export async function startWorkEventServer({ directory, runtime }) {
   try { writeWorkJson(discoveryPath, { version: 1, role: 'piggy-work-events', port: address.port, token, pid: process.pid }) }
   catch (error) { await new Promise(resolve => server.close(resolve)); release(); throw error }
   let closePromise
+  let listenerStopped = false
   return {
     close() {
       if (closePromise) return closePromise
       closing = true
       closePromise = (async () => {
-        const stopped = new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve(undefined)))
-        server.closeIdleConnections()
-        await stopped
+        if (!listenerStopped) {
+          const stopped = new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve(undefined)))
+          server.closeIdleConnections()
+          await stopped
+          listenerStopped = true
+        }
         await Promise.allSettled([...requests])
-        if (readWorkJson(discoveryPath)?.token === token) removeWorkFile(discoveryPath)
+        const discovery = readWorkJson(discoveryPath)
+        if (discovery === null || discovery.token === token) removeWorkFile(discoveryPath)
         release()
-      })()
+      })().catch(error => { closePromise = null; throw error })
       return closePromise
     },
   }
