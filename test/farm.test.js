@@ -451,7 +451,7 @@ test('雨天浇湿已经干的空地和作物；view 不改输入；动作写回
   assert.equal(farm.view(data, t.api).plots[1].pests.includes('dry'), false)
 })
 
-test('开荒字段 normalize 兼容；3.x 迁移和既有 4.0 空地不长出草和残株', () => {
+test('开荒字段 normalize 兼容；3.x 迁移和既有 4.0 空地不长出草和杂草', () => {
   const old = normalize({ version: 4, unlocked: 8, plots: [] })
   assert.ok(old.plots.every(plot => plot === null))
   const migrated = normalize({ version: 3, unlocked: 8, plots: [] })

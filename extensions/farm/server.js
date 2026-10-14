@@ -551,7 +551,7 @@ function helperShelf(data, balance) {
     const next = kind === 'hire' ? 0 : helper[kind] + 1
     const price = kind === 'hire' ? HELPER_PRICES.hire : HELPER_PRICES[kind][next]
     if (price === undefined) return []
-    const label = kind === 'hire' ? '雇帮工猪' : kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][next] : ['小谷仓', '顺手农具', '轻巧农具', '高效农具'][next]
+    const label = kind === 'hire' ? '雇帮工猪' : kind === 'level' ? ['帮工猪', '熟练帮工', '老练帮工'][next] : ['小仓库', '顺手农具', '轻巧农具', '高效农具'][next]
     const note = kind === 'hire' ? '管 ' + HELPER_PLOTS[0] + ' 块地，6 小时封仓' : kind === 'level' ? '管 ' + HELPER_PLOTS[next] + ' 块地' : '提高自动收成效率'
     return [{ key: 'helper-' + kind, emoji: kind === 'barn' ? '🧺' : '🐷', label, note, price, disabled: balance < price, pick: null }]
   })
