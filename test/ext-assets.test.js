@@ -1,7 +1,7 @@
 // 扩展自带图片（用户 2026-10-11：扩展界面换成画好的素材，扩展格式要能带图片文件夹）。
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -12,6 +12,7 @@ import { createJournal } from '../store/journal.js'
 import { createExtRuntime } from '../store/ext-runtime.js'
 import { assetNames, describeAssetList, describeAssetsTooBig, describeFileTooBig, describeTooManyAssets, inBatches } from '../store/ext-files.js'
 import { isOfficial, makeBundle, parseBundle } from '../store/ext-import.js'
+import { extensionFiles } from '../scripts/extension-files.mjs'
 
 const sha = body => createHash('sha256').update(Buffer.from(body)).digest('hex')
 const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex')
@@ -89,6 +90,26 @@ test('张数超 / 合计字节超：扩展包和在线目录都报出真因，�
   // 单张超 512KB：指出是哪个文件、多大、超了多少。
   assert.match(parseBundle(makeBundle({ ...pkg(), 'assets/bg.webp': Buffer.alloc(600 * 1024) })).message,
     /bg\.webp 太大：600\.0KB，上限 512\.0KB，多了 88\.0KB/)
+})
+
+test('打包脚本遇到写坏的图片名单会停下来，不会悄悄发一个没有图的包', () => {
+  const root = mkdtempSync(join(tmpdir(), 'dsh-piggy-extfiles-'))
+  try {
+    const dir = join(root, 'garden')
+    mkdirSync(join(dir, 'assets'), { recursive: true })
+    writeFileSync(join(dir, 'server.js'), 'export default {}')
+    writeFileSync(join(dir, 'client.js'), '// noop')
+    const write = assets => writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ key: 'garden', version: '1.0.0', assets }))
+    const read = () => extensionFiles('garden', new URL('file://' + root + '/'))
+    write(Array.from({ length: 257 }, (_, index) => 'img-' + index + '.webp'))
+    assert.throws(read, /assets 名单不对/, '超过 256 张要报错，不是当没有图片')
+    write(['B.png'])
+    assert.throws(read, /assets 名单不对/, '名字不合法要报错')
+    write(['ok.webp'])
+    assert.throws(read, /ok\.webp/, '名单里的图片不在盘上要报错')
+    writeFileSync(join(dir, 'assets', 'ok.webp'), WEBP)
+    assert.deepEqual(Object.keys(read()).sort(), ['assets/ok.webp', 'client.js', 'manifest.json', 'server.js'])
+  } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
 test('分批下载：结果按原顺序，同时跑的不超过上限', async () => {
