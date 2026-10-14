@@ -84,7 +84,7 @@ test('无窗口入口没有 --work-events 时不监听、不创建存档或发�
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })
 
-test('无窗口入口显式启用，SIGTERM 正常退出并清理发现文件', async () => {
+test('无窗口入口显式启用，按平台检查 SIGTERM 退出并清理测试目录', async () => {
   const directory = temp(), statePath = join(directory, 'state.json'), endpointDir = join(directory, 'endpoint')
   const child = spawn(process.execPath, [join(ROOT, 'runtime/serve.mjs'), '--work-events', `--state-path=${statePath}`, `--endpoint-directory=${endpointDir}`], { stdio: ['ignore', 'pipe', 'pipe'] })
   const exited = once(child, 'exit')
@@ -100,13 +100,21 @@ test('无窗口入口显式启用，SIGTERM 正常退出并清理发现文件', 
     ])
     const discovery = read(join(endpointDir, 'endpoint.json'))
     assert.equal((await fetch(`http://127.0.0.1:${discovery.port}/health`, { headers: { authorization: `Bearer ${discovery.token}` } })).status, 200)
-    child.kill('SIGTERM')
-    assert.equal((await exited)[0], 0, error)
-    assert.equal(existsSync(join(endpointDir, 'endpoint.json')), false)
-    assert.equal(existsSync(`${statePath}.runtime.lock`), false)
+    assert.equal(child.kill('SIGTERM'), true)
+    const [code] = await exited
+    assert.ok(child.exitCode !== null || child.signalCode !== null, '子进程必须已结束')
+    if (process.platform !== 'win32') {
+      assert.equal(code, 0, error)
+      assert.equal(existsSync(join(endpointDir, 'endpoint.json')), false)
+      assert.equal(existsSync(join(endpointDir, 'endpoint.runtime.lock')), false)
+      assert.equal(existsSync(`${statePath}.runtime.lock`), false)
+    }
+    // Windows kill 是强制终止，不能要求进程执行信号回调；测试目录由 finally 清理。
+    await assert.rejects(fetch(`http://127.0.0.1:${discovery.port}/health`))
   } finally {
     if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await exited }
     rmSync(directory, { recursive: true, force: true })
+    assert.equal(existsSync(directory), false, '测试目录必须清理')
   }
 })
 
