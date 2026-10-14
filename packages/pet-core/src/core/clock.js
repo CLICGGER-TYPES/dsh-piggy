@@ -7,7 +7,7 @@
  */
 
 import { DAYS_PER_MONTH, DAY_STARTS_AT_HOUR, DEAD_DAY, GRAVE, GROWTH_PER_HOUR, LEVEL_TITLES, LIFE_STAGES, MAX_LEVEL, SOUL_AFTER_DAYS, xpForLevel } from '../data.js'
-import { DAY_MS } from './constants.js'
+import { CLOCK_ROLLBACK_HOLD_MS, DAY_MS } from './constants.js'
 
 /**
  * The pig's age in days.
@@ -41,6 +41,39 @@ export const ageMonths = (state, nowMs) => ageDays(state, nowMs) / DAYS_PER_MONT
 export function isUsableCursor(cursor, bornAt) {
   if (typeof cursor !== 'number' || !Number.isFinite(cursor) || cursor < 0) return false
   return !(typeof bornAt === 'number' && Number.isFinite(bornAt) && cursor < bornAt)
+}
+
+/**
+ * 时钟比结算游标走得慢时的处理：保留游标、本次不结算。
+ *
+ * 为什么会走到这里：`fromMs` 是已经结算到的高点。时钟回拨、或存档里的游标来自一台
+ * 走快的机器（B2），都会让 `nowMs < fromMs`。这时把游标落到 `nowMs` 就是「吞掉」
+ * 已经结算过的时间，等真实时钟追上来会重复结算。
+ *
+ * 但不能永远保留：用户把系统时间调成错的（笔记本没电池、手动改表）时，游标就永远
+ * 停在未来、猪一直冻结。折中——倒退持续满 CLOCK_ROLLBACK_HOLD_MS（按倒退后的新
+ * 时钟计）就认新时钟当新起点，跳过去、不补结算。回拨出来的那段本来就没真的流过，
+ * 补上等于凭空多给一次离线结算；回拨不超过一天时，真实时钟会在冻结 CLOCK_ROLLBACK_HOLD_MS
+ * 之前追上原游标，所以普通对表不会触发这一步。
+ *
+ * 2026-10-14 从 settlement.js 搬来这里：那边快撞上 400 行的硬线，而这一条和
+ * isUsableCursor 讲的都是「游标可不可信」，放一起更好读（原位置与行为不变）。
+ *
+ * @param {object} state
+ * @param {number} nowMs
+ * @param {number} fromMs
+ */
+export function holdClock(state, nowMs, fromMs) {
+  // 只认真正的倒退。同一毫秒里的重复调用很常见（describe 等只读路径），
+  // 不能拿它当冻结的起点。（坏游标在 decay() 里就已经被修掉，这里只会拿到有限的 fromMs。）
+  if (!(nowMs < fromMs)) return
+  const since = Number.isFinite(state.clockRollbackAt) ? state.clockRollbackAt : nowMs
+  if (nowMs - since >= CLOCK_ROLLBACK_HOLD_MS) {
+    state.lastSeenAt = nowMs
+    state.clockRollbackAt = null
+    return
+  }
+  state.clockRollbackAt = since
 }
 
 /**

@@ -7,7 +7,7 @@
  */
 
 import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
-import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, CLOCK_ROLLBACK_HOLD_MS, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
+import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
@@ -15,7 +15,7 @@ import { advanceIllness, noteOuting, restAtHome, rollForIllness } from './illnes
 import { say } from './lines.js'
 import { rollerFor } from './random.js'
 import { noteToday, writeDiaryIfNewDay } from './diary.js'
-import { dayKeyFor, isUsableCursor } from './clock.js'
+import { dayKeyFor, holdClock, isUsableCursor } from './clock.js'
 import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
@@ -98,36 +98,6 @@ export function decay(state, nowMs, options = {}) {
   if (state.dead !== true) passTime(state, { fromMs: cursor, toMs: nowMs, away: false, meals }, next)
   finishOfflineMeals(state, meals, nowMs)
   return state
-}
-
-/**
- * 时钟比结算游标走得慢时的处理：保留游标、本次不结算。
- *
- * 为什么会走到这里：`fromMs` 是已经结算到的高点。时钟回拨、或存档里的游标来自一台
- * 走快的机器（B2），都会让 `nowMs < fromMs`。这时把游标落到 `nowMs` 就是「吞掉」
- * 已经结算过的时间，等真实时钟追上来会重复结算。
- *
- * 但不能永远保留：用户把系统时间调成错的（笔记本没电池、手动改表）时，游标就永远
- * 停在未来、猪一直冻结。折中——倒退持续满 CLOCK_ROLLBACK_HOLD_MS（按倒退后的新
- * 时钟计）就认新时钟当新起点，跳过去、不补结算。回拨出来的那段本来就没真的流过，
- * 补上等于凭空多给一次离线结算；回拨不超过一天时，真实时钟会在冻结 CLOCK_ROLLBACK_HOLD_MS
- * 之前追上原游标，所以普通对表不会触发这一步。
- *
- * @param {object} state
- * @param {number} nowMs
- * @param {number} fromMs
- */
-function holdClock(state, nowMs, fromMs) {
-  // 只认真正的倒退。同一毫秒里的重复调用很常见（describe 等只读路径），
-  // 不能拿它当冻结的起点。（坏游标在 decay() 里就已经被修掉，这里只会拿到有限的 fromMs。）
-  if (!(nowMs < fromMs)) return
-  const since = Number.isFinite(state.clockRollbackAt) ? state.clockRollbackAt : nowMs
-  if (nowMs - since >= CLOCK_ROLLBACK_HOLD_MS) {
-    state.lastSeenAt = nowMs
-    state.clockRollbackAt = null
-    return
-  }
-  state.clockRollbackAt = since
 }
 
 /**
