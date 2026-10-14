@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { ageFromNow, applyDevPatch, decay, hatchEgg, lifeStageFor, migrate, onsetRisks, THRESHOLDS, SHOP, REVIVE_ITEM } from '../core.js'
+import { ageFromNow, applyDevPatch, awayBlockedReason, decay, doctorFee, hatchEgg, lifeStageFor, migrate, onsetRisks, seeDoctor, THRESHOLDS, SHOP, REVIVE_ITEM } from '../core.js'
 import { CHAIN_INDEX } from '../packages/pet-core/src/data/illness.js'
 import { raiseSettledUpTo } from '../packages/pet-core/src/core/clock.js'
 import { emptyOfflineMeals, finishOfflineMeals, offlineSustainMs, pickOfflineItem, OFFLINE_NEEDS } from '../packages/pet-core/src/core/offline-feed.js'
@@ -528,6 +528,21 @@ test('返工3 A2：垂危只公告一次，不重复刷屏', () => {
   decay(pig, START + 11 * DAY, never)
   assert.equal(pig.pending.filter(entry => entry.kind === 'weak').length, weakBefore, '已经是 1 格健康就不再重复公告')
   assert.equal(pig.health, 1)
+})
+
+test('返工5：离线撑到垂危的猪，「快喂点东西」不再出现；带去看医生花 45 回满、又能出门', () => {
+  const pig = hatchEgg(START)
+  decay(pig, START + 10 * DAY + HOUR, never)
+  assert.equal(pig.health, 1)
+  const weak = pig.pending.find(entry => entry.kind === 'weak')
+  assert.ok(weak !== undefined && weak.text.includes('生命垂危'))
+  assert.ok(!weak.text.includes('喂'), '公告不能指点一个救不回垂危的动作（喂食不加 health）')
+  // 2026-10-14 用户拍板：垂危也能看医生，看一次回满。
+  pig.coins = 100
+  assert.equal(doctorFee(pig), 45)
+  assert.deepEqual(seeDoctor(pig, START + 10 * DAY + HOUR), { ok: true, fee: 45 })
+  assert.equal(pig.health, 5)
+  assert.equal(awayBlockedReason(pig), null, '恢复之后又能出门了')
 })
 
 test('返工3 A2：合法的离开 100 天照常结算（背包够撑，行为不变）', { timeout: 5000 }, () => {

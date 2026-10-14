@@ -1370,6 +1370,19 @@ test('a sick pig shows its illness and what it needs', async () => {
   assert.ok(text.includes('金色消炎药水'), text)
 })
 
+test('返工5：垂危（没病、健康 1 格）也显示「看医生」按钮', async () => {
+  const { registration, dom } = await loadClient({
+    status: { ...SNAPSHOT, canGoOut: false, awayBlocked: 'weak', pig: { ...PIG, health: 1, healthPercent: 20, illness: null, doctorFee: 45 } },
+  })
+  registration.factory(() => {}).apply({})
+  await settle()
+  openPanel(dom)
+  const text = contentOf(dom).allText()
+  assert.ok(text.includes('生命垂危'), text)
+  assert.ok(text.includes('看医生'), text)
+  assert.notEqual(findByAttr(contentOf(dom), 'data-action', 'doctor'), undefined)
+})
+
 test('a box that already has a save is still pokeable', async () => {
   // `reset` and `adopt` write a real save with hatched:false, so `pig` is an
   // object rather than null. Gating the poke on `pig === null` meant clicking

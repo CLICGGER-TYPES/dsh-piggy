@@ -14,6 +14,7 @@ import {
   ILLNESS_CHAINS,
   ILLNESS_ONSET,
   MAX,
+  MEDICINE_PRICE_BY_TIER,
   REVIVE_ITEM,
   SELF_HEAL_CHANCE,
   SICK_AWAY_MULTIPLIER,
@@ -23,6 +24,7 @@ import {
   illnessStageMs,
   nextIllness,
 } from '../data.js'
+import { TOO_WEAK_HEALTH } from './constants.js'
 import { announce, remember } from './effects.js'
 import { say } from './lines.js'
 import { chance, rollerFor } from './random.js'
@@ -81,6 +83,19 @@ export function progressIllness(state, elapsedMs, where, next) {
 // ---------------------------------------------------------------------------
 // Falling ill
 // ---------------------------------------------------------------------------
+
+/**
+ * 疾病阶段只会把健康往下带到该阶段的格数，绝不往上抬。
+ *
+ * 垂危（`health` = 1，见 `settleStarvation`）时发病 / 病情加重都必须停在 1：
+ * 否则「再生一场病」会顺手把垂危治好，`work/study/trip/…` 的 `weak` 拦截也被解除
+ * （2026-10-14 用户拍板，P3-2）。正常猪的健康高于任何阶段的格数，取 min 后逐位不变。
+ * @param {object} state
+ * @param {number} stageHealth - `STAGE_HEALTH` 里该阶段的格数
+ */
+function capHealth(state, stageHealth) {
+  return Math.min(Number.isFinite(state.health) ? state.health : MAX.health, stageHealth)
+}
 
 /**
  * What the pig is at risk of right now, per hour, and from which chain.
@@ -156,7 +171,9 @@ export function restAtHome(state, minutes) {
  */
 export function catchIllness(state, chain, nowMs) {
   state.illness = { chain, stage: 1, since: nowMs, progressMs: 0 }
-  state.health = STAGE_HEALTH[0]
+  // 取 min，不覆写：垂危（健康 1 格）时发病不能把 health 抬回 4，否则等于「生一场病治好垂危」
+  // （2026-10-14 交叉审查 P3-2、用户同日拍板）。正常猪 health 高于 4，行为逐位不变。
+  state.health = capHealth(state, STAGE_HEALTH[0])
   state.stats.illnesses = (state.stats.illnesses ?? 0) + 1
   const ill = illnessAt(chain, 1)
   if (ill === null) return
@@ -201,7 +218,8 @@ export function worsen(state, nowMs, why) {
     return
   }
   state.illness = { chain, stage: stage + 1, since: nowMs, progressMs: 0 }
-  state.health = STAGE_HEALTH[stage]
+  // 同样取 min：垂危时病情加重也只停在 1 格（P3-2）。
+  state.health = capHealth(state, STAGE_HEALTH[stage])
   remember(state, `病情加重：${worse.name}`, nowMs)
   announce(state, 'worse', `${state.name} 的病情加重了：${worse.name}，需要${worse.cureEmoji}${worse.cure}`, nowMs)
 }
@@ -241,10 +259,22 @@ export function medicate(state, item, nowMs) {
   return { ok: false, reason: 'wrong-medicine', needs: ill }
 }
 
-/** What seeing the doctor costs for the illness the pig has now. */
+/**
+ * 垂危（无病）看诊费。
+ *
+ * **本轮自定，待用户确认**：垂危没有疾病可对症，就按最便宜一档药价（30）× 现有看诊加价口径
+ * （`DOCTOR_MARKUP` = 1.5）= 45。候选方案：把垂危当「健康只剩 1 格」的重症，用 4 级药价
+ * 260 × 1.5 = 390——本轮不采用，等用户拍板。
+ */
+export const CRITICAL_DOCTOR_FEE = Math.ceil(MEDICINE_PRICE_BY_TIER[0] * DOCTOR_MARKUP)
+
+/** What seeing the doctor costs for the illness the pig has now, or the flat charge when it is only 垂危. */
 export function doctorFee(state) {
   const ill = currentIllness(state)
-  return ill === null ? null : Math.ceil(ill.curePrice * DOCTOR_MARKUP)
+  if (ill !== null) return Math.ceil(ill.curePrice * DOCTOR_MARKUP)
+  // 没病、没死但健康只剩 1 格（垂危）：也放行看医生（2026-10-14 用户拍板）。
+  if (state.dead !== true && Number.isFinite(state.health) && state.health <= TOO_WEAK_HEALTH) return CRITICAL_DOCTOR_FEE
+  return null
 }
 
 /** 看医生：pay the fee, skip the shopping, get well. */
@@ -253,12 +283,14 @@ export function seeDoctor(state, nowMs) {
   if (state.dead === true) return { ok: false, reason: 'dead' }
   const fee = doctorFee(state)
   if (fee === null) return { ok: false, reason: 'not-sick' }
+  const sick = currentIllness(state) !== null
   if (!spendCoins(state, fee, 'doctor', nowMs)) return { ok: false, reason: 'poor', need: fee, have: state.coins }
   recover(state, nowMs)
   state.stats.cures = (state.stats.cures ?? 0) + 1
   state.stats.doctorVisits = (state.stats.doctorVisits ?? 0) + 1
-  remember(state, `🏥 看了医生，花了 ${fee} 金币，病好了`, nowMs)
-  announce(state, 'cured', `${state.name} 看了医生，痊愈了 💚（${fee} 🪙）`, nowMs)
+  // 垂危本来没病，别说「病好了」，只说身体恢复了（措辞进 文案稿.md 待用户确认）。
+  remember(state, sick ? `🏥 看了医生，花了 ${fee} 金币，病好了` : `🏥 看了医生，花了 ${fee} 金币，身体恢复了`, nowMs)
+  announce(state, 'cured', sick ? `${state.name} 看了医生，痊愈了 💚（${fee} 🪙）` : `${state.name} 看了医生，身体恢复了 💚（${fee} 🪙）`, nowMs)
   noteToday(state, 'cure')
   return { ok: true, fee }
 }

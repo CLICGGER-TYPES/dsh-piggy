@@ -2659,6 +2659,8 @@
         cleanliness: Math.round(num(pig.cleanliness, 0)),
         health: num(pig.health, 5),
         healthPercent: num(pig.healthPercent, 100),
+        // 垂危（没病）时看医生的费用：新宿主发在 pig 顶层；旧宿主只发 illness.doctorFee，回退读它。
+        doctorFee: typeof pig.doctorFee === "number" ? pig.doctorFee : typeof obj(pig.illness).doctorFee === "number" ? obj(pig.illness).doctorFee : null,
         coins: num(pig.coins, 0),
         weight: str(pig.weight, "\u2014"),
         bodyWeight: isObj(pig.bodyWeight) ? {
@@ -8067,6 +8069,18 @@
         clinic.appendChild(doctor);
         ui.content.appendChild(clinic);
       }
+    } else if (ui.view.pig !== null && ui.view.pig.doctorFee !== null) {
+      var dying = el("div", "dp-alert dp-sick");
+      dying.appendChild(el("b", null, "\u{1F494} \u751F\u547D\u5782\u5371"));
+      ui.content.appendChild(dying);
+      var dyingClinic = el("div", "dp-actions");
+      var dyingDoctor = button("dp-btn dp-btn-wide", { "data-action": "doctor" }, function() {
+        ui.send("doctor");
+      });
+      dyingDoctor.appendChild(el("span", null, "\u{1F3E5}"));
+      dyingDoctor.appendChild(el("span", null, "\u770B\u533B\u751F\uFF08" + ui.view.pig.doctorFee + " \u{1FA99}\uFF09"));
+      dyingClinic.appendChild(dyingDoctor);
+      ui.content.appendChild(dyingClinic);
     } else if (ui.view.pig !== null && ui.view.activity !== null) {
       var away = el("div", "dp-alert dp-work");
       away.appendChild(el("b", null, ui.view.activity.emoji + " \u5728\u5916\u9762\uFF1A" + ui.view.activity.label));

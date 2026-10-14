@@ -145,6 +145,19 @@ function renderBanners(ui) {
       clinic.appendChild(doctor)
       ui.content.appendChild(clinic)
     }
+  } else if (ui.view.pig !== null && ui.view.pig.doctorFee !== null) {
+    // 垂危（没病、健康只剩 1 格）：原来无路可走——喂食 / 休息都不加 health，只能等死或再
+    // 生一场病「治愈回满」。2026-10-14 用户拍板：垂危也能带去看医生，看一次回满；这里放
+    // 与生病时同一颗看医生按钮（`data-action: 'doctor'`）。横幅只用已有的词。
+    var dying = el('div', 'dp-alert dp-sick')
+    dying.appendChild(el('b', null, '💔 生命垂危'))
+    ui.content.appendChild(dying)
+    var dyingClinic = el('div', 'dp-actions')
+    var dyingDoctor = button('dp-btn dp-btn-wide', { 'data-action': 'doctor' }, function () { ui.send('doctor') })
+    dyingDoctor.appendChild(el('span', null, '🏥'))
+    dyingDoctor.appendChild(el('span', null, '看医生（' + ui.view.pig.doctorFee + ' 🪙）'))
+    dyingClinic.appendChild(dyingDoctor)
+    ui.content.appendChild(dyingClinic)
   } else if (ui.view.pig !== null && ui.view.activity !== null) {
     var away = el('div', 'dp-alert dp-work')
     away.appendChild(el('b', null, ui.view.activity.emoji + ' 在外面：' + ui.view.activity.label))

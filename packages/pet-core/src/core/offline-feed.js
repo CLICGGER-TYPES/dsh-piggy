@@ -131,7 +131,7 @@ export function settleStarvation(state, nowMs, unsupportedMs) {
   if (state.health > 1) {
     state.health = 1
     remember(state, '💔 生命垂危：太久没有东西吃', nowMs)
-    announce(state, 'weak', `${state.name} 生命垂危了，快喂点东西`, nowMs)
+    announce(state, 'weak', `${state.name} 生命垂危了，它现在很虚弱`, nowMs)
   }
 }
 

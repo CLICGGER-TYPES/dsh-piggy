@@ -53,6 +53,9 @@ export function normalize(raw) {
       cleanliness: Math.round(num(pig.cleanliness, 0)),
       health: num(pig.health, 5),
       healthPercent: num(pig.healthPercent, 100),
+      // 垂危（没病）时看医生的费用：新宿主发在 pig 顶层；旧宿主只发 illness.doctorFee，回退读它。
+      doctorFee: typeof pig.doctorFee === 'number' ? pig.doctorFee
+        : (typeof obj(pig.illness).doctorFee === 'number' ? obj(pig.illness).doctorFee : null),
       coins: num(pig.coins, 0),
       weight: str(pig.weight, '—'),
       bodyWeight: isObj(pig.bodyWeight) ? {
