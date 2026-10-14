@@ -1414,8 +1414,12 @@
         if (startedAt !== actionSeq) return;
         var key = pollKey(next);
         if (key !== paintedKey) {
-          paintedKey = key;
-          ctx.render(next);
+          try {
+            paintedKey = ctx.render(next) === false ? null : key;
+          } catch (error) {
+            paintedKey = null;
+            throw error;
+          }
         }
         if (hostDown) {
           hostDown = false;
@@ -9427,7 +9431,7 @@
     function render(next) {
       if (pointerRepaint.defer(function() {
         render(next);
-      })) return;
+      })) return true;
       var previousFishing = ctx.view?.fishing?.pending;
       ctx.view = applyExtensions(normalize(next));
       var stageEntry = null;
@@ -9541,14 +9545,15 @@
       ctx.icons.dex.setAttribute("data-alert", "false");
       ctx.icons.travel.setAttribute("data-alert", ctx.view.pig !== null && ctx.view.pig.coins >= 400 ? "true" : "false");
       processPending(ctx, showPigLine);
-      if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return;
-      if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return;
-      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return;
-      if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return;
-      if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return;
+      if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return false;
+      if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return false;
+      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true")) return false;
+      if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return false;
+      if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return false;
       var currentFishing = ctx.view.fishing.pending;
-      if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return;
+      if (ctx.tab === "fishing" && previousFishing && currentFishing && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase && (currentFishing.phase === "waiting" || currentFishing.phase === "hooked")) return false;
       renderContent();
+      return true;
     }
     function showPigLine(event) {
       var lineId = event.id;

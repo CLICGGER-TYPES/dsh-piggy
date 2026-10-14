@@ -39,7 +39,6 @@ import { str } from './values.js'
 import { attachPointerRepaint } from './pointer-repaint.js'
 import { restoreHover } from './hover-restore.js'
 
-
 export function createPanel(ctx) {
   var pointerRepaint = attachPointerRepaint(ctx.host, window)
       var AWAY_LINE = {
@@ -220,8 +219,8 @@ export function createPanel(ctx) {
         ctx.fitPanel()
       }
 
-      function render(next) {
-        if (pointerRepaint.defer(function () { render(next) })) return
+      function render(next) { // 返回值＝这轮到底把内容区画出来了没有：几处早退都返回 false，轮询据此决定要不要重试
+        if (pointerRepaint.defer(function () { render(next) })) return true
         var previousFishing = ctx.view?.fishing?.pending
         ctx.view = applyExtensions(normalize(next))
         // Never leave the study tab parked on a stage the pig cannot attend —
@@ -373,19 +372,20 @@ export function createPanel(ctx) {
         processPending(ctx, showPigLine)
 
         // Typing a new name: a repaint would drop the input and its focus.
-        if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return
-        if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return
+        if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return false
+        if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return false
         // Replacing a focused input drops the caret (including IME composition).
-        if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true')) return
-        if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return
-        if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return
+        if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true')) return false
+        if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return false
+        if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return false
         // The QTE and waiting animation own their DOM until the phase changes.
         // A four-second poll must not restart them or discard keyboard focus.
         var currentFishing = ctx.view.fishing.pending
         if (ctx.tab === 'fishing' && previousFishing && currentFishing
           && previousFishing.id === currentFishing.id && previousFishing.phase === currentFishing.phase
-          && (currentFishing.phase === 'waiting' || currentFishing.phase === 'hooked')) return
+          && (currentFishing.phase === 'waiting' || currentFishing.phase === 'hooked')) return false
         renderContent()
+        return true
       }
 
   /** A line from the pig goes in its bubble, with the owner's reply buttons under it. */

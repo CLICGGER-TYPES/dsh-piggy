@@ -148,8 +148,16 @@ export function createIo(ctx) {
           // 顺手还会把悬停卡、开着的弹层抹掉。指纹按显示精度压过（见 poll-key.js）。
           var key = pollKey(next)
           if (key !== paintedKey) {
-            paintedKey = key
-            ctx.render(next)
+            // 记账必须等 render 说「真的画了」：焦点在改名框 / 图鉴搜索框 / 菜园购买数量框时，
+            // render 会早退（不重画内容区），早退返回 false —— 这时把指纹打回 null，
+            // 下一轮即使快照没变也再试一次（改前就是靠这个自愈的，别再被短路掉）。
+            try {
+              paintedKey = ctx.render(next) === false ? null : key
+            } catch (error) {
+              // 这轮抛异常＝没画成，同样打回 null 留住「下一轮重试」的性质；错误照旧往上抛。
+              paintedKey = null
+              throw error
+            }
           }
           if (hostDown) {
             hostDown = false
