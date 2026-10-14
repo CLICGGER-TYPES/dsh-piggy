@@ -91,8 +91,12 @@ export const CSS_BASE = [
   'box-shadow:var(--ac-shadow-lg);color:var(--ac-text-body);font-family:var(--ac-font);font-size:11px}',
 
   // 扩展的大界面在网页里（没有桌面大窗口时）：面板卡片铺满页面，避免宿主边距露出场景外底色（游戏 0.37.0 起，菜园大农场）。
+  // border:0!important / border-radius:0!important 不能少：面板那张卡自带 2px 边框和 20px 圆角，
+  // 铺满窗口后四周会露一条 2px 的缝、四角圆角外露一块近白宿主底色
+  // （桌面版大窗口在 src/client/desktop/ext-window.js 里清了，网页版这里要对齐）。
+  // box-shadow 不用清：卡片固定铺满视口，阴影本来就全落在视口外，量不到一点差别。
   '[data-dsh-pig][data-ext-view="big"] .dp-card{position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:0!important;',
-  'width:auto!important;max-width:none!important;max-height:none!important;height:auto!important;z-index:2147483600}',
+  'border:0!important;border-radius:0!important;width:auto!important;max-width:none!important;max-height:none!important;height:auto!important;z-index:2147483600}',
   '[data-dsh-pig][data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;flex:1 1 auto}',
   '[data-dsh-pig][data-ext-view="big"] .dp-bar,[data-dsh-pig][data-ext-view="big"] .dp-panel-footer{display:none!important}',
 
