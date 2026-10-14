@@ -62,11 +62,11 @@ export function migrate(input, nowMs) {
     if (typeof state[key] !== 'number' || !Number.isFinite(state[key])) state[key] = egg[key]
   }
   if (typeof raw.cleanliness !== 'number') state.cleanliness = egg.cleanliness
-  // 新字段（0.36.2 修时钟回拨）：老存档没有就补 null，坏值当没有。
-  // 不升 STATE_VERSION：没有要换算的数据，缺了就是「没有正在进行的回拨」（先例见 daily.js）。
-  if (!Number.isFinite(state.clockRollbackAt)) state.clockRollbackAt = null
-  // 已结算水位同理：缺了/坏了就是 null，decay() 按 lastSeenAt 处理（返工2 P2-2）。
+  // 已结算水位：缺了/坏了就是 null，decay() 按 lastSeenAt 处理（返工2 P2-2）。
   if (!Number.isFinite(state.settledUpTo)) state.settledUpTo = null
+  // 0.36.2 第二轮的「倒退满一天认新时钟」出口已在返工3 取消，这个冻结标记不再有人写；
+  // 老存档里留下的值直接丢掉（它是当时的临时标记，不是玩家数据）。
+  delete state.clockRollbackAt
   if (typeof raw.health !== 'number') state.health = raw.dead === true ? 0 : MAX.health
   if (typeof raw.coins !== 'number') state.coins = egg.coins
   // Starting money went 60 -> 500. A pig that hatched under the old number is

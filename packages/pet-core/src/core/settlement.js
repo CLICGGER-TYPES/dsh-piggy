@@ -7,7 +7,7 @@
  */
 
 import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
-import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, MAX_SETTLE_STEPS, MIN_SETTLE_STEP_MS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
+import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, DAY_MS, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, MAX_SETTLE_STEPS, MIN_SETTLE_STEP_MS, OFFLINE_GRACE_DAYS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
@@ -15,13 +15,13 @@ import { advanceIllness, noteOuting, restAtHome, rollForIllness } from './illnes
 import { say } from './lines.js'
 import { rollerFor } from './random.js'
 import { noteToday, writeDiaryIfNewDay } from './diary.js'
-import { dayKeyFor, holdClock, isUsableCursor, raiseSettledUpTo, settleFloorMs } from './clock.js'
+import { dayKeyFor, isUsableCursor, raiseSettledUpTo, settleFloorMs } from './clock.js'
 import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
 import { finishAutoFishing } from './fishing.js'
 import { settleAutoFishing } from './fishing-auto.js'
-import { eatOffline, finishOfflineMeals } from './offline-feed.js'
+import { careOffline, emptyOfflineMeals, finishOfflineMeals, offlineSustainMs, settleStarvation } from './offline-feed.js'
 import { ONLINE_GIFT, THRESHOLDS } from '../data.js'
 import { earnCoins } from './economy.js'
 
@@ -61,7 +61,6 @@ export function decay(state, nowMs, options = {}) {
   if (!isUsableCursor(state.lastSeenAt)) {
     console.warn(`[dsh-piggy] unusable settle cursor, resetting to now: lastSeenAt=${String(state.lastSeenAt)} nowMs=${nowMs}`)
     state.lastSeenAt = nowMs
-    state.clockRollbackAt = null
     raiseSettledUpTo(state, nowMs)
     return state
   }
@@ -70,15 +69,13 @@ export function decay(state, nowMs, options = {}) {
   // 在将来（快机器上孵的猪、对表之后）时不抬，否则跨度变负、猪会冻到生日那天。
   const bornAtMs = Number.isFinite(state.bornAt) && state.bornAt <= nowMs ? state.bornAt : null
   const fromMs = bornAtMs === null ? state.lastSeenAt : Math.max(state.lastSeenAt, bornAtMs)
-  // 时钟没前进（回拨 / 游标在未来）：游标只能停在已结算到的高点，见 holdClock。
-  if (!(nowMs > fromMs)) {
-    holdClock(state, nowMs, fromMs)
-    return state
-  }
-  state.clockRollbackAt = null
+  // 时钟没前进（玩家把系统时间调回去了 / 游标在未来）：猪原地不动，保留游标，本次不结算。
+  // 玩家调时间了就冻结，不自动恢复——等真实时间追上旧水位（settledUpTo）再接着走，
+  // 错表那段本来就没真的流过（2026-10-14 用户拍板，取消了原来的「满一天认新时钟」出口）。
+  if (!(nowMs > fromMs)) return state
   state.lastSeenAt = nowMs
-  // 已结算水位（只增不减，见 clock.js）：认新时钟后 lastSeenAt 会跳回过去，水位却留在
-  // 旧高点——时间要重新越过它才继续结算，同一段绝不结算两遍（返工2 P2-2，宁可少算）。
+  // 已结算水位（只增不减，见 clock.js）：时间要越过它才继续结算，同一段绝不结算两遍
+  // （返工2 P2-2，宁可少算）。
   const floorMs = settleFloorMs(state, fromMs)
   if (nowMs <= floorMs) return state
   // An unopened box is not a pet yet: it never gets hungry, dirty, sick or
@@ -88,12 +85,14 @@ export function decay(state, nowMs, options = {}) {
   // 到这里才真的要结算，水位跟着推进（前面的跳过路径只在 lastSeenAt 上走）。
   raiseSettledUpTo(state, nowMs)
   const next = options.roll ?? rollerFor(state)
-  // 单次结算跨度上限（见 constants.js）：起点即使合法也可能久远到走不完，只补最近
-  // MAX_SETTLE_SPAN_MS，更早的时间不结算——那一段当作没有离开过。
-  const settleFromMs = Math.max(floorMs, nowMs - MAX_SETTLE_SPAN_MS)
+  // 单次结算的推算上限：背包还能撑多久 + 10 天（见 offline-feed.js），再夹在 400 天的
+  // 绝对上限内。超出的时间不逐步走——那正是「几百万步卡住面板」的来源（返工3 A2）。
+  const sustainMs = offlineSustainMs(state)
+  const horizonMs = Math.min(sustainMs + OFFLINE_GRACE_DAYS * DAY_MS, MAX_SETTLE_SPAN_MS)
+  const settleFromMs = Math.max(floorMs, nowMs - horizonMs)
   // 少结算了就说一声，别让玩家只看到「年龄凭空少了」（P3-3）。
-  if (nowMs - floorMs > MAX_SETTLE_SPAN_MS) {
-    console.warn(`[dsh-piggy] settle span over the cap, only the last ${MAX_SETTLE_SPAN_MS}ms is settled: floorMs=${floorMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
+  if (nowMs - floorMs > horizonMs) {
+    console.warn(`[dsh-piggy] settle span over the offline horizon, only the last ${horizonMs}ms is walked: floorMs=${floorMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
   }
   if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
     // First tick after loading an old save: seed pig time from the birthday.
@@ -104,7 +103,7 @@ export function decay(state, nowMs, options = {}) {
   rollDiaryAt(state, settleFromMs)
 
   const meals = nowMs - settleFromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
-    ? { counts: {}, isEmpty: false } : null
+    ? emptyOfflineMeals() : null
   let cursor = settleFromMs
   const activity = state.activity
   if (activity !== null && activity !== undefined) {
@@ -119,6 +118,9 @@ export function decay(state, nowMs, options = {}) {
   }
   if (state.dead !== true) passTime(state, { fromMs: cursor, toMs: nowMs, away: false, meals }, next)
   finishOfflineMeals(state, meals, nowMs)
+  // 超过「背包能撑的」那一刻还有剩余时间：没东西撑着满 30 天就是死亡，否则生命垂危
+  // （返工3 A2）。这段时间不逐步推算，正是为了不走上百万步。
+  settleStarvation(state, nowMs, nowMs - floorMs - sustainMs)
   return state
 }
 
@@ -139,7 +141,7 @@ function passTime(state, stretch, next) {
       return
     }
     steps += 1
-    eatOffline(state, stretch.meals, cursor)
+    careOffline(state, stretch.meals, cursor)
     const speed = stretch.away ? AWAY_DECAY_MULTIPLIER : 1
     const toHungerMs = (state.satiety - THRESHOLDS.hungry) / (SATIETY_DECAY_PER_MIN * speed) * 60000
     const span = stretch.meals && toHungerMs > 0 ? Math.min(SETTLE_STEP_MS, Math.max(MIN_SETTLE_STEP_MS, Math.ceil(toHungerMs))) : SETTLE_STEP_MS
@@ -159,7 +161,7 @@ function step(state, tick, next) {
   const { elapsedMs, atMs, away } = tick
   rollDiaryAt(state, atMs)
   drainBars(state, elapsedMs / 60000, away)
-  eatOffline(state, tick.meals, atMs)
+  careOffline(state, tick.meals, atMs)
   trackSicknessRisk(state, elapsedMs / 60000, away, atMs, next)
   progressIllness(state, elapsedMs, { away, atMs }, next)
   if (state.dead !== true) growOlder(state, elapsedMs, atMs)

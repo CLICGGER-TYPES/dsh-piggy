@@ -1669,7 +1669,7 @@
   }
 
   // src/client/pending.js
-  var URGENT_KINDS = ["sick", "worse", "death", "cured", "revived"];
+  var URGENT_KINDS = ["sick", "worse", "death", "cured", "revived", "weak"];
   function processPending(ctx, showPigLine) {
     var role2 = desktopRole();
     var pigSide = role2 !== "panel";

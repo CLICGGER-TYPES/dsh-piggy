@@ -7,7 +7,7 @@
  */
 
 import { DAYS_PER_MONTH, DAY_STARTS_AT_HOUR, DEAD_DAY, GRAVE, GROWTH_PER_HOUR, LEVEL_TITLES, LIFE_STAGES, MAX_LEVEL, SOUL_AFTER_DAYS, xpForLevel } from '../data.js'
-import { CLOCK_ROLLBACK_HOLD_MS, DAY_MS } from './constants.js'
+import { DAY_MS } from './constants.js'
 
 /**
  * The pig's age in days.
@@ -50,10 +50,9 @@ export function isUsableCursor(cursor) {
  * 已结算水位（`state.settledUpTo`）：只增不减的时间戳，表示这一刻（含）以前的猪时间
  * 都已经结算过了——同一段时间绝不算两遍。
  *
- * 为什么需要它：`holdClock` 的「满一天」出口会认新时钟，把 `lastSeenAt` 从旧高点跳回过去。
- * 如果只看 `lastSeenAt`，真实时间一追上就会把「错表那几天」再结算一遍（返工 P2-2）。水位
- * 一直留在旧高点，只有这次真的结算了才推到 `nowMs`（见 core/settlement.js 的 decay()）。
- * 代价是「宁可少算」：旧高点落在将来时，猪要等真实时间越过水位才继续长。
+ * 为什么需要它：时钟被拨回、或存档游标来自一台走快的机器（B2）时，`lastSeenAt` 会停在
+ * 将来。水位记着真正结算到过的高点，时间要重新越过它才继续结算——「宁可少算」，同一段
+ * 绝不重复结算（返工2 P2-2，用户 2026-10-14 拍板）。
  *
  * 缺失或坏值按 `lastSeenAt`（即 `fromMs`）处理——老存档没有这个字段。`settleFloorMs` 返回
  * 结算起点（这次真正要结算的区间下界），`raiseSettledUpTo` 只用更大的值覆盖它。
@@ -65,51 +64,14 @@ export function settleFloorMs(state, fromMs) {
   return Number.isFinite(state.settledUpTo) && state.settledUpTo > fromMs ? state.settledUpTo : fromMs
 }
 
-/** 把已结算水位抬到 ms；只增不减（时钟被接受时也不回退，见 holdClock）。 */
+/**
+ * 把已结算水位抬到 ms；只增不减。
+ *
+ * 唯二允许把水位写小的写入点在 core/state.js（`ageFromNow` 年龄归零、调试页的 `__advanceMs`
+ * 快进），那是「重置时间线 / 假装这段真的流过」，不是结算；别处的写入一律走这个函数。
+ */
 export function raiseSettledUpTo(state, ms) {
   if (!Number.isFinite(state.settledUpTo) || ms > state.settledUpTo) state.settledUpTo = ms
-}
-
-/**
- * 时钟比结算游标走得慢时的处理：保留游标、本次不结算。
- *
- * 为什么会走到这里：`fromMs` 是已经结算到的高点。时钟回拨、或存档里的游标来自一台
- * 走快的机器（B2），都会让 `nowMs < fromMs`。这时把游标落到 `nowMs` 就是「吞掉」
- * 已经结算过的时间，等真实时钟追上来会重复结算。
- *
- * 但不能永远保留：用户把系统时间调成错的（笔记本没电池、手动改表）时，游标就永远
- * 停在未来、猪一直冻结。折中——倒退持续满 CLOCK_ROLLBACK_HOLD_MS（按倒退后的新
- * 时钟计）就认新时钟当新起点，跳过去、不补结算。回拨出来的那段本来就没真的流过，
- * 补上等于凭空多给一次离线结算；回拨不超过一天时，真实时钟会在冻结 CLOCK_ROLLBACK_HOLD_MS
- * 之前追上原游标，所以普通对表不会触发这一步。
- *
- * 接受新时钟时**不动已结算水位**（`settledUpTo`，见 settleFloorMs）：游标跳回过去，水位却
- * 留在被放弃的旧高点，时间要重新越过它才继续结算（返工2 P2-2）。代价是「宁可少算」——旧高点
- * 落在将来时猪会暂停到真实时间赶上它，但不会再掉回「被拒收」分支、也就不会永久冻住。
- *
- * 2026-10-14 从 settlement.js 搬来这里：那边快撞上 400 行的硬线，而这一条和
- * isUsableCursor 讲的都是「游标可不可信」，放一起更好读（原位置与行为不变）。
- *
- * @param {object} state
- * @param {number} nowMs
- * @param {number} fromMs
- */
-export function holdClock(state, nowMs, fromMs) {
-  // 只认真正的倒退。同一毫秒里的重复调用很常见（describe 等只读路径），
-  // 不能拿它当冻结的起点。（坏游标在 decay() 里就已经被修掉，这里只会拿到有限的 fromMs。）
-  if (!(nowMs < fromMs)) return
-  const since = Number.isFinite(state.clockRollbackAt) ? state.clockRollbackAt : nowMs
-  if (nowMs - since >= CLOCK_ROLLBACK_HOLD_MS) {
-    // 别静默：猪停了一天，排障的人需要知道是时钟被拨了（P3-3）。
-    console.warn(`[dsh-piggy] clock held for a day, accepting the new time: heldAt=${fromMs} nowMs=${nowMs}`)
-    // 认新时钟，但已结算水位留在旧高点：游标跳回过去，而水位不动，以后时间重新越过它时
-    // 只结算新增的那一段——否则「错表超一天又改回来」会把同一段算第二遍（返工2 P2-2）。
-    raiseSettledUpTo(state, fromMs)
-    state.lastSeenAt = nowMs
-    state.clockRollbackAt = null
-    return
-  }
-  state.clockRollbackAt = since
 }
 
 /**

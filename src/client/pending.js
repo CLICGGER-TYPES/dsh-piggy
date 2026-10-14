@@ -9,7 +9,7 @@ import { showMilestoneNotice } from './milestone-notice.js'
 import { str } from './values.js'
 
 /** News that gets through 免打扰. */
-var URGENT_KINDS = ['sick', 'worse', 'death', 'cured', 'revived']
+var URGENT_KINDS = ['sick', 'worse', 'death', 'cured', 'revived', 'weak']
 
 /**
  * @param {any} ctx

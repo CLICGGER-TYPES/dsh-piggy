@@ -69,11 +69,8 @@ export function layEgg(nowMs) {
     lastFedAt: 0,
     lastActiveAt: nowMs,
     lastSeenAt: nowMs,
-    // 时钟回拨后第一次被看到的时刻（倒退后的新时钟读数）；只在冻结期间有值，
-    // 用来判断这个倒退是不是「用户改了系统时间」（见 core/clock.js 的 holdClock）。
-    clockRollbackAt: null,
-    // 已结算水位（只增不减）：这一刻（含）以前的猪时间都结算过了。认新时钟后 lastSeenAt
-    // 会跳回过去而水位留在旧高点，同一段时间绝不结算两遍（见 core/clock.js 的 settleFloorMs）。
+    // 已结算水位（只增不减）：这一刻（含）以前的猪时间都结算过了，时间要越过它才继续，
+    // 同一段时间绝不结算两遍（见 core/clock.js 的 settleFloorMs）。
     settledUpTo: null,
     cooldowns: {},
     pending: [],
