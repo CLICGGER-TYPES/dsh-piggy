@@ -51,7 +51,7 @@
   }
   /** 扩展自带图片的地址；老宿主没有 app.asset 时给空串，界面退回 emoji。 */
   function art(app, name) { return typeof app.asset === 'function' ? app.asset(name + '.webp') : '' }
-  function bg(app, node, name) { var url = art(app, name); if (url) node.style.backgroundImage = 'url("' + url + '")'; if (typeof app.paintAsset === 'function') app.paintAsset(node, name + '.webp'); return node }
+  function bg(app, node, name) { if (!name) return node; var url = art(app, name); if (url) node.style.backgroundImage = 'url("' + url + '")'; if (typeof app.paintAsset === 'function') app.paintAsset(node, name + '.webp'); return node }
   function picture(app, className, url, fallback) {
     if (!url) return app.el('span', className, fallback || '')
     var node = app.el('img', className); node.src = url; node.alt = ''; return node
@@ -290,11 +290,12 @@
     }
     return { label: '都在长', sub: look.soonest < Infinity ? '最快 ' + shortTime(look.soonest) : '', idle: true }
   }
+  /** 场景图只挑 manifest 里登记过的图（旧图 bg-big / bg-small 没登记，请求它必 404）；退路是同晴雨的白天图，一张都没有就不铺底图。 */
   function sceneArt(app, size) {
-    var date = new Date(app.data.now), hour = date.getHours()
+    var date = new Date(app.data.now), hour = date.getHours(), sky = app.data.weather === 'rain' ? 'rain' : 'sunny'
     var phase = hour < 5 || hour >= 19 ? 'night' : hour < 8 ? 'dawn' : hour < 17 ? 'day' : 'dusk'
-    var name = 'bg-' + size + '-' + phase + '-' + (app.data.weather === 'rain' ? 'rain' : 'sunny')
-    return typeof app.hasAsset === 'function' && app.hasAsset(name + '.webp') ? name : 'bg-' + size
+    var names = ['bg-' + size + '-' + phase + '-' + sky, 'bg-' + size + '-day-' + sky]
+    return typeof app.hasAsset !== 'function' ? names[0] : names.find(function (name) { return app.hasAsset(name + '.webp') }) || ''
   }
   function renderSmall(app, data) {
     var root = app.el('div', 'fm')

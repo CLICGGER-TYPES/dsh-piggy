@@ -14,8 +14,8 @@ export const PEST_MS = 4 * 3600000
 export const PEST_LOSS = 2
 /** 照料一次（浇水、除草、杀虫）的经验。 */
 export const CARE_EXP = 2
-/** 升下一级要「当前等级 × 100」经验。 */
-export const EXP_PER_LEVEL = 100
+/** 升下一级要「当前等级 × 100」经验；EXP_CAP 是坏存档（1e308 / Infinity）的经验上限，正常玩到不了。 */
+export const EXP_PER_LEVEL = 100, EXP_CAP = Number.MAX_SAFE_INTEGER
 /** 「玩会累」：种、收、照料一块地扣多少饱食（data/economy.js 的建议值）。 */
 export const EXERT = 0.2
 const H = 3600000
@@ -118,12 +118,12 @@ export function plotState(plot, now) {
   return { crop: crop.key, stage: STAGES[index], ripe, withered: false, season: plot.season, seasons: crop.seasons, pests,
     progress: age, remainingMs: ripe ? 0 : Math.max(0, ripeAt(plot, crop) - now), yield: ripe ? Math.max(1, crop.yield + plot.roll - PEST_LOSS * pests.length) : 0 }
 }
-/** 等级：从总经验算出来（升下一级要「等级 × 100」）。 */
+/** 等级：从总经验算出来。解 level(level − 1) ≤ exp / 50 得闭式；浮点误差最多一级，下面修正回来。 */
 export function levelOf(exp) {
-  let level = 1
-  let left = count(exp)
-  while (left >= level * EXP_PER_LEVEL) { left -= level * EXP_PER_LEVEL; level += 1 }
-  return { level, exp: left, need: level * EXP_PER_LEVEL }
+  const total = Math.min(EXP_CAP, count(exp)), reach = level => EXP_PER_LEVEL / 2 * level * (level - 1)
+  let level = Math.max(1, Math.floor((1 + Math.sqrt(1 + total / 12.5)) / 2))
+  level += reach(level + 1) <= total ? 1 : reach(level) > total ? -1 : 0
+  return { level, exp: total - reach(level), need: level * EXP_PER_LEVEL }
 }
 /** 3.x → 4.0：地数至少 6 块；地里的作物当作长完、按旧产量进仓库；旧洒水器、旧肥料退菜币；大水壶换成喷雾桶。 */
 function migrate(data) {
@@ -164,7 +164,8 @@ export function normalize(data) {
     return plot
   })
   for (const field of ['seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert']) if (!isObject(data[field])) data[field] = {}
-  data.exp = count(data.exp); data.refund = count(data.refund); data.helperBarnRefund = count(data.helperBarnRefund)
+  data.exp = Math.min(EXP_CAP, count(data.exp))
+  data.refund = count(data.refund); data.helperBarnRefund = count(data.helperBarnRefund)
   normalizeHelper(data)
   refundOldBarn(data)
   return data

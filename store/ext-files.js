@@ -19,19 +19,56 @@ export const ASSET_TYPES = Object.freeze({ webp: 'image/webp', png: 'image/png' 
 
 /**
  * manifest 里声明的图片名单；写错了返回 null（整个扩展当坏包拒绝，免得装上缺图）。
+ * 哪里不对由 describeAssetList 说，免得两处判断走偏。
  * @param {any} manifest
  * @returns {string[]|null}
  */
 export function assetNames(manifest) {
   const list = manifest?.assets
   if (list === undefined) return []
-  if (!Array.isArray(list) || list.length > MAX_ASSETS) return null
-  if (!list.every(name => typeof name === 'string' && ASSET_NAME.test(name))) return null
-  return new Set(list).size === list.length ? [...list] : null
+  return describeAssetList(manifest) === '' ? [...list] : null
 }
 
 /** 一个扩展的全部文件（相对扩展目录的路径）。 @param {string[]} assets */
 export const fileList = assets => [...CODE_FILES, ...assets.map(name => 'assets/' + name)]
+
+/** 给用户看的大小写法：KB / MB 各留一位小数，别只丢一串字节。 @param {number} bytes */
+function size(bytes) {
+  return bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + 'MB' : (bytes / 1024).toFixed(1) + 'KB'
+}
+
+/** 单个文件超过上限时怎么说（写清这个多大、上限多少、超了多少）。 @param {string} name @param {number} bytes @param {number} [limit] */
+export function describeFileTooBig(name, bytes, limit = MAX_FILE_BYTES) {
+  return `${name} 太大：${size(bytes)}，上限 ${size(limit)}，多了 ${size(bytes - limit)}`
+}
+
+/** 图片张数超过上限时怎么说（写清多少张、上限、多了几张）。 @param {number} count */
+export function describeTooManyAssets(count) {
+  return `图片太多：${count} 张，最多 ${MAX_ASSETS} 张，多了 ${count - MAX_ASSETS} 张`
+}
+
+/** 图片合计超过 4MB 时怎么说（写清合计多大、上限、超了多少）。 @param {number} bytes */
+export function describeAssetsTooBig(bytes) {
+  return `图片合计太大：${size(bytes)}，最多 ${size(MAX_ASSETS_BYTES)}，多了 ${size(bytes - MAX_ASSETS_BYTES)}`
+}
+
+/**
+ * `manifest.assets` 哪里不对（张数超 / 名字不合法 / 重复），给报错指出真因；没问题返回 ''。
+ * 和 assetNames 判为 null 的条件一一对应。
+ * @param {any} manifest
+ * @returns {string}
+ */
+export function describeAssetList(manifest) {
+  const list = manifest?.assets
+  if (list === undefined) return ''
+  if (!Array.isArray(list)) return '图片清单得是一个数组'
+  if (list.length > MAX_ASSETS) return describeTooManyAssets(list.length)
+  for (let index = 0; index < list.length; index += 1) {
+    const name = list[index]
+    if (typeof name !== 'string' || !ASSET_NAME.test(name)) return `第 ${index + 1} 张图片名不对：${String(name)}（只能小写字母、数字、横线加 .webp / .png）`
+  }
+  return new Set(list).size === list.length ? '' : '图片清单里有重复的名字'
+}
 
 /** 顺着 cause 链找最里层的错误码：fetch 失败时真正的原因藏在 cause 里。 */
 function causeCode(error) {
