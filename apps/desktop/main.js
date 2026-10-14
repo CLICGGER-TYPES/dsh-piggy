@@ -1029,7 +1029,8 @@ app.whenReady().then(async () => {
     if (firstRun === null) { app.quit(); return }
   }
   const gameDir = versions.activeDir()
-  host = await startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net),
+  const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
+  host = await startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
     onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)

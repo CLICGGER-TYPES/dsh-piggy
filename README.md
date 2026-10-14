@@ -92,6 +92,10 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 ## 开发
 
+### 第三方 agent 接入（未发版）
+
+来自 PR #12 的游戏运行时支持进程内工作事件提交，以及默认关闭的本机认证接口；桌面源码或无窗口入口显式传入 `--work-events` 后开启。协议、去重确认和启动方式见[接入其他 agent 框架](docs/guides/agent-adapters.md)。
+
 ```sh
 npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
 npm run build

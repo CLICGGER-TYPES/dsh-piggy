@@ -39,6 +39,7 @@
     "store",
     "runtime",
     "adapters",
+    "docs/guides/agent-adapters.md",
     "src",
     "scripts",
     "cordis.patch.yml",

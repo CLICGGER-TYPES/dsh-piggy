@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 来自 PR #12（WolalaQAQ）：显式 `--work-events` 启用本机认证接口，仅监听 127.0.0.1 随机端口并开放 `/health`、`/events`；提供默认关闭的无窗口入口和 agent 接入说明。
+
 - 来自 PR #12（WolalaQAQ）：工作事件协议 v1、来源与 ID 去重收据、完整状态 WAL 恢复；补默认字段时标记待保存，桌面运行时改为后台单写者。
 
 - 来自 PR #12（WolalaQAQ）：拆分游戏运行时、DSH 适配器和界面挂载，保留原入口及旧游戏包兼容；桌面外壳升至 0.6.6。
