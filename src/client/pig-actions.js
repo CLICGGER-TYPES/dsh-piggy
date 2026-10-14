@@ -38,16 +38,18 @@ export function attachPigActions(c) {
     if (action === 'blink' && active) return
     clearFrame()
     active = action
-    // 2026-10-13 仅暂停当前动效；animation:none 会把呼吸中途的位置重置，实测跳 6.8px。
+    // 2026-10-13 只暂停当前动效（CSS 里限定 :not([data-react])）；animation:none 会把呼吸中途的位置重置，实测跳 6.8px。
     c.pig.setAttribute?.('data-micro-action', action)
     c.render()
     frameTimer = clock.setTimeout(() => { clearFrame(); c.render() }, ACTION_DURATION[action])
   }
   function scheduleBlink() {
-    if (isBlocked()) return
+    // 排期独立于「这一拍能不能播」：受阻（拖动/隐藏/状态被换掉）时跳过这一帧，但仍然排下一次，
+    // 不靠 observer 每 4 秒轮询来兜底（F5）。
+    clock.clearTimeout(blinkTimer)
     blinkTimer = clock.setTimeout(() => {
       blinkTimer = null
-      play('blink')
+      if (!isBlocked()) play('blink')
       scheduleBlink()
     }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min))
   }
@@ -72,12 +74,14 @@ export function attachPigActions(c) {
     }).catch(error => console.error('小猪动作图片解码失败', action, error))
   }
   document.addEventListener?.('visibilitychange', visibility)
-  c.pig.addEventListener?.('pointercancel', visibility)
-  c.pig.addEventListener?.('lostpointercapture', visibility)
+  // 指针捕获设在 .dp-scene 上（index.js），pointercancel / lostpointercapture 的 target 是它而不是
+  // 猪本身；挂在 .dp-pig 上永远不会触发（F4）。没有父节点（测试环境）时退回猪本身。
+  const gestureTarget = c.pig.parentNode || c.pig
+  gestureTarget.addEventListener?.('pointercancel', visibility)
+  gestureTarget.addEventListener?.('lostpointercapture', visibility)
   const observer = typeof MutationObserver === 'function' ? new MutationObserver(() => {
     if (active && !currentArt()) c.render()
-    if (isBlocked()) cancel()
-    else if (blinkTimer === null) scheduleBlink()
+    else if (blinkTimer === null && !isBlocked()) scheduleBlink()
   }) : null
   observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ['data-dragging', 'data-art', 'data-mood', 'data-idle', 'data-activity', 'data-illness', 'data-party', 'data-react'] })
   scheduleBlink()
@@ -89,8 +93,8 @@ export function attachPigActions(c) {
       cancel()
       PLAYERS.delete(c.pig)
       document.removeEventListener?.('visibilitychange', visibility)
-      c.pig.removeEventListener?.('pointercancel', visibility)
-      c.pig.removeEventListener?.('lostpointercapture', visibility)
+      gestureTarget.removeEventListener?.('pointercancel', visibility)
+      gestureTarget.removeEventListener?.('lostpointercapture', visibility)
     },
   }
 }

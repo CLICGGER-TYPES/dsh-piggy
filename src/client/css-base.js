@@ -227,7 +227,9 @@ export const CSS_BASE = [
   '.dp-pig[data-mood="working"]{animation-name:dp-typing;animation-duration:.7s}',
   '.dp-pig[data-mood="studying"]{animation-name:dp-reading;animation-duration:2.4s}',
   '.dp-pig[data-mood="traveling"]{animation-name:dp-walking;animation-duration:1s}',
-  '.dp-pig[data-micro-action]{animation-play-state:paused!important}',
+  // 微动作期间暂停待机/呼吸动画，避免 animation:none 把呼吸中途的位置重置（实测跳 6.8px）。
+  // 只暂停「没有反应动画」的时候：摸猪的压扁回弹（data-react="pet"）要靠它演完，不能被一起冻住。
+  '.dp-pig[data-micro-action]:not([data-react]){animation-play-state:paused!important}',
   '.dp-pig[data-mood="dead"]{animation:none}'
   ,'.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   '.dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}',

@@ -10,6 +10,7 @@ import { afterEach, test } from 'node:test'
 
 import { PIG_FX, splitSetOpen, wireSplit } from '../src/client/split.js'
 import { processPending } from '../src/client/pending.js'
+import { attachPigActions, pigActionArt, playPigPet } from '../src/client/pig-actions.js'
 
 /** 假外壳：记下页面发给主进程的每条消息，并能模拟主进程推回来的消息。 */
 function fakeShell(role) {
@@ -104,6 +105,39 @@ test('面板窗口：对猪的反应都转给猪窗口，主进程的开/关/失
   assert.equal(ctx.isOpen, true, '焦点到了猪身上不收')
   emit('panel', { type: 'closed' })
   assert.equal(ctx.isOpen, false)
+})
+
+test('面板窗口摸猪：害羞帧转给猪窗口演（F1）', async () => {
+  const attrs = { 'data-art': 'piglet', 'data-mood': 'fine' }
+  const pig = {
+    parentNode: null,
+    getAttribute: key => attrs[key] || null,
+    setAttribute(key, value) { attrs[key] = value },
+    removeAttribute(key) { delete attrs[key] },
+    addEventListener() {}, removeEventListener() {},
+  }
+  const savedDocument = globalThis.document
+  globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} }
+  const player = attachPigActions({ pig, clock: { setTimeout: () => 1, clearTimeout() {} },
+    preload: async () => {}, isStopped: () => false, isDragging: () => false, render() {} })
+  await Promise.resolve(); await Promise.resolve()
+  // 猪窗口：本窗口有播放器，petShy 直接播。
+  const petShell = fakeShell('pet')
+  const petCtx = Object.assign(fakeCtx(), { petShy: () => playPigPet(pig) })
+  assert.equal(wireSplit(petCtx, { refresh() {}, isFishing: () => false }), 'pet')
+  // 面板窗口：attachLife 是 null，petShy 被换成一个转发；面板里点「摸摸」走的就是它。
+  const panelShell = fakeShell('panel')
+  const panelCtx = Object.assign(fakeCtx(), { petShy: () => assert.fail('面板里不该自己播') })
+  assert.equal(wireSplit(panelCtx, { refresh() {}, isFishing: () => false }), 'panel')
+  assert.ok(PIG_FX.includes('petShy'), 'petShy 要在转给猪窗口的名单里')
+  panelCtx.petShy()
+  const relay = panelShell.sent.filter(entry => entry[0] === 'fx')
+  assert.deepEqual(relay, [['fx', 'petShy', []]])
+  // 主进程把这条转给猪窗口（fireSplit 里就是 onFx）。
+  for (const [, name, args] of relay) petCtx[name](...args)
+  assert.equal(pigActionArt(pig), 'piglet-shy-pet', '害羞帧要在猪窗口里真的播起来')
+  player.dispose()
+  globalThis.document = savedDocument
 })
 
 test('任一窗口收到「存档变了」都刷新', () => {

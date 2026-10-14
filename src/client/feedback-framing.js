@@ -342,7 +342,7 @@ export const ART_BOUNDS = Object.freeze({
   'pigs/feedback/twitch.png': [0.0625, 0.136719, 0.9375, 0.859375],
   'pigs/badges/badge-pig-jobs-hundred.png': [0.132812, 0.0625, 0.863281, 0.9375],
   'pigs/feedback/death-day.png': [0.0625, 0.210938, 0.9375, 0.789062],
-  'pigs/base/piglet/blink.png': [0.039062, 0.09375, 0.949219, 0.941406],
-  'pigs/base/piglet/shy-pet.png': [0.050781, 0.09375, 0.949219, 0.90625],
+  'pigs/base/piglet/blink.png': [0.058594, 0.105469, 0.941406, 0.894531],
+  'pigs/base/piglet/shy-pet.png': [0.058594, 0.105469, 0.941406, 0.898438],
 })
 export const MAX_ART_ASPECT = 1.947826

@@ -1,5 +1,4 @@
 // @ts-check
-import { playPigPet } from './pig-actions.js'
 /**
  * 与宿主对话：拉快照、发动作。
  *
@@ -46,7 +45,7 @@ export function createIo(ctx) {
           var next = await res.json()
           if (action === 'buy' && next?.ok === true) ctx.justBought = extra?.item ?? null
           ctx.render(next)
-          if (action === 'pet' && next?.ok === true) playPigPet(ctx.pig)
+          if (action === 'pet' && next?.ok === true) ctx.petShy?.()
           // 签到、礼包的结果一律由猪说出来（面板开着时也是）；对应的公告事件不再弹面板顶上的提示条。
           if ((action === 'signIn' || action === 'openGift') && next?.ok === true) {
             var reward = str(next.reward, '')

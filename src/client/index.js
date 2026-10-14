@@ -27,6 +27,7 @@ import { updatesBridge } from './tabs/update.js'
 import { arr, num, obj, str } from './values.js'
 import { desktop } from './desktop/index.js'
 import { attachLife } from './life.js'
+import { playPigPet } from './pig-actions.js'
 import { forceFeedbackArt, syncPigArt } from './art.js'
 import { createBirthday } from './birthday.js'
 import { partAt } from './pet-parts.js'
@@ -213,6 +214,8 @@ import { attachSizePreference } from './pig-size.js'
       ctx.flash = flash
 
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)
+      // 摸猪害羞：本窗口有播放器就直接播；拆窗口的面板窗口里 attachLife 是 null，wireSplit 会把它换成转发（PIG_FX: petShy）。
+      ctx.petShy = function () { playPigPet(pig) }
       // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
       ctx.previewArt = function (name) { forceFeedbackArt(name); syncPigArt(pig, pigArt, pigEmoji) }
       ctx.idleNow = function (key) { if (ctx.life) ctx.life.idleNow(key) }

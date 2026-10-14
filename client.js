@@ -311,10 +311,10 @@
       }, ACTION_DURATION[action]);
     }
     function scheduleBlink() {
-      if (isBlocked()) return;
+      clock.clearTimeout(blinkTimer);
       blinkTimer = clock.setTimeout(() => {
         blinkTimer = null;
-        play("blink");
+        if (!isBlocked()) play("blink");
         scheduleBlink();
       }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
     }
@@ -342,12 +342,12 @@
       }).catch((error) => console.error("\u5C0F\u732A\u52A8\u4F5C\u56FE\u7247\u89E3\u7801\u5931\u8D25", action, error));
     }
     document.addEventListener?.("visibilitychange", visibility);
-    c.pig.addEventListener?.("pointercancel", visibility);
-    c.pig.addEventListener?.("lostpointercapture", visibility);
+    const gestureTarget = c.pig.parentNode || c.pig;
+    gestureTarget.addEventListener?.("pointercancel", visibility);
+    gestureTarget.addEventListener?.("lostpointercapture", visibility);
     const observer = typeof MutationObserver === "function" ? new MutationObserver(() => {
       if (active && !currentArt()) c.render();
-      if (isBlocked()) cancel();
-      else if (blinkTimer === null) scheduleBlink();
+      else if (blinkTimer === null && !isBlocked()) scheduleBlink();
     }) : null;
     observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
     scheduleBlink();
@@ -359,8 +359,8 @@
         cancel();
         PLAYERS.delete(c.pig);
         document.removeEventListener?.("visibilitychange", visibility);
-        c.pig.removeEventListener?.("pointercancel", visibility);
-        c.pig.removeEventListener?.("lostpointercapture", visibility);
+        gestureTarget.removeEventListener?.("pointercancel", visibility);
+        gestureTarget.removeEventListener?.("lostpointercapture", visibility);
       }
     };
   }
@@ -799,8 +799,8 @@
     "pigs/feedback/twitch.png": [0.0625, 0.136719, 0.9375, 0.859375],
     "pigs/badges/badge-pig-jobs-hundred.png": [0.132812, 0.0625, 0.863281, 0.9375],
     "pigs/feedback/death-day.png": [0.0625, 0.210938, 0.9375, 0.789062],
-    "pigs/base/piglet/blink.png": [0.039062, 0.09375, 0.949219, 0.941406],
-    "pigs/base/piglet/shy-pet.png": [0.050781, 0.09375, 0.949219, 0.90625]
+    "pigs/base/piglet/blink.png": [0.058594, 0.105469, 0.941406, 0.894531],
+    "pigs/base/piglet/shy-pet.png": [0.058594, 0.105469, 0.941406, 0.898438]
   });
   var MAX_ART_ASPECT = 1.947826;
 
@@ -1397,7 +1397,7 @@
         var next = await res.json();
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
         ctx.render(next);
-        if (action === "pet" && next?.ok === true) playPigPet(ctx.pig);
+        if (action === "pet" && next?.ok === true) ctx.petShy?.();
         if ((action === "signIn" || action === "openGift") && next?.ok === true) {
           var reward = str(next.reward, "");
           ctx.showBubble((action === "signIn" ? "\u7B7E\u5230\u6210\u529F" : "\u793C\u5305\u6253\u5F00") + (reward ? " \xB7 " + reward : ""), 4e3);
@@ -2491,7 +2491,7 @@
   }
 
   // src/client/split.js
-  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform", "previewArt", "idleNow", "walkNow", "birthdayNow"];
+  var PIG_FX = ["flash", "react", "burst", "showBubble", "transform", "previewArt", "idleNow", "walkNow", "birthdayNow", "petShy"];
   function wireSplit(ctx, hooks) {
     var role2 = desktopRole();
     var shell2 = desktopShell();
@@ -3504,7 +3504,9 @@
     '.dp-pig[data-mood="working"]{animation-name:dp-typing;animation-duration:.7s}',
     '.dp-pig[data-mood="studying"]{animation-name:dp-reading;animation-duration:2.4s}',
     '.dp-pig[data-mood="traveling"]{animation-name:dp-walking;animation-duration:1s}',
-    ".dp-pig[data-micro-action]{animation-play-state:paused!important}",
+    // 微动作期间暂停待机/呼吸动画，避免 animation:none 把呼吸中途的位置重置（实测跳 6.8px）。
+    // 只暂停「没有反应动画」的时候：摸猪的压扁回弹（data-react="pet"）要靠它演完，不能被一起冻住。
+    ".dp-pig[data-micro-action]:not([data-react]){animation-play-state:paused!important}",
     '.dp-pig[data-mood="dead"]{animation:none}',
     '.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
     ".dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}",
@@ -10566,6 +10568,9 @@
         ctx.fitPanel = fitPanel;
         ctx.flash = flash;
         var updateNotice = attachUpdateNotice(ctx, updatesBridge);
+        ctx.petShy = function() {
+          playPigPet(pig);
+        };
         ctx.previewArt = function(name) {
           forceFeedbackArt(name);
           syncPigArt(pig, pigArt, pigEmoji);
