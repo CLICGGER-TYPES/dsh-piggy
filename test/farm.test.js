@@ -585,7 +585,7 @@ test('时钟回拨：结算不挪 lastAt，回拨那一段不重记工时（回�
   assert.deepEqual(data.helper.stock, stock, '时钟走回原处不重复发货')
 })
 
-test('帮工清理管区开荒地（残株、杂草）不给经验、不吃体力；缺指定种子就只清不种', () => {
+test('帮工清理管区开荒地（留茬、杂草）不给经验、不吃体力；缺指定种子就只清不种', () => {
   setRandom(() => 0.1)
   const data = establishedFarm()
   const t = fakeApi()
@@ -598,7 +598,7 @@ test('帮工清理管区开荒地（残株、杂草）不给经验、不吃体�
   t.api.now = T0 + H
   farm.actions.buy(data, { item: 'sprout', count: 1 }, t.api) // 有别的种子，帮工也不替玩家挑
   assert.equal(data.plots[0].fallow, true, '缺种子不补种')
-  assert.equal(data.plots[0].stubble, false, '残株照清')
+  assert.equal(data.plots[0].stubble, false, '留茬照清')
   assert.equal(data.plots[1].pests.weed, null, '杂草照拔')
   assert.equal(data.plots[2].stubble, false, '没指定作物的荒地也只清')
   assert.equal(data.exp, exp, '帮工清理开荒地不给经验')

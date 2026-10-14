@@ -57,7 +57,7 @@ test('菜园：真该看到的变化一个都不能漏', () => {
     长草: s => { s.extViews.farm.plots[10].pests = ['weed'] },
     天气: s => { s.extViews.farm.weather = s.extViews.farm.weather === 'rain' ? 'sunny' : 'rain' },
     工具到手: s => { s.extViews.farm.tools[0].owned = true },
-    帮工谷仓: s => { s.extViews.farm.helper.stored += 1 },
+    帮工仓库: s => { s.extViews.farm.helper.stored += 1 },
     开了新地: s => { s.extViews.farm.unlocked += 1 },
     金币: s => { s.pig.coins += 1 },
     饱食度: s => { s.pig.satiety -= 1 },
@@ -86,7 +86,7 @@ test('压到什么精度：就是界面画出来的精度', () => {
   // 进度按整百分比画（悬停卡进度条）
   assert.equal(pollKey(view({ progress: 0.5001 })), base)
   assert.notEqual(pollKey(view({ progress: 0.51 })), base)
-  // 帮工计时画面上没有（谷仓按个数报）
+  // 帮工计时画面上没有（帮工仓库按个数报）
   assert.equal(pollKey(view({ usedHours: 3.25 })), base)
 })
 

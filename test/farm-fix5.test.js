@@ -30,11 +30,11 @@ test('fix5：网页大界面铺满时，面板卡的 2px 边框和 20px 圆角�
   assert.match(block, /border-radius:0!important/, '铺满窗口要一起清掉 .dp-card 自带的 20px 圆角，四角才不会露宿主底色')
 })
 
-test('fix5：面板里的弹层（包袱/化肥/仓库/购买框）不许高过面板可视底边', () => {
+test('fix5：面板里的弹层（种子袋/肥料/仓库/购买框）不许高过面板可视底边', () => {
   const css = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
   const clamp = 'min(var(--ext-panel-height,100%),var(--fm-panel-avail,9999px))'
   assert.match(css, new RegExp('\\.fm-s-pop\\{[^}]*max-height:' + clamp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
-    '.fm-s-pop（包袱/化肥/仓库弹层）的高度要取 --ext-panel-height 和 --fm-panel-avail 的较小值')
+    '.fm-s-pop（种子袋/肥料/仓库弹层）的高度要取 --ext-panel-height 和 --fm-panel-avail 的较小值')
   assert.match(css, /\.fm:not\(\.fm-big\)>\.fm-mask\{[^}]*height:min\(var\(--ext-panel-height,100%\),var\(--fm-panel-avail,9999px\)\)/,
     '面板形态的遮罩（购买/铲除框底下那层）也要一起钳到面板可视高度')
   assert.match(css, /\.fm-s-pop\{[^}]*grid-template-rows:max-content max-content max-content/,

@@ -90,14 +90,14 @@ test('大农场帮工牌说实话：没种子写「帮工没种子」，缺某�
   assert.match(badge(), /帮工 · 4 块地/)
 })
 
-test('大农场帮工牌：谷仓有货就先说有货，不被「缺种子」顶掉', () => {
+test('大农场帮工牌：帮工仓库有货就先说有货，不被「缺种子」顶掉', () => {
   const data = establishedFarm(), t = api()
   farm.actions.hire(data, {}, t)
   data.helper.targets[0] = 'radish'
   farm.actions.buy(data, { item: 'radish', count: 1 }, t) // 只有一颗，种下就用光
-  t.now = T0 + 2 * H // 白萝卜一批 1.5 小时，先收一批进帮工谷仓
+  t.now = T0 + 2 * H // 白萝卜一批 1.5 小时，先收一批进帮工仓库
   const helper = farm.view(data, t).helper
-  assert.ok(helper.stored > 0, '谷仓有货：' + helper.stored)
+  assert.ok(helper.stored > 0, '帮工仓库有货：' + helper.stored)
   assert.ok(helper.missing.length > 0 || helper.seedless, '同时也在缺种子')
   assert.match(renderFarm(farm.view(data, t), 'big').text(), /帮工收了 \d+ 个/)
 })

@@ -96,8 +96,8 @@ test('夜里下雨同样浇湿已干的作物，干旱顺延到下一个晴天�
   assert.ok(plotState(data.plots[0], dry).pests.includes('dry'), '到了晴天才重新旱')
 })
 
-test('新开垦的地是荒地：干土 + 杂草或残株，清干净才能种', () => {
-  setRandom(() => 0.1) // 有草也有残株
+test('新开垦的地是荒地：干土 + 杂草（长草或留茬），清干净才能种', () => {
+  setRandom(() => 0.1) // 长草与留茬都有
   const t = fakeApi(SUNNY)
   const data = emptyFarm()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
@@ -106,40 +106,40 @@ test('新开垦的地是荒地：干土 + 杂草或残株，清干净才能种',
     const plot = data.plots[index]
     assert.equal(plot.fallow, true, '新地是空地')
     assert.equal(plot.pests.dry, 0, '新地是干的')
-    assert.ok(plot.pests.weed === 0 || plot.stubble === true, '新地至少长草或留残株')
+    assert.ok(plot.pests.weed === 0 || plot.stubble === true, '新地至少长草或留茬')
     assert.equal(farm.actions.plant(data, { plot: index, item: 'radish' }, t.api).reason, 'clear-ground', '没清干净不能种')
   }
   const index = 6
   farm.actions.care(data, { plot: index, kind: 'weed' }, t.api)
   assert.equal(data.plots[index].pests.weed, null)
-  assert.equal(farm.actions.plant(data, { plot: index, item: 'radish' }, t.api).reason, 'clear-ground', '残株还在')
+  assert.equal(farm.actions.plant(data, { plot: index, item: 'radish' }, t.api).reason, 'clear-ground', '留茬还在')
   assert.equal(farm.actions.clear(data, { plot: index }, t.api).ok, true)
   assert.equal(data.plots[index].stubble, false)
   assert.equal(farm.actions.plant(data, { plot: index, item: 'radish' }, t.api).ok, true)
   assert.equal(data.plots[index].crop, 'radish')
 })
 
-test('新开垦的地无论抽到草还是残株，都挡播种且能清掉', () => {
-  // 抽到只有草（无残株）：要先除草
+test('新开垦的地无论抽到长草还是留茬，都挡播种且能清掉', () => {
+  // 抽到只有长草（无留茬）：要先除草
   setRandom(() => 0.5)
   let t = fakeApi(SUNNY)
   let data = emptyFarm()
   farm.actions.buy(data, { item: 'radish' }, t.api)
   farm.actions.unlock(data, { plot: 6 }, t.api)
   assert.equal(data.plots[6].pests.weed, 0, '抽到草')
-  assert.equal(data.plots[6].stubble, false, '没残株')
+  assert.equal(data.plots[6].stubble, false, '没留茬')
   assert.equal(farm.actions.plant(data, { plot: 6, item: 'radish' }, t.api).reason, 'clear-ground')
   assert.equal(farm.actions.care(data, { plot: 6, kind: 'weed' }, t.api).cured, 1)
   assert.equal(farm.actions.plant(data, { plot: 6, item: 'radish' }, t.api).ok, true)
 
-  // 抽到只有残株（无草）：要先铲
+  // 抽到只有留茬（无长草）：要先铲
   setRandom(() => 0.95)
   t = fakeApi(SUNNY)
   data = emptyFarm()
   farm.actions.buy(data, { item: 'radish' }, t.api)
   farm.actions.unlock(data, { plot: 6 }, t.api)
   assert.equal(data.plots[6].pests.weed, null, '没草')
-  assert.equal(data.plots[6].stubble, true, '抽到残株')
+  assert.equal(data.plots[6].stubble, true, '抽到留茬')
   assert.equal(farm.actions.plant(data, { plot: 6, item: 'radish' }, t.api).reason, 'clear-ground')
   assert.equal(farm.actions.clear(data, { plot: 6 }, t.api).ok, true)
   assert.equal(farm.actions.plant(data, { plot: 6, item: 'radish' }, t.api).ok, true)
@@ -213,7 +213,7 @@ test('帮工每小时净产出不超过 400，六小时封仓后不再增产', (
   assert.equal(data.helper.usedMs, HELPER_WINDOW)
 })
 
-test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草残株）', () => {
+test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留茬）', () => {
   const old = {
     version: 3, unlocked: 8,
     plots: [{ crop: 'pumpkin', stage: 1, plantedAt: SUNNY, wateredAt: null }, null, { crop: 'carrot', stage: 3, plantedAt: SUNNY, wateredAt: null }],

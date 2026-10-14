@@ -438,7 +438,7 @@ export const HELPER_PLOTS = [4, 8, 16]
 /** 帮工实际净收益要到「同作物、同管地数自己种」的几成（用户 2026-10-13 要求九成；取整后落在 85%~92%）。 */
 export const HELPER_SHARE = 0.9
 export const HELPER_WINDOW = 6 * 3600000
-/** 农具档（旧谷仓）2026-10-14 用户拍板从商店下架：不再出售，存档里的 barn 字段保留但不再参与配方。 */
+/** 旧农具档 2026-10-14 用户拍板从商店下架：不再出售，存档里的 barn 字段保留但不再参与配方。 */
 export const HELPER_PRICES = { hire: 2500, level: [0, 2000, 6000] }
 /** 帮工配方：从「自己种的 0.9」往下试，挑净时薪落进 85%~92%（400 封顶、六小时整数批）的组合；数值一改可能无解，就取最接近九成的组合、最后保底 1 批 1 个（share/degraded 标出退化）。只有作物 key 不认识才返回 null，调用方要兜底。管地数之外没有别的档位（农具档已下架）。 */
 export function helperRecipe(key, level) {
