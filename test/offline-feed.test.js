@@ -494,6 +494,9 @@ test('返工3 A2：背包只够撑 5 天时，离开 20 天垂危、离开 40 �
   decay(short, START + 20 * DAY, never)
   assert.equal(short.dead, false)
   assert.equal(short.health, 1, '苹果吃光之后超过 10 天：垂危')
+  // 返工4 P2-1：判定按完整跨度（20 天），结算也要按完整跨度长年龄/写日记；被 horizon 截掉的
+  // 头部（撑得住的那 5 天）要一次性补回，不能只算「截头后那 15 天」。
+  assert.ok(Math.abs(short.ageMs - 20 * DAY) < 1000, `活着回来要按完整 20 天长大（实际 ${short.ageMs / DAY} 天）`)
 
   const dead = hatchEgg(START)
   dead.inventory = { apple: 26 }

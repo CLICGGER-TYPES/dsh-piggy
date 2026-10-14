@@ -46,15 +46,12 @@ function warnFrozen(state, floorMs, nowMs) {
 /**
  * Bring the pig up to `nowMs`, resolving everything that happened in between.
  *
- * The gap is cut into at most two stretches — away until the activity ends,
- * then home — and each stretch is walked in steps of SETTLE_STEP_MS. That is
- * what lets a long absence play out the way it would have live: a job that
- * ended at 18:56 is paid (and stamped) at 18:56, the evening after it is time
- * at home, and a bar that crosses a threshold at 3 a.m. starts its sickness
- * risk at 3 a.m. rather than at whatever moment the panel was next opened.
- *
- * Randomness comes from the pig's own seed (see random.js); pass `roll` to pin
- * the outcome, as the tests and dev mode do.
+ * The gap is cut into at most two stretches — away until the activity ends, then
+ * home — each walked in SETTLE_STEP_MS steps, so a long absence plays out as it
+ * would have live: a job ending at 18:56 is paid at 18:56, and a bar crossing a
+ * threshold at 3 a.m. starts its sickness risk then, not when the panel is next
+ * opened. Randomness comes from the pig's own seed (see random.js); pass `roll` to
+ * pin the outcome, as the tests and dev mode do.
  *
  * @param {object} state
  * @param {number} nowMs
@@ -115,12 +112,16 @@ export function decay(state, nowMs, options = {}) {
   if (nowMs - floorMs > horizonMs) {
     console.warn(`[dsh-piggy] settle span over the offline horizon, only the last ${horizonMs}ms is walked: floorMs=${floorMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
   }
-  if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
+  const hadAge = Number.isFinite(state.ageMs)
+  if (!hadAge) {
     // First tick after loading an old save: seed pig time from the birthday.
     state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, settleFromMs - state.bornAt) : 0
   }
-  // An old save may have no diary yet. Start at the last observed day so
-  // events settled below cannot be credited to the day the panel reopened.
+  // 被 horizon 截掉的头部（floorMs..settleFromMs）也要算进时间线：判定按完整跨度算「撑不住」
+  // 多久，结算却只走截头那段，活着回来的猪会凭空少长几天（返工4 P2-1）。本段只补一次——日记
+  // 游标一天一篇走到 settleFromMs、年龄在末尾按 timeScale 加回；不重跑步长 / 衰减 / 发病 / 进食。
+  const headMs = Math.min(settleFromMs - floorMs, MAX_SETTLE_SPAN_MS - horizonMs)
+  for (let at = settleFromMs - headMs; at < settleFromMs; at += DAY_MS) rollDiaryAt(state, at)
   rollDiaryAt(state, settleFromMs)
 
   const meals = nowMs - settleFromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
@@ -142,6 +143,9 @@ export function decay(state, nowMs, options = {}) {
   // 超过「背包能撑的」那一刻还有剩余时间：没东西撑着满 30 天就是死亡，否则生命垂危
   // （返工3 A2）。这段时间不逐步推算，正是为了不走上百万步。
   settleStarvation(state, nowMs, nowMs - floorMs - sustainMs)
+  // 补回被截掉的头部年龄；死亡那档不加（停在 die() 那一刻），老存档上面刚按 settleFromMs 播种、
+  // 本来就含这一段，也不加（返工4）。
+  if (hadAge && state.dead !== true) state.ageMs += headMs * pigScale(state)
   return state
 }
 
@@ -216,15 +220,11 @@ function trackSicknessRisk(state, minutes, away, atMs, next) {
   rollForIllness(state, { minutes, atMs }, next)
 }
 
-/**
- * Pig time is elapsed real time times the scale. Age only counts days now —
- * the body follows the level — and the same pig time drives passive growth.
- */
+/** 猪时间 = 真实流逝 × timeScale（坏值当作 1）；它同时驱动被动成长。 */
+const pigScale = state => Number.isFinite(state.timeScale) && state.timeScale > 0 ? state.timeScale : DEFAULT_TIME_SCALE
+
 function growOlder(state, elapsedMs, atMs) {
-  const scale = Number.isFinite(state.timeScale) && state.timeScale > 0
-    ? state.timeScale
-    : DEFAULT_TIME_SCALE
-  const pigMs = elapsedMs * scale
+  const pigMs = elapsedMs * pigScale(state)
   settleWeight(state, pigMs)
   state.ageMs += pigMs
   if (state.hatched === true) growWithTime(state, pigMs, atMs)

@@ -105,7 +105,8 @@ export function offlineSustainMs(state) {
   const cap = MAX.satiety - need.threshold
   const stock = foods.reduce((sum, item) => sum + (state.inventory?.[item.key] ?? 0) * Math.min(item[need.bar], cap), 0)
   const buffer = Math.max(0, (Number.isFinite(state.satiety) ? state.satiety : 0) - need.threshold)
-  // 用在家的衰减速率：离开的那段里就算有在外活动，它也只是一小截，估个整就好。
+  // 用在家的衰减速率：离开的那段里就算有在外活动，它也只占一小截，估个整就好——忽略在外 1.4 倍
+  // 会让「能撑的天数」偏高一点（方向总是偏宽容，审查 P3-3），误差到不了致命量级。
   return ((buffer + stock) / (SATIETY_DECAY_PER_MIN * 1440)) * DAY_MS
 }
 
