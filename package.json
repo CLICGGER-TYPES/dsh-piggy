@@ -36,6 +36,8 @@
     "client.js",
     "packages/pet-core",
     "store",
+    "runtime",
+    "adapters",
     "src",
     "scripts",
     "cordis.patch.yml",

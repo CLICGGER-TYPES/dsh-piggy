@@ -15,7 +15,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const entryPoint = join(packageRoot, 'src/client/index.js')
+const entryPoint = join(packageRoot, 'adapters/dsh/client.js')
 const outfile = join(packageRoot, 'client.js')
 const require = createRequire(import.meta.url)
 

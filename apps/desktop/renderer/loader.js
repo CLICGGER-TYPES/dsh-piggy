@@ -22,6 +22,14 @@
 
   var script = document.createElement('script')
   script.onload = function () {
+    var game = w.piggyGame
+    if (game && game.desktop && typeof game.mount === 'function') {
+      document.documentElement.setAttribute('data-piggy-desktop', String(game.desktop.version || 1))
+      game.desktop.install(w.piggyShell)
+      game.mount()
+      game.desktop.start()
+      return
+    }
     if (entry === null) { legacy(); return }
     var plugin = entry.factory(function () { return {} })
     if (plugin && plugin.desktop && typeof plugin.desktop.install === 'function') {
