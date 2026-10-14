@@ -1,6 +1,7 @@
 // @ts-check
 /** 离线喂食按真实结算时钟消费，在线和关闭时保留原规则。 */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { decay, hatchEgg, migrate, THRESHOLDS, SHOP, REVIVE_ITEM } from '../core.js'
 const START = 1_700_000_000_000
@@ -173,4 +174,72 @@ test('同一天离线摘要与原日记合在一篇，翻页后仍能按日期�
   assert.equal(pig.diary.entries.filter(entry => entry.day === day).length, 1, '跨天落笔也不能重复当天摘要的日期')
   assert.ok(pig.diary.entries[0].text.includes('原来的日记'))
   assert.ok(pig.diary.entries[0].text.includes('自己吃了 苹果×2'))
+})
+
+// ===========================================================================
+// 坏结算游标与单次结算跨度上限（存档模糊测试 4.1 回归）
+//
+// 见 results/save-fuzz/REPORT.md §4.1：lastSeenAt 为 0 / 负数 / 非有限 / 早于
+// bornAt 时，decay() 会按 SETTLE_STEP_MS 一步走完巨大的时间差（最坏等于永不返回）。
+// 夹具：
+//   fixtures/save-fuzz-01.json  从 crashes/01-core-decay-Timeout.json 提取的 save
+//   fixtures/save-fuzz-03.json  crashes/03-core-decay-compact.json 在产物里缺失，
+//                               按报告 §4.1 的最小条件重建（hatched + 时间戳坏 +
+//                               一个 endsAt 在结算点附近的活动）
+// ===========================================================================
+
+const FUZZ_NOW = 1_790_780_277_081
+const loadFixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'))
+
+for (const name of ['01', '03']) {
+  test(`模糊测试 4.1（sample ${name}）：坏游标不按几百万步补结算`, () => {
+    const pig = migrate(loadFixture(`save-fuzz-${name}`), FUZZ_NOW)
+    const ageMs = pig.ageMs
+    const satiety = pig.satiety
+    // 修复前：crashes/01 与 03 各约 77 秒（本机实测），lastSeenAt = -1e15 时等于不返回。
+    decay(pig, FUZZ_NOW + DAY, never)
+    assert.equal(pig.lastSeenAt, FUZZ_NOW + DAY, '坏游标按刚看过处理，修到 nowMs')
+    assert.equal(pig.ageMs, ageMs, '坏游标不补结算：不凭空长大')
+    assert.equal(pig.satiety, satiety, '坏游标不补结算：不凭空衰减')
+    // 修游标只跳过这一次；下一次看到它时照常结算并结束那班活动。
+    decay(pig, FUZZ_NOW + DAY + 60_000, never)
+    assert.equal(pig.activity, null, '修完游标后活动照常结算')
+  })
+}
+
+for (const [label, bad] of [
+  ['0', 0],
+  ['负数', -1],
+  ['负数（很大）', -1e15],
+  ['NaN', Number.NaN],
+  ['Infinity', Number.POSITIVE_INFINITY],
+  ['早于出生', START - DAY],
+]) {
+  test(`坏游标（${label}）一律不补结算`, () => {
+    const pig = pigWithFood()
+    pig.lastSeenAt = bad
+    const ageMs = pig.ageMs
+    decay(pig, START + DAY, never)
+    assert.equal(pig.lastSeenAt, START + DAY)
+    assert.equal(pig.ageMs, ageMs)
+    assert.equal(pig.stats.feeds, 0)
+  })
+}
+
+test('合法的离开 100 天照常结算', () => {
+  const pig = hatchEgg(START)
+  pig.inventory = { apple: 300, bread: 300 }
+  decay(pig, START + 100 * DAY, never)
+  assert.equal(pig.dead, false, '有离线喂食，100 天不会饿死')
+  assert.ok(Math.abs(pig.ageMs - 100 * DAY) < 1000, `100 天应全部结算（实际 ${pig.ageMs / DAY} 天）`)
+  assert.equal(pig.lastSeenAt, START + 100 * DAY)
+})
+
+test('单次结算跨度封顶 400 天：更早的部分不补', () => {
+  const pig = hatchEgg(START)
+  pig.inventory = { apple: 300, bread: 300 }
+  decay(pig, START + 500 * DAY, never)
+  assert.equal(pig.lastSeenAt, START + 500 * DAY)
+  assert.ok(pig.ageMs <= 400 * DAY + 1000, `最多补 400 天（实际 ${pig.ageMs / DAY} 天）`)
+  assert.ok(pig.ageMs > 399 * DAY, '上限内的 400 天要照常结算')
 })

@@ -7,7 +7,7 @@
  */
 
 import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
-import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, CLOCK_ROLLBACK_HOLD_MS, HAPPINESS_DECAY_PER_MIN, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
+import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, CLOCK_ROLLBACK_HOLD_MS, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
@@ -15,7 +15,7 @@ import { advanceIllness, noteOuting, restAtHome, rollForIllness } from './illnes
 import { say } from './lines.js'
 import { rollerFor } from './random.js'
 import { noteToday, writeDiaryIfNewDay } from './diary.js'
-import { dayKeyFor } from './clock.js'
+import { dayKeyFor, isUsableCursor } from './clock.js'
 import { recordDex } from './dex.js'
 import { unlockCareerLook } from './skins.js'
 import { reduceWorkWeight, settleWeight } from './weight.js'
@@ -49,7 +49,15 @@ export { currentIllness, die } from './illness.js'
  * @param {{roll?: import('./random.js').Roll}} [options]
  */
 export function decay(state, nowMs, options = {}) {
-  const fromMs = state.lastSeenAt ?? nowMs
+  // 坏游标（非有限、负数、早于出生）不能当作可信的「上次看到」：没有起点就按刚刚
+  // 看过处理——把游标修到 nowMs，本次不补结算。否则 0 / -1 这类值会让时间差大到
+  // passTime 按 SETTLE_STEP_MS 一步走几百万步（存档模糊测试 4.1）。
+  if (!isUsableCursor(state.lastSeenAt, state.bornAt)) {
+    state.lastSeenAt = nowMs
+    state.clockRollbackAt = null
+    return state
+  }
+  const fromMs = state.lastSeenAt
   // 时钟没前进（回拨 / 游标在未来）：游标只能停在已结算到的高点，见 holdClock。
   if (!(nowMs > fromMs)) {
     holdClock(state, nowMs, fromMs)
@@ -62,17 +70,20 @@ export function decay(state, nowMs, options = {}) {
   if (state.hatched !== true) return state
   if (state.dead === true) return state
   const next = options.roll ?? rollerFor(state)
+  // 单次结算跨度上限（见 constants.js）：游标即使合法也可能久远到走不完，只补最近
+  // MAX_SETTLE_SPAN_MS，更早的时间不结算——那一段当作没有离开过。
+  const settleFromMs = Math.max(fromMs, nowMs - MAX_SETTLE_SPAN_MS)
   if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
     // First tick after loading an old save: seed pig time from the birthday.
-    state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, fromMs - state.bornAt) : 0
+    state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, settleFromMs - state.bornAt) : 0
   }
   // An old save may have no diary yet. Start at the last observed day so
   // events settled below cannot be credited to the day the panel reopened.
-  rollDiaryAt(state, fromMs)
+  rollDiaryAt(state, settleFromMs)
 
-  const meals = nowMs - fromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
+  const meals = nowMs - settleFromMs > ONLINE_GIFT.pollGapMaxMs && state.isOfflineFeedEnabled !== false
     ? { counts: {}, isEmpty: false } : null
-  let cursor = fromMs
+  let cursor = settleFromMs
   const activity = state.activity
   if (activity !== null && activity !== undefined) {
     settleAutoFishing(state, activity, nowMs)
@@ -107,13 +118,8 @@ export function decay(state, nowMs, options = {}) {
  * @param {number} fromMs
  */
 function holdClock(state, nowMs, fromMs) {
-  // 游标缺失或已损坏（NaN / Infinity）时没有可比的高点，按老行为落在当前时刻。
-  if (!Number.isFinite(fromMs)) {
-    state.lastSeenAt = nowMs
-    return
-  }
   // 只认真正的倒退。同一毫秒里的重复调用很常见（describe 等只读路径），
-  // 不能拿它当冻结的起点。
+  // 不能拿它当冻结的起点。（坏游标在 decay() 里就已经被修掉，这里只会拿到有限的 fromMs。）
   if (!(nowMs < fromMs)) return
   const since = Number.isFinite(state.clockRollbackAt) ? state.clockRollbackAt : nowMs
   if (nowMs - since >= CLOCK_ROLLBACK_HOLD_MS) {

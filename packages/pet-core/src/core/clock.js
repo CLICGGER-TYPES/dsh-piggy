@@ -31,6 +31,19 @@ export function ageDays(state, nowMs) {
 export const ageMonths = (state, nowMs) => ageDays(state, nowMs) / DAYS_PER_MONTH
 
 /**
+ * Is a saved `lastSeenAt` believable? False for a non-number, a non-finite
+ * value, a negative one, or a moment before the pig was born. Such a cursor is
+ * corrupt or hand-edited data, not evidence of an absence — decay() settles
+ * nothing for it (see core/settlement.js).
+ * @param {unknown} cursor
+ * @param {unknown} bornAt
+ */
+export function isUsableCursor(cursor, bornAt) {
+  if (typeof cursor !== 'number' || !Number.isFinite(cursor) || cursor < 0) return false
+  return !(typeof bornAt === 'number' && Number.isFinite(bornAt) && cursor < bornAt)
+}
+
+/**
  * Which stage the pig is at right now: a box, a pig of some size, or a grave.
  * The body follows the level, not the calendar (B2).
  */
