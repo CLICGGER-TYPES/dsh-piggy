@@ -6,6 +6,7 @@
  */
 import { closeSync, cpSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync, writeSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { isDeepStrictEqual } from 'node:util'
 import { dirname, join, resolve } from 'node:path'
 
 import { STATE_VERSION, migrate } from '../core.js'
@@ -122,6 +123,7 @@ export function readStateFile(filePath, nowMs, journal) {
     return { state: null, needsSave: false }
   }
 
+  const beforeMigration = structuredClone(parsed)
   const upgraded = migrate(parsed, nowMs)
   if (upgraded === null) {
     preserveUnusableSave(context, raw, 'migrate() rejected the shape')
@@ -129,7 +131,7 @@ export function readStateFile(filePath, nowMs, journal) {
   }
   const onDisk = parsed?.version
   if (typeof onDisk === 'number' && onDisk < STATE_VERSION) keepPreUpgradeCopy(context, raw, onDisk)
-  return { state: upgraded, needsSave: parsed?.version !== upgraded.version }
+  return { state: upgraded, needsSave: !isDeepStrictEqual(beforeMigration, upgraded) }
 }
 
 /** Atomic write: temp file → fsync → rename. */

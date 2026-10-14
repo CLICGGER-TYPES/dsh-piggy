@@ -18,6 +18,7 @@
     ".": "./index.js",
     "./client": "./client.js",
     "./core": "./core.js",
+    "./runtime": "./runtime/index.js",
     "./pet-core": "./packages/pet-core/src/index.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"

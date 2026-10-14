@@ -90,7 +90,7 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
   dirty = opened.needsSave
   report('info', 'save', '存档打开', { path: filePath, version: state?.version ?? null, hatched: state !== null, needsSave: dirty })
 
-  return createApi({
+  const api = createApi({
     filePath,
     now,
     journal,
@@ -111,5 +111,15 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
         report('error', 'save', '退出前最后一次写入失败', { path: filePath, reason })
       }
     },
+  })
+  return Object.assign(api, {
+    /** 工作事务先保存基线并撤下节流计时器，失败后不能再写回旧状态。 */
+    flush(force = false) {
+      if (timer !== null) { clearTimer(timer); timer = null }
+      if (force && state !== null) dirty = true
+      writeNow()
+    },
+    /** 仅由游戏运行时在持久提交后安装状态，不重新结算或安排写盘。 */
+    installCommittedState(next) { state = next; dirty = false },
   })
 }

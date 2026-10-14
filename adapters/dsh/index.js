@@ -1,5 +1,6 @@
 // @ts-check
 /** DSH 只负责宿主事件、服务注册和默认位置，游戏规则与持久化由运行时负责。 */
+import { randomUUID } from 'node:crypto'
 import { createGameRuntime } from '../../runtime/index.js'
 import { defaultStatePath, moveLegacySaveDir } from '../../store/state-file.js'
 import { environmentNote } from '../../environment.js'
@@ -16,8 +17,12 @@ export function apply(ctx, config = {}) {
   const runtime = createGameRuntime({ statePath, journalHeader: environmentNote({
     运行形态: 'DSH 插件', 存档路径: statePath, DSH_HOME: process.env.DSH_HOME ?? '', Node: process.version,
   }) })
+  // 当前 DSH 回调未提供已核实的持久身份，保留每次真实回调计数的原行为。
+  const producer = randomUUID()
+  let sequence = 0
   const observe = type => {
-    try { runtime.feed(type) } catch { /* 保持原宿主回调的异常隔离行为。 */ }
+    try { runtime.acceptWorkEvent({ version: 1, source: 'dsh', id: `${producer}:${++sequence}`, type, at: Date.now() }) }
+    catch (error) { console.warn('[dsh-piggy] DSH work event failed; evidence preserved') }
   }
   ctx.on('agent/inbox/claimed', () => observe('message'))
   ctx.on('agent/turn-stopping', () => observe('turn'))
