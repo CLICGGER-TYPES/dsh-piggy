@@ -1765,7 +1765,7 @@
       context.setOpen(false);
     }
     function onWindowBlur() {
-      if (context.isDesktop() && canClose()) context.setOpen(false);
+      if (context.isDesktop() && desktopRole() !== "panel" && canClose()) context.setOpen(false);
     }
     document.addEventListener("pointerdown", onOutsidePointer, true);
     window.addEventListener?.("blur", onWindowBlur);
