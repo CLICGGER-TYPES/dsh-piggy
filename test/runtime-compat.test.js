@@ -51,6 +51,11 @@ test('A 运行时不暴露原始 Store；旧游戏包仍走原加载路径', asy
     packGame(ROOT, join(directory, 'game'))
     rmSync(join(directory, 'game', 'runtime'), { recursive: true })
     host = await startHost(join(directory, 'game'), join(directory, 'legacy.json'))
+    assert.deepEqual(Object.keys(host.store), ['journal'])
+    assert.deepEqual(Object.keys(host.store.journal), ['record'])
+    assert.equal(typeof host.store.journal.record, 'function')
+    assert.equal(typeof host.record, 'function')
+    host.store.journal.record('info', 'compat', '旧包日志代理检查')
     assert.equal(JSON.parse((await host.handle('POST', '/dsh-piggy/act', '{"action":"hatch"}')).body).hatched, true)
   } finally { runtime.dispose(); await host?.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })
