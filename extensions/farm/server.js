@@ -55,11 +55,9 @@ export const CROPS = [
   { key: 'melon', emoji: '🍈', label: '哈密瓜', level: 9, price: 200, hours: 30, exp: 28, yield: 30, sell: 34, seasons: 1 },
 ]
 /** 解锁一键操作的工具（先买才有，用户定 C）。 */
-export const TOOLS = [{ key: 'sickle', label: '收割镰', price: 1000, note: '解锁一键收获' }, { key: 'sprayer', label: '喷雾桶', price: 600, note: '解锁一键照料' },
-  { key: 'rake', label: '平地耙', price: 800, note: '解锁一键铲除' }, { key: 'planter', label: '播种器', price: 1800, note: '解锁一键播种' }]
+export const TOOLS = [{ key: 'sickle', label: '收割镰', price: 1000, note: '解锁一键收获' }, { key: 'sprayer', label: '喷雾桶', price: 600, note: '解锁一键照料' }, { key: 'rake', label: '平地耙', price: 800, note: '解锁一键铲除' }, { key: 'planter', label: '播种器', price: 1800, note: '解锁一键播种' }]
 /** 化肥（原版 props.xml）：施一次多长几小时，可以连着施。 */
-export const FERTILIZERS = [{ key: 'fert-1', label: '普通化肥', price: 500, hours: 2 }, { key: 'fert-2', label: '快速化肥', price: 800, hours: 3.5 },
-  { key: 'fert-3', label: '急速化肥', price: 1000, hours: 5 }]
+export const FERTILIZERS = [{ key: 'fert-1', label: '普通化肥', price: 500, hours: 2 }, { key: 'fert-2', label: '快速化肥', price: 800, hours: 3.5 }, { key: 'fert-3', label: '急速化肥', price: 1000, hours: 5 }]
 /** 灾害：长草、生虫、干旱，各自独立。 */
 export const PESTS = ['weed', 'bug', 'dry']
 /** 生长阶段（按这一季走过的比例）：种子、发芽、小苗、长大、开花、成熟。多季作物收完回到「长大」。 */
@@ -434,23 +432,21 @@ const game = {
 }
 /** 帮工猪（D，规矩照 J2：六小时封仓、每小时至多 400、比自己种少赚；4.0 管 4/8/16 块地）。用自己的小批次周期，管的地不长草不生虫，收成进自己的谷仓。 */
 export const HELPER_PLOTS = [4, 8, 16]
-/** 帮工能赚到同样地数自己种的几成（用户 2026-10-13 要求调高：0.7 → 0.9，仍比自己种少）。 */
+/** 帮工实际净收益要到「同作物、同管地数自己种」的几成（用户 2026-10-13 要求九成；取整后落在 85%~92%）。 */
 export const HELPER_SHARE = 0.9
-export const HELPER_BUDGETS = [90, 180, 300]
-export const HELPER_SPEEDS = [1, 1.1, 1.2, 4 / 3]
 export const HELPER_WINDOW = 6 * 3600000
 export const HELPER_PRICES = { hire: 2500, level: [0, 2000, 6000], barn: [0, 1000, 3000, 9000] }
-/** 收成先按起步预算定小批次，六小时内排整数批，升级只增加批次数。 */
+/** 旧公式的批数向下取整让净时薪只有自己种的 56%~89%；这里从「每批收成」往下试，挑净时薪落进 85%~92% 的组合（400 封顶、六小时整数批；农具档不再改收益）。 */
 export function helperRecipe(key, level = 0, barn = 0) {
   const crop = cropFor(key)
   if (!crop) return null
-  const manual = plots => plots * (crop.yield * crop.sell - crop.price - 5 * EXERT * 10 / 32) / crop.hours
-  const starter = Math.min(90, manual(HELPER_PLOTS[0]) * HELPER_SHARE)
-  const yieldCount = Math.max(1, Math.min(crop.yield, Math.floor((starter * 6 + crop.price) / crop.sell)))
-  const profit = yieldCount * crop.sell - crop.price
-  const budget = Math.min(400, HELPER_BUDGETS[level] * HELPER_SPEEDS[barn], manual(HELPER_PLOTS[level]) * HELPER_SHARE)
-  const batches = Math.max(1, Math.floor((budget * 6 + 0.00001) / profit))
-  return { yield: yieldCount, intervalMs: HELPER_WINDOW / batches, net: profit * batches / 6, itemsPerHour: yieldCount * batches / 6, batches }
+  const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours
+  const target = Math.min(400, manual * HELPER_SHARE)
+  for (let batches = 1; batches <= 60; batches += 1) {
+    const y = Math.round((target * 6 / batches + crop.price) / crop.sell), net = (y * crop.sell - crop.price) * batches / 6
+    if (y >= 1 && y <= crop.yield && net >= manual * 0.85 && net <= Math.min(manual * 0.92, 400)) return { yield: y, intervalMs: HELPER_WINDOW / batches, net, itemsPerHour: y * batches / 6, batches }
+  }
+  return null
 }
 function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {}
@@ -471,21 +467,24 @@ function normalizeHelper(data) {
 }
 const helperCount = data => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0)
 const helperPlots = data => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS[data.helper.level]) : 0
-/** 没种子的空地跳过；枯萎的先铲；恢复时从当前动作时间开始，不补停工收益。 */
+/** 没目标的空地：用仓库里数量最多的种子补种，一种都没有就没得种。 */
+function helperSeed(data) {
+  const have = crop => amountFor(data, 'seeds', crop.key)
+  return CROPS.filter(crop => have(crop) > 0).sort((a, b) => have(b) - have(a))[0] ?? null
+}
+/** 枯萎的先铲；开荒地先清残株和杂草再补种；恢复时从当前动作时间开始，不补停工收益。 */
 function prepareHelper(data, at) {
   const helper = data.helper
   const managed = helperPlots(data)
   for (let offset = 0; offset < managed; offset += 1) {
     const index = (helper.cursor + offset) % managed
-    if (data.plots[index]?.withered) data.plots[index] = null
     let plot = data.plots[index]
-    const crop = cropFor(plot?.crop ?? helper.targets[index])
+    if (plot?.withered) data.plots[index] = plot = null
+    if (plot?.fallow && (plot.stubble || plot.pests.weed === 0)) { plot.stubble = false; plot.pests.weed = null; gainExp(data, CARE_EXP) }
+    const crop = cropFor(plot?.crop ?? helper.targets[index]) ?? helperSeed(data)
     if (!crop) continue
     helper.targets[index] = crop.key
-    if (!plot) {
-      if (!plantPlot(data, index, crop, at)) continue
-      plot = data.plots[index]
-    }
+    if (!plot || plot.fallow) { if (!plantPlot(data, index, crop, at)) continue; plot = data.plots[index] }
     const recipe = helperRecipe(crop.key, helper.level, helper.barn)
     helper.pending = { index, crop: crop.key, plantedAt: plot.plantedAt, remainingMs: recipe.intervalMs, yield: recipe.yield }
     return true
@@ -502,7 +501,7 @@ export function settleHelper(data, now) {
   const helper = data.helper
   if (!helperPlots(data) || !Number.isFinite(now)) return
   const start = helper.lastAt ?? now
-  if (now < start) { helper.lastAt = now; return }
+  if (now < start) return
   const pendingPlot = helper.pending ? data.plots[helper.pending.index] : null
   if (helper.pending && (!pendingPlot || pendingPlot.withered || pendingPlot.plantedAt !== helper.pending.plantedAt || pendingPlot.crop !== helper.pending.crop)) helper.pending = null
   let remaining = Math.min(now - start, HELPER_WINDOW - helper.usedMs)
@@ -531,8 +530,9 @@ export function settleHelper(data, now) {
 function helperView(data) {
   const helper = data.helper
   const missing = helper.targets.slice(0, helperPlots(data)).filter((key, index) => key && !data.plots[index] && amountFor(data, 'seeds', key) === 0)
+  const seedless = helperPlots(data) > 0 && !helper.pending && !CROPS.some(crop => amountFor(data, 'seeds', crop.key) > 0) && !data.plots.slice(0, helperPlots(data)).some(plot => plot?.crop)
   return { hired: helper.hired, plots: helperPlots(data), stored: helperCount(data), usedHours: helper.usedMs / 3600000,
-    capacityHours: 6, full: helper.usedMs >= HELPER_WINDOW, missing: [...new Set(missing)].map(key => cropFor(key).label) }
+    capacityHours: 6, full: helper.usedMs >= HELPER_WINDOW, seedless, missing: [...new Set(missing)].map(key => cropFor(key).label) }
 }
 /** 帮工管的地显示它自己的批次进度（不长草不生虫）；手动成熟的照旧可以自己收。 */
 function helperPlotView(data, index, state) {

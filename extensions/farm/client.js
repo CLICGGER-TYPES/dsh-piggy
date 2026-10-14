@@ -370,11 +370,11 @@
     // 帮工猪住在右上角的猪窝（替原版的狗窝）
     var helper = data.helper
     if (helper) {
-      var label = !helper.hired ? '雇帮工猪' : helper.full ? '谷仓满了' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : '帮工 · ' + helper.plots + ' 块地'
+      var label = !helper.hired ? '雇帮工猪' : helper.full ? '谷仓满了' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.seedless ? '帮工没种子' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : '帮工 · ' + helper.plots + ' 块地'
       var badge = put(scene, app.button('fm-b-helper', { 'data-farm-helper': helper.hired ? 'collect' : 'hire', 'aria-label': label }, function () {
         if (!helper.hired) app.send('hire', {})
         else if (helper.stored > 0 || helper.full) app.send('collect', {})
-        else if (helper.missing.length) goShop(app)
+        else if (helper.missing.length || helper.seedless) goShop(app)
         else say(app, '帮工正在照顾 ' + helper.plots + ' 块地')
       }))
       put(badge, pigOf(app, null))

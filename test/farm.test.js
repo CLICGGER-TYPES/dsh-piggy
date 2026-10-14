@@ -4,7 +4,7 @@ import { test, beforeEach } from 'node:test'
 
 import farm, {
   CROPS, FERTILIZERS, PEST_LOSS, PEST_MS, PLOTS, RECLAIM_PRICE, START_PLOTS, TOOLS,
-  levelOf, normalize, plotState, setRandom, weatherAt, helperRecipe, HELPER_PLOTS,
+  levelOf, normalize, plotState, setRandom, weatherAt, helperRecipe, HELPER_PLOTS, HELPER_WINDOW,
 } from '../extensions/farm/server.js'
 
 // 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。
@@ -379,6 +379,79 @@ test('fix4：夜里下雨浇湿已干地，时段不改变天气或浇水', () =
   farm.actions.buy(data, { item: 'radish' }, t.api)
   assert.equal(data.plots[0].pests.dry, null)
   assert.ok(data.plots[1].pests.dry > night)
+})
+
+test('帮工每种作物、每档：实际净时薪落在自己种的 85%~92%，400 封顶、六小时整数批', () => {
+  const capped = []
+  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
+    const recipe = helperRecipe(crop.key, level, barn)
+    const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours
+    const where = crop.key + '/' + HELPER_PLOTS[level] + '块地/农具' + barn
+    assert.ok(Number.isInteger(recipe.batches) && recipe.batches >= 1, where + ' 批数是整数')
+    assert.equal(recipe.intervalMs * recipe.batches, HELPER_WINDOW, where + ' 批次正好铺满六小时')
+    assert.ok(recipe.yield >= 1 && recipe.yield <= crop.yield, where + ' 单批收成不超过自己种')
+    assert.ok(recipe.net > 0 && recipe.net <= 400, where + ' 净时薪不超过 400')
+    const share = recipe.net / manual
+    assert.ok(share >= 0.85 - 1e-9 && share <= 0.92 + 1e-9, where + ' 实际占比 ' + share.toFixed(4))
+    if (manual * 0.92 > 400) capped.push(where + '=' + recipe.net.toFixed(0))
+  }
+  assert.ok(capped.length > 0, '有被 400 封顶的组合：' + capped.join(','))
+})
+
+test('时钟回拨：结算不挪 lastAt，回拨那一段不重记工时（回归）', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
+  for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
+  farm.actions.hire(data, {}, t.api)
+  t.api.now = T0 + 5 * H
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  const used = data.helper.usedMs, stock = structuredClone(data.helper.stock)
+  assert.ok(used > 0 && used <= 5 * H, '先干满五小时：' + used)
+  t.api.now = T0 + 4 * H
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  assert.equal(data.helper.lastAt, T0 + 5 * H, '回拨不把 lastAt 挪到过去')
+  assert.equal(data.helper.usedMs, used, '回拨这一段不结算')
+  assert.deepEqual(data.helper.stock, stock, '回拨不发货')
+  t.api.now = T0 + 5 * H
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  assert.equal(data.helper.usedMs, used, '时钟走回原处不重复记工时')
+  assert.deepEqual(data.helper.stock, stock, '时钟走回原处不重复发货')
+})
+
+test('帮工先清理管区里的开荒地（残株、杂草）再补种', () => {
+  setRandom(() => 0.1)
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
+  data.plots[0] = { fallow: true, stubble: true, pests: { dry: null, weed: null } }
+  data.plots[1] = { fallow: true, stubble: false, pests: { dry: null, weed: 0 } }
+  farm.actions.hire(data, {}, t.api)
+  t.api.now = T0 + 2 * H
+  farm.actions.buy(data, { item: 'radish' }, t.api)
+  assert.equal(data.plots[0].crop, 'radish', '残株铲掉后补种')
+  assert.equal(data.plots[1].crop, 'radish', '杂草拔掉后补种')
+  assert.ok(data.exp >= 2 * 2, '清理开荒地给经验：' + data.exp)
+  assert.ok(data.helper.usedMs > 0 && data.helper.stock.radish > 0, '干活了')
+})
+
+test('帮工 view：没种子就报「缺种子」/「没种子」，不再只写「帮工 · N 块地」', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.hire(data, {}, t.api)
+  let helper = farm.view(data, t.api).helper
+  assert.equal(helper.hired, true)
+  assert.equal(helper.plots, HELPER_PLOTS[0])
+  assert.equal(helper.seedless, true, '一种种子都没有：没得种')
+  assert.deepEqual(helper.missing, [])
+  data.helper.targets[0] = 'radish'
+  helper = farm.view(data, t.api).helper
+  assert.deepEqual(helper.missing, ['白萝卜'], '有目标没种子：报缺哪种')
+  farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
+  helper = farm.view(data, t.api).helper
+  assert.equal(helper.seedless, false, '有种子就干活')
+  assert.deepEqual(helper.missing, [])
+  assert.ok(data.plots.some(plot => plot?.crop === 'radish'), '空地上自动补种')
 })
 
 test('fix4：缺失或越界的旧旱灾时间不导致雨天顺延无限循环', () => {
