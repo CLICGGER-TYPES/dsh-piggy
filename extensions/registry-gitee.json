@@ -2230,7 +2230,7 @@
       },
       "bundle": {
         "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.2/ext-farm-4.0.2.piggyext",
-        "sha256": "82dc83855fa587f2f8e4e83cc104619306d43737030d5d57a90dd826752d73a5"
+        "sha256": "8171c55478bbe930bd6a39b44460fcb2181bf982a4cb6e0a7155707d335520d2"
       },
       "files": {
         "manifest.json": {
@@ -2243,7 +2243,7 @@
         },
         "client.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.2/client.js",
-          "sha256": "45c406bd24b40f45b2969a884a9455447b6ecab25d2a89366fac9b40a052046c"
+          "sha256": "327022f9852db048a1951d52e51a858bbd2db2fa37855c828e79c1b84253a5a3"
         },
         "assets/bg-big-dawn-rain.webp": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.2/bg-big-dawn-rain.webp",

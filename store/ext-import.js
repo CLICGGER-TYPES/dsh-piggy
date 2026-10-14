@@ -12,7 +12,7 @@
  */
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { ASSET_NAME, CODE_FILES, MAX_ASSETS_BYTES, MAX_FILE_BYTES, assetNames } from './ext-files.js'
+import { ASSET_NAME, CODE_FILES, MAX_ASSETS_BYTES, MAX_FILE_BYTES, assetNames, describeAssetList, describeFileTooBig, describeAssetsTooBig } from './ext-files.js'
 
 export const BUNDLE_FORMAT = 'dsh-piggy-extension'
 export const BUNDLE_FILES = CODE_FILES
@@ -61,17 +61,20 @@ export function parseBundle(text) {
   if (typeof bundle.key === 'string' && bundle.key !== manifest.key) return bad('扩展包名字和 manifest 对不上')
   const declared = assetNames(manifest)
   const images = bundle.assets !== null && typeof bundle.assets === 'object' ? bundle.assets : {}
-  if (declared === null) return bad('manifest.json 里的图片清单不对')
+  if (declared === null) {
+    const why = describeAssetList(manifest)
+    return bad('manifest.json 里的图片清单不对' + (why === '' ? '' : '（' + why + '）'))
+  }
   if (Object.keys(images).length !== declared.length || !declared.every(name => typeof images[name] === 'string')) return bad('扩展包里的图片和 manifest 对不上')
   let imageBytes = 0
   for (const name of declared) {
     if (!ASSET_NAME.test(name)) return bad('图片名不对：' + name)
     const buffer = Buffer.from(images[name], 'base64')
-    if (buffer.length > BUNDLE_FILE_BYTES) return bad(name + ' 太大')
+    if (buffer.length > BUNDLE_FILE_BYTES) return bad(describeFileTooBig(name, buffer.length))
     imageBytes += buffer.length
     files.set('assets/' + name, buffer)
   }
-  if (imageBytes > MAX_ASSETS_BYTES) return bad('图片合计太大')
+  if (imageBytes > MAX_ASSETS_BYTES) return bad(describeAssetsTooBig(imageBytes))
   const hashes = Object.fromEntries([...files].map(([name, buffer]) => [name, sha256(buffer)]))
   return { ok: true, key: manifest.key, manifest, files, hashes }
 }

@@ -1,7 +1,9 @@
 // 第四轮：地块只留作物，统一弹层，悬停不盖弹层，场景由用户本地时段和快照天气选择。
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import farm from '../extensions/farm/server.js'
+import { assetNames } from '../store/ext-files.js'
 import { api, establishedFarm, renderFarm } from './helpers/farm-ui.js'
 
 function growing() {
@@ -66,6 +68,25 @@ test('fix4：场景读取同一份天气快照，夜间天气与白天一致', (
   assert.ok(['sunny', 'rain'].includes(view.weather))
   clock.now = new Date(2026, 9, 13, 22).getTime()
   assert.equal(farm.view(data, clock).weather, farm.view(data, { ...clock, now: new Date(2026, 9, 13, 12).getTime() }).weather)
+})
+
+test('fix4：场景图兜底只挑登记过的图，不请求没登记的 bg-big / bg-small', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../extensions/farm/manifest.json', import.meta.url), 'utf8'))
+  const listed = assetNames(manifest)
+  assert.ok(!listed.includes('bg-big.webp') && !listed.includes('bg-small.webp'), '这两张旧图本来就没登记')
+  const file = scene => (/url\("([^"]+)"\)/.exec(scene.style.backgroundImage) ?? [])[1]?.replace('/assets/', '') ?? ''
+  // 宿主有 asset 但没有 hasAsset（老版本）：以前会退回没登记的 bg-<尺寸>.webp，请求出去必 404。
+  for (const mode of ['panel', 'big']) {
+    const scene = renderFarm(growing(), mode, art).dom.body.querySelectorAll(mode === 'big' ? '.fm-b-scene' : '.fm-s-scene')[0]
+    assert.ok(listed.includes(file(scene)), mode + ' 的底图没登记：' + file(scene))
+  }
+  // 该时段的图不在名单里：退到同尺寸、同晴雨的白天图（天气按钮读的也是这张图名字里的晴雨）。
+  const night = { ...growing(), now: new Date(2026, 9, 13, 22).getTime() }
+  const picked = renderFarm(night, 'big', { ...art, hasAsset: name => name !== 'bg-big-night-sunny.webp' })
+  assert.match(picked.dom.body.querySelectorAll('.fm-b-scene')[0].style.backgroundImage, /bg-big-day-sunny\.webp/)
+  // 一张能用的都没有：不铺底图，也不拼一个不存在的名字。
+  const none = renderFarm(night, 'big', { ...art, hasAsset: () => false }).dom.body.querySelectorAll('.fm-b-scene')[0]
+  assert.ok(!none.style.backgroundImage, '没有登记过的图时不该请求任何底图')
 })
 
 test('fix4：每个作物阶段均可查看卡片，成熟/枯萎使用既有中文状态', () => {
