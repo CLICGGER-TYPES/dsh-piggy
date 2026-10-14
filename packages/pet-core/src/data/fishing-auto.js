@@ -11,8 +11,8 @@ export const AUTO_FISH_GEAR = {
   ],
   duration: [
     { label: '短时自动钓', price: 0, value: 60 },
-    { label: '两小时自动钓', price: 2000, value: 120 },
-    { label: '四小时自动钓', price: 5000, value: 240 },
+    { label: '2 小时自动钓', price: 2000, value: 120 },
+    { label: '4 小时自动钓', price: 5000, value: 240 },
   ],
   baitBox: [
     { label: '没有鱼饵盒', price: 0, value: 0 },

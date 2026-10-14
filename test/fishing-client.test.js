@@ -11,7 +11,7 @@ const status = extra => ({ ...SNAPSHOT, fishing: { ...fishing, ...extra }, canGo
 test('K1 自动仓收取、升级和长时出发走宿主动作，鱼饵盒允许少量鱼饵', async () => {
   const automation = { stored: 3, capacity: 48, full: false, baitLimit: 64,
     choices: [{ minutes: 30, attempts: 6 }, { minutes: 240, attempts: 53 }],
-    upgrades: [{ kind: 'duration', label: '四小时自动钓', price: 5000 }] }
+    upgrades: [{ kind: 'duration', label: '4 小时自动钓', price: 5000 }] }
   const { dom, calls } = await mount({ status: { ...status({ automation }), pig: { ...SNAPSHOT.pig, coins: 6000 },
     inventory: { ...SNAPSHOT.inventory, bait_worm: 2 } } })
   openPanel(dom, 'fishing')
