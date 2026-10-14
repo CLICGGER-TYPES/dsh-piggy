@@ -12,7 +12,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
+import farm, { setRandom } from '../extensions/farm/server.js'
 import { CSS } from '../src/client/styles.js'
+
+import { api, renderFarm } from './helpers/farm-ui.js'
 
 /** 取出某条选择器的声明块（CSS 是各模块拼起来的一整串，规则之间没有换行）。 */
 function declarations(selector) {
@@ -45,4 +48,21 @@ test('fix5：弹层装不下内容时（data-farm-tight）只留弹层一层滚�
     '紧凑模式下列表不再自己滚（两层滚动条会让商品只露一条缝，中心点还点不到）')
   assert.match(css, /setAttribute\('data-farm-tight'/,
     '这条属性要在 renderSmall 量完 --fm-panel-avail 后按弹层真实溢出设置，不能写死')
+})
+
+test('fix5(E3)：带开垦牌的地块要抬到邻地之上（大农场每块地各自是层叠上下文，只给牌加 z-index 盖不住邻地地面）', () => {
+  const css = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
+  // 大农场每块地用 inline translate 摆位；translate 会创建层叠上下文，牌自己的 z-index 只在这块地内部生效，
+  // 管不到隔壁地块的可见地面（`.fm-plot::before` 菱形）和 z-index 5 的 `.fm-hit` 命中层——邻地会压在牌上。
+  assert.match(css, /card\.style\.translate\s*=\s*spot\.translate/, '大农场每块地靠 inline translate 摆位，各自是层叠上下文')
+  const lifted = /\.fm-b-field \.fm-plot:has\(\.fm-expand\)\{z-index:(\d+)\}/.exec(css)
+  assert.ok(lifted, '带开垦牌的地块要有高于邻地（auto）的 z-index，否则邻地地面压在牌上、牌面约 40% 点不到')
+  const z = Number(lifted[1])
+  assert.ok(z >= 1 && z < 40, '抬起值要盖过邻地（auto/0）又不抢悬停提升（40），实际 ' + z)
+  // 牌是地块的子节点（`put(card, reclaimSign(...))`），抬地块才会连牌一起抬到邻地之上。
+  setRandom(() => 0.5)
+  const ui = renderFarm(farm.view(farm.init(), api()), 'big')
+  const sign = ui.all('data-farm-reclaim')[0]
+  assert.ok(sign, '初始荒地要有一个开垦牌')
+  assert.match(sign.parentNode.className, /\bfm-plot\b/, '开垦牌挂在地块里，抬地块才能把牌抬到邻地之上')
 })
