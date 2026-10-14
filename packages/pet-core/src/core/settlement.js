@@ -7,7 +7,7 @@
  */
 
 import { CERTIFICATE_AFTER, DEFAULT_TIME_SCALE, ILLNESS_ONSET, GRADUATION_GROWTH, GRADUATION_LESSONS, SICK_AWAY_MULTIPLIER, SICK_PAY_MULTIPLIER, STUDY_GROWTH_PER_LESSON, TRAITS, illnessStageMs, interestByKey, jobByKey, rarityByKey, schoolStageByKey, stageForNextLesson, subjectByKey, traitBonus, tripByKey } from '../data.js'
-import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
+import { AWAY_DECAY_MULTIPLIER, AWAY_FLOOR, CLEANLINESS_DECAY_PER_MIN, HAPPINESS_DECAY_PER_MIN, MAX_SETTLE_SPAN_MS, MAX_SETTLE_STEPS, MIN_SETTLE_STEP_MS, SATIETY_DECAY_PER_MIN, SETTLE_STEP_MS } from './constants.js'
 import { announce, clamp100, remember } from './effects.js'
 import { growWithTime, grow, outingGrowth } from './growth.js'
 import { describeDrops, graduationDrops, studyDrops, workDrops } from './drops.js'
@@ -49,15 +49,26 @@ export { currentIllness, die } from './illness.js'
  * @param {{roll?: import('./random.js').Roll}} [options]
  */
 export function decay(state, nowMs, options = {}) {
-  // 坏游标（非有限、负数、早于出生）不能当作可信的「上次看到」：没有起点就按刚刚
+  // 宿主自己把 nowMs 传坏了（NaN / 负数 / Infinity）时什么也别做：写进去会把游标变成坏值，
+  // 而 NaN 会让后面每个比较都判假、猪永久冻住，比不结算更糟。只读，不动状态。
+  if (!Number.isFinite(nowMs) || nowMs < 0) {
+    console.warn(`[dsh-piggy] decay skipped, unusable nowMs: nowMs=${String(nowMs)}`)
+    return state
+  }
+  // 坏游标（非数字 / 非有限 / 非正数）不能当作可信的「上次看到」：没有起点就按刚刚
   // 看过处理——把游标修到 nowMs，本次不补结算。否则 0 / -1 这类值会让时间差大到
   // passTime 按 SETTLE_STEP_MS 一步走几百万步（存档模糊测试 4.1）。
-  if (!isUsableCursor(state.lastSeenAt, state.bornAt)) {
+  if (!isUsableCursor(state.lastSeenAt)) {
+    console.warn(`[dsh-piggy] unusable settle cursor, resetting to now: lastSeenAt=${String(state.lastSeenAt)} nowMs=${nowMs}`)
     state.lastSeenAt = nowMs
     state.clockRollbackAt = null
     return state
   }
-  const fromMs = state.lastSeenAt
+  // 游标早于出生时刻（手改存档、跨机器拷贝）时把结算起点钳到出生：出生之前猪还不存在，
+  // 不该补算那一段，更不该像旧版那样判成坏数据（会永久冻结，返工 P2-1）。出生时刻本身
+  // 在将来（快机器上孵的猪、对表之后）时不抬，否则跨度变负、猪会冻到生日那天。
+  const bornAtMs = Number.isFinite(state.bornAt) && state.bornAt <= nowMs ? state.bornAt : null
+  const fromMs = bornAtMs === null ? state.lastSeenAt : Math.max(state.lastSeenAt, bornAtMs)
   // 时钟没前进（回拨 / 游标在未来）：游标只能停在已结算到的高点，见 holdClock。
   if (!(nowMs > fromMs)) {
     holdClock(state, nowMs, fromMs)
@@ -73,6 +84,10 @@ export function decay(state, nowMs, options = {}) {
   // 单次结算跨度上限（见 constants.js）：游标即使合法也可能久远到走不完，只补最近
   // MAX_SETTLE_SPAN_MS，更早的时间不结算——那一段当作没有离开过。
   const settleFromMs = Math.max(fromMs, nowMs - MAX_SETTLE_SPAN_MS)
+  // 少结算了就说一声，别让玩家只看到「年龄凭空少了」（P3-3）。
+  if (nowMs - fromMs > MAX_SETTLE_SPAN_MS) {
+    console.warn(`[dsh-piggy] settle span over the cap, only the last ${MAX_SETTLE_SPAN_MS}ms is settled: fromMs=${fromMs} settleFromMs=${settleFromMs} nowMs=${nowMs}`)
+  }
   if (typeof state.ageMs !== 'number' || !Number.isFinite(state.ageMs)) {
     // First tick after loading an old save: seed pig time from the birthday.
     state.ageMs = typeof state.bornAt === 'number' ? Math.max(0, settleFromMs - state.bornAt) : 0
@@ -108,11 +123,19 @@ export function decay(state, nowMs, options = {}) {
  */
 function passTime(state, stretch, next) {
   let cursor = stretch.fromMs
+  let steps = 0
   while (cursor < stretch.toMs && state.dead !== true) {
+    // 步数守卫：正常路径最多 400 天 / 5 分钟 ≈ 11.5 万步，触发说明输入异常（步长被压到
+    // 下限还走不完）。放弃剩余时间并记一条日志，不硬撑占住面板线程（P2-3 第 7 条）。
+    if (steps >= MAX_SETTLE_STEPS) {
+      console.warn(`[dsh-piggy] settle step guard hit, dropping the rest: fromMs=${stretch.fromMs} toMs=${stretch.toMs} steps=${steps} minStepMs=${MIN_SETTLE_STEP_MS}`)
+      return
+    }
+    steps += 1
     eatOffline(state, stretch.meals, cursor)
     const speed = stretch.away ? AWAY_DECAY_MULTIPLIER : 1
     const toHungerMs = (state.satiety - THRESHOLDS.hungry) / (SATIETY_DECAY_PER_MIN * speed) * 60000
-    const span = stretch.meals && toHungerMs > 0 ? Math.min(SETTLE_STEP_MS, Math.max(1, Math.ceil(toHungerMs))) : SETTLE_STEP_MS
+    const span = stretch.meals && toHungerMs > 0 ? Math.min(SETTLE_STEP_MS, Math.max(MIN_SETTLE_STEP_MS, Math.ceil(toHungerMs))) : SETTLE_STEP_MS
     const stepEnd = Math.min(stretch.toMs, cursor + span)
     step(state, { elapsedMs: stepEnd - cursor, atMs: stepEnd, away: stretch.away, meals: stretch.meals }, next)
     cursor = stepEnd

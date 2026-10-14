@@ -32,15 +32,18 @@ export const ageMonths = (state, nowMs) => ageDays(state, nowMs) / DAYS_PER_MONT
 
 /**
  * Is a saved `lastSeenAt` believable? False for a non-number, a non-finite
- * value, a negative one, or a moment before the pig was born. Such a cursor is
- * corrupt or hand-edited data, not evidence of an absence — decay() settles
- * nothing for it (see core/settlement.js).
+ * value, or a moment that is not a positive instant. Such a cursor is corrupt
+ * or hand-edited data, not evidence of an absence — decay() settles nothing for
+ * it and repairs it to nowMs (see core/settlement.js).
+ *
+ * 「早于出生」不再算坏游标（2026-10-14 返工 P2-1）：把那种情况判成坏数据会把猪永久冻住
+ * ——出生时刻在将来（快机器上孵的猪、对表之后）时，修出来的游标仍然早于出生，这条判定
+ * 每次都会命中、又没有出口。出生之前的时间本来也不该补结算，所以改成在 decay() 里把结算
+ * 起点钳到出生时刻；坏值只留「非数字 / 非有限 / 非正数」三条。
  * @param {unknown} cursor
- * @param {unknown} bornAt
  */
-export function isUsableCursor(cursor, bornAt) {
-  if (typeof cursor !== 'number' || !Number.isFinite(cursor) || cursor < 0) return false
-  return !(typeof bornAt === 'number' && Number.isFinite(bornAt) && cursor < bornAt)
+export function isUsableCursor(cursor) {
+  return typeof cursor === 'number' && Number.isFinite(cursor) && cursor > 0
 }
 
 /**
@@ -69,6 +72,8 @@ export function holdClock(state, nowMs, fromMs) {
   if (!(nowMs < fromMs)) return
   const since = Number.isFinite(state.clockRollbackAt) ? state.clockRollbackAt : nowMs
   if (nowMs - since >= CLOCK_ROLLBACK_HOLD_MS) {
+    // 别静默：猪停了一天，排障的人需要知道是时钟被拨了（P3-3）。
+    console.warn(`[dsh-piggy] clock held for a day, accepting the new time: heldAt=${fromMs} nowMs=${nowMs}`)
     state.lastSeenAt = nowMs
     state.clockRollbackAt = null
     return

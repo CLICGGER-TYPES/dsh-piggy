@@ -136,8 +136,8 @@ export function applyDevPatch(state, patch, nowMs) {
     const advance = Math.min(patch.__advanceMs, 60 * 86_400_000)
     state.lastSeenAt = nowMs - advance
     // 快进的起点可能早于出生（新猪 + 快进半天）。那只是「这段时间也当作猪在」的
-    // 模拟，不是坏游标，所以把生日一起提前，别让 decay() 把它当损坏数据拒掉
-    // （见 core/settlement.js 的 isUsableCursor）。
+    // 模拟，不是坏游标，所以把生日一起提前，别让 decay() 从出生算起、把这段吃掉
+    // （见 core/settlement.js 的 decay）。
     if (typeof state.bornAt === 'number' && Number.isFinite(state.bornAt) && state.bornAt > state.lastSeenAt) {
       state.bornAt = state.lastSeenAt
     }
