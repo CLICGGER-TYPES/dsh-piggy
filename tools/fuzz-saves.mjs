@@ -5,6 +5,9 @@
  *
  * 用法：
  *   node tools/fuzz-saves.mjs --cases 1500 --seed 20261014 --out ../../results/save-fuzz
+ *   node tools/fuzz-saves.mjs --help        # 只看参数说明
+ *
+ * 参数是严格解析的：不认识的 `--xxx` 或缺少值会直接报错退出（不跑用例、不碰产物目录）。
  *
  * 覆盖的存储面：
  *   core    —— migrate() → readStateFile()（真实读盘路径）→ 结算（recordOnline/decay/diary/pomodoro）→ snapshot() → 一串核心动作
@@ -811,18 +814,79 @@ async function minimize(slot, baseCase, signature, timeoutMs, maxTests) {
   return { value: best, tests }
 }
 
-function argument(name, fallback) {
-  const index = process.argv.indexOf(`--${name}`)
-  return index >= 0 && process.argv[index + 1] !== undefined ? process.argv[index + 1] : fallback
+const DEFAULT_OUT = join(REPO, '..', '..', 'results', 'save-fuzz')
+
+/** 每个选项的默认值；`numeric: true` 的值必须能解析成有限数。 */
+const OPTIONS = {
+  cases: { numeric: true, fallback: 1500 },
+  seed: { numeric: true, fallback: 20261014 },
+  jobs: { numeric: true, fallback: 4 },
+  timeout: { numeric: true, fallback: 1500 },
+  minimize: { numeric: true, fallback: 8 },
+  out: { numeric: false, fallback: null },
+}
+
+const USAGE = `用法：node tools/fuzz-saves.mjs [选项]
+
+选项（括号里是默认值）：
+  --cases <n>      跑多少例（1500）
+  --seed <n>       随机种子，决定整串用例（20261014）
+  --jobs <n>       并行 worker 数（4）
+  --timeout <ms>   单例看门狗超时，超时算死循环（1500）
+  --out <dir>      产物目录（${DEFAULT_OUT}）
+  --minimize <n>   最多最小化几个崩溃签名（8）
+  -h, --help       只打印本说明后退出，不跑用例、不碰任何目录
+`
+
+/**
+ * 严格解析命令行。不认识的参数或缺少值直接抛错——必须在 mkdirSync / rmSync 之前跑完，
+ * 否则拼错的参数会按默认值跑起来、还会把 outDir/crashes 里已归档的崩溃证据清掉。
+ * 返回 { help: true }，或解析好的 { help: false, count, seed, jobs, timeoutMs, outDir, minimizeCrashes }。
+ */
+function parseArgs(argv) {
+  if (argv.includes('--help') || argv.includes('-h')) return { help: true }
+  const values = {}
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index]
+    if (!token.startsWith('--')) throw new Error(`无法识别的参数：${token}`)
+    const name = token.slice(2)
+    if (!Object.hasOwn(OPTIONS, name)) throw new Error(`未知参数：${token}`)
+    if (Object.hasOwn(values, name)) throw new Error(`参数重复：${token}`)
+    const value = argv[index + 1]
+    if (value === undefined || value.startsWith('--')) throw new Error(`参数 ${token} 缺少值`)
+    values[name] = value
+    index += 1
+  }
+  for (const [name, spec] of Object.entries(OPTIONS)) {
+    if (!spec.numeric || !Object.hasOwn(values, name)) continue
+    if (!Number.isFinite(Number(values[name]))) throw new Error(`参数 --${name} 必须是数字，收到：${values[name]}`)
+  }
+  const value = name => (Object.hasOwn(values, name) ? values[name] : OPTIONS[name].fallback)
+  return {
+    help: false,
+    count: Number(value('cases')),
+    seed: Number(value('seed')),
+    jobs: Math.max(1, Number(value('jobs'))),
+    timeoutMs: Number(value('timeout')),
+    outDir: resolve(value('out') ?? DEFAULT_OUT),
+    minimizeCrashes: Number(value('minimize')),
+  }
 }
 
 async function main() {
-  const count = Number(argument('cases', 1500))
-  const seed = Number(argument('seed', 20261014))
-  const jobs = Math.max(1, Number(argument('jobs', 4)))
-  const timeoutMs = Number(argument('timeout', 1500))
-  const outDir = resolve(argument('out', join(REPO, '..', '..', 'results', 'save-fuzz')))
-  const minimizeCrashes = Number(argument('minimize', 8))
+  let options
+  try {
+    options = parseArgs(process.argv.slice(2))
+  } catch (error) {
+    process.stderr.write(`${error?.message ?? error}\n\n${USAGE}`)
+    process.exitCode = 2
+    return
+  }
+  if (options.help) {
+    process.stdout.write(USAGE)
+    return
+  }
+  const { count, seed, jobs, timeoutMs, outDir, minimizeCrashes } = options
   const rng = mulberry32(seed)
   const cases = Array.from({ length: count }, (_, index) => buildCase(rng, index))
 
