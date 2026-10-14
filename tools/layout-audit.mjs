@@ -3,6 +3,7 @@
 import { writeFileSync } from 'node:fs'
 import { readAssetLayout } from './asset-layout.mjs'
 import { IMAGE_AUDIT_FUNCTIONS, auditImageRatios, auditMaterialPadding } from './layout-image-audit.mjs'
+import { SHAPE_AUDIT_FUNCTIONS, alphaOf, stylePaints, pseudoPaints, cornerRadii, polygonOf, pointInShape, pointInPolygon, readPseudoBox, subtreePaints } from './layout-audit-shapes.mjs'
 import { pathToFileURL } from 'node:url'
 
 /** @param {Element} element */
@@ -46,6 +47,11 @@ function effectiveFont(element) {
 function layerOf(element) {
   return element.closest('.fm-mask,.fm-pop,.fm-hover-card,.fm-b-bar,.fm-s-tools,.fm-s-header,.fm-s-acts,.fm-b-field,.fm-s-field') || element.parentElement
 }
+/** node 是不是 element 的祖先。@param {Element|null} node @param {Element} element */
+function isAncestor(node, element) {
+  for (let parent = element.parentElement; parent; parent = parent.parentElement) if (parent === node) return true
+  return false
+}
 /** @param {Element} element */
 function scrollOwner(element) {
   for (let parent = element.parentElement; parent; parent = parent.parentElement) {
@@ -56,9 +62,30 @@ function scrollOwner(element) {
 }
 /** @param {Element} element */
 function footprint(element) {
-  const r = rectOf(element)
-  if (element.matches('.fm-plot') && element.querySelector('.fm-hit')) return [[r.x + r.width / 2, r.y], [r.right, r.y + r.height / 2], [r.x + r.width / 2, r.bottom], [r.x, r.y + r.height / 2]]
+  const r = rectOf(element), css = getComputedStyle(element)
+  const own = css.clipPath && css.clipPath !== 'none' ? polygonOf(css.clipPath) : null
+  if (own) return own.map(p => [r.x + p[0] * r.width, r.y + p[1] * r.height])
+  // 菱形地块的形状来自命中层 .fm-hit 的 clip-path，别再硬编码。
+  const hit = element.matches('.fm-plot') ? element.querySelector('.fm-hit') : null
+  if (hit) {
+    const hitCss = getComputedStyle(hit), hitClip = hitCss && hitCss.clipPath && hitCss.clipPath !== 'none' ? polygonOf(hitCss.clipPath) : null
+    if (hitClip) return hitClip.map(p => [r.x + p[0] * r.width, r.y + p[1] * r.height])
+    return [[r.x + r.width / 2, r.y], [r.right, r.y + r.height / 2], [r.x + r.width / 2, r.bottom], [r.x, r.y + r.height / 2]]
+  }
   return [[r.x, r.y], [r.right, r.y], [r.right, r.bottom], [r.x, r.bottom]]
+}
+/** 元素本体 + 画得出来的伪元素的轮廓（页面坐标）。@param {Element} element @returns {number[][][]} */
+function shapesOf(element) {
+  const shapes = [footprint(element)], rect = rectOf(element)
+  for (const pseudo of ['::before', '::after']) {
+    const box = readPseudoBox(element, pseudo, rect)
+    if (!box) continue
+    const css = getComputedStyle(element, pseudo)
+    if (!css || !pseudoPaints(css)) continue
+    const clip = css.clipPath && css.clipPath !== 'none' ? polygonOf(css.clipPath) : null
+    shapes.push(clip ? clip.map(p => [box.x + p[0] * box.width, box.y + p[1] * box.height]) : [[box.x, box.y], [box.right, box.y], [box.right, box.bottom], [box.x, box.bottom]])
+  }
+  return shapes
 }
 /** @param {number[]} a @param {number[]} b @param {number[]} p */
 function cross(a, b, p) { return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) }
@@ -83,17 +110,113 @@ function polygonIntersection(subject, boundary) {
 function polygonArea(points) {
   return Math.abs(points.reduce((sum, p, i) => { const next = points[(i + 1) % points.length]; return sum + p[0] * next[1] - next[0] * p[1] }, 0)) / 2
 }
+/** 两侧真实形状（含伪元素）的最大相交面积。@param {Element} a @param {Element} b */
+function pairOverlapArea(a, b) {
+  let best = 0
+  for (const sa of shapesOf(a)) for (const sb of shapesOf(b)) best = Math.max(best, polygonArea(polygonIntersection(sa, sb)))
+  return best
+}
+/**
+ * 在重叠区中心用命中测试判谁真的画在上面。
+ * 返回 { side, node, paints }；命中不到 a/b 任何一侧时返回 null。
+ * @param {Element} a @param {Element} b @param {any} box
+ */
+function topSide(a, b, box) {
+  const x = box.x + box.width / 2, y = box.y + box.height / 2
+  const stack = typeof document.elementsFromPoint === 'function' ? document.elementsFromPoint(x, y) : [document.elementFromPoint(x, y)]
+  for (const node of stack) {
+    if (!node) continue
+    if (node === a || a.contains(node)) return { side: 'a', node, paints: subtreePaints(node, a) }
+    if (node === b || b.contains(node)) return { side: 'b', node, paints: subtreePaints(node, b) }
+  }
+  return null
+}
+/** 文字墨迹框（Range.getClientRects），拿不到就用元素框。@param {Element} element @returns {any[]} */
+function inkRects(element) {
+  if (typeof document.createRange === 'function') {
+    const rects = []
+    for (const node of Array.from(element.childNodes)) {
+      if (node.nodeType !== 3 || !node.textContent?.trim()) continue
+      const range = document.createRange(); range.selectNodeContents(node)
+      rects.push(...Array.from(range.getClientRects()))
+    }
+    if (rects.length) return rects
+  }
+  if (typeof element.getClientRects === 'function') {
+    const rects = Array.from(element.getClientRects())
+    if (rects.length) return rects
+  }
+  return [element.getBoundingClientRect()]
+}
+/** 最近的「纯色上色、不是素材框」的底牌祖先。素材框交给 auditMaterialPadding。@param {Element} element */
+function textPlate(element) {
+  const scene = innerWidth * innerHeight * .6
+  for (let plate = element.parentElement; plate && plate.closest('.fm'); plate = plate.parentElement) {
+    if (plate.matches('.fm,.fm-big,.fm-b-scene,.fm-s-scene,.fm-b-field,.dp-card,.fm-tool-label,.fm-tooltip,.fm-n,.fm-lock')) continue
+    const css = getComputedStyle(plate), r = rectOf(plate)
+    if (r.width * r.height > scene) continue
+    if (css.borderImageSource && css.borderImageSource !== 'none') continue
+    if (css.backgroundImage && css.backgroundImage !== 'none' && css.backgroundSize !== '0px 0px') continue
+    if (alphaOf(css.backgroundColor) <= .05 && parseFloat(css.borderTopWidth) <= 0) continue
+    return plate
+  }
+  return null
+}
+/** 底牌 content box 减去同一行非文字兄弟占位，是文字真正可用的区域。@param {Element} element @param {Element} plate */
+function availableTextArea(element, plate) {
+  const css = getComputedStyle(plate), r = rectOf(plate), er = rectOf(element)
+  let left = r.x + (parseFloat(css.borderLeftWidth) || 0) + (parseFloat(css.paddingLeft) || 0)
+  let right = r.right - (parseFloat(css.borderRightWidth) || 0) - (parseFloat(css.paddingRight) || 0)
+  const top = r.y + (parseFloat(css.borderTopWidth) || 0) + (parseFloat(css.paddingTop) || 0)
+  const bottom = r.bottom - (parseFloat(css.borderBottomWidth) || 0) - (parseFloat(css.paddingBottom) || 0)
+  for (const sibling of Array.from(plate.children || [])) {
+    if (sibling === element || sibling.contains(element) || element.contains(sibling)) continue
+    const sr = rectOf(sibling)
+    if (sr.bottom <= er.y + 1 || sr.y >= er.bottom - 1) continue
+    if (sr.right <= er.x + 1) left = Math.max(left, sr.right)
+    else if (sr.x >= er.right - 1) right = Math.min(right, sr.x)
+  }
+  return { x: left, y: top, width: right - left, height: bottom - top, right, bottom }
+}
+/**
+ * 某个滚动祖先滚一下能不能把这个操作项的中心送进视口。
+ * 比 scrollOwner 只认「最近的滚动祖先」更准：面板 120px 时商店页签被弹层自己的滚动条压住，
+ * 真正能救它的是更外层的面板滚动区。
+ * @param {Element} element
+ */
+function scrollBringsIntoView(element) {
+  const r = rectOf(element)
+  for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    const css = getComputedStyle(ancestor)
+    if (!/(auto|scroll)/.test(css.overflowX + css.overflowY)) continue
+    const maxTop = ancestor.scrollHeight - ancestor.clientHeight, maxLeft = ancestor.scrollWidth - ancestor.clientWidth
+    if (maxTop <= 1 && maxLeft <= 1) continue
+    const ar = rectOf(ancestor), boxX = ar.x + (ancestor.clientLeft || 0), boxY = ar.y + (ancestor.clientTop || 0)
+    const scrollTop = ancestor.scrollTop || 0, scrollLeft = ancestor.scrollLeft || 0
+    const topInContent = r.y - boxY + scrollTop, leftInContent = r.x - boxX + scrollLeft
+    const targetTop = Math.min(Math.max(0, topInContent - (ancestor.clientHeight - r.height) / 2), Math.max(0, maxTop))
+    const targetLeft = Math.min(Math.max(0, leftInContent - (ancestor.clientWidth - r.width) / 2), Math.max(0, maxLeft))
+    const centerX = r.x - (targetLeft - scrollLeft) + r.width / 2, centerY = r.y - (targetTop - scrollTop) + r.height / 2
+    if (centerX >= 0 && centerY >= 0 && centerX <= innerWidth && centerY <= innerHeight) return ancestor
+  }
+  return null
+}
 /** @param {Element[]} nodes @param {any} report */
 function auditPairs(nodes, report) {
   for (let i = 0; i < nodes.length; i += 1) for (let j = i + 1; j < nodes.length; j += 1) {
     const a = nodes[i], b = nodes[j]
-    if (a.contains(b) || b.contains(a) || layerOf(a) !== layerOf(b) || (!(a.matches('.fm-plot') && b.matches('.fm-plot')) && getComputedStyle(a).zIndex !== getComputedStyle(b).zIndex)) continue
+    if (a.contains(b) || b.contains(a) || layerOf(a) !== layerOf(b)) continue
     const box = intersection(rectOf(a), rectOf(b)), boxArea = box.width * box.height
     if (boxArea <= .5) continue
-    const area = polygonArea(polygonIntersection(footprint(a), footprint(b)))
+    const area = pairOverlapArea(a, b)
     const detail = { a: identify(a), b: identify(b), boxAreaPx2: boxArea, areaPx2: area }
-    if (area > .5) report.overlaps.push(detail)
-    else report.exceptions.push({ ...detail, reason: '菱形轴对齐框相交；实际地块与命中多边形只共边，没有内部相交。' })
+    if (area <= .5) { report.exceptions.push({ ...detail, reason: '菱形轴对齐框相交；实际地块与命中多边形只共边，没有内部相交。' }); continue }
+    if (getComputedStyle(a).zIndex === getComputedStyle(b).zIndex) { report.overlaps.push(detail); continue }
+    // z-index 不同不再当成「故意叠放」：用命中测试判谁真在上面，只在上面那侧上色时报（挡掉透明命中层噪声）。
+    const top = topSide(a, b, box)
+    if (!top) { report.exceptions.push({ ...detail, reason: '重叠区被第三方元素盖住，量不到 a/b 的层序。' }); continue }
+    if (!top.paints) { report.exceptions.push({ ...detail, reason: '重叠区在上层的那侧是透明命中/占位层，没有画出可见像素。' }); continue }
+    report.overlaps.push({ ...detail, onTop: top.side, topPaintTest: identify(top.node) })
   }
 }
 /** @param {Element[]} controls @param {any} report */
@@ -102,12 +225,27 @@ function auditControls(controls, report) {
     const r = rectOf(element), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
     const detail = { element: identify(element), label: element.getAttribute('aria-label') || element.textContent?.trim(), rect: r }
     if (r.width < 31.99 || r.height < 31.99) report.smallTargets.push(detail)
-    if (!hit || !(element === hit || element.contains(hit))) {
-      const overlay = hit?.closest('.fm-pop,.fm-mask'), scroll = scrollOwner(element)
-      if (overlay && !overlay.contains(element)) report.exceptions.push({ ...detail, hit: identify(hit), reason: '打开的弹层覆盖背景操作；背景操作不得穿过弹层。关闭后仍必须复测。' })
-      else if (scroll && (intersection(r, rectOf(scroll)).height < r.height - .5 || intersection(r, rectOf(scroll)).width < r.width - .5)) report.exceptions.push({ ...detail, reason: '滚动列表边缘只露出部分商品；滚动后才能操作该商品中心。' })
-      else report.blockedControls.push({ ...detail, hit: hit ? identify(hit) : null })
+    // 5×5 采样：只数落在控件自己形状内、且被「非祖先」元素抢走的点，量「命中不到自己」的面积占比。
+    const ownShape = footprint(element)
+    let total = 0, blocked = 0, sampleHit = null
+    for (let iy = 0; iy < 5; iy += 1) for (let ix = 0; ix < 5; ix += 1) {
+      const px = r.x + r.width * (ix + .5) / 5, py = r.y + r.height * (iy + .5) / 5
+      if (px < 0 || py < 0 || px > innerWidth - 1 || py > innerHeight - 1) continue
+      if (!pointInPolygon(px, py, ownShape)) continue
+      total += 1
+      const sample = document.elementFromPoint(px, py)
+      if (isAncestor(sample, element)) continue
+      if (!(sample === element || element.contains(sample))) { blocked += 1; sampleHit = sampleHit || sample }
     }
+    const ratio = total ? blocked / total : 0
+    const centerBlocked = !hit || !(element === hit || element.contains(hit))
+    if (!centerBlocked && ratio <= .05) continue
+    const overlay = (centerBlocked ? hit : sampleHit)?.closest('.fm-pop,.fm-mask')
+    const scroll = scrollOwner(element)
+    const scrolled = scrollBringsIntoView(element)
+    if (overlay && !overlay.contains(element)) report.exceptions.push({ ...detail, hit: hit ? identify(hit) : null, reason: '打开的弹层覆盖背景操作；背景操作不得穿过弹层。关闭后仍必须复测。' })
+    else if (scrolled || (scroll && (intersection(r, rectOf(scroll)).height < r.height - .5 || intersection(r, rectOf(scroll)).width < r.width - .5))) report.exceptions.push({ ...detail, reason: '滚动列表边缘只露出部分商品；滚动后才能操作该商品中心。' })
+    else report.blockedControls.push({ ...detail, hit: hit ? identify(hit) : null, blockedRatio: Math.round(ratio * 100) / 100, blockedPx2: Math.round(ratio * r.width * r.height), sampleHit: sampleHit ? identify(sampleHit) : null })
   }
 }
 /** @param {Element} element @param {Element[]} controls @param {any} report */
@@ -135,7 +273,14 @@ function auditText(element, report) {
   if (font < 11.99) report.smallText.push({ ...detail, fontPx: font })
   if (element.clientWidth > 0 && element.scrollWidth > element.clientWidth + .5) report.clippedText.push({ ...detail, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })
   const parent = element.parentElement
-  if (parent && !element.matches('.fm-tool-label,.fm-tooltip,.fm-toast,.fm-n,.fm-count') && r.width > rectOf(parent).width + .5) report.clippedText.push({ ...detail, reason: '文字宽度超过所属容器', parent: identify(parent) })
+  if (parent && !element.matches('.fm-tool-label,.fm-tooltip,.fm-toast,.fm-n,.fm-count')) {
+    const plate = textPlate(element)
+    if (plate) {
+      const available = availableTextArea(element, plate)
+      const overhang = inkRects(element).reduce((max, ink) => Math.max(max, available.x - ink.left, ink.right - available.right, available.y - ink.top, ink.bottom - available.bottom), -Infinity)
+      if (overhang > .5) report.clippedText.push({ ...detail, reason: '文字墨迹戳出底牌可用区（底牌 content box 减同行非文字兄弟）', plate: identify(plate), overhangPx: Math.round(overhang * 100) / 100, available })
+    } else if (r.width > rectOf(parent).width + .5) report.clippedText.push({ ...detail, reason: '文字宽度超过所属容器', parent: identify(parent) })
+  }
   if (visible && (visible.width < r.width - .5 || visible.height < r.height - .5)) {
     if (scrollOwner(element)) report.exceptions.push({ ...detail, reason: '滚动容器的边缘裁切；完整文字应在滚动到该项时再核对。' })
     else report.clippedText.push({ ...detail, visible })
@@ -159,7 +304,7 @@ function auditDecorations(decorations, controls, report) {
   for (const decoration of decorations) for (const control of controls) {
     const front = decoration.closest('.fm-pop,.fm-mask'), back = control.closest('.fm-pop,.fm-mask')
     if (control.contains(decoration) || (front !== back && (front || back))) continue
-    const area = polygonArea(polygonIntersection(footprint(decoration), footprint(control)))
+    const area = pairOverlapArea(decoration, control)
     if (area > .5) report.decorativeOcclusions.push({ decoration: identify(decoration), control: identify(control), areaPx2: area })
   }
 }
@@ -171,6 +316,58 @@ function auditBounds(elements, report) {
     const detail = { element: identify(element), rect: r, visible }
     if (scrollOwner(element)) report.exceptions.push({ ...detail, reason: '滚动列表边缘元素被裁切；滚动到完整可见后才能验收。' })
     else report.overflowingElements.push(detail)
+  }
+}
+/**
+ * 形状感知的裁切：元素自身形状的角/边取样点落进祖先的圆角矩形或 clip-path 之外，就是被切掉。
+ * 不用命中测试（会被上层元素干扰），并让浏览器按实际值收窄圆角（min(半径,宽/2,高/2)、百分比换算）。
+ * @param {Element[]} elements @param {any} report
+ */
+function auditCornerClip(elements, report) {
+  for (const element of elements) {
+    const r = rectOf(element), css = getComputedStyle(element)
+    if (r.width * r.height < 400 || !stylePaints(css)) continue
+    if (r.right < 0 || r.bottom < 0 || r.x > innerWidth || r.y > innerHeight) continue
+    const radius = cornerRadii(css, r.width, r.height)
+    const clippers = []
+    for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+      const pcss = getComputedStyle(parent), pr = rectOf(parent)
+      if (r.x < pr.x - .5 || r.y < pr.y - .5 || r.right > pr.right + .5 || r.bottom > pr.bottom + .5) continue
+      if (pcss.clipPath && pcss.clipPath !== 'none') {
+        const norm = polygonOf(pcss.clipPath)
+        if (norm) clippers.push({ element: parent, rect: pr, radius: [0, 0, 0, 0], poly: norm.map(p => [pr.x + p[0] * pr.width, pr.y + p[1] * pr.height]), kind: 'clip-path' })
+      } else if (/(hidden|clip)/.test(pcss.overflowX + pcss.overflowY)) {
+        const clipRadius = cornerRadii(pcss, pr.width, pr.height)
+        if (Math.max(...clipRadius) > 0) clippers.push({ element: parent, rect: pr, radius: clipRadius, poly: null, kind: 'radius+overflow' })
+      }
+    }
+    if (!clippers.length) continue
+    const corners = [[r.x, r.y, 0, 1, 1], [r.right, r.y, 1, -1, 1], [r.right, r.bottom, 2, -1, -1], [r.x, r.bottom, 3, 1, -1]]
+    const cuts = []
+    for (let c = 0; c < 4; c += 1) {
+      const cx = corners[c][0], cy = corners[c][1], sx = corners[c][3], sy = corners[c][4], rad = radius[c]
+      const applicable = clippers.filter(clip => clip.kind === 'clip-path' || clip.radius[c] > rad + .5)
+      if (!applicable.length) continue
+      const samples = []
+      if (rad > 1) {
+        for (let k = 0; k <= 18; k += 1) { const angle = Math.PI / 2 * k / 18; samples.push([cx + sx * (rad - (rad - .75) * Math.cos(angle)), cy + sy * (rad - (rad - .75) * Math.sin(angle))]) }
+      } else {
+        for (let d = 1; d <= 24; d += 1) { samples.push([cx + sx * d, cy + sy * 1.5]); samples.push([cx + sx * 1.5, cy + sy * d]) }
+      }
+      let misses = 0, culprit = null
+      for (const point of samples) {
+        if (point[0] < 0 || point[1] < 0 || point[0] > innerWidth - 1 || point[1] > innerHeight - 1) continue
+        let cutBy = null
+        for (const clip of applicable) if (!pointInShape(point[0], point[1], clip)) { cutBy = clip; break }
+        if (!cutBy) continue
+        misses += 1
+        culprit = culprit || cutBy
+      }
+      const clippedPct = Math.round(misses / samples.length * 100)
+      if (clippedPct < 15) continue
+      cuts.push({ corner: ['TL', 'TR', 'BR', 'BL'][c], ownRadiusPx: Math.round(rad * 10) / 10, clippedPct, clipper: identify(culprit.element), clipKind: culprit.kind, clipperRadiusPx: Math.round(Math.max(...culprit.radius) * 10) / 10 })
+    }
+    if (cuts.length) report.cornerClip.push({ element: identify(element), cuts })
   }
 }
 const assetCatalog = readAssetLayout()
@@ -186,7 +383,7 @@ function auditProgress(elements, report) {
   }
 }
 function auditPage() {
-  const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], smallTargets: [], smallIcons: [], missingImages: [], stretchedImages: [], framePaddingViolations: [], unknownAssetGeometry: [], pageErrors: [], exceptions: [], checked: {} }
+  const report = { identity: { title: document.title, url: location.href, width: innerWidth, height: innerHeight }, overlaps: [], cornerClip: [], overflowingElements: [], decorativeOcclusions: [], driftedAttachments: [], clippedText: [], occludedText: [], wrappedLabels: [], smallText: [], blockedControls: [], smallTargets: [], smallIcons: [], missingImages: [], stretchedImages: [], framePaddingViolations: [], unknownAssetGeometry: [], pageErrors: [], exceptions: [], checked: {} }
   const visible = Array.from(document.querySelectorAll('body *')).filter(e => visibleRect(e))
   const controls = visible.filter(e => e.matches('button,input,textarea,select,a[href],[role="button"],.fm-plot'))
   const attached = visible.filter(e => e.matches('.fm-chip,.fm-prog,.fm-b-sign,.fm-bubble,.fm-n,.fm-count,.fm-lock,.fm-tool-label,.fm-tooltip'))
@@ -200,6 +397,7 @@ function auditPage() {
   if (purchaseInfo && purchaseInfo.clientHeight < 32) report.pageErrors.push('购买信息区被压成零高，滚动也无法查看商品资料')
   if (document.fonts.status !== 'loaded') report.pageErrors.push('字体尚未稳定，稍后重读')
   auditBounds([...new Set([...controls, ...attached])], report)
+  auditCornerClip(visible.filter(e => e.closest('.fm')), report)
   auditControls(controls, report)
   auditPairs([...new Set([...controls, ...attached])], report)
   auditDecorations(visible.filter(e => e.matches('.fm-crop,.fm-pest,.fm-b-pig,.fm-s-pig,.fm-b-face,.fm-s-face,.fm-title')), controls, report)
@@ -227,13 +425,13 @@ function auditPage() {
     else if (r.width < 23.99 || r.height < 23.99) report.smallIcons.push({ element: identify(element), src: element.getAttribute('src'), rect: r })
   }
   report.checked = { visibleElements: visible.length, controls: controls.length, attachments: attached.length }
-  report.problemCount = ['overlaps','overflowingElements','decorativeOcclusions','driftedAttachments','clippedText','occludedText','wrappedLabels','smallText','blockedControls','smallTargets','smallIcons','missingImages','stretchedImages','framePaddingViolations','unknownAssetGeometry','pageErrors'].reduce((n,key) => n + report[key].length,0)
+  report.problemCount = ['overlaps','cornerClip','overflowingElements','decorativeOcclusions','driftedAttachments','clippedText','occludedText','wrappedLabels','smallText','blockedControls','smallTargets','smallIcons','missingImages','stretchedImages','framePaddingViolations','unknownAssetGeometry','pageErrors'].reduce((n,key) => n + report[key].length,0)
   return report
 }
-const browserFunctions = [rectOf, identify, intersection, visibleRect, effectiveFont, layerOf, scrollOwner, footprint, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditProgress, auditPage]
+const browserFunctions = [rectOf, identify, intersection, visibleRect, effectiveFont, layerOf, isAncestor, scrollOwner, footprint, shapesOf, pairOverlapArea, topSide, inkRects, textPlate, availableTextArea, scrollBringsIntoView, cross, polygonIntersection, polygonArea, auditPairs, auditControls, auditTextOcclusion, auditText, auditAttachment, auditDecorations, auditBounds, auditCornerClip, auditProgress, auditPage]
 /** @param {Record<string, any>} [catalog] */
 export function buildAuditExpression(catalog = readAssetLayout()) {
-  return '(function () {const assetCatalog=' + JSON.stringify(catalog) + ';' + [...browserFunctions, ...IMAGE_AUDIT_FUNCTIONS].map(fn => fn.toString()).join('\n') + '\nreturn auditPage()\n})()'
+  return '(function () {const assetCatalog=' + JSON.stringify(catalog) + ';' + [...SHAPE_AUDIT_FUNCTIONS, ...browserFunctions, ...IMAGE_AUDIT_FUNCTIONS].map(fn => fn.toString()).join('\n') + '\nreturn auditPage()\n})()'
 }
 export const AUDIT_EXPRESSION = buildAuditExpression()
 

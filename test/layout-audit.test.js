@@ -11,7 +11,7 @@ function node({ x = 0, y = 0, w = 40, h = 40, tag = 'BUTTON', classes = [], text
     getBoundingClientRect: () => ({ x, y, width: w, height: h, right: x + w, bottom: y + h, left: x, top: y }),
     getAttribute() { return null },
     matches(selector) { return selector.split(',').some(s => s.trim().startsWith('.') ? classes.includes(s.trim().slice(1)) : s.trim().toUpperCase() === tag) },
-    querySelector(selector) { return hit && selector === '.fm-hit' ? {} : null },
+    querySelector(selector) { return hit && selector === '.fm-hit' ? { css: { clipPath: 'polygon(50% 0,100% 50%,50% 100%,0 50%)' } } : null },
     contains(other) { for (let p = other; p; p = p.parentElement) if (p === element) return true; return false },
     closest(selector) { for (let p = element; p; p = p.parentElement) if (p.matches(selector)) return p; return null },
   }
@@ -126,4 +126,83 @@ test('有数值却透明的进度条不能通过，填充宽度必须对应数�
   assert.equal(audit([track, fill, node({ x: 300 })]).problemCount, 0)
   fill.getBoundingClientRect = () => ({ x: 0, y: 0, width: 30, height: 40, left: 0, top: 0, right: 30, bottom: 40 })
   assert.ok(audit([track, fill, node({ x: 300 })]).driftedAttachments.some(e => e.reason.includes('填充宽度')))
+})
+
+test('布局审计：上色子元素被祖先圆角溢出裁掉一角必须报 cornerClip', () => {
+  const card = node({ tag: 'DIV', x: 0, y: 0, w: 200, h: 200,
+    css: { overflowX: 'hidden', overflowY: 'hidden', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', borderBottomRightRadius: '20px', borderBottomLeftRadius: '20px' } })
+  const fill = node({ tag: 'DIV', x: 0, y: 0, w: 200, h: 200, css: { backgroundColor: 'rgb(40, 80, 60)' } })
+  fill.parentElement = card
+  const result = audit([card, fill, node({ x: 300 })])
+  assert.equal(result.cornerClip.length, 1)
+  assert.ok(result.cornerClip[0].cuts.length >= 1)
+  assert.equal(result.cornerClip[0].cuts[0].clipper, 'div.')
+})
+
+test('布局审计：圆角收窄到半宽后不再误报（圆形关闭按钮）', () => {
+  const card = node({ tag: 'DIV', x: 0, y: 0, w: 200, h: 200,
+    css: { overflowX: 'hidden', overflowY: 'hidden', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', borderBottomRightRadius: '20px', borderBottomLeftRadius: '20px' } })
+  const round = node({ tag: 'DIV', x: 0, y: 0, w: 40, h: 40, css: { backgroundColor: 'rgb(40, 80, 60)', borderTopLeftRadius: '50px', borderTopRightRadius: '50px', borderBottomRightRadius: '50px', borderBottomLeftRadius: '50px' } })
+  round.parentElement = card
+  assert.equal(audit([card, round, node({ x: 300 })]).cornerClip.length, 0)
+})
+
+test('布局审计：纯色底牌上的文字墨迹戳出可用区必须报错', () => {
+  const plate = node({ tag: 'DIV', x: 0, y: 0, w: 100, h: 34,
+    css: { backgroundColor: 'rgb(247, 243, 223)', paddingLeft: '4px', paddingRight: '4px', paddingTop: '4px', paddingBottom: '4px', borderLeftWidth: '0px', borderRightWidth: '0px', borderTopWidth: '0px', borderBottomWidth: '0px' } })
+  const label = node({ tag: 'SPAN', x: 6, y: 6, w: 120, h: 16, text: '缺胡萝卜种子' })
+  label.parentElement = plate
+  plate.children = [label]
+  const result = audit([plate, label, node({ x: 300 })])
+  assert.ok(result.clippedText.some(e => e.reason?.includes('底牌可用区')))
+  assert.equal(result.clippedText.find(e => e.reason?.includes('底牌可用区')).overhangPx, 30)
+})
+
+test('布局审计：纯色底牌也按内边距门槛查，不能因为没素材名就跳过', () => {
+  const plate = node({ tag: 'DIV', x: 0, y: 0, w: 100, h: 34,
+    css: { backgroundColor: 'rgb(247, 243, 223)', paddingLeft: '4px', paddingRight: '4px', paddingTop: '4px', paddingBottom: '4px', borderLeftWidth: '0px', borderRightWidth: '0px', borderTopWidth: '0px', borderBottomWidth: '0px' } })
+  const label = node({ tag: 'SPAN', x: 6, y: 6, w: 120, h: 16, text: '缺胡萝卜种子' })
+  label.parentElement = plate
+  plate.children = [label]
+  const violation = audit([plate, label, node({ x: 300 })]).framePaddingViolations.find(e => e.solid)
+  assert.ok(violation)
+  assert.equal(violation.minimum, 6)
+  assert.ok(violation.gaps.right < -0.5)
+})
+
+test('布局审计：不同 z-index 的误叠放按“谁真在上面”报重叠', () => {
+  const chip = node({ x: 0, y: 0, w: 80, h: 30, classes: ['fm-chip'], css: { zIndex: '6', backgroundColor: 'rgb(246, 189, 110)' } })
+  const plot = node({ x: 40, y: 0, w: 100, h: 100, classes: ['fm-plot'], hit: true, css: { zIndex: 'auto', backgroundColor: 'rgb(90, 60, 30)' } })
+  const result = audit([chip, plot])
+  assert.equal(result.overlaps.length, 1)
+  assert.equal(result.overlaps[0].onTop, 'b')
+})
+
+test('布局审计：不同 z-index 但上层是透明命中层时不报重叠', () => {
+  const plot = node({ x: 0, y: 0, w: 100, h: 100, classes: ['fm-plot'], hit: true, css: { zIndex: 'auto' } })
+  const chip = node({ x: 0, y: 0, w: 80, h: 30, classes: ['fm-chip'], css: { zIndex: '6' } })
+  const result = audit([plot, chip])
+  assert.equal(result.overlaps.length, 0)
+  assert.ok(result.exceptions.some(e => e.reason?.includes('透明')))
+})
+
+test('布局审计：中心能点到但大部分面积被盖住要按占比报错', () => {
+  const cover = node({ tag: 'DIV', x: 0, y: 0, w: 100, h: 100 })
+  const control = node({ x: 0, y: 0, w: 100, h: 100 })
+  const result = audit([control], { elementFromPoint: (x, y) => (y > 60 ? cover : control) })
+  assert.equal(result.blockedControls.length, 1)
+  assert.ok(result.blockedControls[0].blockedRatio >= .3)
+})
+
+test('布局审计：视口外的操作项能被任一滚动祖先滚进来时给豁免而不是报点不到', () => {
+  const panel = node({ tag: 'DIV', x: 0, y: 0, w: 300, h: 800, css: { overflowY: 'auto' } })
+  panel.clientHeight = 700; panel.scrollHeight = 1000
+  const popup = node({ tag: 'DIV', x: 15, y: 700, w: 254, h: 160, css: { overflowY: 'auto' } })
+  popup.clientHeight = 160; popup.scrollHeight = 400
+  popup.parentElement = panel
+  const tab = node({ x: 120, y: 790, w: 80, h: 34 })
+  tab.parentElement = popup
+  const result = audit([panel, popup, tab], { elementFromPoint: (x, y) => (y > 800 ? null : tab) })
+  assert.equal(result.blockedControls.length, 0)
+  assert.ok(result.exceptions.some(e => e.reason?.includes('滚动')))
 })
