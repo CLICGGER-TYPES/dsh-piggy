@@ -9984,6 +9984,63 @@
     return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance && Math.abs(a.width - b.width) <= tolerance && Math.abs(a.height - b.height) <= tolerance;
   }
 
+  // src/client/desktop/motion-envelope.js
+  var PIG_TRANSFORM_ORIGIN = Object.freeze({ x: 0.5, y: 0.85 });
+  var PIG_MOTION = Object.freeze({
+    spinScale: 1.2,
+    jumpRise: 26,
+    jumpPeakScale: 1.12,
+    jumpLandingScale: 0.92
+  });
+  var corners = (box) => [
+    { x: box.x, y: box.y },
+    { x: box.x + box.width, y: box.y },
+    { x: box.x, y: box.y + box.height },
+    { x: box.x + box.width, y: box.y + box.height }
+  ];
+  function boundsOf(points) {
+    const left = Math.min(...points.map((point) => point.x));
+    const top = Math.min(...points.map((point) => point.y));
+    const right = Math.max(...points.map((point) => point.x));
+    const bottom = Math.max(...points.map((point) => point.y));
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  }
+  function scaledCorners(box, pivot, scale, translateY = 0) {
+    return corners(box).map((point) => ({
+      x: pivot.x + (point.x - pivot.x) * scale,
+      y: pivot.y + (point.y - pivot.y) * scale + translateY
+    }));
+  }
+  function unionBoxes(...boxes) {
+    return boundsOf(boxes.flatMap(corners));
+  }
+  function spinEnvelope(box, pivot) {
+    const radius = Math.max(...corners(box).map((point) => Math.hypot(point.x - pivot.x, point.y - pivot.y))) * PIG_MOTION.spinScale;
+    return { x: pivot.x - radius, y: pivot.y - radius, width: radius * 2, height: radius * 2 };
+  }
+  function jumpEnvelope(box, pivot) {
+    return boundsOf([
+      ...corners(box),
+      ...scaledCorners(box, pivot, PIG_MOTION.jumpPeakScale, -PIG_MOTION.jumpRise),
+      ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
+    ]);
+  }
+  function fixedMotionReserve(pigBox) {
+    const artWidth = MAX_ART_ASPECT2 * FRAME_HEIGHT2 * pigBox.width;
+    const artHeight = FRAME_HEIGHT2 * pigBox.width;
+    const staticBox = unionBoxes(pigBox, {
+      x: pigBox.x + (pigBox.width - artWidth) / 2,
+      y: pigBox.y + (pigBox.height - artHeight) / 2,
+      width: artWidth,
+      height: artHeight
+    });
+    const pivot = {
+      x: pigBox.x + pigBox.width * PIG_TRANSFORM_ORIGIN.x,
+      y: pigBox.y + pigBox.height * PIG_TRANSFORM_ORIGIN.y
+    };
+    return unionBoxes(staticBox, spinEnvelope(staticBox, pivot), jumpEnvelope(staticBox, pivot));
+  }
+
   // src/client/desktop/measure.js
   function framedBox(node, box) {
     if (!node.matches?.(".dp-pig-img,.dp-pig-sleep")) return box;
@@ -10026,6 +10083,9 @@
     const state2 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
     function boxes(host3) {
+      const pigNode = host3.querySelector(".dp-pig");
+      const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode);
+      const pigInk = { x: pigBox.x, y: pigBox.y, r: pigBox.x + pigBox.width, b: pigBox.y + pigBox.height };
       const nodes = [host3];
       const all = host3.querySelectorAll("*");
       for (let a = 0; a < all.length; a += 1) {
@@ -10043,13 +10103,17 @@
         const box = framedBox(node, layoutBox(node));
         if (box.width < 1 || box.height < 1) continue;
         const rect = { x: box.x, y: box.y, r: box.x + box.width, b: box.y + box.height };
+        if (pigNode !== null && (node === pigNode || node.closest(".dp-pig") === pigNode)) {
+          pigInk.x = Math.min(pigInk.x, rect.x);
+          pigInk.y = Math.min(pigInk.y, rect.y);
+          pigInk.r = Math.max(pigInk.r, rect.r);
+          pigInk.b = Math.max(pigInk.b, rect.b);
+        }
         if (bubble !== null) bubbleRects.push(rect);
         else rects.push(rect);
       }
       if (rects.length === 0) return null;
       const hostBox = layoutBox(host3);
-      const pigNode = host3.querySelector(".dp-pig");
-      const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode);
       let bubbleZone = null;
       if (reserves && pigNode !== null) {
         const above = geometry2 === null ? BUBBLE_ZONE.height : geometry2.window.y + pigBox.y - geometry2.workArea.y - PAD;
@@ -10084,6 +10148,10 @@
           r: pigBox.x + pigBox.width + artMargin,
           b: pigBox.y + pigBox.height + 12
         });
+        if (reserves) {
+          const motion = fixedMotionReserve(pigBox);
+          outline.push({ x: motion.x, y: motion.y, r: motion.x + motion.width, b: motion.y + motion.height });
+        }
       }
       let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
       for (const o of outline) {
@@ -10099,7 +10167,17 @@
         height: Math.ceil((bottom - top + PAD * 2) / STEP) * STEP
       };
       const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height };
-      const shape = rects.concat(bubbleRects).map(function(rect) {
+      const animatedRects = [];
+      if (reserves && pigNode !== null) {
+        const animation = getComputedStyle(pigNode).animationName;
+        const envelope = animation === "dp-spin" ? spinEnvelope : animation === "dp-jump" ? jumpEnvelope : null;
+        if (envelope !== null) {
+          const pivot = { x: pigBox.x + pigBox.width * PIG_TRANSFORM_ORIGIN.x, y: pigBox.y + pigBox.height * PIG_TRANSFORM_ORIGIN.y };
+          const motion = envelope({ x: pigInk.x, y: pigInk.y, width: pigInk.r - pigInk.x, height: pigInk.b - pigInk.y }, pivot);
+          animatedRects.push({ x: motion.x, y: motion.y, r: motion.x + motion.width, b: motion.y + motion.height });
+        }
+      }
+      const shape = rects.concat(bubbleRects, animatedRects).map(function(rect) {
         const x = Math.max(0, Math.floor(rect.x) - SHAPE_SLACK);
         const y = Math.max(0, Math.floor(rect.y) - SHAPE_SLACK);
         return { x, y, width: Math.ceil(rect.r) + SHAPE_SLACK - x, height: Math.ceil(rect.b) + SHAPE_SLACK - y };

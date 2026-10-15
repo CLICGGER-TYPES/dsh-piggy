@@ -162,7 +162,7 @@ test('气泡不进窗口外框，猪头上方一直留气泡位置（面板朝�
   const src = readFileSync(new URL('../src/client/desktop/measure.js', import.meta.url), 'utf8')
   assert.match(src, /if \(bubble !== null\) bubbleRects\.push\(rect\)/)
   assert.match(src, /const outline = rects\.concat\(bubbleZone === null \? \[\] : \[bubbleZone\]\)/)
-  assert.match(src, /const shape = rects\.concat\(bubbleRects\)/)
+  assert.match(src, /const shape = rects\.concat\(bubbleRects, animatedRects\)/)
 })
 
 test('two-style artwork reserve keeps wide sprites on screen and does not move on action changes', () => {

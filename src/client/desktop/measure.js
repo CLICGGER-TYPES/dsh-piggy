@@ -11,6 +11,7 @@
  */
 import { PAD, STEP } from './geometry.js'
 import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
+import { fixedMotionReserve, jumpEnvelope, PIG_TRANSFORM_ORIGIN, spinEnvelope } from './motion-envelope.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -66,6 +67,9 @@ export function createMeasure(env) {
 
   /** @param {any} host */
   function boxes(host) {
+    const pigNode = host.querySelector('.dp-pig')
+    const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode)
+    const pigInk = { x: pigBox.x, y: pigBox.y, r: pigBox.x + pigBox.width, b: pigBox.y + pigBox.height }
     const nodes = [host]
     const all = host.querySelectorAll('*')
     for (let a = 0; a < all.length; a += 1) {
@@ -86,13 +90,15 @@ export function createMeasure(env) {
       const box = framedBox(node, layoutBox(node))
       if (box.width < 1 || box.height < 1) continue
       const rect = { x: box.x, y: box.y, r: box.x + box.width, b: box.y + box.height }
+      if (pigNode !== null && (node === pigNode || node.closest('.dp-pig') === pigNode)) {
+        pigInk.x = Math.min(pigInk.x, rect.x); pigInk.y = Math.min(pigInk.y, rect.y)
+        pigInk.r = Math.max(pigInk.r, rect.r); pigInk.b = Math.max(pigInk.b, rect.b)
+      }
       if (bubble !== null) bubbleRects.push(rect)
       else rects.push(rect)
     }
     if (rects.length === 0) return null
     const hostBox = layoutBox(host)
-    const pigNode = host.querySelector('.dp-pig')
-    const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode)
     // 气泡预留区：收起、打开都留，气泡出现/消失不改外框。离屏幕顶边不够高就只留到顶边。
     let bubbleZone = null
     if (reserves && pigNode !== null) {
@@ -132,6 +138,12 @@ export function createMeasure(env) {
       const artMargin = artMarginFor(pigBox.width)
       outline.push({ x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, pigBox.x - artMargin), y: pigBox.y - BUBBLE_ZONE.height - 24,
         r: pigBox.x + pigBox.width + artMargin, b: pigBox.y + pigBox.height + 12 })
+      // Reserve the whole rotation once, independent of the active action. macOS
+      // has no native shape, so keep its window footprint until passthrough is addressed.
+      if (reserves) {
+        const motion = fixedMotionReserve(pigBox)
+        outline.push({ x: motion.x, y: motion.y, r: motion.x + motion.width, b: motion.y + motion.height })
+      }
     }
     let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity
     for (const o of outline) { left = Math.min(left, o.x); top = Math.min(top, o.y); right = Math.max(right, o.r); bottom = Math.max(bottom, o.b) }
@@ -140,12 +152,24 @@ export function createMeasure(env) {
     // 实测：给内容尺寸也加滞回并不能消掉那 3~4px（2026-10-06），所以没留——
     // 它影响面更大（会推迟真变化），没有证据就不该在代码里。
     const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height }
-    const shape = rects.concat(bubbleRects).map(function (rect) {
+    // Only the active animation gets its swept hit area. The idle window's
+    // transparent motion reserve must remain click-through.
+    const animatedRects = []
+    if (reserves && pigNode !== null) {
+      const animation = getComputedStyle(pigNode).animationName
+      const envelope = animation === 'dp-spin' ? spinEnvelope : animation === 'dp-jump' ? jumpEnvelope : null
+      if (envelope !== null) {
+        const pivot = { x: pigBox.x + pigBox.width * PIG_TRANSFORM_ORIGIN.x, y: pigBox.y + pigBox.height * PIG_TRANSFORM_ORIGIN.y }
+        const motion = envelope({ x: pigInk.x, y: pigInk.y, width: pigInk.r - pigInk.x, height: pigInk.b - pigInk.y }, pivot)
+        animatedRects.push({ x: motion.x, y: motion.y, r: motion.x + motion.width, b: motion.y + motion.height })
+      }
+    }
+    const shape = rects.concat(bubbleRects, animatedRects).map(function (rect) {
       const x = Math.max(0, Math.floor(rect.x) - SHAPE_SLACK)
       const y = Math.max(0, Math.floor(rect.y) - SHAPE_SLACK)
       return { x, y, width: Math.ceil(rect.r) + SHAPE_SLACK - x, height: Math.ceil(rect.b) + SHAPE_SLACK - y }
     })
-    // 摸猪冒的爱心从猪头往上飘约 56px：飘的时候这块也可见，不然被切掉一半。
+    // Particle visibility has its own lifetime, independent of the pig's motion.
     if (pigNode !== null && host.querySelector('.dp-fx') !== null) {
       const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) }
       shape.push({ x: fx.x, y: fx.y, width: Math.ceil(pigBox.x + pigBox.width + 36) - fx.x, height: Math.ceil(pigBox.y + 12) - fx.y })
