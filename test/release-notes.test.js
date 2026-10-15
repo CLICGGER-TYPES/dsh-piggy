@@ -6,8 +6,9 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 
-const notes = version => execFileSync(process.execPath, [new URL('../scripts/release-notes.mjs', import.meta.url).pathname, version], { encoding: 'utf8' })
+const notes = version => execFileSync(process.execPath, [fileURLToPath(new URL('../scripts/release-notes.mjs', import.meta.url)), version], { encoding: 'utf8' })
 
 test('release notes end with plain @mentions of the contributors named in that version', () => {
   assert.match(notes('0.34.0'), /感谢贡献者：@tetezi\s*$/)

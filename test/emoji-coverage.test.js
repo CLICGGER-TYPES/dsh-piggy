@@ -5,9 +5,10 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { brotliDecompressSync } from 'node:zlib'
 
-const ROOT = new URL('..', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SOURCES = ['src/client', 'packages/pet-core/src', 'store', 'extensions', 'data.js', 'core.js', 'snapshot.js']
 // 跟 tools/slim-emoji-font.py 收字的范围一致；肤色修饰符不单独显示，不查。
 const PICTO = /[\u{1F000}-\u{1FAFF}]/gu
