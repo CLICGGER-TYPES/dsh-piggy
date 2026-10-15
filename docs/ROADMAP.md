@@ -6,18 +6,18 @@
 
 | 项目 | 当前值 | 状态 |
 |---|---|---|
-| 稳定主线 | `c20ab95` | 游戏包 0.37.0、桌面外壳 0.6.6、`STATE_VERSION` 14 |
+| 当前主线 | `main`，已纳入完整候选 `1e46ef3` | 整合前基线 `c20ab95`；版本仍为游戏 0.37.0、外壳 0.6.6、存档 v14；未发新版本 |
 | 菜园扩展 | 4.0.8（最低游戏版本 0.37.0） | 本轮扩展版本 |
-| 整合候选 | [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate) | PR #12/#13 的 A/B/C 与体验修复，准确阶段提交见[验证记录](guides/agent-adapters-validation.md)；未合入 main、未发版 |
+| 整合候选 | [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate) | PR #12/#13 的 A/B/C 与体验修复，准确阶段提交见[验证记录](guides/agent-adapters-validation.md)；完整候选已进入 main，原分支保留供复核，未发版 |
 
 历史阶段记录：PR #12/#13 的 A/B/C 候选曾在主机、Linux CLI、Windows 11 CLI 各完成 **1106/1106**；Esc 后续阶段 host **1115/1115**，Windows Node24 新增 Esc 测试 9/9。这些是对应历史版本的结果，不代表最新候选在三平台都跑过同一全量。
 
-最新候选客户端 SHA-256：`5476f34e95817e2aa28d09886572b5159dacb7d5ecfb66dac5eed0fb8008b8be`。主机全量 **1124/1124**、build/typecheck 通过；Windows Node24 动画相关测试 **9/9**。未声称最新候选在 Linux/Windows/macOS 均跑过 1124 项全量。
+最新候选客户端 SHA-256：`5476f34e95817e2aa28d09886572b5159dacb7d5ecfb66dac5eed0fb8008b8be`。主机全量 **1124/1124**、build/typecheck 通过。作者随后在原生 Windows / Node24 独立复核完整候选 **1124/1124**，构建和类型检查通过；[作者记录](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12#issuecomment-6191689370)。此前 Windows 动画相关 **9/9** 为历史单独执行；macOS 未验收。
 
 ## 当前阶段
 
 1. **体验问题阶段收尾，后续暂缓**：追蝴蝶与旋转/跳跃整段动画命中扫掠已修并完成几何复验；Linux 与 Windows 新版原生流程按下方实际覆盖记录。Windows 新版全新存档孵化已完成，macOS 未实机验证。用户已查看本机启动效果，要求余下问题以后处理；保留下方限制和待办。
-2. **候选交付**：用户已授权将完整候选提交并推送到独立分支，提供阶段提交号供 PR 作者复核。`code/` 主线保持稳定，尚未授权合入或发版。
+2. **整合收口**：作者已完成完整候选 Windows、DSH Desktop 和真实 OpenCode 联动复核，没有发现通用接入、提交恢复或 DSH 兼容阻断项。按用户后续指示将 `1e46ef3` 快进整合至 main，保留全部阶段提交与贡献署名；原 PR 按移植整合结果收口，不另发版。
 
 ## 体验问题（暂停新功能）
 

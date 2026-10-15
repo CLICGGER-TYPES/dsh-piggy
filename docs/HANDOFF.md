@@ -10,10 +10,10 @@
 
 ### 当前状态（2026-10-15）
 
-- **稳定基线**：总目录 `code/` 的主线基点为 `c20ab95`，游戏包 0.37.0、外壳 0.6.6、`STATE_VERSION` 14。主线基线不等于本轮 PR 整合已合入。
-- **PR #12/#13 候选**：完整 A/B/C 改动及后续体验修复在 `worktrees/runtime-c/`，候选发布到独立分支 [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate)；稳定 `code/` 仍在 `c20ab95`。当前客户端 SHA-256 为 `5476f34e95817e2aa28d09886572b5159dacb7d5ecfb66dac5eed0fb8008b8be`，主机全量 1124/1124、build/typecheck 通过。历史整合检查曾在主机、Linux CLI、Windows CLI 各为 1106/1106；那不是本次 1124 项结果。当前 Windows Node24 动画相关测试 9/9。本轮已获用户授权提交并推送独立候选，不合入 main、不发版；公开提交及验证范围见[整合验证记录](guides/agent-adapters-validation.md)。
+- **当前主线**：`code/` 的 main 已快进纳入作者复核的完整候选 `1e46ef3`，整合前基线为 `c20ab95`。游戏版本仍为 0.37.0、外壳 0.6.6、`STATE_VERSION` 14；尚未创建新版本标签或发版。
+- **PR #12/#13 整合**：A/B/C、关闭恢复与安装保存失败重试、Esc 和动画命中修复均已进入 main。复核基点保留在 [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate) 的 `1e46ef3`；main 随后只更新交接文档。当前客户端 SHA-256 为 `5476f34e95817e2aa28d09886572b5159dacb7d5ecfb66dac5eed0fb8008b8be`，主机全量 1124/1124、build/typecheck 通过；作者另在原生 Windows / Node 24.21.0 独立复核完整候选 1124/1124、构建及类型检查通过。完整阶段提交、独立复核来源和限制见[整合验证记录](guides/agent-adapters-validation.md)。
 - **当前已实测路径**：真实 DSH 14 项通过；Linux 原生新存档孵化、双焦点 Esc、空白点击穿透、固定 356×284 拖动与正常退出，拖动窗口位移与输入精确一致。Linux 284 帧录制约 49.9fps、最大间隔 34ms，未见猪丢失、反向步或重影；严格分析器仍因待机约 3.5px 位移报 FAIL。Windows 125% 原生购买 494/1、双焦点 Esc、底部 motion reserve 空白点击穿透、固定视口拖动与退出重启持久化通过；当前原生 132 帧约 21.66fps、最大间隔 78.26ms，逐帧未见白块/第二只猪，但仍不足以排除单帧残影。新版全新存档三次原生点击孵化已通过。macOS 未实机验证。
-- **目录整理**：已按迁移计划执行并核验 11 项；8 棵 Git 工作树 HEAD 与脏文件 SHA 均保留。活动 PR #12 物理路径保留，`worktrees/pr12-source` 为兼容入口。旧 `rightclick` 的四个未提交文件仍须保留。证据位于本机总目录 `tasks/results/directory-migration/`。稳定 `code/` 保持干净且位于 `c20ab95`；后续由用户明确授权提交并推送独立候选。
+- **目录整理**：已按迁移计划执行并核验 11 项；8 棵 Git 工作树 HEAD 与脏文件 SHA 均保留。活动 PR #12 物理路径保留，`worktrees/pr12-source` 为兼容入口。旧 `rightclick` 的四个未提交文件仍须保留。证据位于本机总目录 `tasks/results/directory-migration/`。目录迁移时 `code/` 保持干净且位于 `c20ab95`；随后按用户授权将完整候选整合到 main。
 - **当前工作顺序与体验待办**：以 [ROADMAP](ROADMAP.md) 为唯一清单；完整执行证据见本机总目录 `tasks/2026-10-15-runtime-integration-and-cleanup.md`。
 
 动画命中范围的当前结论：追蝴蝶、旋转 `dp-spin` 与跳跃 `dp-jump` 已用整段 CSS 动画扫掠纳入测量；旋转修前 roll20/67 越界最大 30.206px、cure14/59 最大 29.51px，修后分别 0/67、0/59；追蝴蝶修后 0/61。窗口轮廓只随尺寸固定预留，待机时不把预留扩张成点击区；Darwin 保持原 footprint，尚未修复。探针是强制动画的几何验证，不等同于自然用户复现或 macOS 实机验收。证据：本机总目录 `tasks/results/rotation-hit-probe/`。
@@ -21,7 +21,7 @@
 DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium headless 独立 profile 完成；未使用个人 profile 或真实 `DSH_HOME`。`Continue`、右键打开面板、孵化、购买苹果后金额 500→494 且苹果 0→1，刷新和重启 DSH 后仍为 494/1；仅有主动拦截 Google Fonts 引起的 3 条 console 加载错误，无其他 app error。Linux Esc 原生流程在 pet focus 和 panel focus 两态均关闭面板；菜园 dialog/popup 依次从 1/1 到 0/1、0/0、扩展关闭，panel focus 保持 true。证据路径见本机总目录 `tasks/results/runtime-c-dsh-ui/run-20261015T063137Z/result.json` 和 `tasks/results/runtime-c-linux-ui/ux-results.json`。
 
 - **是什么**：一只「QQ 宠物」式的电子猪。同一份代码有两种形态：**DSH 插件**（住在 DeepSeek Harness 网页里）和**桌面版**（Electron，Windows / Linux / macOS）。
-- **稳定代码入口**：项目总目录中的 `code/`（本机主线基线）；本轮候选另在总目录 `worktrees/runtime-c/`。远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy` 的发布仍按第 9 节流程执行。
+- **稳定代码入口**：项目总目录中的 `code/`（当前 main）；已复核候选另保留在总目录 `worktrees/runtime-c/`。远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy` 的发布仍按第 9 节流程执行。
 - **每次改完必跑**：`npm run build && npm test && npm run typecheck`（当前候选主机全量 1124 项；具体平台和版本范围以对应验证记录为准）。
 - **「怎么加 X」先看 `docs/guides/`**：[开发新功能（总则）](guides/adding-features.md)、[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
