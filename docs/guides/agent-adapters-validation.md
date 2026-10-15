@@ -45,3 +45,11 @@ WolalaQAQ 的补丁基于 `29d84e4`，拆成 `96fcfd8`（B）和 `9ef3638`（C�
 PR #13 原补丁在 Linux 常规测试 893/893，六条单独复现 6/6，构建与类型检查通过。审查发现的安装前保存失败已补两条真实 Worker 回归，修前 0/2、修后 2/2；六条旧复现同时纳入 npm test，Linux 常规测试现为 901/901，0 失败、0 跳过，构建与类型检查通过。未调用真实安装器。
 
 Windows 六项基线分成两类单独处理：新增 `.gitattributes` 保持文本 LF，避免构建产物和官方扩展哈希受检出换行影响；emoji 字体与发行说明测试用 `fileURLToPath()` 取得本地路径，避免重复盘符。这些改动不改扩展内容或登记哈希。
+
+### Win11 对照与最终结果
+
+Win11 虚拟机使用 Node 24.21.0、临时便携 Git 2.56.0.windows.2，独立临时目录；检出时显式 `core.autocrlf=true`，未修改系统 Git 设置或原有测试存档。原 PR #13 为 884/893：六项已知换行/路径失败，加三项本机接口 `ECONNRESET`。换行/路径修正后为 898/901，原六项全部消失；`git ls-files --eol` 确认 client.js、素材表、扩展源码从 w/crlf 变为 w/lf。
+
+另外三项来自 VM 已有 `NODE_USE_ENV_PROXY`、HTTP(S)_PROXY 且缺少 NO_PROXY：本机诊断服务器收到 0 次请求，fetch 连接重置、Node HTTP 返回代理的 502。测试入口改用 `scripts/test.mjs`，仅为子进程追加 localhost/回环直连，保留其他代理配置。新增独立进程测试，在继承不可达代理时验证 fetch、Node HTTP 均真正命中本机服务器。Win11 同一夹具直接运行失败，经新入口运行通过，没有放宽 HTTP 状态或跳过断言。
+
+最终 Linux Node 26.11.1、Win11 Node 24.21.0 均为 **902/902，0 失败、0 跳过**；两边构建、类型检查通过，Windows 构建后 git status 干净。Linux 私有显示上的真实 Electron 默认/启用接口两次启动均退出 0，面板预加载正常；启用接口时返回 401/200/404/applied/duplicate，退出后存档锁、接口锁、发现文件均清理。未运行真实安装器，未将本补充分支接到 0.37 或合入 main；没有复测 macOS。

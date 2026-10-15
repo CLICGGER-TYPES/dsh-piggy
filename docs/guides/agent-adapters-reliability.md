@@ -5,7 +5,7 @@
 B 手动运行：
 
 ```sh
-node --test test/repros/pr12-b-reliability.test.js
+npm test -- test/repros/pr12-b-reliability.test.js
 ```
 
 补丁前结果为 **0/5 通过、5 条失败**，对应：
@@ -19,7 +19,7 @@ node --test test/repros/pr12-b-reliability.test.js
 C 手动运行：
 
 ```sh
-node --test test/repros/pr12-c-reliability.test.js
+npm test -- test/repros/pr12-c-reliability.test.js
 ```
 
 补丁前结果为 **0/1 通过、1 条失败**：真实 HTTP 接口已关闭，发现文件删除注入一次 EACCES；恢复文件系统后第二次 `close()` 仍返回第一次失败的 Promise，发现文件及接口锁未被清理。
@@ -35,7 +35,7 @@ WolalaQAQ 的补丁基于 `29d84e4`，拆成 `96fcfd8`（B：同步关闭与工�
 在 Windows 上运行：
 
 ```sh
-node --test test/repros/pr12-b-reliability.test.js test/repros/pr12-c-reliability.test.js
+npm test -- test/repros/pr12-b-reliability.test.js test/repros/pr12-c-reliability.test.js
 ```
 
 6 条通过 5 条：C 1/1，B 4/5。剩下的「WAL rename 成功后目录 fsync 失败」只能在 Linux 上运行：`syncDirectory()` 在 `process.platform === 'win32'` 时直接返回，注入的 fsync 不会执行，`assert.throws` 必然失败。补丁把 `pending` 的登记放在 rename 之后、目录同步之前，同时补了状态 rename 后的目录同步，正是这条复现要求的顺序。
@@ -49,3 +49,5 @@ node --test test/repros/pr12-b-reliability.test.js test/repros/pr12-c-reliabilit
 安装改用统一关闭函数；失败后只记日志并取消安装，恢复请求和命中轮询，不自动退出。`test/shell-install-retry.test.js` 用真实 Worker、真实存档和被目录占用的临时文件制造写入失败，分别检查恢复后重试安装、正常退出；两条修前都失败，修后通过。连同六条旧复现，Linux 共 8/8 通过，全部纳入常规测试。
 
 目录 fsync 故障注入保留 Linux 路径；Windows 分支验证不尝试目录 fsync，且提交及去重正常，不把未执行的注入计作通过。两平台的检查名称分别说明范围。
+
+原六项 Windows 基线测试的 LF/路径问题已单独修正；继承代理时的回环直连也补独立进程回归。最终 Linux/Win11 常规测试均为 902/902，0 失败、0 跳过；构建与类型检查通过，细节见[验证记录](agent-adapters-validation.md)。请用上述 npm 入口运行局部回归，避免宿主的环境代理接走本机请求。
