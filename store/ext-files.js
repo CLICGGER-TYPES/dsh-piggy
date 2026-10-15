@@ -5,7 +5,7 @@
  * - 代码三件：manifest.json、server.js、client.js，每个 ≤512KB。
  * - 图片（v0.36 起，用户 2026-10-11：扩展界面要用画好的素材）：manifest 里 `assets: ["bg.webp", …]` 列出，
  *   放在扩展目录的 `assets/` 里；在线目录的 `files` 里对应 `"assets/bg.webp": { url, sha256 }`。
- *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB；0.37.1 起不限制图片张数和合计大小。
+ *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB；0.37.0 起不限制图片张数和合计大小。
  *   面板里用 `app.asset('bg.webp')` 拿地址（GET /dsh-piggy/ext/<key>/assets/<name>）。
  * @module dsh-piggy/store/ext-files
  */

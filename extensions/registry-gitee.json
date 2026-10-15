@@ -82,7 +82,7 @@
       "label": "菜园",
       "emoji": "🥬",
       "version": "4.0.8",
-      "minGame": "0.37.1",
+      "minGame": "0.37.0",
       "description": "照 QQ 农场改版：29 种作物、18 块地，会长草生虫干旱；等级解锁种子，多季作物；面板里是小农场，也能开大窗口的大农场。可雇帮工猪。用自己的菜币。",
       "economy": {
         "currency": {
@@ -2279,12 +2279,12 @@
       },
       "bundle": {
         "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.8/ext-farm-4.0.8.piggyext",
-        "sha256": "f165708f87451dfee41702479f5373cd2c9634830bfa2f3e64d11a47bd33f5fb"
+        "sha256": "1bc932c6912b31a87808217e07f79470a07fc76b489ce069a70c41501959cd69"
       },
       "files": {
         "manifest.json": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.8/manifest.json",
-          "sha256": "dd18eccfa3f991e16b8b2e0b2de8faef67418860af6863925fb42fe0c7d6b230"
+          "sha256": "c864d20c98c26206b5c84ff22cbd99068e7ddc2b38df1214513f32e27a2412a4"
         },
         "server.js": {
           "url": "https://gitee.com/clicgger/dsh-piggy/releases/download/ext-farm-4.0.8/server.js",
