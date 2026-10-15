@@ -1,5 +1,5 @@
 // @ts-check
-/** PR12 B 的故障复现；补丁到达前单独运行，明确保留失败而不改生产实现。 */
+/** PR12 B 的可靠性回归，纳入 npm test；真实落盘、Worker 和生产退出回调。 */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'
@@ -14,6 +14,7 @@ import { acquireGameLock } from '../../runtime/owner-lock.js'
 import { createStore } from '../../store.js'
 import { hatchEgg } from '../../core.js'
 import { startBackgroundHost } from '../../apps/desktop/lib/background-host.js'
+import { shellLifecycle } from '../helpers/shell-lifecycle.js'
 
 const temp = () => fs.mkdtempSync(join(tmpdir(), 'piggy-pr12-b-repro-'))
 const read = path => JSON.parse(fs.readFileSync(path, 'utf8'))
@@ -65,7 +66,7 @@ test('B 在途请求读完请求体时运行时已关闭，不能覆盖新写者
   }
 })
 
-test('B WAL rename 成功后目录 fsync 失败，下一步仍恢复已发布事务', () => {
+test(process.platform === 'win32' ? 'B Windows 提交不做目录 fsync，重复事件不再奖励' : 'B WAL rename 成功后目录 fsync 失败，下一步仍恢复已发布事务', () => {
   const directory = temp(), statePath = join(directory, 'state.json'), ledgerDir = `${statePath}.work-events`
   const now = Date.now(), walPath = join(ledgerDir, 'transaction.json')
   fs.writeFileSync(statePath, JSON.stringify(hatchEgg(now)))
@@ -80,6 +81,12 @@ test('B WAL rename 成功后目录 fsync 失败，下一步仍恢复已发布事
     return original(descriptor)
   })
   try {
+    if (process.platform === 'win32') {
+      assert.equal(ledger.receive(store, work(now)).status, 'applied')
+      assert.equal(injected, false, 'Windows 不应尝试目录 fsync')
+      assert.equal(ledger.receive(store, work(now)).status, 'duplicate')
+      return
+    }
     assert.throws(() => ledger.receive(store, work(now)))
     assert.equal(injected, true)
     assert.equal(fs.existsSync(walPath), true)
@@ -141,23 +148,17 @@ test('B Worker 真实死亡后 before-quit 能结束主进程退出流程', asyn
 })
 
 test('B 外壳安装器启动前必须等待后台保存完成', async () => {
-  const source = fs.readFileSync(new URL('../../apps/desktop/main.js', import.meta.url), 'utf8')
-  const start = source.indexOf("ipcMain.handle('piggy:shell:install'")
-  const end = source.indexOf("ipcMain.handle('piggy:quit'", start)
-  let handler, scheduled, completeSave
+  let completeSave
   const saved = new Promise(resolve => { completeSave = resolve })
   const steps = []
-  runInNewContext(source.slice(start, end), {
-    ipcMain: { handle(name, callback) { handler = callback } }, fromPage: () => true,
-    shellUpdates: { status: () => ({ readyVersion: '0.6.7' }), install() { steps.push('install') } },
-    host: { dispose() { steps.push('saving'); return saved.then(() => steps.push('saved')) } },
-    backupSave() {}, setTimeout(callback) { scheduled = callback }, process: { env: {} },
-    log() {}, app: { quit() {} }, hostClosed: false, hostClosing: null,
-  })
+  const lifecycle = shellLifecycle({ dispose() {
+    steps.push('saving')
+    return saved.then(() => { steps.push('saved'); return { saved: true } })
+  } }, () => steps.push('install'))
   try {
-    const result = handler({})
+    const result = lifecycle.install()
     // 生产实现用 600ms 的调度；在测试中直接执行捕获的回调。
-    const installed = scheduled?.()
+    const installed = lifecycle.runInstall()
     await delay(0)
     assert.equal(steps.includes('install'), false, `保存未完成就安装：${steps}`)
     assert.equal(steps.includes('saving'), true)

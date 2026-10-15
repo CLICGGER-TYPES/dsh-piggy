@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 外壳更新前保存失败时取消本次安装、恢复游戏操作，允许重新安装或正常退出；安装和退出共用关闭状态，失败的 Promise 不再把应用卡住。
+
 - 来自 PR #12（WolalaQAQ）：修复关闭与恢复边界。运行时关闭后，读请求期间到达的动作不再写旧存档；WAL 已 rename 后的目录同步失败仍按已发布事务恢复；Windows 上残留的空锁目录可以回收；后台 Worker 死亡时主进程能结束退出；外壳安装器改为等存档落盘后启动；发现文件清理失败后接口可以重试关闭。
 
 - 来自 PR #12（WolalaQAQ）：显式 `--work-events` 启用本机认证接口，仅监听 127.0.0.1 随机端口并开放 `/health`、`/events`；提供默认关闭的无窗口入口和 agent 接入说明。

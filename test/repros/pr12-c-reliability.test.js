@@ -1,5 +1,5 @@
 // @ts-check
-/** PR12 C 的关闭重试故障复现；补丁到达前单独运行，不改生产实现。 */
+/** PR12 C 的接口关闭重试回归，纳入 npm test。 */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { syncBuiltinESMExports } from 'node:module'

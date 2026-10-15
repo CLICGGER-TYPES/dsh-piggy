@@ -968,14 +968,10 @@ ipcMain.handle('piggy:shell:install', event => {
   const readyVersion = shellUpdates.status().readyVersion
   // 安装器会替换整个外壳：关掉后台写者、等存档落盘之后再启动安装器。
   setTimeout(() => {
-    if (!hostClosing) {
-      quitting = true
-      hostClosing = (host ? host.dispose() : Promise.resolve({ saved: true })).then(result => { hostClosed = true; return result })
-    }
-    return hostClosing.then(() => {
+    return prepareToQuit().then(() => {
       backupSave('shell-v' + readyVersion)
       try { shellUpdates?.install() } catch (error) { log('shell update install failed', String(error)) }
-    }).catch(error => { log('shell update shutdown failed', String(error)); app.quit() })
+    }).catch(error => { log('shell update shutdown failed', String(error)) })
   }, 600)
   return { ok: true }
 })
