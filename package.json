@@ -39,6 +39,7 @@
     "store",
     "runtime",
     "adapters",
+    "docs/guides/agent-adapters.md",
     "src",
     "scripts",
     "cordis.patch.yml",
@@ -52,7 +53,7 @@
   "scripts": {
     "build": "node scripts/build-client.mjs",
     "typecheck": "node scripts/typecheck.mjs",
-    "test": "node --import ./test/helpers/strict-lines.js --test \"test/**/*.test.js\" \"apps/desktop/test/*.test.js\"",
+    "test": "node scripts/test.mjs",
     "preview": "echo \"open tools/preview.html in a browser\""
   },
   "dsh": {

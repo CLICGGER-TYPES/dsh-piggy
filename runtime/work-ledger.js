@@ -63,10 +63,13 @@ export function openWorkLedger({ directory, statePath, now = Date.now }) {
     if (store && ![before, after].includes(identity(store.state))) {
       throw new Error('work memory conflict; evidence preserved')
     }
+    // 发布后的目录同步可能失败；恢复时先持久化 WAL，再写游戏状态。
+    syncDirectory(directory)
     if (disk === before && pending.nextState !== null) {
       writeStateFile(statePath, pending.nextState)
-      syncDirectory(dirname(statePath))
     }
+    // 上一次状态 rename 后的目录同步也可能失败，已是 nextState 时仍需补同步。
+    syncDirectory(dirname(statePath))
     // flush 已撤下旧状态的节流计时器；安装不能再安排一次旧快照写盘。
     if (store) store.installCommittedState(structuredClone(pending.nextState))
     const key = workEventKey(pending.receipt)
@@ -102,14 +105,14 @@ export function openWorkLedger({ directory, statePath, now = Date.now }) {
     if (receipts.size >= RECEIPT_LIMIT) throw workError('work receipt capacity reached', 429)
     // 保存完整内存基线，让 WAL 的 beforeState 与当前 Store 一致。
     store.flush(true)
+    syncDirectory(dirname(statePath))
     const beforeState = savedState(statePath)
     const nextState = structuredClone(store.state)
     const disposition = nextState === null || nextState.dead ? 'ignored' : 'applied'
     if (nextState !== null) { feed(nextState, event.type, nowMs); settleAchievements(nextState, nowMs) }
     const receipt = { ...event, disposition }
     const wal = { version: 1, statePath: resolve(statePath), beforeState, nextState, receipt }
-    writeWorkJson(walPath, wal)
-    pending = wal
+    writeWorkJson(walPath, wal, () => { pending = wal })
     finish(store)
     return { ok: true, status: 'applied', disposition }
   }

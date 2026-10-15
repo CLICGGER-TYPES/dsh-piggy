@@ -2,13 +2,15 @@
 /** 桌面游戏 Store、路由和工作接口共用后台单写者，窗口线程不执行落盘。 */
 import { parentPort, workerData } from 'node:worker_threads'
 import { startHost } from './host.js'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 if (!parentPort) throw new Error('game runtime requires a parent port')
 const port = parentPort
 const fetches = new Map()
 const tasks = new Set()
 let sequence = 0
-let host
+let host, endpoint
 let closing = false
 
 /** @type {typeof globalThis.fetch} */
@@ -30,6 +32,7 @@ async function request(message) {
   if (message.method === 'dispose') {
     closing = true
     try {
+      await endpoint?.close()
       await Promise.allSettled([...tasks])
       host.dispose()
     } catch (error) { closing = false; throw error }
@@ -64,6 +67,10 @@ try {
     onSnapshot: value => port.postMessage({ kind: 'snapshot', value }),
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
+  if (workerData.workEventsDirectory) {
+    const { startWorkEventServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/local-server.js')).href)
+    endpoint = await startWorkEventServer({ directory: workerData.workEventsDirectory, runtime: host })
+  }
   port.postMessage({ kind: 'ready' })
 } catch (error) {
   host?.dispose()

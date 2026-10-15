@@ -3,6 +3,13 @@
 import { randomBytes } from 'node:crypto'
 import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs'
 
+function removeEmptyLock(directory) {
+  // 只移除空目录；竞争者已经发布的新标记不能被删除。
+  try { rmdirSync(directory) } catch (error) {
+    if (!['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(error?.code)) throw error
+  }
+}
+
 export function acquireGameLock(statePath) {
   const fixed = `${statePath}.runtime.lock`
   const nonce = randomBytes(16).toString('hex')
@@ -22,8 +29,12 @@ export function acquireGameLock(statePath) {
           if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('invalid game lock; evidence preserved')
           names = readdirSync(fixed)
         } catch (readError) { if (readError?.code === 'ENOENT') continue; throw readError }
+        // Windows 不能用 rename 覆盖空目录；旧 owner 删除后崩溃可留下这种锁。
+        if (names.length === 0) { removeEmptyLock(fixed); continue }
         if (names.length !== 1 || !/^[a-f0-9]{32}\.json$/.test(names[0])) throw new Error('invalid game lock; evidence preserved')
-        const owner = JSON.parse(readFileSync(`${fixed}/${names[0]}`, 'utf8'))
+        let owner
+        try { owner = JSON.parse(readFileSync(`${fixed}/${names[0]}`, 'utf8')) }
+        catch (readError) { if (readError?.code === 'ENOENT') continue; throw readError }
         if (!Number.isSafeInteger(owner.pid) || owner.pid <= 0 || owner.nonce !== names[0].slice(0, -5)) {
           throw new Error('invalid game lock owner; evidence preserved')
         }
@@ -31,9 +42,7 @@ export function acquireGameLock(statePath) {
         catch (probeError) { if (probeError?.code !== 'ESRCH') throw probeError }
         // 随机文件名绑定旧所有者，迟到回收不能删除新所有者的标记。
         try { unlinkSync(`${fixed}/${names[0]}`) } catch (removeError) { if (removeError?.code !== 'ENOENT') throw removeError }
-        try { rmdirSync(fixed) } catch (removeError) {
-          if (!['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(removeError?.code)) throw removeError
-        }
+        removeEmptyLock(fixed)
       }
     }
     if (!published) throw new Error('game lock contention')
@@ -43,8 +52,9 @@ export function acquireGameLock(statePath) {
   let released = false
   return () => {
     if (released) return
-    unlinkSync(`${fixed}/${name}`)
-    rmdirSync(fixed)
+    // 上一次可能已经删除 owner，但 rmdir 失败；重试只碰自己的随机标记。
+    try { unlinkSync(`${fixed}/${name}`) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+    removeEmptyLock(fixed)
     released = true
   }
 }

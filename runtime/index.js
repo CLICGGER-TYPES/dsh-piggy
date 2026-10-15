@@ -21,14 +21,15 @@ export function createGameRuntime(options) {
     store = createStore(options.statePath, { now: options.now })
   } catch (error) { release(); throw error }
   if (options.journalHeader) store.journal?.header?.(options.journalHeader)
-  // 路由、扩展的异步网络操作结束后，也必须先恢复未完成事务。
+  let closed = false
+  // 路由、扩展的异步操作恢复后，在实际 Store 入口检查关闭状态并恢复事务。
+  // dispose 由运行时在关闭后调用；flush 和状态安装仅供账本内部使用。
   for (const [key, method] of Object.entries(store)) {
-    if (typeof method !== 'function' || ['flush', 'installCommittedState'].includes(key)) continue
-    store[key] = (...args) => { ledger.finish(store); return method(...args) }
+    if (typeof method !== 'function' || ['dispose', 'flush', 'installCommittedState'].includes(key)) continue
+    store[key] = (...args) => { prepare(); return method(...args) }
   }
   const routes = []
   const mounts = new Set()
-  let closed = false
 
   function prepare() {
     if (closed) throw new Error('game runtime closed')
@@ -51,8 +52,8 @@ export function createGameRuntime(options) {
   mountRoutes({ register: route => { routes.push(route); return () => {} } })
 
   function handle(method, url, body) {
-    prepare()
     const path = url.split('?')[0]
+    if (!(closed && path === '/dsh-piggy/logs/export')) prepare()
     const route = routes.find(r => r.kind === 'prefix' ? path.startsWith(r.path + '/') : path === r.path)
     if (!route) return Promise.resolve({ status: 404, headers: {}, body: '' })
     return new Promise((resolve, reject) => {
@@ -90,7 +91,7 @@ export function createGameRuntime(options) {
     dispatchCommand(command, input) { prepare(); return dispatch(store, command, input) },
     record: (...args) => store.journal?.record?.(...args),
     dispose() {
-      if (closed) return
+      if (closed) return release()
       ledger.finish(store)
       store.flush()
       closed = true
