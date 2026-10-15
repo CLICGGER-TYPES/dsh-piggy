@@ -9,6 +9,45 @@ const role = argv.includes('--piggy-role=panel') ? 'panel' : argv.includes('--pi
 /** 扩展大窗口（role=ext，外壳 0.6.5 起）显示的是哪个扩展。 */
 const extKey = role === 'ext' ? (argv.find(arg => arg.startsWith('--piggy-ext=')) || '').slice('--piggy-ext='.length) : null
 
+/** A visible inner layer gets the first Escape; an empty desktop window can close on the next one. */
+function hasVisibleEscapeLayer() {
+  const layers = document.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-farm-overlay]')
+  for (const layer of layers) {
+    if (layer.getClientRects().length === 0) continue
+    const { visibility } = document.defaultView.getComputedStyle(layer)
+    if (visibility !== 'hidden' && visibility !== 'collapse') return true
+  }
+  return false
+}
+
+function isEditableTarget(target) {
+  for (let node = target; node !== null && node !== undefined; node = node.parentElement) {
+    const tag = String(node.tagName || '').toLowerCase()
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || node.isContentEditable === true) return true
+    if (node.getAttribute?.('role') === 'textbox') return true
+    const contentEditable = node.getAttribute?.('contenteditable')
+    if (contentEditable === '' || contentEditable === 'true' || contentEditable === 'plaintext-only') return true
+  }
+  return false
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || event.repeat || event.defaultPrevented) return
+    if (isEditableTarget(event.target) || isEditableTarget(document.activeElement) || hasVisibleEscapeLayer()) return
+
+    let channel = null
+    if (role === 'panel') channel = 'piggy:panel:close'
+    else if (role === 'pet' && document.querySelector?.('[data-dsh-pig][data-panel-open="true"]') != null) channel = 'piggy:panel:close'
+    else if (role === 'ext') channel = 'piggy:ext:close'
+    if (channel === null) return
+
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    ipcRenderer.send(channel)
+  }, true)
+}
+
 contextBridge.exposeInMainWorld('piggyShell', {
   /** 内容（猪 + 面板 + 气泡）的外接框：主进程据此把窗口调成那么大，并抠出可点区域。 */
   setContent: (content, immediate = false) => {
