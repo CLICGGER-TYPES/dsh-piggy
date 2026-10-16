@@ -18,7 +18,7 @@
 - **后续菜园焦点候选**：扩展 4.0.9 修复购买/铲除确认的焦点进入、Tab 限制和返回；共享客户端 `a0b806a` 修复宿主轮询再次丢焦点。主机 1136/1136、build/typecheck 通过，Windows 125% 实际便携测试包与 DSH 网页复验通过。Linux 旧宿主客户端加 4.0.9 的原生流程已过，但新宿主客户端复验遇到两次 Xwayland/pixman_blt 崩溃，未计通过，需先诊断。修改、4.0.9 双渠道目录/官方清单和测试包均未发布；未提交或推送。只在本机隔离工作树，具体证据及下一步以 [ROADMAP](ROADMAP.md) 为准。
 - **继续验收结果**：主机再次1136/1136、build/typecheck通过。Windows独立身份的实际NSIS安装、孵化/购买、正常退出重开（494金币/1苹果）和卸载通过，原安装/快捷方式未变；125%宿主QMP scanout录制540帧约90fps、最大14.43ms，抽查未见白块/第二只猪，不能据此宣称残影根因已修。Linux私有rootful隔离启动对照与15分钟稳定运行完成，但原rootless pixman崩溃仍未解决；前置误用XTest段已排除，不作完整QMP验收。证据在本机总目录 `tasks/results/experience-finish-20261016/ACCEPTANCE.md`；后续纯QMP与主代理未插桩候选复核已覆盖Linux私有rootful的焦点、退出重开/锁和540帧拖动；仍不替代原rootless条件。一次子代理误启动默认配置目录无基线，无法保证未写入，未擅自删除/回滚；具体影响边界和私有窗口二次退出点测限制见报告及ROADMAP。
 - **RC 与 README 准备**：用户同意先准备 RC；独立工作树现为游戏/别名包 `0.37.1-rc.1`、外壳 `0.6.7-rc.1`，存档仍 v14、菜园候选仍 4.0.9。README 已重排安装、玩法、稳定版/RC 状态，并替换为隔离 DSH 实拍的主菜单、小农场和大农场；见[截图来源](screenshots/readme-rc-capture.md)。RC 更新清单与 Gitee 清理回归已通过；主代理全量 1140/1140、build/typecheck 通过，游戏包、扩展双渠道校验及 npm 打包预览通过。未提交、推送、打标签或发布；线上稳定入口未改。具体进度和发布顺序仍以 [ROADMAP](ROADMAP.md) 为准。
-- **晚间反馈修复与发布授权**：用户要求验收后今晚先发 GitHub/Gitee RC、npm 明早；QEMU 可用。已修复本体摸摸 pending 丢失、较大小猪气泡预留、#16/#17/#18，对应矿洞候选 3.0.1，主代理回归 1154/1154。最新客户端 `02f3d279`；Windows 高 DPI 与 DSH 定向流程继续验收，尚未发布。Gitee 认证可用，凭据不在文件中。当前进度见 [ROADMAP](ROADMAP.md)。
+- **晚间 RC 已发布**：游戏/别名源码 `0.37.1-rc.1`、外壳 `0.6.7-rc.1`，存档 v14 不变；[GitHub RC](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.1) 与 [Gitee RC](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.1) 均已发布，农场 4.0.9 / 矿洞 3.0.1 两渠道正常 UI 在线安装通过。主机全量 1154/1154，Windows 125% + Electron DPR2 对照、本体/面板摸摸和退出重开通过，实际系统 200% 未覆盖；Linux rootless/macOS 限制保留。GitHub provider 在各 release 下使用 latest 清单，Gitee generic 使用 rc；首次 GitHub 检查假设错误已修正，原标签补构建全绿，未移动标签。#12/#13/#14/#15/#16/#17/#18 均已按各自范围回复，README 与发行说明已感谢贡献者。npm 未发布，维护者明早手动使用预发布 dist-tag。当前状态以 [ROADMAP](ROADMAP.md) 为准。
 - **当前工作顺序与体验待办**：以 [ROADMAP](ROADMAP.md) 为唯一清单；完整执行证据见本机总目录 `tasks/2026-10-15-runtime-integration-and-cleanup.md`。
 
 动画命中范围的当前结论：追蝴蝶、旋转 `dp-spin` 与跳跃 `dp-jump` 已用整段 CSS 动画扫掠纳入测量；旋转修前 roll20/67 越界最大 30.206px、cure14/59 最大 29.51px，修后分别 0/67、0/59；追蝴蝶修后 0/61。窗口轮廓只随尺寸固定预留，待机时不把预留扩张成点击区；Darwin 保持原 footprint，尚未修复。探针是强制动画的几何验证，不等同于自然用户复现或 macOS 实机验收。证据：本机总目录 `tasks/results/rotation-hit-probe/`。
@@ -232,7 +232,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
    cd code && npm login && npm publish --access public && npm view dsh-piggy version
    cd packages/dsh-plugin-piggy && npm publish --access public && npm view dsh-plugin-piggy version
    ```
-   已经发过的版本号不能再发。
+   以上命令用于正式版。预发布（例如 `0.37.1-rc.1`）两包均用 `npm publish --access public --tag rc`，不要覆盖稳定 `latest`；先主包、再别名包。已经发过的版本号不能再发。
 
 ### 9.3 在线扩展发版
 
