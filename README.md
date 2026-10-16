@@ -11,17 +11,17 @@
 大农场可以在 DSH 中展开，也能在桌面版里开独立窗口。种菜、浇水、除草、收菜，或者雇帮工猪替你照料。
 
 <p align="center">
-  <img src="docs/screenshots/readme-rc-farm-big.png" width="900" alt="当前 RC 候选的真实界面：大农场、地块和底部工具栏">
+  <img src="docs/screenshots/readme-rc-farm-big.png" width="900" alt="本次 RC的真实界面：大农场、地块和底部工具栏">
 </p>
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/readme-rc-home.png" width="290" alt="当前 RC 候选：小猪旁的 App 主菜单"><br>主菜单</td>
-    <td align="center"><img src="docs/screenshots/readme-rc-farm-small.png" width="290" alt="当前 RC 候选：面板中的小农场与照料工具"><br>小农场</td>
+    <td align="center"><img src="docs/screenshots/readme-rc-home.png" width="290" alt="本次 RC：小猪旁的 App 主菜单"><br>主菜单</td>
+    <td align="center"><img src="docs/screenshots/readme-rc-farm-small.png" width="290" alt="本次 RC：面板中的小农场与照料工具"><br>小农场</td>
   </tr>
 </table>
 
-以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9 候选**的实际截图；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。这批候选仍在发布准备，在线稳定版暂为游戏 **0.37.0 / 外壳 0.6.6 / 菜园 4.0.8**。
+以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9**的实际截图；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。本次游戏和外壳为 RC 预发布；稳定版仍为游戏 **0.37.0 / 外壳 0.6.6**。在线菜园已更新到 **4.0.9**。
 
 ## 安装
 
@@ -72,25 +72,26 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 | 外观与收藏 | 免费内置皮肤、职业外观、自定义 PNG 皮肤包（兼容原 SVG 包），以及成就、纪念品和摆件图鉴 |
 | 桌面陪伴 | 猪与面板分成两个窗口；大小按百分比调，可设网络代理和全屏时隐藏。猪会眨眼、打滚、打盹、追蝴蝶，散步默认关闭 |
 
-金币按来源记账，扩展可以有自己的币，并按汇率兑换；删除扩展时余额自动换回金币。扩展可单独开关、删除、更新；当前菜园稳定版 4.0.8 需要游戏 0.37.0。在线扩展只安装本项目发布并通过校验的文件，详见[扩展安装说明](docs/design/extension-download.md)。
+金币按来源记账，扩展可以有自己的币，并按汇率兑换；删除扩展时余额自动换回金币。扩展可单独开关、删除、更新；当前菜园版本 4.0.9 需要游戏 0.37.0。在线扩展只安装本项目发布并通过校验的文件，详见[扩展安装说明](docs/design/extension-download.md)。
 
 小猪使用一套无描边平涂透明 PNG，不同状态会换成对应立绘；支持内置彩色 emoji 字体与系统字体切换。商店、背包中的“装扮”入口暂时隐藏，已有记录保留。换肤见[玩家教程](docs/guides/skins.md)，自定义皮肤从[制作教程](docs/guides/creating-skins.md)开始。
 
 遇到问题时，可到「设置 → 日志 → 导出日志」保存运行记录；桌面版会弹出“另存为”。日志包含版本、动作、扩展下载与报错，方便反馈时定位。
 
-## 本次 RC：0.37.1-rc.1（准备中）
+## 本次 RC：0.37.1-rc.1（预发布）
 
-| 部分 | 候选版本 |
+| 部分 | 版本 |
 |---|---|
 | 游戏与 DSH 插件 | 0.37.1-rc.1 |
 | 桌面外壳 | 0.6.7-rc.1 |
 | 菜园扩展 | 4.0.9，单独发布 |
+| 矿洞扩展 | 3.0.1，单独发布 |
 
 这次主要整理第三方 agent 工作事件接入，并修复桌面拖动、动作命中、Esc、菜园确认框焦点、本体摸摸台词被重绘吞掉，以及放大小猪时的气泡裁剪。更新说明保留滚动位置，菜园连续点击按序发送，矿洞猪跟随正在敲击的石块。菜园取消确认后会返回原商品或地块，宿主轮询后仍保留焦点；分数缩放下鼠标停住时不再反复设置同一窗口位置与尺寸。完整改动见 [CHANGELOG](CHANGELOG.md)。
 
 **已知限制：** Linux 部分 GNOME/rootless Xwayland 环境仍有 pixman 启动崩溃，尚未解决；隔离显示的测试通过不能代替这些环境的验收。macOS 点击远处透明空白的问题尚未实机验证。本次不宣称已修复这些问题，也不保证完全排除单帧残影。
 
-RC 尚未公开下载。发布后请从[全部发行版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases)选择标记为预发布的版本；稳定版更新提示不会把 RC 当成正式版推荐。
+RC 下载：[GitHub v0.37.1-rc.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.1) / [Gitee v0.37.1-rc.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.1)。稳定版更新提示不会把 RC 当成正式版推荐。npm 暂未同步，默认 DSH 安装命令仍安装稳定版；提前测试可从本标签源码安装。
 
 ## 文档与开发
 
