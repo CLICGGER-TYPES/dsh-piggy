@@ -73,8 +73,9 @@ test('GitHub keeps latest metadata per release; Gitee uses the version channel',
   assert.ok(artifactPaths.includes('apps/desktop/dist/rc*.yml'))
   // Repair builds run the current workflow but check out the immutable release tag.
   assert.ok(releaseWorkflow.includes('workflow_dispatch:'))
-  assert.equal((releaseWorkflow.match(/ref: \$\{\{ env.TAG \}\}/g) || []).length, 2)
+  assert.equal((releaseWorkflow.match(/ref: refs\/tags\/\$\{\{ env.TAG \}\}/g) || []).length, 2)
   assert.ok(releaseWorkflow.includes('gh release upload "$TAG"'))
+  assert.ok(releaseWorkflow.includes('gh release create "$TAG" --verify-tag'))
   assert.ok(releaseWorkflow.includes('fail-fast: false'))
 })
 

@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ env.TAG }}
+          ref: refs/tags/${{ env.TAG }}
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - name: 标签要和 package.json 的版本一致
@@ -55,7 +55,7 @@ jobs:
       - name: 建 Release 并上传游戏包
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --notes-file notes.md --generate-notes $([[ "$TAG" == *-* ]] && echo --prerelease)
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes $([[ "$TAG" == *-* ]] && echo --prerelease)
           gh release upload "$TAG" dist-game/* --clobber
 
   desktop:
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ env.TAG }}
+          ref: refs/tags/${{ env.TAG }}
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - name: 装依赖
