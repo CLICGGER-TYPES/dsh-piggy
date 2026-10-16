@@ -9,7 +9,7 @@
 | 当前主线 | `main`，已纳入 PR #12/#13 与本轮体验修复 | 游戏 0.37.1-rc.1、外壳 0.6.7-rc.1、存档 v14；稳定发行版仍为 0.37.0 / 0.6.6 |
 | 菜园扩展 | 4.0.9（最低游戏版本 0.37.0） | GitHub/Gitee 附件与目录已同步 |
 | 矿洞扩展 | 3.0.1（最低游戏版本 0.36.0） | 两渠道附件与旧版兼容文件已同步 |
-| 整合候选 | [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate) | PR #12/#13 的 A/B/C 与体验修复，准确阶段提交见[验证记录](guides/agent-adapters-validation.md)；完整候选已进入 main，原分支保留供复核，未发版 |
+| 整合候选 | [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate) | PR #12/#13 的 A/B/C 与体验修复，准确阶段提交见[验证记录](guides/agent-adapters-validation.md)；完整候选已进入 main，原分支保留供复核，整合结果已随 RC 交付 |
 
 历史阶段记录：PR #12/#13 的 A/B/C 候选曾在主机、Linux CLI、Windows 11 CLI 各完成 **1106/1106**；Esc 后续阶段 host **1115/1115**，Windows Node24 新增 Esc 测试 9/9。这些是对应历史版本的结果，不代表最新候选在三平台都跑过同一全量。
 
@@ -24,7 +24,7 @@
 - [x] 气泡裁剪：Win/Linux 固定外框覆盖较大小猪左侧气泡，开关不改框尺寸；Darwin 保持原 footprint，未提前声称修复 macOS。
 - [x] #16 更新说明按版本保留滚动；Linux 隔离原生滚轮滚至 360，等待并触发宠物动作重绘后仍为 360。
 - [x] #17 扩展连续点击串行发送；旧实现 3/3 行为回归失败，修后覆盖顺序、现有动作 barrier、业务拒绝、真实网络 reject、停止后取消。
-- [x] #18 矿洞客户端修正未挖开目标格站位，候选 3.0.1；不改数值或规则，双渠道目录与官方清单已重算，已发布。
+- [x] #18 矿洞客户端修正未挖开目标格站位，3.0.1；不改数值或规则，双渠道目录与官方清单已重算，已发布。
 - [x] 主代理整合回归 1154/1154、build/typecheck通过；修后客户端 SHA-256 `02f3d27998c372958faa8ab9511056a0cc05f59964c90c41a18b9480b23e5c25`。README 加入 Flappy-Boy 反馈贡献与致谢。
 - [x] DSH 正常 UI 的农场跨地播种/浇水、矿洞两次敲击、本体/面板摸摸及刷新/服务重启持久化通过。用户指定的 pi/DeepSeek 视觉 skill 已实际启用；pi 运行中断，只计 partial，后续由 Luna 按截图与真实鼠标完成，未覆盖成熟收获或并发 UI 压力。
 - [x] Windows 本体对照：系统仍 125%，Electron DPR 2 模拟；旧版点击未显示气泡，最终 fixed 可见。标准缩放菜单仅有 100/125，实际系统 200% 未覆盖；不把模拟写成目标系统验收。
@@ -35,15 +35,15 @@
 
 本轮记录集中在本机总目录 `tasks/results/chat-bubble-20261016/`。Linux rootless 条件本轮再次确认 Xwayland/pixman SIGSEGV，仍未修复；私有 rootful 的通过只代表隔离条件。macOS 未实机验收。RC 已按上述范围公开，不能写成全平台问题已修。
 
-## RC 与 README（用户已同意准备）
+## RC 与 README 交付记录
 
 - [x] 游戏/别名包升至 `0.37.1-rc.1`，外壳升至 `0.6.7-rc.1`，同步锁文件元数据和 CHANGELOG 精确版本小节；存档 v14、桌面协议 4 保持。
-- [x] README 重排，区分当前稳定版与准备中的 RC；替换主菜单、小农场、大农场为候选真实截图，整理贡献者感谢。来源见[截图记录](screenshots/readme-rc-capture.md)。
-- [x] RC 渠道更新清单与 Gitee 清理回归通过；RC 不发起清理请求，稳定版保留原清理路径。主代理全量 1140/1140、build/typecheck 通过；游戏包 308 个文件的版本与客户端核对、扩展双渠道 bundle SHA 核对、npm 两包 dry-run 通过。README 在本地 Markdown 预览的 1200px / 390px 下图片完整加载、无页面横向溢出；未宣称远端 GitHub/Gitee 已部署。证据在本机总目录 `tasks/results/rc-readme-20261016/ACCEPTANCE.md`。
+- [x] README 重排，区分当前稳定版与 RC 预发布；替换主菜单、小农场、大农场为候选真实截图，整理贡献者感谢。来源见[截图记录](screenshots/readme-rc-capture.md)。
+- [x] 主代理最终 1154/1154、build/typecheck 通过；GitHub provider 使用各发行版下的 latest 清单，Gitee generic 使用 rc，RC 不触发稳定版清理。首次 GitHub CI 的清单名称错误已修正，原标签多平台补构建全绿。游戏包 308 文件与候选逐字节一致，扩展双渠道各 53 个下载哈希一致，全新存档正常 UI 在线安装均通过；README 在 1200px / 390px 本地 Markdown 预览下图片完整加载、无页面横向溢出。早期 1140 项准备阶段证据保留在本机总目录 `tasks/results/rc-readme-20261016/ACCEPTANCE.md`，最终证据见 `tasks/results/chat-bubble-20261016/ACCEPTANCE.md`。
 - [x] 按用户授权，先发布 GitHub/Gitee 菜园 4.0.9 / 矿洞 3.0.1 附件，核验两渠道各 53 个文件 SHA-256，再公开两份扩展目录与官方清单。
 - [x] 已提交、推送并创建 RC 标签；GitHub 多平台补构建全绿，Gitee 已从维护者本机发布并核验。npm 由维护者明早手动发，使用 `--tag rc`，保留稳定 `latest`。
 
-RC 不包含 #14 外部桌宠模式。Linux 原 rootless 崩溃及 macOS 透明区反馈仍按下文保留，不能以准备 RC 抹去未完成的验收。
+RC 不包含 #14 外部桌宠模式。Linux 原 rootless 崩溃及 macOS 透明区反馈仍按下文保留，不能以发布 RC 抹去未完成的验收。
 
 ## 体验验收阶段记录（RC 之前）
 
