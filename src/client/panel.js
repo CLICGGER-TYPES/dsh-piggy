@@ -39,6 +39,7 @@ import { str } from './values.js'
 import { attachPointerRepaint } from './pointer-repaint.js'
 import { createRenderHold } from './render-hold.js'
 import { restoreHover } from './hover-restore.js'
+import { preserveFarmTriggerFocus } from './farm-trigger-focus.js'
 
 export function createPanel(ctx) {
       var pointerRepaint = attachPointerRepaint(ctx.host, window)
@@ -142,7 +143,7 @@ export function createPanel(ctx) {
             scrollPositions.set(node.getAttribute('data-scroll-key'), { top: node.scrollTop, left: node.scrollLeft })
           }
         })
-        paintContent()
+        preserveFarmTriggerFocus(ctx.content, paintContent)
         // 重绘刚把整棵内容换掉：此刻写 scrollTop 会为整棵树强制一次同步布局（实测 3–4ms，读那一下是在旧布局上读、便宜）。没人滚过就一步都不写——写 0 也一样会强制布局。
         if (scrollTop !== 0) ctx.content.scrollTop = scrollTop
         if (scrollPositions.size > 0) ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
@@ -219,7 +220,7 @@ export function createPanel(ctx) {
       }
 
       function render(next) { // 返回值＝这轮到底把内容区画出来了没有：几处早退都返回 false，轮询据此决定要不要重试
-        if (pointerRepaint.defer(function () { render(next) })) return true
+        if (pointerRepaint.defer(render, next)) return true
         var previousFishing = ctx.view?.fishing?.pending
         ctx.view = applyExtensions(normalize(next))
         // Never leave the study tab parked on a stage the pig cannot attend —

@@ -3,7 +3,7 @@
  * Gitee 发行版小工具（CI 和手动发扩展用），令牌从环境变量 GITEE_TOKEN 读，不落盘。
  *   node scripts/gitee-release.mjs ensure <tag> [说明.md]   有就复用、没有就建，打印发行版 id
  *   node scripts/gitee-release.mjs upload <id> <文件>...     上传附件（先传新的，成功后删掉旧的同名附件）
- *   node scripts/gitee-release.mjs prune <保留的tag>          删掉其它 v* 发行版里的安装包附件（游戏包留着，回退用）
+ *   node scripts/gitee-release.mjs prune <保留的tag>          稳定版发布时清理旧游戏版安装包附件（游戏包留着，回退用）
  * 仓库默认 clicgger/dsh-piggy，可用 GITEE_REPO 改。Gitee 附件单个 ≤100MB、单仓库总量 ≤1GB。
  */
 import { execFileSync } from 'node:child_process'
@@ -72,7 +72,11 @@ if (cmd === 'ensure') {
   }
 } else if (cmd === 'prune') {
   const [keep] = args
-  const INSTALLER = /\.(exe|dmg|AppImage|blockmap|zip)$|^latest.*\.yml$/
+  if (!/^v\d+\.\d+\.\d+$/.test(keep ?? '')) {
+    console.log('prune: skipped for prerelease or non-game release')
+    process.exit(0)
+  }
+  const INSTALLER = /\.(exe|dmg|AppImage|blockmap|zip)$|^(latest|rc).*\.yml$/
   let freed = 0
   for (const release of await releases()) {
     if (release.tag_name === keep || !/^v\d/.test(release.tag_name)) continue

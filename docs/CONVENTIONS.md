@@ -37,6 +37,7 @@
 - 数值集中在 `data/`，不许在逻辑里写裸数字。
 - **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
 - 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 无法拆模块，允许 600 行，不能靠压行或删注释满足上限。
+- 临时窄范围例外：`extensions/farm/client.js` 最多 680 行。菜园购买和铲除确认的焦点进入、Tab 环绕和返回必须随单文件客户端下载；当前三文件扩展协议不能加载额外模块，本轮不扩张协议，也不靠压行满足守卫。后续支持扩展客户端构建拆分时移除此例外；其余扩展仍为 600 行。
 
 ## 命名
 

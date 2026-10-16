@@ -1423,7 +1423,29 @@
     var actionSeq = 0;
     var hostDown = false;
     var paintedKey = null;
-    async function send2(action, extra) {
+    var actionTail = Promise.resolve(null);
+    var pendingExtensions = 0;
+    function send2(action, extra) {
+      if (action === "ext") {
+        pendingExtensions += 1;
+        var queued = actionTail.then(function() {
+          return perform(action, extra);
+        });
+        actionTail = queued.catch(function() {
+          return null;
+        });
+        return queued.finally(function() {
+          pendingExtensions -= 1;
+        });
+      }
+      if (ctx.busy || pendingExtensions > 0) return Promise.resolve(null);
+      var running = perform(action, extra);
+      actionTail = running.catch(function() {
+        return null;
+      });
+      return running;
+    }
+    async function perform(action, extra) {
       if (ctx.busy || ctx.stopped) return null;
       if (ctx.view.pig === null && action !== "hatch") return null;
       actionSeq += 1;
@@ -8194,7 +8216,11 @@
     }
     var box = el("div", "dp-pick dp-tile-card dp-update-detail");
     box.appendChild(el("div", "dp-pick-head", "\u53D1\u73B0\u65B0\u7248\u672C v" + release.version));
-    if (release.notes) box.appendChild(el("div", "dp-update-notes", release.notes));
+    if (release.notes) {
+      var notes = el("div", "dp-update-notes", release.notes);
+      notes.setAttribute("data-scroll-key", "update-notes:" + release.version);
+      box.appendChild(notes);
+    }
     var go = button("dp-btn dp-btn-wide", { "data-update-page": release.version }, function() {
       window.open(release.page, "_blank", "noopener");
     });
@@ -8292,7 +8318,11 @@
   function details(ui, release) {
     var box = el("div", "dp-pick dp-tile-card dp-update-detail");
     box.appendChild(el("div", "dp-pick-head", "v" + release.version + (release.date ? " \xB7 " + release.date : "") + (release.prerelease ? " \xB7 \u9884\u89C8\u7248" : "")));
-    if (release.notes) box.appendChild(el("div", "dp-update-notes", release.notes));
+    if (release.notes) {
+      var notes = el("div", "dp-update-notes", release.notes);
+      notes.setAttribute("data-scroll-key", "update-notes:" + release.version);
+      box.appendChild(notes);
+    }
     var go = button("dp-btn dp-btn-wide", { "data-update-install": release.version }, function() {
       if (release.blocked === "shell") updatesBridge().openPage(release.page);
       else install(ui, release.version);
@@ -9284,16 +9314,27 @@
 
   // src/client/pointer-repaint.js
   function attachPointerRepaint(root, events) {
-    let held = false, readyAt = 0, pending2 = null, timer2 = null;
+    let held = false, readyAt = 0, timer2 = null;
+    let pending2 = null;
+    function mergeSnapshots(previous, next) {
+      const merged = { ...next };
+      if (Array.isArray(previous?.pending) || Array.isArray(next?.pending)) {
+        merged.pending = [
+          ...Array.isArray(previous?.pending) ? previous.pending : [],
+          ...Array.isArray(next?.pending) ? next.pending : []
+        ];
+      }
+      return merged;
+    }
     function schedule4() {
       if (timer2 !== null) clearTimeout(timer2);
       timer2 = null;
       if (held || pending2 === null) return;
       timer2 = setTimeout(() => {
         timer2 = null;
-        const run = pending2;
+        const task = pending2;
         pending2 = null;
-        run?.();
+        if (task !== null) task.run(task.hasSnapshot ? task.snapshot : void 0);
       }, Math.max(0, readyAt - Date.now()));
     }
     function down() {
@@ -9316,9 +9357,20 @@
     events.addEventListener("pointercancel", blur, true);
     events.addEventListener("blur", blur);
     return {
-      defer(run) {
-        if (!held && Date.now() >= readyAt) return false;
-        pending2 = run;
+      /**
+       * Keep the old callback-only, latest-wins form for other callers. When a
+       * snapshot is supplied, keep its newest state while accumulating pending
+       * events until the protected pointer interaction has finished.
+       * @param {(snapshot?: any) => void} run
+       * @param {any} [snapshot]
+       */
+      defer(run, snapshot) {
+        const hasSnapshot = arguments.length > 1;
+        if (!held && Date.now() >= readyAt && pending2 === null) return false;
+        if (hasSnapshot) {
+          const accumulated = pending2?.hasSnapshot ? mergeSnapshots(pending2.snapshot, snapshot) : snapshot;
+          pending2 = { run, snapshot: accumulated, hasSnapshot: true };
+        } else pending2 = { run, snapshot: void 0, hasSnapshot: false };
         schedule4();
         return true;
       },
@@ -9474,6 +9526,23 @@
     };
   }
 
+  // src/client/farm-trigger-focus.js
+  function preserveFarmTriggerFocus(content, paint) {
+    const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
+    if (!doc) return paint();
+    const active = doc.activeElement;
+    if (!content.contains(active)) return paint();
+    const key = ["data-farm-item", "data-farm-plot"].map((attr) => ({ attr, value: active.getAttribute?.(attr) })).find((entry) => entry.value !== null && entry.value !== void 0);
+    const result = paint();
+    if (!key) return result;
+    const next = doc.activeElement;
+    if (content.contains(next) || next !== null && next !== void 0 && next !== doc.body && next !== active) return result;
+    if (next === active && content.contains(active)) return result;
+    const target = Array.from(content.querySelectorAll("[data-farm-item], [data-farm-plot]")).find((node) => node.tagName?.toLowerCase() === "button" && !node.disabled && node.getAttribute(key.attr) === key.value);
+    if (target) target.focus({ preventScroll: true });
+    return result;
+  }
+
   // src/client/panel.js
   function createPanel(ctx) {
     var pointerRepaint = attachPointerRepaint(ctx.host, window);
@@ -9560,7 +9629,7 @@
           scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
         }
       });
-      paintContent();
+      preserveFarmTriggerFocus(ctx.content, paintContent);
       if (scrollTop !== 0) ctx.content.scrollTop = scrollTop;
       if (scrollPositions.size > 0) ctx.content.querySelectorAll("[data-scroll-key]").forEach(function(node) {
         var saved = scrollPositions.get(node.getAttribute("data-scroll-key"));
@@ -9638,9 +9707,7 @@
       ctx.fitPanel();
     }
     function render(next) {
-      if (pointerRepaint.defer(function() {
-        render(next);
-      })) return true;
+      if (pointerRepaint.defer(render, next)) return true;
       var previousFishing = ctx.view?.fishing?.pending;
       ctx.view = applyExtensions(normalize(next));
       var stageEntry = null;
@@ -10062,6 +10129,7 @@
     };
   }
   var BUBBLE_ZONE = { width: 272, height: 104 };
+  var OPEN_BUBBLE_LEFT = 180 + 6 + 6;
   var SHAPE_SLACK = 6;
   var SIDE = Object.freeze({ vertical: "bottom", horizontal: "right" });
   function layoutBox(node) {
@@ -10142,8 +10210,9 @@
       const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone]);
       if (pigNode !== null) {
         const artMargin = artMarginFor(pigBox.width);
+        const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT : Infinity;
         outline.push({
-          x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, pigBox.x - artMargin),
+          x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, openBubbleLeft, pigBox.x - artMargin),
           y: pigBox.y - BUBBLE_ZONE.height - 24,
           r: pigBox.x + pigBox.width + artMargin,
           b: pigBox.y + pigBox.height + 12

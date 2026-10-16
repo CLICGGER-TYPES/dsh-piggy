@@ -23,13 +23,31 @@ export function createIo(ctx) {
       /** 上一次画到面板上的那份快照的「画面指纹」（见 poll-key.js）。 */
       var paintedKey = null
 
+      // Extension grids expose several independent targets at once. Keep their
+      // clicks in arrival order instead of dropping them behind the busy guard.
+      var actionTail = Promise.resolve(null)
+      var pendingExtensions = 0
+
+      function send(action, extra) {
+        if (action === 'ext') {
+          pendingExtensions += 1
+          var queued = actionTail.then(function () { return perform(action, extra) })
+          actionTail = queued.catch(function () { return null })
+          return queued.finally(function () { pendingExtensions -= 1 })
+        }
+        if (ctx.busy || pendingExtensions > 0) return Promise.resolve(null)
+        var running = perform(action, extra)
+        actionTail = running.catch(function () { return null })
+        return running
+      }
+
       /** 发一个动作。返回宿主回的整份面板数据（被挡下、失败时为 null），
        * 需要看结果的调用方（比如下载扩展）可以直接 await。
        * @param {string} action
        * @param {object} [extra]
        * @returns {Promise<any>}
        */
-      async function send(action, extra) {
+      async function perform(action, extra) {
         if (ctx.busy || ctx.stopped) return null
         if (ctx.view.pig === null && action !== 'hatch') return null
         // Every action bumps the sequence: a poll that started before this

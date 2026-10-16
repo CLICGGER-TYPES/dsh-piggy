@@ -266,7 +266,10 @@ function applyBounds(next, why) {
   if (win === null || win.isDestroyed()) return null
   const before = win.getBounds()
   const delta = { x: next.x - before.x, y: next.y - before.y, width: next.width - before.width, height: next.height - before.height }
-  const tolerance = why === 'drag' || why === 'move' ? 0 : BOUNDS_TOLERANCE
+  // 分数缩放回读可能比请求大 1px；目标没变时不要每个拖动 tick 重设同一窗口。
+  // 新目标仍用零容差，保证 1px 鼠标位移可达；真实外部偏移超出容差时继续纠正。
+  const sameRequest = petAsked !== null && ['x', 'y', 'width', 'height'].every(key => petAsked[key] === next[key])
+  const tolerance = (why === 'drag' || why === 'move') && !sameRequest ? 0 : BOUNDS_TOLERANCE
   if (Math.abs(delta.x) <= tolerance && Math.abs(delta.y) <= tolerance
     && Math.abs(delta.width) <= tolerance && Math.abs(delta.height) <= tolerance) return null
   win.setBounds(next)

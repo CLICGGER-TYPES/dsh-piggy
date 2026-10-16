@@ -125,8 +125,8 @@
     if (current && current.id !== lastAnimationId) { lastAnimationId = current.id; lastAnimationAt = current.at }
     var elapsed = current ? Math.max(0, Date.now() - lastAnimationAt) : 9999
     var animate = elapsed < 900
-    // 猪站在最后挖开的那格（效果图 c-v2）；这一层还没挖就站在洞口中间。
-    var stand = current && d.cells[current.index] && d.cells[current.index].open ? current.index : 2
+    // 猪站在最近一次敲击的目标格；这一层还没挖就站在洞口中间。
+    var stand = current && d.cells[current.index] ? current.index : 2
     d.cells.forEach(function (cell) {
       var active = !cell.open && cell.adjacent
       var node = app.button('mn-cell', { 'data-mine-cell': String(cell.index), 'aria-label': cell.open ? '已挖开' : active ? '挖第 ' + (cell.index + 1) + ' 格' : '还挖不到' }, function () {

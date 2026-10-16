@@ -77,9 +77,11 @@ jobs:
         shell: bash
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          if [[ "${{ matrix.target }}" == "--win" ]]; then test -s dist/latest.yml; fi
-          if [[ "${{ matrix.target }}" == "--linux" ]]; then test -s dist/latest-linux.yml; fi
+          update_channel=latest
+          if [[ "$GITHUB_REF_NAME" =~ -([[:alpha:]][[:alnum:]-]*)(\.|$) ]]; then update_channel="${BASH_REMATCH[1]}"; fi
+          if [[ "${{ matrix.target }}" == "--win" ]]; then test -s "dist/${update_channel}.yml"; fi
+          if [[ "${{ matrix.target }}" == "--linux" ]]; then test -s "dist/${update_channel}-linux.yml"; fi
           shopt -s nullglob
-          files=(dist/*.AppImage dist/*.exe dist/*.dmg dist/latest*.yml)
+          files=(dist/*.AppImage dist/*.exe dist/*.dmg "dist/${update_channel}"*.yml)
           test "${#files[@]}" -gt 0
           gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber

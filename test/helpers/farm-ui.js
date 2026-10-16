@@ -21,6 +21,7 @@ export function renderFarm(view, mode = 'panel', extra = {}) {
   const create = dom.document.createElement
   dom.document.createElement = tag => {
     const node = create(tag)
+    node.focus = () => { dom.document.activeElement = node; for (const fn of dom.documentListeners.focusin ?? []) fn({ target: node }) }
     node.querySelector = selector => {
       let found = null
       const attr = /^\[([a-z0-9-]+)(?:="([^"]*)")?\]$/.exec(selector)
@@ -28,6 +29,12 @@ export function renderFarm(view, mode = 'panel', extra = {}) {
       return found
     }
     return node
+  }
+  dom.document.body.querySelector = selector => {
+    const attr = /^\[([a-z0-9-]+)(?:="([^"]*)")?\]$/.exec(selector)
+    let found = null
+    dom.document.body.walk(node => { if (attr ? node.getAttribute(attr[1]) != null && (attr[2] === undefined || node.getAttribute(attr[1]) === attr[2]) : node.matches(selector)) found ||= node })
+    return found
   }
   dom.document.getElementById = id => dom.head.children.find(node => node.id === id) || null
   let render

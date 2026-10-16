@@ -65,7 +65,7 @@ for list in "$WORK"/gitee-dist-*/upload-list.txt; do
     f="$dir/$rel"
     [ -f "$f" ] || { echo "清单里的 $rel 不在 artifact 里"; exit 1; }
     case "$(basename "$f")" in
-      latest*.yml) MANIFESTS+=("$f") ;;
+      latest*.yml|rc*.yml) MANIFESTS+=("$f") ;;
       *) INSTALLERS+=("$f") ;;
     esac
   done < "$list"

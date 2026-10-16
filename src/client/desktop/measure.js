@@ -33,6 +33,8 @@ export function framedBox(node, box) {
 
 /** 猪头上方预留的气泡区：冒气泡只改可点区域，不改窗口大小。 */
 const BUBBLE_ZONE = { width: 272, height: 104 }
+/** 面板打开时，气泡在折叠场景左侧：180px 最大宽 + 两侧各 6px 的场景/间距。 */
+const OPEN_BUBBLE_LEFT = 180 + 6 + 6
 /** 可点区域四周放宽几像素：礼包浮动、猪摇摆会越出布局盒一点。 */
 const SHAPE_SLACK = 6
 /** 内容永远钉在窗口右下角（猪窗口里没有面板，不用挑边）。 */
@@ -136,7 +138,12 @@ export function createMeasure(env) {
     if (pigNode !== null) {
       // Reserve the widest reviewed sprite for every action: action changes never resize the window.
       const artMargin = artMarginFor(pigBox.width)
-      outline.push({ x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, pigBox.x - artMargin), y: pigBox.y - BUBBLE_ZONE.height - 24,
+      // On platforms with native shape support, also cover the open-panel
+      // bubble, which extends left of the pig by up to 192px. The collapsed
+      // 272px reserve is measured from pigRight, so it reaches only
+      // 272 - pigWidth pixels left of the pig and fails for wider pigs.
+      const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT : Infinity
+      outline.push({ x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, openBubbleLeft, pigBox.x - artMargin), y: pigBox.y - BUBBLE_ZONE.height - 24,
         r: pigBox.x + pigBox.width + artMargin, b: pigBox.y + pigBox.height + 12 })
       // Reserve the whole rotation once, independent of the active action. macOS
       // has no native shape, so keep its window footprint until passthrough is addressed.

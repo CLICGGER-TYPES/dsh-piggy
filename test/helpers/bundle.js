@@ -42,6 +42,10 @@ export function fakeDom() {
     }
 
     appendChild(child) { child.parentNode = this; this.children.push(child); return child }
+    contains(other) {
+      for (let node = other; node; node = node.parentNode) if (node === this) return true
+      return false
+    }
     setAttribute(name, value) { this.attributes[name] = String(value) }
     getAttribute(name) { return this.attributes[name] ?? null }
     removeAttribute(name) { delete this.attributes[name] }

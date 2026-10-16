@@ -13,6 +13,7 @@
   var tip = null
   var tipAt = 0, tipPlot = null, shopTab = 'seed', purchase = null, quantity = 1
   var currentApp = null, keyboardBound = false, pendingAction = null, paintedPopup = null, cancelLayer = null
+  var modalOpen = false, modalFocus = null, modalReturn = null
   var effects = {}
   var styleId = 'dsh-piggy-farm-style-4'
   var SMALL_PLOTS = 6
@@ -107,7 +108,7 @@
     var shovel = hand.kind === 'shovel'
     if (plot.wild) return say(app, plot.next ? '点木牌开垦' : '要先开前一块荒地')
     if (shovel && plot.empty && !plot.stubble) return say(app, '这块地是空的', index)
-    if (shovel && !plot.empty && !plot.withered) { confirmClear = index; return app.rerender() }
+    if (shovel && !plot.empty && !plot.withered) { confirmClear = index; modalReturn = { attr: 'data-farm-plot', value: String(index) }; return app.rerender() }
     if (shovel) { confirmClear = null; return act(app, index, '🪏', 'clear', plot.withered || plot.stubble ? { plot: index } : { plot: index, force: true }) }
     confirmClear = null
     if (hand.kind === 'care') {
@@ -450,7 +451,18 @@
   function bindKeyboard() {
     if (keyboardBound) return
     keyboardBound = true
+    document.addEventListener('focusin', function (event) { if (modalOpen && inDialog(event.target)) modalFocus = focusDescriptor(event.target) || modalFocus })
     document.addEventListener('keydown', function (event) {
+      var dialog = currentApp && currentApp.content.querySelector('[role="dialog"]')
+      if (dialog && event.key === 'Tab') {
+        var focusable = Array.prototype.filter.call(dialog.querySelectorAll('button,input,select,textarea,a'), function (node) { return !node.disabled && node.getAttribute('tabindex') !== '-1' })
+        if (!focusable.length) { event.preventDefault(); dialog.focus(); return }
+        var active = document.activeElement, first = focusable[0], last = focusable[focusable.length - 1]
+        if (!inDialog(active) || event.shiftKey && active === first || !event.shiftKey && active === last) {
+          event.preventDefault(); (event.shiftKey ? last : first).focus()
+        }
+        return
+      }
       if (currentApp && event.key === 'Escape') { if (cancelLayer) cancelLayer(); else { popup = null; currentApp.rerender() } return }
       if (!currentApp || currentApp.mode !== 'big' || !currentApp.content.querySelector('.fm-big') || event.ctrlKey || event.altKey || event.metaKey || event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/i.test(event.target.tagName)) return
       var tools = { q: { kind: 'care', key: 'dry' }, w: { kind: 'care', key: 'weed' }, e: { kind: 'care', key: 'bug' }, r: AUTO }
@@ -517,7 +529,7 @@
     var grid = put(box, app.el('div', 'fm-shop-grid')); grid.setAttribute('role', 'tabpanel')
     grid.setAttribute('data-scroll-key', 'farm-shop:' + shopTab)
     shopItems(data).filter(function (item) { return item.category === shopTab }).sort(function (a, b) { return Number(a.disabled) - Number(b.disabled) }).forEach(function (item) {
-      var node = put(grid, bg(app, app.button('fm-shop-item', { 'data-farm-item': item.key, 'aria-disabled': String(!!item.disabled) }, function () { purchase = item; quantity = 1; app.rerender() }), item.disabled ? 'shop-item-locked' : 'shop-item'))
+      var node = put(grid, bg(app, app.button('fm-shop-item', { 'data-farm-item': item.key, 'aria-disabled': String(!!item.disabled) }, function () { purchase = item; quantity = 1; modalReturn = { attr: 'data-farm-item', value: item.key }; app.rerender() }), item.disabled ? 'shop-item-locked' : 'shop-item'))
       put(node, product(app, item, 'fm-product')); put(node, app.el('b', null, item.label))
       put(node, app.el('span', 'fm-price', item.price + ' 菜币'))
       if (item.disabled) put(node, app.el('small', 'fm-unavailable', item.locked ? '需要 ' + item.level + ' 级' : item.owned ? '已拥有' : '菜币不足'))
@@ -549,7 +561,7 @@
     var stepper = put(box, app.el('div', 'fm-stepper'))
     put(stepper, app.el('span', null, '数量'))
     put(stepper, bg(app, button(app, 'fm-step', { 'data-farm-quantity': 'minus', 'aria-label': '减少数量' }, '', function () { quantity = Math.max(1, quantity - 1); app.rerender() }), 'stepper-minus')).disabled = !many || quantity === 1
-    var field = put(stepper, bg(app, app.el('input', 'fm-quantity'), 'stepper-field')); field.type = 'number'; field.min = '1'; field.max = many ? '99' : '1'; field.value = String(quantity); field.disabled = !many; field.setAttribute('aria-label', '数量')
+    var field = put(stepper, bg(app, app.el('input', 'fm-quantity'), 'stepper-field')); field.type = 'number'; field.min = '1'; field.max = many ? '99' : '1'; field.value = String(quantity); field.disabled = !many; field.setAttribute('aria-label', '数量'); field.setAttribute('data-farm-quantity-field', 'true')
     ;['input', 'change'].forEach(function (type) { field.addEventListener(type, function () {
       quantity = Math.max(1, Math.min(many ? 99 : 1, Math.floor(Number(field.value) || 1)))
       total.textContent = '总价 ' + quantity * item.price + ' 菜币'; total.setAttribute('data-farm-total', String(quantity * item.price))
@@ -584,6 +596,37 @@
       modalButtons(app, box, function () { confirmClear = null; act(app, index, '🪏', 'clear', { plot: index, force: true }) }, cancel)
     }
   }
+  function focusDescriptor(node) {
+    if (!node) return null
+    var attrs = ['data-farm-quantity-field', 'data-farm-quantity', 'data-farm-close', 'data-farm-confirm', 'data-farm-cancel']
+    for (var i = 0; i < attrs.length; i += 1) if (node.getAttribute(attrs[i]) !== null) return { attr: attrs[i], value: node.getAttribute(attrs[i]) }
+    return null
+  }
+  function inDialog(node) {
+    while (node) { if (node.getAttribute && node.getAttribute('role') === 'dialog') return true; node = node.parentNode }
+    return false
+  }
+  function syncModalFocus(app, root) {
+    var dialog = root.querySelector('[role="dialog"]')
+    if (dialog) {
+      var target = null
+      if (modalOpen && modalFocus) target = dialog.querySelector('[' + modalFocus.attr + '="' + modalFocus.value + '"]')
+      if (target && target.disabled) target = null
+      if (!modalOpen || !target) {
+        var field = dialog.querySelector('[data-farm-quantity-field="true"]')
+        target = field && !field.disabled ? field : dialog.querySelector('[data-farm-close="true"]')
+      }
+      modalOpen = true
+      if (target && document.activeElement !== target) target.focus()
+      modalFocus = focusDescriptor(target) || modalFocus
+      return
+    }
+    if (modalOpen) {
+      var trigger = modalReturn && root.querySelector('[' + modalReturn.attr + '="' + modalReturn.value + '"]')
+      modalOpen = false; modalFocus = null; modalReturn = null
+      if (trigger) trigger.focus()
+    }
+  }
   function render(app) {
     ensureStyle(app)
     var data = app.data
@@ -595,6 +638,8 @@
     syncHand(data)
     if (app.mode === 'big') renderBig(app, data)
     else renderSmall(app, data)
+    var root = app.content.querySelector('.fm')
+    if (root) syncModalFocus(app, root)
   }
   if (window.dshPiggyExtensions) window.dshPiggyExtensions.register('farm', { render: render })
 })()

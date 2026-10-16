@@ -1,4 +1,4 @@
-# dsh-piggy 维护交接文档（2026-10-15 更新状态，游戏 0.37.0 / 外壳 0.6.6）
+# dsh-piggy 维护交接文档（2026-10-16 更新，稳定游戏 0.37.0 / 外壳 0.6.6）
 
 > 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
 > 本页取代 [2026-10-03 的交接记录](archive/HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
@@ -8,12 +8,17 @@
 
 ## 1. 先读这里（五分钟版）
 
-### 当前状态（2026-10-15）
+### 当前状态（2026-10-16）
 
 - **当前主线**：`code/` 的 main 已快进纳入作者复核的完整候选 `1e46ef3`，整合前基线为 `c20ab95`。游戏版本仍为 0.37.0、外壳 0.6.6、`STATE_VERSION` 14；尚未创建新版本标签或发版。
 - **PR #12/#13 整合**：A/B/C、关闭恢复与安装保存失败重试、Esc 和动画命中修复均已进入 main。复核基点保留在 [`codex/runtime-037-candidate`](https://github.com/CLICGGER-TYPES/dsh-piggy/tree/codex/runtime-037-candidate) 的 `1e46ef3`；main 随后只更新交接文档。当前客户端 SHA-256 为 `5476f34e95817e2aa28d09886572b5159dacb7d5ecfb66dac5eed0fb8008b8be`，主机全量 1124/1124、build/typecheck 通过；作者另在原生 Windows / Node 24.21.0 独立复核完整候选 1124/1124、构建及类型检查通过。完整阶段提交、独立复核来源和限制见[整合验证记录](guides/agent-adapters-validation.md)。
 - **当前已实测路径**：真实 DSH 14 项通过；Linux 原生新存档孵化、双焦点 Esc、空白点击穿透、固定 356×284 拖动与正常退出，拖动窗口位移与输入精确一致。Linux 284 帧录制约 49.9fps、最大间隔 34ms，未见猪丢失、反向步或重影；严格分析器仍因待机约 3.5px 位移报 FAIL。Windows 125% 原生购买 494/1、双焦点 Esc、底部 motion reserve 空白点击穿透、固定视口拖动与退出重启持久化通过；当前原生 132 帧约 21.66fps、最大间隔 78.26ms，逐帧未见白块/第二只猪，但仍不足以排除单帧残影。新版全新存档三次原生点击孵化已通过。macOS 未实机验证。
 - **目录整理**：已按迁移计划执行并核验 11 项；8 棵 Git 工作树 HEAD 与脏文件 SHA 均保留。活动 PR #12 物理路径保留，`worktrees/pr12-source` 为兼容入口。旧 `rightclick` 的四个未提交文件仍须保留。证据位于本机总目录 `tasks/results/directory-migration/`。目录迁移时 `code/` 保持干净且位于 `c20ab95`；随后按用户授权将完整候选整合到 main。
+- **2026-10-16 桌面体验修复候选**：独立工作树 `worktrees/desktop-ux-20261016/` 修复分数缩放回读误差导致的相同目标重复设置。Windows 125% 原生静止按住对照中，约 1.6 秒的同目标 setBounds 从 93 次降为 0；45 个移动步骤对应 45 次设置，实际位移保持 (-176,-72) DIP（物理输入 -220,-90）。主机 1132/1132、build/typecheck 通过；新 8 条行为回归原代码 1/8、修后 8/8。Linux 同版原生孵化、静止按住后拖到边缘、Esc、正常退出及实际存档锁创建/释放通过；498 帧拖动片段为 52.41fps、最大间隔 34ms，主代理逐帧审阅。该项生产改动仅在外壳，不改客户端、玩法或存档；修改尚未提交或推送。此结论不代表白块或单帧残影已修复。
+- **后续菜园焦点候选**：扩展 4.0.9 修复购买/铲除确认的焦点进入、Tab 限制和返回；共享客户端 `a0b806a` 修复宿主轮询再次丢焦点。主机 1136/1136、build/typecheck 通过，Windows 125% 实际便携测试包与 DSH 网页复验通过。Linux 旧宿主客户端加 4.0.9 的原生流程已过，但新宿主客户端复验遇到两次 Xwayland/pixman_blt 崩溃，未计通过，需先诊断。修改、4.0.9 双渠道目录/官方清单和测试包均未发布；未提交或推送。只在本机隔离工作树，具体证据及下一步以 [ROADMAP](ROADMAP.md) 为准。
+- **继续验收结果**：主机再次1136/1136、build/typecheck通过。Windows独立身份的实际NSIS安装、孵化/购买、正常退出重开（494金币/1苹果）和卸载通过，原安装/快捷方式未变；125%宿主QMP scanout录制540帧约90fps、最大14.43ms，抽查未见白块/第二只猪，不能据此宣称残影根因已修。Linux私有rootful隔离启动对照与15分钟稳定运行完成，但原rootless pixman崩溃仍未解决；前置误用XTest段已排除，不作完整QMP验收。证据在本机总目录 `tasks/results/experience-finish-20261016/ACCEPTANCE.md`；后续纯QMP与主代理未插桩候选复核已覆盖Linux私有rootful的焦点、退出重开/锁和540帧拖动；仍不替代原rootless条件。一次子代理误启动默认配置目录无基线，无法保证未写入，未擅自删除/回滚；具体影响边界和私有窗口二次退出点测限制见报告及ROADMAP。
+- **RC 与 README 准备**：用户同意先准备 RC；独立工作树现为游戏/别名包 `0.37.1-rc.1`、外壳 `0.6.7-rc.1`，存档仍 v14、菜园候选仍 4.0.9。README 已重排安装、玩法、稳定版/RC 状态，并替换为隔离 DSH 实拍的主菜单、小农场和大农场；见[截图来源](screenshots/readme-rc-capture.md)。RC 更新清单与 Gitee 清理回归已通过；主代理全量 1140/1140、build/typecheck 通过，游戏包、扩展双渠道校验及 npm 打包预览通过。未提交、推送、打标签或发布；线上稳定入口未改。具体进度和发布顺序仍以 [ROADMAP](ROADMAP.md) 为准。
+- **晚间反馈修复与发布授权**：用户要求验收后今晚先发 GitHub/Gitee RC、npm 明早；QEMU 可用。已修复本体摸摸 pending 丢失、较大小猪气泡预留、#16/#17/#18，对应矿洞候选 3.0.1，主代理回归 1154/1154。最新客户端 `02f3d279`；Windows 高 DPI 与 DSH 定向流程继续验收，尚未发布。Gitee 认证可用，凭据不在文件中。当前进度见 [ROADMAP](ROADMAP.md)。
 - **当前工作顺序与体验待办**：以 [ROADMAP](ROADMAP.md) 为唯一清单；完整执行证据见本机总目录 `tasks/2026-10-15-runtime-integration-and-cleanup.md`。
 
 动画命中范围的当前结论：追蝴蝶、旋转 `dp-spin` 与跳跃 `dp-jump` 已用整段 CSS 动画扫掠纳入测量；旋转修前 roll20/67 越界最大 30.206px、cure14/59 最大 29.51px，修后分别 0/67、0/59；追蝴蝶修后 0/61。窗口轮廓只随尺寸固定预留，待机时不把预留扩张成点击区；Darwin 保持原 footprint，尚未修复。探针是强制动画的几何验证，不等同于自然用户复现或 macOS 实机验收。证据：本机总目录 `tasks/results/rotation-hit-probe/`。
@@ -22,7 +27,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 - **是什么**：一只「QQ 宠物」式的电子猪。同一份代码有两种形态：**DSH 插件**（住在 DeepSeek Harness 网页里）和**桌面版**（Electron，Windows / Linux / macOS）。
 - **稳定代码入口**：项目总目录中的 `code/`（当前 main）；已复核候选另保留在总目录 `worktrees/runtime-c/`。远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy` 的发布仍按第 9 节流程执行。
-- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（当前候选主机全量 1124 项；具体平台和版本范围以对应验证记录为准）。
+- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（历史整合主机全量 1124 项；最新候选结果以本页当前状态与对应验证记录为准）。
 - **「怎么加 X」先看 `docs/guides/`**：[开发新功能（总则）](guides/adding-features.md)、[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
 - **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 发 GitHub、并构建 Gitee 渠道的包 → **本机**跑 `scripts/gitee-publish.sh` 推 Gitee → npm 由人手动发。详见第 9 节。
@@ -232,8 +237,8 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 ### 9.3 在线扩展发版
 
 1. 改扩展、升 `manifest.json` 版本。
-2. GitHub：`node scripts/extension-entry.mjs <key>` 生成目录条目，更新 `extensions/registry.json`；再 `node scripts/official-extensions.mjs` 把新版本并进游戏自带的官方清单 `store/official-extensions.json`（本地导入靠它认官方扩展，`test/ext-import.test.js` 会查漏）；`node scripts/extension-bundle.mjs <key>` 生成扩展包 `dist/ext-<key>-<版本>.piggyext`；`gh release create ext-<key>-<版本> extensions/<key>/{manifest.json,server.js,client.js} dist/ext-<key>-<版本>.piggyext --prerelease --latest=false`（**一定要预发布 + 不设 latest**，否则会抢掉游戏正式版的「最新」）。
-3. Gitee：`node scripts/extension-entry.mjs <key> --host gitee` 更新 `extensions/registry-gitee.json`；`GITEE_TOKEN=… node scripts/gitee-release.mjs ensure ext-<key>-<版本>` 拿到 id，再 `upload <id> extensions/<key>/manifest.json extensions/<key>/server.js extensions/<key>/client.js dist/ext-<key>-<版本>.piggyext`。
+2. 用 `node scripts/extension-entry.mjs <key>`（及 `--host gitee`）更新两份目录，再运行 `node scripts/official-extensions.mjs`；用 `node scripts/extension-bundle.mjs <key>` 生成 `dist/ext-<key>-<版本>.piggyext`。先在候选提交上发布附件，核验后再公开 main 的目录。
+3. GitHub 使用 `gh release create ext-<key>-<版本> dist/ext-<key>-<版本>.piggyext --target <候选提交> --prerelease --latest=false`；Gitee 从本机推对应标签，再用 `scripts/gitee-release.mjs ensure` / `upload` 发布。同[扩展指南](guides/writing-extensions.md#发版)：`minGame >= 0.36.1` 只传一个 `.piggyext`；兼容更旧游戏的版本还必须上传 `manifest.json`、`server.js`、`client.js`，并将声明的图片平铺为附件。GitHub 扩展始终预发布且不设 latest，不能抢游戏正式版入口。
 4. 提交两个 registry 文件和官方清单、推 main（GitHub 和 Gitee 的 main 都要有：本机 `git push gitee main`）。
 5. 新附件刚传上去约 1 分钟后才能下载；用全新存档实际在线装一次验证。
 

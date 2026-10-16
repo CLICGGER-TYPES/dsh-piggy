@@ -231,7 +231,11 @@ function renderDshUpdate(ui) {
   }
   var box = el('div', 'dp-pick dp-tile-card dp-update-detail')
   box.appendChild(el('div', 'dp-pick-head', '发现新版本 v' + release.version))
-  if (release.notes) box.appendChild(el('div', 'dp-update-notes', release.notes))
+  if (release.notes) {
+    var notes = el('div', 'dp-update-notes', release.notes)
+    notes.setAttribute('data-scroll-key', 'update-notes:' + release.version)
+    box.appendChild(notes)
+  }
   var go = button('dp-btn dp-btn-wide', { 'data-update-page': release.version }, function () {
     window.open(release.page, '_blank', 'noopener')
   })
@@ -326,7 +330,11 @@ function previewRow(ui, release) {
 function details(ui, release) {
   var box = el('div', 'dp-pick dp-tile-card dp-update-detail')
   box.appendChild(el('div', 'dp-pick-head', 'v' + release.version + (release.date ? ' · ' + release.date : '') + (release.prerelease ? ' · 预览版' : '')))
-  if (release.notes) box.appendChild(el('div', 'dp-update-notes', release.notes))
+  if (release.notes) {
+    var notes = el('div', 'dp-update-notes', release.notes)
+    notes.setAttribute('data-scroll-key', 'update-notes:' + release.version)
+    box.appendChild(notes)
+  }
   var go = button('dp-btn dp-btn-wide', { 'data-update-install': release.version }, function () {
     if (release.blocked === 'shell') updatesBridge().openPage(release.page)
     else install(ui, release.version)
