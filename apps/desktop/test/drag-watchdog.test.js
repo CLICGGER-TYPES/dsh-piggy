@@ -48,7 +48,8 @@ test('Windows 用鼠标穿透代替 setShape（开关面板时窗口区域不变
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   const shell = readFileSync(new URL('../renderer/shell.js', import.meta.url), 'utf8')
   assert.match(main, /const PASSTHROUGH = process\.platform === 'win32'/)
-  assert.match(main, /setIgnoreMouseEvents\(!hit, \{ forward: true \}\)/)
+  // forward 的模式切换由 mouse-forwarding.test.js 执行生产 IPC 验证，不再固定为 true。
+  assert.match(main, /setIgnoreMouseEvents\(!hit, \{ forward \}\)/)
   assert.match(main, /function applyShape\(rects\) \{\s*if \(PASSTHROUGH/)
   assert.match(shell, /shell\.setHit\(inside\)/)
 })
