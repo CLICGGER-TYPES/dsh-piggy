@@ -9,19 +9,29 @@ name: release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '重新构建的已有版本标签（不移动标签）'
+        required: true
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   game:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - name: 标签要和 package.json 的版本一致
-        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+        run: test "v$(node -p "require('./package.json').version")" = "$TAG"
       - name: 测试
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
@@ -32,7 +42,7 @@ jobs:
         run: node apps/desktop/scripts/release-game.mjs dist-game
       - name: 改动说明（CHANGELOG 这一版的小节 + 下载指引；GitHub 再在后面接 PR 与贡献者列表）
         run: |
-          node scripts/release-notes.mjs "$GITHUB_REF_NAME" > notes.md
+          node scripts/release-notes.mjs "$TAG" > notes.md
           cat >> notes.md <<'NOTES'
 
           ### 下载
@@ -45,12 +55,13 @@ jobs:
       - name: 建 Release 并上传游戏包
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --generate-notes $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease)
-          gh release upload "$GITHUB_REF_NAME" dist-game/* --clobber
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --notes-file notes.md --generate-notes $([[ "$TAG" == *-* ]] && echo --prerelease)
+          gh release upload "$TAG" dist-game/* --clobber
 
   desktop:
     needs: game
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -64,6 +75,8 @@ jobs:
       run: { working-directory: apps/desktop }
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - name: 装依赖
@@ -78,10 +91,11 @@ jobs:
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           update_channel=latest
-          if [[ "$GITHUB_REF_NAME" =~ -([[:alpha:]][[:alnum:]-]*)(\.|$) ]]; then update_channel="${BASH_REMATCH[1]}"; fi
+          # GitHub provider keeps latest filenames inside each separate release.
+          # Its prerelease discovery isolates the RC from the stable release.
           if [[ "${{ matrix.target }}" == "--win" ]]; then test -s "dist/${update_channel}.yml"; fi
           if [[ "${{ matrix.target }}" == "--linux" ]]; then test -s "dist/${update_channel}-linux.yml"; fi
           shopt -s nullglob
           files=(dist/*.AppImage dist/*.exe dist/*.dmg "dist/${update_channel}"*.yml)
           test "${#files[@]}" -gt 0
-          gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+          gh release upload "$TAG" "${files[@]}" --clobber

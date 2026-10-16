@@ -28,7 +28,7 @@ function makeDist(dir, names) {
 
 function selectionScript(workflow, tagVariable, globLinePattern, label) {
   const initial = line(workflow, /^\s*update_channel=latest$/, `${label} channel default`)
-  const derive = line(workflow, new RegExp(`^\\s*if \\\[\\\[ "\\$${tagVariable}" =~ `), `${label} channel derivation`)
+  const derive = label === 'GitHub' ? (workflow.split('\n').find(value => /^\s*if \[\[.* =~ .*update_channel=/.test(value)) || '').trim() : line(workflow, new RegExp(`^\\s*if \\\[\\\[ "\\$${tagVariable}" =~ `), `${label} channel derivation`)
   const globLine = line(workflow, globLinePattern, `${label} metadata glob`)
   const glob = globLine.match(/(?:files=\(|for f in )(.*?)(?:\)|; do)$/)?.[1]
   assert.ok(glob, `${label} glob parsed`)
@@ -37,80 +37,45 @@ function selectionScript(workflow, tagVariable, globLinePattern, label) {
   }
 }
 
-test('stable release keeps latest metadata; an RC selects and uploads its rc metadata', () => {
+test('GitHub keeps latest metadata per release; Gitee uses the version channel', () => {
   const ghSelection = selectionScript(
-    releaseWorkflow, 'GITHUB_REF_NAME', /^\s*files=\(dist\/\*\.AppImage/, 'GitHub',
+    releaseWorkflow, 'TAG', /^\s*files=\(dist\/\*\.AppImage/, 'GitHub',
   )
   const giteeSelection = selectionScript(
     giteeWorkflow, 'TAG', /^\s*for f in apps\/desktop\/dist\/\*\.exe/, 'Gitee',
   )
-  const ghValidation = releaseWorkflow.split('\n').filter(value => value.includes('test -s "dist/${update_channel}'))
-  assert.ok(
-    ghValidation.some(value => value.includes('dist/${update_channel}.yml')),
-    'Windows validates the channel manifest',
-  )
-  assert.ok(
-    ghValidation.some(value => value.includes('dist/${update_channel}-linux.yml')),
-    'Linux validates its channel manifest',
-  )
-  assert.ok(
-    giteeWorkflow.includes('test -s "apps/desktop/dist/${update_channel}.yml"'),
-    'Gitee requires its Windows channel manifest',
-  )
-
-  for (const [tag, names, expected] of [
-    [
-      'v0.37.1',
-      ['latest.yml', 'latest-linux.yml', 'latest-mac.yml', 'rc.yml', 'piggy.AppImage'],
-      ['dist/latest.yml', 'dist/latest-linux.yml', 'dist/latest-mac.yml', 'dist/piggy.AppImage'],
-    ],
-    [
-      'v0.37.1-rc.1',
-      ['rc.yml', 'rc-linux.yml', 'rc-mac.yml', 'latest.yml', 'piggy.AppImage'],
-      ['dist/rc.yml', 'dist/rc-linux.yml', 'dist/rc-mac.yml', 'dist/piggy.AppImage'],
-    ],
-  ]) {
+  const validation = releaseWorkflow.split('\n').filter(value => value.includes('test -s "dist/${update_channel}'))
+    .map(value => value.trim().replaceAll('${{ matrix.target }}', '$TARGET')).join('\n')
+  assert.ok(validation.includes('dist/${update_channel}.yml'))
+  assert.ok(validation.includes('dist/${update_channel}-linux.yml'))
+  assert.ok(giteeWorkflow.includes('test -s "apps/desktop/dist/${update_channel}.yml"'))
+  assert.equal(JSON.parse(readFileSync(new URL('../apps/desktop/package.json', import.meta.url))).build.publish[0].provider, 'github')
+  for (const tag of ['v0.37.1', 'v0.37.1-rc.1']) {
     const dir = mkdtempSync(join(tmpdir(), 'piggy-release-channel-'))
     try {
-      makeDist(dir, names)
-      assert.deepEqual(
-        runBash(dir, ghSelection.script, { GITHUB_REF_NAME: tag }).sort(), expected.sort(),
-      )
-      const giteeExpected = expected.filter(value => /\.yml$/.test(value))
-      const giteeScript = giteeSelection.script.replaceAll('apps/desktop/dist/', 'dist/')
-      assert.deepEqual(runBash(dir, giteeScript, { TAG: tag }).sort(), giteeExpected.sort())
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
-    }
+      // The real GitHub provider emits latest*.yml even for prerelease versions.
+      makeDist(dir, ['latest.yml', 'latest-linux.yml', 'piggy.AppImage'])
+      for (const target of ['--win', '--linux']) {
+        const script = ghSelection.script.replace('shopt -s nullglob', validation + '\nshopt -s nullglob')
+        assert.deepEqual(runBash(dir, script, { TAG: tag, GITHUB_REF_NAME: tag, TARGET: target }).sort(),
+          ['dist/latest-linux.yml', 'dist/latest.yml', 'dist/piggy.AppImage'])
+      }
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+    const generic = mkdtempSync(join(tmpdir(), 'piggy-gitee-channel-'))
+    try {
+      makeDist(generic, ['latest.yml', 'rc.yml'])
+      const script = giteeSelection.script.replaceAll('apps/desktop/dist/', 'dist/')
+      assert.deepEqual(runBash(generic, script, { TAG: tag }), [tag.includes('-rc.') ? 'dist/rc.yml' : 'dist/latest.yml'])
+    } finally { rmSync(generic, { recursive: true, force: true }) }
   }
-
-  const oldRcOnly = mkdtempSync(join(tmpdir(), 'piggy-old-rc-glob-'))
-  try {
-    makeDist(oldRcOnly, ['rc.yml', 'rc-linux.yml'])
-    const oldSelection = 'shopt -s nullglob; files=(dist/latest*.yml); test -s dist/latest.yml; printf "%s\\n" "${files[@]}"'
-    assert.throws(() => runBash(oldRcOnly, oldSelection))
-    assert.deepEqual(
-      runBash(oldRcOnly, ghSelection.script, { GITHUB_REF_NAME: 'v0.37.1-rc.1' }).sort(),
-      ['dist/rc-linux.yml', 'dist/rc.yml'],
-    )
-  } finally {
-    rmSync(oldRcOnly, { recursive: true, force: true })
-  }
-
-  const oldStable = mkdtempSync(join(tmpdir(), 'piggy-old-stable-glob-'))
-  try {
-    makeDist(oldStable, ['latest.yml', 'latest-linux.yml'])
-    const oldSelection = 'shopt -s nullglob; files=(dist/latest*.yml); test -s dist/latest.yml; printf "%s\\n" "${files[@]}"'
-    assert.deepEqual(
-      runBash(oldStable, oldSelection).sort(), ['dist/latest-linux.yml', 'dist/latest.yml'],
-    )
-  } finally {
-    rmSync(oldStable, { recursive: true, force: true })
-  }
-
   const artifactPaths = giteeWorkflow.split('\n').map(value => value.trim())
-  assert.ok(artifactPaths.includes('apps/desktop/dist/latest*.yml'), 'stable artifacts remain included')
-  assert.ok(artifactPaths.includes('apps/desktop/dist/rc*.yml'), 'RC artifacts are preserved for local publishing')
+  assert.ok(artifactPaths.includes('apps/desktop/dist/latest*.yml'))
+  assert.ok(artifactPaths.includes('apps/desktop/dist/rc*.yml'))
+  // Repair builds run the current workflow but check out the immutable release tag.
+  assert.ok(releaseWorkflow.includes('workflow_dispatch:'))
+  assert.equal((releaseWorkflow.match(/ref: \$\{\{ env.TAG \}\}/g) || []).length, 2)
+  assert.ok(releaseWorkflow.includes('gh release upload "$TAG"'))
+  assert.ok(releaseWorkflow.includes('fail-fast: false'))
 })
 
 test('Gitee upload script classifies both stable and RC metadata for the final upload phase', () => {
