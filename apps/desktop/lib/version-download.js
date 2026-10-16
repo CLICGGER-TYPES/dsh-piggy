@@ -27,7 +27,8 @@ export async function downloadVersionFile(options) {
       callback(null, chunk)
     },
   })
-  await pipeline(Readable.from(/** @type {any} */ (response.body)), progress,
+  // 2026-10-17：直接取消 Web reader，避免落盘失败后仍等异步迭代器的下一块数据。
+  await pipeline(Readable.fromWeb(/** @type {any} */ (response.body)), progress,
     createWriteStream(options.destination, { flags: 'wx' }), { signal: options.signal })
   options.onBytes?.(bytes)
   return result

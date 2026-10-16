@@ -361,6 +361,20 @@ function setLegacyHit(hit = passthroughHit) {
   setHit(hit)
 }
 
+/** 只把合法的窗口协议消息作为能力证据，不能让坏消息启用全局转发。 */
+function isMouseRect(rect) {
+  return rect != null && [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)
+    && rect.width >= 0 && rect.height >= 0
+}
+function isMouseShape(rects) {
+  return Array.isArray(rects) && rects.every(isMouseRect)
+}
+function isPlaceRequest(request) {
+  return request !== null && typeof request === 'object' && !Array.isArray(request)
+    && [request.bounds, request.pig].every(rect => rect === undefined || (isMouseRect(rect) && rect.width > 0 && rect.height > 0))
+    && (request.shape === undefined || isMouseShape(request.shape))
+}
+
 /** Forwarded mousemove can be missed when crossing directly onto an ignored window.
  * Read the cursor in the main process so the first click already reaches the pig. */
 function refreshHit() {
@@ -452,9 +466,10 @@ ipcMain.on('piggy:content', (event, content) => {
     if (content?.immediate === true) event.returnValue = null
     return
   }
-  const width = Number(content?.width)
-  const height = Number(content?.height)
-  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+  const width = content?.width
+  const height = content?.height
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0
+    || (content.shape !== undefined && !isMouseShape(content.shape))) {
     if (content?.immediate === true) event.returnValue = null
     return
   }
@@ -654,7 +669,7 @@ ipcMain.on('piggy:drag:end', event => {
  * 同步返回改完后的几何，页面同一轮里就能接着用。以后这类调整只发游戏包，不用再发桌面程序。
  */
 ipcMain.on('piggy:place', (event, request) => {
-  if (!fromPet(event)) { event.returnValue = null; return }
+  if (!fromPet(event) || !isPlaceRequest(request)) { event.returnValue = null; return }
   if (passthroughMode !== 'modern') {
     passthroughMode = 'modern'
     setHit(passthroughHit)
@@ -693,9 +708,9 @@ ipcMain.on('piggy:place', (event, request) => {
 
 /** 页面判断鼠标在不在猪/面板上（只在 Windows 穿透模式下生效）。 */
 ipcMain.on('piggy:hit', (event, hit) => {
-  if (!fromPet(event)) return
+  if (!fromPet(event) || typeof hit !== 'boolean') return
   if (hasPlacedShape) return
-  setLegacyHit(hit === true)
+  setLegacyHit(hit)
 })
 
 /** 旧游戏包（0.27.2 及以前）只会发鼠标增量：照旧支持，回退版本时拖动不坏。 */
@@ -710,8 +725,8 @@ ipcMain.on('piggy:move', (event, delta) => {
 })
 
 ipcMain.on('piggy:shape', (event, rects) => {
-  if (lastShape.length === 0 && Array.isArray(rects) && rects.length > 0) log('first shape', JSON.stringify(rects))
-  if (!fromPet(event) || !Array.isArray(rects)) return
+  if (!fromPet(event) || !isMouseShape(rects)) return
+  if (lastShape.length === 0 && rects.length > 0) log('first shape', JSON.stringify(rects))
   setLegacyHit()
   lastShape = rects
   applyShape(rects.slice(0, 64).map(r => ({

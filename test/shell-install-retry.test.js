@@ -5,7 +5,6 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { hatchEgg } from '../core.js'
 import { startBackgroundHost } from '../apps/desktop/lib/background-host.js'
@@ -22,10 +21,10 @@ for (const retry of ['安装', '退出']) {
     try {
       host = await startBackgroundHost(ROOT, statePath)
       await host.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'name', name: '待保存的小猪' }))
-      const lifecycle = shellLifecycle({ dispose() { attempts++; return host.dispose() } }, () => installs++)
+      const lifecycle = shellLifecycle({ dispose() { attempts++; return host.dispose() } }, () => { installs++; return { ok: true } })
       // 原子写的临时文件被目录占用，真实 openSync 会失败；不用假保存结果代替。
       mkdirSync(blocker)
-      lifecycle.install()
+      assert.equal(lifecycle.install().ok, true)
       await lifecycle.runInstall()
       assert.equal(installs, 0, '保存失败不能启动安装器')
       assert.equal(attempts, 1, '失败后留给用户重试，不能自动退出或再次关闭')
@@ -33,16 +32,18 @@ for (const retry of ['安装', '退出']) {
       assert.equal(lifecycle.state().closing, false, '失败 Promise 不能留在关闭状态中')
       assert.equal(lifecycle.state().closed, false)
       assert.equal(lifecycle.state().hitTimer, 1, '保留命中轮询，猪仍然可点')
-      assert.ok(lifecycle.messages.some(parts => String(parts).includes('shell update shutdown failed')))
+      assert.ok(lifecycle.messages.some(parts => String(parts).includes('desktop action failed')))
+      assert.equal(lifecycle.dialogs.length, 1, '保存失败必须向用户报告')
+      assert.match(lifecycle.dialogs[0].detail, /state\.json\.tmp/)
       rmSync(blocker, { recursive: true })
       assert.equal((await host.handle('GET', '/dsh-piggy/state')).status, 200)
       if (retry === '安装') {
-        lifecycle.install()
+        assert.equal(lifecycle.install().ok, true)
         await lifecycle.runInstall()
         assert.equal(installs, 1)
+        assert.equal(lifecycle.dialogs.length, 1, '重试成功不能再次报错')
       } else {
-        lifecycle.quit()
-        for (let i = 0; i < 100 && lifecycle.state().exits === 0; i++) await delay(10)
+        await lifecycle.quit()
         assert.equal(lifecycle.state().exits, 1, '保存恢复后正常完成退出')
       }
       assert.equal(attempts, 2)

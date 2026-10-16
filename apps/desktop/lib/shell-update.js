@@ -1,5 +1,5 @@
 // @ts-check
-/** Desktop executable updates are separate from the downloaded game packs. */
+/** 桌面外壳更新与游戏包更新分离；关闭时等待检查、下载和签名验证全部收尾。 */
 import { Worker } from 'node:worker_threads'
 import { NsisUpdater } from 'electron-updater'
 import { CancellationToken } from 'builder-util-runtime'
@@ -58,6 +58,7 @@ export function createShellUpdates(options) {
   let busy = false
   let closed = false
   let downloading = null
+  let operation = null
   let closing = null
   const signatures = new Set()
   if (mode === 'automatic') {
@@ -92,30 +93,37 @@ export function createShellUpdates(options) {
     if (compareVersions(expectedVersion, currentVersion) <= 0) return { ok: false, reason: '桌面外壳已经是这个版本' }
     busy = true
     readyVersion = null
-    try {
-      updater.allowPrerelease = prerelease
-      if (channel.name === 'gitee') {
-        if (!tag) return { ok: false, reason: '版本列表过期了，点上面的「刷新」再试一次' }
-        updater.setFeedURL({ provider: 'generic', url: `${channel.downloadBase}/${tag}` })
+    // 2026-10-16：先登记整轮操作，再调用更新器；检查尚无取消 token 时，关闭也必须等待。
+    operation = Promise.resolve().then(async () => {
+      try {
+        if (closed) return { ok: false, reason: '桌面外壳更新已关闭' }
+        updater.allowPrerelease = prerelease
+        if (channel.name === 'gitee') {
+          if (!tag) return { ok: false, reason: '版本列表过期了，点上面的「刷新」再试一次' }
+          updater.setFeedURL({ provider: 'generic', url: `${channel.downloadBase}/${tag}` })
+        }
+        const result = await updater.checkForUpdates()
+        if (closed) return { ok: false, reason: '桌面外壳更新已关闭' }
+        const found = result?.updateInfo?.version
+        if (found !== expectedVersion) return { ok: false, reason: found ? `发布页当前外壳是 v${found}，点「刷新」再试` : '还没有可自动安装的外壳包，请到发布页下载' }
+        downloading = new CancellationToken()
+        await updater.downloadUpdate(downloading)
+        if (closed) return { ok: false, reason: '桌面外壳更新已关闭' }
+        readyVersion = found
+        return { ok: true, version: found }
+      } catch (error) {
+        return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+      } finally {
+        busy = false
+        downloading = null
+        operation = null
       }
-      const result = await updater.checkForUpdates()
-      if (closed) return { ok: false, reason: '桌面外壳更新已关闭' }
-      const found = result?.updateInfo?.version
-      if (found !== expectedVersion) return { ok: false, reason: found ? `发布页当前外壳是 v${found}，点「刷新」再试` : '还没有可自动安装的外壳包，请到发布页下载' }
-      downloading = new CancellationToken()
-      await updater.downloadUpdate(downloading)
-      if (closed) return { ok: false, reason: '桌面外壳更新已关闭' }
-      readyVersion = found
-      return { ok: true, version: found }
-    } catch (error) {
-      return { ok: false, reason: error instanceof Error ? error.message : String(error) }
-    } finally {
-      busy = false
-      downloading = null
-    }
+    })
+    return operation
   }
 
   function install() {
+    if (closed) return { ok: false, reason: '桌面外壳更新已关闭' }
     if (mode !== 'automatic' || readyVersion === null) return { ok: false, reason: '还没有下载好桌面外壳' }
     updater.quitAndInstall(false, true)
     return { ok: true }
@@ -124,9 +132,9 @@ export function createShellUpdates(options) {
   function close() {
     if (closing) return closing
     closed = true
-    downloading?.cancel()
     // 证书验证器自己管理 PowerShell 超时；正常退出等待它结束，不能直接终止 Worker 留下子进程。
-    closing = Promise.allSettled([...signatures]).then(() => {})
+    closing = Promise.allSettled([operation, ...signatures]).then(() => {})
+    downloading?.cancel()
     return closing
   }
 

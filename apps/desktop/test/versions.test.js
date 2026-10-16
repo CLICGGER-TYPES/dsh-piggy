@@ -4,7 +4,7 @@
  * GitHub 用假的 fetch 代替；游戏包用 release-game 真生成。
  */
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -43,6 +43,9 @@ function setup(save = { version: 12 }) {
   const bundled = join(dir, 'bundled')
   mkdirSync(bundled)
   writeFileSync(join(bundled, 'package.json'), JSON.stringify({ version: '0.24.0' }))
+  const schemaPath = 'packages/pet-core/src/core/constants.js'
+  mkdirSync(join(bundled, 'packages/pet-core/src/core'), { recursive: true })
+  copyFileSync(join(ROOT, schemaPath), join(bundled, schemaPath))
   const statePath = join(dir, 'state.json')
   writeFileSync(statePath, JSON.stringify(save))
   return { dir, bundled, statePath }
