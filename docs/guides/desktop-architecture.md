@@ -28,10 +28,30 @@
 
 原则：**能放进游戏包的都放进游戏包**（玩家点一下就更新），外壳（要下载安装包）能不动就不动。
 
-- 只有需要**新的基础动作**（新 IPC 消息、新窗口能力）时才改外壳：外壳升版本，
-  游戏包 `apps/desktop/package.json` 的 `piggy.minShell` 视情况提高，`src/client/desktop/index.js` 的 `DESKTOP_VERSION` 加一。
+- 窗口能力、主进程性能和外壳依赖的修复通过新安装包交付。新增**基础动作**（新 IPC 消息、新窗口能力）时，外壳升版本，
+  游戏包 `apps/desktop/package.json` 的 `piggy.minShell` 视情况提高，`src/client/desktop/index.js` 的 `DESKTOP_VERSION` 加一；只优化现有动作不必增加约定版本。
 - 游戏包要兼容「新游戏包 + 刚好满足 minShell 的旧外壳」：用新动作前先 `typeof shell.xxx === 'function'`。
 - 外壳要兼容「老游戏包」：老游戏包会退回外壳自带的 `renderer/shell.js` 和下表「旧」消息，别删。
+
+## 线程与持久化
+
+| 执行位置 | 职责 |
+|---|---|
+| 窗口主线程 | Electron 窗口、拖动采样、命中判断、系统对话框、Chromium 网络和消息转发 |
+| 游戏 Worker | 游戏 Store、路由、工作事件接口、事务账本和游戏存档；保持同一个单写者 |
+| 更新 Worker | 版本记录和缓存、游戏包校验、解压、解析及暂存文件准备；不占用游戏单写者 |
+| Windows 全屏探测 Worker | 创建和管理 PowerShell 探测进程，向主线程报告全屏状态；退出时等待进程和输出管道关闭 |
+| 短生命周期签名 Worker | 外壳安装包的 Windows 发布者签名判断，复用更新器原有实现 |
+
+外壳自己的日志、窗口状态、代理和全屏偏好采用异步文件操作。窗口状态保留防抖并串行写入，退出时写完最新快照；日志按接收顺序追加。静态资源通过异步文件响应提供，保留原有类型和缓存头。
+
+Windows 上，现代游戏通过 `piggy:place` 上报可点区域后，命中完全由主进程读取光标并轮询判断，不再开启全局鼠标转发。切换到这个模式时，即使命中值没变也要重新设置转发选项。旧游戏仍使用页面的 `piggy:hit` 和鼠标转发；拖动捕获、心跳和松手最终几何确认独立保留。
+
+游戏更新分为准备和提交：先下载、校验并解包到暂存目录，现用游戏继续运行；准备成功后关闭游戏写者，确认 `saved === true`，备份最终存档，再提交版本目录、原子切换 `active.json` 并重启。安装、回退和外壳安装共用一个切换排他，不能由两个窗口交错执行。准备任务可以单独取消，不永久关闭版本服务；失败准备包单独撤销，回退提交前核对当前存档与目标版本的兼容性。更新 Worker 内的同步包处理不会占用窗口线程，下载仍由主线程的 Chromium 网络栈执行，以保留系统代理和设备代理设置。
+
+带非空 `pending` 的快照必须把同一份消息送到各窗口，因为生成快照时已经取走这些消息。Worker 先发送原始 JSON 快照文本，再返回对应路由响应；主线程只转发，preload 在页面进程解析并保持 `onStateChanged` 的对象接口。此类快照不能替换成空刷新通知，也不能只保留最新一份。POST 请求体用 ArrayBuffer 转移到 Worker 后再解析文本；二进制响应也在 Worker 内整理为独立 ArrayBuffer 后转移，不转移可能来自池化 Buffer 的底层存储。这些路径仍会完整接收请求体或响应体，并非端到端流式传输。
+
+正常退出先停接工作事件，再完成游戏保存和资源清理。如果保存失败且宿主仍可运行，重新建立工作接口并发布发现文件后才返回保存错误，界面恢复时接口也可重新发现。外壳更新下载在退出时取消，已经开始的签名验证等待原验证器结束，避免直接终止 Worker 留下 PowerShell 子进程。
 
 ## IPC 消息全表
 
@@ -46,7 +66,7 @@
 | `piggy:drag:start` | `beginDrag(pig)` | 单向 | 开始拖：带猪在窗口里的框；`slide:true` 表示页面会接 `piggy:drag-slide` |
 | `piggy:drag:heartbeat` | `dragHeartbeat()` | 单向 | 拖动中每次 pointermove 发；2 秒没心跳主进程自己松手 |
 | `piggy:drag:end` | `endDrag()` | 单向 | 松手 |
-| `piggy:hit` | `setHit(bool)` | 单向 | Windows 穿透模式：鼠标在不在猪上 |
+| `piggy:hit` | `setHit(bool)` | 单向 | 旧游戏的 Windows 穿透命中；现代游戏上报形状后由主进程轮询 |
 | `piggy:geometry:ask` | `askGeometry()` | 单向 | 挂载后主动要一次几何 |
 | `piggy:panel:toggle` | `panel.toggle(open, pig)` | 单向 | 右键开/关面板 |
 
@@ -66,7 +86,7 @@
 | `piggy:drag-slide` | `onDragSlide` | 猪窗口 | 拖到屏幕边、窗口被夹住时猪在窗口里该滑多少 |
 | `piggy:panel` | `panel.on` | 两边 | `{type:'open', vertical, maxHeight}` / `{type:'closed'}` / `{type:'blur', toPet}` |
 | `piggy:pig-fx` | `panel.onFx` | 猪窗口 | 面板转来的反应 |
-| `piggy:state-changed` | `onStateChanged` | 两边 | 存档变了（任一边 POST 之后，30ms 内合并一次），马上刷新 |
+| `piggy:state-changed` | `onStateChanged` | 两边 | 普通变更通知在 30ms 内合并并触发刷新；也可携带同一份含 `pending` 的快照，此时不合并，直接渲染 |
 
 ### 两边都能用的
 
@@ -85,6 +105,10 @@
 | 文件 | 内容 |
 |---|---|
 | `apps/desktop/main.js` | 主进程：两个窗口、拖动（`dragTick`）、面板窗口一节、IPC |
+| `apps/desktop/lib/background-host.js`、`runtime-worker.js` | 游戏 Worker 的异步代理、路由和快照转发 |
+| `apps/desktop/lib/background-versions.js`、`versions-worker.js` | 更新 Worker、Chromium 下载衔接和版本操作 |
+| `apps/desktop/lib/fullscreen.js`、`fullscreen-worker.js` | 全屏偏好及 Windows 后台探测器 |
+| `apps/desktop/lib/signature-worker.js` | Windows 外壳安装包签名校验 |
 | `apps/desktop/lib/panel-geometry.js` | 面板窗口摆哪（纯函数，有单测） |
 | `apps/desktop/lib/window-geometry.js` | 拖动时窗口怎么跟鼠标、夹在哪些屏里 |
 | `apps/desktop/preload.cjs` | `window.piggyShell` |

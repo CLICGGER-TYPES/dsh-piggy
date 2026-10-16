@@ -13,10 +13,11 @@
  * - 存档在 userData/dsh-piggy/state.json，跟 DSH 里那只各养各的；托盘里可以导入。
  */
 import { spawn } from 'node:child_process'
-import { appendFile, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { access, appendFile, copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, extname, join, normalize, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, extname, join, resolve, sep } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
@@ -24,7 +25,8 @@ import updaterPackage from 'electron-updater'
 import { startBackgroundHost } from './lib/background-host.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
-import { RELEASES_PAGE, createVersions } from './lib/versions.js'
+import { RELEASES_PAGE } from './lib/versions.js'
+import { startBackgroundVersions } from './lib/background-versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
@@ -54,17 +56,26 @@ const BOUNDS_TOLERANCE = 2
 /** 页面还没报内容框之前的兜底尺寸：折叠的猪 + 留白。 */
 const FALLBACK_CONTENT = { width: 132, height: 152 }
 
-/** A small log next to the save, so a launch that shows nothing can still be diagnosed. */
+let logDirectoryReady = null
+let logWriting = Promise.resolve()
+
+/** 启动失败也能诊断；目录只准备一次，追加按调用顺序执行。 */
 function log(...parts) {
   const line = `[${new Date().toISOString()}] ${parts.join(' ')}\n`
   if (process.env.PIGGY_CAPTURE) process.stdout.write(line)
-  try {
+  logWriting = logWriting.then(async () => {
     const file = join(app.getPath('userData'), 'piggy.log')
-    mkdirSync(dirname(file), { recursive: true })
-    appendFile(file, line, () => {})
-  } catch { /* logging must never break the pig */ }
+    logDirectoryReady ??= mkdir(dirname(file), { recursive: true })
+    await logDirectoryReady
+    await appendFile(file, line)
+  }).catch(() => { logDirectoryReady = null })
   // 同一句话也进游戏自己的日志：设置里导出的那一份要能看到窗口和更新出了什么事。
   try { hostJournal?.record('info', 'shell', parts.join(' ')) } catch { /* 日志不许反过来把猪弄挂 */ }
+}
+
+async function flushLogs() {
+  let writing
+  do { writing = logWriting; await writing } while (writing !== logWriting)
 }
 
 /** 游戏宿主的日志本；宿主起来之前是 null。 */
@@ -113,19 +124,30 @@ const statePath = () => join(app.getPath('userData'), 'dsh-piggy', 'state.json')
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.ttf': 'font/ttf' }
 
 /** Serve a file from `root`, refusing anything that climbs out of it. */
-function serveFile(root, rel) {
-  const file = normalize(join(root, rel))
-  if (!file.startsWith(normalize(root)) || !existsSync(file)) return new Response('not found', { status: 404 })
+async function serveFile(root, rel) {
+  const base = resolve(root)
+  const file = resolve(base, rel)
+  if (!file.startsWith(base + sep)) return new Response('not found', { status: 404 })
   const type = MIME[extname(file)] ?? 'application/octet-stream'
   // 立绘、字体让浏览器缓存：摸猪时立绘在「摸」和「平常」之间来回换，
   // 不缓存的话每次都要重新取一遍，Windows 上会空一帧（猪闪一下）。
   const cache = /^(image|font)\//.test(type) ? { 'cache-control': 'max-age=86400' } : {}
-  return new Response(readFileSync(file), { headers: { 'content-type': type, ...cache } })
+  try {
+    // Chromium 的 file loader 支持 ASAR，字体也不必整块读进主进程再复制。
+    const response = await net.fetch(pathToFileURL(file).href)
+    if (!response.ok) {
+      await response.body?.cancel()
+      return new Response('not found', { status: 404 })
+    }
+    return new Response(response.body, { headers: { 'content-type': type, ...cache } })
+  } catch { return new Response('not found', { status: 404 }) }
 }
 
 let host = null
-/** @type {ReturnType<typeof createVersions> | null} */
+let hostStarting = null
+/** @type {Awaited<ReturnType<typeof startBackgroundVersions>> | null} */
 let versions = null
+let versionsStarting = null
 /** @type {ReturnType<typeof createShellUpdates> | null} */
 let shellUpdates = null
 let win = null
@@ -149,6 +171,19 @@ const extensionLayer = createExtensionLayer({ extension: () => extWin, overlays:
 let extKey = null
 /** 正在退出/重启：关掉窗口前先置位，之后到达的页面消息一律不处理。 */
 let quitting = false
+/** 导入与版本切换共用一次预约，直到重启/安装完成前不接受第二次切换。 */
+let activeAction = null
+let quitAfterAction = false
+function reserveAction(kind, phase = 'commit') {
+  if (quitting || activeAction !== null) return null
+  activeAction = { kind, phase, cancelled: false }
+  return activeAction
+}
+function releaseAction(action) {
+  if (activeAction !== action) return
+  activeAction = null
+  if (quitAfterAction) { quitAfterAction = false; app.quit() }
+}
 /**
  * 消息是不是这扇窗口的页面发来的。窗口销毁后再读 win.webContents 会抛
  * 「Object has been destroyed」—— Windows 上在更新页切换版本时，旧页面的消息还在路上，
@@ -178,7 +213,7 @@ function registerProtocol(gameDir) {
     const url = new URL(request.url)
     const path = decodeURIComponent(url.pathname)
     if (path.startsWith('/dsh-piggy/')) {
-      const body = request.method === 'POST' ? await request.text() : undefined
+      const body = request.method === 'POST' ? await request.arrayBuffer() : undefined
       if (quitting) return new Response('game runtime closing', { status: 503 })
       const out = await host.handle(request.method, path + url.search, body)
       // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
@@ -201,9 +236,9 @@ function windowStatePath() {
   return join(app.getPath('userData'), 'window.json')
 }
 
-function readWindowState() {
+async function readWindowState() {
   try {
-    const saved = JSON.parse(readFileSync(windowStatePath(), 'utf8'))
+    const saved = JSON.parse(await readFile(windowStatePath(), 'utf8'))
     if (saved !== null && typeof saved === 'object' && Number.isFinite(saved.width) && Number.isFinite(saved.height)) return saved
   } catch { /* 第一次运行没有这个文件 */ }
   return null
@@ -211,20 +246,38 @@ function readWindowState() {
 
 /** 让窗口晚一点再写盘：拖动时 setBounds 会连发。 */
 let windowStateTimer = null
+let windowStateWriting = Promise.resolve()
+let pendingWindowState = null
+function saveWindowState() {
+  if (win === null || win.isDestroyed()) return windowStateWriting
+  const bounds = win.getBounds()
+  // 坐标仍在窗口线程采样，异步写者只接收快照，不回读 Electron 对象。
+  const pig = lastPigWindow === null ? undefined : { x: bounds.x + lastPigWindow.x, y: bounds.y + lastPigWindow.y }
+  pendingWindowState = JSON.stringify({ ...bounds, pig })
+  windowStateWriting = windowStateWriting.then(async () => {
+    if (pendingWindowState === null) return
+    const contents = pendingWindowState
+    pendingWindowState = null
+    const file = windowStatePath()
+    await mkdir(dirname(file), { recursive: true })
+    await writeFile(file + '.tmp', contents)
+    await rename(file + '.tmp', file)
+  }).catch(() => { /* 存不下就算了，下次用兜底位置 */ })
+  return windowStateWriting
+}
+
+function flushWindowState() {
+  if (windowStateTimer !== null) clearTimeout(windowStateTimer)
+  windowStateTimer = null
+  return saveWindowState()
+}
+
 function scheduleWindowStateSave() {
   if (win === null || win.isDestroyed()) return
   if (windowStateTimer !== null) clearTimeout(windowStateTimer)
   windowStateTimer = setTimeout(() => {
     windowStateTimer = null
-    if (win === null || win.isDestroyed()) return
-    try {
-      mkdirSync(dirname(windowStatePath()), { recursive: true })
-      const bounds = win.getBounds()
-      // 连猪在屏幕上的位置一起存：下次启动按猪摆，而不是按窗口摆 —— 窗口大小每次启动
-      // 可能不同（上次退出时面板开着、气泡区、版本升级），按窗口摆猪会一次漂几像素。
-      const pig = lastPigWindow === null ? undefined : { x: bounds.x + lastPigWindow.x, y: bounds.y + lastPigWindow.y }
-      writeFileSync(windowStatePath(), JSON.stringify({ ...bounds, pig }))
-    } catch { /* 存不下就算了，下次用兜底位置 */ }
+    return saveWindowState()
   }, 800)
 }
 
@@ -287,11 +340,25 @@ function applyBounds(next, why) {
  */
 const PASSTHROUGH = process.platform === 'win32' && process.env.PIGGY_SHAPE !== '1'
 let passthroughHit = false
+let passthroughForward = null
+/** 未知能力阶段不安装全局转发钩子；place 确认现代能力后不再降级。 */
+let passthroughMode = 'unknown'
 let hitTimer = null
 function setHit(hit) {
-  if (!PASSTHROUGH || win === null || win.isDestroyed() || hit === passthroughHit) return
+  if (!PASSTHROUGH || win === null || win.isDestroyed()) return
+  const forward = passthroughMode === 'legacy'
+  if (hit === passthroughHit && forward === passthroughForward) return
   passthroughHit = hit
-  win.setIgnoreMouseEvents(!hit, { forward: true })
+  passthroughForward = forward
+  // 现代游戏由 main 轮询命中，不再安装绑在 UI 线程上的 Windows 全局鼠标转发钩子。
+  if (forward) win.setIgnoreMouseEvents(!hit, { forward: true })
+  else win.setIgnoreMouseEvents(!hit, { forward: false })
+}
+
+function setLegacyHit(hit = passthroughHit) {
+  if (passthroughMode === 'modern') return
+  passthroughMode = 'legacy'
+  setHit(hit)
 }
 
 /** Forwarded mousemove can be missed when crossing directly onto an ignored window.
@@ -313,8 +380,9 @@ function applyShape(rects) {
 /** 上次退出时猪的屏幕位置：启动后第一次收到内容上报时按它摆窗口。 */
 let savedPigScreen = null
 
-function createWindow() {
-  const saved = readWindowState()
+async function createWindow() {
+  const saved = await readWindowState()
+  if (quitting) return
   savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
   if (savedPigScreen !== null) {
     // 显示器拔掉或换了分辨率：猪至少要整只留在某块屏上。
@@ -390,6 +458,7 @@ ipcMain.on('piggy:content', (event, content) => {
     if (content?.immediate === true) event.returnValue = null
     return
   }
+  setLegacyHit()
   const anchor = { vertical: content?.anchor?.vertical === 'top' ? 'top' : 'bottom', horizontal: content?.anchor?.horizontal === 'left' ? 'left' : 'right' }
   const bounds = win.getBounds()
   const pigWindow = { x: Number(content?.pigWindow?.x), y: Number(content?.pigWindow?.y) }
@@ -586,6 +655,10 @@ ipcMain.on('piggy:drag:end', event => {
  */
 ipcMain.on('piggy:place', (event, request) => {
   if (!fromPet(event)) { event.returnValue = null; return }
+  if (passthroughMode !== 'modern') {
+    passthroughMode = 'modern'
+    setHit(passthroughHit)
+  }
   const b = request?.bounds
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
     applyBounds({ x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }, 'place')
@@ -622,7 +695,7 @@ ipcMain.on('piggy:place', (event, request) => {
 ipcMain.on('piggy:hit', (event, hit) => {
   if (!fromPet(event)) return
   if (hasPlacedShape) return
-  setHit(hit === true)
+  setLegacyHit(hit === true)
 })
 
 /** 旧游戏包（0.27.2 及以前）只会发鼠标增量：照旧支持，回退版本时拖动不坏。 */
@@ -639,6 +712,7 @@ ipcMain.on('piggy:move', (event, delta) => {
 ipcMain.on('piggy:shape', (event, rects) => {
   if (lastShape.length === 0 && Array.isArray(rects) && rects.length > 0) log('first shape', JSON.stringify(rects))
   if (!fromPet(event) || !Array.isArray(rects)) return
+  setLegacyHit()
   lastShape = rects
   applyShape(rects.slice(0, 64).map(r => ({
     x: Math.round(Number(r.x) || 0), y: Math.round(Number(r.y) || 0),
@@ -868,7 +942,12 @@ function openExtWindow(key) {
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true,
       additionalArguments: ['--piggy-role=ext', '--piggy-ext=' + key] },
   })
-  for (const event of ['focus', 'blur', 'minimize', 'restore', 'hide']) extWin.on(event, () => extensionLayer.sync())
+  const syncExtensionLayer = () => extensionLayer.sync()
+  extWin.on('focus', syncExtensionLayer)
+  extWin.on('blur', syncExtensionLayer)
+  extWin.on('minimize', syncExtensionLayer)
+  extWin.on('restore', syncExtensionLayer)
+  extWin.on('hide', syncExtensionLayer)
   extWin.setMenuBarVisibility(false)
   extWin.loadURL('piggy://app/index.html')
   extWin.once('ready-to-show', () => { extWin?.show(); extWin?.focus() })
@@ -888,53 +967,78 @@ ipcMain.on('piggy:ext:close', event => {
 })
 
 /** Where the DSH plugin keeps its pig (the folder moved from dsh-pig to dsh-piggy). */
-function dshSavePath() {
+async function dshSavePath() {
   const home = process.env.DSH_HOME?.trim() ? resolve(process.env.DSH_HOME.trim()) : join(homedir(), '.dsh')
   for (const folder of ['dsh-piggy', 'dsh-pig']) {
     const file = join(home, folder, 'state.json')
-    if (existsSync(file)) return file
+    try { await access(file); return file } catch (error) { if (error.code !== 'ENOENT') throw error }
   }
   return null
 }
 
 /** Copy DSH's pig over this one, keeping a copy of this one first. */
 async function importFromDsh() {
-  const source = dshSavePath()
-  if (source === null) {
-    await dialog.showMessageBox({ type: 'info', message: '没找到 DSH 里的猪', detail: '默认找 ~/.dsh/dsh-piggy/state.json（或 DSH_HOME 下面）。' })
-    return
-  }
-  const { response } = await dialog.showMessageBox({
-    type: 'question', buttons: ['导入', '算了'], defaultId: 0, cancelId: 1,
-    message: '把 DSH 里的猪接过来？',
-    detail: `从 ${source} 复制一份过来。桌面版现在这只会先备份，不会丢。`,
-  })
-  if (response !== 0 || quitting) return
+  const action = reserveAction('import', 'prepare')
+  if (action === null) return
   try {
-    if (!(await prepareToQuit()).saved) { app.quit(); return }
-  } catch (error) { log('host shutdown failed', String(error)); return }
-  const target = statePath()
-  mkdirSync(dirname(target), { recursive: true })
-  if (existsSync(target)) copyFileSync(target, `${target}.before-import-${new Date().toISOString().replace(/[:.]/g, '-')}`)
-  copyFileSync(source, target)
-  relaunch()
-  app.exit(0)
+    const source = await dshSavePath()
+    if (action.cancelled || quitting) return
+    if (source === null) {
+      await dialog.showMessageBox({ type: 'info', message: '没找到 DSH 里的猪', detail: '默认找 ~/.dsh/dsh-piggy/state.json（或 DSH_HOME 下面）。' })
+      return
+    }
+    const { response } = await dialog.showMessageBox({
+      type: 'question', buttons: ['导入', '算了'], defaultId: 0, cancelId: 1,
+      message: '把 DSH 里的猪接过来？',
+      detail: `从 ${source} 复制一份过来。桌面版现在这只会先备份，不会丢。`,
+    })
+    if (action.cancelled || quitting || response !== 0) return
+    action.phase = 'commit'
+    await requireSavedGame()
+    const target = statePath()
+    await mkdir(dirname(target), { recursive: true })
+    await backupSave('import')
+    await copyFile(source, target + '.importing')
+    await rename(target + '.importing', target)
+    await restartGame()
+  } catch (error) {
+    if (!action.cancelled) await recoverAction(error)
+  } finally { releaseAction(action) }
 }
 
 /** Start with the system. Electron handles Windows; Linux gets an autostart entry. */
 const autostartFile = join(homedir(), '.config', 'autostart', 'dsh-piggy.desktop')
-function autostartOn() {
-  return process.platform === 'linux' ? existsSync(autostartFile) : app.getLoginItemSettings().openAtLogin
+/** @type {boolean|null} null 表示设备状态不可读，不据此显示为已开启或尝试写入。 */
+let autostartEnabled = false
+let autostartWriting = Promise.resolve()
+async function readAutostart() {
+  if (process.platform !== 'linux') return app.getLoginItemSettings().openAtLogin
+  try { await access(autostartFile); return true } catch (error) {
+    if (error.code === 'ENOENT') return false
+    log('autostart read failed', String(error))
+    return null
+  }
 }
 function setAutostart(on) {
-  if (process.platform !== 'linux') return app.setLoginItemSettings({ openAtLogin: on })
-  if (!on) return rmSync(autostartFile, { force: true })
-  const exec = process.env.APPIMAGE ?? process.execPath
-  mkdirSync(dirname(autostartFile), { recursive: true })
-  writeFileSync(autostartFile, `[Desktop Entry]\nType=Application\nName=dsh-piggy\nExec="${exec}"\nX-GNOME-Autostart-enabled=true\n`)
+  if (quitting || autostartEnabled === null) return autostartWriting
+  autostartWriting = autostartWriting.then(async () => {
+    if (process.platform !== 'linux') app.setLoginItemSettings({ openAtLogin: on })
+    else if (!on) await rm(autostartFile, { force: true })
+    else {
+      const exec = process.env.APPIMAGE ?? process.execPath
+      await mkdir(dirname(autostartFile), { recursive: true })
+      await writeFile(autostartFile + '.tmp', `[Desktop Entry]\nType=Application\nName=dsh-piggy\nExec="${exec}"\nX-GNOME-Autostart-enabled=true\n`)
+      await rename(autostartFile + '.tmp', autostartFile)
+    }
+    autostartEnabled = on
+  }).catch(error => log('autostart save failed', String(error)))
+  return autostartWriting
 }
 
-function createTray(gameDir) {
+async function createTray(gameDir) {
+  const version = await readVersion(gameDir)
+  autostartEnabled = await readAutostart()
+  if (quitting) return
   const icon = nativeImage.createFromPath(join(HERE, 'build', 'tray.png'))
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
   tray.setToolTip('dsh-piggy')
@@ -942,30 +1046,49 @@ function createTray(gameDir) {
   tray.on('click', () => { if (win?.isVisible()) { closePanel('tray'); win.hide() } else win?.showInactive() })
   const menu = () => Menu.buildFromTemplate([
     { label: win?.isVisible() ? '藏起来' : '叫猪出来', click: () => { if (win?.isVisible()) { closePanel('tray'); win.hide() } else win?.showInactive(); tray?.setContextMenu(menu()) } },
-    { label: '开机自启', type: 'checkbox', checked: autostartOn(), click: item => setAutostart(item.checked) },
-    { label: '从 DSH 导入猪…', click: () => { importFromDsh() } },
+    { label: '开机自启', type: 'checkbox', checked: autostartEnabled === true, enabled: autostartEnabled !== null,
+      click: item => { void setAutostart(item.checked).then(() => tray?.setContextMenu(menu())) } },
+    { label: '从 DSH 导入猪…', click: () => { void importFromDsh().catch(error => log('import failed', String(error))) } },
     { type: 'separator' },
-    { label: `游戏版本 ${readVersion(gameDir)}`, enabled: false },
+    { label: `游戏版本 ${version}`, enabled: false },
     { label: '退出', click: () => app.quit() },
   ])
   tray.setContextMenu(menu())
 }
 
-function readVersion(gameDir) {
-  try { return JSON.parse(readFileSync(join(gameDir, 'package.json'), 'utf8')).version } catch { return '?' }
+async function readVersion(gameDir) {
+  try { return JSON.parse(await readFile(join(gameDir, 'package.json'), 'utf8')).version } catch { return '?' }
 }
 
 /** Keep a copy of the save before the game code under it changes. */
-function backupSave(label) {
+async function backupSave(label) {
   const file = statePath()
-  if (existsSync(file)) copyFileSync(file, `${file}.before-${label}-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+  try { await access(file) } catch (error) { if (error.code === 'ENOENT') return; throw error }
+  await copyFile(file, `${file}.before-${label}-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+}
+
+async function requireSavedGame() {
+  const result = await prepareToQuit()
+  if (result.saved !== true) throw new Error('游戏未成功保存，已取消切换；未完成的工作记录保留在磁盘上')
+}
+
+/** 关闭后的备份或激活失败不能留下一个已没有游戏宿主的窗口。 */
+async function recoverAction(error) {
+  log('desktop action failed', String(error))
+  try {
+    await dialog.showMessageBox({ type: 'error', message: '操作未完成',
+      detail: `${error instanceof Error ? error.message : String(error)}${hostClosed ? '\n将重新启动当前游戏。' : ''}` })
+  } finally {
+    if (hostClosed) await restartGame()
+  }
 }
 
 /** Load the new game: flush the save first, then start over. */
 async function restartGame() {
   quitting = true
-  if (hostClosing) return
   try { await prepareToQuit() } catch (error) { log('host shutdown failed', String(error)); return }
+  await closeShellResources()
+  if (quitAfterAction) return app.exit(0)
   // Testing runs one launch at a time; the next one is started by hand.
   if (process.env.PIGGY_CAPTURE) return app.exit(0)
   relaunch()
@@ -974,12 +1097,15 @@ async function restartGame() {
 
 // ---- 更新 App（页面里的 tabs/update.js）通过这几个口子调用 ----
 let releases = []
+let releasesRequest = 0
 ipcMain.handle('piggy:updates:current', event => (fromPage(event) ? versions?.current() : null))
 ipcMain.handle('piggy:updates:list', async (event, fresh) => {
   if (!fromPage(event) || versions === null) return { ok: false, reason: '不在桌面版里' }
+  const request = ++releasesRequest
   try {
-    releases = await versions.list({ fresh: fresh === true })
-    return { ok: true, releases: releases.map(({ manifest, packUrl, ...rest }) => rest) }
+    const listed = await versions.list({ fresh: fresh === true })
+    if (request === releasesRequest) releases = listed
+    return { ok: true, releases: listed.map(({ manifest, packUrl, ...rest }) => rest) }
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : String(error) }
   }
@@ -989,25 +1115,57 @@ ipcMain.handle('piggy:updates:install', async (event, version) => {
   const target = releases.find(r => r.version === version)
   if (target === undefined) return { ok: false, reason: '先刷新一下版本列表' }
   if (target.blocked !== null) return { ok: false, reason: target.blocked === 'shell' ? '要先装新的安装包' : '存档太新，这个版本读不了' }
+  const action = reserveAction('game-install', 'prepare')
+  if (action === null) return { ok: false, reason: '正在切换版本，请稍候' }
+  let prepared = null
+  let restarting = false
   try {
-    backupSave('v' + target.version)
-    await versions.install(target, fraction => toPages('piggy:progress', fraction))
+    // 下载、校验、解包不影响正在玩的版本；成功保存并备份最终存档后才激活。
+    prepared = await versions.prepareInstall(target, fraction => toPages('piggy:progress', fraction))
+    if (action.cancelled) throw new Error('已取消版本准备')
+    action.phase = 'commit'
+    await requireSavedGame()
+    await backupSave('v' + target.version)
+    await versions.commitInstall(prepared)
+    prepared = null
+    restarting = true
     setTimeout(restartGame, 600)
     return { ok: true, version: target.version }
   } catch (error) {
+    if (prepared !== null) {
+      try { await versions.discardPrepared(prepared) }
+      catch (cleanupError) { if (!action.cancelled) log('prepared game cleanup failed', String(cleanupError)) }
+    }
+    if (!action.cancelled && hostClosed) await recoverAction(error)
     return { ok: false, reason: error instanceof Error ? error.message : String(error) }
-  }
+  } finally { if (!restarting) releaseAction(action) }
 })
-ipcMain.handle('piggy:updates:rollback', event => {
+ipcMain.handle('piggy:updates:rollback', async event => {
   if (!fromPage(event) || versions === null) return { ok: false, reason: '不在桌面版里' }
-  backupSave('rollback')
-  const result = versions.rollback()
-  if (result.ok) setTimeout(restartGame, 600)
-  return result
+  const action = reserveAction('game-rollback', 'prepare')
+  if (action === null) return { ok: false, reason: '正在切换版本，请稍候' }
+  let restarting = false
+  try {
+    const current = await versions.current()
+    if (action.cancelled) throw new Error('已取消版本准备')
+    if (current.previous === null) return { ok: false, reason: '没有上一个版本' }
+    action.phase = 'commit'
+    await requireSavedGame()
+    await backupSave('rollback')
+    const result = await versions.rollback()
+    if (!result.ok) throw new Error(result.reason)
+    restarting = true
+    setTimeout(restartGame, 600)
+    return result
+  } catch (error) {
+    if (!action.cancelled && hostClosed) await recoverAction(error)
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+  } finally { if (!restarting) releaseAction(action) }
 })
 ipcMain.handle('piggy:shell:status', event => (fromPage(event) ? shellUpdates?.status() : null))
 ipcMain.handle('piggy:shell:download', async (event, version) => {
   if (!fromPage(event) || shellUpdates === null) return { ok: false, reason: '桌面外壳更新不可用' }
+  if (activeAction !== null) return { ok: false, reason: '正在切换版本，请稍候' }
   // 预览版里的外壳也能下：只有在用预览版游戏的人，页面才会把它列出来。
   const target = releases.find(release => release.latestShell === version && release.shellUpdate)
   if (target === undefined) return { ok: false, reason: '版本列表过期了，点上面的「刷新」再试一次' }
@@ -1016,18 +1174,26 @@ ipcMain.handle('piggy:shell:download', async (event, version) => {
 ipcMain.handle('piggy:shell:install', event => {
   if (!fromPage(event) || shellUpdates === null || shellUpdates.status().readyVersion === null) return { ok: false, reason: '还没有下载好桌面外壳' }
   if (process.env.PIGGY_CAPTURE) return { ok: false, reason: '截图测试不会安装更新' }
+  const action = reserveAction('shell-install')
+  if (action === null) return { ok: false, reason: '正在切换版本，请稍候' }
   const readyVersion = shellUpdates.status().readyVersion
   // 安装器会替换整个外壳：关掉后台写者、等存档落盘之后再启动安装器。
-  setTimeout(() => {
-    return prepareToQuit().then(() => {
-      backupSave('shell-v' + readyVersion)
-      try { shellUpdates?.install() } catch (error) { log('shell update install failed', String(error)) }
-    }).catch(error => { log('shell update shutdown failed', String(error)) })
+  setTimeout(async () => {
+    try {
+      await requireSavedGame()
+      await backupSave('shell-v' + readyVersion)
+      await closeShellResources()
+      const result = shellUpdates.install()
+      if (!result.ok) throw new Error(result.reason)
+    } catch (error) {
+      try { await recoverAction(error) } finally { releaseAction(action) }
+    }
   }, 600)
   return { ok: true }
 })
 ipcMain.handle('piggy:quit', (event) => { if (fromPage(event)) app.quit() })
 // 设置 → 日志 → 导出：弹系统「另存为」，把日志写到用户选的位置。
+const exportWrites = new Set()
 ipcMain.handle('piggy:save-log', async (event, payload) => {
   if (!fromPage(event)) return { ok: false, reason: '来源不对' }
   const name = typeof payload?.name === 'string' && payload.name.trim() !== '' ? payload.name.trim() : 'dsh-piggy-log.txt'
@@ -1038,8 +1204,10 @@ ipcMain.handle('piggy:save-log', async (event, payload) => {
       defaultPath: join(app.getPath('downloads'), name),
       filters: [{ name: '日志文本', extensions: ['txt'] }, { name: '全部文件', extensions: ['*'] }],
     })
-    if (picked.canceled === true || typeof picked.filePath !== 'string' || picked.filePath === '') return { ok: false, canceled: true }
-    writeFileSync(picked.filePath, text, 'utf8')
+    if (quitting || picked.canceled === true || typeof picked.filePath !== 'string' || picked.filePath === '') return { ok: false, canceled: true }
+    const writing = writeFile(picked.filePath, text, 'utf8')
+    exportWrites.add(writing)
+    try { await writing } finally { exportWrites.delete(writing) }
     log('log exported', picked.filePath, String(text.length))
     return { ok: true, path: picked.filePath }
   } catch (error) {
@@ -1068,6 +1236,7 @@ let reassertingUntil = 0
  * 光调一次 setAlwaysOnTop(true) 在 Electron 里可能因为「状态没变」被跳过，所以先关再开。
  */
 function reassertTop(why) {
+  if (quitting) return
   if (extensionLayer.isFocused()) { extensionLayer.sync(); return }
   reassertingUntil = Date.now() + 1000
   for (const target of [panelWin, win]) {
@@ -1091,7 +1260,7 @@ function applyMacSpaces() {
 
 /** @param {{fullscreen:boolean, samePigScreen:boolean} | null} probe */
 function onFullscreenProbe(probe) {
-  if (win === null || win.isDestroyed() || fullscreenWatch === null) return
+  if (quitting || win === null || win.isDestroyed() || fullscreenWatch === null) return
   const covering = probe !== null && probe.fullscreen === true && probe.samePigScreen === true
   const ended = pigScreenFullscreen && !covering
   pigScreenFullscreen = covering
@@ -1116,7 +1285,7 @@ function onFullscreenProbe(probe) {
   else if (covering && win.isVisible()) raisePetAbovePanel()
 }
 
-function startFullscreenWatch() {
+async function startFullscreenWatch() {
   fullscreenWatch = createFullscreenWatch({
     path: join(app.getPath('userData'), 'fullscreen.json'), platform: process.platform, selfPid: process.pid, log,
     pigHwnd: () => {
@@ -1133,6 +1302,8 @@ function startFullscreenWatch() {
     },
     onProbe: onFullscreenProbe,
   })
+  await fullscreenWatch.init()
+  if (quitting) return
   fullscreenWatch.start()
   applyMacSpaces()
   // 置顶守护：系统把置顶清掉时马上抢回来；有的情况下没有事件，再每 3 秒核对一次。
@@ -1146,10 +1317,14 @@ function startFullscreenWatch() {
   topGuardTimer.unref?.()
 }
 
-ipcMain.handle('piggy:fullscreen:get', event => (fromPage(event) && fullscreenWatch !== null ? fullscreenWatch.get() : null))
-ipcMain.handle('piggy:fullscreen:set', (event, mode) => {
+ipcMain.handle('piggy:fullscreen:get', async event => {
+  if (!fromPage(event) || fullscreenWatch === null) return null
+  await fullscreenWatch.init()
+  return fullscreenWatch.get()
+})
+ipcMain.handle('piggy:fullscreen:set', async (event, mode) => {
   if (!fromPage(event) || fullscreenWatch === null) return { ok: false, reason: '这个外壳不支持' }
-  const result = fullscreenWatch.set(mode)
+  const result = await fullscreenWatch.set(mode)
   applyMacSpaces()
   return result
 })
@@ -1163,10 +1338,11 @@ for (const action of ['get', 'set', 'clear', 'test']) {
 }
 
 app.whenReady().then(async () => {
-  if (needsX11) return
+  if (needsX11 || quitting) return
   proxySettings = createProxy({ path: join(app.getPath('userData'), 'proxy.json'),
     sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
   await proxySettings.init()
+  if (quitting) return
   log('start', app.getVersion(), process.platform, process.env.XDG_SESSION_TYPE ?? '')
   shellUpdates = createShellUpdates({
     mode: shellUpdateMode({ platform: process.platform, packaged: app.isPackaged,
@@ -1174,32 +1350,40 @@ app.whenReady().then(async () => {
     currentVersion: app.getVersion(), updater: autoUpdater,
     onProgress: fraction => toPages('piggy:shell-progress', fraction),
   })
-  versions = createVersions({
+  versionsStarting = startBackgroundVersions({
     userData: app.getPath('userData'), bundledDir: bundledGameDir(), shellVersion: app.getVersion(),
     statePath: statePath(), releasesUrl: process.env.PIGGY_RELEASES_URL || undefined,
     // Chromium's network stack: follows the system proxy, which plain fetch does not.
     fetch: /** @type {any} */ (net.fetch.bind(net)),
   })
+  versions = await versionsStarting
+  if (quitting) { await versions.close(); return }
   // Gitee 的 Windows 安装包不带游戏：第一次先下载（first-run.js）。
   let firstRun = null
-  if (versions.needsGame()) {
+  if (await versions.needsGame()) {
     firstRun = await downloadFirstGame({ versions, pinPath: gamePinPath(app, HERE), here: HERE, releasesPage: RELEASES_PAGE, log })
     if (firstRun === null) { app.quit(); return }
   }
-  const gameDir = versions.activeDir()
+  const gameDir = await versions.activeDir()
+  if (quitting) return
   const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
-  host = await startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
+  hostStarting = startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
     onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
+  host = await hostStarting
+  if (quitting) return
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
-  createWindow()
+  await createWindow()
+  if (quitting) return
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
   ensurePanelWindow()
   log('panel preloaded', JSON.stringify({ visible: panelWin.isVisible(), focused: panelWin.isFocused() }))
-  startFullscreenWatch()
+  await startFullscreenWatch()
+  if (quitting) return
   firstRun?.destroy()
-  createTray(gameDir)
+  await createTray(gameDir)
+  if (quitting) return
   // 用户机器上到底是什么显示器、什么缩放：以前日志里没有，Windows 的问题只能靠猜。
   log('displays', JSON.stringify(screen.getAllDisplays().map(display => ({ id: display.id, label: display.label,
     bounds: display.bounds, workArea: display.workArea, scale: display.scaleFactor, internal: display.internal }))))
@@ -1207,7 +1391,7 @@ app.whenReady().then(async () => {
   // 显式告诉游戏包「显示器变了」：applyBounds 有 2px 死区，窗口不需要挪的时候它不会推几何，
   // 页面手里的 workAreas 就会一直用旧的那份（分辨率变了但窗口刚好没动 → 用的是旧工作区）。
   const reclamp = (why, detail) => {
-    if (win === null || win.isDestroyed()) return
+    if (quitting || win === null || win.isDestroyed()) return
     const bounds = win.getBounds()
     applyBounds(clampBounds(bounds, workAreaFor(bounds)), 'display')
     pushGeometry()
@@ -1272,6 +1456,26 @@ process.on('uncaughtException', error => { log('uncaught', error?.stack ?? Strin
 app.on('second-instance', () => win?.showInactive())
 let hostClosed = false
 let hostClosing = null
+let shellClosed = false
+let shellClosing = null
+let quitTask = null
+
+/** 版本激活仍要用 worker，因此只在最终退出/重启/安装前释放它。 */
+function closeShellResources() {
+  if (shellClosing) return shellClosing
+  const fullscreenStopping = fullscreenWatch?.stop()
+  for (const timer of [topGuardTimer, displayWatchTimer, hitTimer]) if (timer !== null) clearInterval(timer)
+  if (stateTimer !== null) clearTimeout(stateTimer)
+  shellClosing = (async () => {
+    await Promise.all([fullscreenStopping, shellUpdates?.close(), flushWindowState(), proxySettings?.flush(), fullscreenWatch?.flush(), autostartWriting,
+      Promise.allSettled([...exportWrites])])
+    try { await versions?.close() } catch (error) { log('versions shutdown failed', String(error)) }
+    await flushLogs()
+    shellClosed = true
+  })().catch(error => { shellClosing = null; throw error })
+  return shellClosing
+}
+
 /** 退出与安装共用一次后台关闭；保存失败时允许重试，不提前停命中轮询。 */
 function prepareToQuit() {
   if (hostClosing) return hostClosing
@@ -1287,12 +1491,31 @@ function prepareToQuit() {
   return hostClosing
 }
 app.on('before-quit', event => {
-  if (!host || hostClosed) {
-    quitting = true; stopDrag(); fullscreenWatch?.stop()
-    if (topGuardTimer !== null) clearInterval(topGuardTimer)
+  if (shellClosed) return
+  event.preventDefault()
+  if (activeAction !== null) {
+    quitAfterAction = true
+    if (activeAction.phase === 'prepare') {
+      const action = activeAction
+      action.cancelled = true
+      quitting = true
+      if (action.kind === 'import') releaseAction(action)
+      else void versions.cancelPreparation().catch(error => log('versions cancellation failed', String(error)))
+    }
     return
   }
-  event.preventDefault()
-  if (!hostClosing) void prepareToQuit().then(() => app.quit()).catch(error => log('host shutdown failed', String(error)))
+  if (quitTask === null) {
+    quitTask = (async () => {
+      quitting = true
+      // 只等正在创建的资源，不等首次下载窗口的用户选择；最终 quit 会正常关闭那个窗口。
+      await Promise.allSettled([proxySettings?.init(), versionsStarting, hostStarting])
+      if (!host) {
+        try { await versions?.close() } catch (error) { log('versions shutdown failed', String(error)) }
+      }
+      await prepareToQuit()
+      await closeShellResources()
+      app.quit()
+    })().catch(error => { quitTask = null; log('host shutdown failed', String(error)) })
+  }
 })
 app.on('window-all-closed', () => app.quit())

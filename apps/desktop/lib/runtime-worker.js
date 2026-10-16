@@ -27,18 +27,48 @@ const fetchFromMain = (input, init = {}) => new Promise((resolve, reject) => {
   port.postMessage({ kind: 'fetch', id, url: String(input), init: { ...settings, headers } })
 })
 
+async function startEndpoint() {
+  if (!workerData.workEventsDirectory) return
+  const { startWorkEventServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/local-server.js')).href)
+  endpoint = await startWorkEventServer({ directory: workerData.workEventsDirectory, runtime: host })
+}
+
 async function request(message) {
   if (closing) throw new Error('game runtime closed')
   if (message.method === 'dispose') {
     closing = true
+    let endpointStopped = !endpoint
     try {
       await endpoint?.close()
+      endpointStopped = true
+      endpoint = undefined
       await Promise.allSettled([...tasks])
-      host.dispose()
-    } catch (error) { closing = false; throw error }
+      await host.dispose()
+    } catch (error) {
+      try {
+        if (endpointStopped && workerData.workEventsDirectory) {
+          // HEAD 不生成快照或取走 pending；已关闭的运行时会在路由入口拒绝。
+          await host.handle('HEAD', '/dsh-piggy/state')
+          await startEndpoint()
+        }
+      } catch (recoveryError) {
+        throw new AggregateError([error, recoveryError],
+          `${error.message}；工作接口恢复失败：${recoveryError.message}`, { cause: error })
+      } finally { closing = false }
+      throw error
+    }
     return
   }
-  if (message.method === 'handle') return host.handle(...message.args)
+  if (message.method === 'handle') {
+    const out = await host.handle(...message.args)
+    if (String(out.headers['content-type'] ?? '').includes('application/json')) {
+      const text = String(out.body)
+      const view = JSON.parse(text)
+      // 这份响应已取走 pending；先广播原文，不能另取快照或合并丢掉中间消息。
+      if (Array.isArray(view.pending) && view.pending.length > 0) port.postMessage({ kind: 'snapshot', value: text })
+    }
+    return out
+  }
   if (message.method === 'acceptWorkEvent') return host.acceptWorkEvent(...message.args)
   if (message.method === 'record') return host.record(...message.args)
   throw new Error('unknown game runtime method')
@@ -56,7 +86,17 @@ port.on('message', message => {
     return
   }
   if (message.kind !== 'request') return
-  const task = request(message).then(value => port.postMessage({ kind: 'response', id: message.id, value }),
+  const task = request(message).then(value => {
+    const transfer = []
+    if (message.method === 'handle' && ArrayBuffer.isView(value.body)) {
+      // 只复制有效字节到独立存储，不能转移可能池化的 Buffer.buffer。
+      const body = new Uint8Array(value.body.byteLength)
+      body.set(new Uint8Array(value.body.buffer, value.body.byteOffset, value.body.byteLength))
+      value = { ...value, body: body.buffer }
+      transfer.push(body.buffer)
+    }
+    port.postMessage({ kind: 'response', id: message.id, value }, transfer)
+  },
     error => port.postMessage({ kind: 'response', id: message.id, error: error.message }))
     .finally(() => tasks.delete(task))
   if (message.method !== 'dispose') tasks.add(task)
@@ -64,13 +104,9 @@ port.on('message', message => {
 
 try {
   host = await startHost(workerData.gameDir, workerData.statePath, { fetch: fetchFromMain,
-    onSnapshot: value => port.postMessage({ kind: 'snapshot', value }),
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
-  if (workerData.workEventsDirectory) {
-    const { startWorkEventServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/local-server.js')).href)
-    endpoint = await startWorkEventServer({ directory: workerData.workEventsDirectory, runtime: host })
-  }
+  await startEndpoint()
   port.postMessage({ kind: 'ready' })
 } catch (error) {
   host?.dispose()

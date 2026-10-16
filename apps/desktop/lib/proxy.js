@@ -1,6 +1,6 @@
 // @ts-check
 /** Device-local proxy preferences shared by game, extensions and shell downloads. */
-import { readFileSync, writeFileSync, renameSync, mkdirSync, rmSync } from 'node:fs'
+import { readFile, writeFile, rename, mkdir, rm } from 'node:fs/promises'
 import { CHANNEL } from './channel.js'
 import { isIP } from 'node:net'
 import { dirname } from 'node:path'
@@ -34,36 +34,49 @@ export function createProxy({ path, sessions }) {
   /** @type {{ mode: string, address: string }} */
   let current = { ...DEFAULT }
   let warning = ''
-  try { current = proxyPreference(JSON.parse(readFileSync(path, 'utf8'))) }
-  catch (error) { if (error?.code !== 'ENOENT') warning = '代理配置无法读取，暂时跟随系统；请重新应用或清除配置' }
   let busy = false
+  let initialization = null
+  /** @type {Promise<any>} */
+  let writing = Promise.resolve()
   const apply = async value => {
     for (const session of sessions) await session.setProxy(proxyConfig(value))
     for (const session of sessions) await session.closeAllConnections()
   }
-  async function set(value, clear = false) {
-    if (busy) return { ok: false, reason: '正在应用代理设置' }
+  function init() {
+    if (initialization === null) initialization = (async () => {
+      try { current = proxyPreference(JSON.parse(await readFile(path, 'utf8'))) }
+      catch (error) { if (error?.code !== 'ENOENT') warning = '代理配置无法读取，暂时跟随系统；请重新应用或清除配置' }
+      await apply(current)
+    })()
+    return initialization
+  }
+  function set(value, clear = false) {
+    if (busy) return Promise.resolve({ ok: false, reason: '正在应用代理设置' })
     busy = true
-    try {
-      const next = clear ? { ...DEFAULT } : proxyPreference(value)
+    writing = (async () => {
       try {
-        await apply(next)
-        if (clear) rmSync(path, { force: true })
-        else {
-          mkdirSync(dirname(path), { recursive: true })
-          writeFileSync(path + '.tmp', JSON.stringify(next) + '\n', { mode: 0o600 })
-          renameSync(path + '.tmp', path)
+        await init()
+        const next = clear ? { ...DEFAULT } : proxyPreference(value)
+        try {
+          await apply(next)
+          if (clear) await rm(path, { force: true })
+          else {
+            await mkdir(dirname(path), { recursive: true })
+            await writeFile(path + '.tmp', JSON.stringify(next) + '\n', { mode: 0o600 })
+            await rename(path + '.tmp', path)
+          }
+        } catch (error) {
+          await apply(current)
+          throw error
         }
+        current = next
+        warning = ''
+        return { ok: true, preference: { ...current } }
       } catch (error) {
-        await apply(current)
-        throw error
-      }
-      current = next
-      warning = ''
-      return { ok: true, preference: { ...current } }
-    } catch (error) {
-      return { ok: false, reason: error instanceof Error ? error.message : String(error) }
-    } finally { busy = false }
+        return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+      } finally { busy = false }
+    })()
+    return writing
   }
   async function test() {
     try {
@@ -75,5 +88,6 @@ export function createProxy({ path, sessions }) {
       return { ok: true, route }
     } catch (error) { return { ok: false, reason: error instanceof Error ? error.message : String(error) } }
   }
-  return { get: () => ({ ...current, ...(warning ? { warning } : {}) }), init: () => apply(current), set, clear: () => set(DEFAULT, true), test }
+  return { get: () => ({ ...current, ...(warning ? { warning } : {}) }), init, set, clear: () => set(DEFAULT, true), test,
+    flush: () => writing }
 }
