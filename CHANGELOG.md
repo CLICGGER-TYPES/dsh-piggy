@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- Windows 桌面版：未知游戏能力时不启用全局鼠标转发；只有合法的旧版内容、形状或命中上报才开启。现代游戏首次有效 `place` 后持续关闭转发，改由现有主进程轮询判断命中；能力变化时即使命中相同也刷新选项。保留拖动捕获、心跳和同步几何确认。
+
 ## [0.37.1-rc.1] — 2026-10-16 · 桌面体验与第三方 agent 接入（预发布；外壳 0.6.7-rc.1）
 
 感谢 [@Flappy-Boy](https://github.com/Flappy-Boy) 提供 #16/#17/#18 的问题反馈与复现步骤，也感谢反馈本体摸摸和高 DPI 气泡问题的玩家。
