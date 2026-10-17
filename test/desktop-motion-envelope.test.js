@@ -5,10 +5,11 @@ import { test } from 'node:test'
 import { ART_BOUNDS, builtinFrame, FRAME_HEIGHT, MAX_ART_ASPECT } from '../src/client/art-framing.js'
 import { framedBox } from '../src/client/desktop/measure.js'
 import {
-  fixedMotionReserve, jumpEnvelope, PIG_MOTION, PIG_TRANSFORM_ORIGIN, spinEnvelope,
+  fixedMotionReserve, jumpEnvelope, motionEnvelope, PIG_MOTION, PIG_TRANSFORM_ORIGIN, REACTION_MOTION, spinEnvelope,
 } from '../src/client/desktop/motion-envelope.js'
 
 const cssBase = readFileSync(resolve('src/client/css-base.js'), 'utf8')
+const cssTabs = readFileSync(resolve('src/client/css-tabs.js'), 'utf8')
 const near = (actual, expected, epsilon = 1e-9) => assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} != ${expected}`)
 
 function transformPoint(point, pivot, angle, scale = 1, translateY = 0) {
@@ -120,4 +121,91 @@ test('fixed window reserve covers every reviewed framed sprite through a full tu
     }
   }
   assert.ok(checked >= 900)
+})
+
+const WIZARD_IDLE = 'pigs/skins/skin-wizard/idle.png'
+
+/** Alpha-box of a built-in sprite in page coordinates (untransformed). */
+function artBox(path, pig) {
+  const frame = builtinFrame('/dsh-piggy/art/' + path)
+  if (frame === null) return null
+  const values = { '--art-zoom': frame[0], '--art-x': frame[1] + '%', '--art-y': frame[2] + '%' }
+  const image = { matches: () => true, getAttribute: () => '/dsh-piggy/art/' + path,
+    closest: () => null, style: { getPropertyValue: key => values[key] } }
+  return framedBox(image, { x: pig.x, y: pig.y, width: pig.width, height: pig.height })
+}
+
+/** Same scale → rotate → translate order as the CSS `transform` list. */
+function keyframePoint(point, pivot, state) {
+  const radians = state.rotate * Math.PI / 180
+  const x = (point.x - pivot.x) * state.scaleX
+  const y = (point.y - pivot.y) * state.scaleY
+  return {
+    x: pivot.x + x * Math.cos(radians) - y * Math.sin(radians) + state.x,
+    y: pivot.y + x * Math.sin(radians) + y * Math.cos(radians) + state.y,
+  }
+}
+
+test('care-reaction envelopes cover every keyframe pose around the parent pivot', () => {
+  const pig = { x: 100, y: 160, width: 62, height: 62 }
+  const ink = artBox(WIZARD_IDLE, pig)
+  assert.notEqual(ink, null)
+  const pivot = { x: pig.x + pig.width * PIG_TRANSFORM_ORIGIN.x, y: pig.y + pig.height * PIG_TRANSFORM_ORIGIN.y }
+  for (const name of ['dp-feed-hop', 'dp-play-hop', 'dp-squash']) {
+    const envelope = motionEnvelope(name)(ink, pivot)
+    for (const state of REACTION_MOTION[name]) {
+      for (const point of [
+        { x: ink.x, y: ink.y }, { x: ink.x + ink.width, y: ink.y },
+        { x: ink.x, y: ink.y + ink.height }, { x: ink.x + ink.width, y: ink.y + ink.height },
+      ]) assert.equal(contains(envelope, keyframePoint(point, pivot, state)), true, name)
+    }
+    // The lifted wizard hat must be inside the envelope; the art starts 4.4px
+    // below the pig box, so the static 6px slack alone cannot cover the hops.
+    assert.ok(envelope.y < ink.y - 6, name)
+  }
+  assert.equal(motionEnvelope('dp-bob'), null)
+  assert.equal(motionEnvelope('dp-unknown'), null)
+})
+
+test('reaction envelope numbers stay tied to the actual CSS keyframes', () => {
+  assert.ok(cssBase.includes("'@keyframes dp-feed-hop{0%,100%{transform:translateY(0) scale(1)}',"))
+  assert.ok(cssBase.includes("'14%{transform:translateY(2px) scale(1.07,.91)}38%{transform:translateY(-12px) scale(.96,1.07)}',"))
+  assert.ok(cssBase.includes("'58%{transform:translateY(0) scale(1.1,.88)}76%{transform:translateY(-4px) scale(.98,1.03)}}',"))
+  assert.ok(cssBase.includes("'@keyframes dp-play-hop{0%,100%{transform:translate(0,0) rotate(0) scale(1)}',"))
+  assert.ok(cssBase.includes("'18%{transform:translate(-3px,-5px) rotate(-7deg) scale(1.02)}',"))
+  assert.ok(cssBase.includes("'38%{transform:translate(0,0) rotate(3deg) scale(1.08,.92)}',"))
+  assert.ok(cssBase.includes("'60%{transform:translate(4px,-9px) rotate(8deg) scale(.97,1.06)}',"))
+  assert.ok(cssBase.includes("'80%{transform:translate(0,0) rotate(-2deg) scale(1.05,.96)}}',"))
+  assert.ok(cssTabs.includes("'@keyframes dp-squash{0%,100%{transform:translateY(0) scale(1)}',"))
+  assert.ok(cssTabs.includes("'16%{transform:translateY(1px) scale(1.04,.95)}38%{transform:translateY(3px) scale(1.14,.82)}',"))
+  assert.ok(cssTabs.includes("'67%{transform:translateY(-4px) scale(.95,1.09)}84%{transform:translateY(0) scale(1.04,.97)}}',"))
+  assert.deepEqual(REACTION_MOTION['dp-feed-hop'][2], { scaleX: .96, scaleY: 1.07, rotate: 0, x: 0, y: -12 })
+  assert.deepEqual(REACTION_MOTION['dp-play-hop'][3], { scaleX: .97, scaleY: 1.06, rotate: 8, x: 4, y: -9 })
+  assert.deepEqual(REACTION_MOTION['dp-squash'][3], { scaleX: .95, scaleY: 1.09, rotate: 0, x: 0, y: -4 })
+})
+
+test('every reviewed sprite gets the same care-reaction coverage at the common framed top', () => {
+  const pig = { x: 100, y: 160, width: 62, height: 62 }
+  const pivot = { x: pig.x + pig.width * PIG_TRANSFORM_ORIGIN.x, y: pig.y + pig.height * PIG_TRANSFORM_ORIGIN.y }
+  let checked = 0
+  for (const path of Object.keys(ART_BOUNDS)) {
+    const ink = artBox(path, pig)
+    if (ink === null) continue
+    // Generated framing gives every reviewed sprite the same visible height and
+    // center, so all of them sit 4.84px below the pig box at 62px.
+    for (const name of ['dp-feed-hop', 'dp-play-hop', 'dp-squash']) {
+      const envelope = motionEnvelope(name)(ink, pivot)
+      for (const state of REACTION_MOTION[name]) {
+        for (const point of [
+          { x: ink.x, y: ink.y }, { x: ink.x + ink.width, y: ink.y },
+          { x: ink.x, y: ink.y + ink.height }, { x: ink.x + ink.width, y: ink.y + ink.height },
+        ]) assert.equal(contains(envelope, keyframePoint(point, pivot, state)), true, `${path} ${name}`)
+      }
+      // Without the envelope the native shape only reached 6px above the box,
+      // which is inside the framed art: the top of every sprite was cut.
+      if (name !== 'dp-squash') assert.ok(envelope.y < Math.min(ink.y, pig.y) - 6, `${path} ${name}`)
+    }
+    checked += 1
+  }
+  assert.ok(checked > 100)
 })

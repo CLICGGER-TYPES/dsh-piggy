@@ -13,6 +13,42 @@ export const PIG_MOTION = Object.freeze({
   jumpLandingScale: 0.92,
 })
 
+/** One keyframe of a `transform` list: translate(x, y) rotate(deg) scale(sx, sy). */
+const keyframe = (scaleX, scaleY, rotate, x, y) => Object.freeze({ scaleX, scaleY, rotate, x, y })
+
+/**
+ * Care reactions that lift the pig above its layout box. The desktop window's
+ * native shape (Linux setShape) clips drawing outside its rects, so every
+ * animation that moves the artwork has to contribute its swept area. Generated
+ * framing puts every sprite's visible top 4.84px below the box at 62px, and the
+ * wizard hat is simply the most visible place that top gets cut.
+ * Values are the actual CSS keyframes:
+ *   dp-feed-hop / dp-play-hop in css-base.js, dp-squash in css-tabs.js.
+ */
+export const REACTION_MOTION = Object.freeze({
+  'dp-feed-hop': Object.freeze([
+    keyframe(1, 1, 0, 0, 0),
+    keyframe(1.07, 0.91, 0, 0, 2),
+    keyframe(0.96, 1.07, 0, 0, -12),
+    keyframe(1.1, 0.88, 0, 0, 0),
+    keyframe(0.98, 1.03, 0, 0, -4),
+  ]),
+  'dp-play-hop': Object.freeze([
+    keyframe(1, 1, 0, 0, 0),
+    keyframe(1.02, 1.02, -7, -3, -5),
+    keyframe(1.08, 0.92, 3, 0, 0),
+    keyframe(0.97, 1.06, 8, 4, -9),
+    keyframe(1.05, 0.96, -2, 0, 0),
+  ]),
+  'dp-squash': Object.freeze([
+    keyframe(1, 1, 0, 0, 0),
+    keyframe(1.04, 0.95, 0, 0, 1),
+    keyframe(1.14, 0.82, 0, 0, 3),
+    keyframe(0.95, 1.09, 0, 0, -4),
+    keyframe(1.04, 0.97, 0, 0, 0),
+  ]),
+})
+
 const corners = box => [
   { x: box.x, y: box.y },
   { x: box.x + box.width, y: box.y },
@@ -63,6 +99,46 @@ export function jumpEnvelope(box, pivot) {
     ...scaledCorners(box, pivot, PIG_MOTION.jumpPeakScale, -PIG_MOTION.jumpRise),
     ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale),
   ])
+}
+
+/**
+ * Corners after one keyframe's scale → rotate → translate, around the CSS
+ * transform-origin pivot (the keyframes are written in that order).
+ * @param {{x:number,y:number,width:number,height:number}} box
+ * @param {{x:number,y:number}} pivot
+ * @param {{scaleX:number,scaleY:number,rotate:number,x:number,y:number}} state
+ */
+function keyframeCorners(box, pivot, state) {
+  const radians = state.rotate * Math.PI / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  return corners(box).map(point => {
+    const x = (point.x - pivot.x) * state.scaleX
+    const y = (point.y - pivot.y) * state.scaleY
+    return {
+      x: pivot.x + x * cos - y * sin + state.x,
+      y: pivot.y + x * sin + y * cos + state.y,
+    }
+  })
+}
+
+/** Union of every keyframe pose of one reaction. */
+export function keyframeEnvelope(states, box, pivot) {
+  return boundsOf(states.flatMap(state => keyframeCorners(box, pivot, state)))
+}
+
+/** Swung area of a care reaction, so tall sprites stay inside the window shape. */
+export function reactionEnvelope(name, box, pivot) {
+  const states = REACTION_MOTION[name]
+  return states === undefined ? null : keyframeEnvelope(states, box, pivot)
+}
+
+/** Envelope lookup for the current CSS animation name; null means the shape is static. */
+export function motionEnvelope(name) {
+  if (name === 'dp-spin') return spinEnvelope
+  if (name === 'dp-jump') return jumpEnvelope
+  if (Object.hasOwn(REACTION_MOTION, name)) return (box, pivot) => reactionEnvelope(name, box, pivot)
+  return null
 }
 
 /**
