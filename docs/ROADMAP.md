@@ -72,7 +72,7 @@ RC 不包含 #14 外部桌宠模式。Linux 原 rootless 崩溃及 macOS 透明�
 
 - [x] PR #12/#13 整合、回复与主线收口；目录和任务资料整理。
 - [x] 重复原生窗口设置、确认框焦点和宿主轮询丢焦点修复；1136 项测试及 Windows/DSH 对应验收。
-- [ ] Linux 启动 Xwayland/pixman_blt 崩溃：先在私有 Xwayland 显示上复现/对照，隔离共享桌面，再修根因并补目标环境验证。
+- [x] Linux 启动 Xwayland/pixman_blt 崩溃：最小 Electron 序列（有旧缓冲 → 空形状 → resize → 真实形状）在共享 rootless 稳定复现；根因是空形状让 `winSize` 变空、`xwl_window_set_window_pixmap()` 跳过旧缓冲释放，新尺寸 damage 写进旧尺寸缓冲。修复为 Linux 先摆好尺寸/形状再显示；共享 rootless 启动、拖动、托盘退出连续 3 轮通过，详见 `tasks/results/linux-pixman/REPORT.md`。
 - [x] Linux私有rootful隔离流程：纯QMP孵化/导入/购买播种完成；主代理用未经插桩9f33 main+a0 client独立复核两种取消焦点5秒、正常退出及同目录重开/锁恢复。540帧约90fps拖动已核验；此项仅限私有rootful，不代替原rootless目标验收。
 - [x] Windows 安装版：实际 NSIS 构建、独立 appId/productName/存档的安装、启动、购买、正常退出重开和卸载通过；原 0.6.4 注册表/快捷方式哈希未变。测试机恢复原关机，临时进程/文件/锁已清理。
 - [x] Windows 分数缩放与动态画面取证：125% 下改用宿主 QMP 原生 scanout，540帧/6秒、约90fps、最大间隔14.43ms；慢/快拖动抽查未见白块或第二只猪。未复现不能判定单帧残影已修，348个图像状态不等同应用呈现帧。
