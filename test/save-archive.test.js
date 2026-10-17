@@ -8,7 +8,7 @@ import { createSaveArchive, parseSaveArchive } from '../runtime/save-archive.js'
 import { makeZip, readZip } from '../runtime/save-zip.js'
 import { officialList } from '../store/ext-import.js'
 import { assetNames, fileList } from '../store/ext-files.js'
-import { REQUIRED_SKIN_SCENES } from '../packages/pet-core/src/data/skins.js'
+import { REQUIRED_SKIN_SCENES, SKIN_SCENES } from '../packages/pet-core/src/data/skins.js'
 
 const NOW = 1_797_000_000_000
 const skinSvg = Buffer.from('<svg viewBox="0 0 64 64"><path d="M1 1h2"/></svg>')
@@ -174,4 +174,88 @@ test('ZIP 解码拒绝符号链接、重复路径、解压炸弹和损坏边界'
   assert.throws(() => readZip(bomb, { maxFileBytes: 128 }), /太大/)
   const badEocd = Buffer.concat([makeZip([['state.json', state]]), Buffer.from('trailing')])
   assert.throws(() => readZip(badEocd), /目录无效/)
+})
+
+test('带可选场景的完整皮肤不误报缺图，缺必需场景的图片要报', () => {
+  const skin = { key: 'fox', art: 'custom-fox', label: '狐狸', scenes: SKIN_SCENES }
+  const state = Buffer.from(JSON.stringify({ version: 14, customSkins: [skin] }))
+  const file = scene => `skins/custom-fox${scene === 'idle' ? '' : '-' + scene}.svg`
+
+  // 完整皮肤（含 fish、sleep 等可选场景）不该被说成“缺少图片”。
+  const complete = new Map([['state.json', state]])
+  for (const scene of SKIN_SCENES) complete.set(file(scene), skinSvg)
+  const parsedComplete = parseSaveArchive(archiveWith(complete), { nowMs: NOW })
+  assert.deepEqual(parsedComplete.warnings, [])
+  assert.equal(parsedComplete.state.customSkins.length, 1)
+
+  // 文件总数刚好等于必需场景数，但缺了 pet、多了 fish：不能因此漏报。
+  const missingRequired = new Map([['state.json', state]])
+  for (const scene of ['idle', 'eat', 'bathe', 'play', 'fish']) missingRequired.set(file(scene), skinSvg)
+  const parsedMissing = parseSaveArchive(archiveWith(missingRequired), { nowMs: NOW })
+  assert.equal(parsedMissing.state.customSkins.length, 1, '缺图但场景登记完整时，皮肤记录仍会保留')
+  assert(parsedMissing.warnings.some(w => w.includes('fox') && w.includes('缺少图片')), '缺少 pet 图必须提示')
+})
+
+test('导出文件名使用本地时间而不是 UTC', { skip: process.platform === 'win32' }, () => {
+  const previous = process.env.TZ
+  process.env.TZ = 'Asia/Shanghai'
+  try {
+    const nowMs = Date.UTC(2026, 9, 17, 14, 30)
+    const archive = createSaveArchive({ statePath: '/tmp/state.json', state: { version: 14 }, nowMs })
+    assert.equal(archive.name, 'piggy-save-20261017-2230.zip')
+  } finally {
+    if (previous === undefined) delete process.env.TZ
+    else process.env.TZ = previous
+  }
+})
+
+test('皮肤图片必须属于迁移后仍存在的皮肤记录', () => {
+  const state = withSkin => Buffer.from(JSON.stringify({ version: 14, customSkins: [withSkin] }))
+  const file = scene => `skins/custom-fox${scene === 'idle' ? '' : '-' + scene}.svg`
+
+  // art 和 key 对不上：迁移会把 art 改成 custom-fox，图片却还在 custom-other，导入后只剩记录。
+  const mismatched = new Map([['state.json', state({ key: 'fox', art: 'custom-other', label: '狐狸', scenes: REQUIRED_SKIN_SCENES })]])
+  for (const scene of REQUIRED_SKIN_SCENES) mismatched.set(`skins/custom-other${scene === 'idle' ? '' : '-' + scene}.svg`, skinSvg)
+  assert.throws(() => parseSaveArchive(archiveWith(mismatched), { nowMs: NOW }), /皮肤/)
+
+  // 场景登记缺少必需场景：迁移会丢掉整条皮肤记录，不能把图片当孤儿写进去。
+  const dropped = new Map([['state.json', state({ key: 'fox', art: 'custom-fox', label: '狐狸', scenes: REQUIRED_SKIN_SCENES.filter(scene => scene !== 'pet') })]])
+  for (const scene of REQUIRED_SKIN_SCENES.filter(scene => scene !== 'pet')) dropped.set(file(scene), skinSvg)
+  assert.throws(() => parseSaveArchive(archiveWith(dropped), { nowMs: NOW }), /皮肤/)
+
+  // 两条记录共用一个 art：迁移后其中一条会指向不存在的图片，不能只看 art 集合。
+  const shared = new Map([['state.json', Buffer.from(JSON.stringify({ version: 14, customSkins: [
+    { key: 'a', art: 'custom-b', label: 'A', scenes: REQUIRED_SKIN_SCENES },
+    { key: 'b', art: 'custom-b', label: 'B', scenes: REQUIRED_SKIN_SCENES },
+  ] }))]])
+  for (const scene of REQUIRED_SKIN_SCENES) shared.set(`skins/custom-b${scene === 'idle' ? '' : '-' + scene}.svg`, skinSvg)
+  assert.throws(() => parseSaveArchive(archiveWith(shared), { nowMs: NOW }), /皮肤/)
+})
+
+test('畸形 customSkins 不会让预览抛 TypeError', () => {
+  const state = Buffer.from(JSON.stringify({ version: 14, customSkins: [null, 42] }))
+  const parsed = parseSaveArchive(archiveWith(new Map([['state.json', state]])), { nowMs: NOW })
+  assert.deepEqual(parsed.state.customSkins, [])
+})
+
+test('旧 JSON 的畸形 customSkins 不会让预览抛 TypeError', () => {
+  const parsed = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14, customSkins: 42 })), { nowMs: NOW })
+  assert.deepEqual(parsed.state.customSkins, [])
+})
+
+test('导出畸形 customSkins 不会抛 TypeError', () => {
+  const s = setup()
+  try {
+    const archive = createSaveArchive({ statePath: s.statePath, state: { ...s.state, customSkins: [null] }, nowMs: NOW })
+    assert.match(archive.name, /^piggy-save-/)
+  } finally { s.cleanup() }
+})
+
+test('导出拒绝与资源目录重名的 statePath', () => {
+  const root = mkdtempSync(join(tmpdir(), 'piggy-save-layout-'))
+  try {
+    for (const name of ['skins', 'extensions', 'backups', 'Skins', 'skins.', 'skins ']) {
+      assert.throws(() => createSaveArchive({ statePath: join(root, name), state: { version: 14 }, nowMs: NOW }), /重名|不能/)
+    }
+  } finally { rmSync(root, { recursive: true, force: true }) }
 })

@@ -11,6 +11,7 @@ import { REQUIRED_SKIN_SCENES, SKIN_SCENES } from '../packages/pet-core/src/data
 import { validateSkinFiles } from '../store/skin-pack.js'
 import { validateWorkEvent, workEventKey } from './work-events.js'
 import { makeZip, readZip } from './save-zip.js'
+import { assertStatePathLayout } from './save-layout.js'
 
 const MAX_FILES = 512
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -24,6 +25,7 @@ function skinFilesFor(skin, available) {
     key: skin.key, label: skin.label, author: skin.author, description: skin.description, emoji: skin.emoji,
   }))]])
   let found = false
+  const present = new Set()
   const declared = new Set(Array.isArray(skin.scenes) ? skin.scenes : [])
   for (const scene of SKIN_SCENES) {
     const stem = `skins/${art}${scene === 'idle' ? '' : '-' + scene}`
@@ -35,13 +37,13 @@ function skinFilesFor(skin, available) {
       continue
     }
     if (!declared.has(scene)) throw new Error(`皮肤 ${skin.key} 含有未登记的 ${scene} 文件`)
-    found = true; actual.set(`${stem}${png ? '.png' : '.svg'}`, body)
+    found = true; present.add(scene); actual.set(`${stem}${png ? '.png' : '.svg'}`, body)
     validation.set(`${scene}${png ? '.png' : '.svg'}`, body)
   }
   if (!found) return { files: actual, missing: true }
   const checked = validateSkinFiles(validation)
   if (!checked.ok) throw new Error(`皮肤 ${skin.key} 文件无效：${checked.errors.join('；')}`)
-  return { files: actual, missing: actual.size !== REQUIRED_SKIN_SCENES.length }
+  return { files: actual, missing: REQUIRED_SKIN_SCENES.some(scene => !present.has(scene)) }
 }
 
 function collectSkinFiles(root, state) {
@@ -61,7 +63,7 @@ function collectSkinFiles(root, state) {
   for (const skin of Array.isArray(state.customSkins) ? state.customSkins : []) {
     const { files, missing } = skinFilesFor(skin, candidates)
     for (const [name, body] of files) out.set(name, body)
-    if (missing) warnings.push(`皮肤 ${skin.key ?? skin.art} 缺少图片`)
+    if (missing) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
   }
   return { files: out, warnings }
 }
@@ -97,11 +99,12 @@ function summaryFor(state, { gameVersion = '', createdAt = null, legacy = false,
   if (state === null) return { name: '未孵化', level: 1, createdAt, gameVersion, extensions: [], skins: [], legacy, ...(warnings.length ? { warnings: [...warnings] } : {}) }
   return { name: String(state.name ?? state.petName ?? '小猪'), level: levelFor(state.xp),
     createdAt, gameVersion, extensions: Object.keys(state.extData ?? {}).filter(safeKey.test.bind(safeKey)),
-    skins: (state.customSkins ?? []).map(skin => skin.key), legacy, ...(warnings.length ? { warnings: [...warnings] } : {}) }
+    skins: (Array.isArray(state.customSkins) ? state.customSkins : []).map(skin => skin?.key).filter(key => typeof key === 'string'), legacy, ...(warnings.length ? { warnings: [...warnings] } : {}) }
 }
 
 export function createSaveArchive({ statePath, state, gameVersion = '', nowMs = Date.now() }) {
   if (typeof statePath !== 'string' || !statePath || (state !== null && (typeof state !== 'object' || Array.isArray(state)))) throw new Error('没有可备份的有效存档')
+  assertStatePathLayout(statePath)
   const skinOutput = state === null ? { files: new Map(), warnings: [] } : collectSkinFiles(join(dirname(statePath), 'skins'), state)
   const files = new Map([['state.json', Buffer.from(JSON.stringify(state))], ...skinOutput.files])
   if (state !== null) for (const [name, body] of officialExtensionFiles(join(dirname(statePath), 'extensions'))) files.set(name, body)
@@ -122,8 +125,10 @@ export function createSaveArchive({ statePath, state, gameVersion = '', nowMs = 
   if (uncompressed + manifestBytes.length > 32 * 1024 * 1024 || manifestBytes.length > 8 * 1024 * 1024) throw new Error('存档内容超过备份上限')
   const buffer = makeZip([...files, ['backup.json', manifestBytes]])
   if (buffer.length > 32 * 1024 * 1024) throw new Error('存档 ZIP 超过大小上限')
-  const stamp = new Date(nowMs).toISOString().slice(0, 16), [day, time] = stamp.split('T')
-  return { buffer, name: `piggy-save-${day.replace(/-/g, '')}-${time.replace(':', '')}.zip`, summary: summaryFor(state, { gameVersion, createdAt: nowMs, warnings: skinOutput.warnings }) }
+  // 文件名和界面里的“备份时间”都按本机时区显示；用 UTC 会让用户看到早/晚几个小时的备份。
+  const date = new Date(nowMs), pad = value => String(value).padStart(2, '0')
+  const stamp = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`
+  return { buffer, name: `piggy-save-${stamp}.zip`, summary: summaryFor(state, { gameVersion, createdAt: nowMs, warnings: skinOutput.warnings }) }
 }
 
 function validateReceipts(value) {
@@ -150,7 +155,7 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
     let parsed; try { parsed = JSON.parse(buffer.toString('utf8')) } catch { throw new Error('旧存档 JSON 损坏') }
     const warnings = []
     for (const key of Object.keys(parsed?.extData ?? {})) warnings.push(`扩展 ${key} 缺少程序文件，进度仍会保留`)
-    for (const skin of parsed?.customSkins ?? []) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
+    for (const skin of Array.isArray(parsed?.customSkins) ? parsed.customSkins : []) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
     return parseState(parsed, { nowMs, legacy: true, files: new Map([['state.json', Buffer.from(JSON.stringify(parsed))]]), warnings })
   }
   const archive = readZip(buffer), manifestBytes = archive.get('backup.json')
@@ -187,17 +192,25 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
   }
   for (const key of Object.keys(state?.extData ?? {})) if (!extensionKeys.has(key)) warnings.push(`扩展 ${key} 缺少程序文件，进度仍会保留`)
   const skinCandidates = new Map([...files].filter(([name]) => name.startsWith('skins/')))
-  const validatedSkinFiles = new Set()
-  for (const skin of state?.customSkins ?? []) {
+  const validatedSkinFiles = new Set(), validatedSkinRecords = new Set()
+  const rawSkins = Array.isArray(state?.customSkins) ? state.customSkins : []
+  for (const skin of rawSkins) {
     const { files: validated, missing } = skinFilesFor(skin, skinCandidates)
     for (const name of validated.keys()) {
       if (!skinCandidates.has(name)) throw new Error('皮肤文件清单无效')
       validatedSkinFiles.add(name)
     }
-    if (missing) warnings.push(`皮肤 ${skin.key ?? skin.art} 缺少图片`)
+    if (validated.size > 0) validatedSkinRecords.add(`${skin?.key}\0${skin?.art}`)
+    if (missing) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
   }
   for (const [name] of skinCandidates) if (!validatedSkinFiles.has(name)) throw new Error('存档含有未登记或未校验的皮肤文件')
-  return parseState(state, { nowMs, legacy: false, files, warnings, gameVersion: manifest.gameVersion ?? '', createdAt: manifest.createdAt ?? null })
+  const parsed = parseState(state, { nowMs, legacy: false, files, warnings, gameVersion: manifest.gameVersion ?? '', createdAt: manifest.createdAt ?? null })
+  // 迁移会把 art 固定成 custom-<key>，也会丢掉缺必需场景的记录；校验和实际写入必须对同一份皮肤。
+  const migratedRecords = new Set((parsed.state?.customSkins ?? []).map(skin => `${skin.key}\0${skin.art}`))
+  for (const record of validatedSkinRecords) {
+    if (!migratedRecords.has(record)) throw new Error(`皮肤 ${record.split('\0')[0] || '自定义皮肤'} 的记录在迁移后不可用，请检查存档`)
+  }
+  return parsed
 }
 
 function parseState(input, { nowMs, legacy, files, warnings = [], gameVersion = '', createdAt = null }) {

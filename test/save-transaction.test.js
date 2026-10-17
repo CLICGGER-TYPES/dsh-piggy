@@ -341,3 +341,67 @@ test('snapshot files are flushed through writable handles required by Windows', 
     assert.deepEqual(JSON.parse(await readFile(s.statePath, 'utf8')), { new: true })
   } finally { await s.done() }
 })
+
+test('staged files and rollback snapshots are directory-synced before any managed root is replaced', async () => {
+  const { dir, statePath, done } = await setup()
+  const tx = txPath(statePath)
+  const roots = new Set([statePath, path.join(dir, 'skins'), path.join(dir, 'extensions'), `${statePath}.work-events`])
+  const synced = new Set()
+  let checked = false
+  const io = { ...fs,
+    open: async (file, ...args) => {
+      // Windows 上直接 open 目录会失败；用假句柄记录“确实调用了目录 fsync”，
+      // 这样测试在 Linux/Windows 都验证同一段代码路径。
+      const stat = await fs.lstat(file).catch(() => null)
+      if (stat?.isDirectory()) return { sync: async () => { synced.add(String(file)) }, close: async () => {} }
+      const handle = await fs.open(file, ...args)
+      return new Proxy(handle, { get(target, key) {
+        if (key === 'sync') return async () => { synced.add(String(file)); return target.sync() }
+        const value = Reflect.get(target, key, target)
+        return typeof value === 'function' ? value.bind(target) : value
+      } })
+    },
+    rm: async (target, options) => {
+      if (!checked && roots.has(target)) {
+        checked = true
+        for (const required of [path.join(tx, 'old'), path.join(tx, 'new'), path.join(tx, 'new', '2')]) {
+          assert.equal(synced.has(required), true, `必须在替换存档前 fsync 目录 ${required}`)
+        }
+      }
+      return fs.rm(target, options)
+    },
+  }
+  const nested = new Map([...files, ['extensions/farm/server.js', Buffer.from('nested extension')]])
+  try {
+    await commitSaveImport({ statePath, files: nested, backup: Buffer.from('zip'), io })
+    assert.equal(checked, true)
+  } finally { await done() }
+})
+
+test('a state basename that collides with a managed directory is rejected before replacing files', async () => {
+  for (const basename of ['skins', 'extensions', 'backups', 'Skins']) {
+    const dir = await mkdtemp(path.join(tmpdir(), 'piggy-save-layout-'))
+    const statePath = path.join(dir, basename)
+    try {
+      await writeFile(statePath, '{"old":true}')
+      await assert.rejects(commitSaveImport({ statePath, files, backup: Buffer.from('zip') }), /重名|不能/)
+      assert.equal(await readFile(statePath, 'utf8'), '{"old":true}', `${basename} 不能被替换`)
+      if (basename !== 'backups') await assert.rejects(readFile(path.join(dir, 'backups')), { code: 'ENOENT' })
+    } finally { await rm(dir, { recursive: true, force: true }) }
+  }
+})
+
+test('recovery refuses a reserved state basename before touching the state file', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'piggy-save-layout-recover-'))
+  const statePath = path.join(dir, 'skins')
+  const tx = txPath(statePath)
+  try {
+    await writeFile(statePath, '{"old":true}')
+    await mkdir(tx, { recursive: true })
+    await writeFile(path.join(tx, 'journal.json'), journal(statePath, { phase: 'applying', had: [false, false, false, false] }))
+    assert.throws(() => recoverSaveImportSync(statePath), /重名|不能/)
+    await assert.rejects(recoverSaveImport(statePath), /重名|不能/)
+    assert.equal(await readFile(statePath, 'utf8'), '{"old":true}')
+    assert.equal(await readFile(path.join(tx, 'journal.json'), 'utf8'), journal(statePath, { phase: 'applying', had: [false, false, false, false] }))
+  } finally { await rm(dir, { recursive: true, force: true }) }
+})

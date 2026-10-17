@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import fsSync from 'node:fs'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
+import { assertStatePathLayout } from './save-layout.js'
 
 const TX_NAME = '.piggy-save-import'
 const ROOTS = ['state', 'skins', 'extensions', 'work-events']
@@ -35,6 +36,16 @@ async function durableWrite(file, data, io) {
 
 async function exists(file, io) {
   try { return await io.lstat(file) } catch (error) { if (error.code === 'ENOENT') return null; throw error }
+}
+
+/** 目录项也要落盘：只 fsync 文件本身，断电后新目录/子目录可能整个消失。 */
+async function syncTree(root, io) {
+  const stat = await io.lstat(root)
+  if (stat.isSymbolicLink()) throw new Error(`事务快照含符号链接，拒绝同步：${root}`)
+  if (!stat.isFile() && !stat.isDirectory()) throw new Error(`事务快照类型无效，拒绝同步：${root}`)
+  if (!stat.isDirectory()) return
+  for (const name of await io.readdir(root)) await syncTree(path.join(root, name), io)
+  await syncDir(root, io)
 }
 
 async function copyTree(source, destination, io) {
@@ -175,6 +186,7 @@ export async function recoverSaveImport(statePath, { io = fs } = {}) {
   const { tx, roots } = pathsFor(statePath)
   const txStat = await exists(tx, io)
   if (!txStat) return { recovered: false }
+  assertStatePathLayout(statePath)
   if (!txStat.isDirectory() || txStat.isSymbolicLink()) throw new Error('存档事务目录无效，拒绝启动')
   const journalPath = path.join(tx, 'journal.json')
   const journalStat = await exists(journalPath, io)
@@ -200,6 +212,7 @@ export function recoverSaveImportSync(statePath) {
   let txStat
   try { txStat = fsSync.lstatSync(tx) } catch (error) { if (error.code === 'ENOENT') return { recovered: false }; throw error }
   if (!txStat.isDirectory() || txStat.isSymbolicLink()) throw new Error('存档事务目录无效，拒绝启动')
+  assertStatePathLayout(statePath)
   const journalPath = path.join(tx, 'journal.json')
   let journalStat
   try { journalStat = fsSync.lstatSync(journalPath) } catch (error) {
@@ -245,6 +258,7 @@ export async function commitSaveImport({ statePath, files, backup, nowMs = Date.
   if (activate !== undefined && typeof activate !== 'function') throw new TypeError('activate 必须是函数')
   const entries = validateFiles(files)
   const { absolute, parent, tx, roots } = pathsFor(statePath)
+  assertStatePathLayout(absolute)
   await recoverSaveImport(absolute, { io })
 
   const backupDir = path.join(parent, 'backups')
@@ -282,6 +296,11 @@ export async function commitSaveImport({ statePath, files, backup, nowMs = Date.
     }
     // Empty managed directories are valid and replace prior contents as part of this import.
     for (const i of [1, 2, 3]) await io.mkdir(staged[i], { recursive: true })
+    // 快照和待替换目录里的文件已经各自 fsync；这里补齐目录项（含嵌套 assets），
+    // 否则断电后 rollback 快照或导入的扩展可能只剩一个空目录。
+    if (await exists(path.join(tx, 'old'), io)) await syncTree(path.join(tx, 'old'), io)
+    await syncTree(path.join(tx, 'new'), io)
+    await syncDir(path.join(tx, 'new'), io)
     const journal = { version: 1, phase: 'applying', statePath: absolute, had }
     await writeJournal(tx, journal, io)
     for (let i = 0; i < roots.length; i += 1) {
