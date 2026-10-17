@@ -10059,6 +10059,30 @@
     jumpPeakScale: 1.12,
     jumpLandingScale: 0.92
   });
+  var keyframe = (scaleX, scaleY, rotate, x, y) => Object.freeze({ scaleX, scaleY, rotate, x, y });
+  var REACTION_MOTION = Object.freeze({
+    "dp-feed-hop": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1.07, 0.91, 0, 0, 2),
+      keyframe(0.96, 1.07, 0, 0, -12),
+      keyframe(1.1, 0.88, 0, 0, 0),
+      keyframe(0.98, 1.03, 0, 0, -4)
+    ]),
+    "dp-play-hop": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1.02, 1.02, -7, -3, -5),
+      keyframe(1.08, 0.92, 3, 0, 0),
+      keyframe(0.97, 1.06, 8, 4, -9),
+      keyframe(1.05, 0.96, -2, 0, 0)
+    ]),
+    "dp-squash": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1.04, 0.95, 0, 0, 1),
+      keyframe(1.14, 0.82, 0, 0, 3),
+      keyframe(0.95, 1.09, 0, 0, -4),
+      keyframe(1.04, 0.97, 0, 0, 0)
+    ])
+  });
   var corners = (box) => [
     { x: box.x, y: box.y },
     { x: box.x + box.width, y: box.y },
@@ -10091,6 +10115,32 @@
       ...scaledCorners(box, pivot, PIG_MOTION.jumpPeakScale, -PIG_MOTION.jumpRise),
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
+  }
+  function keyframeCorners(box, pivot, state2) {
+    const radians = state2.rotate * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    return corners(box).map((point) => {
+      const x = (point.x - pivot.x) * state2.scaleX;
+      const y = (point.y - pivot.y) * state2.scaleY;
+      return {
+        x: pivot.x + x * cos - y * sin + state2.x,
+        y: pivot.y + x * sin + y * cos + state2.y
+      };
+    });
+  }
+  function keyframeEnvelope(states, box, pivot) {
+    return boundsOf(states.flatMap((state2) => keyframeCorners(box, pivot, state2)));
+  }
+  function reactionEnvelope(name, box, pivot) {
+    const states = REACTION_MOTION[name];
+    return states === void 0 ? null : keyframeEnvelope(states, box, pivot);
+  }
+  function motionEnvelope(name) {
+    if (name === "dp-spin") return spinEnvelope;
+    if (name === "dp-jump") return jumpEnvelope;
+    if (Object.hasOwn(REACTION_MOTION, name)) return (box, pivot) => reactionEnvelope(name, box, pivot);
+    return null;
   }
   function fixedMotionReserve(pigBox) {
     const artWidth = MAX_ART_ASPECT2 * FRAME_HEIGHT2 * pigBox.width;
@@ -10238,12 +10288,14 @@
       const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height };
       const animatedRects = [];
       if (reserves && pigNode !== null) {
-        const animation = getComputedStyle(pigNode).animationName;
-        const envelope = animation === "dp-spin" ? spinEnvelope : animation === "dp-jump" ? jumpEnvelope : null;
-        if (envelope !== null) {
+        const names = String(getComputedStyle(pigNode).animationName).split(",").map((name) => name.trim()).filter(Boolean);
+        const envelopes = names.map((name) => motionEnvelope(name)).filter((envelope) => envelope !== null);
+        if (envelopes.length > 0) {
           const pivot = { x: pigBox.x + pigBox.width * PIG_TRANSFORM_ORIGIN.x, y: pigBox.y + pigBox.height * PIG_TRANSFORM_ORIGIN.y };
-          const motion = envelope({ x: pigInk.x, y: pigInk.y, width: pigInk.r - pigInk.x, height: pigInk.b - pigInk.y }, pivot);
-          animatedRects.push({ x: motion.x, y: motion.y, r: motion.x + motion.width, b: motion.y + motion.height });
+          for (const envelope of envelopes) {
+            const animated = envelope({ x: pigInk.x, y: pigInk.y, width: pigInk.r - pigInk.x, height: pigInk.b - pigInk.y }, pivot);
+            animatedRects.push({ x: animated.x, y: animated.y, r: animated.x + animated.width, b: animated.y + animated.height });
+          }
         }
       }
       const shape = rects.concat(bubbleRects, animatedRects).map(function(rect) {

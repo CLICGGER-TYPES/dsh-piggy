@@ -11,7 +11,7 @@
  */
 import { PAD, STEP } from './geometry.js'
 import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
-import { fixedMotionReserve, jumpEnvelope, PIG_TRANSFORM_ORIGIN, spinEnvelope } from './motion-envelope.js'
+import { fixedMotionReserve, motionEnvelope, PIG_TRANSFORM_ORIGIN } from './motion-envelope.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -160,15 +160,19 @@ export function createMeasure(env) {
     // 它影响面更大（会推迟真变化），没有证据就不该在代码里。
     const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height }
     // Only the active animation gets its swept hit area. The idle window's
-    // transparent motion reserve must remain click-through.
+    // transparent motion reserve must remain click-through. Every animation
+    // that moves the artwork contributes, because the Linux window shape also
+    // clips *drawing* outside these rects (a tall hat at dp-feed-hop's peak).
     const animatedRects = []
     if (reserves && pigNode !== null) {
-      const animation = getComputedStyle(pigNode).animationName
-      const envelope = animation === 'dp-spin' ? spinEnvelope : animation === 'dp-jump' ? jumpEnvelope : null
-      if (envelope !== null) {
+      const names = String(getComputedStyle(pigNode).animationName).split(',').map(name => name.trim()).filter(Boolean)
+      const envelopes = names.map(name => motionEnvelope(name)).filter(envelope => envelope !== null)
+      if (envelopes.length > 0) {
         const pivot = { x: pigBox.x + pigBox.width * PIG_TRANSFORM_ORIGIN.x, y: pigBox.y + pigBox.height * PIG_TRANSFORM_ORIGIN.y }
-        const motion = envelope({ x: pigInk.x, y: pigInk.y, width: pigInk.r - pigInk.x, height: pigInk.b - pigInk.y }, pivot)
-        animatedRects.push({ x: motion.x, y: motion.y, r: motion.x + motion.width, b: motion.y + motion.height })
+        for (const envelope of envelopes) {
+          const animated = envelope({ x: pigInk.x, y: pigInk.y, width: pigInk.r - pigInk.x, height: pigInk.b - pigInk.y }, pivot)
+          animatedRects.push({ x: animated.x, y: animated.y, r: animated.x + animated.width, b: animated.y + animated.height })
+        }
       }
     }
     const shape = rects.concat(bubbleRects, animatedRects).map(function (rect) {
