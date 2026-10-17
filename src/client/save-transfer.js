@@ -1,0 +1,283 @@
+// @ts-check
+/** Complete-save transfer controls for Settings. */
+import { button, el } from './dom.js'
+import { desktopShell } from './desktop-shell.js'
+
+const EXPORT_URL = '/dsh-piggy/save/export'
+const PREVIEW_URL = '/dsh-piggy/save/preview'
+const IMPORT_URL = '/dsh-piggy/save/import'
+
+const state = {
+  open: false,
+  preview: null,
+  loading: false,
+  busy: false,
+  error: '',
+  focus: 'cancel',
+  ui: null,
+  trigger: null,
+  controller: null,
+  keyHandler: null,
+}
+
+const cancelError = error => error?.name === 'AbortError' || error?.name === 'NotAllowedError'
+const messageOf = error => error instanceof Error ? error.message : String(error)
+
+function defaultName() {
+  const d = new Date(), p = n => String(n).padStart(2, '0')
+  return `piggy-save-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.zip`
+}
+
+function responseName(response) {
+  const value = response.headers?.get?.('content-disposition') || ''
+  const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+  if (encoded) { try { return decodeURIComponent(encoded) } catch { /* use plain filename */ } }
+  return value.match(/filename="?([^";]+)"?/i)?.[1] || defaultName()
+}
+
+async function saveBytes(name, bytes) {
+  const shell = desktopShell()
+  if (typeof shell?.saves?.save === 'function') {
+    const result = await shell.saves.save(name, new Uint8Array(bytes))
+    if (result?.ok) return { ok: true }
+    if (result?.canceled) return { canceled: true }
+    throw new Error(String(result?.reason || '桌面外壳没能保存存档'))
+  }
+  const picker = typeof window === 'object' ? /** @type {any} */ (window).showSaveFilePicker : null
+  if (typeof picker === 'function') {
+    try {
+      const handle = await picker({ suggestedName: name, types: [{ description: '小猪存档', accept: { 'application/zip': ['.zip'] } }] })
+      const writable = await handle.createWritable()
+      await writable.write(bytes)
+      await writable.close()
+      return { ok: true }
+    } catch (error) {
+      if (cancelError(error)) return { canceled: true }
+      // Unsupported picker permissions still allow a normal browser download.
+    }
+  }
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  return { ok: true, downloaded: true }
+}
+
+function status(ui, text, ms = 3500) {
+  if (typeof ui.showBubble === 'function') ui.showBubble(text, ms)
+}
+
+function rerender() {
+  if (typeof state.ui?.renderContent === 'function') state.ui.renderContent()
+}
+
+async function exportSave(ui) {
+  if (state.busy) return
+  state.busy = true
+  rerender()
+  try {
+    const response = await fetch(EXPORT_URL, { cache: 'no-store' })
+    if (!response.ok) throw new Error(`宿主返回 HTTP ${response.status}`)
+    const bytes = await response.arrayBuffer()
+    const result = await saveBytes(responseName(response), bytes)
+    if (result.canceled) return
+    status(ui, result.downloaded ? '存档已下载' : '存档已导出')
+  } catch (error) {
+    status(ui, '存档没导出：' + messageOf(error), 5000)
+  } finally {
+    state.busy = false
+    rerender()
+  }
+}
+
+function focusTrigger() {
+  const ui = state.ui
+  const trigger = ui?.content?.querySelector?.('[data-save-trigger="import"]')
+  if (trigger?.focus) trigger.focus()
+}
+
+function closeDialog() {
+  state.controller?.abort()
+  state.controller = null
+  state.open = false
+  state.preview = null
+  state.error = ''
+  state.loading = false
+  state.busy = false
+  if (state.keyHandler && typeof document === 'object') document.removeEventListener('keydown', state.keyHandler, true)
+  state.keyHandler = null
+  rerender()
+  focusTrigger()
+}
+
+function trapKeys() {
+  if (state.keyHandler || typeof document !== 'object') return
+  state.keyHandler = event => {
+    if (!state.open) return
+    if (event.key === 'Escape') {
+      if (state.busy) return
+      event.preventDefault()
+      closeDialog()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const dialog = state.ui?.content?.querySelector?.('[data-save-dialog="true"]')
+    const items = Array.from(dialog?.querySelectorAll?.('button:not([disabled]),input:not([disabled])') || [])
+    if (!items.length) { event.preventDefault(); dialog?.focus?.(); return }
+    const first = items[0], last = items[items.length - 1], active = document.activeElement
+    if (event.shiftKey && (active === first || !dialog.contains(active))) { event.preventDefault(); last.focus() }
+    else if (!event.shiftKey && (active === last || !dialog.contains(active))) { event.preventDefault(); first.focus() }
+  }
+  document.addEventListener('keydown', state.keyHandler, true)
+}
+
+async function previewFile(file) {
+  if (!file) return
+  state.preview = null
+  state.error = ''
+  state.loading = true
+  state.controller?.abort()
+  const controller = new AbortController()
+  state.controller = controller
+  rerender()
+  try {
+    const response = await fetch(PREVIEW_URL, { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: await file.arrayBuffer(), signal: controller.signal })
+    const result = await response.json().catch(() => null)
+    if (!response.ok || result?.ok !== true || !result.token || !result.summary) throw new Error(result?.error || result?.reason || `宿主返回 HTTP ${response.status}`)
+    state.preview = result
+  } catch (error) {
+    if (!cancelError(error)) state.error = '没能读取这个存档：' + messageOf(error)
+  } finally {
+    if (state.controller === controller) {
+      state.loading = false
+      state.controller = null
+      rerender()
+    }
+  }
+}
+
+async function commitImport(ui) {
+  if (state.busy || !state.preview?.token) return
+  state.busy = true
+  state.error = ''
+  rerender()
+  try {
+    const response = await fetch(IMPORT_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: state.preview.token }) })
+    const result = await response.json().catch(() => null)
+    if (!response.ok || result?.ok !== true) throw new Error(result?.error || result?.reason || `宿主返回 HTTP ${response.status}`)
+    state.open = false
+    if (state.keyHandler) document.removeEventListener('keydown', state.keyHandler, true)
+    state.keyHandler = null
+    status(ui, '存档已导入')
+    window.setTimeout(() => window.location.reload(), 500)
+  } catch (error) {
+    state.error = '导入失败：' + messageOf(error)
+    state.busy = false
+    rerender()
+  }
+}
+
+/** Called on each settings paint; state is module-owned so polling can rebuild the DOM safely. */
+export function renderSaveTransferSettings(ui, section) {
+  state.ui = ui
+  const transfer = section(ui, '存档', '备份进度，或把小猪带到另一台设备')
+  transfer.box.setAttribute('data-save-transfer-active', String(state.open || state.busy || state.loading))
+  const actions = el('div', 'dp-actions')
+  const exportButton = button('dp-btn', { 'data-save-trigger': 'export' }, () => exportSave(ui))
+  exportButton.textContent = state.busy && !state.open ? '导出中…' : '导出存档'
+  exportButton.disabled = state.busy || !ui.view?.pig
+  if (!ui.view?.pig) exportButton.title = '接到小猪后即可备份'
+  const importButton = button('dp-btn', { 'data-save-trigger': 'import' }, () => {
+    if (state.busy) return
+    state.open = true
+    state.preview = null
+    state.error = ''
+    state.trigger = 'import'
+    rerender()
+    trapKeys()
+    const input = ui.content.querySelector('[data-save-file="true"]')
+    input?.click()
+  })
+  importButton.textContent = '导入存档'
+  importButton.disabled = state.busy || state.loading
+  actions.appendChild(exportButton)
+  actions.appendChild(importButton)
+  transfer.box.appendChild(actions)
+
+  if (!state.open) return
+  const overlay = el('div', 'dp-save-overlay')
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box'
+  const dialog = el('div', 'dp-set')
+  dialog.style.cssText = 'width:min(268px,100%);max-height:90vh;overflow:auto;background:var(--ac-bg-content);border:2px solid var(--ac-border);border-radius:var(--ac-radius-card);padding:12px;box-shadow:var(--ac-shadow-lg)'
+  dialog.setAttribute('role', 'dialog')
+  dialog.setAttribute('aria-modal', 'true')
+  dialog.setAttribute('aria-label', '导入存档')
+  dialog.setAttribute('data-save-dialog', 'true')
+  dialog.tabIndex = -1
+  overlay.appendChild(dialog)
+  dialog.appendChild(el('b', null, '导入存档'))
+  if (state.loading) dialog.appendChild(el('p', 'dp-dim', '正在检查存档…'))
+  else if (state.preview) {
+    const summary = state.preview.summary
+    rowTo(dialog, '小猪', `${summary.name || '未命名'} · Lv.${summary.level ?? '—'}`)
+    rowTo(dialog, '备份时间', displayDate(summary.createdAt))
+    rowTo(dialog, '游戏版本', summary.gameVersion || '未知')
+    rowTo(dialog, '内容', `养成进度、${summary.extensions || 0} 个扩展、${summary.skins || 0} 个自定义皮肤`)
+    if (summary.legacy) dialog.appendChild(alert('这是旧版 JSON 存档，部分资源可能未包含。'))
+    for (const warning of state.preview.warnings || []) dialog.appendChild(alert(warning))
+    dialog.appendChild(el('p', 'dp-dim', '将替换当前这只猪。当前存档会先自动备份，导入后两边不会自动同步。'))
+  } else {
+    dialog.appendChild(el('p', 'dp-dim', '选择 ZIP 备份或已有的 state.json。选取后只检查和预览，不会修改当前存档。'))
+    const picker = el('input', 'dp-input')
+    picker.type = 'file'
+    picker.accept = '.zip,.json,application/zip,application/json'
+    picker.setAttribute('data-save-file', 'true')
+    picker.setAttribute('aria-label', '选择存档文件')
+    picker.addEventListener('change', () => { const file = picker.files?.[0]; if (file) previewFile(file) })
+    picker.addEventListener('cancel', closeDialog)
+    dialog.appendChild(picker)
+  }
+  if (state.error) dialog.appendChild(alert(state.error, 'dp-alert dp-dead'))
+  const buttons = el('div', 'dp-actions')
+  const cancel = button('dp-btn', { 'data-save-focus': 'cancel', 'data-save-cancel': 'true' }, closeDialog)
+  cancel.textContent = '取消'
+  cancel.disabled = state.busy
+  buttons.appendChild(cancel)
+  if (state.preview) {
+    const confirm = button('dp-mini', { 'data-save-focus': 'confirm', 'data-save-confirm': 'true' }, () => commitImport(ui))
+    confirm.textContent = state.busy ? '导入中…' : '备份并导入'
+    confirm.disabled = state.busy
+    buttons.appendChild(confirm)
+  }
+  dialog.appendChild(buttons)
+  ui.content.appendChild(overlay)
+  const desired = dialog.querySelector(`[data-save-focus="${state.focus}"]`) || dialog.querySelector('input') || cancel
+  if (document.activeElement === document.body || !dialog.contains(document.activeElement)) desired.focus()
+  dialog.addEventListener('focusin', event => {
+    const key = event.target?.getAttribute?.('data-save-focus')
+    if (key) state.focus = key
+  })
+}
+
+function rowTo(parent, label, value) {
+  const line = el('div', 'dp-set-head')
+  line.appendChild(el('b', null, label))
+  line.appendChild(el('small', 'dp-dim', String(value)))
+  parent.appendChild(line)
+}
+
+function displayDate(value) {
+  if (value === null || value === undefined || value === '') return '未记录'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  const p = n => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())} ${p(date.getHours())}:${p(date.getMinutes())}`
+}
+
+function alert(text, className = 'dp-alert dp-legacy') {
+  return el('div', className, String(text))
+}

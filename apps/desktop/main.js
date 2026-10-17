@@ -33,6 +33,7 @@ import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
+import { readPostBody, saveArchive } from './lib/save-export.js'
 
 const { autoUpdater } = updaterPackage
 
@@ -178,7 +179,7 @@ function registerProtocol(gameDir) {
     const url = new URL(request.url)
     const path = decodeURIComponent(url.pathname)
     if (path.startsWith('/dsh-piggy/')) {
-      const body = request.method === 'POST' ? await request.text() : undefined
+      const body = request.method === 'POST' ? await readPostBody(request) : undefined
       if (quitting) return new Response('game runtime closing', { status: 503 })
       const out = await host.handle(request.method, path + url.search, body)
       // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
@@ -1049,6 +1050,17 @@ ipcMain.handle('piggy:save-log', async (event, payload) => {
     log('log export failed', String(error))
     return { ok: false, reason: error instanceof Error ? error.message : String(error) }
   }
+})
+// 设置 → 存档 → 导出：只接受安全 ZIP 文件名和有限大小的字节，不接受调用方路径。
+ipcMain.handle('piggy:save-archive', async (event, payload) => {
+  if (!fromPage(event)) return { ok: false, reason: '来源不对' }
+  return saveArchive({
+    dialog,
+    parentWindow: win ?? undefined,
+    downloadsDir: app.getPath('downloads'),
+    name: payload?.name,
+    bytes: payload?.bytes,
+  })
 })
 ipcMain.handle('piggy:open', (event, url) => {
   // Only this repo's own pages: the release notes and installers.

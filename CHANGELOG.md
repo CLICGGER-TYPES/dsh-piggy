@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 设置增加完整存档导出与导入预览，支持 ZIP 和旧 JSON。确认前自动备份，失败可回滚，DSH 与桌面可手动迁移；不合并两只猪。桌面新增二进制存档保存桥。
+
 ## [0.37.1-rc.1] — 2026-10-16 · 桌面体验与第三方 agent 接入（预发布；外壳 0.6.7-rc.1）
 
 感谢 [@Flappy-Boy](https://github.com/Flappy-Boy) 提供 #16/#17/#18 的问题反馈与复现步骤，也感谢反馈本体摸摸和高 DPI 气泡问题的玩家。

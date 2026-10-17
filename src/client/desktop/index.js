@@ -15,8 +15,9 @@ import { installExt } from './ext-window.js'
 
 /** 页面 ↔ 桌面程序的约定版本：以后桌面程序加新的基础动作时加一。
  * v3：外壳支持 piggyShell.logs.save（导出日志时弹系统「另存为」）。
- * v4：外壳 0.6.0 起猪和面板各一个窗口（piggyShell.role / panel / onStateChanged）。 */
-export const DESKTOP_VERSION = 4
+ * v4：外壳 0.6.0 起猪和面板各一个窗口（piggyShell.role / panel / onStateChanged）。
+ * v5：外壳支持 piggyShell.saves.save（二进制存档另存为）。 */
+export const DESKTOP_VERSION = 5
 
 const FONT_STACK = 'Nunito,"Noto Sans SC",-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif'
 /** 桌面版专用样式：内置 emoji 字体栈；投影不越出可见区域；面板底栏限高。 */
@@ -265,6 +266,7 @@ export function install(shell) {
     // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
     role: 'pet',
     proxy: shell.proxy,
+    saves: shell.saves,
     ext: shell.ext,
     fullscreen: shell.fullscreen,
     split: true,

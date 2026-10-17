@@ -239,3 +239,21 @@ test('网页面板收起时离线摘要仍在猪上可见', () => {
   processPending(ctx, () => {})
   assert.equal(ctx.calls.filter(call => call[0] === 'showBubble').length, 1)
 })
+
+test('存档原生选择器和导入预览期间失焦不收面板，结束后恢复自动收起', () => {
+  const { emit } = fakeShell('panel')
+  const ctx = fakeCtx()
+  let transferActive = true
+  ctx.content = { querySelector: () => transferActive ? {} : null }
+  ctx.isOpen = true
+  const oldDocument = globalThis.document
+  globalThis.document = { activeElement: null }
+  try {
+    wireSplit(ctx, { refresh() {}, isFishing: () => false })
+    emit('panel', { type: 'blur', toPet: false })
+    assert.equal(ctx.isOpen, true, '存档操作失焦后必须仍能看到预览')
+    transferActive = false
+    emit('panel', { type: 'blur', toPet: false })
+    assert.equal(ctx.isOpen, false, '存档操作结束后保留原来的自动收起偏好')
+  } finally { globalThis.document = oldDocument }
+})

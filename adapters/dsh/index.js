@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { createGameRuntime } from '../../runtime/index.js'
 import { defaultStatePath, moveLegacySaveDir } from '../../store/state-file.js'
 import { environmentNote } from '../../environment.js'
+import { createWorkObserver } from './work-observer.js'
 
 export const name = 'dsh-piggy'
 export const inject = []
@@ -17,13 +18,10 @@ export function apply(ctx, config = {}) {
   const runtime = createGameRuntime({ statePath, journalHeader: environmentNote({
     运行形态: 'DSH 插件', 存档路径: statePath, DSH_HOME: process.env.DSH_HOME ?? '', Node: process.version,
   }) })
-  // 当前 DSH 回调未提供已核实的持久身份，保留每次真实回调计数的原行为。
-  const producer = randomUUID()
-  let sequence = 0
-  const observe = type => {
-    try { runtime.acceptWorkEvent({ version: 1, source: 'dsh', id: `${producer}:${++sequence}`, type, at: Date.now() }) }
-    catch (error) { console.warn('[dsh-piggy] DSH work event failed; evidence preserved') }
-  }
+  // Host callbacks have no durable identity; keep each generated event ID stable across 503 retries.
+  const observer = createWorkObserver({ accept: event => runtime.acceptWorkEvent(event), source: 'dsh', producer: randomUUID(),
+    warn: message => console.warn(message) })
+  const observe = type => observer.observe(type)
   ctx.on('agent/inbox/claimed', () => observe('message'))
   ctx.on('agent/turn-stopping', () => observe('turn'))
   ctx.on('agent/error', () => observe('agentError'))
@@ -38,5 +36,5 @@ export function apply(ctx, config = {}) {
       catch (error) { return { kind: 'error', text: `🐖 猪摔了一跤：${error instanceof Error ? error.message : String(error)}` } }
     },
   }))
-  ctx.effect(() => () => runtime.dispose())
+  ctx.effect(() => () => { observer.dispose(); runtime.dispose() })
 }

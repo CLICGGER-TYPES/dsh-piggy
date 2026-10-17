@@ -71,7 +71,7 @@
 ### 两边都能用的
 
 `piggy:updates:*`（游戏包版本切换）、`piggy:shell:*`（外壳更新）、`piggy:open`（用系统浏览器开链接）、
-`piggy:save-log`（导出日志另存为）、`piggy:quit`。都是 `invoke`（返回 Promise）。
+`piggy:save-log`（导出日志另存为）、`piggy:save-archive`（完整存档 ZIP 另存为，开发候选）、`piggy:quit`。都是 `invoke`（返回 Promise）。
 
 ### 旧消息（只给老游戏包，别删）
 
@@ -106,3 +106,9 @@
    用 QMP 绝对鼠标真拖、虚拟机里 ffmpeg `gdigrab` 录屏，同样用 `drag-film.py --panel` 分析。
    修前先用旧版录一次复现（0.33.1 的对照：修前面板偏 204px，修后 90% 的帧 ≤2px）。
 3. 测试机的账号、IP、操作脚本在维护者本机笔记里，不进仓库。
+
+### 完整存档传输（开发候选，尚未发布）
+
+设置入口通过共用 runtime 的 `/dsh-piggy/save/export`、`/save/preview` 和 `/save/import` 操作完整 ZIP。预览不写目标目录；确认后冻结新操作、等待在途请求、结清工作账本和 Store，再保存自动备份并执行可恢复的替换。恢复必须在获取存档锁后、打开账本和 Store 前执行。每份猪独占目录，避免多个文件名共享资源。
+
+桌面协议 v5 新增 `piggyShell.saves.save(name, Uint8Array)` / `piggy:save-archive`，只接受受限 ZIP 名称与字节，由系统保存框选目的地。协议 POST 使用 `arrayBuffer()`，不能将 ZIP 按 UTF-8 文本转码。旧外壳检测不到新方法时走浏览器下载，不提高 minShell。
