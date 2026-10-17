@@ -32,6 +32,7 @@ import { panelToggleAction } from './lib/panel-toggle.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
+import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
 
 const { autoUpdater } = updaterPackage
@@ -129,6 +130,8 @@ let versions = null
 /** @type {ReturnType<typeof createShellUpdates> | null} */
 let shellUpdates = null
 let win = null
+/** 猪窗口什么时候显示（Linux 等第一次 content，见 lib/window-show.js）。 */
+let showGate = null
 /**
  * 最近一次请求给猪窗口的位置和大小。拖动和面板都按它算，不按 getBounds() 回读：
  * Windows 125%/150% 缩放下回读的尺寸常比设的大 1px，「读回来再设回去」每帧涨 1px，
@@ -316,6 +319,13 @@ function applyShape(rects) {
 /** 上次退出时猪的屏幕位置：启动后第一次收到内容上报时按它摆窗口。 */
 let savedPigScreen = null
 
+/** 显示猪窗口（只显示一次；日志保留原来的 shown 行格式）。 */
+function showPigWindow() {
+  if (win === null || win.isDestroyed() || win.isVisible()) return
+  win.showInactive()
+  log('shown', JSON.stringify(win.getBounds()), win.isVisible())
+}
+
 function createWindow() {
   const saved = readWindowState()
   savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
@@ -346,8 +356,10 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'floating')
   // 30fps：猪的动画够看，整窗合成的次数砍一半（D1 第 3 条）。
   if (FRAME_CAP > 0) win.webContents.setFrameRate(FRAME_CAP)
-  // Until the page reports where the pig is, the window takes no clicks at all.
-  applyShape([])
+  // Linux 先不显示：等页面报真实内容和形状后再显示（见 lib/window-show.js）。
+  // 以前这里先 applyShape([]) 再按兜底尺寸显示、随后 resize，共享 rootless Xwayland
+  // 会把新尺寸 damage 复制进旧尺寸缓冲，在 pixman_blt 里 SIGSEGV。
+  showGate = createShowGate({ platform: process.platform })
   if (PASSTHROUGH) { passthroughHit = true; setHit(false) }
   if (PASSTHROUGH) {
     hitTimer = setInterval(refreshHit, 16)
@@ -356,7 +368,12 @@ function createWindow() {
   win.loadURL('piggy://app/index.html')
   // 启动摆放最多管 3 秒：之后一律按猪当前位置算，免得哪次没对上就一直往回拽。
   win.once('ready-to-show', () => { setTimeout(() => { savedPigScreen = null }, 3000) })
-  win.once('ready-to-show', () => { log('ready-to-show'); win.showInactive(); log('shown', JSON.stringify(win.getBounds()), win.isVisible()) })
+  win.once('ready-to-show', () => {
+    log('ready-to-show')
+    if (showGate !== null && showGate.readyToShow()) showPigWindow()
+    // 页面一直不报内容：兜底显示，不能永远不出现。
+    setTimeout(() => { if (showGate !== null && showGate.timeout()) showPigWindow() }, SHOW_FALLBACK_MS).unref?.()
+  })
   win.webContents.on('did-finish-load', () => log('page loaded'))
   // 面板开着时焦点离开猪窗口、也没进面板：当作点到别处（见 panelFocusLeft）
   win.on('blur', () => panelFocusLeft())
@@ -457,6 +474,7 @@ ipcMain.on('piggy:content', (event, content) => {
     x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
     width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
   })))
+  if (showGate !== null && showGate.content()) showPigWindow()
   lastShape = shape
   if (content?.immediate === true) {
     const current = win.getBounds()
@@ -610,6 +628,9 @@ ipcMain.on('piggy:place', (event, request) => {
     }))
     applyShape(placedShape)
     refreshHit()
+    // 新游戏包的第一次摆放就带真实尺寸和形状：窗口此前一直藏着，
+    // 现在 setBounds + setShape 都做完了，可以显示了（Linux 防 Xwayland resize 崩溃）。
+    if (showGate !== null && showGate.content()) showPigWindow()
   }
   // 游戏包 0.33.1 起顺带报猪在窗口里的框（贴屏幕边时内容在窗口里挪过）：面板按它贴猪。
   const pig = request?.pig

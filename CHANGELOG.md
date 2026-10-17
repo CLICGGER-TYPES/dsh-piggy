@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 桌面版（Linux）：启动时先按页面报上来的真实尺寸和可点形状摆好窗口，再显示；不再先按兜底尺寸显示、随后 resize。共享 rootless Xwayland（24.1.10）在窗口形状为空时 resize 会跳过旧缓冲释放，把新尺寸的 damage 复制进旧尺寸缓冲，在 `pixman_blt` 里 SIGSEGV；本次改动避开该路径，Windows / macOS 的显示时机不变。
+
 ## [0.37.1-rc.1] — 2026-10-16 · 桌面体验与第三方 agent 接入（预发布；外壳 0.6.7-rc.1）
 
 感谢 [@Flappy-Boy](https://github.com/Flappy-Boy) 提供 #16/#17/#18 的问题反馈与复现步骤，也感谢反馈本体摸摸和高 DPI 气泡问题的玩家。
