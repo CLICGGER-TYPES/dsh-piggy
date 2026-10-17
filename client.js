@@ -10408,21 +10408,21 @@
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
   }
-  function keyframeCorners(box, pivot, state2) {
-    const radians = state2.rotate * Math.PI / 180;
+  function keyframeCorners(box, pivot, state3) {
+    const radians = state3.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners(box).map((point) => {
-      const x = (point.x - pivot.x) * state2.scaleX;
-      const y = (point.y - pivot.y) * state2.scaleY;
+      const x = (point.x - pivot.x) * state3.scaleX;
+      const y = (point.y - pivot.y) * state3.scaleY;
       return {
-        x: pivot.x + x * cos - y * sin + state2.x,
-        y: pivot.y + x * sin + y * cos + state2.y
+        x: pivot.x + x * cos - y * sin + state3.x,
+        y: pivot.y + x * sin + y * cos + state3.y
       };
     });
   }
   function keyframeEnvelope(states, box, pivot) {
-    return boundsOf(states.flatMap((state2) => keyframeCorners(box, pivot, state2)));
+    return boundsOf(states.flatMap((state3) => keyframeCorners(box, pivot, state3)));
   }
   function reactionEnvelope(name, box, pivot) {
     const states = REACTION_MOTION[name];

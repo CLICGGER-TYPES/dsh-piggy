@@ -1,4 +1,4 @@
-# dsh-piggy 维护交接文档（2026-10-16 更新，稳定游戏 0.37.0 / 外壳 0.6.6）
+# dsh-piggy 维护交接文档（2026-10-18 更新，稳定游戏 0.37.0 / 外壳 0.6.6）
 
 > 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
 > 本页取代 [2026-10-03 的交接记录](archive/HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
@@ -8,7 +8,9 @@
 
 ## 1. 先读这里（五分钟版）
 
-### 当前状态（2026-10-16）
+### 当前状态（2026-10-18）
+
+- **0.37.1-rc.2 集成候选已就绪，未发布**：集成分支 `rc/0.37.1-rc.2` 已合并存档导入导出（`9523a86`，含 pi/DSH 两侧复核修复）和桌面动作形状修复（`8504838`）；游戏/别名包 `0.37.1-rc.2`、外壳 `0.6.7-rc.2`，存档 v14 不变。主机全量 **1231/1231**、build/typecheck 与 `git diff --check` 通过，`client.js` 已重建。未 push、未打标签、未发布；等待维护者验收后按第 9 节执行，npm 仍由维护者手动发。
 
 - **晚间 RC 已发布**：游戏/别名源码 `0.37.1-rc.1`、外壳 `0.6.7-rc.1`，存档 v14 不变；[GitHub RC](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.1) 与 [Gitee RC](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.1) 均已发布，农场 4.0.9 / 矿洞 3.0.1 两渠道正常 UI 在线安装通过。主机全量 1154/1154，Windows 125% + Electron DPR2 对照、本体/面板摸摸和退出重开通过，实际系统 200% 未覆盖；Linux rootless/macOS 限制保留。GitHub provider 在各 release 下使用 latest 清单，Gitee generic 使用 rc；首次 GitHub 检查假设错误已修正，原标签补构建全绿，未移动标签。#12/#13/#14/#15/#16/#17/#18 均已按各自范围回复，README 与发行说明已感谢贡献者。npm 未发布，维护者明早手动使用预发布 dist-tag。当前状态以 [ROADMAP](ROADMAP.md) 为准。
 
