@@ -9048,14 +9048,22 @@
       window.showSaveFilePicker
     ) : null;
     if (typeof picker === "function") {
+      let handle = null;
       try {
-        const handle = await picker({ suggestedName: name, types: [{ description: "\u5C0F\u732A\u5B58\u6863", accept: { "application/zip": [".zip"] } }] });
-        const writable = await handle.createWritable();
-        await writable.write(bytes);
-        await writable.close();
-        return { ok: true };
+        handle = await picker({ suggestedName: name, types: [{ description: "\u5C0F\u732A\u5B58\u6863", accept: { "application/zip": [".zip"] } }] });
       } catch (error) {
-        if (cancelError(error)) return { canceled: true };
+        if (error?.name === "AbortError") return { canceled: true };
+      }
+      if (handle !== null && handle !== void 0) {
+        try {
+          const writable = await handle.createWritable();
+          await writable.write(bytes);
+          await writable.close();
+          return { ok: true };
+        } catch (error) {
+          if (error?.name === "AbortError") return { canceled: true };
+          throw error;
+        }
       }
     }
     const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
@@ -9151,10 +9159,11 @@
     try {
       const response = await fetch(PREVIEW_URL, { method: "POST", headers: { "content-type": "application/octet-stream" }, body: await file.arrayBuffer(), signal: controller.signal });
       const result = await response.json().catch(() => null);
+      if (state2.controller !== controller) return;
       if (!response.ok || result?.ok !== true || !result.token || !result.summary) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
       state2.preview = result;
     } catch (error) {
-      if (!cancelError(error)) state2.error = "\u6CA1\u80FD\u8BFB\u53D6\u8FD9\u4E2A\u5B58\u6863\uFF1A" + messageOf(error);
+      if (state2.controller === controller && !cancelError(error)) state2.error = "\u6CA1\u80FD\u8BFB\u53D6\u8FD9\u4E2A\u5B58\u6863\uFF1A" + messageOf(error);
     } finally {
       if (state2.controller === controller) {
         state2.loading = false;

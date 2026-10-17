@@ -175,3 +175,78 @@ test('ZIP 解码拒绝符号链接、重复路径、解压炸弹和损坏边界'
   const badEocd = Buffer.concat([makeZip([['state.json', state]]), Buffer.from('trailing')])
   assert.throws(() => readZip(badEocd), /目录无效/)
 })
+
+test('完整包含可选动作的自定义皮肤不会被误报缺少图片', () => {
+  const s = setup()
+  try {
+    const scenes = [...REQUIRED_SKIN_SCENES, 'work']
+    s.state.customSkins = [{ key: 'fox', art: 'custom-fox', label: '狐狸', scenes }]
+    mkdirSync(join(s.root, 'skins'), { recursive: true })
+    for (const scene of scenes) writeFileSync(join(s.root, 'skins', `custom-fox${scene === 'idle' ? '' : '-' + scene}.svg`), skinSvg)
+    const exported = createSaveArchive({ statePath: s.statePath, state: s.state, gameVersion: 'x', nowMs: NOW })
+    assert.deepEqual(exported.summary.warnings ?? [], [])
+    const parsed = parseSaveArchive(exported.buffer, { nowMs: NOW })
+    assert(!parsed.warnings.some(warning => warning.includes('皮肤')))
+  } finally { s.cleanup() }
+})
+
+test('缺少必需动作时即使文件数相同也要提示缺图', () => {
+  const s = setup()
+  try {
+    const scenes = [...REQUIRED_SKIN_SCENES, 'work']
+    s.state.customSkins = [{ key: 'fox', art: 'custom-fox', label: '狐狸', scenes }]
+    mkdirSync(join(s.root, 'skins'), { recursive: true })
+    for (const scene of ['idle', 'eat', 'bathe', 'play', 'work']) {
+      writeFileSync(join(s.root, 'skins', `custom-fox${scene === 'idle' ? '' : '-' + scene}.svg`), skinSvg)
+    }
+    const exported = createSaveArchive({ statePath: s.statePath, state: s.state, gameVersion: 'x', nowMs: NOW })
+    assert((exported.summary.warnings ?? []).some(warning => warning.includes('fox') && warning.includes('缺少图片')))
+    const parsed = parseSaveArchive(exported.buffer, { nowMs: NOW })
+    assert(parsed.warnings.some(warning => warning.includes('fox') && warning.includes('缺少图片')))
+  } finally { s.cleanup() }
+})
+
+test('皮肤记录里的 art 与 key 不一致时按 key 校验，不导入错名字的图片', () => {
+  const state = Buffer.from(JSON.stringify({ version: 14,
+    customSkins: [{ key: 'fox', art: 'custom-evil', label: '狐狸', scenes: REQUIRED_SKIN_SCENES }] }))
+  const entries = new Map([['state.json', state]])
+  for (const scene of REQUIRED_SKIN_SCENES) {
+    entries.set(`skins/custom-evil${scene === 'idle' ? '' : '-' + scene}.svg`, skinSvg)
+  }
+  assert.throws(() => parseSaveArchive(archiveWith(entries), { nowMs: NOW }), /未登记或未校验/)
+})
+
+test('损坏的 customSkins 形状只忽略记录，不让预览抛原始 TypeError', () => {
+  const legacy = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14,
+    customSkins: { fox: { key: 'fox' } } })), { nowMs: NOW })
+  assert.deepEqual(legacy.summary.skins, [])
+  const zipState = Buffer.from(JSON.stringify({ version: 14, customSkins: 5 }))
+  const parsed = parseSaveArchive(archiveWith(new Map([['state.json', zipState]])), { nowMs: NOW })
+  assert.deepEqual(parsed.summary.skins, [])
+})
+
+test('旧 JSON 的版本号不是整数时拒绝而不是当成旧档迁移', () => {
+  assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify({ version: '999', name: '未来猪' })), { nowMs: NOW }), /版本/)
+  assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify({ version: 13.5, name: '半档' })), { nowMs: NOW }), /版本/)
+})
+
+test('导出的文件名使用本机时间，和预览里的备份时间一致', () => {
+  const s = setup()
+  try {
+    const exported = createSaveArchive({ statePath: s.statePath, state: s.state, gameVersion: 'x', nowMs: NOW })
+    const date = new Date(NOW), pad = value => String(value).padStart(2, '0')
+    const local = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`
+    assert.equal(exported.name, `piggy-save-${local}.zip`)
+  } finally { s.cleanup() }
+})
+
+test('自定义皮肤记录数量超过上限时拒绝，避免恶意存档撑爆快照', () => {
+  const customSkins = Array.from({ length: 129 }, (_, index) => ({ key: `skin${index}`, scenes: REQUIRED_SKIN_SCENES }))
+  assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify({ version: 14, customSkins })), { nowMs: NOW }), /皮肤数量/)
+  assert.throws(() => parseSaveArchive(archiveWith(new Map([['state.json', Buffer.from(JSON.stringify({ version: 14, customSkins }))]])), { nowMs: NOW }), /皮肤数量/)
+  const s = setup()
+  try {
+    s.state.customSkins = customSkins
+    assert.throws(() => createSaveArchive({ statePath: s.statePath, state: s.state, gameVersion: 'x', nowMs: NOW }), /皮肤数量/)
+  } finally { s.cleanup() }
+})

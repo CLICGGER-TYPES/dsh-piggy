@@ -249,3 +249,95 @@ test('rollback failure faults the runtime closed until a new runtime recovers th
     rmSync(root, { recursive: true, force: true })
   }
 })
+
+test('回滚成功但重开旧存档失败时，运行时进入故障态而不是半开', async () => {
+  const root = directory(), statePath = path.join(root, 'faulted-reopen.json')
+  const old = hatchEgg(NOW); old.name = '回滚后的小猪'
+  writeFileSync(statePath, JSON.stringify(old))
+  let headerCalls = 0, runtime, retry
+  const journalHeader = new Proxy({}, { ownKeys() {
+    headerCalls += 1
+    if (headerCalls >= 2) throw new Error('injected reopen failure')
+    return []
+  } })
+  try {
+    runtime = createGameRuntime({ statePath, now: () => NOW, journalHeader })
+    const incoming = hatchEgg(NOW); incoming.name = '待导入的小猪'
+    const archive = createSaveArchive({ statePath: path.join(root, 'other-device.json'), state: incoming, nowMs: NOW })
+    const parsed = await preview(runtime, archive.buffer)
+    const result = await importToken(runtime, parsed.token)
+    assert.equal(result.status, 400)
+    assert.match(JSON.parse(result.body).error, /injected reopen failure/)
+    assert.equal(readJson(statePath).name, '回滚后的小猪')
+    assert.equal(readdirSync(root).some(name => name.startsWith('.piggy-save-import-')), false)
+
+    const state = await runtime.handle('GET', '/dsh-piggy/state')
+    const action = await runtime.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'name', name: '不该写进去' }))
+    assert.equal(state.status, 503)
+    assert.equal(action.status, 503)
+    assert.throws(() => runtime.acceptWorkEvent(event), error => error.status === 503)
+    assert.equal(readJson(statePath).name, '回滚后的小猪')
+
+    runtime.dispose()
+    runtime = null
+    retry = createGameRuntime({ statePath, now: () => NOW })
+    assert.equal(readJson(statePath).name, '回滚后的小猪')
+    assert.equal((await retry.handle('GET', '/dsh-piggy/state')).status, 200)
+  } finally {
+    runtime?.dispose(); retry?.dispose()
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('导入等待在途操作时，另一个窗口的预览不能撤销已提交的导入预览', async () => {
+  const root = directory(), statePath = path.join(root, 'preview-race.json')
+  const incoming = hatchEgg(NOW); incoming.name = '待导入的小猪'
+  writeFileSync(statePath, JSON.stringify(hatchEgg(NOW)))
+  let target, releaseFetch, fetchStarted = false
+  try {
+    target = createGameRuntime({ statePath, now: () => NOW,
+      fetch: () => { fetchStarted = true; return new Promise(resolve => { releaseFetch = resolve }) } })
+    const archive = createSaveArchive({ statePath: path.join(root, 'other-device.json'), state: incoming, nowMs: NOW })
+    const parsed = await preview(target, archive.buffer)
+    const active = target.handle('GET', '/dsh-piggy/extensions/online?force=1')
+    while (!fetchStarted) await new Promise(resolve => setImmediate(resolve))
+
+    let importing = null
+    const importingResult = target.handle('POST', '/dsh-piggy/save/import', JSON.stringify({ token: parsed.token }))
+      .then(result => { importing = result; return result })
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(importing, null, 'import is waiting for the active route')
+
+    const otherPreview = await target.handle('POST', '/dsh-piggy/save/preview', Buffer.from(JSON.stringify({ version: 14, name: '另一个窗口' })))
+    assert.equal(otherPreview.status, 503)
+
+    releaseFetch({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ extensions: [] }) })
+    const [activeResult, imported] = await Promise.all([active, importingResult])
+    assert.equal(activeResult.status, 200)
+    assert.equal(imported.status, 200, String(imported.body))
+    assert.equal(readJson(statePath).name, incoming.name)
+  } finally {
+    releaseFetch?.({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ extensions: [] }) })
+    target?.dispose()
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('预览提示过多时截断，恶意存档不能撑爆界面', async () => {
+  const root = directory(), statePath = path.join(root, 'many-warnings.json')
+  writeFileSync(statePath, JSON.stringify(hatchEgg(NOW)))
+  let runtime
+  try {
+    runtime = createGameRuntime({ statePath, now: () => NOW })
+    const extData = Object.fromEntries(Array.from({ length: 200 }, (_, index) => [`ext${index}`, {}]))
+    const response = await runtime.handle('POST', '/dsh-piggy/save/preview', Buffer.from(JSON.stringify({ version: 14, extData })))
+    assert.equal(response.status, 200, String(response.body))
+    const body = JSON.parse(response.body)
+    assert.ok(body.warnings.length <= 51, `warnings=${body.warnings.length}`)
+    assert.ok(body.summary.warnings.length <= 51, `summary warnings=${body.summary.warnings.length}`)
+    assert.match(body.warnings.at(-1), /另有/)
+  } finally {
+    runtime?.dispose()
+    rmSync(root, { recursive: true, force: true })
+  }
+})

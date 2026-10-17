@@ -6,24 +6,30 @@ import { migrate } from '../core.js'
 import { STATE_VERSION } from '../packages/pet-core/src/core/constants.js'
 import { levelFor } from '../packages/pet-core/src/core/clock.js'
 import { officialList, isOfficial } from '../store/ext-import.js'
-import { CODE_FILES, assetNames, fileList } from '../store/ext-files.js'
+import { assetNames, fileList } from '../store/ext-files.js'
 import { REQUIRED_SKIN_SCENES, SKIN_SCENES } from '../packages/pet-core/src/data/skins.js'
 import { validateSkinFiles } from '../store/skin-pack.js'
 import { validateWorkEvent, workEventKey } from './work-events.js'
 import { makeZip, readZip } from './save-zip.js'
 
 const MAX_FILES = 512
+// 每个皮肤至少 5 张必需动作图；512 文件上限下不可能有这么多完整皮肤，
+// 这个上限只用于挡住「大量空皮肤记录」撑爆快照。
+const MAX_SKINS = 128
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const safeKey = /^[a-z0-9-]{2,24}$/
+const skinKey = /^[a-z0-9](?:[a-z0-9-]{0,22}[a-z0-9])?$/
 const SAFE_SKIN_SVG = Buffer.from('<svg viewBox="0 0 64 64"></svg>')
 
 function skinFilesFor(skin, available) {
-  const art = typeof skin?.art === 'string' && /^custom-[a-z0-9-]{1,41}$/.test(skin.art) ? skin.art : ''
+  // core 的 ensureSkins() 会按 key 重算 art；沿用存档里的 art 会让校验的文件和导入后实际加载的文件不一致。
+  const key = typeof skin?.key === 'string' && skinKey.test(skin.key) ? skin.key : ''
+  const art = key === '' ? '' : `custom-${key}`
   if (!art) return { files: new Map(), missing: true }
   const actual = new Map(), validation = new Map([['skin.json', Buffer.from(JSON.stringify({
     key: skin.key, label: skin.label, author: skin.author, description: skin.description, emoji: skin.emoji,
   }))]])
-  let found = false
+  const found = new Set()
   const declared = new Set(Array.isArray(skin.scenes) ? skin.scenes : [])
   for (const scene of SKIN_SCENES) {
     const stem = `skins/${art}${scene === 'idle' ? '' : '-' + scene}`
@@ -35,21 +41,23 @@ function skinFilesFor(skin, available) {
       continue
     }
     if (!declared.has(scene)) throw new Error(`皮肤 ${skin.key} 含有未登记的 ${scene} 文件`)
-    found = true; actual.set(`${stem}${png ? '.png' : '.svg'}`, body)
+    found.add(scene); actual.set(`${stem}${png ? '.png' : '.svg'}`, body)
     validation.set(`${scene}${png ? '.png' : '.svg'}`, body)
   }
-  if (!found) return { files: actual, missing: true }
+  if (found.size === 0) return { files: actual, missing: true }
   const checked = validateSkinFiles(validation)
   if (!checked.ok) throw new Error(`皮肤 ${skin.key} 文件无效：${checked.errors.join('；')}`)
-  return { files: actual, missing: actual.size !== REQUIRED_SKIN_SCENES.length }
+  return { files: actual, missing: REQUIRED_SKIN_SCENES.some(scene => !found.has(scene)) }
 }
 
 function collectSkinFiles(root, state) {
   const candidates = new Map(), out = new Map()
   for (const skin of Array.isArray(state.customSkins) ? state.customSkins : []) {
-    if (!/^custom-[a-z0-9-]{1,41}$/.test(skin?.art ?? '')) continue
+    const key = typeof skin?.key === 'string' && skinKey.test(skin.key) ? skin.key : ''
+    if (key === '') continue
+    const art = `custom-${key}`
     for (const scene of Array.isArray(skin.scenes) ? skin.scenes : []) if (SKIN_SCENES.includes(scene)) for (const ext of ['png', 'svg']) {
-      const relative = `${skin.art}${scene === 'idle' ? '' : '-' + scene}.${ext}`, path = join(root, relative)
+      const relative = `${art}${scene === 'idle' ? '' : '-' + scene}.${ext}`, path = join(root, relative)
       try {
         const stat = lstatSync(path)
         if (stat.isSymbolicLink() || !stat.isFile() || stat.size > 96 * 1024) continue
@@ -61,7 +69,7 @@ function collectSkinFiles(root, state) {
   for (const skin of Array.isArray(state.customSkins) ? state.customSkins : []) {
     const { files, missing } = skinFilesFor(skin, candidates)
     for (const [name, body] of files) out.set(name, body)
-    if (missing) warnings.push(`皮肤 ${skin.key ?? skin.art} 缺少图片`)
+    if (missing) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
   }
   return { files: out, warnings }
 }
@@ -97,11 +105,13 @@ function summaryFor(state, { gameVersion = '', createdAt = null, legacy = false,
   if (state === null) return { name: '未孵化', level: 1, createdAt, gameVersion, extensions: [], skins: [], legacy, ...(warnings.length ? { warnings: [...warnings] } : {}) }
   return { name: String(state.name ?? state.petName ?? '小猪'), level: levelFor(state.xp),
     createdAt, gameVersion, extensions: Object.keys(state.extData ?? {}).filter(safeKey.test.bind(safeKey)),
-    skins: (state.customSkins ?? []).map(skin => skin.key), legacy, ...(warnings.length ? { warnings: [...warnings] } : {}) }
+    skins: (Array.isArray(state.customSkins) ? state.customSkins : []).map(skin => skin?.key).filter(Boolean),
+    legacy, ...(warnings.length ? { warnings: [...warnings] } : {}) }
 }
 
 export function createSaveArchive({ statePath, state, gameVersion = '', nowMs = Date.now() }) {
   if (typeof statePath !== 'string' || !statePath || (state !== null && (typeof state !== 'object' || Array.isArray(state)))) throw new Error('没有可备份的有效存档')
+  if (state !== null && Array.isArray(state.customSkins) && state.customSkins.length > MAX_SKINS) throw new Error('自定义皮肤数量超过上限')
   const skinOutput = state === null ? { files: new Map(), warnings: [] } : collectSkinFiles(join(dirname(statePath), 'skins'), state)
   const files = new Map([['state.json', Buffer.from(JSON.stringify(state))], ...skinOutput.files])
   if (state !== null) for (const [name, body] of officialExtensionFiles(join(dirname(statePath), 'extensions'))) files.set(name, body)
@@ -122,8 +132,10 @@ export function createSaveArchive({ statePath, state, gameVersion = '', nowMs = 
   if (uncompressed + manifestBytes.length > 32 * 1024 * 1024 || manifestBytes.length > 8 * 1024 * 1024) throw new Error('存档内容超过备份上限')
   const buffer = makeZip([...files, ['backup.json', manifestBytes]])
   if (buffer.length > 32 * 1024 * 1024) throw new Error('存档 ZIP 超过大小上限')
-  const stamp = new Date(nowMs).toISOString().slice(0, 16), [day, time] = stamp.split('T')
-  return { buffer, name: `piggy-save-${day.replace(/-/g, '')}-${time.replace(':', '')}.zip`, summary: summaryFor(state, { gameVersion, createdAt: nowMs, warnings: skinOutput.warnings }) }
+  const date = new Date(nowMs), pad = value => String(value).padStart(2, '0')
+  const day = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
+  const time = `${pad(date.getHours())}${pad(date.getMinutes())}`
+  return { buffer, name: `piggy-save-${day}-${time}.zip`, summary: summaryFor(state, { gameVersion, createdAt: nowMs, warnings: skinOutput.warnings }) }
 }
 
 function validateReceipts(value) {
@@ -145,12 +157,15 @@ function validateName(name) {
 }
 
 export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
-  // Old transfer files were plain state.json documents.
+  // 旧版传输文件就是纯 state.json。
   if (Buffer.isBuffer(buffer) && buffer.length <= 8 * 1024 * 1024 && buffer.toString('utf8').trimStart().startsWith('{')) {
     let parsed; try { parsed = JSON.parse(buffer.toString('utf8')) } catch { throw new Error('旧存档 JSON 损坏') }
+    if (Array.isArray(parsed?.customSkins) && parsed.customSkins.length > MAX_SKINS) throw new Error('自定义皮肤数量超过上限')
     const warnings = []
     for (const key of Object.keys(parsed?.extData ?? {})) warnings.push(`扩展 ${key} 缺少程序文件，进度仍会保留`)
-    for (const skin of parsed?.customSkins ?? []) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
+    for (const skin of Array.isArray(parsed?.customSkins) ? parsed.customSkins : []) {
+      warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
+    }
     return parseState(parsed, { nowMs, legacy: true, files: new Map([['state.json', Buffer.from(JSON.stringify(parsed))]]), warnings })
   }
   const archive = readZip(buffer), manifestBytes = archive.get('backup.json')
@@ -167,6 +182,7 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
   }
   const stateBytes = files.get('state.json'); if (!stateBytes) throw new Error('存档缺少 state.json')
   let state; try { state = JSON.parse(stateBytes.toString('utf8')) } catch { throw new Error('state.json 损坏') }
+  if (Array.isArray(state?.customSkins) && state.customSkins.length > MAX_SKINS) throw new Error('自定义皮肤数量超过上限')
   if ((state?.version ?? 0) !== manifest.stateVersion) throw new Error('存档版本清单不匹配')
   const warnings = []
   const receiptsPath = 'state.json.work-events/receipts.json'
@@ -188,13 +204,13 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
   for (const key of Object.keys(state?.extData ?? {})) if (!extensionKeys.has(key)) warnings.push(`扩展 ${key} 缺少程序文件，进度仍会保留`)
   const skinCandidates = new Map([...files].filter(([name]) => name.startsWith('skins/')))
   const validatedSkinFiles = new Set()
-  for (const skin of state?.customSkins ?? []) {
+  for (const skin of Array.isArray(state?.customSkins) ? state.customSkins : []) {
     const { files: validated, missing } = skinFilesFor(skin, skinCandidates)
     for (const name of validated.keys()) {
       if (!skinCandidates.has(name)) throw new Error('皮肤文件清单无效')
       validatedSkinFiles.add(name)
     }
-    if (missing) warnings.push(`皮肤 ${skin.key ?? skin.art} 缺少图片`)
+    if (missing) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
   }
   for (const [name] of skinCandidates) if (!validatedSkinFiles.has(name)) throw new Error('存档含有未登记或未校验的皮肤文件')
   return parseState(state, { nowMs, legacy: false, files, warnings, gameVersion: manifest.gameVersion ?? '', createdAt: manifest.createdAt ?? null })
@@ -207,7 +223,9 @@ function parseState(input, { nowMs, legacy, files, warnings = [], gameVersion = 
     return { state: null, files, summary: summaryFor(null, { gameVersion, createdAt, legacy, warnings }), warnings }
   }
   if (typeof input !== 'object' || Array.isArray(input)) throw new Error('存档内容无效')
-  if (typeof input.version === 'number' && input.version > STATE_VERSION) throw new Error('存档版本高于当前支持版本')
+  if (Array.isArray(input.customSkins) && input.customSkins.length > MAX_SKINS) throw new Error('自定义皮肤数量超过上限')
+  if (input.version !== undefined && (!Number.isSafeInteger(input.version) || input.version < 0)) throw new Error('存档版本无效')
+  if (input.version > STATE_VERSION) throw new Error('存档版本高于当前支持版本')
   const state = migrate(structuredClone(input), nowMs)
   if (!state) throw new Error('存档内容无效')
   files.set('state.json', Buffer.from(JSON.stringify(state)))
