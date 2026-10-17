@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const scriptPath = fileURLToPath(new URL('../scripts/gitee-release.mjs', import.meta.url))
 const releases = [
@@ -68,7 +68,7 @@ function prune(tag) {
     const deletes = join(dir, 'deletes.jsonl')
     writeFileSync(preload, preloadSource)
     writeFileSync(deletes, '')
-    const output = execFileSync(process.execPath, ['--import', preload, scriptPath, 'prune', tag], {
+    const output = execFileSync(process.execPath, ['--import', pathToFileURL(preload).href, scriptPath, 'prune', tag], {
       env: {
         ...process.env,
         GITEE_TOKEN: 'mock-token',

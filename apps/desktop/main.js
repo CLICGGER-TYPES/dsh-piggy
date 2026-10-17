@@ -287,22 +287,47 @@ function applyBounds(next, why) {
 }
 
 /**
- * Windows 上不用 setShape，改用「鼠标穿透 + 页面判断鼠标在不在猪/面板上」：
+ * Windows 上不用 setShape，改用鼠标穿透：现代游戏由主进程轮询命中，旧游戏由页面上报。
  * setShape 在 Windows 上是 SetWindowRgn，开关面板时可点区域整块变化，透明分层窗口会闪一下白
  * （用户 2026-10-05：装了 0.2.5 右键开关菜单仍闪白屏）。穿透模式下窗口区域从不变化。
  * PIGGY_SHAPE=1 可退回旧做法，方便对比排查。
  */
 const PASSTHROUGH = process.platform === 'win32' && process.env.PIGGY_SHAPE !== '1'
 let passthroughHit = false
+let passthroughForward = null
+/** 未知能力不安装全局转发钩子；有效 place 确认现代能力后不再降级（2026-10-16）。 */
+let passthroughMode = 'unknown'
 let hitTimer = null
 function setHit(hit) {
-  if (!PASSTHROUGH || win === null || win.isDestroyed() || hit === passthroughHit) return
+  if (!PASSTHROUGH || win === null || win.isDestroyed()) return
+  const forward = passthroughMode === 'legacy'
+  if (hit === passthroughHit && forward === passthroughForward) return
   passthroughHit = hit
-  win.setIgnoreMouseEvents(!hit, { forward: true })
+  passthroughForward = forward
+  win.setIgnoreMouseEvents(!hit, { forward })
 }
 
-/** Forwarded mousemove can be missed when crossing directly onto an ignored window.
- * Read the cursor in the main process so the first click already reaches the pig. */
+function setLegacyHit(hit = passthroughHit) {
+  if (passthroughMode === 'modern') return
+  passthroughMode = 'legacy'
+  setHit(hit)
+}
+
+/** 只把合法的窗口协议消息作为能力证据，不能让坏消息启用全局转发。 */
+function isMouseRect(rect) {
+  return rect != null && [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)
+    && rect.width >= 0 && rect.height >= 0
+}
+function isMouseShape(rects) {
+  return Array.isArray(rects) && rects.every(isMouseRect)
+}
+function isPlaceRequest(request) {
+  return request !== null && typeof request === 'object' && !Array.isArray(request)
+    && [request.bounds, request.pig].every(rect => rect === undefined || (isMouseRect(rect) && rect.width > 0 && rect.height > 0))
+    && (request.shape === undefined || isMouseShape(request.shape))
+}
+
+/** 穿透窗口可能收不到第一次 mousemove；主进程读取光标，保证首次点击就能命中猪。 */
 function refreshHit() {
   if (!PASSTHROUGH || !hasPlacedShape || win === null || win.isDestroyed() || dragSession !== null) return
   setHit(pointerHitsShape(screen.getCursorScreenPoint(), win.getBounds(), placedShape))
@@ -361,7 +386,8 @@ function createWindow() {
   // 以前这里先 applyShape([]) 再按兜底尺寸显示、随后 resize，共享 rootless Xwayland
   // 会把新尺寸 damage 复制进旧尺寸缓冲，在 pixman_blt 里 SIGSEGV。
   showGate = createShowGate({ platform: process.platform })
-  if (PASSTHROUGH) { passthroughHit = true; setHit(false) }
+  // 页面还没报猪在哪时完全穿透，也不启用未知游戏的鼠标转发。
+  if (PASSTHROUGH) { passthroughMode = 'unknown'; passthroughForward = null; setHit(false) }
   if (PASSTHROUGH) {
     hitTimer = setInterval(refreshHit, 16)
     hitTimer.unref?.()
@@ -405,12 +431,14 @@ ipcMain.on('piggy:content', (event, content) => {
     if (content?.immediate === true) event.returnValue = null
     return
   }
-  const width = Number(content?.width)
-  const height = Number(content?.height)
-  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+  const width = content?.width
+  const height = content?.height
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0
+    || (content.shape !== undefined && !isMouseShape(content.shape))) {
     if (content?.immediate === true) event.returnValue = null
     return
   }
+  setLegacyHit()
   const anchor = { vertical: content?.anchor?.vertical === 'top' ? 'top' : 'bottom', horizontal: content?.anchor?.horizontal === 'left' ? 'left' : 'right' }
   const bounds = win.getBounds()
   const pigWindow = { x: Number(content?.pigWindow?.x), y: Number(content?.pigWindow?.y) }
@@ -607,7 +635,11 @@ ipcMain.on('piggy:drag:end', event => {
  * 同步返回改完后的几何，页面同一轮里就能接着用。以后这类调整只发游戏包，不用再发桌面程序。
  */
 ipcMain.on('piggy:place', (event, request) => {
-  if (!fromPet(event)) { event.returnValue = null; return }
+  if (!fromPet(event) || !isPlaceRequest(request)) { event.returnValue = null; return }
+  if (passthroughMode !== 'modern') {
+    passthroughMode = 'modern'
+    setHit(passthroughHit)
+  }
   const b = request?.bounds
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
     applyBounds({ x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }, 'place')
@@ -645,9 +677,9 @@ ipcMain.on('piggy:place', (event, request) => {
 
 /** 页面判断鼠标在不在猪/面板上（只在 Windows 穿透模式下生效）。 */
 ipcMain.on('piggy:hit', (event, hit) => {
-  if (!fromPet(event)) return
+  if (!fromPet(event) || typeof hit !== 'boolean') return
   if (hasPlacedShape) return
-  setHit(hit === true)
+  setLegacyHit(hit)
 })
 
 /** 旧游戏包（0.27.2 及以前）只会发鼠标增量：照旧支持，回退版本时拖动不坏。 */
@@ -662,8 +694,9 @@ ipcMain.on('piggy:move', (event, delta) => {
 })
 
 ipcMain.on('piggy:shape', (event, rects) => {
-  if (lastShape.length === 0 && Array.isArray(rects) && rects.length > 0) log('first shape', JSON.stringify(rects))
-  if (!fromPet(event) || !Array.isArray(rects)) return
+  if (!fromPet(event) || !isMouseShape(rects)) return
+  if (lastShape.length === 0 && rects.length > 0) log('first shape', JSON.stringify(rects))
+  setLegacyHit()
   lastShape = rects
   applyShape(rects.slice(0, 64).map(r => ({
     x: Math.round(Number(r.x) || 0), y: Math.round(Number(r.y) || 0),

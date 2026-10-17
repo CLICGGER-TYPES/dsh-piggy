@@ -7,6 +7,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- Windows 桌面版：未知游戏能力时不启用全局鼠标转发；只有合法的旧版内容、形状或命中上报才开启。现代游戏首次有效 `place` 后持续关闭转发，改由现有主进程轮询判断命中；能力变化时即使命中相同也刷新选项。保留拖动捕获、心跳和同步几何确认。
 - 桌面版（Linux）：启动时先按页面报上来的真实尺寸和可点形状摆好窗口，再显示；不再先按兜底尺寸显示、随后 resize。共享 rootless Xwayland（24.1.10）在窗口形状为空时 resize 会跳过旧缓冲释放，把新尺寸的 damage 复制进旧尺寸缓冲，在 `pixman_blt` 里 SIGSEGV；本次改动避开该路径，Windows / macOS 的显示时机不变。
 
 ## [0.37.1-rc.2] — 2026-10-18 · 存档导入导出、动作时头顶不再被裁（预发布；外壳 0.6.7-rc.2）

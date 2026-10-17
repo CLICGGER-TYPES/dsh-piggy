@@ -33,6 +33,12 @@
 - 游戏包要兼容「新游戏包 + 刚好满足 minShell 的旧外壳」：用新动作前先 `typeof shell.xxx === 'function'`。
 - 外壳要兼容「老游戏包」：老游戏包会退回外壳自带的 `renderer/shell.js` 和下表「旧」消息，别删。
 
+### Windows 鼠标转发
+
+默认穿透模式下，窗口启动时完全穿透且 `forward:false`。只有猪窗口发来的合法 `piggy:content`、`piggy:shape` 或布尔 `piggy:hit` 才确认旧版能力并开启转发；面板、扩展及非法消息不作为能力证据。
+
+首次有效 `piggy:place`（含同步读取几何的 `place({})`）确认现代能力，此后保持 `forward:false`，迟到的旧消息不会降级。现代游戏上报形状后，主进程每 16ms 读取光标判断命中；命中与转发选项一起去重，能力变化时即使命中相同也重新设置。拖动捕获、心跳和松手后的同步几何屏障保持原流程。Linux、macOS 和 `PIGGY_SHAPE=1` 不走这条转发路径。
+
 ## IPC 消息全表
 
 页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧在 `apps/desktop/main.js`，
