@@ -7,6 +7,7 @@ import { createContext, runInContext } from 'node:vm'
 import * as geometry from '../lib/window-geometry.js'
 import { dragHeartbeatExpired } from '../lib/drag-watchdog.js'
 import { pointerHitsShape } from '../lib/pointer-hit.js'
+import { SHOW_FALLBACK_MS, createShowGate } from '../lib/window-show.js'
 
 const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
 const SHAPE = [{ x: 20, y: 30, width: 60, height: 60 }]
@@ -32,7 +33,7 @@ function mouseHarness({ platform = 'win32', env = {} } = {}) {
     on() {}
   }
   const context = createContext({
-    ...geometry, pointerHitsShape, dragHeartbeatExpired,
+    ...geometry, pointerHitsShape, dragHeartbeatExpired, SHOW_FALLBACK_MS, createShowGate,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     win: null, quitting: false, petAsked: null, panelPig: null, dragStats: null,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
@@ -227,6 +228,7 @@ for (const options of [{ platform: 'linux' }, { platform: 'darwin' }, { env: { P
     shell.send('piggy:place', { shape: SHAPE })
     assert.deepEqual(shell.mouse, [])
     assert.equal(shell.intervals.length, 0)
-    assert.equal(shell.shapes.length, options.platform === 'darwin' ? 0 : 2)
+    // 启动不再先设空形状（Linux 防 Xwayland resize 崩溃），只有 place 这一次。
+    assert.equal(shell.shapes.length, options.platform === 'darwin' ? 0 : 1)
   })
 }

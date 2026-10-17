@@ -10,7 +10,9 @@
 
 ### 当前状态（2026-10-18）
 
-- **0.37.1-rc.2 集成候选已就绪，未发布**：集成分支 `rc/0.37.1-rc.2` 已合并存档导入导出（`9523a86`，含 pi/DSH 两侧复核修复）和桌面动作形状修复（`8504838`）；游戏/别名包 `0.37.1-rc.2`、外壳 `0.6.7-rc.2`，存档 v14 不变。主机全量 **1231/1231**、build/typecheck 与 `git diff --check` 通过，`client.js` 已重建。未 push、未打标签、未发布；等待维护者验收后按第 9 节执行，npm 仍由维护者手动发。
+- **0.37.1-rc.3 集成候选已就绪，未发布**：分支 `rc/0.37.1-rc.3` 基于 main `b8f6c92`（v0.37.1-rc.2），已合并 Linux Xwayland/pixman 启动崩溃修复（`995b324`，应用侧规避）和 PR #19 `fa2e9ee`（WolalaQAQ，按游戏能力控制 Windows 鼠标转发，保留作者提交与署名）；游戏/别名包 `0.37.1-rc.3`、外壳 `0.6.7-rc.3`，存档 v14 不变。主机全量 **1257/1257**、build/typecheck 与 `git diff --check` 通过，`client.js` 重建后无差异。未 push、未打标签、未发布；等维护者早上验收后按第 9 节执行，npm 仍由维护者手动发。魔法师新图（待用户审）与 PR #15（P1 待作者修）未并入。
+
+- **0.37.1-rc.2 已发布**：main `b8f6c92`，标签 `v0.37.1-rc.2`；内容为存档导入导出、Linux 动作形状修复与既有桌面体验修复，发行说明见 [CHANGELOG](../CHANGELOG.md)。其上的 rc.3 只增加 Linux 启动崩溃修复和 Windows 鼠标转发调整，不改变存档格式。
 
 - **晚间 RC 已发布**：游戏/别名源码 `0.37.1-rc.1`、外壳 `0.6.7-rc.1`，存档 v14 不变；[GitHub RC](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.1) 与 [Gitee RC](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.1) 均已发布，农场 4.0.9 / 矿洞 3.0.1 两渠道正常 UI 在线安装通过。主机全量 1154/1154，Windows 125% + Electron DPR2 对照、本体/面板摸摸和退出重开通过，实际系统 200% 未覆盖；Linux rootless/macOS 限制保留。GitHub provider 在各 release 下使用 latest 清单，Gitee generic 使用 rc；首次 GitHub 检查假设错误已修正，原标签补构建全绿，未移动标签。#12/#13/#14/#15/#16/#17/#18 均已按各自范围回复，README 与发行说明已感谢贡献者。npm 未发布，维护者明早手动使用预发布 dist-tag。当前状态以 [ROADMAP](ROADMAP.md) 为准。
 

@@ -21,7 +21,7 @@
   </tr>
 </table>
 
-以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9** 的实际截图（主菜单和小农场页面本次未改）；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。本次游戏和外壳为 RC 预发布；稳定版仍为游戏 **0.37.0 / 外壳 0.6.6**。在线菜园已更新到 **4.0.9**。
+以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9** 的实际截图（主菜单和小农场页面本次未改）；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。本次游戏和外壳为 **0.37.1-rc.3 / 0.6.7-rc.3** RC 预发布；稳定版仍为游戏 **0.37.0 / 外壳 0.6.6**。在线菜园已更新到 **4.0.9**。
 
 ## 安装
 
@@ -78,20 +78,20 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 遇到问题时，可到「设置 → 日志 → 导出日志」保存运行记录；桌面版会弹出“另存为”。日志包含版本、动作、扩展下载与报错，方便反馈时定位。
 
-## 本次 RC：0.37.1-rc.2（预发布）
+## 本次 RC：0.37.1-rc.3（预发布）
 
 | 部分 | 版本 |
 |---|---|
-| 游戏与 DSH 插件 | 0.37.1-rc.2 |
-| 桌面外壳 | 0.6.7-rc.2 |
+| 游戏与 DSH 插件 | 0.37.1-rc.3 |
+| 桌面外壳 | 0.6.7-rc.3 |
 | 菜园扩展 | 4.0.9，单独发布 |
 | 矿洞扩展 | 3.0.1，单独发布 |
 
-这次新增「设置 → 存档」：导出完整存档 ZIP，带到另一台设备或另一份安装里预览、自动备份后导入，DSH 和桌面可以互相搬运。也修复了 Linux 桌面版喂食、玩耍、摸头时画面上沿被原生窗口形状裁掉的问题，戴帽子的猪也能完整显示。存档导入导出、动作形状和此前的桌面体验修复都在本版里；完整改动见 [CHANGELOG](CHANGELOG.md)。
+这次修复了 Linux 桌面版在部分 GNOME/Wayland 环境一启动就让共享 Xwayland 崩溃的问题：现在先等页面报上真实尺寸和可点范围、把窗口摆好，再显示。Windows 桌面版改为按游戏版本决定鼠标转发方式，新版游戏不再额外开启全局转发，旧版游戏和拖动、面板操作保持原样。0.37.1-rc.2 的「设置 → 存档」和动作形状修复也在本版里；完整改动见 [CHANGELOG](CHANGELOG.md)。
 
-**已知限制：** Linux 部分 GNOME/rootless Xwayland 环境仍有 pixman 启动崩溃，尚未解决；隔离显示的测试通过不能代替这些环境的验收。macOS 点击远处透明空白的问题尚未实机验证。本次不宣称已修复这些问题，也不保证完全排除单帧残影。存档导入导出会替换当前猪，不合并两只猪；正式版发布前请先保留自己的备份。
+**已知限制：** Linux 的修复是应用侧规避，不是给 Xwayland 打补丁，其它 Electron 应用仍可能遇到同一问题。macOS 点击远处透明空白的问题尚未实机验证，单帧残影也未完全排除；本次不宣称已修复这些。存档导入导出会替换当前猪，不合并两只猪；正式版发布前请先保留自己的备份。
 
-RC 下载：[GitHub v0.37.1-rc.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.2) / [Gitee v0.37.1-rc.2](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.2)。稳定版更新提示不会把 RC 当成正式版推荐。npm 暂未同步，默认 DSH 安装命令仍安装稳定版；提前测试可从本标签源码安装。
+RC 下载：[GitHub v0.37.1-rc.3](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.3) / [Gitee v0.37.1-rc.3](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.3)。稳定版更新提示不会把 RC 当成正式版推荐。npm 暂未同步，默认 DSH 安装命令仍安装稳定版；提前测试可从本标签源码安装。
 
 ## 文档与开发
 
@@ -123,7 +123,7 @@ npm run typecheck
 | [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)） |
 | [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题（[#5](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/5)） |
 | [@tetezi](https://github.com/tetezi) | 面板动作时猪窗口置顶、右键不误摸、脏和生病状态的苍蝇/病毒图标、恢复桌面版状态变色与心情优先级调整，附回归测试（[#8](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/8)，随 [#9](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/9) 合入） |
-| [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)） |
+| [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；按游戏能力控制 Windows 鼠标转发（[#19](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/19)），并协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)） |
 | [@Flappy-Boy](https://github.com/Flappy-Boy) | 反馈更新说明滚动回顶、菜园快速点击丢操作、矿洞连续挖掘站位异常，并提供复现步骤（[#16](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/16)、[#17](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/17)、[#18](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/18)） |
 
 想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)（Gitee 用户可以在 [Gitee 仓库](https://gitee.com/clicgger/dsh-piggy) 提 Issue）。合并进来的贡献会记在这张表里。
