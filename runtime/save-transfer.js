@@ -1,11 +1,12 @@
 // @ts-check
-/** Shared binary routes; parsing a preview never writes into the target save. */
+/** 共享的二进制路由；预览只解析，不写目标存档。 */
 import { randomUUID } from 'node:crypto'
 import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 import { PACKAGE_VERSION } from '../snapshot.js'
 
 const LIMIT = 32 * 1024 * 1024
 const TTL = 10 * 60 * 1000
+const WARNING_LIMIT = 50
 const send = (res, code, value) => {
   res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
   res.end(JSON.stringify(value))
@@ -22,7 +23,7 @@ async function read(req, limit) {
   return Buffer.concat(chunks)
 }
 
-export function createSaveTransfer({ statePath, getStore, exclusive, replace, now = Date.now }) {
+export function createSaveTransfer({ statePath, getStore, exclusive, replace, now = Date.now, isBusy = () => false }) {
   const previews = new Map()
   const archive = () => createSaveArchive({ statePath, state: getStore().state, gameVersion: PACKAGE_VERSION, nowMs: now() })
   const route = (suffix, method, action) => ({ kind: 'exact', path: `/dsh-piggy/save/${suffix}`,
@@ -48,14 +49,19 @@ export function createSaveTransfer({ statePath, getStore, exclusive, replace, no
       }),
       route('preview', 'POST', async (req, res) => {
         const input = await read(req, LIMIT)
+        // 读请求体会让出事件循环，期间可能已经开始导入/导出；另一个窗口的预览不能清掉已被接受的导入令牌。
+        if (isBusy()) throw Object.assign(new Error('正在处理存档，请稍后重试'), { status: 503 })
         for (const [token, entry] of previews) if (entry.expires <= now()) previews.delete(token)
-        // One pending file per runtime keeps uncompressed payloads bounded in memory.
+        // 每个运行时只保留一份待确认预览，未压缩内容不会无限堆积。
         previews.clear()
         const parsed = parseSaveArchive(input, { nowMs: now() })
         const token = randomUUID()
         previews.set(token, { parsed, expires: now() + TTL })
-        const summary = { ...parsed.summary, extensions: parsed.summary.extensions.length, skins: parsed.summary.skins.length }
-        send(res, 200, { ok: true, token, summary, warnings: parsed.warnings })
+        const allWarnings = Array.isArray(parsed.warnings) ? parsed.warnings : []
+        const warnings = allWarnings.slice(0, WARNING_LIMIT)
+        if (allWarnings.length > WARNING_LIMIT) warnings.push(`另有 ${allWarnings.length - WARNING_LIMIT} 条提示`)
+        const summary = { ...parsed.summary, extensions: parsed.summary.extensions.length, skins: parsed.summary.skins.length, warnings }
+        send(res, 200, { ok: true, token, summary, warnings })
       }),
       route('import', 'POST', async (req, res) => {
         const body = JSON.parse((await read(req, 2048)).toString('utf8'))

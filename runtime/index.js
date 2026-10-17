@@ -82,7 +82,7 @@ export function createGameRuntime(options) {
     }
   }
   const transfer = createSaveTransfer({ statePath: options.statePath, getStore: () => store,
-    now: options.now, exclusive, async replace(files, backup) {
+    now: options.now, exclusive, isBusy: () => busy, async replace(files, backup) {
       store.dispose()
       try {
         const result = await commitSaveImport({ statePath: options.statePath, files, backup,
@@ -105,14 +105,22 @@ export function createGameRuntime(options) {
         }
         return result
       } catch (error) {
-        // Cancel any timer belonging to a partially activated imported Store before recovery.
+        // 回滚前先撤掉部分激活的新 Store 的定时器，别让它写回旧档。
         store.installCommittedState(null)
         store.dispose()
         if (error.recoveryError) {
           try { recoverSaveImportSync(options.statePath) }
           catch (recoveryError) { fault = recoveryError; throw error }
         }
-        open()
+        try {
+          open()
+        } catch (reopenError) {
+          // 回滚已恢复旧档，但运行时重开失败；不能让旧路由配新 store 继续跑，故障关闭等重启。
+          store.installCommittedState(null)
+          store.dispose()
+          fault = reopenError
+          throw error
+        }
         throw error
       }
     } })

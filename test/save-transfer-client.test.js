@@ -178,3 +178,133 @@ test('an older shell without native save downloads the same ZIP bytes', async t 
     assert.deepEqual(dom.ui.messages, ['存档已下载'])
   } finally { globalThis.document = oldDocument; globalThis.window = oldWindow; globalThis.fetch = oldFetch }
 })
+
+test('保存选择器被权限策略挡住时回退到浏览器下载，不静默取消', async t => {
+  const oldDocument = globalThis.document, oldWindow = globalThis.window, oldFetch = globalThis.fetch
+  const dom = fixture(), downloads = [], blobs = []
+  const bytes = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0xff])
+  const createElement = dom.document.createElement.bind(dom.document)
+  dom.document.createElement = tag => {
+    const node = createElement(tag)
+    if (tag === 'a') node.click = () => downloads.push({ name: node.download, href: node.href })
+    return node
+  }
+  globalThis.document = dom.document
+  globalThis.window = {
+    showSaveFilePicker: async () => { throw Object.assign(new Error('blocked by permissions policy'), { name: 'NotAllowedError' }) },
+    setTimeout: () => 1,
+  }
+  globalThis.fetch = async () => new Response(bytes, { headers: {
+    'content-disposition': 'attachment; filename="piggy-save-20261017-2030.zip"',
+  } })
+  t.mock.method(URL, 'createObjectURL', blob => { blobs.push(blob); return 'blob:picker-fallback' })
+  try {
+    const { renderSaveTransferSettings } = await import('../src/client/save-transfer.js?picker-fallback-test')
+    renderSaveTransferSettings(dom.ui, ui => {
+      const box = document.createElement('section'); ui.content.appendChild(box)
+      return { box, head: box }
+    })
+    dom.content.querySelector('[data-save-trigger="export"]').click()
+    await tick()
+    await tick()
+    assert.deepEqual(downloads, [{ name: 'piggy-save-20261017-2030.zip', href: 'blob:picker-fallback' }])
+    assert.deepEqual(new Uint8Array(await blobs[0].arrayBuffer()), bytes)
+    assert.deepEqual(dom.ui.messages, ['存档已下载'])
+  } finally {
+    globalThis.document = oldDocument
+    globalThis.window = oldWindow
+    globalThis.fetch = oldFetch
+  }
+})
+
+test('连续选择文件时，先到的旧预览响应不能覆盖后选的文件', async () => {
+  const oldDocument = globalThis.document, oldWindow = globalThis.window, oldFetch = globalThis.fetch
+  const dom = fixture()
+  let releaseFirst
+  const summary = name => ({ name, level: name === '第一个' ? 1 : 2, createdAt: null, gameVersion: 'x', extensions: 0, skins: 0 })
+  globalThis.fetch = async (url, options = {}) => {
+    if (url.endsWith('/preview')) {
+      if (new Uint8Array(options.body)[0] === 1) {
+        await new Promise(resolve => { releaseFirst = resolve })
+        return { ok: true, status: 200, async json() { return { ok: true, token: 'first', summary: summary('第一个'), warnings: [] } } }
+      }
+      return { ok: true, status: 200, async json() { return { ok: true, token: 'second', summary: summary('第二个'), warnings: [] } } }
+    }
+    return { ok: false, status: 500, async json() { return null } }
+  }
+  globalThis.document = dom.document
+  globalThis.window = { setTimeout: () => 1 }
+  try {
+    const { renderSaveTransferSettings } = await import('../src/client/save-transfer.js?stale-preview-test')
+    dom.ui.renderContent = () => {
+      dom.content.children.forEach(child => { child.parentNode = null })
+      dom.content.children = []
+      renderSaveTransferSettings(dom.ui, ui => {
+        const box = document.createElement('section'); ui.content.appendChild(box)
+        return { box, head: box }
+      })
+    }
+    dom.ui.renderContent()
+    dom.content.querySelector('[data-save-trigger="import"]').click()
+    const picker = dom.content.querySelector('[data-save-file="true"]')
+    picker.files = [{ arrayBuffer: async () => new Uint8Array([1]).buffer }]
+    picker.fire('change')
+    await tick()
+    assert.equal(typeof releaseFirst, 'function', 'first preview request is in flight')
+    picker.files = [{ arrayBuffer: async () => new Uint8Array([2]).buffer }]
+    picker.fire('change')
+    await tick()
+    await tick()
+    assert.match(dom.content.allText, /第二个/)
+    releaseFirst()
+    await tick()
+    await tick()
+    dom.ui.renderContent()
+    assert.match(dom.content.allText, /第二个/)
+    assert.doesNotMatch(dom.content.allText, /第一个/)
+  } finally {
+    globalThis.document = oldDocument
+    globalThis.window = oldWindow
+    globalThis.fetch = oldFetch
+  }
+})
+
+test('网页保存选择器选中文件后写盘失败要报错，不能再偷偷下载一份', async t => {
+  const oldDocument = globalThis.document, oldWindow = globalThis.window, oldFetch = globalThis.fetch
+  const dom = fixture(), downloads = [], blobs = []
+  const bytes = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0xff])
+  const createElement = dom.document.createElement.bind(dom.document)
+  dom.document.createElement = tag => {
+    const node = createElement(tag)
+    if (tag === 'a') node.click = () => downloads.push({ name: node.download, href: node.href })
+    return node
+  }
+  globalThis.document = dom.document
+  globalThis.window = {
+    showSaveFilePicker: async () => ({
+      createWritable: async () => ({ write: async () => { throw new Error('disk full') }, close: async () => {} }),
+    }),
+    setTimeout: () => 1,
+  }
+  globalThis.fetch = async () => new Response(bytes, { headers: {
+    'content-disposition': 'attachment; filename="piggy-save-20261017-2030.zip"',
+  } })
+  t.mock.method(URL, 'createObjectURL', blob => { blobs.push(blob); return 'blob:unexpected-download' })
+  try {
+    const { renderSaveTransferSettings } = await import('../src/client/save-transfer.js?picker-write-failure-test')
+    renderSaveTransferSettings(dom.ui, ui => {
+      const box = document.createElement('section'); ui.content.appendChild(box)
+      return { box, head: box }
+    })
+    dom.content.querySelector('[data-save-trigger="export"]').click()
+    await tick()
+    await tick()
+    assert.deepEqual(downloads, [])
+    assert.equal(blobs.length, 0)
+    assert(dom.ui.messages.some(message => message.includes('disk full')), `expected write error, got ${JSON.stringify(dom.ui.messages)}`)
+  } finally {
+    globalThis.document = oldDocument
+    globalThis.window = oldWindow
+    globalThis.fetch = oldFetch
+  }
+})

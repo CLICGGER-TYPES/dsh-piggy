@@ -45,15 +45,24 @@ async function saveBytes(name, bytes) {
   }
   const picker = typeof window === 'object' ? /** @type {any} */ (window).showSaveFilePicker : null
   if (typeof picker === 'function') {
+    let handle = null
     try {
-      const handle = await picker({ suggestedName: name, types: [{ description: '小猪存档', accept: { 'application/zip': ['.zip'] } }] })
-      const writable = await handle.createWritable()
-      await writable.write(bytes)
-      await writable.close()
-      return { ok: true }
+      handle = await picker({ suggestedName: name, types: [{ description: '小猪存档', accept: { 'application/zip': ['.zip'] } }] })
     } catch (error) {
-      if (cancelError(error)) return { canceled: true }
-      // Unsupported picker permissions still allow a normal browser download.
+      // AbortError 是用户取消；NotAllowedError/SecurityError 表示选择器存在但这里用不了，继续走普通下载。
+      if (error?.name === 'AbortError') return { canceled: true }
+    }
+    if (handle !== null && handle !== undefined) {
+      try {
+        const writable = await handle.createWritable()
+        await writable.write(bytes)
+        await writable.close()
+        return { ok: true }
+      } catch (error) {
+        // 用户已经选好目标路径；写盘失败必须报出来，不能再偷偷下载一份。
+        if (error?.name === 'AbortError') return { canceled: true }
+        throw error
+      }
     }
   }
   const url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }))
@@ -147,10 +156,11 @@ async function previewFile(file) {
   try {
     const response = await fetch(PREVIEW_URL, { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: await file.arrayBuffer(), signal: controller.signal })
     const result = await response.json().catch(() => null)
+    if (state.controller !== controller) return
     if (!response.ok || result?.ok !== true || !result.token || !result.summary) throw new Error(result?.error || result?.reason || `宿主返回 HTTP ${response.status}`)
     state.preview = result
   } catch (error) {
-    if (!cancelError(error)) state.error = '没能读取这个存档：' + messageOf(error)
+    if (state.controller === controller && !cancelError(error)) state.error = '没能读取这个存档：' + messageOf(error)
   } finally {
     if (state.controller === controller) {
       state.loading = false
