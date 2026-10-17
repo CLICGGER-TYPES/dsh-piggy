@@ -29,6 +29,7 @@ export function installExt(bridge) {
     extKey: typeof bridge.extKey === 'string' ? bridge.extKey : null,
     ext: bridge.ext,
     proxy: bridge.proxy,
+    saves: bridge.saves,
     fullscreen: bridge.fullscreen,
     split: true,
     panel: bridge.panel,

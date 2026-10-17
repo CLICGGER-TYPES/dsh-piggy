@@ -70,7 +70,8 @@ export function wireSplit(ctx, hooks) {
       if (ctx.isOpen) ctx.setOpen(false)
     } else if (message.type === 'blur') {
       // 焦点到了猪身上（摸猪、拖猪）不收；到了别的程序上，按「点外面自动收起」的设置来。
-      if (message.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks.isFishing() || typing()) return
+      const saveTransferActive = ctx.content?.querySelector?.('[data-save-transfer-active="true"]')
+      if (message.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks.isFishing() || typing() || saveTransferActive) return
       ctx.setOpen(false)
     }
   })

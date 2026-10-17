@@ -15,6 +15,7 @@ import { str } from '../values.js'
 import { renderProxySettings } from './proxy.js'
 import { renderFullscreenSettings } from './fullscreen.js'
 import { extensionUpdateAvailable } from './extensions.js'
+import { renderSaveTransferSettings } from '../save-transfer.js'
 
 /** 一项设置：标题、说明，下面放控件。 */
 function section(ui, title, note) {
@@ -55,6 +56,8 @@ export function renderSettingsTab(ui) {
   openExtensions.textContent = '🧩 扩展'
   if (extFresh) openExtensions.appendChild(el('b', 'dp-tile-badge dp-update-dot', '!'))
   extensions.head.appendChild(openExtensions)
+
+  renderSaveTransferSettings(ui, section)
 
   const size = section(ui, '小猪大小', '普通猪、皮肤和睡姿一起调整；只改这台设备，不改存档')
   const sizeRow = el('div', 'dp-size-control')

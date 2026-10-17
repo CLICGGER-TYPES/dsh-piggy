@@ -1,5 +1,6 @@
 // 桌面版的页面桥：页面只能通过这几个口子跟主进程说话。
 const { contextBridge, ipcRenderer } = require('electron')
+const MAX_SAVE_BYTES = 128 * 1024 * 1024
 
 /** 最近一次主进程报来的窗口与工作区（同步读，页面随时能用）。 */
 let geometry = null
@@ -114,6 +115,14 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 设置 → 日志 → 导出：主进程弹系统「另存为」，写盘。 */
   logs: {
     save: (name, text) => ipcRenderer.invoke('piggy:save-log', { name: String(name), text: String(text) }),
+  },
+  /** 设置 → 存档 → 导出：主进程弹系统「另存为」，只接收 ZIP 字节。 */
+  saves: {
+    save: (name, bytes) => {
+      if (!(bytes instanceof Uint8Array)) return Promise.resolve({ ok: false, reason: '存档数据格式不正确' })
+      if (bytes.byteLength === 0 || bytes.byteLength > MAX_SAVE_BYTES) return Promise.resolve({ ok: false, reason: '存档大小无效或超过 128 MiB' })
+      return ipcRenderer.invoke('piggy:save-archive', { name: String(name), bytes })
+    },
   },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
