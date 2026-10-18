@@ -10,6 +10,7 @@ import { artMarginFor } from '../art-framing.js'
 import { sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
+import { createWindowClamp } from './window-clamp.js'
 import { installPanel, startPanel } from './panel-window.js'
 import { installExt } from './ext-window.js'
 
@@ -52,6 +53,9 @@ let dragSlide = { x: 0, y: 0 }
 let measure = /** @type {any} */ (null)
 let placement = /** @type {any} */ (null)
 let lastKey = null
+/** 窗口管理器连续拒绝同一个目标时，接受它的实际位置，避免 place→被夹→再 place 的死循环。 */
+const windowClamp = createWindowClamp()
+let clampNotice = null
 let hitRects = []
 let lastHit = null
 let mouse = { x: -1, y: -1 }
@@ -144,6 +148,24 @@ function tick() {
     hitRects = next.shape
   }
   const move = !sameBounds(want, bounds, TOLERANCE)
+  // 同一个目标连续失败多次：以窗口管理器的实际位置为准重定家，只 place 一次实际位置。
+  // 不能在第一帧就接受 —— X11 的 setBounds 是异步的，刚开始回读可能还是旧值。
+  const clampState = windowClamp.observe(want, bounds)
+  if (clampState === 'accept') {
+    const pig = pigInWindow(bounds)
+    if (pig !== null) {
+      placement.acceptWindow(bounds, pig, areas)
+      const notice = JSON.stringify({ want, actual: bounds })
+      if (clampNotice !== notice) {
+        clampNotice = notice
+        console.warn('[piggy-desktop] wm clamp accepted ' + notice)
+      }
+      lastKey = null
+      // 同步主进程的 petAsked：下一次拖动/摆放从实际位置起步，不会先跳回被拒绝的目标。
+      bridge.place({ bounds: { ...bounds } })
+      return
+    }
+  }
   const key = measure.keyOf(next)
   if (!move && key === lastKey) return
   lastKey = key
