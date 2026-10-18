@@ -75,5 +75,8 @@
   "bugs": {
     "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/issues"
   },
-  "author": "clicgger"
+  "author": "clicgger",
+  "devDependencies": {
+    "motion": "14.3.0"
+  }
 }

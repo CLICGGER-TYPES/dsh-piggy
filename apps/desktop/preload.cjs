@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('piggyShell', {
   },
   dragHeartbeat: () => ipcRenderer.send('piggy:drag:heartbeat'),
   endDrag: () => ipcRenderer.send('piggy:drag:end'),
+  /** A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds；旧游戏包不会调用。 */
+  flyMove: frame => ipcRenderer.send('piggy:flight:move', frame),
   /** 旧游戏包（0.27.2 及以前）的拖动：只发鼠标增量。 */
   moveBy: (dx, dy) => ipcRenderer.send('piggy:move', { dx: Number(dx) || 0, dy: Number(dy) || 0 }),
   /** 平台：macOS 没有 setShape，收起时不能预留透明区域（会挡住桌面点击）。 */

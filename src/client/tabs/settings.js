@@ -11,6 +11,8 @@ import { emojiStyle, hasBundledEmoji, setEmojiStyle, applyEmojiStyle } from '../
 import { displayedPigSize, pigSize, setPigSize } from '../pig-size.js'
 import { setWalk, walkEnabled } from '../life.js'
 import { exportLogs } from '../log-export.js'
+import { feelMode, setFeelMode, soundSettings, setSoundSettings } from '../feel/settings.js'
+import { unlockSound } from '../sound.js'
 import { str } from '../values.js'
 import { renderProxySettings } from './proxy.js'
 import { renderFullscreenSettings } from './fullscreen.js'
@@ -94,6 +96,37 @@ export function renderSettingsTab(ui) {
   percent.addEventListener('change', () => applySize(Number(percent.value)))
   percent.addEventListener('keydown', event => { if (event.key === 'Enter') { applySize(Number(percent.value)); percent.blur() } })
   size.box.appendChild(sizeRow)
+
+  // 手感：标准 / 轻柔 / 关闭。只改这台设备；系统「减少动态效果」时强制关闭。
+  const feel = section(ui, '手感', '拖动、落地和摸猪时的挤压回弹；只改这台设备')
+  segmented(feel, 'data-feel-mode', [
+    { key: 'full', label: '标准' },
+    { key: 'soft', label: '轻柔' },
+    { key: 'off', label: '关闭' },
+  ], feelMode(), function (key) {
+    setFeelMode(key)
+    ui.renderContent()
+  })
+
+  // 音效：默认关；打开后才有声音。免打扰时不响（核心状态，见 index）。
+  const soundPrefs = soundSettings()
+  const sound = section(ui, '音效', '拎起、落地、摸摸的声音；免打扰时不响')
+  const soundToggle = button('dp-switch', { 'data-sound': soundPrefs.on ? 'on' : 'off', 'aria-pressed': String(soundPrefs.on) }, function () {
+    const next = setSoundSettings({ on: !soundPrefs.on })
+    if (next.on) unlockSound()
+    ui.renderContent()
+  })
+  soundToggle.appendChild(el('span', 'dp-switch-knob'))
+  soundToggle.appendChild(el('span', 'dp-switch-text', soundPrefs.on ? '开' : '关'))
+  sound.head.appendChild(soundToggle)
+  segmented(sound, 'data-sound-volume', [
+    { key: '0', label: '轻' },
+    { key: '1', label: '中' },
+    { key: '2', label: '响' },
+  ], String(soundPrefs.volume), function (key) {
+    setSoundSettings({ volume: Number(key) })
+    ui.renderContent()
+  })
 
   // 网页版和桌面版都自带了这套 emoji，所以两边都能选（旧外壳没有这个字体，就不显示）。
   if (hasBundledEmoji()) {

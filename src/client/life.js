@@ -45,6 +45,7 @@ export function setWalk(on) { writeStore(WALK_KEY, on ? 'on' : 'off') }
  * @param {(fx: string[], count: number) => void} c.burst
  * @param {(text: string, ms?: number) => void} c.showBubble
  * @param {() => any} c.desktopShell
+ * @param {any} [c.feel] 物理层（转身翻卡片用）
  */
 export function attachLife(c) {
   var actions = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
@@ -83,11 +84,18 @@ export function attachLife(c) {
   }
 
   function doIdle(action) {
-    c.pig.setAttribute('data-idle', action.key)
-    syncPigArt(c.pig, c.pigArt, c.pigEmoji)
-    if (action.fx.length > 0) c.burst(action.fx, action.fx.length)
-    if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3000, action.ms))
-    later(function () { c.pig.removeAttribute('data-idle'); syncPigArt(c.pig, c.pigArt, c.pigEmoji) }, action.ms)
+    // 追蝴蝶是跳跃类：先蹲 120ms 再起跳；其他小动作不等。
+    var lead = action.key === 'butterfly' && c.feel ? 120 : 0
+    if (lead > 0) c.feel.crouch(lead)
+    var run = function () {
+      c.pig.setAttribute('data-idle', action.key)
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji)
+      if (action.fx.length > 0) c.burst(action.fx, action.fx.length)
+      if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3000, action.ms))
+      later(function () { c.pig.removeAttribute('data-idle'); syncPigArt(c.pig, c.pigArt, c.pigEmoji) }, action.ms)
+    }
+    if (lead > 0) later(run, lead)
+    else run()
   }
 
   function scheduleWalk() {
@@ -109,14 +117,20 @@ export function attachLife(c) {
     var back = false
     c.pig.setAttribute('data-idle', 'walk')
     syncPigArt(c.pig, c.pigArt, c.pigEmoji)
-    c.pig.setAttribute('data-walk', toLeft ? 'left' : 'right')
+    if (c.feel) c.feel.face(toLeft ? 'left' : 'right')
+    else c.pig.setAttribute('data-walk', toLeft ? 'left' : 'right')
     if (!quiet() && Math.random() < 0.5) c.showBubble('我去巡逻一下', 2000)
     var timer = window.setInterval(function () {
       // 你一拖它、一开面板，就停在原地不走了。
       if (c.isStopped() || c.isOpen() || c.isDragging()) return stop()
       shell.moveBy(back ? -step : step, 0)
       walked += 2
-      if (!back && walked >= distance) { back = true; walked = 0; c.pig.setAttribute('data-walk', toLeft ? 'right' : 'left') }
+      if (!back && walked >= distance) {
+        back = true
+        walked = 0
+        if (c.feel) c.feel.face(toLeft ? 'right' : 'left')
+        else c.pig.setAttribute('data-walk', toLeft ? 'right' : 'left')
+      }
       else if (back && walked >= distance) stop()
     }, 16)
     timers.push(timer)
@@ -124,7 +138,8 @@ export function attachLife(c) {
       window.clearInterval(timer)
       c.pig.removeAttribute('data-idle')
       syncPigArt(c.pig, c.pigArt, c.pigEmoji)
-      c.pig.removeAttribute('data-walk')
+      if (c.feel) c.feel.face(null)
+      else c.pig.removeAttribute('data-walk')
     }
   }
 

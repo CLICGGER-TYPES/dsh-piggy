@@ -12,6 +12,7 @@
 import { PAD, STEP } from './geometry.js'
 import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
 import { fixedMotionReserve, motionEnvelope, PIG_TRANSFORM_ORIGIN } from './motion-envelope.js'
+import { feelEnvelope } from '../feel/envelope.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -174,6 +175,13 @@ export function createMeasure(env) {
           animatedRects.push({ x: animated.x, y: animated.y, r: animated.x + animated.width, b: animated.y + animated.height })
         }
       }
+    }
+    // 物理活跃/回稳时追加固定包络：倾斜、拉长、压扁都在这里面，回稳后移除。
+    // 不是每帧重算 —— 包络只跟猪的布局盒有关。
+    const feelState = pigNode === null ? null : pigNode.getAttribute('data-feel')
+    if (pigNode !== null && (feelState === 'active' || feelState === 'settle')) {
+      const envelope = feelEnvelope(pigBox)
+      animatedRects.push({ x: envelope.x, y: envelope.y, r: envelope.x + envelope.width, b: envelope.y + envelope.height })
     }
     const shape = rects.concat(bubbleRects, animatedRects).map(function (rect) {
       const x = Math.max(0, Math.floor(rect.x) - SHAPE_SLACK)

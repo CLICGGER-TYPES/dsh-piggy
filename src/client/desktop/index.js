@@ -7,38 +7,19 @@
  * 窗口摆哪、哪里可点都在这里，跟着游戏包热更新。
  */
 import { artMarginFor } from '../art-framing.js'
-import { sameBounds } from './geometry.js'
+import { displayNote, sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
 import { installPanel, startPanel } from './panel-window.js'
 import { installExt } from './ext-window.js'
+import { DESKTOP_CSS } from './css.js'
 
 /** 页面 ↔ 桌面程序的约定版本：以后桌面程序加新的基础动作时加一。
  * v3：外壳支持 piggyShell.logs.save（导出日志时弹系统「另存为」）。
  * v4：外壳 0.6.0 起猪和面板各一个窗口（piggyShell.role / panel / onStateChanged）。
- * v5：外壳支持 piggyShell.saves.save（二进制存档另存为）。 */
-export const DESKTOP_VERSION = 5
-
-const FONT_STACK = 'Nunito,"Noto Sans SC",-apple-system,"PingFang SC","Hiragino Sans GB",sans-serif'
-/** 桌面版专用样式：内置 emoji 字体栈；投影不越出可见区域；面板底栏限高。 */
-const DESKTOP_CSS = [
-  `[data-dsh-pig][data-dsh-pig]{--ac-font:"Piggy Emoji",${FONT_STACK}}`,
-  `[data-dsh-pig][data-dsh-pig][data-emoji="system"]{--ac-font:${FONT_STACK}}`,
-  '[data-dsh-pig][data-open="false"] .dp-pig{filter:none!important}',
-  '[data-dsh-pig] .dp-pig-img,[data-dsh-pig] .dp-pig-emoji{filter:none!important}',
-  // 上面两条只为去投影（F11），却把状态变色一起关了（2026-10-08 发现）：这里把变色补回来，不带投影。
-  '[data-dsh-pig] .dp-pig[data-mood="sick"] .dp-pig-img,[data-dsh-pig] .dp-pig[data-mood="sick"] .dp-pig-emoji{filter:hue-rotate(-28deg) saturate(.75)!important}',
-  '[data-dsh-pig] .dp-pig[data-mood="dirty"] .dp-pig-img,[data-dsh-pig] .dp-pig[data-mood="dirty"] .dp-pig-emoji{filter:sepia(.4)!important}',
-  '[data-dsh-pig] .dp-pig[data-mood="dead"] .dp-pig-img,[data-dsh-pig] .dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1)!important}',
-  '[data-dsh-pig][data-faded="true"] .dp-pig-emoji{filter:grayscale(.5) opacity(.72)!important}',
-  '[data-dsh-pig][data-dsh-pig] .dp-pig[data-stage="grave"]{filter:grayscale(.35)!important}',
-  '[data-dsh-pig] .dp-card{box-shadow:inset 0 1px 2px rgba(61,52,40,.09)!important}',
-  '[data-dsh-pig] .dp-panel-footer{max-height:270px!important}',
-  // 收起时拖猪，窗口缩到只包住猪；头顶的签到/礼包小气泡会被窗口边裁成半块白色，拖的时候先藏起来。
-  '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-daily,[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-poke-hint{visibility:hidden!important}',
-  // 猪窗口（外壳 0.6.0 起）：面板和名牌在另一个窗口里，这里永远只有猪。
-  '[data-piggy-role="pet"] .dp-card,[data-piggy-role="pet"] .dp-hud{display:none!important}',
-].join('\n')
+ * v5：外壳支持 piggyShell.saves.save（二进制存档另存为）。
+ * v6：外壳支持 piggyShell.flyMove（A2 抛掷，窗口跟着飞）。 */
+export const DESKTOP_VERSION = 6
 
 /** 窗口差这么多以内就不改。取 2 而不是 0/1：Windows 分数缩放下读回来常差 1px，Electron 源码自己也说
  *  GetWindowBoundsInScreen 有约 1px 误差（native_window_views.cc）。贴着噪声改就会来回抖。 */
@@ -49,6 +30,8 @@ let bridge = /** @type {any} */ (null)
 let role = /** @type {'pet'|'panel'|'ext'|null} */ (null)
 /** 拖动中窗口被夹在屏幕里时，猪在窗口里滑了多少（主进程推来的，见 main.js dragTick）。 */
 let dragSlide = { x: 0, y: 0 }
+/** 抛掷期间暂停常规摆放：窗口位置由 feel 每帧算好后直接发给主进程。 */
+let flying = false
 let measure = /** @type {any} */ (null)
 let placement = /** @type {any} */ (null)
 let lastKey = null
@@ -71,7 +54,7 @@ function dragging() {
 function updateHit(x, y) {
   mouse = { x, y }
   if (typeof bridge.setHit !== 'function') return
-  let inside = dragging()
+  let inside = dragging() || flying
   for (let i = 0; !inside && i < hitRects.length; i += 1) {
     const r = hitRects[i]
     inside = x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height
@@ -93,6 +76,7 @@ function layoutStale(win) {
 }
 
 function tick() {
+  if (flying) return
   const h = host()
   if (h === null) return
   const info = readGeometry()
@@ -173,17 +157,6 @@ function pigInWindow(win) {
   return pigNode ? layoutBox(pigNode) : null
 }
 
-/** 窗口在哪块屏、那块屏什么缩放：Windows 分数缩放的问题只能靠这个在日志里看出来。 */
-function displayNote(info) {
-  const list = info?.displays
-  if (!Array.isArray(list) || list.length === 0) return null
-  const win = info.window
-  const hit = list.find(display => win.x >= display.workArea.x && win.x < display.workArea.x + display.workArea.width
-    && win.y >= display.workArea.y && win.y < display.workArea.y + display.workArea.height)
-  const one = hit ?? list[0]
-  return { id: one.id, scale: one.scaleFactor, count: list.length }
-}
-
 /** 同步回读真实窗口几何；外壳给不了就退回缓存（老外壳没有同步 place）。 */
 function readGeometry() {
   if (typeof bridge.place === 'function') {
@@ -204,7 +177,7 @@ function schedule() {
   scheduled = true
   requestAnimationFrame(function () {
     scheduled = false
-    if (!dragging()) tick()
+    if (!dragging() && !flying) tick()
   })
 }
 
@@ -281,7 +254,8 @@ export function install(shell) {
       onFx: shell.panel.onFx,
       raisePet: shell.panel.raisePet,
     },
-    beginDrag: function () {
+    /** @param {{x:number,y:number}|null} [origin] pointerdown 时的屏幕坐标：延迟到 4px 才开始拖动时，窗口不会落后手指。 */
+    beginDrag: function (origin) {
       const h = host()
       if (h !== null && h.getAttribute('data-open') === 'false') {
         // 收起时拖：不再把窗口缩成「只包住猪」。
@@ -299,11 +273,15 @@ export function install(shell) {
       const pig = info && info.window ? pigInWindow(info.window) : null
       dragSlide = { x: 0, y: 0 }
       // slide：这个页面会接「猪在窗口里滑」（窗口被夹在屏幕里时），主进程才夹窗口
+      if (typeof shell.beginDrag !== 'function') return
       shell.beginDrag(pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height,
-        slide: typeof shell.onDragSlide === 'function' })
+        slide: typeof shell.onDragSlide === 'function',
+        origin: origin !== null && origin !== undefined && Number.isFinite(origin.x) && Number.isFinite(origin.y)
+          ? { x: origin.x, y: origin.y } : undefined })
     },
     dragHeartbeat: function () { if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat() },
     endDrag: function () {
+      if (typeof shell.endDrag !== 'function') return
       shell.endDrag()
       // 拖动结束和同步读几何按 IPC 顺序处理，读到的就是最后一帧之后的窗口。
       const info = readGeometry()
@@ -333,6 +311,50 @@ export function install(shell) {
     },
     syncGeometry: function () { tick() },
     // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
+    // A2 抛掷：页面算好窗口位置，外壳只 setBounds；旧外壳没有 flyMove，supported=false，
+    // 页面自动退回原地落地。
+    flight: {
+      supported: typeof shell.flyMove === 'function',
+      start: function () {
+        const info = readGeometry()
+        if (info === null || info === undefined || !info.window) return null
+        const pig = pigInWindow(info.window)
+        if (pig === null) return null
+        return {
+          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
+          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
+          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
+          area: info.workArea,
+          areas: info.workAreas ?? [info.workArea],
+        }
+      },
+      move: function (x, y, slide) {
+        if (typeof shell.flyMove !== 'function') return
+        shell.flyMove({ x: x, y: y, slide: slide ?? { x: 0, y: 0 } })
+      },
+      setFlying: function (on) {
+        flying = on === true
+        if (!flying) { lastKey = null; tick() }
+      },
+      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
+      finish: function (last) {
+        flying = false
+        if (last !== null && last !== undefined && last.window && last.pig) {
+          const pig = {
+            x: last.pig.x + (last.slide?.x ?? 0),
+            y: last.pig.y + (last.slide?.y ?? 0),
+            width: last.pig.width,
+            height: last.pig.height,
+          }
+          placement.rehome(last.window, pig, last.areas ?? [])
+        }
+        dragSlide = { x: 0, y: 0 }
+        const h = host()
+        if (h !== null) h.style.translate = ''
+        lastKey = null
+        tick()
+      },
+    },
     moveBy: typeof shell.moveBy === 'function' ? function (dx, dy) {
       shell.moveBy(dx, dy)
       // 散步是猪自己走：走完按窗口真实位置重定家（主进程可能在屏幕边上夹过）。
@@ -368,7 +390,7 @@ export function start() {
   }
   window.addEventListener('resize', schedule)
   window.addEventListener('pointerup', schedule)
-  setInterval(function () { if (!dragging()) tick() }, 1000)
+  setInterval(function () { if (!dragging() && !flying) tick() }, 1000)
   tick()
 }
 

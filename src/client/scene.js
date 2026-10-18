@@ -91,23 +91,29 @@ pigSleep.className = 'dp-pig-sleep'
 pigSleep.alt = ''
 pigSleep.draggable = false
 var pigEmoji = el('span', 'dp-pig-emoji', '🐖')
+// 三层：.dp-pig 保留现有 CSS 动画；.dp-pig-hold 只做拎起拉长（支点在头顶）；
+// .dp-pig-body 只做物理整图变换（压扁/倾斜/翻面）。见 src/client/feel/index.js。
 var pig = el('div', 'dp-pig')
-pig.appendChild(pigArt)
-pig.appendChild(pigEmoji)
-pig.appendChild(pigSleep)
+var pigHold = el('div', 'dp-pig-hold')
+var pigBody = el('div', 'dp-pig-body')
+pig.appendChild(pigHold)
+pigHold.appendChild(pigBody)
+pigBody.appendChild(pigArt)
+pigBody.appendChild(pigEmoji)
+pigBody.appendChild(pigSleep)
 var napBubble = el('span', 'dp-nap-zzz', 'Zzz')
 napBubble.setAttribute('aria-hidden', 'true')
-pig.appendChild(napBubble)
+pigBody.appendChild(napBubble)
 // 装扮点位：每个点位挂一件，位置全在 CSS 里（.dp-slot[data-slot=…]）。
 var dressSlots = el('div', 'dp-dress')
-pig.appendChild(dressSlots)
+pigBody.appendChild(dressSlots)
 
 // 番茄钟（C2）：专注中贴在猪立绘右上角的小角标，挂在猪身上所以跟着它走。
 // 位置别越出猪头上方 20px，也不能高过说话气泡 —— 面板打开时它就够不着面板。
 var pomoHint = el('div', 'dp-pomo')
 pomoHint.setAttribute('data-pomo-pill', 'true')
 pomoHint.hidden = true
-pig.appendChild(pomoHint)
+pigBody.appendChild(pomoHint)
 scene.appendChild(pig)
 // Right-click is not discoverable on its own, so the native tooltip says so.
 scene.title = '左键摸摸 · 右键打开面板 · 拖动可移动'
@@ -134,5 +140,5 @@ if (document.body !== null && document.body !== undefined) {
   }, { once: true })
 }
 
-  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, dressSlots, bar, content, footer }
+  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer }
 }

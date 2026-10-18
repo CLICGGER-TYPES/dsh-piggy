@@ -30,6 +30,7 @@
 
 - 只有需要**新的基础动作**（新 IPC 消息、新窗口能力）时才改外壳：外壳升版本，
   游戏包 `apps/desktop/package.json` 的 `piggy.minShell` 视情况提高，`src/client/desktop/index.js` 的 `DESKTOP_VERSION` 加一。
+  2026-10-18：`DESKTOP_VERSION=6`，新增 `piggy:flight:move`；`minShell` 不提高（旧外壳仍能跑 A1，只是不抛）。
 - 游戏包要兼容「新游戏包 + 刚好满足 minShell 的旧外壳」：用新动作前先 `typeof shell.xxx === 'function'`。
 - 外壳要兼容「老游戏包」：老游戏包会退回外壳自带的 `renderer/shell.js` 和下表「旧」消息，别删。
 
@@ -49,7 +50,8 @@
 | 通道 | piggyShell 方法 | 方式 | 说明 |
 |---|---|---|---|
 | `piggy:place` | `place({bounds?, shape?, pig?})` | 同步 | 设窗口位置大小、可点区域；`pig` 是猪在窗口里的框（0.33.1 起，面板按它贴猪）。返回最新几何 |
-| `piggy:drag:start` | `beginDrag(pig)` | 单向 | 开始拖：带猪在窗口里的框；`slide:true` 表示页面会接 `piggy:drag-slide` |
+| `piggy:drag:start` | `beginDrag({x,y,width,height,slide,origin?})` | 单向 | 开始拖：带猪在窗口里的框；`slide:true` 表示页面会接 `piggy:drag-slide`；`origin` 是 pointerdown 的屏幕坐标（手感层延迟到 4px 才发，主进程校验后当拖动起点） |
+| `piggy:flight:move` | `flyMove({x,y,slide})` | 单向 | A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds，不重排、不 followPig、不写 window.json；`slide` 用来平移可点/可见形状 |
 | `piggy:drag:heartbeat` | `dragHeartbeat()` | 单向 | 拖动中每次 pointermove 发；2 秒没心跳主进程自己松手 |
 | `piggy:drag:end` | `endDrag()` | 单向 | 松手 |
 | `piggy:hit` | `setHit(bool)` | 单向 | Windows 穿透模式：鼠标在不在猪上 |

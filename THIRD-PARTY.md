@@ -15,6 +15,7 @@
 
 | 内容 | 许可 | 说明 |
 |---|---|---|
+| [Motion](https://motion.dev)（`motion`） | MIT | 客户端物理层：按压/挤压/拎起/倾斜的弹簧与帧循环。版本钉死 14.3.0（`motion` 14.3.0 + `motion-dom`/`framer-motion` 由 esbuild 打进 `client.js`）。2026-10-18 实测打包增量约 239KB 未压缩 / 56KB gzip（`client.js` 598KB → 836KB），低于游戏包 300KB 增量红线 |
 | Nunito / Noto Sans SC | SIL OFL 1.1 | 客户端在浏览器里按需从 Google Fonts 加载；加载失败自动退回系统字体。**字体文件不随本包分发** |
 | Noto Color Emoji | SIL OFL 1.1 | 仅桌面版：`apps/desktop/renderer/piggy-emoji.ttf`，整套原样附带（`tools/build-emoji-font.py` 复制），默认 emoji 样式，许可原文见同目录 `piggy-emoji-LICENSE.txt` |
 

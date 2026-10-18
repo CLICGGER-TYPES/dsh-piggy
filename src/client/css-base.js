@@ -129,6 +129,20 @@ export const CSS_BASE = [
   // 动画只改 transform，滤镜跟着每帧重算在 Windows 上很贵（D1 第 4 条）。
   '.dp-pig{line-height:1;transform-origin:50% 85%;cursor:pointer;position:relative;',
   'animation:dp-bob 1.8s ease-in-out infinite}',
+  // 物理层三层：外层 .dp-pig 保留现有 CSS 动画，.dp-pig-hold 只做拎起（支点在头顶），
+  // .dp-pig-body 只做整图压扁/倾斜/翻面（支点在 85%，和 motion-envelope 一致）。
+  '.dp-pig-hold{display:block;position:relative;width:var(--pig-size);height:var(--pig-size);',
+  'transform-origin:50% 0%;will-change:auto}',
+  '.dp-pig-body{display:block;position:relative;width:var(--pig-size);height:var(--pig-size);',
+  'transform-origin:50% 85%;will-change:auto}',
+  // 翻卡片期间由物理层做镜像；内层 data-walk 的瞬间镜像要关掉，否则翻完会双重镜像。
+  '[data-dsh-pig] .dp-pig[data-feel-flip="true"] .dp-pig-img{transform:none!important}',
+  // 被拎着拖动时暂停待机浮动（反应动画照常演），避免「被拎住还在自己上下飘」。
+  '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-pig:not([data-react]){animation-play-state:paused!important}',
+  // 摔晕：整图轻摇 + 眩晕符号（符号由 feel 用 burst 冒），不新增立绘。
+  '[data-dsh-pig] .dp-pig[data-react="dizzy"]{animation-name:dp-dizzy;animation-duration:2.4s}',
+  '@keyframes dp-dizzy{0%,100%{transform:rotate(0)}12%{transform:rotate(-6deg)}28%{transform:rotate(5deg)}',
+  '44%{transform:rotate(-4deg)}60%{transform:rotate(3deg)}76%{transform:rotate(-2deg)}}',
   '.dp-pig-img,.dp-pig-emoji{filter:drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   '.dp-pig-sleep{display:none;position:absolute;top:0;left:calc(50% - var(--pig-size) * .6);z-index:1;',
   'width:calc(var(--pig-size) * 1.2);height:var(--pig-size);object-fit:contain;',

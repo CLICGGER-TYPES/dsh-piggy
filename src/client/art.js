@@ -74,6 +74,35 @@ export function syncSleepArt(art, scenes, image) {
 /** 调试页「立绘」指定的反馈图；null 表示照常按状态自动选。只在这个页面里，不进存档。 */
 var forcedFeedback = null
 
+/** 临时表现图（摔晕的 faint.png）：优先级低于调试页，高于普通选图；不进存档。 */
+var effectArt = null
+
+/** @param {string|null} name */
+export function showEffectArt(name) {
+  effectArt = typeof name === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null
+}
+
+export function clearEffectArt() {
+  effectArt = null
+}
+
+/**
+ * 动作图切换遮挡：物理层装上后由它决定「先压一下再换图」。
+ * @type {null | ((apply: () => void) => void)}
+ */
+var artSwapHook = null
+
+/** @param {null | ((apply: () => void) => void)} hook */
+export function setArtSwapHook(hook) {
+  artSwapHook = typeof hook === 'function' ? hook : null
+}
+
+/** 真正换图；有遮挡钩子时交给它排队。 */
+function swapSource(apply) {
+  if (artSwapHook === null) apply()
+  else artSwapHook(apply)
+}
+
 /** @param {string|null} name 反馈图文件名（不带 .png），null 恢复自动 */
 export function forceFeedbackArt(name) {
   forcedFeedback = typeof name === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null
@@ -88,7 +117,7 @@ export function forceFeedbackArt(name) {
 export function syncPigArt(pig, image, emoji) {
   var base = pig.getAttribute('data-art') || ''
   pigActionArt(pig)
-  var feedback = forcedFeedback || feedbackArtFor({
+  var feedback = forcedFeedback || effectArt || feedbackArtFor({
     stage: pig.getAttribute('data-stage') || '', base: base,
     mood: pig.getAttribute('data-mood') || '', reaction: pig.getAttribute('data-react') || '',
     idle: pig.getAttribute('data-idle') || '', activityKind: pig.getAttribute('data-activity') || '',
@@ -97,8 +126,12 @@ export function syncPigArt(pig, image, emoji) {
   })
   if (feedback) {
     var feedbackSrc = artSource('feedback/' + feedback)
-    if (image.getAttribute('src') !== feedbackSrc) image.src = feedbackSrc
-    applyFrame(image, builtinFrame(feedbackSrc))
+    if (image.getAttribute('src') !== feedbackSrc) {
+      swapSource(function () {
+        image.src = feedbackSrc
+        applyFrame(image, builtinFrame(feedbackSrc))
+      })
+    }
     image.hidden = false
     pig.setAttribute('data-feedback', 'true')
     if (emoji) emoji.hidden = true
@@ -115,8 +148,12 @@ export function syncPigArt(pig, image, emoji) {
   var microArt = pigActionArt(pig)
   if (microArt && !forcedFeedback) {
     var microSrc = artSource(microArt)
-    if (image.getAttribute('src') !== microSrc) image.src = microSrc
-    applyFrame(image, builtinFrame(artSource('piglet')))
+    if (image.getAttribute('src') !== microSrc) {
+      swapSource(function () {
+        image.src = microSrc
+        applyFrame(image, builtinFrame(artSource('piglet')))
+      })
+    }
     image.hidden = false
     pig.setAttribute('data-feedback', 'false')
     if (emoji) emoji.hidden = true
@@ -130,8 +167,12 @@ export function syncPigArt(pig, image, emoji) {
       && (base.startsWith('custom-') || hasBuiltinArt(base + '-' + action))) art += '-' + action
   }
   var src = artSource(art)
-  if (image.getAttribute('src') !== src) image.src = src
-  frameCustomImage(image, src)
+  if (image.getAttribute('src') !== src) {
+    swapSource(function () {
+      image.src = src
+      frameCustomImage(image, src)
+    })
+  }
   image.hidden = false
   pig.setAttribute('data-feedback', 'false')
   if (emoji) emoji.hidden = true

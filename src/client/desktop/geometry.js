@@ -50,3 +50,18 @@ export function sameBounds(a, b, tolerance) {
   return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
     && Math.abs(a.width - b.width) <= tolerance && Math.abs(a.height - b.height) <= tolerance
 }
+
+
+/**
+ * 窗口在哪块屏、那块屏什么缩放：Windows 分数缩放的问题只能靠这个在日志里看出来。
+ * @param {any} info geometryOf() 的返回
+ */
+export function displayNote(info) {
+  const list = info?.displays
+  if (!Array.isArray(list) || list.length === 0) return null
+  const win = info.window
+  const hit = list.find(display => win.x >= display.workArea.x && win.x < display.workArea.x + display.workArea.width
+    && win.y >= display.workArea.y && win.y < display.workArea.y + display.workArea.height)
+  const one = hit ?? list[0]
+  return { id: one.id, scale: one.scaleFactor, count: list.length }
+}

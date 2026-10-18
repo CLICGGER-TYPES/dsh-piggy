@@ -93,8 +93,11 @@ test('按住 1.5 秒不移动后再拖，桌面窗口仍跟着鼠标，松开即
   window.clearInterval = id => cleared.add(id)
   const scene = sceneOf(dom)
   scene.fire('pointerdown', { button: 0, clientX: 20, clientY: 20, screenX: 100, screenY: 100, pointerId: 1 })
+  // 手感层：4px 之前不算拖动，也不开始心跳（来回摸不能把窗口推着走）。
+  assert.equal(intervals.filter(timer => timer.delay === 250).length, 0, '4px 之前不开始拖动')
+  scene.fire('pointermove', { clientX: 30, clientY: 20, screenX: 110, screenY: 100, pointerId: 1 })
   const heartbeats = intervals.map((timer, index) => ({ ...timer, id: index + 1 })).filter(timer => timer.delay === 250)
-  assert.equal(heartbeats.length, 1, '拖动期间须每 250ms 发一次心跳')
+  assert.equal(heartbeats.length, 1, '越过 4px 后每 250ms 发一次心跳')
   for (now = 250; now <= 1500; now += 250) {
     for (const timer of heartbeats) if (!cleared.has(timer.id)) timer.fn()
     if (now - lastHeartbeat > 1000) active = false // 主进程的超时保险
@@ -287,7 +290,7 @@ test('CSS：朝右开时场景改左对齐，气泡/道具跟着镜像（网页�
 })
 
 test('桌面版关掉投影时保留状态变色（生病/脏/死/老/墓碑），且不带回投影', () => {
-  const src = readFileSync(new URL('../src/client/desktop/index.js', import.meta.url), 'utf8')
+  const src = readFileSync(new URL('../src/client/desktop/css.js', import.meta.url), 'utf8')
   const rules = {
     sick: /data-mood="sick"\][^{]*\{filter:hue-rotate\(-28deg\) saturate\(\.75\)!important\}/,
     dirty: /data-mood="dirty"\][^{]*\{filter:sepia\(\.4\)!important\}/,

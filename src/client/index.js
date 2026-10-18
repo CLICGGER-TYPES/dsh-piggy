@@ -17,7 +17,6 @@ import { button, el, meter } from './dom.js'
 import { normalize } from './normalize.js'
 import { desktopShell } from './desktop-shell.js'
 import { wireSplit } from './split.js'
-import { startDragHeartbeat } from './drag-heartbeat.js'
 import { attachAutoCollapse } from './auto-collapse.js'
 import { readPosition } from './position.js'
 import { attachDevMode } from './dev-mode.js'
@@ -28,9 +27,11 @@ import { arr, num, obj, str } from './values.js'
 import { desktop } from './desktop/index.js'
 import { attachLife } from './life.js'
 import { playPigPet } from './pig-actions.js'
-import { forceFeedbackArt, syncPigArt } from './art.js'
+import { forceFeedbackArt, setArtSwapHook, syncPigArt } from './art.js'
+import { attachGestures } from './gestures.js'
+import { createFeel } from './feel/index.js'
+import { configureSound } from './sound.js'
 import { createBirthday } from './birthday.js'
-import { partAt } from './pet-parts.js'
 import { attachSizePreference } from './pig-size.js'
 export function mountGame() {
     var devMode = false
@@ -47,7 +48,7 @@ export function mountGame() {
       // instead of breaking the panel.
       var parts = createScene()
       var { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
-        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, dressSlots, bar, content, footer } = parts
+        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer } = parts
 
       // 桌面版外壳：用时现取（外壳脚本比 client 先跑，但晚到也不能当网页版 —— 那样拖动
       // 只挪页面里的猪、窗口不跟）。
@@ -115,6 +116,17 @@ export function mountGame() {
       var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast
       var stopped = false
       var busy = false
+      // 物理层：A1 原地手感 + A2 抛出。装不上（测试环境/旧浏览器）时自己退回 off。
+      var feel = createFeel({
+        pig: pig, pigHold: pigHold, pigBody: pigBody, scene: scene, host: host,
+        pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst),
+        getShell: desktopShell,
+        isQuiet: function () { return view.dialogue.quiet === true },
+        onGeometry: function () { desktopShell()?.syncGeometry?.() },
+      })
+      configureSound({ isQuiet: function () { return view.dialogue.quiet === true } })
+      setArtSwapHook(function (apply) { feel.coverSwap(apply) })
+      fx.setFeel(feel)
 
       /** The shell hands the modules an explicit context instead of sharing a scope. */
       var ctx = {
@@ -170,6 +182,7 @@ export function mountGame() {
         get busy() { return busy }, set busy(next) { busy = next },
         justBought: null, homePage: 0,
         get stopped() { return stopped }, set stopped(next) { stopped = next },
+        get feel() { return feel },
         get devMode() { return devMode },
       }
       var layout = createLayout(ctx)
@@ -220,68 +233,6 @@ export function mountGame() {
        * can be checked at all.
        */
 
-      // ---- drag the pig; right-click it for the menu ----
-      var drag = null
-      var stopDragHeartbeat = function () {}
-      scene.addEventListener('pointerdown', function (event) {
-        if (event.button !== 0) return
-        stopDragHeartbeat()
-        drag = {
-          x: event.clientX, y: event.clientY,
-          startX: typeof event.screenX === 'number' ? event.screenX : event.clientX,
-          startY: typeof event.screenY === 'number' ? event.screenY : event.clientY,
-          lastX: typeof event.screenX === 'number' ? event.screenX : event.clientX,
-          lastY: typeof event.screenY === 'number' ? event.screenY : event.clientY,
-          right: parseFloat(getComputedStyle(host).right) || 18,
-          bottom: parseFloat(getComputedStyle(host).bottom) || 18,
-          moved: false,
-        }
-        scene.setAttribute('data-dragging', 'true')
-        scene.setPointerCapture?.(event.pointerId)
-        var shellAtStart = desktopShell()
-        shellAtStart?.beginDrag?.()
-        stopDragHeartbeat = startDragHeartbeat(shellAtStart, function () { return drag !== null })
-      })
-      scene.addEventListener('pointermove', function (event) {
-        if (drag === null) return
-        var dx = event.clientX - drag.x
-        var dy = event.clientY - drag.y
-        // Desktop samples the cursor in the main process; the page detects a pat.
-        var shellNow = desktopShell()
-        if (shellNow !== null) {
-          shellNow.dragHeartbeat?.()
-          var screenX = typeof event.screenX === 'number' ? event.screenX : event.clientX
-          var screenY = typeof event.screenY === 'number' ? event.screenY : event.clientY
-          if (Math.abs(screenX - drag.startX) > 3 || Math.abs(screenY - drag.startY) > 3) drag.moved = true
-          if (typeof shellNow.beginDrag !== 'function') {
-            var stepX = screenX - drag.lastX
-            var stepY = screenY - drag.lastY
-            drag.lastX = screenX
-            drag.lastY = screenY
-            if (stepX !== 0 || stepY !== 0) shellNow.moveBy(stepX, stepY)
-          }
-          return
-        }
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true
-        userRight = drag.right - dx
-        userBottom = drag.bottom - dy
-        clampPig()
-        fitPanel()
-      })
-      function endDrag() {
-        if (drag === null) return false
-        var moved = drag.moved
-        drag = null
-        stopDragHeartbeat()
-        stopDragHeartbeat = function () {}
-        desktopShell()?.endDrag?.()
-        scene.removeAttribute('data-dragging')
-        clampPig()
-        // 桌面版的位置归窗口管（主进程会存），页面不写自己的坐标。
-        if (deskShell === null) writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }))
-        fitPanel()
-        return moved
-      }
       var boxPokes = 0
       /** Three pokes open the box. */
       function pokeBox() {
@@ -300,21 +251,19 @@ export function mountGame() {
         showBubble(BOX_POKE_LINES[boxPokes - 1], 2200)
       }
 
-      // Left click pats; context menu opens the panel.
-      scene.addEventListener('pointerup', function (event) {
-        // Right click has no drag session; it only opens the menu.
-        if (drag === null) return
-        if (endDrag()) return
-        // An unhatched save is a box, whether or not one exists yet.
-        if (view.hatched !== true) {
-          pokeBox()
-          return
-        }
-        // 点在猪身上就是摸它，按点的位置告诉核心摸的是哪儿（G 批次）。
-        if (!view.dead) send('pet', { part: partAt(pig, event) })
+      // 手势：单击 / 来回摸 / 拖动 / 拎起 / 空中接住。窗口延迟到 4px 才开始动。
+      var gestures = attachGestures({
+        scene: scene, host: host, pig: pig, feel: feel,
+        getView: function () { return view },
+        send: send,
+        pokeBox: pokeBox,
+        getRight: function () { return userRight }, setRight: function (value) { userRight = value },
+        getBottom: function () { return userBottom }, setBottom: function (value) { userBottom = value },
+        clampPig: clampPig, fitPanel: fitPanel,
+        desktopShell: desktopShell, isDesktop: deskShell !== null,
+        writePosition: function () { writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom })) },
       })
-      scene.addEventListener('pointercancel', function () { endDrag() })
-      scene.addEventListener('lostpointercapture', function () { endDrag() })
+
       scene.addEventListener('contextmenu', function (event) {
         event.preventDefault()
         setOpen(!isOpen)
@@ -322,7 +271,7 @@ export function mountGame() {
 
       var autoCollapse = splitRole !== null ? { dispose: function () {} } : attachAutoCollapse({
         host: host, isOpen: function () { return isOpen }, setOpen: setOpen,
-        isDragging: function () { return drag !== null },
+        isDragging: function () { return gestures.isDragging() },
         isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' },
         isDesktop: function () { return desktopShell() !== null },
       })
@@ -337,8 +286,9 @@ export function mountGame() {
       // 打招呼、闲聊、按时间说话、自己找事做、桌面散步（G 批次）都在 life.js。
       var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife({
         send: send, isStopped: function () { return stopped }, isBusy: function () { return busy },
-        isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return drag !== null },
+        isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return gestures.isDragging() },
         pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: desktopShell,
+        feel: feel,
       })
       ctx.life = life // 调试页「散步一次」「做个小动作」用
       var stopResize = layout.attachResize()
@@ -354,16 +304,19 @@ export function mountGame() {
         stopped = true
         panel.dispose()
         stopSizePreference()
-        stopDragHeartbeat()
         updateNotice.stop()
         stopResize()
         autoCollapse.dispose()
+        gestures.dispose()
         panel.dispose()
         // #11: the console handle outlived the pig, so a reload could toggle a
         // panel that had already been disposed.
         dev.dispose()
         if (pollTimer !== null) window.clearInterval(pollTimer)
         life?.dispose()
+        setArtSwapHook(null)
+        fx.setFeel(null)
+        feel.dispose()
         fx.dispose()
         pollTimer = null
         host.remove()

@@ -12,7 +12,7 @@ import { el } from './dom.js'
 
 /**
  * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean }} deps
- * @returns {{ react: Function, burst: Function, transform: Function, flash: Function, showBubble: Function, showLine: Function, toast: Function, dispose: Function }}
+ * @returns {{ react: Function, burst: Function, transform: Function, flash: Function, showBubble: Function, showLine: Function, toast: Function, dispose: Function, setFeel: Function }}
  */
 export function createEffects(deps) {
   var scene = deps.scene
@@ -24,6 +24,7 @@ export function createEffects(deps) {
   var isStopped = deps.isStopped
 
   var reactTimer = null
+  var feelHooks = null
   var bubbleTimer = null
   var transformTimer = null
   var transformLayer = null
@@ -57,8 +58,10 @@ function transform(kind) {
 }
 
 // ---- animation ----
-function react(kind, ms) {
-  if (reactTimer !== null) window.clearTimeout(reactTimer)
+/** 跳跃类动作先蹲 120ms 再起跳；手感关闭时完全走原路。 */
+var JUMP_KINDS = { levelup: true, away: true, feed: true, play: true }
+
+function applyReact(kind, ms) {
   // Re-assigning the same value does NOT restart a CSS animation, so
   // clicking three times quickly only played it once. Dropping the
   // attribute and forcing a reflow makes every click start from zero.
@@ -71,6 +74,18 @@ function react(kind, ms) {
     syncPigArt(pig, deps.pigArt, deps.pigEmoji)
     reactTimer = null
   }, ms || 900)
+}
+
+function react(kind, ms) {
+  if (reactTimer !== null) window.clearTimeout(reactTimer)
+  // 手感在时，跳跃类先蹲一下：物理层压 8%，120ms 后再设 data-react。
+  // 移除定时器从真正设属性那一刻算起，动作尾巴不会被截掉。
+  if (feelHooks !== null && JUMP_KINDS[kind] === true) {
+    feelHooks.crouch(120)
+    reactTimer = window.setTimeout(function () { applyReact(kind, ms) }, 120)
+    return
+  }
+  applyReact(kind, ms)
 }
 
 function burst(emojis, count) {
@@ -202,5 +217,9 @@ function toast(text) {
     transformLayer = null
   }
 
-  return { react: react, burst: burst, transform: transform, flash: flash, showBubble: showBubble, showLine: showLine, toast: toast, dispose: dispose }
+  return {
+    react: react, burst: burst, transform: transform, flash: flash, showBubble: showBubble, showLine: showLine, toast: toast, dispose: dispose,
+    /** 物理层装好后由 shell 接上；关闭手感时传 null。 */
+    setFeel: function (feel) { feelHooks = feel },
+  }
 }

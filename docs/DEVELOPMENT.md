@@ -5,7 +5,7 @@
 需要 Node.js 20 或更高版本。仓库不把构建工具列为运行时依赖，首次开发先安装已验证的本地工具版本：
 
 ```sh
-npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
+npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43 motion@14.3.0
 npm run build
 npm test
 npm run typecheck
