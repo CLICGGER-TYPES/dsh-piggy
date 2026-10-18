@@ -57,6 +57,9 @@ export function createFeel(deps) {
   let pendingSwap = null
   let crouchTimer = null
   let tapTimer = null
+  let wakeTimer = null
+  /** 刚被拿起：即使宿主的 sleepy 快照还没回来，也先按清醒幅度演。 */
+  let justWoke = false
   let lifted = false
   let liftSoundPlayed = false
   let dragging = false
@@ -75,7 +78,22 @@ export function createFeel(deps) {
   }
 
   function sleeping() {
+    if (justWoke) return false
     return (pig.getAttribute('data-idle') || '') === 'nap' || (pig.getAttribute('data-mood') || '') === 'sleepy'
+  }
+
+  /** 拿起/戳一下：先停掉打盹小动作，并按清醒幅度演；真正的 mood 由 core 的 touch 快照刷新。 */
+  function wake() {
+    if (pig.getAttribute('data-idle') === 'nap') {
+      pig.removeAttribute('data-idle')
+      syncPigArt(pig, deps.pigArt, deps.pigEmoji)
+    }
+    justWoke = true
+    if (wakeTimer !== null) clearTimeout(wakeTimer)
+    wakeTimer = setTimeout(function () {
+      wakeTimer = null
+      justWoke = false
+    }, 1500)
   }
 
   function restingFactor() {
@@ -337,6 +355,7 @@ export function createFeel(deps) {
   return {
     ready: function () { return motor !== null },
     mode: function () { return mode },
+    wake: wake,
     press: pressPig,
     lift: liftPig,
     move: movePig,
@@ -361,8 +380,10 @@ export function createFeel(deps) {
       cancelSwap()
       if (crouchTimer !== null) clearTimeout(crouchTimer)
       if (tapTimer !== null) clearTimeout(tapTimer)
+      if (wakeTimer !== null) clearTimeout(wakeTimer)
       crouchTimer = null
       tapTimer = null
+      wakeTimer = null
       dizzyFx.dispose()
       pig.removeEventListener?.('animationend', onAnimationEnd)
       motor?.dispose()

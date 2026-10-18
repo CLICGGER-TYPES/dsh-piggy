@@ -85,6 +85,10 @@ export function attachGestures(c) {
     const screen = pointerScreen(event)
     // 飞行中点到猪：先接住，再按普通拖动开始。
     c.feel.catchFlight()
+    // 拿起/戳/点都算一次互动：刷新 core 的 lastActiveAt（后台动作，不占 busy），
+    // 睡着的猪会醒来并换回清醒立绘。纸盒不送，避免打扰拆盒流程。
+    c.feel.wake?.()
+    if (c.getView().hatched === true) c.send('touch')
     c.feel.press()
     unlockSound()
     drag = {

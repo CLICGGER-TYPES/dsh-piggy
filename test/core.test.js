@@ -62,6 +62,7 @@ import {
   startTrip,
   startWork,
   traitView,
+  touch,
   useItem,
   wearItem,
   takeOff,
@@ -440,6 +441,24 @@ test('mood: dead beats sick beats working beats everything else', () => {
   pig.activity = null
   pig.dead = true
   assert.equal(mood(pig, T0).key, 'dead')
+})
+
+test('拿起/戳一下会刷新活跃时间：sleepy 立刻不再是 sleepy', () => {
+  const pig = hatchEgg(T0)
+  pig.lastActiveAt = T0 - 55 * MIN
+  assert.equal(mood(pig, T0).key, 'sleepy')
+  const result = touch(pig, T0)
+  assert.equal(result.ok, true)
+  assert.equal(result.woke, true)
+  assert.equal(mood(pig, T0).key === 'sleepy', false)
+  assert.equal(pig.lastActiveAt, T0)
+})
+
+test('纸盒/死亡不产生互动，也不说话', () => {
+  const box = layEgg(T0)
+  const before = box.pending.length
+  assert.deepEqual(touch(box, T0), { ok: false, reason: 'silent' })
+  assert.equal(box.pending.length, before)
 })
 
 // ===========================================================================

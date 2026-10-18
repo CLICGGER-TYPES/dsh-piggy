@@ -152,6 +152,12 @@ export const CSS_BASE = [
   '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
   '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-sleep{display:block}',
   '.dp-pig[data-idle="nap"]:not([data-react]) .dp-dress{visibility:hidden}',
+  // 困了/睡着（mood=sleepy）也用当前皮肤自己的 sleep 图，不再用反馈图里的 sleep-cloud/lie-flat。
+  // syncSleepArt 每次都按当前形态/皮肤设置这张图。
+  '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-pig-img,',
+  '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-pig-emoji{visibility:hidden}',
+  '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-pig-sleep{display:block}',
+  '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-dress{visibility:hidden}',
   // 打盹时在头顶轻轻冒两次 Zzz；位置落在桌面猪窗口已预留的气泡区。
   '.dp-nap-zzz{display:none;position:absolute;left:calc(50% - 14px);top:-25px;z-index:4;',
   'padding:3px 7px;border:2px solid var(--ac-border-light);border-radius:11px;',

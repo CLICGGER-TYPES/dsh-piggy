@@ -368,7 +368,6 @@
   // src/client/feedback-art.js
   var MOOD_ART = {
     hungry: ["hungry"],
-    sleepy: ["sleep-cloud", "lie-flat"],
     lonely: ["lie-flat"],
     dirty: ["collection-mosquito"]
   };
@@ -435,7 +434,15 @@
     trip: TRIP_ART,
     idle: IDLE_ART
   });
-  var UNUSED_FEEDBACK_ART = Object.freeze(["collection-badge", "collection-check", "collection-cage", "suspended", "twitch"]);
+  var UNUSED_FEEDBACK_ART = Object.freeze([
+    "collection-badge",
+    "collection-check",
+    "collection-cage",
+    "suspended",
+    "twitch",
+    // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
+    "sleep-cloud"
+  ]);
   function choose(options, hour) {
     return options[Math.abs(Math.floor(hour)) % options.length];
   }
@@ -1478,6 +1485,7 @@
     var actionTail = Promise.resolve(null);
     var pendingExtensions = 0;
     function send2(action, extra) {
+      if (action === "touch") return perform(action, extra, { background: true });
       if (action === "ext") {
         pendingExtensions += 1;
         var queued = actionTail.then(function() {
@@ -1497,12 +1505,15 @@
       });
       return running;
     }
-    async function perform(action, extra) {
-      if (ctx.busy || ctx.stopped) return null;
+    async function perform(action, extra, options) {
+      var background = options?.background === true;
+      if (ctx.busy && !background || ctx.stopped) return null;
       if (ctx.view.pig === null && action !== "hatch") return null;
-      actionSeq += 1;
-      ctx.busy = true;
-      ctx.flash(action, extra);
+      var seq2 = ++actionSeq;
+      if (!background) {
+        ctx.busy = true;
+        ctx.flash(action, extra);
+      }
       try {
         var body = { action };
         if (extra) for (var k in extra) body[k] = extra[k];
@@ -1512,6 +1523,7 @@
           body: JSON.stringify(body)
         });
         var next = await res.json();
+        if (background && seq2 !== actionSeq) return next;
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
         paintedKey = null;
         ctx.render(next);
@@ -1590,7 +1602,7 @@
         record("warn", "act", "\u52A8\u4F5C\u6CA1\u9001\u5230\u5BBF\u4E3B\uFF1A" + action, { reason: error instanceof Error ? error.message : String(error) });
         return null;
       } finally {
-        ctx.busy = false;
+        if (!background) ctx.busy = false;
       }
     }
     async function refresh2() {
@@ -3574,6 +3586,12 @@
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-emoji{visibility:hidden}',
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-pig-sleep{display:block}',
     '.dp-pig[data-idle="nap"]:not([data-react]) .dp-dress{visibility:hidden}',
+    // 困了/睡着（mood=sleepy）也用当前皮肤自己的 sleep 图，不再用反馈图里的 sleep-cloud/lie-flat。
+    // syncSleepArt 每次都按当前形态/皮肤设置这张图。
+    '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-pig-img,',
+    '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-pig-emoji{visibility:hidden}',
+    '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-pig-sleep{display:block}',
+    '.dp-pig[data-mood="sleepy"]:not([data-react]):not([data-feedback="true"]) .dp-dress{visibility:hidden}',
     // 打盹时在头顶轻轻冒两次 Zzz；位置落在桌面猪窗口已预留的气泡区。
     ".dp-nap-zzz{display:none;position:absolute;left:calc(50% - 14px);top:-25px;z-index:4;",
     "padding:3px 7px;border:2px solid var(--ac-border-light);border-radius:11px;",
@@ -6707,6 +6725,12 @@
   var line2 = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
   var scene2 = (...lines) => Object.freeze(lines);
   var BASE_LINES = Object.freeze({
+    // 被拿起/戳醒：只说一句，不啰嗦。
+    wake: scene2(
+      line2("\u5514\u2026\u2026\u88AB\u62CE\u8D77\u6765\u4E86"),
+      line2("\u9192\u4E86\u9192\u4E86\uFF0C\u522B\u6643\u6211"),
+      line2("\uFF08\u8FF7\u8FF7\u7CCA\u7CCA\uFF09\u5230\u54EA\u513F\u4E86\uFF1F")
+    ),
     // --- 照顾 -----------------------------------------------------------------
     eat: scene2(
       line2("\u597D\u5403\uFF01\u8FD8\u6709\u5417\uFF1F", "\u771F\u4E56"),
@@ -11852,6 +11876,8 @@
       };
       const screen = pointerScreen(event);
       c.feel.catchFlight();
+      c.feel.wake?.();
+      if (c.getView().hatched === true) c.send("touch");
       c.feel.press();
       unlockSound();
       drag = {
@@ -17748,6 +17774,8 @@
     let pendingSwap = null;
     let crouchTimer = null;
     let tapTimer = null;
+    let wakeTimer = null;
+    let justWoke = false;
     let lifted = false;
     let liftSoundPlayed = false;
     let dragging2 = false;
@@ -17761,7 +17789,20 @@
       return motor !== null && !disposed && mode !== "off";
     }
     function sleeping() {
+      if (justWoke) return false;
       return (pig.getAttribute("data-idle") || "") === "nap" || (pig.getAttribute("data-mood") || "") === "sleepy";
+    }
+    function wake() {
+      if (pig.getAttribute("data-idle") === "nap") {
+        pig.removeAttribute("data-idle");
+        syncPigArt(pig, deps.pigArt, deps.pigEmoji);
+      }
+      justWoke = true;
+      if (wakeTimer !== null) clearTimeout(wakeTimer);
+      wakeTimer = setTimeout(function() {
+        wakeTimer = null;
+        justWoke = false;
+      }, 1500);
     }
     function restingFactor() {
       return sleeping() ? 0.5 : 1;
@@ -18006,6 +18047,7 @@
       mode: function() {
         return mode;
       },
+      wake,
       press: pressPig,
       lift: liftPig,
       move: movePig,
@@ -18040,8 +18082,10 @@
         cancelSwap();
         if (crouchTimer !== null) clearTimeout(crouchTimer);
         if (tapTimer !== null) clearTimeout(tapTimer);
+        if (wakeTimer !== null) clearTimeout(wakeTimer);
         crouchTimer = null;
         tapTimer = null;
+        wakeTimer = null;
         dizzyFx.dispose();
         pig.removeEventListener?.("animationend", onAnimationEnd);
         motor?.dispose();

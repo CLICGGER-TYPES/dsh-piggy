@@ -29,6 +29,8 @@ export function createIo(ctx) {
       var pendingExtensions = 0
 
       function send(action, extra) {
+        // touch 是后台互动：不能占 busy，否则紧接着的 pet/拖动会被丢掉。
+        if (action === 'touch') return perform(action, extra, { background: true })
         if (action === 'ext') {
           pendingExtensions += 1
           var queued = actionTail.then(function () { return perform(action, extra) })
@@ -45,16 +47,20 @@ export function createIo(ctx) {
        * 需要看结果的调用方（比如下载扩展）可以直接 await。
        * @param {string} action
        * @param {object} [extra]
+       * @param {{ background?: boolean }} [options]
        * @returns {Promise<any>}
        */
-      async function perform(action, extra) {
-        if (ctx.busy || ctx.stopped) return null
+      async function perform(action, extra, options) {
+        var background = options?.background === true
+        if ((ctx.busy && !background) || ctx.stopped) return null
         if (ctx.view.pig === null && action !== 'hatch') return null
         // Every action bumps the sequence: a poll that started before this
         // action is stale by the time it lands and must be dropped.
-        actionSeq += 1
-        ctx.busy = true
-        ctx.flash(action, extra)
+        var seq = ++actionSeq
+        if (!background) {
+          ctx.busy = true
+          ctx.flash(action, extra)
+        }
         try {
           var body = { action: action }
           if (extra) for (var k in extra) body[k] = extra[k]
@@ -64,6 +70,8 @@ export function createIo(ctx) {
             body: JSON.stringify(body),
           })
           var next = await res.json()
+          // 后台 touch 让位给更晚的动作：后者的快照更新，不能再拿旧的覆盖。
+          if (background && seq !== actionSeq) return next
           if (action === 'buy' && next?.ok === true) ctx.justBought = extra?.item ?? null
           // 动作结果不是 /state 的正文（多一个 ok/reason）：下一次轮询照旧重画一次，宁可多画也不漏。
           paintedKey = null
@@ -146,7 +154,7 @@ export function createIo(ctx) {
           record('warn', 'act', '动作没送到宿主：' + action, { reason: error instanceof Error ? error.message : String(error) })
           return null
         } finally {
-          ctx.busy = false
+          if (!background) ctx.busy = false
         }
       }
 

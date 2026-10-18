@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { test } from 'node:test'
 import { feedbackArtFor } from '../src/client/feedback-art.js'
+import { syncSleepArt } from '../src/client/art.js'
 import { registerRoutes } from '../routes.js'
 
 const base = { stage: 'piglet', base: 'piglet', mood: 'fine', reaction: '', idle: '', activityKind: '', activityKey: '', hour: 0 }
@@ -57,11 +58,33 @@ test('审定图片按真实状态切换，已有皮肤保留自己的立绘', ()
   ]
   for (const [state, expected] of cases) assert.equal(feedbackArtFor(state), expected, JSON.stringify(state))
   for (let hour = 0; hour < 24; hour += 1) {
-    for (const mood of ['hungry', 'sleepy', 'lonely', 'dirty']) {
+    for (const mood of ['hungry', 'lonely', 'dirty']) {
       const art = feedbackArtFor({ ...base, mood, hour })
       assert.ok(statSync(new URL(`../assets/pigs/feedback/${art}.png`, import.meta.url)).size > 1000)
     }
   }
+})
+
+test('困了/睡着只用当前皮肤自己的 sleep 图，不再用 sleep-cloud/lie-flat', () => {
+  for (let hour = 0; hour < 24; hour += 1) {
+    assert.equal(feedbackArtFor({ ...base, mood: 'sleepy', hour }), null, `hour=${hour}`)
+  }
+  const makeImage = () => {
+    const attrs = {}
+    return {
+      attrs,
+      style: { setProperty(name, value) { this[name] = value } },
+      getAttribute(name) { return attrs[name] ?? null },
+      set src(value) { attrs.src = value },
+      get src() { return attrs.src ?? '' },
+    }
+  }
+  const piglet = makeImage()
+  syncSleepArt('piglet', [], piglet)
+  assert.equal(piglet.getAttribute('src'), '/dsh-piggy/art/pigs/base/piglet/sleep.png')
+  const mint = makeImage()
+  syncSleepArt('skin-mint', [], mint)
+  assert.equal(mint.getAttribute('src'), '/dsh-piggy/art/pigs/skins/skin-mint/sleep.png')
 })
 
 test('待定的图一张都不会被选中', async () => {

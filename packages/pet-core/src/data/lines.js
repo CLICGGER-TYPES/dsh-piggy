@@ -55,6 +55,12 @@ const scene = (...lines) => Object.freeze(lines)
 
 /** B6 的原稿；G 批次加的句子和新场景在 lines-more.js，下面合并。 */
 const BASE_LINES = Object.freeze({
+  // 被拿起/戳醒：只说一句，不啰嗦。
+  wake: scene(
+    line('唔……被拎起来了'),
+    line('醒了醒了，别晃我'),
+    line('（迷迷糊糊）到哪儿了？'),
+  ),
   // --- 照顾 -----------------------------------------------------------------
   eat: scene(
     line('好吃！还有吗？', '真乖'),

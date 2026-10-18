@@ -76,6 +76,8 @@ const OPERATIONS = {
   bathe: (store, body) => store.act('bathe', str(body.item)),
   play: (store, body) => store.act('play', str(body.item)),
   pet: (store, body) => store.act('pet', str(body.part)),
+  // 拿起/抛出/戳一下：刷新活跃时间，让睡着的猪醒过来；不消耗物品。
+  touch: store => store.touch(),
   // Answer the pig's latest line: `line` is the message id, `index` the button.
   reply: (store, body) => store.reply(Number(body.line), Number(body.index)),
   // 日常：签到（在线礼包在 B5 的第二步接上）。

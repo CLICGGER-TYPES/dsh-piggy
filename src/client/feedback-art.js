@@ -8,7 +8,6 @@
 
 const MOOD_ART = {
   hungry: ['hungry'],
-  sleepy: ['sleep-cloud', 'lie-flat'],
   lonely: ['lie-flat'],
   dirty: ['collection-mosquito'],
 }
@@ -57,7 +56,9 @@ export const FEEDBACK_ART_TABLES = Object.freeze({
 })
 
 /** 审定过但暂时不用的图（用户 2026-10-09：待定或不合适），留在仓库里备用。 */
-export const UNUSED_FEEDBACK_ART = Object.freeze(['collection-badge', 'collection-check', 'collection-cage', 'suspended', 'twitch'])
+export const UNUSED_FEEDBACK_ART = Object.freeze(['collection-badge', 'collection-check', 'collection-cage', 'suspended', 'twitch',
+  // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
+  'sleep-cloud'])
 
 /** @param {string[]} options @param {number} hour */
 function choose(options, hour) {

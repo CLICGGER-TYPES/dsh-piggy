@@ -9,6 +9,7 @@
  */
 import {
   act as coreAct,
+  touch as coreTouch,
   adopt as coreAdopt,
   ageFromNow as coreAgeFromNow,
   applyDevPatch as coreDevPatch,
@@ -147,6 +148,9 @@ export function createApi(control) {
 
     /** Apply one care action with its cooldown, spending `itemKey` when given. */
     act: (action, itemKey) => mutate(live => coreAct(live, action, now(), itemKey)),
+
+    /** 拿起/抛出/戳一下：只刷新活跃时间，不消耗物品、不加心情。 */
+    touch: () => mutate(live => coreTouch(live, now())),
 
     /** Send the pig out to work. */
     startWork: (jobKey, short = false) => mutate(live => coreSayAfter(live, coreStartWork(live, jobKey, now(), short === true), 'workStart', now())),
