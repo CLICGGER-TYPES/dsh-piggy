@@ -29,7 +29,9 @@ test('app and updater sessions share persistent settings, rollback and clear to 
     assert.deepEqual(calls.slice(0, 2), [[0, { mode: 'system' }], [1, { mode: 'system' }]])
     assert.equal((await proxy.set({ mode: 'socks5', address: '127.0.0.1:1080' })).ok, true)
     const saved = JSON.parse(readFileSync(path))
-    assert.deepEqual(createProxy({ path, sessions }).get(), saved)
+    const restarted = createProxy({ path, sessions })
+    await restarted.init()
+    assert.deepEqual(restarted.get(), saved)
     reject = true
     assert.equal((await proxy.set({ mode: 'direct' })).ok, false)
     assert.deepEqual(proxy.get(), saved)

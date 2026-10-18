@@ -15,11 +15,12 @@
  * 纯 Node（fetch、zlib、fs），不依赖 Electron；网络、时间都能换，测试直接跑。
  * @module dsh-piggy-desktop/versions
  */
-import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, normalize, sep } from 'node:path'
-import { gunzipSync } from 'node:zlib'
+import { join } from 'node:path'
 import { CHANNEL } from './channel.js'
+import { downloadVersionFile } from './version-download.js'
+import { createVersionInstalls } from './version-installs.js'
+import { createVersionSchemas, readSaveVersion } from './version-schema.js'
 
 export const RELEASES_URL = CHANNEL.releasesList
 /** 版本列表问到之后半小时内不再问（GitHub 不登录每小时只给 60 次，两个窗口 + 重启很快就用完）。 */
@@ -57,15 +58,22 @@ export function compareVersions(a, b) {
  * @param {typeof fetch} [options.fetch]
  * @param {() => number} [options.now] 测试用的时钟
  * @param {string} [options.releasesUrl]
+ * @param {string} [options.temporaryDir] 后台版本管理器独占的临时目录
+ * @param {(url: string, headers: Record<string, string>, destination: string, onBytes?: (bytes: number) => void, signal?: AbortSignal) => Promise<{ ok: boolean, status: number, etag: string|null }>} [options.download] Worker 委托 UI 线程的 Chromium 下载
  */
 export function createVersions(options) {
   const doFetch = options.fetch ?? fetch
   const releasesUrl = options.releasesUrl ?? RELEASES_URL
   const root = join(options.userData, 'versions')
   const activeFile = join(root, 'active.json')
+  const activeTemporaryFile = join(options.temporaryDir ?? root, 'active.json.tmp')
   /** 版本列表和各版本 manifest 存在本地：{ at, etag, releases, manifests: { 地址: manifest } }。 */
   const cacheFile = join(root, 'releases-cache.json')
+  const cacheTemporaryFile = join(options.temporaryDir ?? root, 'releases-cache.json.tmp')
   const now = options.now ?? (() => Date.now())
+  const download = options.download ?? ((url, headers, destination, onBytes, signal) => downloadVersionFile({ url, headers, destination, onBytes, signal, fetch: doFetch }))
+  const schemas = createVersionSchemas({ root, temporaryDir: options.temporaryDir, bundledDir: options.bundledDir })
+  let temporarySequence = 0
   /** @type {{ at: number, etag: string|null, releases: any[]|null, manifests: Record<string, any> }|null} */
   let cache = null
   /** @type {Promise<any[]>|null} 正在问的那一次，两个窗口同时来就共用 */
@@ -105,8 +113,7 @@ export function createVersions(options) {
 
   /** The save's version, so older games that cannot read it are refused. */
   function saveVersion() {
-    const save = readJson(options.statePath)
-    return typeof save?.version === 'number' ? save.version : 0
+    return readSaveVersion(options.statePath)
   }
 
   function current() {
@@ -124,6 +131,15 @@ export function createVersions(options) {
   /** Fetch JSON, with a clear message instead of an exception for the panel. */
   async function getJson(url, etag = null) {
     const headers = { accept: 'application/vnd.github+json', 'user-agent': 'dsh-piggy-desktop', ...(etag ? { 'if-none-match': etag } : {}) }
+    if (options.download) {
+      const file = join(options.temporaryDir ?? root, `metadata-${++temporarySequence}.json`)
+      try {
+        const res = await download(url, headers, file)
+        if (res.status === 304) return { notModified: true, body: null, etag }
+        if (!res.ok) throw new Error(res.status === 403 ? 'GitHub 暂时不让查了（每小时次数用完），过会儿再试' : `GitHub 回了 ${res.status}`)
+        return { notModified: false, body: JSON.parse(readFileSync(file, 'utf8')), etag: res.etag }
+      } finally { rmSync(file, { force: true }) }
+    }
     const res = await doFetch(url, { headers })
     if (res.status === 304) return { notModified: true, body: null, etag }
     if (!res.ok) throw new Error(res.status === 403 ? 'GitHub 暂时不让查了（每小时次数用完），过会儿再试' : `GitHub 回了 ${res.status}`)
@@ -145,8 +161,8 @@ export function createVersions(options) {
   function saveCache() {
     try {
       mkdirSync(root, { recursive: true })
-      writeFileSync(cacheFile + '.tmp', JSON.stringify(cache))
-      renameSync(cacheFile + '.tmp', cacheFile)
+      writeFileSync(cacheTemporaryFile, JSON.stringify(cache))
+      renameSync(cacheTemporaryFile, cacheFile)
     } catch { /* 存不下也不影响这次 */ }
   }
 
@@ -237,88 +253,34 @@ export function createVersions(options) {
     return out
   }
 
-  /**
-   * Download, check and unpack one version, then make it the active one.
-   * Nothing changes on disk until the package has passed its checksum.
-   * 分卷的包按 manifest.parts 的顺序逐卷下载、逐卷校验，拼起来再校验整包。
-   * @param {{ version: string, manifest: any, packUrl?: string, packUrls?: string[] }} release
-   * @param {(fraction: number) => void} [onProgress]
-   */
-  async function install(release, onProgress = () => {}) {
-    const version = String(release.version)
-    if (!/^[0-9A-Za-z.+-]{1,40}$/.test(version)) throw new Error('版本号不对')
-    const urls = Array.isArray(release.packUrls) && release.packUrls.length > 0 ? release.packUrls : [String(release.packUrl)]
-    const parts = Array.isArray(release.manifest.parts) ? release.manifest.parts : null
-    if (parts !== null && parts.length !== urls.length) throw new Error('游戏包分卷对不上，没换')
-    const total = Number(release.manifest.size) || 0
-    const pieces = []
-    let got = 0
-    for (let i = 0; i < urls.length; i += 1) {
-      const res = await doFetch(urls[i], { headers: { 'user-agent': 'dsh-piggy-desktop' } })
-      if (!res.ok || res.body === null) throw new Error(urls.length > 1 ? `第 ${i + 1}/${urls.length} 卷下载失败（${res.status}）` : `下载失败（${res.status}）`)
-      const chunks = []
-      for await (const chunk of /** @type {any} */ (res.body)) {
-        chunks.push(chunk)
-        got += chunk.length
-        if (total > 0) onProgress(Math.min(1, got / total))
-      }
-      const piece = Buffer.concat(chunks)
-      if (parts !== null && createHash('sha256').update(piece).digest('hex') !== String(parts[i].sha256)) throw new Error(`第 ${i + 1} 卷校验不对，没换`)
-      pieces.push(piece)
-    }
-    const pack = Buffer.concat(pieces)
-    const sha = createHash('sha256').update(pack).digest('hex')
-    if (sha !== String(release.manifest.sha256)) throw new Error('下载的文件校验不对，没换')
-    const files = JSON.parse(gunzipSync(pack).toString('utf8')).files
-    if (files === null || typeof files !== 'object' || typeof files['package.json'] !== 'string') throw new Error('游戏包里少东西，没换')
-
-    const target = join(root, version)
-    const staging = `${target}.part`
-    rmSync(staging, { recursive: true, force: true })
-    for (const [rel, base64] of Object.entries(files)) {
-      const file = normalize(join(staging, rel))
-      if (!file.startsWith(staging + sep)) throw new Error('游戏包里有可疑路径，没换')
-      mkdirSync(dirname(file), { recursive: true })
-      writeFileSync(file, Buffer.from(String(base64), 'base64'))
-    }
-    rmSync(target, { recursive: true, force: true })
-    renameSync(staging, target)
-    activate(version)
-    onProgress(1)
-    return { ok: true, version }
-  }
-
   /** Point at `version` (or 'bundled'), remembering where we came from. */
   function activate(version) {
     const rec = record()
     const was = rec.active ?? 'bundled'
     mkdirSync(root, { recursive: true })
     const next = { active: version === 'bundled' ? null : version, previous: was === version ? rec.previous : was, shell: options.shellVersion }
-    writeFileSync(activeFile + '.tmp', JSON.stringify(next))
-    renameSync(activeFile + '.tmp', activeFile)
+    writeFileSync(activeTemporaryFile, JSON.stringify(next))
+    renameSync(activeTemporaryFile, activeFile)
   }
 
   /** Go back to the version used before the last switch. */
   function rollback() {
     const rec = record()
     if (rec.previous === null) return { ok: false, reason: '没有上一个版本' }
-    activate(rec.previous)
-    return { ok: true, version: current().version }
-  }
-
-  /**
-   * 不带游戏的安装包第一次启动：装 game-pin.json 写好的那个版本（和安装包同一次构建）。
-   * @param {{ version: string, manifest: any, urls: string[] }} pin
-   * @param {(fraction: number) => void} [onProgress]
-   */
-  async function installPinned(pin, onProgress = () => {}) {
-    if (pin === null || typeof pin !== 'object' || !Array.isArray(pin.urls) || pin.urls.length === 0 || typeof pin.manifest?.sha256 !== 'string') {
-      throw new Error('安装包里的游戏清单坏了，请重新下载安装包')
+    try {
+      const supported = schemas.supported(rec.previous)
+      const saved = saveVersion()
+      if (supported < saved) return { ok: false, reason: `当前存档版本为 ${saved}，上个游戏只支持 ${supported}，不能回退` }
+      activate(rec.previous)
+      return { ok: true, version: current().version }
+    } catch (error) {
+      return { ok: false, reason: error instanceof Error ? error.message : String(error) }
     }
-    return install({ version: String(pin.version), manifest: pin.manifest, packUrls: pin.urls.map(String) }, onProgress)
   }
 
-  return { activeDir, current, list, install, installPinned, needsGame, rollback, saveVersion }
+  const installs = createVersionInstalls({ root, temporaryDir: options.temporaryDir, download, activate, installed, gameVersion,
+    saveVersion, recordSchema: schemas.record })
+  return { activeDir, current, list, needsGame, rollback, saveVersion, readPin: readJson, ...installs }
 }
 
 /**

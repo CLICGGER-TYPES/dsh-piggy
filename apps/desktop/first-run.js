@@ -5,7 +5,6 @@
  * 安装包里只有 resources/game-pin.json（scripts/write-game-pin.mjs 写的版本、校验值、下载地址）。
  * @module dsh-piggy-desktop/first-run
  */
-import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { BrowserWindow, ipcMain, shell } from 'electron'
@@ -22,8 +21,6 @@ export function gamePinPath(app, here) {
  * @returns {Promise<BrowserWindow|null>} 装好了返回下载窗口（等猪窗口开出来再关，免得「最后一个窗口关了」直接退出）；用户退出返回 null
  */
 export function downloadFirstGame(c) {
-  let pin = null
-  try { pin = JSON.parse(readFileSync(c.pinPath, 'utf8')) } catch { /* 下面报「清单坏了」 */ }
   const boot = new BrowserWindow({
     width: 380, height: 230, useContentSize: true, resizable: false, maximizable: false, fullscreenable: false, title: 'dsh-piggy',
     icon: join(c.here, 'build', 'icon.png'), backgroundColor: '#f8f8f0',
@@ -34,23 +31,34 @@ export function downloadFirstGame(c) {
   return new Promise(resolve => {
     let settled = false
     let busy = false
+    const pinLoading = c.versions.readPin(c.pinPath).catch(() => null)
     const finish = value => {
       if (settled) return
       settled = true
       ipcMain.removeListener('piggy:first-run-act', onAct)
-      resolve(value)
+      if (value === null) {
+        Promise.resolve(c.versions.close()).then(() => resolve(null), error => {
+          c.log('first-run', 'cleanup failed', error?.message ?? String(error))
+          resolve(null)
+        })
+      } else resolve(value)
     }
     const attempt = async () => {
       if (busy || settled) return
       busy = true
-      send({ state: 'downloading', fraction: 0, version: pin?.version ?? '' })
+      send({ state: 'downloading', fraction: 0, version: '' })
       try {
+        const pin = await pinLoading
+        if (settled) return
         if (pin === null) throw new Error('安装包里的游戏清单坏了，请重新下载安装包')
+        send({ state: 'downloading', fraction: 0, version: pin.version })
         await c.versions.installPinned(pin, fraction => send({ state: 'downloading', fraction, version: pin.version }))
+        if (settled) return
         c.log('first-run', 'installed', pin.version)
         send({ state: 'done', version: pin.version })
         finish(boot)
       } catch (error) {
+        if (settled) return
         c.log('first-run', 'failed', error?.message ?? String(error))
         send({ state: 'error', message: friendlyError(error?.message ?? String(error)) })
       } finally { busy = false }
