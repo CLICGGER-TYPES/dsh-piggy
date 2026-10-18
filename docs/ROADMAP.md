@@ -6,7 +6,9 @@
 
 - [x] 分支 `rc/0.37.1-rc.3` 基于 main `b8f6c92`（v0.37.1-rc.2），合并 `fix/linux-pixman` `995b324` 与 PR #19 `fa2e9ee`（保留作者提交与署名）；CHANGELOG 文本冲突已人工合并，`main.js` 的启动形状与鼠标转发初始化合并为同一套逻辑。
 - [x] 游戏/别名包升至 `0.37.1-rc.3`，外壳升至 `0.6.7-rc.3`，存档 v14 不变；CHANGELOG 新增 rc.3 小节，README、HANDOFF 与本节同步。
-- [x] 主机全量 **1257/1257**、build/typecheck、`git diff --check` 通过；`client.js` 重建后无差异。未 push、未打标签、未发布，等维护者早上验收。
+- [x] 主机全量 **1257/1257**、build/typecheck、`git diff --check` 通过；`client.js` 重建后无差异。
+- [x] 用户试玩后要求带上手感一起发 RC：并入 `feat/feel-a`（Q 弹手感 A1+A2、拖动/抛掷/按钮返修、拿起即醒与皮肤睡图、混合缩放多屏 bounds 死循环修复）和 `fix/chubby-skin-note`；全量 **1297/1297**。
+- [ ] 手感 B（浮层窗口，测试不卡则默认开）下一轮；混合缩放多屏、Windows、macOS 手感待实机；音效待试听。
 - [ ] 魔法师新图待用户审；PR #15 有 P1 待作者修；两者均未并入本 RC。
 
 ## 2026-10-18 RC 0.37.1-rc.2 集成
