@@ -69,7 +69,12 @@ contextBridge.exposeInMainWorld('piggyShell', {
     return next
   },
   dragHeartbeat: () => ipcRenderer.send('piggy:drag:heartbeat'),
-  endDrag: () => ipcRenderer.send('piggy:drag:end'),
+  /** 同步返回松手后的几何：最后一帧 slide 必须和页面重定家在同一拍算完。 */
+  endDrag: release => {
+    const next = ipcRenderer.sendSync('piggy:drag:end', release ?? null)
+    if (next && next.window && next.workArea) geometry = next
+    return next
+  },
   /** A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds；旧游戏包不会调用。 */
   flyMove: frame => ipcRenderer.send('piggy:flight:move', frame),
   /** 旧游戏包（0.27.2 及以前）的拖动：只发鼠标增量。 */

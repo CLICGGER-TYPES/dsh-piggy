@@ -169,7 +169,7 @@ export const CSS_TABS = [
 
   /* ---------- settings inputs ---------- */
   '.dp-size-control{display:flex;align-items:center;width:max-content;gap:8px;margin:4px 0 8px}',
-  '.dp-size-step{width:34px;height:34px;border:1px solid var(--ac-border-light);border-radius:10px;',
+  '.dp-size-step{width:34px;height:34px;border:1px solid var(--ac-border-light);border-radius:var(--ac-radius-sm);',
   'background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;font-size:20px;cursor:pointer}',
   '.dp-size-step:hover{border-color:var(--ac-primary);color:var(--ac-primary)}',
   '.dp-size-percent{display:flex;align-items:center;gap:3px;color:var(--ac-text-muted)}',
@@ -184,11 +184,9 @@ export const CSS_TABS = [
   '.dp-proxy-endpoint{display:grid;gap:5px;font-size:10px}',
   '.dp-proxy-endpoint[hidden]{display:none}',
   '.dp-proxy-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-  '.dp-proxy-actions .dp-mini{border-radius:8px;box-shadow:none;padding:6px 10px;font-size:10px}',
-  '.dp-proxy-actions .dp-proxy-save{background:var(--ac-primary);border-color:var(--ac-primary);color:#fff}',
-  '.dp-proxy-actions .dp-proxy-clear{margin-left:auto;border-color:transparent;background:transparent;color:var(--ac-text-muted)}',
+  // 三个代理按钮复用面板现有的 dp-mini（青药丸 + 3D 底边），不另造一套视觉。
+  '.dp-proxy-actions .dp-proxy-clear{margin-left:auto}',
   '.dp-proxy-status{font-size:10px;line-height:1.5;margin-top:9px;color:var(--ac-text-muted);overflow-wrap:anywhere}',
-  '.dp-proxy-actions .dp-proxy-test{background:transparent;border-color:var(--ac-border-light);color:var(--ac-text-body)}',
   '.dp-proxy-error{color:var(--ac-error)}',
 
   /* ---------- segmented control ---------- */

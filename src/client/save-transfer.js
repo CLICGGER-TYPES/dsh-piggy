@@ -197,11 +197,11 @@ export function renderSaveTransferSettings(ui, section) {
   const transfer = section(ui, '存档', '备份进度，或把小猪带到另一台设备')
   transfer.box.setAttribute('data-save-transfer-active', String(state.open || state.busy || state.loading))
   const actions = el('div', 'dp-actions')
-  const exportButton = button('dp-btn', { 'data-save-trigger': 'export' }, () => exportSave(ui))
+  const exportButton = button('dp-mini', { 'data-save-trigger': 'export' }, () => exportSave(ui))
   exportButton.textContent = state.busy && !state.open ? '导出中…' : '导出存档'
   exportButton.disabled = state.busy || !ui.view?.pig
   if (!ui.view?.pig) exportButton.title = '接到小猪后即可备份'
-  const importButton = button('dp-btn', { 'data-save-trigger': 'import' }, () => {
+  const importButton = button('dp-mini', { 'data-save-trigger': 'import' }, () => {
     if (state.busy) return
     state.open = true
     state.preview = null

@@ -303,9 +303,9 @@ export function install(shell) {
           ? { x: origin.x, y: origin.y } : undefined })
     },
     dragHeartbeat: function () { if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat() },
-    endDrag: function () {
+    endDrag: function (release) {
       if (typeof shell.endDrag !== 'function') return
-      shell.endDrag()
+      shell.endDrag(release ?? null)
       // 拖动结束和同步读几何按 IPC 顺序处理，读到的就是最后一帧之后的窗口。
       const info = readGeometry()
       if (info && info.window) {

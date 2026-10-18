@@ -9,6 +9,7 @@
  */
 import { startDragHeartbeat } from './drag-heartbeat.js'
 import { FEEL } from './feel/config.js'
+import { recentVelocity } from './feel/velocity.js'
 import { partAt } from './pet-parts.js'
 import { playSound, unlockSound } from './sound.js'
 
@@ -27,6 +28,7 @@ function pointerScreen(event) {
  *   getBottom:()=>number, setBottom:(n:number)=>void,
  *   clampPig:()=>void, fitPanel:()=>void,
  *   desktopShell:()=>any, isDesktop:boolean, writePosition:()=>void,
+ *   isPanelOpen?:()=>boolean,
  * }} c
  */
 export function attachGestures(c) {
@@ -34,16 +36,8 @@ export function attachGestures(c) {
   let stopHeartbeat = function () {}
 
   function velocity() {
-    if (drag === null || drag.samples.length < 2) return { vx: 0, vy: 0 }
-    const now = performance.now()
-    let first = drag.samples[0]
-    for (let i = 0; i < drag.samples.length; i += 1) {
-      if (now - drag.samples[i].t <= 120) { first = drag.samples[i]; break }
-    }
-    const last = drag.samples[drag.samples.length - 1]
-    const dt = (last.t - first.t) / 1000
-    if (dt <= 0.001) return { vx: 0, vy: 0 }
-    return { vx: (last.x - first.x) / dt, vy: (last.y - first.y) / dt }
+    if (drag === null) return { vx: 0, vy: 0 }
+    return recentVelocity(drag.samples, performance.now())
   }
 
   /** 越过 4px 才让窗口开始动；把 pointerdown 的屏幕坐标带给外壳当起点。 */
@@ -68,13 +62,14 @@ export function attachGestures(c) {
     c.feel.setDragging(true)
   }
 
-  function endDrag() {
+  /** @param {{x:number,y:number}|null} [release] 松手时的屏幕坐标：外壳用它算最后一帧 slide。 */
+  function endDrag(release) {
     if (drag === null) return null
     const info = drag
     drag = null
     stopHeartbeat()
     stopHeartbeat = function () {}
-    if (info.started) c.desktopShell()?.endDrag?.()
+    if (info.started) c.desktopShell()?.endDrag?.(release ?? null)
     c.feel.setDragging(false)
     c.scene.removeAttribute('data-dragging')
     c.clampPig()
@@ -170,10 +165,12 @@ export function attachGestures(c) {
 
   function onPointerUp(event) {
     if (drag === null) return
-    const speed = velocity()
+    // 面板开着时猪窗口在面板下面：抛出去会飞到面板背后看不见。
+    // 直接按「放下」处理，面板在 endDrag 里重新贴到猪旁边。
+    const speed = c.isPanelOpen?.() === true ? { vx: 0, vy: 0 } : velocity()
     const started = drag.started
     const patted = drag.patted
-    endDrag()
+    endDrag(pointerScreen(event))
     if (started) {
       c.feel.release({ vx: speed.vx, vy: speed.vy, dragged: true })
       return

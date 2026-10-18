@@ -46,8 +46,10 @@ export const FEEL = Object.freeze({
   strokeWindowMs: 1200,
   strokePx: 320,
   strokeCooldownMs: 800,
-  /** 桌面抛掷。 */
+  /** 桌面抛掷：只认松手前最后一小段仍在快速移动。 */
   throwMin: 180,
+  throwTailMs: 60,
+  throwIdleMs: 60,
   throwMax: 2200,
   gravity: 2400,
   airDrag: 0.12,

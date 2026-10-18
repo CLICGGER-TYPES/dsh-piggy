@@ -27,6 +27,7 @@ import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
+import { validDragOrigin } from './lib/drag-origin.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
 import { panelToggleAction } from './lib/panel-toggle.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
@@ -340,7 +341,11 @@ function shiftedShape(rects, slide) {
 
 function refreshHit() {
   if (!PASSTHROUGH || !hasPlacedShape || win === null || win.isDestroyed() || dragSession !== null) return
-  setHit(pointerHitsShape(screen.getCursorScreenPoint(), win.getBounds(), shiftedShape(placedShape, flightSlide)))
+  const bounds = win.getBounds()
+  const shape = flightShapeActive || dragShapeActive
+    ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
+    : shiftedShape(placedShape, flightSlide)
+  setHit(pointerHitsShape(screen.getCursorScreenPoint(), bounds, shape))
 }
 
 /** 抛掷只挪窗口，不重排、不 followPig、不推几何、不写 window.json（A2）。 */
@@ -438,6 +443,10 @@ let hasPlacedShape = false
 /** A2 抛掷：窗口被夹在屏幕里时，可点/可见形状要跟着猪在窗口里滑。 */
 let flightSlide = { x: 0, y: 0 }
 let lastFlightShapeSlide = null
+/** 抛掷期间用整窗形状：不每帧 setShape，也不会因为窗口被夹/内容滑动把猪裁掉。 */
+let flightShapeActive = false
+/** 拖动期间同理：整窗形状，避免贴边滑动时形状跟不上把猪裁掉。 */
+let dragShapeActive = false
 /** Last renderer-reported local pig origin; always measured after pinPig. */
 let lastPigWindow = null
 let lastPigSize = { width: 56, height: 56 }
@@ -547,7 +556,7 @@ function refreshRateAt(point) {
   return Number.isFinite(hz) && hz >= 30 ? Math.min(240, Math.round(hz)) : 60
 }
 
-function dragTick() {
+function dragTick(cursorOverride) {
   if (win === null || win.isDestroyed() || dragSession === null) return
   if (dragStats !== null) {
     const now = Date.now()
@@ -556,7 +565,11 @@ function dragTick() {
     dragStats.last = now
   }
   if (dragHeartbeatExpired(dragSession.lastHeartbeat, Date.now())) { stopDrag(); return }
-  const cursor = screen.getCursorScreenPoint()
+  // 松手时页面把最后的屏幕坐标带过来：输入队列偶尔会把最后一次 move 排在 end 后面，
+  // 只用主进程此刻读到的光标会少走一小段（贴边快速拖动时最明显）。
+  const cursor = cursorOverride !== null && cursorOverride !== undefined
+    && Number.isFinite(cursorOverride.x) && Number.isFinite(cursorOverride.y)
+    ? { x: cursorOverride.x, y: cursorOverride.y } : screen.getCursorScreenPoint()
   // 夹取按「所有屏」算，不按鼠标当前在哪块屏：鼠标一过两块屏的缝就换夹取范围，
   // 会把猪整只弹回去（上下屏最明显）。见 lib/window-geometry.js 的 dragPigBounds。
   const areas = screen.getAllDisplays().map(display => display.workArea)
@@ -565,6 +578,14 @@ function dragTick() {
   const pig = dragSession.pig ?? { ...(lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }), ...lastPigSize }
   // 窗口大小用请求值，不用回读值（见 petAsked 的说明）
   const wanted = dragPigBounds(petAsked ?? win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas)
+  if (!dragShapeActive) {
+    dragShapeActive = true
+    if (!PASSTHROUGH) {
+      const bounds = win.getBounds()
+      applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
+    }
+    refreshHit()
+  }
   if (!dragSession.slide) { applyBounds(wanted, 'drag'); return }
   // 窗口不出屏幕，猪在窗口里滑过去（外壳 0.6.0 起，新游戏包要求时）：
   // GNOME 等窗口管理器不让程序把窗口摆到屏幕外，猪窗口四周又有透明留白（气泡区），
@@ -580,9 +601,8 @@ function dragTick() {
     lastDragSlide = slide
     win.webContents.send('piggy:drag-slide', slide)
     followPig()
-    // Linux 的窗口形状不只管点击、也裁画面：猪滑出原来那块形状就被裁没了（录像里拖到边上猪消失）。
-    // 形状跟着滑同样多。
-    applyShape(placedShape.map(r => ({ ...r, x: Math.max(0, r.x + slide.x), y: Math.max(0, r.y + slide.y) })))
+    // 拖动期间用整窗形状（drag:start 时设置）：窗口被夹住时猪在窗口里滑，
+    // 逐帧改 setShape 既慢又容易在 X11 上把猪裁掉/刷空。松手后页面 place 恢复精确形状。
   }
 }
 function stopDrag() {
@@ -603,19 +623,15 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   stopDrag()
   const bounds = win.getBounds()
   // A1：页面可能延迟到移动 4px 才发 drag:start，带上 pointerdown 的屏幕坐标当起点。
-  // 只接受「有限、离当前光标 ≤32px、在当前屏工作区内」的 origin；坏消息退回当前光标，
-  // 不能让一次拖动把窗口瞬移。
+  // 快速甩动时第一帧就可能离 pointerdown 上百像素，不能按 32px 拒绝；
+  // 只拒绝非有限值、超出 512px 或不在当前屏工作区内的坏消息。
   const cursorNow = screen.getCursorScreenPoint()
   const rawOrigin = given?.origin
   const originValid = rawOrigin !== null && rawOrigin !== undefined
     && Number.isFinite(rawOrigin.x) && Number.isFinite(rawOrigin.y)
-    && Math.hypot(rawOrigin.x - cursorNow.x, rawOrigin.y - cursorNow.y) <= 32
-    && (() => {
-      const area = screen.getDisplayNearestPoint(rawOrigin).workArea
-      return rawOrigin.x >= area.x && rawOrigin.x < area.x + area.width
-        && rawOrigin.y >= area.y && rawOrigin.y < area.y + area.height
-    })()
-  const dragOrigin = originValid ? { x: Math.round(rawOrigin.x), y: Math.round(rawOrigin.y) } : cursorNow
+  const originArea = originValid ? screen.getDisplayNearestPoint(rawOrigin).workArea : null
+  const acceptedOrigin = validDragOrigin(rawOrigin, cursorNow, originArea)
+  const dragOrigin = acceptedOrigin ?? cursorNow
   // 新游戏包会把猪在窗口里的位置和大小一起带过来（它自己量的，不再经过 piggy:content）。
   const pigFromPage = Number.isFinite(given?.x) && Number.isFinite(given?.y) && given?.width > 0 && given?.height > 0
     ? { x: given.x, y: given.y, width: given.width, height: given.height } : null
@@ -636,8 +652,11 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   savedPigScreen = null
   // 拖动期间每一帧都不写日志（60Hz 会刷爆），但起止各记一行：出问题时能看出拖了多远、
   // 起始窗口和猪的位置对不对得上（2026-10-06 的偏移排查就是缺这一段）。
+  dragShapeActive = true
+  if (!PASSTHROUGH) applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
+  refreshHit()
   log('drag start', JSON.stringify({ bounds, pigScreen: dragSession.pigScreen, pigFromPage: pigFromPage !== null,
-    origin: originValid ? dragOrigin : null }))
+    origin: acceptedOrigin }))
   // tick 频率跟显示器刷新率走，不再写死 60Hz：144Hz 屏上窗口 60Hz 地动、画面 144Hz 地刷，
   // 一样是抽帧（用户 2026-10-07：「帧数应该跟显示器同步」）。
   const hz = refreshRateAt(dragSession.cursor)
@@ -651,8 +670,10 @@ ipcMain.on('piggy:drag:heartbeat', event => {
   // 比只靠主进程定时器（Windows 上计时精度约 15.6ms）更顺。
   dragTick()
 })
-ipcMain.on('piggy:drag:end', event => {
+ipcMain.on('piggy:drag:end', (event, release) => {
   if (!fromPet(event)) return
+  // 页面的 release 坐标可能比主进程此刻读到的光标旧（输入队列延迟）；
+  // 主进程的光标是最新值，最后一帧用它算 slide。
   dragTick()
   if (dragSession !== null) {
     const bounds = win === null || win.isDestroyed() ? null : win.getBounds()
@@ -667,6 +688,8 @@ ipcMain.on('piggy:drag:end', event => {
   stopDrag()
   restingPigScreen = null
   reanchorPanel()
+  // 页面紧接着要读几何重定家：把最后一帧 slide 一起同步返回，避免 send/sendSync 乱序。
+  event.returnValue = geometryOf(win?.getBounds() ?? { x: 0, y: 0, width: 0, height: 0 }, geometrySeq)
 })
 
 /**
@@ -695,6 +718,8 @@ ipcMain.on('piggy:place', (event, request) => {
   // 落地/接住后的正常摆放：抛掷滑动归零，形状回到未平移的版本。
   flightSlide = { x: 0, y: 0 }
   lastFlightShapeSlide = null
+  flightShapeActive = false
+  dragShapeActive = false
   if (Array.isArray(request?.shape)) {
     hasPlacedShape = true
     placedShape = request.shape.slice(0, 64).map(r => ({
@@ -734,12 +759,15 @@ ipcMain.on('piggy:flight:move', (event, frame) => {
   }
   applyFlightBounds(frame.x, frame.y)
   flightSlide = slide
-  const changed = lastFlightShapeSlide === null
-    || Math.abs(slide.x - lastFlightShapeSlide.x) >= 4 || Math.abs(slide.y - lastFlightShapeSlide.y) >= 4
-  if (changed) {
-    lastFlightShapeSlide = { ...slide }
-    // Linux 的 setShape 同时裁画面：猪在窗口里滑出去时形状要跟着滑，否则边上会被切掉。
-    if (!PASSTHROUGH) applyShape(shiftedShape(placedShape, flightSlide))
+  if (!flightShapeActive) {
+    flightShapeActive = true
+    // 整个窗口都算可见/可点：飞行中窗口每帧都在动，逐帧 setShape 会把透明窗口
+    // 刷成空白（用户看到的「猪贴图消失」），而且窗口被夹时形状滑动容易裁到猪。
+    // 落地/接住后页面会发 place，恢复精确形状。
+    if (!PASSTHROUGH) {
+      const bounds = win.getBounds()
+      applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
+    }
     refreshHit()
   }
 })

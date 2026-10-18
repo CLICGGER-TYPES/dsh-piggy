@@ -3897,7 +3897,7 @@
     ".dp-btn .dp-wait{color:var(--ac-text-2);font-size:10px;font-weight:600}",
     /* ---------- settings inputs ---------- */
     ".dp-size-control{display:flex;align-items:center;width:max-content;gap:8px;margin:4px 0 8px}",
-    ".dp-size-step{width:34px;height:34px;border:1px solid var(--ac-border-light);border-radius:10px;",
+    ".dp-size-step{width:34px;height:34px;border:1px solid var(--ac-border-light);border-radius:var(--ac-radius-sm);",
     "background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;font-size:20px;cursor:pointer}",
     ".dp-size-step:hover{border-color:var(--ac-primary);color:var(--ac-primary)}",
     ".dp-size-percent{display:flex;align-items:center;gap:3px;color:var(--ac-text-muted)}",
@@ -3912,11 +3912,9 @@
     ".dp-proxy-endpoint{display:grid;gap:5px;font-size:10px}",
     ".dp-proxy-endpoint[hidden]{display:none}",
     ".dp-proxy-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-    ".dp-proxy-actions .dp-mini{border-radius:8px;box-shadow:none;padding:6px 10px;font-size:10px}",
-    ".dp-proxy-actions .dp-proxy-save{background:var(--ac-primary);border-color:var(--ac-primary);color:#fff}",
-    ".dp-proxy-actions .dp-proxy-clear{margin-left:auto;border-color:transparent;background:transparent;color:var(--ac-text-muted)}",
+    // 三个代理按钮复用面板现有的 dp-mini（青药丸 + 3D 底边），不另造一套视觉。
+    ".dp-proxy-actions .dp-proxy-clear{margin-left:auto}",
     ".dp-proxy-status{font-size:10px;line-height:1.5;margin-top:9px;color:var(--ac-text-muted);overflow-wrap:anywhere}",
-    ".dp-proxy-actions .dp-proxy-test{background:transparent;border-color:var(--ac-border-light);color:var(--ac-text-body)}",
     ".dp-proxy-error{color:var(--ac-error)}",
     /* ---------- segmented control ---------- */
     ".dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}",
@@ -9491,11 +9489,11 @@
     const transfer = section2(ui, "\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u6216\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
     transfer.box.setAttribute("data-save-transfer-active", String(state2.open || state2.busy || state2.loading));
     const actions = el("div", "dp-actions");
-    const exportButton = button("dp-btn", { "data-save-trigger": "export" }, () => exportSave(ui));
+    const exportButton = button("dp-mini", { "data-save-trigger": "export" }, () => exportSave(ui));
     exportButton.textContent = state2.busy && !state2.open ? "\u5BFC\u51FA\u4E2D\u2026" : "\u5BFC\u51FA\u5B58\u6863";
     exportButton.disabled = state2.busy || !ui.view?.pig;
     if (!ui.view?.pig) exportButton.title = "\u63A5\u5230\u5C0F\u732A\u540E\u5373\u53EF\u5907\u4EFD";
-    const importButton = button("dp-btn", { "data-save-trigger": "import" }, () => {
+    const importButton = button("dp-mini", { "data-save-trigger": "import" }, () => {
       if (state2.busy) return;
       state2.open = true;
       state2.preview = null;
@@ -10815,8 +10813,10 @@
     strokeWindowMs: 1200,
     strokePx: 320,
     strokeCooldownMs: 800,
-    /** 桌面抛掷。 */
+    /** 桌面抛掷：只认松手前最后一小段仍在快速移动。 */
     throwMin: 180,
+    throwTailMs: 60,
+    throwIdleMs: 60,
     throwMax: 2200,
     gravity: 2400,
     airDrag: 0.12,
@@ -11678,9 +11678,9 @@
       dragHeartbeat: function() {
         if (typeof shell2.dragHeartbeat === "function") shell2.dragHeartbeat();
       },
-      endDrag: function() {
+      endDrag: function(release) {
         if (typeof shell2.endDrag !== "function") return;
-        shell2.endDrag();
+        shell2.endDrag(release ?? null);
         const info = readGeometry();
         if (info && info.window) {
           if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) dragSlide = info.dragSlide;
@@ -11781,6 +11781,20 @@
     return () => window.clearInterval(timer2);
   }
 
+  // src/client/feel/velocity.js
+  function recentVelocity(samples, now2, options) {
+    const tailMs = options?.tailMs ?? FEEL.throwTailMs;
+    const idleMs = options?.idleMs ?? FEEL.throwIdleMs;
+    if (!Array.isArray(samples) || samples.length < 2) return { vx: 0, vy: 0 };
+    const last = samples[samples.length - 1];
+    const previous = samples[samples.length - 2];
+    if (!last || !previous || !Number.isFinite(last.t) || !Number.isFinite(previous.t)) return { vx: 0, vy: 0 };
+    if (now2 - last.t > idleMs) return { vx: 0, vy: 0 };
+    const dt = (last.t - previous.t) / 1e3;
+    if (dt <= 0 || dt > tailMs / 1e3) return { vx: 0, vy: 0 };
+    return { vx: (last.x - previous.x) / dt, vy: (last.y - previous.y) / dt };
+  }
+
   // src/client/gestures.js
   function pointerScreen(event) {
     return {
@@ -11793,19 +11807,8 @@
     let stopHeartbeat = function() {
     };
     function velocity() {
-      if (drag === null || drag.samples.length < 2) return { vx: 0, vy: 0 };
-      const now2 = performance.now();
-      let first = drag.samples[0];
-      for (let i = 0; i < drag.samples.length; i += 1) {
-        if (now2 - drag.samples[i].t <= 120) {
-          first = drag.samples[i];
-          break;
-        }
-      }
-      const last = drag.samples[drag.samples.length - 1];
-      const dt = (last.t - first.t) / 1e3;
-      if (dt <= 1e-3) return { vx: 0, vy: 0 };
-      return { vx: (last.x - first.x) / dt, vy: (last.y - first.y) / dt };
+      if (drag === null) return { vx: 0, vy: 0 };
+      return recentVelocity(drag.samples, performance.now());
     }
     function beginWindowDrag() {
       if (drag === null || drag.started) return;
@@ -11827,14 +11830,14 @@
       }
       c.feel.setDragging(true);
     }
-    function endDrag() {
+    function endDrag(release) {
       if (drag === null) return null;
       const info = drag;
       drag = null;
       stopHeartbeat();
       stopHeartbeat = function() {
       };
-      if (info.started) c.desktopShell()?.endDrag?.();
+      if (info.started) c.desktopShell()?.endDrag?.(release ?? null);
       c.feel.setDragging(false);
       c.scene.removeAttribute("data-dragging");
       c.clampPig();
@@ -11939,10 +11942,10 @@
     }
     function onPointerUp(event) {
       if (drag === null) return;
-      const speed = velocity();
+      const speed = c.isPanelOpen?.() === true ? { vx: 0, vy: 0 } : velocity();
       const started = drag.started;
       const patted = drag.patted;
-      endDrag();
+      endDrag(pointerScreen(event));
       if (started) {
         c.feel.release({ vx: speed.vx, vy: speed.vy, dragged: true });
         return;
@@ -18414,6 +18417,9 @@
         fitPanel,
         desktopShell,
         isDesktop: deskShell !== null,
+        isPanelOpen: function() {
+          return isOpen;
+        },
         writePosition: function() {
           writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }));
         }

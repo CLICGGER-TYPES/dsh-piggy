@@ -261,6 +261,7 @@ export function mountGame() {
         getBottom: function () { return userBottom }, setBottom: function (value) { userBottom = value },
         clampPig: clampPig, fitPanel: fitPanel,
         desktopShell: desktopShell, isDesktop: deskShell !== null,
+        isPanelOpen: function () { return isOpen },
         writePosition: function () { writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom })) },
       })
 
