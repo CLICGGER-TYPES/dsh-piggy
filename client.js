@@ -4388,6 +4388,7 @@
     ".dp-dex-foot{position:relative;z-index:1;margin-top:8px;padding-top:7px;border-top:1px dashed rgba(87,69,42,.3);",
     "font-size:9.5px;font-weight:700;text-align:center;color:var(--ac-text-2)}",
     ".dp-dex-skin-action{position:relative;z-index:1;display:flex;margin-top:16px;justify-content:center}",
+    ".dp-dex-skin-note{position:relative;z-index:1;margin-top:7px;font-size:12px;font-weight:600;line-height:1.4;text-align:center;color:var(--ac-text-2)}",
     "@media (prefers-reduced-motion:reduce){.dp-dex-card,.dp-dex-big,.dp-dex-art{transition:none!important;transform:none!important}",
     ".dp-dex-card-foil::after,.dp-dex-big-foil::after{display:none}}"
   ].join("");
@@ -4430,7 +4431,7 @@
 
   // src/client/css-skins.js
   var CSS_SKINS = `
-.dp-skin-intro{display:grid;gap:4px;margin:0 0 10px}.dp-skin-intro span{font-size:10.5px;line-height:1.5;color:var(--ac-text-2)}.dp-skin-grid{display:flex;flex-direction:column;gap:7px}.dp-skin-row{min-height:62px;padding:7px 9px}.dp-skin-current{background:var(--ac-active);border-color:#9db0d6}.dp-skin-row[data-locked="true"] .dp-skin-art{filter:grayscale(1);opacity:.48}.dp-skin-art{width:48px;height:48px;flex:none;object-fit:contain}.dp-skin-copy{display:grid;gap:3px}.dp-skin-copy b{font-size:10.5px}.dp-skin-copy small{line-height:1.35}.dp-skin-row>.dp-mini{flex:none;padding-inline:10px}.dp-skin-import{display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 8px;margin-top:10px;cursor:pointer}.dp-skin-import .dp-pick-head{margin:0}.dp-skin-import>.dp-dim{font-size:10px;line-height:1.4;color:var(--ac-text-2)}.dp-skin-import input{position:absolute;width:1px;height:1px;opacity:0}.dp-skin-file{grid-column:2;grid-row:1/3;display:inline-flex!important;align-items:center;white-space:nowrap}.dp-skin-howto{display:flex;width:100%;justify-content:center;margin:10px 0 8px}
+.dp-skin-intro{display:grid;gap:4px;margin:0 0 10px}.dp-skin-intro span{font-size:10.5px;line-height:1.5;color:var(--ac-text-2)}.dp-skin-grid{display:flex;flex-direction:column;gap:7px}.dp-skin-row{min-height:62px;padding:7px 9px}.dp-skin-current{background:var(--ac-active);border-color:#9db0d6}.dp-skin-row[data-locked="true"] .dp-skin-art{filter:grayscale(1);opacity:.48}.dp-skin-art{width:48px;height:48px;flex:none;object-fit:contain}.dp-skin-copy{display:grid;gap:3px}.dp-skin-copy b{font-size:10.5px}.dp-skin-copy small{line-height:1.35}.dp-skin-row>.dp-mini{flex:none;padding-inline:10px}.dp-skin-import{display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 8px;margin-top:10px;cursor:pointer}.dp-skin-import .dp-pick-head{margin:0}.dp-skin-import>.dp-dim{font-size:10px;line-height:1.4;color:var(--ac-text-2)}.dp-skin-import input{position:absolute;width:1px;height:1px;opacity:0}.dp-skin-file{grid-column:2;grid-row:1/3;display:inline-flex!important;align-items:center;white-space:nowrap}.dp-skin-howto{display:flex;width:100%;justify-content:center;margin:10px 0 8px}.dp-skin-note{font-size:12px;font-weight:600;line-height:1.4;color:var(--ac-text-2)}
 `;
 
   // src/client/css-holo.js
@@ -5278,6 +5279,16 @@
     return box;
   }
 
+  // src/client/skin-note.js
+  var CHUBBY_SKIN_NOTE = "\u7A7F\u76AE\u80A4\u4F1A\u53D8\u666E\u901A\u4F53\u578B\uFF0C\u80D6\u80D6\u53EA\u6709\u9ED8\u8BA4\u76AE\u80A4\u6709";
+  function isChubbyPig(view) {
+    const body = view?.pig?.bodyWeight;
+    return body !== null && typeof body === "object" && (body.class === "round" || body.class === "fat");
+  }
+  function chubbySkinNote(view) {
+    return isChubbyPig(view) ? CHUBBY_SKIN_NOTE : "";
+  }
+
   // src/client/tabs/achievements.js
   function renderAchievements(ui, entries2) {
     const selected = entries2.find((entry) => entry.key === ui.drill.pick);
@@ -5663,6 +5674,12 @@
         const action = el("div", "dp-dex-skin-action");
         action.appendChild(pick);
         card2.appendChild(action);
+        const note2 = chubbySkinNote(ui.view);
+        if (note2 !== "") {
+          const hint = el("div", "dp-dex-skin-note", note2);
+          hint.setAttribute("data-skin-fat-note", "true");
+          card2.appendChild(hint);
+        }
       }
     } else {
       const riddle = el("div", "dp-dex-riddle");
@@ -8803,6 +8820,12 @@
     intro.appendChild(el("b", null, "\u7ED9\u732A\u732A\u6362\u4EF6\u65B0\u8863\u670D"));
     intro.appendChild(el("span", null, "\u53A8\u5E08\u4E0E\u5B87\u822A\u5458\u5B8C\u6210\u5BF9\u5E94\u5DE5\u4F5C\u540E\u89E3\u9501\uFF1B\u5176\u4ED6\u76AE\u80A4\u53EF\u76F4\u63A5\u4F7F\u7528\u3002\u5F62\u6001\u4F1A\u4F18\u5148\u663E\u793A\u3002"));
     ui.content.appendChild(intro);
+    const note2 = chubbySkinNote(ui.view);
+    if (note2 !== "") {
+      const hint = el("div", "dp-hint dp-skin-note", note2);
+      hint.setAttribute("data-skin-fat-note", "true");
+      ui.content.appendChild(hint);
+    }
     const grid = el("div", "dp-skin-grid");
     for (const skin of ui.view.skins.entries) grid.appendChild(skinCard(ui, skin));
     ui.content.appendChild(grid);

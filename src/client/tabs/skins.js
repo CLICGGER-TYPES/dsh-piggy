@@ -3,6 +3,7 @@
 
 import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
+import { chubbySkinNote } from '../skin-note.js'
 import { drillTo } from '../widgets.js'
 import { renderSkinGuide } from './skin-guide.js'
 
@@ -12,6 +13,14 @@ export function renderSkinsTab(ui) {
   intro.appendChild(el('b', null, '给猪猪换件新衣服'))
   intro.appendChild(el('span', null, '厨师与宇航员完成对应工作后解锁；其他皮肤可直接使用。形态会优先显示。'))
   ui.content.appendChild(intro)
+
+  // 胖体型穿皮肤会变回普通体型（体重叠层只画在默认皮肤上），提前说一句，不放大段说明。
+  const note = chubbySkinNote(ui.view)
+  if (note !== '') {
+    const hint = el('div', 'dp-hint dp-skin-note', note)
+    hint.setAttribute('data-skin-fat-note', 'true')
+    ui.content.appendChild(hint)
+  }
 
   const grid = el('div', 'dp-skin-grid')
   for (const skin of ui.view.skins.entries) grid.appendChild(skinCard(ui, skin))

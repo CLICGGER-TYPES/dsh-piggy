@@ -5,6 +5,7 @@ import { offParts } from '../extensions.js'
 import { shelfOf } from '../constants.js'
 import { artSource } from '../art-path.js'
 import { button, el, sideScroller } from '../dom.js'
+import { chubbySkinNote } from '../skin-note.js'
 import { drillHeader, drillTo, tile, tileGrid } from '../widgets.js'
 import { renderAchievements } from './achievements.js'
 import { renderHoloSection } from './dex-holo.js'
@@ -238,6 +239,13 @@ function renderDetail(ui, section, entry) {
       const action = el('div', 'dp-dex-skin-action')
       action.appendChild(pick)
       card.appendChild(action)
+      // 图鉴里也能换皮肤：胖体型时同样先说明会变回普通体型。
+      const note = chubbySkinNote(ui.view)
+      if (note !== '') {
+        const hint = el('div', 'dp-dex-skin-note', note)
+        hint.setAttribute('data-skin-fat-note', 'true')
+        card.appendChild(hint)
+      }
     }
   } else {
     const riddle = el('div', 'dp-dex-riddle')

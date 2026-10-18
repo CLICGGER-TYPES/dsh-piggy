@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 胖体型（圆润 / 胖胖）打开「换肤」或图鉴里的皮肤详情时，会先看到一句说明：穿皮肤会变普通体型，胖胖只有默认皮肤有。猪不胖时不显示；体型和图片的显示规则没有改。
+
 ## [0.37.1-rc.3] — 2026-10-18 · Linux 启动崩溃修复、Windows 鼠标转发更稳（预发布；外壳 0.6.7-rc.3）
 
 感谢 [@WolalaQAQ](https://github.com/WolalaQAQ) 提供 PR #19：按游戏版本决定 Windows 的鼠标转发方式，避免在新版游戏里多开一层全局转发。
