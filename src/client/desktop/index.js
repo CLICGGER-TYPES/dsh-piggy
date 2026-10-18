@@ -10,6 +10,8 @@ import { artMarginFor } from '../art-framing.js'
 import { displayNote, sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
+import { createWindowClamp } from './window-clamp.js'
+import { createFlightBridge } from './flight-bridge.js'
 import { installPanel, startPanel } from './panel-window.js'
 import { installExt } from './ext-window.js'
 import { DESKTOP_CSS } from './css.js'
@@ -35,6 +37,9 @@ let flying = false
 let measure = /** @type {any} */ (null)
 let placement = /** @type {any} */ (null)
 let lastKey = null
+/** 窗口管理器连续拒绝同一个目标时，接受它的实际位置，避免 place→被夹→再 place 的死循环。 */
+const windowClamp = createWindowClamp()
+let clampNotice = null
 let hitRects = []
 let lastHit = null
 let mouse = { x: -1, y: -1 }
@@ -128,6 +133,24 @@ function tick() {
     hitRects = next.shape
   }
   const move = !sameBounds(want, bounds, TOLERANCE)
+  // 同一个目标连续失败多次：以窗口管理器的实际位置为准重定家，只 place 一次实际位置。
+  // 不能在第一帧就接受 —— X11 的 setBounds 是异步的，刚开始回读可能还是旧值。
+  const clampState = windowClamp.observe(want, bounds)
+  if (clampState === 'accept') {
+    const pig = pigInWindow(bounds)
+    if (pig !== null) {
+      placement.acceptWindow(bounds, pig, areas)
+      const notice = JSON.stringify({ want, actual: bounds })
+      if (clampNotice !== notice) {
+        clampNotice = notice
+        console.warn('[piggy-desktop] wm clamp accepted ' + notice)
+      }
+      lastKey = null
+      // 同步主进程的 petAsked：下一次拖动/摆放从实际位置起步，不会先跳回被拒绝的目标。
+      bridge.place({ bounds: { ...bounds } })
+      return
+    }
+  }
   const key = measure.keyOf(next)
   if (!move && key === lastKey) return
   lastKey = key
@@ -312,49 +335,22 @@ export function install(shell) {
     syncGeometry: function () { tick() },
     // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
     // A2 抛掷：页面算好窗口位置，外壳只 setBounds；旧外壳没有 flyMove，supported=false，
-    // 页面自动退回原地落地。
-    flight: {
-      supported: typeof shell.flyMove === 'function',
-      start: function () {
-        const info = readGeometry()
-        if (info === null || info === undefined || !info.window) return null
-        const pig = pigInWindow(info.window)
-        if (pig === null) return null
-        return {
-          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
-          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
-          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
-          area: info.workArea,
-          areas: info.workAreas ?? [info.workArea],
-        }
-      },
-      move: function (x, y, slide) {
-        if (typeof shell.flyMove !== 'function') return
-        shell.flyMove({ x: x, y: y, slide: slide ?? { x: 0, y: 0 } })
-      },
-      setFlying: function (on) {
-        flying = on === true
-        if (!flying) { lastKey = null; tick() }
-      },
-      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
-      finish: function (last) {
-        flying = false
-        if (last !== null && last !== undefined && last.window && last.pig) {
-          const pig = {
-            x: last.pig.x + (last.slide?.x ?? 0),
-            y: last.pig.y + (last.slide?.y ?? 0),
-            width: last.pig.width,
-            height: last.pig.height,
-          }
-          placement.rehome(last.window, pig, last.areas ?? [])
-        }
+    // 页面自动退回原地落地。具体实现见 flight-bridge.js。
+    flight: createFlightBridge({
+      shell: shell,
+      readGeometry: readGeometry,
+      pigInWindow: pigInWindow,
+      rehome: function (win, pig, areas) { placement.rehome(win, pig, areas) },
+      setFlying: function (on) { flying = on },
+      isFlying: function () { return flying },
+      clearSlide: function () {
         dragSlide = { x: 0, y: 0 }
         const h = host()
         if (h !== null) h.style.translate = ''
-        lastKey = null
-        tick()
       },
-    },
+      forgetLayout: function () { lastKey = null },
+      tick: tick,
+    }),
     moveBy: typeof shell.moveBy === 'function' ? function (dx, dy) {
       shell.moveBy(dx, dy)
       // 散步是猪自己走：走完按窗口真实位置重定家（主进程可能在屏幕边上夹过）。

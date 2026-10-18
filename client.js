@@ -188,8 +188,8 @@
   });
 
   // src/client/art-style.js
-  function builtinArtPath(key) {
-    return PIG_ART_ASSETS[key];
+  function builtinArtPath(key2) {
+    return PIG_ART_ASSETS[key2];
   }
 
   // src/client/constants.js
@@ -260,11 +260,11 @@
   ];
 
   // src/client/art-path.js
-  function artSource(key) {
-    return ART_URL + (builtinArtPath(key) ?? (key.startsWith("custom-") ? key : key + ".svg"));
+  function artSource(key2) {
+    return ART_URL + (builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg"));
   }
-  function hasBuiltinArt(key) {
-    return Object.hasOwn(PIG_ART_ASSETS, key);
+  function hasBuiltinArt(key2) {
+    return Object.hasOwn(PIG_ART_ASSETS, key2);
   }
 
   // src/client/pig-actions.js
@@ -1032,7 +1032,7 @@
   function button(className, attrs, onClick) {
     var node = el("button", className);
     node.type = "button";
-    for (var key in attrs) node.setAttribute(key, attrs[key]);
+    for (var key2 in attrs) node.setAttribute(key2, attrs[key2]);
     node.addEventListener("click", function(event) {
       event.stopPropagation();
       onClick(event);
@@ -1370,16 +1370,16 @@
     });
     if (value === null || typeof value !== "object") return value;
     var out = {};
-    for (var key in value) {
-      var rule = rules[key];
-      out[key] = rule !== void 0 && typeof value[key] === "number" ? rule(value[key]) : fold(value[key], rules);
+    for (var key2 in value) {
+      var rule = rules[key2];
+      out[key2] = rule !== void 0 && typeof value[key2] === "number" ? rule(value[key2]) : fold(value[key2], rules);
     }
     return out;
   }
   function foldViews(views) {
     if (views === null || typeof views !== "object") return views;
     var out = {};
-    for (var key in views) out[key] = VIEW_RULES[key] ? fold(views[key], VIEW_RULES[key]) : views[key];
+    for (var key2 in views) out[key2] = VIEW_RULES[key2] ? fold(views[key2], VIEW_RULES[key2]) : views[key2];
     return out;
   }
   function pollKey(snapshot) {
@@ -1602,10 +1602,10 @@
         if (!res.ok) throw new Error("HTTP " + res.status);
         var next = await res.json();
         if (startedAt !== actionSeq) return;
-        var key = pollKey(next);
-        if (key !== paintedKey) {
+        var key2 = pollKey(next);
+        if (key2 !== paintedKey) {
           try {
-            paintedKey = ctx.render(next) === false ? null : key;
+            paintedKey = ctx.render(next) === false ? null : key2;
           } catch (error) {
             paintedKey = null;
             throw error;
@@ -1683,9 +1683,9 @@
     const width = Math.ceil(h.offsetWidth || 0);
     const height = Math.ceil(h.offsetHeight || 0);
     if (width < 1 || height < 1) return;
-    const key = width + "x" + height;
-    if (key === lastSize) return;
-    lastSize = key;
+    const key2 = width + "x" + height;
+    if (key2 === lastSize) return;
+    lastSize = key2;
     shell.panel.size(width, height);
   }
   function schedule2() {
@@ -1756,7 +1756,7 @@
     if (list.length === 0) return DEFAULTS.map((entry) => ({ ...entry }));
     return list.map(function(value) {
       const entry = obj(value);
-      const strings = (key) => arr(entry[key]).filter((item) => typeof item === "string");
+      const strings = (key2) => arr(entry[key2]).filter((item) => typeof item === "string");
       const app = obj(entry.app);
       return {
         key: str(entry.key, ""),
@@ -1971,17 +1971,17 @@
   }
 
   // src/client/storage.js
-  function readStore(key) {
+  function readStore(key2) {
     try {
-      var value = window.localStorage.getItem(key);
-      return value !== null ? value : window.localStorage.getItem(key.replace(/^dsh-piggy:/, "dsh-pig:"));
+      var value = window.localStorage.getItem(key2);
+      return value !== null ? value : window.localStorage.getItem(key2.replace(/^dsh-piggy:/, "dsh-pig:"));
     } catch (error) {
       return null;
     }
   }
-  function writeStore(key, value) {
+  function writeStore(key2, value) {
     try {
-      window.localStorage.setItem(key, value);
+      window.localStorage.setItem(key2, value);
     } catch (error) {
     }
   }
@@ -2474,7 +2474,7 @@
   function renderReady(ui) {
     renderGear(ui);
     const baits = ui.view.shop.filter((item) => item.kind === "bait");
-    const owned = (key) => ui.view.inventory[key] ?? 0;
+    const owned = (key2) => ui.view.inventory[key2] ?? 0;
     if (!baits.some((item) => item.key === selectedBait && owned(item.key) > 0)) selectedBait = baits.find((item) => owned(item.key) > 0)?.key ?? null;
     ui.content.appendChild(el("div", "dp-fish-label", "\u9009\u9C7C\u9975"));
     const choices = el("div", "dp-fish-baits");
@@ -3071,7 +3071,7 @@
         upTo: typeof obj(stage2).upTo === "number" ? obj(stage2).upTo : null,
         // Which courses this stage teaches — empty on an old host, in which
         // case the panel shows every subject rather than none.
-        subjects: arr(obj(stage2).subjects).filter((key) => typeof key === "string"),
+        subjects: arr(obj(stage2).subjects).filter((key2) => typeof key2 === "string"),
         // The school ladder: a stage with `unlocked === false` is gated behind
         // finishing the previous one, and says by how much.
         unlocked: obj(stage2).unlocked !== false,
@@ -3263,9 +3263,9 @@
     var source = obj(raw);
     var out = {};
     for (var i = 0; i < MODES.length; i += 1) {
-      var key = MODES[i];
-      var entry = obj(source[key]);
-      out[key] = {
+      var key2 = MODES[i];
+      var entry = obj(source[key2]);
+      out[key2] = {
         ready: entry.ready !== false,
         waitSeconds: num(entry.waitSeconds, 0),
         blocked: typeof entry.blocked === "string" ? entry.blocked : null
@@ -4643,8 +4643,8 @@
     if (spec.note) node.appendChild(el("span", "dp-tile-note", spec.note));
     return node;
   }
-  function drillTo(ui, tab, key) {
-    ui.drill[tab] = key;
+  function drillTo(ui, tab, key2) {
+    ui.drill[tab] = key2;
     ui.drill.pick = null;
     ui.renderContent();
     ui.content.scrollTop = 0;
@@ -4870,7 +4870,7 @@
       fish: ui.view.fishing.bag.length,
       wallet: (ui.view.wallets || []).length
     };
-    for (var key in EXTRA) {
+    for (var key2 in EXTRA) {
       (function(category) {
         if ((category === "worn" || category === "wallet") && counts[category] === 0) return;
         var spec = EXTRA[category];
@@ -4885,7 +4885,7 @@
             drillTo(ui, "bag", category);
           }
         }));
-      })(key);
+      })(key2);
     }
     ui.content.appendChild(grid);
   }
@@ -5127,17 +5127,17 @@
     row.appendChild(el("span", "dp-vcard-value", value));
     return row;
   }
-  function editableField(ui, key, label, value) {
-    var editing = ui.cardEdit !== null && ui.cardEdit.field === key;
-    var row = el("div", "dp-vcard-row" + (key === "motto" ? " dp-vcard-motto-row" : ""));
+  function editableField(ui, key2, label, value) {
+    var editing = ui.cardEdit !== null && ui.cardEdit.field === key2;
+    var row = el("div", "dp-vcard-row" + (key2 === "motto" ? " dp-vcard-motto-row" : ""));
     row.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
     if (editing) {
-      appendEditor(ui, row, key);
+      appendEditor(ui, row, key2);
       return row;
     }
-    if (key === "owner") row.appendChild(el("span", "dp-vcard-value dp-dim", "\uFF08\u6084\u6084\u8BB0\u7740\uFF0C\u4E0D\u5199\u51FA\u6765\uFF09"));
-    else row.appendChild(el("span", key === "motto" ? "dp-vcard-value dp-vcard-motto" : "dp-vcard-value", key === "motto" ? "\u300C" + value + "\u300D" : value));
-    row.appendChild(pencil(ui, key, label, value, "dp-vcard-edit"));
+    if (key2 === "owner") row.appendChild(el("span", "dp-vcard-value dp-dim", "\uFF08\u6084\u6084\u8BB0\u7740\uFF0C\u4E0D\u5199\u51FA\u6765\uFF09"));
+    else row.appendChild(el("span", key2 === "motto" ? "dp-vcard-value dp-vcard-motto" : "dp-vcard-value", key2 === "motto" ? "\u300C" + value + "\u300D" : value));
+    row.appendChild(pencil(ui, key2, label, value, "dp-vcard-edit"));
     return row;
   }
   function nameLine(ui, p) {
@@ -5150,34 +5150,34 @@
     line3.appendChild(pencil(ui, "name", "\u540D\u5B57", p.name, "dp-vcard-edit dp-vcard-name-edit"));
     return line3;
   }
-  function pencil(ui, key, label, value, className) {
-    var btn = button(className, { "data-card-edit": key }, function() {
-      ui.cardEdit = { field: key, draft: value };
+  function pencil(ui, key2, label, value, className) {
+    var btn = button(className, { "data-card-edit": key2 }, function() {
+      ui.cardEdit = { field: key2, draft: value };
       ui.renderContent();
     });
     btn.textContent = "\u270F\uFE0F";
     btn.title = "\u6539" + label;
     return btn;
   }
-  function appendEditor(ui, parent, key) {
+  function appendEditor(ui, parent, key2) {
     var input = (
       /** @type {HTMLInputElement} */
       el("input", "dp-input dp-vcard-input")
     );
     input.value = ui.cardEdit.draft;
-    input.maxLength = LIMITS[key];
-    input.setAttribute("data-card-input", key);
+    input.maxLength = LIMITS[key2];
+    input.setAttribute("data-card-input", key2);
     input.addEventListener("input", function() {
-      ui.cardEdit = { field: key, draft: input.value };
+      ui.cardEdit = { field: key2, draft: input.value };
     });
-    var save = button("dp-mini", { "data-card-save": key }, function() {
+    var save = button("dp-mini", { "data-card-save": key2 }, function() {
       var text = (ui.cardEdit === null ? "" : ui.cardEdit.draft).trim();
       ui.cardEdit = null;
-      if (text !== "") ui.send(key, key === "name" || key === "owner" ? { name: text } : { text });
+      if (text !== "") ui.send(key2, key2 === "name" || key2 === "owner" ? { name: text } : { text });
       ui.renderContent();
     });
     save.textContent = "\u597D";
-    var cancel = button("dp-mini dp-mini-plain", { "data-card-cancel": key }, function() {
+    var cancel = button("dp-mini dp-mini-plain", { "data-card-cancel": key2 }, function() {
       ui.cardEdit = null;
       ui.renderContent();
     });
@@ -5215,7 +5215,7 @@
     pick.addEventListener("change", function() {
       draft2.personality = pick.value;
     });
-    var number2 = function(key, max, value) {
+    var number2 = function(key2, max, value) {
       var input = (
         /** @type {HTMLInputElement} */
         el("input", "dp-input dp-vcard-date")
@@ -5224,9 +5224,9 @@
       input.min = "1";
       input.max = String(max);
       input.value = String(value);
-      input.setAttribute("data-card-once", key);
+      input.setAttribute("data-card-once", key2);
       input.addEventListener("input", function() {
-        draft2[key] = Number(input.value);
+        draft2[key2] = Number(input.value);
       });
       return input;
     };
@@ -5478,15 +5478,15 @@
     for (const section2 of ui.view.extDex ?? []) {
       const entries2 = section2.entries ?? [];
       const got = entries2.filter((entry) => entry.acquired).length;
-      const key = "ext:" + section2.extension + ":" + section2.key;
+      const key2 = "ext:" + section2.extension + ":" + section2.key;
       const node = tile({
         emoji: section2.emoji,
         label: section2.label,
         color: section2.color || "orange",
         note: got + "/" + entries2.length,
-        data: { "data-dex-section": key },
+        data: { "data-dex-section": key2 },
         onPick: function() {
-          drillTo(ui, "dex", key);
+          drillTo(ui, "dex", key2);
         }
       });
       const progress2 = el("span", "dp-dex-progress");
@@ -5562,15 +5562,15 @@
     const filters = el("div", "dp-dex-filters");
     const active2 = ui.drill.dexFilter ?? "all";
     const available = new Set(entries2.map((entry) => shelfOf(entry.kind)));
-    for (const [key, label] of ITEM_KINDS) {
-      if (key !== "all" && !available.has(key)) continue;
-      const filter2 = button("dp-dex-filter", { "data-dex-filter": key }, function() {
-        ui.drill.dexFilter = key;
+    for (const [key2, label] of ITEM_KINDS) {
+      if (key2 !== "all" && !available.has(key2)) continue;
+      const filter2 = button("dp-dex-filter", { "data-dex-filter": key2 }, function() {
+        ui.drill.dexFilter = key2;
         ui.drill.pick = null;
         ui.renderContent();
       });
       filter2.textContent = label;
-      filter2.setAttribute("data-active", active2 === key ? "true" : "false");
+      filter2.setAttribute("data-active", active2 === key2 ? "true" : "false");
       filters.appendChild(filter2);
     }
     controls.appendChild(filters);
@@ -5658,8 +5658,8 @@
     ui.content.appendChild(wrap2);
     if (flash && entry.acquired) tilt2(card2);
   }
-  function openDetail(ui, key) {
-    ui.drill.pick = key;
+  function openDetail(ui, key2) {
+    ui.drill.pick = key2;
     ui.renderContent();
     ui.content.scrollTop = 0;
   }
@@ -5715,13 +5715,13 @@
   function iconStyle() {
     return "system";
   }
-  function appIcon(key, emoji, className) {
-    if (iconStyle() !== "built-in" || !BUNDLED.has(key)) return el("span", className, emoji);
+  function appIcon(key2, emoji, className) {
+    if (iconStyle() !== "built-in" || !BUNDLED.has(key2)) return el("span", className, emoji);
     const img = (
       /** @type {HTMLImageElement} */
       el("img", className + " dp-tile-svg")
     );
-    img.src = ART_URL + "ui-" + key + ".svg";
+    img.src = ART_URL + "ui-" + key2 + ".svg";
     img.alt = emoji;
     img.addEventListener("error", function() {
       const replacement = el("span", className, emoji);
@@ -5767,36 +5767,36 @@
     );
     if (!host3.dshPiggyExtensions) {
       host3.dshPiggyExtensions = {
-        register: function(key, impl) {
-          if (typeof key !== "string" || impl === null || typeof impl !== "object") return;
-          registry[key] = impl;
+        register: function(key2, impl) {
+          if (typeof key2 !== "string" || impl === null || typeof impl !== "object") return;
+          registry[key2] = impl;
           if (typeof rerender === "function") rerender();
         }
       };
     }
     return host3.dshPiggyExtensions;
   }
-  function ensureScript(key, version) {
+  function ensureScript(key2, version) {
     bridge();
-    var id = key + "@" + version;
+    var id = key2 + "@" + version;
     if (requested[id] || typeof document === "undefined" || typeof document.createElement !== "function") return;
     requested[id] = true;
     var script = (
       /** @type {HTMLScriptElement} */
       document.createElement("script")
     );
-    script.src = "/dsh-piggy/ext/" + encodeURIComponent(key) + "/client.js?v=" + encodeURIComponent(version);
+    script.src = "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/client.js?v=" + encodeURIComponent(version);
     script.async = true;
     (document.head || document.body)?.appendChild(script);
   }
-  function openBigApp(ui, key) {
+  function openBigApp(ui, key2) {
     var shell2 = desktopShell();
     if (shell2 && shell2.ext && typeof shell2.ext.open === "function") {
-      shell2.ext.open(key);
+      shell2.ext.open(key2);
       return;
     }
-    ui.extBig = key;
-    ui.tab = "ext:" + key;
+    ui.extBig = key2;
+    ui.tab = "ext:" + key2;
     ui.renderContent();
   }
   function closeBigApp(ui) {
@@ -5809,10 +5809,10 @@
     ui.host.setAttribute("data-ext-view", "");
     ui.renderContent();
   }
-  function renderDownloadedApp(ui, key, mode) {
+  function renderDownloadedApp(ui, key2, mode) {
     var big = mode === "big";
     var extension = (ui.view.extensions || []).find(function(entry) {
-      return entry.key === key;
+      return entry.key === key2;
     });
     if (!extension) {
       ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u5DF2\u7ECF\u5220\u6389\u4E86"));
@@ -5822,20 +5822,20 @@
       ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u51FA\u9519\u4E86\uFF1A" + extension.error));
       return;
     }
-    ensureScript(key, extension.version);
+    ensureScript(key2, extension.version);
     rerender = function() {
-      if (ui.tab === "ext:" + key) ui.renderContent();
+      if (ui.tab === "ext:" + key2) ui.renderContent();
     };
-    var impl = registry[key];
+    var impl = registry[key2];
     if (!impl || typeof impl.render !== "function") {
       ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u52A0\u8F7D\u2026\u2026"));
       return;
     }
-    var data = ui.view.extViews ? ui.view.extViews[key] : void 0;
+    var data = ui.view.extViews ? ui.view.extViews[key2] : void 0;
     var wallet = (ui.view.wallets || []).find(function(entry) {
-      return entry.key === key;
+      return entry.key === key2;
     });
-    if (wallet && !big && key !== "farm") ui.content.appendChild(walletBar(ui, wallet));
+    if (wallet && !big && key2 !== "farm") ui.content.appendChild(walletBar(ui, wallet));
     var panel = typeof ui.content.closest === "function" ? ui.content.closest(".dp-card") : null;
     if (panel && !big) {
       var padding = parseFloat(getComputedStyle(panel.querySelector(".dp-content") || panel).paddingBottom) || 0;
@@ -5849,13 +5849,13 @@
         mode: big ? "big" : "panel",
         // 桌面版外壳 0.6.5 以前没有大窗口，面板窗口又太小，就不给这个入口；网页版在页面里铺满。
         openBig: big || desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === "function") ? void 0 : function() {
-          openBigApp(ui, key);
+          openBigApp(ui, key2);
         },
         closeBig: big ? function() {
           closeBigApp(ui);
         } : void 0,
         send: function(op, payload) {
-          ui.send("ext", { key, op, data: payload || {} });
+          ui.send("ext", { key: key2, op, data: payload || {} });
         },
         walletContent: wallet ? function() {
           return walletBar(ui, wallet, { open: true });
@@ -5878,17 +5878,17 @@
           applyAssetFrame(node, extension.assetLayout?.[name]);
         },
         paintFrame: function(node, name) {
-          return applyModalAssetFrame(node, extension.assetLayout?.[name], "/dsh-piggy/ext/" + encodeURIComponent(key) + "/assets/" + encodeURIComponent(name) + "?v=" + encodeURIComponent(extension.version));
+          return applyModalAssetFrame(node, extension.assetLayout?.[name], "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/assets/" + encodeURIComponent(name) + "?v=" + encodeURIComponent(extension.version));
         },
         assetInfo: function(name) {
           return extension.assetLayout ? extension.assetLayout[name] : null;
         },
         asset: function(name) {
-          return "/dsh-piggy/ext/" + encodeURIComponent(key) + "/assets/" + encodeURIComponent(String(name)) + "?v=" + encodeURIComponent(extension.version);
+          return "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/assets/" + encodeURIComponent(String(name)) + "?v=" + encodeURIComponent(extension.version);
         },
         openDex: function(section2) {
           ui.select("dex");
-          ui.drill.dex = "ext:" + key + ":" + section2;
+          ui.drill.dex = "ext:" + key2 + ":" + section2;
           ui.renderContent();
         },
         // 跳到商店里这个扩展的货架（比如菜园缺种子 → 种子货架），按返回回到扩展页（用户 2026-10-09）。
@@ -5898,8 +5898,8 @@
             ui.host.setAttribute("data-ext-view", "");
           }
           ui.select("shop");
-          ui.drill.shop = "ext:" + key;
-          ui.drill.from = "ext:" + key;
+          ui.drill.shop = "ext:" + key2;
+          ui.drill.from = "ext:" + key2;
           ui.renderContent();
         }
       });
@@ -5917,13 +5917,13 @@
     const texts = {};
     for (const file of files) if (NAMES.includes(file.name)) texts[file.name] = await file.text();
     if (!NAMES.every((name) => typeof texts[name] === "string")) return null;
-    let key = "";
+    let key2 = "";
     try {
-      key = str(obj(JSON.parse(texts["manifest.json"])).key, "");
+      key2 = str(obj(JSON.parse(texts["manifest.json"])).key, "");
     } catch {
       return null;
     }
-    return JSON.stringify({ format: "dsh-piggy-extension", version: 1, key, files: texts });
+    return JSON.stringify({ format: "dsh-piggy-extension", version: 1, key: key2, files: texts });
   }
   function base64(text) {
     const bytes = new TextEncoder().encode(text);
@@ -6028,16 +6028,16 @@
     []
   ), stamp: "" };
   var download = { key: "", failed: "", error: "" };
-  function startInstall(ui, key) {
+  function startInstall(ui, key2) {
     if (download.key !== "") return;
-    download = { key, failed: "", error: "" };
+    download = { key: key2, failed: "", error: "" };
     ui.renderContent();
-    Promise.resolve(ui.send("installExtension", { key })).then(function(result) {
-      if (download.key !== key) return;
+    Promise.resolve(ui.send("installExtension", { key: key2 })).then(function(result) {
+      if (download.key !== key2) return;
       if (result !== null && result !== void 0 && result.ok === false) {
-        download = { key: "", failed: key, error: str(result.message, "") || "\u4E0B\u8F7D\u5931\u8D25\uFF0C\u7A0D\u540E\u518D\u8BD5" };
+        download = { key: "", failed: key2, error: str(result.message, "") || "\u4E0B\u8F7D\u5931\u8D25\uFF0C\u7A0D\u540E\u518D\u8BD5" };
       } else if (result === null || result === void 0) {
-        download = { key: "", failed: key, error: "\u521A\u624D\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B\uFF0C\u518D\u70B9\u4E00\u6B21" };
+        download = { key: "", failed: key2, error: "\u521A\u624D\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B\uFF0C\u518D\u70B9\u4E00\u6B21" };
       } else {
         download = { key: "", failed: "", error: "" };
       }
@@ -6050,9 +6050,9 @@
       return extension.key + "@" + extension.version + ":" + extension.installed;
     }).join(",");
   }
-  function closingNote(view, key) {
-    if (key === "pomodoro" && view.pomodoro !== null && view.pomodoro.active) return "\u6B63\u5728\u4E13\u6CE8\uFF1A\u5173\u6389\u4F1A\u653E\u5F03\u8FD9\u4E00\u4E2A\uFF0C\u4E0D\u7ED9\u5956\u52B1";
-    if (key === "fishing" && view.activity?.kind === "fishing") return "\u732A\u6B63\u5728\u5916\u9762\u9493\u9C7C\uFF1A\u5173\u6389\u4F1A\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u9C7C\u9975\u9000\u56DE";
+  function closingNote(view, key2) {
+    if (key2 === "pomodoro" && view.pomodoro !== null && view.pomodoro.active) return "\u6B63\u5728\u4E13\u6CE8\uFF1A\u5173\u6389\u4F1A\u653E\u5F03\u8FD9\u4E00\u4E2A\uFF0C\u4E0D\u7ED9\u5956\u52B1";
+    if (key2 === "fishing" && view.activity?.kind === "fishing") return "\u732A\u6B63\u5728\u5916\u9762\u9493\u9C7C\uFF1A\u5173\u6389\u4F1A\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u9C7C\u9975\u9000\u56DE";
     return "";
   }
   var CLEARS = { pomodoro: "\u4ECA\u5929\u548C\u7D2F\u8BA1\u7684\u756A\u8304\u6570", fishing: "\u9C7C\u7BD3\u91CC\u7684\u9C7C\u3001\u56FE\u9274\u91CC\u7684\u9C7C\u3001\u80CC\u5305\u91CC\u7684\u9C7C\u9975" };
@@ -6072,10 +6072,10 @@
       if (["home", "settings", "extensions"].includes(ui.tab)) ui.renderContent();
     });
   }
-  var downloading = (key) => download.key === key;
-  function installLabel(key, normal) {
-    if (downloading(key)) return "\u4E0B\u8F7D\u4E2D\u2026";
-    return download.failed === key ? "\u91CD\u8BD5" : normal;
+  var downloading = (key2) => download.key === key2;
+  function installLabel(key2, normal) {
+    if (downloading(key2)) return "\u4E0B\u8F7D\u4E2D\u2026";
+    return download.failed === key2 ? "\u91CD\u8BD5" : normal;
   }
   function extensionUpdateAvailable(ui) {
     if (!online.loaded || online.stamp !== stampOf(ui.view)) loadOnline(ui, false);
@@ -6228,7 +6228,7 @@
     dev: "brown"
   };
   function orderHomeApps(apps) {
-    const rank = (key) => key === "quit" ? 4 : key === "dev" ? 3 : key === "settings" ? 2 : key.startsWith("ext:") ? 1 : 0;
+    const rank = (key2) => key2 === "quit" ? 4 : key2 === "dev" ? 3 : key2 === "settings" ? 2 : key2.startsWith("ext:") ? 1 : 0;
     return apps.slice().sort((a, b) => rank(a.key) - rank(b.key));
   }
   function renderHome(ui, apps) {
@@ -6357,16 +6357,16 @@
     });
     ui.content.appendChild(version);
   }
-  function alertFor(ui, key) {
-    if (key === "update") return ui.updateNotice?.unread ? "!" : "";
+  function alertFor(ui, key2) {
+    if (key2 === "update") return ui.updateNotice?.unread ? "!" : "";
     var p = ui.view.pig;
-    if (key === "status") {
+    if (key2 === "status") {
       if (ui.view.dead) return "\u8D70\u4E86";
       if (p.illness !== null) return "\u751F\u75C5";
       if (ui.view.activity !== null) return "\u5728\u5916\u9762";
       return "";
     }
-    var icon = ui.icons[key];
+    var icon = ui.icons[key2];
     return icon !== void 0 && icon.getAttribute("data-alert") === "true" ? "!" : "";
   }
   function appHeader(ui, app, info) {
@@ -6388,7 +6388,7 @@
   }
 
   // packages/pet-core/src/data/fish.js
-  var fish2 = (key, label, emoji, spot, rarity, times, behavior, difficulty, minCm, maxCm, price) => Object.freeze({ key, label, emoji, spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price });
+  var fish2 = (key2, label, emoji, spot, rarity, times, behavior, difficulty, minCm, maxCm, price) => Object.freeze({ key: key2, label, emoji, spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price });
   var ALL_DAY = ["early", "noon", "evening", "night"];
   var FISH = Object.freeze([
     // C5 的 15 种（价格、时段、手感都不改，只按水域分到钓点）
@@ -6883,7 +6883,7 @@
     )
   });
   var LINES = Object.freeze(Object.fromEntries(
-    [.../* @__PURE__ */ new Set([...Object.keys(BASE_LINES), ...Object.keys(MORE_LINES)])].map((key) => [key, Object.freeze([...BASE_LINES[key] ?? [], ...MORE_LINES[key] ?? []])])
+    [.../* @__PURE__ */ new Set([...Object.keys(BASE_LINES), ...Object.keys(MORE_LINES)])].map((key2) => [key2, Object.freeze([...BASE_LINES[key2] ?? [], ...MORE_LINES[key2] ?? []])])
   ));
   var LINE_SCENES = Object.freeze(Object.keys(LINES));
 
@@ -6929,7 +6929,7 @@
   ]);
 
   // packages/pet-core/src/data/school.js
-  var subject = (key, label, emoji, trait, secondary = null) => Object.freeze({ key, label, emoji, trait, secondary });
+  var subject = (key2, label, emoji, trait, secondary = null) => Object.freeze({ key: key2, label, emoji, trait, secondary });
   var SUBJECTS = Object.freeze([
     subject("chinese", "\u8BED\u6587", "\u{1F4D6}", "intel", "charm"),
     subject("mathematics", "\u6570\u5B66", "\u{1F522}", "intel"),
@@ -6968,7 +6968,7 @@
     240: Object.freeze({ satiety: -34, cleanliness: -26 }),
     480: Object.freeze({ satiety: -60, cleanliness: -40 })
   });
-  var job = (key, label, emoji, trait, minutes, coins, requires) => Object.freeze({ key, label, emoji, trait, minutes, coins, ...COST_BY_MINUTES[minutes], requires: Object.freeze(requires) });
+  var job = (key2, label, emoji, trait, minutes, coins, requires) => Object.freeze({ key: key2, label, emoji, trait, minutes, coins, ...COST_BY_MINUTES[minutes], requires: Object.freeze(requires) });
   var JOBS = Object.freeze([
     // --- 起步：不用上学 · 30–45 分钟 ------------------------------------------
     job("bricks", "\u642C\u7816", "\u{1F9F1}", "strong", 30, 40, { level: 1 }),
@@ -7021,7 +7021,7 @@
   var SELF_HEAL_CHANCE = Object.freeze([0.25, 0.12, 0.05, 0]);
   var STAGE_HEALTH = Object.freeze([4, 3, 2, 1]);
   var MEDICINE_PRICE_BY_TIER = Object.freeze([30, 70, 140, 260]);
-  var medicine = (key, label, emoji, tier) => Object.freeze({ key, label, emoji, tier, price: MEDICINE_PRICE_BY_TIER[tier - 1], kind: "medicine" });
+  var medicine = (key2, label, emoji, tier) => Object.freeze({ key: key2, label, emoji, tier, price: MEDICINE_PRICE_BY_TIER[tier - 1], kind: "medicine" });
   var stage = (name, cure) => Object.freeze({ name, cure });
   var ILLNESS_CHAINS = Object.freeze([
     Object.freeze({
@@ -7243,9 +7243,9 @@
       },
       /** 调试页「做个小动作」。 */
       /** @param {string} [key] 指定哪个小动作（调试页用），不给就随机。 */
-      idleNow: function(key) {
+      idleNow: function(key2) {
         var picked = IDLE_ACTIONS.find(function(action) {
-          return action.key === key;
+          return action.key === key2;
         });
         doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
       },
@@ -7384,9 +7384,9 @@
         });
         return;
       }
-      Object.keys(table).forEach(function(key) {
-        var label = kind === "work" ? jobNames[key] ?? key : kind === "illness" ? jobNames["illness:" + key] ?? key : kind === "interest" ? jobNames["interest:" + key] ?? ART_SCENE_NAMES[key] ?? key : ART_SCENE_NAMES[key] ?? key;
-        [].concat(table[key]).forEach(function(name) {
+      Object.keys(table).forEach(function(key2) {
+        var label = kind === "work" ? jobNames[key2] ?? key2 : kind === "illness" ? jobNames["illness:" + key2] ?? key2 : kind === "interest" ? jobNames["interest:" + key2] ?? ART_SCENE_NAMES[key2] ?? key2 : ART_SCENE_NAMES[key2] ?? key2;
+        [].concat(table[key2]).forEach(function(name) {
           add(name, prefix + label);
         });
       });
@@ -7395,9 +7395,9 @@
     UNUSED_FEEDBACK_ART.forEach(function(name) {
       add(name, "\u6682\u4E0D\u4F7F\u7528\uFF08\u5F85\u5B9A\uFF09");
     });
-    Object.keys(WITHDRAWN_FEEDBACK_ART).forEach(function(key) {
-      WITHDRAWN_FEEDBACK_ART[key].forEach(function(name) {
-        if (!uses[name]) add(name, "\u5148\u64A4\u56DE\uFF08" + (ART_SCENE_NAMES[key] ?? key) + "\uFF09");
+    Object.keys(WITHDRAWN_FEEDBACK_ART).forEach(function(key2) {
+      WITHDRAWN_FEEDBACK_ART[key2].forEach(function(name) {
+        if (!uses[name]) add(name, "\u5148\u64A4\u56DE\uFF08" + (ART_SCENE_NAMES[key2] ?? key2) + "\uFF09");
       });
     });
     return uses;
@@ -7423,10 +7423,10 @@
       ui.send("dev", { patch: body });
     };
     var pages = [];
-    function page(key, label) {
+    function page(key2, label) {
       var body = el("div", "dp-dev-page");
-      body.setAttribute("data-dev-page-body", key);
-      pages.push({ key, label, body });
+      body.setAttribute("data-dev-page-body", key2);
+      pages.push({ key: key2, label, body });
       return function group(title, entries2, note2) {
         var head = el("div", "dp-title");
         head.appendChild(el("b", null, title));
@@ -8334,16 +8334,16 @@
     for (var g = 0; g < groups.length; g += 1) renderGroup(ui, groups[g], newestStable);
   }
   function renderGroup(ui, group, newestStable) {
-    var key = group.base;
+    var key2 = group.base;
     var head = group.stable ?? group.previews[0];
-    var open = state.pick === key;
+    var open = state.pick === key2;
     var box = el("div", "dp-rel");
-    box.setAttribute("data-release-group", key);
+    box.setAttribute("data-release-group", key2);
     var row = button("dp-rel-head", { "data-release": head.version }, function() {
-      state.pick = open ? null : key;
+      state.pick = open ? null : key2;
       ui.renderContent();
     });
-    row.appendChild(el("b", null, "v" + key));
+    row.appendChild(el("b", null, "v" + key2));
     row.appendChild(el("small", null, group.stable !== null ? group.stable.date : "\u8FD8\u6CA1\u53D1\u6B63\u5F0F\u7248"));
     var tags = el("span", "dp-rel-tags");
     var current2 = group.stable !== null && group.stable.current || group.previews.some(function(r) {
@@ -8359,9 +8359,9 @@
       if (group.stable !== null) body.appendChild(details(ui, group.stable));
       if (group.previews.length > 0) {
         var pre = el("div", "dp-rel-pre");
-        var showing = state.previews === key;
-        var toggle = button("dp-mini dp-mini-plain", { "data-previews": key }, function() {
-          state.previews = showing ? null : key;
+        var showing = state.previews === key2;
+        var toggle = button("dp-mini dp-mini-plain", { "data-previews": key2 }, function() {
+          state.previews = showing ? null : key2;
           ui.renderContent();
         });
         toggle.textContent = (showing ? "\u25BE " : "\u25B8 ") + "\u6D4B\u8BD5\u7248 " + group.previews.length + " \u4E2A \xB7 \u624B\u52A8\u5B89\u88C5";
@@ -8453,21 +8453,21 @@
     ui.content.appendChild(dailyLine);
     var grid = el("div", "dp-actions");
     for (var i = 0; i < MODES.length; i += 1) {
-      (function(key) {
-        var info = ui.view.actions[key];
-        var shelf = ui.view.care[key] ?? [];
+      (function(key2) {
+        var info = ui.view.actions[key2];
+        var shelf = ui.view.care[key2] ?? [];
         var needsItem = shelf.length > 0;
-        var btn = button("dp-btn", { "data-action": key }, function() {
-          if (BAG_SHELF[key] !== void 0) {
+        var btn = button("dp-btn", { "data-action": key2 }, function() {
+          if (BAG_SHELF[key2] !== void 0) {
             ui.select("bag");
             ui.drill.from = "status";
-            drillTo(ui, "bag", BAG_SHELF[key]);
+            drillTo(ui, "bag", BAG_SHELF[key2]);
           } else {
-            ui.send(key);
+            ui.send(key2);
           }
         });
-        btn.appendChild(el("span", null, CARE_LABEL[key][1]));
-        btn.appendChild(el("span", null, CARE_LABEL[key][0]));
+        btn.appendChild(el("span", null, CARE_LABEL[key2][1]));
+        btn.appendChild(el("span", null, CARE_LABEL[key2][0]));
         if (needsItem) btn.appendChild(el("span", "dp-count", String(shelf.length)));
         if (!info.ready || ui.view.dead) {
           btn.disabled = true;
@@ -9114,18 +9114,18 @@
       voices = Math.max(0, voices - 1);
     };
   }
-  function playSound(key, options) {
-    var recipe = RECIPES[key];
+  function playSound(key2, options) {
+    var recipe = RECIPES[key2];
     if (recipe === void 0) return false;
     var settings = soundSettings();
     if (!settings.on) return false;
     if (!allowedRole() || quietCheck() === true) return false;
     var now2 = Date.now();
-    if (now2 - (lastAt[key] ?? 0) < 60) return false;
+    if (now2 - (lastAt[key2] ?? 0) < 60) return false;
     if (voices >= 3) return false;
     var ctx = ensureContext();
     if (ctx === null || master === null) return false;
-    lastAt[key] = now2;
+    lastAt[key2] = now2;
     var level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
     var volume = level * (options?.soft === true ? 0.65 : 1);
     var start2 = ctx.currentTime + 5e-3;
@@ -9171,12 +9171,12 @@
     );
     mode.setAttribute("aria-label", "\u4EE3\u7406\u6A21\u5F0F");
     mode.setAttribute("data-proxy-mode", "true");
-    for (const [key, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF\u4EE3\u7406"], ["direct", "\u76F4\u8FDE\uFF08\u4E0D\u4F7F\u7528\u4EE3\u7406\uFF09"], ["http", "HTTP \u4EE3\u7406"], ["socks5", "SOCKS5 \u4EE3\u7406"]]) {
+    for (const [key2, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF\u4EE3\u7406"], ["direct", "\u76F4\u8FDE\uFF08\u4E0D\u4F7F\u7528\u4EE3\u7406\uFF09"], ["http", "HTTP \u4EE3\u7406"], ["socks5", "SOCKS5 \u4EE3\u7406"]]) {
       const option = (
         /** @type {HTMLOptionElement} */
         el("option", null, label)
       );
-      option.value = key;
+      option.value = key2;
       mode.appendChild(option);
     }
     mode.value = draft.mode;
@@ -9235,12 +9235,12 @@
         if (ui.tab === "settings") ui.renderContent();
       }
     }
-    for (const [key, label, action] of [
+    for (const [key2, label, action] of [
       ["save", "\u5E94\u7528", () => api.set({ mode: mode.value, address: endpoint.value })],
       ["test", "\u6D4B\u8BD5\u8FDE\u63A5", () => api.test()],
       ["clear", "\u6062\u590D\u7CFB\u7EDF", () => api.clear()]
     ]) {
-      const control = button("dp-mini dp-proxy-" + key, { "data-proxy-action": key }, () => run(action));
+      const control = button("dp-mini dp-proxy-" + key2, { "data-proxy-action": key2 }, () => run(action));
       control.textContent = label;
       control.disabled = busy2;
       actions.push(control);
@@ -9564,8 +9564,8 @@
     const desired = dialog.querySelector(`[data-save-focus="${state2.focus}"]`) || dialog.querySelector("input") || cancel;
     if (document.activeElement === document.body || !dialog.contains(document.activeElement)) desired.focus();
     dialog.addEventListener("focusin", (event) => {
-      const key = event.target?.getAttribute?.("data-save-focus");
-      if (key) state2.focus = key;
+      const key2 = event.target?.getAttribute?.("data-save-focus");
+      if (key2) state2.focus = key2;
     });
   }
   function rowTo(parent, label, value) {
@@ -9652,8 +9652,8 @@
       ui.fitPanel();
       desktopShell()?.syncGeometry?.();
     }
-    for (const { key, label, delta } of [{ key: "minus", label: "\u2212", delta: -10 }, { key: "plus", label: "+", delta: 10 }]) {
-      const control = button("dp-size-step", { "data-pig-size-step": key, "aria-label": delta < 0 ? "\u7F29\u5C0F\u5C0F\u732A" : "\u653E\u5927\u5C0F\u732A" }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)));
+    for (const { key: key2, label, delta } of [{ key: "minus", label: "\u2212", delta: -10 }, { key: "plus", label: "+", delta: 10 }]) {
+      const control = button("dp-size-step", { "data-pig-size-step": key2, "aria-label": delta < 0 ? "\u7F29\u5C0F\u5C0F\u732A" : "\u653E\u5927\u5C0F\u732A" }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)));
       control.textContent = label;
       if (delta < 0) sizeRow.appendChild(control);
       else {
@@ -9677,8 +9677,8 @@
       { key: "full", label: "\u6807\u51C6" },
       { key: "soft", label: "\u8F7B\u67D4" },
       { key: "off", label: "\u5173\u95ED" }
-    ], feelMode(), function(key) {
-      setFeelMode(key);
+    ], feelMode(), function(key2) {
+      setFeelMode(key2);
       ui.renderContent();
     });
     const soundPrefs = soundSettings();
@@ -9695,8 +9695,8 @@
       { key: "0", label: "\u8F7B" },
       { key: "1", label: "\u4E2D" },
       { key: "2", label: "\u54CD" }
-    ], String(soundPrefs.volume), function(key) {
-      setSoundSettings({ volume: Number(key) });
+    ], String(soundPrefs.volume), function(key2) {
+      setSoundSettings({ volume: Number(key2) });
       ui.renderContent();
     });
     if (hasBundledEmoji()) {
@@ -9704,8 +9704,8 @@
       segmented(emoji, "data-emoji-style", [
         { key: "bundled", label: "\u5185\u7F6E" },
         { key: "system", label: "\u7CFB\u7EDF\u81EA\u5E26" }
-      ], emojiStyle(), function(key) {
-        setEmojiStyle(key);
+      ], emojiStyle(), function(key2) {
+        setEmojiStyle(key2);
         applyEmojiStyle(ui.host);
         ui.renderContent();
       });
@@ -10145,13 +10145,13 @@
     if (!doc) return paint();
     const active2 = doc.activeElement;
     if (!content.contains(active2)) return paint();
-    const key = ["data-farm-item", "data-farm-plot"].map((attr) => ({ attr, value: active2.getAttribute?.(attr) })).find((entry) => entry.value !== null && entry.value !== void 0);
+    const key2 = ["data-farm-item", "data-farm-plot"].map((attr) => ({ attr, value: active2.getAttribute?.(attr) })).find((entry) => entry.value !== null && entry.value !== void 0);
     const result = paint();
-    if (!key) return result;
+    if (!key2) return result;
     const next = doc.activeElement;
     if (content.contains(next) || next !== null && next !== void 0 && next !== doc.body && next !== active2) return result;
     if (next === active2 && content.contains(active2)) return result;
-    const target = Array.from(content.querySelectorAll("[data-farm-item], [data-farm-plot]")).find((node) => node.tagName?.toLowerCase() === "button" && !node.disabled && node.getAttribute(key.attr) === key.value);
+    const target = Array.from(content.querySelectorAll("[data-farm-item], [data-farm-plot]")).find((node) => node.tagName?.toLowerCase() === "button" && !node.disabled && node.getAttribute(key2.attr) === key2.value);
     if (target) target.focus({ preventScroll: true });
     return result;
   }
@@ -11098,9 +11098,9 @@
       else want.right = Math.round(contentBox.right - hostBox.x - hostBox.width + PAD - shift.x) + "px";
       if (side.vertical === "top") want.top = Math.round(hostBox.y - contentBox.top + PAD + shift.y) + "px";
       else want.bottom = Math.round(contentBox.bottom - hostBox.y - hostBox.height + PAD - shift.y) + "px";
-      const key = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
-      if (key === state3.pinned) return;
-      state3.pinned = key;
+      const key2 = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
+      if (key2 === state3.pinned) return;
+      state3.pinned = key2;
       host3.style.left = want.left;
       host3.style.right = want.right;
       host3.style.top = want.top;
@@ -11154,15 +11154,15 @@
     function homeFromSaved(raw, pigSize2, areas) {
       const list = Array.isArray(areas) ? areas : [];
       const relative = raw.v === STORE_VERSION || raw.v === 2;
-      const same = relative && raw.area ? list.find((a) => a.x === raw.area.x && a.y === raw.area.y && a.width === raw.area.width && a.height === raw.area.height) : null;
-      const origin = relative && raw.area ? same ?? raw.area : { x: 0, y: 0 };
+      const same2 = relative && raw.area ? list.find((a) => a.x === raw.area.x && a.y === raw.area.y && a.width === raw.area.width && a.height === raw.area.height) : null;
+      const origin = relative && raw.area ? same2 ?? raw.area : { x: 0, y: 0 };
       let point = { x: origin.x + raw.x, y: origin.y + raw.y };
       if (raw.v !== STORE_VERSION) {
         const w = Number.isFinite(raw.w) ? raw.w : pigSize2.width;
         const h = Number.isFinite(raw.h) ? raw.h : pigSize2.height;
         point = { x: point.x + w / 2, y: point.y + h };
       }
-      if (relative && raw.area && same === null) {
+      if (relative && raw.area && same2 === null) {
         const area = areaOf(point, list);
         if (area !== null) point = clampInto(point, area);
       }
@@ -11174,15 +11174,17 @@
         y: Math.max(area.y + 1, Math.min(point.y, area.y + area.height))
       };
     }
+    function payloadFor(point, areas) {
+      const area = areaOf(point, areas);
+      return area === null ? { v: STORE_VERSION, area: null, x: point.x, y: point.y } : { v: STORE_VERSION, area: { x: area.x, y: area.y, width: area.width, height: area.height }, x: point.x - area.x, y: point.y - area.y };
+    }
     function persist(areas) {
       if (home === null) return;
-      const area = areaOf(home, areas);
-      const payload = area === null ? { v: STORE_VERSION, area: null, x: home.x, y: home.y } : { v: STORE_VERSION, area: { x: area.x, y: area.y, width: area.width, height: area.height }, x: home.x - area.x, y: home.y - area.y };
-      const key = JSON.stringify(payload);
-      if (key === stored) return;
-      stored = key;
+      const key2 = JSON.stringify(payloadFor(home, areas));
+      if (key2 === stored) return;
+      stored = key2;
       try {
-        localStorage.setItem(PIG_SCREEN_KEY, key);
+        localStorage.setItem(PIG_SCREEN_KEY, key2);
       } catch {
       }
     }
@@ -11227,9 +11229,18 @@
       pending2 = null;
       persist(areas);
     }
+    function acceptWindow(windowPos, pigLocal, areas) {
+      home = {
+        x: Math.round(windowPos.x + pigLocal.x + pigLocal.width / 2),
+        y: Math.round(windowPos.y + pigLocal.y + pigLocal.height)
+      };
+      pending2 = null;
+      stored = JSON.stringify(payloadFor(home, Array.isArray(areas) ? areas : []));
+    }
     return {
       decide,
       rehome,
+      acceptWindow,
       /** 家写盘（启动换算完、显示器变了之后调一次）。 */
       persist,
       /** 猪的家（脚底中心）；还不知道是 null。 */
@@ -11239,6 +11250,100 @@
       /** 上一轮算出来的窗口被工作区夹了多少。 */
       clamp: () => lastClamp,
       pigSize: () => lastPigSize
+    };
+  }
+
+  // src/client/desktop/window-clamp.js
+  var TOLERANCE = 2;
+  var DEFAULT_LIMIT = 6;
+  function same(a, b) {
+    return Math.abs(a.x - b.x) <= TOLERANCE && Math.abs(a.y - b.y) <= TOLERANCE && Math.abs(a.width - b.width) <= TOLERANCE && Math.abs(a.height - b.height) <= TOLERANCE;
+  }
+  function key(rect) {
+    return [rect.x, rect.y, rect.width, rect.height].map((value) => Math.round(value / TOLERANCE)).join(",");
+  }
+  function createWindowClamp(limit = DEFAULT_LIMIT) {
+    let wantKey = null;
+    let actualKey = null;
+    let attempts = 0;
+    return {
+      /**
+       * @param {{x:number,y:number,width:number,height:number}} want 页面请求的窗口
+       * @param {{x:number,y:number,width:number,height:number}} actual 主进程回读的实际窗口
+       * @returns {'ok'|'retry'|'accept'}
+       */
+      observe(want, actual) {
+        if (same(want, actual)) {
+          wantKey = null;
+          actualKey = null;
+          attempts = 0;
+          return "ok";
+        }
+        const nextWant = key(want);
+        const nextActual = key(actual);
+        if (nextWant === wantKey && nextActual === actualKey) attempts += 1;
+        else {
+          wantKey = nextWant;
+          actualKey = nextActual;
+          attempts = 1;
+        }
+        return attempts >= limit ? "accept" : "retry";
+      },
+      reset() {
+        wantKey = null;
+        actualKey = null;
+        attempts = 0;
+      },
+      attempts() {
+        return attempts;
+      }
+    };
+  }
+
+  // src/client/desktop/flight-bridge.js
+  function createFlightBridge(c) {
+    return {
+      supported: typeof c.shell.flyMove === "function",
+      start: function() {
+        const info = c.readGeometry();
+        if (info === null || info === void 0 || !info.window) return null;
+        const pig = c.pigInWindow(info.window);
+        if (pig === null) return null;
+        return {
+          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
+          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
+          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
+          area: info.workArea,
+          areas: info.workAreas ?? [info.workArea]
+        };
+      },
+      move: function(x, y, slide) {
+        if (typeof c.shell.flyMove !== "function") return;
+        c.shell.flyMove({ x, y, slide: slide ?? { x: 0, y: 0 } });
+      },
+      setFlying: function(on) {
+        c.setFlying(on === true);
+        if (!c.isFlying()) {
+          c.forgetLayout();
+          c.tick();
+        }
+      },
+      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
+      finish: function(last) {
+        c.setFlying(false);
+        if (last !== null && last !== void 0 && last.window && last.pig) {
+          const pig = {
+            x: last.pig.x + (last.slide?.x ?? 0),
+            y: last.pig.y + (last.slide?.y ?? 0),
+            width: last.pig.width,
+            height: last.pig.height
+          };
+          c.rehome(last.window, pig, last.areas ?? []);
+        }
+        c.clearSlide();
+        c.forgetLayout();
+        c.tick();
+      }
     };
   }
 
@@ -11303,7 +11408,7 @@
 
   // src/client/desktop/index.js
   var DESKTOP_VERSION = 6;
-  var TOLERANCE = 2;
+  var TOLERANCE2 = 2;
   var bridge2 = (
     /** @type {any} */
     null
@@ -11323,6 +11428,8 @@
     null
   );
   var lastKey = null;
+  var windowClamp = createWindowClamp();
+  var clampNotice = null;
   var hitRects = [];
   var lastHit = null;
   var mouse = { x: -1, y: -1 };
@@ -11415,10 +11522,25 @@
       next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
       hitRects = next.shape;
     }
-    const move = !sameBounds(want, bounds2, TOLERANCE);
-    const key = measure.keyOf(next);
-    if (!move && key === lastKey) return;
-    lastKey = key;
+    const move = !sameBounds(want, bounds2, TOLERANCE2);
+    const clampState = windowClamp.observe(want, bounds2);
+    if (clampState === "accept") {
+      const pig = pigInWindow(bounds2);
+      if (pig !== null) {
+        placement.acceptWindow(bounds2, pig, areas);
+        const notice = JSON.stringify({ want, actual: bounds2 });
+        if (clampNotice !== notice) {
+          clampNotice = notice;
+          console.warn("[piggy-desktop] wm clamp accepted " + notice);
+        }
+        lastKey = null;
+        bridge2.place({ bounds: { ...bounds2 } });
+        return;
+      }
+    }
+    const key2 = measure.keyOf(next);
+    if (!move && key2 === lastKey) return;
+    lastKey = key2;
     const request = { shape: next.shape, bounds: move ? want : void 0, pig: void 0 };
     const pigNode = h.querySelector(".dp-pig");
     if (pigNode) request.pig = layoutBox(pigNode);
@@ -11579,52 +11701,30 @@
       },
       // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
       // A2 抛掷：页面算好窗口位置，外壳只 setBounds；旧外壳没有 flyMove，supported=false，
-      // 页面自动退回原地落地。
-      flight: {
-        supported: typeof shell2.flyMove === "function",
-        start: function() {
-          const info = readGeometry();
-          if (info === null || info === void 0 || !info.window) return null;
-          const pig = pigInWindow(info.window);
-          if (pig === null) return null;
-          return {
-            home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
-            pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
-            window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
-            area: info.workArea,
-            areas: info.workAreas ?? [info.workArea]
-          };
-        },
-        move: function(x, y, slide) {
-          if (typeof shell2.flyMove !== "function") return;
-          shell2.flyMove({ x, y, slide: slide ?? { x: 0, y: 0 } });
+      // 页面自动退回原地落地。具体实现见 flight-bridge.js。
+      flight: createFlightBridge({
+        shell: shell2,
+        readGeometry,
+        pigInWindow,
+        rehome: function(win, pig, areas) {
+          placement.rehome(win, pig, areas);
         },
         setFlying: function(on) {
-          flying = on === true;
-          if (!flying) {
-            lastKey = null;
-            tick();
-          }
+          flying = on;
         },
-        /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
-        finish: function(last) {
-          flying = false;
-          if (last !== null && last !== void 0 && last.window && last.pig) {
-            const pig = {
-              x: last.pig.x + (last.slide?.x ?? 0),
-              y: last.pig.y + (last.slide?.y ?? 0),
-              width: last.pig.width,
-              height: last.pig.height
-            };
-            placement.rehome(last.window, pig, last.areas ?? []);
-          }
+        isFlying: function() {
+          return flying;
+        },
+        clearSlide: function() {
           dragSlide = { x: 0, y: 0 };
           const h = host2();
           if (h !== null) h.style.translate = "";
+        },
+        forgetLayout: function() {
           lastKey = null;
-          tick();
-        }
-      },
+        },
+        tick
+      }),
       moveBy: typeof shell2.moveBy === "function" ? function(dx, dy) {
         shell2.moveBy(dx, dy);
         const info = readGeometry();
@@ -12446,7 +12546,7 @@
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
   // node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
-  var checkStringStartsWith = (token) => (key) => typeof key === "string" && key.startsWith(token);
+  var checkStringStartsWith = (token) => (key2) => typeof key2 === "string" && key2.startsWith(token);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
     const startsWithToken = startsAsVariableToken(value);
@@ -12815,14 +12915,14 @@
   function mixObject(a, b) {
     const output = { ...a, ...b };
     const blendValue = {};
-    for (const key in output) {
-      if (a[key] !== void 0 && b[key] !== void 0) {
-        blendValue[key] = getMixer(a[key])(a[key], b[key]);
+    for (const key2 in output) {
+      if (a[key2] !== void 0 && b[key2] !== void 0) {
+        blendValue[key2] = getMixer(a[key2])(a[key2], b[key2]);
       }
     }
     return (v) => {
-      for (const key in blendValue) {
-        output[key] = blendValue[key](v);
+      for (const key2 in blendValue) {
+        output[key2] = blendValue[key2](v);
       }
       return output;
     };
@@ -12975,8 +13075,8 @@
     let runNextFrame = false;
     let useDefaultElapsed = true;
     const flagRunNextFrame = () => runNextFrame = true;
-    const steps = stepsOrder.reduce((acc, key) => {
-      acc[key] = createRenderStep(flagRunNextFrame);
+    const steps = stepsOrder.reduce((acc, key2) => {
+      acc[key2] = createRenderStep(flagRunNextFrame);
       return acc;
     }, {});
     const { setup, read: read2, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps;
@@ -13010,9 +13110,9 @@
         scheduleNextBatch(processBatch);
       }
     };
-    const schedule4 = stepsOrder.reduce((acc, key) => {
-      const step = steps[key];
-      acc[key] = (process2, keepAlive = false, immediate = false) => {
+    const schedule4 = stepsOrder.reduce((acc, key2) => {
+      const step = steps[key2];
+      acc[key2] = (process2, keepAlive = false, immediate = false) => {
         if (!runNextFrame)
           wake();
         return step.schedule(process2, keepAlive, immediate);
@@ -14074,12 +14174,12 @@
     mask,
     WebkitMask: mask
   };
-  var getDefaultValueType = (key) => defaultValueTypes[key];
+  var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
   // node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
-  function getAnimatableNone2(key, value) {
-    let defaultValueType = getDefaultValueType(key);
+  function getAnimatableNone2(key2, value) {
+    let defaultValueType = getDefaultValueType(key2);
     if (!customTypes.has(defaultValueType))
       defaultValueType = complex;
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
@@ -14200,17 +14300,17 @@
   // node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
-  var nonTranslationalTransformKeys = transformPropOrder.filter((key) => !transformKeys.has(key));
+  var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
   function removeNonTranslationalTransform(visualElement) {
     const removedTransforms = [];
-    nonTranslationalTransformKeys.forEach((key) => {
-      const value = visualElement.getValue(key);
+    nonTranslationalTransformKeys.forEach((key2) => {
+      const value = visualElement.getValue(key2);
       if (value !== void 0) {
         const current2 = value.get();
-        const reset = key.startsWith("scale") ? 1 : 0;
+        const reset = key2.startsWith("scale") ? 1 : 0;
         if (current2 === reset)
           return;
-        removedTransforms.push([key, current2]);
+        removedTransforms.push([key2, current2]);
         value.set(reset);
       }
     });
@@ -14278,8 +14378,8 @@
         element.render();
         const restore = transformsToRestore.get(element);
         if (restore) {
-          restore.forEach(([key, value]) => {
-            element.getValue(key)?.set(value);
+          restore.forEach(([key2, value]) => {
+            element.getValue(key2)?.set(value);
           });
         }
       });
@@ -14646,8 +14746,8 @@
     backInOut,
     circInOut
   };
-  function isUnsupportedEase(key) {
-    return key in unsupportedEasingFunctions;
+  function isUnsupportedEase(key2) {
+    return key2 in unsupportedEasingFunctions;
   }
   function replaceStringEasing(transition) {
     if (typeof transition.ease === "string" && isUnsupportedEase(transition.ease)) {
@@ -14841,26 +14941,26 @@
     let transformString = "";
     let transformIsDefault = true;
     for (let i = 0; i < numTransforms; i++) {
-      const key = transformPropOrder[i];
-      const value = latestValues[key];
+      const key2 = transformPropOrder[i];
+      const value = latestValues[key2];
       if (value === void 0)
         continue;
       let valueIsDefault = true;
       if (typeof value === "number") {
-        valueIsDefault = value === (key.startsWith("scale") ? 1 : 0);
+        valueIsDefault = value === (key2.startsWith("scale") ? 1 : 0);
       } else {
         const parsed = parseFloat(value);
-        valueIsDefault = key.startsWith("scale") ? parsed === 1 : parsed === 0;
+        valueIsDefault = key2.startsWith("scale") ? parsed === 1 : parsed === 0;
       }
       if (!valueIsDefault || transformTemplate) {
-        const valueAsType = getValueAsType(value, numberValueTypes[key]);
+        const valueAsType = getValueAsType(value, numberValueTypes[key2]);
         if (!valueIsDefault) {
           transformIsDefault = false;
-          const transformName = translateAlias[key] || key;
+          const transformName = translateAlias[key2] || key2;
           transformString += `${transformName}(${valueAsType}) `;
         }
         if (transformTemplate) {
-          transform[key] = valueAsType;
+          transform[key2] = valueAsType;
         }
       }
     }
@@ -14897,7 +14997,7 @@
   };
   var getOwner = (options) => options.motionValue.owner;
   var getGroup = (element) => transformGroups.get(element);
-  var read = (owner, key) => owner.latestValues ? owner.latestValues[key] : owner.getValue(key)?.get();
+  var read = (owner, key2) => owner.latestValues ? owner.latestValues[key2] : owner.getValue(key2)?.get();
   var canGroupTransform = ({ name, motionValue: motionValue2 }) => name && transformPropOrder.includes(name) && motionValue2?.owner?.current instanceof HTMLElement && supportsWaapi() && supportsLinearEasing();
   function canAccelerateTransform(options) {
     const owner = getOwner(options);
@@ -15092,26 +15192,26 @@
     let isScheduled2 = false;
     let hasChurned = false;
     let lastChurn = -Infinity;
-    const has = (key) => {
+    const has = (key2) => {
       for (const track of tracks)
-        if (track.name === key)
+        if (track.name === key2)
           return true;
     };
     const valuesAt = (timestamp, settled) => {
       const values = {};
-      for (const key of timestamp === void 0 ? transformPropOrder : keys) {
-        const track = byKey.get(key);
-        const value = timestamp === void 0 ? read(owner, key) : track ? track.sampleAt(settled > timestamp && !track.timing()[1] ? settled : timestamp) : statics[key];
+      for (const key2 of timestamp === void 0 ? transformPropOrder : keys) {
+        const track = byKey.get(key2);
+        const value = timestamp === void 0 ? read(owner, key2) : track ? track.sampleAt(settled > timestamp && !track.timing()[1] ? settled : timestamp) : statics[key2];
         if (value !== void 0)
-          values[key] = value;
+          values[key2] = value;
       }
       return values;
     };
     const compose = (timestamp, settled) => {
       let transform = "";
       const values = valuesAt(timestamp, settled);
-      for (const key in values) {
-        transform += (translateAlias[key] || key) + "(" + getValueAsType(values[key], numberValueTypes[key]) + ") ";
+      for (const key2 in values) {
+        transform += (translateAlias[key2] || key2) + "(" + getValueAsType(values[key2], numberValueTypes[key2]) + ") ";
       }
       return transform || "none";
     };
@@ -15277,11 +15377,11 @@
         end = Math.max(end, trackEnd);
       }
       statics = {};
-      keys = transformPropOrder.filter((key) => {
-        if (byKey.has(key))
+      keys = transformPropOrder.filter((key2) => {
+        if (byKey.has(key2))
           return true;
-        const value = statics[key] = read(owner, key);
-        return value !== void 0 && parseFloat(value) !== (key.startsWith("scale") ? 1 : 0);
+        const value = statics[key2] = read(owner, key2);
+        return value !== void 0 && parseFloat(value) !== (key2.startsWith("scale") ? 1 : 0);
       });
       stop(false);
       const tween = !cycle && getTween(moving);
@@ -15426,8 +15526,8 @@
       check() {
         if (group.isJS)
           return;
-        for (const key in statics) {
-          if (read(owner, key) !== statics[key] && !has(key)) {
+        for (const key2 in statics) {
+          if (read(owner, key2) !== statics[key2] && !has(key2)) {
             return group.schedule(true, true);
           }
         }
@@ -16011,8 +16111,8 @@
   }
 
   // node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
-  function getValueTransition(transition, key) {
-    const valueTransition = transition?.[key] ?? transition?.["default"] ?? transition;
+  function getValueTransition(transition, key2) {
+    const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
       return resolveTransition(valueTransition, transition);
     }
@@ -16064,8 +16164,8 @@
     "elapsed"
   ]);
   function isTransitionDefined(transition) {
-    for (const key in transition) {
-      if (!orchestrationKeys.has(key))
+    for (const key2 in transition) {
+      if (!orchestrationKeys.has(key2))
         return true;
     }
     return false;
@@ -16364,26 +16464,26 @@
     const animations = [];
     const { velocity } = transition;
     const reduceMotion = transition.reduceMotion ?? element?.shouldReduceMotion;
-    for (const key in keyframes2) {
-      if (key === "transition" || key === "transitionEnd")
+    for (const key2 in keyframes2) {
+      if (key2 === "transition" || key2 === "transitionEnd")
         continue;
-      const target = keyframes2[key];
+      const target = keyframes2[key2];
       if (target === void 0)
         continue;
-      const value = getValue(key);
+      const value = getValue(key2);
       const current2 = value.get();
       if (current2 !== void 0 && !value.isAnimating() && !Array.isArray(target) && target === current2 && !velocity) {
         frame2.update(() => value.set(target));
         continue;
       }
-      value.start(animateMotionValue(key, value, target, reduceMotion && positionalKeys.has(key) ? { type: false } : transition, element));
+      value.start(animateMotionValue(key2, value, target, reduceMotion && positionalKeys.has(key2) ? { type: false } : transition, element));
       value.animation && animations.push(value.animation);
     }
     const { transitionEnd } = keyframes2;
     if (transitionEnd) {
       const applyTransitionEnd = () => frame2.update(() => {
-        for (const key in transitionEnd) {
-          getValue(key).set(transitionEnd[key]);
+        for (const key2 in transitionEnd) {
+          getValue(key2).set(transitionEnd[key2]);
         }
       });
       animations.length ? Promise.all(animations).then(applyTransitionEnd) : applyTransitionEnd();
@@ -16391,17 +16491,17 @@
     return animations;
   }
   function animateEffectSubject(effect, subject2, keyframes2, transition, element) {
-    return animateValues((key) => {
-      let value = effect.get(subject2, key);
+    return animateValues((key2) => {
+      let value = effect.get(subject2, key2);
       if (!value) {
         let initial;
         if (!element) {
-          const target = keyframes2[key];
-          initial = firstKeyframe(target) ?? effect.read(subject2, key, target);
-          invariant(initial !== void 0, `"${key}" can't be read from the animated subject. Provide [from, to] keyframes.`, "effect-unreadable-value");
+          const target = keyframes2[key2];
+          initial = firstKeyframe(target) ?? effect.read(subject2, key2, target);
+          invariant(initial !== void 0, `"${key2}" can't be read from the animated subject. Provide [from, to] keyframes.`, "effect-unreadable-value");
         }
         value = motionValue(initial, { owner: element });
-        effect(subject2, { [key]: value });
+        effect(subject2, { [key2]: value });
       }
       return value;
     }, keyframes2, transition, element);
@@ -16557,9 +16657,9 @@
       const state3 = stateCache.get(subject2) ?? new MotionValueState(step);
       stateCache.set(subject2, state3);
       const subscriptions = [];
-      for (const key in values) {
-        const value = values[key];
-        const remove = addValue(subject2, state3, key, value);
+      for (const key2 in values) {
+        const value = values[key2];
+        const remove = addValue(subject2, state3, key2, value);
         subscriptions.push(remove);
       }
       return () => {
@@ -16568,7 +16668,7 @@
       };
     };
     return Object.assign(effect, options, {
-      get: (subject2, key) => stateCache.get(subject2)?.get(key),
+      get: (subject2, key2) => stateCache.get(subject2)?.get(key2),
       flush: (subject2) => stateCache.get(subject2)?.flush(),
       state: (subject2) => stateCache.get(subject2)
     });
@@ -16580,13 +16680,13 @@
     let transform = "";
     const { transformKeys: keys = [], transformValues: values = {} } = state3;
     for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const value = values[key].getCurrent();
+      const key2 = keys[i];
+      const value = values[key2].getCurrent();
       if (value === void 0)
         continue;
       const parsed = typeof value === "number" ? value : parseFloat(value);
-      if (parsed !== (key.startsWith("scale") ? 1 : 0)) {
-        transform += (transform && " ") + (openers[key] || (openers[key] = (translateAlias[key] || key) + "(")) + getValueAsType(value, transformValueTypes[key]) + ")";
+      if (parsed !== (key2.startsWith("scale") ? 1 : 0)) {
+        transform += (transform && " ") + (openers[key2] || (openers[key2] = (translateAlias[key2] || key2) + "(")) + getValueAsType(value, transformValueTypes[key2]) + ")";
       }
     }
     const pathRotation = state3.get("pathRotation")?.get();
@@ -16598,16 +16698,16 @@
 
   // node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
-  var styleValue = (state3, key) => getValueAsType(state3.get(key)?.get(), numberValueTypes[key]);
-  var addStyleValue = (element, state3, key, value) => {
+  var styleValue = (state3, key2) => getValueAsType(state3.get(key2)?.get(), numberValueTypes[key2]);
+  var addStyleValue = (element, state3, key2, value) => {
     let render = void 0;
     let computed = void 0;
-    if (transformProps.has(key)) {
-      if (key !== "pathRotation") {
+    if (transformProps.has(key2)) {
+      if (key2 !== "pathRotation") {
         const keys = state3.transformKeys ?? (state3.transformKeys = []);
-        (state3.transformValues ?? (state3.transformValues = {}))[key] = value;
-        if (!keys.includes(key)) {
-          keys.push(key);
+        (state3.transformValues ?? (state3.transformValues = {}))[key2] = value;
+        if (!keys.includes(key2)) {
+          keys.push(key2);
           keys.sort((a, b) => transformPropOrder.indexOf(a) - transformPropOrder.indexOf(b));
         }
       }
@@ -16621,7 +16721,7 @@
         });
       }
       computed = state3.get("transform");
-    } else if (originProps.has(key)) {
+    } else if (originProps.has(key2)) {
       if (!state3.get("transformOrigin")) {
         state3.set("transformOrigin", new MotionValue(""), () => {
           const originX = styleValue(state3, "originX") ?? "50%";
@@ -16631,24 +16731,24 @@
         });
       }
       computed = state3.get("transformOrigin");
-    } else if (isCSSVar(key)) {
+    } else if (isCSSVar(key2)) {
       render = () => {
-        element.style.setProperty(key, value.getCurrent());
+        element.style.setProperty(key2, value.getCurrent());
       };
     } else {
       render = () => {
-        element.style[key] = getValueAsType(value.getCurrent(), numberValueTypes[key]);
+        element.style[key2] = getValueAsType(value.getCurrent(), numberValueTypes[key2]);
       };
     }
-    return state3.set(key, value, render, computed);
+    return state3.set(key2, value, render, computed);
   };
   var isStyleSubject = (subject2) => isHTMLElement(subject2) || isSVGElement(subject2);
-  var readStyleValue = (element, key) => {
-    if (transformProps.has(key)) {
-      return readTransformValue(element, key);
+  var readStyleValue = (element, key2) => {
+    if (transformProps.has(key2)) {
+      return readTransformValue(element, key2);
     }
     const computedStyle = getComputedStyle(element);
-    const value = isCSSVar(key) ? computedStyle.getPropertyValue(key) : computedStyle[key];
+    const value = isCSSVar(key2) ? computedStyle.getPropertyValue(key2) : computedStyle[key2];
     return typeof value === "string" && value.trim() || 0;
   };
   var styleSubjectEffect = /* @__PURE__ */ createEffect(addStyleValue, {
@@ -16676,14 +16776,14 @@
     const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), name) || Object.getOwnPropertyDescriptor(element, name);
     return descriptor && typeof descriptor.set === "function";
   }
-  var addAttrValue = (element, state3, key, value, name = key) => {
+  var addAttrValue = (element, state3, key2, value, name = key2) => {
     const isProp = canSetAsProperty(element, name);
     if (!isProp && (name.startsWith("data") || name.startsWith("aria"))) {
       name = camelToDash(name);
     }
-    const type = numberValueTypes[key] || numberValueTypes[name];
+    const type = numberValueTypes[key2] || numberValueTypes[name];
     const render = isProp ? () => {
-      element[name] = getValueAsType(value.get(), numberValueTypes[key]);
+      element[name] = getValueAsType(value.get(), numberValueTypes[key2]);
     } : () => {
       const v = getValueAsType(value.get(), type);
       if (v === null || v === void 0) {
@@ -16692,14 +16792,14 @@
         element.setAttribute(name, String(v));
       }
     };
-    return state3.set(key, value, render);
+    return state3.set(key2, value, render);
   };
 
   // node_modules/motion-dom/dist/es/effects/svg/index.mjs
-  function addSVGPathValue(element, state3, key, value) {
+  function addSVGPathValue(element, state3, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
-    if (key === "pathOffset") {
-      return state3.set(key, value, () => {
+    if (key2 === "pathOffset") {
+      return state3.set(key2, value, () => {
         const offset = value.get();
         element.setAttribute("stroke-dashoffset", `${-offset}`);
       });
@@ -16711,34 +16811,34 @@
           element.setAttribute("stroke-dasharray", `${pathLength} ${pathSpacing ?? 1 - Number(pathLength)}`);
         });
       }
-      return state3.set(key, value, void 0, state3.get("stroke-dasharray"));
+      return state3.set(key2, value, void 0, state3.get("stroke-dasharray"));
     }
   }
-  var addSVGValue = (element, state3, key, value) => {
-    if (key.startsWith("path")) {
-      return addSVGPathValue(element, state3, key, value);
-    } else if (key.startsWith("attr")) {
-      return addAttrValue(element, state3, key, value, convertAttrKey(key));
+  var addSVGValue = (element, state3, key2, value) => {
+    if (key2.startsWith("path")) {
+      return addSVGPathValue(element, state3, key2, value);
+    } else if (key2.startsWith("attr")) {
+      return addAttrValue(element, state3, key2, value, convertAttrKey(key2));
     }
-    const handler = transformProps.has(key) || originProps.has(key) || isCSSVar(key) || key in element.style ? addStyleValue : addAttrValue;
-    return handler(element, state3, key, value);
+    const handler = transformProps.has(key2) || originProps.has(key2) || isCSSVar(key2) || key2 in element.style ? addStyleValue : addAttrValue;
+    return handler(element, state3, key2, value);
   };
-  var readSVGValue = (element, key) => {
-    if (transformProps.has(key)) {
-      return numberValueTypes[key]?.default || 0;
+  var readSVGValue = (element, key2) => {
+    if (transformProps.has(key2)) {
+      return numberValueTypes[key2]?.default || 0;
     }
-    if (isCSSVar(key) || cssStyleProperties.includes(key)) {
-      return readStyleValue(element, key) || element.getAttribute(camelToDash(key)) || 0;
+    if (isCSSVar(key2) || cssStyleProperties.includes(key2)) {
+      return readStyleValue(element, key2) || element.getAttribute(camelToDash(key2)) || 0;
     }
-    key = convertAttrKey(key);
-    return element.getAttribute(camelToDash(key)) ?? element.getAttribute(key) ?? void 0;
+    key2 = convertAttrKey(key2);
+    return element.getAttribute(camelToDash(key2)) ?? element.getAttribute(key2) ?? void 0;
   };
   var svgSubjectEffect = /* @__PURE__ */ createEffect(addSVGValue, {
     test: isSVGElement,
     read: readSVGValue
   });
-  function convertAttrKey(key) {
-    return key.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
+  function convertAttrKey(key2) {
+    return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
   // node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
@@ -16775,11 +16875,11 @@
       this.current = current2;
       this.KeyframeResolver = DOMKeyframesResolver;
     }
-    getValue(key) {
-      return this.effect.get(this.current, key);
+    getValue(key2) {
+      return this.effect.get(this.current, key2);
     }
-    readValue(key, target) {
-      return this.effect.read(this.current, key, target);
+    readValue(key2, target) {
+      return this.effect.read(this.current, key2, target);
     }
     render() {
       this.effect.flush(this.current);
@@ -16793,21 +16893,21 @@
   };
   function animateElement(element, keyframes2, transition, visualElement) {
     if (visualElement) {
-      return animateValues((key) => visualElement.getValue(key, null), keyframes2, transition, visualElement);
+      return animateValues((key2) => visualElement.getValue(key2, null), keyframes2, transition, visualElement);
     }
     const effect = getElementEffect(element);
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
   // node_modules/motion-dom/dist/es/effects/prop/index.mjs
-  var propEffect = /* @__PURE__ */ createEffect((subject2, state3, key, value) => {
-    return state3.set(key, value, () => {
-      subject2[key] = value.get();
+  var propEffect = /* @__PURE__ */ createEffect((subject2, state3, key2, value) => {
+    return state3.set(key2, value, () => {
+      subject2[key2] = value.get();
     });
   }, {
     test: (subject2) => isObject(subject2),
-    read: (subject2, key) => {
-      const value = subject2[key];
+    read: (subject2, key2) => {
+      const value = subject2[key2];
       return typeof value === "string" || typeof value === "number" ? value : void 0;
     }
   });
@@ -17235,8 +17335,8 @@
           transition = transition;
           const thisSubject = subjects[subjectIndex];
           const subjectSequence = getSubjectSequence(thisSubject, sequences);
-          for (const key in keyframes2) {
-            resolveValueSequence(keyframes2[key], getValueTransition2(transition, key), getValueSequence(key, subjectSequence), subjectIndex, numSubjects);
+          for (const key2 in keyframes2) {
+            resolveValueSequence(keyframes2[key2], getValueTransition2(transition, key2), getValueSequence(key2, subjectSequence), subjectIndex, numSubjects);
           }
         }
       }
@@ -17244,8 +17344,8 @@
       currentTime += maxDuration;
     }
     sequences.forEach((valueSequences, element) => {
-      for (const key in valueSequences) {
-        const valueSequence = valueSequences[key];
+      for (const key2 in valueSequences) {
+        const valueSequence = valueSequences[key2];
         valueSequence.sort(compareByTime);
         const keyframes2 = [];
         const valueOffset = [];
@@ -17272,9 +17372,9 @@
           });
         }
         const definition = animationDefinitions.get(element);
-        definition.keyframes[key] = keyframes2;
+        definition.keyframes[key2] = keyframes2;
         const { type: _type, ...remainingDefaultTransition } = defaultTransition;
-        definition.transition[key] = {
+        definition.transition[key2] = {
           ...remainingDefaultTransition,
           duration: totalDuration,
           ease: valueEasing,
@@ -17297,10 +17397,10 @@
   function keyframesAsList(keyframes2) {
     return Array.isArray(keyframes2) ? keyframes2 : [keyframes2];
   }
-  function getValueTransition2(transition, key) {
-    return transition && transition[key] ? {
+  function getValueTransition2(transition, key2) {
+    return transition && transition[key2] ? {
       ...transition,
-      ...transition[key]
+      ...transition[key2]
     } : { ...transition };
   }
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
@@ -17858,8 +17958,8 @@
         const limit = FEEL.tiltMaxFly * scale2();
         motor.tiltTarget(clamp5(-vx * FEEL.tiltGain, -limit, limit));
       },
-      onSound: function(key) {
-        playSound(key, { soft: mode === "soft" });
+      onSound: function(key2) {
+        playSound(key2, { soft: mode === "soft" });
       },
       onFinish: function(result) {
         if (motor !== null) motor.tiltTarget(0);
@@ -18247,8 +18347,8 @@
         forceFeedbackArt(name);
         syncPigArt(pig, pigArt, pigEmoji);
       };
-      ctx.idleNow = function(key) {
-        if (ctx.life) ctx.life.idleNow(key);
+      ctx.idleNow = function(key2) {
+        if (ctx.life) ctx.life.idleNow(key2);
       };
       ctx.walkNow = function() {
         if (ctx.life) ctx.life.walkNow();

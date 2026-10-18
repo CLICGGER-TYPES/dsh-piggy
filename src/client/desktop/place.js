@@ -74,14 +74,18 @@ export function createPlacement() {
     }
   }
 
+  /** 家 → 存档 payload（和显示器无关的绝对坐标时 area 为 null）。 */
+  function payloadFor(point, areas) {
+    const area = areaOf(point, areas)
+    return area === null
+      ? { v: STORE_VERSION, area: null, x: point.x, y: point.y }
+      : { v: STORE_VERSION, area: { x: area.x, y: area.y, width: area.width, height: area.height }, x: point.x - area.x, y: point.y - area.y }
+  }
+
   /** 家写进存档（只在家变了的时候写）。 */
   function persist(areas) {
     if (home === null) return
-    const area = areaOf(home, areas)
-    const payload = area === null
-      ? { v: STORE_VERSION, area: null, x: home.x, y: home.y }
-      : { v: STORE_VERSION, area: { x: area.x, y: area.y, width: area.width, height: area.height }, x: home.x - area.x, y: home.y - area.y }
-    const key = JSON.stringify(payload)
+    const key = JSON.stringify(payloadFor(home, areas))
     if (key === stored) return
     stored = key
     try { localStorage.setItem(PIG_SCREEN_KEY, key) } catch { /* 存不下就下次从默认位置开始 */ }
@@ -147,8 +151,25 @@ export function createPlacement() {
     persist(areas)
   }
 
+  /**
+   * 窗口管理器把窗口夹在了别的位置：以实际位置为准重定家，但不写盘。
+   * 这是 WM 的决定（例如混合缩放下它允许的范围比 Electron 报的 workArea 小），
+   * 不是用户拖出来的位置；下次启动按原存档重新摆，若仍被夹会再收敛一次。
+   * @param {{x:number,y:number}} windowPos
+   * @param {{x:number,y:number,width:number,height:number}} pigLocal
+   */
+  function acceptWindow(windowPos, pigLocal, areas) {
+    home = {
+      x: Math.round(windowPos.x + pigLocal.x + pigLocal.width / 2),
+      y: Math.round(windowPos.y + pigLocal.y + pigLocal.height),
+    }
+    pending = null
+    // 存档里保留原来的家：只把内存里的 stored 对齐到实际位置，下一轮 persist 就不再写盘。
+    stored = JSON.stringify(payloadFor(home, Array.isArray(areas) ? areas : []))
+  }
+
   return {
-    decide, rehome,
+    decide, rehome, acceptWindow,
     /** 家写盘（启动换算完、显示器变了之后调一次）。 */
     persist,
     /** 猪的家（脚底中心）；还不知道是 null。 */
