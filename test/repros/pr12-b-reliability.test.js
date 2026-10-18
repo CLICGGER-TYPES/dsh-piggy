@@ -6,7 +6,6 @@ import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { runInNewContext } from 'node:vm'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createGameRuntime } from '../../runtime/index.js'
 import { openWorkLedger } from '../../runtime/work-ledger.js'
@@ -130,20 +129,13 @@ test('B Worker 真实死亡后 before-quit 能结束主进程退出流程', asyn
   try {
     host = await startBackgroundHost(gameDir, join(directory, 'state.json'))
     await assert.rejects(host.handle('GET', '/crash'), /worker exited: 23/)
-    const source = fs.readFileSync(new URL('../../apps/desktop/main.js', import.meta.url), 'utf8')
-    const handlers = new Map(), messages = []
-    let quitCalls = 0, prevented = 0
-    const app = { on(name, handler) { handlers.set(name, handler) }, quit() { quitCalls++ } }
     // 执行生产 before-quit 代码，Worker 用真实死亡状态，而不是复制退出逻辑。
-    runInNewContext(source.slice(source.indexOf('let hostClosed = false'), source.indexOf("app.on('window-all-closed'")), {
-      app, host, quitting: false, stopDrag() {}, hitTimer: null, clearInterval,
-      log(...args) { messages.push(args) },
-    })
-    for (let attempt = 0; attempt < 2 && quitCalls === 0; attempt++) {
-      handlers.get('before-quit')({ preventDefault() { prevented++ } })
-      await delay(0)
-    }
-    assert.ok(quitCalls > 0 || prevented < 2, `死亡 Worker 阻止退出 ${prevented} 次：${JSON.stringify(messages)}`)
+    const lifecycle = shellLifecycle(host)
+    await lifecycle.quit()
+    assert.equal(lifecycle.state().exits, 1, JSON.stringify(lifecycle.messages))
+    assert.equal(lifecycle.state().closed, true)
+    assert.equal(lifecycle.state().hitTimer, null)
+    assert.ok(lifecycle.messages.some(parts => String(parts).includes('shutdown without save')))
   } finally { await host?.dispose().catch(() => {}); fs.rmSync(directory, { recursive: true, force: true }) }
 })
 
@@ -154,16 +146,19 @@ test('B 外壳安装器启动前必须等待后台保存完成', async () => {
   const lifecycle = shellLifecycle({ dispose() {
     steps.push('saving')
     return saved.then(() => { steps.push('saved'); return { saved: true } })
-  } }, () => steps.push('install'))
+  } }, () => { steps.push('install'); return { ok: true } })
   try {
     const result = lifecycle.install()
+    assert.equal(result.ok, true)
     // 生产实现用 600ms 的调度；在测试中直接执行捕获的回调。
     const installed = lifecycle.runInstall()
     await delay(0)
     assert.equal(steps.includes('install'), false, `保存未完成就安装：${steps}`)
     assert.equal(steps.includes('saving'), true)
     completeSave()
-    await result; await installed
+    await installed
     assert.deepEqual(steps, ['saving', 'saved', 'install'])
+    assert.deepEqual(lifecycle.dialogs, [], '保存成功后不能转入失败恢复')
+    assert.deepEqual(lifecycle.messages, [])
   } finally { completeSave() }
 })

@@ -41,8 +41,10 @@ test('反应消息、全屏恢复和3秒守卫都不能抬回获得焦点的大�
   const extract = name => source.slice(source.indexOf('function ' + name + '('), source.indexOf('\n}', source.indexOf('function ' + name + '(')) + 2)
   let moves = 0, tops = 0
   const win = { isDestroyed: () => false, isVisible: () => true, moveTop: () => moves++, setAlwaysOnTop: () => tops++ }
-  const context = { win, panelWin: win, extensionLayer: { isFocused: () => true, sync() {} }, Date, log() {}, reassertingUntil: 0 }
+  let syncs = 0
+  const context = { win, panelWin: win, extensionLayer: { isFocused: () => true, sync() { syncs++ } }, Date, log() {}, reassertingUntil: 0, quitting: false }
   runInNewContext(extract('raisePetAbovePanel') + '\n' + extract('reassertTop') + '\nraisePetAbovePanel(); reassertTop("check"); reassertTop("lost"); reassertTop("fullscreen-ended")', context)
   assert.equal(moves, 0)
   assert.equal(tops, 0)
+  assert.equal(syncs, 3)
 })
