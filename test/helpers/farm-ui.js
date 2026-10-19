@@ -16,7 +16,7 @@ export function api(balance = 50_000) {
     wallet: { currency: { label: '菜币', emoji: '🥬', rate: 1 }, balance: () => balance, earn(n) { balance += n; return n }, spend(n) { if (balance < n) return false; balance -= n; return true } } }
 }
 
-export function renderFarm(view, mode = 'panel', extra = {}) {
+export function renderFarm(view, mode = 'panel', extra = {}, clientSource = null) {
   const dom = fakeDom()
   const create = dom.document.createElement
   dom.document.createElement = tag => {
@@ -39,7 +39,7 @@ export function renderFarm(view, mode = 'panel', extra = {}) {
   dom.document.getElementById = id => dom.head.children.find(node => node.id === id) || null
   let render
   const window = { dshPiggyExtensions: { register(_key, impl) { render = impl.render } } }
-  runInNewContext(readFileSync(new URL('../../extensions/farm/client.js', import.meta.url), 'utf8'), { window, document: dom.document, Date })
+  runInNewContext(clientSource ?? readFileSync(new URL('../../extensions/farm/client.js', import.meta.url), 'utf8'), { window, document: dom.document, Date })
   const sent = []
   let shop = 0
   const app = {

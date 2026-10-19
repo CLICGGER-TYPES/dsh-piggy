@@ -577,6 +577,7 @@
     cancelLayer = null
     if (popup) {
       var box = put(root, app.el('div', 'fm-pop' + (app.mode === 'big' ? ' fm-b-pop' : ' fm-s-pop') + (popup === 'shop' ? ' fm-shop' : '')))
+      box.setAttribute('data-scroll-key', 'farm-popup:' + popup + ':' + (popup === 'shop' ? shopTab : ''))
       if (paintedPopup !== popup) box.className += ' fm-enter'
       box.setAttribute('data-farm-overlay', popup)
       frame(app, box, 'shop-frame'); closeButton(app, box, function () { popup = null; app.rerender() })

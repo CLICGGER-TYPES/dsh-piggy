@@ -271,6 +271,12 @@ export function createExtRuntime(store, options) {
   /** 把扩展的文件（相对路径 → 内容）放进扩展目录（先放临时目录再换名，坏了不留半截）、加载、在存档里建数据。local 是本地导入的非官方扩展。
    * @param {string} key @param {Map<string, Buffer>} files @param {boolean} local */
   async function place(key, files, local) {
+    if (key === 'farm' && store.state?.extData?.farm?.version >= 4) {
+      const manifest = JSON.parse(files.get('manifest.json').toString('utf8'))
+      if (!versionAtLeast(manifest.version, '3.1.0')) {
+        return { ok: false, reason: 'download-failed', message: '这份旧菜园不能读取当前进度，请使用 3.1.0 经典兼容版；菜币和进度未改动。' }
+      }
+    }
     const staging = join(root(), '.' + key + '-' + now())
     try {
       mkdirSync(join(staging, 'assets'), { recursive: true })

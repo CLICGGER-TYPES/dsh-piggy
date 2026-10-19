@@ -323,29 +323,29 @@
     "path": "pigs/skins/skin-wizard/idle.png",
     "actor": "skin-wizard",
     "action": "idle",
-    "version": "skin-wizard-flat-v2",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard.svg",
-    "sourceSha256": "c0a0ef94833b5c4666fc459655e5003b724491748d44f864c4192f454353ea09",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "57e2b42e585a7834ec5a2424530f32c38ba75697fc1ee0c5092017c84164dbe8",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      37,
-      29,
-      1207,
-      1179
+      76,
+      44,
+      1178,
+      1124
     ],
     "bounds": [
-      16,
-      18,
-      240,
-      238
+      15,
+      8,
+      241,
+      230
     ],
-    "sha256": "2b1579b71703567e1156588aef0eab9b350da3c8fc74f92872bdbaf3a4c77562",
-    "bytes": 9809
+    "sha256": "cadeffcf6911ccb4eceb316ca114f77e6b805f5d8f8e944bfbad8cc91851cba8",
+    "bytes": 35952
   },
   {
     "key": "piglet-eat",
@@ -613,87 +613,87 @@
     "path": "pigs/skins/skin-wizard/eat.png",
     "actor": "skin-wizard",
     "action": "eat",
-    "version": "skin-wizard-eat-flat-v1",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-eat.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-eat.svg",
-    "sourceSha256": "903c8cb2ec16138128dedd6b0811d09b78d39acb251cb214f2ff5f5806124d8b",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "e0fcdd70236fcac2cb9103b96fa1952a609d3e1f6f9fc9288ca38efc3ef0e5f7",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      111,
-      114,
-      1138,
-      1189
+      76,
+      83,
+      1178,
+      1026
     ],
     "bounds": [
-      21,
+      15,
       16,
-      235,
-      240
+      241,
+      210
     ],
-    "sha256": "b7b6736da671bfa0ec87e4ecd4c24293b25d36d48ac86662d313011750340b7d",
-    "bytes": 9992
+    "sha256": "0c9cae6468ad888546065f70534e15cfc3041b3f49cf37452f2bc9ab95013c15",
+    "bytes": 36128
   },
   {
     "key": "skin-wizard-play",
     "path": "pigs/skins/skin-wizard/play.png",
     "actor": "skin-wizard",
     "action": "play",
-    "version": "skin-wizard-play-flat-v1",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-play.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-play.svg",
-    "sourceSha256": "51c279c59ab58871cebde3892c5706229e0734218f23a49138dbc0af3de23541",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "cd620810b1450483dbc95af867fb427aaed24df1decc46346dcedbb45fd90ebf",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      217,
-      10,
-      1146,
-      1228
+      77,
+      44,
+      1178,
+      1094
     ],
     "bounds": [
-      42,
-      16,
-      213,
-      240
+      15,
+      8,
+      241,
+      224
     ],
-    "sha256": "ad136f375076cd8093373860ca717fe787e103a99520b864889c11f7a9a1cb5a",
-    "bytes": 8862
+    "sha256": "dcc5ba143cf1294aa554d9a4598e2b857f4f9c2857a886aa0e1d159284e21ff3",
+    "bytes": 39158
   },
   {
     "key": "skin-wizard-sleep",
     "path": "pigs/skins/skin-wizard/sleep.png",
     "actor": "skin-wizard",
     "action": "sleep",
-    "version": "skin-wizard-sleep-flat-v2",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-sleep.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-sleep.png",
-    "sourceSha256": "c0d961b4bcec2950d789e3616463236d948b262ce47c0d5fa92c6081c623548e",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "a62da7f760a3e2379d45fbe33c5c30da5316ce699f6515e90cc3316224b8bd4d",
     "sourceDimensions": [
-      1452,
-      1083
+      1254,
+      1254
     ],
     "sourceBounds": [
-      117,
-      46,
-      1344,
-      1030
+      76,
+      59,
+      1178,
+      1016
     ],
     "bounds": [
-      16,
-      38,
-      240,
-      218
+      15,
+      12,
+      241,
+      208
     ],
-    "sha256": "fc54d57ede745802a104b58eeb52a77a2cad00dbf414991e9082799a201161ee",
-    "bytes": 7658
+    "sha256": "962b55ca9cf8a24cc815adde53fc3b24df2eb3a18c7cab19225c5989b539f630",
+    "bytes": 33132
   },
   {
     "key": "pig-round-eat",
@@ -1512,58 +1512,58 @@
     "path": "pigs/skins/skin-wizard/pet.png",
     "actor": "skin-wizard",
     "action": "pet",
-    "version": "skin-wizard-pet-flat-v1",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-pet.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-pet.svg",
-    "sourceSha256": "3d59c111ea149977065633dd9063ae3e08933146a87158dddd854df2bf6fbdb9",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "385dba5cff1ffc033df5db0fb347b65c38aec763b85e9000ae59c919552c29f6",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      100,
-      24,
-      1154,
-      1166
+      76,
+      44,
+      1178,
+      1124
     ],
     "bounds": [
-      24,
-      16,
-      231,
-      240
+      15,
+      8,
+      241,
+      230
     ],
-    "sha256": "932db40c98b2d0141d40a288acc6ac9dfe469bcd71eeb18f951b423f1311326f",
-    "bytes": 10212
+    "sha256": "64d3d9a1408441fd24b1b47230369a0fd08dda411795977a794a0e21eac6d95c",
+    "bytes": 48521
   },
   {
     "key": "skin-wizard-relaxed",
     "path": "pigs/skins/skin-wizard/relaxed.png",
     "actor": "skin-wizard",
     "action": "relaxed",
-    "version": "skin-wizard-relaxed-flat-v2",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-relaxed.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-relaxed.svg",
-    "sourceSha256": "530913946c8746ce91d7a7e8e61ecff15af653e1911737adf262f1014548017b",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "2aa15d79610da58f48f382ef06a5fe613e8c17a8dc3ed7c961f8626816b33319",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      37,
-      10,
-      1205,
-      1169
+      76,
+      44,
+      1178,
+      1123
     ],
     "bounds": [
-      16,
-      17,
-      240,
-      239
+      15,
+      8,
+      241,
+      229
     ],
-    "sha256": "63ae2897c43cacdef2a4da0dbe4a95478f8dbd2e7cb7be161e2338d55df9f83a",
-    "bytes": 9113
+    "sha256": "59a9bcc9b5c9118f825518e5aaaec921f199f57019ced577f64a5a6dca7c30ae",
+    "bytes": 47885
   },
   {
     "key": "career-astronaut-pet",
@@ -2150,29 +2150,29 @@
     "path": "pigs/skins/skin-wizard/bathe.png",
     "actor": "skin-wizard",
     "action": "bathe",
-    "version": "skin-wizard-bathe-flat-v1",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-bathe.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-bathe.svg",
-    "sourceSha256": "c181a1f1a0ca78888a32d8ac7566a25fd623c46ab6271a79203527fb3309d279",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "63ab8e3dcad774f4f429da3da5a8ceeb01d564c8a654548f6c248ae0dccec21c",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      28,
-      112,
-      1196,
-      1196
+      76,
+      44,
+      1178,
+      1026
     ],
     "bounds": [
-      16,
-      24,
-      240,
-      232
+      15,
+      8,
+      241,
+      210
     ],
-    "sha256": "3574314b8744baf61976e42d699b7ccde63e0b5393ecd52759e0aa0d56e56830",
-    "bytes": 8394
+    "sha256": "af2d629b6131c3b993c753f9820764cfc39e3d3c153012ad82d766a6906fba39",
+    "bytes": 34633
   },
   {
     "key": "skin-detective-bathe",
@@ -2498,87 +2498,87 @@
     "path": "pigs/skins/skin-wizard/work.png",
     "actor": "skin-wizard",
     "action": "work",
-    "version": "skin-wizard-work-flat-v2",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-work.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-work.svg",
-    "sourceSha256": "60e179183c3bf09f355de05d97ad2a5164310b9ca0821f203e28017ac6bb3181",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "a302a3036e9b4bcf23d28fb2bd2129019ebc8094b0d33ba573bfc8efd0c843bb",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      57,
-      18,
-      1254,
-      1219
+      76,
+      93,
+      1178,
+      908
     ],
     "bounds": [
-      16,
-      16,
-      239,
-      240
+      15,
+      18,
+      241,
+      186
     ],
-    "sha256": "12dd114af98f4d80ffdf4bef862f7efc1bab7c84796fee4bf6009517bc96d4ff",
-    "bytes": 9607
+    "sha256": "f60e357f13c93b34d4ed98243e59f87cb3d4bb26ce94c3b61c49c485b57f1ced",
+    "bytes": 32898
   },
   {
     "key": "skin-wizard-study",
     "path": "pigs/skins/skin-wizard/study.png",
     "actor": "skin-wizard",
     "action": "study",
-    "version": "skin-wizard-study-flat-v2",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-study.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-study.svg",
-    "sourceSha256": "de4b995452a6646d532272388ec4afdce59aa44bf1b091fb41f8e61115dd0632",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "bca3a6990ed06dc0c17b8cbfe66f43a0000c78687874b1cb3b735bfd9874d603",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      117,
-      40,
-      1150,
-      1234
+      76,
+      44,
+      1178,
+      1227
     ],
     "bounds": [
-      31,
-      16,
-      225,
-      240
+      15,
+      8,
+      241,
+      250
     ],
-    "sha256": "e2c006c4c2594ef6b74e063b4cad1e38cdd2fb9ff471b29a771b158fc8e883ed",
-    "bytes": 9167
+    "sha256": "23d7e5d9284e6a6c291584ebed6ba8047d445fc21b0c0f044bfbf911bd3da855",
+    "bytes": 46938
   },
   {
     "key": "skin-wizard-trip",
     "path": "pigs/skins/skin-wizard/trip.png",
     "actor": "skin-wizard",
     "action": "trip",
-    "version": "skin-wizard-trip-flat-v2",
-    "tool": "image_gen",
-    "prompt": "docs/art-prompts/flat-pigs/skin-wizard-trip.txt",
-    "reference": "bfc9d9f^:assets/skin-wizard-trip.svg",
-    "sourceSha256": "167e0a99c871b86d2a6c6f1da6c524f58a0f909521df4774ef57f8de1a163670",
+    "version": "wizard-redo-20261018",
+    "tool": "image_gen + offline costume composition",
+    "prompt": "docs/art-prompts/flat-pigs/wizard-redo-20261018.md",
+    "reference": "art-source/pig-skins/wizard-redo-20261018/references/",
+    "sourceSha256": "a7661de8b537ca3f93c446ba17c089a6c994b293656976357b91442e84b5fb02",
     "sourceDimensions": [
       1254,
       1254
     ],
     "sourceBounds": [
-      176,
-      19,
-      1209,
-      1159
+      76,
+      44,
+      1178,
+      1124
     ],
     "bounds": [
-      26,
-      16,
-      229,
-      240
+      15,
+      8,
+      241,
+      230
     ],
-    "sha256": "f0dae1fbedf68638d88cfbf1ac12b059cac03fc90817dcd6adceee1c4517aec6",
-    "bytes": 9784
+    "sha256": "209253abd4db73e3530dca73261bc35185586f497460969e5e444b49c5844e8c",
+    "bytes": 38404
   },
   {
     "key": "career-astronaut-work",

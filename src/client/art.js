@@ -21,6 +21,7 @@ var SLEEP_ART = new Set([
 
 const CUSTOM_FRAME_CACHE = new Map()
 const CUSTOM_FRAME_PENDING = new WeakMap()
+const ART_SELECTION = new WeakMap()
 
 /** Imported PNG or legacy SVG skins are measured once after loading. */
 function frameCustomImage(image, src, sleep = false) {
@@ -115,6 +116,13 @@ export function forceFeedbackArt(name) {
  * @param {object} image the <img> inside it
  */
 export function syncPigArt(pig, image, emoji) {
+  // A feel transition may apply later. Even selecting the already visible
+  // sprite must invalidate it, otherwise an old frame can replace a reaction.
+  const selection = {}
+  ART_SELECTION.set(image, selection)
+  const applySelected = apply => swapSource(() => {
+    if (ART_SELECTION.get(image) === selection) apply()
+  })
   var base = pig.getAttribute('data-art') || ''
   pigActionArt(pig)
   var feedback = forcedFeedback || effectArt || feedbackArtFor({
@@ -127,7 +135,7 @@ export function syncPigArt(pig, image, emoji) {
   if (feedback) {
     var feedbackSrc = artSource('feedback/' + feedback)
     if (image.getAttribute('src') !== feedbackSrc) {
-      swapSource(function () {
+      applySelected(function () {
         image.src = feedbackSrc
         applyFrame(image, builtinFrame(feedbackSrc))
       })
@@ -149,7 +157,7 @@ export function syncPigArt(pig, image, emoji) {
   if (microArt && !forcedFeedback) {
     var microSrc = artSource(microArt)
     if (image.getAttribute('src') !== microSrc) {
-      swapSource(function () {
+      applySelected(function () {
         image.src = microSrc
         applyFrame(image, builtinFrame(artSource('piglet')))
       })
@@ -168,7 +176,7 @@ export function syncPigArt(pig, image, emoji) {
   }
   var src = artSource(art)
   if (image.getAttribute('src') !== src) {
-    swapSource(function () {
+    applySelected(function () {
       image.src = src
       frameCustomImage(image, src)
     })
