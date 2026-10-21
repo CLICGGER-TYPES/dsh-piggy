@@ -178,9 +178,10 @@ export function absoluteDragBounds(startBounds, startCursor, cursor, pigWindow, 
   const maxY = round(area.y + area.height) - pigY - pigHeight
   const wantedX = round(startBounds.x + cursor.x - startCursor.x)
   const wantedY = round(startBounds.y + cursor.y - startCursor.y)
+  const constrain = (value, min, max) => max < min ? Math.round((min + max) / 2) : Math.max(min, Math.min(value, max))
   return {
-    x: Math.max(minX, Math.min(wantedX, maxX)),
-    y: Math.max(minY, Math.min(wantedY, maxY)),
+    x: constrain(wantedX, minX, maxX),
+    y: constrain(wantedY, minY, maxY),
     width,
     height,
   }
@@ -216,6 +217,22 @@ function unionOf(areas) {
   }
 }
 
+/** A connected screen seam is drawable; an empty corner in an L layout is not. */
+function drawingCovered(box, areas) {
+  const cuts = [box.y, box.y + box.height, ...areas.flatMap(a => [a.y, a.y + a.height])
+    .filter(y => y > box.y && y < box.y + box.height)].sort((a, b) => a - b)
+  for (let i = 1; i < cuts.length; i += 1) {
+    const y = (cuts[i - 1] + cuts[i]) / 2
+    let end = box.x
+    for (const area of areas.filter(a => y >= a.y && y < a.y + a.height).sort((a, b) => a.x - b.x)) {
+      if (area.x > end) break
+      if (area.x + area.width > end) end = area.x + area.width
+    }
+    if (end < box.x + box.width) return false
+  }
+  return true
+}
+
 /** 拖动中的透明窗口可跨屏缝，只在整个桌面的外沿夹取，避免切屏时整窗瞬移。 */
 export function desktopViewportBounds(wanted, areas) {
   if (!Array.isArray(areas) || areas.length === 0) return wanted
@@ -239,8 +256,9 @@ export function desktopViewportBounds(wanted, areas) {
  * @param {{x:number,y:number}} startCursor
  * @param {{x:number,y:number}} cursor
  * @param {Array<{x:number,y:number,width:number,height:number}>} areas 所有屏的工作区
+ * @param {{x:number,y:number,width:number,height:number}|null} [visual] 可选绘制包络，不改变猪的定位盒
  */
-export function dragPigBounds(bounds, pigWindow, startPigScreen, startCursor, cursor, areas) {
+export function dragPigBounds(bounds, pigWindow, startPigScreen, startCursor, cursor, areas, visual = null) {
   const width = round(bounds.width)
   const height = round(bounds.height)
   const startBounds = {
@@ -251,15 +269,17 @@ export function dragPigBounds(bounds, pigWindow, startPigScreen, startCursor, cu
   }
   const list = Array.isArray(areas) && areas.length > 0 ? areas : null
   if (list === null) return absoluteDragBounds(startBounds, startCursor, cursor, pigWindow, null)
-  const pigX = round(pigWindow.x)
-  const pigY = round(pigWindow.y)
-  const pigWidth = Math.max(1, round(pigWindow.width))
-  const pigHeight = Math.max(1, round(pigWindow.height))
+  const drawing = visual ?? pigWindow
+  const pigX = visual ? Math.floor(drawing.x) : round(drawing.x)
+  const pigY = visual ? Math.floor(drawing.y) : round(drawing.y)
+  const pigWidth = Math.max(1, visual ? Math.ceil(drawing.x + drawing.width) - pigX : round(drawing.width))
+  const pigHeight = Math.max(1, visual ? Math.ceil(drawing.y + drawing.height) - pigY : round(drawing.height))
   const union = unionOf(list)
   const wantedX = round(startBounds.x + cursor.x - startCursor.x)
   const wantedY = round(startBounds.y + cursor.y - startCursor.y)
-  const x = Math.max(round(union.x) - pigX, Math.min(wantedX, round(union.x + union.width) - pigX - pigWidth))
-  const y = Math.max(round(union.y) - pigY, Math.min(wantedY, round(union.y + union.height) - pigY - pigHeight))
+  const constrain = (value, min, max) => max < min ? Math.round((min + max) / 2) : Math.max(min, Math.min(value, max))
+  const x = constrain(wantedX, round(union.x) - pigX, round(union.x + union.width) - pigX - pigWidth)
+  const y = constrain(wantedY, round(union.y) - pigY, round(union.y + union.height) - pigY - pigHeight)
   const pig = { x: x + pigX, y: y + pigY, width: pigWidth, height: pigHeight }
   // 一半以上还看得见就放行（跨缝时就是这种）；掉进 L 形排列的死角才拉回整块屏。
   let best = null
@@ -268,9 +288,10 @@ export function dragPigBounds(bounds, pigWindow, startPigScreen, startCursor, cu
     const overlap = overlapArea(pig, area)
     if (overlap > bestOverlap) { best = area; bestOverlap = overlap }
   }
-  if (best !== null && bestOverlap * 2 >= pigWidth * pigHeight) return { x, y, width, height }
-  if (best === null) return { x, y, width, height }
-  return absoluteDragBounds(startBounds, startCursor, cursor, pigWindow, best)
+  if (visual !== null ? drawingCovered(pig, list) : best !== null && bestOverlap * 2 >= pigWidth * pigHeight) return { x, y, width, height }
+  if (best === null && visual === null) return { x, y, width, height }
+  return absoluteDragBounds(startBounds, startCursor, cursor, { x: pigX, y: pigY, width: pigWidth, height: pigHeight },
+    best ?? nearestAreaTo({ x: pig.x + pig.width / 2, y: pig.y + pig.height / 2 }, list))
 }
 
 /** 收敛容差：猪的屏幕位置差这么点就不管了。 */

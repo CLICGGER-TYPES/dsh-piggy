@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { install } from '../src/client/desktop/index.js'
+
+test('direct geometry requests cannot take placement ownership during native dragging, but release still reads geometry', () => {
+  const saved = Object.fromEntries(['window','document','getComputedStyle','requestAnimationFrame'].map(key => [key,globalThis[key]]))
+  const scene = { dragging: true, getAttribute: () => scene.dragging ? 'true' : null }
+  const body = {}
+  const host = { style:{right:'0px',bottom:'0px',translate:''}, offsetLeft:0,offsetTop:0,offsetWidth:0,offsetHeight:0,offsetParent:body,
+    querySelector:()=>null,querySelectorAll:()=>[],closest:()=>null,getAttribute:()=>null }
+  const raf = [], calls = []
+  globalThis.document = { body, head:{appendChild(){}}, createElement:()=>({setAttribute(){}}),
+    documentElement:{setAttribute(){},addEventListener(){}}, addEventListener(){},
+    querySelector:selector=>selector.endsWith('.dp-scene')?scene:host }
+  globalThis.window = {innerWidth:384,innerHeight:348,screenX:0,screenY:0}
+  globalThis.getComputedStyle = () => ({display:'block',visibility:'visible',opacity:'1'})
+  globalThis.requestAnimationFrame = fn => raf.push(fn)
+  try {
+    install({role:'pet',platform:'linux',panel:{toggle(){}},beginDrag(){},endDrag(){calls.push('end')},
+      place(request){calls.push(['place',request]);return null},geometry:()=>null})
+    const shell=window.__dshPiggyShell
+    shell.syncGeometry()
+    assert.deepEqual(calls,[],'even place({}) mutates native drag/flight ownership and must not run here')
+    shell.endDrag()
+    assert.deepEqual(calls,['end',['place',{}]],'release still needs its ordered final native geometry read')
+    scene.dragging=false
+    for(const fn of raf.splice(0))fn()
+    assert.equal(calls.filter(x=>Array.isArray(x)).length,2,'ordinary placement resumes after the gesture releases ownership')
+  } finally {
+    for(const [key,value] of Object.entries(saved)) {
+      if(value===undefined)delete globalThis[key]
+      else globalThis[key]=value
+    }
+  }
+})

@@ -7,44 +7,9 @@
  * @module dsh-piggy/client/desktop/flight
  */
 import { FEEL } from '../feel/config.js'
+import { drawingCorridor } from './geometry.js'
 
 const STEP = 1 / 120
-
-// 对完整身体覆盖的每一条工作区带取交集；相接的屏幕先合并，再留立绘边距。
-// 因此内侧屏缝没有墙，错位屏幕之间的空白仍是墙。
-function merged(ranges) {
-  const result = []
-  for (const range of ranges.sort((a, b) => a[0] - b[0])) {
-    const last = result[result.length - 1]
-    if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1])
-    else result.push([...range])
-  }
-  return result
-}
-
-function intersect(a, b) {
-  return a.flatMap(one => b.map(two => [Math.max(one[0], two[0]), Math.min(one[1], two[1])]))
-    .filter(range => range[0] <= range[1])
-}
-
-function corridor(areas, horizontal, from, to, before, after, position) {
-  const axis = horizontal ? 'y' : 'x'
-  const size = horizontal ? 'height' : 'width'
-  const other = horizontal ? 'x' : 'y'
-  const otherSize = horizontal ? 'width' : 'height'
-  const cuts = [from, to, ...areas.flatMap(a => [a[axis], a[axis] + a[size]])
-    .filter(v => v > from && v < to)].sort((a, b) => a - b)
-  let ranges = [[-Infinity, Infinity]]
-  for (let i = 1; i < cuts.length; i++) {
-    const mid = (cuts[i - 1] + cuts[i]) / 2
-    const band = merged(areas.filter(a => mid >= a[axis] && mid <= a[axis] + a[size])
-      .map(a => [a[other], a[other] + a[otherSize]]))
-    ranges = intersect(ranges, band)
-  }
-  const allowed = ranges.map(r => [r[0] + before, r[1] - after]).filter(r => r[0] <= r[1])
-  return allowed.find(r => position >= r[0] - 0.00001 && position <= r[1] + 0.00001)
-    ?? allowed.sort((a, b) => Math.abs(clamp(position, a[0], a[1]) - position) - Math.abs(clamp(position, b[0], b[1]) - position))[0]
-}
 
 /** 外壳有没有抛掷能力（旧外壳没有 flyMove）。 */
 export function supportsFlight(shell) {
@@ -61,7 +26,8 @@ function clamp(value, min, max) {
  *   x:number, y:number, vx:number, vy:number,
  *   area:{x:number,y:number,width:number,height:number},
  *   areas?:Array<{x:number,y:number,width:number,height:number}>,
- *   pig:{width:number,height:number}, artMargin?:number,
+ *   pig:{width:number,height:number,x?:number,y?:number}, artMargin?:number,
+ *   visual?:{x:number,y:number,width:number,height:number},
  * }} options
  */
 export function createFlight(options) {
@@ -69,14 +35,18 @@ export function createFlight(options) {
   const area = options.area
   const pig = options.pig
   const artMargin = Number.isFinite(options.artMargin) ? options.artMargin : 0
-  const reach = Math.min(area.width / 2, pig.width / 2 + artMargin)
-  const head = pig.height + 8
-  const horizontal = (x, y) => corridor(areas, true, y - head, y, reach, reach, x)
-  const vertical = (x, y) => corridor(areas, false, x - reach, x + reach, head, 0, y)
+  const visual = options.visual
+  const left = visual ? (pig.x ?? 0) + pig.width / 2 - visual.x : pig.width / 2 + artMargin
+  const right = visual ? visual.x + visual.width - (pig.x ?? 0) - pig.width / 2 : pig.width / 2 + artMargin
+  const head = visual ? (pig.y ?? 0) + pig.height - visual.y : pig.height + 8
+  const foot = visual ? visual.y + visual.height - (pig.y ?? 0) - pig.height : 0
+  const reach = Math.min(area.width / 2, Math.max(left, right))
+  const horizontal = (x, y) => drawingCorridor(areas, true, y - head, y + foot, reach, reach, x)
+  const vertical = (x, y) => drawingCorridor(areas, false, x - reach, x + reach, head, foot, y)
   let x = options.x
   let y = options.y
   // 拖放可以略微越过边缘，起飞时只夹回最近的有效走廊。
-  const initialY = vertical(x, y) ?? [area.y + head, area.y + area.height]
+  const initialY = vertical(x, y) ?? [area.y + head, area.y + area.height - foot]
   y = clamp(y, initialY[0], initialY[1])
   const initialX = horizontal(x, y) ?? [area.x + reach, area.x + area.width - reach]
   x = clamp(x, initialX[0], initialX[1])

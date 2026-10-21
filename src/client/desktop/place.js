@@ -12,7 +12,7 @@
  *
  * 猪窗口里没有面板（外壳 0.6.0 起面板单独一个窗口），所以猪永远在家。
  */
-import { contentBoundsForPig, nearestArea, workAreaBounds } from './geometry.js'
+import { contentBoundsForPig, nearestArea, workAreaBounds, drawingCorridor } from './geometry.js'
 
 const PIG_SCREEN_KEY = 'dsh-piggy:desktop-pig'
 const STORE_VERSION = 3
@@ -135,6 +135,20 @@ export function createPlacement() {
       const area = horizontalSpan({ x: home.x, y: home.y - pigSize.height / 2 }, list, areaOf(home, list))
       const reach = Math.min(area.width / 2, pigSize.width / 2 + report.artMargin)
       home.x = Math.round(Math.max(area.x + reach, Math.min(home.x, area.x + area.width - reach)))
+    }
+    if (report.visual && list.length > 0) {
+      const visual = report.visual
+      const left = report.pig.x + pigSize.width / 2 - visual.x
+      const right = visual.x + visual.width - report.pig.x - pigSize.width / 2
+      const top = report.pig.y + pigSize.height - visual.y
+      const bottom = visual.y + visual.height - report.pig.y - pigSize.height
+      const fit = (value, range) => Math.round(Math.max(range[0], Math.min(value, range[1])))
+      // Same drawing corridor as flight. Existing old saves may put the square
+      // feet at the edge while the held artwork extends beyond it. Once fitted,
+      // repeated layout/bubble/menu measurements leave this home unchanged.
+      home.y = fit(home.y, drawingCorridor(list, false, home.x - left, home.x + right, top, bottom, home.y))
+      home.x = fit(home.x, drawingCorridor(list, true, home.y - top, home.y + bottom, left, right, home.x))
+      home.y = fit(home.y, drawingCorridor(list, false, home.x - left, home.x + right, top, bottom, home.y))
     }
     const shift = report.shift ?? { x: 0, y: 0 }
     // 按「内容没在窗口里挪过」的布局算窗口；被夹了多少交给页面去挪内容（只在收起时）。

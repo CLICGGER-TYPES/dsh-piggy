@@ -6,6 +6,7 @@
  * 旧外壳没有 flyMove 时 supported=false，页面自动退回原地落地。
  * @module dsh-piggy/client/desktop/flight-bridge
  */
+import { bodyVisualBounds } from './visual-bounds.js'
 
 /**
  * @param {{
@@ -31,6 +32,7 @@ export function createFlightBridge(c) {
       return {
         home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
         pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
+        visual: bodyVisualBounds(pig),
         window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
         area: info.workArea,
         areas: info.workAreas ?? [info.workArea],

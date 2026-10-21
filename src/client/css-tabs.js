@@ -55,6 +55,7 @@ export const CSS_TABS = [
   'border-bottom:2px solid var(--ac-border-light);transform:rotate(45deg)}',
   '[data-dsh-pig][data-panel-side="right"] .dp-bubble{right:auto;left:6px}',
   '[data-dsh-pig][data-panel-side="right"] .dp-bubble::after{right:auto;left:calc(var(--pig-size) / 2 - 5px)}',
+  '[data-dsh-pig] .dp-bubble[data-fitted]::after{left:var(--bubble-tail-left);right:auto}',
   // Reply buttons under a line: small pills, the mint of the primary colour
   // without the 3D base, which the spec keeps for real primary buttons.
   // 对话始终在猪头上；菜单打开只调整原生窗口层级，不改变气泡位置、宽度或滚动进度。

@@ -4092,6 +4092,7 @@
     "border-bottom:2px solid var(--ac-border-light);transform:rotate(45deg)}",
     '[data-dsh-pig][data-panel-side="right"] .dp-bubble{right:auto;left:6px}',
     '[data-dsh-pig][data-panel-side="right"] .dp-bubble::after{right:auto;left:calc(var(--pig-size) / 2 - 5px)}',
+    "[data-dsh-pig] .dp-bubble[data-fitted]::after{left:var(--bubble-tail-left);right:auto}",
     // Reply buttons under a line: small pills, the mint of the primary colour
     // without the 3D base, which the spec keeps for real primary buttons.
     // 对话始终在猪头上；菜单打开只调整原生窗口层级，不改变气泡位置、宽度或滚动进度。
@@ -11886,6 +11887,40 @@
     const one = hit ?? list[0];
     return { id: one.id, scale: one.scaleFactor, count: list.length };
   }
+  function merged(ranges) {
+    const result = [];
+    for (const range of ranges.sort((a, b) => a[0] - b[0])) {
+      const last = result[result.length - 1];
+      if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
+      else result.push([...range]);
+    }
+    return result;
+  }
+  function intersect(a, b) {
+    return a.flatMap((one) => b.map((two) => [Math.max(one[0], two[0]), Math.min(one[1], two[1])])).filter((range) => range[0] <= range[1]);
+  }
+  function drawingCorridor(areas, horizontal, from, to, before, after, position) {
+    const axis = horizontal ? "y" : "x";
+    const size = horizontal ? "height" : "width";
+    const other = horizontal ? "x" : "y";
+    const otherSize = horizontal ? "width" : "height";
+    const cuts = [from, to, ...areas.flatMap((a) => [a[axis], a[axis] + a[size]]).filter((v) => v > from && v < to)].sort((a, b) => a - b);
+    let ranges = [[-Infinity, Infinity]];
+    for (let i = 1; i < cuts.length; i++) {
+      const mid = (cuts[i - 1] + cuts[i]) / 2;
+      const band = merged(areas.filter((a) => mid >= a[axis] && mid <= a[axis] + a[size]).map((a) => [a[other], a[other] + a[otherSize]]));
+      ranges = intersect(ranges, band);
+    }
+    if (ranges.length === 0) {
+      const nearest = areas.slice().sort((a, b) => Math.abs(position - (a[other] + a[otherSize] / 2)) - Math.abs(position - (b[other] + b[otherSize] / 2)))[0];
+      ranges = [[nearest[other], nearest[other] + nearest[otherSize]]];
+    }
+    const allowed = ranges.map((r) => {
+      const min = r[0] + before, max = r[1] - after;
+      return min <= max ? [min, max] : [(min + max) / 2, (min + max) / 2];
+    });
+    return allowed.find((r) => position >= r[0] - 1e-5 && position <= r[1] + 1e-5) ?? allowed.sort((a, b) => Math.abs(Math.max(a[0], Math.min(position, a[1])) - position) - Math.abs(Math.max(b[0], Math.min(position, b[1])) - position))[0];
+  }
 
   // src/client/desktop/motion-envelope.js
   var PIG_TRANSFORM_ORIGIN = Object.freeze({ x: 0.5, y: 0.85 });
@@ -12095,9 +12130,9 @@
       };
     });
   }
-  function poseEnvelope(box, pose) {
-    const bodyPivot = { x: box.x + box.width * 0.5, y: box.y + box.height * 0.85 };
-    const holdPivot = { x: box.x + box.width * 0.5, y: box.y };
+  function poseEnvelope(box, pose, pigBox = box) {
+    const bodyPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y + pigBox.height * 0.85 };
+    const holdPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y };
     const body = transformed(box, bodyPivot, {
       scaleX: 1 + FEEL.volumeK * pose.squash,
       scaleY: 1 - pose.squash,
@@ -12133,26 +12168,54 @@
     });
     return union(bounds(hold), bounds(exact));
   }
-  function feelEnvelope(pigBox, pose) {
+  function feelEnvelope(pigBox, pose, artBox = pigBox) {
     if (pigBox.width <= 0 || pigBox.height <= 0) return { x: pigBox.x, y: pigBox.y, width: pigBox.width, height: pigBox.height };
     if (pose !== void 0) {
-      return poseEnvelope(pigBox, {
+      return poseEnvelope(artBox, {
         squash: Number.isFinite(pose.squash) ? pose.squash : 0,
         hold: Number.isFinite(pose.hold) ? pose.hold : 0,
         tilt: Number.isFinite(pose.tilt) ? pose.tilt : 0,
         hop: Number.isFinite(pose.hop) ? pose.hop : 0
-      });
+      }, pigBox);
     }
     const squashes = [FEEL.squashMax, -FEEL.squashMax * 0.45];
     const tilts = [-FEEL.tiltMaxFly, FEEL.tiltMaxFly];
     const boxes = [];
     for (const squash of squashes) {
       for (const tilt3 of tilts) {
-        boxes.push(poseEnvelope(pigBox, { squash, hold: FEEL.holdMax, tilt: tilt3, hop: 0 }));
-        boxes.push(poseEnvelope(pigBox, { squash, hold: 0, tilt: tilt3, hop: 0 }));
+        boxes.push(poseEnvelope(artBox, { squash, hold: FEEL.holdMax, tilt: tilt3, hop: 0 }, pigBox));
+        boxes.push(poseEnvelope(artBox, { squash, hold: 0, tilt: tilt3, hop: 0 }, pigBox));
       }
     }
     return union(...boxes);
+  }
+
+  // src/client/desktop/visual-bounds.js
+  function bodyVisualBounds(pig) {
+    const art = artMarginFor(pig.width);
+    const pose = feelEnvelope(
+      { x: 0, y: 0, width: pig.width, height: pig.height },
+      void 0,
+      { x: -art, y: 0, width: pig.width + art * 2, height: pig.height }
+    );
+    const left = Math.max(art, -pose.x);
+    const right = Math.max(art, pose.x + pose.width - pig.width);
+    const top = Math.max(8, -pose.y);
+    const bottom = Math.max(12, pose.y + pose.height - pig.height);
+    return {
+      x: pig.x - left,
+      y: pig.y - top,
+      width: pig.width + left + right,
+      height: pig.height + top + bottom
+    };
+  }
+
+  // src/client/desktop/bubble-geometry.js
+  function fitBubbleHorizontally(bubble, pig, windowBounds, workArea) {
+    const left = Math.max(0, workArea.x - windowBounds.x) + 6;
+    const right = Math.min(windowBounds.width, workArea.x + workArea.width - windowBounds.x) - 6;
+    const x = Math.max(left, Math.min(bubble.x, Math.max(left, right - bubble.width)));
+    return { x, tailLeft: Math.max(10, Math.min(bubble.width - 20, pig.x + pig.width / 2 - x - 5)) };
   }
 
   // src/client/desktop/measure.js
@@ -12327,7 +12390,7 @@
       }
       const feelState = pigNode === null ? null : pigNode.getAttribute("data-feel");
       if (pigNode !== null && (feelState === "active" || feelState === "settle")) {
-        const envelope = feelEnvelope(pigBox);
+        const envelope = bodyVisualBounds(pigBox);
         animatedRects.push({ x: envelope.x, y: envelope.y, r: envelope.x + envelope.width, b: envelope.y + envelope.height });
       }
       const shape = rects.concat(bubbleRects, animatedRects).map(function(rect) {
@@ -12377,7 +12440,30 @@
         state3.anchor = { x: 0, y: 0 };
       }
     }
-    return { boxes, sides, pin, keyOf, fitWindow, state: state3 };
+    function fitBubble(host3, geometry2) {
+      const bubble = host3.querySelector(".dp-bubble");
+      const pig = host3.querySelector(".dp-pig");
+      if (!bubble || !pig || !geometry2?.window || !geometry2?.workArea) return;
+      if (bubble.hidden) return;
+      const parent = bubble.offsetParent;
+      if (!parent) return;
+      const originalLeft = host3.getAttribute("data-panel-side") === "right" ? 6 : parent.clientWidth - 6 - bubble.offsetWidth;
+      const box = { ...layoutBox(bubble), x: layoutBox(parent).x + originalLeft };
+      const fitted = fitBubbleHorizontally(box, layoutBox(pig), geometry2.window, geometry2.workArea);
+      const clipped = Math.abs(fitted.x - box.x) >= 0.5;
+      const left = clipped ? originalLeft + fitted.x - box.x + "px" : "";
+      const right = clipped ? "auto" : "";
+      const tail = clipped ? fitted.tailLeft + "px" : "";
+      if (bubble.style.left !== left) bubble.style.left = left;
+      if (bubble.style.right !== right) bubble.style.right = right;
+      if (bubble.style.getPropertyValue("--bubble-tail-left") !== tail) {
+        if (tail) bubble.style.setProperty("--bubble-tail-left", tail);
+        else bubble.style.removeProperty("--bubble-tail-left");
+      }
+      if (clipped && !bubble.hasAttribute("data-fitted")) bubble.setAttribute("data-fitted", "true");
+      else if (!clipped && bubble.hasAttribute("data-fitted")) bubble.removeAttribute("data-fitted");
+    }
+    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state3 };
   }
 
   // src/client/desktop/place.js
@@ -12478,6 +12564,17 @@
         const area2 = horizontalSpan({ x: home.x, y: home.y - pigSize2.height / 2 }, list, areaOf(home, list));
         const reach = Math.min(area2.width / 2, pigSize2.width / 2 + report.artMargin);
         home.x = Math.round(Math.max(area2.x + reach, Math.min(home.x, area2.x + area2.width - reach)));
+      }
+      if (report.visual && list.length > 0) {
+        const visual = report.visual;
+        const left = report.pig.x + pigSize2.width / 2 - visual.x;
+        const right = visual.x + visual.width - report.pig.x - pigSize2.width / 2;
+        const top = report.pig.y + pigSize2.height - visual.y;
+        const bottom = visual.y + visual.height - report.pig.y - pigSize2.height;
+        const fit = (value, range) => Math.round(Math.max(range[0], Math.min(value, range[1])));
+        home.y = fit(home.y, drawingCorridor(list, false, home.x - left, home.x + right, top, bottom, home.y));
+        home.x = fit(home.x, drawingCorridor(list, true, home.y - top, home.y + bottom, left, right, home.x));
+        home.y = fit(home.y, drawingCorridor(list, false, home.x - left, home.x + right, top, bottom, home.y));
       }
       const shift = report.shift ?? { x: 0, y: 0 };
       const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize2 };
@@ -12580,6 +12677,7 @@
         return {
           home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
           pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
+          visual: bodyVisualBounds(pig),
           window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
           area: info.workArea,
           areas: info.workAreas ?? [info.workArea]
@@ -12750,7 +12848,7 @@
     return Math.abs(window.innerWidth - win.width) > 1 || Math.abs(window.innerHeight - win.height) > 1;
   }
   function tick() {
-    if (flying) return;
+    if (dragging() || flying) return;
     const h = host2();
     if (h === null) return;
     const info = readGeometry();
@@ -12791,6 +12889,7 @@
       height: next.content.height,
       pig: next.pig,
       artMargin: artMarginFor(next.pig.width),
+      visual: bodyVisualBounds(next.pig),
       pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
       pigNow: { x: next.pigBox.x, y: next.pigBox.y },
       shift: measure.state.shift
@@ -12807,6 +12906,10 @@
       next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
       hitRects = next.shape;
     }
+    measure.fitBubble(h, info);
+    next = measure.boxes(h);
+    if (next === null) return;
+    hitRects = next.shape;
     const move = !sameBounds(want, bounds2, TOLERANCE2);
     const clampState = windowClamp.observe(want, bounds2);
     if (clampState === "accept") {
@@ -12926,6 +13029,7 @@
       ext: shell2.ext,
       fullscreen: shell2.fullscreen,
       split: true,
+      dragVisualBounds: shell2.dragVisualBounds === true,
       onStateChanged: shell2.onStateChanged,
       panel: {
         toggle: function(open) {
@@ -12948,6 +13052,7 @@
           y: pig.y,
           width: pig.width,
           height: pig.height,
+          visual: bodyVisualBounds(pig),
           slide: typeof shell2.onDragSlide === "function",
           origin: origin !== null && origin !== void 0 && Number.isFinite(origin.x) && Number.isFinite(origin.y) ? { x: origin.x, y: origin.y } : void 0
         });
@@ -13315,33 +13420,6 @@
 
   // src/client/desktop/flight.js
   var STEP2 = 1 / 120;
-  function merged(ranges) {
-    const result = [];
-    for (const range of ranges.sort((a, b) => a[0] - b[0])) {
-      const last = result[result.length - 1];
-      if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
-      else result.push([...range]);
-    }
-    return result;
-  }
-  function intersect(a, b) {
-    return a.flatMap((one) => b.map((two) => [Math.max(one[0], two[0]), Math.min(one[1], two[1])])).filter((range) => range[0] <= range[1]);
-  }
-  function corridor(areas, horizontal, from, to, before, after, position) {
-    const axis = horizontal ? "y" : "x";
-    const size = horizontal ? "height" : "width";
-    const other = horizontal ? "x" : "y";
-    const otherSize = horizontal ? "width" : "height";
-    const cuts = [from, to, ...areas.flatMap((a) => [a[axis], a[axis] + a[size]]).filter((v) => v > from && v < to)].sort((a, b) => a - b);
-    let ranges = [[-Infinity, Infinity]];
-    for (let i = 1; i < cuts.length; i++) {
-      const mid = (cuts[i - 1] + cuts[i]) / 2;
-      const band = merged(areas.filter((a) => mid >= a[axis] && mid <= a[axis] + a[size]).map((a) => [a[other], a[other] + a[otherSize]]));
-      ranges = intersect(ranges, band);
-    }
-    const allowed = ranges.map((r) => [r[0] + before, r[1] - after]).filter((r) => r[0] <= r[1]);
-    return allowed.find((r) => position >= r[0] - 1e-5 && position <= r[1] + 1e-5) ?? allowed.sort((a, b) => Math.abs(clamp(position, a[0], a[1]) - position) - Math.abs(clamp(position, b[0], b[1]) - position))[0];
-  }
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -13350,13 +13428,17 @@
     const area = options.area;
     const pig = options.pig;
     const artMargin = Number.isFinite(options.artMargin) ? options.artMargin : 0;
-    const reach = Math.min(area.width / 2, pig.width / 2 + artMargin);
-    const head = pig.height + 8;
-    const horizontal = (x2, y2) => corridor(areas, true, y2 - head, y2, reach, reach, x2);
-    const vertical = (x2, y2) => corridor(areas, false, x2 - reach, x2 + reach, head, 0, y2);
+    const visual = options.visual;
+    const left = visual ? (pig.x ?? 0) + pig.width / 2 - visual.x : pig.width / 2 + artMargin;
+    const right = visual ? visual.x + visual.width - (pig.x ?? 0) - pig.width / 2 : pig.width / 2 + artMargin;
+    const head = visual ? (pig.y ?? 0) + pig.height - visual.y : pig.height + 8;
+    const foot = visual ? visual.y + visual.height - (pig.y ?? 0) - pig.height : 0;
+    const reach = Math.min(area.width / 2, Math.max(left, right));
+    const horizontal = (x2, y2) => drawingCorridor(areas, true, y2 - head, y2 + foot, reach, reach, x2);
+    const vertical = (x2, y2) => drawingCorridor(areas, false, x2 - reach, x2 + reach, head, foot, y2);
     let x = options.x;
     let y = options.y;
-    const initialY = vertical(x, y) ?? [area.y + head, area.y + area.height];
+    const initialY = vertical(x, y) ?? [area.y + head, area.y + area.height - foot];
     y = clamp(y, initialY[0], initialY[1]);
     const initialX = horizontal(x, y) ?? [area.x + reach, area.x + area.width - reach];
     x = clamp(x, initialX[0], initialX[1]);
@@ -13383,17 +13465,17 @@
         vy *= drag;
       }
       vy += FEEL.gravity * h;
-      const [left, right] = horizontal(x, y);
+      const [left2, right2] = horizontal(x, y);
       x += vx * h;
-      if (x < left) {
-        x = left;
+      if (x < left2) {
+        x = left2;
         if (vx < 0) {
           const impact = Math.abs(vx);
           vx = impact * FEEL.restitution;
           emit({ type: "bounce", speed: impact, side: "left" });
         }
-      } else if (x > right) {
-        x = right;
+      } else if (x > right2) {
+        x = right2;
         if (vx > 0) {
           const impact = Math.abs(vx);
           vx = -impact * FEEL.restitution;
@@ -13489,9 +13571,9 @@
         return clamp(Math.round(Math.max(0, impact) / 600), 1, 4);
       },
       bounds() {
-        const [left, right] = horizontal(x, y);
+        const [left2, right2] = horizontal(x, y);
         const [ceiling, floor2] = vertical(x, y);
-        return { left, right, floor: floor2, ceiling };
+        return { left: left2, right: right2, floor: floor2, ceiling };
       }
     };
   }
@@ -13576,7 +13658,8 @@
           area: start2.area,
           areas: start2.areas,
           pig: start2.pig,
-          artMargin: artMarginFor(start2.pig.width)
+          artMargin: artMarginFor(start2.pig.width),
+          visual: start2.visual
         });
         state3 = {
           body,

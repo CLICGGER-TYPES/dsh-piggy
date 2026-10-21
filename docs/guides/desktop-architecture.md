@@ -50,7 +50,7 @@
 | 通道 | piggyShell 方法 | 方式 | 说明 |
 |---|---|---|---|
 | `piggy:place` | `place({bounds?, shape?, pig?})` | 同步 | 设窗口位置大小、可点区域；`pig` 是猪在窗口里的框（0.33.1 起，面板按它贴猪）。返回最新几何 |
-| `piggy:drag:start` | `beginDrag({x,y,width,height,slide,origin?})` | 单向 | 开始拖：带猪在窗口里的框；`slide:true` 表示页面会接 `piggy:drag-slide`；`origin` 是 pointerdown 的屏幕坐标（手感层延迟到 4px 才发，主进程校验后当拖动起点） |
+| `piggy:drag:start` | `beginDrag({x,y,width,height,slide,origin?,visual?})` | 单向 | 开始拖：带猪在窗口里的定位框；`slide:true` 表示页面会接 `piggy:drag-slide`；`origin` 是 pointerdown 的屏幕坐标（手感层延迟到 4px 才发，主进程校验后当拖动起点）；未发布候选的可选 `visual` 是同坐标系完整绘制包络，不能替换原定位框 |
 | `piggy:flight:move` | `flyMove({x,y,slide})` | 单向 | A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds，不重排、不 followPig、不写 window.json；`slide` 用来平移可点/可见形状 |
 | `piggy:drag:heartbeat` | `dragHeartbeat()` | 单向 | 拖动中每次 pointermove 发；2 秒没心跳主进程自己松手 |
 | `piggy:drag:end` | `endDrag()` | 单向 | 松手 |
@@ -133,3 +133,15 @@ Linux 的 setShape 也裁剪绘制。窗口 resize 时先临时保留完整区�
 页面通过 `panel.size(width, height, true)` 上报内容高度；新外壳预留本次锚点的最大高度，内容始终贴着猪的一边。Linux/Windows 的原生 shape 只覆盖真实内容，切页后等待新帧再提交轮廓；macOS 按内容框同步鼠标穿透。旧页面不传第三个参数，旧外壳忽略它，均继续支持原尺寸协议。Linux 虚拟机已复现旧版切页瞬时偏移 114px；Windows/macOS 本轮未实机验证。
 
 开着面板跨屏拖动时，`panelBoundsFor` 接收当前全部工作区，按整个桌面外沿夹取；锚点保留的原 workArea 仅供静态排版、尺寸和松手重排使用，不能成为拖动中的屏幕围栏。该路径复用 `desktopViewportBounds`，不会每过屏缝就切换对齐方向。
+
+### 边缘拖放绘制包络（2026-10-21 未发布候选）
+
+`desktop/visual-bounds.js` 从原始猪定位盒、宽立绘留白与 `feelEnvelope` 推出固定绘制范围；动作变换中心仍是原定位盒。启动位置、拖动、飞行和活跃时的原生 shape 使用同一包络，home 与面板依然按脚底中心定位。连接的屏缝可以穿过，错位屏幕的空白不能作为可绘制区域。初始存档贴边时只向可容纳完整绘制范围的位置夹取，稳定后重复测量不能漂移。
+
+新外壳声明 `piggyShell.dragVisualBounds === true`。没有传 `visual` 的旧游戏包沿用原方形定位盒夹取；旧外壳忽略新字段，游戏仍能运行，但拖到边缘的预防修复需要更新并重启外壳。不要把这项能力写成已经包含在已发布 0.6.7 中。
+
+不能用松手后无条件清空 `commitSlide`/anchor 代替源头限制：实际原生录像已证明这种候选会引入单帧位置交接跳动。既有坏 anchor 通过同存档重启恢复；本轮不做运行中强制清零。验证范围和仍开放的快拖、混合缩放问题以 ROADMAP 为准。
+
+拖动期间只有外壳 `dragTick` 拥有窗口位置与绘制形状。页面 `tick` 的统一入口必须拦住拖动和飞行，不能只在定时器/调度器里拦；直接的菜单、尺寸或动作几何回调也走同一约束。外壳用既有 `dragSession` 拒绝拖动期间普通 `place` 写入，不另设第二套拖动状态。`place({})` 始终是只读几何查询：保留现代能力握手，但不清空 slide、不退出整窗绘制形状、不触发落地提交。松手仍按原 IPC 顺序读取最后几何并交接。
+
+同尺寸也有新旧画面交接：`commitSlide` 把 translate 交回布局后，第一份精确 shape 不能立刻裁剪仍在显示的旧缓冲。Linux 在退出 `dragShapeActive`/`flightShapeActive` 的第一次带 shape 提交中，复用 `resizeShape.begin(bounds, true)` 等新帧；只传 shape、未传 bounds 的提交同样处理。新的拖动/飞行取消旧订阅，精确形状只在目标画面到达后恢复。定向 VM 记录的订阅耗时 3–18ms、随后均结束，减少动态和零 slide 也已验证；不增加常驻帧捕获，不修改动作节奏。

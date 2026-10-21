@@ -15,12 +15,14 @@ const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
 const SHAPE = [{ x: 20, y: 30, width: 60, height: 60 }]
 const PIG = { x: 20, y: 30, width: 60, height: 60 }
 
-function mouseHarness({ platform = 'win32', env = {} } = {}) {
+function mouseHarness({ platform = 'win32', env = {}, frameSubscription = false } = {}) {
   const handlers = new Map(), intervals = [], mouse = [], shapes = [], sent = []
   const area = { x: 0, y: 0, width: 1920, height: 1040 }
   const display = { workArea: area, bounds: area, scaleFactor: 1, displayFrequency: 60 }
   const state = { bounds: null, cursor: { x: 0, y: 0 }, destroyed: false }
-  const webContents = { on() {}, setFrameRate() {}, send: (...args) => sent.push(args) }
+  const frames = [], ended = []
+  const webContents = { on() {}, setFrameRate() {}, send: (...args) => sent.push(args),
+    ...(frameSubscription ? { isDestroyed:()=>false, beginFrameSubscription:fn=>frames.push(fn), endFrameSubscription:()=>ended.push(true) } : {}) }
   class WindowStub {
     constructor(bounds) { state.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } }
     webContents = webContents
@@ -65,8 +67,62 @@ function mouseHarness({ platform = 'win32', env = {} } = {}) {
     poll() { for (const timer of intervals.filter(timer => timer.delay === 16)) timer.callback() },
     point(x, y) { state.cursor = { x: state.bounds.x + x, y: state.bounds.y + y } },
     dragging: () => runInContext('dragSession !== null', context),
+    ownership: () => JSON.parse(runInContext('JSON.stringify({dragShapeActive, flightShapeActive, flightSlide})', context)),
+    frames, ended,
+    present() { frames.at(-1)({getSize:()=>({width:state.bounds.width,height:state.bounds.height})}) },
   }
 }
+
+test('geometry reads preserve native drag and flight drawing ownership', () => {
+  const shell = mouseHarness({platform:'linux'})
+  shell.send('piggy:place',{shape:SHAPE,pig:PIG})
+  shell.send('piggy:drag:start',{...PIG,slide:true})
+  shell.send('piggy:place',{})
+  assert.equal(shell.ownership().dragShapeActive,true)
+  shell.send('piggy:drag:end')
+  shell.send('piggy:flight:move',{x:300,y:200,slide:{x:25,y:40}})
+  shell.send('piggy:place',{})
+  assert.deepEqual(shell.ownership(),{dragShapeActive:true,flightShapeActive:true,flightSlide:{x:25,y:40}})
+})
+
+test('ordinary placement cannot compete with an active native drag, and resumes after release', () => {
+  const shell = mouseHarness({platform:'linux'})
+  shell.send('piggy:place',{shape:SHAPE,pig:PIG})
+  shell.send('piggy:drag:start',{...PIG,slide:true})
+  const before={...shell.state.bounds}, count=shell.shapes.length
+  const requested={x:300,y:200,width:384,height:348}
+  shell.send('piggy:place',{bounds:requested,shape:SHAPE,pig:PIG})
+  assert.deepEqual(shell.state.bounds,before)
+  assert.equal(shell.shapes.length,count)
+  assert.equal(shell.ownership().dragShapeActive,true)
+  shell.send('piggy:drag:end')
+  shell.send('piggy:place',{bounds:requested,shape:SHAPE,pig:PIG})
+  assert.deepEqual(shell.state.bounds,requested)
+  assert.equal(shell.ownership().dragShapeActive,false)
+})
+
+test('drag and flight handoff wait for a new frame before restoring a same-size precise shape', () => {
+  const shell=mouseHarness({platform:'linux',frameSubscription:true})
+  shell.send('piggy:place',{shape:SHAPE,pig:PIG})
+  shell.send('piggy:drag:start',{...PIG,slide:true})
+  shell.send('piggy:drag:end')
+  const shape=[{x:50,y:60,width:60,height:60}]
+  shell.send('piggy:place',{shape,pig:PIG})
+  const full=[{x:0,y:0,width:shell.state.bounds.width,height:shell.state.bounds.height}]
+  assert.deepEqual(shell.shapes.at(-1),full,'the old backing frame still needs the whole native drawing area')
+  assert.equal(shell.frames.length,1,'shape-only handoff must also wait for presentation')
+  shell.present()
+  assert.deepEqual(shell.shapes.at(-1),shape)
+  assert.equal(shell.ended.length,1)
+  shell.send('piggy:place',{shape,pig:PIG})
+  assert.equal(shell.frames.length,1,'idle measurements must not keep capturing frames')
+  shell.send('piggy:flight:move',{x:300,y:200,slide:{x:20,y:40}})
+  shell.send('piggy:place',{bounds:{...shell.state.bounds},shape,pig:PIG})
+  assert.deepEqual(shell.shapes.at(-1),full)
+  assert.equal(shell.frames.length,2,'same-size bounds handoff must also wait once')
+  shell.present()
+  assert.deepEqual(shell.shapes.at(-1),shape)
+})
 
 test('未知能力启动不转发，16ms 命中轮询保留且静止 120 帧不重复设置', () => {
   const shell = mouseHarness()

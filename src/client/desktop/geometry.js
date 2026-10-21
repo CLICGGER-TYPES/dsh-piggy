@@ -73,3 +73,47 @@ export function displayNote(info) {
   const one = hit ?? list[0]
   return { id: one.id, scale: one.scaleFactor, count: list.length }
 }
+
+// 对完整身体覆盖的每一条工作区带取交集；相接的屏幕先合并，再留立绘边距。
+// 因此内侧屏缝没有墙，错位屏幕之间的空白仍是墙。
+function merged(ranges) {
+  const result = []
+  for (const range of ranges.sort((a, b) => a[0] - b[0])) {
+    const last = result[result.length - 1]
+    if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1])
+    else result.push([...range])
+  }
+  return result
+}
+
+function intersect(a, b) {
+  return a.flatMap(one => b.map(two => [Math.max(one[0], two[0]), Math.min(one[1], two[1])]))
+    .filter(range => range[0] <= range[1])
+}
+
+export function drawingCorridor(areas, horizontal, from, to, before, after, position) {
+  const axis = horizontal ? 'y' : 'x'
+  const size = horizontal ? 'height' : 'width'
+  const other = horizontal ? 'x' : 'y'
+  const otherSize = horizontal ? 'width' : 'height'
+  const cuts = [from, to, ...areas.flatMap(a => [a[axis], a[axis] + a[size]])
+    .filter(v => v > from && v < to)].sort((a, b) => a - b)
+  let ranges = [[-Infinity, Infinity]]
+  for (let i = 1; i < cuts.length; i++) {
+    const mid = (cuts[i - 1] + cuts[i]) / 2
+    const band = merged(areas.filter(a => mid >= a[axis] && mid <= a[axis] + a[size])
+      .map(a => [a[other], a[other] + a[otherSize]]))
+    ranges = intersect(ranges, band)
+  }
+  if (ranges.length === 0) {
+    const nearest = areas.slice().sort((a, b) =>
+      Math.abs(position - (a[other] + a[otherSize] / 2)) - Math.abs(position - (b[other] + b[otherSize] / 2)))[0]
+    ranges = [[nearest[other], nearest[other] + nearest[otherSize]]]
+  }
+  const allowed = ranges.map(r => {
+    const min = r[0] + before, max = r[1] - after
+    return min <= max ? [min, max] : [(min + max) / 2, (min + max) / 2]
+  })
+  return allowed.find(r => position >= r[0] - 0.00001 && position <= r[1] + 0.00001)
+    ?? allowed.sort((a, b) => Math.abs(Math.max(a[0], Math.min(position, a[1])) - position) - Math.abs(Math.max(b[0], Math.min(position, b[1])) - position))[0]
+}

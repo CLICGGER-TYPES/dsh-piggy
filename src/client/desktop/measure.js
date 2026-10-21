@@ -12,7 +12,8 @@
 import { PAD, STEP } from './geometry.js'
 import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
 import { fixedMotionReserve, motionEnvelope, PIG_TRANSFORM_ORIGIN } from './motion-envelope.js'
-import { feelEnvelope } from '../feel/envelope.js'
+import { bodyVisualBounds } from './visual-bounds.js'
+import { fitBubbleHorizontally } from './bubble-geometry.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -198,7 +199,7 @@ export function createMeasure(env) {
     }
     const feelState = pigNode === null ? null : pigNode.getAttribute('data-feel')
     if (pigNode !== null && (feelState === 'active' || feelState === 'settle')) {
-      const envelope = feelEnvelope(pigBox)
+      const envelope = bodyVisualBounds(pigBox)
       animatedRects.push({ x: envelope.x, y: envelope.y, r: envelope.x + envelope.width, b: envelope.y + envelope.height })
     }
     const shape = rects.concat(bubbleRects, animatedRects).map(function (rect) {
@@ -251,5 +252,32 @@ export function createMeasure(env) {
     }
   }
 
-  return { boxes, sides, pin, keyOf, fitWindow, state }
+  /** Fit from the original CSS anchor every time; never accumulate a previous correction. */
+  function fitBubble(host, geometry) {
+    const bubble = host.querySelector('.dp-bubble')
+    const pig = host.querySelector('.dp-pig')
+    if (!bubble || !pig || !geometry?.window || !geometry?.workArea) return
+    if (bubble.hidden) return
+    const parent = bubble.offsetParent
+    if (!parent) return
+    const originalLeft = host.getAttribute('data-panel-side') === 'right' ? 6 : parent.clientWidth - 6 - bubble.offsetWidth
+    const box = { ...layoutBox(bubble), x: layoutBox(parent).x + originalLeft }
+    const fitted = fitBubbleHorizontally(box, layoutBox(pig), geometry.window, geometry.workArea)
+    const clipped = Math.abs(fitted.x - box.x) >= 0.5
+    const left = clipped ? (originalLeft + fitted.x - box.x) + 'px' : ''
+    const right = clipped ? 'auto' : ''
+    const tail = clipped ? fitted.tailLeft + 'px' : ''
+    // MutationObserver schedules geometry on style changes; write only actual
+    // differences so a stable fitted bubble does not create a measurement loop.
+    if (bubble.style.left !== left) bubble.style.left = left
+    if (bubble.style.right !== right) bubble.style.right = right
+    if (bubble.style.getPropertyValue('--bubble-tail-left') !== tail) {
+      if (tail) bubble.style.setProperty('--bubble-tail-left', tail)
+      else bubble.style.removeProperty('--bubble-tail-left')
+    }
+    if (clipped && !bubble.hasAttribute('data-fitted')) bubble.setAttribute('data-fitted', 'true')
+    else if (!clipped && bubble.hasAttribute('data-fitted')) bubble.removeAttribute('data-fitted')
+  }
+
+  return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state }
 }

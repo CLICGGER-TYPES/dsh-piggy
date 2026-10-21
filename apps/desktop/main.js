@@ -579,7 +579,7 @@ function dragTick(cursorOverride) {
   // 用起始窗口的大小去 setBounds 会把窗口来回改大改小，猪就一抽一抽的。
   const pig = dragSession.pig ?? { ...(lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }), ...lastPigSize }
   // 窗口大小用请求值，不用回读值（见 petAsked 的说明）
-  const wanted = dragPigBounds(petAsked ?? win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas)
+  const wanted = dragPigBounds(petAsked ?? win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas, dragSession.visual)
   if (!dragShapeActive) {
     dragShapeActive = true
     if (!PASSTHROUGH) {
@@ -641,6 +641,11 @@ ipcMain.on('piggy:drag:start', (event, given) => {
     cursor: dragOrigin,
     pigScreen: { x: bounds.x + pig.x, y: bounds.y + pig.y },
     pig: pigFromPage,
+    visual: pigFromPage !== null && isMouseRect(given?.visual) && given.visual.width > 0 && given.visual.height > 0
+      && given.visual.x <= pigFromPage.x && given.visual.y <= pigFromPage.y
+      && given.visual.x + given.visual.width >= pigFromPage.x + pigFromPage.width
+      && given.visual.y + given.visual.height >= pigFromPage.y + pigFromPage.height
+      ? { ...given.visual } : null,
     lastHeartbeat: Date.now(),
     // 页面说它会接 piggy:drag-slide（猪在窗口里滑），主进程才把窗口夹在屏幕里
     slide: given?.slide === true,
@@ -706,11 +711,25 @@ ipcMain.on('piggy:place', (event, request) => {
     passthroughMode = 'modern'
     setHit(passthroughHit)
   }
+  // place({}) is a synchronous geometry query, not a landing/placement commit.
+  // During native dragging even old pages must not compete with dragTick by
+  // moving the window or restoring a stale precise drawing shape.
+  const reading = request.bounds === undefined && request.shape === undefined && request.pig === undefined
+  if (reading || dragSession !== null) {
+    event.returnValue = geometryOf(win.getBounds(), geometrySeq)
+    return
+  }
   const b = request?.bounds
+  const motionHandoff = Array.isArray(request.shape) && (dragShapeActive || flightShapeActive)
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
     const next = { x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }
-    if (process.platform === 'linux' && !PASSTHROUGH) resizeShape.begin(next)
+    if (process.platform === 'linux' && !PASSTHROUGH) resizeShape.begin(next, motionHandoff)
     applyBounds(next, 'place')
+  } else if (motionHandoff && process.platform === 'linux' && !PASSTHROUGH) {
+    // commitSlide transfers translate into layout without changing the window
+    // size. Keep the old backing frame whole until the new layout is painted,
+    // just as on resize; otherwise its new precise shape clips the old pig.
+    resizeShape.begin(win.getBounds(), true)
   }
   // setBounds 是异步的（X11 要等 ConfigureNotify 回来），紧跟其后的 getBounds() 可能还是旧值。
   // 页面拿这个旧值做闭环核对，就会算出假偏差、再照着它挪窗口 —— 用户看到的「越修越偏」。

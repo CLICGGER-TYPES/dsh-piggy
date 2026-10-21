@@ -9,6 +9,7 @@
 import { artMarginFor } from '../art-framing.js'
 import { displayNote, sameBounds } from './geometry.js'
 import { createMeasure, layoutBox } from './measure.js'
+import { bodyVisualBounds } from './visual-bounds.js'
 import { createPlacement } from './place.js'
 import { createWindowClamp } from './window-clamp.js'
 import { createFlightBridge } from './flight-bridge.js'
@@ -82,7 +83,9 @@ function layoutStale(win) {
 }
 
 function tick() {
-  if (flying) return
+  // Direct callers (feel/size/menu hooks) must obey the same ownership rule
+  // as schedule(). Native dragging alone decides bounds and its full shape.
+  if (dragging() || flying) return
   const h = host()
   if (h === null) return
   const info = readGeometry()
@@ -115,6 +118,7 @@ function tick() {
   const grownY = side.vertical === 'bottom' ? next.content.height - bounds.height : 0
   const want = placement.decide({
     width: next.content.width, height: next.content.height, pig: next.pig, artMargin: artMarginFor(next.pig.width),
+    visual: bodyVisualBounds(next.pig),
     pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
     pigNow: { x: next.pigBox.x, y: next.pigBox.y },
     shift: measure.state.shift,
@@ -134,6 +138,12 @@ function tick() {
     next.shape = next.shape.map(rect => ({ ...rect, x: rect.x + dx, y: rect.y + dy }))
     hitRects = next.shape
   }
+  // A desktop-edge scene shift must not carry long speech outside the native
+  // window. Re-measure after fitting so drawing and pointer shapes agree.
+  measure.fitBubble(h, info)
+  next = measure.boxes(h)
+  if (next === null) return
+  hitRects = next.shape
   const move = !sameBounds(want, bounds, TOLERANCE)
   // 同一个目标连续失败多次：以窗口管理器的实际位置为准重定家，只 place 一次实际位置。
   // 不能在第一帧就接受 —— X11 的 setBounds 是异步的，刚开始回读可能还是旧值。
@@ -262,6 +272,7 @@ export function install(shell) {
     ext: shell.ext,
     fullscreen: shell.fullscreen,
     split: true,
+    dragVisualBounds: shell.dragVisualBounds === true,
     onStateChanged: shell.onStateChanged,
     panel: {
       toggle: function (open) {
@@ -283,6 +294,7 @@ export function install(shell) {
       // slide：这个页面会接「猪在窗口里滑」（窗口被夹在屏幕里时），主进程才夹窗口
       if (typeof shell.beginDrag !== 'function') return
       shell.beginDrag(pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height,
+        visual: bodyVisualBounds(pig),
         slide: typeof shell.onDragSlide === 'function',
         origin: origin !== null && origin !== undefined && Number.isFinite(origin.x) && Number.isFinite(origin.y)
           ? { x: origin.x, y: origin.y } : undefined })

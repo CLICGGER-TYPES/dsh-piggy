@@ -60,9 +60,9 @@ function transformed(box, pivot, state) {
  * @param {{x:number,y:number,width:number,height:number}} box
  * @param {{squash:number,hold:number,tilt:number,hop:number}} pose
  */
-function poseEnvelope(box, pose) {
-  const bodyPivot = { x: box.x + box.width * 0.5, y: box.y + box.height * 0.85 }
-  const holdPivot = { x: box.x + box.width * 0.5, y: box.y }
+function poseEnvelope(box, pose, pigBox = box) {
+  const bodyPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y + pigBox.height * 0.85 }
+  const holdPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y }
   const body = transformed(box, bodyPivot, {
     scaleX: 1 + FEEL.volumeK * pose.squash,
     scaleY: 1 - pose.squash,
@@ -102,16 +102,17 @@ function poseEnvelope(box, pose) {
  * 物理包络。默认按最大压扁/拉长/倾斜算；显式传入姿态时只算那一个姿态。
  * @param {{x:number,y:number,width:number,height:number}} pigBox
  * @param {{squash?:number,hold?:number,tilt?:number,hop?:number}} [pose]
+ * @param {{x:number,y:number,width:number,height:number}} [artBox] 绘制范围，变换中心仍取猪布局盒
  */
-export function feelEnvelope(pigBox, pose) {
+export function feelEnvelope(pigBox, pose, artBox = pigBox) {
   if (pigBox.width <= 0 || pigBox.height <= 0) return { x: pigBox.x, y: pigBox.y, width: pigBox.width, height: pigBox.height }
   if (pose !== undefined) {
-    return poseEnvelope(pigBox, {
+    return poseEnvelope(artBox, {
       squash: Number.isFinite(pose.squash) ? pose.squash : 0,
       hold: Number.isFinite(pose.hold) ? pose.hold : 0,
       tilt: Number.isFinite(pose.tilt) ? pose.tilt : 0,
       hop: Number.isFinite(pose.hop) ? pose.hop : 0,
-    })
+    }, pigBox)
   }
   // 挤压两个方向都要盖住：落地回弹会短暂反向拉长。
   const squashes = [FEEL.squashMax, -FEEL.squashMax * 0.45]
@@ -119,8 +120,8 @@ export function feelEnvelope(pigBox, pose) {
   const boxes = []
   for (const squash of squashes) {
     for (const tilt of tilts) {
-      boxes.push(poseEnvelope(pigBox, { squash: squash, hold: FEEL.holdMax, tilt: tilt, hop: 0 }))
-      boxes.push(poseEnvelope(pigBox, { squash: squash, hold: 0, tilt: tilt, hop: 0 }))
+      boxes.push(poseEnvelope(artBox, { squash: squash, hold: FEEL.holdMax, tilt: tilt, hop: 0 }, pigBox))
+      boxes.push(poseEnvelope(artBox, { squash: squash, hold: 0, tilt: tilt, hop: 0 }, pigBox))
     }
   }
   return union(...boxes)

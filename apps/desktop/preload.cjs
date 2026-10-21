@@ -62,6 +62,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   setShape: rects => ipcRenderer.send('piggy:shape', rects),
   /** Main process samples the cursor at 60 Hz from this pointer-down origin. */
   beginDrag: pig => ipcRenderer.send('piggy:drag:start', pig ?? null),
+  dragVisualBounds: true,
   /** 新游戏包：页面算好窗口位置大小和可点区域，主进程照做，同步返回新几何。 */
   place: request => {
     const next = ipcRenderer.sendSync('piggy:place', request)

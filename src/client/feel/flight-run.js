@@ -104,6 +104,7 @@ export function createFlightRunner(c) {
       const body = createFlight({
         x: start.home.x, y: start.home.y, vx: vx, vy: vy,
         area: start.area, areas: start.areas, pig: start.pig, artMargin: artMarginFor(start.pig.width),
+        visual: start.visual,
       })
       state = {
         body: body, start: start, shell: shell,
