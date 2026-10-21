@@ -19,6 +19,7 @@ permissions:
   contents: write
 
 env:
+  TZ: Asia/Shanghai
   TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:

@@ -66,6 +66,7 @@ test('the card view: birthday, sign, personality, counts', () => {
 
 test('the pig sometimes ends a line with its catchphrase, never in serious moments', () => {
   const pig = hatchEgg(T0)
+  pig.personality = 'peppy' // 固定可用台词，不依赖 T0 在运行机器时区里的随机性格
   pig.catchphrase = '噜噜'
   const always = () => 0
   const fresh = () => ({ ...pig, dialogue: { ...pig.dialogue, lastByScene: {} } })

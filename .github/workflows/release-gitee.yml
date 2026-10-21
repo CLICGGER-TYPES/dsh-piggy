@@ -26,6 +26,7 @@ permissions:
   contents: read
 
 env:
+  TZ: Asia/Shanghai
   GITEE_REPO: clicgger/dsh-piggy
   TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   # Gitee 的「100MB」实测是 100MiB：104,500,000 字节能传，105,000,000 字节被拒（2026-10-06）。
@@ -36,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with: { fetch-depth: 0 }
+        with: { fetch-depth: 0, ref: 'refs/tags/${{ env.TAG }}' }
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - name: 版本号要和标签一致
@@ -81,6 +82,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        with: { ref: 'refs/tags/${{ env.TAG }}' }
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - uses: actions/setup-python@v5
