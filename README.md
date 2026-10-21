@@ -97,7 +97,7 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 以上为 Linux 测试虚拟机的实际截图，来源见[截图记录](docs/screenshots/readme-rc-capture.md)。Windows、macOS 与混合缩放多屏上的新增修复未逐项实机复测；历史日历/礼物偶发误触摸摸仍继续跟踪。
 
-正式版下载：[GitHub 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1) / [Gitee 0.37.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1)。npm 仍由维护者手动发布，发布前默认 DSH 安装命令可能仍指向上一稳定版。
+正式版下载：[GitHub 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1) / [Gitee 0.37.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1) / [夸克网盘（Windows 国内渠道）](https://pan.quark.cn/s/2c571e9aaecc)。npm 仍由维护者手动发布，发布前默认 DSH 安装命令可能仍指向上一稳定版。
 
 ## 文档与开发
 
