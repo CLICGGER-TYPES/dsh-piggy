@@ -11,6 +11,14 @@ export const STEP = 4
 /** 窗口最小尺寸。 */
 export const MIN_WINDOW = Object.freeze({ width: 96, height: 96 })
 
+/** 透明窗口可跨屏缝，只按整个桌面的外沿夹取；猪本体仍由各块工作区约束。 */
+export function workAreaBounds(areas, fallback) {
+  if (!Array.isArray(areas) || areas.length === 0) return fallback
+  const x = Math.min(...areas.map(a => a.x)), y = Math.min(...areas.map(a => a.y))
+  return { x, y, width: Math.max(...areas.map(a => a.x + a.width)) - x,
+    height: Math.max(...areas.map(a => a.y + a.height)) - y }
+}
+
 const round = value => Math.round(Number(value) || 0)
 
 /**

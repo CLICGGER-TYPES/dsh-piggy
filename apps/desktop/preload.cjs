@@ -147,7 +147,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
    */
   panel: {
     toggle: (open, pig) => ipcRenderer.send('piggy:panel:toggle', { open: open === true, pig: pig ?? null }),
-    size: (width, height) => ipcRenderer.send('piggy:panel:size', { width: Number(width) || 0, height: Number(height) || 0 }),
+    size: (width, height, fixedViewport = false) => ipcRenderer.send('piggy:panel:size', { width: Number(width) || 0, height: Number(height) || 0, fixedViewport: fixedViewport === true }),
     close: () => ipcRenderer.send('piggy:panel:close'),
     fx: (name, args) => ipcRenderer.send('piggy:pig-fx', { name: String(name), args: Array.isArray(args) ? args : [] }),
     /** 主进程的面板消息：{type:'open', vertical, maxHeight} / {type:'closed'} / {type:'blur', toPet}。 */

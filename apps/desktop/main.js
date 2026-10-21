@@ -12,6 +12,8 @@
  * - 游戏运行时在后台单写者中执行，界面经 piggy:// 访问。
  * - 存档在 userData/dsh-piggy/state.json，跟 DSH 里那只各养各的；托盘里可以导入。
  */
+import { panelViewportSize, panelContentRect } from './lib/panel-geometry.js'
+import { createResizeShape } from './lib/resize-shape.js'
 import { spawn } from 'node:child_process'
 import { appendFile, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -22,7 +24,7 @@ import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, prot
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
-import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
+import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
@@ -587,13 +589,12 @@ function dragTick(cursorOverride) {
     refreshHit()
   }
   if (!dragSession.slide) { applyBounds(wanted, 'drag'); return }
-  // 窗口不出屏幕，猪在窗口里滑过去（外壳 0.6.0 起，新游戏包要求时）：
+  // 窗口只在整个桌面的外沿夹取，屏幕接缝允许跨过；猪在窗口里滑过外沿留白：
   // GNOME 等窗口管理器不让程序把窗口摆到屏幕外，猪窗口四周又有透明留白（气泡区），
   // 拖到屏幕边上时窗口被卡住、猪就停在离边一大截的地方，松手才瞬移过去
   // （2026-10-07 虚拟机真拖录像逐帧看到的）。现在窗口夹在工作区里，超出去的那一截
   // 告诉页面，让它把猪在窗口里挪过去——猪一路跟着鼠标走到边上。
-  const center = { x: Math.round(wanted.x + pig.x + pig.width / 2), y: Math.round(wanted.y + pig.y + pig.height / 2) }
-  const held = clampBounds(wanted, screen.getDisplayNearestPoint(center).workArea)
+  const held = desktopViewportBounds(wanted, areas)
   const slide = { x: wanted.x - held.x, y: wanted.y - held.y }
   applyBounds(held, 'drag')
   if (slide.x !== dragSession.lastSlide.x || slide.y !== dragSession.lastSlide.y) {
@@ -655,6 +656,7 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   dragShapeActive = true
   if (!PASSTHROUGH) applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
   refreshHit()
+  resizeShape.cancel()
   log('drag start', JSON.stringify({ bounds, pigScreen: dragSession.pigScreen, pigFromPage: pigFromPage !== null,
     origin: acceptedOrigin }))
   // tick 频率跟显示器刷新率走，不再写死 60Hz：144Hz 屏上窗口 60Hz 地动、画面 144Hz 地刷，
@@ -696,6 +698,8 @@ ipcMain.on('piggy:drag:end', (event, release) => {
  * 新游戏包的桌面逻辑：窗口摆哪、多大、哪里可点，都由页面算好，主进程只照做。
  * 同步返回改完后的几何，页面同一轮里就能接着用。以后这类调整只发游戏包，不用再发桌面程序。
  */
+const resizeShape = createResizeShape(() => win, applyShape, () => screen.getDisplayMatching(win.getBounds()).scaleFactor)
+
 ipcMain.on('piggy:place', (event, request) => {
   if (!fromPet(event) || !isPlaceRequest(request)) { event.returnValue = null; return }
   if (passthroughMode !== 'modern') {
@@ -704,7 +708,9 @@ ipcMain.on('piggy:place', (event, request) => {
   }
   const b = request?.bounds
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
-    applyBounds({ x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }, 'place')
+    const next = { x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }
+    if (process.platform === 'linux' && !PASSTHROUGH) resizeShape.begin(next)
+    applyBounds(next, 'place')
   }
   // setBounds 是异步的（X11 要等 ConfigureNotify 回来），紧跟其后的 getBounds() 可能还是旧值。
   // 页面拿这个旧值做闭环核对，就会算出假偏差、再照着它挪窗口 —— 用户看到的「越修越偏」。
@@ -726,7 +732,7 @@ ipcMain.on('piggy:place', (event, request) => {
       x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
       width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
     }))
-    applyShape(placedShape)
+    resizeShape.update(placedShape)
     refreshHit()
     // 新游戏包的第一次摆放就带真实尺寸和形状：窗口此前一直藏着，
     // 现在 setBounds + setShape 都做完了，可以显示了（Linux 防 Xwayland resize 崩溃）。
@@ -757,6 +763,7 @@ ipcMain.on('piggy:flight:move', (event, frame) => {
     passthroughMode = 'modern'
     setHit(passthroughHit)
   }
+  resizeShape.cancel()
   applyFlightBounds(frame.x, frame.y)
   flightSlide = slide
   if (!flightShapeActive) {
@@ -813,6 +820,11 @@ let panelPig = null
 let panelAnchor = null
 /** 面板页面最近报的尺寸。 */
 let panelSize = null
+let panelFixedViewport = false
+let panelHitTimer = null
+let panelHit = null
+let panelShapeKey = ''
+let panelHasNativeShape = false
 /** 最近一次给面板窗口设的位置：没变就不再 setBounds。 */
 let panelAsked = null
 /** 面板页面加载好没有：没好之前的「打开」先记着，加载完再发。 */
@@ -843,11 +855,39 @@ function decidePanelAnchor() {
 function panelBounds() {
   const pig = pigOnScreen()
   if (pig === null || panelAnchor === null) return null
-  return panelBoundsFor(pig, panelAnchor, panelSize)
+  return panelBoundsFor(pig, panelAnchor, panelViewportSize(panelAnchor, panelSize, panelFixedViewport),
+    dragSession !== null ? screen.getAllDisplays().map(display => display.workArea) : null)
 }
 
 function sendPanel(message) {
   if (panelWin !== null && !panelWin.isDestroyed() && panelReady) panelWin.webContents.send('piggy:panel', message)
+}
+
+/** 固定外框只让实际卡片和名牌接收点击，透明预留区继续点到桌面。 */
+function refreshPanelHit() {
+  if (!panelFixedViewport || !panelOpen || !panelAnchor || !panelWin || panelWin.isDestroyed() || !panelWin.isVisible()) return
+  const bounds = panelWin.getBounds()
+  const hit = pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])
+  if (hit === panelHit) return
+  panelHit = hit
+  panelWin.setIgnoreMouseEvents(!hit, { forward: true })
+}
+
+const panelShape = createResizeShape(() => panelWin, rects => {
+  if (panelWin && !panelWin.isDestroyed() && process.platform !== 'darwin') panelWin.setShape(rects)
+}, () => screen.getDisplayMatching(panelWin.getBounds()).scaleFactor)
+
+function stopPanelHit() {
+  if (panelHitTimer !== null) clearInterval(panelHitTimer)
+  panelHitTimer = null
+  panelHit = null
+}
+
+function startPanelHit() {
+  if (process.platform !== 'darwin' || !panelFixedViewport || !panelOpen || panelHitTimer !== null) return
+  refreshPanelHit()
+  panelHitTimer = setInterval(refreshPanelHit, 16)
+  panelHitTimer.unref?.()
 }
 
 /**
@@ -866,6 +906,8 @@ function ensurePanelWindow() {
   if (panelWin !== null && !panelWin.isDestroyed()) return panelWin
   panelReady = false
   panelAsked = null
+  panelShapeKey = ''
+  panelHasNativeShape = false
   panelWin = new BrowserWindow({
     width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
@@ -900,6 +942,11 @@ function panelFocusLeft() {
     if (!panelOpen) return
     const focused = BrowserWindow.getFocusedWindow()
     if (focused !== null && (focused === win || focused === panelWin || focused === extWin)) return
+    // 原生窗口重新映射时焦点可能暂空，指针仍在真实面板内不能算外部点击。
+    if (focused === null && panelAnchor && panelSize && panelWin && !panelWin.isDestroyed() && panelWin.isVisible()) {
+      const bounds = panelWin.getBounds()
+      if (pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])) return
+    }
     sendPanel({ type: 'blur', toPet: false })
   }, 0)
 }
@@ -909,6 +956,24 @@ function placePanel() {
   if (!panelOpen || panelWin === null || panelWin.isDestroyed()) return
   const next = panelBounds()
   if (next === null) return
+  // 切页、拖动后换边及可用高度变化都从同一份内容框计算轮廓。
+  if (process.platform !== 'darwin') {
+    if (panelFixedViewport) {
+      const rect = panelContentRect(next, panelAnchor, panelSize)
+      const key = [next.width, next.height, rect.y, rect.width, rect.height].join(',')
+      if (key !== panelShapeKey) {
+        panelShape.begin(next, true)
+        panelShape.update([rect])
+        panelShapeKey = key
+        panelHasNativeShape = true
+      }
+    } else if (panelHasNativeShape) {
+      panelShape.cancel()
+      panelWin.setShape([{x: 0, y: 0, width: next.width, height: next.height}])
+      panelShapeKey = ''
+      panelHasNativeShape = false
+    }
+  }
   if (panelAsked === null || panelAsked.x !== next.x || panelAsked.y !== next.y
     || panelAsked.width !== next.width || panelAsked.height !== next.height) {
     panelWin.setBounds(next)
@@ -930,6 +995,7 @@ function openPanel(pig) {
   if (panelPig === null) return
   ensurePanelWindow()
   panelOpen = true
+  startPanelHit()
   // 每次打开都按默认规则重新挑对齐边（保持对齐只在拖完重定时用）
   panelAnchor = null
   panelAnchor = decidePanelAnchor()
@@ -941,6 +1007,9 @@ function openPanel(pig) {
 function closePanel(why) {
   if (!panelOpen) return
   panelOpen = false
+  panelShape.cancel()
+  panelShapeKey = ''
+  stopPanelHit()
   if (panelWin !== null && !panelWin.isDestroyed()) panelWin.hide()
   sendPanel({ type: 'closed' })
   if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:panel', { type: 'closed' })
@@ -984,7 +1053,15 @@ ipcMain.on('piggy:panel:size', (event, size) => {
   const height = Number(size?.height)
   if (!(width > 0) || !(height > 0)) return
   panelSize = { width: Math.ceil(width), height: Math.ceil(height) }
+  // 新 preload 透传第三个参数；旧游戏包/旧 preload 自动沿用可变外框。
+  panelFixedViewport = size.fixedViewport === true
+  if (panelFixedViewport) startPanelHit()
+  else {
+    stopPanelHit()
+    panelWin.setIgnoreMouseEvents(false)
+  }
   placePanel()
+  if (process.platform === 'darwin') refreshPanelHit()
 })
 /** 任一页面：收起面板（面板里点了收起、点外面自动收起）。 */
 ipcMain.on('piggy:panel:close', event => { if (fromPage(event)) closePanel('page') })
@@ -1375,7 +1452,7 @@ app.whenReady().then(async () => {
   const reclamp = (why, detail) => {
     if (win === null || win.isDestroyed()) return
     const bounds = win.getBounds()
-    applyBounds(clampBounds(bounds, workAreaFor(bounds)), 'display')
+    applyBounds(desktopViewportBounds(bounds, screen.getAllDisplays().map(display => display.workArea)), 'display')
     pushGeometry()
     log('display', why, JSON.stringify(detail ?? {}))
   }

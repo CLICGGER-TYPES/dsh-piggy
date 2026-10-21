@@ -29,6 +29,30 @@ test('第一次摆放：没有存档就把猪现在的位置当家，窗口不�
   assert.deepEqual(place.home(), foot(win, { x: 248, y: 120 }))
 })
 
+test('cross-monitor release keeps the existing window even when its transparent margin straddles the seam', () => {
+  memory.clear()
+  const place = createPlacement()
+  const areas = [{ x: 0, y: 16, width: 640, height: 384 }, { x: 640, y: 0, width: 640, height: 400 }]
+  const win = { x: 400, y: 44, width: 392, height: 356 }
+  const pig = { x: 217, y: 150, width: 86, height: 86 }
+  place.rehome(win, pig, areas)
+  const next = place.decide(report(392, 356, pig, { pig, artMargin: 70, shift: { x: 0, y: 0 } }), win, areas)
+  assert.deepEqual(next, win, 'release must not insert a native window jump at the seam')
+  assert.deepEqual(place.clamp(), { dx: 0, dy: 0 })
+  assert.deepEqual(place.home(), foot(win, pig, pig))
+})
+
+test('a monitor at a different height does not make the empty desktop corner valid artwork space', () => {
+  memory.clear()
+  const place = createPlacement()
+  const areas = [{ x: 0, y: 0, width: 640, height: 400 }, { x: 640, y: 400, width: 640, height: 400 }]
+  const win = { x: 340, y: 44, width: 392, height: 356 }
+  const pig = { x: 217, y: 150, width: 86, height: 86 }
+  place.rehome(win, pig, areas)
+  place.decide(report(392, 356, pig, { pig, artMargin: 70, shift: { x: 0, y: 0 } }), win, areas)
+  assert.equal(place.home().x, 640 - 43 - 70, 'the artwork must stay visible at the true outer edge')
+})
+
 test('内容怎么变猪都不动：收起↔拖动尺寸、预留面板、气泡，窗口按「家 − 猪在窗口里的位置」摆', () => {
   memory.clear()
   for (const y of [180, 600, 840]) {

@@ -178,6 +178,16 @@ export const CSS_BASE = [
   'animation:dp-nap-zzz-pop 2s ease-in-out 2 both}',
   '@keyframes dp-nap-zzz-pop{0%,8%,65%,100%{opacity:0;transform:translateY(3px) scale(.86)}',
   '18%,50%{opacity:1;transform:translateY(-2px) scale(1)}}',
+  // 想象泡独立于猪图；避开正上方的签到/礼包，讲话或拖动时让位。
+  '.dp-hunger-bubble{display:none;position:absolute;left:calc(100% + 8px);top:-36px;z-index:4;',
+  'width:40px;height:37px;filter:drop-shadow(0 1.5px 0 rgba(61,52,40,.14));pointer-events:none}',
+  '.dp-hunger-bubble svg{display:block;width:100%;height:100%;overflow:visible;',
+  'fill:var(--ac-bg-input);stroke:var(--ac-border);stroke-width:2;stroke-linejoin:round}',
+  '.dp-hunger-food{position:absolute;left:6px;top:5px;width:29px;height:20px;',
+  'font:17.5px/20px var(--ac-font);text-align:center}',
+  '.dp-pig[data-mood="hungry"] .dp-hunger-bubble{display:block}',
+  '.dp-scene:has(.dp-bubble:not([hidden])) .dp-hunger-bubble,',
+  '.dp-scene[data-dragging="true"] .dp-hunger-bubble{visibility:hidden}',
   // 装扮点位：猪身上固定的几个锚点，每个点位挂一件。
   // 以后换真立绘时，只改这里的偏移/尺寸，逻辑和存档都不用动。
   '.dp-dress{position:absolute;inset:0;pointer-events:none;z-index:3}',

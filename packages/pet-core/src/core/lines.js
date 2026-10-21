@@ -27,7 +27,7 @@ export function emptyDialogue() {
 }
 
 /**
- * Pick a line for `scene`, never one of the last few said in it (LINE_MEMORY).
+ * Pick an eligible personality/shared line, avoiding recent total-table indices.
  * @param {object} state - `dialogue.lastByScene` is updated in place.
  * @param {string} scene
  * @param {import('./random.js').Roll} [next]
@@ -39,10 +39,18 @@ export function pickLine(state, scene, next = rollerFor(state)) {
   const dialogue = ensureDialogue(state)
   // 老存档里记的是一个数字（上一句），G 批次起记最近几句。
   const raw = dialogue.lastByScene[scene]
-  const recent = (Array.isArray(raw) ? raw : Number.isInteger(raw) ? [raw] : []).slice(-Math.min(LINE_MEMORY, pool.length - 1))
-  let index = Math.min(pool.length - 1, Math.floor(next() * pool.length))
-  for (let step = 0; step < pool.length && recent.includes(index); step += 1) index = (index + 1) % pool.length
-  dialogue.lastByScene = { ...dialogue.lastByScene, [scene]: [...recent, index].slice(-LINE_MEMORY) }
+  const history = (Array.isArray(raw) ? raw : Number.isInteger(raw) ? [raw] : []).slice(-LINE_MEMORY)
+  // 始终记总表下标；按性格筛选后的位置不能写进旧档的台词记忆。
+  const eligible = pool.map((line, index) => ({ line, index }))
+    .filter(({ line }) => line.personalities === undefined || line.personalities.includes(state.personality))
+    .map(({ index }) => index)
+  if (eligible.length === 0) return null
+  const recent = history.filter(index => eligible.includes(index))
+    .slice(-Math.min(LINE_MEMORY, eligible.length - 1))
+  let position = Math.min(eligible.length - 1, Math.floor(next() * eligible.length))
+  for (let step = 0; step < eligible.length && recent.includes(eligible[position]); step += 1) position = (position + 1) % eligible.length
+  const index = eligible[position]
+  dialogue.lastByScene = { ...dialogue.lastByScene, [scene]: [...history, index].slice(-LINE_MEMORY) }
   const line = pool[index]
   return {
     scene,

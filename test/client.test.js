@@ -170,6 +170,7 @@ function fakeDom() {
     head,
     body,
     createElement(tag) { return new FakeElement(tag) },
+    createElementNS(namespace, tag) { return new FakeElement(tag) },
     querySelector() { return null },
     addEventListener() {},
     removeEventListener() {},

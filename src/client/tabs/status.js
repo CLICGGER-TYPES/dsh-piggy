@@ -85,7 +85,7 @@ var BAG_SHELF = { feed: 'food', bathe: 'bath', play: 'toy' }
 function renderWeight(ui, p) {
   var row = el('div', 'dp-row')
   row.appendChild(el('span', null, '⚖️ 体重'))
-  row.appendChild(el('b', null, p.weight + (p.bodyWeight !== null ? ' · ' + p.bodyWeight.label : '')))
+  row.appendChild(el('b', null, p.weight + (p.bodyWeight !== null ? ' · ' + p.bodyWeight.label + (p.bodyWeight.locked ? ' · 已锁定' : '') : '')))
   ui.content.appendChild(row)
 }
 

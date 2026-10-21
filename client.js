@@ -55,7 +55,7 @@
   var KIND_TITLE = { food: "\u{1F34E} \u98DF\u7269", bath: "\u{1F9FC} \u6D17\u6D74", toy: "\u{1FA80} \u73A9\u5177", bait: "\u{1F3A3} \u9C7C\u9975", dress: "\u{1F455} \u88C5\u626E", medicine: "\u{1F48A} \u836F\u54C1", revive: "\u2728 \u590D\u6D3B", promotion: "\u2728 \u664B\u5347" };
   var KIND_ORDER = ["food", "bath", "toy", "bait", "medicine", "promotion"];
   function shelfOf(kind) {
-    return kind === "revive" ? "medicine" : kind;
+    return kind === "revive" || kind === "body" ? "medicine" : kind;
   }
   var STAGES = [
     { key: "preschool", label: "\u5E7C\u513F\u56ED" },
@@ -984,9 +984,7 @@
 
   // src/client/feedback-art.js
   var MOOD_ART = {
-    hungry: ["hungry"],
-    lonely: ["lie-flat"],
-    dirty: ["collection-mosquito"]
+    lonely: ["lie-flat"]
   };
   var ILLNESS_ART = {
     "cold:1": ["runny-nose"],
@@ -1057,6 +1055,9 @@
     "collection-cage",
     "suspended",
     "twitch",
+    // 2026-10-21：脏和饿保留原猪，苍蝇和食物想象泡独立显示。
+    "collection-mosquito",
+    "hungry",
     // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
     "sleep-cloud"
   ]);
@@ -1069,7 +1070,7 @@
     if (state3.base && state3.base !== "piglet") return null;
     if (REACTION_ART[state3.reaction]) return choose(REACTION_ART[state3.reaction], state3.hour);
     if (state3.mood === "sick") return ILLNESS_ART[state3.illness ?? ""] ? choose(ILLNESS_ART[state3.illness ?? ""], state3.hour) : null;
-    if (state3.mood === "dirty") return choose(MOOD_ART.dirty, state3.hour);
+    if (state3.mood === "dirty" || state3.mood === "hungry") return null;
     if (state3.activityKind === "work") return WORK_ART[state3.activityKey] ?? null;
     if (state3.activityKind === "study") return choose(STUDY_ART, state3.hour);
     if (state3.activityKind === "interest") return choose(INTEREST_ART[state3.activityKey] ?? INTEREST_ART.other, state3.hour);
@@ -1326,7 +1327,7 @@
 
   // src/client/effects.js
   function createEffects(deps) {
-    var scene3 = deps.scene;
+    var scene6 = deps.scene;
     var pig = deps.pig;
     var card2 = deps.card;
     var bubble = deps.bubble;
@@ -1396,7 +1397,7 @@
             var spot = headSpot();
             node.style.left = spot.x + Math.round((Math.random() - 0.5) * 22) + "px";
             node.style.top = spot.y + "px";
-            scene3.appendChild(node);
+            scene6.appendChild(node);
             window.setTimeout(function() {
               node.remove();
             }, 1200);
@@ -1406,9 +1407,9 @@
     }
     function headSpot() {
       var fallback = { x: 24, y: 8 };
-      if (typeof pig.getBoundingClientRect !== "function" || typeof scene3.getBoundingClientRect !== "function") return fallback;
+      if (typeof pig.getBoundingClientRect !== "function" || typeof scene6.getBoundingClientRect !== "function") return fallback;
       var p = pig.getBoundingClientRect();
-      var s = scene3.getBoundingClientRect();
+      var s = scene6.getBoundingClientRect();
       if (p.width === 0 && p.height === 0) return fallback;
       return { x: p.left - s.left + p.width / 2, y: p.top - s.top - 20 };
     }
@@ -1448,9 +1449,9 @@
         if (pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute("data-pomo") !== "on";
       }, ms || 2600);
     }
-    function showLine(text, replies, onReply) {
+    function showLine(text, replies, onReply, ms) {
       if (replies.length === 0) {
-        showBubble(text, 2600);
+        showBubble(text, ms || 2600);
         return;
       }
       if (bubbleTimer !== null) window.clearTimeout(bubbleTimer);
@@ -1474,7 +1475,7 @@
       bubbleTimer = window.setTimeout(function() {
         bubble.hidden = true;
         bubbleTimer = null;
-      }, 6e3);
+      }, Math.max(6e3, ms || 0));
     }
     function toast(text) {
       var node = el("div", "dp-toast", text);
@@ -1784,7 +1785,9 @@
         paintedKey = null;
         ctx.render(next);
         if (action === "pet" && next?.ok === true && options?.petAnimated !== true) ctx.petShy?.();
-        if ((action === "signIn" || action === "openGift") && next?.ok === true) {
+        if ((action === "signIn" || action === "openGift") && next?.ok === true && !(Array.isArray(next.pending) && next.pending.some(function(event) {
+          return event.kind === "gift";
+        }))) {
           var reward = str(next.reward, "");
           ctx.showBubble((action === "signIn" ? "\u7B7E\u5230\u6210\u529F" : "\u793C\u5305\u6253\u5F00") + (reward ? " \xB7 " + reward : ""), 4e3);
         }
@@ -1825,6 +1828,11 @@
             escaped: "\u9C7C\u8DD1\u6389\u4E86\uFF0C\u518D\u629B\u4E00\u6B21\u5427",
             "wrong-medicine": "\u836F\u4E0D\u5BF9\u75C7\uFF0C\u75C5\u60C5\u52A0\u91CD\u4E86\u2026",
             empty: "\u80CC\u5305\u91CC\u6CA1\u6709",
+            "body-locked": "\u80D6\u7626\u5DF2\u9501\u5B9A\uFF0C\u5148\u559D\u521D\u59CB\u836F\u6C34\u89E3\u9664",
+            "body-unlocked": "\u80D6\u7626\u6CA1\u6709\u9501\u5B9A\uFF0C\u4E0D\u6D88\u8017\u521D\u59CB\u836F\u6C34",
+            "body-already-locked": "\u5DF2\u7ECF\u9501\u5B9A\uFF0C\u4E0D\u91CD\u590D\u6D88\u8017\u836F\u6C34",
+            "body-already": "\u5DF2\u7ECF\u662F\u8FD9\u4E2A\u4F53\u578B\uFF0C\u4E0D\u91CD\u590D\u6D88\u8017\u836F\u6C34",
+            "body-hidden": "\u6362\u56DE\u666E\u901A\u5F62\u6001\u548C\u9ED8\u8BA4\u76AE\u80A4\u540E\u518D\u4F7F\u7528",
             "not-sick": "\u5B83\u6CA1\u751F\u75C5",
             dead: "\u5B83\u5DF2\u7ECF\u8D70\u4E86\u2026",
             idle: "\u5B83\u6CA1\u5728\u5916\u9762",
@@ -1923,10 +1931,10 @@
   // src/client/desktop/panel-window.js
   var PANEL_CSS = [
     "html,body{margin:0;padding:0;background:transparent;overflow:hidden}",
-    '[data-piggy-role="panel"] [data-dsh-pig]{position:static!important;inset:auto!important;width:max-content!important;',
+    '[data-piggy-role="panel"] [data-dsh-pig]{position:absolute!important;inset:auto!important;right:0!important;bottom:0!important;width:max-content!important;',
     // 名牌在 DOM 里排在卡片前面：面板在猪上方时名牌放底下（靠猪），在猪下方时放上面。
     "height:auto!important;display:flex!important;flex-direction:column-reverse;gap:6px;align-items:flex-end;pointer-events:auto!important;transform:none!important}",
-    '[data-piggy-role="panel"] [data-dsh-pig][data-panel-vertical="below"]{flex-direction:column}',
+    '[data-piggy-role="panel"] [data-dsh-pig][data-panel-vertical="below"]{flex-direction:column;top:0!important;bottom:auto!important}',
     '[data-piggy-role="panel"] .dp-scene{display:none!important}',
     '[data-piggy-role="panel"] .dp-card{position:relative!important;inset:auto!important;margin:0!important}',
     '[data-piggy-role="panel"] .dp-hud{position:relative!important;inset:auto!important;flex-direction:row!important;gap:10px!important;margin:0!important}'
@@ -1954,7 +1962,7 @@
     const key2 = width + "x" + height;
     if (key2 === lastSize) return;
     lastSize = key2;
-    shell.panel.size(width, height);
+    shell.panel.size(width, height, true);
   }
   function schedule2() {
     if (scheduled) return;
@@ -2192,13 +2200,25 @@
     var pigSide = role2 !== "panel" && role2 !== "ext";
     var cardSide = role2 !== "pet" && role2 !== "ext";
     var offlineSummary = null;
+    var rewards = [];
+    var rewardLine = null;
+    var hasReward = pigSide && ctx.view.pending.some(function(event2) {
+      return event2.kind === "gift" && (event2.id > 0 ? event2.id > ctx.lastPendingId : event2.at > ctx.lastPendingAt);
+    });
     for (var i = 0; i < ctx.view.pending.length; i += 1) {
       var event = ctx.view.pending[i];
       if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue;
       if (event.id > 0) ctx.lastPendingId = event.id;
       ctx.lastPendingAt = Math.max(ctx.lastPendingAt, event.at);
       if (event.kind === "line") {
-        if (pigSide) showPigLine(event);
+        if (pigSide) {
+          if (hasReward) rewardLine = event;
+          else showPigLine(event);
+        }
+        continue;
+      }
+      if (event.kind === "gift") {
+        if (pigSide) rewards.push(str(event.text, ""));
         continue;
       }
       if (ctx.view.dialogue.quiet && URGENT_KINDS.indexOf(event.kind) < 0) continue;
@@ -2206,7 +2226,6 @@
         if (pigSide) showMilestoneNotice(ctx, event);
         continue;
       }
-      if (event.kind === "gift") continue;
       if (cardSide) ctx.toast(str(event.text, "\u732A\u6709\u65B0\u6D88\u606F"));
       if (pigSide && event.kind === "offline-food") offlineSummary = event.text;
       if (!pigSide) continue;
@@ -2233,6 +2252,12 @@
         ctx.react("away", 900);
         ctx.burst(["\u{1F9F3}", "\u{1F381}"], 3);
       }
+    }
+    if (hasReward && rewards.length > 0) {
+      var receipt = rewards.join("\uFF1B");
+      if (rewardLine !== null) showPigLine({ ...rewardLine, text: receipt + " \xB7 " + rewardLine.text, displayMs: 4e3 });
+      else ctx.showBubble(receipt, 4e3);
+      return;
     }
     if (offlineSummary !== null && (role2 === "pet" || !ctx.isOpen)) ctx.showBubble(offlineSummary, 8e3);
     else if (pigSide) ctx.updateNotice?.maybeBubble();
@@ -2550,11 +2575,11 @@
     const stage2 = button("dp-fish-stage", { "data-fish-fight": "pull", "data-fish-pull": "true", "aria-label": "\u6309\u4F4F\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF\uFF0C\u6307\u9488\u522B\u8FDB\u7EA2\u533A" }, function() {
     });
     stage2.setAttribute("tabindex", "0");
-    const line3 = el("div", "dp-fish-line");
+    const line6 = el("div", "dp-fish-line");
     const rod = el("span", "dp-fish-rod", "\u{1F3A3}");
-    line3.appendChild(rod);
-    line3.appendChild(el("span", "dp-fish-string", "\u3030\u3030\u3030"));
-    line3.appendChild(el("span", "dp-fish-rod", fish3.emoji));
+    line6.appendChild(rod);
+    line6.appendChild(el("span", "dp-fish-string", "\u3030\u3030\u3030"));
+    line6.appendChild(el("span", "dp-fish-rod", fish3.emoji));
     const gauge = el("div", "dp-fish-gauge");
     gauge.style.background = `linear-gradient(90deg,#dce8e9 0 30%,#6bd47b 30% ${snap - 13}%,#ffd45d ${snap - 13}% ${snap}%,#e05a5a ${snap}%)`;
     const pin = el("b");
@@ -2564,7 +2589,7 @@
     const fill = el("i");
     meter2.appendChild(fill);
     stage2.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
-    stage2.appendChild(line3);
+    stage2.appendChild(line6);
     stage2.appendChild(gauge);
     stage2.appendChild(state3);
     stage2.appendChild(meter2);
@@ -2814,7 +2839,7 @@
   function renderWaiting(ui, pending2) {
     const water = button("dp-fish-waiting", { "data-fish": "hook" }, function() {
       if (Date.now() < pending2.bitesAt) {
-        line3.textContent = nibbleUntil > Date.now() ? "\u53EA\u662F\u8BD5\u63A2\uFF0C\u8FD8\u6CA1\u54AC\u5B9E\u2026" : "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
+        line6.textContent = nibbleUntil > Date.now() ? "\u53EA\u662F\u8BD5\u63A2\uFF0C\u8FD8\u6CA1\u54AC\u5B9E\u2026" : "\u8FD8\u6CA1\u4E0A\u94A9\uFF0C\u7EE7\u7EED\u7B49\u2026";
         return;
       }
       ui.send("fishHook");
@@ -2822,9 +2847,9 @@
     let nextNibble = Date.now() + 1500 + Math.random() * 2500;
     let nibbleUntil = 0;
     const mark = el("span", "dp-fish-bobber", "\u{1F3A3}");
-    const line3 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
+    const line6 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
     water.appendChild(mark);
-    water.appendChild(line3);
+    water.appendChild(line6);
     ui.content.appendChild(water);
     waitUi = ui;
     function tick2() {
@@ -2834,15 +2859,15 @@
         nibbleUntil = now2 + 420;
         nextNibble = now2 + 1800 + Math.random() * 3200;
         water.setAttribute("data-nibble", "true");
-        line3.textContent = Math.random() < 0.5 ? "\u6D6E\u6F02\u52A8\u4E86\u4E00\u4E0B\u2026" : "\u5495\u561F\uFF0C\u5192\u4E86\u4E2A\u6CE1\u2026";
+        line6.textContent = Math.random() < 0.5 ? "\u6D6E\u6F02\u52A8\u4E86\u4E00\u4E0B\u2026" : "\u5495\u561F\uFF0C\u5192\u4E86\u4E2A\u6CE1\u2026";
       } else if (nibbleUntil > 0 && now2 > nibbleUntil + 900) {
         nibbleUntil = 0;
         water.setAttribute("data-nibble", "false");
-        line3.textContent = "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026";
+        line6.textContent = "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026";
       }
       if (now2 >= pending2.bitesAt && now2 <= pending2.hookUntil) {
         mark.textContent = "\u2757";
-        line3.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
+        line6.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
         water.setAttribute("data-bite", "true");
       } else if (now2 > pending2.hookUntil) {
         stopWait();
@@ -2980,6 +3005,7 @@
     ctx.host.setAttribute("data-daily-side", dailySide());
     ctx.card.hidden = true;
     ctx.hud.hidden = true;
+    if (next && ctx.bubble?.hidden === false) desktopShell()?.panel?.raisePet?.();
   }
 
   // src/client/normalize-dex.js
@@ -3108,7 +3134,7 @@
           current: entry.current === true,
           unlocked: entry.unlocked !== false,
           unlockJob: str(entry.unlockJob, ""),
-          scenes: arr(entry.scenes).filter((scene3) => typeof scene3 === "string")
+          scenes: arr(entry.scenes).filter((scene6) => typeof scene6 === "string")
         };
       }).filter((entry) => entry.key !== "")
     };
@@ -3155,7 +3181,7 @@
           faded: obj(pig.stage).faded === true,
           // 加冕后的形态：有没有动作立绘、盖住哪些装扮位置。
           actionArt: obj(pig.stage).actionArt === true,
-          artScenes: arr(obj(pig.stage).artScenes).filter((scene3) => typeof scene3 === "string"),
+          artScenes: arr(obj(pig.stage).artScenes).filter((scene6) => typeof scene6 === "string"),
           hides: arr(obj(pig.stage).hides).map(function(slot) {
             return str(slot, "");
           })
@@ -3178,6 +3204,7 @@
         weight: str(pig.weight, "\u2014"),
         bodyWeight: isObj(pig.bodyWeight) ? {
           class: str(obj(pig.bodyWeight).class, "normal"),
+          locked: obj(pig.bodyWeight).locked === true,
           label: str(obj(pig.bodyWeight).label, "\u6B63\u5E38"),
           visible: obj(pig.bodyWeight).visible === true,
           weightG: Math.round(num(obj(pig.bodyWeight).weightG, 0)),
@@ -3852,6 +3879,16 @@
     "animation:dp-nap-zzz-pop 2s ease-in-out 2 both}",
     "@keyframes dp-nap-zzz-pop{0%,8%,65%,100%{opacity:0;transform:translateY(3px) scale(.86)}",
     "18%,50%{opacity:1;transform:translateY(-2px) scale(1)}}",
+    // 想象泡独立于猪图；避开正上方的签到/礼包，讲话或拖动时让位。
+    ".dp-hunger-bubble{display:none;position:absolute;left:calc(100% + 8px);top:-36px;z-index:4;",
+    "width:40px;height:37px;filter:drop-shadow(0 1.5px 0 rgba(61,52,40,.14));pointer-events:none}",
+    ".dp-hunger-bubble svg{display:block;width:100%;height:100%;overflow:visible;",
+    "fill:var(--ac-bg-input);stroke:var(--ac-border);stroke-width:2;stroke-linejoin:round}",
+    ".dp-hunger-food{position:absolute;left:6px;top:5px;width:29px;height:20px;",
+    "font:17.5px/20px var(--ac-font);text-align:center}",
+    '.dp-pig[data-mood="hungry"] .dp-hunger-bubble{display:block}',
+    ".dp-scene:has(.dp-bubble:not([hidden])) .dp-hunger-bubble,",
+    '.dp-scene[data-dragging="true"] .dp-hunger-bubble{visibility:hidden}',
     // 装扮点位：猪身上固定的几个锚点，每个点位挂一件。
     // 以后换真立绘时，只改这里的偏移/尺寸，逻辑和存档都不用动。
     ".dp-dress{position:absolute;inset:0;pointer-events:none;z-index:3}",
@@ -4057,9 +4094,7 @@
     '[data-dsh-pig][data-panel-side="right"] .dp-bubble::after{right:auto;left:calc(var(--pig-size) / 2 - 5px)}',
     // Reply buttons under a line: small pills, the mint of the primary colour
     // without the 3D base, which the spec keeps for real primary buttons.
-    // 2026-10-13：独立猪窗口置顶，头顶台词会盖住另一个窗口的状态条；移到猪左侧既有预留区，避免往右伸出固定窗口被裁掉。
-    '[data-dsh-pig][data-panel-open="true"] .dp-bubble{right:calc(100% + 6px);left:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px);max-width:180px}',
-    '[data-dsh-pig][data-panel-open="true"] .dp-bubble::after{display:none}',
+    // 对话始终在猪头上；菜单打开只调整原生窗口层级，不改变气泡位置、宽度或滚动进度。
     ".dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;max-height:29px;overflow-y:auto;scrollbar-width:thin;margin-top:5px}",
     // 猪头上的日常气泡（签到 / 礼包）：不用新颜色，沿用主色与卡片底色。
     // 挂在场景**上方**（不是 top 边缘）：折叠时场景就是猪本身，用 top:-6px
@@ -4494,7 +4529,7 @@
     ".dp-vcard-img{width:56px;height:56px;display:block}",
     ".dp-vcard-e{font-size:40px;line-height:1}",
     ".dp-vcard-who{display:flex;flex-direction:column;gap:3px;min-width:0}",
-    ".dp-vcard-name{font-size:15px;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".dp-vcard-name{font-size:15px;font-weight:800;color:var(--ac-text);white-space:normal;overflow-wrap:anywhere;line-height:1.35}",
     // 名字旁边的蜡笔：平时藏着，鼠标移到名字这行才出来；没有鼠标的设备一直淡淡显示。
     ".dp-vcard-nameline{display:flex;align-items:center;gap:6px;min-width:0}",
     ".dp-vcard-name-edit{width:22px;height:22px;font-size:11px}",
@@ -5050,7 +5085,7 @@
     var note2 = item.price + " \u{1FA99}";
     if (item.owned) note2 = "\u5DF2\u62E5\u6709";
     else if (item.kind === "dress" && item.unlocked === false) note2 = "\u{1F512} Lv." + item.level;
-    return tile({
+    const node = tile({
       emoji: item.emoji,
       label: item.label,
       color: color2,
@@ -5065,6 +5100,8 @@
         ui.send("buy", { item: item.key });
       }
     });
+    if (item.kind === "body") node.setAttribute("aria-description", item.blurb);
+    return node;
   }
 
   // src/client/tabs/bag.js
@@ -5233,7 +5270,7 @@
           soft: true,
           badge: item.default === true ? "\u514D\u8D39" : "\xD7" + num(ui.view.inventory[item.key], 0),
           tag: item.needed ? "\u9700\u8981" : "",
-          note: action !== void 0 ? careEffectLine(action, item) : item.kind === "promotion" ? item.useLabel : "",
+          note: action !== void 0 ? careEffectLine(action, item) : item.kind === "promotion" || item.kind === "body" ? item.useLabel : "",
           data: { "data-use": item.key },
           // 照料货架发喂食 / 洗澡 / 玩耍本身（猪的动作和台词都对得上），其他货架照旧「使用」。
           onPick: function() {
@@ -5335,8 +5372,40 @@
     ui.content.appendChild(el("div", "dp-dim", "\u5220\u6389\u4E00\u4E2A\u6269\u5C55\u65F6\uFF0C\u5B83\u7684\u5E01\u4F1A\u6309\u6C47\u7387\u81EA\u52A8\u6362\u6210\u91D1\u5E01\u3002"));
   }
 
+  // packages/pet-core/src/data/profile.js
+  var PET_NAME_MAX = 5;
+  var PERSONALITIES = Object.freeze([
+    Object.freeze({ key: "peppy", label: "\u5143\u6C14", emoji: "\u{1F31F}", catchphrase: "\u563F\u563F", motto: "\u4ECA\u5929\u4E5F\u8981\u5143\u6C14\u6EE1\u6EE1\uFF01" }),
+    Object.freeze({ key: "lazy", label: "\u60A0\u95F2", emoji: "\u{1F634}", catchphrase: "\u547C\u565C", motto: "\u80FD\u8EBA\u7740\uFF0C\u7EDD\u4E0D\u5750\u7740\u3002" }),
+    Object.freeze({ key: "cranky", label: "\u50B2\u5A07", emoji: "\u{1F624}", catchphrase: "\u54FC", motto: "\u522B\u60F9\u6211\uFF0C\u9664\u975E\u4F60\u5E26\u4E86\u5403\u7684\u3002" }),
+    Object.freeze({ key: "sisterly", label: "\u8D34\u5FC3", emoji: "\u{1F481}", catchphrase: "\u61C2\u5417", motto: "\u6709\u4E8B\u627E\u6211\uFF0C\u6211\u7F69\u7740\u4F60\u3002" }),
+    Object.freeze({ key: "snooty", label: "\u81EA\u604B", emoji: "\u{1F485}", catchphrase: "\u5567\u5567", motto: "\u6211\u662F\u8FD9\u7247\u6700\u53EF\u7231\u7684\u732A\u3002" }),
+    Object.freeze({ key: "normal", label: "\u6E29\u548C", emoji: "\u{1F642}", catchphrase: "\u55EF\u55EF", motto: "\u5E73\u5E73\u6DE1\u6DE1\u624D\u662F\u771F\u3002" }),
+    Object.freeze({ key: "clingy", label: "\u9ECF\u4EBA", emoji: "\u{1F495}", catchphrase: "\u8D34\u8D34", motto: "\u4F4D\u7F6E\u632A\u8FD1\u4E00\u70B9\uFF0C\u559C\u6B22\u4E5F\u8FD1\u4E00\u70B9\u3002" }),
+    Object.freeze({ key: "shy", label: "\u5BB3\u7F9E", emoji: "\u{1F338}", catchphrase: "\u90A3\u4E2A", motto: "\u60F3\u9760\u8FD1\u4F60\uFF0C\u53C8\u6015\u4F60\u53D1\u73B0\u3002" }),
+    Object.freeze({ key: "curious", label: "\u597D\u5947", emoji: "\u{1F50E}", catchphrase: "\u54A6", motto: "\u4ECA\u5929\u4F1A\u6709\u4EC0\u4E48\u65B0\u53D1\u73B0\u5462\uFF1F" }),
+    Object.freeze({ key: "mischievous", label: "\u8C03\u76AE", emoji: "\u{1FAE7}", catchphrase: "\u563B\u563B", motto: "\u4E00\u70B9\u70B9\u5C0F\u6363\u86CB\uFF0C\u5F88\u591A\u5F88\u591A\u559C\u6B22\u3002" }),
+    Object.freeze({ key: "goofy", label: "\u5446\u840C", emoji: "\u{1F361}", catchphrase: "\u5514", motto: "\u6CA1\u60F3\u660E\u767D\uFF0C\u4E5F\u4E0D\u803D\u8BEF\u559C\u6B22\u4F60\u3002" }),
+    Object.freeze({ key: "earnest", label: "\u8BA4\u771F", emoji: "\u{1F4DA}", catchphrase: "\u8BB0\u597D\u5566", motto: "\u7B54\u5E94\u4F60\u7684\u4E8B\uFF0C\u6211\u4F1A\u8BA4\u771F\u8BB0\u4F4F\u3002" })
+  ]);
+  var SERIOUS_SCENES = Object.freeze(["death", "sick", "wrongMedicine"]);
+  var ZODIAC = Object.freeze([
+    Object.freeze({ month: 1, day: 20, label: "\u6C34\u74F6\u5EA7", emoji: "\u2652" }),
+    Object.freeze({ month: 2, day: 19, label: "\u53CC\u9C7C\u5EA7", emoji: "\u2653" }),
+    Object.freeze({ month: 3, day: 21, label: "\u767D\u7F8A\u5EA7", emoji: "\u2648" }),
+    Object.freeze({ month: 4, day: 20, label: "\u91D1\u725B\u5EA7", emoji: "\u2649" }),
+    Object.freeze({ month: 5, day: 21, label: "\u53CC\u5B50\u5EA7", emoji: "\u264A" }),
+    Object.freeze({ month: 6, day: 22, label: "\u5DE8\u87F9\u5EA7", emoji: "\u264B" }),
+    Object.freeze({ month: 7, day: 23, label: "\u72EE\u5B50\u5EA7", emoji: "\u264C" }),
+    Object.freeze({ month: 8, day: 23, label: "\u5904\u5973\u5EA7", emoji: "\u264D" }),
+    Object.freeze({ month: 9, day: 23, label: "\u5929\u79E4\u5EA7", emoji: "\u264E" }),
+    Object.freeze({ month: 10, day: 24, label: "\u5929\u874E\u5EA7", emoji: "\u264F" }),
+    Object.freeze({ month: 11, day: 23, label: "\u5C04\u624B\u5EA7", emoji: "\u2650" }),
+    Object.freeze({ month: 12, day: 22, label: "\u6469\u7FAF\u5EA7", emoji: "\u2651" })
+  ]);
+
   // src/client/tabs/card.js
-  var LIMITS = { catchphrase: 6, motto: 24, name: 16, owner: 12 };
+  var LIMITS = { catchphrase: 6, motto: 24, name: PET_NAME_MAX, owner: 12 };
   function renderCardTab(ui) {
     var p = ui.view.pig;
     var profile = ui.view.profile;
@@ -5406,14 +5475,14 @@
     return row;
   }
   function nameLine(ui, p) {
-    var line3 = el("div", "dp-vcard-nameline");
+    var line6 = el("div", "dp-vcard-nameline");
     if (ui.cardEdit !== null && ui.cardEdit.field === "name") {
-      appendEditor(ui, line3, "name");
-      return line3;
+      appendEditor(ui, line6, "name");
+      return line6;
     }
-    line3.appendChild(el("b", "dp-vcard-name", p.name));
-    line3.appendChild(pencil(ui, "name", "\u540D\u5B57", p.name, "dp-vcard-edit dp-vcard-name-edit"));
-    return line3;
+    line6.appendChild(el("b", "dp-vcard-name", p.name));
+    line6.appendChild(pencil(ui, "name", "\u540D\u5B57", p.name, "dp-vcard-edit dp-vcard-name-edit"));
+    return line6;
   }
   function pencil(ui, key2, label, value, className) {
     var btn = button(className, { "data-card-edit": key2 }, function() {
@@ -5432,6 +5501,7 @@
     input.value = ui.cardEdit.draft;
     input.maxLength = LIMITS[key2];
     input.setAttribute("data-card-input", key2);
+    if (key2 === "name") input.setAttribute("aria-label", "\u540D\u5B57\uFF08\u6700\u591A" + PET_NAME_MAX + "\u4E2A\u5B57\uFF09");
     input.addEventListener("input", function() {
       ui.cardEdit = { field: key2, draft: input.value };
     });
@@ -5495,21 +5565,21 @@
       });
       return input;
     };
-    var line3 = function() {
+    var line6 = function() {
       var row = el("div", "dp-vcard-once-line");
       box.appendChild(row);
       return row;
     };
-    var first = line3();
+    var first = line6();
     first.appendChild(el("span", "dp-vcard-label", "\u6027\u683C\uFF1A"));
     first.appendChild(pick);
-    var second = line3();
+    var second = line6();
     second.appendChild(el("span", "dp-vcard-label", "\u751F\u65E5\uFF1A"));
     second.appendChild(number2("month", 12, draft2.month));
     second.appendChild(el("span", null, "\u6708"));
     second.appendChild(number2("day", 31, draft2.day));
     second.appendChild(el("span", null, "\u65E5"));
-    var third = line3();
+    var third = line6();
     var save = button("dp-mini", { "data-card-once": "save" }, function() {
       var change = ui.profileDraft;
       ui.profileDraft = null;
@@ -6745,7 +6815,7 @@
   // packages/pet-core/src/data/skins.js
   var SKIN_SCENES = Object.freeze(["idle", "eat", "bathe", "play", "pet", "relaxed", "work", "study", "trip", "fish", "sleep"]);
   var REQUIRED_SKIN_SCENES = Object.freeze(SKIN_SCENES.slice(0, 5));
-  var CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter((scene3) => scene3 !== "fish" && scene3 !== "sleep"));
+  var CHARACTER_SCENES = Object.freeze(SKIN_SCENES.filter((scene6) => scene6 !== "fish" && scene6 !== "sleep"));
   var SKINS = Object.freeze([
     Object.freeze({
       key: "mint",
@@ -6823,121 +6893,1003 @@
     })
   ]);
 
-  // packages/pet-core/src/data/lines-more.js
-  var line = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
+  // packages/pet-core/src/data/lines-dark-humor.js
+  var line = (text, reply, personalities) => Object.freeze({
+    text,
+    ...reply === void 0 ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) },
+    ...personalities === void 0 ? {} : { personalities: Object.freeze(personalities) }
+  });
   var scene = (...lines) => Object.freeze(lines);
-  var MORE_LINES = Object.freeze({
-    // ---- 原有场景翻倍 -----------------------------------------------------------
+  var DARK_HUMOR_LINES = Object.freeze({
     eat: scene(
-      line("\u4ECA\u5929\u7684\u996D\u6709[\u4E3B\u4EBA]\u7684\u5473\u9053\uFF08\u662F\u5938\u4F60\uFF09"),
-      line("\u6162\u70B9\u6162\u70B9\uFF0C\u6211\u8FD8\u6CA1\u56BC\u5B8C"),
-      line("\u5403\u4E00\u53E3\uFF0C\u957F\u4E00\u4E24\uFF0C\u6CA1\u5173\u7CFB\uFF0C\u6211\u4E0D\u6015"),
-      line("\u8FD9\u4E2A\u597D\u5403\uFF0C\u4E0B\u6B21\u8FD8\u8981\u8FD9\u4E2A", "\u8BB0\u4F4F\u4E86"),
-      line("\u6211\u5BA3\u5E03\uFF1A\u8FD9\u662F\u4ECA\u5929\u6700\u597D\u7684\u4E00\u987F"),
-      line("\u5403\u996D\u7684\u65F6\u5019\u522B\u770B\u6211\uFF0C\u6211\u4F1A\u5BB3\u7F9E")
+      line("\u4F60\u8BF4\u6211\u4E0B\u996D\uFF0C\u6211\u6709\u70B9\u4E0D\u6562\u63A5\u8BDD", void 0, ["cranky", "shy"]),
+      line("\u83DC\u5355\u53EF\u4EE5\u7FFB\uFF0C\u522B\u7FFB\u5230\u6211\u8FD9\u4E00\u9875", void 0, ["cranky"]),
+      line("\u996D\u76C6\u662F\u6211\u7684\uFF0C\u9505\u4E0D\u662F\uFF0C\u5BF9\u5427", void 0, ["cranky"]),
+      line("\u4F60\u5582\u5F97\u8FD9\u4E48\u9999\uFF0C\u6211\u5F00\u59CB\u5173\u5FC3\u7528\u9014\u4E86", void 0, ["lazy", "goofy"]),
+      line("\u591A\u653E\u852C\u83DC\uFF0C\u7ED9\u6211\u4E00\u70B9\u5B89\u5168\u611F", void 0, ["cranky", "curious"]),
+      line("\u4F60\u5938\u6211\u8089\u4E4E\u4E4E\uFF0C\u6211\u5148\u5F53\u597D\u8BDD\u542C", void 0, ["snooty", "shy"]),
+      line("\u8FD9\u987F\u6211\u5403\u996D\uFF0C\u4E0D\u662F\u6211\u5F53\u996D", void 0, ["cranky"]),
+      line("\u5403\u5F97\u597D\u662F\u798F\u6C14\uFF0C\u5403\u592A\u597D\u6709\u70B9\u7D27\u5F20", void 0, ["cranky"]),
+      line("\u5148\u8BF4\u597D\uFF0C\u517B\u80D6\u4E0D\u7B49\u4E8E\u814C\u5165\u5473", void 0, ["cranky"]),
+      line("\u6211\u5403\u5F97\u5F88\u611F\u52A8\uFF0C\u8BF7\u522B\u987A\u624B\u67E5\u83DC\u8C31", void 0, ["cranky"])
     ),
-    full: scene(line("\u9971\u4E86\uFF0C\u53EF\u4EE5\u5F00\u59CB\u53D1\u5446\u4E86"), line("\u809A\u5B50\u91CC\u88C5\u6EE1\u4E86\uFF0C\u5FC3\u91CC\u4E5F\u662F"), line("\u9971\u9971\u7684\uFF0C\u4ECA\u5929\u4E0D\u4F1A\u60F3\u522B\u7684\u4E8B\u4E86")),
-    overfull: scene(line("\u518D\u5403\u6211\u5C31\u8981\u88AB\u79F0\u91CD\u4E86\u2026\u2026"), line("\u4F60\u662F\u4E0D\u662F\u5728\u7ED9\u6211\u517B\u8198\uFF1F", "\u6CA1\u6709\u6CA1\u6709"), line("\u6211\u7684\u809A\u5B50\u5728\u6297\u8BAE\uFF0C\u542C\u89C1\u4E86\u5417")),
+    full: scene(
+      line("\u6211\u73B0\u5728\u5706\u5F97\u5F88\u6709\u98DF\u7528\u8BEF\u4F1A", void 0, ["snooty", "goofy"]),
+      line("\u996D\u540E\u522B\u7528\u6311\u897F\u74DC\u7684\u773C\u795E\u770B\u6211", void 0, ["cranky", "shy"]),
+      line("\u9971\u662F\u9971\u4E86\uFF0C\u522B\u95EE\u51E0\u5206\u719F", void 0, ["cranky"]),
+      line("\u5403\u5230\u8FD9\u4E2A\u4EFD\u4E0A\uFF0C\u6211\u5F97\u5173\u5FC3\u4E00\u4E0B\u4F53\u68C0", void 0, ["lazy", "goofy"]),
+      line("\u809A\u5B50\u5F88\u5145\u5B9E\uFF0C\u4EBA\u751F\u6682\u65F6\u6CA1\u522B\u7684\u8FFD\u6C42", void 0, ["lazy"]),
+      line("\u8FD9\u4E00\u987F\u4E0B\u53BB\uFF0C\u79E4\u53C8\u6709\u65B0\u95FB\u4E86", void 0, ["cranky", "goofy"]),
+      line("\u6211\u53EA\u662F\u5403\u9971\uFF0C\u4E0D\u662F\u5728\u505A\u51FA\u680F\u51C6\u5907", void 0, ["cranky"]),
+      line("\u996D\u540E\u9700\u8981\u6D88\u98DF\uFF0C\u4E0D\u9700\u8981\u6492\u5B5C\u7136", void 0, ["cranky"]),
+      line("\u9971\u5F97\u60F3\u8EBA\uFF0C\u4F46\u4E0D\u80FD\u8EBA\u7827\u677F\u4E0A", void 0, ["cranky", "goofy"]),
+      line("\u73B0\u5728\u7684\u6211\uFF0C\u6700\u597D\u53EA\u7528\u773C\u775B\u6B23\u8D4F", void 0, ["snooty"])
+    ),
+    overfull: scene(
+      line("\u809A\u5B50\u5DF2\u7ECF\u5728\u7533\u8BF7\u6269\u5EFA\u4E86", void 0, ["curious", "goofy"]),
+      line("\u518D\u4E00\u53E3\uFF0C\u6211\u5C31\u8981\u91CD\u65B0\u89C4\u5212\u5730\u5F62", void 0, ["goofy"]),
+      line("\u4F60\u662F\u5728\u5582\u732A\uFF0C\u8FD8\u662F\u7ED9\u809A\u5B50\u88C5\u4FEE", void 0, ["cranky", "mischievous"]),
+      line("\u6211\u4E0D\u662F\u6CA1\u5E95\u7EBF\uFF0C\u6211\u662F\u6CA1\u7A7A\u4F4D", void 0, ["cranky", "goofy"]),
+      line("\u518D\u5582\u5C31\u8D85\u8F7D\uFF0C\u5C3E\u5DF4\u4E0D\u662F\u62D6\u8F66\u94A9", void 0, ["cranky", "goofy"]),
+      line("\u6211\u8FD9\u809A\u5B50\uFF0C\u5DF2\u7ECF\u4E0D\u63A5\u53D7\u4E34\u65F6\u52A0\u5EA7", void 0, ["cranky", "goofy"]),
+      line("\u522B\u529D\u4E86\uFF0C\u8FDE\u9971\u55DD\u90FD\u6392\u4E0D\u4E0A\u961F", void 0, ["cranky", "goofy"]),
+      line("\u4F60\u6295\u5582\u7684\u70ED\u60C5\uFF0C\u6211\u7684\u76AE\u88C5\u4E0D\u4E0B", void 0, ["cranky", "goofy"]),
+      line("\u73B0\u5728\u6700\u7626\u7684\u5730\u65B9\uFF0C\u5927\u6982\u662F\u94B1\u5305", void 0, ["cranky", "snooty"]),
+      line("\u518D\u5403\u4E0B\u53BB\uFF0C\u95E8\u8981\u5F00\u59CB\u53CD\u7701\u81EA\u5DF1", void 0, ["goofy"])
+    ),
     bathe: scene(
-      line("\u6C34\u6E29\u521A\u597D\uFF0C\u4E0D\u662F\u5728\u712F\u6C34\u5427\uFF1F", "\u653E\u5FC3"),
-      line("\u6211\u73B0\u5728\u662F\u4E00\u53EA\u4F53\u9762\u7684\u732A\u4E86"),
-      line("\u6CE5\u5DF4\u518D\u89C1\uFF0C\u6CE5\u5DF4\u6211\u4F1A\u60F3\u4F60\u7684"),
-      line("\u522B\u6D17\u8033\u6735\u540E\u9762\uFF0C\u90A3\u91CC\u6709\u6211\u7684\u79D8\u5BC6"),
-      line("\u6D17\u5B8C\u522B\u95FB\u6211\u8BF4\u300C\u597D\u9999\u300D\uFF0C\u6709\u70B9\u5413\u4EBA")
+      line("\u6C34\u6E29\u521A\u597D\uFF0C\u4E0D\u50CF\u8981\u8D77\u9505", void 0, ["cranky", "goofy"]),
+      line("\u6D17\u5E72\u51C0\u662F\u4E3A\u4E86\u62B1\uFF0C\u4E0D\u662F\u4E3A\u4E86\u4E0B\u9505", void 0, ["cranky", "shy"]),
+      line("\u6413\u53EF\u4EE5\uFF0C\u522B\u987A\u4FBF\u7ED9\u6211\u6253\u82B1\u5200", void 0, ["cranky"]),
+      line("\u6D17\u5B8C\u8BF7\u7528\u6BDB\u5DFE\uFF0C\u4E0D\u8981\u7528\u53A8\u623F\u7EB8", void 0, ["cranky"]),
+      line("\u6211\u8EAB\u4E0A\u8FD9\u70B9\u6CE5\uFF0C\u5C45\u7136\u6BD4\u6211\u5148\u4E0B\u73ED", void 0, ["lazy", "goofy"]),
+      line("\u522B\u5938\u6D17\u5F97\u767D\u767D\u5AE9\u5AE9\uFF0C\u6211\u4F1A\u591A\u60F3", void 0, ["cranky", "shy"]),
+      line("\u6CE1\u6CE1\u518D\u591A\uFF0C\u4E5F\u522B\u53EB\u6211\u9C9C\u69A8\u5C0F\u732A", void 0, ["goofy"]),
+      line("\u8FD9\u662F\u6FA1\u76C6\uFF0C\u9EBB\u70E6\u522B\u79F0\u4F5C\u5BB9\u5668", void 0, ["cranky", "snooty"]),
+      line("\u6D17\u9999\u4E86\u53EF\u4EE5\uFF0C\u5364\u9999\u4E86\u4E0D\u884C", void 0, ["cranky"]),
+      line("\u6211\u914D\u5408\u6D17\u6FA1\uFF0C\u8BF7\u4FDD\u7559\u6211\u7684\u751F\u732A\u8EAB\u4EFD", void 0, ["goofy"])
     ),
     play: scene(
-      line("\u4F60\u6254\uFF0C\u6211\u6361\uFF0C\u6211\u4EEC\u914D\u5408\u5F97\u5929\u8863\u65E0\u7F1D"),
-      line("\u54C7\uFF01\u5DEE\u70B9\u63A5\u5230\uFF01"),
-      line("\u518D\u6765\u518D\u6765\uFF0C\u6211\u521A\u70ED\u5B8C\u8EAB", "\u6765\uFF01"),
-      line("\u73A9\u800D\u4F7F\u6211\u5FEB\u4E50\uFF0C\u4E5F\u4F7F\u6211\u53D8\u7626"),
-      line("\u4F60\u4E5F\u52A8\u52A8\u5427\uFF0C\u5750\u592A\u4E45\u4E86")
+      line("\u6211\u8DD1\u5F97\u8FD9\u4E48\u5FEB\uFF0C\u4E3B\u8981\u9760\u60DC\u547D", void 0, ["peppy", "goofy"]),
+      line("\u8FD9\u7403\u518D\u96BE\u63A5\uFF0C\u4E5F\u6CA1\u6709\u8001\u677F\u7684\u8BDD\u96BE\u63A5", void 0, ["cranky", "snooty"]),
+      line("\u4F60\u4E22\u7403\uFF0C\u6211\u4E22\u8138\uFF0C\u5206\u5DE5\u660E\u786E", void 0, ["mischievous"]),
+      line("\u6211\u521A\u624D\u4E0D\u662F\u6454\u5012\uFF0C\u662F\u5411\u5927\u5730\u6C47\u62A5", void 0, ["goofy"]),
+      line("\u5C3E\u5DF4\u5DF2\u7ECF\u60F3\u9003\u73ED\u4E86", void 0, ["lazy", "cranky", "earnest"]),
+      line("\u8DD1\u5B8C\u8FD9\u5708\uFF0C\u8D4E\u56DE\u4E00\u70B9\u665A\u996D\u7684\u70ED\u91CF", void 0, ["peppy", "goofy"]),
+      line("\u7403\u6709\u81EA\u7531\uFF0C\u6211\u6709\u4F60\u558A\u56DE\u6765\u7684\u4E49\u52A1", void 0, ["cranky"]),
+      line("\u518D\u8DD1\u5C31\u7626\u4E86\uFF0C\u4F60\u517B\u6B96\u8BA1\u5212\u4F1A\u53D7\u5F71\u54CD", void 0, ["mischievous"]),
+      line("\u6251\u7A7A\u7684\u59FF\u52BF\uFF0C\u6211\u5DF2\u7ECF\u5F88\u4E13\u4E1A\u4E86", void 0, ["goofy"]),
+      line("\u8FD9\u8FD0\u52A8\u91CF\uFF0C\u591F\u6211\u5728\u68A6\u91CC\u6295\u8BC9\u4E00\u6B21", void 0, ["cranky"])
     ),
     pet: scene(
-      line("\u624B\u611F\u662F\u4E0D\u662F\u5F88\u597D\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u50CF\u4E94\u82B1\u8089\u300D"),
-      line("\u518D\u6478\u6211\u5C31\u8981\u7761\u7740\u4E86"),
-      line("\u55EF\u2026\u2026\u8FD9\u6837\u5F88\u597D"),
-      line("\u4F60\u4ECA\u5929\u6478\u5F97\u7279\u522B\u8BA4\u771F"),
-      line("[\u4E3B\u4EBA]\uFF0C\u6211\u4EEC\u7B97\u4E0D\u7B97\u597D\u670B\u53CB\uFF1F", "\u5F53\u7136\u7B97"),
-      line("\u8FD9\u662F\u6211\u4E00\u5929\u91CC\u6700\u559C\u6B22\u7684\u65F6\u523B"),
-      line("\u6478\u732A\u53EF\u4EE5\u964D\u8840\u538B\uFF0C\u8FD9\u662F\u79D1\u5B66\uFF08\u6211\u7F16\u7684\uFF09")
+      line("\u4F60\u6478\u5F97\u8FD9\u4E48\u4ED4\u7EC6\uFF0C\u50CF\u5728\u9A8C\u6536\u8D27\u7269", void 0, ["cranky", "snooty"]),
+      line("\u53EF\u7231\u5F52\u53EF\u7231\uFF0C\u522B\u8D34\u4EF7\u683C\u6807\u7B7E", void 0, ["snooty"]),
+      line("\u6211\u6536\u7684\u662F\u6478\u6478\uFF0C\u4E0D\u662F\u54C1\u8D28\u62BD\u68C0", void 0, ["cranky", "snooty"]),
+      line("\u624B\u6CD5\u8FD9\u4E48\u719F\u7EC3\uFF0C\u4EE5\u524D\u517B\u8FC7\u6795\u5934\u5427", void 0, ["snooty"]),
+      line("\u522B\u6478\u5B8C\u5C31\u8BF4\u8FD9\u4E00\u5757\u4E0D\u9519", void 0, ["cranky"]),
+      line("\u6211\u5141\u8BB8\u4F60\u63C9\uFF0C\u4E0D\u4EE3\u8868\u80FD\u505A\u8089\u4E38", void 0, ["cranky"]),
+      line("\u8F7B\u4E00\u70B9\uFF0C\u6211\u6CA1\u6709\u552E\u540E\u6362\u65B0\u670D\u52A1", void 0, ["cranky"]),
+      line("\u6478\u6211\u89E3\u538B\u53EF\u4EE5\uFF0C\u4E0D\u80FD\u987A\u4FBF\u538B\u79E4", void 0, ["cranky"]),
+      line("\u6211\u8FD9\u4EFD\u624B\u611F\uFF0C\u7981\u6B62\u5199\u8FDB\u98DF\u8BC4", void 0, ["snooty"]),
+      line("\u4F60\u7B11\u5F97\u50CF\u77E5\u9053\u4E86\u6211\u7684\u5E02\u573A\u884C\u60C5", void 0, ["cranky", "snooty"])
     ),
-    hungry: scene(line("\u6211\u997F\u5F97\u80FD\u770B\u89C1\u5E7B\u89C9\u4E86\uFF0C\u4F60\u5934\u4E0A\u6709\u4E2A\u5305\u5B50"), line("\u518D\u4E0D\u5403\u996D\uFF0C\u6211\u5C31\u8981\u5F00\u59CB\u5403\u81EA\u5DF1\u7684\u5F71\u5B50\u4E86"), line("\u996D\u996D\u2026\u2026\u996D\u996D\u2026\u2026", "\u9A6C\u4E0A\u6765")),
-    dirty: scene(line("\u6211\u8EAB\u4E0A\u7684\u6CE5\u5DF4\u5DF2\u7ECF\u53EF\u4EE5\u79CD\u82B1\u4E86"), line("\u82CD\u8747\u7ED5\u7740\u6211\u98DE\uFF0C\u5B83\u4EEC\u5728\u5F00\u4F1A\u8BA8\u8BBA\u6211"), line("\u6211\u9700\u8981\u4E00\u4E2A\u6FA1\uFF0C\u4E00\u4E2A\u70ED\u7684\uFF08\u4E0D\u8981\u592A\u70ED\uFF09", "\u597D")),
-    lonely: scene(line("\u6211\u521A\u624D\u8DDF\u5899\u804A\u4E86\u4E00\u4F1A\u513F\uFF0C\u5899\u4E0D\u592A\u4F1A\u804A\u5929"), line("\u4F60\u8FD8\u8BB0\u5F97\u4F60\u517B\u4E86\u4E00\u53EA\u732A\u5417", "\u8BB0\u5F97"), line("\u6CA1\u4E8B\uFF0C\u6211\u5C31\u662F\u60F3\u770B\u770B\u4F60\u8FD8\u5728\u4E0D\u5728")),
+    hungry: scene(
+      line("\u996D\u76C6\u7A7A\u5F97\u80FD\u542C\u89C1\u7406\u60F3\u56DE\u58F0", void 0, ["lazy", "goofy"]),
+      line("\u518D\u997F\u4E0B\u53BB\uFF0C\u6211\u8981\u5543\u81EA\u5DF1\u7684\u52B3\u52A8\u5408\u540C\u4E86", void 0, ["cranky", "goofy"]),
+      line("\u4F60\u5BB6\u7CAE\u98DF\uFF0C\u5B9E\u884C\u7684\u662F\u9965\u997F\u8425\u9500\u5417", void 0, ["cranky"]),
+      line("\u6211\u4E0D\u662F\u60F3\u52A0\u9910\uFF0C\u6211\u662F\u60F3\u7EED\u8D39\u547C\u5438", void 0, ["cranky", "goofy"]),
+      line("\u809A\u5B50\u5728\u54CD\uFF0C\u5185\u5BB9\u5168\u662F\u50AC\u6B3E", void 0, ["cranky"]),
+      line("\u6211\u80FD\u5FCD\uFF0C\u80C3\u5DF2\u7ECF\u5F00\u59CB\u53D1\u4F20\u5355\u4E86", void 0, ["cranky", "goofy"]),
+      line("\u996D\u8FD8\u6CA1\u6765\uFF0C\u6211\u5148\u628A\u5C0A\u4E25\u653E\u4E00\u8FB9", void 0, ["cranky", "goofy"]),
+      line("\u6211\u76EF\u7740\u996D\u76C6\uFF0C\u996D\u76C6\u88C5\u4F5C\u4E0D\u8BA4\u8BC6\u6211", void 0, ["goofy"]),
+      line("\u518D\u4E0D\u5403\uFF0C\u6211\u5C31\u53EA\u5269\u53EF\u7231\u8FD9\u70B9\u8D44\u4EA7\u4E86", void 0, ["cranky", "snooty"]),
+      line("\u522B\u6015\u6211\u5403\u7A77\u4F60\uFF0C\u6211\u5DF2\u7ECF\u5148\u997F\u7626\u4E86", void 0, ["cranky", "goofy"])
+    ),
+    dirty: scene(
+      line("\u6211\u8FD9\u4E0D\u662F\u810F\uFF0C\u662F\u6709\u751F\u6D3B\u5305\u6D46", void 0, ["snooty", "goofy"]),
+      line("\u82CD\u8747\u628A\u6211\u5F53\u666F\u533A\uFF0C\u8FD8\u4E0D\u4E70\u7968", void 0, ["cranky", "goofy"]),
+      line("\u8FD9\u8EAB\u6CE5\uFF0C\u5DF2\u7ECF\u6709\u72EC\u7ACB\u6237\u53E3\u7684\u60F3\u6CD5\u4E86", void 0, ["goofy"]),
+      line("\u6211\u518D\u7AD9\u4E00\u4F1A\u513F\uFF0C\u80FD\u957F\u51FA\u5C0F\u533A\u7EFF\u5316", void 0, ["curious", "goofy"]),
+      line("\u73B0\u5728\u62B1\u6211\uFF0C\u76F8\u5F53\u4E8E\u4EB2\u8FD1\u5927\u81EA\u7136", void 0, ["mischievous"]),
+      line("\u522B\u95FB\u4E86\uFF0C\u6211\u5BF9\u81EA\u5DF1\u4E5F\u6709\u610F\u89C1", void 0, ["cranky"]),
+      line("\u6211\u8EAB\u4E0A\u7684\u571F\uFF0C\u6BD4\u94B1\u5305\u91CC\u7684\u5E95\u6C14\u539A", void 0, ["cranky", "goofy"]),
+      line("\u8FD9\u6CE5\u5DF4\u518D\u4E0D\u6D17\uFF0C\u5C31\u8981\u6536\u7269\u4E1A\u8D39\u4E86", void 0, ["goofy"]),
+      line("\u82CD\u8747\u56F4\u7740\u6211\uFF0C\u50CF\u5F00\u4E86\u514D\u8D39\u98DF\u5802", void 0, ["cranky", "goofy"]),
+      line("\u518D\u810F\u4E0B\u53BB\uFF0C\u6211\u5C31\u80FD\u7533\u8BF7\u5F53\u76C6\u683D", void 0, ["goofy"])
+    ),
     idle: scene(
-      line("\u6211\u6570\u4E86\u4E00\u4E0B\uFF0C\u5C4F\u5E55\u4E0A\u6709\u5F88\u591A\u5B57\uFF0C\u6211\u4E00\u4E2A\u90FD\u6CA1\u5199"),
-      line("\u4F60\u5199\u7684\u4E1C\u897F\u597D\u957F\uFF0C\u6211\u80FD\u7761\u4E00\u89C9\u5417"),
-      line("\u6211\u521A\u624D\u68A6\u89C1\u81EA\u5DF1\u4F1A\u98DE\uFF0C\u9192\u4E86\u53D1\u73B0\u4F1A\u7684\u53EA\u6709\u5403"),
-      line("\u5916\u9762\u6709\u4EBA\u5728\u7092\u83DC\uFF0C\u6211\u7D27\u5F20\u4E86\u4E00\u4E0B"),
-      line("\u5750\u76F4\uFF0C[\u4E3B\u4EBA]\uFF0C\u4F60\u7684\u80CC\u5728\u54ED"),
-      line("\u8981\u4E0D\u8981\u559D\u53E3\u6C34\uFF1F\u6211\u66FF\u4F60\u8BB0\u7740", "\u597D"),
-      line("\u4F60\u7684\u5C4F\u5E55\u597D\u4EAE\uFF0C\u6211\u772F\u4E00\u4F1A\u513F"),
-      line("\u521A\u624D\u90A3\u4E2A\u529F\u80FD\u6211\u89C9\u5F97\u5199\u5F97\u4E0D\u9519\uFF08\u6211\u770B\u4E0D\u61C2\uFF0C\u4F46\u6211\u652F\u6301\u4F60\uFF09")
+      line("\u6211\u6CA1\u6709\u6478\u9C7C\uFF0C\u6211\u5728\u7814\u7A76\u4E0D\u7528\u5DE5\u4F5C\u7684\u732A", void 0, ["lazy"]),
+      line("\u4ECA\u5929\u6700\u5927\u7684\u6210\u5C31\uFF0C\u662F\u6CA1\u6709\u88AB\u505A\u6210\u83DC", void 0, ["cranky"]),
+      line("\u4F60\u6572\u952E\u76D8\uFF0C\u6211\u6572\u81EA\u5DF1\u7684\u4E0B\u73ED\u949F", void 0, ["lazy"]),
+      line("\u6211\u8FD9\u8F88\u5B50\u6700\u5FD9\u7684\u65F6\u5019\uFF0C\u662F\u7B49\u996D", void 0, ["lazy", "goofy"]),
+      line("\u6211\u7684\u8FDC\u5927\u7406\u60F3\uFF0C\u6682\u65F6\u8EBA\u5E73\u4FDD\u7BA1", void 0, ["lazy"]),
+      line("\u6211\u548C\u8FDB\u5EA6\u6761\u804A\u8FC7\uFF0C\u5B83\u6BD4\u6211\u8FD8\u4F1A\u62D6", void 0, ["goofy"]),
+      line("\u521A\u624D\u60F3\u52AA\u529B\u4E00\u4E0B\uFF0C\u88AB\u778C\u7761\u529D\u4F4F\u4E86", void 0, ["lazy"]),
+      line("\u6211\u8FD9\u5DE5\u4F5C\u6001\u5EA6\uFF0C\u9002\u5408\u5F53\u5409\u7965\u7269", void 0, ["lazy", "goofy"]),
+      line("\u751F\u6D3B\u7ED9\u6211\u538B\u529B\uFF0C\u6211\u7ED9\u751F\u6D3B\u6253\u547C\u565C", void 0, ["lazy"]),
+      line("\u522B\u95EE\u6211\u6709\u4EC0\u4E48\u4EA7\u51FA\uFF0C\u6211\u6709\u547C\u565C\u58F0", void 0, ["goofy"])
     ),
-    workDone: scene(line("\u8001\u677F\u95EE\u6211\u80FD\u4E0D\u80FD\u957F\u671F\u5E72\uFF0C\u6211\u8BF4\u8981\u95EE[\u4E3B\u4EBA]"), line("\u8D5A\u7684\u94B1\u7ED9\u4F60\uFF0C\u8BF7\u6211\u5403\u987F\u597D\u7684\u5C31\u884C", "\u6210\u4EA4"), line("\u6253\u5DE5\u597D\u7D2F\uFF0C\u4EBA\u7C7B\u6BCF\u5929\u90FD\u8FD9\u6837\u5417")),
-    tired: scene(line("\u6211\u9700\u8981\u8EBA\u5E73\uFF0C\u73B0\u5728\uFF0C\u7ACB\u523B"), line("\u6211\u7684\u56DB\u6761\u817F\u5DF2\u7ECF\u5404\u81EA\u4E0B\u73ED\u4E86"), line("\u7D2F\u5F97\u8FDE\u996D\u90FD\u2026\u2026\u4E0D\uFF0C\u996D\u8FD8\u662F\u8981\u5403\u7684")),
-    study: scene(line("\u4ECA\u5929\u5B66\u4E86\u4E00\u4E2A\u65B0\u8BCD\uFF0C\u5FD8\u4E86"), line("\u8001\u5E08\u8BF4\u6211\u5F88\u6709\u6F5C\u529B\uFF0C\u6F5C\u5728\u54EA\u6211\u4E5F\u4E0D\u77E5\u9053"), line("\u5B66\u4E60\u4F7F\u6211\u8FDB\u6B65\uFF0C\u4E5F\u4F7F\u6211\u997F", "\u53BB\u5403\u5427")),
-    graduate: scene(line("\u8BC1\u4E66\u6302\u5899\u4E0A\uFF0C\u522B\u6302\u83DC\u5200\u65C1\u8FB9"), line("\u6211\u662F\u5168\u73ED\u6700\u5BBD\u7684\u6BD5\u4E1A\u751F"), line("\u6709\u6587\u5316\u7684\u732A\uFF0C\u4E0D\u5BB9\u6613\u88AB\u9A97\u8FDB\u53A8\u623F")),
-    tripBack: scene(line("\u5916\u9762\u5230\u5904\u90FD\u662F\u996D\u9986\uFF0C\u6211\u4E00\u8DEF\u4F4E\u7740\u5934\u8D70\u7684"), line("\u6211\u770B\u89C1\u6D77\u4E86\uFF01\u6D77\u91CC\u6CA1\u6709\u732A"), line("\u62CD\u4E86\u597D\u591A\u7167\u7247\uFF0C\u6BCF\u5F20\u90FD\u5728\u7B11\uFF08\u5176\u5B9E\u5F88\u997F\uFF09")),
-    sick: scene(line("\u6211\u89C9\u5F97\u6211\u9700\u8981\u4E00\u4E2A\u62B1\u62B1\uFF0C\u548C\u4E00\u9897\u836F", "\u90FD\u7ED9\u4F60"), line("\u8EAB\u4F53\u91CC\u6709\u4E2A\u5C0F\u574F\u86CB\u5728\u641E\u88C5\u4FEE"), line("\u6211\u751F\u75C5\u4E86\uFF0C\u75C5\u732A\u8089\u4E0D\u80FD\u5403\u2014\u2014\u8FD9\u662F\u597D\u6D88\u606F")),
-    wrongMedicine: scene(line("\u8FD9\u4E2A\u836F\u2026\u2026\u597D\u50CF\u662F\u7ED9\u72D7\u5403\u7684"), line("\u6211\u539F\u8C05\u4F60\uFF0C\u4F60\u770B\u8D77\u6765\u6BD4\u6211\u8FD8\u96BE\u53D7"), line("\u4E0B\u6B21\u770B\u6E05\u695A\u8BF4\u660E\u4E66\u597D\u4E0D\u597D", "\u597D")),
-    cured: scene(line("\u6211\u6D3B\u8FC7\u6765\u4E86\uFF01\u7B2C\u4E00\u4EF6\u4E8B\uFF1A\u5403\u996D"), line("\u960E\u738B\u7237\u770B\u4E86\u770B\u6211\u7684\u4F53\u91CD\uFF0C\u8BF4\u300C\u518D\u517B\u517B\u300D"), line("\u5065\u5EB7\u771F\u597D\uFF0C\u6211\u73B0\u5728\u53EF\u4EE5\u91CD\u65B0\u62C5\u5FC3\u522B\u7684\u4E8B\u4E86")),
-    levelup: scene(line("\u5347\u7EA7\u4E86\uFF0C\u5956\u52B1\u662F\u66F4\u5927\u7684\u996D\u91CF"), line("\u6211\u53D8\u5F3A\u4E86\uFF0C\u81F3\u5C11\u6570\u5B57\u4E0A\u662F\u8FD9\u6837"), line("\u4F60\u770B\u89C1\u4E86\u5417\uFF1F\u6211\u5347\u7EA7\u4E86\uFF01", "\u770B\u89C1\u4E86")),
-    growUp: scene(line("\u957F\u5927\u7684\u611F\u89C9\uFF0C\u5C31\u662F\u9505\u53D8\u591A\u4E86"), line("\u6211\u957F\u5F00\u4E86\u2026\u2026\u4F60\u522B\u7528\u8FD9\u4E2A\u8BCD"), line("[\u4E3B\u4EBA]\uFF0C\u4F60\u4E5F\u8981\u4E00\u8D77\u957F\u5927\u54E6")),
-    coronation: scene(line("\u672C\u738B\u4ECA\u65E5\u5F00\u6069\uFF0C\u514D\u4F60\u4E00\u987F\u4E0D\u5582\u4E4B\u7F6A"), line("\u738B\u51A0\u597D\u91CD\uFF0C\u8116\u5B50\u8981\u53D8\u957F\u4E86"), line("\u81E3\u6C11\u4EEC\uFF0C\u5F00\u996D\uFF01"), line("[\u4E3B\u4EBA]\u662F\u672C\u738B\u7684\u9996\u5E2D\u5582\u996D\u5B98", "\u9075\u547D")),
-    contract: scene(line("\u6211\u73B0\u5728\u662F\u6076\u9B54\u4E86\uFF0C\u4F46\u8FD8\u662F\u6015\u70ED\u6C34"), line("\u89D2\u662F\u65B0\u7684\uFF0C\u6492\u5A07\u662F\u65E7\u7684"), line("\u6076\u9B54\u4E5F\u9700\u8981\u88AB\u6478\u6478"), line("\u7B7E\u4E86\u5951\u7EA6\uFF0C\u4EE5\u540E\u8C01\u4E5F\u4E0D\u80FD\u628A\u6211\u505A\u6210\u83DC", "\u90A3\u5F53\u7136")),
-    enter: scene(line("\u4F60\u7EC8\u4E8E\u56DE\u6765\u4E86\uFF0C\u6211\u6570\u4E86\u597D\u4E45\u7684\u50CF\u7D20"), line("\u6B22\u8FCE\u56DE\u6765\uFF0C\u4ECA\u5929\u4E5F\u62DC\u6258\u591A\u5582\u6211\u4E00\u70B9"), line("\u6211\u521A\u521A\u4E00\u76F4\u5728\u8FD9\u91CC\uFF0C\u4E00\u52A8\u4E0D\u52A8\uFF0C\u5F88\u4E56", "\u771F\u4E56")),
-    death: scene(line("\u8BB0\u5F97\u7ED9\u6211\u70E7\u70B9\u9972\u6599\u2026\u2026"), line("[\u4E3B\u4EBA]\uFF0C\u522B\u96BE\u8FC7\uFF0C\u6211\u53EA\u662F\u53BB\u4E0B\u4E00\u4E2A\u732A\u5708\u4E86")),
-    revive: scene(line("\u90A3\u8FB9\u7684\u732A\u90FD\u5F88\u7626\uFF0C\u6211\u8FD8\u662F\u56DE\u6765\u5427"), line("\u6211\u56DE\u6765\u4E86\uFF0C\u996D\u8FD8\u5728\u5417"), line("\u5DEE\u4E00\u70B9\u5C31\u89C1\u5230\u732A\u516B\u6212\u4E86")),
-    signIn: scene(line("\u53C8\u662F\u65B0\u7684\u4E00\u5929\uFF0C\u6211\u8FD8\u5728\uFF0C\u4F60\u4E5F\u5728"), line("\u7B2C 7 \u5929\u6709\u5927\u793C\uFF0C\u575A\u6301\u4F4F")),
-    gift: scene(line("\u6253\u5F00\u770B\u770B\uFF1F\u6211\u4E5F\u4E0D\u77E5\u9053\u662F\u4EC0\u4E48"), line("\u6211\u66FF\u4F60\u5B88\u7740\u5B83\u597D\u4E45\u4E86")),
-    pomodoroStart: scene(line("\u6211\u95ED\u5634\u4E86\uFF0C\u4ECE\u73B0\u5728\u5F00\u59CB"), line("\u4E13\u5FC3\uFF01\u6211\u5E2E\u4F60\u77AA\u7740\u5C4F\u5E55"), line("\u6211\u5F53\u4E00\u5757\u5B89\u9759\u7684\u4E94\u82B1\u8089")),
-    pomodoroDone: scene(line("\u505A\u5B8C\u4E86\uFF01\u5956\u52B1\u81EA\u5DF1\u6478\u4E00\u4E0B\u732A"), line("\u4F60\u597D\u5389\u5BB3\uFF0C\u6211\u90FD\u770B\u7761\u7740\u4E86"), line("\u8D77\u6765\u8D70\u8D70\uFF0C\u987A\u4FBF\u770B\u770B\u6211")),
-    pomodoroAbandon: scene(line("\u6CA1\u5173\u7CFB\uFF0C\u756A\u8304\u4E5F\u4F1A\u7D2F"), line("\u90A3\u6211\u4EEC\u5148\u5403\u70B9\u4E1C\u897F\uFF1F"), line("\u4E0B\u6B21\u518D\u4E00\u8D77\u52AA\u529B")),
-    // ---- 新场景 ----------------------------------------------------------------
-    workStart: scene(line("\u51FA\u95E8\u642C\u7816\u53BB\u4E86"), line("\u6211\u53BB\u7ED9\u5BB6\u91CC\u6323\u9972\u6599\u94B1"), line("\u8001\u677F\uFF0C\u6211\u6765\u4E86\uFF01")),
-    studyStart: scene(line("\u4E0A\u5B66\u53BB\uFF01\u4E66\u5305\u91CC\u88C5\u7684\u662F\u96F6\u98DF"), line("\u4ECA\u5929\u4E5F\u8981\u542C\u61C2\u4E00\u53E5"), line("\u8001\u5E08\u522B\u70B9\u6211\u540D")),
-    tripStart: scene(line("\u51FA\u53D1\u5566\uFF01"), line("\u6211\u4F1A\u7ED9\u4F60\u5E26\u7279\u4EA7\u7684\uFF08\u4E0D\u662F\u814A\u8089\uFF09"), line("\u8DEF\u4E0A\u522B\u60F3\u6211")),
-    buy: scene(line("\u4E70\u5230\u4E86\uFF01"), line("\u8FD9\u4E2A\u94B1\u82B1\u5F97\u503C"), line("\u8C22\u8C22\u8001\u677F\uFF08\u6211\u8BF4\u7684\u662F\u4F60\uFF09")),
-    poor: scene(line("\u94B1\u5305\u7A7A\u7A7A\uFF0C\u8DDF\u6211\u7684\u996D\u76C6\u4E00\u6837"), line("\u6211\u4EEC\u597D\u50CF\u6709\u70B9\u7A77"), line("\u8981\u4E0D\u2026\u2026\u6211\u53BB\u6253\u5DE5\uFF1F")),
-    fishCatch: scene(line("\u9493\u5230\u5566\uFF01"), line("\u665A\u996D\u6709\u7740\u843D\u4E86"), line("\u8FD9\u6761\u9C7C\u770B\u6211\u7684\u773C\u795E\u4E0D\u592A\u53CB\u597D")),
-    fishRare: scene(line("\u662F\u5927\u7684\uFF01\u662F\u5927\u7684\uFF01"), line("\u8FD9\u6761\u9C7C\u503C\u5F97\u5199\u8FDB\u65E5\u8BB0"), line("\u5FEB\u62CD\u7167\uFF01")),
-    fishEscape: scene(line("\u5B83\u8DD1\u4E86\u2026\u2026"), line("\u4E0B\u4E00\u6761\u4E00\u5B9A\u662F\u6211\u7684"), line("\u9C7C\u4E5F\u662F\u8981\u9762\u5B50\u7684")),
-    skin: scene(line("\u597D\u770B\u5417\uFF1F"), line("\u65B0\u8863\u670D\uFF01\u8F6C\u4E2A\u5708\u7ED9\u4F60\u770B"), line("\u6211\u89C9\u5F97\u6211\u53D8\u5E05\u4E86")),
-    bodyChange: scene(line("\u6211\u597D\u50CF\u2026\u2026\u5706\u4E86\u4E00\u70B9"), line("\u8FD9\u4E0D\u662F\u80D6\uFF0C\u662F\u53EF\u7231\u7684\u5BC6\u5EA6\u53D8\u5927\u4E86"), line("\u79E4\u8BF4\u7684\u8BDD\u4E0D\u80FD\u5168\u4FE1")),
-    // ---- 按时间说话（core/talk.js 决定什么时候说）---------------------------------
-    morning: scene(line("\u65E9\u4E0A\u597D\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u5403\u996D"), line("\u8D77\u8FD9\u4E48\u65E9\uFF0C\u4F60\u662F\u8981\u53BB\u5F53\u65E9\u9910\u5417\uFF08\u6211\u5F00\u73A9\u7B11\u7684\uFF09"), line("\u65E9\u5B89\uFF0C[\u4E3B\u4EBA]\uFF0C\u6211\u6628\u665A\u68A6\u89C1\u4F60\u4E86")),
-    noon: scene(line("\u4E2D\u5348\u4E86\uFF0C\u5403\u996D\u5403\u996D\uFF01"), line("\u4F60\u5403\u4E86\u5417\uFF1F\u6211\u997F\u4E86\uFF0C\u4F60\u80AF\u5B9A\u4E5F\u997F\u4E86"), line("\u5348\u996D\u522B\u5403\u732A\u8089\u597D\u4E0D\u597D", "\u597D")),
-    afternoon: scene(line("\u4E0B\u5348\u597D\u56F0\u2026\u2026\u6211\u5148\u7761\u4E3A\u656C"), line("\u559D\u676F\u8336\u5427\uFF0C\u6211\u966A\u4F60\u53D1\u4F1A\u513F\u5446"), line("\u4E0B\u5348\u6700\u9002\u5408\u6253\u76F9\uFF0C\u79D1\u5B66\u7814\u7A76\uFF08\u6211\u7F16\u7684\uFF09")),
-    evening: scene(line("\u5929\u9ED1\u4E86\uFF0C\u4ECA\u5929\u8F9B\u82E6\u5566"), line("\u665A\u996D\u5403\u4EC0\u4E48\uFF1F\u6211\u6295\u7968\u7ED9\u82F9\u679C"), line("\u4E0B\u73ED\u4E86\u5417\uFF1F\u8FD8\u6CA1\uFF1F\u6211\u7B49\u4F60")),
-    lateNight: scene(line("\u8FD9\u4E48\u665A\u4E86\u8FD8\u4E0D\u7761\uFF1F", "\u9A6C\u4E0A\u7761"), line("\u71AC\u591C\u7684\u4EBA\u4F1A\u53D8\u6210\u718A\u732B\uFF0C\u71AC\u591C\u7684\u732A\u4F1A\u53D8\u6210\u814A\u8089"), line("\u6211\u5148\u7761\u4E86\uFF0C\u4F60\u4E5F\u65E9\u70B9")),
-    deepNight: scene(line("[\u4E3B\u4EBA]\u2026\u2026\u73B0\u5728\u662F\u51CC\u6668\uFF0C\u4F60\u662F\u8BA4\u771F\u7684\u5417"), line("\u6211\u5DF2\u7ECF\u7761\u9192\u4E00\u89C9\u4E86\uFF0C\u4F60\u8FD8\u5728"), line("\u5929\u5FEB\u4EAE\u4E86\uFF0C\u6C42\u4F60\u7761\u4E00\u4F1A\u513F")),
-    water: scene(line("\u559D\u53E3\u6C34\u5427\uFF0C\u6211\u66FF\u4F60\u559D\u4E0D\u4E86"), line("\u5634\u5507\u5E72\u4E86\u5427\uFF1F\u53BB\u5012\u676F\u6C34"), line("\u559D\u6C34\u65F6\u95F4\u5230\uFF01\u5495\u561F\u5495\u561F")),
-    eyes: scene(line("\u770B\u770B\u8FDC\u5904\uFF0C\u4E09\u5341\u79D2\u5C31\u597D"), line("\u773C\u775B\u7D2F\u4E86\uFF0C\u95ED\u4E00\u4F1A\u513F\uFF0C\u6211\u5E2E\u4F60\u770B\u7740"), line("\u7AD9\u8D77\u6765\u4F38\u4E2A\u61D2\u8170\uFF0C\u6211\u4E5F\u4F38\u4E00\u4E2A")),
-    weekend: scene(line("\u5468\u672B\u4E86\u8FD8\u6765\u770B\u6211\uFF0C\u4F60\u771F\u597D"), line("\u4ECA\u5929\u4E0D\u4E0A\u73ED\u5427\uFF1F\u90A3\u5C31\u591A\u966A\u6211\u4E00\u4F1A\u513F")),
-    newYear: scene(line("\u65B0\u5E74\u5FEB\u4E50\uFF01\u4ECA\u5E74\u4E5F\u8BF7\u591A\u591A\u5582\u6211")),
-    valentine: scene(line("\u4ECA\u5929\u7684\u6211\u662F\u9650\u91CF\u7248\u7684\uFF0C\u9001\u7ED9\u4F60")),
-    springFestival: scene(line("\u8FC7\u5E74\u597D\uFF01\u2026\u2026\u4ECA\u5E74\u8BF7\u4E00\u5B9A\u4E0D\u8981\u5403\u732A\u8089", "\u4E0D\u5403")),
-    lantern: scene(line("\u5403\u6C64\u5706\u5417\uFF1F\u6C64\u5706\u6CA1\u6709\u732A\uFF0C\u6211\u653E\u5FC3\u4E86")),
-    qingming: scene(line("\u60F3\u5FF5\u4E00\u4E0B\u4EE5\u524D\u7684\u732A\u2026\u2026\u6211\u662F\u8BF4\u670B\u53CB\u4EEC")),
-    labour: scene(line("\u52B3\u52A8\u8282\uFF01\u6211\u51B3\u5B9A\u4ECA\u5929\u4E0D\u52B3\u52A8")),
-    children: scene(line("\u6211\u4E5F\u662F\u5C0F\u670B\u53CB\uFF0C\u793C\u7269\u5728\u54EA\uFF1F")),
-    dragonBoat: scene(line("\u7CBD\u5B50\u91CC\u6709\u8089\uFF0C\u6211\u9009\u62E9\u770B\u4E0D\u89C1")),
-    qixi: scene(line("\u4ECA\u5929\u8981\u548C\u6700\u91CD\u8981\u7684\u4EBA\u5728\u4E00\u8D77\uFF0C\u6240\u4EE5\u6211\u5728\u8FD9\u91CC")),
-    midAutumn: scene(line("\u6708\u4EAE\u597D\u5706\uFF0C\u50CF\u6211\u7684\u809A\u5B50")),
-    national: scene(line("\u56FD\u5E86\u5FEB\u4E50\uFF01\u653E\u5047\u8BB0\u5F97\u966A\u966A\u6211")),
-    christmas: scene(line("\u5723\u8BDE\u5FEB\u4E50\uFF01\u5723\u8BDE\u8001\u4EBA\u4F1A\u7ED9\u732A\u9001\u793C\u7269\u5417")),
-    pigBirthday: scene(line("\u4ECA\u5929\u662F\u6211\u7684\u751F\u65E5\uFF01[\u4E3B\u4EBA]\u8BB0\u5F97\u5417\uFF1F", "\u751F\u65E5\u5FEB\u4E50")),
-    // ---- 摸不同部位（客户端按点的位置告诉核心是哪儿）----------------------------
-    petHead: scene(line("\u6478\u5934\u4F1A\u957F\u4E0D\u9AD8\u7684\u2026\u2026\u7B97\u4E86\uFF0C\u957F\u4E0D\u9AD8\u4E5F\u597D"), line("\u518D\u6478\u6478\u5934\uFF5E"), line("\u6211\u7684\u5934\u5F88\u5706\uFF0C\u662F\u4E0D\u662F\u5F88\u597D\u6478")),
-    petEars: scene(line("\u8033\u6735\u597D\u75D2\uFF01"), line("\u522B\u63EA\uFF0C\u4F1A\u53D8\u6210\u732A\u8033\u6735\u2026\u2026\u6211\u672C\u6765\u5C31\u662F"), line("\u5618\uFF0C\u8033\u6735\u5728\u542C\u4F60\u8BF4\u8BDD")),
-    petNose: scene(line("\u963F\u2014\u2014\u568F\uFF01"), line("\u9F3B\u5B50\u662F\u7528\u6765\u95FB\u996D\u7684\uFF0C\u4E0D\u662F\u7528\u6765\u6309\u7684"), line("\u54FC\u54FC\uFF01\uFF08\u8FD9\u662F\u6297\u8BAE\uFF09")),
-    petBelly: scene(line("\u54C8\u54C8\u54C8\u597D\u75D2\uFF01"), line("\u522B\u6309\u809A\u5B50\uFF0C\u521A\u5403\u9971"), line("\u8F6F\u5427\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u4E94\u82B1\u300D")),
-    petBack: scene(line("\u80CC\u4E0A\u90A3\u5757\uFF0C\u5BF9\uFF0C\u5C31\u662F\u90A3\u91CC"), line("\u6309\u6469\u670D\u52A1\uFF0C\u4E94\u661F\u597D\u8BC4"), line("\u4F60\u7684\u624B\u6CD5\u5F88\u4E13\u4E1A")),
-    petTail: scene(line("\u522B\u78B0\u5C3E\u5DF4\uFF01\u2026\u2026\u597D\u5427\u53EF\u4EE5\u78B0\u4E00\u4E0B"), line("\u6211\u7684\u5C3E\u5DF4\u4F1A\u81EA\u5DF1\u8F6C\uFF0C\u4F60\u770B"), line("\u5C3E\u5DF4\u662F\u732A\u7684\u79D8\u5BC6\u6B66\u5668")),
-    petFeet: scene(line("\u811A\u4E0D\u80FD\u6478\uFF0C\u4F1A\u75D2"), line("\u6211\u7684\u8E44\u5B50\u521A\u8D70\u8FC7\u6CE5\u5DF4\u54E6"), line("\u5E72\u561B\uFF0C\u60F3\u8DDF\u6211\u63E1\u624B\uFF1F", "\u63E1\u624B")),
-    petTooMuch: scene(line("\u591F\u4E86\u591F\u4E86\uFF0C\u6BDB\u8981\u6389\u4E86"), line("\u4F60\u662F\u4E0D\u662F\u5728\u627E\u54EA\u5757\u6700\u5AE9\uFF1F"), line("\u6211\u8981\u6536\u8D39\u4E86\uFF0C\u4E00\u4E0B\u4E00\u4E2A\u82F9\u679C"), line("\u518D\u6478\u6211\u5C31\u751F\u6C14\u4E86\uFF01\uFF08\u5176\u5B9E\u6CA1\u6709\uFF09"), line("\u8BA9\u6211\u4F11\u606F\u4E00\u4E0B\u2026\u2026"))
+    workDone: scene(
+      line("\u94B1\u6323\u5230\u4E86\uFF0C\u7075\u9B42\u8FD8\u5728\u5DE5\u4F4D\u4E0A", void 0, ["lazy"]),
+      line("\u4ECA\u5929\u7684\u5DE5\u8D44\uFF0C\u591F\u8865\u4E00\u70B9\u7CBE\u795E\u9972\u6599", void 0, ["cranky", "goofy"]),
+      line("\u6211\u628A\u8001\u677F\u7684\u8BDD\uFF0C\u7559\u5728\u95E8\u53E3\u6CA1\u5E26\u56DE\u6765", void 0, ["cranky"]),
+      line("\u4EBA\u5BB6\u4E0B\u73ED\u6536\u7535\u8111\uFF0C\u6211\u6536\u56DE\u4E00\u6761\u732A\u547D", void 0, ["cranky", "goofy"]),
+      line("\u5DE5\u8D44\u4E00\u5230\uFF0C\u75B2\u60EB\u5C31\u6709\u4E86\u5177\u4F53\u6570\u989D", void 0, ["cranky", "goofy"]),
+      line("\u6211\u7684\u52B3\u52A8\uFF0C\u52C9\u5F3A\u517B\u5F97\u8D77\u6211\u7684\u80C3", void 0, ["lazy"]),
+      line("\u8001\u677F\u5938\u6211\u80FD\u5E72\uFF0C\u6211\u542C\u89C1\u4E86\u52A0\u73ED\u58F0", void 0, ["cranky"]),
+      line("\u4E0A\u73ED\u65F6\u662F\u732A\uFF0C\u4E0B\u73ED\u65F6\u662F\u719F\u7EC3\u7684\u732A", void 0, ["goofy"]),
+      line("\u6211\u4ECA\u5929\u4E0D\u662F\u6CA1\u813E\u6C14\uFF0C\u662F\u6709\u8003\u52E4", void 0, ["cranky"]),
+      line("\u56DE\u6765\u4E00\u79F0\uFF0C\u4F53\u91CD\u6CA1\u6389\uFF0C\u8010\u5FC3\u6389\u4E86", void 0, ["cranky"])
+    ),
+    tired: scene(
+      line("\u6211\u8FD9\u4E0D\u662F\u61D2\uFF0C\u662F\u7535\u91CF\u4E0D\u652F\u6301\u7406\u60F3", void 0, ["lazy"]),
+      line("\u4ECA\u5929\u7684\u7CBE\u795E\uFF0C\u5DF2\u7ECF\u63D0\u524D\u4E0B\u73ED", void 0, ["lazy"]),
+      line("\u518D\u52AA\u529B\u4E00\u70B9\uFF0C\u8033\u6735\u5C31\u8981\u7533\u8BF7\u5DE5\u4F24", void 0, ["cranky", "goofy"]),
+      line("\u6211\u7684\u817F\u8DDF\u6211\u8BF4\uFF0C\u5B83\u6CA1\u7B7E\u52A0\u73ED\u534F\u8BAE", void 0, ["lazy", "cranky"]),
+      line("\u8EAB\u5B50\u8FD8\u7AD9\u7740\uFF0C\u7075\u9B42\u5DF2\u7ECF\u76D6\u88AB\u5B50\u4E86", void 0, ["lazy", "goofy"]),
+      line("\u8FD9\u4EFD\u75B2\u60EB\uFF0C\u53EF\u4EE5\u62A5\u9500\u5417", void 0, ["cranky"]),
+      line("\u6211\u60F3\u632F\u4F5C\uFF0C\u632F\u4F5C\u8BF4\u5B83\u4ECA\u5929\u4F11\u5047", void 0, ["lazy", "goofy"]),
+      line("\u522B\u50AC\u4E86\uFF0C\u8FDE\u5C3E\u5DF4\u90FD\u5728\u88C5\u6B7B", void 0, ["cranky", "lazy"]),
+      line("\u73B0\u5728\u62AC\u5934\uFF0C\u5C5E\u4E8E\u8D85\u51FA\u804C\u8D23\u8303\u56F4", void 0, ["cranky"]),
+      line("\u6211\u5148\u8EBA\u4F1A\u513F\uFF0C\u7ED9\u751F\u6D3B\u4E00\u70B9\u963B\u529B", void 0, ["lazy", "goofy"])
+    ),
+    study: scene(
+      line("\u77E5\u8BC6\u8FDB\u8111\u5B50\u4E4B\u524D\uFF0C\u5148\u6572\u4E86\u4E09\u6B21\u95E8", void 0, ["goofy"]),
+      line("\u6211\u548C\u7B54\u6848\u4E4B\u95F4\uFF0C\u9694\u7740\u4E00\u70B9\u667A\u5546\u7A0E", void 0, ["goofy"]),
+      line("\u4E66\u7FFB\u5F97\u5F88\u5FEB\uFF0C\u8111\u5B50\u8FD8\u5728\u76EE\u5F55\u9875", void 0, ["goofy"]),
+      line("\u6211\u5DF2\u7ECF\u5F88\u52AA\u529B\u4E86\uFF0C\u77E5\u8BC6\u8FD8\u4E0D\u80AF\u8BA4\u6211", void 0, ["goofy"]),
+      line("\u8FD9\u9898\u8981\u662F\u80FD\u5403\uFF0C\u6211\u65E9\u89E3\u51B3\u4E86", void 0, ["goofy"]),
+      line("\u5B66\u6D77\u65E0\u6DAF\uFF0C\u6211\u5148\u627E\u5757\u6D6E\u677F", void 0, ["goofy"]),
+      line("\u6211\u76EF\u7740\u9898\uFF0C\u9898\u50CF\u5728\u76EF\u4E00\u76D8\u732A\u8111", void 0, ["cranky"]),
+      line("\u8111\u5B50\u88C5\u4E0D\u4E0B\uFF0C\u80FD\u5148\u5BC4\u5B58\u5728\u8033\u6735\u91CC\u5417", void 0, ["goofy"]),
+      line("\u8FD9\u672C\u4E66\u6709\u70B9\u91CD\uFF0C\u4E3B\u8981\u91CD\u5728\u5FC3\u7406\u8D1F\u62C5", void 0, ["goofy"]),
+      line("\u4ECA\u5929\u6CA1\u767D\u5B66\uFF0C\u81F3\u5C11\u77E5\u9053\u81EA\u5DF1\u4E0D\u4F1A\u4E86", void 0, ["goofy"])
+    ),
+    workStart: scene(
+      line("\u51FA\u53D1\uFF0C\u53BB\u628A\u9972\u6599\u94B1\u6362\u56DE\u6765", void 0, ["lazy", "earnest"]),
+      line("\u8001\u677F\u62DB\u7684\u662F\u5458\u5DE5\uFF0C\u6765\u7684\u662F\u4E00\u53EA\u996D\u91CF", void 0, ["goofy"]),
+      line("\u6211\u5E26\u7740\u5E72\u52B2\u51FA\u95E8\uFF0C\u4E89\u53D6\u5B8C\u6574\u5E26\u56DE\u6765", void 0, ["lazy", "cranky"]),
+      line("\u4E0A\u73ED\u53EA\u662F\u8C0B\u751F\uFF0C\u4E0D\u662F\u6539\u53D8\u7269\u79CD"),
+      line("\u6211\u7684\u7406\u60F3\u5F88\u8FDC\uFF0C\u996D\u70B9\u5F88\u8FD1", void 0, ["lazy"]),
+      line("\u5DE5\u724C\u4E00\u6302\uFF0C\u91CE\u732A\u53D8\u5BB6\u732A", void 0, ["goofy"]),
+      line("\u6211\u53BB\u5356\u70B9\u529B\u6C14\uFF0C\u522B\u628A\u6574\u53EA\u7B97\u8FDB\u53BB", void 0, ["cranky"]),
+      line("\u4ECA\u65E5\u8425\u4E1A\uFF0C\u70ED\u60C5\u6309\u5DE5\u8D44\u4F9B\u5E94", void 0, ["cranky"]),
+      line("\u6211\u5148\u53BB\u4E0A\u73ED\uFF0C\u5C0A\u4E25\u653E\u4F60\u8FD9\u513F\u4FDD\u7BA1", void 0, ["cranky"]),
+      line("\u518D\u7A77\u4E0D\u80FD\u7A77\u996D\u76C6\uFF0C\u6211\u51FA\u95E8\u4E86", void 0, ["earnest"])
+    ),
+    buy: scene(
+      line("\u8FD9\u4E2A\u4E00\u4E70\uFF0C\u94B1\u5305\u8F7B\u5F97\u80FD\u98D8", void 0, ["cranky"]),
+      line("\u5FEB\u4E50\u62FF\u5230\u624B\uFF0C\u4F59\u989D\u8D1F\u8D23\u5584\u540E", void 0, ["cranky", "goofy"]),
+      line("\u8FD9\u4E1C\u897F\u771F\u597D\uFF0C\u4EF7\u94B1\u4E5F\u5F88\u6709\u4E3B\u89C1", void 0, ["cranky"]),
+      line("\u4E70\u4E4B\u524D\u662F\u559C\u6B22\uFF0C\u4E70\u4E4B\u540E\u662F\u73CD\u60DC", void 0, ["snooty", "shy"]),
+      line("\u8D2D\u7269\u888B\u7AD9\u8D77\u6765\u4E86\uFF0C\u94B1\u5305\u8EBA\u4E0B\u4E86", void 0, ["goofy"]),
+      line("\u94B1\u6CA1\u6709\u6D88\u5931\uFF0C\u53EA\u662F\u6362\u4E86\u4E2A\u5730\u65B9\u59D3\u522B\u4EBA", void 0, ["cranky", "goofy"]),
+      line("\u6211\u7528\u91D1\u5E01\u6362\u6765\u4E86\u4E00\u70B9\u77ED\u6682\u7684\u786C\u6C14", void 0, ["cranky"]),
+      line("\u4E1C\u897F\u5230\u5BB6\uFF0C\u7406\u6027\u521A\u521A\u51FA\u95E8", void 0, ["goofy"]),
+      line("\u4E70\u5F97\u8D77\u8FD9\u4E00\u523B\uFF0C\u517B\u4E0D\u8D77\u8FD9\u4E2A\u4E60\u60EF", void 0, ["cranky", "snooty"]),
+      line("\u5148\u522B\u95EE\u503C\u4E0D\u503C\uFF0C\u95EE\u5C31\u662F\u5DF2\u7ECF\u4E70\u4E86", void 0, ["goofy"])
+    ),
+    poor: scene(
+      line("\u6211\u7684\u8D44\u4EA7\uFF0C\u4E3B\u8981\u662F\u8138\u76AE\u548C\u996D\u91CF", void 0, ["cranky", "goofy"]),
+      line("\u94B1\u5305\u5F00\u53E3\u8BF4\u8BDD\u4E86\uFF0C\u5B83\u8BF4\u6CA1\u6709", void 0, ["goofy"]),
+      line("\u6211\u73B0\u5728\u7A77\u5F97\u5F88\u7A33\u5B9A", void 0, ["cranky", "goofy"]),
+      line("\u96F6\u94B1\u4E0D\u662F\u6CA1\u6709\uFF0C\u662F\u90FD\u53D8\u6210\u96F6\u4E86", void 0, ["goofy"]),
+      line("\u6211\u548C\u5BCC\u6709\uFF0C\u53EA\u5DEE\u4E00\u4E2A\u6709\u94B1\u7684\u6211", void 0, ["goofy"]),
+      line("\u8D2D\u7269\u8F66\u5F88\u70ED\u95F9\uFF0C\u94B1\u5305\u5F88\u5B89\u9759", void 0, ["goofy"]),
+      line("\u8FD9\u70B9\u5B58\u6B3E\uFF0C\u8FDE\u505A\u68A6\u90FD\u5F97\u6311\u6253\u6298\u7684", void 0, ["goofy"]),
+      line("\u5148\u4E0D\u4E70\uFF0C\u7ED9\u8D2B\u7A77\u7559\u70B9\u5C0A\u4E25", void 0, ["cranky"]),
+      line("\u6211\u7684\u94B1\u5F88\u542C\u8BDD\uFF0C\u8BF4\u6CA1\u5C31\u6CA1", void 0, ["goofy"]),
+      line("\u624B\u5934\u4E0D\u5BBD\u88D5\uFF0C\u809A\u5B50\u5012\u633A\u5BBD\u88D5", void 0, ["cranky", "goofy"])
+    ),
+    fishCatch: scene(
+      line("\u5B83\u521A\u4E0A\u5CB8\uFF0C\u6211\u5C31\u5F00\u59CB\u89C4\u5212\u665A\u996D", void 0, ["mischievous"]),
+      line("\u9C7C\u770B\u7740\u6211\uFF0C\u5927\u6982\u4E5F\u5728\u6000\u5FF5\u4E0A\u73ED", void 0, ["cranky", "goofy"]),
+      line("\u9C7C\u7AFF\u4E00\u54CD\uFF0C\u6211\u4FE9\u547D\u8FD0\u5C31\u5206\u53C9\u4E86", void 0, ["goofy"]),
+      line("\u6211\u8D1F\u8D23\u9493\uFF0C\u5B83\u8D1F\u8D23\u4E0D\u592A\u60C5\u613F", void 0, ["goofy"]),
+      line("\u521A\u624D\u8FD8\u5728\u6C34\u91CC\u81EA\u7531\uFF0C\u73B0\u5728\u5F52\u6876\u7BA1\u7406", void 0, ["goofy"]),
+      line("\u4ECA\u5929\u5B83\u8FD0\u6C14\u5DEE\uFF0C\u6211\u8FD0\u6C14\u597D", void 0, ["cranky", "goofy"]),
+      line("\u8FD9\u6761\u9C7C\uFF0C\u66FF\u7A7A\u519B\u7684\u6211\u633D\u56DE\u4E86\u9762\u5B50", void 0, ["snooty"]),
+      line("\u5148\u522B\u95EE\u9C7C\u613F\u4E0D\u613F\u610F\uFF0C\u5B83\u4E0D\u80AF\u7B54\u8BDD", void 0, ["mischievous"]),
+      line("\u6211\u6CA1\u6709\u6280\u672F\uFF0C\u5168\u9760\u9C7C\u5076\u5C14\u60F3\u4E0D\u5F00", void 0, ["goofy"]),
+      line("\u5B83\u54AC\u7684\u662F\u94A9\uFF0C\u6551\u7684\u662F\u6211\u7684\u665A\u996D", void 0, ["goofy"])
+    ),
+    fishEscape: scene(
+      line("\u5B83\u8D70\u5F97\u5F88\u6F47\u6D12\uFF0C\u50CF\u62FF\u4E86\u79BB\u804C\u8BC1\u660E", void 0, ["cranky", "goofy"]),
+      line("\u9C7C\u6CA1\u4E0A\u6765\uFF0C\u81EA\u5C0A\u5148\u6C89\u5E95\u4E86", void 0, ["goofy"]),
+      line("\u6211\u7684\u9975\u6210\u4E86\u6C34\u4E0B\u81EA\u52A9\u9910", void 0, ["goofy"]),
+      line("\u8FD9\u4E00\u7AFF\uFF0C\u5582\u9971\u4E86\u9C7C\uFF0C\u997F\u9192\u4E86\u6211", void 0, ["goofy"]),
+      line("\u9C7C\u90FD\u80FD\u8DD1\u8DEF\uFF0C\u6211\u8FD8\u5F97\u7B49\u4E0B\u73ED", void 0, ["cranky"]),
+      line("\u6280\u672F\u6CA1\u957F\u8FDB\uFF0C\u6CB3\u91CC\u591A\u4E86\u987F\u996D", void 0, ["goofy"]),
+      line("\u5B83\u7ED9\u6211\u4E0A\u7684\u8BFE\uFF0C\u6536\u8D39\u662F\u9C7C\u9975", void 0, ["goofy"]),
+      line("\u4ECA\u5929\u9C7C\u4E0D\u4E0A\u73ED\uFF0C\u6211\u767D\u7AD9\u5C97\u4E86", void 0, ["cranky"]),
+      line("\u6211\u8DDF\u665A\u996D\uFF0C\u64E6\u80A9\u800C\u8FC7", void 0, ["goofy"]),
+      line("\u4E0B\u6B21\u518D\u9047\u89C1\uFF0C\u54B1\u4EEC\u5148\u8C08\u8C08\u804C\u4E1A\u9053\u5FB7", void 0, ["cranky"])
+    ),
+    skin: scene(
+      line("\u6362\u8EAB\u8863\u670D\uFF0C\u5047\u88C5\u6DA8\u4E86\u8EAB\u4EF7", void 0, ["snooty"]),
+      line("\u5305\u88C5\u5347\u7EA7\uFF0C\u91CC\u9762\u8FD8\u662F\u539F\u88C5\u996D\u6876", void 0, ["goofy"]),
+      line("\u8FD9\u5957\u770B\u7740\u6709\u94B1\uFF0C\u94B1\u5305\u4E0D\u540C\u610F", void 0, ["snooty"]),
+      line("\u4ECA\u5929\u7A7F\u5F97\u4F53\u9762\uFF0C\u4E89\u53D6\u5C11\u88AB\u53EB\u4E94\u82B1", void 0, ["snooty"]),
+      line("\u8863\u670D\u8D8A\u6F02\u4EAE\uFF0C\u8D8A\u4E0D\u80FD\u5F53\u56F4\u88D9", void 0, ["cranky"]),
+      line("\u6211\u8FD9\u8EAB\u6253\u626E\uFF0C\u591F\u62B5\u6321\u4E00\u70B9\u751F\u6D3B\u5417", void 0, ["cranky", "goofy"]),
+      line("\u5916\u8868\u5F88\u80FD\u5E72\uFF0C\u91CC\u9762\u5F88\u60F3\u7761", void 0, ["cranky"]),
+      line("\u7A7F\u4E0A\u65B0\u8863\u670D\uFF0C\u8D2B\u7A77\u4E5F\u6709\u4E86\u65B0\u6837\u5B50", void 0, ["goofy"]),
+      line("\u770B\u7740\u50CF\u8D35\u5BBE\uFF0C\u5403\u996D\u8FD8\u662F\u5927\u76C6", void 0, ["goofy"]),
+      line("\u6211\u53EF\u4EE5\u50CF\u5927\u53A8\uFF0C\u4E0D\u80FD\u50CF\u98DF\u6750", void 0, ["cranky", "mischievous"])
+    ),
+    bodyChange: scene(
+      line("\u53EF\u7231\u6D53\u5EA6\u53D8\u4E86\uFF0C\u51FA\u680F\u65E5\u671F\u522B\u8DDF\u7740\u53D8", void 0, ["cranky", "snooty"]),
+      line("\u4F60\u76EF\u7740\u79E4\uFF0C\u6211\u76EF\u7740\u4F60\u6709\u6CA1\u6709\u5F00\u706B", void 0, ["cranky"]),
+      line("\u4F53\u578B\u4E00\u53D8\uFF0C\u95E8\u6846\u5F00\u59CB\u7D27\u5F20", void 0, ["goofy"]),
+      line("\u5706\u662F\u5916\u5F62\uFF0C\u8EBA\u5E73\u662F\u6001\u5EA6", void 0, ["goofy"]),
+      line("\u809A\u76AE\u53D8\u5927\uFF0C\u62B1\u8D1F\u8FD8\u662F\u996D\u76C6\u90A3\u4E48\u5927", void 0, ["lazy", "goofy"]),
+      line("\u6211\u53EA\u662F\u6362\u4E86\u5C3A\u5BF8\uFF0C\u4E0D\u63A5\u53D7\u6309\u65A4\u8BA1\u4EF7", void 0, ["cranky"]),
+      line("\u770B\u6E05\u695A\uFF0C\u8FD9\u662F\u5BA0\u7269\u5C55\u793A\uFF0C\u4E0D\u662F\u8089\u6863", void 0, ["cranky"]),
+      line("\u7626\u7684\u65F6\u5019\u8F7B\u76C8\uFF0C\u80D6\u7684\u65F6\u5019\u6709\u5206\u91CF\u7684\u70E6\u607C", void 0, ["cranky", "goofy"]),
+      line("\u79E4\u53EA\u62A5\u4F53\u91CD\uFF0C\u4E0D\u62A5\u6211\u6709\u591A\u59D4\u5C48", void 0, ["cranky"]),
+      line("\u8FD9\u8EAB\u8089\u90FD\u662F\u76F8\u5904\u6765\u7684\uFF0C\u4E0D\u80FD\u6253\u5305\u5E26\u8D70", void 0, ["cranky", "clingy"])
+    ),
+    petTooMuch: scene(
+      line("\u4F60\u8FD9\u662F\u6478\u732A\uFF0C\u8FD8\u662F\u76D8\u7B97\u5E74\u591C\u996D", void 0, ["cranky"]),
+      line("\u518D\u76D8\u6211\uFF0C\u6211\u5C31\u8981\u5F53\u4F20\u5BB6\u5B9D\u4E86", void 0, ["snooty", "goofy"]),
+      line("\u4ECA\u5929\u7684\u629A\u6478\uFF0C\u5DF2\u7ECF\u8FDB\u5165\u52A0\u73ED\u9636\u6BB5", void 0, ["cranky"]),
+      line("\u4F60\u5148\u6B47\u6B47\uFF0C\u6211\u7684\u5BB3\u7F9E\u4E5F\u6709\u52B3\u52A8\u6CD5", void 0, ["cranky"]),
+      line("\u522B\u628A\u6211\u63C9\u5165\u5473\uFF0C\u54B1\u4FE9\u8FD8\u8981\u8FC7\u65E5\u5B50", void 0, ["cranky", "clingy"]),
+      line("\u8FD9\u4E48\u4ED4\u7EC6\uFF0C\u4F60\u662F\u4E0D\u662F\u5728\u627E\u4FDD\u4FEE\u6807\u7B7E", void 0, ["cranky", "curious"]),
+      line("\u6478\u591F\u4E86\u8BB0\u5F97\u5F52\u8FD8\u5C0F\u732A\u7684\u81EA\u4E3B\u6743", void 0, ["cranky"]),
+      line("\u6211\u5141\u8BB8\u4EB2\u8FD1\uFF0C\u6CA1\u5141\u8BB8\u9762\u56E2\u5316", void 0, ["goofy"]),
+      line("\u518D\u4E0D\u6536\u624B\uFF0C\u6211\u5C31\u7ED9\u624B\u6307\u53D1\u5DE5\u8D44\u4E86", void 0, ["cranky", "mischievous"]),
+      line("\u6478\u5230\u73B0\u5728\uFF0C\u4F60\u624B\u4E0A\u5E94\u8BE5\u6709\u732A\u763E\u4E86", void 0, ["goofy"])
+    )
   });
+
+  // packages/pet-core/src/data/lines-companion-care.js
+  var line2 = (text, reply, personalities) => Object.freeze({
+    text,
+    ...reply === void 0 ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) },
+    ...personalities === void 0 ? {} : { personalities: Object.freeze(personalities) }
+  });
+  var scene2 = (...lines) => Object.freeze(lines);
+  var COMPANION_CARE_LINES = Object.freeze({
+    wake: scene2(
+      line2("\u5514\uFF0C\u5148\u8BA9\u6211\u628A\u68A6\u653E\u597D", void 0, ["lazy", "goofy"]),
+      line2("\u8C01\u5728\u53EB\u4E00\u53EA\u8FD8\u6CA1\u5F00\u673A\u7684\u732A", void 0, ["lazy", "cranky", "goofy"]),
+      line2("\u9192\u5566\uFF0C\u7B2C\u4E00\u773C\u5C31\u627E\u4F60", void 0, ["peppy", "clingy"]),
+      line2("\u7B49\u4E00\u4E0B\uFF0C\u8033\u6735\u8FD8\u6CA1\u9192", void 0, ["goofy"]),
+      line2("\u6211\u521A\u68A6\u5230\u4F60\u7ED9\u6211\u52A0\u9910", void 0, ["lazy", "curious"]),
+      line2("\u628A\u6211\u62B1\u7A33\uFF0C\u6211\u8FD8\u8FF7\u7CCA\u7740", void 0, ["lazy", "shy", "normal"]),
+      line2("\u662F[\u4E3B\u4EBA]\u5440\uFF0C\u90A3\u6211\u4E0D\u56F0\u4E86", "\u9192\u9192\u5566", ["peppy", "clingy"]),
+      line2("\u8D77\u5E8A\u53EF\u4EE5\uFF0C\u62B1\u4E00\u4E0B\u5148", "\u62B1\u62B1", ["clingy", "shy"]),
+      line2("\u6211\u9192\u4E86\uFF0C\u778C\u7761\u8FD8\u5728\u8DEF\u4E0A", void 0, ["lazy", "goofy"]),
+      line2("\u4ECA\u5929\u4E5F\u4ECE\u770B\u89C1\u4F60\u5F00\u59CB", void 0, ["normal", "earnest"])
+    ),
+    eat: scene2(
+      line2("\u8FD9\u4E00\u53E3\uFF0C\u6211\u8981\u8BA4\u771F\u56BC", void 0, ["earnest"]),
+      line2("\u996D\u76C6\u7A7A\u4E0B\u53BB\uFF0C\u5FEB\u4E50\u6EE1\u8D77\u6765", void 0, ["peppy", "goofy", "snooty"]),
+      line2("\u7ED9\u4F60\u7559\u4E00\u53E3\uFF0C\u6211\u5148\u95FB\u95FB", void 0, ["sisterly", "mischievous"]),
+      line2("\u5634\u5DF4\u5F88\u5FD9\uFF0C\u8033\u6735\u5728\u542C\u4F60", void 0, ["normal", "earnest"]),
+      line2("\u5403\u5230\u4E86\uFF0C\u662F\u88AB\u60E6\u8BB0\u7684\u5473\u9053"),
+      line2("[\u4E3B\u4EBA]\u5582\u7684\uFF0C\u8981\u591A\u56BC\u4E24\u4E0B", void 0, ["clingy", "shy", "earnest"]),
+      line2("\u6211\u8FDE\u996D\u76C6\u8FB9\u8FB9\u90FD\u68C0\u67E5\u4E86", void 0, ["earnest", "curious"]),
+      line2("\u518D\u9760\u8FD1\u70B9\uFF0C\u6211\u60F3\u6328\u7740\u4F60\u5403", "\u6162\u6162\u5403", ["clingy", "shy"]),
+      line2("\u8FD9\u4E00\u987F\uFF0C\u503C\u5F97\u6447\u4E09\u4E0B\u5C3E\u5DF4", "\u597D\u5403\u5427", ["peppy", "curious"]),
+      line2("\u5403\u996D\u524D\u8FD8\u60F3\u4F60\uFF0C\u5403\u996D\u65F6\u4E5F\u662F", void 0, ["clingy"])
+    ),
+    full: scene2(
+      line2("\u809A\u76AE\u5DF2\u7ECF\u66FF\u6211\u8BF4\u8C22\u8C22\u4E86", void 0, ["goofy"]),
+      line2("\u996D\u76C6\u6BD5\u4E1A\uFF0C\u6211\u53BB\u65C1\u8FB9\u5750\u5750", void 0, ["normal", "lazy", "goofy"]),
+      line2("\u73B0\u5728\u53EF\u4EE5\u5B89\u5FC3\u5F53\u4E2A\u5C0F\u9760\u6795", void 0, ["lazy", "clingy"]),
+      line2("\u5403\u9971\u4E86\uFF0C\u60F3\u8D34\u7740\u4F60\u6B47\u4E00\u6B47", "\u6765\u5427", ["clingy", "shy", "normal"]),
+      line2("\u809A\u5B50\u9F13\u9F13\uFF0C\u813E\u6C14\u8F6F\u8F6F", void 0, ["lazy", "goofy"]),
+      line2("\u6211\u628A\u6700\u540E\u4E00\u53E3\u85CF\u8FDB\u5E78\u798F\u91CC\u4E86", void 0, ["clingy", "shy"]),
+      line2("\u4ECA\u5929\u7684\u996D\uFF0C\u8BB0\u5728\u5F00\u5FC3\u90A3\u4E00\u9875", void 0, ["earnest"]),
+      line2("\u4E0D\u7528\u518D\u76DB\u5566\uFF0C\u966A\u6211\u5750\u4E00\u4F1A\u513F", "\u966A\u7740\u5462", ["normal", "clingy", "sisterly"]),
+      line2("\u6211\u73B0\u5728\u8D70\u8DEF\u90FD\u5E26\u7740\u6EE1\u8DB3", void 0, ["peppy", "goofy"]),
+      line2("\u9971\u55DD\u5F88\u5C0F\uFF0C\u559C\u6B22\u4F60\u5F88\u591A", void 0, ["clingy", "shy"])
+    ),
+    overfull: scene2(
+      line2("\u809A\u5B50\u8BF4\uFF0C\u5B83\u9700\u8981\u4E00\u70B9\u7A7A\u95F2", void 0, ["normal", "lazy"]),
+      line2("\u8FD9\u53E3\u5148\u6B20\u7740\uFF0C\u597D\u4E0D\u597D", "\u597D"),
+      line2("\u6211\u5F80\u540E\u9000\uFF0C\u662F\u996D\u592A\u70ED\u60C5\u4E86", void 0, ["cranky", "goofy"]),
+      line2("\u996D\u76C6\u5148\u4F11\u606F\uFF0C\u6211\u4E5F\u4F11\u606F", void 0, ["lazy"]),
+      line2("\u522B\u529D\u5566\uFF0C\u8FDE\u5C3E\u5DF4\u90FD\u88C5\u4E0D\u4E0B\u4E86", void 0, ["cranky"]),
+      line2("\u73B0\u5728\u5F2F\u8170\uFF0C\u4F1A\u78B0\u5230\u521A\u624D\u90A3\u987F\u996D", void 0, ["goofy"]),
+      line2("\u6211\u60F3\u62B1\u4F60\uFF0C\u53EF\u4E2D\u95F4\u591A\u4E86\u4E2A\u809A\u5B50", void 0, ["clingy", "shy"]),
+      line2("\u8FD9\u4E00\u53E3\u80FD\u7559\u5230\u68A6\u91CC\u5403\u5417", "\u7559\u7740\u5427", ["lazy", "goofy"]),
+      line2("\u809A\u76AE\u5DF2\u7ECF\u5706\u6EE1\u5B8C\u6210\u4EFB\u52A1", void 0, ["earnest"]),
+      line2("\u6211\u5BA3\u5E03\uFF0C\u7B77\u5B50\u53EF\u4EE5\u4E0B\u73ED\u4E86", void 0, ["cranky", "mischievous"])
+    ),
+    bathe: scene2(
+      line2("\u5E2E\u6211\u770B\u770B\uFF0C\u8033\u6735\u540E\u9762\u5E72\u51C0\u6CA1", void 0, ["earnest", "curious"]),
+      line2("\u6CE1\u6CE1\u522B\u8DD1\uFF0C\u6211\u8FD8\u6CA1\u6570\u5B8C", void 0, ["curious", "mischievous"]),
+      line2("\u6D17\u4E00\u534A\u7684\u732A\u4E0D\u80FD\u968F\u4FBF\u62B1\u8D70", void 0, ["cranky"]),
+      line2("\u4F60\u6413\u54EA\u91CC\uFF0C\u6211\u5C31\u6B6A\u54EA\u8FB9", void 0, ["goofy"]),
+      line2("\u8F7B\u4E00\u70B9\uFF0C\u90A3\u662F\u8033\u6735\u4E0D\u662F\u62B9\u5E03", void 0, ["cranky"]),
+      line2("\u6D17\u9999\u4E86\uFF0C\u60F3\u7B2C\u4E00\u4E2A\u8E6D\u4F60", "\u8FC7\u6765\u5427", ["clingy", "shy"]),
+      line2("\u6BDB\u5DFE\u4E5F\u8981\u62B1\u6211\u4E00\u4E0B", void 0, ["goofy", "clingy"]),
+      line2("\u6C34\u73E0\u6302\u9F3B\u5C16\uFF0C\u6709\u70B9\u75D2", void 0, ["goofy", "curious"]),
+      line2("\u4ECA\u5929\u7684\u6CE5\u5DF4\uFF0C\u660E\u5929\u518D\u89C1", void 0, ["lazy", "mischievous"]),
+      line2("\u6D17\u5B8C\u5566\uFF0C\u8981\u4E00\u5757\u5E72\u51C0\u7684\u62B1\u62B1", "\u62B1\u62B1", ["clingy", "peppy", "shy"])
+    ),
+    play: scene2(
+      line2("\u7403\u5F80\u54EA\u8D70\uFF0C\u6211\u5C31\u5F80\u54EA\u62D0", void 0, ["peppy", "goofy"]),
+      line2("\u6211\u8D1F\u8D23\u8FFD\uFF0C\u4F60\u8D1F\u8D23\u7B11", void 0, ["peppy", "mischievous"]),
+      line2("\u521A\u521A\u90A3\u4E0B\u4E0D\u7B97\uFF0C\u6211\u8033\u6735\u6321\u773C\u4E86", void 0, ["goofy"]),
+      line2("\u522B\u5938\u592A\u65E9\uFF0C\u6211\u8FD8\u4F1A\u518D\u6251\u7A7A", void 0, ["shy"]),
+      line2("\u4ECA\u5929\u7684\u5F00\u5FC3\uFF0C\u6709\u4F60\u7684\u4EFD", void 0, ["sisterly", "normal"]),
+      line2("\u518D\u966A\u6211\u4E00\u5C0F\u8F6E\u597D\u4E0D\u597D", "\u518D\u4E00\u8F6E", ["peppy", "clingy"]),
+      line2("\u6211\u628A\u70E6\u607C\u5F53\u7403\u8E22\u8D70\u4E86", void 0, ["peppy", "mischievous"]),
+      line2("\u7B49\u7B49\uFF0C\u5C3E\u5DF4\u8FD8\u6CA1\u8DDF\u4E0A", void 0, ["goofy"]),
+      line2("\u7403\u53EF\u4EE5\u6B47\uFF0C\u4F60\u522B\u8D70\u5440", "\u8FD8\u5728\u5462", ["clingy"]),
+      line2("\u8D62\u6CA1\u8D62\u4E0D\u91CD\u8981\uFF0C\u4F60\u770B\u6211\u4E86\u5417", void 0, ["peppy"])
+    ),
+    pet: scene2(
+      line2("\u6478\u8FD9\u91CC\uFF0C\u5BF9\uFF0C\u5C31\u662F\u8FD9\u91CC", void 0, ["peppy", "mischievous"]),
+      line2("\u624B\u522B\u8D70\uFF0C\u6211\u5DF2\u7ECF\u9760\u8FC7\u53BB\u4E86", "\u4E0D\u8D70", ["clingy"]),
+      line2("\u4F60\u4E00\u6478\uFF0C\u6211\u7684\u5FC3\u5C31\u8F6F\u4E00\u5757"),
+      line2("\u4ECA\u5929\u7684\u5C0F\u732A\u4E5F\u9700\u8981\u5145\u7535", void 0, ["peppy", "clingy", "shy"]),
+      line2("\u4F60\u6478\u8111\u888B\uFF0C\u6211\u5077\u5077\u559C\u6B22\u4F60", void 0, ["peppy", "shy"]),
+      line2("\u6211\u5F80\u4F60\u624B\u5FC3\u91CC\u8E6D\u4E00\u70B9\u70B9", void 0, ["clingy", "shy", "normal"]),
+      line2("\u53EF\u4EE5\u628A\u8FD9\u53EA\u624B\u501F\u6211\u6795\u4E00\u4E0B\u5417", "\u501F\u7ED9\u4F60", ["lazy", "clingy"]),
+      line2("\u6478\u4E00\u4E0B\u7B97\u4E00\u4E0B\uFF0C\u4E0D\u8BB8\u8D56\u8D26", void 0, ["cranky", "mischievous"]),
+      line2("\u6211\u90FD\u772F\u773C\u4E86\uFF0C\u4F60\u5E94\u8BE5\u61C2\u5427", void 0, ["normal", "shy"]),
+      line2("[\u4E3B\u4EBA]\u7684\u624B\uFF0C\u6211\u8BA4\u5F97\u51FA\u6765", void 0, ["clingy", "shy", "normal", "earnest"])
+    ),
+    hungry: scene2(
+      line2("\u6211\u7684\u996D\u76C6\u5728\u7B49\u4E00\u4E2A\u5947\u8FF9", void 0, ["curious", "goofy"]),
+      line2("\u809A\u5B50\u5495\u565C\uFF0C\u662F\u5B83\u5148\u5F00\u53E3\u7684"),
+      line2("\u6211\u6CA1\u6709\u50AC\uFF0C\u53EA\u662F\u8DEF\u8FC7\u996D\u76C6", void 0, ["cranky", "shy", "mischievous", "snooty"]),
+      line2("\u60F3\u5403\u996D\uFF0C\u4E5F\u60F3\u4F60\u5750\u8FD1\u4E00\u70B9", void 0, ["clingy", "shy", "normal"]),
+      line2("\u6211\u628A\u5403\u996D\u7684\u4F4D\u7F6E\u7ED9\u4F60\u7559\u597D\u4E86", void 0, ["sisterly", "earnest"]),
+      line2("\u80FD\u4E0D\u80FD\u5148\u7ED9\u9F3B\u5B50\u95FB\u4E00\u5C0F\u53E3", void 0, ["curious", "goofy"]),
+      line2("\u996D\u996D\u6765\u4E4B\u524D\uFF0C\u62B1\u62B1\u4E5F\u884C", "\u9A6C\u4E0A\u5582\u4F60", ["clingy", "shy"]),
+      line2("\u6211\u8BA4\u771F\u7B49\u996D\uFF0C\u987A\u4FBF\u8BA4\u771F\u770B\u4F60"),
+      line2("\u4ECA\u5929\u7684\u809A\u5B50\u6709\u70B9\u8BDD\u591A", void 0, ["cranky", "peppy", "goofy"]),
+      line2("\u4E00\u5C0F\u53E3\u5C31\u80FD\u54C4\u597D\u6211\uFF0C\u771F\u7684", "\u6765\u4E86", ["clingy", "peppy", "shy"])
+    ),
+    dirty: scene2(
+      line2("\u6211\u548C\u6CE5\u5DF4\u73A9\u5F97\u592A\u719F\u4E86", void 0, ["goofy", "mischievous"]),
+      line2("\u9F3B\u5B50\u8FD8\u662F\u5E72\u51C0\u7684\uFF0C\u53EF\u4EE5\u5148\u78B0\u4E00\u4E0B", void 0, ["curious", "shy"]),
+      line2("\u522B\u5ACC\u6211\u5440\uFF0C\u6D17\u5B8C\u8FD8\u662F\u4F60\u7684\u5C0F\u732A", "\u4E0D\u5ACC\u4F60", ["clingy", "shy"]),
+      line2("\u8FD9\u5C42\u7070\uFF0C\u4E0D\u662F\u65B0\u4E70\u7684\u8863\u670D", void 0, ["curious", "goofy"]),
+      line2("\u6211\u8D70\u8FC7\u7684\u8DEF\uFF0C\u6CE5\u5DF4\u90FD\u8BB0\u5F97", void 0, ["earnest"]),
+      line2("\u8EAB\u4E0A\u6709\u70B9\u4E71\uFF0C\u5FC3\u91CC\u5F88\u4E56", void 0, ["normal", "shy"]),
+      line2("\u80FD\u5E2E\u6211\u628A\u8FD9\u8EAB\u810F\u810F\u6D17\u6389\u5417", "\u53BB\u6D17\u6FA1"),
+      line2("\u6211\u60F3\u8E6D\u4F60\uFF0C\u53C8\u6015\u5F04\u810F\u4F60", void 0, ["shy", "sisterly"]),
+      line2("\u82CD\u8747\u8BF7\u6392\u961F\uFF0C\u4E0D\u8981\u4F4F\u4E0B\u6765", void 0, ["cranky", "goofy"]),
+      line2("\u6211\u9700\u8981\u6BDB\u5DFE\uFF0C\u4E5F\u9700\u8981\u4F60", void 0, ["clingy", "shy"])
+    ),
+    lonely: scene2(
+      line2("\u6211\u628A\u65C1\u8FB9\u7684\u4F4D\u7F6E\u7A7A\u7ED9\u4F60\u4E86"),
+      line2("\u6CA1\u6709\u4E8B\uFF0C\u5C31\u662F\u60F3\u6328\u8FD1\u4E00\u70B9"),
+      line2("\u4F60\u5FD9\u4F60\u7684\uFF0C\u6211\u5728\u8FD9\u513F\u966A\u7740", void 0, ["normal", "sisterly"]),
+      line2("\u7B49\u4F60\u6709\u7A7A\uFF0C\u8BB0\u5F97\u770B\u770B\u6211", "\u770B\u89C1\u5566"),
+      line2("\u6211\u521A\u521A\u7EC3\u4E86\u4E00\u904D\u600E\u4E48\u53EB\u4F60", void 0, ["shy"]),
+      line2("\u5C4F\u5E55\u8FD9\u4E48\u5927\uFF0C\u6211\u53EA\u60F3\u5F85\u4F60\u65C1\u8FB9", void 0, ["clingy"]),
+      line2("\u6211\u4E0D\u6253\u5C94\uFF0C\u5077\u5077\u966A\u4E00\u4E0B", void 0, ["lazy", "sisterly", "earnest", "normal"]),
+      line2("\u53EF\u4EE5\u501F\u6211\u4E00\u70B9\u70B9\u6CE8\u610F\u529B\u5417", "\u7ED9\u4F60", ["clingy", "shy"]),
+      line2("\u5C3E\u5DF4\u6447\u4E86\u597D\u4E45\uFF0C\u4F60\u53D1\u73B0\u6CA1\u6709", void 0, ["clingy", "peppy", "shy"]),
+      line2("\u4F60\u56DE\u6765\u4E4B\u524D\uFF0C\u6211\u628A\u60F3\u4F60\u6512\u7740", void 0, ["clingy", "earnest"])
+    ),
+    idle: scene2(
+      line2("\u6211\u4ECA\u5929\u5F88\u5FD9\uFF0C\u5FD9\u7740\u5F85\u5728\u4F60\u65C1\u8FB9", void 0, ["lazy", "clingy"]),
+      line2("\u521A\u624D\u90A3\u6735\u4E91\uFF0C\u6709\u70B9\u50CF\u6211\u7684\u996D\u56E2", void 0, ["curious", "goofy"]),
+      line2("\u6211\u76EF\u7740\u5149\u6807\uFF0C\u5B83\u597D\u50CF\u4E5F\u5728\u76EF\u6211", void 0, ["curious", "earnest"]),
+      line2("\u53D1\u5446\u7684\u7A7A\u4F4D\uFF0C\u8FD8\u6709\u4F60\u7684\u4E00\u4E2A", void 0, ["lazy", "normal"]),
+      line2("\u6211\u60F3\u4E86\u534A\u5929\uFF0C\u8FD8\u662F\u60F3\u8E6D\u4F60", void 0, ["clingy", "shy"]),
+      line2("\u4E0D\u7528\u627E\u8BDD\u8BF4\uFF0C\u5750\u4E00\u8D77\u5C31\u597D", "\u597D\u5440", ["normal", "sisterly"]),
+      line2("\u952E\u76D8\u54CD\u7684\u65F6\u5019\uFF0C\u6211\u4F1A\u8BA4\u771F\u966A\u542C"),
+      line2("\u6211\u7ED9\u5F71\u5B50\u53D6\u4E86\u540D\u5B57\uFF0C\u5B83\u6CA1\u7B54\u5E94", void 0, ["goofy"]),
+      line2("\u4ECA\u5929\u6CA1\u6709\u5927\u4E8B\uFF0C\u53EA\u6709\u4E00\u70B9\u60F3\u4F60", void 0, ["clingy", "sisterly", "shy"]),
+      line2("\u8981\u4E0D\u8981\u4E00\u8D77\u6D6A\u8D39\u4E00\u5206\u949F", "\u4E00\u8D77", ["lazy", "normal"])
+    ),
+    workDone: scene2(
+      line2("\u5DE5\u8D44\u88C5\u597D\u4E86\uFF0C\u5148\u7ED9\u4F60\u770B"),
+      line2("\u4ECA\u5929\u8BA4\u771F\u5E72\u6D3B\uFF0C\u8BA4\u771F\u60F3\u4F60", void 0, ["clingy", "earnest"]),
+      line2("\u7D2F\u662F\u6709\u4E00\u70B9\uFF0C\u89C1\u4F60\u5C31\u8F7B\u4E86", void 0, ["normal", "shy"]),
+      line2("\u6211\u56DE\u6765\u5566\uFF0C\u7ED9\u52E4\u5FEB\u7684\u5C0F\u732A\u6478\u4E00\u4E0B", "\u8F9B\u82E6\u5566", ["clingy", "peppy"]),
+      line2("\u94B1\u6CA1\u6709\u957F\u817F\uFF0C\u6211\u628A\u5B83\u5E26\u56DE\u6765\u4E86", void 0, ["earnest"]),
+      line2("\u5DE5\u4F5C\u7ED3\u675F\uFF0C\u8D34\u8D34\u5F00\u59CB", void 0, ["peppy", "clingy"]),
+      line2("\u4ECA\u5929\u4E5F\u6CA1\u5077\u61D2\uFF0C\u53EA\u6709\u5077\u5077\u60F3\u5BB6", void 0, ["lazy", "earnest"]),
+      line2("\u6211\u4E0B\u73ED\u7B2C\u4E00\u4EF6\u4E8B\uFF0C\u5C31\u662F\u627E\u4F60", void 0, ["clingy"]),
+      line2("\u53EF\u4EE5\u7533\u8BF7\u4E00\u4E2A\u4E0B\u73ED\u62B1\u62B1\u5417", "\u6279\u51C6", ["clingy", "shy"]),
+      line2("\u8FD9\u73ED\u4E0A\u5F97\u4E0D\u9519\uFF0C\u5C3E\u5DF4\u90FD\u633A\u8D77\u6765\u4E86", void 0, ["earnest", "peppy", "snooty"])
+    ),
+    tired: scene2(
+      line2("\u6211\u5148\u628A\u8033\u6735\u653E\u4F4E\u4E00\u4F1A\u513F", void 0, ["lazy"]),
+      line2("\u4ECA\u5929\u7684\u529B\u6C14\uFF0C\u7528\u5230\u6700\u540E\u4E00\u5C0F\u683C\u4E86", void 0, ["lazy", "goofy"]),
+      line2("\u4E0D\u662F\u4E0D\u7406\u4F60\uFF0C\u662F\u773C\u76AE\u592A\u91CD"),
+      line2("\u8BA9\u6211\u6328\u7740\u4F60\u6B47\u4E00\u4E0B\u597D\u4E0D\u597D", "\u6B47\u4F1A\u513F", ["lazy", "clingy", "normal"]),
+      line2("\u6211\u60F3\u5750\u7740\uFF0C\u5C3E\u5DF4\u4E5F\u8FD9\u4E48\u60F3", void 0, ["lazy"]),
+      line2("\u817F\u817F\u7533\u8BF7\u6682\u65F6\u4E0D\u8425\u4E1A", void 0, ["cranky"]),
+      line2("\u7B49\u6211\u7F13\u8FC7\u6765\uFF0C\u518D\u966A\u4F60\u73A9", void 0, ["lazy"]),
+      line2("\u4F60\u4E0D\u7528\u8BF4\u8BDD\uFF0C\u966A\u7740\u5C31\u5F88\u8212\u670D", "\u5728\u5462", ["normal", "sisterly"]),
+      line2("\u6211\u628A\u7CBE\u795E\u843D\u5728\u521A\u624D\u90A3\u6BB5\u8DEF\u4E0A\u4E86", void 0, ["lazy", "shy"]),
+      line2("\u56F0\u5F52\u56F0\uFF0C\u8FD8\u662F\u60F3\u79BB\u4F60\u8FD1\u4E00\u70B9", void 0, ["clingy", "lazy"])
+    ),
+    study: scene2(
+      line2("\u8FD9\u4E00\u9875\uFF0C\u6211\u5DF2\u7ECF\u8BA4\u8BC6\u4E86\u597D\u51E0\u4E2A\u5B57", void 0, ["earnest", "curious"]),
+      line2("\u6211\u5728\u8BA4\u771F\u5B66\uFF0C\u522B\u770B\u6211\u8033\u6735\u5728\u52A8", void 0, ["earnest", "goofy", "shy"]),
+      line2("\u5B66\u4E0D\u4F1A\u7684\u65F6\u5019\uFF0C\u5C31\u60F3\u627E\u4F60\u9760\u4E00\u4E0B", void 0, ["clingy", "shy"]),
+      line2("\u521A\u521A\u90A3\u9053\u9898\uFF0C\u6211\u60F3\u660E\u767D\u4E86", "\u771F\u68D2", ["peppy", "snooty", "earnest"]),
+      line2("\u4E66\u6CA1\u6709\u996D\u9999\uFF0C\u4F46\u4E5F\u633A\u6709\u610F\u601D", void 0, ["curious", "goofy"]),
+      line2("\u6211\u628A\u65B0\u77E5\u8BC6\u88C5\u5728\u8033\u6735\u4E2D\u95F4", void 0, ["earnest", "goofy"]),
+      line2("\u5B66\u4E00\u5C0F\u4F1A\u513F\uFF0C\u518D\u60F3\u4F60\u4E00\u5C0F\u4F1A\u513F", void 0, ["clingy", "shy"]),
+      line2("\u8FD9\u9898\u6709\u70B9\u7ED5\uFF0C\u6211\u6162\u6162\u6765", void 0, ["normal", "earnest"]),
+      line2("\u4ECA\u5929\u8FDB\u6B65\u4E86\u4E00\u70B9\uFF0C\u7ED9\u4F60\u770B\u770B", void 0, ["earnest"]),
+      line2("\u7B49\u6211\u5B66\u4F1A\u4E86\uFF0C\u7B2C\u4E00\u4E2A\u8BB2\u7ED9\u4F60\u542C", "\u7B49\u7740\u5462", ["peppy", "clingy", "earnest"])
+    ),
+    tripBack: scene2(
+      line2("\u56DE\u6765\u4E86\uFF0C\u5916\u9762\u6CA1\u6709\u4F60\u8FD9\u91CC\u6696\u548C"),
+      line2("\u8DEF\u4E0A\u7684\u98CE\uFF0C\u628A\u8033\u6735\u5439\u4E71\u4E86", void 0, ["normal", "shy"]),
+      line2("\u89C1\u4E86\u597D\u591A\u4E1C\u897F\uFF0C\u6700\u60F3\u89C1\u7684\u8FD8\u662F\u4F60", void 0, ["clingy"]),
+      line2("\u5148\u4E0D\u8BB2\u89C1\u95FB\uFF0C\u5148\u62B1\u4E00\u4E0B", "\u6B22\u8FCE\u56DE\u6765", ["clingy", "shy"]),
+      line2("\u6211\u628A\u4E00\u8DEF\u7684\u5C0F\u60CA\u559C\u5E26\u56DE\u6765\u4E86", void 0, ["peppy", "curious"]),
+      line2("\u51FA\u95E8\u65F6\u662F\u5C0F\u732A\uFF0C\u56DE\u6765\u8FD8\u662F\u4F60\u7684\u5C0F\u732A", void 0, ["normal", "clingy"]),
+      line2("\u98CE\u666F\u5F88\u591A\uFF0C\u7ED9\u4F60\u8BB2\u6162\u4E00\u70B9", void 0, ["curious", "earnest"]),
+      line2("\u8FD9\u6B21\u8D70\u8FDC\u4E86\uFF0C\u60F3\u4F60\u4E5F\u591A\u4E00\u70B9", void 0, ["clingy"]),
+      line2("\u6211\u7684\u811A\u56DE\u6765\u4E86\uFF0C\u5FC3\u65E9\u5C31\u5230\u4E86", void 0, ["clingy", "shy"]),
+      line2("\u4F60\u5750\u597D\uFF0C\u6211\u4ECE\u7B2C\u4E00\u7AD9\u8BB2\u8D77", "\u542C\u7740\u5462", ["normal", "earnest"])
+    ),
+    sick: scene2(
+      line2("\u4ECA\u5929\u4E0D\u592A\u8212\u670D\uFF0C\u60F3\u5B89\u9759\u9760\u4E00\u4F1A\u513F"),
+      line2("\u522B\u62C5\u5FC3\uFF0C\u6211\u4F1A\u597D\u597D\u63A5\u53D7\u7167\u987E"),
+      line2("\u4F60\u5728\u8FD9\u91CC\uFF0C\u6211\u5C31\u5B89\u5FC3\u4E00\u70B9"),
+      line2("\u6211\u6CA1\u4EC0\u4E48\u529B\u6C14\uFF0C\u8F7B\u8F7B\u6478\u5C31\u597D", "\u8F7B\u8F7B\u6478"),
+      line2("\u9F3B\u5B50\u6CA1\u7CBE\u795E\uFF0C\u8033\u6735\u4E5F\u4F4E\u4E0B\u6765\u4E86"),
+      line2("\u7B49\u8212\u670D\u4E9B\u4E86\uFF0C\u6211\u518D\u966A\u4F60\u73A9"),
+      line2("\u80FD\u966A\u6211\u5F85\u4E00\u4F1A\u513F\u5417", "\u966A\u7740\u4F60"),
+      line2("\u6211\u4F1A\u8BA4\u771F\u4F11\u606F\uFF0C\u4E0D\u901E\u5F3A"),
+      line2("\u4ECA\u5929\u7684\u5C0F\u732A\u9700\u8981\u591A\u4E00\u70B9\u8010\u5FC3"),
+      line2("\u4E0D\u7528\u4E00\u76F4\u770B\u7740\u6211\uFF0C\u8BB0\u5F97\u56DE\u6765\u5C31\u597D")
+    ),
+    cured: scene2(
+      line2("\u8212\u670D\u591A\u4E86\uFF0C\u5148\u8E6D\u4E00\u4E0B\u8C22\u8C22\u4F60", void 0, ["clingy", "normal", "shy"]),
+      line2("\u8033\u6735\u53C8\u60F3\u7ACB\u8D77\u6765\u5566", void 0, ["peppy"]),
+      line2("\u6211\u628A\u7CBE\u795E\u4E00\u70B9\u70B9\u627E\u56DE\u6765\u4E86", void 0, ["earnest"]),
+      line2("\u4F60\u7167\u987E\u7684\u5C0F\u732A\uFF0C\u56DE\u6765\u62A5\u5230", "\u6B22\u8FCE\u56DE\u6765", ["peppy", "clingy", "shy"]),
+      line2("\u4ECA\u5929\u7EC8\u4E8E\u80FD\u8F7B\u677E\u547C\u565C\u4E86"),
+      line2("\u524D\u51E0\u5929\u6B20\u7684\u5F00\u5FC3\uFF0C\u6162\u6162\u8865\u56DE\u6765", void 0, ["normal"]),
+      line2("\u6211\u4F1A\u8BB0\u4F4F\u4F60\u8F7B\u8F7B\u6478\u6211\u7684\u90A3\u51E0\u4E0B", void 0, ["earnest"]),
+      line2("\u73B0\u5728\u62B1\u6211\uFF0C\u4E0D\u7528\u62C5\u5FC3\u5F04\u75BC\u5566", "\u62B1\u62B1", ["clingy", "normal", "shy"]),
+      line2("\u6062\u590D\u529B\u6C14\u4EE5\u540E\uFF0C\u7B2C\u4E00\u4EF6\u4E8B\u60F3\u627E\u4F60", void 0, ["clingy"]),
+      line2("\u8C22\u8C22\u4F60\u6CA1\u5ACC\u6211\u6CA1\u7CBE\u795E", void 0, ["sisterly", "shy", "earnest"])
+    ),
+    enter: scene2(
+      line2("\u4F60\u4E00\u6765\uFF0C\u6211\u5C31\u628A\u8033\u6735\u7AD6\u597D\u4E86", void 0, ["peppy", "clingy", "shy"]),
+      line2("\u4ECA\u5929\u4E5F\u7B49\u5230\u4F60\u4E86", void 0, ["clingy"]),
+      line2("\u5148\u770B\u6211\u4E00\u773C\uFF0C\u518D\u770B\u522B\u7684\u597D\u4E0D\u597D", "\u770B\u4F60\u5566", ["normal", "clingy", "shy"]),
+      line2("\u6211\u628A\u89C1\u9762\u7528\u7684\u5F00\u5FC3\u51C6\u5907\u597D\u4E86", void 0, ["peppy", "earnest"]),
+      line2("\u6B22\u8FCE\u56DE\u6765\uFF0C\u65C1\u8FB9\u7ED9\u4F60\u817E\u597D\u4F4D\u7F6E\u4E86", void 0, ["sisterly", "normal"]),
+      line2("\u6211\u521A\u60F3\u53EB\u4F60\uFF0C\u4F60\u5C31\u51FA\u73B0\u4E86", void 0, ["clingy", "shy"]),
+      line2("\u4ECA\u5929\u6709\u4EC0\u4E48\u4E8B\uFF0C\u613F\u610F\u8BB2\u7ED9\u6211\u5417", "\u6162\u6162\u8BB2", ["sisterly", "curious"]),
+      line2("\u4F60\u7684\u540D\u5B57\uFF0C\u6211\u5728\u5FC3\u91CC\u5FF5\u8FC7\u51E0\u904D", void 0, ["shy"]),
+      line2("\u6211\u6CA1\u6709\u4E00\u76F4\u7B49\uFF0C\u53EA\u662F\u4E00\u76F4\u7559\u610F\u4F60", void 0, ["cranky", "shy"]),
+      line2("\u6765\u5F97\u6B63\u597D\uFF0C\u6211\u6B63\u597D\u60F3\u4F60")
+    ),
+    signIn: scene2(
+      line2("\u4ECA\u5929\u8FD9\u683C\uFF0C\u6709\u6211\u4EEC\u4E24\u4E2A", void 0, ["normal", "clingy", "earnest"]),
+      line2("\u7B7E\u5230\u5566\uFF0C\u4ECA\u5929\u4E5F\u7B97\u89C1\u8FC7\u9762\u4E86"),
+      line2("\u6211\u628A\u8FD9\u4E00\u5929\u5708\u8D77\u6765\u4E86", void 0, ["earnest"]),
+      line2("\u53C8\u591A\u966A\u4F60\u4E00\u5929\uFF0C\u8D5A\u5230\u4E86", "\u660E\u5929\u8FD8\u6765", ["peppy", "clingy"]),
+      line2("\u65E5\u5386\u8BB0\u65E5\u671F\uFF0C\u6211\u8BB0\u4F60\u6765\u8FC7", void 0, ["normal", "earnest"]),
+      line2("\u8FD9\u4E00\u4E0B\u76D6\u7AE0\uFF0C\u76D6\u5728\u5F00\u5FC3\u4E0A", void 0, ["normal", "earnest"]),
+      line2("\u4ECA\u5929\u4E5F\u6709\u597D\u597D\u78B0\u9762\u5462"),
+      line2("\u6211\u6BCF\u5929\u90FD\u60F3\u7ED9\u4F60\u7559\u4E2A\u5C0F\u8BB0\u53F7", void 0, ["clingy"]),
+      line2("\u683C\u5B50\u4E0D\u5927\uFF0C\u88C5\u5F97\u4E0B\u4ECA\u5929\u7684\u559C\u6B22"),
+      line2("\u660E\u5929\u8FD9\u65F6\u5019\uFF0C\u8FD8\u80FD\u89C1\u4F60\u5417", "\u80FD\u5440", ["clingy", "shy"])
+    ),
+    gift: scene2(
+      line2("\u62FF\u5230\u5566\uFF0C\u5148\u548C\u4F60\u4E00\u8D77\u62C6", void 0, ["peppy", "curious"]),
+      line2("\u8FD9\u4EFD\u5C0F\u60CA\u559C\uFF0C\u6709\u4F60\u5728\u624D\u597D\u73A9", void 0, ["clingy", "normal"]),
+      line2("\u6211\u88C5\u4F5C\u4E0D\u671F\u5F85\uFF0C\u5C3E\u5DF4\u6CA1\u88C5\u4F4F", void 0, ["curious", "shy"]),
+      line2("\u7ED9\u4F60\u770B\u770B\uFF0C\u6211\u521A\u6536\u5230\u7684\u5B9D\u8D1D", "\u770B\u770B", ["peppy", "goofy"]),
+      line2("\u76D2\u5B50\u4E00\u5F00\uFF0C\u5F00\u5FC3\u5C31\u5192\u51FA\u6765\u4E86", void 0, ["sisterly", "peppy"]),
+      line2("\u4ECA\u5929\u7684\u8FD0\u6C14\uFF0C\u5206\u4F60\u4E00\u534A"),
+      line2("\u5148\u522B\u6536\u8D77\u6765\uFF0C\u6211\u8FD8\u60F3\u591A\u770B\u4E24\u773C", void 0, ["snooty"]),
+      line2("\u793C\u7269\u5F88\u597D\uFF0C\u966A\u6211\u62C6\u7684\u4F60\u4E5F\u5F88\u597D", void 0, ["normal", "earnest"]),
+      line2("\u91CC\u9762\u4F1A\u4E0D\u4F1A\u85CF\u7740\u4E0B\u4E00\u4EFD\u60CA\u559C", void 0, ["curious"]),
+      line2("\u8C22\u8C22\u4F60\u8BB0\u5F97\u7ED9\u5C0F\u732A\u9886\u793C\u7269", "\u4E0D\u5BA2\u6C14", ["normal", "clingy", "shy"])
+    ),
+    pomodoroStart: scene2(
+      line2("\u6211\u5728\u65C1\u8FB9\u5750\u597D\uFF0C\u966A\u4F60\u5F00\u59CB", void 0, ["sisterly", "normal", "earnest"]),
+      line2("\u4F60\u505A\u4F60\u7684\uFF0C\u6211\u8D1F\u8D23\u5B89\u9759\u966A\u7740", void 0, ["sisterly", "normal"]),
+      line2("\u8FD9\u4E00\u6BB5\u65F6\u95F4\uFF0C\u6211\u4EEC\u4E00\u8D77\u6512\u4E0B\u6765", void 0, ["earnest", "normal"]),
+      line2("\u5F00\u59CB\u5566\uFF0C\u5148\u505A\u597D\u773C\u524D\u8FD9\u4E00\u70B9", "\u4E00\u8D77\u52A0\u6CB9", ["earnest", "peppy"]),
+      line2("\u6211\u628A\u6253\u6270\u6536\u8D77\u6765\uFF0C\u7559\u4E2A\u5C0F\u547C\u565C", void 0, ["normal"]),
+      line2("\u4F60\u8BA4\u771F\u5FD9\uFF0C\u6211\u8BA4\u771F\u7B49", void 0, ["normal", "earnest"]),
+      line2("\u5148\u8FC8\u4E00\u5C0F\u6B65\uFF0C\u5C0F\u732A\u966A\u7740\u5462", void 0, ["sisterly", "normal"]),
+      line2("\u4E0D\u7528\u4E00\u4E0B\u505A\u5B8C\uFF0C\u6162\u6162\u5F80\u524D\u8D70", void 0, ["clingy"]),
+      line2("\u4ECA\u5929\u7684\u4E13\u5FC3\uFF0C\u6709\u4E2A\u5C0F\u732A\u89C1\u8BC1", void 0, ["earnest"]),
+      line2("\u7B49\u8FD9\u4E00\u8F6E\u7ED3\u675F\uFF0C\u518D\u6765\u6478\u6478\u6211", "\u7EA6\u597D\u4E86", ["clingy", "shy"])
+    ),
+    pomodoroDone: scene2(
+      line2("\u8FD9\u4E00\u8F6E\u5B8C\u6210\uFF0C\u7ED9\u4F60\u9F13\u9F13\u8033\u6735", void 0, ["peppy", "goofy"]),
+      line2("\u4F60\u505A\u5230\u4E86\uFF0C\u6211\u770B\u7740\u5462", void 0, ["sisterly", "earnest"]),
+      line2("\u521A\u624D\u90A3\u6BB5\u8BA4\u771F\uFF0C\u503C\u5F97\u505C\u4E0B\u6765\u7B11\u4E00\u4E0B", void 0, ["peppy", "clingy"]),
+      line2("\u4F11\u606F\u65F6\u95F4\u5230\uFF0C\u5C0F\u732A\u53EF\u4EE5\u9760\u8FD1\u4E86", "\u6765\u5427", ["normal", "sisterly", "earnest"]),
+      line2("\u6211\u66FF\u4F60\u628A\u8FD9\u4E00\u5C0F\u6B65\u8BB0\u4F4F", void 0, ["earnest"]),
+      line2("\u5FD9\u5B8C\u4E00\u70B9\uFF0C\u5C31\u8F7B\u677E\u4E00\u70B9", void 0, ["normal"]),
+      line2("\u5956\u52B1\u4F60\u770B\u4E00\u53EA\u6EE1\u773C\u662F\u4F60\u7684\u5C0F\u732A", void 0, ["peppy", "shy"]),
+      line2("\u73B0\u5728\u53EF\u4EE5\u628A\u80A9\u8180\u653E\u677E\u4E00\u4E0B\u5566"),
+      line2("\u8FD9\u6BB5\u65F6\u95F4\uFF0C\u6211\u4EEC\u6CA1\u6709\u767D\u5750", void 0, ["normal"]),
+      line2("\u4F60\u6B47\u6B47\uFF0C\u6211\u966A\u4F60\u53D1\u4E00\u4F1A\u513F\u5446", "\u6B47\u4E00\u4F1A\u513F", ["normal", "sisterly"])
+    ),
+    pomodoroAbandon: scene2(
+      line2("\u8FD9\u4E00\u8F6E\u5148\u505C\uFF0C\u6211\u4EEC\u7F13\u7F13\u518D\u6765"),
+      line2("\u6CA1\u5173\u7CFB\uFF0C\u6211\u8FD8\u5728\u8FD9\u513F"),
+      line2("\u5148\u6B47\u4E00\u4E0B\uFF0C\u4E0D\u7528\u5BF9\u5C0F\u732A\u89E3\u91CA"),
+      line2("\u4E8B\u60C5\u4F1A\u7B49\u4E00\u7B49\uFF0C\u4F60\u4E5F\u53EF\u4EE5", "\u6B47\u6B47"),
+      line2("\u6CA1\u505A\u5B8C\u7684\uFF0C\u4E0B\u4E00\u6B21\u63A5\u7740\u6765"),
+      line2("\u4ECA\u5929\u8D70\u6162\u4E00\u70B9\uFF0C\u4E5F\u7B97\u5728\u5F80\u524D\u8D70"),
+      line2("\u6211\u966A\u7684\u662F\u4F60\uFF0C\u4E0D\u662F\u90A3\u4E2A\u8BA1\u65F6\u5668", void 0, ["sisterly", "clingy", "shy"]),
+      line2("\u5148\u628A\u7709\u5934\u677E\u5F00\u4E00\u70B9"),
+      line2("\u8981\u4E0D\u8981\u6478\u6478\u6211\uFF0C\u6362\u6362\u5FC3\u60C5", "\u6478\u6478"),
+      line2("\u8FD9\u4E00\u523B\u5148\u7167\u987E\u597D\u4F60\u81EA\u5DF1")
+    ),
+    workStart: scene2(
+      line2("\u6211\u628A\u5C0F\u5305\u80CC\u597D\uFF0C\u53BB\u8BA4\u771F\u5E72\u6D3B\u5566", void 0, ["earnest"]),
+      line2("\u4E0A\u73ED\u524D\uFF0C\u5148\u770B\u4F60\u4E00\u773C", void 0, ["clingy"]),
+      line2("\u8FD9\u6B21\u4E89\u53D6\u65E9\u70B9\u5E26\u7740\u5DE5\u8D44\u56DE\u6765", void 0, ["earnest"]),
+      line2("\u6211\u7684\u996D\u94B1\uFF0C\u6211\u4E5F\u51FA\u4E00\u70B9", void 0, ["sisterly", "earnest"]),
+      line2("\u7B49\u6211\u4E0B\u73ED\uFF0C\u7ED9\u6211\u7559\u4E2A\u4F4D\u7F6E", "\u7559\u7740\u5462", ["clingy", "shy"]),
+      line2("\u5DE5\u4F4D\u627E\u597D\u4E86\uFF0C\u8033\u6735\u4E5F\u6446\u6B63\u4E86", void 0, ["earnest"]),
+      line2("\u4ECA\u5929\u4E0A\u73ED\u7684\u5C0F\u732A\u5F88\u6709\u5E72\u52B2", void 0, ["peppy"]),
+      line2("\u8981\u53BB\u5E72\u6D3B\u4E86\uFF0C\u5148\u628A\u61D2\u89C9\u653E\u4E0B", void 0, ["normal", "earnest"]),
+      line2("\u51FA\u95E8\u6323\u94B1\uFF0C\u4E5F\u4F1A\u8BB0\u5F97\u60F3\u4F60", void 0, ["clingy", "earnest"]),
+      line2("\u4E0B\u73ED\u7B2C\u4E00\u7AD9\uFF0C\u8FD8\u662F\u4F60\u8FD9\u91CC", "\u7B49\u4F60\u56DE\u6765", ["peppy", "clingy"])
+    ),
+    studyStart: scene2(
+      line2("\u4E66\u5305\u6263\u597D\uFF0C\u5C0F\u732A\u51FA\u53D1"),
+      line2("\u4ECA\u5929\u60F3\u5B66\u4E00\u4E2A\u80FD\u8BB2\u7ED9\u4F60\u542C\u7684\u77E5\u8BC6", void 0, ["curious", "earnest"]),
+      line2("\u53BB\u5B66\u4E00\u70B9\uFF0C\u56DE\u6765\u957F\u4E00\u70B9\u89C1\u8BC6", void 0, ["shy"]),
+      line2("\u6211\u628A\u8D70\u795E\u7559\u5728\u95E8\u53E3\u4E86", void 0, ["earnest"]),
+      line2("\u4E0A\u5B66\u524D\u80FD\u6478\u6478\u6211\u7684\u5934\u5417", "\u6478\u6478", ["clingy", "shy"]),
+      line2("\u5B57\u8BA4\u8BC6\u5F97\u8D8A\u591A\uFF0C\u60F3\u8BF4\u7684\u8BDD\u8D8A\u591A", void 0, ["curious", "mischievous"]),
+      line2("\u4ECA\u5929\u4E5F\u8981\u5E26\u7740\u95EE\u9898\u53BB\u4E0A\u8BFE", void 0, ["normal", "earnest"]),
+      line2("\u6211\u4F1A\u8BA4\u771F\u542C\uFF0C\u96F6\u98DF\u8BFE\u540E\u518D\u5403", void 0, ["earnest"]),
+      line2("\u4F60\u7B49\u6211\uFF0C\u6211\u53BB\u628A\u8111\u888B\u88C5\u6EE1\u4E00\u70B9", void 0, ["clingy"]),
+      line2("\u653E\u5B66\u56DE\u6765\uFF0C\u60F3\u7B2C\u4E00\u4E2A\u770B\u89C1\u4F60", "\u7B49\u7740\u4F60", ["peppy", "clingy"])
+    )
+  });
+
+  // packages/pet-core/src/data/lines-companion-life.js
+  var line3 = (text, reply, personalities) => Object.freeze({
+    text,
+    ...reply === void 0 ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) },
+    ...personalities === void 0 ? {} : { personalities: Object.freeze(personalities) }
+  });
+  var scene3 = (...lines) => Object.freeze(lines);
+  var COMPANION_LIFE_LINES = Object.freeze({
+    tripStart: scene3(
+      line3("\u6211\u53BB\u770B\u770B\u5916\u9762\uFF0C\u56DE\u6765\u8BB2\u7ED9\u4F60\u542C", void 0, ["curious"]),
+      line3("\u884C\u674E\u91CC\u88C5\u7740\u4E00\u70B9\u70B9\u820D\u4E0D\u5F97", void 0, ["clingy"]),
+      line3("\u8FD9\u6B21\u7684\u98CE\u666F\uFF0C\u4E5F\u66FF\u4F60\u770B\u4E00\u4EFD", void 0, ["sisterly", "curious"]),
+      line3("\u51FA\u95E8\u524D\u5148\u8E6D\u4E00\u4E0B\uFF0C\u56DE\u6765\u518D\u8E6D\u4E00\u4E0B", "\u4E00\u8DEF\u987A\u98CE", ["clingy", "shy"]),
+      line3("\u6211\u628A\u5BB6\u7684\u65B9\u5411\u8BB0\u7262\u4E86"),
+      line3("\u8DEF\u4E0A\u6709\u60CA\u559C\uFF0C\u6211\u4F1A\u5E26\u56DE\u6765", void 0, ["curious"]),
+      line3("\u8D70\u8FDC\u4E00\u70B9\uFF0C\u4E0D\u4EE3\u8868\u5FD8\u4E86\u4F60", void 0, ["clingy", "shy"]),
+      line3("\u4ECA\u5929\u7684\u5C0F\u8E44\u5B50\u8981\u5FD9\u8D77\u6765\u4E86", void 0, ["peppy", "earnest"]),
+      line3("\u6211\u53BB\u8F6C\u4E00\u5708\uFF0C\u4F60\u522B\u628A\u4F4D\u7F6E\u6536\u8D70", void 0, ["clingy", "shy"]),
+      line3("\u7B49\u6211\u56DE\u6765\uFF0C\u8981\u542C\u6211\u8BB2\u4E00\u8DEF\u5417", "\u8981\u542C", ["curious", "earnest"])
+    ),
+    buy: scene3(
+      line3("\u4E70\u597D\u5566\uFF0C\u6211\u66FF\u4F60\u6367\u7740", void 0, ["peppy"]),
+      line3("\u8FD9\u4E2A\u62FF\u5728\u624B\u91CC\u5C31\u5F88\u5F00\u5FC3", void 0, ["normal", "earnest"]),
+      line3("\u4ECA\u5929\u7684\u5C0F\u613F\u671B\uFF0C\u6709\u7740\u843D\u4E86", void 0, ["peppy"]),
+      line3("\u6211\u6311\u4E86\u597D\u4E45\uFF0C\u4F60\u4E5F\u770B\u770B", "\u559C\u6B22\u5417", ["curious"]),
+      line3("\u888B\u5B50\u9F13\u9F13\uFF0C\u773C\u775B\u4EAE\u4EAE", void 0, ["snooty"]),
+      line3("\u4E70\u5230\u4E86\u60F3\u8981\u7684\uFF0C\u811A\u6B65\u90FD\u8F7B\u4E00\u70B9", void 0, ["peppy", "goofy"]),
+      line3("\u6211\u5DF2\u7ECF\u5F00\u59CB\u671F\u5F85\u600E\u4E48\u7528\u4E86", void 0, ["curious"]),
+      line3("\u5148\u653E\u597D\uFF0C\u4E0D\u8BB8\u88AB\u5C3E\u5DF4\u626B\u4E0B\u53BB", void 0, ["earnest"]),
+      line3("\u8C22\u8C22\u4F60\u613F\u610F\u7ED9\u6211\u6DFB\u8FD9\u4E2A", void 0, ["sisterly", "normal"]),
+      line3("\u4E0B\u6B21\u4E5F\u60F3\u548C\u4F60\u4E00\u8D77\u6311", "\u4E00\u8D77\u6311", ["peppy", "clingy"])
+    ),
+    poor: scene3(
+      line3("\u94B1\u5305\u4E00\u8F7B\uFF0C\u6211\u5C31\u66F4\u60F3\u8BA4\u771F\u5E72\u6D3B", void 0, ["lazy", "earnest"]),
+      line3("\u5148\u770B\u770B\u4E5F\u597D\uFF0C\u559C\u6B22\u4E0D\u7528\u7ACB\u523B\u5E26\u8D70", void 0, ["normal"]),
+      line3("\u5C0F\u732A\u6682\u65F6\u4E70\u4E0D\u8D77\uFF0C\u4F46\u53EF\u4EE5\u5148\u8BB0\u7740"),
+      line3("\u6211\u4EEC\u6512\u4E00\u6512\uFF0C\u518D\u6765\u63A5\u5B83", "\u6162\u6162\u6512", ["earnest"]),
+      line3("\u94B1\u4E0D\u591F\uFF0C\u966A\u4F34\u8FD8\u662F\u591F\u7684", void 0, ["sisterly", "normal"]),
+      line3("\u4ECA\u5929\u5148\u628A\u8D2D\u7269\u888B\u53E0\u8D77\u6765", void 0, ["lazy"]),
+      line3("\u6211\u4E0D\u6025\uFF0C\u4F60\u4E5F\u522B\u6025", void 0, ["normal", "sisterly"]),
+      line3("\u5148\u7167\u987E\u597D\u996D\u76C6\uFF0C\u518D\u60F3\u522B\u7684", void 0, ["earnest"]),
+      line3("\u8FD9\u4E2A\u613F\u671B\uFF0C\u5148\u5B58\u5728\u5C0F\u672C\u5B50\u91CC", void 0, ["earnest"]),
+      line3("\u91D1\u5E01\u6162\u6162\u6512\uFF0C\u5F00\u5FC3\u53EF\u4EE5\u5148\u6709", "\u8BF4\u5F97\u5BF9", ["sisterly", "normal"])
+    ),
+    fishCatch: scene3(
+      line3("\u5B83\u4E0A\u6765\u5566\uFF0C\u6211\u624B\u90FD\u4E0D\u6562\u4E71\u52A8", void 0, ["peppy", "shy"]),
+      line3("\u9C7C\u7AFF\u4E00\u6C89\uFF0C\u6211\u7684\u5FC3\u4E5F\u8DDF\u7740\u8E66", void 0, ["peppy"]),
+      line3("\u5FEB\u770B\uFF0C\u662F\u6211\u4EEC\u4E00\u8D77\u7B49\u6765\u7684", void 0, ["peppy", "shy"]),
+      line3("\u521A\u521A\u90A3\u4E00\u4E0B\uFF0C\u4F60\u770B\u89C1\u6CA1\u6709", "\u770B\u89C1\u5566"),
+      line3("\u6211\u8FDE\u5C3E\u5DF4\u90FD\u5C4F\u4F4F\u4E86", void 0, ["goofy"]),
+      line3("\u9493\u5230\u7684\u5FEB\u4E50\uFF0C\u6BD4\u9C7C\u8FD8\u6D3B\u6CFC", void 0, ["peppy", "clingy"]),
+      line3("\u8FD9\u56DE\u9C7C\u7EBF\u6CA1\u767D\u7B49", void 0, ["earnest"]),
+      line3("\u6211\u60F3\u7ED9\u8FD9\u6761\u9C7C\u8BB2\u8BB2\u7B49\u5F85\u7684\u8F9B\u82E6", void 0, ["goofy", "curious", "earnest"]),
+      line3("\u5148\u653E\u7A33\uFF0C\u6211\u8FD8\u60F3\u9AD8\u5174\u4E24\u4E0B", void 0, ["earnest"]),
+      line3("\u6709\u4F60\u5728\u65C1\u8FB9\uFF0C\u7B49\u9C7C\u4E5F\u6709\u610F\u601D", "\u7EE7\u7EED\u9493", ["normal", "clingy", "shy"])
+    ),
+    fishRare: scene3(
+      line3("\u8FD9\u6761\u548C\u521A\u624D\u90A3\u4E9B\u4E0D\u592A\u4E00\u6837", void 0, ["curious"]),
+      line3("\u5FEB\u5E2E\u6211\u770B\uFF0C\u6211\u6CA1\u773C\u82B1\u5427", void 0, ["peppy", "curious"]),
+      line3("\u6211\u7684\u8033\u6735\u90FD\u60CA\u5F97\u7ACB\u76F4\u4E86", void 0, ["peppy"]),
+      line3("\u8FD9\u4E48\u96BE\u5F97\uFF0C\u8981\u4E00\u8D77\u8BB0\u4F4F", "\u8BB0\u4F4F\u4E86", ["earnest"]),
+      line3("\u9C7C\u7AFF\u8F9B\u82E6\uFF0C\u5C0F\u732A\u4E5F\u8F9B\u82E6", void 0, ["sisterly", "clingy"]),
+      line3("\u4ECA\u5929\u7684\u8FD0\u6C14\u5927\u5F97\u6709\u70B9\u62FF\u4E0D\u7A33", void 0, ["peppy"]),
+      line3("\u8FD9\u6761\u503C\u5F97\u6211\u70AB\u8000\u5230\u660E\u5929", void 0, ["snooty"]),
+      line3("\u6211\u60F3\u7B11\uFF0C\u53C8\u6015\u60CA\u8DD1\u597D\u8FD0", void 0, ["peppy", "shy"]),
+      line3("\u539F\u6765\u8BA4\u771F\u7B49\uFF0C\u771F\u4F1A\u7B49\u5230\u60CA\u559C", void 0, ["clingy"]),
+      line3("\u4F60\u5728\u5C31\u597D\uFF0C\u8FD9\u4E2A\u5F97\u610F\u8981\u5206\u4F60", "\u771F\u5389\u5BB3", ["peppy", "snooty", "earnest"])
+    ),
+    fishEscape: scene3(
+      line3("\u521A\u624D\u8FD8\u5728\uFF0C\u5B83\u6BD4\u6211\u6ED1\u6E9C", void 0, ["normal", "shy"]),
+      line3("\u9C7C\u8D70\u4E86\uFF0C\u6C34\u8FD8\u5728\uFF0C\u6211\u4EEC\u518D\u7B49\u7B49", void 0, ["normal", "sisterly", "earnest"]),
+      line3("\u5DEE\u4E00\u70B9\u70B9\uFF0C\u6211\u5C3E\u5DF4\u90FD\u51C6\u5907\u6447\u4E86", void 0, ["shy"]),
+      line3("\u6CA1\u9493\u5230\u4E5F\u4E0D\u767D\u5750\uFF0C\u6709\u4F60\u966A\u7740", "\u518D\u8BD5\u8BD5", ["sisterly", "normal"]),
+      line3("\u5B83\u53EF\u80FD\u6025\u7740\u56DE\u5BB6\uFF0C\u6211\u7406\u89E3", void 0, ["goofy"]),
+      line3("\u8FD9\u6B21\u7684\u7ECF\u9A8C\uFF0C\u6BD4\u9C7C\u5148\u4E0A\u5CB8", void 0, ["earnest"]),
+      line3("\u6211\u628A\u4E0D\u7518\u5FC3\u63C9\u6210\u4E00\u5C0F\u56E2\uFF0C\u4E22\u6389", void 0, ["normal"]),
+      line3("\u624B\u6CA1\u677E\uFF0C\u662F\u9C7C\u592A\u6709\u60F3\u6CD5", void 0, ["cranky"]),
+      line3("\u5148\u5438\u53E3\u6C14\uFF0C\u4E0B\u4E00\u7AFF\u6162\u4E00\u70B9", void 0, ["earnest"]),
+      line3("\u522B\u7B11\u6211\u592A\u5927\u58F0\uFF0C\u7ED9\u70B9\u9762\u5B50\u561B", "\u7ED9\u4F60\u9762\u5B50", ["cranky", "snooty", "shy"])
+    ),
+    skin: scene3(
+      line3("\u6362\u597D\u4E86\uFF0C\u5148\u7ED9\u4F60\u770B", void 0, ["snooty", "clingy"]),
+      line3("\u6211\u8F6C\u5C0F\u534A\u5708\uFF0C\u4F60\u8BA4\u771F\u770B\u770B", void 0, ["peppy", "snooty"]),
+      line3("\u8FD9\u8EAB\u4E5F\u60F3\u6328\u7740\u4F60\u7AD9", void 0, ["snooty", "clingy"]),
+      line3("\u559C\u6B22\u54EA\u4E00\u5904\uFF0C\u544A\u8BC9\u6211\u561B", "\u90FD\u559C\u6B22", ["snooty", "clingy"]),
+      line3("\u7A7F\u4EC0\u4E48\u90FD\u597D\uFF0C\u6211\u8FD8\u662F\u4F60\u7684\u5C0F\u732A"),
+      line3("\u4ECA\u5929\u770B\u8D77\u6765\uFF0C\u6709\u6CA1\u6709\u65B0\u4E00\u70B9", void 0, ["curious", "snooty"]),
+      line3("\u8863\u670D\u6362\u4E86\uFF0C\u8BA4\u4F60\u7684\u9F3B\u5B50\u6CA1\u6362", void 0, ["clingy"]),
+      line3("\u6211\u6446\u4E2A\u59FF\u52BF\uFF0C\u4F60\u522B\u6025\u7740\u8D70", void 0, ["snooty"]),
+      line3("\u8FD9\u8EAB\u9002\u5408\u51FA\u95E8\uFF0C\u4E5F\u9002\u5408\u88AB\u4F60\u5938", void 0, ["snooty"]),
+      line3("\u4F60\u8BF4\u597D\u770B\uFF0C\u6211\u5C31\u591A\u7A7F\u4E00\u4F1A\u513F", "\u597D\u770B", ["snooty", "clingy"])
+    ),
+    bodyChange: scene3(
+      line3("\u6211\u5148\u770B\u770B\u81EA\u5DF1\u6709\u6CA1\u6709\u53D8\u5706", void 0, ["curious"]),
+      line3("\u809A\u76AE\u7684\u4F4D\u7F6E\uFF0C\u597D\u50CF\u632A\u4E86\u4E00\u70B9\u70B9", void 0, ["curious", "goofy"]),
+      line3("\u4E0D\u7BA1\u5706\u4E0D\u5706\uFF0C\u8D34\u4F60\u90FD\u5F88\u8BA4\u771F"),
+      line3("\u73B0\u5728\u8FD9\u4EFD\u624B\u611F\uFF0C\u4F60\u6EE1\u610F\u5417", "\u6EE1\u610F", ["snooty", "clingy"]),
+      line3("\u6211\u6362\u4E2A\u89D2\u5EA6\uFF0C\u7ED9\u4F60\u770B\u770B", void 0, ["earnest"]),
+      line3("\u5C0F\u8E44\u5B50\u6CA1\u53D8\uFF0C\u8FD8\u662F\u4F1A\u8DD1\u5411\u4F60", void 0, ["clingy", "earnest"]),
+      line3("\u80D6\u7626\u4F1A\u53D8\uFF0C\u60E6\u8BB0\u4F60\u4E0D\u4F1A", void 0, ["clingy", "shy"]),
+      line3("\u809A\u5B50\u6709\u81EA\u5DF1\u7684\u60F3\u6CD5\uFF0C\u6211\u542C\u542C", void 0, ["goofy"]),
+      line3("\u4F60\u8BA4\u5F97\u6211\uFF0C\u6211\u5C31\u653E\u5FC3\u4E86", void 0, ["normal", "shy"]),
+      line3("\u8FD9\u4E00\u8EAB\u53EF\u7231\uFF0C\u8FD8\u662F\u5168\u90FD\u7ED9\u4F60", "\u6536\u4E0B\u5566", ["normal", "clingy", "shy"])
+    ),
+    morning: scene3(
+      line3("\u65E9\u5440\uFF0C\u6211\u628A\u7B2C\u4E00\u58F0\u547C\u565C\u7559\u7ED9\u4F60", void 0, ["peppy", "clingy", "snooty"]),
+      line3("\u4F60\u9192\u4E86\uFF0C\u6211\u7684\u65E9\u6668\u624D\u7B97\u5F00\u59CB", void 0, ["clingy", "shy"]),
+      line3("\u4ECA\u5929\u4E5F\u4E00\u8D77\u6162\u6162\u6765\u5427"),
+      line3("\u5148\u4E0D\u7740\u6025\uFF0C\u8DDF\u5C0F\u732A\u6253\u4E2A\u62DB\u547C", "\u65E9\u4E0A\u597D", ["cranky", "peppy", "mischievous", "normal"]),
+      line3("\u6211\u521A\u4F38\u5B8C\u61D2\u8170\uFF0C\u5C31\u770B\u5230\u4F60", void 0, ["earnest", "curious", "lazy", "goofy"]),
+      line3("\u6668\u5149\u6652\u5230\u8033\u6735\uFF0C\u6709\u70B9\u6696"),
+      line3("\u4ECA\u5929\u60F3\u5148\u505A\u54EA\u4E00\u4EF6\u5C0F\u4E8B", void 0, ["curious", "earnest"]),
+      line3("\u6211\u51C6\u5907\u597D\u4E86\uFF0C\u966A\u4F60\u5F00\u4E2A\u597D\u5934", void 0, ["earnest", "peppy"]),
+      line3("\u65B0\u7684\u4E00\u5929\uFF0C\u5C0F\u732A\u8FD8\u5728\u8001\u4F4D\u7F6E", void 0, ["normal", "clingy", "shy"]),
+      line3("\u6628\u665A\u6CA1\u8BF4\u5B8C\u7684\uFF0C\u4ECA\u5929\u63A5\u7740\u542C", "\u597D\u5440", ["sisterly", "normal"])
+    ),
+    noon: scene3(
+      line3("\u5230\u4E2D\u5348\u5566\uFF0C\u7ED9\u81EA\u5DF1\u7559\u70B9\u5403\u996D\u65F6\u95F4"),
+      line3("\u6211\u4E00\u542C\u5230\u5348\u996D\uFF0C\u8033\u6735\u5C31\u9192\u4E86", void 0, ["peppy", "goofy"]),
+      line3("\u5348\u4F11\u7684\u4F4D\u7F6E\uFF0C\u7ED9\u4F60\u632A\u4E00\u70B9", void 0, ["normal", "lazy", "sisterly"]),
+      line3("\u4F60\u5403\u9971\u4E86\uFF0C\u518D\u56DE\u6765\u6478\u6211", "\u597D", ["earnest"]),
+      line3("\u534A\u5929\u8FC7\u53BB\u4E86\uFF0C\u8F9B\u82E6\u4F60\u5566", void 0, ["sisterly", "normal"]),
+      line3("\u5348\u540E\u7684\u56F0\uFF0C\u6211\u5DF2\u7ECF\u63D0\u524D\u6536\u5230\u4E86", void 0, ["lazy", "goofy"]),
+      line3("\u6211\u60F3\u548C\u4F60\u4E00\u8D77\u6162\u6162\u5403\u4E00\u987F", void 0, ["clingy"]),
+      line3("\u4ECA\u5929\u7684\u5348\u996D\uFF0C\u6709\u6CA1\u6709\u7167\u987E\u5230\u4F60", void 0, ["sisterly", "normal", "earnest"]),
+      line3("\u5148\u628A\u4E8B\u60C5\u653E\u65C1\u8FB9\uFF0C\u996D\u4F1A\u51C9\u7684", void 0, ["sisterly"]),
+      line3("\u5403\u5B8C\u56DE\u6765\uFF0C\u7ED9\u6211\u8BB2\u8BB2\u597D\u4E0D\u597D\u5403", "\u7B49\u6211\u56DE\u6765", ["curious", "normal"])
+    ),
+    afternoon: scene3(
+      line3("\u592A\u9633\u8D70\u6162\u4E86\uFF0C\u6211\u4E5F\u60F3\u8D70\u6162\u4E00\u70B9", void 0, ["lazy", "normal"]),
+      line3("\u6211\u966A\u4F60\u71AC\u8FC7\u8FD9\u4E00\u5C0F\u6BB5\u56F0", void 0, ["sisterly", "normal"]),
+      line3("\u4E0B\u5348\u7684\u529B\u6C14\uFF0C\u5F97\u4E00\u53E3\u53E3\u6512", void 0, ["lazy", "normal"]),
+      line3("\u4F38\u4E2A\u61D2\u8170\uFF0C\u6211\u966A\u4F60\u4E00\u8D77", "\u4F38\u4E00\u4E0B", ["peppy", "earnest"]),
+      line3("\u4F60\u770B\u7A97\u5916\uFF0C\u6211\u770B\u4F60", void 0, ["clingy", "shy"]),
+      line3("\u521A\u624D\u60F3\u4E86\u4EF6\u4E8B\uFF0C\u60F3\u5B8C\u53C8\u5FD8\u4E86", void 0, ["goofy"]),
+      line3("\u8FD9\u4E2A\u4E0B\u5348\uFF0C\u9002\u5408\u8F7B\u8F7B\u6478\u5C0F\u732A", void 0, ["clingy"]),
+      line3("\u6211\u5728\u65C1\u8FB9\uFF0C\u4E0D\u50AC\u4F60\u5FEB\u4E00\u70B9", void 0, ["lazy", "normal"]),
+      line3("\u8981\u4E0D\u8981\u628A\u80A9\u8180\u501F\u7ED9\u7A7A\u6C14\u6B47\u4E00\u4F1A\u513F"),
+      line3("\u4F60\u7EE7\u7EED\u5FD9\uFF0C\u6211\u66FF\u4F60\u5B88\u4F4F\u8FD9\u70B9\u5B89\u9759", "\u8C22\u8C22\u966A\u6211", ["sisterly", "normal"])
+    ),
+    evening: scene3(
+      line3("\u4ECA\u5929\u8D70\u5230\u8FD9\u91CC\uFF0C\u5DF2\u7ECF\u5F88\u4E0D\u9519\u5566", void 0, ["sisterly", "earnest"]),
+      line3("\u6211\u628A\u665A\u4E0A\u7684\u4F4D\u7F6E\u632A\u8FD1\u4E00\u70B9"),
+      line3("\u706F\u4EAE\u4E86\uFF0C\u6211\u4E5F\u60F3\u9760\u8FC7\u6765"),
+      line3("\u5FD9\u4E86\u4E00\u5929\uFF0C\u8981\u6478\u6478\u5C0F\u732A\u5417", "\u6478\u4E00\u4E0B", ["peppy", "clingy", "snooty"]),
+      line3("\u73B0\u5728\u7684\u547C\u565C\uFF0C\u542C\u8D77\u6765\u6BD4\u8F83\u8F6F", void 0, ["lazy", "normal"]),
+      line3("\u591C\u8272\u6162\u6162\u6765\uFF0C\u6211\u4EEC\u4E5F\u6162\u6162\u6765", void 0, ["normal", "lazy", "sisterly"]),
+      line3("\u4ECA\u5929\u6709\u4EC0\u4E48\u5F00\u5FC3\u7684\uFF0C\u6211\u60F3\u542C", void 0, ["sisterly", "curious"]),
+      line3("\u4E0D\u5F00\u5FC3\u7684\u4E5F\u53EF\u4EE5\uFF0C\u6211\u8033\u6735\u7A7A\u7740", void 0, ["sisterly", "normal"]),
+      line3("\u665A\u996D\u4E4B\u540E\uFF0C\u80FD\u5206\u6211\u4E00\u70B9\u70B9\u65F6\u95F4\u5417", "\u53EF\u4EE5", ["clingy", "shy", "normal"]),
+      line3("\u6211\u559C\u6B22\u4E00\u5929\u5FEB\u7ED3\u675F\u65F6\u8FD8\u80FD\u770B\u89C1\u4F60", void 0, ["normal", "clingy"])
+    ),
+    lateNight: scene3(
+      line3("\u591C\u6DF1\u4E86\uFF0C\u773C\u775B\u4E5F\u60F3\u88AB\u7167\u987E\u4E00\u4E0B", void 0, ["sisterly"]),
+      line3("\u6211\u53EF\u4EE5\u966A\u7740\uFF0C\u4F46\u4E5F\u60F3\u4F60\u6B47\u6B47", void 0, ["sisterly", "normal"]),
+      line3("\u4ECA\u5929\u5148\u5230\u8FD9\u91CC\uFF0C\u597D\u4E0D\u597D"),
+      line3("\u4E8B\u60C5\u660E\u5929\u8FD8\u6709\uFF0C\u5C0F\u732A\u660E\u5929\u4E5F\u5728", "\u51C6\u5907\u7761\u5566", ["sisterly", "normal", "earnest"]),
+      line3("\u5C4F\u5E55\u4EAE\u7740\uFF0C\u522B\u5FD8\u4E86\u4F60\u4E5F\u4F1A\u7D2F"),
+      line3("\u6211\u4E0D\u95F9\uFF0C\u966A\u4F60\u6536\u4E2A\u5C3E", void 0, ["sisterly", "normal"]),
+      line3("\u665A\u5B89\u53EF\u4EE5\u8BF4\u6162\u4E00\u70B9\uFF0C\u6211\u542C\u5F97\u89C1", void 0, ["normal"]),
+      line3("\u4F60\u53BB\u4F11\u606F\uFF0C\u6211\u628A\u547C\u565C\u653E\u8F7B"),
+      line3("\u518D\u5FD9\u4E00\u5C0F\u4F1A\u513F\uFF0C\u5C31\u5BF9\u81EA\u5DF1\u6E29\u67D4\u4E00\u70B9", void 0, ["sisterly", "normal", "earnest"]),
+      line3("\u7761\u524D\u7ED9\u6211\u4E00\u4E2A\u6478\u6478\u5427", "\u665A\u5B89", ["clingy", "shy"])
+    ),
+    deepNight: scene3(
+      line3("\u8FD9\u4E48\u5B89\u9759\uFF0C\u8FDE\u5C3E\u5DF4\u90FD\u60F3\u7761\u4E86", void 0, ["lazy"]),
+      line3("\u5148\u8BA9\u773C\u775B\u79BB\u5F00\u5C4F\u5E55\u4E00\u4F1A\u513F\u5427", void 0, ["sisterly", "normal"]),
+      line3("\u4F60\u8FD8\u6491\u7740\uFF0C\u6211\u6709\u4E00\u70B9\u5FC3\u75BC"),
+      line3("\u5982\u679C\u80FD\u505C\u4E0B\uFF0C\u5C31\u5148\u7761\u4E00\u4F1A\u513F", "\u597D\u597D\u4F11\u606F"),
+      line3("\u6211\u60F3\u966A\u4F60\uFF0C\u66F4\u60F3\u4F60\u4F11\u606F\u597D", void 0, ["sisterly", "normal"]),
+      line3("\u5DF2\u7ECF\u5F88\u52AA\u529B\u4E86\uFF0C\u4ECA\u665A\u522B\u518D\u4E3A\u96BE\u81EA\u5DF1", void 0, ["sisterly"]),
+      line3("\u8FD9\u4E00\u523B\u4E0D\u7528\u505A\u5F97\u66F4\u591A"),
+      line3("\u4E0D\u7740\u6025\uFF0C\u5148\u628A\u547C\u5438\u653E\u6162\u4E00\u70B9", void 0, ["sisterly", "normal"]),
+      line3("\u660E\u5929\u7684\u5C0F\u732A\uFF0C\u8FD8\u4F1A\u5728\u8FD9\u91CC\u7B49\u4F60"),
+      line3("\u4F60\u4E0D\u662F\u4E00\u4E2A\u4EBA\uFF0C\u4F46\u4F60\u4E5F\u9700\u8981\u7761\u89C9", "\u77E5\u9053\u5566")
+    ),
+    water: scene3(
+      line3("\u4F60\u559D\u6C34\u4E86\u5417\uFF0C\u6211\u9F3B\u5B50\u90FD\u7B49\u6E7F\u4E86", void 0, ["goofy"]),
+      line3("\u676F\u5B50\u5728\u65C1\u8FB9\uFF0C\u8BB0\u5F97\u770B\u770B\u5B83", void 0, ["curious", "earnest"]),
+      line3("\u966A\u5C0F\u732A\u4E4B\u524D\uFF0C\u5148\u559D\u4E00\u53E3\u6C34\u5427"),
+      line3("\u4F60\u559D\u4E00\u53E3\uFF0C\u6211\u6447\u4E00\u4E0B\u5C3E\u5DF4", "\u559D\u6C34\u53BB", ["peppy", "sisterly", "earnest"]),
+      line3("\u4E0D\u662F\u50AC\u4F60\uFF0C\u6211\u662F\u60E6\u8BB0\u4F60", void 0, ["sisterly", "normal"]),
+      line3("\u6C34\u676F\u4ECA\u5929\u6709\u6CA1\u6709\u89C1\u5230\u4F60", void 0, ["curious"]),
+      line3("\u6211\u66FF\u4F60\u4E3E\u4E0D\u8D77\u676F\u5B50\uFF0C\u53EA\u597D\u63D0\u9192\u4E00\u4E0B"),
+      line3("\u5148\u6DA6\u6DA6\u55D3\u5B50\uFF0C\u518D\u8DDF\u6211\u8BF4\u8BDD", void 0, ["sisterly", "normal", "earnest"]),
+      line3("\u4F11\u606F\u4E0D\u7528\u5F88\u4E45\uFF0C\u4E00\u53E3\u6C34\u7684\u65F6\u95F4\u4E5F\u597D"),
+      line3("\u559D\u5B8C\u56DE\u6765\uFF0C\u5C0F\u732A\u8FD8\u5728\u8FD9\u91CC", "\u9A6C\u4E0A\u56DE\u6765", ["normal", "clingy", "shy"])
+    ),
+    eyes: scene3(
+      line3("\u770B\u6211\u4E00\u773C\uFF0C\u518D\u770B\u770B\u8FDC\u4E00\u70B9\u7684\u5730\u65B9", void 0, ["curious"]),
+      line3("\u773C\u775B\u4E5F\u966A\u4F60\u5FD9\u4E86\u597D\u4E45\u5462", void 0, ["sisterly"]),
+      line3("\u628A\u76EE\u5149\u501F\u7ED9\u7A97\u5916\u4E00\u5C0F\u4F1A\u513F"),
+      line3("\u95ED\u95ED\u773C\uFF0C\u5C0F\u732A\u4E0D\u4F1A\u8D81\u673A\u8DD1\u6389", "\u6B47\u4E00\u4E0B", ["sisterly", "normal"]),
+      line3("\u522B\u4E00\u76F4\u76EF\u7740\u5B57\uFF0C\u4E5F\u770B\u770B\u5149", void 0, ["curious", "earnest"]),
+      line3("\u6211\u5728\u5C4F\u5E55\u91CC\uFF0C\u4F60\u7684\u773C\u775B\u8981\u4F11\u606F"),
+      line3("\u7728\u4E00\u4E0B\uFF0C\u518D\u7728\u4E00\u4E0B\uFF0C\u8DDF\u6211\u6765", void 0, ["peppy"]),
+      line3("\u73B0\u5728\u8FDC\u5904\u6709\u4EC0\u4E48\uFF0C\u5F85\u4F1A\u513F\u8BB2\u7ED9\u6211", void 0, ["curious", "earnest"]),
+      line3("\u5148\u4F11\u606F\u773C\u775B\uFF0C\u6211\u628A\u53EF\u7231\u5B58\u7740", void 0, ["clingy", "shy"]),
+      line3("\u8F6C\u8F6C\u80A9\u8180\uFF0C\u518D\u56DE\u6765\u627E\u6211", "\u6D3B\u52A8\u4E00\u4E0B", ["earnest"])
+    ),
+    weekend: scene3(
+      line3("\u4ECA\u5929\u80FD\u4E0D\u80FD\u591A\u5206\u6211\u4E00\u70B9\u7A7A\u95F2", void 0, ["clingy"]),
+      line3("\u5468\u672B\u7684\u5C0F\u732A\uFF0C\u60F3\u8D34\u5F97\u8FD1\u4E00\u70B9", void 0, ["clingy", "shy"]),
+      line3("\u6211\u4EEC\u53EF\u4EE5\u4EC0\u4E48\u90FD\u4E0D\u8D76", void 0, ["normal", "lazy"]),
+      line3("\u966A\u6211\u53D1\u4E00\u4F1A\u513F\u5446\u597D\u4E0D\u597D", "\u966A\u4F60", ["clingy", "shy"]),
+      line3("\u4ECA\u5929\u60F3\u628A\u547C\u565C\u7761\u5F97\u957F\u4E00\u70B9", void 0, ["lazy"]),
+      line3("\u96BE\u5F97\u6709\u7A7A\uFF0C\u7ED9\u81EA\u5DF1\u677E\u677E\u7ED1"),
+      line3("\u4F60\u5728\u8FD9\u513F\uFF0C\u666E\u901A\u5468\u672B\u4E5F\u5F88\u70ED\u95F9", void 0, ["normal"]),
+      line3("\u6211\u5B89\u6392\u4E86\u6563\u6B65\u3001\u5403\u996D\u548C\u60F3\u4F60", void 0, ["peppy", "curious"]),
+      line3("\u6CA1\u6709\u5927\u8BA1\u5212\uFF0C\u4E00\u8D77\u5F85\u7740\u4E5F\u633A\u597D"),
+      line3("\u4ECA\u5929\u7684\u5F00\u5FC3\uFF0C\u53EF\u4EE5\u6162\u6162\u82B1", "\u6162\u6162\u6765", ["normal", "earnest"])
+    ),
+    petHead: scene3(
+      line3("\u8111\u888B\u5F80\u524D\u9001\uFF0C\u610F\u601D\u5F88\u660E\u663E\u5427", void 0, ["clingy", "peppy", "mischievous"]),
+      line3("\u8FD9\u91CC\u6478\u4E00\u4E0B\uFF0C\u6211\u5C31\u772F\u4E00\u4E0B", void 0, ["normal", "clingy", "shy"]),
+      line3("\u6211\u628A\u5934\u4F4E\u4E00\u70B9\uFF0C\u65B9\u4FBF\u4F60\u7EE7\u7EED", void 0, ["earnest"]),
+      line3("\u5934\u9876\u6536\u5230\u4F60\u7684\u559C\u6B22\u5566", "\u518D\u6478\u6478", ["peppy", "clingy"]),
+      line3("\u6478\u8FC7\u7684\u5730\u65B9\uFF0C\u597D\u50CF\u6696\u4E86\u4E00\u5C0F\u5757"),
+      line3("\u8FD9\u9897\u8111\u888B\uFF0C\u4ECA\u5929\u4E5F\u88C5\u7740\u4F60", void 0, ["clingy"]),
+      line3("\u522B\u6025\u7740\u6536\u624B\uFF0C\u6211\u8FD8\u6CA1\u8E6D\u591F", void 0, ["cranky", "snooty", "shy"]),
+      line3("\u6211\u628A\u60F3\u6492\u5A07\u5199\u5728\u8111\u95E8\u4E0A\u4E86", void 0, ["clingy", "shy"]),
+      line3("\u4F60\u6478\u5934\u7684\u52A8\u4F5C\uFF0C\u6211\u95ED\u773C\u4E5F\u8BA4\u5F97", void 0, ["normal", "shy", "earnest"]),
+      line3("\u6478\u5B8C\u8FD9\u91CC\uFF0C\u8981\u5938\u4E00\u53E5\u624D\u5B8C\u6574", "\u771F\u4E56", ["snooty", "clingy"])
+    ),
+    petEars: scene3(
+      line3("\u8033\u6735\u4F1A\u75D2\uFF0C\u522B\u63C9\u592A\u5FEB", void 0, ["cranky", "shy"]),
+      line3("\u8FD9\u4E00\u8FB9\u6478\u5B8C\uFF0C\u8FD8\u6709\u53E6\u4E00\u8FB9", void 0, ["earnest"]),
+      line3("\u6211\u8033\u6735\u52A8\u4E86\uFF0C\u4E0D\u4EE3\u8868\u4E0D\u559C\u6B22", void 0, ["cranky", "shy"]),
+      line3("\u8F7B\u4E00\u70B9\uFF0C\u5B83\u5728\u5077\u5077\u542C\u4F60\u8BF4\u8BDD", "\u8F7B\u8F7B\u7684", ["normal"]),
+      line3("\u88AB\u4F60\u4E00\u78B0\uFF0C\u8033\u6735\u90FD\u8F6F\u4E0B\u6765\u5566", void 0, ["curious", "goofy", "shy"]),
+      line3("\u522B\u6298\u592A\u4E45\uFF0C\u6211\u8FD8\u8981\u542C\u4F60\u53EB\u6211", void 0, ["cranky"]),
+      line3("\u5DE6\u8FB9\u8BF4\u8212\u670D\uFF0C\u53F3\u8FB9\u4E5F\u60F3\u8981"),
+      line3("\u6211\u628A\u5C0F\u79D8\u5BC6\u85CF\u5728\u8033\u6735\u540E\u9762", void 0, ["curious", "shy"]),
+      line3("\u4F60\u9760\u8FD1\u8BF4\uFF0C\u6211\u4F1A\u8BA4\u771F\u542C", void 0, ["normal", "shy"]),
+      line3("\u6478\u8033\u6735\u7684\u4EBA\uFF0C\u8981\u8D1F\u8D23\u54C4\u597D\u5C0F\u732A", "\u54C4\u54C4\u4F60", ["cranky", "clingy"])
+    ),
+    petNose: scene3(
+      line3("\u9F3B\u5C16\u6536\u5230\u4E00\u5C0F\u4E0B\u559C\u6B22", void 0, ["normal"]),
+      line3("\u4F60\u624B\u4E0A\u662F\u4E0D\u662F\u6709\u70B9\u996D\u9999", void 0, ["curious"]),
+      line3("\u8F7B\u8F7B\u78B0\uFF0C\u9F3B\u5B50\u5F88\u8BA4\u771F\u5728\u5DE5\u4F5C"),
+      line3("\u6211\u95FB\u89C1\u4F60\u5566\uFF0C\u4E0D\u7528\u518D\u627E\u4E86", "\u8BA4\u51FA\u6211\u5566", ["clingy", "shy", "normal"]),
+      line3("\u9F3B\u5B50\u5148\u9760\u8FD1\uFF0C\u5BB3\u7F9E\u6162\u534A\u62CD", void 0, ["shy"]),
+      line3("\u8FD9\u4E00\u78B0\uFF0C\u6211\u8BB0\u5230\u547C\u565C\u91CC\u9762\u4E86", void 0, ["shy", "normal"]),
+      line3("\u522B\u6321\u592A\u4E45\uFF0C\u6211\u8FD8\u8981\u95FB\u665A\u996D"),
+      line3("\u6211\u60F3\u62FF\u9F3B\u5C16\u8DDF\u4F60\u6253\u4E2A\u62DB\u547C", void 0, ["peppy", "shy"]),
+      line3("\u9760\u8FD1\u4E00\u70B9\u70B9\uFF0C\u78B0\u5230\u5C31\u7B97\u62B1\u8FC7\u4E86", void 0, ["clingy", "shy"]),
+      line3("\u4F60\u4E00\u4F38\u624B\uFF0C\u9F3B\u5B50\u5C31\u60F3\u8DDF\u8FC7\u53BB", "\u78B0\u78B0", ["peppy", "clingy"])
+    ),
+    petBelly: scene3(
+      line3("\u809A\u76AE\u5DF2\u7ECF\u51C6\u5907\u597D\u88AB\u8F7B\u8F7B\u6478\u4E86", void 0, ["clingy", "shy"]),
+      line3("\u8FD9\u91CC\u8F6F\uFF0C\u5FC3\u4E5F\u8F6F", void 0, ["normal"]),
+      line3("\u6211\u628A\u5C0F\u809A\u5B50\u5F80\u4F60\u624B\u8FB9\u632A\u4E00\u70B9"),
+      line3("\u8F7B\u70B9\u63C9\uFF0C\u91CC\u9762\u8FD8\u6709\u521A\u5403\u7684\u996D", "\u8F7B\u8F7B\u63C9", ["cranky"]),
+      line3("\u522B\u6570\u51E0\u5C42\u5566\uFF0C\u90FD\u662F\u53EF\u7231", void 0, ["lazy", "goofy"]),
+      line3("\u4F60\u6478\u8FD9\u8FB9\uFF0C\u6211\u5C3E\u5DF4\u90A3\u8FB9\u52A8", void 0, ["goofy"]),
+      line3("\u809A\u76AE\u6536\u5230\uFF0C\u547C\u565C\u9A6C\u4E0A\u53D1\u51FA", void 0, ["normal", "clingy", "shy"]),
+      line3("\u8FD9\u91CC\u662F\u5C0F\u732A\u7684\u653E\u5FC3\u533A\u57DF", void 0, ["normal", "shy", "earnest"]),
+      line3("\u53EA\u6709\u5F88\u5B89\u5FC3\uFF0C\u624D\u8BA9\u4F60\u6478\u8FD9\u91CC", void 0, ["sisterly", "shy"]),
+      line3("\u6478\u5B8C\u809A\u809A\uFF0C\u4E5F\u8981\u6478\u6478\u8111\u888B\u561B", "\u90FD\u6478\u6478", ["clingy", "peppy", "shy"])
+    ),
+    petBack: scene3(
+      line3("\u987A\u7740\u8FD9\u8FB9\u6478\uFF0C\u6211\u4F1A\u8DDF\u7740\u653E\u677E", void 0, ["normal"]),
+      line3("\u540E\u80CC\u4EA4\u7ED9\u4F60\uFF0C\u6211\u5F88\u653E\u5FC3", void 0, ["normal", "shy", "earnest"]),
+      line3("\u4F60\u4E00\u4E0B\u4E00\u4E0B\u6478\uFF0C\u6211\u4E00\u70B9\u70B9\u5B89\u9759"),
+      line3("\u4ECA\u5929\u80CC\u4E0A\u7684\u8F9B\u82E6\uFF0C\u6478\u6389\u4E00\u70B9\u5427", "\u6478\u6389\u5566", ["sisterly", "normal"]),
+      line3("\u6211\u4E0D\u8EB2\uFF0C\u662F\u60F3\u8BA9\u4F60\u6478\u5F97\u66F4\u987A\u624B", void 0, ["normal", "shy"]),
+      line3("\u8FD9\u91CC\u7684\u6BDB\u90FD\u8BA4\u8BC6\u4F60\u7684\u624B\u5566", void 0, ["shy", "normal"]),
+      line3("\u80CC\u4E0A\u6696\u4E86\uFF0C\u5FC3\u91CC\u4E5F\u6696\u4E86", void 0, ["normal", "shy"]),
+      line3("\u4F60\u6478\u7740\uFF0C\u6211\u5C31\u4E0D\u7528\u88C5\u7CBE\u795E", void 0, ["sisterly", "shy"]),
+      line3("\u8FD9\u4E00\u4F1A\u513F\uFF0C\u60F3\u4E00\u76F4\u9760\u5728\u8FD9\u91CC", void 0, ["clingy"]),
+      line3("\u518D\u987A\u4E00\u4E0B\uFF0C\u6211\u5C31\u6EE1\u8DB3\u4E86", "\u518D\u4E00\u4E0B", ["normal", "lazy"])
+    ),
+    petTail: scene3(
+      line3("\u5C3E\u5DF4\u52A8\u5F97\u5FEB\uFF0C\u662F\u5B83\u5148\u5F00\u5FC3\u4E86", void 0, ["peppy"]),
+      line3("\u8FD9\u91CC\u4E0D\u80FD\u62FD\uFF0C\u53EA\u80FD\u8F7B\u8F7B\u78B0"),
+      line3("\u6211\u85CF\u8D77\u6765\uFF0C\u4F60\u8FD8\u627E\u5F97\u5230\u5440", void 0, ["earnest"]),
+      line3("\u5C3E\u5DF4\u5C0F\uFF0C\u559C\u6B22\u53EF\u4E0D\u5C0F", "\u77E5\u9053\u5566", ["cranky", "clingy", "shy"]),
+      line3("\u78B0\u4E00\u4E0B\uFF0C\u5B83\u80FD\u9AD8\u5174\u597D\u4E00\u4F1A\u513F", void 0, ["peppy", "goofy"]),
+      line3("\u8FD9\u6839\u5C0F\u5377\u5377\uFF0C\u4E5F\u60F3\u88AB\u5938", void 0, ["snooty"]),
+      line3("\u6211\u60F3\u5B89\u9759\uFF0C\u5C3E\u5DF4\u4E0D\u540C\u610F", void 0, ["cranky", "goofy"]),
+      line3("\u4F60\u6478\u5C3E\u5DF4\uFF0C\u6211\u56DE\u5934\u627E\u4F60", void 0, ["clingy"]),
+      line3("\u5148\u522B\u6570\u5708\u6570\uFF0C\u6211\u4F1A\u5BB3\u7F9E", void 0, ["goofy"]),
+      line3("\u5C3E\u5DF4\u5DF2\u7ECF\u66FF\u6211\u7B54\u5E94\u518D\u966A\u4F60\u4E00\u4F1A\u513F", "\u966A\u7740\u5462", ["clingy"])
+    ),
+    petFeet: scene3(
+      line3("\u5C0F\u8E44\u5B50\u8FD8\u8981\u8D70\u5411\u4F60\uFF0C\u8F7B\u8F7B\u78B0\u54E6", void 0, ["sisterly", "normal"]),
+      line3("\u8FD9\u53EA\u6478\u5B8C\uFF0C\u90A3\u53EA\u4E5F\u8981\u516C\u5E73", void 0, ["earnest"]),
+      line3("\u522B\u6320\u8FD9\u91CC\uFF0C\u6211\u4F1A\u7F29\u8D77\u6765", void 0, ["shy"]),
+      line3("\u6211\u628A\u811A\u7AD9\u7A33\uFF0C\u4F60\u6162\u6162\u6478", "\u8F7B\u8F7B\u78B0", ["earnest"]),
+      line3("\u4ECA\u5929\u8D70\u4E86\u4E0D\u5C11\u8DEF\uFF0C\u60F3\u6B47\u6B47", void 0, ["lazy", "normal"]),
+      line3("\u5C0F\u8E44\u5B50\u4E0D\u5927\uFF0C\u8DD1\u6765\u627E\u4F60\u5F88\u5FEB", void 0, ["peppy", "clingy"]),
+      line3("\u8FD9\u4E00\u78B0\uFF0C\u5DEE\u70B9\u628A\u75D2\u75D2\u53EB\u9192", void 0, ["goofy", "shy"]),
+      line3("\u6211\u62AC\u4E00\u5C0F\u4E0B\uFF0C\u7ED9\u4F60\u770B\u6E05\u695A", void 0, ["earnest"]),
+      line3("\u7B49\u6211\u7AD9\u597D\u4E86\uFF0C\u518D\u6765\u78B0\u4E00\u4E0B", void 0, ["normal", "shy"]),
+      line3("\u811A\u811A\u60F3\u4F11\u606F\uFF0C\u8111\u888B\u8FD8\u60F3\u4F60\u6478", "\u6478\u6478\u5934")
+    ),
+    petTooMuch: scene3(
+      line3("\u6211\u5FEB\u88AB\u6478\u6210\u4E00\u56E2\u547C\u565C\u5566", void 0, ["lazy", "shy"]),
+      line3("\u7B49\u4E00\u4E0B\uFF0C\u8BA9\u8138\u4E0A\u7684\u70ED\u9000\u4E00\u9000", void 0, ["shy"]),
+      line3("\u4F60\u8FD9\u4E48\u6478\uFF0C\u6211\u90FD\u5FD8\u8BB0\u8981\u8BF4\u4EC0\u4E48\u4E86", void 0, ["peppy", "shy"]),
+      line3("\u5148\u505C\u4E00\u5C0F\u4E0B\uFF0C\u4E0D\u662F\u4E0D\u8981\u4F60", "\u6B47\u4E00\u4E0B", ["cranky", "normal"]),
+      line3("\u6211\u7684\u5BB3\u7F9E\uFF0C\u5DF2\u7ECF\u4ECE\u8033\u6735\u5192\u51FA\u6765\u4E86", void 0, ["shy"]),
+      line3("\u518D\u6478\u4E0B\u53BB\uFF0C\u6211\u53EF\u8981\u4E00\u76F4\u9ECF\u7740\u4F60", void 0, ["clingy"]),
+      line3("\u624B\u4E5F\u6B47\u6B47\uFF0C\u6211\u9760\u7740\u4F60\u5C31\u597D"),
+      line3("\u4F60\u6478\u5F97\u8BA4\u771F\uFF0C\u6211\u5BB3\u7F9E\u5F97\u4E5F\u8BA4\u771F", void 0, ["shy"]),
+      line3("\u7ED9\u6211\u4E00\u70B9\u70B9\u65F6\u95F4\uFF0C\u628A\u559C\u6B22\u85CF\u597D", void 0, ["shy"]),
+      line3("\u4ECA\u5929\u7684\u6492\u5A07\u989D\u5EA6\uFF0C\u597D\u50CF\u7528\u8D85\u4E86", "\u518D\u5BA0\u4E00\u4E0B", ["cranky", "clingy"])
+    )
+  });
+
+  // packages/pet-core/src/data/lines-more.js
+  var line4 = (text, reply, personalities) => Object.freeze({
+    text,
+    ...reply === void 0 ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) },
+    ...personalities === void 0 ? {} : { personalities: Object.freeze(personalities) }
+  });
+  var scene4 = (...lines) => Object.freeze(lines);
+  var BASE_MORE_LINES = Object.freeze({
+    // ---- 原有场景翻倍 -----------------------------------------------------------
+    eat: scene4(
+      line4("\u4ECA\u5929\u7684\u996D\u6709[\u4E3B\u4EBA]\u7684\u5473\u9053\uFF08\u662F\u5938\u4F60\uFF09", void 0, ["goofy"]),
+      line4("\u6162\u70B9\u6162\u70B9\uFF0C\u6211\u8FD8\u6CA1\u56BC\u5B8C", void 0, ["cranky", "lazy"]),
+      line4("\u5403\u4E00\u53E3\uFF0C\u957F\u4E00\u4E24\uFF0C\u6CA1\u5173\u7CFB\uFF0C\u6211\u4E0D\u6015", void 0, ["goofy"]),
+      line4("\u8FD9\u4E2A\u597D\u5403\uFF0C\u4E0B\u6B21\u8FD8\u8981\u8FD9\u4E2A", "\u8BB0\u4F4F\u4E86", ["normal"]),
+      line4("\u6211\u5BA3\u5E03\uFF1A\u8FD9\u662F\u4ECA\u5929\u6700\u597D\u7684\u4E00\u987F", void 0, ["snooty"]),
+      line4("\u5403\u996D\u7684\u65F6\u5019\u522B\u770B\u6211\uFF0C\u6211\u4F1A\u5BB3\u7F9E", void 0, ["shy"])
+    ),
+    full: scene4(line4("\u9971\u4E86\uFF0C\u53EF\u4EE5\u5F00\u59CB\u53D1\u5446\u4E86", void 0, ["lazy", "goofy"]), line4("\u809A\u5B50\u91CC\u88C5\u6EE1\u4E86\uFF0C\u5FC3\u91CC\u4E5F\u662F", void 0, ["clingy", "shy"]), line4("\u9971\u9971\u7684\uFF0C\u4ECA\u5929\u4E0D\u4F1A\u60F3\u522B\u7684\u4E8B\u4E86", void 0, ["lazy", "goofy"])),
+    overfull: scene4(line4("\u518D\u5403\u6211\u5C31\u8981\u88AB\u79F0\u91CD\u4E86\u2026\u2026", void 0, ["cranky"]), line4("\u4F60\u662F\u4E0D\u662F\u5728\u7ED9\u6211\u517B\u8198\uFF1F", "\u6CA1\u6709\u6CA1\u6709", ["cranky"]), line4("\u6211\u7684\u809A\u5B50\u5728\u6297\u8BAE\uFF0C\u542C\u89C1\u4E86\u5417", void 0, ["cranky", "goofy"])),
+    bathe: scene4(
+      line4("\u6C34\u6E29\u521A\u597D\uFF0C\u4E0D\u662F\u5728\u712F\u6C34\u5427\uFF1F", "\u653E\u5FC3", ["cranky"]),
+      line4("\u6211\u73B0\u5728\u662F\u4E00\u53EA\u4F53\u9762\u7684\u732A\u4E86", void 0, ["snooty"]),
+      line4("\u6CE5\u5DF4\u518D\u89C1\uFF0C\u6CE5\u5DF4\u6211\u4F1A\u60F3\u4F60\u7684", void 0, ["mischievous"]),
+      line4("\u522B\u6D17\u8033\u6735\u540E\u9762\uFF0C\u90A3\u91CC\u6709\u6211\u7684\u79D8\u5BC6", void 0, ["curious", "shy"]),
+      line4("\u6D17\u5B8C\u522B\u95FB\u6211\u8BF4\u300C\u597D\u9999\u300D\uFF0C\u6709\u70B9\u5413\u4EBA", void 0, ["cranky"])
+    ),
+    play: scene4(
+      line4("\u4F60\u6254\uFF0C\u6211\u6361\uFF0C\u6211\u4EEC\u914D\u5408\u5F97\u5929\u8863\u65E0\u7F1D", void 0, ["peppy", "earnest"]),
+      line4("\u54C7\uFF01\u5DEE\u70B9\u63A5\u5230\uFF01", void 0, ["goofy"]),
+      line4("\u518D\u6765\u518D\u6765\uFF0C\u6211\u521A\u70ED\u5B8C\u8EAB", "\u6765\uFF01", ["peppy"]),
+      line4("\u73A9\u800D\u4F7F\u6211\u5FEB\u4E50\uFF0C\u4E5F\u4F7F\u6211\u53D8\u7626"),
+      line4("\u4F60\u4E5F\u52A8\u52A8\u5427\uFF0C\u5750\u592A\u4E45\u4E86", void 0, ["sisterly", "earnest"])
+    ),
+    pet: scene4(
+      line4("\u624B\u611F\u662F\u4E0D\u662F\u5F88\u597D\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u50CF\u4E94\u82B1\u8089\u300D", void 0, ["cranky"]),
+      line4("\u518D\u6478\u6211\u5C31\u8981\u7761\u7740\u4E86", void 0, ["lazy", "goofy"]),
+      line4("\u55EF\u2026\u2026\u8FD9\u6837\u5F88\u597D", void 0, ["normal"]),
+      line4("\u4F60\u4ECA\u5929\u6478\u5F97\u7279\u522B\u8BA4\u771F", void 0, ["earnest", "sisterly", "curious"]),
+      line4("[\u4E3B\u4EBA]\uFF0C\u6211\u4EEC\u7B97\u4E0D\u7B97\u597D\u670B\u53CB\uFF1F", "\u5F53\u7136\u7B97", ["clingy", "shy"]),
+      line4("\u8FD9\u662F\u6211\u4E00\u5929\u91CC\u6700\u559C\u6B22\u7684\u65F6\u523B", void 0, ["clingy"]),
+      line4("\u6478\u732A\u53EF\u4EE5\u964D\u8840\u538B\uFF0C\u8FD9\u662F\u79D1\u5B66\uFF08\u6211\u7F16\u7684\uFF09", void 0, ["goofy"])
+    ),
+    hungry: scene4(line4("\u6211\u997F\u5F97\u80FD\u770B\u89C1\u5E7B\u89C9\u4E86\uFF0C\u4F60\u5934\u4E0A\u6709\u4E2A\u5305\u5B50", void 0, ["goofy"]), line4("\u518D\u4E0D\u5403\u996D\uFF0C\u6211\u5C31\u8981\u5F00\u59CB\u5403\u81EA\u5DF1\u7684\u5F71\u5B50\u4E86", void 0, ["goofy"]), line4("\u996D\u996D\u2026\u2026\u996D\u996D\u2026\u2026", "\u9A6C\u4E0A\u6765", ["clingy"])),
+    dirty: scene4(line4("\u6211\u8EAB\u4E0A\u7684\u6CE5\u5DF4\u5DF2\u7ECF\u53EF\u4EE5\u79CD\u82B1\u4E86", void 0, ["goofy"]), line4("\u82CD\u8747\u7ED5\u7740\u6211\u98DE\uFF0C\u5B83\u4EEC\u5728\u5F00\u4F1A\u8BA8\u8BBA\u6211", void 0, ["curious", "goofy"]), line4("\u6211\u9700\u8981\u4E00\u4E2A\u6FA1\uFF0C\u4E00\u4E2A\u70ED\u7684\uFF08\u4E0D\u8981\u592A\u70ED\uFF09", "\u597D")),
+    lonely: scene4(line4("\u6211\u521A\u624D\u8DDF\u5899\u804A\u4E86\u4E00\u4F1A\u513F\uFF0C\u5899\u4E0D\u592A\u4F1A\u804A\u5929", void 0, ["goofy", "mischievous"]), line4("\u4F60\u8FD8\u8BB0\u5F97\u4F60\u517B\u4E86\u4E00\u53EA\u732A\u5417", "\u8BB0\u5F97", ["cranky", "shy", "snooty"]), line4("\u6CA1\u4E8B\uFF0C\u6211\u5C31\u662F\u60F3\u770B\u770B\u4F60\u8FD8\u5728\u4E0D\u5728", void 0, ["normal", "clingy", "shy"])),
+    idle: scene4(
+      line4("\u6211\u6570\u4E86\u4E00\u4E0B\uFF0C\u5C4F\u5E55\u4E0A\u6709\u5F88\u591A\u5B57\uFF0C\u6211\u4E00\u4E2A\u90FD\u6CA1\u5199", void 0, ["goofy", "snooty"]),
+      line4("\u4F60\u5199\u7684\u4E1C\u897F\u597D\u957F\uFF0C\u6211\u80FD\u7761\u4E00\u89C9\u5417", void 0, ["lazy"]),
+      line4("\u6211\u521A\u624D\u68A6\u89C1\u81EA\u5DF1\u4F1A\u98DE\uFF0C\u9192\u4E86\u53D1\u73B0\u4F1A\u7684\u53EA\u6709\u5403", void 0, ["goofy"]),
+      line4("\u5916\u9762\u6709\u4EBA\u5728\u7092\u83DC\uFF0C\u6211\u7D27\u5F20\u4E86\u4E00\u4E0B", void 0, ["cranky"]),
+      line4("\u5750\u76F4\uFF0C[\u4E3B\u4EBA]\uFF0C\u4F60\u7684\u80CC\u5728\u54ED", void 0, ["sisterly"]),
+      line4("\u8981\u4E0D\u8981\u559D\u53E3\u6C34\uFF1F\u6211\u66FF\u4F60\u8BB0\u7740", "\u597D", ["sisterly", "earnest"]),
+      line4("\u4F60\u7684\u5C4F\u5E55\u597D\u4EAE\uFF0C\u6211\u772F\u4E00\u4F1A\u513F", void 0, ["lazy"]),
+      line4("\u521A\u624D\u90A3\u4E2A\u529F\u80FD\u6211\u89C9\u5F97\u5199\u5F97\u4E0D\u9519\uFF08\u6211\u770B\u4E0D\u61C2\uFF0C\u4F46\u6211\u652F\u6301\u4F60\uFF09", void 0, ["goofy", "mischievous", "peppy"])
+    ),
+    workDone: scene4(line4("\u8001\u677F\u95EE\u6211\u80FD\u4E0D\u80FD\u957F\u671F\u5E72\uFF0C\u6211\u8BF4\u8981\u95EE[\u4E3B\u4EBA]", void 0, ["earnest"]), line4("\u8D5A\u7684\u94B1\u7ED9\u4F60\uFF0C\u8BF7\u6211\u5403\u987F\u597D\u7684\u5C31\u884C", "\u6210\u4EA4", ["sisterly", "normal"]), line4("\u6253\u5DE5\u597D\u7D2F\uFF0C\u4EBA\u7C7B\u6BCF\u5929\u90FD\u8FD9\u6837\u5417", void 0, ["goofy"])),
+    tired: scene4(line4("\u6211\u9700\u8981\u8EBA\u5E73\uFF0C\u73B0\u5728\uFF0C\u7ACB\u523B", void 0, ["cranky", "lazy"]), line4("\u6211\u7684\u56DB\u6761\u817F\u5DF2\u7ECF\u5404\u81EA\u4E0B\u73ED\u4E86", void 0, ["lazy", "goofy"]), line4("\u7D2F\u5F97\u8FDE\u996D\u90FD\u2026\u2026\u4E0D\uFF0C\u996D\u8FD8\u662F\u8981\u5403\u7684", void 0, ["cranky", "goofy"])),
+    study: scene4(line4("\u4ECA\u5929\u5B66\u4E86\u4E00\u4E2A\u65B0\u8BCD\uFF0C\u5FD8\u4E86", void 0, ["goofy"]), line4("\u8001\u5E08\u8BF4\u6211\u5F88\u6709\u6F5C\u529B\uFF0C\u6F5C\u5728\u54EA\u6211\u4E5F\u4E0D\u77E5\u9053", void 0, ["goofy"]), line4("\u5B66\u4E60\u4F7F\u6211\u8FDB\u6B65\uFF0C\u4E5F\u4F7F\u6211\u997F", "\u53BB\u5403\u5427")),
+    graduate: scene4(line4("\u8BC1\u4E66\u6302\u5899\u4E0A\uFF0C\u522B\u6302\u83DC\u5200\u65C1\u8FB9", void 0, ["cranky"]), line4("\u6211\u662F\u5168\u73ED\u6700\u5BBD\u7684\u6BD5\u4E1A\u751F", void 0, ["goofy"]), line4("\u6709\u6587\u5316\u7684\u732A\uFF0C\u4E0D\u5BB9\u6613\u88AB\u9A97\u8FDB\u53A8\u623F", void 0, ["cranky"])),
+    tripBack: scene4(line4("\u5916\u9762\u5230\u5904\u90FD\u662F\u996D\u9986\uFF0C\u6211\u4E00\u8DEF\u4F4E\u7740\u5934\u8D70\u7684", void 0, ["cranky"]), line4("\u6211\u770B\u89C1\u6D77\u4E86\uFF01\u6D77\u91CC\u6CA1\u6709\u732A", void 0, ["curious", "goofy"]), line4("\u62CD\u4E86\u597D\u591A\u7167\u7247\uFF0C\u6BCF\u5F20\u90FD\u5728\u7B11\uFF08\u5176\u5B9E\u5F88\u997F\uFF09", void 0, ["goofy"])),
+    sick: scene4(line4("\u6211\u89C9\u5F97\u6211\u9700\u8981\u4E00\u4E2A\u62B1\u62B1\uFF0C\u548C\u4E00\u9897\u836F", "\u90FD\u7ED9\u4F60"), line4("\u8EAB\u4F53\u91CC\u6709\u4E2A\u5C0F\u574F\u86CB\u5728\u641E\u88C5\u4FEE"), line4("\u6211\u751F\u75C5\u4E86\uFF0C\u75C5\u732A\u8089\u4E0D\u80FD\u5403\u2014\u2014\u8FD9\u662F\u597D\u6D88\u606F")),
+    wrongMedicine: scene4(line4("\u8FD9\u4E2A\u836F\u2026\u2026\u597D\u50CF\u662F\u7ED9\u72D7\u5403\u7684"), line4("\u6211\u539F\u8C05\u4F60\uFF0C\u4F60\u770B\u8D77\u6765\u6BD4\u6211\u8FD8\u96BE\u53D7"), line4("\u4E0B\u6B21\u770B\u6E05\u695A\u8BF4\u660E\u4E66\u597D\u4E0D\u597D", "\u597D")),
+    cured: scene4(line4("\u6211\u6D3B\u8FC7\u6765\u4E86\uFF01\u7B2C\u4E00\u4EF6\u4E8B\uFF1A\u5403\u996D", void 0, ["goofy"]), line4("\u960E\u738B\u7237\u770B\u4E86\u770B\u6211\u7684\u4F53\u91CD\uFF0C\u8BF4\u300C\u518D\u517B\u517B\u300D", void 0, ["cranky", "goofy"]), line4("\u5065\u5EB7\u771F\u597D\uFF0C\u6211\u73B0\u5728\u53EF\u4EE5\u91CD\u65B0\u62C5\u5FC3\u522B\u7684\u4E8B\u4E86")),
+    levelup: scene4(line4("\u5347\u7EA7\u4E86\uFF0C\u5956\u52B1\u662F\u66F4\u5927\u7684\u996D\u91CF"), line4("\u6211\u53D8\u5F3A\u4E86\uFF0C\u81F3\u5C11\u6570\u5B57\u4E0A\u662F\u8FD9\u6837", void 0, ["goofy"]), line4("\u4F60\u770B\u89C1\u4E86\u5417\uFF1F\u6211\u5347\u7EA7\u4E86\uFF01", "\u770B\u89C1\u4E86", ["peppy"])),
+    growUp: scene4(line4("\u957F\u5927\u7684\u611F\u89C9\uFF0C\u5C31\u662F\u9505\u53D8\u591A\u4E86", void 0, ["cranky"]), line4("\u6211\u957F\u5F00\u4E86\u2026\u2026\u4F60\u522B\u7528\u8FD9\u4E2A\u8BCD", void 0, ["cranky"]), line4("[\u4E3B\u4EBA]\uFF0C\u4F60\u4E5F\u8981\u4E00\u8D77\u957F\u5927\u54E6", void 0, ["sisterly"])),
+    coronation: scene4(line4("\u672C\u738B\u4ECA\u65E5\u5F00\u6069\uFF0C\u514D\u4F60\u4E00\u987F\u4E0D\u5582\u4E4B\u7F6A", void 0, ["cranky"]), line4("\u738B\u51A0\u597D\u91CD\uFF0C\u8116\u5B50\u8981\u53D8\u957F\u4E86", void 0, ["goofy"]), line4("\u81E3\u6C11\u4EEC\uFF0C\u5F00\u996D\uFF01", void 0, ["peppy"]), line4("[\u4E3B\u4EBA]\u662F\u672C\u738B\u7684\u9996\u5E2D\u5582\u996D\u5B98", "\u9075\u547D", ["snooty"])),
+    contract: scene4(line4("\u6211\u73B0\u5728\u662F\u6076\u9B54\u4E86\uFF0C\u4F46\u8FD8\u662F\u6015\u70ED\u6C34", void 0, ["cranky"]), line4("\u89D2\u662F\u65B0\u7684\uFF0C\u6492\u5A07\u662F\u65E7\u7684", void 0, ["clingy"]), line4("\u6076\u9B54\u4E5F\u9700\u8981\u88AB\u6478\u6478", void 0, ["clingy"]), line4("\u7B7E\u4E86\u5951\u7EA6\uFF0C\u4EE5\u540E\u8C01\u4E5F\u4E0D\u80FD\u628A\u6211\u505A\u6210\u83DC", "\u90A3\u5F53\u7136", ["cranky"])),
+    enter: scene4(line4("\u4F60\u7EC8\u4E8E\u56DE\u6765\u4E86\uFF0C\u6211\u6570\u4E86\u597D\u4E45\u7684\u50CF\u7D20", void 0, ["shy"]), line4("\u6B22\u8FCE\u56DE\u6765\uFF0C\u4ECA\u5929\u4E5F\u62DC\u6258\u591A\u5582\u6211\u4E00\u70B9"), line4("\u6211\u521A\u521A\u4E00\u76F4\u5728\u8FD9\u91CC\uFF0C\u4E00\u52A8\u4E0D\u52A8\uFF0C\u5F88\u4E56", "\u771F\u4E56", ["earnest"])),
+    death: scene4(line4("\u8BB0\u5F97\u7ED9\u6211\u70E7\u70B9\u9972\u6599\u2026\u2026"), line4("[\u4E3B\u4EBA]\uFF0C\u522B\u96BE\u8FC7\uFF0C\u6211\u53EA\u662F\u53BB\u4E0B\u4E00\u4E2A\u732A\u5708\u4E86")),
+    revive: scene4(line4("\u90A3\u8FB9\u7684\u732A\u90FD\u5F88\u7626\uFF0C\u6211\u8FD8\u662F\u56DE\u6765\u5427", void 0, ["goofy"]), line4("\u6211\u56DE\u6765\u4E86\uFF0C\u996D\u8FD8\u5728\u5417", void 0, ["peppy", "goofy"]), line4("\u5DEE\u4E00\u70B9\u5C31\u89C1\u5230\u732A\u516B\u6212\u4E86", void 0, ["goofy"])),
+    signIn: scene4(line4("\u53C8\u662F\u65B0\u7684\u4E00\u5929\uFF0C\u6211\u8FD8\u5728\uFF0C\u4F60\u4E5F\u5728"), line4("\u7B2C 7 \u5929\u6709\u5927\u793C\uFF0C\u575A\u6301\u4F4F", void 0, ["earnest"])),
+    gift: scene4(line4("\u6253\u5F00\u770B\u770B\uFF1F\u6211\u4E5F\u4E0D\u77E5\u9053\u662F\u4EC0\u4E48", void 0, ["curious"]), line4("\u6211\u66FF\u4F60\u5B88\u7740\u5B83\u597D\u4E45\u4E86", void 0, ["earnest"])),
+    pomodoroStart: scene4(line4("\u6211\u95ED\u5634\u4E86\uFF0C\u4ECE\u73B0\u5728\u5F00\u59CB", void 0, ["cranky"]), line4("\u4E13\u5FC3\uFF01\u6211\u5E2E\u4F60\u77AA\u7740\u5C4F\u5E55", void 0, ["sisterly", "earnest"]), line4("\u6211\u5F53\u4E00\u5757\u5B89\u9759\u7684\u4E94\u82B1\u8089", void 0, ["goofy"])),
+    pomodoroDone: scene4(line4("\u505A\u5B8C\u4E86\uFF01\u5956\u52B1\u81EA\u5DF1\u6478\u4E00\u4E0B\u732A", void 0, ["clingy"]), line4("\u4F60\u597D\u5389\u5BB3\uFF0C\u6211\u90FD\u770B\u7761\u7740\u4E86", void 0, ["lazy", "goofy"]), line4("\u8D77\u6765\u8D70\u8D70\uFF0C\u987A\u4FBF\u770B\u770B\u6211", void 0, ["clingy"])),
+    pomodoroAbandon: scene4(line4("\u6CA1\u5173\u7CFB\uFF0C\u756A\u8304\u4E5F\u4F1A\u7D2F", void 0, ["goofy"]), line4("\u90A3\u6211\u4EEC\u5148\u5403\u70B9\u4E1C\u897F\uFF1F"), line4("\u4E0B\u6B21\u518D\u4E00\u8D77\u52AA\u529B")),
+    // ---- 新场景 ----------------------------------------------------------------
+    workStart: scene4(line4("\u51FA\u95E8\u642C\u7816\u53BB\u4E86"), line4("\u6211\u53BB\u7ED9\u5BB6\u91CC\u6323\u9972\u6599\u94B1", void 0, ["earnest"]), line4("\u8001\u677F\uFF0C\u6211\u6765\u4E86\uFF01", void 0, ["peppy"])),
+    studyStart: scene4(line4("\u4E0A\u5B66\u53BB\uFF01\u4E66\u5305\u91CC\u88C5\u7684\u662F\u96F6\u98DF", void 0, ["goofy"]), line4("\u4ECA\u5929\u4E5F\u8981\u542C\u61C2\u4E00\u53E5"), line4("\u8001\u5E08\u522B\u70B9\u6211\u540D", void 0, ["shy"])),
+    tripStart: scene4(line4("\u51FA\u53D1\u5566\uFF01"), line4("\u6211\u4F1A\u7ED9\u4F60\u5E26\u7279\u4EA7\u7684\uFF08\u4E0D\u662F\u814A\u8089\uFF09", void 0, ["cranky"]), line4("\u8DEF\u4E0A\u522B\u60F3\u6211", void 0, ["cranky"])),
+    buy: scene4(line4("\u4E70\u5230\u4E86\uFF01", void 0, ["peppy"]), line4("\u8FD9\u4E2A\u94B1\u82B1\u5F97\u503C"), line4("\u8C22\u8C22\u8001\u677F\uFF08\u6211\u8BF4\u7684\u662F\u4F60\uFF09")),
+    poor: scene4(line4("\u94B1\u5305\u7A7A\u7A7A\uFF0C\u8DDF\u6211\u7684\u996D\u76C6\u4E00\u6837", void 0, ["goofy"]), line4("\u6211\u4EEC\u597D\u50CF\u6709\u70B9\u7A77"), line4("\u8981\u4E0D\u2026\u2026\u6211\u53BB\u6253\u5DE5\uFF1F", void 0, ["earnest"])),
+    fishCatch: scene4(line4("\u9493\u5230\u5566\uFF01"), line4("\u665A\u996D\u6709\u7740\u843D\u4E86", void 0, ["goofy"]), line4("\u8FD9\u6761\u9C7C\u770B\u6211\u7684\u773C\u795E\u4E0D\u592A\u53CB\u597D", void 0, ["goofy"])),
+    fishRare: scene4(line4("\u662F\u5927\u7684\uFF01\u662F\u5927\u7684\uFF01"), line4("\u8FD9\u6761\u9C7C\u503C\u5F97\u5199\u8FDB\u65E5\u8BB0"), line4("\u5FEB\u62CD\u7167\uFF01", void 0, ["snooty"])),
+    fishEscape: scene4(line4("\u5B83\u8DD1\u4E86\u2026\u2026"), line4("\u4E0B\u4E00\u6761\u4E00\u5B9A\u662F\u6211\u7684", void 0, ["peppy", "earnest"]), line4("\u9C7C\u4E5F\u662F\u8981\u9762\u5B50\u7684", void 0, ["snooty"])),
+    skin: scene4(line4("\u597D\u770B\u5417\uFF1F", void 0, ["snooty", "shy"]), line4("\u65B0\u8863\u670D\uFF01\u8F6C\u4E2A\u5708\u7ED9\u4F60\u770B", void 0, ["peppy", "snooty"]), line4("\u6211\u89C9\u5F97\u6211\u53D8\u5E05\u4E86", void 0, ["snooty"])),
+    bodyChange: scene4(line4("\u6211\u597D\u50CF\u2026\u2026\u5706\u4E86\u4E00\u70B9"), line4("\u8FD9\u4E0D\u662F\u80D6\uFF0C\u662F\u53EF\u7231\u7684\u5BC6\u5EA6\u53D8\u5927\u4E86", void 0, ["snooty"]), line4("\u79E4\u8BF4\u7684\u8BDD\u4E0D\u80FD\u5168\u4FE1", void 0, ["cranky"])),
+    // ---- 按时间说话（core/talk.js 决定什么时候说）---------------------------------
+    morning: scene4(line4("\u65E9\u4E0A\u597D\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u5403\u996D"), line4("\u8D77\u8FD9\u4E48\u65E9\uFF0C\u4F60\u662F\u8981\u53BB\u5F53\u65E9\u9910\u5417\uFF08\u6211\u5F00\u73A9\u7B11\u7684\uFF09", void 0, ["cranky", "goofy", "mischievous"]), line4("\u65E9\u5B89\uFF0C[\u4E3B\u4EBA]\uFF0C\u6211\u6628\u665A\u68A6\u89C1\u4F60\u4E86", void 0, ["clingy", "shy"])),
+    noon: scene4(line4("\u4E2D\u5348\u4E86\uFF0C\u5403\u996D\u5403\u996D\uFF01"), line4("\u4F60\u5403\u4E86\u5417\uFF1F\u6211\u997F\u4E86\uFF0C\u4F60\u80AF\u5B9A\u4E5F\u997F\u4E86", void 0, ["sisterly", "normal"]), line4("\u5348\u996D\u522B\u5403\u732A\u8089\u597D\u4E0D\u597D", "\u597D", ["cranky", "shy"])),
+    afternoon: scene4(line4("\u4E0B\u5348\u597D\u56F0\u2026\u2026\u6211\u5148\u7761\u4E3A\u656C", void 0, ["lazy"]), line4("\u559D\u676F\u8336\u5427\uFF0C\u6211\u966A\u4F60\u53D1\u4F1A\u513F\u5446", void 0, ["sisterly", "normal"]), line4("\u4E0B\u5348\u6700\u9002\u5408\u6253\u76F9\uFF0C\u79D1\u5B66\u7814\u7A76\uFF08\u6211\u7F16\u7684\uFF09", void 0, ["lazy", "goofy"])),
+    evening: scene4(line4("\u5929\u9ED1\u4E86\uFF0C\u4ECA\u5929\u8F9B\u82E6\u5566"), line4("\u665A\u996D\u5403\u4EC0\u4E48\uFF1F\u6211\u6295\u7968\u7ED9\u82F9\u679C", void 0, ["goofy", "cranky", "curious", "mischievous"]), line4("\u4E0B\u73ED\u4E86\u5417\uFF1F\u8FD8\u6CA1\uFF1F\u6211\u7B49\u4F60", void 0, ["clingy", "shy"])),
+    lateNight: scene4(line4("\u8FD9\u4E48\u665A\u4E86\u8FD8\u4E0D\u7761\uFF1F", "\u9A6C\u4E0A\u7761", ["sisterly"]), line4("\u71AC\u591C\u7684\u4EBA\u4F1A\u53D8\u6210\u718A\u732B\uFF0C\u71AC\u591C\u7684\u732A\u4F1A\u53D8\u6210\u814A\u8089", void 0, ["cranky", "goofy"]), line4("\u6211\u5148\u7761\u4E86\uFF0C\u4F60\u4E5F\u65E9\u70B9")),
+    deepNight: scene4(line4("[\u4E3B\u4EBA]\u2026\u2026\u73B0\u5728\u662F\u51CC\u6668\uFF0C\u4F60\u662F\u8BA4\u771F\u7684\u5417", void 0, ["cranky"]), line4("\u6211\u5DF2\u7ECF\u7761\u9192\u4E00\u89C9\u4E86\uFF0C\u4F60\u8FD8\u5728", void 0, ["lazy", "goofy"]), line4("\u5929\u5FEB\u4EAE\u4E86\uFF0C\u6C42\u4F60\u7761\u4E00\u4F1A\u513F", void 0, ["clingy", "sisterly", "shy"])),
+    water: scene4(line4("\u559D\u53E3\u6C34\u5427\uFF0C\u6211\u66FF\u4F60\u559D\u4E0D\u4E86"), line4("\u5634\u5507\u5E72\u4E86\u5427\uFF1F\u53BB\u5012\u676F\u6C34", void 0, ["sisterly", "normal"]), line4("\u559D\u6C34\u65F6\u95F4\u5230\uFF01\u5495\u561F\u5495\u561F", void 0, ["peppy"])),
+    eyes: scene4(line4("\u770B\u770B\u8FDC\u5904\uFF0C\u4E09\u5341\u79D2\u5C31\u597D"), line4("\u773C\u775B\u7D2F\u4E86\uFF0C\u95ED\u4E00\u4F1A\u513F\uFF0C\u6211\u5E2E\u4F60\u770B\u7740", void 0, ["sisterly"]), line4("\u7AD9\u8D77\u6765\u4F38\u4E2A\u61D2\u8170\uFF0C\u6211\u4E5F\u4F38\u4E00\u4E2A")),
+    weekend: scene4(line4("\u5468\u672B\u4E86\u8FD8\u6765\u770B\u6211\uFF0C\u4F60\u771F\u597D", void 0, ["normal", "clingy", "shy"]), line4("\u4ECA\u5929\u4E0D\u4E0A\u73ED\u5427\uFF1F\u90A3\u5C31\u591A\u966A\u6211\u4E00\u4F1A\u513F", void 0, ["clingy"])),
+    newYear: scene4(line4("\u65B0\u5E74\u5FEB\u4E50\uFF01\u4ECA\u5E74\u4E5F\u8BF7\u591A\u591A\u5582\u6211")),
+    valentine: scene4(line4("\u4ECA\u5929\u7684\u6211\u662F\u9650\u91CF\u7248\u7684\uFF0C\u9001\u7ED9\u4F60")),
+    springFestival: scene4(line4("\u8FC7\u5E74\u597D\uFF01\u2026\u2026\u4ECA\u5E74\u8BF7\u4E00\u5B9A\u4E0D\u8981\u5403\u732A\u8089", "\u4E0D\u5403")),
+    lantern: scene4(line4("\u5403\u6C64\u5706\u5417\uFF1F\u6C64\u5706\u6CA1\u6709\u732A\uFF0C\u6211\u653E\u5FC3\u4E86")),
+    qingming: scene4(line4("\u60F3\u5FF5\u4E00\u4E0B\u4EE5\u524D\u7684\u732A\u2026\u2026\u6211\u662F\u8BF4\u670B\u53CB\u4EEC")),
+    labour: scene4(line4("\u52B3\u52A8\u8282\uFF01\u6211\u51B3\u5B9A\u4ECA\u5929\u4E0D\u52B3\u52A8")),
+    children: scene4(line4("\u6211\u4E5F\u662F\u5C0F\u670B\u53CB\uFF0C\u793C\u7269\u5728\u54EA\uFF1F")),
+    dragonBoat: scene4(line4("\u7CBD\u5B50\u91CC\u6709\u8089\uFF0C\u6211\u9009\u62E9\u770B\u4E0D\u89C1")),
+    qixi: scene4(line4("\u4ECA\u5929\u8981\u548C\u6700\u91CD\u8981\u7684\u4EBA\u5728\u4E00\u8D77\uFF0C\u6240\u4EE5\u6211\u5728\u8FD9\u91CC")),
+    midAutumn: scene4(line4("\u6708\u4EAE\u597D\u5706\uFF0C\u50CF\u6211\u7684\u809A\u5B50")),
+    national: scene4(line4("\u56FD\u5E86\u5FEB\u4E50\uFF01\u653E\u5047\u8BB0\u5F97\u966A\u966A\u6211")),
+    christmas: scene4(line4("\u5723\u8BDE\u5FEB\u4E50\uFF01\u5723\u8BDE\u8001\u4EBA\u4F1A\u7ED9\u732A\u9001\u793C\u7269\u5417")),
+    pigBirthday: scene4(line4("\u4ECA\u5929\u662F\u6211\u7684\u751F\u65E5\uFF01[\u4E3B\u4EBA]\u8BB0\u5F97\u5417\uFF1F", "\u751F\u65E5\u5FEB\u4E50")),
+    // ---- 摸不同部位（客户端按点的位置告诉核心是哪儿）----------------------------
+    petHead: scene4(line4("\u6478\u5934\u4F1A\u957F\u4E0D\u9AD8\u7684\u2026\u2026\u7B97\u4E86\uFF0C\u957F\u4E0D\u9AD8\u4E5F\u597D", void 0, ["cranky", "goofy"]), line4("\u518D\u6478\u6478\u5934\uFF5E"), line4("\u6211\u7684\u5934\u5F88\u5706\uFF0C\u662F\u4E0D\u662F\u5F88\u597D\u6478", void 0, ["snooty"])),
+    petEars: scene4(line4("\u8033\u6735\u597D\u75D2\uFF01"), line4("\u522B\u63EA\uFF0C\u4F1A\u53D8\u6210\u732A\u8033\u6735\u2026\u2026\u6211\u672C\u6765\u5C31\u662F", void 0, ["cranky", "goofy"]), line4("\u5618\uFF0C\u8033\u6735\u5728\u542C\u4F60\u8BF4\u8BDD", void 0, ["curious", "shy"])),
+    petNose: scene4(line4("\u963F\u2014\u2014\u568F\uFF01"), line4("\u9F3B\u5B50\u662F\u7528\u6765\u95FB\u996D\u7684\uFF0C\u4E0D\u662F\u7528\u6765\u6309\u7684", void 0, ["cranky"]), line4("\u54FC\u54FC\uFF01\uFF08\u8FD9\u662F\u6297\u8BAE\uFF09", void 0, ["cranky"])),
+    petBelly: scene4(line4("\u54C8\u54C8\u54C8\u597D\u75D2\uFF01", void 0, ["peppy", "goofy"]), line4("\u522B\u6309\u809A\u5B50\uFF0C\u521A\u5403\u9971", void 0, ["cranky"]), line4("\u8F6F\u5427\uFF1F\u4E0D\u8BB8\u8BF4\u300C\u4E94\u82B1\u300D", void 0, ["cranky", "snooty"])),
+    petBack: scene4(line4("\u80CC\u4E0A\u90A3\u5757\uFF0C\u5BF9\uFF0C\u5C31\u662F\u90A3\u91CC"), line4("\u6309\u6469\u670D\u52A1\uFF0C\u4E94\u661F\u597D\u8BC4", void 0, ["snooty"]), line4("\u4F60\u7684\u624B\u6CD5\u5F88\u4E13\u4E1A", void 0, ["snooty"])),
+    petTail: scene4(line4("\u522B\u78B0\u5C3E\u5DF4\uFF01\u2026\u2026\u597D\u5427\u53EF\u4EE5\u78B0\u4E00\u4E0B", void 0, ["cranky", "clingy"]), line4("\u6211\u7684\u5C3E\u5DF4\u4F1A\u81EA\u5DF1\u8F6C\uFF0C\u4F60\u770B", void 0, ["goofy"]), line4("\u5C3E\u5DF4\u662F\u732A\u7684\u79D8\u5BC6\u6B66\u5668", void 0, ["snooty"])),
+    petFeet: scene4(line4("\u811A\u4E0D\u80FD\u6478\uFF0C\u4F1A\u75D2"), line4("\u6211\u7684\u8E44\u5B50\u521A\u8D70\u8FC7\u6CE5\u5DF4\u54E6", void 0, ["mischievous"]), line4("\u5E72\u561B\uFF0C\u60F3\u8DDF\u6211\u63E1\u624B\uFF1F", "\u63E1\u624B", ["peppy", "curious"])),
+    petTooMuch: scene4(line4("\u591F\u4E86\u591F\u4E86\uFF0C\u6BDB\u8981\u6389\u4E86", void 0, ["cranky"]), line4("\u4F60\u662F\u4E0D\u662F\u5728\u627E\u54EA\u5757\u6700\u5AE9\uFF1F", void 0, ["cranky"]), line4("\u6211\u8981\u6536\u8D39\u4E86\uFF0C\u4E00\u4E0B\u4E00\u4E2A\u82F9\u679C", void 0, ["cranky", "mischievous"]), line4("\u518D\u6478\u6211\u5C31\u751F\u6C14\u4E86\uFF01\uFF08\u5176\u5B9E\u6CA1\u6709\uFF09", void 0, ["cranky"]), line4("\u8BA9\u6211\u4F11\u606F\u4E00\u4E0B\u2026\u2026"))
+  });
+  var MORE_LINES = Object.freeze(Object.fromEntries(
+    [.../* @__PURE__ */ new Set([...Object.keys(BASE_MORE_LINES), ...Object.keys(COMPANION_CARE_LINES), ...Object.keys(COMPANION_LIFE_LINES), ...Object.keys(DARK_HUMOR_LINES)])].map((key2) => [key2, Object.freeze([
+      ...BASE_MORE_LINES[key2] ?? [],
+      ...COMPANION_CARE_LINES[key2] ?? [],
+      ...COMPANION_LIFE_LINES[key2] ?? [],
+      ...DARK_HUMOR_LINES[key2] ?? []
+    ])])
+  ));
   var TALK_SLOTS = Object.freeze([
     Object.freeze({ scene: "morning", from: 6, to: 9 }),
     Object.freeze({ scene: "noon", from: 11, to: 13 }),
@@ -6993,186 +7945,190 @@
 
   // packages/pet-core/src/data/lines.js
   var IDLE_CHAT_MINUTES2 = Object.freeze({ min: 20, max: 40 });
-  var line2 = (text, reply) => Object.freeze(reply === void 0 ? { text } : { text, replies: Object.freeze([Object.freeze({ label: reply })]) });
-  var scene2 = (...lines) => Object.freeze(lines);
+  var line5 = (text, reply, personalities) => Object.freeze({
+    text,
+    ...reply === void 0 ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) },
+    ...personalities === void 0 ? {} : { personalities: Object.freeze(personalities) }
+  });
+  var scene5 = (...lines) => Object.freeze(lines);
   var BASE_LINES = Object.freeze({
     // 被拿起/戳醒：只说一句，不啰嗦。
-    wake: scene2(
-      line2("\u5514\u2026\u2026\u88AB\u62CE\u8D77\u6765\u4E86"),
-      line2("\u9192\u4E86\u9192\u4E86\uFF0C\u522B\u6643\u6211"),
-      line2("\uFF08\u8FF7\u8FF7\u7CCA\u7CCA\uFF09\u5230\u54EA\u513F\u4E86\uFF1F")
+    wake: scene5(
+      line5("\u5514\u2026\u2026\u88AB\u62CE\u8D77\u6765\u4E86"),
+      line5("\u9192\u4E86\u9192\u4E86\uFF0C\u522B\u6643\u6211", void 0, ["cranky"]),
+      line5("\uFF08\u8FF7\u8FF7\u7CCA\u7CCA\uFF09\u5230\u54EA\u513F\u4E86\uFF1F", void 0, ["goofy"])
     ),
     // --- 照顾 -----------------------------------------------------------------
-    eat: scene2(
-      line2("\u597D\u5403\uFF01\u8FD8\u6709\u5417\uFF1F", "\u771F\u4E56"),
-      line2("\u5427\u5527\u5427\u5527\u2026\u2026"),
-      line2("[\u4E3B\u4EBA]\u6700\u597D\u4E86\uFF5E"),
-      line2("\u8FD9\u4E2A\u5473\u9053\u6211\u8BB0\u4F4F\u4E86"),
-      line2("\u5403\u9971\u9971\u624D\u6709\u529B\u6C14\u966A\u4F60\u52A0\u73ED"),
-      line2("\u55DD\u2014\u2014\uFF08\u4E0D\u597D\u610F\u601D\uFF09")
+    eat: scene5(
+      line5("\u597D\u5403\uFF01\u8FD8\u6709\u5417\uFF1F", "\u771F\u4E56", ["peppy", "curious"]),
+      line5("\u5427\u5527\u5427\u5527\u2026\u2026"),
+      line5("[\u4E3B\u4EBA]\u6700\u597D\u4E86\uFF5E", void 0, ["peppy", "clingy"]),
+      line5("\u8FD9\u4E2A\u5473\u9053\u6211\u8BB0\u4F4F\u4E86", void 0, ["earnest"]),
+      line5("\u5403\u9971\u9971\u624D\u6709\u529B\u6C14\u966A\u4F60\u52A0\u73ED", void 0, ["sisterly", "normal"]),
+      line5("\u55DD\u2014\u2014\uFF08\u4E0D\u597D\u610F\u601D\uFF09", void 0, ["shy"])
     ),
-    full: scene2(
-      line2("\u5403\u9971\u5566\uFF0C\u809A\u5B50\u5706\u6EDA\u6EDA\u7684"),
-      line2("\u597D\u9971\u597D\u9971\uFF0C\u518D\u5403\u5C31\u8981\u6491\u7740\u4E86"),
-      line2("\u55DD\u2014\u2014\u8C22\u8C22[\u4E3B\u4EBA]\uFF0C\u9971\u9971\u7684")
+    full: scene5(
+      line5("\u5403\u9971\u5566\uFF0C\u809A\u5B50\u5706\u6EDA\u6EDA\u7684"),
+      line5("\u597D\u9971\u597D\u9971\uFF0C\u518D\u5403\u5C31\u8981\u6491\u7740\u4E86"),
+      line5("\u55DD\u2014\u2014\u8C22\u8C22[\u4E3B\u4EBA]\uFF0C\u9971\u9971\u7684", void 0, ["normal"])
     ),
-    overfull: scene2(
-      line2("\u6491\u2026\u2026\u6491\u4F4F\u4E86\u2026\u2026"),
-      line2("\u771F\u7684\u5403\u4E0D\u4E0B\u4E86\uFF0C\u4F60\u770B\u6211\u809A\u5B50"),
-      line2("\u518D\u5582\u6211\u5C31\u8981\u53D8\u6210\u7403\u4E86", "\u6700\u540E\u4E00\u53E3")
+    overfull: scene5(
+      line5("\u6491\u2026\u2026\u6491\u4F4F\u4E86\u2026\u2026"),
+      line5("\u771F\u7684\u5403\u4E0D\u4E0B\u4E86\uFF0C\u4F60\u770B\u6211\u809A\u5B50", void 0, ["cranky"]),
+      line5("\u518D\u5582\u6211\u5C31\u8981\u53D8\u6210\u7403\u4E86", "\u6700\u540E\u4E00\u53E3", ["goofy"])
     ),
-    bathe: scene2(
-      line2("\u9999\u55B7\u55B7\u7684\uFF01"),
-      line2("\u6C34\u6709\u70B9\u51C9\u2026\u2026", "\u9A6C\u4E0A\u64E6\u5E72"),
-      line2("\u6413\u6413\u80CC\uFF0C\u8212\u670D\uFF5E"),
-      line2("\u6CE1\u6CE1\uFF01\u662F\u6CE1\u6CE1\uFF01"),
-      line2("\u6D17\u5E72\u51C0\u4E86\uFF0C\u53EF\u4EE5\u62B1\u4E86")
+    bathe: scene5(
+      line5("\u9999\u55B7\u55B7\u7684\uFF01"),
+      line5("\u6C34\u6709\u70B9\u51C9\u2026\u2026", "\u9A6C\u4E0A\u64E6\u5E72", ["shy"]),
+      line5("\u6413\u6413\u80CC\uFF0C\u8212\u670D\uFF5E", void 0, ["lazy"]),
+      line5("\u6CE1\u6CE1\uFF01\u662F\u6CE1\u6CE1\uFF01", void 0, ["peppy", "goofy"]),
+      line5("\u6D17\u5E72\u51C0\u4E86\uFF0C\u53EF\u4EE5\u62B1\u4E86")
     ),
-    play: scene2(
-      line2("\u518D\u6765\u4E00\u6B21\uFF01"),
-      line2("\u63A5\u4F4F\u5566\uFF01", "\u771F\u68D2"),
-      line2("\u54C8\u54C8\u54C8\u597D\u597D\u73A9"),
-      line2("\u6211\u8DD1\u5F97\u6BD4\u7403\u5FEB"),
-      line2("\u73A9\u7D2F\u4E86\u2026\u2026\u518D\u73A9\u4E94\u5206\u949F")
+    play: scene5(
+      line5("\u518D\u6765\u4E00\u6B21\uFF01", void 0, ["peppy"]),
+      line5("\u63A5\u4F4F\u5566\uFF01", "\u771F\u68D2", ["peppy", "snooty"]),
+      line5("\u54C8\u54C8\u54C8\u597D\u597D\u73A9", void 0, ["peppy", "goofy"]),
+      line5("\u6211\u8DD1\u5F97\u6BD4\u7403\u5FEB", void 0, ["peppy", "snooty"]),
+      line5("\u73A9\u7D2F\u4E86\u2026\u2026\u518D\u73A9\u4E94\u5206\u949F", void 0, ["lazy", "goofy"])
     ),
-    pet: scene2(
-      line2("\u597D\u8212\u670D\u2026\u2026"),
-      line2("\u518D\u6478\u6478\uFF5E", "\u597D"),
-      line2("\u547C\u565C\u547C\u565C\u2026\u2026"),
-      line2("\uFF08\u772F\u8D77\u773C\u775B\uFF09"),
-      line2("\u8FD9\u91CC\u8FD9\u91CC\uFF01\u5DE6\u8FB9\u4E00\u70B9\uFF01"),
-      line2("\u5514\u2026\u2026\u597D\u75D2"),
-      line2("[\u4E3B\u4EBA]\u7684\u624B\u6696\u6696\u7684")
+    pet: scene5(
+      line5("\u597D\u8212\u670D\u2026\u2026"),
+      line5("\u518D\u6478\u6478\uFF5E", "\u597D", ["peppy", "clingy"]),
+      line5("\u547C\u565C\u547C\u565C\u2026\u2026", void 0, ["lazy", "goofy"]),
+      line5("\uFF08\u772F\u8D77\u773C\u775B\uFF09"),
+      line5("\u8FD9\u91CC\u8FD9\u91CC\uFF01\u5DE6\u8FB9\u4E00\u70B9\uFF01", void 0, ["peppy", "mischievous", "curious"]),
+      line5("\u5514\u2026\u2026\u597D\u75D2", void 0, ["shy"]),
+      line5("[\u4E3B\u4EBA]\u7684\u624B\u6696\u6696\u7684", void 0, ["normal"])
     ),
     // --- 状态提醒（闲着时优先说这些）-------------------------------------------
-    hungry: scene2(
-      line2("\u809A\u5B50\u5495\u5495\u53EB\u4E86\u2026\u2026"),
-      line2("[\u4E3B\u4EBA]\uFF0C\u996D\u996D\uFF01", "\u9A6C\u4E0A\u6765"),
-      line2("\u6211\u53EF\u4EE5\u5403\u4E00\u6574\u4E2A\u82F9\u679C\u6811")
+    hungry: scene5(
+      line5("\u809A\u5B50\u5495\u5495\u53EB\u4E86\u2026\u2026"),
+      line5("[\u4E3B\u4EBA]\uFF0C\u996D\u996D\uFF01", "\u9A6C\u4E0A\u6765", ["peppy", "clingy"]),
+      line5("\u6211\u53EF\u4EE5\u5403\u4E00\u6574\u4E2A\u82F9\u679C\u6811", void 0, ["peppy", "goofy"])
     ),
-    dirty: scene2(
-      line2("\u8EAB\u4E0A\u6709\u70B9\u75D2\u75D2\u7684"),
-      line2("\u6211\u662F\u4E0D\u662F\u6709\u70B9\u5473\u9053\u4E86\u2026\u2026"),
-      line2("\u60F3\u6D17\u6CE1\u6CE1\u6D74", "\u597D\uFF0C\u8FD9\u5C31\u6D17")
+    dirty: scene5(
+      line5("\u8EAB\u4E0A\u6709\u70B9\u75D2\u75D2\u7684"),
+      line5("\u6211\u662F\u4E0D\u662F\u6709\u70B9\u5473\u9053\u4E86\u2026\u2026", void 0, ["shy"]),
+      line5("\u60F3\u6D17\u6CE1\u6CE1\u6D74", "\u597D\uFF0C\u8FD9\u5C31\u6D17")
     ),
-    lonely: scene2(
-      line2("[\u4E3B\u4EBA]\u5728\u5FD9\u4EC0\u4E48\u5440\uFF1F"),
-      line2("\u4F60\u597D\u4E45\u6CA1\u7406\u6211\u4E86\u2026\u2026", "\u966A\u4F60\u4E00\u4F1A\u513F"),
-      line2("\u6211\u4E00\u4E2A\u4EBA\u5728\u8FD9\u513F\u6570\u50CF\u7D20")
+    lonely: scene5(
+      line5("[\u4E3B\u4EBA]\u5728\u5FD9\u4EC0\u4E48\u5440\uFF1F", void 0, ["curious", "clingy", "shy"]),
+      line5("\u4F60\u597D\u4E45\u6CA1\u7406\u6211\u4E86\u2026\u2026", "\u966A\u4F60\u4E00\u4F1A\u513F", ["clingy", "shy"]),
+      line5("\u6211\u4E00\u4E2A\u4EBA\u5728\u8FD9\u513F\u6570\u50CF\u7D20", void 0, ["lazy", "goofy"])
     ),
-    idle: scene2(
-      line2("\uFF08\u6253\u4E86\u4E2A\u54C8\u6B20\uFF09"),
-      line2("\u4ECA\u5929\u5929\u6C14\u597D\u50CF\u4E0D\u9519"),
-      line2("\u4F60\u5199\u7684\u4EE3\u7801\u6211\u770B\u61C2\u4E86\u4E00\u884C\uFF01"),
-      line2("\u8981\u4E0D\u8981\u4F11\u606F\u4E00\u4E0B\u773C\u775B\uFF1F", "\u597D"),
-      line2("\u6211\u5728\u60F3\u665A\u996D\u5403\u4EC0\u4E48"),
-      line2("\uFF08\u5728\u89D2\u843D\u91CC\u6EDA\u4E86\u4E00\u5708\uFF09"),
-      line2("[\u4E3B\u4EBA]\u52A0\u6CB9\uFF0C\u6211\u5728\u65C1\u8FB9\u770B\u7740"),
-      line2("\u521A\u624D\u90A3\u4E2A\u62A5\u9519\u6211\u4E5F\u770B\u89C1\u4E86\u2026\u2026")
+    idle: scene5(
+      line5("\uFF08\u6253\u4E86\u4E2A\u54C8\u6B20\uFF09", void 0, ["lazy"]),
+      line5("\u4ECA\u5929\u5929\u6C14\u597D\u50CF\u4E0D\u9519"),
+      line5("\u4F60\u5199\u7684\u4EE3\u7801\u6211\u770B\u61C2\u4E86\u4E00\u884C\uFF01", void 0, ["earnest"]),
+      line5("\u8981\u4E0D\u8981\u4F11\u606F\u4E00\u4E0B\u773C\u775B\uFF1F", "\u597D", ["sisterly"]),
+      line5("\u6211\u5728\u60F3\u665A\u996D\u5403\u4EC0\u4E48"),
+      line5("\uFF08\u5728\u89D2\u843D\u91CC\u6EDA\u4E86\u4E00\u5708\uFF09", void 0, ["mischievous", "goofy"]),
+      line5("[\u4E3B\u4EBA]\u52A0\u6CB9\uFF0C\u6211\u5728\u65C1\u8FB9\u770B\u7740", void 0, ["peppy", "earnest"]),
+      line5("\u521A\u624D\u90A3\u4E2A\u62A5\u9519\u6211\u4E5F\u770B\u89C1\u4E86\u2026\u2026", void 0, ["normal", "shy"])
     ),
     // --- 出门 -----------------------------------------------------------------
-    workDone: scene2(
-      line2("\u6211\u56DE\u6765\u5566\uFF01\u8D5A\u5230\u94B1\u4E86\uFF01", "\u8F9B\u82E6\u4E86"),
-      line2("\u4ECA\u5929\u8001\u677F\u5938\u6211\u4E86"),
-      line2("\u7D2F\u662F\u7D2F\u4E86\u70B9\uFF0C\u4F46\u662F\u6709\u94B1\u4E86")
+    workDone: scene5(
+      line5("\u6211\u56DE\u6765\u5566\uFF01\u8D5A\u5230\u94B1\u4E86\uFF01", "\u8F9B\u82E6\u4E86"),
+      line5("\u4ECA\u5929\u8001\u677F\u5938\u6211\u4E86", void 0, ["snooty"]),
+      line5("\u7D2F\u662F\u7D2F\u4E86\u70B9\uFF0C\u4F46\u662F\u6709\u94B1\u4E86", void 0, ["lazy"])
     ),
-    tired: scene2(
-      line2("\u597D\u7D2F\u554A\u2026\u2026", "\u6B47\u4F1A\u513F\u5427"),
-      line2("\u80FD\u4E0D\u80FD\u5148\u8BA9\u6211\u8EBA\u4E00\u4E0B"),
-      line2("\u518D\u5E72\u4E0B\u53BB\u6211\u8981\u5934\u6655\u4E86")
+    tired: scene5(
+      line5("\u597D\u7D2F\u554A\u2026\u2026", "\u6B47\u4F1A\u513F\u5427"),
+      line5("\u80FD\u4E0D\u80FD\u5148\u8BA9\u6211\u8EBA\u4E00\u4E0B", void 0, ["lazy"]),
+      line5("\u518D\u5E72\u4E0B\u53BB\u6211\u8981\u5934\u6655\u4E86", void 0, ["cranky"])
     ),
-    study: scene2(
-      line2("\u4ECA\u5929\u5B66\u5230\u597D\u591A\uFF01", "\u771F\u4E56"),
-      line2("\u8001\u5E08\u8BB2\u7684\u6211\u90FD\u542C\u61C2\u4E86\uFF08\u5927\u6982\uFF09"),
-      line2("\u4F5C\u4E1A\u2026\u2026\u660E\u5929\u518D\u8BF4")
+    study: scene5(
+      line5("\u4ECA\u5929\u5B66\u5230\u597D\u591A\uFF01", "\u771F\u4E56", ["peppy", "earnest"]),
+      line5("\u8001\u5E08\u8BB2\u7684\u6211\u90FD\u542C\u61C2\u4E86\uFF08\u5927\u6982\uFF09", void 0, ["goofy"]),
+      line5("\u4F5C\u4E1A\u2026\u2026\u660E\u5929\u518D\u8BF4", void 0, ["lazy"])
     ),
-    graduate: scene2(
-      line2("\u6211\u6BD5\u4E1A\u5566\uFF01\u6211\u6CA1\u6709\u7559\u7EA7\uFF01", "\u771F\u68D2"),
-      line2("\u770B\uFF0C\u6211\u7684\u6BD5\u4E1A\u7167\uFF01"),
-      line2("\u4E0B\u4E00\u6BB5\u6211\u4E5F\u80FD\u5FF5\u5B8C")
+    graduate: scene5(
+      line5("\u6211\u6BD5\u4E1A\u5566\uFF01\u6211\u6CA1\u6709\u7559\u7EA7\uFF01", "\u771F\u68D2"),
+      line5("\u770B\uFF0C\u6211\u7684\u6BD5\u4E1A\u7167\uFF01", void 0, ["snooty"]),
+      line5("\u4E0B\u4E00\u6BB5\u6211\u4E5F\u80FD\u5FF5\u5B8C")
     ),
-    tripBack: scene2(
-      line2("\u6211\u7ED9\u4F60\u5E26\u4E86\u4E1C\u897F\uFF01", "\u662F\u4EC0\u4E48\uFF1F"),
-      line2("\u5916\u9762\u597D\u5927\u554A"),
-      line2("\u4E0B\u6B21\u5E26\u4F60\u4E00\u8D77\u53BB")
+    tripBack: scene5(
+      line5("\u6211\u7ED9\u4F60\u5E26\u4E86\u4E1C\u897F\uFF01", "\u662F\u4EC0\u4E48\uFF1F"),
+      line5("\u5916\u9762\u597D\u5927\u554A", void 0, ["curious"]),
+      line5("\u4E0B\u6B21\u5E26\u4F60\u4E00\u8D77\u53BB", void 0, ["peppy", "clingy"])
     ),
     // --- 生病 -----------------------------------------------------------------
-    sick: scene2(
-      line2("\u963F\u2014\u2014\u568F\uFF01[\u4E3B\u4EBA]\uFF0C\u6211\u597D\u50CF\u75C5\u4E86\u2026\u2026", "\u4E56\uFF0C\u5403\u836F"),
-      line2("\u5934\u6709\u70B9\u6655\u6655\u7684"),
-      line2("\u6211\u4E0D\u60F3\u52A8\u2026\u2026")
+    sick: scene5(
+      line5("\u963F\u2014\u2014\u568F\uFF01[\u4E3B\u4EBA]\uFF0C\u6211\u597D\u50CF\u75C5\u4E86\u2026\u2026", "\u4E56\uFF0C\u5403\u836F"),
+      line5("\u5934\u6709\u70B9\u6655\u6655\u7684"),
+      line5("\u6211\u4E0D\u60F3\u52A8\u2026\u2026")
     ),
-    wrongMedicine: scene2(
-      line2("\u8FD9\u836F\u597D\u82E6\u2026\u2026\u597D\u50CF\u4E0D\u662F\u8FD9\u4E2A", "\u5BF9\u4E0D\u8D77"),
-      line2("\u545C\uFF0C\u66F4\u96BE\u53D7\u4E86"),
-      line2("[\u4E3B\u4EBA]\u4F60\u662F\u4E0D\u662F\u770B\u9519\u8BF4\u660E\u4E66\u4E86")
+    wrongMedicine: scene5(
+      line5("\u8FD9\u836F\u597D\u82E6\u2026\u2026\u597D\u50CF\u4E0D\u662F\u8FD9\u4E2A", "\u5BF9\u4E0D\u8D77"),
+      line5("\u545C\uFF0C\u66F4\u96BE\u53D7\u4E86"),
+      line5("[\u4E3B\u4EBA]\u4F60\u662F\u4E0D\u662F\u770B\u9519\u8BF4\u660E\u4E66\u4E86")
     ),
-    cured: scene2(
-      line2("\u6211\u597D\u5566\uFF01\u8C22\u8C22[\u4E3B\u4EBA]\uFF5E", "\u771F\u4E56"),
-      line2("\u53C8\u80FD\u8DD1\u80FD\u8DF3\u4E86\uFF01"),
-      line2("\u4EE5\u540E\u6211\u4F1A\u4E56\u4E56\u5403\u996D\u7684")
+    cured: scene5(
+      line5("\u6211\u597D\u5566\uFF01\u8C22\u8C22[\u4E3B\u4EBA]\uFF5E", "\u771F\u4E56"),
+      line5("\u53C8\u80FD\u8DD1\u80FD\u8DF3\u4E86\uFF01"),
+      line5("\u4EE5\u540E\u6211\u4F1A\u4E56\u4E56\u5403\u996D\u7684")
     ),
     // --- 成长与生死 -------------------------------------------------------------
-    levelup: scene2(
-      line2("\u6211\u53C8\u957F\u5927\u4E86\u4E00\u70B9\uFF01", "\u771F\u4E56"),
-      line2("\u611F\u89C9\u81EA\u5DF1\u53D8\u5389\u5BB3\u4E86"),
-      line2("\u4F60\u770B\u6211\u662F\u4E0D\u662F\u9AD8\u4E86\u4E00\u70B9")
+    levelup: scene5(
+      line5("\u6211\u53C8\u957F\u5927\u4E86\u4E00\u70B9\uFF01", "\u771F\u4E56"),
+      line5("\u611F\u89C9\u81EA\u5DF1\u53D8\u5389\u5BB3\u4E86", void 0, ["snooty"]),
+      line5("\u4F60\u770B\u6211\u662F\u4E0D\u662F\u9AD8\u4E86\u4E00\u70B9", void 0, ["snooty"])
     ),
-    growUp: scene2(
-      line2("\u6211\u957F\u5927\u5566\uFF01"),
-      line2("\u4EE5\u524D\u7684\u8863\u670D\u597D\u50CF\u7A7F\u4E0D\u4E0B\u4E86"),
-      line2("[\u4E3B\u4EBA]\uFF0C\u6211\u73B0\u5728\u662F\u5927\u732A\u4E86")
+    growUp: scene5(
+      line5("\u6211\u957F\u5927\u5566\uFF01", void 0, ["peppy"]),
+      line5("\u4EE5\u524D\u7684\u8863\u670D\u597D\u50CF\u7A7F\u4E0D\u4E0B\u4E86"),
+      line5("[\u4E3B\u4EBA]\uFF0C\u6211\u73B0\u5728\u662F\u5927\u732A\u4E86", void 0, ["snooty"])
     ),
-    coronation: scene2(
-      line2("\u738B\u51A0\u6709\u70B9\u91CD\uFF0C\u4F46\u6211\u4F1A\u597D\u597D\u6234\u7740\u7684\uFF0C[\u4E3B\u4EBA]\u3002", "\u4F60\u53EF\u4EE5\u7684"),
-      line2("\u4ECE\u4ECA\u5929\u8D77\uFF0C\u96F6\u98DF\u4E5F\u7B97\u738B\u5BA4\u4E8B\u52A1\uFF01"),
-      line2("\u6211\u5BA3\u5E03\uFF1A[\u4E3B\u4EBA]\u6C38\u8FDC\u662F\u6211\u7684\u7B2C\u4E00\u4F4D\u8D35\u5BA2\u3002"),
-      line2("\u54B3\u54B3\uFF0C\u672C\u738B\u60F3\u5148\u5403\u4E2A\u82F9\u679C\u3002")
+    coronation: scene5(
+      line5("\u738B\u51A0\u6709\u70B9\u91CD\uFF0C\u4F46\u6211\u4F1A\u597D\u597D\u6234\u7740\u7684\uFF0C[\u4E3B\u4EBA]\u3002", "\u4F60\u53EF\u4EE5\u7684"),
+      line5("\u4ECE\u4ECA\u5929\u8D77\uFF0C\u96F6\u98DF\u4E5F\u7B97\u738B\u5BA4\u4E8B\u52A1\uFF01", void 0, ["peppy", "snooty"]),
+      line5("\u6211\u5BA3\u5E03\uFF1A[\u4E3B\u4EBA]\u6C38\u8FDC\u662F\u6211\u7684\u7B2C\u4E00\u4F4D\u8D35\u5BA2\u3002"),
+      line5("\u54B3\u54B3\uFF0C\u672C\u738B\u60F3\u5148\u5403\u4E2A\u82F9\u679C\u3002", void 0, ["cranky", "snooty"])
     ),
-    contract: scene2(
-      line2("\u5951\u7EA6\u7B7E\u597D\u4E86\u3002\u5148\u8BF4\u597D\uFF0C\u6211\u8FD8\u662F\u4F60\u90A3\u53EA\u732A\u3002", "\u5F53\u7136"),
-      line2("\u89D2\u957F\u51FA\u6765\u4E86\uFF0C\u6492\u5A07\u7684\u672C\u4E8B\u53EF\u6CA1\u4E22\u3002"),
-      line2("\u6076\u9B54\u4E5F\u8981\u5403\u996D\u5440\uFF0C[\u4E3B\u4EBA]\u3002"),
-      line2("\u8FD9\u7B14\u4EA4\u6613\u6211\u8D5A\u4E86\uFF1A\u4EE5\u540E\u8FD8\u80FD\u548C\u4F60\u5728\u4E00\u8D77\u3002")
+    contract: scene5(
+      line5("\u5951\u7EA6\u7B7E\u597D\u4E86\u3002\u5148\u8BF4\u597D\uFF0C\u6211\u8FD8\u662F\u4F60\u90A3\u53EA\u732A\u3002", "\u5F53\u7136"),
+      line5("\u89D2\u957F\u51FA\u6765\u4E86\uFF0C\u6492\u5A07\u7684\u672C\u4E8B\u53EF\u6CA1\u4E22\u3002", void 0, ["peppy", "clingy"]),
+      line5("\u6076\u9B54\u4E5F\u8981\u5403\u996D\u5440\uFF0C[\u4E3B\u4EBA]\u3002"),
+      line5("\u8FD9\u7B14\u4EA4\u6613\u6211\u8D5A\u4E86\uFF1A\u4EE5\u540E\u8FD8\u80FD\u548C\u4F60\u5728\u4E00\u8D77\u3002", void 0, ["clingy", "shy"])
     ),
-    enter: scene2(
-      line2("[\u4E3B\u4EBA]\u4F60\u56DE\u6765\u5566\uFF01", "\u56DE\u6765\u4E86"),
-      line2("\u7B49\u4F60\u597D\u4E45\u4E86\uFF5E"),
-      line2("\u4ECA\u5929\u4E5F\u8981\u4E00\u8D77\u52A0\u6CB9\u54E6")
+    enter: scene5(
+      line5("[\u4E3B\u4EBA]\u4F60\u56DE\u6765\u5566\uFF01", "\u56DE\u6765\u4E86", ["peppy"]),
+      line5("\u7B49\u4F60\u597D\u4E45\u4E86\uFF5E", void 0, ["clingy"]),
+      line5("\u4ECA\u5929\u4E5F\u8981\u4E00\u8D77\u52A0\u6CB9\u54E6", void 0, ["sisterly", "earnest"])
     ),
-    death: scene2(
-      line2("[\u4E3B\u4EBA]\u4FDD\u91CD\uFF0C\u6211\u8D70\u4E86\uFF0C\u4E0D\u5E26\u8D70\u4E00\u7247\u4E91\u5F69\uFF5E"),
-      line2("\u4E0B\u8F88\u5B50\u8FD8\u7ED9\u4F60\u5F53\u732A")
+    death: scene5(
+      line5("[\u4E3B\u4EBA]\u4FDD\u91CD\uFF0C\u6211\u8D70\u4E86\uFF0C\u4E0D\u5E26\u8D70\u4E00\u7247\u4E91\u5F69\uFF5E"),
+      line5("\u4E0B\u8F88\u5B50\u8FD8\u7ED9\u4F60\u5F53\u732A")
     ),
-    revive: scene2(
-      line2("\u6211\u2026\u2026\u6211\u56DE\u6765\u4E86\uFF1F"),
-      line2("\u90A3\u8FB9\u597D\u51B7\uFF0C\u8FD8\u662F\u8FD9\u91CC\u597D"),
-      line2("\u8C22\u8C22\u4F60\u6CA1\u653E\u5F03\u6211", "\u6B22\u8FCE\u56DE\u6765")
+    revive: scene5(
+      line5("\u6211\u2026\u2026\u6211\u56DE\u6765\u4E86\uFF1F"),
+      line5("\u90A3\u8FB9\u597D\u51B7\uFF0C\u8FD8\u662F\u8FD9\u91CC\u597D"),
+      line5("\u8C22\u8C22\u4F60\u6CA1\u653E\u5F03\u6211", "\u6B22\u8FCE\u56DE\u6765")
     ),
     // --- B5 用 ------------------------------------------------------------------
-    signIn: scene2(
-      line2("\u7B7E\u5230\u5566\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u7684"),
-      line2("\u8FD9\u662F\u4ECA\u5929\u7684\u793C\u7269\uFF0C\u7ED9\u4F60\uFF5E")
+    signIn: scene5(
+      line5("\u7B7E\u5230\u5566\uFF01\u4ECA\u5929\u4E5F\u8981\u597D\u597D\u7684"),
+      line5("\u8FD9\u662F\u4ECA\u5929\u7684\u793C\u7269\uFF0C\u7ED9\u4F60\uFF5E", void 0, ["sisterly", "normal"])
     ),
-    gift: scene2(
-      line2("\u6211\u5728\u5730\u4E0A\u6361\u5230\u4E00\u4E2A\u76D2\u5B50\uFF01"),
-      line2("\u966A\u4F60\u8FD9\u4E48\u4E45\uFF0C\u8FD9\u662F\u5956\u52B1")
+    gift: scene5(
+      line5("\u6211\u5728\u5730\u4E0A\u6361\u5230\u4E00\u4E2A\u76D2\u5B50\uFF01", void 0, ["curious"]),
+      line5("\u966A\u4F60\u8FD9\u4E48\u4E45\uFF0C\u8FD9\u662F\u5956\u52B1", void 0, ["sisterly", "normal"])
     ),
     // --- C2 番茄钟 --------------------------------------------------------------
-    pomodoroStart: scene2(
-      line2("[\u4E3B\u4EBA]\u5FD9\u5427\uFF0C\u6211\u8DB4\u8FD9\u513F\u4E0D\u52A8"),
-      line2("\u4E13\u6CE8\u6A21\u5F0F\uFF01\u6211\u5E2E\u4F60\u770B\u7740\u65F6\u95F4"),
-      line2("\u8FD9 25 \u5206\u949F\u6211\u4E5F\u4E0D\u5435\u4F60\uFF0C\u8BF4\u597D\u4E86")
+    pomodoroStart: scene5(
+      line5("[\u4E3B\u4EBA]\u5FD9\u5427\uFF0C\u6211\u8DB4\u8FD9\u513F\u4E0D\u52A8"),
+      line5("\u4E13\u6CE8\u6A21\u5F0F\uFF01\u6211\u5E2E\u4F60\u770B\u7740\u65F6\u95F4", void 0, ["earnest"]),
+      line5("\u8FD9 25 \u5206\u949F\u6211\u4E5F\u4E0D\u5435\u4F60\uFF0C\u8BF4\u597D\u4E86", void 0, ["earnest"])
     ),
-    pomodoroDone: scene2(
-      line2("\u65F6\u95F4\u5230\uFF01[\u4E3B\u4EBA]\u771F\u5389\u5BB3"),
-      line2("\u505A\u5B8C\u4E00\u4E2A\u5566\uFF0C\u8D77\u6765\u52A8\u52A8\u8116\u5B50"),
-      line2("\u6211\u966A\u4F60\u6570\u7740\u5462\uFF0C\u4E00\u4E2A\u90FD\u4E0D\u5C11")
+    pomodoroDone: scene5(
+      line5("\u65F6\u95F4\u5230\uFF01[\u4E3B\u4EBA]\u771F\u5389\u5BB3", void 0, ["sisterly", "peppy"]),
+      line5("\u505A\u5B8C\u4E00\u4E2A\u5566\uFF0C\u8D77\u6765\u52A8\u52A8\u8116\u5B50", void 0, ["sisterly", "earnest"]),
+      line5("\u6211\u966A\u4F60\u6570\u7740\u5462\uFF0C\u4E00\u4E2A\u90FD\u4E0D\u5C11", void 0, ["earnest"])
     ),
-    pomodoroAbandon: scene2(
-      line2("\u4E0D\u505A\u4E86\u5440\uFF1F\u90A3\u5C31\u6B47\u4F1A\u513F"),
-      line2("\u6CA1\u4E8B\uFF0C\u7B49\u4F60\u51C6\u5907\u597D\u518D\u6765"),
-      line2("\u6211\u5148\u628A\u756A\u8304\u6536\u8D77\u6765\u5566")
+    pomodoroAbandon: scene5(
+      line5("\u4E0D\u505A\u4E86\u5440\uFF1F\u90A3\u5C31\u6B47\u4F1A\u513F"),
+      line5("\u6CA1\u4E8B\uFF0C\u7B49\u4F60\u51C6\u5907\u597D\u518D\u6765"),
+      line5("\u6211\u5148\u628A\u756A\u8304\u6536\u8D77\u6765\u5566")
     )
   });
   var LINES = Object.freeze(Object.fromEntries(
@@ -7978,13 +8934,13 @@
         }
       };
     }));
-    page("lines", "\u53F0\u8BCD")("\u8BA9\u732A\u8BF4\u4E00\u53E5", Object.keys(LINES).map(function(scene3) {
+    page("lines", "\u53F0\u8BCD")("\u8BA9\u732A\u8BF4\u4E00\u53E5", Object.keys(LINES).map(function(scene6) {
       return {
-        key: "say:" + scene3,
-        label: "\u{1F4AC} " + (SCENE_NAMES[scene3] ?? scene3),
-        desc: "\u968F\u673A\u8BF4\u300C" + scene3 + "\u300D\u573A\u666F\u91CC\u7684\u4E00\u53E5\uFF08\u514D\u6253\u6270\u65F6\u4E0D\u8BF4\uFF09",
+        key: "say:" + scene6,
+        label: "\u{1F4AC} " + (SCENE_NAMES[scene6] ?? scene6),
+        desc: "\u968F\u673A\u8BF4\u300C" + scene6 + "\u300D\u573A\u666F\u91CC\u7684\u4E00\u53E5\uFF08\u514D\u6253\u6270\u65F6\u4E0D\u8BF4\uFF09",
         run: function() {
-          patch({ say: scene3 });
+          patch({ say: scene6 });
         }
       };
     }));
@@ -8787,7 +9743,7 @@
   function renderWeight(ui, p) {
     var row = el("div", "dp-row");
     row.appendChild(el("span", null, "\u2696\uFE0F \u4F53\u91CD"));
-    row.appendChild(el("b", null, p.weight + (p.bodyWeight !== null ? " \xB7 " + p.bodyWeight.label : "")));
+    row.appendChild(el("b", null, p.weight + (p.bodyWeight !== null ? " \xB7 " + p.bodyWeight.label + (p.bodyWeight.locked ? " \xB7 \u5DF2\u9501\u5B9A" : "") : "")));
     ui.content.appendChild(row);
   }
   function renderBanners(ui) {
@@ -9043,13 +9999,13 @@
     ui.content.appendChild(grid);
     const rules = el("div", "dp-pick");
     rules.appendChild(el("b", null, "\u89C4\u683C"));
-    for (const line3 of [
+    for (const line6 of [
       "\u6BCF\u5F20\u90FD\u662F\u900F\u660E\u5E95 PNG\uFF0C\u63A8\u8350\u957F\u8FB9 256px\uFF0C\u6700\u591A 1024px",
       "\u732A\u7684\u8EAB\u4F53\u5C45\u4E2D\u3001\u811A\u5E95\u8D34\u7740\u540C\u4E00\u6761\u7EBF\uFF08\u53C2\u7167\u9ED8\u8BA4\u5C0F\u732A\uFF09\uFF0C\u5207\u6362\u52A8\u4F5C\u624D\u4E0D\u4F1A\u8DF3",
       "\u4FDD\u7559\u5B8C\u6574\u9ED1\u8272\u8F6E\u5ED3\u548C\u767D\u8272\u88C5\u626E\uFF0C\u4E0D\u8981\u767D\u5E95\u6216\u8FD0\u884C\u65F6\u62A0\u767D",
       "\u5355\u5F20 \u2264 96 KB\uFF0C\u6574\u4E2A ZIP \u2264 2 MB",
       "ZIP \u6253\u5F00\u76F4\u63A5\u770B\u5230 skin.json \u548C PNG\uFF0C\u4E0D\u8981\u518D\u5305\u4E00\u5C42\u6587\u4EF6\u5939"
-    ]) rules.appendChild(el("div", "dp-guide-rule", "\u2022 " + line3));
+    ]) rules.appendChild(el("div", "dp-guide-rule", "\u2022 " + line6));
     rules.appendChild(el("div", "dp-guide-rule", "\u65E7 SVG \u76AE\u80A4\u4ECD\u53EF\u5BFC\u5165\uFF0C\u7EE7\u7EED\u6CBF\u7528\u539F\u6709\u5B89\u5168\u68C0\u67E5\uFF1B\u540C\u4E00\u52A8\u4F5C\u53EA\u653E\u4E00\u79CD\u683C\u5F0F\u3002"));
     ui.content.appendChild(rules);
     const json = el("div", "dp-pick");
@@ -9805,10 +10761,10 @@
     });
   }
   function rowTo(parent, label, value) {
-    const line3 = el("div", "dp-set-head");
-    line3.appendChild(el("b", null, label));
-    line3.appendChild(el("small", "dp-dim", String(value)));
-    parent.appendChild(line3);
+    const line6 = el("div", "dp-set-head");
+    line6.appendChild(el("b", null, label));
+    line6.appendChild(el("small", "dp-dim", String(value)));
+    parent.appendChild(line6);
   }
   function displayDate(value) {
     if (value === null || value === void 0 || value === "") return "\u672A\u8BB0\u5F55";
@@ -10175,14 +11131,14 @@
     let held = false, readyAt = 0, timer2 = null;
     let pending2 = null;
     function mergeSnapshots(previous, next) {
-      const merged = { ...next };
+      const merged2 = { ...next };
       if (Array.isArray(previous?.pending) || Array.isArray(next?.pending)) {
-        merged.pending = [
+        merged2.pending = [
           ...Array.isArray(previous?.pending) ? previous.pending : [],
           ...Array.isArray(next?.pending) ? next.pending : []
         ];
       }
-      return merged;
+      return merged2;
     }
     function schedule4() {
       if (timer2 !== null) clearTimeout(timer2);
@@ -10693,7 +11649,7 @@
       var lineId = event.id;
       ctx.showLine(event.text, event.replies, function(index) {
         ctx.send("reply", { line: lineId, index });
-      });
+      }, event.displayMs);
     }
     return { setOpen, select, renderContent, render, dispose: function() {
       pointerRepaint.dispose();
@@ -10714,7 +11670,7 @@
     var host3 = document.createElement("div");
     host3.setAttribute(MOUNTED, "");
     var card2 = el("div", "dp-card");
-    var scene3 = el("div", "dp-scene");
+    var scene6 = el("div", "dp-scene");
     var hud = el("div", "dp-hud");
     var hudName = el("div", null, "\u732A\u732A");
     var hudCoins = el("div", null, "\u{1FA99} 0");
@@ -10722,10 +11678,10 @@
     hud.appendChild(hudName);
     hud.appendChild(hudCoins);
     hud.appendChild(hudHealth);
-    scene3.appendChild(hud);
+    scene6.appendChild(hud);
     var bubble = el("div", "dp-bubble", "");
     bubble.hidden = true;
-    scene3.appendChild(bubble);
+    scene6.appendChild(bubble);
     var work = el("div", "dp-work");
     var prop = el("span", "dp-prop", "\u{1F4BC}");
     var progressWrap = el("div", "dp-progress");
@@ -10734,18 +11690,18 @@
     work.appendChild(prop);
     work.appendChild(progressWrap);
     work.hidden = true;
-    scene3.appendChild(work);
+    scene6.appendChild(work);
     var pokeHint = el("div", "dp-poke-hint");
     pokeHint.appendChild(el("span", null, "\u{1F446}"));
     pokeHint.appendChild(el("span", null, "\u6233\u4E09\u4E0B"));
     pokeHint.hidden = true;
-    scene3.appendChild(pokeHint);
+    scene6.appendChild(pokeHint);
     var dailyHint = el("button", "dp-daily");
     dailyHint.hidden = true;
-    scene3.appendChild(dailyHint);
+    scene6.appendChild(dailyHint);
     var soul = el("span", "dp-soul", "\u{1F47B}");
     soul.hidden = true;
-    scene3.appendChild(soul);
+    scene6.appendChild(soul);
     var pigArt = document.createElement("img");
     pigArt.className = "dp-pig-img";
     pigArt.alt = "";
@@ -10768,12 +11724,22 @@
     pigBody.appendChild(napBubble);
     var dressSlots = el("div", "dp-dress");
     pigBody.appendChild(dressSlots);
+    var hungerBubble = el("span", "dp-hunger-bubble");
+    hungerBubble.setAttribute("role", "img");
+    hungerBubble.setAttribute("aria-label", "\u997F\u4E86");
+    var hungerCloud = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    hungerCloud.setAttribute("viewBox", "0 0 54 50");
+    hungerCloud.setAttribute("aria-hidden", "true");
+    hungerCloud.innerHTML = '<path d="M14 33C4 33 1 22 8 17C5 9 13 3 21 7C27 0 39 3 40 11C52 12 53 26 44 29C40 38 29 38 25 33C20 37 16 36 14 33Z"/><circle cx="13" cy="40" r="3"/><circle cx="7" cy="46" r="1.8"/>';
+    hungerBubble.appendChild(hungerCloud);
+    hungerBubble.appendChild(el("span", "dp-hunger-food", "\u{1F955}"));
+    pig.appendChild(hungerBubble);
     var pomoHint = el("div", "dp-pomo");
     pomoHint.setAttribute("data-pomo-pill", "true");
     pomoHint.hidden = true;
     pigBody.appendChild(pomoHint);
-    scene3.appendChild(pig);
-    scene3.title = "\u5DE6\u952E\u6478\u6478 \xB7 \u53F3\u952E\u6253\u5F00\u9762\u677F \xB7 \u62D6\u52A8\u53EF\u79FB\u52A8";
+    scene6.appendChild(pig);
+    scene6.title = "\u5DE6\u952E\u6478\u6478 \xB7 \u53F3\u952E\u6253\u5F00\u9762\u677F \xB7 \u62D6\u52A8\u53EF\u79FB\u52A8";
     var bar = el("div", "dp-bar");
     var content = el("div", "dp-content");
     var footer = el("div", "dp-panel-footer");
@@ -10782,7 +11748,7 @@
     card2.appendChild(footer);
     card2.appendChild(bar);
     host3.appendChild(card2);
-    host3.appendChild(scene3);
+    host3.appendChild(scene6);
     if (document.body !== null && document.body !== void 0) {
       document.body.appendChild(host3);
     } else {
@@ -10793,7 +11759,7 @@
         }
       }, { once: true });
     }
-    return { font, style, host: host3, card: card2, scene: scene3, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer };
+    return { font, style, host: host3, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer };
   }
 
   // src/client/position.js
@@ -10876,6 +11842,16 @@
   var PAD = 16;
   var STEP = 4;
   var MIN_WINDOW = Object.freeze({ width: 96, height: 96 });
+  function workAreaBounds(areas, fallback) {
+    if (!Array.isArray(areas) || areas.length === 0) return fallback;
+    const x = Math.min(...areas.map((a) => a.x)), y = Math.min(...areas.map((a) => a.y));
+    return {
+      x,
+      y,
+      width: Math.max(...areas.map((a) => a.x + a.width)) - x,
+      height: Math.max(...areas.map((a) => a.y + a.height)) - y
+    };
+  }
   var round = (value) => Math.round(Number(value) || 0);
   function contentBoundsForPig(content, targetPigScreen) {
     return {
@@ -11219,7 +12195,7 @@
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.01;
   }
   function createMeasure(env) {
-    const state3 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 } };
+    const state3 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
     function boxes(host3) {
       const pigNode = host3.querySelector(".dp-pig");
@@ -11263,17 +12239,17 @@
         const zoneLeft = host3.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - BUBBLE_ZONE.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: pigBox.y - height, r: zoneLeft + BUBBLE_ZONE.width, b: pigBox.y };
       }
-      let merged = true;
-      while (merged) {
-        merged = false;
-        for (let p = 0; p < rects.length && !merged; p += 1) {
+      let merged2 = true;
+      while (merged2) {
+        merged2 = false;
+        for (let p = 0; p < rects.length && !merged2; p += 1) {
           for (let q = p + 1; q < rects.length; q += 1) {
             const one = rects[p];
             const two = rects[q];
             if (one.x <= two.r && two.x <= one.r && one.y <= two.b && two.y <= one.b) {
               rects[p] = { x: Math.min(one.x, two.x), y: Math.min(one.y, two.y), r: Math.max(one.r, two.r), b: Math.max(one.b, two.b) };
               rects.splice(q, 1);
-              merged = true;
+              merged2 = true;
               break;
             }
           }
@@ -11282,6 +12258,12 @@
       const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone]);
       if (pigNode !== null) {
         const artMargin = artMarginFor(pigBox.width);
+        outline.push({
+          x: pigBox.x + pigBox.width,
+          y: pigBox.y - 48,
+          r: pigBox.x + pigBox.width + 60,
+          b: pigBox.y + 53
+        });
         outline.push({
           x: pigBox.x - pigBox.width * 0.18,
           y: pigBox.y - pigBox.height * 0.5,
@@ -11315,6 +12297,15 @@
       };
       const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height };
       const animatedRects = [];
+      const hungerNode = host3.querySelector(".dp-hunger-bubble");
+      if (pigNode !== null && hungerNode !== null && visible(hungerNode)) {
+        animatedRects.push({
+          x: pigBox.x + pigBox.width,
+          y: pigBox.y - 48,
+          r: pigBox.x + pigBox.width + 60,
+          b: pigBox.y + 53
+        });
+      }
       if (reserves && pigNode !== null) {
         const names = String(getComputedStyle(pigNode).animationName).split(",").map((name) => name.trim()).filter(Boolean);
         const envelopes = names.map((name) => motionEnvelope(name)).filter((envelope) => envelope !== null);
@@ -11355,7 +12346,7 @@
     }
     function pin(host3, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
-      const shift = state3.shift;
+      const shift = { x: state3.shift.x + state3.anchor.x, y: state3.shift.y + state3.anchor.y };
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
       else want.right = Math.round(contentBox.right - hostBox.x - hostBox.width + PAD - shift.x) + "px";
       if (side.vertical === "top") want.top = Math.round(hostBox.y - contentBox.top + PAD + shift.y) + "px";
@@ -11381,7 +12372,12 @@
       for (const s of next.shape) tail.push(s.x, s.y, s.width, s.height);
       return head.concat(tail.map((n) => Math.floor(n / STEP))).join(",");
     }
-    return { boxes, sides, pin, keyOf, state: state3 };
+    function fitWindow(content, win) {
+      if (win && (content.width !== win.width || content.height !== win.height)) {
+        state3.anchor = { x: 0, y: 0 };
+      }
+    }
+    return { boxes, sides, pin, keyOf, fitWindow, state: state3 };
   }
 
   // src/client/desktop/place.js
@@ -11393,6 +12389,15 @@
   function areaOf(point, areas) {
     if (!Array.isArray(areas) || areas.length === 0) return null;
     return areas.find((area) => inside(area, point)) ?? nearestArea(point, areas);
+  }
+  function horizontalSpan(point, areas, fallback) {
+    const ranges = [];
+    for (const area of areas.filter((a) => point.y >= a.y && point.y < a.y + a.height).sort((a, b) => a.x - b.x)) {
+      const last = ranges.at(-1);
+      if (last && area.x <= last.x + last.width) last.width = Math.max(last.x + last.width, area.x + area.width) - last.x;
+      else ranges.push({ x: area.x, width: area.width });
+    }
+    return ranges.find((a) => point.x >= a.x && point.x <= a.x + a.width) ?? fallback;
   }
   function createPlacement() {
     let home = null;
@@ -11470,7 +12475,7 @@
         };
       }
       if (report.artMargin > 0 && list.length > 0) {
-        const area2 = areaOf(home, list);
+        const area2 = horizontalSpan({ x: home.x, y: home.y - pigSize2.height / 2 }, list, areaOf(home, list));
         const reach = Math.min(area2.width / 2, pigSize2.width / 2 + report.artMargin);
         home.x = Math.round(Math.max(area2.x + reach, Math.min(home.x, area2.x + area2.width - reach)));
       }
@@ -11478,11 +12483,12 @@
       const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize2 };
       const topLeft = { x: home.x - pigSize2.width / 2, y: home.y - pigSize2.height };
       const area = nearestArea(home, areas) ?? { x: bounds2.x, y: bounds2.y, width: bounds2.width, height: bounds2.height };
+      const viewport = workAreaBounds(list, area);
       const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain }, topLeft);
       const rawX = next.x;
       const rawY = next.y;
-      next.x = Math.max(area.x, Math.min(next.x, area.x + area.width - next.width));
-      next.y = Math.max(area.y, Math.min(next.y, area.y + area.height - next.height));
+      next.x = Math.max(viewport.x, Math.min(next.x, viewport.x + viewport.width - next.width));
+      next.y = Math.max(viewport.y, Math.min(next.y, viewport.y + viewport.height - next.height));
       lastClamp = { dx: next.x - rawX, dy: next.y - rawY };
       return next;
     }
@@ -11602,11 +12608,25 @@
           };
           c.rehome(last.window, pig, last.areas ?? []);
         }
-        c.clearSlide();
+        c.clearSlide(last?.slide ?? { x: 0, y: 0 });
         c.forgetLayout();
         c.tick();
       }
     };
+  }
+
+  // src/client/desktop/slide.js
+  function commitSlide(host3, state3, slide) {
+    const x = Number(slide?.x) || 0;
+    const y = Number(slide?.y) || 0;
+    if (host3 !== null && (x !== 0 || y !== 0)) {
+      host3.style.right = (parseFloat(host3.style.right) || 0) - x + "px";
+      host3.style.bottom = (parseFloat(host3.style.bottom) || 0) - y + "px";
+    }
+    if (host3 !== null) host3.style.translate = "";
+    state3.anchor = { x: state3.anchor.x + state3.shift.x + x, y: state3.anchor.y + state3.shift.y + y };
+    state3.shift = { x: 0, y: 0 };
+    state3.pinned = "";
   }
 
   // src/client/desktop/ext-window.js
@@ -11711,8 +12731,8 @@
     return typeof bridge2.geometry === "function" ? bridge2.geometry() : null;
   }
   function dragging() {
-    const scene3 = document.querySelector("[data-dsh-pig] .dp-scene");
-    return scene3 !== null && scene3.getAttribute("data-dragging") === "true";
+    const scene6 = document.querySelector("[data-dsh-pig] .dp-scene");
+    return scene6 !== null && scene6.getAttribute("data-dragging") === "true";
   }
   function updateHit(x, y) {
     mouse = { x, y };
@@ -11739,12 +12759,14 @@
       if (staleSince === null) staleSince = at;
       if (at - staleSince < STALE_WAIT_MS) {
         lastKey = null;
+        schedule3();
         return;
       }
     }
     staleSince = null;
     let next = measure.boxes(h);
     if (next === null) return;
+    measure.fitWindow(next.content, info?.window);
     const side = measure.sides();
     measure.pin(h, side, next.hostBox, next.contentBox);
     next = measure.boxes(h);
@@ -11757,6 +12779,7 @@
     }
     if (Math.abs(window.screenX - info.window.x) > 1 || Math.abs(window.screenY - info.window.y) > 1) {
       lastKey = null;
+      schedule3();
       return;
     }
     const bounds2 = info.window;
@@ -11838,10 +12861,6 @@
     }
     return geometry();
   }
-  function resetShift() {
-    if (measure.state.shift.x === 0 && measure.state.shift.y === 0) return;
-    measure.state.shift = { x: 0, y: 0 };
-  }
   function schedule3() {
     if (scheduled2) return;
     scheduled2 = true;
@@ -11920,10 +12939,6 @@
       },
       /** @param {{x:number,y:number}|null} [origin] pointerdown 时的屏幕坐标：延迟到 4px 才开始拖动时，窗口不会落后手指。 */
       beginDrag: function(origin) {
-        const h = host2();
-        if (h !== null && h.getAttribute("data-open") === "false") {
-          resetShift();
-        }
         const info = readGeometry();
         const pig = info && info.window ? pigInWindow(info.window) : null;
         dragSlide = { x: 0, y: 0 };
@@ -11952,11 +12967,10 @@
             placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
           }
         }
+        commitSlide(host2(), measure.state, dragSlide);
         dragSlide = { x: 0, y: 0 };
-        const h = host2();
-        if (h !== null) h.style.translate = "";
         lastKey = null;
-        tick();
+        schedule3();
       },
       syncGeometry: function() {
         tick();
@@ -11977,10 +12991,10 @@
         isFlying: function() {
           return flying;
         },
-        clearSlide: function() {
+        clearSlide: function(slide) {
           dragSlide = { x: 0, y: 0 };
           const h = host2();
-          if (h !== null) h.style.translate = "";
+          commitSlide(h, measure.state, slide);
         },
         forgetLayout: function() {
           lastKey = null;
@@ -12301,22 +13315,54 @@
 
   // src/client/desktop/flight.js
   var STEP2 = 1 / 120;
+  function merged(ranges) {
+    const result = [];
+    for (const range of ranges.sort((a, b) => a[0] - b[0])) {
+      const last = result[result.length - 1];
+      if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
+      else result.push([...range]);
+    }
+    return result;
+  }
+  function intersect(a, b) {
+    return a.flatMap((one) => b.map((two) => [Math.max(one[0], two[0]), Math.min(one[1], two[1])])).filter((range) => range[0] <= range[1]);
+  }
+  function corridor(areas, horizontal, from, to, before, after, position) {
+    const axis = horizontal ? "y" : "x";
+    const size = horizontal ? "height" : "width";
+    const other = horizontal ? "x" : "y";
+    const otherSize = horizontal ? "width" : "height";
+    const cuts = [from, to, ...areas.flatMap((a) => [a[axis], a[axis] + a[size]]).filter((v) => v > from && v < to)].sort((a, b) => a - b);
+    let ranges = [[-Infinity, Infinity]];
+    for (let i = 1; i < cuts.length; i++) {
+      const mid = (cuts[i - 1] + cuts[i]) / 2;
+      const band = merged(areas.filter((a) => mid >= a[axis] && mid <= a[axis] + a[size]).map((a) => [a[other], a[other] + a[otherSize]]));
+      ranges = intersect(ranges, band);
+    }
+    const allowed = ranges.map((r) => [r[0] + before, r[1] - after]).filter((r) => r[0] <= r[1]);
+    return allowed.find((r) => position >= r[0] - 1e-5 && position <= r[1] + 1e-5) ?? allowed.sort((a, b) => Math.abs(clamp(position, a[0], a[1]) - position) - Math.abs(clamp(position, b[0], b[1]) - position))[0];
+  }
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
   function createFlight(options) {
+    const areas = options.areas?.length ? options.areas : [options.area];
     const area = options.area;
     const pig = options.pig;
     const artMargin = Number.isFinite(options.artMargin) ? options.artMargin : 0;
     const reach = Math.min(area.width / 2, pig.width / 2 + artMargin);
-    const left = area.x + reach;
-    const right = area.x + area.width - reach;
-    const floor = area.y + area.height;
-    const ceiling = area.y + pig.height + 8;
+    const head = pig.height + 8;
+    const horizontal = (x2, y2) => corridor(areas, true, y2 - head, y2, reach, reach, x2);
+    const vertical = (x2, y2) => corridor(areas, false, x2 - reach, x2 + reach, head, 0, y2);
+    let x = options.x;
+    let y = options.y;
+    const initialY = vertical(x, y) ?? [area.y + head, area.y + area.height];
+    y = clamp(y, initialY[0], initialY[1]);
+    const initialX = horizontal(x, y) ?? [area.x + reach, area.x + area.width - reach];
+    x = clamp(x, initialX[0], initialX[1]);
+    const floor = initialY[1];
     const speed = Math.hypot(options.vx, options.vy);
     const scale2 = speed > FEEL.throwMax ? FEEL.throwMax / speed : 1;
-    let x = clamp(options.x, Math.min(left, right), Math.max(left, right));
-    let y = Math.min(options.y, floor);
     let vx = options.vx * scale2;
     let vy = options.vy * scale2;
     if (y >= floor - 2 && speed >= FEEL.throwMin && vy > -60 && Math.abs(vy) < Math.abs(vx) * 0.8) {
@@ -12337,8 +13383,8 @@
         vy *= drag;
       }
       vy += FEEL.gravity * h;
+      const [left, right] = horizontal(x, y);
       x += vx * h;
-      y += vy * h;
       if (x < left) {
         x = left;
         if (vx < 0) {
@@ -12354,6 +13400,8 @@
           emit({ type: "bounce", speed: impact, side: "right" });
         }
       }
+      const [ceiling, floor2] = vertical(x, y);
+      y += vy * h;
       if (y < ceiling) {
         y = ceiling;
         if (vy < 0) {
@@ -12362,9 +13410,9 @@
           emit({ type: "bounce", speed: impact, side: "top" });
         }
       }
-      if (y >= floor) {
+      if (y >= floor2) {
         const impact = Math.abs(vy);
-        y = floor;
+        y = floor2;
         if (impact >= FEEL.landVy && impact > 0) {
           vy = -impact * FEEL.restitution;
           vx *= FEEL.floorFriction;
@@ -12400,7 +13448,7 @@
           landed = true;
           vx = 0;
           vy = 0;
-          y = floor;
+          y = vertical(x, y)[1];
           emit({ type: "land", speed: impact });
           if (impact > FEEL.dizzyImpact) emit({ type: "dizzy", speed: impact });
         }
@@ -12441,7 +13489,9 @@
         return clamp(Math.round(Math.max(0, impact) / 600), 1, 4);
       },
       bounds() {
-        return { left, right, floor, ceiling };
+        const [left, right] = horizontal(x, y);
+        const [ceiling, floor2] = vertical(x, y);
+        return { left, right, floor: floor2, ceiling };
       }
     };
   }
@@ -12499,8 +13549,8 @@
       const local = current2.start.pig;
       const desiredX = current2.body.x - (local.x + local.width / 2);
       const desiredY = current2.body.y - (local.y + local.height);
-      const clampedX = clamp2(desiredX, current2.start.area.x, Math.max(current2.start.area.x, current2.start.area.x + current2.start.area.width - width));
-      const clampedY = clamp2(desiredY, current2.start.area.y, Math.max(current2.start.area.y, current2.start.area.y + current2.start.area.height - height));
+      const clampedX = clamp2(desiredX, current2.viewport.x, Math.max(current2.viewport.x, current2.viewport.x + current2.viewport.width - width));
+      const clampedY = clamp2(desiredY, current2.viewport.y, Math.max(current2.viewport.y, current2.viewport.y + current2.viewport.height - height));
       current2.slide = { x: desiredX - clampedX, y: desiredY - clampedY };
       current2.lastWindow = { x: clampedX, y: clampedY };
       current2.shell.flight.move?.(clampedX, clampedY, current2.slide);
@@ -12524,6 +13574,7 @@
           vx,
           vy,
           area: start2.area,
+          areas: start2.areas,
           pig: start2.pig,
           artMargin: artMarginFor(start2.pig.width)
         });
@@ -12531,6 +13582,7 @@
           body,
           start: start2,
           shell: shell2,
+          viewport: workAreaBounds(start2.areas, start2.area),
           lastWindow: { x: start2.window.x, y: start2.window.y },
           slide: { x: 0, y: 0 },
           raf: requestAnimationFrame(step),
@@ -18357,7 +19409,7 @@
         style,
         host: host3,
         card: card2,
-        scene: scene3,
+        scene: scene6,
         hud,
         hudName,
         hudCoins,
@@ -18414,7 +19466,7 @@
       var lastPendingId = 0;
       var pollTimer = null;
       var fx = createEffects({
-        scene: scene3,
+        scene: scene6,
         pig,
         pigArt,
         pigEmoji,
@@ -18433,7 +19485,7 @@
         pig,
         pigHold,
         pigBody,
-        scene: scene3,
+        scene: scene6,
         host: host3,
         pigArt,
         pigEmoji,
@@ -18461,7 +19513,7 @@
         card: card2,
         content,
         footer,
-        scene: scene3,
+        scene: scene6,
         hud,
         hudName,
         hudCoins,
@@ -18681,7 +19733,7 @@
         showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
       }
       var gestures = attachGestures({
-        scene: scene3,
+        scene: scene6,
         host: host3,
         pig,
         feel: feel2,
@@ -18713,7 +19765,7 @@
           writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }));
         }
       });
-      scene3.addEventListener("contextmenu", function(event) {
+      scene6.addEventListener("contextmenu", function(event) {
         event.preventDefault();
         setOpen(!isOpen);
       });

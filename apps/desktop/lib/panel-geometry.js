@@ -10,6 +10,8 @@
  * 尺寸常量和游戏包 src/client/constants.js 的同名常量必须一致（test/panel-geometry.test.js 核对）。
  */
 
+import { desktopViewportBounds } from './window-geometry.js'
+
 /** 面板和猪隔多远。 */
 export const PANEL_GAP = 8
 /** 面板离屏幕边至少多远。 */
@@ -48,7 +50,7 @@ export function pigScreenBox(asked, read, pig, options = {}) {
  * 面板朝哪边开、最高多高、和猪哪边对齐（开面板和松手时定，拖动中不改）：
  * 上面空间大就往上，否则往下（和网页版 fitPanel 一个规则）；右边对齐猪放得下就右对齐，否则左对齐。
  * 拖动中不换对齐边：换一次面板就横跳一个面板宽（2026-10-07 虚拟机录像里拖到左边时跳了 330px），
- * 拖动中放不下就让面板停在屏幕边，松手再重新定；松手时原来那边还放得下就不换（不然松手一下面板横跳）。
+ * 拖动中允许跨过屏缝，只在整个桌面外沿夹取，松手再重新定；松手时原来那边还放得下就不换（不然松手一下面板横跳）。
  * @param {Rect} pig 猪在屏幕上的框
  * @param {Rect} area 猪所在那块屏的工作区
  * @param {number} [width] 面板宽
@@ -71,15 +73,35 @@ export function panelAnchorFor(pig, area, width = PANEL_FALLBACK.width, keep = u
  * @param {Rect} pig 猪在屏幕上的框
  * @param {{vertical:string, horizontal?:string, area:Rect}} anchor
  * @param {{width:number,height:number}|null} size 面板页面报的尺寸
+ * @param {Rect[]|null} [dragAreas] 拖动时允许跨屏，仍保持打开时的方向和尺寸
  * @returns {Rect}
  */
-export function panelBoundsFor(pig, anchor, size) {
+export function panelBoundsFor(pig, anchor, size, dragAreas = null) {
   const area = anchor.area
   const width = Math.round(size?.width ?? PANEL_FALLBACK.width)
   const height = Math.round(Math.min(size?.height ?? PANEL_FALLBACK.height, area.height - 2 * PANEL_MARGIN))
   let x = anchor.horizontal === 'left' ? Math.round(pig.x) : Math.round(pig.x + pig.width - width)
-  x = Math.max(area.x + PANEL_MARGIN, Math.min(x, area.x + area.width - width - PANEL_MARGIN))
   let y = anchor.vertical === 'above' ? Math.round(pig.y - PANEL_GAP - height) : Math.round(pig.y + pig.height + PANEL_GAP)
+  if (dragAreas?.length) {
+    // 只冻结对齐方向，不能冻结夹取屏幕；接缝处整块桌面连续跟随，松手再按落屏重新排版。
+    return desktopViewportBounds({ x, y, width, height }, dragAreas.map(a => ({
+      x: a.x + PANEL_MARGIN, y: a.y, width: a.width - 2 * PANEL_MARGIN, height: a.height,
+    })))
+  }
+  x = Math.max(area.x + PANEL_MARGIN, Math.min(x, area.x + area.width - width - PANEL_MARGIN))
   y = Math.max(area.y, Math.min(y, area.y + area.height - height))
   return { x, y, width, height }
+}
+
+/** 固定透明外框：切页只改变卡片高度，不挪原生窗口。旧游戏包保持原尺寸协议。 */
+export function panelViewportSize(anchor, size, fixed = false) {
+  if (!fixed || size === null) return size
+  return { width: size.width, height: Math.max(size.height, anchor.maxHeight) }
+}
+
+/** 透明外框里的真实面板位置；未占用的空白需要让鼠标穿透。 */
+export function panelContentRect(bounds, anchor, size) {
+  const height = Math.min(bounds.height, size?.height ?? bounds.height)
+  return { x: 0, y: anchor.vertical === 'above' ? bounds.height - height : 0,
+    width: Math.min(bounds.width, size?.width ?? bounds.width), height }
 }

@@ -119,7 +119,7 @@ function itemTile(ui, item, color) {
   var note = item.price + ' 🪙'
   if (item.owned) note = '已拥有'
   else if (item.kind === 'dress' && item.unlocked === false) note = '🔒 Lv.' + item.level
-  return tile({
+  const node = tile({
     emoji: item.emoji, label: item.label, color: color, soft: true, note: note,
     badge: owned > 0 ? '×' + owned : '',
     tag: item.needed ? '需要' : (item.owned && item.worn ? '穿着' : ''),
@@ -128,4 +128,6 @@ function itemTile(ui, item, color) {
     data: { 'data-buy': item.key },
     onPick: function () { ui.send('buy', { item: item.key }) },
   })
+  if (item.kind === 'body') node.setAttribute('aria-description', item.blurb)
+  return node
 }

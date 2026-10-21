@@ -169,10 +169,11 @@ function showBubble(text, ms) {
  * @param {string} text
  * @param {string[]} replies
  * @param {(index: number) => void} onReply
+ * @param {number} [ms]
  */
-function showLine(text, replies, onReply) {
+function showLine(text, replies, onReply, ms) {
   if (replies.length === 0) {
-    showBubble(text, 2600)
+    showBubble(text, ms || 2600)
     return
   }
   if (bubbleTimer !== null) window.clearTimeout(bubbleTimer)
@@ -197,7 +198,7 @@ function showLine(text, replies, onReply) {
   bubbleTimer = window.setTimeout(function () {
     bubble.hidden = true
     bubbleTimer = null
-  }, 6000)
+  }, Math.max(6000, ms || 0))
 }
 
 function toast(text) {

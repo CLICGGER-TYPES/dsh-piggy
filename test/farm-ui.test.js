@@ -197,10 +197,10 @@ test('小农场：信息栏在场景外，主操作绿框，种子袋和仓库�
   assert.ok(ui.find('data-farm-exchange', 'open'))
 })
 
-// 窗口叠放由原有布局负责，台词只移动自己，不改变面板与状态条尺寸。
-test('独立猪窗口开面板时，台词跟签到一样放在猪旁边，避免覆盖另一个窗口底栏', () => {
+// 窗口层级保证现有对话可见，开关菜单不重新定位或缩窄对话。
+test('独立猪窗口开面板时，对话保持头顶位置与宽度', () => {
   const css = readFileSync(new URL('../src/client/css-tabs.js', import.meta.url), 'utf8')
-  assert.match(css, /data-panel-open="true"\] \.dp-bubble\{right:calc\(100% \+ 6px\)/)
+  assert.doesNotMatch(css, /data-panel-open="true"\] \.dp-bubble\{/)
   assert.doesNotMatch(css, /data-daily-side="right"\] \.dp-bubble\{right:auto;left:calc\(100% \+ 6px\)/)
 })
 

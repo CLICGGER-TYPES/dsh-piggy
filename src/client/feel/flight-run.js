@@ -7,6 +7,7 @@
  * @module dsh-piggy/client/feel/flight-run
  */
 import { artMarginFor } from '../art-framing.js'
+import { workAreaBounds } from '../desktop/geometry.js'
 import { createFlight } from '../desktop/flight.js'
 import { FEEL } from './config.js'
 
@@ -79,8 +80,8 @@ export function createFlightRunner(c) {
     const local = current.start.pig
     const desiredX = current.body.x - (local.x + local.width / 2)
     const desiredY = current.body.y - (local.y + local.height)
-    const clampedX = clamp(desiredX, current.start.area.x, Math.max(current.start.area.x, current.start.area.x + current.start.area.width - width))
-    const clampedY = clamp(desiredY, current.start.area.y, Math.max(current.start.area.y, current.start.area.y + current.start.area.height - height))
+    const clampedX = clamp(desiredX, current.viewport.x, Math.max(current.viewport.x, current.viewport.x + current.viewport.width - width))
+    const clampedY = clamp(desiredY, current.viewport.y, Math.max(current.viewport.y, current.viewport.y + current.viewport.height - height))
     current.slide = { x: desiredX - clampedX, y: desiredY - clampedY }
     current.lastWindow = { x: clampedX, y: clampedY }
     current.shell.flight.move?.(clampedX, clampedY, current.slide)
@@ -102,10 +103,11 @@ export function createFlightRunner(c) {
       if (start === null || start === undefined || !start.area) return false
       const body = createFlight({
         x: start.home.x, y: start.home.y, vx: vx, vy: vy,
-        area: start.area, pig: start.pig, artMargin: artMarginFor(start.pig.width),
+        area: start.area, areas: start.areas, pig: start.pig, artMargin: artMarginFor(start.pig.width),
       })
       state = {
         body: body, start: start, shell: shell,
+        viewport: workAreaBounds(start.areas, start.area),
         lastWindow: { x: start.window.x, y: start.window.y },
         slide: { x: 0, y: 0 },
         raf: requestAnimationFrame(step),

@@ -92,6 +92,20 @@ test('猪窗口：面板窗口转来的反应照演，名单外的不演', () =>
   assert.deepEqual(ctx.calls, [['showBubble', '好吃', 2000]])
 })
 
+test('opening the menu raises an existing speech bubble without replaying or replacing it', () => {
+  const { emit, sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  ctx.bubble = { hidden: false }
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  emit('panel', { type: 'open' })
+  assert.deepEqual(sent.filter(entry => entry[0] === 'raise'), [['raise']])
+  assert.deepEqual(ctx.calls, [], 'opening a menu must not replay the line or reset its scroll')
+  ctx.bubble.hidden = true
+  emit('panel', { type: 'closed' })
+  emit('panel', { type: 'open' })
+  assert.equal(sent.filter(entry => entry[0] === 'raise').length, 1, 'no speech means no extra raise')
+})
+
 test('面板窗口：对猪的反应都转给猪窗口，主进程的开/关/失焦驱动面板', () => {
   const { sent, emit } = fakeShell('panel')
   const ctx = fakeCtx()

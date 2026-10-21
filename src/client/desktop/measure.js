@@ -65,7 +65,7 @@ function visible(node) {
  */
 export function createMeasure(env) {
   /** shift：窗口被夹回工作区时，整块内容在窗口里反向挪多少（猪的屏幕位置不变，只裁掉透明留白）。 */
-  const state = { pinned: '', bubbleHeight: null, shift: { x: 0, y: 0 } }
+  const state = { pinned: '', bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } }
   const reserves = env.platform !== 'darwin'
 
   /** @param {any} host */
@@ -140,6 +140,9 @@ export function createMeasure(env) {
     if (pigNode !== null) {
       // Reserve the widest reviewed sprite for every action: action changes never resize the window.
       const artMargin = artMarginFor(pigBox.width)
+      // 饥饿云朵在右上方；始终预留，包括呼吸放大时的余量，显隐不改变窗口大小。
+      outline.push({ x: pigBox.x + pigBox.width, y: pigBox.y - 48,
+        r: pigBox.x + pigBox.width + 60, b: pigBox.y + 53 })
       // Reviewed frame union, including the hand: reserve even while idle.
       // The 512px canvas has transparent padding and must not itself resize the window.
       outline.push({ x: pigBox.x - pigBox.width * .18, y: pigBox.y - pigBox.height * .5,
@@ -170,6 +173,12 @@ export function createMeasure(env) {
     // that moves the artwork contributes, because the Linux window shape also
     // clips *drawing* outside these rects (a tall hat at dp-feed-hop's peak).
     const animatedRects = []
+    const hungerNode = host.querySelector('.dp-hunger-bubble')
+    if (pigNode !== null && hungerNode !== null && visible(hungerNode)) {
+      // Linux 原生窗口形状也会裁剪绘制；可见云朵使用与固定外框一致的余量。
+      animatedRects.push({ x: pigBox.x + pigBox.width, y: pigBox.y - 48,
+        r: pigBox.x + pigBox.width + 60, b: pigBox.y + 53 })
+    }
     if (reserves && pigNode !== null) {
       const names = String(getComputedStyle(pigNode).animationName).split(',').map(name => name.trim()).filter(Boolean)
       const envelopes = names.map(name => motionEnvelope(name)).filter(envelope => envelope !== null)
@@ -211,7 +220,7 @@ export function createMeasure(env) {
   /** 让整块内容离窗口锚边正好 PAD。 @param {any} host */
   function pin(host, side, hostBox, contentBox) {
     const want = { left: 'auto', right: 'auto', top: 'auto', bottom: 'auto' }
-    const shift = state.shift
+    const shift = { x: state.shift.x + state.anchor.x, y: state.shift.y + state.anchor.y }
     if (side.horizontal === 'left') want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + 'px'
     else want.right = Math.round(contentBox.right - hostBox.x - hostBox.width + PAD - shift.x) + 'px'
     if (side.vertical === 'top') want.top = Math.round(hostBox.y - contentBox.top + PAD + shift.y) + 'px'
@@ -234,5 +243,13 @@ export function createMeasure(env) {
     return head.concat(tail.map(n => Math.floor(n / STEP))).join(',')
   }
 
-  return { boxes, sides, pin, keyOf, state }
+  // 落地偏移只适用于交接时的窗口。体型/缩放改变外框后回到标准布局，
+  // 新窗口仍由 placement 的屏幕脚底坐标定位，不能把旧锚点带进更小的外框。
+  function fitWindow(content, win) {
+    if (win && (content.width !== win.width || content.height !== win.height)) {
+      state.anchor = { x: 0, y: 0 }
+    }
+  }
+
+  return { boxes, sides, pin, keyOf, fitWindow, state }
 }

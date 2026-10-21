@@ -12,6 +12,7 @@ import { createMeasure, layoutBox } from './measure.js'
 import { createPlacement } from './place.js'
 import { createWindowClamp } from './window-clamp.js'
 import { createFlightBridge } from './flight-bridge.js'
+import { commitSlide } from './slide.js'
 import { installPanel, startPanel } from './panel-window.js'
 import { installExt } from './ext-window.js'
 import { DESKTOP_CSS } from './css.js'
@@ -89,11 +90,12 @@ function tick() {
     // 等页面重排（resize 事件会再排一次 tick）；等太久就照常量，避免系统改不了尺寸时卡死。
     const at = typeof performance === 'object' ? performance.now() : Date.now()
     if (staleSince === null) staleSince = at
-    if (at - staleSince < STALE_WAIT_MS) { lastKey = null; return }
+    if (at - staleSince < STALE_WAIT_MS) { lastKey = null; schedule(); return }
   }
   staleSince = null
   let next = measure.boxes(h)
   if (next === null) return
+  measure.fitWindow(next.content, info?.window)
   const side = measure.sides()
   measure.pin(h, side, next.hostBox, next.contentBox)
   next = measure.boxes(h)
@@ -105,7 +107,7 @@ function tick() {
   // 还没拿到窗口在哪：先不摆（以前按 (0,0) 算，启动时会把窗口摆错一次）。几何一到会再量。
   if (info === null || !info.window) { lastKey = null; return }
   // 窗口还在动（X11 下 setBounds 是异步的，回读和页面的 screenX 一时对不上）：这一轮不摆，等它落定。
-  if (Math.abs(window.screenX - info.window.x) > 1 || Math.abs(window.screenY - info.window.y) > 1) { lastKey = null; return }
+  if (Math.abs(window.screenX - info.window.x) > 1 || Math.abs(window.screenY - info.window.y) > 1) { lastKey = null; schedule(); return }
   const bounds = info.window
   const areas = info.workAreas ?? [info.workArea]
   // 每一轮都按「家」重新算窗口（不看上一轮算了什么）：上一轮哪怕错了，这一轮按真实布局自己纠正。
@@ -187,12 +189,6 @@ function readGeometry() {
     if (fresh !== null && fresh !== undefined && fresh.window) return fresh
   }
   return geometry()
-}
-
-/** 内容回到贴着窗口锚边的正常位置（拖动、开面板时用；需要时下一轮会重新算）。 */
-function resetShift() {
-  if (measure.state.shift.x === 0 && measure.state.shift.y === 0) return
-  measure.state.shift = { x: 0, y: 0 }
 }
 
 function schedule() {
@@ -279,19 +275,8 @@ export function install(shell) {
     },
     /** @param {{x:number,y:number}|null} [origin] pointerdown 时的屏幕坐标：延迟到 4px 才开始拖动时，窗口不会落后手指。 */
     beginDrag: function (origin) {
-      const h = host()
-      if (h !== null && h.getAttribute('data-open') === 'false') {
-        // 收起时拖：不再把窗口缩成「只包住猪」。
-        //
-        // 以前这里缩一次（204 高）、松手再长回预留面板的大小（476 高、向上长 272px）。
-        // 那是**跨进程的两次改动**：窗口已经在新的位置/尺寸了，页面还没重排完，
-        // 中间那一两帧猪就画在错的地方 —— 用户看到「松手后猪瞬移到上面去再瞬移下来」
-        // （2026-10-07 win11 虚拟机日志：drag end 之后 20ms 内 bounds place
-        //  (226,120,324x476)，341ms 后又回到 (259,390,304x208)）。
-        // 拖动期间保持窗口尺寸不变，松手就没有这一步，也就没有那一帧。
-        resetShift()
-      }
-      // 告诉主进程猪在窗口里哪儿：刚缩完窗口页面多半还没重排，按家和窗口算，不量旧布局。
+      // 拖动不改变窗口尺寸或钉边偏移；right/bottom 和偏移记录必须保持同一套坐标。
+      // 告诉主进程猪在当前窗口里的框，页面尚未重排时按家和窗口算。
       const info = readGeometry()
       const pig = info && info.window ? pigInWindow(info.window) : null
       dragSlide = { x: 0, y: 0 }
@@ -325,12 +310,12 @@ export function install(shell) {
           // 朝向改由「面板真正打开时」决定（sides()），那时窗口本来就在变；收起态保持稳定。
         }
       }
-      // 滑动交还给常规摆放：同一轮里去掉 translate、按新家摆（贴边时由钉边偏移接手），中间不会画出一帧
+      // 先在当前窗口内等位交接，避免「旧窗口 + 新布局」闪出错误位置。
+      // 下一帧再常规摆放：本轮若紧接着抛出，飞行会接管，不插入一次多余的窗口挪动。
+      commitSlide(host(), measure.state, dragSlide)
       dragSlide = { x: 0, y: 0 }
-      const h = host()
-      if (h !== null) h.style.translate = ''
       lastKey = null
-      tick()
+      schedule()
     },
     syncGeometry: function () { tick() },
     // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
@@ -343,10 +328,10 @@ export function install(shell) {
       rehome: function (win, pig, areas) { placement.rehome(win, pig, areas) },
       setFlying: function (on) { flying = on },
       isFlying: function () { return flying },
-      clearSlide: function () {
+      clearSlide: function (slide) {
         dragSlide = { x: 0, y: 0 }
         const h = host()
-        if (h !== null) h.style.translate = ''
+        commitSlide(h, measure.state, slide)
       },
       forgetLayout: function () { lastKey = null },
       tick: tick,

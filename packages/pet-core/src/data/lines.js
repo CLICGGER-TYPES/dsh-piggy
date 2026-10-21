@@ -39,17 +39,21 @@ export const WELCOME_BACK_AFTER_MINUTES = 30
  * @typedef {object} Line
  * @property {string} text
  * @property {ReadonlyArray<LineReply>} [replies]
+ * @property {ReadonlyArray<string>} [personalities]
  */
 
 /**
  * One line, with an optional reply button.
  * @param {string} text
  * @param {string} [reply]
+ * @param {ReadonlyArray<string>} [personalities]
  * @returns {Line}
  */
-const line = (text, reply) => Object.freeze(reply === undefined
-  ? { text }
-  : { text, replies: Object.freeze([Object.freeze({ label: reply })]) })
+const line = (text, reply, personalities) => Object.freeze({
+  text,
+  ...(reply === undefined ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) }),
+  ...(personalities === undefined ? {} : { personalities: Object.freeze(personalities) }),
+})
 
 const scene = (...lines) => Object.freeze(lines)
 
@@ -58,102 +62,102 @@ const BASE_LINES = Object.freeze({
   // 被拿起/戳醒：只说一句，不啰嗦。
   wake: scene(
     line('唔……被拎起来了'),
-    line('醒了醒了，别晃我'),
-    line('（迷迷糊糊）到哪儿了？'),
+    line('醒了醒了，别晃我', undefined, ['cranky']),
+    line('（迷迷糊糊）到哪儿了？', undefined, ['goofy']),
   ),
   // --- 照顾 -----------------------------------------------------------------
   eat: scene(
-    line('好吃！还有吗？', '真乖'),
+    line('好吃！还有吗？', '真乖', ['peppy', 'curious']),
     line('吧唧吧唧……'),
-    line('[主人]最好了～'),
-    line('这个味道我记住了'),
-    line('吃饱饱才有力气陪你加班'),
-    line('嗝——（不好意思）'),
+    line('[主人]最好了～', undefined, ['peppy', 'clingy']),
+    line('这个味道我记住了', undefined, ['earnest']),
+    line('吃饱饱才有力气陪你加班', undefined, ['sisterly', 'normal']),
+    line('嗝——（不好意思）', undefined, ['shy']),
   ),
   full: scene(
     line('吃饱啦，肚子圆滚滚的'),
     line('好饱好饱，再吃就要撑着了'),
-    line('嗝——谢谢[主人]，饱饱的'),
+    line('嗝——谢谢[主人]，饱饱的', undefined, ['normal']),
   ),
   overfull: scene(
     line('撑……撑住了……'),
-    line('真的吃不下了，你看我肚子'),
-    line('再喂我就要变成球了', '最后一口'),
+    line('真的吃不下了，你看我肚子', undefined, ['cranky']),
+    line('再喂我就要变成球了', '最后一口', ['goofy']),
   ),
   bathe: scene(
     line('香喷喷的！'),
-    line('水有点凉……', '马上擦干'),
-    line('搓搓背，舒服～'),
-    line('泡泡！是泡泡！'),
+    line('水有点凉……', '马上擦干', ['shy']),
+    line('搓搓背，舒服～', undefined, ['lazy']),
+    line('泡泡！是泡泡！', undefined, ['peppy', 'goofy']),
     line('洗干净了，可以抱了'),
   ),
   play: scene(
-    line('再来一次！'),
-    line('接住啦！', '真棒'),
-    line('哈哈哈好好玩'),
-    line('我跑得比球快'),
-    line('玩累了……再玩五分钟'),
+    line('再来一次！', undefined, ['peppy']),
+    line('接住啦！', '真棒', ['peppy', 'snooty']),
+    line('哈哈哈好好玩', undefined, ['peppy', 'goofy']),
+    line('我跑得比球快', undefined, ['peppy', 'snooty']),
+    line('玩累了……再玩五分钟', undefined, ['lazy', 'goofy']),
   ),
   pet: scene(
     line('好舒服……'),
-    line('再摸摸～', '好'),
-    line('呼噜呼噜……'),
+    line('再摸摸～', '好', ['peppy', 'clingy']),
+    line('呼噜呼噜……', undefined, ['lazy', 'goofy']),
     line('（眯起眼睛）'),
-    line('这里这里！左边一点！'),
-    line('唔……好痒'),
-    line('[主人]的手暖暖的'),
+    line('这里这里！左边一点！', undefined, ['peppy', 'mischievous', 'curious']),
+    line('唔……好痒', undefined, ['shy']),
+    line('[主人]的手暖暖的', undefined, ['normal']),
   ),
   // --- 状态提醒（闲着时优先说这些）-------------------------------------------
   hungry: scene(
     line('肚子咕咕叫了……'),
-    line('[主人]，饭饭！', '马上来'),
-    line('我可以吃一整个苹果树'),
+    line('[主人]，饭饭！', '马上来', ['peppy', 'clingy']),
+    line('我可以吃一整个苹果树', undefined, ['peppy', 'goofy']),
   ),
   dirty: scene(
     line('身上有点痒痒的'),
-    line('我是不是有点味道了……'),
+    line('我是不是有点味道了……', undefined, ['shy']),
     line('想洗泡泡浴', '好，这就洗'),
   ),
   lonely: scene(
-    line('[主人]在忙什么呀？'),
-    line('你好久没理我了……', '陪你一会儿'),
-    line('我一个人在这儿数像素'),
+    line('[主人]在忙什么呀？', undefined, ['curious', 'clingy', 'shy']),
+    line('你好久没理我了……', '陪你一会儿', ['clingy', 'shy']),
+    line('我一个人在这儿数像素', undefined, ['lazy', 'goofy']),
   ),
   idle: scene(
-    line('（打了个哈欠）'),
+    line('（打了个哈欠）', undefined, ['lazy']),
     line('今天天气好像不错'),
-    line('你写的代码我看懂了一行！'),
-    line('要不要休息一下眼睛？', '好'),
+    line('你写的代码我看懂了一行！', undefined, ['earnest']),
+    line('要不要休息一下眼睛？', '好', ['sisterly']),
     line('我在想晚饭吃什么'),
-    line('（在角落里滚了一圈）'),
-    line('[主人]加油，我在旁边看着'),
-    line('刚才那个报错我也看见了……'),
+    line('（在角落里滚了一圈）', undefined, ['mischievous', 'goofy']),
+    line('[主人]加油，我在旁边看着', undefined, ['peppy', 'earnest']),
+    line('刚才那个报错我也看见了……', undefined, ['normal', 'shy']),
   ),
   // --- 出门 -----------------------------------------------------------------
   workDone: scene(
     line('我回来啦！赚到钱了！', '辛苦了'),
-    line('今天老板夸我了'),
-    line('累是累了点，但是有钱了'),
+    line('今天老板夸我了', undefined, ['snooty']),
+    line('累是累了点，但是有钱了', undefined, ['lazy']),
   ),
   tired: scene(
     line('好累啊……', '歇会儿吧'),
-    line('能不能先让我躺一下'),
-    line('再干下去我要头晕了'),
+    line('能不能先让我躺一下', undefined, ['lazy']),
+    line('再干下去我要头晕了', undefined, ['cranky']),
   ),
   study: scene(
-    line('今天学到好多！', '真乖'),
-    line('老师讲的我都听懂了（大概）'),
-    line('作业……明天再说'),
+    line('今天学到好多！', '真乖', ['peppy', 'earnest']),
+    line('老师讲的我都听懂了（大概）', undefined, ['goofy']),
+    line('作业……明天再说', undefined, ['lazy']),
   ),
   graduate: scene(
     line('我毕业啦！我没有留级！', '真棒'),
-    line('看，我的毕业照！'),
+    line('看，我的毕业照！', undefined, ['snooty']),
     line('下一段我也能念完'),
   ),
   tripBack: scene(
     line('我给你带了东西！', '是什么？'),
-    line('外面好大啊'),
-    line('下次带你一起去'),
+    line('外面好大啊', undefined, ['curious']),
+    line('下次带你一起去', undefined, ['peppy', 'clingy']),
   ),
   // --- 生病 -----------------------------------------------------------------
   sick: scene(
@@ -174,30 +178,30 @@ const BASE_LINES = Object.freeze({
   // --- 成长与生死 -------------------------------------------------------------
   levelup: scene(
     line('我又长大了一点！', '真乖'),
-    line('感觉自己变厉害了'),
-    line('你看我是不是高了一点'),
+    line('感觉自己变厉害了', undefined, ['snooty']),
+    line('你看我是不是高了一点', undefined, ['snooty']),
   ),
   growUp: scene(
-    line('我长大啦！'),
+    line('我长大啦！', undefined, ['peppy']),
     line('以前的衣服好像穿不下了'),
-    line('[主人]，我现在是大猪了'),
+    line('[主人]，我现在是大猪了', undefined, ['snooty']),
   ),
   coronation: scene(
     line('王冠有点重，但我会好好戴着的，[主人]。', '你可以的'),
-    line('从今天起，零食也算王室事务！'),
+    line('从今天起，零食也算王室事务！', undefined, ['peppy', 'snooty']),
     line('我宣布：[主人]永远是我的第一位贵客。'),
-    line('咳咳，本王想先吃个苹果。'),
+    line('咳咳，本王想先吃个苹果。', undefined, ['cranky', 'snooty']),
   ),
   contract: scene(
     line('契约签好了。先说好，我还是你那只猪。', '当然'),
-    line('角长出来了，撒娇的本事可没丢。'),
+    line('角长出来了，撒娇的本事可没丢。', undefined, ['peppy', 'clingy']),
     line('恶魔也要吃饭呀，[主人]。'),
-    line('这笔交易我赚了：以后还能和你在一起。'),
+    line('这笔交易我赚了：以后还能和你在一起。', undefined, ['clingy', 'shy']),
   ),
   enter: scene(
-    line('[主人]你回来啦！', '回来了'),
-    line('等你好久了～'),
-    line('今天也要一起加油哦'),
+    line('[主人]你回来啦！', '回来了', ['peppy']),
+    line('等你好久了～', undefined, ['clingy']),
+    line('今天也要一起加油哦', undefined, ['sisterly', 'earnest']),
   ),
   death: scene(
     line('[主人]保重，我走了，不带走一片云彩～'),
@@ -211,22 +215,22 @@ const BASE_LINES = Object.freeze({
   // --- B5 用 ------------------------------------------------------------------
   signIn: scene(
     line('签到啦！今天也要好好的'),
-    line('这是今天的礼物，给你～'),
+    line('这是今天的礼物，给你～', undefined, ['sisterly', 'normal']),
   ),
   gift: scene(
-    line('我在地上捡到一个盒子！'),
-    line('陪你这么久，这是奖励'),
+    line('我在地上捡到一个盒子！', undefined, ['curious']),
+    line('陪你这么久，这是奖励', undefined, ['sisterly', 'normal']),
   ),
   // --- C2 番茄钟 --------------------------------------------------------------
   pomodoroStart: scene(
     line('[主人]忙吧，我趴这儿不动'),
-    line('专注模式！我帮你看着时间'),
-    line('这 25 分钟我也不吵你，说好了'),
+    line('专注模式！我帮你看着时间', undefined, ['earnest']),
+    line('这 25 分钟我也不吵你，说好了', undefined, ['earnest']),
   ),
   pomodoroDone: scene(
-    line('时间到！[主人]真厉害'),
-    line('做完一个啦，起来动动脖子'),
-    line('我陪你数着呢，一个都不少'),
+    line('时间到！[主人]真厉害', undefined, ['sisterly', 'peppy']),
+    line('做完一个啦，起来动动脖子', undefined, ['sisterly', 'earnest']),
+    line('我陪你数着呢，一个都不少', undefined, ['earnest']),
   ),
   pomodoroAbandon: scene(
     line('不做了呀？那就歇会儿'),

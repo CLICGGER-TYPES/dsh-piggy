@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { createContext, runInContext } from 'node:vm'
 import * as geometry from '../lib/window-geometry.js'
+import { createResizeShape } from '../lib/resize-shape.js'
 import { dragHeartbeatExpired } from '../lib/drag-watchdog.js'
 import { pointerHitsShape } from '../lib/pointer-hit.js'
 import { validDragOrigin } from '../lib/drag-origin.js'
@@ -24,6 +25,7 @@ function mouseHarness({ platform = 'win32', env = {} } = {}) {
     constructor(bounds) { state.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } }
     webContents = webContents
     isDestroyed() { return state.destroyed }
+    isVisible() { return true }
     getBounds() { return { ...state.bounds } }
     setBounds(bounds) { state.bounds = { ...bounds } }
     setIgnoreMouseEvents(ignore, options) { mouse.push({ ignore, forward: options.forward }) }
@@ -34,7 +36,7 @@ function mouseHarness({ platform = 'win32', env = {} } = {}) {
     on() {}
   }
   const context = createContext({
-    ...geometry, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate,
+    ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     win: null, quitting: false, petAsked: null, panelPig: null, dragStats: null,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },

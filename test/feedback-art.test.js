@@ -58,11 +58,23 @@ test('审定图片按真实状态切换，已有皮肤保留自己的立绘', ()
   ]
   for (const [state, expected] of cases) assert.equal(feedbackArtFor(state), expected, JSON.stringify(state))
   for (let hour = 0; hour < 24; hour += 1) {
-    for (const mood of ['hungry', 'lonely', 'dirty']) {
+    for (const mood of ['lonely']) {
       const art = feedbackArtFor({ ...base, mood, hour })
       assert.ok(statSync(new URL(`../assets/pigs/feedback/${art}.png`, import.meta.url)).size > 1000)
     }
   }
+})
+
+test('脏和饿只叠加状态提示，不再把活猪换成整张场景图', () => {
+  for (const mood of ['dirty', 'hungry']) {
+    for (const art of ['piglet', 'pig-round', 'pig-fat', 'pig-king', 'skin-wizard', 'custom-test']) {
+      for (const hour of [0, 1, 12, 23]) {
+        assert.equal(feedbackArtFor({ ...base, base: art, mood, hour }), null, `${art}/${mood}/${hour}`)
+      }
+    }
+  }
+  assert.equal(feedbackArtFor({ ...base, stage: 'dead-day', mood: 'dirty' }), 'death-day')
+  assert.equal(feedbackArtFor({ ...base, stage: 'grave', mood: 'hungry' }), 'ghost-grave')
 })
 
 test('困了/睡着只用当前皮肤自己的 sleep 图，不再用 sleep-cloud/lie-flat', () => {

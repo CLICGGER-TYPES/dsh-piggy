@@ -15,7 +15,7 @@
  *   rehome: (win: {x:number,y:number,width:number,height:number}, pig: any, areas: any[]) => void,
  *   setFlying: (on: boolean) => void,
  *   isFlying: () => boolean,
- *   clearSlide: () => void,
+ *   clearSlide: (slide: {x:number,y:number}) => void,
  *   forgetLayout: () => void,
  *   tick: () => void,
  * }} c
@@ -56,7 +56,7 @@ export function createFlightBridge(c) {
         }
         c.rehome(last.window, pig, last.areas ?? [])
       }
-      c.clearSlide()
+      c.clearSlide(last?.slide ?? { x: 0, y: 0 })
       c.forgetLayout()
       c.tick()
     },

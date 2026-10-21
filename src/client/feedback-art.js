@@ -7,9 +7,7 @@
  */
 
 const MOOD_ART = {
-  hungry: ['hungry'],
   lonely: ['lie-flat'],
-  dirty: ['collection-mosquito'],
 }
 
 /** 生病按「病种:阶段」选图；没列出的病（咳嗽、肠胃、病危）保持原立绘加病色。 */
@@ -57,6 +55,8 @@ export const FEEDBACK_ART_TABLES = Object.freeze({
 
 /** 审定过但暂时不用的图（用户 2026-10-09：待定或不合适），留在仓库里备用。 */
 export const UNUSED_FEEDBACK_ART = Object.freeze(['collection-badge', 'collection-check', 'collection-cage', 'suspended', 'twitch',
+  // 2026-10-21：脏和饿保留原猪，苍蝇和食物想象泡独立显示。
+  'collection-mosquito', 'hungry',
   // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
   'sleep-cloud'])
 
@@ -74,7 +74,7 @@ export function feedbackArtFor(state) {
   if (state.base && state.base !== 'piglet') return null
   if (REACTION_ART[state.reaction]) return choose(REACTION_ART[state.reaction], state.hour)
   if (state.mood === 'sick') return ILLNESS_ART[state.illness ?? ''] ? choose(ILLNESS_ART[state.illness ?? ''], state.hour) : null
-  if (state.mood === 'dirty') return choose(MOOD_ART.dirty, state.hour)
+  if (state.mood === 'dirty' || state.mood === 'hungry') return null
   if (state.activityKind === 'work') return WORK_ART[state.activityKey] ?? null
   if (state.activityKind === 'study') return choose(STUDY_ART, state.hour)
   if (state.activityKind === 'interest') return choose(INTEREST_ART[state.activityKey] ?? INTEREST_ART.other, state.hour)

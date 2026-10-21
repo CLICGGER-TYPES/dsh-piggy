@@ -4,17 +4,17 @@
  *
  * 这个窗口里只显示面板（名牌 + 卡片），猪藏起来。窗口摆在哪由主进程定（贴着猪、
  * 放不下就换边，见 apps/desktop/main.js 的 panelBounds）；这里只做两件事：
- * 按主进程给的最高高度排好面板，再把排好的大小报上去。面板变高变矮只改这个窗口，
- * 猪的窗口一动不动——这就是拆窗口的意义。
+ * 按主进程给的最高高度排好面板，再把内容大小报上去。新外壳固定透明窗口高度，
+ * 切页只改变内部卡片；旧外壳忽略第三个参数，继续按内容大小调整窗口。
  */
 
 /** 面板窗口专用样式：宿主不再浮在角落、不留给猪的位置；名牌靠猪那一侧。 */
 const PANEL_CSS = [
   'html,body{margin:0;padding:0;background:transparent;overflow:hidden}',
-  '[data-piggy-role="panel"] [data-dsh-pig]{position:static!important;inset:auto!important;width:max-content!important;',
+  '[data-piggy-role="panel"] [data-dsh-pig]{position:absolute!important;inset:auto!important;right:0!important;bottom:0!important;width:max-content!important;',
   // 名牌在 DOM 里排在卡片前面：面板在猪上方时名牌放底下（靠猪），在猪下方时放上面。
   'height:auto!important;display:flex!important;flex-direction:column-reverse;gap:6px;align-items:flex-end;pointer-events:auto!important;transform:none!important}',
-  '[data-piggy-role="panel"] [data-dsh-pig][data-panel-vertical="below"]{flex-direction:column}',
+  '[data-piggy-role="panel"] [data-dsh-pig][data-panel-vertical="below"]{flex-direction:column;top:0!important;bottom:auto!important}',
   '[data-piggy-role="panel"] .dp-scene{display:none!important}',
   '[data-piggy-role="panel"] .dp-card{position:relative!important;inset:auto!important;margin:0!important}',
   '[data-piggy-role="panel"] .dp-hud{position:relative!important;inset:auto!important;flex-direction:row!important;gap:10px!important;margin:0!important}',
@@ -39,7 +39,7 @@ function reportSize() {
   const key = width + 'x' + height
   if (key === lastSize) return
   lastSize = key
-  shell.panel.size(width, height)
+  shell.panel.size(width, height, true)
 }
 
 function schedule() {

@@ -13,6 +13,8 @@ export function idealWeightG(state) {
 
 /** Exact C7 thresholds: normal, round at 1.3x, fat at 1.6x. */
 export function bodyWeightClass(state) {
+  const locked = state?.bodyWeight?.lockedClass
+  if (['normal', 'round', 'fat'].includes(locked)) return locked
   const ideal = idealWeightG(state)
   const weight = Number.isFinite(state?.weightG) ? state.weightG : ideal
   if (weight >= ideal * WEIGHT_RULES.fatRatio) return 'fat'
@@ -25,6 +27,7 @@ export function ensureBodyWeight(state) {
   const raw = state.bodyWeight
   const record = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
   state.bodyWeight = {
+    ...(['normal', 'round', 'fat'].includes(record.lockedClass) ? { lockedClass: record.lockedClass } : {}),
     playDay: typeof record.playDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.playDay)
       ? record.playDay : '',
     plays: Number.isFinite(record.plays)
@@ -89,6 +92,7 @@ export function bodyWeightView(state, nowMs) {
   const fatAtG = Math.round(ideal * WEIGHT_RULES.fatRatio)
   return {
     class: bodyClass,
+    locked: ['normal', 'round', 'fat'].includes(state.bodyWeight?.lockedClass),
     // 体型叫法统一成 正常 / 圆润 / 胖胖（以前一处写圆润/胖胖、一处写胖胖猪/大肥猪）。
     label: bodyClass === 'fat' ? '胖胖' : (bodyClass === 'round' ? '圆润' : '正常'),
     weightG: Number.isFinite(state.weightG) ? Math.round(state.weightG) : ideal,

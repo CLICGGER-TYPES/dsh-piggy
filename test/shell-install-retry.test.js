@@ -21,7 +21,7 @@ for (const retry of ['安装', '退出']) {
     let host, attempts = 0, installs = 0
     try {
       host = await startBackgroundHost(ROOT, statePath)
-      await host.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'name', name: '待保存的小猪' }))
+      await host.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'name', name: '待保存小猪' }))
       const lifecycle = shellLifecycle({ dispose() { attempts++; return host.dispose() } }, () => installs++)
       // 原子写的临时文件被目录占用，真实 openSync 会失败；不用假保存结果代替。
       mkdirSync(blocker)
@@ -48,7 +48,7 @@ for (const retry of ['安装', '退出']) {
       assert.equal(attempts, 2)
       assert.equal(lifecycle.state().closed, true)
       assert.equal(lifecycle.state().hitTimer, null)
-      assert.equal(JSON.parse(readFileSync(statePath, 'utf8')).name, '待保存的小猪')
+      assert.equal(JSON.parse(readFileSync(statePath, 'utf8')).name, '待保存小猪')
       assert.equal(existsSync(statePath + '.runtime.lock'), false)
     } finally {
       if (existsSync(blocker)) rmSync(blocker, { recursive: true, force: true })

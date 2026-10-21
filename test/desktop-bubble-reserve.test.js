@@ -31,7 +31,7 @@ function fixture(pigSize, mode = 'open', platform = 'win32') {
     closest: selector => selector === '.dp-bubble' ? bubble : null,
     getAttribute: () => null,
   }
-  host.querySelector = selector => selector === '.dp-pig' ? pig : null
+  host.querySelector = selector => selector === '.dp-pig' ? pig : selector === '.dp-hunger-bubble' && mode === 'hungry' ? pig : null
   host.querySelectorAll = () => [pig, bubble]
   // Simulate a window at the work-area top edge: the height-limited bubble
   // zone is unavailable, leaving the fixed reserve as the clipping safeguard.
@@ -65,12 +65,26 @@ test('open and collapsed bubble geometry does not resize the fixed pig window', 
   }
 })
 
-test('Darwin keeps its existing fixed outline without the new open-bubble reserve', () => {
+test('Darwin keeps its left outline and reserves the reviewed right-side hunger cloud', () => {
   for (const pigSize of [58, 100, 150, 200]) {
     const measured = fixture(pigSize, 'open', 'darwin')
     const artMargin = artMarginFor(pigSize)
     const oldLeft = Math.min(200 + pigSize - 272, 200 - artMargin)
     assert.equal(measured.contentBox.left, oldLeft, `pig ${pigSize}px left edge`)
-    assert.equal(measured.contentBox.right, 200 + pigSize + artMargin, `pig ${pigSize}px right edge`)
+    assert.equal(measured.contentBox.right, Math.max(200 + pigSize + artMargin, 200 + pigSize + 60), `pig ${pigSize}px right edge`)
+  }
+})
+
+test('the fixed window contains the right-side hunger cloud with breathing slack even while hidden', () => {
+  for (const platform of ['linux', 'win32', 'darwin']) {
+    for (const pigSize of [58, 86, 100, 150, 200]) {
+      const measured = fixture(pigSize, 'collapsed', platform)
+      assert.ok(measured.contentBox.right >= 200 + pigSize + 60, `${platform} ${pigSize}px cloud right`)
+      assert.ok(measured.contentBox.top <= 144 - 48, `${platform} ${pigSize}px cloud top`)
+      const hungry = fixture(pigSize, 'hungry', platform)
+      assert.deepEqual(measured.content, hungry.content, 'hunger visibility must not resize the window')
+      assert.ok(hungry.shape.some(rect => rect.x <= 200 + pigSize && rect.x + rect.width >= 200 + pigSize + 60
+        && rect.y <= 144 - 48 && rect.y + rect.height >= 144 + 53), 'native shape must not clip the visible cloud')
+    }
   }
 })

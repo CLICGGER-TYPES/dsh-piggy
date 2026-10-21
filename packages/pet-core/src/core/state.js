@@ -6,7 +6,7 @@
  * @module dsh-piggy/core/state
  */
 
-import { DEFAULT_TIME_SCALE, LINES, MAX, MAX_LEVEL, REVIVE_ITEM, SIGN_IN_CYCLE, formByKey, itemByKey, skinByKey, xpForLevel } from '../data.js'
+import { DEFAULT_TIME_SCALE, LINES, MAX, MAX_LEVEL, PET_NAME_MAX, REVIVE_ITEM, SIGN_IN_CYCLE, formByKey, itemByKey, skinByKey, xpForLevel } from '../data.js'
 import { dayKeyFor, lifeStageFor } from './clock.js'
 import { MEMORY_LIMIT } from './constants.js'
 import { announce, clamp, remember } from './effects.js'
@@ -276,7 +276,7 @@ export function revive(state, nowMs) {
 
 export function rename(state, rawName, nowMs) {
   const cleaned = String(rawName ?? '').replace(/\s+/g, ' ').trim()
-  if (cleaned === '' || [...cleaned].length > 16) return null
+  if (cleaned === '' || [...cleaned].length > PET_NAME_MAX) return null
   state.name = cleaned
   remember(state, `改名叫「${cleaned}」`, nowMs)
   return cleaned

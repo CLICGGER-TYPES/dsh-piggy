@@ -393,7 +393,7 @@ export function createPanel(ctx) {
     var lineId = event.id
     ctx.showLine(event.text, event.replies, function (index) {
       ctx.send('reply', { line: lineId, index: index })
-    })
+    }, event.displayMs)
   }
 
   return { setOpen, select, renderContent, render, dispose: function () { pointerRepaint.dispose(); renderHold.dispose() } }

@@ -28,6 +28,7 @@ test('every scene has at least one line, and replies are well-formed', () => {
 
 test('the same line is never picked twice in a row, and [主人] is filled in', () => {
   const pig = hatchEgg(T0)
+  pig.personality = 'peppy'
   pig.dialogue.ownerName = '小明'
   pig.catchphrase = '' // the catchphrase has its own test below
   const always = () => 0
@@ -51,8 +52,10 @@ test('messages from the same instant each get their own increasing id', () => {
 test('a line with replies can be answered once, for a little happiness', () => {
   const pig = hatchEgg(T0)
   pig.happiness = 50
-  // Index 1 of the pet pool (14 lines since G) is 「再摸摸～」, which has a reply button.
-  assert.equal(say(pig, 'pet', T0, sequence([0.1])), true)
+  pig.personality = 'peppy'
+  const eligible = LINES.pet.filter(line => !line.personalities || line.personalities.includes(pig.personality))
+  // Index 1 stays 「再摸摸～」 as the pool grows; use its index rather than a fixed random fraction.
+  assert.equal(say(pig, 'pet', T0, sequence([1.5 / eligible.length])), true)
   const line = pig.pending.at(-1)
   assert.equal(line.kind, 'line')
   assert.deepEqual(line.replies, ['好'])

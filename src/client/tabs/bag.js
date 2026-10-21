@@ -161,7 +161,7 @@ function renderItems(ui, kind) {
       grid.appendChild(tile({
         emoji: item.emoji, label: item.label, color: SHELF_COLOR[kind] ?? 'blue', soft: true,
         badge: item.default === true ? '免费' : '×' + num(ui.view.inventory[item.key], 0), tag: item.needed ? '需要' : '',
-        note: action !== undefined ? careEffectLine(action, item) : item.kind === 'promotion' ? item.useLabel : '',
+        note: action !== undefined ? careEffectLine(action, item) : item.kind === 'promotion' || item.kind === 'body' ? item.useLabel : '',
         data: { 'data-use': item.key },
         // 照料货架发喂食 / 洗澡 / 玩耍本身（猪的动作和台词都对得上），其他货架照旧「使用」。
         onPick: function () { ui.send(action ?? 'use', { item: item.key }) },

@@ -33,6 +33,7 @@ export const DEFAULT_TOY = Object.freeze({
  * @property {number} [tier]
  * @property {boolean} [cureAll]
  * @property {string} [form]   契约类道具：签下它换成哪个形态（data/evolution.js 的 key）
+ * @property {string} [bodyClass] 体型药的目标档位
  * @property {string} [useLabel] 背包中的操作文字
  * @property {string} [blurb]
  * @property {number} [rarityBoost] 鱼饵提升少见、稀有、传说鱼权重的倍率
@@ -136,6 +137,12 @@ export const SHOP = Object.freeze([
   Object.freeze({ key: 'vest', label: '毛线背心', emoji: '🧶', price: 720, kind: 'dress', level: 12, slot: 'body', blurb: '一针一线织出来的暖和' }),
   // --- medicine: the twenty stage cures and 百草丹 (data/illness.js) ------
   ...MEDICINES,
+  // 体型药单独分类，显示在药品货架，不混入疾病药奖励池。
+  Object.freeze({ key: 'body-normal', label: '正常药水', emoji: '🧪', price: 100, kind: 'body', bodyClass: 'normal', blurb: '变成正常体型；默认皮肤显示', useLabel: '恢复正常体型' }),
+  Object.freeze({ key: 'body-round', label: '胖胖药水', emoji: '🧪', price: 100, kind: 'body', bodyClass: 'round', blurb: '变成胖体型；默认皮肤显示', useLabel: '变胖' }),
+  Object.freeze({ key: 'body-fat', label: '巨胖药水', emoji: '🧪', price: 100, kind: 'body', bodyClass: 'fat', blurb: '变成巨胖体型；默认皮肤显示', useLabel: '变巨胖' }),
+  Object.freeze({ key: 'body-lock', label: '锁定药水', emoji: '🔒', price: 100, kind: 'body', blurb: '锁住当前胖瘦，生病和死亡照常显示', useLabel: '锁定当前胖瘦' }),
+  Object.freeze({ key: 'body-reset', label: '初始药水', emoji: '🧪', price: 100, kind: 'body', blurb: '解除胖瘦锁定，按当前体重显示', useLabel: '解除胖瘦锁定' }),
   // --- revive -------------------------------------------------------------
   REVIVE_ITEM,
   // --- promotion -----------------------------------------------------------
@@ -150,7 +157,7 @@ export const SHOP = Object.freeze([
 ])
 
 /** Shop shelves, in the order the panel shows them. */
-export const KIND_ORDER = Object.freeze(['food', 'bath', 'toy', 'bait', 'dress', 'medicine', 'revive', 'promotion'])
+export const KIND_ORDER = Object.freeze(['food', 'bath', 'toy', 'bait', 'dress', 'medicine', 'body', 'revive', 'promotion'])
 
 export const KIND_LABEL = Object.freeze({
   food: '食物',
@@ -159,6 +166,7 @@ export const KIND_LABEL = Object.freeze({
   bait: '鱼饵',
   dress: '装扮',
   medicine: '药品',
+  body: '体型药',
   revive: '复活',
   promotion: '晋升',
 })

@@ -10,7 +10,7 @@ test('面板焦点去大农场不发送外部失焦，去别的应用仍发送',
   const emitted = [], extWin = {}, panelWin = {}, win = {}
   let focused = extWin
   const body = source.slice(source.indexOf('function panelFocusLeft()'), source.indexOf('/** 把面板窗口放到该在的地方'))
-  const check = runInNewContext(body + '\npanelFocusLeft', { panelOpen: true, win, panelWin, extWin,
+  const check = runInNewContext(body + '\npanelFocusLeft', { panelOpen: true, panelAnchor: null, panelSize: null, win, panelWin, extWin,
     BrowserWindow: { getFocusedWindow: () => focused }, setTimeout: callback => callback(), sendPanel: message => emitted.push(message) })
   check()
   assert.equal(emitted.length, 0)

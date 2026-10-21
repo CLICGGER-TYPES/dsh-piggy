@@ -109,5 +109,27 @@ test('外壳的面板尺寸常量和游戏包 constants.js 一致', () => {
 
 test('main.js 不再在面板窗口回读位置上累加增量', () => {
   const main = readFileSync(new URL('../apps/desktop/main.js', import.meta.url), 'utf8')
-  assert.doesNotMatch(main, /panelWin\.getBounds\(\)/)
+  const positioning = main.slice(main.indexOf('function panelBounds()'), main.indexOf('function sendPanel('))
+  assert.doesNotMatch(positioning, /panelWin\.getBounds\(\)/)
+  assert.match(positioning, /panelBoundsFor\(pig, panelAnchor/)
+})
+
+for (const [label, areas, start, end] of [
+  ['向右副屏', [{x:0,y:0,width:1280,height:800},{x:1280,y:0,width:1280,height:800}], {x:800,y:600,width:86,height:86}, {x:1800,y:600,width:86,height:86}],
+  ['负坐标左屏', [{x:0,y:0,width:1280,height:800},{x:-1280,y:0,width:1280,height:800}], {x:800,y:600,width:86,height:86}, {x:-600,y:600,width:86,height:86}],
+  ['下方副屏', [{x:0,y:0,width:1280,height:800},{x:0,y:800,width:1280,height:800}], {x:800,y:600,width:86,height:86}, {x:800,y:1300,width:86,height:86}],
+]) test('开着面板拖到'+label+'：拖动中跟随，保留原方向和尺寸',()=>{
+  const anchor=panelAnchorFor(start,areas[0]),size={width:292,height:400}
+  const old=panelBoundsFor(end,anchor,size)
+  const before=panelBoundsFor(start,anchor,size,areas),after=panelBoundsFor(end,anchor,size,areas)
+  assert.ok(Math.abs(old.x-end.x-before.x+start.x)>100 || Math.abs(old.y-end.y-before.y+start.y)>100)
+  assert.equal(after.x-end.x,before.x-start.x)
+  assert.equal(after.y-end.y,before.y-start.y)
+  assert.equal(after.width,before.width)
+  assert.equal(after.height,before.height)
+  assert.equal(anchor.area,areas[0])
+})
+test('拖到整个桌面外沿仍夹取，单屏拖动维持原边距',()=>{
+  const area={x:0,y:0,width:1280,height:800},pig={x:10,y:600,width:86,height:86},anchor=panelAnchorFor({x:800,y:600,width:86,height:86},area)
+  assert.deepEqual(panelBoundsFor(pig,anchor,{width:292,height:400},[area]),panelBoundsFor(pig,anchor,{width:292,height:400}))
 })

@@ -12,7 +12,7 @@
  *
  * 猪窗口里没有面板（外壳 0.6.0 起面板单独一个窗口），所以猪永远在家。
  */
-import { contentBoundsForPig, nearestArea } from './geometry.js'
+import { contentBoundsForPig, nearestArea, workAreaBounds } from './geometry.js'
 
 const PIG_SCREEN_KEY = 'dsh-piggy:desktop-pig'
 const STORE_VERSION = 3
@@ -26,6 +26,17 @@ function inside(area, point) {
 function areaOf(point, areas) {
   if (!Array.isArray(areas) || areas.length === 0) return null
   return areas.find(area => inside(area, point)) ?? nearestArea(point, areas)
+}
+
+/** 立绘横向可跨过同一高度上相连的屏幕，但不能伸进错位排列的空隙。 */
+function horizontalSpan(point, areas, fallback) {
+  const ranges = []
+  for (const area of areas.filter(a => point.y >= a.y && point.y < a.y + a.height).sort((a, b) => a.x - b.x)) {
+    const last = ranges.at(-1)
+    if (last && area.x <= last.x + last.width) last.width = Math.max(last.x + last.width, area.x + area.width) - last.x
+    else ranges.push({ x: area.x, width: area.width })
+  }
+  return ranges.find(a => point.x >= a.x && point.x <= a.x + a.width) ?? fallback
 }
 
 export function createPlacement() {
@@ -121,7 +132,7 @@ export function createPlacement() {
     // The widest reviewed artwork must fit as well as the square layout box.
     // Use the same reserve for every action/style, so a switch never moves the pig.
     if (report.artMargin > 0 && list.length > 0) {
-      const area = areaOf(home, list)
+      const area = horizontalSpan({ x: home.x, y: home.y - pigSize.height / 2 }, list, areaOf(home, list))
       const reach = Math.min(area.width / 2, pigSize.width / 2 + report.artMargin)
       home.x = Math.round(Math.max(area.x + reach, Math.min(home.x, area.x + area.width - reach)))
     }
@@ -130,13 +141,14 @@ export function createPlacement() {
     const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize }
     const topLeft = { x: home.x - pigSize.width / 2, y: home.y - pigSize.height }
     const area = nearestArea(home, areas) ?? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    const viewport = workAreaBounds(list, area)
     const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain }, topLeft)
     // 永远不请求会被系统拒绝的窗口矩形：系统（mutter 等）会把伸出工作区的窗口整块推回来，
     // 而页面不知道（用户 2026-10-06 日志里的 143px）。收起时页面会把内容反向挪回去，猪不动。
     const rawX = next.x
     const rawY = next.y
-    next.x = Math.max(area.x, Math.min(next.x, area.x + area.width - next.width))
-    next.y = Math.max(area.y, Math.min(next.y, area.y + area.height - next.height))
+    next.x = Math.max(viewport.x, Math.min(next.x, viewport.x + viewport.width - next.width))
+    next.y = Math.max(viewport.y, Math.min(next.y, viewport.y + viewport.height - next.height))
     lastClamp = { dx: next.x - rawX, dy: next.y - rawY }
     return next
   }

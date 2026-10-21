@@ -108,6 +108,18 @@ pigBody.appendChild(napBubble)
 var dressSlots = el('div', 'dp-dress')
 pigBody.appendChild(dressSlots)
 
+// 饥饿提示只挂在头顶，不替换当前猪或皮肤的立绘。
+var hungerBubble = el('span', 'dp-hunger-bubble')
+hungerBubble.setAttribute('role', 'img')
+hungerBubble.setAttribute('aria-label', '饿了')
+var hungerCloud = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+hungerCloud.setAttribute('viewBox', '0 0 54 50')
+hungerCloud.setAttribute('aria-hidden', 'true')
+hungerCloud.innerHTML = '<path d="M14 33C4 33 1 22 8 17C5 9 13 3 21 7C27 0 39 3 40 11C52 12 53 26 44 29C40 38 29 38 25 33C20 37 16 36 14 33Z"/><circle cx="13" cy="40" r="3"/><circle cx="7" cy="46" r="1.8"/>'
+hungerBubble.appendChild(hungerCloud)
+hungerBubble.appendChild(el('span', 'dp-hunger-food', '🥕'))
+pig.appendChild(hungerBubble)
+
 // 番茄钟（C2）：专注中贴在猪立绘右上角的小角标，挂在猪身上所以跟着它走。
 // 位置别越出猪头上方 20px，也不能高过说话气泡 —— 面板打开时它就够不着面板。
 var pomoHint = el('div', 'dp-pomo')

@@ -9,11 +9,12 @@
  * @module dsh-piggy/client/tabs/card
  */
 
+import { PET_NAME_MAX } from '../../../packages/pet-core/src/data/profile.js'
 import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
 
 /** How long each editable field may be (mirrors data/profile.js). */
-var LIMITS = { catchphrase: 6, motto: 24, name: 16, owner: 12 }
+var LIMITS = { catchphrase: 6, motto: 24, name: PET_NAME_MAX, owner: 12 }
 
 export function renderCardTab(ui) {
   var p = ui.view.pig
@@ -119,6 +120,7 @@ function appendEditor(ui, parent, key) {
   input.value = ui.cardEdit.draft
   input.maxLength = LIMITS[key]
   input.setAttribute('data-card-input', key)
+  if (key === 'name') input.setAttribute('aria-label', '名字（最多' + PET_NAME_MAX + '个字）')
   input.addEventListener('input', function () { ui.cardEdit = { field: key, draft: input.value } })
   var save = button('dp-mini', { 'data-card-save': key }, function () {
     var text = (ui.cardEdit === null ? '' : ui.cardEdit.draft).trim()

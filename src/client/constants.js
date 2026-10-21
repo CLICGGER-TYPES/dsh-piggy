@@ -95,7 +95,7 @@ export const KIND_ORDER = ['food', 'bath', 'toy', 'bait', 'medicine', 'promotion
 
 /** 物品放在哪个货架：还魂丹算药品（商店、背包、图鉴都一样）。 */
 export function shelfOf(kind) {
-  return kind === 'revive' ? 'medicine' : kind
+  return kind === 'revive' || kind === 'body' ? 'medicine' : kind
 }
 export const STAGES = [
   { key: 'preschool', label: '幼儿园' },

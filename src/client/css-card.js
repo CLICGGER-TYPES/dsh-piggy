@@ -20,7 +20,7 @@ export const CSS_CARD = [
   '.dp-vcard-img{width:56px;height:56px;display:block}',
   '.dp-vcard-e{font-size:40px;line-height:1}',
   '.dp-vcard-who{display:flex;flex-direction:column;gap:3px;min-width:0}',
-  '.dp-vcard-name{font-size:15px;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+  '.dp-vcard-name{font-size:15px;font-weight:800;color:var(--ac-text);white-space:normal;overflow-wrap:anywhere;line-height:1.35}',
   // 名字旁边的蜡笔：平时藏着，鼠标移到名字这行才出来；没有鼠标的设备一直淡淡显示。
   '.dp-vcard-nameline{display:flex;align-items:center;gap:6px;min-width:0}',
   '.dp-vcard-name-edit{width:22px;height:22px;font-size:11px}',

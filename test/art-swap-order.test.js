@@ -36,3 +36,19 @@ test('returning to the currently displayed sprite invalidates a pending old sele
     assert.equal(image.src, idle)
   } finally { setArtSwapHook(null) }
 })
+
+test('dirty and hungry keep the selected pig sprite through condition changes', () => {
+  for (const base of ['piglet', 'skin-mint', 'pig-fat']) {
+    const attrs = { 'data-art': base, 'data-mood': 'fine' }
+    const pig = { getAttribute: key => attrs[key] ?? null, setAttribute(key, value) { attrs[key] = value } }
+    const image = { src: '', getAttribute() { return this.src }, style: { setProperty() {} } }
+    syncPigArt(pig, image, null)
+    const original = image.src
+    for (const mood of ['dirty', 'hungry', 'fine']) {
+      attrs['data-mood'] = mood
+      syncPigArt(pig, image, null)
+      assert.equal(image.src, original, `${base}/${mood}`)
+      assert.equal(attrs['data-feedback'], 'false')
+    }
+  }
+})

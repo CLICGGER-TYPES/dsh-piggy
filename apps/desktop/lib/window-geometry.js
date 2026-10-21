@@ -216,6 +216,12 @@ function unionOf(areas) {
   }
 }
 
+/** 拖动中的透明窗口可跨屏缝，只在整个桌面的外沿夹取，避免切屏时整窗瞬移。 */
+export function desktopViewportBounds(wanted, areas) {
+  if (!Array.isArray(areas) || areas.length === 0) return wanted
+  return clampBounds(wanted, unionOf(areas))
+}
+
 /**
  * 拖动：按住时记下猪的屏幕位置和鼠标位置，之后猪 = 起点 + 鼠标位移。
  * 用**当前**窗口大小和猪在窗口里的**当前**位置反推窗口原点 —— 拖动中窗口可能因为

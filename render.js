@@ -263,6 +263,13 @@ export function renderUse(state, result, item) {
   if (result?.ok !== true) {
     switch (result?.reason) {
       case 'empty': return `🎒 背包里没有 ${item.emoji} ${item.label}。先去 /pig shop 买。`
+      case 'body-locked': return '胖瘦已经锁定，先使用初始药水解除锁定。'
+      case 'body-unlocked': return '当前没有锁定胖瘦，不消耗初始药水。'
+      case 'body-already-locked': return '当前胖瘦已经锁定，不重复消耗药水。'
+      case 'body-already': return '已经是这个体型，不重复消耗药水。'
+      case 'body-hidden': return '体型立绘只适用于普通形态和默认皮肤，换回后再使用。'
+      case 'box': return '先孵化小猪，再使用体型药水。'
+      case 'away': return '小猪正在活动，结束后再使用。'
       case 'not-sick': return `${state?.name ?? '猪'} 现在没生病，吃药没用。`
       case 'not-dead': return `${state?.name ?? '猪'} 活得好好的，用不上 ${REVIVE_ITEM.label}。`
       case 'dead': return `${state?.name ?? '猪'} 已经走了…只有 ${REVIVE_ITEM.label} 能救回来。`
@@ -275,7 +282,8 @@ export function renderUse(state, result, item) {
     }
   }
   const lines = [`${state.name} 用了 ${item.emoji} ${item.label}`]
-  if (item.kind === 'medicine') lines.push('', '💚 病好了！健康恢复满值。')
+  if (item.kind === 'body') lines.push('', item.useLabel)
+  else if (item.kind === 'medicine') lines.push('', '💚 病好了！健康恢复满值。')
   else if (item.kind === 'revive') lines.push('', '✨ 回来了！等级、成长值和金币都还在。')
   else {
     lines.push(

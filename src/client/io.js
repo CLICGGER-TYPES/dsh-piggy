@@ -77,8 +77,9 @@ export function createIo(ctx) {
           paintedKey = null
           ctx.render(next)
           if (action === 'pet' && next?.ok === true && options?.petAnimated !== true) ctx.petShy?.()
-          // 签到、礼包的结果一律由猪说出来（面板开着时也是）；对应的公告事件不再弹面板顶上的提示条。
-          if ((action === 'signIn' || action === 'openGift') && next?.ok === true) {
+          // 现代宿主由 pending 合并奖励和台词；旧宿主没有奖励事件时才补回执，避免覆盖回复。
+          if ((action === 'signIn' || action === 'openGift') && next?.ok === true
+            && !(Array.isArray(next.pending) && next.pending.some(function (event) { return event.kind === 'gift' }))) {
             var reward = str(next.reward, '')
             ctx.showBubble((action === 'signIn' ? '签到成功' : '礼包打开') + (reward ? ' · ' + reward : ''), 4000)
           }
@@ -121,6 +122,11 @@ export function createIo(ctx) {
               escaped: '鱼跑掉了，再抛一次吧',
               'wrong-medicine': '药不对症，病情加重了…',
               empty: '背包里没有',
+              'body-locked': '胖瘦已锁定，先喝初始药水解除',
+              'body-unlocked': '胖瘦没有锁定，不消耗初始药水',
+              'body-already-locked': '已经锁定，不重复消耗药水',
+              'body-already': '已经是这个体型，不重复消耗药水',
+              'body-hidden': '换回普通形态和默认皮肤后再使用',
               'not-sick': '它没生病',
               dead: '它已经走了…',
               idle: '它没在外面',

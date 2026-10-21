@@ -97,3 +97,61 @@ test('旧外壳没有 flyMove 时明确降级', () => {
   assert.equal(supportsFlight({}), false)
   assert.equal(supportsFlight({ flyMove: function () {} }), true)
 })
+
+function multiFlight(areas, values = {}) {
+  return createFlight({x: 1100, y: 500, vx: 1200, vy: -200,
+    area: areas[0], areas, pig: PIG, artMargin: 40, ...values})
+}
+function runMulti(flight) {
+  const samples = [], events = []
+  while (!flight.done && samples.length < 500) {
+    events.push(...flight.advance(1000 / 120))
+    samples.push([flight.x, flight.y])
+  }
+  return {samples, events}
+}
+
+test('并排屏幕抛掷穿过内侧屏缝，在接收屏落地', () => {
+  const flight = multiFlight([AREA, {...AREA, x: 1280}])
+  const {samples, events} = runMulti(flight)
+  assert.ok(samples.some(([x]) => x > 1400), '必须飞进副屏')
+  assert.ok(flight.x > 1280, '落在副屏')
+  assert.equal(flight.y, 800)
+  assert.ok(!events.some(e => e.side === 'right'), '内侧屏缝不能反弹')
+})
+
+test('向负坐标副屏抛掷不会被主屏左边挡住', () => {
+  const flight = multiFlight([AREA, {...AREA, x: -1280}], {x: 180, vx: -1200})
+  const {samples} = runMulti(flight)
+  assert.ok(samples.some(([x]) => x < -100))
+  assert.ok(flight.x < 0)
+})
+
+test('上下相接的屏幕之间没有虚假的地面', () => {
+  const flight = multiFlight([AREA, {...AREA, y: 800}], {x: 640, y: 700, vx: 0, vy: 900})
+  const {samples} = runMulti(flight)
+  assert.ok(samples.some(([, y]) => y > 1000))
+  assert.equal(flight.y, 1600)
+})
+
+test('错位双屏只允许从重叠的通道飞过，空白角落仍会反弹', () => {
+  const areas = [AREA, {...AREA, x: 1280, y: 400}]
+  const blocked = multiFlight(areas, {y: 150, vy: -200})
+  let hit = false
+  for (let i = 0; i < 30; i++) hit ||= blocked.advance(1000 / 120).some(e => e.side === 'right')
+  assert.ok(hit, '上方空白角落应挡住')
+  const open = multiFlight(areas, {y: 650, vy: 0})
+  const {samples} = runMulti(open)
+  assert.ok(samples.some(([x]) => x > 1400), '重叠处可以跨屏')
+  for (const [x, y] of samples) {
+    if (x > 1280 - 68) assert.ok(y >= 464 - 0.001, '整个身体不能进入上方空白')
+    if (x < 1280 + 68) assert.ok(y <= 800.001, '不能掉进左下角空白')
+  }
+})
+
+test('屏幕之间实际有空隙时不能穿越', () => {
+  const flight = multiFlight([AREA, {...AREA, x: 1380}])
+  const {samples, events} = runMulti(flight)
+  assert.ok(samples.every(([x]) => x <= 1212.001))
+  assert.ok(events.some(e => e.side === 'right'))
+})

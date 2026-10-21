@@ -22,7 +22,7 @@
 2. **不把 `getBounds()` 读回来再设回去。** Windows 125%/150% 下读回值比设的差 1px，读了再设
    一帧涨 1px（0.6.0 拖一次猪窗口从 345 宽涨到 482）。外壳以请求值 `petAsked` 为准。
 3. **改窗口大小会有一帧画在旧位置**（Windows 透明窗口最明显）。所以猪窗口固定大小，
-   冒气泡、开面板、换页都不改它；面板变高变矮只改面板窗口。
+   冒气泡、开面板、换页都不改它；新版面板使用固定透明外框，切页只变内部卡片高度；旧游戏包继续按内容大小调整面板窗口。
 
 ## 游戏包和外壳怎么分工
 
@@ -120,3 +120,16 @@
 设置入口通过共用 runtime 的 `/dsh-piggy/save/export`、`/save/preview` 和 `/save/import` 操作完整 ZIP。预览不写目标目录；确认后冻结新操作、等待在途请求、结清工作账本和 Store，再保存自动备份并执行可恢复的替换。恢复必须在获取存档锁后、打开账本和 Store 前执行。每份猪独占目录，避免多个文件名共享资源。
 
 桌面协议 v5 新增 `piggyShell.saves.save(name, Uint8Array)` / `piggy:save-archive`，只接受受限 ZIP 名称与字节，由系统保存框选目的地。协议 POST 使用 `arrayBuffer()`，不能将 ZIP 按 UTF-8 文本转码。旧外壳检测不到新方法时走浏览器下载，不提高 minShell。
+
+
+### 2026-10-21：体型变化与原生裁剪
+
+落地锚点只属于当时的窗口尺寸；外框变化时，页面撤回 anchor，再按既有屏幕脚底坐标摆新框，避免旧偏移把较小立绘挤出窗口。窗口尺寸不变时保留锚点，不能恢复落地瞬移。
+
+Linux 的 setShape 也裁剪绘制。窗口 resize 时先临时保留完整区域，等 webContents.beginFrameSubscription 提交目标尺寸的画面后才恢复最新精确 shape，并立即结束订阅；拖动、飞行和 WM 接受实际尺寸时取消旧订阅。依据 [Electron 帧提交订阅 API](https://www.electronjs.org/docs/latest/api/web-contents#contentsbeginframesubscriptiononlydirty-callback)。帧图先结合图片倍率与显示器倍率换回 DIP，已验证 100% / 200%，避免物理像素和逻辑像素相差一倍时持续订阅。正常静止、拖动与逐帧抛掷不持续捕获画面。Windows 穿透路径和 macOS 不启用此保护，本轮只验证 Linux。
+
+### 固定面板外框（2026-10-21 候选）
+
+页面通过 `panel.size(width, height, true)` 上报内容高度；新外壳预留本次锚点的最大高度，内容始终贴着猪的一边。Linux/Windows 的原生 shape 只覆盖真实内容，切页后等待新帧再提交轮廓；macOS 按内容框同步鼠标穿透。旧页面不传第三个参数，旧外壳忽略它，均继续支持原尺寸协议。Linux 虚拟机已复现旧版切页瞬时偏移 114px；Windows/macOS 本轮未实机验证。
+
+开着面板跨屏拖动时，`panelBoundsFor` 接收当前全部工作区，按整个桌面外沿夹取；锚点保留的原 workArea 仅供静态排版、尺寸和松手重排使用，不能成为拖动中的屏幕围栏。该路径复用 `desktopViewportBounds`，不会每过屏缝就切换对齐方向。

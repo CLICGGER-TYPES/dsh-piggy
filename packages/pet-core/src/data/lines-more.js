@@ -8,83 +8,89 @@
  * @module dsh-piggy/data/lines-more
  */
 
-/** @param {string} text @param {string} [reply] */
-const line = (text, reply) => Object.freeze(reply === undefined
-  ? { text }
-  : { text, replies: Object.freeze([Object.freeze({ label: reply })]) })
+import { DARK_HUMOR_LINES } from './lines-dark-humor.js'
+import { COMPANION_CARE_LINES } from './lines-companion-care.js'
+import { COMPANION_LIFE_LINES } from './lines-companion-life.js'
+
+/** @param {string} text @param {string} [reply] @param {ReadonlyArray<string>} [personalities] */
+const line = (text, reply, personalities) => Object.freeze({
+  text,
+  ...(reply === undefined ? {} : { replies: Object.freeze([Object.freeze({ label: reply })]) }),
+  ...(personalities === undefined ? {} : { personalities: Object.freeze(personalities) }),
+})
 const scene = (...lines) => Object.freeze(lines)
 
-export const MORE_LINES = Object.freeze({
+const BASE_MORE_LINES = Object.freeze({
   // ---- 原有场景翻倍 -----------------------------------------------------------
   eat: scene(
-    line('今天的饭有[主人]的味道（是夸你）'), line('慢点慢点，我还没嚼完'), line('吃一口，长一两，没关系，我不怕'),
-    line('这个好吃，下次还要这个', '记住了'), line('我宣布：这是今天最好的一顿'), line('吃饭的时候别看我，我会害羞'),
+    line('今天的饭有[主人]的味道（是夸你）', undefined, ['goofy']), line('慢点慢点，我还没嚼完', undefined, ['cranky', 'lazy']), line('吃一口，长一两，没关系，我不怕', undefined, ['goofy']),
+    line('这个好吃，下次还要这个', '记住了', ['normal']), line('我宣布：这是今天最好的一顿', undefined, ['snooty']), line('吃饭的时候别看我，我会害羞', undefined, ['shy']),
   ),
-  full: scene(line('饱了，可以开始发呆了'), line('肚子里装满了，心里也是'), line('饱饱的，今天不会想别的事了')),
-  overfull: scene(line('再吃我就要被称重了……'), line('你是不是在给我养膘？', '没有没有'), line('我的肚子在抗议，听见了吗')),
+  full: scene(line('饱了，可以开始发呆了', undefined, ['lazy', 'goofy']), line('肚子里装满了，心里也是', undefined, ['clingy', 'shy']), line('饱饱的，今天不会想别的事了', undefined, ['lazy', 'goofy'])),
+  overfull: scene(line('再吃我就要被称重了……', undefined, ['cranky']), line('你是不是在给我养膘？', '没有没有', ['cranky']), line('我的肚子在抗议，听见了吗', undefined, ['cranky', 'goofy'])),
   bathe: scene(
-    line('水温刚好，不是在焯水吧？', '放心'), line('我现在是一只体面的猪了'), line('泥巴再见，泥巴我会想你的'),
-    line('别洗耳朵后面，那里有我的秘密'), line('洗完别闻我说「好香」，有点吓人'),
+    line('水温刚好，不是在焯水吧？', '放心', ['cranky']), line('我现在是一只体面的猪了', undefined, ['snooty']), line('泥巴再见，泥巴我会想你的', undefined, ['mischievous']),
+    line('别洗耳朵后面，那里有我的秘密', undefined, ['curious', 'shy']), line('洗完别闻我说「好香」，有点吓人', undefined, ['cranky']),
   ),
   play: scene(
-    line('你扔，我捡，我们配合得天衣无缝'), line('哇！差点接到！'), line('再来再来，我刚热完身', '来！'),
-    line('玩耍使我快乐，也使我变瘦'), line('你也动动吧，坐太久了'),
+    line('你扔，我捡，我们配合得天衣无缝', undefined, ['peppy', 'earnest']), line('哇！差点接到！', undefined, ['goofy']), line('再来再来，我刚热完身', '来！', ['peppy']),
+    line('玩耍使我快乐，也使我变瘦'), line('你也动动吧，坐太久了', undefined, ['sisterly', 'earnest']),
   ),
   pet: scene(
-    line('手感是不是很好？不许说「像五花肉」'), line('再摸我就要睡着了'), line('嗯……这样很好'), line('你今天摸得特别认真'),
-    line('[主人]，我们算不算好朋友？', '当然算'), line('这是我一天里最喜欢的时刻'), line('摸猪可以降血压，这是科学（我编的）'),
+    line('手感是不是很好？不许说「像五花肉」', undefined, ['cranky']), line('再摸我就要睡着了', undefined, ['lazy', 'goofy']), line('嗯……这样很好', undefined, ['normal']), line('你今天摸得特别认真', undefined, ['earnest', 'sisterly', 'curious']),
+    line('[主人]，我们算不算好朋友？', '当然算', ['clingy', 'shy']), line('这是我一天里最喜欢的时刻', undefined, ['clingy']), line('摸猪可以降血压，这是科学（我编的）', undefined, ['goofy']),
   ),
-  hungry: scene(line('我饿得能看见幻觉了，你头上有个包子'), line('再不吃饭，我就要开始吃自己的影子了'), line('饭饭……饭饭……', '马上来')),
-  dirty: scene(line('我身上的泥巴已经可以种花了'), line('苍蝇绕着我飞，它们在开会讨论我'), line('我需要一个澡，一个热的（不要太热）', '好')),
-  lonely: scene(line('我刚才跟墙聊了一会儿，墙不太会聊天'), line('你还记得你养了一只猪吗', '记得'), line('没事，我就是想看看你还在不在')),
+  hungry: scene(line('我饿得能看见幻觉了，你头上有个包子', undefined, ['goofy']), line('再不吃饭，我就要开始吃自己的影子了', undefined, ['goofy']), line('饭饭……饭饭……', '马上来', ['clingy'])),
+  dirty: scene(line('我身上的泥巴已经可以种花了', undefined, ['goofy']), line('苍蝇绕着我飞，它们在开会讨论我', undefined, ['curious', 'goofy']), line('我需要一个澡，一个热的（不要太热）', '好')),
+  lonely: scene(line('我刚才跟墙聊了一会儿，墙不太会聊天', undefined, ['goofy', 'mischievous']), line('你还记得你养了一只猪吗', '记得', ['cranky', 'shy', 'snooty']), line('没事，我就是想看看你还在不在', undefined, ['normal', 'clingy', 'shy'])),
   idle: scene(
-    line('我数了一下，屏幕上有很多字，我一个都没写'), line('你写的东西好长，我能睡一觉吗'), line('我刚才梦见自己会飞，醒了发现会的只有吃'),
-    line('外面有人在炒菜，我紧张了一下'), line('坐直，[主人]，你的背在哭'), line('要不要喝口水？我替你记着', '好'),
-    line('你的屏幕好亮，我眯一会儿'), line('刚才那个功能我觉得写得不错（我看不懂，但我支持你）'),
+    line('我数了一下，屏幕上有很多字，我一个都没写', undefined, ['goofy', 'snooty']), line('你写的东西好长，我能睡一觉吗', undefined, ['lazy']), line('我刚才梦见自己会飞，醒了发现会的只有吃', undefined, ['goofy']),
+    line('外面有人在炒菜，我紧张了一下', undefined, ['cranky']), line('坐直，[主人]，你的背在哭', undefined, ['sisterly']), line('要不要喝口水？我替你记着', '好', ['sisterly', 'earnest']),
+    line('你的屏幕好亮，我眯一会儿', undefined, ['lazy']), line('刚才那个功能我觉得写得不错（我看不懂，但我支持你）', undefined, ['goofy', 'mischievous', 'peppy']),
   ),
-  workDone: scene(line('老板问我能不能长期干，我说要问[主人]'), line('赚的钱给你，请我吃顿好的就行', '成交'), line('打工好累，人类每天都这样吗')),
-  tired: scene(line('我需要躺平，现在，立刻'), line('我的四条腿已经各自下班了'), line('累得连饭都……不，饭还是要吃的')),
-  study: scene(line('今天学了一个新词，忘了'), line('老师说我很有潜力，潜在哪我也不知道'), line('学习使我进步，也使我饿', '去吃吧')),
-  graduate: scene(line('证书挂墙上，别挂菜刀旁边'), line('我是全班最宽的毕业生'), line('有文化的猪，不容易被骗进厨房')),
-  tripBack: scene(line('外面到处都是饭馆，我一路低着头走的'), line('我看见海了！海里没有猪'), line('拍了好多照片，每张都在笑（其实很饿）')),
+  workDone: scene(line('老板问我能不能长期干，我说要问[主人]', undefined, ['earnest']), line('赚的钱给你，请我吃顿好的就行', '成交', ['sisterly', 'normal']), line('打工好累，人类每天都这样吗', undefined, ['goofy'])),
+  tired: scene(line('我需要躺平，现在，立刻', undefined, ['cranky', 'lazy']), line('我的四条腿已经各自下班了', undefined, ['lazy', 'goofy']), line('累得连饭都……不，饭还是要吃的', undefined, ['cranky', 'goofy'])),
+  study: scene(line('今天学了一个新词，忘了', undefined, ['goofy']), line('老师说我很有潜力，潜在哪我也不知道', undefined, ['goofy']), line('学习使我进步，也使我饿', '去吃吧')),
+  graduate: scene(line('证书挂墙上，别挂菜刀旁边', undefined, ['cranky']), line('我是全班最宽的毕业生', undefined, ['goofy']), line('有文化的猪，不容易被骗进厨房', undefined, ['cranky'])),
+  tripBack: scene(line('外面到处都是饭馆，我一路低着头走的', undefined, ['cranky']), line('我看见海了！海里没有猪', undefined, ['curious', 'goofy']), line('拍了好多照片，每张都在笑（其实很饿）', undefined, ['goofy'])),
   sick: scene(line('我觉得我需要一个抱抱，和一颗药', '都给你'), line('身体里有个小坏蛋在搞装修'), line('我生病了，病猪肉不能吃——这是好消息')),
   wrongMedicine: scene(line('这个药……好像是给狗吃的'), line('我原谅你，你看起来比我还难受'), line('下次看清楚说明书好不好', '好')),
-  cured: scene(line('我活过来了！第一件事：吃饭'), line('阎王爷看了看我的体重，说「再养养」'), line('健康真好，我现在可以重新担心别的事了')),
-  levelup: scene(line('升级了，奖励是更大的饭量'), line('我变强了，至少数字上是这样'), line('你看见了吗？我升级了！', '看见了')),
-  growUp: scene(line('长大的感觉，就是锅变多了'), line('我长开了……你别用这个词'), line('[主人]，你也要一起长大哦')),
-  coronation: scene(line('本王今日开恩，免你一顿不喂之罪'), line('王冠好重，脖子要变长了'), line('臣民们，开饭！'), line('[主人]是本王的首席喂饭官', '遵命')),
-  contract: scene(line('我现在是恶魔了，但还是怕热水'), line('角是新的，撒娇是旧的'), line('恶魔也需要被摸摸'), line('签了契约，以后谁也不能把我做成菜', '那当然')),
-  enter: scene(line('你终于回来了，我数了好久的像素'), line('欢迎回来，今天也拜托多喂我一点'), line('我刚刚一直在这里，一动不动，很乖', '真乖')),
+  cured: scene(line('我活过来了！第一件事：吃饭', undefined, ['goofy']), line('阎王爷看了看我的体重，说「再养养」', undefined, ['cranky', 'goofy']), line('健康真好，我现在可以重新担心别的事了')),
+  levelup: scene(line('升级了，奖励是更大的饭量'), line('我变强了，至少数字上是这样', undefined, ['goofy']), line('你看见了吗？我升级了！', '看见了', ['peppy'])),
+  growUp: scene(line('长大的感觉，就是锅变多了', undefined, ['cranky']), line('我长开了……你别用这个词', undefined, ['cranky']), line('[主人]，你也要一起长大哦', undefined, ['sisterly'])),
+  coronation: scene(line('本王今日开恩，免你一顿不喂之罪', undefined, ['cranky']), line('王冠好重，脖子要变长了', undefined, ['goofy']), line('臣民们，开饭！', undefined, ['peppy']), line('[主人]是本王的首席喂饭官', '遵命', ['snooty'])),
+  contract: scene(line('我现在是恶魔了，但还是怕热水', undefined, ['cranky']), line('角是新的，撒娇是旧的', undefined, ['clingy']), line('恶魔也需要被摸摸', undefined, ['clingy']), line('签了契约，以后谁也不能把我做成菜', '那当然', ['cranky'])),
+  enter: scene(line('你终于回来了，我数了好久的像素', undefined, ['shy']), line('欢迎回来，今天也拜托多喂我一点'), line('我刚刚一直在这里，一动不动，很乖', '真乖', ['earnest'])),
   death: scene(line('记得给我烧点饲料……'), line('[主人]，别难过，我只是去下一个猪圈了')),
-  revive: scene(line('那边的猪都很瘦，我还是回来吧'), line('我回来了，饭还在吗'), line('差一点就见到猪八戒了')),
-  signIn: scene(line('又是新的一天，我还在，你也在'), line('第 7 天有大礼，坚持住')),
-  gift: scene(line('打开看看？我也不知道是什么'), line('我替你守着它好久了')),
-  pomodoroStart: scene(line('我闭嘴了，从现在开始'), line('专心！我帮你瞪着屏幕'), line('我当一块安静的五花肉')),
-  pomodoroDone: scene(line('做完了！奖励自己摸一下猪'), line('你好厉害，我都看睡着了'), line('起来走走，顺便看看我')),
-  pomodoroAbandon: scene(line('没关系，番茄也会累'), line('那我们先吃点东西？'), line('下次再一起努力')),
+  revive: scene(line('那边的猪都很瘦，我还是回来吧', undefined, ['goofy']), line('我回来了，饭还在吗', undefined, ['peppy', 'goofy']), line('差一点就见到猪八戒了', undefined, ['goofy'])),
+  signIn: scene(line('又是新的一天，我还在，你也在'), line('第 7 天有大礼，坚持住', undefined, ['earnest'])),
+  gift: scene(line('打开看看？我也不知道是什么', undefined, ['curious']), line('我替你守着它好久了', undefined, ['earnest'])),
+  pomodoroStart: scene(line('我闭嘴了，从现在开始', undefined, ['cranky']), line('专心！我帮你瞪着屏幕', undefined, ['sisterly', 'earnest']), line('我当一块安静的五花肉', undefined, ['goofy'])),
+  pomodoroDone: scene(line('做完了！奖励自己摸一下猪', undefined, ['clingy']), line('你好厉害，我都看睡着了', undefined, ['lazy', 'goofy']), line('起来走走，顺便看看我', undefined, ['clingy'])),
+  pomodoroAbandon: scene(line('没关系，番茄也会累', undefined, ['goofy']), line('那我们先吃点东西？'), line('下次再一起努力')),
 
   // ---- 新场景 ----------------------------------------------------------------
-  workStart: scene(line('出门搬砖去了'), line('我去给家里挣饲料钱'), line('老板，我来了！')),
-  studyStart: scene(line('上学去！书包里装的是零食'), line('今天也要听懂一句'), line('老师别点我名')),
-  tripStart: scene(line('出发啦！'), line('我会给你带特产的（不是腊肉）'), line('路上别想我')),
-  buy: scene(line('买到了！'), line('这个钱花得值'), line('谢谢老板（我说的是你）')),
-  poor: scene(line('钱包空空，跟我的饭盆一样'), line('我们好像有点穷'), line('要不……我去打工？')),
-  fishCatch: scene(line('钓到啦！'), line('晚饭有着落了'), line('这条鱼看我的眼神不太友好')),
-  fishRare: scene(line('是大的！是大的！'), line('这条鱼值得写进日记'), line('快拍照！')),
-  fishEscape: scene(line('它跑了……'), line('下一条一定是我的'), line('鱼也是要面子的')),
-  skin: scene(line('好看吗？'), line('新衣服！转个圈给你看'), line('我觉得我变帅了')),
-  bodyChange: scene(line('我好像……圆了一点'), line('这不是胖，是可爱的密度变大了'), line('秤说的话不能全信')),
+  workStart: scene(line('出门搬砖去了'), line('我去给家里挣饲料钱', undefined, ['earnest']), line('老板，我来了！', undefined, ['peppy'])),
+  studyStart: scene(line('上学去！书包里装的是零食', undefined, ['goofy']), line('今天也要听懂一句'), line('老师别点我名', undefined, ['shy'])),
+  tripStart: scene(line('出发啦！'), line('我会给你带特产的（不是腊肉）', undefined, ['cranky']), line('路上别想我', undefined, ['cranky'])),
+  buy: scene(line('买到了！', undefined, ['peppy']), line('这个钱花得值'), line('谢谢老板（我说的是你）')),
+  poor: scene(line('钱包空空，跟我的饭盆一样', undefined, ['goofy']), line('我们好像有点穷'), line('要不……我去打工？', undefined, ['earnest'])),
+  fishCatch: scene(line('钓到啦！'), line('晚饭有着落了', undefined, ['goofy']), line('这条鱼看我的眼神不太友好', undefined, ['goofy'])),
+  fishRare: scene(line('是大的！是大的！'), line('这条鱼值得写进日记'), line('快拍照！', undefined, ['snooty'])),
+  fishEscape: scene(line('它跑了……'), line('下一条一定是我的', undefined, ['peppy', 'earnest']), line('鱼也是要面子的', undefined, ['snooty'])),
+  skin: scene(line('好看吗？', undefined, ['snooty', 'shy']), line('新衣服！转个圈给你看', undefined, ['peppy', 'snooty']), line('我觉得我变帅了', undefined, ['snooty'])),
+  bodyChange: scene(line('我好像……圆了一点'), line('这不是胖，是可爱的密度变大了', undefined, ['snooty']), line('秤说的话不能全信', undefined, ['cranky'])),
 
   // ---- 按时间说话（core/talk.js 决定什么时候说）---------------------------------
-  morning: scene(line('早上好！今天也要好好吃饭'), line('起这么早，你是要去当早餐吗（我开玩笑的）'), line('早安，[主人]，我昨晚梦见你了')),
-  noon: scene(line('中午了，吃饭吃饭！'), line('你吃了吗？我饿了，你肯定也饿了'), line('午饭别吃猪肉好不好', '好')),
-  afternoon: scene(line('下午好困……我先睡为敬'), line('喝杯茶吧，我陪你发会儿呆'), line('下午最适合打盹，科学研究（我编的）')),
-  evening: scene(line('天黑了，今天辛苦啦'), line('晚饭吃什么？我投票给苹果'), line('下班了吗？还没？我等你')),
-  lateNight: scene(line('这么晚了还不睡？', '马上睡'), line('熬夜的人会变成熊猫，熬夜的猪会变成腊肉'), line('我先睡了，你也早点')),
-  deepNight: scene(line('[主人]……现在是凌晨，你是认真的吗'), line('我已经睡醒一觉了，你还在'), line('天快亮了，求你睡一会儿')),
-  water: scene(line('喝口水吧，我替你喝不了'), line('嘴唇干了吧？去倒杯水'), line('喝水时间到！咕嘟咕嘟')),
-  eyes: scene(line('看看远处，三十秒就好'), line('眼睛累了，闭一会儿，我帮你看着'), line('站起来伸个懒腰，我也伸一个')),
-  weekend: scene(line('周末了还来看我，你真好'), line('今天不上班吧？那就多陪我一会儿')),
+  morning: scene(line('早上好！今天也要好好吃饭'), line('起这么早，你是要去当早餐吗（我开玩笑的）', undefined, ['cranky', 'goofy', 'mischievous']), line('早安，[主人]，我昨晚梦见你了', undefined, ['clingy', 'shy'])),
+  noon: scene(line('中午了，吃饭吃饭！'), line('你吃了吗？我饿了，你肯定也饿了', undefined, ['sisterly', 'normal']), line('午饭别吃猪肉好不好', '好', ['cranky', 'shy'])),
+  afternoon: scene(line('下午好困……我先睡为敬', undefined, ['lazy']), line('喝杯茶吧，我陪你发会儿呆', undefined, ['sisterly', 'normal']), line('下午最适合打盹，科学研究（我编的）', undefined, ['lazy', 'goofy'])),
+  evening: scene(line('天黑了，今天辛苦啦'), line('晚饭吃什么？我投票给苹果', undefined, ['goofy', 'cranky', 'curious', 'mischievous']), line('下班了吗？还没？我等你', undefined, ['clingy', 'shy'])),
+  lateNight: scene(line('这么晚了还不睡？', '马上睡', ['sisterly']), line('熬夜的人会变成熊猫，熬夜的猪会变成腊肉', undefined, ['cranky', 'goofy']), line('我先睡了，你也早点')),
+  deepNight: scene(line('[主人]……现在是凌晨，你是认真的吗', undefined, ['cranky']), line('我已经睡醒一觉了，你还在', undefined, ['lazy', 'goofy']), line('天快亮了，求你睡一会儿', undefined, ['clingy', 'sisterly', 'shy'])),
+  water: scene(line('喝口水吧，我替你喝不了'), line('嘴唇干了吧？去倒杯水', undefined, ['sisterly', 'normal']), line('喝水时间到！咕嘟咕嘟', undefined, ['peppy'])),
+  eyes: scene(line('看看远处，三十秒就好'), line('眼睛累了，闭一会儿，我帮你看着', undefined, ['sisterly']), line('站起来伸个懒腰，我也伸一个')),
+  weekend: scene(line('周末了还来看我，你真好', undefined, ['normal', 'clingy', 'shy']), line('今天不上班吧？那就多陪我一会儿', undefined, ['clingy'])),
   newYear: scene(line('新年快乐！今年也请多多喂我')),
   valentine: scene(line('今天的我是限量版的，送给你')),
   springFestival: scene(line('过年好！……今年请一定不要吃猪肉', '不吃')),
@@ -100,15 +106,23 @@ export const MORE_LINES = Object.freeze({
   pigBirthday: scene(line('今天是我的生日！[主人]记得吗？', '生日快乐')),
 
   // ---- 摸不同部位（客户端按点的位置告诉核心是哪儿）----------------------------
-  petHead: scene(line('摸头会长不高的……算了，长不高也好'), line('再摸摸头～'), line('我的头很圆，是不是很好摸')),
-  petEars: scene(line('耳朵好痒！'), line('别揪，会变成猪耳朵……我本来就是'), line('嘘，耳朵在听你说话')),
-  petNose: scene(line('阿——嚏！'), line('鼻子是用来闻饭的，不是用来按的'), line('哼哼！（这是抗议）')),
-  petBelly: scene(line('哈哈哈好痒！'), line('别按肚子，刚吃饱'), line('软吧？不许说「五花」')),
-  petBack: scene(line('背上那块，对，就是那里'), line('按摩服务，五星好评'), line('你的手法很专业')),
-  petTail: scene(line('别碰尾巴！……好吧可以碰一下'), line('我的尾巴会自己转，你看'), line('尾巴是猪的秘密武器')),
-  petFeet: scene(line('脚不能摸，会痒'), line('我的蹄子刚走过泥巴哦'), line('干嘛，想跟我握手？', '握手')),
-  petTooMuch: scene(line('够了够了，毛要掉了'), line('你是不是在找哪块最嫩？'), line('我要收费了，一下一个苹果'), line('再摸我就生气了！（其实没有）'), line('让我休息一下……')),
+  petHead: scene(line('摸头会长不高的……算了，长不高也好', undefined, ['cranky', 'goofy']), line('再摸摸头～'), line('我的头很圆，是不是很好摸', undefined, ['snooty'])),
+  petEars: scene(line('耳朵好痒！'), line('别揪，会变成猪耳朵……我本来就是', undefined, ['cranky', 'goofy']), line('嘘，耳朵在听你说话', undefined, ['curious', 'shy'])),
+  petNose: scene(line('阿——嚏！'), line('鼻子是用来闻饭的，不是用来按的', undefined, ['cranky']), line('哼哼！（这是抗议）', undefined, ['cranky'])),
+  petBelly: scene(line('哈哈哈好痒！', undefined, ['peppy', 'goofy']), line('别按肚子，刚吃饱', undefined, ['cranky']), line('软吧？不许说「五花」', undefined, ['cranky', 'snooty'])),
+  petBack: scene(line('背上那块，对，就是那里'), line('按摩服务，五星好评', undefined, ['snooty']), line('你的手法很专业', undefined, ['snooty'])),
+  petTail: scene(line('别碰尾巴！……好吧可以碰一下', undefined, ['cranky', 'clingy']), line('我的尾巴会自己转，你看', undefined, ['goofy']), line('尾巴是猪的秘密武器', undefined, ['snooty'])),
+  petFeet: scene(line('脚不能摸，会痒'), line('我的蹄子刚走过泥巴哦', undefined, ['mischievous']), line('干嘛，想跟我握手？', '握手', ['peppy', 'curious'])),
+  petTooMuch: scene(line('够了够了，毛要掉了', undefined, ['cranky']), line('你是不是在找哪块最嫩？', undefined, ['cranky']), line('我要收费了，一下一个苹果', undefined, ['cranky', 'mischievous']), line('再摸我就生气了！（其实没有）', undefined, ['cranky']), line('让我休息一下……')),
 })
+
+/** 老批次在前，已确认扩充在后；保留旧档最近台词的下标含义。 */
+export const MORE_LINES = Object.freeze(Object.fromEntries(
+  [...new Set([...Object.keys(BASE_MORE_LINES), ...Object.keys(COMPANION_CARE_LINES), ...Object.keys(COMPANION_LIFE_LINES), ...Object.keys(DARK_HUMOR_LINES)])]
+    .map(key => [key, Object.freeze([...(BASE_MORE_LINES[key] ?? []),
+      ...(COMPANION_CARE_LINES[key] ?? []), ...(COMPANION_LIFE_LINES[key] ?? []), ...(DARK_HUMOR_LINES[key] ?? [])])]),
+))
+
 
 /** 一天里的时段（本地时间，含起点不含终点；深夜跨零点）。 */
 export const TALK_SLOTS = Object.freeze([

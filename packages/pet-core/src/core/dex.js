@@ -76,7 +76,7 @@ export function recordDex(state, section, key, nowMs, count = 1) {
 const found = (dex, section, key) => dex[section][key] ?? null
 
 const ITEM_KIND_LABEL = Object.freeze({
-  food: '食物', bath: '洗浴', toy: '玩具', medicine: '药品', revive: '复活', promotion: '晋升', dress: '装扮',
+  food: '食物', bath: '洗浴', toy: '玩具', medicine: '药品', body: '体型药', revive: '复活', promotion: '晋升', dress: '装扮',
 })
 
 /** Build the complete locked/unlocked catalogue sent to the client. */

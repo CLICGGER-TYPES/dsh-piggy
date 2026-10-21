@@ -137,4 +137,6 @@ function updatePetPanelState(ctx, next) {
   ctx.host.setAttribute('data-daily-side', dailySide())
   ctx.card.hidden = true
   ctx.hud.hidden = true
+  // 菜单刚显示时会盖住已存在的对话；确认打开后再抬一次，保留原气泡和滚动位置。
+  if (next && ctx.bubble?.hidden === false) desktopShell()?.panel?.raisePet?.()
 }

@@ -1109,16 +1109,16 @@ test('trait and course views always list everything', () => {
 // Shop
 // ===========================================================================
 
-test('the shop is well formed: 103 items across eight shelves, every cure stocked', () => {
-  assert.equal(SHOP.length, 103, 'the expanded food, bath, toy and dress shelves are available')
+test('the shop is well formed: 108 items across nine kinds, every cure stocked', () => {
+  assert.equal(SHOP.length, 108, 'the expanded food, bath, toy and dress shelves are available')
   const counts = {}
   for (const item of SHOP) {
     assert.equal(typeof item.key, 'string')
     assert.ok(item.price > 0)
-    assert.ok(['food', 'bath', 'toy', 'bait', 'dress', 'medicine', 'revive', 'promotion'].includes(item.kind))
+    assert.ok(['food', 'bath', 'toy', 'bait', 'dress', 'medicine', 'body', 'revive', 'promotion'].includes(item.kind))
     counts[item.kind] = (counts[item.kind] ?? 0) + 1
   }
-  assert.deepEqual(counts, { food: 25, bath: 16, toy: 22, bait: 3, dress: 13, medicine: 21, revive: 1, promotion: 2 })
+  assert.deepEqual(counts, { food: 25, bath: 16, toy: 22, bait: 3, dress: 13, medicine: 21, body: 5, revive: 1, promotion: 2 })
   // 装扮 is a different economy: level-gated, owned once, never counted.
   for (const item of SHOP.filter(entry => entry.kind === 'dress')) {
     assert.ok(Number.isInteger(item.level) && item.level >= 1, `${item.label} needs a level`)
@@ -1240,6 +1240,9 @@ test('inventoryView lists the consumables and leaves 家当 out of the counts', 
 test('rename validates and cleans', () => {
   const pig = layEgg(T0)
   assert.equal(rename(pig, '  大花  ', T0), '大花')
+  assert.equal(rename(pig, '一二三四五', T0), '一二三四五')
+  assert.equal(rename(pig, '一二三四五六', T0), null)
+  assert.equal(pig.name, '一二三四五')
   assert.equal(rename(pig, '', T0), null)
   assert.equal(rename(pig, '一二三四五六七八九十一二三四五六七', T0), null)
 })

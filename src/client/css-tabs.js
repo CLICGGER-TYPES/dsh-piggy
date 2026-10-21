@@ -57,9 +57,7 @@ export const CSS_TABS = [
   '[data-dsh-pig][data-panel-side="right"] .dp-bubble::after{right:auto;left:calc(var(--pig-size) / 2 - 5px)}',
   // Reply buttons under a line: small pills, the mint of the primary colour
   // without the 3D base, which the spec keeps for real primary buttons.
-  // 2026-10-13：独立猪窗口置顶，头顶台词会盖住另一个窗口的状态条；移到猪左侧既有预留区，避免往右伸出固定窗口被裁掉。
-  '[data-dsh-pig][data-panel-open="true"] .dp-bubble{right:calc(100% + 6px);left:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px);max-width:180px}',
-  '[data-dsh-pig][data-panel-open="true"] .dp-bubble::after{display:none}',
+  // 对话始终在猪头上；菜单打开只调整原生窗口层级，不改变气泡位置、宽度或滚动进度。
   '.dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;max-height:29px;overflow-y:auto;scrollbar-width:thin;margin-top:5px}',
   // 猪头上的日常气泡（签到 / 礼包）：不用新颜色，沿用主色与卡片底色。
   // 挂在场景**上方**（不是 top 边缘）：折叠时场景就是猪本身，用 top:-6px

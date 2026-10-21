@@ -15,6 +15,7 @@ import { decay } from './settlement.js'
 import { revive } from './state.js'
 import { recordDex } from './dex.js'
 import { act } from './care.js'
+import { bodyWeightClass, ensureBodyWeight, setBodyWeightClass } from './weight.js'
 import { spendCoins } from './economy.js'
 
 /** Inventory counts, always including zeroes so the UI can render a grid. */
@@ -181,6 +182,7 @@ export function useItem(state, itemKey, nowMs) {
     return { ok: true, item }
   }
   if (state.dead) return { ok: false, reason: 'dead' }
+  if (item.kind === 'body') return useBodyPotion(state, item, have, nowMs)
 
   if (item.kind === 'medicine') {
     if (state.illness === null) return { ok: false, reason: 'not-sick' }
@@ -194,6 +196,28 @@ export function useItem(state, itemKey, nowMs) {
 
   state.inventory[itemKey] = have - 1
   applyEffects(state, item, nowMs)
+  remember(state, `用了 ${item.emoji} ${item.label}`, nowMs)
+  return { ok: true, item }
+}
+
+/** 只改变体型或胖瘦锁，不触碰疾病和生死，也不经过吃错药逻辑。 */
+function useBodyPotion(state, item, have, nowMs) {
+  if (state.hatched !== true) return { ok: false, reason: 'box' }
+  if (state.activity !== null) return { ok: false, reason: 'away' }
+  const body = ensureBodyWeight(state)
+  if (item.key === 'body-reset') {
+    if (!body.lockedClass) return { ok: false, reason: 'body-unlocked' }
+    delete body.lockedClass
+  } else if (item.key === 'body-lock') {
+    if (body.lockedClass) return { ok: false, reason: 'body-already-locked' }
+    body.lockedClass = bodyWeightClass(state)
+  } else {
+    if (body.lockedClass) return { ok: false, reason: 'body-locked' }
+    if (state.form != null || (state.skin != null && state.skin !== 'default')) return { ok: false, reason: 'body-hidden' }
+    if (bodyWeightClass(state) === item.bodyClass) return { ok: false, reason: 'body-already' }
+    setBodyWeightClass(state, item.bodyClass)
+  }
+  state.inventory[item.key] = have - 1
   remember(state, `用了 ${item.emoji} ${item.label}`, nowMs)
   return { ok: true, item }
 }

@@ -46,3 +46,22 @@ test('C7 debug page has normal, round and fat weight entries that send symbolic 
     assert.equal(sent.at(-1).payload.patch.weightClass, bodyClass)
   }
 })
+
+test('体型锁在状态页显示，药水合并到药品货架并能发送使用请求', async () => {
+  const shop = [
+    {key:'body-fat',kind:'body',label:'巨胖药水',emoji:'🧪',price:100,affordable:true,useLabel:'变巨胖'},
+    {key:'body-lock',kind:'body',label:'锁定药水',emoji:'🔒',price:100,affordable:true,useLabel:'锁定当前胖瘦'},
+    {key:'body-reset',kind:'body',label:'初始药水',emoji:'🧪',price:100,affordable:true,useLabel:'解除胖瘦锁定'},
+  ]
+  const status={...SNAPSHOT,pig:{...PIG,weight:'64.0 kg',bodyWeight:{...BODY,locked:true}},shop,inventory:{'body-fat':1,'body-lock':1,'body-reset':1}}
+  let {dom,calls}=await mount({status})
+  openPanel(dom,'status');assert.match(contentOf(dom).allText(),/已锁定/)
+  ;({dom,calls}=await mount({status}))
+  openPanel(dom,'shop');findByAttr(contentOf(dom),'data-shelf','medicine').fire('click')
+  assert.ok(findByAttr(contentOf(dom),'data-buy','body-fat'))
+  ;({dom,calls}=await mount({status}))
+  openPanel(dom,'bag');findByAttr(contentOf(dom),'data-bag','medicine').fire('click')
+  findByAttr(contentOf(dom),'data-use','body-reset').fire('click')
+  await new Promise(resolve=>setTimeout(resolve,0))
+  assert.ok(calls.some(c=>c.method==='POST'&&JSON.parse(c.body).action==='use'&&JSON.parse(c.body).item==='body-reset'))
+})
