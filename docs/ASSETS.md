@@ -38,6 +38,9 @@
 ## 登记
 
 ```assets
+animations/piglet-pet/*.webp
+animations/piglet-pet/manifest.json
+animations/piglet-pet/PROVENANCE.md
 pigs/base/*/*.png
 pigs/forms/*/*.png
 pigs/skins/*/*.png
@@ -55,3 +58,7 @@ piggy-emoji.woff2
 - 菜园第4轮：已审 farm-v4-fix4 场景/UI V2接入扩展；来源、加工规则和逐图哈希见 extensions/farm/PROVENANCE.md、fix4-art-pack.json，原稿与提示词保留在项目素材工作区。
 
 - 菜园整体重画（4.0.8，未发布）：大农场 B、小农场 C1，新增 7 张花叶/木纹/控件图片；出处、逐图哈希见 extensions/farm/PROVENANCE.md、redraw-art-pack.json。其余容器、标题、按钮采用原生 CSS。
+
+## 普通猪摸摸动画（候选，2026-10-21）
+
+v07直接复用用户提供的原GIF：五帧112×112、每帧60ms，排成560×112无损 `animations/piglet-pet/reference.webp`，10,368字节，五格RGBA与GIF完全一致。包含手和猪，运行时固定比例播放；关闭小手改用原idle.png。此前重制图集均保留在研究备份，不再随游戏加载。来源与哈希见对应PROVENANCE.md和manifest.json，详见[实现与验证](design/pet-hand-snap.md)。

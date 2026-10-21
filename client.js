@@ -1,197 +1,5 @@
 // GENERATED FILE. Edit src/client/ and run `npm run build`; do not edit by hand.
 (() => {
-  // packages/pet-core/src/data/art-assets.js
-  var PIG_ART_ASSETS = Object.freeze({
-    "piglet-shy-pet": "pigs/base/piglet/shy-pet.png",
-    "piglet-blink": "pigs/base/piglet/blink.png",
-    "badge-pig-blindbox-first": "pigs/badges/badge-pig-blindbox-first.png",
-    "badge-pig-blindbox-six": "pigs/badges/badge-pig-blindbox-six.png",
-    "badge-pig-blindbox-ten": "pigs/badges/badge-pig-blindbox-ten.png",
-    "badge-pig-clean-ten": "pigs/badges/badge-pig-clean-ten.png",
-    "badge-pig-devil": "pigs/badges/badge-pig-devil.png",
-    "badge-pig-farm-first": "pigs/badges/badge-pig-farm-first.png",
-    "badge-pig-farm-five": "pigs/badges/badge-pig-farm-five.png",
-    "badge-pig-farm-ten": "pigs/badges/badge-pig-farm-ten.png",
-    "badge-pig-first-class": "pigs/badges/badge-pig-first-class.png",
-    "badge-pig-first-fish": "pigs/badges/badge-pig-first-fish.png",
-    "badge-pig-first-job": "pigs/badges/badge-pig-first-job.png",
-    "badge-pig-first-meal": "pigs/badges/badge-pig-first-meal.png",
-    "badge-pig-first-trip": "pigs/badges/badge-pig-first-trip.png",
-    "badge-pig-fish-five": "pigs/badges/badge-pig-fish-five.png",
-    "badge-pig-gacha-first": "pigs/badges/badge-pig-gacha-first.png",
-    "badge-pig-gacha-gold": "pigs/badges/badge-pig-gacha-gold.png",
-    "badge-pig-gacha-machines": "pigs/badges/badge-pig-gacha-machines.png",
-    "badge-pig-grown-up": "pigs/badges/badge-pig-grown-up.png",
-    "badge-pig-jobs-hundred": "pigs/badges/badge-pig-jobs-hundred.png",
-    "badge-pig-jobs-ten": "pigs/badges/badge-pig-jobs-ten.png",
-    "badge-pig-king": "pigs/badges/badge-pig-king.png",
-    "badge-pig-mine-deep": "pigs/badges/badge-pig-mine-deep.png",
-    "badge-pig-mine-first": "pigs/badges/badge-pig-mine-first.png",
-    "badge-pig-mine-fossils": "pigs/badges/badge-pig-mine-fossils.png",
-    "badge-pig-pet-hundred": "pigs/badges/badge-pig-pet-hundred.png",
-    "badge-pig-play-twenty": "pigs/badges/badge-pig-play-twenty.png",
-    "badge-pig-souvenirs-three": "pigs/badges/badge-pig-souvenirs-three.png",
-    "badge-pig-trips-ten": "pigs/badges/badge-pig-trips-ten.png",
-    "career-astronaut": "pigs/skins/career-astronaut/idle.png",
-    "career-astronaut-bathe": "pigs/skins/career-astronaut/bathe.png",
-    "career-astronaut-eat": "pigs/skins/career-astronaut/eat.png",
-    "career-astronaut-pet": "pigs/skins/career-astronaut/pet.png",
-    "career-astronaut-play": "pigs/skins/career-astronaut/play.png",
-    "career-astronaut-relaxed": "pigs/skins/career-astronaut/relaxed.png",
-    "career-astronaut-sleep": "pigs/skins/career-astronaut/sleep.png",
-    "career-astronaut-study": "pigs/skins/career-astronaut/study.png",
-    "career-astronaut-trip": "pigs/skins/career-astronaut/trip.png",
-    "career-astronaut-work": "pigs/skins/career-astronaut/work.png",
-    "career-chef": "pigs/skins/career-chef/idle.png",
-    "career-chef-bathe": "pigs/skins/career-chef/bathe.png",
-    "career-chef-eat": "pigs/skins/career-chef/eat.png",
-    "career-chef-pet": "pigs/skins/career-chef/pet.png",
-    "career-chef-play": "pigs/skins/career-chef/play.png",
-    "career-chef-relaxed": "pigs/skins/career-chef/relaxed.png",
-    "career-chef-sleep": "pigs/skins/career-chef/sleep.png",
-    "career-chef-study": "pigs/skins/career-chef/study.png",
-    "career-chef-trip": "pigs/skins/career-chef/trip.png",
-    "career-chef-work": "pigs/skins/career-chef/work.png",
-    "elder": "pigs/base/elder/idle.png",
-    "feedback/allergy": "pigs/feedback/allergy.png",
-    "feedback/birthday": "pigs/feedback/birthday.png",
-    "feedback/collection-badge": "pigs/feedback/collection-badge.png",
-    "feedback/collection-bubbles": "pigs/feedback/collection-bubbles.png",
-    "feedback/collection-cage": "pigs/feedback/collection-cage.png",
-    "feedback/collection-check": "pigs/feedback/collection-check.png",
-    "feedback/collection-chicken": "pigs/feedback/collection-chicken.png",
-    "feedback/collection-courier": "pigs/feedback/collection-courier.png",
-    "feedback/collection-fever": "pigs/feedback/collection-fever.png",
-    "feedback/collection-fitness": "pigs/feedback/collection-fitness.png",
-    "feedback/collection-letter": "pigs/feedback/collection-letter.png",
-    "feedback/collection-mosquito": "pigs/feedback/collection-mosquito.png",
-    "feedback/collection-scallion": "pigs/feedback/collection-scallion.png",
-    "feedback/collection-snack": "pigs/feedback/collection-snack.png",
-    "feedback/collection-soup": "pigs/feedback/collection-soup.png",
-    "feedback/collection-stack": "pigs/feedback/collection-stack.png",
-    "feedback/collection-taro": "pigs/feedback/collection-taro.png",
-    "feedback/collection-throne": "pigs/feedback/collection-throne.png",
-    "feedback/courier": "pigs/feedback/courier.png",
-    "feedback/death-day": "pigs/feedback/death-day.png",
-    "feedback/faint": "pigs/feedback/faint.png",
-    "feedback/fishing": "pigs/feedback/fishing.png",
-    "feedback/ghost-grave": "pigs/feedback/ghost-grave.png",
-    "feedback/hungry": "pigs/feedback/hungry.png",
-    "feedback/lie-flat": "pigs/feedback/lie-flat.png",
-    "feedback/music-earbuds": "pigs/feedback/music-earbuds.png",
-    "feedback/music-headphones-v2": "pigs/feedback/music-headphones-v2.png",
-    "feedback/music-rainbow": "pigs/feedback/music-rainbow.png",
-    "feedback/painting": "pigs/feedback/painting.png",
-    "feedback/recruit": "pigs/feedback/recruit.png",
-    "feedback/runny-nose": "pigs/feedback/runny-nose.png",
-    "feedback/sleep-cloud": "pigs/feedback/sleep-cloud.png",
-    "feedback/study-book": "pigs/feedback/study-book.png",
-    "feedback/study-determined": "pigs/feedback/study-determined.png",
-    "feedback/study-pink-book": "pigs/feedback/study-pink-book.png",
-    "feedback/suspended": "pigs/feedback/suspended.png",
-    "feedback/turning": "pigs/feedback/turning.png",
-    "feedback/twitch": "pigs/feedback/twitch.png",
-    "pig-devil": "pigs/forms/pig-devil/idle.png",
-    "pig-devil-bathe": "pigs/forms/pig-devil/bathe.png",
-    "pig-devil-eat": "pigs/forms/pig-devil/eat.png",
-    "pig-devil-fly": "pigs/forms/pig-devil/fly.png",
-    "pig-devil-pet": "pigs/forms/pig-devil/pet.png",
-    "pig-devil-play": "pigs/forms/pig-devil/play.png",
-    "pig-devil-relaxed": "pigs/forms/pig-devil/relaxed.png",
-    "pig-devil-sleep": "pigs/forms/pig-devil/sleep.png",
-    "pig-devil-study": "pigs/forms/pig-devil/study.png",
-    "pig-devil-trip": "pigs/forms/pig-devil/trip.png",
-    "pig-devil-work": "pigs/forms/pig-devil/work.png",
-    "pig-fat": "pigs/forms/pig-fat/idle.png",
-    "pig-fat-bathe": "pigs/forms/pig-fat/bathe.png",
-    "pig-fat-eat": "pigs/forms/pig-fat/eat.png",
-    "pig-fat-pet": "pigs/forms/pig-fat/pet.png",
-    "pig-fat-play": "pigs/forms/pig-fat/play.png",
-    "pig-fat-relaxed": "pigs/forms/pig-fat/relaxed.png",
-    "pig-fat-sleep": "pigs/forms/pig-fat/sleep.png",
-    "pig-fat-study": "pigs/forms/pig-fat/study.png",
-    "pig-fat-trip": "pigs/forms/pig-fat/trip.png",
-    "pig-fat-work": "pigs/forms/pig-fat/work.png",
-    "pig-king": "pigs/forms/pig-king/idle.png",
-    "pig-king-bathe": "pigs/forms/pig-king/bathe.png",
-    "pig-king-eat": "pigs/forms/pig-king/eat.png",
-    "pig-king-pet": "pigs/forms/pig-king/pet.png",
-    "pig-king-play": "pigs/forms/pig-king/play.png",
-    "pig-king-relaxed": "pigs/forms/pig-king/relaxed.png",
-    "pig-king-sleep": "pigs/forms/pig-king/sleep.png",
-    "pig-king-study": "pigs/forms/pig-king/study.png",
-    "pig-king-trip": "pigs/forms/pig-king/trip.png",
-    "pig-king-work": "pigs/forms/pig-king/work.png",
-    "pig-round": "pigs/forms/pig-round/idle.png",
-    "pig-round-bathe": "pigs/forms/pig-round/bathe.png",
-    "pig-round-eat": "pigs/forms/pig-round/eat.png",
-    "pig-round-pet": "pigs/forms/pig-round/pet.png",
-    "pig-round-play": "pigs/forms/pig-round/play.png",
-    "pig-round-relaxed": "pigs/forms/pig-round/relaxed.png",
-    "pig-round-sleep": "pigs/forms/pig-round/sleep.png",
-    "pig-round-study": "pigs/forms/pig-round/study.png",
-    "pig-round-trip": "pigs/forms/pig-round/trip.png",
-    "pig-round-work": "pigs/forms/pig-round/work.png",
-    "piglet": "pigs/base/piglet/idle.png",
-    "piglet-bathe": "pigs/base/piglet/bathe.png",
-    "piglet-eat": "pigs/base/piglet/eat.png",
-    "piglet-play": "pigs/base/piglet/play.png",
-    "piglet-sleep": "pigs/base/piglet/sleep.png",
-    "piglet-work": "pigs/base/piglet/work.png",
-    "skin-angel": "pigs/skins/skin-angel/idle.png",
-    "skin-angel-bathe": "pigs/skins/skin-angel/bathe.png",
-    "skin-angel-eat": "pigs/skins/skin-angel/eat.png",
-    "skin-angel-pet": "pigs/skins/skin-angel/pet.png",
-    "skin-angel-play": "pigs/skins/skin-angel/play.png",
-    "skin-angel-relaxed": "pigs/skins/skin-angel/relaxed.png",
-    "skin-angel-sleep": "pigs/skins/skin-angel/sleep.png",
-    "skin-angel-study": "pigs/skins/skin-angel/study.png",
-    "skin-angel-trip": "pigs/skins/skin-angel/trip.png",
-    "skin-angel-work": "pigs/skins/skin-angel/work.png",
-    "skin-detective": "pigs/skins/skin-detective/idle.png",
-    "skin-detective-bathe": "pigs/skins/skin-detective/bathe.png",
-    "skin-detective-eat": "pigs/skins/skin-detective/eat.png",
-    "skin-detective-pet": "pigs/skins/skin-detective/pet.png",
-    "skin-detective-play": "pigs/skins/skin-detective/play.png",
-    "skin-detective-relaxed": "pigs/skins/skin-detective/relaxed.png",
-    "skin-detective-sleep": "pigs/skins/skin-detective/sleep.png",
-    "skin-detective-study": "pigs/skins/skin-detective/study.png",
-    "skin-detective-trip": "pigs/skins/skin-detective/trip.png",
-    "skin-detective-work": "pigs/skins/skin-detective/work.png",
-    "skin-mint": "pigs/skins/skin-mint/idle.png",
-    "skin-mint-bathe": "pigs/skins/skin-mint/bathe.png",
-    "skin-mint-eat": "pigs/skins/skin-mint/eat.png",
-    "skin-mint-pet": "pigs/skins/skin-mint/pet.png",
-    "skin-mint-play": "pigs/skins/skin-mint/play.png",
-    "skin-mint-sleep": "pigs/skins/skin-mint/sleep.png",
-    "skin-mint-work": "pigs/skins/skin-mint/work.png",
-    "skin-pirate": "pigs/skins/skin-pirate/idle.png",
-    "skin-pirate-bathe": "pigs/skins/skin-pirate/bathe.png",
-    "skin-pirate-eat": "pigs/skins/skin-pirate/eat.png",
-    "skin-pirate-pet": "pigs/skins/skin-pirate/pet.png",
-    "skin-pirate-play": "pigs/skins/skin-pirate/play.png",
-    "skin-pirate-relaxed": "pigs/skins/skin-pirate/relaxed.png",
-    "skin-pirate-sleep": "pigs/skins/skin-pirate/sleep.png",
-    "skin-pirate-study": "pigs/skins/skin-pirate/study.png",
-    "skin-pirate-trip": "pigs/skins/skin-pirate/trip.png",
-    "skin-pirate-work": "pigs/skins/skin-pirate/work.png",
-    "skin-wizard": "pigs/skins/skin-wizard/idle.png",
-    "skin-wizard-bathe": "pigs/skins/skin-wizard/bathe.png",
-    "skin-wizard-eat": "pigs/skins/skin-wizard/eat.png",
-    "skin-wizard-pet": "pigs/skins/skin-wizard/pet.png",
-    "skin-wizard-play": "pigs/skins/skin-wizard/play.png",
-    "skin-wizard-relaxed": "pigs/skins/skin-wizard/relaxed.png",
-    "skin-wizard-sleep": "pigs/skins/skin-wizard/sleep.png",
-    "skin-wizard-study": "pigs/skins/skin-wizard/study.png",
-    "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
-    "skin-wizard-work": "pigs/skins/skin-wizard/work.png"
-  });
-
-  // src/client/art-style.js
-  function builtinArtPath(key2) {
-    return PIG_ART_ASSETS[key2];
-  }
-
   // src/client/constants.js
   var STATE_URL = "/dsh-piggy/state";
   var ART_URL = "/dsh-piggy/art/";
@@ -258,210 +66,6 @@
     { key: "college", label: "\u5927\u5B66" },
     { key: "graduate", label: "\u7814\u7A76\u751F" }
   ];
-
-  // src/client/art-path.js
-  function artSource(key2) {
-    return ART_URL + (builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg"));
-  }
-  function hasBuiltinArt(key2) {
-    return Object.hasOwn(PIG_ART_ASSETS, key2);
-  }
-
-  // src/client/pig-actions.js
-  var PLAYERS = /* @__PURE__ */ new WeakMap();
-  var BLINK_INTERVAL = { min: 8e3, max: 16e3 };
-  var ACTION_DURATION = { blink: 100, "shy-pet": 420 };
-  var ACTION_ART = { blink: "piglet-blink", "shy-pet": "piglet-shy-pet" };
-  function canPlayPigAction(pig, action) {
-    const read2 = (name) => pig.getAttribute("data-" + name) || "";
-    return read2("art") === "piglet" && !["box", "grave", "dead-day"].includes(read2("stage")) && !read2("activity") && !read2("idle") && !read2("illness") && read2("party") !== "true" && !["sick", "dirty", "sleepy", "dead", "hungry", "lonely"].includes(read2("mood")) && (!read2("react") || action === "shy-pet" && read2("react") === "pet");
-  }
-  function pigActionArt(pig) {
-    return PLAYERS.get(pig)?.currentArt() || null;
-  }
-  function playPigPet(pig) {
-    PLAYERS.get(pig)?.play("shy-pet");
-  }
-  function attachPigActions(c) {
-    const clock = c.clock || window;
-    const random = c.random || Math.random;
-    const ready = /* @__PURE__ */ new Set();
-    let active2 = null, frameTimer = null, blinkTimer = null, disposed = false;
-    const isBlocked = () => disposed || c.isStopped() || c.isDragging() || document.hidden === true || c.pig.closest?.('[data-dragging="true"]') != null;
-    const clearFrame = () => {
-      clock.clearTimeout(frameTimer);
-      frameTimer = null;
-      active2 = null;
-      c.pig.removeAttribute?.("data-micro-action");
-    };
-    function currentArt() {
-      if (active2 && (isBlocked() || !canPlayPigAction(c.pig, active2))) clearFrame();
-      return active2 ? ACTION_ART[active2] : null;
-    }
-    function play(action) {
-      if (isBlocked() || !ready.has(action) || !canPlayPigAction(c.pig, action)) return;
-      if (action === "blink" && active2) return;
-      clearFrame();
-      active2 = action;
-      c.pig.setAttribute?.("data-micro-action", action);
-      c.render();
-      frameTimer = clock.setTimeout(() => {
-        clearFrame();
-        c.render();
-      }, ACTION_DURATION[action]);
-    }
-    function scheduleBlink() {
-      clock.clearTimeout(blinkTimer);
-      blinkTimer = clock.setTimeout(() => {
-        blinkTimer = null;
-        if (!isBlocked()) play("blink");
-        scheduleBlink();
-      }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
-    }
-    function cancel() {
-      clearFrame();
-      clock.clearTimeout(blinkTimer);
-      blinkTimer = null;
-      c.render();
-    }
-    function visibility() {
-      cancel();
-      if (!isBlocked()) scheduleBlink();
-    }
-    const player = { currentArt, play };
-    PLAYERS.set(c.pig, player);
-    const preload = c.preload || ((src) => {
-      if (typeof Image !== "function") return Promise.resolve(false);
-      const image = new Image();
-      image.src = src;
-      return image.decode().then(() => true);
-    });
-    for (const action of Object.keys(ACTION_ART)) {
-      preload(artSource(ACTION_ART[action])).then((loaded) => {
-        if (!disposed && loaded !== false) ready.add(action);
-      }).catch((error) => console.error("\u5C0F\u732A\u52A8\u4F5C\u56FE\u7247\u89E3\u7801\u5931\u8D25", action, error));
-    }
-    document.addEventListener?.("visibilitychange", visibility);
-    const gestureTarget = c.pig.parentNode || c.pig;
-    gestureTarget.addEventListener?.("pointercancel", visibility);
-    gestureTarget.addEventListener?.("lostpointercapture", visibility);
-    const observer = typeof MutationObserver === "function" ? new MutationObserver(() => {
-      if (active2 && !currentArt()) c.render();
-      else if (blinkTimer === null && !isBlocked()) scheduleBlink();
-    }) : null;
-    observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
-    scheduleBlink();
-    return {
-      cancel,
-      dispose() {
-        observer?.disconnect();
-        disposed = true;
-        cancel();
-        PLAYERS.delete(c.pig);
-        document.removeEventListener?.("visibilitychange", visibility);
-        gestureTarget.removeEventListener?.("pointercancel", visibility);
-        gestureTarget.removeEventListener?.("lostpointercapture", visibility);
-      }
-    };
-  }
-
-  // src/client/feedback-art.js
-  var MOOD_ART = {
-    hungry: ["hungry"],
-    lonely: ["lie-flat"],
-    dirty: ["collection-mosquito"]
-  };
-  var ILLNESS_ART = {
-    "cold:1": ["runny-nose"],
-    "cold:2": ["collection-fever"],
-    "cold:3": ["runny-nose"],
-    "skin:1": ["allergy"],
-    "skin:2": ["allergy"],
-    "skin:3": ["allergy"],
-    "skin:4": ["allergy"],
-    "dizzy:1": ["faint"],
-    "dizzy:2": ["faint"],
-    "dizzy:3": ["faint"]
-  };
-  var REACTION_ART = {};
-  var IDLE_ART = {};
-  var WITHDRAWN_FEEDBACK_ART = Object.freeze({
-    happy: ["music-rainbow", "collection-stack"],
-    feed: ["collection-snack", "collection-soup"],
-    bathe: ["collection-bubbles"],
-    play: ["collection-chicken", "turning"],
-    levelup: ["collection-throne"],
-    roll: ["turning", "collection-taro"],
-    butterfly: ["collection-chicken", "collection-scallion"],
-    look: ["collection-letter"],
-    walk: ["collection-chicken", "collection-scallion"],
-    trip: ["collection-chicken", "collection-taro", "collection-scallion"]
-  });
-  var WORK_ART = {
-    flyers: "collection-letter",
-    singer: "music-headphones-v2",
-    songwriter: "music-earbuds",
-    cartoonist: "painting",
-    athlete: "collection-fitness",
-    coach: "collection-fitness",
-    gardener: "collection-scallion",
-    florist: "collection-scallion",
-    ceo: "collection-throne",
-    star: "music-rainbow"
-  };
-  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
-  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
-  var INTEREST_ART = {
-    fitness: ["collection-fitness"],
-    guitar: ["music-earbuds", "music-headphones-v2"],
-    dancing: ["music-earbuds", "music-headphones-v2"],
-    calligraphy: ["painting"],
-    photography: ["painting"],
-    other: ["study-determined"]
-  };
-  var TRIP_ART = [];
-  var BIRTHDAY_ART = "birthday";
-  var FEEDBACK_ART_TABLES = Object.freeze({
-    stage: STAGE_ART,
-    birthday: [BIRTHDAY_ART],
-    reaction: REACTION_ART,
-    illness: ILLNESS_ART,
-    mood: MOOD_ART,
-    work: WORK_ART,
-    study: STUDY_ART,
-    interest: INTEREST_ART,
-    fishing: ["fishing"],
-    trip: TRIP_ART,
-    idle: IDLE_ART
-  });
-  var UNUSED_FEEDBACK_ART = Object.freeze([
-    "collection-badge",
-    "collection-check",
-    "collection-cage",
-    "suspended",
-    "twitch",
-    // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
-    "sleep-cloud"
-  ]);
-  function choose(options, hour) {
-    return options[Math.abs(Math.floor(hour)) % options.length];
-  }
-  function feedbackArtFor(state3) {
-    if (STAGE_ART[state3.stage]) return choose(STAGE_ART[state3.stage], state3.hour);
-    if (state3.party === true) return BIRTHDAY_ART;
-    if (state3.base && state3.base !== "piglet") return null;
-    if (REACTION_ART[state3.reaction]) return choose(REACTION_ART[state3.reaction], state3.hour);
-    if (state3.mood === "sick") return ILLNESS_ART[state3.illness ?? ""] ? choose(ILLNESS_ART[state3.illness ?? ""], state3.hour) : null;
-    if (state3.mood === "dirty") return choose(MOOD_ART.dirty, state3.hour);
-    if (state3.activityKind === "work") return WORK_ART[state3.activityKey] ?? null;
-    if (state3.activityKind === "study") return choose(STUDY_ART, state3.hour);
-    if (state3.activityKind === "interest") return choose(INTEREST_ART[state3.activityKey] ?? INTEREST_ART.other, state3.hour);
-    if (state3.activityKind === "fishing") return "fishing";
-    if (state3.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state3.hour) : null;
-    if (IDLE_ART[state3.idle]) return choose(IDLE_ART[state3.idle], state3.hour);
-    if (MOOD_ART[state3.mood]) return choose(MOOD_ART[state3.mood], state3.hour);
-    return null;
-  }
 
   // src/client/feedback-framing.js
   var FRAME_HEIGHT = 0.84375;
@@ -828,6 +432,652 @@
   }
   function artMarginFor(width) {
     return Math.max(40, (MAX_ART_ASPECT2 * FRAME_HEIGHT2 - 1) * width / 2 + 6);
+  }
+
+  // packages/pet-core/src/data/art-assets.js
+  var PIG_ART_ASSETS = Object.freeze({
+    "piglet-shy-pet": "pigs/base/piglet/shy-pet.png",
+    "piglet-blink": "pigs/base/piglet/blink.png",
+    "badge-pig-blindbox-first": "pigs/badges/badge-pig-blindbox-first.png",
+    "badge-pig-blindbox-six": "pigs/badges/badge-pig-blindbox-six.png",
+    "badge-pig-blindbox-ten": "pigs/badges/badge-pig-blindbox-ten.png",
+    "badge-pig-clean-ten": "pigs/badges/badge-pig-clean-ten.png",
+    "badge-pig-devil": "pigs/badges/badge-pig-devil.png",
+    "badge-pig-farm-first": "pigs/badges/badge-pig-farm-first.png",
+    "badge-pig-farm-five": "pigs/badges/badge-pig-farm-five.png",
+    "badge-pig-farm-ten": "pigs/badges/badge-pig-farm-ten.png",
+    "badge-pig-first-class": "pigs/badges/badge-pig-first-class.png",
+    "badge-pig-first-fish": "pigs/badges/badge-pig-first-fish.png",
+    "badge-pig-first-job": "pigs/badges/badge-pig-first-job.png",
+    "badge-pig-first-meal": "pigs/badges/badge-pig-first-meal.png",
+    "badge-pig-first-trip": "pigs/badges/badge-pig-first-trip.png",
+    "badge-pig-fish-five": "pigs/badges/badge-pig-fish-five.png",
+    "badge-pig-gacha-first": "pigs/badges/badge-pig-gacha-first.png",
+    "badge-pig-gacha-gold": "pigs/badges/badge-pig-gacha-gold.png",
+    "badge-pig-gacha-machines": "pigs/badges/badge-pig-gacha-machines.png",
+    "badge-pig-grown-up": "pigs/badges/badge-pig-grown-up.png",
+    "badge-pig-jobs-hundred": "pigs/badges/badge-pig-jobs-hundred.png",
+    "badge-pig-jobs-ten": "pigs/badges/badge-pig-jobs-ten.png",
+    "badge-pig-king": "pigs/badges/badge-pig-king.png",
+    "badge-pig-mine-deep": "pigs/badges/badge-pig-mine-deep.png",
+    "badge-pig-mine-first": "pigs/badges/badge-pig-mine-first.png",
+    "badge-pig-mine-fossils": "pigs/badges/badge-pig-mine-fossils.png",
+    "badge-pig-pet-hundred": "pigs/badges/badge-pig-pet-hundred.png",
+    "badge-pig-play-twenty": "pigs/badges/badge-pig-play-twenty.png",
+    "badge-pig-souvenirs-three": "pigs/badges/badge-pig-souvenirs-three.png",
+    "badge-pig-trips-ten": "pigs/badges/badge-pig-trips-ten.png",
+    "career-astronaut": "pigs/skins/career-astronaut/idle.png",
+    "career-astronaut-bathe": "pigs/skins/career-astronaut/bathe.png",
+    "career-astronaut-eat": "pigs/skins/career-astronaut/eat.png",
+    "career-astronaut-pet": "pigs/skins/career-astronaut/pet.png",
+    "career-astronaut-play": "pigs/skins/career-astronaut/play.png",
+    "career-astronaut-relaxed": "pigs/skins/career-astronaut/relaxed.png",
+    "career-astronaut-sleep": "pigs/skins/career-astronaut/sleep.png",
+    "career-astronaut-study": "pigs/skins/career-astronaut/study.png",
+    "career-astronaut-trip": "pigs/skins/career-astronaut/trip.png",
+    "career-astronaut-work": "pigs/skins/career-astronaut/work.png",
+    "career-chef": "pigs/skins/career-chef/idle.png",
+    "career-chef-bathe": "pigs/skins/career-chef/bathe.png",
+    "career-chef-eat": "pigs/skins/career-chef/eat.png",
+    "career-chef-pet": "pigs/skins/career-chef/pet.png",
+    "career-chef-play": "pigs/skins/career-chef/play.png",
+    "career-chef-relaxed": "pigs/skins/career-chef/relaxed.png",
+    "career-chef-sleep": "pigs/skins/career-chef/sleep.png",
+    "career-chef-study": "pigs/skins/career-chef/study.png",
+    "career-chef-trip": "pigs/skins/career-chef/trip.png",
+    "career-chef-work": "pigs/skins/career-chef/work.png",
+    "elder": "pigs/base/elder/idle.png",
+    "feedback/allergy": "pigs/feedback/allergy.png",
+    "feedback/birthday": "pigs/feedback/birthday.png",
+    "feedback/collection-badge": "pigs/feedback/collection-badge.png",
+    "feedback/collection-bubbles": "pigs/feedback/collection-bubbles.png",
+    "feedback/collection-cage": "pigs/feedback/collection-cage.png",
+    "feedback/collection-check": "pigs/feedback/collection-check.png",
+    "feedback/collection-chicken": "pigs/feedback/collection-chicken.png",
+    "feedback/collection-courier": "pigs/feedback/collection-courier.png",
+    "feedback/collection-fever": "pigs/feedback/collection-fever.png",
+    "feedback/collection-fitness": "pigs/feedback/collection-fitness.png",
+    "feedback/collection-letter": "pigs/feedback/collection-letter.png",
+    "feedback/collection-mosquito": "pigs/feedback/collection-mosquito.png",
+    "feedback/collection-scallion": "pigs/feedback/collection-scallion.png",
+    "feedback/collection-snack": "pigs/feedback/collection-snack.png",
+    "feedback/collection-soup": "pigs/feedback/collection-soup.png",
+    "feedback/collection-stack": "pigs/feedback/collection-stack.png",
+    "feedback/collection-taro": "pigs/feedback/collection-taro.png",
+    "feedback/collection-throne": "pigs/feedback/collection-throne.png",
+    "feedback/courier": "pigs/feedback/courier.png",
+    "feedback/death-day": "pigs/feedback/death-day.png",
+    "feedback/faint": "pigs/feedback/faint.png",
+    "feedback/fishing": "pigs/feedback/fishing.png",
+    "feedback/ghost-grave": "pigs/feedback/ghost-grave.png",
+    "feedback/hungry": "pigs/feedback/hungry.png",
+    "feedback/lie-flat": "pigs/feedback/lie-flat.png",
+    "feedback/music-earbuds": "pigs/feedback/music-earbuds.png",
+    "feedback/music-headphones-v2": "pigs/feedback/music-headphones-v2.png",
+    "feedback/music-rainbow": "pigs/feedback/music-rainbow.png",
+    "feedback/painting": "pigs/feedback/painting.png",
+    "feedback/recruit": "pigs/feedback/recruit.png",
+    "feedback/runny-nose": "pigs/feedback/runny-nose.png",
+    "feedback/sleep-cloud": "pigs/feedback/sleep-cloud.png",
+    "feedback/study-book": "pigs/feedback/study-book.png",
+    "feedback/study-determined": "pigs/feedback/study-determined.png",
+    "feedback/study-pink-book": "pigs/feedback/study-pink-book.png",
+    "feedback/suspended": "pigs/feedback/suspended.png",
+    "feedback/turning": "pigs/feedback/turning.png",
+    "feedback/twitch": "pigs/feedback/twitch.png",
+    "pig-devil": "pigs/forms/pig-devil/idle.png",
+    "pig-devil-bathe": "pigs/forms/pig-devil/bathe.png",
+    "pig-devil-eat": "pigs/forms/pig-devil/eat.png",
+    "pig-devil-fly": "pigs/forms/pig-devil/fly.png",
+    "pig-devil-pet": "pigs/forms/pig-devil/pet.png",
+    "pig-devil-play": "pigs/forms/pig-devil/play.png",
+    "pig-devil-relaxed": "pigs/forms/pig-devil/relaxed.png",
+    "pig-devil-sleep": "pigs/forms/pig-devil/sleep.png",
+    "pig-devil-study": "pigs/forms/pig-devil/study.png",
+    "pig-devil-trip": "pigs/forms/pig-devil/trip.png",
+    "pig-devil-work": "pigs/forms/pig-devil/work.png",
+    "pig-fat": "pigs/forms/pig-fat/idle.png",
+    "pig-fat-bathe": "pigs/forms/pig-fat/bathe.png",
+    "pig-fat-eat": "pigs/forms/pig-fat/eat.png",
+    "pig-fat-pet": "pigs/forms/pig-fat/pet.png",
+    "pig-fat-play": "pigs/forms/pig-fat/play.png",
+    "pig-fat-relaxed": "pigs/forms/pig-fat/relaxed.png",
+    "pig-fat-sleep": "pigs/forms/pig-fat/sleep.png",
+    "pig-fat-study": "pigs/forms/pig-fat/study.png",
+    "pig-fat-trip": "pigs/forms/pig-fat/trip.png",
+    "pig-fat-work": "pigs/forms/pig-fat/work.png",
+    "pig-king": "pigs/forms/pig-king/idle.png",
+    "pig-king-bathe": "pigs/forms/pig-king/bathe.png",
+    "pig-king-eat": "pigs/forms/pig-king/eat.png",
+    "pig-king-pet": "pigs/forms/pig-king/pet.png",
+    "pig-king-play": "pigs/forms/pig-king/play.png",
+    "pig-king-relaxed": "pigs/forms/pig-king/relaxed.png",
+    "pig-king-sleep": "pigs/forms/pig-king/sleep.png",
+    "pig-king-study": "pigs/forms/pig-king/study.png",
+    "pig-king-trip": "pigs/forms/pig-king/trip.png",
+    "pig-king-work": "pigs/forms/pig-king/work.png",
+    "pig-round": "pigs/forms/pig-round/idle.png",
+    "pig-round-bathe": "pigs/forms/pig-round/bathe.png",
+    "pig-round-eat": "pigs/forms/pig-round/eat.png",
+    "pig-round-pet": "pigs/forms/pig-round/pet.png",
+    "pig-round-play": "pigs/forms/pig-round/play.png",
+    "pig-round-relaxed": "pigs/forms/pig-round/relaxed.png",
+    "pig-round-sleep": "pigs/forms/pig-round/sleep.png",
+    "pig-round-study": "pigs/forms/pig-round/study.png",
+    "pig-round-trip": "pigs/forms/pig-round/trip.png",
+    "pig-round-work": "pigs/forms/pig-round/work.png",
+    "piglet": "pigs/base/piglet/idle.png",
+    "piglet-bathe": "pigs/base/piglet/bathe.png",
+    "piglet-eat": "pigs/base/piglet/eat.png",
+    "piglet-play": "pigs/base/piglet/play.png",
+    "piglet-sleep": "pigs/base/piglet/sleep.png",
+    "piglet-work": "pigs/base/piglet/work.png",
+    "skin-angel": "pigs/skins/skin-angel/idle.png",
+    "skin-angel-bathe": "pigs/skins/skin-angel/bathe.png",
+    "skin-angel-eat": "pigs/skins/skin-angel/eat.png",
+    "skin-angel-pet": "pigs/skins/skin-angel/pet.png",
+    "skin-angel-play": "pigs/skins/skin-angel/play.png",
+    "skin-angel-relaxed": "pigs/skins/skin-angel/relaxed.png",
+    "skin-angel-sleep": "pigs/skins/skin-angel/sleep.png",
+    "skin-angel-study": "pigs/skins/skin-angel/study.png",
+    "skin-angel-trip": "pigs/skins/skin-angel/trip.png",
+    "skin-angel-work": "pigs/skins/skin-angel/work.png",
+    "skin-detective": "pigs/skins/skin-detective/idle.png",
+    "skin-detective-bathe": "pigs/skins/skin-detective/bathe.png",
+    "skin-detective-eat": "pigs/skins/skin-detective/eat.png",
+    "skin-detective-pet": "pigs/skins/skin-detective/pet.png",
+    "skin-detective-play": "pigs/skins/skin-detective/play.png",
+    "skin-detective-relaxed": "pigs/skins/skin-detective/relaxed.png",
+    "skin-detective-sleep": "pigs/skins/skin-detective/sleep.png",
+    "skin-detective-study": "pigs/skins/skin-detective/study.png",
+    "skin-detective-trip": "pigs/skins/skin-detective/trip.png",
+    "skin-detective-work": "pigs/skins/skin-detective/work.png",
+    "skin-mint": "pigs/skins/skin-mint/idle.png",
+    "skin-mint-bathe": "pigs/skins/skin-mint/bathe.png",
+    "skin-mint-eat": "pigs/skins/skin-mint/eat.png",
+    "skin-mint-pet": "pigs/skins/skin-mint/pet.png",
+    "skin-mint-play": "pigs/skins/skin-mint/play.png",
+    "skin-mint-sleep": "pigs/skins/skin-mint/sleep.png",
+    "skin-mint-work": "pigs/skins/skin-mint/work.png",
+    "skin-pirate": "pigs/skins/skin-pirate/idle.png",
+    "skin-pirate-bathe": "pigs/skins/skin-pirate/bathe.png",
+    "skin-pirate-eat": "pigs/skins/skin-pirate/eat.png",
+    "skin-pirate-pet": "pigs/skins/skin-pirate/pet.png",
+    "skin-pirate-play": "pigs/skins/skin-pirate/play.png",
+    "skin-pirate-relaxed": "pigs/skins/skin-pirate/relaxed.png",
+    "skin-pirate-sleep": "pigs/skins/skin-pirate/sleep.png",
+    "skin-pirate-study": "pigs/skins/skin-pirate/study.png",
+    "skin-pirate-trip": "pigs/skins/skin-pirate/trip.png",
+    "skin-pirate-work": "pigs/skins/skin-pirate/work.png",
+    "skin-wizard": "pigs/skins/skin-wizard/idle.png",
+    "skin-wizard-bathe": "pigs/skins/skin-wizard/bathe.png",
+    "skin-wizard-eat": "pigs/skins/skin-wizard/eat.png",
+    "skin-wizard-pet": "pigs/skins/skin-wizard/pet.png",
+    "skin-wizard-play": "pigs/skins/skin-wizard/play.png",
+    "skin-wizard-relaxed": "pigs/skins/skin-wizard/relaxed.png",
+    "skin-wizard-sleep": "pigs/skins/skin-wizard/sleep.png",
+    "skin-wizard-study": "pigs/skins/skin-wizard/study.png",
+    "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
+    "skin-wizard-work": "pigs/skins/skin-wizard/work.png"
+  });
+
+  // src/client/art-style.js
+  function builtinArtPath(key2) {
+    return PIG_ART_ASSETS[key2];
+  }
+
+  // src/client/art-path.js
+  function artSource(key2) {
+    return ART_URL + (builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg"));
+  }
+  function hasBuiltinArt(key2) {
+    return Object.hasOwn(PIG_ART_ASSETS, key2);
+  }
+
+  // src/client/storage.js
+  function readStore(key2) {
+    try {
+      var value = window.localStorage.getItem(key2);
+      return value !== null ? value : window.localStorage.getItem(key2.replace(/^dsh-piggy:/, "dsh-pig:"));
+    } catch (error) {
+      return null;
+    }
+  }
+  function writeStore(key2, value) {
+    try {
+      window.localStorage.setItem(key2, value);
+    } catch (error) {
+    }
+  }
+
+  // src/client/feel/settings.js
+  var FEEL_KEY = "dsh-piggy:feel";
+  var SOUND_KEY = "dsh-piggy:sound";
+  var FEEL_MODES = Object.freeze(["full", "soft", "off"]);
+  var SOUND_VOLUMES = Object.freeze([0, 1, 2]);
+  function cleanMode(value) {
+    return typeof value === "string" && FEEL_MODES.includes(value) ? value : "full";
+  }
+  function feelMode() {
+    return cleanMode(readStore(FEEL_KEY));
+  }
+  function setFeelMode(mode) {
+    writeStore(FEEL_KEY, cleanMode(mode));
+    notifyFeel();
+  }
+  function prefersReducedMotion() {
+    try {
+      return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches === true;
+    } catch {
+      return false;
+    }
+  }
+  function effectiveFeelMode() {
+    return prefersReducedMotion() ? "off" : feelMode();
+  }
+  var feelListeners = /* @__PURE__ */ new Set();
+  function onFeelModeChange(fn) {
+    feelListeners.add(fn);
+    return function() {
+      feelListeners.delete(fn);
+    };
+  }
+  function notifyFeel() {
+    var mode = effectiveFeelMode();
+    feelListeners.forEach(function(fn) {
+      try {
+        fn(mode);
+      } catch {
+      }
+    });
+  }
+  try {
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("storage", function(event) {
+        if (event !== null && event !== void 0 && event.key === FEEL_KEY) notifyFeel();
+      });
+    }
+  } catch {
+  }
+  function soundSettings() {
+    var raw = null;
+    try {
+      raw = JSON.parse(readStore(SOUND_KEY) || "null");
+    } catch {
+      raw = null;
+    }
+    var on = raw !== null && typeof raw === "object" && raw.on === true;
+    var volume = raw !== null && typeof raw === "object" && Number.isFinite(raw.volume) ? Math.round(raw.volume) : 2;
+    if (!SOUND_VOLUMES.includes(volume)) volume = 2;
+    return { on, volume };
+  }
+  function setSoundSettings(next) {
+    var current2 = soundSettings();
+    var on = next.on === void 0 ? current2.on : next.on === true;
+    var volume = next.volume === void 0 ? current2.volume : Math.round(Number(next.volume));
+    if (!SOUND_VOLUMES.includes(volume)) volume = current2.volume;
+    writeStore(SOUND_KEY, JSON.stringify({ on, volume }));
+    return { on, volume };
+  }
+
+  // src/client/pet-hand-settings.js
+  var PET_HAND_KEY = "dsh-piggy:pet-hand";
+  var listeners = /* @__PURE__ */ new Set();
+  function petHandEnabled() {
+    return readStore(PET_HAND_KEY) !== "off";
+  }
+  function setPetHandEnabled(on) {
+    writeStore(PET_HAND_KEY, on ? "on" : "off");
+    listeners.forEach((fn) => fn());
+  }
+  function onPetHandChange(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+  if (typeof window !== "undefined") window.addEventListener?.("storage", (event) => {
+    if (event.key === PET_HAND_KEY || event.key === null) listeners.forEach((fn) => fn());
+  });
+
+  // src/client/pet-snap.js
+  var players = /* @__PURE__ */ new WeakMap();
+  var SNAP_FRAME_MS = 60;
+  var SNAP_FRAMES = 5;
+  var PET_SINK_PX = Object.freeze([0, 2, 4, 2, 0]);
+  var SNAP_CYCLE_MS = SNAP_FRAME_MS * SNAP_FRAMES;
+  function beginPetSnap(pig) {
+    return players.get(pig)?.press() === true;
+  }
+  function releasePetSnap(pig) {
+    players.get(pig)?.release();
+  }
+  function cancelPetSnap(pig) {
+    players.get(pig)?.cancel();
+  }
+  function confirmPetSnap(pig) {
+    return players.get(pig)?.confirm() === true;
+  }
+  function attachPetSnap(c) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext?.("2d");
+    const parent = c.pig.querySelector?.(".dp-pig-body");
+    if (!ctx || !parent) return { dispose() {
+    } };
+    canvas.className = "dp-pet-snap";
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.hidden = true;
+    canvas.width = canvas.height = 512;
+    const framing = builtinFrame(artSource("piglet")) || [1, 0, 0];
+    canvas.style.setProperty("--snap-zoom", String(framing[0]));
+    canvas.style.setProperty("--snap-x", framing[1] / 2 + "%");
+    canvas.style.setProperty("--snap-y", framing[2] / 2 + "%");
+    parent.appendChild(canvas);
+    let ready = false, disposed = false, active2 = false, held = false;
+    let frame3 = 0, raf3 = 0, start2 = 0, stopAt = Infinity;
+    let atlases = null;
+    let referenceFrames = [];
+    const now2 = () => performance.now();
+    const allowed = () => !disposed && !document.hidden && !c.isStopped() && effectiveFeelMode() === "full" && c.canPlay() && c.pig.getAttribute("data-feel-flip") !== "true";
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!atlases) return;
+      if (petHandEnabled()) {
+        ctx.drawImage(referenceFrames[frame3], 100, 76, 280, 280);
+      } else {
+        ctx.drawImage(atlases[0], 128, 128 + PET_SINK_PX[frame3], 256, 256);
+      }
+    }
+    function cancel() {
+      cancelAnimationFrame(raf3);
+      raf3 = 0;
+      active2 = held = false;
+      c.render();
+      canvas.hidden = true;
+      c.pig.removeAttribute("data-pet-snap");
+    }
+    function tick2(time2) {
+      raf3 = 0;
+      if (!allowed()) {
+        cancel();
+        return;
+      }
+      const elapsed = Math.max(0, time2 - start2);
+      if (!held && elapsed >= stopAt) {
+        if (c.pig.getAttribute("data-react") === "pet") c.pig.removeAttribute("data-react");
+        cancel();
+        return;
+      }
+      const next = Math.floor(elapsed / SNAP_FRAME_MS) % SNAP_FRAMES;
+      if (next !== frame3) {
+        frame3 = next;
+        draw();
+      }
+      raf3 = requestAnimationFrame(tick2);
+    }
+    function press() {
+      if (!ready || !allowed()) return false;
+      c.pig.setAttribute("data-pet-snap", "true");
+      c.cancelMicro();
+      held = active2 = true;
+      stopAt = Infinity;
+      canvas.hidden = false;
+      cancelAnimationFrame(raf3);
+      start2 = now2();
+      frame3 = 0;
+      draw();
+      raf3 = requestAnimationFrame(tick2);
+      return true;
+    }
+    function release() {
+      if (!active2 || !held) return;
+      held = false;
+      stopAt = Math.max(1, Math.ceil((now2() - start2) / SNAP_CYCLE_MS)) * SNAP_CYCLE_MS;
+    }
+    function confirm() {
+      if (held && active2) return true;
+      if (c.isDragging() || !press()) return false;
+      release();
+      return true;
+    }
+    const player = { press, release, cancel, confirm };
+    players.set(c.pig, player);
+    const load = (src) => {
+      const image = new Image();
+      image.src = src;
+      return image.decode().then(() => image);
+    };
+    Promise.all([load(artSource("piglet")), load(ART_URL + "animations/piglet-pet/reference.webp?v=original-v07")]).then(async (images) => {
+      const frames = await Promise.all(Array.from({ length: SNAP_FRAMES }, (_, i) => createImageBitmap(images[1], i * 112, 0, 112, 112)));
+      if (disposed) {
+        frames.forEach((image) => image.close());
+        return;
+      }
+      atlases = images;
+      referenceFrames = frames;
+      ready = true;
+    }).catch((error) => console.warn("\u6478\u6478\u52A8\u753B\u52A0\u8F7D\u5931\u8D25\uFF0C\u4FDD\u7559\u9759\u6001\u6478\u6478", error));
+    const onState = () => {
+      if (active2 && !allowed()) cancel();
+    };
+    const observer = new MutationObserver(onState);
+    observer.observe(c.pig, { attributes: true, childList: true, subtree: true, attributeFilter: ["data-art", "data-stage", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react", "data-feel-flip"] });
+    const offFeel = onFeelModeChange(onState);
+    const offHand = onPetHandChange(() => {
+      if (active2) draw();
+    });
+    const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    media?.addEventListener?.("change", onState);
+    document.addEventListener("visibilitychange", onState);
+    return { dispose() {
+      disposed = true;
+      observer.disconnect();
+      offFeel();
+      offHand();
+      media?.removeEventListener?.("change", onState);
+      document.removeEventListener("visibilitychange", onState);
+      cancel();
+      canvas.remove();
+      atlases = null;
+      referenceFrames.forEach((image) => image.close());
+      referenceFrames = [];
+      players.delete(c.pig);
+    } };
+  }
+
+  // src/client/pig-actions.js
+  var PLAYERS = /* @__PURE__ */ new WeakMap();
+  var BLINK_INTERVAL = { min: 8e3, max: 16e3 };
+  var ACTION_DURATION = { blink: 100, "shy-pet": 420 };
+  var ACTION_ART = { blink: "piglet-blink", "shy-pet": "piglet-shy-pet" };
+  function canPlayPigAction(pig, action) {
+    const read2 = (name) => pig.getAttribute("data-" + name) || "";
+    return read2("art") === "piglet" && !["box", "grave", "dead-day"].includes(read2("stage")) && !read2("activity") && !read2("idle") && !read2("illness") && read2("party") !== "true" && !["sick", "dirty", "sleepy", "dead", "hungry", "lonely"].includes(read2("mood")) && (!read2("react") || action === "shy-pet" && read2("react") === "pet");
+  }
+  function pigActionArt(pig) {
+    return PLAYERS.get(pig)?.currentArt() || null;
+  }
+  function playPigPet(pig) {
+    if (!confirmPetSnap(pig)) PLAYERS.get(pig)?.play("shy-pet");
+  }
+  function attachPigActions(c) {
+    const clock = c.clock || window;
+    const random = c.random || Math.random;
+    const ready = /* @__PURE__ */ new Set();
+    let active2 = null, frameTimer = null, blinkTimer = null, disposed = false;
+    const isBlocked = () => disposed || c.isStopped() || c.isDragging() || document.hidden === true || c.pig.closest?.('[data-dragging="true"]') != null;
+    const clearFrame = () => {
+      clock.clearTimeout(frameTimer);
+      frameTimer = null;
+      active2 = null;
+      c.pig.removeAttribute?.("data-micro-action");
+    };
+    function currentArt() {
+      if (active2 && (isBlocked() || !canPlayPigAction(c.pig, active2))) clearFrame();
+      return active2 ? ACTION_ART[active2] : null;
+    }
+    function play(action) {
+      if (isBlocked() || !ready.has(action) || !canPlayPigAction(c.pig, action)) return;
+      if (c.pig.getAttribute("data-pet-snap") === "true") return;
+      if (action === "blink" && active2) return;
+      clearFrame();
+      active2 = action;
+      c.pig.setAttribute?.("data-micro-action", action);
+      c.render();
+      frameTimer = clock.setTimeout(() => {
+        clearFrame();
+        c.render();
+      }, ACTION_DURATION[action]);
+    }
+    function scheduleBlink() {
+      clock.clearTimeout(blinkTimer);
+      blinkTimer = clock.setTimeout(() => {
+        blinkTimer = null;
+        if (!isBlocked()) play("blink");
+        scheduleBlink();
+      }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
+    }
+    function cancel() {
+      clearFrame();
+      clock.clearTimeout(blinkTimer);
+      blinkTimer = null;
+      c.render();
+    }
+    function visibility() {
+      cancel();
+      if (!isBlocked()) scheduleBlink();
+    }
+    const player = { currentArt, play };
+    PLAYERS.set(c.pig, player);
+    const preload = c.preload || ((src) => {
+      if (typeof Image !== "function") return Promise.resolve(false);
+      const image = new Image();
+      image.src = src;
+      return image.decode().then(() => true);
+    });
+    for (const action of Object.keys(ACTION_ART)) {
+      preload(artSource(ACTION_ART[action])).then((loaded) => {
+        if (!disposed && loaded !== false) ready.add(action);
+      }).catch((error) => console.error("\u5C0F\u732A\u52A8\u4F5C\u56FE\u7247\u89E3\u7801\u5931\u8D25", action, error));
+    }
+    document.addEventListener?.("visibilitychange", visibility);
+    const gestureTarget = c.pig.parentNode || c.pig;
+    gestureTarget.addEventListener?.("pointercancel", visibility);
+    gestureTarget.addEventListener?.("lostpointercapture", visibility);
+    const observer = typeof MutationObserver === "function" ? new MutationObserver(() => {
+      if (active2 && !currentArt()) c.render();
+      else if (blinkTimer === null && !isBlocked()) scheduleBlink();
+    }) : null;
+    observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
+    scheduleBlink();
+    return {
+      cancel,
+      dispose() {
+        observer?.disconnect();
+        disposed = true;
+        cancel();
+        PLAYERS.delete(c.pig);
+        document.removeEventListener?.("visibilitychange", visibility);
+        gestureTarget.removeEventListener?.("pointercancel", visibility);
+        gestureTarget.removeEventListener?.("lostpointercapture", visibility);
+      }
+    };
+  }
+
+  // src/client/feedback-art.js
+  var MOOD_ART = {
+    hungry: ["hungry"],
+    lonely: ["lie-flat"],
+    dirty: ["collection-mosquito"]
+  };
+  var ILLNESS_ART = {
+    "cold:1": ["runny-nose"],
+    "cold:2": ["collection-fever"],
+    "cold:3": ["runny-nose"],
+    "skin:1": ["allergy"],
+    "skin:2": ["allergy"],
+    "skin:3": ["allergy"],
+    "skin:4": ["allergy"],
+    "dizzy:1": ["faint"],
+    "dizzy:2": ["faint"],
+    "dizzy:3": ["faint"]
+  };
+  var REACTION_ART = {};
+  var IDLE_ART = {};
+  var WITHDRAWN_FEEDBACK_ART = Object.freeze({
+    happy: ["music-rainbow", "collection-stack"],
+    feed: ["collection-snack", "collection-soup"],
+    bathe: ["collection-bubbles"],
+    play: ["collection-chicken", "turning"],
+    levelup: ["collection-throne"],
+    roll: ["turning", "collection-taro"],
+    butterfly: ["collection-chicken", "collection-scallion"],
+    look: ["collection-letter"],
+    walk: ["collection-chicken", "collection-scallion"],
+    trip: ["collection-chicken", "collection-taro", "collection-scallion"]
+  });
+  var WORK_ART = {
+    flyers: "collection-letter",
+    singer: "music-headphones-v2",
+    songwriter: "music-earbuds",
+    cartoonist: "painting",
+    athlete: "collection-fitness",
+    coach: "collection-fitness",
+    gardener: "collection-scallion",
+    florist: "collection-scallion",
+    ceo: "collection-throne",
+    star: "music-rainbow"
+  };
+  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
+  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
+  var INTEREST_ART = {
+    fitness: ["collection-fitness"],
+    guitar: ["music-earbuds", "music-headphones-v2"],
+    dancing: ["music-earbuds", "music-headphones-v2"],
+    calligraphy: ["painting"],
+    photography: ["painting"],
+    other: ["study-determined"]
+  };
+  var TRIP_ART = [];
+  var BIRTHDAY_ART = "birthday";
+  var FEEDBACK_ART_TABLES = Object.freeze({
+    stage: STAGE_ART,
+    birthday: [BIRTHDAY_ART],
+    reaction: REACTION_ART,
+    illness: ILLNESS_ART,
+    mood: MOOD_ART,
+    work: WORK_ART,
+    study: STUDY_ART,
+    interest: INTEREST_ART,
+    fishing: ["fishing"],
+    trip: TRIP_ART,
+    idle: IDLE_ART
+  });
+  var UNUSED_FEEDBACK_ART = Object.freeze([
+    "collection-badge",
+    "collection-check",
+    "collection-cage",
+    "suspended",
+    "twitch",
+    // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
+    "sleep-cloud"
+  ]);
+  function choose(options, hour) {
+    return options[Math.abs(Math.floor(hour)) % options.length];
+  }
+  function feedbackArtFor(state3) {
+    if (STAGE_ART[state3.stage]) return choose(STAGE_ART[state3.stage], state3.hour);
+    if (state3.party === true) return BIRTHDAY_ART;
+    if (state3.base && state3.base !== "piglet") return null;
+    if (REACTION_ART[state3.reaction]) return choose(REACTION_ART[state3.reaction], state3.hour);
+    if (state3.mood === "sick") return ILLNESS_ART[state3.illness ?? ""] ? choose(ILLNESS_ART[state3.illness ?? ""], state3.hour) : null;
+    if (state3.mood === "dirty") return choose(MOOD_ART.dirty, state3.hour);
+    if (state3.activityKind === "work") return WORK_ART[state3.activityKey] ?? null;
+    if (state3.activityKind === "study") return choose(STUDY_ART, state3.hour);
+    if (state3.activityKind === "interest") return choose(INTEREST_ART[state3.activityKey] ?? INTEREST_ART.other, state3.hour);
+    if (state3.activityKind === "fishing") return "fishing";
+    if (state3.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state3.hour) : null;
+    if (IDLE_ART[state3.idle]) return choose(IDLE_ART[state3.idle], state3.hour);
+    if (MOOD_ART[state3.mood]) return choose(MOOD_ART[state3.mood], state3.hour);
+    return null;
   }
 
   // src/client/art.js
@@ -1490,7 +1740,7 @@
     var paintedKey = null;
     var actionTail = Promise.resolve(null);
     var pendingExtensions = 0;
-    function send2(action, extra) {
+    function send2(action, extra, options) {
       if (action === "touch") return perform(action, extra, { background: true });
       if (action === "ext") {
         pendingExtensions += 1;
@@ -1505,7 +1755,7 @@
         });
       }
       if (ctx.busy || pendingExtensions > 0) return Promise.resolve(null);
-      var running = perform(action, extra);
+      var running = perform(action, extra, options);
       actionTail = running.catch(function() {
         return null;
       });
@@ -1533,7 +1783,7 @@
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
         paintedKey = null;
         ctx.render(next);
-        if (action === "pet" && next?.ok === true) ctx.petShy?.();
+        if (action === "pet" && next?.ok === true && options?.petAnimated !== true) ctx.petShy?.();
         if ((action === "signIn" || action === "openGift") && next?.ok === true) {
           var reward = str(next.reward, "");
           ctx.showBubble((action === "signIn" ? "\u7B7E\u5230\u6210\u529F" : "\u793C\u5305\u6253\u5F00") + (reward ? " \xB7 " + reward : ""), 4e3);
@@ -1986,22 +2236,6 @@
     }
     if (offlineSummary !== null && (role2 === "pet" || !ctx.isOpen)) ctx.showBubble(offlineSummary, 8e3);
     else if (pigSide) ctx.updateNotice?.maybeBubble();
-  }
-
-  // src/client/storage.js
-  function readStore(key2) {
-    try {
-      var value = window.localStorage.getItem(key2);
-      return value !== null ? value : window.localStorage.getItem(key2.replace(/^dsh-piggy:/, "dsh-pig:"));
-    } catch (error) {
-      return null;
-    }
-  }
-  function writeStore(key2, value) {
-    try {
-      window.localStorage.setItem(key2, value);
-    } catch (error) {
-    }
   }
 
   // src/client/auto-collapse.js
@@ -3571,6 +3805,14 @@
     "animation:dp-bob 1.8s ease-in-out infinite}",
     // 物理层三层：外层 .dp-pig 保留现有 CSS 动画，.dp-pig-hold 只做拎起（支点在头顶），
     // .dp-pig-body 只做整图压扁/倾斜/翻面（支点在 85%，和 motion-envelope 一致）。
+    ".dp-pet-snap{position:absolute;left:-50%;top:-50%;width:200%;height:200%;pointer-events:none;",
+    "scale:var(--snap-zoom,1);translate:var(--snap-x,0%) var(--snap-y,0%)}",
+    ".dp-pet-snap[hidden]{display:none}",
+    '[data-dsh-pig] .dp-pig[data-pet-snap="true"]{animation:none!important}',
+    '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-img{visibility:hidden}',
+    '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-hold,',
+    '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-body{transform:none!important}',
+    '.dp-pig[data-walk="right"] .dp-pet-snap{transform:scaleX(-1);translate:calc(-1 * var(--snap-x,0%)) var(--snap-y,0%)}',
     ".dp-pig-hold{display:block;position:relative;width:var(--pig-size);height:var(--pig-size);",
     "transform-origin:50% 0%;will-change:auto}",
     ".dp-pig-body{display:block;position:relative;width:var(--pig-size);height:var(--pig-size);",
@@ -3800,12 +4042,12 @@
     // 气泡钉在猪头上：右边和猪的右边对齐（场景左右各 6px 内边距，猪贴着它），底边在猪头上方 10px，
     // 尾巴指着猪头正中。收起/打开、面板朝左/朝右都是这一个位置（用户 2026-10-04：「不要飘来飘去」）。
     ".dp-bubble{position:absolute;right:6px;left:auto;top:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) + 10px);",
-    "z-index:2;width:max-content;max-width:calc(var(--panel-width) - 24px);box-sizing:border-box;padding:6px 10px;",
+    "z-index:2;width:max-content;max-width:calc(var(--panel-width) - 24px);max-height:104px;box-sizing:border-box;padding:6px 10px;",
     "border-radius:var(--ac-radius-sm);font-size:10.5px;font-weight:600;line-height:1.45;",
     "color:var(--ac-text-body);background:var(--ac-bg-input);",
     "border:2px solid var(--ac-border-light);box-shadow:var(--ac-shadow-sm)}",
-    ".dp-bubble-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;",
-    "overflow:hidden;white-space:normal;overflow-wrap:anywhere}",
+    ".dp-bubble-text{display:block;max-height:88px;overflow-y:auto;scrollbar-width:thin;white-space:normal;overflow-wrap:anywhere}",
+    ".dp-bubble:has(.dp-bubble-replies) .dp-bubble-text{max-height:52px}",
     // Tail drawn as a small rotated square so the 2px border stays continuous.
     '.dp-bubble::after{content:"";position:absolute;left:auto;right:calc(var(--pig-size) / 2 - 5px);top:100%;bottom:auto;',
     "margin-top:-4px;width:8px;height:8px;",
@@ -3818,7 +4060,7 @@
     // 2026-10-13：独立猪窗口置顶，头顶台词会盖住另一个窗口的状态条；移到猪左侧既有预留区，避免往右伸出固定窗口被裁掉。
     '[data-dsh-pig][data-panel-open="true"] .dp-bubble{right:calc(100% + 6px);left:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px);max-width:180px}',
     '[data-dsh-pig][data-panel-open="true"] .dp-bubble::after{display:none}',
-    ".dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}",
+    ".dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;max-height:29px;overflow-y:auto;scrollbar-width:thin;margin-top:5px}",
     // 猪头上的日常气泡（签到 / 礼包）：不用新颜色，沿用主色与卡片底色。
     // 挂在场景**上方**（不是 top 边缘）：折叠时场景就是猪本身，用 top:-6px
     // 会让气泡叠在猪头上（用户反馈 #6）。
@@ -7185,6 +7427,12 @@
   }
   function attachLife(c) {
     var actions = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) });
+    const snap = attachPetSnap({
+      ...c,
+      canPlay: () => canPlayPigAction(c.pig, "shy-pet") && !c.pig.querySelector?.(".dp-dress")?.childElementCount,
+      cancelMicro: () => actions.cancel(),
+      render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji)
+    });
     var timers = [];
     var later = function(fn, ms) {
       var id = window.setTimeout(fn, ms);
@@ -7301,6 +7549,7 @@
         doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
       },
       dispose: function() {
+        snap.dispose();
         actions.dispose();
         for (var i = 0; i < timers.length; i += 1) {
           window.clearTimeout(timers[i]);
@@ -8974,76 +9223,6 @@
     return { ...saved, bytes: text.length };
   }
 
-  // src/client/feel/settings.js
-  var FEEL_KEY = "dsh-piggy:feel";
-  var SOUND_KEY = "dsh-piggy:sound";
-  var FEEL_MODES = Object.freeze(["full", "soft", "off"]);
-  var SOUND_VOLUMES = Object.freeze([0, 1, 2]);
-  function cleanMode(value) {
-    return typeof value === "string" && FEEL_MODES.includes(value) ? value : "full";
-  }
-  function feelMode() {
-    return cleanMode(readStore(FEEL_KEY));
-  }
-  function setFeelMode(mode) {
-    writeStore(FEEL_KEY, cleanMode(mode));
-    notifyFeel();
-  }
-  function prefersReducedMotion() {
-    try {
-      return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches === true;
-    } catch {
-      return false;
-    }
-  }
-  function effectiveFeelMode() {
-    return prefersReducedMotion() ? "off" : feelMode();
-  }
-  var feelListeners = /* @__PURE__ */ new Set();
-  function onFeelModeChange(fn) {
-    feelListeners.add(fn);
-    return function() {
-      feelListeners.delete(fn);
-    };
-  }
-  function notifyFeel() {
-    var mode = effectiveFeelMode();
-    feelListeners.forEach(function(fn) {
-      try {
-        fn(mode);
-      } catch {
-      }
-    });
-  }
-  try {
-    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-      window.addEventListener("storage", function(event) {
-        if (event !== null && event !== void 0 && event.key === FEEL_KEY) notifyFeel();
-      });
-    }
-  } catch {
-  }
-  function soundSettings() {
-    var raw = null;
-    try {
-      raw = JSON.parse(readStore(SOUND_KEY) || "null");
-    } catch {
-      raw = null;
-    }
-    var on = raw !== null && typeof raw === "object" && raw.on === true;
-    var volume = raw !== null && typeof raw === "object" && Number.isFinite(raw.volume) ? Math.round(raw.volume) : 2;
-    if (!SOUND_VOLUMES.includes(volume)) volume = 2;
-    return { on, volume };
-  }
-  function setSoundSettings(next) {
-    var current2 = soundSettings();
-    var on = next.on === void 0 ? current2.on : next.on === true;
-    var volume = next.volume === void 0 ? current2.volume : Math.round(Number(next.volume));
-    if (!SOUND_VOLUMES.includes(volume)) volume = current2.volume;
-    writeStore(SOUND_KEY, JSON.stringify({ on, volume }));
-    return { on, volume };
-  }
-
   // src/client/sounds.js
   var VOLUME_GAIN = Object.freeze([0.32, 0.55, 0.82]);
   var RECIPES = Object.freeze({
@@ -9738,6 +9917,15 @@
       setFeelMode(key2);
       ui.renderContent();
     });
+    const handOn = petHandEnabled();
+    const hand = section(ui, "\u6478\u6478\u5C0F\u624B", "\u663E\u793A\u629A\u6478\u7684\u5C0F\u624B\uFF1B\u5173\u95ED\u540E\u5C0F\u732A\u4ECD\u4F1A\u8F7B\u8F7B\u4E0B\u6C89\u3001\u56DE\u4F4D");
+    const handToggle = button("dp-switch", { "data-pet-hand": handOn ? "on" : "off", "aria-pressed": String(handOn), "aria-label": "\u6478\u6478\u5C0F\u624B" }, function() {
+      setPetHandEnabled(!petHandEnabled());
+      ui.renderContent();
+    });
+    handToggle.appendChild(el("span", "dp-switch-knob"));
+    handToggle.appendChild(el("span", "dp-switch-text", handOn ? "\u5F00" : "\u5173"));
+    hand.head.appendChild(handToggle);
     const soundPrefs = soundSettings();
     const sound = section(ui, "\u97F3\u6548", "\u62CE\u8D77\u3001\u843D\u5730\u3001\u6478\u6478\u7684\u58F0\u97F3\uFF1B\u514D\u6253\u6270\u65F6\u4E0D\u54CD");
     const soundToggle = button("dp-switch", { "data-sound": soundPrefs.on ? "on" : "off", "aria-pressed": String(soundPrefs.on) }, function() {
@@ -11042,6 +11230,7 @@
       for (let a = 0; a < all.length; a += 1) {
         const candidate = all[a];
         const inCard = candidate.closest(".dp-card");
+        if (candidate.closest(".dp-pet-snap") !== null) continue;
         if (inCard !== null && inCard !== candidate || candidate.closest(".dp-fx") !== null) continue;
         nodes.push(candidate);
       }
@@ -11093,6 +11282,12 @@
       const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone]);
       if (pigNode !== null) {
         const artMargin = artMarginFor(pigBox.width);
+        outline.push({
+          x: pigBox.x - pigBox.width * 0.18,
+          y: pigBox.y - pigBox.height * 0.5,
+          r: pigBox.x + pigBox.width * 1.1,
+          b: pigBox.y + pigBox.height
+        });
         const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT : Infinity;
         outline.push({
           x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, openBubbleLeft, pigBox.x - artMargin),
@@ -11130,6 +11325,14 @@
             animatedRects.push({ x: animated.x, y: animated.y, r: animated.x + animated.width, b: animated.y + animated.height });
           }
         }
+      }
+      if (pigNode?.getAttribute("data-pet-snap") === "true") {
+        animatedRects.push({
+          x: pigBox.x - pigBox.width * 0.18,
+          y: pigBox.y - pigBox.height * 0.5,
+          r: pigBox.x + pigBox.width * 1.1,
+          b: pigBox.y + pigBox.height
+        });
       }
       const feelState = pigNode === null ? null : pigNode.getAttribute("data-feel");
       if (pigNode !== null && (feelState === "active" || feelState === "settle")) {
@@ -11871,6 +12074,7 @@
     }
     function beginWindowDrag() {
       if (drag === null || drag.started) return;
+      cancelPetSnap(c.pig);
       drag.started = true;
       drag.moved = true;
       const shell2 = c.desktopShell();
@@ -11905,7 +12109,8 @@
       return info.started ? info : null;
     }
     function onPointerDown(event) {
-      if (event.button !== 0) return;
+      if (event.button !== 0 || drag !== null) return;
+      if (event.target?.closest?.(".dp-bubble,button,a,input,select,textarea,[role=button]")) return;
       stopHeartbeat();
       stopHeartbeat = function() {
       };
@@ -11913,7 +12118,8 @@
       c.feel.catchFlight();
       c.feel.wake?.();
       if (c.getView().hatched === true) c.send("touch");
-      c.feel.press();
+      const snap = beginPetSnap(c.pig);
+      if (!snap) c.feel.press();
       unlockSound();
       drag = {
         x: event.clientX,
@@ -11931,6 +12137,7 @@
         // 用实际显示的位置（可能已被 clampPig 夹过），不是用户设的原始值。
         right: parseFloat(getComputedStyle(c.host).right) || c.getRight(),
         bottom: parseFloat(getComputedStyle(c.host).bottom) || c.getBottom(),
+        snap,
         moved: false,
         started: false,
         lifted: false,
@@ -11969,7 +12176,7 @@
           drag.patted = true;
           playSound("purr");
           const view = c.getView();
-          if (view.hatched === true && !view.dead) c.send("pet", { part: partAt(c.pig, event) });
+          if (view.hatched === true && !view.dead) c.send("pet", { part: partAt(c.pig, event) }, { petAnimated: drag.snap });
         }
         return;
       }
@@ -12006,6 +12213,7 @@
       const speed = c.isPanelOpen?.() === true ? { vx: 0, vy: 0 } : velocity();
       const started = drag.started;
       const patted = drag.patted;
+      const snap = drag.snap;
       endDrag(pointerScreen(event));
       if (started) {
         c.feel.release({ vx: speed.vx, vy: speed.vy, dragged: true });
@@ -12017,14 +12225,16 @@
         c.feel.release({ vx: 0, vy: 0 });
         return;
       }
-      if (!patted && !view.dead) c.send("pet", { part: partAt(c.pig, event) });
-      c.feel.release({ vx: 0, vy: 0 });
+      if (snap) releasePetSnap(c.pig);
+      if (!patted && !view.dead) c.send("pet", { part: partAt(c.pig, event) }, { petAnimated: snap });
+      if (!snap) c.feel.release({ vx: 0, vy: 0 });
     }
     function onPointerCancel() {
       if (drag === null) return;
       const started = drag.started;
+      cancelPetSnap(c.pig);
       endDrag();
-      if (started) c.feel.release({ vx: 0, vy: 0, dragged: true });
+      c.feel.release({ vx: 0, vy: 0, dragged: started });
     }
     c.scene.addEventListener("pointerdown", onPointerDown);
     c.scene.addEventListener("pointermove", onPointerMove);
@@ -18005,7 +18215,7 @@
     }
     function coverSwap(apply) {
       if (typeof apply !== "function") return;
-      if (!enabled() || dragging2 || runner.isFlying() || pig.getAttribute("data-react") !== null || pig.getAttribute("data-micro-action") !== null) {
+      if (!enabled() || dragging2 || runner.isFlying() || pig.getAttribute("data-pet-snap") === "true" || pig.getAttribute("data-react") !== null || pig.getAttribute("data-micro-action") !== null) {
         apply();
         return;
       }

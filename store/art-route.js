@@ -21,7 +21,8 @@ export function registerArtRoute(webServer, store, sendJson) {
       // nothing from the request can ever walk out of ./assets.
       const flat = /^(?:[a-z][a-z0-9-]{0,63}\.(?:svg|png)|feedback\/[a-z][a-z0-9-]{0,63}\.png)$/.test(name)
       const imported = /^custom-[a-z0-9-]{1,41}$/.test(name)
-      if (!PIG_ART_PATHS.has(name) && !flat && !imported) return sendJson(res, 404, { error: 'not found' })
+      const petFrame = /^animations\/piglet-pet\/reference\.webp$/.test(name)
+      if (!PIG_ART_PATHS.has(name) && !flat && !imported && !petFrame) return sendJson(res, 404, { error: 'not found' })
       try {
         const custom = name.startsWith('custom-') ? customSkinArt(store.filePath, name) : null
         const key = name.replace(/\.(?:svg|png)$/, '')
@@ -30,7 +31,7 @@ export function registerArtRoute(webServer, store, sendJson) {
         // 自带立绘可以缓存一小时：摸猪、喂食时立绘来回换，每次都重新取会空一帧（猪闪一下）。
         // 自定义皮肤玩家随时会换，仍然每次都问。
         const png = art.subarray(0, 8).toString('hex') === '89504e470d0a1a0a'
-        res.writeHead(200, { 'content-type': png ? 'image/png' : 'image/svg+xml; charset=utf-8', 'cache-control': custom === null ? 'max-age=3600' : 'no-cache' })
+        res.writeHead(200, { 'content-type': petFrame ? 'image/webp' : png ? 'image/png' : 'image/svg+xml; charset=utf-8', 'cache-control': custom === null ? 'max-age=3600' : 'no-cache' })
         res.end(art)
       } catch (error) {
         console.warn(`[dsh-piggy] sprite missing: name="${name}" reason="${error instanceof Error ? error.message : String(error)}"`)

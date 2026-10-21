@@ -21,7 +21,7 @@
   </tr>
 </table>
 
-以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9** 的实际截图（主菜单和小农场页面本次未改）；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。本次游戏和外壳为 **0.37.1-rc.4 / 0.6.7-rc.3** RC 预发布；稳定版仍为游戏 **0.37.0 / 外壳 0.6.6**。在线菜园已更新到 **4.0.10**。
+以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9** 的实际截图（主菜单和小农场页面本次未改）；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。本次游戏和外壳为 **0.37.1-rc.5 / 0.6.7-rc.3** RC 预发布；稳定版仍为游戏 **0.37.0 / 外壳 0.6.6**。在线菜园已更新到 **4.0.10**。
 
 ## 安装
 
@@ -78,24 +78,24 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 遇到问题时，可到「设置 → 日志 → 导出日志」保存运行记录；桌面版会弹出“另存为”。日志包含版本、动作、扩展下载与报错，方便反馈时定位。
 
-## 本次 RC：0.37.1-rc.4（预发布）
+## 本次 RC：0.37.1-rc.5（预发布）
 
 | 部分 | 版本 |
 |---|---|
-| 游戏与 DSH 插件 | 0.37.1-rc.4 |
+| 游戏与 DSH 插件 | 0.37.1-rc.5 |
 | 桌面外壳 | 0.6.7-rc.3，代码不变 |
 | 菜园扩展 | 4.0.10；经典兼容版 3.1.0，均单独发布 |
 | 矿洞扩展 | 3.0.1，单独发布 |
 
-本轮修复互动立绘延迟切换、魔法师帽尖和菜园商店滚动回顶。喜欢旧菜园画面的用户，可安装[经典兼容版 3.1.0](extension-variants/farm-classic/README.md)，继续使用新版菜币和存档；不要直接降级到原始 3.0.0。菜园现代版需单独在「设置 → 扩展」更新。完整说明见 [CHANGELOG](CHANGELOG.md)。
+本轮加入普通猪的摸摸小手，按住循环、松手收尾；在「设置 → 摸摸小手」切换。对话回复提前排除摸猪手势，长台词可以滚动阅读。完整改动见 [CHANGELOG](CHANGELOG.md)。
 
-本轮候选实际截图（Windows 魔法师换肤、DSH 经典菜园；截图时版本号尚为 rc.3，界面与本次发布一致）：
+<p><img src="docs/screenshots/readme-rc5-pet.png" width="246" alt="普通猪摸摸动画的实际预览：小手轻抚猪头"></p>
 
-<p><img src="docs/screenshots/readme-rc4-wizard.png" width="640" alt="Windows 魔法师皮肤实际显示，完整帽尖"><img src="docs/screenshots/readme-rc4-classic.png" width="640" alt="DSH 经典菜园兼容版，保留菜币余额"></p>
+上图为本次动画在实际游戏预览场景中的一帧，截图来源见[记录](docs/screenshots/readme-rc-capture.md)。
 
-**验证范围：** 主机1303项通过；DSH往返切换菜园保留数据，Windows换肤、摸摸、睡醒点击及模拟离线48小时吃洗正常。用户原档的「表情/台词消失」「离线不吃不洗」尚未复现，不能视为全部解决。本轮未复测macOS、系统200%和多显示器；之前Linux/Xwayland规避与RC手感限制仍适用。存档导入导出会替换当前猪，不合并两只猪，升级前请先导出备份。
+**验证范围：** 主机 1311 项测试通过；Linux 测试虚拟机在 100% / 200% 缩放下验证签到、礼包和对话回复，包含面板打开及拖动后点击。**用户报告的「点日历 / 礼物却触发摸摸」尚未复现，仍待确认，本版不宣称已解决。** 本轮未验证 Windows、macOS 和混合缩放多显示器上的新增动画。存档版本仍为 v14。
 
-RC 下载：[GitHub v0.37.1-rc.4](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.4) / [Gitee v0.37.1-rc.4](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.4)。稳定版更新提示不会把RC当成正式版推荐。npm由维护者另行手动发布，默认DSH安装命令仍指向稳定版。
+RC 下载：[GitHub v0.37.1-rc.5](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1-rc.5) / [Gitee v0.37.1-rc.5](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1-rc.5)。稳定版更新提示不会把RC当成正式版推荐。npm由维护者另行手动发布，默认DSH安装命令仍指向稳定版。
 
 ## 文档与开发
 

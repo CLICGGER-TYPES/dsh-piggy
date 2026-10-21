@@ -136,6 +136,10 @@ function fakeDom() {
       return selector.split(',').some(part => part.startsWith('.')
         ? this.className.split(/\s+/).includes(part.slice(1)) : this.tagName === part)
     }
+    closest(selector) {
+      for (let node = this; node; node = node.parentNode) if (node.matches(selector)) return node
+      return null
+    }
     querySelectorAll(selector) {
       const found = []
       for (const child of this.children) child.walk(node => { if (node.matches(selector)) found.push(node) })
@@ -490,6 +494,22 @@ test('the composed stylesheet is balanced and complete', async () => {
   assert.ok(uri.includes('</svg>'), 'the petting-hand fallback cursor data-URI must be complete')
   assert.ok(css.indexOf('.dp-pig{cursor:var(--pat-cursor, url(') >= 0, 'the 👋 cursor drawn at runtime overrides the fallback')
   assert.ok(css.includes('.dp-pig-img{'), 'the sprite sizing rule survived')
+})
+
+test('long dialogue keeps its full text in a fixed scrollable bubble', async () => {
+  const css = await readCss()
+  const bubble = css.match(/\.dp-bubble\{([^}]*)\}/)?.[1] ?? ''
+  const text = css.match(/\.dp-bubble-text\{([^}]*)\}/)?.[1] ?? ''
+  const replies = css.match(/\.dp-bubble-replies\{([^}]*)\}/)?.[1] ?? ''
+  assert.match(bubble, /max-height:104px/, 'the desktop reserve stays bounded to its measured height')
+  assert.match(text, /max-height:88px/, 'long dialogue is bounded even without replies')
+  assert.match(text, /overflow-y:auto/, 'long dialogue can be read by scrolling')
+  assert.match(css, /\.dp-bubble:has\(\.dp-bubble-replies\) \.dp-bubble-text\{max-height:52px\}/,
+    'text leaves room for reply buttons in the fixed frame')
+  assert.match(replies, /max-height:29px/, 'reply buttons stay visible in the fixed frame')
+  assert.match(replies, /overflow-y:auto/, 'additional reply buttons remain reachable')
+  assert.doesNotMatch(text, /-webkit-line-clamp/, 'the browser must not discard lines after the second')
+  assert.match(text, /overflow-wrap:anywhere/, 'long unbroken text must still fit the bubble width')
 })
 
 test('classes the bundle hides carry a CSS rule that beats their own display', async () => {
@@ -1567,6 +1587,24 @@ test('a refused operation explains itself in the bubble', async () => {
   const bubble = findByClass(hostOf(dom), 'dp-bubble')
   assert.notEqual(bubble, undefined)
   assert.ok(bubble.allText().includes('钱不够'), bubble.allText())
+})
+
+test('clicking a reply does not first send a pig touch', async () => {
+  const { registration, dom, net } = await loadClient({
+    status: { ...SNAPSHOT, pending: [{ id: 700, kind: 'line', text: '最近怎么样？', at: 700, replies: ['挺好的'] }] },
+  })
+  registration.factory(() => {}).apply({})
+  await settle()
+  const reply = findByClass(hostOf(dom), 'dp-reply')
+  assert.notEqual(reply, undefined, 'a reply button should be visible')
+
+  sceneOf(dom).fire('pointerdown', { button: 0, clientX: 10, clientY: 10, target: reply })
+  sceneOf(dom).fire('pointerup', {})
+  reply.fire('click')
+  await settle()
+
+  const actions = net.calls.filter(call => call.method === 'POST').map(call => JSON.parse(call.body).action)
+  assert.deepEqual(actions, ['reply'])
 })
 
 test('a stale reply is dropped silently instead of scolding the user', async () => {

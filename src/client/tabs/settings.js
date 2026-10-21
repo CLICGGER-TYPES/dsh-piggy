@@ -1,3 +1,4 @@
+import { petHandEnabled, setPetHandEnabled } from '../pet-hand-settings.js'
 // @ts-check
 /**
  * 设置：显示偏好留在本机，免打扰与离线喂食跟随存档。
@@ -107,6 +108,16 @@ export function renderSettingsTab(ui) {
     setFeelMode(key)
     ui.renderContent()
   })
+
+  const handOn = petHandEnabled()
+  const hand = section(ui, '摸摸小手', '显示抚摸的小手；关闭后小猪仍会轻轻下沉、回位')
+  const handToggle = button('dp-switch', { 'data-pet-hand': handOn ? 'on' : 'off', 'aria-pressed': String(handOn), 'aria-label': '摸摸小手' }, function () {
+    setPetHandEnabled(!petHandEnabled())
+    ui.renderContent()
+  })
+  handToggle.appendChild(el('span', 'dp-switch-knob'))
+  handToggle.appendChild(el('span', 'dp-switch-text', handOn ? '开' : '关'))
+  hand.head.appendChild(handToggle)
 
   // 音效：默认关；打开后才有声音。免打扰时不响（核心状态，见 index）。
   const soundPrefs = soundSettings()

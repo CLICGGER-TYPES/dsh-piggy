@@ -7,6 +7,7 @@
  * 不会把猪推着走，单击也不会让窗口抖一下。
  * @module dsh-piggy/client/gestures
  */
+import { beginPetSnap, releasePetSnap, cancelPetSnap } from './pet-snap.js'
 import { startDragHeartbeat } from './drag-heartbeat.js'
 import { FEEL } from './feel/config.js'
 import { recentVelocity } from './feel/velocity.js'
@@ -23,7 +24,7 @@ function pointerScreen(event) {
 /**
  * @param {{
  *   scene:any, host:any, pig:any, feel:any,
- *   getView:()=>any, send:(action:string, extra?:any)=>void, pokeBox:()=>void,
+ *   getView:()=>any, send:(action:string, extra?:any, options?:{petAnimated?:boolean})=>void, pokeBox:()=>void,
  *   getRight:()=>number, setRight:(n:number)=>void,
  *   getBottom:()=>number, setBottom:(n:number)=>void,
  *   clampPig:()=>void, fitPanel:()=>void,
@@ -43,6 +44,7 @@ export function attachGestures(c) {
   /** 越过 4px 才让窗口开始动；把 pointerdown 的屏幕坐标带给外壳当起点。 */
   function beginWindowDrag() {
     if (drag === null || drag.started) return
+    cancelPetSnap(c.pig)
     drag.started = true
     drag.moved = true
     const shell = c.desktopShell()
@@ -79,7 +81,8 @@ export function attachGestures(c) {
   }
 
   function onPointerDown(event) {
-    if (event.button !== 0) return
+    if (event.button !== 0 || drag !== null) return
+    if (event.target?.closest?.('.dp-bubble,button,a,input,select,textarea,[role=button]')) return
     stopHeartbeat()
     stopHeartbeat = function () {}
     const screen = pointerScreen(event)
@@ -89,7 +92,8 @@ export function attachGestures(c) {
     // 睡着的猪会醒来并换回清醒立绘。纸盒不送，避免打扰拆盒流程。
     c.feel.wake?.()
     if (c.getView().hatched === true) c.send('touch')
-    c.feel.press()
+    const snap = beginPetSnap(c.pig)
+    if (!snap) c.feel.press()
     unlockSound()
     drag = {
       x: event.clientX, y: event.clientY,
@@ -101,7 +105,7 @@ export function attachGestures(c) {
       // 用实际显示的位置（可能已被 clampPig 夹过），不是用户设的原始值。
       right: parseFloat(getComputedStyle(c.host).right) || c.getRight(),
       bottom: parseFloat(getComputedStyle(c.host).bottom) || c.getBottom(),
-      moved: false, started: false, lifted: false, patted: false, legacy: false,
+      snap, moved: false, started: false, lifted: false, patted: false, legacy: false,
       path: 0, pathStart: performance.now(), lastStroke: 0,
       samples: [{ t: performance.now(), x: screen.x, y: screen.y }],
     }
@@ -133,7 +137,7 @@ export function attachGestures(c) {
         drag.patted = true
         playSound('purr')
         const view = c.getView()
-        if (view.hatched === true && !view.dead) c.send('pet', { part: partAt(c.pig, event) })
+        if (view.hatched === true && !view.dead) c.send('pet', { part: partAt(c.pig, event) }, { petAnimated: drag.snap })
       }
       return
     }
@@ -174,6 +178,7 @@ export function attachGestures(c) {
     const speed = c.isPanelOpen?.() === true ? { vx: 0, vy: 0 } : velocity()
     const started = drag.started
     const patted = drag.patted
+    const snap = drag.snap
     endDrag(pointerScreen(event))
     if (started) {
       c.feel.release({ vx: speed.vx, vy: speed.vy, dragged: true })
@@ -186,15 +191,17 @@ export function attachGestures(c) {
       return
     }
     // 来回摸已经触发过就不再补一次单击。
-    if (!patted && !view.dead) c.send('pet', { part: partAt(c.pig, event) })
-    c.feel.release({ vx: 0, vy: 0 })
+    if (snap) releasePetSnap(c.pig)
+    if (!patted && !view.dead) c.send('pet', { part: partAt(c.pig, event) }, { petAnimated: snap })
+    if (!snap) c.feel.release({ vx: 0, vy: 0 })
   }
 
   function onPointerCancel() {
     if (drag === null) return
     const started = drag.started
+    cancelPetSnap(c.pig)
     endDrag()
-    if (started) c.feel.release({ vx: 0, vy: 0, dragged: true })
+    c.feel.release({ vx: 0, vy: 0, dragged: started })
   }
 
   c.scene.addEventListener('pointerdown', onPointerDown)

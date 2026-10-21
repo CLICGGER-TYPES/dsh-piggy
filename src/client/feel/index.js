@@ -283,6 +283,7 @@ export function createFeel(deps) {
   function coverSwap(apply) {
     if (typeof apply !== 'function') return
     if (!enabled() || dragging || runner.isFlying()
+      || pig.getAttribute('data-pet-snap') === 'true'
       || pig.getAttribute('data-react') !== null
       || pig.getAttribute('data-micro-action') !== null) {
       apply()

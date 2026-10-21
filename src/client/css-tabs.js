@@ -42,12 +42,12 @@ export const CSS_TABS = [
   // 气泡钉在猪头上：右边和猪的右边对齐（场景左右各 6px 内边距，猪贴着它），底边在猪头上方 10px，
   // 尾巴指着猪头正中。收起/打开、面板朝左/朝右都是这一个位置（用户 2026-10-04：「不要飘来飘去」）。
   '.dp-bubble{position:absolute;right:6px;left:auto;top:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) + 10px);',
-  'z-index:2;width:max-content;max-width:calc(var(--panel-width) - 24px);box-sizing:border-box;padding:6px 10px;',
+  'z-index:2;width:max-content;max-width:calc(var(--panel-width) - 24px);max-height:104px;box-sizing:border-box;padding:6px 10px;',
   'border-radius:var(--ac-radius-sm);font-size:10.5px;font-weight:600;line-height:1.45;',
   'color:var(--ac-text-body);background:var(--ac-bg-input);',
   'border:2px solid var(--ac-border-light);box-shadow:var(--ac-shadow-sm)}',
-  '.dp-bubble-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;',
-  'overflow:hidden;white-space:normal;overflow-wrap:anywhere}',
+  '.dp-bubble-text{display:block;max-height:88px;overflow-y:auto;scrollbar-width:thin;white-space:normal;overflow-wrap:anywhere}',
+  '.dp-bubble:has(.dp-bubble-replies) .dp-bubble-text{max-height:52px}',
   // Tail drawn as a small rotated square so the 2px border stays continuous.
   '.dp-bubble::after{content:"";position:absolute;left:auto;right:calc(var(--pig-size) / 2 - 5px);top:100%;bottom:auto;',
   'margin-top:-4px;width:8px;height:8px;',
@@ -60,7 +60,7 @@ export const CSS_TABS = [
   // 2026-10-13：独立猪窗口置顶，头顶台词会盖住另一个窗口的状态条；移到猪左侧既有预留区，避免往右伸出固定窗口被裁掉。
   '[data-dsh-pig][data-panel-open="true"] .dp-bubble{right:calc(100% + 6px);left:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) / 2 - 18px);max-width:180px}',
   '[data-dsh-pig][data-panel-open="true"] .dp-bubble::after{display:none}',
-  '.dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}',
+  '.dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;max-height:29px;overflow-y:auto;scrollbar-width:thin;margin-top:5px}',
   // 猪头上的日常气泡（签到 / 礼包）：不用新颜色，沿用主色与卡片底色。
   // 挂在场景**上方**（不是 top 边缘）：折叠时场景就是猪本身，用 top:-6px
   // 会让气泡叠在猪头上（用户反馈 #6）。

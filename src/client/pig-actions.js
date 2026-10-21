@@ -1,5 +1,6 @@
 // @ts-check
 /** 普通猪的两帧微动作；结束后由唯一选图入口重读状态，避免旧计时覆盖新状态。 */
+import { confirmPetSnap } from './pet-snap.js'
 import { artSource } from './art-path.js'
 
 const PLAYERS = new WeakMap()
@@ -19,7 +20,7 @@ export function canPlayPigAction(pig, action) {
 /** 选图入口调用；不在这里写图片或取景，避免两个渲染负责人。 */
 export function pigActionArt(pig) { return PLAYERS.get(pig)?.currentArt() || null }
 /** 只在现有摸猪成功反应处触发，不排队。 */
-export function playPigPet(pig) { PLAYERS.get(pig)?.play('shy-pet') }
+export function playPigPet(pig) { if (!confirmPetSnap(pig)) PLAYERS.get(pig)?.play('shy-pet') }
 
 /** 可注入时钟和解码器，测试取消与抢占不依赖真实时间。 */
 export function attachPigActions(c) {
@@ -35,6 +36,7 @@ export function attachPigActions(c) {
   }
   function play(action) {
     if (isBlocked() || !ready.has(action) || !canPlayPigAction(c.pig, action)) return
+    if (c.pig.getAttribute('data-pet-snap') === 'true') return
     if (action === 'blink' && active) return
     clearFrame()
     active = action

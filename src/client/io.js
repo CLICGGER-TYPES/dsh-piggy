@@ -28,7 +28,7 @@ export function createIo(ctx) {
       var actionTail = Promise.resolve(null)
       var pendingExtensions = 0
 
-      function send(action, extra) {
+      function send(action, extra, options) {
         // touch 是后台互动：不能占 busy，否则紧接着的 pet/拖动会被丢掉。
         if (action === 'touch') return perform(action, extra, { background: true })
         if (action === 'ext') {
@@ -38,7 +38,7 @@ export function createIo(ctx) {
           return queued.finally(function () { pendingExtensions -= 1 })
         }
         if (ctx.busy || pendingExtensions > 0) return Promise.resolve(null)
-        var running = perform(action, extra)
+        var running = perform(action, extra, options)
         actionTail = running.catch(function () { return null })
         return running
       }
@@ -47,7 +47,7 @@ export function createIo(ctx) {
        * 需要看结果的调用方（比如下载扩展）可以直接 await。
        * @param {string} action
        * @param {object} [extra]
-       * @param {{ background?: boolean }} [options]
+       * @param {{ background?: boolean, petAnimated?: boolean }} [options]
        * @returns {Promise<any>}
        */
       async function perform(action, extra, options) {
@@ -76,7 +76,7 @@ export function createIo(ctx) {
           // 动作结果不是 /state 的正文（多一个 ok/reason）：下一次轮询照旧重画一次，宁可多画也不漏。
           paintedKey = null
           ctx.render(next)
-          if (action === 'pet' && next?.ok === true) ctx.petShy?.()
+          if (action === 'pet' && next?.ok === true && options?.petAnimated !== true) ctx.petShy?.()
           // 签到、礼包的结果一律由猪说出来（面板开着时也是）；对应的公告事件不再弹面板顶上的提示条。
           if ((action === 'signIn' || action === 'openGift') && next?.ok === true) {
             var reward = str(next.reward, '')

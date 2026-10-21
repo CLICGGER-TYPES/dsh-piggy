@@ -78,6 +78,7 @@ export function createMeasure(env) {
     for (let a = 0; a < all.length; a += 1) {
       const candidate = all[a]
       const inCard = candidate.closest('.dp-card')
+      if (candidate.closest('.dp-pet-snap') !== null) continue
       if ((inCard !== null && inCard !== candidate) || candidate.closest('.dp-fx') !== null) continue
       nodes.push(candidate)
     }
@@ -139,6 +140,10 @@ export function createMeasure(env) {
     if (pigNode !== null) {
       // Reserve the widest reviewed sprite for every action: action changes never resize the window.
       const artMargin = artMarginFor(pigBox.width)
+      // Reviewed frame union, including the hand: reserve even while idle.
+      // The 512px canvas has transparent padding and must not itself resize the window.
+      outline.push({ x: pigBox.x - pigBox.width * .18, y: pigBox.y - pigBox.height * .5,
+        r: pigBox.x + pigBox.width * 1.1, b: pigBox.y + pigBox.height })
       // On platforms with native shape support, also cover the open-panel
       // bubble, which extends left of the pig by up to 192px. The collapsed
       // 272px reserve is measured from pigRight, so it reaches only
@@ -178,6 +183,10 @@ export function createMeasure(env) {
     }
     // 物理活跃/回稳时追加固定包络：倾斜、拉长、压扁都在这里面，回稳后移除。
     // 不是每帧重算 —— 包络只跟猪的布局盒有关。
+    if (pigNode?.getAttribute('data-pet-snap') === 'true') {
+      animatedRects.push({ x: pigBox.x - pigBox.width * .18, y: pigBox.y - pigBox.height * .5,
+        r: pigBox.x + pigBox.width * 1.1, b: pigBox.y + pigBox.height })
+    }
     const feelState = pigNode === null ? null : pigNode.getAttribute('data-feel')
     if (pigNode !== null && (feelState === 'active' || feelState === 'settle')) {
       const envelope = feelEnvelope(pigBox)

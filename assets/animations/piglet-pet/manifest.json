@@ -1,0 +1,37 @@
+{
+  "revision": "original-gif-v07",
+  "source": "research/blender-piglet-20261020/reference-motion-20261021/user-reference.gif",
+  "source_sha256": "64bb1ab1895df6a0912d62623557bb5081ea3c6d3ebfd798065b2ab5379c01e1",
+  "frame_size": [
+    112,
+    112
+  ],
+  "frame_count": 5,
+  "frame_durations_ms": [
+    60,
+    60,
+    60,
+    60,
+    60
+  ],
+  "atlas_size": [
+    560,
+    112
+  ],
+  "atlas_sha256": "53ffa4383eacbbfffe314a57ac99590eaaaf854e81ee2d5d16248b2b6194d2f7",
+  "bytes": 10368,
+  "decoded_frame_rgba_exact": [
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "runtime_target_rect_on_512_canvas": [
+    100,
+    76,
+    280,
+    280
+  ],
+  "hand_disabled": "original piglet idle sprite with translation only"
+}

@@ -10,7 +10,8 @@
  */
 import { GREET_DELAY_MS, IDLE_CHAT_MINUTES } from './constants.js'
 import { readStore, writeStore } from './storage.js'
-import { attachPigActions } from './pig-actions.js'
+import { attachPetSnap } from './pet-snap.js'
+import { attachPigActions, canPlayPigAction } from './pig-actions.js'
 import { syncPigArt } from './art.js'
 
 var TIME_TALK_MS = 5 * 60_000
@@ -49,6 +50,8 @@ export function setWalk(on) { writeStore(WALK_KEY, on ? 'on' : 'off') }
  */
 export function attachLife(c) {
   var actions = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
+  const snap = attachPetSnap({ ...c, canPlay: () => canPlayPigAction(c.pig, 'shy-pet') && !c.pig.querySelector?.('.dp-dress')?.childElementCount,
+    cancelMicro: () => actions.cancel(), render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
   var timers = []
   var later = function (fn, ms) { var id = window.setTimeout(fn, ms); timers.push(id); return id }
   var between = function (min, max) { return (min + Math.random() * (max - min)) * 60_000 }
@@ -158,6 +161,7 @@ export function attachLife(c) {
       doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)])
     },
     dispose: function () {
+      snap.dispose()
       actions.dispose()
       for (var i = 0; i < timers.length; i += 1) { window.clearTimeout(timers[i]); window.clearInterval(timers[i]) }
       timers = []
