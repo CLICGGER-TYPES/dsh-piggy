@@ -1325,6 +1325,62 @@
     }
   }
 
+  // src/client/render-hold.js
+  function createRenderHold(card2, environment = window) {
+    const active2 = /* @__PURE__ */ new Set();
+    let pending2 = null;
+    let frame3 = null;
+    let isDisposed = false;
+    function schedule4() {
+      if (active2.size || !pending2 || frame3 !== null || isDisposed) return;
+      frame3 = environment.requestAnimationFrame(() => {
+        frame3 = null;
+        if (active2.size || !pending2 || isDisposed) return;
+        const render = pending2;
+        pending2 = null;
+        render();
+      });
+    }
+    function down(event) {
+      if (event.button === 0) active2.add(event.pointerId);
+    }
+    function up(event) {
+      active2.delete(event.pointerId);
+      schedule4();
+    }
+    function blur() {
+      active2.clear();
+      schedule4();
+    }
+    card2.addEventListener("pointerdown", down, true);
+    environment.addEventListener?.("pointerup", up, true);
+    environment.addEventListener?.("pointercancel", up, true);
+    environment.addEventListener?.("blur", blur);
+    return {
+      /** 已经有完整的新快照，但按键还没松开时只保留一次最新重绘。 */
+      defer(render) {
+        if (active2.size) {
+          pending2 = render;
+          return true;
+        }
+        pending2 = null;
+        if (frame3 !== null) environment.cancelAnimationFrame(frame3);
+        frame3 = null;
+        return false;
+      },
+      dispose() {
+        isDisposed = true;
+        active2.clear();
+        pending2 = null;
+        if (frame3 !== null) environment.cancelAnimationFrame(frame3);
+        card2.removeEventListener("pointerdown", down, true);
+        environment.removeEventListener?.("pointerup", up, true);
+        environment.removeEventListener?.("pointercancel", up, true);
+        environment.removeEventListener?.("blur", blur);
+      }
+    };
+  }
+
   // src/client/effects.js
   function createEffects(deps) {
     var scene6 = deps.scene;
@@ -1336,6 +1392,8 @@
     var reactTimer = null;
     var feelHooks = null;
     var bubbleTimer = null;
+    var replyHold = null;
+    var bubbleVersion = 0;
     var transformTimer = null;
     var transformLayer = null;
     function transform(kind) {
@@ -1435,18 +1493,37 @@
       burst(part ?? spec.fx, part ? part.length : spec.count);
       if (!SPOKEN_BY_HOST[action]) showBubble(spec.say, 1600);
     }
-    var bubbleTimer = null;
-    function showBubble(text, ms) {
+    function resetBubble() {
+      bubbleVersion += 1;
       if (bubbleTimer !== null) window.clearTimeout(bubbleTimer);
+      bubbleTimer = null;
+      if (replyHold !== null) replyHold.dispose();
+      replyHold = null;
+      return bubbleVersion;
+    }
+    function expireBubble(version, restorePomo) {
+      if (version !== bubbleVersion) return;
+      var close = function() {
+        if (version !== bubbleVersion) return;
+        bubble.hidden = true;
+        if (replyHold !== null) replyHold.dispose();
+        replyHold = null;
+        if (restorePomo && pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute("data-pomo") !== "on";
+      };
+      if (replyHold !== null && replyHold.defer(close)) return;
+      close();
+    }
+    function showBubble(text, ms) {
+      var version = resetBubble();
       bubble.setAttribute("data-bubble-shown", "true");
       bubble.textContent = "";
       bubble.appendChild(el("span", "dp-bubble-text", text));
       bubble.hidden = false;
       if (pomoHint !== null) pomoHint.hidden = true;
       bubbleTimer = window.setTimeout(function() {
-        bubble.hidden = true;
+        if (version !== bubbleVersion) return;
         bubbleTimer = null;
-        if (pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute("data-pomo") !== "on";
+        expireBubble(version, true);
       }, ms || 2600);
     }
     function showLine(text, replies, onReply, ms) {
@@ -1454,18 +1531,19 @@
         showBubble(text, ms || 2600);
         return;
       }
-      if (bubbleTimer !== null) window.clearTimeout(bubbleTimer);
+      var version = resetBubble();
       bubble.textContent = "";
       bubble.appendChild(el("span", "dp-bubble-text", text));
       var row = el("div", "dp-bubble-replies", "");
+      replyHold = createRenderHold(row);
       replies.forEach(function(label, index) {
         var answer = el("button", "dp-reply", label);
         answer.type = "button";
         answer.addEventListener("click", function(event) {
           event.stopPropagation();
+          if (version !== bubbleVersion || bubble.hidden) return;
+          resetBubble();
           bubble.hidden = true;
-          if (bubbleTimer !== null) window.clearTimeout(bubbleTimer);
-          bubbleTimer = null;
           onReply(index);
         });
         row.appendChild(answer);
@@ -1473,8 +1551,9 @@
       bubble.appendChild(row);
       bubble.hidden = false;
       bubbleTimer = window.setTimeout(function() {
-        bubble.hidden = true;
+        if (version !== bubbleVersion) return;
         bubbleTimer = null;
+        expireBubble(version, false);
       }, Math.max(6e3, ms || 0));
     }
     function toast(text) {
@@ -1486,7 +1565,7 @@
     }
     function dispose() {
       if (reactTimer !== null) window.clearTimeout(reactTimer);
-      if (bubbleTimer !== null) window.clearTimeout(bubbleTimer);
+      resetBubble();
       if (transformTimer !== null) window.clearTimeout(transformTimer);
       if (transformLayer !== null) transformLayer.remove();
       reactTimer = null;
@@ -11196,62 +11275,6 @@
         events.removeEventListener("pointerup", up, true);
         events.removeEventListener("pointercancel", blur, true);
         events.removeEventListener("blur", blur);
-      }
-    };
-  }
-
-  // src/client/render-hold.js
-  function createRenderHold(card2, environment = window) {
-    const active2 = /* @__PURE__ */ new Set();
-    let pending2 = null;
-    let frame3 = null;
-    let isDisposed = false;
-    function schedule4() {
-      if (active2.size || !pending2 || frame3 !== null || isDisposed) return;
-      frame3 = environment.requestAnimationFrame(() => {
-        frame3 = null;
-        if (active2.size || !pending2 || isDisposed) return;
-        const render = pending2;
-        pending2 = null;
-        render();
-      });
-    }
-    function down(event) {
-      if (event.button === 0) active2.add(event.pointerId);
-    }
-    function up(event) {
-      active2.delete(event.pointerId);
-      schedule4();
-    }
-    function blur() {
-      active2.clear();
-      schedule4();
-    }
-    card2.addEventListener("pointerdown", down, true);
-    environment.addEventListener?.("pointerup", up, true);
-    environment.addEventListener?.("pointercancel", up, true);
-    environment.addEventListener?.("blur", blur);
-    return {
-      /** 已经有完整的新快照，但按键还没松开时只保留一次最新重绘。 */
-      defer(render) {
-        if (active2.size) {
-          pending2 = render;
-          return true;
-        }
-        pending2 = null;
-        if (frame3 !== null) environment.cancelAnimationFrame(frame3);
-        frame3 = null;
-        return false;
-      },
-      dispose() {
-        isDisposed = true;
-        active2.clear();
-        pending2 = null;
-        if (frame3 !== null) environment.cancelAnimationFrame(frame3);
-        card2.removeEventListener("pointerdown", down, true);
-        environment.removeEventListener?.("pointerup", up, true);
-        environment.removeEventListener?.("pointercancel", up, true);
-        environment.removeEventListener?.("blur", blur);
       }
     };
   }

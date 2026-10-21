@@ -9,6 +9,7 @@
 import { syncPigArt } from './art.js'
 import { PART_FX } from './pet-parts.js'
 import { el } from './dom.js'
+import { createRenderHold } from './render-hold.js'
 
 /**
  * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean }} deps
@@ -26,6 +27,8 @@ export function createEffects(deps) {
   var reactTimer = null
   var feelHooks = null
   var bubbleTimer = null
+  var replyHold = null
+  var bubbleVersion = 0
   var transformTimer = null
   var transformLayer = null
 
@@ -146,9 +149,30 @@ function flash(action, extra) {
   if (!SPOKEN_BY_HOST[action]) showBubble(spec.say, 1600)
 }
 
-var bubbleTimer = null
-function showBubble(text, ms) {
+function resetBubble() {
+  bubbleVersion += 1
   if (bubbleTimer !== null) window.clearTimeout(bubbleTimer)
+  bubbleTimer = null
+  if (replyHold !== null) replyHold.dispose()
+  replyHold = null
+  return bubbleVersion
+}
+
+function expireBubble(version, restorePomo) {
+  if (version !== bubbleVersion) return
+  var close = function () {
+    if (version !== bubbleVersion) return
+    bubble.hidden = true
+    if (replyHold !== null) replyHold.dispose()
+    replyHold = null
+    if (restorePomo && pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute('data-pomo') !== 'on'
+  }
+  if (replyHold !== null && replyHold.defer(close)) return
+  close()
+}
+
+function showBubble(text, ms) {
+  var version = resetBubble()
   bubble.setAttribute('data-bubble-shown', 'true')
   bubble.textContent = ''
   bubble.appendChild(el('span', 'dp-bubble-text', text))
@@ -156,10 +180,10 @@ function showBubble(text, ms) {
   // 角标让位：气泡和它挨着，宁可角标先消失也不能压住猪说的话。
   if (pomoHint !== null) pomoHint.hidden = true
   bubbleTimer = window.setTimeout(function () {
-    bubble.hidden = true
+    if (version !== bubbleVersion) return
     bubbleTimer = null
     // 气泡走了，专注还在就把角标放回来（面板每 4 秒也会按 data-pomo 重设一次）。
-    if (pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute('data-pomo') !== 'on'
+    expireBubble(version, true)
   }, ms || 2600)
 }
 
@@ -176,19 +200,20 @@ function showLine(text, replies, onReply, ms) {
     showBubble(text, ms || 2600)
     return
   }
-  if (bubbleTimer !== null) window.clearTimeout(bubbleTimer)
+  var version = resetBubble()
   bubble.textContent = ''
   bubble.appendChild(el('span', 'dp-bubble-text', text))
   var row = el('div', 'dp-bubble-replies', '')
+  replyHold = createRenderHold(row)
   replies.forEach(function (label, index) {
     var answer = el('button', 'dp-reply', label)
     answer.type = 'button'
     answer.addEventListener('click', function (event) {
       // The bubble sits over the pig; a reply must not also count as a pat.
       event.stopPropagation()
+      if (version !== bubbleVersion || bubble.hidden) return
+      resetBubble()
       bubble.hidden = true
-      if (bubbleTimer !== null) window.clearTimeout(bubbleTimer)
-      bubbleTimer = null
       onReply(index)
     })
     row.appendChild(answer)
@@ -196,8 +221,9 @@ function showLine(text, replies, onReply, ms) {
   bubble.appendChild(row)
   bubble.hidden = false
   bubbleTimer = window.setTimeout(function () {
-    bubble.hidden = true
+    if (version !== bubbleVersion) return
     bubbleTimer = null
+    expireBubble(version, false)
   }, Math.max(6000, ms || 0))
 }
 
@@ -209,7 +235,7 @@ function toast(text) {
   /** Drop the pending timers — the panel is going away, nothing should fire. */
   function dispose() {
     if (reactTimer !== null) window.clearTimeout(reactTimer)
-    if (bubbleTimer !== null) window.clearTimeout(bubbleTimer)
+    resetBubble()
     if (transformTimer !== null) window.clearTimeout(transformTimer)
     if (transformLayer !== null) transformLayer.remove()
     reactTimer = null
