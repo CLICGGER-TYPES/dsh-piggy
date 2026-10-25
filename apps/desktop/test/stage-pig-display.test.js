@@ -148,13 +148,13 @@ test('Linux/macOS: pig centre nearest display in DIP space, no Windows converter
   }
 })
 
-test('system wiring: watchFullscreen uses the injected getter, and keeps the old fallback without it', () => {
+test('system wiring: watchFullscreen uses the injected getter, and keeps the old fallback without it', async () => {
   const win = { isDestroyed: () => false, getBounds: () => ({ x: 10, y: 20, width: 100, height: 200 }) }
   let captured = null
-  const watch = watchFullscreen({
+  const watch = await watchFullscreen({
     getWindow: () => win, userData: '/tmp', log: () => {}, onHide: () => {}, onShow: () => {},
     getPigDisplayBounds: () => SECONDARY_PHYSICAL,
-    createWatch: options => { captured = options; return { start() {}, stop() {} } },
+    createWatch: options => { captured = options; return { async init() {}, start() {}, stop() {} } },
   })
   assert.deepEqual(captured.pigDisplayBounds(), SECONDARY_PHYSICAL)
   assert.equal(typeof captured.windowsPigDisplayBounds, 'function')
@@ -169,9 +169,9 @@ test('system wiring: watchFullscreen uses the injected getter, and keeps the old
     },
   }
   let fallback = null
-  const old = watchFullscreen({
+  const old = await watchFullscreen({
     getWindow: () => win, userData: '/tmp', log: () => {}, onHide: () => {}, onShow: () => {}, screen,
-    createWatch: options => { fallback = options; return { start() {}, stop() {} } },
+    createWatch: options => { fallback = options; return { async init() {}, start() {}, stop() {} } },
   })
   assert.deepEqual(fallback.pigDisplayBounds(), { x: 6.25, y: 7.5, width: 125, height: 250 })
   assert.equal(fallback.windowsPigDisplayBounds, undefined, 'split path keeps the old HWND-only Windows behavior')
@@ -179,14 +179,14 @@ test('system wiring: watchFullscreen uses the injected getter, and keeps the old
   old.stop()
 })
 
-test('main path: presenter getter passed to watchFullscreen picks the pig display', () => {
+test('main path: presenter getter passed to watchFullscreen picks the pig display', async () => {
   const { presenter } = fixture(vmEntries())
   presenter.applyReport({ shape: [PIG], visible: { pig: PIG }, dpr: 1.25, viewport: VIEWPORT, interacting: false })
   let captured = null
-  const watch = watchFullscreen({
+  const watch = await watchFullscreen({
     getWindow: () => ({ isDestroyed: () => false }), userData: '/tmp', log: () => {}, onHide: () => {}, onShow: () => {},
     getPigDisplayBounds: () => presenter.getPigDisplayBounds(),
-    createWatch: options => { captured = options; return { start() {}, stop() {} } },
+    createWatch: options => { captured = options; return { async init() {}, start() {}, stop() {} } },
   })
   assert.deepEqual(captured.pigDisplayBounds(), SECONDARY_PHYSICAL)
   watch.stop()

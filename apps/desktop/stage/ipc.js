@@ -5,7 +5,7 @@
  * @module dsh-piggy-desktop/stage/ipc
  */
 
-import { writeFileSync } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { dialog, ipcMain, shell } from 'electron'
 import { RELEASES_PAGE } from '../lib/versions.js'
@@ -42,6 +42,9 @@ function textName(value) {
  *   forwardFx: (fx:any) => void,
  *   quit: () => void,
  *   restartGame: () => void,
+ *   gameChange: { install: (target:any) => Promise<any>, rollback: () => Promise<any> },
+ *   isClosing?: () => boolean,
+ *   trackWrite?: (task:Promise<any>) => Promise<any>,
  *   log: (...parts:any[]) => void,
  * }} ctx
  */
@@ -91,20 +94,11 @@ export function registerStageIpc(ctx) {
     const target = ctx.getReleases().find(release => release.version === version)
     if (target === undefined) return { ok: false, reason: '先刷新一下版本列表' }
     if (target.blocked !== null) return { ok: false, reason: target.blocked === 'shell' ? '要先装新的安装包' : '存档太新，这个版本读不了' }
-    try {
-      await versions.install(target, fraction => ctx.sendProgress(fraction))
-      setTimeout(ctx.restartGame, 600)
-      return { ok: true, version: target.version }
-    } catch (error) {
-      return { ok: false, reason: error instanceof Error ? error.message : String(error) }
-    }
+    return ctx.gameChange.install(target)
   })
   ipcMain.handle('piggy:updates:rollback', event => {
-    const versions = ctx.getVersions()
-    if (!ctx.fromPage(event) || versions === null) return { ok: false, reason: '不在舞台里' }
-    const result = versions.rollback()
-    if (result.ok) setTimeout(ctx.restartGame, 600)
-    return result
+    if (!ctx.fromPage(event) || ctx.getVersions() === null) return { ok: false, reason: '不在舞台里' }
+    return ctx.gameChange.rollback()
   })
 
   ipcMain.handle('piggy:shell:status', event => (ctx.fromPage(event) ? ctx.getShellUpdates()?.status() ?? null : null))
@@ -155,8 +149,9 @@ export function registerStageIpc(ctx) {
         defaultPath: join(ctx.downloadsDir(), name),
         filters: [{ name: '日志文本', extensions: ['txt'] }, { name: '全部文件', extensions: ['*'] }],
       })
-      if (picked.canceled === true || typeof picked.filePath !== 'string' || picked.filePath === '') return { ok: false, canceled: true }
-      writeFileSync(picked.filePath, text, 'utf8')
+      if (ctx.isClosing?.() || picked.canceled === true || typeof picked.filePath !== 'string' || picked.filePath === '') return { ok: false, canceled: true }
+      const writing = writeFile(picked.filePath, text, 'utf8')
+      await (ctx.trackWrite ? ctx.trackWrite(writing) : writing)
       return { ok: true, path: picked.filePath }
     } catch (error) {
       return { ok: false, reason: error instanceof Error ? error.message : String(error) }
@@ -170,6 +165,8 @@ export function registerStageIpc(ctx) {
       downloadsDir: ctx.downloadsDir(),
       name: payload?.name,
       bytes: payload?.bytes,
+      isClosing: ctx.isClosing,
+      writeFile: ctx.trackWrite ? (...args) => ctx.trackWrite(writeFile(...args)) : undefined,
     })
   })
   ipcMain.handle('stage:save-archive', async (event, payload) => {

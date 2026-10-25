@@ -68,6 +68,14 @@
   "engines": {
     "node": ">=20"
   },
+  "devDependencies": {
+    "builder-util-runtime": "9.7.0",
+    "electron-updater": "6.7.3",
+    "motion": "14.3.0"
+  },
+  "overrides": {
+    "builder-util-runtime": "9.7.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CLICGGER-TYPES/dsh-piggy.git"
@@ -76,8 +84,5 @@
   "bugs": {
     "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/issues"
   },
-  "author": "clicgger",
-  "devDependencies": {
-    "motion": "14.3.0"
-  }
+  "author": "clicgger"
 }

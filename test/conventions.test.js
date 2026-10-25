@@ -127,3 +127,12 @@ test('the typecheck command the conventions promise actually exists', () => {
   assert.equal(manifest.scripts.typecheck, 'node scripts/typecheck.mjs')
   assert.ok(existsSync(new URL('scripts/typecheck.mjs', packageRoot)), 'scripts/typecheck.mjs must exist')
 })
+
+test('root development dependencies retain both desktop update checks and client motion', () => {
+  const raw = read(new URL('package.json', packageRoot))
+  assert.equal([...raw.matchAll(/"devDependencies"\s*:/g)].length, 1)
+  const { devDependencies } = JSON.parse(raw)
+  assert.equal(devDependencies['builder-util-runtime'], '9.7.0')
+  assert.equal(devDependencies['electron-updater'], '6.7.3')
+  assert.equal(devDependencies.motion, '14.3.0')
+})

@@ -167,6 +167,6 @@ contextBridge.exposeInMainWorld('piggyShell', {
     raisePet: () => {},
   },
   onStateChanged: callback => {
-    if (typeof callback === 'function') ipcRenderer.on('piggy:state-changed', (event, view) => callback(view))
+    if (typeof callback === 'function') ipcRenderer.on('piggy:state-changed', (event, view) => callback(typeof view === 'string' ? JSON.parse(view) : view))
   },
 })

@@ -24,13 +24,14 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     fetches.clear()
   }
 
-  function request(method, args = []) {
+  /** @param {string} method @param {any[]} [args] @param {ArrayBuffer[]} [transfer] */
+  function request(method, args = [], transfer = []) {
     if (failure) return Promise.reject(failure)
     if (closed || (closing && method !== 'dispose')) return Promise.reject(new Error('game runtime closed'))
     return new Promise((resolve, reject) => {
       const id = ++sequence
       pending.set(id, { resolve, reject })
-      try { worker.postMessage({ kind: 'request', id, method, args }) }
+      try { worker.postMessage({ kind: 'request', id, method, args }, transfer) }
       catch (error) { pending.delete(id); reject(error) }
     })
   }
@@ -76,7 +77,8 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
   }
 
   return {
-    handle: (method, url, body) => request('handle', [method, url, body]),
+    /** @param {string} method @param {string} url @param {string | ArrayBuffer} [body] */
+    handle: (method, url, body) => request('handle', [method, url, body], body instanceof ArrayBuffer ? [body] : []),
     acceptWorkEvent: event => request('acceptWorkEvent', [event]),
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {

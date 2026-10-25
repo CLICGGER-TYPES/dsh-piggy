@@ -162,7 +162,7 @@ test('appendJournalSync 只在单实例退出路径写一次，写不进去只�
 test('第二个进程拿不到单实例锁时先同步写日志再退出', () => {
   assert.match(MAIN, /requestSingleInstanceLock\(\)[\s\S]{0,700}second launch rejected[\s\S]{0,400}app\.quit\(\)/,
     '没有这一行，日志里看不出「又双击了一次」')
-  const lock = MAIN.indexOf('if (!needsX11 && !app.requestSingleInstanceLock())')
+  const lock = MAIN.search(/if \(!needsX11 && !(?:gotLock|app\.requestSingleInstanceLock\(\))\)/)
   const journal = MAIN.indexOf('appendJournalSync(', lock)
   const quit = MAIN.indexOf('app.quit()', journal)
   assert.ok(lock !== -1 && journal > lock && quit > journal, '退出路径不能等异步回调，必须先同步落盘再 quit')

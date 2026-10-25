@@ -14,7 +14,73 @@
  * @module dsh-piggy-desktop/stage/startup-lifecycle
  */
 import { pageCrashReason, reportStartupFailure } from '../lib/startup-failure.js'
-import { appendJournalSync, journalLine } from '../lib/startup-journal.js'
+import { appendJournal, appendJournalSync, journalLine } from '../lib/startup-journal.js'
+
+/**
+ * 舞台日志串行写入与 flush。写入失败只返回 false，但 flush 会记住失败，不把后面的成功当成整条日志链成功。
+ * @param {{ logPath: () => string, capture?: () => boolean, append?: typeof appendJournal }} deps
+ */
+export function createStageJournal({ logPath, capture = () => Boolean(process.env.PIGGY_CAPTURE), append = appendJournal }) {
+  let writing = Promise.resolve(true)
+  let failure = null
+  function log(...parts) {
+    const line = journalLine(parts)
+    if (capture()) process.stdout.write(line)
+    const next = writing.then(() => append(logPath(), line))
+    writing = next.catch(error => { failure ??= error; return false }).then(wrote => {
+      if (wrote !== true) failure ??= new Error(`stage 日志写入失败：${logPath()}`)
+      return wrote === true
+    })
+    return writing
+  }
+  async function flush() {
+    let current
+    do { current = writing; await current } while (current !== writing)
+    return failure === null
+  }
+  return { log, flush }
+}
+
+/**
+ * 舞台退出：cleanup（含全屏 stop/flush、宿主保存）-> 代理 flush -> 日志 flush。
+ * 返回的 saved 来自宿主 dispose，供安装/重启的保存门禁判断；没有宿主时视为无需保存。
+ * @param {{
+ *   app: any, cleanup: { dispose: () => Promise<any> }, log: (...parts:any[]) => any,
+ *   flushLogs: () => Promise<boolean>, getProxy: () => any, getHost: () => any,
+ *   getHostSaved: () => boolean, setQuitting: (value:boolean) => void,
+ * }} deps
+ */
+export function createStageQuit(deps) {
+  let closing = null
+  let allowQuit = false
+  function prepare() {
+    if (closing !== null) return closing
+    deps.setQuitting(true)
+    closing = (async () => {
+      let result
+      try { result = await deps.cleanup.dispose() } catch (error) { deps.log('cleanup failed', String(error)); result = { ok: false } }
+      try { await deps.getProxy()?.flush?.() } catch (error) { deps.log('proxy flush failed', String(error)) }
+      const saved = deps.getHost() === null ? true : deps.getHostSaved() === true
+      const summary = { ...result, saved }
+      deps.log('cleanup done', JSON.stringify(summary))
+      await deps.flushLogs()
+      return summary
+    })()
+    return closing
+  }
+  function request(reason) {
+    deps.log('quit requested', reason)
+    void prepare().finally(() => { allowQuit = true; deps.app.quit() })
+  }
+  function watchBeforeQuit() {
+    deps.app.on('before-quit', event => {
+      if (allowQuit) return
+      event.preventDefault()
+      void prepare().finally(() => { allowQuit = true; deps.app.quit() })
+    })
+  }
+  return { prepare, request, watchBeforeQuit }
+}
 
 /**
  * ready 之前只碰 Electron 允许的原生 API；ready 之后照常用带按钮的错误框。

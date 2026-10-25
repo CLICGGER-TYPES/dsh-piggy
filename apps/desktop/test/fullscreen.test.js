@@ -45,16 +45,18 @@ test('x11 output parsing', () => {
   assert.equal(parseWindowRect('garbage'), null)
 })
 
-test('preference persists across restarts', () => {
+test('preference persists across restarts', async () => {
   const dir = tempDir()
   try {
     const path = join(dir, 'fullscreen.json')
     const watch = createFullscreenWatch({ path, platform: 'darwin', selfPid: 1, pigHwnd: () => '0', pigDisplayBounds: () => null, onProbe: () => {} })
+    await watch.init()
     assert.equal(watch.get().mode, 'hide')
-    assert.equal(watch.set('nonsense').ok, false)
-    assert.equal(watch.set('show').ok, true)
+    assert.equal((await watch.set('nonsense')).ok, false)
+    assert.equal((await watch.set('show')).ok, true)
     assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), { mode: 'show' })
     const again = createFullscreenWatch({ path, platform: 'darwin', selfPid: 1, pigHwnd: () => '0', pigDisplayBounds: () => null, onProbe: () => {} })
+    await again.init()
     assert.equal(again.mode(), 'show')
     assert.equal(again.get().supported, true)
   } finally { rmSync(dir, { recursive: true, force: true }) }

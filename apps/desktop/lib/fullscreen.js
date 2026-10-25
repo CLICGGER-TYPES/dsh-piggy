@@ -5,7 +5,7 @@
  * 而外壳只在启动时设过一次置顶。现在：
  *
  * - 偏好 `hide`（默认）/ `show` 存在 userData/fullscreen.json，只管这台设备，不进存档；
- * - 探测：Windows 常驻一个 PowerShell 小进程，每秒报一次前台窗口是不是盖满了猪所在的那块屏
+ * - 探测：Windows 专用 Worker 管理一个 PowerShell 小进程，每秒报一次前台窗口是不是盖满了猪所在的那块屏
  *   （或系统报告 D3D 全屏 / 演示模式）；Linux X11 用 xprop 读 `_NET_WM_STATE_FULLSCREEN`；
  *   macOS 全屏程序在单独的桌面空间里，用 visibleOnFullScreen 决定猪跟不跟进去，不用探测；
  *   探测不了时（PowerShell 被禁、没装 xprop）当作「照常显示」，设置里说明原因；
@@ -14,8 +14,10 @@
  * @module dsh-piggy/desktop/fullscreen
  */
 import { spawn as nodeSpawn, execFile as nodeExecFile } from 'node:child_process'
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { Worker } from 'node:worker_threads'
+import { samePhysicalMonitor, isPhysicalRect } from './physical-monitor.js'
 
 export const MODES = /** @type {const} */ (['hide', 'show'])
 export const DEFAULT_MODE = 'hide'
@@ -119,24 +121,6 @@ export function parseProbeLine(line) {
   } catch { return null }
 }
 
-/** 两个物理矩形是不是同一块显示器（PS 的 rcMonitor 与 Electron 换算可能差 1~2px）。 */
-function samePhysicalMonitor(a, b) {
-  const edges = rect => [Math.round(rect.x) + 0, Math.round(rect.y) + 0,
-    Math.round(rect.x + rect.width) + 0, Math.round(rect.y + rect.height) + 0]
-  const [ax, ay, ar, ab] = edges(a)
-  const [bx, by, br, bb] = edges(b)
-  const tolerance = 2
-  return Math.abs(ax - bx) <= tolerance && Math.abs(ay - by) <= tolerance
-    && Math.abs(ar - br) <= tolerance && Math.abs(ab - bb) <= tolerance
-}
-
-/** @param {any} value @returns {boolean} */
-function isPhysicalRect(value) {
-  return value !== null && typeof value === 'object'
-    && [value.x, value.y, value.width, value.height].every(Number.isFinite)
-    && value.width > 0 && value.height > 0
-}
-
 /** `xprop -root _NET_ACTIVE_WINDOW` → 窗口 id（0x… 字符串），没有就 null。 */
 export function parseActiveWindow(text) {
   const match = /window id # (0x[0-9a-f]+)/i.exec(String(text))
@@ -158,6 +142,130 @@ export function parseWindowRect(text) {
   return Object.values(rect).every(Number.isFinite) ? rect : null
 }
 
+/** Windows 探测器本体；生产环境由专用 Worker 调用，也接受调用方提供的进程创建器。
+ * @param {{selfPid:number,pigHwnd:string,onProbe:(probe:any)=>void,
+ *   onStatus:(status:{supported:boolean,reason:string})=>void,
+ *   log?:(...parts:any[])=>void,spawn?:typeof nodeSpawn}} options
+ */
+export function createWindowsProbe(options) {
+  const spawn = options.spawn ?? nodeSpawn
+  const log = options.log ?? (() => {})
+  let supported = null
+  let child = null
+  let childClosed = Promise.resolve()
+  let timer = null
+  let stopped = false
+
+  function unsupported(reason) {
+    if (supported === false) return
+    supported = false
+    options.onStatus({ supported, reason })
+    log('fullscreen probe unavailable', reason)
+    options.onProbe(null)
+  }
+
+  function start() {
+    if (stopped) return
+    const script = windowsProbeScript(options.selfPid, options.pigHwnd)
+    try {
+      child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodePowerShell(script)],
+        { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    } catch (error) { unsupported('启动 PowerShell 失败：' + (error instanceof Error ? error.message : String(error))); return }
+    const running = child
+    childClosed = new Promise(resolve => running.once('close', () => {
+      if (child === running) child = null
+      resolve(undefined)
+    }))
+    let buffer = ''
+    let errText = ''
+    running.stdout.setEncoding('utf8')
+    running.stdout.on('data', chunk => {
+      if (stopped) return
+      buffer += chunk
+      let at
+      while ((at = buffer.indexOf('\n')) >= 0) {
+        const probe = parseProbeLine(buffer.slice(0, at))
+        buffer = buffer.slice(at + 1)
+        if (probe === null) continue
+        if (supported !== true) {
+          supported = true
+          options.onStatus({ supported, reason: '' })
+          log('fullscreen probe ready')
+        }
+        options.onProbe(probe)
+      }
+    })
+    running.stderr.setEncoding('utf8')
+    running.stderr.on('data', chunk => { errText = (errText + chunk).slice(-600) })
+    running.on('error', error => unsupported('PowerShell 不可用：' + error.message))
+    running.on('exit', code => {
+      if (stopped) return
+      log('fullscreen probe exited', code, errText.trim())
+      if (supported === true) {
+        options.onProbe(null)
+        timer = setTimeout(start, 5000)
+        timer.unref?.()
+      } else unsupported(errText.trim() ? 'PowerShell 报错：' + errText.trim().split('\n')[0] : 'PowerShell 被禁用或无法运行')
+    })
+  }
+
+  return {
+    start,
+    stop() {
+      stopped = true
+      if (timer !== null) clearTimeout(timer)
+      // close 晚于进程退出和 stdout/stderr 关闭，不能只发 kill 就让 Worker 消失。
+      if (child !== null) child.kill()
+      return childClosed
+    },
+  }
+}
+
+/** 主进程只转发状态，PowerShell 的创建、流处理和重启全部留在 Worker。 */
+function createWindowsProbeWorker(options) {
+  let worker = null
+  let running = false
+  let exited = Promise.resolve()
+  let stopping = null
+  let rejectStop = null
+  return {
+    start() {
+      try {
+        worker = new Worker(new URL('./fullscreen-worker.js', import.meta.url), {
+          workerData: { selfPid: options.selfPid, pigHwnd: options.pigHwnd },
+        })
+      } catch (error) { options.onError('全屏探测 Worker 无法启动：' + String(error)); return }
+      running = true
+      exited = new Promise(resolve => worker.once('exit', code => {
+        running = false
+        if (stopping === null) options.onError('全屏探测 Worker 已退出：' + code)
+        resolve(undefined)
+      }))
+      worker.on('message', message => {
+        if (message.kind === 'stop-error') {
+          rejectStop?.(new Error(message.error))
+          stopping = null
+        } else if (stopping === null) {
+          if (message.kind === 'probe') options.onProbe(message.value)
+          else if (message.kind === 'status') options.onStatus(message.value)
+          else if (message.kind === 'log') options.log(...message.parts)
+        }
+      })
+      worker.on('error', error => options.onError('全屏探测 Worker 不可用：' + error.message))
+    },
+    stop() {
+      if (stopping !== null) return stopping
+      if (!running) return Promise.resolve()
+      stopping = new Promise((resolve, reject) => {
+        rejectStop = reject
+        exited.then(() => resolve(undefined))
+        try { worker.postMessage({ kind: 'stop' }) } catch (error) { reject(error) }
+      })
+      return stopping
+    },
+  }
+}
+
 /**
  * @param {{
  *   path: string, platform: string, selfPid: number,
@@ -171,17 +279,26 @@ export function parseWindowRect(text) {
 export function createFullscreenWatch(options) {
   const { path, platform, selfPid, onProbe } = options
   const log = options.log ?? (() => {})
-  const spawn = options.spawn ?? nodeSpawn
   const execFile = options.execFile ?? nodeExecFile
   let mode = DEFAULT_MODE
-  try { mode = fullscreenMode(JSON.parse(readFileSync(path, 'utf8')).mode) } catch { /* 没设过：默认隐藏 */ }
+  let initialization = null
+  /** @type {Promise<any>} */
+  let writing = Promise.resolve()
   /** null = 还在探测；true / false = 能不能探测 */
   let supported = platform === 'darwin' ? true : null
   let reason = ''
-  let child = null
+  let windows = null
   let timer = null
   let stopped = false
-  let buffer = ''
+
+  function init() {
+    if (initialization === null) initialization = (async () => {
+      try { mode = fullscreenMode(JSON.parse(await readFile(path, 'utf8')).mode) } catch { /* 没设过：默认隐藏 */ }
+    })()
+    return initialization
+  }
+
+  const get = () => ({ mode, supported: supported !== false, checking: supported === null, reason, platform })
 
   function unsupported(why) {
     if (supported === false) return
@@ -194,7 +311,7 @@ export function createFullscreenWatch(options) {
   /** 只有舞台注入 getter 时才用 PS 报来的前台显示器物理矩形替代 HWND 比较。 */
   function overrideWindowsPigScreen(probe) {
     const getBounds = options.windowsPigDisplayBounds
-    if (typeof getBounds !== 'function' || probe.monitor === undefined) return probe
+    if (probe === null || typeof getBounds !== 'function' || probe.monitor === undefined) return probe
     let pig = null
     try { pig = getBounds() } catch { return probe }
     if (!isPhysicalRect(pig)) return probe
@@ -202,36 +319,12 @@ export function createFullscreenWatch(options) {
   }
 
   function startWindows() {
-    const script = windowsProbeScript(selfPid, options.pigHwnd())
-    try {
-      child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodePowerShell(script)],
-        { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
-    } catch (error) { unsupported('启动 PowerShell 失败：' + (error instanceof Error ? error.message : String(error))); return }
-    let errText = ''
-    child.stdout.setEncoding('utf8')
-    child.stdout.on('data', chunk => {
-      buffer += chunk
-      let at
-      while ((at = buffer.indexOf('\n')) >= 0) {
-        const parsed = parseProbeLine(buffer.slice(0, at))
-        buffer = buffer.slice(at + 1)
-        if (parsed === null) continue
-        if (supported !== true) { supported = true; reason = ''; log('fullscreen probe ready') }
-        // 每一行都重新问猪在哪块屏：拖动、换屏、热插拔后当次就生效。
-        onProbe(overrideWindowsPigScreen(parsed))
-      }
-    })
-    child.stderr.setEncoding('utf8')
-    child.stderr.on('data', chunk => { errText = (errText + chunk).slice(-600) })
-    child.on('error', error => unsupported('PowerShell 不可用：' + error.message))
-    child.on('exit', code => {
-      child = null
-      if (stopped) return
-      log('fullscreen probe exited', code, errText.trim())
-      // 跑起来过又退了（被杀、休眠唤醒）：过一会儿再起；从没跑起来就是这台电脑用不了。
-      if (supported === true) { onProbe(null); timer = setTimeout(startWindows, 5000); timer.unref?.() }
-      else unsupported(errText.trim() ? 'PowerShell 报错：' + errText.trim().split('\n')[0] : 'PowerShell 被禁用或无法运行')
-    })
+    const settings = { selfPid, pigHwnd: options.pigHwnd(), onProbe: probe => onProbe(overrideWindowsPigScreen(probe)), log,
+      onStatus: status => { supported = status.supported; reason = status.reason } }
+    // 提供自定义 spawn 的调用方继续直接使用同一探测器，不把函数序列化进 Worker。
+    windows = options.spawn ? createWindowsProbe({ ...settings, spawn: options.spawn })
+      : createWindowsProbeWorker({ ...settings, onError: unsupported })
+    windows.start()
   }
 
   const run = (file, args) => new Promise(resolve => {
@@ -242,12 +335,14 @@ export function createFullscreenWatch(options) {
   async function pollLinux() {
     if (stopped) return
     const active = await run('xprop', ['-root', '_NET_ACTIVE_WINDOW'])
+    if (stopped) return
     if (active === null) { unsupported('没找到 xprop，检测不了全屏'); return }
     if (supported !== true) { supported = true; reason = '' }
     const id = parseActiveWindow(active)
     let probe = { fullscreen: false, samePigScreen: false }
     if (id !== null) {
       const state = parseWindowState(await run('xprop', ['-id', id, '_NET_WM_STATE', '_NET_WM_PID']) ?? '')
+      if (stopped) return
       if (state.fullscreen && state.pid !== selfPid) {
         const rect = parseWindowRect(await run('xwininfo', ['-id', id]) ?? '')
         const pig = options.pigDisplayBounds()
@@ -257,34 +352,41 @@ export function createFullscreenWatch(options) {
         probe = { fullscreen: true, samePigScreen: same }
       }
     }
+    if (stopped) return
     onProbe(probe)
     timer = setTimeout(pollLinux, 1500)
     timer.unref?.()
   }
 
   return {
+    init,
     start() {
+      if (stopped) return
       if (platform === 'win32') startWindows()
       else if (platform === 'linux') pollLinux()
     },
     stop() {
       stopped = true
       if (timer !== null) clearTimeout(timer)
-      try { child?.kill() } catch { /* already gone */ }
-      child = null
+      return windows?.stop() ?? Promise.resolve()
     },
-    get() { return { mode, supported: supported !== false, checking: supported === null, reason, platform } },
+    get,
     /** @param {unknown} next */
     set(next) {
-      if (!MODES.includes(/** @type {any} */ (next))) return { ok: false, reason: '无效的选项' }
-      mode = fullscreenMode(next)
-      try {
-        mkdirSync(dirname(path), { recursive: true })
-        writeFileSync(path + '.tmp', JSON.stringify({ mode }) + '\n')
-        renameSync(path + '.tmp', path)
-      } catch (error) { log('fullscreen save failed', String(error)) }
-      return { ok: true, ...this.get() }
+      if (!MODES.includes(/** @type {any} */ (next))) return Promise.resolve({ ok: false, reason: '无效的选项' })
+      writing = writing.then(async () => {
+        await init()
+        mode = fullscreenMode(next)
+        try {
+          await mkdir(dirname(path), { recursive: true })
+          await writeFile(path + '.tmp', JSON.stringify({ mode }) + '\n')
+          await rename(path + '.tmp', path)
+        } catch (error) { log('fullscreen save failed', String(error)) }
+        return { ok: true, ...get() }
+      })
+      return writing
     },
+    flush: () => writing,
     mode: () => mode,
   }
 }

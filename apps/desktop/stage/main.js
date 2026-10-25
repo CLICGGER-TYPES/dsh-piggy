@@ -1,7 +1,7 @@
 // @ts-check
 /** 整屏透明舞台入口：一个置顶窗口覆盖所有工作区，里面跑游戏包单页。 */
-import { existsSync, readFileSync } from 'node:fs'
-import { dirname, extname, join, normalize, resolve, sep } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { BrowserWindow, app, dialog, ipcMain, net, protocol, screen, session } from 'electron'
@@ -15,21 +15,21 @@ import { createShellUpdates, shellUpdateMode } from '../lib/shell-update.js'
 import { RELEASES_PAGE, createVersions } from '../lib/versions.js'
 import { downloadFirstGame, gamePinPath } from '../first-run.js'
 import { saveArchive } from '../lib/save-export.js'
-import { appendJournal, journalLine } from '../lib/startup-journal.js'
 import { createCleanup } from './lifecycle.js'
+import { serveFile } from './files.js'
+import { backupStageSave, createStageGameChanges } from './game-change.js'
 import { createInteractionLease } from './lease.js'
 import { createPresenter } from './present.js'
 import { registerStageIpc } from './ipc.js'
 import { applyPhysicalStageBounds, stageGeometryFor, stageWindowBounds } from './window-bounds.js'
 import { createAutostart, createTray, importFromDsh, recoverStage, watchDisplays, watchFullscreen } from './system.js'
-import { createStageStartup } from './startup-lifecycle.js'
+import { createStageJournal, createStageQuit, createStageStartup } from './startup-lifecycle.js'
 import { createStageUiScale } from './ui-scale.js'
 import { enableIsolatedZoom, stageWindowOptions } from './stage-window-options.js'
 
 const { autoUpdater } = updaterPackage
 const HERE = dirname(fileURLToPath(import.meta.url))
 const APP_ROOT = join(HERE, '..')
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.woff': 'font/woff', '.woff2': 'font/woff2' }
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'piggy', privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -47,55 +47,47 @@ if (process.env.PIGGY_USERDATA) app.setPath('userData', resolve(process.env.PIGG
 
 const statePath = () => join(app.getPath('userData'), 'dsh-piggy', 'state.json')
 const logPath = () => join(app.getPath('userData'), 'stage.log')
+const journal = createStageJournal({ logPath })
 function log(...parts) {
-  const line = journalLine(parts)
-  if (process.env.PIGGY_CAPTURE) process.stdout.write(line)
   try { hostJournal?.record?.('info', 'stage', parts.join(' ')) } catch { /* logging must not break the stage */ }
-  return appendJournal(logPath(), line)
+  return journal.log(...parts)
 }
+const flushLogs = journal.flush
 
 const startup = createStageStartup({ app, dialog, log, logPath, platform: process.platform,
   getWindow: () => stageWin, isQuitting: () => quitting, quit: requestQuit })
-if (!needsX11 && !startup.acquireSingleInstance()) app.quit()
+const gotLock = !needsX11 && startup.acquireSingleInstance()
+if (!needsX11 && !gotLock) app.quit()
 
 function bundledGameDir() {
   if (process.env.PIGGY_BUNDLED_GAME) return resolve(process.env.PIGGY_BUNDLED_GAME)
   return app.isPackaged ? join(process.resourcesPath, 'game') : join(APP_ROOT, 'game')
 }
 
-function serveFile(root, rel) {
-  const file = normalize(join(root, rel))
-  const base = normalize(root)
-  // 前缀必须带分隔符：同级 stage-x/ 目录不能因为 startsWith('…/stage') 被当成舞台文件（A8）。
-  if ((file !== base && !file.startsWith(base + sep)) || !existsSync(file)) return new Response('not found', { status: 404 })
-  const type = MIME[extname(file)] ?? 'application/octet-stream'
-  const cache = /^(image|font)\//.test(type) ? { 'cache-control': 'max-age=86400' } : {}
-  return new Response(readFileSync(file), { headers: { 'content-type': type, ...cache } })
-}
 
 function relaunch() {
   app.relaunch(process.env.APPIMAGE ? { execPath: process.env.APPIMAGE, args: process.argv.slice(1) } : { args: process.argv.slice(1) })
 }
 
 const cleanup = createCleanup(log)
-let host = null
-let hostJournal = null
-let versions = null
-let shellUpdates = null
-let proxy = null
-let stageWin = null
-let extWin = null
-let uiScale = null
-let extKey = null
-let fullscreen = null
+let host = null, hostSaved = null, hostJournal = null
+let versions = null, shellUpdates = null, proxy = null
+let stageWin = null, extWin = null, uiScale = null, extKey = null, fullscreen = null
 let quitting = false
-let hostClosing = null
-let allowQuit = false
 let releases = []
-let hitTimer = null
-let topGuardTimer = null
+let hitTimer = null, topGuardTimer = null
 let reassertingUntil = 0 // 同 split：自身重设置顶产生的事件不能再次排队。
 let geometrySeq = 0
+const quit = createStageQuit({
+  app, cleanup, log, flushLogs, getProxy: () => proxy, getHost: () => host, getHostSaved: () => hostSaved,
+  setQuitting: value => { quitting = value },
+})
+const changes = createStageGameChanges({
+  statePath, getVersions: () => versions, getHost: () => host,
+  setHost: next => { host = next; hostJournal = next?.store?.journal ?? null; hostSaved = null },
+  fetch: net.fetch.bind(net), workEventsDirectory: () => process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined,
+  toPages, isQuitting: () => quitting, restart: () => setTimeout(() => { void restartGame() }, 600), log,
+})
 const presenter = createPresenter({
   getWindow: () => stageWin,
   platform: process.platform,
@@ -263,18 +255,8 @@ function createExtWindow(key) {
   log('ext window', key, width + 'x' + height)
 }
 
-function prepareToQuit() {
-  if (hostClosing !== null) return hostClosing
-  quitting = true
-  hostClosing = cleanup.dispose().then(result => { log('cleanup done', JSON.stringify(result)); return result })
-    .catch(error => { log('cleanup failed', String(error)); return { ok: false } })
-  return hostClosing
-}
-
-function requestQuit(reason) {
-  log('quit requested', reason)
-  void prepareToQuit().finally(() => { allowQuit = true; app.quit() })
-}
+function prepareToQuit() { return quit.prepare() }
+function requestQuit(reason) { quit.request(reason) }
 
 async function restartGame() {
   if (quitting) return
@@ -288,15 +270,19 @@ async function restartGame() {
 async function installShell(version) {
   if (version === null || shellUpdates === null || quitting) return
   quitting = true
-  await prepareToQuit()
+  const result = await prepareToQuit()
+  if (result.saved !== true || result.ok !== true) { log('shell install refused: save or cleanup failed'); return }
+  await backupStageSave(statePath(), 'shell-v' + version)
   try { shellUpdates.install() } catch (error) { log('shell install failed', String(error)) }
 }
 
 app.whenReady().then(async () => {
-  if (needsX11) return
+  // app.quit 之后 Electron 仍可能触发 ready：拿不到单实例锁的进程不能初始化代理、版本或宿主。
+  if (needsX11 || !gotLock || quitting) return
   log('start', app.getVersion(), process.platform, process.env.XDG_SESSION_TYPE ?? '')
   proxy = createProxy({ path: join(app.getPath('userData'), 'proxy.json'), sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
   await proxy.init()
+  if (quitting) return
   shellUpdates = createShellUpdates({
     mode: shellUpdateMode({ platform: process.platform, packaged: app.isPackaged,
       portable: Boolean(process.env.PORTABLE_EXECUTABLE_FILE), appImage: process.env.APPIMAGE }),
@@ -311,18 +297,27 @@ app.whenReady().then(async () => {
   let firstRun = null
   if (versions.needsGame()) {
     firstRun = await downloadFirstGame({ versions, pinPath: gamePinPath(app, APP_ROOT), here: APP_ROOT, releasesPage: RELEASES_PAGE, log })
+    if (quitting) { firstRun?.destroy(); return }
     if (firstRun === null) { app.quit(); return }
   }
+  if (quitting) return
   const gameDir = versions.activeDir()
+  const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
   host = await startBackgroundHost(gameDir, statePath(), {
-    fetch: net.fetch.bind(net),
+    fetch: net.fetch.bind(net), workEventsDirectory,
     onSnapshot: view => toPages('piggy:state-changed', view),
     onStateChanged: () => toPages('piggy:state-changed'),
   })
+  if (quitting) {
+    // 启动等待期间用户已经退出：这张宿主还没登记进 cleanup，必须自己关掉，不能和第二实例抢存档。
+    try { log('host started after quit; disposed', JSON.stringify(await host.dispose())) } catch (error) { log('host dispose after quit failed', String(error)) }
+    host = null; await flushLogs(); return
+  }
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `舞台外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   cleanup.add(async () => {
     const result = await host?.dispose()
+    hostSaved = result?.saved === true
     log('host dispose', JSON.stringify(result))
   })
 
@@ -331,6 +326,7 @@ app.whenReady().then(async () => {
       const url = new URL(request.url)
       const path = decodeURIComponent(url.pathname)
       if (path.startsWith('/dsh-piggy/')) {
+        if (quitting || changes.busy) return new Response('game runtime changing', { status: 503 })
         if (quitting) return new Response('game runtime closing', { status: 503 })
         const body = request.method === 'POST' ? Buffer.from(await request.arrayBuffer()) : undefined
         const out = await host.handle(request.method, path + url.search, body)
@@ -346,12 +342,14 @@ app.whenReady().then(async () => {
     }
   })
 
+  cleanup.add(() => changes.close())
   registerStageIpc({
+    gameChange: changes, isClosing: () => quitting, trackWrite: changes.trackWrite,
     fromPage, fromStage, fromExt, getStageWin: () => stageWin, getVersions: () => versions,
     getShellUpdates: () => shellUpdates, getProxy: () => proxy, getFullscreenWatch: () => fullscreen,
     getReleases: () => releases, setReleases: value => { releases = value },
     applyReport: payload => presenter.applyReport(payload), setInteracting, geometry: stageGeometry,
-    saveArchive: payload => saveArchive({ dialog, parentWindow: stageWin ?? undefined, downloadsDir: app.getPath('downloads'), name: payload?.name, bytes: payload?.bytes }),
+    saveArchive: payload => saveArchive({ dialog, parentWindow: stageWin ?? undefined, downloadsDir: app.getPath('downloads'), name: payload?.name, bytes: payload?.bytes, isClosing: () => quitting, writeFile: (...args) => changes.trackWrite(import('node:fs/promises').then(fs => fs.writeFile(...args))) }),
     openExt: key => createExtWindow(key), closeExt: () => extWin?.close(),
     forwardFx: fx => { if (stageWin !== null && !stageWin.isDestroyed()) stageWin.webContents.send('piggy:pig-fx', fx) },
     quit: () => app.quit(), restartGame: () => { void restartGame() },
@@ -367,12 +365,17 @@ app.whenReady().then(async () => {
 
   createStageWindow()
   const autostart = createAutostart()
-  fullscreen = watchFullscreen({
-    getWindow: () => stageWin, userData: app.getPath('userData'), log, getPigDisplayBounds: () => presenter.getPigDisplayBounds(),
+  fullscreen = await watchFullscreen({
+    getWindow: () => stageWin, userData: app.getPath('userData'), log, getPigDisplayBounds: () => presenter.getPigDisplayBounds(), isQuitting: () => quitting,
     onHide: () => { startup.markFullscreenHidden(true); stageWin?.hide(); log('fullscreen: stage hidden') },
     onShow: () => { startup.markFullscreenHidden(false); stageWin?.showInactive(); reassertTop('fullscreen-ended') },
   })
-  cleanup.add(() => fullscreen.stop())
+  const stopFullscreen = async () => {
+    if (fullscreen === null) return
+    try { await fullscreen.stop() } finally { await fullscreen.flush?.() }
+  }
+  if (quitting) { await stopFullscreen(); return }
+  cleanup.add(stopFullscreen)
   const displayWatch = watchDisplays({ getWindow: () => stageWin, displays: displaysNow, apply: (bounds, why) => recomputeStageBounds(why), log })
   cleanup.add(() => displayWatch.stop())
   topGuardTimer = setInterval(() => {
@@ -390,11 +393,7 @@ app.whenReady().then(async () => {
 }).catch(error => { void startup.startupFailed(error) })
 
 startup.watchSecondInstance()
-app.on('before-quit', event => {
-  if (allowQuit) return
-  event.preventDefault()
-  void prepareToQuit().finally(() => { allowQuit = true; app.quit() })
-})
+quit.watchBeforeQuit()
 app.on('window-all-closed', () => app.quit())
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => requestQuit(signal))
 process.on('uncaughtException', error => { log('uncaught', error?.stack ?? String(error)) })

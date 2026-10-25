@@ -103,13 +103,16 @@ export function createTray(options) {
 }
 
 /**
+ * 偏好在 lib/fullscreen.js 里是异步读的：必须 await init() 之后再 start，
+ * 否则探测用默认的 hide 跑起来，设置里选的「照常显示」每次重启都会丢。
  * @param {{
  *   getWindow:() => any, userData:string, log:(...parts:any[])=>void, onHide:() => void, onShow:() => void,
  *   getPigDisplayBounds?: () => ({x:number,y:number,width:number,height:number}|null),
- *   screen?: any, createWatch?: typeof createFullscreenWatch,
+ *   screen?: any, createWatch?: typeof createFullscreenWatch, isQuitting?: () => boolean,
  * }} options
+ * @returns {Promise<ReturnType<typeof createFullscreenWatch>>}
  */
-export function watchFullscreen(options) {
+export async function watchFullscreen(options) {
   let hidden = false
   const activeScreen = options.screen ?? screen
   const createWatch = options.createWatch ?? createFullscreenWatch
@@ -142,6 +145,13 @@ export function watchFullscreen(options) {
       if (hidden) { hidden = false; options.onShow() }
     },
   })
+  await watch.init()
+  // init 是异步的，这期间可能已经开始退出（托盘退出、第二个实例、before-quit）。
+  // 调用方这时还没拿到 watch 去 stop，已经退出就不要再拉起探测进程。
+  if (typeof options.isQuitting === 'function' && options.isQuitting()) {
+    await watch.stop()
+    return watch
+  }
   watch.start()
   return watch
 }
