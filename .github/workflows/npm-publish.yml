@@ -42,6 +42,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  TZ: Asia/Shanghai
   RELEASE_TAG: ${{ inputs.tag }}
   NPM_CONFIG_REGISTRY: https://registry.npmjs.org
   # No tokens: a private empty userconfig, OIDC is the only publish credential.
