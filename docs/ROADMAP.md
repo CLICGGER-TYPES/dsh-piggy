@@ -1,5 +1,19 @@
 # 路线图与待办
 
+## 2026-10-25 0.37.2-rc.2已发布
+
+- [x] GitHub预发布v0.37.2-rc.2已公开，npm双包rc已更新；GitHub稳定版仍v0.37.1，npm latest仍0.37.0。
+- [x] 修复DSH客户端把Cordis Context当舞台配置读stage导致的激活失败。1889项、类型检查、最终npm包Linux VM页面激活/鼠标面板/刷新通过。
+- [x] GitHub三平台构建成功；14个附件下载核对SHA256及更新清单SHA512。npm包与CI包逐字节一致，所有VM受测文件一致，仅npm自动多带一份docs/README.md。335个游戏文件核对，唯一差异为编译器模块路径注释。
+- [x] 外壳代码/版本仍0.6.8-rc.1，存档v15。新生成安装器本轮未再原生安装验收；本轮原生界面验收仅DSH网页。不切Gitee或网盘。
+- 发布：https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2
+- 证据：`/zyx/agents/codex/deliverables/piggy-work/release-rc2-20261025/`；审阅：`/zyx/agents/codex/deliverables/piggy-review/rc-0.37.2-rc.2/`。
+
+
+## 2026-10-25 DSH网页RC激活失败反馈（rc.2已修复发布）
+
+- [x] 用户已更正为浏览器激活失败，其他插件的服务端未激活提示与猪无关。实际npm rc.1在Linux VM浏览器复现，原因为Cordis Context被当作舞台选项读取stage。修复提交30296b2（fix/dsh-client-activation-20261025），1889测试/类型检查、VM激活/右键面板/刷新通过。已发布GitHub及npm双包0.37.2-rc.2；公开rc.1不改写，GitHub发布说明保留已知问题。证据：`/zyx/agents/codex/deliverables/piggy-work/dsh-activation-20261025/REPORT.md`。
+
 ## 正式版 0.37.1 / 外壳 0.6.7（2026-10-21）
 
 - [x] 用户确认正式发版；版本号、README 实拍、CHANGELOG 和别名包同步，存档 v14 不变。

@@ -23,11 +23,9 @@
 - [Gitee 稳定版 0.37.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1)
 - [夸克网盘：Windows 国内渠道](https://pan.quark.cn/s/2c571e9aaecc)
 
-夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者在 GitHub Actions 确认发布，首次需[绑定可信发布者](docs/guides/npm-publishing.md)；如果默认源尚未同步，以发布页上的版本为准。
+夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者手动发布；如果默认源尚未同步，以发布页上的版本为准。
 
-主分支在线扩展目录保留稳定版；RC新版菜园、盲盒和藏猪方块请从RC发布页下载扩展文件，在“设置 → 扩展 → 从文件导入”安装。
-
-预览版下载：[GitHub 0.37.2-rc.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.1)。Windows 安装版与便携版已在虚拟机验证；Linux/macOS 安装包构建结果与验收范围见发布页。
+预览版下载：[GitHub 0.37.2-rc.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2)。修复DSH网页版激活失败；本轮安装包构建与验收范围见发布页。
 
 ### DSH 插件
 
