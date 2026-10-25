@@ -169,13 +169,22 @@ jobs:
         if: ${{ inputs.mode == 'publish' }}
         run: |
           set -euo pipefail
-          sleep 5
-          node scripts/npm-release-plan.mjs \
-            --tag "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --tarball-dir npm-artifacts \
-            --expect-published \
-            --json
+          # npm may accept the upload before asynchronous processing exposes it in the registry.
+          for attempt in $(seq 1 20); do
+            if node scripts/npm-release-plan.mjs \
+              --tag "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --tarball-dir npm-artifacts \
+              --expect-published \
+              --json > "$RUNNER_TEMP/npm-verify.log" 2>&1; then
+              cat "$RUNNER_TEMP/npm-verify.log"
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/npm-verify.log"
+            test "$attempt" -lt 20 || exit 1
+            echo "Waiting for npm registry processing ($attempt/20)"
+            sleep 15
+          done
 
       - name: Keep the plan and tarballs for review
         if: always()
