@@ -157,7 +157,7 @@ jobs:
             action="$(node -p "require('./npm-plan.json').packages.find(p => p.name === '$name').action")"
             if [ "$action" = "publish" ]; then
               echo "publishing $name@$version with dist-tag $dist_tag (provenance is automatic with OIDC)"
-              npm publish "npm-artifacts/${name}-${version}.tgz" --access public --tag "$dist_tag"
+              npm publish "./npm-artifacts/${name}-${version}.tgz" --access public --tag "$dist_tag"
             else
               echo "skip $name@$version: the registry already has the identical tarball"
             fi
