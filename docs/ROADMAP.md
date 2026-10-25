@@ -1,11 +1,11 @@
 # 路线图与待办
 
-## 2026-10-25 DSH网页激活回归修复（准备发布0.37.2-rc.2）
+## 2026-10-25 DSH网页激活回归修复（0.37.2-rc.2已发布）
 
 - [x] 实际npm 0.37.2-rc.1在DSH 0.2.1-rc.2 / 687f282的独立实例和Linux VM浏览器复现：服务端状态200，客户端Failed to load plugins。暂停异常抓到`cannot get property "stage" without inject`：Cordis传入Context，mountGame误作舞台选项读取stage。
 - [x] DSH插件apply用无参数适配函数调用mountGame，保留桌面/舞台显式传参入口。两项带严格Context与构造调用的回归用例修前均失败、修后通过；全量1889/1889、类型检查通过。
 - [x] 同实例使用修复后的私有npm包，VM浏览器激活、右键打开实际面板、刷新再激活均通过，1个猪实例，无相关控制台错误。未运行物理机浏览器，未使用真实存档。
-- [ ] 用户已授权发布0.37.2-rc.2，正在核验GitHub与npm；已公开rc.1未改写，实际npm rc.1仍含此问题。原server-side未激活归因已撤回，better-sidebar/dshmarket错误不属于本问题。
+- [x] GitHub与npm双包0.37.2-rc.2已发布并核验，稳定标签未改；已公开rc.1未改写，实际npm rc.1仍含此问题。原server-side未激活归因已撤回，better-sidebar/dshmarket错误不属于本问题。
 
 
 2026-10-25 用户明确授权 GitHub 发布 v0.37.2-rc.1；本轮仅执行 GitHub 预览版发布，npm 准备可信发布入口并说明绑定，实际 npm 发布等待维护者确认；国内下载迁移仍只研究。最终发布与资产核验以该标签的 Release 为准。
