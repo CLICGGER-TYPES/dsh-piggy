@@ -26,7 +26,7 @@
 2. **大功能先出完整设计**给用户确认再整体做；修 bug 的版本只修 bug，不夹带新功能、不「预留」半成品。
 3. **提交信息不署 AI 名字**（不加 Co-Authored-By 等）。格式见 [CONVENTIONS.md](docs/CONVENTIONS.md)「Git」。
 4. **发版**：用户验收通过后才发；发版前 CHANGELOG 写好该版小节、README 同步（文字和截图）；GitHub、Gitee 两个渠道都要齐；**Gitee 一律从维护者本机推**（`scripts/gitee-publish.sh`），不让 GitHub Actions 往 Gitee 推。
-   **npm 由维护者手动发**，不要替他发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
+   **npm 由维护者确认发布**；可信发布工作流默认只读检查，只有维护者明确选择 `publish` 才能执行，不能未经授权代发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
 5. **不提交凭据**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。
 6. **emoji**：本项目以 emoji 为主——界面图标、物品、气泡、特效、游戏数据都可以用 emoji，参考项目里「不许用 emoji 当图标」之类的规定不适用。
    **不许用 emoji 的是给用户的回复和汇报**（聊天里说明进度、总结时不用）。代码注释、日志、提交信息也不用（见 CONVENTIONS）。

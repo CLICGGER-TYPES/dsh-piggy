@@ -240,7 +240,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
    - `.github/workflows/release-gitee.yml` → **只构建** Gitee 渠道的游戏包和 Windows 安装包，存成 artifact，不往 Gitee 推。
    然后在**本机**：`GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`（推代码和标签、建发行版、传附件、核对、删旧安装包，见 9.4）。
 4. 等两边都绿，核对两边的附件齐全（GitHub `gh release view vX`；Gitee 看发行版页面）。
-5. **npm 手动发**（CI 不发）：
+5. **npm 由维护者确认发布**：可先在 `.github/workflows/npm-publish.yml` 选择 `inspect` 核对，再由维护者选择 `publish` 走OIDC；首次绑定见 [npm可信发布](guides/npm-publishing.md)。本机手动路径仍可使用：
    ```bash
    cd code && npm login && npm publish --access public && npm view dsh-piggy version
    cd packages/dsh-plugin-piggy && npm publish --access public && npm view dsh-plugin-piggy version
