@@ -55,7 +55,9 @@ function host() { return /** @type {any} */ (document.querySelector('[data-dsh-p
 function geometry() { return typeof bridge.geometry === 'function' ? bridge.geometry() : null }
 function dragging() {
   const scene = document.querySelector('[data-dsh-pig] .dp-scene')
-  return scene !== null && scene.getAttribute('data-dragging') === 'true'
+  // Pressing keeps the old held appearance, but only a started window drag
+  // owns geometry. Petting still needs its enlarged drawing shape submitted.
+  return scene !== null && scene.getAttribute('data-window-dragging') === 'true'
 }
 
 function updateHit(x, y) {
@@ -166,10 +168,12 @@ function tick() {
   const key = measure.keyOf(next)
   if (!move && key === lastKey) return
   lastKey = key
-  const request = { shape: next.shape, bounds: move ? want : undefined, pig: undefined }
+  const request = { shape: next.shape, bounds: move ? want : undefined, pig: undefined, speech: undefined }
   // 拆窗口时顺带报猪在窗口里的框（内容可能刚在窗口里挪过）：外壳 0.6.1 起面板按它贴着猪。
   const pigNode = h.querySelector('.dp-pig')
   if (pigNode) request.pig = layoutBox(pigNode)
+  const speech = h.querySelector('.dp-bubble[data-bubble-side="below"]')
+  request.speech = speech && !speech.hidden ? layoutBox(speech) : null
   // 每次要挪窗口都写进桌面程序日志（piggy.log）：平时开关面板、摸猪不会挪窗口，所以很少写；
   // 万一玩家看到「整块跳一下」，日志里就能看出是哪次、为什么挪。
   if (move) {
@@ -271,7 +275,13 @@ export function install(shell) {
     saves: shell.saves,
     ext: shell.ext,
     fullscreen: shell.fullscreen,
-    split: true,
+    split: true, onRecover: shell.onRecover,
+    recoverHome: function (foot) {
+      const info = readGeometry(), areas = info?.workAreas ?? (info?.workArea ? [info.workArea] : [])
+      placement.recover(foot, areas)
+      flying = false; dragSlide = { x: 0, y: 0 }; lastKey = null; commitSlide(host(), measure.state, dragSlide)
+      tick()
+    },
     dragVisualBounds: shell.dragVisualBounds === true,
     onStateChanged: shell.onStateChanged,
     panel: {

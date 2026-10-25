@@ -10,6 +10,7 @@
 
 import { button, el, sideScroller } from '../dom.js'
 import { desktopShell } from '../desktop-shell.js'
+import { stageShell } from '../stage-shell.js'
 import { num } from '../values.js'
 import { FISH } from '../../../packages/pet-core/src/data/fish.js'
 import { SKINS } from '../../../packages/pet-core/src/data/skins.js'
@@ -159,21 +160,20 @@ export function renderDevTab(ui) {
   // ---- 状态 ----
   var status = page('status', '状态')
   status('状态', [
-    { key: 'full', label: '😊 满状态', desc: '饱食、心情、清洁 100，健康满格', run: function () { patch({ satiety: 100, happiness: 100, cleanliness: 100, health: 5 }) } },
+    { key: 'full', label: '😊 满状态', desc: '饱食、心情、清洁 100，健康满格并治好当前疾病', run: function () { patch({ satiety: 100, happiness: 100, cleanliness: 100, health: 5, illness: null }) } },
     { key: 'hungry', label: '🍎 饿', desc: '饱食 10：看饿了的台词和生病风险', run: function () { patch({ satiety: 10 }) } },
     { key: 'dirty', label: '🫧 脏', desc: '清洁 10', run: function () { patch({ cleanliness: 10 }) } },
     { key: 'lonely', label: '🥺 孤单', desc: '心情 10', run: function () { patch({ happiness: 10 }) } },
-    { key: 'sleepy', label: '💤 困', desc: '三项都 90，测试困了的闲聊', run: function () { patch({ satiety: 90, happiness: 90, cleanliness: 90 }) } },
   ])
   status('资源', [
     { key: 'coin100', label: '🪙 +100', desc: '金币加 100', run: function () { patch({ coins: p.coins + 100 }) } },
     { key: 'coin999', label: '🪙 9999', desc: '金币设成 9999', run: function () { patch({ coins: 9999 }) } },
-    { key: 'traits', label: '🧠+5 ✨+5 💪+5', desc: '智力、魅力、武力各 +5', run: function () { patch({ traits: { intel: 5, charm: 5, strong: 5 } }) } },
+    { key: 'traits', label: '🧠+5 ✨+5 💪+5', desc: '智力、魅力、武力各增加 5', run: function () { patch({ traits: { intel: p.traits.intel + 5, charm: p.traits.charm + 5, strong: p.traits.strong + 5 } }) } },
     { key: 'all', label: '🎁 一键拿齐', desc: '商店里每样东西都给几个', run: function () { ui.send('giveAll') } },
   ])
   status('生死', [
-    { key: 'kill', label: '💀 弄死', desc: '当天保留遗体，次日出现墓碑与灵魂；测复活和领养', run: function () { patch({ dead: true }) } },
-    { key: 'revive', label: '✨ 复活', desc: '不用还魂丹直接复活', run: function () { patch({ dead: false, health: 5 }) } },
+    { key: 'kill', label: '💀 弄死', desc: dead ? '已经去世，先复活后才能再次测试死亡' : (boxed ? '先孵化才能测试死亡' : '当天保留遗体，次日出现墓碑与灵魂；测复活和领养'), off: dead || boxed, run: function () { patch({ dead: true }) } },
+    { key: 'revive', label: '✨ 复活', desc: '不用还魂丹直接复活', off: !dead, run: function () { patch({ dead: false, health: 5 }) } },
     { key: 'adopt', label: '📦 领养', desc: '领养一只新猪（旧猪的故事留在记忆里）', run: function () { ui.send('adopt') } },
     { key: 'reset', label: '🔄 重置', desc: '清空存档，从纸盒重新开始', run: function () { ui.send('reset') } },
   ])
@@ -201,19 +201,20 @@ export function renderDevTab(ui) {
     { key: 'dizzy1', label: '😵 头晕', desc: '头晕第 1 期（连续出门太多那条）', run: function () { patch({ illness: { chain: 3, stage: 1 }, health: 4 }) } },
     { key: 'skin1', label: '🩹 瘙痒', desc: '皮肤第 1 期（太脏那条）', run: function () { patch({ illness: { chain: 4, stage: 1 }, health: 4 }) } },
     { key: 'cold4', label: '☠️ 肺炎', desc: '感冒最后一期，健康 1：再拖就会死', run: function () { patch({ illness: { chain: 0, stage: 4 }, health: 1 }) } },
-    { key: 'cure', label: '💚 治好', desc: '直接病好，健康满格', run: function () { patch({ illness: null, health: 5 }) } },
+    { key: 'cure', label: '💚 治好', desc: dead ? '先复活才能治病' : (p.illness === null ? '现在没有疾病' : '直接病好，健康满格'), off: dead || p.illness === null, run: function () { patch({ illness: null, health: 5 }) } },
   ])
 
   // ---- 番茄钟 ----
   page('pomodoro', '番茄钟')('番茄钟', [
-    { key: 'pomoDone', label: '🍅 完成当前', desc: '正在专注的这一个立刻到点，照常发奖', run: function () { patch({ pomodoro: { finish: true } }) } },
+    { key: 'pomoDone', label: '🍅 完成当前', desc: ui.view.pomodoro?.active === true ? '正在专注的这一个立刻到点，照常发奖' : '没有正在进行的番茄钟', off: ui.view.pomodoro?.active !== true, run: function () { patch({ pomodoro: { finish: true } }) } },
   ])
 
   // ---- 钓鱼 ----
   var fishEntries = FISH.map(function (fish) {
-    return { key: 'fish:' + fish.key, label: fish.emoji + ' ' + fish.label, desc: '鱼篓里直接放一条', run: function () { ui.send('fishGive', { fish: fish.key }) } }
+    return { key: 'fish:' + fish.key, off: false, label: fish.emoji + ' ' + fish.label, desc: '鱼篓里直接放一条', run: function () { ui.send('fishGive', { fish: fish.key }) } }
   })
-  fishEntries.push({ key: 'fish:skip', label: '❗ 跳过等待', desc: '抛竿后不用等，马上咬钩', run: function () { ui.send('fishSkip') } })
+  var pendingFish = ui.view.fishing?.pending
+  fishEntries.push({ key: 'fish:skip', label: '❗ 跳过等待', desc: pendingFish?.phase === 'waiting' ? '当前鱼正在等待咬钩，立即跳过等待' : '需要先抛竿并进入等待阶段', off: pendingFish?.phase !== 'waiting', run: function () { ui.send('fishSkip') } })
   page('fishing', '钓鱼')('钓鱼', fishEntries)
 
   // ---- 签到与礼包 ----
@@ -250,8 +251,9 @@ export function renderDevTab(ui) {
   }))
 
   // ---- 台词 ----
+  var quiet = ui.view.dialogue?.quiet === true
   page('lines', '台词')('让猪说一句', Object.keys(LINES).map(function (scene) {
-    return { key: 'say:' + scene, label: '💬 ' + (SCENE_NAMES[scene] ?? scene), desc: '随机说「' + scene + '」场景里的一句（免打扰时不说）',
+    return { key: 'say:' + scene, label: '💬 ' + (SCENE_NAMES[scene] ?? scene), desc: quiet ? '免打扰已开，先关闭后才能让猪说话' : '随机说「' + scene + '」场景里的一句', off: quiet,
       run: function () { patch({ say: scene }) } }
   }))
 
@@ -270,7 +272,7 @@ export function renderDevTab(ui) {
   ])
   time('猪自己找事做', [
     { key: 'idle', label: '🐷 小动作', desc: '马上做一个小动作（打滚、打盹、追蝴蝶……）', off: typeof ui.idleNow !== 'function', run: function () { ui.setOpen(false); ui.idleNow() } },
-    { key: 'walk', label: '🚶 散步一次', desc: '马上沿屏幕底边走一趟（只有桌面版）', off: typeof ui.walkNow !== 'function' || desktopShell() === null, run: function () { ui.setOpen(false); ui.walkNow() } },
+    { key: 'walk', label: '🚶 散步一次', desc: '马上沿屏幕底边走一趟（只有桌面版）', off: typeof ui.walkNow !== 'function' || (desktopShell() === null && stageShell()?.walk !== true), run: function () { ui.setOpen(false); ui.walkNow() } },
     { key: 'timeTalk', label: '🕐 按时间说', desc: '问一次「现在有没有按时间该说的话」（一天一次的已经说过就不说）', run: function () { ui.send('chat', { reason: 'time' }) } },
   ])
 

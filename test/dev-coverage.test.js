@@ -316,6 +316,81 @@ test('直接渲染调试页：幼年猪点形态会把等级拉到起始等级',
   assert.equal(patch.level, lifeStageByKey(FORMS[0].stage).fromLevel)
 })
 
+test('状态快捷键写入预期的 traits、满状态和困意补丁', () => {
+  const { document } = fakeDom()
+  globalThis.document = document
+  const content = document.createElement('div')
+  const sent = []
+  const ui = {
+    content,
+    view: {
+      ...SNAPSHOT,
+      pig: { ...PIG, traits: { intel: 8, charm: 3, strong: 0 }, illness: { chain: 0, stage: 1 } },
+      pomodoro: { active: false },
+      fishing: { pending: null },
+    },
+    send(action, payload) { sent.push({ action, payload }) },
+    devOff() {}, setOpen() {}, renderContent() {}, host: { getAttribute: () => 'false' },
+  }
+  renderDevTab(ui)
+
+  findByAttr(content, 'data-dev', 'traits').fire('click')
+  assert.deepEqual(sent.at(-1).payload.patch.traits, { intel: 13, charm: 8, strong: 5 })
+  findByAttr(content, 'data-dev', 'full').fire('click')
+  assert.equal(sent.at(-1).payload.patch.illness, null, '满状态要治好疾病')
+  assert.equal(findByAttr(content, 'data-dev', 'sleepy'), undefined, '已取消持续睡眠的调试入口')
+  assert.equal(findByAttr(content, 'data-dev', 'pomoDone').disabled, true, '没有进行中的番茄钟时禁用完成按钮')
+  assert.equal(findByAttr(content, 'data-dev', 'fish:skip').disabled, true, '没有等待中的鱼时禁用跳过按钮')
+})
+
+test('死亡状态按快照字段启用复活，并禁用弄死和治病', () => {
+  const { document } = fakeDom()
+  globalThis.document = document
+  const content = document.createElement('div')
+  const ui = {
+    content,
+    view: {
+      ...SNAPSHOT, dead: true, hatched: true,
+      pig: { ...PIG, illness: { chain: 0, stage: 1 } },
+    },
+    send() {}, devOff() {}, setOpen() {}, renderContent() {}, host: { getAttribute: () => 'false' },
+  }
+  assert.equal(Object.hasOwn(ui.view.pig, 'dead'), false, 'normalized pig 没有 dead 字段')
+  renderDevTab(ui)
+  assert.equal(findByAttr(content, 'data-dev', 'revive').disabled, false)
+  assert.equal(findByAttr(content, 'data-dev', 'kill').disabled, true)
+  assert.equal(findByAttr(content, 'data-dev', 'cure').disabled, true)
+})
+
+test('纸盒可以先设满状态或拆盒，但不能直接测试死亡', () => {
+  const { document } = fakeDom()
+  globalThis.document = document
+  const content = document.createElement('div')
+  const ui = {
+    content,
+    view: { ...SNAPSHOT, dead: false, hatched: false, pig: { ...PIG, illness: null } },
+    send() {}, devOff() {}, setOpen() {}, renderContent() {}, host: { getAttribute: () => 'false' },
+  }
+  renderDevTab(ui)
+  assert.equal(findByAttr(content, 'data-dev', 'full').disabled, false, '满状态会保留到拆盒后')
+  assert.equal(findByAttr(content, 'data-dev', 'kill').disabled, true)
+  assert.equal(findByAttr(content, 'data-dev', 'lv1').disabled, false, '幼年 Lv1 会拆盒')
+})
+
+test('免打扰开启时禁用开发者台词入口并说明原因', () => {
+  const { document } = fakeDom()
+  globalThis.document = document
+  const content = document.createElement('div')
+  const ui = {
+    content,
+    view: { ...SNAPSHOT, dialogue: { ...SNAPSHOT.dialogue, quiet: true }, pig: { ...PIG } },
+    send() {}, devOff() {}, setOpen() {}, renderContent() {}, host: { getAttribute: () => 'false' },
+  }
+  renderDevTab(ui)
+  assert.equal(findByAttr(content, 'data-dev', 'say:eat').disabled, true)
+  assert.ok(content.allText().includes('免打扰已开，先关闭后才能让猪说话'))
+})
+
 test('死了的猪：形态按钮置灰并写明「先复活」', async () => {
   const status = { ...SNAPSHOT, dead: true, pig: { ...PIG, soul: true } }
   const { dom } = await openDevTab({ status })

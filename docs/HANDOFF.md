@@ -1,5 +1,19 @@
 # dsh-piggy 维护交接文档（2026-10-21 更新，游戏 0.37.1 / 外壳 0.6.7）
 
+2026-10-25 礼包侧边方案已获用户确认并实装：讲话时待领礼包向工作区内侧摆放，讲话结束回头顶；跨到期按住仅固定按钮至点击后，不延长讲话。修前原生跨到期0领取、按钮提前上移约62px；修后Linux split/stage、100%/200%共5个场景均单次领取、0 touch/pet、猪脚底不动；Windows125%按住跨到期领取并消失通过。1755项及类型检查通过。本地已备份同档同步，仍split、菜园4.1.5，PID711908；仅CLI文件/启动日志核对物理预览，未做物理GUI/CDP验收。未公开发布。
+
+2026-10-25 12:36收尾：已备份同档同步启动诊断与当前游戏候选，本地仍split、菜园4.1.5，PID663785；复制期间存档逐字节不变、身份字段保留、两页加载日志正常，未做物理GUI/CDP测试。备份 `/zyx/agents/codex/deliverables/piggy-work/local-sync-20261025/123606-maintenance-farm-4.1.5/`。完整官方Windows包外网阻断冷启动、原生孵化/菜单已通过，临时防火墙规则已清理；npm账号只读检查E401，可信发布未绑定/未启用。1752项及类型检查通过，未提交/公开发布。
+
+2026-10-25 用户要求六款新猪/钓鱼先等，其他先做。三个PI任务均经火山ARK完成：启动诊断补缺、只读气泡审计、npm发布候选；root原生VM复核后发现并修过早弹框失败，Windows125%缺模块错误框与日志/重复启动已验证。舞台底边往返18px偏移已修0，Linux常规/200%扩展及Windows125%穿透、拖后释放、键盘交还/扩展操作通过；六轮资源采样只支持单屏有限结论，多屏和完整回归仍未完成，默认split。签到回执候选仅在隔离副本把待领礼包移到侧边，已提审，生产未改。发布候选未启用、账号未改、未发包。最新证据和待办见ROADMAP当前汇总及 `/zyx/agents/codex/deliverables/piggy-work/remaining-20261025/`。
+
+本地已于11:53备份后同档同步4.1.5并重启，PID556098；复制期间存档不变、身份信息保留、两页启动日志通过。首次重启遇会话更新后的失效X认证文件，改用当前Xwayland认证后启动成功；仅CLI文件/日志核对，未做物理GUI/CDP测试。备份：`/zyx/agents/codex/deliverables/piggy-work/local-sync-20261025/115302-farm-4.1.5`。
+
+2026-10-25 菜园4.1.5候选：用户接受4.1.4主体，仅要求小农场三个图文入口稍小、选地回到A原型四角短标。小农场导航图片40→32px、实测高度75.19→62.19px；抽屉11个工具与大农场导航仍40px。选地/键盘焦点改为四角浅底青色标记，取消整圈蓝框。Linux VM原生选地、工具展开、背包往返与大农场通过，页面错误0；全仓1715项和类型检查通过。当前Windows未重验；未公开发布。
+
+2026-10-24 新候选4.1.4：用户退回4.1.3的标题被替换、侧栏、纯文字小工具与文字返回胶囊。现保留菜园标题/大农场在菜币左边，工具恢复40px图文、详情与工具放回菜地下方；返回直接复用系统圆箭头。普通空地不显示大号去买种子，有效快捷动作收进详情。VM常规/125%原生通过，200%隔离补测也通过；131相关与1715全量检查通过，类型检查通过。最新同一审阅页；22:07已备份同档同步本地4.1.4，PID4023273，文件与启动日志通过，未做物理GUI/CDP验收，未公开发布。
+
+2026-10-24 后续候选：菜园4.1.3按用户六项明确反馈改成三入口/工具下展/背包三分类/图标商店、大农场左右分区与灰暗荒地、单一返回；另修鼠标focus提前重绘吞首击及滚动条导致场景变宽。Linux原生完整操作通过、125%通过，200%也已通过；1714全过/类型检查通过。固定审阅页 `http://127.0.0.1:9388/farm-navigation.html`；用户随后要求同步，21:30已备份同档更新本地4.1.3，PID3946271；文件与启动日志核对通过，未做物理GUI/CDP测试，未公开发布。stage两轮ARK代码/审查已返回并构建，原生舞台验收尚未完成；详情与证据见ROADMAP当前段落。
+
 > 给接手维护的 DeepSeek / 任何 agent / 开发者。最短的入口是仓库根目录的 [AGENTS.md](../AGENTS.md)（红线和文档地图），这一页是完整的现状和流程。
 > 本页取代 [2026-10-03 的交接记录](archive/HANDOFF-2026-10-03.md)（那份停在 v0.27，只作历史参考）。
 > 有冲突时以：用户最新的话 > 本页当前状态 > 其它文档 > 旧任务卡 为准。部署步骤保留作流程参考，具体版本状态以本节为准。
@@ -179,6 +193,8 @@ node node_modules/electron/install.js
 
 ## 8. 调试与测试环境
 
+> 界面测试边界补充（2026-10-24）：用户要求的“虚拟机测试”包括无头浏览器、DOM尺寸/布局测量与截图，不能把“无头”解释为允许在物理机测试。物理机仅做CLI逻辑、构建、文件/日志核对；渲染测试使用独立VM实例。
+
 > **界面验证去虚拟机里做**（用户 2026-10-09）：别在维护者自己正用的电脑上开桌面版窗口截图——会打扰用户工作。Linux、Windows 各有一台测试虚拟机，账号和地址不进仓库，问维护者。纯逻辑照旧 `npm test`。
 
 ### 8.1 网页版（DSH 插件）——用隔离实例，别碰用户正在用的 DSH
@@ -244,7 +260,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
    - `.github/workflows/release-gitee.yml` → **只构建** Gitee 渠道的游戏包和 Windows 安装包，存成 artifact，不往 Gitee 推。
    然后在**本机**：`GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`（推代码和标签、建发行版、传附件、核对、删旧安装包，见 9.4）。
 4. 等两边都绿，核对两边的附件齐全（GitHub `gh release view vX`；Gitee 看发行版页面）。
-5. **npm 手动发**（CI 不发）：
+5. **npm 由维护者确认发布**：可用 `.github/workflows/npm-publish.yml` 的 `inspect`（默认只读）核对后，维护者选择 `publish` 走 OIDC；首次需在两个包设置 GitHub Actions Trusted Publisher（`CLICGGER-TYPES` / `dsh-piggy` / `npm-publish.yml`，Environment 留空，允许 `npm publish`）。真实 npm 发布不得未经授权执行。旧的本机手动路径仍可使用：
    ```bash
    cd code && npm login && npm publish --access public && npm view dsh-piggy version
    cd packages/dsh-plugin-piggy && npm publish --access public && npm view dsh-plugin-piggy version
@@ -341,3 +357,19 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 - 开发：[开发指南](DEVELOPMENT.md) · [编码规范](CONVENTIONS.md) · [设计说明](DESIGN.md) · [美术规格](ART-SPEC.md) · [扩展下载](design/extension-download.md) · [扩展成就](design/extension-achievements.md) · [扩展中心设计](design/extension-center.md) · [日志与导出](design/log-export.md)
 - 规划与素材：[路线图与待办](ROADMAP.md) · [素材总表](ASSETS.md) · [数值单](numbers/) · [经济设计](design/economy.md) · [扩展自动化（K1）](design/automation.md)
 - 历史：[CHANGELOG](../CHANGELOG.md) · [任务卡](archive/tasks/README.md) · [数值单](numbers/) · [开发过程记录](archive/PROCESS.md) · [旧交接 2026-10-03](archive/HANDOFF-2026-10-03.md)
+
+### 2026-10-24 菜园候选发布依赖
+
+菜园4.1.0和经典3.1.1共用v5数据服务端；新宿主在导入前拒绝会误迁移v5数据的3.1.0/4.0.x旧包。当前工作树未发版，正式发布前必须先确定含此保护的游戏版本，并把两种菜园的`minGame`同步到该版本，再生成目录/官方哈希/扩展包；不能将新菜园先发布给没有此保护的旧宿主。首课已确认数值见[农场首课数值](numbers/farm-onboarding.md)。服务端改`src/extensions/farm/`后跑`npm run build`，不要手改生成的`extensions/farm/server.js`。
+
+> 2026-10-24 本地同步：用户明确要求同步后，已备份原游戏包、扩展和存档，更新物理机现有 codex-preview 游戏包并重启同一存档；菜园4.1.0、藏猪方块0.2.6已同步，钓鱼与回复/外出照顾更新随游戏包载入。仅核对文件哈希、进程与启动日志，未在物理机进行GUI/CDP测试。搏斗动作草稿未纳入。备份位于 `/zyx/agents/codex/deliverables/piggy-work/local-sync-20261024/175056`。
+
+> 2026-10-24 菜园复验：用户指出4.1.0原型还原与鼠标操作均不合格，撤回此前菜园验收结论。4.1.1修正地块选择、主按钮直接照料、工具层收起、页面切换滚动、短面板购买框裁切与纸感工具。Linux VM 100/125/200%原生输入验证，窗口高度不够时使用单层外部滚动；尚未重跑此版Windows UI。界面对照页沿用 deliverables/piggy-review/designs.html。新素材出处见扩展paper-tools-art-pack.json。正式发布前minGame配套保护约束仍有效。
+
+> 菜园4.1.1复验后已于2026-10-24同步现有本地codex-preview并保留原档；备份 `deliverables/piggy-work/local-sync-20261024/182418`。游戏client文件SHA与源一致，物理机只核对文件、进程、启动日志，无GUI/CDP操作。
+
+> 2026-10-24 再次返工：用户反馈4.1.1大农场仍为旧菱形UI、高级工具图标撑满圆按钮，撤回4.1.1的视觉验收。本轮4.1.2候选共用大小窗口组件，去除旧菱形场景/长工具栏，按钮复用标准dp-btn/dp-mini，工具图标独立限幅28px。高缩放复验另修正外壳扩展窗口minWidth/minHeight撑出工作区。候选审阅页 `deliverables/piggy-review/farm-review.html`，尚未同步/重启本地。窗口尺寸修复在外壳源码，不能只更新游戏包就宣称玩家已获得外壳修复。
+
+> 本轮复验补充：常用/高级工具图标28px、商店页签18px；控件普通/悬停/按下/选中状态已原生鼠标核对。锁定工具和缺少肥料分别跳对应货架；买种子主操作显式回种子货架。125%/200%分别走通大小窗口的选地、工具、购买取消、返回，低高度保留单层滚动。未同步本地。
+
+> 2026-10-24 19:40 用户明确要求本地同步：菜园4.1.2与扩展窗口工作区尺寸修复已同档重启codex-preview。同步前完整备份 `/zyx/agents/codex/deliverables/piggy-work/local-sync-20261024/194009`；仅同步菜园扩展与游戏包，核对文件SHA和启动日志，未在物理机执行GUI/CDP测试。未正式发布。

@@ -7,6 +7,8 @@
  */
 import { ACT_URL, NO_ITEM_LINE, STATE_URL } from './constants.js'
 import { el } from './dom.js'
+import { normalizePending } from './normalize.js'
+import { processPending } from './pending.js'
 import { createPomodoroClock } from './pomodoro-clock.js'
 import { pollKey } from './poll-key.js'
 import { record } from './journal.js'
@@ -23,21 +25,21 @@ export function createIo(ctx) {
       /** 上一次画到面板上的那份快照的「画面指纹」（见 poll-key.js）。 */
       var paintedKey = null
 
-      // Extension grids expose several independent targets at once. Keep their
-      // clicks in arrival order instead of dropping them behind the busy guard.
+      // Keep extension clicks and conversation replies in arrival order. A reply
+      // must not disappear just because the previous host request is still pending.
       var actionTail = Promise.resolve(null)
-      var pendingExtensions = 0
+      var pendingQueued = 0
 
       function send(action, extra, options) {
         // touch 是后台互动：不能占 busy，否则紧接着的 pet/拖动会被丢掉。
         if (action === 'touch') return perform(action, extra, { background: true })
-        if (action === 'ext') {
-          pendingExtensions += 1
+        if (action === 'ext' || action === 'reply') {
+          pendingQueued += 1
           var queued = actionTail.then(function () { return perform(action, extra) })
           actionTail = queued.catch(function () { return null })
-          return queued.finally(function () { pendingExtensions -= 1 })
+          return queued.finally(function () { pendingQueued -= 1 })
         }
-        if (ctx.busy || pendingExtensions > 0) return Promise.resolve(null)
+        if (ctx.busy || pendingQueued > 0) return Promise.resolve(null)
         var running = perform(action, extra, options)
         actionTail = running.catch(function () { return null })
         return running
@@ -76,6 +78,7 @@ export function createIo(ctx) {
           // 动作结果不是 /state 的正文（多一个 ok/reason）：下一次轮询照旧重画一次，宁可多画也不漏。
           paintedKey = null
           ctx.render(next)
+          if (action === 'reply' && next?.ok === true) ctx.cancelNap?.()
           if (action === 'pet' && next?.ok === true && options?.petAnimated !== true) ctx.petShy?.()
           // 现代宿主由 pending 合并奖励和台词；旧宿主没有奖励事件时才补回执，避免覆盖回复。
           if ((action === 'signIn' || action === 'openGift') && next?.ok === true
@@ -176,7 +179,16 @@ export function createIo(ctx) {
           var next = await res.json()
           // An action landed while this poll was in flight: its result is newer
           // than ours, so painting ours would undo what the user just did.
-          if (startedAt !== actionSeq) return
+          // But this poll may be the request that took a message out of the
+          // store queue (a reply follow-up, a work notice). Its state is stale;
+          // its pending messages are already consumed and must still be shown.
+          if (startedAt !== actionSeq) {
+            // Replay consumed messages without painting this stale state.
+            if (!ctx.stopped && Array.isArray(next.pending) && next.pending.length > 0 && typeof ctx.showPigLine === 'function') {
+              processPending(ctx, ctx.showPigLine, normalizePending(next.pending))
+            }
+            return
+          }
           // 快照「画面上」没变就不重画：整块内容（菜园一屏 160 个节点、52 张图）拆了重建是白干，
           // 顺手还会把悬停卡、开着的弹层抹掉。指纹按显示精度压过（见 poll-key.js）。
           var key = pollKey(next)

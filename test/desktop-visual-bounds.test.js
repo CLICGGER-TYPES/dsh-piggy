@@ -77,3 +77,26 @@ test('initial placement fits an old edge save once and remains stable across rep
     assert.deepEqual(placement.home(),fitted)
   }
 })
+
+test('stage bottom-edge settlement preserves the same feet when split mode restores that home', async () => {
+  const { pigEnvelope } = await import('../src/client/stage-dom.js')
+  const { constrainRectToAreas } = await import('../src/client/stage-position.js')
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  try {
+    globalThis.document = { body: {} }
+    for (const size of [54, 72, 128]) {
+      const node = { offsetLeft: 500, offsetTop: 800-size, offsetWidth:size, offsetHeight:size, offsetParent:null }
+      const bound = pigEnvelope(node)
+      const moved = constrainRectToAreas(bound, [{x:0,y:0,width:1280,height:800}])
+      const target = { x: node.offsetLeft + moved.offset.x, y: node.offsetTop + moved.offset.y }
+      const local = { x: 120, y: 100, width:size, height:size }
+      const placement = createPlacement()
+      placement.rehome(target, {x:0,y:0,width:size,height:size}, [{x:0,y:0,width:1280,height:800}])
+      placement.decide({width:400,height:400,pig:local,pigNow:local,pigWindow:local,visual:bodyVisualBounds(local),artMargin:artMarginFor(size)}, {x:0,y:0,width:400,height:400}, [{x:0,y:0,width:1280,height:800}])
+      assert.ok(Math.abs(placement.home().y-(target.y+size)) <= 1, `size ${size}: split must not move stage feet again`)
+    }
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis,'document',descriptor)
+    else delete globalThis.document
+  }
+})

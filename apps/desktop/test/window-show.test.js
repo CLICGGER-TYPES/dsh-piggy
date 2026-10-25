@@ -58,6 +58,40 @@ test('超时时间可以注入，默认 2 秒', () => {
   assert.equal(gate.timeout(), true)
 })
 
+test('status 说清显示门在等哪一步（只读诊断）', () => {
+  const gate = createShowGate({ platform: 'linux', timeoutMs: 2000, now: () => 0 })
+  assert.deepEqual(gate.status(0), {
+    ready: false, content: false, shown: false, pending: true, deferred: true, deadline: null, waiting: 'ready-to-show',
+  })
+  assert.equal(gate.readyToShow(0), false)
+  assert.equal(gate.status(100).waiting, 'content')
+  assert.equal(gate.status(1999).waiting, 'content')
+  assert.equal(gate.status(2000).waiting, 'timeout-fallback')
+  assert.equal(gate.content(), true)
+  assert.deepEqual(gate.status(2000), {
+    ready: true, content: true, shown: true, pending: false, deferred: true, deadline: 2000, waiting: null,
+  })
+})
+
+test('status 不改显示状态：反复读和只看日志一样', () => {
+  const gate = createShowGate({ platform: 'win32', timeoutMs: 2000, now: () => 0 })
+  assert.equal(gate.status(0).waiting, 'ready-to-show')
+  assert.equal(gate.status(0).waiting, 'ready-to-show')
+  assert.equal(gate.readyToShow(0), true)
+  assert.deepEqual(gate.status(0), {
+    ready: true, content: false, shown: true, pending: false, deferred: false, deadline: 2000, waiting: null,
+  })
+})
+
+test('ready-to-show 一直不来时显示门永远 pending：只记诊断，不替它强推', () => {
+  for (const platform of ['win32', 'linux']) {
+    const gate = createShowGate({ platform, timeoutMs: 2000, now: () => 0 })
+    assert.equal(gate.timeout(60000), false)
+    assert.equal(gate.pending, true)
+    assert.equal(gate.status(60000).waiting, 'ready-to-show')
+  }
+})
+
 test('启动不再先设空形状再按兜底尺寸显示（避免 Xwayland resize 崩溃）', () => {
   const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   assert.ok(!/^\s*applyShape\(\[\]\)/m.test(source), 'main.js 不应在内容上报前设置空形状')

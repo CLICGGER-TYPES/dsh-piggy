@@ -4,6 +4,30 @@ import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { SNAPSHOT, contentOf, findByAttr, findByClass, mount, openPanel, settle } from './helpers/bundle.js'
 
+test('气泡大小可加减和输入，独立保存，轮询不打断正在输入的比例', async () => {
+  const { dom, store, intervals } = await mount({ store: { 'dsh-piggy:pig-size': 'scale:2' } })
+  openPanel(dom)
+  findByAttr(contentOf(dom), 'data-app', 'settings').fire('click')
+  await settle()
+  const percent = findByAttr(contentOf(dom), 'data-bubble-scale', 'true')
+  assert.equal(percent.value, '100')
+  findByAttr(contentOf(dom), 'data-bubble-size-step', 'plus').fire('click')
+  assert.equal(percent.value, '110')
+  findByAttr(contentOf(dom), 'data-bubble-size-step', 'minus').fire('click')
+  assert.equal(percent.value, '100')
+  percent.value = '200'
+  percent.fire('change')
+  assert.equal(store.get('dsh-piggy:bubble-size'), '2')
+  assert.equal(store.get('dsh-piggy:pig-size'), 'scale:2')
+  percent.value = ''
+  percent.fire('change')
+  assert.equal(percent.value, '200')
+  dom.document.activeElement = percent
+  for (const timer of intervals.filter(timer => timer.delay === 4000)) await timer.fn()
+  await settle()
+  assert.equal(findByAttr(contentOf(dom), 'data-bubble-scale', 'true'), percent)
+})
+
 test('扩展收进设置；有扩展更新时设置方块和入口都有红点，返回设置', async () => {
   const extensions = [
     { key: 'pomodoro', label: '番茄钟', on: true, installed: true, builtin: true, apps: ['pomodoro'], dexSections: [], shopKinds: [] },

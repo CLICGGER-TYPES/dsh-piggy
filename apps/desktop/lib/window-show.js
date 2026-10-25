@@ -54,5 +54,17 @@ export function createShowGate({ platform, timeoutMs = SHOW_FALLBACK_MS, now = (
     get pending() {
       return !shown
     },
+    /**
+     * 诊断用快照：显示门现在在等哪一步（只读，不改显示状态）。
+     * main.js 在页面加载完、显示兜底、渲染进程退出时把它写进启动日志。
+     */
+    status(at = now()) {
+      let waiting = null
+      if (!shown) {
+        if (!ready) waiting = 'ready-to-show'
+        else if (defer && !contentReady) waiting = deadline !== null && at >= deadline ? 'timeout-fallback' : 'content'
+      }
+      return { ready, content: contentReady, shown, pending: !shown, deferred: defer, deadline, waiting }
+    },
   }
 }

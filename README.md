@@ -4,32 +4,28 @@
 
 <p align="center">一只住在 <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a> 里，也能独立住在桌面上的猪。</p>
 
-养一只会长大、上学、打工、旅行，也会跟你搭话的小猪。用鼠标就能完成全部玩法；忙的时候，它会用背包里的东西照顾自己。游戏不注册模型工具，也不向对话注入宠物状态，照顾小猪不消耗模型 token。
+养一只会长大、上学、打工、旅行，也会跟你搭话的小猪。玩法是 QQ 宠物式的单机养成，界面是动森 NookPhone 风格；同一份代码有两种形态：住在 DeepSeek Harness 网页里的 DSH 插件，和独立的桌面版。鼠标就能完成全部玩法；忙的时候，它会用背包里的东西照顾自己。游戏不注册模型工具，也不向对话注入宠物状态，照顾小猪不消耗模型 token。
 
-本版包含：居民卡新名字最多 5 字、旧长名字换行显示，以及桌面面板切页定位、开面板跨屏拖动跟随修复。候选现已支持 12 种性格及性格关联聊天；原猪性格身份、自定义口头禅和签名保留。当前 71 个场景、1008 条主台词见[完整审阅清单](docs/numbers/lines-current-20261021.md)。
+## 快速安装与稳定版下载
 
-## 界面预览
+> **当前稳定版：游戏与 DSH 插件 0.37.1，桌面外壳 0.6.7。** 下面的安装、下载和玩法都指这个正式版；预览版单独提供，以下稳定版下载不包含 RC。
 
-大农场可以在 DSH 中展开，也能在桌面版里开独立窗口。种菜、浇水、除草、收菜，或者雇帮工猪替你照料。
+| 部分 | 稳定版 |
+|---|---|
+| 游戏与 DSH 插件 | 0.37.1 |
+| 桌面外壳 | 0.6.7 |
+| 菜园扩展 | 4.0.10；经典兼容版 3.1.0，均单独发布 |
+| 矿洞扩展 | 3.0.1，单独发布 |
 
-<p align="center">
-  <img src="docs/screenshots/readme-rc-farm-big.png" width="900" alt="本次 RC的真实界面：大农场、地块和底部工具栏">
-</p>
+稳定版下载：
 
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/readme-rc-home.png" width="290" alt="本次 RC：小猪旁的 App 主菜单"><br>主菜单</td>
-    <td align="center"><img src="docs/screenshots/readme-rc-farm-small.png" width="290" alt="本次 RC：面板中的小农场与照料工具"><br>小农场</td>
-  </tr>
-</table>
+- [GitHub 稳定版 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
+- [Gitee 稳定版 0.37.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1)
+- [夸克网盘：Windows 国内渠道](https://pan.quark.cn/s/2c571e9aaecc)
 
-以上为游戏 **0.37.1-rc.1 / 菜园 4.0.9** 的实际截图（主菜单和小农场页面本次未改）；来源和拍摄条件见[截图记录](docs/screenshots/readme-rc-capture.md)。当前正式版为游戏 **0.37.1 / 外壳 0.6.7**。在线菜园已更新到 **4.0.10**。
+夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者手动发布；如果默认源尚未同步，以发布页上的版本为准。
 
-未发布的源码候选已加入五种体型药水（各 100 金币，支持切换胖瘦、锁定与解除），并修复体型变化后的裁切及跨屏抛掷问题；当前公开 RC 尚不包含这些变化。
-
-## 安装
-
-可以只装 DSH 插件，也可以只养桌面猪。目前两种形态使用独立存档；桌面版可从 DSH 导入，具体见[桌面版指南](docs/guides/desktop.md)。可选的外部桌宠模式与合并同步仍在[讨论设计](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/14)，本版尚未加入。
+预览版下载：[GitHub 0.37.2-rc.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.1)。Windows 安装版与便携版已在虚拟机验证；Linux/macOS 安装包构建结果与验收范围见发布页。
 
 ### DSH 插件
 
@@ -43,7 +39,7 @@ dsh plugin --profile web add dsh-piggy
 
 ### 桌面版
 
-从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户也可用 [Gitee 发行版](https://gitee.com/clicgger/dsh-piggy/releases)，其检查更新、游戏包与在线扩展走 Gitee；Linux 和 macOS 安装包只在 GitHub 提供。
+从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户也可用 [Gitee 发行版](https://gitee.com/clicgger/dsh-piggy/releases)。Linux 和 macOS 安装包只在 GitHub 提供。
 
 | 系统 | 下载文件 |
 |---|---|
@@ -51,11 +47,28 @@ dsh plugin --profile web add dsh-piggy
 | Linux | `AppImage`，添加执行权限后运行 |
 | macOS | Apple 芯片选 `arm64.dmg`，Intel 选 `x64.dmg` |
 
-macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。更多说明见[安装与存档](docs/guides/desktop.md)。
+macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。更多说明见[桌面版安装与存档](docs/guides/desktop.md)。
 
-游戏包和桌面外壳分别更新：「设置 → 更新」可查看两个版本。Windows 安装版和 Linux AppImage 支持在 App 内下载并重启安装外壳；Windows 便携版及未签名 macOS 版需到发布页手动替换。游戏 v0.33.0 起需要 0.6.x 外壳，旧外壳会保留自带游戏并提示先升级桌面程序。详见[更新说明](docs/guides/updates.md)。
+## 精选界面预览
 
-## 开始养猪
+以下三张为 0.37.2-rc.1 在 Linux 测试虚拟机中的实拍，用于展示预览版界面；不能当作稳定版截图。稳定版界面仍以 0.37.1 为准。拍摄条件与校验值见[截图记录](docs/screenshots/readme-current-capture.md)。
+
+<p align="center">
+  <img src="docs/screenshots/readme-current-farm-big.png" width="900" alt="当前开发候选：大农场、地块和底部工具栏">
+</p>
+
+<p align="center">大农场：18 块地、顶部状态和下方工具区</p>
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/readme-current-home.png" width="290" alt="当前开发候选：小猪旁的 App 主菜单"><br>主菜单</td>
+    <td align="center"><img src="docs/screenshots/readme-current-farm-small.png" width="290" alt="当前开发候选：面板中的小农场与照料工具"><br>小农场</td>
+  </tr>
+</table>
+
+大农场可以在 DSH 中展开，也能在桌面版里开独立窗口。种菜、浇水、除草、收菜，或者雇帮工猪替你照料。
+
+## 新手上手
 
 1. 第一次见到“猪递”纸盒时，连续点三下，把猪接回家。
 2. 左键摸摸它，右键打开主菜单；桌面版拖动小猪可以换位置。
@@ -64,50 +77,43 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 详细玩法和命令见[玩法指南](docs/guides/gameplay.md)。
 
-## 可以玩些什么
+## 玩法简述
 
 | 玩法 | 内容 |
 |---|---|
-| 养成与生活 | 成长、学习、工作、旅行、生病与照顾；33 种职业支持短班，15 个旅行地点可带回 52 种纪念品。离开时自动吃东西、洗澡、玩玩具，回来有记录 |
+| 养成与生活 | 成长最高 60 级；33 种职业支持短班，15 个旅行地点可带回 52 种纪念品；12 种性格、1008 句台词；离开时自动吃东西、洗澡、玩玩具，回来有记录 |
 | 菜园 | 29 种作物、18 块地，按真实时间生长，离线照算；浇水、除草、杀虫、施肥、多季收获，也能雇帮工猪。小农场与大农场共用同一份进度 |
 | 矿洞 | 20 层矿洞、5 级镐，探索矿脉、宝箱、化石与电梯；可雇小矿工猪 |
 | 盲盒与扭蛋 | 盲盒有 3★～6★ 摆件、卡池与保底，收藏进图鉴；三台扭蛋机每天首次免费，幸运值满 20 必出金色 |
 | 钓鱼与番茄钟 | 40 种鱼、4 个钓点、4 把鱼竿，三种收线玩法；也能让猪自己出门钓鱼，或陪你专注一段时间 |
-| 外观与收藏 | 免费内置皮肤、职业外观、自定义 PNG 皮肤包（兼容原 SVG 包），以及成就、纪念品和摆件图鉴 |
-| 桌面陪伴 | 猪与面板分成两个窗口；大小按百分比调，可设网络代理和全屏时隐藏。猪会眨眼、打滚、打盹、追蝴蝶，散步默认关闭 |
+| 外观与收藏 | 免费内置皮肤、职业外观、自定义 PNG 皮肤包（兼容原 SVG 包）、五种体型药水，以及成就、纪念品和摆件图鉴。基础 16 项成就，菜园、矿洞、扭蛋和盲盒各有 3 项扩展成就 |
+| 桌面陪伴 | 猪与面板分成两个窗口；小猪大小按百分比调整，可设网络代理和全屏时隐藏。猪会眨眼、打滚、打盹、追蝴蝶，散步默认关闭 |
 
-金币按来源记账，扩展可以有自己的币，并按汇率兑换；删除扩展时余额自动换回金币。扩展可单独开关、删除、更新；当前菜园版本 4.0.10 需要游戏 0.37.0。在线扩展只安装本项目发布并通过校验的文件，详见[扩展安装说明](docs/design/extension-download.md)。
+金币按来源记账，扩展可以有自己的币，并按汇率兑换；删除扩展时余额自动换回金币。扩展可单独开关、删除、更新；在线扩展会检查最低游戏版本，只安装本项目发布并通过校验的文件，详见[扩展安装说明](docs/design/extension-download.md)。
 
 小猪使用一套无描边平涂透明 PNG，不同状态会换成对应立绘；支持内置彩色 emoji 字体与系统字体切换。商店、背包中的“装扮”入口暂时隐藏，已有记录保留。换肤见[玩家教程](docs/guides/skins.md)，自定义皮肤从[制作教程](docs/guides/creating-skins.md)开始。
 
-遇到问题时，可到「设置 → 日志 → 导出日志」保存运行记录；桌面版会弹出“另存为”。日志包含版本、动作、扩展下载与报错，方便反馈时定位。
+## 更新、存档与问题反馈
 
-## 正式版：0.37.1
+### 更新
 
-| 部分 | 版本 |
-|---|---|
-| 游戏与 DSH 插件 | 0.37.1 |
-| 桌面外壳 | 0.6.7；跨屏、面板及裁切修复需更新外壳 |
-| 菜园扩展 | 4.0.10；经典兼容版 3.1.0，均单独发布 |
-| 矿洞扩展 | 3.0.1，单独发布 |
+游戏包和桌面外壳分开更新：「设置 → 更新」会分别显示两个版本。Windows 安装版和 Linux AppImage 支持在 App 内下载并重启安装外壳；Windows 便携版及未签名 macOS 版需到发布页手动替换。旧外壳会保留自带游戏，并提示先升级桌面程序。详见[更新说明](docs/guides/updates.md)。
 
-本版加入 12 种性格、性格关联聊天和总计 1008 句台词；支持普通猪摸摸小手、五种体型药水，并修复开菜单气泡移位、切页跳动、跨屏拖动/抛掷及礼包提示覆盖。旧档继续使用，存档版本仍为 v14。完整改动见 [CHANGELOG](CHANGELOG.md)。
+### 存档
 
-<p><img src="docs/screenshots/readme-0371-card.png" width="292" alt="0.37.1 居民卡与性格选项"><img src="docs/screenshots/readme-0371-gift.png" width="364" alt="0.37.1 礼包奖励和台词同时保留"></p>
+DSH 插件和桌面版目前各养一只猪，存档独立；桌面版可从 DSH 导入。稳定版「设置 → 存档」提供完整 ZIP 导出、导入预览、失败恢复与替换前自动备份，DSH 和桌面可手动迁移；只做整档替换，不合并两只猪。存档版本为 v14，旧档继续使用。备份范围、上限与验收要求见[存档传输说明](docs/design/save-transfer.md)。
 
-以上为 Linux 测试虚拟机的实际截图，来源见[截图记录](docs/screenshots/readme-rc-capture.md)。Windows、macOS 与混合缩放多屏上的新增修复未逐项实机复测；历史日历/礼物偶发误触摸摸仍继续跟踪。
+### 问题反馈
 
-正式版下载：[GitHub 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1) / [Gitee 0.37.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1) / [夸克网盘（Windows 国内渠道）](https://pan.quark.cn/s/2c571e9aaecc)。npm 仍由维护者手动发布，发布前默认 DSH 安装命令可能仍指向上一稳定版。
+遇到问题时，可到「设置 → 日志 → 导出日志」保存运行记录；桌面版会弹出“另存为”。日志包含版本、动作、扩展下载与报错，方便反馈时定位。请附上游戏/外壳/扩展版本、系统与缩放、操作步骤和日志，到 [GitHub Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 或 [Gitee Issues](https://gitee.com/clicgger/dsh-piggy/issues) 反馈。
 
-## 文档与开发
+## 开发文档
 
 - [文档中心](docs/README.md) · [玩法与养成规则](docs/guides/gameplay.md)
 - [桌面版安装与存档](docs/guides/desktop.md) · [游戏包与外壳更新](docs/guides/updates.md)
 - [在线扩展](docs/design/extension-download.md) · [经济体系](docs/design/economy.md)
 - [第三方 agent 接入](docs/guides/agent-adapters.md) · [开发与调试](docs/DEVELOPMENT.md)
 - [维护交接](docs/HANDOFF.md) · [路线图](docs/ROADMAP.md) · [版本记录](CHANGELOG.md)
-
-来自 PR #12/#13 的运行时提供进程内工作事件提交，以及默认关闭的本机认证接口。桌面源码或无窗口入口显式传入 `--work-events` 后开启；其他 agent 可以通过协议投递工作事件。DSH 当前仍向自己的内嵌猪提交，不会自动转发给桌宠。
 
 ```sh
 npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
@@ -116,9 +122,19 @@ npm test
 npm run typecheck
 ```
 
-欢迎画猪、报问题或贡献代码。当前立绘只有一套无描边平涂画风，原有形象与制作要求见[小猪画风](docs/art/pig-style.md)。可以先开 Issue 交流，也欢迎 Fork 项目，养一只符合自己喜好的猪。
+源码候选的改动和验收边界记在 [CHANGELOG](CHANGELOG.md) 的候选小节与 [ROADMAP](docs/ROADMAP.md)；候选不等于已发布功能。
 
-本 RC 的「设置 → 存档」提供 ZIP 导出、导入预览、失败恢复与替换前自动备份，DSH 和桌面可手动迁移；只做整档替换，不合并两只猪。备份范围、上限与验收要求见[存档传输说明](docs/design/save-transfer.md)。
+<details>
+<summary><strong>0.37.2-rc.1 预览版（外壳 0.6.8-rc.1）</strong></summary>
+
+- 桌面可选整屏透明舞台：保留双窗口为默认，已完成本轮 Windows/Linux 虚拟机回归，尚未切换默认。
+- 菜园 4.1.5 候选：清爽平涂纸感重排、缩小底部图文入口、选地改为四角标记；随本次 RC 提供。
+- 礼包侧边与跨到期点击：讲话时待领礼包向工作区内侧摆放，按住跨过自动关闭时间仍可领取；已在 Linux 和 Windows 虚拟机场景验证。
+- 桌面启动诊断与托盘恢复：补入口加载失败、重复启动、首帧前崩溃的提示和日志；托盘“恢复小猪”只恢复本机显示位置与 100% 比例，不动养成存档；该入口需要更新到配套外壳，单独更新游戏包不会增加托盘菜单。真实用户的启动问题仍需要日志定位。
+- 存档：本候选将养成存档从 v14 迁移到 v15；升级前应保留完整备份，回退旧游戏时恢复对应旧档。菜园 4.1.5 / 经典 3.1.1 候选要求游戏 0.37.2（本 RC 可用）。
+- 边界：Windows 500% 下自动消失的反馈尚未复现、尚未定位，恢复入口不是根因修复；macOS 未做原生验收。此版本仍为预览版，不能当成稳定版功能。
+
+</details>
 
 ## 贡献者
 
@@ -132,7 +148,7 @@ npm run typecheck
 | [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；按游戏能力控制 Windows 鼠标转发（[#19](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/19)），并协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)） |
 | [@Flappy-Boy](https://github.com/Flappy-Boy) | 反馈更新说明滚动回顶、菜园快速点击丢操作、矿洞连续挖掘站位异常，并提供复现步骤（[#16](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/16)、[#17](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/17)、[#18](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/18)） |
 
-想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)（Gitee 用户可以在 [Gitee 仓库](https://gitee.com/clicgger/dsh-piggy) 提 Issue）。合并进来的贡献会记在这张表里。
+欢迎画猪、报问题或贡献代码。当前立绘只有一套无描边平涂画风，原有形象与制作要求见[小猪画风](docs/art/pig-style.md)。可以先开 Issue 交流，也欢迎 Fork 项目，养一只符合自己喜好的猪。想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)（Gitee 用户可以在 [Gitee 仓库](https://gitee.com/clicgger/dsh-piggy) 提 Issue）。合并进来的贡献会记在这张表里。
 
 ## 致谢与许可
 

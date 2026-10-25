@@ -6,7 +6,7 @@
  * @module dsh-piggy/core/views
  */
 
-import { GRAVE, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SLEEPY_AFTER_MINUTES, SOUL, SOUL_AFTER_DAYS, SUBJECTS, THRESHOLDS, TRAITS, TRAIT_ORDER, TRIPS } from '../data.js'
+import { GRAVE, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SOUL, SOUL_AFTER_DAYS, SUBJECTS, THRESHOLDS, TRAITS, TRAIT_ORDER, TRIPS } from '../data.js'
 import { AWAY_MOODS, DIET } from './constants.js'
 import { clamp, clamp100 } from './effects.js'
 import { currentIllness, decay } from './settlement.js'
@@ -32,7 +32,6 @@ export function mood(state, nowMs) {
     return { ...base, emoji: state.activity.emoji || base.emoji }
   }
   if (state.satiety < THRESHOLDS.hungry) return { key: 'hungry', emoji: '🍎', label: '饿了' }
-  if (nowMs - state.lastActiveAt > SLEEPY_AFTER_MINUTES * 60000) return { key: 'sleepy', emoji: '💤', label: '睡着了' }
   if (state.happiness >= 75) return { key: 'happy', emoji: '❤️', label: '很开心' }
   if (state.happiness < THRESHOLDS.lonely) return { key: 'lonely', emoji: '🥺', label: '有点孤单' }
   return { key: 'fine', emoji: '😊', label: '还不错' }

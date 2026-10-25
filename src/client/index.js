@@ -5,6 +5,7 @@
  * before rendering. Framework loaders call mountGame through their own adapter.
  */
 
+import { attachDailyPlacement } from './daily-placement.js'
 import { createEffects } from './effects.js'
 import { createIo } from './io.js'
 import { installCapture, record } from './journal.js'
@@ -30,11 +31,19 @@ import { playPigPet } from './pig-actions.js'
 import { forceFeedbackArt, setArtSwapHook, syncPigArt } from './art.js'
 import { attachGestures } from './gestures.js'
 import { createFeel } from './feel/index.js'
+import { stageShell } from './stage-shell.js'
+import { createStageBridge } from './stage-bridge.js'
+import { bindRecovery } from './recover.js'
 import { configureSound } from './sound.js'
 import { createBirthday } from './birthday.js'
 import { attachSizePreference } from './pig-size.js'
-export function mountGame() {
+import { attachBubbleSizePreference } from './bubble-size.js'
+export function mountGame(mountOptions) {
     var devMode = false
+    // 整屏舞台是可选的挂载参数：网页版/默认桌面版不传，行为和以前完全一样。
+    var stageCandidate = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.stage : null
+    var stageOptions = stageCandidate !== null && typeof stageCandidate === 'object'
+      && (stageCandidate.role === 'stage' || stageCandidate.role === 'ext') ? stageCandidate : null
 
     function mount() {
       if (document.querySelector('[' + MOUNTED + ']') !== null) {
@@ -80,12 +89,17 @@ export function mountGame() {
        */
 
       var icons = {}
+      // 舞台里外壳仍是 null；位置、气泡、散步这类需要外壳的入口单独从适配器取。
+      function feelShell() { return desktopShell() ?? stageShell()?.feelShell?.() ?? null }
+      function moveShell() { return desktopShell() ?? stageShell()?.moveShell?.() ?? null }
+      function syncGeometry() { desktopShell()?.syncGeometry?.(); stageShell()?.syncGeometry?.() }
 
       // ---- state ----
       var view = normalize(null)
       var stopSizePreference = attachSizePreference(host,
         () => view.hatched ? view.pig?.stage : view.boxStage,
-        () => desktopShell()?.syncGeometry?.())
+        syncGeometry)
+      var stopBubbleSizePreference = attachBubbleSizePreference(host, syncGeometry)
       var tab = 'home'
       var stage = 'primary'
       // 用户自己点过学段之后，轮询就不许再替他改（B1 的「默认学段」只在没选过时生效）。
@@ -111,6 +125,7 @@ export function mountGame() {
       var fx = createEffects({
         scene: scene, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, card: card, bubble: bubble, pomoHint: pomoHint,
         isStopped: function () { return stopped },
+        isAway: function () { return view.activity !== null },
       })
       var react = fx.react, burst = fx.burst, flash = fx.flash
       var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast
@@ -120,9 +135,9 @@ export function mountGame() {
       var feel = createFeel({
         pig: pig, pigHold: pigHold, pigBody: pigBody, scene: scene, host: host,
         pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst),
-        getShell: desktopShell,
+        getShell: feelShell,
         isQuiet: function () { return view.dialogue.quiet === true },
-        onGeometry: function () { desktopShell()?.syncGeometry?.() },
+        onGeometry: syncGeometry,
       })
       configureSound({ isQuiet: function () { return view.dialogue.quiet === true } })
       setArtSwapHook(function (apply) { feel.coverSwap(apply) })
@@ -161,6 +176,7 @@ export function mountGame() {
         transform: fx.transform,
         showBubble: showBubble,
         showLine: showLine,
+        hideBubble: fx.hideBubble,
         toast: toast,
         get view() { return view }, set view(next) { view = next },
         get tab() { return tab }, set tab(next) { tab = next },
@@ -210,11 +226,36 @@ export function mountGame() {
       ctx.petShy = function () { playPigPet(pig) } // 摸猪害羞：本窗口直接播；面板窗口里 attachLife 是 null，wireSplit 会换成转发（PIG_FX: petShy）
       // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
       ctx.previewArt = function (name) { forceFeedbackArt(name); syncPigArt(pig, pigArt, pigEmoji) }
+      ctx.cancelNap = function () { if (ctx.life) ctx.life.cancelNap() }
       ctx.idleNow = function (key) { if (ctx.life) ctx.life.idleNow(key) }
       ctx.walkNow = function () { if (ctx.life) ctx.life.walkNow() }
       var birthday = createBirthday({ ctx: ctx, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: burst, render: function () { refresh() } })
       // 外壳 0.6.0 起猪和面板各一个窗口（split.js）；老外壳和网页版是 null。
       var splitRole = wireSplit(ctx, { refresh: function () { refresh() }, isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' } })
+      // 整屏舞台：只注册受限适配器，不改 window.__dshPiggyShell，网页版拖动/排版照旧。
+      var stageBridge = stageOptions === null ? null : createStageBridge({
+        options: stageOptions, ctx: ctx, host: host, pig: pig, bubble: bubble, card: card,
+        setOpen: setOpen, clampPig: clampPig, fitPanel: fitPanel,
+      })
+      // 托盘恢复只绑定猪窗口/舞台猪页一次；面板和扩展窗口不接，尺寸靠现有 storage 事件跟上。
+      /** @type {'pet'|'stage'|null} */
+      var recoveryRole = splitRole === 'pet' ? 'pet' : stageOptions !== null && stageOptions.role === 'stage' ? 'stage' : null
+      var stopRecovery = bindRecovery({
+        role: recoveryRole,
+        shell: recoveryRole === 'pet' ? deskShell : recoveryRole === 'stage' ? stageOptions : null,
+        host: host, pig: pig,
+        getStageSize: function () { return view.hatched ? view.pig?.stage : view.boxStage },
+        apply: function (home) {
+          if (recoveryRole === 'pet') deskShell.recoverHome(home.foot)
+          else stageBridge.recover(home)
+        },
+      })
+
+      var dailyGeometry = stageOptions ?? deskShell
+      var stopDailyPlacement = attachDailyPlacement({ host: host, pig: pig, daily: dailyHint, bubble: bubble,
+        geometry: function () { return dailyGeometry?.geometry?.() ?? null },
+        onGeometry: function (fn) { return dailyGeometry?.onGeometry?.(fn) },
+      })
 
       // 日常气泡（签到/礼包）的点击只在这里绑一次；它压在猪上面，事件不能冒泡给
       // 拖动和摸摸。
@@ -262,7 +303,11 @@ export function mountGame() {
         clampPig: clampPig, fitPanel: fitPanel,
         desktopShell: desktopShell, isDesktop: deskShell !== null,
         isPanelOpen: function () { return isOpen },
-        writePosition: function () { writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom })) },
+        writePosition: function () {
+          var stage = stageShell()
+          if (stage !== null) stage.setPosition(userRight, userBottom)
+          else writeStore(POSITION_KEY, JSON.stringify({ right: userRight, bottom: userBottom }))
+        },
       })
 
       scene.addEventListener('contextmenu', function (event) {
@@ -288,7 +333,7 @@ export function mountGame() {
       var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife({
         send: send, isStopped: function () { return stopped }, isBusy: function () { return busy },
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return gestures.isDragging() },
-        pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: desktopShell,
+        pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: moveShell,
         feel: feel,
       })
       ctx.life = life // 调试页「散步一次」「做个小动作」用
@@ -305,6 +350,8 @@ export function mountGame() {
         stopped = true
         panel.dispose()
         stopSizePreference()
+        stopBubbleSizePreference()
+        stopRecovery()
         updateNotice.stop()
         stopResize()
         autoCollapse.dispose()
@@ -315,6 +362,8 @@ export function mountGame() {
         dev.dispose()
         if (pollTimer !== null) window.clearInterval(pollTimer)
         life?.dispose()
+        stopDailyPlacement()
+        stageBridge?.dispose?.()
         setArtSwapHook(null)
         fx.setFeel(null)
         feel.dispose()

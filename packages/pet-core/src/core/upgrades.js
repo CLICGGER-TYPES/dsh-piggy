@@ -180,6 +180,22 @@ export const UPGRADES = Object.freeze([
     why: '垂危无病看医生的次数记在猪身上（看诊费按次数阶梯涨），老存档从 0 起',
     up(raw) { return { ...raw, version: 14, criticalDoctorVisits: raw.criticalDoctorVisits ?? 0 } },
   }),
+  Object.freeze({
+    to: 15,
+    why: '对话记录可选的原场景及总表下标，合法回复后接话；旧问题保留且不猜原句身份',
+    up(raw) {
+      const next = { ...raw, version: 15 }
+      const dialogue = raw.dialogue
+      if (dialogue === null || typeof dialogue !== 'object' || Array.isArray(dialogue)) return next
+      const open = dialogue.open
+      if (open === null || typeof open !== 'object' || Array.isArray(open)) return next
+      next.dialogue = { ...dialogue, open: { ...open,
+        scene: typeof open.scene === 'string' ? open.scene : null,
+        index: Number.isInteger(open.index) && open.index >= 0 ? open.index : null,
+      } }
+      return next
+    },
+  }),
 ])
 
 /** The oldest version the step table starts from; earlier saves are cleaned by migrate() alone. */

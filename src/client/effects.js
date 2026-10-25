@@ -9,11 +9,11 @@
 import { syncPigArt } from './art.js'
 import { PART_FX } from './pet-parts.js'
 import { el } from './dom.js'
-import { createRenderHold } from './render-hold.js'
+import { createSpeech } from './speech.js'
 
 /**
- * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean }} deps
- * @returns {{ react: Function, burst: Function, transform: Function, flash: Function, showBubble: Function, showLine: Function, toast: Function, dispose: Function, setFeel: Function }}
+ * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean, isAway?: () => boolean }} deps
+ * @returns {{ react: Function, burst: Function, transform: Function, flash: Function, showBubble: Function, showLine: Function, hideBubble: Function, toast: Function, dispose: Function, setFeel: Function }}
  */
 export function createEffects(deps) {
   var scene = deps.scene
@@ -26,9 +26,8 @@ export function createEffects(deps) {
 
   var reactTimer = null
   var feelHooks = null
-  var bubbleTimer = null
-  var replyHold = null
-  var bubbleVersion = 0
+  const speech = createSpeech({ bubble, pomoHint })
+  const { showBubble, showLine } = speech
   var transformTimer = null
   var transformLayer = null
 
@@ -143,88 +142,11 @@ var SPOKEN_BY_HOST = { feed: true, bathe: true, play: true, pet: true, work: tru
 function flash(action, extra) {
   var spec = REACTIONS[action]
   if (spec === undefined) return
-  react(spec.kind, spec.ms)
+  // 在外面做照料只给粒子反馈，不能把活动立绘换成喂食/洗澡的反应图（用户 2026-10-24）。
+  if (deps.isAway?.() !== true) react(spec.kind, spec.ms)
   var part = action === 'pet' && extra ? PART_FX[extra.part] : undefined
   burst(part ?? spec.fx, part ? part.length : spec.count)
   if (!SPOKEN_BY_HOST[action]) showBubble(spec.say, 1600)
-}
-
-function resetBubble() {
-  bubbleVersion += 1
-  if (bubbleTimer !== null) window.clearTimeout(bubbleTimer)
-  bubbleTimer = null
-  if (replyHold !== null) replyHold.dispose()
-  replyHold = null
-  return bubbleVersion
-}
-
-function expireBubble(version, restorePomo) {
-  if (version !== bubbleVersion) return
-  var close = function () {
-    if (version !== bubbleVersion) return
-    bubble.hidden = true
-    if (replyHold !== null) replyHold.dispose()
-    replyHold = null
-    if (restorePomo && pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute('data-pomo') !== 'on'
-  }
-  if (replyHold !== null && replyHold.defer(close)) return
-  close()
-}
-
-function showBubble(text, ms) {
-  var version = resetBubble()
-  bubble.setAttribute('data-bubble-shown', 'true')
-  bubble.textContent = ''
-  bubble.appendChild(el('span', 'dp-bubble-text', text))
-  bubble.hidden = false
-  // 角标让位：气泡和它挨着，宁可角标先消失也不能压住猪说的话。
-  if (pomoHint !== null) pomoHint.hidden = true
-  bubbleTimer = window.setTimeout(function () {
-    if (version !== bubbleVersion) return
-    bubbleTimer = null
-    // 气泡走了，专注还在就把角标放回来（面板每 4 秒也会按 data-pomo 重设一次）。
-    expireBubble(version, true)
-  }, ms || 2600)
-}
-
-/**
- * A line the pig says, with optional reply buttons. Replying closes the bubble;
- * a line with buttons stays up longer so there is time to answer it.
- * @param {string} text
- * @param {string[]} replies
- * @param {(index: number) => void} onReply
- * @param {number} [ms]
- */
-function showLine(text, replies, onReply, ms) {
-  if (replies.length === 0) {
-    showBubble(text, ms || 2600)
-    return
-  }
-  var version = resetBubble()
-  bubble.textContent = ''
-  bubble.appendChild(el('span', 'dp-bubble-text', text))
-  var row = el('div', 'dp-bubble-replies', '')
-  replyHold = createRenderHold(row)
-  replies.forEach(function (label, index) {
-    var answer = el('button', 'dp-reply', label)
-    answer.type = 'button'
-    answer.addEventListener('click', function (event) {
-      // The bubble sits over the pig; a reply must not also count as a pat.
-      event.stopPropagation()
-      if (version !== bubbleVersion || bubble.hidden) return
-      resetBubble()
-      bubble.hidden = true
-      onReply(index)
-    })
-    row.appendChild(answer)
-  })
-  bubble.appendChild(row)
-  bubble.hidden = false
-  bubbleTimer = window.setTimeout(function () {
-    if (version !== bubbleVersion) return
-    bubbleTimer = null
-    expireBubble(version, false)
-  }, Math.max(6000, ms || 0))
 }
 
 function toast(text) {
@@ -235,17 +157,16 @@ function toast(text) {
   /** Drop the pending timers — the panel is going away, nothing should fire. */
   function dispose() {
     if (reactTimer !== null) window.clearTimeout(reactTimer)
-    resetBubble()
+    speech.dispose()
     if (transformTimer !== null) window.clearTimeout(transformTimer)
     if (transformLayer !== null) transformLayer.remove()
     reactTimer = null
-    bubbleTimer = null
     transformTimer = null
     transformLayer = null
   }
 
   return {
-    react: react, burst: burst, transform: transform, flash: flash, showBubble: showBubble, showLine: showLine, toast: toast, dispose: dispose,
+    react: react, burst: burst, transform: transform, flash: flash, showBubble: showBubble, showLine: showLine, hideBubble: speech.hideBubble, toast: toast, dispose: dispose,
     /** 物理层装好后由 shell 接上；关闭手感时传 null。 */
     setFeel: function (feel) { feelHooks = feel },
   }

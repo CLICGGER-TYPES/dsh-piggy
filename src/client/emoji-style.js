@@ -1,19 +1,32 @@
 // @ts-check
 /**
  * Emoji 用哪套：桌面版自带一整套 Noto Color Emoji（apps/desktop/renderer/piggy-emoji.ttf），
- * 默认用它，三个平台看起来一样；也可以切回这台设备系统自带的 emoji。只存本机，不进存档。
- * 网页版（DSH 里）没有内置字体，这个设置不出现，一直是系统自带。
+ * 网页版提供同家族的 WOFF2 子集；默认用内置，也可以切回系统自带。
+ * 用户要求下一次发版统一默认内置，旧设备迁移一次；只存本机，不进养成存档。
  */
 import { readStore, writeStore } from './storage.js'
 import { applyPatCursor } from './pat-cursor.js'
 
 export const EMOJI_STYLE_KEY = 'dsh-piggy:emoji-style'
+export const EMOJI_DEFAULT_MIGRATION_KEY = 'dsh-piggy:emoji-bundled-default-v1'
+
+/** Next-release default, including upgrades that kept the old system choice.
+ * Runs once per device; subsequent explicit choices remain the user's own.
+ */
+function migrateBundledDefault() {
+  if (readStore(EMOJI_DEFAULT_MIGRATION_KEY) === '1') return false
+  writeStore(EMOJI_STYLE_KEY, 'bundled')
+  if (readStore(EMOJI_STYLE_KEY) === 'bundled') writeStore(EMOJI_DEFAULT_MIGRATION_KEY, '1')
+  return true
+}
 
 export function emojiStyle() {
+  if (migrateBundledDefault()) return 'bundled'
   return readStore(EMOJI_STYLE_KEY) === 'system' ? 'system' : 'bundled'
 }
 
 export function setEmojiStyle(style) {
+  migrateBundledDefault()
   writeStore(EMOJI_STYLE_KEY, style === 'system' ? 'system' : 'bundled')
 }
 

@@ -55,7 +55,7 @@ export function renderCardTab(ui) {
   card.appendChild(editableField(ui, 'catchphrase', '口头禅', profile.catchphrase))
   card.appendChild(editableField(ui, 'motto', '签名', profile.motto))
 
-  if (profile.editsLeft > 0 && profile.birthdayParts !== null && profile.personalities.length) card.appendChild(profileEditor(ui, profile))
+  if (profile.birthdayParts !== null && profile.personalities.length) card.appendChild(profileEditor(ui, profile))
 
   var c = profile.counts
   card.appendChild(el('div', 'dp-vcard-foot',
@@ -141,7 +141,7 @@ function appendEditor(ui, parent, key) {
 }
 
 /**
- * 每只猪送一次的改简介（用户 2026-10-13）：性格、生日一起改，点「就这样」才用掉这次机会。
+ * 自由修改性格、生日，点「保存」才应用。
  * 平时只显示一个入口按钮；点开以后草稿留在 ui.profileDraft，轮询不重画（同 cardEdit）。
  */
 function profileEditor(ui, profile) {
@@ -152,7 +152,7 @@ function profileEditor(ui, profile) {
       ui.profileDraft = { personality: profile.personality ? profile.personality.key : profile.personalities[0].key, month: profile.birthdayParts.month, day: profile.birthdayParts.day }
       ui.renderContent()
     })
-    open.textContent = '✏️ 改性格和生日（送 ' + profile.editsLeft + ' 次）'
+    open.textContent = '✏️ 改性格和生日'
     box.appendChild(open)
     return box
   }
@@ -192,7 +192,7 @@ function profileEditor(ui, profile) {
     ui.send('editProfile', { personality: change.personality, month: change.month, day: change.day })
     ui.renderContent()
   })
-  save.textContent = '就这样（只能改这一次）'
+  save.textContent = '保存'
   var cancel = button('dp-mini dp-mini-plain', { 'data-card-once': 'cancel' }, function () { ui.profileDraft = null; ui.renderContent() })
   cancel.textContent = '算了'
   third.appendChild(save)

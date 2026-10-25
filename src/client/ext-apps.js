@@ -16,6 +16,7 @@ import { walletBar } from './wallet.js'
 import { applyAssetFrame, applyModalAssetFrame } from './asset-background.js'
 import { artSource } from './art-path.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
+import { openBigTarget, stageShell } from './stage-shell.js'
 
 /** @type {Record<string, any>} */
 var registry = {}
@@ -56,19 +57,22 @@ function ensureScript(key, version) {
   ;(document.head || document.body)?.appendChild(script)
 }
 
-/** 打开扩展的大界面：桌面版（外壳 0.6.5 起）开一扇大窗口；网页版、老外壳在这个页面里铺满。 */
+/** 打开扩展的大界面：桌面版开大窗口；整屏舞台开独立窗口；网页版在这个页面里铺满。 */
 export function openBigApp(ui, key) {
-  var shell = desktopShell()
-  if (shell && shell.ext && typeof shell.ext.open === 'function') { shell.ext.open(key); return }
+  var target = openBigTarget(desktopShell(), stageShell())
+  if (target === 'desktop') { desktopShell().ext.open(key); return }
+  if (target === 'stage') { stageShell().ext.open(key); return }
   ui.extBig = key
   ui.tab = 'ext:' + key
   ui.renderContent()
 }
 
-/** 关掉大界面：在大窗口里就关窗口；页面里铺满的就收回面板。 */
+/** 关掉大界面：大窗口里就关窗口；页面里铺满的就收回面板。 */
 export function closeBigApp(ui) {
   var shell = desktopShell()
   if (desktopRole() === 'ext' && shell && shell.ext && typeof shell.ext.close === 'function') { shell.ext.close(); return }
+  var stage = stageShell()
+  if (stage !== null && stage.role === 'ext' && stage.ext && typeof stage.ext.close === 'function') { stage.ext.close(); return }
   ui.extBig = null
   ui.host.setAttribute('data-ext-view', '')
   ui.renderContent()
@@ -98,12 +102,13 @@ export function renderDownloadedApp(ui, key, mode) {
   try {
     impl.render({
       content: ui.content,
+      header: !big && key === 'farm' ? ui.content.querySelector('.dp-drill') : null,
       data: data === undefined ? null : data,
       mode: big ? 'big' : 'panel',
       // 桌面版外壳 0.6.5 以前没有大窗口，面板窗口又太小，就不给这个入口；网页版在页面里铺满。
       openBig: big || (desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === 'function')) ? undefined : function () { openBigApp(ui, key) },
       closeBig: big ? function () { closeBigApp(ui) } : undefined,
-      send: function (op, payload) { ui.send('ext', { key: key, op: op, data: payload || {} }) },
+      send: function (op, payload) { return ui.send('ext', { key: key, op: op, data: payload || {} }) },
       walletContent: wallet ? function () { return walletBar(ui, wallet, { open: true }) } : undefined,
       el: el,
       button: button,

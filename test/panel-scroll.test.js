@@ -38,3 +38,18 @@ test('没滚过就不写 scrollTop：写一下就是一次同步布局', () => {
   render()
   assert.deepEqual(writes, [], '没人滚过就一步都不写')
 })
+
+test('切到菜园购买或工具页面时回到页顶，同页轮询保留原滚动', () => {
+  function run(before, after) {
+    let page = before
+    const content = { scrollTop: 240, querySelectorAll: selector => selector === '[data-scroll-page]' ? [layer(page, 0)] : [] }
+    const ctx = { content, justBought: null }
+    const render = runInNewContext('(' + renderSource + ')', { ctx, paintContent: () => { page = after }, preserveFarmTriggerFocus, renderHold: { defer: () => false }, restoreHover() {} })
+    render()
+    return content.scrollTop
+  }
+  assert.equal(run('farm:field', 'farm:advanced'), 0)
+  assert.equal(run('farm:shop', 'farm:buy:radish'), 0)
+  assert.equal(run('farm:buy:radish', 'farm:shop'), 0)
+  assert.equal(run('farm:shop', 'farm:shop'), 240)
+})

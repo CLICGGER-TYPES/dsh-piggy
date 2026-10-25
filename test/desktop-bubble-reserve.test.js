@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { createMeasure } from '../src/client/desktop/measure.js'
 import { artMarginFor } from '../src/client/art-framing.js'
 
-function fixture(pigSize, mode = 'open', platform = 'win32') {
+function fixture(pigSize, mode = 'open', platform = 'win32', speechScale = 1) {
   const previousDocument = globalThis.document
   const previousStyle = globalThis.getComputedStyle
   const body = {}
@@ -18,6 +18,7 @@ function fixture(pigSize, mode = 'open', platform = 'win32') {
   })
   let nodeRef
   const host = {
+    style: { getPropertyValue: () => String(speechScale) },
     offsetLeft: 0, offsetTop: 0, offsetWidth: 0, offsetHeight: 0, offsetParent: body,
     getAttribute: () => null,
     closest: () => null,
@@ -62,6 +63,24 @@ test('open and collapsed bubble geometry does not resize the fixed pig window', 
     const open = fixture(pigSize, 'open')
     const collapsed = fixture(pigSize, 'collapsed')
     assert.deepEqual(open.content, collapsed.content, `pig ${pigSize}px`)
+  }
+})
+
+test('the approved lower speech position is reserved even while speech is hidden', () => {
+  for (const pigSize of [54, 60, 108, 216]) {
+    const hidden = fixture(pigSize, 'collapsed')
+    assert.ok(hidden.contentBox.bottom >= 144 + pigSize + 10 + 104,
+      `pig ${pigSize}px must have room for a full lower bubble without growing its window on speech`)
+    assert.deepEqual(hidden.content, fixture(pigSize, 'open').content)
+  }
+})
+
+test('independent speech enlargement reserves both positions without changing size when opened', () => {
+  for (const scale of [1, 1.5, 2, 3]) {
+    const measured = fixture(54, 'collapsed', 'linux', scale)
+    assert.ok(measured.contentBox.left <= 200 + 54 - 272 * scale)
+    assert.ok(measured.contentBox.bottom >= 144 + 54 + 10 + 104 * scale)
+    assert.deepEqual(measured.content, fixture(54, 'open', 'linux', scale).content)
   }
 })
 

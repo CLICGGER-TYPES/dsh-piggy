@@ -14,6 +14,7 @@
 | `packages/pet-core/src/` | 养成规则（`data/` 数值表、`core/` 纯函数），两种形态共用 |
 | `store/`、`index.js`、`routes.js`、`snapshot.js` | 存档、HTTP 路由、给面板的快照 |
 | `src/client/` | 面板界面（构建成 `client.js`，**改了源码要 `npm run build` 并提交 `client.js`**） |
+| `src/extensions/farm/` | 菜园服务端源码（构建成 `extensions/farm/server.js`，**不要手改产物**；下载协议仍是三个文件 + assets） |
 | `apps/desktop/` | 桌面外壳（主进程、preload、打包配置） |
 | `extensions/<key>/` | 在线扩展（菜园、矿洞、扭蛋、盲盒），玩家下载安装 |
 | `assets/` | 游戏里的图和字体；每类放哪、怎么命名、出处见 [docs/ASSETS.md](docs/ASSETS.md)（新增素材要登记，测试会查） |
@@ -26,7 +27,7 @@
 2. **大功能先出完整设计**给用户确认再整体做；修 bug 的版本只修 bug，不夹带新功能、不「预留」半成品。
 3. **提交信息不署 AI 名字**（不加 Co-Authored-By 等）。格式见 [CONVENTIONS.md](docs/CONVENTIONS.md)「Git」。
 4. **发版**：用户验收通过后才发；发版前 CHANGELOG 写好该版小节、README 同步（文字和截图）；GitHub、Gitee 两个渠道都要齐；**Gitee 一律从维护者本机推**（`scripts/gitee-publish.sh`），不让 GitHub Actions 往 Gitee 推。
-   **npm 由维护者手动发**，不要替他发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
+   **npm 由维护者确认发布**；可信发布工作流默认只读检查，只有维护者明确选择 `publish` 才能执行，不能未经授权代发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
 5. **不提交凭据**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。
 6. **emoji**：本项目以 emoji 为主——界面图标、物品、气泡、特效、游戏数据都可以用 emoji，参考项目里「不许用 emoji 当图标」之类的规定不适用。
    **不许用 emoji 的是给用户的回复和汇报**（聊天里说明进度、总结时不用）。代码注释、日志、提交信息也不用（见 CONVENTIONS）。
@@ -35,6 +36,7 @@
 9. **需要图就直接用 AI 出**：立绘、动作图、图标都可以用你自带的生图工具（如 codex 的 `image_gen`）出，不用手画、不用描成 SVG。
    交**透明底 PNG**（离线抠底，不靠运行时滤镜）、缩到显示尺寸约 2 倍（立绘长边 ≤ 256px）、记 `PROVENANCE.md`；**图要用户过目才进 `assets/`**。
    规格见 [adding-features.md](docs/guides/adding-features.md) 3.5。
+   **后续小游戏出图默认清爽平涂纸感**：用户已选定菜园 A 作为场景与物件的画风基准，按 [game-style.md](docs/art/game-style.md) 与其中已确认参考图执行；不据此改动已批准的布局或小猪结构。
    **小猪、形态、皮肤、动作只有一套无描边平涂画风**：2026-10-13 用户要求去掉黑色描边和画风设置，181张由旧版 1:1 重画。按 [pig-style.md](docs/art/pig-style.md) 保存逐字提示词、分类素材并逐图自查；不擅自换耳型、姿势、服饰或道具。先出样图给用户看，通过后再批量制作。
 
 ## 做事的方法
@@ -68,7 +70,7 @@
 
 ```sh
 npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43   # 首次
-npm run build        # src/client → client.js
+npm run build        # src/client → client.js，src/extensions/farm → extensions/farm/server.js
 npm test             # 全部测试（含规范检查、台词/成就/扩展目录守卫）
 npm run typecheck
 cd apps/desktop && npm install && npm start           # 跑桌面版

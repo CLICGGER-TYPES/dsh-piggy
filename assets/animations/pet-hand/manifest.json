@@ -1,0 +1,18 @@
+{
+  "revision": "hd-hand-spring-9",
+  "frame_size": [
+    256,
+    256
+  ],
+  "frame_count": 5,
+  "frame_durations_ms": [
+    60,
+    60,
+    60,
+    60,
+    60
+  ],
+  "source_cell_size": 514,
+  "compression": 0.09,
+  "sha256": "79dc2bdb794544387ff18c7ad846e76853fca497c8d3beed81de837b7a3bb296"
+}

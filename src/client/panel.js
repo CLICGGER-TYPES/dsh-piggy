@@ -9,7 +9,7 @@ import { DEV_TAB, OPEN_KEY, QUIT_TAB, TABS, UPDATE_TAB } from './constants.js'
 import { button, el } from './dom.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
 import { processPending } from './pending.js'
-import { splitSetOpen } from './split.js'
+import { splitSetOpen, stageShell } from './split.js'
 import { normalize } from './normalize.js'
 import { displayedPigSize } from './pig-size.js'
 import { applyEmojiStyle } from './emoji-style.js'
@@ -40,7 +40,6 @@ import { attachPointerRepaint } from './pointer-repaint.js'
 import { createRenderHold } from './render-hold.js'
 import { restoreHover } from './hover-restore.js'
 import { preserveFarmTriggerFocus } from './farm-trigger-focus.js'
-
 export function createPanel(ctx) {
       var pointerRepaint = attachPointerRepaint(ctx.host, window)
       const renderHold = createRenderHold(ctx.card)
@@ -50,7 +49,6 @@ export function createPanel(ctx) {
         interest: '在学兴趣课',
         trip: '在路上',
       }
-
       function setOpen(next) {
         if (splitSetOpen(ctx, next)) return
         if (!next) { closeFishing(ctx); if (ctx.isOpen) animatePanelClose(ctx) }
@@ -63,7 +61,7 @@ export function createPanel(ctx) {
         ctx.card.hidden = !next
         // The hud rides with the panel: a bare pig should not have a name floating beside it.
         ctx.hud.hidden = !next
-        if (!next) ctx.bubble.hidden = true
+        if (!next) ctx.hideBubble()
         writeStore(OPEN_KEY, next ? 'true' : 'false')
         if (next) {
           renderContent()
@@ -80,6 +78,7 @@ export function createPanel(ctx) {
           ctx.card.style.maxWidth = ''
         }
         desktopShell()?.syncGeometry?.()
+        stageShell()?.syncGeometry?.()
       }
 
       function select(next) {
@@ -132,10 +131,10 @@ export function createPanel(ctx) {
         } catch (error) { /* 浏览器不给就算了 */ }
         ctx.showBubble('🍅 专注结束 · ' + text, 3200)
       }
-
       function renderContent() {
         if (renderHold.defer(renderContent)) return
         var scrollTop = ctx.content.scrollTop
+        var page = ctx.content.querySelectorAll('[data-scroll-page]')[0]?.getAttribute('data-scroll-page')
         // 2026-10-13：内部浮层按稳定名称保留滚动；重绘后同一商品仍在原位置，不串到别的页签。
         var scrollPositions = new Map()
         ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
@@ -145,7 +144,9 @@ export function createPanel(ctx) {
         })
         preserveFarmTriggerFocus(ctx.content, paintContent)
         // 重绘刚把整棵内容换掉：此刻写 scrollTop 会为整棵树强制一次同步布局（实测 3–4ms，读那一下是在旧布局上读、便宜）。没人滚过就一步都不写——写 0 也一样会强制布局。
-        if (scrollTop !== 0) ctx.content.scrollTop = scrollTop
+        var nextPage = ctx.content.querySelectorAll('[data-scroll-page]')[0]?.getAttribute('data-scroll-page')
+        if (nextPage !== page) ctx.content.scrollTop = 0
+        else if (scrollTop !== 0) ctx.content.scrollTop = scrollTop
         if (scrollPositions.size > 0) ctx.content.querySelectorAll('[data-scroll-key]').forEach(function (node) {
           var saved = scrollPositions.get(node.getAttribute('data-scroll-key'))
           if (saved) { node.scrollTop = saved.top; node.scrollLeft = saved.left }
@@ -153,7 +154,6 @@ export function createPanel(ctx) {
         ctx.justBought = null
         restoreHover(ctx.content) // 重绘把扩展节点上的悬停（菜园的悬停卡）一起换掉了：指针还在原处就补发一次 mousemove，见 hover-restore.js
       }
-
       function paintContent() {
         ctx.content.textContent = ''
         ctx.footer.textContent = ''
@@ -375,7 +375,7 @@ export function createPanel(ctx) {
         if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return false
         if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return false
         // Replacing a focused input drops the caret (including IME composition).
-        if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true')) return false
+        if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true' || document.activeElement?.getAttribute?.('data-bubble-scale') === 'true')) return false
         if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return false
         if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return false
         // The QTE and waiting animation own their DOM until the phase changes.
@@ -395,6 +395,6 @@ export function createPanel(ctx) {
       ctx.send('reply', { line: lineId, index: index })
     }, event.displayMs)
   }
-
+  ctx.showPigLine = showPigLine
   return { setOpen, select, renderContent, render, dispose: function () { pointerRepaint.dispose(); renderHold.dispose() } }
 }

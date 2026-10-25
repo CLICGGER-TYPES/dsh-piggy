@@ -1,0 +1,7 @@
+{
+  "name": "dsh-piggy-desktop",
+  "version": "0.6.7",
+  "private": true,
+  "type": "module",
+  "main": "main.js"
+}

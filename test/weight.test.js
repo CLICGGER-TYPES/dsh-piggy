@@ -1,10 +1,11 @@
 import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 // @ts-check
 import assert from 'node:assert/strict'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../core.js'
 import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
-  STATE_VERSION, act, applyDevPatch, bodyWeightClass, bodyWeightView, decay,
+  act, applyDevPatch, bodyWeightClass, bodyWeightView, decay,
   ensureBodyWeight, formStageView, hatchEgg, idealWeightG, migrate,
   reducePlayWeight, reduceWorkWeight, settleWeight,
 } from '../core.js'
@@ -44,13 +45,12 @@ test('C7 has exact normal, round and fat boundaries', () => {
   assert.equal(bodyWeightClass(state), 'fat')
 })
 
-test('C7 migrates save version to v14 and ensures its daily exercise record', () => {
-  assert.equal(STATE_VERSION, 14)
+test('C7 migrates to the current save version and ensures its daily exercise record', () => {
   const old = pig(40, 1.7)
   delete old.bodyWeight
   old.version = 12
   const loaded = migrate(JSON.parse(JSON.stringify(old)), NOW)
-  assert.equal(loaded.version, 14)
+  assert.equal(loaded.version, CURRENT_STATE_VERSION)
   assert.equal(loaded.weightG, old.weightG)
   assert.deepEqual(loaded.bodyWeight, { playDay: '', plays: 0 })
   loaded.bodyWeight = { playDay: [], plays: Infinity }

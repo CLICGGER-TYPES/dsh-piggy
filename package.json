@@ -1,6 +1,6 @@
 {
   "name": "dsh-piggy",
-  "version": "0.37.1",
+  "version": "0.37.2-rc.1",
   "description": "🐖 一只住在 DeepSeek Harness 里的猪：吃你的真实工作长大，会学习、打工、旅行、生病、需要照顾",
   "keywords": [
     "dsh",
@@ -51,10 +51,11 @@
     "assets"
   ],
   "scripts": {
-    "build": "node scripts/build-client.mjs",
+    "build": "node scripts/build.mjs",
     "typecheck": "node scripts/typecheck.mjs",
     "test": "node scripts/test.mjs",
-    "preview": "echo \"open tools/preview.html in a browser\""
+    "preview": "echo \"open tools/preview.html in a browser\"",
+    "start:stage": "npm --prefix apps/desktop run start:stage"
   },
   "dsh": {
     "bundle": {

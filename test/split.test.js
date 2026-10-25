@@ -185,6 +185,18 @@ test('排队消息两边各管一半：猪的反应只在猪窗口演，提示�
   assert.deepEqual(panel.kinds, ['toast'])
 })
 
+test('晚到或合并的排队消息按 id 升序补演，较大 id 不会吞掉较小 id 的接话', () => {
+  fakeShell(null)
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false } } })
+  const lines = []
+  processPending(ctx, event => lines.push(event.text), [
+    { id: 702, at: 702, kind: 'line', text: '新台词', replies: [] },
+    { id: 701, at: 701, kind: 'line', text: '接话', replies: [] },
+  ])
+  assert.deepEqual(lines, ['接话', '新台词'], 'the lower id is not treated as already seen')
+  assert.equal(ctx.lastPendingId, 702)
+})
+
 test('drained snapshot messages reach both windows and duplicate events are ignored', () => {
   for (const role of ['pet', 'panel']) {
     const { emit } = fakeShell(role)
@@ -270,4 +282,19 @@ test('存档原生选择器和导入预览期间失焦不收面板，结束后�
     emit('panel', { type: 'blur', toPet: false })
     assert.equal(ctx.isOpen, false, '存档操作结束后保留原来的自动收起偏好')
   } finally { globalThis.document = oldDocument }
+})
+
+// Responses can arrive in separate batches; sorting only one batch is insufficient.
+test('跨响应乱序的接话只展示一次，较新的事件不能吞掉晚到接话', () => {
+  fakeShell(null)
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false } } })
+  const lines = []
+  const show = event => lines.push(event.text)
+  const newer = { id: 702, at: 702, kind: 'line', text: 'newer', replies: [] }
+  const followup = { id: 701, at: 701, kind: 'line', text: 'followup', replies: [] }
+  processPending(ctx, show, [newer])
+  processPending(ctx, show, [followup])
+  processPending(ctx, show, [newer, followup])
+  assert.deepEqual(lines, ['newer', 'followup'])
+  assert.equal(ctx.lastPendingId, 702)
 })

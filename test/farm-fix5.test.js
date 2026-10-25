@@ -30,39 +30,34 @@ test('fix5：网页大界面铺满时，面板卡的 2px 边框和 20px 圆角�
   assert.match(block, /border-radius:0!important/, '铺满窗口要一起清掉 .dp-card 自带的 20px 圆角，四角才不会露宿主底色')
 })
 
-test('fix5：面板里的弹层（种子袋/肥料/仓库/购买框）不许高过面板可视底边', () => {
-  const css = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
-  const clamp = 'min(var(--ext-panel-height,100%),var(--fm-panel-avail,9999px))'
-  assert.match(css, new RegExp('\\.fm-s-pop\\{[^}]*max-height:' + clamp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
-    '.fm-s-pop（种子袋/肥料/仓库弹层）的高度要取 --ext-panel-height 和 --fm-panel-avail 的较小值')
-  assert.match(css, /\.fm:not\(\.fm-big\)>\.fm-mask\{[^}]*height:min\(var\(--ext-panel-height,100%\),var\(--fm-panel-avail,9999px\)\)/,
-    '面板形态的遮罩（购买/铲除框底下那层）也要一起钳到面板可视高度')
-  assert.match(css, /\.fm-s-pop\{[^}]*grid-template-rows:max-content max-content max-content/,
-    '弹层钳短后各行要按内容排（列表行被压成 0 就再也滚不出来了），溢出的部分靠 .fm-s-pop 自己滚')
+test('工具抽屉留在菜地外层滚动里，不再叠加内部裁切区或第二层页面', () => {
+  const ui = renderFarm(farm.view(farm.init(), api()))
+  ui.find('data-farm-tools', 'toggle').fire('click')
+  const grid = ui.dom.body.querySelectorAll('.fm-advanced-grid')[0]
+  assert.equal(grid.children.length, 11)
+  const css = ui.dom.head.children[0].textContent
+  assert.match(css, /\.fm-advanced-grid\{[^}]*overflow:visible;max-height:none/)
+  assert.doesNotMatch(css, /\.fm-advanced-grid\{[^}]*overflow:auto/)
+  assert.ok(ui.find('data-farm-drawer', 'tools'), '抽屉画在菜地里，不是独立弹层页')
+  assert.equal(ui.find('data-scroll-page', 'farm').className, 'fm')
 })
 
-test('fix5：弹层装不下内容时（data-farm-tight）只留弹层一层滚动条，列表跟着长开', () => {
-  const css = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
-  assert.ok(css.includes('.fm[data-farm-tight]'), '渲染时量出弹层装不下，要给它挂上 data-farm-tight')
-  assert.match(css, /\[data-farm-tight\] \.fm-s-pop:not\(\.fm-shop\)>\.fm-stock\{overflow:visible;max-height:none\}/,
-    '紧凑模式下列表不再自己滚（两层滚动条会让商品只露一条缝，中心点还点不到）')
-  assert.match(css, /setAttribute\('data-farm-tight'/,
-    '这条属性要在 renderSmall 量完 --fm-panel-avail 后按弹层真实溢出设置，不能写死')
+test('短面板购买流程是完整页面，取消按钮不被嵌套购买框裁掉', () => {
+  const ui = renderFarm(farm.view(farm.init(), api()))
+  ui.find('data-farm-shop', 'shelf').fire('click')
+  ui.find('data-farm-item', 'radish').fire('click')
+  assert.ok(ui.find('data-farm-confirm', 'true'))
+  assert.ok(ui.find('data-farm-cancel', 'true'))
+  assert.equal(ui.all('data-farm-close').length, 0, '确认框只有确定 / 取消，不再多一个叉')
+  const css = ui.dom.head.children[0].textContent
+  assert.match(css, /\.fm-buy,\.fm-clear-confirm\{[^}]*max-height:none;[^}]*overflow:visible/)
 })
 
-test('fix5(E3)：带开垦牌的地块要抬到邻地之上（大农场每块地各自是层叠上下文，只给牌加 z-index 盖不住邻地地面）', () => {
-  const css = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
-  // 大农场每块地用 inline translate 摆位；translate 会创建层叠上下文，牌自己的 z-index 只在这块地内部生效，
-  // 管不到隔壁地块的可见地面（`.fm-plot::before` 菱形）和 z-index 5 的 `.fm-hit` 命中层——邻地会压在牌上。
-  assert.match(css, /card\.style\.translate\s*=\s*spot\.translate/, '大农场每块地靠 inline translate 摆位，各自是层叠上下文')
-  const lifted = /\.fm-b-field \.fm-plot:has\(\.fm-expand\)\{z-index:(\d+)\}/.exec(css)
-  assert.ok(lifted, '带开垦牌的地块要有高于邻地（auto）的 z-index，否则邻地地面压在牌上、牌面约 40% 点不到')
-  const z = Number(lifted[1])
-  assert.ok(z >= 1 && z < 40, '抬起值要盖过邻地（auto/0）又不抢悬停提升（40），实际 ' + z)
-  // 牌是地块的子节点（`put(card, reclaimSign(...))`），抬地块才会连牌一起抬到邻地之上。
+test('开垦按钮属于真实地块，平面网格不添加截获邻地的命中层', () => {
   setRandom(() => 0.5)
   const ui = renderFarm(farm.view(farm.init(), api()), 'big')
   const sign = ui.all('data-farm-reclaim')[0]
-  assert.ok(sign, '初始荒地要有一个开垦牌')
-  assert.match(sign.parentNode.className, /\bfm-plot\b/, '开垦牌挂在地块里，抬地块才能把牌抬到邻地之上')
+  assert.ok(sign)
+  assert.match(sign.parentNode.className, /\bfm-plot\b/)
+  assert.equal(ui.dom.body.querySelectorAll('.fm-hit').length, 0)
 })

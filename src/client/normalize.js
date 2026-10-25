@@ -12,6 +12,18 @@ import { normalizeFishing } from './normalize-fishing.js'
 import { normalizeSkins } from './normalize-skins.js'
 import { normalizeEconomy } from './normalize-economy.js'
 import { normalizeExtensionParts } from './extensions.js'
+import { normalizeDiary } from './normalize-diary.js'
+/** 排队消息的稳定形状；轮询晚到时也要用同一条清洗路径补演。 */
+export function normalizePending(raw) {
+  return arr(raw).filter(e => isObj(e) && typeof e.at === 'number').map(e => ({
+    id: num(e.id, 0),
+    kind: str(e.kind, ''),
+    text: str(e.text, ''),
+    at: e.at,
+    replies: arr(e.replies).filter(label => typeof label === 'string'),
+  }))
+}
+
 export function normalize(raw) {
   var d = obj(raw)
   var pig = isObj(d.pig) ? d.pig : null
@@ -283,10 +295,8 @@ export function normalize(raw) {
       options: arr(d.pomodoro.options).filter(value => typeof value === 'number'),
       finishedAt: typeof d.pomodoro.finishedAt === 'number' ? d.pomodoro.finishedAt : null,
     } : null,
-    diary: arr(d.diary).map(entry => ({
-      day: str(obj(entry).day, ''),
-      text: str(obj(entry).text, ''),
-    })).filter(entry => entry.day !== '' && entry.text !== ''),
+    // 原文 {day,text} 保留；新宿主另发展示用的 body/careNotes，老宿主在这里派生。
+    diary: normalizeDiary(d.diary),
     // Which items each care action could spend right now.
     care: (() => {
       const out = {}
@@ -325,8 +335,6 @@ export function normalize(raw) {
     // B9: the villager card. Older hosts send none, and the card says so.
     profile: isObj(d.profile) ? {
       personality: isObj(d.profile.personality) ? { key: str(d.profile.personality.key, ''), label: str(d.profile.personality.label, ''), emoji: str(d.profile.personality.emoji, '') } : null,
-      // 送一次的改简介（游戏 0.37.0 起）：老宿主没有就是 0，界面不出入口。
-      editsLeft: num(d.profile.editsLeft, 0),
       birthdayParts: isObj(d.profile.birthdayParts) ? { month: num(d.profile.birthdayParts.month, 1), day: num(d.profile.birthdayParts.day, 1) } : null,
       personalities: Array.isArray(d.profile.personalities) ? d.profile.personalities.filter(isObj).map(p => ({ key: str(p.key, ''), label: str(p.label, ''), emoji: str(p.emoji, '') })) : [],
       catchphrase: str(d.profile.catchphrase, ''),
@@ -365,13 +373,7 @@ export function normalize(raw) {
       quiet: obj(d.dialogue).quiet === true,
       isOfflineFeedEnabled: obj(d.dialogue).isOfflineFeedEnabled !== false,
     },
-    pending: arr(d.pending).filter(e => isObj(e) && typeof e.at === 'number').map(e => ({
-      id: num(e.id, 0),
-      kind: str(e.kind, ''),
-      text: str(e.text, ''),
-      at: e.at,
-      replies: arr(e.replies).filter(label => typeof label === 'string'),
-    })),
+    pending: normalizePending(d.pending),
     maxHealth: num(d.maxHealth, 5),
   }
 }

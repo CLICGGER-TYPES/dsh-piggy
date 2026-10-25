@@ -10,6 +10,7 @@
  * @module dsh-piggy/client/tabs/fishing-fight
  */
 import { button, el } from '../dom.js'
+import { fishingArtUrl } from '../fishing-art.js'
 
 let frame = 0
 let activeUi = null
@@ -55,7 +56,7 @@ function surgeOf(s, feel, now, dt) {
   return feel.speed * wobble * ((s.burstLeft || 0) > 0 ? feel.burstScale : 1)
 }
 
-export function renderFight(ui, fish) {
+export function renderFight(ui, fish, root = ui.content) {
   const mode = fish.fight === 'bar' || fish.fight === 'pull' ? fish.fight : 'ring'
   if (session?.id !== fish.id || session.mode !== mode) session = { id: fish.id, mode }
   activeUi = ui
@@ -65,9 +66,25 @@ export function renderFight(ui, fish) {
     stopFight(true)
     ui.send('fishResolve', { success })
   }
-  if (mode === 'bar') return renderBar(ui, fish, session, finish)
-  if (mode === 'pull') return renderPull(ui, fish, session, finish)
-  return renderRing(ui, fish, session, finish)
+  root.appendChild(fightArt(fish))
+  if (mode === 'bar') return renderBar(ui, fish, session, finish, root)
+  if (mode === 'pull') return renderPull(ui, fish, session, finish, root)
+  return renderRing(ui, fish, session, finish, root)
+}
+
+/** 搏斗的画面：有概念稿的拉扯图就用，没到位就退回鱼和鱼竿的 emoji。 */
+function fightArt(fish) {
+  const art = el('div', 'dp-fish-fight-art')
+  art.setAttribute('data-fish-fight-art', 'tug')
+  art.appendChild(el('span', 'dp-fish-fight-fallback', '🎣 ' + fish.emoji))
+  const img = /** @type {HTMLImageElement} */ (el('img', 'dp-fish-fight-img'))
+  img.src = fishingArtUrl('fight-tug.png')
+  img.alt = ''
+  img.setAttribute('aria-hidden', 'true')
+  img.addEventListener('load', function () { art.setAttribute('data-art-loaded', 'true') })
+  img.addEventListener('error', function () { img.hidden = true })
+  art.appendChild(img)
+  return art
 }
 
 /** 面板关掉了就算输（三种玩法一样）。 */
@@ -108,7 +125,7 @@ function newRingRound(s) {
   s.feedback = '看准绿色区域'
 }
 
-function renderRing(ui, fish, s, finish) {
+function renderRing(ui, fish, s, finish, root) {
   if (s.hits === undefined) {
     Object.assign(s, { hits: 0, misses: 0, phase: Math.random() * 6 }, ringRules(difficultyOf(fish), feelOf(fish)))
     newRingRound(s)
@@ -135,7 +152,7 @@ function renderRing(ui, fish, s, finish) {
   wrap.appendChild(ring); wrap.appendChild(score); wrap.appendChild(feedback)
   wrap.appendChild(el('div', 'dp-fish-help', '指针进入绿色区域时点击或按空格 · 黄色为完美判定'))
   wrap.setAttribute('tabindex', '0')
-  ui.content.appendChild(wrap)
+  root.appendChild(wrap)
 
   function paint() {
     const angle = s.angle % 360
@@ -203,7 +220,7 @@ function renderRing(ui, fish, s, finish) {
 
 const BAR_HEIGHT = 220
 
-function renderBar(ui, fish, s, finish) {
+function renderBar(ui, fish, s, finish, root) {
   const d = difficultyOf(fish)
   const feel = feelOf(fish)
   if (s.progress === undefined) {
@@ -226,7 +243,7 @@ function renderBar(ui, fish, s, finish) {
   stage.appendChild(bar)
   const hint = el('div', 'dp-fish-help', '按住（或空格）绿条上浮，松开下沉 · 让鱼待在绿条里')
   stage.appendChild(hint)
-  ui.content.appendChild(stage)
+  root.appendChild(stage)
   holdControls(stage, s)
 
   function moveFish(dt, now) {
@@ -267,7 +284,7 @@ function renderBar(ui, fish, s, finish) {
 
 // ---- 拉力收线 ----------------------------------------------------------------
 
-function renderPull(ui, fish, s, finish) {
+function renderPull(ui, fish, s, finish, root) {
   const d = difficultyOf(fish)
   const feel = feelOf(fish)
   // 好竿更耐拉：断线的红区往后挪（最多到 95）。
@@ -294,7 +311,7 @@ function renderPull(ui, fish, s, finish) {
   stage.appendChild(el('div', 'dp-fish-qte-title', fish.emoji + '　咬紧了！'))
   stage.appendChild(line); stage.appendChild(gauge); stage.appendChild(state); stage.appendChild(meter)
   stage.appendChild(el('div', 'dp-fish-help', '按住（或空格）收线，松开放线 · 鱼发力时松一松'))
-  ui.content.appendChild(stage)
+  root.appendChild(stage)
   holdControls(stage, s)
 
   function tick(now) {

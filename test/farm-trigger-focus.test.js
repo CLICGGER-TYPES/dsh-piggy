@@ -14,7 +14,7 @@ function fixture(initial, paint, focusedInside = true) {
     ownerDocument: doc, scrollTop: 0, children: focusedInside ? [initial] : [],
     contains(node) { return this.children.includes(node) },
     querySelectorAll(selector) {
-      if (selector === '[data-scroll-key]') return []
+      if (selector === '[data-scroll-key]' || selector === '[data-scroll-page]') return []
       return this.children.filter(node => node.matches(selector))
     },
   }
@@ -73,6 +73,54 @@ test('panel polling restores farm plot keys, but leaves a newly focused modal co
   assert.equal(modalUi.doc.activeElement, modalInput)
 })
 
+test('panel polling keeps the tapped puzzle cell focused through DOM replacement', () => {
+  const oldCell = node(null, { 'data-puzzle-cell': '7' })
+  const nextCell = node(null, { 'data-puzzle-cell': '7' })
+  const ui = fixture(oldCell, () => [nextCell])
+  nextCell.focus = options => { nextCell.focusOptions = options; ui.doc.activeElement = nextCell }
+  ui.render()
+  assert.equal(ui.doc.activeElement, nextCell)
+  assert.deepEqual(nextCell.focusOptions, { preventScroll: true })
+})
+
+test('panel polling leaves puzzle focus alone outside content and never steals a new target', () => {
+  const outside = node(null, { 'data-puzzle-cell': '7' }, 'INPUT')
+  const outsideUi = fixture(outside, (_content, doc) => { doc.activeElement = outside; return [] }, false)
+  outsideUi.render()
+  assert.equal(outsideUi.doc.activeElement, outside)
+
+  const oldCell = node(null, { 'data-puzzle-cell': '7' }), hostControl = node(null, {}, 'INPUT')
+  const transferredUi = fixture(oldCell, (_content, doc) => { doc.activeElement = hostControl; return [node(doc, { 'data-puzzle-cell': '7' })] })
+  transferredUi.render()
+  assert.equal(transferredUi.doc.activeElement, hostControl, 'paint 把焦点交给宿主其他控件时不能抢回棋盘格')
+})
+
+test('panel polling only restores a live puzzle button with the same namespaced key', () => {
+  const oldCell = node(null, { 'data-puzzle-cell': '7' })
+  const disabledCell = node(null, { 'data-puzzle-cell': '7' }); disabledCell.disabled = true
+  const disabledUi = fixture(oldCell, () => [disabledCell])
+  disabledUi.render()
+  assert.equal(disabledUi.doc.activeElement, disabledUi.doc.body)
+  assert.equal(disabledCell.focusOptions, null)
+
+  const otherCell = node(null, { 'data-puzzle-cell': '8' })
+  const otherUi = fixture(oldCell, () => [otherCell])
+  otherUi.render()
+  assert.equal(otherUi.doc.activeElement, otherUi.doc.body, '找不到同一格时不能把焦点丢给别的格子')
+  assert.equal(otherCell.focusOptions, null)
+
+  const missingUi = fixture(oldCell, () => [])
+  missingUi.render()
+  assert.equal(missingUi.doc.activeElement, missingUi.doc.body)
+
+  // 通用 data-cell 不在保证范围内：扩展必须用自己命名空间的属性。
+  const genericCell = node(null, { 'data-cell': '7' })
+  const genericUi = fixture(node(null, { 'data-cell': '7' }), () => [genericCell])
+  genericUi.render()
+  assert.equal(genericUi.doc.activeElement, genericUi.doc.body)
+  assert.equal(genericCell.focusOptions, null)
+})
+
 test('panel polling does not capture other controls and skips missing or disabled farm triggers', () => {
   const outside = node(null, {}, 'INPUT')
   const outsideUi = fixture(outside, (_content, doc) => { doc.activeElement = outside; return [] }, false)
@@ -100,4 +148,20 @@ test('panel polling does not capture other controls and skips missing or disable
   nonButtonUi.render()
   assert.equal(nonButtonUi.doc.activeElement, nonButtonUi.doc.body)
   assert.equal(nonButton.focusOptions, null)
+})
+
+test('diary care toggle keeps keyboard focus across repaint without changing dates', () => {
+  const oldToggle = node(null, { 'data-diary-care': '2026-10-22' })
+  const nextToggle = node(null, { 'data-diary-care': '2026-10-22' })
+  const ui = fixture(oldToggle, () => [nextToggle])
+  nextToggle.focus = options => { nextToggle.focusOptions = options; ui.doc.activeElement = nextToggle }
+  ui.render()
+  assert.equal(ui.doc.activeElement, nextToggle)
+  assert.deepEqual(nextToggle.focusOptions, { preventScroll: true })
+
+  const wrongDay = node(null, { 'data-diary-care': '2026-10-21' })
+  const changed = fixture(node(null, { 'data-diary-care': '2026-10-22' }), () => [wrongDay])
+  changed.render()
+  assert.equal(changed.doc.activeElement, changed.doc.body)
+  assert.equal(wrongDay.focusOptions, null)
 })

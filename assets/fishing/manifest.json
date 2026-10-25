@@ -1,0 +1,181 @@
+[
+  {
+    "name": "scene-river",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-7620aaf7-e4c0-4f35-a061-b0c892ef49fa.png",
+    "prompt": "根据参考图的小河插画画风，直接绘制一张独立完整的横向宽幅钓鱼游戏场景素材，横宽约2比1。不是界面截图，不要面板、圆角框、按钮、文字或数字。暖而清爽的平涂绘本风，柔和奶油沙岸、浅青绿色清澈平静水面，画面中部和下半部主要留给水面，中上部有低矮草丛、小绿植与少量圆润灰岩石，河岸自然弯曲。构图居中，适合292像素宽游戏卡片CSS居中取景，重要内容不要贴边，水面要足够清晰留白。与参考图相同的轻巧温暖游戏插画语言，色块干净，无厚重描边，无3D，无强渐变，无雾光。严格不要任何人物、猪、鱼、浮漂、鱼竿、钓线、船、建筑、文字、图标或UI。画满不透明背景。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/ready-responsive.png"
+    ],
+    "self_check": "已实际查看：清爽河岸与青蓝水面，中心留水面；无鱼、角色、浮漂、竿线、文字或UI。",
+    "output": "scene-river.png",
+    "size": [
+      1774,
+      887
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "sha256": "9cdd83a19d8891bd01fbb97c0c1c48da20bca7cc4a8c4ffb717c232fbfa10cd1",
+    "source_bytes_identical": true,
+    "export_size": [
+      1024,
+      512
+    ],
+    "export_sha256": "20bf68ad2766374bdc82d5adc4ac61a1c18bee1ae320bf69332fe2163b8357df",
+    "processing": "Proportional LANCZOS resize only; no crop, recolor, alpha repair or compositing."
+  },
+  {
+    "name": "scene-pond",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-3623e2da-5adc-4db7-b124-8e94f33512e4.png",
+    "prompt": "以参考小河场景的画风和配色为严格风格参考，绘制独立完整横向2:1荷塘场景。温暖清爽的平涂绘本游戏插画，不要UI。中部和下半部留清澈平静的青绿色水面，岸在中上部，圆润灰岩石与低矮草丛，少量荷叶和2-3朵浅粉荷花沿远岸和两侧点缀，中心水面留空便于游戏叠加浮漂。保持参考图的细腻干净色块、明亮奶油沙岸和绿色植被，构图居中可CSS裁景，主要视觉不贴边。只画自然环境，严格无鱼、猪、人物、鸟、昆虫、浮漂、鱼竿、线、船、建筑、文字、数字、按钮、边框、面板。画满不透明背景。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/assets/scene-river.png"
+    ],
+    "self_check": "已实际查看：荷花荷叶在岸侧，水面中心留空；无鱼、角色、浮漂、文字或UI。",
+    "output": "scene-pond.png",
+    "size": [
+      1774,
+      887
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "sha256": "9a82c9426eea76b41083fa24259718c78e91703503167074f6949f7fd60902e3",
+    "source_bytes_identical": true,
+    "export_size": [
+      1024,
+      512
+    ],
+    "export_sha256": "b35a83086d81347db895ddff980d7cc21c292f5393231a1b4f8a731bb04cf895",
+    "processing": "Proportional LANCZOS resize only; no crop, recolor, alpha repair or compositing."
+  },
+  {
+    "name": "scene-reef",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-d7017782-c561-42e2-928b-9c0e8fae27a0.png",
+    "prompt": "参考图同系列温暖清爽的平涂绘本游戏背景，生成一张横向2:1礁石钓点环境。画满不透明。中部与下半部是清澈蓝青色平静近岸水面，上方左右是自然圆润灰褐色礁石岸，少量绿色滨岸植物和奶油沙地，远处简洁蓝天白云。比小河更开阔的岩岸水湾，不能画成原小河简单复制；没有大浪，不做险峻写实悬崖。岩石和水面纹理轻巧干净，中心水面留空，构图居中，便于292px宽游戏卡片CSS裁景，主要景物不要只挤边缘。严格不要鱼、人物、猪、鸟、贝壳动物、浮漂、钓竿、线、船、建筑、文字、数字、按钮、面板或边框。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/assets/scene-river.png"
+    ],
+    "self_check": "已实际查看：开阔礁石水湾，圆润灰石、蓝青水面；无鱼、角色、浮漂、文字或UI。",
+    "output": "scene-reef.png",
+    "size": [
+      1774,
+      887
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "sha256": "e0a63c54fb9b7182a236de8814228c533c034242dafa6250b3f0266119bef83b",
+    "source_bytes_identical": true,
+    "export_size": [
+      1024,
+      512
+    ],
+    "export_sha256": "bb16bf30c0ec1e0df2c9d5fefb8d10635f1f7d3200bcd72d73b118261756dd37",
+    "processing": "Proportional LANCZOS resize only; no crop, recolor, alpha repair or compositing."
+  },
+  {
+    "name": "scene-night",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-58338c08-eaea-4772-9a5d-2664cfdeb6fb.png",
+    "prompt": "绘制参考图同系列的夜潭钓点游戏背景，完整横向2:1。温暖亲切清爽的平涂绘本画风，不做恐怖场景不做霓虹。安静夜色小水潭，深蓝青色平静水面居中并占中部下半部，上方圆润灰蓝岩石、墨绿色草丛与芦苇围成岸边，少量柔和的淡奶黄色月光照亮石头与水面，天空只占很窄一带深蓝，不需要画出月亮，也不画星星图案。夜色明显但景物仍可读，细小水纹简洁，中心留空便于后续叠加游戏浮漂。保持参考图的圆润自然轮廓、干净色块和整体绘本精度。主要景物居中可CSS裁景，不要只挤两侧。严格无任何鱼、角色、猪、人物、萤火虫、动物、浮漂、钓线、钓竿、船、文字、数字、图标、按钮、面板或边框。画满不透明背景。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/assets/scene-river.png"
+    ],
+    "self_check": "已实际查看：深蓝青夜潭，月光反射与芦苇岩石；无鱼、角色、浮漂、文字或UI，夜色较深，叠加文字仍需面板提供对比。",
+    "output": "scene-night.png",
+    "size": [
+      1774,
+      887
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "sha256": "de07b478ae23ab5a5f2c8756ed104d05c53a5abcf454a9379d9ce8bd10bb9baa",
+    "source_bytes_identical": true,
+    "export_size": [
+      1024,
+      512
+    ],
+    "export_sha256": "78468ff6fbaed43664041c7b5f72bed8737b0b821865a673f229274a2e4c22fb",
+    "processing": "Proportional LANCZOS resize only; no crop, recolor, alpha repair or compositing."
+  },
+  {
+    "name": "fight-tug",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-33594a8d-6d34-4341-8f37-259517e5c01c.png",
+    "prompt": "把参考图的弯竹竿和单只鲫鱼重新构图为原生横向3:1的透明游戏素材，画布宽约为高的三倍，适合254×80横向搏斗卡。不是裁剪或拉伸，重新画低矮横向构图：黄绿色竹竿手柄在左下，竹竿以很小的上升角向中部延伸，竿身受力弯成浅弧，竿尖在中间偏上；一条清楚连续细线从竿尖自然斜向右侧单只灰褐银灰鲫鱼的嘴。鲫鱼头朝左上但身体接近水平、尾朝右，鱼完整且正常单尾、背鳍胸鳍腹鳍，沿用参考的柔和灰褐鳞片和暖奶油灰腹，不要金属金。整个组合必须宽而低矮，竿柄竿尖鱼鳍鱼尾都完整留边，四周只有少量透明空白。保持同系列温暖清爽轻巧绘本风，无厚黑边。严格只画一根竿、一条线、一只鱼，无水波、水面、浮漂、角色、猪、手、文字、数字、UI、光晕、雾或背景。真正透明背景，清楚硬边。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/assets/fight-tug.png"
+    ],
+    "self_check": "已实际看完整原生横图：低矮弯竹竿横向展开，细线连续至右侧单鱼嘴，竿柄竿尖鱼鳍尾完整，正常单尾/背胸腹鳍；无水波、角色、猪、文字、UI或雾晕。少量红黄色边缘碎像素仍可见，未做像素后处理。",
+    "method": "builtin-imagegen-direct-native-wide-transparent-png; unchanged byte copy",
+    "output": "fight-tug.png",
+    "size": [
+      2172,
+      724
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "07e3fcd3d67763916f4971dca9b4f2c038f717a847b082bc6dbced51f4811f71",
+    "source_bytes_identical": true,
+    "export_size": [
+      768,
+      256
+    ],
+    "export_sha256": "ede56afb46375b96cb73ac4bc4eff2fd9a14b54d00003829d5bdd7c09bc599fd",
+    "processing": "Proportional LANCZOS resize of directly generated 3:1 wide composition; no crop/recolor/alpha repair."
+  },
+  {
+    "name": "crucian-result",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-6172fbba-5101-4233-b64d-de51888a76b9.png",
+    "prompt": "参考界面左下结果面板的那条灰褐鲫鱼，只生成一条独立完整小鲫鱼插画，透明背景正方形画布，鱼头左尾右，宽扁侧身、正常单尾与背鳍胸鳍腹鳍，小圆眼小嘴。颜色必须低饱和银灰和灰褐，深灰背部、浅银灰鳞片、淡奶油灰腹部，鳍为柔和灰褐；不是金鱼，绝不要大片金黄、金属金、亮金高光。温暖轻巧绘本游戏平涂，柔和少量层次，鳞片简洁清楚，禁止金属或写实油亮质感。只画鱼，完整居中留边。鱼以外完全透明，清楚硬边，不加雾晕、光晕、星光、光芒、投影、水、钓线、文字、面板、任何UI。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/states-board.png"
+    ],
+    "self_check": "已实际查看：低饱和灰褐/银灰鲫鱼，暖灰腹，单尾、正常背/胸/腹鳍。无雾晕、光芒、星星、水、线、文字或UI；少量细碎边缘像素仍可见。旧金黄候选与雾晕稿均不交付。",
+    "output": "crucian-result.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "7e26d7d6d8fa07c4fec07cf2788bc38b3f75f1fe00e242a4ff4ea3c6c5cd74bb",
+    "source_bytes_identical": true,
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "5c1d10fba07b109db86c0a00256dbd83ddc34afc8edfbf879f7d689a13e43d37",
+    "processing": "Proportional LANCZOS resize only; no crop, recolor, alpha repair or compositing."
+  },
+  {
+    "name": "bobber",
+    "source": "/home/clicgger/.codex/generated_images/01a16807-2d6f-7b10-b30a-e934a76f6963/exec-062cb2a8-83f7-4c18-bc6d-ad4918f8aff9.png",
+    "prompt": "参考图左上等待画面的红白浮漂，仅生成该浮漂的独立完整透明PNG素材，正方形画布。小巧竖立的椭圆浮漂，浮体上半红色、下半奶白色，顶部穿出一根细短红杆。与参考图相同温暖清爽的轻巧绘本游戏风，形状简单清楚，柔和少量层次，无厚黑描边。完整居中留足透明边距。只画一只浮漂，不画水波（由游戏CSS叠加），不画水面、鱼竿、钓线、鱼、人物、文字、UI、底座、投影方块或其他物体。背景完全透明，外边清楚，无光晕、雾、发光或阴影。",
+    "references": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/fishing/states-board.png"
+    ],
+    "self_check": "已实际查看原图：独立竖立红上白下椭圆浮漂，细红顶杆，居中留边；没有鱼竿/钓线/鱼/水面/水波/文字/UI/方块阴影，没有明显雾晕。仍有少量红白边缘碎像素，原生出图未经修改。",
+    "method": "builtin-imagegen-direct-full-transparent-png; unmodified byte copy",
+    "output": "bobber.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "8d0071ac186cc0a251875b6d7752adf6930795bbb8e997132e93fefd6e33cd2b",
+    "source_bytes_identical": true,
+    "export_size": [
+      128,
+      128
+    ],
+    "export_sha256": "20f02ec455c4e7832c1d35d35255aad04132bcd4538218fdd4a2e632e744f6b4",
+    "processing": "Proportional LANCZOS resize only; no crop, recolor or alpha repair."
+  }
+]

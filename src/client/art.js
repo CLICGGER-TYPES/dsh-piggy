@@ -23,11 +23,27 @@ const CUSTOM_FRAME_CACHE = new Map()
 const CUSTOM_FRAME_PENDING = new WeakMap()
 const ART_SELECTION = new WeakMap()
 
-/** Imported PNG or legacy SVG skins are measured once after loading. */
-function frameCustomImage(image, src, sleep = false) {
-  if (!src.includes('/custom-')) { applyFrame(image, builtinFrame(src)); return }
+/**
+ * Imported PNG or legacy SVG skins are measured once after loading.
+ *
+ * `onFrame`（可选）在图取景确定后调用一次：已经量过的图同步回调，延迟加载的图等
+ * load 量完再回调。皮肤页的校准方框复用它，才能和真实立绘用同一份量法和缓存，
+ * 并在图解码后刷新 zoom/offset、红点和指针反解。
+ */
+export function frameCustomImage(image, src, sleep = false, onFrame = null) {
+  const done = typeof onFrame === 'function' ? onFrame : null
+  if (!src.includes('/custom-')) {
+    const frame = builtinFrame(src)
+    applyFrame(image, frame)
+    if (done !== null) done(frame)
+    return
+  }
   const cached = CUSTOM_FRAME_CACHE.get(src)
-  if (cached !== undefined) { applyFrame(image, cached); return }
+  if (cached !== undefined) {
+    applyFrame(image, cached)
+    if (done !== null) done(cached)
+    return
+  }
   if (CUSTOM_FRAME_PENDING.get(image) === src) return
   applyFrame(image, null)
   CUSTOM_FRAME_PENDING.set(image, src)
@@ -57,14 +73,27 @@ function frameCustomImage(image, src, sleep = false) {
         (0.5 - (top + bottom) / (2 * canvas.height)) * zoom * 100]
       CUSTOM_FRAME_CACHE.set(src, frame)
       applyFrame(image, frame)
+      if (done !== null) done(frame)
     } catch { /* A browser that cannot read this image keeps the standard frame. */ }
   }
   if (image.complete && image.naturalWidth > 0) measure()
   else image.addEventListener?.('load', measure, { once: true })
 }
 
-/** Use a custom sleep pose when supplied; otherwise fall back to built-in sleep art. */
-export function syncSleepArt(art, scenes, image) {
+/**
+ * 某张立绘当前用的取景（zoom, x%, y%），取不到就是 null。
+ *
+ * 皮肤页的接触点拨准要跟真实立绘一样地缩放/偏移，所以借用这里量好的自定义图取景；
+ * 内置图直接查 art-framing 的表。不修改任何图或存档。
+ * @param {string} src
+ * @returns {[number, number, number] | null}
+ */
+export function artFrameFor(src) {
+  if (typeof src !== 'string' || src === '') return null
+  return CUSTOM_FRAME_CACHE.get(src) ?? builtinFrame(src) ?? null
+}
+
+/** Use a custom sleep pose when supplied; otherwise fall back to built-in sleep art. */export function syncSleepArt(art, scenes, image) {
   var custom = typeof art === 'string' && art.startsWith('custom-') && scenes.includes('sleep')
   var name = SLEEP_ART.has(art) ? art : 'piglet'
   var src = artSource((custom ? art : name) + '-sleep')
@@ -116,12 +145,14 @@ export function forceFeedbackArt(name) {
  * @param {object} image the <img> inside it
  */
 export function syncPigArt(pig, image, emoji) {
+  // During a rub, retain the current skin/pose rather than swapping to its pet picture.
+  if (pig.getAttribute('data-pet-snap') === 'true') return !image.hidden
   // A feel transition may apply later. Even selecting the already visible
   // sprite must invalidate it, otherwise an old frame can replace a reaction.
   const selection = {}
   ART_SELECTION.set(image, selection)
   const applySelected = apply => swapSource(() => {
-    if (ART_SELECTION.get(image) === selection) apply()
+    if (ART_SELECTION.get(image) === selection && pig.getAttribute('data-pet-snap') !== 'true') apply()
   })
   var base = pig.getAttribute('data-art') || ''
   pigActionArt(pig)

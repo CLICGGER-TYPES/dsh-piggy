@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { STATE_VERSION } from '../core.js'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -52,7 +53,7 @@ test('真实 ZIP 往返存档、皮肤、官方扩展和收据，同时排除日
     assert.deepEqual(parsed.state.extData.unknown, { keep: true })
     assert(parsed.files.has(`extensions/${official}/server.js`))
     assert(parsed.files.has('skins/custom-fox.svg'))
-    assert.equal(JSON.parse(parsed.files.get('state.json').toString()).version, 14)
+    assert.equal(JSON.parse(parsed.files.get('state.json').toString()).version, STATE_VERSION)
     assert(parsed.files.has('state.json.work-events/receipts.json'))
     assert(!parsed.files.has(`extensions/${official}/local.json`))
     assert(parsed.warnings.some(w => w.includes('unknown')))
@@ -68,7 +69,7 @@ test('兼容旧 JSON 并拒绝 future state 与损坏 JSON/ZIP', () => {
   assert.equal(legacy.summary.legacy, true)
   assert.equal(legacy.summary.createdAt, null)
   assert.equal(legacy.state.coins, 99)
-  assert.equal(JSON.parse(legacy.files.get('state.json').toString()).version, 14)
+  assert.equal(JSON.parse(legacy.files.get('state.json').toString()).version, STATE_VERSION)
   assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify({ version: 999 })), { nowMs: NOW }), /高于当前/)
   assert.throws(() => parseSaveArchive(Buffer.from('{broken'), { nowMs: NOW }), /ZIP|JSON/)
   const zip = createSaveArchive({ statePath: '/tmp/a.json', state: { version: 14 }, nowMs: NOW }).buffer

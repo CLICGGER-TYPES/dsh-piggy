@@ -273,8 +273,12 @@ export function createExtRuntime(store, options) {
   async function place(key, files, local) {
     if (key === 'farm' && store.state?.extData?.farm?.version >= 4) {
       const manifest = JSON.parse(files.get('manifest.json').toString('utf8'))
-      if (!versionAtLeast(manifest.version, '3.1.0')) {
-        return { ok: false, reason: 'download-failed', message: '这份旧菜园不能读取当前进度，请使用 3.1.0 经典兼容版；菜币和进度未改动。' }
+      // 第一课把菜园数据升到 v5；旧 3.1.0/4.0.x 会把它误作 v3 迁移，必须在替换文件前拒绝。
+      const currentData = store.state.extData.farm.version
+      const compatible = currentData < 5 ? versionAtLeast(manifest.version, '3.1.0')
+        : versionAtLeast(manifest.version, '4.1.0') || (versionAtLeast(manifest.version, '3.1.1') && !versionAtLeast(manifest.version, '4.0.0'))
+      if (!compatible) {
+        return { ok: false, reason: 'download-failed', message: '这份旧菜园不能读取当前进度，请使用 4.1.0 或 3.1.1 经典兼容版；菜币和进度未改动。' }
       }
     }
     const staging = join(root(), '.' + key + '-' + now())

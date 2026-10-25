@@ -68,6 +68,8 @@ function fakeChild() {
   return child
 }
 
+const tick = () => new Promise(resolve => setImmediate(resolve))
+
 test('windows: probe lines reach the shell; a PowerShell that never answers marks it unsupported', async () => {
   const dir = tempDir()
   try {
@@ -101,6 +103,118 @@ test('windows: probe lines reach the shell; a PowerShell that never answers mark
     assert.equal(blocked.get().supported, false)
     assert.match(blocked.get().reason, /AuthorizationManager/)
     assert.equal(probes.at(-1), null)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('probe parsing keeps the old object shape and sanitizes the optional physical monitor', () => {
+  const base = { fullscreen: true, samePigScreen: false, state: 3, cls: 'Chrome_WidgetWin_1' }
+  const old = parseProbeLine(JSON.stringify(base))
+  assert.deepEqual(old, base)
+  assert.equal('monitor' in old, false)
+  assert.deepEqual(parseProbeLine(JSON.stringify({ ...base, monitor: { x: -1920, y: -120, width: 1920, height: 1080 } })),
+    { ...base, monitor: { x: -1920, y: -120, width: 1920, height: 1080 } })
+  for (const monitor of [null, {}, { x: 1, y: 2, width: 0, height: 3 }, { x: 1, y: 2, width: 3 },
+    { x: '1', y: 2, width: 3, height: 4 }, [0, 0, 1, 1]]) {
+    assert.deepEqual(parseProbeLine(JSON.stringify({ ...base, monitor })), base)
+  }
+})
+
+test('windows: opt-in pig display rect overrides the HWND screen flag on every probe', async () => {
+  const dir = tempDir()
+  try {
+    const probes = []
+    let pig = { x: 0, y: 0, width: 2560, height: 1440 }
+    let spawned = null
+    const watch = createFullscreenWatch({
+      path: join(dir, 'f.json'), platform: 'win32', selfPid: 77, pigHwnd: () => '12345',
+      pigDisplayBounds: () => null, windowsPigDisplayBounds: () => pig,
+      onProbe: probe => probes.push(probe),
+      spawn: () => { spawned = { child: fakeChild() }; return spawned.child },
+    })
+    watch.start()
+    const send = async line => { spawned.child.stdout.write(line + '\n'); await tick() }
+    const monitor = '{"x":0,"y":0,"width":2560,"height":1440}'
+    await send(`{"fullscreen":true,"samePigScreen":false,"state":0,"cls":"Chrome_WidgetWin_1","monitor":${monitor}}`)
+    assert.equal(probes.length, 1)
+    assert.equal(probes[0].samePigScreen, true, 'stage HWND said false, but the foreground monitor is the pig monitor')
+    assert.deepEqual(probes[0].monitor, { x: 0, y: 0, width: 2560, height: 1440 })
+
+    pig = { x: -1920, y: 0, width: 1920, height: 1080 }
+    await send(`{"fullscreen":true,"samePigScreen":true,"state":0,"cls":"Chrome_WidgetWin_1","monitor":${monitor}}`)
+    assert.equal(probes[0].samePigScreen, true)
+    assert.equal(probes[1].samePigScreen, false, 'moving the pig to the negative-origin monitor changes the next probe')
+
+    pig = { x: 2, y: 0, width: 2558, height: 1438 }
+    await send(`{"fullscreen":true,"samePigScreen":false,"state":0,"cls":"Chrome_WidgetWin_1","monitor":${monitor}}`)
+    assert.equal(probes[2].samePigScreen, true, '1-2px Electron rounding still counts as the same physical monitor')
+
+    pig = { x: 3, y: 0, width: 2557, height: 1437 }
+    await send(`{"fullscreen":true,"samePigScreen":true,"state":0,"cls":"Chrome_WidgetWin_1","monitor":${monitor}}`)
+    assert.equal(probes[3].samePigScreen, false, 'beyond the rounding tolerance is a different monitor')
+    watch.stop()
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('windows: missing/invalid monitor and invalid pig rect keep the PS HWND flag', async () => {
+  const dir = tempDir()
+  try {
+    const probes = []
+    let pig = { x: 0, y: 0, width: 2560, height: 1440 }
+    let throwOnBounds = false
+    let spawned = null
+    const watch = createFullscreenWatch({
+      path: join(dir, 'f.json'), platform: 'win32', selfPid: 77, pigHwnd: () => '12345',
+      pigDisplayBounds: () => null,
+      windowsPigDisplayBounds: () => { if (throwOnBounds) throw new Error('display list changing'); return pig },
+      onProbe: probe => probes.push(probe),
+      spawn: () => { spawned = { child: fakeChild() }; return spawned.child },
+    })
+    watch.start()
+    const send = async line => { spawned.child.stdout.write(line + '\n'); await tick() }
+
+    await send('{"fullscreen":true,"samePigScreen":false,"state":0,"cls":"Chrome_WidgetWin_1"}')
+    assert.equal(probes[0].samePigScreen, false, 'old PS line has no monitor: keep its HWND flag')
+
+    await send('{"fullscreen":true,"samePigScreen":true,"state":0,"cls":"Chrome_WidgetWin_1","monitor":{"x":0,"y":0,"width":0,"height":1440}}')
+    assert.equal(probes[1].samePigScreen, true, 'invalid monitor is ignored: keep its HWND flag')
+
+    pig = null
+    await send('{"fullscreen":true,"samePigScreen":false,"state":0,"cls":"Chrome_WidgetWin_1","monitor":{"x":0,"y":0,"width":2560,"height":1440}}')
+    assert.equal(probes[2].samePigScreen, false, 'no pig rect: keep its HWND flag')
+
+    pig = { x: NaN, y: 0, width: 2560, height: 1440 }
+    await send('{"fullscreen":true,"samePigScreen":true,"state":0,"cls":"Chrome_WidgetWin_1","monitor":{"x":0,"y":0,"width":2560,"height":1440}}')
+    assert.equal(probes[3].samePigScreen, true, 'invalid pig rect: keep its HWND flag')
+
+    pig = { x: 0, y: 0, width: 2560, height: 1440 }
+    throwOnBounds = true
+    await send('{"fullscreen":true,"samePigScreen":false,"state":0,"cls":"Chrome_WidgetWin_1","monitor":{"x":0,"y":0,"width":2560,"height":1440}}')
+    assert.equal(probes[4].samePigScreen, false, 'getter error: keep its HWND flag instead of dropping the probe')
+    watch.stop()
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('windows: split path without the opt-in callback keeps the PS HWND flag', async () => {
+  const dir = tempDir()
+  try {
+    const probes = []
+    let legacyCalls = 0
+    let spawned = null
+    const watch = createFullscreenWatch({
+      path: join(dir, 'f.json'), platform: 'win32', selfPid: 77, pigHwnd: () => '12345',
+      pigDisplayBounds: () => {
+        legacyCalls += 1
+        return { x: 0, y: 0, width: 2560, height: 1440 }
+      },
+      onProbe: probe => probes.push(probe),
+      spawn: () => { spawned = { child: fakeChild() }; return spawned.child },
+    })
+    watch.start()
+    spawned.child.stdout.write('{"fullscreen":true,"samePigScreen":false,"state":0,"cls":"Chrome_WidgetWin_1","monitor":{"x":0,"y":0,"width":2560,"height":1440}}\n')
+    await tick()
+    assert.equal(probes[0].samePigScreen, false, 'main.js split path has no physical getter: old HWND flag wins')
+    assert.equal(legacyCalls, 0, 'the old DIP*scale pigDisplayBounds is not used by the Windows override')
+    watch.stop()
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 

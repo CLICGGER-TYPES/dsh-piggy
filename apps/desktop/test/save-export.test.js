@@ -65,7 +65,7 @@ test('saveArchive opens only a ZIP save dialog and writes the selected destinati
   assert.deepEqual(result, { ok: true })
   assert.equal(f.calls.length, 1)
   assert.equal(f.calls[0].parent, 'panel')
-  assert.equal(f.calls[0].options.defaultPath, `/downloads/${NAME}`)
+  assert.equal(f.calls[0].options.defaultPath, join('/downloads', NAME))
   assert.deepEqual(f.calls[0].options.filters, [{ name: '小猪存档', extensions: ['zip'] }])
   assert.equal(f.writes[0].path, '/downloads/piggy.zip')
   assert.deepEqual(f.writes[0].bytes, Buffer.from(ZIP_BYTES))

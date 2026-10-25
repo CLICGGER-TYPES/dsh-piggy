@@ -494,7 +494,7 @@ async function workerMain() {
       mark('farm:normalize')
       const normalized = attempt('farm:normalize', () => farmMod.normalize(structuredClone(data)))
       const inputVersion = asObject(data)?.version
-      if (normalized.ok && isPlainObject(normalized.value) && inputVersion !== 4) {
+      if (normalized.ok && isPlainObject(normalized.value) && Number(inputVersion) < 4) {
         result.losses = farmLosses(asObject(data) ?? {}, normalized.value)
       }
       mark('farm:view')
@@ -619,11 +619,11 @@ async function workerMain() {
     attempt(`${label}:view-after-actions`, () => farmModule.view(data, api))
   }
 
-  /** 3.x→4.0 迁移的不变量（OLD_YIELD 与 extensions/farm/server.js 保持一致）。 */
+  /** 3.x→5.0 迁移的不变量（OLD_YIELD 与 extensions/farm/server.js 保持一致）。 */
   function farmLosses(before, after) {
     const out = []
     const OLD_YIELD = { sprout: 2, scallion: 3, coriander: 3, lettuce: 3, cabbage: 3, strawberry: 3, blueberry: 4, carrot: 4, sweetpotato: 3, tomato: 4, corn: 5, pumpkin: 2, sunflower: 3, watermelon: 2, grape: 3, melon: 2 }
-    if (after.version !== 4) out.push({ check: 'version', detail: `version=${after.version}` })
+    if (after.version !== 5) out.push({ check: 'version', detail: `version=${after.version}` })
     if (!(after.unlocked >= 6 && after.unlocked <= 18)) out.push({ check: 'unlocked', detail: `unlocked=${after.unlocked}` })
     for (const [key, count] of Object.entries(asObject(before.seeds) ?? {})) {
       if (!Number.isFinite(count) || count <= 0) continue
@@ -692,11 +692,11 @@ async function workerMain() {
       check,
       fired: coreLosses(before, Object.assign({ inventory: {}, dress: [], lessons: {}, traits: {}, souvenirs: [], memories: [] }, after)).some(entry => entry.check === check),
     })).concat([
-      { check: 'farm-seeds', fired: farmLosses({ seeds: { sprout: 3 } }, { version: 4 }).some(entry => entry.check === 'farm-seeds') },
-      { check: 'farm-plot-crop', fired: farmLosses({ plots: [{ crop: 'nonexistent' }] }, { version: 4, harvest: {} }).some(entry => entry.check === 'farm-plot-crop') },
-      { check: 'farm-plot-yield', fired: farmLosses({ plots: [{ crop: 'sprout' }] }, { version: 4, harvest: {} }).some(entry => entry.check === 'farm-plot-yield') },
-      { check: 'farm-tools', fired: farmLosses({ tools: { can: true } }, { version: 4, tools: {} }).some(entry => entry.check === 'farm-tools') },
-      { check: 'farm-refund', fired: farmLosses({ sprinklers: [true] }, { version: 4, refund: 0 }).some(entry => entry.check === 'farm-refund') },
+      { check: 'farm-seeds', fired: farmLosses({ seeds: { sprout: 3 } }, { version: 5 }).some(entry => entry.check === 'farm-seeds') },
+      { check: 'farm-plot-crop', fired: farmLosses({ plots: [{ crop: 'nonexistent' }] }, { version: 5, harvest: {} }).some(entry => entry.check === 'farm-plot-crop') },
+      { check: 'farm-plot-yield', fired: farmLosses({ plots: [{ crop: 'sprout' }] }, { version: 5, harvest: {} }).some(entry => entry.check === 'farm-plot-yield') },
+      { check: 'farm-tools', fired: farmLosses({ tools: { can: true } }, { version: 5, tools: {} }).some(entry => entry.check === 'farm-tools') },
+      { check: 'farm-refund', fired: farmLosses({ sprinklers: [true] }, { version: 5, refund: 0 }).some(entry => entry.check === 'farm-refund') },
     ])
   }
 }

@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 import { inflateRawSync } from 'node:zlib'
 
 import { REQUIRED_SKIN_SCENES, SKIN_SCENES, skinByKey } from '../data.js'
+import { normalizeSkinContact } from '../packages/pet-core/src/core/skins.js'
 
 const MAX_ZIP = 2 * 1024 * 1024
 const MAX_FILE = 96 * 1024
@@ -81,6 +82,12 @@ export function validateSkinFiles(files) {
   if (!KEY.test(key)) errors.push('key 只能用小写字母、数字和短横线，最长 24 位')
   if (key === 'default' || skinByKey(key) !== null) errors.push('key 与内置皮肤重名')
   if (typeof manifest?.label !== 'string' || manifest.label.trim() === '') errors.push('缺少皮肤名称 label')
+  // contact 可选；只要写了就必须是合法坐标，免得作者以为声明生效了、小手却还在自动估计。
+  const contact = normalizeSkinContact(manifest?.contact)
+  if (manifest !== null && typeof manifest === 'object' && manifest.contact !== undefined
+    && manifest.contact !== null && contact === null) {
+    errors.push('contact 需要 x / y 两个 0 到 1 之间的数字（立绘方框里的位置）')
+  }
   const scenes = SKIN_SCENES.filter(scene => files.has(`${scene}.png`) || files.has(`${scene}.svg`))
   for (const scene of REQUIRED_SKIN_SCENES) if (!scenes.includes(scene)) errors.push(`缺少 ${scene}.png（旧包也可用 ${scene}.svg）`)
   for (const scene of scenes) if (files.has(`${scene}.png`) && files.has(`${scene}.svg`)) errors.push(`${scene} 只能放 PNG 或 SVG 中的一种`)
@@ -101,7 +108,7 @@ export function validateSkinFiles(files) {
     metadata: {
       key, label: manifest.label.trim().slice(0, 30), author: String(manifest.author ?? '玩家').slice(0, 30),
       description: String(manifest.description ?? '').slice(0, 100), emoji: String(manifest.emoji ?? '🎨').slice(0, 4),
-      art: `custom-${key}`, scenes, custom: true,
+      art: `custom-${key}`, scenes, custom: true, contact,
     },
   }
 }

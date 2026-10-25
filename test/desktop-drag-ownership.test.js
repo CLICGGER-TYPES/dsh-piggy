@@ -4,7 +4,8 @@ import { install } from '../src/client/desktop/index.js'
 
 test('direct geometry requests cannot take placement ownership during native dragging, but release still reads geometry', () => {
   const saved = Object.fromEntries(['window','document','getComputedStyle','requestAnimationFrame'].map(key => [key,globalThis[key]]))
-  const scene = { dragging: true, getAttribute: () => scene.dragging ? 'true' : null }
+  const scene = { dragging: false, getAttribute: name =>
+    name === 'data-dragging' || (name === 'data-window-dragging' && scene.dragging) ? 'true' : null }
   const body = {}
   const host = { style:{right:'0px',bottom:'0px',translate:''}, offsetLeft:0,offsetTop:0,offsetWidth:0,offsetHeight:0,offsetParent:body,
     querySelector:()=>null,querySelectorAll:()=>[],closest:()=>null,getAttribute:()=>null }
@@ -19,6 +20,10 @@ test('direct geometry requests cannot take placement ownership during native dra
     install({role:'pet',platform:'linux',panel:{toggle(){}},beginDrag(){},endDrag(){calls.push('end')},
       place(request){calls.push(['place',request]);return null},geometry:()=>null})
     const shell=window.__dshPiggyShell
+    shell.syncGeometry()
+    assert.deepEqual(calls,[['place',{}]],'holding the pig without moving must still refresh the hand drawing geometry')
+    calls.length=0
+    scene.dragging=true
     shell.syncGeometry()
     assert.deepEqual(calls,[],'even place({}) mutates native drag/flight ownership and must not run here')
     shell.endDrag()

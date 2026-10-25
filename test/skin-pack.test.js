@@ -23,6 +23,30 @@ test('an imported sleep pose is optional and retained in skin metadata', () => {
   assert.ok(result.metadata.scenes.includes('sleep'))
 })
 
+// A-2: skin.json 可以带可选的头部接触点（摸摸手落点）；旧包没字段完全兼容。
+test('an optional contact point is validated, kept in metadata, and optional for old packs', () => {
+  const plain = validateSkinFiles(files())
+  assert.equal(plain.ok, true)
+  assert.equal(plain.metadata.contact, null, 'old packs without the field stay untouched')
+
+  const declared = files()
+  declared.set('skin.json', Buffer.from(JSON.stringify({ key: 'berry', label: '莓果猪', contact: { x: 0.5, y: 0.12 } })))
+  const accepted = validateSkinFiles(declared)
+  assert.equal(accepted.ok, true, JSON.stringify(accepted.errors))
+  assert.deepEqual(accepted.metadata.contact, { x: 0.5, y: 0.12 })
+
+  for (const bad of [{ x: 1.2, y: 0.2 }, { x: 0.5, y: -0.1 }, { x: null, y: 0.2 }, { x: '0.5', y: 0.2 }, {}, [0.5, 0.2]]) {
+    const broken = files()
+    broken.set('skin.json', Buffer.from(JSON.stringify({ key: 'berry', label: '莓果猪', contact: bad })))
+    const rejected = validateSkinFiles(broken)
+    assert.equal(rejected.ok, false, JSON.stringify(bad))
+    assert.ok(rejected.errors.some(error => error.includes('contact')), JSON.stringify(rejected.errors))
+  }
+  const explicitNull = files()
+  explicitNull.set('skin.json', Buffer.from(JSON.stringify({ key: 'berry', label: '莓果猪', contact: null })))
+  assert.equal(validateSkinFiles(explicitNull).ok, true, 'null means "no declaration"')
+})
+
 test('C6 rejects missing scenes and unsafe SVG features', () => {
   const missing = files()
   missing.delete('pet.svg')

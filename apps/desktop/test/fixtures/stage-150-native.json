@@ -1,0 +1,176 @@
+{
+  "plan": {
+    "records": [
+      {
+        "id": 2121262686,
+        "label": "QXL0001",
+        "scaleFactor": 1,
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 800
+        },
+        "workArea": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 752
+        },
+        "dipWorkArea": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 752
+        },
+        "physicalWorkArea": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 752
+        }
+      },
+      {
+        "id": 2573313688,
+        "label": "QXL0001",
+        "scaleFactor": 1.5,
+        "bounds": {
+          "x": -854,
+          "y": 800,
+          "width": 2561,
+          "height": 1441
+        },
+        "workArea": {
+          "x": -854,
+          "y": 800,
+          "width": 2561,
+          "height": 1393
+        },
+        "dipWorkArea": {
+          "x": -854,
+          "y": 800,
+          "width": 2561,
+          "height": 1393
+        },
+        "physicalWorkArea": {
+          "x": -1280,
+          "y": 800,
+          "width": 3842,
+          "height": 2090
+        }
+      }
+    ],
+    "union": {
+      "x": -1280,
+      "y": 0,
+      "width": 3842,
+      "height": 2890
+    },
+    "dip": {
+      "x": -855,
+      "y": 266,
+      "width": 2563,
+      "height": 1929
+    },
+    "physical": {
+      "x": -1282,
+      "y": -1,
+      "width": 3845,
+      "height": 2894
+    },
+    "pad": 1
+  },
+  "attempts": [
+    {
+      "request": {
+        "x": -1280,
+        "y": 0,
+        "width": 3842,
+        "height": 2890
+      },
+      "dip": {
+        "x": -854,
+        "y": 267,
+        "width": 2562,
+        "height": 1927
+      },
+      "physical": {
+        "x": -1280,
+        "y": 1,
+        "width": 3843,
+        "height": 2891
+      }
+    },
+    {
+      "request": {
+        "x": -1281,
+        "y": -1,
+        "width": 3844,
+        "height": 2892
+      },
+      "dip": {
+        "x": -855,
+        "y": 266,
+        "width": 2563,
+        "height": 1929
+      },
+      "physical": {
+        "x": -1282,
+        "y": -1,
+        "width": 3845,
+        "height": 2894
+      }
+    },
+    {
+      "request": {
+        "x": -1282,
+        "y": -2,
+        "width": 3846,
+        "height": 2894
+      },
+      "dip": {
+        "x": -855,
+        "y": 265,
+        "width": 2565,
+        "height": 1930
+      },
+      "physical": {
+        "x": -1282,
+        "y": -3,
+        "width": 3848,
+        "height": 2896
+      }
+    }
+  ],
+  "window": {
+    "id": 1,
+    "bounds": {
+      "x": -855,
+      "y": 266,
+      "width": 2564,
+      "height": 1930
+    },
+    "content": {
+      "x": -855,
+      "y": 266,
+      "width": 2564,
+      "height": 1930
+    },
+    "physical": {
+      "x": -1282,
+      "y": -1,
+      "width": 3847,
+      "height": 2895
+    },
+    "physicalContent": {
+      "x": -1282,
+      "y": -1,
+      "width": 3847,
+      "height": 2895
+    },
+    "zoom": 0.6664933714582791,
+    "visible": true,
+    "minimized": false,
+    "focused": false
+  }
+}

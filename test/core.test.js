@@ -443,13 +443,13 @@ test('mood: dead beats sick beats working beats everything else', () => {
   assert.equal(mood(pig, T0).key, 'dead')
 })
 
-test('拿起/戳一下会刷新活跃时间：sleepy 立刻不再是 sleepy', () => {
+test('拿起/戳一下会刷新活跃时间，但长时间无互动不再触发睡眠', () => {
   const pig = hatchEgg(T0)
   pig.lastActiveAt = T0 - 55 * MIN
-  assert.equal(mood(pig, T0).key, 'sleepy')
+  assert.notEqual(mood(pig, T0).key, 'sleepy')
   const result = touch(pig, T0)
   assert.equal(result.ok, true)
-  assert.equal(result.woke, true)
+  assert.equal(result.woke, false)
   assert.equal(mood(pig, T0).key === 'sleepy', false)
   assert.equal(pig.lastActiveAt, T0)
 })
@@ -534,11 +534,13 @@ test('work is refused while away, sick, hungry or dead', () => {
   assert.equal(startWork(hatchEgg(T0), 'moon', T0).reason, 'unknown')
 })
 
-test('care actions are blocked while the pig is away (except petting)', () => {
+test('food and cleaning are allowed while the pig is away, play is not', () => {
   const pig = hatchEgg(T0)
+  pig.inventory = { apple: 1, soap: 1 }
   startWork(pig, 'bricks', T0)
-  assert.equal(act(pig, 'feed', T0).reason, 'away')
-  assert.equal(act(pig, 'bathe', T0).reason, 'away')
+  assert.equal(act(pig, 'feed', T0).ok, true, 'feeding survives the trip')
+  assert.equal(act(pig, 'bathe', T0).ok, true, 'cleaning survives the trip')
+  assert.equal(act(pig, 'play', T0).reason, 'away', 'playing still needs the pig at home')
   assert.equal(act(pig, 'pet', T0).ok, true, 'you can still pat it')
 })
 
@@ -1033,12 +1035,11 @@ test('a trip is refused when broke, and nothing is spent', () => {
   assert.equal(startTrip(pig, 'mars', T0).reason, 'unknown')
 })
 
-test('care is blocked while travelling, and the pig can be recalled', () => {
+test('another activity is blocked while travelling, and the pig can be recalled', () => {
   const pig = hatchEgg(T0)
   pig.coins = 200
   const trip = TRIPS[0]
   startTrip(pig, trip.key, T0)
-  assert.equal(act(pig, 'feed', T0).reason, 'away')
   assert.equal(startWork(pig, 'bricks', T0).reason, 'away')
 
   const recalled = callOffActivity(pig, T0)
@@ -1301,6 +1302,13 @@ test('developer mode can force any state, but only valid ones', () => {
     applyDevPatch(before, { __advanceMs: 12 * 3600_000 }, T0)
     assert.ok(before.satiety < 100, 'time moved')
   }
+})
+
+test('obsolete developer sleepy patch cannot restore persistent inactivity sleep', () => {
+  const pig = hatchEgg(T0)
+  applyDevPatch(pig, { satiety: 90, happiness: 90, cleanliness: 90, sleepy: true }, T0)
+  assert.notEqual(mood(pig, T0).key, 'sleepy')
+  assert.equal(pig.lastActiveAt, T0)
 })
 
 test('a forced age is marked, and can be put back on the real clock', () => {

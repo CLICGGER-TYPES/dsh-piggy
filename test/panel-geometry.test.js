@@ -17,6 +17,19 @@ const { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } = panelGe
 const AREA = { x: 0, y: 0, width: 1920, height: 1040 }
 const PIG = { x: 40, y: 60, width: 56, height: 56 }
 
+test('below-pig speech reserves panel space without changing the body or foot anchor', () => {
+  const pig = { x: 600, y: 58, width: 60, height: 60 }
+  const speech = { x: 475, y: 128, width: 185, height: 74 }
+  const reference = panelGeometry.panelReferenceFor(pig, speech)
+  const anchor = panelAnchorFor(reference, AREA)
+  const panel = panelBoundsFor(reference, anchor, { width: 292, height: 400 })
+  assert.ok(panel.y >= speech.y + speech.height)
+  assert.deepEqual(pig, { x: 600, y: 58, width: 60, height: 60 })
+  assert.equal(reference.x, pig.x)
+  assert.equal(reference.width, pig.width)
+  assert.equal(panelGeometry.panelReferenceFor(pig, null), pig)
+})
+
 /** 125% 缩放：逻辑坐标 → 物理像素取整 → 再换回逻辑坐标（向下取整），回读值和请求值差 0~1px。 */
 const scaled = at => ({ x: Math.floor(Math.round(at.x * 1.25) / 1.25), y: Math.floor(Math.round(at.y * 1.25) / 1.25) })
 

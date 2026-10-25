@@ -52,3 +52,23 @@ test('dirty and hungry keep the selected pig sprite through condition changes', 
     }
   }
 })
+
+
+test('pet spring retains the selected custom image and invalidates queued pre-pet artwork', () => {
+  const attrs = { 'data-art': 'skin-mint', 'data-art-actions': 'true', 'data-mood': 'fine' }
+  const pig = { getAttribute: k => attrs[k] ?? null, setAttribute(k, v) { attrs[k] = v } }
+  const image = { src: '', getAttribute() { return this.src }, style: { setProperty() {} } }
+  syncPigArt(pig, image, null)
+  const original = image.src
+  let queued
+  try {
+    setArtSwapHook(apply => { queued = apply })
+    attrs['data-react'] = 'pet'; syncPigArt(pig, image, null)
+    attrs['data-pet-snap'] = 'true'; syncPigArt(pig, image, null)
+    queued()
+    assert.equal(image.src, original)
+    delete attrs['data-pet-snap']; delete attrs['data-react']
+    setArtSwapHook(null); syncPigArt(pig, image, null)
+    assert.equal(image.src, original)
+  } finally { setArtSwapHook(null) }
+})

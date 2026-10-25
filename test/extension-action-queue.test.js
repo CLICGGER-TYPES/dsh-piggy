@@ -79,3 +79,36 @@ test('a network failure releases the barrier and the next extension click still 
   assert.equal(ctx.busy, false)
   assert.deepEqual(bubbles, ['操作没送到宿主'])
 })
+
+test('a reply waits for an existing request instead of disappearing behind busy', async t => {
+  const { send, requests, ctx } = setup(t)
+  const previous = send('timeScale', { scale: 1 })
+  const reply = send('reply', { line: 42, index: 0 })
+  await tick()
+  assert.equal(requests.length, 1)
+  requests[0].finish()
+  await previous
+  await tick()
+  assert.deepEqual(requests[1].body, { action: 'reply', line: 42, index: 0 })
+  requests[1].finish({ ok: true })
+  assert.equal((await reply).ok, true)
+  assert.equal(ctx.busy, false)
+})
+
+test('a queued reply preserves stale rejection and unmount cancels unsent replies', async t => {
+  const { send, requests, ctx } = setup(t)
+  const previous = send('chat', { reason: 'time' })
+  const reply = send('reply', { line: 42, index: 0 })
+  requests[0].finish()
+  await previous
+  await tick()
+  requests[1].finish({ ok: false, reason: 'stale-line' })
+  assert.equal((await reply).reason, 'stale-line', 'queueing must not turn a replaced question into a successful answer')
+  const action = send('timeScale', { scale: 1 })
+  const canceled = send('reply', { line: 43, index: 0 })
+  ctx.stopped = true
+  requests[2].finish()
+  await action
+  assert.equal(await canceled, null)
+  assert.equal(requests.length, 3)
+})

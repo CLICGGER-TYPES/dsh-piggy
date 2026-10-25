@@ -1,6 +1,7 @@
 // @ts-check
 /** 0.37 迁移、离线结算、真实路由和工作事件提交的整合回归。 */
 import assert from 'node:assert/strict'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../core.js'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -32,7 +33,7 @@ test('v12 和 v13 存档经真实 Store 打开和落盘后保留钱包、背包�
     try {
       runtime.dispose()
       const saved = read(statePath)
-      assert.equal(saved.version, 14)
+      assert.equal(saved.version, CURRENT_STATE_VERSION)
       assert.equal(saved.coins, 731)
       assert.equal(saved.inventory.apple, 7, JSON.stringify(saved.inventory))
       assert.deepEqual(saved.wallets.farm, { ...legacy.wallets.farm, buyable: true })

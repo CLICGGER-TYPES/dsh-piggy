@@ -313,14 +313,18 @@ test('先吃完食物后继续衰减，鱼饵 / 药品 / 王冠不消耗', () =>
   assert.deepEqual(pig.inventory, { bait_worm: 4, crown: 1, [medicineKey]: 2 })
   assert.ok(pig.pending.some(entry => entry.text.includes('苹果×1') && entry.text.includes('背包里没吃的了')))
 })
-test('离线发生在外出过程中也可吃背包食物，手动喂食仍受外出限制', async () => {
+test('离线发生在外出过程中也可吃背包食物，手动喂食同样放行', async () => {
   const { act, startWork } = await import('../core.js')
   const pig = pigWithFood()
   startWork(pig, 'bricks', START)
   pig.satiety = 26
-  assert.equal(act(pig, 'feed', START, 'apple').reason, 'away')
-  decay(pig, START + 10 * 60_000, never)
+  const manual = act(pig, 'feed', START, 'apple')
+  assert.equal(manual.ok, true)
   assert.equal(pig.stats.feeds, 1)
+  assert.equal(pig.inventory.apple, 29)
+  decay(pig, START + 10 * 60_000, never)
+  assert.equal(pig.stats.feeds, 1, 'the same bite is not replayed by the offline feed')
+  assert.equal(pig.inventory.apple, 29, 'and the apple is not spent twice')
   assert.ok(pig.satiety > THRESHOLDS.hungry)
 })
 

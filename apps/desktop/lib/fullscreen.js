@@ -32,7 +32,8 @@ export function shouldHide(mode, probe) {
 
 /**
  * Windows 探测脚本。用前台窗口和猪窗口各自所在的显示器句柄比较是不是同一块屏，
- * 不用把物理像素换算成 Electron 的 DIP。父进程（外壳）没了就自己退出。
+ * 不用把物理像素换算成 Electron 的 DIP；另报前台显示器的 rcMonitor 物理矩形，
+ * 让舞台可以按猪的真实屏幕比较（窗口跨屏时 HWND 不够）。父进程（外壳）没了就自己退出。
  * @param {number} parentPid @param {string} pigHwnd 十进制窗口句柄
  */
 export function windowsProbeScript(parentPid, pigHwnd) {
@@ -66,15 +67,18 @@ public static class PiggyFullscreen {
     RECT r; GetWindowRect(h, out r);
     IntPtr mon = MonitorFromWindow(h, 2);
     MONITORINFO mi = new MONITORINFO(); mi.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-    GetMonitorInfo(mon, ref mi);
+    bool gotMonitor = GetMonitorInfo(mon, ref mi);
     RECT m = mi.rcMonitor;
     bool covers = r.L <= m.L && r.T <= m.T && r.R >= m.R && r.B >= m.B;
     bool fs = covers || q == 3 || q == 4;
     bool same = pig == IntPtr.Zero || MonitorFromWindow(pig, 2) == mon;
-    return Line(fs, same, q, c);
+    return gotMonitor ? LineWithMonitor(fs, same, q, c, m) : Line(fs, same, q, c);
   }
   static string Line(bool fs, bool same, int q, string c) {
     return "{\"fullscreen\":" + (fs ? "true" : "false") + ",\"samePigScreen\":" + (same ? "true" : "false") + ",\"state\":" + q + ",\"cls\":\"" + c.Replace("\\", "").Replace("\"", "") + "\"}";
+  }
+  static string LineWithMonitor(bool fs, bool same, int q, string c, RECT m) {
+    return "{\"fullscreen\":" + (fs ? "true" : "false") + ",\"samePigScreen\":" + (same ? "true" : "false") + ",\"state\":" + q + ",\"cls\":\"" + c.Replace("\\", "").Replace("\"", "") + "\",\"monitor\":{\"x\":" + m.L + ",\"y\":" + m.T + ",\"width\":" + (m.R - m.L) + ",\"height\":" + (m.B - m.T) + "}}";
   }
 }
 '@
@@ -95,13 +99,42 @@ export function encodePowerShell(script) {
   return Buffer.from(script, 'utf16le').toString('base64')
 }
 
+/** @param {unknown} value @returns {{x:number,y:number,width:number,height:number}|null} */
+function sanitizeMonitorRect(value) {
+  if (value === null || typeof value !== 'object') return null
+  const { x, y, width, height } = /** @type {any} */ (value)
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null
+  return { x, y, width, height }
+}
+
 /** 解析探测进程的一行输出；不是合法 JSON 就当没收到。 */
 export function parseProbeLine(line) {
   try {
     const value = JSON.parse(String(line).trim())
     if (typeof value?.fullscreen !== 'boolean') return null
-    return { fullscreen: value.fullscreen, samePigScreen: value.samePigScreen !== false, state: Number(value.state) || 0, cls: String(value.cls ?? '') }
+    const probe = { fullscreen: value.fullscreen, samePigScreen: value.samePigScreen !== false, state: Number(value.state) || 0, cls: String(value.cls ?? '') }
+    const monitor = sanitizeMonitorRect(value.monitor)
+    // 旧版 PowerShell 不报 monitor：对象保持原来的四个字段。
+    return monitor === null ? probe : { ...probe, monitor }
   } catch { return null }
+}
+
+/** 两个物理矩形是不是同一块显示器（PS 的 rcMonitor 与 Electron 换算可能差 1~2px）。 */
+function samePhysicalMonitor(a, b) {
+  const edges = rect => [Math.round(rect.x) + 0, Math.round(rect.y) + 0,
+    Math.round(rect.x + rect.width) + 0, Math.round(rect.y + rect.height) + 0]
+  const [ax, ay, ar, ab] = edges(a)
+  const [bx, by, br, bb] = edges(b)
+  const tolerance = 2
+  return Math.abs(ax - bx) <= tolerance && Math.abs(ay - by) <= tolerance
+    && Math.abs(ar - br) <= tolerance && Math.abs(ab - bb) <= tolerance
+}
+
+/** @param {any} value @returns {boolean} */
+function isPhysicalRect(value) {
+  return value !== null && typeof value === 'object'
+    && [value.x, value.y, value.width, value.height].every(Number.isFinite)
+    && value.width > 0 && value.height > 0
 }
 
 /** `xprop -root _NET_ACTIVE_WINDOW` → 窗口 id（0x… 字符串），没有就 null。 */
@@ -129,7 +162,8 @@ export function parseWindowRect(text) {
  * @param {{
  *   path: string, platform: string, selfPid: number,
  *   pigHwnd: () => string, pigDisplayBounds: () => ({x:number,y:number,width:number,height:number}|null),
- *   onProbe: (probe: {fullscreen:boolean,samePigScreen:boolean}|null) => void,
+ *   windowsPigDisplayBounds?: () => ({x:number,y:number,width:number,height:number}|null),
+ *   onProbe: (probe: {fullscreen:boolean,samePigScreen:boolean,monitor?:{x:number,y:number,width:number,height:number}}|null) => void,
  *   log?: (...parts: any[]) => void,
  *   spawn?: typeof nodeSpawn, execFile?: typeof nodeExecFile,
  * }} options
@@ -157,6 +191,16 @@ export function createFullscreenWatch(options) {
     onProbe(null)
   }
 
+  /** 只有舞台注入 getter 时才用 PS 报来的前台显示器物理矩形替代 HWND 比较。 */
+  function overrideWindowsPigScreen(probe) {
+    const getBounds = options.windowsPigDisplayBounds
+    if (typeof getBounds !== 'function' || probe.monitor === undefined) return probe
+    let pig = null
+    try { pig = getBounds() } catch { return probe }
+    if (!isPhysicalRect(pig)) return probe
+    return { ...probe, samePigScreen: samePhysicalMonitor(probe.monitor, pig) }
+  }
+
   function startWindows() {
     const script = windowsProbeScript(selfPid, options.pigHwnd())
     try {
@@ -169,11 +213,12 @@ export function createFullscreenWatch(options) {
       buffer += chunk
       let at
       while ((at = buffer.indexOf('\n')) >= 0) {
-        const probe = parseProbeLine(buffer.slice(0, at))
+        const parsed = parseProbeLine(buffer.slice(0, at))
         buffer = buffer.slice(at + 1)
-        if (probe === null) continue
+        if (parsed === null) continue
         if (supported !== true) { supported = true; reason = ''; log('fullscreen probe ready') }
-        onProbe(probe)
+        // 每一行都重新问猪在哪块屏：拖动、换屏、热插拔后当次就生效。
+        onProbe(overrideWindowsPigScreen(parsed))
       }
     })
     child.stderr.setEncoding('utf8')

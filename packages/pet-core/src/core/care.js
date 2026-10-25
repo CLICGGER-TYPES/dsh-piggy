@@ -20,6 +20,15 @@ import { bodyWeightClass, reducePlayWeight } from './weight.js'
 /** Which line scene each care action makes the pig speak from. */
 const CARE_SCENE = Object.freeze({ feed: 'eat', bathe: 'bathe', play: 'play', pet: 'pet' })
 
+/**
+ * 用户 2026-10-24：外出期间可以喂食、清洁，正常时间消耗照旧；活动本身不动。
+ * 玩耍还要猪在家，所以不在这里放行。
+ * @param {string} action
+ */
+export function careAllowedWhileAway(action) {
+  return action === 'feed' || action === 'bathe'
+}
+
 /** Which shelves the pig can actually use right now, for the panel's picker. */
 export function careView(state) {
   const out = {}
@@ -72,7 +81,7 @@ export function act(state, action, nowMs, itemKey) {
   if (state.hatched !== true) return { ok: false, reason: 'box' }
   decay(state, nowMs)
   if (state.dead) return { ok: false, reason: 'dead' }
-  if (state.activity !== null && action !== 'pet') return { ok: false, reason: 'away' }
+  if (state.activity !== null && action !== 'pet' && !careAllowedWhileAway(action)) return { ok: false, reason: 'away' }
 
   return applySettledCare(state, { action, nowMs, itemKey })
 }

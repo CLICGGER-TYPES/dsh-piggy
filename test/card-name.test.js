@@ -16,3 +16,21 @@ test('居民卡输入上限5字；新名字保存同限，旧档长名字保留'
  findByAttr(contentOf(dom),'data-card-edit','name').fire('click')
  assert.equal(findByAttr(contentOf(dom),'data-card-input','name').maxLength,5)
 })
+
+test('旧存档修改次数为零，居民卡仍可打开性格生日编辑并重复保存',async()=>{
+ const now=1800000000000,state=hatchEgg(now)
+ state.profileEdits=0
+ const {dom}=await mount({status:{...SNAPSHOT,profile:profileView(state,now),pig:PIG}})
+ openPanel(dom,'card')
+ let open=findByAttr(contentOf(dom),'data-card-once','open')
+ assert.ok(open,'旧次数用完也显示入口')
+ assert.ok(!contentOf(dom).allText().includes('只能改这一次'))
+ open.fire('click')
+ assert.ok(findByAttr(contentOf(dom),'data-card-once','personality'))
+ findByAttr(contentOf(dom),'data-card-once','save').fire('click')
+ await new Promise(resolve=>setTimeout(resolve,0))
+ open=findByAttr(contentOf(dom),'data-card-once','open')
+ assert.ok(open,'保存后入口保留')
+ open.fire('click')
+ assert.ok(findByAttr(contentOf(dom),'data-card-once','save'),'可再次编辑')
+})

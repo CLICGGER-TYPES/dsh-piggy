@@ -1,5 +1,6 @@
 // @ts-check
 import assert from 'node:assert/strict'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../core.js'
 import { test } from 'node:test'
 import { ACHIEVEMENTS, FISH } from '../data.js'
 import { adopt, hatchEgg, migrate, reset, settleAchievements, achievementsView } from '../core.js'
@@ -40,7 +41,7 @@ test('old saves backfill provable achievements silently without invented dates',
   state.stats.jobs = 10
   state.stats.plays = 20
   const updated = migrate(state, NOW + 10)
-  assert.equal(updated.version, 14)
+  assert.equal(updated.version, CURRENT_STATE_VERSION)
   assert.equal(entry(updated, 'jobs-ten').acquired, true)
   assert.equal(entry(updated, 'jobs-ten').firstAt, null)
   assert.equal(entry(updated, 'jobs-ten').recovered, true)

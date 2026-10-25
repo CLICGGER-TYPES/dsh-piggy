@@ -1,10 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { SNAPSHOT, contentOf, findByAttr, findByClass, mount, openPanel, settle } from './helpers/bundle.js'
+import { SNAPSHOT, contentOf, findByAttr, findByClass, mount, openPanel, sceneOf, settle } from './helpers/bundle.js'
 
 const fishing = { pending: null, bag: [], period: 'evening', autoTrips: 0 }
 const bait = { key: 'bait_worm', kind: 'bait', label: '蚯蚓鱼饵', emoji: '🪱', price: 5 }
+const rod = { level: 1, key: 'bamboo', label: '竹竿', emoji: '🎋' }
+const spots = [
+  { key: 'river', label: '小河', emoji: '🏞', price: 0, unlocked: true, open: true, kinds: 15 },
+  { key: 'lake', label: '湖', emoji: '🏕', price: 1500, unlocked: false, open: true, kinds: 12 },
+  { key: 'sea', label: '海边', emoji: '🏖', price: 4000, unlocked: false, open: true, kinds: 9 },
+  { key: 'night', label: '夜潭', emoji: '🌌', price: 9000, unlocked: true, open: false, kinds: 5 },
+]
 const status = extra => ({ ...SNAPSHOT, fishing: { ...fishing, ...extra }, canGoOut: true,
   shop: [...SNAPSHOT.shop, bait], inventory: { ...SNAPSHOT.inventory, bait_worm: 20 } })
 
@@ -187,4 +194,187 @@ test('G caught result shows rarity stars; auto fishing explains why it is off', 
   const poor = await mount({ status: { ...status(), inventory: { ...SNAPSHOT.inventory, bait_worm: 4 } } })
   openPanel(poor.dom, 'fishing')
   assert.match(contentOf(poor.dom).allText(), /点不了：鱼饵只剩 4 个，不够 10 个/)
+})
+
+test('U24-7 ready layout: scenic hero, bait counts, closed sections and the teal cast', async () => {
+  const shrimp = { key: 'bait_shrimp', kind: 'bait', label: '鲜虾鱼饵', emoji: '🦐', price: 15 }
+  const glow = { key: 'bait_glow', kind: 'bait', label: '夜光鱼饵', emoji: '🟢', price: 40 }
+  const base = status({ rod, spots })
+  const { dom } = await mount({ status: { ...base, shop: [...base.shop, shrimp, glow],
+    inventory: { ...base.inventory, bait_worm: 3, bait_shrimp: 1, bait_glow: 0 } } })
+  openPanel(dom, 'fishing')
+  const content = contentOf(dom)
+  assert.match(content.allText(), /当前钓点.*小河/)
+  assert.notEqual(findByAttr(content, 'data-fish-scene', 'river'), undefined)
+  assert.notEqual(findByClass(content, 'dp-fish-hero-art'), undefined)
+  assert.equal(findByClass(content, 'dp-fish-art-img').src, '/dsh-piggy/art/fishing/scene-river.png?v=20bf68ad2766')
+  assert.equal(findByAttr(content, 'data-fish-bait', 'bait_worm').getAttribute('aria-pressed'), 'true')
+  assert.match(findByAttr(content, 'data-fish-bait', 'bait_worm').allText(), /蚯蚓.*×3/)
+  assert.equal(findByAttr(content, 'data-fish-bait', 'bait_glow').disabled, true)
+  assert.match(findByAttr(content, 'data-fish-bait', 'bait_glow').allText(), /×0/)
+  for (const key of ['spot', 'rod', 'auto']) {
+    const section = findByAttr(content, 'data-fish-section', key)
+    assert.notEqual(section, undefined, key)
+    assert.equal(section.getAttribute('open'), null, key + ' starts collapsed')
+  }
+  assert.match(findByAttr(content, 'data-fish-section', 'rod').allText(), /竹竿/)
+  const cast = findByAttr(content, 'data-fish', 'cast')
+  assert.equal(cast.disabled, false)
+  assert.match(cast.textContent, /抛竿/)
+  assert.notEqual(findByClass(content, 'dp-fish-cast'), undefined)
+})
+
+test('U24-7 expanded sections stay open across a status poll', async () => {
+  const options = { status: status({ rod, spots }) }
+  const { dom, intervals } = await mount(options)
+  openPanel(dom, 'fishing')
+  for (const key of ['spot', 'rod', 'auto']) {
+    const section = findByAttr(contentOf(dom), 'data-fish-section', key)
+    section.open = true
+    section.fire('toggle')
+  }
+  options.status = status({ rod, spots, period: 'night' })
+  const poll = intervals.find(entry => entry.delay === 4000).fn
+  await poll()
+  for (const key of ['spot', 'rod', 'auto']) {
+    const section = findByAttr(contentOf(dom), 'data-fish-section', key)
+    assert.equal(section.getAttribute('open'), '', key + ' remains open after the poll')
+  }
+})
+
+test('U24-7 waiting keeps only current spot/rod and the float, never auto stock above', async () => {
+  const pending = { id: 'wait-1', key: 'fish_carp', label: '鲤鱼', emoji: '🐟', phase: 'waiting', sizeCm: 20, price: 12,
+    bitesAt: Date.now() + 5000, hookUntil: Date.now() + 7000, expiresAt: Date.now() + 60000 }
+  const automation = { unlocked: true, stored: 2, usedHours: 1, full: false, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 10 }], upgrades: [] }
+  const { dom, calls } = await mount({ status: status({ rod, spots, pending, automation }) })
+  openPanel(dom, 'fishing')
+  const content = contentOf(dom)
+  assert.match(content.allText(), /当前：小河 · 竹竿/)
+  assert.match(content.allText(), /安静等鱼咬钩/)
+  const water = findByAttr(content, 'data-fish', 'hook')
+  assert.notEqual(water, undefined)
+  assert.notEqual(findByClass(content, 'dp-fish-bobber'), undefined)
+  assert.equal(findByAttr(content, 'data-fish-section', 'auto'), undefined)
+  assert.equal(findByAttr(content, 'data-fish-auto', '30'), undefined)
+  assert.equal(findByAttr(content, 'data-fish-collect', 'true'), undefined)
+  const before = calls.length
+  water.fire('click')
+  await settle()
+  assert.equal(calls.length, before, 'an early tap only changes the line, it does not spend or hook')
+})
+
+test('U24-7 fight keeps all three games and the current spot without auto stock above', async () => {
+  for (const fight of ['ring', 'bar', 'pull']) {
+    const hooked = { id: 'fight-' + fight, key: 'fish_carp', label: '鲤鱼', emoji: '🐟', phase: 'hooked', difficulty: 18, behavior: 'smooth', fight }
+    const automation = { unlocked: true, stored: 1, usedHours: 1, full: false, baitLimit: 64,
+      choices: [{ minutes: 30, attempts: 10 }], upgrades: [] }
+    const { dom } = await mount({ status: status({ rod, spots, pending: hooked, automation }) })
+    openPanel(dom, 'fishing')
+    const content = contentOf(dom)
+    assert.match(content.allText(), /当前：小河 · 竹竿/, fight)
+    assert.notEqual(findByAttr(content, 'data-fish-fight-art', 'tug'), undefined, fight)
+    assert.equal(findByClass(content, 'dp-fish-fight-img').src, '/dsh-piggy/art/fishing/fight-tug.png?v=ede56afb4637')
+    if (fight === 'ring') assert.notEqual(findByAttr(content, 'data-fish-qte', 'true'), undefined)
+    else assert.notEqual(findByAttr(content, 'data-fish-fight', fight), undefined)
+    assert.equal(findByAttr(content, 'data-fish-section', 'auto'), undefined)
+    assert.equal(findByAttr(content, 'data-fish-collect', 'true'), undefined)
+  }
+})
+
+test('U24-7 result uses actual fish facts, crucian art only for crucian, and keeps the bag action', async () => {
+  const crucian = { id: 'res-1', key: 'fish_crucian', label: '鲫鱼', emoji: '🐟', rarity: 'common', sizeCm: 18.4, price: 8, phase: 'caught' }
+  const one = await mount({ status: status({ rod, spots, pending: crucian }) })
+  openPanel(one.dom, 'fishing')
+  const content = contentOf(one.dom)
+  assert.match(content.allText(), /鲫鱼.*18\.4 cm.*8/)
+  assert.match(content.allText(), /★☆☆☆/)
+  const card = findByAttr(content, 'data-fish-result', 'fish_crucian')
+  assert.equal(card.getAttribute('data-fish-result-art'), 'crucian')
+  assert.notEqual(findByClass(content, 'dp-fish-result-img'), undefined)
+  assert.equal(findByClass(content, 'dp-fish-result-img').src, '/dsh-piggy/art/fishing/crucian-result.png?v=5c1d10fba07b')
+  const keep = findByAttr(content, 'data-fish', 'keep')
+  assert.notEqual(keep, undefined)
+  assert.notEqual(findByClass(content, 'dp-fish-keep'), undefined)
+
+  const carp = { id: 'res-2', key: 'fish_carp', label: '鲤鱼', emoji: '🐟', rarity: 'uncommon', sizeCm: 33.2, price: 12, phase: 'caught' }
+  const two = await mount({ status: status({ rod, spots, pending: carp }) })
+  openPanel(two.dom, 'fishing')
+  assert.equal(findByAttr(contentOf(two.dom), 'data-fish-result', 'fish_carp').getAttribute('data-fish-result-art'), 'emoji')
+  assert.equal(findByClass(contentOf(two.dom), 'dp-fish-result-img'), undefined)
+  assert.match(contentOf(two.dom).allText(), /鲤鱼.*★★☆☆.*33\.2 cm.*12/)
+})
+
+test('U24-7 auto expanded shows bait, stock, choices, upgrades and the actual reason', async () => {
+  const automation = { unlocked: true, stored: 2, usedHours: 1.5, full: false, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }],
+    upgrades: [{ kind: 'duration', label: '2 小时自动钓', price: 2000 }] }
+  const base = status({ rod, spots, automation })
+  const { dom } = await mount({ status: { ...base, inventory: { ...SNAPSHOT.inventory, bait_worm: 3 } } })
+  openPanel(dom, 'fishing')
+  const auto = findByAttr(contentOf(dom), 'data-fish-section', 'auto')
+  auto.open = true
+  auto.fire('toggle')
+  const content = contentOf(dom)
+  assert.match(content.allText(), /当前鱼饵.*蚯蚓.*×3/)
+  assert.match(content.allText(), /鱼篓 1\.5 \/ 6 小时/)
+  assert.equal(findByAttr(content, 'data-fish-collect', 'true').textContent, '收一下')
+  assert.equal(findByAttr(content, 'data-fish-auto', '30').disabled, true)
+  assert.equal(findByAttr(content, 'data-fish-auto', '60').disabled, true)
+  assert.match(content.allText(), /点不了：鱼饵只剩 3 个，不够 10 个/)
+  assert.equal(findByAttr(content, 'data-fish-upgrade', 'duration').disabled, true)
+})
+
+test('U24-7 empty, locked and closed spots explain what is off', async () => {
+  const empty = await mount({ status: { ...status({ rod, spots }), inventory: { ...SNAPSHOT.inventory } } })
+  openPanel(empty.dom, 'fishing')
+  assert.match(contentOf(empty.dom).allText(), /没有鱼饵了/)
+  assert.equal(findByAttr(contentOf(empty.dom), 'data-fish', 'cast').disabled, true)
+  assert.equal(findByAttr(contentOf(empty.dom), 'data-fish-bait', 'bait_worm').disabled, true)
+
+  const locked = await mount({ status: status({ rod, spots }) })
+  openPanel(locked.dom, 'fishing')
+  assert.equal(findByAttr(contentOf(locked.dom), 'data-fish-spot', 'lake').disabled, true)
+
+  const closed = await mount({ status: status({ rod, spots, spot: 'night' }) })
+  openPanel(closed.dom, 'fishing')
+  assert.match(contentOf(closed.dom).allText(), /这个钓点现在没有开/)
+  assert.equal(findByAttr(contentOf(closed.dom), 'data-fish', 'cast').disabled, true)
+})
+
+test('U24-7 away keeps the activity line and the auto-basket collect, without auto choices', async () => {
+  const activity = { kind: 'fishing', label: '自动钓鱼 30 分钟', emoji: '🎣', secondsLeft: 600, cost: 0 }
+  const automation = { unlocked: true, stored: 2, usedHours: 1, full: false, baitLimit: 64,
+    choices: [{ minutes: 30, attempts: 10 }], upgrades: [] }
+  const { dom } = await mount({ status: { ...status({ rod, spots, automation }), activity } })
+  openPanel(dom, 'fishing')
+  const content = contentOf(dom)
+  assert.match(content.allText(), /当前：小河 · 竹竿/)
+  assert.match(content.allText(), /自动钓鱼 30 分钟/)
+  assert.equal(findByAttr(content, 'data-fish', 'cast'), undefined)
+  assert.equal(findByAttr(content, 'data-fish-section', 'auto'), undefined)
+  assert.notEqual(findByAttr(content, 'data-fish-collect', 'true'), undefined)
+})
+
+test('U24-7 one cast click posts exactly one fishCast', async () => {
+  const { dom, calls } = await mount({ status: status({ rod, spots }) })
+  openPanel(dom, 'fishing')
+  const before = calls.length
+  findByAttr(contentOf(dom), 'data-fish', 'cast').fire('click')
+  await settle()
+  const posts = calls.slice(before).filter(call => call.method === 'POST')
+  assert.equal(posts.length, 1)
+  assert.deepEqual(JSON.parse(posts[0].body), { action: 'fishCast', power: .5, bait: 'bait_worm' })
+})
+
+test('U24-7 closing a hooked fight resolves it exactly once', async () => {
+  const hooked = { id: 'close-1', key: 'fish_carp', label: '鲤鱼', emoji: '🐟', phase: 'hooked', difficulty: 18, behavior: 'smooth', fight: 'ring' }
+  const { dom, calls } = await mount({ status: status({ rod, spots, pending: hooked }) })
+  openPanel(dom, 'fishing')
+  const before = calls.length
+  sceneOf(dom).fire('contextmenu', { preventDefault() {} })
+  await settle()
+  const posts = calls.slice(before).filter(call => call.method === 'POST')
+  assert.equal(posts.length, 1)
+  assert.deepEqual(JSON.parse(posts[0].body), { action: 'fishResolve', success: false })
 })

@@ -25,18 +25,22 @@ import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
+import { recoverBounds, recoveryPayload } from './lib/pig-recovery.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE, createVersions } from './lib/versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { validDragOrigin } from './lib/drag-origin.js'
-import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox } from './lib/panel-geometry.js'
+import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox, panelReferenceFor } from './lib/panel-geometry.js'
 import { panelToggleAction } from './lib/panel-toggle.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
+import { extensionWindowGeometry } from './lib/extension-window-geometry.js'
 import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
+import { reportStartupFailure, pageCrashReason } from './lib/startup-failure.js'
+import { appendJournalSync, journalLine } from './lib/startup-journal.js'
 import { readPostBody, saveArchive } from './lib/save-export.js'
 
 const { autoUpdater } = updaterPackage
@@ -61,15 +65,18 @@ const FALLBACK_CONTENT = { width: 132, height: 152 }
 
 /** A small log next to the save, so a launch that shows nothing can still be diagnosed. */
 function log(...parts) {
-  const line = `[${new Date().toISOString()}] ${parts.join(' ')}\n`
+  const line = journalLine(parts)
   if (process.env.PIGGY_CAPTURE) process.stdout.write(line)
+  /** @type {Promise<void>} */
+  let written = Promise.resolve()
   try {
     const file = join(app.getPath('userData'), 'piggy.log')
     mkdirSync(dirname(file), { recursive: true })
-    appendFile(file, line, () => {})
+    written = new Promise(resolve => appendFile(file, line, () => resolve()))
   } catch { /* logging must never break the pig */ }
   // 同一句话也进游戏自己的日志：设置里导出的那一份要能看到窗口和更新出了什么事。
   try { hostJournal?.record('info', 'shell', parts.join(' ')) } catch { /* 日志不许反过来把猪弄挂 */ }
+  return written
 }
 
 /** 游戏宿主的日志本；宿主起来之前是 null。 */
@@ -104,7 +111,16 @@ protocol.registerSchemesAsPrivileged([
 
 // Testing: keep a throwaway save and settings away from the real ones.
 if (process.env.PIGGY_USERDATA) app.setPath('userData', resolve(process.env.PIGGY_USERDATA))
-if (!needsX11 && !app.requestSingleInstanceLock()) app.quit()
+// 第二个进程拿不到单实例锁就马上退出：先同步留一行再退。第一个进程可能还没 ready、
+// 甚至卡在启动里，它的 second-instance 行不一定写得出来；没有这一行，日志里就看不出
+// 「用户又双击了一次」，只能看到第一次启动的痕迹。
+if (!needsX11 && !app.requestSingleInstanceLock()) {
+  try {
+    appendJournalSync(join(app.getPath('userData'), 'piggy.log'),
+      journalLine(['second launch rejected', JSON.stringify({ pid: process.pid, version: app.getVersion() })]))
+  } catch { /* 日志不许挡住退出 */ }
+  app.quit()
+}
 
 /** The game shipped inside the app; downloaded versions live under userData (lib/versions.js). */
 function bundledGameDir() {
@@ -427,12 +443,56 @@ function createWindow() {
     log('ready-to-show')
     if (showGate !== null && showGate.readyToShow()) showPigWindow()
     // 页面一直不报内容：兜底显示，不能永远不出现。
-    setTimeout(() => { if (showGate !== null && showGate.timeout()) showPigWindow() }, SHOW_FALLBACK_MS).unref?.()
+    setTimeout(() => {
+      if (showGate !== null && showGate.timeout()) {
+        log('show fallback', JSON.stringify(showGate.status()))
+        showPigWindow()
+      }
+    }, SHOW_FALLBACK_MS).unref?.()
   })
-  win.webContents.on('did-finish-load', () => log('page loaded'))
+  win.webContents.on('did-finish-load', () => {
+    const gate = showGate === null ? null : showGate.status()
+    log('page loaded', JSON.stringify({ gate }))
+    // 页面加载完、显示门还关着：日志要能区分「页面根本没加载」和「加载了但一直没来首帧/内容」。
+    if (gate?.pending === true) log('page loaded before show gate opened', JSON.stringify({ waiting: gate.waiting }))
+  })
+  // 页面加载失败时显示门永远不会放行（Linux 等 content、其它平台等 ready-to-show）：
+  // 日志里留下失败码和地址；窗口还没显示过就把失败也弹出来，不能只留一份看不见的日志。
+  let startupPageFailureReported = false
+  win.webContents.on('did-fail-load', async (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    log('page failed', JSON.stringify({ errorCode, errorDescription, url: validatedURL, mainFrame: isMainFrame }))
+    if (isMainFrame !== true || quitting || startupPageFailureReported || win === null || win.isDestroyed() || win.isVisible() || showGate?.pending !== true) return
+    startupPageFailureReported = true
+    let logPath = 'piggy.log'
+    try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
+    await reportStartupFailure({
+      dialog, log,
+      error: new Error(`游戏页面加载失败：${errorDescription}（${errorCode}）`),
+      logPath, version: app.getVersion(), platform: process.platform,
+    })
+    app.quit()
+  })
   // 面板开着时焦点离开猪窗口、也没进面板：当作点到别处（见 panelFocusLeft）
   win.on('blur', () => panelFocusLeft())
-  win.webContents.on('render-process-gone', (e, d) => { stopDrag(); log('renderer gone', JSON.stringify(d)) })
+  // 窗口卡住/恢复时只记日志（不弹框、不强推显示）：卡住往往就是「一直不显示」的那几秒。
+  win.on('unresponsive', () => log('window unresponsive', JSON.stringify({ gate: showGate === null ? null : showGate.status() })))
+  win.on('responsive', () => log('window responsive'))
+  win.webContents.on('render-process-gone', (e, details) => {
+    stopDrag()
+    const gate = showGate === null ? null : showGate.status()
+    log('renderer gone', JSON.stringify(details), JSON.stringify({ visible: win?.isVisible?.() === true, gate }))
+    // 窗口还没显示过就崩（启动时最常见）：用户看到的是「双击没反应」，和页面加载失败一样
+    // 先写日志、再弹一次，然后退出；已经显示过就只记日志，不在运行中弹框。
+    void reportStartupCrash(details, gate)
+  })
+  async function reportStartupCrash(details, gate) {
+    if (quitting || startupPageFailureReported || win === null || win.isDestroyed() || win.isVisible() || gate?.pending !== true) return
+    startupPageFailureReported = true
+    let logPath = 'piggy.log'
+    try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
+    await reportStartupFailure({ dialog, log, error: new Error(pageCrashReason(details)), logPath, version: app.getVersion(), platform: process.platform })
+    app.quit()
+  }
   win.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('page:', message) })
   if (process.env.PIGGY_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' })
   if (process.env.PIGGY_CAPTURE) win.webContents.once('did-finish-load', () => { captureForCheck(process.env.PIGGY_CAPTURE) })
@@ -759,10 +819,22 @@ ipcMain.on('piggy:place', (event, request) => {
   }
   // 游戏包 0.33.1 起顺带报猪在窗口里的框（贴屏幕边时内容在窗口里挪过）：面板按它贴猪。
   const pig = request?.pig
+  let panelPigChanged = false
   if (pig && [pig.x, pig.y, pig.width, pig.height].every(Number.isFinite) && pig.width > 0 && pig.height > 0) {
-    const changed = panelPig === null || panelPig.x !== pig.x || panelPig.y !== pig.y || panelPig.width !== pig.width || panelPig.height !== pig.height
+    panelPigChanged = panelPig === null || panelPig.x !== pig.x || panelPig.y !== pig.y || panelPig.width !== pig.width || panelPig.height !== pig.height
     panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
-    if (changed && dragSession === null) followPig()
+  }
+  let speechChanged = false
+  if (Object.hasOwn(request, 'speech')) {
+    const s = request.speech
+    const next = s && [s.x, s.y, s.width, s.height].every(Number.isFinite) && s.width > 0 && s.height > 0
+      ? { x: s.x, y: s.y, width: s.width, height: s.height } : null
+    speechChanged = JSON.stringify(panelSpeech) !== JSON.stringify(next)
+    panelSpeech = next
+  }
+  if (dragSession === null) {
+    if (speechChanged) reanchorPanel()
+    else if (panelPigChanged) followPig()
   }
   event.returnValue = geometryOf(win.getBounds(), geometrySeq)
 })
@@ -835,6 +907,8 @@ ipcMain.on('piggy:shape', (event, rects) => {
 let panelOpen = false
 /** 猪在猪窗口里的框（打开面板时猪页面报上来的）；面板按它贴在猪旁边。 */
 let panelPig = null
+/** Below-pig speech exclusion, separate from the real body/drag geometry. */
+let panelSpeech = null
 /** 这次面板朝哪边开、最高多高：打开时定一次，拖动松手后重新定。 */
 let panelAnchor = null
 /** 面板页面最近报的尺寸。 */
@@ -864,7 +938,7 @@ function pigOnScreen() {
 
 /** 按猪现在的位置决定面板朝哪边开、最高多高。 */
 function decidePanelAnchor() {
-  const pig = pigOnScreen()
+  const pig = panelReferenceOnScreen()
   if (pig === null) return null
   return panelAnchorFor(pig, screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea,
     panelSize?.width ?? PANEL_FALLBACK.width, panelAnchor?.horizontal)
@@ -872,10 +946,18 @@ function decidePanelAnchor() {
 
 /** 面板窗口该在哪：每次都从猪现在在哪直接算（见 lib/panel-geometry.js 文件头）。 */
 function panelBounds() {
-  const pig = pigOnScreen()
+  const pig = panelReferenceOnScreen()
   if (pig === null || panelAnchor === null) return null
   return panelBoundsFor(pig, panelAnchor, panelViewportSize(panelAnchor, panelSize, panelFixedViewport),
     dragSession !== null ? screen.getAllDisplays().map(display => display.workArea) : null)
+}
+
+function panelReferenceOnScreen() {
+  const pig = pigOnScreen()
+  if (pig === null || panelSpeech === null) return pig
+  const speech = pigScreenBox(petAsked, win.getBounds(), panelSpeech,
+    dragSession !== null ? { dragging: true, slide: lastDragSlide } : {})
+  return panelReferenceFor(pig, speech)
 }
 
 function sendPanel(message) {
@@ -1110,16 +1192,20 @@ function openExtWindow(key) {
   }
   extKey = key
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
-  const width = Math.min(1200, Math.round(area.width * 0.9))
-  const height = Math.min(800, Math.round(area.height * 0.9), Math.round(width * 2 / 3))
+  const { width, height, minWidth, minHeight } = extensionWindowGeometry(area)
   extWin = new BrowserWindow({
-    width, height, useContentSize: true, minWidth: 720, minHeight: 480, center: true, show: false,
+    width, height, useContentSize: true, minWidth, minHeight, center: true, show: false,
     title: EXT_TITLES[key] ?? '扩展', backgroundColor: '#7fae5a', autoHideMenuBar: true,
     icon: join(HERE, 'build', 'icon.png'),
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true,
       additionalArguments: ['--piggy-role=ext', '--piggy-ext=' + key] },
   })
-  for (const event of ['focus', 'blur', 'minimize', 'restore', 'hide']) extWin.on(event, () => extensionLayer.sync())
+  const syncExtensionLayer = () => extensionLayer.sync()
+  extWin.on('focus', syncExtensionLayer)
+  extWin.on('blur', syncExtensionLayer)
+  extWin.on('minimize', syncExtensionLayer)
+  extWin.on('restore', syncExtensionLayer)
+  extWin.on('hide', syncExtensionLayer)
   extWin.setMenuBarVisibility(false)
   extWin.loadURL('piggy://app/index.html')
   extWin.once('ready-to-show', () => { extWin?.show(); extWin?.focus() })
@@ -1193,6 +1279,7 @@ function createTray(gameDir) {
   tray.on('click', () => { if (win?.isVisible()) { closePanel('tray'); win.hide() } else win?.showInactive() })
   const menu = () => Menu.buildFromTemplate([
     { label: win?.isVisible() ? '藏起来' : '叫猪出来', click: () => { if (win?.isVisible()) { closePanel('tray'); win.hide() } else win?.showInactive(); tray?.setContextMenu(menu()) } },
+    { label: '恢复小猪', click: () => { recoverPig(); tray?.setContextMenu(menu()) } },
     { label: '开机自启', type: 'checkbox', checked: autostartOn(), click: item => setAutostart(item.checked) },
     { label: '从 DSH 导入猪…', click: () => { importFromDsh() } },
     { type: 'separator' },
@@ -1204,6 +1291,26 @@ function createTray(gameDir) {
 
 function readVersion(gameDir) {
   try { return JSON.parse(readFileSync(join(gameDir, 'package.json'), 'utf8')).version } catch { return '?' }
+}
+
+/** 托盘恢复：清掉陈旧拖动/抛掷锚点，先把窗口移到主屏可见处，再让猪页把尺寸和家复位。 */
+function recoverPig() {
+  if (quitting || win === null || win.isDestroyed()) return
+  const payload = recoveryPayload(screen.getPrimaryDisplay())
+  if (payload === null) return
+  stopDrag()
+  resizeShape.cancel()
+  dragShapeActive = false
+  flightShapeActive = false
+  flightSlide = { x: 0, y: 0 }
+  lastDragSlide = { x: 0, y: 0 }
+  lastFlightShapeSlide = null
+  savedPigScreen = null
+  restingPigScreen = null
+  win.showInactive()
+  applyBounds(recoverBounds(win.getBounds(), payload.workArea), 'recover')
+  win.webContents.send('piggy:recover', payload)
+  log('recover', JSON.stringify(payload))
 }
 
 /** Keep a copy of the save before the game code under it changes. */
@@ -1494,7 +1601,12 @@ app.whenReady().then(async () => {
   displayWatchTimer.unref?.()
   win.webContents.on('did-finish-load', () => pushGeometry())
   pushGeometry()
-}).catch(error => { log('startup failed', String(error)); app.quit() })
+}).catch(async error => {
+  let logPath = 'piggy.log'
+  try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
+  await reportStartupFailure({ dialog, log, error, logPath, version: app.getVersion(), platform: process.platform })
+  app.quit()
+})
 
 /**
  * Testing: run a list of steps against the page and photograph it (with its
@@ -1531,7 +1643,12 @@ async function captureForCheck(dir) {
 // 兜底：主进程里漏网的异常只写日志，不弹「A JavaScript error occurred」那种错误框吓人。
 process.on('uncaughtException', error => { log('uncaught', error?.stack ?? String(error)) })
 
-app.on('second-instance', () => win?.showInactive())
+app.on('second-instance', () => {
+  // 第二次双击没反应时，日志要能说明「第二次确实进来了」，以及第一扇窗当时的状态。
+  // pid 和第二个进程的「second launch rejected」行对得上；host 说明第一次启动走到哪了。
+  log('second instance', JSON.stringify({ pid: process.pid, host: host !== null, window: win !== null, visible: win?.isVisible?.() === true, showPending: showGate?.pending === true }))
+  win?.showInactive()
+})
 let hostClosed = false
 let hostClosing = null
 /** 退出与安装共用一次后台关闭；保存失败时允许重试，不提前停命中轮询。 */

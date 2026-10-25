@@ -6,16 +6,38 @@ import { test, beforeEach } from 'node:test'
 import farm, { PEST_MS, setRandom } from '../extensions/farm/server.js'
 
 import { establishedFarm, api, renderFarm, plain, H, T0 } from './helpers/farm-ui.js'
+function openTools(ui) {
+  const toggle = ui.find('data-farm-tools', 'toggle')
+  if (toggle.getAttribute('aria-expanded') !== 'true') toggle.fire('click')
+}
+function toolNode(ui, key) {
+  if (!ui.find('data-farm-tool', key)) openTools(ui)
+  return ui.find('data-farm-tool', key)
+}
+function chooseTool(ui, key) { openTools(ui); toolNode(ui, key).fire('click') }
+function advancedText(ui) { openTools(ui); return ui.text() }
+
 beforeEach(() => setRandom(() => 0.5))
 
-test('小农场：6 块地；点空地种手里的种子，没种子去商店；有大农场入口就显示', () => {
+test('小农场：6 块地；保留标题且大农场在菜币左边；没种子不放大号买种子按钮，走真实商店入口', () => {
   const data = establishedFarm()
   const t = api()
   let ui = renderFarm(farm.view(data, t), 'panel', { openBig() {} })
   assert.equal(ui.all('data-farm-plot').length, 6)
-  assert.ok(ui.find('data-farm-big', 'open'))
-  ui.find('data-farm-main', 'shop').fire('click')
+  const header = ui.dom.body.querySelectorAll('.fm-s-header')[0]
+  const classes = header.children.map(node => node.className)
+  const titleAt = classes.findIndex(name => /\bfm-garden-title\b/.test(name))
+  const bigAt = classes.findIndex(name => /\bfm-big-open\b/.test(name))
+  const coinAt = classes.findIndex(name => /\bfm-coin\b/.test(name))
+  assert.equal(titleAt, 0, '大农场入口不能替换标题')
+  assert.ok(bigAt > titleAt && coinAt > bigAt, '大农场入口保留在菜币左边')
+  assert.equal(header.children[titleAt].textContent, '菜园')
+  assert.equal(ui.find('data-farm-main', 'shop'), undefined, '普通详情不再放大号买种子主按钮')
+  assert.equal(ui.find('data-farm-main', 'idle'), undefined, '没有有效操作就不显示无用主按钮')
+  assert.match(ui.find('data-farm-detail', '0').allText(), /去商店买/, '状态与条件文本保留')
+  ui.find('data-farm-shop', 'shelf').fire('click')
   assert.equal(ui.shops(), 1)
+  ui.find('data-farm-back', 'true').fire('click')
   farm.actions.buy(data, { item: 'radish', count: 2 }, t)
   ui = renderFarm(farm.view(data, t))
   assert.equal(ui.find('data-farm-big', 'open'), undefined, 'old hosts have no big window')
@@ -23,7 +45,7 @@ test('小农场：6 块地；点空地种手里的种子，没种子去商店；
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'plant', payload: { plot: 0, item: 'radish' } })
 })
 
-test('小农场：主按钮按 收 > 照料 > 铲 > 种 的顺序做一块；买了一键工具也只选工具', () => {
+test('小农场：主按钮按 收 > 照料 > 铲 > 种 的顺序做一块；买了一键工具也只照料一块', () => {
   const data = establishedFarm()
   const t = api()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t)
@@ -32,13 +54,13 @@ test('小农场：主按钮按 收 > 照料 > 铲 > 种 的顺序做一块；买
   t.now = T0 + Math.round(Math.LN2 * PEST_MS)
   let ui = renderFarm(farm.view(data, t))
   ui.find('data-farm-main', 'care').fire('click')
-  assert.equal(ui.sent.length, 0)
+  assert.equal(ui.sent.length, 1)
   ui.find('data-farm-plot', '0').fire('click')
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'care', payload: { plot: 0, kind: 'weed' } })
   farm.actions.buy(data, { item: 'sprayer' }, t)
   ui = renderFarm(farm.view(data, t))
   ui.find('data-farm-main', 'care').fire('click')
-  assert.equal(ui.sent.length, 0)
+  assert.equal(ui.sent.length, 1)
   farm.actions.careAll(data, {}, t)
   for (const plot of data.plots) if (plot) plot.pests = { weed: 1e15, bug: 1e15, dry: 1e15 }
   t.now = T0 + 14 * H
@@ -65,15 +87,15 @@ test('大农场：18 块地，荒地点一下开垦；工具拿在手里点地�
   let closed = 0
   const ui = renderFarm(farm.view(data, t), 'big', { closeBig() { closed += 1 } })
   assert.equal(ui.all('data-farm-plot').length, 18)
-  assert.equal(ui.dom.body.querySelectorAll('.fm-hit').length, 18, '菱形透明角不拦邻地点击')
+  assert.equal(ui.dom.body.querySelectorAll('.fm-hit').length, 0, '平面地块本身命中，不保留旧菱形透明覆盖层')
   ui.find('data-farm-reclaim', '6').fire('click')
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'unlock', payload: { plot: 6 } })
   ui.find('data-farm-plot', '7').fire('click')
   assert.equal(ui.sent.length, 1, 'only the next wild plot can be reclaimed')
-  ui.find('data-farm-tool', 'weedkiller').fire('click')
+  chooseTool(ui, 'weedkiller')
   ui.find('data-farm-plot', '0').fire('click')
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'care', payload: { plot: 0, kind: 'weed' } })
-  ui.find('data-farm-tool', 'sickle').fire('click')
+  chooseTool(ui, 'sickle')
   assert.equal(ui.shops(), 1)
   ui.find('data-farm-big', 'close').fire('click')
   assert.equal(closed, 1)
@@ -82,7 +104,7 @@ test('大农场：18 块地，荒地点一下开垦；工具拿在手里点地�
 test('大农场帮工牌说实话：没种子写「帮工没种子」，缺某种种子写清哪种，真在干活才写 N 块地', () => {
   const data = establishedFarm(), t = api()
   farm.actions.hire(data, {}, t)
-  const badge = () => renderFarm(farm.view(data, t), 'big').text()
+  const badge = () => advancedText(renderFarm(farm.view(data, t), 'big'))
   assert.match(badge(), /帮工没种子/)
   data.helper.targets[0] = 'radish'
   assert.match(badge(), /缺白萝卜种子/)
@@ -99,7 +121,7 @@ test('大农场帮工牌：帮工仓库有货就先说有货，不被「缺种�
   const helper = farm.view(data, t).helper
   assert.ok(helper.stored > 0, '帮工仓库有货：' + helper.stored)
   assert.ok(helper.missing.length > 0 || helper.seedless, '同时也在缺种子')
-  assert.match(renderFarm(farm.view(data, t), 'big').text(), /帮工收了 \d+ 个/)
+  assert.match(advancedText(renderFarm(farm.view(data, t), 'big')), /帮工收了 \d+ 个/)
 })
 
 test('大农场：铁锹铲正在长的作物要确认；仓库弹层能全卖', () => {
@@ -109,23 +131,24 @@ test('大农场：铁锹铲正在长的作物要确认；仓库弹层能全卖',
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t)
   data.harvest.radish = 10
   const ui = renderFarm(farm.view(data, t), 'big')
-  ui.find('data-farm-tool', 'shovel').fire('click')
+  chooseTool(ui, 'shovel')
   ui.find('data-farm-plot', '0').fire('click')
   assert.equal(ui.sent.length, 0)
   ui.find('data-farm-confirm', 'true').fire('click')
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'clear', payload: { plot: 0, force: true } })
-  ui.find('data-farm-panel', 'stock').fire('click')
+  ui.find('data-farm-bag', 'open').fire('click')
+  ui.find('data-farm-bag-tab', 'crop').fire('click')
   ui.find('data-farm-sell-everything', 'true').fire('click')
   assert.deepEqual(plain(ui.sent.at(-1)), { op: 'sell', payload: { item: '*' } })
 })
 
-test('种子袋：点击格子拿种子可连续播种；移开收起，用完回手套；空地显示淡影', () => {
+test('种子袋：点击格子拿种子可连续播种；选完收起，用完回手套；空地显示淡影', () => {
   const data = establishedFarm(), t = api()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t)
   const ui = renderFarm(farm.view(data, t), 'big', { asset: name => '/assets/' + name })
-  ui.find('data-farm-tool', 'seedbag').fire('click')
+  chooseTool(ui, 'seedbag')
   ui.find('data-farm-seed', 'radish').fire('click')
-  assert.equal(ui.find('data-farm-seed', 'radish').getAttribute('aria-pressed'), 'true')
+  assert.equal(ui.find('data-farm-overlay', 'seeds'), undefined)
   assert.ok(ui.dom.body.querySelectorAll('.fm-ghost').length)
   ui.find('data-farm-plot', '0').fire('click')
   ui.find('data-farm-plot', '1').fire('click')
@@ -133,10 +156,11 @@ test('种子袋：点击格子拿种子可连续播种；移开收起，用完�
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t)
   farm.actions.plant(data, { plot: 1, item: 'radish' }, t)
   ui.app.data = farm.view(data, t); ui.app.rerender()
+  openTools(ui)
   assert.equal(ui.find('data-farm-tool', 'gloves').getAttribute('aria-pressed'), 'true')
-  ui.find('data-farm-overlay', 'seeds').fire('mouseleave')
+  ui.find('data-farm-tools', 'toggle').fire('click')
   assert.equal(ui.find('data-farm-overlay', 'seeds'), undefined)
-  ui.find('data-farm-tool', 'seedbag').fire('click')
+  chooseTool(ui, 'seedbag')
   ui.dom.body.querySelectorAll('.fm-big')[0].fire('click', { target: { closest: () => null } })
   assert.equal(ui.find('data-farm-overlay', 'seeds'), undefined, '点击空白处收起')
 })
@@ -168,33 +192,40 @@ test('商店：四标签、可买排前、等级或余额提示；购买数量 1
   assert.match(ui.text(), /菜币不足/)
 })
 
-test('大农场：Q/W/E/R 切换工具；输入框不响应；悬停卡与三种气泡', () => {
+test('大农场：Q/W/E/R 切换工具；输入框不响应；三种灾害气泡仍可见', () => {
   const data = establishedFarm(), t = api()
   farm.actions.buy(data, { item: 'radish' }, t); farm.actions.plant(data, { plot: 0, item: 'radish' }, t)
   data.plots[0].pests = { dry: T0, weed: T0, bug: T0 }
   const ui = renderFarm(farm.view(data, t), 'big')
+  openTools(ui)
   ui.dom.body.querySelector = selector => ui.dom.body.querySelectorAll(selector)[0] || null
   const key = (value, tag = 'BODY') => ui.dom.documentListeners.keydown.forEach(fn => fn({ key: value, target: { tagName: tag }, preventDefault() {} }))
-  for (const [shortcut, tool] of [['q', 'can'], ['w', 'weedkiller'], ['e', 'pesticide'], ['r', 'gloves']]) { key(shortcut); assert.equal(ui.find('data-farm-tool', tool).getAttribute('aria-pressed'), 'true') }
+  for (const [shortcut, tool] of [['q', 'can'], ['w', 'weedkiller'], ['e', 'pesticide'], ['r', 'gloves']]) { key(shortcut); assert.equal(toolNode(ui, tool).getAttribute('aria-pressed'), 'true') }
   key('q', 'INPUT'); assert.equal(ui.find('data-farm-tool', 'gloves').getAttribute('aria-pressed'), 'true')
-  const plot = ui.find('data-farm-plot', '0')
-  plot.fire('mousemove', { movementX: 1, movementY: 0 }); assert.ok(ui.find('data-farm-card', '0'))
   assert.equal(ui.all('data-farm-bubble').length, 3)
-  plot.fire('mouseleave'); assert.equal(ui.find('data-farm-card', '0'), undefined)
+  ui.find('data-farm-plot', '0').fire('mouseleave')
 })
 
-test('小农场：信息栏在场景外，主操作绿框，种子袋和仓库为覆盖层，荒地要先照料', () => {
+test('小农场：第一课在地块里，信息栏和进度在场景外，工具抽屉与背包仍可到达', () => {
   const data = farm.init(), t = api()
-  const ui = renderFarm(farm.view(data, t), 'panel', { asset: name => '/assets/' + name })
+  const ui = renderFarm(farm.view(data, t), 'panel', { asset: name => '/assets/' + name, openBig() {} })
   const header = ui.dom.body.querySelectorAll('.fm-s-header')[0]
   assert.equal(header.parentNode.className, 'fm')
-  assert.equal(ui.find('data-farm-main', 'care').getAttribute('data-farm-main'), 'care')
-  assert.ok(ui.find('data-farm-next', 'true'))
-  ui.find('data-farm-panel', 'seeds').fire('click')
-  assert.equal(ui.find('data-farm-overlay', 'seeds').parentNode.className, 'fm')
-  ui.find('data-farm-panel', 'stock').fire('click')
-  assert.equal(ui.find('data-farm-overlay', 'stock').parentNode.className, 'fm')
-  assert.ok(ui.find('data-farm-exchange', 'open'))
+  assert.equal(ui.find('data-farm-main', 'onboarding').getAttribute('data-farm-main'), 'onboarding')
+  assert.ok(ui.find('data-farm-lesson-plot', 'true'))
+  assert.ok(ui.find('data-farm-progress', '0'))
+  ui.find('data-farm-bag', 'open').fire('click')
+  assert.equal(ui.find('data-farm-overlay', 'bag').parentNode.className, 'fm')
+  assert.equal(ui.all('data-farm-back').length, 1, '背包子页只有一个返回')
+  ui.find('data-farm-back', 'true').fire('click')
+  openTools(ui)
+  assert.equal(ui.find('data-farm-tools', 'toggle').getAttribute('aria-expanded'), 'true')
+  assert.ok(ui.find('data-farm-helper', 'hire'))
+  assert.ok(ui.find('data-farm-big', 'open'))
+  ui.find('data-farm-weather', 'info').fire('click')
+  assert.match(ui.text(), /天气/)
+  assert.ok(ui.find('data-farm-tool', 'gloves').querySelectorAll('.fm-tool-label')[0].textContent)
+  assert.ok(ui.find('data-farm-coin', 'open'))
 })
 
 // 窗口层级保证现有对话可见，开关菜单不重新定位或缩窄对话。
@@ -219,9 +250,10 @@ test('大小农场：灾害只显示气泡，保留单个收获提示；种子�
     assert.equal(afflicted.querySelectorAll('.fm-bubble').length, 3)
     assert.equal(ui.find('data-farm-plot', '1').querySelectorAll('.fm-chip').length, 1, '收获提示只留一项')
     if (mode === 'panel') {
-      assert.equal(ui.find('data-farm-panel', 'seeds').parentNode.className, 'fm-s-tools')
-      ui.find('data-farm-panel', 'seeds').fire('click')
-      assert.ok(ui.find('data-farm-overlay', 'seeds'))
+      ui.find('data-farm-tools', 'toggle').fire('click')
+      assert.equal(ui.find('data-farm-tool', 'seedbag').parentNode.className, 'fm-advanced-grid')
+      ui.find('data-farm-tool', 'seedbag').fire('click')
+      assert.ok(ui.find('data-farm-overlay', 'bag'))
     }
   }
 })
@@ -234,6 +266,7 @@ test('经验条使用 levelOf 的当前等级进度：六级零经验、半满�
     assert.deepEqual([view.level, view.exp, view.need], [level, exp, need])
     for (const mode of ['panel', 'big']) {
       const ui = renderFarm(view, mode)
+      if (mode === 'panel') openTools(ui)
       const bar = ui.dom.body.querySelectorAll('.fm-exp')[0]
       assert.equal(bar.getAttribute('title'), '经验 ' + exp + ' / ' + need)
       assert.equal(bar.children[0].style.width, width)
@@ -252,7 +285,7 @@ test('小农场紧凑布局按宿主可用高度决定，不随面板自身内�
   assert.equal(ui.find('data-farm-compact', 'true'), undefined)
 })
 
-test('fix3：手套只收成熟作物，主按钮只选照料工具，拥有喷雾桶也不自动批量', () => {
+test('fix3：手套只收成熟作物，主按钮直接照料一块，拥有喷雾桶也不自动批量', () => {
   const data = establishedFarm(), t = api()
   farm.actions.buy(data, { item: 'radish', count: 2 }, t)
   for (const plot of [0, 1]) farm.actions.plant(data, { plot, item: 'radish' }, t)
@@ -262,7 +295,7 @@ test('fix3：手套只收成熟作物，主按钮只选照料工具，拥有喷�
   ui.find('data-farm-plot', '0').fire('click')
   assert.equal(ui.sent.length, 0)
   ui.find('data-farm-main', 'care').fire('click')
-  assert.equal(ui.sent.length, 0)
+  assert.equal(ui.sent.length, 1)
   ui.find('data-farm-plot', '0').fire('click')
   assert.deepEqual(plain(ui.sent), [{ op: 'care', payload: { plot: 0, kind: 'weed' } }])
 })
@@ -278,10 +311,11 @@ test('fix3：等级与天气有提示，田地层不截获顶部信息牌空白�
   const ui = renderFarm(farm.view(establishedFarm(), api()), 'big')
   ui.find('data-farm-level', 'info').fire('click')
   assert.match(ui.text(), /经验/)
+  assert.equal(ui.find('data-farm-exchange', 'open'), undefined, '顶栏不再堆换菜币按钮')
   ui.find('data-farm-weather', 'info').fire('click')
   assert.match(ui.text(), /天气/)
   const source = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
-  assert.match(source, /\.fm-b-field\{[^}]*pointer-events:none/)
+  assert.doesNotMatch(source, /fm-b-field|fm-hit/)
 })
 
 test('fix3：三种照料工具一次只请求一种灾害、一个地块；手套不铲不种', () => {
@@ -291,7 +325,7 @@ test('fix3：三种照料工具一次只请求一种灾害、一个地块；手�
   for (const plot of data.plots.filter(Boolean)) plot.pests = { dry: T0, weed: T0, bug: T0 }
   for (const [tool, kind] of [['can', 'dry'], ['weedkiller', 'weed'], ['pesticide', 'bug']]) {
     const ui = renderFarm(farm.view(data, t), 'big')
-    ui.find('data-farm-tool', tool).fire('click')
+    chooseTool(ui, tool)
     ui.find('data-farm-plot', '0').fire('click')
     assert.deepEqual(plain(ui.sent), [{ op: 'care', payload: { plot: 0, kind } }])
     const before = structuredClone(data)
@@ -323,13 +357,16 @@ test('fix3：大农场绿框只在移动时出现，点击、离开、重绘会�
   assert.equal(ui.find('data-farm-plot', '0').getAttribute('data-farm-hover'), null)
 })
 
-test('fix3：工具提示跟随移动，点击后清除；R只拿手套，Esc关闭当前弹层', () => {
+test('fix3：工具提示跟随移动，点击后收起抽屉；R只拿手套，Esc关闭当前弹层', () => {
   const ui = renderFarm(farm.view(farm.init(), api()), 'big')
+  openTools(ui)
   let tool = ui.find('data-farm-tool', 'can')
   tool.fire('mousemove')
   assert.equal(tool.getAttribute('data-farm-hover'), 'true')
   tool.fire('click')
   assert.equal(tool.getAttribute('data-farm-hover'), null)
+  assert.equal(ui.find('data-farm-drawer', 'tools'), undefined, '选好工具就收起抽屉回菜地')
+  openTools(ui)
   tool = ui.find('data-farm-tool', 'can')
   assert.equal(tool.getAttribute('data-farm-hover'), null)
   ui.app.content.querySelector = selector => ui.app.content.querySelectorAll(selector)[0] || null
@@ -343,38 +380,38 @@ test('fix3：工具提示跟随移动，点击后清除；R只拿手套，Esc关
   assert.equal(ui.find('data-farm-overlay', 'shop'), undefined)
 })
 
-test('fix3追加：18块地同尺寸、相邻只共边，整个网格位于中央空地', () => {
+test('大小农场共用平面地块，扩展视图保留18块及真实开垦入口', () => {
   const ui = renderFarm(farm.view(establishedFarm(), api()), 'big')
-  const plots = ui.all('data-farm-plot').map(node => {
-    const w = parseFloat(node.style.width), h = parseFloat(node.style.height)
-    const [dx, dy] = (node.style.translate || '0% 0%').split(' ').map(parseFloat)
-    return { x: parseFloat(node.style.left) + dx * w / 100, y: parseFloat(node.style.top) + dy * h / 100, w, h }
-  })
-  assert.equal(plots.length, 18)
-  for (const p of plots) {
-    assert.ok(Number.isFinite(p.w) && Number.isFinite(p.h), '尺寸随地块坐标从同一份几何配置生成')
-    assert.equal(p.w, plots[0].w)
-    assert.equal(p.h, plots[0].h)
-    assert.ok(p.x >= 20 && p.x + p.w <= 82 && p.y >= 25 && p.y + p.h <= 83, '不压水边、上方道路或工具栏')
+  assert.equal(ui.all('data-farm-plot').length, 18)
+  assert.equal(ui.find('data-farm-grid', 'expanded').className, 'fm-s-field')
+  assert.ok(ui.find('data-farm-reclaim', '6'))
+  for (const plot of ui.all('data-farm-plot')) {
+    assert.equal(plot.style.translate, undefined, '不使用旧菱形的逐格位移')
+    assert.equal(plot.style.left, undefined)
   }
-  for (let i = 0; i < plots.length; i += 1) {
-    for (let j = i + 1; j < plots.length; j += 1) {
-      const a = plots[i], b = plots[j]
-      const separation = Math.abs(a.x - b.x) / (a.w / 2) + Math.abs(a.y - b.y) / (a.h / 2)
-      assert.ok(separation >= 2 - 1e-9, '菱形内部不得相交：' + i + '/' + j)
-    }
-  }
-  assert.ok(Math.abs(plots[3].x - plots[0].x - plots[0].w / 2) < 1e-9)
-  assert.ok(Math.abs(plots[3].y - plots[0].y - plots[0].h / 2) < 1e-9)
 })
 
-test('fix3追加：进度条和开垦标签位于菱形内部，工具字号至少12px且角标不盖图', () => {
-  const source = readFileSync(new URL('../extensions/farm/client.js', import.meta.url), 'utf8')
-  assert.doesNotMatch(source, /app\.el\('(?:div|span)', 'fm-prog'/)
-  assert.match(source, /\.fm-b-field \.fm-chip\{[^}]*bottom:2%/)
-  assert.match(source, /\.fm-b-bar \.fm-tool-label\{[^}]*font-size:clamp\(12px,/)
-  assert.match(source, /\.fm-b-bar \.fm-n,\.fm-b-bar \.fm-lock\{[^}]*top:-13px/)
-  assert.match(source, /\.fm-big\{[^}]*background:[^}]*\/cover/)
+test('大小农场有效快捷操作是详情末行的小 dp-mini，工具是 40px 图片加文字的标准次按钮', () => {
+  for (const mode of ['panel', 'big']) {
+    const data = establishedFarm(), t = api()
+    farm.actions.buy(data, { item: 'radish' }, t)
+    const ui = renderFarm(farm.view(data, t), mode, { asset: name => '/assets/' + name })
+    const main = ui.find('data-farm-main', 'plant')
+    assert.match(main.className, /\bdp-mini\b/)
+    assert.equal(main.parentNode.className, 'fm-s-acts', '有效快捷操作只占详情末行')
+    assert.equal(main.parentNode.parentNode, ui.find('data-farm-detail', '0'))
+    openTools(ui)
+    for (const tool of ui.all('data-farm-tool')) {
+      assert.match(tool.className, /\bdp-btn\b/)
+      assert.doesNotMatch(tool.className, /\bdp-mini\b/)
+      assert.ok(tool.allText().trim(), '工具按钮必须带文字标签')
+      assert.equal(tool.querySelectorAll('img').length, 1, '工具入口同时带图片内容')
+      assert.equal(tool.style.backgroundImage, undefined, '图片是工具内容，不是整颗按钮')
+    }
+    const css = ui.dom.head.children[0].textContent
+    assert.match(css, /\.fm \.fm-slot>img\{width:40px;height:40px/)
+    assert.match(css, /\.fm-dock-btn>img\{width:40px;height:40px\}/)
+  }
 })
 
 test('fix3：更新扩展后替换旧样式，不能让旧的hover规则继续覆盖新行为', () => {
@@ -384,7 +421,7 @@ test('fix3：更新扩展后替换旧样式，不能让旧的hover规则继续�
   ui.app.rerender()
   assert.equal(ui.dom.head.children.length, 1)
   assert.doesNotMatch(style.textContent, /\.fm-plot:hover \.fm-hover/)
-  assert.match(style.textContent, /data-farm-hover/)
+  assert.match(style.textContent, /data-farm-target/)
 })
 
 test('fix3：手套不直接开垦，只有明确点击开垦牌才操作；种子不收成熟菜', () => {
@@ -398,7 +435,7 @@ test('fix3：手套不直接开垦，只有明确点击开垦牌才操作；种�
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t)
   t.now += 14 * H
   ui = renderFarm(farm.view(data, t), 'big')
-  ui.find('data-farm-tool', 'seedbag').fire('click')
+  chooseTool(ui, 'seedbag')
   ui.find('data-farm-seed', 'radish').fire('click')
   ui.find('data-farm-plot', '0').fire('click')
   assert.equal(ui.sent.length, 0)
@@ -410,7 +447,7 @@ test('fix3：种子工具点成熟作物不收获', () => {
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t)
   t.now += 14 * H
   const ui = renderFarm(farm.view(data, t), 'big')
-  ui.find('data-farm-tool', 'seedbag').fire('click')
+  chooseTool(ui, 'seedbag')
   ui.find('data-farm-seed', 'radish').fire('click')
   ui.find('data-farm-plot', '0').fire('click')
   assert.equal(ui.sent.length, 0)
@@ -430,33 +467,37 @@ test('fix3：Esc只关闭当前购买框，点遮罩取消不向下冒泡关闭�
   assert.ok(ui.find('data-farm-overlay', 'shop'))
 })
 
-test('fix3：大小农场商店标题都为关闭按钮保留32px，钱包保持一组', () => {
+test('fix3：大小农场商店只留一个返回入口，钱包保持一组，不再叠关闭叉', () => {
   for (const mode of ['big', 'panel']) {
     const ui = renderFarm(farm.view(establishedFarm(), api()), mode)
     ui.find('data-farm-shop', 'shelf').fire('click')
-    const style = ui.dom.head.children[0].textContent
-    assert.match(style, /\.fm-shop-head[^}]*padding-right:40px/)
+    assert.equal(ui.all('data-farm-back').length, 1, '子页只有一个返回')
+    assert.equal(ui.all('data-farm-close').length, 0, '不再有第二个关闭入口')
     assert.equal(ui.dom.body.querySelectorAll('.fm-shop-wallet').length, 1)
+    ui.find('data-farm-back', 'true').fire('click')
+    assert.equal(ui.find('data-farm-overlay', 'shop'), undefined)
+    assert.equal(ui.find('data-farm-shop', 'shelf').getAttribute('data-farm-shop'), 'shelf', '返回菜地')
   }
 })
 
-test('fix3：最小大农场帮工牌标签保持一行', () => {
-  const ui = renderFarm(farm.view(establishedFarm(), api()), 'big')
-  assert.match(ui.dom.head.children[0].textContent, /\.fm-b-helper\{[^}]*white-space:nowrap/)
+test('帮工入口在工具抽屉里，大农场入口在顶栏：都用次按钮而非两颗主按钮', () => {
+  const ui = renderFarm(farm.view(establishedFarm(), api()), 'panel', { openBig() {} })
+  const entry = ui.find('data-farm-big', 'open')
+  assert.match(entry.className, /\bdp-btn\b/)
+  assert.doesNotMatch(entry.className, /\bdp-mini\b/)
+  openTools(ui)
+  const helper = ui.find('data-farm-helper', 'hire')
+  assert.match(helper.className, /\bdp-btn\b/)
+  assert.doesNotMatch(helper.className, /\bdp-mini\b/)
+  assert.equal(helper.querySelectorAll('img').length, 0)
 })
 
-test('fix3：浏览器按1/64px取整后菱形仍共边，不分别取整每块的位置', () => {
-  const ui = renderFarm(farm.view(establishedFarm(), api()), 'big')
-  const round = value => Math.floor(value * 64) / 64
-  const plots = ui.all('data-farm-plot').map(node => {
-    const w = round(1036.5 * parseFloat(node.style.width) / 100)
-    const h = round(691 * parseFloat(node.style.height) / 100)
-    const [dx, dy] = (node.style.translate || '0% 0%').split(' ').map(parseFloat)
-    return { x: round(1036.5 * parseFloat(node.style.left) / 100) + dx * w / 100,
-      y: round(691 * parseFloat(node.style.top) / 100) + dy * h / 100, w, h }
-  })
-  for (let i = 0; i < plots.length; i++) for (let j = i + 1; j < plots.length; j++) {
-    const a = plots[i], b = plots[j]
-    assert.ok(Math.abs(a.x - b.x) / (a.w / 2) + Math.abs(a.y - b.y) / (a.h / 2) >= 2 - 1e-9, `${i}/${j}`)
-  }
+test('大小农场切换不再各自计算几何：均使用共享场景和网格', () => {
+  const view = farm.view(establishedFarm(), api())
+  const small = renderFarm(view), large = renderFarm(view, 'big')
+  assert.equal(small.dom.body.querySelectorAll('.fm-s-scene').length, 1)
+  assert.equal(large.dom.body.querySelectorAll('.fm-s-scene').length, 1)
+  assert.equal(large.dom.body.querySelectorAll('.fm-b-scene').length, 0)
+  assert.equal(small.all('data-farm-plot').length, 6)
+  assert.equal(large.all('data-farm-plot').length, 18)
 })

@@ -15,6 +15,23 @@ import { UPGRADES } from '../packages/pet-core/src/core/upgrades.js'
 const T0 = 1_700_000_000_000
 const realSave = () => JSON.parse(readFileSync(new URL('./fixtures/state-v7-real.json', import.meta.url), 'utf8'))
 
+test('v14 dialogue upgrades without guessing old question identity or changing player progress', () => {
+  const before = { ...layEgg(T0), version: 14, name: '旧名字', coins: 4321,
+    dialogue: { ownerName: '旧主人', open: { id: 8, replies: [{ label: '好', happiness: 3 }] } } }
+  const frozen = JSON.stringify(before)
+  const step = UPGRADES.find(upgrade => upgrade.to === 15)
+  const after = step.up(before, T0)
+  assert.equal(after.version, 15)
+  assert.equal(after.name, '旧名字')
+  assert.equal(after.coins, 4321)
+  assert.equal(after.dialogue.ownerName, '旧主人')
+  assert.deepEqual(after.dialogue.open, { id: 8, replies: [{ label: '好', happiness: 3 }], scene: null, index: null })
+  assert.equal(JSON.stringify(before), frozen)
+  const identified = { ...before, dialogue: { ...before.dialogue, open: { ...before.dialogue.open, scene: 'eat', index: 0 } } }
+  assert.equal(step.up(identified, T0).dialogue.open.scene, 'eat')
+  assert.equal(step.up(identified, T0).dialogue.open.index, 0)
+})
+
 test('the upgrade table ends at the current version, one step at a time', () => {
   assert.equal(UPGRADES.at(-1)?.to, STATE_VERSION)
   UPGRADES.forEach((upgrade, index) => {

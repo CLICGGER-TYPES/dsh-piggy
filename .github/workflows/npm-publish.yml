@@ -1,0 +1,175 @@
+# npm Trusted Publishing (OIDC), no NPM_TOKEN anywhere:
+#   - For BOTH packages (dsh-piggy, dsh-plugin-piggy) add one trusted publisher on npmjs.com:
+#       GitHub Actions / CLICGGER-TYPES / dsh-piggy / workflow filename npm-publish.yml / direct "npm publish" allowed
+#     (staged publish is not used: it still needs manual 2FA approval per release.)
+#     The environment field is optional; if you configure an environment name there, add `environment:` to the job
+#     below with the same name, otherwise leave both empty.
+#   - The workflow file must already live in .github/workflows/ when the publisher is created, and a new publisher
+#     must complete its first publish within 2 days or it expires.
+#   - Official requirements: npm >= 11.5.1, Node >= 22.14.0, GitHub-hosted runner.
+#     https://docs.npmjs.com/trusted-publishers/  https://docs.npmjs.com/generating-provenance-statements/
+#   - Provenance attestations are generated automatically by npm for this OIDC + public repo + public package;
+#     do not add --provenance=false.
+#   - After the first successful run, set each package's Publishing access to "Require 2FA and disallow tokens".
+#
+# Defaults to read-only inspection. Publishing happens only with mode=publish, one package at a time, main first.
+# Re-running the same tag is safe: scripts/npm-release-plan.mjs skips a version whose published tarball is already
+# identical in file paths, sizes and content (packaging-only differences are tolerated), and blocks otherwise (a published version
+# must never be overwritten; bump the version instead). Registry errors/ambiguous responses block, they are never
+# treated as "version missing". Never run `npm publish` outside this workflow.
+name: npm-publish
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing pushed release tag, e.g. v0.37.2 or v0.37.2-rc.1'
+        required: true
+        type: string
+      mode:
+        description: 'inspect = read-only plan (default); publish = publish only the missing package(s)'
+        required: true
+        default: inspect
+        type: choice
+        options:
+          - inspect
+          - publish
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag }}
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+  # No tokens: a private empty userconfig, OIDC is the only publish credential.
+  NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/npmrc-empty
+  NPM_CONFIG_PROVENANCE: 'true'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Refuse malformed tag or mode
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$' \
+            || { echo "tag must be vX.Y.Z or vX.Y.Z-rc.N: $RELEASE_TAG"; exit 1; }
+          case "${{ inputs.mode }}" in
+            inspect|publish) ;;
+            *) echo "mode must be inspect or publish"; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+
+      - name: Verify the tag is pushed and points at the checked-out commit
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "CLICGGER-TYPES/dsh-piggy" || { echo "wrong repository: $GITHUB_REPOSITORY"; exit 1; }
+          remote_ref="$(git ls-remote --tags origin | awk -v want="refs/tags/$RELEASE_TAG" '
+            $2 == want "^{}" { peeled = $1 }
+            $2 == want { tag = $1 }
+            END { print (peeled != "" ? peeled : tag) }
+          ')"
+          local_ref="$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
+          head_ref="$(git rev-parse HEAD)"
+          test -n "$remote_ref" || { echo "tag $RELEASE_TAG is not pushed to origin"; exit 1; }
+          test "$remote_ref" = "$head_ref" || { echo "remote tag $RELEASE_TAG -> $remote_ref, checkout is $head_ref"; exit 1; }
+          test "$local_ref" = "$head_ref" || { echo "local tag $RELEASE_TAG -> $local_ref, checkout is $head_ref"; exit 1; }
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Use an OIDC-capable npm (>= 11.5.1) and verify there is no token
+        run: |
+          set -euo pipefail
+          : > "$NPM_CONFIG_USERCONFIG"
+          npm install --global npm@11.7.0
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          const [major, minor, patch] = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim().split('.').map(Number)
+          const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)))
+          if (!ok) throw new Error('npm 11.5.1+ is required for trusted publishing')
+          NODE
+
+      - name: Build, test and type-check the tagged tree
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
+          test -f scripts/npm-release-plan.mjs || { echo 'This tag predates the release planner; use the existing manual release path'; exit 1; }
+          npm run build
+          git diff --exit-code -- client.js
+          npm test
+          npm run typecheck
+
+      - name: Pack both packages for review and for the plan
+        run: |
+          set -euo pipefail
+          rm -rf npm-artifacts
+          mkdir -p npm-artifacts
+          npm pack --ignore-scripts --pack-destination npm-artifacts
+          npm pack ./packages/dsh-plugin-piggy --ignore-scripts --pack-destination npm-artifacts
+
+      - name: Inspect registry and print the plan (read-only; script never publishes)
+        run: |
+          set -euo pipefail
+          node scripts/npm-release-plan.mjs \
+            --tag "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --tarball-dir npm-artifacts \
+            --json \
+            --out npm-plan.json
+
+      - name: Publish only the missing package(s), main first, through OIDC
+        if: ${{ inputs.mode == 'publish' }}
+        run: |
+          set -euo pipefail
+          dist_tag="$(node -p "require('./npm-plan.json').distTag")"
+          version="$(node -p "require('./package.json').version")"
+          publish_if_missing() {
+            local name="$1"
+            local action
+            action="$(node -p "require('./npm-plan.json').packages.find(p => p.name === '$name').action")"
+            if [ "$action" = "publish" ]; then
+              echo "publishing $name@$version with dist-tag $dist_tag (provenance is automatic with OIDC)"
+              npm publish "npm-artifacts/${name}-${version}.tgz" --access public --tag "$dist_tag"
+            else
+              echo "skip $name@$version: the registry already has the identical tarball"
+            fi
+          }
+          publish_if_missing dsh-piggy
+          publish_if_missing dsh-plugin-piggy
+
+      - name: Verify registry state after publish (read-only)
+        if: ${{ inputs.mode == 'publish' }}
+        run: |
+          set -euo pipefail
+          sleep 5
+          node scripts/npm-release-plan.mjs \
+            --tag "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --tarball-dir npm-artifacts \
+            --expect-published \
+            --json
+
+      - name: Keep the plan and tarballs for review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: npm-release-plan
+          path: |
+            npm-plan.json
+            npm-artifacts/*.tgz
+          if-no-files-found: warn
+          retention-days: 14

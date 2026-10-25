@@ -352,7 +352,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   }
   const t = fakeApi(0)
   farm.actions.buy(old, { item: 'nothing' }, t.api)
-  assert.equal(old.version, 4)
+  assert.equal(old.version, 5)
   assert.equal(old.unlocked, 6)
   assert.equal(old.harvest.pumpkin, 2)
   assert.equal(old.harvest.carrot, 1 + 4)

@@ -11,13 +11,40 @@ import { str } from './values.js'
 /** News that gets through 免打扰. */
 var URGENT_KINDS = ['sick', 'worse', 'death', 'cured', 'revived', 'weak']
 
+// Remember received IDs rather than only the largest: different responses can
+// arrive out of order. Consecutive IDs share a range; a context releases its
+// history when its window is disposed. The initial watermark keeps old hosts'
+// already-consumed history excluded.
+const receivedByContext = new WeakMap()
+function receiptFor(ctx) {
+  if (!receivedByContext.has(ctx)) receivedByContext.set(ctx, { floor: ctx.lastPendingId || 0, ranges: [] })
+  return receivedByContext.get(ctx)
+}
+function received(receipt, id) {
+  return id <= receipt.floor || receipt.ranges.some(range => id >= range[0] && id <= range[1])
+}
+function rememberId(receipt, id) {
+  const merged = []
+  const ranges = receipt.ranges.concat([[id, id]]).sort((a, b) => a[0] - b[0])
+  for (const range of ranges) {
+    const previous = merged[merged.length - 1]
+    if (previous && range[0] <= previous[1] + 1) previous[1] = Math.max(previous[1], range[1])
+    else merged.push(range.slice())
+  }
+  if (merged.length && merged[0][0] === receipt.floor + 1) receipt.floor = merged.shift()[1]
+  receipt.ranges = merged
+}
+
+
 /**
  * @param {any} ctx
  * @param {(event: any) => void} showPigLine 猪说的话（带回复按钮）
+ * @param {any[]} [pending] 要处理的消息；默认是当前快照里的。晚到的轮询补演时直接传入。
  */
-export function processPending(ctx, showPigLine) {
+export function processPending(ctx, showPigLine, pending = ctx.view.pending) {
   // 拆窗口后两边都在处理排队的消息：猪的反应和猪说的话只在猪窗口演，
   // 提示条只在面板窗口出（猪窗口里没有面板）。
+  var receivedIds = receiptFor(ctx)
   var role = desktopRole()
   var pigSide = role !== 'panel' && role !== 'ext'
   var cardSide = role !== 'pet' && role !== 'ext'
@@ -25,16 +52,21 @@ export function processPending(ctx, showPigLine) {
   var rewards = []
   var rewardLine = null
   // 同批奖励和台词一次展示，不能在 render 后用领取回执抹掉台词/回复。
-  var hasReward = pigSide && ctx.view.pending.some(function (event) {
-    return event.kind === 'gift' && (event.id > 0 ? event.id > ctx.lastPendingId : event.at > ctx.lastPendingAt)
+  var ordered = pending.slice().sort(function (a, b) {
+    // 正常快照本来就是按 id 递增的；合并/晚到的消息可能乱序，不能因为先看到
+    // 更大的 id 就把更小的接话当成旧的丢掉（见 test/client.test.js 的轮到晚到用例）。
+    return (a.id || 0) - (b.id || 0) || (a.at || 0) - (b.at || 0)
   })
-  for (var i = 0; i < ctx.view.pending.length; i += 1) {
-    var event = ctx.view.pending[i]
+  var hasReward = pigSide && ordered.some(function (event) {
+    return event.kind === 'gift' && (event.id > 0 ? !received(receivedIds, event.id) : event.at > ctx.lastPendingAt)
+  })
+  for (var i = 0; i < ordered.length; i += 1) {
+    var event = ordered[i]
     // Messages carry an id that only goes up; two from the same instant
     // ("病情加重" then "走了") used to collapse into the first one.
     // Hosts older than the id still dedupe on the timestamp.
-    if (event.id > 0 ? event.id <= ctx.lastPendingId : event.at <= ctx.lastPendingAt) continue
-    if (event.id > 0) ctx.lastPendingId = event.id
+    if (event.id > 0 ? received(receivedIds, event.id) : event.at <= ctx.lastPendingAt) continue
+    if (event.id > 0) { rememberId(receivedIds, event.id); ctx.lastPendingId = Math.max(ctx.lastPendingId, event.id) }
     ctx.lastPendingAt = Math.max(ctx.lastPendingAt, event.at)
     if (event.kind === 'line') {
       if (pigSide) { if (hasReward) rewardLine = event; else showPigLine(event) }

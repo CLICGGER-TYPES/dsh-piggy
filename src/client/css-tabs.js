@@ -42,12 +42,12 @@ export const CSS_TABS = [
   // 气泡钉在猪头上：右边和猪的右边对齐（场景左右各 6px 内边距，猪贴着它），底边在猪头上方 10px，
   // 尾巴指着猪头正中。收起/打开、面板朝左/朝右都是这一个位置（用户 2026-10-04：「不要飘来飘去」）。
   '.dp-bubble{position:absolute;right:6px;left:auto;top:auto;bottom:calc(var(--pig-gap-below) + var(--pig-size) + 10px);',
-  'z-index:2;width:max-content;max-width:calc(var(--panel-width) - 24px);max-height:104px;box-sizing:border-box;padding:6px 10px;',
-  'border-radius:var(--ac-radius-sm);font-size:10.5px;font-weight:600;line-height:1.45;',
+  'z-index:2;width:max-content;max-width:calc(268px * var(--bubble-scale,1));max-height:calc(104px * var(--bubble-scale,1));box-sizing:border-box;padding:calc(6px * var(--bubble-scale,1)) calc(10px * var(--bubble-scale,1));',
+  'border-radius:var(--ac-radius-sm);font-size:calc(10.5px * var(--bubble-scale,1));font-weight:600;line-height:1.45;',
   'color:var(--ac-text-body);background:var(--ac-bg-input);',
-  'border:2px solid var(--ac-border-light);box-shadow:var(--ac-shadow-sm)}',
-  '.dp-bubble-text{display:block;max-height:88px;overflow-y:auto;scrollbar-width:thin;white-space:normal;overflow-wrap:anywhere}',
-  '.dp-bubble:has(.dp-bubble-replies) .dp-bubble-text{max-height:52px}',
+  'border:calc(2px * var(--bubble-scale,1)) solid var(--ac-border-light);box-shadow:var(--ac-shadow-sm)}',
+  '.dp-bubble-text{display:block;max-height:calc(88px * var(--bubble-scale,1));overflow-y:auto;scrollbar-width:thin;white-space:normal;overflow-wrap:anywhere}',
+  '.dp-bubble:has(.dp-bubble-replies) .dp-bubble-text{max-height:calc(52px * var(--bubble-scale,1))}',
   // Tail drawn as a small rotated square so the 2px border stays continuous.
   '.dp-bubble::after{content:"";position:absolute;left:auto;right:calc(var(--pig-size) / 2 - 5px);top:100%;bottom:auto;',
   'margin-top:-4px;width:8px;height:8px;',
@@ -56,10 +56,11 @@ export const CSS_TABS = [
   '[data-dsh-pig][data-panel-side="right"] .dp-bubble{right:auto;left:6px}',
   '[data-dsh-pig][data-panel-side="right"] .dp-bubble::after{right:auto;left:calc(var(--pig-size) / 2 - 5px)}',
   '[data-dsh-pig] .dp-bubble[data-fitted]::after{left:var(--bubble-tail-left);right:auto}',
+  '[data-dsh-pig] .dp-bubble[data-bubble-side="below"]::after{top:auto;bottom:100%;margin-top:0;margin-bottom:-4px;border-right:0;border-bottom:0;border-left:2px solid var(--ac-border-light);border-top:2px solid var(--ac-border-light)}',
   // Reply buttons under a line: small pills, the mint of the primary colour
   // without the 3D base, which the spec keeps for real primary buttons.
   // 对话始终在猪头上；菜单打开只调整原生窗口层级，不改变气泡位置、宽度或滚动进度。
-  '.dp-bubble-replies{display:flex;flex-wrap:wrap;gap:4px;max-height:29px;overflow-y:auto;scrollbar-width:thin;margin-top:5px}',
+  '.dp-bubble-replies{display:flex;flex-wrap:wrap;gap:calc(4px * var(--bubble-scale,1));max-height:calc(29px * var(--bubble-scale,1));overflow-y:auto;scrollbar-width:thin;margin-top:calc(5px * var(--bubble-scale,1))}',
   // 猪头上的日常气泡（签到 / 礼包）：不用新颜色，沿用主色与卡片底色。
   // 挂在场景**上方**（不是 top 边缘）：折叠时场景就是猪本身，用 top:-6px
   // 会让气泡叠在猪头上（用户反馈 #6）。
@@ -87,12 +88,32 @@ export const CSS_TABS = [
   '@keyframes dp-daily-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}',
   // 收起时礼包按钮也在猪头上方：猪说话时先藏起来，和番茄钟角标一样，不跟气泡抢位置。
   '[data-dsh-pig][data-open="false"]:has(.dp-bubble:not([hidden])) .dp-daily{visibility:hidden}',
+  // Approved: a waiting gift stays actionable beside the pig throughout speech.
+  '[data-dsh-pig][data-open="false"]:is(:has(.dp-bubble:not([hidden])),[data-gift-held="true"]) .dp-daily[data-action="openGift"]{left:auto;margin-left:0;right:calc(100% + 6px);bottom:calc(var(--pig-gap-below) + var(--pig-size)/2 - 18px);visibility:visible}',
+  '[data-dsh-pig][data-open="false"][data-gift-side="right"]:is(:has(.dp-bubble:not([hidden])),[data-gift-held="true"]) .dp-daily[data-action="openGift"]{right:auto;left:calc(100% + 6px)}',
   // 日记：折叠时只有首句，展开是全文。
   '.dp-diary{cursor:pointer}',
   '.dp-diary[data-open="true"] .dp-diary-full{display:block}',
   '.dp-diary-full{margin-top:4px;line-height:1.5}',
-  '.dp-reply{font:inherit;font-size:10px;font-weight:700;padding:2px 9px;cursor:pointer;',
-  'border-radius:var(--ac-pill);border:2px solid var(--ac-border-light);background:var(--ac-bg);',
+  // 背包日记页：正文 14px/1.75 保留换行；照料记录默认收起，展开后一行一条。
+  // 面板只有 292px 宽，长链接/长 emoji 也不许把内容顶出横向滚动。
+  '.dp-diary-page{min-width:0;overflow-wrap:anywhere}',
+  '.dp-diary-body{margin-top:4px;font-size:14px;line-height:1.75;white-space:pre-line;',
+  'color:var(--ac-text);overflow-wrap:anywhere}',
+  '.dp-diary-note{margin-top:4px;font-size:12px;line-height:1.5;color:var(--ac-text-2)}',
+  '.dp-diary-care-toggle{display:flex;align-items:center;justify-content:space-between;gap:6px;',
+  'width:100%;min-height:32px;margin-top:8px;padding:5px 10px;font:inherit;font-size:12px;',
+  'font-weight:700;text-align:left;color:var(--ac-text);background:var(--ac-bg-input);',
+  'border:2px solid var(--ac-border-light);border-radius:var(--ac-radius-sm);cursor:pointer}',
+  '.dp-diary-care-toggle:hover{border-color:var(--ac-border-hover)}',
+  '.dp-diary-care-toggle:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}',
+  '.dp-diary-care-toggle .dp-diary-care-arrow{flex:none;font-size:11px;color:var(--ac-text-2)}',
+  '.dp-diary-care{margin-top:6px;padding:8px 10px;font-size:12px;line-height:1.6;',
+  'color:var(--ac-text-2);background:var(--ac-bg-input);border:1.5px dashed var(--ac-border-light);',
+  'border-radius:var(--ac-radius-sm);overflow-wrap:anywhere}',
+  '.dp-diary-care-row + .dp-diary-care-row{margin-top:4px}',
+  '.dp-reply{font:inherit;font-size:calc(10px * var(--bubble-scale,1));font-weight:700;padding:calc(2px * var(--bubble-scale,1)) calc(9px * var(--bubble-scale,1));cursor:pointer;',
+  'border-radius:var(--ac-pill);border:calc(2px * var(--bubble-scale,1)) solid var(--ac-border-light);background:var(--ac-bg);',
   'color:var(--ac-text);transition:border-color .15s var(--ac-ease)}',
   '.dp-reply:hover{border-color:var(--ac-border-hover)}',
   '.dp-reply:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}',

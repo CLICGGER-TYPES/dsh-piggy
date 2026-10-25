@@ -13,6 +13,18 @@
  * 猪窗口里没有面板（外壳 0.6.0 起面板单独一个窗口），所以猪永远在家。
  */
 import { contentBoundsForPig, nearestArea, workAreaBounds, drawingCorridor } from './geometry.js'
+import { feetPoint } from '../character-geometry.js'
+
+/** Translate the same layout feet used by speech/hit geometry into desktop DIP. */
+function screenFeet(origin, box) {
+  const feet = feetPoint(box)
+  return { x: Math.round(origin.x + feet.x), y: Math.round(origin.y + feet.y) }
+}
+
+function topLeftAtFeet(home, size) {
+  const offset = feetPoint(size)
+  return { x: home.x - offset.x, y: home.y - offset.y }
+}
 
 const PIG_SCREEN_KEY = 'dsh-piggy:desktop-pig'
 const STORE_VERSION = 3
@@ -68,7 +80,7 @@ export function createPlacement() {
       // v2 / 绝对坐标存的是左上角：按存下的猪大小（没有就用现在的）换成脚底中心。
       const w = Number.isFinite(raw.w) ? raw.w : pigSize.width
       const h = Number.isFinite(raw.h) ? raw.h : pigSize.height
-      point = { x: point.x + w / 2, y: point.y + h }
+      point = screenFeet(point, { width: w, height: h })
     }
     if (relative && raw.area && same === null) {
       // 原来那块屏不在了：保持相对偏移，落到离它最近的屏上，再夹进那块屏。
@@ -117,7 +129,7 @@ export function createPlacement() {
     if (pending === undefined) pending = readSaved()
     if (home === null) {
       home = pending !== null ? homeFromSaved(pending, pigSize, areas)
-        : { x: Math.round(bounds.x + report.pigNow.x + pigSize.width / 2), y: Math.round(bounds.y + report.pigNow.y + pigSize.height) }
+        : screenFeet(bounds, { ...report.pigNow, ...pigSize })
       pending = null
     }
     // 家不在任何一块屏上（拔了显示器、改了分辨率）：落到最近那块屏里，整只猪看得见。
@@ -153,7 +165,7 @@ export function createPlacement() {
     const shift = report.shift ?? { x: 0, y: 0 }
     // 按「内容没在窗口里挪过」的布局算窗口；被夹了多少交给页面去挪内容（只在收起时）。
     const pigPlain = { x: report.pigWindow.x - shift.x, y: report.pigWindow.y - shift.y, ...pigSize }
-    const topLeft = { x: home.x - pigSize.width / 2, y: home.y - pigSize.height }
+    const topLeft = topLeftAtFeet(home, pigSize)
     const area = nearestArea(home, areas) ?? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
     const viewport = workAreaBounds(list, area)
     const next = contentBoundsForPig({ width: report.width, height: report.height, pigWindow: pigPlain }, topLeft)
@@ -172,9 +184,22 @@ export function createPlacement() {
    * @param {{x:number,y:number}} windowPos 窗口现在的位置 @param {{x:number,y:number,width:number,height:number}} pigLocal 猪在窗口里的框
    */
   function rehome(windowPos, pigLocal, areas) {
-    home = { x: Math.round(windowPos.x + pigLocal.x + pigLocal.width / 2), y: Math.round(windowPos.y + pigLocal.y + pigLocal.height) }
+    home = screenFeet(windowPos, pigLocal)
     pending = null
     persist(areas)
+  }
+
+  /**
+   * 托盘恢复：直接把家放回一个已知安全的屏幕脚底（不再是拖动/上次摆位的结果）。
+   * 只改本机位置偏好；尺寸、面板、气泡等由调用方决定。
+   * @param {{x:number,y:number}} point
+   * @param {Array<any>} areas
+   */
+  function recover(point, areas) {
+    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return
+    home = { x: Math.round(point.x), y: Math.round(point.y) }
+    pending = null
+    persist(Array.isArray(areas) ? areas : [])
   }
 
   /**
@@ -185,23 +210,20 @@ export function createPlacement() {
    * @param {{x:number,y:number,width:number,height:number}} pigLocal
    */
   function acceptWindow(windowPos, pigLocal, areas) {
-    home = {
-      x: Math.round(windowPos.x + pigLocal.x + pigLocal.width / 2),
-      y: Math.round(windowPos.y + pigLocal.y + pigLocal.height),
-    }
+    home = screenFeet(windowPos, pigLocal)
     pending = null
     // 存档里保留原来的家：只把内存里的 stored 对齐到实际位置，下一轮 persist 就不再写盘。
     stored = JSON.stringify(payloadFor(home, Array.isArray(areas) ? areas : []))
   }
 
   return {
-    decide, rehome, acceptWindow,
+    decide, rehome, acceptWindow, recover,
     /** 家写盘（启动换算完、显示器变了之后调一次）。 */
     persist,
     /** 猪的家（脚底中心）；还不知道是 null。 */
     home: () => home,
     /** 猪在家时左上角在哪（面板预留范围按它判断放不放得下）。 */
-    homeTopLeft: () => home === null ? null : { x: home.x - lastPigSize.width / 2, y: home.y - lastPigSize.height },
+    homeTopLeft: () => home === null ? null : topLeftAtFeet(home, lastPigSize),
     /** 上一轮算出来的窗口被工作区夹了多少。 */
     clamp: () => lastClamp,
     pigSize: () => lastPigSize,

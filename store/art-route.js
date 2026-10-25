@@ -5,6 +5,8 @@ import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 import { customSkinArt } from './skin-pack.js'
 const ART_ROUTE = '/dsh-piggy/art'
 const PIG_ART_PATHS = new Set(Object.values(PIG_ART_ASSETS))
+// 场景插画与小猪立绘分开登记；只开放实际随包分发的文件，不扩大任意路径读取范围。
+const FISHING_ART_PATHS = new Set(['scene-river', 'scene-pond', 'scene-reef', 'scene-night', 'fight-tug', 'crucian-result', 'bobber'].map(name => `fishing/${name}.png`))
 
 /**
  * Classified PNGs, imported skins and legacy artwork URL aliases.
@@ -21,8 +23,8 @@ export function registerArtRoute(webServer, store, sendJson) {
       // nothing from the request can ever walk out of ./assets.
       const flat = /^(?:[a-z][a-z0-9-]{0,63}\.(?:svg|png)|feedback\/[a-z][a-z0-9-]{0,63}\.png)$/.test(name)
       const imported = /^custom-[a-z0-9-]{1,41}$/.test(name)
-      const petFrame = /^animations\/piglet-pet\/reference\.webp$/.test(name)
-      if (!PIG_ART_PATHS.has(name) && !flat && !imported && !petFrame) return sendJson(res, 404, { error: 'not found' })
+      const petFrame = name === 'animations/piglet-pet/reference.webp' || name === 'animations/pet-hand/hand.webp'
+      if (!PIG_ART_PATHS.has(name) && !FISHING_ART_PATHS.has(name) && !flat && !imported && !petFrame) return sendJson(res, 404, { error: 'not found' })
       try {
         const custom = name.startsWith('custom-') ? customSkinArt(store.filePath, name) : null
         const key = name.replace(/\.(?:svg|png)$/, '')

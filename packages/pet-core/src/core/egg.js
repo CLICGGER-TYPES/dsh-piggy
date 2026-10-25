@@ -103,7 +103,7 @@ export function hatch(state, nowMs) {
   // (older saves let it eat real work) does not count toward growing up.
   state.xp = 0
   assignPersonality(state)
-  // 新猪送一次改简介（性格、生日）的机会，上一只猪改过的生日不带过来。
+  // 保留旧版字段默认值；上一只猪改过的生日不带过来。
   state.profileEdits = FREE_PROFILE_EDITS
   delete state.birthday
   state.bornAt = nowMs
@@ -121,7 +121,7 @@ export function hatchEgg(nowMs) {
   const state = layEgg(nowMs)
   state.hatched = true
   assignPersonality(state)
-  // 新猪送一次改简介（性格、生日）的机会，上一只猪改过的生日不带过来。
+  // 保留旧版字段默认值；上一只猪改过的生日不带过来。
   state.profileEdits = FREE_PROFILE_EDITS
   delete state.birthday
   state.bornAt = nowMs

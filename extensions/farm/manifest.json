@@ -2,9 +2,9 @@
   "key": "farm",
   "label": "菜园",
   "emoji": "🥬",
-  "version": "4.0.10",
-  "minGame": "0.37.0",
-  "description": "照 QQ 农场改版：29 种作物、18 块地，会长草生虫干旱；等级解锁种子，多季作物；面板里是小农场，也能开大窗口的大农场。可雇帮工猪。用自己的菜币。",
+  "version": "4.1.5",
+  "minGame": "0.37.2",
+  "description": "清爽平涂纸感菜园：29种作物、18块地，支持新手试种、明确照料目标、换菜币和帮工。",
   "app": {
     "emoji": "🥬",
     "label": "菜园"
@@ -279,7 +279,28 @@
     "redraw-close.webp",
     "redraw-plus.webp",
     "redraw-minus.webp",
-    "redraw-lock.webp"
+    "redraw-lock.webp",
+    "paper-garden-background.png",
+    "paper-soil-patch.png",
+    "paper-scallion-seed.png",
+    "paper-scallion-seedling.png",
+    "paper-scallion-ripe.png",
+    "paper-weed.png",
+    "paper-stubble.png",
+    "paper-glove.png",
+    "paper-seed-bag.png",
+    "paper-watering-can.png",
+    "paper-shovel.png",
+    "paper-backpack.png",
+    "paper-shop.png",
+    "paper-weed-spray.png",
+    "paper-insect-spray.png",
+    "paper-fertilizer-bag.png",
+    "paper-harvest-sickle.png",
+    "paper-backpack-sprayer.png",
+    "paper-leveling-rake.png",
+    "paper-push-seeder.png",
+    "paper-garden-wide.png"
   ],
   "assetLayout": {
     "bg-big-dawn-rain.webp": {

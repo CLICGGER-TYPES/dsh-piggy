@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url)
  * documented, portable way is `pnpm add -D esbuild`.
  * @returns {any} the esbuild module
  */
-function loadEsbuild() {
+export function loadEsbuild() {
   try {
     return require('esbuild')
   } catch {

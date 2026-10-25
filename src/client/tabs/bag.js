@@ -171,6 +171,30 @@ function renderItems(ui, kind) {
   ui.content.appendChild(grid)
 }
 
+/** 照料记录的展开状态挂在 ui.drill 上：只是这一屏的样子，不发送、不存档。 */
+function careOpen(ui, day) {
+  return !!(ui.drill.diaryCare && ui.drill.diaryCare[day])
+}
+
+function toggleCare(ui, day) {
+  var open = careOpen(ui, day)
+  if (!ui.drill.diaryCare) ui.drill.diaryCare = Object.create(null)
+  if (open) delete ui.drill.diaryCare[day]
+  else ui.drill.diaryCare[day] = true
+  ui.renderContent()
+}
+
+/** 正文只认 body：空串就是空页（可能只剩照料记录），绝不回退到 text。 */
+function diaryBody(entry) {
+  return typeof entry.body === 'string' ? entry.body : ''
+}
+
+function diaryCareNotes(entry) {
+  return Array.isArray(entry.careNotes)
+    ? entry.careNotes.filter(note => typeof note === 'string')
+    : []
+}
+
 /** 日记: one tile per day, newest first; the picked day's page opens below. */
 function renderDiary(ui) {
   drillHeader(ui, 'bag', '📔 日记', ui.view.diary.length + ' 篇')
@@ -195,12 +219,33 @@ function renderDiary(ui) {
     })(ui.view.diary[d])
   }
   ui.content.appendChild(grid)
-  if (picked !== null) {
-    var page = el('div', 'dp-pick dp-tile-card dp-diary-page')
-    page.appendChild(el('div', 'dp-pick-head', picked.day))
-    page.appendChild(el('div', null, picked.text))
-    ui.content.appendChild(page)
+  if (picked === null) return
+  var body = diaryBody(picked)
+  var notes = diaryCareNotes(picked)
+  var page = el('div', 'dp-pick dp-tile-card dp-diary-page')
+  page.appendChild(el('div', 'dp-pick-head', picked.day))
+  if (body !== '') page.appendChild(el('div', 'dp-diary-body', body))
+  // 只有明细的一页：说清楚这里是什么，不拿别的东西补正文。
+  if (body === '' && notes.length > 0) page.appendChild(el('div', 'dp-diary-note', '这页只有照料记录。'))
+  if (notes.length > 0) {
+    var open = careOpen(ui, picked.day)
+    var panelId = 'dp-diary-care-' + picked.day.replace(/[^\w-]/g, '_')
+    var toggle = button('dp-diary-care-toggle', {
+      'data-diary-care': picked.day,
+      'aria-expanded': open ? 'true' : 'false',
+      'aria-controls': panelId,
+    }, function () { toggleCare(ui, picked.day) })
+    toggle.appendChild(el('span', null, '照料记录（' + notes.length + ' 条）'))
+    toggle.appendChild(el('span', 'dp-diary-care-arrow', open ? '▴' : '▾'))
+    page.appendChild(toggle)
+    if (open) {
+      var panel = el('div', 'dp-diary-care')
+      panel.id = panelId
+      for (var n = 0; n < notes.length; n += 1) panel.appendChild(el('div', 'dp-diary-care-row', notes[n]))
+      page.appendChild(panel)
+    }
   }
+  ui.content.appendChild(page)
 }
 
 /** 纪念品: tap one for its story, and sell it from there. */

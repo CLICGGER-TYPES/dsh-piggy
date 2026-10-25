@@ -1,0 +1,218 @@
+{
+  "reference": "docs/art/game-paper-reference.png",
+  "source_directory": "/zyx/agents/codex/deliverables/piggy-work/farm-consistency-20261024/art-drafts",
+  "prompts": {
+    "big-farm-background-prompt.txt": "Use case: stylized-concept\nAsset type: ultrawide farming game scenery BACKGROUND only, a private candidate.\nPrimary request: an empty soft paper-textured pale yellow-green lawn with a very shallow strip of distant low sage-green shrubs along the absolute TOP EDGE. Match the flat paper/gouache style and exact gentle light meadow palette in the supplied garden-background.png and direction-a-flat-paper.png references. No outlines. No 3D.\nComposition: intended native panoramic aspect ratio approximately 3.12:1, ideally 1536x492 or 1920x616. The final display is 1060x340. The top approximately 15% of the finished panoramic banner is a very shallow band of soft distant LOW shrubs, the lower 85% of finished banner is empty unobstructed pale lawn. Almost no sky, only tiny warm cream gaps between shrub tops at the very upper border. No tall trees or bushes.\nCRITICAL FALLBACK COMPOSITION: if generating a 1536x1024 canvas instead of a panorama, keep ALL shrub shapes and distant scenery STRICTLY INSIDE THE TOP 75 PIXELS (top 7.3%); absolutely everything below y=75 must be empty pale green lawn. This lets us retain the entire width and crop the top 493 pixels into an ultrawide panorama without stretching or cutting any shrub. In a tall canvas, do not spread the shrubs down into the field. Do not center the horizon vertically.\nScene: broad empty lawn for placing a farm gameplay layer later. Very subtle warm paper grain and gentle irregular flat paint variation. A handful of tiny low-contrast grass strokes at the outer left/right edges only are acceptable, keep most field open and quiet.\nColor palette: light yellow-green lawn, subdued pale sage shrubs, warm ivory highlights, quiet low-contrast paper finish. Copy the reference garden lawn rather than saturated emerald grass.\nConstraints: background only. NO soil plots, no crops, no tools, no pigs, no animals, no characters, no buildings, no fences, no paths, no text, no UI, no border, no rounded frame, no decorations in the central lawn. Full-bleed opaque background. Soft flat paint, no heavy gradients, no vignette, no shadows across the field.",
+    "advanced-tools-prompt.txt": "Use case: stylized-concept\nAsset type: seven separate farming-game item icons arranged on one transparent sprite sheet.\nPrimary request: create exactly seven tool icons matching the reference watering can and the small icons at the bottom of the garden reference. Soft flat paper-cut / gouache paper texture, simple broad color areas, restrained subtle mottling. No black outlines, no dark contour strokes, no glossy 3D rendering, no dramatic shadows.\nReference images: /zyx/agents/DSH/workspaces/dsh-piggy/worktrees/status-overlays-20261021/docs/art/game-paper-reference.png is STYLE REFERENCE only; /zyx/agents/codex/deliverables/piggy-work/farm-repair-20261024/art-drafts/watering-can-qa.jpg is STYLE REFERENCE only. Copy their soft friendly silhouette, flat colors and paper texture.\nLayout: a precisely regular FOUR-column TWO-row grid on a 1536 x 1024 transparent canvas, eight equal 384x512 cells. Each icon entirely contained and centered in its cell, generous transparent separation, consistent visual weight. No gridlines. Last cell empty transparent. All tool silhouettes complete and easily readable at 64 pixels. Each tool occupies approximately 70% of its cell with ample clear margin.\nRow 1 left to right:\n1) a GREEN handheld weed-control trigger spray bottle, green bottle and pale beige trigger sprayer, small simple leaf mark on body, no letters.\n2) a muted CORAL RED handheld insect-control trigger spray bottle, red body and pale beige trigger sprayer, tiny simplified bug symbol on cream label, no letters.\n3) a warm kraft paper fertilizer bag with folded top, cream label and green paired-leaf mark, no letters.\n4) a harvest sickle, crescent cool-gray metal blade and short warm wood handle, clear recognizable sickle silhouette.\nRow 2 left to right:\n5) a backpack garden sprayer, soft teal-green rectangular tank with rounded corners, cream cap, two straps and attached simple curved hose with short spray lance, all parts contained in cell.\n6) a gardening leveling rake, wooden long handle diagonally positioned, broad muted gray-green rake head with clearly visible short tines, simple complete silhouette.\n7) a compact hand-push seed planter, small round wheel, warm cream seed hopper above a sage-green frame, angled wood-toned push handle, recognizable and simple.\n8) completely EMPTY transparent cell.\nScene/backdrop: genuinely transparent alpha background everywhere outside tools. Absolutely no beige backdrop, no white backdrop, no checkerboard drawn into image.\nConstraints: only the seven single tools. No buttons, panels, circles, decorative backplates, enclosing frames, floor shadows, text, UI, watermark. Do not draw the reference UI. Each icon separate from neighbors. Flat simplified painted paper colors like the reference watering can."
+  },
+  "native_sources": {
+    "advanced-tools-native-sheet.png": "8406222b3e1179e5699ae1c3da7a86ff0a24a79e9c8a6ede5180e9e6edf83bfc",
+    "big-farm-background-native-wide.png": "8024c88cac7ada8e46b430e505c61b4f9a9d0392002d3a8ea58bd3cbb2ad6a91"
+  },
+  "exports": {
+    "paper-weed-spray.png": "cfd3b4334ad880e58c9b08a3d63e7261efef1698867c17437edce798acbd62e7",
+    "paper-insect-spray.png": "af958bc1c040f0a24f24bbdf7294490adab251ca54f5caf87566a5ccddc222f1",
+    "paper-fertilizer-bag.png": "23181d8a8dcbd22b3ed30f8269fd034a0177ef5404d8009cfc85013a55b54e2e",
+    "paper-harvest-sickle.png": "f4e19dde5fee81bfaa3daad79b4a1c5136bcbd76e8fd056449f6060b99c46fe0",
+    "paper-backpack-sprayer.png": "1d03467143fe7ec067fdee0df53c94a653eeddeac3415fe2d76bae99bfaf3805",
+    "paper-leveling-rake.png": "793edfac9eb9252c441b1d5461037e0426c549061d2addb75790edce8664f256",
+    "paper-push-seeder.png": "e3f799b2522eadc822497c9965e002caf536b20ff1ffd4d4f0c81bbb98705124",
+    "paper-garden-wide.png": "55ba7fc4f9e067c25a534ecf1520fba73755f91604ae70560a6acc83f0c65d00"
+  },
+  "export_records": {
+    "big-farm-background-export-record.json": {
+      "mode": "built-in native image_gen",
+      "transparent_background": false,
+      "native_path": "/home/clicgger/.codex/generated_images/01a16d76-bf37-7681-94f0-ada9e3aae886/exec-094ae0b7-157c-44f9-b91a-c556ff23831f.png",
+      "native_copy": "big-farm-background-native-wide.png",
+      "native_size": [
+        2212,
+        711
+      ],
+      "crop_rect": [
+        19,
+        0,
+        2192,
+        697
+      ],
+      "crop_size": [
+        2173,
+        697
+      ],
+      "output_size": [
+        1060,
+        340
+      ],
+      "uniform_scale": "20/41 on both dimensions",
+      "operations": "pure rectangular crop and aspect-preserving Lanczos resize only; no drawn elements, recoloring, masking or background processing",
+      "inspection": "Native output is panoramic. Distant low shrubs confined approximately to upper 12%; remaining approximately 88% is pale open lawn, with a few tiny edge grass marks. No plots, tools, pigs, buildings, labels, UI or borders. Source style references: direction-a-flat-paper.png and garden-background.png. Private candidate only; no official assets changed.",
+      "sha256": {
+        "big-farm-background-native-wide.png": "8024c88cac7ada8e46b430e505c61b4f9a9d0392002d3a8ea58bd3cbb2ad6a91",
+        "big-farm-background-paper-1060x340.png": "55ba7fc4f9e067c25a534ecf1520fba73755f91604ae70560a6acc83f0c65d00",
+        "big-farm-background-prompt.txt": "69fddbd00b109e29b1387bbea4c4d34068f1543c4294282fe9f81b8f0c466696"
+      }
+    },
+    "advanced-tools-export-record.json": {
+      "source_native": "/home/clicgger/.codex/generated_images/01a16d76-bf37-7681-94f0-ada9e3aae886/exec-dd54dc8b-f7d5-428f-b194-c6eaa2a6e2d5.png",
+      "source_copy_sha256": "8406222b3e1179e5699ae1c3da7a86ff0a24a79e9c8a6ede5180e9e6edf83bfc",
+      "mode": "native image_gen; transparent_background=true",
+      "transform": "Pure rectangular crop with margins per icon; aspect-preserving Lanczos downscale to maximum 224px; centered on transparent 256px canvas; no drawing, no masking, no contour edits. The rake crop excludes neighboring backpack hose.",
+      "records": [
+        {
+          "name": "weed-spray",
+          "native_crop_rect": [
+            40,
+            55,
+            340,
+            505
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            149,
+            224
+          ],
+          "offset": [
+            53,
+            16
+          ],
+          "sha256": "cfd3b4334ad880e58c9b08a3d63e7261efef1698867c17437edce798acbd62e7"
+        },
+        {
+          "name": "insect-spray",
+          "native_crop_rect": [
+            425,
+            55,
+            715,
+            505
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            144,
+            224
+          ],
+          "offset": [
+            56,
+            16
+          ],
+          "sha256": "af958bc1c040f0a24f24bbdf7294490adab251ca54f5caf87566a5ccddc222f1"
+        },
+        {
+          "name": "fertilizer-bag",
+          "native_crop_rect": [
+            770,
+            65,
+            1130,
+            505
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            183,
+            224
+          ],
+          "offset": [
+            36,
+            16
+          ],
+          "sha256": "23181d8a8dcbd22b3ed30f8269fd034a0177ef5404d8009cfc85013a55b54e2e"
+        },
+        {
+          "name": "harvest-sickle",
+          "native_crop_rect": [
+            1180,
+            65,
+            1500,
+            505
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            163,
+            224
+          ],
+          "offset": [
+            46,
+            16
+          ],
+          "sha256": "f4e19dde5fee81bfaa3daad79b4a1c5136bcbd76e8fd056449f6060b99c46fe0"
+        },
+        {
+          "name": "backpack-sprayer",
+          "native_crop_rect": [
+            40,
+            540,
+            395,
+            970
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            185,
+            224
+          ],
+          "offset": [
+            35,
+            16
+          ],
+          "sha256": "1d03467143fe7ec067fdee0df53c94a653eeddeac3415fe2d76bae99bfaf3805"
+        },
+        {
+          "name": "leveling-rake",
+          "native_crop_rect": [
+            420,
+            550,
+            765,
+            965
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            186,
+            224
+          ],
+          "offset": [
+            35,
+            16
+          ],
+          "sha256": "793edfac9eb9252c441b1d5461037e0426c549061d2addb75790edce8664f256"
+        },
+        {
+          "name": "push-seeder",
+          "native_crop_rect": [
+            780,
+            550,
+            1150,
+            970
+          ],
+          "export_size": [
+            256,
+            256
+          ],
+          "fitted_crop_size": [
+            197,
+            224
+          ],
+          "offset": [
+            29,
+            16
+          ],
+          "sha256": "e3f799b2522eadc822497c9965e002caf536b20ff1ffd4d4f0c81bbb98705124"
+        }
+      ]
+    }
+  }
+}

@@ -220,7 +220,7 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
     seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {},
   }
   normalize(old)
-  assert.equal(old.version, 4)
+  assert.equal(old.version, 5)
   assert.equal(old.unlocked, 8)
   assert.equal(old.plots.length, PLOTS)
   assert.ok(old.plots.every(plot => plot === null), '迁移后地块全空')

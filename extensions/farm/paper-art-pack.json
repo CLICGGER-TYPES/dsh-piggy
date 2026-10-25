@@ -1,0 +1,304 @@
+[
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/garden-background.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-47d95d8b-6cc7-4093-b2f8-ec4067eacdf9.png",
+    "tool": "builtin image_gen",
+    "sha256": "e99590bb5d9e7d2c2772905a961b65660357fa0f7bca3cad265497e07421fd7f",
+    "source_sha256": "e99590bb5d9e7d2c2772905a961b65660357fa0f7bca3cad265497e07421fd7f",
+    "size": [
+      1536,
+      1024
+    ],
+    "mode": "RGB",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/background-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "prompt_texts": [
+      "Production bitmap asset for dsh-piggy's garden. User selected DIRECTION A, clean matte flat 2D soft paper illustration. The supplied full garden panel image is ONLY A STYLE/PALETTE REFERENCE, not an image to reproduce. Generate ONE isolated reusable asset as specified below. Never output a whole UI screenshot or the reference panel. Preserve the selected style: light warm cream, soft low-saturation pale sage green, warm muted soil brown, simple rounded 2D shapes, faint paper grain only. Absolutely no shiny 3D, specular highlights, bevels, heavy cast shadows, black outlines, dense flowers, saturated cartoon toy style or realistic rendering. Do not include any pig/character, letters, numbers, button, frame, caption, progress bar, tool, icon UI chrome, reward or label. This must be an actual separable production asset, not a concept board.\n\nCreate a WIDE LANDSCAPE 3:2 background, opaque RGB, showing the EMPTY open pale-sage garden field from direction A. All field soil patches and crops are separate layers; therefore render ZERO soil patches, ZERO planting beds, ZERO crops and ZERO seed/objects. Central and lower 80 percent should be spacious, nearly flat very pale sage green with faint paper grain and sparse quiet blades at OUTER EDGES ONLY, so six plots can be placed freely by code. Top 15 percent can have a small soft muted distant hedge silhouette and light cream sky breathing room, no houses, fence, trees, river, flowers, barrels, dense grass or landmark. Keep horizon near the top edge, uniform calm field below. Avoid perspective grid or ground marks that suggest planting slots. Do not bake in a field boundary/frame. Style matches selected A's low-density paper landscape, not rejected lush illustrated 3D farm. Render full-bleed landscape with NO transparency, no huge white border."
+    ],
+    "export": "paper-garden-background.png",
+    "export_size": [
+      768,
+      512
+    ],
+    "export_sha256": "7e45dab24b9e79941ea304e607e50f2331e7197c8a8f43b3333e12e54ea03a9d",
+    "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
+  },
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/soil-patch.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-6c708a35-7002-49df-8998-9e27768e718b.png",
+    "tool": "builtin image_gen",
+    "sha256": "82a9809989579e3f887eb3b6cc757836d9fe55b3f8f28391eab87c74640d4258",
+    "source_sha256": "82a9809989579e3f887eb3b6cc757836d9fe55b3f8f28391eab87c74640d4258",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/plot-prompt.txt",
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/plot-repair-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "alpha_bbox_128": [
+      75,
+      248,
+      1190,
+      1005
+    ],
+    "visible_base_anchor_normalized": [
+      0.5043859649122807,
+      0.8014354066985646
+    ],
+    "transparent_edge_pixels": 766307,
+    "red_pixels_alpha_gt_16": 0,
+    "red_alpha_max": 7,
+    "prompt_texts": [
+      "Production bitmap asset for dsh-piggy's garden. User selected DIRECTION A, clean matte flat 2D soft paper illustration. The supplied full garden panel image is ONLY A STYLE/PALETTE REFERENCE, not an image to reproduce. Generate ONE isolated reusable asset as specified below. Never output a whole UI screenshot or the reference panel. Preserve the selected style: light warm cream, soft low-saturation pale sage green, warm muted soil brown, simple rounded 2D shapes, faint paper grain only. Absolutely no shiny 3D, specular highlights, bevels, heavy cast shadows, black outlines, dense flowers, saturated cartoon toy style or realistic rendering. Do not include any pig/character, letters, numbers, button, frame, caption, progress bar, tool, icon UI chrome, reward or label. This must be an actual separable production asset, not a concept board.\n\nCreate ONE EMPTY SOIL PATCH as a transparent PNG sprite. It is the SINGLE plain warm-brown rounded rectangular soil patch used in selected A, to be repeated six times by code. The soil patch's aspect ratio is about 4:3 (width greater than height), viewed top-down / extremely shallow angle, a flat low rounded rectangle with slightly organic papery edges, sparse tiny muted brown soil-grain speckles. Matte, simple flat color with slight paper texture, no drawn dark border and no 3D thickness. No wooden boards or box, no grass around/under it, no plants, seed, roots, stones, objects, water, shine, hover marker or shadow ellipse. Sprite should occupy about 80 percent of square canvas with even transparent margins. Fully transparent background, real alpha, no checkerboard painted in. This is an independent flat soil layer only.",
+      "Production bitmap asset for dsh-piggy's garden. User selected DIRECTION A, clean matte flat 2D soft paper illustration. The supplied full garden panel image is ONLY A STYLE/PALETTE REFERENCE, not an image to reproduce. Generate ONE isolated reusable asset as specified below. Never output a whole UI screenshot or the reference panel. Preserve the selected style: light warm cream, soft low-saturation pale sage green, warm muted soil brown, simple rounded 2D shapes, faint paper grain only. Absolutely no shiny 3D, specular highlights, bevels, heavy cast shadows, black outlines, dense flowers, saturated cartoon toy style or realistic rendering. Do not include any pig/character, letters, numbers, button, frame, caption, progress bar, tool, icon UI chrome, reward or label. This must be an actual separable production asset, not a concept board.\n\nCreate ONE EMPTY SOIL PATCH as a transparent PNG sprite. It is the SINGLE plain warm-brown rounded rectangular soil patch used in selected A, to be repeated six times by code. The soil patch's aspect ratio is about 4:3 (width greater than height), viewed top-down / extremely shallow angle, a flat low rounded rectangle with slightly organic papery edges, sparse tiny muted brown soil-grain speckles. Matte, simple flat color with slight paper texture, no drawn dark border and no 3D thickness. No wooden boards or box, no grass around/under it, no plants, seed, roots, stones, objects, water, shine, hover marker or shadow ellipse. Sprite should occupy about 80 percent of square canvas with even transparent margins. Fully transparent background, real alpha, no checkerboard painted in. This is an independent flat soil layer only.\nCRITICAL dimensions: the OUTPUT CANVAS must be SQUARE, not landscape. The actual soil silhouette is only 4:3, almost square, NOT a long wide strip: about 750px wide by 560px high inside a 1024px square canvas. Preserve full transparent margins. No red/yellow/black edge fringing or opaque border. Match the selected concept's compact regular soil tile, not the old wide planter.\n"
+    ],
+    "export": "paper-soil-patch.png",
+    "export_size": [
+      256,
+      256
+    ],
+    "export_sha256": "cd7ca68f905a0f0feec803ce9e66ceb402c983ad7e9cd29d0b21e0694755983c",
+    "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
+  },
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-seed.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-242cf136-5570-41c4-8170-b5296f1336ee.png",
+    "tool": "builtin image_gen",
+    "sha256": "2943fabdd16c8b247b7afa73b3084c74e7395e33d981b1677eb29cf99db94cc6",
+    "source_sha256": "2943fabdd16c8b247b7afa73b3084c74e7395e33d981b1677eb29cf99db94cc6",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-seed-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "alpha_bbox_128": [
+      504,
+      810,
+      763,
+      1005
+    ],
+    "visible_base_anchor_normalized": [
+      0.50518341307815,
+      0.8014354066985646
+    ],
+    "transparent_edge_pixels": 1552457,
+    "red_pixels_alpha_gt_16": 0,
+    "red_alpha_max": 4,
+    "prompt_texts": [
+      "Production bitmap asset for dsh-piggy's garden. User selected DIRECTION A, clean matte flat 2D soft paper illustration. The supplied full garden panel image is ONLY A STYLE/PALETTE REFERENCE, not an image to reproduce. Generate ONE isolated reusable asset as specified below. Never output a whole UI screenshot or the reference panel. Preserve the selected style: light warm cream, soft low-saturation pale sage green, warm muted soil brown, simple rounded 2D shapes, faint paper grain only. Absolutely no shiny 3D, specular highlights, bevels, heavy cast shadows, black outlines, dense flowers, saturated cartoon toy style or realistic rendering. Do not include any pig/character, letters, numbers, button, frame, caption, progress bar, tool, icon UI chrome, reward or label. This must be an actual separable production asset, not a concept board.\n\nCreate ONE small-cluster SPRING-ONION SEEDS stage sprite on fully transparent background. A few tiny warm dark-brown onion seeds (three to five tiny irregular round/angular seed shapes), simple matte flat paper shapes with no shine. Cluster centered horizontally, close together so they read as one crop-state icon, and near lower-middle of square sprite with broad transparent room above for later growth states. No soil mound/patch, no grass, leaf, sprout, white roots, seed bag, packet, label, digits, surrounding shadow, border or UI. This is a planted-seed stage visual, not a statement of game inventory quantity. Palette quiet warm dark brown, not shiny gold beans or sunflower seeds. Crisp natural alpha edges."
+    ],
+    "export": "paper-scallion-seed.png",
+    "export_size": [
+      256,
+      256
+    ],
+    "export_sha256": "63ab1bb7d409481338a30cf12d6d3d35997c90538a8f734fa60ae5dcee197336",
+    "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
+  },
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-seedling.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-d74e79d5-3710-467b-b21f-25410d39108c.png",
+    "tool": "builtin image_gen",
+    "sha256": "9006edf1d118366ebf3703fb0a930f9bc8bca01bd42bd02162114cc162e8a780",
+    "source_sha256": "9006edf1d118366ebf3703fb0a930f9bc8bca01bd42bd02162114cc162e8a780",
+    "size": [
+      1145,
+      1374
+    ],
+    "mode": "RGBA",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-seedling-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "alpha_bbox_128": [
+      315,
+      321,
+      860,
+      1227
+    ],
+    "visible_base_anchor_normalized": [
+      0.5131004366812227,
+      0.8930131004366813
+    ],
+    "transparent_edge_pixels": 1382528,
+    "red_pixels_alpha_gt_16": 0,
+    "red_alpha_max": 1,
+    "prompt_texts": [
+      "Production bitmap asset for dsh-piggy's garden. User selected DIRECTION A, clean matte flat 2D soft paper illustration. The supplied full garden panel image is ONLY A STYLE/PALETTE REFERENCE, not an image to reproduce. Generate ONE isolated reusable asset as specified below. Never output a whole UI screenshot or the reference panel. Preserve the selected style: light warm cream, soft low-saturation pale sage green, warm muted soil brown, simple rounded 2D shapes, faint paper grain only. Absolutely no shiny 3D, specular highlights, bevels, heavy cast shadows, black outlines, dense flowers, saturated cartoon toy style or realistic rendering. Do not include any pig/character, letters, numbers, button, frame, caption, progress bar, tool, icon UI chrome, reward or label. This must be an actual separable production asset, not a concept board.\n\nCreate ONE young spring-onion seedling CLUMP sprite on a fully transparent background, matching the crop silhouettes in selected A. Three small young scallion shoots grouped naturally as one clump, just a few slim upright green blades and short pale-cream stems, fresh low-saturation medium green. Flat 2D paper cutout, simple readable shapes, faint paper grain, no black contour or strong gradients. Keep the base of the shoots around 80 percent canvas height; tips around 40 percent height; broad transparent margin above reflects early growth. Center clump horizontally. NO soil mound/patch, no roots, scattered extra plants, grass background, fruit, flower, tool, container, shadow ellipse, text or UI. All visible stems are connected from their common grounded base, no floating leaf pieces."
+    ],
+    "export": "paper-scallion-seedling.png",
+    "export_size": [
+      213,
+      256
+    ],
+    "export_sha256": "e21957e95e92013e591d1aa7f149099bc91e44a7accb29b9c7d934a68b1876c4",
+    "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
+  },
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-ripe.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-f62fa259-82bd-4af4-8118-d20214b63ef5.png",
+    "tool": "builtin image_gen",
+    "sha256": "167c632e7c2bdb53dec90c9fd9f496b2b375a2c1d1a89e5f48efacc28a0e0724",
+    "source_sha256": "167c632e7c2bdb53dec90c9fd9f496b2b375a2c1d1a89e5f48efacc28a0e0724",
+    "size": [
+      1145,
+      1374
+    ],
+    "mode": "RGBA",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-ripe-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "alpha_bbox_128": [
+      183,
+      86,
+      987,
+      1287
+    ],
+    "visible_base_anchor_normalized": [
+      0.5109170305676856,
+      0.9366812227074236
+    ],
+    "transparent_edge_pixels": 1199324,
+    "red_pixels_alpha_gt_16": 0,
+    "red_alpha_max": 1,
+    "prompt_texts": [
+      "Production bitmap asset for dsh-piggy's garden. User selected DIRECTION A, clean matte flat 2D soft paper illustration. The supplied full garden panel image is ONLY A STYLE/PALETTE REFERENCE, not an image to reproduce. Generate ONE isolated reusable asset as specified below. Never output a whole UI screenshot or the reference panel. Preserve the selected style: light warm cream, soft low-saturation pale sage green, warm muted soil brown, simple rounded 2D shapes, faint paper grain only. Absolutely no shiny 3D, specular highlights, bevels, heavy cast shadows, black outlines, dense flowers, saturated cartoon toy style or realistic rendering. Do not include any pig/character, letters, numbers, button, frame, caption, progress bar, tool, icon UI chrome, reward or label. This must be an actual separable production asset, not a concept board.\n\nCreate ONE fully grown spring-onion CLUMP sprite on a fully transparent background, matching the selected A seedling and crop appearance. Three slim mature scallion stems grouped naturally as one crop clump, long upright slightly fanning low-saturation green lance-like hollow leaves and short pale-cream lower stems, NO large round onion bulbs. Flat 2D paper cutout with simple layered greens and faint grain, no shiny green tubes or photorealistic 3D shading, no black contour. Base around 80 percent square canvas height, leaf tips around 15 percent height, centered horizontally, transparent breathing room. NO soil mound/patch, visible root tangle, floating leaf fragments, grass/background, flower, container, tool, seeds, labels, text, UI or shadow ellipse. Mature state larger/taller than young seedling but same body/crop identity and consistent planting anchor."
+    ],
+    "export": "paper-scallion-ripe.png",
+    "export_size": [
+      213,
+      256
+    ],
+    "export_sha256": "5fdfadb6082020e2c3498b32258f035f94214c20b1cf189ed667ccba52b18357",
+    "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
+  },
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/paper-weed.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-c292dbad-c648-40e1-87cc-a098b2984abe.png",
+    "tool": "builtin image_gen",
+    "sha256": "8c9da04a743a6cb71b944df82923f0986342f1059ce12524af6c40ee56a89fa0",
+    "source_sha256": "8c9da04a743a6cb71b944df82923f0986342f1059ce12524af6c40ee56a89fa0",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-weed-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "alpha_bbox_128": [
+      357,
+      403,
+      879,
+      918
+    ],
+    "visible_base_anchor_normalized": [
+      0.49282296650717705,
+      0.7320574162679426
+    ],
+    "red_pixels_alpha_gt_16": 0,
+    "red_alpha_max": 1,
+    "self_check": "single sparse connected clump; no soil/background/text/crop fruit/pig; paper style; no runtime validation",
+    "prompt_texts": [
+      "Production reusable transparent PNG overlay asset for dsh-piggy small garden. The input garden screenshot is a STYLE REFERENCE ONLY: user approved direction A, clean simple matte flat 2D with soft paper grain, muted colors, generous negative space. Do not reproduce screenshot/UI or any of its soil patches/background. Generate ONE isolated small overlay sprite on a fully transparent real-alpha canvas, centered in an ample square transparent margin. NO text, numbers, labels, badges, UI, pig or character. No white background, opaque fill, checkerboard painted in, soil patch, dirt mound, rocks, grass field, border, shadow ellipse or decorative fragments. No pure black contour, realistic 3D volume, shiny highlighting, saturated neon color, glossy leaves, lush dense bush or elaborate texture. Keep silhouettes clear and connected, flat paper-like colors and just faint paper grain; practical small-game sprite, not a scene or decorative composition. Output native raster PNG, no code/vector diagram.\n\nASSET: paper-weed.png. Show ONE SMALL SPARSE CLUMP OF WEEDS. Approximately four to six simple narrow irregular little green leaves rise naturally from one grounded root point, muted sage/olive greens. Leaves have only a few broad flat paper-colored layers, no veins or complicated shading. The weed should read as a small unwanted wild-grass tuft, NOT a ripe vegetable, scallion, lettuce, flower, large fern, bush or edible crop. Uneven short leaf heights help distinguish it from the existing long straight trial scallion. Base is a tiny shared stem join, no visible dirt/root ball. One connected clump, no free-floating scraps. Subject uses middle 60 percent of square, enough transparent margin on all sides."
+    ],
+    "export": "paper-weed.png",
+    "export_size": [
+      256,
+      256
+    ],
+    "export_sha256": "5da374a06a292c14691e2b44f1709f0dfdfa81c3ee0036510b77a3b3c9a88031",
+    "processing": "Proportional LANCZOS resize only; no crop/recolor/alpha repair."
+  },
+  {
+    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/paper-stubble.png",
+    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-60f980d3-4c06-40b3-ad0e-10521c57b318.png",
+    "tool": "builtin image_gen",
+    "sha256": "0add838fc5df9628d332ea6f3d928cbd5c5cad113f43dc97714774b08af070cd",
+    "source_sha256": "0add838fc5df9628d332ea6f3d928cbd5c5cad113f43dc97714774b08af070cd",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
+    "prompts": [
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-stubble-prompt.txt",
+      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-stubble-repair-prompt.txt"
+    ],
+    "pixel_editing": false,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "alpha_bbox_128": [
+      433,
+      480,
+      858,
+      852
+    ],
+    "visible_base_anchor_normalized": [
+      0.5147527910685805,
+      0.6794258373205742
+    ],
+    "red_pixels_alpha_gt_16": 0,
+    "red_alpha_max": 4,
+    "self_check": "single sparse connected clump; no soil/background/text/crop fruit/pig; paper style; no runtime validation",
+    "prompt_texts": [
+      "Production reusable transparent PNG overlay asset for dsh-piggy small garden. The input garden screenshot is a STYLE REFERENCE ONLY: user approved direction A, clean simple matte flat 2D with soft paper grain, muted colors, generous negative space. Do not reproduce screenshot/UI or any of its soil patches/background. Generate ONE isolated small overlay sprite on a fully transparent real-alpha canvas, centered in an ample square transparent margin. NO text, numbers, labels, badges, UI, pig or character. No white background, opaque fill, checkerboard painted in, soil patch, dirt mound, rocks, grass field, border, shadow ellipse or decorative fragments. No pure black contour, realistic 3D volume, shiny highlighting, saturated neon color, glossy leaves, lush dense bush or elaborate texture. Keep silhouettes clear and connected, flat paper-like colors and just faint paper grain; practical small-game sprite, not a scene or decorative composition. Output native raster PNG, no code/vector diagram.\n\nASSET: paper-stubble.png. Show ONE SMALL LOW-DENSITY CLUMP OF LEFTOVER DRY STUBBLE. A few short pale tan / light warm-brown cut dry stems, one or two tiny angled broken dry blades, all joined at a small grounded base. Flat simple papery shapes, small clean silhouette, matte cream/tan/brown palette. It must read as leftover stalk stubs after harvest or dead grass needing a shovel, NOT fallen corn, a whole wilted vegetable, an entire crop, banana peel, grain sheaf, haystack, wood/log pile, root bulb or edible produce. No soil or dark mound behind it. Keep it VERY SPARSE and short: three to five little cut stalks, visually distinct from green weeds and living scallion. No floating dust, no repeated separate plants, no giant object or background. Subject uses middle 55 percent of square with transparent room all around.",
+      "Production reusable transparent PNG overlay asset for dsh-piggy small garden. The input garden screenshot is a STYLE REFERENCE ONLY: user approved direction A, clean simple matte flat 2D with soft paper grain, muted colors, generous negative space. Do not reproduce screenshot/UI or any of its soil patches/background. Generate ONE isolated small overlay sprite on a fully transparent real-alpha canvas, centered in an ample square transparent margin. NO text, numbers, labels, badges, UI, pig or character. No white background, opaque fill, checkerboard painted in, soil patch, dirt mound, rocks, grass field, border, shadow ellipse or decorative fragments. No pure black contour, realistic 3D volume, shiny highlighting, saturated neon color, glossy leaves, lush dense bush or elaborate texture. Keep silhouettes clear and connected, flat paper-like colors and just faint paper grain; practical small-game sprite, not a scene or decorative composition. Output native raster PNG, no code/vector diagram.\n\nASSET: paper-stubble.png. Show ONE SMALL LOW-DENSITY CLUMP OF LEFTOVER DRY STUBBLE. A few short pale tan / light warm-brown cut dry stems, one or two tiny angled broken dry blades, all joined at a small grounded base. Flat simple papery shapes, small clean silhouette, matte cream/tan/brown palette. It must read as leftover stalk stubs after harvest or dead grass needing a shovel, NOT fallen corn, a whole wilted vegetable, an entire crop, banana peel, grain sheaf, haystack, wood/log pile, root bulb or edible produce. No soil or dark mound behind it. Keep it VERY SPARSE and short: three to five little cut stalks, visually distinct from green weeds and living scallion. No floating dust, no repeated separate plants, no giant object or background. Subject uses middle 55 percent of square with transparent room all around.\nCritical style correction: previous attempt made chunky faceted hollow bamboo-like tubes, which is WRONG. Draw VERY THIN SIMPLE FLAT TAN CUT-PAPER STICKS, not cylindrical stalks. Three little short irregular 2D strips joined at base, each strip has ONE flat tan color with faint grain only, no left/right shaded side faces, no hollow top, no sawtooth tube cross-section, no bevel or dimensional folds. At most one narrow dry blade bends gently down. Keep a low, sparse silhouette rather than a tall pile. Do not draw bamboo, corn stalks, logs, rolled paper, a cereal sheaf or thick broken tubes. No shiny edges or white highlights.\n"
+    ],
+    "export": "paper-stubble.png",
+    "export_size": [
+      256,
+      256
+    ],
+    "export_sha256": "07093be4e550f9bcdaa97f79ae8500cd129f7a2a91efe7889cf620c01c9d3689",
+    "processing": "Proportional LANCZOS resize only; no crop/recolor/alpha repair."
+  }
+]

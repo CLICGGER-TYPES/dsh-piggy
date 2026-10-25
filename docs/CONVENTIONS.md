@@ -6,9 +6,9 @@
 
 | 通用规范 | 本项目 | 为什么 |
 |---|---|---|
-| 文件 ≤ 约 400 行 | 源码、外壳模块（`apps/desktop/lib/`）都遵守；扩展 `extensions/*/{client,server}.js` 单独允许 ≤600 行，因扩展是单文件下载的，不能拆模块；**豁免**：构建产物 `client.js`、外壳主进程 `apps/desktop/main.js`（约 1000 行，待拆，见 HANDOFF） | `client.js` 是 esbuild 产物；`main.js` 里窗口、拖动、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
+| 文件 ≤ 约 400 行 | 源码、外壳模块（`apps/desktop/lib/`）都遵守；下载扩展 `extensions/*/{client,server}.js` 单独允许 ≤600 行，因协议只下载单文件；菜园服务端源码拆在 `src/extensions/farm/`，每个模块仍 ≤400；**豁免**：构建产物 `client.js`、`extensions/farm/server.js`（有生成横幅才算）、外壳主进程 `apps/desktop/main.js`（约 1000 行，待拆，见 HANDOFF） | `client.js` 和菜园 `server.js` 都是 esbuild 产物；`main.js` 里窗口、拖动、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
 | 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留**；在线扩展注释里的 ★（星级）保留 | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
-| 不引入构建步骤 | **允许**，且只用于客户端插件 | DSH 的客户端插件按 classic `<script src>` 加载，不打包就没法拆文件 |
+| 不引入构建步骤 | **允许**，用于面板插件和菜园服务端的单文件产物 | DSH 的面板按 classic `<script src>` 加载 `client.js`，扩展下载协议也只收单个 `server.js`；源码拆分后由 esbuild 生成，运行时不加载额外模块 |
 
 ## 先读哪些
 
@@ -36,7 +36,8 @@
 - 改存档结构：`core/upgrades.js` 表尾加一级 + `STATE_VERSION` +1 + 迁移测试。
 - 数值集中在 `data/`，不许在逻辑里写裸数字。
 - **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
-- 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 无法拆模块，允许 600 行，不能靠压行或删注释满足上限。
+- 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 直接写单文件时允许 600 行，不能靠压行或删注释满足上限。
+- 菜园服务端是**源码拆分 + 单文件分发**：规则在 `src/extensions/farm/`（data / pure / plot-rules / helper / migration / actions / view / server 组装），每个源模块 ≤400 行、要 `// @ts-check` 并过 `npm run typecheck`；`extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 生成，不手改。生成的单文件不压行、不引运行时依赖，下载协议仍是 manifest.json / server.js / client.js + assets。
 - 临时窄范围例外：`extensions/farm/client.js` 最多 680 行。菜园购买和铲除确认的焦点进入、Tab 环绕和返回必须随单文件客户端下载；当前三文件扩展协议不能加载额外模块，本轮不扩张协议，也不靠压行满足守卫。后续支持扩展客户端构建拆分时移除此例外；其余扩展仍为 600 行。
 
 ## 命名
@@ -74,7 +75,7 @@
 - 持久化数据带 `STATE_VERSION`；结构一变就加迁移函数 + 迁移测试。
 - 旧存档必须能自动迁移，不丢数据。
 - 写文件原子化：临时文件 → `fsync` → `rename`（`store/state-file.js`）。
-- **产物新鲜度**：`client.js` 必须与 `src/client/` 一致，由 `test/bundle.test.js` 守住。
+- **产物新鲜度**：`client.js` 必须与 `src/client/` 一致，由 `test/bundle.test.js` 守住；`extensions/farm/server.js` 必须与 `src/extensions/farm/` 的构建结果一致，由 `test/farm-server-distribution.test.js` 守住。
 
 ## 测试
 

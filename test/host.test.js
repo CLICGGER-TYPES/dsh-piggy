@@ -328,10 +328,11 @@ test('an away pig reports how far through its activity it is', async () => {
   }
 })
 
-test('care is refused while working, and the refusal is honest', async () => {
+test('food and cleaning stay available while working, and the refusal for play is honest', async () => {
   const app = boot(nowMs => {
     const pig = hatchEgg(nowMs)
     pig.satiety = 80
+    pig.inventory = { apple: 1, soap: 1 }
     return pig
   })
   try {
@@ -341,10 +342,27 @@ test('care is refused while working, and the refusal is honest', async () => {
     assert.equal(started.activity.kind, 'work')
     assert.equal(started.activity.key, 'bricks')
     assert.ok(started.activity.secondsLeft > 0)
+    assert.equal(started.actions.feed.ready, true, 'feeding is offered while away')
+    assert.equal(started.actions.bathe.ready, true, 'cleaning is offered while away')
+    assert.equal(started.actions.play.ready, false, 'playing still needs the pig at home')
+    assert.equal(started.actions.play.blocked, 'away')
+    assert.equal(started.actions.pet.ready, true)
 
-    const feed = await app.post({ action: 'feed' })
-    assert.equal(feed.ok, false)
-    assert.equal(feed.reason, 'away')
+    const feed = await app.post({ action: 'feed', item: 'apple' })
+    assert.equal(feed.ok, true)
+    assert.equal(feed.activity.kind, 'work', 'the shift keeps going')
+    assert.ok(feed.activity.secondsLeft > 0)
+    assert.equal(feed.awayBlocked, 'away')
+    assert.equal(feed.inventory.apple, 0, 'the apple is spent once')
+
+    const bathe = await app.post({ action: 'bathe', item: 'soap' })
+    assert.equal(bathe.ok, true)
+    assert.equal(bathe.activity.kind, 'work')
+    assert.equal(bathe.inventory.soap, 0, 'the soap is spent once')
+
+    const play = await app.post({ action: 'play' })
+    assert.equal(play.ok, false)
+    assert.equal(play.reason, 'away', 'play remains at home only')
 
     const second = await app.post({ action: 'work', job: 'bricks' })
     assert.equal(second.ok, false)

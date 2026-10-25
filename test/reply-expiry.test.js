@@ -72,3 +72,59 @@ test('新消息替换和dispose取消旧到期任务，旧回调不隐藏新消�
   assert.equal(h.timers.size, 0)
   for (const name of ['pointerup', 'pointercancel', 'blur']) assert.equal(h.events.listeners[name]?.length ?? 0, 0)
 })
+
+test('奖励回执替换为可回复台词后，旧回执到期不能关闭或提交新回复', () => {
+  const h = harness()
+  h.fx.showBubble('领取成功', 4000)
+  const receiptTimer = [...h.timers.values()][0]
+  const answer = h.show('新的问题')
+  assert.equal(h.timers.size, 1)
+  receiptTimer.fn()
+  assert.equal(h.bubble.hidden, false)
+  assert.equal(h.bubble.children[0].textContent, '新的问题')
+  assert.deepEqual(h.calls, [])
+  answer.fire('click')
+  assert.deepEqual(h.calls, [0])
+  assert.equal(h.timers.size, 0)
+  h.fx.dispose()
+})
+
+test('统一气泡生命周期保留普通、奖励和回复的已有显示时长', () => {
+  const h = harness()
+  for (const [show, ms] of [
+    [() => h.fx.showBubble('普通台词'), 2600],
+    [() => h.fx.showBubble('奖励回执', 4000), 4000],
+    [() => h.fx.showLine('问题', ['回答'], () => {}, 4000), 6000],
+    [() => h.fx.showLine('较长问题', ['回答'], () => {}, 8000), 8000],
+  ]) {
+    show()
+    assert.equal(h.timers.size, 1, '替换后只保留当前消息的一个计时器')
+    assert.equal([...h.timers.values()][0].ms, ms)
+  }
+  h.fx.dispose()
+  assert.equal(h.timers.size, 0)
+})
+
+test('主动收起取消旧回复和计时器，下一条消息仍能正常显示', () => {
+  const h = harness(), old = h.show()
+  h.fx.hideBubble()
+  old.fire('click')
+  assert.equal(h.bubble.hidden, true)
+  assert.equal(h.timers.size, 0)
+  assert.deepEqual(h.calls, [])
+  h.fx.showBubble('新消息')
+  assert.equal(h.bubble.hidden, false)
+  assert.equal(h.timers.size, 1)
+  h.fx.dispose()
+})
+
+test('卸载后迟到的窗口消息不能重建气泡或计时器', () => {
+  const h = harness()
+  h.show()
+  h.fx.dispose()
+  h.fx.showBubble('迟到的回执')
+  h.fx.showLine('迟到的问题', ['回答'], () => h.calls.push(1))
+  assert.equal(h.bubble.hidden, true)
+  assert.equal(h.timers.size, 0)
+  assert.deepEqual(h.calls, [])
+})

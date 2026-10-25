@@ -11,7 +11,8 @@
 import { GREET_DELAY_MS, IDLE_CHAT_MINUTES } from './constants.js'
 import { readStore, writeStore } from './storage.js'
 import { attachPetSnap } from './pet-snap.js'
-import { attachPigActions, canPlayPigAction } from './pig-actions.js'
+import { canPlayPetSnap } from './pet-snap-geometry.js'
+import { attachPigActions } from './pig-actions.js'
 import { syncPigArt } from './art.js'
 
 var TIME_TALK_MS = 5 * 60_000
@@ -50,9 +51,10 @@ export function setWalk(on) { writeStore(WALK_KEY, on ? 'on' : 'off') }
  */
 export function attachLife(c) {
   var actions = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
-  const snap = attachPetSnap({ ...c, canPlay: () => canPlayPigAction(c.pig, 'shy-pet') && !c.pig.querySelector?.('.dp-dress')?.childElementCount,
+  const snap = attachPetSnap({ ...c, canPlay: () => canPlayPetSnap(c.pig),
     cancelMicro: () => actions.cancel(), render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
   var timers = []
+  var idleTimer = null
   var later = function (fn, ms) { var id = window.setTimeout(fn, ms); timers.push(id); return id }
   var between = function (min, max) { return (min + Math.random() * (max - min)) * 60_000 }
   var hasPig = function () { return c.getView().pig !== null && c.getView().hatched === true && !c.getView().dead }
@@ -91,11 +93,12 @@ export function attachLife(c) {
     var lead = action.key === 'butterfly' && c.feel ? 120 : 0
     if (lead > 0) c.feel.crouch(lead)
     var run = function () {
+      if (idleTimer !== null) window.clearTimeout(idleTimer)
       c.pig.setAttribute('data-idle', action.key)
       syncPigArt(c.pig, c.pigArt, c.pigEmoji)
       if (action.fx.length > 0) c.burst(action.fx, action.fx.length)
       if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3000, action.ms))
-      later(function () { c.pig.removeAttribute('data-idle'); syncPigArt(c.pig, c.pigArt, c.pigEmoji) }, action.ms)
+      idleTimer = window.setTimeout(function () { idleTimer = null; c.pig.removeAttribute('data-idle'); syncPigArt(c.pig, c.pigArt, c.pigEmoji) }, action.ms)
     }
     if (lead > 0) later(run, lead)
     else run()
@@ -147,6 +150,14 @@ export function attachLife(c) {
   }
 
   return {
+    /** A confirmed conversation reply wakes the local nap without petting. */
+    cancelNap: function () {
+      if (c.pig.getAttribute('data-idle') !== 'nap') return
+      if (idleTimer !== null) window.clearTimeout(idleTimer)
+      idleTimer = null
+      c.pig.removeAttribute('data-idle')
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji)
+    },
     /** 调试页「散步一次」：不等计时，马上走一趟（只有桌面版能走）。 */
     walkNow: function () {
       var shell = c.desktopShell()
@@ -161,6 +172,8 @@ export function attachLife(c) {
       doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)])
     },
     dispose: function () {
+      if (idleTimer !== null) window.clearTimeout(idleTimer)
+      idleTimer = null
       snap.dispose()
       actions.dispose()
       for (var i = 0; i < timers.length; i += 1) { window.clearTimeout(timers[i]); window.clearInterval(timers[i]) }

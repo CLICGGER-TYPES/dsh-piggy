@@ -8,8 +8,10 @@ import { petHandEnabled, setPetHandEnabled } from '../pet-hand-settings.js'
 import { button, el } from '../dom.js'
 import { autoCollapseEnabled, setAutoCollapse } from '../auto-collapse.js'
 import { desktopShell } from '../desktop-shell.js'
+import { stageShell } from '../stage-shell.js'
 import { emojiStyle, hasBundledEmoji, setEmojiStyle, applyEmojiStyle } from '../emoji-style.js'
 import { displayedPigSize, pigSize, setPigSize } from '../pig-size.js'
+import { applyBubbleSize, setBubbleSize } from '../bubble-size.js'
 import { setWalk, walkEnabled } from '../life.js'
 import { exportLogs } from '../log-export.js'
 import { feelMode, setFeelMode, soundSettings, setSoundSettings } from '../feel/settings.js'
@@ -19,6 +21,12 @@ import { renderProxySettings } from './proxy.js'
 import { renderFullscreenSettings } from './fullscreen.js'
 import { extensionUpdateAvailable } from './extensions.js'
 import { renderSaveTransferSettings } from '../save-transfer.js'
+
+/** 桌面外壳和整屏舞台都通过同一个回调重排；网页版两个都没有。 */
+function syncGeometry() {
+  desktopShell()?.syncGeometry?.()
+  stageShell()?.syncGeometry?.()
+}
 
 /** 一项设置：标题、说明，下面放控件。 */
 function section(ui, title, note) {
@@ -80,7 +88,7 @@ export function renderSettingsTab(ui) {
     percent.value = String(Math.round(scale * 100))
     ui.host.style.setProperty('--pig-size', displayedPigSize(stageSize) + 'px')
     ui.fitPanel()
-    desktopShell()?.syncGeometry?.()
+    syncGeometry()
   }
   for (const { key, label, delta } of [{ key: 'minus', label: '−', delta: -10 }, { key: 'plus', label: '+', delta: 10 }]) {
     const control = button('dp-size-step', { 'data-pig-size-step': key, 'aria-label': delta < 0 ? '缩小小猪' : '放大小猪' }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)))
@@ -97,6 +105,35 @@ export function renderSettingsTab(ui) {
   percent.addEventListener('change', () => applySize(Number(percent.value)))
   percent.addEventListener('keydown', event => { if (event.key === 'Enter') { applySize(Number(percent.value)); percent.blur() } })
   size.box.appendChild(sizeRow)
+
+  const speechSize = section(ui, '气泡大小', '文字和回复按钮一起调整；只改这台设备，不影响小猪大小')
+  const speechRow = el('div', 'dp-size-control')
+  const speechPercent = /** @type {HTMLInputElement} */ (el('input', 'dp-size-value'))
+  speechPercent.type = 'number'
+  speechPercent.min = '10'
+  speechPercent.step = '10'
+  speechPercent.value = String(Math.round(applyBubbleSize(ui.host) * 100))
+  speechPercent.setAttribute('aria-label', '气泡大小百分比')
+  speechPercent.setAttribute('data-bubble-scale', 'true')
+  function applySpeechSize(value) {
+    if (Number.isFinite(value) && value > 0) setBubbleSize(value / 100)
+    speechPercent.value = String(Math.round(applyBubbleSize(ui.host) * 100))
+    ui.fitPanel()
+    syncGeometry()
+  }
+  const speechMinus = button('dp-size-step', { 'data-bubble-size-step': 'minus', 'aria-label': '缩小气泡' }, () => applySpeechSize(Math.max(10, Math.round(applyBubbleSize(ui.host) * 100) - 10)))
+  speechMinus.textContent = '−'
+  const speechValue = el('label', 'dp-size-percent')
+  speechValue.appendChild(speechPercent)
+  speechValue.appendChild(el('span', null, '%'))
+  const speechPlus = button('dp-size-step', { 'data-bubble-size-step': 'plus', 'aria-label': '放大气泡' }, () => applySpeechSize(Math.round(applyBubbleSize(ui.host) * 100) + 10))
+  speechPlus.textContent = '+'
+  speechRow.appendChild(speechMinus)
+  speechRow.appendChild(speechValue)
+  speechRow.appendChild(speechPlus)
+  speechPercent.addEventListener('change', () => applySpeechSize(Number(speechPercent.value)))
+  speechPercent.addEventListener('keydown', event => { if (event.key === 'Enter') { applySpeechSize(Number(speechPercent.value)); speechPercent.blur() } })
+  speechSize.box.appendChild(speechRow)
 
   // 手感：标准 / 轻柔 / 关闭。只改这台设备；系统「减少动态效果」时强制关闭。
   const feel = section(ui, '手感', '拖动、落地和摸猪时的挤压回弹；只改这台设备')
@@ -181,8 +218,8 @@ export function renderSettingsTab(ui) {
   toggle.appendChild(el('span', 'dp-switch-text', on ? '开' : '关'))
   close.head.appendChild(toggle)
 
-  // 桌面散步只有桌面版有（G 批次，默认关）。
-  if (desktopShell() !== null) {
+  // 桌面散步：桌面版和整屏舞台都能走（G 批次，默认关）。
+  if (desktopShell() !== null || stageShell()?.walk === true) {
     const walk = section(ui, '桌面散步', '每 10–20 分钟沿屏幕底边走一段再走回来；拖它、开着面板、免打扰时不走')
     const walking = walkEnabled()
     const walkToggle = button('dp-switch', { 'data-walk': String(!walking), 'aria-pressed': String(walking) }, function () {
@@ -194,10 +231,11 @@ export function renderSettingsTab(ui) {
     walk.head.appendChild(walkToggle)
   }
 
-  const fullscreen = desktopShell()?.fullscreen
+  // 整屏舞台的外壳能力从适配器取；网页版没有代理/全屏，照旧不显示。
+  const fullscreen = desktopShell()?.fullscreen ?? stageShell()?.fullscreen
   if (fullscreen) renderFullscreenSettings(ui, section, fullscreen)
 
-  const proxy = desktopShell()?.proxy
+  const proxy = desktopShell()?.proxy ?? stageShell()?.proxy
   if (proxy) renderProxySettings(ui, section, proxy)
 
   // 日志：猪出问题时导出这一份，里面记着做了什么、哪一步失败了。

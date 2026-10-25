@@ -82,3 +82,43 @@ test('care actions make the pig speak', () => {
   assert.ok(line !== undefined, 'petting queued a line')
   assert.ok(LINES.pet.some(candidate => candidate.text.split('[主人]').join('主人') === line.text), line.text)
 })
+
+test('a valid reply records interaction without adding a pet or a wake line', async () => {
+  const { mood } = await import('../core.js')
+  const now = T0 + 31 * 60_000
+  const pig = hatchEgg(T0)
+  pig.personality = 'peppy'
+  pig.happiness = 50
+  const pool = LINES.pet.filter(line => !line.personalities || line.personalities.includes('peppy'))
+  const index = pool.findIndex(line => line.replies?.length)
+  say(pig, 'pet', now, () => (index + .5) / pool.length)
+  const line = pig.pending.at(-1), pending = pig.pending.length, pets = pig.stats.pets
+  assert.notEqual(mood(pig, now).key, 'sleepy')
+  const happiness = pig.happiness
+  assert.equal(replyToLine(pig, line.id, 0, now).ok, true)
+  assert.equal(pig.lastActiveAt, now)
+  assert.notEqual(mood(pig, now).key, 'sleepy')
+  assert.equal(pig.stats.pets, pets)
+  assert.equal(pig.pending.length, pending + 1, 'accepted replies add one follow-up without a wake line')
+  assert.equal(pig.pending.at(-1).kind, 'line')
+  assert.deepEqual(pig.pending.at(-1).replies, [])
+  assert.equal(pig.happiness, happiness + REPLY_HAPPINESS)
+  assert.equal(replyToLine(pig, line.id, 0, now + 1000).reason, 'stale-line')
+  assert.equal(pig.lastActiveAt, now, 'duplicate replies do not count as new interactions')
+})
+
+test('invalid and expired replies do not refresh activity', () => {
+  const now = T0 + 31 * 60_000
+  const pig = hatchEgg(T0)
+  pig.personality = 'peppy'
+  const pool = LINES.pet.filter(line => !line.personalities || line.personalities.includes('peppy'))
+  const index = pool.findIndex(line => line.replies?.length)
+  say(pig, 'pet', now, () => (index + .5) / pool.length)
+  const id = pig.dialogue.open.id
+  assert.equal(replyToLine(pig, id + 1, 0, now).reason, 'stale-line')
+  assert.equal(replyToLine(pig, id, 1000, now).reason, 'unknown')
+  assert.equal(pig.lastActiveAt, T0)
+  pig.dead = true
+  assert.equal(replyToLine(pig, id, 0, now).reason, 'dead')
+  assert.equal(pig.lastActiveAt, T0)
+})

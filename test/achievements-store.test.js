@@ -18,7 +18,7 @@ test('real successful actions persist badges; rejected care and polling never co
     assert.equal(store.act('feed','apple').ok,true)
     assert.equal(store.state.achievements.totals.feeds,1)
     store.state.activity={kind:'work',endsAt:NOW+60000,startedAt:NOW,key:'odd-job'}
-    assert.equal(store.act('feed','apple').ok,false)
+    assert.equal(store.act('play').ok,false, 'play is still refused while away')
     assert.equal(store.state.achievements.totals.feeds,1)
     store.state.activity=null
     for(let i=0;i<4;i++) store.freshen()

@@ -221,7 +221,7 @@ export function createApi(control) {
 
     /** The line on the pig's card (居民卡). */
     setMotto: text => mutate(live => coreSetMotto(live, text)),
-    /** 每只猪送一次：改性格、生日（用户 2026-10-13）。 */
+    /** 居民卡：自由修改性格、生日。 */
     editProfile: change => mutate(live => coreEditProfile(live, change)),
 
     /** 加冕: the owner picks a form the pig qualifies for. */
@@ -231,7 +231,7 @@ export function createApi(control) {
     setOwnerName: name => mutate(live => coreSetOwnerName(live, name)),
 
     /** The owner answers the pig's latest line. */
-    reply: (lineId, replyIndex) => mutate(live => coreReplyToLine(live, lineId, replyIndex)),
+    reply: (lineId, replyIndex) => mutate(live => coreReplyToLine(live, lineId, replyIndex, now())),
 
     /** 领今天的签到礼包。 */
     signIn: () => mutate(live => coreSignIn(live, now())),

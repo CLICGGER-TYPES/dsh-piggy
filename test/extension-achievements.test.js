@@ -1,6 +1,7 @@
 import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 // @ts-check
 import assert from 'node:assert/strict'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../core.js'
 import { test } from 'node:test'
 import { existsSync } from 'node:fs'
 import { ACHIEVEMENTS } from '../data.js'
@@ -66,7 +67,7 @@ test('migration sanitizes optional event saves and silently retains valid histor
   state.achievements = { events: { farm: { harvest: { total: 10, seen: 10, items: ['carrot', '../bad', 'carrot'] } },
     mine: { depth: { maximum: -10 }, unknown: { total: 999 } }, evil: { any: {} } } }
   const loaded = migrate(JSON.parse(JSON.stringify(state)), NOW)
-  assert.equal(loaded.version, 14)
+  assert.equal(loaded.version, CURRENT_STATE_VERSION)
   assert.equal(entry(loaded, 'farm-ten').acquired, true)
   assert.equal(entry(loaded, 'farm-ten').firstAt, null)
   assert.equal(entry(loaded, 'farm-five').progress, 1)

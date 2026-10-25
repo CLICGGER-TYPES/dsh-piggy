@@ -46,6 +46,16 @@ export function pigScreenBox(asked, read, pig, options = {}) {
   return { x: at.x + pig.x + slide.x, y: at.y + pig.y + slide.y, width: pig.width, height: pig.height }
 }
 
+/** Speech can occupy the approved below-pig position. Only panel placement
+ * uses this exclusion; the real pig box and its saved foot point never grow.
+ * @param {Rect} pig @param {Rect|null} speech
+ * @returns {Rect}
+ */
+export function panelReferenceFor(pig, speech) {
+  if (!speech || speech.y < pig.y + pig.height) return pig
+  return { ...pig, height: Math.max(pig.y + pig.height, speech.y + speech.height) - pig.y }
+}
+
 /**
  * 面板朝哪边开、最高多高、和猪哪边对齐（开面板和松手时定，拖动中不改）：
  * 上面空间大就往上，否则往下（和网页版 fitPanel 一个规则）；右边对齐猪放得下就右对齐，否则左对齐。

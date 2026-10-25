@@ -7,7 +7,7 @@
  */
 import { PACKAGE_VERSION } from './environment.js'
 import { achievementsView, disabledParts, extensionsView, tripUnlocked } from './core.js'
-import { ACTIONS, ACTION_ORDER, bodyWeightView, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
+import { ACTIONS, ACTION_ORDER, bodyWeightView, careAllowedWhileAway, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
 import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SHORT_SHIFT_MINUTES, SIGN_IN_CYCLE, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
 
 /** 版本号只有一个来源：environment.js（它也是导出日志表头的那一份）。 */
@@ -214,7 +214,7 @@ function actionsFor(state, nowMs) {
   for (const key of ACTION_ORDER) {
     const spec = ACTIONS[key]
     const wait = state === null ? 0 : actionCooldownSeconds(state, key, nowMs)
-    const away = state !== null && !state.dead && state.activity !== null && key !== 'pet'
+    const away = state !== null && !state.dead && state.activity !== null && key !== 'pet' && !careAllowedWhileAway(key)
     out[key] = {
       label: spec.label,
       emoji: spec.emoji,

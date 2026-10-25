@@ -5,8 +5,8 @@ import farm, { weatherAt } from '../../extensions/farm/server.js'
 import { applyModalAssetFrame } from '../../src/client/asset-background.js'
 import { fakeDom } from './bundle.js'
 
-// 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。
-export function establishedFarm() { return Object.assign(farm.init(), { plots: Array(18).fill(null) }) }
+// 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。老玩家不显示第一课。
+export function establishedFarm() { return Object.assign(farm.init(), { plots: Array(18).fill(null), onboarding: { step: 'done', rewarded: true, legacy: true, plantedAt: null, wateredAt: null } }) }
 export const H = 3600000
 export let T0 = 0
 for (let day = 0; day < 30 && !T0; day += 1) { const at = new Date(2026, 9, 12 + day, 12).getTime(); if (weatherAt(at) === 'sunny') T0 = at }
@@ -39,7 +39,7 @@ export function renderFarm(view, mode = 'panel', extra = {}, clientSource = null
   dom.document.getElementById = id => dom.head.children.find(node => node.id === id) || null
   let render
   const window = { dshPiggyExtensions: { register(_key, impl) { render = impl.render } } }
-  runInNewContext(clientSource ?? readFileSync(new URL('../../extensions/farm/client.js', import.meta.url), 'utf8'), { window, document: dom.document, Date })
+  runInNewContext(clientSource ?? readFileSync(new URL('../../extensions/farm/client.js', import.meta.url), 'utf8'), { window, document: dom.document, Date: extra.now ? class extends Date { static now() { return extra.now() } } : Date })
   const sent = []
   let shop = 0
   const app = {

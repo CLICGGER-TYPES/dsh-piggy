@@ -13,9 +13,11 @@
 import { autoCollapseEnabled } from './auto-collapse.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
 import { closeFishing } from './tabs/fishing.js'
+import { PIG_FX } from './pig-fx.js'
+import { stageShell } from './stage-shell.js'
 
 /** 面板窗口里会转给猪窗口的反应（参数都能直接过进程边界）。 */
-export var PIG_FX = ['flash', 'react', 'burst', 'showBubble', 'transform', 'previewArt', 'idleNow', 'walkNow', 'birthdayNow', 'petShy']
+export { PIG_FX, stageShell }
 
 /**
  * @param {any} ctx 挂载后的上下文（index.js 的 ctx）

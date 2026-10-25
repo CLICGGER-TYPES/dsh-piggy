@@ -44,6 +44,7 @@ export function attachGestures(c) {
   /** 越过 4px 才让窗口开始动；把 pointerdown 的屏幕坐标带给外壳当起点。 */
   function beginWindowDrag() {
     if (drag === null || drag.started) return
+    c.scene.setAttribute('data-window-dragging', 'true')
     cancelPetSnap(c.pig)
     drag.started = true
     drag.moved = true
@@ -72,6 +73,7 @@ export function attachGestures(c) {
     stopHeartbeat()
     stopHeartbeat = function () {}
     if (info.started) c.desktopShell()?.endDrag?.(release ?? null)
+    c.scene.removeAttribute('data-window-dragging')
     c.feel.setDragging(false)
     c.scene.removeAttribute('data-dragging')
     c.clampPig()
@@ -219,6 +221,7 @@ export function attachGestures(c) {
       c.scene.removeEventListener('pointercancel', onPointerCancel)
       c.scene.removeEventListener('lostpointercapture', onPointerCancel)
       stopHeartbeat()
+      c.scene.removeAttribute('data-window-dragging')
       drag = null
     },
   }

@@ -22,7 +22,7 @@ function setup(certs = 0) {
 }
 
 test('盲盒 3.0 声明资质凭证：1 张 15 金币，不能用金币买', () => {
-  assert.equal(MANIFEST.version, '3.0.0')
+  assert.equal(MANIFEST.version, '4.0.3')
   assert.equal(MANIFEST.minGame, '0.35.0')
   assert.deepEqual(CURRENCY, { label: '资质凭证', emoji: '📜', rate: 15, buyable: false })
 })

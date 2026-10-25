@@ -132,13 +132,13 @@ export const CSS_BASE = [
   // 物理层三层：外层 .dp-pig 保留现有 CSS 动画，.dp-pig-hold 只做拎起（支点在头顶），
   // .dp-pig-body 只做整图压扁/倾斜/翻面（支点在 85%，和 motion-envelope 一致）。
   '.dp-pet-snap{position:absolute;left:-50%;top:-50%;width:200%;height:200%;pointer-events:none;',
-  'scale:var(--snap-zoom,1);translate:var(--snap-x,0%) var(--snap-y,0%)}',
+  'z-index:4}',
   '.dp-pet-snap[hidden]{display:none}',
   '[data-dsh-pig] .dp-pig[data-pet-snap="true"]{animation:none!important}',
-  '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-img{visibility:hidden}',
-  '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-hold,',
-  '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-body{transform:none!important}',
-  '.dp-pig[data-walk="right"] .dp-pet-snap{transform:scaleX(-1);translate:calc(-1 * var(--snap-x,0%)) var(--snap-y,0%)}',
+
+  '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-hold{transform:none!important}',
+  '[data-dsh-pig] .dp-pig[data-pet-snap="true"] .dp-pig-body{transform:scale(var(--pet-sx,1),var(--pet-sy,1))!important;transform-origin:var(--pet-origin-x,50%) var(--pet-origin-y,92%)}',
+  '.dp-pig[data-walk="right"] .dp-pet-snap{transform:scaleX(-1)}',
   '.dp-pig-hold{display:block;position:relative;width:var(--pig-size);height:var(--pig-size);',
   'transform-origin:50% 0%;will-change:auto}',
   '.dp-pig-body{display:block;position:relative;width:var(--pig-size);height:var(--pig-size);',

@@ -23,7 +23,7 @@ export function assignPersonality(state) {
   state.motto = personality.motto
 }
 
-/** 每只猪送一次改简介（性格、生日）的机会，老猪也补一次（用户 2026-10-13）。 */
+/** 保留旧存档的字段默认值；居民卡修改不再使用或消耗次数。 */
 export const FREE_PROFILE_EDITS = 1
 
 /** Make sure a hatched pig has every profile field (older saves, hand edits). */
@@ -76,12 +76,11 @@ export function birthdayOf(state, nowMs) {
 }
 
 /**
- * 用掉那次改简介的机会：性格、生日一起改（只改给了的）。性格换了，口头禅和签名如果还是原来性格的默认句子，就跟着换。
+ * 自由修改性格、生日（只改给了的）。性格换了，口头禅和签名如果还是原来性格的默认句子，就跟着换。
  * @param {object} state @param {{personality?: string, month?: number, day?: number}} change
  */
 export function editProfile(state, change) {
   if (state === null || state.hatched !== true) return { ok: false, reason: 'absent' }
-  if (!(state.profileEdits > 0)) return { ok: false, reason: 'no-edits' }
   const next = change?.personality === undefined ? null : personalityByKey(change.personality)
   if (change?.personality !== undefined && next === null) return { ok: false, reason: 'unknown' }
   const wantsBirthday = change?.month !== undefined || change?.day !== undefined
@@ -95,8 +94,7 @@ export function editProfile(state, change) {
     state.personality = next.key
   }
   if (wantsBirthday) state.birthday = birthday
-  state.profileEdits -= 1
-  return { ok: true, profileEdits: state.profileEdits }
+  return { ok: true }
 }
 
 /**
@@ -131,7 +129,6 @@ export function profileView(state, nowMs) {
     birthday: `${month} 月 ${day} 日`,
     zodiac: zodiacFor(month, day),
     birthdayParts: { month, day },
-    editsLeft: Number.isInteger(state.profileEdits) ? state.profileEdits : FREE_PROFILE_EDITS,
     personalities: PERSONALITIES.map(entry => ({ key: entry.key, label: entry.label, emoji: entry.emoji })),
     counts: {
       days: Math.floor(ageDays(state, nowMs)),

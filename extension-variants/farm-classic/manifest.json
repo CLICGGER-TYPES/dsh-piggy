@@ -2,8 +2,8 @@
   "key": "farm",
   "label": "菜园（经典版）",
   "emoji": "🥬",
-  "version": "3.1.0",
-  "minGame": "0.37.0",
+  "version": "3.1.1",
+  "minGame": "0.37.2",
   "description": "3.0 经典界面，兼容新版菜币、18 块地、作物与帮工数据；可与新版菜园互换，不重置进度。",
   "app": {
     "emoji": "🥬",

@@ -10,6 +10,7 @@ import { desktopRole, desktopShell } from './desktop-shell.js'
 import { fitPanelWindow } from './desktop/panel-window.js'
 import { enabledTabs } from './extensions.js'
 import { button, el } from './dom.js'
+import { stageShell } from './stage-shell.js'
 
 export function createLayout(ctx) {
       function clampPig() {
@@ -47,10 +48,17 @@ export function createLayout(ctx) {
         var vw = window.innerWidth || 0
         var vh = window.innerHeight || 0
         if (vw <= 0 || vh <= 0) return
+        // 舞台窗口是所有屏的并集（2026-10-25 原生：1930px 高，主屏只有 752px）：上/下空间、
+        // 横向夹取和留边都按猪所在那块屏的工作区算。这里是页面坐标矩形，原点和宽高一起用；
+        // 网页版/分屏没有舞台适配器（或还没拿到几何）时退回整窗，行为和原来一样。
+        var page = { x: 0, y: 0, width: vw, height: vh }
+        var stage = stageShell()
+        var panelArea = typeof stage?.panelArea === 'function' ? stage.panelArea() : null
+        if (panelArea && panelArea.width > 0 && panelArea.height > 0) page = panelArea
 
         var rect = ctx.scene.getBoundingClientRect()
-        var roomAbove = rect.top - PANEL_GAP - PANEL_MARGIN
-        var roomBelow = vh - rect.bottom - PANEL_GAP - PANEL_MARGIN
+        var roomAbove = rect.top - page.y - PANEL_GAP - PANEL_MARGIN
+        var roomBelow = page.y + page.height - rect.bottom - PANEL_GAP - PANEL_MARGIN
 
         // Open on whichever side has space. Ties go above, which is where a
         // bottom-docked pig expects its menu — but a pig parked near the top
@@ -72,15 +80,15 @@ export function createLayout(ctx) {
         // edge to the pig can push it off the left of the window. A negative
         // `right` moves the panel without touching the wrapper's width, so the
         // pig stays exactly where it was put.
-        var width = Math.min(PANEL_WIDTH, vw - 2 * PANEL_MARGIN)
+        var width = Math.min(PANEL_WIDTH, page.width - 2 * PANEL_MARGIN)
         ctx.card.style.maxWidth = Math.round(width) + 'px'
-        var shift = PANEL_MARGIN - (rect.right - width)
+        var shift = page.x + PANEL_MARGIN - (rect.right - width)
         ctx.card.style.right = shift > 0 ? -Math.round(shift) + 'px' : '0px'
 
         // The hud lives inside the scene, which runs past the left edge whenever
         // the panel above had to be shifted back into view. Line it up with the
         // panel's left edge so it stays visible too.
-        var cardLeft = Math.max(rect.right - width, PANEL_MARGIN)
+        var cardLeft = Math.max(rect.right - width, page.x + PANEL_MARGIN)
         ctx.hud.style.left = Math.max(9, Math.round(cardLeft - rect.left)) + 'px'
       }
 

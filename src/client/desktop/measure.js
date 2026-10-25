@@ -13,7 +13,8 @@ import { PAD, STEP } from './geometry.js'
 import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
 import { fixedMotionReserve, motionEnvelope, PIG_TRANSFORM_ORIGIN } from './motion-envelope.js'
 import { bodyVisualBounds } from './visual-bounds.js'
-import { fitBubbleHorizontally } from './bubble-geometry.js'
+import { fitBubbleHorizontally, fitBubbleVertically } from './bubble-geometry.js'
+import { bubbleSlot, characterGeometry, framedArtBox } from '../character-geometry.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -21,16 +22,14 @@ export function framedBox(node, box) {
   const path = (node.getAttribute('src') || '').split('/art/')[1]
   const bounds = ART_BOUNDS[path]
   if (!bounds) return box
-  const zoom = Number(node.style.getPropertyValue('--art-zoom')) || 1
-  const shiftX = parseFloat(node.style.getPropertyValue('--art-x')) || 0
-  const shiftY = parseFloat(node.style.getPropertyValue('--art-y')) || 0
-  const mirrored = node.closest('.dp-pig')?.getAttribute('data-walk') === 'right'
-  const fit = Math.min(box.width, box.height)
-  const left = mirrored ? 1 - bounds[2] : bounds[0]
-  const right = mirrored ? 1 - bounds[0] : bounds[2]
-  return { x: box.x + box.width / 2 + (left - .5) * fit * zoom + (mirrored ? -shiftX : shiftX) * box.width / 100,
-    y: box.y + box.height / 2 + (bounds[1] - .5) * fit * zoom + shiftY * box.height / 100,
-    width: (right - left) * fit * zoom, height: (bounds[3] - bounds[1]) * fit * zoom }
+  // 取景换算在 character-geometry.js：立绘可见范围、接触锚点、气泡尾巴共用同一份映射。
+  return framedArtBox(box, {
+    bounds,
+    zoom: Number(node.style.getPropertyValue('--art-zoom')) || 1,
+    shiftX: parseFloat(node.style.getPropertyValue('--art-x')) || 0,
+    shiftY: parseFloat(node.style.getPropertyValue('--art-y')) || 0,
+    mirrored: node.closest('.dp-pig')?.getAttribute('data-walk') === 'right',
+  })
 }
 
 /** 猪头上方预留的气泡区：冒气泡只改可点区域，不改窗口大小。 */
@@ -73,6 +72,8 @@ export function createMeasure(env) {
   function boxes(host) {
     const pigNode = host.querySelector('.dp-pig')
     const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode)
+    // 头顶锚点、脚底锚点：气泡预留区和绘制范围都按它算（见 character-geometry.js）。
+    const anchors = characterGeometry(pigBox)
     const pigInk = { x: pigBox.x, y: pigBox.y, r: pigBox.x + pigBox.width, b: pigBox.y + pigBox.height }
     const nodes = [host]
     const all = host.querySelectorAll('*')
@@ -84,6 +85,8 @@ export function createMeasure(env) {
       nodes.push(candidate)
     }
     const geometry = env.geometry()
+    const speechScale = Number(host.style?.getPropertyValue?.('--bubble-scale')) || 1
+    const bubbleSize = { width: BUBBLE_ZONE.width * speechScale, height: BUBBLE_ZONE.height * speechScale }
     let rects = []
     // 气泡只进可点/可见区域，不进窗口外框：它的位置已经由下面的气泡预留区留好了。
     // 以前气泡会撑大外框，面板朝下开时一冒气泡整块内容就要挪，Windows 上会画出一帧重影
@@ -107,17 +110,17 @@ export function createMeasure(env) {
     // 气泡预留区：收起、打开都留，气泡出现/消失不改外框。离屏幕顶边不够高就只留到顶边。
     let bubbleZone = null
     if (reserves && pigNode !== null) {
-      const above = geometry === null ? BUBBLE_ZONE.height : geometry.window.y + pigBox.y - geometry.workArea.y - PAD
+      const above = geometry === null ? bubbleSize.height : geometry.window.y + anchors.headTop.y - geometry.workArea.y - PAD
       // 滞回：预留区高度是「窗口当前在哪」的函数，而窗口位置又是「内容框（含这个预留区）」的函数，
       // 结构上是一个反馈环（量化到 4px 后可能变成极限环）。预留区只是「留多少位置」的估计，
       // 差不到两档就不改，环就断了。
       // 注意：2026-10-06 查的那 3~4px 抖动**不是**这条环造成的，是猪自己的待机动画（见 I-round.md），
       // 这里保留只是因为依赖方向确实成环，且代价为零。
-      const want = Math.max(0, Math.min(BUBBLE_ZONE.height, Math.round(above)))
+      const want = Math.max(0, Math.min(bubbleSize.height, Math.round(above)))
       if (state.bubbleHeight === null || Math.abs(want - state.bubbleHeight) >= STEP * 2) state.bubbleHeight = want
       const height = state.bubbleHeight
-      const zoneLeft = host.getAttribute('data-panel-side') === 'right' ? hostBox.x : hostBox.x + hostBox.width - BUBBLE_ZONE.width
-      if (height > 0) bubbleZone = { x: zoneLeft, y: pigBox.y - height, r: zoneLeft + BUBBLE_ZONE.width, b: pigBox.y }
+      const zoneLeft = host.getAttribute('data-panel-side') === 'right' ? hostBox.x : hostBox.x + hostBox.width - bubbleSize.width
+      if (height > 0) bubbleZone = { x: zoneLeft, y: anchors.headTop.y - height, r: zoneLeft + bubbleSize.width, b: anchors.headTop.y }
     }
     let merged = true
     while (merged) {
@@ -147,14 +150,14 @@ export function createMeasure(env) {
       // Reviewed frame union, including the hand: reserve even while idle.
       // The 512px canvas has transparent padding and must not itself resize the window.
       outline.push({ x: pigBox.x - pigBox.width * .18, y: pigBox.y - pigBox.height * .5,
-        r: pigBox.x + pigBox.width * 1.1, b: pigBox.y + pigBox.height })
+        r: pigBox.x + pigBox.width * 1.1, b: anchors.feet.y })
       // On platforms with native shape support, also cover the open-panel
       // bubble, which extends left of the pig by up to 192px. The collapsed
       // 272px reserve is measured from pigRight, so it reaches only
       // 272 - pigWidth pixels left of the pig and fails for wider pigs.
-      const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT : Infinity
-      outline.push({ x: Math.min(pigBox.x + pigBox.width - BUBBLE_ZONE.width, openBubbleLeft, pigBox.x - artMargin), y: pigBox.y - BUBBLE_ZONE.height - 24,
-        r: pigBox.x + pigBox.width + artMargin, b: pigBox.y + pigBox.height + 12 })
+      const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT * speechScale : Infinity
+      outline.push({ x: Math.min(pigBox.x + pigBox.width - bubbleSize.width, openBubbleLeft, pigBox.x - artMargin), y: anchors.headTop.y - bubbleSize.height - 24,
+        r: pigBox.x + pigBox.width + artMargin, b: anchors.feet.y + bubbleSize.height + 10 })
       // Reserve the whole rotation once, independent of the active action. macOS
       // has no native shape, so keep its window footprint until passthrough is addressed.
       if (reserves) {
@@ -206,7 +209,9 @@ export function createMeasure(env) {
       const x = Math.max(0, Math.floor(rect.x) - SHAPE_SLACK)
       const y = Math.max(0, Math.floor(rect.y) - SHAPE_SLACK)
       return { x, y, width: Math.ceil(rect.r) + SHAPE_SLACK - x, height: Math.ceil(rect.b) + SHAPE_SLACK - y }
-    })
+    // A saved large size can initially lay out entirely above/left of the old
+    // small window. Its empty intersection must not reject the resize itself.
+    }).filter(rect => rect.width > 0 && rect.height > 0)
     // Particle visibility has its own lifetime, independent of the pig's motion.
     if (pigNode !== null && host.querySelector('.dp-fx') !== null) {
       const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) }
@@ -277,6 +282,20 @@ export function createMeasure(env) {
     }
     if (clipped && !bubble.hasAttribute('data-fitted')) bubble.setAttribute('data-fitted', 'true')
     else if (!clipped && bubble.hasAttribute('data-fitted')) bubble.removeAttribute('data-fitted')
+    // Always recompute from the original head-top anchor, even if the current
+    // bubble is below. Opening the panel must not reset its text or scroll.
+    const pigBox = layoutBox(pig)
+    const anchors = characterGeometry(pigBox)
+    // 上方槽位＝头顶锚点 - 间距 - 气泡高；放不下由 fitBubbleVertically 改用脚底下方同一间距。
+    const originalY = bubbleSlot(anchors, 'above', { width: bubble.offsetWidth, height: bubble.offsetHeight }).y
+    const vertical = fitBubbleVertically({ y: originalY, height: bubble.offsetHeight }, pigBox, geometry.window, geometry.workArea)
+    const below = vertical.side === 'below'
+    const top = below ? (vertical.y - layoutBox(parent).y) + 'px' : ''
+    const bottom = below ? 'auto' : ''
+    if (bubble.style.top !== top) bubble.style.top = top
+    if (bubble.style.bottom !== bottom) bubble.style.bottom = bottom
+    if (below && bubble.getAttribute('data-bubble-side') !== 'below') bubble.setAttribute('data-bubble-side', 'below')
+    else if (!below && bubble.hasAttribute('data-bubble-side')) bubble.removeAttribute('data-bubble-side')
   }
 
   return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state }

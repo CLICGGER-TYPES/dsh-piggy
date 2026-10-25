@@ -20,8 +20,11 @@ extensions/<key>/
 - **图片**（可选）：放 `assets/`，在 manifest 写 `"assets": ["bg.webp", "coin.webp"]`，`minGame` 至少 `0.36.0`。名字只许小写字母、数字、`-` 加 `.webp` / `.png`，
   单张仍 ≤ 512KB；游戏 0.37.0 起不限制图片张数和合计大小（旧宿主有 256 张 / 4MB 限制，超出时 minGame 必须至少 0.37.0）；名单和文件夹里的文件要一一对应（下载、导入都会核对，对不上整个不装）。面板宽 292px，图按显示大小的两倍出就够。
   页面里用 `app.asset('bg.webp')` 拿地址。菜园、矿洞的素材原稿和切图脚本在总目录 `art-source/ext-ui/`。
-- 三个文件各 ≤ 512KB（宿主拒绝更大的）。不能引别的文件，`server.js` 也不能 `import` 游戏代码——
+- 三个文件各 ≤ 512KB（宿主拒绝更大的）。**运行时的 `server.js` 不能引别的文件**，也不能 `import` 游戏代码——
   它只能通过下面的 `api` 碰主存档。
+- 菜园是官方特例：服务端源码拆在 `src/extensions/farm/`（每个模块 ≤400 行、要 `// @ts-check`），
+  `extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 从源码生成，**不要手改**；`npm run build`
+  会先构建面板 `client.js` 再构建它。下载协议没有变，仍是这三个文件加 `assets/`。其他扩展直接写单文件（≤600 行）。
 
 ## manifest.json
 
@@ -162,6 +165,9 @@ export default {
 })()
 ```
 
+- 当前未发布候选的 `app.send()` 会返回宿主动作 Promise，可在完成/失败后恢复按钮。老游戏可能返回 `undefined`，扩展必须探测后使用；没有 Promise 时等待宿主快照确认结果，不能仅凭固定超时允许重复提交。
+- 需要跨轮询保留棋盘键盘焦点时，藏猪方块使用 `data-puzzle-cell` 标记稳定格子；通用 `data-cell` 不属于宿主保证范围。拖动应处理指针取消、失焦和失去捕获，避免下一次无关松手补交旧操作。
+
 - 样式写在自己的 `<style id="dsh-piggy-<key>-style">` 里，类名用自己的前缀（菜园用 `fm-`），**颜色、圆角、边框一律用面板的 `--ac-*` 变量**并给兜底值，
   按钮用面板现成的 `dp-btn` / `dp-mini`，别自己造按钮样式。规则见 [ui-style.md](ui-style.md)。
 - 面板要简洁：不放大段说明文字、不加刻度条之类的装饰（用户明确要求过）。
@@ -177,7 +183,7 @@ export default {
 
 ## 发版
 
-见 [HANDOFF.md 9.3](../HANDOFF.md)：升 `manifest.json` 版本 → `node scripts/extension-entry.mjs <key>`（和 `--host gitee`）更新两份目录 →
+见 [HANDOFF.md 9.3](../HANDOFF.md)：改菜园服务端先 `npm run build`（源码在 `src/extensions/farm/`，产物 `extensions/farm/server.js`）→ 升 `manifest.json` 版本 → `node scripts/extension-entry.mjs <key>`（和 `--host gitee`）更新两份目录 →
 `node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包 `.piggyext`（代码和图片都在里面）→
 发行版**只传这一个 `.piggyext`**：0.36.1 起游戏在线安装只下整包（目录条目的 `bundle`）。例外：`minGame` 还低于 0.36.1 的版本（0.36.0 及更早的游戏也能装），要照旧把三个文件和 `assets/` 里的图**平铺**一起传，老游戏按 `files` 逐个下 →
 GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 提交目录、推 main → 用全新存档在线装一次验证。

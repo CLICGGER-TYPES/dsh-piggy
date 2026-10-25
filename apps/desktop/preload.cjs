@@ -10,6 +10,15 @@ const role = argv.includes('--piggy-role=panel') ? 'panel' : argv.includes('--pi
 /** 扩展大窗口（role=ext，外壳 0.6.5 起）显示的是哪个扩展。 */
 const extKey = role === 'ext' ? (argv.find(arg => arg.startsWith('--piggy-ext=')) || '').slice('--piggy-ext='.length) : null
 
+/** 恢复事件只接受主屏 DIP 工作区；坏载荷不交给页面。 */
+function recoveryWorkArea(value) {
+  const area = value === null || typeof value !== 'object' ? null : value.workArea
+  if (area === null || typeof area !== 'object') return null
+  if (![area.x, area.y, area.width, area.height].every(Number.isFinite)) return null
+  if (!(area.width > 0) || !(area.height > 0)) return null
+  return { x: area.x, y: area.y, width: area.width, height: area.height }
+}
+
 /** A visible inner layer gets the first Escape; an empty desktop window can close on the next one. */
 function hasVisibleEscapeLayer() {
   const layers = document.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-farm-overlay]')
@@ -161,4 +170,14 @@ contextBridge.exposeInMainWorld('piggyShell', {
   onDragSlide: callback => { ipcRenderer.on('piggy:drag-slide', (event, slide) => callback(slide)) },
   /** 存档变了（两个窗口任一个做了动作）：马上刷新，别等轮询。 */
   onStateChanged: callback => { ipcRenderer.on('piggy:state-changed', (event, view) => callback(view)) },
+  /** 托盘「恢复小猪」（本版外壳）：只带主屏 DIP 工作区；返回取消订阅。 */
+  onRecover: callback => {
+    if (typeof callback !== 'function') return () => {}
+    const handler = (event, payload) => {
+      const workArea = recoveryWorkArea(payload)
+      if (workArea !== null) callback({ workArea })
+    }
+    ipcRenderer.on('piggy:recover', handler)
+    return () => ipcRenderer.removeListener('piggy:recover', handler)
+  },
 })

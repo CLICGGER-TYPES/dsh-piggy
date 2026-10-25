@@ -26,6 +26,9 @@ function jsFiles(dirUrl) {
 
 const read = url => readFileSync(url, 'utf8')
 const shortName = url => url.pathname.split('/').slice(-2).join('/')
+// 唯一豁免：菜园服务端是 scripts/build-farm-server.mjs 从 src/extensions/farm/ 生成的
+// 单文件下载产物，源码各模块仍受 400 行和 @ts-check 限制。没有生成横幅就不算产物，照常检查。
+const isGeneratedFarmServer = url => url.pathname.endsWith('/extensions/farm/server.js') && read(url).startsWith('// GENERATED FILE.')
 
 test('the domain layer never reads the system clock', () => {
   // The domain lives in packages/pet-core: core.js is its barrel, core/ the modules.
@@ -79,6 +82,7 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
     ...jsFiles(new URL('core/', coreRoot)),
     ...jsFiles(new URL('store/', packageRoot)),
     ...jsFiles(new URL('src/client/', packageRoot)),
+    ...jsFiles(new URL('src/extensions/', packageRoot)),
     // 桌面外壳的模块和在线扩展同样受限；apps/desktop/main.js 暂时豁免（见 CONVENTIONS「豁免」）
     ...jsFiles(new URL('apps/desktop/lib/', packageRoot)),
     ...jsFiles(new URL('extensions/', packageRoot)),
@@ -87,14 +91,16 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
   // 菜园仍按三文件协议分发；弹窗焦点管理暂留同一入口，见 CONVENTIONS 的窄范围例外。
   const limit = url => /\/extensions\/farm\/client\.js$/.test(url.pathname) ? 680
     : /\/extensions\/[^/]+\/(?:client|server)\.js$/.test(url.pathname) ? 600 : 400
-  const offenders = files.filter(url => lineCount(url) > limit(url)).map(url => `${shortName(url)}:${lineCount(url)}>${limit(url)}`)
+  const offenders = files.filter(url => !isGeneratedFarmServer(url) && lineCount(url) > limit(url)).map(url => `${shortName(url)}:${lineCount(url)}>${limit(url)}`)
   assert.deepEqual(offenders, [], 'split the file instead of growing past 400 lines (CONVENTIONS §分层)')
 })
 
-test('外壳模块和在线扩展的规则文件开头都有 // @ts-check', () => {
-  const files = [...jsFiles(new URL('apps/desktop/lib/', packageRoot)), new URL('apps/desktop/main.js', packageRoot),
+test('源码、外壳模块和在线扩展的规则文件开头都有 // @ts-check', () => {
+  const files = [...jsFiles(new URL('src/extensions/', packageRoot)),
+    ...jsFiles(new URL('apps/desktop/lib/', packageRoot)), new URL('apps/desktop/main.js', packageRoot),
     ...jsFiles(new URL('extensions/', packageRoot)).filter(url => url.pathname.endsWith('server.js'))]
-  assert.deepEqual(files.filter(url => !read(url).startsWith('// @ts-check')).map(shortName), [])
+  const offenders = files.filter(url => !isGeneratedFarmServer(url) && !read(url).startsWith('// @ts-check')).map(shortName)
+  assert.deepEqual(offenders, [])
 })
 
 test('package.json ships every module the runtime imports', () => {

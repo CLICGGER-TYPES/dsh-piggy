@@ -74,7 +74,7 @@ function fakeDom() {
     constructor(tagName) {
       this.tagName = tagName
       this.children = []
-      this.style = { setProperty() {}, removeProperty() {} }
+      this.style = { setProperty() {}, getPropertyValue() { return '' }, removeProperty() {} }
       this.attributes = {}
       this.className = ''
       this._text = ''
@@ -502,12 +502,12 @@ test('long dialogue keeps its full text in a fixed scrollable bubble', async () 
   const bubble = css.match(/\.dp-bubble\{([^}]*)\}/)?.[1] ?? ''
   const text = css.match(/\.dp-bubble-text\{([^}]*)\}/)?.[1] ?? ''
   const replies = css.match(/\.dp-bubble-replies\{([^}]*)\}/)?.[1] ?? ''
-  assert.match(bubble, /max-height:104px/, 'the desktop reserve stays bounded to its measured height')
-  assert.match(text, /max-height:88px/, 'long dialogue is bounded even without replies')
+  assert.match(bubble, /max-height:calc\(104px \* var\(--bubble-scale,1\)\)/, 'the desktop reserve stays bounded to its measured height')
+  assert.match(text, /max-height:calc\(88px \* var\(--bubble-scale,1\)\)/, 'long dialogue is bounded even without replies')
   assert.match(text, /overflow-y:auto/, 'long dialogue can be read by scrolling')
-  assert.match(css, /\.dp-bubble:has\(\.dp-bubble-replies\) \.dp-bubble-text\{max-height:52px\}/,
+  assert.match(css, /\.dp-bubble:has\(\.dp-bubble-replies\) \.dp-bubble-text\{max-height:calc\(52px \* var\(--bubble-scale,1\)\)\}/,
     'text leaves room for reply buttons in the fixed frame')
-  assert.match(replies, /max-height:29px/, 'reply buttons stay visible in the fixed frame')
+  assert.match(replies, /max-height:calc\(29px \* var\(--bubble-scale,1\)\)/, 'reply buttons stay visible in the fixed frame')
   assert.match(replies, /overflow-y:auto/, 'additional reply buttons remain reachable')
   assert.doesNotMatch(text, /-webkit-line-clamp/, 'the browser must not discard lines after the second')
   assert.match(text, /overflow-wrap:anywhere/, 'long unbroken text must still fit the bubble width')
@@ -675,6 +675,56 @@ test('disposing takes the dev console handle with it', async () => {
 
   dispose()
   assert.equal(window.dshPigDev, undefined, 'and the console handle must go')
+})
+
+test('a stale poll that drained the reply follow-up still shows it', async () => {
+  // The reply action and a poll can overlap. If the poll snapshot is the one
+  // that took the follow-up out of the store queue, dropping the stale poll
+  // would silently lose the pig's answer. Its state is stale, but its pending
+  // messages are already consumed and must still reach the bubble.
+  const line = { id: 700, kind: 'line', text: '最近怎么样？', at: 700, replies: ['挺好的'] }
+  const followup = { id: 701, kind: 'line', text: '醒啦，今天也想跟你玩', at: 701, replies: [] }
+  const status = { ...SNAPSHOT, pending: [line] }
+  const acted = { ...SNAPSHOT, pig: { ...PIG, name: '动作后' }, pending: [] }
+  const { registration, dom } = await loadClient({ status, actResult: acted })
+
+  let poll = null
+  const realSetInterval = globalThis.window.setInterval
+  globalThis.window.setInterval = fn => { poll = fn; return 1 }
+  try {
+    registration.factory(() => {}).apply({})
+    await settle()
+    const reply = findByClass(hostOf(dom), 'dp-reply')
+    assert.notEqual(reply, undefined, 'the question is visible first')
+
+    let release
+    const gate = new Promise(resolve => { release = resolve })
+    const realFetch = globalThis.fetch
+    globalThis.fetch = async (url, options) => {
+      if ((options?.method ?? 'GET') === 'GET') { await gate; return realFetch(url, { method: 'GET' }) }
+      return realFetch(url, options)
+    }
+    // The poll starts before the reply and hangs. The server drains the
+    // follow-up into this poll's snapshot before the reply response is built.
+    status.pending = [followup]
+    const stale = poll()
+    sceneOf(dom).fire('pointerdown', { button: 0, clientX: 10, clientY: 10, target: reply })
+    sceneOf(dom).fire('pointerup', {})
+    reply.fire('click')
+    await settle()
+    release()
+    await stale
+    await new Promise(resolve => setTimeout(resolve, 200))
+    await settle()
+
+    const bubble = findByClass(hostOf(dom), 'dp-bubble')
+    assert.notEqual(bubble, undefined)
+    assert.equal(bubble.hidden, false, 'the follow-up bubble is visible')
+    assert.ok(bubble.allText().includes('醒啦，今天也想跟你玩'), bubble.allText())
+    assert.equal(bubble.allText().split('醒啦，今天也想跟你玩').length - 1, 1, 'shown once')
+  } finally {
+    globalThis.window.setInterval = realSetInterval
+  }
 })
 
 test('a slow poll cannot overwrite the result of an action', async () => {
@@ -1606,6 +1656,113 @@ test('clicking a reply does not first send a pig touch', async () => {
 
   const actions = net.calls.filter(call => call.method === 'POST').map(call => JSON.parse(call.body).action)
   assert.deepEqual(actions, ['reply'])
+})
+
+test('real routes: clicking a reply shows the approved follow-up for that line', async () => {
+  const { mkdtempSync, rmSync, writeFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { createStore } = await import('../store.js')
+  const { registerRoutes } = await import('../routes.js')
+  const core = await import('../core.js')
+  const { LINES } = await import('../data.js')
+  const dir = mkdtempSync(join(tmpdir(), 'piggy-client-reply-'))
+  const statePath = join(dir, 'state.json')
+  const now = Date.now()
+  const pig = core.hatchEgg(now - 60_000)
+  pig.personality = 'peppy'
+  pig.catchphrase = ''
+  const index = LINES.wake.findIndex(line => line.replies?.length)
+  assert.ok(index >= 0)
+  writeFileSync(statePath, JSON.stringify(pig))
+  const store = createStore(statePath, { now: () => now + 1000, setTimer: () => 0, clearTimer() {} })
+  assert.equal(core.say(store.state, 'wake', now, () => (index + 0.5) / LINES.wake.length), true)
+  const routes = {}
+  registerRoutes({ inject: (deps, fn) => { if (deps.includes('webServer')) fn({ webServer: { register: route => { routes[route.path] = route; return () => {} } } }) } }, store)
+  const { registration, dom } = await loadClient({ status: SNAPSHOT })
+  const bridge = async (url, options = {}) => {
+    const path = String(url).split('?')[0]
+    const route = routes[path]
+    const method = options.method ?? 'GET'
+    let body = ''
+    let code = 0
+    const req = { method, url: path, async *[Symbol.asyncIterator]() { if (options.body) yield Buffer.from(options.body) } }
+    const res = { writeHead(next) { code = next }, end(chunk) { body = String(chunk ?? '') } }
+    await route.handler(req, res)
+    return { ok: code >= 200 && code < 300, status: code, async json() { return JSON.parse(body) } }
+  }
+  globalThis.fetch = bridge
+  try {
+    registration.factory(() => {}).apply({})
+    await settle()
+    const reply = findByClass(hostOf(dom), 'dp-reply')
+    assert.notEqual(reply, undefined, 'a reply button should be visible')
+    sceneOf(dom).fire('pointerdown', { button: 0, clientX: 10, clientY: 10, target: reply })
+    sceneOf(dom).fire('pointerup', {})
+    reply.fire('click')
+    await new Promise(resolve => setTimeout(resolve, 200))
+    await settle()
+    const bubble = findByClass(hostOf(dom), 'dp-bubble')
+    assert.notEqual(bubble, undefined)
+    assert.ok(bubble.allText().includes('醒啦，今天也想跟你玩'), bubble.allText())
+    assert.equal(store.state.pending.length, 0, 'the server drained the follow-up into the action response')
+  } finally {
+    store.dispose()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('a reply response with a follow-up line shows it in the bubble', async () => {
+  const followup = { id: 701, kind: 'line', text: '醒啦，今天也想跟你玩', at: 701, replies: [] }
+  const { registration, dom } = await loadClient({
+    status: { ...SNAPSHOT, pending: [{ id: 700, kind: 'line', text: '最近怎么样？', at: 700, replies: ['挺好的'] }] },
+    actResult: { ...SNAPSHOT, pending: [followup] },
+  })
+  registration.factory(() => {}).apply({})
+  await settle()
+  const reply = findByClass(hostOf(dom), 'dp-reply')
+  assert.notEqual(reply, undefined, 'a reply button should be visible')
+  sceneOf(dom).fire('pointerdown', { button: 0, clientX: 10, clientY: 10, target: reply })
+  sceneOf(dom).fire('pointerup', {})
+  reply.fire('click')
+  await new Promise(resolve => setTimeout(resolve, 200))
+  await settle()
+  const bubble = findByClass(hostOf(dom), 'dp-bubble')
+  assert.notEqual(bubble, undefined)
+  assert.ok(bubble.allText().includes('醒啦，今天也想跟你玩'), bubble.allText())
+})
+
+test('split pet window shows a reply follow-up once across broadcast and POST response', async () => {
+  const followup = { id: 701, kind: 'line', text: '醒啦，今天也想跟你玩', at: 701, replies: [] }
+  const lineStatus = { ...SNAPSHOT, pending: [{ id: 700, kind: 'line', text: '最近怎么样？', at: 700, replies: ['挺好的'] }] }
+  const listeners = []
+  const shell = {
+    role: 'pet', beginDrag() {}, panel: {
+      toggle() {}, on() {}, onFx() {}, raisePet() {}, close() {}, fx() {},
+    },
+    onStateChanged: cb => { listeners.push(cb) },
+  }
+  const { registration, dom } = await loadClient({
+    status: lineStatus,
+    actResult: { ...SNAPSHOT, pending: [followup] },
+    windowExtra: { __dshPiggyShell: shell },
+  })
+  registration.factory(() => {}).apply({})
+  await settle()
+  const reply = findByClass(hostOf(dom), 'dp-reply')
+  assert.notEqual(reply, undefined, 'a reply button should be visible in the pet window')
+  sceneOf(dom).fire('pointerdown', { button: 0, clientX: 10, clientY: 10, target: reply })
+  sceneOf(dom).fire('pointerup', {})
+  reply.fire('click')
+  assert.equal(listeners.length, 1, 'the pet window subscribes to state broadcasts')
+  listeners[0]({ ...SNAPSHOT, pending: [followup] })
+  await new Promise(resolve => setTimeout(resolve, 200))
+  await settle()
+  const bubble = findByClass(hostOf(dom), 'dp-bubble')
+  assert.notEqual(bubble, undefined)
+  const text = bubble.allText()
+  assert.ok(text.includes('醒啦，今天也想跟你玩'), text)
+  assert.equal(text.split('醒啦，今天也想跟你玩').length - 1, 1, 'the same follow-up id is shown once')
 })
 
 test('a stale reply is dropped silently instead of scolding the user', async () => {

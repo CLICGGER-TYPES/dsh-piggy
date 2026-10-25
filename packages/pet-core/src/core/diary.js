@@ -11,6 +11,7 @@ import { DIARY_BOOK, DIARY_GROUP_ORDER, DIARY_MAX, OWNER_TOKEN } from '../data.j
 import { dayKeyFor } from './clock.js'
 import { ensureDialogue } from './lines.js'
 import { rollerFor } from './random.js'
+import { splitDiaryText } from './diary-text.js'
 
 /** 一本空日记：没有历史，今天还没开始记。 */
 export function emptyDiary() {
@@ -97,7 +98,8 @@ export function composeDiary(counts, ownerName, next = () => 0, recent = []) {
   const book = /** @type {Record<string, ReadonlyArray<string>>} */ (DIARY_BOOK)
   const pool = book[diaryGroupFor(counts)] ?? book.daily
   const said = text => text.split(OWNER_TOKEN).join(ownerName)
-  const fresh = pool.filter(text => !recent.includes(said(text)))
+  const recentBodies = new Set(recent.map(text => splitDiaryText(text).body.trim()))
+  const fresh = pool.filter(text => !recentBodies.has(said(text).trim()))
   const from = fresh.length > 0 ? fresh : pool
   return said(from[Math.min(from.length - 1, Math.floor(next() * from.length))])
 }
@@ -124,8 +126,8 @@ export function writeDiaryIfNewDay(state, nowMs) {
   return true
 }
 
-/** 面板要的那份：按日期倒序（新的在前）。 */
+/** 面板用按日期倒序的派生信息；text原文保留以兼容旧客户端和存档导出。 */
 export function diaryView(state) {
   const diary = ensureDiary(state)
-  return diary.entries.slice().reverse().map(entry => ({ day: entry.day, text: entry.text }))
+  return diary.entries.slice().reverse().map(entry => ({ day: entry.day, text: entry.text, ...splitDiaryText(entry.text) }))
 }

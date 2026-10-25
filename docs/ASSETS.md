@@ -40,6 +40,12 @@
 ## 登记
 
 ```assets
+fishing/*.png
+fishing/manifest.json
+fishing/PROVENANCE.md
+animations/pet-hand/*.webp
+animations/pet-hand/manifest.json
+animations/pet-hand/PROVENANCE.md
 animations/piglet-pet/*.webp
 animations/piglet-pet/manifest.json
 animations/piglet-pet/PROVENANCE.md
@@ -64,3 +70,15 @@ piggy-emoji.woff2
 ## 普通猪摸摸动画（候选，2026-10-21）
 
 v07直接复用用户提供的原GIF：五帧112×112、每帧60ms，排成560×112无损 `animations/piglet-pet/reference.webp`，10,368字节，五格RGBA与GIF完全一致。包含手和猪，运行时固定比例播放；关闭小手改用原idle.png。此前重制图集均保留在研究备份，不再随游戏加载。来源与哈希见对应PROVENANCE.md和manifest.json，详见[实现与验证](design/pet-hand-snap.md)。
+
+## 高清独立摸摸手（2026-10-22，已审核9%受压候选）
+
+`animations/pet-hand/hand.webp` 是透明独立手五格图集（1280×256，各格256²、60ms），仅含手，不含猪。经用户五帧GIF审阅、选定9%压缩并要求接入游戏。运行保留当前猪与装扮DOM，脚底固定受压，手独立叠加；不再把任何形态替换成普通猪。来源与加工见同目录PROVENANCE。原GIF图集仍保留作历史参考，运行不加载。
+
+## 小游戏纸感与钓鱼候选（2026-10-24）
+
+后续小游戏默认采用用户选定的清爽平涂纸感，见 [game-style.md](art/game-style.md) 与已确认参考图。菜园七份分层素材及来源见 `extensions/farm/paper-art-pack.json`；钓鱼四处钓点、独立浮漂、宽版搏斗插画和鲫鱼结果图见 [fishing/PROVENANCE.md](../assets/fishing/PROVENANCE.md)。文字、按钮、进度和游戏规则独立实现。
+
+菜园4.1.1补充六张 `paper-{glove,seed-bag,watering-can,shovel,backpack,shop}.png` 工具图标；见扩展 `paper-tools-art-pack.json` 的原生出处与哈希，沿用已确认菜园A参考。
+
+菜园4.1.2候选补 `paper-{weed-spray,insect-spray,fertilizer-bag,harvest-sickle,backpack-sprayer,leveling-rake,push-seeder}.png` 与 `paper-garden-wide.png`。原生来源、逐字提示词、导出记录见 `extensions/farm/paper-advanced-art-pack.json`。图片只作内容，控件仍按项目UI规范绘制。

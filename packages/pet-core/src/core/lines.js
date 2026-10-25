@@ -6,7 +6,7 @@
  * @module dsh-piggy/core/lines
  */
 
-import { CATCHPHRASE_CHANCE, DEFAULT_OWNER_NAME, LINE_MEMORY, LINES, SERIOUS_SCENES, OWNER_NAME_MAX, OWNER_TOKEN, REPLY_HAPPINESS, THRESHOLDS, WELCOME_BACK_AFTER_MINUTES } from '../data.js'
+import { CATCHPHRASE_CHANCE, DEFAULT_OWNER_NAME, LINE_MEMORY, LINES, REPLY_FOLLOWUPS, SERIOUS_SCENES, OWNER_NAME_MAX, OWNER_TOKEN, REPLY_HAPPINESS, THRESHOLDS, WELCOME_BACK_AFTER_MINUTES } from '../data.js'
 import { announce, clamp100 } from './effects.js'
 import { chance, rollerFor } from './random.js'
 import { cleanPetTimes, cleanTalk, emptyTalk, timeTalkScene } from './talk.js'
@@ -31,7 +31,7 @@ export function emptyDialogue() {
  * @param {object} state - `dialogue.lastByScene` is updated in place.
  * @param {string} scene
  * @param {import('./random.js').Roll} [next]
- * @returns {{scene: string, text: string, replies: Array<{label: string, happiness: number}>}|null}
+ * @returns {{scene: string, index: number, text: string, replies: Array<{label: string, happiness: number}>}|null}
  */
 export function pickLine(state, scene, next = rollerFor(state)) {
   const pool = LINES[scene]
@@ -54,9 +54,32 @@ export function pickLine(state, scene, next = rollerFor(state)) {
   const line = pool[index]
   return {
     scene,
+    // 稳定身份：合并后总表里的下标，和 dialogue.lastByScene 记的是同一套。
+    index,
     text: withCatchphrase(state, scene, line.text.split(OWNER_TOKEN).join(dialogue.ownerName), next),
     replies: (line.replies ?? []).map(reply => ({ label: reply.label, happiness: reply.happiness ?? REPLY_HAPPINESS })),
   }
+}
+
+/**
+ * 回复后的接话：按「场景 + 总表下标 + 回复下标」查表，当前性格优先，缺失时用该分支的通用句。
+ * 旧存档的 open 没有场景和下标（见 sanitizeOpenLine），这里返回 null——不能拿最近台词或
+ * 显示文字猜它是哪一句，也不是所有 open 都能从 lastByScene 唯一还原（lastByScene 只记
+ * 每个场景各自最近用过的下标，分不出 open 属于哪个场景）。
+ * @param {{scene?: unknown, index?: unknown}} open
+ * @param {unknown} replyIndex
+ * @param {unknown} personality
+ * @returns {string|null}
+ */
+export function replyFollowup(open, replyIndex, personality) {
+  const index = open.index
+  if (typeof open.scene !== 'string' || typeof index !== 'number' || !Number.isInteger(index) || index < 0) return null
+  if (typeof replyIndex !== 'number' || !Number.isInteger(replyIndex) || replyIndex < 0) return null
+  const entry = REPLY_FOLLOWUPS[`${open.scene}:${index}:${replyIndex}`]
+  if (entry === undefined) return null
+  // 存档里的性格可能被手改成未知值；也防 __proto__ / constructor 这类键名拿到非文案。
+  const own = typeof personality === 'string' ? entry.personalities[personality] : undefined
+  return typeof own === 'string' ? own : entry.generic
 }
 
 /**
@@ -85,7 +108,10 @@ export function say(state, scene, nowMs, next) {
   if (line === null) return false
   const message = announce(state, 'line', line.text, nowMs, { scene, replies: line.replies.map(reply => reply.label) })
   const dialogue = ensureDialogue(state)
-  dialogue.open = line.replies.length > 0 ? { id: message.id, replies: line.replies } : null
+  // open 记住稳定身份：回复时才能准确找回这一句和这个按钮，不靠显示文字猜。
+  dialogue.open = line.replies.length > 0
+    ? { id: message.id, replies: line.replies, scene: line.scene, index: line.index }
+    : null
   return true
 }
 
@@ -110,8 +136,9 @@ export function sayAfter(state, result, okScene, nowMs) {
  * @param {object} state
  * @param {number} lineId - the `id` of the `line` message being answered.
  * @param {number} replyIndex
+ * @param {number} [nowMs] Host time for an accepted interaction.
  */
-export function replyToLine(state, lineId, replyIndex) {
+export function replyToLine(state, lineId, replyIndex, nowMs) {
   if (state === null) return { ok: false, reason: 'absent' }
   if (state.dead === true) return { ok: false, reason: 'dead' }
   const dialogue = ensureDialogue(state)
@@ -119,8 +146,16 @@ export function replyToLine(state, lineId, replyIndex) {
   if (open === null || open.id !== lineId) return { ok: false, reason: 'stale-line' }
   const reply = open.replies[replyIndex]
   if (reply === undefined) return { ok: false, reason: 'unknown' }
+  const followup = replyFollowup(open, replyIndex, state.personality)
   dialogue.open = null
+  if (Number.isFinite(nowMs)) state.lastActiveAt = nowMs
   state.happiness = clamp100(state.happiness + reply.happiness)
+  // 只接一句不带回复按钮的话：不再奖励、不追加摸摸、不触发日常动作。
+  // 急病、死亡等真实状态已在上面拦下；接话不会覆盖它们的优先级。
+  if (followup !== null) {
+    const at = Number.isFinite(nowMs) ? nowMs : Number.isFinite(state.lastActiveAt) ? state.lastActiveAt : 0
+    announce(state, 'line', followup, at, { scene: open.scene, replies: [] })
+  }
   return { ok: true, reply: reply.label }
 }
 
@@ -200,5 +235,10 @@ function sanitizeOpenLine(raw) {
   const replies = raw.replies
     .filter(reply => reply !== null && typeof reply === 'object' && typeof reply.label === 'string')
     .map(reply => ({ label: reply.label, happiness: Number.isFinite(reply.happiness) ? reply.happiness : REPLY_HAPPINESS }))
-  return replies.length > 0 ? { id: raw.id, replies } : null
+  if (replies.length === 0) return null
+  // 身份是后加的：旧存档的 open 只有 id 和 replies，清洗时保留成缺失（null），
+  // 回复照常算有效、照常加心情，只是接不到话；下一条新台词起就有身份了。
+  const scene = typeof raw.scene === 'string' && raw.scene !== '' ? raw.scene : null
+  const index = Number.isInteger(raw.index) && raw.index >= 0 ? raw.index : null
+  return { id: raw.id, replies, scene, index }
 }
