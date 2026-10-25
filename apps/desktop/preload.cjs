@@ -159,5 +159,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 拖动中窗口被夹在屏幕里时，猪要在窗口里滑多少（外壳 0.6.0 起，见 main.js dragTick）。 */
   onDragSlide: callback => { ipcRenderer.on('piggy:drag-slide', (event, slide) => callback(slide)) },
   /** 存档变了（两个窗口任一个做了动作）：马上刷新，别等轮询。 */
-  onStateChanged: callback => { ipcRenderer.on('piggy:state-changed', (event, view) => callback(view)) },
+  onStateChanged: callback => {
+    ipcRenderer.on('piggy:state-changed', (event, view) => callback(typeof view === 'string' ? JSON.parse(view) : view))
+  },
 })
