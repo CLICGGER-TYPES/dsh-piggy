@@ -205,7 +205,10 @@ export async function mount(options = {}) {
   loadCount += 1
   url.searchParams.set('t', String(loadCount))
   await import(url.href)
-  registration.factory(() => {}).apply({})
+  const plugin = registration.factory(() => {})
+  const context = options?.pluginContext ?? {}
+  if (options?.constructPlugin) Reflect.construct(plugin.apply, [context, {}])
+  else plugin.apply(context)
   await settle()
   return { dom, store, calls, intervals, windowListeners, documentListeners: dom.documentListeners, registration }
 }

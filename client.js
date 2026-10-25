@@ -23518,7 +23518,10 @@
     }
   }
   function createClientPlugin() {
-    const exports = { name: "dsh-piggy", apply: mountGame, desktop };
+    function apply() {
+      return mountGame();
+    }
+    const exports = { name: "dsh-piggy", apply, desktop };
     exports.desktop = desktop;
     return exports;
   }

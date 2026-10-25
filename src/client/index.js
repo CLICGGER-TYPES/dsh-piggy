@@ -390,7 +390,9 @@ export { desktop }
 
 /** 保留原单文件插件的返回形状，宿主加载逻辑留在适配器中。 */
 export function createClientPlugin() {
-  const exports = { name: 'dsh-piggy', apply: mountGame, desktop }
+  // Cordis传入的是受注入约束的Context，不能当作桌面舞台配置读取。
+  function apply() { return mountGame() }
+  const exports = { name: 'dsh-piggy', apply, desktop }
   exports.desktop = desktop
   return exports
 }

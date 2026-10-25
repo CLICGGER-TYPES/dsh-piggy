@@ -1,5 +1,13 @@
 # 路线图与待办
 
+## 2026-10-25 DSH网页激活回归修复（候选，未发布）
+
+- [x] 实际npm 0.37.2-rc.1在DSH 0.2.1-rc.2 / 687f282的独立实例和Linux VM浏览器复现：服务端状态200，客户端Failed to load plugins。暂停异常抓到`cannot get property "stage" without inject`：Cordis传入Context，mountGame误作舞台选项读取stage。
+- [x] DSH插件apply用无参数适配函数调用mountGame，保留桌面/舞台显式传参入口。两项带严格Context与构造调用的回归用例修前均失败、修后通过；全量1889/1889、类型检查通过。
+- [x] 同实例使用修复后的私有npm包，VM浏览器激活、右键打开实际面板、刷新再激活均通过，1个猪实例，无相关控制台错误。未运行物理机浏览器，未使用真实存档。
+- [ ] 发布包含修复的新RC；已公开rc.1未改写，实际npm rc.1仍含此问题。原server-side未激活归因已撤回，better-sidebar/dshmarket错误不属于本问题。
+
+
 2026-10-25 用户明确授权 GitHub 发布 v0.37.2-rc.1；本轮仅执行 GitHub 预览版发布，npm 准备可信发布入口并说明绑定，实际 npm 发布等待维护者确认；国内下载迁移仍只研究。最终发布与资产核验以该标签的 Release 为准。
 
 2026-10-25 RC准备完成：游戏/DSH插件0.37.2-rc.1、外壳0.6.8-rc.1；README已重排，换三张当前Linux VM实拍并登记SHA。真实Windows NSIS完成旧版安装/RC升级、v14→v15七类字段保留、恢复旧备份配旧便携版回退、卸载后全新安装、网卡断开首次启动及孵化、最终包500%托盘恢复；新RC便携版另以空档完成原生孵化/菜单/退出。335个内置游戏文件和57个外壳文件与候选一致，更新清单sha512匹配。菜园4.1.5/经典3.1.1最低游戏0.37.2与官方哈希配套；最终1887项、类型、diff、README引用通过。npm实际tarball与只读预检通过，OIDC工作流仍候选、账号待维护者配合；网盘迁移PI只读研究已交付，未切渠道。其他任务后续RC。尚未提交/发版，待用户审阅。验收边界：回退使用旧备份+旧便携版，不是旧安装器直接降级；本轮未验Linux AppImage/macOS DMG。交付 `/zyx/agents/codex/deliverables/piggy-review/release-prep.html`，报告 `/zyx/agents/codex/deliverables/piggy-work/release-prep-20261025/REPORT.md`。
