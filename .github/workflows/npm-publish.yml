@@ -46,7 +46,6 @@ env:
   RELEASE_TAG: ${{ inputs.tag }}
   NPM_CONFIG_REGISTRY: https://registry.npmjs.org
   # No tokens: a private empty userconfig, OIDC is the only publish credential.
-  NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/npmrc-empty
   NPM_CONFIG_PROVENANCE: 'true'
 
 jobs:
@@ -95,6 +94,8 @@ jobs:
       - name: Use an OIDC-capable npm (>= 11.5.1) and verify there is no token
         run: |
           set -euo pipefail
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/npmrc-empty"
+          echo "NPM_CONFIG_USERCONFIG=$NPM_CONFIG_USERCONFIG" >> "$GITHUB_ENV"
           : > "$NPM_CONFIG_USERCONFIG"
           npm install --global npm@11.7.0
           node --input-type=module <<'NODE'
@@ -109,10 +110,22 @@ jobs:
           set -euo pipefail
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
           test -f scripts/npm-release-plan.mjs || { echo 'This tag predates the release planner; use the existing manual release path'; exit 1; }
+          npm ci --prefix apps/desktop --no-audit --no-fund
+          cp client.js "$RUNNER_TEMP/client-tag.js"
           npm run build
-          git diff --exit-code -- client.js
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync } from 'node:fs'
+          const canonical = text => text.replace(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm, '$1node_modules/')
+          const tagged = readFileSync(process.env.RUNNER_TEMP + '/client-tag.js', 'utf8')
+          const rebuilt = readFileSync('client.js', 'utf8')
+          assert.equal(canonical(rebuilt), canonical(tagged), 'rebuilt client code differs from the tagged build')
+          NODE
           npm test
           npm run typecheck
+          # Pack the exact tagged client after verifying machine-dependent module comments only.
+          cp "$RUNNER_TEMP/client-tag.js" client.js
+          git diff --exit-code -- client.js
 
       - name: Pack both packages for review and for the plan
         run: |
@@ -144,7 +157,7 @@ jobs:
             action="$(node -p "require('./npm-plan.json').packages.find(p => p.name === '$name').action")"
             if [ "$action" = "publish" ]; then
               echo "publishing $name@$version with dist-tag $dist_tag (provenance is automatic with OIDC)"
-              npm publish "npm-artifacts/${name}-${version}.tgz" --access public --tag "$dist_tag"
+              npm publish "./npm-artifacts/${name}-${version}.tgz" --access public --tag "$dist_tag"
             else
               echo "skip $name@$version: the registry already has the identical tarball"
             fi
@@ -156,13 +169,22 @@ jobs:
         if: ${{ inputs.mode == 'publish' }}
         run: |
           set -euo pipefail
-          sleep 5
-          node scripts/npm-release-plan.mjs \
-            --tag "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --tarball-dir npm-artifacts \
-            --expect-published \
-            --json
+          # npm may accept the upload before asynchronous processing exposes it in the registry.
+          for attempt in $(seq 1 20); do
+            if node scripts/npm-release-plan.mjs \
+              --tag "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --tarball-dir npm-artifacts \
+              --expect-published \
+              --json > "$RUNNER_TEMP/npm-verify.log" 2>&1; then
+              cat "$RUNNER_TEMP/npm-verify.log"
+              exit 0
+            fi
+            cat "$RUNNER_TEMP/npm-verify.log"
+            test "$attempt" -lt 20 || exit 1
+            echo "Waiting for npm registry processing ($attempt/20)"
+            sleep 15
+          done
 
       - name: Keep the plan and tarballs for review
         if: always()

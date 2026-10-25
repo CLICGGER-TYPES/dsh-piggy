@@ -25,7 +25,7 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者手动发布；如果默认源尚未同步，以发布页上的版本为准。
 
-预览版下载：[GitHub 0.37.2-rc.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.1)。Windows 安装版与便携版已在虚拟机验证；Linux/macOS 安装包构建结果与验收范围见发布页。
+预览版下载：[GitHub 0.37.2-rc.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2)。修复DSH网页版激活失败；本轮安装包构建与验收范围见发布页。
 
 ### DSH 插件
 

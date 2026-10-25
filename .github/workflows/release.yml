@@ -33,6 +33,8 @@ jobs:
         with: { node-version: 22 }
       - name: 标签要和 package.json 的版本一致
         run: test "v$(node -p "require('./package.json').version")" = "$TAG"
+      - name: 安装桌面测试依赖（纯Node接线测试会导入桌面模块）
+        run: npm ci --prefix apps/desktop --no-audit --no-fund
       - name: 测试
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
