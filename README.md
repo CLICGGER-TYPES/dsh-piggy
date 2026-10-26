@@ -20,12 +20,13 @@
 稳定版下载：
 
 - [GitHub 稳定版 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
-- [Gitee 稳定版 0.37.1](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.1)
 - [夸克网盘：Windows 国内渠道](https://pan.quark.cn/s/2c571e9aaecc)
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者手动发布；如果默认源尚未同步，以发布页上的版本为准。
 
-预览版下载：[GitHub 0.37.2-rc.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2)。修复DSH网页版激活失败；本轮安装包构建与验收范围见发布页。
+预览版下载：[GitHub 0.37.2-rc.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2)、[Gitee 0.37.2-rc.2](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.2)。修复DSH网页版激活失败；本轮安装包构建与验收范围见发布页。Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。
+
+[国内旧版归档（夸克）](https://pan.quark.cn/s/a4484e98dec8)：按版本保存旧国内渠道安装器、游戏包和校验清单。含 13 个版本的现存文件，其中 5 个版本有 Windows 安装器；更早安装器已不存在的版本仅归档游戏包。旧 Gitee 安装器首次启动依赖的游戏包继续保留在 Gitee，避免历史安装器无法启动。
 
 ### DSH 插件
 
@@ -39,7 +40,7 @@ dsh plugin --profile web add dsh-piggy
 
 ### 桌面版
 
-从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户也可用 [Gitee 发行版](https://gitee.com/clicgger/dsh-piggy/releases)。Linux 和 macOS 安装包只在 GitHub 提供。
+从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版，或从 [Gitee 最新预览版](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.2)下载 RC。Linux 和 macOS 安装包只在 GitHub 提供。
 
 | 系统 | 下载文件 |
 |---|---|
