@@ -24,7 +24,7 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者确认后按版本发布（可信发布工作流或本机手动发布）；如果默认源尚未同步，以发布页上的版本为准。
 
-预览版 **0.37.2-rc.3 / 外壳 0.6.8-rc.2**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)。包含透明舞台整合、外观边界修复和更新页版本选择。测试版需手动查看，不主动提示更新；验证范围见发布说明。
+预览版 **0.37.2-rc.3 / 外壳 0.6.8-rc.2**：[夸克国内 Windows 完整版](https://pan.quark.cn/s/62eefaa3c173)、[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)。夸克提供安装版、便携版、可选玩法扩展和下载说明，Windows 包已包含游戏。包含透明舞台整合、外观边界修复和更新页版本选择。测试版需手动查看，不主动提示更新；验证范围见发布说明。
 
 Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。本轮 RC2 的 Windows 安装器、更新清单和游戏包已归档到下方夸克旧版归档。
 

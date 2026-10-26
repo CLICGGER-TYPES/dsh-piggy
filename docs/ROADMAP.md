@@ -13,6 +13,8 @@
 - 本轮自建Windows克隆及其磁盘/NVRAM/TPM、Linux私有应用和临时文件已清理；原Windows保持关闭、原Linux保持运行。用户本地试用实例按其要求启动了上次同步版本，未自动替换为RC3。
 - 完整证据：`/zyx/agents/codex/deliverables/piggy-work/rc3-20261026/QA.md`、`github-digests-final.json`、`npm-published-verified.json`、`gitee-published.json`、`gitee-cleanup-verified.json`及两份cleanup.json。
 
+- 补充：RC3 已同步[夸克预发布 Windows 完整版](https://pan.quark.cn/s/62eefaa3c173)，共10文件，远端名称/大小与8个官方附件校验值已核对。另以独立 DSH_HOME 直接安装公开 npm 精确版本，在 Linux VM 真实 DSH 0.2.1-rc.2 中完成激活、背包喂食、带回复台词接话、浏览器刷新和宿主重启；口头禅旧默认迁移与物品消耗保留通过，浏览器 pageerror 0。回复前置条件为私有存档饱食90与台词历史，随后喂食和回复均用原生鼠标，不伪造响应。证据 `deliverables/piggy-work/dsh-public-rc3-20261026/`。
+
 ## 2026-10-26 Gitee 同步 rc.2
 
 - 用户要求同步 `v0.37.2-rc.2`；原 Gitee CI 缺桌面测试依赖，工作流修复 `dfc0135` 已进入 main，原标签不移动。
