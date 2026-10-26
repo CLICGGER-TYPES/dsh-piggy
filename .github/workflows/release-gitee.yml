@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: '要发到 Gitee 的版本标签（如 v0.31.0）；代码用你选的分支，package.json 版本要和它一致'
+        description: '要构建的已有版本标签（如 v0.37.2-rc.2）；始终从该标签取源码，不移动标签'
         required: true
 
 permissions:
@@ -42,6 +42,8 @@ jobs:
         with: { node-version: 22 }
       - name: 版本号要和标签一致
         run: test "v$(node -p "require('./package.json').version")" = "$TAG"
+      - name: 安装桌面测试依赖（纯Node接线测试会导入桌面模块）
+        run: npm ci --prefix apps/desktop --no-audit --no-fund
       - name: 测试（默认渠道，和 GitHub 发版同一套）
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43

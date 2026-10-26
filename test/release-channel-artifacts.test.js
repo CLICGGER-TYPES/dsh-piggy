@@ -26,6 +26,15 @@ function makeDist(dir, names) {
   for (const name of names) writeFileSync(join(dir, 'dist', name), 'metadata')
 }
 
+test('both release game jobs install desktop dependencies before running root tests', () => {
+  for (const workflow of [releaseWorkflow, giteeWorkflow]) {
+    const gameJob = workflow.split('\n  desktop:')[0]
+    const install = gameJob.indexOf('npm ci --prefix apps/desktop --no-audit --no-fund')
+    const tests = gameJob.indexOf('npm test')
+    assert.ok(install >= 0 && tests > install, 'desktop imports must resolve before root tests')
+  }
+})
+
 function selectionScript(workflow, tagVariable, globLinePattern, label) {
   const initial = line(workflow, /^\s*update_channel=latest$/, `${label} channel default`)
   const derive = label === 'GitHub' ? (workflow.split('\n').find(value => /^\s*if \[\[.* =~ .*update_channel=/.test(value)) || '').trim() : line(workflow, new RegExp(`^\\s*if \\\[\\\[ "\\$${tagVariable}" =~ `), `${label} channel derivation`)
