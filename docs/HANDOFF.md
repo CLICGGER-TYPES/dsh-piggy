@@ -1,4 +1,6 @@
-# dsh-piggy 维护交接文档（2026-10-21 更新，游戏 0.37.1 / 外壳 0.6.7）
+# dsh-piggy 维护交接文档（2026-10-26 更新，候选 0.37.2-rc.3 / 外壳 0.6.8-rc.2，稳定版仍 0.37.1 / 0.6.7）
+
+2026-10-26 0.37.2-rc.3 / 外壳 0.6.8-rc.2 **候选已就绪，未发布**：根工作树 `worktrees/qa-appearance-20261026` 已集成 PR15 候选 `5a941eb` 与 main `eb87c3f`，全量 2027 项中 2015 通过、0 失败、12 平台跳过，`npm run build` 与 `typecheck` 通过。外观四份修复（装扮随比例缩放与翻面不跳边、放大后帽子被 Linux 原生形状裁掉、自定义非方形 PNG 取景与桌面/舞台 shape）、更新页测试版入口与按 npm 精确版本安装、贴心口头禅「懂吗」→「有我呢」（旧默认随加载替换）均已进源码。DSH 在 Linux 虚拟机浏览器用真实鼠标走通孵化/菜单/设置/更新/RC 展开/rc.2 npm 200 安装命令/0.37.1 npm 404 提示。**Linux 最终候选仍需原生复验；Windows 验收中，用户原始 500% 自动消失与双击无响应本轮未复现，不宣称根因已修；macOS 无原生验收。** README 三张预览图已标为 RC1 历史实拍，rc.3 新截图待补。未提交、未构建安装包、未发布；证据 `/zyx/agents/codex/deliverables/piggy-work/rc3-20261026/`（`full-test-final.log`、四份 report、`archive-rc2/report.md`）。
 
 2026-10-25 礼包侧边方案已获用户确认并实装：讲话时待领礼包向工作区内侧摆放，讲话结束回头顶；跨到期按住仅固定按钮至点击后，不延长讲话。修前原生跨到期0领取、按钮提前上移约62px；修后Linux split/stage、100%/200%共5个场景均单次领取、0 touch/pet、猪脚底不动；Windows125%按住跨到期领取并消失通过。1755项及类型检查通过。本地已备份同档同步，仍split、菜园4.1.5，PID711908；仅CLI文件/启动日志核对物理预览，未做物理GUI/CDP验收。未公开发布。
 
@@ -29,6 +31,8 @@
 ### 最新发布状态（2026-10-26）
 
 游戏 `0.37.2-rc.2` 已在 GitHub/npm rc 发布，本轮同步 [Gitee RC](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.2)；外壳 `0.6.8-rc.1`，存档 v15。Gitee 受附件配额限制，用户授权仅保留最新 Windows 安装器；旧游戏包及在线扩展保留，清理前有完整备份。1889 项 CI 测试和渠道扫描通过；本轮未新增原生 Windows 安装验收。实际发布/清理凭据及后续工作见 [ROADMAP](ROADMAP.md)。下面版本条目为历史记录。
+
+**下一版（未发布）**：`0.37.2-rc.3` / 外壳 `0.6.8-rc.2` 候选见本页顶部与 ROADMAP 顶部；文档已按候选实况更新，安装包、渠道和 npm 均未动。
 
 Gitee rc.2 五个发布附件已从公开地址下载校验，15 个旧安装器/清单已清理。[夸克国内旧版归档](https://pan.quark.cn/s/a4484e98dec8)包含 13 个版本、68 个文件，逐目录核对通过；位于 `piggy/历史版本/国内旧版归档-20261026`。旧瘦安装器首次启动仍需对应 Gitee 游戏包，因此这类依赖和在线扩展未删除。
 
@@ -127,7 +131,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 ### 4.2 存档
 
-- 当前 `STATE_VERSION = 14`（`packages/pet-core/src/core/constants.js`）。改存档结构：`core/upgrades.js` 表尾加一级 + 版本 +1 + 迁移测试。**不要随便升版本**；只是加字段就用 `ensureXxx(state)` 补默认值。
+- 当前 `STATE_VERSION = 15`（`packages/pet-core/src/core/constants.js`）。改存档结构：`core/upgrades.js` 表尾加一级 + 版本 +1 + 迁移测试。**不要随便升版本**；只是加字段就用 `ensureXxx(state)` 补默认值。
 - 写文件原子化（`store/state-file.js`）：临时文件 → fsync → rename。旧档要能自动迁移，不丢数据。
 - 时间推进是分段结算（离线一段时间后打开会按段补算）。
 
@@ -143,7 +147,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 ### 4.4 桌面版：外壳和游戏包分开
 
-- **外壳**（`apps/desktop/`，当前稳定版 **0.6.6**）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
+- **外壳**（`apps/desktop/`，当前稳定版 **0.6.7**，本轮候选 0.6.8-rc.2）：两个窗口（猪 / 面板）、托盘、更新器。改了 `main.js` / `preload.cjs` / `lib/` / `renderer/` 才需要升外壳版本，用户要重装或外壳自更新。结构和全部 IPC 见 [桌面架构](guides/desktop-architecture.md)。
 - **游戏包**（= 插件那份代码，`apps/desktop/scripts/pack-game.mjs` 复制、`release-game.mjs` 打成 `game-<版本>.json.gz` + manifest）：在「设置 → 更新」里直接下载切换、可回退，不用重装。
 - 窗口摆放、可点区域、桌面样式都放在游戏包里（`src/client/desktop/`），所以这类修复走游戏包更新就到。
 - 详见 [更新机制](guides/updates.md)、[桌面版指南](guides/desktop.md)、`docs/DEVELOPMENT.md`「桌面程序和游戏包怎么分工」。

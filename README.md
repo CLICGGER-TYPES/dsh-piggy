@@ -22,11 +22,13 @@
 - [GitHub 稳定版 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
 - [夸克网盘：Windows 国内渠道](https://pan.quark.cn/s/2c571e9aaecc)
 
-夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者手动发布；如果默认源尚未同步，以发布页上的版本为准。
+夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者确认后按版本发布（可信发布工作流或本机手动发布）；如果默认源尚未同步，以发布页上的版本为准。
 
-预览版下载：[GitHub 0.37.2-rc.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2)、[Gitee 0.37.2-rc.2](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.2)。修复DSH网页版激活失败；本轮安装包构建与验收范围见发布页。Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。
+预览版下载：0.37.2-rc.3 / 外壳 0.6.8-rc.2（候选已就绪，**待最终验证后发布**，下列链接在发布后才生效）：[GitHub v0.37.2-rc.3](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee v0.37.2-rc.3](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)。这一版是舞台整合、外观边界与更新页版本选择的候选，Linux 原生复验和 Windows 验收仍在进行；结论出来前不要把它当成已发布版本，具体范围以发布页说明为准。上一版 0.37.2-rc.2 的说明仍在其发布页。
 
-[国内旧版归档（夸克）](https://pan.quark.cn/s/a4484e98dec8)：按版本保存旧国内渠道安装器、游戏包和校验清单。含 13 个版本的现存文件，其中 5 个版本有 Windows 安装器；更早安装器已不存在的版本仅归档游戏包。旧 Gitee 安装器首次启动依赖的游戏包继续保留在 Gitee，避免历史安装器无法启动。
+Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。本轮 RC2 的 Windows 安装器、更新清单和游戏包已归档到下方夸克旧版归档。
+
+[国内旧版归档（夸克）](https://pan.quark.cn/s/a4484e98dec8)：按版本保存旧国内渠道安装器、游戏包和校验清单。加入 RC2 后共 14 个版本，其中 6 个版本有完整 Windows 双包（`setup.exe` + `portable.exe`），8 个更早版本只剩游戏包。旧 Gitee 安装器首次启动依赖的游戏包继续保留在 Gitee，避免历史安装器无法启动。
 
 ### DSH 插件
 
@@ -34,13 +36,21 @@
 dsh plugin --profile web add dsh-piggy
 ```
 
+不带版本号装的是 npm 上的 `latest`，也就是当前正式版；要装某一版预览版，用完整版本号（下例是本次候选，须先确认该版本已经在 npm 上）：
+
+```sh
+dsh plugin --profile web add dsh-piggy@0.37.2-rc.3
+```
+
+发布页上的标签和 npm 上的包不是同一份清单，npm 由维护者按版本发布，两者可能相差一段时间。DSH 插件也不会自动跟 npm `latest` 升级，没有后台更新：装哪一版、什么时候换，都由你在自己的 DSH 里执行命令决定（游戏里的更新页只给命令和发布页入口，不替你执行）。
+
 安装后重启 DSH，再刷新页面。如果社区目录按 `dsh-plugin-*` 搜索，也可安装 [`dsh-plugin-piggy`](https://www.npmjs.com/package/dsh-plugin-piggy)；它加载同一个游戏，每个 profile 只需装其中一个。
 
 使用本地源码时，克隆本仓库后运行 `dsh plugin --profile web add /path/to/dsh-piggy`。
 
 ### 桌面版
 
-从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版，或从 [Gitee 最新预览版](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.2)下载 RC。Linux 和 macOS 安装包只在 GitHub 提供。
+从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版，或从 [Gitee 最新预览版](https://gitee.com/clicgger/dsh-piggy/releases)下载 RC（当前仍是 v0.37.2-rc.2，v0.37.2-rc.3 在最终验证发布后同步）。Linux 和 macOS 安装包只在 GitHub 提供。
 
 | 系统 | 下载文件 |
 |---|---|
@@ -52,18 +62,18 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 ## 精选界面预览
 
-以下三张为 0.37.2-rc.1 在 Linux 测试虚拟机中的实拍，用于展示预览版界面；不能当作稳定版截图。稳定版界面仍以 0.37.1 为准。拍摄条件与校验值见[截图记录](docs/screenshots/readme-current-capture.md)。
+主菜单为 **0.37.2-rc.3 本轮实拍**，两张菜园图为 **0.37.2-rc.1 历史实拍**；均来自 Linux 测试虚拟机中的真实界面。稳定版界面仍以 0.37.1 为准。拍摄条件与校验值见[截图记录](docs/screenshots/readme-current-capture.md)。
 
 <p align="center">
-  <img src="docs/screenshots/readme-current-farm-big.png" width="900" alt="当前开发候选：大农场、地块和底部工具栏">
+  <img src="docs/screenshots/readme-current-farm-big.png" width="900" alt="0.37.2-rc.1 历史实拍：大农场、地块和底部工具栏">
 </p>
 
 <p align="center">大农场：18 块地、顶部状态和下方工具区</p>
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/readme-current-home.png" width="290" alt="当前开发候选：小猪旁的 App 主菜单"><br>主菜单</td>
-    <td align="center"><img src="docs/screenshots/readme-current-farm-small.png" width="290" alt="当前开发候选：面板中的小农场与照料工具"><br>小农场</td>
+    <td align="center"><img src="docs/screenshots/readme-rc3-home.png" width="290" alt="0.37.2-rc.3：小猪 App 主菜单"><br>主菜单</td>
+    <td align="center"><img src="docs/screenshots/readme-current-farm-small.png" width="290" alt="0.37.2-rc.1 历史实拍：面板中的小农场与照料工具"><br>小农场</td>
   </tr>
 </table>
 
@@ -98,7 +108,9 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 ### 更新
 
-游戏包和桌面外壳分开更新：「设置 → 更新」会分别显示两个版本。Windows 安装版和 Linux AppImage 支持在 App 内下载并重启安装外壳；Windows 便携版及未签名 macOS 版需到发布页手动替换。旧外壳会保留自带游戏，并提示先升级桌面程序。详见[更新说明](docs/guides/updates.md)。
+游戏包和桌面外壳分开更新：「设置 → 更新」会分别显示两个版本。Windows 安装版和 Linux AppImage 支持在 App 内下载并重启安装外壳；Windows 便携版及未签名 macOS 版需到发布页手动替换。旧外壳会保留自带游戏，并提示先升级桌面程序。
+
+预览版（RC）只出现在版本列表里，默认折叠，不弹气泡、不亮红点，也不进入「更新到最新」；想试就自己点开安装，不点不会动。只换游戏包不会带上窗口功能，预览版条目会同时给出配套外壳版本和手动下载入口。详见[更新说明](docs/guides/updates.md)。
 
 ### 存档
 
@@ -126,7 +138,24 @@ npm run typecheck
 源码候选的改动和验收边界记在 [CHANGELOG](CHANGELOG.md) 的候选小节与 [ROADMAP](docs/ROADMAP.md)；候选不等于已发布功能。
 
 <details>
-<summary><strong>0.37.2-rc.1 预览版（外壳 0.6.8-rc.1）</strong></summary>
+<summary><strong>0.37.2-rc.3 预览候选（外壳 0.6.8-rc.2）</strong></summary>
+
+候选已就绪，尚未发布：Linux 原生复验和 Windows 验收仍在进行，最终结论以发布页和 [ROADMAP](docs/ROADMAP.md) 为准。
+
+- 贴心性格的默认口头禅改为「有我呢」；旧存档里仍是旧默认「懂吗」的会随加载替换，其他自定义口头禅保留。
+- 帽子、披风随本机小猪显示比例一起缩放，翻面时跟随小猪朝向；Linux 放大后不再裁掉帽子上沿。
+- 桌面与 DSH 更新页都能主动查看测试版：测试版只在版本列表里，默认折叠，不进入「更新到最新」、不亮红点、不弹气泡。不同游戏的测试版详情会给出配套外壳，避免只换游戏包却拿不到窗口功能。
+- DSH 更新页增加按版本查看与安装指引：选中某一版时才去 npm 核对这一版在不在，在才给 `dsh plugin --profile web add dsh-piggy@<版本>`；不在或问不到会分别说明，不显示装不上的命令。切换旧版先提示导出存档，页面不自动改写插件文件。
+- 自定义非方形 PNG 按等比显示，取景、摸摸接触点和桌面绘制边界共用同一份可见范围；同名皮肤重新导入后即时换图。
+- 修复大尺寸小猪展开菜单时仍用固定场景高度、遮住菜单按钮；小尺寸的既有布局保留。补齐 Linux 洗澡、摇头、伸展等动作的绘制范围，放大后边缘不再被窗口形状切掉。
+- 外壳把静态资源、日志、偏好、备份和导出改为异步读写，退出前完成已开始的写入；Windows 全屏探测和游戏更新转移到后台线程，更新准备可单独取消。
+- 桌面默认仍是双窗口；整屏透明舞台继续由启动参数 `--window-mode=stage` 选择（`--window-mode=split` 可显式回退）。
+- 边界：Windows 用户反馈的 500% 缩放下自动消失、双击无响应仍未复现、未定位，恢复小猪入口不是根因修复；macOS 本轮没有原生验收。此版本仍为预览候选，不能当成稳定版功能。
+
+</details>
+
+<details>
+<summary><strong>0.37.2-rc.1 预览版（外壳 0.6.8-rc.1，历史）</strong></summary>
 
 - 桌面可选整屏透明舞台：保留双窗口为默认，已完成本轮 Windows/Linux 虚拟机回归，尚未切换默认。
 - 菜园 4.1.5 候选：清爽平涂纸感重排、缩小底部图文入口、选地改为四角标记；随本次 RC 提供。

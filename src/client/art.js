@@ -8,7 +8,8 @@
 import { pigActionArt } from './pig-actions.js'
 import { artSource, hasBuiltinArt } from './art-path.js'
 import { feedbackArtFor } from './feedback-art.js'
-import { applyFrame, builtinFrame, FRAME_HEIGHT } from './art-framing.js'
+import { applyFrame, builtinFrame } from './art-framing.js'
+import { customArtInk, measureCustomArt, frameFromInk, onCustomArtChange } from './custom-art.js'
 
 var REACTION_ART = { feed: 'eat', bathe: 'bathe', play: 'play', pet: 'pet', cure: 'relaxed', levelup: 'relaxed' }
 var ACTIVITY_ART = { work: 'work', study: 'study', interest: 'study', trip: 'trip', fishing: 'fish' }
@@ -22,6 +23,8 @@ var SLEEP_ART = new Set([
 const CUSTOM_FRAME_CACHE = new Map()
 const CUSTOM_FRAME_PENDING = new WeakMap()
 const ART_SELECTION = new WeakMap()
+// 同一个 key 重新导入（custom-art 的版本 +1）后，旧地址的取景全部作废，下一帧按新图重新量。
+onCustomArtChange(() => { CUSTOM_FRAME_CACHE.clear() })
 
 /**
  * Imported PNG or legacy SVG skins are measured once after loading.
@@ -50,31 +53,14 @@ export function frameCustomImage(image, src, sleep = false, onFrame = null) {
   function measure() {
     CUSTOM_FRAME_PENDING.delete(image)
     if (image.getAttribute('src') !== src) return
-    try {
-      const canvas = document.createElement('canvas')
-      canvas.height = 128
-      canvas.width = sleep ? Math.round(128 * 1.2) : 128
-      const context = canvas.getContext?.('2d', { willReadFrequently: true })
-      if (!context) return
-      const fit = Math.min(canvas.width / image.naturalWidth, canvas.height / (image.naturalHeight || image.naturalWidth))
-      const width = image.naturalWidth * fit, height = (image.naturalHeight || image.naturalWidth) * fit
-      context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height)
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-      let left = canvas.width, top = canvas.height, right = 0, bottom = 0
-      for (let y = 0; y < canvas.height; y += 1) for (let x = 0; x < canvas.width; x += 1) {
-        if (pixels[(y * canvas.width + x) * 4 + 3] <= 16) continue
-        left = Math.min(left, x); top = Math.min(top, y)
-        right = Math.max(right, x + 1); bottom = Math.max(bottom, y + 1)
-      }
-      if (right <= left || bottom <= top) return
-      const zoom = FRAME_HEIGHT / ((bottom - top) / canvas.height)
-      const frame = [zoom,
-        (0.5 - (left + right) / (2 * canvas.width)) * zoom * 100,
-        (0.5 - (top + bottom) / (2 * canvas.height)) * zoom * 100]
-      CUSTOM_FRAME_CACHE.set(src, frame)
-      applyFrame(image, frame)
-      if (done !== null) done(frame)
-    } catch { /* A browser that cannot read this image keeps the standard frame. */ }
+    // 和 object-fit:contain 显示同一算则；读不到像素的浏览器保留标准取景。
+    // 量到的 ink 由 custom-art 统一缓存，桌面 shape / 舞台可见范围 / 摸摸手读同一份。
+    const ink = customArtInk(src) ?? measureCustomArt(image, src, sleep)
+    const frame = ink === null ? null : frameFromInk(ink)
+    if (frame === null) return
+    CUSTOM_FRAME_CACHE.set(src, frame)
+    applyFrame(image, frame)
+    if (done !== null) done(frame)
   }
   if (image.complete && image.naturalWidth > 0) measure()
   else image.addEventListener?.('load', measure, { once: true })

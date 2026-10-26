@@ -63,7 +63,7 @@ jobs:
           ### 下载（Gitee 版：检查更新、游戏包、在线扩展都走 Gitee）
           - **Windows**：`dsh-piggy-setup-*.exe`（安装版）或 `dsh-piggy-portable-*.exe`（免安装）；第一次打开会从 Gitee 下载游戏
           - **Linux / macOS**：到 [GitHub 发布页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest) 下载
-          - 已装 Gitee 版桌面程序的：主屏「🔄 更新」直接从 Gitee 升级游戏
+          - 已装 Gitee 版桌面程序的：「设置 → 更新」直接从 Gitee 升级游戏
           NOTES
       - name: 保存游戏包和发布说明（本机推 Gitee 时用）
         uses: actions/upload-artifact@v4

@@ -61,3 +61,18 @@ test('性格改变不改已显示对话/回复；回复仍只奖励一次',()=>{
  assert.equal(s.happiness,50+REPLY_HAPPINESS)
  assert.equal(replyToLine(s,message.id,0).ok,false)
 })
+
+test('贴心使用温和口头禅；旧默认随迁移替换，保留其他自定义内容',()=>{
+ const p=PERSONALITIES.find(p=>p.key==='sisterly')
+ assert.equal(p.catchphrase,'有我呢')
+ const old=make('sisterly');old.catchphrase='懂吗'
+ const copy=migrate(JSON.parse(JSON.stringify(old)),now)
+ assert.equal(copy.catchphrase,'有我呢')
+ assert.equal(migrate(copy,now).catchphrase,'有我呢')
+ for(const [personality,text] of [['sisterly','陪着你呀'],['normal','懂吗']]){
+  const custom=make(personality);custom.catchphrase=text
+  assert.equal(migrate(custom,now).catchphrase,text)
+ }
+ const fresh=make('normal');fresh.catchphrase=PERSONALITIES.find(p=>p.key==='normal').catchphrase;editProfile(fresh,{personality:'sisterly'})
+ assert.equal(fresh.catchphrase,'有我呢')
+})

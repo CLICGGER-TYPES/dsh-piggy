@@ -9,8 +9,9 @@
  * 量框一律用布局盒（offsetLeft/offsetTop 累加），不用 getBoundingClientRect：呼吸、浮动动画只改
  * transform，rect 每帧都在抖。
  */
-import { PAD, STEP } from './geometry.js'
+import { centeredBox, PAD, STEP } from './geometry.js'
 import { ART_BOUNDS, artMarginFor } from '../art-framing.js'
+import { customArtVisibleBox } from '../custom-art.js'
 import { fixedMotionReserve, motionEnvelope, PIG_TRANSFORM_ORIGIN } from './motion-envelope.js'
 import { bodyVisualBounds } from './visual-bounds.js'
 import { fitBubbleHorizontally, fitBubbleVertically } from './bubble-geometry.js'
@@ -19,7 +20,10 @@ import { bubbleSlot, characterGeometry, framedArtBox } from '../character-geomet
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
   if (!node.matches?.('.dp-pig-img,.dp-pig-sleep')) return box
-  const path = (node.getAttribute('src') || '').split('/art/')[1]
+  // 自定义立绘：和显示同一份已量 ink + 取景（见 custom-art.js）；还没量到的图保持方形。
+  const custom = customArtVisibleBox(node, box)
+  if (custom !== null) return custom
+  const path = (node.getAttribute('src') || '').split('/art/')[1]?.split('?')[0]
   const bounds = ART_BOUNDS[path]
   if (!bounds) return box
   // 取景换算在 character-geometry.js：立绘可见范围、接触锚点、气泡尾巴共用同一份映射。
@@ -36,7 +40,9 @@ export function framedBox(node, box) {
 const BUBBLE_ZONE = { width: 272, height: 104 }
 /** 面板打开时，气泡在折叠场景左侧：180px 最大宽 + 两侧各 6px 的场景/间距。 */
 const OPEN_BUBBLE_LEFT = 180 + 6 + 6
-/** 可点区域四周放宽几像素：礼包浮动、猪摇摆会越出布局盒一点。 */
+/** 可点区域四周放宽几像素：礼包浮动、猪摇摆会越出布局盒一点；点位里的 emoji 墨迹
+ * 也会越过 line-height:1 的行盒（自带字体量到最多 0.0688em，500% 的帽子是 5.2px），
+ * 同样由这几像素吸收。 */
 const SHAPE_SLACK = 6
 /** 内容永远钉在窗口右下角（猪窗口里没有面板，不用挑边）。 */
 const SIDE = Object.freeze({ vertical: 'bottom', horizontal: 'right' })
@@ -52,6 +58,17 @@ export function layoutBox(node) {
     walk = walk.offsetParent
   }
   return { x, y, width: node.offsetWidth || 0, height: node.offsetHeight || 0 }
+}
+
+/**
+ * 节点的稳定绘制盒：装扮点位（`.dp-slot`）自己用 `translate(-50%,-50%)` 居中在锚点上，
+ * 布局盒要按那个已知的 translate 折算（见 geometry.js 的 centeredBox），否则 500% 时
+ * 帽子上沿会落在原生 shape 之外被裁。其它节点照旧用布局盒。
+ * @param {any} node
+ */
+function stableBox(node) {
+  const box = layoutBox(node)
+  return node.matches?.('.dp-slot') === true ? centeredBox(box) : box
 }
 
 /** @param {any} node */
@@ -95,7 +112,7 @@ export function createMeasure(env) {
     for (const node of nodes) {
       if (node.closest('[hidden]') !== null || !visible(node)) continue
       const bubble = node.closest('.dp-bubble')
-      const box = framedBox(node, layoutBox(node))
+      const box = framedBox(node, stableBox(node))
       if (box.width < 1 || box.height < 1) continue
       const rect = { x: box.x, y: box.y, r: box.x + box.width, b: box.y + box.height }
       if (pigNode !== null && (node === pigNode || node.closest('.dp-pig') === pigNode)) {

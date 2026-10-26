@@ -36,6 +36,8 @@ export function ensureProfile(state) {
     return
   }
   const personality = personalityByKey(state.personality)
+  // Replace the retired default in existing saves; keep other custom phrases.
+  if (state.personality === 'sisterly' && state.catchphrase === '懂吗') state.catchphrase = personality.catchphrase
   if (typeof state.catchphrase !== 'string' || state.catchphrase.trim() === '') state.catchphrase = personality?.catchphrase ?? ''
   if (typeof state.motto !== 'string' || state.motto.trim() === '') state.motto = personality?.motto ?? ''
 }

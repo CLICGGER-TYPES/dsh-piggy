@@ -10,7 +10,7 @@ import { autoCollapseEnabled, setAutoCollapse } from '../auto-collapse.js'
 import { desktopShell } from '../desktop-shell.js'
 import { stageShell } from '../stage-shell.js'
 import { emojiStyle, hasBundledEmoji, setEmojiStyle, applyEmojiStyle } from '../emoji-style.js'
-import { displayedPigSize, pigSize, setPigSize } from '../pig-size.js'
+import { pigSize, setPigSize, syncPigSize } from '../pig-size.js'
 import { applyBubbleSize, setBubbleSize } from '../bubble-size.js'
 import { setWalk, walkEnabled } from '../life.js'
 import { exportLogs } from '../log-export.js'
@@ -86,7 +86,7 @@ export function renderSettingsTab(ui) {
     const scale = Math.min(value / 100, available / (stageSize * 2))
     setPigSize(scale)
     percent.value = String(Math.round(scale * 100))
-    ui.host.style.setProperty('--pig-size', displayedPigSize(stageSize) + 'px')
+    syncPigSize(ui.host, stageSize)
     ui.fitPanel()
     syncGeometry()
   }

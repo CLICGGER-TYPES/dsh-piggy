@@ -1,14 +1,16 @@
 // @ts-check
 /**
- * 更新 App：桌面版可以下载、换版本和回滚；DSH 插件只提示 GitHub 新版本。
+ * 更新 App：桌面版可以下载、换版本和回滚；DSH 插件只提醒正式版。
  *
  * 版本列表一格一个方块，点一个下面出详情卡（更新说明、能不能换、按钮）。
  * 读写都经过桌面版的 window.piggyShell.updates，不走游戏的路由。
+ * DSH 插件的版本列表在 update-versions.js。
  * @module dsh-piggy/client/tabs/update
  */
 
 import { button, el } from '../dom.js'
 import { compareVersions } from '../update-notice.js'
+import { renderDshUpdate } from './update-versions.js'
 
 /** One panel per page, so the update state can live here. */
 /** @type {any} */
@@ -126,6 +128,9 @@ export function renderUpdateTab(ui) {
     : '游戏 v' + cur.version + (cur.bundled ? '（安装包自带）' : '')))
   head.appendChild(top)
   if (cur !== null) head.appendChild(el('div', 'dp-dim', '桌面外壳 v' + cur.shell + ' · 游戏玩法和窗口功能分别更新'))
+  // 测试版只在列表里：先在这里说一句，找起来不用猜（用户 2026-10-26：RC 要清楚可发现）。
+  var previewCount = state.list === null ? 0 : state.list.filter(function (r) { return r.prerelease }).length
+  if (previewCount > 0) head.appendChild(el('div', 'dp-dim', '列表里还有 ' + previewCount + ' 个测试版：不会提醒，想试的话在下面点开手动安装。'))
   if (state.message !== null) head.appendChild(el('div', 'dp-req', state.message))
   // 刷新：重新问一遍 GitHub 和本机现在的版本（以前没有入口，出错时只能重开面板）。
   var again = button('dp-mini dp-update-refresh', { 'data-update-refresh': '' }, function () {
@@ -203,47 +208,6 @@ export function renderUpdateTab(ui) {
   }
 }
 
-/** DSH cannot replace plugin files safely; it only points to the new release. */
-function renderDshUpdate(ui) {
-  var notice = ui.updateNotice
-  var head = el('div', 'dp-pick dp-tile-card dp-update-now')
-  head.appendChild(el('div', 'dp-pick-head', '现在 v' + (ui.view.version || '未知')))
-  head.appendChild(el('div', 'dp-dim', 'DSH 插件只提醒新版本，不会自动改动本地文件。'))
-  ui.content.appendChild(head)
-  if (notice === null || notice === undefined) return
-  if (!notice.checked && !notice.checking && notice.error === null) notice.check()
-  if (notice.checking) {
-    ui.content.appendChild(el('div', 'dp-empty', '正在问 GitHub…'))
-    return
-  }
-  if (notice.error !== null) {
-    ui.content.appendChild(el('div', 'dp-empty', notice.error))
-    var retry = button('dp-btn dp-btn-wide', { 'data-update-retry': '' }, function () { notice.check() })
-    retry.textContent = '再试一次'
-    ui.content.appendChild(retry)
-    return
-  }
-  var release = notice.remote
-  if (release === null) return
-  if (notice.latest === null) {
-    ui.content.appendChild(el('div', 'dp-req dp-req-ok', '✓ 已经是最新'))
-    return
-  }
-  var box = el('div', 'dp-pick dp-tile-card dp-update-detail')
-  box.appendChild(el('div', 'dp-pick-head', '发现新版本 v' + release.version))
-  if (release.notes) {
-    var notes = el('div', 'dp-update-notes', release.notes)
-    notes.setAttribute('data-scroll-key', 'update-notes:' + release.version)
-    box.appendChild(notes)
-  }
-  var go = button('dp-btn dp-btn-wide', { 'data-update-page': release.version }, function () {
-    window.open(release.page, '_blank', 'noopener')
-  })
-  go.textContent = '打开发布页'
-  box.appendChild(go)
-  ui.content.appendChild(box)
-}
-
 /** 测试版归到它对应的正式版下面：0.28.0-rc.2 → 0.28.0。 */
 function baseOf(version) {
   return String(version).split('-')[0]
@@ -285,13 +249,18 @@ function renderGroup(ui, group, newestStable) {
   var current = (group.stable !== null && group.stable.current) || group.previews.some(function (r) { return r.current })
   if (current) tags.appendChild(tag('current', '在用'))
   if (group.stable !== null && newestStable !== null && group.stable.version === newestStable.version) tags.appendChild(tag('latest', '最新'))
+  if (group.previews.length > 0) tags.appendChild(tag('preview', '测试版 ' + group.previews.length))
   if (group.stable !== null && group.stable.blocked !== null) tags.appendChild(tag('blocked', '🔒'))
   row.appendChild(tags)
   box.appendChild(row)
   if (open) {
     var body = el('div', 'dp-rel-body')
     if (group.stable !== null) body.appendChild(details(ui, group.stable))
-    if (group.previews.length > 0) {
+    if (group.previews.length > 0 && group.stable === null) {
+      // 只有测试版的组：点开这一组就直接列出测试版，不再多一层折叠。
+      body.appendChild(el('div', 'dp-dim', '这组还没有正式版；测试版不会提醒，只列在这里。'))
+      for (var q = 0; q < group.previews.length; q += 1) body.appendChild(previewRow(ui, group.previews[q]))
+    } else if (group.previews.length > 0) {
       var pre = el('div', 'dp-rel-pre')
       var showing = state.previews === key
       var toggle = button('dp-mini dp-mini-plain', { 'data-previews': key }, function () { state.previews = showing ? null : key; ui.renderContent() })
@@ -315,6 +284,7 @@ function tag(kind, text) {
 
 /** 一个测试版：版本、日期、手动安装按钮（不推荐，所以只是一个小按钮）。 */
 function previewRow(ui, release) {
+  var box = el('div', 'dp-rel-pre')
   var row = el('div', 'dp-rel-pre-row')
   row.appendChild(el('span', null, 'v' + release.version + (release.date ? ' · ' + release.date : '')))
   var go = button('dp-mini', { 'data-update-install': release.version }, function () {
@@ -324,7 +294,15 @@ function previewRow(ui, release) {
   go.textContent = release.current ? '正在用' : release.blocked === 'shell' ? '需要新外壳' : release.blocked === 'save' ? '换不了' : '安装测试版'
   go.disabled = release.current || release.blocked === 'save' || state.busy !== null
   row.appendChild(go)
-  return row
+  box.appendChild(row)
+  var shell = release.latestShell || (release.manifest && release.manifest.shellVersion)
+  if (shell && state.current && compareVersions(shell, state.current.shell) > 0) {
+    box.appendChild(el('div', 'dp-dim', '配套桌面外壳 v' + shell + '；只换游戏包不会更新窗口功能。'))
+    var desktop = button('dp-mini', { 'data-preview-shell': release.version }, function () { updatesBridge().openPage(release.page) })
+    desktop.textContent = '下载配套桌面版'
+    box.appendChild(desktop)
+  }
+  return box
 }
 
 function details(ui, release) {

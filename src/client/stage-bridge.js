@@ -20,7 +20,7 @@ import { characterGeometry } from './character-geometry.js'
 import { POSITION_KEY } from './constants.js'
 import { nearestArea } from './desktop/geometry.js'
 import { DESKTOP_HOME_KEY, resolveStageHome } from './stage-home.js'
-import { hostInset, layoutBox, pigEnvelope, union } from './stage-dom.js'
+import { hostInset, layoutBox, pigEnvelope, stageDrawingBounds, union } from './stage-dom.js'
 import { readStore, writeStore } from './storage.js'
 import { constrainRectToAreas, desktopPositionForStage, geometryMatchesViewport, positionForScreenFoot, rebaseStageFoot, rescaleGeometryForDpr, STAGE_POSITION_MIGRATION_KEY, stagePanelArea, toPageRect, workAreaForPig } from './stage-position.js'
 import { applyPigFx, forwardPigFx, registerStageShell, unregisterStageShell } from './stage-shell.js'
@@ -370,7 +370,7 @@ export function createStageBridge(deps) {
   setStageAreaProvider(stageBubbleArea)
   const publicApi = {
     setPosition, setOpen, ext: api.ext, syncGeometry: api.syncGeometry, walk: true,
-    drawingBounds: bodyVisualBounds,
+    drawingBounds: box => stageDrawingBounds(box, pig),
     isFlying() { return flying },
   }
   ;/** @type {any} */ (window).piggyStage = publicApi

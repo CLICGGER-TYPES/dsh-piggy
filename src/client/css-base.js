@@ -101,7 +101,7 @@ export const CSS_BASE = [
   '[data-dsh-pig][data-ext-view="big"] .dp-bar,[data-dsh-pig][data-ext-view="big"] .dp-panel-footer{display:none!important}',
 
   /* ---------- the pig: never moved, never boxed ---------- */
-  '.dp-scene{position:relative;height:var(--scene-open);background:none;cursor:grab;',
+  '.dp-scene{position:relative;height:max(var(--scene-open),calc(var(--pig-size) + var(--pig-gap-below)));background:none;cursor:grab;',
   'overflow:visible;display:flex;align-items:flex-end;justify-content:flex-end;',
   'padding:0 6px var(--pig-gap-below);width:max-content}',
   '.dp-scene[data-dragging="true"]{cursor:grabbing}',
@@ -145,6 +145,10 @@ export const CSS_BASE = [
   'transform-origin:50% 85%;will-change:auto}',
   // 翻卡片期间由物理层做镜像；内层 data-walk 的瞬间镜像要关掉，否则翻完会双重镜像。
   '[data-dsh-pig] .dp-pig[data-feel-flip="true"] .dp-pig-img{transform:none!important}',
+  // 装扮跟着立绘走同一条开关：朝右时整件镜像（背点位 14%→86%），翻卡片期间也用物理层的镜像，
+  // 这里像 .dp-pig-img 一样关掉。差一条就会双重镜像，翻面最后一帧背部件再跳回另一侧。
+  '[data-dsh-pig] .dp-pig[data-walk="right"] .dp-dress{transform:scaleX(-1)}',
+  '[data-dsh-pig] .dp-pig[data-feel-flip="true"] .dp-dress{transform:none!important}',
   // 被拎着拖动时暂停待机浮动（反应动画照常演），避免「被拎住还在自己上下飘」。
   '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-pig:not([data-react]){animation-play-state:paused!important}',
   // 摔晕：整图轻摇 + 眩晕符号（符号由 feel 用 burst 冒），不新增立绘。
@@ -191,12 +195,14 @@ export const CSS_BASE = [
   // 装扮点位：猪身上固定的几个锚点，每个点位挂一件。
   // 以后换真立绘时，只改这里的偏移/尺寸，逻辑和存档都不用动。
   '.dp-dress{position:absolute;inset:0;pointer-events:none;z-index:3}',
-  '.dp-slot{position:absolute;line-height:1;font-size:15px;transform:translate(-50%,-50%)}',
+  // 点数位置是盒内百分比，字号只乘本机显示比例（--pig-scale）：100% 时各年龄身体仍是 15px/19px，
+  // 放大到 200%/500% 时帽子和披风跟猪身同比例变大，不会缩成小贴纸。
+  '.dp-slot{position:absolute;line-height:1;font-size:calc(15px * var(--pig-scale,1));transform:translate(-50%,-50%)}',
   '.dp-slot[data-slot="head"]{left:50%;top:2%}',
   '.dp-slot[data-slot="face"]{left:50%;top:32%}',
   '.dp-slot[data-slot="neck"]{left:50%;top:60%}',
-  '.dp-slot[data-slot="body"]{left:50%;top:78%;font-size:19px}',
-  '.dp-slot[data-slot="back"]{left:14%;top:42%;font-size:19px}',
+  '.dp-slot[data-slot="body"]{left:50%;top:78%;font-size:calc(19px * var(--pig-scale,1))}',
+  '.dp-slot[data-slot="back"]{left:14%;top:42%;font-size:calc(19px * var(--pig-scale,1))}',
   '.dp-slot[data-slot="feet"]{left:50%;top:99%}',
   '[data-dsh-pig][data-open="false"] .dp-pig{filter:drop-shadow(0 5px 9px rgba(61,52,40,.26))}',
   '[data-dsh-pig][data-open="false"] .dp-pig[data-feedback="true"]{filter:none}',
@@ -320,7 +326,9 @@ export const CSS_BASE = [
 
   // A drawn sprite is sized by the same variable as the emoji, so growing up
   // works identically either way.
-  '.dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;',
+  // 自定义皮肤允许非正方形图：按 object-fit:contain 等比放进方盒，和量图/摸摸手同一算则。
+  // 内置立绘都是 256 方形，contain 与原来的 fill 逐像素一致。
+  '.dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;object-fit:contain;',
   'scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);',
   '-webkit-user-drag:none;user-select:none}',
   // 反馈立绘在打包前离线处理为透明 PNG。

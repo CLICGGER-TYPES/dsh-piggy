@@ -6,6 +6,7 @@ import { framedPetBounds, petPose } from './pet-snap-geometry.js'
 import { effectiveFeelMode, onFeelModeChange } from './feel/settings.js'
 import { petHandEnabled, onPetHandChange } from './pet-hand-settings.js'
 import { PET_PREVIEW_LEASE_MS, effectiveSkinContact, framedSkinPoint, handScaleRatio, onPetSnapPreview, onSkinContactChange, skinContactShift } from './skin-contact.js'
+import { customArtInk, measureCustomArt } from './custom-art.js'
 
 const players = new WeakMap()
 export const SNAP_FRAME_MS = 60
@@ -36,7 +37,6 @@ export function attachPetSnap(c) {
   let contact = null
   // 换肤页的纯视觉预览：这一次「按着」是预览租约（不在本窗口真实摸猪），到期没续就自己松手。
   let previewHeld = false, previewUntil = 0
-  const boundsCache = new Map()
   let referenceFrames = []
   const now = () => performance.now()
   const allowed = () => !disposed && !document.hidden && !c.isStopped()
@@ -47,21 +47,10 @@ export function attachPetSnap(c) {
     const image = c.pigArt
     const src = image?.getAttribute('src') || ''
     const path = src.slice(ART_URL.length).split('?')[0].replace(/^pigs\/no-outline\//, 'pigs/')
-    let ink = ART_BOUNDS[path] || boundsCache.get(src)
-    if (!ink && image?.complete && image.naturalWidth > 0) {
-      try {
-        const probe = document.createElement('canvas'); probe.width = probe.height = 128
-        const context = probe.getContext('2d', { willReadFrequently: true })
-        context.drawImage(image, 0, 0, 128, 128)
-        const rgba = context.getImageData(0, 0, 128, 128).data
-        let l = 128, t = 128, r = 0, b = 0
-        for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-          if (rgba[(y * 128 + x) * 4 + 3] <= 16) continue
-          l = Math.min(l, x); t = Math.min(t, y); r = Math.max(r, x + 1); b = Math.max(b, y + 1)
-        }
-        if (r > l && b > t) { ink = [l / 128, t / 128, r / 128, b / 128]; boundsCache.set(src, ink) }
-      } catch { /* Unsupported external pixels keep a conservative layout anchor, never replace the skin. */ }
-    }
+    let ink = ART_BOUNDS[path] || customArtInk(src)
+    // 自定义立绘没有内置边界表：读 custom-art 已量好的同一份 ink（不另建缓存），
+    // 未量过时按和显示（object-fit:contain）同一算则量一次。
+    if (!ink && image?.complete && image.naturalWidth > 0) ink = measureCustomArt(image, src)
     const style = image?.style
     return framedPetBounds(ink || [.08, .08, .92, .92],
       Number(style?.getPropertyValue('--art-zoom')) || 1,
@@ -218,7 +207,7 @@ export function attachPetSnap(c) {
     observer.disconnect(); offFeel(); offHand(); offContact(); offPreview()
     media?.removeEventListener?.('change', onState)
     document.removeEventListener('visibilitychange', onState)
-    cancel(); canvas.remove(); boundsCache.clear()
+    cancel(); canvas.remove()
     referenceFrames.forEach(image => image.close()); referenceFrames = []
     players.delete(c.pig)
   } }

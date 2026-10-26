@@ -14,6 +14,7 @@ import { attachPetSnap } from './pet-snap.js'
 import { canPlayPetSnap } from './pet-snap-geometry.js'
 import { attachPigActions } from './pig-actions.js'
 import { syncPigArt } from './art.js'
+import { onCustomArtChange } from './custom-art.js'
 
 var TIME_TALK_MS = 5 * 60_000
 var WALK_KEY = 'dsh-piggy:walk'
@@ -55,6 +56,8 @@ export function attachLife(c) {
     cancelMicro: () => actions.cancel(), render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
   var timers = []
   var idleTimer = null
+  // 桌面版拆窗口时，导入皮肤的窗口写本机版本、猪窗口靠 storage 事件立刻换图/重量取景。
+  var offCustomArt = onCustomArtChange(function () { syncPigArt(c.pig, c.pigArt, c.pigEmoji) })
   var later = function (fn, ms) { var id = window.setTimeout(fn, ms); timers.push(id); return id }
   var between = function (min, max) { return (min + Math.random() * (max - min)) * 60_000 }
   var hasPig = function () { return c.getView().pig !== null && c.getView().hatched === true && !c.getView().dead }
@@ -174,6 +177,7 @@ export function attachLife(c) {
     dispose: function () {
       if (idleTimer !== null) window.clearTimeout(idleTimer)
       idleTimer = null
+      offCustomArt()
       snap.dispose()
       actions.dispose()
       for (var i = 0; i < timers.length; i += 1) { window.clearTimeout(timers[i]); window.clearInterval(timers[i]) }

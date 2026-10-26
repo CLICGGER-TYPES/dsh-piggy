@@ -4,6 +4,7 @@
 import { artFrameFor, frameCustomImage } from '../art.js'
 import { applyFrame } from '../art-framing.js'
 import { artSource } from '../art-path.js'
+import { refreshCustomArt } from '../custom-art.js'
 import { button, el } from '../dom.js'
 import { chubbySkinNote } from '../skin-note.js'
 import { cancelSkinContactPreview, clampSkinContact, clearSkinContact, effectiveSkinContact, endSkinContactPreview, framedSkinPoint, renewSkinContactPreview, setDeclaredSkinContact, setSkinContactOverride, skinContactSource, startSkinContactPreview, unframedSkinPoint } from '../skin-contact.js'
@@ -228,7 +229,12 @@ function importCard(ui) {  const wrap = el('label', 'dp-pick dp-tile-card dp-ski
         // A-2: 皮肤包里可选的 contact 在这里落到本机（这时 data 还是原始快照，条目带着 contact）。
         // 落不到的（旧包、没声明）就不记，小手继续用自动估计。
         const imported = (data.skins?.entries ?? []).find(entry => entry.key === data.imported)
-        if (imported !== undefined) setDeclaredSkinContact(imported.art, imported.contact)
+        if (imported !== undefined) {
+          setDeclaredSkinContact(imported.art, imported.contact)
+          // 同一个 key 重新导入会覆盖服务器上的图片，但地址不变：先让这套皮肤的版本 +1
+          // （地址带 ?v=、取景缓存作废），再重绘——主猪才会当场换图/重新取景，不用整页刷新。
+          refreshCustomArt(imported.art)
+        }
         if (typeof ui.render === 'function') ui.render(data)
         else { ui.view = data; ui.renderContent() }
         ui.showBubble('皮肤导入成功 🎨')

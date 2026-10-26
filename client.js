@@ -4,6 +4,16 @@
   var PAD = 16;
   var STEP = 4;
   var MIN_WINDOW = Object.freeze({ width: 96, height: 96 });
+  function centeredBox(box) {
+    const width = Number(box.width) || 0;
+    const height = Number(box.height) || 0;
+    return {
+      x: (Number(box.x) || 0) - width / 2,
+      y: (Number(box.y) || 0) - height / 2,
+      width,
+      height
+    };
+  }
   function workAreaBounds(areas, fallback) {
     if (!Array.isArray(areas) || areas.length === 0) return fallback;
     const x = Math.min(...areas.map((a) => a.x)), y = Math.min(...areas.map((a) => a.y));
@@ -2777,7 +2787,7 @@
     Object.freeze({ key: "peppy", label: "\u5143\u6C14", emoji: "\u{1F31F}", catchphrase: "\u563F\u563F", motto: "\u4ECA\u5929\u4E5F\u8981\u5143\u6C14\u6EE1\u6EE1\uFF01" }),
     Object.freeze({ key: "lazy", label: "\u60A0\u95F2", emoji: "\u{1F634}", catchphrase: "\u547C\u565C", motto: "\u80FD\u8EBA\u7740\uFF0C\u7EDD\u4E0D\u5750\u7740\u3002" }),
     Object.freeze({ key: "cranky", label: "\u50B2\u5A07", emoji: "\u{1F624}", catchphrase: "\u54FC", motto: "\u522B\u60F9\u6211\uFF0C\u9664\u975E\u4F60\u5E26\u4E86\u5403\u7684\u3002" }),
-    Object.freeze({ key: "sisterly", label: "\u8D34\u5FC3", emoji: "\u{1F481}", catchphrase: "\u61C2\u5417", motto: "\u6709\u4E8B\u627E\u6211\uFF0C\u6211\u7F69\u7740\u4F60\u3002" }),
+    Object.freeze({ key: "sisterly", label: "\u8D34\u5FC3", emoji: "\u{1F481}", catchphrase: "\u6709\u6211\u5462", motto: "\u6709\u4E8B\u627E\u6211\uFF0C\u6211\u7F69\u7740\u4F60\u3002" }),
     Object.freeze({ key: "snooty", label: "\u81EA\u604B", emoji: "\u{1F485}", catchphrase: "\u5567\u5567", motto: "\u6211\u662F\u8FD9\u7247\u6700\u53EF\u7231\u7684\u732A\u3002" }),
     Object.freeze({ key: "normal", label: "\u6E29\u548C", emoji: "\u{1F642}", catchphrase: "\u55EF\u55EF", motto: "\u5E73\u5E73\u6DE1\u6DE1\u624D\u662F\u771F\u3002" }),
     Object.freeze({ key: "clingy", label: "\u9ECF\u4EBA", emoji: "\u{1F495}", catchphrase: "\u8D34\u8D34", motto: "\u4F4D\u7F6E\u632A\u8FD1\u4E00\u70B9\uFF0C\u559C\u6B22\u4E5F\u8FD1\u4E00\u70B9\u3002" }),
@@ -3719,62 +3729,62 @@
       )
     };
   }
-  function writeSkinContacts(state3) {
-    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state3));
+  function writeSkinContacts(state4) {
+    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state4));
     listeners2.forEach((fn) => fn());
   }
   function effectiveSkinContact(art) {
     if (typeof art !== "string" || !ART_KEY.test(art)) return null;
-    const state3 = readSkinContacts();
-    if (state3.overrides[art] !== void 0) return state3.overrides[art];
-    if (state3.auto[art] === true) return null;
-    return state3.declared[art] ?? null;
+    const state4 = readSkinContacts();
+    if (state4.overrides[art] !== void 0) return state4.overrides[art];
+    if (state4.auto[art] === true) return null;
+    return state4.declared[art] ?? null;
   }
   function skinContactSource(art) {
     if (typeof art !== "string" || !ART_KEY.test(art)) return "auto";
-    const state3 = readSkinContacts();
-    if (state3.overrides[art] !== void 0) return "local";
-    if (state3.auto[art] === true) return "auto";
-    if (state3.declared[art] !== void 0) return "pack";
+    const state4 = readSkinContacts();
+    if (state4.overrides[art] !== void 0) return "local";
+    if (state4.auto[art] === true) return "auto";
+    if (state4.declared[art] !== void 0) return "pack";
     return "auto";
   }
   function setSkinContactOverride(art, contact) {
     if (typeof art !== "string" || !ART_KEY.test(art)) return false;
-    const state3 = readSkinContacts();
-    if (contact === null) delete state3.overrides[art];
+    const state4 = readSkinContacts();
+    if (contact === null) delete state4.overrides[art];
     else {
       const value = normalizeSkinContact(contact);
       if (value === null) return false;
-      state3.overrides[art] = value;
-      delete state3.auto[art];
+      state4.overrides[art] = value;
+      delete state4.auto[art];
     }
-    writeSkinContacts(state3);
+    writeSkinContacts(state4);
     return true;
   }
   function setDeclaredSkinContact(art, contact) {
     if (typeof art !== "string" || !ART_KEY.test(art)) return false;
     const value = normalizeSkinContact(contact);
     if (value === null) return false;
-    const state3 = readSkinContacts();
-    const current3 = state3.declared[art];
-    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state3.auto[art] !== true) return true;
-    state3.declared[art] = value;
-    delete state3.auto[art];
-    writeSkinContacts(state3);
+    const state4 = readSkinContacts();
+    const current3 = state4.declared[art];
+    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state4.auto[art] !== true) return true;
+    state4.declared[art] = value;
+    delete state4.auto[art];
+    writeSkinContacts(state4);
     return true;
   }
   function clearSkinContact(art) {
     if (typeof art !== "string" || !ART_KEY.test(art)) return false;
-    const state3 = readSkinContacts();
-    delete state3.overrides[art];
-    delete state3.declared[art];
-    state3.auto[art] = true;
-    writeSkinContacts(state3);
+    const state4 = readSkinContacts();
+    delete state4.overrides[art];
+    delete state4.declared[art];
+    state4.auto[art] = true;
+    writeSkinContacts(state4);
     return true;
   }
   function syncDeclaredSkinContacts(skins) {
     const entries2 = Array.isArray(skins?.entries) ? skins.entries : [];
-    const state3 = readSkinContacts();
+    const state4 = readSkinContacts();
     let changed = false;
     for (const entry of entries2) {
       if (entry === null || typeof entry !== "object") continue;
@@ -3782,17 +3792,17 @@
       if (typeof art !== "string" || !ART_KEY.test(art)) continue;
       const contact = normalizeSkinContact(entry.contact);
       if (contact !== null) {
-        if (state3.auto[art] === true) continue;
-        const current3 = state3.declared[art];
+        if (state4.auto[art] === true) continue;
+        const current3 = state4.declared[art];
         if (current3 !== void 0 && current3.x === contact.x && current3.y === contact.y) continue;
-        state3.declared[art] = contact;
+        state4.declared[art] = contact;
         changed = true;
-      } else if (state3.auto[art] !== true && state3.declared[art] !== void 0 && entry.contactStated === true) {
-        delete state3.declared[art];
+      } else if (state4.auto[art] !== true && state4.declared[art] !== void 0 && entry.contactStated === true) {
+        delete state4.declared[art];
         changed = true;
       }
     }
-    if (changed) writeSkinContacts(state3);
+    if (changed) writeSkinContacts(state4);
     return changed;
   }
   function onSkinContactChange(fn) {
@@ -3926,6 +3936,194 @@
   }
   ensureStorageBridge();
 
+  // src/client/custom-art.js
+  var CUSTOM_CANVAS = 128;
+  var CUSTOM_SLEEP_WIDTH = 192;
+  var CUSTOM_SLEEP_HEIGHT = 160;
+  var CUSTOM_ART_KEY = "dsh-piggy:custom-art-versions";
+  var ART_KEY2 = /^custom-[a-z0-9-]{1,41}$/;
+  var listeners3 = /* @__PURE__ */ new Set();
+  var INK_CACHE = /* @__PURE__ */ new Map();
+  var versions = null;
+  var bridgedWindow2 = null;
+  function customArtCanvas(sleep = false) {
+    return sleep ? { width: CUSTOM_SLEEP_WIDTH, height: CUSTOM_SLEEP_HEIGHT } : { width: CUSTOM_CANVAS, height: CUSTOM_CANVAS };
+  }
+  function srcKey(src) {
+    const text = typeof src === "string" ? src : "";
+    const index = text.indexOf("/art/");
+    return index < 0 ? text : text.slice(index + 5);
+  }
+  function customArtInk(src) {
+    const key2 = srcKey(src);
+    return key2 === "" ? null : INK_CACHE.get(key2) ?? null;
+  }
+  function measureCustomArt(image, src, sleep = false) {
+    const key2 = srcKey(src);
+    if (key2 === "") return null;
+    const cached = INK_CACHE.get(key2);
+    if (cached !== void 0) return cached;
+    const canvas = customArtCanvas(sleep);
+    const ink = containedInk(image, canvas.width, canvas.height);
+    if (ink === null) return null;
+    INK_CACHE.set(key2, ink);
+    return ink;
+  }
+  function framedInkBox(box, ink, framing = {}) {
+    const zoom = Number(framing.zoom) > 0 ? Number(framing.zoom) : 1;
+    const shiftX = Number(framing.shiftX) || 0;
+    const shiftY = Number(framing.shiftY) || 0;
+    const mirrored = framing.mirrored === true;
+    const left = mirrored ? 1 - ink[2] : ink[0];
+    const right = mirrored ? 1 - ink[0] : ink[2];
+    const shift = mirrored ? -shiftX : shiftX;
+    return {
+      x: box.x + box.width * (0.5 + (left - 0.5) * zoom + shift / 100),
+      y: box.y + box.height * (0.5 + (ink[1] - 0.5) * zoom + shiftY / 100),
+      width: box.width * (right - left) * zoom,
+      height: box.height * (ink[3] - ink[1]) * zoom
+    };
+  }
+  function customArtVisibleBox(node, box) {
+    if (node === null || node === void 0 || typeof node.getAttribute !== "function") return null;
+    const ink = customArtInk(node.getAttribute("src") || "");
+    if (ink === null) return null;
+    const style = node.style;
+    const sleep = node.matches?.(".dp-pig-sleep") === true;
+    return framedInkBox(box, ink, {
+      zoom: Number(style?.getPropertyValue?.("--art-zoom")) || 1,
+      shiftX: parseFloat(style?.getPropertyValue?.("--art-x")) || 0,
+      shiftY: parseFloat(style?.getPropertyValue?.("--art-y")) || 0,
+      mirrored: !sleep && node.closest?.(".dp-pig")?.getAttribute("data-walk") === "right"
+    });
+  }
+  function forgetInk(art) {
+    for (const key2 of [...INK_CACHE.keys()]) {
+      const path = key2.split("?")[0];
+      if (path === art || path.startsWith(art + "-")) INK_CACHE.delete(key2);
+    }
+  }
+  function containedInk(image, canvasWidth = CUSTOM_CANVAS, canvasHeight = CUSTOM_CANVAS) {
+    const naturalWidth = Number(image?.naturalWidth) || 0;
+    const naturalHeight = Number(image?.naturalHeight) || naturalWidth;
+    if (!(naturalWidth > 0) || !(naturalHeight > 0)) return null;
+    const fit = Math.min(canvasWidth / naturalWidth, canvasHeight / naturalHeight);
+    if (!(fit > 0)) return null;
+    const width = naturalWidth * fit;
+    const height = naturalHeight * fit;
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const context2 = canvas.getContext?.("2d", { willReadFrequently: true });
+      if (!context2) return null;
+      context2.drawImage(image, (canvasWidth - width) / 2, (canvasHeight - height) / 2, width, height);
+      const pixels = context2.getImageData(0, 0, canvasWidth, canvasHeight).data;
+      let left = canvasWidth, top = canvasHeight, right = 0, bottom = 0;
+      for (let y = 0; y < canvasHeight; y += 1) for (let x = 0; x < canvasWidth; x += 1) {
+        if (pixels[(y * canvasWidth + x) * 4 + 3] <= 16) continue;
+        left = Math.min(left, x);
+        top = Math.min(top, y);
+        right = Math.max(right, x + 1);
+        bottom = Math.max(bottom, y + 1);
+      }
+      if (right <= left || bottom <= top) return null;
+      return [left / canvasWidth, top / canvasHeight, right / canvasWidth, bottom / canvasHeight];
+    } catch {
+      return null;
+    }
+  }
+  function frameFromInk(ink) {
+    const height = ink[3] - ink[1];
+    if (!(height > 0)) return null;
+    const zoom = FRAME_HEIGHT2 / height;
+    return [
+      zoom,
+      (0.5 - (ink[0] + ink[2]) / 2) * zoom * 100,
+      (0.5 - (ink[1] + ink[3]) / 2) * zoom * 100
+    ];
+  }
+  function readVersions() {
+    const raw = readStore(CUSTOM_ART_KEY);
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw ?? "");
+    } catch {
+      parsed = null;
+    }
+    const map = /* @__PURE__ */ new Map();
+    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const [key2, value] of Object.entries(parsed)) {
+        const version = Number(value);
+        if (ART_KEY2.test(key2) && Number.isInteger(version) && version > 0) map.set(key2, version);
+      }
+    }
+    return map;
+  }
+  function ensureVersions() {
+    if (versions === null) versions = readVersions();
+    return versions;
+  }
+  function rootArt(art) {
+    const map = ensureVersions();
+    let best = "";
+    for (const key2 of map.keys()) {
+      if (art === key2 || art.startsWith(key2 + "-")) {
+        if (key2.length > best.length) best = key2;
+      }
+    }
+    return best === "" ? null : best;
+  }
+  function customArtVersion(art) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return 0;
+    const root = rootArt(art);
+    return root === null ? 0 : ensureVersions().get(root) ?? 0;
+  }
+  function refreshCustomArt(art) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return 0;
+    const map = ensureVersions();
+    const version = (map.get(art) ?? 0) + 1;
+    map.set(art, version);
+    forgetInk(art);
+    writeStore(CUSTOM_ART_KEY, JSON.stringify(Object.fromEntries(map)));
+    notify();
+    return version;
+  }
+  function onCustomArtChange(fn) {
+    ensureStorageBridge2();
+    listeners3.add(fn);
+    return () => listeners3.delete(fn);
+  }
+  function notify() {
+    for (const fn of [...listeners3]) {
+      try {
+        fn();
+      } catch (error) {
+        console.warn("\u81EA\u5B9A\u4E49\u7ACB\u7ED8\u5237\u65B0\u5931\u8D25", error);
+      }
+    }
+  }
+  function onStorage2(event) {
+    const key2 = (
+      /** @type {StorageEvent | null} */
+      event?.key
+    );
+    if (key2 !== CUSTOM_ART_KEY && key2 !== null && key2 !== void 0) return;
+    const previous = versions === null ? /* @__PURE__ */ new Map() : new Map(versions);
+    versions = readVersions();
+    for (const root of /* @__PURE__ */ new Set([...previous.keys(), ...versions.keys()])) {
+      if ((previous.get(root) ?? 0) !== (versions.get(root) ?? 0)) forgetInk(root);
+    }
+    notify();
+  }
+  function ensureStorageBridge2() {
+    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+    if (bridgedWindow2 === window) return;
+    bridgedWindow2 = window;
+    window.addEventListener("storage", onStorage2);
+  }
+  ensureStorageBridge2();
+
   // src/client/pet-snap.js
   var players = /* @__PURE__ */ new WeakMap();
   var SNAP_FRAME_MS = 60;
@@ -3961,7 +4159,6 @@
     let bounds2 = null;
     let contact = null;
     let previewHeld = false, previewUntil = 0;
-    const boundsCache = /* @__PURE__ */ new Map();
     let referenceFrames = [];
     const now2 = () => performance.now();
     const allowed = () => !disposed && !document.hidden && !c.isStopped() && effectiveFeelMode() === "full" && c.canPlay() && (!active2 || capturedArt === c.pig.getAttribute("data-art")) && c.pig.getAttribute("data-feel-flip") !== "true";
@@ -3969,29 +4166,8 @@
       const image = c.pigArt;
       const src = image?.getAttribute("src") || "";
       const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
-      let ink = ART_BOUNDS2[path] || boundsCache.get(src);
-      if (!ink && image?.complete && image.naturalWidth > 0) {
-        try {
-          const probe = document.createElement("canvas");
-          probe.width = probe.height = 128;
-          const context2 = probe.getContext("2d", { willReadFrequently: true });
-          context2.drawImage(image, 0, 0, 128, 128);
-          const rgba2 = context2.getImageData(0, 0, 128, 128).data;
-          let l = 128, t = 128, r = 0, b = 0;
-          for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-            if (rgba2[(y * 128 + x) * 4 + 3] <= 16) continue;
-            l = Math.min(l, x);
-            t = Math.min(t, y);
-            r = Math.max(r, x + 1);
-            b = Math.max(b, y + 1);
-          }
-          if (r > l && b > t) {
-            ink = [l / 128, t / 128, r / 128, b / 128];
-            boundsCache.set(src, ink);
-          }
-        } catch {
-        }
-      }
+      let ink = ART_BOUNDS2[path] || customArtInk(src);
+      if (!ink && image?.complete && image.naturalWidth > 0) ink = measureCustomArt(image, src);
       const style = image?.style;
       return framedPetBounds(
         ink || [0.08, 0.08, 0.92, 0.92],
@@ -4111,12 +4287,12 @@
       }
     };
     players.set(c.pig, player);
-    const load = (src) => {
+    const load2 = (src) => {
       const image = new Image();
       image.src = src;
       return image.decode().then(() => image);
     };
-    load(ART_URL + "animations/pet-hand/hand.webp?v=hd-spring-9").then(async (image) => {
+    load2(ART_URL + "animations/pet-hand/hand.webp?v=hd-spring-9").then(async (image) => {
       const frames = await Promise.all(Array.from({ length: SNAP_FRAMES }, (_, i) => createImageBitmap(image, i * 256, 0, 256, 256)));
       if (disposed) {
         frames.forEach((frame4) => frame4.close());
@@ -4171,7 +4347,6 @@
       document.removeEventListener("visibilitychange", onState);
       cancel();
       canvas.remove();
-      boundsCache.clear();
       referenceFrames.forEach((image) => image.close());
       referenceFrames = [];
       players.delete(c.pig);
@@ -4372,7 +4547,9 @@
 
   // src/client/art-path.js
   function artSource(key2) {
-    return ART_URL + (builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg"));
+    const path = builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg");
+    const version = key2.startsWith("custom-") ? customArtVersion(key2) : 0;
+    return ART_URL + path + (version > 0 ? "?v=" + version : "");
   }
   function hasBuiltinArt(key2) {
     return Object.hasOwn(PIG_ART_ASSETS, key2);
@@ -4559,20 +4736,20 @@
   function choose(options, hour) {
     return options[Math.abs(Math.floor(hour)) % options.length];
   }
-  function feedbackArtFor(state3) {
-    if (STAGE_ART[state3.stage]) return choose(STAGE_ART[state3.stage], state3.hour);
-    if (state3.party === true) return BIRTHDAY_ART;
-    if (state3.base && state3.base !== "piglet") return null;
-    if (REACTION_ART[state3.reaction]) return choose(REACTION_ART[state3.reaction], state3.hour);
-    if (state3.mood === "sick") return ILLNESS_ART[state3.illness ?? ""] ? choose(ILLNESS_ART[state3.illness ?? ""], state3.hour) : null;
-    if (state3.mood === "dirty" || state3.mood === "hungry") return null;
-    if (state3.activityKind === "work") return WORK_ART[state3.activityKey] ?? null;
-    if (state3.activityKind === "study") return choose(STUDY_ART, state3.hour);
-    if (state3.activityKind === "interest") return choose(INTEREST_ART[state3.activityKey] ?? INTEREST_ART.other, state3.hour);
-    if (state3.activityKind === "fishing") return "fishing";
-    if (state3.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state3.hour) : null;
-    if (IDLE_ART[state3.idle]) return choose(IDLE_ART[state3.idle], state3.hour);
-    if (MOOD_ART[state3.mood]) return choose(MOOD_ART[state3.mood], state3.hour);
+  function feedbackArtFor(state4) {
+    if (STAGE_ART[state4.stage]) return choose(STAGE_ART[state4.stage], state4.hour);
+    if (state4.party === true) return BIRTHDAY_ART;
+    if (state4.base && state4.base !== "piglet") return null;
+    if (REACTION_ART[state4.reaction]) return choose(REACTION_ART[state4.reaction], state4.hour);
+    if (state4.mood === "sick") return ILLNESS_ART[state4.illness ?? ""] ? choose(ILLNESS_ART[state4.illness ?? ""], state4.hour) : null;
+    if (state4.mood === "dirty" || state4.mood === "hungry") return null;
+    if (state4.activityKind === "work") return WORK_ART[state4.activityKey] ?? null;
+    if (state4.activityKind === "study") return choose(STUDY_ART, state4.hour);
+    if (state4.activityKind === "interest") return choose(INTEREST_ART[state4.activityKey] ?? INTEREST_ART.other, state4.hour);
+    if (state4.activityKind === "fishing") return "fishing";
+    if (state4.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state4.hour) : null;
+    if (IDLE_ART[state4.idle]) return choose(IDLE_ART[state4.idle], state4.hour);
+    if (MOOD_ART[state4.mood]) return choose(MOOD_ART[state4.mood], state4.hour);
     return null;
   }
 
@@ -4596,6 +4773,9 @@
   var CUSTOM_FRAME_CACHE = /* @__PURE__ */ new Map();
   var CUSTOM_FRAME_PENDING = /* @__PURE__ */ new WeakMap();
   var ART_SELECTION = /* @__PURE__ */ new WeakMap();
+  onCustomArtChange(() => {
+    CUSTOM_FRAME_CACHE.clear();
+  });
   function frameCustomImage(image, src, sleep = false, onFrame = null) {
     const done = typeof onFrame === "function" ? onFrame : null;
     if (!src.includes("/custom-")) {
@@ -4616,36 +4796,12 @@
     function measure2() {
       CUSTOM_FRAME_PENDING.delete(image);
       if (image.getAttribute("src") !== src) return;
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.height = 128;
-        canvas.width = sleep ? Math.round(128 * 1.2) : 128;
-        const context2 = canvas.getContext?.("2d", { willReadFrequently: true });
-        if (!context2) return;
-        const fit = Math.min(canvas.width / image.naturalWidth, canvas.height / (image.naturalHeight || image.naturalWidth));
-        const width = image.naturalWidth * fit, height = (image.naturalHeight || image.naturalWidth) * fit;
-        context2.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
-        const pixels = context2.getImageData(0, 0, canvas.width, canvas.height).data;
-        let left = canvas.width, top = canvas.height, right = 0, bottom = 0;
-        for (let y = 0; y < canvas.height; y += 1) for (let x = 0; x < canvas.width; x += 1) {
-          if (pixels[(y * canvas.width + x) * 4 + 3] <= 16) continue;
-          left = Math.min(left, x);
-          top = Math.min(top, y);
-          right = Math.max(right, x + 1);
-          bottom = Math.max(bottom, y + 1);
-        }
-        if (right <= left || bottom <= top) return;
-        const zoom = FRAME_HEIGHT2 / ((bottom - top) / canvas.height);
-        const frame3 = [
-          zoom,
-          (0.5 - (left + right) / (2 * canvas.width)) * zoom * 100,
-          (0.5 - (top + bottom) / (2 * canvas.height)) * zoom * 100
-        ];
-        CUSTOM_FRAME_CACHE.set(src, frame3);
-        applyFrame(image, frame3);
-        if (done !== null) done(frame3);
-      } catch {
-      }
+      const ink = customArtInk(src) ?? measureCustomArt(image, src, sleep);
+      const frame3 = ink === null ? null : frameFromInk(ink);
+      if (frame3 === null) return;
+      CUSTOM_FRAME_CACHE.set(src, frame3);
+      applyFrame(image, frame3);
+      if (done !== null) done(frame3);
     }
     if (image.complete && image.naturalWidth > 0) measure2();
     else image.addEventListener?.("load", measure2, { once: true });
@@ -4793,8 +4949,8 @@
   var str = (v, dflt) => typeof v === "string" && v !== "" ? v : dflt;
 
   // src/client/dom.js
-  function el(tag2, className, text) {
-    var node = document.createElement(tag2);
+  function el(tag3, className, text) {
+    var node = document.createElement(tag3);
     if (className) node.className = className;
     if (text !== void 0) node.textContent = text;
     return node;
@@ -6491,8 +6647,8 @@
   function attachAutoCollapse(context2) {
     function focusedInput() {
       const active2 = document.activeElement;
-      const tag2 = active2?.tagName?.toLowerCase?.() ?? "";
-      return tag2 === "input" || tag2 === "textarea" || active2?.getAttribute?.("contenteditable") === "true";
+      const tag3 = active2?.tagName?.toLowerCase?.() ?? "";
+      return tag3 === "input" || tag3 === "textarea" || active2?.getAttribute?.("contenteditable") === "true";
     }
     function canClose() {
       return context2.isOpen() && autoCollapseEnabled() && !context2.isDragging() && !focusedInput() && !context2.isFishing();
@@ -6836,14 +6992,14 @@
     gauge.style.background = `linear-gradient(90deg,#dce8e9 0 30%,#6bd47b 30% ${snap - 13}%,#ffd45d ${snap - 13}% ${snap}%,#e05a5a ${snap}%)`;
     const pin = el("b");
     gauge.appendChild(pin);
-    const state3 = el("div", "dp-fish-pull-state");
+    const state4 = el("div", "dp-fish-pull-state");
     const meter2 = el("div", "dp-fish-hmeter");
     const fill = el("i");
     meter2.appendChild(fill);
     stage2.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
     stage2.appendChild(line6);
     stage2.appendChild(gauge);
-    stage2.appendChild(state3);
+    stage2.appendChild(state4);
     stage2.appendChild(meter2);
     stage2.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
     root.appendChild(stage2);
@@ -6869,7 +7025,7 @@
       pin.style.left = s.tension + "%";
       rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
       fill.style.width = 100 - Math.max(0, s.distance) + "%";
-      state3.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
+      state4.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
       stage2.setAttribute("data-tension", s.tension.toFixed(0));
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
@@ -7195,11 +7351,11 @@
     mark.appendChild(fishImage("bobber.png", "dp-fish-bobber-img"));
     water.appendChild(mark);
     root.appendChild(water);
-    const state3 = el("div", "dp-fish-wait-state");
+    const state4 = el("div", "dp-fish-wait-state");
     const line6 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
-    state3.appendChild(line6);
-    state3.appendChild(el("small", null, "\u76EF\u4F4F\u6D6E\u6F02\uFF0C\u54AC\u94A9\u65F6\u70B9\u51FB"));
-    root.appendChild(state3);
+    state4.appendChild(line6);
+    state4.appendChild(el("small", null, "\u76EF\u4F4F\u6D6E\u6F02\uFF0C\u54AC\u94A9\u65F6\u70B9\u51FB"));
+    root.appendChild(state4);
     let nextNibble = Date.now() + 1500 + Math.random() * 2500;
     let nibbleUntil = 0;
     waitUi = ui;
@@ -7356,8 +7512,8 @@
       /** @type {any} */
       document.activeElement
     );
-    var tag2 = active2?.tagName?.toLowerCase?.() ?? "";
-    return tag2 === "input" || tag2 === "textarea" || active2?.getAttribute?.("contenteditable") === "true";
+    var tag3 = active2?.tagName?.toLowerCase?.() ?? "";
+    return tag3 === "input" || tag3 === "textarea" || active2?.getAttribute?.("contenteditable") === "true";
   }
   function splitSetOpen(ctx, next) {
     var role2 = desktopRole();
@@ -7414,16 +7570,25 @@
   function displayedPigSize(stageSize) {
     return stageSize * pigSize();
   }
+  function applyPigBox(host3, width) {
+    const style = host3?.style;
+    if (typeof style?.setProperty !== "function") return;
+    style.setProperty("--pig-size", width + "px");
+    style.setProperty("--pig-scale", String(pigSize()));
+  }
+  function syncPigSize(host3, stageSize) {
+    applyPigBox(host3, displayedPigSize(stageSize));
+  }
   function attachSizePreference(host3, getStage, onChanged) {
-    function onStorage2(event) {
+    function onStorage3(event) {
       if (event.key !== PIG_SIZE_KEY) return;
       const stage2 = getStage();
       if (!stage2) return;
-      host3.style.setProperty("--pig-size", displayedPigSize(stage2.size) + "px");
+      syncPigSize(host3, stage2.size);
       onChanged?.();
     }
-    window.addEventListener("storage", onStorage2);
-    return () => window.removeEventListener("storage", onStorage2);
+    window.addEventListener("storage", onStorage3);
+    return () => window.removeEventListener("storage", onStorage3);
   }
 
   // src/client/pat-cursor.js
@@ -7652,7 +7817,7 @@
     '[data-dsh-pig][data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;flex:1 1 auto}',
     '[data-dsh-pig][data-ext-view="big"] .dp-bar,[data-dsh-pig][data-ext-view="big"] .dp-panel-footer{display:none!important}',
     /* ---------- the pig: never moved, never boxed ---------- */
-    ".dp-scene{position:relative;height:var(--scene-open);background:none;cursor:grab;",
+    ".dp-scene{position:relative;height:max(var(--scene-open),calc(var(--pig-size) + var(--pig-gap-below)));background:none;cursor:grab;",
     "overflow:visible;display:flex;align-items:flex-end;justify-content:flex-end;",
     "padding:0 6px var(--pig-gap-below);width:max-content}",
     '.dp-scene[data-dragging="true"]{cursor:grabbing}',
@@ -7695,6 +7860,10 @@
     "transform-origin:50% 85%;will-change:auto}",
     // 翻卡片期间由物理层做镜像；内层 data-walk 的瞬间镜像要关掉，否则翻完会双重镜像。
     '[data-dsh-pig] .dp-pig[data-feel-flip="true"] .dp-pig-img{transform:none!important}',
+    // 装扮跟着立绘走同一条开关：朝右时整件镜像（背点位 14%→86%），翻卡片期间也用物理层的镜像，
+    // 这里像 .dp-pig-img 一样关掉。差一条就会双重镜像，翻面最后一帧背部件再跳回另一侧。
+    '[data-dsh-pig] .dp-pig[data-walk="right"] .dp-dress{transform:scaleX(-1)}',
+    '[data-dsh-pig] .dp-pig[data-feel-flip="true"] .dp-dress{transform:none!important}',
     // 被拎着拖动时暂停待机浮动（反应动画照常演），避免「被拎住还在自己上下飘」。
     '[data-dsh-pig] .dp-scene[data-dragging="true"] .dp-pig:not([data-react]){animation-play-state:paused!important}',
     // 摔晕：整图轻摇 + 眩晕符号（符号由 feel 用 burst 冒），不新增立绘。
@@ -7741,12 +7910,14 @@
     // 装扮点位：猪身上固定的几个锚点，每个点位挂一件。
     // 以后换真立绘时，只改这里的偏移/尺寸，逻辑和存档都不用动。
     ".dp-dress{position:absolute;inset:0;pointer-events:none;z-index:3}",
-    ".dp-slot{position:absolute;line-height:1;font-size:15px;transform:translate(-50%,-50%)}",
+    // 点数位置是盒内百分比，字号只乘本机显示比例（--pig-scale）：100% 时各年龄身体仍是 15px/19px，
+    // 放大到 200%/500% 时帽子和披风跟猪身同比例变大，不会缩成小贴纸。
+    ".dp-slot{position:absolute;line-height:1;font-size:calc(15px * var(--pig-scale,1));transform:translate(-50%,-50%)}",
     '.dp-slot[data-slot="head"]{left:50%;top:2%}',
     '.dp-slot[data-slot="face"]{left:50%;top:32%}',
     '.dp-slot[data-slot="neck"]{left:50%;top:60%}',
-    '.dp-slot[data-slot="body"]{left:50%;top:78%;font-size:19px}',
-    '.dp-slot[data-slot="back"]{left:14%;top:42%;font-size:19px}',
+    '.dp-slot[data-slot="body"]{left:50%;top:78%;font-size:calc(19px * var(--pig-scale,1))}',
+    '.dp-slot[data-slot="back"]{left:14%;top:42%;font-size:calc(19px * var(--pig-scale,1))}',
     '.dp-slot[data-slot="feet"]{left:50%;top:99%}',
     '[data-dsh-pig][data-open="false"] .dp-pig{filter:drop-shadow(0 5px 9px rgba(61,52,40,.26))}',
     '[data-dsh-pig][data-open="false"] .dp-pig[data-feedback="true"]{filter:none}',
@@ -7861,7 +8032,9 @@
     ".dp-hud b{font-weight:700}",
     // A drawn sprite is sized by the same variable as the emoji, so growing up
     // works identically either way.
-    ".dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;",
+    // 自定义皮肤允许非正方形图：按 object-fit:contain 等比放进方盒，和量图/摸摸手同一算则。
+    // 内置立绘都是 256 方形，contain 与原来的 fill 逐像素一致。
+    ".dp-pig-img{width:var(--pig-size);height:var(--pig-size);display:block;object-fit:contain;",
     "scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);",
     "-webkit-user-drag:none;user-select:none}",
     // 反馈立绘在打包前离线处理为透明 PNG。
@@ -8263,7 +8436,7 @@
     ".dp-switch-ask{display:grid;gap:6px;margin-bottom:10px}.dp-switch-ask-row{display:flex;gap:8px}",
     ".dp-guide-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 10px}",
     ".dp-guide-links .dp-btn{justify-content:center;font-size:12px}",
-    ".dp-guide-code{margin:4px 0;padding:6px 8px;border-radius:8px;background:var(--ac-bg-content);font-size:10px;line-height:1.5;white-space:pre-wrap}",
+    ".dp-guide-code{margin:4px 0;padding:6px 8px;border-radius:8px;background:var(--ac-bg-content);font-size:10px;line-height:1.5;white-space:pre-wrap;user-select:text}",
     // 背包顶上的状态条：两列四格 + 一行体重。
     ".dp-statstrip{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0 0 10px;padding:8px 10px;",
     "border-radius:var(--ac-radius-sm);background:var(--ac-bg-content);border:2px solid var(--ac-border-light)}",
@@ -8668,7 +8841,7 @@
 
   // src/client/css-skins.js
   var CSS_SKINS = `
-.dp-skin-intro{display:grid;gap:4px;margin:0 0 10px}.dp-skin-intro span{font-size:10.5px;line-height:1.5;color:var(--ac-text-2)}.dp-skin-grid{display:flex;flex-direction:column;gap:7px}.dp-skin-row{min-height:62px;padding:7px 9px}.dp-skin-current{background:var(--ac-active);border-color:#9db0d6}.dp-skin-row[data-locked="true"] .dp-skin-art{filter:grayscale(1);opacity:.48}.dp-skin-art{width:48px;height:48px;flex:none;object-fit:contain}.dp-skin-copy{display:grid;gap:3px}.dp-skin-copy b{font-size:10.5px}.dp-skin-copy small{line-height:1.35}.dp-skin-row>.dp-mini{flex:none;padding-inline:10px}.dp-skin-import{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 8px;margin-top:10px;cursor:pointer}.dp-skin-import .dp-pick-head{margin:0}.dp-skin-import>.dp-dim{font-size:10px;line-height:1.4;color:var(--ac-text-2)}.dp-skin-import input{position:absolute;left:50%;top:50%;width:1px;height:1px;opacity:0}.dp-skin-file{grid-column:2;grid-row:1/3;display:inline-flex!important;align-items:center;white-space:nowrap}.dp-skin-howto{display:flex;width:100%;justify-content:center;margin:10px 0 8px}.dp-skin-note{font-size:12px;font-weight:600;line-height:1.4;color:var(--ac-text-2)}.dp-skin-contact{display:grid;gap:6px;margin-top:10px}.dp-skin-contact .dp-pick-head{margin:0;font-size:12px}.dp-skin-contact .dp-mini{font-size:12px;min-width:32px;min-height:32px}.dp-contact-hint{font-size:12px;line-height:1.45;color:var(--ac-text-2)}.dp-contact-pad{position:relative;width:132px;height:132px;justify-self:center;border:2px dashed var(--ac-border-light);border-radius:12px;overflow:hidden;background:var(--ac-active);touch-action:none;cursor:crosshair}.dp-contact-art{display:block;width:100%;height:100%;object-fit:fill;scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);pointer-events:none;-webkit-user-drag:none;user-select:none}.dp-contact-dot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid #fff;background:#e2574c;box-shadow:0 1px 3px rgba(61,52,40,.35);pointer-events:none}.dp-contact-dot[hidden]{display:none}.dp-contact-row{display:flex;align-items:center;gap:6px}.dp-contact-value{flex:1;font-size:12px;line-height:1.4;color:var(--ac-text-2)}
+.dp-skin-intro{display:grid;gap:4px;margin:0 0 10px}.dp-skin-intro span{font-size:10.5px;line-height:1.5;color:var(--ac-text-2)}.dp-skin-grid{display:flex;flex-direction:column;gap:7px}.dp-skin-row{min-height:62px;padding:7px 9px}.dp-skin-current{background:var(--ac-active);border-color:#9db0d6}.dp-skin-row[data-locked="true"] .dp-skin-art{filter:grayscale(1);opacity:.48}.dp-skin-art{width:48px;height:48px;flex:none;object-fit:contain}.dp-skin-copy{display:grid;gap:3px}.dp-skin-copy b{font-size:10.5px}.dp-skin-copy small{line-height:1.35}.dp-skin-row>.dp-mini{flex:none;padding-inline:10px}.dp-skin-import{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 8px;margin-top:10px;cursor:pointer}.dp-skin-import .dp-pick-head{margin:0}.dp-skin-import>.dp-dim{font-size:10px;line-height:1.4;color:var(--ac-text-2)}.dp-skin-import input{position:absolute;left:50%;top:50%;width:1px;height:1px;opacity:0}.dp-skin-file{grid-column:2;grid-row:1/3;display:inline-flex!important;align-items:center;white-space:nowrap}.dp-skin-howto{display:flex;width:100%;justify-content:center;margin:10px 0 8px}.dp-skin-note{font-size:12px;font-weight:600;line-height:1.4;color:var(--ac-text-2)}.dp-skin-contact{display:grid;gap:6px;margin-top:10px}.dp-skin-contact .dp-pick-head{margin:0;font-size:12px}.dp-skin-contact .dp-mini{font-size:12px;min-width:32px;min-height:32px}.dp-contact-hint{font-size:12px;line-height:1.45;color:var(--ac-text-2)}.dp-contact-pad{position:relative;width:132px;height:132px;justify-self:center;border:2px dashed var(--ac-border-light);border-radius:12px;overflow:hidden;background:var(--ac-active);touch-action:none;cursor:crosshair}.dp-contact-art{display:block;width:100%;height:100%;object-fit:contain;scale:var(--art-zoom,1);translate:var(--art-x,0%) var(--art-y,0%);pointer-events:none;-webkit-user-drag:none;user-select:none}.dp-contact-dot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid #fff;background:#e2574c;box-shadow:0 1px 3px rgba(61,52,40,.35);pointer-events:none}.dp-contact-dot[hidden]{display:none}.dp-contact-row{display:flex;align-items:center;gap:6px}.dp-contact-value{flex:1;font-size:12px;line-height:1.4;color:var(--ac-text-2)}
 `;
 
   // src/client/css-holo.js
@@ -10742,6 +10915,9 @@
     });
     var timers = [];
     var idleTimer = null;
+    var offCustomArt = onCustomArtChange(function() {
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+    });
     var later = function(fn, ms) {
       var id = window.setTimeout(fn, ms);
       timers.push(id);
@@ -10869,6 +11045,7 @@
       dispose: function() {
         if (idleTimer !== null) window.clearTimeout(idleTimer);
         idleTimer = null;
+        offCustomArt();
         snap.dispose();
         actions.dispose();
         for (var i = 0; i < timers.length; i += 1) {
@@ -11679,221 +11856,133 @@
     return notice;
   }
 
-  // src/client/tabs/update.js
-  var state = {
-    current: null,
-    list: null,
-    error: null,
-    loading: false,
-    pick: null,
-    previews: null,
-    busy: null,
-    fraction: 0,
-    message: null,
-    listening: false,
-    shellStatus: null,
-    shellBusy: false,
-    shellReady: null,
-    shellFraction: 0,
-    shellMessage: null,
-    shellListening: false
-  };
-  function updatesBridge() {
-    var shell2 = (
-      /** @type {any} */
-      window.piggyShell
-    );
-    return shell2 && shell2.updates ? shell2 : null;
+  // src/client/tabs/update-npm.js
+  var NPM_PACKAGE = "dsh-piggy";
+  var NPM_REGISTRY = "https://registry.npmjs.org";
+  function npmVersionUrl(version) {
+    return NPM_REGISTRY + "/" + NPM_PACKAGE + "/" + encodeURIComponent(version);
   }
-  function refresh(ui, fresh) {
-    var shell2 = updatesBridge();
-    if (shell2 === null || state.loading) return;
-    state.loading = true;
-    state.error = null;
-    if (!state.listening) {
-      state.listening = true;
-      shell2.updates.onProgress(function(fraction) {
-        state.fraction = fraction;
-        ui.renderContent();
+  async function fetchNpmVersion(version, doFetch = fetch) {
+    let response;
+    try {
+      response = await doFetch(npmVersionUrl(version), { headers: { accept: "application/json" }, cache: "no-store" });
+    } catch (error) {
+      throw new Error("\u6CA1\u8FDE\u4E0A npm");
+    }
+    if (response.status === 404) return "missing";
+    if (!response.ok) throw new Error("npm " + response.status);
+    return "found";
+  }
+
+  // src/client/tabs/update-versions.js
+  function freshState(ui) {
+    return {
+      ui,
+      releases: null,
+      loading: false,
+      asked: false,
+      error: null,
+      pick: null,
+      previews: false,
+      /** 版本 → { state: 'checking'|'found'|'missing'|'error', message? }：只记问过 npm 的这一版。 */
+      npm: {}
+    };
+  }
+  var state = freshState(null);
+  function stateFor(ui) {
+    if (state.ui !== ui) state = freshState(ui);
+    return state;
+  }
+  function channelName() {
+    return CHANNEL.name === "gitee" ? "Gitee" : "GitHub";
+  }
+  function gameTag(tag3) {
+    var name = String(tag3 ?? "");
+    var match = /^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(name);
+    return match === null ? null : match[1];
+  }
+  function gameReleases(payload) {
+    var list = Array.isArray(payload) ? payload : payload !== null && typeof payload === "object" ? [payload] : [];
+    var out = [];
+    for (var i = 0; i < list.length; i += 1) {
+      var release = list[i];
+      if (release === null || typeof release !== "object" || release.draft === true) continue;
+      var version = gameTag(release.tag_name);
+      if (version === null) continue;
+      var tag3 = String(release.tag_name);
+      var date = release.published_at ?? release.created_at ?? "";
+      out.push({
+        version,
+        tag: tag3,
+        date: typeof date === "string" ? date.slice(0, 10) : "",
+        // 有的接口（如 Gitee）可能不带 prerelease 标记，版本号里的 -rc.N 同样算测试版。
+        prerelease: release.prerelease === true || version.indexOf("-") !== -1,
+        notes: String(release.body ?? "").slice(0, 1200),
+        page: String(release.html_url || CHANNEL.releasesPage + "/tag/" + tag3)
       });
     }
-    if (shell2.shellUpdates && !state.shellListening) {
-      state.shellListening = true;
-      shell2.shellUpdates.onProgress(function(fraction) {
-        state.shellFraction = fraction;
-        ui.renderContent();
-      });
-    }
-    Promise.all([shell2.updates.current(), shell2.updates.list(fresh === true), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
-      state.current = got[0];
-      if (got[1] && got[1].ok) state.list = got[1].releases;
-      else state.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
-      state.shellStatus = got[2];
-    }, function() {
-      state.error = "\u6CA1\u95EE\u5230";
-    }).then(function() {
-      state.loading = false;
-      ui.renderContent();
+    out.sort(function(a, b) {
+      return compareVersions(b.version, a.version);
     });
+    return out;
   }
-  function downloadShell(ui, version) {
-    var shell2 = updatesBridge();
-    if (!shell2 || !shell2.shellUpdates || state.shellBusy) return;
-    state.shellBusy = true;
-    state.shellFraction = 0;
-    state.shellMessage = null;
-    ui.renderContent();
-    shell2.shellUpdates.download(version).then(function(result) {
-      if (result.ok) {
-        state.shellReady = result.version;
-        state.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
-      } else state.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
-      state.shellBusy = false;
-      ui.renderContent();
+  async function fetchReleases(doFetch = fetch) {
+    var response;
+    try {
+      response = await doFetch(CHANNEL.releasesList, { headers: { accept: "application/vnd.github+json" }, cache: "no-store" });
+    } catch (error) {
+      throw new Error("\u6CA1\u95EE\u5230 " + channelName() + " \u53D1\u5E03\u9875");
+    }
+    if (!response.ok) throw new Error(channelName() + " " + response.status);
+    return gameReleases(await response.json());
+  }
+  function load(ui) {
+    var s = stateFor(ui);
+    if (s.loading) return;
+    s.loading = true;
+    s.error = null;
+    fetchReleases().then(function(releases) {
+      s.releases = releases;
     }, function(error) {
-      state.shellBusy = false;
-      state.shellMessage = String(error);
-      ui.renderContent();
+      s.error = error instanceof Error ? error.message : "\u6CA1\u95EE\u5230\u53D1\u5E03\u9875";
+    }).then(function() {
+      s.loading = false;
+      s.asked = true;
+      if (ui.tab === "update") ui.renderContent();
     });
-  }
-  function installShell(ui) {
-    var shell2 = updatesBridge();
-    if (!shell2 || !shell2.shellUpdates) return;
-    shell2.shellUpdates.install().then(function(result) {
-      if (!result.ok) {
-        state.shellMessage = result.reason;
-        ui.renderContent();
-      }
-    });
-  }
-  function shellManualReason(mode) {
-    if (mode === "portable") return "Windows \u4FBF\u643A\u7248\u9700\u8981\u4E0B\u8F7D\u5E76\u66FF\u6362\u65E7 EXE\u3002";
-    if (mode === "unsigned-mac") return "macOS \u5305\u6682\u672A\u7B7E\u540D\uFF0C\u65E0\u6CD5\u5728\u5E94\u7528\u5185\u81EA\u52A8\u66F4\u65B0\uFF1B\u8BF7\u4E0B\u8F7D DMG \u5E76\u66FF\u6362\u5E94\u7528\u3002";
-    if (mode === "manual") return "\u8FD9\u79CD Linux \u5B89\u88C5\u65B9\u5F0F\u9700\u8981\u4ECE\u53D1\u5E03\u9875\u4E0B\u8F7D\u65B0\u5305\u3002";
-    if (mode === "preview-manual") return "\u9884\u89C8\u7248\u7684\u684C\u9762\u5916\u58F3\u8981\u4ECE\u53D1\u5E03\u9875\u4E0B\u8F7D\u5B89\u88C5\u5305\uFF0C\u88C5\u4E00\u6B21\u4E4B\u540E\u5C31\u80FD\u5728\u8FD9\u91CC\u76F4\u63A5\u66F4\u65B0\u3002";
-    return "\u5F53\u524D\u7248\u672C\u8FD8\u4E0D\u652F\u6301\u5E94\u7528\u5185\u66F4\u65B0\u5916\u58F3\uFF0C\u9700\u8981\u624B\u52A8\u5B89\u88C5\u4E00\u6B21\u65B0\u7248\u3002";
-  }
-  function install(ui, version) {
-    var shell2 = updatesBridge();
-    if (shell2 === null) return;
-    state.busy = version;
-    state.fraction = 0;
-    state.message = null;
-    ui.renderContent();
-    shell2.updates.install(version).then(function(result) {
-      state.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state.busy = null;
-      ui.renderContent();
-    });
-  }
-  function rollback(ui) {
-    var shell2 = updatesBridge();
-    if (shell2 === null) return;
-    state.busy = "rollback";
-    ui.renderContent();
-    shell2.updates.rollback().then(function(result) {
-      state.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state.busy = null;
-      ui.renderContent();
-    });
-  }
-  function renderUpdateTab(ui) {
-    if (updatesBridge() === null) {
-      renderDshUpdate(ui);
-      return;
-    }
-    if (state.current === null && state.list === null && state.error === null) refresh(ui);
-    var cur = state.current;
-    var head = el("div", "dp-pick dp-tile-card dp-update-now");
-    var top = el("div", "dp-update-top");
-    top.appendChild(el("div", "dp-pick-head", cur === null ? "\u6B63\u5728\u770B\u73B0\u5728\u7684\u7248\u672C\u2026" : "\u6E38\u620F v" + cur.version + (cur.bundled ? "\uFF08\u5B89\u88C5\u5305\u81EA\u5E26\uFF09" : "")));
-    head.appendChild(top);
-    if (cur !== null) head.appendChild(el("div", "dp-dim", "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \xB7 \u6E38\u620F\u73A9\u6CD5\u548C\u7A97\u53E3\u529F\u80FD\u5206\u522B\u66F4\u65B0"));
-    if (state.message !== null) head.appendChild(el("div", "dp-req", state.message));
-    var again = button("dp-mini dp-update-refresh", { "data-update-refresh": "" }, function() {
-      state.message = null;
-      state.shellMessage = null;
-      refresh(ui, true);
-    });
-    again.textContent = state.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
-    again.disabled = state.loading || state.busy !== null || state.shellBusy;
-    top.appendChild(again);
-    var eligible = function(r) {
-      return !r.prerelease;
-    };
-    var shellOf = function(r) {
-      return r.latestShell || r.manifest && r.manifest.shellVersion || null;
-    };
-    var shellRelease = state.list === null || cur === null ? null : state.list.find(function(r) {
-      return eligible(r) && shellOf(r) !== null && compareVersions(shellOf(r), cur.shell) > 0;
-    }) || null;
-    if (shellRelease !== null) {
-      var shellVersion = shellOf(shellRelease);
-      var mode = state.shellStatus && state.shellStatus.mode;
-      if (shellRelease.prerelease && compareVersions(cur.shell, "0.2.5") < 0) mode = "preview-manual";
-      var required = compareVersions(cur.shell, "0.2.0") < 0 || state.list.some(function(r) {
-        return eligible(r) && r.blocked === "shell" && compareVersions(r.version, cur.version) > 0;
-      });
-      head.appendChild(el("div", required ? "dp-req" : "dp-dim", required ? "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \u2192 v" + shellVersion + "\uFF1A\u65B0\u7248\u672C\u6E38\u620F\u9700\u8981\u5B83" : "\u684C\u9762\u5916\u58F3\u6709\u53EF\u9009\u66F4\u65B0 v" + shellVersion + "\uFF0C\u4E0D\u66F4\u65B0\u4E5F\u80FD\u6B63\u5E38\u73A9"));
-      if (compareVersions(cur.shell, "0.2.0") < 0) head.appendChild(el("div", "dp-dim", "\u4F60\u7684\u684C\u9762\u5916\u58F3\u662F\u94FA\u6EE1\u5168\u5C4F\u7684\u65E7\u7248\uFF0C\u4F1A\u5361\u3001\u4F1A\u95EA\uFF1B\u65B0\u5916\u58F3\u53EA\u6846\u4F4F\u732A\u548C\u9762\u677F\u3002\u8BF7\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305\u8986\u76D6\u5B89\u88C5\uFF0C\u5B58\u6863\u4E0D\u4F1A\u4E22\u3002"));
-      if (mode !== "automatic" && required) head.appendChild(el("div", "dp-dim", shellManualReason(mode)));
-      if (state.shellMessage !== null) head.appendChild(el("div", "dp-req", state.shellMessage));
-      if (state.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state.shellFraction * 100) + "%"));
-      var shellGo = button(required ? "dp-btn dp-btn-wide" : "dp-mini", { "data-update-shell": shellRelease.version }, function() {
-        if (mode !== "automatic") updatesBridge().openPage(shellRelease.page);
-        else if (state.shellReady === shellVersion) installShell(ui);
-        else downloadShell(ui, shellVersion);
-      });
-      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
-      shellGo.disabled = state.shellBusy || state.busy !== null;
-      head.appendChild(shellGo);
-    }
-    if (state.busy !== null && state.message === null) {
-      head.appendChild(el("div", "dp-dim", state.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state.fraction * 100) + "%"));
-    }
-    var latest = state.list === null ? null : state.list.find(function(r) {
-      return r.blocked === null && eligible(r);
-    }) || null;
-    if (latest !== null && cur !== null && compareVersions(latest.version, cur.version) > 0) {
-      var up = button("dp-btn dp-btn-wide", { "data-update-latest": latest.version }, function() {
-        install(ui, latest.version);
-      });
-      up.textContent = "\u2B06\uFE0F \u66F4\u65B0\u5230\u6700\u65B0 v" + latest.version;
-      up.disabled = state.busy !== null;
-      head.appendChild(up);
-    } else if (latest !== null) {
-      head.appendChild(el("div", "dp-req dp-req-ok", "\u2713 \u5DF2\u7ECF\u662F\u6700\u65B0"));
-    }
-    ui.content.appendChild(head);
-    if (state.loading && state.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
-    if (state.error !== null) {
-      ui.content.appendChild(el("div", "dp-empty", state.error));
-      var again = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
-        refresh(ui, true);
-      });
-      again.textContent = "\u518D\u8BD5\u4E00\u6B21";
-      ui.content.appendChild(again);
-    }
-    if (state.list !== null) renderList(ui, state.list);
-    if (cur !== null && cur.previous !== null) {
-      var back = button("dp-btn dp-btn-wide dp-update-back", { "data-update-rollback": "" }, function() {
-        rollback(ui);
-      });
-      back.textContent = "\u21A9\uFE0F \u56DE\u5230\u4E0A\u4E00\u4E2A\u7248\u672C v" + cur.previous;
-      back.disabled = state.busy !== null;
-      ui.content.appendChild(back);
-    }
   }
   function renderDshUpdate(ui) {
-    var notice = ui.updateNotice;
+    var s = stateFor(ui);
+    if (!s.asked && !s.loading && s.error === null) load(ui);
+    renderHead(ui, s);
+    renderNotice(ui);
+    renderVersions(ui, s);
+  }
+  function renderHead(ui, s) {
     var head = el("div", "dp-pick dp-tile-card dp-update-now");
-    head.appendChild(el("div", "dp-pick-head", "\u73B0\u5728 v" + (ui.view.version || "\u672A\u77E5")));
+    var top = el("div", "dp-update-top");
+    top.appendChild(el("div", "dp-pick-head", "\u73B0\u5728 v" + (ui.view.version || "\u672A\u77E5")));
+    var again = button("dp-mini dp-update-refresh", { "data-dsh-refresh": "" }, function() {
+      s.pick = null;
+      s.previews = false;
+      s.npm = {};
+      load(ui);
+      ui.renderContent();
+    });
+    again.textContent = s.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
+    again.disabled = s.loading;
+    top.appendChild(again);
+    head.appendChild(top);
     head.appendChild(el("div", "dp-dim", "DSH \u63D2\u4EF6\u53EA\u63D0\u9192\u65B0\u7248\u672C\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u6539\u52A8\u672C\u5730\u6587\u4EF6\u3002"));
+    head.appendChild(el("div", "dp-dim", "\u6D4B\u8BD5\u7248\u4E0D\u5F39\u63D0\u793A\u3001\u4E5F\u4E0D\u4EAE\u7EA2\u70B9\uFF1B\u60F3\u8BD5\u54EA\u4E2A\u7248\u672C\uFF0C\u5728\u4E0B\u9762\u70B9\u5F00\u770B\u8FD9\u4E00\u7248\u600E\u4E48\u88C5\u3002"));
     ui.content.appendChild(head);
+  }
+  function renderNotice(ui) {
+    var notice = ui.updateNotice;
     if (notice === null || notice === void 0) return;
     if (!notice.checked && !notice.checking && notice.error === null) notice.check();
     if (notice.checking) {
-      ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
+      ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE " + channelName() + "\u2026"));
       return;
     }
     if (notice.error !== null) {
@@ -11924,6 +12013,367 @@
     go.textContent = "\u6253\u5F00\u53D1\u5E03\u9875";
     box.appendChild(go);
     ui.content.appendChild(box);
+  }
+  function renderVersions(ui, s) {
+    if (s.releases === null) {
+      if (s.loading) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE " + channelName() + " \u53D1\u5E03\u9875\u2026"));
+      if (s.error !== null) {
+        ui.content.appendChild(el("div", "dp-empty", s.error));
+        var retry = button("dp-btn dp-btn-wide", { "data-dsh-retry": "" }, function() {
+          load(ui);
+          ui.renderContent();
+        });
+        retry.textContent = "\u518D\u8BD5\u4E00\u6B21";
+        ui.content.appendChild(retry);
+      }
+      return;
+    }
+    if (s.releases.length === 0) {
+      ui.content.appendChild(el("div", "dp-empty", "\u53D1\u5E03\u9875\u4E0A\u8FD8\u6CA1\u6709\u80FD\u5B89\u88C5\u7684\u7248\u672C"));
+      ui.content.appendChild(pageButton("\u6253\u5F00\u53D1\u5E03\u9875", CHANNEL.releasesPage, true));
+      return;
+    }
+    if (s.error !== null) ui.content.appendChild(el("div", "dp-req", "\u5237\u65B0\u5931\u8D25\uFF1A" + s.error + "\uFF0C\u4E0B\u9762\u662F\u4E0A\u6B21\u7684\u5217\u8868\u3002"));
+    var stable = [];
+    var previews = [];
+    for (var i = 0; i < s.releases.length; i += 1) {
+      if (s.releases[i].prerelease) previews.push(s.releases[i]);
+      else stable.push(s.releases[i]);
+    }
+    if (stable.length > 0) {
+      ui.content.appendChild(el("div", "dp-dim", "\u6B63\u5F0F\u7248"));
+      for (var v = 0; v < stable.length; v += 1) ui.content.appendChild(versionRow(ui, s, stable[v]));
+    }
+    if (previews.length > 0) ui.content.appendChild(previewBox(ui, s, previews));
+  }
+  function previewBox(ui, s, previews) {
+    var box = el("div", "dp-rel");
+    var row = button("dp-rel-head", { "data-dsh-previews": "" }, function() {
+      s.previews = !s.previews;
+      ui.renderContent();
+    });
+    row.appendChild(el("b", null, "\u6D4B\u8BD5\u7248"));
+    row.appendChild(el("small", null, previews.length + " \u4E2A \xB7 \u4E0D\u63D0\u9192\uFF0C\u624B\u52A8\u5C55\u5F00"));
+    var tags = el("span", "dp-rel-tags");
+    tags.appendChild(tag("preview", s.previews ? "\u6536\u8D77" : "\u5C55\u5F00"));
+    row.appendChild(tags);
+    box.appendChild(row);
+    if (s.previews) {
+      var body = el("div", "dp-rel-body");
+      body.appendChild(el("div", "dp-dim", "\u6D4B\u8BD5\u7248\u53EA\u5728\u8FD9\u91CC\u4F9B\u624B\u52A8\u9009\u62E9\uFF1A\u4E0D\u4F1A\u63D0\u9192\uFF0C\u4E5F\u4E0D\u4F1A\u81EA\u52A8\u5B89\u88C5\u3002"));
+      for (var i = 0; i < previews.length; i += 1) body.appendChild(versionRow(ui, s, previews[i]));
+      box.appendChild(body);
+    }
+    return box;
+  }
+  function versionRow(ui, s, release) {
+    var open = s.pick === release.version;
+    var current3 = isCurrent(ui, release.version);
+    var box = el("div", "dp-rel");
+    box.setAttribute("data-dsh-release", release.version);
+    var row = button("dp-rel-head", { "data-dsh-open": release.version }, function() {
+      s.pick = open ? null : release.version;
+      ui.renderContent();
+    });
+    row.appendChild(el("b", null, "v" + release.version));
+    if (release.date !== "") row.appendChild(el("small", null, release.date));
+    var tags = el("span", "dp-rel-tags");
+    if (current3) tags.appendChild(tag("current", "\u5728\u7528"));
+    tags.appendChild(tag(release.prerelease ? "preview" : "stable", release.prerelease ? "\u6D4B\u8BD5\u7248" : "\u6B63\u5F0F\u7248"));
+    row.appendChild(tags);
+    box.appendChild(row);
+    if (open) box.appendChild(versionDetails(ui, s, release));
+    return box;
+  }
+  function isCurrent(ui, version) {
+    return ui.view.version ? compareVersions(version, ui.view.version) === 0 : false;
+  }
+  function isOlder(ui, version) {
+    return ui.view.version ? compareVersions(version, ui.view.version) < 0 : false;
+  }
+  function versionDetails(ui, s, release) {
+    var box = el("div", "dp-rel-body");
+    if (release.notes) {
+      var notes = el("div", "dp-update-notes", release.notes);
+      notes.setAttribute("data-scroll-key", "dsh-update-notes:" + release.version);
+      box.appendChild(notes);
+    } else {
+      box.appendChild(el("div", "dp-dim", "\u8FD9\u4E2A\u7248\u672C\u6CA1\u6709\u5199\u66F4\u65B0\u8BF4\u660E\u3002"));
+    }
+    if (isCurrent(ui, release.version)) {
+      box.appendChild(el("div", "dp-req dp-req-ok", "\u6B63\u5728\u7528\u8FD9\u4E2A\u7248\u672C"));
+    } else {
+      if (isOlder(ui, release.version)) {
+        box.appendChild(el("div", "dp-req", "\u8FD9\u662F\u65E7\u7248\u672C v" + release.version + "\uFF0C\u4F4E\u4E8E\u5F53\u524D v" + ui.view.version + "\u3002\u8BF7\u5148\u5BFC\u51FA\u5B58\u6863\u518D\u88C5\uFF0C\u65E7\u7248\u672C\u53EF\u80FD\u8BFB\u4E0D\u4E86\u73B0\u5728\u7684\u5B58\u6863\u3002\u8FD9\u91CC\u53EA\u63D0\u4F9B\u5B89\u88C5\u6307\u5F15\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u964D\u7EA7\u3002"));
+      }
+      box.appendChild(installGuide(ui, s, release));
+    }
+    box.appendChild(pageButton("\u6253\u5F00\u53D1\u5E03\u9875", release.page, false, release.version));
+    return box;
+  }
+  function installGuide(ui, s, release) {
+    var box = el("div", null);
+    box.setAttribute("data-dsh-npm", release.version);
+    var known = s.npm[release.version] ?? { state: "checking" };
+    if (s.npm[release.version] === void 0) checkNpm(ui, release.version);
+    if (known.state === "checking") {
+      box.appendChild(el("div", "dp-dim", "\u6B63\u5728\u786E\u8BA4 npm \u4E0A\u6709\u6CA1\u6709 v" + release.version + "\u2026"));
+    } else if (known.state === "found") {
+      box.appendChild(el("div", "dp-dim", "\u5728 DSH \u91CC\u5B89\u88C5\u8FD9\u4E2A\u7248\u672C\uFF1A"));
+      box.appendChild(el("pre", "dp-guide-code", "dsh plugin --profile web add dsh-piggy@" + release.version));
+      box.appendChild(el("div", "dp-dim", "\u88C5\u5B8C\u91CD\u542F DSH\uFF0C\u518D\u5237\u65B0\u9875\u9762\u3002\u7528\u522B\u7684 profile \u65F6\u628A web \u6362\u6210\u81EA\u5DF1\u7684\u3002"));
+    } else if (known.state === "missing") {
+      box.appendChild(el("div", "dp-req", "npm \u4E0A\u8FD8\u6CA1\u6709 v" + release.version + "\uFF1A\u8FD9\u4E00\u7248\u53EA\u5728\u53D1\u5E03\u9875\u4E0A\uFF0C\u6CA1\u6709\u5BF9\u5E94\u7684 npm \u5305\u3002"));
+      box.appendChild(el("div", "dp-dim", "\u53EF\u4EE5\u5148\u4ECE\u53D1\u5E03\u9875\u4E0B\u8F7D\u8FD9\u4E2A\u7248\u672C\u7684\u538B\u7F29\u5305\uFF1B\u7B49 npm \u8865\u4E0A\u540E\u518D\u6309\u7248\u672C\u5B89\u88C5\u3002"));
+      box.appendChild(npmAgain(ui, release.version));
+    } else {
+      box.appendChild(el("div", "dp-req", "\u6CA1\u80FD\u786E\u8BA4 npm \u4E0A\u6709\u6CA1\u6709 v" + release.version + "\uFF08" + known.message + "\uFF09\u3002"));
+      box.appendChild(el("div", "dp-dim", "\u8FD9\u662F\u6CA1\u95EE\u5230 npm\uFF0C\u4E0D\u4EE3\u8868\u8FD9\u4E00\u7248\u4E0D\u5B58\u5728\uFF1B\u7F13\u4E00\u4E0B\u518D\u67E5\u4E00\u6B21\u3002"));
+      box.appendChild(npmAgain(ui, release.version));
+    }
+    return box;
+  }
+  function npmAgain(ui, version) {
+    var go = button("dp-mini", { "data-dsh-npm-retry": version }, function() {
+      delete stateFor(ui).npm[version];
+      ui.renderContent();
+    });
+    go.textContent = "\u518D\u67E5\u4E00\u6B21 npm";
+    return go;
+  }
+  function checkNpm(ui, version) {
+    var s = stateFor(ui);
+    if (s.npm[version] !== void 0) return;
+    s.npm[version] = { state: "checking" };
+    fetchNpmVersion(version).then(function(answer) {
+      s.npm[version] = { state: answer };
+    }, function(error) {
+      s.npm[version] = { state: "error", message: error instanceof Error ? error.message : "\u6CA1\u8FDE\u4E0A npm" };
+    }).then(function() {
+      if (state === s && ui.tab === "update" && s.pick === version) ui.renderContent();
+    });
+  }
+  function pageButton(text, page, empty, version) {
+    var go = button("dp-btn dp-btn-wide", empty ? { "data-dsh-page": "" } : { "data-update-page": version }, function() {
+      window.open(page, "_blank", "noopener");
+    });
+    go.textContent = text;
+    return go;
+  }
+  function tag(kind, text) {
+    var node = el("span", "dp-rel-tag", text);
+    node.setAttribute("data-tag", kind);
+    return node;
+  }
+
+  // src/client/tabs/update.js
+  var state2 = {
+    current: null,
+    list: null,
+    error: null,
+    loading: false,
+    pick: null,
+    previews: null,
+    busy: null,
+    fraction: 0,
+    message: null,
+    listening: false,
+    shellStatus: null,
+    shellBusy: false,
+    shellReady: null,
+    shellFraction: 0,
+    shellMessage: null,
+    shellListening: false
+  };
+  function updatesBridge() {
+    var shell2 = (
+      /** @type {any} */
+      window.piggyShell
+    );
+    return shell2 && shell2.updates ? shell2 : null;
+  }
+  function refresh(ui, fresh) {
+    var shell2 = updatesBridge();
+    if (shell2 === null || state2.loading) return;
+    state2.loading = true;
+    state2.error = null;
+    if (!state2.listening) {
+      state2.listening = true;
+      shell2.updates.onProgress(function(fraction) {
+        state2.fraction = fraction;
+        ui.renderContent();
+      });
+    }
+    if (shell2.shellUpdates && !state2.shellListening) {
+      state2.shellListening = true;
+      shell2.shellUpdates.onProgress(function(fraction) {
+        state2.shellFraction = fraction;
+        ui.renderContent();
+      });
+    }
+    Promise.all([shell2.updates.current(), shell2.updates.list(fresh === true), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
+      state2.current = got[0];
+      if (got[1] && got[1].ok) state2.list = got[1].releases;
+      else state2.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
+      state2.shellStatus = got[2];
+    }, function() {
+      state2.error = "\u6CA1\u95EE\u5230";
+    }).then(function() {
+      state2.loading = false;
+      ui.renderContent();
+    });
+  }
+  function downloadShell(ui, version) {
+    var shell2 = updatesBridge();
+    if (!shell2 || !shell2.shellUpdates || state2.shellBusy) return;
+    state2.shellBusy = true;
+    state2.shellFraction = 0;
+    state2.shellMessage = null;
+    ui.renderContent();
+    shell2.shellUpdates.download(version).then(function(result) {
+      if (result.ok) {
+        state2.shellReady = result.version;
+        state2.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
+      } else state2.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
+      state2.shellBusy = false;
+      ui.renderContent();
+    }, function(error) {
+      state2.shellBusy = false;
+      state2.shellMessage = String(error);
+      ui.renderContent();
+    });
+  }
+  function installShell(ui) {
+    var shell2 = updatesBridge();
+    if (!shell2 || !shell2.shellUpdates) return;
+    shell2.shellUpdates.install().then(function(result) {
+      if (!result.ok) {
+        state2.shellMessage = result.reason;
+        ui.renderContent();
+      }
+    });
+  }
+  function shellManualReason(mode) {
+    if (mode === "portable") return "Windows \u4FBF\u643A\u7248\u9700\u8981\u4E0B\u8F7D\u5E76\u66FF\u6362\u65E7 EXE\u3002";
+    if (mode === "unsigned-mac") return "macOS \u5305\u6682\u672A\u7B7E\u540D\uFF0C\u65E0\u6CD5\u5728\u5E94\u7528\u5185\u81EA\u52A8\u66F4\u65B0\uFF1B\u8BF7\u4E0B\u8F7D DMG \u5E76\u66FF\u6362\u5E94\u7528\u3002";
+    if (mode === "manual") return "\u8FD9\u79CD Linux \u5B89\u88C5\u65B9\u5F0F\u9700\u8981\u4ECE\u53D1\u5E03\u9875\u4E0B\u8F7D\u65B0\u5305\u3002";
+    if (mode === "preview-manual") return "\u9884\u89C8\u7248\u7684\u684C\u9762\u5916\u58F3\u8981\u4ECE\u53D1\u5E03\u9875\u4E0B\u8F7D\u5B89\u88C5\u5305\uFF0C\u88C5\u4E00\u6B21\u4E4B\u540E\u5C31\u80FD\u5728\u8FD9\u91CC\u76F4\u63A5\u66F4\u65B0\u3002";
+    return "\u5F53\u524D\u7248\u672C\u8FD8\u4E0D\u652F\u6301\u5E94\u7528\u5185\u66F4\u65B0\u5916\u58F3\uFF0C\u9700\u8981\u624B\u52A8\u5B89\u88C5\u4E00\u6B21\u65B0\u7248\u3002";
+  }
+  function install(ui, version) {
+    var shell2 = updatesBridge();
+    if (shell2 === null) return;
+    state2.busy = version;
+    state2.fraction = 0;
+    state2.message = null;
+    ui.renderContent();
+    shell2.updates.install(version).then(function(result) {
+      state2.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state2.busy = null;
+      ui.renderContent();
+    });
+  }
+  function rollback(ui) {
+    var shell2 = updatesBridge();
+    if (shell2 === null) return;
+    state2.busy = "rollback";
+    ui.renderContent();
+    shell2.updates.rollback().then(function(result) {
+      state2.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state2.busy = null;
+      ui.renderContent();
+    });
+  }
+  function renderUpdateTab(ui) {
+    if (updatesBridge() === null) {
+      renderDshUpdate(ui);
+      return;
+    }
+    if (state2.current === null && state2.list === null && state2.error === null) refresh(ui);
+    var cur = state2.current;
+    var head = el("div", "dp-pick dp-tile-card dp-update-now");
+    var top = el("div", "dp-update-top");
+    top.appendChild(el("div", "dp-pick-head", cur === null ? "\u6B63\u5728\u770B\u73B0\u5728\u7684\u7248\u672C\u2026" : "\u6E38\u620F v" + cur.version + (cur.bundled ? "\uFF08\u5B89\u88C5\u5305\u81EA\u5E26\uFF09" : "")));
+    head.appendChild(top);
+    if (cur !== null) head.appendChild(el("div", "dp-dim", "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \xB7 \u6E38\u620F\u73A9\u6CD5\u548C\u7A97\u53E3\u529F\u80FD\u5206\u522B\u66F4\u65B0"));
+    var previewCount = state2.list === null ? 0 : state2.list.filter(function(r) {
+      return r.prerelease;
+    }).length;
+    if (previewCount > 0) head.appendChild(el("div", "dp-dim", "\u5217\u8868\u91CC\u8FD8\u6709 " + previewCount + " \u4E2A\u6D4B\u8BD5\u7248\uFF1A\u4E0D\u4F1A\u63D0\u9192\uFF0C\u60F3\u8BD5\u7684\u8BDD\u5728\u4E0B\u9762\u70B9\u5F00\u624B\u52A8\u5B89\u88C5\u3002"));
+    if (state2.message !== null) head.appendChild(el("div", "dp-req", state2.message));
+    var again = button("dp-mini dp-update-refresh", { "data-update-refresh": "" }, function() {
+      state2.message = null;
+      state2.shellMessage = null;
+      refresh(ui, true);
+    });
+    again.textContent = state2.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
+    again.disabled = state2.loading || state2.busy !== null || state2.shellBusy;
+    top.appendChild(again);
+    var eligible = function(r) {
+      return !r.prerelease;
+    };
+    var shellOf = function(r) {
+      return r.latestShell || r.manifest && r.manifest.shellVersion || null;
+    };
+    var shellRelease = state2.list === null || cur === null ? null : state2.list.find(function(r) {
+      return eligible(r) && shellOf(r) !== null && compareVersions(shellOf(r), cur.shell) > 0;
+    }) || null;
+    if (shellRelease !== null) {
+      var shellVersion = shellOf(shellRelease);
+      var mode = state2.shellStatus && state2.shellStatus.mode;
+      if (shellRelease.prerelease && compareVersions(cur.shell, "0.2.5") < 0) mode = "preview-manual";
+      var required = compareVersions(cur.shell, "0.2.0") < 0 || state2.list.some(function(r) {
+        return eligible(r) && r.blocked === "shell" && compareVersions(r.version, cur.version) > 0;
+      });
+      head.appendChild(el("div", required ? "dp-req" : "dp-dim", required ? "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \u2192 v" + shellVersion + "\uFF1A\u65B0\u7248\u672C\u6E38\u620F\u9700\u8981\u5B83" : "\u684C\u9762\u5916\u58F3\u6709\u53EF\u9009\u66F4\u65B0 v" + shellVersion + "\uFF0C\u4E0D\u66F4\u65B0\u4E5F\u80FD\u6B63\u5E38\u73A9"));
+      if (compareVersions(cur.shell, "0.2.0") < 0) head.appendChild(el("div", "dp-dim", "\u4F60\u7684\u684C\u9762\u5916\u58F3\u662F\u94FA\u6EE1\u5168\u5C4F\u7684\u65E7\u7248\uFF0C\u4F1A\u5361\u3001\u4F1A\u95EA\uFF1B\u65B0\u5916\u58F3\u53EA\u6846\u4F4F\u732A\u548C\u9762\u677F\u3002\u8BF7\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305\u8986\u76D6\u5B89\u88C5\uFF0C\u5B58\u6863\u4E0D\u4F1A\u4E22\u3002"));
+      if (mode !== "automatic" && required) head.appendChild(el("div", "dp-dim", shellManualReason(mode)));
+      if (state2.shellMessage !== null) head.appendChild(el("div", "dp-req", state2.shellMessage));
+      if (state2.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state2.shellFraction * 100) + "%"));
+      var shellGo = button(required ? "dp-btn dp-btn-wide" : "dp-mini", { "data-update-shell": shellRelease.version }, function() {
+        if (mode !== "automatic") updatesBridge().openPage(shellRelease.page);
+        else if (state2.shellReady === shellVersion) installShell(ui);
+        else downloadShell(ui, shellVersion);
+      });
+      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state2.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
+      shellGo.disabled = state2.shellBusy || state2.busy !== null;
+      head.appendChild(shellGo);
+    }
+    if (state2.busy !== null && state2.message === null) {
+      head.appendChild(el("div", "dp-dim", state2.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state2.fraction * 100) + "%"));
+    }
+    var latest = state2.list === null ? null : state2.list.find(function(r) {
+      return r.blocked === null && eligible(r);
+    }) || null;
+    if (latest !== null && cur !== null && compareVersions(latest.version, cur.version) > 0) {
+      var up = button("dp-btn dp-btn-wide", { "data-update-latest": latest.version }, function() {
+        install(ui, latest.version);
+      });
+      up.textContent = "\u2B06\uFE0F \u66F4\u65B0\u5230\u6700\u65B0 v" + latest.version;
+      up.disabled = state2.busy !== null;
+      head.appendChild(up);
+    } else if (latest !== null) {
+      head.appendChild(el("div", "dp-req dp-req-ok", "\u2713 \u5DF2\u7ECF\u662F\u6700\u65B0"));
+    }
+    ui.content.appendChild(head);
+    if (state2.loading && state2.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
+    if (state2.error !== null) {
+      ui.content.appendChild(el("div", "dp-empty", state2.error));
+      var again = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
+        refresh(ui, true);
+      });
+      again.textContent = "\u518D\u8BD5\u4E00\u6B21";
+      ui.content.appendChild(again);
+    }
+    if (state2.list !== null) renderList(ui, state2.list);
+    if (cur !== null && cur.previous !== null) {
+      var back = button("dp-btn dp-btn-wide dp-update-back", { "data-update-rollback": "" }, function() {
+        rollback(ui);
+      });
+      back.textContent = "\u21A9\uFE0F \u56DE\u5230\u4E0A\u4E00\u4E2A\u7248\u672C v" + cur.previous;
+      back.disabled = state2.busy !== null;
+      ui.content.appendChild(back);
+    }
   }
   function baseOf(version) {
     return String(version).split("-")[0];
@@ -11956,11 +12406,11 @@
   function renderGroup(ui, group, newestStable) {
     var key2 = group.base;
     var head = group.stable ?? group.previews[0];
-    var open = state.pick === key2;
+    var open = state2.pick === key2;
     var box = el("div", "dp-rel");
     box.setAttribute("data-release-group", key2);
     var row = button("dp-rel-head", { "data-release": head.version }, function() {
-      state.pick = open ? null : key2;
+      state2.pick = open ? null : key2;
       ui.renderContent();
     });
     row.appendChild(el("b", null, "v" + key2));
@@ -11969,19 +12419,23 @@
     var current3 = group.stable !== null && group.stable.current || group.previews.some(function(r) {
       return r.current;
     });
-    if (current3) tags.appendChild(tag("current", "\u5728\u7528"));
-    if (group.stable !== null && newestStable !== null && group.stable.version === newestStable.version) tags.appendChild(tag("latest", "\u6700\u65B0"));
-    if (group.stable !== null && group.stable.blocked !== null) tags.appendChild(tag("blocked", "\u{1F512}"));
+    if (current3) tags.appendChild(tag2("current", "\u5728\u7528"));
+    if (group.stable !== null && newestStable !== null && group.stable.version === newestStable.version) tags.appendChild(tag2("latest", "\u6700\u65B0"));
+    if (group.previews.length > 0) tags.appendChild(tag2("preview", "\u6D4B\u8BD5\u7248 " + group.previews.length));
+    if (group.stable !== null && group.stable.blocked !== null) tags.appendChild(tag2("blocked", "\u{1F512}"));
     row.appendChild(tags);
     box.appendChild(row);
     if (open) {
       var body = el("div", "dp-rel-body");
       if (group.stable !== null) body.appendChild(details(ui, group.stable));
-      if (group.previews.length > 0) {
+      if (group.previews.length > 0 && group.stable === null) {
+        body.appendChild(el("div", "dp-dim", "\u8FD9\u7EC4\u8FD8\u6CA1\u6709\u6B63\u5F0F\u7248\uFF1B\u6D4B\u8BD5\u7248\u4E0D\u4F1A\u63D0\u9192\uFF0C\u53EA\u5217\u5728\u8FD9\u91CC\u3002"));
+        for (var q = 0; q < group.previews.length; q += 1) body.appendChild(previewRow(ui, group.previews[q]));
+      } else if (group.previews.length > 0) {
         var pre = el("div", "dp-rel-pre");
-        var showing = state.previews === key2;
+        var showing = state2.previews === key2;
         var toggle = button("dp-mini dp-mini-plain", { "data-previews": key2 }, function() {
-          state.previews = showing ? null : key2;
+          state2.previews = showing ? null : key2;
           ui.renderContent();
         });
         toggle.textContent = (showing ? "\u25BE " : "\u25B8 ") + "\u6D4B\u8BD5\u7248 " + group.previews.length + " \u4E2A \xB7 \u624B\u52A8\u5B89\u88C5";
@@ -11995,12 +12449,13 @@
     }
     ui.content.appendChild(box);
   }
-  function tag(kind, text) {
+  function tag2(kind, text) {
     var node = el("span", "dp-rel-tag", text);
     node.setAttribute("data-tag", kind);
     return node;
   }
   function previewRow(ui, release) {
+    var box = el("div", "dp-rel-pre");
     var row = el("div", "dp-rel-pre-row");
     row.appendChild(el("span", null, "v" + release.version + (release.date ? " \xB7 " + release.date : "")));
     var go = button("dp-mini", { "data-update-install": release.version }, function() {
@@ -12008,9 +12463,19 @@
       else install(ui, release.version);
     });
     go.textContent = release.current ? "\u6B63\u5728\u7528" : release.blocked === "shell" ? "\u9700\u8981\u65B0\u5916\u58F3" : release.blocked === "save" ? "\u6362\u4E0D\u4E86" : "\u5B89\u88C5\u6D4B\u8BD5\u7248";
-    go.disabled = release.current || release.blocked === "save" || state.busy !== null;
+    go.disabled = release.current || release.blocked === "save" || state2.busy !== null;
     row.appendChild(go);
-    return row;
+    box.appendChild(row);
+    var shell2 = release.latestShell || release.manifest && release.manifest.shellVersion;
+    if (shell2 && state2.current && compareVersions(shell2, state2.current.shell) > 0) {
+      box.appendChild(el("div", "dp-dim", "\u914D\u5957\u684C\u9762\u5916\u58F3 v" + shell2 + "\uFF1B\u53EA\u6362\u6E38\u620F\u5305\u4E0D\u4F1A\u66F4\u65B0\u7A97\u53E3\u529F\u80FD\u3002"));
+      var desktop2 = button("dp-mini", { "data-preview-shell": release.version }, function() {
+        updatesBridge().openPage(release.page);
+      });
+      desktop2.textContent = "\u4E0B\u8F7D\u914D\u5957\u684C\u9762\u7248";
+      box.appendChild(desktop2);
+    }
+    return box;
   }
   function details(ui, release) {
     var box = el("div", "dp-pick dp-tile-card dp-update-detail");
@@ -12029,15 +12494,15 @@
       go.disabled = true;
     } else if (release.blocked === "shell") {
       box.appendChild(el("div", "dp-req", "\u2717 \u6E38\u620F v" + release.version + " \u8981\u6C42\u684C\u9762\u5916\u58F3\u81F3\u5C11 v" + release.minShell));
-      go.textContent = state.shellStatus && state.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
-      if (state.shellStatus && state.shellStatus.mode === "automatic") go.disabled = true;
+      go.textContent = state2.shellStatus && state2.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
+      if (state2.shellStatus && state2.shellStatus.mode === "automatic") go.disabled = true;
     } else if (release.blocked === "save") {
       box.appendChild(el("div", "dp-req", "\u2717 \u5B58\u6863\u592A\u65B0\uFF0C\u8FD9\u4E2A\u7248\u672C\u8BFB\u4E0D\u4E86"));
       go.textContent = "\u6362\u4E0D\u4E86";
       go.disabled = true;
     } else {
       go.textContent = "\u6362\u5230\u8FD9\u4E2A\u7248\u672C";
-      go.disabled = state.busy !== null;
+      go.disabled = state2.busy !== null;
     }
     box.appendChild(go);
     return box;
@@ -12582,7 +13047,10 @@
       }).then((response) => response.json()).then((data) => {
         if (data.ok !== true) return ui.showBubble("\u5BFC\u5165\u5931\u8D25\uFF1A" + ((data.errors || [data.reason]).join("\uFF1B") || "\u8BF7\u68C0\u67E5\u76AE\u80A4\u5305"));
         const imported = (data.skins?.entries ?? []).find((entry) => entry.key === data.imported);
-        if (imported !== void 0) setDeclaredSkinContact(imported.art, imported.contact);
+        if (imported !== void 0) {
+          setDeclaredSkinContact(imported.art, imported.contact);
+          refreshCustomArt(imported.art);
+        }
         if (typeof ui.render === "function") ui.render(data);
         else {
           ui.view = data;
@@ -12645,14 +13113,14 @@
       applyBubbleSize(host3);
       onChanged?.();
     }
-    function onStorage2(event) {
+    function onStorage3(event) {
       if (event.key === BUBBLE_SIZE_KEY || event.key === null) update();
     }
     applyBubbleSize(host3);
-    window.addEventListener("storage", onStorage2);
+    window.addEventListener("storage", onStorage3);
     window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener("storage", onStorage2);
+      window.removeEventListener("storage", onStorage3);
       window.removeEventListener("resize", update);
     };
   }
@@ -13039,7 +13507,7 @@
   var EXPORT_URL2 = "/dsh-piggy/save/export";
   var PREVIEW_URL = "/dsh-piggy/save/preview";
   var IMPORT_URL = "/dsh-piggy/save/import";
-  var state2 = {
+  var state3 = {
     open: false,
     preview: null,
     loading: false,
@@ -13113,11 +13581,11 @@
     if (typeof ui.showBubble === "function") ui.showBubble(text, ms);
   }
   function rerender2() {
-    if (typeof state2.ui?.renderContent === "function") state2.ui.renderContent();
+    if (typeof state3.ui?.renderContent === "function") state3.ui.renderContent();
   }
   async function exportSave(ui) {
-    if (state2.busy) return;
-    state2.busy = true;
+    if (state3.busy) return;
+    state3.busy = true;
     rerender2();
     try {
       const response = await fetch(EXPORT_URL2, { cache: "no-store" });
@@ -13129,40 +13597,40 @@
     } catch (error) {
       status(ui, "\u5B58\u6863\u6CA1\u5BFC\u51FA\uFF1A" + messageOf(error), 5e3);
     } finally {
-      state2.busy = false;
+      state3.busy = false;
       rerender2();
     }
   }
   function focusTrigger() {
-    const ui = state2.ui;
+    const ui = state3.ui;
     const trigger = ui?.content?.querySelector?.('[data-save-trigger="import"]');
     if (trigger?.focus) trigger.focus();
   }
   function closeDialog() {
-    state2.controller?.abort();
-    state2.controller = null;
-    state2.open = false;
-    state2.preview = null;
-    state2.error = "";
-    state2.loading = false;
-    state2.busy = false;
-    if (state2.keyHandler && typeof document === "object") document.removeEventListener("keydown", state2.keyHandler, true);
-    state2.keyHandler = null;
+    state3.controller?.abort();
+    state3.controller = null;
+    state3.open = false;
+    state3.preview = null;
+    state3.error = "";
+    state3.loading = false;
+    state3.busy = false;
+    if (state3.keyHandler && typeof document === "object") document.removeEventListener("keydown", state3.keyHandler, true);
+    state3.keyHandler = null;
     rerender2();
     focusTrigger();
   }
   function trapKeys() {
-    if (state2.keyHandler || typeof document !== "object") return;
-    state2.keyHandler = (event) => {
-      if (!state2.open) return;
+    if (state3.keyHandler || typeof document !== "object") return;
+    state3.keyHandler = (event) => {
+      if (!state3.open) return;
       if (event.key === "Escape") {
-        if (state2.busy) return;
+        if (state3.busy) return;
         event.preventDefault();
         closeDialog();
         return;
       }
       if (event.key !== "Tab") return;
-      const dialog = state2.ui?.content?.querySelector?.('[data-save-dialog="true"]');
+      const dialog = state3.ui?.content?.querySelector?.('[data-save-dialog="true"]');
       const items = Array.from(dialog?.querySelectorAll?.("button:not([disabled]),input:not([disabled])") || []);
       if (!items.length) {
         event.preventDefault();
@@ -13178,79 +13646,79 @@
         first.focus();
       }
     };
-    document.addEventListener("keydown", state2.keyHandler, true);
+    document.addEventListener("keydown", state3.keyHandler, true);
   }
   async function previewFile(file) {
     if (!file) return;
-    state2.preview = null;
-    state2.error = "";
-    state2.loading = true;
-    state2.controller?.abort();
+    state3.preview = null;
+    state3.error = "";
+    state3.loading = true;
+    state3.controller?.abort();
     const controller = new AbortController();
-    state2.controller = controller;
+    state3.controller = controller;
     rerender2();
     try {
       const response = await fetch(PREVIEW_URL, { method: "POST", headers: { "content-type": "application/octet-stream" }, body: await file.arrayBuffer(), signal: controller.signal });
       const result = await response.json().catch(() => null);
-      if (state2.controller !== controller) return;
+      if (state3.controller !== controller) return;
       if (!response.ok || result?.ok !== true || !result.token || !result.summary) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
-      state2.preview = result;
+      state3.preview = result;
     } catch (error) {
-      if (state2.controller === controller && !cancelError(error)) state2.error = "\u6CA1\u80FD\u8BFB\u53D6\u8FD9\u4E2A\u5B58\u6863\uFF1A" + messageOf(error);
+      if (state3.controller === controller && !cancelError(error)) state3.error = "\u6CA1\u80FD\u8BFB\u53D6\u8FD9\u4E2A\u5B58\u6863\uFF1A" + messageOf(error);
     } finally {
-      if (state2.controller === controller) {
-        state2.loading = false;
-        state2.controller = null;
+      if (state3.controller === controller) {
+        state3.loading = false;
+        state3.controller = null;
         rerender2();
       }
     }
   }
   async function commitImport(ui) {
-    if (state2.busy || !state2.preview?.token) return;
-    state2.busy = true;
-    state2.error = "";
+    if (state3.busy || !state3.preview?.token) return;
+    state3.busy = true;
+    state3.error = "";
     rerender2();
     try {
-      const response = await fetch(IMPORT_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: state2.preview.token }) });
+      const response = await fetch(IMPORT_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: state3.preview.token }) });
       const result = await response.json().catch(() => null);
       if (!response.ok || result?.ok !== true) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
-      state2.open = false;
-      if (state2.keyHandler) document.removeEventListener("keydown", state2.keyHandler, true);
-      state2.keyHandler = null;
+      state3.open = false;
+      if (state3.keyHandler) document.removeEventListener("keydown", state3.keyHandler, true);
+      state3.keyHandler = null;
       status(ui, "\u5B58\u6863\u5DF2\u5BFC\u5165");
       window.setTimeout(() => window.location.reload(), 500);
     } catch (error) {
-      state2.error = "\u5BFC\u5165\u5931\u8D25\uFF1A" + messageOf(error);
-      state2.busy = false;
+      state3.error = "\u5BFC\u5165\u5931\u8D25\uFF1A" + messageOf(error);
+      state3.busy = false;
       rerender2();
     }
   }
   function renderSaveTransferSettings(ui, section2) {
-    state2.ui = ui;
+    state3.ui = ui;
     const transfer = section2(ui, "\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u6216\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
-    transfer.box.setAttribute("data-save-transfer-active", String(state2.open || state2.busy || state2.loading));
+    transfer.box.setAttribute("data-save-transfer-active", String(state3.open || state3.busy || state3.loading));
     const actions = el("div", "dp-actions");
     const exportButton = button("dp-mini", { "data-save-trigger": "export" }, () => exportSave(ui));
-    exportButton.textContent = state2.busy && !state2.open ? "\u5BFC\u51FA\u4E2D\u2026" : "\u5BFC\u51FA\u5B58\u6863";
-    exportButton.disabled = state2.busy || !ui.view?.pig;
+    exportButton.textContent = state3.busy && !state3.open ? "\u5BFC\u51FA\u4E2D\u2026" : "\u5BFC\u51FA\u5B58\u6863";
+    exportButton.disabled = state3.busy || !ui.view?.pig;
     if (!ui.view?.pig) exportButton.title = "\u63A5\u5230\u5C0F\u732A\u540E\u5373\u53EF\u5907\u4EFD";
     const importButton = button("dp-mini", { "data-save-trigger": "import" }, () => {
-      if (state2.busy) return;
-      state2.open = true;
-      state2.preview = null;
-      state2.error = "";
-      state2.trigger = "import";
+      if (state3.busy) return;
+      state3.open = true;
+      state3.preview = null;
+      state3.error = "";
+      state3.trigger = "import";
       rerender2();
       trapKeys();
       const input = ui.content.querySelector('[data-save-file="true"]');
       input?.click();
     });
     importButton.textContent = "\u5BFC\u5165\u5B58\u6863";
-    importButton.disabled = state2.busy || state2.loading;
+    importButton.disabled = state3.busy || state3.loading;
     actions.appendChild(exportButton);
     actions.appendChild(importButton);
     transfer.box.appendChild(actions);
-    if (!state2.open) return;
+    if (!state3.open) return;
     const overlay = el("div", "dp-save-overlay");
     overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
     const dialog = el("div", "dp-set");
@@ -13262,15 +13730,15 @@
     dialog.tabIndex = -1;
     overlay.appendChild(dialog);
     dialog.appendChild(el("b", null, "\u5BFC\u5165\u5B58\u6863"));
-    if (state2.loading) dialog.appendChild(el("p", "dp-dim", "\u6B63\u5728\u68C0\u67E5\u5B58\u6863\u2026"));
-    else if (state2.preview) {
-      const summary = state2.preview.summary;
+    if (state3.loading) dialog.appendChild(el("p", "dp-dim", "\u6B63\u5728\u68C0\u67E5\u5B58\u6863\u2026"));
+    else if (state3.preview) {
+      const summary = state3.preview.summary;
       rowTo(dialog, "\u5C0F\u732A", `${summary.name || "\u672A\u547D\u540D"} \xB7 Lv.${summary.level ?? "\u2014"}`);
       rowTo(dialog, "\u5907\u4EFD\u65F6\u95F4", displayDate(summary.createdAt));
       rowTo(dialog, "\u6E38\u620F\u7248\u672C", summary.gameVersion || "\u672A\u77E5");
       rowTo(dialog, "\u5185\u5BB9", `\u517B\u6210\u8FDB\u5EA6\u3001${summary.extensions || 0} \u4E2A\u6269\u5C55\u3001${summary.skins || 0} \u4E2A\u81EA\u5B9A\u4E49\u76AE\u80A4`);
       if (summary.legacy) dialog.appendChild(alert("\u8FD9\u662F\u65E7\u7248 JSON \u5B58\u6863\uFF0C\u90E8\u5206\u8D44\u6E90\u53EF\u80FD\u672A\u5305\u542B\u3002"));
-      for (const warning2 of state2.preview.warnings || []) dialog.appendChild(alert(warning2));
+      for (const warning2 of state3.preview.warnings || []) dialog.appendChild(alert(warning2));
       dialog.appendChild(el("p", "dp-dim", "\u5C06\u66FF\u6362\u5F53\u524D\u8FD9\u53EA\u732A\u3002\u5F53\u524D\u5B58\u6863\u4F1A\u5148\u81EA\u52A8\u5907\u4EFD\uFF0C\u5BFC\u5165\u540E\u4E24\u8FB9\u4E0D\u4F1A\u81EA\u52A8\u540C\u6B65\u3002"));
     } else {
       dialog.appendChild(el("p", "dp-dim", "\u9009\u62E9 ZIP \u5907\u4EFD\u6216\u5DF2\u6709\u7684 state.json\u3002\u9009\u53D6\u540E\u53EA\u68C0\u67E5\u548C\u9884\u89C8\uFF0C\u4E0D\u4F1A\u4FEE\u6539\u5F53\u524D\u5B58\u6863\u3002"));
@@ -13286,25 +13754,25 @@
       picker.addEventListener("cancel", closeDialog);
       dialog.appendChild(picker);
     }
-    if (state2.error) dialog.appendChild(alert(state2.error, "dp-alert dp-dead"));
+    if (state3.error) dialog.appendChild(alert(state3.error, "dp-alert dp-dead"));
     const buttons = el("div", "dp-actions");
     const cancel = button("dp-btn", { "data-save-focus": "cancel", "data-save-cancel": "true" }, closeDialog);
     cancel.textContent = "\u53D6\u6D88";
-    cancel.disabled = state2.busy;
+    cancel.disabled = state3.busy;
     buttons.appendChild(cancel);
-    if (state2.preview) {
+    if (state3.preview) {
       const confirm = button("dp-mini", { "data-save-focus": "confirm", "data-save-confirm": "true" }, () => commitImport(ui));
-      confirm.textContent = state2.busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u5907\u4EFD\u5E76\u5BFC\u5165";
-      confirm.disabled = state2.busy;
+      confirm.textContent = state3.busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u5907\u4EFD\u5E76\u5BFC\u5165";
+      confirm.disabled = state3.busy;
       buttons.appendChild(confirm);
     }
     dialog.appendChild(buttons);
     ui.content.appendChild(overlay);
-    const desired = dialog.querySelector(`[data-save-focus="${state2.focus}"]`) || dialog.querySelector("input") || cancel;
+    const desired = dialog.querySelector(`[data-save-focus="${state3.focus}"]`) || dialog.querySelector("input") || cancel;
     if (document.activeElement === document.body || !dialog.contains(document.activeElement)) desired.focus();
     dialog.addEventListener("focusin", (event) => {
       const key2 = event.target?.getAttribute?.("data-save-focus");
-      if (key2) state2.focus = key2;
+      if (key2) state3.focus = key2;
     });
   }
   function rowTo(parent, label, value) {
@@ -13391,7 +13859,7 @@
       const scale2 = Math.min(value / 100, available / (stageSize * 2));
       setPigSize(scale2);
       percent2.value = String(Math.round(scale2 * 100));
-      ui.host.style.setProperty("--pig-size", displayedPigSize(stageSize) + "px");
+      syncPigSize(ui.host, stageSize);
       ui.fitPanel();
       syncGeometry();
     }
@@ -14088,7 +14556,7 @@
         ctx.pigEmoji.textContent = ctx.view.boxStage.emoji;
         ctx.pig.setAttribute("data-mood", "box");
         syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
-        ctx.host.style.setProperty("--pig-size", displayedPigSize(ctx.view.boxStage.size) + "px");
+        syncPigSize(ctx.host, ctx.view.boxStage.size);
         applyEmojiStyle(ctx.host);
         ctx.soul.hidden = true;
         ctx.host.setAttribute("data-soul", "false");
@@ -14114,7 +14582,7 @@
         ctx.pig.setAttribute("data-illness", ill === null || ill.chainKey === "" ? "" : ill.chainKey + ":" + ill.stage);
         ctx.pigEmoji.textContent = pigStage.emoji;
         syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
-        ctx.host.style.setProperty("--pig-size", displayedPigSize(pigStage.size) + "px");
+        syncPigSize(ctx.host, pigStage.size);
         applyEmojiStyle(ctx.host);
         ctx.host.setAttribute("data-soul", ctx.view.pig.soul ? "true" : "false");
         ctx.host.setAttribute("data-faded", pigStage.faded ? "true" : "false");
@@ -14382,8 +14850,98 @@
     jumpPeakScale: 1.12,
     jumpLandingScale: 0.92
   });
-  var keyframe = (scaleX2, scaleY2, rotate2, x, y) => Object.freeze({ scaleX: scaleX2, scaleY: scaleY2, rotate: rotate2, x, y });
-  var REACTION_MOTION = Object.freeze({
+  var keyframe = (scaleX2, scaleY2, rotate2, x, y, translateFirst) => Object.freeze(
+    translateFirst ? { scaleX: scaleX2, scaleY: scaleY2, rotate: rotate2, x, y, translateFirst } : { scaleX: scaleX2, scaleY: scaleY2, rotate: rotate2, x, y }
+  );
+  var PIG_ANIMATION_MOTION = Object.freeze({
+    // Base idle bob and the shared breathing animation.
+    "dp-bob": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -2.5, 0, -7)
+    ]),
+    "dp-breathe": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1.09, 1.09, 0, 0, 1)
+    ]),
+    // Mood / reaction shakes and the bathe wobble.
+    "dp-shake": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -5, -4, 0),
+      keyframe(1, 1, 5, 4, 0)
+    ]),
+    "dp-cough": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -7, -4, 0),
+      keyframe(1, 1, 6, 4, 0)
+    ]),
+    "dp-dizzy": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -6, 0, 0),
+      keyframe(1, 1, 5, 0, 0),
+      keyframe(1, 1, -4, 0, 0),
+      keyframe(1, 1, 3, 0, 0),
+      keyframe(1, 1, -2, 0, 0)
+    ]),
+    "dp-wobble": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -14, 0, 0),
+      keyframe(1, 1, 14, 0, 0)
+    ]),
+    // Idle self-actions from life.js.
+    "dp-idle-stretch": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1.16, 0.88, 0, 0, 0)
+    ]),
+    "dp-idle-look": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -8, -3, 0, true)
+    ]),
+    "dp-walking": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -4, 0, -6),
+      keyframe(1, 1, 4, 0, -6)
+    ]),
+    "dp-typing": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -1.5, 0, -2),
+      keyframe(1, 1, 1.5, 0, -2)
+    ]),
+    "dp-reading": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -5, 0, 1),
+      keyframe(1, 1, -2, 0, 1)
+    ]),
+    // Crowned forms with their own action sprites.
+    "dp-king-work": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, 1, 0, 1)
+    ]),
+    "dp-king-study": Object.freeze([
+      keyframe(1, 1, -2, 0, 0),
+      keyframe(1, 1, 2, 0, 0)
+    ]),
+    "dp-king-walk": Object.freeze([
+      keyframe(1, 1, -2, 0, 0),
+      keyframe(1, 1, 2, 0, -3)
+    ]),
+    // Box stage, unhatched glow and poke reaction.
+    "dp-box-wobble": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -4, 0, 0),
+      keyframe(1, 1, 3, 0, 0),
+      keyframe(1, 1, -2, 0, 0)
+    ]),
+    "dp-box-breathe": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1.06, 1.06, 0, 0, -3)
+    ]),
+    "dp-poke-shake": Object.freeze([
+      keyframe(1, 1, 0, 0, 0),
+      keyframe(1, 1, -7, 0, 0),
+      keyframe(1, 1, 6, 0, 0),
+      keyframe(1, 1, -4, 0, 0)
+    ]),
+    // Care reactions that lift the pig above its layout box.
     "dp-feed-hop": Object.freeze([
       keyframe(1, 1, 0, 0, 0),
       keyframe(1.07, 0.91, 0, 0, 2),
@@ -14405,6 +14963,11 @@
       keyframe(0.95, 1.09, 0, 0, -4),
       keyframe(1.04, 0.97, 0, 0, 0)
     ])
+  });
+  var REACTION_MOTION = Object.freeze({
+    "dp-feed-hop": PIG_ANIMATION_MOTION["dp-feed-hop"],
+    "dp-play-hop": PIG_ANIMATION_MOTION["dp-play-hop"],
+    "dp-squash": PIG_ANIMATION_MOTION["dp-squash"]
   });
   var corners = (box) => [
     { x: box.x, y: box.y },
@@ -14439,31 +15002,33 @@
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
   }
-  function keyframeCorners(box, pivot, state3) {
-    const radians = state3.rotate * Math.PI / 180;
+  function keyframeCorners(box, pivot, state4) {
+    const radians = state4.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners(box).map((point) => {
-      const x = (point.x - pivot.x) * state3.scaleX;
-      const y = (point.y - pivot.y) * state3.scaleY;
+      const x = (point.x - pivot.x) * state4.scaleX;
+      const y = (point.y - pivot.y) * state4.scaleY;
+      if (state4.translateFirst) {
+        return {
+          x: pivot.x + (x + state4.x) * cos - (y + state4.y) * sin,
+          y: pivot.y + (x + state4.x) * sin + (y + state4.y) * cos
+        };
+      }
       return {
-        x: pivot.x + x * cos - y * sin + state3.x,
-        y: pivot.y + x * sin + y * cos + state3.y
+        x: pivot.x + x * cos - y * sin + state4.x,
+        y: pivot.y + x * sin + y * cos + state4.y
       };
     });
   }
   function keyframeEnvelope(states, box, pivot) {
-    return boundsOf(states.flatMap((state3) => keyframeCorners(box, pivot, state3)));
-  }
-  function reactionEnvelope(name, box, pivot) {
-    const states = REACTION_MOTION[name];
-    return states === void 0 ? null : keyframeEnvelope(states, box, pivot);
+    return boundsOf(states.flatMap((state4) => keyframeCorners(box, pivot, state4)));
   }
   function motionEnvelope(name) {
     if (name === "dp-spin") return spinEnvelope;
     if (name === "dp-jump") return jumpEnvelope;
-    if (Object.hasOwn(REACTION_MOTION, name)) return (box, pivot) => reactionEnvelope(name, box, pivot);
-    return null;
+    const states = Object.hasOwn(PIG_ANIMATION_MOTION, name) ? PIG_ANIMATION_MOTION[name] : void 0;
+    return states === void 0 ? null : (box, pivot) => keyframeEnvelope(states, box, pivot);
   }
   function fixedMotionReserve(pigBox) {
     const artWidth = MAX_ART_ASPECT2 * FRAME_HEIGHT2 * pigBox.width;
@@ -14569,16 +15134,16 @@
   function union(...boxes) {
     return bounds(boxes.flatMap(corners2));
   }
-  function transformed(box, pivot, state3) {
-    const radians = state3.rotate * Math.PI / 180;
+  function transformed(box, pivot, state4) {
+    const radians = state4.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners2(box).map((point) => {
-      const x = (point.x - pivot.x) * state3.scaleX;
-      const y = (point.y - pivot.y) * state3.scaleY;
+      const x = (point.x - pivot.x) * state4.scaleX;
+      const y = (point.y - pivot.y) * state4.scaleY;
       return {
         x: pivot.x + x * cos - y * sin,
-        y: pivot.y + x * sin + y * cos + state3.dy
+        y: pivot.y + x * sin + y * cos + state4.dy
       };
     });
   }
@@ -14682,7 +15247,9 @@
   // src/client/desktop/measure.js
   function framedBox(node, box) {
     if (!node.matches?.(".dp-pig-img,.dp-pig-sleep")) return box;
-    const path = (node.getAttribute("src") || "").split("/art/")[1];
+    const custom = customArtVisibleBox(node, box);
+    if (custom !== null) return custom;
+    const path = (node.getAttribute("src") || "").split("/art/")[1]?.split("?")[0];
     const bounds2 = ART_BOUNDS2[path];
     if (!bounds2) return box;
     return framedArtBox(box, {
@@ -14708,12 +15275,16 @@
     }
     return { x, y, width: node.offsetWidth || 0, height: node.offsetHeight || 0 };
   }
+  function stableBox(node) {
+    const box = layoutBox(node);
+    return node.matches?.(".dp-slot") === true ? centeredBox(box) : box;
+  }
   function visible(node) {
     const style = getComputedStyle(node);
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.01;
   }
   function createMeasure(env) {
-    const state3 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
+    const state4 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
     function boxes(host3) {
       const pigNode = host3.querySelector(".dp-pig");
@@ -14737,7 +15308,7 @@
       for (const node of nodes) {
         if (node.closest("[hidden]") !== null || !visible(node)) continue;
         const bubble = node.closest(".dp-bubble");
-        const box = framedBox(node, layoutBox(node));
+        const box = framedBox(node, stableBox(node));
         if (box.width < 1 || box.height < 1) continue;
         const rect = { x: box.x, y: box.y, r: box.x + box.width, b: box.y + box.height };
         if (pigNode !== null && (node === pigNode || node.closest(".dp-pig") === pigNode)) {
@@ -14755,8 +15326,8 @@
       if (reserves && pigNode !== null) {
         const above = geometry2 === null ? bubbleSize2.height : geometry2.window.y + anchors.headTop.y - geometry2.workArea.y - PAD;
         const want = Math.max(0, Math.min(bubbleSize2.height, Math.round(above)));
-        if (state3.bubbleHeight === null || Math.abs(want - state3.bubbleHeight) >= STEP * 2) state3.bubbleHeight = want;
-        const height = state3.bubbleHeight;
+        if (state4.bubbleHeight === null || Math.abs(want - state4.bubbleHeight) >= STEP * 2) state4.bubbleHeight = want;
+        const height = state4.bubbleHeight;
         const zoneLeft = host3.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: anchors.headTop.y - height, r: zoneLeft + bubbleSize2.width, b: anchors.headTop.y };
       }
@@ -14867,14 +15438,14 @@
     }
     function pin(host3, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
-      const shift = { x: state3.shift.x + state3.anchor.x, y: state3.shift.y + state3.anchor.y };
+      const shift = { x: state4.shift.x + state4.anchor.x, y: state4.shift.y + state4.anchor.y };
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
       else want.right = Math.round(contentBox.right - hostBox.x - hostBox.width + PAD - shift.x) + "px";
       if (side.vertical === "top") want.top = Math.round(hostBox.y - contentBox.top + PAD + shift.y) + "px";
       else want.bottom = Math.round(contentBox.bottom - hostBox.y - hostBox.height + PAD - shift.y) + "px";
       const key2 = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
-      if (key2 === state3.pinned) return;
-      state3.pinned = key2;
+      if (key2 === state4.pinned) return;
+      state4.pinned = key2;
       host3.style.left = want.left;
       host3.style.right = want.right;
       host3.style.top = want.top;
@@ -14895,7 +15466,7 @@
     }
     function fitWindow(content, win) {
       if (win && (content.width !== win.width || content.height !== win.height)) {
-        state3.anchor = { x: 0, y: 0 };
+        state4.anchor = { x: 0, y: 0 };
       }
     }
     function fitBubble(host3, geometry2) {
@@ -14932,7 +15503,7 @@
       if (below && bubble.getAttribute("data-bubble-side") !== "below") bubble.setAttribute("data-bubble-side", "below");
       else if (!below && bubble.hasAttribute("data-bubble-side")) bubble.removeAttribute("data-bubble-side");
     }
-    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state3 };
+    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state4 };
   }
 
   // src/client/desktop/place.js
@@ -15195,7 +15766,7 @@
   }
 
   // src/client/desktop/slide.js
-  function commitSlide(host3, state3, slide) {
+  function commitSlide(host3, state4, slide) {
     const x = Number(slide?.x) || 0;
     const y = Number(slide?.y) || 0;
     if (host3 !== null && (x !== 0 || y !== 0)) {
@@ -15203,9 +15774,9 @@
       host3.style.bottom = (parseFloat(host3.style.bottom) || 0) - y + "px";
     }
     if (host3 !== null) host3.style.translate = "";
-    state3.anchor = { x: state3.anchor.x + state3.shift.x + x, y: state3.anchor.y + state3.shift.y + y };
-    state3.shift = { x: 0, y: 0 };
-    state3.pinned = "";
+    state4.anchor = { x: state4.anchor.x + state4.shift.x + x, y: state4.anchor.y + state4.shift.y + y };
+    state4.shift = { x: 0, y: 0 };
+    state4.pinned = "";
   }
 
   // src/client/desktop/ext-window.js
@@ -16079,11 +16650,11 @@
     return Math.max(min, Math.min(max, value));
   }
   function createFlightRunner(c) {
-    let state3 = null;
+    let state4 = null;
     function finish(result) {
-      const current3 = state3;
+      const current3 = state4;
       if (current3 === null) return;
-      state3 = null;
+      state4 = null;
       if (current3.raf) cancelAnimationFrame(current3.raf);
       try {
         current3.shell.flight.finish?.({
@@ -16099,8 +16670,8 @@
       if (result !== null) c.onFinish(result);
     }
     function step(now2) {
-      if (state3 === null) return;
-      const current3 = state3;
+      if (state4 === null) return;
+      const current3 = state4;
       const dt = Math.min(50, Math.max(0, now2 - current3.lastTime));
       current3.lastTime = now2;
       const events = current3.body.advance(dt);
@@ -16157,7 +16728,7 @@
           artMargin: artMarginFor(start2.pig.width),
           visual: start2.visual
         });
-        state3 = {
+        state4 = {
           body,
           start: start2,
           shell: shell2,
@@ -16176,21 +16747,21 @@
       },
       /** 空中接住：停住并重定家，不播放落地冲击。 */
       catch: function() {
-        if (state3 === null) return false;
-        state3.body.stop();
+        if (state4 === null) return false;
+        state4.body.stop();
         finish(null);
         return true;
       },
       cancel: function() {
-        if (state3 === null) return;
-        state3.body.stop();
+        if (state4 === null) return;
+        state4.body.stop();
         finish(null);
       },
       isFlying: function() {
-        return state3 !== null;
+        return state4 !== null;
       },
       setScale: function(value) {
-        if (state3 !== null) state3.scale = value;
+        if (state4 !== null) state4.scale = value;
       },
       dispose: function() {
         finish(null);
@@ -16198,7 +16769,7 @@
     };
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/array.mjs
+  // node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -16209,7 +16780,7 @@
       arr2.splice(index, 1);
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/clamp.mjs
+  // node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -16218,12 +16789,12 @@
     return v;
   };
 
-  // ../../code/node_modules/motion-utils/dist/es/format-error-message.mjs
+  // node_modules/motion-utils/dist/es/format-error-message.mjs
   function formatErrorMessage(message2, errorCode) {
     return errorCode ? `${message2}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message2;
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/errors.mjs
+  // node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
@@ -16241,19 +16812,19 @@
     };
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/global-config.mjs
+  // node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // ../../code/node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // ../../code/node_modules/motion-utils/dist/es/is-object.mjs
+  // node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // ../../code/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // ../../code/node_modules/motion-utils/dist/es/memo.mjs
+  // node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -16264,19 +16835,19 @@
     };
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/noop.mjs
+  // node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // ../../code/node_modules/motion-utils/dist/es/pipe.mjs
+  // node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // ../../code/node_modules/motion-utils/dist/es/progress.mjs
+  // node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // ../../code/node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
@@ -16309,14 +16880,14 @@
     }
   };
 
-  // ../../code/node_modules/motion-utils/dist/es/time-conversion.mjs
+  // node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // ../../code/node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // ../../code/node_modules/motion-utils/dist/es/warn-once.mjs
+  // node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
   function warnOnce(condition, message2, errorCode) {
     if (condition || warned.has(message2))
@@ -16325,13 +16896,13 @@
     warned.add(message2);
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/wrap.mjs
+  // node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -16355,45 +16926,45 @@
     };
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/back.mjs
+  // node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/circ.mjs
+  // node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/ease.mjs
+  // node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // ../../code/node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -16422,14 +16993,14 @@
     return definition;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -16447,10 +17018,10 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
   var checkStringStartsWith = (token) => (key2) => typeof key2 === "string" && key2.startsWith(token);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
@@ -16466,7 +17037,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -16481,18 +17052,18 @@
     default: 1
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -16508,7 +17079,7 @@
     };
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -16520,7 +17091,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -16554,7 +17125,7 @@
     transform: rgba.transform
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -16571,7 +17142,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -16580,7 +17151,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -16602,10 +17173,10 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -16696,7 +17267,7 @@
     getAnimatableNone
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -16734,17 +17305,17 @@
     };
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -16780,7 +17351,7 @@
     };
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -16790,7 +17361,7 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -16860,7 +17431,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -16887,7 +17458,7 @@
     return mixer(from, to);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -16907,7 +17478,7 @@
     // Compute
   ];
 
-  // ../../code/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -16970,9 +17541,9 @@
     return step;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
-  function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state3 = {
+  function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
@@ -16987,22 +17558,22 @@
     const { setup, read: read2, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
-      const timestamp = useManualTiming ? state3.timestamp : performance.now();
+      const timestamp = useManualTiming ? state4.timestamp : performance.now();
       runNextFrame = false;
       if (!useManualTiming) {
-        state3.delta = useDefaultElapsed ? 1e3 / 60 : Math.max(Math.min(timestamp - state3.timestamp, maxElapsed), 1);
+        state4.delta = useDefaultElapsed ? 1e3 / 60 : Math.max(Math.min(timestamp - state4.timestamp, maxElapsed), 1);
       }
-      state3.timestamp = timestamp;
-      state3.isProcessing = true;
-      setup.process(state3);
-      read2.process(state3);
-      resolveKeyframes.process(state3);
-      preUpdate.process(state3);
-      update.process(state3);
-      preRender.process(state3);
-      render.process(state3);
-      postRender.process(state3);
-      state3.isProcessing = false;
+      state4.timestamp = timestamp;
+      state4.isProcessing = true;
+      setup.process(state4);
+      read2.process(state4);
+      resolveKeyframes.process(state4);
+      preUpdate.process(state4);
+      update.process(state4);
+      preRender.process(state4);
+      render.process(state4);
+      postRender.process(state4);
+      state4.isProcessing = false;
       if (runNextFrame && allowKeepAlive) {
         useDefaultElapsed = false;
         scheduleNextBatch(processBatch);
@@ -17011,7 +17582,7 @@
     const wake = () => {
       runNextFrame = true;
       useDefaultElapsed = true;
-      if (!state3.isProcessing) {
+      if (!state4.isProcessing) {
         scheduleNextBatch(processBatch);
       }
     };
@@ -17029,13 +17600,13 @@
         steps[stepsOrder[i]].cancel(process2);
       }
     };
-    return { schedule: schedule4, cancel, state: state3, steps };
+    return { schedule: schedule4, cancel, state: state4, steps };
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -17049,7 +17620,7 @@
     };
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -17059,21 +17630,21 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
-    let state3 = generator.next(duration);
-    keyframes2?.push(state3.value);
-    while (!state3.done && duration < maxDuration) {
+    let state4 = generator.next(duration);
+    keyframes2?.push(state4.value);
+    while (!state4.done && duration < maxDuration) {
       duration += timeStep;
-      state3 = generator.next(duration);
-      keyframes2?.push(state3.value);
+      state4 = generator.next(duration);
+      keyframes2?.push(state4.value);
     }
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -17092,7 +17663,7 @@
     };
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -17234,7 +17805,7 @@
     } : optionsOrVisualDuration;
     const origin = options.keyframes[0];
     const target = options.keyframes[options.keyframes.length - 1];
-    const state3 = { done: false, value: origin };
+    const state4 = { done: false, value: origin };
     const { stiffness, damping, mass, duration, isResolvedFromDuration, isTimeDefined } = getSpringOptions({ ...options });
     const inheritVelocity = (velocity) => isTimeDefined ? 0 : -millisecondsToSeconds(velocity);
     const dampingRatio = damping / (2 * Math.sqrt(stiffness * mass));
@@ -17317,7 +17888,7 @@
         if (!(options.restSpeed && options.restDelta))
           setRestThresholds();
         generator.calculatedDuration = calculatedDuration;
-        state3.done = false;
+        state4.done = false;
         update();
       },
       velocity: (t) => secondsToMilliseconds(resolveVelocity(t)),
@@ -17325,12 +17896,12 @@
         const current3 = resolveSpring(t);
         if (!isResolvedFromDuration) {
           const currentVelocity = secondsToMilliseconds(resolveVelocity(t));
-          state3.done = Math.abs(currentVelocity) <= s.restSpeed && Math.abs(s.target - current3) <= s.restDelta;
+          state4.done = Math.abs(currentVelocity) <= s.restSpeed && Math.abs(s.target - current3) <= s.restDelta;
         } else {
-          state3.done = t >= duration;
+          state4.done = t >= duration;
         }
-        state3.value = state3.done ? s.target : current3;
-        return state3;
+        state4.value = state4.done ? s.target : current3;
+        return state4;
       },
       toString: () => {
         const easingDuration = Math.min(calcGeneratorDuration(generator), maxGeneratorDuration);
@@ -17350,10 +17921,10 @@
     return options;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
-    const state3 = {
+    const state4 = {
       done: false,
       value: origin
     };
@@ -17373,17 +17944,17 @@
     const calcDelta = (t) => -amplitude * Math.exp(-t / timeConstant);
     const applyFriction = (t) => {
       const delta = calcDelta(t);
-      state3.done = Math.abs(delta) <= restDelta;
-      state3.value = state3.done ? target : target + delta;
+      state4.done = Math.abs(delta) <= restDelta;
+      state4.value = state4.done ? target : target + delta;
     };
     let timeReachedBoundary;
     let spring$1;
     const checkCatchBoundary = (t) => {
-      if (!isOutOfBounds(state3.value))
+      if (!isOutOfBounds(state4.value))
         return;
       timeReachedBoundary = t;
       spring$1 = spring({
-        keyframes: [state3.value, nearestBoundary(state3.value)],
+        keyframes: [state4.value, nearestBoundary(state4.value)],
         /**
          * The friction curve is target + calcDelta(t), so its exact
          * derivative is -calcDelta(t) / timeConstant in units/ms,
@@ -17410,13 +17981,13 @@
           return spring$1.next(t - timeReachedBoundary);
         } else {
           !hasUpdatedFrame && applyFriction(t);
-          return state3;
+          return state4;
         }
       }
     };
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -17461,7 +18032,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -17470,25 +18041,25 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
   function keyframes({ duration = 300, keyframes: keyframeValues, times, ease: ease2 = "easeInOut" }) {
     const easingFunctions = isEasingArray(ease2) ? ease2.map(easingDefinitionToFunction) : easingDefinitionToFunction(ease2) || easeInOut;
-    const state3 = {
+    const state4 = {
       done: false,
       value: keyframeValues[0]
     };
@@ -17498,9 +18069,9 @@
       return {
         calculatedDuration: duration,
         next: (t) => {
-          state3.value = mixer ? mixer(easingFunctions(duration > 0 ? clamp3(0, 1, t / duration) : 1)) : target;
-          state3.done = t >= duration;
-          return state3;
+          state4.value = mixer ? mixer(easingFunctions(duration > 0 ? clamp3(0, 1, t / duration) : 1)) : target;
+          state4.done = t >= duration;
+          return state4;
         }
       };
     }
@@ -17516,14 +18087,14 @@
     return {
       calculatedDuration: duration,
       next: (t) => {
-        state3.value = mapTimeToKeyframe(t);
-        state3.done = t >= duration;
-        return state3;
+        state4.value = mapTimeToKeyframe(t);
+        state4.done = t >= duration;
+        return state4;
       }
     };
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -17535,7 +18106,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -17544,7 +18115,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -17558,11 +18129,11 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -17573,11 +18144,11 @@
     };
   }
   function notifyAnimationStart(animation, options, transition) {
-    const notify = globalThis.__MOTION_INSPECT__;
-    if (!notify)
+    const notify2 = globalThis.__MOTION_INSPECT__;
+    if (!notify2)
       return;
     try {
-      notify({
+      notify2({
         ...baseRecord("animation-start", animation),
         options: transition ? { ...options, ...transition } : options
       });
@@ -17585,7 +18156,7 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -17616,7 +18187,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -17713,22 +18284,22 @@
       if (this.state === "finished" && this.holdTime === null) {
         this.currentTime = totalDuration;
       }
-      const state3 = this.generate(this.currentTime, isInDelayPhase);
-      let { done } = state3;
+      const state4 = this.generate(this.currentTime, isInDelayPhase);
+      let { done } = state4;
       if (!isInDelayPhase && calculatedDuration !== null) {
         done = this.playbackSpeed >= 0 ? this.currentTime >= totalDuration : this.currentTime <= 0;
       }
       const isAnimationFinished = this.holdTime === null && (this.state === "finished" || this.state === "running" && done);
       if (isAnimationFinished && type !== inertia) {
-        state3.value = getFinalKeyframe(keyframes2, this.options, finalKeyframe, this.speed);
+        state4.value = getFinalKeyframe(keyframes2, this.options, finalKeyframe, this.speed);
       }
       if (onUpdate) {
-        onUpdate(state3.value);
+        onUpdate(state4.value);
       }
       if (isAnimationFinished) {
         this.finish();
       }
-      return state3;
+      return state4;
     }
     /**
      * This animation's time, including delay, at a timestamp.
@@ -17777,17 +18348,17 @@
         }
         elapsed = clamp3(0, 1, iterationProgress) * resolvedDuration;
       }
-      let state3;
+      let state4;
       if (isInDelayPhase) {
         this.delayState.value = keyframes2[0];
-        state3 = this.delayState;
+        state4 = this.delayState;
       } else {
-        state3 = frameGenerator.next(elapsed);
+        state4 = frameGenerator.next(elapsed);
       }
       if (mixKeyframes && !isInDelayPhase) {
-        state3.value = mixKeyframes(state3.value);
+        state4.value = mixKeyframes(state4.value);
       }
-      return state3;
+      return state4;
     }
     /**
      * Allows the returned animation to be awaited or promise-chained. Currently
@@ -17920,7 +18491,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -17944,7 +18515,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -17954,13 +18525,13 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/int.mjs
+  // node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -17994,7 +18565,7 @@
     originZ: px
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -18059,7 +18630,7 @@
     numOctaves: int
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -18081,7 +18652,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -18090,14 +18661,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -18179,7 +18750,7 @@
     return parseFloat(value.trim());
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -18202,7 +18773,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -18251,7 +18822,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -18397,27 +18968,27 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // ../../code/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -18427,10 +18998,10 @@
     return true;
   }, "linearEasing");
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -18443,7 +19014,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -18458,7 +19029,7 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -18481,12 +19052,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -18497,7 +19068,7 @@
     return options;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -18556,8 +19127,8 @@
       if (this.isStopped)
         return;
       this.isStopped = true;
-      const { state: state3 } = this;
-      if (state3 === "idle" || state3 === "finished") {
+      const { state: state4 } = this;
+      if (state4 === "idle" || state4 === "finished") {
         return;
       }
       if (this.updateMotionValue) {
@@ -18645,7 +19216,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -18660,7 +19231,7 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -18696,8 +19267,8 @@
      * The value now, as WAAPI doesn't set the motion value while it runs.
      */
     liveValue() {
-      const { state: state3 } = this;
-      if (state3 === "running" || state3 === "paused") {
+      const { state: state4 } = this;
+      if (state4 === "running" || state4 === "paused") {
         return this.sample(this.elapsed());
       }
     }
@@ -18727,7 +19298,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -18741,7 +19312,7 @@
     return false;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -18768,13 +19339,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -18783,7 +19354,7 @@
     "backgroundColor"
   ]);
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -18794,7 +19365,7 @@
     return false;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -18829,12 +19400,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -18883,10 +19454,10 @@
     return transformString;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -18982,8 +19553,8 @@
      * Whether this is running, or paused, on the compositor.
      */
     isAccelerated() {
-      const { group, state: state3 } = this;
-      return group?.tracks.has(this) && !group.isJS && this.canAccelerate && (state3 === "running" || state3 === "paused");
+      const { group, state: state4 } = this;
+      return group?.tracks.has(this) && !group.isJS && this.canAccelerate && (state4 === "running" || state4 === "paused");
     }
     /**
      * The value now, while this runs on the compositor and so doesn't
@@ -19322,10 +19893,10 @@
       let elapsed;
       let rate = 0;
       for (const track of tracks) {
-        const state3 = built.get(track);
-        if (!state3)
+        const state4 = built.get(track);
+        if (!state4)
           return false;
-        const [builtTime, builtSpeed, wasHeld] = state3;
+        const [builtTime, builtSpeed, wasHeld] = state4;
         const trackTime = track.at(now2);
         const isHeld = track.timing()[0] === Infinity;
         if (wasHeld) {
@@ -19381,8 +19952,8 @@
         group.isFinishing = false;
       }
       isScheduled2 = false;
-      tracks.forEach(({ state: state3 }, track) => {
-        if (state3 === "idle" || state3 === "finished")
+      tracks.forEach(({ state: state4 }, track) => {
+        if (state4 === "idle" || state4 === "finished")
           tracks.delete(track);
       });
       if (!tracks.size) {
@@ -19454,7 +20025,7 @@
     return group;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -19592,7 +20163,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -19672,7 +20243,7 @@
     return max;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -19680,7 +20251,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/index.mjs
+  // node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -20006,7 +20577,7 @@
     return new MotionValue(init, options);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -20015,7 +20586,7 @@
     return transition;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -20024,7 +20595,7 @@
     return valueTransition;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -20055,7 +20626,7 @@
     return ease;
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -20076,7 +20647,7 @@
     return false;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -20135,7 +20706,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -20161,7 +20732,7 @@
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -20172,28 +20743,28 @@
     ...transformPropOrder
   ]);
 
-  // ../../code/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // ../../code/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/test.mjs
+  // node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // ../../code/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -20204,7 +20775,7 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -20225,7 +20796,7 @@
     }
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -20352,7 +20923,7 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -20416,17 +20987,17 @@
     return first === null ? void 0 : first;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -20444,7 +21015,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -20458,17 +21029,17 @@
           remove();
       };
     };
-    const { test: test2, read: read2, get, flush: flush2, state: state3 } = subjectEffect;
+    const { test: test2, read: read2, get, flush: flush2, state: state4 } = subjectEffect;
     return Object.assign(effect, {
       test: test2,
       read: read2,
       get,
       flush: flush2,
-      state: state3
+      state: state4
     });
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -20555,16 +21126,16 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
-      const state3 = stateCache.get(subject2) ?? new MotionValueState(step);
-      stateCache.set(subject2, state3);
+      const state4 = stateCache.get(subject2) ?? new MotionValueState(step);
+      stateCache.set(subject2, state4);
       const subscriptions = [];
       for (const key2 in values) {
         const value = values[key2];
-        const remove = addValue(subject2, state3, key2, value);
+        const remove = addValue(subject2, state4, key2, value);
         subscriptions.push(remove);
       }
       return () => {
@@ -20579,11 +21150,11 @@
     });
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
-  function buildTransform2(state3) {
+  function buildTransform2(state4) {
     let transform = "";
-    const { transformKeys: keys = [], transformValues: values = {} } = state3;
+    const { transformKeys: keys = [], transformValues: values = {} } = state4;
     for (let i = 0; i < keys.length; i++) {
       const key2 = keys[i];
       const value = values[key2].getCurrent();
@@ -20594,48 +21165,48 @@
         transform += (transform && " ") + (openers[key2] || (openers[key2] = (translateAlias[key2] || key2) + "(")) + getValueAsType(value, transformValueTypes[key2]) + ")";
       }
     }
-    const pathRotation = state3.get("pathRotation")?.get();
+    const pathRotation = state4.get("pathRotation")?.get();
     if (pathRotation) {
       transform += (transform && " ") + "rotate(" + getValueAsType(pathRotation, transformValueTypes.pathRotation) + ")";
     }
     return transform || "none";
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
-  var styleValue = (state3, key2) => getValueAsType(state3.get(key2)?.get(), numberValueTypes[key2]);
-  var addStyleValue = (element, state3, key2, value) => {
+  var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
+  var addStyleValue = (element, state4, key2, value) => {
     let render = void 0;
     let computed = void 0;
     if (transformProps.has(key2)) {
       if (key2 !== "pathRotation") {
-        const keys = state3.transformKeys ?? (state3.transformKeys = []);
-        (state3.transformValues ?? (state3.transformValues = {}))[key2] = value;
+        const keys = state4.transformKeys ?? (state4.transformKeys = []);
+        (state4.transformValues ?? (state4.transformValues = {}))[key2] = value;
         if (!keys.includes(key2)) {
           keys.push(key2);
           keys.sort((a, b) => transformPropOrder.indexOf(a) - transformPropOrder.indexOf(b));
         }
       }
-      if (!state3.get("transform")) {
-        if (!isHTMLElement(element) && !state3.get("transformBox")) {
-          addStyleValue(element, state3, "transformBox", new MotionValue("fill-box"));
+      if (!state4.get("transform")) {
+        if (!isHTMLElement(element) && !state4.get("transformBox")) {
+          addStyleValue(element, state4, "transformBox", new MotionValue("fill-box"));
         }
-        state3.set("transform", new MotionValue("none"), () => {
+        state4.set("transform", new MotionValue("none"), () => {
           transformGroups.get(element)?.check();
-          element.style.transform = buildTransform2(state3);
+          element.style.transform = buildTransform2(state4);
         });
       }
-      computed = state3.get("transform");
+      computed = state4.get("transform");
     } else if (originProps.has(key2)) {
-      if (!state3.get("transformOrigin")) {
-        state3.set("transformOrigin", new MotionValue(""), () => {
-          const originX = styleValue(state3, "originX") ?? "50%";
-          const originY = styleValue(state3, "originY") ?? "50%";
-          const originZ = styleValue(state3, "originZ") ?? 0;
+      if (!state4.get("transformOrigin")) {
+        state4.set("transformOrigin", new MotionValue(""), () => {
+          const originX = styleValue(state4, "originX") ?? "50%";
+          const originY = styleValue(state4, "originY") ?? "50%";
+          const originZ = styleValue(state4, "originZ") ?? 0;
           element.style.transformOrigin = `${originX} ${originY} ${originZ}`;
         });
       }
-      computed = state3.get("transformOrigin");
+      computed = state4.get("transformOrigin");
     } else if (isCSSVar(key2)) {
       render = () => {
         element.style.setProperty(key2, value.getCurrent());
@@ -20645,7 +21216,7 @@
         element.style[key2] = getValueAsType(value.getCurrent(), numberValueTypes[key2]);
       };
     }
-    return state3.set(key2, value, render, computed);
+    return state4.set(key2, value, render, computed);
   };
   var isStyleSubject = (subject2) => isHTMLElement(subject2) || isSVGElement(subject2);
   var readStyleValue = (element, key2) => {
@@ -20662,7 +21233,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // ../../code/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -20674,14 +21245,14 @@
     "offsetAnchor"
   ];
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
     const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), name) || Object.getOwnPropertyDescriptor(element, name);
     return descriptor && typeof descriptor.set === "function";
   }
-  var addAttrValue = (element, state3, key2, value, name = key2) => {
+  var addAttrValue = (element, state4, key2, value, name = key2) => {
     const isProp = canSetAsProperty(element, name);
     if (!isProp && (name.startsWith("data") || name.startsWith("aria"))) {
       name = camelToDash(name);
@@ -20697,36 +21268,36 @@
         element.setAttribute(name, String(v));
       }
     };
-    return state3.set(key2, value, render);
+    return state4.set(key2, value, render);
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/svg/index.mjs
-  function addSVGPathValue(element, state3, key2, value) {
+  // node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
-      return state3.set(key2, value, () => {
+      return state4.set(key2, value, () => {
         const offset = value.get();
         element.setAttribute("stroke-dashoffset", `${-offset}`);
       });
     } else {
-      if (!state3.get("stroke-dasharray")) {
-        state3.set("stroke-dasharray", new MotionValue("1 1"), () => {
-          const pathLength = state3.get("pathLength")?.get() ?? 1;
-          const pathSpacing = state3.get("pathSpacing")?.get();
+      if (!state4.get("stroke-dasharray")) {
+        state4.set("stroke-dasharray", new MotionValue("1 1"), () => {
+          const pathLength = state4.get("pathLength")?.get() ?? 1;
+          const pathSpacing = state4.get("pathSpacing")?.get();
           element.setAttribute("stroke-dasharray", `${pathLength} ${pathSpacing ?? 1 - Number(pathLength)}`);
         });
       }
-      return state3.set(key2, value, void 0, state3.get("stroke-dasharray"));
+      return state4.set(key2, value, void 0, state4.get("stroke-dasharray"));
     }
   }
-  var addSVGValue = (element, state3, key2, value) => {
+  var addSVGValue = (element, state4, key2, value) => {
     if (key2.startsWith("path")) {
-      return addSVGPathValue(element, state3, key2, value);
+      return addSVGPathValue(element, state4, key2, value);
     } else if (key2.startsWith("attr")) {
-      return addAttrValue(element, state3, key2, value, convertAttrKey(key2));
+      return addAttrValue(element, state4, key2, value, convertAttrKey(key2));
     }
     const handler = transformProps.has(key2) || originProps.has(key2) || isCSSVar(key2) || key2 in element.style ? addStyleValue : addAttrValue;
-    return handler(element, state3, key2, value);
+    return handler(element, state4, key2, value);
   };
   var readSVGValue = (element, key2) => {
     if (transformProps.has(key2)) {
@@ -20746,7 +21317,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -20766,12 +21337,12 @@
     };
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -20804,9 +21375,9 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/effects/prop/index.mjs
-  var propEffect = /* @__PURE__ */ createEffect((subject2, state3, key2, value) => {
-    return state3.set(key2, value, () => {
+  // node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
+    return state4.set(key2, value, () => {
       subject2[key2] = value.get();
     });
   }, {
@@ -20817,7 +21388,7 @@
     }
   });
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -20886,8 +21457,8 @@
       }
       const elapsed = Math.round(timestamp - this.startTime) - delay;
       const t = this.currentTime = Math.max(0, elapsed);
-      const state3 = this.generator.next(t);
-      const value = elapsed < 0 ? options.keyframes[0] : state3.value;
+      const state4 = this.generator.next(t);
+      const value = elapsed < 0 ? options.keyframes[0] : state4.value;
       if (retargeted) {
         this.hasNextTarget = false;
         const { keyframes: keyframes2 } = options;
@@ -20902,7 +21473,7 @@
       if (this.state !== "running")
         return;
       onUpdate?.(value);
-      if (state3.done && elapsed >= 0 && !retargeted && !this.hasNextTarget && this.state === "running") {
+      if (state4.done && elapsed >= 0 && !retargeted && !this.hasNextTarget && this.state === "running") {
         this.notifyFinished();
         this.teardown();
         this.state = "finished";
@@ -20926,10 +21497,10 @@
     }
   };
 
-  // ../../code/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // ../../code/node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -21004,7 +21575,7 @@
     return unit ? v + unit : v;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -21015,7 +21586,7 @@
     });
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -21026,7 +21597,7 @@
     return value;
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -21036,22 +21607,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // ../../code/node_modules/motion-dom/dist/es/render/store.mjs
+  // node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // ../../code/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -21067,12 +21638,12 @@
     }
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -21087,7 +21658,7 @@
     }
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -21108,7 +21679,7 @@
     }
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -21116,7 +21687,7 @@
     }
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -21129,7 +21700,7 @@
     }
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -21311,7 +21882,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -21342,7 +21913,7 @@
     return animations;
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -21367,7 +21938,7 @@
     return animations;
   }
 
-  // ../../code/node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
@@ -22046,12 +22617,45 @@
     const box = layoutBox2(pig);
     if (box.width < 1 || box.height < 1) return null;
     const side = artMarginFor(box.width) + 8;
-    return union2(bodyVisualBounds(box), {
+    const envelope = union2(bodyVisualBounds(box), {
       x: Math.floor(box.x - side),
       y: Math.floor(box.y - PIG_TOP),
       width: Math.ceil(box.width + side * 2),
       height: Math.ceil(box.height + PIG_TOP + PIG_BOTTOM)
     });
+    const art = customArtBounds(pig);
+    return art === null ? envelope : union2(envelope, art);
+  }
+  function artVisible(node) {
+    if (node === null || node === void 0 || node.hidden) return false;
+    if (typeof getComputedStyle === "function") {
+      const style = getComputedStyle(node);
+      if (style?.display === "none" || style?.visibility === "hidden" || Number(style?.opacity) <= 0.01) return false;
+    }
+    return true;
+  }
+  function customArtBounds(pig, target = null) {
+    if (pig === null || pig === void 0 || typeof pig.querySelectorAll !== "function") return null;
+    const pigBox = layoutBox2(pig);
+    let art = null;
+    for (const node of pig.querySelectorAll(".dp-pig-img,.dp-pig-sleep")) {
+      if (!artVisible(node)) continue;
+      const local = layoutBox2(node);
+      const box = target === null ? local : {
+        x: target.x + local.x - pigBox.x,
+        y: target.y + local.y - pigBox.y,
+        width: local.width,
+        height: local.height
+      };
+      const rect = customArtVisibleBox(node, box);
+      if (rect !== null) art = art === null ? rect : union2(art, rect);
+    }
+    return art;
+  }
+  function stageDrawingBounds(box, pig) {
+    const body = bodyVisualBounds(box);
+    const art = customArtBounds(pig, box);
+    return art === null ? body : union2(body, art);
   }
   function union2(a, b) {
     const x = Math.min(a.x, b.x);
@@ -22768,8 +23372,8 @@
     function canCollapse() {
       if (ctx.isOpen !== true || !autoCollapseEnabled()) return false;
       const active2 = document.activeElement;
-      const tag2 = active2?.tagName?.toLowerCase?.() ?? "";
-      if (tag2 === "input" || tag2 === "textarea" || active2?.getAttribute?.("contenteditable") === "true") return false;
+      const tag3 = active2?.tagName?.toLowerCase?.() ?? "";
+      if (tag3 === "input" || tag3 === "textarea" || active2?.getAttribute?.("contenteditable") === "true") return false;
       if (ctx.tab === "fishing" && ctx.view?.fishing?.pending?.phase === "hooked") return false;
       if (ctx.content?.querySelector?.('[data-save-transfer-active="true"]') !== null) return false;
       return true;
@@ -22875,7 +23479,7 @@
       ext: api.ext,
       syncGeometry: api.syncGeometry,
       walk: true,
-      drawingBounds: bodyVisualBounds,
+      drawingBounds: (box) => stageDrawingBounds(box, pig),
       isFlying() {
         return flying2;
       }
@@ -22971,7 +23575,7 @@
         height: Number(options.pig?.offsetHeight) || 0
       }, pigSize(), stageSize > 0 ? stageSize : void 0);
       setPigSize(RECOVER_SCALE);
-      options.host?.style?.setProperty?.("--pig-size", size.width + "px");
+      applyPigBox(options.host, size.width);
       const home = recoveryHome({ pigSize: size, workArea: area });
       if (home !== null) options.apply?.(home, size);
     });

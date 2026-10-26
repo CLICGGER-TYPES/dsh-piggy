@@ -8,13 +8,15 @@ import { createMeasure } from '../src/client/desktop/measure.js'
  * the *visible* region. Tall sprites (the wizard hat is 4.4px below the pig
  * box, the closest of all reviewed art) lost their top during dp-feed-hop /
  * dp-play-hop because only dp-spin/dp-jump had their swept envelope added.
+ * The `none` animation below is the unanimated baseline: dp-bob itself now has
+ * an envelope (see desktop-idle-motion-shape.test.js), so it cannot stand in for it.
  */
 function fixture(run) {
   const previousDocument = globalThis.document
   const previousStyle = globalThis.getComputedStyle
   const body = {}
   globalThis.document = { body }
-  const state = { animation: 'dp-bob', fx: false }
+  const state = { animation: 'none', fx: false }
   globalThis.getComputedStyle = () => ({ display: 'block', visibility: 'visible', opacity: '1', animationName: state.animation })
   const node = (x, y, width, height) => ({
     offsetLeft: x, offsetTop: y, offsetWidth: width, offsetHeight: height, offsetParent: body,
@@ -45,7 +47,7 @@ test('feeding keeps the airborne top of a tall hat inside the native shape', () 
   assert.equal(contains(feeding.shape, 133, 138), true)
   assert.deepEqual(feeding.content, resting.content)
   assert.deepEqual(feeding.pig, resting.pig)
-  state.animation = 'dp-bob'
+  state.animation = 'none'
   assert.equal(contains(measure().shape, 133, 138), false)
 }))
 
@@ -63,7 +65,7 @@ test('squash keeps the lifted top inside the native shape', () => fixture((measu
   const squash = measure()
   // 67% keyframe: translateY(-4px) scale(.95, 1.09).
   assert.equal(contains(squash.shape, 133, 140), true)
-  state.animation = 'dp-bob'
+  state.animation = 'none'
   assert.equal(contains(measure().shape, 133, 140), false)
 }))
 

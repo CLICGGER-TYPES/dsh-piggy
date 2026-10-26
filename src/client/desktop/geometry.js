@@ -11,6 +11,26 @@ export const STEP = 4
 /** 窗口最小尺寸。 */
 export const MIN_WINDOW = Object.freeze({ width: 96, height: 96 })
 
+/**
+ * CSS 用 `transform:translate(-50%,-50%)` 居中在锚点上的元素，画出来的盒子。
+ *
+ * 百分比 translate 相对元素自己的边框盒，所以画出来的盒子就是布局盒往左上挪半格。
+ * `offsetLeft/offsetTop/offsetWidth/offsetHeight` 都不认 transform，直接用布局盒量出来的
+ * 矩形会停在锚点上（装扮点位就是帽心），比画出来的 emoji 低半个字号。
+ * 纯布局换算：动画只改 transform，这里一个 rect 都不读。
+ * @param {{x:number,y:number,width:number,height:number}} box
+ */
+export function centeredBox(box) {
+  const width = Number(box.width) || 0
+  const height = Number(box.height) || 0
+  return {
+    x: (Number(box.x) || 0) - width / 2,
+    y: (Number(box.y) || 0) - height / 2,
+    width,
+    height,
+  }
+}
+
 /** 透明窗口可跨屏缝，只按整个桌面的外沿夹取；猪本体仍由各块工作区约束。 */
 export function workAreaBounds(areas, fallback) {
   if (!Array.isArray(areas) || areas.length === 0) return fallback

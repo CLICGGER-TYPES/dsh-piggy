@@ -11,7 +11,7 @@ import { desktopRole, desktopShell } from './desktop-shell.js'
 import { processPending } from './pending.js'
 import { splitSetOpen, stageShell } from './split.js'
 import { normalize } from './normalize.js'
-import { displayedPigSize } from './pig-size.js'
+import { syncPigSize } from './pig-size.js'
 import { applyEmojiStyle } from './emoji-style.js'
 import { readStore, writeStore } from './storage.js'
 import { cakeTakenToday } from './birthday.js'
@@ -260,7 +260,7 @@ export function createPanel(ctx) {
           ctx.pig.setAttribute('data-mood', 'box')
           syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji)
           // Size comes from the host so the box and the pig can never drift.
-          ctx.host.style.setProperty('--pig-size', displayedPigSize(ctx.view.boxStage.size) + 'px')
+          syncPigSize(ctx.host, ctx.view.boxStage.size)
           applyEmojiStyle(ctx.host)
           ctx.soul.hidden = true
           ctx.host.setAttribute('data-soul', 'false')
@@ -287,7 +287,7 @@ export function createPanel(ctx) {
           ctx.pigEmoji.textContent = pigStage.emoji
           syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji)
           // Display scale is a device preference; the stage remains save data.
-          ctx.host.style.setProperty('--pig-size', displayedPigSize(pigStage.size) + 'px')
+          syncPigSize(ctx.host, pigStage.size)
           applyEmojiStyle(ctx.host)
           ctx.host.setAttribute('data-soul', ctx.view.pig.soul ? 'true' : 'false')
           // Old age reads as a faded coat, since every stage is the same pig.

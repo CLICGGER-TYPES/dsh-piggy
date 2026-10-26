@@ -12,7 +12,7 @@
 import { feetPoint } from './character-geometry.js'
 import { drawingCorridor, PAD } from './desktop/geometry.js'
 import { bodyVisualBounds } from './desktop/visual-bounds.js'
-import { pigSize, setPigSize } from './pig-size.js'
+import { applyPigBox, pigSize, setPigSize } from './pig-size.js'
 
 export const RECOVER_SCALE = 1
 
@@ -95,7 +95,7 @@ export function bindRecovery(options) {
       height: Number(options.pig?.offsetHeight) || 0,
     }, pigSize(), stageSize > 0 ? stageSize : undefined)
     setPigSize(RECOVER_SCALE)
-    options.host?.style?.setProperty?.('--pig-size', size.width + 'px')
+    applyPigBox(options.host, size.width)
     const home = recoveryHome({ pigSize: size, workArea: area })
     if (home !== null) options.apply?.(home, size)
   })

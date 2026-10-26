@@ -52,8 +52,8 @@ jobs:
           - **Windows**：`dsh-piggy-setup-*.exe`（安装版）或 `dsh-piggy-portable-*.exe`（免安装，双击就跑）
           - **Linux**：`dsh-piggy-*.AppImage`（加执行权限后双击）
           - **macOS**：`dsh-piggy-*-arm64.dmg`（M 系列芯片）或 `-x64.dmg`（Intel）。没有签名，第一次打开要在「访达」里**右键 → 打开**；或者终端执行 `xattr -dr com.apple.quarantine /Applications/dsh-piggy.app`
-          - **DSH 插件**：`dsh plugin --profile web add dsh-piggy`，装完重启 dsh
-          - 已装桌面版的：主屏「🔄 更新」可升级游戏包；新安装的 Windows 安装版和 Linux AppImage 也能升级桌面外壳。Windows 便携版、未签名 macOS 版需从本页手动下载。
+          - **DSH 插件**：按上方精确版本指引安装，装完重启 DSH 并刷新页面
+          - 已装桌面版的：「设置 → 更新」可升级游戏包；新安装的 Windows 安装版和 Linux AppImage 也能升级桌面外壳。Windows 便携版、未签名 macOS 版需从本页手动下载。
           NOTES
       - name: 建 Release 并上传游戏包
         env: { GH_TOKEN: '${{ github.token }}' }

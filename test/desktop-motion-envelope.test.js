@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { ART_BOUNDS, builtinFrame, FRAME_HEIGHT, MAX_ART_ASPECT } from '../src/client/art-framing.js'
 import { framedBox } from '../src/client/desktop/measure.js'
 import {
-  fixedMotionReserve, jumpEnvelope, motionEnvelope, PIG_MOTION, PIG_TRANSFORM_ORIGIN, REACTION_MOTION, spinEnvelope,
+  fixedMotionReserve, jumpEnvelope, motionEnvelope, PIG_ANIMATION_MOTION, PIG_MOTION, PIG_TRANSFORM_ORIGIN, REACTION_MOTION, spinEnvelope,
 } from '../src/client/desktop/motion-envelope.js'
 
 const cssBase = readFileSync(resolve('src/client/css-base.js'), 'utf8')
@@ -138,11 +138,19 @@ function artBox(path, pig) {
 /** Same scale → rotate → translate order as the CSS `transform` list. */
 function keyframePoint(point, pivot, state) {
   const radians = state.rotate * Math.PI / 180
-  const x = (point.x - pivot.x) * state.scaleX
-  const y = (point.y - pivot.y) * state.scaleY
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const sx = (point.x - pivot.x) * state.scaleX
+  const sy = (point.y - pivot.y) * state.scaleY
+  if (state.translateFirst) {
+    return {
+      x: pivot.x + (sx + state.x) * cos - (sy + state.y) * sin,
+      y: pivot.y + (sx + state.x) * sin + (sy + state.y) * cos,
+    }
+  }
   return {
-    x: pivot.x + x * Math.cos(radians) - y * Math.sin(radians) + state.x,
-    y: pivot.y + x * Math.sin(radians) + y * Math.cos(radians) + state.y,
+    x: pivot.x + sx * cos - sy * sin + state.x,
+    y: pivot.y + sx * sin + sy * cos + state.y,
   }
 }
 
@@ -163,8 +171,9 @@ test('care-reaction envelopes cover every keyframe pose around the parent pivot'
     // below the pig box, so the static 6px slack alone cannot cover the hops.
     assert.ok(envelope.y < ink.y - 6, name)
   }
-  assert.equal(motionEnvelope('dp-bob'), null)
+  assert.notEqual(motionEnvelope('dp-bob'), null)
   assert.equal(motionEnvelope('dp-unknown'), null)
+  assert.equal(motionEnvelope('toString'), null)
 })
 
 test('reaction envelope numbers stay tied to the actual CSS keyframes', () => {
@@ -182,6 +191,89 @@ test('reaction envelope numbers stay tied to the actual CSS keyframes', () => {
   assert.deepEqual(REACTION_MOTION['dp-feed-hop'][2], { scaleX: .96, scaleY: 1.07, rotate: 0, x: 0, y: -12 })
   assert.deepEqual(REACTION_MOTION['dp-play-hop'][3], { scaleX: .97, scaleY: 1.06, rotate: 8, x: 4, y: -9 })
   assert.deepEqual(REACTION_MOTION['dp-squash'][3], { scaleX: .95, scaleY: 1.09, rotate: 0, x: 0, y: -4 })
+})
+
+test('every .dp-pig transform animation envelope is tied to its actual CSS keyframes', () => {
+  const k = (scaleX, scaleY, rotate, x, y) => ({ scaleX, scaleY, rotate, x, y })
+  const kt = (scaleX, scaleY, rotate, x, y) => ({ scaleX, scaleY, rotate, x, y, translateFirst: true })
+  const expected = {
+    'dp-bob': [k(1, 1, 0, 0, 0), k(1, 1, -2.5, 0, -7)],
+    'dp-breathe': [k(1, 1, 0, 0, 0), k(1.09, 1.09, 0, 0, 1)],
+    'dp-shake': [k(1, 1, 0, 0, 0), k(1, 1, -5, -4, 0), k(1, 1, 5, 4, 0)],
+    'dp-cough': [k(1, 1, 0, 0, 0), k(1, 1, -7, -4, 0), k(1, 1, 6, 4, 0)],
+    'dp-dizzy': [k(1, 1, 0, 0, 0), k(1, 1, -6, 0, 0), k(1, 1, 5, 0, 0), k(1, 1, -4, 0, 0), k(1, 1, 3, 0, 0), k(1, 1, -2, 0, 0)],
+    'dp-wobble': [k(1, 1, 0, 0, 0), k(1, 1, -14, 0, 0), k(1, 1, 14, 0, 0)],
+    'dp-idle-stretch': [k(1, 1, 0, 0, 0), k(1.16, 0.88, 0, 0, 0)],
+    'dp-idle-look': [k(1, 1, 0, 0, 0), kt(1, 1, -8, -3, 0)],
+    'dp-walking': [k(1, 1, 0, 0, 0), k(1, 1, -4, 0, -6), k(1, 1, 4, 0, -6)],
+    'dp-typing': [k(1, 1, 0, 0, 0), k(1, 1, -1.5, 0, -2), k(1, 1, 1.5, 0, -2)],
+    'dp-reading': [k(1, 1, 0, 0, 0), k(1, 1, -5, 0, 1), k(1, 1, -2, 0, 1)],
+    'dp-king-work': [k(1, 1, 0, 0, 0), k(1, 1, 1, 0, 1)],
+    'dp-king-study': [k(1, 1, -2, 0, 0), k(1, 1, 2, 0, 0)],
+    'dp-king-walk': [k(1, 1, -2, 0, 0), k(1, 1, 2, 0, -3)],
+    'dp-box-wobble': [k(1, 1, 0, 0, 0), k(1, 1, -4, 0, 0), k(1, 1, 3, 0, 0), k(1, 1, -2, 0, 0)],
+    'dp-box-breathe': [k(1, 1, 0, 0, 0), k(1.06, 1.06, 0, 0, -3)],
+    'dp-poke-shake': [k(1, 1, 0, 0, 0), k(1, 1, -7, 0, 0), k(1, 1, 6, 0, 0), k(1, 1, -4, 0, 0)],
+    'dp-feed-hop': [k(1, 1, 0, 0, 0), k(1.07, 0.91, 0, 0, 2), k(0.96, 1.07, 0, 0, -12), k(1.1, 0.88, 0, 0, 0), k(0.98, 1.03, 0, 0, -4)],
+    'dp-play-hop': [k(1, 1, 0, 0, 0), k(1.02, 1.02, -7, -3, -5), k(1.08, 0.92, 3, 0, 0), k(0.97, 1.06, 8, 4, -9), k(1.05, 0.96, -2, 0, 0)],
+    'dp-squash': [k(1, 1, 0, 0, 0), k(1.04, 0.95, 0, 0, 1), k(1.14, 0.82, 0, 0, 3), k(0.95, 1.09, 0, 0, -4), k(1.04, 0.97, 0, 0, 0)],
+  }
+  assert.deepEqual(Object.keys(PIG_ANIMATION_MOTION).sort(), Object.keys(expected).sort())
+  for (const [name, states] of Object.entries(expected)) {
+    assert.deepEqual(PIG_ANIMATION_MOTION[name], states, name)
+    assert.notEqual(motionEnvelope(name), null, name)
+  }
+
+  // Source strings pin the table to the stylesheet, so a keyframe edit cannot
+  // silently keep an obsolete envelope.
+  for (const source of [
+    "'@keyframes dp-bob{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-7px) rotate(-2.5deg)}}',",
+    "'@keyframes dp-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(1px) scale(1.09)}}',",
+    "'@keyframes dp-shake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-4px) rotate(-5deg)}60%{transform:translateX(4px) rotate(5deg)}}',",
+    "'@keyframes dp-dizzy{0%,100%{transform:rotate(0)}12%{transform:rotate(-6deg)}28%{transform:rotate(5deg)}',",
+    "'44%{transform:rotate(-4deg)}60%{transform:rotate(3deg)}76%{transform:rotate(-2deg)}}',",
+    "'@keyframes dp-wobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}55%{transform:rotate(14deg)}}',",
+    "'@keyframes dp-cough{0%,100%{transform:translateX(0)}30%{transform:translateX(-4px) rotate(-7deg)}70%{transform:translateX(4px) rotate(6deg)}}',",
+    "'@keyframes dp-idle-stretch{0%,100%{transform:scale(1)}45%{transform:scaleX(1.16) scaleY(.88)}}',",
+    "'@keyframes dp-idle-look{0%,100%{transform:rotate(0)}30%,70%{transform:rotate(-8deg) translateX(-3px)}}',",
+    "'@keyframes dp-walking{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(-4deg)}50%{transform:translateY(0) rotate(0)}75%{transform:translateY(-6px) rotate(4deg)}}',",
+    "'@keyframes dp-typing{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-2px) rotate(-1.5deg)}50%{transform:translateY(0) rotate(0)}75%{transform:translateY(-2px) rotate(1.5deg)}}',",
+    "'@keyframes dp-reading{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(1px) rotate(-5deg)}70%{transform:translateY(1px) rotate(-2deg)}}',",
+    "'@keyframes dp-king-work{0%,100%{transform:translateY(0)}50%{transform:translateY(1px) rotate(1deg)}}',",
+    "'@keyframes dp-king-study{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}',",
+    "'@keyframes dp-king-walk{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-3px) rotate(2deg)}}',",
+    "'@keyframes dp-poke-shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}',",
+    "'50%{transform:rotate(6deg)}75%{transform:rotate(-4deg)}}',",
+  ]) assert.ok(cssBase.includes(source), source)
+  for (const source of [
+    "'@keyframes dp-box-wobble{0%,100%{transform:rotate(0)}30%{transform:rotate(-4deg)}',",
+    "'45%{transform:rotate(3deg)}60%{transform:rotate(-2deg)}}',",
+  ]) assert.ok(cssTabs.includes(source), source)
+  for (const source of [
+    "'@keyframes dp-box-breathe{0%,100%{transform:translateY(0) scale(1)}',",
+    "'50%{transform:translateY(-3px) scale(1.06)}}',",
+  ]) assert.ok(cssBase.includes(source), source)
+})
+
+test('every transform animation envelope contains all its keyframe poses for tall and wide art', () => {
+  const paths = [WIZARD_IDLE, 'pigs/base/piglet/bathe.png', 'pigs/base/piglet/work.png']
+  for (const path of paths) {
+    for (const size of [68, 340]) {
+      const pig = { x: 100, y: 160, width: size, height: size }
+      const ink = artBox(path, pig)
+      assert.notEqual(ink, null, path)
+      const pivot = { x: pig.x + pig.width * PIG_TRANSFORM_ORIGIN.x, y: pig.y + pig.height * PIG_TRANSFORM_ORIGIN.y }
+      for (const [name, states] of Object.entries(PIG_ANIMATION_MOTION)) {
+        const envelope = motionEnvelope(name)(ink, pivot)
+        for (const state of states) {
+          for (const point of [
+            { x: ink.x, y: ink.y }, { x: ink.x + ink.width, y: ink.y },
+            { x: ink.x, y: ink.y + ink.height }, { x: ink.x + ink.width, y: ink.y + ink.height },
+          ]) assert.equal(contains(envelope, keyframePoint(point, pivot, state)), true, `${path} ${size}px ${name}`)
+        }
+      }
+    }
+  }
 })
 
 test('every reviewed sprite gets the same care-reaction coverage at the common framed top', () => {
