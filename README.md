@@ -24,7 +24,7 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者确认后按版本发布（可信发布工作流或本机手动发布）；如果默认源尚未同步，以发布页上的版本为准。
 
-预览版下载：0.37.2-rc.3 / 外壳 0.6.8-rc.2（候选已就绪，**待最终验证后发布**，下列链接在发布后才生效）：[GitHub v0.37.2-rc.3](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee v0.37.2-rc.3](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)。这一版是舞台整合、外观边界与更新页版本选择的候选，Linux 原生复验和 Windows 验收仍在进行；结论出来前不要把它当成已发布版本，具体范围以发布页说明为准。上一版 0.37.2-rc.2 的说明仍在其发布页。
+预览版 **0.37.2-rc.3 / 外壳 0.6.8-rc.2**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)。包含透明舞台整合、外观边界修复和更新页版本选择。测试版需手动查看，不主动提示更新；验证范围见发布说明。
 
 Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。本轮 RC2 的 Windows 安装器、更新清单和游戏包已归档到下方夸克旧版归档。
 
@@ -36,7 +36,7 @@ Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧�
 dsh plugin --profile web add dsh-piggy
 ```
 
-不带版本号装的是 npm 上的 `latest`，也就是当前正式版；要装某一版预览版，用完整版本号（下例是本次候选，须先确认该版本已经在 npm 上）：
+不带版本号装的是 npm 上的 `latest`，也就是当前正式版；要装某一版预览版，用完整版本号（以下版本已在 npm 发布）：
 
 ```sh
 dsh plugin --profile web add dsh-piggy@0.37.2-rc.3
@@ -50,7 +50,7 @@ dsh plugin --profile web add dsh-piggy@0.37.2-rc.3
 
 ### 桌面版
 
-从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版，或从 [Gitee 最新预览版](https://gitee.com/clicgger/dsh-piggy/releases)下载 RC（当前仍是 v0.37.2-rc.2，v0.37.2-rc.3 在最终验证发布后同步）。Linux 和 macOS 安装包只在 GitHub 提供。
+从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版，或从 [Gitee 最新预览版](https://gitee.com/clicgger/dsh-piggy/releases)下载 RC。Linux 和 macOS 安装包只在 GitHub 提供。
 
 | 系统 | 下载文件 |
 |---|---|
@@ -135,7 +135,7 @@ npm test
 npm run typecheck
 ```
 
-源码候选的改动和验收边界记在 [CHANGELOG](CHANGELOG.md) 的候选小节与 [ROADMAP](docs/ROADMAP.md)；候选不等于已发布功能。
+完整变更与验证范围见 [CHANGELOG](CHANGELOG.md)，后续计划见 [ROADMAP](docs/ROADMAP.md)。
 
 <details>
 <summary><strong>0.37.2-rc.3 预览候选（外壳 0.6.8-rc.2）</strong></summary>
@@ -150,7 +150,7 @@ npm run typecheck
 - 修复大尺寸小猪展开菜单时仍用固定场景高度、遮住菜单按钮；小尺寸的既有布局保留。补齐 Linux 洗澡、摇头、伸展等动作的绘制范围，放大后边缘不再被窗口形状切掉。
 - 外壳把静态资源、日志、偏好、备份和导出改为异步读写，退出前完成已开始的写入；Windows 全屏探测和游戏更新转移到后台线程，更新准备可单独取消。
 - 桌面默认仍是双窗口；整屏透明舞台继续由启动参数 `--window-mode=stage` 选择（`--window-mode=split` 可显式回退）。
-- 边界：Windows 用户反馈的 500% 缩放下自动消失、双击无响应仍未复现、未定位，恢复小猪入口不是根因修复；macOS 本轮没有原生验收。此版本仍为预览候选，不能当成稳定版功能。
+- 边界：Windows 用户反馈的 500% 缩放下自动消失、双击无响应仍未复现、未定位，恢复小猪入口不是根因修复；macOS 本轮没有原生验收。此版本为测试版；macOS、混合DPI多屏和实时系统缩放切换仍需补验。
 
 </details>
 
@@ -175,7 +175,7 @@ npm run typecheck
 | [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)） |
 | [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题（[#5](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/5)） |
 | [@tetezi](https://github.com/tetezi) | 面板动作时猪窗口置顶、右键不误摸、脏和生病状态的苍蝇/病毒图标、恢复桌面版状态变色与心情优先级调整，附回归测试（[#8](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/8)，随 [#9](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/9) 合入） |
-| [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；按游戏能力控制 Windows 鼠标转发（[#19](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/19)），并协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)） |
+| [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；按游戏能力控制 Windows 鼠标转发（[#19](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/19)），异步外壳 I/O 与更新生命周期（[#15](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/15)）；并协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)） |
 | [@Flappy-Boy](https://github.com/Flappy-Boy) | 反馈更新说明滚动回顶、菜园快速点击丢操作、矿洞连续挖掘站位异常，并提供复现步骤（[#16](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/16)、[#17](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/17)、[#18](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/18)） |
 
 欢迎画猪、报问题或贡献代码。当前立绘只有一套无描边平涂画风，原有形象与制作要求见[小猪画风](docs/art/pig-style.md)。可以先开 Issue 交流，也欢迎 Fork 项目，养一只符合自己喜好的猪。想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)（Gitee 用户可以在 [Gitee 仓库](https://gitee.com/clicgger/dsh-piggy) 提 Issue）。合并进来的贡献会记在这张表里。

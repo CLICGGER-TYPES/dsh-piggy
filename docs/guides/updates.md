@@ -39,7 +39,7 @@ DSH 插件形态的「设置 → 更新」会读 `channel.js` 选定的发布页
     版本号用发布页上的完整版本号（RC 要带 `-rc.N`，不能只写 `0.37.2`）。例如 npm 上已有这一版时：
 
     ```sh
-    dsh plugin --profile web add dsh-piggy@0.37.2-rc.2
+    dsh plugin --profile web add dsh-piggy@0.37.2-rc.3
     ```
 
     用别的 profile 时把 `web` 换成自己的。装完重启 DSH，再刷新页面；更新页顶部的「现在 v…」应该变成新版本。不带版本号的 `dsh plugin --profile web add dsh-piggy` 装的是 npm 的 `latest`（正式版），不会拿预览版。
