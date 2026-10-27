@@ -24,7 +24,7 @@ jobs:
       - name: Install build and virtual desktop tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libfuse2t64 xvfb openbox xdotool scrot dbus-x11
+          sudo apt-get install -y libfuse2t64 xvfb openbox picom xdotool scrot dbus-x11 fonts-noto-cjk
           npm install --global pnpm@11.28.5
           npm ci --prefix apps/desktop --no-audit --no-fund
           npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43

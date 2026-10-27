@@ -230,6 +230,7 @@ def read_state(directory):
 try:
     run(['openbox', '--version'])
     launch(['openbox'], 'window-manager.log')
+    launch(['picom', '--backend', 'xrender'], 'compositor.log')
     for directory, role in [(profile, 'desktop'), (source, 'source')]:
         run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(directory), role], cwd=repo)
     run(['node', str(cli), 'plugin', '--profile', 'web', 'add', str(tgz)], env=env, timeout=240)
@@ -348,7 +349,7 @@ try:
             'input': 'native XTest mouse/keyboard', 'browser': 'Playwright read-only CDP; Browser plugin not available',
             'appImageSha256': hashlib.sha256(image.read_bytes()).hexdigest(),
             'npmSha256': hashlib.sha256(tgz.read_bytes()).hexdigest(),
-            'linuxDisplay': 'Xvfb/Openbox software rendering; --no-sandbox --disable-gpu --ozone-platform=x11'}, ensure_ascii=False, indent=2))
+            'linuxDisplay': 'Xvfb/Openbox/picom software rendering; --no-sandbox --disable-gpu --ozone-platform=x11'}, ensure_ascii=False, indent=2))
 except Exception as error:
     (out / 'report.json').write_text(json.dumps({'ok': False, 'error': clean(error), 'cases': checks, 'errors': errors}, ensure_ascii=False, indent=2))
     for name in ['piggy.log', 'stage.log', 'window.json']:
