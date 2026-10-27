@@ -397,3 +397,16 @@ test('雇用前早已成熟的多季作物只在雇用时收第一季，下一�
   assert.equal(data.plots[0].plantedAt, T0 - crop.hours * H / 2)
   assert.equal(data.seeds.pumpkin, 1)
 })
+
+test('异常超长离线超过结算保护时明确失败，不静默把结算时钟跳到当前时间', () => {
+  const t = api(), data = farm9()
+  data.unlocked = 18
+  data.helper.level = 2
+  data.seeds.radish = 1_000_000
+  farm.actions.hire(data, {}, t.api)
+  for (let plot = 0; plot < 16; plot++) farm.actions.plant(data, {plot,item:'radish'}, t.api)
+  const lastAt = data.helper.lastAt
+  t.api.now = T0 + 100 * 365 * 24 * H
+  assert.throws(() => farm.actions.buy(data, {item:'nothing'}, t.api), /离线农活过多/)
+  assert.equal(data.helper.lastAt, lastAt, '宿主事务会回滚失败动作，不能将未处理的离线时间标记为已完成')
+})
