@@ -228,3 +228,7 @@ GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `sc
 附件上传后运行 `node scripts/extension-release-check.mjs`（默认 GitHub/Gitee 都检查）。仅核对某渠道或扩展可用 `--host github --key farm,mine`。它只读本地候选目录和公开下载地址，不上传、不改目录、不推送；非零退出时不能发布该目录。它会核对整包、包内版本与文件散列；`minGame < 0.36.1` 的扩展还逐件回读旧宿主需要的代码和图片。HTTP 404、内容不符和网络失败分别保留实际结果，不能用本地标签是否存在代替下载验证。
 
 `.github/workflows/extensions-check.yml` 对目录变更的 PR 执行同一检查，也支持手动只读执行；权限仅 `contents: read`。候选文件尚未上传时检查失败是发布依赖未就绪，不应跳过检查或把候选目录提前推成线上目录。网络失败需重试核对，不等于已证明附件不存在；此检查也不能代替最终游戏中的实际安装验收。
+
+### 未发布候选与公开目录
+
+源码扩展升版后，先把两渠道新条目保存在 `release-candidates/extensions/registry.json` 与 `registry-gitee.json`。CI以候选目录核对源码，公开 `extensions/registry*.json` 继续保留已交付的版本，并校验其官方身份；不能同版本改下载内容。确认发行后，先上传扩展附件并逐件回读校验，再把候选目录晋级公开目录，最后删除候选副本。离线安装器按源码打包，并用官方清单校验，不依赖公开目录先行。

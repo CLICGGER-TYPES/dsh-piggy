@@ -274,7 +274,7 @@ export function install(shell) {
     proxy: shell.proxy,
     saves: shell.saves,
     ext: shell.ext,
-    fullscreen: shell.fullscreen,
+    fullscreen: shell.fullscreen, external: shell.external ?? null,
     split: true, onRecover: shell.onRecover,
     recoverHome: function (foot) {
       const info = readGeometry(), areas = info?.workAreas ?? (info?.workArea ? [info.workArea] : [])

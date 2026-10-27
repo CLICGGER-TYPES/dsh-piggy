@@ -62,6 +62,7 @@ def wait(check, label, seconds=40):
         except Exception as error:
             last = clean(error)
         time.sleep(.25)
+    save_diagnostics()
     raise AssertionError(f'Timeout: {label}; {last}')
 
 
@@ -81,6 +82,29 @@ def launch(command, log, environment=env, web=False):
                 stream.flush()
     threading.Thread(target=pump, daemon=True).start()
     return proc
+
+
+def save_diagnostics():
+    for label, browser in [('desktop', desktop_browser), ('web', web_browser)]:
+        if browser is None:
+            continue
+        try:
+            pages = browser_pages(browser)
+        except Exception:
+            continue
+        for index, page in enumerate(pages):
+            try:
+                details = page.evaluate("""() => {
+                  const p=document.querySelector('.dp-pig'),r=p?.getBoundingClientRect();
+                  const hit=r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2):null;
+                  return {body:document.body?.innerText,role:window.piggyShell?.role,
+                    viewport:{screenX,screenY,outerWidth,outerHeight,innerWidth,innerHeight},
+                    pig:r?{x:r.x,y:r.y,w:r.width,h:r.height,stage:p.getAttribute('data-stage'),hit:hit?.className}:null};
+                }""")
+                (out / f'failure-{label}-{index}.json').write_text(clean(json.dumps(details, ensure_ascii=False)))
+                shot(page, f'failure-{label}-{index}')
+            except Exception as error:
+                (out / f'failure-{label}-{index}-capture.txt').write_text(clean(error))
 
 
 def record(name, **details):
@@ -122,9 +146,9 @@ def click(page, selector, button=1):
         if not point['ok']:
             return False
         key = (round(point['x']), round(point['y']))
-        stable = stable + 1 if key == previous else 0
+        stable = stable + 1 if previous and abs(key[0]-previous[0]) <= 2 and abs(key[1]-previous[1]) <= 2 else 0
         previous = key
-        return point if stable >= 2 else False
+        return point if selector == '.dp-pig' or stable >= 2 else False
     point = wait(target, 'visible stable native target ' + selector)
     run(['xdotool', 'mousemove', '--sync', str(round(point['x'])), str(round(point['y']))])
     time.sleep(.15)
@@ -424,15 +448,6 @@ except Exception as error:
     for name in ['piggy.log', 'stage.log', 'window.json']:
         if (profile / name).exists():
             (out / ('desktop-' + name)).write_text(clean((profile / name).read_text()))
-    if desktop_browser:
-        for index, page in enumerate(desktop_pages()):
-            try:
-                shot(page, 'failure-desktop-' + str(index))
-                details = page.evaluate('''() => ({url:location.href,body:document.body?.innerText,
-                    pig:document.querySelector('.dp-pig')?.outerHTML,html:document.documentElement.outerHTML.slice(-2000)})''')
-                (out / ('failure-desktop-' + str(index) + '.json')).write_text(clean(json.dumps(details, ensure_ascii=False)))
-            except Exception:
-                pass
     if web_browser:
         for index, page in enumerate(browser_pages(web_browser)):
             try:

@@ -76,6 +76,7 @@ export function installPanel(bridge) {
     saves: bridge.saves,
     ext: bridge.ext,
     fullscreen: bridge.fullscreen,
+    external: bridge.external ?? null,
     geometry: bridge.geometry,
     split: true,
     panel: bridge.panel,

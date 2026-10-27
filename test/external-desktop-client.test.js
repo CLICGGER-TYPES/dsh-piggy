@@ -68,3 +68,32 @@ test('开启/关闭使用原开关组件，通知更新状态且离开设置后�
     assert.match(s.content.allText(), /已允许外部联动/)
   } finally { s.restore() }
 })
+
+test('实际split面板适配层保留联动接口，设置开关可调用原生桥', async () => {
+  const { installPanel } = await import('../src/client/desktop/panel-window.js')
+  const { desktopShell } = await import('../src/client/desktop-shell.js')
+  const oldWindow = globalThis.window, oldDocument = globalThis.document
+  const calls = []
+  const api = { get: async () => ({ ok: true, enabled: false }),
+    set: async enabled => { calls.push(enabled); return { ok: true, enabled, running: enabled } } }
+  globalThis.window = {}
+  globalThis.document = fakeDom().document
+  globalThis.document.documentElement = globalThis.document.createElement('html')
+  let s
+  try {
+    installPanel({ external: api, panel: {} })
+    assert.equal(desktopShell().external, api)
+    s = setup(desktopShell().external)
+    await settle()
+    findByAttr(s.content, 'data-external-allow', 'true').fire('click')
+    await settle()
+    assert.deepEqual(calls, [true])
+    assert.match(s.content.allText(), /已允许外部联动/)
+  } finally {
+    s?.restore()
+    if (oldWindow === undefined) delete globalThis.window
+    else globalThis.window = oldWindow
+    if (oldDocument === undefined) delete globalThis.document
+    else globalThis.document = oldDocument
+  }
+})

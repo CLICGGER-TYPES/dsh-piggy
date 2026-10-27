@@ -7428,6 +7428,7 @@
       saves: bridge3.saves,
       ext: bridge3.ext,
       fullscreen: bridge3.fullscreen,
+      external: bridge3.external ?? null,
       geometry: bridge3.geometry,
       split: true,
       panel: bridge3.panel,
@@ -18934,6 +18935,7 @@
       saves: shell2.saves,
       ext: shell2.ext,
       fullscreen: shell2.fullscreen,
+      external: shell2.external ?? null,
       split: true,
       onRecover: shell2.onRecover,
       recoverHome: function(foot) {
