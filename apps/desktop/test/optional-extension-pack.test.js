@@ -219,3 +219,12 @@ test('NSIS string escaping cannot break out of a define', () => {
   assert.equal(nsisString('say "hi"'), '"say $\\"hi$\\""')
   assert.equal(nsisString('two\r\nlines'), '"two lines"')
 })
+
+test('public Windows release builds the full optional installer and portable separately', () => {
+  const workflow = readFileSync(new URL('../../../.github/workflows/release.yml', import.meta.url), 'utf8')
+  const pack = workflow.indexOf('node scripts/pack-optional-extensions.mjs')
+  const installer = workflow.indexOf('npx electron-builder --win nsis --config electron-builder.optional.cjs --publish never')
+  const portable = workflow.indexOf('npx electron-builder --win portable --publish never')
+  assert.ok(pack > 0 && installer > pack && portable > installer, 'release must use the same five-pack NSIS configuration as native acceptance')
+  assert.match(workflow, /Windows updater must reference the full NSIS installer/)
+})

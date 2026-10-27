@@ -88,7 +88,14 @@ jobs:
         shell: bash
         run: |
           node scripts/pack-game.mjs
-          npx electron-builder ${{ matrix.target }} --publish never
+          if [[ "${{ matrix.target }}" == "--win" ]]; then
+            node scripts/pack-optional-extensions.mjs
+            npx electron-builder --win nsis --config electron-builder.optional.cjs --publish never
+            npx electron-builder --win portable --publish never
+            node -e 'const fs=require("node:fs"),p=require("./package.json"); const text=fs.readFileSync("dist/latest.yml","utf8"); if(!text.includes(`dsh-piggy-setup-${p.version}.exe`) || text.includes("portable")) throw Error("Windows updater must reference the full NSIS installer")'
+          else
+            npx electron-builder ${{ matrix.target }} --publish never
+          fi
       - name: 上传安装包与外壳更新清单
         shell: bash
         env: { GH_TOKEN: '${{ github.token }}' }

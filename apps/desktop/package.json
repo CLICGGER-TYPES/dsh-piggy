@@ -61,6 +61,8 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "dsh-piggy-setup-${version}.${ext}"

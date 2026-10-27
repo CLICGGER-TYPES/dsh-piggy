@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$Installer,[Parameter(Mandatory=$true)][string]$Repository)
+﻿param([Parameter(Mandatory=$true)][string]$Installer,[Parameter(Mandatory=$true)][string]$Repository,[switch]$CheckIcons)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Windows.Forms,System.Drawing
 Add-Type @'
@@ -232,6 +232,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
  Open-GameMenu $root
  Wait-Until { Quit-Tile $script:Game.Id } 'native game menu' 20 | Out-Null
  Screenshot ($Name+'-menu')
+ if($CheckIcons -and $Name -eq 'none'){Check-TrayIcon}
  if ($CheckExternal) {
   Click-Element (Wait-Until { Find-GameButton $script:Game.Id '设置' } 'settings tile')
   $back=Wait-Until { Find-GameButton $script:Game.Id '^‹$' } 'settings back button'
@@ -267,12 +268,14 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
  Write-Host ('Game case complete: '+$Name)
  $Results.Add(@{case=$Name;installedExe=$true;nativeMenu=$true;nativeQuit=$true;proxy='unreachable 127.0.0.1:9';extensions=$Expected;freshHatch=$Fresh;defaultProfile=$UseDefault;windowMode=$WindowMode;externalPermission=$CheckExternal})
 }
+. (Join-Path $Repository 'apps/desktop/qa/windows-icons.ps1')
 try {
  if ((Test-Path $DefaultProfile) -or (Test-Path $LegacyProfile)) { throw 'VM already contains a personal piggy profile; refusing to overwrite it' }
  node (Join-Path $Repository 'apps/desktop/qa/seed-installer-profile.mjs') $DataProfile $Repository
  if ($LASTEXITCODE -ne 0) { throw 'Fixture seed failed' }
  $env:PIGGY_USERDATA=$DataProfile
  Install-Pick 'none' @()
+ if($CheckIcons){Check-InstalledIcons}
  Run-Game 'none' $DataProfile 1
  Install-Pick 'single' @('mine') $false $true
  Run-Game 'single' $DataProfile 2
