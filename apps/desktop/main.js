@@ -1051,6 +1051,8 @@ function startPanelHit() {
 function raisePetAbovePanel() {
   if (extensionLayer.isFocused()) return
   if (win === null || win.isDestroyed() || !win.isVisible()) return
+  // 置顶标记仍为 true 时，菜单也可能被其他应用盖住；先抬菜单，再抬猪。
+  if (panelWin !== null && !panelWin.isDestroyed() && panelWin.isVisible()) panelWin.moveTop()
   win.moveTop()
 }
 
@@ -1135,6 +1137,7 @@ function placePanel() {
     // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
     //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
     panelWin.showInactive()
+    raisePetAbovePanel()
     log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical }))
     if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:panel', { type: 'open' })
   }
