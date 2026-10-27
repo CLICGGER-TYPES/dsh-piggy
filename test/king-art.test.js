@@ -38,5 +38,5 @@ test('care reactions temporarily replace activity sprites and restore afterward'
   attrs['data-react'] = 'bathe'
   syncPigArt(pig, image)
   // 用户 2026-10-13：洗澡等反应的反馈图撤回，普通猪用自己的洗澡动作图。
-  assert.match(image.src, /\/pigs\/base\/piglet\/bathe\.png$/, 'ordinary pigs use their own bathe art')
+  assert.match(new URL(image.src, 'https://example.test').pathname, /\/pigs\/base\/piglet\/bathe\.png$/, 'ordinary pigs use their own bathe art')
 })

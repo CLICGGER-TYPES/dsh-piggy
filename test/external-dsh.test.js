@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createServer } from 'node:http'
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
@@ -621,15 +621,15 @@ test('DSH 侧强制终结：运行中可结束打工；已暂存时按暂停时�
   failBase.activity = { kind: 'trip', key: 'park', label: '旅行·公园', emoji: '🌳', startedAt: BASE, endsAt: BASE + 60 * 60_000, cost: 15, minutes: 60 }
   const failPath = dshState(join(d.dir, 'fail'), failBase)
   const failing = controllerFor(failPath, { clock: d.clock, markerPath: d.markerPath, homes: d.homes })
-  const directory = dirname(failPath)
+  const blockedWrite = `${failPath}.tmp`
   try {
     await failing.controller.init()
     await failing.controller.connect('connect')
     const originalBytes = readFileSync(failPath, 'utf8')
     const originalConfig = readFileSync(`${failPath}.external-pet.json`, 'utf8')
-    chmodSync(directory, 0o500)
+    mkdirSync(blockedWrite) // A directory at the atomic temp path blocks writes on Windows and POSIX.
     const failed = await failing.controller.prepare('activity', 'source')
-    chmodSync(directory, 0o700)
+    rmSync(blockedWrite, { recursive: true })
     assert.equal(failed.ok, false)
     assert.equal(failed.reason, 'write-failed')
     assert.equal(readFileSync(failPath, 'utf8'), originalBytes, '失败恢复原存档')
@@ -637,7 +637,7 @@ test('DSH 侧强制终结：运行中可结束打工；已暂存时按暂停时�
     const retried = await failing.controller.prepare('activity', 'source')
     assert.equal(retried.ok, true, JSON.stringify(retried))
     assert.equal(readJson(failPath).activity, null)
-  } finally { chmodSync(directory, 0o700); failing.controller.close() }
+  } finally { rmSync(blockedWrite, { recursive: true, force: true }); failing.controller.close() }
   } finally { await d.close() }
 })
 

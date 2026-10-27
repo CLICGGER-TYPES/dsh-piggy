@@ -199,13 +199,13 @@ function Close-Game($Process,$Root) {
  if ($confirm) { Click-Element $confirm }
  if (-not $Process.WaitForExit(20000)) { throw 'Game did not quit through its UI' }
 }
-function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh=$false,[bool]$UseDefault=$false) {
+function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh=$false,[bool]$UseDefault=$false,[string]$WindowMode="split",[bool]$CheckExternal=$false) {
  if ($UseDefault) { Remove-Item Env:PIGGY_USERDATA -ErrorAction SilentlyContinue } else { $env:PIGGY_USERDATA=$UserProfile }
  if (-not $UseDefault -or -not (Test-Path (Join-Path $LegacyProfile 'dsh-piggy'))) {
   if (-not (Test-Path $UserProfile)) { New-Item $UserProfile -ItemType Directory | Out-Null }
   '{"mode":"http","address":"127.0.0.1:9"}' | Set-Content (Join-Path $UserProfile 'proxy.json')
  }
- $script:Game=Start-Process (Join-Path $AppDir 'dsh-piggy.exe') -ArgumentList '--force-renderer-accessibility' -PassThru
+ $script:Game=Start-Process (Join-Path $AppDir 'dsh-piggy.exe') -ArgumentList "--force-renderer-accessibility --window-mode=$WindowMode" -PassThru
  $root=Wait-Until { Find-Window $script:Game.Id } 'installed game window' 60
  if ($Fresh) {
   Start-Sleep -Seconds 3
@@ -225,12 +225,40 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
  Open-GameMenu $root
  Wait-Until { Quit-Tile $script:Game.Id } 'native game menu' 20 | Out-Null
  Screenshot ($Name+'-menu')
+ if ($CheckExternal) {
+  Click-Element (Wait-Until { Find-GameButton $script:Game.Id '设置' } 'settings tile')
+  $back=Wait-Until { Find-GameButton $script:Game.Id '^‹$' } 'settings back button'
+  $box=$back.Current.BoundingRectangle
+  [void][PiggyNative]::SetCursorPos([int]($box.X+130),[int]($box.Y+180))
+  $toggle=$null
+  for ($scroll=0;$scroll -lt 30;$scroll++) {
+   $toggle=Find-GameButton $script:Game.Id '允许 DSH 联动'
+   if ($toggle) { break }
+   [PiggyNative]::mouse_event(2048,0,0,[uint32]4294966096,[UIntPtr]::Zero)
+   Start-Sleep -Milliseconds 180
+  }
+  if (-not $toggle) { throw 'Native external permission toggle not visible' }
+  Click-Element $toggle
+  Wait-Until { Test-Path (Join-Path $UserProfile 'work-endpoint/pair.json') } 'native pair service ready' 15 | Out-Null
+  if (-not (Get-Content (Join-Path $UserProfile 'external.json') -Raw -Encoding UTF8 | ConvertFrom-Json).enabled) { throw 'Native toggle did not persist permission' }
+  Screenshot ($Name+'-external-enabled')
+  Click-Element (Find-GameButton $script:Game.Id '允许 DSH 联动')
+  Wait-Until { -not (Test-Path (Join-Path $UserProfile 'work-endpoint/pair.json')) } 'native pair service disabled' 15 | Out-Null
+  for ($scroll=0;$scroll -lt 15;$scroll++) {
+   $back=Find-GameButton $script:Game.Id '^‹$'
+   if ($back) { break }
+   [PiggyNative]::mouse_event(2048,0,0,1440,[UIntPtr]::Zero)
+   Start-Sleep -Milliseconds 180
+  }
+  Click-Element $back
+  Wait-Until { Quit-Tile $script:Game.Id } 'home after external permission check' 15 | Out-Null
+ }
  Close-Game $script:Game $root
  $script:Game=$null
  $state=Get-Content (Join-Path $UserProfile 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
  if (-not $Fresh -and ($state.coins -ne 1314 -or $state.inventory.apple -ne 7 -or $state.name -ne 'Installer QA')) { throw 'Existing game progress changed' }
  Write-Host ('Game case complete: '+$Name)
- $Results.Add(@{case=$Name;installedExe=$true;nativeMenu=$true;nativeQuit=$true;proxy='unreachable 127.0.0.1:9';extensions=$Expected;freshHatch=$Fresh;defaultProfile=$UseDefault})
+ $Results.Add(@{case=$Name;installedExe=$true;nativeMenu=$true;nativeQuit=$true;proxy='unreachable 127.0.0.1:9';extensions=$Expected;freshHatch=$Fresh;defaultProfile=$UseDefault;windowMode=$WindowMode;externalPermission=$CheckExternal})
 }
 try {
  if ((Test-Path $DefaultProfile) -or (Test-Path $LegacyProfile)) { throw 'VM already contains a personal piggy profile; refusing to overwrite it' }
@@ -244,6 +272,8 @@ try {
  Install-Pick 'all' @('farm','mine','blindbox','gacha','pig-puzzle')
  Run-Game 'all' $DataProfile 5
  Run-Game 'restart' $DataProfile 5
+ Run-Game 'split-external' $DataProfile 5 $false $false 'split' $true
+ Run-Game 'stage-external' $DataProfile 5 $false $false 'stage' $true
  Install-Pick 'upgrade-subset' @('mine')
  Run-Game 'upgrade-subset' $DataProfile 5
  $before=Inventory $DataProfile

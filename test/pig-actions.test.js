@@ -119,11 +119,11 @@ test('shared web/desktop selection restores current illness instead of captured 
   const f = await fixture()
   const image = { src: '', hidden: false, getAttribute() { return this.src }, style: { setProperty() {} } }
   f.advance(8000); syncPigArt(f.pig, image, null)
-  assert.match(image.src, /piglet\/blink.png$/)
+  assert.match(new URL(image.src, 'https://example.test').pathname, /piglet\/blink.png$/)
   f.attrs['data-mood'] = 'sick'; f.attrs['data-illness'] = 'skin:1'
-  syncPigArt(f.pig, image, null); assert.match(image.src, /feedback\/allergy.png$/)
+  syncPigArt(f.pig, image, null); assert.match(new URL(image.src, 'https://example.test').pathname, /feedback\/allergy.png$/)
   f.advance(100); syncPigArt(f.pig, image, null)
-  assert.match(image.src, /feedback\/allergy.png$/)
+  assert.match(new URL(image.src, 'https://example.test').pathname, /feedback\/allergy.png$/)
   f.player.dispose()
 })
 
