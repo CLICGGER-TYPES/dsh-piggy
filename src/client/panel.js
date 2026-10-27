@@ -41,7 +41,7 @@ import { attachPointerRepaint } from './pointer-repaint.js'
 import { createRenderHold } from './render-hold.js'
 import { restoreHover } from './hover-restore.js'
 import { preserveFarmTriggerFocus } from './farm-trigger-focus.js'
-import { externalDevTabs, externalRenderBlocked, isExternalMode, syncExternalPanel } from './external-link.js'
+import { externalActionsBlocked, externalDevTabs, externalRenderBlocked, isExternalMode, syncExternalPanel } from './external-link.js'
 export function createPanel(ctx) {
       var pointerRepaint = attachPointerRepaint(ctx.host, window)
       const renderHold = createRenderHold(ctx.card)
@@ -229,7 +229,7 @@ export function createPanel(ctx) {
         // The 兴趣 button is not a stage; leave it selected.
         if (!ctx.stagePicked && firstOpen !== null && (stageEntry === null || stageEntry.unlocked === false)) ctx.stage = firstOpen
         syncExternalPanel(ctx)
-        ctx.host.setAttribute('data-external-offline', ctx.view.pig === null && isExternalMode(ctx.view) ? 'true' : 'false')
+        ctx.host.setAttribute('data-external-offline', externalActionsBlocked(ctx.view) ? 'true' : 'false')
         // 猪窗口里 isOpen 只表示「另一个窗口的面板开着」，自己永远按收起排版（不然会撑大猪窗口）
         ctx.host.setAttribute('data-open', ctx.isOpen && desktopRole() !== 'pet' ? 'true' : 'false')
         ctx.host.setAttribute('data-dev', ctx.devMode ? 'true' : 'false')

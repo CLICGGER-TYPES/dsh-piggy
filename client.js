@@ -17399,7 +17399,7 @@
       }
       if (!ctx.stagePicked && firstOpen !== null && (stageEntry === null || stageEntry.unlocked === false)) ctx.stage = firstOpen;
       syncExternalPanel(ctx);
-      ctx.host.setAttribute("data-external-offline", ctx.view.pig === null && isExternalMode(ctx.view) ? "true" : "false");
+      ctx.host.setAttribute("data-external-offline", externalActionsBlocked(ctx.view) ? "true" : "false");
       ctx.host.setAttribute("data-open", ctx.isOpen && desktopRole() !== "pet" ? "true" : "false");
       ctx.host.setAttribute("data-dev", ctx.devMode ? "true" : "false");
       ctx.host.setAttribute("data-away", ctx.view.activity === null ? "false" : ctx.view.activity.kind);

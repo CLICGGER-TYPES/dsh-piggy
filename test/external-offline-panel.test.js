@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { contentOf, findByAttr, findByClass, hostOf, mount, openPanel, settle } from './helpers/bundle.js'
+import { SNAPSHOT, contentOf, findByAttr, findByClass, hostOf, mount, openPanel, settle } from './helpers/bundle.js'
 
 const LINK = { state: 'disconnected', lastAt: 1_760_000_000_000, queued: 3, merged: false, dead: false }
 
@@ -95,4 +95,18 @@ test('外部模式断线：不摆内嵌纸盒，设置/管理/切回入口仍可
   const sent = calls.find(entry => entry.path.endsWith('/external/disconnect'))
   assert.notEqual(sent, undefined, '切回必须真的请求 /external/disconnect')
   assert.equal(sent.body.discardQueue, true)
+})
+
+
+test('外部断线保留最后快照时仍标离线，恢复连接后移除离线标记', async () => {
+  const { dom, intervals } = await mount({ status: { ...SNAPSHOT, ok: false, reason: 'disconnected', link: LINK } })
+  await settle()
+  assert.equal(hostOf(dom).getAttribute('data-link'), 'disconnected')
+  assert.equal(hostOf(dom).getAttribute('data-external-offline'), 'true')
+  const poll = intervals.find(entry => entry.delay === 4000)
+  globalThis.fetch = async () => json({ ...SNAPSHOT, link: { ...LINK, state: 'connected' } })
+  await poll.fn()
+  await settle()
+  assert.equal(hostOf(dom).getAttribute('data-link'), 'connected')
+  assert.equal(hostOf(dom).getAttribute('data-external-offline'), 'false')
 })

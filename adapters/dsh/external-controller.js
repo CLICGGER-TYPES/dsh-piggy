@@ -266,7 +266,8 @@ export function createExternalController(options) {
     lastSnapshot: () => lastSnapshot,
     setSnapshot: snapshot => { lastSnapshot = snapshot },
     noteSummary: summary => { noteTargetSummary(summary) },
-    markSeen: () => { lastAt = now() },
+    markSeen: () => { lastAt = now(); if (!BUSY_STATES.has(connection)) connection = 'connected'; error = null },
+    markUnavailable: reason => { if (!BUSY_STATES.has(connection)) connection = 'disconnected'; error = reason },
     refreshEndpoints: () => { void refreshEndpoints() },
   })
   ctx.getPanel = () => panel

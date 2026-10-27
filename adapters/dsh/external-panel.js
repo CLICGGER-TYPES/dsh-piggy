@@ -80,6 +80,7 @@ export function createExternalPanel(options) {
   }
 
   function failed(reason) {
+    if (reason === 'disconnected' || reason === 'unauthorized') options.markUnavailable?.(reason)
     return { ...(last() ?? { ok: false }), ok: false, reason, link: link() }
   }
 
@@ -150,10 +151,13 @@ export function createExternalPanel(options) {
         const response = await withPair(() => client.command({ clientId: options.clientId(), requestId, input }))
         if (response.status !== 200 || response.json === null || response.json.ok === false) {
           const reason = response.json?.reason ?? (response.status === 401 ? 'unauthorized' : 'disconnected')
+          failed(reason)
           return { ok: false, kind: 'error', text: `桌宠没开，工作事件已排队；打开桌面版后再试。动作没有执行。（${reason}）` }
         }
+        options.markSeen?.()
         return { ok: true, kind: response.json.kind ?? 'success', text: String(response.json.text ?? '') }
       } catch {
+        failed('disconnected')
         return { ok: false, kind: 'error', text: '桌宠没开，工作事件已排队；打开桌面版后再试。动作没有执行。' }
       }
     },

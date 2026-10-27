@@ -314,6 +314,10 @@ test('面板动作/命令失败返回最后快照 + ok:false；断线不投内�
     await controller.connect('connect')
     await controller.panel.state()
     await d.pair.close()
+    const offline = await controller.panel.state()
+    assert.equal(offline.link.state, 'disconnected', '轮询失败必须立即撤销已连接状态')
+    assert.equal(offline.pig.name, '团团', '断线保留最后真实快照')
+    assert.equal(controller.status().connection, 'disconnected')
     const failed = await controller.panel.act({ requestId: 'req-offline-0001', action: 'pet' })
     assert.equal(failed.ok, false)
     assert.equal(failed.reason, 'disconnected')
@@ -909,4 +913,27 @@ test('桌面忙的占位快照不改写最后快照和摘要', async () => {
   assert.equal(busyAgain.pig.coins, 500, '忙碌时返回最后一份真实快照')
   assert.equal(last.pig.coins, 500, '最后一份真实快照没被占位正文改写')
   assert.equal(summaries.length, 1, '忙的时候不结算摘要')
+})
+
+test('真实面板轮询断线后恢复：连接状态随结果更新，内嵌存档始终暂停', async () => {
+  const d = await desktop({ target: { name: '团团' } })
+  const statePath = dshState(d.dir)
+  let reachable = true
+  const { controller, runtime } = controllerFor(statePath, { clock: d.clock, markerPath: d.markerPath, homes: d.homes,
+    fetch: (...args) => reachable ? globalThis.fetch(...args) : Promise.reject(new Error('offline')) })
+  try {
+    await controller.init()
+    await controller.connect('connect')
+    assert.equal((await controller.panel.state()).link.state, 'connected')
+    const frozen = readFileSync(statePath, 'utf8')
+    reachable = false
+    const offline = await controller.panel.state()
+    assert.equal(offline.link.state, 'disconnected')
+    assert.equal(offline.pig.name, '团团')
+    reachable = true
+    assert.equal((await controller.panel.state()).link.state, 'connected')
+    assert.equal(controller.status().connection, 'connected')
+    assert.equal(runtime(), null)
+    assert.equal(readFileSync(statePath, 'utf8'), frozen)
+  } finally { controller.close(); await d.close() }
 })
