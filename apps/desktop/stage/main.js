@@ -3,7 +3,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
 import { BrowserWindow, app, dialog, ipcMain, net, protocol, screen, session } from 'electron'
 import updaterPackage from 'electron-updater'
 
