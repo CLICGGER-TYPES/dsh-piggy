@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 桌面版默认数据目录统一为 `piggy`，存档 `state.json` 和扩展 `extensions/` 直接放在其中；Windows、Linux、macOS 共用同一套路径规则，普通窗口与透明舞台一致。首次升级复制旧数据并保留原目录，拒绝覆盖已有数据或迁移仍在使用中的存档；迁移中断可继续。此改动需要更新外壳，不随游戏热更新生效。
+
 后续安排见 [路线图](docs/ROADMAP.md)；六款新猪与钓鱼新动作按用户要求暂缓。
 
 ## [0.37.2-rc.3] — 2026-10-26 · 舞台整合、外观边界与版本选择

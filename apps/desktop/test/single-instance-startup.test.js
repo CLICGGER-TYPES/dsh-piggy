@@ -19,6 +19,8 @@ async function runStartup(userData, hasLock) {
   let quits = 0, ready = 0
   const context = createContext({
     needsX11: false, quitting: false, join, resolve,
+    configureDesktopData: () => ({ userData, statePath: join(userData, 'state.json') }),
+    migrateDesktopData() { calls.push('migration') },
     process: { platform: 'win32', env: { PIGGY_USERDATA: userData }, argv: [] },
     app: { setPath() {}, getPath: () => userData, getVersion: () => '0.6.6', isPackaged: false,
       requestSingleInstanceLock: () => hasLock,
@@ -75,6 +77,6 @@ test('取得单实例锁的实例仍执行生产 ready 初始化及版本服务�
   const result = await runStartup(directory, true)
   assert.equal(result.quits, 0)
   assert.equal(result.ready, 1)
-  assert.deepEqual(result.calls, ['proxy', 'proxy-init', 'shell', 'versions'])
+  assert.deepEqual(result.calls, ['migration', 'proxy', 'proxy-init', 'shell', 'versions'])
   assert.deepEqual(await readdir(join(directory, 'versions')), [])
 })

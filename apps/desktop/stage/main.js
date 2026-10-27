@@ -1,13 +1,15 @@
 // @ts-check
 /** 整屏透明舞台入口：一个置顶窗口覆盖所有工作区，里面跑游戏包单页。 */
 import { readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { BrowserWindow, app, dialog, ipcMain, net, protocol, screen, session } from 'electron'
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from '../lib/background-host.js'
+import { configureDesktopData, bundledDesktopGame } from '../lib/data-paths.js'
+import { migrateDesktopData } from '../lib/data-migration.js'
 import { extensionWindowGeometry } from '../lib/extension-window-geometry.js'
 import { centerExtensionWindow, extensionWindowPlacement } from './extension-placement.js'
 import { createProxy } from '../lib/proxy.js'
@@ -43,9 +45,9 @@ if (needsX11) {
   spawn(process.env.APPIMAGE ?? process.execPath, [...process.argv.slice(1), X11_FLAG], { detached: true, stdio: 'ignore' }).unref()
   app.exit(0)
 }
-if (process.env.PIGGY_USERDATA) app.setPath('userData', resolve(process.env.PIGGY_USERDATA))
+const dataPaths = configureDesktopData(app)
 
-const statePath = () => join(app.getPath('userData'), 'dsh-piggy', 'state.json')
+const statePath = () => dataPaths.statePath
 const logPath = () => join(app.getPath('userData'), 'stage.log')
 const journal = createStageJournal({ logPath })
 function log(...parts) {
@@ -59,10 +61,7 @@ const startup = createStageStartup({ app, dialog, log, logPath, platform: proces
 const gotLock = !needsX11 && startup.acquireSingleInstance()
 if (!needsX11 && !gotLock) app.quit()
 
-function bundledGameDir() {
-  if (process.env.PIGGY_BUNDLED_GAME) return resolve(process.env.PIGGY_BUNDLED_GAME)
-  return app.isPackaged ? join(process.resourcesPath, 'game') : join(APP_ROOT, 'game')
-}
+const bundledGameDir = () => bundledDesktopGame(app, APP_ROOT)
 
 
 function relaunch() {
@@ -279,6 +278,7 @@ async function installShell(version) {
 app.whenReady().then(async () => {
   // app.quit 之后 Electron 仍可能触发 ready：拿不到单实例锁的进程不能初始化代理、版本或宿主。
   if (needsX11 || !gotLock || quitting) return
+  migrateDesktopData(dataPaths)
   log('start', app.getVersion(), process.platform, process.env.XDG_SESSION_TYPE ?? '')
   proxy = createProxy({ path: join(app.getPath('userData'), 'proxy.json'), sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
   await proxy.init()
