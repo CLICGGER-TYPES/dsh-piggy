@@ -33,6 +33,8 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
       - name: Build
         run: npm run build
+      - name: Committed generated files match the clean build
+        run: git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
       - name: Serial regression tests
         run: node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
       - name: Type check

@@ -4,6 +4,11 @@ on:
     branches: [feat/windows-offline-installer-20261027, feat/integrated-candidate-20261027]
     paths-ignore: [apps/desktop/qa/linux-dsh.py, apps/desktop/qa/seed-integration.mjs, .github/workflows/integrated-candidate.yml]
   workflow_dispatch:
+    inputs:
+      verify_icons:
+        description: 'Validate approved face icons through Windows Shell and native UI'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -36,23 +41,32 @@ jobs:
         run: |
           $tokens = $null
           $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'apps/desktop/qa/windows-installer.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
-          if ($errors.Count) { $errors | Write-Error; exit 1 }
+          foreach ($file in @('apps/desktop/qa/windows-installer.ps1','apps/desktop/qa/windows-icons.ps1')) {
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count) { $errors | Write-Error; exit 1 }
+          }
       - name: Installer contracts and typecheck
         run: |
           node scripts/test.mjs --test-concurrency=1 apps/desktop/test/optional-extension-pack.test.js apps/desktop/test/optional-extension-runtime.test.js apps/desktop/test/runtime-host.test.js apps/desktop/test/stage-lifecycle-gaps.test.js
           npm run typecheck
       - name: Build full installer without publishing
         working-directory: apps/desktop
-        run: npx --no-install electron-builder --win nsis --x64 --config electron-builder.optional.cjs --config.nsis.artifactName=dsh-piggy-offline-setup-qa.exe --publish never
+        run: npx --no-install electron-builder --win nsis --x64 --config electron-builder.optional.cjs --publish never
       - name: Native installer and installed-game acceptance
         shell: powershell
-        run: ./apps/desktop/qa/windows-installer.ps1 -Installer "${{ github.workspace }}/apps/desktop/dist/dsh-piggy-offline-setup-qa.exe" -Repository "${{ github.workspace }}"
+        run: |
+          $extra = @{}
+          if ('${{ inputs.verify_icons }}' -eq 'true') { $extra.CheckIcons = $true }
+          $installer = @(Get-ChildItem apps/desktop/dist/dsh-piggy-setup-*.exe)
+          if ($installer.Count -ne 1) { throw "Expected exactly one full NSIS candidate" }
+          ./apps/desktop/qa/windows-installer.ps1 -Installer $installer[0].FullName -Repository "${{ github.workspace }}" @extra
+      - name: Build portable candidate without publishing
+        working-directory: apps/desktop
+        run: npx --no-install electron-builder --win portable --x64 --publish never
       - name: Hash installer
         shell: pwsh
         run: |
-          $file = 'apps/desktop/dist/dsh-piggy-offline-setup-qa.exe'
-          (Get-FileHash $file -Algorithm SHA256).Hash.ToLower() + '  dsh-piggy-offline-setup-qa.exe' | Set-Content apps/desktop/dist/SHA256SUMS
+          Get-ChildItem apps/desktop/dist/*.exe | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower() + '  ' + $_.Name } | Set-Content apps/desktop/dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -67,7 +81,8 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           path: |
-            apps/desktop/dist/dsh-piggy-offline-setup-qa.exe
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/latest.yml
             apps/desktop/dist/SHA256SUMS
             apps/desktop/build/optional-extensions/catalog.json
             apps/desktop/build/optional-extensions/strings.json

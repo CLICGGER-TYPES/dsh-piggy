@@ -19,4 +19,6 @@ magick app-icon-source-20261027.png -strip -resize 64x64 -background none -gravi
 magick ../build/icon.png -define icon:auto-resize=256,128,64,48,32,16 ../build/icon.ico
 ```
 
-本次只准备下一次桌面打包资源；没有重发此前已验收的工程包，也没有替换维护者本地游玩AppImage。下一次外壳打包验收时核对实际安装器、桌面/开始菜单和托盘图标。
+2026-10-27已完成[Windows原生安装验收](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40494946162)，受测源码`2ddfe7f720f04b17ef99100e4e2330c65ff33bc5`：Shell解码安装器、应用、卸载程序和两类快捷方式均匹配指定ICO；桌面、开始菜单和托盘实拍逐图检查通过。18项安装流程通过，开始菜单/托盘的辅助访问限制与截图来源见[拍摄记录](../../../docs/screenshots/readme-current-capture.md#2026-10-27-rc4-windows-图标与安装器候选)。
+
+候选尚未公开发布，未修改维护者本地游玩AppImage、快捷方式或存档；Linux/macOS桌面图标显示不据此宣称已完成原生验收。
