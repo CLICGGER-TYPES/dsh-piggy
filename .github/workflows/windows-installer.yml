@@ -1,0 +1,59 @@
+name: Windows offline installer QA
+on:
+  push:
+    branches: [feat/windows-offline-installer-20261027]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-offline-installer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Shanghai
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: |
+          npm ci --prefix apps/desktop --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
+      - name: Build game and offline extension payloads
+        run: |
+          npm run build
+          node apps/desktop/scripts/pack-game.mjs
+          node apps/desktop/scripts/pack-optional-extensions.mjs
+      - name: Test and typecheck
+        run: |
+          node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
+          npm run typecheck
+      - name: Build full installer without publishing
+        working-directory: apps/desktop
+        run: npx --no-install electron-builder --win nsis --x64 --config electron-builder.optional.cjs --config.nsis.artifactName=dsh-piggy-offline-setup-qa.exe --publish never
+      - name: Native installer and installed-game acceptance
+        shell: powershell
+        run: ./apps/desktop/qa/windows-installer.ps1 -Installer "${{ github.workspace }}/apps/desktop/dist/dsh-piggy-offline-setup-qa.exe" -Repository "${{ github.workspace }}"
+      - name: Hash installer
+        shell: pwsh
+        run: |
+          $file = 'apps/desktop/dist/dsh-piggy-offline-setup-qa.exe'
+          (Get-FileHash $file -Algorithm SHA256).Hash.ToLower() + '  dsh-piggy-offline-setup-qa.exe' | Set-Content apps/desktop/dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-offline-installer-qa-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            apps/desktop/dist/dsh-piggy-offline-setup-qa.exe
+            apps/desktop/dist/SHA256SUMS
+            apps/desktop/build/optional-extensions/catalog.json
+            apps/desktop/build/optional-extensions/strings.json
+            installer-qa-results/

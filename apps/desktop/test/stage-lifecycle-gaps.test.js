@@ -27,6 +27,7 @@ function readyCallbackBody() {
 }
 
 async function runReady(context) {
+  context.APP_ROOT ??= '/tmp/piggy-stage-app'
   context.dataPaths ??= {}
   context.migrateDesktopData ??= () => {}
   const fn = runInContext(`(async () => {${readyCallbackBody()}})()`, createContext(context))

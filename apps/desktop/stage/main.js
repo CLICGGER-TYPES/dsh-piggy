@@ -305,6 +305,7 @@ app.whenReady().then(async () => {
   const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
   host = await startBackgroundHost(gameDir, statePath(), {
     fetch: net.fetch.bind(net), workEventsDirectory,
+    optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : APP_ROOT, 'optional-extensions'),
     onSnapshot: view => toPages('piggy:state-changed', view),
     onStateChanged: () => toPages('piggy:state-changed'),
   })
