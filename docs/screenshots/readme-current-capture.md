@@ -33,3 +33,11 @@
 | readme-rc4-windows-start.png | `28db32b69c40cb794a4b19d5df80c1714f3418f1c50344f79e1d37cc404fce5f` |
 
 Windows18项原生流程通过；Linux真实AppImage与DSH17项通过。双平台各2226项检查零失败。macOS、混合DPI多屏没有本轮原生结论；便携版仅构建与哈希检查，未新增本轮原生启动验收。候选附件与截图统一审阅目录：`/zyx/agents/codex/deliverables/piggy-review/rc4-preparation-20261027/`。
+
+
+## 2026-10-27 RC5 自然托管原生验收
+
+- 截图来自[托管Linux虚拟机验收40509788463](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40509788463)，受测源码1975116；AppImage与真实DSH0.2.1-rc.2均使用原生XTest输入，Playwright只读定位/截图/监听响应。不是原型图。
+- 小农场六块逐一原生点击；DSH六块剩余时间同次采样各下降4000ms，桌面各下降4001ms；真实自然成熟时间18小时。成熟夹具收仓144个，现有种子从12剩6，自动同种补种，重复点击没有重复收成。
+- 23项通过、pageerror 0；桌面收仓依靠真实背包/种子/重新种下的地块界面核对，不把未捕获的自定义协议动作响应算作证据。Windows候选18项安装流程通过，发布后精确包复验另记。
+- Xvfb/Openbox/picom软件显示，X11、单屏；macOS、混合DPI、硬件GPU、原生Wayland未覆盖。个人游玩实例未改动。
