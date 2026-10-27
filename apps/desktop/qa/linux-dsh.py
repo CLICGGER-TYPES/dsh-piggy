@@ -35,10 +35,18 @@ image = repo / 'apps/desktop/dist/dsh-piggy-integrated-qa.AppImage'
 tgz = next((repo / 'candidate-qa').glob('dsh-piggy-*.tgz'))
 env = {**os.environ, 'DSH_HOME': str(home), 'XDG_DATA_HOME': str(private / 'xdg-data'), 'XDG_CONFIG_HOME': str(private / 'xdg-config')}
 children, checks, errors, responses = [], [], [], []
+state_responses, act_responses = [], []
+body_cache = {}
+tracked_pages = set()
 desktop = dsh = browser_proc = None
 desktop_browser = web_browser = None
 web_url = {'value': None}
 cdp_readers = {}
+# Extra isolated profiles are seeded before their own desktop instance starts:
+# natural growth and an already-ripe helper farm. They never share the legacy/default profile.
+natural_profile = private / 'farm-natural/piggy'
+ripe_profile = private / 'farm-ripe/piggy'
+HOUR_MS = 3600000
 
 
 def clean(text):
@@ -118,6 +126,19 @@ def watch(page, label):
     page.on('pageerror', lambda error: errors.append({'surface': label, 'error': clean(error)}))
 
 
+def track(page, label):
+    """Attach read-only page/error and response observers exactly once per page."""
+    key = id(page)
+    if key in tracked_pages:
+        return
+    tracked_pages.add(key)
+    watch(page, label)
+    page.on('response', lambda response: state_responses.append({'surface': label, 'response': response})
+            if response.url.split('?', 1)[0].endswith('/dsh-piggy/state') and response.request.method == 'GET' else None)
+    page.on('response', lambda response: act_responses.append({'surface': label, 'response': response})
+            if '/dsh-piggy/act' in response.url and response.request.method == 'POST' else None)
+
+
 def shot(page, name):
     page.screenshot(path=str(out / (name + '.png')))
     # Capture actual X11 pixels of the content area, excluding the browser's
@@ -186,7 +207,9 @@ def scroll_to(page, selector):
         }''')
         with (out / 'native-scroll-trace.jsonl').open('a') as trace:
             trace.write(json.dumps({'selector':selector,'at':time.time(),**point},ensure_ascii=False)+'\n')
-        run(['xdotool', 'mousemove', str(round(point['x'])), str(round(point['y'])), 'click', '5'])
+        target_middle = point['target']['y'] + point['target']['h'] / 2
+        container_middle = point['container']['y'] + point['container']['h'] / 2
+        run(['xdotool', 'mousemove', str(round(point['x'])), str(round(point['y'])), 'click', '4' if target_middle < container_middle else '5'])
         time.sleep(.18)
     save_diagnostics()
     raise AssertionError('Cannot scroll native panel to ' + selector)
@@ -267,18 +290,18 @@ def stop_game():
     wait(lambda: desktop.poll() is not None, 'graceful AppImage exit')
 
 
-def start_game(mode, use_default=False):
+def start_game(mode, use_default=False, data_profile=None, port=9412, label=None):
     global desktop, desktop_browser
-    game_env = {**env, 'PIGGY_USERDATA': str(profile)}
+    game_env = {**env, 'PIGGY_USERDATA': str(data_profile or profile)}
     if use_default:
         game_env.pop('PIGGY_USERDATA', None)
     desktop = launch([str(image), '--no-sandbox', '--disable-gpu', '--ozone-platform=x11',
-                      '--remote-debugging-port=9412', '--window-mode=' + mode],
+                      '--remote-debugging-port=' + str(port), '--window-mode=' + mode],
                      'appimage-' + mode + '.log', game_env)
-    desktop_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:9412'), 'AppImage CDP')
+    desktop_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:' + str(port)), 'AppImage CDP')
     pet = desk_page('.dp-pig')
     for p in desktop_pages():
-        watch(p, 'desktop-' + mode)
+        track(p, label or 'desktop-' + mode)
     wait(lambda: pet.locator('.dp-pig').get_attribute('data-stage') != 'box', 'fixture pig loaded')
     return pet
 
@@ -294,12 +317,264 @@ def read_state(directory):
     return json.loads((directory / 'state.json').read_text())
 
 
+def post_json(response):
+    try:
+        return response.request.post_data_json or {}
+    except Exception:
+        return {}
+
+
+def item_body(item):
+    key = id(item['response'])
+    if key not in body_cache:
+        try:
+            body_cache[key] = item['response'].json()
+        except Exception:
+            body_cache[key] = None
+    return body_cache[key]
+
+
+def farm_views(surface):
+    # Dispatch Playwright's sync event loop through a read-only protocol query;
+    # time.sleep alone does not deliver new HTTP response events.
+    for browser in [web_browser, desktop_browser]:
+        if browser is not None:
+            try:
+                browser_pages(browser)
+            except Exception:
+                pass
+    views = []
+    for item in state_responses:
+        if item['surface'] != surface:
+            continue
+        body = item_body(item)
+        if not isinstance(body, dict):
+            continue
+        view = (body.get('extViews') or {}).get('farm')
+        if isinstance(view, dict) and isinstance(view.get('plots'), list) and len(view['plots']) >= 6:
+            views.append(view)
+    return views
+
+
+def poll(check, seconds):
+    """Non-fatal bounded polling for optional read-only evidence."""
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        try:
+            result = check()
+            if result:
+                return result
+        except Exception:
+            pass
+        time.sleep(.25)
+    return None
+
+
+def snapshot_pair(surface, required=True, seconds=20):
+    count = len(farm_views(surface))
+    first = poll(lambda: (farm_views(surface)[count] if len(farm_views(surface)) > count else None), seconds)
+    if first is None:
+        if required:
+            save_diagnostics()
+            raise AssertionError('Timeout: fresh farm snapshot for ' + surface)
+        return None, None
+    count = len(farm_views(surface))
+    second = poll(lambda: (farm_views(surface)[count] if len(farm_views(surface)) > count else None), seconds)
+    if second is None:
+        if required:
+            save_diagnostics()
+            raise AssertionError('Timeout: second farm snapshot for ' + surface)
+        return None, None
+    return first, second
+
+
+def assert_natural_growth(first, second):
+    drops = []
+    for index in range(6):
+        a, b = first['plots'][index], second['plots'][index]
+        assert a.get('crop') == 'cabbage', f'Farm plot {index} is not the seeded cabbage: {a}'
+        assert a.get('progress', 0) > 0, f'Farm plot {index} has no real growth: {a}'
+        assert a.get('remainingMs', 0) > 15 * HOUR_MS, f'Farm plot {index} is not on the real 18h clock: {a}'
+        assert b.get('remainingMs', 0) < a.get('remainingMs', 0), f'Farm plot {index} did not advance between real snapshots'
+        drops.append(a.get('remainingMs', 0) - b.get('remainingMs', 0))
+    helper = first.get('helper') or {}
+    assert helper.get('hired') is True and helper.get('plots') == 6, f'Helper is not managing six plots: {helper}'
+    return drops
+
+
+def click_farm_plots(page, plots=6):
+    for index in range(plots):
+        selector = f'[data-farm-plot="{index}"]'
+        if not tappable(page, selector):
+            scroll_to(page, selector)
+        click(page, selector)
+        wait(lambda i=index: has(page, f'[data-farm-detail="{i}"]'), f'farm plot {index} selected')
+        line = page.locator(f'[data-farm-detail="{index}"] [data-farm-progress]').first
+        progress = int(line.get_attribute('data-farm-progress') or 0)
+        text = page.locator(f'[data-farm-detail="{index}"] small').first.inner_text()
+        assert progress > 0, f'Farm plot {index} has no real growth in the UI: {progress}'
+        assert '还剩' in text and '17 小时' in text and '2 小时' not in text and '2 分钟' not in text, \
+            f'Farm plot {index} does not show real 18h maturity: {text}'
+    # Leave the view on the first plot/top row so the saved screenshot shows all six.
+    scroll_to(page, '[data-farm-plot="0"]')
+    click(page, '[data-farm-plot="0"]')
+
+
+def farm_action_body(surface, op):
+    for item in reversed(act_responses):
+        if item['surface'] != surface:
+            continue
+        request = post_json(item['response'])
+        data = request.get('data') or {}
+        if request.get('action') == 'ext' and data.get('key') == 'farm' and data.get('op') == op:
+            return item_body(item)
+    return None
+
+
+def farm_action_count(surface, op=None):
+    count = 0
+    for item in act_responses:
+        if item['surface'] != surface:
+            continue
+        request = post_json(item['response'])
+        data = request.get('data') or {}
+        if request.get('action') == 'ext' and data.get('key') == 'farm' and (op is None or data.get('op') == op):
+            count += 1
+    return count
+
+
+def crop_count(view, key):
+    return next((int(row.get('count', 0)) for row in view.get('harvest', []) if row.get('key') == key), 0)
+
+
+def seed_count(view, key):
+    return next((int(row.get('count', 0)) for row in view.get('seeds', []) if row.get('key') == key), 0)
+
+
+def start_farm_desktop(data_profile, port, surface):
+    start_game('stage', data_profile=data_profile, port=port, label=surface)
+    page = desktop_menu()
+    home_tab(page, 'ext:farm')
+    wait(lambda: has(page, '[data-farm-plot="0"]'), 'farm app renders on ' + surface, 30)
+    return page
+
+
+def open_large_farm(page, surface):
+    scroll_to(page, '[data-farm-big="open"]')
+    click(page, '[data-farm-big="open"]')
+    large = wait(lambda: next((candidate for candidate in desktop_pages() if has(candidate, '.fm-big')), None)
+                 if surface.startswith('desktop') else (page if has(page, '.fm-big') else None), 'large farm for ' + surface, 25)
+    track(large, surface + '-large')
+    wait(lambda: has(large, '[data-farm-grid="expanded"]'), 'large farm grid for ' + surface)
+    return large
+
+
+def close_large_farm(page, large):
+    click(large, '[data-farm-big="close"]')
+    wait(lambda: not any(has(candidate, '.fm-big') for candidate in desktop_pages())
+         if page in desktop_pages() else not has(page, '.fm-big'), 'large farm closed')
+
+
+def dsh_farm_cases(page):
+    open_web_menu(page)
+    home_tab(page, 'ext:farm')
+    wait(lambda: has(page, '[data-farm-plot="0"]'), 'DSH farm app', 30)
+    assert page.locator('[data-dsh-pig]').count() == 1
+    click_farm_plots(page)
+    shot(page, 'dsh-farm-natural-small')
+    first, second = snapshot_pair('DSH')
+    drops = assert_natural_growth(first, second)
+    record('DSH native farm opens six real 18h cabbage plots', plots=6,
+           remainingMs=first['plots'][0]['remainingMs'], remainingDropMs=drops)
+    large = open_large_farm(page, 'DSH')
+    shot(large, 'dsh-farm-large')
+    close_large_farm(page, large)
+    record('DSH native large farm switches and renders')
+
+
+def natural_farm_cases():
+    surface = 'desktop-farm-natural'
+    # Seed immediately before this instance starts, so "25 minutes ago" is real
+    # at test time and never drifts while the earlier 17 cases run.
+    run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(natural_profile), 'desktop', 'natural'], cwd=repo)
+    page = start_farm_desktop(natural_profile, 9414, surface)
+    click_farm_plots(page)
+    shot(page, 'farm-natural-small')
+    first, second = snapshot_pair(surface, required=False, seconds=10)
+    drops = assert_natural_growth(first, second) if first is not None and second is not None else None
+    if drops is None:
+        assert page.locator('[data-farm-plot="0"]').count() == 1
+    record('desktop native farm opens six real 18h cabbage plots', plots=6,
+           remainingMs=first['plots'][0]['remainingMs'] if first else None,
+           remainingDropMs=drops, snapshotEvidence=drops is not None)
+    large = open_large_farm(page, surface)
+    shot(large, 'farm-natural-large')
+    close_large_farm(page, large)
+    record('desktop native large farm switches and renders')
+    stop_game()
+
+
+def ripe_farm_cases():
+    surface = 'desktop-farm-ripe'
+    run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(ripe_profile), 'desktop', 'ripe'], cwd=repo)
+    page = start_farm_desktop(ripe_profile, 9416, surface)
+    scroll_to(page, '[data-farm-tools="toggle"]')
+    click(page, '[data-farm-tools="toggle"]')
+    wait(lambda: has(page, '[data-farm-helper="collect"]'), 'helper collect button')
+    stock_text = wait(lambda: ((lambda text: text if '帮工收了' in text and '144' in text else None)(
+        page.locator('[data-farm-helper="collect"]').first.inner_text())), 'helper stock before collect', 20)
+    shot(page, 'farm-ripe-before-collect')
+    before = farm_action_count(surface, 'collect')
+    click(page, '[data-farm-helper="collect"]')
+    wait(lambda: '帮工收了' not in page.locator('[data-farm-helper="collect"]').first.inner_text(), 'helper stock collected')
+    body = poll(lambda: farm_action_body(surface, 'collect') if farm_action_count(surface, 'collect') > before else None, 6)
+    if body is not None:
+        after = (body.get('extViews') or {}).get('farm') or {}
+        assert body.get('ok') is True, body
+        assert after['helper']['stored'] == 0, after['helper']
+        assert crop_count(after, 'cabbage') == 144, crop_count(after, 'cabbage')
+        assert seed_count(after, 'cabbage') == 6, seed_count(after, 'cabbage')
+        for index in range(6):
+            plot = after['plots'][index]
+            assert plot.get('crop') == 'cabbage' and plot.get('remainingMs', 0) > 17 * HOUR_MS, plot
+    # A second native click must not deliver the same 144 cabbages again. The
+    # bag below is the real check even if the custom-scheme response is not visible to CDP.
+    click(page, '[data-farm-helper="collect"]')
+    time.sleep(1.5)
+    scroll_to(page, '[data-farm-bag="open"]')
+    click(page, '[data-farm-bag="open"]')
+    scroll_to(page, '[data-farm-bag-tab="crop"]')
+    click(page, '[data-farm-bag-tab="crop"]')
+    wait(lambda: has(page, '[data-farm-crop="cabbage"]'), 'cabbage bag row')
+    label = page.locator('[data-farm-crop="cabbage"]').first.get_attribute('aria-label') or ''
+    assert '144' in label, label
+    shot(page, 'farm-ripe-bag')
+    scroll_to(page, '[data-farm-bag-tab="seed"]')
+    click(page, '[data-farm-bag-tab="seed"]')
+    wait(lambda: has(page, '[data-farm-seed="cabbage"]'), 'cabbage seed row')
+    seed_text = page.locator('[data-farm-seed="cabbage"]').first.inner_text()
+    assert re.search(r'×\s*6(?!\d)', seed_text), seed_text
+    scroll_to(page, '[data-farm-back="true"]')
+    click(page, '[data-farm-back="true"]')
+    scroll_to(page, '[data-farm-plot="0"]')
+    click(page, '[data-farm-plot="0"]')
+    wait(lambda: has(page, '[data-farm-detail="0"]'), 'replanted plot selected')
+    replant_text = page.locator('[data-farm-detail="0"] small').first.inner_text()
+    assert '还剩' in replant_text and '17 小时' in replant_text and '2 小时' not in replant_text, replant_text
+    assert page.locator('[data-farm-detail="0"]').first.inner_text().find('小白菜') >= 0
+    shot(page, 'farm-ripe-collected')
+    record('desktop natural helper auto-harvests into stock and replants same crop', stored=144, seedsLeft=6,
+           responseEvidence=body is not None)
+    record('desktop native helper collect moves stock once without duplicate delivery', cabbage=144)
+    stop_game()
+
+
 try:
     run(['openbox', '--version'])
     launch(['openbox'], 'window-manager.log')
     launch(['picom', '--backend', 'xrender'], 'compositor.log')
-    for directory, role in [(legacy / 'dsh-piggy', 'desktop'), (source, 'source')]:
-        run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(directory), role], cwd=repo)
+    for directory, role, fixture in [(legacy / 'dsh-piggy', 'desktop', 'default'), (source, 'source', 'natural')]:
+        run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(directory), role, fixture], cwd=repo)
     (legacy / 'dsh-piggy/proxy.json').replace(legacy / 'proxy.json')
     original_legacy = {str(p.relative_to(legacy)): hashlib.sha256(p.read_bytes()).hexdigest() for p in legacy.rglob('*') if p.is_file()}
     run(['node', str(cli), 'plugin', '--profile', 'web', 'add', str(tgz)], env=env, timeout=240)
@@ -351,7 +626,7 @@ try:
                                '--no-first-run', url], 'browser.log')
         web_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:9413'), 'DSH browser')
         page = wait(lambda: next((p for p in browser_pages(web_browser) if '3088' in p.url), None), 'DSH page')
-        watch(page, 'DSH')
+        track(page, 'DSH')
         page.on('response', lambda response: responses.append(response) if '/dsh-piggy/act' in response.url and response.request.method == 'POST' else None)
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH plugin activation', 90)
         assert page.locator('[data-dsh-pig]').count() == 1
@@ -501,9 +776,13 @@ try:
         wait(lambda: '1000' in pet.locator('.dp-hud').inner_text(), 'rollback desktop balance rendered')
         shot(page, 'merge-rollback')
         record('native rollback restores both pigs and preserves premerge care')
+        dsh_farm_cases(page)
         stop_game()
+        natural_farm_cases()
+        ripe_farm_cases()
         assert not errors, errors
         record('page error check', errors=0)
+        print('CASES:', len(checks), 'PAGEERRORS:', len(errors), flush=True)
         (out / 'report.json').write_text(json.dumps({'ok': True, 'cases': checks, 'errors': errors,
             'input': 'native XTest mouse/keyboard', 'browser': 'Playwright read-only CDP; Browser plugin not available',
             'appImageSha256': hashlib.sha256(image.read_bytes()).hexdigest(),
@@ -511,9 +790,11 @@ try:
             'linuxDisplay': 'Xvfb/Openbox/picom software rendering; --no-sandbox --disable-gpu --ozone-platform=x11'}, ensure_ascii=False, indent=2))
 except Exception as error:
     (out / 'report.json').write_text(json.dumps({'ok': False, 'error': clean(error), 'cases': checks, 'errors': errors}, ensure_ascii=False, indent=2))
-    for name in ['piggy.log', 'stage.log', 'window.json']:
-        if (profile / name).exists():
-            (out / ('desktop-' + name)).write_text(clean((profile / name).read_text()))
+    for base, prefix in [(profile, 'desktop-'), (natural_profile, 'farm-natural-'), (ripe_profile, 'farm-ripe-')]:
+        for name in ['piggy.log', 'stage.log', 'window.json']:
+            if (base / name).exists():
+                (out / (prefix + name)).write_text(clean((base / name).read_text()))
+    print('CASES:', len(checks), 'PAGEERRORS:', len(errors), flush=True)
     raise
 finally:
     for proc in reversed(children):

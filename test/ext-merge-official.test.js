@@ -21,7 +21,7 @@ import { createStore } from '../store.js'
 import { createExtRuntime } from '../store/ext-runtime.js'
 import { createJournal } from '../store/journal.js'
 import { describeExtensionConflicts } from '../packages/pet-core/src/core/merge-identity.js'
-import farm, { HELPER_WINDOW } from '../extensions/farm/server.js'
+import farm from '../extensions/farm/server.js'
 import mine from '../extensions/mine/server.js'
 import gacha, { gameDay } from '../extensions/gacha/server.js'
 import blindbox from '../extensions/blindbox/server.js'
@@ -57,7 +57,10 @@ test('官方四个扩展（含经典菜园）都声明 mergeHook 1，服务端�
   const classic = JSON.parse(readFileSync(new URL('../extension-variants/farm-classic/manifest.json', import.meta.url), 'utf8'))
   assert.equal(classic.key, 'farm')
   assert.equal(classic.mergeHook, 1)
-  assert.equal(classic.version, '3.1.2', '经典菜园和现代菜园共用同一份服务端，版本一起 +1')
+  // 经典菜园有自己的大版本号，但跟现代菜园共用同一份服务端：小版本和补丁位一起走。
+  const [, classicMinor, classicPatch] = classic.version.split('.')
+  const [, modernMinor, modernPatch] = manifestOf('farm').version.split('.')
+  assert.deepEqual([classicMinor, classicPatch], [modernMinor, modernPatch], '经典菜园和现代菜园共用同一份服务端，小版本一起走')
   for (const extension of [farm, mine, gacha, blindbox]) assert.equal(typeof extension.mergeStates, 'function')
 })
 
@@ -130,8 +133,8 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
 
   assert.equal(merged.helper.hired, true)
   assert.equal(merged.helper.level, 1, '帮工等级取高')
-  assert.equal(merged.helper.usedMs, 5 * H, '本窗口干了多少取高，不相加')
-  assert.equal(merged.helper.cursor, 7, '整套进度跟干得更多的一方')
+  assert.equal(merged.helper.usedMs, 0, '自然托管没有工作预算')
+  assert.equal(merged.helper.cursor, 7, '指针和管区跟结算得更晚的一方')
   assert.equal(merged.helper.targets[2], 'apple')
   assert.equal(merged.helper.pending, null)
   assert.equal(merged.helper.stock.radish, 4, '帮工仓是资产，两边相加')
@@ -142,20 +145,25 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
   assert.match(result.warnings.join(' '), /第一课/)
 })
 
-test('菜园：帮工那批没收完的作物跟地块一起走，对不上就丢掉并警告', () => {
+test('菜园：帮工的旧批次不再合并，仓里已落袋的果保留一次，指针跟结算得更晚的一边', () => {
   const target = farming()
   target.plots[0] = plot('apple', NOW - 6 * H)
-  target.helper = { hired: true, level: 1, barn: 0, lastAt: NOW - 2 * H, usedMs: 5 * H, cursor: 0, pending: { index: 0, crop: 'apple', plantedAt: NOW - 6 * H, remainingMs: 60000, yield: 1 }, targets: Array(18).fill(null), stock: {} }
+  target.helper = { hired: true, level: 1, barn: 0, lastAt: NOW - 2 * H, usedMs: 5 * H, cursor: 0, pending: { index: 0, crop: 'apple', plantedAt: NOW - 6 * H, remainingMs: 60000, yield: 1 }, targets: Array(18).fill(null), stock: { apple: 3 } }
   target.helper.targets[0] = 'apple'
 
-  const samePlot = farming()
-  samePlot.helper = { hired: true, level: 1, barn: 0, lastAt: NOW - 2 * H, usedMs: 1 * H, cursor: 4, pending: null, targets: Array(18).fill(null), stock: {} }
-  const kept = merge(farm, target, samePlot)
+  const stale = farming()
+  stale.plots[0] = plot('apple', NOW - 2 * H)
+  stale.helper = { hired: true, level: 1, barn: 0, lastAt: NOW - 5 * H, usedMs: 1 * H, cursor: 4, pending: { index: 0, crop: 'apple', plantedAt: NOW - 2 * H, remainingMs: 60000, yield: 1 }, targets: Array(18).fill(null), stock: { apple: 2 } }
+  stale.helper.targets[0] = 'apple'
+  const kept = merge(farm, target, stale)
   assertPlainData(kept)
-  assert.equal(kept.data.helper.pending.index, 0, '批次的进度跟地块一起保留')
-  assert.equal(kept.data.helper.pending.remainingMs, 60000)
-  assert.equal(kept.data.helper.pending.yield, kept.data.helper.pending.yield, '产量由扩展的配方重新算')
-  assert.ok(kept.data.helper.pending.yield >= 1)
+  assert.equal(kept.data.helper.pending, null, '旧批次一律清成 null，不把上一边的队列带过来')
+  assert.equal(kept.data.helper.usedMs, 0, '自然托管没有工作预算')
+  assert.equal(kept.data.helper.stock.apple, 5, '已经在仓里的果保留一次、两边相加')
+  assert.equal(kept.data.helper.cursor, 0, '指针和管区跟结算得更晚的一方')
+  assert.equal(kept.data.helper.targets[0], 'apple')
+  assert.equal(kept.data.helper.lastAt, NOW - 2 * H, '结算时间取更晚的一边')
+  assert.equal(kept.data.plots[0].plantedAt, NOW - 6 * H, '同块地取更靠后的那份')
 
   const betterPlot = farming()
   betterPlot.plots[0] = plot('apple', NOW - 10 * H, { roll: 2 })
@@ -164,7 +172,8 @@ test('菜园：帮工那批没收完的作物跟地块一起走，对不上就�
   assertPlainData(dropped)
   assert.equal(dropped.data.plots[0].plantedAt, NOW - 10 * H, '更靠后的地块赢')
   assert.equal(dropped.data.helper.pending, null, '地块换了一份，旧批次不能假装还在')
-  assert.match(dropped.warnings.join(' '), /帮工/)
+  assert.equal(dropped.data.helper.cursor, 9, '指针跟结算得更晚的一边')
+  assert.equal(dropped.data.helper.stock.apple, 3, '仓里的果一个不少')
 })
 
 test('菜园：经典/旧版数据先迁移到 v5 再合并，收获、退款、帮工仓和首课都不丢', () => {
@@ -229,7 +238,7 @@ test('菜园：数量不超游戏约束；版本比扩展新或不是对象就�
   assert.equal(merged.exp, SAFE, '经验封顶安全整数')
   assert.equal(merged.seeds.radish, SAFE, '数量封顶安全整数，不是负数/NaN')
   assert.equal(merged.helper.level, 2, '帮工最多升到 2 级')
-  assert.equal(merged.helper.usedMs, HELPER_WINDOW, '六小时窗口封顶')
+  assert.equal(merged.helper.usedMs, 0, '自然托管没有工作预算：旧工时一律清零')
 
   const v6 = Object.assign(farming(), { version: 6 })
   assert.throws(() => merge(farm, v6, farming()), /版本 6 比当前扩展新/)

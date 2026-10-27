@@ -47,7 +47,7 @@ function setup({ minGame, corrupt, pkg = PACKAGE, flaky = 0, dead = false } = {}
   /** 每个文件地址被请求了几次；flaky / dead 用来模拟「直连 GitHub 连不上」。 */
   const tries = new Map()
   const fetch = async url => {
-    if (url === 'https://example.test/registry.json') return { ok: true, status: 200, json: async () => registry }
+    if (url === 'https://example.test/registry.json') return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(registry)) }
     const name = url.replace('https://example.test/', '')
     tries.set(name, (tries.get(name) ?? 0) + 1)
     // 第一次连不上、过一会儿就好：国内直连 GitHub 的常态。
@@ -256,4 +256,21 @@ test('the online catalog is asked once, kept on disk, and re-checked with its ET
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('explicit extension update refreshes a still-fresh catalog before downloading', async () => {
+  const t = setup()
+  try {
+    assert.equal((await t.runtime.install('piggybank')).ok, true)
+    await t.runtime.onlineView()
+    const original = PACKAGE['manifest.json']
+    try {
+      PACKAGE['manifest.json'] = JSON.stringify({...JSON.parse(original), version:'1.0.1'})
+      t.publish('1.0.1')
+      assert.equal((await t.runtime.install('piggybank')).ok,true)
+      const view = await t.runtime.onlineView()
+      assert.equal(view.entries.find(e=>e.key==='piggybank').local,'1.0.1')
+      assert.equal(t.store.state.extData.piggybank.saved,0)
+    } finally { PACKAGE['manifest.json'] = original }
+  } finally { t.done() }
 })

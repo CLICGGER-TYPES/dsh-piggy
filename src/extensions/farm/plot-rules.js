@@ -52,12 +52,12 @@ export function clearPlot(data, index, force = false) {
   if (plot !== null && !plot.fallow && (plot.withered || force)) { data.plots[index] = null; return true }
   return false
 }
-/** 在空地上种一粒种子。 */
-export function plantPlot(data, index, crop, at) {
+/** 在空地上种一粒种子；rng 只给托管帮工自动补种用，手动播种仍走游戏随机源。 */
+export function plantPlot(data, index, crop, at, rng = undefined) {
   const old = data.plots[index]
   if ((old !== null && (!old.fallow || old.stubble || old.pests.weed === 0)) || amountFor(data, 'seeds', crop.key) < 1 || levelNow(data) < crop.level) return false
   data.seeds[crop.key] -= 1
-  data.plots[index] = sow(crop, at)
+  data.plots[index] = sow(crop, at, 1, 0, rng)
   if (old?.fallow && old.pests.dry === 0) data.plots[index].pests.dry = at
   return true
 }
