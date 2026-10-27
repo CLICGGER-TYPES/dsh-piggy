@@ -53,7 +53,7 @@ test('main wiring: ui-scale is created after IPC, attached before navigation, di
   assert.match(mainSource, /onChange: \(\) => \{ geometrySeq \+= 1; pushGeometry\(\) \}/,
     'onChange bumps the sequence after zoom, then sends geometry with the latest getZoomFactor')
 
-  const construct = mainSource.indexOf('stageWin = new BrowserWindow(stageWindowOptions(')
+  const construct = mainSource.indexOf('stageWin = createStageNativeWindow(BrowserWindow,')
   const attach = mainSource.indexOf('uiScale?.attach(stageWin)')
   const load = mainSource.indexOf("stageWin.loadURL('piggy://app/stage/index.html')")
   assert.ok(construct >= 0 && construct < attach && attach < load,

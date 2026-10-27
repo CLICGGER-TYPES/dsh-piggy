@@ -210,10 +210,71 @@ function reportProgress(data, api) {
   for (const { name, ...payload } of progress(data)) api.emit(name, payload)
 }
 
+// #14 外部桌宠合并钩子：两边数据先各自 normalize 到 v2，摆件潜能取高（不超 6 潜），
+// 凭证/抽数相加，保底水位按卡池取高，序号取高，最近一次记录取更新的那条。数据版本比当前新就抛错，不硬读。
+const MERGE_FIELDS = ['v', 'owned', 'certs', 'pity', 'pulls', 'last', 'seq']
+const SAFE = Number.MAX_SAFE_INTEGER
+/** 存档里的 key 会拼进新对象：`__proto__` 这类名字一律不收。 */
+const safeKey = key => key !== '__proto__' && key !== 'constructor' && key !== 'prototype'
+
+function forMerge(data, side) {
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) throw new Error('盲盒数据（' + side + '）不是对象，无法合并')
+  const version = Math.floor(Number(data.v))
+  if (Number.isSafeInteger(version) && version > 2) throw new Error('盲盒数据（' + side + '）版本 ' + version + ' 比当前扩展新，请先更新盲盒再合并')
+  return normalize(structuredClone(data))
+}
+
+function whole(value) {
+  const n = Math.floor(Number(value))
+  return Number.isSafeInteger(n) && n > 0 ? n : 0
+}
+
+/** 最近一次记录是面板要画的，只留游戏里真有的摆件和合法潜能。 */
+function cleanLast(last) {
+  if (last === null || typeof last !== 'object' || typeof last.banner !== 'string' || !Array.isArray(last.items)) return null
+  const items = last.items.map(got => {
+    const figure = got !== null && typeof got === 'object' ? byKey(got.key) : null
+    if (figure === null) return null
+    return { key: figure.key, stars: figure.stars, isNew: got.isNew === true,
+      potential: Math.max(1, Math.min(MAX_POTENTIAL, whole(got.potential) || 1)), certs: Math.min(SAFE, whole(got.certs)) }
+  }).filter(item => item !== null)
+  return items.length === 0 ? null : { id: whole(last.id), banner: last.banner, items }
+}
+
+function mergeStates(target, source) {
+  const t = forMerge(target, '桌宠'), s = forMerge(source, '内嵌猪')
+  const owned = {}
+  for (const figure of CATALOG) {
+    const potential = Math.min(MAX_POTENTIAL, Math.max(whole(t.owned[figure.key]), whole(s.owned[figure.key])))
+    if (potential > 0) owned[figure.key] = potential
+  }
+  const pity = {}
+  for (const group of new Set([...Object.keys(t.pity), ...Object.keys(s.pity)])) {
+    if (safeKey(group)) pity[group] = Math.min(SAFE, Math.max(whole(t.pity[group]), whole(s.pity[group])))
+  }
+  const lastT = cleanLast(t.last), lastS = cleanLast(s.last)
+  const last = lastS !== null && (lastT === null || lastS.id > lastT.id) ? lastS : lastT
+  const data = {
+    v: 2,
+    owned,
+    certs: Math.min(SAFE, whole(t.certs) + whole(s.certs)),
+    pity,
+    pulls: Math.min(SAFE, whole(t.pulls) + whole(s.pulls)),
+    seq: Math.max(whole(t.seq), whole(s.seq), last?.id ?? 0),
+    last,
+  }
+  for (const key of Object.keys(t)) if (!MERGE_FIELDS.includes(key) && safeKey(key)) data[key] = t[key]
+  const unknown = Object.keys(s).filter(key => !MERGE_FIELDS.includes(key))
+  const warnings = unknown.length > 0 ? ['盲盒：内嵌猪有当前版本不认识的字段（' + unknown.slice(0, 6).join('、') + '），没有合并'] : []
+  normalize(data)
+  return { data, warnings, conflicts: [] }
+}
+
 export default {
   eventVersion: 1,
   progress,
   init() { return normalize({}) },
+  mergeStates,
 
   actions: {
     /** 寻访：banner 是 standard / limited，count 1 或 10；ticket 为真时用一张盲盒券抽 1 次。 */

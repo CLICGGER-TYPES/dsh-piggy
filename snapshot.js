@@ -192,6 +192,8 @@ export function snapshot(store, options = {}) {
       label: activity.label,
       emoji: activity.emoji,
       cost: activity.cost ?? 0,
+      // 强制终结的文案要用真实鱼饵数（自动钓鱼按实际消耗，不预付）。
+      bait: Number.isFinite(activity.baitCount) ? activity.baitCount : 0,
       secondsLeft: activitySecondsLeft(state, nowMs),
       // How far along, so the panel can draw the pig actually getting on with it.
       progress: activityProgress(activity, nowMs),

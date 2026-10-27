@@ -9,6 +9,8 @@
  * @module dsh-piggy-desktop/stage/stage-window-options
  */
 
+import { auxiliaryWindowOptions } from '../lib/auxiliary-window.js'
+
 const ZOOM_MODE = 'isolated'
 
 /**
@@ -25,6 +27,7 @@ export function stageWindowOptions(value) {
     hasShadow: false,
     alwaysOnTop: true,
     skipTaskbar: true,
+    ...auxiliaryWindowOptions(value.platform),
     focusable: true,
     show: false,
     backgroundColor: '#00000000',
@@ -35,6 +38,19 @@ export function stageWindowOptions(value) {
       backgroundThrottling: false,
     },
   }
+}
+
+/**
+ * Linux construction can clamp an oversized fixed window to one monitor and
+ * lock that clamped size into its min/max hints. Reapply the intended union
+ * after construction, before any page geometry or native shape is measured.
+ * @param {any} Window
+ * @param {{bounds:{x:number,y:number,width:number,height:number}, platform:string, preload:string}} value
+ */
+export function createStageNativeWindow(Window, value) {
+  const win = new Window(stageWindowOptions(value))
+  if (value.platform === 'linux') win.setBounds(value.bounds)
+  return win
 }
 
 /**

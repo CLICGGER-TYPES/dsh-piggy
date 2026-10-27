@@ -2,7 +2,8 @@
   "key": "mine",
   "label": "矿洞",
   "emoji": "⛏️",
-  "version": "3.0.1",
+  "version": "3.0.2",
+  "mergeHook": 1,
   "minGame": "0.36.0",
   "description": "20 层矿洞、连挖和宝藏；可雇小矿工猪，升级矿车、头灯，离线按时间挖矿，矿车满了就停。用自己的矿石币。",
   "app": {

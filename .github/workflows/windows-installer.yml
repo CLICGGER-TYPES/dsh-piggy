@@ -1,7 +1,7 @@
 name: Windows offline installer QA
 on:
   push:
-    branches: [feat/windows-offline-installer-20261027]
+    branches: [feat/windows-offline-installer-20261027, feat/integrated-candidate-20261027]
   workflow_dispatch:
 permissions:
   contents: read

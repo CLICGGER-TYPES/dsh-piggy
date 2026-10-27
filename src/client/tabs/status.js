@@ -9,6 +9,7 @@
 import { CARE_LABEL, MODES } from '../constants.js'
 import { button, el } from '../dom.js'
 import { drillTo, labelledBar } from '../widgets.js'
+import { externalActionsBlocked } from '../external-link.js'
 
 export function renderStatusTab(ui) {
   var p = ui.view.pig
@@ -41,6 +42,8 @@ export function renderStatusTab(ui) {
 
 
   var grid = el('div', 'dp-actions')
+  // 外部模式断线/合并中：照顾按钮置灰，只留顶部「重新连接」（设计 4.9）。
+  var locked = externalActionsBlocked(ui.view)
   for (var i = 0; i < MODES.length; i += 1) {
     (function (key) {
       var info = ui.view.actions[key]
@@ -62,7 +65,10 @@ export function renderStatusTab(ui) {
       if (needsItem) btn.appendChild(el('span', 'dp-count', String(shelf.length)))
       // Trust but verify: a dead pig cannot be cared for even if the host
       // forgot to clear its readiness flags.
-      if (!info.ready || ui.view.dead) {
+      if (locked) {
+        btn.disabled = true
+        btn.appendChild(el('span', 'dp-wait', '先连接'))
+      } else if (!info.ready || ui.view.dead) {
         btn.disabled = true
         if (ui.view.dead) btn.appendChild(el('span', 'dp-wait', '—'))
         else if (info.waitSeconds > 0) btn.appendChild(el('span', 'dp-wait', info.waitSeconds + 's'))

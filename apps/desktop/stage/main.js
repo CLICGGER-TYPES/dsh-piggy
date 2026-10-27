@@ -10,6 +10,7 @@ import updaterPackage from 'electron-updater'
 import { startBackgroundHost } from '../lib/background-host.js'
 import { configureDesktopData, bundledDesktopGame } from '../lib/data-paths.js'
 import { migrateDesktopData } from '../lib/data-migration.js'
+import { attachStageExternal, confirmStageMerge } from './external.js'
 import { extensionWindowGeometry } from '../lib/extension-window-geometry.js'
 import { centerExtensionWindow, extensionWindowPlacement } from './extension-placement.js'
 import { createProxy } from '../lib/proxy.js'
@@ -27,12 +28,11 @@ import { applyPhysicalStageBounds, stageGeometryFor, stageWindowBounds } from '.
 import { createAutostart, createTray, importFromDsh, recoverStage, watchDisplays, watchFullscreen } from './system.js'
 import { createStageJournal, createStageQuit, createStageStartup } from './startup-lifecycle.js'
 import { createStageUiScale } from './ui-scale.js'
-import { enableIsolatedZoom, stageWindowOptions } from './stage-window-options.js'
+import { createStageNativeWindow, enableIsolatedZoom } from './stage-window-options.js'
 
 const { autoUpdater } = updaterPackage
 const HERE = dirname(fileURLToPath(import.meta.url))
 const APP_ROOT = join(HERE, '..')
-
 protocol.registerSchemesAsPrivileged([
   { scheme: 'piggy', privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ])
@@ -62,7 +62,6 @@ const gotLock = !needsX11 && startup.acquireSingleInstance()
 if (!needsX11 && !gotLock) app.quit()
 
 const bundledGameDir = () => bundledDesktopGame(app, APP_ROOT)
-
 
 function relaunch() {
   app.relaunch(process.env.APPIMAGE ? { execPath: process.env.APPIMAGE, args: process.argv.slice(1) } : { args: process.argv.slice(1) })
@@ -183,7 +182,7 @@ const interactionLease = createInteractionLease({
 })
 function createStageWindow() {
   const bounds = stageWindowBounds({ platform: process.platform, displays: displaysNow(), screen }) ?? screen.getPrimaryDisplay().workArea
-  stageWin = new BrowserWindow(stageWindowOptions({ bounds, platform: process.platform, preload: join(HERE, 'preload.cjs') }))
+  stageWin = createStageNativeWindow(BrowserWindow, { bounds, platform: process.platform, preload: join(HERE, 'preload.cjs') })
   uiScale?.attach(stageWin)
   // resizable 只在 Windows 为 true（见 stageWindowOptions）；用户拖动缩放由 will-resize 拒绝。
   if (process.platform === 'win32') stageWin.on('will-resize', event => event.preventDefault())
@@ -302,10 +301,11 @@ app.whenReady().then(async () => {
   }
   if (quitting) return
   const gameDir = versions.activeDir()
-  const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
+  const workEventsDirectory = join(app.getPath('userData'), 'work-endpoint')
   host = await startBackgroundHost(gameDir, statePath(), {
     fetch: net.fetch.bind(net), workEventsDirectory,
     optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : APP_ROOT, 'optional-extensions'),
+    workEventsAutoStart: process.argv.includes('--work-events'), onConfirm: plan => confirmStageMerge({ dialog, getWindow: () => stageWin, plan }),
     onSnapshot: view => toPages('piggy:state-changed', view),
     onStateChanged: () => toPages('piggy:state-changed'),
   })
@@ -365,6 +365,7 @@ app.whenReady().then(async () => {
   })
 
   createStageWindow()
+  await attachStageExternal({ app, ipcMain, host, cleanup, fromStage, toPages, log })
   const autostart = createAutostart()
   fullscreen = await watchFullscreen({
     getWindow: () => stageWin, userData: app.getPath('userData'), log, getPigDisplayBounds: () => presenter.getPigDisplayBounds(), isQuitting: () => quitting,

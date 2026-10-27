@@ -500,6 +500,80 @@ game.actions.collect = (data, payload, api) => {
   return { ok: true }
 }
 
+// #14 外部桌宠合并钩子：矿洞数据先各自 normalize 到 v2，资产按 key 相加或并集，镐/深度取高，
+// 探索上下文（层、趟、地图、连挖、上一格）整套只从钻得更深的一边接过来，不混两张地图。
+const MERGE_FIELDS = ['v', 'layer', 'run', 'maps', 'pickaxe', 'bag', 'found', 'oreCount', 'bombs', 'deepest', 'combo', 'last', 'helper']
+
+function forMerge(data, side) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('矿洞数据（' + side + '）不是对象，无法合并')
+  const version = Math.floor(Number(data.v))
+  if (Number.isSafeInteger(version) && version > 2) throw new Error('矿洞数据（' + side + '）版本 ' + version + ' 比当前扩展新，请先更新矿洞再合并')
+  return normalize(structuredClone(data))
+}
+
+/** 存档里的 key 会拼进新对象：`__proto__` 这类名字一律不收。 */
+const safeKey = key => key !== '__proto__' && key !== 'constructor' && key !== 'prototype'
+
+/** 每种矿/化石的数量相加，封顶安全整数。 */
+function sumKeys(...maps) {
+  const out = {}
+  for (const map of maps) for (const [key, value] of Object.entries(map)) {
+    const n = count(value)
+    if (n > 0 && safeKey(key)) out[key] = Math.min(Number.MAX_SAFE_INTEGER, (out[key] ?? 0) + n)
+  }
+  return out
+}
+
+function mergeStates(target, source) {
+  const t = forMerge(target, '桌宠'), s = forMerge(source, '内嵌猪')
+  const ctx = s.deepest > t.deepest ? s : t
+  const maps = {}
+  for (const [key, value] of Object.entries(ctx.maps)) {
+    const floor = Number(key)
+    if (!Number.isSafeInteger(floor) || floor < 1 || floor > FLOORS) continue
+    const open = [...new Set([0, 1, 2, 3, 4, 5, ...(Array.isArray(value.open) ? value.open : [])])].filter(cell => Number.isSafeInteger(cell) && cell >= 0 && cell < SIZE)
+    const hits = {}
+    for (const [cell, n] of Object.entries(value.hits)) {
+      const index = Number(cell), times = count(n)
+      if (Number.isSafeInteger(index) && index >= WIDTH && index < SIZE && times > 0) hits[index] = Math.min(Number.MAX_SAFE_INTEGER, times)
+    }
+    maps[floor] = { open, hits }
+  }
+  const found = {}
+  for (const map of [t.found, s.found]) for (const [key, value] of Object.entries(map)) if (value === true && safeKey(key)) found[key] = true
+  const work = s.helper.usedMs > t.helper.usedMs ? s.helper : t.helper
+  const clamp = (value, max) => Math.max(0, Math.min(max, value))
+  const last = ctx.last !== null && Number.isFinite(ctx.last.at)
+    ? { layer: Math.max(1, Math.min(FLOORS, count(ctx.last.layer))), index: clamp(count(ctx.last.index), SIZE - 1),
+      kind: typeof ctx.last.kind === 'string' ? ctx.last.kind : 'soil', key: typeof ctx.last.key === 'string' ? ctx.last.key : null,
+      at: ctx.last.at, bonus: count(ctx.last.bonus), combo: count(ctx.last.combo), id: count(ctx.last.id) }
+    : null
+  const data = {
+    v: 2, layer: ctx.layer, run: ctx.run, maps, pickaxe: Math.max(t.pickaxe, s.pickaxe),
+    bag: sumKeys(t.bag, s.bag), found,
+    oreCount: Math.min(Number.MAX_SAFE_INTEGER, t.oreCount + s.oreCount),
+    bombs: Math.min(Number.MAX_SAFE_INTEGER, t.bombs + s.bombs),
+    deepest: Math.max(t.deepest, s.deepest),
+    combo: { n: count(ctx.combo.n), at: ctx.combo.at },
+    last,
+    helper: {
+      hired: t.helper.hired === true || s.helper.hired === true,
+      cart: Math.max(t.helper.cart, s.helper.cart), lamp: Math.max(t.helper.lamp, s.helper.lamp),
+      floor: CHECKPOINTS.includes(work.floor) ? work.floor : 1,
+      lastAt: Number.isFinite(work.lastAt) ? work.lastAt : null,
+      remainder: clamp(work.remainder, 3600000), sequence: count(work.sequence), usedMs: clamp(work.usedMs, HELPER_WINDOW),
+      stock: sumKeys(t.helper.stock, s.helper.stock),
+    },
+  }
+  for (const key of Object.keys(t)) if (!MERGE_FIELDS.includes(key) && safeKey(key)) data[key] = t[key]
+  const unknown = Object.keys(s).filter(key => !MERGE_FIELDS.includes(key))
+  const warnings = unknown.length > 0 ? ['矿洞：内嵌猪有当前版本不认识的字段（' + unknown.slice(0, 6).join('、') + '），没有合并'] : []
+  normalize(data)
+  return { data, warnings, conflicts: [] }
+}
+
+game.mergeStates = mergeStates
+
 // 每个动作先结旧速度的收益；view 只在副本里结算，不写存档。
 for (const [key, action] of Object.entries(game.actions)) {
   game.actions[key] = (data, payload, api) => {

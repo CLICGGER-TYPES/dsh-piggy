@@ -404,10 +404,10 @@ function migrate(data) {
 }
 function refundOldBarn(data) {
   if (data.helperBarnRefunded === true || data.helper.barn < 1) return;
-  let amount = 0;
-  for (let stage = 1; stage <= data.helper.barn; stage += 1) amount += OLD_HELPER_BARN_PRICES[stage];
-  data.refund += amount;
-  data.helperBarnRefund = amount;
+  let amount2 = 0;
+  for (let stage = 1; stage <= data.helper.barn; stage += 1) amount2 += OLD_HELPER_BARN_PRICES[stage];
+  data.refund += amount2;
+  data.helperBarnRefund = amount2;
   data.helper.barn = 0;
   data.helperBarnRefunded = true;
 }
@@ -600,6 +600,174 @@ actions.hire = (data, payload, api) => helperBuy(data, { item: "helper-hire" }, 
 actions.upgrade = (data, payload, api) => helperBuy(data, { item: "helper-" + payload?.kind }, api);
 actions.collect = (data) => collectHelper(data);
 
+// src/extensions/farm/merge.js
+var FARM_DATA_VERSION = 5;
+var KNOWN = /* @__PURE__ */ new Set([
+  "version",
+  "unlocked",
+  "plots",
+  "seeds",
+  "harvest",
+  "acquired",
+  "harvests",
+  "tools",
+  "fert",
+  "exp",
+  "refund",
+  "helperBarnRefund",
+  "helperBarnRefunded",
+  "helper",
+  "onboarding"
+]);
+var SAFE = Number.MAX_SAFE_INTEGER;
+var safeKey = (key) => key !== "__proto__" && key !== "constructor" && key !== "prototype";
+var amount = (value) => {
+  const n = Math.floor(Number(value));
+  return Number.isSafeInteger(n) && n > 0 ? Math.min(SAFE, n) : 0;
+};
+function sumCounts(...maps) {
+  const out = {};
+  for (const map of maps) {
+    if (!isObject(map)) continue;
+    for (const [key, value] of Object.entries(map)) {
+      const n = amount(value);
+      if (n > 0 && safeKey(key)) out[key] = Math.min(SAFE, (out[key] ?? 0) + n);
+    }
+  }
+  return out;
+}
+function prepare(data, side) {
+  if (!isObject(data)) throw new Error("菜园数据（" + side + "）不是对象，无法合并");
+  const version = Math.floor(Number(data.version));
+  if (Number.isSafeInteger(version) && version > FARM_DATA_VERSION) {
+    throw new Error("菜园数据（" + side + "）版本 " + version + " 比当前扩展新，请先更新菜园再合并");
+  }
+  return normalize(structuredClone(data));
+}
+function plotRank(plot, now) {
+  if (!isObject(plot)) return [-1, 0];
+  const state = plotState(plot, now);
+  if (state === null) return [-1, 0];
+  if (state.withered === true) return [0, 0];
+  if (state.empty === true) return [1, 0];
+  return state.ripe === true ? [3, 1] : [2, Math.max(0, Math.min(0.999999, state.progress))];
+}
+function cleanPlot(plot) {
+  if (!isObject(plot)) return null;
+  if (plot.fallow === true) return { fallow: true, stubble: plot.stubble === true, pests: { dry: plot.pests?.dry === 0 ? 0 : null, weed: plot.pests?.weed === 0 ? 0 : null } };
+  if (plot.withered === true) return { crop: plot.crop, withered: true };
+  const crop = cropFor(plot.crop);
+  if (crop === null) return null;
+  const pest = (kind) => Number.isFinite(plot.pests?.[kind]) ? plot.pests[kind] : null;
+  return {
+    crop: crop.key,
+    season: Math.max(1, Math.min(crop.seasons, Math.floor(Number(plot.season)) || 1)),
+    plantedAt: plot.plantedAt,
+    boostMs: Number.isFinite(plot.boostMs) ? Math.max(0, plot.boostMs) : 0,
+    roll: Number.isFinite(plot.roll) ? Math.max(-3, Math.min(2, Math.floor(plot.roll))) : 0,
+    pests: { weed: pest("weed"), bug: pest("bug"), dry: pest("dry") }
+  };
+}
+function pickPlot(target, source, now) {
+  const t = cleanPlot(target), s = cleanPlot(source);
+  if (t === null) return s;
+  if (s === null) return t;
+  const [tRank, tProgress] = plotRank(t, now);
+  const [sRank, sProgress] = plotRank(s, now);
+  if (sRank > tRank || sRank === tRank && sProgress > tProgress) return s;
+  return t;
+}
+function pickHelperContext(target, source) {
+  const tWork = [target.usedMs, target.lastAt ?? 0];
+  const sWork = [source.usedMs, source.lastAt ?? 0];
+  if (sWork[0] > tWork[0] || sWork[0] === tWork[0] && sWork[1] > tWork[1]) return source;
+  return target;
+}
+function mergeHelper(out, t, s, warnings) {
+  const hired = t.hired === true || s.hired === true;
+  const level = Math.max(t.level, s.level);
+  const context = pickHelperContext(t, s);
+  const loser = context === t ? s : t;
+  const managed = hired ? Math.min(out.unlocked, HELPER_PLOTS[level]) : 0;
+  const stock = sumCounts(t.stock, s.stock);
+  let pending = hired ? context.pending : null;
+  if (loser.pending !== null && (pending === null || loser.pending.index !== pending.index || loser.pending.plantedAt !== pending.plantedAt)) {
+    warnings.push("菜园：帮工没收完的那一批只保留干得更多那一边的进度");
+  }
+  if (pending !== null) {
+    const plot = Array.isArray(out.plots) ? out.plots[pending.index] : null;
+    const recipe = helperRecipe(pending.crop, level);
+    const same = pending.index >= 0 && pending.index < managed && isObject(plot) && plot.fallow !== true && plot.withered !== true && plot.crop === pending.crop && plot.plantedAt === pending.plantedAt;
+    if (!same || recipe === null) {
+      pending = null;
+      warnings.push("菜园：帮工那批没收完的作物随旧地块一起结束了，收成没有记进仓库");
+    } else pending = { index: pending.index, crop: pending.crop, plantedAt: pending.plantedAt, remainingMs: Math.max(0, Math.min(recipe.intervalMs, pending.remainingMs)), yield: recipe.yield };
+  }
+  out.helper = {
+    hired,
+    level,
+    barn: Math.max(t.barn, s.barn),
+    lastAt: hired && Number.isFinite(context.lastAt) ? context.lastAt : null,
+    usedMs: hired ? Math.max(0, Math.min(HELPER_WINDOW, context.usedMs)) : 0,
+    cursor: context.cursor,
+    pending,
+    targets: Array.from({ length: PLOTS }, (_, index) => context.targets[index] ?? null),
+    stock
+  };
+}
+function mergeLesson(out, t, s, warnings) {
+  const done = t.step === "done" ? t : s.step === "done" ? s : null;
+  if (done !== null) {
+    const other = done === t ? s : t;
+    if (other.step !== "done") warnings.push("菜园：另一边的第一课还没做完，合并后按已完成处理，只保留一份 12 菜币奖励");
+    out.onboarding = {
+      step: "done",
+      rewarded: true,
+      legacy: t.legacy === true || s.legacy === true,
+      plantedAt: Number.isFinite(done.plantedAt) ? done.plantedAt : null,
+      wateredAt: Number.isFinite(done.wateredAt) ? done.wateredAt : null
+    };
+    return;
+  }
+  const ready = (lesson) => lesson.plantedAt === null ? Infinity : lessonAt(lesson);
+  const advanced = s.step === "planted" && (t.step !== "planted" || ready(s) < ready(t));
+  const pick = advanced ? s : t;
+  out.onboarding = pick.step === "planted" ? { step: "planted", rewarded: false, legacy: false, plantedAt: pick.plantedAt, wateredAt: Number.isFinite(pick.wateredAt) ? pick.wateredAt : null } : { step: "offer", rewarded: false, legacy: false, plantedAt: null, wateredAt: null };
+}
+function mergeStates(targetData, sourceData, now = Date.now()) {
+  const t = prepare(targetData, "桌宠");
+  const s = prepare(sourceData, "内嵌猪");
+  const warnings = [];
+  const out = {
+    version: FARM_DATA_VERSION,
+    unlocked: Math.max(START_PLOTS, Math.min(PLOTS, Math.max(t.unlocked, s.unlocked))),
+    plots: [],
+    seeds: sumCounts(t.seeds, s.seeds),
+    harvest: sumCounts(t.harvest, s.harvest),
+    acquired: sumCounts(t.acquired, s.acquired),
+    harvests: sumCounts(t.harvests, s.harvests),
+    tools: {},
+    fert: sumCounts(t.fert, s.fert),
+    exp: Math.min(EXP_CAP, Math.max(t.exp, s.exp)),
+    refund: Math.min(SAFE, t.refund + s.refund),
+    helperBarnRefund: Math.max(amount(t.helperBarnRefund), amount(s.helperBarnRefund)),
+    helperBarnRefunded: t.helperBarnRefunded === true || s.helperBarnRefunded === true
+  };
+  for (let index = 0; index < PLOTS; index += 1) {
+    out.plots.push(index < out.unlocked ? pickPlot(t.plots[index], s.plots[index], now) : null);
+  }
+  for (const map of [t.tools, s.tools]) for (const [key, value] of Object.entries(map)) if (value === true && safeKey(key)) out.tools[key] = true;
+  mergeHelper(out, t.helper, s.helper, warnings);
+  mergeLesson(out, t.onboarding, s.onboarding, warnings);
+  for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value;
+  const unknown = Object.keys(s).filter((key) => !KNOWN.has(key));
+  if (unknown.length > 0) warnings.push("菜园：内嵌猪有当前版本不认识的字段（" + unknown.slice(0, 6).join("、") + "），没有合并");
+  normalize(out);
+  out.unlocked = Math.max(START_PLOTS, Math.min(PLOTS, out.unlocked));
+  for (let index = out.unlocked; index < PLOTS; index += 1) out.plots[index] = null;
+  return { data: out, warnings, conflicts: [] };
+}
+
 // src/extensions/farm/view.js
 function view(data, api) {
   const d = normalize(structuredClone(data));
@@ -693,7 +861,9 @@ var game = {
     return normalize({ version: 4, plots: Array.from({ length: START_PLOTS }, () => newGround()) });
   },
   actions,
-  view
+  view,
+  // #14 外部桌宠合并：宿主只在目标端已安装且 manifest mergeHook >= 1 时调用。
+  mergeStates
 };
 for (const [key, action] of Object.entries(game.actions)) {
   game.actions[key] = (data, payload, api) => {

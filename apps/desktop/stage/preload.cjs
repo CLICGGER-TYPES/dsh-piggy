@@ -141,6 +141,16 @@ contextBridge.exposeInMainWorld('piggyShell', {
     get: () => ipcRenderer.invoke('piggy:fullscreen:get'),
     set: mode => ipcRenderer.invoke('piggy:fullscreen:set', String(mode)),
   },
+  external: {
+    get: () => ipcRenderer.invoke('piggy:external:get'),
+    set: enabled => ipcRenderer.invoke('piggy:external:set', enabled === true),
+    onStatus: callback => {
+      if (typeof callback !== 'function') return () => {}
+      const listener = (event, status) => callback(status)
+      ipcRenderer.on('piggy:external', listener)
+      return () => ipcRenderer.removeListener('piggy:external', listener)
+    },
+  },
   openPage: url => ipcRenderer.invoke('piggy:open', String(url)),
   logs: {
     save: (name, text) => ipcRenderer.invoke('piggy:save-log', { name: String(name), text: String(text) }),

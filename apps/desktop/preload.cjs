@@ -128,6 +128,12 @@ contextBridge.exposeInMainWorld('piggyShell', {
     install: () => ipcRenderer.invoke('piggy:shell:install'),
     onProgress: callback => { ipcRenderer.on('piggy:shell-progress', (event, fraction) => callback(fraction)) },
   },
+  /** 设置 → 外部连接：只有面板窗口能调用；扩展大窗口会被主进程拒绝。 */
+  external: {
+    get: () => ipcRenderer.invoke('piggy:external:get'),
+    set: enabled => ipcRenderer.invoke('piggy:external:set', enabled === true),
+    onStatus: callback => { ipcRenderer.on('piggy:external', (event, status) => callback(status)) },
+  },
   openPage: url => ipcRenderer.invoke('piggy:open', String(url)),
   /** 设置 → 日志 → 导出：主进程弹系统「另存为」，写盘。 */
   logs: {

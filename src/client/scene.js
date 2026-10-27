@@ -132,6 +132,13 @@ scene.title = '左键摸摸 · 右键打开面板 · 拖动可移动'
 
 var bar = el('div', 'dp-bar')
 
+// 外部桌宠的连接标签和断线提示：挂在面板内容上方，所有页签都能看到。
+// 内嵌模式隐藏，面板布局和以前一致（见 external-link.js）。
+var linkBar = el('div', 'dp-link')
+linkBar.hidden = true
+var linkNote = el('div', 'dp-link-note')
+linkNote.hidden = true
+
 var content = el('div', 'dp-content')
 var footer = el('div', 'dp-panel-footer')
 footer.hidden = true
@@ -139,6 +146,8 @@ footer.hidden = true
 // Panel first, pig second: as flex siblings in a bottom-anchored column,
 // the pig ends up at a fixed screen position whether the panel is open or
 // not, and the panel can only ever grow upwards from it.
+card.appendChild(linkBar)
+card.appendChild(linkNote)
 card.appendChild(content)
 card.appendChild(footer)
 card.appendChild(bar)
@@ -152,5 +161,5 @@ if (document.body !== null && document.body !== undefined) {
   }, { once: true })
 }
 
-  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer }
+  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote }
 }

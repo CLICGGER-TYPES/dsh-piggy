@@ -186,6 +186,11 @@ export async function mount(options = {}) {
   }
   globalThis.fetch = async (url, opts) => {
     calls.push({ url, method: opts?.method ?? 'GET', body: opts?.body })
+    // 单测需要按路由给不同回应（例如 /state 断线、/external/status 仍有摘要）。
+    if (typeof options.fetch === 'function') {
+      const custom = await options.fetch(url, opts)
+      if (custom !== undefined && custom !== null) return custom
+    }
     if (String(url).includes('/extensions/online') && options.onlineResponse) return { ok: true, status: 200, async json() { return options.onlineResponse } }
     // 日志导出：返回纯文本那一份（设置 → 日志 → 导出）。
     if (String(url).includes('/dsh-piggy/logs/export') && options.exportText !== undefined) {
@@ -221,7 +226,7 @@ export const hostOf = dom => {
   return found[0]
 }
 export const sceneOf = dom => hostOf(dom).children[1]
-export const contentOf = dom => hostOf(dom).children[0].children[0]
+export const contentOf = dom => findByClass(hostOf(dom), 'dp-content')
 
 export const findByAttr = (root, attr, value) => {
   const found = []

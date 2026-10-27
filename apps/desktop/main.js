@@ -14,6 +14,8 @@
  */
 import { panelViewportSize, panelContentRect } from './lib/panel-geometry.js'
 import { createResizeShape } from './lib/resize-shape.js'
+import { auxiliaryWindowOptions } from './lib/auxiliary-window.js'
+import { createLinuxDisplayRebuild } from './lib/linux-display-rebuild.js'
 import { spawn } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { access, appendFile, copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
@@ -40,6 +42,7 @@ import { panelToggleAction } from './lib/panel-toggle.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
+import { createExternalManager } from './lib/external.js'
 import { extensionWindowGeometry } from './lib/extension-window-geometry.js'
 import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
@@ -163,6 +166,8 @@ async function serveFile(root, rel) {
 
 let host = null
 let hostStarting = null
+/** 外部连接开关（设置 → 外部连接）。 */
+let externalManager = null
 /** @type {Awaited<ReturnType<typeof startBackgroundVersions>> | null} */
 let versions = null
 let versionsStarting = null
@@ -227,6 +232,37 @@ function toPages(channel, ...args) {
   }
 }
 let tray = null
+
+/** 合并确认：内容由桌面端自己算；窗口隐藏时先显示窗口。 */
+async function confirmMerge(plan) {
+  try {
+    if (win === null || win.isDestroyed()) return false
+    if (!win.isVisible()) win.show()
+    win.focus()
+    const result = typeof plan?.target === 'object'
+      ? `合并前会分别备份两只猪。合并后内嵌猪会退役，不再长大。`
+      : '合并前会分别备份两只猪。'
+    const answer = await dialog.showMessageBox(win, {
+      type: 'question', buttons: ['取消', '允许合并'], defaultId: 0, cancelId: 0, noLink: true,
+      title: 'DSH 想把内嵌猪合并到这只猪',
+      message: 'DSH 想把内嵌猪合并到这只猪',
+      detail: `${planLine('桌宠', plan?.target)}${planLine('内嵌', plan?.source)}${planLine('合并后', plan?.result)}\n${result}`,
+    })
+    return answer.response === 1
+  } catch (error) {
+    log('merge confirm failed', String(error))
+    return false
+  }
+}
+
+function planLine(label, summary) {
+  if (summary === null || summary === undefined) return ''
+  return `${label}：${summary.name ?? ''} · Lv.${summary.level ?? '?'} · 金币 ${summary.coins ?? 0}\n`
+}
+
+function fromPanelOnly(event) {
+  return !quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents
+}
 
 function registerProtocol(gameDir) {
   protocol.handle('piggy', async request => {
@@ -446,8 +482,8 @@ function showPigWindow() {
   log('shown', JSON.stringify(win.getBounds()), win.isVisible())
 }
 
-async function createWindow() {
-  const saved = await readWindowState()
+async function createWindow(override = null) {
+  const saved = override ?? await readWindowState()
   if (quitting) return
   savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
   if (savedPigScreen !== null) {
@@ -468,12 +504,14 @@ async function createWindow() {
     ...start,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
     alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
+    ...auxiliaryWindowOptions(process.platform),
     backgroundColor: '#00000000',
     // backgroundThrottling: 这个窗口从不获得焦点（showInactive + skipTaskbar），Chromium 默认
     // 会把「后台窗口」的 rAF/定时器降频；而页面测量、闭环核对、形状上报全走 rAF，
     // 被降频就会表现为「猪慢半拍 / 挪完窗口猪还在旧位置」。桌宠没有省电的必要，关掉。
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   })
+  const createdWindow = win
   win.setAlwaysOnTop(true, 'floating')
   // 30fps：猪的动画够看，整窗合成的次数砍一半（D1 第 3 条）。
   if (FRAME_CAP > 0) win.webContents.setFrameRate(FRAME_CAP)
@@ -489,13 +527,14 @@ async function createWindow() {
   }
   win.loadURL('piggy://app/index.html')
   // 启动摆放最多管 3 秒：之后一律按猪当前位置算，免得哪次没对上就一直往回拽。
-  win.once('ready-to-show', () => { setTimeout(() => { savedPigScreen = null }, 3000) })
+  win.once('ready-to-show', () => { setTimeout(() => { if (win === createdWindow) savedPigScreen = null }, 3000) })
   win.once('ready-to-show', () => {
+    if (win !== createdWindow) return
     log('ready-to-show')
     if (showGate !== null && showGate.readyToShow()) showPigWindow()
     // 页面一直不报内容：兜底显示，不能永远不出现。
     setTimeout(() => {
-      if (showGate !== null && showGate.timeout()) {
+      if (win === createdWindow && showGate !== null && showGate.timeout()) {
         log('show fallback', JSON.stringify(showGate.status()))
         showPigWindow()
       }
@@ -547,6 +586,40 @@ async function createWindow() {
   win.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('page:', message) })
   if (process.env.PIGGY_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' })
   if (process.env.PIGGY_CAPTURE) win.webContents.once('did-finish-load', () => { captureForCheck(process.env.PIGGY_CAPTURE) })
+}
+
+/** Refresh native pixel/DIP caches by using the already-tested cold view path. */
+async function rebuildLinuxViews() {
+  if (quitting || win === null || win.isDestroyed()) return
+  const previous = win
+  const previousPanel = panelWin
+  const bounds = petAsked ?? previous.getBounds()
+  const pig = lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
+  const saved = { ...bounds, pig: { x: bounds.x + pig.x, y: bounds.y + pig.y } }
+  stopDrag()
+  resizeShape.cancel()
+  closePanel('display')
+  previous.hide()
+  lastContent = null
+  lastPigWindow = null
+  restingPigScreen = null
+  lastShape = []
+  placedShape = []
+  hasPlacedShape = false
+  await createWindow(saved)
+  previous.removeAllListeners()
+  previous.webContents.removeAllListeners()
+  previous.destroy()
+  if (previousPanel && !previousPanel.isDestroyed()) {
+    previousPanel.removeAllListeners()
+    previousPanel.webContents.removeAllListeners()
+    previousPanel.destroy()
+  }
+  panelWin = null
+  if (quitting) return
+  ensurePanelWindow()
+  pushGeometry()
+  log('display views rebuilt', JSON.stringify({ bounds: win.getBounds() }))
 }
 
 let lastShape = []
@@ -1066,6 +1139,7 @@ function ensurePanelWindow() {
     width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
     alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
+    ...auxiliaryWindowOptions(process.platform),
     backgroundColor: '#00000000',
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
       additionalArguments: ['--piggy-role=panel'] },
@@ -1428,6 +1502,15 @@ async function restartGame() {
   app.exit(0)
 }
 
+// ---- 外部连接（设置 → 外部连接）：只允许面板窗口，扩展大窗口不行 ----
+ipcMain.handle('piggy:external:get', event => (fromPanelOnly(event) && externalManager !== null ? externalManager.status() : { ok: false, enabled: false, running: false, error: 'unavailable' }))
+ipcMain.handle('piggy:external:set', async (event, enabled) => {
+  if (!fromPanelOnly(event) || externalManager === null) return { ok: false, enabled: false, running: false, error: 'unavailable' }
+  const status = await externalManager.setEnabled(enabled === true)
+  toPages('piggy:external', status)
+  return status
+})
+
 // ---- 更新 App（页面里的 tabs/update.js）通过这几个口子调用 ----
 let releases = []
 let releasesRequest = 0
@@ -1717,9 +1800,11 @@ app.whenReady().then(async () => {
   }
   const gameDir = await versions.activeDir()
   if (quitting) return
-  const workEventsDirectory = process.argv.includes('--work-events') ? join(app.getPath('userData'), 'work-endpoint') : undefined
+  const workEventsDirectory = join(app.getPath('userData'), 'work-endpoint')
   hostStarting = startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
     optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
+    workEventsAutoStart: process.argv.includes('--work-events'),
+    onConfirm: plan => confirmMerge(plan),
     onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
   host = await hostStarting
   if (quitting) return
@@ -1730,6 +1815,12 @@ app.whenReady().then(async () => {
   if (quitting) return
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
   ensurePanelWindow()
+  externalManager = createExternalManager({
+    userData: app.getPath('userData'), host, appVersion: app.getVersion(), log,
+    onConfirm: plan => confirmMerge(plan),
+  })
+  try { await externalManager.init() } catch (error) { log('external manager init failed', String(error)) }
+  if (quitting) return
   log('panel preloaded', JSON.stringify({ visible: panelWin.isVisible(), focused: panelWin.isFocused() }))
   await startFullscreenWatch()
   if (quitting) return
@@ -1742,8 +1833,13 @@ app.whenReady().then(async () => {
   // The window follows its screen's work area when it changes (taskbar moved, resolution changed).
   // 显式告诉游戏包「显示器变了」：applyBounds 有 2px 死区，窗口不需要挪的时候它不会推几何，
   // 页面手里的 workAreas 就会一直用旧的那份（分辨率变了但窗口刚好没动 → 用的是旧工作区）。
+  const displayRebuild = createLinuxDisplayRebuild({
+    platform: process.platform, displays: () => screen.getAllDisplays(), rebuild: rebuildLinuxViews,
+    onError: error => log('display view rebuild failed', String(error)),
+  })
   const reclamp = (why, detail) => {
     if (quitting || win === null || win.isDestroyed()) return
+    if (displayRebuild.changed() || displayRebuild.busy()) return
     const bounds = win.getBounds()
     applyBounds(desktopViewportBounds(bounds, screen.getAllDisplays().map(display => display.workArea)), 'display')
     pushGeometry()
@@ -1843,7 +1939,14 @@ function prepareToQuit() {
   if (hostClosing) return hostClosing
   quitting = true
   stopDrag()
-  hostClosing = (host ? host.dispose() : Promise.resolve({ saved: true })).then(result => {
+  hostClosing = (async () => {
+    // VM 生命周期测试只加载这段代码，没有外部开关变量；真实主进程里它始终存在。
+    if (typeof externalManager !== 'undefined') {
+      try { await externalManager?.close() } catch (error) { log('external shutdown failed', String(error)) }
+      externalManager = null
+    }
+    return host ? host.dispose() : { saved: true }
+  })().then(result => {
     hostClosed = true
     if (!result.saved) log('host worker exited; WAL retained; shutdown without save')
     if (hitTimer !== null) clearInterval(hitTimer)

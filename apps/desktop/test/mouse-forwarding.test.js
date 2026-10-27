@@ -10,6 +10,7 @@ import { dragHeartbeatExpired } from '../lib/drag-watchdog.js'
 import { pointerHitsShape } from '../lib/pointer-hit.js'
 import { validDragOrigin } from '../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../lib/window-show.js'
+import { auxiliaryWindowOptions } from '../lib/auxiliary-window.js'
 
 const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
 const SHAPE = [{ x: 20, y: 30, width: 60, height: 60 }]
@@ -38,7 +39,7 @@ async function mouseHarness({ platform = 'win32', env = {}, frameSubscription = 
     on() {}
   }
   const context = createContext({
-    ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate,
+    ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     win: null, quitting: false, petAsked: null, panelPig: null, dragStats: null,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },

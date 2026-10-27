@@ -13,7 +13,7 @@ import { createLayout } from './layout.js'
 import { createPanel } from './panel.js'
 import { createScene } from './scene.js'
 import { CSS } from './styles.js'
-import { ACT_URL, ART_URL, BOX_POKES_TO_OPEN, BOX_POKE_LINES, CARE_LABEL, DEV_TAB, KIND_ORDER, KIND_TITLE, MOUNTED, MODES, NO_ITEM_LINE, OPEN_KEY, PANEL_GAP, PANEL_MARGIN, PANEL_MIN_HEIGHT, PANEL_WIDTH, PIG_PADDING_X, POLL_MS, POSITION_KEY, SCENE_RESERVE, STAGES, STATE_URL, TABS } from './constants.js'
+import { ACT_URL, ART_URL, CARE_LABEL, DEV_TAB, KIND_ORDER, KIND_TITLE, MOUNTED, MODES, NO_ITEM_LINE, OPEN_KEY, PANEL_GAP, PANEL_MARGIN, PANEL_MIN_HEIGHT, PANEL_WIDTH, PIG_PADDING_X, POLL_MS, POSITION_KEY, SCENE_RESERVE, STAGES, STATE_URL, TABS } from './constants.js'
 import { button, el, meter } from './dom.js'
 import { normalize } from './normalize.js'
 import { desktopShell } from './desktop-shell.js'
@@ -38,6 +38,7 @@ import { configureSound } from './sound.js'
 import { createBirthday } from './birthday.js'
 import { attachSizePreference } from './pig-size.js'
 import { attachBubbleSizePreference } from './bubble-size.js'
+import { createBoxPoke } from './box-poke.js'
 export function mountGame(mountOptions) {
     var devMode = false
     // 整屏舞台是可选的挂载参数：网页版/默认桌面版不传，行为和以前完全一样。
@@ -57,8 +58,7 @@ export function mountGame(mountOptions) {
       // instead of breaking the panel.
       var parts = createScene()
       var { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
-        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer } = parts
-
+        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote } = parts
       // 桌面版外壳：用时现取（外壳脚本比 client 先跑，但晚到也不能当网页版 —— 那样拖动
       // 只挪页面里的猪、窗口不跟）。
       var deskShell = desktopShell()
@@ -168,7 +168,7 @@ export function mountGame(mountOptions) {
         pigEmoji: pigEmoji,
         pig: pig,
         dressSlots: dressSlots,
-        bar: bar,
+        bar: bar, linkBar: linkBar, linkNote: linkNote,
         icons: icons,
         flash: flash,
         react: react,
@@ -215,7 +215,7 @@ export function mountGame(mountOptions) {
       for (var t = 0; t < TABS.length; t += 1) buildIcon(TABS[t])
       var io = createIo(ctx)
       var send = io.send, refresh = io.refresh
-      ctx.send = send
+      ctx.send = send; ctx.refresh = refresh
       ctx.render = render
       ctx.renderContent = renderContent
       ctx.setOpen = setOpen
@@ -274,23 +274,7 @@ export function mountGame(mountOptions) {
        * can be checked at all.
        */
 
-      var boxPokes = 0
-      /** Three pokes open the box. */
-      function pokeBox() {
-        boxPokes += 1
-        react('poke', 560)
-        if (boxPokes >= BOX_POKES_TO_OPEN) {
-          boxPokes = 0
-          host.removeAttribute('data-poke')
-          showBubble('哇——！', 1200)
-          burst(['✨', '🎉', '💨'], 6)
-          send('hatch')
-          return
-        }
-        host.setAttribute('data-poke', String(boxPokes))
-        burst(['💨'], 2)
-        showBubble(BOX_POKE_LINES[boxPokes - 1], 2200)
-      }
+      var pokeBox = createBoxPoke({ getView: function () { return view }, showBubble, react, host, burst, send })
 
       // 手势：单击 / 来回摸 / 拖动 / 拎起 / 空中接住。窗口延迟到 4px 才开始动。
       var gestures = attachGestures({

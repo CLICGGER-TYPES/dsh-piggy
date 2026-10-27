@@ -7,6 +7,7 @@ import { readWorkJson, removeWorkFile, writeWorkJson } from './work-files.js'
 import { WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, workError } from './work-events.js'
 import { acquireGameLock } from './owner-lock.js'
 import { secureDirectory } from './work-directory.js'
+export { secureDirectory } from './work-directory.js'
 
 
 function send(response, status, body) {
