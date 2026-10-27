@@ -19,6 +19,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 - 发布前原生验收：Windows安装器18项，Linux AppImage与真实DSH23项，页面错误0；六块地分别逐格点击，DSH与桌面两次实际快照中六块地均同步推进，成熟收仓144个、同种种子补种后剩6，重复收仓不重复发货。公开精确包发布后另行复验。
 
+- 发布后公开精确包复验：Windows19项、Linux/真实DSH23项通过，pageerror0；npm双包rc、GitHub与Gitee同步完成。[夸克Windows完整版](https://pan.quark.cn/s/6b55bc9dc8c9)提供安装器、便携版、扩展及校验清单。已有菜园请在扩展页刷新并更新到4.2.0（经典3.2.0），安装器保留已有版本。
+
 感谢之前参与整合与问题定位的 [@WolalaQAQ](https://github.com/WolalaQAQ)，以及提供菜园并行生长和扩展下载反馈的玩家。
 
 ## [0.37.2-rc.4] — 2026-10-27 · 离线安装扩展、数据目录与桌宠联动

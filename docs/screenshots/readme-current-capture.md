@@ -35,9 +35,27 @@
 Windows18项原生流程通过；Linux真实AppImage与DSH17项通过。双平台各2226项检查零失败。macOS、混合DPI多屏没有本轮原生结论；便携版仅构建与哈希检查，未新增本轮原生启动验收。候选附件与截图统一审阅目录：`/zyx/agents/codex/deliverables/piggy-review/rc4-preparation-20261027/`。
 
 
-## 2026-10-27 RC5 自然托管原生验收
+## 2026-10-27 RC5 自然托管候选验收（历史记录）
 
 - 截图来自[托管Linux虚拟机验收40509788463](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40509788463)，受测源码1975116；AppImage与真实DSH0.2.1-rc.2均使用原生XTest输入，Playwright只读定位/截图/监听响应。不是原型图。
 - 小农场六块逐一原生点击；DSH六块剩余时间同次采样各下降4000ms，桌面各下降4001ms；真实自然成熟时间18小时。成熟夹具收仓144个，现有种子从12剩6，自动同种补种，重复点击没有重复收成。
 - 23项通过、pageerror 0；桌面收仓依靠真实背包/种子/重新种下的地块界面核对，不把未捕获的自定义协议动作响应算作证据。Windows候选18项安装流程通过，发布后精确包复验另记。
 - Xvfb/Openbox/picom软件显示，X11、单屏；macOS、混合DPI、硬件GPU、原生Wayland未覆盖。个人游玩实例未改动。
+
+
+## 2026-10-27 RC5 公开包验收
+
+README现采用本节公开包实拍，前一节保留候选验收记录。发行标签v0.37.2-rc.5，实际代码9e58204893646e547ca35ab1588f48d5c1a15893；游戏0.37.2-rc.5／外壳0.6.8-rc.3。
+
+- [Windows公开包40513215122](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40513215122)：19项通过，实际完整NSIS与便携包，原生Win32鼠标。安装器、桌面/开始菜单与托盘指定猪脸已逐图查看。
+- [Linux/DSH公开包40515254474](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40515254474)：实际下载GitHub AppImage与公开npm精确版本，真实DSH0.2.1-rc.2，23项通过、pageerror0。原生XTest输入，CDP只读。两次真实快照间，桌面和DSH各六地剩余时间均下降4000ms；收仓144个、同种补种剩6种子，不重发。
+- 首轮公开Linux验收卡在Azure Ubuntu镜像、未进入游戏操作，已取消；只修验收环境镜像/依赖准备后重跑。验证脚本b622d76，实际运行的公开游戏/npm仍是不可变9e58204，不借工作树依赖。
+- 私有夹具在启动前写入；没有运行中直接改业务状态，所有游戏操作用原生鼠标。大农场为原生窗口像素截图，未用生成图替代。
+- 两平台单屏，Linux为Xvfb/Openbox/picom软件显示；macOS、混合DPI、GPU与原生Wayland未做原生验收。
+
+公开包原始截图SHA256：
+
+- `readme-rc5-windows-installer.png`：`250e235e59e82fbf986c9bd4065d96b9e0a27ade3c89f9294780d4092a7fe2ca`
+- `readme-rc5-windows-desktop.png`：`cf9a7cbd6d09e2b177de73e399e9f0db1fd0b6cd15e5d8e0a4c19d719447d09e`
+- `readme-rc5-windows-start.png`：`bc4d1ae7d8868ddac20ad4660606b5fca4e8c702e8368a0a8954dedb4e00a1d2`
+- `readme-rc5-farm-natural.png`：`81b8448ae9ce13934e2bed8032b8d20f2f6a884299568e36c8c09ef96d5964b4`

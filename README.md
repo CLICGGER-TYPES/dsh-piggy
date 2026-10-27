@@ -30,22 +30,22 @@
 
 已有菜园的玩家：更新游戏后，到「设置 → 扩展」点击「刷新」，再更新菜园到4.2.0。安装器只补缺失项，不会覆盖已有扩展版本。
 
-<img src="docs/screenshots/readme-rc5-farm-natural.png" width="700" alt="RC5候选大农场实拍：六块小白菜同时自然生长，帮工照料，显示真实剩余17小时35分">
+<img src="docs/screenshots/readme-rc5-farm-natural.png" width="700" alt="RC5公开包大农场实拍：六块小白菜同时自然生长，帮工照料，显示真实剩余17小时35分">
 
 <details>
-<summary>RC4 Windows 安装效果（发行前候选实拍）</summary>
+<summary>当前 Windows 安装效果（RC5 公开包实拍）</summary>
 
 完整安装器随包提供五项离线扩展，默认不选，保留已有版本与进度。图标采用用户指定猪脸，安装器、应用、卸载程序、桌面/开始菜单快捷方式及托盘已在 Windows 云端虚拟机核对。
 
-<img src="docs/screenshots/readme-rc4-windows-installer.png" width="500" alt="RC4候选原生安装器：指定猪脸与五项默认未选的离线扩展">
+<img src="docs/screenshots/readme-rc5-windows-installer.png" width="500" alt="RC5公开包原生安装器：指定猪脸与五项默认未选的离线扩展">
 
-桌面实际显示：<img src="docs/screenshots/readme-rc4-windows-desktop.png" width="78" alt="Windows桌面实际猪脸快捷方式">
+桌面实际显示：<img src="docs/screenshots/readme-rc5-windows-desktop.png" width="78" alt="Windows桌面实际猪脸快捷方式">
 
-[开始菜单实拍](docs/screenshots/readme-rc4-windows-start.png) · [拍摄条件与校验记录](docs/screenshots/readme-current-capture.md#2026-10-27-rc4-windows-图标与安装器候选)
+[开始菜单实拍](docs/screenshots/readme-rc5-windows-start.png) · [拍摄条件与校验记录](docs/screenshots/readme-current-capture.md#2026-10-27-rc5-公开包验收)
 
 </details>
 
-预览版 **0.37.2-rc.5 / 外壳 0.6.8-rc.3**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5)。GitHub和夸克完整版包含游戏，Windows安装器另附五项默认不选的离线扩展；Gitee因100MiB限制仍提供首次联网下载游戏的瘦包。夸克本轮链接在交付核对完成后更新。
+预览版 **0.37.2-rc.5 / 外壳 0.6.8-rc.3**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5)。GitHub和夸克完整版包含游戏，Windows安装器另附五项默认不选的离线扩展；Gitee因100MiB限制仍提供首次联网下载游戏的瘦包。[夸克RC5 Windows完整版](https://pan.quark.cn/s/6b55bc9dc8c9)，含安装器、便携版、六个扩展包（含经典菜园备选）、说明与校验清单，共10文件。
 
 [上一版RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，不是本轮RC4。
 
