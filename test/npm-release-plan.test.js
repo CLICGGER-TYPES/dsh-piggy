@@ -332,9 +332,11 @@ test('CLI 参数默认只检查；没有发布开关', () => {
 
 test('脚本只调用 npm pack，源码里没有 npm publish 执行入口或凭据', () => {
   const source = readFileSync(new URL('../scripts/npm-release-plan.mjs', import.meta.url), 'utf8')
-  assert.equal((source.match(/execFileSync\(/g) ?? []).length, 1)
-  assert.match(source, /execFileSync\('npm', PACK_ARGS/)
-  assert.match(source, /\['pack', '--json', '--dry-run', '--ignore-scripts'\]/)
+  const command = readFileSync(new URL('../scripts/npm-command.mjs', import.meta.url), 'utf8')
+  assert.equal((command.match(/execFileSync\(/g) ?? []).length, 1)
+  assert.match(source, /runNpmPack\(dir\)/)
+  assert.match(command, /\['pack', '--json', '--dry-run', '--ignore-scripts'\]/)
+  assert.doesNotMatch(command, /shell:\s*true/)
   assert.doesNotMatch(source, /method:\s*'POST'/)
   assert.doesNotMatch(source, /NODE_AUTH_TOKEN|NPM_TOKEN|_authToken/)
 })

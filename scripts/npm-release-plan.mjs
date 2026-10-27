@@ -6,7 +6,7 @@
  * 权限位——同一个版本用不同 npm 或文件权限发布时 integrity 会不同，但内容一样，仍可安全跳过。
  * 用法：node scripts/npm-release-plan.mjs [--tag vX.Y.Z] [--repo owner/name] [--tarball-dir DIR] [--json] [--out FILE] [--expect-published]
  */
-import { execFileSync } from 'node:child_process'
+import { runNpmPack } from './npm-command.mjs'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -26,7 +26,6 @@ export const PACKAGES = [
 ]
 
 const VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$/
-const PACK_ARGS = ['pack', '--json', '--dry-run', '--ignore-scripts']
 const USAGE = '用法：node scripts/npm-release-plan.mjs [--tag vX.Y.Z] [--repo owner/name] [--tarball-dir DIR] [--json] [--out FILE] [--expect-published]'
 
 /** 发布前检查发现的问题；任何一条都不许继续发布。 */
@@ -111,7 +110,7 @@ export function tarballContent(gz) {
  * @param {string} dir
  */
 export function packDryRun(dir) {
-  const output = execFileSync('npm', PACK_ARGS, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  const output = runNpmPack(dir)
   const parsed = JSON.parse(output)
   const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed)[0]
   if (!entry || !Array.isArray(entry.files) || typeof entry.integrity !== 'string' || typeof entry.shasum !== 'string') {

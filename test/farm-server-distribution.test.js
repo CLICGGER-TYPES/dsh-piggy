@@ -7,7 +7,6 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { pathToFileURL } from 'node:url'
 
 import { hatchEgg } from '../core.js'
 import { buildFarmServer } from '../scripts/build-farm-server.mjs'
@@ -51,7 +50,7 @@ test('the generated server has the original named/default exports and no runtime
   assert.ok(!/^\s*import\s/m.test(text), 'a downloaded single file must not import another module')
   assert.ok(!/\bfrom\s+['"][^'"]+['"]/.test(text.replace(/\/\/.*$/gm, '')), 'no module specifiers at runtime')
   assert.ok(!/\brequire\s*\(/.test(text), 'no CommonJS require')
-  const imported = await import(pathToFileURL(new URL(generatedUrl).pathname).href + '?distribution=' + Date.now())
+  const imported = await import(generatedUrl.href + '?distribution=' + Date.now())
   assert.deepEqual(Object.keys(imported).sort(), NAMED_EXPORTS)
   assert.equal(imported.default.eventVersion, 1)
   assert.equal(typeof imported.default.init, 'function')

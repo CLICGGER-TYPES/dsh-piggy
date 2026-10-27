@@ -11,7 +11,7 @@
  *   npm run typecheck          # check everything
  *   node scripts/typecheck.mjs --quiet
  */
-import { spawnSync } from 'node:child_process'
+import { runTypecheck } from './typecheck-command.mjs'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
@@ -118,5 +118,4 @@ const args = [
   ...(typesRoot === null ? [] : ['--typeRoots', typesRoot, '--types', 'node']),
   ...sources(),
 ]
-const run = spawnSync(process.execPath, [tsc, ...args], { stdio: 'inherit', cwd: packageRoot })
-process.exit(run.status ?? 1)
+process.exit(runTypecheck(tsc, args, packageRoot))
