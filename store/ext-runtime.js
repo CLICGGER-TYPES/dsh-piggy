@@ -278,7 +278,8 @@ export function createExtRuntime(store, options) {
   /** 安装：内置的直接装回；下载的下载、核对、放好、加载，再在存档里建数据。 */
   async function install(key) {
     if (store.state === null) return { ok: false, reason: 'absent' }
-    const { entries } = await online(false)
+    // 玩家明确点安装或更新时重新核对目录，避免沿用一小时旧链接；离线仍保留已校验缓存。
+    const { entries } = await online(true)
     const entry = entries.find(candidate => candidate.key === key)
     if (entry === undefined) return { ok: false, reason: 'unknown-extension' }
     if (entry.builtin === true) return store.mutate(state => installExtension(state, key))

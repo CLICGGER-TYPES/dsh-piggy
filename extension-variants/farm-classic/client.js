@@ -61,6 +61,7 @@
     '@media (prefers-reduced-motion:reduce){.fc-effect,.fc-plot,.fc-main,.fc-sign,.fc-slot{animation:none!important;transition:none!important}.fc-effect{opacity:0}}',
   ].join('')
 
+  function helperContinuous(data) { return data.helper && data.helper.continuous === true }
   function ensureStyle() {
     if (document.getElementById(styleId)) return
     var style = document.createElement('style'); style.id = styleId; style.textContent = css; document.head.appendChild(style)
@@ -129,6 +130,7 @@
       badge.appendChild(pigOf(app, 'fc-face'))
       badge.appendChild(app.el('span', null, state))
       if (ready || helper.full) badge.appendChild(app.el('b', null, ready ? '收一下' : '接着干'))
+      else if (helper.continuous) badge.appendChild(app.el('span', null, '持续照料'))
       else {
         var meter = app.el('span', 'fc-meter')
         meter.setAttribute('title', '还能干 ' + Math.max(0, helper.capacityHours - helper.usedHours).toFixed(1) + ' 小时')
@@ -186,7 +188,7 @@
         effect(index, 'water')
         app.send('water', { plot: index })
       } else {
-        tip = plot.cropEmoji + ' ' + plot.label + ' · ' + (plot.helperManaged ? plot.helperNote + (plot.helperNote === '帮工处理中' ? ' · ' + shortTime(plot.remainingMs) : '') : '还要 ' + shortTime(plot.remainingMs))
+        tip = plot.cropEmoji + ' ' + plot.label + ' · ' + (plot.helperManaged ? (plot.helperNote || '帮工照料') + (helperContinuous(data) || plot.helperNote === '帮工处理中' ? ' · ' + shortTime(plot.remainingMs) : '') : '还要 ' + shortTime(plot.remainingMs))
         app.rerender()
       }
     })

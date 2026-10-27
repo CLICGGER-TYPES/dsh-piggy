@@ -83,7 +83,21 @@ function setRandom(fn) {
   random = typeof fn === "function" ? fn : Math.random;
 }
 var randomValue = () => random();
-var nextPest = (from) => from + Math.round(-Math.log(1 - Math.min(0.999999, random())) * PEST_MS);
+function stableRandom(...parts) {
+  let state = 2654435769;
+  for (const part of parts) {
+    const text = String(part);
+    for (let index = 0; index < text.length; index += 1) state = Math.imul(state ^ text.charCodeAt(index), 16777619) >>> 0;
+    state = Math.imul(state ^ 47, 16777619) >>> 0;
+  }
+  return () => {
+    state = state + 2654435769 >>> 0;
+    let mix = Math.imul(state ^ state >>> 16, 569420461) >>> 0;
+    mix = Math.imul(mix ^ mix >>> 15, 1935289751) >>> 0;
+    return ((mix ^ mix >>> 15) >>> 0) / 4294967296;
+  };
+}
+var nextPest = (from, rng = random) => from + Math.round(-Math.log(1 - Math.min(0.999999, rng())) * PEST_MS);
 function weatherAt(at) {
   const date = new Date(at);
   const day = date.getFullYear() * 400 + date.getMonth() * 32 + date.getDate();
@@ -96,8 +110,8 @@ function droughtAt(at) {
   return at;
 }
 var seasonMs = (crop) => crop.hours * HOUR_MS;
-function sow(crop, at, season = 1, offset = 0) {
-  return { crop: crop.key, season, plantedAt: at - offset, boostMs: 0, roll: Math.floor(random() * 6) - 3, pests: { weed: nextPest(at), bug: nextPest(at), dry: nextPest(at) } };
+function sow(crop, at, season = 1, offset = 0, rng = random) {
+  return { crop: crop.key, season, plantedAt: at - offset, boostMs: 0, roll: Math.floor(rng() * 6) - 3, pests: { weed: nextPest(at, rng), bug: nextPest(at, rng), dry: nextPest(at, rng) } };
 }
 var ageOf = (plot, crop, now) => Math.min(1, Math.max(0, (now - plot.plantedAt + plot.boostMs) / seasonMs(crop)));
 var ripeAt = (plot, crop) => plot.plantedAt - plot.boostMs + seasonMs(crop);
@@ -181,11 +195,11 @@ function clearPlot(data, index, force = false) {
   }
   return false;
 }
-function plantPlot(data, index, crop, at) {
+function plantPlot(data, index, crop, at, rng = void 0) {
   const old = data.plots[index];
   if (old !== null && (!old.fallow || old.stubble || old.pests.weed === 0) || amountFor(data, "seeds", crop.key) < 1 || levelNow(data) < crop.level) return false;
   data.seeds[crop.key] -= 1;
-  data.plots[index] = sow(crop, at);
+  data.plots[index] = sow(crop, at, 1, 0, rng);
   if (old?.fallow && old.pests.dry === 0) data.plots[index].pests.dry = at;
   return true;
 }
@@ -211,6 +225,7 @@ var HELPER_PLOTS = [4, 8, 16];
 var HELPER_SHARE = 0.9;
 var HELPER_WINDOW = 6 * 36e5;
 var HELPER_PRICES = { hire: 2500, level: [0, 2e3, 6e3] };
+var MAX_STEPS = 1e5;
 function helperRecipe(key, level) {
   const crop = cropFor(key);
   if (!crop) return null;
@@ -231,45 +246,102 @@ function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {};
   const level = Math.min(2, count(raw.level));
   const barn = Math.min(3, count(raw.barn));
-  const recipe = helperRecipe(raw.pending?.crop, level), pending = recipe && Number.isFinite(raw.pending.remainingMs) && Number.isInteger(raw.pending.index) ? { ...raw.pending, remainingMs: Math.max(0, Math.min(recipe.intervalMs, raw.pending.remainingMs)), yield: recipe.yield } : null;
   data.helper = {
     hired: raw.hired === true,
     level,
     barn,
     lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
-    usedMs: Number.isFinite(raw.usedMs) ? Math.max(0, Math.min(HELPER_WINDOW, raw.usedMs)) : 0,
+    usedMs: 0,
     cursor: count(raw.cursor) % PLOTS,
-    pending,
+    pending: null,
     targets: Array.from({ length: PLOTS }, (_, index) => cropFor(raw.targets?.[index]) ? raw.targets[index] : null),
     stock: Object.fromEntries(CROPS.map((crop) => [crop.key, count(raw.stock?.[crop.key])]))
   };
 }
 var helperCount = (data) => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0);
 var helperPlots = (data) => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS[data.helper.level]) : 0;
-function prepareHelper(data, at) {
-  const helper = data.helper;
-  const managed = helperPlots(data);
+var helperRandom = (...parts) => stableRandom("helper", ...parts);
+function keepClean(plot, at, index) {
+  if (!isObject(plot.pests)) plot.pests = { weed: null, bug: null, dry: null };
+  for (const kind of PESTS) {
+    const when = plot.pests[kind];
+    if (Number.isFinite(when) && when > at) continue;
+    plot.pests[kind] = nextPest(at, helperRandom("pest", index, kind, plot.crop, plot.plantedAt, at));
+  }
+}
+function nextEvent(data, helper, managed, at, now, blocked) {
+  let pick = null;
   for (let offset = 0; offset < managed; offset += 1) {
     const index = (helper.cursor + offset) % managed;
+    if (blocked.has(index)) continue;
+    const plot = data.plots[index];
+    const crop = cropFor(plot?.fallow === true || plot?.withered === true ? null : plot?.crop);
+    const when = crop === null ? at : Math.max(at, ripeAt(plot, crop));
+    if (when > now) continue;
+    if (pick === null || when < pick.when) pick = { when, index, crop };
+  }
+  return pick;
+}
+function harvestHere(data, helper, managed, next) {
+  const plot = data.plots[next.index];
+  const crop = next.crop;
+  keepClean(plot, next.at, next.index);
+  const state = plotState(plot, next.at);
+  recordHarvest(data, crop.key, Math.max(1, state?.yield ?? 1), helper.stock);
+  helper.targets[next.index] = crop.key;
+  if (plot.season < crop.seasons) {
+    const season = plot.season + 1;
+    data.plots[next.index] = sow(crop, next.at, season, REGROW_AT * seasonMs(crop), helperRandom("sow", next.index, crop.key, next.at, season));
+  } else data.plots[next.index] = null;
+  helper.cursor = (next.index + 1) % managed;
+}
+function plantHere(data, helper, managed, next, at, blocked) {
+  const index = next.index;
+  let plot = data.plots[index];
+  if (plot?.withered) data.plots[index] = plot = null;
+  if (plot?.fallow && (plot.stubble || plot.pests.weed === 0)) {
+    plot.stubble = false;
+    plot.pests.weed = null;
+  }
+  const crop = cropFor(plot?.crop) ?? cropFor(helper.targets[index]);
+  if (crop === null || !plantPlot(data, index, crop, at, helperRandom("sow", index, crop.key, at, 1))) {
+    blocked.add(index);
+    return;
+  }
+  helper.targets[index] = crop.key;
+  keepClean(data.plots[index], at, index);
+  helper.cursor = (index + 1) % managed;
+}
+function tidy(data, managed, now) {
+  for (let index = 0; index < managed; index += 1) {
     let plot = data.plots[index];
     if (plot?.withered) data.plots[index] = plot = null;
-    if (plot?.fallow && (plot.stubble || plot.pests.weed === 0)) {
-      plot.stubble = false;
-      plot.pests.weed = null;
+    if (plot === null) continue;
+    if (plot.fallow) {
+      if (plot.stubble) plot.stubble = false;
+      if (plot.pests?.weed === 0) plot.pests.weed = null;
+      continue;
     }
-    const crop = cropFor(plot?.crop) ?? cropFor(helper.targets[index]);
-    if (!crop) continue;
-    helper.targets[index] = crop.key;
-    if (!plot || plot.fallow) {
-      if (!plantPlot(data, index, crop, at)) continue;
-      plot = data.plots[index];
-    }
-    const recipe = helperRecipe(crop.key, helper.level);
-    if (!recipe) continue;
-    helper.pending = { index, crop: crop.key, plantedAt: plot.plantedAt, remainingMs: recipe.intervalMs, yield: recipe.yield };
-    return true;
+    keepClean(plot, now, index);
   }
-  return false;
+}
+function settlePlots(data, helper, managed, start, now) {
+  for (let index = 0; index < managed; index += 1) {
+    const crop = cropFor(data.plots[index]?.crop);
+    if (crop !== null) helper.targets[index] = crop.key;
+  }
+  const blocked = /* @__PURE__ */ new Set();
+  let at = start;
+  let step = 0;
+  for (; step < MAX_STEPS; step += 1) {
+    const next = nextEvent(data, helper, managed, at, now, blocked);
+    if (next === null) break;
+    at = Math.max(at, next.when);
+    if (next.crop === null) plantHere(data, helper, managed, next, at, blocked);
+    else harvestHere(data, helper, managed, { at: next.when, index: next.index, crop: next.crop });
+  }
+  if (step === MAX_STEPS && nextEvent(data, helper, managed, at, now, blocked) !== null) throw new Error("菜园离线农活过多，未推进结算时间；请联系维护者检查存档。");
+  tidy(data, managed, now);
 }
 function settleHelper(data, now) {
   if (weatherAt(now) === "rain") for (const plot of data.plots) {
@@ -277,65 +349,33 @@ function settleHelper(data, now) {
     else if (plot?.pests?.dry <= now) plot.pests.dry = droughtAt(now);
   }
   const helper = data.helper;
-  if (!helperPlots(data) || !Number.isFinite(now)) return;
+  const managed = helperPlots(data);
+  if (!managed || !Number.isFinite(now)) return;
   const start = helper.lastAt ?? now;
   if (now < start) return;
-  const pendingPlot = helper.pending ? data.plots[helper.pending.index] : null;
-  if (helper.pending && (!pendingPlot || pendingPlot.withered || pendingPlot.plantedAt !== helper.pending.plantedAt || pendingPlot.crop !== helper.pending.crop)) helper.pending = null;
-  let remaining = Math.min(now - start, HELPER_WINDOW - helper.usedMs);
-  let at = start;
-  if (!helper.pending) prepareHelper(data, start);
-  while (remaining > 0 && helper.pending) {
-    const pending = helper.pending;
-    const elapsed = Math.min(remaining, pending.remainingMs);
-    pending.remainingMs -= elapsed;
-    helper.usedMs += elapsed;
-    remaining -= elapsed;
-    at += elapsed;
-    if (pending.remainingMs > 1e-5) break;
-    recordHarvest(data, pending.crop, pending.yield, helper.stock);
-    data.plots[pending.index] = null;
-    helper.cursor = (pending.index + 1) % helperPlots(data);
-    helper.pending = null;
-    if (helper.usedMs >= HELPER_WINDOW - 1e-5) {
-      helper.usedMs = HELPER_WINDOW;
-      break;
-    }
-    plantPlot(data, pending.index, cropFor(pending.crop), at);
-    if (!prepareHelper(data, at)) break;
-  }
+  settlePlots(data, helper, managed, start, now);
   helper.lastAt = now;
 }
 function helperView(data) {
   const helper = data.helper;
   const managed = helperPlots(data);
   const missing = helper.targets.slice(0, managed).filter((key, index) => key && (!data.plots[index] || data.plots[index].fallow) && amountFor(data, "seeds", key) === 0);
-  const seedless = managed > 0 && !helper.pending && !data.plots.slice(0, managed).some((plot) => plot?.crop) && !helper.targets.slice(0, managed).some((key) => key && amountFor(data, "seeds", key) > 0);
+  const seedless = managed > 0 && !data.plots.slice(0, managed).some((plot) => cropFor(plot?.crop)) && !helper.targets.slice(0, managed).some((key) => key && amountFor(data, "seeds", key) > 0);
   return {
     hired: helper.hired,
     plots: managed,
     stored: helperCount(data),
     usedHours: helper.usedMs / 36e5,
-    capacityHours: 6,
-    full: helper.usedMs >= HELPER_WINDOW,
+    capacityHours: null,
+    full: false,
+    continuous: true,
     seedless,
     missing: [...new Set(missing)].map((key) => cropFor(key).label)
   };
 }
 function helperPlotView(data, index, state) {
   if (index >= helperPlots(data) || state === null || state.ripe || state.withered) return {};
-  const recipe = helperRecipe(state.crop, data.helper.level);
-  if (!recipe) return {};
-  const pending = data.helper.pending?.index === index ? data.helper.pending : null;
-  const remainingMs = pending?.remainingMs ?? recipe.intervalMs;
-  const progress2 = pending ? Math.max(0, Math.min(1, 1 - remainingMs / recipe.intervalMs)) : 0;
-  return {
-    helperNote: data.helper.usedMs >= HELPER_WINDOW ? "等帮工接着干" : pending ? "帮工处理中" : "等帮工",
-    pests: [],
-    stage: STAGES[Math.min(4, Math.floor(progress2 * 5))],
-    progress: progress2,
-    remainingMs
-  };
+  return { helperNote: "帮工照料中", pests: [] };
 }
 function helperShelf(data, balance) {
   const helper = data.helper;
@@ -343,7 +383,7 @@ function helperShelf(data, balance) {
   const price = helper.hired ? HELPER_PRICES.level[level] : HELPER_PRICES.hire;
   if (price === void 0) return [];
   const label = helper.hired ? ["帮工猪", "熟练帮工", "老练帮工"][level] : "雇帮工猪";
-  const note = helper.hired ? "管 " + HELPER_PLOTS[level] + " 块地" : "管 " + HELPER_PLOTS[0] + " 块地，6 小时封仓";
+  const note = helper.hired ? "管 " + HELPER_PLOTS[level] + " 块地" : "管 " + HELPER_PLOTS[0] + " 块地";
   return [{ key: helper.hired ? "helper-level" : "helper-hire", emoji: "🐷", label, note, price, disabled: balance < price, pick: null }];
 }
 function helperBuy(data, payload, api) {
@@ -364,10 +404,9 @@ function helperBuy(data, payload, api) {
   return { ok: true };
 }
 function collectHelper(data) {
-  if (!helperCount(data) && data.helper.usedMs === 0) return { ok: false, reason: "empty" };
+  if (!helperCount(data)) return { ok: false, reason: "empty" };
   for (const crop of CROPS) data.harvest[crop.key] = amountFor(data, "harvest", crop.key) + data.helper.stock[crop.key];
   data.helper.stock = Object.fromEntries(CROPS.map((crop) => [crop.key, 0]));
-  data.helper.usedMs = 0;
   return { ok: true };
 }
 
@@ -678,41 +717,23 @@ function pickPlot(target, source, now) {
   return t;
 }
 function pickHelperContext(target, source) {
-  const tWork = [target.usedMs, target.lastAt ?? 0];
-  const sWork = [source.usedMs, source.lastAt ?? 0];
-  if (sWork[0] > tWork[0] || sWork[0] === tWork[0] && sWork[1] > tWork[1]) return source;
-  return target;
+  const settledAt = (helper) => Number.isFinite(helper.lastAt) ? helper.lastAt : -Infinity;
+  return settledAt(source) > settledAt(target) ? source : target;
 }
-function mergeHelper(out, t, s, warnings) {
+function mergeHelper(out, t, s) {
   const hired = t.hired === true || s.hired === true;
   const level = Math.max(t.level, s.level);
   const context = pickHelperContext(t, s);
-  const loser = context === t ? s : t;
-  const managed = hired ? Math.min(out.unlocked, HELPER_PLOTS[level]) : 0;
-  const stock = sumCounts(t.stock, s.stock);
-  let pending = hired ? context.pending : null;
-  if (loser.pending !== null && (pending === null || loser.pending.index !== pending.index || loser.pending.plantedAt !== pending.plantedAt)) {
-    warnings.push("菜园：帮工没收完的那一批只保留干得更多那一边的进度");
-  }
-  if (pending !== null) {
-    const plot = Array.isArray(out.plots) ? out.plots[pending.index] : null;
-    const recipe = helperRecipe(pending.crop, level);
-    const same = pending.index >= 0 && pending.index < managed && isObject(plot) && plot.fallow !== true && plot.withered !== true && plot.crop === pending.crop && plot.plantedAt === pending.plantedAt;
-    if (!same || recipe === null) {
-      pending = null;
-      warnings.push("菜园：帮工那批没收完的作物随旧地块一起结束了，收成没有记进仓库");
-    } else pending = { index: pending.index, crop: pending.crop, plantedAt: pending.plantedAt, remainingMs: Math.max(0, Math.min(recipe.intervalMs, pending.remainingMs)), yield: recipe.yield };
-  }
   out.helper = {
     hired,
     level,
     barn: Math.max(t.barn, s.barn),
     lastAt: hired && Number.isFinite(context.lastAt) ? context.lastAt : null,
-    usedMs: hired ? Math.max(0, Math.min(HELPER_WINDOW, context.usedMs)) : 0,
+    usedMs: 0,
     cursor: context.cursor,
-    pending,
+    pending: null,
     targets: Array.from({ length: PLOTS }, (_, index) => context.targets[index] ?? null),
-    stock
+    stock: sumCounts(t.stock, s.stock)
   };
 }
 function mergeLesson(out, t, s, warnings) {
@@ -757,7 +778,7 @@ function mergeStates(targetData, sourceData, now = Date.now()) {
     out.plots.push(index < out.unlocked ? pickPlot(t.plots[index], s.plots[index], now) : null);
   }
   for (const map of [t.tools, s.tools]) for (const [key, value] of Object.entries(map)) if (value === true && safeKey(key)) out.tools[key] = true;
-  mergeHelper(out, t.helper, s.helper, warnings);
+  mergeHelper(out, t.helper, s.helper);
   mergeLesson(out, t.onboarding, s.onboarding, warnings);
   for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value;
   const unknown = Object.keys(s).filter((key) => !KNOWN.has(key));

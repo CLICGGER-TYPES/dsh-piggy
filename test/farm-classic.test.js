@@ -30,7 +30,7 @@ test('classic farm bundles the identical current server and a valid classic clie
   const bundle = parseBundle(makeBundle(files))
   assert.equal(bundle.ok, true)
   assert.equal(bundle.key, 'farm')
-  assert.equal(bundle.manifest.version, '3.1.2')
+  assert.equal(bundle.manifest.version, '3.2.0')
   const data = farm.init(), clock = api()
   const view = farm.view(data, clock), before = structuredClone(view)
   const ui = renderFarm(view, 'panel', {}, files['client.js'])

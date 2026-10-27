@@ -352,7 +352,7 @@
     var line = put(box, app.el('div', 'fm-s-progress')); line.setAttribute('data-farm-progress', String(Math.round(progress * 100)))
     put(line, app.el('span', null, '生长进度'))
     var track = put(line, app.el('span', 'fm-s-track')); put(track, app.el('i')).style.width = Math.round(progress * 100) + '%'
-    var text = on ? on.canPlant ? '课内' + on.seed.label + ' ×' + on.seed.count : on.canHarvest ? '点主按钮收获' : on.canWater ? '浇水后 2 分钟成熟' : '还剩 ' + shortTime(on.remainingMs) : plot.empty ? '先选种子 / 去商店买' : plot.ripe ? '收 ' + plot.yield + ' 个 · 等主按钮' : plot.withered ? '用铁锹铲掉' : '还剩 ' + shortTime(plot.remainingMs)
+    var text = on ? on.canPlant ? '课内' + on.seed.label + ' ×' + on.seed.count : on.canHarvest ? '点主按钮收获' : on.canWater ? '浇水后 2 分钟成熟' : '还剩 ' + shortTime(on.remainingMs) : plot.empty ? '先选种子 / 去商店买' : plot.ripe ? '收 ' + plot.yield + ' 个 · 等主按钮' : plot.withered ? '用铁锹铲掉' : (plot.helper && data.helper && data.helper.continuous ? '帮工照料 · ' : '') + '还剩 ' + shortTime(plot.remainingMs)
     put(box, app.el('small', null, text))
     return box
   }

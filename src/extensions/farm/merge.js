@@ -4,10 +4,11 @@
 // 规则写在 docs/guides/writing-extensions.md「合并钩子」（#14 设计稿 6.4）。
 //
 // 规则：资产（种子、仓库、图鉴数量、历史收获、肥料、帮工仓、欠着的退款）两边相加；
-// 进度（开垦块数、经验、帮工等级）取更高；同一块地、同一套帮工进度只能留一份，取更靠后/干得更多的一方。
+// 进度（开垦块数、经验、帮工等级）取更高；同一块地只能留一份，取更靠后/种得更晚的一方；
+// 帮工只保留「结算得更晚」那一侧的指针和管区目标，旧批次（pending）不再合并。
 // 数据版本比当前新（> 5）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
 import { EXP_CAP, PLOTS, START_PLOTS } from './data.js'
-import { HELPER_PLOTS, HELPER_WINDOW, helperRecipe } from './helper.js'
+import { HELPER_PLOTS } from './helper.js'
 import { normalize } from './migration.js'
 import { lessonAt } from './plot-rules.js'
 import { count, cropFor, isObject, plotState } from './pure.js'
@@ -89,43 +90,24 @@ function pickPlot(target, source, now) {
   return t
 }
 
-/** 帮工：等级/雇佣取高，仓库相加；整套干活进度（批次、指针、管哪几块地）只从干得更多的一边拿。 */
+/** 帮工：等级/雇佣取高，仓库相加；指针和管哪几块地整套跟「结算得更晚」的一边（旧批次不再合并）。 */
 function pickHelperContext(target, source) {
-  const tWork = [target.usedMs, target.lastAt ?? 0]
-  const sWork = [source.usedMs, source.lastAt ?? 0]
-  if (sWork[0] > tWork[0] || (sWork[0] === tWork[0] && sWork[1] > tWork[1])) return source
-  return target
+  const settledAt = helper => (Number.isFinite(helper.lastAt) ? helper.lastAt : -Infinity)
+  return settledAt(source) > settledAt(target) ? source : target
 }
 
-function mergeHelper(out, t, s, warnings) {
+function mergeHelper(out, t, s) {
   const hired = t.hired === true || s.hired === true
   const level = Math.max(t.level, s.level)
   const context = pickHelperContext(t, s)
-  const loser = context === t ? s : t
-  const managed = hired ? Math.min(out.unlocked, HELPER_PLOTS[level]) : 0
-  const stock = sumCounts(t.stock, s.stock)
-  let pending = hired ? context.pending : null
-  if (loser.pending !== null && (pending === null || loser.pending.index !== pending.index || loser.pending.plantedAt !== pending.plantedAt)) {
-    warnings.push('菜园：帮工没收完的那一批只保留干得更多那一边的进度')
-  }
-  if (pending !== null) {
-    const plot = Array.isArray(out.plots) ? out.plots[pending.index] : null
-    const recipe = helperRecipe(pending.crop, level)
-    const same = pending.index >= 0 && pending.index < managed && isObject(plot) && plot.fallow !== true && plot.withered !== true &&
-      plot.crop === pending.crop && plot.plantedAt === pending.plantedAt
-    if (!same || recipe === null) {
-      pending = null
-      warnings.push('菜园：帮工那批没收完的作物随旧地块一起结束了，收成没有记进仓库')
-    } else pending = { index: pending.index, crop: pending.crop, plantedAt: pending.plantedAt, remainingMs: Math.max(0, Math.min(recipe.intervalMs, pending.remainingMs)), yield: recipe.yield }
-  }
   out.helper = {
     hired, level, barn: Math.max(t.barn, s.barn),
     lastAt: hired && Number.isFinite(context.lastAt) ? context.lastAt : null,
-    usedMs: hired ? Math.max(0, Math.min(HELPER_WINDOW, context.usedMs)) : 0,
+    usedMs: 0,
     cursor: context.cursor,
-    pending,
+    pending: null,
     targets: Array.from({ length: PLOTS }, (_, index) => context.targets[index] ?? null),
-    stock,
+    stock: sumCounts(t.stock, s.stock),
   }
 }
 
@@ -178,7 +160,7 @@ export function mergeStates(targetData, sourceData, now = Date.now()) {
   }
   // 工具是买过的永久解锁，两边都算；认不出的 key 原样留着。
   for (const map of [t.tools, s.tools]) for (const [key, value] of Object.entries(map)) if (value === true && safeKey(key)) out.tools[key] = true
-  mergeHelper(out, t.helper, s.helper, warnings)
+  mergeHelper(out, t.helper, s.helper)
   mergeLesson(out, t.onboarding, s.onboarding, warnings)
   // 桌宠自己的未来字段原样保留；内嵌猪的认不出字段不猜，只提示。
   for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value

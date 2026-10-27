@@ -14,8 +14,26 @@ let random = Math.random
 export function setRandom(fn) { random = typeof fn === 'function' ? fn : Math.random }
 /** 当前随机源；newGround 和 sow 共用同一个可注入实现。 */
 export const randomValue = () => random()
-/** 下一次灾害什么时候来：指数分布，平均 PEST_MS。 */
-export const nextPest = from => from + Math.round(-Math.log(1 - Math.min(0.999999, random())) * PEST_MS)
+/**
+ * 由几个标签派生的稳定随机源（splitmix32）：标签一样，永远给出同一串数。
+ * 托管帮工补种 / 清灾害用它，view 反复结算不会改变将来的收成。
+ */
+export function stableRandom(...parts) {
+  let state = 0x9e3779b9
+  for (const part of parts) {
+    const text = String(part)
+    for (let index = 0; index < text.length; index += 1) state = Math.imul(state ^ text.charCodeAt(index), 16777619) >>> 0
+    state = Math.imul(state ^ 0x2f, 16777619) >>> 0
+  }
+  return () => {
+    state = (state + 0x9e3779b9) >>> 0
+    let mix = Math.imul(state ^ state >>> 16, 0x21f0aaad) >>> 0
+    mix = Math.imul(mix ^ mix >>> 15, 0x735a2d97) >>> 0
+    return ((mix ^ mix >>> 15) >>> 0) / 4294967296
+  }
+}
+/** 下一次灾害什么时候来：指数分布，平均 PEST_MS；rng 不给就用游戏随机源（手动玩法不变）。 */
+export const nextPest = (from, rng = random) => from + Math.round(-Math.log(1 - Math.min(0.999999, rng())) * PEST_MS)
 /** 每天随机晴或雨（按日期定，两扇窗口看到的一样），与昼夜时段无关。 */
 export function weatherAt(at) {
   const date = new Date(at)
@@ -31,9 +49,9 @@ export function droughtAt(at) {
 }
 /** 一季要多久（毫秒）。 */
 export const seasonMs = crop => crop.hours * HOUR_MS
-/** 新种下（或进入下一季）的地：起点、产量浮动、三样灾害什么时候来，都在这时定好。 */
-export function sow(crop, at, season = 1, offset = 0) {
-  return { crop: crop.key, season, plantedAt: at - offset, boostMs: 0, roll: Math.floor(random() * 6) - 3, pests: { weed: nextPest(at), bug: nextPest(at), dry: nextPest(at) } }
+/** 新种下（或进入下一季）的地：起点、产量浮动、三样灾害什么时候来，都在这时定好；rng 不给就用游戏随机源。 */
+export function sow(crop, at, season = 1, offset = 0, rng = random) {
+  return { crop: crop.key, season, plantedAt: at - offset, boostMs: 0, roll: Math.floor(rng() * 6) - 3, pests: { weed: nextPest(at, rng), bug: nextPest(at, rng), dry: nextPest(at, rng) } }
 }
 /** 这块地这一季走到哪了（0～1）。 */
 export const ageOf = (plot, crop, now) => Math.min(1, Math.max(0, (now - plot.plantedAt + plot.boostMs) / seasonMs(crop)))

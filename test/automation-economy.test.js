@@ -22,25 +22,33 @@ test('矿工每个工具、选站、速度档都低于 400 和对应手动，六
   }
 })
 
-test('所有作物、管地：实物菜、扣种子、六小时封仓、手动更赚', () => {
+test('菜园自然托管：收成按地块真实生长与 roll，不再有 400 / 六小时预算，手动仍多拿经验', () => {
   for (const crop of CROPS) for (const plots of [4, 8, 16]) {
     const rate = farmHelperPerHour({ cropKey: crop.key, plots })
-    const manual = plots * (crop.yield * crop.sell - crop.price - 5 * .2 * 10 / 32) / crop.hours
-    assert.ok(rate.net > 0 && rate.net <= 400 && rate.net < manual, crop.key)
-    assert.equal(rate.fullHours, 6)
+    assert.ok(rate.net > 0 && rate.itemsPerHour > 0, crop.key + ' / ' + plots)
+    // 同样的地自己种一整株（多季含重长期）也差不多这个时薪：托管就是替你按时收、按时补种，不是加速器。
+    const manual = plots * (crop.yield * crop.seasons * crop.sell - crop.price) / rate.hours
+    assert.ok(Math.abs(rate.net - manual) < 1e-9, crop.key + ' / ' + plots + ' 托管时薪就该等于同地块自然生长的时薪')
+    assert.equal(rate.hours, crop.hours + (crop.seasons - 1) * crop.hours / 2, crop.key + ' 多季只花半季重长')
+  }
+
+  for (const crop of CROPS.slice(0, 6)) for (const plots of [4, 8, 16]) {
     const data = Object.assign(farm.init(), { plots: Array(18).fill(null) }), host = api()
-    data.unlocked = plots
-    data.seeds[crop.key] = 999
+    data.unlocked = Math.max(6, plots)
     data.exp = 10000 // 4.0 起种子按等级解锁：直接给到满级
+    data.seeds[crop.key] = 999
     for (let index = 0; index < plots; index += 1) farm.actions.plant(data, { plot: index, item: crop.key }, host)
     farm.actions.hire(data, {}, host)
     data.helper.level = [4, 8, 16].indexOf(plots)
-    data.helper.pending = null
-    host.now += 6 * 3600000
-    farm.actions.collect(data, {}, host)
-    assert.equal(data.harvest[crop.key], rate.storedItems, crop.key + ' / ' + plots)
-    assert.equal(data.helper.usedMs, 0)
-    assert.equal(data.helper.stock[crop.key], 0)
+    const before = structuredClone(data.plots.slice(0, plots))
+    host.now = NOW + crop.hours * 3600000
+    // 到点结算一次：每块地都按自己的 roll 收一次，不封仓、不按预算打折。
+    farm.actions.collect(data, {}, host) // 只是逼一次结算
+    farm.actions.buy(data, { item: 'nothing' }, host)
+    let expected = 0
+    for (const plot of before) expected += Math.max(1, crop.yield + plot.roll)
+    assert.ok(data.harvest[crop.key] + data.helper.stock[crop.key] === expected, crop.key + ' / ' + plots + ' 收成 ' + (data.harvest[crop.key] + data.helper.stock[crop.key]) + ' 应为 ' + expected)
+    assert.equal(data.exp, 10000, '帮工不给玩家经验')
   }
 })
 

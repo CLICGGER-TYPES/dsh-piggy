@@ -24,7 +24,9 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者确认后按版本发布（可信发布工作流或本机手动发布）；如果默认源尚未同步，以发布页上的版本为准。
 
-> 本轮预览版：游戏0.37.2-rc.4 / 外壳0.6.8-rc.3。包含指定猪脸图标、五项离线可选扩展、默认piggy数据目录及可选DSH桌宠联动。测试版需手动查看，不主动提示更新。
+> 本轮预览版：游戏0.37.2-rc.5 / 外壳0.6.8-rc.3。包含指定猪脸图标、五项离线可选扩展、默认piggy数据目录及可选DSH桌宠联动。测试版需手动查看，不主动提示更新。
+
+本轮另外修复菜园托管地串行生长与旧扩展下载缺件：菜园4.2.0／经典3.2.0按自然时长并行生长，帮工负责照料、收获及现有同种种子补种。原有进度保留。
 
 <details>
 <summary>RC4 Windows 安装效果（发行前候选实拍）</summary>
@@ -39,7 +41,7 @@
 
 </details>
 
-预览版 **0.37.2-rc.4 / 外壳 0.6.8-rc.3**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.4)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.4)。GitHub和夸克完整版包含游戏，Windows安装器另附五项默认不选的离线扩展；Gitee因100MiB限制仍提供首次联网下载游戏的瘦包。夸克RC4链接在交付核对完成后更新。
+预览版 **0.37.2-rc.5 / 外壳 0.6.8-rc.3**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5)。GitHub和夸克完整版包含游戏，Windows安装器另附五项默认不选的离线扩展；Gitee因100MiB限制仍提供首次联网下载游戏的瘦包。夸克本轮链接在交付核对完成后更新。
 
 [上一版RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，不是本轮RC4。
 

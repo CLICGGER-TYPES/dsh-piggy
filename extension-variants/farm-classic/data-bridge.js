@@ -18,6 +18,7 @@ function classicApp(app) {
       return {
         ...plot,
         stage: plot.ripe ? 3 : plot.empty || plot.withered ? 0 : plot.stage === 'seedling' ? 1 : 2,
+        helperManaged: plot.helper === true,
         cropEmoji: plot.emoji || '',
         label: plot.label || (plot.stubble ? '枯苗' : '荒地'),
         thirsty: !plot.ripe && (plot.pests || []).length > 0,

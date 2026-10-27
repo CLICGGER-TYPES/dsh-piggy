@@ -9,7 +9,7 @@
 import { fileURLToPath } from 'node:url'
 
 import mine, { CHECKPOINTS, FLOORS, HELPER_RATES, HELPER_SPEEDS, ORES, generateMap, hitsNeeded, pickaxeFor } from '../extensions/mine/server.js'
-import { CROPS, HELPER_PLOTS, helperRecipe } from '../extensions/farm/server.js'
+import { CROPS, HELPER_PLOTS } from '../extensions/farm/server.js'
 import { FISH, RODS, SHOP } from '../data.js'
 import { FISH_WEIGHT } from '../packages/pet-core/src/core/fishing.js'
 import { AUTO_FISH_INTERVAL, AUTO_FISH_GEAR, AUTO_FISH_SUCCESS_FACTOR } from '../packages/pet-core/src/data/fishing-auto.js'
@@ -90,7 +90,7 @@ export const FARM_ACTIONS_PER_SEASON = 5
 export const MINE_HELPER_RATES = HELPER_RATES
 /** J2 当前基准：帮工普通矿的稀有度权重；不抽手动的宝藏格。 */
 export const MINE_HELPER_WEIGHT_POWER = 2
-/** J2 当前基准：管地升级同时减少帮工收、补种的等待；肥料不缩短这个间隔。 */
+/** J2 当前基准：矿工 / 自动钓的工作仓都是六小时；菜园自然托管 2026-10-27 起不再套这个预算。 */
 export const AUTOMATION_HOURS = 6
 /** J2 当前基准：每 4.5 分钟一竿，避免夜间湖泊超过挂机线。 */
 export const AUTO_FISH_SECONDS = AUTO_FISH_INTERVAL / 1000
@@ -113,16 +113,20 @@ export function mineHelperPerHour({ pickaxe, floor, cart = 0 }) {
 }
 
 /**
- * 菜园帮工：扣种子；不施肥、不扣猪饱食；实物收成按帮工小批次处理，手动作物不改。
- * 扣每批种子，六小时内安排整数批自动收成。管地数之外没有档位（农具档已下架）。
+ * 菜园自然托管：托管地按原成熟时间、原收成并行生长，成熟自动收进帮工仓、同种种子自动补种。
+ * 时薪按「一直有种子、整株（含多季重长）轮完」算，扣种子价；不给经验、不扣饱食，也不设仓上限、
+ * 不再套旧的 400 封顶 / 六小时预算——挂机收益完全由作物自己的成熟时间决定。
  * @param {{cropKey: string, plots: number}} options
  */
 export function farmHelperPerHour({ cropKey, plots }) {
   const level = HELPER_PLOTS.indexOf(plots)
-  if (level < 0) return null
-  const recipe = helperRecipe(cropKey, level)
-  if (!recipe) return null
-  return { ...recipe, cycleHours: recipe.intervalMs / 3600000, fullHours: AUTOMATION_HOURS, storedItems: recipe.batches * recipe.yield }
+  const crop = CROPS.find(entry => entry.key === cropKey)
+  if (level < 0 || !crop) return null
+  // data.js 的 REGROW_AT：多季作物收回「长大」再长一季，后续每季只花半季时间。
+  const hours = crop.hours + (crop.seasons - 1) * crop.hours / 2
+  const items = crop.yield * crop.seasons
+  return { plots, hours, items, itemsPerHour: plots * items / hours,
+    net: plots * (items * crop.sell - crop.price) / hours, seedsPerHour: plots / hours }
 }
 
 /**
@@ -170,7 +174,7 @@ function printAutomation() {
   for (const crop of CROPS) {
     console.log('帮工', crop.label, [4, 8, 16].map(plots => {
       const rate = farmHelperPerHour({ cropKey: crop.key, plots })
-      return `${plots}地 ${rate.net.toFixed(2)}/时 ${rate.itemsPerHour.toFixed(2)}件/时 六小时仓${rate.fullHours.toFixed(2)}时`
+      return `${plots}地 ${rate.net.toFixed(2)}/时 ${rate.itemsPerHour.toFixed(2)}件/时 一株${rate.hours.toFixed(0)}时`
     }).join(' · '))
   }
   for (const rod of RODS) {

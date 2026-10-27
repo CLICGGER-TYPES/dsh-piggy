@@ -4,8 +4,8 @@ import assert from 'node:assert/strict'
 import { test, beforeEach } from 'node:test'
 
 import farm, {
-  CROPS, HELPER_WINDOW, PLOTS, START_PLOTS,
-  helperRecipe, normalize, plotState, setRandom, weatherAt,
+  CROPS, PLOTS, START_PLOTS,
+  normalize, plotState, setRandom, weatherAt,
 } from '../extensions/farm/server.js'
 
 const H = 3600000
@@ -181,36 +181,36 @@ test('多季作物收完回到「长大」接着长，收满季数才枯萎', ()
   }
 })
 
-test('帮工每小时净产出不超过 400，六小时封仓后不再增产', () => {
-  for (const crop of CROPS) for (let level = 0; level < 3; level += 1) for (let barn = 0; barn < 4; barn += 1) {
-    const recipe = helperRecipe(crop.key, level, barn)
-    assert.ok(recipe.net > 0 && recipe.net <= 400, crop.key + '/' + level + '/' + barn + ' 净时薪超限')
-    assert.ok(recipe.yield <= crop.yield, '单次产量不超过自己种')
-    assert.ok(Math.abs(recipe.intervalMs * recipe.batches - HELPER_WINDOW) < 1e-6, '批次正好铺满六小时窗口')
-  }
-
-  setRandom(() => 0.5)
+test('自然托管：按地块真实成熟时间收成，没有 400 上限、也不再有六小时封仓', () => {
+  setRandom(() => 0.5) // roll 0，没有灾害
   const t = fakeApi(SUNNY)
   const data = emptyFarm()
+  data.exp = 10000 // 9 级：种子等级不挡路
   farm.actions.buy(data, { item: 'radish', count: 50 }, t.api)
-  farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
-  farm.actions.plant(data, { plot: 1, item: 'radish' }, t.api)
+  for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
   farm.actions.hire(data, {}, t.api)
-  const crop = CROPS.find(c => c.key === 'radish')
-  const recipe = helperRecipe('radish', 0, 0)
-
-  t.api.now = SUNNY + HELPER_WINDOW + 1
+  t.api.now = SUNNY + 13 * H
   farm.actions.buy(data, { item: 'nothing' }, t.api)
-  assert.equal(data.helper.usedMs, HELPER_WINDOW, '六小时封顶')
-  assert.equal(data.helper.stock.radish, recipe.batches * recipe.yield, '只收满一个窗口的批次')
-  const windowValue = (recipe.yield * crop.sell - crop.price) * recipe.batches
-  assert.ok(windowValue / (HELPER_WINDOW / H) <= 400 + 1e-9, '六小时净产出不超过 2400')
+  assert.deepEqual(Object.values(data.helper.stock).filter(n => n > 0), [], '十三小时还没熟：一块也不收')
 
-  const before = structuredClone(data.helper.stock)
+  const view = farm.view(data, t.api)
+  assert.equal(view.helper.full, false, '自然托管不封仓')
+  assert.equal(view.helper.capacityHours, null, '没有仓容量这个概念')
+  assert.equal(view.helper.continuous, true, '面板按「一直照料」显示')
+  assert.equal(view.helper.usedHours, 0, '不再算工作时长')
+  assert.ok(Math.abs(view.plots[0].progress - 13 / 14) < 1e-9, '13/14 季：真实进度，不是旧批次的假进度')
+  assert.equal(view.plots[0].remainingMs, H, '还剩一小时')
+  assert.deepEqual(view.plots[0].pests, [], '托管地不长草不生虫')
+
+  t.api.now = SUNNY + 14 * H
+  assert.equal(farm.view(data, t.api).helper.stored, 4 * 24, '四块到点各收基础产量')
   t.api.now = SUNNY + 100 * H
+  const before = data.exp
   farm.actions.buy(data, { item: 'nothing' }, t.api)
-  assert.deepEqual(data.helper.stock, before, '封仓后不再增产')
-  assert.equal(data.helper.usedMs, HELPER_WINDOW)
+  assert.equal(data.harvests.radish, 28, '100 小时里四块地每块走满七轮')
+  assert.ok(data.helper.stock.radish >= 28 * 21 && data.helper.stock.radish <= 28 * 26, '每块都按自己的 roll 收，没有小时产出上限：' + data.helper.stock.radish)
+  assert.equal(data.seeds.radish, 50 - 4 - 28, '每收一块补一颗：整株收完才扣种子')
+  assert.equal(data.exp, before, '帮工不给玩家经验')
 })
 
 test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留茬）', () => {
