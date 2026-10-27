@@ -93,6 +93,12 @@ def watch(page, label):
 
 def shot(page, name):
     page.screenshot(path=str(out / (name + '.png')))
+    # Capture actual X11 pixels of the content area, excluding the browser's
+    # token-bearing address bar. This also exposes native clipping/occlusion.
+    box = page.evaluate('''() => ({x:screenX+(outerWidth-innerWidth)/2,
+        y:screenY+outerHeight-innerHeight,w:innerWidth,h:innerHeight})''')
+    rect = ','.join(str(round(box[k])) for k in ['x', 'y', 'w', 'h'])
+    run(['scrot', '-o', '-a', rect, str(out / (name + '-native.png'))])
 
 
 def coord(page, selector):
@@ -224,7 +230,7 @@ try:
         run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(directory), role], cwd=repo)
     run(['node', str(cli), 'plugin', '--profile', 'web', 'add', str(tgz)], env=env, timeout=240)
     installed = home / 'profiles/web/node_modules/dsh-piggy'
-    assert installed.exists() and not installed.is_symlink(), 'DSH must load an installed tgz, not a worktree symlink'
+    assert installed.exists() and installed.resolve().is_relative_to(home.resolve()), 'DSH must load the private installed tgz, not a worktree link'
     with tarfile.open(tgz) as archive:
         wanted = archive.extractfile('package/adapters/dsh/index.js').read()
     assert (installed / 'adapters/dsh/index.js').read_bytes() == wanted
@@ -239,6 +245,20 @@ try:
         click(panel, '[data-external-allow]')
         wait(lambda: (profile / 'work-endpoint/pair.json').exists(), 'native permission enables pair service')
         shot(panel, 'desktop-external-enabled')
+        marker = json.loads((home / 'dsh-piggy/desktop-app.json').read_text())
+        mounted = Path(os.readlink('/proc/' + str(marker['pid']) + '/exe')).parent / 'resources/game'
+        assert mounted.is_dir(), 'Cannot inspect directly mounted AppImage game'
+        with tarfile.open(tgz) as archive:
+            members = {m.name: m for m in archive.getmembers() if m.isfile()}
+            compared = 0
+            for file in mounted.rglob('*'):
+                if not file.is_file():
+                    continue
+                name = 'package/' + file.relative_to(mounted).as_posix()
+                assert name in members, name + ' missing from npm package'
+                assert file.read_bytes() == archive.extractfile(members[name]).read(), name + ' differs between AppImage and npm'
+                compared += 1
+        record('mounted AppImage game matches installed npm candidate', files=compared)
         record('direct AppImage split and native external permission', extracted=False)
         stop_game()
         pet = start_game('stage')

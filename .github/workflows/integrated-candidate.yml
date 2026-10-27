@@ -25,6 +25,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y libfuse2t64 xvfb openbox xdotool scrot dbus-x11
+          npm install --global pnpm@11.28.5
           npm ci --prefix apps/desktop --no-audit --no-fund
           npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
           python3 -m venv "$RUNNER_TEMP/piggy-qa-python"
