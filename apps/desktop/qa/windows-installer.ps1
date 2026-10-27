@@ -38,13 +38,13 @@ function Mouse-Point([int]$X,[int]$Y,[bool]$Right=$false) {
 }
 function Click-Element($Element) {
  # Wait for native layout/slide animation to settle before sampling its input point.
- $previous=''; $stable=0
+ $position=@{previous='';stable=0}
  $r=Wait-Until {
   $box=$Element.Current.BoundingRectangle
-  if ($box.ToString() -eq $previous) { $stable++ } else { $stable=0; $previous=$box.ToString() }
-  if ($stable -ge 3) { return $box }
+  if ($box.ToString() -eq $position.previous) { $position.stable++ } else { $position.stable=0; $position.previous=$box.ToString() }
+  if ($position.stable -ge 3) { return $box }
   return $null
- }.GetNewClosure() 'stable native target bounds' 10
+ } 'stable native target bounds' 10
  Write-Host ('Native click: '+$Element.Current.Name+' @ '+$r.ToString())
  if ($r.Width -le 0 -or $r.Height -le 0 -or $Element.Current.IsOffscreen) { throw 'Native target is not visible' }
  Mouse-Point ([int]($r.X+$r.Width/2)) ([int]($r.Y+$r.Height/2))
