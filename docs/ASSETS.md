@@ -2,6 +2,10 @@
 
 `assets/` 每个文件按本页登记；`test/assets-registry.test.js` 检查漏登记和空登记。当前只有一套无描边平涂透明 PNG，2026-10-13 由旧版 1:1 重画。
 
+## 桌面应用标识
+
+2026-10-27 用户指定后续安装器、桌面/开始菜单快捷方式与应用图标使用其提供的猪脸图片。原图和哈希见[图标出处](../apps/desktop/artwork/PROVENANCE.md)；`apps/desktop/build/icon.png` 为512px应用图标，`icon.ico` 为Windows六档图标，`tray.png` 为64px托盘图标。只等比缩放和透明补方，不改图中五官或颜色；此项为桌面打包资源，不属于下列游戏立绘。
+
 ## 分类与使用
 
 | 类别 | 目录与命名 | 数量 | 使用 |
