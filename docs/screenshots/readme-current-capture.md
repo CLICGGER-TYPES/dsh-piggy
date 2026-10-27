@@ -59,3 +59,4 @@ README现采用本节公开包实拍，前一节保留候选验收记录。发�
 - `readme-rc5-windows-desktop.png`：`cf9a7cbd6d09e2b177de73e399e9f0db1fd0b6cd15e5d8e0a4c19d719447d09e`
 - `readme-rc5-windows-start.png`：`bc4d1ae7d8868ddac20ad4660606b5fca4e8c702e8368a0a8954dedb4e00a1d2`
 - `readme-rc5-farm-natural.png`：`81b8448ae9ce13934e2bed8032b8d20f2f6a884299568e36c8c09ef96d5964b4`
+- `readme-rc5-farm-dsh.png`：`343cdfb3544b5bf526b9445b3ed4b58e862d0527a825bdb76a191bc56b790a5c`

@@ -12,7 +12,8 @@
 
 | 部分 | 稳定版 |
 |---|---|
-| 游戏与 DSH 插件 | 0.37.1 |
+| 游戏与 DSH 插件（GitHub 稳定版） | 0.37.1 |
+| npm `latest` | 0.37.0 |
 | 桌面外壳 | 0.6.7 |
 | 菜园扩展 | 4.0.10；经典兼容版 3.1.0，均单独发布 |
 | 矿洞扩展 | 3.0.1，单独发布 |
@@ -22,7 +23,7 @@
 - [GitHub 稳定版 0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
 - [夸克网盘：Windows 国内渠道](https://pan.quark.cn/s/2c571e9aaecc)
 
-夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者确认后按版本发布（可信发布工作流或本机手动发布）；如果默认源尚未同步，以发布页上的版本为准。
+夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm由维护者确认后通过GitHub Actions可信发布，主包与别名包同步；RC只更新`rc`标签，保持稳定入口。npm `latest`目前仍是0.37.0，与GitHub稳定游戏0.37.1分别标示。
 
 > 本轮预览版：游戏0.37.2-rc.5 / 外壳0.6.8-rc.3。包含指定猪脸图标、五项离线可选扩展、默认piggy数据目录及可选DSH桌宠联动。测试版需手动查看，不主动提示更新。
 
@@ -59,7 +60,7 @@ Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧�
 dsh plugin --profile web add dsh-piggy
 ```
 
-不带版本号装的是 npm 上的 `latest`，也就是当前正式版；要装某一版预览版，用完整版本号（GitHub/npm同步可能存在延迟，以实际npm版本可用为准）：
+不带版本号会安装npm `latest`（目前0.37.0）；本轮预览版已同步npm，用下面的精确版本安装：
 
 ```sh
 dsh plugin --profile web add dsh-piggy@0.37.2-rc.5
