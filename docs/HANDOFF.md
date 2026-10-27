@@ -85,7 +85,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 | 形态 | 怎么跑 | 存档 |
 |---|---|---|
 | DSH 插件 | npm 包 `dsh-piggy`（社区目录别名 `dsh-plugin-piggy`），DSH 的 web profile 加载 | `$DSH_HOME/dsh-piggy/state.json` |
-| 桌面版 | Electron 外壳（`apps/desktop/`）+ 游戏包（可热更新） | Electron userData 下 `dsh-piggy/state.json`；Linux `~/.config/dsh-piggy-desktop/`，Windows `%APPDATA%\dsh-piggy-desktop\`，macOS `~/Library/Application Support/dsh-piggy-desktop/` |
+| 桌面版 | Electron 外壳（`apps/desktop/`）+ 游戏包（可热更新） | 开发分支：Linux `~/.local/share/piggy/state.json`，Windows `%APPDATA%\piggy\state.json`，macOS `~/Library/Application Support/piggy/state.json`；当前公开外壳仍为原userData下 `dsh-piggy/state.json`，升级后保留旧目录并迁移 |
 
 两边各养各的猪，桌面版托盘菜单可以导入 DSH 的存档。
 

@@ -109,6 +109,7 @@ try {
   await startEndpoint()
   port.postMessage({ kind: 'ready' })
 } catch (error) {
-  host?.dispose()
-  port.postMessage({ kind: 'startup-error', error: error.message })
+  let message = error.message
+  try { await host?.dispose() } catch (cleanupError) { message += `；启动清理失败：${cleanupError.message}` }
+  port.postMessage({ kind: 'startup-error', error: message })
 }

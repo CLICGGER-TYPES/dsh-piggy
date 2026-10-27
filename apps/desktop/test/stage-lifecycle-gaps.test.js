@@ -27,6 +27,8 @@ function readyCallbackBody() {
 }
 
 async function runReady(context) {
+  context.dataPaths ??= {}
+  context.migrateDesktopData ??= () => {}
   const fn = runInContext(`(async () => {${readyCallbackBody()}})()`, createContext(context))
   return fn
 }

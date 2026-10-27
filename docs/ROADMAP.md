@@ -1,5 +1,11 @@
 # 路线图与待办
 
+## 2026-10-27 桌面默认数据目录整理（代码修复，未发布）
+
+- 用户要求默认存档目录统一为piggy，并明确要求修改代码、Git推送。普通窗口与透明舞台已改用同一套路径规则：Windows `%APPDATA%\piggy\`、Linux `~/.local/share/piggy/`（支持XDG）、macOS `~/Library/Application Support/piggy/`；存档与扩展直接放根目录。
+- 升级迁移复制旧存档、扩展、备份、设置和已下载游戏版本，旧目录保留；运行中旧猪拒绝迁移，已有新存档不覆盖，目标冲突保留现场，中断可恢复。独立profile不跨目录找猪，DSH插件不改位置，存档字段和版本不变。
+- 路径/迁移/启动/舞台专项47项通过，新增模块类型检查通过；Windows/macOS仅路径与文件协议回归，未新增原生GUI验收。宿主可用内存不足8GiB，未启动VM或物理机GUI、未重打安装包。现有本地AppImage尚不含本次修复。
+
 ## 2026-10-26 0.37.2-rc.3 已发布
 
 - 游戏/DSH插件 `0.37.2-rc.3`，配套外壳 `0.6.8-rc.2`，存档 v15。不可变标签提交 `b4e47a8d8cd8bc9207aa4e4e46e7e147e82ca23b`，保留PR15全部作者提交；[GitHub](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)均已公开。npm双包rc均为本版，latest仍0.37.0；GitHub稳定版仍0.37.1。

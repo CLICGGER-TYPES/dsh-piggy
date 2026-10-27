@@ -10,7 +10,7 @@
  * - 几何一律以「请求值」为准，不把 getBounds() 读回来再设回去：Windows 分数缩放下读回值有 1px 误差，
  *   读了再设就会一帧帧累加（2026-10-07 面板越跑越远就是这么来的，见 petAsked）。
  * - 游戏运行时在后台单写者中执行，界面经 piggy:// 访问。
- * - 存档在 userData/dsh-piggy/state.json，跟 DSH 里那只各养各的；托盘里可以导入。
+ * - 存档在 userData/state.json，默认数据目录名为 piggy，跟 DSH 里那只各养各的；托盘里可以导入。
  */
 import { panelViewportSize, panelContentRect } from './lib/panel-geometry.js'
 import { createResizeShape } from './lib/resize-shape.js'
@@ -25,6 +25,8 @@ import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, prot
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
+import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
+import { migrateDesktopData } from './lib/data-migration.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
 import { recoverBounds, recoveryPayload } from './lib/pig-recovery.js'
 import { createProxy } from './lib/proxy.js'
@@ -119,7 +121,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 // Testing: keep a throwaway save and settings away from the real ones.
-if (process.env.PIGGY_USERDATA) app.setPath('userData', resolve(process.env.PIGGY_USERDATA))
+const dataPaths = configureDesktopData(app)
 const gotLock = !needsX11 && app.requestSingleInstanceLock()
 // 第二个进程拿不到单实例锁就马上退出：先同步留一行再退。第一个进程可能还没 ready、
 // 甚至卡在启动里，它的 second-instance 行不一定写得出来；没有这一行，日志里就看不出
@@ -133,13 +135,9 @@ if (!needsX11 && !gotLock) {
 }
 
 /** The game shipped inside the app; downloaded versions live under userData (lib/versions.js). */
-function bundledGameDir() {
-  // PIGGY_BUNDLED_GAME：开发时模拟「安装包不带游戏」（指一个不存在的目录）。
-  if (process.env.PIGGY_BUNDLED_GAME) return resolve(process.env.PIGGY_BUNDLED_GAME)
-  return app.isPackaged ? join(process.resourcesPath, 'game') : join(HERE, 'game')
-}
+const bundledGameDir = () => bundledDesktopGame(app, HERE)
 
-const statePath = () => join(app.getPath('userData'), 'dsh-piggy', 'state.json')
+const statePath = () => dataPaths.statePath
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.ttf': 'font/ttf' }
 
@@ -1688,6 +1686,7 @@ for (const action of ['get', 'set', 'clear', 'test']) {
 
 app.whenReady().then(async () => {
   if (needsX11 || !gotLock || quitting) return
+  migrateDesktopData(dataPaths)
   proxySettings = createProxy({ path: join(app.getPath('userData'), 'proxy.json'),
     sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
   await proxySettings.init()

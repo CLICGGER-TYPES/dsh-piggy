@@ -116,6 +116,8 @@ macOS 包暂未签名，第一次打开请在访达中右键应用并选择“�
 
 DSH 插件和桌面版目前各养一只猪，存档独立；桌面版可从 DSH 导入。稳定版「设置 → 存档」提供完整 ZIP 导出、导入预览、失败恢复与替换前自动备份，DSH 和桌面可手动迁移；只做整档替换，不合并两只猪。存档版本为 v14，旧档继续使用。备份范围、上限与验收要求见[存档传输说明](docs/design/save-transfer.md)。
 
+桌面版开发分支已统一默认数据目录（随下个外壳版本生效，现有安装包尚未改变）：Windows 为 `%APPDATA%\piggy\`，Linux 为 `~/.local/share/piggy/`（支持 `XDG_DATA_HOME`），macOS 为 `~/Library/Application Support/piggy/`。目录内直接放 `state.json`、`extensions/`，不再重复嵌套。升级首次启动迁移原桌面存档与扩展并保留旧目录；已有新存档不会被覆盖。DSH 插件的存档位置保持原有规则。
+
 ### 问题反馈
 
 遇到问题时，可到「设置 → 日志 → 导出日志」保存运行记录；桌面版会弹出“另存为”。日志包含版本、动作、扩展下载与报错，方便反馈时定位。请附上游戏/外壳/扩展版本、系统与缩放、操作步骤和日志，到 [GitHub Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 或 [Gitee Issues](https://gitee.com/clicgger/dsh-piggy/issues) 反馈。

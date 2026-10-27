@@ -1,41 +1,13 @@
 // @ts-check
 /** 可选的本机工作事件接口：不开放游戏管理路由，也不依赖任何 agent 框架。 */
-import { execFile } from 'node:child_process'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
-import { chmod, lstat, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { readWorkJson, removeWorkFile, writeWorkJson } from './work-files.js'
 import { WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, workError } from './work-events.js'
 import { acquireGameLock } from './owner-lock.js'
+import { secureDirectory } from './work-directory.js'
 
-async function secureDirectory(directory) {
-  await mkdir(directory, { recursive: true, mode: 0o700 })
-  const stat = await lstat(directory)
-  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('work endpoint directory must be a real directory')
-  if (process.platform !== 'win32') {
-    if (stat.uid !== process.getuid()) throw new Error('work endpoint directory owner mismatch')
-    await chmod(directory, 0o700)
-    return
-  }
-  const script = [
-    '$ErrorActionPreference = "Stop"',
-    '$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User',
-    '$dir = [System.IO.DirectoryInfo]::new($env:PIGGY_WORK_PATH)',
-    '$sections = [System.Security.AccessControl.AccessControlSections]',
-    '$sidType = [System.Security.Principal.SecurityIdentifier]',
-    'if (-not $dir.GetAccessControl($sections::Owner).GetOwner($sidType).Equals($sid)) { throw "owner mismatch" }',
-    '$acl = $dir.GetAccessControl($sections::Access)',
-    '$acl.SetAccessRuleProtection($true, $false)',
-    'foreach ($rule in $acl.GetAccessRules($true, $false, $sidType)) { $acl.RemoveAccessRuleSpecific($rule) }',
-    '$acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($sid,"FullControl","ContainerInherit,ObjectInherit","None","Allow"))',
-    '$dir.SetAccessControl($acl)',
-    // 已有的显式子文件授权可能不继承目录的新权限，不能发布到不私有的文件上。
-    'foreach ($file in $dir.GetFiles()) { foreach ($rule in $file.GetAccessControl($sections::Access).GetAccessRules($true,$true,$sidType)) { if (-not $rule.IdentityReference.Equals($sid) -or [int]$rule.AccessControlType -ne 0) { throw "file is not private" } } }',
-  ].join('; ')
-  await new Promise((resolve, reject) => execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script],
-    { env: { ...process.env, PIGGY_WORK_PATH: directory }, windowsHide: true }, error => error ? reject(error) : resolve(undefined)))
-}
 
 function send(response, status, body) {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' })

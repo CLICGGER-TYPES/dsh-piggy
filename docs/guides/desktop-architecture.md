@@ -171,3 +171,11 @@ Linux 的 setShape 也裁剪绘制。窗口 resize 时先临时保留完整区�
 拖动期间只有外壳 `dragTick` 拥有窗口位置与绘制形状。页面 `tick` 的统一入口必须拦住拖动和飞行，不能只在定时器/调度器里拦；直接的菜单、尺寸或动作几何回调也走同一约束。外壳用既有 `dragSession` 拒绝拖动期间普通 `place` 写入，不另设第二套拖动状态。`place({})` 始终是只读几何查询：保留现代能力握手，但不清空 slide、不退出整窗绘制形状、不触发落地提交。松手仍按原 IPC 顺序读取最后几何并交接。
 
 同尺寸也有新旧画面交接：`commitSlide` 把 translate 交回布局后，第一份精确 shape 不能立刻裁剪仍在显示的旧缓冲。Linux 在退出 `dragShapeActive`/`flightShapeActive` 的第一次带 shape 提交中，复用 `resizeShape.begin(bounds, true)` 等新帧；只传 shape、未传 bounds 的提交同样处理。新的拖动/飞行取消旧订阅，精确形状只在目标画面到达后恢复。定向 VM 记录的订阅耗时 3–18ms、随后均结束，减少动态和零 slide 也已验证；不增加常驻帧捕获，不修改动作节奏。
+
+## 默认数据目录与旧存档迁移（未发布）
+
+`lib/data-paths.js` 统一选择桌面数据目录：Windows `%APPDATA%\piggy\`，Linux `$XDG_DATA_HOME/piggy/`（未设置或相对路径时为 `~/.local/share/piggy/`），macOS `~/Library/Application Support/piggy/`。根目录直接含 `state.json`、`extensions/`，版本和设置也位于同一数据目录。显式 `PIGGY_USERDATA` 优先于 `--user-data-dir`，二者仍可隔离测试，不能自动导入其他profile或DSH的猪。
+
+两种入口都在取得应用单实例锁后、启动Worker之前调用 `lib/data-migration.js`。首次迁移会取得旧存档运行时锁，暂存并校验存档、扩展与备份，迁移窗口/代理/全屏等设置和已下载游戏版本；先发布其余文件，最后发布 `state.json`。成功记录 `data-migration.json`，旧目录原样保留。目标已有存档就直接使用；发现冲突、活跃旧运行时或损坏迁移记录会停止并保留证据。中断后按记录继续，旧源数据发生变化则拒绝导入旧副本。没有存档的旧profile也只迁移一次。
+
+`lib/save-owner-lock.js` 是 `runtime/owner-lock.js` 的构建副本，`npm run build` 同步生成，不能单独修改协议；专项测试核对二者逐字节一致。此目录迁移不更改游戏存档字段或 `STATE_VERSION`，也不改变DSH插件的默认存档。

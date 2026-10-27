@@ -8,7 +8,7 @@
  *
  * 用法：npm run build
  */
-import { writeFileSync } from 'node:fs'
+import { copyFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -16,6 +16,8 @@ import { buildClient } from './build-client.mjs'
 import { buildFarmServer } from './build-farm-server.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+// Shell migration and game runtime must use the identical save-owner lock protocol.
+copyFileSync(join(packageRoot, 'runtime/owner-lock.js'), join(packageRoot, 'apps/desktop/lib/save-owner-lock.js'))
 const outputs = [
   ['client.js', await buildClient()],
   ['extensions/farm/server.js', await buildFarmServer()],
