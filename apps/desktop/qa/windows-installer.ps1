@@ -16,7 +16,8 @@ public class PiggyNative {
 $Out = Join-Path $Repository 'installer-qa-results'
 New-Item $Out -ItemType Directory -Force | Out-Null
 $Qa = Join-Path $env:RUNNER_TEMP ('piggy-installer-' + [Guid]::NewGuid().ToString('N'))
-$AppDir = Join-Path $Qa 'Program files'
+# electron-builder appends APP_FILENAME when the chosen directory lacks it.
+$AppDir = Join-Path $Qa 'Program files/dsh-piggy'
 $DataProfile = Join-Path $Qa 'personal profile'
 $DefaultProfile = Join-Path $env:APPDATA 'piggy'
 $LegacyProfile = Join-Path $env:APPDATA 'dsh-piggy-desktop'
