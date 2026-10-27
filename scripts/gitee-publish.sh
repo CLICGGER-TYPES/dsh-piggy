@@ -94,7 +94,9 @@ gitee_push() {
   git -c credential.helper= -c 'credential.helper=!f() { echo username=clicgger; echo "password=$GITEE_TOKEN"; }; f' \
     push https://gitee.com/clicgger/dsh-piggy.git "$@"
 }
-gitee_push main
+# Worktree的本地main可能长期停在旧提交；发行代码必须与不可变标签一致。
+source_commit=$(git rev-parse "${TAG}^{commit}")
+gitee_push "$source_commit:refs/heads/main"
 gitee_push "refs/tags/$TAG"
 
 # 3. 发行版和附件（先传安装包，最后传更新清单：清单一出现，老用户就会按它来下载）

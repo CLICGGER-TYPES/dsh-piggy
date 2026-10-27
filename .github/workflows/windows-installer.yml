@@ -5,6 +5,10 @@ on:
     paths-ignore: [apps/desktop/qa/linux-dsh.py, apps/desktop/qa/seed-integration.mjs, .github/workflows/integrated-candidate.yml]
   workflow_dispatch:
     inputs:
+      published_tag:
+        description: Exact public release tag to install (empty builds a candidate)
+        type: string
+        default: ""
       verify_icons:
         description: 'Validate approved face icons through Windows Shell and native UI'
         type: boolean
@@ -50,17 +54,36 @@ jobs:
           node scripts/test.mjs --test-concurrency=1 apps/desktop/test/optional-extension-pack.test.js apps/desktop/test/optional-extension-runtime.test.js apps/desktop/test/runtime-host.test.js apps/desktop/test/stage-lifecycle-gaps.test.js
           npm run typecheck
       - name: Build full installer without publishing
+        if: inputs.published_tag == ''
         working-directory: apps/desktop
         run: npx --no-install electron-builder --win nsis --x64 --config electron-builder.optional.cjs --publish never
+      - name: Download official full installer and portable for acceptance
+        if: inputs.published_tag != ''
+        env:
+          PUBLIC_TAG: ${{ inputs.published_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $game = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $shell = (Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json).version
+          if ($env:PUBLIC_TAG -ne "v$game" -or $game -notmatch '^\d+\.\d+\.\d+-rc\.\d+$') { throw 'Public tag must match checked-out RC' }
+          New-Item apps/desktop/dist -ItemType Directory -Force | Out-Null
+          gh release download $env:PUBLIC_TAG --pattern "dsh-piggy-setup-$shell.exe" --pattern "dsh-piggy-portable-$shell.exe" --pattern latest.yml --dir apps/desktop/dist
+          if ($LASTEXITCODE) { throw 'Official release download failed' }
       - name: Native installer and installed-game acceptance
         shell: powershell
         run: |
           $extra = @{}
           if ('${{ inputs.verify_icons }}' -eq 'true') { $extra.CheckIcons = $true }
+          if ('${{ inputs.published_tag }}' -ne '') {
+            $portable = @(Get-ChildItem apps/desktop/dist/dsh-piggy-portable-*.exe)
+            if ($portable.Count -ne 1) { throw 'Expected exactly one public portable executable' }
+            $extra.Portable = $portable[0].FullName
+          }
           $installer = @(Get-ChildItem apps/desktop/dist/dsh-piggy-setup-*.exe)
           if ($installer.Count -ne 1) { throw "Expected exactly one full NSIS candidate" }
           ./apps/desktop/qa/windows-installer.ps1 -Installer $installer[0].FullName -Repository "${{ github.workspace }}" @extra
       - name: Build portable candidate without publishing
+        if: inputs.published_tag == ''
         working-directory: apps/desktop
         run: npx --no-install electron-builder --win portable --x64 --publish never
       - name: Hash installer

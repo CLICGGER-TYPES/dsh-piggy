@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$Installer,[Parameter(Mandatory=$true)][string]$Repository,[switch]$CheckIcons)
+﻿param([Parameter(Mandatory=$true)][string]$Installer,[Parameter(Mandatory=$true)][string]$Repository,[switch]$CheckIcons,[string]$Portable="")
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Windows.Forms,System.Drawing
 Add-Type @'
@@ -206,13 +206,22 @@ function Close-Game($Process,$Root) {
  if ($confirm) { Click-Element $confirm }
  if (-not $Process.WaitForExit(20000)) { throw 'Game did not quit through its UI' }
 }
-function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh=$false,[bool]$UseDefault=$false,[string]$WindowMode="split",[bool]$CheckExternal=$false) {
+function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh=$false,[bool]$UseDefault=$false,[string]$WindowMode="split",[bool]$CheckExternal=$false,[string]$Executable="") {
  if ($UseDefault) { Remove-Item Env:PIGGY_USERDATA -ErrorAction SilentlyContinue } else { $env:PIGGY_USERDATA=$UserProfile }
  if (-not $UseDefault -or -not (Test-Path (Join-Path $LegacyProfile 'dsh-piggy'))) {
   if (-not (Test-Path $UserProfile)) { New-Item $UserProfile -ItemType Directory | Out-Null }
   '{"mode":"http","address":"127.0.0.1:9"}' | Set-Content (Join-Path $UserProfile 'proxy.json')
  }
- $script:Game=Start-Process (Join-Path $AppDir 'dsh-piggy.exe') -ArgumentList "--force-renderer-accessibility --window-mode=$WindowMode" -PassThru
+ $portableLauncher=$null
+ if ($Executable) {
+  $portableLauncher=Start-Process $Executable -ArgumentList "--force-renderer-accessibility --window-mode=$WindowMode" -PassThru
+  $child=Wait-Until {
+   Get-CimInstance Win32_Process -Filter "ParentProcessId = $($portableLauncher.Id)" | Where-Object { $_.Name -eq 'dsh-piggy.exe' -and $_.CommandLine -notmatch '--type=' } | Select-Object -First 1
+  } 'public portable launches its standalone game' 60
+  $script:Game=Get-Process -Id $child.ProcessId
+ } else {
+  $script:Game=Start-Process (Join-Path $AppDir 'dsh-piggy.exe') -ArgumentList "--force-renderer-accessibility --window-mode=$WindowMode" -PassThru
+ }
  $root=Wait-Until { Find-Window $script:Game.Id } 'installed game window' 60
  if ($Fresh) {
   Start-Sleep -Seconds 3
@@ -262,6 +271,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
   Wait-Until { Quit-Tile $script:Game.Id } 'home after external permission check' 15 | Out-Null
  }
  Close-Game $script:Game $root
+ if ($portableLauncher -and -not $portableLauncher.WaitForExit(30000)) { throw 'Portable launcher did not finish cleanup' }
  $script:Game=$null
  $state=Get-Content (Join-Path $UserProfile 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
  if (-not $Fresh -and ($state.coins -ne 1314 -or $state.inventory.apple -ne 7 -or $state.name -ne 'Installer QA')) { throw 'Existing game progress changed' }
@@ -275,7 +285,7 @@ try {
  if ($LASTEXITCODE -ne 0) { throw 'Fixture seed failed' }
  $env:PIGGY_USERDATA=$DataProfile
  Install-Pick 'none' @()
- if($CheckIcons){Check-InstalledIcons}
+ if($CheckIcons){Check-InstalledIcons; if($Portable){Check-ShellIcon 'portable' $Portable}}
  Run-Game 'none' $DataProfile 1
  Install-Pick 'single' @('mine') $false $true
  Run-Game 'single' $DataProfile 2
@@ -308,6 +318,7 @@ try {
  if ($before -ne (Inventory $DataProfile)) { throw 'Uninstall changed personal save or extensions' }
  if ($freshBefore -ne (Inventory $DefaultProfile)) { throw 'Uninstall changed default-profile save or extensions' }
  $Results.Add(@{case='uninstall';saveUntouched=$true;exitCode=$uninstall.ExitCode})
+ if($Portable){Run-Game 'public-portable' $DataProfile 5 $false $false 'split' $false $Portable}
  @{ok=$true;cases=$Results;vm='GitHub windows-latest';input='native Win32 mouse';version='QA only, not published'} | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $Out 'report.json') -Encoding UTF8
 } catch {
  try { Screenshot 'failure-desktop' } catch {}

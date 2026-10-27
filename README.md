@@ -24,10 +24,10 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm 由维护者确认后按版本发布（可信发布工作流或本机手动发布）；如果默认源尚未同步，以发布页上的版本为准。
 
-> 下一版准备中：游戏0.37.2-rc.4 / 外壳0.6.8-rc.3，包含新猪脸图标、五项离线可选扩展、默认piggy数据目录与可选DSH桌宠联动。尚未发布，下面的下载链接与npm命令仍指向已公开版本。
+> 本轮预览版：游戏0.37.2-rc.4 / 外壳0.6.8-rc.3。包含指定猪脸图标、五项离线可选扩展、默认piggy数据目录及可选DSH桌宠联动。测试版需手动查看，不主动提示更新。
 
 <details>
-<summary>下一版 Windows 安装效果（候选，未发布）</summary>
+<summary>RC4 Windows 安装效果（发行前候选实拍）</summary>
 
 完整安装器随包提供五项离线扩展，默认不选，保留已有版本与进度。图标采用用户指定猪脸，安装器、应用、卸载程序、桌面/开始菜单快捷方式及托盘已在 Windows 云端虚拟机核对。
 
@@ -39,7 +39,9 @@
 
 </details>
 
-预览版 **0.37.2-rc.3 / 外壳 0.6.8-rc.2**：[夸克国内 Windows 完整版](https://pan.quark.cn/s/62eefaa3c173)、[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.3)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.3)。夸克提供安装版、便携版、可选玩法扩展和下载说明，Windows 包已包含游戏。包含透明舞台整合、外观边界修复和更新页版本选择。测试版需手动查看，不主动提示更新；验证范围见发布说明。
+预览版 **0.37.2-rc.4 / 外壳 0.6.8-rc.3**：[GitHub 下载](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.4)、[Gitee 国内 Windows 下载](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.4)。GitHub和夸克完整版包含游戏，Windows安装器另附五项默认不选的离线扩展；Gitee因100MiB限制仍提供首次联网下载游戏的瘦包。夸克RC4链接在交付核对完成后更新。
+
+[上一版RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，不是本轮RC4。
 
 Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。本轮 RC2 的 Windows 安装器、更新清单和游戏包已归档到下方夸克旧版归档。
 
@@ -51,10 +53,10 @@ Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧�
 dsh plugin --profile web add dsh-piggy
 ```
 
-不带版本号装的是 npm 上的 `latest`，也就是当前正式版；要装某一版预览版，用完整版本号（以下版本已在 npm 发布）：
+不带版本号装的是 npm 上的 `latest`，也就是当前正式版；要装某一版预览版，用完整版本号（GitHub/npm同步可能存在延迟，以实际npm版本可用为准）：
 
 ```sh
-dsh plugin --profile web add dsh-piggy@0.37.2-rc.3
+dsh plugin --profile web add dsh-piggy@0.37.2-rc.4
 ```
 
 发布页上的标签和 npm 上的包不是同一份清单，npm 由维护者按版本发布，两者可能相差一段时间。DSH 插件也不会自动跟 npm `latest` 升级，没有后台更新：装哪一版、什么时候换，都由你在自己的 DSH 里执行命令决定（游戏里的更新页只给命令和发布页入口，不替你执行）。
