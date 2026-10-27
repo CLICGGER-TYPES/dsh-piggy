@@ -79,7 +79,7 @@ export const handler = {
 const hooks = {
   repaint: () => repaint(),
   close: () => closeWizard(),
-  reload: () => loadStatus(session),
+  reload: () => loadStatus(session, true),
   bubble: (text, ms) => session.ui?.showBubble?.(text, ms),
   render: () => session.ui?.renderContent?.(),
 }
@@ -218,7 +218,7 @@ async function confirmConnect() {
     const result = await connect('connect')
     if (!result.ok) { session.error = 'connect-failed'; return }
     if (result.page.status !== null) session.status = result.page.status
-    else await loadStatus(session)
+    await loadStatus(session, true)
     session.ui?.showBubble?.('已连接桌面猪', 3000)
     closeWizard()
   } finally {
@@ -300,7 +300,7 @@ async function submit() {
     session.result = normalized
     if (result.ok && normalized.ok) {
       session.step = 'success'
-      await loadStatus(session)
+      await loadStatus(session, true)
     } else {
       session.error = result.error?.code ?? normalized.status ?? normalized.error ?? 'unknown'
       session.step = 'failure'
@@ -353,7 +353,7 @@ async function cancelPreview(byExpiry) {
       session.error = result.error?.code ?? 'network'
       return
     }
-    await loadStatus(session)
+    await loadStatus(session, true)
     closeWizard()
     session.ui?.showBubble?.(byExpiry ? '预览过期了，内嵌猪已恢复' : '已取消合并预览', 3200)
   } finally {

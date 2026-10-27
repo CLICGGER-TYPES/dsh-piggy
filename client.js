@@ -10537,7 +10537,8 @@
   }
 
   // src/client/external-status.js
-  async function loadStatus(session3) {
+  async function loadStatus(session3, refreshView = false) {
+    if (refreshView) await session3.ui?.refresh?.();
     if (session3.loading) return null;
     session3.loading = true;
     try {
@@ -10651,7 +10652,7 @@
   var hooks = {
     repaint: () => repaint(),
     close: () => closeWizard(),
-    reload: () => loadStatus(session),
+    reload: () => loadStatus(session, true),
     bubble: (text, ms) => session.ui?.showBubble?.(text, ms),
     render: () => session.ui?.renderContent?.()
   };
@@ -10800,7 +10801,7 @@
         return;
       }
       if (result.page.status !== null) session.status = result.page.status;
-      else await loadStatus(session);
+      await loadStatus(session, true);
       session.ui?.showBubble?.("\u5DF2\u8FDE\u63A5\u684C\u9762\u732A", 3e3);
       closeWizard();
     } finally {
@@ -10889,7 +10890,7 @@
       session.result = normalized;
       if (result.ok && normalized.ok) {
         session.step = "success";
-        await loadStatus(session);
+        await loadStatus(session, true);
       } else {
         session.error = result.error?.code ?? normalized.status ?? normalized.error ?? "unknown";
         session.step = "failure";
@@ -10959,7 +10960,7 @@
         session.error = result.error?.code ?? "network";
         return;
       }
-      await loadStatus(session);
+      await loadStatus(session, true);
       closeWizard();
       session.ui?.showBubble?.(byExpiry ? "\u9884\u89C8\u8FC7\u671F\u4E86\uFF0C\u5185\u5D4C\u732A\u5DF2\u6062\u590D" : "\u5DF2\u53D6\u6D88\u5408\u5E76\u9884\u89C8", 3200);
     } finally {

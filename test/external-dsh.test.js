@@ -231,8 +231,9 @@ test('连接：冻结内嵌猪、工作事件进 outbox 按序投递、面板镜
   } finally { controller.close(); await d.close() }
 })
 
-test('合并：预览冻结源端、提交退役、重启不打开旧档、撤销恢复两边', async () => {
+test('合并：预览冻结源端、提交退役、重启不打开旧档、撤销恢复两边', async t => {
   const d = await desktop({ target: { name: '团团', coins: 1240, inventory: { apple: 2 } } })
+  t.after(() => d.close())
   const statePath = dshState(d.dir, { name: '猪猪', coins: 880, inventory: { apple: 3 } })
   const first = controllerFor(statePath, { clock: d.clock, markerPath: d.markerPath, homes: d.homes })
   let mergeId
@@ -251,6 +252,7 @@ test('合并：预览冻结源端、提交退役、重启不打开旧档、撤�
     const committed = await first.controller.commitMerge({ duplicate: 'merge' })
     assert.equal(committed.ok, true, JSON.stringify(committed))
     assert.equal(committed.result.coins, 2120)
+    assert.equal(first.controller.status().target.summary.coins, 2120, '合并返回前摘要必须反映真实余额')
     assert.equal(existsSync(`${statePath}.merged`), true)
     assert.equal(existsSync(statePath), false)
     assert.equal(existsSync(`${statePath}.merged-${mergeId}`), true)
@@ -274,6 +276,7 @@ test('合并：预览冻结源端、提交退役、重启不打开旧档、撤�
     assert.equal(rollback.ok, true, JSON.stringify(rollback))
     assert.deepEqual(rollback.restored, { target: true, source: true })
     assert.equal(second.controller.mode, 'normal')
+    assert.equal(second.controller.status().target.summary.coins, 1240, '撤销返回前重新读取桌宠摘要')
     assert.equal(existsSync(statePath), true)
     assert.equal(existsSync(`${statePath}.merged`), false)
     assert.equal(existsSync(`${statePath}.external-pet.json`), false)
@@ -281,7 +284,7 @@ test('合并：预览冻结源端、提交退役、重启不打开旧档、撤�
     assert.equal(source.coins, 880)
     const target = await d.runtime.view(false)
     assert.equal(target.pig.coins, 1240)
-  } finally { second.controller.close(); await d.close() }
+  } finally { second.controller.close() }
 })
 
 test('退役半完成：只补缺的 work-events 改名，不重复改 state；损坏标记不打开旧档', () => {

@@ -8,7 +8,8 @@
 import { fetchStatus } from './external-api.js'
 
 /** 读状态：失败保留旧状态，只更新错误，不把卡片清成「未知」。 */
-export async function loadStatus(session) {
+export async function loadStatus(session, refreshView = false) {
+  if (refreshView) await session.ui?.refresh?.()
   if (session.loading) return null
   session.loading = true
   try {
