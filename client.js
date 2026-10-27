@@ -11098,6 +11098,9 @@
       );
     }
     const dialog = session.overlay.dialog;
+    const scrollTop = dialog.getAttribute("data-external-dialog") === session.step ? dialog.scrollTop : 0;
+    dialog.setAttribute("data-external-dialog", session.step);
+    dialog.setAttribute("data-scroll-key", "external:" + session.step);
     const focused = typeof document === "object" ? document.activeElement : null;
     const keep = focused?.getAttribute?.("data-external-field") ?? focused?.getAttribute?.("data-external-select") ?? "";
     const keepAttr = focused?.getAttribute?.("data-external-field") != null ? "data-external-field" : "data-external-select";
@@ -11110,6 +11113,7 @@
         if (typeof again.setSelectionRange === "function") again.setSelectionRange(again.value.length, again.value.length);
       }
     }
+    dialog.scrollTop = scrollTop;
   }
   function renderStep(dialog) {
     switch (session.step) {
