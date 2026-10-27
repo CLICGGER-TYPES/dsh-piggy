@@ -35,7 +35,7 @@
 !include "optional-extensions.generated.nsh"
 
 !define OPTEXT_TARGET_DIR "$INSTDIR\resources\optional-extensions"
-!define OPTEXT_SOURCE_DIR "${BUILD_RESOURCES_DIR}/optional-extensions"
+!define OPTEXT_SOURCE_DIR "${BUILD_RESOURCES_DIR}\optional-extensions"
 
 Var /GLOBAL optExtDialog
 Var /GLOBAL optExtCb0
@@ -173,22 +173,22 @@ Var /GLOBAL optExtFile
   CreateDirectory "${OPTEXT_TARGET_DIR}"
   SetOutPath "${OPTEXT_TARGET_DIR}"
 
-  File "${OPTEXT_SOURCE_DIR}/catalog.json"
+  File "${OPTEXT_SOURCE_DIR}\catalog.json"
 
   ${If} $optExtSel0 == "1"
-    File "${OPTEXT_SOURCE_DIR}/${OPTEXT_0_FILE}"
+    File "${OPTEXT_SOURCE_DIR}\${OPTEXT_0_FILE}"
   ${EndIf}
   ${If} $optExtSel1 == "1"
-    File "${OPTEXT_SOURCE_DIR}/${OPTEXT_1_FILE}"
+    File "${OPTEXT_SOURCE_DIR}\${OPTEXT_1_FILE}"
   ${EndIf}
   ${If} $optExtSel2 == "1"
-    File "${OPTEXT_SOURCE_DIR}/${OPTEXT_2_FILE}"
+    File "${OPTEXT_SOURCE_DIR}\${OPTEXT_2_FILE}"
   ${EndIf}
   ${If} $optExtSel3 == "1"
-    File "${OPTEXT_SOURCE_DIR}/${OPTEXT_3_FILE}"
+    File "${OPTEXT_SOURCE_DIR}\${OPTEXT_3_FILE}"
   ${EndIf}
   ${If} $optExtSel4 == "1"
-    File "${OPTEXT_SOURCE_DIR}/${OPTEXT_4_FILE}"
+    File "${OPTEXT_SOURCE_DIR}\${OPTEXT_4_FILE}"
   ${EndIf}
 
   ; selection.json is rewritten on every install (also when nothing is picked),

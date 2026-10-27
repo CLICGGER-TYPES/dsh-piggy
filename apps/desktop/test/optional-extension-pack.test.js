@@ -137,10 +137,11 @@ test('customInstall only writes the app resources folder and never user data', (
   const install = source.slice(source.indexOf('!macro customInstall'), source.indexOf('!macroend', source.indexOf('!macro customInstall')))
   assert.ok(install.includes('RMDir /r "${OPTEXT_TARGET_DIR}"'))
   assert.ok(source.includes('!define OPTEXT_TARGET_DIR "$INSTDIR\\resources\\optional-extensions"'))
-  assert.ok(install.includes('File "${OPTEXT_SOURCE_DIR}/catalog.json"'), 'catalog is always placed')
+  assert.ok(install.includes('File "${OPTEXT_SOURCE_DIR}\\catalog.json"'), 'catalog is always placed')
   for (let index = 0; index < 5; index += 1) {
-    assert.ok(new RegExp(`\\$\\{If\\} \\$optExtSel${index} == "1"\\s*\\n\\s*File "\\$\\{OPTEXT_SOURCE_DIR\\}/\\$\\{OPTEXT_${index}_FILE\\}"`).test(install),
-      `bundle ${index} is only extracted when checked`)
+    const header = '${If} $optExtSel' + index + ' == "1"'
+    const extract = 'File "${OPTEXT_SOURCE_DIR}\\${OPTEXT_' + index + '_FILE}"'
+    assert.ok(install.includes(header + '\n    ' + extract), `bundle ${index} is only extracted when checked`)
   }
   assert.ok(!/\$(APPDATA|PROFILE|LOCALAPPDATA|DOCUMENTS)|\\AppData|\\Documents/i.test(install), 'no user data paths in customInstall')
   assert.ok(install.includes("FileWrite $optExtFile '{\"version\":1,\"keys\":[$optExtKeys]}'"), 'selection.json is the runtime contract')
