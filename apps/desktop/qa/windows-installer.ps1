@@ -48,7 +48,7 @@ function Click-Element($Element) {
    if ($window.Current.IsOffscreen) { continue }
    foreach ($candidate in (Controls $window $identity.type)) {
     $box=$candidate.Current.BoundingRectangle
-    if ($candidate.Current.Name -ne $identity.name -or $candidate.Current.IsOffscreen -or $box.Width -le 0 -or $box.Height -le 0) { continue }
+    if ($candidate.Current.Name -ne $identity.name -or $candidate.Current.IsOffscreen -or -not $candidate.Current.IsEnabled -or $box.Width -le 0 -or $box.Height -le 0) { continue }
     if ($box.ToString() -eq $position.previous) { $position.stable++ } else { $position.stable=0; $position.previous=$box.ToString() }
     if ($position.stable -ge 3) { return @{element=$candidate;bounds=$box} }
    }
@@ -158,7 +158,11 @@ function Find-GameButton([int]$ProcessId,[string]$Pattern) {
  foreach ($window in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$condition)) {
   if ($window.Current.IsOffscreen -or $window.Current.BoundingRectangle.Width -lt 80) { continue }
   foreach ($button in (Controls $window ([System.Windows.Automation.ControlType]::Button))) {
-   if ($button.Current.Name -match $Pattern -and -not $button.Current.IsOffscreen -and $button.Current.IsEnabled -and $button.Current.BoundingRectangle.Width -gt 0) { return $button }
+   $current=$button.Current
+   if ($current.Name -match $Pattern -and -not $current.IsOffscreen -and $current.IsEnabled -and $current.BoundingRectangle.Width -gt 0) {
+    # Keep identity by value; Chromium may replace the live node before click.
+    return @{Current=$current}
+   }
   }
  }
  return $null

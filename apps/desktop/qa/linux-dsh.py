@@ -193,6 +193,12 @@ def tappable(page, selector):
         return False
 
 
+def open_web_menu(page):
+    if page.locator('[data-dsh-pig]').get_attribute('data-open') != 'true':
+        click(page, '.dp-pig', 3)
+    wait(lambda: page.locator('[data-dsh-pig]').get_attribute('data-open') == 'true', 'web panel opened')
+
+
 def home_tab(page, app):
     if has(page, '[data-home]'):
         click(page, '[data-home]')
@@ -237,7 +243,7 @@ def desk_page(selector):
 def desktop_menu():
     page = desk_page('.dp-pig')
     if not any(has(p, '[data-home-dot]:visible, [data-home]:visible') for p in desktop_pages()):
-        click(page, '.dp-pig', 3)
+        open_web_menu(page)
     return desk_page('.dp-content')
 
 
@@ -335,7 +341,7 @@ try:
         page.on('response', lambda response: responses.append(response) if '/dsh-piggy/act' in response.url and response.request.method == 'POST' else None)
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH plugin activation', 90)
         assert page.locator('[data-dsh-pig]').count() == 1
-        click(page, '.dp-pig', 3)
+        open_web_menu(page)
         home_tab(page, 'bag')
         click(page, '[data-bag="food"]')
         click(page, '[data-use="apple"]')
@@ -360,7 +366,7 @@ try:
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH refresh')
         assert page.locator('[data-dsh-pig]').count() == 1
         record('DSH native refresh preserves single activation')
-        click(page, '.dp-pig', 3)
+        open_web_menu(page)
         home_tab(page, 'settings')
         scroll_to(page, '[data-external-action="recheck"]')
         click(page, '[data-external-action="recheck"]')
@@ -391,7 +397,7 @@ try:
         wait(lambda: has(page, '[data-external-offline="true"]'), 'DSH restart keeps external offline mode', 90)
         assert hashlib.sha256((source / 'state.json').read_bytes()).hexdigest() == frozen
         record('real DSH host restart preserves external mode and paused source')
-        click(page, '.dp-pig', 3)
+        open_web_menu(page)
         home_tab(page, 'settings')
         scroll_to(page, '[data-external-action="withdraw"]')
         click(page, '[data-external-action="withdraw"]')
