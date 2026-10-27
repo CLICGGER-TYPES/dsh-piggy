@@ -181,6 +181,7 @@ def scroll_to(page, selector):
         }''')
         run(['xdotool', 'mousemove', str(round(point['x'])), str(round(point['y'])), 'click', '5'])
         time.sleep(.18)
+    save_diagnostics()
     raise AssertionError('Cannot scroll native panel to ' + selector)
 
 
@@ -435,6 +436,15 @@ try:
                 selector = '[data-external-conflict="'+conflict+'"] [data-external-choice="target"]'
                 scroll_to(page, selector)
                 click(page, selector)
+            # The real duplicate guard also considers matching early badges.
+            # Explicitly choose addition for these two private test pigs.
+            duplicate = '[data-external-duplicate] [data-external-choice="merge"]'
+            if has(page, duplicate):
+                scroll_to(page, duplicate)
+                click(page, duplicate)
+            (out / 'merge-selection.json').write_text(clean(json.dumps(page.evaluate(
+                '() => ({body:document.body.innerText,disabled:document.querySelector("[data-external-submit]")?.disabled})'
+            ), ensure_ascii=False, indent=2)))
 
         merge_preview()
         scroll_to(page, '[data-external-action="preview-cancel"]')
