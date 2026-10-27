@@ -100,6 +100,7 @@ def save_diagnostics():
                   const hit=r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2):null;
                   return {body:document.body?.innerText,role:window.piggyShell?.role,
                     viewport:{screenX,screenY,outerWidth,outerHeight,innerWidth,innerHeight},
+                    scrolls:[...document.querySelectorAll('[data-scroll-key]')].map(e=>({key:e.getAttribute('data-scroll-key'),top:e.scrollTop,h:e.clientHeight,total:e.scrollHeight})),
                     pig:r?{x:r.x,y:r.y,w:r.width,h:r.height,stage:p.getAttribute('data-stage'),hit:hit?.className}:null};
                 }""")
                 (out / f'failure-{label}-{index}.json').write_text(clean(json.dumps(details, ensure_ascii=False)))
@@ -177,8 +178,14 @@ def scroll_to(page, selector):
           let p=e.parentElement;
           while(p){const c=getComputedStyle(p);if(/auto|scroll/.test(c.overflowY)&&p.scrollHeight>p.clientHeight)break;p=p.parentElement}
           const r=(p||document.querySelector('.dp-content')).getBoundingClientRect();
-          return {x:screenX+(outerWidth-innerWidth)/2+r.x+r.width/2,y:screenY+outerHeight-innerHeight-(outerWidth-innerWidth)/2+r.y+r.height/2};
+          const er=e.getBoundingClientRect();
+          return {x:screenX+(outerWidth-innerWidth)/2+r.x+r.width/2,y:screenY+outerHeight-innerHeight-(outerWidth-innerWidth)/2+r.y+r.height/2,
+            scrollTop:p?.scrollTop,scrollHeight:p?.scrollHeight,clientHeight:p?.clientHeight,
+            scrollKey:p?.getAttribute('data-scroll-key'),target:{y:er.y,h:er.height,disabled:e.disabled},
+            container:{y:r.y,h:r.height},hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.className};
         }''')
+        with (out / 'native-scroll-trace.jsonl').open('a') as trace:
+            trace.write(json.dumps({'selector':selector,'at':time.time(),**point},ensure_ascii=False)+'\n')
         run(['xdotool', 'mousemove', str(round(point['x'])), str(round(point['y'])), 'click', '5'])
         time.sleep(.18)
     save_diagnostics()
