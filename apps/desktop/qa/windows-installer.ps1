@@ -37,16 +37,26 @@ function Mouse-Point([int]$X,[int]$Y,[bool]$Right=$false) {
  Start-Sleep -Milliseconds 160
 }
 function Click-Element($Element) {
- # Wait for native layout/slide animation to settle before sampling its input point.
+ # Polls/import completion can rebuild Chromium buttons. Reacquire the same
+ # visible accessible target by its identity while waiting for layout to settle.
+ $identity=@{name=$Element.Current.Name;process=$Element.Current.ProcessId;type=$Element.Current.ControlType}
+ if (-not $identity.name) { throw 'Native click target has no accessible identity' }
  $position=@{previous='';stable=0}
- $r=Wait-Until {
-  $box=$Element.Current.BoundingRectangle
-  if ($box.ToString() -eq $position.previous) { $position.stable++ } else { $position.stable=0; $position.previous=$box.ToString() }
-  if ($position.stable -ge 3) { return $box }
+ $target=Wait-Until {
+  $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$identity.process)
+  foreach ($window in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$condition)) {
+   if ($window.Current.IsOffscreen) { continue }
+   foreach ($candidate in (Controls $window $identity.type)) {
+    $box=$candidate.Current.BoundingRectangle
+    if ($candidate.Current.Name -ne $identity.name -or $candidate.Current.IsOffscreen -or $box.Width -le 0 -or $box.Height -le 0) { continue }
+    if ($box.ToString() -eq $position.previous) { $position.stable++ } else { $position.stable=0; $position.previous=$box.ToString() }
+    if ($position.stable -ge 3) { return @{element=$candidate;bounds=$box} }
+   }
+  }
   return $null
- } 'stable native target bounds' 10
- Write-Host ('Native click: '+$Element.Current.Name+' @ '+$r.ToString())
- if ($r.Width -le 0 -or $r.Height -le 0 -or $Element.Current.IsOffscreen) { throw 'Native target is not visible' }
+ } 'stable visible native target' 10
+ $r=$target.bounds
+ Write-Host ('Native click: '+$identity.name+' @ '+$r.ToString())
  Mouse-Point ([int]($r.X+$r.Width/2)) ([int]($r.Y+$r.Height/2))
 }
 function Click-Id($Root,[int]$Id) {
@@ -148,7 +158,7 @@ function Find-GameButton([int]$ProcessId,[string]$Pattern) {
  foreach ($window in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$condition)) {
   if ($window.Current.IsOffscreen -or $window.Current.BoundingRectangle.Width -lt 80) { continue }
   foreach ($button in (Controls $window ([System.Windows.Automation.ControlType]::Button))) {
-   if ($button.Current.Name -match $Pattern -and -not $button.Current.IsOffscreen -and $button.Current.IsEnabled) { return $button }
+   if ($button.Current.Name -match $Pattern -and -not $button.Current.IsOffscreen -and $button.Current.IsEnabled -and $button.Current.BoundingRectangle.Width -gt 0) { return $button }
   }
  }
  return $null
