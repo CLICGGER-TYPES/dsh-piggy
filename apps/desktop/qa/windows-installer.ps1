@@ -248,7 +248,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
   Wait-Until { Test-Path (Join-Path $UserProfile 'work-endpoint/pair.json') } 'native pair service ready' 15 | Out-Null
   if (-not (Get-Content (Join-Path $UserProfile 'external.json') -Raw -Encoding UTF8 | ConvertFrom-Json).enabled) { throw 'Native toggle did not persist permission' }
   Screenshot ($Name+'-external-enabled')
-  Click-Element (Find-GameButton $script:Game.Id '允许 DSH 联动')
+  Click-Element (Wait-Until { Find-GameButton $script:Game.Id '允许 DSH 联动' } 'permission toggle after settings redraw' 15)
   Wait-Until { -not (Test-Path (Join-Path $UserProfile 'work-endpoint/pair.json')) } 'native pair service disabled' 15 | Out-Null
   for ($scroll=0;$scroll -lt 15;$scroll++) {
    $back=Find-GameButton $script:Game.Id '^‹$'
