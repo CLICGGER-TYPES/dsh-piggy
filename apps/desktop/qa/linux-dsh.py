@@ -173,9 +173,13 @@ def home_tab(page, app):
     click(page, selector)
 
 
+def desktop_pages():
+    return [page for context in desktop_browser.contexts for page in context.pages]
+
+
 def desk_page(selector):
     def find():
-        for page in desktop_browser.contexts[0].pages:
+        for page in desktop_pages():
             if tappable(page, selector):
                 try:
                     if coord(page, selector)['ok']:
@@ -188,7 +192,7 @@ def desk_page(selector):
 
 def desktop_menu():
     page = desk_page('.dp-pig')
-    if not any(has(p, '[data-home-dot]:visible') for p in desktop_browser.contexts[0].pages):
+    if not any(has(p, '[data-home-dot]:visible') for p in desktop_pages()):
         click(page, '.dp-pig', 3)
     return desk_page('[data-home-dot]')
 
@@ -201,12 +205,12 @@ def stop_game():
 
 def start_game(mode):
     global desktop, desktop_browser
-    desktop = launch([str(image), '--no-sandbox', '--ozone-platform=x11',
+    desktop = launch([str(image), '--no-sandbox', '--disable-gpu', '--ozone-platform=x11',
                       '--remote-debugging-port=9412', '--window-mode=' + mode],
                      'appimage-' + mode + '.log', {**env, 'PIGGY_USERDATA': str(profile)})
     desktop_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:9412'), 'AppImage CDP')
     pet = desk_page('.dp-pig')
-    for p in desktop_browser.contexts[0].pages:
+    for p in desktop_pages():
         watch(p, 'desktop-' + mode)
     wait(lambda: pet.locator('.dp-pig').get_attribute('data-stage') != 'box', 'fixture pig loaded')
     return pet
@@ -265,7 +269,7 @@ try:
         assert read_state(profile)['name'] == '桌面猪'
         wait(lambda: (profile / 'work-endpoint/pair.json').exists(), 'permission survives stage restart')
         record('direct AppImage stage restart preserves permission and pig', extracted=False)
-        if any(has(p, '[data-home-dot]:visible') for p in desktop_browser.contexts[0].pages):
+        if any(has(p, '[data-home-dot]:visible') for p in desktop_pages()):
             click(pet, '.dp-pig', 3)
         url = start_dsh()
         chrome = os.environ.get('CHROME_PATH', '/usr/bin/google-chrome')
@@ -343,9 +347,22 @@ try:
         (out / 'report.json').write_text(json.dumps({'ok': True, 'cases': checks, 'errors': errors,
             'input': 'native XTest mouse/keyboard', 'browser': 'Playwright read-only CDP; Browser plugin not available',
             'appImageSha256': hashlib.sha256(image.read_bytes()).hexdigest(),
-            'npmSha256': hashlib.sha256(tgz.read_bytes()).hexdigest()}, ensure_ascii=False, indent=2))
+            'npmSha256': hashlib.sha256(tgz.read_bytes()).hexdigest(),
+            'linuxDisplay': 'Xvfb/Openbox software rendering; --no-sandbox --disable-gpu --ozone-platform=x11'}, ensure_ascii=False, indent=2))
 except Exception as error:
     (out / 'report.json').write_text(json.dumps({'ok': False, 'error': clean(error), 'cases': checks, 'errors': errors}, ensure_ascii=False, indent=2))
+    for name in ['piggy.log', 'stage.log', 'window.json']:
+        if (profile / name).exists():
+            (out / ('desktop-' + name)).write_text(clean((profile / name).read_text()))
+    if desktop_browser:
+        for index, page in enumerate(desktop_pages()):
+            try:
+                shot(page, 'failure-desktop-' + str(index))
+                details = page.evaluate('''() => ({url:location.href,body:document.body?.innerText,
+                    pig:document.querySelector('.dp-pig')?.outerHTML,html:document.documentElement.outerHTML.slice(-2000)})''')
+                (out / ('failure-desktop-' + str(index) + '.json')).write_text(clean(json.dumps(details, ensure_ascii=False)))
+            except Exception:
+                pass
     if web_browser:
         for index, page in enumerate(web_browser.contexts[0].pages):
             try:
