@@ -19,6 +19,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 - 桌面双窗口模式打开菜单时同步恢复菜单与小猪的层级，修复菜单仍有置顶标记却被其他窗口盖住的问题；不抢焦点，保留大扩展窗口的优先层级。
 
+感谢 [@WolalaQAQ](https://github.com/WolalaQAQ) 提供 [PR #21](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/21)，定位 Windows 菜单被其他窗口遮挡的层级问题，并补充修复与回归测试；原始提交历史已保留。
+
 ## [0.37.2-rc.3] — 2026-10-26 · 舞台整合、外观边界与版本选择
 
 配套桌面外壳 0.6.8-rc.2，存档仍为 v15。双窗口模式保持默认，透明舞台继续通过 `--window-mode=stage` 选择。
