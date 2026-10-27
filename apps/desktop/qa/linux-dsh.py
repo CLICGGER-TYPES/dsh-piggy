@@ -203,12 +203,11 @@ def home_tab(page, app):
     if has(page, '[data-home]'):
         click(page, '[data-home]')
     selector = f'[data-app="{app}"]'
+    wait(lambda: has(page, selector), 'home app registered ' + app)
     if not tappable(page, selector):
-        dots = page.locator('[data-home-dot]').count()
-        for index in range(dots):
-            click(page, f'[data-home-dot="{index}"]')
-            if tappable(page, selector):
-                break
+        index = page.locator(selector).first.evaluate('e=>e.closest("[data-home-page]").getAttribute("data-home-page")')
+        click(page, f'[data-home-dot="{index}"]')
+        wait(lambda: tappable(page, selector), 'native home page exposes ' + app)
     click(page, selector)
 
 
@@ -341,6 +340,8 @@ try:
         page.on('response', lambda response: responses.append(response) if '/dsh-piggy/act' in response.url and response.request.method == 'POST' else None)
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH plugin activation', 90)
         assert page.locator('[data-dsh-pig]').count() == 1
+        if has(page, 'button:has-text("Continue")'):
+            click(page, 'button:has-text("Continue")')
         open_web_menu(page)
         home_tab(page, 'bag')
         click(page, '[data-bag="food"]')
@@ -362,7 +363,8 @@ try:
         wait(lambda: page.locator('.dp-bubble').inner_text() != before, 'reply follow-up rendered')
         shot(page, 'dsh-reply')
         record('DSH native pet reply has a follow-up')
-        key('ctrl+r')
+        with page.expect_navigation(wait_until='domcontentloaded', timeout=90000):
+            key('ctrl+r')
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH refresh')
         assert page.locator('[data-dsh-pig]').count() == 1
         record('DSH native refresh preserves single activation')

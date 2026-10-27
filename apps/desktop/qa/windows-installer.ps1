@@ -161,7 +161,8 @@ function Find-GameButton([int]$ProcessId,[string]$Pattern) {
    $current=$button.Current
    if ($current.Name -match $Pattern -and -not $current.IsOffscreen -and $current.IsEnabled -and $current.BoundingRectangle.Width -gt 0) {
     # Keep identity by value; Chromium may replace the live node before click.
-    return @{Current=$current}
+    return @{Current=@{Name=[string]$current.Name;ProcessId=[int]$current.ProcessId;
+     ControlType=$current.ControlType;BoundingRectangle=$current.BoundingRectangle}}
    }
   }
  }
@@ -256,7 +257,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
    [PiggyNative]::mouse_event(2048,0,0,1440,[UIntPtr]::Zero)
    Start-Sleep -Milliseconds 180
   }
-  Click-Element $back
+  Click-Element (Wait-Until { Find-GameButton $script:Game.Id '^‹$' } 'back after settings redraw' 15)
   Wait-Until { Quit-Tile $script:Game.Id } 'home after external permission check' 15 | Out-Null
  }
  Close-Game $script:Game $root
