@@ -5,7 +5,10 @@
 - 用户明确要求整合20/21，先做到Windows安装器和五个离线可选扩展；新RC与夸克交付待前项完成后另议，本轮不发布。
 - PR20、21均已按已验收HEAD正常合并，保留作者提交；主线6e2d052。安装器独立分支feat/windows-offline-installer-20261027基于该主线实现。
 - 扩展包随完整安装器：五项默认不选，只补缺失、保留已有版本和进度；通过既有导入路由进入Worker，未孵化延后。官方包离线校验不请求在线目录，内部导入不消费待显示消息；两种桌面窗口共用。
-- 本地低内存专项通过。GitHub Windows虚拟机负责完整构建和原生安装器/游戏鼠标验收，检查全不选、单选、多选、返回、取消、覆盖安装、重启、断网、孵化、卸载保档；尚未获得最终原生结果，不能称交付完成。
+- 已完成：安装器PR [#22](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/22)已合并，保留20/21；工程验收源码5ab135d，合并58cb3dd。公开版本号未改，不创建新RC、不上传夸克。
+- [Windows/Linux回归](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40468911150)：每平台2068项，Windows2064通过/4平台跳过，Linux2056通过/12平台跳过，零失败；构建、类型检查通过。
+- [Windows原生验收](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40468906846)：完整安装器构建成功，14项流程通过，覆盖全不选、单选、全选、返回保留勾选、取消、覆盖改选、重启、已有扩展版本/进度、默认piggy路径迁移、首次孵化和卸载保档。实际安装版使用不可连接代理；仅原生鼠标输入，可访问树只读定位。人工查看默认/单选/全选及孵化后菜单截图，五项完整显示。测试环境Windows Server 2025单屏100%，不据此声称混合DPI或macOS通过。
+- 证据与工程安装包：`/zyx/agents/codex/deliverables/piggy-work/windows-installer-20261027/`；用户审阅文件统一放`/zyx/agents/codex/deliverables/piggy-review/windows-installer-20261027/`。本轮未操作个人游玩存档、未启动本地测试VM。后续新RC、夸克交付按用户要求另议。
 
 ## 2026-10-27 桌面默认数据目录整理（代码修复，未发布）
 
