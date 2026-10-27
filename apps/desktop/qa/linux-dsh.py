@@ -27,12 +27,13 @@ out = repo / 'integrated-qa-results'
 out.mkdir(exist_ok=True)
 private = Path(tempfile.mkdtemp(prefix='piggy-integration-'))
 home = private / 'dsh-home'
-profile = private / 'desktop'
+profile = private / 'xdg-data/piggy'
+legacy = private / 'xdg-config/dsh-piggy-desktop'
 source = home / 'dsh-piggy'
 cli = args.host / 'node_modules/@deepseek-ai/dsh/lib/bin.js'
 image = repo / 'apps/desktop/dist/dsh-piggy-integrated-qa.AppImage'
 tgz = next((repo / 'candidate-qa').glob('dsh-piggy-*.tgz'))
-env = {**os.environ, 'DSH_HOME': str(home)}
+env = {**os.environ, 'DSH_HOME': str(home), 'XDG_DATA_HOME': str(private / 'xdg-data'), 'XDG_CONFIG_HOME': str(private / 'xdg-config')}
 children, checks, errors, responses = [], [], [], []
 desktop = dsh = browser_proc = None
 desktop_browser = web_browser = None
@@ -128,7 +129,9 @@ def shot(page, name):
 
 def coord(page, selector):
     return page.locator(selector).first.evaluate('''e => {
-      const r=e.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
+      const r=e.getBoundingClientRect();
+      const fx=e.matches('.dp-pig')?(e.getAttribute('data-walk')==='right'?.33:.67):.5;
+      const x=r.x+r.width*fx, y=r.y+r.height/2;
       const hit=document.elementFromPoint(x,y);
       return {x:screenX+(outerWidth-innerWidth)/2+x,y:screenY+outerHeight-innerHeight+y,
         rect:[r.x,r.y,r.width,r.height],ok:!e.disabled&&r.width>0&&r.height>0&&
@@ -244,11 +247,14 @@ def stop_game():
     wait(lambda: desktop.poll() is not None, 'graceful AppImage exit')
 
 
-def start_game(mode):
+def start_game(mode, use_default=False):
     global desktop, desktop_browser
+    game_env = {**env, 'PIGGY_USERDATA': str(profile)}
+    if use_default:
+        game_env.pop('PIGGY_USERDATA', None)
     desktop = launch([str(image), '--no-sandbox', '--disable-gpu', '--ozone-platform=x11',
                       '--remote-debugging-port=9412', '--window-mode=' + mode],
-                     'appimage-' + mode + '.log', {**env, 'PIGGY_USERDATA': str(profile)})
+                     'appimage-' + mode + '.log', game_env)
     desktop_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:9412'), 'AppImage CDP')
     pet = desk_page('.dp-pig')
     for p in desktop_pages():
@@ -272,8 +278,10 @@ try:
     run(['openbox', '--version'])
     launch(['openbox'], 'window-manager.log')
     launch(['picom', '--backend', 'xrender'], 'compositor.log')
-    for directory, role in [(profile, 'desktop'), (source, 'source')]:
+    for directory, role in [(legacy / 'dsh-piggy', 'desktop'), (source, 'source')]:
         run(['node', str(repo / 'apps/desktop/qa/seed-integration.mjs'), str(directory), role], cwd=repo)
+    (legacy / 'dsh-piggy/proxy.json').replace(legacy / 'proxy.json')
+    original_legacy = {str(p.relative_to(legacy)): hashlib.sha256(p.read_bytes()).hexdigest() for p in legacy.rglob('*') if p.is_file()}
     run(['node', str(cli), 'plugin', '--profile', 'web', 'add', str(tgz)], env=env, timeout=240)
     installed = home / 'profiles/web/node_modules/dsh-piggy'
     assert installed.exists() and installed.resolve().is_relative_to(home.resolve()), 'DSH must load the private installed tgz, not a worktree link'
@@ -283,7 +291,10 @@ try:
     record('real npm package installation', adapterSha256=hashlib.sha256(wanted).hexdigest())
     image.chmod(0o755)
     with sync_playwright() as pw:
-        pet = start_game('split')
+        pet = start_game('split', use_default=True)
+        assert (profile / 'state.json').exists() and not (profile / 'dsh-piggy').exists()
+        assert original_legacy == {str(p.relative_to(legacy)): hashlib.sha256(p.read_bytes()).hexdigest() for p in legacy.rglob('*') if p.is_file()}
+        record('native Linux default piggy directory migrates legacy without changing originals', files=len(original_legacy))
         panel = desktop_menu()
         home_tab(panel, 'settings')
         scroll_to(panel, '[data-external-allow]')
@@ -316,7 +327,7 @@ try:
         url = start_dsh()
         chrome = os.environ.get('CHROME_PATH', '/usr/bin/google-chrome')
         browser_proc = launch([chrome, '--no-sandbox', '--remote-debugging-port=9413',
-                               '--user-data-dir=' + str(private / 'browser'), '--window-size=1180,850',
+                               '--user-data-dir=' + str(private / 'browser'), '--window-size=1180,850', '--window-position=20,20',
                                '--no-first-run', url], 'browser.log')
         web_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:9413'), 'DSH browser')
         page = wait(lambda: next((p for p in browser_pages(web_browser) if '3088' in p.url), None), 'DSH page')
@@ -330,12 +341,16 @@ try:
         click(page, '[data-use="apple"]')
         wait(lambda: responses and responses[-1].json().get('inventory', {}).get('apple') == 2, 'DSH native feeding')
         record('DSH activation and real feeding', applesAfter=2)
-        for _ in range(16):
+        with page.expect_response(lambda r: '/dsh-piggy/act' in r.url and r.request.method == 'POST'
+                                  and r.request.post_data_json.get('action') == 'pet', timeout=8000) as pet_response:
             click(page, '.dp-pig')
-            if has(page, '.dp-reply:visible'):
-                break
-            time.sleep(.7)
-        assert has(page, '.dp-reply:visible'), 'No reply offered; cannot claim reply coverage'
+        pet_result = pet_response.value.json()
+        (out / 'pet-response.json').write_text(json.dumps({'http': pet_response.value.status,
+            'request': pet_response.value.request.post_data_json, 'ok': pet_result.get('ok'),
+            'reason': pet_result.get('reason'), 'pending': pet_result.get('pending')}, ensure_ascii=False, indent=2))
+        if not has(page, '.dp-reply:visible'):
+            save_diagnostics()
+        assert has(page, '.dp-reply:visible'), 'The prepared back-pet history did not offer its real reply'
         before = page.locator('.dp-bubble').inner_text()
         click(page, '.dp-reply:visible')
         wait(lambda: page.locator('.dp-bubble').inner_text() != before, 'reply follow-up rendered')
@@ -448,13 +463,6 @@ except Exception as error:
     for name in ['piggy.log', 'stage.log', 'window.json']:
         if (profile / name).exists():
             (out / ('desktop-' + name)).write_text(clean((profile / name).read_text()))
-    if web_browser:
-        for index, page in enumerate(browser_pages(web_browser)):
-            try:
-                shot(page, 'failure-web-' + str(index))
-                (out / ('failure-web-' + str(index) + '.txt')).write_text(clean(page.locator('body').inner_text()))
-            except Exception:
-                pass
     raise
 finally:
     for proc in reversed(children):

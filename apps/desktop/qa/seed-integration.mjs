@@ -3,6 +3,7 @@
 import { cpSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { hatchEgg } from '../../../core.js'
+import { LINES, LINE_MEMORY } from '../../../data.js'
 
 const [directory, role] = process.argv.slice(2)
 mkdirSync(directory, { recursive: true })
@@ -12,6 +13,17 @@ state.coins = role === 'desktop' ? 1000 : 500
 state.satiety = 90
 state.inventory.apple = role === 'desktop' ? 5 : 3
 state.isOfflineFeedEnabled = false
+if (role !== 'desktop') {
+  // A legitimate prelaunch history gives this lazy pig a back-pet reply.
+  // The browser still has to perform pet + reply through the real UI/routes.
+  state.personality = 'lazy'
+  state.dialogue.greetedAt = Date.now()
+  const recent = LINES.petBack.map((line, index) => ({ line, index }))
+    .filter(({ line }) => (!line.personalities || line.personalities.includes('lazy')) && !line.replies?.length)
+    .map(({ index }) => index)
+  if (recent.length > LINE_MEMORY) throw new Error('Reply fixture history no longer excludes all non-reply back lines')
+  state.dialogue.lastByScene.petBack = recent
+}
 state.extData = {}
 for (const key of ['farm', 'mine', 'blindbox', 'gacha', 'pig-puzzle']) {
   const extension = (await import(`../../../extensions/${key}/server.js`)).default

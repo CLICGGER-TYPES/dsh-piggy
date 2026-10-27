@@ -2,7 +2,7 @@ name: Windows offline installer QA
 on:
   push:
     branches: [feat/windows-offline-installer-20261027, feat/integrated-candidate-20261027]
-    paths-ignore: [apps/desktop/qa/linux-dsh.py, .github/workflows/integrated-candidate.yml]
+    paths-ignore: [apps/desktop/qa/linux-dsh.py, apps/desktop/qa/seed-integration.mjs, .github/workflows/integrated-candidate.yml]
   workflow_dispatch:
 permissions:
   contents: read
