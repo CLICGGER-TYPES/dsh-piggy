@@ -88,7 +88,7 @@ export function buildOptionalExtensions(options = {}) {
     const bundle = makeBundle(files)
     // 自检：安装器里的包必须是游戏端能拆开的同一种包。
     const parsed = parseBundle(bundle)
-    if (!parsed.ok) throw new Error(`${spec.key}: 生成的扩展包读不出来（${parsed.message}）`)
+    if (parsed.ok === false) throw new Error(`${spec.key}: 生成的扩展包读不出来（${parsed.message}）`)
     const file = `ext-${spec.key}-${manifest.version}.piggyext`
     const buffer = Buffer.from(bundle, 'utf8')
     writeFileSync(join(outDir, file), buffer)

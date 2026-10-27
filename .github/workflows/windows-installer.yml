@@ -30,6 +30,13 @@ jobs:
           npm run build
           node apps/desktop/scripts/pack-game.mjs
           node apps/desktop/scripts/pack-optional-extensions.mjs
+      - name: Validate native QA harness syntax
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'apps/desktop/qa/windows-installer.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | Write-Error; exit 1 }
       - name: Test and typecheck
         run: |
           node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
