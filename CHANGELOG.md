@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- Windows完整安装器增加五个默认不勾选的离线可选扩展：菜园、矿洞、盲盒、扭蛋、藏猪方块。首次孵化后补装缺失项，已有扩展版本和进度保留；安装器不直接修改存档。
+
 - 本机工作接口兼容Windows管理员令牌的默认目录所有者，随后将所有者及访问规则收敛到当前账户；后台启动失败时保留原始原因和清理失败信息。
 
 - 补充Windows/Linux PR自动回归；修正Windows文件URL导入、npm只读打包子进程与类型检查命令行过长，检查流程不发布任何包。

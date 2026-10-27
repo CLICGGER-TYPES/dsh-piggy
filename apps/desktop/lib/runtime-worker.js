@@ -2,6 +2,7 @@
 /** 桌面游戏 Store、路由和工作接口共用后台单写者，窗口线程不执行落盘。 */
 import { parentPort, workerData } from 'node:worker_threads'
 import { startHost } from './host.js'
+import { createInstallerExtensions } from './optional-extensions.js'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -10,7 +11,7 @@ const port = parentPort
 const fetches = new Map()
 const tasks = new Set()
 let sequence = 0
-let host, endpoint
+let host, endpoint, installerExtensions
 let closing = false
 
 /** @type {typeof globalThis.fetch} */
@@ -61,11 +62,17 @@ async function request(message) {
   }
   if (message.method === 'handle') {
     const out = await host.handle(...message.args)
+    let hatched
     if (String(out.headers['content-type'] ?? '').includes('application/json')) {
       const text = String(out.body)
       const view = JSON.parse(text)
+      if (typeof view.hatched === 'boolean') hatched = view.hatched
       // 这份响应已取走 pending；先广播原文，不能另取快照或合并丢掉中间消息。
       if (Array.isArray(view.pending) && view.pending.length > 0) port.postMessage({ kind: 'snapshot', value: text })
+    }
+    if (message.args[0] === 'POST' && out.status === 200) {
+      const addons = await installerExtensions?.apply(hatched)
+      if (addons?.changed) port.postMessage({ kind: 'changed' })
     }
     return out
   }
@@ -106,6 +113,9 @@ try {
   host = await startHost(workerData.gameDir, workerData.statePath, { fetch: fetchFromMain,
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
+  installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
+    onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
+  await installerExtensions.apply()
   await startEndpoint()
   port.postMessage({ kind: 'ready' })
 } catch (error) {

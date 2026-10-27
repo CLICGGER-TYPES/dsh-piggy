@@ -16,3 +16,7 @@ node_modules/
 *.orig
 __pycache__/
 dist/
+
+# Generated offline installer payloads
+apps/desktop/build/optional-extensions/
+apps/desktop/build/optional-extensions.generated.nsh

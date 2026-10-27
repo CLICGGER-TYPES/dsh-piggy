@@ -108,7 +108,9 @@ export function makeImporter(deps) {
     const { manifest } = bundle
     const about = { key: bundle.key, label: String(manifest.label ?? bundle.key), version: String(manifest.version ?? '') }
     if (typeof manifest.minGame === 'string' && !deps.versionAtLeast(deps.gameVersion, manifest.minGame)) return { ok: false, reason: 'game-too-old', need: manifest.minGame, ...about }
-    const official = isOfficial(bundle.hashes, bundle.key, officialList(), (await deps.online(false)).entries)
+    const known = officialList()
+    const official = isOfficial(bundle.hashes, bundle.key, known, [])
+      || isOfficial(bundle.hashes, bundle.key, known, (await deps.online(false)).entries)
     if (!official && confirm !== true) return { ok: false, reason: 'unofficial', ...about }
     deps.warn(`extension imported from file: key="${bundle.key}" version="${about.version}" official=${official}`)
     const result = await deps.place(bundle.key, bundle.files, !official)

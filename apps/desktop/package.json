@@ -12,7 +12,8 @@
     "dist:win": "npm run pack-game && electron-builder --win",
     "dist:mac": "npm run pack-game && electron-builder --mac",
     "release-game": "node scripts/release-game.mjs",
-    "start:stage": "npm run pack-game && electron . --window-mode=stage"
+    "start:stage": "npm run pack-game && electron . --window-mode=stage",
+    "dist:win:offline": "npm run pack-game && node scripts/pack-optional-extensions.mjs && electron-builder --win nsis --config electron-builder.optional.cjs"
   },
   "devDependencies": {
     "electron": "44.5.1",

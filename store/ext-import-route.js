@@ -26,7 +26,7 @@ export function registerExtImportRoute(webServer, store, snapshot) {
       try {
         const result = await store.ext.importBundle(body.bundle, body.confirm === true)
         if (result.ok !== true) return send(200, result)
-        send(200, { ...snapshot(store), ...result, ok: true })
+        send(200, { ...(body.snapshot === false ? {} : snapshot(store)), ...result, ok: true })
       } catch (error) {
         send(200, { ok: false, reason: 'invalid-bundle', message: error instanceof Error ? error.message : String(error) })
       }

@@ -4,7 +4,7 @@ import { Worker } from 'node:worker_threads'
 
 export async function startBackgroundHost(gameDir, statePath, options = {}) {
   const worker = new Worker(new URL('./runtime-worker.js', import.meta.url), {
-    workerData: { gameDir, statePath, workEventsDirectory: options.workEventsDirectory },
+    workerData: { gameDir, statePath, optionalExtensionsDirectory: options.optionalExtensionsDirectory, workEventsDirectory: options.workEventsDirectory },
   })
   const pending = new Map()
   const fetches = new Map()
