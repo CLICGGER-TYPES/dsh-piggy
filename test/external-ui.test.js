@@ -886,5 +886,8 @@ test('外部弹层同一步骤重画保留滚动，切换步骤复位并更新�
     assert.equal(dialog.scrollTop, 0)
     assert.equal(dialog.getAttribute('data-external-dialog'), 'rollingBack')
     assert.equal(dialog.getAttribute('data-scroll-key'), 'external:rollingBack')
+    clearContent(session.ui)
+    repaint()
+    assert.equal(env.dom.document.keydown.length, 1, '轮询重挂时移除旧弹层键盘监听')
   } finally { resetSession(session); env.restore() }
 })

@@ -21,6 +21,7 @@ export { session }
 export function repaint() {
   if (!session.open) return
   if (session.overlay === null || session.overlay.overlay.parentNode === null) {
+    session.overlay?.dispose?.()
     session.overlay = createOverlay(/** @type {any} */ (session.ui), {
       label: '外部桌宠',
       step: session.step,

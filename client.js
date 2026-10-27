@@ -11086,6 +11086,7 @@
   function repaint2() {
     if (!session.open) return;
     if (session.overlay === null || session.overlay.overlay.parentNode === null) {
+      session.overlay?.dispose?.();
       session.overlay = createOverlay(
         /** @type {any} */
         session.ui,
