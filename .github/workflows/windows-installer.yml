@@ -58,11 +58,13 @@ jobs:
           $extra = @{}
           if ('${{ inputs.verify_icons }}' -eq 'true') { $extra.CheckIcons = $true }
           ./apps/desktop/qa/windows-installer.ps1 -Installer "${{ github.workspace }}/apps/desktop/dist/dsh-piggy-offline-setup-qa.exe" -Repository "${{ github.workspace }}" @extra
+      - name: Build portable candidate without publishing
+        working-directory: apps/desktop
+        run: npx --no-install electron-builder --win portable --x64 --publish never
       - name: Hash installer
         shell: pwsh
         run: |
-          $file = 'apps/desktop/dist/dsh-piggy-offline-setup-qa.exe'
-          (Get-FileHash $file -Algorithm SHA256).Hash.ToLower() + '  dsh-piggy-offline-setup-qa.exe' | Set-Content apps/desktop/dist/SHA256SUMS
+          Get-ChildItem apps/desktop/dist/*.exe | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower() + '  ' + $_.Name } | Set-Content apps/desktop/dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -77,7 +79,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           path: |
-            apps/desktop/dist/dsh-piggy-offline-setup-qa.exe
+            apps/desktop/dist/*.exe
             apps/desktop/dist/SHA256SUMS
             apps/desktop/build/optional-extensions/catalog.json
             apps/desktop/build/optional-extensions/strings.json

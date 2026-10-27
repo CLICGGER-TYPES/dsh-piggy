@@ -25,6 +25,7 @@ public class PiggyIconNative {
 '@ -ReferencedAssemblies System.Drawing
 $IconChecks=[System.Collections.Generic.List[object]]::new()
 function Check-ShellIcon([string]$Name,[string]$Path) {
+ $Path=[System.IO.Path]::GetFullPath($Path.Replace('/','\'))
  $actual=[PiggyIconNative]::ReadIcon($Path)
  $expectedIcon=[System.Drawing.Icon]::new((Join-Path $Repository 'apps/desktop/build/icon.ico'),[System.Drawing.Size]::new($actual.Width,$actual.Height))
  $expected=$expectedIcon.ToBitmap()
