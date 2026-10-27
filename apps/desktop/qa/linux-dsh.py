@@ -468,7 +468,7 @@ try:
         assert read_state(profile)['inventory']['apple'] == 6
         assert not (source / 'state.json').exists(), 'Merged source must be retired'
         wait(lambda: '1500' in page.locator('.dp-hud').inner_text(), 'merged DSH balance rendered')
-        wait(lambda: '1,500' in page.locator('.dp-ext-card').inner_text(), 'merged settings summary rendered')
+        wait(lambda: '1,500' in page.locator('[data-external-pet]').inner_text(), 'merged settings summary rendered')
         wait(lambda: '1500' in pet.locator('.dp-hud').inner_text(), 'merged desktop balance rendered')
         shot(page, 'merge-success')
         record('native confirmed merge applies assets once and retires source', coins=1500, apples=6)
@@ -481,7 +481,7 @@ try:
         assert read_state(source)['coins'] == 500 and read_state(source)['inventory']['apple'] == 2
         wait(lambda: page.locator('[data-dsh-pig]').get_attribute('data-link') is None
              and '内嵌猪' in page.locator('.dp-hud').inner_text() and '500' in page.locator('.dp-hud').inner_text(), 'rollback embedded identity and balance rendered')
-        wait(lambda: '1,000' in page.locator('.dp-ext-card').inner_text(), 'rollback settings summary rendered')
+        wait(lambda: '1,000' in page.locator('[data-external-pet]').inner_text(), 'rollback settings summary rendered')
         wait(lambda: '1000' in pet.locator('.dp-hud').inner_text(), 'rollback desktop balance rendered')
         shot(page, 'merge-rollback')
         record('native rollback restores both pigs and preserves premerge care')
