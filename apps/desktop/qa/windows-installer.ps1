@@ -37,7 +37,15 @@ function Mouse-Point([int]$X,[int]$Y,[bool]$Right=$false) {
  Start-Sleep -Milliseconds 160
 }
 function Click-Element($Element) {
- $r = $Element.Current.BoundingRectangle
+ # Wait for native layout/slide animation to settle before sampling its input point.
+ $previous=''; $stable=0
+ $r=Wait-Until {
+  $box=$Element.Current.BoundingRectangle
+  if ($box.ToString() -eq $previous) { $stable++ } else { $stable=0; $previous=$box.ToString() }
+  if ($stable -ge 3) { return $box }
+  return $null
+ }.GetNewClosure() 'stable native target bounds' 10
+ Write-Host ('Native click: '+$Element.Current.Name+' @ '+$r.ToString())
  if ($r.Width -le 0 -or $r.Height -le 0 -or $Element.Current.IsOffscreen) { throw 'Native target is not visible' }
  Mouse-Point ([int]($r.X+$r.Width/2)) ([int]($r.Y+$r.Height/2))
 }
@@ -132,11 +140,13 @@ function Install-Pick([string]$Name,[string[]]$Keys,[bool]$Cancel=$false,[bool]$
   if ($bundles.Count -ne $Keys.Count) { throw 'Unselected bundles extracted' }
   foreach ($key in $Keys) { $item=$Catalog.items | Where-Object key -eq $key; if ((Get-FileHash (Join-Path $directory $item.file) -Algorithm SHA256).Hash -ne $item.sha256) { throw 'Embedded bundle hash mismatch' } }
  }
+ Write-Host ('Installer case complete: '+$Name)
  $Results.Add(@{case=$Name;keys=$Keys;cancel=$Cancel;nativeMouse=$true;saveUntouched=$true})
 }
 function Find-GameButton([int]$ProcessId,[string]$Pattern) {
  $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$ProcessId)
  foreach ($window in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$condition)) {
+  if ($window.Current.IsOffscreen -or $window.Current.BoundingRectangle.Width -lt 80) { continue }
   foreach ($button in (Controls $window ([System.Windows.Automation.ControlType]::Button))) {
    if ($button.Current.Name -match $Pattern -and -not $button.Current.IsOffscreen -and $button.Current.IsEnabled) { return $button }
   }
@@ -155,6 +165,7 @@ function Open-GameMenu($Root) {
  } 'visible native pig scene' 30
  $r=$target.Current.BoundingRectangle
  Mouse-Point ([int]($r.X+$r.Width/2)) ([int]($r.Y+$r.Height/2)) $true
+ Start-Sleep -Milliseconds 1000
 }
 function Quit-Tile([int]$ProcessId) {
  $button=Find-GameButton $ProcessId '退出'
@@ -205,6 +216,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
  $script:Game=$null
  $state=Get-Content (Join-Path $UserProfile 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
  if (-not $Fresh -and ($state.coins -ne 1314 -or $state.inventory.apple -ne 7 -or $state.name -ne 'Installer QA')) { throw 'Existing game progress changed' }
+ Write-Host ('Game case complete: '+$Name)
  $Results.Add(@{case=$Name;installedExe=$true;nativeMenu=$true;nativeQuit=$true;proxy='unreachable 127.0.0.1:9';extensions=$Expected;freshHatch=$Fresh;defaultProfile=$UseDefault})
 }
 try {
