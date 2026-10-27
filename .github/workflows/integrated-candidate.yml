@@ -3,6 +3,11 @@ on:
   push:
     branches: [feat/integrated-candidate-20261027]
   workflow_dispatch:
+    inputs:
+      public_version:
+        description: Exact published npm and GitHub game version to verify (empty builds a candidate)
+        type: string
+        default: ""
 permissions:
   contents: read
 concurrency:
@@ -32,6 +37,7 @@ jobs:
           "$RUNNER_TEMP/piggy-qa-python/bin/pip" install playwright==1.64.1
           npm install --prefix "$RUNNER_TEMP/piggy-dsh-host" --no-audit --no-fund @deepseek-ai/dsh@0.2.1-rc.2
       - name: Build exact game, npm package and AppImage without publishing
+        if: inputs.public_version == ''
         run: |
           npm run build
           mkdir -p candidate-qa
@@ -40,6 +46,19 @@ jobs:
           node apps/desktop/scripts/pack-game.mjs
           cd apps/desktop
           npx --no-install electron-builder --linux AppImage --x64 --config.linux.artifactName=dsh-piggy-integrated-qa.AppImage --publish never
+      - name: Download exact public npm package and GitHub release
+        if: inputs.public_version != ''
+        env:
+          PUBLIC_VERSION: ${{ inputs.public_version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node -e 'const p=require("./package.json");if(process.env.PUBLIC_VERSION!==p.version || !/^\d+\.\d+\.\d+-rc\.\d+$/.test(p.version))throw Error("public version must match checked-out RC")'
+          mkdir -p candidate-qa apps/desktop/dist
+          npm pack "dsh-piggy@$PUBLIC_VERSION" --ignore-scripts --pack-destination candidate-qa
+          shell_version=$(node -p 'require("./apps/desktop/package.json").version')
+          gh release download "v$PUBLIC_VERSION" --pattern "dsh-piggy-$shell_version.AppImage" --dir apps/desktop/dist
+          mv "apps/desktop/dist/dsh-piggy-$shell_version.AppImage" apps/desktop/dist/dsh-piggy-integrated-qa.AppImage
+          gh release download "v$PUBLIC_VERSION" --pattern "game-$PUBLIC_VERSION.json.gz" --pattern "game-$PUBLIC_VERSION.manifest.json" --dir candidate-qa
       - name: Native AppImage and real DSH acceptance
         run: |
           dbus-run-session -- xvfb-run -a -s '-screen 0 1440x1000x24' "$RUNNER_TEMP/piggy-qa-python/bin/python" apps/desktop/qa/linux-dsh.py --repository "$GITHUB_WORKSPACE" --host "$RUNNER_TEMP/piggy-dsh-host"

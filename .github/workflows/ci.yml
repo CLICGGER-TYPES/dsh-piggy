@@ -35,6 +35,15 @@ jobs:
         run: npm run build
       - name: Committed generated files match the clean build
         run: git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
+      - name: Validate Windows native QA syntax
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          foreach ($file in Get-ChildItem apps/desktop/qa/*.ps1) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count) { $errors | Write-Error; exit 1 }
+          }
       - name: Serial regression tests
         run: node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
       - name: Type check
