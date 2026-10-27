@@ -234,7 +234,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
   for ($scroll=0;$scroll -lt 30;$scroll++) {
    $toggle=Find-GameButton $script:Game.Id '允许 DSH 联动'
    if ($toggle) { break }
-   [PiggyNative]::mouse_event(2048,0,0,[uint32]4294966096,[UIntPtr]::Zero)
+   [PiggyNative]::mouse_event(2048,0,0,[uint32]4294967176,[UIntPtr]::Zero)
    Start-Sleep -Milliseconds 180
   }
   if (-not $toggle) { throw 'Native external permission toggle not visible' }

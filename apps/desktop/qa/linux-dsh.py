@@ -37,6 +37,7 @@ children, checks, errors, responses = [], [], [], []
 desktop = dsh = browser_proc = None
 desktop_browser = web_browser = None
 web_url = {'value': None}
+cdp_readers = {}
 
 
 def clean(text):
@@ -143,7 +144,12 @@ def scroll_to(page, selector):
                 return
         except Exception:
             pass
-        point = coord(page, '.dp-content')
+        point = page.locator(selector).first.evaluate('''e => {
+          let p=e.parentElement;
+          while(p){const c=getComputedStyle(p);if(/auto|scroll/.test(c.overflowY)&&p.scrollHeight>p.clientHeight)break;p=p.parentElement}
+          const r=(p||document.querySelector('.dp-content')).getBoundingClientRect();
+          return {x:screenX+(outerWidth-innerWidth)/2+r.x+r.width/2,y:screenY+outerHeight-innerHeight+r.y+r.height/2};
+        }''')
         run(['xdotool', 'mousemove', str(round(point['x'])), str(round(point['y'])), 'click', '5'])
         time.sleep(.18)
     raise AssertionError('Cannot scroll native panel to ' + selector)
@@ -173,8 +179,19 @@ def home_tab(page, app):
     click(page, selector)
 
 
+def browser_pages(browser):
+    # A pure Python sleep does not dispatch Playwright's sync event loop. Pump
+    # an explicitly read-only protocol request while waiting for new windows.
+    reader = cdp_readers.get(browser)
+    if reader is None:
+        reader = browser.new_browser_cdp_session()
+        cdp_readers[browser] = reader
+    reader.send('Target.getTargets')
+    return [page for context in browser.contexts for page in context.pages]
+
+
 def desktop_pages():
-    return [page for context in desktop_browser.contexts for page in context.pages]
+    return browser_pages(desktop_browser)
 
 
 def desk_page(selector):
@@ -278,7 +295,7 @@ try:
                                '--user-data-dir=' + str(private / 'browser'), '--window-size=1180,850',
                                '--no-first-run', url], 'browser.log')
         web_browser = wait(lambda: pw.chromium.connect_over_cdp('http://127.0.0.1:9413'), 'DSH browser')
-        page = wait(lambda: next((p for p in web_browser.contexts[0].pages if '3088' in p.url), None), 'DSH page')
+        page = wait(lambda: next((p for p in browser_pages(web_browser) if '3088' in p.url), None), 'DSH page')
         watch(page, 'DSH')
         page.on('response', lambda response: responses.append(response) if '/dsh-piggy/act' in response.url and response.request.method == 'POST' else None)
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH plugin activation', 90)
@@ -343,6 +360,58 @@ try:
         wait(lambda: page.locator('[data-dsh-pig]').get_attribute('data-link') is None and has(page, '.dp-pig:visible'), 'withdraw restores embedded pig')
         shot(page, 'dsh-withdraw-offline')
         record('native offline withdrawal restores embedded pig')
+        pet = start_game('stage')
+        if any(has(p, '[data-home-dot]:visible') for p in desktop_pages()):
+            click(pet, '.dp-pig', 3)
+        home_tab(page, 'settings')
+        scroll_to(page, '[data-external-action="recheck"]')
+        click(page, '[data-external-action="recheck"]')
+        wait(lambda: has(page, '[data-external-action="connect"]:visible'), 'desktop rediscovery for merge')
+
+        def merge_preview():
+            click(page, '[data-external-action="connect"]')
+            click(page, '[data-external-choice="merge"]')
+            click(page, '[data-external-action="choose-next"]')
+            wait(lambda: has(page, '[data-external-submit]'), 'real merge preview')
+            conflicts = page.locator('[data-external-conflict]').evaluate_all('(xs)=>xs.map(x=>x.getAttribute("data-external-conflict"))')
+            for conflict in conflicts:
+                selector = '[data-external-conflict="'+conflict+'"] [data-external-choice="target"]'
+                scroll_to(page, selector)
+                click(page, selector)
+
+        merge_preview()
+        scroll_to(page, '[data-external-action="preview-cancel"]')
+        click(page, '[data-external-action="preview-cancel"]')
+        wait(lambda: not has(page, '[data-external-dialog]'), 'cancel preview closes wizard')
+        assert read_state(source)['coins'] == 500 and read_state(source)['inventory']['apple'] == 2
+        record('native merge preview cancellation preserves source assets')
+        merge_preview()
+        scroll_to(page, '[data-external-submit]')
+        shot(page, 'merge-preview')
+        click(page, '[data-external-submit]')
+        window = wait(lambda: run(['xdotool', 'search', '--onlyvisible', '--name', 'DSH.*合并']).strip().splitlines()[0], 'native merge confirmation')
+        geometry = dict(line.split('=', 1) for line in run(['xdotool', 'getwindowgeometry', '--shell', window]).splitlines())
+        rect = ','.join(geometry[k] for k in ['X', 'Y', 'WIDTH', 'HEIGHT'])
+        run(['scrot', '-o', '-a', rect, str(out / 'merge-native-confirm.png')])
+        run(['xdotool', 'windowactivate', '--sync', window])
+        # The native dialog starts on Cancel; move focus to Allow, then confirm.
+        key('Tab', 'Return')
+        wait(lambda: has(page, '[data-external-dialog="success"]'), 'native-confirmed merge succeeds', 70)
+        assert read_state(profile)['coins'] == 1500
+        assert read_state(profile)['inventory']['apple'] == 6
+        assert not (source / 'state.json').exists(), 'Merged source must be retired'
+        shot(page, 'merge-success')
+        record('native confirmed merge applies assets once and retires source', coins=1500, apples=6)
+        scroll_to(page, '[data-external-action="success-rollback"]')
+        click(page, '[data-external-action="success-rollback"]')
+        click(page, '[data-external-action="rollback-go"]')
+        wait(lambda: (source / 'state.json').exists(), 'rollback restores source')
+        wait(lambda: read_state(profile)['coins'] == 1000, 'rollback restores desktop')
+        assert read_state(profile)['inventory']['apple'] == 4
+        assert read_state(source)['coins'] == 500 and read_state(source)['inventory']['apple'] == 2
+        shot(page, 'merge-rollback')
+        record('native rollback restores both pigs and preserves premerge care')
+        stop_game()
         assert not errors, errors
         record('page error check', errors=0)
         (out / 'report.json').write_text(json.dumps({'ok': True, 'cases': checks, 'errors': errors,
@@ -365,7 +434,7 @@ except Exception as error:
             except Exception:
                 pass
     if web_browser:
-        for index, page in enumerate(web_browser.contexts[0].pages):
+        for index, page in enumerate(browser_pages(web_browser)):
             try:
                 shot(page, 'failure-web-' + str(index))
                 (out / ('failure-web-' + str(index) + '.txt')).write_text(clean(page.locator('body').inner_text()))
