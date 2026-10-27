@@ -243,7 +243,7 @@ def desk_page(selector):
 def desktop_menu():
     page = desk_page('.dp-pig')
     if not any(has(p, '[data-home-dot]:visible, [data-home]:visible') for p in desktop_pages()):
-        open_web_menu(page)
+        click(page, '.dp-pig', 3)
     return desk_page('.dp-content')
 
 
@@ -393,7 +393,8 @@ try:
         # Navigation is native keyboard input, not DOM mutation.
         key('ctrl+l')
         run(['xdotool', 'type', '--clearmodifiers', '--delay', '1', url])
-        key('Return')
+        with page.expect_navigation(wait_until='domcontentloaded', timeout=90000):
+            key('Return')
         wait(lambda: has(page, '[data-external-offline="true"]'), 'DSH restart keeps external offline mode', 90)
         assert hashlib.sha256((source / 'state.json').read_bytes()).hexdigest() == frozen
         record('real DSH host restart preserves external mode and paused source')
