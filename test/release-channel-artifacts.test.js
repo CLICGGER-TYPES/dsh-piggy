@@ -104,3 +104,32 @@ test('Gitee upload script classifies both stable and RC metadata for the final u
   const manifestsUpload = giteePublish.indexOf('node scripts/gitee-release.mjs upload "$ID" "${MANIFESTS[@]}"')
   assert.ok(installersUpload >= 0 && manifestsUpload > installersUpload, 'metadata uploads after installers')
 })
+
+
+test('Gitee publishes the immutable release commit even when local main is stale', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'piggy-gitee-tag-source-'))
+  const bare = join(dir, 'remote.git')
+  const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  try {
+    git('init', '-q')
+    git('symbolic-ref', 'HEAD', 'refs/heads/main')
+    writeFileSync(join(dir, 'version.txt'), 'old')
+    git('add', 'version.txt')
+    git('-c', 'user.name=Release Test', '-c', 'user.email=release@example.invalid', 'commit', '-qm', 'old')
+    const stale = git('rev-parse', 'HEAD')
+    writeFileSync(join(dir, 'version.txt'), 'release')
+    git('add', 'version.txt')
+    git('-c', 'user.name=Release Test', '-c', 'user.email=release@example.invalid', 'commit', '-qm', 'release')
+    const expected = git('rev-parse', 'HEAD')
+    git('tag', 'v1.2.3-rc.1')
+    git('update-ref', 'refs/heads/main', stale)
+    git('init', '--bare', '-q', bare)
+    const derive = line(giteePublish, /^source_commit=/, 'immutable release source')
+    const push = line(giteePublish, /^gitee_push "\$source_commit:refs\/heads\/main"$/, 'explicit release main refspec')
+    const tagPush = line(giteePublish, /^gitee_push "refs\/tags\/\$TAG"$/, 'release tag refspec')
+    runBash(dir, `gitee_push() { git push "$TEST_BARE" "$@"; }\n${derive}\n${push}\n${tagPush}`, { TAG: 'v1.2.3-rc.1', TEST_BARE: bare })
+    assert.equal(git('--git-dir=' + bare, 'rev-parse', 'refs/heads/main'), expected)
+    assert.equal(git('--git-dir=' + bare, 'rev-parse', 'refs/tags/v1.2.3-rc.1'), expected)
+    assert.equal(git('rev-parse', 'refs/heads/main'), stale, 'the caller local branch is not modified')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
