@@ -9552,7 +9552,7 @@
     dialog.setAttribute("data-external-dialog", options.step);
     dialog.tabIndex = -1;
     overlay.appendChild(dialog);
-    ui.content.appendChild(overlay);
+    (ui.card ?? ui.content).appendChild(overlay);
     const keyHandler = (event) => {
       if (!overlay.isConnected && overlay.parentNode === null) return;
       if (event.key === "Escape") {

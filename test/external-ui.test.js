@@ -891,3 +891,28 @@ test('外部弹层同一步骤重画保留滚动，切换步骤复位并更新�
     assert.equal(env.dom.document.keydown.length, 1, '轮询重挂时移除旧弹层键盘监听')
   } finally { resetSession(session); env.restore() }
 })
+
+test('外部弹层挂稳定面板层：内容轮询不销毁滚动容器本体', async () => {
+  const env = installGlobals()
+  const { session, repaint } = await import('../src/client/external-pet.js')
+  resetSession(session)
+  try {
+    const ui = env.dom.ui
+    const card = env.dom.document.createElement('aside')
+    ui.content.remove()
+    env.dom.document.body.appendChild(card)
+    card.appendChild(ui.content)
+    ui.card = card
+    session.ui = ui
+    session.open = true
+    session.step = 'loading'
+    repaint()
+    const dialog = session.overlay.dialog
+    dialog.scrollTop = 650
+    clearContent(ui)
+    repaint()
+    assert.equal(session.overlay.dialog, dialog, '不能用新滚动节点替换仍在接收原生滚轮的节点')
+    assert.equal(session.overlay.overlay.parentNode, card)
+    assert.equal(dialog.scrollTop, 650)
+  } finally { resetSession(session); env.restore() }
+})

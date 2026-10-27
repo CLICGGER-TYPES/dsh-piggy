@@ -940,3 +940,22 @@ test('真实面板轮询断线后恢复：连接状态随结果更新，内嵌�
     assert.equal(readFileSync(statePath, 'utf8'), frozen)
   } finally { controller.close(); await d.close() }
 })
+
+test('合并收尾只刷新已配对目标：发现文件暂时消失不改变连接和摘要', async t => {
+  const d = await desktop({ target: { name: '团团', coins: 1240 } })
+  t.after(() => d.close())
+  const statePath = dshState(d.dir, { name: '猪猪', coins: 880 })
+  const { controller } = controllerFor(statePath, { clock: d.clock, markerPath: d.markerPath, homes: d.homes })
+  try {
+    await controller.init()
+    const preview = await controller.previewMerge()
+    rmSync(d.markerPath)
+    const committed = await controller.commitMerge({ duplicate: 'merge' })
+    assert.equal(committed.ok, true)
+    assert.equal(controller.status().connection, 'connected')
+    assert.equal(controller.status().target.summary.coins, 2120)
+    const rolled = await controller.rollbackMerge(preview.mergeId)
+    assert.equal(rolled.ok, true)
+    assert.equal(controller.status().target.summary.coins, 1240)
+  } finally { controller.close() }
+})

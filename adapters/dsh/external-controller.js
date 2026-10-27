@@ -227,6 +227,10 @@ export function createExternalController(options) {
     getConfig: () => config,
     setConfig: next => { config = next },
     saveConfig, baseConfig, refresh, refreshEndpoints,
+    refreshTargetSummary: async () => {
+      const response = await client.info()
+      if (response.status === 200 && response.json?.ok === true) noteTargetSummary(response.json.summary ?? null)
+    },
     getMode: () => mode,
     setMode: applyMode,
     getConnection: () => connection,

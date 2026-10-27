@@ -455,6 +455,15 @@ try:
 
         merge_preview()
         scroll_to(page, '[data-external-action="preview-cancel"]')
+        live_dialog = page.locator('[data-external-dialog="preview"]').element_handle()
+        scroll_before = live_dialog.evaluate('e=>e.scrollTop')
+        countdown = page.locator('[data-external-dialog="preview"] .dp-ext-note').first.inner_text()
+        with page.expect_response(lambda r: '/dsh-piggy/state' in r.url and r.request.method == 'GET', timeout=15000):
+            pass
+        wait(lambda: page.locator('[data-external-dialog="preview"] .dp-ext-note').first.inner_text() != countdown, 'real poll redraws preview')
+        assert live_dialog.evaluate('e=>e.isConnected'), 'Polling replaced the native scroll container'
+        assert abs(live_dialog.evaluate('e=>e.scrollTop') - scroll_before) <= 2, 'Polling moved the preview scroll position'
+        record('native preview scroll container and position survive a real DSH poll')
         click(page, '[data-external-action="preview-cancel"]')
         wait(lambda: not has(page, '[data-external-dialog]'), 'cancel preview closes wizard')
         assert read_state(source)['coins'] == 500 and read_state(source)['inventory']['apple'] == 2

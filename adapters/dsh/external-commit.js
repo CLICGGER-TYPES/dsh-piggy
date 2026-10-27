@@ -54,7 +54,7 @@ export function createCommitFlow(ctx) {
     ctx.setConnection('connected')
     outbox.resume()
     ctx.scheduleDelivery(0)
-    await ctx.refresh().catch(() => {})
+    await ctx.refreshTargetSummary().catch(() => {})
     return { ...body, ok: true, warnings: [...new Set([...(Array.isArray(body.warnings) ? body.warnings : []), ...warnings, ...cleanup.warnings])], dsh: { retired, record: record?.merges?.at(-1) ?? null, cleanup } }
   }
 
@@ -145,7 +145,7 @@ export function createCommitFlow(ctx) {
       ctx.setMode('normal')
       outbox.resume()
       ctx.embedded().ensure()
-      await ctx.refresh().catch(() => {})
+      await ctx.refreshTargetSummary().catch(() => {})
       return { ok: true, mergeId, restored: { target: true, source: true }, backups: { source: backupName } }
     } catch (cause) {
       ctx.saveConfig({ ...(config ?? ctx.baseConfig()), pigState: 'rolling-back', connection: 'disconnected', mergeId, rollback: { mergeId, targetRestored: true } })
