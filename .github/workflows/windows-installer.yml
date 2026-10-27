@@ -51,13 +51,15 @@ jobs:
           npm run typecheck
       - name: Build full installer without publishing
         working-directory: apps/desktop
-        run: npx --no-install electron-builder --win nsis --x64 --config electron-builder.optional.cjs --config.nsis.artifactName=dsh-piggy-offline-setup-qa.exe --publish never
+        run: npx --no-install electron-builder --win nsis --x64 --config electron-builder.optional.cjs --publish never
       - name: Native installer and installed-game acceptance
         shell: powershell
         run: |
           $extra = @{}
           if ('${{ inputs.verify_icons }}' -eq 'true') { $extra.CheckIcons = $true }
-          ./apps/desktop/qa/windows-installer.ps1 -Installer "${{ github.workspace }}/apps/desktop/dist/dsh-piggy-offline-setup-qa.exe" -Repository "${{ github.workspace }}" @extra
+          $installer = @(Get-ChildItem apps/desktop/dist/dsh-piggy-setup-*.exe)
+          if ($installer.Count -ne 1) { throw "Expected exactly one full NSIS candidate" }
+          ./apps/desktop/qa/windows-installer.ps1 -Installer $installer[0].FullName -Repository "${{ github.workspace }}" @extra
       - name: Build portable candidate without publishing
         working-directory: apps/desktop
         run: npx --no-install electron-builder --win portable --x64 --publish never
@@ -80,6 +82,7 @@ jobs:
           if-no-files-found: warn
           path: |
             apps/desktop/dist/*.exe
+            apps/desktop/dist/latest.yml
             apps/desktop/dist/SHA256SUMS
             apps/desktop/build/optional-extensions/catalog.json
             apps/desktop/build/optional-extensions/strings.json

@@ -82,11 +82,21 @@ function Check-InstalledIcons {
  Start-Sleep -Milliseconds 700
  $desktopIcon=Wait-Until {Find-SystemElement '^dsh-piggy$' @('explorer') ([System.Windows.Automation.ControlType]::ListItem)} 'desktop shortcut visible' 15
  Screenshot 'icon-desktop-native' $desktopIcon
- [PiggyIconNative]::Keys(0x44,$true)
- [PiggyIconNative]::Keys(0x5B,$false)
- Start-Sleep -Milliseconds 650
- [System.Windows.Forms.SendKeys]::SendWait('dsh-piggy')
- $entry=Wait-Until {Find-SystemElement '^dsh-piggy(?:, App| App)?$' @('SearchHost','StartMenuExperienceHost','SearchApp')} 'native Start menu search result' 25
+ $start=Wait-Until {Find-SystemElement '^Start$' @('explorer') ([System.Windows.Automation.ControlType]::Button)} 'native Start button' 15
+ Click-Element $start
+ $all=Wait-Until {Find-SystemElement '^All(?: apps)?$' @('StartMenuExperienceHost') ([System.Windows.Automation.ControlType]::Button)} 'Start menu All apps button' 30
+ Screenshot 'icon-start-menu-open-native'
+ Click-Element $all
+ $entry=$null
+ for($attempt=0;$attempt -lt 16;$attempt++){
+  $entry=Find-SystemElement '^dsh-piggy$' @('StartMenuExperienceHost')
+  if($entry){break}
+  # Scroll the real All apps view under the native pointer; UIA remains read-only.
+  [void][PiggyNative]::SetCursorPos(500,450)
+  [PiggyNative]::mouse_event(0x0800,0,0,4294966936,[UIntPtr]::Zero)
+  Start-Sleep -Milliseconds 500
+ }
+ if(-not $entry){throw 'Native Start menu All apps did not show dsh-piggy'}
  Screenshot 'icon-start-menu-native'
  [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
  Start-Sleep -Milliseconds 250
