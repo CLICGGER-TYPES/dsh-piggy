@@ -2,7 +2,8 @@
   "key": "farm",
   "label": "菜园",
   "emoji": "🥬",
-  "version": "4.1.5",
+  "version": "4.1.6",
+  "mergeHook": 1,
   "minGame": "0.37.2",
   "description": "清爽平涂纸感菜园：29种作物、18块地，支持新手试种、明确照料目标、换菜币和帮工。",
   "app": {

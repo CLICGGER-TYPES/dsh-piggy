@@ -156,9 +156,13 @@ test('退出顺序是 cleanup（含宿主保存）-> proxy.flush -> 日志 flush
 })
 
 test('stage main 在退出路径等待全屏探测、代理和日志，并保留显式 work-events 模式', () => {
-  assert.match(source, /const workEventsDirectory = process\.argv\.includes\('--work-events'\)/)
-  assert.match(source, /host = await startBackgroundHost\([\s\S]{0,220}workEventsDirectory/,
-    '--work-events 的目录要传给宿主；不传时宿主保持不监听')
+  // 外部桌宠要按需启停工作事件端点，所以目录总是交给宿主；真正「听不听」
+  // 由 workEventsAutoStart 决定，只有显式 --work-events 才自动开始。
+  assert.match(source, /const workEventsDirectory = join\(app\.getPath\('userData'\), 'work-endpoint'\)/)
+  assert.match(source, /host = await startBackgroundHost\([\s\S]{0,260}workEventsDirectory/,
+    'work-events 的目录要传给宿主；只听显式开关')
+  assert.match(source, /workEventsAutoStart: process\.argv\.includes\('--work-events'\)/,
+    '只有显式 --work-events 才让宿主自动开始监听')
   assert.doesNotMatch(source, /startBackgroundHost\([^)]*workEventsDirectory: join\(app\.getPath\('userData'\), 'work-endpoint'\)/,
     '不能无条件开启 work-events 目录')
   assert.match(source, /fullscreen = await watchFullscreen\(/, 'watchFullscreen 改为异步后仍要等它返回')

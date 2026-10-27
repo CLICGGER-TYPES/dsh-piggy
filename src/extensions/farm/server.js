@@ -11,6 +11,7 @@ import { actions } from './actions.js'
 import { CROPS, START_PLOTS } from './data.js'
 import { HELPER_PLOTS, HELPER_PRICES, HELPER_SHARE, HELPER_WINDOW, helperRecipe, settleHelper } from './helper.js'
 import { payRefund } from './host.js'
+import { mergeStates } from './merge.js'
 import { newGround, normalize } from './migration.js'
 import { amountFor } from './plot-rules.js'
 import { view } from './view.js'
@@ -32,6 +33,8 @@ const game = {
   init() { return normalize({ version: 4, plots: Array.from({ length: START_PLOTS }, () => newGround()) }) },
   actions,
   view,
+  // #14 外部桌宠合并：宿主只在目标端已安装且 manifest mergeHook >= 1 时调用。
+  mergeStates,
 }
 // 所有动作走同一道入口：先迁移/补齐、付迁移退款、结算帮工，成功后再结算一次并报成就进度。
 for (const [key, action] of Object.entries(game.actions)) {

@@ -25,6 +25,7 @@ import { readStore, writeStore } from './storage.js'
 import { constrainRectToAreas, desktopPositionForStage, geometryMatchesViewport, positionForScreenFoot, rebaseStageFoot, rescaleGeometryForDpr, STAGE_POSITION_MIGRATION_KEY, stagePanelArea, toPageRect, workAreaForPig } from './stage-position.js'
 import { applyPigFx, forwardPigFx, registerStageShell, unregisterStageShell } from './stage-shell.js'
 import { createStageAnchor } from './stage-anchor.js'
+import { bindStageEvents } from './stage-events.js'
 
 const FLIGHT_GUARD_MS = 15000
 const ROUND = value => Math.round(Number(value) || 0)
@@ -335,9 +336,7 @@ export function createStageBridge(deps) {
   }
   const shell = /** @type {any} */ (window).piggyShell
   if (typeof shell?.panel?.onFx === 'function') shell.panel.onFx(fx => applyPigFx(ctx, fx))
-  window.addEventListener('pointerup', onPointerUp, true)
-  window.addEventListener('pointercancel', onPointerUp, true)
-  window.addEventListener('resize', onResize, { passive: true })
+  subscriptions.push(bindStageEvents(window, ctx, setOpen, onPointerUp, onResize))
   const observer = new MutationObserver(() => { scheduleBubble(); scheduleSettle() })
   observer.observe(host, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'style', 'data-open', 'data-bubble-side', 'data-fitted'] })
 
@@ -361,6 +360,7 @@ export function createStageBridge(deps) {
     walk: true,
     proxy: shell?.proxy ?? null,
     fullscreen: shell?.fullscreen ?? null,
+    external: shell?.external ?? null,
     isFlying() { return flying },
     feelShell() { return { flight: flightBridge } },
     moveShell() { return { moveBy } },
@@ -378,9 +378,6 @@ export function createStageBridge(deps) {
   function dispose() {
     observer.disconnect()
     for (const off of subscriptions.splice(0)) { try { off() } catch { /* already gone */ } }
-    window.removeEventListener('pointerup', onPointerUp, true)
-    window.removeEventListener('pointercancel', onPointerUp, true)
-    window.removeEventListener('resize', onResize)
     if (settleFrame !== 0) cancelAnimationFrame(settleFrame)
     if (bubbleFrame !== 0) cancelAnimationFrame(bubbleFrame)
     if (flightGuard !== null) clearTimeout(flightGuard)

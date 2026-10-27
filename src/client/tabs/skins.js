@@ -10,6 +10,7 @@ import { chubbySkinNote } from '../skin-note.js'
 import { cancelSkinContactPreview, clampSkinContact, clearSkinContact, effectiveSkinContact, endSkinContactPreview, framedSkinPoint, renewSkinContactPreview, setDeclaredSkinContact, setSkinContactOverride, skinContactSource, startSkinContactPreview, unframedSkinPoint } from '../skin-contact.js'
 import { drillTo } from '../widgets.js'
 import { renderSkinGuide } from './skin-guide.js'
+import { isExternalMode } from '../external-link.js'
 
 export function renderSkinsTab(ui) {
   // 面板重绘/切页签/卸载：上一条按住预览在这里收掉（没有预览时是空操作）。
@@ -36,7 +37,9 @@ export function renderSkinsTab(ui) {
   if (currentSkin !== undefined && currentSkin.key !== 'default' && currentSkin.unlocked) {
     ui.content.appendChild(contactCard(currentSkin))
   }
-  ui.content.appendChild(importCard(ui))
+  // 外部桌宠：皮肤导入归桌面版；已安装皮肤仍可切换（转发）。
+  if (isExternalMode(ui.view)) ui.content.appendChild(el('div', 'dp-dim', '外部桌宠模式下，导入皮肤请到桌面版；这里仍可切换已安装的皮肤。'))
+  else ui.content.appendChild(importCard(ui))
   // G 批次：说清楚自己做皮肤要哪些图、什么规格（以前只有一行字）。
   const howto = button('dp-btn dp-skin-howto', { 'data-skin-guide': 'true' }, function () { drillTo(ui, 'skins', 'guide') })
   howto.textContent = '📐 怎么做皮肤：需要哪些图'

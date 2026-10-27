@@ -41,6 +41,25 @@ const CHANNEL_LABEL = { github: 'GitHub', gitee: 'Gitee' }[CHANNEL.name] ?? CHAN
 
 const sleep = ms => new Promise(resolve => { setTimeout(resolve, ms) })
 
+/** 只接受普通对象/数组/字符串/有限数字/布尔/null；拒绝函数、循环引用和原型污染。 */
+function plainData(value, depth) {
+  if (depth > 64) throw new Error('mergeStates 返回值嵌套过深')
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error('mergeStates 返回值含非法数字')
+    return value
+  }
+  if (Array.isArray(value)) return value.map(item => plainData(item, depth + 1))
+  if (typeof value !== 'object') throw new Error('mergeStates 返回值含函数或未知类型')
+  if (Object.getPrototypeOf(value) !== Object.prototype) throw new Error('mergeStates 返回值必须是普通对象')
+  const out = {}
+  for (const [key, item] of Object.entries(value)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') throw new Error('mergeStates 返回值含危险 key')
+    out[key] = plainData(item, depth + 1)
+  }
+  return out
+}
+
 /** 「0.31.0」≥「0.30.2」吗（测试版后缀不管）。 */
 export function versionAtLeast(have, need) {
   const parse = text => String(text).split('-')[0].split('.').map(part => Number(part) || 0)
@@ -140,7 +159,7 @@ export function createExtRuntime(store, options) {
 
   /** 快照里的扩展列表（下载来的那部分）。 */
   function list(state) {
-    return [...loaded.entries()].filter(([key]) => state?.extData?.[key] !== undefined).map(([key, entry]) => ({
+    return [...loaded.entries()].map(([key, entry]) => ({
       key,
       label: String(entry.manifest.label ?? key),
       emoji: String(entry.manifest.emoji ?? '🧩'),
@@ -149,6 +168,7 @@ export function createExtRuntime(store, options) {
       eventVersion: entry.module?.eventVersion === 1 || typeof entry.module?.progress === 'function' ? 1 : 0,
       on: extensionOn(state, key),
       installed: true,
+      hasData: state?.extData?.[key] !== undefined,
       builtin: false,
       local: existsSync(join(root(), key, LOCAL_MARK)),
       app: entry.manifest.app ? { emoji: String(entry.manifest.app.emoji ?? entry.manifest.emoji ?? '🧩'), label: String(entry.manifest.app.label ?? entry.manifest.label ?? key) } : null,
@@ -330,6 +350,27 @@ export function createExtRuntime(store, options) {
     return store.mutate(state => runExtensionAction(state, handler, { key, payload, nowMs: now(), currency: entry.manifest?.economy?.currency }))
   }
 
+  /**
+   * 合并钩子：只从目标端已安装、manifest 声明 mergeHook>=1 的扩展加载。
+   * 扩展只能拿到自己的深拷贝，返回值必须是纯 JSON；不合格就抛错，降级为二选一。
+   */
+  function mergeStates() {
+    const hooks = {}
+    for (const [key, entry] of loaded) {
+      if (entry.module === null || typeof entry.module.mergeStates !== 'function') continue
+      if (!Number.isInteger(entry.manifest?.mergeHook) || entry.manifest.mergeHook < 1) continue
+      hooks[key] = (target, source) => {
+        const result = entry.module.mergeStates(structuredClone(target), structuredClone(source))
+        if (result === null || typeof result !== 'object' || Array.isArray(result)) throw new Error('mergeStates 必须返回对象')
+        const clean = plainData(result, 0)
+        if (JSON.stringify(clean).length > 1024 * 1024) throw new Error('mergeStates 返回值超过 1MB')
+        if (!Object.hasOwn(clean, 'data') || clean.data === undefined) throw new Error('mergeStates 缺少 data')
+        return clean
+      }
+    }
+    return hooks
+  }
+
   /** 扩展的面板脚本（GET /dsh-piggy/ext/<key>/client.js）。 */
   function clientScript(key) {
     if (!KEY.test(key) || !loaded.has(key)) return null
@@ -343,5 +384,5 @@ export function createExtRuntime(store, options) {
     try { return { body: readFileSync(join(root(), key, 'assets', name)), type: ASSET_TYPES[name.split('.').pop() ?? ''] } } catch { return null }
   }
 
-  return { ready, list, views, shelves, dex, onlineView, install, importBundle, remove, act, clientScript, assetFile }
+  return { ready, list, views, shelves, dex, onlineView, install, importBundle, remove, act, mergeStates, installedKeys, clientScript, assetFile }
 }

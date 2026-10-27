@@ -143,6 +143,7 @@ export function extensionsView(state) {
     description: extension.description,
     on: extensionOn(state, extension.key),
     installed: extensionInstalled(state, extension.key),
+    hasData: state?.extData?.[extension.key] !== undefined,
     builtin: true,
     apps: [...extension.apps],
     dexSections: [...extension.dexSections],

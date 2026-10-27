@@ -11,6 +11,7 @@ import { button, el } from '../dom.js'
 import { renderDownloadedApp } from '../ext-apps.js'
 import { importCard } from '../ext-import.js'
 import { arr, obj, str } from '../values.js'
+import { isExternalMode } from '../external-link.js'
 
 /** 正在确认删除哪个扩展。 */
 var confirming = null
@@ -80,6 +81,8 @@ function installLabel(key, normal) {
 
 /** 主菜单与设置共用的扩展更新红点。 */
 export function extensionUpdateAvailable(ui) {
+  // 外部模式不请求在线目录，也不在设置方块上冒「有更新」的红点。
+  if (isExternalMode(ui.view)) return false
   if (!online.loaded || online.stamp !== stampOf(ui.view)) loadOnline(ui, false)
   return online.loaded && online.stamp === stampOf(ui.view) && online.entries.some(function (entry) {
     return entry.update === true && ui.view.extensions.some(function (extension) { return extension.key === entry.key && extension.installed })
@@ -88,13 +91,20 @@ export function extensionUpdateAvailable(ui) {
 
 export function renderExtensionsTab(ui) {
   if (String(ui.tab).startsWith('ext:')) { renderDownloadedApp(ui, String(ui.tab).slice(4)); return }
-  if (!online.loaded || online.stamp !== stampOf(ui.view)) loadOnline(ui, false)
-  ui.content.appendChild(el('div', 'dp-ext-intro', '用不上的玩法可以关掉，数据留着随时恢复；删除会连数据一起清掉，以后可以在下面重新装。'))
+  const external = isExternalMode(ui.view)
+  if (!external && (!online.loaded || online.stamp !== stampOf(ui.view))) loadOnline(ui, false)
+  ui.content.appendChild(el('div', 'dp-ext-intro', external
+    ? '外部桌宠模式下只显示已安装扩展；开关会转发到桌面版，安装、更新和删除请到桌面版。'
+    : '用不上的玩法可以关掉，数据留着随时恢复；删除会连数据一起清掉，以后可以在下面重新装。'))
 
   ui.content.appendChild(el('div', 'dp-ext-section', '本地扩展'))
   var local = ui.view.extensions.filter(function (extension) { return extension.installed })
   if (local.length === 0) ui.content.appendChild(el('div', 'dp-ext-later', '一个扩展都没装'))
-  for (var i = 0; i < local.length; i += 1) ui.content.appendChild(localCard(ui, local[i]))
+  for (var i = 0; i < local.length; i += 1) ui.content.appendChild(localCard(ui, local[i], external))
+  if (external) {
+    ui.content.appendChild(el('div', 'dp-ext-later', '安装、更新和删除扩展请到桌面版；这里的开关仍然可用。'))
+    return
+  }
   ui.content.appendChild(importCard(ui))
 
   var head = el('div', 'dp-ext-section dp-ext-online-head')
@@ -107,7 +117,7 @@ export function renderExtensionsTab(ui) {
   renderOnline(ui)
 }
 
-function localCard(ui, extension) {
+function localCard(ui, extension, external) {
   var card = el('div', 'dp-set dp-ext-card')
   card.setAttribute('data-extension', extension.key)
   var head = el('div', 'dp-set-head')
@@ -129,13 +139,15 @@ function localCard(ui, extension) {
   toggle.appendChild(el('span', 'dp-switch-knob'))
   toggle.appendChild(el('span', 'dp-switch-text', extension.on ? '开' : '关'))
   row.appendChild(toggle)
-  if (newer) {
+  if (newer && !external) {
     var update = button('dp-mini', { 'data-ext-update': extension.key }, function () { startInstall(ui, extension.key) })
     update.textContent = installLabel(extension.key, '更新到 ' + str(newer.version, ''))
     update.disabled = download.key !== ''
     row.appendChild(update)
   }
-  if (confirming === extension.key) {
+  if (external) {
+    card.appendChild(el('div', 'dp-ext-note', '安装、更新和删除在桌面版管理'))
+  } else if (confirming === extension.key) {
     row.appendChild(el('span', 'dp-ext-warn', '删掉会清空' + (CLEARS[extension.key] ?? '它的数据') + '，确定吗？'))
     var yes = button('dp-mini dp-ext-danger', { 'data-ext-remove-yes': extension.key }, function () {
       confirming = null

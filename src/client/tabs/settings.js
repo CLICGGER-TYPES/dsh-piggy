@@ -21,6 +21,8 @@ import { renderProxySettings } from './proxy.js'
 import { renderFullscreenSettings } from './fullscreen.js'
 import { extensionUpdateAvailable } from './extensions.js'
 import { renderSaveTransferSettings } from '../save-transfer.js'
+import { renderExternalPetSettings } from '../external-pet.js'
+import { renderExternalDesktopSettings } from '../external-desktop.js'
 
 /** 桌面外壳和整屏舞台都通过同一个回调重排；网页版两个都没有。 */
 function syncGeometry() {
@@ -69,6 +71,11 @@ export function renderSettingsTab(ui) {
   extensions.head.appendChild(openExtensions)
 
   renderSaveTransferSettings(ui, section)
+
+  // 外部桌宠入口固定在「存档」之后、「小猪大小」之前（设计 4.1）。
+  // 只在 DSH 网页版显示；桌面版设置里是「外部连接」，不当成自己连自己。
+  if (desktopShell() === null && stageShell() === null) renderExternalPetSettings(ui, section)
+  else renderExternalDesktopSettings(ui, section, desktopShell()?.external ?? stageShell()?.external)
 
   const size = section(ui, '小猪大小', '普通猪、皮肤和睡姿一起调整；只改这台设备，不改存档')
   const sizeRow = el('div', 'dp-size-control')

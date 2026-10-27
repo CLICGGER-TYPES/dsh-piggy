@@ -631,7 +631,7 @@
   var ART_BOUNDS2 = ART_BOUNDS;
   var MAX_ART_ASPECT2 = MAX_ART_ASPECT;
   function builtinFrame(src) {
-    const path = src.slice(ART_URL.length).replace(/^pigs\/no-outline\//, "pigs/");
+    const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
     const name = path.split("/").pop()?.replace(/\.png$/, "");
     return BUILTIN_FRAMING[path] ?? FEEDBACK_FRAMING[name] ?? null;
   }
@@ -4208,7 +4208,7 @@
       ctx.drawImage(referenceFrames[frame3], -18, -pose.wrist, 514, 514);
       ctx.restore();
     }
-    function cancel() {
+    function cancel2() {
       cancelAnimationFrame(raf3);
       raf3 = 0;
       active2 = held = false;
@@ -4223,7 +4223,7 @@
     function tick2(time2) {
       raf3 = 0;
       if (!allowed()) {
-        cancel();
+        cancel2();
         return;
       }
       if (previewHeld && time2 >= previewUntil) {
@@ -4234,7 +4234,7 @@
       const elapsed = Math.max(0, time2 - start2);
       if (!held && elapsed >= stopAt) {
         if (c.pig.getAttribute("data-react") === "pet") c.pig.removeAttribute("data-react");
-        cancel();
+        cancel2();
         return;
       }
       const next = Math.floor(elapsed / SNAP_FRAME_MS) % SNAP_FRAMES;
@@ -4277,7 +4277,7 @@
     const player = {
       press,
       release,
-      cancel,
+      cancel: cancel2,
       confirm,
       /** 皮肤页调校准滑点/拖动时：正在播的手立刻按新接触点重画，不用松手重按。 */
       refreshContact() {
@@ -4302,7 +4302,7 @@
       ready = true;
     }).catch((error) => console.warn("\u6478\u6478\u5C0F\u624B\u52A0\u8F7D\u5931\u8D25\uFF0C\u4FDD\u7559\u73B0\u6709\u7ACB\u7ED8", error));
     const onState = () => {
-      if (active2 && !allowed()) cancel();
+      if (active2 && !allowed()) cancel2();
     };
     const observer = new MutationObserver(onState);
     observer.observe(c.pig, { attributes: true, childList: true, subtree: true, attributeFilter: ["data-art", "data-stage", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react", "data-feel-flip"] });
@@ -4331,7 +4331,7 @@
       previewHeld = false;
       previewUntil = 0;
       if (event.action === "release") release();
-      else cancel();
+      else cancel2();
     });
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     media?.addEventListener?.("change", onState);
@@ -4345,7 +4345,7 @@
       offPreview();
       media?.removeEventListener?.("change", onState);
       document.removeEventListener("visibilitychange", onState);
-      cancel();
+      cancel2();
       canvas.remove();
       referenceFrames.forEach((image) => image.close());
       referenceFrames = [];
@@ -4540,6 +4540,193 @@
     "skin-wizard-work": "pigs/skins/skin-wizard/work.png"
   });
 
+  // packages/pet-core/src/data/art-revisions.js
+  var PIG_ART_REVISIONS = Object.freeze({
+    "badge-pig-blindbox-first": "35f572dc5351",
+    "badge-pig-blindbox-six": "6223da3506ee",
+    "badge-pig-blindbox-ten": "0c2d076bfd61",
+    "badge-pig-clean-ten": "6003eb8595a0",
+    "badge-pig-devil": "89cb8d3e629f",
+    "badge-pig-farm-first": "5d1652cb0fe0",
+    "badge-pig-farm-five": "deb83c643582",
+    "badge-pig-farm-ten": "0149eff14413",
+    "badge-pig-first-class": "12a7524937d8",
+    "badge-pig-first-fish": "b61fec5ff7ff",
+    "badge-pig-first-job": "e905051473a8",
+    "badge-pig-first-meal": "e5fbc9564601",
+    "badge-pig-first-trip": "f8ac4b6899d0",
+    "badge-pig-fish-five": "5c35eb850433",
+    "badge-pig-gacha-first": "a57d94f99dd9",
+    "badge-pig-gacha-gold": "4996ffc1006d",
+    "badge-pig-gacha-machines": "77f0da6b8e33",
+    "badge-pig-grown-up": "b71a0daf69f4",
+    "badge-pig-jobs-hundred": "8eb8387ce16f",
+    "badge-pig-jobs-ten": "97ddd9e832b8",
+    "badge-pig-king": "0eafa52396a1",
+    "badge-pig-mine-deep": "d94d942494c1",
+    "badge-pig-mine-first": "c0ff5e419ad4",
+    "badge-pig-mine-fossils": "c5a8a6273d0b",
+    "badge-pig-pet-hundred": "d44a2084eeba",
+    "badge-pig-play-twenty": "d1bcbd208fe4",
+    "badge-pig-souvenirs-three": "7ea9125dab52",
+    "badge-pig-trips-ten": "7a993658b297",
+    "career-astronaut": "9c4f6a1d855d",
+    "career-astronaut-bathe": "4711f654cd98",
+    "career-astronaut-eat": "d6c9441eee7e",
+    "career-astronaut-pet": "427eb8fec33a",
+    "career-astronaut-play": "8c0deb1d7f3c",
+    "career-astronaut-relaxed": "3b69cc74e2db",
+    "career-astronaut-sleep": "9183e4d26ff7",
+    "career-astronaut-study": "737fddb5021d",
+    "career-astronaut-trip": "f00d9b454c75",
+    "career-astronaut-work": "052b7bdc8bd7",
+    "career-chef": "06fcbcb1b635",
+    "career-chef-bathe": "0e7134a48043",
+    "career-chef-eat": "b0670e2669c6",
+    "career-chef-pet": "dda5fb31b6eb",
+    "career-chef-play": "19d50b01a970",
+    "career-chef-relaxed": "180a6efd6a6c",
+    "career-chef-sleep": "5b7dde635592",
+    "career-chef-study": "e082511e86c0",
+    "career-chef-trip": "d5229df9d60d",
+    "career-chef-work": "3185d40094fd",
+    "elder": "30dc454a31c9",
+    "feedback/allergy": "ae418198fa11",
+    "feedback/birthday": "de2011e99f7b",
+    "feedback/collection-badge": "5b660d65cdbb",
+    "feedback/collection-bubbles": "00d223964c11",
+    "feedback/collection-cage": "d26ab0f9b29a",
+    "feedback/collection-check": "bc7794bf473d",
+    "feedback/collection-chicken": "76441b4b9b3d",
+    "feedback/collection-courier": "0d00d1c060a2",
+    "feedback/collection-fever": "7ab3453e41ab",
+    "feedback/collection-fitness": "743ea4c35c3b",
+    "feedback/collection-letter": "d5437602fa55",
+    "feedback/collection-mosquito": "1ac1bef599a3",
+    "feedback/collection-scallion": "5e3980377c9d",
+    "feedback/collection-snack": "efaa38ee13e4",
+    "feedback/collection-soup": "fe78d2049f28",
+    "feedback/collection-stack": "aaac07ddfcc8",
+    "feedback/collection-taro": "4edf34ddfb30",
+    "feedback/collection-throne": "762826882f37",
+    "feedback/courier": "7705d64381a1",
+    "feedback/death-day": "bfc42c776c35",
+    "feedback/faint": "da8493aa3728",
+    "feedback/fishing": "6da9e58f77a6",
+    "feedback/ghost-grave": "96bf71078568",
+    "feedback/hungry": "e6127c60fda6",
+    "feedback/lie-flat": "a2587f44583d",
+    "feedback/music-earbuds": "91abfada5ada",
+    "feedback/music-headphones-v2": "9e83147d4811",
+    "feedback/music-rainbow": "d2fe79631774",
+    "feedback/painting": "2a46d738fd80",
+    "feedback/recruit": "0b74beab60db",
+    "feedback/runny-nose": "8e67024a4df8",
+    "feedback/sleep-cloud": "b298ff55abd6",
+    "feedback/study-book": "85cf5637aa07",
+    "feedback/study-determined": "bfcc6716e7d8",
+    "feedback/study-pink-book": "40f5feafd5e8",
+    "feedback/suspended": "3d97bcd9bd45",
+    "feedback/turning": "5e76ce9d5347",
+    "feedback/twitch": "345f8b2731b3",
+    "pig-devil": "7686c1397031",
+    "pig-devil-bathe": "687e89327f43",
+    "pig-devil-eat": "d12e5370a7a7",
+    "pig-devil-fly": "42c15d1e6ea7",
+    "pig-devil-pet": "18053285327d",
+    "pig-devil-play": "f0765a9b2112",
+    "pig-devil-relaxed": "2d20d5903640",
+    "pig-devil-sleep": "eefe50a71cad",
+    "pig-devil-study": "660c660ee1a8",
+    "pig-devil-trip": "218c507ac2fe",
+    "pig-devil-work": "8a90f98385b9",
+    "pig-fat": "ceb62db10657",
+    "pig-fat-bathe": "a4b0b1948419",
+    "pig-fat-eat": "aa34db002e64",
+    "pig-fat-pet": "988d6988578d",
+    "pig-fat-play": "35de101d383e",
+    "pig-fat-relaxed": "79989fdb89d6",
+    "pig-fat-sleep": "60166bc2775d",
+    "pig-fat-study": "ffeb35d6159e",
+    "pig-fat-trip": "c136afbb7d77",
+    "pig-fat-work": "b096a13c648d",
+    "pig-king": "92505502aa32",
+    "pig-king-bathe": "11555bd6342d",
+    "pig-king-eat": "2ccff733ac64",
+    "pig-king-pet": "917d132c51db",
+    "pig-king-play": "4d1ac625f925",
+    "pig-king-relaxed": "0a94a4d99e3d",
+    "pig-king-sleep": "4d94fdbc9be3",
+    "pig-king-study": "f74a81b1a9f2",
+    "pig-king-trip": "d06e08e72039",
+    "pig-king-work": "76d83966fe82",
+    "pig-round": "8f7a21882602",
+    "pig-round-bathe": "b9f92289db7c",
+    "pig-round-eat": "44a3f41c4b9a",
+    "pig-round-pet": "2d3e8ab7adab",
+    "pig-round-play": "b504cbdb26ec",
+    "pig-round-relaxed": "958815aafc7d",
+    "pig-round-sleep": "fd453626094b",
+    "pig-round-study": "e4569efde593",
+    "pig-round-trip": "a11787b3085f",
+    "pig-round-work": "fc26b4f9273d",
+    "piglet": "7543c26400e0",
+    "piglet-bathe": "4cd672524e43",
+    "piglet-blink": "8d487ac28119",
+    "piglet-eat": "6254178b7ef8",
+    "piglet-play": "f9242fc126e3",
+    "piglet-shy-pet": "d20a491df29b",
+    "piglet-sleep": "4644643d928a",
+    "piglet-work": "493f5ec57707",
+    "skin-angel": "2bd80432fec5",
+    "skin-angel-bathe": "30b0d629501d",
+    "skin-angel-eat": "08c9ea8d424b",
+    "skin-angel-pet": "515ee07b41bb",
+    "skin-angel-play": "546d6e74365f",
+    "skin-angel-relaxed": "b94aee6b53de",
+    "skin-angel-sleep": "c4d5828983e5",
+    "skin-angel-study": "be8cd5cc1022",
+    "skin-angel-trip": "87e94137b700",
+    "skin-angel-work": "238cd5d08984",
+    "skin-detective": "774388f51c10",
+    "skin-detective-bathe": "446766580d07",
+    "skin-detective-eat": "8305f97346ca",
+    "skin-detective-pet": "f1f1a0dcdb83",
+    "skin-detective-play": "c078b09babd1",
+    "skin-detective-relaxed": "74c9bfb9db6a",
+    "skin-detective-sleep": "14f541005466",
+    "skin-detective-study": "768870c6ddd9",
+    "skin-detective-trip": "9712e2915190",
+    "skin-detective-work": "d68f377d5255",
+    "skin-mint": "202c3fc6a8b7",
+    "skin-mint-bathe": "6128254fe813",
+    "skin-mint-eat": "40acc4e29d17",
+    "skin-mint-pet": "ade450188518",
+    "skin-mint-play": "6e2d5d019a22",
+    "skin-mint-sleep": "000c0853791b",
+    "skin-mint-work": "4c2be85d62e1",
+    "skin-pirate": "fecba331dc8b",
+    "skin-pirate-bathe": "224795218d1f",
+    "skin-pirate-eat": "ac19f1827d3a",
+    "skin-pirate-pet": "4985cc85c9d0",
+    "skin-pirate-play": "29b1e7517062",
+    "skin-pirate-relaxed": "b04673387d27",
+    "skin-pirate-sleep": "9a89106729fe",
+    "skin-pirate-study": "79a329922c4f",
+    "skin-pirate-trip": "6b332026a9e1",
+    "skin-pirate-work": "a0764d3d129f",
+    "skin-wizard": "cadeffcf6911",
+    "skin-wizard-bathe": "af2d629b6131",
+    "skin-wizard-eat": "0c9cae6468ad",
+    "skin-wizard-pet": "64d3d9a14084",
+    "skin-wizard-play": "dcc5ba143cf1",
+    "skin-wizard-relaxed": "59a9bcc9b5c9",
+    "skin-wizard-sleep": "962b55ca9cf8",
+    "skin-wizard-study": "23d7e5d9284e",
+    "skin-wizard-trip": "209253abd4db",
+    "skin-wizard-work": "f60e357f13c9"
+  });
+
   // src/client/art-style.js
   function builtinArtPath(key2) {
     return PIG_ART_ASSETS[key2];
@@ -4548,8 +4735,8 @@
   // src/client/art-path.js
   function artSource(key2) {
     const path = builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg");
-    const version = key2.startsWith("custom-") ? customArtVersion(key2) : 0;
-    return ART_URL + path + (version > 0 ? "?v=" + version : "");
+    const version = key2.startsWith("custom-") ? customArtVersion(key2) : PIG_ART_REVISIONS[key2];
+    return ART_URL + path + (version ? "?v=" + version : "");
   }
   function hasBuiltinArt(key2) {
     return Object.hasOwn(PIG_ART_ASSETS, key2);
@@ -4607,14 +4794,14 @@
         scheduleBlink();
       }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
     }
-    function cancel() {
+    function cancel2() {
       clearFrame();
       clock.clearTimeout(blinkTimer);
       blinkTimer = null;
       c.render();
     }
     function visibility() {
-      cancel();
+      cancel2();
       if (!isBlocked()) scheduleBlink();
     }
     const player = { currentArt, play };
@@ -4641,11 +4828,11 @@
     observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
     scheduleBlink();
     return {
-      cancel,
+      cancel: cancel2,
       dispose() {
         observer?.disconnect();
         disposed = true;
-        cancel();
+        cancel2();
         PLAYERS.delete(c.pig);
         document.removeEventListener?.("visibilitychange", visibility);
         gestureTarget.removeEventListener?.("pointercancel", visibility);
@@ -5036,8 +5223,8 @@
       const current3 = reset();
       bubble.textContent = "";
       bubble.appendChild(el("span", "dp-bubble-text", text));
-      const row = el("div", "dp-bubble-replies", "");
-      hold = createRenderHold(row);
+      const row2 = el("div", "dp-bubble-replies", "");
+      hold = createRenderHold(row2);
       replies.forEach((label, index) => {
         const answer = el("button", "dp-reply", label);
         answer.type = "button";
@@ -5048,9 +5235,9 @@
           bubble.hidden = true;
           onReply(index);
         });
-        row.appendChild(answer);
+        row2.appendChild(answer);
       });
-      bubble.appendChild(row);
+      bubble.appendChild(row2);
       bubble.hidden = false;
       timer2 = window.setTimeout(() => {
         if (current3 !== version) return;
@@ -5441,6 +5628,21 @@
     return tabs.filter((tab) => !off.apps.has(tab.key)).concat(downloaded);
   }
 
+  // src/client/external-snapshot.js
+  var STATES = ["connecting", "connected", "reconnecting", "disconnected", "merging"];
+  function normalizeLink(raw) {
+    const link = obj(raw);
+    const state4 = str(link.state, "");
+    if (!STATES.includes(state4)) return null;
+    return {
+      state: state4,
+      lastAt: num(link.lastAt, 0),
+      queued: num(link.queued, 0),
+      merged: link.merged === true,
+      dead: link.dead === true
+    };
+  }
+
   // packages/pet-core/src/core/diary-text.js
   function splitDiaryText(text) {
     const raw = typeof text === "string" ? text : "";
@@ -5457,7 +5659,7 @@
 
   // src/client/normalize-diary.js
   function careNotesOf(value) {
-    return arr(value).filter((note2) => typeof note2 === "string" && note2 !== "");
+    return arr(value).filter((note3) => typeof note3 === "string" && note3 !== "");
   }
   function normalizeDiaryEntry(raw) {
     const entry = obj(raw);
@@ -5840,8 +6042,8 @@
             fromLevel: num(f.fromLevel, 1),
             current: f.current === true,
             ready: f.ready === true,
-            requirements: arr(f.requirements).map(function(row) {
-              var r = obj(row);
+            requirements: arr(f.requirements).map(function(row2) {
+              var r = obj(row2);
               return { key: str(r.key, ""), label: str(r.label, ""), have: num(r.have, 0), need: num(r.need, 0), met: r.met === true };
             })
           };
@@ -5854,7 +6056,8 @@
         isOfflineFeedEnabled: obj(d.dialogue).isOfflineFeedEnabled !== false
       },
       pending: normalizePending(d.pending),
-      maxHealth: num(d.maxHealth, 5)
+      maxHealth: num(d.maxHealth, 5),
+      link: normalizeLink(d.link)
     };
   }
   function normalizeActions(raw) {
@@ -6029,17 +6232,17 @@
       head.appendChild(el("b", null, "\u{1F345} \u4E13\u6CE8\u591A\u4E45\uFF1F"));
       head.appendChild(el("span", null, "\u4F11\u606F " + view.breakMinutes + " \u5206\u949F"));
       ui.content.appendChild(head);
-      var row = el("div", "dp-dev-row");
+      var row2 = el("div", "dp-dev-row");
       for (var i = 0; i < view.options.length; i += 1) {
         (function(minutes) {
           var start2 = button("dp-mini dp-dev-btn", { "data-pomo-start": String(minutes) }, function() {
             ui.send("pomodoro", { minutes });
           });
           start2.textContent = minutes + " \u5206\u949F";
-          row.appendChild(start2);
+          row2.appendChild(start2);
         })(view.options[i]);
       }
-      ui.content.appendChild(row);
+      ui.content.appendChild(row2);
     }
     var today2 = el("div", "dp-row");
     today2.appendChild(el("span", null, "\u4ECA\u5929\u5B8C\u6210"));
@@ -6086,8 +6289,8 @@
       }
       if (breakEndsAt > 0) {
         var rest = Math.max(0, Math.ceil((breakEndsAt - now2) / 1e3));
-        var note2 = content.querySelector("[data-pomo-break]");
-        if (note2 !== null) note2.textContent = "\u2615 \u4F11\u606F " + clockText(rest) + "\uFF08\u4E5F\u53EF\u4EE5\u76F4\u63A5\u5F00\u4E0B\u4E00\u4E2A\uFF09";
+        var note3 = content.querySelector("[data-pomo-break]");
+        if (note3 !== null) note3.textContent = "\u2615 \u4F11\u606F " + clockText(rest) + "\uFF08\u4E5F\u53EF\u4EE5\u76F4\u63A5\u5F00\u4E0B\u4E00\u4E2A\uFF09";
         if (rest === 0) breakEndsAt = 0;
       }
     }
@@ -6220,7 +6423,738 @@
     await flush();
   }
 
+  // src/client/external-api.js
+  var EXTERNAL_URL = {
+    status: "/dsh-piggy/external/status",
+    recheck: "/dsh-piggy/external/recheck",
+    connect: "/dsh-piggy/external/connect",
+    disconnect: "/dsh-piggy/external/disconnect",
+    prepare: "/dsh-piggy/external/merge/prepare",
+    preview: "/dsh-piggy/external/merge/preview",
+    commit: "/dsh-piggy/external/merge/commit",
+    status2: "/dsh-piggy/external/merge/status",
+    rollback: "/dsh-piggy/external/merge/rollback",
+    cancel: "/dsh-piggy/external/merge/cancel",
+    restore: "/dsh-piggy/external/restore",
+    retireRetry: "/dsh-piggy/external/retire/retry"
+  };
+  var PIG_STATES = ["none", "paused", "merged", "rolling-back", "merge-unknown"];
+  var CONNECTIONS = ["connecting", "connected", "reconnecting", "disconnected", "merging"];
+  var BLOCKER_KIND = { activity: "activity", pomodoro: "pomodoro", fishing: "fishing-auto" };
+  function errorOf(data, status2) {
+    const body = obj(data);
+    const nested = obj(body.error);
+    const code = str(body.reason, str(nested.code, str(body.error, status2 > 0 ? "http-" + status2 : "network")));
+    const message2 = str(body.message, str(nested.message, ""));
+    return { code, message: message2 || (status2 > 0 ? "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + status2 : "\u8FDE\u4E0D\u4E0A\u5BBF\u4E3B") };
+  }
+  async function call(url, method, body, timeout) {
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timer2 = controller === null ? null : setTimeout(() => controller.abort(), timeout);
+    const options = { method, cache: "no-store" };
+    if (controller !== null) options.signal = controller.signal;
+    if (body !== void 0) {
+      options.headers = { "content-type": "application/json" };
+      options.body = JSON.stringify(body);
+    }
+    try {
+      const response = await fetch(url, options);
+      const data = await response.json().catch(() => null);
+      if (!response.ok || obj(data).ok === false) {
+        return { ok: false, status: response.status, data, error: errorOf(data, response.status) };
+      }
+      return { ok: true, status: response.status, data, error: null };
+    } catch (error) {
+      const aborted = isObj(error) && /** @type {any} */
+      error.name === "AbortError";
+      return {
+        ok: false,
+        status: 0,
+        data: null,
+        error: { code: aborted ? "timeout" : "network", message: aborted ? "\u5BBF\u4E3B\u54CD\u5E94\u8D85\u65F6" : error instanceof Error ? error.message : String(error) }
+      };
+    } finally {
+      if (timer2 !== null) clearTimeout(timer2);
+    }
+  }
+  function normalizeSummary(raw) {
+    const outer = obj(raw);
+    const inner = obj(outer.summary);
+    const source = Object.keys(inner).length > 0 ? inner : outer;
+    const name = str(source.name, "");
+    const hasPig = outer.hasPig === true || source.hatched === true || source.dead === true || name !== "";
+    return {
+      exists: hasPig,
+      // 契约目前只给 hasPig/dead；纸盒与活猪的区分等后端补 kind（见 notes）。
+      hatched: source.hatched === true || hasPig && source.dead !== true && source.box !== true && source.state === void 0,
+      dead: source.dead === true,
+      box: source.box === true || source.state === "box",
+      state: str(source.state, ""),
+      name,
+      level: num(source.level, 0),
+      days: num(source.days, 0),
+      coins: num(source.coins, 0),
+      items: num(source.items, 0),
+      badges: num(source.badges, 0),
+      busy: outer.busy === true
+    };
+  }
+  function desktopOf(raw) {
+    const source = obj(raw);
+    return {
+      found: source.found === true || source.pid > 0 || source.summary !== void 0 || source.name !== void 0 || source.hasPig === true,
+      running: source.running !== false,
+      enabled: source.enabled === true,
+      reason: str(source.reason, ""),
+      appVersion: str(source.appVersion, ""),
+      gameVersion: str(source.gameVersion, ""),
+      stateVersion: num(source.stateVersion, 0),
+      mergeRulesVersion: num(source.mergeRulesVersion, 0),
+      pid: num(source.pid, 0)
+    };
+  }
+  function pickEnum(value, allowed, fallback) {
+    const text = str(value, "");
+    return allowed.includes(text) ? text : fallback;
+  }
+  function normalizeStatus(raw) {
+    const body = obj(raw);
+    const source = Object.keys(obj(body.status)).length > 0 ? obj(body.status) : body;
+    const pigState = pickEnum(source.pigState, PIG_STATES, source.merged === true ? "merged" : "none");
+    const external = source.mode === "external" || pigState !== "none";
+    const connection = pickEnum(source.connection, CONNECTIONS, external ? "disconnected" : "disconnected");
+    const can = obj(source.can);
+    const target = normalizeSummary(source.target);
+    const last = normalizeSummary(source.lastSummary);
+    const error = str(source.error, str(obj(source.error).message, ""));
+    const desktop2 = desktopOf(Object.keys(obj(source.desktop)).length > 0 ? source.desktop : source.target);
+    if (desktop2.found && !["disabled", "no-pair", "pair-not-offered", "missing-marker", "config-corrupt"].includes(error)) desktop2.enabled = true;
+    return {
+      ok: body.ok !== false,
+      mode: external ? "external" : "internal",
+      pigState,
+      connection,
+      merged: source.merged === true || pigState === "merged" || pigState === "rolling-back" || pigState === "merge-unknown",
+      desktop: desktop2,
+      target: target.exists || target.name !== "" ? target : last.exists ? last : target,
+      local: normalizeSummary(source.source ?? source.local),
+      queued: num(source.queued, 0),
+      canMerge: can.merge === true,
+      canRollback: can.rollback === true,
+      canRecoverInternal: can.restoreEmbedded === true,
+      canAct: can.act === true,
+      configCorrupt: source.configCorrupt === true,
+      retirementPending: source.retirementPending === true,
+      mergeId: str(source.mergeId, ""),
+      merge: isObj(source.preview) ? source.preview : null,
+      lastAt: num(source.lastAt, 0),
+      error,
+      raw: source
+    };
+  }
+  function normalizeConnectResult(raw) {
+    const body = obj(raw);
+    const hasPage = Object.keys(obj(body.source)).length > 0 || arr(body.blockers).length > 0;
+    return {
+      ok: body.ok !== false,
+      page: hasPage,
+      target: normalizeSummary(body.target),
+      source: normalizeSummary(body.source),
+      blockers: arr(body.blockers).map(normalizeBlocker),
+      status: hasPage ? null : normalizeStatus(body)
+    };
+  }
+  function normalizeBlocker(raw) {
+    const source = obj(raw);
+    const reason = str(source.reason, "");
+    return {
+      side: source.side === "source" ? "source" : "target",
+      kind: str(source.kind, BLOCKER_KIND[reason] ?? "unknown"),
+      reason,
+      label: str(source.label, str(source.detail, reason)),
+      finished: source.finished === true || source.alreadyFinished === true,
+      phase: str(source.phase, ""),
+      refund: num(source.refund, 0),
+      bait: num(source.bait, 0),
+      minutes: num(source.minutes, 0),
+      raw: source
+    };
+  }
+  function normalizeConflict(raw) {
+    const source = obj(raw);
+    return {
+      key: str(source.key, ""),
+      label: str(source.label, str(source.key, "\u6269\u5C55")),
+      message: str(source.message, ""),
+      level: str(source.level, "choice"),
+      options: arr(source.options).map((value) => str(value, "")).filter(Boolean),
+      default: source.default === "source" ? "source" : source.default === "target" ? "target" : "",
+      paths: arr(source.paths).map((value) => str(value, "")).filter(Boolean),
+      raw: source
+    };
+  }
+  function normalizeChoice(raw) {
+    const source = obj(raw);
+    return {
+      key: str(source.key, ""),
+      label: str(source.label, str(source.key, "")),
+      options: arr(source.options).map((value) => str(value, "")).filter(Boolean),
+      default: source.default === "source" ? "source" : "target",
+      editable: arr(source.editable).map((value) => str(value, "")).filter(Boolean),
+      value: source.value,
+      side: str(obj(source.value).side, "")
+    };
+  }
+  function sidesOf(choices) {
+    const sides = { target: {}, source: {} };
+    for (const choice of choices) {
+      const value = choice.value;
+      if (choice.key === "name" && typeof value === "string") {
+        sides[choice.default].name = value;
+        continue;
+      }
+      if (!isObj(value)) continue;
+      const side = value.side === "source" ? "source" : "target";
+      if (choice.key === "look") Object.assign(sides[side], { form: value.form ?? "", skin: value.skin ?? "", worn: arr(value.worn).map((entry) => str(entry, "")).filter(Boolean) });
+      if (choice.key === "personality") Object.assign(sides[side], {
+        personality: str(value.personality, ""),
+        catchphrase: str(value.catchphrase, ""),
+        motto: str(value.motto, ""),
+        birthday: isObj(value.birthday) ? value.birthday.month + "/" + value.birthday.day : str(value.birthday, "")
+      });
+      if (choice.key === "preferences") Object.assign(sides[side], {
+        ownerName: str(value.ownerName, ""),
+        quiet: value.quiet === true,
+        isOfflineFeedEnabled: value.isOfflineFeedEnabled !== false,
+        timeScale: num(value.timeScale, 1),
+        spot: str(value.spot, str(obj(value.fishing).spot, ""))
+      });
+    }
+    return sides;
+  }
+  function normalizePreview(raw) {
+    const body = obj(raw);
+    const source = Object.keys(obj(body.preview)).length > 0 ? obj(body.preview) : body;
+    const details2 = obj(source.details);
+    const blockersRaw = arr(source.blockers).length > 0 ? arr(source.blockers) : arr(details2.blockers);
+    const result = obj(source.result);
+    const choices = arr(source.choices).map(normalizeChoice);
+    const duplicateRaw = source.duplicate;
+    return {
+      ok: body.ok !== false,
+      mergeId: str(source.mergeId, ""),
+      previewToken: str(source.previewToken, ""),
+      expiresAt: num(source.expiresAt, 0),
+      blocked: source.blocked === true || blockersRaw.length > 0,
+      reason: str(source.reason, str(details2.reason, "")),
+      blockers: blockersRaw.map(normalizeBlocker),
+      target: normalizeSummary(source.target),
+      source: normalizeSummary(source.source),
+      result: {
+        name: str(result.name, ""),
+        level: num(result.level, 0),
+        days: num(result.days, 0),
+        coins: num(result.coins, 0),
+        items: num(result.items, 0),
+        badges: num(result.badges, 0),
+        newBadges: num(result.newBadges, 0),
+        newDex: num(result.newDex, 0),
+        newDiary: num(result.newDiary, 0),
+        dead: result.dead === true
+      },
+      choices,
+      sides: sidesOf(choices),
+      editors: obj(source.editors),
+      conflicts: arr(source.conflicts).map(normalizeConflict),
+      warnings: arr(source.warnings).map((value) => str(value, "")).filter(Boolean),
+      autoMerge: arr(source.autoMerge ?? source.auto).map((value) => str(value, "")).filter(Boolean),
+      duplicate: duplicateRaw === true ? { suspected: true } : isObj(duplicateRaw) && duplicateRaw.suspected === true ? duplicateRaw : null,
+      backups: obj(source.backups),
+      sourceBackup: str(source.sourceBackup, ""),
+      runtimeId: str(source.runtimeId, str(obj(source.target).runtimeId, "")),
+      epoch: num(source.epoch, num(obj(source.target).epoch, -1)),
+      raw: source
+    };
+  }
+  function normalizeResult(raw) {
+    const body = obj(raw);
+    const source = Object.keys(obj(body.result)).length > 0 ? obj(body.result) : body;
+    const summary = Object.keys(obj(source.summary)).length > 0 ? obj(source.summary) : source;
+    const restored = obj(source.restored);
+    const backups = Object.keys(obj(source.backups)).length > 0 ? obj(source.backups) : obj(body.backups);
+    return {
+      ok: body.ok !== false,
+      status: str(source.status, str(body.status, str(body.reason, ""))),
+      mergeId: str(source.mergeId, str(body.mergeId, "")),
+      result: normalizePreview({ result: summary }).result,
+      backups,
+      restored: { target: restored.target === true, source: restored.source === true },
+      cleanup: str(backups.cleanup, ""),
+      dsh: obj(source.dsh ?? body.dsh),
+      errors: arr(obj(source.details).errors).map((entry) => ({ path: str(obj(entry).path, ""), reason: str(obj(entry).reason, "") })).filter((entry) => entry.path !== ""),
+      warnings: arr(source.warnings).map((value) => str(value, "")).filter(Boolean),
+      error: str(source.error, str(body.reason, str(body.error, ""))),
+      raw: source
+    };
+  }
+  async function fetchStatus() {
+    const result = await call(EXTERNAL_URL.status, "GET", void 0, 1e4);
+    return { ...result, status: normalizeStatus(result.data ?? {}) };
+  }
+  async function recheck() {
+    const result = await call(EXTERNAL_URL.recheck, "POST", {}, 15e3);
+    return { ...result, status: normalizeStatus(result.data ?? {}) };
+  }
+  async function connect(mode) {
+    const result = await call(EXTERNAL_URL.connect, "POST", { mode: mode === "merge" ? "merge" : "connect" }, 2e4);
+    return { ...result, page: normalizeConnectResult(result.data ?? {}) };
+  }
+  async function disconnect(options) {
+    const body = { discardQueue: options?.discardQueue === true, confirmChanged: options?.confirmChanged === true };
+    return call(EXTERNAL_URL.disconnect, "POST", body, 2e4);
+  }
+  async function prepare(blocker) {
+    const reason = obj(blocker).reason;
+    const target = reason === "pomodoro" ? "pomodoro" : reason === "fishing" ? "fishing" : "activity";
+    return call(EXTERNAL_URL.prepare, "POST", { target, side: obj(blocker).side === "source" ? "source" : "target" }, 2e4);
+  }
+  async function preview() {
+    return call(EXTERNAL_URL.preview, "POST", {}, 3e4);
+  }
+  async function commit(choices) {
+    return call(EXTERNAL_URL.commit, "POST", { choices }, 12e4);
+  }
+  async function mergeStatus(mergeId) {
+    return call(EXTERNAL_URL.status2 + (mergeId === "" ? "" : "?mergeId=" + encodeURIComponent(mergeId)), "GET", void 0, 1e4);
+  }
+  async function cancel() {
+    return call(EXTERNAL_URL.cancel, "POST", {}, 2e4);
+  }
+  async function rollback(mergeId) {
+    return call(EXTERNAL_URL.rollback, "POST", { mergeId }, 3e4);
+  }
+  async function restore(backup) {
+    return call(EXTERNAL_URL.restore, "POST", backup === void 0 ? {} : { backup }, 2e4);
+  }
+  async function retireRetry() {
+    return call(EXTERNAL_URL.retireRetry, "POST", {}, 2e4);
+  }
+
+  // src/client/external-rules.js
+  var NAME_MAX = 5;
+  function formatNumber(value) {
+    const text = String(Math.trunc(Number(value) || 0));
+    return text.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function summaryLine(summary) {
+    if (summary === null || summary === void 0 || summary.exists !== true) return "\u8FD8\u6CA1\u6709\u732A";
+    if (summary.state === "box" || summary.hatched !== true && summary.dead !== true && summary.box) return "\u7EB8\u76D2\uFF08\u8FD8\u6CA1\u62C6\uFF09";
+    if (summary.dead) return "\u5DF2\u79BB\u5F00";
+    const parts = [summary.name === "" ? "\u672A\u547D\u540D" : summary.name];
+    if (summary.level > 0) parts.push("Lv." + summary.level);
+    if (summary.days > 0) parts.push(summary.days + " \u5929");
+    parts.push("\u{1FA99}" + formatNumber(summary.coins));
+    parts.push("\u{1F392}" + summary.items);
+    parts.push("\u{1F3C5}" + summary.badges);
+    return parts.join(" \xB7 ");
+  }
+  function pigKind(summary) {
+    if (summary === null || summary === void 0) return "unknown";
+    if (summary.exists !== true) return "none";
+    if (summary.dead === true) return "dead";
+    if (summary.hatched === true) return "alive";
+    if (summary.box === true || summary.state === "box") return "box";
+    return "unknown";
+  }
+  function mergeOptions(target, local) {
+    const t = pigKind(target);
+    const s = pigKind(local);
+    const none = { canConnect: true, canMerge: false, mergeLabel: "\u5408\u5E76", note: "", warn: "" };
+    if (t === "unknown" || s === "unknown") return { ...none, note: "\u8BFB\u4E0D\u5230\u4E24\u8FB9\u5C0F\u732A\u7684\u72B6\u6001\uFF1B\u5148\u66F4\u65B0\u4E24\u7AEF\u518D\u8BD5" };
+    if (t === "alive" && s === "alive") return { ...none, canMerge: true, mergeLabel: "\u5408\u5E76" };
+    if (t === "alive" && s === "dead") return { ...none, canMerge: true, note: "\u5185\u5D4C\u732A\u5DF2\u7ECF\u79BB\u5F00\uFF1B\u5408\u5E76\u540E\u4EE5\u684C\u5BA0\u4E3A\u51C6\uFF0C\u5185\u5D4C\u732A\u7684\u7269\u54C1\u548C\u5FBD\u7AE0\u4FDD\u7559" };
+    if (t === "alive" && s === "box") return { ...none, note: "\u5185\u5D4C\u732A\u8FD8\u6CA1\u62C6\u76D2\uFF0C\u60F3\u5408\u5E76\u7684\u8BDD\u5148\u62C6\u76D2" };
+    if (t === "alive" && s === "none") return { ...none, note: "DSH \u91CC\u8FD8\u6CA1\u6709\u732A\uFF0C\u6CA1\u6709\u53EF\u5408\u5E76\u7684\u6570\u636E" };
+    if ((t === "box" || t === "none") && s === "alive") {
+      return { ...none, canMerge: true, mergeLabel: "\u642C\u5230\u684C\u5BA0", note: t === "none" ? "\u684C\u9762\u8FD8\u6CA1\u6709\u5B58\u6863\uFF0C\u53EA\u642C\u5185\u5D4C\u732A\u8FC7\u53BB\uFF0C\u4E0D\u8865\u521D\u59CB\u91D1\u5E01" : "\u684C\u5BA0\u7684\u7EB8\u76D2\u521D\u59CB\u91D1\u5E01\u4E5F\u4F1A\u52A0\u8FDB\u6765" };
+    }
+    if (t === "dead" && s === "alive") return { ...none, canMerge: true, note: "\u684C\u9762\u4E0A\u7684\u732A\u5DF2\u7ECF\u79BB\u5F00\uFF1B\u5408\u5E76\u540E\u4EE5\u5185\u5D4C\u732A\u4E3A\u51C6\uFF0C\u684C\u5BA0\u7684\u7269\u54C1\u548C\u5FBD\u7AE0\u4FDD\u7559" };
+    if (t === "dead" && (s === "dead" || s === "box" || s === "none")) {
+      return { ...none, note: "\u4E24\u53EA\u5C0F\u732A\u90FD\u5DF2\u7ECF\u79BB\u5F00\uFF1B\u8BF7\u5148\u5728\u684C\u9762\u7248\u590D\u6D3B/\u9886\u517B\uFF0C\u6216\u4F7F\u7528\u5B58\u6863\u5BFC\u5165" };
+    }
+    if ((t === "box" || t === "none") && (s === "box" || s === "none")) {
+      return { ...none, note: "\u4E24\u8FB9\u90FD\u8FD8\u6CA1\u62C6\u76D2\uFF1B\u5148\u8FDE\u63A5\uFF0C\u6216\u5148\u5728\u4EFB\u610F\u4E00\u8FB9\u62C6\u76D2" };
+    }
+    if ((t === "box" || t === "none") && s === "dead") {
+      return { ...none, note: "\u5408\u5E76\u81F3\u5C11\u9700\u8981\u4E00\u53EA\u6D3B\u7740\u4E14\u5DF2\u5B75\u5316\u7684\u5C0F\u732A" };
+    }
+    return none;
+  }
+  function linkLabel(link) {
+    if (link === null || link === void 0) return "";
+    if (link.dead === true) return "\u684C\u9762\u732A \xB7 \u5DF2\u79BB\u5F00";
+    if (link.state === "merging") return "\u684C\u9762\u732A \xB7 \u6B63\u5728\u5408\u5E76";
+    if (link.state === "connected") return link.merged === true ? "\u684C\u9762\u732A \xB7 \u5DF2\u8FDE\u63A5\uFF08\u5DF2\u5408\u5E76\uFF09" : "\u684C\u9762\u732A \xB7 \u5DF2\u8FDE\u63A5";
+    if (link.state === "connecting") return "\u684C\u9762\u732A \xB7 \u6B63\u5728\u8FDE\u63A5";
+    return "\u684C\u9762\u732A \xB7 \u8FDE\u63A5\u4E2D\u65AD";
+  }
+  function clockText2(timestamp) {
+    if (typeof timestamp !== "number" || !isFinite(timestamp) || timestamp <= 0) return "";
+    const date = new Date(timestamp);
+    const pad = (value) => String(value).padStart(2, "0");
+    return pad(date.getHours()) + ":" + pad(date.getMinutes());
+  }
+  function linkNote(link) {
+    if (link === null || link === void 0) return "";
+    const parts = [];
+    const at = clockText2(link.lastAt);
+    if (at !== "") parts.push("\u6700\u540E\u66F4\u65B0 " + at);
+    if (link.state === "reconnecting") parts.push("\u6B63\u5728\u91CD\u8FDE");
+    else if (link.state === "disconnected") parts.push("\u6B63\u5728\u91CD\u8FDE");
+    else if (link.state === "connecting") parts.push("\u6B63\u5728\u8FDE\u63A5");
+    if (link.queued > 0) parts.push("\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + link.queued + " \u6761\uFF09");
+    return parts.length === 0 ? "\u684C\u9762\u7248\u6CA1\u5F00\uFF0C\u52A8\u4F5C\u6CA1\u6709\u6267\u884C\u3002" : parts.join(" \xB7 ") + "\u3002";
+  }
+  function blockerCopy(blocker) {
+    const money = blocker.refund > 0 ? blocker.refund + " \u91D1\u5E01" : "\u5B66\u8D39/\u65C5\u8D39";
+    const bait = blocker.bait > 0 ? String(blocker.bait) : "N";
+    switch (blocker.kind) {
+      case "work":
+        return blocker.finished ? { done: true, title: "\u8FD9\u73ED\u5DF2\u7ECF\u5230\u70B9\uFF0C\u6309\u5B8C\u6210\u7ED3\u7B97\u540E\u7EE7\u7EED\u3002" } : { done: false, title: "\u8FD9\u73ED\u8FD8\u6CA1\u505A\u5B8C\uFF0C\u63D0\u524D\u56DE\u6765\u62FF\u4E0D\u5230\u5DE5\u8D44\uFF0C\u4E5F\u4E0D\u7B97\u4E00\u6B21\u6253\u5DE5\u3002\u5176\u4ED6\u72B6\u6001\u4E0D\u53D8\u3002" };
+      case "study":
+      case "interest":
+        return blocker.finished ? { done: true, title: "\u8FD9\u8282\u8BFE\u5DF2\u7ECF\u5230\u70B9\uFF0C\u6309\u5B8C\u6210\u7ED3\u7B97\u540E\u7EE7\u7EED\u3002" } : { done: false, title: "\u8FD9\u8282\u8BFE\u63D0\u524D\u7ED3\u675F\uFF0C" + money + "\u9000\u56DE\uFF1B\u8FD9\u8282\u8BFE\u4E0D\u7B97\u6B21\u6570\uFF0C\u4E5F\u4E0D\u52A0\u5C5E\u6027\u3002" };
+      case "trip":
+        return blocker.finished ? { done: true, title: "\u8FD9\u6B21\u65C5\u884C\u5DF2\u7ECF\u5230\u70B9\uFF0C\u6309\u5B8C\u6210\u7ED3\u7B97\u540E\u7EE7\u7EED\u3002" } : { done: false, title: "\u8FD9\u6B21\u65C5\u884C\u63D0\u524D\u7ED3\u675F\uFF0C" + money + "\u9000\u56DE\uFF1B\u7EAA\u5FF5\u54C1\u548C\u65C5\u884C\u8BB0\u5F55\u90FD\u4E0D\u4F1A\u6709\u3002" };
+      case "fishing-auto":
+        return blocker.finished ? { done: true, title: "\u81EA\u52A8\u9493\u9C7C\u5DF2\u7ECF\u5230\u70B9\uFF0C\u5148\u6536\u7AFF\u7ED3\u7B97\uFF0C\u518D\u7EE7\u7EED\u5408\u5E76\u3002" } : { done: false, title: "\u63D0\u524D\u6536\u7AFF\uFF0C\u9000\u56DE " + bait + " \u4E2A\u9C7C\u9975\uFF1B\u8FD9\u6B21\u4E0D\u4F1A\u9493\u5230\u9C7C\u3002" };
+      case "pomodoro":
+        return blocker.finished ? { done: true, title: "\u5DF2\u7ECF\u5230\u70B9\uFF0C\u6309\u5B8C\u6210\u7ED3\u7B97\u540E\u7EE7\u7EED\u3002" } : { done: false, title: "\u8FD8\u6CA1\u5230\u70B9\uFF0C\u62FF\u4E0D\u5230\u4E13\u6CE8\u5956\u52B1\uFF0C\u4ECA\u5929\u5B8C\u6210\u6570\u4E5F\u4E0D\u52A0\uFF1B\u514D\u6253\u6270\u4F1A\u6062\u590D\u3002" };
+      case "fishing-manual":
+        if (blocker.phase === "caught") return { done: true, title: "\u5148\u628A\u8FD9\u6761\u9C7C\u6536\u8FDB\u9C7C\u7BD3\uFF0C\u518D\u7EE7\u7EED\u5408\u5E76\u3002" };
+        return { done: false, title: "\u6536\u7AFF\u653E\u5F03\uFF1F\u9C7C\u4F1A\u8DD1\u6389\uFF0C\u629B\u7AFF\u7528\u6389\u7684 1 \u4E2A\u9C7C\u9975\u4E0D\u9000\uFF0C\u56FE\u9274\u548C\u6B21\u6570\u90FD\u4E0D\u52A0\u3002" };
+      case "activity":
+        return blocker.finished ? { done: true, title: "\u8FD9\u9879\u6D3B\u52A8\u5DF2\u7ECF\u5230\u70B9\uFF0C\u5148\u6309\u5B8C\u6210\u7ED3\u7B97\u518D\u7EE7\u7EED\u3002" } : { done: false, title: "\u8FD9\u9879\u6D3B\u52A8\u8FD8\u6CA1\u7ED3\u675F\uFF1B\u5F3A\u5236\u7EC8\u7ED3\u4F1A\u63D0\u524D\u6536\u5C3E\uFF0C\u62A5\u916C\u548C\u6B21\u6570\u6309\u7ED3\u675F\u65F6\u7684\u5B9E\u9645\u7ED3\u679C\u7B97\u3002" };
+      default:
+        return { done: false, title: "\u684C\u9762\u7248/DSH \u7248\u672C\u4E0D\u652F\u6301\u8FD9\u79CD\u72B6\u6001\uFF0C\u8BF7\u5148\u66F4\u65B0\u6216\u53BB\u5BF9\u5E94\u7AEF\u5904\u7406" };
+    }
+  }
+  function canForce(blocker) {
+    return ["work", "study", "interest", "trip", "fishing-auto", "pomodoro", "fishing-manual", "activity"].includes(blocker.kind);
+  }
+  function reasonText(reason) {
+    const table = {
+      "not-connected": "\u684C\u9762\u7248\u6CA1\u8FDE\u4E0A\uFF0C\u5148\u91CD\u65B0\u8FDE\u63A5",
+      "connect-failed": "\u6CA1\u80FD\u8FDE\u4E0A\uFF0C\u5185\u5D4C\u732A\u6CA1\u6709\u5207\u6362",
+      "invalid-choices": "\u9009\u62E9\u91CC\u6709\u4E0D\u5408\u6CD5\u7684\u5B57\u6BB5\uFF0C\u8BF7\u56DE\u5230\u9884\u89C8\u6539\u9009",
+      "desktop-busy": "\u684C\u9762\u7248\u6B63\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5",
+      disconnected: "\u684C\u9762\u7248\u6CA1\u5F00\uFF0C\u5148\u91CD\u65B0\u8FDE\u63A5",
+      "external-disabled": "\u684C\u9762\u7248\u6CA1\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D",
+      "pair-unavailable": "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u8BF7\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8",
+      "version-mismatch": "\u4E24\u8FB9\u7684\u7248\u672C\u5BF9\u4E0D\u4E0A\uFF0C\u5148\u66F4\u65B0\u5230\u540C\u4E00\u7248",
+      "rule-version": "\u5408\u5E76\u89C4\u5219\u7248\u672C\u4E0D\u540C\uFF0C\u5148\u66F4\u65B0\u5230\u540C\u4E00\u7248",
+      "no-pig": "\u81F3\u5C11\u9700\u8981\u4E00\u53EA\u6D3B\u7740\u4E14\u5DF2\u5B75\u5316\u7684\u5C0F\u732A",
+      "blocked-activity": "\u4E24\u8FB9\u8FD8\u6709\u8FDB\u884C\u4E2D\u7684\u6D3B\u52A8\uFF0C\u5148\u7ED3\u675F",
+      expired: "\u9884\u89C8\u5DF2\u7ECF\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      "preview-missing": "\u9884\u89C8\u5DF2\u7ECF\u4E0D\u5728\u684C\u9762\u7248\u4E0A\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      "runtime-changed": "\u684C\u9762\u7248\u91CD\u8F7D\u8FC7\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      changed: "\u9884\u89C8\u540E\u684C\u9762\u732A\u6709\u65B0\u7684\u64CD\u4F5C\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      "merge-busy": "\u684C\u9762\u7248\u6B63\u5728\u5904\u7406\u53E6\u4E00\u6B21\u5408\u5E76",
+      "backup-failed": "\u5907\u4EFD\u5931\u8D25\uFF0C\u6CA1\u6709\u6539\u52A8\u4EFB\u4F55\u5B58\u6863",
+      declined: "\u684C\u9762\u7248\u62D2\u7EDD\u4E86\u8FD9\u6B21\u5408\u5E76",
+      "tx-failed": "\u5408\u5E76\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u5408\u5E76\u524D\u7684\u684C\u5BA0\uFF1B\u5185\u5D4C\u732A\u539F\u6837\u4FDD\u7559",
+      "retire-failed": "\u684C\u5BA0\u5DF2\u5408\u5E76\uFF0C\u4F46\u5185\u5D4C\u732A\u9000\u5F79\u6CA1\u5B8C\u6210",
+      "cleanup-failed": "\u65E7\u5408\u5E76\u5907\u4EFD\u6CA1\u6E05\u7406\u6389\uFF0C\u4E0D\u5F71\u54CD\u8FD9\u6B21\u5408\u5E76",
+      "merge-unknown": "\u6B63\u5728\u786E\u8BA4\u5408\u5E76\u7ED3\u679C\uFF0C\u8BF7\u4E0D\u8981\u64CD\u4F5C",
+      "no-merge": "\u6CA1\u6709\u53EF\u64A4\u9500\u7684\u5408\u5E76",
+      "unsupported": "\u684C\u9762\u7248/DSH \u7248\u672C\u4E0D\u652F\u6301\u8FD9\u4E2A\u64CD\u4F5C",
+      // 契约里的失败码（external-contract.md 第 2、6 节）
+      "preview-expired": "\u9884\u89C8\u5DF2\u7ECF\u8FC7\u671F\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      "unknown-preview": "\u9884\u89C8\u5DF2\u88AB\u66FF\u6362\u6216\u53D6\u6D88\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      "unknown-source-fields": "\u5185\u5D4C\u5B58\u6863\u6709\u5F53\u524D\u7248\u672C\u4E0D\u8BA4\u8BC6\u7684\u5B57\u6BB5\uFF0C\u8BF7\u5148\u9009\u4E22\u5F03\u6216\u4E2D\u6B62",
+      "unknown-source-aborted": "\u56E0\u4E3A\u4F60\u9009\u62E9\u4E2D\u6B62\uFF0C\u8FD9\u6B21\u5408\u5E76\u6CA1\u6709\u6267\u884C",
+      "version-too-new": "\u684C\u9762\u7248\u5B58\u6863\u7248\u672C\u66F4\u9AD8\uFF0C\u5148\u66F4\u65B0 DSH",
+      "rules-too-new": "\u5408\u5E76\u89C4\u5219\u7248\u672C\u4E0D\u540C\uFF0C\u5148\u66F4\u65B0\u5230\u540C\u4E00\u7248",
+      "source-backup-failed": "DSH \u672C\u5730\u5907\u4EFD\u5931\u8D25\uFF0C\u6CA1\u6709\u6539\u52A8\u4EFB\u4F55\u5B58\u6863",
+      "no-backup": "\u627E\u4E0D\u5230\u53EF\u7528\u7684\u5408\u5E76\u5907\u4EFD",
+      "bad-token": "\u9884\u89C8\u4EE4\u724C\u5BF9\u4E0D\u4E0A\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8",
+      "source-paused": "\u5185\u5D4C\u732A\u5DF2\u6682\u5B58\uFF0C\u5148\u5207\u56DE\u5185\u5D4C\u732A\u518D\u7EC8\u7ED3\u8FD9\u9879\u6D3B\u52A8",
+      "queue-not-empty": "\u5DE5\u4F5C\u4E8B\u4EF6\u8FD8\u5728\u961F\u5217\u91CC\uFF0C\u5148\u9009\u62E9\u7B49\u5F85\u9001\u8FBE\u6216\u4E22\u5F03",
+      "state-changed": "\u6682\u5B58\u671F\u95F4\u5185\u5D4C\u5B58\u6863\u88AB\u6539\u8FC7\uFF0C\u786E\u8BA4\u540E\u624D\u80FD\u5207\u56DE",
+      "already-merged": "\u5185\u5D4C\u732A\u5DF2\u7ECF\u5408\u5E76\u9000\u5F79\uFF0C\u53EA\u80FD\u53EA\u6062\u590D\u5185\u5D4C\u732A\u6216\u64A4\u9500\u5408\u5E76",
+      "no-source-pig": "DSH \u91CC\u8FD8\u6CA1\u6709\u53EF\u5408\u5E76\u7684\u732A",
+      "preview-failed": "\u684C\u9762\u7248\u6CA1\u80FD\u751F\u6210\u9884\u89C8\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B",
+      "missing-marker": "\u627E\u4E0D\u5230\u684C\u9762\u7248\u7684\u53D1\u73B0\u6587\u4EF6\uFF0C\u8BF7\u786E\u8BA4\u684C\u9762\u7248\u5DF2\u6253\u5F00\u8054\u52A8",
+      "not-active": "\u8FD9\u6B21\u5408\u5E76\u4E0D\u662F\u6700\u8FD1\u4E00\u6B21\uFF0C\u4E0D\u80FD\u64A4\u9500",
+      "restore-failed": "\u6062\u590D\u5185\u5D4C\u732A\u5931\u8D25\uFF0C\u9000\u5F79\u6807\u8BB0\u4F1A\u4FDD\u7559",
+      partial: "\u90E8\u5206\u64A4\u9500\uFF1A\u53EA\u6062\u590D\u4E86\u4E00\u8FB9",
+      "radio": ""
+    };
+    const key2 = typeof reason === "string" ? reason : "";
+    return table[key2] ?? (key2.startsWith("pair-") ? "\u684C\u9762\u7248\u914D\u5BF9\u63A5\u53E3\u8FDE\u4E0D\u4E0A\uFF0C\u5148\u786E\u8BA4\u8054\u52A8\u5DF2\u6253\u5F00" : reason.startsWith("work-") ? "\u684C\u9762\u7248\u5DE5\u4F5C\u63A5\u53E3\u8FDE\u4E0D\u4E0A\uFF0C\u5148\u786E\u8BA4\u8054\u52A8\u5DF2\u6253\u5F00" : "\u64CD\u4F5C\u6CA1\u5B8C\u6210\uFF08" + key2 + "\uFF09");
+  }
+  function defaultChoices(preview2) {
+    const find = (key2) => preview2.choices.find((entry) => entry.key === key2) ?? null;
+    const pickOf = (key2, fallback) => {
+      const entry = find(key2);
+      return entry !== null && (entry.default === "source" || entry.default === "target") ? entry.default : fallback;
+    };
+    const namePick = pickOf("name", "target");
+    const lookPick = pickOf("look", "target");
+    const personalityPick = pickOf("personality", "target");
+    const prefPick = pickOf("preferences", "target");
+    const nameEntry = find("name");
+    const nameValue = nameEntry !== null && typeof nameEntry.value === "string" ? nameEntry.value : namePick === "source" ? preview2.source.name : preview2.target.name;
+    const initial = (key2, side) => {
+      const entry = find(key2);
+      if (entry === null || !isPlainObject(entry.value)) return null;
+      const valueSide = entry.value.side === "source" ? "source" : "target";
+      return valueSide === side ? entry.value : null;
+    };
+    const lookValue = initial("look", lookPick) ?? {};
+    const personValue = initial("personality", personalityPick) ?? {};
+    const prefValue = initial("preferences", prefPick) ?? {};
+    const conflicts = {};
+    const hasUnknown = (preview2.conflicts ?? []).some((conflict) => conflict.key === "unknownSource");
+    for (const conflict of preview2.conflicts ?? []) {
+      if (conflict.level === "warning" || conflict.key === "unknownSource" || conflict.key === "") continue;
+      conflicts[conflict.key] = conflict.default === "source" ? "source" : "target";
+    }
+    return {
+      name: { pick: namePick, value: nameValue },
+      look: {
+        pick: lookPick,
+        form: typeof lookValue.form === "string" ? lookValue.form : "",
+        skin: typeof lookValue.skin === "string" ? lookValue.skin : "",
+        worn: Array.isArray(lookValue.worn) ? lookValue.worn.filter((value) => typeof value === "string") : [],
+        wornText: Array.isArray(lookValue.worn) ? lookValue.worn.join(",") : ""
+      },
+      personality: {
+        pick: personalityPick,
+        personality: typeof personValue.personality === "string" ? personValue.personality : "",
+        catchphrase: typeof personValue.catchphrase === "string" ? personValue.catchphrase : "",
+        motto: typeof personValue.motto === "string" ? personValue.motto : "",
+        birthday: birthdayText(personValue.birthday)
+      },
+      preferences: {
+        pick: prefPick,
+        ownerName: typeof prefValue.ownerName === "string" ? prefValue.ownerName : "",
+        quiet: prefValue.quiet === true,
+        isOfflineFeedEnabled: prefValue.isOfflineFeedEnabled !== false,
+        timeScale: typeof prefValue.timeScale === "number" ? prefValue.timeScale : 1,
+        spot: typeof prefValue.spot === "string" ? prefValue.spot : ""
+      },
+      conflicts,
+      unknownSource: hasUnknown ? null : void 0,
+      duplicate: null
+    };
+  }
+  var isPlainObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+  function birthdayText(value) {
+    if (typeof value === "string") return value;
+    if (isPlainObject(value) && value.month > 0 && value.day > 0) return value.month + "/" + value.day;
+    return "";
+  }
+  function sideValues(preview2, side) {
+    const source = preview2.sides?.[side] ?? {};
+    return {
+      name: typeof source.name === "string" ? source.name : "",
+      form: typeof source.form === "string" ? source.form : "",
+      skin: typeof source.skin === "string" ? source.skin : "",
+      worn: Array.isArray(source.worn) ? source.worn.filter((value) => typeof value === "string") : [],
+      personality: typeof source.personality === "string" ? source.personality : "",
+      catchphrase: typeof source.catchphrase === "string" ? source.catchphrase : "",
+      motto: typeof source.motto === "string" ? source.motto : "",
+      birthday: typeof source.birthday === "string" ? source.birthday : "",
+      ownerName: typeof source.ownerName === "string" ? source.ownerName : "",
+      quiet: source.quiet === true,
+      isOfflineFeedEnabled: source.isOfflineFeedEnabled !== false,
+      timeScale: typeof source.timeScale === "number" ? source.timeScale : 1,
+      spot: typeof source.spot === "string" ? source.spot : typeof source.fishing === "object" && source.fishing !== null ? String(source.fishing.spot ?? "") : "",
+      known: Object.keys(source).length > 0
+    };
+  }
+  function sideKnown(preview2, side) {
+    return Object.keys(preview2.sides?.[side] ?? {}).length > 0;
+  }
+  var cleanText = (value) => typeof value === "string" ? value.trim() : "";
+  function validateChoices(preview2, choices) {
+    const errors = {};
+    const name = cleanText(choices.name.value);
+    if (choices.name.pick === "custom") {
+      if (name.length === 0) errors.name = "\u540D\u5B57\u4E0D\u80FD\u4E3A\u7A7A";
+      else if (name.length > NAME_MAX) errors.name = "\u540D\u5B57\u6700\u591A " + NAME_MAX + " \u4E2A\u5B57\u7B26";
+    }
+    if (choices.look.pick === "custom") {
+      const forms = optionKeys(preview2.editors?.look?.form);
+      const skins = optionKeys(preview2.editors?.look?.skin);
+      const worn = optionKeys(preview2.editors?.look?.worn);
+      if (forms.length > 0 && choices.look.form !== "" && !forms.includes(choices.look.form)) errors.look = "\u8FD9\u4E2A\u5F62\u6001\u4E0D\u5728\u5408\u5E76\u540E\u7684\u56FE\u9274\u91CC";
+      else if (skins.length > 0 && choices.look.skin !== "" && !skins.includes(choices.look.skin)) errors.look = "\u8FD9\u4E2A\u76AE\u80A4\u4E0D\u5728\u5408\u5E76\u540E\u7684\u76AE\u80A4\u8868\u91CC";
+      else if (worn.length > 0 && choices.look.worn.some((key2) => !worn.includes(key2))) errors.look = "\u7A7F\u6234\u91CC\u6709\u5408\u5E76\u540E\u6CA1\u6709\u7684\u4E1C\u897F";
+    }
+    if (choices.personality.pick === "custom") {
+      const people = optionKeys(preview2.editors?.personality?.personality);
+      const phrase = cleanText(choices.personality.catchphrase);
+      const motto = cleanText(choices.personality.motto);
+      if (cleanText(choices.personality.personality) === "") errors.personality = "\u8BF7\u9009\u4E00\u4E2A\u6027\u683C";
+      else if (people.length > 0 && !people.includes(choices.personality.personality)) errors.personality = "\u8FD9\u4E2A\u6027\u683C\u4E0D\u53EF\u7528";
+      else if (phrase.length < 1 || phrase.length > 6) errors.personality = "\u53E3\u5934\u7985\u8981 1-6 \u4E2A\u5B57";
+      else if (motto.length < 1 || motto.length > 24) errors.personality = "\u7B7E\u540D\u8981 1-24 \u4E2A\u5B57";
+      else if (choices.personality.birthday.trim() !== "" && !validBirthday(choices.personality.birthday)) errors.personality = "\u751F\u65E5\u683C\u5F0F\u4E0D\u5BF9\uFF08\u6708/\u65E5\uFF09";
+    }
+    if (choices.preferences.pick === "custom") {
+      const spots = optionKeys(preview2.editors?.preferences?.spot);
+      if (cleanText(choices.preferences.ownerName).length < 1 || cleanText(choices.preferences.ownerName).length > 12) errors.preferences = "\u79F0\u547C\u8981 1-12 \u4E2A\u5B57";
+      else if (!(choices.preferences.timeScale > 0 && choices.preferences.timeScale <= 365)) errors.preferences = "\u65F6\u95F4\u500D\u7387\u8981\u5927\u4E8E 0 \u4E14\u4E0D\u8D85\u8FC7 365";
+      else if (spots.length > 0 && choices.preferences.spot !== "" && !spots.includes(choices.preferences.spot)) errors.preferences = "\u8FD9\u4E2A\u9493\u70B9\u8FD8\u6CA1\u89E3\u9501";
+    }
+    if (preview2.duplicate !== null && choices.duplicate === null) errors.duplicate = "\u8FD9\u4E24\u53EA\u732A\u53EF\u80FD\u662F\u540C\u4E00\u4EFD\u5B58\u6863\u7684\u526F\u672C\uFF0C\u8BF7\u5148\u9009\u4E00\u9879";
+    if (choices.unknownSource === null) errors.unknownSource = "\u5185\u5D4C\u5B58\u6863\u6709\u5F53\u524D\u7248\u672C\u4E0D\u8BA4\u8BC6\u7684\u5B57\u6BB5\uFF0C\u8BF7\u5148\u9009\u4E22\u5F03\u6216\u4E2D\u6B62";
+    return { ok: Object.keys(errors).length === 0, errors };
+  }
+  function optionKeys(list) {
+    if (!Array.isArray(list)) return [];
+    return list.map((entry) => typeof entry === "string" ? entry : entry !== null && typeof entry === "object" ? String(entry.key ?? "") : "").filter(Boolean);
+  }
+  function validBirthday(value) {
+    const text = cleanText(value);
+    if (text === "") return true;
+    const match = /^(\d{1,2})\s*[\/.-]\s*(\d{1,2})$/.exec(text);
+    if (match === null) return false;
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+  }
+  function choicesPayload(choices) {
+    const payload = {
+      name: choices.name.pick === "custom" ? { side: "custom", value: cleanText(choices.name.value) } : { side: choices.name.pick },
+      look: choices.look.pick === "custom" ? { side: "custom", form: choices.look.form === "" ? null : choices.look.form, skin: choices.look.skin === "" ? "default" : choices.look.skin, worn: choices.look.worn.slice(0) } : { side: choices.look.pick },
+      personality: choices.personality.pick === "custom" ? {
+        side: "custom",
+        personality: cleanText(choices.personality.personality),
+        catchphrase: cleanText(choices.personality.catchphrase),
+        motto: cleanText(choices.personality.motto),
+        birthday: parseBirthday(choices.personality.birthday)
+      } : { side: choices.personality.pick },
+      preferences: choices.preferences.pick === "custom" ? {
+        side: "custom",
+        ownerName: cleanText(choices.preferences.ownerName),
+        quiet: choices.preferences.quiet === true,
+        isOfflineFeedEnabled: choices.preferences.isOfflineFeedEnabled !== false,
+        timeScale: choices.preferences.timeScale,
+        spot: cleanText(choices.preferences.spot)
+      } : { side: choices.preferences.pick },
+      extensions: {}
+    };
+    for (const [key2, value] of Object.entries(choices.conflicts)) {
+      if (value !== "target" && value !== "source") continue;
+      payload.extensions[key2.startsWith("ext:") ? key2.slice(4) : key2] = value;
+    }
+    if (typeof choices.unknownSource === "string") payload.unknownSource = choices.unknownSource;
+    if (choices.duplicate !== null) payload.duplicate = choices.duplicate;
+    return payload;
+  }
+  function parseBirthday(value) {
+    const text = cleanText(value);
+    if (text === "") return null;
+    const match = /^(\d{1,2})\s*[\/.-]\s*(\d{1,2})$/.exec(text);
+    if (match === null) return null;
+    return { month: Number(match[1]), day: Number(match[2]) };
+  }
+
+  // src/client/external-link.js
+  function externalLinkOf(view) {
+    const raw = isObj(view) ? view.link : null;
+    if (!isObj(raw)) return null;
+    const state4 = str(raw.state, "");
+    if (!["connecting", "connected", "reconnecting", "disconnected", "merging"].includes(state4)) return null;
+    return {
+      state: state4,
+      lastAt: num(raw.lastAt, 0),
+      queued: num(raw.queued, 0),
+      merged: raw.merged === true,
+      dead: raw.dead === true
+    };
+  }
+  function isExternalMode(view) {
+    return externalLinkOf(view) !== null;
+  }
+  function externalActionsBlocked(view) {
+    const link = externalLinkOf(view);
+    return link !== null && link.state !== "connected";
+  }
+  function externalBlockedMessage(view) {
+    const link = externalLinkOf(view);
+    if (link !== null && link.state === "merging") return "\u6B63\u5728\u5408\u5E76\uFF0C\u5148\u7B49\u684C\u9762\u7248\u5904\u7406\u5B8C";
+    return "\u684C\u5BA0\u6CA1\u5F00\uFF0C\u52A8\u4F5C\u6CA1\u6709\u6267\u884C\uFF1B\u5DE5\u4F5C\u4E8B\u4EF6\u5DF2\u6392\u961F\u3002\u6253\u5F00\u684C\u9762\u7248\u540E\u518D\u8BD5\u3002";
+  }
+  function updateLinkBar(ctx) {
+    const bar = ctx.linkBar;
+    const hint = ctx.linkNote;
+    if (bar === void 0 || hint === void 0) return;
+    const link = externalLinkOf(ctx.view);
+    if (link === null) {
+      bar.hidden = true;
+      hint.hidden = true;
+      ctx.host.removeAttribute("data-link");
+      return;
+    }
+    bar.hidden = false;
+    bar.setAttribute("data-link", link.state);
+    bar.setAttribute("data-dead", String(link.dead === true));
+    bar.textContent = "";
+    bar.appendChild(el("span", "dp-link-dot", link.state === "connected" || link.state === "merging" ? "\u25CF" : "\u25CB"));
+    bar.appendChild(el("span", "dp-link-text", linkLabel(link)));
+    ctx.host.setAttribute("data-link", link.state);
+    hint.hidden = link.state === "connected";
+    hint.textContent = "";
+    if (link.state !== "connected") hint.appendChild(el("span", null, linkNote(link)));
+    if (link.state === "disconnected" || link.state === "reconnecting") {
+      const retry2 = button("dp-mini", { "data-external-reconnect": "true" }, function() {
+        reconnect(ctx);
+      });
+      retry2.textContent = "\u91CD\u65B0\u8FDE\u63A5";
+      retry2.disabled = link.state === "reconnecting";
+      hint.appendChild(retry2);
+    }
+  }
+  async function reconnect(ctx) {
+    if (ctx.busy) return;
+    ctx.busy = true;
+    try {
+      const result = await recheck();
+      if (result.ok) ctx.showBubble("\u684C\u9762\u7248\u8FDE\u4E0A\u4E86", 2600);
+      else ctx.showBubble("\u8FD8\u6CA1\u8FDE\u4E0A\uFF1A" + (result.error?.message ?? "\u684C\u9762\u7248\u6CA1\u5F00"), 4e3);
+      ctx.renderContent?.();
+      ctx.refresh?.();
+    } finally {
+      ctx.busy = false;
+    }
+  }
+  function externalRenderBlocked() {
+    const active2 = document.activeElement;
+    return active2?.getAttribute?.("data-external-field") != null || active2?.getAttribute?.("data-external-select") != null;
+  }
+  function externalDevTabs(ctx) {
+    return ctx.devMode && !isExternalMode(ctx.view) ? [DEV_TAB] : [];
+  }
+  function syncExternalPanel(ctx) {
+    const link = externalLinkOf(ctx.view);
+    if (link !== null) ctx.view.link = { ...link, dead: ctx.view.dead === true };
+    if (link !== null && ctx.tab === DEV_TAB.key) ctx.tab = "home";
+    ctx.host.setAttribute("data-dead", ctx.view.dead ? "true" : "false");
+    updateLinkBar(ctx);
+  }
+  var MIRROR_NOTE = "\u5916\u90E8\u684C\u5BA0\u6A21\u5F0F\u4E0B\uFF0C\u8FD9\u4E00\u9879\u5728\u684C\u9762\u7248\u8BBE\u7F6E\u91CC\u64CD\u4F5C";
+
   // src/client/io.js
+  var EXTERNAL_FORBIDDEN = ["dev", "giveAll", "reset", "ageFromNow", "timeScale", "fishGive", "installExtension", "removeExtension"];
+  function busyResponse(status2, body) {
+    if (body === null || typeof body !== "object" || Array.isArray(body)) return false;
+    if (body.busy === true || body.code === "busy" || body.reason === "desktop-busy") return true;
+    return status2 === 503 && str(body.error, "").includes("\u6B63\u5728\u5904\u7406\u5B58\u6863");
+  }
   function createIo(ctx) {
     var actionSeq = 0;
     var hostDown = false;
@@ -6251,6 +7185,14 @@
     async function perform(action, extra, options) {
       var background = options?.background === true;
       if (ctx.busy && !background || ctx.stopped) return null;
+      if (externalActionsBlocked(ctx.view)) {
+        if (!background) ctx.showBubble(externalBlockedMessage(ctx.view), 3800);
+        return null;
+      }
+      if (isExternalMode(ctx.view) && EXTERNAL_FORBIDDEN.includes(action)) {
+        ctx.showBubble("\u5916\u90E8\u684C\u5BA0\u6A21\u5F0F\u4E0B\uFF0C\u8FD9\u4E00\u9879\u5728\u684C\u9762\u7248\u8BBE\u7F6E\u91CC\u64CD\u4F5C", 3600);
+        return null;
+      }
       if (ctx.view.pig === null && action !== "hatch") return null;
       var seq2 = ++actionSeq;
       if (!background) {
@@ -6266,6 +7208,10 @@
           body: JSON.stringify(body)
         });
         var next = await res.json();
+        if (!res.ok && busyResponse(res.status, next)) {
+          if (!background) ctx.showBubble("\u5BBF\u4E3B\u6B63\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5", 2600);
+          return null;
+        }
         if (background && seq2 !== actionSeq) return next;
         if (action === "buy" && next?.ok === true) ctx.justBought = extra?.item ?? null;
         paintedKey = null;
@@ -6288,8 +7234,8 @@
             return next;
           }
           if (next.reason === "contract-ineligible" || next.reason === "coronation-ineligible") {
-            var lacks = (Array.isArray(next.missing) ? next.missing : []).map(function(row) {
-              return str(row.label, "") + " " + num(row.have, 0) + "/" + num(row.need, 0);
+            var lacks = (Array.isArray(next.missing) ? next.missing : []).map(function(row2) {
+              return str(row2.label, "") + " " + num(row2.have, 0) + "/" + num(row2.need, 0);
             }).join(" \xB7 ");
             var actionName = next.reason === "contract-ineligible" ? "\u7B7E\u7EA6" : "\u52A0\u5195";
             ctx.showBubble(lacks === "" ? actionName + "\u6761\u4EF6\u8FD8\u6CA1\u9F50" : actionName + "\u8FD8\u5DEE\uFF1A" + lacks, 3400);
@@ -6342,7 +7288,11 @@
             "no-certs": "\u8D44\u8D28\u51ED\u8BC1\u4E0D\u591F",
             "too-small": "\u592A\u5C11\u4E86\uFF0C\u6362\u4E0D\u51FA 1 \u4E2A\u91D1\u5E01",
             "not-buyable": "\u8FD9\u79CD\u5E01\u53EA\u80FD\u5728\u6269\u5C55\u91CC\u6323\uFF0C\u4E0D\u80FD\u7528\u91D1\u5E01\u4E70",
-            closed: "\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u5F00\uFF0C\u591C\u6F6D\u53EA\u5728\u665A\u4E0A"
+            closed: "\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u5F00\uFF0C\u591C\u6F6D\u53EA\u5728\u665A\u4E0A",
+            // 外部桌宠：桌面忙/断线时不排队，只提示再试
+            "desktop-busy": "\u684C\u9762\u7248\u6B63\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5",
+            disconnected: "\u6CA1\u8FDE\u4E0A\u684C\u9762\u7248\uFF0C\u52A8\u4F5C\u6CA1\u6709\u6267\u884C",
+            "link-queued": "\u684C\u9762\u7248\u6CA1\u5F00\uFF0C\u5DE5\u4F5C\u4E8B\u4EF6\u5DF2\u6392\u961F\uFF1B\u52A8\u4F5C\u6CA1\u6709\u6267\u884C"
           };
           ctx.showBubble(reasons[next.reason] ?? "\u8FD9\u4E2A\u64CD\u4F5C\u6CA1\u6210", 2400);
         }
@@ -6362,8 +7312,15 @@
       var startedAt = actionSeq;
       try {
         var res = await fetch(STATE_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        if (!res.ok) {
+          var failure2 = await res.json().catch(function() {
+            return null;
+          });
+          if (busyResponse(res.status, failure2)) return;
+          throw new Error("HTTP " + res.status);
+        }
         var next = await res.json();
+        if (busyResponse(res.status, next) && !(isObj(next) && "pig" in next)) return;
         if (startedAt !== actionSeq) {
           if (!ctx.stopped && Array.isArray(next.pending) && next.pending.length > 0 && typeof ctx.showPigLine === "function") {
             processPending(ctx, ctx.showPigLine, normalizePending(next.pending));
@@ -6471,6 +7428,7 @@
       saves: bridge3.saves,
       ext: bridge3.ext,
       fullscreen: bridge3.fullscreen,
+      external: bridge3.external ?? null,
       geometry: bridge3.geometry,
       split: true,
       panel: bridge3.panel,
@@ -6545,7 +7503,7 @@
         };
       })(name);
     }
-    return function restore() {
+    return function restore2() {
       for (var key2 in originals) ctx[key2] = originals[key2];
     };
   }
@@ -6636,6 +7594,878 @@
     return { clampPig, fitPanel, visibleTabs, paintBar, buildIcon, attachResize };
   }
 
+  // src/client/widgets.js
+  function labelledBar(ui, label, value, valueText, variant) {
+    var row2 = el("div", "dp-row");
+    row2.appendChild(el("span", null, label));
+    row2.appendChild(el("b", null, valueText));
+    ui.content.appendChild(row2);
+    ui.content.appendChild(meter(value, variant));
+  }
+  function statStrip(ui) {
+    var p = ui.view.pig;
+    if (p === null) return;
+    var strip = el("div", "dp-statstrip");
+    var cells = [
+      ["\u{1F35A} \u9971\u98DF", p.satiety, p.satiety + "%", ""],
+      ["\u2764\uFE0F \u5FC3\u60C5", p.happiness, p.happiness + "%", "dp-mood"],
+      ["\u{1FAE7} \u6E05\u6D01", p.cleanliness, p.cleanliness + "%", "dp-clean"],
+      ["\u{1F49A} \u5065\u5EB7", p.healthPercent, p.health + "/" + ui.view.maxHealth, "dp-health"]
+    ];
+    for (var i = 0; i < cells.length; i += 1) {
+      var cell = el("div", "dp-statcell");
+      var head = el("div", "dp-row");
+      head.appendChild(el("span", null, cells[i][0]));
+      head.appendChild(el("b", null, cells[i][2]));
+      cell.appendChild(head);
+      cell.appendChild(meter(cells[i][1], cells[i][3]));
+      strip.appendChild(cell);
+    }
+    strip.appendChild(el("div", "dp-statweight", "\u2696\uFE0F \u4F53\u91CD " + p.weight));
+    ui.content.appendChild(strip);
+  }
+  function careEffectLine(action, item) {
+    var parts = [];
+    if (action === "feed") {
+      parts.push("\u9971\u98DF +" + item.satiety);
+      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
+    } else if (action === "bathe") {
+      parts.push("\u6E05\u6D01 +" + item.cleanliness);
+      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
+    } else {
+      parts.push("\u5FC3\u60C5 +" + item.happiness);
+      if (item.satiety) parts.push("\u9971\u98DF " + item.satiety);
+    }
+    return parts.join(" \xB7 ");
+  }
+  function tileGrid() {
+    return el("div", "dp-tiles");
+  }
+  function tile(spec) {
+    var node = button("dp-tile" + (spec.soft ? " dp-tile-soft" : ""), spec.data ?? {}, function() {
+      spec.onPick();
+    });
+    node.setAttribute("data-color", spec.color);
+    if (spec.locked) node.setAttribute("data-locked", "true");
+    if (spec.dim) node.setAttribute("data-dim", "true");
+    if (spec.active) node.setAttribute("data-active", "true");
+    if (spec.disabled === true) node.disabled = true;
+    var icon = el("span", "dp-tile-icon");
+    icon.appendChild(spec.icon ?? el("span", "dp-tile-e", spec.emoji));
+    if (spec.badge) icon.appendChild(el("b", "dp-tile-badge", spec.badge));
+    if (spec.tag) icon.appendChild(el("b", "dp-tile-tag", spec.tag));
+    node.appendChild(icon);
+    node.appendChild(el("span", "dp-tile-n", spec.label));
+    if (spec.note) node.appendChild(el("span", "dp-tile-note", spec.note));
+    return node;
+  }
+  function drillTo(ui, tab, key2) {
+    ui.drill[tab] = key2;
+    ui.drill.pick = null;
+    ui.renderContent();
+    ui.content.scrollTop = 0;
+  }
+  function drillHeader(ui, tab, title, info) {
+    var row2 = el("div", "dp-drill");
+    var back = button("dp-drill-back", { "data-back": tab }, function() {
+      if (ui.drill.from) ui.select(ui.drill.from);
+      else drillTo(ui, tab, null);
+    });
+    back.textContent = "\u2039";
+    row2.appendChild(back);
+    row2.appendChild(el("b", "dp-drill-title", title));
+    if (info) row2.appendChild(el("span", "dp-drill-info", info));
+    ui.content.appendChild(row2);
+  }
+
+  // src/client/icon-style.js
+  var BUNDLED = /* @__PURE__ */ new Set([
+    "status",
+    "card",
+    "dex",
+    "skins",
+    "study",
+    "work",
+    "shop",
+    "travel",
+    "bag",
+    "pomodoro",
+    "fishing",
+    "settings",
+    "update",
+    "quit",
+    "dev"
+  ]);
+  function iconStyle() {
+    return "system";
+  }
+  function appIcon(key2, emoji, className) {
+    if (iconStyle() !== "built-in" || !BUNDLED.has(key2)) return el("span", className, emoji);
+    const img = (
+      /** @type {HTMLImageElement} */
+      el("img", className + " dp-tile-svg")
+    );
+    img.src = ART_URL + "ui-" + key2 + ".svg";
+    img.alt = emoji;
+    img.addEventListener("error", function() {
+      const replacement = el("span", className, emoji);
+      img.parentNode?.replaceChild(replacement, img);
+    });
+    return img;
+  }
+
+  // src/client/wallet.js
+  var TO_GOLD = [10, 100];
+  var FROM_GOLD = [10, 100, 1e3];
+  var CSS_WALLET = [
+    ".dp-wallet{display:grid;gap:8px;margin:0 0 10px;padding:9px 11px;border-radius:16px;background:var(--ac-bg-input);border:2px solid var(--ac-border-light)}",
+    ".dp-wallet-head{display:flex;align-items:center;gap:8px;font-weight:800}",
+    ".dp-wallet-emoji{font-size:22px;line-height:1}.dp-wallet-name{font-size:11px;color:var(--ac-text-2);font-weight:700}",
+    ".dp-wallet-balance{flex:1;font-size:15px;letter-spacing:.02em}",
+    ".dp-wallet-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}",
+    ".dp-wallet-row>small{width:100%;font-size:10px;color:var(--ac-text-2)}"
+  ].join("");
+  function walletBar(ui, wallet, options) {
+    var always = options && options.open === true;
+    var open = always || ui.drill.wallet === wallet.key;
+    var box = el("div", "dp-wallet");
+    box.setAttribute("data-wallet", wallet.key);
+    var head = el("div", "dp-wallet-head");
+    head.appendChild(el("span", "dp-wallet-emoji", wallet.emoji));
+    var name = el("span", "dp-wallet-balance", String(wallet.balance));
+    name.appendChild(el("span", "dp-wallet-name", " " + wallet.label));
+    head.appendChild(name);
+    if (!always) {
+      var toggle = button("dp-mini dp-mini-plain", { "data-wallet-toggle": wallet.key }, function() {
+        ui.drill.wallet = open ? null : wallet.key;
+        ui.renderContent();
+      });
+      toggle.textContent = open ? "\u6536\u8D77" : "\u6362";
+      head.appendChild(toggle);
+    }
+    box.appendChild(head);
+    if (!open) return box;
+    var coins = Number(ui.view.pig && ui.view.pig.coins) || 0;
+    var send2 = function(direction, amount) {
+      ui.send("exchange", { key: wallet.key, direction, amount });
+    };
+    var out = el("div", "dp-wallet-row");
+    out.appendChild(el("small", null, "\u6362\u6210\u91D1\u5E01 \xB7 1 " + wallet.label + " = " + wallet.rate + " \u{1FA99}"));
+    var amounts = TO_GOLD.filter(function(n) {
+      return n < wallet.balance;
+    }).concat(wallet.balance > 0 ? [wallet.balance] : []);
+    for (var i = 0; i < amounts.length; i += 1) {
+      (function(n, all) {
+        var gold = Math.floor(n * wallet.rate);
+        var go = button("dp-mini", { "data-wallet-out": all ? "all" : String(n) }, function() {
+          send2("toGold", n);
+        });
+        go.textContent = (all ? "\u5168\u90E8 " : "") + n + " \u2192 \u{1FA99} " + gold;
+        go.disabled = gold === 0;
+        out.appendChild(go);
+      })(amounts[i], i === amounts.length - 1 && wallet.balance > 0);
+    }
+    if (wallet.balance === 0) out.appendChild(el("span", "dp-wallet-name", "\u8FD8\u6CA1\u6709" + wallet.label));
+    box.appendChild(out);
+    if (wallet.buyable === false) return box;
+    var back = el("div", "dp-wallet-row");
+    back.appendChild(el("small", null, "\u7528\u91D1\u5E01\u6362 \xB7 1 " + wallet.label + " = " + wallet.buyRate + " \u{1FA99}\uFF08\u542B 5% \u624B\u7EED\u8D39\uFF09"));
+    for (var j = 0; j < FROM_GOLD.length; j += 1) {
+      (function(n) {
+        var cost = Math.ceil(n * wallet.buyRate - 1e-9);
+        var buy = button("dp-mini dp-mini-plain", { "data-wallet-in": String(n) }, function() {
+          send2("fromGold", n);
+        });
+        buy.textContent = "\u{1FA99} " + cost + " \u2192 " + n;
+        buy.disabled = coins < cost;
+        back.appendChild(buy);
+      })(FROM_GOLD[j]);
+    }
+    box.appendChild(back);
+    return box;
+  }
+
+  // src/client/asset-background.js
+  function applyAssetFrame(node, info) {
+    const slices = info?.nine_slice?.insets;
+    if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return;
+    if (node.matches(".fm-slot,.fm-packet,i") || node.parentElement?.matches(".fm-exp,.fm-card-progress")) return;
+    node.classList.add("fm-framed-art");
+    const limit = node.matches(".fm-exp,.fm-card-progress") ? 2 : 8;
+    const scale2 = Math.min(0.5, limit / Math.max(...slices));
+    node.style.borderWidth = slices.map((value) => Math.ceil(value * scale2) + "px").join(" ");
+    node.style.borderImageWidth = slices.map((value) => value * scale2 + "px").join(" ");
+    node.style.borderImageSource = node.style.backgroundImage;
+    node.style.borderImageSlice = slices.join(" ") + " fill";
+    node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
+    node.style.backgroundImage = "none";
+  }
+  function applyModalAssetFrame(node, info, url) {
+    const slices = info?.nine_slice?.insets;
+    if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return node;
+    const gap = Number.isFinite(info.outer_insets?.[0]) ? info.outer_insets[0] / slices[0] : 0;
+    node.style.setProperty("--fm-frame-top-gap-ratio", String(gap));
+    node.style.borderImageSource = 'url("' + url + '")';
+    node.style.borderImageSlice = slices.join(" ") + " fill";
+    node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
+    return node;
+  }
+
+  // src/client/ext-apps.js
+  var registry = {};
+  var requested = {};
+  var activeVersion = {};
+  var rerender = null;
+  function bridge() {
+    var host3 = (
+      /** @type {any} */
+      window
+    );
+    if (!host3.dshPiggyExtensions) {
+      host3.dshPiggyExtensions = {
+        register: function(key2, impl) {
+          if (typeof key2 !== "string" || impl === null || typeof impl !== "object") return;
+          var scriptId = document.currentScript?.getAttribute("data-piggy-extension");
+          var id = scriptId || activeVersion[key2];
+          if (!id || !id.startsWith(key2 + "@")) return;
+          registry[id] = impl;
+          if (typeof rerender === "function") rerender();
+        }
+      };
+    }
+    return host3.dshPiggyExtensions;
+  }
+  function ensureScript(key2, version) {
+    bridge();
+    var id = key2 + "@" + version;
+    activeVersion[key2] = id;
+    if (requested[id] || typeof document === "undefined" || typeof document.createElement !== "function") return;
+    requested[id] = true;
+    var script = (
+      /** @type {HTMLScriptElement} */
+      document.createElement("script")
+    );
+    script.src = "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/client.js?v=" + encodeURIComponent(version);
+    script.setAttribute("data-piggy-extension", id);
+    script.async = true;
+    (document.head || document.body)?.appendChild(script);
+  }
+  function openBigApp(ui, key2) {
+    var target = openBigTarget(desktopShell(), stageShell());
+    if (target === "desktop") {
+      desktopShell().ext.open(key2);
+      return;
+    }
+    if (target === "stage") {
+      stageShell().ext.open(key2);
+      return;
+    }
+    ui.extBig = key2;
+    ui.tab = "ext:" + key2;
+    ui.renderContent();
+  }
+  function closeBigApp(ui) {
+    var shell2 = desktopShell();
+    if (desktopRole() === "ext" && shell2 && shell2.ext && typeof shell2.ext.close === "function") {
+      shell2.ext.close();
+      return;
+    }
+    var stage2 = stageShell();
+    if (stage2 !== null && stage2.role === "ext" && stage2.ext && typeof stage2.ext.close === "function") {
+      stage2.ext.close();
+      return;
+    }
+    ui.extBig = null;
+    ui.host.setAttribute("data-ext-view", "");
+    ui.renderContent();
+  }
+  function renderDownloadedApp(ui, key2, mode) {
+    var big = mode === "big";
+    var extension = (ui.view.extensions || []).find(function(entry) {
+      return entry.key === key2;
+    });
+    if (!extension) {
+      ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u5DF2\u7ECF\u5220\u6389\u4E86"));
+      return;
+    }
+    if (extension.error) {
+      ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u51FA\u9519\u4E86\uFF1A" + extension.error));
+      return;
+    }
+    ensureScript(key2, extension.version);
+    rerender = function() {
+      if (ui.tab === "ext:" + key2) ui.renderContent();
+    };
+    var impl = registry[key2 + "@" + extension.version];
+    if (!impl || typeof impl.render !== "function") {
+      ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u52A0\u8F7D\u2026\u2026"));
+      return;
+    }
+    var data = ui.view.extViews ? ui.view.extViews[key2] : void 0;
+    var wallet = (ui.view.wallets || []).find(function(entry) {
+      return entry.key === key2;
+    });
+    if (wallet && !big && (key2 !== "farm" || Number.parseInt(extension.version, 10) < 4)) ui.content.appendChild(walletBar(ui, wallet));
+    var panel = typeof ui.content.closest === "function" ? ui.content.closest(".dp-card") : null;
+    if (panel && !big) {
+      var padding = parseFloat(getComputedStyle(panel.querySelector(".dp-content") || panel).paddingBottom) || 0;
+      var bottom = panel.getBoundingClientRect().top + (parseFloat(panel.style.maxHeight) || panel.clientHeight);
+      ui.content.style.setProperty("--ext-panel-height", Math.max(160, bottom - ui.content.getBoundingClientRect().top - padding - 2) + "px");
+    }
+    try {
+      impl.render({
+        content: ui.content,
+        header: !big && key2 === "farm" ? ui.content.querySelector(".dp-drill") : null,
+        data: data === void 0 ? null : data,
+        mode: big ? "big" : "panel",
+        // 桌面版外壳 0.6.5 以前没有大窗口，面板窗口又太小，就不给这个入口；网页版在页面里铺满。
+        openBig: big || desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === "function") ? void 0 : function() {
+          openBigApp(ui, key2);
+        },
+        closeBig: big ? function() {
+          closeBigApp(ui);
+        } : void 0,
+        send: function(op, payload) {
+          return ui.send("ext", { key: key2, op, data: payload || {} });
+        },
+        walletContent: wallet ? function() {
+          return walletBar(ui, wallet, { open: true });
+        } : void 0,
+        el,
+        button,
+        rerender: function() {
+          ui.renderContent();
+        },
+        // 玩家现在用的猪图（随皮肤和形态变）；没有立绘时是 null，扩展自己退回 emoji。
+        pigArt: function() {
+          var art = ui.view.pig && ui.view.pig.stage ? ui.view.pig.stage.art : null;
+          return art ? artSource(art) : null;
+        },
+        // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
+        hasAsset: function(name) {
+          return (extension.assets || []).includes(name);
+        },
+        paintAsset: function(node, name) {
+          applyAssetFrame(node, extension.assetLayout?.[name]);
+        },
+        paintFrame: function(node, name) {
+          return applyModalAssetFrame(node, extension.assetLayout?.[name], "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/assets/" + encodeURIComponent(name) + "?v=" + encodeURIComponent(extension.version));
+        },
+        assetInfo: function(name) {
+          return extension.assetLayout ? extension.assetLayout[name] : null;
+        },
+        asset: function(name) {
+          return "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/assets/" + encodeURIComponent(String(name)) + "?v=" + encodeURIComponent(extension.version);
+        },
+        openDex: function(section2) {
+          ui.select("dex");
+          ui.drill.dex = "ext:" + key2 + ":" + section2;
+          ui.renderContent();
+        },
+        // 跳到商店里这个扩展的货架（比如菜园缺种子 → 种子货架），按返回回到扩展页（用户 2026-10-09）。
+        openShop: function() {
+          if (big && desktopRole() !== "ext") {
+            ui.extBig = null;
+            ui.host.setAttribute("data-ext-view", "");
+          }
+          ui.select("shop");
+          ui.drill.shop = "ext:" + key2;
+          ui.drill.from = "ext:" + key2;
+          ui.renderContent();
+        }
+      });
+    } catch (error) {
+      ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u51FA\u9519\u4E86\uFF1A" + (error instanceof Error ? error.message : String(error))));
+    }
+  }
+
+  // src/client/ext-import.js
+  var NAMES = ["manifest.json", "server.js", "client.js"];
+  var pending = null;
+  var busy = false;
+  async function bundleOf(files) {
+    if (files.length === 1) return files[0].text();
+    const texts = {};
+    for (const file of files) if (NAMES.includes(file.name)) texts[file.name] = await file.text();
+    if (!NAMES.every((name) => typeof texts[name] === "string")) return null;
+    let key2 = "";
+    try {
+      key2 = str(obj(JSON.parse(texts["manifest.json"])).key, "");
+    } catch {
+      return null;
+    }
+    return JSON.stringify({ format: "dsh-piggy-extension", version: 1, key: key2, files: texts });
+  }
+  function base64(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 32768)));
+    return btoa(binary);
+  }
+  var REASONS = {
+    "invalid-bundle": "\u8BFB\u4E0D\u61C2\u8FD9\u4E2A\u6587\u4EF6",
+    "game-too-old": "\u8FD9\u4E2A\u6269\u5C55\u8981\u66F4\u65B0\u7684\u6E38\u620F",
+    "too-large": "\u6269\u5C55\u5305\u592A\u5927",
+    "broken-extension": "\u6269\u5C55\u88C5\u4E0A\u4E86\u4F46\u52A0\u8F7D\u51FA\u9519",
+    "download-failed": "\u6CA1\u80FD\u5199\u8FDB\u6269\u5C55\u76EE\u5F55",
+    absent: "\u8FD8\u6CA1\u6709\u732A"
+  };
+  function send(ui, bundle, confirm) {
+    busy = true;
+    ui.renderContent();
+    fetch("/dsh-piggy/extensions/import", { method: "POST", headers: { "content-type": "text/plain" }, body: base64(JSON.stringify({ bundle, confirm })) }).then((response) => response.json()).then((data) => {
+      busy = false;
+      const result = obj(data);
+      if (result.ok === true) {
+        pending = null;
+        if (typeof ui.render === "function") ui.render(result);
+        else {
+          ui.view = result;
+          ui.renderContent();
+        }
+        ui.showBubble("\u88C5\u597D\u4E86\uFF1A" + str(result.label, "\u6269\u5C55") + (result.official === true ? "" : "\uFF08\u672C\u5730\u5BFC\u5165\uFF09"));
+        return;
+      }
+      if (result.reason === "unofficial") {
+        pending = { bundle, label: str(result.label, str(result.key, "\u6269\u5C55")), version: str(result.version, "") };
+        ui.renderContent();
+        return;
+      }
+      pending = null;
+      ui.renderContent();
+      const why = REASONS[str(result.reason, "")] ?? "\u5BFC\u5165\u5931\u8D25";
+      ui.showBubble(why + (result.need ? "\uFF08\u8981\u6E38\u620F v" + str(result.need, "") + "\uFF09" : "") + (result.message ? "\uFF1A" + str(result.message, "") : ""));
+    }).catch(() => {
+      busy = false;
+      ui.renderContent();
+      ui.showBubble("\u5BFC\u5165\u5931\u8D25\uFF1A\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B");
+    });
+  }
+  function importCard(ui) {
+    const card2 = el("div", "dp-set dp-ext-card dp-ext-import");
+    const head = el("div", "dp-set-head");
+    head.appendChild(el("span", "dp-ext-emoji", "\u{1F4E6}"));
+    head.appendChild(el("b", null, "\u4ECE\u6587\u4EF6\u5BFC\u5165"));
+    head.appendChild(el("small", "dp-dim", "\u4E0B\u8F7D\u4E0D\u4E86\u65F6\uFF0C\u7528\u522B\u5904\u62FF\u5230\u7684\u6269\u5C55\u5305\uFF08.piggyext\uFF09\uFF0C\u6216\u4E00\u8D77\u9009\u4E2D\u6269\u5C55\u7684\u4E09\u4E2A\u6587\u4EF6\u3002"));
+    card2.appendChild(head);
+    if (pending !== null) {
+      const ask = pending;
+      card2.appendChild(el("div", "dp-ext-note dp-ext-warn", "\u300C" + ask.label + (ask.version ? " " + ask.version : "") + "\u300D\u4E0D\u662F\u5B98\u65B9\u6269\u5C55\u3002\u6269\u5C55\u91CC\u7684\u4EE3\u7801\u5728\u6E38\u620F\u91CC\u4EC0\u4E48\u90FD\u80FD\u505A\uFF0C\u53EA\u88C5\u4F60\u4FE1\u5F97\u8FC7\u7684\u4EBA\u7ED9\u7684\u3002"));
+      const row2 = el("div", "dp-ext-actions");
+      const yes = button("dp-mini dp-ext-danger", { "data-ext-import-confirm": "true" }, () => send(ui, ask.bundle, true));
+      yes.textContent = busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u4ECD\u8981\u5BFC\u5165";
+      yes.disabled = busy;
+      const no = button("dp-mini dp-mini-plain", { "data-ext-import-cancel": "true" }, () => {
+        pending = null;
+        ui.renderContent();
+      });
+      no.textContent = "\u7B97\u4E86";
+      row2.appendChild(yes);
+      row2.appendChild(no);
+      card2.appendChild(row2);
+      return card2;
+    }
+    const pick = el("label", "dp-mini dp-ext-import-pick");
+    pick.appendChild(el("span", null, busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u9009\u62E9\u6587\u4EF6"));
+    const input = (
+      /** @type {HTMLInputElement} */
+      el("input")
+    );
+    input.type = "file";
+    input.multiple = true;
+    input.setAttribute("accept", ".piggyext,.json,.js");
+    input.setAttribute("data-ext-import", "file");
+    input.disabled = busy;
+    input.addEventListener("change", () => {
+      const files = Array.from(input.files ?? []);
+      if (files.length === 0) return;
+      bundleOf(files).then((bundle) => {
+        if (bundle === null) {
+          ui.showBubble("\u8981\u9009\u4E00\u4E2A .piggyext\uFF0C\u6216\u8005 manifest.json\u3001server.js\u3001client.js \u4E09\u4E2A\u4E00\u8D77\u9009");
+          return;
+        }
+        send(ui, bundle, false);
+      }).catch(() => ui.showBubble("\u8BFB\u4E0D\u4E86\u8FD9\u4E2A\u6587\u4EF6"));
+    });
+    pick.appendChild(input);
+    card2.appendChild(pick);
+    return card2;
+  }
+
+  // src/client/tabs/extensions.js
+  var confirming = null;
+  var online = { loading: false, loaded: false, error: "", entries: (
+    /** @type {any[]} */
+    []
+  ), stamp: "" };
+  var download = { key: "", failed: "", error: "" };
+  function startInstall(ui, key2) {
+    if (download.key !== "") return;
+    download = { key: key2, failed: "", error: "" };
+    ui.renderContent();
+    Promise.resolve(ui.send("installExtension", { key: key2 })).then(function(result) {
+      if (download.key !== key2) return;
+      if (result !== null && result !== void 0 && result.ok === false) {
+        download = { key: "", failed: key2, error: str(result.message, "") || "\u4E0B\u8F7D\u5931\u8D25\uFF0C\u7A0D\u540E\u518D\u8BD5" };
+      } else if (result === null || result === void 0) {
+        download = { key: "", failed: key2, error: "\u521A\u624D\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B\uFF0C\u518D\u70B9\u4E00\u6B21" };
+      } else {
+        download = { key: "", failed: "", error: "" };
+      }
+      online.loaded = false;
+      ui.renderContent();
+    });
+  }
+  function stampOf(view) {
+    return view.extensions.map(function(extension) {
+      return extension.key + "@" + extension.version + ":" + extension.installed;
+    }).join(",");
+  }
+  function closingNote(view, key2) {
+    if (key2 === "pomodoro" && view.pomodoro !== null && view.pomodoro.active) return "\u6B63\u5728\u4E13\u6CE8\uFF1A\u5173\u6389\u4F1A\u653E\u5F03\u8FD9\u4E00\u4E2A\uFF0C\u4E0D\u7ED9\u5956\u52B1";
+    if (key2 === "fishing" && view.activity?.kind === "fishing") return "\u732A\u6B63\u5728\u5916\u9762\u9493\u9C7C\uFF1A\u5173\u6389\u4F1A\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u9C7C\u9975\u9000\u56DE";
+    return "";
+  }
+  var CLEARS = { pomodoro: "\u4ECA\u5929\u548C\u7D2F\u8BA1\u7684\u756A\u8304\u6570", fishing: "\u9C7C\u7BD3\u91CC\u7684\u9C7C\u3001\u56FE\u9274\u91CC\u7684\u9C7C\u3001\u80CC\u5305\u91CC\u7684\u9C7C\u9975" };
+  function loadOnline(ui, force) {
+    if (online.loading || typeof fetch !== "function") return;
+    online.loading = true;
+    fetch("/dsh-piggy/extensions/online" + (force ? "?force=1" : ""), { cache: "no-store" }).then(function(response) {
+      return response.json();
+    }).then(function(data) {
+      var body = obj(data);
+      online = { loading: false, loaded: true, error: str(body.error, ""), entries: arr(body.entries).filter(function(entry) {
+        return typeof obj(entry).key === "string";
+      }), stamp: stampOf(ui.view) };
+    }).catch(function() {
+      online = { loading: false, loaded: true, error: "\u8FDE\u4E0D\u4E0A", entries: online.entries, stamp: stampOf(ui.view) };
+    }).then(function() {
+      if (["home", "settings", "extensions"].includes(ui.tab)) ui.renderContent();
+    });
+  }
+  var downloading = (key2) => download.key === key2;
+  function installLabel(key2, normal) {
+    if (downloading(key2)) return "\u4E0B\u8F7D\u4E2D\u2026";
+    return download.failed === key2 ? "\u91CD\u8BD5" : normal;
+  }
+  function extensionUpdateAvailable(ui) {
+    if (isExternalMode(ui.view)) return false;
+    if (!online.loaded || online.stamp !== stampOf(ui.view)) loadOnline(ui, false);
+    return online.loaded && online.stamp === stampOf(ui.view) && online.entries.some(function(entry) {
+      return entry.update === true && ui.view.extensions.some(function(extension) {
+        return extension.key === entry.key && extension.installed;
+      });
+    });
+  }
+  function renderExtensionsTab(ui) {
+    if (String(ui.tab).startsWith("ext:")) {
+      renderDownloadedApp(ui, String(ui.tab).slice(4));
+      return;
+    }
+    const external = isExternalMode(ui.view);
+    if (!external && (!online.loaded || online.stamp !== stampOf(ui.view))) loadOnline(ui, false);
+    ui.content.appendChild(el("div", "dp-ext-intro", external ? "\u5916\u90E8\u684C\u5BA0\u6A21\u5F0F\u4E0B\u53EA\u663E\u793A\u5DF2\u5B89\u88C5\u6269\u5C55\uFF1B\u5F00\u5173\u4F1A\u8F6C\u53D1\u5230\u684C\u9762\u7248\uFF0C\u5B89\u88C5\u3001\u66F4\u65B0\u548C\u5220\u9664\u8BF7\u5230\u684C\u9762\u7248\u3002" : "\u7528\u4E0D\u4E0A\u7684\u73A9\u6CD5\u53EF\u4EE5\u5173\u6389\uFF0C\u6570\u636E\u7559\u7740\u968F\u65F6\u6062\u590D\uFF1B\u5220\u9664\u4F1A\u8FDE\u6570\u636E\u4E00\u8D77\u6E05\u6389\uFF0C\u4EE5\u540E\u53EF\u4EE5\u5728\u4E0B\u9762\u91CD\u65B0\u88C5\u3002"));
+    ui.content.appendChild(el("div", "dp-ext-section", "\u672C\u5730\u6269\u5C55"));
+    var local = ui.view.extensions.filter(function(extension) {
+      return extension.installed;
+    });
+    if (local.length === 0) ui.content.appendChild(el("div", "dp-ext-later", "\u4E00\u4E2A\u6269\u5C55\u90FD\u6CA1\u88C5"));
+    for (var i = 0; i < local.length; i += 1) ui.content.appendChild(localCard(ui, local[i], external));
+    if (external) {
+      ui.content.appendChild(el("div", "dp-ext-later", "\u5B89\u88C5\u3001\u66F4\u65B0\u548C\u5220\u9664\u6269\u5C55\u8BF7\u5230\u684C\u9762\u7248\uFF1B\u8FD9\u91CC\u7684\u5F00\u5173\u4ECD\u7136\u53EF\u7528\u3002"));
+      return;
+    }
+    ui.content.appendChild(importCard(ui));
+    var head = el("div", "dp-ext-section dp-ext-online-head");
+    head.appendChild(el("span", null, "\u5728\u7EBF\u6269\u5C55"));
+    var refresh2 = button("dp-mini dp-mini-plain", { "data-ext-refresh": "true" }, function() {
+      loadOnline(ui, true);
+      ui.renderContent();
+    });
+    refresh2.textContent = online.loading ? "\u8BFB\u53D6\u4E2D\u2026" : "\u{1F504} \u5237\u65B0";
+    refresh2.disabled = online.loading;
+    head.appendChild(refresh2);
+    ui.content.appendChild(head);
+    renderOnline(ui);
+  }
+  function localCard(ui, extension, external) {
+    var card2 = el("div", "dp-set dp-ext-card");
+    card2.setAttribute("data-extension", extension.key);
+    var head = el("div", "dp-set-head");
+    head.appendChild(el("span", "dp-ext-emoji", extension.emoji));
+    head.appendChild(el("b", null, extension.label + (extension.builtin ? "" : " " + extension.version) + (extension.local ? " \xB7 \u672C\u5730\u5BFC\u5165" : "")));
+    if (extension.description) head.appendChild(el("small", "dp-dim", extension.description));
+    card2.appendChild(head);
+    var note3 = extension.on ? closingNote(ui.view, extension.key) : "";
+    if (note3) card2.appendChild(el("div", "dp-ext-note", note3));
+    if (extension.error) card2.appendChild(el("div", "dp-ext-note", "\u52A0\u8F7D\u51FA\u9519\uFF1A" + extension.error));
+    if (download.failed === extension.key) card2.appendChild(el("div", "dp-ext-note", "\u6CA1\u88C5\u4E0A\uFF1A" + download.error));
+    var newer = online.entries.find(function(entry) {
+      return entry.key === extension.key && entry.update === true;
+    });
+    var row2 = el("div", "dp-ext-actions");
+    var toggle = button("dp-switch", { "data-extension-toggle": extension.key, "aria-pressed": String(extension.on) }, function() {
+      ui.send("setExtension", { key: extension.key, on: !extension.on });
+    });
+    toggle.appendChild(el("span", "dp-switch-knob"));
+    toggle.appendChild(el("span", "dp-switch-text", extension.on ? "\u5F00" : "\u5173"));
+    row2.appendChild(toggle);
+    if (newer && !external) {
+      var update = button("dp-mini", { "data-ext-update": extension.key }, function() {
+        startInstall(ui, extension.key);
+      });
+      update.textContent = installLabel(extension.key, "\u66F4\u65B0\u5230 " + str(newer.version, ""));
+      update.disabled = download.key !== "";
+      row2.appendChild(update);
+    }
+    if (external) {
+      card2.appendChild(el("div", "dp-ext-note", "\u5B89\u88C5\u3001\u66F4\u65B0\u548C\u5220\u9664\u5728\u684C\u9762\u7248\u7BA1\u7406"));
+    } else if (confirming === extension.key) {
+      row2.appendChild(el("span", "dp-ext-warn", "\u5220\u6389\u4F1A\u6E05\u7A7A" + (CLEARS[extension.key] ?? "\u5B83\u7684\u6570\u636E") + "\uFF0C\u786E\u5B9A\u5417\uFF1F"));
+      var yes = button("dp-mini dp-ext-danger", { "data-ext-remove-yes": extension.key }, function() {
+        confirming = null;
+        online.loaded = false;
+        ui.send("removeExtension", { key: extension.key });
+      });
+      yes.textContent = "\u5220\u9664";
+      var no = button("dp-mini dp-mini-plain", { "data-ext-remove-no": extension.key }, function() {
+        confirming = null;
+        ui.renderContent();
+      });
+      no.textContent = "\u7B97\u4E86";
+      row2.appendChild(yes);
+      row2.appendChild(no);
+    } else {
+      var remove = button("dp-mini dp-mini-plain dp-ext-remove", { "data-ext-remove": extension.key }, function() {
+        confirming = extension.key;
+        ui.renderContent();
+      });
+      remove.textContent = "\u5220\u9664";
+      row2.appendChild(remove);
+    }
+    card2.appendChild(row2);
+    return card2;
+  }
+  function renderOnline(ui) {
+    if (!online.loaded) {
+      ui.content.appendChild(el("div", "dp-ext-later", "\u6B63\u5728\u8BFB\u53D6\u5728\u7EBF\u6269\u5C55\u2026\u2026"));
+      return;
+    }
+    var installed2 = {};
+    for (var i = 0; i < ui.view.extensions.length; i += 1) if (ui.view.extensions[i].installed) installed2[ui.view.extensions[i].key] = true;
+    var entries2 = online.entries.filter(function(entry) {
+      return !installed2[entry.key];
+    });
+    if (online.error && entries2.length === 0) {
+      ui.content.appendChild(el("div", "dp-ext-later", "\u8BFB\u4E0D\u5230\u5728\u7EBF\u6269\u5C55\u76EE\u5F55\uFF08" + online.error + "\uFF09\uFF0C\u7A0D\u540E\u70B9\u5237\u65B0"));
+      return;
+    }
+    if (entries2.length === 0) {
+      ui.content.appendChild(el("div", "dp-ext-later", "\u5728\u7EBF\u7684\u6269\u5C55\u90FD\u88C5\u597D\u4E86\uFF0C\u4EE5\u540E\u6709\u65B0\u7684\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC"));
+      return;
+    }
+    for (var k = 0; k < entries2.length; k += 1) {
+      (function(entry) {
+        var card2 = el("div", "dp-set dp-ext-card");
+        card2.setAttribute("data-online-extension", entry.key);
+        var head = el("div", "dp-set-head");
+        head.appendChild(el("span", "dp-ext-emoji", str(entry.emoji, "\u{1F9E9}")));
+        head.appendChild(el("b", null, str(entry.label, entry.key) + (entry.builtin ? " \xB7 \u5185\u7F6E" : " " + str(entry.version, ""))));
+        var get = button("dp-mini", { "data-ext-install": entry.key }, function() {
+          startInstall(ui, entry.key);
+        });
+        get.textContent = installLabel(entry.key, entry.builtin ? "\u91CD\u65B0\u5B89\u88C5" : "\u4E0B\u8F7D");
+        get.disabled = downloading(entry.key) || download.key !== "" || entry.blocked !== null && entry.blocked !== void 0;
+        head.appendChild(get);
+        if (entry.description) head.appendChild(el("small", "dp-dim", str(entry.description, "")));
+        card2.appendChild(head);
+        if (download.failed === entry.key) card2.appendChild(el("div", "dp-ext-note", "\u6CA1\u88C5\u4E0A\uFF1A" + download.error));
+        if (entry.blocked === "game-too-old") card2.appendChild(el("div", "dp-ext-note", "\u9700\u8981\u6E38\u620F v" + str(entry.minGame, "") + "\uFF0C\u5148\u66F4\u65B0\u6E38\u620F"));
+        else if (entry.builtin) card2.appendChild(el("div", "dp-ext-note", "\u4EE3\u7801\u5728\u6E38\u620F\u91CC\uFF0C\u88C5\u56DE\u6765\u4E0D\u7528\u4E0B\u8F7D\uFF0C\u4ECE\u96F6\u5F00\u59CB"));
+        else if (downloading(entry.key)) card2.appendChild(el("div", "dp-ext-note", "\u6B63\u5728\u4E0B\u8F7D\uFF0C\u7F51\u7EDC\u6162\u7684\u65F6\u5019\u8981\u7B49\u4E00\u4F1A\u513F"));
+        ui.content.appendChild(card2);
+      })(entries2[k]);
+    }
+  }
+
+  // src/client/tabs/home.js
+  var APP_COLOR = {
+    status: "green",
+    card: "pink",
+    dex: "purple",
+    skins: "purple",
+    study: "yellow",
+    work: "orange",
+    shop: "red",
+    travel: "blue",
+    bag: "teal",
+    pomodoro: "red",
+    fishing: "blue",
+    settings: "peach",
+    update: "lime",
+    quit: "peach",
+    dev: "brown"
+  };
+  function orderHomeApps(apps) {
+    const rank = (key2) => key2 === "quit" ? 4 : key2 === "dev" ? 3 : key2 === "settings" ? 2 : key2.startsWith("ext:") ? 1 : 0;
+    return apps.slice().sort((a, b) => rank(a.key) - rank(b.key));
+  }
+  function renderHome(ui, apps) {
+    var p = ui.view.pig;
+    var head = el("div", "dp-title");
+    head.appendChild(el("b", null, p.name + " Lv." + p.level.level));
+    head.appendChild(el("span", null, "\u{1FA99} " + p.coins));
+    ui.content.appendChild(head);
+    const pages = Math.max(1, Math.ceil(apps.length / 9));
+    ui.homePage = Math.max(0, Math.min(pages - 1, ui.homePage ?? 0));
+    const clip2 = el("div", "dp-home-clip");
+    clip2.setAttribute("data-home-swipe", "true");
+    const track = el("div", "dp-home-track");
+    const grids = [];
+    const dots = [];
+    for (let page = 0; page < pages; page += 1) {
+      const grid = tileGrid();
+      grid.className += " dp-home-page";
+      grid.setAttribute("data-home-page", String(page));
+      for (const app of apps.slice(page * 9, page * 9 + 9)) {
+        grid.appendChild(tile({
+          emoji: app.emoji,
+          icon: appIcon(app.key, app.emoji, "dp-tile-e"),
+          label: app.label,
+          color: APP_COLOR[app.key] ?? "blue",
+          // 更新入口收进了设置：有新正式版时设置格子冒红点（G 批次）。
+          tag: app.key === "update" || app.key === "settings" ? "" : alertFor(ui, app.key),
+          badge: app.key === "settings" ? alertFor(ui, "update") || (extensionUpdateAvailable(ui) ? "!" : "") : "",
+          data: { "data-app": app.key },
+          onPick: function() {
+            ui.select(app.key);
+          }
+        }));
+      }
+      grids.push(grid);
+      track.appendChild(grid);
+    }
+    clip2.appendChild(track);
+    ui.content.appendChild(clip2);
+    let dotRow = null;
+    if (pages > 1) {
+      dotRow = el("div", "dp-home-dots");
+      for (let page = 0; page < pages; page += 1) {
+        const dot = button("dp-home-dot", { "data-home-dot": String(page), "aria-label": "\u7B2C " + (page + 1) + " \u9875" }, function() {
+          showPage(page);
+        });
+        dots.push(dot);
+        dotRow.appendChild(dot);
+      }
+      ui.content.appendChild(dotRow);
+    }
+    function showPage(page) {
+      const next = Math.max(0, Math.min(pages - 1, page));
+      ui.homePage = next;
+      track.style.transform = "translateX(-" + next * 100 + "%)";
+      grids.forEach((grid, index) => {
+        grid.setAttribute("data-active", String(index === next));
+        grid.setAttribute("aria-hidden", String(index !== next));
+        grid.inert = index !== next;
+      });
+      dots.forEach((dot, index) => dot.setAttribute("aria-pressed", String(index === next)));
+    }
+    showPage(ui.homePage);
+    let drag = null;
+    let swallowClick = false;
+    clip2.addEventListener("pointerdown", (event) => {
+      if (pages < 2 || event.pointerType === "mouse" && event.button !== 0) return;
+      drag = { x: event.clientX, y: event.clientY, id: event.pointerId, moved: false };
+    });
+    clip2.addEventListener("pointermove", (event) => {
+      if (drag === null || event.pointerId !== drag.id) return;
+      const dx = event.clientX - drag.x;
+      if (!drag.moved) {
+        if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(event.clientY - drag.y)) return;
+        drag.moved = true;
+        clip2.setPointerCapture?.(event.pointerId);
+        track.style.transition = "none";
+      }
+      const atEdge = ui.homePage === 0 && dx > 0 || ui.homePage === pages - 1 && dx < 0;
+      track.style.transform = "translateX(calc(-" + ui.homePage * 100 + "% + " + (atEdge ? dx / 3 : dx) + "px))";
+    });
+    function endDrag(event) {
+      if (drag === null || event.pointerId !== drag.id) return;
+      const dx = event.clientX - drag.x;
+      const moved = drag.moved || Math.abs(dx) > 40;
+      drag = null;
+      track.style.transition = "";
+      if (!moved) return;
+      swallowClick = true;
+      setTimeout(() => {
+        swallowClick = false;
+      }, 0);
+      showPage(Math.abs(dx) > 40 ? ui.homePage + (dx < 0 ? 1 : -1) : ui.homePage);
+    }
+    clip2.addEventListener("pointerup", endDrag);
+    clip2.addEventListener("pointercancel", (event) => {
+      if (drag !== null) {
+        drag.moved = true;
+        endDrag(event);
+      }
+    });
+    clip2.addEventListener("click", (event) => {
+      if (swallowClick) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    }, true);
+    let wheelLock = 0;
+    clip2.addEventListener("wheel", (event) => {
+      if (pages < 2) return;
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (Math.abs(delta) < 4) return;
+      const next = ui.homePage + (delta > 0 ? 1 : -1);
+      if (next < 0 || next >= pages) return;
+      event.preventDefault();
+      const now2 = Date.now();
+      if (now2 < wheelLock) return;
+      wheelLock = now2 + 450;
+      showPage(next);
+    }, { passive: false });
+    var version = el("div", "dp-version", "v" + (ui.view.version === "" ? "\u672A\u77E5" : ui.view.version));
+    version.setAttribute("data-version", "true");
+    version.addEventListener("click", function(event) {
+      if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+      ui.tapVersion();
+    });
+    ui.content.appendChild(version);
+  }
+  function alertFor(ui, key2) {
+    if (key2 === "update") return ui.updateNotice?.unread ? "!" : "";
+    var p = ui.view.pig;
+    if (key2 === "status") {
+      if (ui.view.dead) return "\u8D70\u4E86";
+      if (p.illness !== null) return "\u751F\u75C5";
+      if (ui.view.activity !== null) return "\u5728\u5916\u9762";
+      return "";
+    }
+    var icon = ui.icons[key2];
+    return icon !== void 0 && icon.getAttribute("data-alert") === "true" ? "!" : "";
+  }
+  function appHeader(ui, app, info) {
+    var row2 = el("div", "dp-drill dp-app-head");
+    var back = el("button", "dp-drill-back");
+    back.setAttribute("data-home", "true");
+    back.textContent = "\u2039";
+    back.addEventListener("click", function(event) {
+      if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+      ui.select(app.key === "extensions" ? "settings" : "home");
+    });
+    row2.appendChild(back);
+    var title = el("b", "dp-drill-title dp-app-title");
+    title.appendChild(appIcon(app.key, app.emoji, "dp-app-title-icon"));
+    title.appendChild(el("span", null, app.label));
+    row2.appendChild(title);
+    if (info) row2.appendChild(el("span", "dp-drill-info", info));
+    ui.content.appendChild(row2);
+  }
+
   // src/client/auto-collapse.js
   var AUTO_COLLAPSE_KEY = "dsh-piggy:auto-collapse";
   function autoCollapseEnabled() {
@@ -6673,6 +8503,3090 @@
     };
   }
 
+  // src/client/pat-cursor.js
+  var SIZE = 32;
+  var drawnFor = null;
+  function applyPatCursor(host3) {
+    if (typeof document === "undefined" || typeof document.createElement !== "function" || typeof getComputedStyle !== "function") return;
+    let family = "sans-serif";
+    try {
+      family = String(getComputedStyle(host3).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
+    } catch {
+      return;
+    }
+    if (drawnFor === family) return;
+    drawnFor = family;
+    const font = `26px ${family}`;
+    const draw = () => {
+      try {
+        const canvas = (
+          /** @type {HTMLCanvasElement} */
+          document.createElement("canvas")
+        );
+        if (typeof canvas.getContext !== "function") return;
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext("2d");
+        if (ctx === null) return;
+        ctx.font = font;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("\u{1F44B}", SIZE / 2, SIZE / 2 + 1);
+        const url = canvas.toDataURL("image/png");
+        if (typeof url === "string" && url.startsWith("data:image/png")) host3.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
+      } catch {
+      }
+    };
+    const fonts = (
+      /** @type {any} */
+      document.fonts
+    );
+    try {
+      if (fonts !== void 0 && typeof fonts.load === "function") fonts.load(font, "\u{1F44B}").then(draw, draw);
+      else draw();
+    } catch {
+    }
+  }
+
+  // src/client/emoji-style.js
+  var EMOJI_STYLE_KEY = "dsh-piggy:emoji-style";
+  var EMOJI_DEFAULT_MIGRATION_KEY = "dsh-piggy:emoji-bundled-default-v1";
+  function migrateBundledDefault() {
+    if (readStore(EMOJI_DEFAULT_MIGRATION_KEY) === "1") return false;
+    writeStore(EMOJI_STYLE_KEY, "bundled");
+    if (readStore(EMOJI_STYLE_KEY) === "bundled") writeStore(EMOJI_DEFAULT_MIGRATION_KEY, "1");
+    return true;
+  }
+  function emojiStyle() {
+    if (migrateBundledDefault()) return "bundled";
+    return readStore(EMOJI_STYLE_KEY) === "system" ? "system" : "bundled";
+  }
+  function setEmojiStyle(style) {
+    migrateBundledDefault();
+    writeStore(EMOJI_STYLE_KEY, style === "system" ? "system" : "bundled");
+  }
+  function hasBundledEmoji() {
+    try {
+      const fonts = (
+        /** @type {any} */
+        document.fonts
+      );
+      if (fonts === void 0 || typeof fonts.forEach !== "function") return false;
+      let found = false;
+      fonts.forEach(function(face) {
+        if (String(face.family).replace(/["']/g, "") === "Piggy Emoji") found = true;
+      });
+      return found;
+    } catch {
+      return false;
+    }
+  }
+  function applyEmojiStyle(host3) {
+    host3.setAttribute("data-emoji", emojiStyle());
+    applyPatCursor(host3);
+  }
+
+  // src/client/pig-size.js
+  var PIG_SIZE_KEY = "dsh-piggy:pig-size";
+  var OLD_SCALE = { small: 0.85, standard: 1, large: 1.3, extra: 1.7, 48: 0.85, 56: 1, 72: 1.3, 96: 1.7 };
+  function pigSize() {
+    const saved = readStore(PIG_SIZE_KEY);
+    if (saved?.startsWith("scale:")) {
+      const value = Number(saved.slice(6));
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+    const scale2 = OLD_SCALE[saved] ?? 1;
+    if (saved !== null) setPigSize(scale2);
+    return scale2;
+  }
+  function setPigSize(value) {
+    const scale2 = Number(value);
+    writeStore(PIG_SIZE_KEY, "scale:" + (Number.isFinite(scale2) && scale2 > 0 ? scale2 : 1));
+  }
+  function displayedPigSize(stageSize) {
+    return stageSize * pigSize();
+  }
+  function applyPigBox(host3, width) {
+    const style = host3?.style;
+    if (typeof style?.setProperty !== "function") return;
+    style.setProperty("--pig-size", width + "px");
+    style.setProperty("--pig-scale", String(pigSize()));
+  }
+  function syncPigSize(host3, stageSize) {
+    applyPigBox(host3, displayedPigSize(stageSize));
+  }
+  function attachSizePreference(host3, getStage, onChanged) {
+    function onStorage3(event) {
+      if (event.key !== PIG_SIZE_KEY) return;
+      const stage2 = getStage();
+      if (!stage2) return;
+      syncPigSize(host3, stage2.size);
+      onChanged?.();
+    }
+    window.addEventListener("storage", onStorage3);
+    return () => window.removeEventListener("storage", onStorage3);
+  }
+
+  // src/client/bubble-size.js
+  var BUBBLE_SIZE_KEY = "dsh-piggy:bubble-size";
+  function bubbleSize() {
+    const value = Number(readStore(BUBBLE_SIZE_KEY));
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  }
+  function limitBubbleSize(value, area) {
+    const width = area?.width > 0 ? area.width : 1280;
+    const height = area?.height > 0 ? area.height : 800;
+    const maximum = Math.max(0.1, Math.min((width - 24) / 272, (height - 64) / 208));
+    return Math.min(maximum, Math.max(0.1, Number.isFinite(value) && value > 0 ? value : 1));
+  }
+  var stageArea = null;
+  function setStageAreaProvider(provider) {
+    stageArea = typeof provider === "function" ? provider : null;
+  }
+  function stageAreaNow() {
+    if (stageArea === null) return null;
+    try {
+      const area = stageArea();
+      return area && area.width > 0 && area.height > 0 ? area : null;
+    } catch {
+      return null;
+    }
+  }
+  function availableArea() {
+    const shell2 = desktopShell();
+    if (shell2) return shell2.geometry?.()?.workArea ?? {
+      width: window.screen?.availWidth,
+      height: window.screen?.availHeight
+    };
+    return stageAreaNow() ?? { width: window.innerWidth, height: window.innerHeight };
+  }
+  function applyBubbleSize(host3) {
+    const scale2 = limitBubbleSize(bubbleSize(), availableArea());
+    if (typeof host3?.style?.setProperty !== "function") return scale2;
+    if (host3.style.getPropertyValue("--bubble-scale") !== String(scale2)) host3.style.setProperty("--bubble-scale", String(scale2));
+    return scale2;
+  }
+  function setBubbleSize(value) {
+    const scale2 = limitBubbleSize(value, availableArea());
+    writeStore(BUBBLE_SIZE_KEY, String(scale2));
+    return scale2;
+  }
+  function attachBubbleSizePreference(host3, onChanged) {
+    function update() {
+      applyBubbleSize(host3);
+      onChanged?.();
+    }
+    function onStorage3(event) {
+      if (event.key === BUBBLE_SIZE_KEY || event.key === null) update();
+    }
+    applyBubbleSize(host3);
+    window.addEventListener("storage", onStorage3);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("storage", onStorage3);
+      window.removeEventListener("resize", update);
+    };
+  }
+
+  // src/client/life.js
+  var TIME_TALK_MS = 5 * 6e4;
+  var WALK_KEY = "dsh-piggy:walk";
+  var IDLE_ACTIONS = [
+    { key: "roll", fx: ["\u{1F4AB}"], say: "\uFF08\u6EDA\u4E86\u4E00\u5708\uFF09\u8FD9\u6837\u6BD4\u8F83\u8212\u670D", ms: 1400 },
+    { key: "nap", fx: [], say: "\u6211\u5C31\u772F\u4E00\u4E0B\u2026\u2026", ms: 4e3 },
+    { key: "butterfly", fx: ["\u{1F98B}"], say: "\u7B49\u7B49\u6211\uFF01", ms: 3e3 },
+    { key: "scratch", fx: ["\u3030\uFE0F"], say: "\u80CC\u4E0A\u75D2\u75D2\u7684", ms: 2e3 },
+    { key: "stretch", fx: ["\u2728"], say: "\u55EF\u2014\u2014\u4F38\u4E2A\u61D2\u8170", ms: 1800 },
+    { key: "look", fx: ["\u2753"], say: "\u4F60\u5728\u5199\u4EC0\u4E48\u5440", ms: 2600 },
+    { key: "bubbles", fx: ["\u{1FAE7}", "\u{1FAE7}", "\u{1FAE7}"], say: "\u5657\u565C\u565C\u2026\u2026", ms: 2400 }
+  ];
+  function walkEnabled() {
+    return readStore(WALK_KEY) === "on";
+  }
+  function setWalk(on) {
+    writeStore(WALK_KEY, on ? "on" : "off");
+  }
+  function attachLife(c) {
+    var actions2 = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) });
+    const snap = attachPetSnap({
+      ...c,
+      canPlay: () => canPlayPetSnap(c.pig),
+      cancelMicro: () => actions2.cancel(),
+      render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji)
+    });
+    var timers = [];
+    var idleTimer = null;
+    var offCustomArt = onCustomArtChange(function() {
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+    });
+    var later = function(fn, ms) {
+      var id = window.setTimeout(fn, ms);
+      timers.push(id);
+      return id;
+    };
+    var between = function(min, max) {
+      return (min + Math.random() * (max - min)) * 6e4;
+    };
+    var hasPig = function() {
+      return c.getView().pig !== null && c.getView().hatched === true && !c.getView().dead;
+    };
+    var home = function() {
+      return hasPig() && c.getView().activity === null && !c.isOpen() && !c.isDragging();
+    };
+    var quiet = function() {
+      return c.getView().dialogue?.quiet === true;
+    };
+    later(function() {
+      if (!c.isStopped() && hasPig()) c.send("chat", { reason: "enter" });
+    }, GREET_DELAY_MS);
+    later(timeTalk, GREET_DELAY_MS + 4e3);
+    scheduleChat();
+    scheduleIdle();
+    scheduleWalk();
+    function scheduleChat() {
+      later(function() {
+        if (!c.isStopped() && !c.isBusy() && hasPig()) c.send("chat", { reason: "idle" });
+        scheduleChat();
+      }, between(IDLE_CHAT_MINUTES.min, IDLE_CHAT_MINUTES.max));
+    }
+    function timeTalk() {
+      if (c.isStopped()) return;
+      if (!c.isBusy() && hasPig()) c.send("chat", { reason: "time" });
+      later(timeTalk, TIME_TALK_MS);
+    }
+    function scheduleIdle() {
+      later(function() {
+        if (c.isStopped()) return;
+        if (home()) doIdle(IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
+        scheduleIdle();
+      }, between(3, 8));
+    }
+    function doIdle(action) {
+      var lead = action.key === "butterfly" && c.feel ? 120 : 0;
+      if (lead > 0) c.feel.crouch(lead);
+      var run = function() {
+        if (idleTimer !== null) window.clearTimeout(idleTimer);
+        c.pig.setAttribute("data-idle", action.key);
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        if (action.fx.length > 0) c.burst(action.fx, action.fx.length);
+        if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3e3, action.ms));
+        idleTimer = window.setTimeout(function() {
+          idleTimer = null;
+          c.pig.removeAttribute("data-idle");
+          syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        }, action.ms);
+      };
+      if (lead > 0) later(run, lead);
+      else run();
+    }
+    function scheduleWalk() {
+      later(function() {
+        if (c.isStopped()) return;
+        var shell2 = c.desktopShell();
+        if (walkEnabled() && !quiet() && home() && shell2 !== null && typeof shell2.moveBy === "function") walk(shell2);
+        scheduleWalk();
+      }, between(10, 20));
+    }
+    function walk(shell2) {
+      var screenWidth = window.screen?.availWidth ?? 0;
+      var toLeft = screenWidth > 0 && (window.screenX ?? 0) > screenWidth / 2;
+      var distance = 120 + Math.floor(Math.random() * 180);
+      var step = toLeft ? -2 : 2;
+      var walked = 0;
+      var back = false;
+      c.pig.setAttribute("data-idle", "walk");
+      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      if (c.feel) c.feel.face(toLeft ? "left" : "right");
+      else c.pig.setAttribute("data-walk", toLeft ? "left" : "right");
+      if (!quiet() && Math.random() < 0.5) c.showBubble("\u6211\u53BB\u5DE1\u903B\u4E00\u4E0B", 2e3);
+      var timer2 = window.setInterval(function() {
+        if (c.isStopped() || c.isOpen() || c.isDragging()) return stop();
+        shell2.moveBy(back ? -step : step, 0);
+        walked += 2;
+        if (!back && walked >= distance) {
+          back = true;
+          walked = 0;
+          if (c.feel) c.feel.face(toLeft ? "right" : "left");
+          else c.pig.setAttribute("data-walk", toLeft ? "right" : "left");
+        } else if (back && walked >= distance) stop();
+      }, 16);
+      timers.push(timer2);
+      function stop() {
+        window.clearInterval(timer2);
+        c.pig.removeAttribute("data-idle");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        if (c.feel) c.feel.face(null);
+        else c.pig.removeAttribute("data-walk");
+      }
+    }
+    return {
+      /** A confirmed conversation reply wakes the local nap without petting. */
+      cancelNap: function() {
+        if (c.pig.getAttribute("data-idle") !== "nap") return;
+        if (idleTimer !== null) window.clearTimeout(idleTimer);
+        idleTimer = null;
+        c.pig.removeAttribute("data-idle");
+        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      },
+      /** 调试页「散步一次」：不等计时，马上走一趟（只有桌面版能走）。 */
+      walkNow: function() {
+        var shell2 = c.desktopShell();
+        if (shell2 === null || typeof shell2.moveBy !== "function") return false;
+        walk(shell2);
+        return true;
+      },
+      /** 调试页「做个小动作」。 */
+      /** @param {string} [key] 指定哪个小动作（调试页用），不给就随机。 */
+      idleNow: function(key2) {
+        var picked = IDLE_ACTIONS.find(function(action) {
+          return action.key === key2;
+        });
+        doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
+      },
+      dispose: function() {
+        if (idleTimer !== null) window.clearTimeout(idleTimer);
+        idleTimer = null;
+        offCustomArt();
+        snap.dispose();
+        actions2.dispose();
+        for (var i = 0; i < timers.length; i += 1) {
+          window.clearTimeout(timers[i]);
+          window.clearInterval(timers[i]);
+        }
+        timers = [];
+      }
+    };
+  }
+
+  // src/client/log-export.js
+  var EXPORT_URL = "/dsh-piggy/logs/export";
+  function fileName(now2 = /* @__PURE__ */ new Date()) {
+    const pad = (value, width) => String(value).padStart(width, "0");
+    return `dsh-piggy-log-${now2.getFullYear()}${pad(now2.getMonth() + 1, 2)}${pad(now2.getDate(), 2)}-${pad(now2.getHours(), 2)}${pad(now2.getMinutes(), 2)}.txt`;
+  }
+  var isCancel = (error) => error?.name === "AbortError" || error?.name === "NotAllowedError";
+  async function saveViaShell(name, text) {
+    const shell2 = typeof window === "object" ? (
+      /** @type {any} */
+      window.piggyShell
+    ) : void 0;
+    const bridge3 = shell2?.logs;
+    if (bridge3 === void 0 || typeof bridge3.save !== "function") return null;
+    const result = await bridge3.save(name, text);
+    if (result?.ok === true) return { ok: true, path: String(result.path ?? "") };
+    if (result?.canceled === true) return { ok: false, canceled: true };
+    return { ok: false, reason: String(result?.reason ?? "\u5916\u58F3\u6CA1\u80FD\u4FDD\u5B58") };
+  }
+  async function saveViaPicker(name, text) {
+    const picker = typeof window === "object" ? (
+      /** @type {any} */
+      window.showSaveFilePicker
+    ) : void 0;
+    if (typeof picker !== "function") return null;
+    try {
+      const handle = await picker({
+        suggestedName: name,
+        types: [{ description: "\u65E5\u5FD7\u6587\u672C", accept: { "text/plain": [".txt"] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      return { ok: true, path: "" };
+    } catch (error) {
+      if (isCancel(error)) return { ok: false, canceled: true };
+      return null;
+    }
+  }
+  function saveViaDownload(name, text) {
+    try {
+      const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
+      return { ok: true, path: "", downloaded: true };
+    } catch (error) {
+      return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  async function exportLogs() {
+    await flushBeforeExport();
+    let text;
+    try {
+      const response = await fetch(EXPORT_URL, { cache: "no-store" });
+      if (!response.ok) return { ok: false, reason: "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + response.status };
+      text = await response.text();
+    } catch (error) {
+      return { ok: false, reason: "\u62FF\u4E0D\u5230\u65E5\u5FD7\uFF1A" + (error instanceof Error ? error.message : String(error)) };
+    }
+    const name = fileName();
+    const saved = await saveViaShell(name, text) ?? await saveViaPicker(name, text) ?? saveViaDownload(name, text);
+    return { ...saved, bytes: text.length };
+  }
+
+  // src/client/sounds.js
+  var VOLUME_GAIN = Object.freeze([0.32, 0.55, 0.82]);
+  var RECIPES = Object.freeze({
+    tap: { tones: [{ type: "sine", from: 660, to: 520, ms: 70, gain: 0.35 }] },
+    lift: { tones: [{ type: "triangle", from: 340, to: 760, ms: 110, gain: 0.4 }] },
+    toss: { tones: [{ type: "sine", from: 240, to: 120, ms: 120, gain: 0.2 }], noise: { from: 900, to: 260, ms: 220, gain: 0.28 } },
+    bounce: { tones: [{ type: "sine", from: 190, to: 105, ms: 110, gain: 0.5 }] },
+    "land-soft": { tones: [{ type: "sine", from: 130, to: 82, ms: 130, gain: 0.5 }] },
+    "land-hard": { tones: [{ type: "sine", from: 105, to: 55, ms: 170, gain: 0.65 }, { type: "triangle", from: 300, to: 180, ms: 120, gain: 0.18 }], noise: { from: 420, to: 120, ms: 120, gain: 0.22 } },
+    dizzy: { tones: [{ type: "sine", from: 720, to: 560, ms: 150, gain: 0.32 }, { type: "sine", from: 640, to: 480, ms: 180, gain: 0.3, delay: 130 }] },
+    purr: { tones: [{ type: "sawtooth", from: 72, to: 62, ms: 280, gain: 0.28 }] },
+    flip: { tones: [], noise: { from: 2400, to: 700, ms: 90, gain: 0.22, type: "highpass" } },
+    catch: { tones: [{ type: "square", from: 460, to: 380, ms: 70, gain: 0.28 }] }
+  });
+  var SOUND_KEYS = Object.freeze(Object.keys(RECIPES));
+
+  // src/client/sound.js
+  var context = null;
+  var master = null;
+  var compressor = null;
+  var lastAt = /* @__PURE__ */ Object.create(null);
+  var voices = 0;
+  var quietCheck = function() {
+    return false;
+  };
+  function allowedRole() {
+    var role2 = desktopRole();
+    return role2 === null || role2 === "pet";
+  }
+  function configureSound(options) {
+    if (typeof options?.isQuiet === "function") quietCheck = options.isQuiet;
+  }
+  function unlockSound() {
+    if (!soundSettings().on) return null;
+    return ensureContext();
+  }
+  function ensureContext() {
+    if (context !== null) {
+      if (context.state === "suspended") context.resume?.().catch?.(function() {
+      });
+      return context;
+    }
+    try {
+      var audioWindow = typeof window !== "undefined" ? (
+        /** @type {any} */
+        window
+      ) : null;
+      var Ctor = audioWindow === null ? null : audioWindow.AudioContext || audioWindow.webkitAudioContext;
+      if (typeof Ctor !== "function") return null;
+      context = new Ctor();
+      compressor = context.createDynamicsCompressor?.() ?? null;
+      master = context.createGain();
+      master.gain.value = 1;
+      if (compressor !== null) {
+        compressor.threshold.value = -18;
+        compressor.knee.value = 12;
+        compressor.ratio.value = 6;
+        compressor.attack.value = 3e-3;
+        compressor.release.value = 0.2;
+        master.connect(compressor);
+        compressor.connect(context.destination);
+      } else {
+        master.connect(context.destination);
+      }
+      if (context.state === "suspended") context.resume?.().catch?.(function() {
+      });
+      return context;
+    } catch {
+      context = null;
+      master = null;
+      compressor = null;
+      return null;
+    }
+  }
+  function noiseBuffer(ctx, seconds) {
+    var length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+    var buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    var seed = 2654435769;
+    for (var i = 0; i < length; i += 1) {
+      seed = seed * 1664525 + 1013904223 >>> 0;
+      data[i] = seed / 4294967295 * 2 - 1;
+    }
+    return buffer;
+  }
+  function tone(ctx, destination, spec, start2, volume) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var duration = spec.ms / 1e3;
+    osc.type = spec.type;
+    osc.frequency.setValueAtTime(Math.max(20, spec.from), start2);
+    if (spec.to !== spec.from) osc.frequency.exponentialRampToValueAtTime(Math.max(20, spec.to), start2 + duration);
+    var peak = Math.max(1e-4, spec.gain * volume);
+    gain.gain.setValueAtTime(1e-4, start2);
+    gain.gain.exponentialRampToValueAtTime(peak, start2 + Math.min(0.02, duration * 0.2));
+    gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
+    osc.connect(gain);
+    gain.connect(destination);
+    osc.start(start2);
+    osc.stop(start2 + duration + 0.02);
+    voices += 1;
+    osc.onended = function() {
+      voices = Math.max(0, voices - 1);
+    };
+  }
+  function noise(ctx, destination, spec, start2, volume) {
+    var source = ctx.createBufferSource();
+    var filter2 = ctx.createBiquadFilter();
+    var gain = ctx.createGain();
+    var duration = spec.ms / 1e3;
+    source.buffer = noiseBuffer(ctx, duration);
+    filter2.type = spec.type ?? "lowpass";
+    filter2.frequency.setValueAtTime(Math.max(40, spec.from), start2);
+    if (spec.to !== spec.from) filter2.frequency.exponentialRampToValueAtTime(Math.max(40, spec.to), start2 + duration);
+    gain.gain.setValueAtTime(1e-4, start2);
+    gain.gain.exponentialRampToValueAtTime(Math.max(1e-4, spec.gain * volume), start2 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
+    source.connect(filter2);
+    filter2.connect(gain);
+    gain.connect(destination);
+    source.start(start2);
+    source.stop(start2 + duration + 0.01);
+    voices += 1;
+    source.onended = function() {
+      voices = Math.max(0, voices - 1);
+    };
+  }
+  function playSound(key2, options) {
+    var recipe = RECIPES[key2];
+    if (recipe === void 0) return false;
+    var settings = soundSettings();
+    if (!settings.on) return false;
+    if (!allowedRole() || quietCheck() === true) return false;
+    var now2 = Date.now();
+    if (now2 - (lastAt[key2] ?? 0) < 60) return false;
+    if (voices >= 3) return false;
+    var ctx = ensureContext();
+    if (ctx === null || master === null) return false;
+    lastAt[key2] = now2;
+    var level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
+    var volume = level * (options?.soft === true ? 0.65 : 1);
+    var start2 = ctx.currentTime + 5e-3;
+    for (var i = 0; i < recipe.tones.length; i += 1) {
+      tone(ctx, master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume);
+    }
+    if (recipe.noise !== void 0) noise(ctx, master, recipe.noise, start2, volume);
+    return true;
+  }
+
+  // src/client/tabs/proxy.js
+  var preference = null;
+  var loading = false;
+  var busy2 = false;
+  var draft = null;
+  var message = "";
+  var failure = false;
+  function renderProxySettings(ui, section2, api) {
+    const setting = section2(ui, "\u7F51\u7EDC\u4EE3\u7406", "\u7528\u4E8E\u66F4\u65B0\u4E0B\u8F7D\u548C\u5728\u7EBF\u6269\u5C55");
+    if (preference === null) {
+      setting.box.appendChild(el("small", "dp-dim", message || "\u6B63\u5728\u8BFB\u53D6\u4EE3\u7406\u914D\u7F6E\u2026"));
+      if (!loading && !message) {
+        loading = true;
+        api.get().then((value) => {
+          if (value?.mode) {
+            preference = value;
+            message = value.warning || "";
+          } else message = value?.reason || "\u4EE3\u7406\u914D\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
+        }).catch((error) => {
+          message = String(error);
+        }).finally(() => {
+          loading = false;
+          if (ui.tab === "settings") ui.renderContent();
+        });
+      }
+      return;
+    }
+    if (draft === null) draft = { ...preference };
+    const form = el("div", "dp-proxy-form");
+    const mode = (
+      /** @type {HTMLSelectElement} */
+      el("select", "dp-setting-field")
+    );
+    mode.setAttribute("aria-label", "\u4EE3\u7406\u6A21\u5F0F");
+    mode.setAttribute("data-proxy-mode", "true");
+    for (const [key2, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF\u4EE3\u7406"], ["direct", "\u76F4\u8FDE\uFF08\u4E0D\u4F7F\u7528\u4EE3\u7406\uFF09"], ["http", "HTTP \u4EE3\u7406"], ["socks5", "SOCKS5 \u4EE3\u7406"]]) {
+      const option = (
+        /** @type {HTMLOptionElement} */
+        el("option", null, label)
+      );
+      option.value = key2;
+      mode.appendChild(option);
+    }
+    mode.value = draft.mode;
+    mode.disabled = busy2;
+    const endpoint = (
+      /** @type {HTMLInputElement} */
+      el("input", "dp-setting-field")
+    );
+    endpoint.disabled = busy2;
+    endpoint.type = "text";
+    endpoint.placeholder = "\u4F8B\u5982 127.0.0.1:7890";
+    endpoint.setAttribute("aria-label", "\u4EE3\u7406\u5730\u5740\u548C\u7AEF\u53E3");
+    endpoint.setAttribute("data-proxy-address", "true");
+    endpoint.value = draft.address;
+    endpoint.addEventListener("input", () => {
+      draft.address = endpoint.value;
+    });
+    const address = el("label", "dp-proxy-endpoint");
+    address.appendChild(el("span", "dp-dim", "\u4EE3\u7406\u5730\u5740"));
+    address.appendChild(endpoint);
+    function choose2() {
+      draft.mode = mode.value;
+      address.hidden = mode.value === "system" || mode.value === "direct";
+    }
+    mode.addEventListener("change", choose2);
+    choose2();
+    form.appendChild(mode);
+    form.appendChild(address);
+    setting.box.appendChild(form);
+    const controls = el("div", "dp-proxy-actions");
+    const status2 = el("div", failure ? "dp-proxy-status dp-proxy-error" : "dp-proxy-status", message);
+    status2.hidden = !message;
+    status2.setAttribute("role", "status");
+    const actions2 = [];
+    async function run(action) {
+      if (busy2) return;
+      busy2 = true;
+      for (const control of actions2) control.disabled = true;
+      mode.disabled = true;
+      endpoint.disabled = true;
+      status2.hidden = false;
+      status2.textContent = "\u5904\u7406\u4E2D\u2026";
+      try {
+        const result = await action();
+        failure = result?.ok !== true;
+        if (result?.preference) {
+          preference = result.preference;
+          draft = { ...preference };
+        }
+        message = failure ? result?.reason || "\u4EE3\u7406\u64CD\u4F5C\u5931\u8D25" : result.route ? "\u8FDE\u63A5\u6B63\u5E38" : "\u4EE3\u7406\u914D\u7F6E\u5DF2\u751F\u6548";
+      } catch (error) {
+        failure = true;
+        message = error instanceof Error ? error.message : String(error);
+      } finally {
+        busy2 = false;
+        if (ui.tab === "settings") ui.renderContent();
+      }
+    }
+    for (const [key2, label, action] of [
+      ["save", "\u5E94\u7528", () => api.set({ mode: mode.value, address: endpoint.value })],
+      ["test", "\u6D4B\u8BD5\u8FDE\u63A5", () => api.test()],
+      ["clear", "\u6062\u590D\u7CFB\u7EDF", () => api.clear()]
+    ]) {
+      const control = button("dp-mini dp-proxy-" + key2, { "data-proxy-action": key2 }, () => run(action));
+      control.textContent = label;
+      control.disabled = busy2;
+      actions2.push(control);
+      controls.appendChild(control);
+    }
+    setting.box.appendChild(controls);
+    setting.box.appendChild(status2);
+  }
+
+  // src/client/tabs/fullscreen.js
+  var current2 = null;
+  var loading2 = false;
+  var busy3 = false;
+  var OPTIONS = [{ key: "hide", label: "\u9690\u85CF\u5C0F\u732A" }, { key: "show", label: "\u7167\u5E38\u663E\u793A" }];
+  function note(value) {
+    if (value === null) return "\u6B63\u5728\u8BFB\u53D6\u2026";
+    if (!value.supported) return "\u8FD9\u53F0\u7535\u8111\u68C0\u6D4B\u4E0D\u4E86\u5168\u5C4F\uFF08" + (value.reason || "\u539F\u56E0\u672A\u77E5") + "\uFF09\uFF0C\u5C0F\u732A\u4F1A\u4E00\u76F4\u663E\u793A";
+    if (value.mode === "show") return value.platform === "darwin" ? "\u5168\u5C4F\u7A0B\u5E8F\u7684\u684C\u9762\u91CC\u4E5F\u663E\u793A\u5C0F\u732A" : "\u5C0F\u732A\u538B\u5728\u5168\u5C4F\u753B\u9762\u4E0A\u9762\uFF1B\u72EC\u5360\u5168\u5C4F\u7684\u6E38\u620F\u7CFB\u7EDF\u4E0D\u8BA9\u4EFB\u4F55\u7A97\u53E3\u76D6\u4E0A\u53BB";
+    return "\u5C0F\u732A\u6240\u5728\u7684\u5C4F\u5E55\u4E0A\u6709\u7A0B\u5E8F\u5168\u5C4F\u65F6\u5148\u85CF\u8D77\u6765\uFF0C\u9000\u51FA\u5168\u5C4F\u518D\u56DE\u6765";
+  }
+  function renderFullscreenSettings(ui, section2, api) {
+    const setting = section2(ui, "\u5168\u5C4F\u65F6\uFF08\u73A9\u6E38\u620F\u3001\u770B\u89C6\u9891\uFF09", note(current2));
+    if (current2 === null) {
+      if (!loading2) {
+        loading2 = true;
+        api.get().then((value) => {
+          if (value?.mode) current2 = value;
+        }).catch(() => {
+        }).finally(() => {
+          loading2 = false;
+          if (ui.tab === "settings") ui.renderContent();
+        });
+      }
+      return;
+    }
+    const row2 = el("div", "dp-seg");
+    for (const option of OPTIONS) {
+      const pick = button("dp-seg-btn", { "data-fullscreen-mode": option.key, "aria-pressed": String(option.key === current2.mode) }, function() {
+        if (busy3) return;
+        busy3 = true;
+        api.set(option.key).then((value) => {
+          if (value?.ok) current2 = value;
+        }).catch(() => {
+        }).finally(() => {
+          busy3 = false;
+          if (ui.tab === "settings") ui.renderContent();
+        });
+      });
+      pick.textContent = option.label;
+      pick.disabled = busy3 || option.key === current2.mode;
+      row2.appendChild(pick);
+    }
+    setting.box.appendChild(row2);
+  }
+
+  // src/client/save-transfer.js
+  var EXPORT_URL2 = "/dsh-piggy/save/export";
+  var PREVIEW_URL = "/dsh-piggy/save/preview";
+  var IMPORT_URL = "/dsh-piggy/save/import";
+  var state = {
+    open: false,
+    preview: null,
+    loading: false,
+    busy: false,
+    error: "",
+    focus: "cancel",
+    ui: null,
+    trigger: null,
+    controller: null,
+    keyHandler: null
+  };
+  var cancelError = (error) => error?.name === "AbortError" || error?.name === "NotAllowedError";
+  var messageOf = (error) => error instanceof Error ? error.message : String(error);
+  function defaultName() {
+    const d = /* @__PURE__ */ new Date(), p = (n) => String(n).padStart(2, "0");
+    return `piggy-save-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.zip`;
+  }
+  function responseName(response) {
+    const value = response.headers?.get?.("content-disposition") || "";
+    const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (encoded) {
+      try {
+        return decodeURIComponent(encoded);
+      } catch {
+      }
+    }
+    return value.match(/filename="?([^";]+)"?/i)?.[1] || defaultName();
+  }
+  async function saveBytes(name, bytes) {
+    const shell2 = desktopShell();
+    if (typeof shell2?.saves?.save === "function") {
+      const result = await shell2.saves.save(name, new Uint8Array(bytes));
+      if (result?.ok) return { ok: true };
+      if (result?.canceled) return { canceled: true };
+      throw new Error(String(result?.reason || "\u684C\u9762\u5916\u58F3\u6CA1\u80FD\u4FDD\u5B58\u5B58\u6863"));
+    }
+    const picker = typeof window === "object" ? (
+      /** @type {any} */
+      window.showSaveFilePicker
+    ) : null;
+    if (typeof picker === "function") {
+      let handle = null;
+      try {
+        handle = await picker({ suggestedName: name, types: [{ description: "\u5C0F\u732A\u5B58\u6863", accept: { "application/zip": [".zip"] } }] });
+      } catch (error) {
+        if (error?.name === "AbortError") return { canceled: true };
+      }
+      if (handle !== null && handle !== void 0) {
+        try {
+          const writable = await handle.createWritable();
+          await writable.write(bytes);
+          await writable.close();
+          return { ok: true };
+        } catch (error) {
+          if (error?.name === "AbortError") return { canceled: true };
+          throw error;
+        }
+      }
+    }
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return { ok: true, downloaded: true };
+  }
+  function status(ui, text, ms = 3500) {
+    if (typeof ui.showBubble === "function") ui.showBubble(text, ms);
+  }
+  function rerender2() {
+    if (typeof state.ui?.renderContent === "function") state.ui.renderContent();
+  }
+  async function exportSave(ui) {
+    if (state.busy) return;
+    state.busy = true;
+    rerender2();
+    try {
+      const response = await fetch(EXPORT_URL2, { cache: "no-store" });
+      if (!response.ok) throw new Error(`\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
+      const bytes = await response.arrayBuffer();
+      const result = await saveBytes(responseName(response), bytes);
+      if (result.canceled) return;
+      status(ui, result.downloaded ? "\u5B58\u6863\u5DF2\u4E0B\u8F7D" : "\u5B58\u6863\u5DF2\u5BFC\u51FA");
+    } catch (error) {
+      status(ui, "\u5B58\u6863\u6CA1\u5BFC\u51FA\uFF1A" + messageOf(error), 5e3);
+    } finally {
+      state.busy = false;
+      rerender2();
+    }
+  }
+  function focusTrigger() {
+    const ui = state.ui;
+    const trigger = ui?.content?.querySelector?.('[data-save-trigger="import"]');
+    if (trigger?.focus) trigger.focus();
+  }
+  function closeDialog() {
+    state.controller?.abort();
+    state.controller = null;
+    state.open = false;
+    state.preview = null;
+    state.error = "";
+    state.loading = false;
+    state.busy = false;
+    if (state.keyHandler && typeof document === "object") document.removeEventListener("keydown", state.keyHandler, true);
+    state.keyHandler = null;
+    rerender2();
+    focusTrigger();
+  }
+  function trapKeys() {
+    if (state.keyHandler || typeof document !== "object") return;
+    state.keyHandler = (event) => {
+      if (!state.open) return;
+      if (event.key === "Escape") {
+        if (state.busy) return;
+        event.preventDefault();
+        closeDialog();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = state.ui?.content?.querySelector?.('[data-save-dialog="true"]');
+      const items = Array.from(dialog?.querySelectorAll?.("button:not([disabled]),input:not([disabled])") || []);
+      if (!items.length) {
+        event.preventDefault();
+        dialog?.focus?.();
+        return;
+      }
+      const first = items[0], last = items[items.length - 1], active2 = document.activeElement;
+      if (event.shiftKey && (active2 === first || !dialog.contains(active2))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active2 === last || !dialog.contains(active2))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", state.keyHandler, true);
+  }
+  async function previewFile(file) {
+    if (!file) return;
+    state.preview = null;
+    state.error = "";
+    state.loading = true;
+    state.controller?.abort();
+    const controller = new AbortController();
+    state.controller = controller;
+    rerender2();
+    try {
+      const response = await fetch(PREVIEW_URL, { method: "POST", headers: { "content-type": "application/octet-stream" }, body: await file.arrayBuffer(), signal: controller.signal });
+      const result = await response.json().catch(() => null);
+      if (state.controller !== controller) return;
+      if (!response.ok || result?.ok !== true || !result.token || !result.summary) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
+      state.preview = result;
+    } catch (error) {
+      if (state.controller === controller && !cancelError(error)) state.error = "\u6CA1\u80FD\u8BFB\u53D6\u8FD9\u4E2A\u5B58\u6863\uFF1A" + messageOf(error);
+    } finally {
+      if (state.controller === controller) {
+        state.loading = false;
+        state.controller = null;
+        rerender2();
+      }
+    }
+  }
+  async function commitImport(ui) {
+    if (state.busy || !state.preview?.token) return;
+    state.busy = true;
+    state.error = "";
+    rerender2();
+    try {
+      const response = await fetch(IMPORT_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: state.preview.token }) });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.ok !== true) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
+      state.open = false;
+      if (state.keyHandler) document.removeEventListener("keydown", state.keyHandler, true);
+      state.keyHandler = null;
+      status(ui, "\u5B58\u6863\u5DF2\u5BFC\u5165");
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      state.error = "\u5BFC\u5165\u5931\u8D25\uFF1A" + messageOf(error);
+      state.busy = false;
+      rerender2();
+    }
+  }
+  function renderSaveTransferSettings(ui, section2) {
+    state.ui = ui;
+    if (isExternalMode(ui.view)) {
+      const box = section2(ui, "\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u6216\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
+      const actions3 = el("div", "dp-actions");
+      for (const [key2, label] of [["export", "\u5BFC\u51FA\u5B58\u6863"], ["import", "\u5BFC\u5165\u5B58\u6863"]]) {
+        const node = button("dp-mini", { "data-save-trigger": key2, "data-external-disabled": "true" }, function() {
+          status(ui, MIRROR_NOTE, 3600);
+        });
+        node.textContent = label;
+        node.disabled = true;
+        actions3.appendChild(node);
+      }
+      box.box.appendChild(actions3);
+      box.box.appendChild(el("p", "dp-dim", MIRROR_NOTE));
+      return;
+    }
+    const transfer = section2(ui, "\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u6216\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
+    transfer.box.setAttribute("data-save-transfer-active", String(state.open || state.busy || state.loading));
+    const actions2 = el("div", "dp-actions");
+    const exportButton = button("dp-mini", { "data-save-trigger": "export" }, () => exportSave(ui));
+    exportButton.textContent = state.busy && !state.open ? "\u5BFC\u51FA\u4E2D\u2026" : "\u5BFC\u51FA\u5B58\u6863";
+    exportButton.disabled = state.busy || !ui.view?.pig;
+    if (!ui.view?.pig) exportButton.title = "\u63A5\u5230\u5C0F\u732A\u540E\u5373\u53EF\u5907\u4EFD";
+    const importButton = button("dp-mini", { "data-save-trigger": "import" }, () => {
+      if (state.busy) return;
+      state.open = true;
+      state.preview = null;
+      state.error = "";
+      state.trigger = "import";
+      rerender2();
+      trapKeys();
+      const input = ui.content.querySelector('[data-save-file="true"]');
+      input?.click();
+    });
+    importButton.textContent = "\u5BFC\u5165\u5B58\u6863";
+    importButton.disabled = state.busy || state.loading;
+    actions2.appendChild(exportButton);
+    actions2.appendChild(importButton);
+    transfer.box.appendChild(actions2);
+    if (!state.open) return;
+    const overlay = el("div", "dp-save-overlay");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
+    const dialog = el("div", "dp-set");
+    dialog.style.cssText = "width:min(268px,100%);max-height:90vh;overflow:auto;background:var(--ac-bg-content);border:2px solid var(--ac-border);border-radius:var(--ac-radius-card);padding:12px;box-shadow:var(--ac-shadow-lg)";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-label", "\u5BFC\u5165\u5B58\u6863");
+    dialog.setAttribute("data-save-dialog", "true");
+    dialog.tabIndex = -1;
+    overlay.appendChild(dialog);
+    dialog.appendChild(el("b", null, "\u5BFC\u5165\u5B58\u6863"));
+    if (state.loading) dialog.appendChild(el("p", "dp-dim", "\u6B63\u5728\u68C0\u67E5\u5B58\u6863\u2026"));
+    else if (state.preview) {
+      const summary = state.preview.summary;
+      rowTo(dialog, "\u5C0F\u732A", `${summary.name || "\u672A\u547D\u540D"} \xB7 Lv.${summary.level ?? "\u2014"}`);
+      rowTo(dialog, "\u5907\u4EFD\u65F6\u95F4", displayDate(summary.createdAt));
+      rowTo(dialog, "\u6E38\u620F\u7248\u672C", summary.gameVersion || "\u672A\u77E5");
+      rowTo(dialog, "\u5185\u5BB9", `\u517B\u6210\u8FDB\u5EA6\u3001${summary.extensions || 0} \u4E2A\u6269\u5C55\u3001${summary.skins || 0} \u4E2A\u81EA\u5B9A\u4E49\u76AE\u80A4`);
+      if (summary.legacy) dialog.appendChild(alert("\u8FD9\u662F\u65E7\u7248 JSON \u5B58\u6863\uFF0C\u90E8\u5206\u8D44\u6E90\u53EF\u80FD\u672A\u5305\u542B\u3002"));
+      for (const warning2 of state.preview.warnings || []) dialog.appendChild(alert(warning2));
+      dialog.appendChild(el("p", "dp-dim", "\u5C06\u66FF\u6362\u5F53\u524D\u8FD9\u53EA\u732A\u3002\u5F53\u524D\u5B58\u6863\u4F1A\u5148\u81EA\u52A8\u5907\u4EFD\uFF0C\u5BFC\u5165\u540E\u4E24\u8FB9\u4E0D\u4F1A\u81EA\u52A8\u540C\u6B65\u3002"));
+    } else {
+      dialog.appendChild(el("p", "dp-dim", "\u9009\u62E9 ZIP \u5907\u4EFD\u6216\u5DF2\u6709\u7684 state.json\u3002\u9009\u53D6\u540E\u53EA\u68C0\u67E5\u548C\u9884\u89C8\uFF0C\u4E0D\u4F1A\u4FEE\u6539\u5F53\u524D\u5B58\u6863\u3002"));
+      const picker = el("input", "dp-input");
+      picker.type = "file";
+      picker.accept = ".zip,.json,application/zip,application/json";
+      picker.setAttribute("data-save-file", "true");
+      picker.setAttribute("aria-label", "\u9009\u62E9\u5B58\u6863\u6587\u4EF6");
+      picker.addEventListener("change", () => {
+        const file = picker.files?.[0];
+        if (file) previewFile(file);
+      });
+      picker.addEventListener("cancel", closeDialog);
+      dialog.appendChild(picker);
+    }
+    if (state.error) dialog.appendChild(alert(state.error, "dp-alert dp-dead"));
+    const buttons = el("div", "dp-actions");
+    const cancel2 = button("dp-btn", { "data-save-focus": "cancel", "data-save-cancel": "true" }, closeDialog);
+    cancel2.textContent = "\u53D6\u6D88";
+    cancel2.disabled = state.busy;
+    buttons.appendChild(cancel2);
+    if (state.preview) {
+      const confirm = button("dp-mini", { "data-save-focus": "confirm", "data-save-confirm": "true" }, () => commitImport(ui));
+      confirm.textContent = state.busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u5907\u4EFD\u5E76\u5BFC\u5165";
+      confirm.disabled = state.busy;
+      buttons.appendChild(confirm);
+    }
+    dialog.appendChild(buttons);
+    ui.content.appendChild(overlay);
+    const desired = dialog.querySelector(`[data-save-focus="${state.focus}"]`) || dialog.querySelector("input") || cancel2;
+    if (document.activeElement === document.body || !dialog.contains(document.activeElement)) desired.focus();
+    dialog.addEventListener("focusin", (event) => {
+      const key2 = event.target?.getAttribute?.("data-save-focus");
+      if (key2) state.focus = key2;
+    });
+  }
+  function rowTo(parent, label, value) {
+    const line6 = el("div", "dp-set-head");
+    line6.appendChild(el("b", null, label));
+    line6.appendChild(el("small", "dp-dim", String(value)));
+    parent.appendChild(line6);
+  }
+  function displayDate(value) {
+    if (value === null || value === void 0 || value === "") return "\u672A\u8BB0\u5F55";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())} ${p(date.getHours())}:${p(date.getMinutes())}`;
+  }
+  function alert(text, className = "dp-alert dp-legacy") {
+    return el("div", className, String(text));
+  }
+
+  // src/client/external-ui.js
+  function createOverlay(ui, options) {
+    const overlay = el("div", "dp-save-overlay dp-ext-overlay");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
+    const dialog = el("div", "dp-set dp-ext-dialog");
+    dialog.style.cssText = "width:min(268px,100%);max-height:90vh;overflow:auto;background:var(--ac-bg-content);border:2px solid var(--ac-border);border-radius:var(--ac-radius-card);padding:12px;box-shadow:var(--ac-shadow-lg)";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-label", options.label);
+    dialog.setAttribute("data-external-dialog", options.step);
+    dialog.tabIndex = -1;
+    overlay.appendChild(dialog);
+    (ui.card ?? ui.content).appendChild(overlay);
+    const keyHandler = (event) => {
+      if (!overlay.isConnected && overlay.parentNode === null) return;
+      if (event.key === "Escape") {
+        if (options.busy === true) return;
+        event.preventDefault();
+        options.onCancel?.();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = Array.from(dialog.querySelectorAll?.("button:not([disabled]),input:not([disabled]),select:not([disabled])") || []);
+      if (items.length === 0) {
+        event.preventDefault();
+        dialog.focus?.();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active2 = document.activeElement;
+      if (event.shiftKey && (active2 === first || !dialog.contains(active2))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active2 === last || !dialog.contains(active2))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    if (typeof document === "object" && document !== null) document.addEventListener("keydown", keyHandler, true);
+    return {
+      overlay,
+      dialog,
+      dispose() {
+        if (typeof document === "object" && document !== null) document.removeEventListener("keydown", keyHandler, true);
+        overlay.remove?.();
+      },
+      focus(selector) {
+        const target = dialog.querySelector?.(selector) ?? dialog;
+        if (target?.focus) target.focus();
+      }
+    };
+  }
+  function heading(dialog, title, note3) {
+    dialog.appendChild(el("b", "dp-ext-title", title));
+    if (note3 !== void 0 && note3 !== "") dialog.appendChild(el("p", "dp-dim dp-ext-sub", note3));
+  }
+  function row(parent, label, value) {
+    const line6 = el("div", "dp-set-head dp-ext-row");
+    line6.appendChild(el("b", null, label));
+    line6.appendChild(el("small", "dp-dim", String(value)));
+    parent.appendChild(line6);
+    return line6;
+  }
+  function note2(parent, text, warning2) {
+    const node = el("div", warning2 === true ? "dp-alert dp-legacy dp-ext-warn" : "dp-ext-note", String(text));
+    parent.appendChild(node);
+    return node;
+  }
+  function actions(parent, specs) {
+    const rowNode = el("div", "dp-actions dp-ext-actions");
+    for (const spec of specs) {
+      if (spec === null || spec === void 0) continue;
+      const node = button(spec.primary === true ? "dp-mini" : "dp-btn", {
+        "data-external-action": spec.key,
+        ...spec.attrs ?? {}
+      }, function() {
+        spec.onPick?.();
+      });
+      node.textContent = spec.label;
+      node.disabled = spec.disabled === true;
+      rowNode.appendChild(node);
+    }
+    parent.appendChild(rowNode);
+    return rowNode;
+  }
+  function choiceRow(parent, spec) {
+    const node = button("dp-ext-choice", {
+      "data-external-choice": spec.key,
+      "aria-pressed": String(spec.checked === true),
+      role: "radio",
+      "aria-checked": String(spec.checked === true)
+    }, function() {
+      spec.onPick?.();
+    });
+    node.appendChild(el("span", "dp-ext-choice-dot", spec.checked === true ? "\u25CF" : "\u25CB"));
+    const copy = el("span", "dp-ext-choice-copy");
+    copy.appendChild(el("b", null, spec.label));
+    if (spec.note !== void 0 && spec.note !== "") copy.appendChild(el("small", "dp-dim", spec.note));
+    node.appendChild(copy);
+    parent.appendChild(node);
+    return node;
+  }
+  function field(parent, spec) {
+    const wrap2 = el("label", "dp-ext-field");
+    wrap2.appendChild(el("span", "dp-ext-field-label", spec.label));
+    const input = el("input", "dp-input dp-setting-field");
+    input.value = spec.value ?? "";
+    if (spec.type === "number") {
+      input.type = "number";
+      input.min = spec.min ?? "";
+      input.max = spec.max ?? "";
+    } else {
+      input.type = "text";
+    }
+    if (spec.maxLength) input.maxLength = spec.maxLength;
+    if (spec.placeholder) input.placeholder = spec.placeholder;
+    input.setAttribute("data-external-field", spec.key);
+    input.disabled = spec.disabled === true;
+    if (spec.onInput) input.addEventListener("input", (event) => spec.onInput(event?.target?.value ?? input.value));
+    wrap2.appendChild(input);
+    if (spec.maxLength) {
+      const counter = el("small", "dp-ext-counter", String(String(spec.value ?? "").length) + "/" + spec.maxLength);
+      wrap2.appendChild(counter);
+      input.addEventListener("input", function() {
+        counter.textContent = String(input.value.length) + "/" + spec.maxLength;
+      });
+    }
+    parent.appendChild(wrap2);
+    return input;
+  }
+  function select(parent, spec) {
+    const wrap2 = el("label", "dp-ext-field");
+    wrap2.appendChild(el("span", "dp-ext-field-label", spec.label));
+    const node = el("select", "dp-input dp-setting-field dp-ext-select");
+    node.setAttribute("data-external-select", spec.key);
+    for (const option of spec.options ?? []) {
+      const item = el("option", null, option.label);
+      item.value = option.key;
+      if (option.key === spec.value) item.selected = true;
+      node.appendChild(item);
+    }
+    node.disabled = spec.disabled === true || (spec.options ?? []).length === 0;
+    node.addEventListener("change", (event) => spec.onChange?.(event?.target?.value ?? node.value));
+    wrap2.appendChild(node);
+    parent.appendChild(wrap2);
+    return node;
+  }
+  function checkList(parent, spec) {
+    const wrap2 = el("div", "dp-ext-field");
+    wrap2.appendChild(el("span", "dp-ext-field-label", spec.label));
+    const rowNode = el("div", "dp-ext-checks");
+    for (const option of spec.options ?? []) {
+      const on = (spec.value ?? []).includes(option.key);
+      const node = button("dp-mini dp-mini-plain", { "data-external-check": option.key, "aria-pressed": String(on) }, function() {
+        spec.onToggle?.(option.key);
+      });
+      node.textContent = (on ? "\u2713 " : "") + option.label;
+      rowNode.appendChild(node);
+    }
+    wrap2.appendChild(rowNode);
+    parent.appendChild(wrap2);
+    return wrap2;
+  }
+
+  // src/client/external-card.js
+  var lastAtText = (status2) => {
+    const at = clockText2(status2.lastAt);
+    return at === "" ? "" : " \xB7 \u4E0A\u6B21 " + at;
+  };
+  function statusLine(card2, text, tone2) {
+    const line6 = el("span", "dp-ext-state", text);
+    line6.setAttribute("data-tone", tone2);
+    card2.appendChild(line6);
+    return line6;
+  }
+  function cardActions(card2, specs) {
+    const rowNode = el("div", "dp-ext-card-actions");
+    for (const spec of specs) {
+      if (spec === null || spec === void 0) continue;
+      const node = button(spec.primary === true ? "dp-mini" : "dp-btn", { "data-external-action": spec.key }, function() {
+        spec.onPick?.();
+      });
+      node.textContent = spec.label;
+      node.disabled = spec.disabled === true;
+      if (spec.wide === true) node.className += " dp-btn-wide";
+      rowNode.appendChild(node);
+    }
+    card2.appendChild(rowNode);
+  }
+  function renderExternalCard(ui, section2, state4, handlers) {
+    const status2 = state4.status;
+    const entry = section2(ui, "\u5916\u90E8\u684C\u5BA0");
+    const box = entry.box;
+    box.setAttribute("data-external-pet", "true");
+    const busy4 = state4.busy === true;
+    if (status2 === null) {
+      statusLine(box, state4.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state4.error === "" ? "warn" : "warn");
+      if (state4.error !== "") note2(box, state4.error, true);
+      cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+      return;
+    }
+    const desktop2 = status2.desktop;
+    const target = status2.target;
+    if (status2.retirementPending) note2(box, "\u5185\u5D4C\u732A\u9000\u5F79\u8FD8\u6CA1\u5B8C\u6210\uFF0C\u6B63\u5728\u91CD\u8BD5\uFF1B\u684C\u9762\u732A\u5DF2\u7ECF\u5408\u5E76\uFF0C\u4E0D\u4F1A\u91CD\u65B0\u6253\u5F00\u5185\u5D4C\u732A\u3002", true);
+    if (status2.configCorrupt) {
+      statusLine(box, "\u5916\u90E8\u684C\u5BA0\u914D\u7F6E\u8BFB\u4E0D\u51FA\u6765", "warn");
+      note2(box, "\u914D\u7F6E\u6587\u4EF6\u635F\u574F\u6216\u8BFB\u4E0D\u4E86\uFF1B\u539F\u6587\u4EF6\u4F1A\u6539\u540D\u7559\u8BC1\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u5220\u9664\uFF0C\u4E5F\u4E0D\u4F1A\u6253\u5F00\u5DF2\u5408\u5E76\u7684\u65E7\u5B58\u6863\u3002", true);
+      cardActions(box, [
+        { key: "recheck", label: "\u91CD\u8BD5\u8BFB\u53D6", onPick: handlers.recheck, disabled: busy4 },
+        { key: "restore-backup", label: "\u4ECE\u6700\u8FD1\u5408\u5E76\u5907\u4EFD\u6062\u590D", onPick: handlers.restoreBackup, disabled: busy4 },
+        status2.pigState === "merged" ? { key: "recover-local", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: handlers.recoverLocal, disabled: busy4, wide: true } : { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy4, wide: true }
+      ]);
+      return;
+    }
+    if (status2.mode === "internal") {
+      if (!desktop2.found) {
+        statusLine(box, "\u6CA1\u627E\u5230\u5DF2\u5F00\u542F\u8054\u52A8\u7684\u684C\u9762\u7248", "warn");
+        if (status2.error === "disabled" || desktop2.reason === "external-disabled") note2(box, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002\u53BB\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D\u3002");
+        else if (status2.error === "no-pair" || status2.error === "pair-not-offered" || desktop2.reason === "pair-unavailable") note2(box, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u8BF7\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
+        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+        return;
+      }
+      if (!desktop2.enabled) {
+        statusLine(box, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8", "warn");
+        note2(box, "\u53BB\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D\uFF0C\u518D\u56DE\u6765\u91CD\u65B0\u68C0\u6D4B\u3002");
+        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+        return;
+      }
+      statusLine(box, "\u684C\u9762\u7248\u5DF2\u5C31\u7EEA \xB7 " + summaryLine(target), "ok");
+      note2(box, "\u8FDE\u63A5\u540E\uFF0CDSH \u7684\u5DE5\u4F5C\u548C\u9762\u677F\u64CD\u4F5C\u90FD\u4EA4\u7ED9\u684C\u9762\u4E0A\u7684\u732A\u3002");
+      cardActions(box, [{ key: "connect", label: "\u8FDE\u63A5\u684C\u9762\u732A", primary: true, onPick: handlers.connect, disabled: busy4, wide: true }]);
+      return;
+    }
+    if (status2.merged) {
+      if (status2.connection === "connected") {
+        statusLine(box, "\u25CF \u5DF2\u5408\u5E76\u5230\u684C\u5BA0 \xB7 " + summaryLine(target), "ok");
+        note2(box, "\u5185\u5D4C\u732A\u5DF2\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF1B\u53EA\u80FD\u64A4\u9500\u6700\u8FD1\u4E00\u6B21\u5408\u5E76\u3002");
+        cardActions(box, [
+          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 },
+          { key: "rollback", label: "\u64A4\u9500\u5408\u5E76", onPick: handlers.rollback, disabled: busy4 || !status2.canRollback }
+        ]);
+      } else {
+        statusLine(box, "\u25CB \u5DF2\u5408\u5E76 \xB7 \u684C\u9762\u7248\u6CA1\u5F00" + lastAtText(status2), "warn");
+        note2(box, "\u5185\u5D4C\u732A\u5DF2\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF1B\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + status2.queued + " \u6761\uFF09\u3002");
+        note2(box, "\u64A4\u9500\u5408\u5E76\u8981\u7B49\u684C\u9762\u7248\u8FDE\u4E0A\uFF1B\u4ECD\u53EF\u9009\u62E9\u300C\u53EA\u6062\u590D\u5185\u5D4C\u732A\u300D\u3002");
+        cardActions(box, [
+          { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy4 },
+          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 }
+        ]);
+      }
+      return;
+    }
+    if (status2.connection === "connected") {
+      statusLine(box, "\u25CF \u5DF2\u8FDE\u63A5 \xB7 " + summaryLine(target), "ok");
+      note2(box, "DSH \u7684\u5DE5\u4F5C\u6B63\u5728\u6295\u7ED9\u684C\u9762\u4E0A\u7684\u732A\u3002");
+      cardActions(box, [
+        { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 },
+        status2.pigState === "paused" ? { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy4 } : null
+      ]);
+      return;
+    }
+    if (status2.pigState === "merging" || status2.pigState === "merge-unknown" || status2.pigState === "rolling-back") {
+      const text = status2.pigState === "rolling-back" ? "\u6B63\u5728\u64A4\u9500\u2026" : status2.pigState === "merging" ? "\u6B63\u5728\u5408\u5E76\u2026" : "\u6B63\u5728\u786E\u8BA4\u5408\u5E76\u7ED3\u679C\u2026";
+      statusLine(box, text, "warn");
+      note2(box, "\u5148\u7B49\u684C\u9762\u7248\u5904\u7406\u5B8C\uFF0C\u4E0D\u8981\u64CD\u4F5C\u3002");
+      cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: true, wide: true }]);
+      return;
+    }
+    statusLine(box, "\u25CB \u6CA1\u8FDE\u4E0A\u684C\u9762\u7248" + lastAtText(status2), "warn");
+    note2(box, "\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + status2.queued + " \u6761\uFF09\uFF1B\u9762\u677F\u663E\u793A\u6700\u540E\u4E00\u6B21\u540C\u6B65\u7684\u72B6\u6001\u3002");
+    cardActions(box, [
+      { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy4 },
+      { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 }
+    ]);
+  }
+  function renderManageDialog(ui, state4, handlers, view) {
+    const dialog = view.dialog;
+    dialog.setAttribute("data-external-dialog", "manage");
+    dialog.appendChild(el("b", "dp-ext-title", "\u7BA1\u7406\u684C\u9762\u8FDE\u63A5"));
+    const status2 = state4.status;
+    const target = status2?.target ?? null;
+    row(dialog, "\u684C\u9762\u732A", summaryLine(target));
+    row(dialog, "\u5185\u5D4C\u732A", status2?.pigState === "merged" ? "\u5DF2\u5408\u5E76\u5E76\u9000\u5F79" : status2?.pigState === "paused" ? "\u6682\u5B58\u4E2D\uFF0C\u4E0D\u997F\u4E0D\u75C5" : "\u6CA1\u6709\u5185\u5D4C\u732A");
+    row(dialog, "\u8FDE\u63A5", status2?.connection === "connected" ? "\u5DF2\u8FDE\u63A5" : "\u6CA1\u8FDE\u4E0A");
+    if (status2 !== null && status2.queued > 0) row(dialog, "\u5DE5\u4F5C\u961F\u5217", status2.queued + " \u6761");
+    if (state4.manageStep === "discard") {
+      note2(dialog, "\u8FD8\u6709 " + status2.queued + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230");
+      note2(dialog, "\u73B0\u5728\u5207\u56DE\uFF0C\u8FD9 " + status2.queued + " \u6761\u4F1A\u7559\u5728 outbox\uFF0C\u4E0D\u4F1A\u518D\u5582\u7ED9\u684C\u9762\u732A\u3002", true);
+      actions(dialog, [
+        { key: "discard-cancel", label: "\u53D6\u6D88", onPick: () => handlers.setManageStep("") },
+        { key: "discard-wait", label: "\u7B49\u5F85\u9001\u8FBE", primary: true, onPick: () => {
+          handlers.setManageStep("");
+          handlers.closeManage();
+        } },
+        { key: "discard-go", label: "\u4E22\u5F03\u5E76\u5207\u56DE", onPick: () => handlers.withdraw(true) }
+      ]);
+      return;
+    }
+    if (status2 !== null && status2.merged) {
+      note2(dialog, "\u5185\u5D4C\u732A\u5DF2\u7ECF\u5408\u5E76\u5230\u684C\u5BA0\u5E76\u9000\u5F79\uFF08\u4E0D\u5728\u9ED8\u8BA4\u5B58\u6863\u8DEF\u5F84\uFF09\u3002\u53EA\u80FD\u64A4\u9500\u6700\u8FD1\u4E00\u6B21\u5408\u5E76\uFF0C\u6216\u628A\u5408\u5E76\u524D\u7684\u5185\u5D4C\u732A\u5355\u72EC\u6062\u590D\u3002");
+      actions(dialog, [
+        { key: "manage-close", label: "\u53D6\u6D88", onPick: handlers.closeManage },
+        { key: "recover-local", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: () => handlers.recoverLocal() },
+        { key: "manage-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, disabled: status2.connection !== "connected" || !status2.canRollback, onPick: () => handlers.rollback() }
+      ]);
+      return;
+    }
+    if (status2 !== null && status2.pigState === "paused") {
+      note2(dialog, status2.connection === "connected" ? "\u60F3\u53EA\u6539\u6295\u9012\u5C31\u628A\u9762\u677F\u4EA4\u7ED9\u684C\u9762\u732A\uFF1B\u60F3\u8FDE\u6570\u636E\u4E00\u8D77\u5E26\u8FC7\u53BB\uFF0C\u5C31\u7528\u5408\u5E76\u3002" : "\u684C\u9762\u7248\u6CA1\u5F00\uFF0C\u6682\u5B58\u7684\u5185\u5D4C\u732A\u5148\u4FDD\u6301\u4E0D\u52A8\uFF1B\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\u3002");
+      actions(dialog, [
+        { key: "manage-close", label: "\u53D6\u6D88", onPick: handlers.closeManage },
+        { key: "manage-merge", label: "\u5408\u5E76\u5230\u684C\u9762\u732A", primary: true, disabled: status2.connection !== "connected" || !status2.canMerge, onPick: () => handlers.mergeStaged() },
+        { key: "manage-withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: () => handlers.withdraw() }
+      ]);
+      return;
+    }
+    note2(dialog, "DSH \u91CC\u6CA1\u6709\u5185\u5D4C\u732A\u53EF\u5408\u5E76\uFF1B\u5207\u56DE\u4F1A\u663E\u793A\u7EB8\u76D2\u3002");
+    actions(dialog, [
+      { key: "manage-close", label: "\u5173\u95ED", primary: true, onPick: handlers.closeManage }
+    ]);
+  }
+
+  // src/client/external-result.js
+  var backupName = (backups, key2) => typeof backups?.[key2] === "string" && backups[key2] !== "" ? backups[key2] : "\u2014";
+  function renderCommitting(dialog, state4, handlers) {
+    heading(dialog, "\u6B63\u5728\u5408\u5E76\u2026");
+    note2(dialog, "\u684C\u9762\u7248\u4F1A\u5F39\u51FA\u4E00\u4E2A\u786E\u8BA4\u6846\uFF0C\u8BF7\u5728\u90A3\u8FB9\u70B9\u300C\u5141\u8BB8\u5408\u5E76\u300D\u3002");
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [{ key: "commit-cancel", label: "\u53D6\u6D88", onPick: handlers.dismiss, disabled: false }]);
+  }
+  function renderSuccess(dialog, state4, handlers) {
+    const result = state4.result?.result ?? { name: "", level: 0, coins: 0, items: 0, badges: 0 };
+    heading(dialog, "\u5408\u5E76\u5B8C\u6210");
+    if (result.name === "") {
+      note2(dialog, "\u684C\u9762\u7248\u6CA1\u6709\u8FD4\u56DE\u6700\u7EC8\u6458\u8981\uFF0C\u8BF7\u5173\u95ED\u540E\u5237\u65B0\u9762\u677F\u786E\u8BA4\uFF1B\u5907\u4EFD\u540D\u89C1\u4E0B\u3002", true);
+    } else {
+      const line6 = el("span", "dp-ext-result", "\u684C\u9762\u4E0A\u7684" + result.name + "\u73B0\u5728\u6709\uFF1A");
+      line6.appendChild(el("small", null, "Lv." + result.level + " \xB7 \u{1FA99}" + formatNumber(result.coins) + " \xB7 \u{1F392}" + result.items + " \u4EF6 \xB7 \u{1F3C5}" + result.badges + " \u679A"));
+      dialog.appendChild(line6);
+    }
+    dialog.appendChild(el("b", "dp-ext-group-head", "\u672C\u6B21\u5907\u4EFD\uFF1A"));
+    row(dialog, "\u684C\u9762", backupName(state4.result?.backups, "target"));
+    row(dialog, "\u5185\u5D4C", backupName(state4.result?.backups, "source"));
+    if (state4.result?.cleanup === "failed") note2(dialog, "\u65E7\u5408\u5E76\u5907\u4EFD\u6CA1\u6E05\u7406\u6389\uFF0C\u4E0D\u5F71\u54CD\u8FD9\u6B21\u5408\u5E76\uFF0C\u4E0B\u6B21\u4F1A\u518D\u8BD5\u3002", true);
+    else note2(dialog, "\u66F4\u65E9\u7684\u5408\u5E76\u5907\u4EFD\u5DF2\u6E05\u7406\uFF0C\u53EA\u4FDD\u7559\u8FD9\u4E00\u6B21\u3002\u624B\u52A8\u5907\u4EFD\u4E0D\u4F1A\u88AB\u6E05\u7406\u3002");
+    note2(dialog, "DSH \u7684\u5DE5\u4F5C\u73B0\u5728\u4F1A\u5582\u7ED9\u684C\u9762\u732A\u3002");
+    actions(dialog, [
+      { key: "success-done", label: "\u597D\u7684", onPick: handlers.done },
+      { key: "success-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, onPick: handlers.rollback, disabled: state4.busy === true }
+    ]);
+  }
+  function renderFailure(dialog, state4, handlers) {
+    heading(dialog, state4.result?.status === "retire-failed" ? "\u684C\u5BA0\u5DF2\u5408\u5E76" : "\u5408\u5E76\u6CA1\u6709\u5B8C\u6210");
+    const code = state4.error === "" ? state4.result?.status ?? "unknown" : state4.error;
+    note2(dialog, reasonText(code), true);
+    if (code === "retire-failed") note2(dialog, "\u684C\u9762\u732A\u5DF2\u7ECF\u5408\u5E76\u6210\u529F\uFF1B\u5185\u5D4C\u732A\u9000\u5F79\u6CA1\u5B8C\u6210\uFF0C\u4F1A\u4FDD\u6301\u5916\u90E8\u6A21\u5F0F\u91CD\u8BD5\uFF0C\u4E0D\u4F1A\u91CD\u65B0\u6253\u5F00\u5185\u5D4C\u732A\u3002");
+    if (code === "backup-failed") note2(dialog, "\u6CA1\u6709\u6539\u52A8\u4EFB\u4F55\u5B58\u6863\u3002");
+    if (code === "declined") note2(dialog, "\u4E24\u8FB9\u90FD\u6CA1\u6709\u6539\u52A8\u3002");
+    if (code === "tx-failed") note2(dialog, "\u684C\u9762\u732A\u5DF2\u6062\u590D\u5230\u5408\u5E76\u524D\uFF1B\u65B0\u5907\u4EFD\u4FDD\u7559\u3002");
+    if (code === "cleanup-failed") note2(dialog, "\u5408\u5E76\u5DF2\u6210\u529F\uFF0C\u65E7\u5907\u4EFD\u7A0D\u540E\u518D\u6E05\u7406\u3002");
+    for (const error of state4.result?.errors ?? []) note2(dialog, error.path + "\uFF1A" + (error.reason === "" ? "\u4E0D\u5408\u6CD5" : error.reason), true);
+    actions(dialog, [
+      { key: "failure-close", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "failure-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.retry, disabled: state4.busy === true }
+    ]);
+  }
+  function renderWithdraw(dialog, state4, handlers) {
+    const status2 = state4.status;
+    if (status2 !== null && status2.merged) {
+      heading(dialog, "\u5207\u56DE\u5185\u5D4C\u732A\uFF1F");
+      note2(dialog, "\u5185\u5D4C\u732A\u5DF2\u7ECF\u5408\u5E76\u5230\u684C\u5BA0\u5E76\u9000\u5F79\uFF08\u4E0D\u5728\u9ED8\u8BA4\u5B58\u6863\u8DEF\u5F84\uFF09\u3002");
+      note2(dialog, "\u5207\u56DE\u4F1A\u4ECE\u5907\u4EFD\u6062\u590D\u5408\u5E76\u524D\u7684\u5185\u5D4C\u732A\uFF0C\u684C\u9762\u732A\u4FDD\u6301\u73B0\u72B6\uFF08\u4F1A\u51FA\u73B0\u4E24\u53EA\u76F8\u4F3C\u7684\u732A\uFF09\u3002");
+      note2(dialog, "\u5982\u679C\u4F60\u60F3\u8FDE\u684C\u9762\u732A\u4E00\u8D77\u6062\u590D\u5230\u5408\u5E76\u524D\uFF0C\u8BF7\u7528\u300C\u64A4\u9500\u5408\u5E76\u300D\u3002");
+      actions(dialog, [
+        { key: "withdraw-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+        { key: "withdraw-recover", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: handlers.recoverLocal },
+        { key: "withdraw-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, onPick: handlers.rollback, disabled: status2.connection !== "connected" || !status2.canRollback }
+      ]);
+      return;
+    }
+    if (state4.withdrawDiscard === true) {
+      heading(dialog, "\u8FD8\u6709 " + (status2?.queued ?? 0) + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230");
+      note2(dialog, "\u73B0\u5728\u5207\u56DE\uFF0C\u8FD9 " + (status2?.queued ?? 0) + " \u6761\u4F1A\u7559\u5728 outbox\uFF0C\u4E0D\u4F1A\u518D\u5582\u7ED9\u684C\u9762\u732A\u3002");
+      actions(dialog, [
+        { key: "discard-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+        { key: "discard-wait", label: "\u7B49\u5F85\u9001\u8FBE", onPick: handlers.waitDeliver },
+        { key: "discard-go", label: "\u4E22\u5F03\u5E76\u5207\u56DE", primary: true, onPick: () => handlers.withdrawNow(true) }
+      ]);
+      return;
+    }
+    heading(dialog, "\u5207\u56DE\u5185\u5D4C\u732A\uFF1F");
+    note2(dialog, "\u684C\u9762\u732A\u4F1A\u7559\u5728\u684C\u9762\uFF0CDSH \u7684\u5DE5\u4F5C\u548C\u9762\u677F\u4E0D\u518D\u6295\u7ED9\u5B83\u3002");
+    note2(dialog, "\u5185\u5D4C\u732A\u4ECE\u6682\u5B58\u65F6\u63A5\u7740\u517B\uFF1A\u6682\u5B58\u671F\u95F4\u4E0D\u997F\u3001\u4E0D\u75C5\u3001\u4E0D\u957F\u5927\u3002");
+    if ((status2?.queued ?? 0) > 0) note2(dialog, "\u8FD8\u6709 " + status2.queued + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230\uFF1B\u5207\u56DE\u524D\u4F1A\u8BA9\u4F60\u786E\u8BA4\u3002", true);
+    actions(dialog, [
+      { key: "withdraw-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "withdraw-go", label: "\u5207\u56DE", primary: true, onPick: () => handlers.withdrawNow(false), disabled: state4.busy === true }
+    ]);
+  }
+  function renderRollbackConfirm(dialog, state4, handlers) {
+    heading(dialog, "\u64A4\u9500\u5408\u5E76\uFF1F");
+    note2(dialog, "\u5C06\u628A\u684C\u9762\u732A\u548C DSH \u5185\u5D4C\u732A\u90FD\u6062\u590D\u5230\u5408\u5E76\u524D\u7684\u5B58\u6863\u3002\u5408\u5E76\u540E\u65B0\u589E\u7684\u8FDB\u5EA6\u4F1A\u4E22\u5931\u3002");
+    note2(dialog, "\u5408\u5E76\u65F6\u4ECE\u5185\u5D4C\u732A\u590D\u5236\u8FC7\u6765\u7684\u76AE\u80A4\u4F1A\u64A4\u56DE\uFF1B\u5408\u5E76\u540E\u65B0\u5BFC\u5165\u7684\u76AE\u80A4\u4FDD\u7559\u3002");
+    note2(dialog, "\u684C\u9762\u5408\u5E76\u540E\u7684\u5B58\u6863\u4F1A\u5148\u53E6\u5B58\u4E00\u4EFD\u5907\u4EFD\uFF0C\u4E0D\u4F1A\u65E0\u58F0\u4E22\u6389\u3002");
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [
+      { key: "rollback-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "rollback-go", label: "\u786E\u8BA4\u64A4\u9500", primary: true, onPick: handlers.rollbackGo, disabled: state4.busy === true }
+    ]);
+  }
+  function renderRollingBack(dialog) {
+    heading(dialog, "\u6B63\u5728\u64A4\u9500\u2026");
+    note2(dialog, "\u5148\u628A\u684C\u9762\u5408\u5E76\u540E\u7684\u5B58\u6863\u53E6\u5B58\u4E00\u4EFD\uFF0C\u518D\u6062\u590D\u4E24\u8FB9\uFF1B\u4E0D\u8981\u64CD\u4F5C\u3002");
+  }
+  function renderRollbackPartial(dialog, state4, handlers) {
+    heading(dialog, "\u90E8\u5206\u64A4\u9500");
+    const restored = state4.result?.restored ?? { target: false, source: false };
+    note2(dialog, (restored.target ? "\u684C\u9762\u732A\u5DF2\u6062\u590D\u3002" : "\u684C\u9762\u732A\u6CA1\u6062\u590D\u3002") + (restored.source ? "\u5185\u5D4C\u732A\u5DF2\u6062\u590D\u3002" : "\u5185\u5D4C\u732A\u6CA1\u6062\u590D\u3002"), true);
+    row(dialog, "\u684C\u9762\u5907\u4EFD", backupName(state4.result?.backups, "target"));
+    row(dialog, "\u5185\u5D4C\u5907\u4EFD", backupName(state4.result?.backups, "source"));
+    note2(dialog, "\u91CD\u8BD5\u53EA\u4F1A\u8865\u6CA1\u6062\u590D\u7684\u4E00\u8FB9\uFF0C\u4E0D\u4F1A\u91CD\u590D\u8986\u76D6\u5DF2\u7ECF\u6062\u590D\u7684\u4E00\u8FB9\u3002");
+    actions(dialog, [
+      { key: "partial-close", label: "\u5173\u95ED", onPick: handlers.close },
+      { key: "partial-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.rollbackGo, disabled: state4.busy === true }
+    ]);
+  }
+  function renderRecoverConfirm(dialog, state4, handlers) {
+    heading(dialog, "\u53EA\u6062\u590D\u5185\u5D4C\u732A\uFF1F");
+    note2(dialog, "\u4F1A\u4ECE DSH \u672C\u5730\u5907\u4EFD\u6062\u590D\u5408\u5E76\u524D\u7684\u5185\u5D4C\u732A\uFF0C\u684C\u9762\u732A\u4FDD\u6301\u5408\u5E76\u540E\u7684\u6837\u5B50\uFF08\u4F1A\u51FA\u73B0\u4E24\u53EA\u76F8\u4F3C\u7684\u732A\uFF09\u3002");
+    note2(dialog, "\u5148\u628A\u5907\u4EFD\u6062\u590D\u5230\u4E34\u65F6\u4F4D\u7F6E\u5E76\u6821\u9A8C\uFF0C\u518D\u653E\u56DE state.json\uFF1B\u5931\u8D25\u4F1A\u4FDD\u7559\u9000\u5F79\u6807\u8BB0\u3002");
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [
+      { key: "recover-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "recover-go", label: "\u6062\u590D\u5185\u5D4C\u732A", primary: true, onPick: handlers.recoverGo, disabled: state4.busy === true }
+    ]);
+  }
+  function renderWithdrawChanged(dialog, state4, handlers) {
+    heading(dialog, "\u6682\u5B58\u671F\u95F4\u5B58\u6863\u88AB\u6539\u8FC7");
+    note2(dialog, "\u5207\u56DE\u4F1A\u6309\u6B63\u5E38\u79BB\u7EBF\u7ED3\u7B97\uFF0C\u53EF\u80FD\u53D8\u997F\u3001\u751F\u75C5\u3002\u5185\u5D4C\u732A\u4E0D\u4F1A\u6309\u6682\u5B58\u65F6\u523B\u540E\u79FB\u65F6\u95F4\u3002", true);
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [
+      { key: "withdraw-changed-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "withdraw-changed-go", label: "\u4ECD\u8981\u5207\u56DE", primary: true, onPick: handlers.withdrawChangedGo, disabled: state4.busy === true }
+    ]);
+  }
+
+  // src/client/external-preview.js
+  var GROUPS = [
+    { key: "look", label: "\u6837\u5B50", fields: ["form", "skin", "worn"] },
+    { key: "personality", label: "\u6027\u683C", fields: ["personality", "catchphrase", "motto", "birthday"] },
+    { key: "preferences", label: "\u504F\u597D", fields: ["ownerName", "quiet", "isOfflineFeedEnabled", "timeScale", "spot"] }
+  ];
+  function labelOf(list, key2) {
+    if (!Array.isArray(list)) return "";
+    for (const entry of list) {
+      if (typeof entry !== "object" || entry === null) continue;
+      if (String(entry.key ?? "") !== key2) continue;
+      return typeof entry.label === "string" ? entry.label : "";
+    }
+    return "";
+  }
+  function knownLabel(list, key2) {
+    const label = labelOf(list, key2);
+    return label !== key2 ? label : "";
+  }
+  function lookLine(preview2, values) {
+    const editors = preview2.editors ?? {};
+    const parts = [];
+    if (values.form !== "") {
+      const label = knownLabel(editors.look?.form, values.form);
+      parts.push(label === "" ? "\u5F62\u6001\u672A\u77E5" : "\u5F62\u6001 " + label);
+    }
+    if (values.skin !== "") {
+      const label = labelOf(editors.look?.skin, values.skin);
+      const skin = label !== "" ? label : values.skin === "default" ? "\u9ED8\u8BA4" : "";
+      parts.push(skin === "" ? "\u76AE\u80A4\u672A\u77E5" : "\u76AE\u80A4 " + skin);
+    }
+    if (values.worn.length > 0) parts.push("\u7A7F\u6234 " + values.worn.map((key2) => knownLabel(editors.look?.worn, key2) || "\u672A\u77E5\u88C5\u626E").join("\u3001"));
+    return parts.length === 0 ? "\u9ED8\u8BA4\u6837\u5B50" : parts.join(" \xB7 ");
+  }
+  function personalityLine(preview2, values) {
+    const parts = [];
+    if (values.personality !== "") parts.push(knownLabel(preview2.editors?.personality?.personality, values.personality) || "\u672A\u77E5\u6027\u683C");
+    if (values.catchphrase !== "") parts.push("\u300C" + values.catchphrase + "\u300D");
+    if (values.birthday !== "") parts.push("\u751F\u65E5 " + values.birthday);
+    return parts.length === 0 ? "\u9ED8\u8BA4\u6027\u683C" : parts.join(" \xB7 ");
+  }
+  function preferenceLine(preview2, values) {
+    const parts = [];
+    if (values.ownerName !== "") parts.push("\u79F0\u547C " + values.ownerName);
+    parts.push("\u514D\u6253\u6270" + (values.quiet ? "\u5F00" : "\u5173"));
+    parts.push("\u79BB\u7EBF\u5582\u98DF" + (values.isOfflineFeedEnabled === false ? "\u5173" : "\u5F00"));
+    parts.push("\xD7" + values.timeScale);
+    if (values.spot !== "") parts.push("\u9493\u70B9 " + (knownLabel(preview2.editors?.preferences?.spot, values.spot) || "\u672A\u77E5"));
+    return parts.join(" \xB7 ");
+  }
+  function optionsOf(list) {
+    return Array.isArray(list) ? list.map((entry) => typeof entry === "string" ? { key: entry, label: entry } : { key: String(entry?.key ?? ""), label: String(entry?.label ?? entry?.key ?? "") }).filter((option) => option.key !== "") : [];
+  }
+  function canEdit(preview2, group) {
+    const editors = preview2.editors ?? {};
+    const hasLists = group === "look" ? optionsOf(editors.look?.form).length > 0 || optionsOf(editors.look?.skin).length > 0 || optionsOf(editors.look?.worn).length > 0 : group === "personality" ? optionsOf(editors.personality?.personality).length > 0 : optionsOf(editors.preferences?.spot).length > 0;
+    const choice = preview2.choices.find((entry) => entry.key === group);
+    return hasLists || choice !== void 0 && choice.editable.length > 0;
+  }
+  function sideLine(preview2, group, pick) {
+    const side = pick === "source" ? "source" : "target";
+    const values = sideValues(preview2, side);
+    if (!sideKnown(preview2, side)) return pick === "source" ? "\u8DDF\u5185\u5D4C\u732A" : "\u8DDF\u684C\u5BA0";
+    if (group === "name") return values.name === "" ? "\u672A\u547D\u540D" : values.name;
+    if (group === "look") return lookLine(preview2, values);
+    return group === "personality" ? personalityLine(preview2, values) : preferenceLine(preview2, values);
+  }
+  function errorFor(errors, group) {
+    return Object.keys(errors).filter((key2) => group === "look" ? key2 === "look" : group === "personality" ? key2 === "personality" : key2 === "preferences").map((key2) => errors[key2])[0] ?? "";
+  }
+  function pickerGroup(dialog, state4, handlers, preview2, group, label) {
+    const choices = state4.choices[group];
+    const wrap2 = el("div", "dp-ext-group");
+    const head = el("div", "dp-ext-group-head");
+    head.appendChild(el("b", null, label));
+    head.appendChild(el("small", "dp-dim", choices.pick === "custom" ? "\u81EA\u5DF1\u6539" : sideLine(preview2, group, choices.pick)));
+    const editable2 = canEdit(preview2, group);
+    if (editable2) {
+      const edit = button("dp-mini" + (choices.pick === "custom" ? "" : " dp-mini-plain"), { "data-external-edit": group, "aria-pressed": String(choices.pick === "custom") }, function() {
+        if (choices.pick !== "custom") {
+          const from = sideValues(preview2, choices.pick);
+          for (const key2 of GROUPS.find((entry) => entry.key === group).fields) choices[key2] = from[key2];
+          choices.pick = "custom";
+        } else {
+          choices.pick = "target";
+        }
+        handlers.refresh();
+      });
+      edit.textContent = "\u6539\u2026";
+      head.appendChild(edit);
+    }
+    wrap2.appendChild(head);
+    const line6 = el("div", "dp-ext-inline");
+    for (const pick of ["target", "source"]) {
+      choiceRow(line6, {
+        key: pick,
+        label: pick === "target" ? "\u8DDF\u684C\u5BA0" : "\u8DDF\u5185\u5D4C\u732A",
+        checked: choices.pick === pick,
+        onPick: () => {
+          choices.pick = pick;
+          handlers.refresh();
+        }
+      });
+    }
+    wrap2.appendChild(line6);
+    if (choices.pick === "custom") renderEditor(wrap2, preview2, state4, handlers, group);
+    const error = errorFor(validateChoices(preview2, state4.choices).errors, group);
+    const flag = el("span", "dp-ext-flag", error);
+    flag.setAttribute("data-external-flag-for", group);
+    wrap2.appendChild(flag);
+    dialog.appendChild(wrap2);
+  }
+  function renderEditor(wrap2, preview2, state4, handlers, group) {
+    const choices = state4.choices[group];
+    const editors = preview2.editors ?? {};
+    if (group === "look") {
+      const forms = optionsOf(editors.look?.form);
+      const skins = optionsOf(editors.look?.skin);
+      const wornOptions = optionsOf(editors.look?.worn);
+      if (forms.length > 0) select(wrap2, { key: "form", label: "\u5F62\u6001", value: choices.form, options: forms, onChange: (value) => {
+        choices.form = value;
+        handlers.refresh();
+      } });
+      else field(wrap2, { key: "form", label: "\u5F62\u6001 key\uFF08\u7559\u7A7A\uFF1D\u9ED8\u8BA4\u5F62\u6001\uFF09", value: choices.form, onInput: (value) => {
+        choices.form = value;
+        handlers.sync?.();
+      } });
+      if (skins.length > 0) select(wrap2, { key: "skin", label: "\u76AE\u80A4", value: choices.skin, options: skins, onChange: (value) => {
+        choices.skin = value;
+        handlers.refresh();
+      } });
+      else field(wrap2, { key: "skin", label: "\u76AE\u80A4 key\uFF08\u9ED8\u8BA4 default\uFF09", value: choices.skin, onInput: (value) => {
+        choices.skin = value;
+        handlers.sync?.();
+      } });
+      if (wornOptions.length > 0) {
+        checkList(wrap2, {
+          label: "\u7A7F\u6234",
+          value: choices.worn,
+          options: wornOptions,
+          onToggle: (key2) => {
+            choices.worn = choices.worn.includes(key2) ? choices.worn.filter((entry) => entry !== key2) : choices.worn.concat([key2]);
+            handlers.refresh();
+          }
+        });
+      } else {
+        field(wrap2, {
+          key: "worn",
+          label: "\u7A7F\u6234 key\uFF08\u9017\u53F7\u5206\u9694\uFF0C\u7559\u7A7A\uFF1D\u4E0D\u7A7F\uFF09",
+          value: choices.wornText ?? choices.worn.join(","),
+          onInput: (value) => {
+            choices.wornText = value;
+            choices.worn = value.split(",").map((entry) => entry.trim()).filter(Boolean);
+            handlers.sync?.();
+          }
+        });
+      }
+      return;
+    }
+    if (group === "personality") {
+      const people = optionsOf(editors.personality?.personality);
+      if (people.length > 0) select(wrap2, { key: "personality", label: "\u6027\u683C", value: choices.personality, options: people, onChange: (value) => {
+        choices.personality = value;
+        handlers.refresh();
+      } });
+      else field(wrap2, { key: "personality", label: "\u6027\u683C key", value: choices.personality, onInput: (value) => {
+        choices.personality = value;
+        handlers.sync?.();
+      } });
+      field(wrap2, { key: "catchphrase", label: "\u53E3\u5934\u7985\uFF08\u6700\u591A 6 \u5B57\uFF09", value: choices.catchphrase, maxLength: 6, onInput: (value) => {
+        choices.catchphrase = value;
+        handlers.sync?.();
+      } });
+      field(wrap2, { key: "motto", label: "\u7B7E\u540D\uFF08\u6700\u591A 24 \u5B57\uFF09", value: choices.motto, maxLength: 24, onInput: (value) => {
+        choices.motto = value;
+        handlers.sync?.();
+      } });
+      field(wrap2, { key: "birthday", label: "\u751F\u65E5\uFF08\u6708/\u65E5\uFF09", value: choices.birthday, onInput: (value) => {
+        choices.birthday = value;
+        handlers.sync?.();
+      } });
+      return;
+    }
+    field(wrap2, { key: "ownerName", label: "\u79F0\u547C\uFF08\u6700\u591A 12 \u5B57\uFF09", value: choices.ownerName, maxLength: 12, onInput: (value) => {
+      choices.ownerName = value;
+      handlers.sync?.();
+    } });
+    const quiet = choiceRow(wrap2, { key: "quiet", label: "\u514D\u6253\u6270", note: choices.quiet ? "\u5F00" : "\u5173", checked: choices.quiet, onPick: () => {
+      choices.quiet = !choices.quiet;
+      handlers.refresh();
+    } });
+    quiet.setAttribute("data-external-check", "quiet");
+    const feed = choiceRow(wrap2, { key: "offlineFeed", label: "\u79BB\u7EBF\u5582\u98DF", note: choices.isOfflineFeedEnabled ? "\u5F00" : "\u5173", checked: choices.isOfflineFeedEnabled, onPick: () => {
+      choices.isOfflineFeedEnabled = !choices.isOfflineFeedEnabled;
+      handlers.refresh();
+    } });
+    feed.setAttribute("data-external-check", "offlineFeed");
+    field(wrap2, { key: "timeScale", label: "\u65F6\u95F4\u500D\u7387\uFF080\u2013365\uFF09", value: String(choices.timeScale), type: "number", min: 0, max: 365, onInput: (value) => {
+      choices.timeScale = Number(value);
+      handlers.sync?.();
+    } });
+    const spots = optionsOf(editors.preferences?.spot);
+    if (spots.length > 0) select(wrap2, { key: "spot", label: "\u9493\u70B9", value: choices.spot, options: spots, onChange: (value) => {
+      choices.spot = value;
+      handlers.refresh();
+    } });
+    else field(wrap2, { key: "spot", label: "\u9493\u70B9 key", value: choices.spot, onInput: (value) => {
+      choices.spot = value;
+      handlers.sync?.();
+    } });
+  }
+  function nameGroup(dialog, state4, handlers, preview2) {
+    const choices = state4.choices.name;
+    const wrap2 = el("div", "dp-ext-group");
+    const head = el("div", "dp-ext-group-head");
+    head.appendChild(el("b", null, "\u540D\u5B57"));
+    wrap2.appendChild(head);
+    const line6 = el("div", "dp-ext-inline");
+    for (const pick of ["target", "source", "custom"]) {
+      choiceRow(line6, {
+        key: pick,
+        label: pick === "target" ? "\u8DDF\u684C\u5BA0" : pick === "source" ? "\u8DDF\u5185\u5D4C\u732A" : "\u81EA\u5DF1\u6539",
+        checked: choices.pick === pick,
+        onPick: () => {
+          choices.pick = pick;
+          if (pick !== "custom") choices.value = sideValues(preview2, pick).name;
+          handlers.refresh();
+        }
+      });
+    }
+    wrap2.appendChild(line6);
+    if (choices.pick === "custom") {
+      field(wrap2, { key: "name", label: "\u540D\u5B57", value: choices.value, maxLength: NAME_MAX, onInput: (value) => {
+        choices.value = value;
+        handlers.sync?.();
+      } });
+    }
+    const flag = el("span", "dp-ext-flag", validateChoices(preview2, state4.choices).errors.name ?? "");
+    flag.setAttribute("data-external-flag-for", "name");
+    wrap2.appendChild(flag);
+    dialog.appendChild(wrap2);
+  }
+  function conflictGroup(dialog, state4, handlers, conflict) {
+    const wrap2 = el("div", "dp-ext-group");
+    wrap2.setAttribute("data-external-conflict", conflict.key);
+    const head = el("div", "dp-ext-group-head");
+    head.appendChild(el("b", null, "\u6269\u5C55\u300C" + conflict.label + "\u300D"));
+    head.appendChild(el("small", "dp-dim", conflict.message === "" ? "\u4E24\u8FB9\u90FD\u6709\u8BB0\u5F55" : conflict.message));
+    wrap2.appendChild(head);
+    const line6 = el("div", "dp-ext-inline");
+    for (const pick of conflict.options.length > 0 ? conflict.options : ["target", "source"]) {
+      choiceRow(line6, {
+        key: pick,
+        label: pick === "target" ? "\u4FDD\u7559\u684C\u5BA0" : "\u7528\u5185\u5D4C\u732A",
+        checked: state4.choices.conflicts[conflict.key] === pick,
+        onPick: () => {
+          state4.choices.conflicts[conflict.key] = pick;
+          handlers.refresh();
+        }
+      });
+    }
+    wrap2.appendChild(line6);
+    dialog.appendChild(wrap2);
+  }
+  function unknownSourceGroup(dialog, state4, handlers, conflict) {
+    const wrap2 = el("div", "dp-ext-group");
+    wrap2.setAttribute("data-external-unknown-source", "true");
+    wrap2.appendChild(el("b", "dp-ext-group-head", "\u5185\u5D4C\u5B58\u6863\u6709\u5F53\u524D\u7248\u672C\u4E0D\u8BA4\u8BC6\u7684\u5B57\u6BB5"));
+    note2(wrap2, conflict.message === "" ? "\u8FD9\u4E9B\u5B57\u6BB5\u5728\u65B0\u7248\u91CC\u6CA1\u6709\u5BF9\u5E94\u7684\u5408\u5E76\u89C4\u5219\uFF1B\u4E22\u5F03\u4F1A\u628A\u5B83\u4EEC\u4ECE\u5408\u5E76\u7ED3\u679C\u91CC\u53BB\u6389\uFF0C\u4E2D\u6B62\u5219\u4E0D\u505A\u8FD9\u6B21\u5408\u5E76\u3002" : conflict.message, true);
+    if (conflict.paths.length > 0) note2(wrap2, "\u5B57\u6BB5\uFF1A" + conflict.paths.join("\u3001"));
+    const line6 = el("div", "dp-ext-inline");
+    for (const option of conflict.options.length > 0 ? conflict.options : ["discard", "abort"]) {
+      choiceRow(line6, {
+        key: option,
+        label: option === "discard" ? "\u4E22\u5F03\u8FD9\u4E9B\u5B57\u6BB5" : option === "abort" ? "\u4E2D\u6B62\u5408\u5E76" : option,
+        checked: state4.choices.unknownSource === option,
+        onPick: () => {
+          state4.choices.unknownSource = option;
+          handlers.refresh();
+        }
+      });
+    }
+    wrap2.appendChild(line6);
+    dialog.appendChild(wrap2);
+  }
+  function duplicateGroup(dialog, state4, handlers, preview2) {
+    const wrap2 = el("div", "dp-ext-group");
+    wrap2.setAttribute("data-external-duplicate", "true");
+    wrap2.appendChild(el("b", "dp-ext-group-head", "\u7591\u4F3C\u540C\u4E00\u4EFD\u5B58\u6863\u7684\u526F\u672C"));
+    note2(wrap2, "\u8FD9\u4E24\u53EA\u732A\u770B\u8D77\u6765\u662F\u540C\u4E00\u4EFD\u5B58\u6863\u7684\u526F\u672C\u3002\u5408\u5E76\u4F1A\u628A\u4E24\u8FB9\u7684\u91D1\u5E01\u3001\u7269\u54C1\u548C\u5FBD\u7AE0\u76F8\u52A0\uFF0C\u53EF\u80FD\u51FA\u73B0\u91CD\u590D\u7684\u8D44\u4EA7\u3002\u5EFA\u8BAE\u53EA\u4FDD\u7559\u4E00\u8FB9\uFF0C\u4E0D\u8981\u76F8\u52A0\u3002", true);
+    const line6 = el("div", "dp-ext-inline");
+    for (const pick of ["target", "source", "merge"]) {
+      choiceRow(line6, {
+        key: pick,
+        label: pick === "target" ? "\u53EA\u4FDD\u7559\u684C\u5BA0" : pick === "source" ? "\u53EA\u4FDD\u7559\u5185\u5D4C\u732A" : "\u4ECD\u7136\u5408\u5E76",
+        checked: state4.choices.duplicate === pick,
+        onPick: () => {
+          state4.choices.duplicate = pick;
+          handlers.refresh();
+        }
+      });
+    }
+    wrap2.appendChild(line6);
+    dialog.appendChild(wrap2);
+  }
+  function backupNote(dialog, preview2) {
+    dialog.appendChild(el("p", "dp-ext-note", "\u5408\u5E76\u524D\u5206\u522B\u5907\u4EFD\u4E24\u53EA\u732A\uFF1B\u53EA\u4FDD\u7559\u6700\u65B0\u4E00\u4EFD\u5408\u5E76\u5907\u4EFD\u3002\u624B\u52A8\u5907\u4EFD\u4E0D\u4F1A\u88AB\u6E05\u7406\u3002"));
+    dialog.appendChild(el("p", "dp-ext-note", "\u5408\u5E76\u540E\u5185\u5D4C\u732A\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF0C\u4E0D\u518D\u957F\u5927\u3002"));
+    const names = preview2.backups ?? {};
+    if (typeof names.target === "string" && names.target !== "") row(dialog, "\u684C\u9762\u5907\u4EFD", names.target);
+    if (typeof names.source === "string" && names.source !== "") row(dialog, "\u5185\u5D4C\u5907\u4EFD", names.source);
+    if (preview2.sourceBackup !== "") row(dialog, "\u5185\u5D4C\u5907\u4EFD", preview2.sourceBackup);
+  }
+  function renderPreview(dialog, state4, handlers) {
+    const preview2 = state4.preview;
+    if (preview2 === null) {
+      heading(dialog, "\u5408\u5E76\u9884\u89C8");
+      note2(dialog, "\u8FD8\u6CA1\u62FF\u5230\u9884\u89C8\uFF0C\u8BF7\u91CD\u65B0\u8FDE\u63A5\u3002", true);
+      actions(dialog, [{ key: "preview-close", label: "\u5173\u95ED", onPick: handlers.close }]);
+      return;
+    }
+    heading(dialog, mergeTitle(state4.status));
+    if (preview2.expiresAt > 0) {
+      const left = Math.max(0, Math.round((preview2.expiresAt - Date.now()) / 1e3));
+      note2(dialog, "\u9884\u89C8 " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + " \u540E\u8FC7\u671F\uFF1B\u8FC7\u671F\u4F1A\u81EA\u52A8\u53D6\u6D88\u5E76\u6062\u590D\u5185\u5D4C\u732A\u3002");
+    }
+    const result = preview2.result;
+    const resultNode = el("span", "dp-ext-result", result.name === "" ? "\u5408\u5E76\u540E\uFF1A\u2014" : "\u5408\u5E76\u540E\uFF1A" + result.name);
+    resultNode.appendChild(el(
+      "small",
+      null,
+      "Lv." + result.level + " \xB7 " + result.days + " \u5929 \xB7 \u{1FA99}" + formatNumber(result.coins) + " \xB7 \u{1F392}" + result.items + " \xB7 \u{1F3C5}" + result.badges
+    ));
+    dialog.appendChild(resultNode);
+    nameGroup(dialog, state4, handlers, preview2);
+    pickerGroup(dialog, state4, handlers, preview2, "look", "\u6837\u5B50");
+    pickerGroup(dialog, state4, handlers, preview2, "personality", "\u6027\u683C");
+    pickerGroup(dialog, state4, handlers, preview2, "preferences", "\u504F\u597D");
+    const unknownConflict = preview2.conflicts.find((conflict) => conflict.key === "unknownSource");
+    if (preview2.conflicts.length > 0) {
+      dialog.appendChild(el("b", "dp-ext-group-head", "\u9700\u8981\u4F60\u51B3\u5B9A"));
+      for (const conflict of preview2.conflicts) {
+        if (conflict.key === "unknownSource") continue;
+        if (conflict.level === "warning") note2(dialog, conflict.label + "\uFF1A" + conflict.message, true);
+        else conflictGroup(dialog, state4, handlers, conflict);
+      }
+    }
+    if (unknownConflict !== void 0) unknownSourceGroup(dialog, state4, handlers, unknownConflict);
+    if (preview2.duplicate !== null) duplicateGroup(dialog, state4, handlers, preview2);
+    if (preview2.autoMerge.length > 0) {
+      dialog.appendChild(el("b", "dp-ext-group-head", "\u81EA\u52A8\u5408\u5E76"));
+      const list = el("ul", "dp-ext-list");
+      for (const line6 of preview2.autoMerge.slice(0, 20)) list.appendChild(el("li", null, line6));
+      dialog.appendChild(list);
+    }
+    if (result.newBadges + result.newDex + result.newDiary > 0) {
+      note2(dialog, "\u5FBD\u7AE0\u65B0\u589E " + result.newBadges + " \u679A\uFF1B\u56FE\u9274\u65B0\u589E " + result.newDex + " \u79CD\uFF1B\u65E5\u8BB0\u65B0\u589E " + result.newDiary + " \u7BC7\u3002");
+    }
+    for (const warning2 of preview2.warnings) note2(dialog, warning2, true);
+    if (validateChoices(preview2, state4.choices).errors.unknownSource !== void 0 && unknownConflict === void 0) {
+      note2(dialog, validateChoices(preview2, state4.choices).errors.unknownSource, true);
+    }
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    backupNote(dialog, preview2);
+    const submitted = el("button", "dp-mini", actionsLabel(state4));
+    submitted.setAttribute("data-external-submit", "true");
+    submitted.disabled = !validateChoices(preview2, state4.choices).ok || state4.busy === true;
+    handlers.sync = function syncValidity() {
+      const found = validateChoices(preview2, state4.choices);
+      submitted.disabled = !found.ok || state4.busy === true;
+      for (const key2 of ["name", "look", "personality", "preferences"]) {
+        const node = dialog.querySelector?.('[data-external-flag-for="' + key2 + '"]');
+        if (node) node.textContent = found.errors[key2] ?? "";
+      }
+    };
+    submitted.addEventListener("click", function(event) {
+      event.stopPropagation();
+      handlers.submit();
+    });
+    const cancel2 = el("button", "dp-btn", "\u53D6\u6D88");
+    cancel2.setAttribute("data-external-action", "preview-cancel");
+    cancel2.addEventListener("click", function(event) {
+      event.stopPropagation();
+      handlers.cancelPreview();
+    });
+    const grid = el("div", "dp-actions dp-ext-actions");
+    grid.appendChild(cancel2);
+    grid.appendChild(submitted);
+    dialog.appendChild(grid);
+  }
+  function actionsLabel(state4) {
+    if (state4.busy) return "\u6B63\u5728\u63D0\u4EA4\u2026";
+    return state4.preview !== null && pigKind(state4.status?.local) === "alive" && pigKind(state4.status?.target) !== "alive" ? "\u5F00\u59CB\u642C" : "\u5F00\u59CB\u5408\u5E76";
+  }
+  function mergeTitle(status2) {
+    return pigKind(status2?.local) === "alive" && pigKind(status2?.target) !== "alive" ? "\u642C\u5230\u684C\u5BA0" : "\u5408\u5E76\u9884\u89C8";
+  }
+
+  // src/client/external-runtime.js
+  async function runWithdraw(session3, hooks2, discard, confirmChanged) {
+    const queued = session3.status?.queued ?? 0;
+    if (!discard && !confirmChanged && queued > 0) {
+      session3.withdrawDiscard = true;
+      hooks2.repaint();
+      return;
+    }
+    session3.busy = true;
+    session3.error = "";
+    hooks2.repaint();
+    try {
+      const result = await disconnect({ discardQueue: discard === true, confirmChanged: confirmChanged === true });
+      if (!result.ok) {
+        const code = result.error?.code ?? "network";
+        if (code === "queue-not-empty") {
+          session3.withdrawDiscard = true;
+          session3.error = "";
+          return;
+        }
+        if (code === "state-changed") {
+          session3.withdrawChanged = true;
+          session3.error = "";
+          session3.step = "withdrawChanged";
+          return;
+        }
+        session3.error = code;
+        return;
+      }
+      await hooks2.reload();
+      hooks2.close();
+      hooks2.bubble("\u5DF2\u5207\u56DE\u5185\u5D4C\u732A", 3e3);
+    } finally {
+      session3.busy = false;
+      hooks2.repaint();
+      hooks2.render();
+    }
+  }
+  async function runRecover(session3, hooks2) {
+    session3.busy = true;
+    session3.error = "";
+    hooks2.repaint();
+    try {
+      const result = await restore();
+      if (!result.ok) {
+        session3.error = result.error?.code ?? "network";
+        return;
+      }
+      await hooks2.reload();
+      hooks2.close();
+      hooks2.bubble("\u5185\u5D4C\u732A\u5DF2\u6062\u590D", 3200);
+    } finally {
+      session3.busy = false;
+      hooks2.repaint();
+      hooks2.render();
+    }
+  }
+  async function runRetireRetry(session3, hooks2) {
+    session3.busy = true;
+    session3.error = "";
+    hooks2.repaint();
+    try {
+      const result = await retireRetry();
+      const normalized = normalizeResult(result.data ?? {});
+      session3.result = normalized;
+      if (result.ok && normalized.ok) {
+        session3.step = "success";
+        await hooks2.reload();
+      } else {
+        session3.error = result.error?.code ?? "retire-failed";
+        session3.step = "failure";
+      }
+    } finally {
+      session3.busy = false;
+      hooks2.repaint();
+      hooks2.render();
+    }
+  }
+  async function runRollback(session3, hooks2) {
+    const mergeId = session3.result?.mergeId ?? session3.status?.mergeId ?? str(session3.status?.merge?.mergeId, "");
+    session3.busy = true;
+    session3.error = "";
+    session3.step = "rollingBack";
+    hooks2.repaint();
+    try {
+      const result = await rollback(mergeId);
+      const normalized = normalizeResult(result.data ?? {});
+      session3.result = normalized;
+      if (result.ok && normalized.restored.target && normalized.restored.source) {
+        await hooks2.reload();
+        hooks2.close();
+        hooks2.bubble("\u5DF2\u64A4\u9500\u5408\u5E76", 3200);
+        return;
+      }
+      session3.error = result.error?.code ?? normalized.status ?? "rollback-partial";
+      const partial = normalized.restored.target || normalized.restored.source;
+      session3.step = partial ? "rollbackPartial" : "rollback";
+    } finally {
+      session3.busy = false;
+      hooks2.repaint();
+      hooks2.render();
+    }
+  }
+  async function loadMergePage(session3, hooks2) {
+    const result = await connect("merge");
+    if (!result.ok) {
+      session3.error = result.error?.code ?? "network";
+      session3.step = "detectError";
+      hooks2.repaint();
+      return false;
+    }
+    session3.status = {
+      ...session3.status,
+      target: result.page.target,
+      local: result.page.source,
+      canMerge: true
+    };
+    session3.blockers = result.page.blockers;
+    session3.step = "choose";
+    hooks2.repaint();
+    return true;
+  }
+  async function pollMergeUnknown(session3, hooks2) {
+    const mergeId = session3.result?.mergeId ?? session3.preview?.mergeId ?? "";
+    const deadline = Date.now() + 12e4;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 2e3));
+      const result = await mergeStatus(mergeId);
+      const body = result.data ?? {};
+      const statusText = String(body.reason ?? body.status ?? "");
+      if (!result.ok && statusText === "") continue;
+      if (statusText === "committed") {
+        session3.result = normalizeResult(result.data ?? {});
+        await hooks2.reload();
+        session3.step = "success";
+        hooks2.repaint();
+        return;
+      }
+      if (statusText === "failed" || statusText === "rolled-back" || statusText === "restored") {
+        session3.error = statusText;
+        session3.step = "failure";
+        await hooks2.reload();
+        hooks2.repaint();
+        return;
+      }
+    }
+    session3.error = "merge-unknown";
+    session3.step = "failure";
+    hooks2.repaint();
+  }
+
+  // src/client/external-status.js
+  async function loadStatus(session3, refreshView = false) {
+    if (refreshView) await session3.ui?.refresh?.();
+    if (session3.loading) return null;
+    session3.loading = true;
+    try {
+      const result = await fetchStatus();
+      session3.status = result.status;
+      session3.lastLoad = Date.now();
+      if (!result.ok) session3.error = result.error?.code ?? "network";
+      else if (session3.error === "network" || session3.error === "timeout") session3.error = "";
+      return session3.status;
+    } finally {
+      session3.loading = false;
+    }
+  }
+  function ensureStatus(session3) {
+    if (session3.loading) return;
+    if (session3.status === null || Date.now() - session3.lastLoad > 5e3) {
+      loadStatus(session3).then(() => session3.ui?.renderContent?.()).catch(() => {
+        session3.ui?.renderContent?.();
+      });
+    }
+  }
+
+  // src/client/external-session.js
+  var session = {
+    ui: null,
+    open: false,
+    step: "",
+    status: null,
+    error: "",
+    busy: false,
+    loading: false,
+    mode: "connect",
+    blockers: [],
+    terminate: null,
+    preview: null,
+    choices: null,
+    result: null,
+    manageStep: "",
+    withdrawDiscard: false,
+    withdrawChanged: false,
+    overlay: null,
+    lastLoad: 0,
+    timer: null,
+    repaint: null,
+    closeOverlay: null
+  };
+  var TAB_FOR_KIND = { work: "work", study: "study", interest: "study", trip: "travel", "fishing-auto": "fishing", "fishing-manual": "fishing", pomodoro: "pomodoro" };
+  var handler = {
+    recheck: () => runRecheck(),
+    connect: () => openWizard("detect"),
+    manage: () => openManageStep(),
+    withdraw: () => openStep("withdraw"),
+    rollback: () => openStep("rollback"),
+    close: () => closeWizard(),
+    dismiss: () => closeWizard(),
+    setMode: (mode) => {
+      session.mode = mode;
+      session.error = "";
+      repaint();
+    },
+    backToDetect: () => {
+      session.step = "detect";
+      repaint();
+    },
+    chooseNext: () => chooseNext(),
+    recheckBlocker: () => recheckBlockers(),
+    goHandle: (blocker) => goHandle(blocker),
+    askForce: (blocker) => {
+      session.terminate = blocker;
+      session.error = "";
+      session.step = "force";
+      repaint();
+    },
+    cancelForce: () => {
+      session.terminate = null;
+      session.error = "";
+      session.step = "blockers";
+      repaint();
+    },
+    force: () => runForce(),
+    submit: () => submit(),
+    cancelPreview: () => cancelPreview(false),
+    refresh: () => repaint(),
+    done: () => {
+      closeWizard();
+      session.ui?.renderContent?.();
+    },
+    retry: () => retry(),
+    withdrawNow: (discard) => runWithdraw(session, hooks, discard, false),
+    waitDeliver: () => closeWizard(),
+    recoverLocal: () => openStep("recover"),
+    recoverGo: () => runRecover(session, hooks),
+    restoreBackup: () => openStep("recover"),
+    withdrawChangedGo: () => runWithdraw(session, hooks, false, true),
+    retireRetry: () => runRetireRetry(session, hooks),
+    rollbackGo: () => runRollback(session, hooks),
+    setManageStep: (step) => {
+      session.manageStep = step;
+      repaint();
+    },
+    closeManage: () => closeWizard(),
+    mergeStaged: () => {
+      openWizard("loading", "merge");
+      session.busy = true;
+      loadMergePage(session, hooks).finally(() => {
+        session.busy = false;
+        repaint();
+      });
+    }
+  };
+  var hooks = {
+    repaint: () => repaint(),
+    close: () => closeWizard(),
+    reload: () => loadStatus(session, true),
+    bubble: (text, ms) => session.ui?.showBubble?.(text, ms),
+    render: () => session.ui?.renderContent?.()
+  };
+  async function runRecheck() {
+    session.busy = true;
+    session.error = "";
+    repaint();
+    try {
+      const result = await recheck();
+      session.status = result.status;
+      session.lastLoad = Date.now();
+      if (!result.ok) session.error = result.error?.code ?? "network";
+      const ready = session.status.desktop.found && session.status.desktop.enabled;
+      if (session.open) {
+        if (!ready) {
+          session.step = "detectError";
+          return;
+        }
+        if (session.status.merged) {
+          session.step = "manage";
+          return;
+        }
+        if (session.status.mode === "external") {
+          session.step = "manage";
+          return;
+        }
+        await loadMergePage(session, hooks);
+      }
+    } finally {
+      session.busy = false;
+      session.ui?.renderContent?.();
+      if (session.open) repaint();
+    }
+  }
+  function openWizard(step, mode) {
+    session.open = true;
+    session.step = step;
+    session.error = "";
+    session.blockers = [];
+    session.preview = null;
+    session.choices = null;
+    session.result = null;
+    session.terminate = null;
+    session.withdrawDiscard = false;
+    session.withdrawChanged = false;
+    if (mode === "connect" || mode === "merge") session.mode = mode;
+    if (step === "detect") session.step = "loading";
+    repaint();
+    if (step === "detect") runRecheck();
+  }
+  function openStep(step) {
+    session.open = true;
+    session.step = step;
+    session.error = "";
+    session.withdrawDiscard = false;
+    session.withdrawChanged = false;
+    repaint();
+  }
+  function openManageStep() {
+    session.open = true;
+    session.step = "manage";
+    session.manageStep = "";
+    repaint();
+  }
+  function repaint() {
+    session.repaint?.();
+  }
+  function closeWizard() {
+    session.open = false;
+    session.step = "";
+    session.error = "";
+    session.busy = false;
+    session.blockers = [];
+    session.terminate = null;
+    session.withdrawDiscard = false;
+    session.withdrawChanged = false;
+    session.manageStep = "";
+    if (session.timer !== null) {
+      clearInterval(session.timer);
+      session.timer = null;
+    }
+    session.closeOverlay?.();
+    const ui = (
+      /** @type {any} */
+      session.ui
+    );
+    ui?.renderContent?.();
+  }
+  function goHandle(blocker) {
+    if (blocker.side === "target") {
+      session.ui?.showBubble?.("\u53BB\u684C\u9762\u7248\u7ED3\u675F\u8FD9\u9879\u6D3B\u52A8\uFF0C\u5B8C\u6210\u540E\u56DE\u6765\u518D\u5408\u5E76", 4200);
+      closeWizard();
+      return;
+    }
+    const tab = TAB_FOR_KIND[blocker.kind] ?? "";
+    closeWizard();
+    if (tab !== "") session.ui?.select?.(tab);
+    session.ui?.showBubble?.("\u5148\u7ED3\u675F\u8FD9\u9879\u6D3B\u52A8\uFF0C\u518D\u56DE\u6765\u5408\u5E76", 3800);
+  }
+  async function chooseNext() {
+    if (session.mode === "cancel") {
+      closeWizard();
+      return;
+    }
+    if (session.mode === "connect") {
+      await confirmConnect();
+      return;
+    }
+    if (session.blockers.length > 0) {
+      session.step = "blockers";
+      repaint();
+      return;
+    }
+    await startPreview();
+  }
+  async function recheckBlockers() {
+    const sourceBlocked = session.blockers.some((blocker) => blocker.side === "source");
+    if (sourceBlocked) {
+      session.busy = true;
+      session.error = "";
+      repaint();
+      try {
+        const page = await connect("merge");
+        if (!page.ok) {
+          session.error = page.error?.code ?? "network";
+          return;
+        }
+        session.blockers = page.page.blockers;
+        session.step = session.blockers.length > 0 ? "blockers" : "choose";
+      } finally {
+        session.busy = false;
+        repaint();
+      }
+      return;
+    }
+    await startPreview();
+  }
+  async function confirmConnect() {
+    session.busy = true;
+    session.error = "";
+    repaint();
+    try {
+      const result = await connect("connect");
+      if (!result.ok) {
+        session.error = "connect-failed";
+        return;
+      }
+      if (result.page.status !== null) session.status = result.page.status;
+      await loadStatus(session, true);
+      session.ui?.showBubble?.("\u5DF2\u8FDE\u63A5\u684C\u9762\u732A", 3e3);
+      closeWizard();
+    } finally {
+      session.busy = false;
+      repaint();
+      session.ui?.renderContent?.();
+    }
+  }
+  async function startPreview() {
+    session.busy = true;
+    session.error = "";
+    const backTo = session.step === "blockers" ? "blockers" : "choose";
+    session.step = "loading";
+    repaint();
+    try {
+      const result = await preview();
+      const normalized = normalizePreview(result.data ?? {});
+      if (!result.ok) {
+        const reason = result.error?.code ?? normalized.reason ?? "unknown";
+        session.error = reason;
+        if (reason === "activity" || reason === "pomodoro" || reason === "fishing") {
+          session.blockers = [{ side: "target", reason, kind: reason === "pomodoro" ? "pomodoro" : reason === "fishing" ? "fishing-auto" : "activity", label: reason === "activity" ? "\u6B63\u5728\u5916\u9762\u6D3B\u52A8" : reason === "pomodoro" ? "\u6B63\u5728\u4E13\u6CE8" : "\u6B63\u5728\u9493\u9C7C", finished: false, phase: "", refund: 0, bait: 0, minutes: 0, raw: {} }];
+          session.step = "blockers";
+        } else {
+          session.step = backTo;
+        }
+        return;
+      }
+      if (normalized.blocked) {
+        session.blockers = normalized.blockers;
+        session.step = normalized.blockers.length > 0 ? "blockers" : backTo;
+        if (normalized.blockers.length === 0) session.error = normalized.reason === "" ? "blocked-activity" : normalized.reason;
+        return;
+      }
+      session.preview = normalized;
+      session.status = { ...session.status, target: normalized.target, local: normalized.source };
+      session.blockers = [];
+      session.choices = defaultChoices(normalized);
+      session.step = "preview";
+      startExpiryWatch(normalized);
+    } finally {
+      session.busy = false;
+      repaint();
+    }
+  }
+  async function runForce() {
+    const blocker = session.terminate;
+    if (blocker === null) return;
+    session.busy = true;
+    session.error = "";
+    repaint();
+    try {
+      const result = await prepare(blocker);
+      if (!result.ok) {
+        session.error = result.error?.code ?? "network";
+        return;
+      }
+      if (result.data !== null && result.data !== void 0 && result.data.alreadyFinished === true) session.ui?.showBubble?.("\u8FD9\u9879\u5DF2\u7ECF\u5230\u70B9\uFF0C\u6309\u5B8C\u6210\u7ED3\u7B97\u540E\u7EE7\u7EED", 3200);
+      session.terminate = null;
+      session.step = blocker.side === "source" ? "blockers" : "loading";
+      if (blocker.side === "source") await recheckBlockers();
+      else await startPreview();
+    } finally {
+      session.busy = false;
+      repaint();
+    }
+  }
+  async function submit() {
+    const found = validateChoices(session.preview, session.choices);
+    if (!found.ok) {
+      session.error = "invalid-choices";
+      repaint();
+      return;
+    }
+    session.busy = true;
+    session.step = "committing";
+    session.error = "";
+    repaint();
+    try {
+      const result = await commit(choicesPayload(session.choices));
+      if (session.timer !== null) {
+        clearInterval(session.timer);
+        session.timer = null;
+      }
+      const normalized = normalizeResult(result.data ?? {});
+      session.result = normalized;
+      if (result.ok && normalized.ok) {
+        session.step = "success";
+        await loadStatus(session, true);
+      } else {
+        session.error = result.error?.code ?? normalized.status ?? normalized.error ?? "unknown";
+        session.step = "failure";
+        if (session.error === "merge-unknown") await pollMergeUnknown(session, hooks);
+      }
+    } finally {
+      session.busy = false;
+      repaint();
+      session.ui?.renderContent?.();
+    }
+  }
+  async function retry() {
+    if (session.error === "retire-failed") {
+      await runRetireRetry();
+      return;
+    }
+    if (session.error === "merge-unknown") {
+      await pollMergeUnknown(session, hooks);
+      return;
+    }
+    if (["explicit-change", "preview-expired", "runtime-changed", "unknown-preview", "unknown-source-fields", "unknown-source-aborted", "version-too-new", "rules-too-new"].includes(session.error)) {
+      session.preview = null;
+      session.choices = null;
+      session.error = "";
+      await startPreview();
+      return;
+    }
+    if (session.error === "invalid-choices" && session.preview !== null) {
+      session.error = "";
+      session.step = "preview";
+      repaint();
+      return;
+    }
+    if (session.preview !== null) {
+      await submit();
+      return;
+    }
+    session.step = "choose";
+    session.error = "";
+    repaint();
+  }
+  function startExpiryWatch(previewResult) {
+    if (session.timer !== null) {
+      clearInterval(session.timer);
+      session.timer = null;
+    }
+    if (!(previewResult.expiresAt > 0)) return;
+    session.timer = setInterval(function() {
+      if (session.step !== "preview" || session.preview === null) return;
+      if (Date.now() >= session.preview.expiresAt) {
+        clearInterval(
+          /** @type {any} */
+          session.timer
+        );
+        session.timer = null;
+        cancelPreview(true);
+      }
+    }, 1e3);
+  }
+  async function cancelPreview(byExpiry) {
+    if (session.busy) return;
+    session.busy = true;
+    session.error = "";
+    try {
+      const result = await cancel();
+      if (!result.ok) {
+        session.error = result.error?.code ?? "network";
+        return;
+      }
+      await loadStatus(session, true);
+      closeWizard();
+      session.ui?.showBubble?.(byExpiry ? "\u9884\u89C8\u8FC7\u671F\u4E86\uFF0C\u5185\u5D4C\u732A\u5DF2\u6062\u590D" : "\u5DF2\u53D6\u6D88\u5408\u5E76\u9884\u89C8", 3200);
+    } finally {
+      session.busy = false;
+      repaint();
+    }
+  }
+
+  // src/client/external-wizard.js
+  function renderDetectError(dialog, state4, handlers) {
+    const desktop2 = state4.status?.desktop;
+    heading(dialog, desktop2?.found ? desktop2.enabled ? "\u684C\u9762\u7248\u5DF2\u5C31\u7EEA" : "\u684C\u9762\u7248\u8FD8\u6CA1\u51C6\u5907\u597D" : "\u6CA1\u627E\u5230\u684C\u9762\u4E0A\u7684\u5C0F\u732A");
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    const steps = el("ol", "dp-ext-list");
+    [
+      "\u684C\u9762\u7248\u548C DSH \u5728\u540C\u4E00\u53F0\u7535\u8111\u4E0A\u8FD0\u884C",
+      "\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u5DF2\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D",
+      "\u684C\u9762\u7248\u6CA1\u6709\u505C\u5728\u5B58\u6863\u5BFC\u5165/\u5408\u5E76\u4E2D"
+    ].forEach((text) => steps.appendChild(el("li", null, text)));
+    dialog.appendChild(steps);
+    if (state4.error === "disabled" || state4.status?.desktop.reason === "external-disabled") note2(dialog, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002");
+    if (state4.error === "no-pair" || state4.error === "pair-not-offered") note2(dialog, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u9700\u8981\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
+    actions(dialog, [
+      { key: "detect-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "detect-retry", label: "\u91CD\u65B0\u68C0\u6D4B", primary: true, disabled: state4.busy === true, onPick: handlers.recheck }
+    ]);
+  }
+  function renderChoose(dialog, state4, handlers) {
+    const status2 = state4.status;
+    const options = mergeOptions(status2.target, status2.local);
+    heading(dialog, "\u8FDE\u63A5\u684C\u9762\u732A");
+    row(dialog, "\u684C\u9762\u4E0A\u7684\u732A", summaryLine(status2.target));
+    row(dialog, "DSH \u91CC\u7684\u732A", summaryLine(status2.local));
+    dialog.appendChild(el("b", "dp-ext-group-head", "\u600E\u4E48\u5904\u7406\uFF1F"));
+    const mode = state4.mode;
+    choiceRow(dialog, {
+      key: "connect",
+      label: "\u53EA\u628A\u5DE5\u4F5C\u548C\u9762\u677F\u4EA4\u7ED9\u684C\u9762\u732A",
+      note: "\u5185\u5D4C\u732A\u6682\u5B58\uFF0C\u4E0D\u997F\u4E0D\u75C5\uFF1B\u4E1C\u897F\u4E0D\u5408\u5E76",
+      checked: mode === "connect",
+      onPick: () => handlers.setMode("connect")
+    });
+    if (options.canMerge) {
+      choiceRow(dialog, {
+        key: "merge",
+        label: options.mergeLabel === "\u642C\u5230\u684C\u5BA0" ? "\u628A\u5185\u5D4C\u732A\u642C\u5230\u684C\u5BA0" : "\u628A\u5185\u5D4C\u732A\u5408\u5E76\u5230\u684C\u9762\u732A",
+        note: "\u8D44\u4EA7\u76F8\u52A0\uFF0C\u8FDB\u5EA6\u53D6\u66F4\u9AD8\uFF0C\u8EAB\u4EFD\u7531\u4F60\u9009",
+        checked: mode === "merge",
+        onPick: () => handlers.setMode("merge")
+      });
+    }
+    choiceRow(dialog, {
+      key: "cancel",
+      label: "\u5148\u4E0D\u8FDE\u63A5",
+      checked: mode === "cancel",
+      onPick: () => handlers.setMode("cancel")
+    });
+    if (options.note !== "") note2(dialog, options.note);
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [
+      { key: "choose-back", label: "\u4E0A\u4E00\u6B65", onPick: handlers.backToDetect, disabled: state4.busy === true },
+      { key: "choose-next", label: "\u4E0B\u4E00\u6B65", primary: true, onPick: handlers.chooseNext, disabled: state4.busy === true || mode === "merge" && !options.canMerge }
+    ]);
+  }
+  function renderBlockers(dialog, state4, handlers) {
+    heading(dialog, "\u5408\u5E76\u524D\u8981\u5148\u7ED3\u675F\u8FD9\u4E9B");
+    const blockers = state4.blockers ?? [];
+    if (blockers.length === 0) {
+      note2(dialog, reasonText(state4.error === "" ? "blocked-activity" : state4.error), true);
+    }
+    for (const blocker of blockers) {
+      const block = el("div", "dp-ext-block");
+      block.setAttribute("data-external-blocker", blocker.kind);
+      block.appendChild(el("b", null, (blocker.side === "target" ? "\u684C\u9762\u4E0A\u7684\u732A" : "\u5185\u5D4C\u7684\u732A") + " \xB7 " + (blocker.label === "" ? blocker.kind : blocker.label)));
+      const copy = blockerCopy(blocker);
+      block.appendChild(el("small", null, copy.title));
+      const rowNode = el("div", "dp-ext-block-actions");
+      const goLabel = blocker.side === "target" ? "\u53BB\u684C\u9762\u5904\u7406" : "\u53BB\u5904\u7406";
+      const go = el("button", "dp-btn", goLabel);
+      go.setAttribute("data-external-goto", blocker.side);
+      go.addEventListener("click", function(event) {
+        event.stopPropagation();
+        handlers.goHandle(blocker);
+      });
+      rowNode.appendChild(go);
+      if (canForce(blocker)) {
+        const force = el("button", "dp-mini", copy.done ? "\u5148\u7ED3\u7B97" : "\u5F3A\u5236\u7EC8\u7ED3");
+        force.setAttribute("data-external-force", blocker.kind);
+        force.addEventListener("click", function(event) {
+          event.stopPropagation();
+          handlers.askForce(blocker);
+        });
+        rowNode.appendChild(force);
+      }
+      block.appendChild(rowNode);
+      dialog.appendChild(block);
+    }
+    if (state4.error !== "" && blockers.length > 0) note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [
+      { key: "blocked-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
+      { key: "blocked-recheck", label: "\u91CD\u65B0\u68C0\u67E5", primary: true, disabled: state4.busy === true, onPick: handlers.recheck }
+    ]);
+  }
+  function renderForceConfirm(dialog, state4, handlers) {
+    const blocker = state4.terminate;
+    if (blocker === null || blocker === void 0) {
+      heading(dialog, "\u8FD9\u9879\u6D3B\u52A8\u5DF2\u7ECF\u5904\u7406\u8FC7\u4E86");
+      note2(dialog, "\u91CD\u65B0\u68C0\u67E5\u4E00\u4E0B\u4E24\u8FB9\u7684\u72B6\u6001\u3002");
+      actions(dialog, [{ key: "force-back", label: "\u8FD4\u56DE", onPick: handlers.cancelForce }]);
+      return;
+    }
+    heading(dialog, "\u5F3A\u5236\u7EC8\u7ED3\uFF1F");
+    const copy = blockerCopy(blocker);
+    note2(dialog, copy.title);
+    note2(dialog, blocker.side === "target" ? "\u8FD9\u4E00\u6B65\u4F1A\u5728\u684C\u9762\u7248\u4E0A\u6267\u884C\uFF0C\u6267\u884C\u5B8C\u91CD\u65B0\u68C0\u67E5\u3002" : "\u8FD9\u4E00\u6B65\u4F1A\u5728 DSH \u7684\u5185\u5D4C\u732A\u4E0A\u6267\u884C\uFF0C\u6267\u884C\u5B8C\u91CD\u65B0\u68C0\u67E5\u3002");
+    if (state4.error !== "") note2(dialog, reasonText(state4.error), true);
+    actions(dialog, [
+      { key: "force-cancel", label: "\u53D6\u6D88", onPick: handlers.cancelForce },
+      { key: "force-go", label: "\u5F3A\u5236\u7ED3\u675F", primary: true, disabled: state4.busy === true, onPick: handlers.force }
+    ]);
+  }
+
+  // src/client/external-pet.js
+  function repaint2() {
+    if (!session.open) return;
+    if (session.overlay === null || session.overlay.overlay.parentNode === null) {
+      session.overlay?.dispose?.();
+      session.overlay = createOverlay(
+        /** @type {any} */
+        session.ui,
+        {
+          label: "\u5916\u90E8\u684C\u5BA0",
+          step: session.step,
+          busy: session.busy,
+          onCancel: () => handler.close()
+        }
+      );
+    }
+    const dialog = session.overlay.dialog;
+    const scrollTop = dialog.getAttribute("data-external-dialog") === session.step ? dialog.scrollTop : 0;
+    dialog.setAttribute("data-external-dialog", session.step);
+    dialog.setAttribute("data-scroll-key", "external:" + session.step);
+    const focused = typeof document === "object" ? document.activeElement : null;
+    const keep = focused?.getAttribute?.("data-external-field") ?? focused?.getAttribute?.("data-external-select") ?? "";
+    const keepAttr = focused?.getAttribute?.("data-external-field") != null ? "data-external-field" : "data-external-select";
+    dialog.textContent = "";
+    renderStep(dialog);
+    if (keep !== "") {
+      const again = keep === "" ? null : dialog.querySelector?.("[" + keepAttr + '="' + keep + '"]');
+      if (again?.focus) {
+        again.focus();
+        if (typeof again.setSelectionRange === "function") again.setSelectionRange(again.value.length, again.value.length);
+      }
+    }
+    dialog.scrollTop = scrollTop;
+  }
+  function renderStep(dialog) {
+    switch (session.step) {
+      case "loading":
+        dialog.appendChild(el("b", "dp-ext-title", "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026"));
+        dialog.appendChild(el("p", "dp-dim dp-ext-sub", "\u53EA\u8BFB\u684C\u9762\u7248\u7684\u53D1\u73B0\u6587\u4EF6\uFF0C\u4E0D\u6539\u5B58\u6863\u3002"));
+        break;
+      case "detect":
+      case "detectError":
+        renderDetectError(dialog, session, handler);
+        break;
+      case "choose":
+        renderChoose(dialog, session, handler);
+        break;
+      case "blockers":
+        renderBlockers(dialog, session, handler);
+        break;
+      case "force":
+        renderForceConfirm(dialog, session, handler);
+        break;
+      case "preview":
+        renderPreview(dialog, session, handler);
+        break;
+      case "committing":
+        renderCommitting(dialog, session, handler);
+        break;
+      case "success":
+        renderSuccess(dialog, session, handler);
+        break;
+      case "failure":
+        renderFailure(dialog, session, handler);
+        break;
+      case "withdraw":
+        renderWithdraw(dialog, session, handler);
+        break;
+      case "withdrawChanged":
+        renderWithdrawChanged(dialog, session, handler);
+        break;
+      case "rollback":
+        renderRollbackConfirm(dialog, session, handler);
+        break;
+      case "rollingBack":
+        renderRollingBack(dialog);
+        break;
+      case "rollbackPartial":
+        renderRollbackPartial(dialog, session, handler);
+        break;
+      case "recover":
+        renderRecoverConfirm(dialog, session, handler);
+        break;
+      case "manage":
+        renderManageDialog(
+          /** @type {any} */
+          session.ui,
+          session,
+          handler,
+          session.overlay
+        );
+        break;
+      default:
+        break;
+    }
+  }
+  session.repaint = repaint2;
+  session.closeOverlay = function closeOverlay() {
+    session.overlay?.dispose?.();
+    session.overlay = null;
+  };
+  function renderExternalPetSettings(ui, section2) {
+    session.ui = ui;
+    renderExternalCard(ui, section2, session, handler);
+    if (session.open) repaint2();
+    ensureStatus(session);
+  }
+
+  // src/client/external-desktop.js
+  var states = /* @__PURE__ */ new WeakMap();
+  function redraw(state4) {
+    if (state4.ui?.tab === "settings") state4.ui.renderContent();
+  }
+  function accept(state4, value) {
+    if (value === null || typeof value !== "object") return;
+    state4.value = value;
+    state4.failed = value.ok === false || Boolean(value.error);
+  }
+  function stateFor(api, ui) {
+    let state4 = states.get(api);
+    if (state4 === void 0) {
+      state4 = { value: null, failed: false, loading: true, busy: false, ui };
+      states.set(api, state4);
+      api.onStatus?.((value) => {
+        accept(state4, value);
+        redraw(state4);
+      });
+      Promise.resolve().then(() => api.get()).then((value) => accept(state4, value)).catch(() => {
+        state4.failed = true;
+      }).finally(() => {
+        state4.loading = false;
+        redraw(state4);
+      });
+    }
+    state4.ui = ui;
+    return state4;
+  }
+  function renderExternalDesktopSettings(ui, section2, api) {
+    const setting = section2(ui, "\u5916\u90E8\u8FDE\u63A5", "\u5141\u8BB8\u672C\u673A\u7684 DSH \u548C\u5176\u4ED6 agent \u628A\u771F\u5B9E\u5DE5\u4F5C\u6295\u7ED9\u8FD9\u53EA\u732A\uFF0C\u5E76\u5728 DSH \u9762\u677F\u91CC\u7167\u987E\u5B83");
+    setting.box.setAttribute("data-external-desktop", "true");
+    if (typeof api?.get !== "function" || typeof api?.set !== "function") {
+      setting.box.appendChild(el("small", "dp-dim", "\u66F4\u65B0\u684C\u9762\u5916\u58F3\u540E\u53EF\u7528"));
+      return;
+    }
+    const state4 = stateFor(api, ui);
+    const enabled = state4.value?.enabled === true;
+    const toggle = button("dp-switch", { "data-external-allow": String(!enabled), "aria-pressed": String(enabled), "aria-label": "\u5141\u8BB8 DSH \u8054\u52A8" }, async () => {
+      if (state4.busy || state4.loading) return;
+      state4.busy = true;
+      redraw(state4);
+      try {
+        accept(state4, await api.set(!enabled));
+      } catch {
+        state4.failed = true;
+      } finally {
+        state4.busy = false;
+        redraw(state4);
+      }
+    });
+    toggle.disabled = state4.busy || state4.loading;
+    toggle.appendChild(el("span", "dp-switch-knob"));
+    toggle.appendChild(el("span", "dp-switch-text", enabled ? "\u5F00" : "\u5173"));
+    setting.head.appendChild(toggle);
+    let text = "\u5F53\u524D\u5173\u95ED\uFF1B\u6253\u5F00\u540E\u53EF\u5728 DSH \u8BBE\u7F6E\u4E2D\u8FDE\u63A5\u8FD9\u53EA\u732A";
+    if (state4.loading) text = "\u6B63\u5728\u8BFB\u53D6\u2026";
+    else if (state4.busy) text = "\u6B63\u5728\u5207\u6362\u2026";
+    else if (state4.failed) text = "\u8054\u52A8\u8BBE\u7F6E\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5\uFF1B\u8BE6\u7EC6\u539F\u56E0\u53EF\u5728\u65E5\u5FD7\u4E2D\u67E5\u770B";
+    else if (enabled && state4.value?.running === true) text = "\u5DF2\u5141\u8BB8\u5916\u90E8\u8054\u52A8\uFF1B\u53EA\u5141\u8BB8\u8FD9\u53F0\u7535\u8111\u8FDE\u63A5";
+    else if (enabled) text = "\u5DF2\u5F00\u542F\u8BB8\u53EF\uFF0C\u4F46\u8FDE\u63A5\u670D\u52A1\u5C1A\u672A\u5C31\u7EEA\uFF0C\u8BF7\u91CD\u8BD5";
+    setting.box.appendChild(el("small", "dp-dim", text));
+  }
+
+  // src/client/tabs/settings.js
+  function syncGeometry() {
+    desktopShell()?.syncGeometry?.();
+    stageShell()?.syncGeometry?.();
+  }
+  function section(ui, title, note3) {
+    const box = el("div", "dp-set");
+    const head = el("div", "dp-set-head");
+    head.appendChild(el("b", null, title));
+    if (note3) head.appendChild(el("small", "dp-dim", note3));
+    box.appendChild(head);
+    ui.content.appendChild(box);
+    return { box, head };
+  }
+  function segmented({ box }, attr, options, current3, onPick) {
+    const row2 = el("div", "dp-seg");
+    for (const option of options) {
+      const pick = button("dp-seg-btn", { [attr]: option.key, "aria-pressed": String(option.key === current3) }, function() {
+        onPick(option.key);
+      });
+      pick.textContent = option.label;
+      pick.disabled = option.key === current3;
+      row2.appendChild(pick);
+    }
+    box.appendChild(row2);
+  }
+  function renderSettingsTab(ui) {
+    const notice = ui.updateNotice;
+    const fresh = notice?.unread === true && notice.latest !== null;
+    const update = section(ui, "\u66F4\u65B0", fresh ? "\u6709\u65B0\u7248\u672C v" + notice.latest.version : "\u67E5\u770B\u7248\u672C\u3001\u66F4\u65B0\u6216\u6362\u56DE\u65E7\u7248\u672C");
+    const go = button("dp-mini dp-update-entry", { "data-open-update": "true" }, function() {
+      ui.select("update");
+    });
+    go.textContent = "\u{1F504} \u66F4\u65B0";
+    if (fresh) go.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
+    update.head.appendChild(go);
+    const extFresh = extensionUpdateAvailable(ui);
+    const extensions = section(ui, "\u6269\u5C55", "\u672C\u5730\u73A9\u6CD5\u3001\u5F00\u5173\u4E0E\u5728\u7EBF\u6269\u5C55");
+    const openExtensions = button("dp-mini dp-update-entry", { "data-open-extensions": "true" }, function() {
+      ui.select("extensions");
+    });
+    openExtensions.textContent = "\u{1F9E9} \u6269\u5C55";
+    if (extFresh) openExtensions.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
+    extensions.head.appendChild(openExtensions);
+    renderSaveTransferSettings(ui, section);
+    if (desktopShell() === null && stageShell() === null) renderExternalPetSettings(ui, section);
+    else renderExternalDesktopSettings(ui, section, desktopShell()?.external ?? stageShell()?.external);
+    const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
+    const sizeRow = el("div", "dp-size-control");
+    const percent2 = (
+      /** @type {HTMLInputElement} */
+      el("input", "dp-size-value")
+    );
+    percent2.type = "number";
+    percent2.value = String(Math.round(pigSize() * 100));
+    percent2.setAttribute("aria-label", "\u5C0F\u732A\u5927\u5C0F\u767E\u5206\u6BD4");
+    percent2.setAttribute("data-pig-scale", "true");
+    function applySize(value) {
+      if (!Number.isFinite(value) || value <= 0) {
+        percent2.value = String(Math.round(pigSize() * 100));
+        return;
+      }
+      const stageSize = ui.view.hatched ? ui.view.pig.stage.size : ui.view.boxStage.size;
+      const geometry2 = desktopShell()?.geometry?.();
+      const area = geometry2?.workArea;
+      const available = Math.min(area?.width || window.screen?.availWidth || window.innerWidth, area?.height || window.screen?.availHeight || window.innerHeight);
+      const scale2 = Math.min(value / 100, available / (stageSize * 2));
+      setPigSize(scale2);
+      percent2.value = String(Math.round(scale2 * 100));
+      syncPigSize(ui.host, stageSize);
+      ui.fitPanel();
+      syncGeometry();
+    }
+    for (const { key: key2, label, delta } of [{ key: "minus", label: "\u2212", delta: -10 }, { key: "plus", label: "+", delta: 10 }]) {
+      const control = button("dp-size-step", { "data-pig-size-step": key2, "aria-label": delta < 0 ? "\u7F29\u5C0F\u5C0F\u732A" : "\u653E\u5927\u5C0F\u732A" }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)));
+      control.textContent = label;
+      if (delta < 0) sizeRow.appendChild(control);
+      else {
+        const value = el("label", "dp-size-percent");
+        value.appendChild(percent2);
+        value.appendChild(el("span", null, "%"));
+        sizeRow.appendChild(value);
+        sizeRow.appendChild(control);
+      }
+    }
+    percent2.addEventListener("change", () => applySize(Number(percent2.value)));
+    percent2.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        applySize(Number(percent2.value));
+        percent2.blur();
+      }
+    });
+    size.box.appendChild(sizeRow);
+    const speechSize = section(ui, "\u6C14\u6CE1\u5927\u5C0F", "\u6587\u5B57\u548C\u56DE\u590D\u6309\u94AE\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u5F71\u54CD\u5C0F\u732A\u5927\u5C0F");
+    const speechRow = el("div", "dp-size-control");
+    const speechPercent = (
+      /** @type {HTMLInputElement} */
+      el("input", "dp-size-value")
+    );
+    speechPercent.type = "number";
+    speechPercent.min = "10";
+    speechPercent.step = "10";
+    speechPercent.value = String(Math.round(applyBubbleSize(ui.host) * 100));
+    speechPercent.setAttribute("aria-label", "\u6C14\u6CE1\u5927\u5C0F\u767E\u5206\u6BD4");
+    speechPercent.setAttribute("data-bubble-scale", "true");
+    function applySpeechSize(value) {
+      if (Number.isFinite(value) && value > 0) setBubbleSize(value / 100);
+      speechPercent.value = String(Math.round(applyBubbleSize(ui.host) * 100));
+      ui.fitPanel();
+      syncGeometry();
+    }
+    const speechMinus = button("dp-size-step", { "data-bubble-size-step": "minus", "aria-label": "\u7F29\u5C0F\u6C14\u6CE1" }, () => applySpeechSize(Math.max(10, Math.round(applyBubbleSize(ui.host) * 100) - 10)));
+    speechMinus.textContent = "\u2212";
+    const speechValue = el("label", "dp-size-percent");
+    speechValue.appendChild(speechPercent);
+    speechValue.appendChild(el("span", null, "%"));
+    const speechPlus = button("dp-size-step", { "data-bubble-size-step": "plus", "aria-label": "\u653E\u5927\u6C14\u6CE1" }, () => applySpeechSize(Math.round(applyBubbleSize(ui.host) * 100) + 10));
+    speechPlus.textContent = "+";
+    speechRow.appendChild(speechMinus);
+    speechRow.appendChild(speechValue);
+    speechRow.appendChild(speechPlus);
+    speechPercent.addEventListener("change", () => applySpeechSize(Number(speechPercent.value)));
+    speechPercent.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        applySpeechSize(Number(speechPercent.value));
+        speechPercent.blur();
+      }
+    });
+    speechSize.box.appendChild(speechRow);
+    const feel2 = section(ui, "\u624B\u611F", "\u62D6\u52A8\u3001\u843D\u5730\u548C\u6478\u732A\u65F6\u7684\u6324\u538B\u56DE\u5F39\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907");
+    segmented(feel2, "data-feel-mode", [
+      { key: "full", label: "\u6807\u51C6" },
+      { key: "soft", label: "\u8F7B\u67D4" },
+      { key: "off", label: "\u5173\u95ED" }
+    ], feelMode(), function(key2) {
+      setFeelMode(key2);
+      ui.renderContent();
+    });
+    const handOn = petHandEnabled();
+    const hand = section(ui, "\u6478\u6478\u5C0F\u624B", "\u663E\u793A\u629A\u6478\u7684\u5C0F\u624B\uFF1B\u5173\u95ED\u540E\u5C0F\u732A\u4ECD\u4F1A\u8F7B\u8F7B\u4E0B\u6C89\u3001\u56DE\u4F4D");
+    const handToggle = button("dp-switch", { "data-pet-hand": handOn ? "on" : "off", "aria-pressed": String(handOn), "aria-label": "\u6478\u6478\u5C0F\u624B" }, function() {
+      setPetHandEnabled(!petHandEnabled());
+      ui.renderContent();
+    });
+    handToggle.appendChild(el("span", "dp-switch-knob"));
+    handToggle.appendChild(el("span", "dp-switch-text", handOn ? "\u5F00" : "\u5173"));
+    hand.head.appendChild(handToggle);
+    const soundPrefs = soundSettings();
+    const sound = section(ui, "\u97F3\u6548", "\u62CE\u8D77\u3001\u843D\u5730\u3001\u6478\u6478\u7684\u58F0\u97F3\uFF1B\u514D\u6253\u6270\u65F6\u4E0D\u54CD");
+    const soundToggle = button("dp-switch", { "data-sound": soundPrefs.on ? "on" : "off", "aria-pressed": String(soundPrefs.on) }, function() {
+      const next = setSoundSettings({ on: !soundPrefs.on });
+      if (next.on) unlockSound();
+      ui.renderContent();
+    });
+    soundToggle.appendChild(el("span", "dp-switch-knob"));
+    soundToggle.appendChild(el("span", "dp-switch-text", soundPrefs.on ? "\u5F00" : "\u5173"));
+    sound.head.appendChild(soundToggle);
+    segmented(sound, "data-sound-volume", [
+      { key: "0", label: "\u8F7B" },
+      { key: "1", label: "\u4E2D" },
+      { key: "2", label: "\u54CD" }
+    ], String(soundPrefs.volume), function(key2) {
+      setSoundSettings({ volume: Number(key2) });
+      ui.renderContent();
+    });
+    if (hasBundledEmoji()) {
+      const emoji = section(ui, "Emoji \u6837\u5F0F", "\u5185\u7F6E\u662F\u968F\u6E38\u620F\u9644\u5E26\u7684\u4E00\u6574\u5957 Noto \u5F69\u8272 emoji\uFF0C\u5404\u7CFB\u7EDF\u770B\u8D77\u6765\u4E00\u6837");
+      segmented(emoji, "data-emoji-style", [
+        { key: "bundled", label: "\u5185\u7F6E" },
+        { key: "system", label: "\u7CFB\u7EDF\u81EA\u5E26" }
+      ], emojiStyle(), function(key2) {
+        setEmojiStyle(key2);
+        applyEmojiStyle(ui.host);
+        ui.renderContent();
+      });
+    }
+    const quiet = section(ui, "\u514D\u6253\u6270", "\u5F00\u7740\u65F6\u732A\u4E0D\u4E3B\u52A8\u8BF4\u8BDD\u3001\u4E0D\u62A5\u65E5\u5E38\u6D88\u606F\uFF1B\u751F\u75C5\u548C\u610F\u5916\u7167\u5E38\u63D0\u9192");
+    const quietOn = ui.view.dialogue.quiet === true;
+    const quietToggle = button("dp-switch", { "data-quiet": quietOn ? "on" : "off", "aria-pressed": String(quietOn) }, function() {
+      ui.send("quiet", { on: !quietOn });
+    });
+    quietToggle.appendChild(el("span", "dp-switch-knob"));
+    quietToggle.appendChild(el("span", "dp-switch-text", quietOn ? "\u5F00" : "\u5173"));
+    quiet.head.appendChild(quietToggle);
+    const feeding = section(ui, "\u79BB\u7EBF\u81EA\u52A8\u7167\u987E", "");
+    const feedingOn = ui.view.dialogue.isOfflineFeedEnabled !== false;
+    const feedingToggle = button("dp-switch", { "data-offline-feed": String(feedingOn), "aria-pressed": String(feedingOn) }, function() {
+      ui.send("offlineFeed", { on: !feedingOn });
+    });
+    feedingToggle.appendChild(el("span", "dp-switch-knob"));
+    feedingToggle.appendChild(el("span", "dp-switch-text", feedingOn ? "\u5F00" : "\u5173"));
+    feeding.head.appendChild(feedingToggle);
+    const close = section(ui, "\u70B9\u51FB\u522B\u5904\u65F6\u6536\u8D77\u9762\u677F", "\u7F51\u9875\u7248\u70B9\u9762\u677F\u5916\u3001\u684C\u9762\u7248\u5207\u5230\u5176\u4ED6\u7A97\u53E3\u65F6\u6536\u8D77");
+    const on = autoCollapseEnabled();
+    const toggle = button("dp-switch", { "data-auto-collapse": String(!on), "aria-pressed": String(on) }, function() {
+      setAutoCollapse(!autoCollapseEnabled());
+      ui.renderContent();
+    });
+    toggle.appendChild(el("span", "dp-switch-knob"));
+    toggle.appendChild(el("span", "dp-switch-text", on ? "\u5F00" : "\u5173"));
+    close.head.appendChild(toggle);
+    if (desktopShell() !== null || stageShell()?.walk === true) {
+      const walk = section(ui, "\u684C\u9762\u6563\u6B65", "\u6BCF 10\u201320 \u5206\u949F\u6CBF\u5C4F\u5E55\u5E95\u8FB9\u8D70\u4E00\u6BB5\u518D\u8D70\u56DE\u6765\uFF1B\u62D6\u5B83\u3001\u5F00\u7740\u9762\u677F\u3001\u514D\u6253\u6270\u65F6\u4E0D\u8D70");
+      const walking = walkEnabled();
+      const walkToggle = button("dp-switch", { "data-walk": String(!walking), "aria-pressed": String(walking) }, function() {
+        setWalk(!walkEnabled());
+        ui.renderContent();
+      });
+      walkToggle.appendChild(el("span", "dp-switch-knob"));
+      walkToggle.appendChild(el("span", "dp-switch-text", walking ? "\u5F00" : "\u5173"));
+      walk.head.appendChild(walkToggle);
+    }
+    const fullscreen = desktopShell()?.fullscreen ?? stageShell()?.fullscreen;
+    if (fullscreen) renderFullscreenSettings(ui, section, fullscreen);
+    const proxy = desktopShell()?.proxy ?? stageShell()?.proxy;
+    if (proxy) renderProxySettings(ui, section, proxy);
+    const logs = section(ui, "\u65E5\u5FD7", "\u9047\u5230\u95EE\u9898\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u91CC\u9762\u6709\u7248\u672C\u3001\u52A8\u4F5C\u548C\u62A5\u9519");
+    const exportButton = button("dp-mini", { "data-export-logs": "true" }, function() {
+      runExport(ui, exportButton);
+    });
+    exportButton.textContent = "\u{1F4C4} \u5BFC\u51FA";
+    logs.head.appendChild(exportButton);
+    if (exporting) exportButton.disabled = true;
+  }
+  var exporting = false;
+  function runExport(ui, exportButton) {
+    if (exporting) return;
+    exporting = true;
+    exportButton.disabled = true;
+    exportButton.textContent = "\u5BFC\u51FA\u4E2D\u2026";
+    exportLogs().then(function(result) {
+      exporting = false;
+      if (result.canceled === true) ui.renderContent();
+      else if (result.ok === true) ui.showBubble(result.downloaded === true ? "\u65E5\u5FD7\u5DF2\u4E0B\u8F7D" : "\u65E5\u5FD7\u5DF2\u4FDD\u5B58", 3200);
+      else ui.showBubble("\u65E5\u5FD7\u6CA1\u5BFC\u51FA\uFF1A" + str(result.reason, "\u672A\u77E5\u539F\u56E0"), 4e3);
+      if (typeof ui.renderContent === "function") ui.renderContent();
+    }).catch(function(error) {
+      exporting = false;
+      ui.showBubble("\u65E5\u5FD7\u6CA1\u5BFC\u51FA\uFF1A" + (error instanceof Error ? error.message : String(error)), 4e3);
+      ui.renderContent();
+    });
+  }
+
+  // src/client/panel-empty.js
+  function renderEmptyPanel(ctx) {
+    if (ctx.view.pig !== null) return false;
+    {
+      if (isExternalMode(ctx.view)) {
+        if (ctx.tab === "settings") {
+          var settingsApp = TABS.find(function(entry) {
+            return entry.key === "settings";
+          });
+          if (settingsApp !== void 0) appHeader(ctx, settingsApp);
+          renderSettingsTab(ctx);
+          ctx.fitPanel();
+          return true;
+        }
+        ctx.host.setAttribute("data-ext-view", "");
+        var extHead = el("div", "dp-title");
+        extHead.appendChild(el("b", null, "\u684C\u9762\u732A"));
+        extHead.appendChild(el("span", null, "\u6CA1\u8FDE\u4E0A"));
+        ctx.content.appendChild(extHead);
+        var extBox = el("div", "dp-set");
+        var extBoxHead = el("div", "dp-set-head");
+        extBoxHead.appendChild(el("b", null, "\u5916\u90E8\u684C\u5BA0"));
+        extBox.appendChild(extBoxHead);
+        extBox.appendChild(el("p", "dp-dim", "\u684C\u9762\u732A\u6CA1\u8FDE\u4E0A\uFF0CDSH \u4E0D\u4F1A\u6253\u5F00\u5185\u5D4C\u732A\uFF1B\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + (ctx.view.link === null ? 0 : ctx.view.link.queued) + " \u6761\uFF09\u3002\u5728\u8BBE\u7F6E\u91CC\u53EF\u4EE5\u91CD\u65B0\u8FDE\u63A5\u3001\u5207\u56DE\u5185\u5D4C\u732A\u6216\u67E5\u770B\u961F\u5217\u3002"));
+        ctx.content.appendChild(extBox);
+        var extActions = el("div", "dp-actions");
+        var openSettings = button("dp-btn dp-btn-wide", { "data-external-open-settings": "true" }, function() {
+          ctx.select("settings");
+        });
+        openSettings.textContent = "\u6253\u5F00\u8BBE\u7F6E";
+        extActions.appendChild(openSettings);
+        ctx.content.appendChild(extActions);
+        ctx.fitPanel();
+        return true;
+      }
+      ctx.content.appendChild(el("div", "dp-empty", "\u95E8\u53E3\u653E\u7740\u4E00\u4E2A\u7EB8\u76D2\uFF0C\u91CC\u9762\u7AB8\u7AB8\u7AA3\u7AA3 \u{1F4E6}"));
+      var grid = el("div", "dp-actions");
+      var hatch = button("dp-btn dp-btn-wide", { "data-action": "hatch" }, function() {
+        ctx.send("hatch");
+      });
+      hatch.appendChild(el("span", null, "\u{1F95A}"));
+      hatch.appendChild(el("span", null, "\u62C6\u5F00\u7EB8\u76D2"));
+      grid.appendChild(hatch);
+      ctx.content.appendChild(grid);
+      return true;
+    }
+  }
+  function renderUnhatchedPig(ctx) {
+    if (ctx.view.pig === null && isExternalMode(ctx.view)) {
+      ctx.pig.setAttribute("data-stage", "offline");
+      ctx.pig.setAttribute("data-art", "");
+      ctx.pig.setAttribute("data-activity", "");
+      ctx.pig.setAttribute("data-activity-key", "");
+      ctx.pigEmoji.textContent = "\u{1F416}";
+      ctx.pig.setAttribute("data-mood", "offline");
+      syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
+      syncPigSize(ctx.host, ctx.view.boxStage.size);
+      applyEmojiStyle(ctx.host);
+      ctx.soul.hidden = true;
+      ctx.host.setAttribute("data-soul", "false");
+      ctx.host.setAttribute("data-faded", "false");
+      ctx.host.setAttribute("data-unhatched", "false");
+      ctx.pokeHint.hidden = true;
+      ctx.hudName.textContent = "\u684C\u9762\u732A \xB7 \u6CA1\u8FDE\u4E0A";
+      ctx.hudCoins.textContent = "";
+      ctx.hudHealth.textContent = "";
+      ctx.lastStage = null;
+    } else {
+      ctx.pig.setAttribute("data-stage", "box");
+      ctx.pig.setAttribute("data-art", "");
+      ctx.pig.setAttribute("data-activity", "");
+      ctx.pig.setAttribute("data-activity-key", "");
+      ctx.pigEmoji.textContent = ctx.view.boxStage.emoji;
+      ctx.pig.setAttribute("data-mood", "box");
+      syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
+      syncPigSize(ctx.host, ctx.view.boxStage.size);
+      applyEmojiStyle(ctx.host);
+      ctx.soul.hidden = true;
+      ctx.host.setAttribute("data-soul", "false");
+      ctx.host.setAttribute("data-faded", "false");
+      ctx.host.setAttribute("data-unhatched", "true");
+      ctx.pokeHint.hidden = false;
+      ctx.hudName.textContent = "\u4E00\u4E2A" + ctx.view.boxStage.label;
+      ctx.hudCoins.textContent = "\u70B9\u5F00\u62C6\u5F00\u5B83";
+      ctx.hudHealth.textContent = "";
+      ctx.lastStage = null;
+    }
+  }
+
   // packages/pet-core/src/data/fishing-art.js
   var FISHING_ART_HASHES = Object.freeze({
     "scene-river.png": "20bf68ad2766",
@@ -6691,7 +11605,7 @@
   var frame = 0;
   var activeUi = null;
   var resolving = false;
-  var session = null;
+  var session2 = null;
   var raf = (fn) => typeof requestAnimationFrame === "function" ? requestAnimationFrame(fn) : 0;
   var caf = (id) => {
     if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(id);
@@ -6705,7 +11619,7 @@
       releaseHold();
       releaseHold = null;
     }
-    if (clear) session = null;
+    if (clear) session2 = null;
   }
   function fightActive(ui) {
     return activeUi === ui;
@@ -6728,7 +11642,7 @@
   }
   function renderFight(ui, fish3, root = ui.content) {
     const mode = fish3.fight === "bar" || fish3.fight === "pull" ? fish3.fight : "ring";
-    if (session?.id !== fish3.id || session.mode !== mode) session = { id: fish3.id, mode };
+    if (session2?.id !== fish3.id || session2.mode !== mode) session2 = { id: fish3.id, mode };
     activeUi = ui;
     const finish = (success) => {
       if (resolving) return;
@@ -6737,9 +11651,9 @@
       ui.send("fishResolve", { success });
     };
     root.appendChild(fightArt(fish3));
-    if (mode === "bar") return renderBar(ui, fish3, session, finish, root);
-    if (mode === "pull") return renderPull(ui, fish3, session, finish, root);
-    return renderRing(ui, fish3, session, finish, root);
+    if (mode === "bar") return renderBar(ui, fish3, session2, finish, root);
+    if (mode === "pull") return renderPull(ui, fish3, session2, finish, root);
+    return renderRing(ui, fish3, session2, finish, root);
   }
   function fightArt(fish3) {
     const art = el("div", "dp-fish-fight-art");
@@ -6870,7 +11784,7 @@
       paint();
       if (s.hits >= s.hitsNeeded) return setTimeout(() => finish(true), 260);
       setTimeout(() => {
-        if (session !== s || resolving) return;
+        if (session2 !== s || resolving) return;
         newRingRound(s);
         paint();
       }, 380);
@@ -7066,7 +11980,7 @@
     box.appendChild(el("b", null, "\u732A\u6B63\u5728" + activity.label.replace(/^兴趣·/, "\u5B66") + "\uFF08\u8FD8\u6709 " + left + " \u5206\u949F\uFF09"));
     var loss = lossOf(activity);
     box.appendChild(el("div", null, "\u8981\u7ED3\u675F\u5B83\uFF0C\u6539\u53BB" + ask.label + "\u5417\uFF1F" + (loss ? loss + "\u3002" : "")));
-    var row = el("div", "dp-switch-ask-row");
+    var row2 = el("div", "dp-switch-ask-row");
     var go = button("dp-mini", { "data-switch-go": ask.action }, function() {
       ui.switchAsk = null;
       Promise.resolve(ui.send("calloff")).then(function() {
@@ -7079,9 +11993,9 @@
       ui.renderContent();
     });
     no.textContent = "\u7B97\u4E86";
-    row.appendChild(go);
-    row.appendChild(no);
-    box.appendChild(row);
+    row2.appendChild(go);
+    row2.appendChild(no);
+    box.appendChild(row2);
     ui.content.appendChild(box);
   }
 
@@ -7141,11 +12055,11 @@
     return root;
   }
   function contextLine(ui, root) {
-    const row = el("div", "dp-fish-context");
-    row.setAttribute("data-fish-context", "true");
+    const row2 = el("div", "dp-fish-context");
+    row2.setAttribute("data-fish-context", "true");
     const spot = currentSpot(ui);
-    row.textContent = "\u5F53\u524D\uFF1A" + spot.label + " \xB7 " + ui.view.fishing.rod.label;
-    root.appendChild(row);
+    row2.textContent = "\u5F53\u524D\uFF1A" + spot.label + " \xB7 " + ui.view.fishing.rod.label;
+    root.appendChild(row2);
   }
   function accordion(key2, className, emoji, label, value) {
     const box = el("details", "dp-fish-sec " + className);
@@ -7208,14 +12122,14 @@
   function renderAutoStock(ui, parent) {
     const automation2 = ui.view.fishing.automation;
     if (!automation2 || !automation2.unlocked && automation2.stored === 0 && automation2.usedHours === 0) return false;
-    const row = el("div", "dp-fish-stock");
+    const row2 = el("div", "dp-fish-stock");
     const capacity = automation2.capacityHours ?? 6;
-    row.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9493\u9C7C\u6B47\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + " / " + capacity + " \u5C0F\u65F6"));
+    row2.appendChild(el("span", null, "\u{1F9FA} " + (automation2.full ? automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86" : "\u9493\u9C7C\u6B47\u4E86" : "\u9C7C\u7BD3") + " " + automation2.usedHours.toFixed(1) + " / " + capacity + " \u5C0F\u65F6"));
     const collect = button("dp-mini", { "data-fish-collect": "true" }, () => ui.send("fishCollect"));
     collect.textContent = automation2.stored > 0 ? "\u6536\u4E00\u4E0B" : automation2.full ? "\u63A5\u7740\u5E72" : "\u6682\u65E0\u6536\u6210";
     collect.disabled = automation2.stored === 0 && !automation2.full;
-    row.appendChild(collect);
-    parent.appendChild(row);
+    row2.appendChild(collect);
+    parent.appendChild(row2);
     return true;
   }
   function renderAutoSection(ui, baitState) {
@@ -7230,7 +12144,7 @@
     renderAutoStock(ui, body);
     const choices = automation2?.choices ?? [30, 60].map((minutes) => ({ minutes, attempts: minutes / 3 }));
     const closed = currentSpot(ui).open === false;
-    const row = el("div", "dp-fish-auto-row");
+    const row2 = el("div", "dp-fish-auto-row");
     const reasons = [];
     for (const { minutes, attempts, legacy = minutes <= 60 } of choices) {
       const boxed = !legacy && automation2?.baitLimit > 0;
@@ -7247,9 +12161,9 @@
         else if (closed) reasons.push("\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u6709\u5F00");
         else reasons.push("\u9C7C\u9975\u53EA\u5269 " + have + " \u4E2A\uFF0C\u4E0D\u591F " + need + " \u4E2A");
       }
-      row.appendChild(go);
+      row2.appendChild(go);
     }
-    body.appendChild(row);
+    body.appendChild(row2);
     const blockedUpgrades = [];
     for (const upgrade of automation2?.upgrades ?? []) {
       const buy = button("dp-mini", { "data-fish-upgrade": upgrade.kind }, () => ui.send("fishAutomation", { kind: upgrade.kind }));
@@ -7443,13 +12357,13 @@
   }
 
   // src/client/split.js
-  function wireSplit(ctx, hooks) {
+  function wireSplit(ctx, hooks2) {
     var role2 = desktopRole();
     var shell2 = desktopShell();
     if (role2 === null || shell2 === null || shell2.panel === void 0) return null;
     if (typeof shell2.onStateChanged === "function") shell2.onStateChanged(function(view) {
       if (view && Array.isArray(view.pending)) ctx.render(view);
-      else hooks.refresh();
+      else hooks2.refresh();
     });
     if (role2 === "pet") {
       ;
@@ -7492,7 +12406,7 @@
         if (ctx.isOpen) ctx.setOpen(false);
       } else if (message2.type === "blur") {
         const saveTransferActive = ctx.content?.querySelector?.('[data-save-transfer-active="true"]');
-        if (message2.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks.isFishing() || typing() || saveTransferActive) return;
+        if (message2.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks2.isFishing() || typing() || saveTransferActive) return;
         ctx.setOpen(false);
       }
     });
@@ -7548,130 +12462,6 @@
     ctx.card.hidden = true;
     ctx.hud.hidden = true;
     if (next && ctx.bubble?.hidden === false) desktopShell()?.panel?.raisePet?.();
-  }
-
-  // src/client/pig-size.js
-  var PIG_SIZE_KEY = "dsh-piggy:pig-size";
-  var OLD_SCALE = { small: 0.85, standard: 1, large: 1.3, extra: 1.7, 48: 0.85, 56: 1, 72: 1.3, 96: 1.7 };
-  function pigSize() {
-    const saved = readStore(PIG_SIZE_KEY);
-    if (saved?.startsWith("scale:")) {
-      const value = Number(saved.slice(6));
-      if (Number.isFinite(value) && value > 0) return value;
-    }
-    const scale2 = OLD_SCALE[saved] ?? 1;
-    if (saved !== null) setPigSize(scale2);
-    return scale2;
-  }
-  function setPigSize(value) {
-    const scale2 = Number(value);
-    writeStore(PIG_SIZE_KEY, "scale:" + (Number.isFinite(scale2) && scale2 > 0 ? scale2 : 1));
-  }
-  function displayedPigSize(stageSize) {
-    return stageSize * pigSize();
-  }
-  function applyPigBox(host3, width) {
-    const style = host3?.style;
-    if (typeof style?.setProperty !== "function") return;
-    style.setProperty("--pig-size", width + "px");
-    style.setProperty("--pig-scale", String(pigSize()));
-  }
-  function syncPigSize(host3, stageSize) {
-    applyPigBox(host3, displayedPigSize(stageSize));
-  }
-  function attachSizePreference(host3, getStage, onChanged) {
-    function onStorage3(event) {
-      if (event.key !== PIG_SIZE_KEY) return;
-      const stage2 = getStage();
-      if (!stage2) return;
-      syncPigSize(host3, stage2.size);
-      onChanged?.();
-    }
-    window.addEventListener("storage", onStorage3);
-    return () => window.removeEventListener("storage", onStorage3);
-  }
-
-  // src/client/pat-cursor.js
-  var SIZE = 32;
-  var drawnFor = null;
-  function applyPatCursor(host3) {
-    if (typeof document === "undefined" || typeof document.createElement !== "function" || typeof getComputedStyle !== "function") return;
-    let family = "sans-serif";
-    try {
-      family = String(getComputedStyle(host3).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
-    } catch {
-      return;
-    }
-    if (drawnFor === family) return;
-    drawnFor = family;
-    const font = `26px ${family}`;
-    const draw = () => {
-      try {
-        const canvas = (
-          /** @type {HTMLCanvasElement} */
-          document.createElement("canvas")
-        );
-        if (typeof canvas.getContext !== "function") return;
-        canvas.width = SIZE;
-        canvas.height = SIZE;
-        const ctx = canvas.getContext("2d");
-        if (ctx === null) return;
-        ctx.font = font;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("\u{1F44B}", SIZE / 2, SIZE / 2 + 1);
-        const url = canvas.toDataURL("image/png");
-        if (typeof url === "string" && url.startsWith("data:image/png")) host3.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
-      } catch {
-      }
-    };
-    const fonts = (
-      /** @type {any} */
-      document.fonts
-    );
-    try {
-      if (fonts !== void 0 && typeof fonts.load === "function") fonts.load(font, "\u{1F44B}").then(draw, draw);
-      else draw();
-    } catch {
-    }
-  }
-
-  // src/client/emoji-style.js
-  var EMOJI_STYLE_KEY = "dsh-piggy:emoji-style";
-  var EMOJI_DEFAULT_MIGRATION_KEY = "dsh-piggy:emoji-bundled-default-v1";
-  function migrateBundledDefault() {
-    if (readStore(EMOJI_DEFAULT_MIGRATION_KEY) === "1") return false;
-    writeStore(EMOJI_STYLE_KEY, "bundled");
-    if (readStore(EMOJI_STYLE_KEY) === "bundled") writeStore(EMOJI_DEFAULT_MIGRATION_KEY, "1");
-    return true;
-  }
-  function emojiStyle() {
-    if (migrateBundledDefault()) return "bundled";
-    return readStore(EMOJI_STYLE_KEY) === "system" ? "system" : "bundled";
-  }
-  function setEmojiStyle(style) {
-    migrateBundledDefault();
-    writeStore(EMOJI_STYLE_KEY, style === "system" ? "system" : "bundled");
-  }
-  function hasBundledEmoji() {
-    try {
-      const fonts = (
-        /** @type {any} */
-        document.fonts
-      );
-      if (fonts === void 0 || typeof fonts.forEach !== "function") return false;
-      let found = false;
-      fonts.forEach(function(face) {
-        if (String(face.family).replace(/["']/g, "") === "Piggy Emoji") found = true;
-      });
-      return found;
-    } catch {
-      return false;
-    }
-  }
-  function applyEmojiStyle(host3) {
-    host3.setAttribute("data-emoji", emojiStyle());
-    applyPatCursor(host3);
   }
 
   // src/client/birthday.js
@@ -8863,79 +13653,96 @@
     "@media (prefers-reduced-motion:reduce){.dp-holo,.dp-holo-face::after{animation:none!important;transition:none!important;transform:none!important}}"
   ].join("");
 
-  // src/client/wallet.js
-  var TO_GOLD = [10, 100];
-  var FROM_GOLD = [10, 100, 1e3];
-  var CSS_WALLET = [
-    ".dp-wallet{display:grid;gap:8px;margin:0 0 10px;padding:9px 11px;border-radius:16px;background:var(--ac-bg-input);border:2px solid var(--ac-border-light)}",
-    ".dp-wallet-head{display:flex;align-items:center;gap:8px;font-weight:800}",
-    ".dp-wallet-emoji{font-size:22px;line-height:1}.dp-wallet-name{font-size:11px;color:var(--ac-text-2);font-weight:700}",
-    ".dp-wallet-balance{flex:1;font-size:15px;letter-spacing:.02em}",
-    ".dp-wallet-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}",
-    ".dp-wallet-row>small{width:100%;font-size:10px;color:var(--ac-text-2)}"
+  // src/client/external-css.js
+  var CSS_EXTERNAL = [
+    /* ---------- panel link bar: one strip above the app content ---------- */
+    ".dp-link{display:flex;align-items:center;gap:6px;margin:0 12px 8px;padding:5px 9px;",
+    "border-radius:var(--ac-radius-sm);border:2px solid var(--ac-border-light);background:var(--ac-bg-content);",
+    "font-size:10.5px;font-weight:700;color:var(--ac-text);line-height:1.4}",
+    ".dp-link[hidden]{display:none}",
+    ".dp-link-dot{flex:none;font-size:9px;line-height:1}",
+    '.dp-link[data-link="connected"]{border-color:#bfe8dc;background:#eefaf6}',
+    '.dp-link[data-link="connected"] .dp-link-dot{color:var(--ac-primary)}',
+    '.dp-link[data-link="connecting"] .dp-link-dot,',
+    '.dp-link[data-link="reconnecting"] .dp-link-dot,',
+    '.dp-link[data-link="disconnected"] .dp-link-dot{color:var(--ac-warning)}',
+    '.dp-link[data-link="merging"] .dp-link-dot{color:var(--ac-primary)}',
+    '.dp-link[data-dead="true"]{border-color:var(--ac-border);color:var(--ac-text-2)}',
+    ".dp-link-note{margin:0 12px 8px;padding:5px 9px;border-radius:var(--ac-radius-sm);",
+    "background:var(--ac-bg-disabled);border:2px solid var(--ac-border-light);",
+    "font-size:9.5px;line-height:1.5;color:var(--ac-text-2)}",
+    ".dp-link-note[hidden]{display:none}",
+    ".dp-link-note .dp-mini{margin-top:4px}",
+    // 外部模式断线且没有快照：不摆内嵌纸盒，猪占位去色并收起互动提示。
+    '[data-dsh-pig][data-external-offline="true"] .dp-pig-emoji{filter:grayscale(.7) opacity(.55)}',
+    '[data-dsh-pig][data-external-offline="true"] .dp-hud{opacity:.75}',
+    // 断线/合并中：动作看起来就是不能用的（真正的拦截在 io.js，导航和返回保持正常）。
+    '[data-dsh-pig][data-link="disconnected"] .dp-content button:not(.dp-drill-back):not(.dp-home-dot):not(.dp-seg-btn):not(.dp-tile):not([data-home]):not([data-skin-guide]){opacity:.55}',
+    '[data-dsh-pig][data-link="reconnecting"] .dp-content button:not(.dp-drill-back):not(.dp-home-dot):not(.dp-seg-btn):not(.dp-tile):not([data-home]):not([data-skin-guide]){opacity:.55}',
+    '[data-dsh-pig][data-link="merging"] .dp-content button:not(.dp-drill-back):not(.dp-home-dot):not(.dp-seg-btn):not(.dp-tile):not([data-home]):not([data-skin-guide]){opacity:.55}',
+    /* ---------- settings card ---------- */
+    ".dp-ext-card .dp-set-head small{flex-basis:auto}",
+    ".dp-ext-state{display:block;font-size:10.5px;line-height:1.5;color:var(--ac-text-2);margin-top:2px}",
+    '.dp-ext-state[data-tone="ok"]{color:var(--ac-text)}',
+    '.dp-ext-state[data-tone="warn"]{color:var(--ac-text-2)}',
+    ".dp-ext-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}",
+    ".dp-ext-card-actions .dp-mini,.dp-ext-card-actions .dp-btn{justify-content:center;width:100%}",
+    ".dp-ext-card-actions .dp-btn-wide{grid-column:1 / -1}",
+    /* ---------- overlay dialog ---------- */
+    ".dp-ext-dialog .dp-ext-title{display:block;font-size:13px;color:var(--ac-text);margin:0 0 2px}",
+    ".dp-ext-sub{margin:0 0 8px;font-size:10.5px;line-height:1.5}",
+    ".dp-ext-row{margin:3px 0}",
+    ".dp-ext-row small{flex-basis:auto}",
+    ".dp-ext-row b{font-size:11px;min-width:58px}",
+    ".dp-ext-note{display:block;margin:6px 0 0;font-size:10px;line-height:1.55;color:var(--ac-text-2)}",
+    ".dp-ext-warn{margin:8px 0 0;font-size:10.5px}",
+    ".dp-ext-actions{margin-top:12px}",
+    ".dp-ext-actions .dp-btn,.dp-ext-actions .dp-mini{justify-content:center;width:100%}",
+    ".dp-ext-block{display:block;margin:8px 0 0;padding:8px 10px;border-radius:var(--ac-radius-sm);",
+    "border:2px solid var(--ac-border-light);background:var(--ac-bg-input)}",
+    ".dp-ext-block b{display:block;font-size:11px;color:var(--ac-text)}",
+    ".dp-ext-block small{display:block;margin-top:2px;font-size:10px;line-height:1.5;color:var(--ac-text-2)}",
+    ".dp-ext-block-actions{display:flex;gap:6px;margin-top:6px}",
+    ".dp-ext-block-actions .dp-mini,.dp-ext-block-actions .dp-btn{flex:1;justify-content:center;font-size:10px;padding:4px 6px}",
+    /* ---------- radio cards (two pigs / identity / conflicts) ---------- */
+    ".dp-ext-choice{display:flex;align-items:flex-start;gap:6px;width:100%;box-sizing:border-box;margin:6px 0 0;",
+    "padding:7px 9px;font:inherit;text-align:left;cursor:pointer;color:var(--ac-text);",
+    "border:2px solid var(--ac-border-light);border-radius:var(--ac-radius-sm);background:var(--ac-bg-input);",
+    "transition:border-color .15s var(--ac-ease),background-color .15s var(--ac-ease)}",
+    ".dp-ext-choice:hover{border-color:var(--ac-border-hover)}",
+    '.dp-ext-choice[aria-pressed="true"]{border-color:var(--ac-primary);background:var(--ac-primary-bg)}',
+    ".dp-ext-choice:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}",
+    ".dp-ext-choice-dot{flex:none;font-size:10px;line-height:1.5;color:var(--ac-primary)}",
+    ".dp-ext-choice-copy{display:flex;flex-direction:column;min-width:0}",
+    ".dp-ext-choice-copy b{font-size:10.5px;line-height:1.45}",
+    ".dp-ext-choice-copy small{font-size:9.5px;line-height:1.45;color:var(--ac-text-2)}",
+    ".dp-ext-group{margin-top:10px;padding-top:8px;border-top:1.5px dashed var(--ac-border-light)}",
+    ".dp-ext-group-head{display:flex;align-items:center;gap:6px;margin-bottom:2px}",
+    ".dp-ext-group-head b{font-size:11px}",
+    ".dp-ext-group-head small{font-size:9.5px;color:var(--ac-text-2)}",
+    ".dp-ext-group-head .dp-mini{margin-left:auto;flex:none;font-size:9.5px;padding:2px 8px}",
+    ".dp-ext-inline{display:flex;gap:4px;margin-top:4px}",
+    ".dp-ext-inline .dp-ext-choice{flex:1;margin:0;justify-content:center;padding:5px 4px}",
+    ".dp-ext-inline .dp-ext-choice-copy{align-items:center}",
+    ".dp-ext-inline .dp-ext-choice-dot{display:none}",
+    /* ---------- fields ---------- */
+    ".dp-ext-field{display:block;margin:6px 0 0}",
+    ".dp-ext-field-label{display:block;font-size:9.5px;font-weight:700;color:var(--ac-text-2);margin-bottom:2px}",
+    ".dp-ext-select{appearance:auto}",
+    ".dp-ext-counter{display:block;margin-top:1px;font-size:9px;color:var(--ac-text-muted);text-align:right}",
+    ".dp-ext-checks{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}",
+    ".dp-ext-checks .dp-mini{font-size:9.5px;padding:3px 8px}",
+    ".dp-ext-flag{display:block;margin-top:3px;font-size:9.5px;line-height:1.45;color:var(--ac-warning,#c0503f)}",
+    ".dp-ext-result{display:block;margin:6px 0 0;font-size:12px;font-weight:800;color:var(--ac-text);line-height:1.5}",
+    ".dp-ext-result small{display:block;font-size:10px;font-weight:600;color:var(--ac-text-2)}",
+    ".dp-ext-list{margin:4px 0 0;padding:0;list-style:none}",
+    ".dp-ext-list li{position:relative;padding-left:10px;font-size:9.5px;line-height:1.5;color:var(--ac-text-2)}",
+    '.dp-ext-list li::before{content:"\xB7";position:absolute;left:2px}',
+    ".dp-ext-count{font-size:9.5px;color:var(--ac-text-muted)}"
   ].join("");
-  function walletBar(ui, wallet, options) {
-    var always = options && options.open === true;
-    var open = always || ui.drill.wallet === wallet.key;
-    var box = el("div", "dp-wallet");
-    box.setAttribute("data-wallet", wallet.key);
-    var head = el("div", "dp-wallet-head");
-    head.appendChild(el("span", "dp-wallet-emoji", wallet.emoji));
-    var name = el("span", "dp-wallet-balance", String(wallet.balance));
-    name.appendChild(el("span", "dp-wallet-name", " " + wallet.label));
-    head.appendChild(name);
-    if (!always) {
-      var toggle = button("dp-mini dp-mini-plain", { "data-wallet-toggle": wallet.key }, function() {
-        ui.drill.wallet = open ? null : wallet.key;
-        ui.renderContent();
-      });
-      toggle.textContent = open ? "\u6536\u8D77" : "\u6362";
-      head.appendChild(toggle);
-    }
-    box.appendChild(head);
-    if (!open) return box;
-    var coins = Number(ui.view.pig && ui.view.pig.coins) || 0;
-    var send2 = function(direction, amount) {
-      ui.send("exchange", { key: wallet.key, direction, amount });
-    };
-    var out = el("div", "dp-wallet-row");
-    out.appendChild(el("small", null, "\u6362\u6210\u91D1\u5E01 \xB7 1 " + wallet.label + " = " + wallet.rate + " \u{1FA99}"));
-    var amounts = TO_GOLD.filter(function(n) {
-      return n < wallet.balance;
-    }).concat(wallet.balance > 0 ? [wallet.balance] : []);
-    for (var i = 0; i < amounts.length; i += 1) {
-      (function(n, all) {
-        var gold = Math.floor(n * wallet.rate);
-        var go = button("dp-mini", { "data-wallet-out": all ? "all" : String(n) }, function() {
-          send2("toGold", n);
-        });
-        go.textContent = (all ? "\u5168\u90E8 " : "") + n + " \u2192 \u{1FA99} " + gold;
-        go.disabled = gold === 0;
-        out.appendChild(go);
-      })(amounts[i], i === amounts.length - 1 && wallet.balance > 0);
-    }
-    if (wallet.balance === 0) out.appendChild(el("span", "dp-wallet-name", "\u8FD8\u6CA1\u6709" + wallet.label));
-    box.appendChild(out);
-    if (wallet.buyable === false) return box;
-    var back = el("div", "dp-wallet-row");
-    back.appendChild(el("small", null, "\u7528\u91D1\u5E01\u6362 \xB7 1 " + wallet.label + " = " + wallet.buyRate + " \u{1FA99}\uFF08\u542B 5% \u624B\u7EED\u8D39\uFF09"));
-    for (var j = 0; j < FROM_GOLD.length; j += 1) {
-      (function(n) {
-        var cost = Math.ceil(n * wallet.buyRate - 1e-9);
-        var buy = button("dp-mini dp-mini-plain", { "data-wallet-in": String(n) }, function() {
-          send2("fromGold", n);
-        });
-        buy.textContent = "\u{1FA99} " + cost + " \u2192 " + n;
-        buy.disabled = coins < cost;
-        back.appendChild(buy);
-      })(FROM_GOLD[j]);
-    }
-    box.appendChild(back);
-    return box;
-  }
 
   // src/client/styles.js
-  var CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS + CSS_WALLET;
+  var CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS + CSS_WALLET + CSS_EXTERNAL;
 
   // src/client/interaction-motion.js
   function canAnimate(node) {
@@ -9003,90 +13810,6 @@
       fade.onfinish = () => ghost.remove();
       setTimeout(() => ghost.remove(), 400);
     }
-  }
-
-  // src/client/widgets.js
-  function labelledBar(ui, label, value, valueText, variant) {
-    var row = el("div", "dp-row");
-    row.appendChild(el("span", null, label));
-    row.appendChild(el("b", null, valueText));
-    ui.content.appendChild(row);
-    ui.content.appendChild(meter(value, variant));
-  }
-  function statStrip(ui) {
-    var p = ui.view.pig;
-    if (p === null) return;
-    var strip = el("div", "dp-statstrip");
-    var cells = [
-      ["\u{1F35A} \u9971\u98DF", p.satiety, p.satiety + "%", ""],
-      ["\u2764\uFE0F \u5FC3\u60C5", p.happiness, p.happiness + "%", "dp-mood"],
-      ["\u{1FAE7} \u6E05\u6D01", p.cleanliness, p.cleanliness + "%", "dp-clean"],
-      ["\u{1F49A} \u5065\u5EB7", p.healthPercent, p.health + "/" + ui.view.maxHealth, "dp-health"]
-    ];
-    for (var i = 0; i < cells.length; i += 1) {
-      var cell = el("div", "dp-statcell");
-      var head = el("div", "dp-row");
-      head.appendChild(el("span", null, cells[i][0]));
-      head.appendChild(el("b", null, cells[i][2]));
-      cell.appendChild(head);
-      cell.appendChild(meter(cells[i][1], cells[i][3]));
-      strip.appendChild(cell);
-    }
-    strip.appendChild(el("div", "dp-statweight", "\u2696\uFE0F \u4F53\u91CD " + p.weight));
-    ui.content.appendChild(strip);
-  }
-  function careEffectLine(action, item) {
-    var parts = [];
-    if (action === "feed") {
-      parts.push("\u9971\u98DF +" + item.satiety);
-      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
-    } else if (action === "bathe") {
-      parts.push("\u6E05\u6D01 +" + item.cleanliness);
-      if (item.happiness) parts.push("\u5FC3\u60C5 +" + item.happiness);
-    } else {
-      parts.push("\u5FC3\u60C5 +" + item.happiness);
-      if (item.satiety) parts.push("\u9971\u98DF " + item.satiety);
-    }
-    return parts.join(" \xB7 ");
-  }
-  function tileGrid() {
-    return el("div", "dp-tiles");
-  }
-  function tile(spec) {
-    var node = button("dp-tile" + (spec.soft ? " dp-tile-soft" : ""), spec.data ?? {}, function() {
-      spec.onPick();
-    });
-    node.setAttribute("data-color", spec.color);
-    if (spec.locked) node.setAttribute("data-locked", "true");
-    if (spec.dim) node.setAttribute("data-dim", "true");
-    if (spec.active) node.setAttribute("data-active", "true");
-    if (spec.disabled === true) node.disabled = true;
-    var icon = el("span", "dp-tile-icon");
-    icon.appendChild(spec.icon ?? el("span", "dp-tile-e", spec.emoji));
-    if (spec.badge) icon.appendChild(el("b", "dp-tile-badge", spec.badge));
-    if (spec.tag) icon.appendChild(el("b", "dp-tile-tag", spec.tag));
-    node.appendChild(icon);
-    node.appendChild(el("span", "dp-tile-n", spec.label));
-    if (spec.note) node.appendChild(el("span", "dp-tile-note", spec.note));
-    return node;
-  }
-  function drillTo(ui, tab, key2) {
-    ui.drill[tab] = key2;
-    ui.drill.pick = null;
-    ui.renderContent();
-    ui.content.scrollTop = 0;
-  }
-  function drillHeader(ui, tab, title, info) {
-    var row = el("div", "dp-drill");
-    var back = button("dp-drill-back", { "data-back": tab }, function() {
-      if (ui.drill.from) ui.select(ui.drill.from);
-      else drillTo(ui, tab, null);
-    });
-    back.textContent = "\u2039";
-    row.appendChild(back);
-    row.appendChild(el("b", "dp-drill-title", title));
-    if (info) row.appendChild(el("span", "dp-drill-info", info));
-    ui.content.appendChild(row);
   }
 
   // src/client/tabs/shop.js
@@ -9173,12 +13896,12 @@
     ui.content.appendChild(el("div", "dp-ext-shelf-note", "\u7528" + currency.label + "\u4E70 \xB7 " + currency.emoji + " \u4F59\u989D " + currency.balance));
     const list = el("div", "dp-ext-goods");
     for (const item of shelf.items ?? []) {
-      const row = el("div", "dp-ext-good");
-      row.appendChild(el("span", "dp-ext-good-emoji", item.emoji));
+      const row2 = el("div", "dp-ext-good");
+      row2.appendChild(el("span", "dp-ext-good-emoji", item.emoji));
       const copy = el("div", "dp-ext-good-copy");
       copy.appendChild(el("b", null, item.label));
       copy.appendChild(el("small", null, item.note));
-      row.appendChild(copy);
+      row2.appendChild(copy);
       const hasPick = Array.isArray(item.pick);
       const buy = button("dp-mini", { "data-ext-buy": item.key }, function() {
         if (hasPick) {
@@ -9190,7 +13913,7 @@
       });
       buy.textContent = item.price + " " + currency.emoji;
       buy.disabled = item.disabled === true;
-      row.appendChild(buy);
+      row2.appendChild(buy);
       if (hasPick && ui.drill.pick === item.key) {
         const choices = el("div", "dp-ext-picks");
         for (const pick of item.pick) {
@@ -9201,23 +13924,23 @@
           choose2.textContent = pick.emoji + " " + pick.label;
           choices.appendChild(choose2);
         }
-        row.appendChild(choices);
+        row2.appendChild(choices);
       }
-      list.appendChild(row);
+      list.appendChild(row2);
     }
     ui.content.appendChild(list);
   }
   function itemTile(ui, item, color2) {
     var owned = num(ui.view.inventory[item.key], 0);
-    var note2 = item.price + " \u{1FA99}";
-    if (item.owned) note2 = "\u5DF2\u62E5\u6709";
-    else if (item.kind === "dress" && item.unlocked === false) note2 = "\u{1F512} Lv." + item.level;
+    var note3 = item.price + " \u{1FA99}";
+    if (item.owned) note3 = "\u5DF2\u62E5\u6709";
+    else if (item.kind === "dress" && item.unlocked === false) note3 = "\u{1F512} Lv." + item.level;
     const node = tile({
       emoji: item.emoji,
       label: item.label,
       color: color2,
       soft: true,
-      note: note2,
+      note: note3,
       badge: owned > 0 ? "\xD7" + owned : "",
       tag: item.needed ? "\u9700\u8981" : item.owned && item.worn ? "\u7A7F\u7740" : "",
       dim: !item.owned && (!item.affordable || item.kind === "dress" && item.unlocked === false),
@@ -9329,15 +14052,15 @@
     }
     for (var i = 0; i < worn.length; i += 1) {
       (function(item) {
-        var row = el("div", "dp-item");
-        row.appendChild(el("span", "dp-item-emoji", item.emoji));
-        row.appendChild(el("span", "dp-grow", item.label + (item.slotLabel ? " \xB7 " + item.slotLabel : "")));
+        var row2 = el("div", "dp-item");
+        row2.appendChild(el("span", "dp-item-emoji", item.emoji));
+        row2.appendChild(el("span", "dp-grow", item.label + (item.slotLabel ? " \xB7 " + item.slotLabel : "")));
         var off = button("dp-mini", { "data-take-off": item.key }, function() {
           ui.send("wear", { item: item.key, on: false });
         });
         off.textContent = "\u8131\u4E0B";
-        row.appendChild(off);
-        ui.content.appendChild(row);
+        row2.appendChild(off);
+        ui.content.appendChild(row2);
       })(worn[i]);
     }
   }
@@ -9353,7 +14076,7 @@
         var card2 = el("div", "dp-pick dp-tile-card");
         card2.appendChild(el("div", "dp-pick-head", fish3.emoji + " " + fish3.label));
         card2.appendChild(el("div", null, fish3.sizeCm.toFixed(1) + " cm \xB7 \u{1FA99} " + fish3.price));
-        var actions = el("div", "dp-dev-row");
+        var actions2 = el("div", "dp-dev-row");
         var feed = button("dp-mini", { "data-fish-feed": fish3.id }, function() {
           ui.send("fishFeed", { id: fish3.id });
         });
@@ -9362,9 +14085,9 @@
           ui.send("fishSell", { id: fish3.id });
         });
         sell.textContent = "\u{1FA99} \u5356";
-        actions.appendChild(feed);
-        actions.appendChild(sell);
-        card2.appendChild(actions);
+        actions2.appendChild(feed);
+        actions2.appendChild(sell);
+        card2.appendChild(actions2);
         ui.content.appendChild(card2);
       })(list[i]);
     }
@@ -9422,7 +14145,7 @@
     return typeof entry.body === "string" ? entry.body : "";
   }
   function diaryCareNotes(entry) {
-    return Array.isArray(entry.careNotes) ? entry.careNotes.filter((note2) => typeof note2 === "string") : [];
+    return Array.isArray(entry.careNotes) ? entry.careNotes.filter((note3) => typeof note3 === "string") : [];
   }
   function renderDiary(ui) {
     drillHeader(ui, "bag", "\u{1F4D4} \u65E5\u8BB0", ui.view.diary.length + " \u7BC7");
@@ -9568,14 +14291,14 @@
     who.appendChild(el("span", "dp-vcard-sub", p.stage.label));
     top.appendChild(who);
     card2.appendChild(top);
-    card2.appendChild(field("\u751F\u65E5", profile.birthday));
-    if (profile.zodiac !== null) card2.appendChild(field("\u661F\u5EA7", profile.zodiac.emoji + " " + profile.zodiac.label));
-    if (profile.personality !== null) card2.appendChild(field("\u6027\u683C", profile.personality.emoji + " " + profile.personality.label));
+    card2.appendChild(field2("\u751F\u65E5", profile.birthday));
+    if (profile.zodiac !== null) card2.appendChild(field2("\u661F\u5EA7", profile.zodiac.emoji + " " + profile.zodiac.label));
+    if (profile.personality !== null) card2.appendChild(field2("\u6027\u683C", profile.personality.emoji + " " + profile.personality.label));
     var forms = ui.view.forms;
     var worn = forms === null ? null : forms.forms.find(function(f) {
       return f.current;
     }) || null;
-    if (worn !== null) card2.appendChild(field("\u5F62\u6001", worn.emoji + " " + worn.label));
+    if (worn !== null) card2.appendChild(field2("\u5F62\u6001", worn.emoji + " " + worn.label));
     card2.appendChild(editableField(ui, "owner", "\u53EB\u4F60", ui.view.dialogue.ownerName));
     card2.appendChild(editableField(ui, "catchphrase", "\u53E3\u5934\u7985", profile.catchphrase));
     card2.appendChild(editableField(ui, "motto", "\u7B7E\u540D", profile.motto));
@@ -9588,24 +14311,24 @@
     ));
     ui.content.appendChild(card2);
   }
-  function field(label, value) {
-    var row = el("div", "dp-vcard-row");
-    row.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
-    row.appendChild(el("span", "dp-vcard-value", value));
-    return row;
+  function field2(label, value) {
+    var row2 = el("div", "dp-vcard-row");
+    row2.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
+    row2.appendChild(el("span", "dp-vcard-value", value));
+    return row2;
   }
   function editableField(ui, key2, label, value) {
     var editing = ui.cardEdit !== null && ui.cardEdit.field === key2;
-    var row = el("div", "dp-vcard-row" + (key2 === "motto" ? " dp-vcard-motto-row" : ""));
-    row.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
+    var row2 = el("div", "dp-vcard-row" + (key2 === "motto" ? " dp-vcard-motto-row" : ""));
+    row2.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
     if (editing) {
-      appendEditor(ui, row, key2);
-      return row;
+      appendEditor(ui, row2, key2);
+      return row2;
     }
-    if (key2 === "owner") row.appendChild(el("span", "dp-vcard-value dp-dim", "\uFF08\u6084\u6084\u8BB0\u7740\uFF0C\u4E0D\u5199\u51FA\u6765\uFF09"));
-    else row.appendChild(el("span", key2 === "motto" ? "dp-vcard-value dp-vcard-motto" : "dp-vcard-value", key2 === "motto" ? "\u300C" + value + "\u300D" : value));
-    row.appendChild(pencil(ui, key2, label, value, "dp-vcard-edit"));
-    return row;
+    if (key2 === "owner") row2.appendChild(el("span", "dp-vcard-value dp-dim", "\uFF08\u6084\u6084\u8BB0\u7740\uFF0C\u4E0D\u5199\u51FA\u6765\uFF09"));
+    else row2.appendChild(el("span", key2 === "motto" ? "dp-vcard-value dp-vcard-motto" : "dp-vcard-value", key2 === "motto" ? "\u300C" + value + "\u300D" : value));
+    row2.appendChild(pencil(ui, key2, label, value, "dp-vcard-edit"));
+    return row2;
   }
   function nameLine(ui, p) {
     var line6 = el("div", "dp-vcard-nameline");
@@ -9645,14 +14368,14 @@
       ui.renderContent();
     });
     save.textContent = "\u597D";
-    var cancel = button("dp-mini dp-mini-plain", { "data-card-cancel": key2 }, function() {
+    var cancel2 = button("dp-mini dp-mini-plain", { "data-card-cancel": key2 }, function() {
       ui.cardEdit = null;
       ui.renderContent();
     });
-    cancel.textContent = "\u7B97\u4E86";
+    cancel2.textContent = "\u7B97\u4E86";
     parent.appendChild(input);
     parent.appendChild(save);
-    parent.appendChild(cancel);
+    parent.appendChild(cancel2);
   }
   function profileEditor(ui, profile) {
     var box = el("div", "dp-vcard-row dp-vcard-once");
@@ -9699,9 +14422,9 @@
       return input;
     };
     var line6 = function() {
-      var row = el("div", "dp-vcard-once-line");
-      box.appendChild(row);
-      return row;
+      var row2 = el("div", "dp-vcard-once-line");
+      box.appendChild(row2);
+      return row2;
     };
     var first = line6();
     first.appendChild(el("span", "dp-vcard-label", "\u6027\u683C\uFF1A"));
@@ -9720,13 +14443,13 @@
       ui.renderContent();
     });
     save.textContent = "\u4FDD\u5B58";
-    var cancel = button("dp-mini dp-mini-plain", { "data-card-once": "cancel" }, function() {
+    var cancel2 = button("dp-mini dp-mini-plain", { "data-card-once": "cancel" }, function() {
       ui.profileDraft = null;
       ui.renderContent();
     });
-    cancel.textContent = "\u7B97\u4E86";
+    cancel2.textContent = "\u7B97\u4E86";
     third.appendChild(save);
-    third.appendChild(cancel);
+    third.appendChild(cancel2);
     return box;
   }
 
@@ -10066,28 +14789,28 @@
     search.addEventListener("input", function() {
       ui.drill.dexQuery = search.value;
       const needle = search.value.trim().toLowerCase();
-      for (const row of list.children) {
-        const hidden = needle !== "" && !String(row.getAttribute("data-search-text") ?? "").includes(needle);
-        if (hidden) row.setAttribute("data-search-hidden", "true");
-        else row.removeAttribute("data-search-hidden");
+      for (const row2 of list.children) {
+        const hidden = needle !== "" && !String(row2.getAttribute("data-search-text") ?? "").includes(needle);
+        if (hidden) row2.setAttribute("data-search-hidden", "true");
+        else row2.removeAttribute("data-search-hidden");
       }
     });
   }
   function catalogueRow(ui, entry) {
-    const row = button(
+    const row2 = button(
       "dp-dex-row" + (entry.acquired ? "" : " dp-dex-row-locked"),
       { "data-dex-entry": entry.key, "data-search-text": entry.acquired ? entry.label.toLowerCase() : ("\u672A\u77E5" + entry.kindLabel).toLowerCase() },
       function() {
         openDetail(ui, entry.key);
       }
     );
-    row.appendChild(el("span", "dp-dex-row-emoji", entry.acquired ? entry.emoji : "\u25C6"));
+    row2.appendChild(el("span", "dp-dex-row-emoji", entry.acquired ? entry.emoji : "\u25C6"));
     const copy = el("span", "dp-dex-row-text");
     copy.appendChild(el("b", null, entry.acquired ? entry.label : "\u672A\u77E5\u9053\u5177"));
     copy.appendChild(el("small", null, entry.kindLabel || "\u5176\u4ED6"));
-    row.appendChild(copy);
-    row.appendChild(el("span", "dp-dex-row-count", entry.acquired ? "\xD7" + entry.count : "\u{1F512}"));
-    return row;
+    row2.appendChild(copy);
+    row2.appendChild(el("span", "dp-dex-row-count", entry.acquired ? "\xD7" + entry.count : "\u{1F512}"));
+    return row2;
   }
   function renderDetail(ui, section2, entry) {
     const header = el("div", "dp-drill");
@@ -10125,9 +14848,9 @@
         const action = el("div", "dp-dex-skin-action");
         action.appendChild(pick);
         card2.appendChild(action);
-        const note2 = chubbySkinNote(ui.view);
-        if (note2 !== "") {
-          const hint = el("div", "dp-dex-skin-note", note2);
+        const note3 = chubbySkinNote(ui.view);
+        if (note3 !== "") {
+          const hint = el("div", "dp-dex-skin-note", note3);
           hint.setAttribute("data-skin-fat-note", "true");
           card2.appendChild(hint);
         }
@@ -10178,885 +14901,6 @@
     });
   }
 
-  // src/client/icon-style.js
-  var BUNDLED = /* @__PURE__ */ new Set([
-    "status",
-    "card",
-    "dex",
-    "skins",
-    "study",
-    "work",
-    "shop",
-    "travel",
-    "bag",
-    "pomodoro",
-    "fishing",
-    "settings",
-    "update",
-    "quit",
-    "dev"
-  ]);
-  function iconStyle() {
-    return "system";
-  }
-  function appIcon(key2, emoji, className) {
-    if (iconStyle() !== "built-in" || !BUNDLED.has(key2)) return el("span", className, emoji);
-    const img = (
-      /** @type {HTMLImageElement} */
-      el("img", className + " dp-tile-svg")
-    );
-    img.src = ART_URL + "ui-" + key2 + ".svg";
-    img.alt = emoji;
-    img.addEventListener("error", function() {
-      const replacement = el("span", className, emoji);
-      img.parentNode?.replaceChild(replacement, img);
-    });
-    return img;
-  }
-
-  // src/client/asset-background.js
-  function applyAssetFrame(node, info) {
-    const slices = info?.nine_slice?.insets;
-    if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return;
-    if (node.matches(".fm-slot,.fm-packet,i") || node.parentElement?.matches(".fm-exp,.fm-card-progress")) return;
-    node.classList.add("fm-framed-art");
-    const limit = node.matches(".fm-exp,.fm-card-progress") ? 2 : 8;
-    const scale2 = Math.min(0.5, limit / Math.max(...slices));
-    node.style.borderWidth = slices.map((value) => Math.ceil(value * scale2) + "px").join(" ");
-    node.style.borderImageWidth = slices.map((value) => value * scale2 + "px").join(" ");
-    node.style.borderImageSource = node.style.backgroundImage;
-    node.style.borderImageSlice = slices.join(" ") + " fill";
-    node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
-    node.style.backgroundImage = "none";
-  }
-  function applyModalAssetFrame(node, info, url) {
-    const slices = info?.nine_slice?.insets;
-    if (!Array.isArray(slices) || slices.length !== 4 || !slices.every((value) => Number.isFinite(value) && value > 0)) return node;
-    const gap = Number.isFinite(info.outer_insets?.[0]) ? info.outer_insets[0] / slices[0] : 0;
-    node.style.setProperty("--fm-frame-top-gap-ratio", String(gap));
-    node.style.borderImageSource = 'url("' + url + '")';
-    node.style.borderImageSlice = slices.join(" ") + " fill";
-    node.style.borderImageRepeat = info.nine_slice.edge_mode === "round" ? "round" : "repeat";
-    return node;
-  }
-
-  // src/client/ext-apps.js
-  var registry = {};
-  var requested = {};
-  var activeVersion = {};
-  var rerender = null;
-  function bridge() {
-    var host3 = (
-      /** @type {any} */
-      window
-    );
-    if (!host3.dshPiggyExtensions) {
-      host3.dshPiggyExtensions = {
-        register: function(key2, impl) {
-          if (typeof key2 !== "string" || impl === null || typeof impl !== "object") return;
-          var scriptId = document.currentScript?.getAttribute("data-piggy-extension");
-          var id = scriptId || activeVersion[key2];
-          if (!id || !id.startsWith(key2 + "@")) return;
-          registry[id] = impl;
-          if (typeof rerender === "function") rerender();
-        }
-      };
-    }
-    return host3.dshPiggyExtensions;
-  }
-  function ensureScript(key2, version) {
-    bridge();
-    var id = key2 + "@" + version;
-    activeVersion[key2] = id;
-    if (requested[id] || typeof document === "undefined" || typeof document.createElement !== "function") return;
-    requested[id] = true;
-    var script = (
-      /** @type {HTMLScriptElement} */
-      document.createElement("script")
-    );
-    script.src = "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/client.js?v=" + encodeURIComponent(version);
-    script.setAttribute("data-piggy-extension", id);
-    script.async = true;
-    (document.head || document.body)?.appendChild(script);
-  }
-  function openBigApp(ui, key2) {
-    var target = openBigTarget(desktopShell(), stageShell());
-    if (target === "desktop") {
-      desktopShell().ext.open(key2);
-      return;
-    }
-    if (target === "stage") {
-      stageShell().ext.open(key2);
-      return;
-    }
-    ui.extBig = key2;
-    ui.tab = "ext:" + key2;
-    ui.renderContent();
-  }
-  function closeBigApp(ui) {
-    var shell2 = desktopShell();
-    if (desktopRole() === "ext" && shell2 && shell2.ext && typeof shell2.ext.close === "function") {
-      shell2.ext.close();
-      return;
-    }
-    var stage2 = stageShell();
-    if (stage2 !== null && stage2.role === "ext" && stage2.ext && typeof stage2.ext.close === "function") {
-      stage2.ext.close();
-      return;
-    }
-    ui.extBig = null;
-    ui.host.setAttribute("data-ext-view", "");
-    ui.renderContent();
-  }
-  function renderDownloadedApp(ui, key2, mode) {
-    var big = mode === "big";
-    var extension = (ui.view.extensions || []).find(function(entry) {
-      return entry.key === key2;
-    });
-    if (!extension) {
-      ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u5DF2\u7ECF\u5220\u6389\u4E86"));
-      return;
-    }
-    if (extension.error) {
-      ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u51FA\u9519\u4E86\uFF1A" + extension.error));
-      return;
-    }
-    ensureScript(key2, extension.version);
-    rerender = function() {
-      if (ui.tab === "ext:" + key2) ui.renderContent();
-    };
-    var impl = registry[key2 + "@" + extension.version];
-    if (!impl || typeof impl.render !== "function") {
-      ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u52A0\u8F7D\u2026\u2026"));
-      return;
-    }
-    var data = ui.view.extViews ? ui.view.extViews[key2] : void 0;
-    var wallet = (ui.view.wallets || []).find(function(entry) {
-      return entry.key === key2;
-    });
-    if (wallet && !big && (key2 !== "farm" || Number.parseInt(extension.version, 10) < 4)) ui.content.appendChild(walletBar(ui, wallet));
-    var panel = typeof ui.content.closest === "function" ? ui.content.closest(".dp-card") : null;
-    if (panel && !big) {
-      var padding = parseFloat(getComputedStyle(panel.querySelector(".dp-content") || panel).paddingBottom) || 0;
-      var bottom = panel.getBoundingClientRect().top + (parseFloat(panel.style.maxHeight) || panel.clientHeight);
-      ui.content.style.setProperty("--ext-panel-height", Math.max(160, bottom - ui.content.getBoundingClientRect().top - padding - 2) + "px");
-    }
-    try {
-      impl.render({
-        content: ui.content,
-        header: !big && key2 === "farm" ? ui.content.querySelector(".dp-drill") : null,
-        data: data === void 0 ? null : data,
-        mode: big ? "big" : "panel",
-        // 桌面版外壳 0.6.5 以前没有大窗口，面板窗口又太小，就不给这个入口；网页版在页面里铺满。
-        openBig: big || desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === "function") ? void 0 : function() {
-          openBigApp(ui, key2);
-        },
-        closeBig: big ? function() {
-          closeBigApp(ui);
-        } : void 0,
-        send: function(op, payload) {
-          return ui.send("ext", { key: key2, op, data: payload || {} });
-        },
-        walletContent: wallet ? function() {
-          return walletBar(ui, wallet, { open: true });
-        } : void 0,
-        el,
-        button,
-        rerender: function() {
-          ui.renderContent();
-        },
-        // 玩家现在用的猪图（随皮肤和形态变）；没有立绘时是 null，扩展自己退回 emoji。
-        pigArt: function() {
-          var art = ui.view.pig && ui.view.pig.stage ? ui.view.pig.stage.art : null;
-          return art ? artSource(art) : null;
-        },
-        // 带版本号：扩展更新后换了图，地址也跟着换，不会拿到缓存里的旧图。
-        hasAsset: function(name) {
-          return (extension.assets || []).includes(name);
-        },
-        paintAsset: function(node, name) {
-          applyAssetFrame(node, extension.assetLayout?.[name]);
-        },
-        paintFrame: function(node, name) {
-          return applyModalAssetFrame(node, extension.assetLayout?.[name], "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/assets/" + encodeURIComponent(name) + "?v=" + encodeURIComponent(extension.version));
-        },
-        assetInfo: function(name) {
-          return extension.assetLayout ? extension.assetLayout[name] : null;
-        },
-        asset: function(name) {
-          return "/dsh-piggy/ext/" + encodeURIComponent(key2) + "/assets/" + encodeURIComponent(String(name)) + "?v=" + encodeURIComponent(extension.version);
-        },
-        openDex: function(section2) {
-          ui.select("dex");
-          ui.drill.dex = "ext:" + key2 + ":" + section2;
-          ui.renderContent();
-        },
-        // 跳到商店里这个扩展的货架（比如菜园缺种子 → 种子货架），按返回回到扩展页（用户 2026-10-09）。
-        openShop: function() {
-          if (big && desktopRole() !== "ext") {
-            ui.extBig = null;
-            ui.host.setAttribute("data-ext-view", "");
-          }
-          ui.select("shop");
-          ui.drill.shop = "ext:" + key2;
-          ui.drill.from = "ext:" + key2;
-          ui.renderContent();
-        }
-      });
-    } catch (error) {
-      ui.content.appendChild(el("div", "dp-empty", "\u8FD9\u4E2A\u6269\u5C55\u51FA\u9519\u4E86\uFF1A" + (error instanceof Error ? error.message : String(error))));
-    }
-  }
-
-  // src/client/ext-import.js
-  var NAMES = ["manifest.json", "server.js", "client.js"];
-  var pending = null;
-  var busy = false;
-  async function bundleOf(files) {
-    if (files.length === 1) return files[0].text();
-    const texts = {};
-    for (const file of files) if (NAMES.includes(file.name)) texts[file.name] = await file.text();
-    if (!NAMES.every((name) => typeof texts[name] === "string")) return null;
-    let key2 = "";
-    try {
-      key2 = str(obj(JSON.parse(texts["manifest.json"])).key, "");
-    } catch {
-      return null;
-    }
-    return JSON.stringify({ format: "dsh-piggy-extension", version: 1, key: key2, files: texts });
-  }
-  function base64(text) {
-    const bytes = new TextEncoder().encode(text);
-    let binary = "";
-    for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 32768)));
-    return btoa(binary);
-  }
-  var REASONS = {
-    "invalid-bundle": "\u8BFB\u4E0D\u61C2\u8FD9\u4E2A\u6587\u4EF6",
-    "game-too-old": "\u8FD9\u4E2A\u6269\u5C55\u8981\u66F4\u65B0\u7684\u6E38\u620F",
-    "too-large": "\u6269\u5C55\u5305\u592A\u5927",
-    "broken-extension": "\u6269\u5C55\u88C5\u4E0A\u4E86\u4F46\u52A0\u8F7D\u51FA\u9519",
-    "download-failed": "\u6CA1\u80FD\u5199\u8FDB\u6269\u5C55\u76EE\u5F55",
-    absent: "\u8FD8\u6CA1\u6709\u732A"
-  };
-  function send(ui, bundle, confirm) {
-    busy = true;
-    ui.renderContent();
-    fetch("/dsh-piggy/extensions/import", { method: "POST", headers: { "content-type": "text/plain" }, body: base64(JSON.stringify({ bundle, confirm })) }).then((response) => response.json()).then((data) => {
-      busy = false;
-      const result = obj(data);
-      if (result.ok === true) {
-        pending = null;
-        if (typeof ui.render === "function") ui.render(result);
-        else {
-          ui.view = result;
-          ui.renderContent();
-        }
-        ui.showBubble("\u88C5\u597D\u4E86\uFF1A" + str(result.label, "\u6269\u5C55") + (result.official === true ? "" : "\uFF08\u672C\u5730\u5BFC\u5165\uFF09"));
-        return;
-      }
-      if (result.reason === "unofficial") {
-        pending = { bundle, label: str(result.label, str(result.key, "\u6269\u5C55")), version: str(result.version, "") };
-        ui.renderContent();
-        return;
-      }
-      pending = null;
-      ui.renderContent();
-      const why = REASONS[str(result.reason, "")] ?? "\u5BFC\u5165\u5931\u8D25";
-      ui.showBubble(why + (result.need ? "\uFF08\u8981\u6E38\u620F v" + str(result.need, "") + "\uFF09" : "") + (result.message ? "\uFF1A" + str(result.message, "") : ""));
-    }).catch(() => {
-      busy = false;
-      ui.renderContent();
-      ui.showBubble("\u5BFC\u5165\u5931\u8D25\uFF1A\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B");
-    });
-  }
-  function importCard(ui) {
-    const card2 = el("div", "dp-set dp-ext-card dp-ext-import");
-    const head = el("div", "dp-set-head");
-    head.appendChild(el("span", "dp-ext-emoji", "\u{1F4E6}"));
-    head.appendChild(el("b", null, "\u4ECE\u6587\u4EF6\u5BFC\u5165"));
-    head.appendChild(el("small", "dp-dim", "\u4E0B\u8F7D\u4E0D\u4E86\u65F6\uFF0C\u7528\u522B\u5904\u62FF\u5230\u7684\u6269\u5C55\u5305\uFF08.piggyext\uFF09\uFF0C\u6216\u4E00\u8D77\u9009\u4E2D\u6269\u5C55\u7684\u4E09\u4E2A\u6587\u4EF6\u3002"));
-    card2.appendChild(head);
-    if (pending !== null) {
-      const ask = pending;
-      card2.appendChild(el("div", "dp-ext-note dp-ext-warn", "\u300C" + ask.label + (ask.version ? " " + ask.version : "") + "\u300D\u4E0D\u662F\u5B98\u65B9\u6269\u5C55\u3002\u6269\u5C55\u91CC\u7684\u4EE3\u7801\u5728\u6E38\u620F\u91CC\u4EC0\u4E48\u90FD\u80FD\u505A\uFF0C\u53EA\u88C5\u4F60\u4FE1\u5F97\u8FC7\u7684\u4EBA\u7ED9\u7684\u3002"));
-      const row = el("div", "dp-ext-actions");
-      const yes = button("dp-mini dp-ext-danger", { "data-ext-import-confirm": "true" }, () => send(ui, ask.bundle, true));
-      yes.textContent = busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u4ECD\u8981\u5BFC\u5165";
-      yes.disabled = busy;
-      const no = button("dp-mini dp-mini-plain", { "data-ext-import-cancel": "true" }, () => {
-        pending = null;
-        ui.renderContent();
-      });
-      no.textContent = "\u7B97\u4E86";
-      row.appendChild(yes);
-      row.appendChild(no);
-      card2.appendChild(row);
-      return card2;
-    }
-    const pick = el("label", "dp-mini dp-ext-import-pick");
-    pick.appendChild(el("span", null, busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u9009\u62E9\u6587\u4EF6"));
-    const input = (
-      /** @type {HTMLInputElement} */
-      el("input")
-    );
-    input.type = "file";
-    input.multiple = true;
-    input.setAttribute("accept", ".piggyext,.json,.js");
-    input.setAttribute("data-ext-import", "file");
-    input.disabled = busy;
-    input.addEventListener("change", () => {
-      const files = Array.from(input.files ?? []);
-      if (files.length === 0) return;
-      bundleOf(files).then((bundle) => {
-        if (bundle === null) {
-          ui.showBubble("\u8981\u9009\u4E00\u4E2A .piggyext\uFF0C\u6216\u8005 manifest.json\u3001server.js\u3001client.js \u4E09\u4E2A\u4E00\u8D77\u9009");
-          return;
-        }
-        send(ui, bundle, false);
-      }).catch(() => ui.showBubble("\u8BFB\u4E0D\u4E86\u8FD9\u4E2A\u6587\u4EF6"));
-    });
-    pick.appendChild(input);
-    card2.appendChild(pick);
-    return card2;
-  }
-
-  // src/client/tabs/extensions.js
-  var confirming = null;
-  var online = { loading: false, loaded: false, error: "", entries: (
-    /** @type {any[]} */
-    []
-  ), stamp: "" };
-  var download = { key: "", failed: "", error: "" };
-  function startInstall(ui, key2) {
-    if (download.key !== "") return;
-    download = { key: key2, failed: "", error: "" };
-    ui.renderContent();
-    Promise.resolve(ui.send("installExtension", { key: key2 })).then(function(result) {
-      if (download.key !== key2) return;
-      if (result !== null && result !== void 0 && result.ok === false) {
-        download = { key: "", failed: key2, error: str(result.message, "") || "\u4E0B\u8F7D\u5931\u8D25\uFF0C\u7A0D\u540E\u518D\u8BD5" };
-      } else if (result === null || result === void 0) {
-        download = { key: "", failed: key2, error: "\u521A\u624D\u6CA1\u80FD\u9001\u5230\u5BBF\u4E3B\uFF0C\u518D\u70B9\u4E00\u6B21" };
-      } else {
-        download = { key: "", failed: "", error: "" };
-      }
-      online.loaded = false;
-      ui.renderContent();
-    });
-  }
-  function stampOf(view) {
-    return view.extensions.map(function(extension) {
-      return extension.key + "@" + extension.version + ":" + extension.installed;
-    }).join(",");
-  }
-  function closingNote(view, key2) {
-    if (key2 === "pomodoro" && view.pomodoro !== null && view.pomodoro.active) return "\u6B63\u5728\u4E13\u6CE8\uFF1A\u5173\u6389\u4F1A\u653E\u5F03\u8FD9\u4E00\u4E2A\uFF0C\u4E0D\u7ED9\u5956\u52B1";
-    if (key2 === "fishing" && view.activity?.kind === "fishing") return "\u732A\u6B63\u5728\u5916\u9762\u9493\u9C7C\uFF1A\u5173\u6389\u4F1A\u628A\u5B83\u53EB\u56DE\u6765\uFF0C\u9C7C\u9975\u9000\u56DE";
-    return "";
-  }
-  var CLEARS = { pomodoro: "\u4ECA\u5929\u548C\u7D2F\u8BA1\u7684\u756A\u8304\u6570", fishing: "\u9C7C\u7BD3\u91CC\u7684\u9C7C\u3001\u56FE\u9274\u91CC\u7684\u9C7C\u3001\u80CC\u5305\u91CC\u7684\u9C7C\u9975" };
-  function loadOnline(ui, force) {
-    if (online.loading || typeof fetch !== "function") return;
-    online.loading = true;
-    fetch("/dsh-piggy/extensions/online" + (force ? "?force=1" : ""), { cache: "no-store" }).then(function(response) {
-      return response.json();
-    }).then(function(data) {
-      var body = obj(data);
-      online = { loading: false, loaded: true, error: str(body.error, ""), entries: arr(body.entries).filter(function(entry) {
-        return typeof obj(entry).key === "string";
-      }), stamp: stampOf(ui.view) };
-    }).catch(function() {
-      online = { loading: false, loaded: true, error: "\u8FDE\u4E0D\u4E0A", entries: online.entries, stamp: stampOf(ui.view) };
-    }).then(function() {
-      if (["home", "settings", "extensions"].includes(ui.tab)) ui.renderContent();
-    });
-  }
-  var downloading = (key2) => download.key === key2;
-  function installLabel(key2, normal) {
-    if (downloading(key2)) return "\u4E0B\u8F7D\u4E2D\u2026";
-    return download.failed === key2 ? "\u91CD\u8BD5" : normal;
-  }
-  function extensionUpdateAvailable(ui) {
-    if (!online.loaded || online.stamp !== stampOf(ui.view)) loadOnline(ui, false);
-    return online.loaded && online.stamp === stampOf(ui.view) && online.entries.some(function(entry) {
-      return entry.update === true && ui.view.extensions.some(function(extension) {
-        return extension.key === entry.key && extension.installed;
-      });
-    });
-  }
-  function renderExtensionsTab(ui) {
-    if (String(ui.tab).startsWith("ext:")) {
-      renderDownloadedApp(ui, String(ui.tab).slice(4));
-      return;
-    }
-    if (!online.loaded || online.stamp !== stampOf(ui.view)) loadOnline(ui, false);
-    ui.content.appendChild(el("div", "dp-ext-intro", "\u7528\u4E0D\u4E0A\u7684\u73A9\u6CD5\u53EF\u4EE5\u5173\u6389\uFF0C\u6570\u636E\u7559\u7740\u968F\u65F6\u6062\u590D\uFF1B\u5220\u9664\u4F1A\u8FDE\u6570\u636E\u4E00\u8D77\u6E05\u6389\uFF0C\u4EE5\u540E\u53EF\u4EE5\u5728\u4E0B\u9762\u91CD\u65B0\u88C5\u3002"));
-    ui.content.appendChild(el("div", "dp-ext-section", "\u672C\u5730\u6269\u5C55"));
-    var local = ui.view.extensions.filter(function(extension) {
-      return extension.installed;
-    });
-    if (local.length === 0) ui.content.appendChild(el("div", "dp-ext-later", "\u4E00\u4E2A\u6269\u5C55\u90FD\u6CA1\u88C5"));
-    for (var i = 0; i < local.length; i += 1) ui.content.appendChild(localCard(ui, local[i]));
-    ui.content.appendChild(importCard(ui));
-    var head = el("div", "dp-ext-section dp-ext-online-head");
-    head.appendChild(el("span", null, "\u5728\u7EBF\u6269\u5C55"));
-    var refresh2 = button("dp-mini dp-mini-plain", { "data-ext-refresh": "true" }, function() {
-      loadOnline(ui, true);
-      ui.renderContent();
-    });
-    refresh2.textContent = online.loading ? "\u8BFB\u53D6\u4E2D\u2026" : "\u{1F504} \u5237\u65B0";
-    refresh2.disabled = online.loading;
-    head.appendChild(refresh2);
-    ui.content.appendChild(head);
-    renderOnline(ui);
-  }
-  function localCard(ui, extension) {
-    var card2 = el("div", "dp-set dp-ext-card");
-    card2.setAttribute("data-extension", extension.key);
-    var head = el("div", "dp-set-head");
-    head.appendChild(el("span", "dp-ext-emoji", extension.emoji));
-    head.appendChild(el("b", null, extension.label + (extension.builtin ? "" : " " + extension.version) + (extension.local ? " \xB7 \u672C\u5730\u5BFC\u5165" : "")));
-    if (extension.description) head.appendChild(el("small", "dp-dim", extension.description));
-    card2.appendChild(head);
-    var note2 = extension.on ? closingNote(ui.view, extension.key) : "";
-    if (note2) card2.appendChild(el("div", "dp-ext-note", note2));
-    if (extension.error) card2.appendChild(el("div", "dp-ext-note", "\u52A0\u8F7D\u51FA\u9519\uFF1A" + extension.error));
-    if (download.failed === extension.key) card2.appendChild(el("div", "dp-ext-note", "\u6CA1\u88C5\u4E0A\uFF1A" + download.error));
-    var newer = online.entries.find(function(entry) {
-      return entry.key === extension.key && entry.update === true;
-    });
-    var row = el("div", "dp-ext-actions");
-    var toggle = button("dp-switch", { "data-extension-toggle": extension.key, "aria-pressed": String(extension.on) }, function() {
-      ui.send("setExtension", { key: extension.key, on: !extension.on });
-    });
-    toggle.appendChild(el("span", "dp-switch-knob"));
-    toggle.appendChild(el("span", "dp-switch-text", extension.on ? "\u5F00" : "\u5173"));
-    row.appendChild(toggle);
-    if (newer) {
-      var update = button("dp-mini", { "data-ext-update": extension.key }, function() {
-        startInstall(ui, extension.key);
-      });
-      update.textContent = installLabel(extension.key, "\u66F4\u65B0\u5230 " + str(newer.version, ""));
-      update.disabled = download.key !== "";
-      row.appendChild(update);
-    }
-    if (confirming === extension.key) {
-      row.appendChild(el("span", "dp-ext-warn", "\u5220\u6389\u4F1A\u6E05\u7A7A" + (CLEARS[extension.key] ?? "\u5B83\u7684\u6570\u636E") + "\uFF0C\u786E\u5B9A\u5417\uFF1F"));
-      var yes = button("dp-mini dp-ext-danger", { "data-ext-remove-yes": extension.key }, function() {
-        confirming = null;
-        online.loaded = false;
-        ui.send("removeExtension", { key: extension.key });
-      });
-      yes.textContent = "\u5220\u9664";
-      var no = button("dp-mini dp-mini-plain", { "data-ext-remove-no": extension.key }, function() {
-        confirming = null;
-        ui.renderContent();
-      });
-      no.textContent = "\u7B97\u4E86";
-      row.appendChild(yes);
-      row.appendChild(no);
-    } else {
-      var remove = button("dp-mini dp-mini-plain dp-ext-remove", { "data-ext-remove": extension.key }, function() {
-        confirming = extension.key;
-        ui.renderContent();
-      });
-      remove.textContent = "\u5220\u9664";
-      row.appendChild(remove);
-    }
-    card2.appendChild(row);
-    return card2;
-  }
-  function renderOnline(ui) {
-    if (!online.loaded) {
-      ui.content.appendChild(el("div", "dp-ext-later", "\u6B63\u5728\u8BFB\u53D6\u5728\u7EBF\u6269\u5C55\u2026\u2026"));
-      return;
-    }
-    var installed2 = {};
-    for (var i = 0; i < ui.view.extensions.length; i += 1) if (ui.view.extensions[i].installed) installed2[ui.view.extensions[i].key] = true;
-    var entries2 = online.entries.filter(function(entry) {
-      return !installed2[entry.key];
-    });
-    if (online.error && entries2.length === 0) {
-      ui.content.appendChild(el("div", "dp-ext-later", "\u8BFB\u4E0D\u5230\u5728\u7EBF\u6269\u5C55\u76EE\u5F55\uFF08" + online.error + "\uFF09\uFF0C\u7A0D\u540E\u70B9\u5237\u65B0"));
-      return;
-    }
-    if (entries2.length === 0) {
-      ui.content.appendChild(el("div", "dp-ext-later", "\u5728\u7EBF\u7684\u6269\u5C55\u90FD\u88C5\u597D\u4E86\uFF0C\u4EE5\u540E\u6709\u65B0\u7684\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC"));
-      return;
-    }
-    for (var k = 0; k < entries2.length; k += 1) {
-      (function(entry) {
-        var card2 = el("div", "dp-set dp-ext-card");
-        card2.setAttribute("data-online-extension", entry.key);
-        var head = el("div", "dp-set-head");
-        head.appendChild(el("span", "dp-ext-emoji", str(entry.emoji, "\u{1F9E9}")));
-        head.appendChild(el("b", null, str(entry.label, entry.key) + (entry.builtin ? " \xB7 \u5185\u7F6E" : " " + str(entry.version, ""))));
-        var get = button("dp-mini", { "data-ext-install": entry.key }, function() {
-          startInstall(ui, entry.key);
-        });
-        get.textContent = installLabel(entry.key, entry.builtin ? "\u91CD\u65B0\u5B89\u88C5" : "\u4E0B\u8F7D");
-        get.disabled = downloading(entry.key) || download.key !== "" || entry.blocked !== null && entry.blocked !== void 0;
-        head.appendChild(get);
-        if (entry.description) head.appendChild(el("small", "dp-dim", str(entry.description, "")));
-        card2.appendChild(head);
-        if (download.failed === entry.key) card2.appendChild(el("div", "dp-ext-note", "\u6CA1\u88C5\u4E0A\uFF1A" + download.error));
-        if (entry.blocked === "game-too-old") card2.appendChild(el("div", "dp-ext-note", "\u9700\u8981\u6E38\u620F v" + str(entry.minGame, "") + "\uFF0C\u5148\u66F4\u65B0\u6E38\u620F"));
-        else if (entry.builtin) card2.appendChild(el("div", "dp-ext-note", "\u4EE3\u7801\u5728\u6E38\u620F\u91CC\uFF0C\u88C5\u56DE\u6765\u4E0D\u7528\u4E0B\u8F7D\uFF0C\u4ECE\u96F6\u5F00\u59CB"));
-        else if (downloading(entry.key)) card2.appendChild(el("div", "dp-ext-note", "\u6B63\u5728\u4E0B\u8F7D\uFF0C\u7F51\u7EDC\u6162\u7684\u65F6\u5019\u8981\u7B49\u4E00\u4F1A\u513F"));
-        ui.content.appendChild(card2);
-      })(entries2[k]);
-    }
-  }
-
-  // src/client/tabs/home.js
-  var APP_COLOR = {
-    status: "green",
-    card: "pink",
-    dex: "purple",
-    skins: "purple",
-    study: "yellow",
-    work: "orange",
-    shop: "red",
-    travel: "blue",
-    bag: "teal",
-    pomodoro: "red",
-    fishing: "blue",
-    settings: "peach",
-    update: "lime",
-    quit: "peach",
-    dev: "brown"
-  };
-  function orderHomeApps(apps) {
-    const rank = (key2) => key2 === "quit" ? 4 : key2 === "dev" ? 3 : key2 === "settings" ? 2 : key2.startsWith("ext:") ? 1 : 0;
-    return apps.slice().sort((a, b) => rank(a.key) - rank(b.key));
-  }
-  function renderHome(ui, apps) {
-    var p = ui.view.pig;
-    var head = el("div", "dp-title");
-    head.appendChild(el("b", null, p.name + " Lv." + p.level.level));
-    head.appendChild(el("span", null, "\u{1FA99} " + p.coins));
-    ui.content.appendChild(head);
-    const pages = Math.max(1, Math.ceil(apps.length / 9));
-    ui.homePage = Math.max(0, Math.min(pages - 1, ui.homePage ?? 0));
-    const clip2 = el("div", "dp-home-clip");
-    clip2.setAttribute("data-home-swipe", "true");
-    const track = el("div", "dp-home-track");
-    const grids = [];
-    const dots = [];
-    for (let page = 0; page < pages; page += 1) {
-      const grid = tileGrid();
-      grid.className += " dp-home-page";
-      grid.setAttribute("data-home-page", String(page));
-      for (const app of apps.slice(page * 9, page * 9 + 9)) {
-        grid.appendChild(tile({
-          emoji: app.emoji,
-          icon: appIcon(app.key, app.emoji, "dp-tile-e"),
-          label: app.label,
-          color: APP_COLOR[app.key] ?? "blue",
-          // 更新入口收进了设置：有新正式版时设置格子冒红点（G 批次）。
-          tag: app.key === "update" || app.key === "settings" ? "" : alertFor(ui, app.key),
-          badge: app.key === "settings" ? alertFor(ui, "update") || (extensionUpdateAvailable(ui) ? "!" : "") : "",
-          data: { "data-app": app.key },
-          onPick: function() {
-            ui.select(app.key);
-          }
-        }));
-      }
-      grids.push(grid);
-      track.appendChild(grid);
-    }
-    clip2.appendChild(track);
-    ui.content.appendChild(clip2);
-    let dotRow = null;
-    if (pages > 1) {
-      dotRow = el("div", "dp-home-dots");
-      for (let page = 0; page < pages; page += 1) {
-        const dot = button("dp-home-dot", { "data-home-dot": String(page), "aria-label": "\u7B2C " + (page + 1) + " \u9875" }, function() {
-          showPage(page);
-        });
-        dots.push(dot);
-        dotRow.appendChild(dot);
-      }
-      ui.content.appendChild(dotRow);
-    }
-    function showPage(page) {
-      const next = Math.max(0, Math.min(pages - 1, page));
-      ui.homePage = next;
-      track.style.transform = "translateX(-" + next * 100 + "%)";
-      grids.forEach((grid, index) => {
-        grid.setAttribute("data-active", String(index === next));
-        grid.setAttribute("aria-hidden", String(index !== next));
-        grid.inert = index !== next;
-      });
-      dots.forEach((dot, index) => dot.setAttribute("aria-pressed", String(index === next)));
-    }
-    showPage(ui.homePage);
-    let drag = null;
-    let swallowClick = false;
-    clip2.addEventListener("pointerdown", (event) => {
-      if (pages < 2 || event.pointerType === "mouse" && event.button !== 0) return;
-      drag = { x: event.clientX, y: event.clientY, id: event.pointerId, moved: false };
-    });
-    clip2.addEventListener("pointermove", (event) => {
-      if (drag === null || event.pointerId !== drag.id) return;
-      const dx = event.clientX - drag.x;
-      if (!drag.moved) {
-        if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(event.clientY - drag.y)) return;
-        drag.moved = true;
-        clip2.setPointerCapture?.(event.pointerId);
-        track.style.transition = "none";
-      }
-      const atEdge = ui.homePage === 0 && dx > 0 || ui.homePage === pages - 1 && dx < 0;
-      track.style.transform = "translateX(calc(-" + ui.homePage * 100 + "% + " + (atEdge ? dx / 3 : dx) + "px))";
-    });
-    function endDrag(event) {
-      if (drag === null || event.pointerId !== drag.id) return;
-      const dx = event.clientX - drag.x;
-      const moved = drag.moved || Math.abs(dx) > 40;
-      drag = null;
-      track.style.transition = "";
-      if (!moved) return;
-      swallowClick = true;
-      setTimeout(() => {
-        swallowClick = false;
-      }, 0);
-      showPage(Math.abs(dx) > 40 ? ui.homePage + (dx < 0 ? 1 : -1) : ui.homePage);
-    }
-    clip2.addEventListener("pointerup", endDrag);
-    clip2.addEventListener("pointercancel", (event) => {
-      if (drag !== null) {
-        drag.moved = true;
-        endDrag(event);
-      }
-    });
-    clip2.addEventListener("click", (event) => {
-      if (swallowClick) {
-        event.stopPropagation();
-        event.preventDefault();
-      }
-    }, true);
-    let wheelLock = 0;
-    clip2.addEventListener("wheel", (event) => {
-      if (pages < 2) return;
-      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-      if (Math.abs(delta) < 4) return;
-      const next = ui.homePage + (delta > 0 ? 1 : -1);
-      if (next < 0 || next >= pages) return;
-      event.preventDefault();
-      const now2 = Date.now();
-      if (now2 < wheelLock) return;
-      wheelLock = now2 + 450;
-      showPage(next);
-    }, { passive: false });
-    var version = el("div", "dp-version", "v" + (ui.view.version === "" ? "\u672A\u77E5" : ui.view.version));
-    version.setAttribute("data-version", "true");
-    version.addEventListener("click", function(event) {
-      if (event && typeof event.stopPropagation === "function") event.stopPropagation();
-      ui.tapVersion();
-    });
-    ui.content.appendChild(version);
-  }
-  function alertFor(ui, key2) {
-    if (key2 === "update") return ui.updateNotice?.unread ? "!" : "";
-    var p = ui.view.pig;
-    if (key2 === "status") {
-      if (ui.view.dead) return "\u8D70\u4E86";
-      if (p.illness !== null) return "\u751F\u75C5";
-      if (ui.view.activity !== null) return "\u5728\u5916\u9762";
-      return "";
-    }
-    var icon = ui.icons[key2];
-    return icon !== void 0 && icon.getAttribute("data-alert") === "true" ? "!" : "";
-  }
-  function appHeader(ui, app, info) {
-    var row = el("div", "dp-drill dp-app-head");
-    var back = el("button", "dp-drill-back");
-    back.setAttribute("data-home", "true");
-    back.textContent = "\u2039";
-    back.addEventListener("click", function(event) {
-      if (event && typeof event.stopPropagation === "function") event.stopPropagation();
-      ui.select(app.key === "extensions" ? "settings" : "home");
-    });
-    row.appendChild(back);
-    var title = el("b", "dp-drill-title dp-app-title");
-    title.appendChild(appIcon(app.key, app.emoji, "dp-app-title-icon"));
-    title.appendChild(el("span", null, app.label));
-    row.appendChild(title);
-    if (info) row.appendChild(el("span", "dp-drill-info", info));
-    ui.content.appendChild(row);
-  }
-
-  // src/client/life.js
-  var TIME_TALK_MS = 5 * 6e4;
-  var WALK_KEY = "dsh-piggy:walk";
-  var IDLE_ACTIONS = [
-    { key: "roll", fx: ["\u{1F4AB}"], say: "\uFF08\u6EDA\u4E86\u4E00\u5708\uFF09\u8FD9\u6837\u6BD4\u8F83\u8212\u670D", ms: 1400 },
-    { key: "nap", fx: [], say: "\u6211\u5C31\u772F\u4E00\u4E0B\u2026\u2026", ms: 4e3 },
-    { key: "butterfly", fx: ["\u{1F98B}"], say: "\u7B49\u7B49\u6211\uFF01", ms: 3e3 },
-    { key: "scratch", fx: ["\u3030\uFE0F"], say: "\u80CC\u4E0A\u75D2\u75D2\u7684", ms: 2e3 },
-    { key: "stretch", fx: ["\u2728"], say: "\u55EF\u2014\u2014\u4F38\u4E2A\u61D2\u8170", ms: 1800 },
-    { key: "look", fx: ["\u2753"], say: "\u4F60\u5728\u5199\u4EC0\u4E48\u5440", ms: 2600 },
-    { key: "bubbles", fx: ["\u{1FAE7}", "\u{1FAE7}", "\u{1FAE7}"], say: "\u5657\u565C\u565C\u2026\u2026", ms: 2400 }
-  ];
-  function walkEnabled() {
-    return readStore(WALK_KEY) === "on";
-  }
-  function setWalk(on) {
-    writeStore(WALK_KEY, on ? "on" : "off");
-  }
-  function attachLife(c) {
-    var actions = attachPigActions({ ...c, render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji) });
-    const snap = attachPetSnap({
-      ...c,
-      canPlay: () => canPlayPetSnap(c.pig),
-      cancelMicro: () => actions.cancel(),
-      render: () => syncPigArt(c.pig, c.pigArt, c.pigEmoji)
-    });
-    var timers = [];
-    var idleTimer = null;
-    var offCustomArt = onCustomArtChange(function() {
-      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-    });
-    var later = function(fn, ms) {
-      var id = window.setTimeout(fn, ms);
-      timers.push(id);
-      return id;
-    };
-    var between = function(min, max) {
-      return (min + Math.random() * (max - min)) * 6e4;
-    };
-    var hasPig = function() {
-      return c.getView().pig !== null && c.getView().hatched === true && !c.getView().dead;
-    };
-    var home = function() {
-      return hasPig() && c.getView().activity === null && !c.isOpen() && !c.isDragging();
-    };
-    var quiet = function() {
-      return c.getView().dialogue?.quiet === true;
-    };
-    later(function() {
-      if (!c.isStopped() && hasPig()) c.send("chat", { reason: "enter" });
-    }, GREET_DELAY_MS);
-    later(timeTalk, GREET_DELAY_MS + 4e3);
-    scheduleChat();
-    scheduleIdle();
-    scheduleWalk();
-    function scheduleChat() {
-      later(function() {
-        if (!c.isStopped() && !c.isBusy() && hasPig()) c.send("chat", { reason: "idle" });
-        scheduleChat();
-      }, between(IDLE_CHAT_MINUTES.min, IDLE_CHAT_MINUTES.max));
-    }
-    function timeTalk() {
-      if (c.isStopped()) return;
-      if (!c.isBusy() && hasPig()) c.send("chat", { reason: "time" });
-      later(timeTalk, TIME_TALK_MS);
-    }
-    function scheduleIdle() {
-      later(function() {
-        if (c.isStopped()) return;
-        if (home()) doIdle(IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
-        scheduleIdle();
-      }, between(3, 8));
-    }
-    function doIdle(action) {
-      var lead = action.key === "butterfly" && c.feel ? 120 : 0;
-      if (lead > 0) c.feel.crouch(lead);
-      var run = function() {
-        if (idleTimer !== null) window.clearTimeout(idleTimer);
-        c.pig.setAttribute("data-idle", action.key);
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-        if (action.fx.length > 0) c.burst(action.fx, action.fx.length);
-        if (!quiet() && Math.random() < 0.35) c.showBubble(action.say, Math.min(3e3, action.ms));
-        idleTimer = window.setTimeout(function() {
-          idleTimer = null;
-          c.pig.removeAttribute("data-idle");
-          syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-        }, action.ms);
-      };
-      if (lead > 0) later(run, lead);
-      else run();
-    }
-    function scheduleWalk() {
-      later(function() {
-        if (c.isStopped()) return;
-        var shell2 = c.desktopShell();
-        if (walkEnabled() && !quiet() && home() && shell2 !== null && typeof shell2.moveBy === "function") walk(shell2);
-        scheduleWalk();
-      }, between(10, 20));
-    }
-    function walk(shell2) {
-      var screenWidth = window.screen?.availWidth ?? 0;
-      var toLeft = screenWidth > 0 && (window.screenX ?? 0) > screenWidth / 2;
-      var distance = 120 + Math.floor(Math.random() * 180);
-      var step = toLeft ? -2 : 2;
-      var walked = 0;
-      var back = false;
-      c.pig.setAttribute("data-idle", "walk");
-      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-      if (c.feel) c.feel.face(toLeft ? "left" : "right");
-      else c.pig.setAttribute("data-walk", toLeft ? "left" : "right");
-      if (!quiet() && Math.random() < 0.5) c.showBubble("\u6211\u53BB\u5DE1\u903B\u4E00\u4E0B", 2e3);
-      var timer2 = window.setInterval(function() {
-        if (c.isStopped() || c.isOpen() || c.isDragging()) return stop();
-        shell2.moveBy(back ? -step : step, 0);
-        walked += 2;
-        if (!back && walked >= distance) {
-          back = true;
-          walked = 0;
-          if (c.feel) c.feel.face(toLeft ? "right" : "left");
-          else c.pig.setAttribute("data-walk", toLeft ? "right" : "left");
-        } else if (back && walked >= distance) stop();
-      }, 16);
-      timers.push(timer2);
-      function stop() {
-        window.clearInterval(timer2);
-        c.pig.removeAttribute("data-idle");
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-        if (c.feel) c.feel.face(null);
-        else c.pig.removeAttribute("data-walk");
-      }
-    }
-    return {
-      /** A confirmed conversation reply wakes the local nap without petting. */
-      cancelNap: function() {
-        if (c.pig.getAttribute("data-idle") !== "nap") return;
-        if (idleTimer !== null) window.clearTimeout(idleTimer);
-        idleTimer = null;
-        c.pig.removeAttribute("data-idle");
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
-      },
-      /** 调试页「散步一次」：不等计时，马上走一趟（只有桌面版能走）。 */
-      walkNow: function() {
-        var shell2 = c.desktopShell();
-        if (shell2 === null || typeof shell2.moveBy !== "function") return false;
-        walk(shell2);
-        return true;
-      },
-      /** 调试页「做个小动作」。 */
-      /** @param {string} [key] 指定哪个小动作（调试页用），不给就随机。 */
-      idleNow: function(key2) {
-        var picked = IDLE_ACTIONS.find(function(action) {
-          return action.key === key2;
-        });
-        doIdle(picked || IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)]);
-      },
-      dispose: function() {
-        if (idleTimer !== null) window.clearTimeout(idleTimer);
-        idleTimer = null;
-        offCustomArt();
-        snap.dispose();
-        actions.dispose();
-        for (var i = 0; i < timers.length; i += 1) {
-          window.clearTimeout(timers[i]);
-          window.clearInterval(timers[i]);
-        }
-        timers = [];
-      }
-    };
-  }
-
   // src/client/tabs/dev-economy.js
   function sourceLabel(ui, entry) {
     if (entry.label) return entry.label;
@@ -11087,11 +14931,11 @@
     body.appendChild(title);
     if (economy.sources.length === 0) body.appendChild(el("div", "dp-dev-note", "\u8FD8\u6CA1\u6709\u6536\u652F"));
     for (var i = 0; i < economy.sources.length; i += 1) {
-      var row = el("div", "dp-row");
-      row.setAttribute("data-economy-source", economy.sources[i].source);
-      row.appendChild(el("span", null, sourceLabel(ui, economy.sources[i])));
-      row.appendChild(el("b", null, (economy.sources[i].in ? "+" + economy.sources[i].in : "") + (economy.sources[i].out ? " -" + economy.sources[i].out : "")));
-      body.appendChild(row);
+      var row2 = el("div", "dp-row");
+      row2.setAttribute("data-economy-source", economy.sources[i].source);
+      row2.appendChild(el("span", null, sourceLabel(ui, economy.sources[i])));
+      row2.appendChild(el("b", null, (economy.sources[i].in ? "+" + economy.sources[i].in : "") + (economy.sources[i].out ? " -" + economy.sources[i].out : "")));
+      body.appendChild(row2);
     }
   }
 
@@ -11224,11 +15068,11 @@
       var body = el("div", "dp-dev-page");
       body.setAttribute("data-dev-page-body", key2);
       pages.push({ key: key2, label, body });
-      return function group(title, entries2, note2) {
+      return function group(title, entries2, note3) {
         var head = el("div", "dp-title");
         head.appendChild(el("b", null, title));
         body.appendChild(head);
-        if (note2 !== void 0 && note2 !== "") body.appendChild(el("div", "dp-dev-note", note2));
+        if (note3 !== void 0 && note3 !== "") body.appendChild(el("div", "dp-dev-note", note3));
         var wrap2 = el("div", "dp-dev-list");
         for (var i = 0; i < entries2.length; i += 1) {
           (function(entry) {
@@ -11585,10 +15429,10 @@
       ["\u65F6\u95F4\u500D\u7387", "\xD7" + (ui.view.timeScale ?? 1)]
     ];
     for (var r = 0; r < rows3.length; r += 1) {
-      var row = el("div", "dp-row");
-      row.appendChild(el("span", null, rows3[r][0]));
-      row.appendChild(el("b", null, String(rows3[r][1])));
-      values.appendChild(row);
+      var row2 = el("div", "dp-row");
+      row2.appendChild(el("span", null, rows3[r][0]));
+      row2.appendChild(el("b", null, String(rows3[r][1])));
+      values.appendChild(row2);
     }
     renderPages(ui, pages);
   }
@@ -11729,7 +15573,7 @@
       options.showBubble(text);
       options.write(NOTIFIED_KEY, id);
     }
-    function accept(candidate, newest) {
+    function accept2(candidate, newest) {
       latest = candidate;
       remote = newest;
       const id = signalId(candidate);
@@ -11759,12 +15603,12 @@
           let candidate2 = null;
           if (gameNew) candidate2 = { ...newest2, kind: newest2.blocked === "shell" ? "shell" : "game" };
           else if (shellNew !== null) candidate2 = { ...shellNew, kind: "shell" };
-          accept(candidate2, newest2);
+          accept2(candidate2, newest2);
           return;
         }
         const newest = await options.fetchLatest();
         const candidate = newest !== null && compareVersions(newest.version, options.currentVersion()) > 0 ? { ...newest, kind: "game" } : null;
-        accept(candidate, newest);
+        accept2(candidate, newest);
       } catch (caught) {
         checking = false;
         error = caught instanceof Error ? caught.message : "\u68C0\u67E5\u66F4\u65B0\u5931\u8D25";
@@ -11888,10 +15732,10 @@
       npm: {}
     };
   }
-  var state = freshState(null);
-  function stateFor(ui) {
-    if (state.ui !== ui) state = freshState(ui);
-    return state;
+  var state2 = freshState(null);
+  function stateFor2(ui) {
+    if (state2.ui !== ui) state2 = freshState(ui);
+    return state2;
   }
   function channelName() {
     return CHANNEL.name === "gitee" ? "Gitee" : "GitHub";
@@ -11937,7 +15781,7 @@
     return gameReleases(await response.json());
   }
   function load(ui) {
-    var s = stateFor(ui);
+    var s = stateFor2(ui);
     if (s.loading) return;
     s.loading = true;
     s.error = null;
@@ -11952,7 +15796,7 @@
     });
   }
   function renderDshUpdate(ui) {
-    var s = stateFor(ui);
+    var s = stateFor2(ui);
     if (!s.asked && !s.loading && s.error === null) load(ui);
     renderHead(ui, s);
     renderNotice(ui);
@@ -11987,11 +15831,11 @@
     }
     if (notice.error !== null) {
       ui.content.appendChild(el("div", "dp-empty", notice.error));
-      var retry = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
+      var retry2 = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
         notice.check();
       });
-      retry.textContent = "\u518D\u8BD5\u4E00\u6B21";
-      ui.content.appendChild(retry);
+      retry2.textContent = "\u518D\u8BD5\u4E00\u6B21";
+      ui.content.appendChild(retry2);
       return;
     }
     var release = notice.remote;
@@ -12019,12 +15863,12 @@
       if (s.loading) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE " + channelName() + " \u53D1\u5E03\u9875\u2026"));
       if (s.error !== null) {
         ui.content.appendChild(el("div", "dp-empty", s.error));
-        var retry = button("dp-btn dp-btn-wide", { "data-dsh-retry": "" }, function() {
+        var retry2 = button("dp-btn dp-btn-wide", { "data-dsh-retry": "" }, function() {
           load(ui);
           ui.renderContent();
         });
-        retry.textContent = "\u518D\u8BD5\u4E00\u6B21";
-        ui.content.appendChild(retry);
+        retry2.textContent = "\u518D\u8BD5\u4E00\u6B21";
+        ui.content.appendChild(retry2);
       }
       return;
     }
@@ -12048,16 +15892,16 @@
   }
   function previewBox(ui, s, previews) {
     var box = el("div", "dp-rel");
-    var row = button("dp-rel-head", { "data-dsh-previews": "" }, function() {
+    var row2 = button("dp-rel-head", { "data-dsh-previews": "" }, function() {
       s.previews = !s.previews;
       ui.renderContent();
     });
-    row.appendChild(el("b", null, "\u6D4B\u8BD5\u7248"));
-    row.appendChild(el("small", null, previews.length + " \u4E2A \xB7 \u4E0D\u63D0\u9192\uFF0C\u624B\u52A8\u5C55\u5F00"));
+    row2.appendChild(el("b", null, "\u6D4B\u8BD5\u7248"));
+    row2.appendChild(el("small", null, previews.length + " \u4E2A \xB7 \u4E0D\u63D0\u9192\uFF0C\u624B\u52A8\u5C55\u5F00"));
     var tags = el("span", "dp-rel-tags");
     tags.appendChild(tag("preview", s.previews ? "\u6536\u8D77" : "\u5C55\u5F00"));
-    row.appendChild(tags);
-    box.appendChild(row);
+    row2.appendChild(tags);
+    box.appendChild(row2);
     if (s.previews) {
       var body = el("div", "dp-rel-body");
       body.appendChild(el("div", "dp-dim", "\u6D4B\u8BD5\u7248\u53EA\u5728\u8FD9\u91CC\u4F9B\u624B\u52A8\u9009\u62E9\uFF1A\u4E0D\u4F1A\u63D0\u9192\uFF0C\u4E5F\u4E0D\u4F1A\u81EA\u52A8\u5B89\u88C5\u3002"));
@@ -12071,17 +15915,17 @@
     var current3 = isCurrent(ui, release.version);
     var box = el("div", "dp-rel");
     box.setAttribute("data-dsh-release", release.version);
-    var row = button("dp-rel-head", { "data-dsh-open": release.version }, function() {
+    var row2 = button("dp-rel-head", { "data-dsh-open": release.version }, function() {
       s.pick = open ? null : release.version;
       ui.renderContent();
     });
-    row.appendChild(el("b", null, "v" + release.version));
-    if (release.date !== "") row.appendChild(el("small", null, release.date));
+    row2.appendChild(el("b", null, "v" + release.version));
+    if (release.date !== "") row2.appendChild(el("small", null, release.date));
     var tags = el("span", "dp-rel-tags");
     if (current3) tags.appendChild(tag("current", "\u5728\u7528"));
     tags.appendChild(tag(release.prerelease ? "preview" : "stable", release.prerelease ? "\u6D4B\u8BD5\u7248" : "\u6B63\u5F0F\u7248"));
-    row.appendChild(tags);
-    box.appendChild(row);
+    row2.appendChild(tags);
+    box.appendChild(row2);
     if (open) box.appendChild(versionDetails(ui, s, release));
     return box;
   }
@@ -12135,14 +15979,14 @@
   }
   function npmAgain(ui, version) {
     var go = button("dp-mini", { "data-dsh-npm-retry": version }, function() {
-      delete stateFor(ui).npm[version];
+      delete stateFor2(ui).npm[version];
       ui.renderContent();
     });
     go.textContent = "\u518D\u67E5\u4E00\u6B21 npm";
     return go;
   }
   function checkNpm(ui, version) {
-    var s = stateFor(ui);
+    var s = stateFor2(ui);
     if (s.npm[version] !== void 0) return;
     s.npm[version] = { state: "checking" };
     fetchNpmVersion(version).then(function(answer) {
@@ -12150,7 +15994,7 @@
     }, function(error) {
       s.npm[version] = { state: "error", message: error instanceof Error ? error.message : "\u6CA1\u8FDE\u4E0A npm" };
     }).then(function() {
-      if (state === s && ui.tab === "update" && s.pick === version) ui.renderContent();
+      if (state2 === s && ui.tab === "update" && s.pick === version) ui.renderContent();
     });
   }
   function pageButton(text, page, empty, version) {
@@ -12167,7 +16011,7 @@
   }
 
   // src/client/tabs/update.js
-  var state2 = {
+  var state3 = {
     current: null,
     list: null,
     error: null,
@@ -12194,52 +16038,52 @@
   }
   function refresh(ui, fresh) {
     var shell2 = updatesBridge();
-    if (shell2 === null || state2.loading) return;
-    state2.loading = true;
-    state2.error = null;
-    if (!state2.listening) {
-      state2.listening = true;
+    if (shell2 === null || state3.loading) return;
+    state3.loading = true;
+    state3.error = null;
+    if (!state3.listening) {
+      state3.listening = true;
       shell2.updates.onProgress(function(fraction) {
-        state2.fraction = fraction;
+        state3.fraction = fraction;
         ui.renderContent();
       });
     }
-    if (shell2.shellUpdates && !state2.shellListening) {
-      state2.shellListening = true;
+    if (shell2.shellUpdates && !state3.shellListening) {
+      state3.shellListening = true;
       shell2.shellUpdates.onProgress(function(fraction) {
-        state2.shellFraction = fraction;
+        state3.shellFraction = fraction;
         ui.renderContent();
       });
     }
     Promise.all([shell2.updates.current(), shell2.updates.list(fresh === true), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
-      state2.current = got[0];
-      if (got[1] && got[1].ok) state2.list = got[1].releases;
-      else state2.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
-      state2.shellStatus = got[2];
+      state3.current = got[0];
+      if (got[1] && got[1].ok) state3.list = got[1].releases;
+      else state3.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
+      state3.shellStatus = got[2];
     }, function() {
-      state2.error = "\u6CA1\u95EE\u5230";
+      state3.error = "\u6CA1\u95EE\u5230";
     }).then(function() {
-      state2.loading = false;
+      state3.loading = false;
       ui.renderContent();
     });
   }
   function downloadShell(ui, version) {
     var shell2 = updatesBridge();
-    if (!shell2 || !shell2.shellUpdates || state2.shellBusy) return;
-    state2.shellBusy = true;
-    state2.shellFraction = 0;
-    state2.shellMessage = null;
+    if (!shell2 || !shell2.shellUpdates || state3.shellBusy) return;
+    state3.shellBusy = true;
+    state3.shellFraction = 0;
+    state3.shellMessage = null;
     ui.renderContent();
     shell2.shellUpdates.download(version).then(function(result) {
       if (result.ok) {
-        state2.shellReady = result.version;
-        state2.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
-      } else state2.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
-      state2.shellBusy = false;
+        state3.shellReady = result.version;
+        state3.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
+      } else state3.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
+      state3.shellBusy = false;
       ui.renderContent();
     }, function(error) {
-      state2.shellBusy = false;
-      state2.shellMessage = String(error);
+      state3.shellBusy = false;
+      state3.shellMessage = String(error);
       ui.renderContent();
     });
   }
@@ -12248,7 +16092,7 @@
     if (!shell2 || !shell2.shellUpdates) return;
     shell2.shellUpdates.install().then(function(result) {
       if (!result.ok) {
-        state2.shellMessage = result.reason;
+        state3.shellMessage = result.reason;
         ui.renderContent();
       }
     });
@@ -12263,24 +16107,24 @@
   function install(ui, version) {
     var shell2 = updatesBridge();
     if (shell2 === null) return;
-    state2.busy = version;
-    state2.fraction = 0;
-    state2.message = null;
+    state3.busy = version;
+    state3.fraction = 0;
+    state3.message = null;
     ui.renderContent();
     shell2.updates.install(version).then(function(result) {
-      state2.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state2.busy = null;
+      state3.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state3.busy = null;
       ui.renderContent();
     });
   }
-  function rollback(ui) {
+  function rollback2(ui) {
     var shell2 = updatesBridge();
     if (shell2 === null) return;
-    state2.busy = "rollback";
+    state3.busy = "rollback";
     ui.renderContent();
     shell2.updates.rollback().then(function(result) {
-      state2.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state2.busy = null;
+      state3.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state3.busy = null;
       ui.renderContent();
     });
   }
@@ -12289,25 +16133,25 @@
       renderDshUpdate(ui);
       return;
     }
-    if (state2.current === null && state2.list === null && state2.error === null) refresh(ui);
-    var cur = state2.current;
+    if (state3.current === null && state3.list === null && state3.error === null) refresh(ui);
+    var cur = state3.current;
     var head = el("div", "dp-pick dp-tile-card dp-update-now");
     var top = el("div", "dp-update-top");
     top.appendChild(el("div", "dp-pick-head", cur === null ? "\u6B63\u5728\u770B\u73B0\u5728\u7684\u7248\u672C\u2026" : "\u6E38\u620F v" + cur.version + (cur.bundled ? "\uFF08\u5B89\u88C5\u5305\u81EA\u5E26\uFF09" : "")));
     head.appendChild(top);
     if (cur !== null) head.appendChild(el("div", "dp-dim", "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \xB7 \u6E38\u620F\u73A9\u6CD5\u548C\u7A97\u53E3\u529F\u80FD\u5206\u522B\u66F4\u65B0"));
-    var previewCount = state2.list === null ? 0 : state2.list.filter(function(r) {
+    var previewCount = state3.list === null ? 0 : state3.list.filter(function(r) {
       return r.prerelease;
     }).length;
     if (previewCount > 0) head.appendChild(el("div", "dp-dim", "\u5217\u8868\u91CC\u8FD8\u6709 " + previewCount + " \u4E2A\u6D4B\u8BD5\u7248\uFF1A\u4E0D\u4F1A\u63D0\u9192\uFF0C\u60F3\u8BD5\u7684\u8BDD\u5728\u4E0B\u9762\u70B9\u5F00\u624B\u52A8\u5B89\u88C5\u3002"));
-    if (state2.message !== null) head.appendChild(el("div", "dp-req", state2.message));
+    if (state3.message !== null) head.appendChild(el("div", "dp-req", state3.message));
     var again = button("dp-mini dp-update-refresh", { "data-update-refresh": "" }, function() {
-      state2.message = null;
-      state2.shellMessage = null;
+      state3.message = null;
+      state3.shellMessage = null;
       refresh(ui, true);
     });
-    again.textContent = state2.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
-    again.disabled = state2.loading || state2.busy !== null || state2.shellBusy;
+    again.textContent = state3.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
+    again.disabled = state3.loading || state3.busy !== null || state3.shellBusy;
     top.appendChild(again);
     var eligible = function(r) {
       return !r.prerelease;
@@ -12315,34 +16159,34 @@
     var shellOf = function(r) {
       return r.latestShell || r.manifest && r.manifest.shellVersion || null;
     };
-    var shellRelease = state2.list === null || cur === null ? null : state2.list.find(function(r) {
+    var shellRelease = state3.list === null || cur === null ? null : state3.list.find(function(r) {
       return eligible(r) && shellOf(r) !== null && compareVersions(shellOf(r), cur.shell) > 0;
     }) || null;
     if (shellRelease !== null) {
       var shellVersion = shellOf(shellRelease);
-      var mode = state2.shellStatus && state2.shellStatus.mode;
+      var mode = state3.shellStatus && state3.shellStatus.mode;
       if (shellRelease.prerelease && compareVersions(cur.shell, "0.2.5") < 0) mode = "preview-manual";
-      var required = compareVersions(cur.shell, "0.2.0") < 0 || state2.list.some(function(r) {
+      var required = compareVersions(cur.shell, "0.2.0") < 0 || state3.list.some(function(r) {
         return eligible(r) && r.blocked === "shell" && compareVersions(r.version, cur.version) > 0;
       });
       head.appendChild(el("div", required ? "dp-req" : "dp-dim", required ? "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \u2192 v" + shellVersion + "\uFF1A\u65B0\u7248\u672C\u6E38\u620F\u9700\u8981\u5B83" : "\u684C\u9762\u5916\u58F3\u6709\u53EF\u9009\u66F4\u65B0 v" + shellVersion + "\uFF0C\u4E0D\u66F4\u65B0\u4E5F\u80FD\u6B63\u5E38\u73A9"));
       if (compareVersions(cur.shell, "0.2.0") < 0) head.appendChild(el("div", "dp-dim", "\u4F60\u7684\u684C\u9762\u5916\u58F3\u662F\u94FA\u6EE1\u5168\u5C4F\u7684\u65E7\u7248\uFF0C\u4F1A\u5361\u3001\u4F1A\u95EA\uFF1B\u65B0\u5916\u58F3\u53EA\u6846\u4F4F\u732A\u548C\u9762\u677F\u3002\u8BF7\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305\u8986\u76D6\u5B89\u88C5\uFF0C\u5B58\u6863\u4E0D\u4F1A\u4E22\u3002"));
       if (mode !== "automatic" && required) head.appendChild(el("div", "dp-dim", shellManualReason(mode)));
-      if (state2.shellMessage !== null) head.appendChild(el("div", "dp-req", state2.shellMessage));
-      if (state2.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state2.shellFraction * 100) + "%"));
+      if (state3.shellMessage !== null) head.appendChild(el("div", "dp-req", state3.shellMessage));
+      if (state3.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state3.shellFraction * 100) + "%"));
       var shellGo = button(required ? "dp-btn dp-btn-wide" : "dp-mini", { "data-update-shell": shellRelease.version }, function() {
         if (mode !== "automatic") updatesBridge().openPage(shellRelease.page);
-        else if (state2.shellReady === shellVersion) installShell(ui);
+        else if (state3.shellReady === shellVersion) installShell(ui);
         else downloadShell(ui, shellVersion);
       });
-      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state2.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
-      shellGo.disabled = state2.shellBusy || state2.busy !== null;
+      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state3.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
+      shellGo.disabled = state3.shellBusy || state3.busy !== null;
       head.appendChild(shellGo);
     }
-    if (state2.busy !== null && state2.message === null) {
-      head.appendChild(el("div", "dp-dim", state2.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state2.fraction * 100) + "%"));
+    if (state3.busy !== null && state3.message === null) {
+      head.appendChild(el("div", "dp-dim", state3.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state3.fraction * 100) + "%"));
     }
-    var latest = state2.list === null ? null : state2.list.find(function(r) {
+    var latest = state3.list === null ? null : state3.list.find(function(r) {
       return r.blocked === null && eligible(r);
     }) || null;
     if (latest !== null && cur !== null && compareVersions(latest.version, cur.version) > 0) {
@@ -12350,28 +16194,28 @@
         install(ui, latest.version);
       });
       up.textContent = "\u2B06\uFE0F \u66F4\u65B0\u5230\u6700\u65B0 v" + latest.version;
-      up.disabled = state2.busy !== null;
+      up.disabled = state3.busy !== null;
       head.appendChild(up);
     } else if (latest !== null) {
       head.appendChild(el("div", "dp-req dp-req-ok", "\u2713 \u5DF2\u7ECF\u662F\u6700\u65B0"));
     }
     ui.content.appendChild(head);
-    if (state2.loading && state2.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
-    if (state2.error !== null) {
-      ui.content.appendChild(el("div", "dp-empty", state2.error));
+    if (state3.loading && state3.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
+    if (state3.error !== null) {
+      ui.content.appendChild(el("div", "dp-empty", state3.error));
       var again = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
         refresh(ui, true);
       });
       again.textContent = "\u518D\u8BD5\u4E00\u6B21";
       ui.content.appendChild(again);
     }
-    if (state2.list !== null) renderList(ui, state2.list);
+    if (state3.list !== null) renderList(ui, state3.list);
     if (cur !== null && cur.previous !== null) {
       var back = button("dp-btn dp-btn-wide dp-update-back", { "data-update-rollback": "" }, function() {
-        rollback(ui);
+        rollback2(ui);
       });
       back.textContent = "\u21A9\uFE0F \u56DE\u5230\u4E0A\u4E00\u4E2A\u7248\u672C v" + cur.previous;
-      back.disabled = state2.busy !== null;
+      back.disabled = state3.busy !== null;
       ui.content.appendChild(back);
     }
   }
@@ -12406,15 +16250,15 @@
   function renderGroup(ui, group, newestStable) {
     var key2 = group.base;
     var head = group.stable ?? group.previews[0];
-    var open = state2.pick === key2;
+    var open = state3.pick === key2;
     var box = el("div", "dp-rel");
     box.setAttribute("data-release-group", key2);
-    var row = button("dp-rel-head", { "data-release": head.version }, function() {
-      state2.pick = open ? null : key2;
+    var row2 = button("dp-rel-head", { "data-release": head.version }, function() {
+      state3.pick = open ? null : key2;
       ui.renderContent();
     });
-    row.appendChild(el("b", null, "v" + key2));
-    row.appendChild(el("small", null, group.stable !== null ? group.stable.date : "\u8FD8\u6CA1\u53D1\u6B63\u5F0F\u7248"));
+    row2.appendChild(el("b", null, "v" + key2));
+    row2.appendChild(el("small", null, group.stable !== null ? group.stable.date : "\u8FD8\u6CA1\u53D1\u6B63\u5F0F\u7248"));
     var tags = el("span", "dp-rel-tags");
     var current3 = group.stable !== null && group.stable.current || group.previews.some(function(r) {
       return r.current;
@@ -12423,8 +16267,8 @@
     if (group.stable !== null && newestStable !== null && group.stable.version === newestStable.version) tags.appendChild(tag2("latest", "\u6700\u65B0"));
     if (group.previews.length > 0) tags.appendChild(tag2("preview", "\u6D4B\u8BD5\u7248 " + group.previews.length));
     if (group.stable !== null && group.stable.blocked !== null) tags.appendChild(tag2("blocked", "\u{1F512}"));
-    row.appendChild(tags);
-    box.appendChild(row);
+    row2.appendChild(tags);
+    box.appendChild(row2);
     if (open) {
       var body = el("div", "dp-rel-body");
       if (group.stable !== null) body.appendChild(details(ui, group.stable));
@@ -12433,9 +16277,9 @@
         for (var q = 0; q < group.previews.length; q += 1) body.appendChild(previewRow(ui, group.previews[q]));
       } else if (group.previews.length > 0) {
         var pre = el("div", "dp-rel-pre");
-        var showing = state2.previews === key2;
+        var showing = state3.previews === key2;
         var toggle = button("dp-mini dp-mini-plain", { "data-previews": key2 }, function() {
-          state2.previews = showing ? null : key2;
+          state3.previews = showing ? null : key2;
           ui.renderContent();
         });
         toggle.textContent = (showing ? "\u25BE " : "\u25B8 ") + "\u6D4B\u8BD5\u7248 " + group.previews.length + " \u4E2A \xB7 \u624B\u52A8\u5B89\u88C5";
@@ -12456,18 +16300,18 @@
   }
   function previewRow(ui, release) {
     var box = el("div", "dp-rel-pre");
-    var row = el("div", "dp-rel-pre-row");
-    row.appendChild(el("span", null, "v" + release.version + (release.date ? " \xB7 " + release.date : "")));
+    var row2 = el("div", "dp-rel-pre-row");
+    row2.appendChild(el("span", null, "v" + release.version + (release.date ? " \xB7 " + release.date : "")));
     var go = button("dp-mini", { "data-update-install": release.version }, function() {
       if (release.blocked === "shell") updatesBridge().openPage(release.page);
       else install(ui, release.version);
     });
     go.textContent = release.current ? "\u6B63\u5728\u7528" : release.blocked === "shell" ? "\u9700\u8981\u65B0\u5916\u58F3" : release.blocked === "save" ? "\u6362\u4E0D\u4E86" : "\u5B89\u88C5\u6D4B\u8BD5\u7248";
-    go.disabled = release.current || release.blocked === "save" || state2.busy !== null;
-    row.appendChild(go);
-    box.appendChild(row);
+    go.disabled = release.current || release.blocked === "save" || state3.busy !== null;
+    row2.appendChild(go);
+    box.appendChild(row2);
     var shell2 = release.latestShell || release.manifest && release.manifest.shellVersion;
-    if (shell2 && state2.current && compareVersions(shell2, state2.current.shell) > 0) {
+    if (shell2 && state3.current && compareVersions(shell2, state3.current.shell) > 0) {
       box.appendChild(el("div", "dp-dim", "\u914D\u5957\u684C\u9762\u5916\u58F3 v" + shell2 + "\uFF1B\u53EA\u6362\u6E38\u620F\u5305\u4E0D\u4F1A\u66F4\u65B0\u7A97\u53E3\u529F\u80FD\u3002"));
       var desktop2 = button("dp-mini", { "data-preview-shell": release.version }, function() {
         updatesBridge().openPage(release.page);
@@ -12494,15 +16338,15 @@
       go.disabled = true;
     } else if (release.blocked === "shell") {
       box.appendChild(el("div", "dp-req", "\u2717 \u6E38\u620F v" + release.version + " \u8981\u6C42\u684C\u9762\u5916\u58F3\u81F3\u5C11 v" + release.minShell));
-      go.textContent = state2.shellStatus && state2.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
-      if (state2.shellStatus && state2.shellStatus.mode === "automatic") go.disabled = true;
+      go.textContent = state3.shellStatus && state3.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
+      if (state3.shellStatus && state3.shellStatus.mode === "automatic") go.disabled = true;
     } else if (release.blocked === "save") {
       box.appendChild(el("div", "dp-req", "\u2717 \u5B58\u6863\u592A\u65B0\uFF0C\u8FD9\u4E2A\u7248\u672C\u8BFB\u4E0D\u4E86"));
       go.textContent = "\u6362\u4E0D\u4E86";
       go.disabled = true;
     } else {
       go.textContent = "\u6362\u5230\u8FD9\u4E2A\u7248\u672C";
-      go.disabled = state2.busy !== null;
+      go.disabled = state3.busy !== null;
     }
     box.appendChild(go);
     return box;
@@ -12537,6 +16381,7 @@
     dailyLine.appendChild(el("b", null, "\u7B2C " + daily.signInDay + "/" + daily.cycle + " \u5929" + (daily.canSignIn ? " \xB7 \u4ECA\u5929\u8FD8\u6CA1\u7B7E" : "") + (daily.unclaimed > 0 ? " \xB7 \u{1F381} " + daily.unclaimed : "")));
     ui.content.appendChild(dailyLine);
     var grid = el("div", "dp-actions");
+    var locked = externalActionsBlocked(ui.view);
     for (var i = 0; i < MODES.length; i += 1) {
       (function(key2) {
         var info = ui.view.actions[key2];
@@ -12554,7 +16399,10 @@
         btn.appendChild(el("span", null, CARE_LABEL[key2][1]));
         btn.appendChild(el("span", null, CARE_LABEL[key2][0]));
         if (needsItem) btn.appendChild(el("span", "dp-count", String(shelf.length)));
-        if (!info.ready || ui.view.dead) {
+        if (locked) {
+          btn.disabled = true;
+          btn.appendChild(el("span", "dp-wait", "\u5148\u8FDE\u63A5"));
+        } else if (!info.ready || ui.view.dead) {
           btn.disabled = true;
           if (ui.view.dead) btn.appendChild(el("span", "dp-wait", "\u2014"));
           else if (info.waitSeconds > 0) btn.appendChild(el("span", "dp-wait", info.waitSeconds + "s"));
@@ -12570,10 +16418,10 @@
   }
   var BAG_SHELF = { feed: "food", bathe: "bath", play: "toy" };
   function renderWeight(ui, p) {
-    var row = el("div", "dp-row");
-    row.appendChild(el("span", null, "\u2696\uFE0F \u4F53\u91CD"));
-    row.appendChild(el("b", null, p.weight + (p.bodyWeight !== null ? " \xB7 " + p.bodyWeight.label + (p.bodyWeight.locked ? " \xB7 \u5DF2\u9501\u5B9A" : "") : "")));
-    ui.content.appendChild(row);
+    var row2 = el("div", "dp-row");
+    row2.appendChild(el("span", null, "\u2696\uFE0F \u4F53\u91CD"));
+    row2.appendChild(el("b", null, p.weight + (p.bodyWeight !== null ? " \xB7 " + p.bodyWeight.label + (p.bodyWeight.locked ? " \xB7 \u5DF2\u9501\u5B9A" : "") : "")));
+    ui.content.appendChild(row2);
   }
   function renderBanners(ui) {
     if (ui.view.pig !== null && ui.view.dead) {
@@ -12640,12 +16488,12 @@
       away.appendChild(el("div", null, "\u8FD8\u6709 " + ui.view.activity.secondsLeft + " \u79D2"));
       ui.content.appendChild(away);
       var wrap2 = el("div", "dp-actions");
-      var call = button("dp-btn dp-btn-wide", { "data-action": "calloff" }, function() {
+      var call2 = button("dp-btn dp-btn-wide", { "data-action": "calloff" }, function() {
         ui.send("calloff");
       });
-      call.appendChild(el("span", null, "\u21A9\uFE0F"));
-      call.appendChild(el("span", null, "\u53EB\u5B83\u56DE\u6765"));
-      wrap2.appendChild(call);
+      call2.appendChild(el("span", null, "\u21A9\uFE0F"));
+      call2.appendChild(el("span", null, "\u53EB\u5B83\u56DE\u6765"));
+      wrap2.appendChild(call2);
       ui.content.appendChild(wrap2);
     }
   }
@@ -12737,17 +16585,17 @@
     for (var i = 0; i < ui.view.subjects.length; i += 1) {
       (function(sub) {
         var where = standing(sub, stage2);
-        var note2;
-        if (where === "done") note2 = "\u2713 \u6BD5\u4E1A";
-        else if (where === "ahead") note2 = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
-        else if (stage2.upTo !== null) note2 = sub.lessons - stage2.from + "/" + (stage2.upTo - stage2.from) + " \u8282";
-        else note2 = sub.lessons + " \u8282";
+        var note3;
+        if (where === "done") note3 = "\u2713 \u6BD5\u4E1A";
+        else if (where === "ahead") note3 = "\u{1F512} " + (sub.stageLabel || "\u6CA1\u5230");
+        else if (stage2.upTo !== null) note3 = sub.lessons - stage2.from + "/" + (stage2.upTo - stage2.from) + " \u8282";
+        else note3 = sub.lessons + " \u8282";
         grid.appendChild(tile({
           emoji: sub.emoji,
           label: sub.label,
           color: color2,
           soft: true,
-          note: note2,
+          note: note3,
           disabled: where !== "current" || !canStart(ui),
           dim: where === "current" && !sub.affordable,
           data: { "data-subject": sub.key },
@@ -12765,14 +16613,14 @@
     var grid = tileGrid();
     for (var n = 0; n < ui.view.interests.length; n += 1) {
       (function(entry) {
-        var note2 = entry.cost + " \u{1FA99} \xB7 \u7EA6 " + entry.minutes + " \u5206\u949F\u540E " + entry.traitLabel + " +" + entry.gain;
+        var note3 = entry.cost + " \u{1FA99} \xB7 \u7EA6 " + entry.minutes + " \u5206\u949F\u540E " + entry.traitLabel + " +" + entry.gain;
         var badge2 = entry.certificate === "" ? "" : entry.certified ? "\u{1F4DC}" : entry.times + "/" + entry.certificateAfter;
         grid.appendChild(tile({
           emoji: entry.emoji,
           label: entry.label,
           color: INTEREST_COLOR,
           soft: true,
-          note: note2,
+          note: note3,
           badge: badge2,
           disabled: !canStart(ui),
           dim: !entry.affordable,
@@ -12867,9 +16715,9 @@
     intro.appendChild(el("b", null, "\u7ED9\u732A\u732A\u6362\u4EF6\u65B0\u8863\u670D"));
     intro.appendChild(el("span", null, "\u53A8\u5E08\u4E0E\u5B87\u822A\u5458\u5B8C\u6210\u5BF9\u5E94\u5DE5\u4F5C\u540E\u89E3\u9501\uFF1B\u5176\u4ED6\u76AE\u80A4\u53EF\u76F4\u63A5\u4F7F\u7528\u3002\u5F62\u6001\u4F1A\u4F18\u5148\u663E\u793A\u3002"));
     ui.content.appendChild(intro);
-    const note2 = chubbySkinNote(ui.view);
-    if (note2 !== "") {
-      const hint = el("div", "dp-hint dp-skin-note", note2);
+    const note3 = chubbySkinNote(ui.view);
+    if (note3 !== "") {
+      const hint = el("div", "dp-hint dp-skin-note", note3);
       hint.setAttribute("data-skin-fat-note", "true");
       ui.content.appendChild(hint);
     }
@@ -12880,7 +16728,8 @@
     if (currentSkin !== void 0 && currentSkin.key !== "default" && currentSkin.unlocked) {
       ui.content.appendChild(contactCard(currentSkin));
     }
-    ui.content.appendChild(importCard2(ui));
+    if (isExternalMode(ui.view)) ui.content.appendChild(el("div", "dp-dim", "\u5916\u90E8\u684C\u5BA0\u6A21\u5F0F\u4E0B\uFF0C\u5BFC\u5165\u76AE\u80A4\u8BF7\u5230\u684C\u9762\u7248\uFF1B\u8FD9\u91CC\u4ECD\u53EF\u5207\u6362\u5DF2\u5B89\u88C5\u7684\u76AE\u80A4\u3002"));
+    else ui.content.appendChild(importCard2(ui));
     const howto = button("dp-btn dp-skin-howto", { "data-skin-guide": "true" }, function() {
       drillTo(ui, "skins", "guide");
     });
@@ -12939,7 +16788,7 @@
     dot.setAttribute("data-contact-dot", "true");
     pad.appendChild(dot);
     wrap2.appendChild(pad);
-    const row = el("div", "dp-contact-row");
+    const row2 = el("div", "dp-contact-row");
     const tryBtn = button("dp-mini", { "data-contact-try": "true" }, function() {
       onceHand(art);
     });
@@ -12949,11 +16798,11 @@
       paint();
     });
     autoBtn.textContent = "\u6062\u590D\u81EA\u52A8";
-    row.appendChild(tryBtn);
-    row.appendChild(autoBtn);
+    row2.appendChild(tryBtn);
+    row2.appendChild(autoBtn);
     const value = el("span", "dp-contact-value");
     value.setAttribute("data-contact-value", "true");
-    wrap2.appendChild(row);
+    wrap2.appendChild(row2);
     wrap2.appendChild(value);
     const percent2 = (number2) => Math.round(number2 * 1e3) / 10 + "%";
     function paint() {
@@ -13064,975 +16913,6 @@
     return wrap2;
   }
 
-  // src/client/bubble-size.js
-  var BUBBLE_SIZE_KEY = "dsh-piggy:bubble-size";
-  function bubbleSize() {
-    const value = Number(readStore(BUBBLE_SIZE_KEY));
-    return Number.isFinite(value) && value > 0 ? value : 1;
-  }
-  function limitBubbleSize(value, area) {
-    const width = area?.width > 0 ? area.width : 1280;
-    const height = area?.height > 0 ? area.height : 800;
-    const maximum = Math.max(0.1, Math.min((width - 24) / 272, (height - 64) / 208));
-    return Math.min(maximum, Math.max(0.1, Number.isFinite(value) && value > 0 ? value : 1));
-  }
-  var stageArea = null;
-  function setStageAreaProvider(provider) {
-    stageArea = typeof provider === "function" ? provider : null;
-  }
-  function stageAreaNow() {
-    if (stageArea === null) return null;
-    try {
-      const area = stageArea();
-      return area && area.width > 0 && area.height > 0 ? area : null;
-    } catch {
-      return null;
-    }
-  }
-  function availableArea() {
-    const shell2 = desktopShell();
-    if (shell2) return shell2.geometry?.()?.workArea ?? {
-      width: window.screen?.availWidth,
-      height: window.screen?.availHeight
-    };
-    return stageAreaNow() ?? { width: window.innerWidth, height: window.innerHeight };
-  }
-  function applyBubbleSize(host3) {
-    const scale2 = limitBubbleSize(bubbleSize(), availableArea());
-    if (typeof host3?.style?.setProperty !== "function") return scale2;
-    if (host3.style.getPropertyValue("--bubble-scale") !== String(scale2)) host3.style.setProperty("--bubble-scale", String(scale2));
-    return scale2;
-  }
-  function setBubbleSize(value) {
-    const scale2 = limitBubbleSize(value, availableArea());
-    writeStore(BUBBLE_SIZE_KEY, String(scale2));
-    return scale2;
-  }
-  function attachBubbleSizePreference(host3, onChanged) {
-    function update() {
-      applyBubbleSize(host3);
-      onChanged?.();
-    }
-    function onStorage3(event) {
-      if (event.key === BUBBLE_SIZE_KEY || event.key === null) update();
-    }
-    applyBubbleSize(host3);
-    window.addEventListener("storage", onStorage3);
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("storage", onStorage3);
-      window.removeEventListener("resize", update);
-    };
-  }
-
-  // src/client/log-export.js
-  var EXPORT_URL = "/dsh-piggy/logs/export";
-  function fileName(now2 = /* @__PURE__ */ new Date()) {
-    const pad = (value, width) => String(value).padStart(width, "0");
-    return `dsh-piggy-log-${now2.getFullYear()}${pad(now2.getMonth() + 1, 2)}${pad(now2.getDate(), 2)}-${pad(now2.getHours(), 2)}${pad(now2.getMinutes(), 2)}.txt`;
-  }
-  var isCancel = (error) => error?.name === "AbortError" || error?.name === "NotAllowedError";
-  async function saveViaShell(name, text) {
-    const shell2 = typeof window === "object" ? (
-      /** @type {any} */
-      window.piggyShell
-    ) : void 0;
-    const bridge3 = shell2?.logs;
-    if (bridge3 === void 0 || typeof bridge3.save !== "function") return null;
-    const result = await bridge3.save(name, text);
-    if (result?.ok === true) return { ok: true, path: String(result.path ?? "") };
-    if (result?.canceled === true) return { ok: false, canceled: true };
-    return { ok: false, reason: String(result?.reason ?? "\u5916\u58F3\u6CA1\u80FD\u4FDD\u5B58") };
-  }
-  async function saveViaPicker(name, text) {
-    const picker = typeof window === "object" ? (
-      /** @type {any} */
-      window.showSaveFilePicker
-    ) : void 0;
-    if (typeof picker !== "function") return null;
-    try {
-      const handle = await picker({
-        suggestedName: name,
-        types: [{ description: "\u65E5\u5FD7\u6587\u672C", accept: { "text/plain": [".txt"] } }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(text);
-      await writable.close();
-      return { ok: true, path: "" };
-    } catch (error) {
-      if (isCancel(error)) return { ok: false, canceled: true };
-      return null;
-    }
-  }
-  function saveViaDownload(name, text) {
-    try {
-      const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
-      return { ok: true, path: "", downloaded: true };
-    } catch (error) {
-      return { ok: false, reason: error instanceof Error ? error.message : String(error) };
-    }
-  }
-  async function exportLogs() {
-    await flushBeforeExport();
-    let text;
-    try {
-      const response = await fetch(EXPORT_URL, { cache: "no-store" });
-      if (!response.ok) return { ok: false, reason: "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + response.status };
-      text = await response.text();
-    } catch (error) {
-      return { ok: false, reason: "\u62FF\u4E0D\u5230\u65E5\u5FD7\uFF1A" + (error instanceof Error ? error.message : String(error)) };
-    }
-    const name = fileName();
-    const saved = await saveViaShell(name, text) ?? await saveViaPicker(name, text) ?? saveViaDownload(name, text);
-    return { ...saved, bytes: text.length };
-  }
-
-  // src/client/sounds.js
-  var VOLUME_GAIN = Object.freeze([0.32, 0.55, 0.82]);
-  var RECIPES = Object.freeze({
-    tap: { tones: [{ type: "sine", from: 660, to: 520, ms: 70, gain: 0.35 }] },
-    lift: { tones: [{ type: "triangle", from: 340, to: 760, ms: 110, gain: 0.4 }] },
-    toss: { tones: [{ type: "sine", from: 240, to: 120, ms: 120, gain: 0.2 }], noise: { from: 900, to: 260, ms: 220, gain: 0.28 } },
-    bounce: { tones: [{ type: "sine", from: 190, to: 105, ms: 110, gain: 0.5 }] },
-    "land-soft": { tones: [{ type: "sine", from: 130, to: 82, ms: 130, gain: 0.5 }] },
-    "land-hard": { tones: [{ type: "sine", from: 105, to: 55, ms: 170, gain: 0.65 }, { type: "triangle", from: 300, to: 180, ms: 120, gain: 0.18 }], noise: { from: 420, to: 120, ms: 120, gain: 0.22 } },
-    dizzy: { tones: [{ type: "sine", from: 720, to: 560, ms: 150, gain: 0.32 }, { type: "sine", from: 640, to: 480, ms: 180, gain: 0.3, delay: 130 }] },
-    purr: { tones: [{ type: "sawtooth", from: 72, to: 62, ms: 280, gain: 0.28 }] },
-    flip: { tones: [], noise: { from: 2400, to: 700, ms: 90, gain: 0.22, type: "highpass" } },
-    catch: { tones: [{ type: "square", from: 460, to: 380, ms: 70, gain: 0.28 }] }
-  });
-  var SOUND_KEYS = Object.freeze(Object.keys(RECIPES));
-
-  // src/client/sound.js
-  var context = null;
-  var master = null;
-  var compressor = null;
-  var lastAt = /* @__PURE__ */ Object.create(null);
-  var voices = 0;
-  var quietCheck = function() {
-    return false;
-  };
-  function allowedRole() {
-    var role2 = desktopRole();
-    return role2 === null || role2 === "pet";
-  }
-  function configureSound(options) {
-    if (typeof options?.isQuiet === "function") quietCheck = options.isQuiet;
-  }
-  function unlockSound() {
-    if (!soundSettings().on) return null;
-    return ensureContext();
-  }
-  function ensureContext() {
-    if (context !== null) {
-      if (context.state === "suspended") context.resume?.().catch?.(function() {
-      });
-      return context;
-    }
-    try {
-      var audioWindow = typeof window !== "undefined" ? (
-        /** @type {any} */
-        window
-      ) : null;
-      var Ctor = audioWindow === null ? null : audioWindow.AudioContext || audioWindow.webkitAudioContext;
-      if (typeof Ctor !== "function") return null;
-      context = new Ctor();
-      compressor = context.createDynamicsCompressor?.() ?? null;
-      master = context.createGain();
-      master.gain.value = 1;
-      if (compressor !== null) {
-        compressor.threshold.value = -18;
-        compressor.knee.value = 12;
-        compressor.ratio.value = 6;
-        compressor.attack.value = 3e-3;
-        compressor.release.value = 0.2;
-        master.connect(compressor);
-        compressor.connect(context.destination);
-      } else {
-        master.connect(context.destination);
-      }
-      if (context.state === "suspended") context.resume?.().catch?.(function() {
-      });
-      return context;
-    } catch {
-      context = null;
-      master = null;
-      compressor = null;
-      return null;
-    }
-  }
-  function noiseBuffer(ctx, seconds) {
-    var length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
-    var buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-    var data = buffer.getChannelData(0);
-    var seed = 2654435769;
-    for (var i = 0; i < length; i += 1) {
-      seed = seed * 1664525 + 1013904223 >>> 0;
-      data[i] = seed / 4294967295 * 2 - 1;
-    }
-    return buffer;
-  }
-  function tone(ctx, destination, spec, start2, volume) {
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    var duration = spec.ms / 1e3;
-    osc.type = spec.type;
-    osc.frequency.setValueAtTime(Math.max(20, spec.from), start2);
-    if (spec.to !== spec.from) osc.frequency.exponentialRampToValueAtTime(Math.max(20, spec.to), start2 + duration);
-    var peak = Math.max(1e-4, spec.gain * volume);
-    gain.gain.setValueAtTime(1e-4, start2);
-    gain.gain.exponentialRampToValueAtTime(peak, start2 + Math.min(0.02, duration * 0.2));
-    gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
-    osc.connect(gain);
-    gain.connect(destination);
-    osc.start(start2);
-    osc.stop(start2 + duration + 0.02);
-    voices += 1;
-    osc.onended = function() {
-      voices = Math.max(0, voices - 1);
-    };
-  }
-  function noise(ctx, destination, spec, start2, volume) {
-    var source = ctx.createBufferSource();
-    var filter2 = ctx.createBiquadFilter();
-    var gain = ctx.createGain();
-    var duration = spec.ms / 1e3;
-    source.buffer = noiseBuffer(ctx, duration);
-    filter2.type = spec.type ?? "lowpass";
-    filter2.frequency.setValueAtTime(Math.max(40, spec.from), start2);
-    if (spec.to !== spec.from) filter2.frequency.exponentialRampToValueAtTime(Math.max(40, spec.to), start2 + duration);
-    gain.gain.setValueAtTime(1e-4, start2);
-    gain.gain.exponentialRampToValueAtTime(Math.max(1e-4, spec.gain * volume), start2 + 0.012);
-    gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
-    source.connect(filter2);
-    filter2.connect(gain);
-    gain.connect(destination);
-    source.start(start2);
-    source.stop(start2 + duration + 0.01);
-    voices += 1;
-    source.onended = function() {
-      voices = Math.max(0, voices - 1);
-    };
-  }
-  function playSound(key2, options) {
-    var recipe = RECIPES[key2];
-    if (recipe === void 0) return false;
-    var settings = soundSettings();
-    if (!settings.on) return false;
-    if (!allowedRole() || quietCheck() === true) return false;
-    var now2 = Date.now();
-    if (now2 - (lastAt[key2] ?? 0) < 60) return false;
-    if (voices >= 3) return false;
-    var ctx = ensureContext();
-    if (ctx === null || master === null) return false;
-    lastAt[key2] = now2;
-    var level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
-    var volume = level * (options?.soft === true ? 0.65 : 1);
-    var start2 = ctx.currentTime + 5e-3;
-    for (var i = 0; i < recipe.tones.length; i += 1) {
-      tone(ctx, master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume);
-    }
-    if (recipe.noise !== void 0) noise(ctx, master, recipe.noise, start2, volume);
-    return true;
-  }
-
-  // src/client/tabs/proxy.js
-  var preference = null;
-  var loading = false;
-  var busy2 = false;
-  var draft = null;
-  var message = "";
-  var failure = false;
-  function renderProxySettings(ui, section2, api) {
-    const setting = section2(ui, "\u7F51\u7EDC\u4EE3\u7406", "\u7528\u4E8E\u66F4\u65B0\u4E0B\u8F7D\u548C\u5728\u7EBF\u6269\u5C55");
-    if (preference === null) {
-      setting.box.appendChild(el("small", "dp-dim", message || "\u6B63\u5728\u8BFB\u53D6\u4EE3\u7406\u914D\u7F6E\u2026"));
-      if (!loading && !message) {
-        loading = true;
-        api.get().then((value) => {
-          if (value?.mode) {
-            preference = value;
-            message = value.warning || "";
-          } else message = value?.reason || "\u4EE3\u7406\u914D\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
-        }).catch((error) => {
-          message = String(error);
-        }).finally(() => {
-          loading = false;
-          if (ui.tab === "settings") ui.renderContent();
-        });
-      }
-      return;
-    }
-    if (draft === null) draft = { ...preference };
-    const form = el("div", "dp-proxy-form");
-    const mode = (
-      /** @type {HTMLSelectElement} */
-      el("select", "dp-setting-field")
-    );
-    mode.setAttribute("aria-label", "\u4EE3\u7406\u6A21\u5F0F");
-    mode.setAttribute("data-proxy-mode", "true");
-    for (const [key2, label] of [["system", "\u8DDF\u968F\u7CFB\u7EDF\u4EE3\u7406"], ["direct", "\u76F4\u8FDE\uFF08\u4E0D\u4F7F\u7528\u4EE3\u7406\uFF09"], ["http", "HTTP \u4EE3\u7406"], ["socks5", "SOCKS5 \u4EE3\u7406"]]) {
-      const option = (
-        /** @type {HTMLOptionElement} */
-        el("option", null, label)
-      );
-      option.value = key2;
-      mode.appendChild(option);
-    }
-    mode.value = draft.mode;
-    mode.disabled = busy2;
-    const endpoint = (
-      /** @type {HTMLInputElement} */
-      el("input", "dp-setting-field")
-    );
-    endpoint.disabled = busy2;
-    endpoint.type = "text";
-    endpoint.placeholder = "\u4F8B\u5982 127.0.0.1:7890";
-    endpoint.setAttribute("aria-label", "\u4EE3\u7406\u5730\u5740\u548C\u7AEF\u53E3");
-    endpoint.setAttribute("data-proxy-address", "true");
-    endpoint.value = draft.address;
-    endpoint.addEventListener("input", () => {
-      draft.address = endpoint.value;
-    });
-    const address = el("label", "dp-proxy-endpoint");
-    address.appendChild(el("span", "dp-dim", "\u4EE3\u7406\u5730\u5740"));
-    address.appendChild(endpoint);
-    function choose2() {
-      draft.mode = mode.value;
-      address.hidden = mode.value === "system" || mode.value === "direct";
-    }
-    mode.addEventListener("change", choose2);
-    choose2();
-    form.appendChild(mode);
-    form.appendChild(address);
-    setting.box.appendChild(form);
-    const controls = el("div", "dp-proxy-actions");
-    const status2 = el("div", failure ? "dp-proxy-status dp-proxy-error" : "dp-proxy-status", message);
-    status2.hidden = !message;
-    status2.setAttribute("role", "status");
-    const actions = [];
-    async function run(action) {
-      if (busy2) return;
-      busy2 = true;
-      for (const control of actions) control.disabled = true;
-      mode.disabled = true;
-      endpoint.disabled = true;
-      status2.hidden = false;
-      status2.textContent = "\u5904\u7406\u4E2D\u2026";
-      try {
-        const result = await action();
-        failure = result?.ok !== true;
-        if (result?.preference) {
-          preference = result.preference;
-          draft = { ...preference };
-        }
-        message = failure ? result?.reason || "\u4EE3\u7406\u64CD\u4F5C\u5931\u8D25" : result.route ? "\u8FDE\u63A5\u6B63\u5E38" : "\u4EE3\u7406\u914D\u7F6E\u5DF2\u751F\u6548";
-      } catch (error) {
-        failure = true;
-        message = error instanceof Error ? error.message : String(error);
-      } finally {
-        busy2 = false;
-        if (ui.tab === "settings") ui.renderContent();
-      }
-    }
-    for (const [key2, label, action] of [
-      ["save", "\u5E94\u7528", () => api.set({ mode: mode.value, address: endpoint.value })],
-      ["test", "\u6D4B\u8BD5\u8FDE\u63A5", () => api.test()],
-      ["clear", "\u6062\u590D\u7CFB\u7EDF", () => api.clear()]
-    ]) {
-      const control = button("dp-mini dp-proxy-" + key2, { "data-proxy-action": key2 }, () => run(action));
-      control.textContent = label;
-      control.disabled = busy2;
-      actions.push(control);
-      controls.appendChild(control);
-    }
-    setting.box.appendChild(controls);
-    setting.box.appendChild(status2);
-  }
-
-  // src/client/tabs/fullscreen.js
-  var current2 = null;
-  var loading2 = false;
-  var busy3 = false;
-  var OPTIONS = [{ key: "hide", label: "\u9690\u85CF\u5C0F\u732A" }, { key: "show", label: "\u7167\u5E38\u663E\u793A" }];
-  function note(value) {
-    if (value === null) return "\u6B63\u5728\u8BFB\u53D6\u2026";
-    if (!value.supported) return "\u8FD9\u53F0\u7535\u8111\u68C0\u6D4B\u4E0D\u4E86\u5168\u5C4F\uFF08" + (value.reason || "\u539F\u56E0\u672A\u77E5") + "\uFF09\uFF0C\u5C0F\u732A\u4F1A\u4E00\u76F4\u663E\u793A";
-    if (value.mode === "show") return value.platform === "darwin" ? "\u5168\u5C4F\u7A0B\u5E8F\u7684\u684C\u9762\u91CC\u4E5F\u663E\u793A\u5C0F\u732A" : "\u5C0F\u732A\u538B\u5728\u5168\u5C4F\u753B\u9762\u4E0A\u9762\uFF1B\u72EC\u5360\u5168\u5C4F\u7684\u6E38\u620F\u7CFB\u7EDF\u4E0D\u8BA9\u4EFB\u4F55\u7A97\u53E3\u76D6\u4E0A\u53BB";
-    return "\u5C0F\u732A\u6240\u5728\u7684\u5C4F\u5E55\u4E0A\u6709\u7A0B\u5E8F\u5168\u5C4F\u65F6\u5148\u85CF\u8D77\u6765\uFF0C\u9000\u51FA\u5168\u5C4F\u518D\u56DE\u6765";
-  }
-  function renderFullscreenSettings(ui, section2, api) {
-    const setting = section2(ui, "\u5168\u5C4F\u65F6\uFF08\u73A9\u6E38\u620F\u3001\u770B\u89C6\u9891\uFF09", note(current2));
-    if (current2 === null) {
-      if (!loading2) {
-        loading2 = true;
-        api.get().then((value) => {
-          if (value?.mode) current2 = value;
-        }).catch(() => {
-        }).finally(() => {
-          loading2 = false;
-          if (ui.tab === "settings") ui.renderContent();
-        });
-      }
-      return;
-    }
-    const row = el("div", "dp-seg");
-    for (const option of OPTIONS) {
-      const pick = button("dp-seg-btn", { "data-fullscreen-mode": option.key, "aria-pressed": String(option.key === current2.mode) }, function() {
-        if (busy3) return;
-        busy3 = true;
-        api.set(option.key).then((value) => {
-          if (value?.ok) current2 = value;
-        }).catch(() => {
-        }).finally(() => {
-          busy3 = false;
-          if (ui.tab === "settings") ui.renderContent();
-        });
-      });
-      pick.textContent = option.label;
-      pick.disabled = busy3 || option.key === current2.mode;
-      row.appendChild(pick);
-    }
-    setting.box.appendChild(row);
-  }
-
-  // src/client/save-transfer.js
-  var EXPORT_URL2 = "/dsh-piggy/save/export";
-  var PREVIEW_URL = "/dsh-piggy/save/preview";
-  var IMPORT_URL = "/dsh-piggy/save/import";
-  var state3 = {
-    open: false,
-    preview: null,
-    loading: false,
-    busy: false,
-    error: "",
-    focus: "cancel",
-    ui: null,
-    trigger: null,
-    controller: null,
-    keyHandler: null
-  };
-  var cancelError = (error) => error?.name === "AbortError" || error?.name === "NotAllowedError";
-  var messageOf = (error) => error instanceof Error ? error.message : String(error);
-  function defaultName() {
-    const d = /* @__PURE__ */ new Date(), p = (n) => String(n).padStart(2, "0");
-    return `piggy-save-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.zip`;
-  }
-  function responseName(response) {
-    const value = response.headers?.get?.("content-disposition") || "";
-    const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    if (encoded) {
-      try {
-        return decodeURIComponent(encoded);
-      } catch {
-      }
-    }
-    return value.match(/filename="?([^";]+)"?/i)?.[1] || defaultName();
-  }
-  async function saveBytes(name, bytes) {
-    const shell2 = desktopShell();
-    if (typeof shell2?.saves?.save === "function") {
-      const result = await shell2.saves.save(name, new Uint8Array(bytes));
-      if (result?.ok) return { ok: true };
-      if (result?.canceled) return { canceled: true };
-      throw new Error(String(result?.reason || "\u684C\u9762\u5916\u58F3\u6CA1\u80FD\u4FDD\u5B58\u5B58\u6863"));
-    }
-    const picker = typeof window === "object" ? (
-      /** @type {any} */
-      window.showSaveFilePicker
-    ) : null;
-    if (typeof picker === "function") {
-      let handle = null;
-      try {
-        handle = await picker({ suggestedName: name, types: [{ description: "\u5C0F\u732A\u5B58\u6863", accept: { "application/zip": [".zip"] } }] });
-      } catch (error) {
-        if (error?.name === "AbortError") return { canceled: true };
-      }
-      if (handle !== null && handle !== void 0) {
-        try {
-          const writable = await handle.createWritable();
-          await writable.write(bytes);
-          await writable.close();
-          return { ok: true };
-        } catch (error) {
-          if (error?.name === "AbortError") return { canceled: true };
-          throw error;
-        }
-      }
-    }
-    const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
-    return { ok: true, downloaded: true };
-  }
-  function status(ui, text, ms = 3500) {
-    if (typeof ui.showBubble === "function") ui.showBubble(text, ms);
-  }
-  function rerender2() {
-    if (typeof state3.ui?.renderContent === "function") state3.ui.renderContent();
-  }
-  async function exportSave(ui) {
-    if (state3.busy) return;
-    state3.busy = true;
-    rerender2();
-    try {
-      const response = await fetch(EXPORT_URL2, { cache: "no-store" });
-      if (!response.ok) throw new Error(`\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
-      const bytes = await response.arrayBuffer();
-      const result = await saveBytes(responseName(response), bytes);
-      if (result.canceled) return;
-      status(ui, result.downloaded ? "\u5B58\u6863\u5DF2\u4E0B\u8F7D" : "\u5B58\u6863\u5DF2\u5BFC\u51FA");
-    } catch (error) {
-      status(ui, "\u5B58\u6863\u6CA1\u5BFC\u51FA\uFF1A" + messageOf(error), 5e3);
-    } finally {
-      state3.busy = false;
-      rerender2();
-    }
-  }
-  function focusTrigger() {
-    const ui = state3.ui;
-    const trigger = ui?.content?.querySelector?.('[data-save-trigger="import"]');
-    if (trigger?.focus) trigger.focus();
-  }
-  function closeDialog() {
-    state3.controller?.abort();
-    state3.controller = null;
-    state3.open = false;
-    state3.preview = null;
-    state3.error = "";
-    state3.loading = false;
-    state3.busy = false;
-    if (state3.keyHandler && typeof document === "object") document.removeEventListener("keydown", state3.keyHandler, true);
-    state3.keyHandler = null;
-    rerender2();
-    focusTrigger();
-  }
-  function trapKeys() {
-    if (state3.keyHandler || typeof document !== "object") return;
-    state3.keyHandler = (event) => {
-      if (!state3.open) return;
-      if (event.key === "Escape") {
-        if (state3.busy) return;
-        event.preventDefault();
-        closeDialog();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const dialog = state3.ui?.content?.querySelector?.('[data-save-dialog="true"]');
-      const items = Array.from(dialog?.querySelectorAll?.("button:not([disabled]),input:not([disabled])") || []);
-      if (!items.length) {
-        event.preventDefault();
-        dialog?.focus?.();
-        return;
-      }
-      const first = items[0], last = items[items.length - 1], active2 = document.activeElement;
-      if (event.shiftKey && (active2 === first || !dialog.contains(active2))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (active2 === last || !dialog.contains(active2))) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", state3.keyHandler, true);
-  }
-  async function previewFile(file) {
-    if (!file) return;
-    state3.preview = null;
-    state3.error = "";
-    state3.loading = true;
-    state3.controller?.abort();
-    const controller = new AbortController();
-    state3.controller = controller;
-    rerender2();
-    try {
-      const response = await fetch(PREVIEW_URL, { method: "POST", headers: { "content-type": "application/octet-stream" }, body: await file.arrayBuffer(), signal: controller.signal });
-      const result = await response.json().catch(() => null);
-      if (state3.controller !== controller) return;
-      if (!response.ok || result?.ok !== true || !result.token || !result.summary) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
-      state3.preview = result;
-    } catch (error) {
-      if (state3.controller === controller && !cancelError(error)) state3.error = "\u6CA1\u80FD\u8BFB\u53D6\u8FD9\u4E2A\u5B58\u6863\uFF1A" + messageOf(error);
-    } finally {
-      if (state3.controller === controller) {
-        state3.loading = false;
-        state3.controller = null;
-        rerender2();
-      }
-    }
-  }
-  async function commitImport(ui) {
-    if (state3.busy || !state3.preview?.token) return;
-    state3.busy = true;
-    state3.error = "";
-    rerender2();
-    try {
-      const response = await fetch(IMPORT_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: state3.preview.token }) });
-      const result = await response.json().catch(() => null);
-      if (!response.ok || result?.ok !== true) throw new Error(result?.error || result?.reason || `\u5BBF\u4E3B\u8FD4\u56DE HTTP ${response.status}`);
-      state3.open = false;
-      if (state3.keyHandler) document.removeEventListener("keydown", state3.keyHandler, true);
-      state3.keyHandler = null;
-      status(ui, "\u5B58\u6863\u5DF2\u5BFC\u5165");
-      window.setTimeout(() => window.location.reload(), 500);
-    } catch (error) {
-      state3.error = "\u5BFC\u5165\u5931\u8D25\uFF1A" + messageOf(error);
-      state3.busy = false;
-      rerender2();
-    }
-  }
-  function renderSaveTransferSettings(ui, section2) {
-    state3.ui = ui;
-    const transfer = section2(ui, "\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u6216\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
-    transfer.box.setAttribute("data-save-transfer-active", String(state3.open || state3.busy || state3.loading));
-    const actions = el("div", "dp-actions");
-    const exportButton = button("dp-mini", { "data-save-trigger": "export" }, () => exportSave(ui));
-    exportButton.textContent = state3.busy && !state3.open ? "\u5BFC\u51FA\u4E2D\u2026" : "\u5BFC\u51FA\u5B58\u6863";
-    exportButton.disabled = state3.busy || !ui.view?.pig;
-    if (!ui.view?.pig) exportButton.title = "\u63A5\u5230\u5C0F\u732A\u540E\u5373\u53EF\u5907\u4EFD";
-    const importButton = button("dp-mini", { "data-save-trigger": "import" }, () => {
-      if (state3.busy) return;
-      state3.open = true;
-      state3.preview = null;
-      state3.error = "";
-      state3.trigger = "import";
-      rerender2();
-      trapKeys();
-      const input = ui.content.querySelector('[data-save-file="true"]');
-      input?.click();
-    });
-    importButton.textContent = "\u5BFC\u5165\u5B58\u6863";
-    importButton.disabled = state3.busy || state3.loading;
-    actions.appendChild(exportButton);
-    actions.appendChild(importButton);
-    transfer.box.appendChild(actions);
-    if (!state3.open) return;
-    const overlay = el("div", "dp-save-overlay");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
-    const dialog = el("div", "dp-set");
-    dialog.style.cssText = "width:min(268px,100%);max-height:90vh;overflow:auto;background:var(--ac-bg-content);border:2px solid var(--ac-border);border-radius:var(--ac-radius-card);padding:12px;box-shadow:var(--ac-shadow-lg)";
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    dialog.setAttribute("aria-label", "\u5BFC\u5165\u5B58\u6863");
-    dialog.setAttribute("data-save-dialog", "true");
-    dialog.tabIndex = -1;
-    overlay.appendChild(dialog);
-    dialog.appendChild(el("b", null, "\u5BFC\u5165\u5B58\u6863"));
-    if (state3.loading) dialog.appendChild(el("p", "dp-dim", "\u6B63\u5728\u68C0\u67E5\u5B58\u6863\u2026"));
-    else if (state3.preview) {
-      const summary = state3.preview.summary;
-      rowTo(dialog, "\u5C0F\u732A", `${summary.name || "\u672A\u547D\u540D"} \xB7 Lv.${summary.level ?? "\u2014"}`);
-      rowTo(dialog, "\u5907\u4EFD\u65F6\u95F4", displayDate(summary.createdAt));
-      rowTo(dialog, "\u6E38\u620F\u7248\u672C", summary.gameVersion || "\u672A\u77E5");
-      rowTo(dialog, "\u5185\u5BB9", `\u517B\u6210\u8FDB\u5EA6\u3001${summary.extensions || 0} \u4E2A\u6269\u5C55\u3001${summary.skins || 0} \u4E2A\u81EA\u5B9A\u4E49\u76AE\u80A4`);
-      if (summary.legacy) dialog.appendChild(alert("\u8FD9\u662F\u65E7\u7248 JSON \u5B58\u6863\uFF0C\u90E8\u5206\u8D44\u6E90\u53EF\u80FD\u672A\u5305\u542B\u3002"));
-      for (const warning2 of state3.preview.warnings || []) dialog.appendChild(alert(warning2));
-      dialog.appendChild(el("p", "dp-dim", "\u5C06\u66FF\u6362\u5F53\u524D\u8FD9\u53EA\u732A\u3002\u5F53\u524D\u5B58\u6863\u4F1A\u5148\u81EA\u52A8\u5907\u4EFD\uFF0C\u5BFC\u5165\u540E\u4E24\u8FB9\u4E0D\u4F1A\u81EA\u52A8\u540C\u6B65\u3002"));
-    } else {
-      dialog.appendChild(el("p", "dp-dim", "\u9009\u62E9 ZIP \u5907\u4EFD\u6216\u5DF2\u6709\u7684 state.json\u3002\u9009\u53D6\u540E\u53EA\u68C0\u67E5\u548C\u9884\u89C8\uFF0C\u4E0D\u4F1A\u4FEE\u6539\u5F53\u524D\u5B58\u6863\u3002"));
-      const picker = el("input", "dp-input");
-      picker.type = "file";
-      picker.accept = ".zip,.json,application/zip,application/json";
-      picker.setAttribute("data-save-file", "true");
-      picker.setAttribute("aria-label", "\u9009\u62E9\u5B58\u6863\u6587\u4EF6");
-      picker.addEventListener("change", () => {
-        const file = picker.files?.[0];
-        if (file) previewFile(file);
-      });
-      picker.addEventListener("cancel", closeDialog);
-      dialog.appendChild(picker);
-    }
-    if (state3.error) dialog.appendChild(alert(state3.error, "dp-alert dp-dead"));
-    const buttons = el("div", "dp-actions");
-    const cancel = button("dp-btn", { "data-save-focus": "cancel", "data-save-cancel": "true" }, closeDialog);
-    cancel.textContent = "\u53D6\u6D88";
-    cancel.disabled = state3.busy;
-    buttons.appendChild(cancel);
-    if (state3.preview) {
-      const confirm = button("dp-mini", { "data-save-focus": "confirm", "data-save-confirm": "true" }, () => commitImport(ui));
-      confirm.textContent = state3.busy ? "\u5BFC\u5165\u4E2D\u2026" : "\u5907\u4EFD\u5E76\u5BFC\u5165";
-      confirm.disabled = state3.busy;
-      buttons.appendChild(confirm);
-    }
-    dialog.appendChild(buttons);
-    ui.content.appendChild(overlay);
-    const desired = dialog.querySelector(`[data-save-focus="${state3.focus}"]`) || dialog.querySelector("input") || cancel;
-    if (document.activeElement === document.body || !dialog.contains(document.activeElement)) desired.focus();
-    dialog.addEventListener("focusin", (event) => {
-      const key2 = event.target?.getAttribute?.("data-save-focus");
-      if (key2) state3.focus = key2;
-    });
-  }
-  function rowTo(parent, label, value) {
-    const line6 = el("div", "dp-set-head");
-    line6.appendChild(el("b", null, label));
-    line6.appendChild(el("small", "dp-dim", String(value)));
-    parent.appendChild(line6);
-  }
-  function displayDate(value) {
-    if (value === null || value === void 0 || value === "") return "\u672A\u8BB0\u5F55";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    const p = (n) => String(n).padStart(2, "0");
-    return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())} ${p(date.getHours())}:${p(date.getMinutes())}`;
-  }
-  function alert(text, className = "dp-alert dp-legacy") {
-    return el("div", className, String(text));
-  }
-
-  // src/client/tabs/settings.js
-  function syncGeometry() {
-    desktopShell()?.syncGeometry?.();
-    stageShell()?.syncGeometry?.();
-  }
-  function section(ui, title, note2) {
-    const box = el("div", "dp-set");
-    const head = el("div", "dp-set-head");
-    head.appendChild(el("b", null, title));
-    if (note2) head.appendChild(el("small", "dp-dim", note2));
-    box.appendChild(head);
-    ui.content.appendChild(box);
-    return { box, head };
-  }
-  function segmented({ box }, attr, options, current3, onPick) {
-    const row = el("div", "dp-seg");
-    for (const option of options) {
-      const pick = button("dp-seg-btn", { [attr]: option.key, "aria-pressed": String(option.key === current3) }, function() {
-        onPick(option.key);
-      });
-      pick.textContent = option.label;
-      pick.disabled = option.key === current3;
-      row.appendChild(pick);
-    }
-    box.appendChild(row);
-  }
-  function renderSettingsTab(ui) {
-    const notice = ui.updateNotice;
-    const fresh = notice?.unread === true && notice.latest !== null;
-    const update = section(ui, "\u66F4\u65B0", fresh ? "\u6709\u65B0\u7248\u672C v" + notice.latest.version : "\u67E5\u770B\u7248\u672C\u3001\u66F4\u65B0\u6216\u6362\u56DE\u65E7\u7248\u672C");
-    const go = button("dp-mini dp-update-entry", { "data-open-update": "true" }, function() {
-      ui.select("update");
-    });
-    go.textContent = "\u{1F504} \u66F4\u65B0";
-    if (fresh) go.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
-    update.head.appendChild(go);
-    const extFresh = extensionUpdateAvailable(ui);
-    const extensions = section(ui, "\u6269\u5C55", "\u672C\u5730\u73A9\u6CD5\u3001\u5F00\u5173\u4E0E\u5728\u7EBF\u6269\u5C55");
-    const openExtensions = button("dp-mini dp-update-entry", { "data-open-extensions": "true" }, function() {
-      ui.select("extensions");
-    });
-    openExtensions.textContent = "\u{1F9E9} \u6269\u5C55";
-    if (extFresh) openExtensions.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
-    extensions.head.appendChild(openExtensions);
-    renderSaveTransferSettings(ui, section);
-    const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
-    const sizeRow = el("div", "dp-size-control");
-    const percent2 = (
-      /** @type {HTMLInputElement} */
-      el("input", "dp-size-value")
-    );
-    percent2.type = "number";
-    percent2.value = String(Math.round(pigSize() * 100));
-    percent2.setAttribute("aria-label", "\u5C0F\u732A\u5927\u5C0F\u767E\u5206\u6BD4");
-    percent2.setAttribute("data-pig-scale", "true");
-    function applySize(value) {
-      if (!Number.isFinite(value) || value <= 0) {
-        percent2.value = String(Math.round(pigSize() * 100));
-        return;
-      }
-      const stageSize = ui.view.hatched ? ui.view.pig.stage.size : ui.view.boxStage.size;
-      const geometry2 = desktopShell()?.geometry?.();
-      const area = geometry2?.workArea;
-      const available = Math.min(area?.width || window.screen?.availWidth || window.innerWidth, area?.height || window.screen?.availHeight || window.innerHeight);
-      const scale2 = Math.min(value / 100, available / (stageSize * 2));
-      setPigSize(scale2);
-      percent2.value = String(Math.round(scale2 * 100));
-      syncPigSize(ui.host, stageSize);
-      ui.fitPanel();
-      syncGeometry();
-    }
-    for (const { key: key2, label, delta } of [{ key: "minus", label: "\u2212", delta: -10 }, { key: "plus", label: "+", delta: 10 }]) {
-      const control = button("dp-size-step", { "data-pig-size-step": key2, "aria-label": delta < 0 ? "\u7F29\u5C0F\u5C0F\u732A" : "\u653E\u5927\u5C0F\u732A" }, () => applySize(Math.max(10, Math.round(pigSize() * 100) + delta)));
-      control.textContent = label;
-      if (delta < 0) sizeRow.appendChild(control);
-      else {
-        const value = el("label", "dp-size-percent");
-        value.appendChild(percent2);
-        value.appendChild(el("span", null, "%"));
-        sizeRow.appendChild(value);
-        sizeRow.appendChild(control);
-      }
-    }
-    percent2.addEventListener("change", () => applySize(Number(percent2.value)));
-    percent2.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        applySize(Number(percent2.value));
-        percent2.blur();
-      }
-    });
-    size.box.appendChild(sizeRow);
-    const speechSize = section(ui, "\u6C14\u6CE1\u5927\u5C0F", "\u6587\u5B57\u548C\u56DE\u590D\u6309\u94AE\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u5F71\u54CD\u5C0F\u732A\u5927\u5C0F");
-    const speechRow = el("div", "dp-size-control");
-    const speechPercent = (
-      /** @type {HTMLInputElement} */
-      el("input", "dp-size-value")
-    );
-    speechPercent.type = "number";
-    speechPercent.min = "10";
-    speechPercent.step = "10";
-    speechPercent.value = String(Math.round(applyBubbleSize(ui.host) * 100));
-    speechPercent.setAttribute("aria-label", "\u6C14\u6CE1\u5927\u5C0F\u767E\u5206\u6BD4");
-    speechPercent.setAttribute("data-bubble-scale", "true");
-    function applySpeechSize(value) {
-      if (Number.isFinite(value) && value > 0) setBubbleSize(value / 100);
-      speechPercent.value = String(Math.round(applyBubbleSize(ui.host) * 100));
-      ui.fitPanel();
-      syncGeometry();
-    }
-    const speechMinus = button("dp-size-step", { "data-bubble-size-step": "minus", "aria-label": "\u7F29\u5C0F\u6C14\u6CE1" }, () => applySpeechSize(Math.max(10, Math.round(applyBubbleSize(ui.host) * 100) - 10)));
-    speechMinus.textContent = "\u2212";
-    const speechValue = el("label", "dp-size-percent");
-    speechValue.appendChild(speechPercent);
-    speechValue.appendChild(el("span", null, "%"));
-    const speechPlus = button("dp-size-step", { "data-bubble-size-step": "plus", "aria-label": "\u653E\u5927\u6C14\u6CE1" }, () => applySpeechSize(Math.round(applyBubbleSize(ui.host) * 100) + 10));
-    speechPlus.textContent = "+";
-    speechRow.appendChild(speechMinus);
-    speechRow.appendChild(speechValue);
-    speechRow.appendChild(speechPlus);
-    speechPercent.addEventListener("change", () => applySpeechSize(Number(speechPercent.value)));
-    speechPercent.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        applySpeechSize(Number(speechPercent.value));
-        speechPercent.blur();
-      }
-    });
-    speechSize.box.appendChild(speechRow);
-    const feel2 = section(ui, "\u624B\u611F", "\u62D6\u52A8\u3001\u843D\u5730\u548C\u6478\u732A\u65F6\u7684\u6324\u538B\u56DE\u5F39\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907");
-    segmented(feel2, "data-feel-mode", [
-      { key: "full", label: "\u6807\u51C6" },
-      { key: "soft", label: "\u8F7B\u67D4" },
-      { key: "off", label: "\u5173\u95ED" }
-    ], feelMode(), function(key2) {
-      setFeelMode(key2);
-      ui.renderContent();
-    });
-    const handOn = petHandEnabled();
-    const hand = section(ui, "\u6478\u6478\u5C0F\u624B", "\u663E\u793A\u629A\u6478\u7684\u5C0F\u624B\uFF1B\u5173\u95ED\u540E\u5C0F\u732A\u4ECD\u4F1A\u8F7B\u8F7B\u4E0B\u6C89\u3001\u56DE\u4F4D");
-    const handToggle = button("dp-switch", { "data-pet-hand": handOn ? "on" : "off", "aria-pressed": String(handOn), "aria-label": "\u6478\u6478\u5C0F\u624B" }, function() {
-      setPetHandEnabled(!petHandEnabled());
-      ui.renderContent();
-    });
-    handToggle.appendChild(el("span", "dp-switch-knob"));
-    handToggle.appendChild(el("span", "dp-switch-text", handOn ? "\u5F00" : "\u5173"));
-    hand.head.appendChild(handToggle);
-    const soundPrefs = soundSettings();
-    const sound = section(ui, "\u97F3\u6548", "\u62CE\u8D77\u3001\u843D\u5730\u3001\u6478\u6478\u7684\u58F0\u97F3\uFF1B\u514D\u6253\u6270\u65F6\u4E0D\u54CD");
-    const soundToggle = button("dp-switch", { "data-sound": soundPrefs.on ? "on" : "off", "aria-pressed": String(soundPrefs.on) }, function() {
-      const next = setSoundSettings({ on: !soundPrefs.on });
-      if (next.on) unlockSound();
-      ui.renderContent();
-    });
-    soundToggle.appendChild(el("span", "dp-switch-knob"));
-    soundToggle.appendChild(el("span", "dp-switch-text", soundPrefs.on ? "\u5F00" : "\u5173"));
-    sound.head.appendChild(soundToggle);
-    segmented(sound, "data-sound-volume", [
-      { key: "0", label: "\u8F7B" },
-      { key: "1", label: "\u4E2D" },
-      { key: "2", label: "\u54CD" }
-    ], String(soundPrefs.volume), function(key2) {
-      setSoundSettings({ volume: Number(key2) });
-      ui.renderContent();
-    });
-    if (hasBundledEmoji()) {
-      const emoji = section(ui, "Emoji \u6837\u5F0F", "\u5185\u7F6E\u662F\u968F\u6E38\u620F\u9644\u5E26\u7684\u4E00\u6574\u5957 Noto \u5F69\u8272 emoji\uFF0C\u5404\u7CFB\u7EDF\u770B\u8D77\u6765\u4E00\u6837");
-      segmented(emoji, "data-emoji-style", [
-        { key: "bundled", label: "\u5185\u7F6E" },
-        { key: "system", label: "\u7CFB\u7EDF\u81EA\u5E26" }
-      ], emojiStyle(), function(key2) {
-        setEmojiStyle(key2);
-        applyEmojiStyle(ui.host);
-        ui.renderContent();
-      });
-    }
-    const quiet = section(ui, "\u514D\u6253\u6270", "\u5F00\u7740\u65F6\u732A\u4E0D\u4E3B\u52A8\u8BF4\u8BDD\u3001\u4E0D\u62A5\u65E5\u5E38\u6D88\u606F\uFF1B\u751F\u75C5\u548C\u610F\u5916\u7167\u5E38\u63D0\u9192");
-    const quietOn = ui.view.dialogue.quiet === true;
-    const quietToggle = button("dp-switch", { "data-quiet": quietOn ? "on" : "off", "aria-pressed": String(quietOn) }, function() {
-      ui.send("quiet", { on: !quietOn });
-    });
-    quietToggle.appendChild(el("span", "dp-switch-knob"));
-    quietToggle.appendChild(el("span", "dp-switch-text", quietOn ? "\u5F00" : "\u5173"));
-    quiet.head.appendChild(quietToggle);
-    const feeding = section(ui, "\u79BB\u7EBF\u81EA\u52A8\u7167\u987E", "");
-    const feedingOn = ui.view.dialogue.isOfflineFeedEnabled !== false;
-    const feedingToggle = button("dp-switch", { "data-offline-feed": String(feedingOn), "aria-pressed": String(feedingOn) }, function() {
-      ui.send("offlineFeed", { on: !feedingOn });
-    });
-    feedingToggle.appendChild(el("span", "dp-switch-knob"));
-    feedingToggle.appendChild(el("span", "dp-switch-text", feedingOn ? "\u5F00" : "\u5173"));
-    feeding.head.appendChild(feedingToggle);
-    const close = section(ui, "\u70B9\u51FB\u522B\u5904\u65F6\u6536\u8D77\u9762\u677F", "\u7F51\u9875\u7248\u70B9\u9762\u677F\u5916\u3001\u684C\u9762\u7248\u5207\u5230\u5176\u4ED6\u7A97\u53E3\u65F6\u6536\u8D77");
-    const on = autoCollapseEnabled();
-    const toggle = button("dp-switch", { "data-auto-collapse": String(!on), "aria-pressed": String(on) }, function() {
-      setAutoCollapse(!autoCollapseEnabled());
-      ui.renderContent();
-    });
-    toggle.appendChild(el("span", "dp-switch-knob"));
-    toggle.appendChild(el("span", "dp-switch-text", on ? "\u5F00" : "\u5173"));
-    close.head.appendChild(toggle);
-    if (desktopShell() !== null || stageShell()?.walk === true) {
-      const walk = section(ui, "\u684C\u9762\u6563\u6B65", "\u6BCF 10\u201320 \u5206\u949F\u6CBF\u5C4F\u5E55\u5E95\u8FB9\u8D70\u4E00\u6BB5\u518D\u8D70\u56DE\u6765\uFF1B\u62D6\u5B83\u3001\u5F00\u7740\u9762\u677F\u3001\u514D\u6253\u6270\u65F6\u4E0D\u8D70");
-      const walking = walkEnabled();
-      const walkToggle = button("dp-switch", { "data-walk": String(!walking), "aria-pressed": String(walking) }, function() {
-        setWalk(!walkEnabled());
-        ui.renderContent();
-      });
-      walkToggle.appendChild(el("span", "dp-switch-knob"));
-      walkToggle.appendChild(el("span", "dp-switch-text", walking ? "\u5F00" : "\u5173"));
-      walk.head.appendChild(walkToggle);
-    }
-    const fullscreen = desktopShell()?.fullscreen ?? stageShell()?.fullscreen;
-    if (fullscreen) renderFullscreenSettings(ui, section, fullscreen);
-    const proxy = desktopShell()?.proxy ?? stageShell()?.proxy;
-    if (proxy) renderProxySettings(ui, section, proxy);
-    const logs = section(ui, "\u65E5\u5FD7", "\u9047\u5230\u95EE\u9898\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u91CC\u9762\u6709\u7248\u672C\u3001\u52A8\u4F5C\u548C\u62A5\u9519");
-    const exportButton = button("dp-mini", { "data-export-logs": "true" }, function() {
-      runExport(ui, exportButton);
-    });
-    exportButton.textContent = "\u{1F4C4} \u5BFC\u51FA";
-    logs.head.appendChild(exportButton);
-    if (exporting) exportButton.disabled = true;
-  }
-  var exporting = false;
-  function runExport(ui, exportButton) {
-    if (exporting) return;
-    exporting = true;
-    exportButton.disabled = true;
-    exportButton.textContent = "\u5BFC\u51FA\u4E2D\u2026";
-    exportLogs().then(function(result) {
-      exporting = false;
-      if (result.canceled === true) ui.renderContent();
-      else if (result.ok === true) ui.showBubble(result.downloaded === true ? "\u65E5\u5FD7\u5DF2\u4E0B\u8F7D" : "\u65E5\u5FD7\u5DF2\u4FDD\u5B58", 3200);
-      else ui.showBubble("\u65E5\u5FD7\u6CA1\u5BFC\u51FA\uFF1A" + str(result.reason, "\u672A\u77E5\u539F\u56E0"), 4e3);
-      if (typeof ui.renderContent === "function") ui.renderContent();
-    }).catch(function(error) {
-      exporting = false;
-      ui.showBubble("\u65E5\u5FD7\u6CA1\u5BFC\u51FA\uFF1A" + (error instanceof Error ? error.message : String(error)), 4e3);
-      ui.renderContent();
-    });
-  }
-
   // src/client/format.js
   function formatMinutes(minutes) {
     if (minutes < 60) return minutes + " \u5206\u949F";
@@ -14051,20 +16931,20 @@
     var list = el("div", "dp-list");
     for (var i = 0; i < ui.view.trips.length; i += 1) {
       (function(trip) {
-        var row = el("div", "dp-item");
-        row.appendChild(el("span", null, trip.emoji));
+        var row2 = el("div", "dp-item");
+        row2.appendChild(el("span", null, trip.emoji));
         var grow = el("div", "dp-grow");
         grow.appendChild(el("div", null, trip.label));
         grow.appendChild(el("div", "dp-dim", formatMinutes(trip.minutes) + " \xB7 " + trip.cost + " \u{1FA99}" + (trip.bestRarity ? " \xB7 \u53EF\u5E26\u56DE " + trip.bestRarityEmoji + trip.bestRarity : "")));
         if (trip.locked) grow.appendChild(el("div", "dp-dim", "\u{1F512} " + trip.locked + "\u624D\u80FD\u53BB"));
-        row.appendChild(grow);
+        row2.appendChild(grow);
         var go = button("dp-mini", { "data-trip": trip.key }, function() {
           startOrSwitch(ui, "\u65C5\u884C\uFF08" + trip.label + "\uFF09", "trip", { trip: trip.key });
         });
         go.textContent = "\u51FA\u53D1";
         go.disabled = !canStart(ui) || !trip.affordable || trip.locked !== "";
-        row.appendChild(go);
-        list.appendChild(row);
+        row2.appendChild(go);
+        list.appendChild(row2);
       })(ui.view.trips[i]);
     }
     ui.content.appendChild(list);
@@ -14257,12 +17137,12 @@
   // src/client/hover-restore.js
   var restorers = /* @__PURE__ */ new WeakMap();
   function restoreHover(content) {
-    var restore = restorers.get(content);
-    if (restore === void 0) {
-      restore = attach(content);
-      restorers.set(content, restore);
+    var restore2 = restorers.get(content);
+    if (restore2 === void 0) {
+      restore2 = attach(content);
+      restorers.set(content, restore2);
     }
-    return restore();
+    return restore2();
   }
   function attach(content) {
     var doc = content.ownerDocument ?? globalThis.document ?? null;
@@ -14331,7 +17211,7 @@
     }
     content.addEventListener("mousemove", remember);
     content.addEventListener("mouseleave", forget);
-    return function restore() {
+    return function restore2() {
       if (restoring || pending2 || x === null) return false;
       pending2 = true;
       schedule4(seq2);
@@ -14392,7 +17272,7 @@
       desktopShell()?.syncGeometry?.();
       stageShell()?.syncGeometry?.();
     }
-    function select(next) {
+    function select2(next) {
       var previous = ctx.tab;
       if (next === "crown") next = "dex";
       if (next === "quit") {
@@ -14435,7 +17315,7 @@
       ctx.showBubble("\u{1F345} \u4E13\u6CE8\u7ED3\u675F \xB7 " + text, 3200);
     }
     function renderContent() {
-      if (renderHold.defer(renderContent)) return;
+      if (renderHold.defer(renderContent) || externalRenderBlocked()) return false;
       var scrollTop = ctx.content.scrollTop;
       var page = ctx.content.querySelectorAll("[data-scroll-page]")[0]?.getAttribute("data-scroll-page");
       var scrollPositions = /* @__PURE__ */ new Map();
@@ -14472,18 +17352,7 @@
         legacy.appendChild(el("div", null, "\u91D1\u5E01\u3001\u5065\u5EB7\u3001\u6253\u5DE5\u3001\u5546\u5E97\u8FD9\u4E9B\u662F\u65B0\u589E\u7684\uFF0C\u91CD\u542F dsh\uFF08\u4E0D\u662F\u5237\u65B0\u9875\u9762\uFF09\u4E4B\u540E\u624D\u4F1A\u51FA\u73B0\u3002"));
         ctx.content.appendChild(legacy);
       }
-      if (ctx.view.pig === null) {
-        ctx.content.appendChild(el("div", "dp-empty", "\u95E8\u53E3\u653E\u7740\u4E00\u4E2A\u7EB8\u76D2\uFF0C\u91CC\u9762\u7AB8\u7AB8\u7AA3\u7AA3 \u{1F4E6}"));
-        var grid = el("div", "dp-actions");
-        var hatch = button("dp-btn dp-btn-wide", { "data-action": "hatch" }, function() {
-          ctx.send("hatch");
-        });
-        hatch.appendChild(el("span", null, "\u{1F95A}"));
-        hatch.appendChild(el("span", null, "\u62C6\u5F00\u7EB8\u76D2"));
-        grid.appendChild(hatch);
-        ctx.content.appendChild(grid);
-        return;
-      }
+      if (renderEmptyPanel(ctx)) return;
       var bigView = Boolean(ctx.extBig) && ctx.tab === "ext:" + ctx.extBig;
       ctx.host.setAttribute("data-ext-view", bigView ? "big" : "");
       if (bigView) {
@@ -14491,7 +17360,7 @@
         return;
       }
       var shell2 = updatesBridge();
-      var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell2 !== null && shell2.quit ? [QUIT_TAB] : [], ctx.devMode ? [DEV_TAB] : []));
+      var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell2 !== null && shell2.quit ? [QUIT_TAB] : [], externalDevTabs(ctx)));
       if (ctx.tab === "home") {
         renderHome(ctx, apps.filter(function(a) {
           return a.key !== "update" && a.key !== "extensions";
@@ -14535,7 +17404,8 @@
         if (entry.key === ctx.stage) stageEntry = entry;
       }
       if (!ctx.stagePicked && firstOpen !== null && (stageEntry === null || stageEntry.unlocked === false)) ctx.stage = firstOpen;
-      ctx.host.setAttribute("data-dead", ctx.view.dead ? "true" : "false");
+      syncExternalPanel(ctx);
+      ctx.host.setAttribute("data-external-offline", externalActionsBlocked(ctx.view) ? "true" : "false");
       ctx.host.setAttribute("data-open", ctx.isOpen && desktopRole() !== "pet" ? "true" : "false");
       ctx.host.setAttribute("data-dev", ctx.devMode ? "true" : "false");
       ctx.host.setAttribute("data-away", ctx.view.activity === null ? "false" : ctx.view.activity.kind);
@@ -14549,24 +17419,7 @@
         ctx.work.title = (AWAY_LINE[ctx.view.activity.kind] ?? "\u5728\u5916\u9762") + "\uFF1A" + ctx.view.activity.label;
       }
       if (ctx.view.hatched !== true) {
-        ctx.pig.setAttribute("data-stage", "box");
-        ctx.pig.setAttribute("data-art", "");
-        ctx.pig.setAttribute("data-activity", "");
-        ctx.pig.setAttribute("data-activity-key", "");
-        ctx.pigEmoji.textContent = ctx.view.boxStage.emoji;
-        ctx.pig.setAttribute("data-mood", "box");
-        syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji);
-        syncPigSize(ctx.host, ctx.view.boxStage.size);
-        applyEmojiStyle(ctx.host);
-        ctx.soul.hidden = true;
-        ctx.host.setAttribute("data-soul", "false");
-        ctx.host.setAttribute("data-faded", "false");
-        ctx.host.setAttribute("data-unhatched", "true");
-        ctx.pokeHint.hidden = false;
-        ctx.hudName.textContent = "\u4E00\u4E2A" + ctx.view.boxStage.label;
-        ctx.hudCoins.textContent = "\u70B9\u5F00\u62C6\u5F00\u5B83";
-        ctx.hudHealth.textContent = "";
-        ctx.lastStage = null;
+        renderUnhatchedPig(ctx);
       } else {
         const pigStage = ctx.view.pig.stage;
         syncSleepArt(pigStage.art, pigStage.artScenes, ctx.pigSleep);
@@ -14655,7 +17508,7 @@
       }, event.displayMs);
     }
     ctx.showPigLine = showPigLine;
-    return { setOpen, select, renderContent, render, dispose: function() {
+    return { setOpen, select: select2, renderContent, render, dispose: function() {
       pointerRepaint.dispose();
       renderHold.dispose();
     } };
@@ -14745,9 +17598,15 @@
     scene6.appendChild(pig);
     scene6.title = "\u5DE6\u952E\u6478\u6478 \xB7 \u53F3\u952E\u6253\u5F00\u9762\u677F \xB7 \u62D6\u52A8\u53EF\u79FB\u52A8";
     var bar = el("div", "dp-bar");
+    var linkBar = el("div", "dp-link");
+    linkBar.hidden = true;
+    var linkNote2 = el("div", "dp-link-note");
+    linkNote2.hidden = true;
     var content = el("div", "dp-content");
     var footer = el("div", "dp-panel-footer");
     footer.hidden = true;
+    card2.appendChild(linkBar);
+    card2.appendChild(linkNote2);
     card2.appendChild(content);
     card2.appendChild(footer);
     card2.appendChild(bar);
@@ -14763,7 +17622,7 @@
         }
       }, { once: true });
     }
-    return { font, style, host: host3, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer };
+    return { font, style, host: host3, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote: linkNote2 };
   }
 
   // src/client/position.js
@@ -15021,14 +17880,14 @@
       };
     });
   }
-  function keyframeEnvelope(states, box, pivot) {
-    return boundsOf(states.flatMap((state4) => keyframeCorners(box, pivot, state4)));
+  function keyframeEnvelope(states2, box, pivot) {
+    return boundsOf(states2.flatMap((state4) => keyframeCorners(box, pivot, state4)));
   }
   function motionEnvelope(name) {
     if (name === "dp-spin") return spinEnvelope;
     if (name === "dp-jump") return jumpEnvelope;
-    const states = Object.hasOwn(PIG_ANIMATION_MOTION, name) ? PIG_ANIMATION_MOTION[name] : void 0;
-    return states === void 0 ? null : (box, pivot) => keyframeEnvelope(states, box, pivot);
+    const states2 = Object.hasOwn(PIG_ANIMATION_MOTION, name) ? PIG_ANIMATION_MOTION[name] : void 0;
+    return states2 === void 0 ? null : (box, pivot) => keyframeEnvelope(states2, box, pivot);
   }
   function fixedMotionReserve(pigBox) {
     const artWidth = MAX_ART_ASPECT2 * FRAME_HEIGHT2 * pigBox.width;
@@ -16082,6 +18941,7 @@
       saves: shell2.saves,
       ext: shell2.ext,
       fullscreen: shell2.fullscreen,
+      external: shell2.external ?? null,
       split: true,
       onRecover: shell2.onRecover,
       recoverHome: function(foot) {
@@ -16452,7 +19312,7 @@
       const mood = c.pig.getAttribute("data-mood") || "";
       return (c.pig.getAttribute("data-art") || "") === "piglet" && !c.pig.getAttribute("data-illness") && stage2 !== "box" && stage2 !== "grave" && stage2 !== "dead-day" && mood !== "sick" && mood !== "dead";
     }
-    function cancel() {
+    function cancel2() {
       if (c.pig.getAttribute("data-react") !== "dizzy") return;
       c.pig.removeAttribute("data-react");
       clearEffectArt();
@@ -16476,7 +19336,7 @@
     }
     return {
       trigger,
-      cancel,
+      cancel: cancel2,
       dispose: function() {
         disposed = true;
         if (timer2 !== null) clearTimeout(timer2);
@@ -16769,7 +19629,7 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/array.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -16780,7 +19640,7 @@
       arr2.splice(index, 1);
   }
 
-  // node_modules/motion-utils/dist/es/clamp.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -16789,12 +19649,12 @@
     return v;
   };
 
-  // node_modules/motion-utils/dist/es/format-error-message.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/format-error-message.mjs
   function formatErrorMessage(message2, errorCode) {
     return errorCode ? `${message2}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message2;
   }
 
-  // node_modules/motion-utils/dist/es/errors.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
@@ -16812,19 +19672,19 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/global-config.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // node_modules/motion-utils/dist/es/is-object.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // node_modules/motion-utils/dist/es/memo.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -16835,29 +19695,29 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/noop.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // node_modules/motion-utils/dist/es/pipe.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // node_modules/motion-utils/dist/es/progress.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
     }
-    add(handler) {
-      addUniqueItem(this.subscriptions, handler);
-      return () => this.remove(handler);
+    add(handler2) {
+      addUniqueItem(this.subscriptions, handler2);
+      return () => this.remove(handler2);
     }
-    remove(handler) {
-      removeItem(this.subscriptions, handler);
+    remove(handler2) {
+      removeItem(this.subscriptions, handler2);
     }
     notify(a, b, c) {
       const numSubscriptions = this.subscriptions.length;
@@ -16867,8 +19727,8 @@
         this.subscriptions[0](a, b, c);
       } else {
         for (let i = 0; i < numSubscriptions; i++) {
-          const handler = this.subscriptions[i];
-          handler && handler(a, b, c);
+          const handler2 = this.subscriptions[i];
+          handler2 && handler2(a, b, c);
         }
       }
     }
@@ -16880,14 +19740,14 @@
     }
   };
 
-  // node_modules/motion-utils/dist/es/time-conversion.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // node_modules/motion-utils/dist/es/warn-once.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
   function warnOnce(condition, message2, errorCode) {
     if (condition || warned.has(message2))
@@ -16896,13 +19756,13 @@
     warned.add(message2);
   }
 
-  // node_modules/motion-utils/dist/es/wrap.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -16926,45 +19786,45 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // node_modules/motion-utils/dist/es/easing/back.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // node_modules/motion-utils/dist/es/easing/circ.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // node_modules/motion-utils/dist/es/easing/ease.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -16993,14 +19853,14 @@
     return definition;
   };
 
-  // node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -17018,10 +19878,10 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
   var checkStringStartsWith = (token) => (key2) => typeof key2 === "string" && key2.startsWith(token);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
@@ -17037,7 +19897,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -17052,18 +19912,18 @@
     default: 1
   };
 
-  // node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -17079,7 +19939,7 @@
     };
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -17091,7 +19951,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -17125,7 +19985,7 @@
     transform: rgba.transform
   };
 
-  // node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -17142,7 +20002,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -17151,7 +20011,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -17173,10 +20033,10 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -17267,7 +20127,7 @@
     getAnimatableNone
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -17305,17 +20165,17 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -17351,7 +20211,7 @@
     };
   };
 
-  // node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -17361,7 +20221,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -17431,7 +20291,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -17458,7 +20318,7 @@
     return mixer(from, to);
   }
 
-  // node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -17478,7 +20338,7 @@
     // Compute
   ];
 
-  // node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -17541,7 +20401,7 @@
     return step;
   }
 
-  // node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
   function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
@@ -17595,18 +20455,18 @@
       };
       return acc;
     }, {});
-    const cancel = (process2) => {
+    const cancel2 = (process2) => {
       for (let i = 0; i < stepsOrder.length; i++) {
         steps[stepsOrder[i]].cancel(process2);
       }
     };
-    return { schedule: schedule4, cancel, state: state4, steps };
+    return { schedule: schedule4, cancel: cancel2, state: state4, steps };
   }
 
-  // node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -17620,7 +20480,7 @@
     };
   };
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -17630,7 +20490,7 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
@@ -17644,7 +20504,7 @@
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -17663,7 +20523,7 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -17921,7 +20781,7 @@
     return options;
   };
 
-  // node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
     const state4 = {
@@ -17987,7 +20847,7 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -18032,7 +20892,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -18041,19 +20901,19 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
@@ -18094,7 +20954,7 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -18106,7 +20966,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -18115,7 +20975,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -18129,11 +20989,11 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -18156,7 +21016,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -18187,7 +21047,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -18491,7 +21351,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -18515,7 +21375,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -18525,13 +21385,13 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/int.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -18565,7 +21425,7 @@
     originZ: px
   };
 
-  // node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -18630,7 +21490,7 @@
     numOctaves: int
   };
 
-  // node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -18652,7 +21512,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -18661,14 +21521,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -18750,7 +21610,7 @@
     return parseFloat(value.trim());
   }
 
-  // node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -18773,7 +21633,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -18822,7 +21682,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -18852,9 +21712,9 @@
       resolversToMeasure.forEach((resolver) => resolver.measureInitialState());
       elementsToMeasure.forEach((element) => {
         element.render();
-        const restore = transformsToRestore.get(element);
-        if (restore) {
-          restore.forEach(([key2, value]) => {
+        const restore2 = transformsToRestore.get(element);
+        if (restore2) {
+          restore2.forEach(([key2, value]) => {
             element.getValue(key2)?.set(value);
           });
         }
@@ -18968,27 +21828,27 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -18998,10 +21858,10 @@
     return true;
   }, "linearEasing");
 
-  // node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -19014,7 +21874,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -19029,7 +21889,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -19052,12 +21912,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -19068,7 +21928,7 @@
     return options;
   }
 
-  // node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -19216,7 +22076,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -19231,7 +22091,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -19298,7 +22158,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -19312,7 +22172,7 @@
     return false;
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -19339,13 +22199,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -19354,7 +22214,7 @@
     "backgroundColor"
   ]);
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -19365,7 +22225,7 @@
     return false;
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -19400,12 +22260,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -19454,10 +22314,10 @@
     return transformString;
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -19691,11 +22551,11 @@
       }
       return transform || "none";
     };
-    const commit = (values = valuesAt()) => {
+    const commit2 = (values = valuesAt()) => {
       element.style.transform = buildTransform(values, {});
     };
     const stop = (shouldCommit = true) => {
-      shouldCommit && commit();
+      shouldCommit && commit2();
       segments.forEach(({ animation }) => animation.cancel());
       segments = [];
     };
@@ -19806,7 +22666,7 @@
         keyframes2.offset = times.map((t) => progress(from, to, t));
       }
       if (transform.every((t) => t === transform[0])) {
-        commit(valuesAt(from, settled));
+        commit2(valuesAt(from, settled));
         keyframes2 = null;
       }
       return element.animate(keyframes2, {
@@ -20025,7 +22885,7 @@
     return group;
   }
 
-  // node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -20163,7 +23023,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -20186,8 +23046,8 @@
     attachTimeline(timeline) {
       const subscriptions = this.animations.map((animation) => animation.attachTimeline(timeline));
       return () => {
-        subscriptions.forEach((cancel, i) => {
-          cancel && cancel();
+        subscriptions.forEach((cancel2, i) => {
+          cancel2 && cancel2();
           this.animations[i].stop();
         });
       };
@@ -20243,7 +23103,7 @@
     return max;
   }
 
-  // node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -20251,7 +23111,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -20577,7 +23437,7 @@
     return new MotionValue(init, options);
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -20586,7 +23446,7 @@
     return transition;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -20595,7 +23455,7 @@
     return valueTransition;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -20626,7 +23486,7 @@
     return ease;
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -20647,7 +23507,7 @@
     return false;
   }
 
-  // node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -20706,7 +23566,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -20732,7 +23592,7 @@
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -20743,28 +23603,28 @@
     ...transformPropOrder
   ]);
 
-  // node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // node_modules/motion-dom/dist/es/value/types/test.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -20775,7 +23635,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -20796,7 +23656,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -20923,7 +23783,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -20987,17 +23847,17 @@
     return first === null ? void 0 : first;
   }
 
-  // node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -21015,7 +23875,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -21039,7 +23899,7 @@
     });
   }
 
-  // node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -21126,7 +23986,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
@@ -21139,8 +23999,8 @@
         subscriptions.push(remove);
       }
       return () => {
-        for (const cancel of subscriptions)
-          cancel();
+        for (const cancel2 of subscriptions)
+          cancel2();
       };
     };
     return Object.assign(effect, options, {
@@ -21150,7 +24010,7 @@
     });
   }
 
-  // node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
   function buildTransform2(state4) {
     let transform = "";
@@ -21172,7 +24032,7 @@
     return transform || "none";
   }
 
-  // node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
   var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
   var addStyleValue = (element, state4, key2, value) => {
@@ -21233,7 +24093,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -21245,7 +24105,7 @@
     "offsetAnchor"
   ];
 
-  // node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
@@ -21271,7 +24131,7 @@
     return state4.set(key2, value, render);
   };
 
-  // node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/svg/index.mjs
   function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
@@ -21296,8 +24156,8 @@
     } else if (key2.startsWith("attr")) {
       return addAttrValue(element, state4, key2, value, convertAttrKey(key2));
     }
-    const handler = transformProps.has(key2) || originProps.has(key2) || isCSSVar(key2) || key2 in element.style ? addStyleValue : addAttrValue;
-    return handler(element, state4, key2, value);
+    const handler2 = transformProps.has(key2) || originProps.has(key2) || isCSSVar(key2) || key2 in element.style ? addStyleValue : addAttrValue;
+    return handler2(element, state4, key2, value);
   };
   var readSVGValue = (element, key2) => {
     if (transformProps.has(key2)) {
@@ -21317,7 +24177,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -21337,12 +24197,12 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -21375,7 +24235,7 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/effects/prop/index.mjs
   var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
     return state4.set(key2, value, () => {
       subject2[key2] = value.get();
@@ -21388,7 +24248,7 @@
     }
   });
 
-  // node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -21497,10 +24357,10 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -21575,7 +24435,7 @@
     return unit ? v + unit : v;
   }
 
-  // node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -21586,7 +24446,7 @@
     });
   }
 
-  // node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -21597,7 +24457,7 @@
     return value;
   }
 
-  // node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -21607,22 +24467,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // node_modules/motion-dom/dist/es/render/store.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -21638,12 +24498,12 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -21658,7 +24518,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -21679,7 +24539,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -21687,7 +24547,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -21700,7 +24560,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -21882,7 +24742,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -21913,7 +24773,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -21938,7 +24798,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // ../../../../../codex/deliverables/piggy-work/continue-20261026/contracts/build-deps/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
@@ -23097,6 +25957,40 @@
     };
   }
 
+  // src/client/stage-events.js
+  function editable(target) {
+    for (let node = target; node; node = node.parentElement) {
+      if (["input", "textarea", "select"].includes(String(node.tagName || "").toLowerCase())) return true;
+      if (node.isContentEditable || node.getAttribute?.("role") === "textbox") return true;
+      if (["", "true", "plaintext-only"].includes(node.getAttribute?.("contenteditable"))) return true;
+    }
+    return false;
+  }
+  function bindStageEvents(target, ctx, setOpen, onPointerUp, onResize) {
+    const doc = target.document ?? document;
+    function escape(event) {
+      if (event.key !== "Escape" || event.repeat || event.defaultPrevented || !ctx.isOpen) return;
+      if (editable(event.target) || editable(doc.activeElement)) return;
+      for (const layer of doc.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-farm-overlay]')) {
+        if (layer.getClientRects().length === 0) continue;
+        if (!["hidden", "collapse"].includes(target.getComputedStyle(layer).visibility)) return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setOpen(false);
+    }
+    target.addEventListener("keydown", escape);
+    target.addEventListener("pointerup", onPointerUp, true);
+    target.addEventListener("pointercancel", onPointerUp, true);
+    target.addEventListener("resize", onResize, { passive: true });
+    return () => {
+      target.removeEventListener("keydown", escape);
+      target.removeEventListener("pointerup", onPointerUp, true);
+      target.removeEventListener("pointercancel", onPointerUp, true);
+      target.removeEventListener("resize", onResize);
+    };
+  }
+
   // src/client/stage-bridge.js
   var FLIGHT_GUARD_MS = 15e3;
   var ROUND = (value) => Math.round(Number(value) || 0);
@@ -23109,10 +26003,10 @@
         /** @type {any} */
         window.piggyShell
       );
-      const restore = typeof shell3?.panel?.fx === "function" ? forwardPigFx(deps.ctx, (name, args) => shell3.panel.fx(name, args)) : function() {
+      const restore2 = typeof shell3?.panel?.fx === "function" ? forwardPigFx(deps.ctx, (name, args) => shell3.panel.fx(name, args)) : function() {
       };
       return { role: "ext", dispose: function() {
-        restore();
+        restore2();
       } };
     }
     const { ctx, host: host3, pig, bubble, card: card2, setOpen, clampPig, fitPanel } = deps;
@@ -23413,9 +26307,7 @@
       window.piggyShell
     );
     if (typeof shell2?.panel?.onFx === "function") shell2.panel.onFx((fx) => applyPigFx(ctx, fx));
-    window.addEventListener("pointerup", onPointerUp, true);
-    window.addEventListener("pointercancel", onPointerUp, true);
-    window.addEventListener("resize", onResize, { passive: true });
+    subscriptions.push(bindStageEvents(window, ctx, setOpen, onPointerUp, onResize));
     const observer = new MutationObserver(() => {
       scheduleBubble();
       scheduleSettle();
@@ -23460,6 +26352,7 @@
       walk: true,
       proxy: shell2?.proxy ?? null,
       fullscreen: shell2?.fullscreen ?? null,
+      external: shell2?.external ?? null,
       isFlying() {
         return flying2;
       },
@@ -23493,9 +26386,6 @@
         } catch {
         }
       }
-      window.removeEventListener("pointerup", onPointerUp, true);
-      window.removeEventListener("pointercancel", onPointerUp, true);
-      window.removeEventListener("resize", onResize);
       if (settleFrame !== 0) cancelAnimationFrame(settleFrame);
       if (bubbleFrame !== 0) cancelAnimationFrame(bubbleFrame);
       if (flightGuard !== null) clearTimeout(flightGuard);
@@ -23582,6 +26472,30 @@
     return typeof detach === "function" ? detach : none;
   }
 
+  // src/client/box-poke.js
+  function createBoxPoke({ getView, showBubble, react, host: host3, burst, send: send2 }) {
+    let boxPokes = 0;
+    return function pokeBox() {
+      if (isExternalMode(getView()) && getView().pig === null) {
+        showBubble(externalBlockedMessage(getView()), 3800);
+        return;
+      }
+      boxPokes += 1;
+      react("poke", 560);
+      if (boxPokes >= BOX_POKES_TO_OPEN) {
+        boxPokes = 0;
+        host3.removeAttribute("data-poke");
+        showBubble("\u54C7\u2014\u2014\uFF01", 1200);
+        burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
+        send2("hatch");
+        return;
+      }
+      host3.setAttribute("data-poke", String(boxPokes));
+      burst(["\u{1F4A8}"], 2);
+      showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
+    };
+  }
+
   // src/client/index.js
   function mountGame(mountOptions) {
     var devMode = false;
@@ -23622,7 +26536,9 @@
         dressSlots,
         bar,
         content,
-        footer
+        footer,
+        linkBar,
+        linkNote: linkNote2
       } = parts;
       var deskShell = desktopShell();
       var savedPos = deskShell === null ? readPosition(readStore(POSITION_KEY)) : null;
@@ -23735,6 +26651,8 @@
         pig,
         dressSlots,
         bar,
+        linkBar,
+        linkNote: linkNote2,
         icons,
         flash,
         react,
@@ -23874,13 +26792,14 @@
       ctx.buildIcon = layout.buildIcon;
       ctx.clampPig = layout.clampPig;
       var render = panel.render, renderContent = panel.renderContent;
-      var setOpen = panel.setOpen, select = panel.select;
+      var setOpen = panel.setOpen, select2 = panel.select;
       var fitPanel = layout.fitPanel, clampPig = layout.clampPig;
       var paintBar = layout.paintBar, buildIcon = layout.buildIcon;
       for (var t = 0; t < TABS.length; t += 1) buildIcon(TABS[t]);
       var io = createIo(ctx);
       var send2 = io.send, refresh2 = io.refresh;
       ctx.send = send2;
+      ctx.refresh = refresh2;
       ctx.render = render;
       ctx.renderContent = renderContent;
       ctx.setOpen = setOpen;
@@ -23960,22 +26879,9 @@
         if (action === "cake") birthday.celebrate();
         else if (action !== null && action !== "") send2(action);
       });
-      var boxPokes = 0;
-      function pokeBox() {
-        boxPokes += 1;
-        react("poke", 560);
-        if (boxPokes >= BOX_POKES_TO_OPEN) {
-          boxPokes = 0;
-          host3.removeAttribute("data-poke");
-          showBubble("\u54C7\u2014\u2014\uFF01", 1200);
-          burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
-          send2("hatch");
-          return;
-        }
-        host3.setAttribute("data-poke", String(boxPokes));
-        burst(["\u{1F4A8}"], 2);
-        showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
-      }
+      var pokeBox = createBoxPoke({ getView: function() {
+        return view;
+      }, showBubble, react, host: host3, burst, send: send2 });
       var gestures = attachGestures({
         scene: scene6,
         host: host3,
@@ -24077,7 +26983,7 @@
         host: host3,
         paintBar,
         setOpen,
-        select,
+        select: select2,
         showBubble,
         getTab: function() {
           return tab;

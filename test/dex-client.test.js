@@ -1,4 +1,5 @@
 // @ts-check
+import { artSource } from '../src/client/art-path.js'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
@@ -58,10 +59,10 @@ test('C4 form shelf uses SVG flash cards and keeps exact requirements secret', a
   assert.notEqual(findByClass(contentOf(dom), 'dp-dex-flash-grid'), undefined)
   assert.match(king.className, /dp-dex-card-locked/)
   assert.doesNotMatch(king.className, /dp-dex-card-foil/)
-  assert.equal(findByClass(king, 'dp-dex-art').src, '/dsh-piggy/art/pigs/forms/pig-king/idle.png')
+  assert.equal(findByClass(king, 'dp-dex-art').src, artSource('pig-king'))
   assert.match(king.allText(), /🔒/)
   assert.doesNotMatch(king.allText(), /猪猪王|等级|魅力|40\/40|12\/20/)
-  assert.equal(findByClass(devil, 'dp-dex-art').src, '/dsh-piggy/art/pigs/forms/pig-devil/idle.png')
+  assert.equal(findByClass(devil, 'dp-dex-art').src, artSource('pig-devil'))
   assert.match(devil.allText(), /恶魔猪/)
   assert.match(devil.className, /dp-dex-card-foil/)
 })

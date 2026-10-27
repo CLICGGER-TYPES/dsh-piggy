@@ -44,13 +44,19 @@ const readModule = name => readFile(new URL('../src/client/' + name, import.meta
 
 async function readCss() {
   const dir = new URL('../src/client/', import.meta.url)
-  const modules = ['css-base.js', 'css-tabs.js', 'css-tiles.js', 'css-card.js']
+  // Same modules styles.js composes; external-css.js is last because the
+  // external link bar/note rules live there.
+  const modules = ['css-base.js', 'css-tabs.js', 'css-tiles.js', 'css-card.js', 'external-css.js']
   const sources = await Promise.all(modules.map(name => readFile(new URL(name, dir), 'utf8')))
   let css = ''
   for (const source of sources) {
     const start = source.indexOf('export const CSS_')
-    const end = source.indexOf("].join('')", start)
-    assert.ok(start >= 0 && end > start, 'could not locate the CSS array')
+    assert.ok(start >= 0, 'could not locate the CSS array')
+    // Older modules end with `].join('')`; the external stylesheet exports the
+    // array as-is, so its terminator is a line that starts with `]`.
+    let end = source.indexOf("].join('')", start)
+    if (end < 0) end = source.indexOf('\n]', start) + 1
+    assert.ok(end > start, 'could not locate the CSS array')
     const body = source.slice(start, end)
     // Two shapes of literal: one that begins a line, and one appended to a
     // previous literal with `+`. The cursor data-URI is split across seven of the
@@ -248,8 +254,10 @@ const hostOf = dom => {
 // The pig is a sibling of the panel, not a child of it: host = [panel, scene].
 const cardOf = dom => hostOf(dom).children[0]
 const sceneOf = dom => hostOf(dom).children[1]
-// Inside the panel, content sits above the icon bar.
-const contentOf = dom => cardOf(dom).children[0]
+// Inside the panel, content sits above the icon bar. Look it up by class:
+// the card also carries the external link bar/note before it, and their
+// presence depends on the link state, so a child index is not stable.
+const contentOf = dom => findByClass(cardOf(dom), 'dp-content')
 const barOf = dom => findByClass(cardOf(dom), 'dp-bar')
 
 const findByAttr = (root, attr, value) => {
@@ -1795,7 +1803,7 @@ test('a drawn stage shows a sprite, the others show the emoji', async () => {
   const emoji = findByClass(hostOf(drawn.dom), 'dp-pig-emoji')
   assert.notEqual(img, undefined, 'the sprite element must exist')
   assert.equal(img.hidden, false, 'the sprite is shown')
-  assert.equal(img.src, '/dsh-piggy/art/pigs/base/piglet/idle.png', 'the sprite points at the plugin art route')
+  assert.match(img.src, /^\/dsh-piggy\/art\/pigs\/base\/piglet\/idle\.png\?v=[a-f0-9]{12}$/, 'the sprite points at the current built-in PNG')
   assert.equal(emoji.hidden, true, 'and the emoji is hidden')
 
   const plain = await loadClient({ status: { ...SNAPSHOT, pig: { ...PIG, mood: 'fine' } } })

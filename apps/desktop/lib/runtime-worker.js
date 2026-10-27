@@ -2,17 +2,34 @@
 /** 桌面游戏 Store、路由和工作接口共用后台单写者，窗口线程不执行落盘。 */
 import { parentPort, workerData } from 'node:worker_threads'
 import { startHost } from './host.js'
-import { createInstallerExtensions } from './optional-extensions.js'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { readFile } from 'node:fs/promises'
+import { createInstallerExtensions } from './optional-extensions.js'
 
 if (!parentPort) throw new Error('game runtime requires a parent port')
 const port = parentPort
 const fetches = new Map()
 const tasks = new Set()
 let sequence = 0
-let host, endpoint, installerExtensions
+let host, endpoint, pairServer
 let closing = false
+const confirmations = new Map()
+let confirmSequence = 0
+let gameMetadata = null
+let installerExtensions
+
+function metadata() {
+  gameMetadata ??= Promise.all([
+    readFile(join(workerData.gameDir, 'package.json'), 'utf8'),
+    import(pathToFileURL(join(workerData.gameDir, 'packages/pet-core/src/core/constants.js')).href),
+  ]).then(([text, core]) => {
+    const version = JSON.parse(text).version
+    if (typeof version !== 'string' || version.trim() === '') throw new Error('game metadata has no version')
+    return { gameVersion: version, stateVersion: core.STATE_VERSION }
+  })
+  return gameMetadata
+}
 
 /** @type {typeof globalThis.fetch} */
 const fetchFromMain = (input, init = {}) => new Promise((resolve, reject) => {
@@ -28,10 +45,54 @@ const fetchFromMain = (input, init = {}) => new Promise((resolve, reject) => {
   port.postMessage({ kind: 'fetch', id, url: String(input), init: { ...settings, headers } })
 })
 
-async function startEndpoint() {
-  if (!workerData.workEventsDirectory) return
+async function startEndpoint(directory = workerData.workEventsDirectory) {
+  if (!directory || endpoint) return endpoint
   const { startWorkEventServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/local-server.js')).href)
-  endpoint = await startWorkEventServer({ directory: workerData.workEventsDirectory, runtime: host })
+  endpoint = await startWorkEventServer({ directory, runtime: host })
+  return endpoint
+}
+
+async function stopEndpoint() {
+  const current = endpoint
+  endpoint = undefined
+  await current?.close()
+}
+
+function confirmInMain(plan) {
+  return new Promise(resolve => {
+    const id = ++confirmSequence
+    const timer = setTimeout(() => { confirmations.delete(id); resolve(false) }, 65_000)
+    timer.unref?.()
+    confirmations.set(id, allowed => { clearTimeout(timer); confirmations.delete(id); resolve(allowed === true) })
+    port.postMessage({ kind: 'confirm', id, plan })
+  })
+}
+
+async function externalEnable(message) {
+  const directory = typeof message.directory === 'string' && message.directory !== '' ? message.directory : workerData.workEventsDirectory
+  if (!directory) throw new Error('external mode needs a work endpoint directory')
+  const info = await metadata()
+  const existingWork = endpoint !== undefined
+  try {
+    await startEndpoint(directory)
+    if (pairServer === undefined) {
+      const { startPairServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/pair-server.js')).href)
+      pairServer = await startPairServer({ runtime: host, directory, appVersion: message.appVersion ?? '',
+        gameVersion: info.gameVersion, confirm: confirmInMain })
+    }
+  } catch (error) {
+    if (!existingWork) await stopEndpoint()
+    throw error
+  }
+  return { ok: true, port: pairServer.port, ...info, workDirectory: directory }
+}
+
+async function externalDisable() {
+  const current = pairServer
+  pairServer = undefined
+  await current?.close()
+  await stopEndpoint()
+  return { ok: true }
 }
 
 async function request(message) {
@@ -40,6 +101,8 @@ async function request(message) {
     closing = true
     let endpointStopped = !endpoint
     try {
+      await pairServer?.close()
+      pairServer = undefined
       await endpoint?.close()
       endpointStopped = true
       endpoint = undefined
@@ -78,10 +141,20 @@ async function request(message) {
   }
   if (message.method === 'acceptWorkEvent') return host.acceptWorkEvent(...message.args)
   if (message.method === 'record') return host.record(...message.args)
+  if (message.method === 'external:enable') return externalEnable(message.args[0] ?? {})
+  if (message.method === 'external:disable') return externalDisable()
+  if (message.method === 'metadata') {
+    return metadata()
+  }
   throw new Error('unknown game runtime method')
 }
 
 port.on('message', message => {
+  if (message.kind === 'confirm-result') {
+    const resolve = confirmations.get(message.id)
+    if (resolve !== undefined) resolve(message.allowed === true)
+    return
+  }
   if (message.kind === 'fetch-result') {
     const task = fetches.get(message.id)
     if (!task) return
@@ -116,7 +189,7 @@ try {
   installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
     onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
   await installerExtensions.apply()
-  await startEndpoint()
+  if (workerData.workEventsDirectory && workerData.workEventsAutoStart !== false) await startEndpoint()
   port.postMessage({ kind: 'ready' })
 } catch (error) {
   let message = error.message

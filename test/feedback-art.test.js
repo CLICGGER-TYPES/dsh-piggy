@@ -1,4 +1,5 @@
 // 审定 PNG 的状态选择与真实资源路由：避免切换到不存在的文件或越过资源目录。
+import { artSource } from '../src/client/art-path.js'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { test } from 'node:test'
@@ -93,10 +94,10 @@ test('困了/睡着只用当前皮肤自己的 sleep 图，不再用 sleep-cloud
   }
   const piglet = makeImage()
   syncSleepArt('piglet', [], piglet)
-  assert.equal(piglet.getAttribute('src'), '/dsh-piggy/art/pigs/base/piglet/sleep.png')
+  assert.equal(piglet.getAttribute('src'), artSource('piglet-sleep'))
   const mint = makeImage()
   syncSleepArt('skin-mint', [], mint)
-  assert.equal(mint.getAttribute('src'), '/dsh-piggy/art/pigs/skins/skin-mint/sleep.png')
+  assert.equal(mint.getAttribute('src'), artSource('skin-mint-sleep'))
 })
 
 test('待定的图一张都不会被选中', async () => {

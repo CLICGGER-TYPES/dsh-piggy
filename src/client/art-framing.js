@@ -9,7 +9,7 @@ export const MAX_ART_ASPECT = data.MAX_ART_ASPECT
 
 export function builtinFrame(src) {
   // 2026-10-13 以前的无描边图在 pigs/no-outline/ 下，现在就是主图：老地址按同一张算。
-  const path = src.slice(ART_URL.length).replace(/^pigs\/no-outline\//, 'pigs/')
+  const path = src.slice(ART_URL.length).split('?')[0].replace(/^pigs\/no-outline\//, 'pigs/')
   const name = path.split('/').pop()?.replace(/\.png$/, '')
   return data.BUILTIN_FRAMING[path] ?? data.FEEDBACK_FRAMING[name] ?? null
 }

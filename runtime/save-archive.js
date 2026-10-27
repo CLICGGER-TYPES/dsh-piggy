@@ -4,6 +4,7 @@ import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { migrate } from '../core.js'
 import { STATE_VERSION } from '../packages/pet-core/src/core/constants.js'
+import { MERGE_RULES_VERSION } from '../packages/pet-core/src/core/merge-rules.js'
 import { levelFor } from '../packages/pet-core/src/core/clock.js'
 import { officialList, isOfficial } from '../store/ext-import.js'
 import { assetNames, fileList } from '../store/ext-files.js'
@@ -127,7 +128,7 @@ export function createSaveArchive({ statePath, state, gameVersion = '', nowMs = 
   } catch (error) { if (error?.code !== 'ENOENT') throw new Error(`工作收据无效：${error.message}`) }
   const uncompressed = [...files.values()].reduce((sum, body) => sum + body.length, 0)
   if (files.size >= MAX_FILES || uncompressed > 32 * 1024 * 1024 || [...files.values()].some(body => body.length > 8 * 1024 * 1024)) throw new Error('存档内容超过备份上限')
-  const manifest = { version: 1, gameVersion, stateVersion: state?.version ?? 0, createdAt: nowMs,
+  const manifest = { version: 1, gameVersion, stateVersion: state?.version ?? 0, mergeRulesVersion: MERGE_RULES_VERSION, createdAt: nowMs,
     files: Object.fromEntries([...files].map(([name, body]) => [name, { size: body.length, sha256: sha(body) }])) }
   const manifestBytes = Buffer.from(JSON.stringify(manifest))
   if (uncompressed + manifestBytes.length > 32 * 1024 * 1024 || manifestBytes.length > 8 * 1024 * 1024) throw new Error('存档内容超过备份上限')
@@ -165,7 +166,8 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
     const warnings = []
     for (const key of Object.keys(parsed?.extData ?? {})) warnings.push(`扩展 ${key} 缺少程序文件，进度仍会保留`)
     for (const skin of Array.isArray(parsed?.customSkins) ? parsed.customSkins : []) warnings.push(`皮肤 ${skin?.key ?? skin?.art ?? '自定义皮肤'} 缺少图片`)
-    return parseState(parsed, { nowMs, legacy: true, files: new Map([['state.json', Buffer.from(JSON.stringify(parsed))]]), warnings })
+    const legacyParsed = parseState(parsed, { nowMs, legacy: true, files: new Map([['state.json', Buffer.from(JSON.stringify(parsed))]]), warnings })
+    return { ...legacyParsed, stateVersion: Number.isSafeInteger(parsed?.version) ? parsed.version : 0, mergeRulesVersion: MERGE_RULES_VERSION }
   }
   const archive = readZip(buffer), manifestBytes = archive.get('backup.json')
   if (!manifestBytes) throw new Error('存档 ZIP 缺少 backup.json')
@@ -232,7 +234,7 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
       name.startsWith(prefix) && ['.', '-'].includes(name[prefix.length]))
     if (claimed) throw new Error(`皮肤 ${skin.key} 的记录在迁移后没有可用图片，请检查存档`)
   }
-  return parsed
+  return { ...parsed, stateVersion: manifest.stateVersion, mergeRulesVersion: Number.isInteger(manifest.mergeRulesVersion) ? manifest.mergeRulesVersion : MERGE_RULES_VERSION }
 }
 
 function parseState(input, { nowMs, legacy, files, warnings = [], gameVersion = '', createdAt = null }) {

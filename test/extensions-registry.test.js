@@ -26,7 +26,9 @@ const MAX_FILE_BYTES = 512 * 1024
 const gameVersion = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
 const folders = readdirSync(ROOT, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name)
-const registry = JSON.parse(readFileSync(new URL('registry.json', ROOT), 'utf8'))
+const published = JSON.parse(readFileSync(new URL('registry.json', ROOT), 'utf8'))
+const candidateUrl = new URL('../release-candidates/extensions/registry.json', import.meta.url)
+const registry = existsSync(candidateUrl) ? JSON.parse(readFileSync(candidateUrl, 'utf8')) : published
 const manifestOf = key => JSON.parse(readFileSync(new URL(key + '/manifest.json', ROOT), 'utf8'))
 const sha256 = url => createHash('sha256').update(readFileSync(url)).digest('hex')
 
@@ -55,7 +57,7 @@ test('每个扩展目录三件套齐全，manifest 合规', () => {
   }
 })
 
-test('在线目录里每个下载扩展的版本、文案、校验值和仓库里的文件一致（改了代码就要升版本、重生成条目）', () => {
+test('候选目录（没有候选时为公开目录）与源码版本、文案、全部文件校验值一致', () => {
   for (const key of folders) {
     const entry = registry.extensions.find(candidate => candidate.key === key)
     assert.ok(entry, 'registry.json 里没有 ' + key + '：node scripts/extension-entry.mjs ' + key)
@@ -91,5 +93,21 @@ test('扩展的 server.js 导出合规：动作是函数；声明了公共事件
     if (module.init !== undefined) assert.equal(typeof module.init, 'function', key + '.init')
     if (module.view !== undefined) assert.equal(typeof module.view, 'function', key + '.view')
     if (module.eventVersion === 1) assert.ok(EXTENSION_EVENTS[key], key + ' 声明了 eventVersion 1，但 extension-events.js 里没登记它的事件')
+  }
+})
+
+// A new source version does not authorize advertising an unuploaded download.
+test('公开目录保持可信旧版本，候选必须升版且不能同版本改内容', () => {
+  const official = JSON.parse(readFileSync(new URL('../store/official-extensions.json', import.meta.url), 'utf8'))
+  for (const entry of published.extensions.filter(item => !item.builtin)) {
+    const known = official[entry.key]?.[entry.version]
+    assert.ok(known, entry.key + '@' + entry.version + ' missing official identity')
+    for (const [name, spec] of Object.entries(entry.files)) assert.equal(spec.sha256, known[name], entry.key + '/' + name)
+    const next = registry.extensions.find(item => item.key === entry.key)
+    assert.ok(next && versionAtLeast(next.version, entry.version), entry.key + ' candidate regressed')
+    if (next.version === entry.version) {
+      assert.deepEqual(next.files, entry.files, entry.key + ' changed files without a version bump')
+      assert.equal(next.bundle.sha256, entry.bundle.sha256)
+    }
   }
 })

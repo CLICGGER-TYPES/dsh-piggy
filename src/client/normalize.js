@@ -12,6 +12,7 @@ import { normalizeFishing } from './normalize-fishing.js'
 import { normalizeSkins } from './normalize-skins.js'
 import { normalizeEconomy } from './normalize-economy.js'
 import { normalizeExtensionParts } from './extensions.js'
+import { normalizeLink } from './external-snapshot.js'
 import { normalizeDiary } from './normalize-diary.js'
 /** 排队消息的稳定形状；轮询晚到时也要用同一条清洗路径补演。 */
 export function normalizePending(raw) {
@@ -375,6 +376,7 @@ export function normalize(raw) {
     },
     pending: normalizePending(d.pending),
     maxHealth: num(d.maxHealth, 5),
+    link: normalizeLink(d.link),
   }
 }
 

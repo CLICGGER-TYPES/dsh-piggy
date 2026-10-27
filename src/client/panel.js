@@ -4,6 +4,7 @@
  * 只通过 ctx 读写外壳的状态与元素（getter/setter 转发），不直接碰全局。
  * @module dsh-piggy/client/panel
  */
+import { renderEmptyPanel, renderUnhatchedPig } from './panel-empty.js'
 import { syncPigArt, syncSleepArt } from './art.js'
 import { DEV_TAB, OPEN_KEY, QUIT_TAB, TABS, UPDATE_TAB } from './constants.js'
 import { button, el } from './dom.js'
@@ -40,6 +41,7 @@ import { attachPointerRepaint } from './pointer-repaint.js'
 import { createRenderHold } from './render-hold.js'
 import { restoreHover } from './hover-restore.js'
 import { preserveFarmTriggerFocus } from './farm-trigger-focus.js'
+import { externalActionsBlocked, externalDevTabs, externalRenderBlocked, isExternalMode, syncExternalPanel } from './external-link.js'
 export function createPanel(ctx) {
       var pointerRepaint = attachPointerRepaint(ctx.host, window)
       const renderHold = createRenderHold(ctx.card)
@@ -132,7 +134,7 @@ export function createPanel(ctx) {
         ctx.showBubble('🍅 专注结束 · ' + text, 3200)
       }
       function renderContent() {
-        if (renderHold.defer(renderContent)) return
+        if (renderHold.defer(renderContent) || externalRenderBlocked()) return false
         var scrollTop = ctx.content.scrollTop
         var page = ctx.content.querySelectorAll('[data-scroll-page]')[0]?.getAttribute('data-scroll-page')
         // 2026-10-13：内部浮层按稳定名称保留滚动；重绘后同一商品仍在原位置，不串到别的页签。
@@ -171,16 +173,7 @@ export function createPanel(ctx) {
           legacy.appendChild(el('div', null, '金币、健康、打工、商店这些是新增的，重启 dsh（不是刷新页面）之后才会出现。'))
           ctx.content.appendChild(legacy)
         }
-        if (ctx.view.pig === null) {
-          ctx.content.appendChild(el('div', 'dp-empty', '门口放着一个纸盒，里面窸窸窣窣 📦'))
-          var grid = el('div', 'dp-actions')
-          var hatch = button('dp-btn dp-btn-wide', { 'data-action': 'hatch' }, function () { ctx.send('hatch') })
-          hatch.appendChild(el('span', null, '🥚'))
-          hatch.appendChild(el('span', null, '拆开纸盒'))
-          grid.appendChild(hatch)
-          ctx.content.appendChild(grid)
-          return
-        }
+        if (renderEmptyPanel(ctx)) return
 
         // 扩展的大界面（大窗口里，或网页里铺满）：只画它，不要页头。
         var bigView = Boolean(ctx.extBig) && ctx.tab === 'ext:' + ctx.extBig
@@ -189,7 +182,7 @@ export function createPanel(ctx) {
 
         // B9: home first; every app's top layer gets a 「‹」 back (inside a category it goes up a layer).
         var shell = updatesBridge()
-        var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell !== null && shell.quit ? [QUIT_TAB] : [], ctx.devMode ? [DEV_TAB] : []))
+        var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell !== null && shell.quit ? [QUIT_TAB] : [], externalDevTabs(ctx)))
         if (ctx.tab === 'home') {
           renderHome(ctx, apps.filter(function (a) { return a.key !== 'update' && a.key !== 'extensions' })) // 更新、扩展入口在设置里
           ctx.fitPanel()
@@ -235,7 +228,8 @@ export function createPanel(ctx) {
         }
         // The 兴趣 button is not a stage; leave it selected.
         if (!ctx.stagePicked && firstOpen !== null && (stageEntry === null || stageEntry.unlocked === false)) ctx.stage = firstOpen
-        ctx.host.setAttribute('data-dead', ctx.view.dead ? 'true' : 'false')
+        syncExternalPanel(ctx)
+        ctx.host.setAttribute('data-external-offline', externalActionsBlocked(ctx.view) ? 'true' : 'false')
         // 猪窗口里 isOpen 只表示「另一个窗口的面板开着」，自己永远按收起排版（不然会撑大猪窗口）
         ctx.host.setAttribute('data-open', ctx.isOpen && desktopRole() !== 'pet' ? 'true' : 'false')
         ctx.host.setAttribute('data-dev', ctx.devMode ? 'true' : 'false')
@@ -252,25 +246,7 @@ export function createPanel(ctx) {
         }
 
         if (ctx.view.hatched !== true) {
-          ctx.pig.setAttribute('data-stage', 'box')
-          ctx.pig.setAttribute('data-art', '')
-          ctx.pig.setAttribute('data-activity', '')
-          ctx.pig.setAttribute('data-activity-key', '')
-          ctx.pigEmoji.textContent = ctx.view.boxStage.emoji
-          ctx.pig.setAttribute('data-mood', 'box')
-          syncPigArt(ctx.pig, ctx.pigArt, ctx.pigEmoji)
-          // Size comes from the host so the box and the pig can never drift.
-          syncPigSize(ctx.host, ctx.view.boxStage.size)
-          applyEmojiStyle(ctx.host)
-          ctx.soul.hidden = true
-          ctx.host.setAttribute('data-soul', 'false')
-          ctx.host.setAttribute('data-faded', 'false')
-          ctx.host.setAttribute('data-unhatched', 'true')
-          ctx.pokeHint.hidden = false
-          ctx.hudName.textContent = '一个' + ctx.view.boxStage.label
-          ctx.hudCoins.textContent = '点开拆开它'
-          ctx.hudHealth.textContent = ''
-          ctx.lastStage = null
+          renderUnhatchedPig(ctx)
         } else {
           const pigStage = ctx.view.pig.stage
           syncSleepArt(pigStage.art, pigStage.artScenes, ctx.pigSleep)
@@ -387,7 +363,6 @@ export function createPanel(ctx) {
         renderContent()
         return true
       }
-
   /** A line from the pig goes in its bubble, with the owner's reply buttons under it. */
   function showPigLine(event) {
     var lineId = event.id

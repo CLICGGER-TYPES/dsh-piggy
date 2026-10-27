@@ -28,7 +28,7 @@ function fixture(initial, paint, focusedInside = true) {
       content.children.forEach(node => { node.parentNode = content })
       if (losesFocus && doc.activeElement === active) doc.activeElement = doc.body
     },
-    renderHold: { defer: () => false }, restoreHover() {}, preserveFarmTriggerFocus,
+    renderHold: { defer: () => false }, externalRenderBlocked: () => false, restoreHover() {}, preserveFarmTriggerFocus,
   })
   return { content, doc, ctx, render }
 }

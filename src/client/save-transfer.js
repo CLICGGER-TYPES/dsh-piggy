@@ -2,6 +2,7 @@
 /** Complete-save transfer controls for Settings. */
 import { button, el } from './dom.js'
 import { desktopShell } from './desktop-shell.js'
+import { isExternalMode, MIRROR_NOTE } from './external-link.js'
 
 const EXPORT_URL = '/dsh-piggy/save/export'
 const PREVIEW_URL = '/dsh-piggy/save/preview'
@@ -194,6 +195,20 @@ async function commitImport(ui) {
 /** Called on each settings paint; state is module-owned so polling can rebuild the DOM safely. */
 export function renderSaveTransferSettings(ui, section) {
   state.ui = ui
+  // 外部桌宠：存档导入导出归桌面版管，这里禁用并说明（设计 4.9 白名单）。
+  if (isExternalMode(ui.view)) {
+    const box = section(ui, '存档', '备份进度，或把小猪带到另一台设备')
+    const actions = el('div', 'dp-actions')
+    for (const [key, label] of [['export', '导出存档'], ['import', '导入存档']]) {
+      const node = button('dp-mini', { 'data-save-trigger': key, 'data-external-disabled': 'true' }, function () { status(ui, MIRROR_NOTE, 3600) })
+      node.textContent = label
+      node.disabled = true
+      actions.appendChild(node)
+    }
+    box.box.appendChild(actions)
+    box.box.appendChild(el('p', 'dp-dim', MIRROR_NOTE))
+    return
+  }
   const transfer = section(ui, '存档', '备份进度，或把小猪带到另一台设备')
   transfer.box.setAttribute('data-save-transfer-active', String(state.open || state.busy || state.loading))
   const actions = el('div', 'dp-actions')

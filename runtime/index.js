@@ -1,13 +1,18 @@
 // @ts-check
 /** 游戏本体的运行时：适配器不持有 Store，不直接调用奖励或存档实现。 */
+import { randomUUID } from 'node:crypto'
 import { dirname } from 'node:path'
-import { mkdirSync, unlinkSync } from 'node:fs'
+import { mkdirSync, readFileSync, unlinkSync } from 'node:fs'
 import { createStore } from '../store.js'
 import { dispatch } from '../commands.js'
+import { snapshot } from '../snapshot.js'
+import { MERGE_RULES_VERSION, abandonPomodoro, callOffActivity, keepFish, mergeSummary } from '../core.js'
+import { artFile } from '../store/art-route.js'
 import { registerGameRoutes } from '../routes.js'
 import { openWorkLedger } from './work-ledger.js'
 import { acquireGameLock } from './owner-lock.js'
 import { recoverSaveImportSync, commitSaveImport } from './save-transaction.js'
+import { recoverMergeSync } from './merge-transaction.js'
 import { createSaveTransfer } from './save-transfer.js'
 export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWorkEvent } from './work-events.js'
 
@@ -21,6 +26,8 @@ export function createGameRuntime(options) {
   let store
   let closed = false, busy = false, generation = 0
   let fault = null
+  let runtimeId = randomUUID()
+  let epoch = 0
   let routes = []
   const mounts = new Set(), active = new Set()
 
@@ -33,6 +40,16 @@ export function createGameRuntime(options) {
     if (busy) throw Object.assign(new Error('正在处理存档，请稍后重试'), { status: 503 })
     prepare()
   }
+  /** 显式写操作才 +1；轮询/被动 decay 不改变 epoch（#14 6.6）。 */
+  const READ_ONLY = new Set(['state', 'filePath', 'journal', 'freshen', 'drainPending', 'extensionOn',
+    'dispose', 'flush', 'installCommittedState'])
+
+  function changed(result) {
+    if (result === null || result === false || result === undefined) return false
+    if (typeof result === 'object' && result.ok === false) return false
+    return true
+  }
+
   function open() {
     const nextLedger = openWorkLedger({ directory: `${options.statePath}.work-events`,
       statePath: options.statePath, now: options.now })
@@ -40,20 +57,24 @@ export function createGameRuntime(options) {
     ledger = nextLedger
     store = nextStore
     const ownGeneration = ++generation
+    runtimeId = randomUUID()
+    epoch = 0
     if (options.journalHeader) store.journal?.header?.(options.journalHeader)
     for (const [key, method] of Object.entries(store)) {
-      if (typeof method !== 'function' || ['dispose', 'flush', 'installCommittedState'].includes(key)) continue
+      if (typeof method !== 'function' || READ_ONLY.has(key)) continue
       store[key] = (...args) => {
         if (generation !== ownGeneration) throw new Error('save replaced')
         prepare()
-        return method(...args)
+        const result = method(...args)
+        if (changed(result)) epoch += 1
+        return result
       }
     }
     const next = []
     registerGameRoutes({ register(route) { next.push(route); return () => {} } }, store, { fetch: options.fetch })
     routes = next
   }
-  try { recoverSaveImportSync(options.statePath); open() }
+  try { recoverSaveImportSync(options.statePath); recoverMergeSync(options.statePath); open() }
   catch (error) { store?.dispose(); release(); throw error }
 
   function finishDispose() {
@@ -65,6 +86,41 @@ export function createGameRuntime(options) {
     if (!fault) store.dispose()
     release()
   }
+  function readReceipts() {
+    try {
+      const parsed = JSON.parse(readFileSync(`${options.statePath}.work-events/receipts.json`, 'utf8'))
+      return Array.isArray(parsed?.receipts) ? parsed.receipts : []
+    } catch (error) {
+      if (error?.code === 'ENOENT') return []
+      throw error
+    }
+  }
+
+  /** 在 exclusive 内重新结算、结清 WAL、flush，并返回可供合并计算的内存快照。 */
+  function snapshotForWrite() {
+    if (closed) throw new Error('game runtime closed')
+    const state = store.freshen()
+    ledger.finish(store)
+    store.flush(true)
+    return {
+      state: state === null ? null : structuredClone(state),
+      receipts: structuredClone(readReceipts()),
+      runtimeId,
+      epoch,
+    }
+  }
+
+  /** 合并/回滚写完盘后重载运行时；会重新生成 runtimeId。 */
+  function restart() {
+    if (closed) throw new Error('game runtime closed')
+    ledger.finish(store)
+    // 事务已经写盘；旧 Store 不能再 flush，否则会把合并前的内存状态覆盖回去。
+    const old = store
+    old.installCommittedState(null)
+    old.dispose()
+    open()
+  }
+
   async function exclusive(operation) {
     available()
     busy = true
@@ -175,11 +231,71 @@ export function createGameRuntime(options) {
   }
 
   return {
-    handle, mountRoutes,
+    handle, mountRoutes, exclusive, restart, snapshotForWrite,
+    statePath: options.statePath,
+    view(drain = false) {
+      // 合并/导入期间仍要能给面板返回「最后一次快照 + ok:false」。
+      if (!busy) available()
+      else if (closed || fault) throw new Error('game runtime unavailable')
+      return snapshot(store, { drain })
+    },
+    gameInfo() {
+      const state = store.state
+      return {
+        busy,
+        hasPig: state !== null,
+        summary: state === null ? null : mergeSummary(state),
+        stateVersion: state?.version ?? 0,
+        mergeRulesVersion: MERGE_RULES_VERSION,
+      }
+    },
+    art(name) { return artFile({ filePath: options.statePath }, name) },
+    prepareMerge(target) {
+      return exclusive(async () => {
+        const state = store.state
+        if (state === null) return { ok: false, reason: 'absent', alreadyFinished: true }
+        const nowMs = options.now?.() ?? Date.now()
+        let result
+        if (target === 'activity') {
+          const had = state.activity !== null && state.activity !== undefined
+          const called = callOffActivity(state, nowMs)
+          result = { ok: true, alreadyFinished: had && called.ok !== true, summary: { had, result: called } }
+        } else if (target === 'pomodoro') {
+          const had = state.pomodoro?.startedAt !== null && state.pomodoro?.startedAt !== undefined
+          const abandoned = abandonPomodoro(state, nowMs)
+          result = { ok: true, alreadyFinished: had && abandoned.ok === true && abandoned.abandoned === false, summary: { had, result: abandoned } }
+        } else if (target === 'fishing') {
+          const pending = state.fishing?.pending ?? null
+          if (pending === null) result = { ok: true, alreadyFinished: true, summary: { kept: false } }
+          else if (pending.phase === 'caught') {
+            const kept = keepFish(state, nowMs)
+            result = { ok: true, alreadyFinished: true, summary: { kept: kept.ok === true, result: kept } }
+          } else {
+            // 手动钓鱼等待/搏斗：鱼跑掉，抛竿用掉的鱼饵不退。
+            state.fishing.pending = null
+            result = { ok: true, alreadyFinished: false, summary: { kept: false, escaped: true } }
+          }
+        } else result = { ok: false, reason: 'unknown-target' }
+        if (result.ok !== false) store.flush(true)
+        return result
+      })
+    },
+    runtimeId: () => runtimeId,
+    epoch: () => epoch,
+    readReceipts,
+    mergeHooks() {
+      const ext = store.ext
+      if (ext === undefined || typeof ext.mergeStates !== 'function') return {}
+      return ext.mergeStates()
+    },
+    targetInstalled() {
+      return store.ext?.installedKeys?.() ?? []
+    },
     acceptWorkEvent(event) {
       try {
         available()
         const result = ledger.receive(store, event)
+        if (result.status === 'applied') epoch += 1
         if (result.status !== 'duplicate') options.onStateChanged?.()
         return result
       } catch (error) {

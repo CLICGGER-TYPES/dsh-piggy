@@ -144,6 +144,43 @@ export default {
 
 细节（幂等、事务、上限）见 `docs/design/extension-achievements.md`。
 
+### 合并钩子（可选，`mergeStates`）
+
+DSH 的「外部桌宠」会把内嵌猪并进桌面猪（#14，设计稿 6.4）。
+两边都有这个扩展的数据时，宿主不知道你的字段是什么意思，所以**由扩展自己合并**：
+
+```js
+// manifest.json
+{ "key": "garden", "version": "1.1.1", "mergeHook": 1 }
+
+// server.js
+export default {
+  mergeStates(targetData, sourceData) {
+    return { data: { level: Math.max(targetData.level, sourceData.level) }, warnings: [], conflicts: [] }
+  },
+}
+```
+
+- **`mergeHook: 1`**：manifest 里写整数，`>= 1` 才会被调用。不写、写 0 或写成别的东西都算「没有钩子」，宿主退回**逐个二选一**（默认保留桌宠，落选的一边留在源备份里），不会报错。加钩子要同时把扩展版本 +1（patch），重算两份目录和官方清单——和改代码一样要发新版本。
+- **只从目标端已安装的扩展加载**：钩子永远由桌面猪那边装着的版本执行；内嵌猪的扩展代码**永远不会被执行**，也不会从存档 ZIP 里导入代码。所以两条规则：旧版本不认识的来源数据要拒绝合并（见下），不要把来源数据当成自己写的。
+- **签名** `mergeStates(targetData, sourceData)`（宿主会传两个深拷贝，你也可以再 `structuredClone`；**不要改入参**）。返回 `{ data, warnings, conflicts }`：
+  - `data`：合并后的这一份数据，**必填**；
+  - `warnings`：字符串数组，会显示在合并预览/结果里（写清楚丢了什么、留了哪一边）；
+  - `conflicts`：钩子自己没能自动决定的冲突，数组（没解决就写 `[]`）。**返回非空就等于说这一项要用户定**：宿主会把它降级成逐个二选一（默认保留桌宠，落选的留在源备份里），并把每条冲突的 `message` 写进警告；**不会**拿你返回的 `data` 顶着用。
+- **只返回纯 JSON**：普通对象/数组/字符串/有限数字/布尔/null。函数、`undefined`、`NaN`/`Infinity`、`Date`/`Map`/类实例、`__proto__` 这类 key 都会被宿主拒绝（连同超过 1MB 的返回值）；拒绝时按「钩子失败」退回二选一，不会写半个结果。
+- **入参可能比你的版本新**：数据里带版本号的（菜园 `version`、矿洞/盲盒 `v`）发现比当前新就直接 `throw`，让宿主退回二选一，**不要**用旧规则硬读、也不要悄悄把版本号改小。没有版本号的扩展（扭蛋）在 `warnings` 里说明「内嵌猪有当前版本不认识的字段」并保留桌宠自己的未知字段。
+
+官方四个（`farm` / `mine` / `gacha` / `blindbox`）已经实现，可以直接对照：
+
+| 扩展 | 规则 |
+|---|---|
+| 菜园 `farm` | 种子、仓库、图鉴数量、历史收获、肥料、帮工仓、欠着的退款两边相加；开垦块数、经验、帮工等级取高；同一块地取更靠后的一份（成熟 > 生长中（进度高）> 空地/休耕 > 枯苗）；帮工只留一套干活进度（批次/指针/管哪几块地），取本窗口干得更多的一方，仓库相加；第一课只算一次，做过的赢 |
+| 矿洞 `mine` | 矿石、化石图鉴、炸弹、累计挖到的矿两边相加或并集；镐、最深取高；层/趟/地图/连挖/上一格是一套上下文，整套跟钻得更深的一边，不混两张地图；小矿工猪的矿车/头灯取高，矿车里的矿相加，产出进度取本窗口更多的一方 |
+| 扭蛋 `gacha` | 幸运值、序号取高；记录按桌宠在前拼起来，最多 30 条；里程碑（抽数/金色/机器）两边累计相加；免费那一抽按天：今天任一边抽过，合并后今天不再免费；最近一次取 id 更大的 |
+| 盲盒 `blindbox` | 摆件潜能取高（最多 6）；凭证、抽数相加；每个卡池的保底水位取高；序号取高，最近一次取 id 更大的 |
+
+写钩子的通用做法：先把两边各自过一遍你自己的 `normalize`（旧版本数据先迁移），再按「资产相加、进度取高、局内上下文整套选一边」合并，最后再过一次 `normalize` 并把数量夹到游戏上限。金样例和不变量测试照 `test/ext-merge-official.test.js`：真实存档形状、入参不变、同输入同输出、未知新版本拒绝、上限不超。
+
 ## client.js
 
 普通脚本（不是 module），用 IIFE 包起来，加载后注册：
@@ -186,4 +223,12 @@ export default {
 见 [HANDOFF.md 9.3](../HANDOFF.md)：改菜园服务端先 `npm run build`（源码在 `src/extensions/farm/`，产物 `extensions/farm/server.js`）→ 升 `manifest.json` 版本 → `node scripts/extension-entry.mjs <key>`（和 `--host gitee`）更新两份目录 →
 `node scripts/official-extensions.mjs` 更新官方清单、`node scripts/extension-bundle.mjs <key>` 生成扩展包 `.piggyext`（代码和图片都在里面）→
 发行版**只传这一个 `.piggyext`**：0.36.1 起游戏在线安装只下整包（目录条目的 `bundle`）。例外：`minGame` 还低于 0.36.1 的版本（0.36.0 及更早的游戏也能装），要照旧把三个文件和 `assets/` 里的图**平铺**一起传，老游戏按 `files` 逐个下 →
-GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 提交目录、推 main → 用全新存档在线装一次验证。
+GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 回读附件校验通过 → 提交目录、推 main → 用全新存档在线装一次验证。
+
+附件上传后运行 `node scripts/extension-release-check.mjs`（默认 GitHub/Gitee 都检查）。仅核对某渠道或扩展可用 `--host github --key farm,mine`。它只读本地候选目录和公开下载地址，不上传、不改目录、不推送；非零退出时不能发布该目录。它会核对整包、包内版本与文件散列；`minGame < 0.36.1` 的扩展还逐件回读旧宿主需要的代码和图片。HTTP 404、内容不符和网络失败分别保留实际结果，不能用本地标签是否存在代替下载验证。
+
+`.github/workflows/extensions-check.yml` 对目录变更的 PR 执行同一检查，也支持手动只读执行；权限仅 `contents: read`。候选文件尚未上传时检查失败是发布依赖未就绪，不应跳过检查或把候选目录提前推成线上目录。网络失败需重试核对，不等于已证明附件不存在；此检查也不能代替最终游戏中的实际安装验收。
+
+### 未发布候选与公开目录
+
+源码扩展升版后，先把两渠道新条目保存在 `release-candidates/extensions/registry.json` 与 `registry-gitee.json`。CI以候选目录核对源码，公开 `extensions/registry*.json` 继续保留已交付的版本，并校验其官方身份；不能同版本改下载内容。确认发行后，先上传扩展附件并逐件回读校验，再把候选目录晋级公开目录，最后删除候选副本。离线安装器按源码打包，并用官方清单校验，不依赖公开目录先行。

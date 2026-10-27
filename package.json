@@ -1,6 +1,6 @@
 {
   "name": "dsh-piggy",
-  "version": "0.37.2-rc.3",
+  "version": "0.37.2-rc.4",
   "description": "🐖 一只住在 DeepSeek Harness 里的猪：吃你的真实工作长大，会学习、打工、旅行、生病、需要照顾",
   "keywords": [
     "dsh",
@@ -40,6 +40,7 @@
     "runtime",
     "adapters",
     "docs/guides/agent-adapters.md",
+    "docs/guides/external-pet.md",
     "src",
     "scripts",
     "cordis.patch.yml",

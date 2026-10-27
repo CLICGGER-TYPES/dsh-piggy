@@ -1,0 +1,62 @@
+name: Integrated candidate native QA
+on:
+  push:
+    branches: [feat/integrated-candidate-20261027]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  linux-dsh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      TZ: Asia/Shanghai
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install build and virtual desktop tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libfuse2t64 xvfb openbox picom xdotool scrot dbus-x11 x11-utils fonts-noto-cjk
+          npm install --global pnpm@11.28.5
+          npm ci --prefix apps/desktop --no-audit --no-fund
+          npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
+          python3 -m venv "$RUNNER_TEMP/piggy-qa-python"
+          "$RUNNER_TEMP/piggy-qa-python/bin/pip" install playwright==1.64.1
+          npm install --prefix "$RUNNER_TEMP/piggy-dsh-host" --no-audit --no-fund @deepseek-ai/dsh@0.2.1-rc.2
+      - name: Build exact game, npm package and AppImage without publishing
+        run: |
+          npm run build
+          mkdir -p candidate-qa
+          npm pack --ignore-scripts --pack-destination candidate-qa
+          node apps/desktop/scripts/release-game.mjs candidate-qa
+          node apps/desktop/scripts/pack-game.mjs
+          cd apps/desktop
+          npx --no-install electron-builder --linux AppImage --x64 --config.linux.artifactName=dsh-piggy-integrated-qa.AppImage --publish never
+      - name: Native AppImage and real DSH acceptance
+        run: |
+          dbus-run-session -- xvfb-run -a -s '-screen 0 1440x1000x24' "$RUNNER_TEMP/piggy-qa-python/bin/python" apps/desktop/qa/linux-dsh.py --repository "$GITHUB_WORKSPACE" --host "$RUNNER_TEMP/piggy-dsh-host"
+      - name: Hash exact candidate outputs
+        run: |
+          sha256sum apps/desktop/dist/dsh-piggy-integrated-qa.AppImage candidate-qa/*.tgz candidate-qa/*.gz > candidate-qa/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-native-report-${{ github.sha }}
+          retention-days: 7
+          path: integrated-qa-results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-linux-candidate-${{ github.sha }}
+          retention-days: 7
+          path: |
+            apps/desktop/dist/dsh-piggy-integrated-qa.AppImage
+            candidate-qa/

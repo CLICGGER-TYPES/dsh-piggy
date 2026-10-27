@@ -36,3 +36,18 @@ test('Gitee 在线扩展目录：下载地址都在 Gitee 发行版，校验值�
     }
   }
 })
+
+test('候选渠道目录互相匹配，Gitee候选不包含GitHub链接', async () => {
+  const { existsSync } = await import('node:fs')
+  const path = new URL('../release-candidates/extensions/registry.json', import.meta.url)
+  if (!existsSync(path)) return
+  const github = JSON.parse(readFileSync(path, 'utf8'))
+  const gitee = JSON.parse(readFileSync(new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url), 'utf8'))
+  assert.doesNotMatch(JSON.stringify(gitee), /github/i)
+  assert.deepEqual(gitee.extensions.map(item => item.key + '@' + item.version), github.extensions.map(item => item.key + '@' + item.version))
+  for (const item of github.extensions.filter(item => !item.builtin)) {
+    const twin = gitee.extensions.find(other => other.key === item.key)
+    assert.equal(twin.bundle.sha256, item.bundle.sha256)
+    for (const [name, file] of Object.entries(item.files)) assert.equal(twin.files[name].sha256, file.sha256)
+  }
+})

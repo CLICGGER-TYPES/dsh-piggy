@@ -83,9 +83,80 @@ function reportProgress(data, api) {
   for (const { name, ...payload } of progress(data)) api.emit(name, payload)
 }
 
+// #14 外部桌宠合并钩子：扭蛋没有自己的币，只有运气值、记录和里程碑。
+// 运气/序号取高，记录按新旧拼起来留最近 30 条，里程碑两边累计相加；没有版本号的数据只提示认不出的字段。
+const MERGE_FIELDS = ['luck', 'seq', 'history', 'last', 'freeDay', 'milestones']
+const SAFE = Number.MAX_SAFE_INTEGER
+const RARITIES = ['normal', 'rare', 'gold']
+/** 存档里的 key 会拼进新对象：`__proto__` 这类名字一律不收。 */
+const safeKey = key => key !== '__proto__' && key !== 'constructor' && key !== 'prototype'
+
+function forMerge(data, side) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('扭蛋数据（' + side + '）不是对象，无法合并')
+  return normalize(structuredClone(data))
+}
+
+/** 只留下游戏里真出得来的记录（机器里确实有这个稀有度的这个东西）。 */
+function cleanGot(got) {
+  if (got === null || typeof got !== 'object' || !RARITIES.includes(got.rarity)) return null
+  const amount = Math.floor(Number(got.count))
+  if (typeof got.key !== 'string' || !Number.isSafeInteger(amount) || amount <= 0) return null
+  if (!Object.values(POOLS).some(pool => (pool[got.rarity] ?? []).some(entry => entry.key === got.key))) return null
+  return { key: got.key, label: String(got.label ?? ''), emoji: String(got.emoji ?? ''), count: amount, rarity: got.rarity }
+}
+
+function cleanList(list) {
+  return (Array.isArray(list) ? list : []).map(cleanGot).filter(item => item !== null)
+}
+
+function cleanLast(last) {
+  if (last === null || typeof last !== 'object' || !Object.hasOwn(POOLS, last.machine)) return null
+  const items = cleanList(last.items)
+  if (items.length === 0) return null
+  const id = Math.floor(Number(last.id))
+  return { id: Number.isSafeInteger(id) && id > 0 ? id : 0, machine: last.machine, items }
+}
+
+/** 免费那一抽按天记：今天任一边抽过，合并后今天就不再免费；否则留较晚的那天。 */
+function mergeFreeDay(a, b, today) {
+  const looksLikeDay = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  if (a === today || b === today) return today
+  if (looksLikeDay(a) && looksLikeDay(b)) return a > b ? a : b
+  return looksLikeDay(a) ? a : looksLikeDay(b) ? b : ''
+}
+
+function mergeStates(target, source, now = Date.now()) {
+  const t = forMerge(target, '桌宠'), s = forMerge(source, '内嵌猪')
+  const history = [...cleanList(t.history), ...cleanList(s.history)].slice(0, 30)
+  const lastT = cleanLast(t.last), lastS = cleanLast(s.last)
+  const last = lastS !== null && (lastT === null || lastS.id > lastT.id) ? lastS : lastT
+  // 老数据没有 milestones（第一次抽卡时才补），先按记录和历史推出来再相加。
+  const tMilestones = milestones(t), sMilestones = milestones(s)
+  const data = {
+    luck: Math.min(SAFE, Math.max(t.luck, s.luck)),
+    seq: Math.max(t.seq, s.seq, last?.id ?? 0),
+    history,
+    last,
+    freeDay: mergeFreeDay(t.freeDay, s.freeDay, gameDay(now)),
+    milestones: {
+      spins: Math.min(SAFE, tMilestones.spins + sMilestones.spins),
+      gold: Math.min(SAFE, tMilestones.gold + sMilestones.gold),
+      machines: [...new Set([...tMilestones.machines, ...sMilestones.machines])].filter(key => Object.hasOwn(POOLS, key)),
+    },
+  }
+  for (const key of Object.keys(t)) if (!MERGE_FIELDS.includes(key) && safeKey(key)) data[key] = t[key]
+  const unknown = Object.keys(s).filter(key => !MERGE_FIELDS.includes(key))
+  const warnings = unknown.length > 0 ? ['扭蛋：内嵌猪有当前版本不认识的字段（' + unknown.slice(0, 6).join('、') + '），没有合并'] : []
+  // 记录和里程碑保持自洽：两边累计相加，但也不能少于历史里看得见的次数。
+  data.milestones = milestones(data)
+  normalize(data)
+  return { data, warnings, conflicts: [] }
+}
+
 export default {
   eventVersion: 1,
   progress,
+  mergeStates,
   init() { return { luck: 0, freeDay: '', history: [], last: null, seq: 0 } },
 
   actions: {

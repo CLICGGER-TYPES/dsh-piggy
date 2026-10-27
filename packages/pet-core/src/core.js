@@ -115,3 +115,9 @@ export { validateExtensionEvent, recordExtensionEvent, resetExtensionEventBaseli
 export { buyFishingAutomation, collectAutoFish } from './core/fishing-auto.js'
 
 export { setOfflineFeed } from './core/offline-feed.js'
+
+export { MergeError, assertMergeable, mergeReceipts, mergeSaveStates, mergeSummary } from './core/merge.js'
+export { MERGE_RECEIPT_LIMIT, MERGE_RULES_VERSION, MERGE_RULES, DYNAMIC_MAP_RULES, knownRule, missingMergeRules, duplicateOf, mergeBlockers } from './core/merge-rules.js'
+export { mergeSummary as mergeStateSummary } from './core/merge.js'
+export { MERGE_NAME_MAX, describeChoices, normalizeChoices, applyChoices, mergedSkinsHas, skinChoices, personalityChoices } from './core/merge-identity.js'
+export { resumeSuspendedPig, suspensionFingerprint, suspensionState } from './core/suspend.js'

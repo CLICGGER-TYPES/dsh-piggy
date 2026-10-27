@@ -4,7 +4,9 @@ import { Worker } from 'node:worker_threads'
 
 export async function startBackgroundHost(gameDir, statePath, options = {}) {
   const worker = new Worker(new URL('./runtime-worker.js', import.meta.url), {
-    workerData: { gameDir, statePath, optionalExtensionsDirectory: options.optionalExtensionsDirectory, workEventsDirectory: options.workEventsDirectory },
+    workerData: { gameDir, statePath, workEventsDirectory: options.workEventsDirectory,
+      optionalExtensionsDirectory: options.optionalExtensionsDirectory,
+      workEventsAutoStart: options.workEventsAutoStart !== false, gameVersion: options.gameVersion ?? '' },
   })
   const pending = new Map()
   const fetches = new Map()
@@ -61,6 +63,12 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
       else task.resolve(message.value)
     } else if (message.kind === 'snapshot') options.onSnapshot?.(message.value)
     else if (message.kind === 'changed') options.onStateChanged?.()
+    else if (message.kind === 'confirm') {
+      Promise.resolve(options.onConfirm?.(message.plan)).then(
+        allowed => worker.postMessage({ kind: 'confirm-result', id: message.id, allowed: allowed === true }),
+        () => worker.postMessage({ kind: 'confirm-result', id: message.id, allowed: false }),
+      )
+    }
     // 网络或回复投递失败不代表 writer 死亡，退出时仍须尝试保存。
     else if (message.kind === 'fetch') void forwardFetch(message).catch(() => {})
     else if (message.kind === 'cancel-fetch') fetches.get(message.id)?.abort()
@@ -80,6 +88,9 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     /** @param {string} method @param {string} url @param {string | ArrayBuffer} [body] */
     handle: (method, url, body) => request('handle', [method, url, body], body instanceof ArrayBuffer ? [body] : []),
     acceptWorkEvent: event => request('acceptWorkEvent', [event]),
+    metadata: () => request('metadata'),
+    externalEnable: options => request('external:enable', [options]),
+    externalDisable: () => request('external:disable'),
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {
       if (closing) return closing

@@ -12,7 +12,27 @@ import { processPending } from './pending.js'
 import { createPomodoroClock } from './pomodoro-clock.js'
 import { pollKey } from './poll-key.js'
 import { record } from './journal.js'
-import { num, str } from './values.js'
+import { isObj, num, str } from './values.js'
+import { externalActionsBlocked, externalBlockedMessage, isExternalMode } from './external-link.js'
+
+/** 外部模式下不转发、也不显示的本地管理动作（桌面侧还会再校验一次）。 */
+const EXTERNAL_FORBIDDEN = ['dev', 'giveAll', 'reset', 'ageFromNow', 'timeScale', 'fishGive', 'installExtension', 'removeExtension']
+
+/**
+ * 宿主在合并/导入的 exclusive 里明确说「我在忙」时，普通的 /state、/act 会被拒。
+ *
+ * 这不是断线：轮询每 POLL_MS 一次，当成断线就会每 4 秒弹一次「连接不上宿主」，
+ * 还会把这份错误正文当作快照画上去（画面上等于把猪和面板清掉）。所以只认
+ * 「写明白了在忙」的这几种（运行时的固定话术、reason/code/busy 标记），
+ * 真正的故障（例如存档恢复失败）照样按失败处理，不能在这里吞掉。
+ * @param {number} status
+ * @param {any} body 已解析的正文
+ */
+function busyResponse(status, body) {
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) return false
+  if (body.busy === true || body.code === 'busy' || body.reason === 'desktop-busy') return true
+  return status === 503 && str(body.error, '').includes('正在处理存档')
+}
 
 /**
  * @param {object} ctx - the shell context
@@ -55,6 +75,16 @@ export function createIo(ctx) {
       async function perform(action, extra, options) {
         var background = options?.background === true
         if ((ctx.busy && !background) || ctx.stopped) return null
+        // 外部桌宠：断线/合并中一律不执行、不排队，也不回退到内嵌猪（设计 4.9、4.11）。
+        if (externalActionsBlocked(ctx.view)) {
+          if (!background) ctx.showBubble(externalBlockedMessage(ctx.view), 3800)
+          return null
+        }
+        // 存档/扩展安装/调试类动作在外部模式下由桌面版管理，客户端先拦一道。
+        if (isExternalMode(ctx.view) && EXTERNAL_FORBIDDEN.includes(action)) {
+          ctx.showBubble('外部桌宠模式下，这一项在桌面版设置里操作', 3600)
+          return null
+        }
         if (ctx.view.pig === null && action !== 'hatch') return null
         // Every action bumps the sequence: a poll that started before this
         // action is stale by the time it lands and must be dropped.
@@ -72,6 +102,11 @@ export function createIo(ctx) {
             body: JSON.stringify(body),
           })
           var next = await res.json()
+          // 宿主明确说忙：这次动作没执行，也不能把「在忙」的正文当动作结果结算进画面。
+          if (!res.ok && busyResponse(res.status, next)) {
+            if (!background) ctx.showBubble('宿主正忙，请稍后再试', 2600)
+            return null
+          }
           // 后台 touch 让位给更晚的动作：后者的快照更新，不能再拿旧的覆盖。
           if (background && seq !== actionSeq) return next
           if (action === 'buy' && next?.ok === true) ctx.justBought = extra?.item ?? null
@@ -153,6 +188,10 @@ export function createIo(ctx) {
               'too-small': '太少了，换不出 1 个金币',
               'not-buyable': '这种币只能在扩展里挣，不能用金币买',
               closed: '这个钓点现在没开，夜潭只在晚上',
+              // 外部桌宠：桌面忙/断线时不排队，只提示再试
+              'desktop-busy': '桌面版正忙，请稍后再试',
+              disconnected: '没连上桌面版，动作没有执行',
+              'link-queued': '桌面版没开，工作事件已排队；动作没有执行',
             }
             ctx.showBubble(reasons[next.reason] ?? '这个操作没成', 2400)
           }
@@ -175,8 +214,15 @@ export function createIo(ctx) {
         var startedAt = actionSeq
         try {
           var res = await fetch(STATE_URL, { cache: 'no-store' })
-          if (!res.ok) throw new Error('HTTP ' + res.status)
+          if (!res.ok) {
+            var failure = await res.json().catch(function () { return null })
+            // 正在处理存档/合并：保留当前快照，不报断线、不重画（见 busyResponse）。
+            if (busyResponse(res.status, failure)) return
+            throw new Error('HTTP ' + res.status)
+          }
           var next = await res.json()
+          // 忙碌且没带快照（外层面板的占位正文）：同样保留当前画面，别把面板清成「没有猪」。
+          if (busyResponse(res.status, next) && !(isObj(next) && 'pig' in next)) return
           // An action landed while this poll was in flight: its result is newer
           // than ours, so painting ours would undo what the user just did.
           // But this poll may be the request that took a message out of the
