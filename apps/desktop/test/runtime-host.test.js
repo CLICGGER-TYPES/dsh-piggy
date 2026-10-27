@@ -195,3 +195,18 @@ test('Worker 保存失败保留原错误与现场，重新发布健康接口且�
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('Worker startup preserves the original endpoint failure when cleanup also fails', async () => {
+  const directory = temp(), statePath = join(directory, 'state.json'), endpoint = join(directory, 'not-a-directory')
+  writeFileSync(statePath, JSON.stringify(hatchEgg(Date.now())))
+  mkdirSync(statePath + '.tmp')
+  writeFileSync(endpoint, 'preserve')
+  try {
+    await assert.rejects(startBackgroundHost(writeGameWithPending(directory), statePath, { workEventsDirectory: endpoint }), error => {
+      assert.match(error.message, /EEXIST|ENOTDIR|real directory/)
+      assert.match(error.message, /启动清理失败/)
+      assert.match(error.message, /state\.json\.tmp/)
+      return true
+    })
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})
