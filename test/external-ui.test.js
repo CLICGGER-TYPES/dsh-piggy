@@ -861,3 +861,30 @@ test('切回确认与丢弃确认按钮实际发送 disconnect，而非再次打
     }
   } finally { resetSession(session); env.restore() }
 })
+
+test('外部弹层同一步骤重画保留滚动，切换步骤复位并更新独立滚动标识', async () => {
+  const env = installGlobals()
+  const { session, repaint } = await import('../src/client/external-pet.js')
+  resetSession(session)
+  try {
+    session.ui = env.dom.ui
+    session.open = true
+    session.step = 'loading'
+    repaint()
+    const dialog = session.overlay.dialog
+    // Real browsers clamp scrollTop when textContent empties a scrolled box.
+    Object.defineProperty(dialog, 'textContent', {
+      get() { return this._text },
+      set(value) { Object.getOwnPropertyDescriptor(Node.prototype, 'textContent').set.call(this, value); this.scrollTop = 0 },
+    })
+    dialog.scrollTop = 650
+    repaint()
+    assert.equal(dialog.scrollTop, 650)
+    assert.equal(dialog.getAttribute('data-scroll-key'), 'external:loading')
+    session.step = 'rollingBack'
+    repaint()
+    assert.equal(dialog.scrollTop, 0)
+    assert.equal(dialog.getAttribute('data-external-dialog'), 'rollingBack')
+    assert.equal(dialog.getAttribute('data-scroll-key'), 'external:rollingBack')
+  } finally { resetSession(session); env.restore() }
+})
