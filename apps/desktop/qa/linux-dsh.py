@@ -121,8 +121,10 @@ def shot(page, name):
     page.screenshot(path=str(out / (name + '.png')))
     # Capture actual X11 pixels of the content area, excluding the browser's
     # token-bearing address bar. This also exposes native clipping/occlusion.
+    # Openbox adds a bottom border: subtract the horizontal frame half-width
+    # from outerHeight-innerHeight, otherwise 9px home dots are missed by 4px.
     box = page.evaluate('''() => ({x:screenX+(outerWidth-innerWidth)/2,
-        y:screenY+outerHeight-innerHeight,w:innerWidth,h:innerHeight})''')
+        y:screenY+outerHeight-innerHeight-(outerWidth-innerWidth)/2,w:innerWidth,h:innerHeight})''')
     rect = ','.join(str(round(box[k])) for k in ['x', 'y', 'w', 'h'])
     run(['scrot', '-o', '-a', rect, str(out / (name + '-native.png'))])
 
@@ -133,7 +135,7 @@ def coord(page, selector):
       const fx=e.matches('.dp-pig')?(e.getAttribute('data-walk')==='right'?.33:.67):.5;
       const x=r.x+r.width*fx, y=r.y+r.height/2;
       const hit=document.elementFromPoint(x,y);
-      return {x:screenX+(outerWidth-innerWidth)/2+x,y:screenY+outerHeight-innerHeight+y,
+      return {x:screenX+(outerWidth-innerWidth)/2+x,y:screenY+outerHeight-innerHeight-(outerWidth-innerWidth)/2+y,
         rect:[r.x,r.y,r.width,r.height],ok:!e.disabled&&r.width>0&&r.height>0&&
           x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&(hit===e||e.contains(hit))};
     }''')
@@ -175,7 +177,7 @@ def scroll_to(page, selector):
           let p=e.parentElement;
           while(p){const c=getComputedStyle(p);if(/auto|scroll/.test(c.overflowY)&&p.scrollHeight>p.clientHeight)break;p=p.parentElement}
           const r=(p||document.querySelector('.dp-content')).getBoundingClientRect();
-          return {x:screenX+(outerWidth-innerWidth)/2+r.x+r.width/2,y:screenY+outerHeight-innerHeight+r.y+r.height/2};
+          return {x:screenX+(outerWidth-innerWidth)/2+r.x+r.width/2,y:screenY+outerHeight-innerHeight-(outerWidth-innerWidth)/2+r.y+r.height/2};
         }''')
         run(['xdotool', 'mousemove', str(round(point['x'])), str(round(point['y'])), 'click', '5'])
         time.sleep(.18)
@@ -340,8 +342,9 @@ try:
         page.on('response', lambda response: responses.append(response) if '/dsh-piggy/act' in response.url and response.request.method == 'POST' else None)
         wait(lambda: has(page, '.dp-pig:visible'), 'DSH plugin activation', 90)
         assert page.locator('[data-dsh-pig]').count() == 1
-        if has(page, 'button:has-text("Continue")'):
-            click(page, 'button:has-text("Continue")')
+        wait(lambda: has(page, 'button:has-text("Continue")'), 'fresh DSH host welcome notice')
+        click(page, 'button:has-text("Continue")')
+        wait(lambda: not has(page, 'button:has-text("Continue")'), 'native host welcome acknowledgement')
         open_web_menu(page)
         home_tab(page, 'bag')
         click(page, '[data-bag="food"]')
