@@ -39,6 +39,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
           npm run build
+          git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
           npm test
           npm run typecheck
       - name: 游戏包
