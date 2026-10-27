@@ -18,6 +18,8 @@ New-Item $Out -ItemType Directory -Force | Out-Null
 $Qa = Join-Path $env:RUNNER_TEMP ('piggy-installer-' + [Guid]::NewGuid().ToString('N'))
 $AppDir = Join-Path $Qa 'Program files'
 $DataProfile = Join-Path $Qa 'personal profile'
+$DefaultProfile = Join-Path $env:APPDATA 'piggy'
+$LegacyProfile = Join-Path $env:APPDATA 'dsh-piggy-desktop'
 $Catalog = Get-Content (Join-Path $Repository 'apps/desktop/build/optional-extensions/catalog.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $Results = [System.Collections.Generic.List[object]]::new()
 $Game = $null
@@ -153,10 +155,12 @@ function Close-Game($Process,$Root) {
  if ($confirm) { Click-Element $confirm }
  if (-not $Process.WaitForExit(20000)) { throw 'Game did not quit through its UI' }
 }
-function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh=$false) {
- $env:PIGGY_USERDATA=$UserProfile
- if (-not (Test-Path $UserProfile)) { New-Item $UserProfile -ItemType Directory | Out-Null }
- '{"mode":"http","address":"127.0.0.1:9"}' | Set-Content (Join-Path $UserProfile 'proxy.json')
+function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh=$false,[bool]$UseDefault=$false) {
+ if ($UseDefault) { Remove-Item Env:PIGGY_USERDATA -ErrorAction SilentlyContinue } else { $env:PIGGY_USERDATA=$UserProfile }
+ if (-not $UseDefault -or -not (Test-Path (Join-Path $LegacyProfile 'dsh-piggy'))) {
+  if (-not (Test-Path $UserProfile)) { New-Item $UserProfile -ItemType Directory | Out-Null }
+  '{"mode":"http","address":"127.0.0.1:9"}' | Set-Content (Join-Path $UserProfile 'proxy.json')
+ }
  $script:Game=Start-Process (Join-Path $AppDir 'dsh-piggy.exe') -ArgumentList '--force-renderer-accessibility' -PassThru
  $root=Wait-Until { Find-Window $script:Game.Id } 'installed game window' 60
  if ($Fresh) {
@@ -181,9 +185,10 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
  $script:Game=$null
  $state=Get-Content (Join-Path $UserProfile 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
  if (-not $Fresh -and ($state.coins -ne 1314 -or $state.inventory.apple -ne 7 -or $state.name -ne 'Installer QA')) { throw 'Existing game progress changed' }
- $Results.Add(@{case=$Name;installedExe=$true;nativeMenu=$true;nativeQuit=$true;proxy='unreachable 127.0.0.1:9';extensions=$Expected;freshHatch=$Fresh})
+ $Results.Add(@{case=$Name;installedExe=$true;nativeMenu=$true;nativeQuit=$true;proxy='unreachable 127.0.0.1:9';extensions=$Expected;freshHatch=$Fresh;defaultProfile=$UseDefault})
 }
 try {
+ if ((Test-Path $DefaultProfile) -or (Test-Path $LegacyProfile)) { throw 'VM already contains a personal piggy profile; refusing to overwrite it' }
  node (Join-Path $Repository 'apps/desktop/qa/seed-installer-profile.mjs') $DataProfile $Repository
  if ($LASTEXITCODE -ne 0) { throw 'Fixture seed failed' }
  $env:PIGGY_USERDATA=$DataProfile
@@ -201,16 +206,30 @@ try {
  Install-Pick 'cancel' @('farm','mine','blindbox','gacha','pig-puzzle') $true
  if ($exeHash -ne (Get-FileHash (Join-Path $AppDir 'dsh-piggy.exe')).Hash) { throw 'Cancel changed installed executable' }
  Install-Pick 'fresh-all' @('farm','mine','blindbox','gacha','pig-puzzle')
- Run-Game 'fresh-hatch' (Join-Path $Qa 'fresh profile') 5 $true
+ node (Join-Path $Repository 'apps/desktop/qa/seed-installer-profile.mjs') (Join-Path $LegacyProfile 'dsh-piggy') $Repository
+ if ($LASTEXITCODE -ne 0) { throw 'Legacy fixture seed failed' }
+ Move-Item (Join-Path $LegacyProfile 'dsh-piggy/proxy.json') (Join-Path $LegacyProfile 'proxy.json')
+ $oldHash=Inventory $LegacyProfile
+ Run-Game 'default-migration' $DefaultProfile 5 $false $true
+ if ($oldHash -ne (Inventory $LegacyProfile)) { throw 'Native default migration changed original legacy files' }
+ Move-Item $DefaultProfile (Join-Path $Qa 'migrated-default-backup')
+ Move-Item $LegacyProfile (Join-Path $Qa 'original-legacy-backup')
+ Run-Game 'fresh-hatch' $DefaultProfile 5 $true $true
  $before=Inventory $DataProfile
+ $freshBefore=Inventory $DefaultProfile
  $uninstall=Start-Process (Join-Path $AppDir 'Uninstall dsh-piggy.exe') -ArgumentList "/S _?=$AppDir" -PassThru
  if (-not $uninstall.WaitForExit(60000)) { throw 'Uninstaller timed out' }
  Wait-Until { -not (Test-Path (Join-Path $AppDir 'dsh-piggy.exe')) } 'uninstalled executable removal' 30 | Out-Null
  if ($before -ne (Inventory $DataProfile)) { throw 'Uninstall changed personal save or extensions' }
+ if ($freshBefore -ne (Inventory $DefaultProfile)) { throw 'Uninstall changed default-profile save or extensions' }
  $Results.Add(@{case='uninstall';saveUntouched=$true;exitCode=$uninstall.ExitCode})
  @{ok=$true;cases=$Results;vm='GitHub windows-latest';input='native Win32 mouse';version='QA only, not published'} | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $Out 'report.json') -Encoding UTF8
 } catch {
  try { Screenshot 'failure-desktop' } catch {}
+ foreach ($dir in @($DataProfile,$DefaultProfile)) {
+  if (Test-Path (Join-Path $dir 'piggy.log')) { Copy-Item (Join-Path $dir 'piggy.log') (Join-Path $Out ((Split-Path $dir -Leaf)+'-piggy.log')) }
+  if (Test-Path (Join-Path $dir 'window.json')) { Copy-Item (Join-Path $dir 'window.json') (Join-Path $Out ((Split-Path $dir -Leaf)+'-window.json')) }
+ }
  try {
   $script:LastRoot.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition) | ForEach-Object { @{name=$_.Current.Name;type=$_.Current.ControlType.ProgrammaticName;id=$_.Current.AutomationId;rect=$_.Current.BoundingRectangle.ToString()} } | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $Out 'failure-controls.json') -Encoding UTF8
  } catch {}

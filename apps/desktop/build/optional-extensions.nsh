@@ -23,6 +23,8 @@
 ;   selection file mtime is a fresh batch identity for the runtime importer;
 ; - farm-classic (same key, manual import variant) is never bundled here.
 
+; Uninstaller compilation has no optional page or payload hooks.
+!ifndef BUILD_UNINSTALLER
 !ifndef OPTIONAL_EXTENSIONS_NSH
 !define OPTIONAL_EXTENSIONS_NSH
 
@@ -77,6 +79,7 @@ Var /GLOBAL optExtFile
       ${NSD_SetState} $optExtCb0 ${BST_CHECKED}
     ${EndIf}
     ${NSD_CreateLabel} 4% 8% 96% 8% "${OPTEXT_0_NOTE}"
+    Pop $0
 
     ${NSD_CreateCheckbox} 0 17% 100% 8% "${OPTEXT_1_LABEL}"
     Pop $optExtCb1
@@ -84,6 +87,7 @@ Var /GLOBAL optExtFile
       ${NSD_SetState} $optExtCb1 ${BST_CHECKED}
     ${EndIf}
     ${NSD_CreateLabel} 4% 25% 96% 8% "${OPTEXT_1_NOTE}"
+    Pop $0
 
     ${NSD_CreateCheckbox} 0 34% 100% 8% "${OPTEXT_2_LABEL}"
     Pop $optExtCb2
@@ -91,6 +95,7 @@ Var /GLOBAL optExtFile
       ${NSD_SetState} $optExtCb2 ${BST_CHECKED}
     ${EndIf}
     ${NSD_CreateLabel} 4% 42% 96% 8% "${OPTEXT_2_NOTE}"
+    Pop $0
 
     ${NSD_CreateCheckbox} 0 51% 100% 8% "${OPTEXT_3_LABEL}"
     Pop $optExtCb3
@@ -98,6 +103,7 @@ Var /GLOBAL optExtFile
       ${NSD_SetState} $optExtCb3 ${BST_CHECKED}
     ${EndIf}
     ${NSD_CreateLabel} 4% 59% 96% 8% "${OPTEXT_3_NOTE}"
+    Pop $0
 
     ${NSD_CreateCheckbox} 0 68% 100% 8% "${OPTEXT_4_LABEL}"
     Pop $optExtCb4
@@ -105,15 +111,20 @@ Var /GLOBAL optExtFile
       ${NSD_SetState} $optExtCb4 ${BST_CHECKED}
     ${EndIf}
     ${NSD_CreateLabel} 4% 76% 96% 8% "${OPTEXT_4_NOTE}"
+    Pop $0
 
     ; One reserved note row; restore only choices from this wizard visit.
     ${If} ${FileExists} "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
       ${NSD_CreateLabel} 0 84% 100% 8% "${OPTEXT_NOTE_UPDATE}"
+    Pop $0
     ${Else}
       ${NSD_CreateLabel} 0 84% 100% 8% "${OPTEXT_NOTE_KEEP}"
+    Pop $0
     ${EndIf}
     ${NSD_CreateLabel} 0 92% 100% 8% "${OPTEXT_NOTE_BUILTIN}"
+    Pop $0
 
+    ${NSD_OnBack} optExtPageLeave
     nsDialogs::Show
   FunctionEnd
 
@@ -219,3 +230,5 @@ Var /GLOBAL optExtFile
 !macroend
 
 !endif
+
+!endif ; BUILD_UNINSTALLER
