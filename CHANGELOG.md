@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 本机工作接口兼容Windows管理员令牌的默认目录所有者，随后将所有者及访问规则收敛到当前账户；后台启动失败时保留原始原因和清理失败信息。
+
 - 补充Windows/Linux PR自动回归；修正Windows文件URL导入、npm只读打包子进程与类型检查命令行过长，检查流程不发布任何包。
 
 - 桌面版默认数据目录统一为 `piggy`，存档 `state.json` 和扩展 `extensions/` 直接放在其中；Windows、Linux、macOS 共用同一套路径规则，普通窗口与透明舞台一致。首次升级复制旧数据并保留原目录，拒绝覆盖已有数据或迁移仍在使用中的存档；迁移中断可继续。此改动需要更新外壳，不随游戏热更新生效。
