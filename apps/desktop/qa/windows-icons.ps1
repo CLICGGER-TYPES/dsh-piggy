@@ -49,14 +49,12 @@ function Check-ShellIcon([string]$Name,[string]$Path) {
 }
 function Find-SystemElement([string]$Pattern,[string[]]$Processes,$Type=$null) {
  $ids=@(Get-Process -Name $Processes -ErrorAction SilentlyContinue | ForEach-Object Id)
- foreach($id in $ids){
-  $cond=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,[int]$id)
-  foreach($root in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$cond)){
-   if($root.Current.IsOffscreen){continue}
-   foreach($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)){
-    $c=$e.Current;$r=$c.BoundingRectangle
-    if($c.Name -match $Pattern -and -not $c.IsOffscreen -and $r.Width -gt 5 -and $r.Height -gt 5 -and ($null -eq $Type -or $c.ControlType -eq $Type)){return $e}
-   }
+ # XAML accessibility children can live in a different process from their
+ # top-level proxy. Match the actual element owner, not the window proxy.
+ foreach($root in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,[System.Windows.Automation.Condition]::TrueCondition)){
+  foreach($e in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)){
+   $c=$e.Current;$r=$c.BoundingRectangle
+   if($c.ProcessId -in $ids -and $c.Name -match $Pattern -and -not $c.IsOffscreen -and $r.Width -gt 5 -and $r.Height -gt 5 -and ($null -eq $Type -or $c.ControlType -eq $Type)){return $e}
   }
  }
  return $null
@@ -84,12 +82,25 @@ function Check-InstalledIcons {
  Screenshot 'icon-desktop-native' $desktopIcon
  $start=Wait-Until {Find-SystemElement '^Start$' @('explorer') ([System.Windows.Automation.ControlType]::Button)} 'native Start button' 15
  Click-Element $start
- $all=Wait-Until {Find-SystemElement '^All(?: apps)?$' @('StartMenuExperienceHost') ([System.Windows.Automation.ControlType]::Button)} 'Start menu All apps button' 30
+ $all=Wait-Until {
+  $point=[System.Windows.Point]::new(743,154)
+  $element=[System.Windows.Automation.AutomationElement]::FromPoint($point)
+  $trail=@()
+  for($level=0;$level -lt 4 -and $element;$level++){
+   $trail+=@{name=$element.Current.Name;type=$element.Current.ControlType.ProgrammaticName;process=$element.Current.ProcessId}
+   if($element.Current.Name -match '^All(?: apps)?$'){return $element}
+   $element=[System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($element)
+  }
+  $trail | ConvertTo-Json | Set-Content (Join-Path $Out 'start-all-accessibility.json') -Encoding UTF8
+  return $null
+ } 'Start menu All apps button at observed native screenshot position' 30
  Screenshot 'icon-start-menu-open-native'
- Click-Element $all
+ # The button position is observed in the 1024x768 native VM screenshot;
+ # FromPoint above checks its live accessible identity before native input.
+ Mouse-Point 743 154
  $entry=$null
  for($attempt=0;$attempt -lt 16;$attempt++){
-  $entry=Find-SystemElement '^dsh-piggy$' @('StartMenuExperienceHost')
+  $entry=Find-SystemElement '^dsh-piggy$' @('StartMenuExperienceHost','explorer','SearchHost','ShellExperienceHost')
   if($entry){break}
   # Scroll the real All apps view under the native pointer; UIA remains read-only.
   [void][PiggyNative]::SetCursorPos(500,450)
