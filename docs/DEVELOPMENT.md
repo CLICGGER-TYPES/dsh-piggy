@@ -42,6 +42,14 @@ npm run dist:mac
 
 `npm start` 会先把根项目打进 `apps/desktop/game/`。各平台安装包输出到 `apps/desktop/dist/`。macOS 包需在 macOS 构建；正式发布由 GitHub Actions 完成。
 
+### Windows 完整离线可选扩展安装器
+
+在根目录先执行 `npm run build`，然后运行 `npm --prefix apps/desktop run dist:win:offline`。此入口内置游戏和菜园、矿洞、盲盒、扭蛋、藏猪方块五个扩展包，安装页默认全部不勾选；安装时只解出所选包，游戏启动后通过现有导入器补装缺失项，未孵化时延后。已有扩展版本和进度保留，未勾选不卸载。静默安装不自动选择附加项。
+
+`build/optional-extensions/` 和 `build/optional-extensions.generated.nsh` 是生成文件，不提交。构建前校验包哈希、版本和五项完整性，失败则停止打包。此入口保留图标资源编辑和完整卸载器，不裁掉 Electron 组件。
+
+`.github/workflows/windows-installer.yml` 在 GitHub 托管 Windows 虚拟机中构建工程验收包，并用原生鼠标操作安装器和实际安装的程序；不发布发行版。测试只使用独立新建存档，通过不可连接的代理验证离线安装，不读取维护者存档。工程包文件名不代表新 RC，正式版本号和发布渠道另行确认。
+
 ### 桌面程序和游戏包怎么分工（外壳 0.3.0 起）
 
 原则：**能放进游戏包的都放进游戏包**，桌面程序（外壳）尽量不动。玩家更新游戏包只要在「更新」里点一下；更新桌面程序要下载安装包，能少则少。

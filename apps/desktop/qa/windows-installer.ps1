@@ -144,12 +144,31 @@ function Find-GameButton([int]$ProcessId,[string]$Pattern) {
  return $null
 }
 function Open-GameMenu($Root) {
- $r=$Root.Current.BoundingRectangle
+ # The transparent window includes speech/motion reserve; its center is not the pig.
+ # Read the visible scene group from Windows accessibility and click its actual bounds.
+ $target=Wait-Until {
+  foreach ($group in (Controls $Root ([System.Windows.Automation.ControlType]::Group))) {
+   $r=$group.Current.BoundingRectangle
+   if (-not $group.Current.IsOffscreen -and $r.Width -ge 32 -and $r.Height -ge 32 -and $r.Width -le 200 -and $r.Height -le 200) { return $group }
+  }
+  return $null
+ } 'visible native pig scene' 30
+ $r=$target.Current.BoundingRectangle
  Mouse-Point ([int]($r.X+$r.Width/2)) ([int]($r.Y+$r.Height/2)) $true
 }
+function Quit-Tile([int]$ProcessId) {
+ $button=Find-GameButton $ProcessId '退出'
+ if ($button) { return $button }
+ # Home apps are paginated; the quit tile is on the final page.
+ for ($page=8;$page -ge 2;$page--) {
+  $dot=Find-GameButton $ProcessId ('^第 '+$page+' 页$')
+  if ($dot) { Click-Element $dot; return (Wait-Until { Find-GameButton $ProcessId '退出' } 'visible quit tile on final home page' 10) }
+ }
+ return $null
+}
 function Close-Game($Process,$Root) {
- $button=Find-GameButton $Process.Id '退出'
- if (-not $button) { Open-GameMenu $Root; $button=Wait-Until { Find-GameButton $Process.Id '退出' } 'native quit tile' 20 }
+ $button=Quit-Tile $Process.Id
+ if (-not $button) { Open-GameMenu $Root; $button=Wait-Until { Quit-Tile $Process.Id } 'native quit tile' 20 }
  Click-Element $button
  Start-Sleep -Milliseconds 400
  $confirm=Find-GameButton $Process.Id '^退出$|^确定$'
@@ -180,7 +199,7 @@ function Run-Game([string]$Name,[string]$UserProfile,[int]$Expected,[bool]$Fresh
  if (Test-Path (Join-Path $UserProfile 'dsh-piggy')) { throw 'Legacy nested save directory recreated' }
  Screenshot ($Name+'-game') $root
  Open-GameMenu $root
- Wait-Until { Find-GameButton $script:Game.Id '退出' } 'native game menu' 20 | Out-Null
+ Wait-Until { Quit-Tile $script:Game.Id } 'native game menu' 20 | Out-Null
  Screenshot ($Name+'-menu')
  Close-Game $script:Game $root
  $script:Game=$null
