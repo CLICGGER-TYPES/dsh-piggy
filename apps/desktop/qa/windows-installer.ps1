@@ -172,12 +172,14 @@ function Open-GameMenu($Root) {
  $target=Wait-Until {
   foreach ($group in (Controls $Root ([System.Windows.Automation.ControlType]::Group))) {
    $r=$group.Current.BoundingRectangle
-   if (-not $group.Current.IsOffscreen -and $r.Width -ge 32 -and $r.Height -ge 32 -and $r.Width -le 200 -and $r.Height -le 200) { return $group }
+   if (-not $group.Current.IsOffscreen -and $r.Width -ge 32 -and $r.Height -ge 32 -and $r.Width -le 400 -and $r.Height -le 200) { return $group }
   }
   return $null
  } 'visible native pig scene' 30
+ if (Find-GameButton $Root.Current.ProcessId '^第 [0-9]+ 页$|^‹$|拆开纸盒') { return }
  $r=$target.Current.BoundingRectangle
- Mouse-Point ([int]($r.X+$r.Width/2)) ([int]($r.Y+$r.Height/2)) $true
+ # Stage scene includes the name bar; the pig remains at its lower-right.
+ Mouse-Point ([int]($r.Right-[Math]::Min(33,$r.Width/2))) ([int]($r.Bottom-[Math]::Min(33,$r.Height/2))) $true
  Start-Sleep -Milliseconds 1000
 }
 function Quit-Tile([int]$ProcessId) {

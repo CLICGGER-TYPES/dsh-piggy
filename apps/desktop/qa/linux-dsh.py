@@ -233,9 +233,9 @@ def desk_page(selector):
 
 def desktop_menu():
     page = desk_page('.dp-pig')
-    if not any(has(p, '[data-home-dot]:visible') for p in desktop_pages()):
+    if not any(has(p, '[data-home-dot]:visible, [data-home]:visible') for p in desktop_pages()):
         click(page, '.dp-pig', 3)
-    return desk_page('[data-home-dot]')
+    return desk_page('.dp-content')
 
 
 def stop_game():
