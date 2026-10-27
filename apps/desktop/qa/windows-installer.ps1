@@ -164,6 +164,9 @@ function Find-GameButton([int]$ProcessId,[string]$Pattern) {
  return $null
 }
 function Open-GameMenu($Root) {
+ # Hatching can leave the menu open; right-click would close that valid state.
+ Start-Sleep -Milliseconds 300
+ if (Find-GameButton $Root.Current.ProcessId '^第 [0-9]+ 页$|拆开纸盒') { return }
  # The transparent window includes speech/motion reserve; its center is not the pig.
  # Read the visible scene group from Windows accessibility and click its actual bounds.
  $target=Wait-Until {
