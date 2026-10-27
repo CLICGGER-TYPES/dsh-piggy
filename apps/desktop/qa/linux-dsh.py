@@ -202,6 +202,11 @@ def open_web_menu(page):
 
 
 def home_tab(page, app):
+    # After a host restart there is no cached desktop snapshot; the approved
+    # offline view offers its own settings entry instead of home app tiles.
+    if app == 'settings' and tappable(page, '[data-external-open-settings]'):
+        click(page, '[data-external-open-settings]')
+        return
     if has(page, '[data-home]'):
         click(page, '[data-home]')
     selector = f'[data-app="{app}"]'
