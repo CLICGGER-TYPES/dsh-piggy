@@ -33,7 +33,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 感谢 [@WolalaQAQ](https://github.com/WolalaQAQ) 提供 [PR #21](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/21)，定位 Windows 菜单被其他窗口遮挡的层级问题，并补充修复与回归测试；原始提交历史已保留。
 
-- 发布前检查：Windows完整安装器18项原生流程、Linux直接AppImage与真实DSH17项通过；开始菜单与托盘按实际系统截图逐图核对，公开精确包上线后继续复验。macOS、混合DPI多屏、硬件GPU及原生Wayland未做本轮原生验收，不扩大平台结论。
+- 发布前检查：Windows完整安装器18项原生流程、Linux直接AppImage与真实DSH17项通过；发行源双平台各2227项检查零失败，构建和类型检查通过；开始菜单与托盘按实际系统截图逐图核对，公开精确包上线后继续复验。macOS、混合DPI多屏、硬件GPU及原生Wayland未做本轮原生验收，不扩大平台结论。
 - Gitee发布按不可变发行标签推送代码，避免独立worktree中的旧main分支误推；上传新附件并回读核验后再清理旧安装器，旧游戏包继续供历史安装器首次下载。
 
 ## [0.37.2-rc.3] — 2026-10-26 · 舞台整合、外观边界与版本选择
