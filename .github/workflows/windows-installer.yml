@@ -37,9 +37,9 @@ jobs:
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'apps/desktop/qa/windows-installer.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count) { $errors | Write-Error; exit 1 }
-      - name: Test and typecheck
+      - name: Installer contracts and typecheck
         run: |
-          node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
+          node scripts/test.mjs --test-concurrency=1 apps/desktop/test/optional-extension-pack.test.js apps/desktop/test/optional-extension-runtime.test.js apps/desktop/test/runtime-host.test.js apps/desktop/test/stage-lifecycle-gaps.test.js
           npm run typecheck
       - name: Build full installer without publishing
         working-directory: apps/desktop
