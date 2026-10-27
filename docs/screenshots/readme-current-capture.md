@@ -19,3 +19,17 @@
 `readme-rc3-home.png`：游戏 0.37.2-rc.3 / 外壳 0.6.8-rc.2，Linux 虚拟机透明舞台。原生鼠标打开菜单并切回第一页，仅裁剪真实卡片边界；未合成或修改界面。DPR=1、小猪显示100%。
 
 尺寸 292 × 335；SHA256 `cc350a9759d3d33694891ab7f42bb729503a12c2c68886a8cfd605b0418bf7a5`。原生整屏证据在 `rc3-20261026/linux/rc3-home-native.png`。
+
+## 2026-10-27 RC4 Windows 图标与安装器候选
+
+游戏0.37.2-rc.4 / 外壳0.6.8-rc.3，尚未公开发布。来源为[Windows原生验收40494946162](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40494946162)，精确受测提交`2ddfe7f720f04b17ef99100e4e2330c65ff33bc5`。Windows Server 2025，1024×768、100%缩放，原生Win32鼠标/键盘；UIA只读。桌面截图按真实控件边界直接抓屏，其他两张保留实际安装窗口/整屏，未拼接或修饰。
+
+开始菜单XAML可显示但不暴露辅助访问节点，依据实际截图用原生鼠标打开All apps并滚动，逐图确认D分组中的dsh-piggy；托盘同样逐图检查真实溢出面板。原始自动报告明确保留`visualReview=required`，最终验收由实际截图补齐，不将UIA读不到写成应用故障或自动通过。
+
+| 文件 | SHA256 |
+|---|---|
+| readme-rc4-windows-installer.png | `84f38698085ad97550346b769104ba6e66c0b62ad2d5b6a94f8cfb2c138b38bd` |
+| readme-rc4-windows-desktop.png | `cf9a7cbd6d09e2b177de73e399e9f0db1fd0b6cd15e5d8e0a4c19d719447d09e` |
+| readme-rc4-windows-start.png | `28db32b69c40cb794a4b19d5df80c1714f3418f1c50344f79e1d37cc404fce5f` |
+
+Windows18项原生流程通过；Linux真实AppImage与DSH17项通过。双平台各2226项检查零失败。macOS、混合DPI多屏没有本轮原生结论；便携版仅构建与哈希检查，未新增本轮原生启动验收。候选附件与截图统一审阅目录：`/zyx/agents/codex/deliverables/piggy-review/rc4-preparation-20261027/`。
