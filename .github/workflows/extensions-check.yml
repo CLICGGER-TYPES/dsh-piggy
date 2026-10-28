@@ -1,0 +1,50 @@
+name: extensions-check
+on:
+  pull_request:
+    paths:
+      - extensions/registry.json
+      - extensions/registry-gitee.json
+      - release-candidates/extensions/registry.json
+      - release-candidates/extensions/registry-gitee.json
+      - scripts/extension-release-check.mjs
+      - test/extension-release-check.test.js
+      - .github/workflows/extensions-check.yml
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Public attachment channel to verify (read-only)
+        default: both
+        type: choice
+        options: [both, github, gitee]
+      key:
+        description: Comma-separated extension keys (empty = all)
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  attachments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CHECK_HOST: ${{ inputs.host || 'both' }}
+      CHECK_KEY: ${{ inputs.key || '' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Verify the read-only checker against local HTTP fixtures
+        run: node --test test/extension-release-check.test.js
+      - name: Verify public attachments before publishing the catalog
+        shell: bash
+        run: |
+          args=(--host "$CHECK_HOST")
+          if [ -n "$CHECK_KEY" ]; then
+            args+=(--key "$CHECK_KEY")
+          fi
+          node scripts/extension-release-check.mjs "${args[@]}"
