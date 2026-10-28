@@ -8,57 +8,32 @@
  * - 装在存档旁边的 `extensions/<key>/`，`server.js` 用动态 import 加载；
  * - 扩展只能改 `state.extData[key]`，动别的只能走这里给的 api（花钱、给东西、说话）；
  * - 扩展出错只影响它自己。
+ *
+ * 2026-10-28 按职责拆开：目录读取与缓存在 store/ext-catalog.js，安装替换删除在
+ * store/ext-install.js，加载与已加载模块的调用在 store/ext-load.js，面板视图与静态资源
+ * 在 store/ext-view.js。这个文件只做组装，公开的 createExtRuntime 返回形状、方法名和
+ * 回调顺序保持不变；versionAtLeast 仍从这里导出，避免其它模块反向 import 造成环。
  * @module dsh-piggy/store/ext-runtime
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
-import { extensionOn, installExtension, openWallet, removeExtension } from '../core.js'
-import { LOCAL_MARK, makeImporter } from './ext-import.js'
-import { createDownloads } from './ext-download.js'
-import { ASSET_NAME, ASSET_TYPES, CODE_FILES, assetNames, describeFetchError } from './ext-files.js'
-import { apiFor } from './ext-api.js'
-import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { CHANNEL } from '../channel.js'
+import { createCatalog } from './ext-catalog.js'
+import { createDownloads } from './ext-download.js'
+import { createInstaller } from './ext-install.js'
+import { createLoader } from './ext-load.js'
+import { createViews } from './ext-view.js'
 
 /** 在线扩展目录：GitHub 或 Gitee，看打包时的渠道（channel.js）。 */
 export const REGISTRY_URL = CHANNEL.registry
 /** 扩展文件只许从本渠道的发行版附件和仓库原始文件下载。 */
 export const ALLOWED_SOURCES = [CHANNEL.downloadBase + '/', CHANNEL.rawBase + '/']
 const KEY = /^[a-z0-9-]{2,24}$/
-/** 在线目录读到之后一小时内不再问（用户 2026-10-09：请求一次本地有了就别一直问，免得撞 GitHub 上限）。 */
-const REGISTRY_TTL_MS = 60 * 60_000
-/** 读失败后多久再试；这段时间里先用存在本地的那份。 */
-const REGISTRY_RETRY_MS = 5 * 60_000
-/** 读目录失败后隔多久再试。 */
-const RETRY_BACKOFF_MS = [400, 1200]
-const REGISTRY_ATTEMPTS = 2
-const REGISTRY_TIMEOUT_MS = 10_000
 
 /** 渠道名给日志和错误文案用（Gitee 包里不能写 GitHub）。 */
 const CHANNEL_LABEL = { github: 'GitHub', gitee: 'Gitee' }[CHANNEL.name] ?? CHANNEL.name
 
 const sleep = ms => new Promise(resolve => { setTimeout(resolve, ms) })
-
-/** 只接受普通对象/数组/字符串/有限数字/布尔/null；拒绝函数、循环引用和原型污染。 */
-function plainData(value, depth) {
-  if (depth > 64) throw new Error('mergeStates 返回值嵌套过深')
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) throw new Error('mergeStates 返回值含非法数字')
-    return value
-  }
-  if (Array.isArray(value)) return value.map(item => plainData(item, depth + 1))
-  if (typeof value !== 'object') throw new Error('mergeStates 返回值含函数或未知类型')
-  if (Object.getPrototypeOf(value) !== Object.prototype) throw new Error('mergeStates 返回值必须是普通对象')
-  const out = {}
-  for (const [key, item] of Object.entries(value)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') throw new Error('mergeStates 返回值含危险 key')
-    out[key] = plainData(item, depth + 1)
-  }
-  return out
-}
 
 /** 「0.31.0」≥「0.30.2」吗（测试版后缀不管）。 */
 export function versionAtLeast(have, need) {
@@ -85,33 +60,10 @@ export function createExtRuntime(store, options) {
   const registryUrl = options.registryUrl ?? REGISTRY_URL
   const now = options.now ?? (() => Date.now())
   const wait = options.sleep ?? sleep
-  const downloads = createDownloads({ fetch: doFetch, wait, warn, sourceOk: url => options.registryUrl !== undefined || ALLOWED_SOURCES.some(prefix => url.startsWith(prefix)) })
   // 没有存档路径（测试里的假存档）就当一个扩展都没装。
   const root = () => typeof store.filePath === 'string' ? join(dirname(store.filePath), 'extensions') : ''
-  /** @type {Map<string, {manifest: any, module: any, error: string|null}>} */
+  /** @type {Map<string, {manifest: any, module: any, error: string|null}>} 已加载的扩展：由这里创建，加载器和视图共用。 */
   const loaded = new Map()
-  let registry = { at: 0, entries: /** @type {any[]} */ ([]), error: /** @type {string|null} */ (null), etag: /** @type {string|null} */ (null) }
-  /** @type {Promise<typeof registry>|null} 正在读的那一次：同时来的请求（两个窗口）共用它。 */
-  let reading = null
-  /** 在线目录存到存档旁边，重启后先用它，过期了再带 ETag 去问有没有变。 */
-  const registryFile = () => root() === '' ? '' : join(root(), 'registry-cache.json')
-  function loadSavedRegistry() {
-    if (registry.at > 0 || registryFile() === '' || !existsSync(registryFile())) return
-    try {
-      const saved = JSON.parse(readFileSync(registryFile(), 'utf8'))
-      if (Array.isArray(saved?.entries) && Number.isFinite(saved?.at)) {
-        registry = { at: saved.at, entries: saved.entries.filter(entry => KEY.test(entry?.key ?? '')), error: null, etag: typeof saved.etag === 'string' ? saved.etag : null }
-      }
-    } catch { /* 坏了就当没有，下面重新读 */ }
-  }
-  function saveRegistry() {
-    if (registryFile() === '') return
-    try {
-      mkdirSync(root(), { recursive: true })
-      writeFileSync(registryFile() + '.tmp', JSON.stringify({ at: registry.at, etag: registry.etag, entries: registry.entries }))
-      renameSync(registryFile() + '.tmp', registryFile())
-    } catch (error) { warn(`extension registry cache not saved: ${error instanceof Error ? error.message : String(error)}`) }
-  }
 
   /** 下载和目录读取的失败都从这里出去：控制台一份（进日志），返回值一份（进界面）。 */
   function warn(message) {
@@ -119,271 +71,57 @@ export function createExtRuntime(store, options) {
     if (typeof store.journal === 'function') store.journal('warn', 'ext', message)
   }
 
-  function readManifest(key) {
-    try {
-      const manifest = JSON.parse(readFileSync(join(root(), key, 'manifest.json'), 'utf8'))
-      return manifest !== null && typeof manifest === 'object' && manifest.key === key ? manifest : null
-    } catch { return null }
+  const downloads = createDownloads({
+    fetch: doFetch,
+    wait,
+    warn,
+    sourceOk: url => options.registryUrl !== undefined || ALLOWED_SOURCES.some(prefix => url.startsWith(prefix)),
+  })
+  const loader = createLoader({ store, root, loaded, now, keyPattern: KEY })
+  const catalog = createCatalog({
+    fetch: doFetch,
+    wait,
+    now,
+    warn,
+    getState: () => store.state,
+    root,
+    registryUrl,
+    channelLabel: CHANNEL_LABEL,
+    keyPattern: KEY,
+    getGameVersion: () => options.gameVersion,
+    versionAtLeast,
+    localVersion: loader.localVersion,
+    isLocal: loader.isLocal,
+  })
+  const installer = createInstaller({
+    store,
+    root,
+    now,
+    downloads,
+    online: catalog.online,
+    load: loader.load,
+    hasLoaded: loader.has,
+    forgetLoaded: loader.forget,
+    warn,
+    getGameVersion: () => options.gameVersion,
+    versionAtLeast,
+  })
+  const views = createViews({ root, loaded, now, keyPattern: KEY })
+
+  return {
+    ready: loader.ready,
+    list: loader.list,
+    views: views.views,
+    shelves: views.shelves,
+    dex: views.dex,
+    onlineView: catalog.onlineView,
+    install: installer.install,
+    importBundle: installer.importBundle,
+    remove: installer.remove,
+    act: loader.act,
+    mergeStates: loader.mergeStates,
+    installedKeys: loader.installedKeys,
+    clientScript: views.clientScript,
+    assetFile: views.assetFile,
   }
-
-  /** 装在硬盘上的扩展（不管存档里有没有）。 */
-  function installedKeys() {
-    if (root() === '' || !existsSync(root())) return []
-    return readdirSync(root()).filter(name => KEY.test(name) && readManifest(name) !== null)
-  }
-
-  async function load(key) {
-    const manifest = readManifest(key)
-    if (manifest === null) { loaded.delete(key); return null }
-    try {
-      const file = join(root(), key, 'server.js')
-      const url = pathToFileURL(file).href + '?v=' + statSync(file).mtimeMs
-      const imported = await import(url)
-      const module = imported.default ?? imported
-      loaded.set(key, { manifest, module, error: null })
-      backfillExtensionEvents(store, { module }, { key, nowMs: now() })
-      // 已经装着的扩展更新后才声明货币：启动时就把钱包开好（汇率变了也在这里刷新）。
-      const currency = manifest.economy?.currency
-      const wallet = store.state?.wallets?.[key]
-      if (currency && store.state?.extData?.[key] !== undefined && (wallet === undefined || wallet.rate !== Number(currency.rate) || wallet.label !== currency.label)) {
-        store.mutate(state => { openWallet(state, key, currency); return { ok: true } })
-      }
-    } catch (error) {
-      loaded.set(key, { manifest, module: null, error: error instanceof Error ? error.message : String(error) })
-    }
-    return loaded.get(key)
-  }
-
-  /** 启动时把硬盘上的扩展都加载一遍。 */
-  const ready = Promise.all(installedKeys().map(load)).catch(() => {})
-
-  /** 快照里的扩展列表（下载来的那部分）。 */
-  function list(state) {
-    return [...loaded.entries()].map(([key, entry]) => ({
-      key,
-      label: String(entry.manifest.label ?? key),
-      emoji: String(entry.manifest.emoji ?? '🧩'),
-      description: String(entry.manifest.description ?? ''),
-      version: String(entry.manifest.version ?? ''),
-      eventVersion: entry.module?.eventVersion === 1 || typeof entry.module?.progress === 'function' ? 1 : 0,
-      on: extensionOn(state, key),
-      installed: true,
-      hasData: state?.extData?.[key] !== undefined,
-      builtin: false,
-      local: existsSync(join(root(), key, LOCAL_MARK)),
-      app: entry.manifest.app ? { emoji: String(entry.manifest.app.emoji ?? entry.manifest.emoji ?? '🧩'), label: String(entry.manifest.app.label ?? entry.manifest.label ?? key) } : null,
-      assets: assetNames(entry.manifest) ?? [],
-      assetLayout: entry.manifest.assetLayout ?? {},
-      error: entry.error,
-      apps: [], dexSections: [], shopKinds: [],
-    }))
-  }
-
-  /** 每个开着的下载扩展给它的 App 页的数据。 */
-  function views(state) {
-    const out = {}
-    for (const [key, entry] of loaded) {
-      if (state?.extData?.[key] === undefined || !extensionOn(state, key) || typeof entry.module?.view !== 'function') continue
-      try { out[key] = entry.module.view(structuredClone(state.extData[key]), apiFor(structuredClone(state), key, { nowMs: now(), currency: entry.manifest?.economy?.currency })) } catch { out[key] = { error: true } }
-    }
-    return out
-  }
-
-  /** 开着的下载扩展给商店和图鉴的入口。 */
-  function parts(state, field) {
-    return Object.entries(views(state)).flatMap(([extension, view]) => {
-      const part = view?.[field]
-      return part !== null && typeof part === 'object' && !Array.isArray(part) ? [{ ...part, extension }] : []
-    })
-  }
-  const shelves = state => parts(state, 'shelf')
-  const dex = state => parts(state, 'dex')
-
-  /**
-   * 读在线目录，带超时和一次重试：目录站也会抖。带上次的 ETag 问，没变（304）就返回 null，不用重新下。
-   * @param {string|null} etag
-   * @returns {Promise<{ entries: any[], etag: string|null }|null>}
-   */
-  async function readRegistry(etag) {
-    let lastError = null
-    for (let attempt = 1; attempt <= REGISTRY_ATTEMPTS; attempt += 1) {
-      try {
-        const response = await doFetch(registryUrl, {
-          headers: etag === null ? { accept: 'application/json' } : { accept: 'application/json', 'if-none-match': etag },
-          signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
-        })
-        if (response.status === 304) return null
-        if (response.status === 404) throw new Error('目录还没发布')
-        if (!response.ok) throw new Error(`${CHANNEL_LABEL} 返回 ${response.status}`)
-        const parsed = await response.json()
-        const entries = Array.isArray(parsed?.extensions) ? parsed.extensions.filter(entry => KEY.test(entry?.key ?? '')) : []
-        return { entries, etag: response.headers?.get?.('etag') ?? null }
-      } catch (error) {
-        lastError = error
-        warn(`extension registry failed: attempt=${attempt}/${REGISTRY_ATTEMPTS} url="${registryUrl}" reason="${describeFetchError(error, registryUrl)}"`)
-        if (attempt < REGISTRY_ATTEMPTS) await wait(RETRY_BACKOFF_MS[0])
-      }
-    }
-    throw lastError
-  }
-
-  /**
-   * 在线目录（带缓存）：一小时内直接用上次的；失败了先用本地那份，5 分钟后才再试。
-   * `force`（页面上点刷新）时马上去问，但仍带 ETag，没变就不重新下。
-   */
-  async function online(force = false) {
-    loadSavedRegistry()
-    if (reading !== null) return reading
-    const freshFor = registry.error === null ? REGISTRY_TTL_MS : REGISTRY_RETRY_MS
-    if (!force && registry.at > 0 && now() - registry.at < freshFor) return registry
-    reading = (async () => {
-      try {
-        const got = await readRegistry(registry.entries.length > 0 ? registry.etag : null)
-        registry = got === null
-          ? { ...registry, at: now(), error: null }
-          : { at: now(), entries: got.entries, error: null, etag: got.etag }
-        saveRegistry()
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        registry = { ...registry, at: now(), error: /fetch failed|ENOTFOUND|ECONN|timed? ?out/i.test(message) ? `连不上 ${CHANNEL_LABEL}` : message }
-      }
-      return registry
-    })()
-    try { return await reading } finally { reading = null }
-  }
-
-  /** 在线扩展列表给面板：每个写清能不能装、为什么。 */
-  async function onlineView(force = false) {
-    const { entries, error } = await online(force)
-    const state = store.state
-    return {
-      error,
-      entries: entries.map(entry => {
-        const installed = state === null ? false : (entry.builtin === true ? !(state.extensionsRemoved ?? []).includes(entry.key) : state.extData?.[entry.key] !== undefined)
-        const tooNew = typeof entry.minGame === 'string' && !versionAtLeast(options.gameVersion, entry.minGame)
-        // 已装的下载扩展：目录里版本更新就可以「更新」（重新下载，数据保留）。
-        const local = loaded.get(entry.key)?.manifest?.version ?? null
-        const update = installed && entry.builtin !== true && local !== null && typeof entry.version === 'string' && !versionAtLeast(local, entry.version)
-          && !existsSync(join(root(), entry.key, LOCAL_MARK))
-        return {
-          local, update,
-          key: entry.key, label: String(entry.label ?? entry.key), emoji: String(entry.emoji ?? '🧩'),
-          description: String(entry.description ?? ''), version: String(entry.version ?? ''), builtin: entry.builtin === true,
-          installed, minGame: typeof entry.minGame === 'string' ? entry.minGame : null, blocked: tooNew ? 'game-too-old' : null,
-        }
-      }),
-    }
-  }
-
-  /** 安装：内置的直接装回；下载的下载、核对、放好、加载，再在存档里建数据。 */
-  async function install(key) {
-    if (store.state === null) return { ok: false, reason: 'absent' }
-    // 玩家明确点安装或更新时重新核对目录，避免沿用一小时旧链接；离线仍保留已校验缓存。
-    const { entries } = await online(true)
-    const entry = entries.find(candidate => candidate.key === key)
-    if (entry === undefined) return { ok: false, reason: 'unknown-extension' }
-    if (entry.builtin === true) return store.mutate(state => installExtension(state, key))
-    if (typeof entry.minGame === 'string' && !versionAtLeast(options.gameVersion, entry.minGame)) return { ok: false, reason: 'game-too-old', need: entry.minGame }
-    const got = await downloads.fetchExtension(key, entry)
-    if (!got.ok) return got
-    return place(key, got.files, false)
-  }
-
-  /** 把扩展的文件（相对路径 → 内容）放进扩展目录（先放临时目录再换名，坏了不留半截）、加载、在存档里建数据。local 是本地导入的非官方扩展。
-   * @param {string} key @param {Map<string, Buffer>} files @param {boolean} local */
-  async function place(key, files, local) {
-    if (key === 'farm' && store.state?.extData?.farm?.version >= 4) {
-      const manifest = JSON.parse(files.get('manifest.json').toString('utf8'))
-      // 第一课把菜园数据升到 v5；旧 3.1.0/4.0.x 会把它误作 v3 迁移，必须在替换文件前拒绝。
-      const currentData = store.state.extData.farm.version
-      const compatible = currentData < 5 ? versionAtLeast(manifest.version, '3.1.0')
-        : versionAtLeast(manifest.version, '4.1.0') || (versionAtLeast(manifest.version, '3.1.1') && !versionAtLeast(manifest.version, '4.0.0'))
-      if (!compatible) {
-        return { ok: false, reason: 'download-failed', message: '这份旧菜园不能读取当前进度，请使用 4.1.0 或 3.1.1 经典兼容版；菜币和进度未改动。' }
-      }
-    }
-    const staging = join(root(), '.' + key + '-' + now())
-    try {
-      mkdirSync(join(staging, 'assets'), { recursive: true })
-      for (const [name, buffer] of files) {
-        if (!CODE_FILES.includes(name) && !(name.startsWith('assets/') && ASSET_NAME.test(name.slice('assets/'.length)))) throw new Error('不认识的文件：' + name)
-        writeFileSync(join(staging, name), buffer)
-      }
-      if (local) writeFileSync(join(staging, LOCAL_MARK), JSON.stringify({ importedAt: now() }))
-      const target = join(root(), key)
-      rmSync(target, { recursive: true, force: true })
-      renameSync(staging, target)
-    } catch (error) {
-      rmSync(staging, { recursive: true, force: true })
-      return { ok: false, reason: 'download-failed', message: error instanceof Error ? error.message : String(error) }
-    }
-    const entryLoaded = await load(key)
-    if (entryLoaded === null || entryLoaded.module === null) return { ok: false, reason: 'broken-extension', message: entryLoaded?.error ?? '' }
-    const initial = typeof entryLoaded.module.init === 'function' ? entryLoaded.module.init() : {}
-    // 装上就开钱包（声明了货币的），扩展页顶上马上有余额条。
-    return store.mutate(state => {
-      const result = installExtension(state, key, initial)
-      if (result.ok) openWallet(state, key, entryLoaded.manifest?.economy?.currency)
-      return result
-    })
-  }
-
-  /** 本地导入扩展包（store/ext-import.js）：官方的直接装；不是官方的先说明，用户确认后才装。 */
-  const importBundle = makeImporter({ ready: () => store.state !== null && root() !== '', gameVersion: options.gameVersion, versionAtLeast, online, place, warn })
-
-  /** 删除：核心清数据；下载的再把文件删掉。 */
-  function remove(key) {
-    const result = store.mutate(state => removeExtension(state, key, now()))
-    if (result.ok && loaded.has(key)) {
-      loaded.delete(key)
-      rmSync(join(root(), key), { recursive: true, force: true })
-    }
-    return result
-  }
-
-  /** 执行扩展自己的动作；只交出它自己的数据。 */
-  function act(key, op, payload) {
-    const entry = loaded.get(key)
-    if (entry === undefined) return { ok: false, reason: 'unknown-extension' }
-    if (entry.module === null) return { ok: false, reason: 'broken-extension' }
-    const handler = entry.module.actions?.[op]
-    if (typeof handler !== 'function') return { ok: false, reason: 'unknown' }
-    return store.mutate(state => runExtensionAction(state, handler, { key, payload, nowMs: now(), currency: entry.manifest?.economy?.currency }))
-  }
-
-  /**
-   * 合并钩子：只从目标端已安装、manifest 声明 mergeHook>=1 的扩展加载。
-   * 扩展只能拿到自己的深拷贝，返回值必须是纯 JSON；不合格就抛错，降级为二选一。
-   */
-  function mergeStates() {
-    const hooks = {}
-    for (const [key, entry] of loaded) {
-      if (entry.module === null || typeof entry.module.mergeStates !== 'function') continue
-      if (!Number.isInteger(entry.manifest?.mergeHook) || entry.manifest.mergeHook < 1) continue
-      hooks[key] = (target, source) => {
-        const result = entry.module.mergeStates(structuredClone(target), structuredClone(source))
-        if (result === null || typeof result !== 'object' || Array.isArray(result)) throw new Error('mergeStates 必须返回对象')
-        const clean = plainData(result, 0)
-        if (JSON.stringify(clean).length > 1024 * 1024) throw new Error('mergeStates 返回值超过 1MB')
-        if (!Object.hasOwn(clean, 'data') || clean.data === undefined) throw new Error('mergeStates 缺少 data')
-        return clean
-      }
-    }
-    return hooks
-  }
-
-  /** 扩展的面板脚本（GET /dsh-piggy/ext/<key>/client.js）。 */
-  function clientScript(key) {
-    if (!KEY.test(key) || !loaded.has(key)) return null
-    try { return readFileSync(join(root(), key, 'client.js'), 'utf8') } catch { return null }
-  }
-
-  /** 扩展的图片（GET /dsh-piggy/ext/<key>/assets/<name>）：只给 manifest 里列了的。 */
-  function assetFile(key, name) {
-    const entry = loaded.get(key)
-    if (!KEY.test(key) || entry === undefined || !ASSET_NAME.test(name) || !(assetNames(entry.manifest) ?? []).includes(name)) return null
-    try { return { body: readFileSync(join(root(), key, 'assets', name)), type: ASSET_TYPES[name.split('.').pop() ?? ''] } } catch { return null }
-  }
-
-  return { ready, list, views, shelves, dex, onlineView, install, importBundle, remove, act, mergeStates, installedKeys, clientScript, assetFile }
 }
