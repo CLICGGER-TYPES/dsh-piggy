@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "dsh-piggy bounded production resource index sample",
+  "description": "A small, supported sample of production asset identity/provenance, with full-manifest coverage counts. It is not a complete ledger and does not define approval: reviewDecision.status=approved is the only approval claim and requires an explicit record bound to assetId, revision and outputSha256.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "kind",
+    "bounded",
+    "sourceCommit",
+    "generatedFrom",
+    "description",
+    "sampleCount",
+    "sampleSelection",
+    "reviewPolicy",
+    "coverage",
+    "historicalApproval",
+    "samples"
+  ],
+  "properties": {
+    "schema": { "const": 1 },
+    "kind": { "const": "dsh-piggy-production-resource-index-sample" },
+    "bounded": { "const": true },
+    "sourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "generatedFrom": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "description": { "type": "string" },
+    "sampleCount": { "type": "integer", "minimum": 1 },
+    "sampleSelection": { "type": "string" },
+    "reviewPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkedMeans", "uncheckedMeans", "inactivePreviousMeans", "approvalRequires", "currentApprovedRecords"],
+      "properties": {
+        "checkedMeans": { "type": "string" },
+        "uncheckedMeans": { "type": "string" },
+        "inactivePreviousMeans": { "type": "string" },
+        "approvalRequires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "currentApprovedRecords": { "type": "integer", "minimum": 0 },
+        "notes": { "type": "string" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifestRecords", "sampleCount", "byKind", "byReviewStatus", "verified", "excluded"],
+      "properties": {
+        "manifestRecords": { "type": "integer", "minimum": 1 },
+        "sampleCount": { "type": "integer", "minimum": 1 },
+        "byKind": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "byReviewStatus": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "verified": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "excluded": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "historicalApproval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "records", "status", "keyOverlapWithCurrentAssets", "bindsCurrentOutputHashes", "note"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "records": { "type": "integer", "minimum": 0 },
+        "status": { "type": "string" },
+        "keyOverlapWithCurrentAssets": { "type": "integer", "minimum": 0 },
+        "bindsCurrentOutputHashes": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string" }
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/record" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "reviewDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "approval"],
+      "properties": {
+        "status": {
+          "enum": ["approved", "user-directed", "reviewed", "pending", "not-recorded"]
+        },
+        "approval": { "type": "boolean" },
+        "scope": { "type": "string" },
+        "evidence": { "type": ["string", "null"] }
+      }
+    },
+    "role": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "category", "actor", "action"],
+          "properties": {
+            "kind": { "const": "pig" },
+            "category": { "type": "string" },
+            "actor": { "type": "string" },
+            "action": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name", "usage"],
+          "properties": {
+            "kind": { "const": "fishing" },
+            "name": { "type": "string" },
+            "usage": { "enum": ["scene", "fight", "result", "prop"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name", "runtimeLoaded"],
+          "properties": {
+            "kind": { "const": "animation" },
+            "name": { "type": "string" },
+            "runtimeLoaded": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool"],
+      "properties": {
+        "tool": { "type": "string" },
+        "promptRef": { "type": ["string", "null"] },
+        "reference": { "type": "string" },
+        "detailsRef": { "type": "string" },
+        "sourceRef": { "type": "string" }
+      }
+    },
+    "supersedes": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sha256", "revision", "basis"],
+          "properties": {
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "revision": { "type": ["string", "null"] },
+            "basis": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "path",
+        "revision",
+        "revisionBasis",
+        "role",
+        "source",
+        "provenance",
+        "outputSha256",
+        "bytes",
+        "reviewDecision",
+        "supersedes"
+      ],
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "pattern": "^(pigs|fishing|animation):[A-Za-z0-9._-]+$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "revision": { "type": ["string", "null"] },
+        "revisionBasis": { "type": "string" },
+        "role": { "$ref": "#/$defs/role" },
+        "source": { "$ref": "#/$defs/source" },
+        "provenance": { "type": "string", "minLength": 1 },
+        "outputSha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "reviewDecision": { "$ref": "#/$defs/reviewDecision" },
+        "supersedes": { "$ref": "#/$defs/supersedes" }
+      }
+    }
+  }
+}
