@@ -1,5 +1,5 @@
 import test from 'node:test'
-import { STATE_VERSION } from '../core.js'
+import { STATE_VERSION, hatchEgg, layEgg } from '../core.js'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -13,8 +13,8 @@ import { REQUIRED_SKIN_SCENES, SKIN_SCENES } from '../packages/pet-core/src/data
 
 const NOW = 1_797_000_000_000
 const skinSvg = Buffer.from('<svg viewBox="0 0 64 64"><path d="M1 1h2"/></svg>')
-function archiveWith(files) {
-  const manifest = { version: 1, gameVersion: 'x', stateVersion: 14, createdAt: NOW,
+function archiveWith(files, stateVersion = 14) {
+  const manifest = { version: 1, gameVersion: 'x', stateVersion, createdAt: NOW,
     files: Object.fromEntries([...files].map(([name, body]) => [name, { size: body.length, sha256: createHash('sha256').update(body).digest('hex') }])) }
   return makeZip([...files, ['backup.json', Buffer.from(JSON.stringify(manifest))]])
 }
@@ -86,6 +86,101 @@ test('旧 JSON 摘要明确提示缺少扩展程序和自定义皮肤图片', ()
     customSkins: [{ key: 'fox', art: 'custom-fox' }] })), { nowMs: NOW })
   assert(legacy.warnings.some(w => w.includes('farm') && w.includes('缺少程序文件')))
   assert(legacy.warnings.some(w => w.includes('fox') && w.includes('缺少图片')))
+})
+
+test('拒绝真实导出 ZIP 里的 backup.json 清单，不让它变成默认小猪', () => {
+  const state = Buffer.from(JSON.stringify({ version: STATE_VERSION, name: '团团', coins: 678, hatched: true }))
+  const manifest = Buffer.from(JSON.stringify({ version: 1, gameVersion: '0.37.2-rc.5', stateVersion: STATE_VERSION,
+    mergeRulesVersion: 1, createdAt: NOW,
+    files: { 'state.json': { size: state.length, sha256: createHash('sha256').update(state).digest('hex') } } }))
+  assert.throws(() => parseSaveArchive(manifest, { nowMs: NOW }), /不是可识别的小猪存档.*backup\.json/)
+  // 同一份清单在完整 ZIP 里是正常的；只有单独选中清单文件时才拒绝。
+  const parsed = parseSaveArchive(makeZip([['state.json', state], ['backup.json', manifest]]), { nowMs: NOW })
+  assert.equal(parsed.state.coins, 678)
+  assert.equal(parsed.state.name, '团团')
+})
+
+test('拒绝空对象、窗口/代理配置、安装器回执和扩展包等非存档 JSON', () => {
+  const documents = [
+    {},
+    { width: 800, height: 600, x: 12, y: 34, scale: 1 },
+    { mode: 'system', enabled: true },
+    { port: 3190, token: 'x'.repeat(32) },
+    { version: 1, batch: 'a'.repeat(64), done: [] },
+    { format: 'dsh-piggy-extension', key: 'farm', version: '1.0.0', files: { 'manifest.json': '{}' } },
+  ]
+  for (const document of documents) {
+    assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify(document)), { nowMs: NOW }), /不是可识别的小猪存档/, JSON.stringify(document))
+  }
+})
+
+test('单个通用字段（skin/stage/work/daily/seed）的设置或回执不再补成500金币默认猪', () => {
+  const documents = [
+    { version: 1, skin: 'dark' },
+    { version: 1, stage: 'complete' },
+    { version: 1, work: { mode: 'night' } },
+    { version: 1, daily: { checked: true } },
+    { version: 1, seed: 42 },
+    { version: 1, coins: 500 },
+    { version: 1, coins: 500, skin: 'dark' },
+    { version: 1, coins: 500, daily: { checked: true } },
+    { version: 1, name: '设置', skin: 'dark' },
+    { version: 1, skin: 'dark', stage: 'complete', form: 'x' },
+    { version: 1, personality: 'cranky', motto: '早睡早起' },
+  ]
+  for (const document of documents) {
+    assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify(document)), { nowMs: NOW }), /不是可识别的小猪存档/, JSON.stringify(document))
+  }
+})
+
+test('可识别的历史 JSON、新建猪和未知字段继续按原有版本规则迁移', () => {
+  const v1 = parseSaveArchive(Buffer.from(JSON.stringify({ version: 1, name: '大花', bornAt: NOW, xp: 200,
+    weightG: 5000, satiety: 50, happiness: 50, lastSeenAt: NOW })), { nowMs: NOW })
+  assert.equal(v1.state.version, STATE_VERSION)
+  assert.equal(v1.state.name, '大花')
+  assert.equal(v1.state.coins, 500)
+  const v3 = parseSaveArchive(Buffer.from(JSON.stringify({ version: 3, name: '老三',
+    work: { job: 'site', startedAt: NOW - 60_000, endsAt: NOW }, lastSeenAt: NOW })), { nowMs: NOW })
+  assert.equal(v3.state.version, STATE_VERSION)
+  assert.equal(v3.state.name, '老三')
+  const partial = parseSaveArchive(Buffer.from(JSON.stringify({ name: '旧猪', version: 14, coins: 99 })), { nowMs: NOW })
+  assert.equal(partial.state.coins, 99)
+  // 新建但还没拆盒的猪也是合法存档，不能被识别规则挡掉。
+  const unhatched = parseSaveArchive(Buffer.from(JSON.stringify(layEgg(NOW))), { nowMs: NOW })
+  assert.equal(unhatched.state.hatched, false)
+  assert.equal(unhatched.state.coins, 500)
+  const full = { ...hatchEgg(NOW), coins: 12345, name: '豆豆', mysteryField: { keep: true } }
+  const parsed = parseSaveArchive(Buffer.from(JSON.stringify(full)), { nowMs: NOW })
+  assert.equal(parsed.state.coins, 12345)
+  assert.equal(parsed.state.name, '豆豆')
+  assert.deepEqual(parsed.state.mysteryField, { keep: true })
+  assert.equal(JSON.parse(parsed.files.get('state.json').toString()).coins, 12345)
+})
+
+test('仓库里的真实 v7 存档（state-v7-real.json）仍然通过识别并原样迁移', () => {
+  const v7 = JSON.parse(readFileSync(new URL('./fixtures/state-v7-real.json', import.meta.url), 'utf8'))
+  assert.equal(v7.version, 7)
+  const parsed = parseSaveArchive(Buffer.from(JSON.stringify(v7)), { nowMs: NOW })
+  assert.equal(parsed.state.version, STATE_VERSION)
+  assert.equal(parsed.state.name, v7.name)
+  assert.equal(parsed.state.coins, v7.coins)
+  assert.equal(parsed.state.hatched, true)
+  assert.deepEqual(parsed.state.inventory, v7.inventory)
+  assert.deepEqual(parsed.state.traits, v7.traits)
+  assert.equal(parsed.state.stats.jobs, v7.stats.jobs)
+  assert.equal(parsed.state.memories.length, v7.memories.length)
+})
+
+test('ZIP 里的 state.json 使用同一套识别规则，正常 v15 存档保留原值', () => {
+  assert.throws(() => parseSaveArchive(archiveWith(new Map([['state.json', Buffer.from('{}')]]), 0), { nowMs: NOW }), /不是可识别的小猪存档/)
+  const packet = Buffer.from(JSON.stringify({ format: 'dsh-piggy-extension', key: 'farm', files: {} }))
+  assert.throws(() => parseSaveArchive(archiveWith(new Map([['state.json', packet]]), 0), { nowMs: NOW }), /扩展包/)
+  const manifestState = Buffer.from(JSON.stringify({ version: 1, gameVersion: 'x', stateVersion: 1, createdAt: NOW, files: {} }))
+  assert.throws(() => parseSaveArchive(archiveWith(new Map([['state.json', manifestState]]), 1), { nowMs: NOW }), /backup\.json/)
+  const state = Buffer.from(JSON.stringify({ version: STATE_VERSION, name: '豆豆', coins: 12345, hatched: true }))
+  const parsed = parseSaveArchive(archiveWith(new Map([['state.json', state]]), STATE_VERSION), { nowMs: NOW })
+  assert.equal(parsed.state.coins, 12345)
+  assert.equal(parsed.state.name, '豆豆')
 })
 
 test('拒绝 ZIP 路径越界和未知文件', () => {
@@ -240,8 +335,30 @@ test('畸形 customSkins 不会让预览抛 TypeError', () => {
 })
 
 test('旧 JSON 的畸形 customSkins 不会让预览抛 TypeError', () => {
-  const parsed = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14, customSkins: 42 })), { nowMs: NOW })
+  const parsed = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14, name: '团团', coins: 721, customSkins: 42 })), { nowMs: NOW })
+  assert.equal(parsed.state.coins, 721)
   assert.deepEqual(parsed.state.customSkins, [])
+})
+
+test('畸形 customSkins 单独出现时不再被当成存档', () => {
+  const documents = [
+    { version: 14, customSkins: 42 },
+    { version: 14, customSkins: null },
+    { version: 14, customSkins: '不是皮肤列表' },
+    { version: 14, customSkins: { fox: { key: 'fox' } } },
+  ]
+  for (const document of documents) {
+    assert.throws(() => parseSaveArchive(Buffer.from(JSON.stringify(document)), { nowMs: NOW }), /不是可识别的小猪存档/, JSON.stringify(document))
+  }
+})
+
+test('真实存档字段加畸形 customSkins 仍然正常迁移并清洗皮肤', () => {
+  for (const customSkins of [42, null, '不是皮肤列表']) {
+    const parsed = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14, name: '团团', coins: 678, hatched: true, customSkins })), { nowMs: NOW })
+    assert.equal(parsed.state.name, '团团')
+    assert.equal(parsed.state.coins, 678)
+    assert.deepEqual(parsed.state.customSkins, [])
+  }
 })
 
 test('导出畸形 customSkins 不会抛 TypeError', () => {
@@ -302,10 +419,10 @@ test('皮肤记录里的 art 与 key 不一致时按 key 校验，不导入错�
 })
 
 test('损坏的 customSkins 形状只忽略记录，不让预览抛原始 TypeError', () => {
-  const legacy = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14,
+  const legacy = parseSaveArchive(Buffer.from(JSON.stringify({ version: 14, name: '团团', coins: 721,
     customSkins: { fox: { key: 'fox' } } })), { nowMs: NOW })
   assert.deepEqual(legacy.summary.skins, [])
-  const zipState = Buffer.from(JSON.stringify({ version: 14, customSkins: 5 }))
+  const zipState = Buffer.from(JSON.stringify({ version: 14, name: '团团', coins: 721, customSkins: 5 }))
   const parsed = parseSaveArchive(archiveWith(new Map([['state.json', zipState]])), { nowMs: NOW })
   assert.deepEqual(parsed.summary.skins, [])
 })

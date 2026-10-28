@@ -18,6 +18,33 @@ const MAX_FILES = 512
 // 每个皮肤至少 5 张必需动作图；512 文件上限下不可能有这么多完整皮肤，
 // 这个上限只用于挡住「大量空皮肤记录」撑爆快照。
 const MAX_SKINS = 128
+// 旧版导入以前只确认“是一个 JSON 对象”，ZIP 里的 backup.json 清单、窗口/代理配置或扩展包
+// 也会被 migrate() 补成一只 500 金币的默认猪，整档替换用户的小猪。识别规则按历代存档形状
+// （packages/pet-core/src/core/{egg,migrate,upgrades,profile,daily,diary}.js 与
+// test/fixtures/state-v7-real.json 的真实 v7 存档）分两档：
+//   A. 核心字段：出生/成长/照料/背包/统计这类只有小猪存档才有的进度、生命周期或结构化集合，
+//      值的类型对得上，有一个就足以说明「这只猪活过」。
+//   B. 最小存档形状：历史/手改档最少的 {name, version, coins} —— 非空 name + 数值 coins
+//      同时存在才算进度存档。coins 单独、name/skin/stage/work/daily/seed 任意组合都不算；
+//      通用字段不能替代 A 档的核心证据。
+// customSkins 只有类型确实是数组时才算结构化存档字段；null/数字/字符串等畸形值本身不能
+// 证明这是存档，也不能因此补出默认猪。数组里的畸形记录仍由 migrate()/ensureSkins() 清洗成 []。
+const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value)
+const isNonEmptyString = value => typeof value === 'string' && value.trim() !== ''
+const isBoolean = value => typeof value === 'boolean'
+const isPlainObject = value => typeof value === 'object' && value !== null && !Array.isArray(value)
+const SAVE_CORE_NUMBERS = new Set([
+  'ageMs', 'bornAt', 'cleanliness', 'clockRollbackAt', 'criticalDoctorVisits', 'diedAt', 'happiness', 'health',
+  'lastActiveAt', 'lastFedAt', 'lastSeenAt', 'outingStreak', 'pendingSeq', 'restMinutes', 'riskMinutes',
+  'satiety', 'settledUpTo', 'weightG', 'xp',
+])
+const SAVE_CORE_BOOLEANS = new Set(['dead', 'hatched'])
+const SAVE_CORE_OBJECTS = new Set([
+  'achievements', 'bodyWeight', 'cooldowns', 'courses', 'coursesByStage', 'dex', 'dialogue', 'diary', 'economy',
+  'extData', 'extensions', 'fishing', 'interests', 'inventory', 'lessons', 'lessonsByStage', 'pomodoro',
+  'realWorkGrowth', 'stats', 'traits', 'wallets',
+])
+const SAVE_CORE_ARRAYS = new Set(['customSkins', 'dress', 'memories', 'pending', 'souvenirs', 'worn'])
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const safeKey = /^[a-z0-9-]{2,24}$/
 const skinKey = /^[a-z0-9](?:[a-z0-9-]{0,22}[a-z0-9])?$/
@@ -237,6 +264,27 @@ export function parseSaveArchive(buffer, { nowMs = Date.now() } = {}) {
   return { ...parsed, stateVersion: manifest.stateVersion, mergeRulesVersion: Number.isInteger(manifest.mergeRulesVersion) ? manifest.mergeRulesVersion : MERGE_RULES_VERSION }
 }
 
+// 明确的非存档文档：导出包自己的 backup.json 清单和扩展包。必须在 migrate()/补默认值之前拒绝。
+function assertNotForeignDocument(input) {
+  if (isPlainObject(input.files) && Number.isSafeInteger(input.stateVersion) && typeof input.gameVersion === 'string') {
+    throw new Error('这不是可识别的小猪存档，它看起来是存档 ZIP 里的 backup.json；请导入完整 ZIP 或其中的 state.json')
+  }
+  if (input.format === 'dsh-piggy-extension') throw new Error('这不是可识别的小猪存档，它看起来是扩展包')
+}
+
+// 空对象、窗口/代理配置、安装器回执、工作收据等任意宿主文档都不带任何存档证据，不能补成默认猪。
+function assertRecognizableSave(input) {
+  const core = [...SAVE_CORE_NUMBERS].some(key => isFiniteNumber(input[key]))
+    || [...SAVE_CORE_BOOLEANS].some(key => isBoolean(input[key]))
+    || [...SAVE_CORE_OBJECTS].some(key => isPlainObject(input[key]))
+    || [...SAVE_CORE_ARRAYS].some(key => Array.isArray(input[key]))
+  if (core) return
+  // 唯一允许的最小存档形状：{name, version, coins}（name 非空 + coins 数值）。
+  // coins 单独、name/skin/stage/work/daily/seed 的任意组合都不算存档。
+  if (isNonEmptyString(input.name) && isFiniteNumber(input.coins)) return
+  throw new Error('这不是可识别的小猪存档，请选择由小猪导出的 ZIP 或其中的 state.json')
+}
+
 function parseState(input, { nowMs, legacy, files, warnings = [], gameVersion = '', createdAt = null }) {
   if (input === null) {
     if (legacy) throw new Error('旧 JSON 存档内容无效')
@@ -245,8 +293,10 @@ function parseState(input, { nowMs, legacy, files, warnings = [], gameVersion = 
   }
   if (typeof input !== 'object' || Array.isArray(input)) throw new Error('存档内容无效')
   if (Array.isArray(input.customSkins) && input.customSkins.length > MAX_SKINS) throw new Error('自定义皮肤数量超过上限')
+  assertNotForeignDocument(input)
   if (input.version !== undefined && (!Number.isSafeInteger(input.version) || input.version < 0)) throw new Error('存档版本无效')
   if (input.version > STATE_VERSION) throw new Error('存档版本高于当前支持版本')
+  assertRecognizableSave(input)
   const state = migrate(structuredClone(input), nowMs)
   if (!state) throw new Error('存档内容无效')
   files.set('state.json', Buffer.from(JSON.stringify(state)))
