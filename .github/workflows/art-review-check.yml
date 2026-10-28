@@ -1,0 +1,25 @@
+name: art-review-check
+on:
+  pull_request:
+    paths:
+      - tools/art-review/**
+      - .github/workflows/art-review-check.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: art-review-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  feedback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check saved notes, image revisions and republishing in temporary directories
+        run: python3 -m unittest discover -s tools/art-review -p 'test_review.py' -v
