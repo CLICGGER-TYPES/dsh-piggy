@@ -1,14 +1,15 @@
 # 路线图与待办
 
-## 2026-10-28 用户暂停：提交、推送与恢复顺序（本地 Git 已完成，测试未做）
+## 2026-10-28 用户暂停：提交、推送与恢复顺序（当前暂停；GitHub 两分支已推送，Gitee 未更新）
 
-- 用户要求「先进展整理，准备关机，push 完先暂停」。本轮只做本地 Git 与文档整理：把两项已审候选落到独立分支并推送 GitHub/Gitee。未做任何测试、构建、浏览器、VM 或产品启动，未发版、未开 PR，未动主线/标签。
-- `fix/import-guard-20261028`（基于已验证基线 `749f4cb`）：仅 `runtime/save-archive.js` + `test/save-archive.test.js`，即已接受的 import-guard v3 累积补丁（补丁 SHA256 `30d4597df167f5b3ede8a86b9e43f785c91a4bc110a0e87fea16a75e8d3e4920`）；落盘文件哈希 `70b1f4a6c9631335744e45f1c7ef168aea82d7a986268119b08f8f952fdc2450` / `d5f9120ce75067f98e0767d1d9e441b5ddb9996f858006bfd11351ab9d701a5b`，提交 `7628d86`。作用范围：导入前校验存档清单与条目、拒绝会把金币/设置重置为默认值的导入；用户原始文件与版本未提供，只能确认默认值重置这一类原因已修。
-- `wip/desktop-refactor-b1-20261028`（基于上面热修提交）：B1 桌面拆分 9 路径（`apps/desktop/main.js`、4 个新 `apps/desktop/lib/*` 模块、2 个桌面测试、根级 `test/desktop-ext-focus.test.js` 与 `test/helpers/shell-lifecycle.js`），文件哈希与 D03 输出清单 `4c513b62f204b638be8d59a2748d4a47f0367d0b3499c0485dd56435e36a9976`（2372 文件）逐一致，提交 `15827ca`，显式标注为 WIP、等待原生验收。
-- 已完成的内部结果（仅记录，不构成本轮验收）：本地档案为唯一实例且无个人数据备份副本；DSH 真实 ARK 4 工具/6 收据/+7XP、F5 不重复计分；P04 同 guest 状态 READY（未做外链验收）；B1 仅构建（AppImage `eff3dacffcfa1d70b668dc9cc924089a31dbdf190cb5560772c7fe51a754ae1a`，未验收）；T03 未跑，B2 未开始。
+- 用户要求「先进展整理，准备关机，push 完先暂停」。本轮只做本地 Git 与文档整理：把两项已审候选落到独立分支并推送。未做任何新的测试、构建、浏览器、VM 或产品启动，未发版、未开 PR，未动主线/标签。推送结果：两个分支已推送 GitHub 并逐 ref 回读一致；Gitee 因没有可用的已配置凭据而未更新，两个分支均未推送 Gitee。
+- `fix/import-guard-20261028`（基于已验证基线 `749f4cb`）：仅 `runtime/save-archive.js` + `test/save-archive.test.js`，即已接受的 import-guard v3 累积补丁（补丁 SHA256 `30d4597df167f5b3ede8a86b9e43f785c91a4bc110a0e87fea16a75e8d3e4920`）；落盘文件哈希 `70b1f4a6c9631335744e45f1c7ef168aea82d7a986268119b08f8f952fdc2450` / `d5f9120ce75067f98e0767d1d9e441b5ddb9996f858006bfd11351ab9d701a5b`，提交 `7628d86`。作用范围：导入前校验存档清单与条目，拒绝会把金币/设置重置为默认值的导入。修复前的具体问题是：非存档 JSON（例如误把实际 ZIP 导出的 `backup.json` 清单或宿主配置选为存档）会被当作默认存档接受，导致金币/设置重置；v3 在预览/迁移之前拒绝外来 JSON，合法的当前 JSON 与 ZIP 存档仍可导入。用户原始文件与版本未提供，未确认其原始文件的真实原因；也不表示合法 ZIP 备份包内的清单本身无效。
+- 验收状态：该 import guard 此前已由独立测试在网页、原生与真实 AppImage 上验证，并通过 62 项聚焦检查（32 存档/传输 + 20 候选 harness + 10 运行时）；C01 本轮 Git 收尾没有重跑测试。
+- `wip/desktop-refactor-b1-20261028`（基于上面热修提交）：B1 桌面拆分 9 路径（`apps/desktop/main.js`、4 个新 `apps/desktop/lib/*` 模块、2 个桌面测试、根级 `test/desktop-ext-focus.test.js` 与 `test/helpers/shell-lifecycle.js`），文件哈希与 D03 输出清单 `4c513b62f204b638be8d59a2748d4a47f0367d0b3499c0485dd56435e36a9976`（2372 文件）逐一致，提交 `15827ca`，显式标注为 WIP。B1 原生 T03 仍未运行（NOT RUN），B2 未开始。
+- 已完成的内部结果（仅记录，不构成本轮验收）：本地档案为唯一实例且无个人数据备份副本；DSH 真实 ARK 4 工具/6 收据/+7XP、F5 不重复计分；P04 同 guest 状态 READY（未做外链验收）；B1 仅构建（AppImage `eff3dacffcfa1d70b668dc9cc924089a31dbdf190cb5560772c7fe51a754ae1a`，未验收）。
 - 恢复顺序：T05 桌面联动/离线/恰好一次/合并撤销 → T03 B1 原生 → D03 B2 → D02 发行闸门/D04 商店 IO → D05（依赖 D03/D04） → D06 素材台账（D02 交付后） → 最终 T01..T06 使用同一份冻结产物。所有产品测试只在 149（`clicgger@192.168.31.149`），由独立 PI/DSH 执行，沿用同一 ARK 环境；不在本机跑测试，不公开发行。
-- 运维：C02 正在停 guest/P03/U01，恢复时不存在假定的在线环境，按已记录配方重启。用户可在家里直接检出推送后的 WIP 分支查看当前代码。
-- 证据按项目相对路径引用：`.work/dsh-piggy/D01-PI-01/artifacts/remote-evidence-20261028T074411.136678Z/artifacts/import-guard-v3.patch`、`.work/dsh-piggy/D03-PI-02/artifacts/remote-evidence-20261028T093443.013279Z/artifacts/D03-B1.patch`，以及本任务 `PUSH-HANDOFF.json`；原始日志留在各任务目录，不随仓库提交。
+- 运维：C02 暂停清理已完成——所分配 guest 已关机，本机预览 3180/3195 已关闭，guest 3210 已停，本地 U01 隧道由 root 关闭；已有测试进度/源码/日志保留，未新建个人备份，指定本地状态未改，恢复时需按已记录配方重启环境（报告 `.work/dsh-piggy/C02-PI-03/artifacts/remote-evidence-20261028T102612.299071Z/reports/PAUSE-CLEANUP.json`）。用户可在家里直接检出推送后的 WIP 分支查看当前代码。
+- 证据按项目相对路径引用：`.work/dsh-piggy/D01-PI-01/artifacts/remote-evidence-20261028T074411.136678Z/artifacts/import-guard-v3.patch`、`.work/dsh-piggy/D03-PI-02/artifacts/remote-evidence-20261028T093443.013279Z/artifacts/D03-B1.patch`、C02 暂停清理报告，以及本任务 `PUSH-HANDOFF.json`；原始日志留在各任务目录，不随仓库提交。
 
 ## 2026-10-27 菜园自然托管及RC5（已交付）
 
