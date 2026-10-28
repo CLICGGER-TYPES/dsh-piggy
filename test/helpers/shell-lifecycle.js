@@ -16,9 +16,11 @@ export function shellLifecycle(host, install = () => ({ ok: true }), options = {
   const context = createContext({
     host, hostStarting: null, versions: options.versions ?? null, versionsStarting: null,
     win: { isDestroyed: () => false, webContents: pages.pet },
-    panelWin: { isDestroyed: () => false, webContents: pages.panel }, extWin: null,
+    panelWin: { isDestroyed: () => false, webContents: pages.panel },
+    extensionWindow: { current: () => null, owns: () => false },
+    autostart: { flush: () => Promise.resolve() },
     hitTimer: 1, fullscreenWatch: null, topGuardTimer: null, displayWatchTimer: null, stateTimer: null,
-    proxySettings: null, autostartWriting: Promise.resolve(),
+    proxySettings: null,
     join, saveArchive, writeFile: options.writeFile,
     stopDrag() {}, clearInterval() {}, clearTimeout() {}, flushWindowState() {}, flushLogs() {},
     process: { env: {} },
@@ -46,7 +48,7 @@ export function shellLifecycle(host, install = () => ({ ok: true }), options = {
     assert.ok(first >= 0 && last > first, `生产生命周期代码边界不存在：${start} → ${end}`)
     runInContext(source.slice(first, last), context, { filename: 'desktop-main-lifecycle.js' })
   }
-  load('let quitting = false', 'let tray = null')
+  load('let quitting = false', '/** 合并确认')
   load('async function requireSavedGame()', '// ---- 更新 App')
   load('let hostClosed = false', "app.on('window-all-closed'")
   load('let releases = []', "ipcMain.handle('piggy:quit'")

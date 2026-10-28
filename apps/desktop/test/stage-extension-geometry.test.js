@@ -17,7 +17,7 @@ import { extensionWindowGeometry } from '../lib/extension-window-geometry.js'
 import { stageBounds, workAreasOf } from '../stage/geometry.js'
 
 const stageSource = readFileSync(new URL('../stage/main.js', import.meta.url), 'utf8')
-const splitSource = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+const extensionSource = readFileSync(new URL('../lib/extension-window.js', import.meta.url), 'utf8')
 
 /** 取出 stage/main.js 里一个顶层函数（到它自己的收尾行），和 extension-layer.test.js 同一做法。 */
 function extract(name) {
@@ -46,7 +46,7 @@ test('高缩放小工作区：修前固定最小尺寸超界，helper 留在工�
   assert.ok(after.minWidth <= after.width && after.minHeight <= after.height)
 })
 
-test('stage 扩展窗口与 split 主进程共用 extension-window-geometry helper', () => {
+test('stage 扩展窗口与 split 外壳模块共用 extension-window-geometry helper', () => {
   assert.match(stageSource, /import \{ extensionWindowGeometry \} from '\.\.\/lib\/extension-window-geometry\.js'/)
   assert.match(stageSource, /const \{ width, height, minWidth, minHeight \} = extensionWindowGeometry\(area\)/)
   assert.match(stageSource, /width, height, useContentSize: true, minWidth, minHeight/)
@@ -54,8 +54,8 @@ test('stage 扩展窗口与 split 主进程共用 extension-window-geometry help
   assert.doesNotMatch(stageSource, /minHeight:\s*480/)
 
   // 对照 split：同一个 helper、同一组解构字段，避免两条启动路径再次分叉。
-  assert.match(splitSource, /import \{ extensionWindowGeometry \} from '\.\/lib\/extension-window-geometry\.js'/)
-  assert.match(splitSource, /const \{ width, height, minWidth, minHeight \} = extensionWindowGeometry\(area\)/)
+  assert.match(extensionSource, /import \{ extensionWindowGeometry \} from '\.\/extension-window-geometry\.js'/)
+  assert.match(extensionSource, /const \{ width, height, minWidth, minHeight \} = extensionWindowGeometry\(area\)/)
 })
 
 test('扩展窗口按光标所在屏的真实工作区取尺寸，不用多屏并集外接框', () => {
