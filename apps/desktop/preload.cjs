@@ -65,14 +65,14 @@ contextBridge.exposeInMainWorld('piggyShell', {
     const next = ipcRenderer.sendSync('piggy:content', { ...content, immediate: true })
     if (next && next.window && next.workArea) geometry = next
   },
-  /** Windows 穿透模式：鼠标进出猪/面板时告诉主进程要不要接点击。 */
+  /** 旧游戏包上报鼠标命中；现代游戏由主进程轮询 place 的 hitShape（缺省沿用 shape）。 */
   setHit: hit => ipcRenderer.send('piggy:hit', hit === true),
   /** Which parts of the window the pig occupies; everything else lets clicks through. */
   setShape: rects => ipcRenderer.send('piggy:shape', rects),
   /** Main process samples the cursor at 60 Hz from this pointer-down origin. */
   beginDrag: pig => ipcRenderer.send('piggy:drag:start', pig ?? null),
   dragVisualBounds: true,
-  /** 新游戏包：页面算好窗口位置大小和可点区域，主进程照做，同步返回新几何。 */
+  /** 新游戏包：bounds 为窗口几何，shape 保守裁剪绘制，hitShape 独立限制输入，均为窗口 CSS 坐标。 */
   place: request => {
     const next = ipcRenderer.sendSync('piggy:place', request)
     if (next && next.window && next.workArea) geometry = next
@@ -89,7 +89,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   flyMove: frame => ipcRenderer.send('piggy:flight:move', frame),
   /** 旧游戏包（0.27.2 及以前）的拖动：只发鼠标增量。 */
   moveBy: (dx, dy) => ipcRenderer.send('piggy:move', { dx: Number(dx) || 0, dy: Number(dy) || 0 }),
-  /** 平台：macOS 没有 setShape，收起时不能预留透明区域（会挡住桌面点击）。 */
+  /** 平台：macOS 不支持 setShape，由主进程按输入区域切换鼠标穿透。 */
   platform: typeof process === 'undefined' ? '' : process.platform,
   /** 主进程推来的窗口/工作区几何：面板朝屏幕里侧开要用。 */
   geometry: () => geometry,

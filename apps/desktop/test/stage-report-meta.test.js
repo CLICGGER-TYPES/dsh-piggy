@@ -91,6 +91,16 @@ test('preload keeps the shape cap and ignores non-object reports', () => {
   assert.equal(sent.length, 1, 'only object reports reach the main process')
 })
 
+test('preload preserves independent input shapes and omission for legacy games', () => {
+  const { exposed, sent } = loadPreload()
+  exposed.stageShell.report({ shape: [rect], hitShape: [], interacting: false })
+  assert.deepEqual(plain(sent[0].payload.hitShape), [], 'empty input explicitly makes all drawing pass-through')
+  exposed.stageShell.report({ shape: [rect], hitShape: Array.from({ length: 100 }, () => rect) })
+  assert.equal(sent[1].payload.hitShape.length, 64)
+  exposed.stageShell.report({ shape: [rect] })
+  assert.equal('hitShape' in sent[2].payload, false, 'old reports retain shape-as-input semantics')
+})
+
 test('preload role/extKey stays as before and the existing shell API is still exposed', () => {
   const { exposed } = loadPreload({ argv: ['electron', '--piggy-role=ext', '--piggy-ext=farm'] })
   assert.equal(exposed.stageShell.role, 'ext')
@@ -144,8 +154,10 @@ const GLOBALS = ['window', 'document', 'getComputedStyle', 'MutationObserver', '
 async function mountPage(label) {
   const clock = fakeClock()
   const reports = []
+  const interactions = []
   const onWindow = new Map()
   const onDocument = new Map()
+  let onMutation = () => {}
   const listen = map => ({
     add: (type, handler) => { const list = map.get(type) ?? []; list.push(handler); map.set(type, list) },
     remove: (type, handler) => { const list = map.get(type); if (list) { const i = list.indexOf(handler); if (i >= 0) list.splice(i, 1) } },
@@ -183,7 +195,7 @@ async function mountPage(label) {
     stageShell: {
       role: 'stage',
       report: payload => { reports.push(payload) },
-      setInteracting() {},
+      setInteracting: active => { interactions.push(active) },
       geometry: () => geometry,
       askGeometry: () => geometry,
       onGeometry: () => () => {},
@@ -201,7 +213,7 @@ async function mountPage(label) {
     window: win,
     document: doc,
     getComputedStyle: () => ({ display: 'block', visibility: 'visible', opacity: '1', translate: '' }),
-    MutationObserver: class { observe() {} disconnect() {} },
+    MutationObserver: class { constructor(callback) { onMutation = callback } observe() {} disconnect() {} },
     ResizeObserver: class { observe() {} disconnect() {} },
     requestAnimationFrame: fn => clock.setTimeout(() => fn(clock.now()), 16),
     cancelAnimationFrame: id => clock.clearTimeout(id),
@@ -224,9 +236,13 @@ async function mountPage(label) {
   }
   return {
     reports,
+    interactions,
     win,
     advance: ms => clock.advance(ms),
     resize: () => windowEvents.fire('resize', {}),
+    mutate: () => onMutation(),
+    down: point => windowEvents.fire('pointerdown', { pointerId: 1, button: 0, ...point }),
+    up: () => windowEvents.fire('pointerup', { pointerId: 1 }),
     restore() {
       for (const [key, descriptor] of saved) {
         if (descriptor) Object.defineProperty(globalThis, key, descriptor)
@@ -269,6 +285,72 @@ test('bootstrap reports dpr + CSS viewport and dedups on dpr/viewport as well as
     page.advance(32)
     assert.equal(page.reports.length, 3)
     assert.deepEqual(page.reports[2].viewport, { width: 1000, height: 640 })
+  } finally {
+    page.restore()
+  }
+})
+
+test('bootstrap reports input-only changes and removes hidden controls without shrinking drawing', async () => {
+  const page = await mountPage('input-only-report')
+  try {
+    const pig = { x: 120, y: 80, width: 30, height: 35 }
+    const gift = { x: 180, y: 80, width: 20, height: 20 }
+    let hits = [pig, gift]
+    const api = /** @type {any} */ (page.win.piggyStage)
+    api.hitRegions = () => hits
+    page.resize()
+    page.advance(32)
+    const drawing = page.reports.at(-1).shape
+    assert.deepEqual(page.reports.at(-1).hitShape, [pig, gift])
+    const count = page.reports.length
+    hits = [pig]
+    page.mutate()
+    page.advance(32)
+    assert.equal(page.reports.length, count + 1, 'hiding only a control is not deduped away')
+    assert.deepEqual(page.reports.at(-1).shape, drawing)
+    assert.deepEqual(page.reports.at(-1).hitShape, [pig], 'hidden control no longer receives native input')
+  } finally {
+    page.restore()
+  }
+})
+
+test('bootstrap follows animated input while the pointer and DOM stay still', async () => {
+  const page = await mountPage('animated-input')
+  try {
+    let pig = { x: 120, y: 80, width: 30, height: 35 }
+    const api = /** @type {any} */ (page.win.piggyStage)
+    api.hitRegions = () => [pig]
+    page.advance(64)
+    const first = page.reports.at(-1)
+    assert.deepEqual(first.hitShape, [pig])
+    pig = { ...pig, y: pig.y - 5 }
+    page.advance(64)
+    const moved = page.reports.at(-1)
+    assert.deepEqual(moved.hitShape, [pig], 'a CSS-only bob updates native input without pointermove or mutation')
+    assert.deepEqual(moved.shape, first.shape, 'tracking never shrinks the drawing corridor')
+    const count = page.reports.length
+    page.advance(64)
+    assert.equal(page.reports.length, count, 'unchanged input does not cause redundant reports')
+  } finally {
+    page.restore()
+  }
+})
+
+test('bootstrap acquires a lease only for visible input and releases it after pointerup', async () => {
+  const page = await mountPage('blank-hit-region')
+  try {
+    const api = /** @type {any} */ (page.win.piggyStage)
+    api.hitRegions = () => [{ x: 120, y: 80, width: 30, height: 35 }, { x: 180, y: 80, width: 20, height: 20 }]
+    page.down({ clientX: 80, clientY: 80 })
+    page.advance(32)
+    assert.deepEqual(page.interactions, [], 'transparent host whitespace cannot claim the full stage')
+    page.down({ clientX: 185, clientY: 85 })
+    page.advance(32)
+    assert.equal(page.interactions.at(-1), true, 'a real control may acquire capture')
+    page.up()
+    page.advance(32)
+    assert.equal(page.interactions.at(-1), false, 'control release hands the stage back')
+    assert.equal(page.reports.at(-1).interacting, false)
   } finally {
     page.restore()
   }

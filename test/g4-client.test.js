@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { partFor } from '../src/client/pet-parts.js'
-import { SNAPSHOT, contentOf, findByAttr, findByClass, mount, openPanel, sceneOf, settle } from './helpers/bundle.js'
+import { SNAPSHOT, contentOf, findByAttr, findByClass, hostOf, mount, openPanel, sceneOf, settle } from './helpers/bundle.js'
 
 test('the spot you pat on a left-facing pig maps to a body part', () => {
   assert.equal(partFor(0.5, 0.95), 'feet')
@@ -18,8 +18,8 @@ test('the spot you pat on a left-facing pig maps to a body part', () => {
 test('a left click on the pig sends a pat with the body part, and no canned client line', async () => {
   const { dom, calls } = await mount({ status: SNAPSHOT })
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 0, clientY: 0 })
-  scene.fire('pointerup', { clientX: 0, clientY: 0 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31 })
+  scene.fire('pointerup', { clientX: 35, clientY: 31 })
   await settle()
   const body = JSON.parse(calls.at(-1).body)
   assert.equal(body.action, 'pet')
@@ -34,9 +34,9 @@ test('右键猪只开关面板，不摸猪', async () => {
   const pig = findByClass(scene, 'dp-pig')
   pig.removeAttribute('data-react')
   const before = calls.length
-  scene.fire('pointerdown', { button: 2, clientX: 0, clientY: 0 })
-  scene.fire('pointerup', { button: 2, clientX: 0, clientY: 0 })
-  scene.fire('contextmenu', { preventDefault() {} })
+  scene.fire('pointerdown', { button: 2, clientX: 35, clientY: 31 })
+  scene.fire('pointerup', { button: 2, clientX: 35, clientY: 31 })
+  scene.fire('contextmenu', { clientX: 35, clientY: 31, preventDefault() {} })
   await settle()
   const pats = calls.slice(before).filter(call => call.body && JSON.parse(call.body).action === 'pet')
   assert.equal(pats.length, 0, '右键不发 pet')
@@ -47,4 +47,37 @@ test('desktop walking is a settings switch only on desktop, off by default', asy
   const web = await mount({ status: SNAPSHOT })
   openPanel(web.dom, 'settings')
   assert.equal(findByAttr(contentOf(web.dom), 'data-walk', 'true'), undefined, 'not on the web page')
+})
+
+test('scene whitespace cannot wake, touch, pet, capture, drag or open the pig menu', async () => {
+  const drag = []
+  const shell = { beginDrag: () => drag.push('start'), endDrag: () => drag.push('end') }
+  const { dom, calls } = await mount({ status: SNAPSHOT, windowExtra: { __dshPiggyShell: shell } })
+  const scene = sceneOf(dom), pig = findByClass(scene, 'dp-pig')
+  let captured = 0, prevented = false
+  scene.setPointerCapture = () => { captured += 1 }
+  pig.setAttribute('data-idle', 'nap')
+  const before = calls.length, feelBefore = pig.getAttribute('data-feel')
+  scene.fire('pointerdown', { button: 0, clientX: 900, clientY: 600, pointerId: 1 })
+  scene.fire('pointermove', { clientX: 940, clientY: 620, pointerId: 1 })
+  scene.fire('pointerup', { clientX: 940, clientY: 620, pointerId: 1 })
+  scene.fire('contextmenu', { clientX: 900, clientY: 600, preventDefault() { prevented = true } })
+  await settle()
+  assert.equal(pig.getAttribute('data-idle'), 'nap')
+  assert.equal(pig.getAttribute('data-feel'), feelBefore)
+  assert.equal(scene.getAttribute('data-dragging'), null)
+  assert.equal(captured, 0)
+  assert.deepEqual(drag, [])
+  assert.equal(calls.slice(before).some(call => call.method === 'POST'), false)
+  assert.equal(hostOf(dom).getAttribute('data-open'), 'false')
+  assert.equal(prevented, false)
+
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, pointerId: 2 })
+  assert.equal(captured, 1)
+  assert.equal(pig.getAttribute('data-idle'), null)
+  scene.fire('pointermove', { clientX: 50, clientY: 31, pointerId: 2 })
+  scene.fire('pointerup', { clientX: 50, clientY: 31, pointerId: 2 })
+  assert.deepEqual(drag, ['start', 'end'])
+  scene.fire('contextmenu', { clientX: 35, clientY: 31 })
+  assert.equal(hostOf(dom).getAttribute('data-open'), 'true')
 })

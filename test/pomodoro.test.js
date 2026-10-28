@@ -439,8 +439,8 @@ test('猪说话的时候角标让位（气泡和角标挨着，宁可角标先�
   const pill = findByAttr(scene, 'data-pomo-pill', 'true')
 
   // 左键摸一下 → 核心回一句 → 猪说出来 → 角标让位。
-  scene.fire('pointerdown', { button: 0, clientX: 0, clientY: 0 })
-  scene.fire('pointerup', {})
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31 })
+  scene.fire('pointerup', { clientX: 35, clientY: 31 })
   await settle()
   const bubble = findByAttr(scene, 'data-bubble-shown', 'true')
   assert.equal(bubble.hidden, false, '气泡应该出来了')

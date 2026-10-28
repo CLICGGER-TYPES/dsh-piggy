@@ -1,9 +1,8 @@
 // @ts-check
 /**
- * 舞台页面量形状：猪的绘制包络 + 每个真实可见控件的矩形。
- *
- * 不用 getBoundingClientRect 量猪（呼吸/浮动只改 transform，rect 每帧都抖）；
- * 气泡、面板、弹窗用自己的 rect。透明空白区不进形状，Linux 上才真的点得到桌面。
+ * 舞台页面分别量绘制形状与真实输入区域。
+ * 猪的保守包络和粒子只用于绘制，Linux setShape 不能把它们裁掉；
+ * 输入由游戏的 hitRegions 提供当前可见立绘与真实控件，旧游戏仍沿用绘制形状。
  * @module dsh-piggy-desktop/stage/overlay-shape
  */
 
@@ -49,9 +48,12 @@ export function layoutBox(node) {
 /** @param {any} node */
 export function visible(node) {
   if (node === null || node === undefined) return false
-  if (node.closest?.('[hidden]') !== null) return false
-  const style = getComputedStyle(node)
-  return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0.01
+  if (node.closest?.('[hidden]')) return false
+  for (let walk = node; walk !== null && walk !== undefined; walk = walk.parentElement) {
+    const style = getComputedStyle(walk)
+    if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse' || Number(style.opacity) <= 0.01) return false
+  }
+  return true
 }
 
 /** @param {{x:number,y:number,width:number,height:number}} rect @param {number} pad */
@@ -136,15 +138,34 @@ function elementRect(node, pad) {
 }
 
 /**
+ * 当前真实输入；缺 hook 和空数组必须区分，旧游戏才不会失去原有点击契约。
  * @param {any} host
  * @param {Document} doc
- * @param {((box:any)=>any)|null} [drawingBounds]
+ * @param {{hitRegions?:((host:any)=>any[])}} stageApi
  */
-export function collectStageShape(host, doc = document, drawingBounds = null) {
+export function collectStageHitShape(host, doc, stageApi) {
+  if (typeof stageApi.hitRegions !== 'function') return undefined
+  const rects = stageApi.hitRegions(host)
+  const hits = Array.isArray(rects) ? rects : []
+  const overlays = []
+  // role dialog / 农场纸面才是真实内容，不能把 .dp-save-overlay 的整屏暗底变成输入。
+  for (const node of Array.from(doc.querySelectorAll('[role="dialog"],[role="alertdialog"],[aria-modal="true"],[data-farm-overlay]'))) {
+    const rect = elementRect(node, 0)
+    if (rect !== null) overlays.push(rect)
+  }
+  return overlays.length === 0 ? hits : hits.concat(overlays)
+}
+
+/**
+ * @param {any} host
+ * @param {Document} doc
+ * @param {{drawingBounds?:((box:any)=>any), hitRegions?:((host:any)=>any[])}} [stageApi]
+ */
+export function collectStageShape(host, doc = document, stageApi = {}) {
   if (host === null || host === undefined) return null
   const pigBox = pigLayoutBox(host)
   const pig = envelopeFor(pigBox)
-  const body = pigBox !== null && typeof drawingBounds === 'function' ? roundRect(drawingBounds(pigBox), 0) : null
+  const body = pigBox !== null && typeof stageApi.drawingBounds === 'function' ? roundRect(stageApi.drawingBounds(pigBox), 0) : null
   // Linux setShape 同时裁绘制：粒子升起的那一段也要在形状里（split 的 measure.js 早就有）。
   const fx = host.querySelector('.dp-fx') === null ? null : fxBand(pigBox)
   const bubble = elementRect(host.querySelector('.dp-bubble'), BUBBLE_PAD)
@@ -164,8 +185,10 @@ export function collectStageShape(host, doc = document, drawingBounds = null) {
   for (const rect of [pig, body, fx, bubble, menu, gift, hud, work, poke, soul, ...overlays]) {
     if (rect !== null) shape.push(rect)
   }
+  const hitShape = collectStageHitShape(host, doc, stageApi)
   return {
     shape,
+    ...(hitShape !== undefined ? { hitShape: Array.isArray(hitShape) ? hitShape : [] } : {}),
     visible: {
       pig,
       bubble,

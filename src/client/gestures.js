@@ -13,6 +13,7 @@ import { FEEL } from './feel/config.js'
 import { recentVelocity } from './feel/velocity.js'
 import { partAt } from './pet-parts.js'
 import { playSound, unlockSound } from './sound.js'
+import { hitsPig } from './hit-regions.js'
 
 function pointerScreen(event) {
   return {
@@ -84,7 +85,7 @@ export function attachGestures(c) {
 
   function onPointerDown(event) {
     if (event.button !== 0 || drag !== null) return
-    if (event.target?.closest?.('.dp-bubble,button,a,input,select,textarea,[role=button]')) return
+    if (!hitsPig(c.host, event)) return
     stopHeartbeat()
     stopHeartbeat = function () {}
     const screen = pointerScreen(event)

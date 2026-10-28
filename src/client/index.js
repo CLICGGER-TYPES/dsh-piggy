@@ -30,6 +30,7 @@ import { attachLife } from './life.js'
 import { playPigPet } from './pig-actions.js'
 import { forceFeedbackArt, setArtSwapHook, syncPigArt } from './art.js'
 import { attachGestures } from './gestures.js'
+import { hitsPig } from './hit-regions.js'
 import { createFeel } from './feel/index.js'
 import { stageShell } from './stage-shell.js'
 import { createStageBridge } from './stage-bridge.js'
@@ -295,6 +296,7 @@ export function mountGame(mountOptions) {
       })
 
       scene.addEventListener('contextmenu', function (event) {
+        if (!hitsPig(host, event)) return
         event.preventDefault()
         setOpen(!isOpen)
       })

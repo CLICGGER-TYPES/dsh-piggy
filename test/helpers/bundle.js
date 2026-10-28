@@ -67,6 +67,10 @@ export function fakeDom() {
       return selector.split(',').some(part => part.startsWith('.')
         ? this.className.split(/\s+/).includes(part.slice(1)) : this.tagName === part)
     }
+    closest(selector) {
+      for (let node = this; node; node = node.parentNode) if (node.matches(selector)) return node
+      return null
+    }
     querySelectorAll(selector) {
       const found = []
       for (const child of this.children) child.walk(node => { if (node.matches(selector)) found.push(node) })
@@ -244,7 +248,7 @@ export const findByClass = (root, className) => {
 /** 打开面板（右键＝菜单），主屏就是第一屏。 */
 export function openPanel(dom, app = 'home') {
   // 右键＝菜单，打开面板先落在主屏；指定 App 就再点一下它的方块。
-  sceneOf(dom).fire('contextmenu', { preventDefault() {} })
+  sceneOf(dom).fire('contextmenu', { clientX: 35, clientY: 31, preventDefault() {} })
   if (app === 'home') return
   findByAttr(contentOf(dom), 'data-app', app).fire('click')
 }
