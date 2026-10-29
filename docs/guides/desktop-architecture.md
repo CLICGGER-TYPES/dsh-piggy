@@ -4,7 +4,7 @@
 
 ## 一句话
 
-两个透明置顶窗口，一份游戏包两边各跑一份：
+默认双窗口模式使用两个透明置顶窗口，一份游戏包两边各跑一份；`--window-mode=stage` 选择透明舞台模式。
 
 | 窗口 | 里面有什么 | 谁决定它在哪、多大 |
 |---|---|---|
@@ -33,6 +33,16 @@
   2026-10-18：`DESKTOP_VERSION=6`，新增 `piggy:flight:move`；`minShell` 不提高（旧外壳仍能跑 A1，只是不抛）。
 - 游戏包要兼容「新游戏包 + 刚好满足 minShell 的旧外壳」：用新动作前先 `typeof shell.xxx === 'function'`。
 - 外壳要兼容「老游戏包」：老游戏包会退回外壳自带的 `renderer/shell.js` 和下表「旧」消息，别删。
+
+### 绘制形状与输入区域
+
+游戏包分别上报绘制 `shape` 和输入 `hitShape`。`shape` 保留气泡、动画扫掠和特效需要的绘制包络；`hitShape` 只收当前可见立绘的墨迹外接矩形、可见装扮文字和真实交互控件，不把透明布局容器、动画预留或非交互特效当输入。双窗口、透明舞台和摸摸/右键/拖动手势共用 `src/client/hit-regions.js`，图片复用内置取景及自定义立绘的墨迹数据，不是逐像素命中遮罩。
+
+双窗口通过 `place({shape, hitShape})` 提交，舞台通过布局报告传递两份形状。舞台的 `stage-bridge.hitRegions` 经 `stage/overlay-shape.js`、`bootstrap.js`、`preload.cjs` 和 `shape.js` 清洗后交给 `present.js`；两份形状在同一 CSS 视口中传递。未提供 `hitShape` 的旧报告仍按原 `shape` 契约处理；显式 `hitShape: []` 表示没有输入区域，不能改回绘制形状。普通未捕获状态下，客户端采样当前 CSS 动画后的输入区域，只有变化时才提交；仅更新输入区域不改变窗口位置或大小。
+
+macOS 和 Linux 的双窗口、舞台均由主进程轮询真实光标位置，通过 `setIgnoreMouseEvents` 切换输入；Linux 另用绘制 `shape` 调用 `setShape`，不再只靠绘制裁剪限制输入。已授权的原生拖动捕获、舞台交互租约及其结束交接仍保留既有输入保护，并非始终按静止命中放行。Windows 保留既有物理坐标/设备像素比映射与下述转发能力协商，不把 CSS 坐标直接当作屏幕坐标。
+
+双窗口原生拖动期间暂停页面输入区域提交，由外壳持有拖动几何；飞行期间继续提交 `hitShape`，但不重排布局或退出既有飞行绘制保护。合法 pointerdown 的起点不会因后续按压动画改变而被再次按新帧命中区域拒绝，主进程仍核对发送窗口、有限坐标、起点距离和工作区范围。
 
 ### Windows 鼠标转发
 
@@ -71,9 +81,9 @@
 
 | 通道 | piggyShell 方法 | 方式 | 说明 |
 |---|---|---|---|
-| `piggy:place` | `place({bounds?, shape?, pig?})` | 同步 | 设窗口位置大小、可点区域；`pig` 是猪在窗口里的框（0.33.1 起，面板按它贴猪）。返回最新几何 |
+| `piggy:place` | `place({bounds?, shape?, hitShape?, pig?})` | 同步 | 设窗口位置大小、绘制形状与独立输入区域；`pig` 是猪在窗口里的框（0.33.1 起，面板按它贴猪）。只传 `hitShape` 不重排窗口，返回最新几何 |
 | `piggy:drag:start` | `beginDrag({x,y,width,height,slide,origin?,visual?})` | 单向 | 开始拖：带猪在窗口里的定位框；`slide:true` 表示页面会接 `piggy:drag-slide`；`origin` 是 pointerdown 的屏幕坐标（手感层延迟到 4px 才发，主进程校验后当拖动起点）；未发布候选的可选 `visual` 是同坐标系完整绘制包络，不能替换原定位框 |
-| `piggy:flight:move` | `flyMove({x,y,slide})` | 单向 | A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds，不重排、不 followPig、不写 window.json；`slide` 用来平移可点/可见形状 |
+| `piggy:flight:move` | `flyMove({x,y,slide})` | 单向 | A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds，不重排、不 followPig、不写 window.json；`slide` 同步平移绘制与输入形状 |
 | `piggy:drag:heartbeat` | `dragHeartbeat()` | 单向 | 拖动中每次 pointermove 发；2 秒没心跳主进程自己松手 |
 | `piggy:drag:end` | `endDrag(release?)` | 同步 | 松手并返回最后一帧的窗口几何与滑动量 |
 | `piggy:hit` | `setHit(bool)` | 单向 | 旧游戏的 Windows 穿透命中；现代游戏上报形状后由主进程轮询 |
@@ -125,6 +135,7 @@
 | `src/client/desktop/index.js` | 猪窗口页面：每轮量猪、按家算窗口、拖动起止 |
 | `src/client/desktop/place.js` | 「家」模型 |
 | `src/client/desktop/measure.js` | 猪窗口的固定框、气泡预留、可点区域 |
+| `src/client/hit-regions.js` | 双窗口、舞台与 DOM 手势共用的可见立绘和控件输入区域 |
 | `src/client/desktop/panel-window.js` | 面板窗口页面：排版、报尺寸 |
 | `src/client/split.js`、`pending.js` | 两边页面的分工（谁演反应、谁出提示条） |
 
@@ -140,6 +151,13 @@
    用 QMP 绝对鼠标真拖、虚拟机里 ffmpeg `gdigrab` 录屏，同样用 `drag-film.py --panel` 分析。
    修前先用旧版录一次复现（0.33.1 的对照：修前面板偏 204px，修后 90% 的帧 ≤2px）。
 3. 测试机的账号、IP、操作脚本在维护者本机笔记里，不进仓库。
+
+### 透明区输入验收
+
+1. 使用隔离存档分别启动默认双窗口和 `--window-mode=stage` 候选，让窗口后方的普通应用显示可点击内容。
+2. 在没有正在进行的拖动、飞行或交互交接时，用系统鼠标在猪周围的透明留白、动画预留区及纯特效区分别左击、右击和按住拖动。确认后方应用收到对应操作，小猪不摸摸、不切换面板、不开始拖动。
+3. 用系统鼠标在可见猪身上复验摸摸、右键菜单和拖动，并核对气泡回复、签到及礼包等控件仍各自响应。覆盖普通/自定义非方形立绘、睡姿、不同显示比例，以及动画、按压后再拖动、抛掷和落地后的再次抓取。
+4. 记录实际系统、模式、缩放和未覆盖项；Windows 补实际分数缩放，macOS/Linux 分别验证本机窗口穿透。DOM 事件注入、真实光标移动或 `setIgnoreMouseEvents` 调用记录不能代替后方应用收到系统点击的证据；没有系统点击权限时，明确保留此项未验收。
 
 ### 完整存档传输（0.37.1-rc.2 预发布）
 
@@ -162,13 +180,13 @@ Linux 的 setShape 也裁剪绘制。窗口 resize 时先临时保留完整区�
 
 ### 边缘拖放绘制包络（2026-10-21 未发布候选）
 
-`desktop/visual-bounds.js` 从原始猪定位盒、宽立绘留白与 `feelEnvelope` 推出固定绘制范围；动作变换中心仍是原定位盒。启动位置、拖动、飞行和活跃时的原生 shape 使用同一包络，home 与面板依然按脚底中心定位。连接的屏缝可以穿过，错位屏幕的空白不能作为可绘制区域。初始存档贴边时只向可容纳完整绘制范围的位置夹取，稳定后重复测量不能漂移。
+`desktop/visual-bounds.js` 从原始猪定位盒、宽立绘留白与 `feelEnvelope` 推出固定绘制范围；动作变换中心仍是原定位盒。启动位置、拖动、飞行和活跃时的原生绘制 `shape` 使用同一包络，独立 `hitShape` 不包含这份预留；home 与面板依然按脚底中心定位。连接的屏缝可以穿过，错位屏幕的空白不能作为可绘制区域。初始存档贴边时只向可容纳完整绘制范围的位置夹取，稳定后重复测量不能漂移。
 
 新外壳声明 `piggyShell.dragVisualBounds === true`。没有传 `visual` 的旧游戏包沿用原方形定位盒夹取；旧外壳忽略新字段，游戏仍能运行，但拖到边缘的预防修复需要更新并重启外壳。不要把这项能力写成已经包含在已发布 0.6.7 中。
 
 不能用松手后无条件清空 `commitSlide`/anchor 代替源头限制：实际原生录像已证明这种候选会引入单帧位置交接跳动。既有坏 anchor 通过同存档重启恢复；本轮不做运行中强制清零。验证范围和仍开放的快拖、混合缩放问题以 ROADMAP 为准。
 
-拖动期间只有外壳 `dragTick` 拥有窗口位置与绘制形状。页面 `tick` 的统一入口必须拦住拖动和飞行，不能只在定时器/调度器里拦；直接的菜单、尺寸或动作几何回调也走同一约束。外壳用既有 `dragSession` 拒绝拖动期间普通 `place` 写入，不另设第二套拖动状态。`place({})` 始终是只读几何查询：保留现代能力握手，但不清空 slide、不退出整窗绘制形状、不触发落地提交。松手仍按原 IPC 顺序读取最后几何并交接。
+拖动期间只有外壳 `dragTick` 拥有窗口位置与绘制形状。页面 `tick` 的布局入口拦住拖动和飞行，直接的菜单、尺寸或动作几何回调也走同一约束；输入区域采样在拖动时暂停，在飞行时仅提交 `hitShape`。外壳用既有 `dragSession` 拒绝拖动期间普通 `place` 写入，不另设第二套拖动状态。`place({})` 始终是只读几何查询：保留现代能力握手，但不清空 slide、不退出整窗绘制形状、不触发落地提交。松手仍按原 IPC 顺序读取最后几何并交接。
 
 同尺寸也有新旧画面交接：`commitSlide` 把 translate 交回布局后，第一份精确 shape 不能立刻裁剪仍在显示的旧缓冲。Linux 在退出 `dragShapeActive`/`flightShapeActive` 的第一次带 shape 提交中，复用 `resizeShape.begin(bounds, true)` 等新帧；只传 shape、未传 bounds 的提交同样处理。新的拖动/飞行取消旧订阅，精确形状只在目标画面到达后恢复。定向 VM 记录的订阅耗时 3–18ms、随后均结束，减少动态和零 slide 也已验证；不增加常驻帧捕获，不修改动作节奏。
 

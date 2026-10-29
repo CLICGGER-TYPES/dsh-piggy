@@ -299,7 +299,7 @@ Linux 已在旧宿主客户端 `5476f34` 加新菜园 4.0.9 下完成原生购�
 - 换皮肤后猪变小：普通体型幼年猪的默认→薄荷→默认真实 DSH UI 复验差异 0px。扩展隔离 QA fixture（主代理独立重跑）发现胖体型默认→薄荷可见高度 68.3408→45.5622px，缩小约 33.3%；源码只在默认皮肤应用体重叠层及其尺寸，属于现有显示规则，暂不擅自改动，待用户验收决定。职业皮肤和带透明边框 PNG 均约 45.562px；测试 SVG 为 46.170px。强制自定义睡姿仅验证图片路径与 framing，不代表真实睡眠流程或用户存档已复现。证据在本机总目录 `tasks/results/skin-size-expanded/root-verification.json` 及 `tasks/results/skin-size-browser/latest/`。
 - 小面板 Esc：已修复并完成主机 1115/1115、Windows Node24 新增 9/9，以及 Linux/Windows 两种焦点状态的原生验收。菜园内层弹窗逐层取消及大窗口返回面板在 Linux 通过；修复随独立候选交付，尚未发版。
 - 小猪点击命中区域偏小：追蝴蝶修前 9/61 采样越界（最远约 4.08px）、修后 0/61。后续将 `motion-envelope.js` 整合到测量流程，按 `dp-spin` / `dp-jump` CSS `animationName` 计算整段运动范围；旋转 roll20/67 修前最大越界 30.206px、修后 0/67，cure14/59 修前最大 29.51px、修后 0/59；蝴蝶修后 0/61。窗口 outline 随尺寸固定预留，idle 时不计入 hit 区域；Darwin 保持原 footprint 未修。host 全量 1124/1124，build/typecheck 通过；Windows Node24 动画相关 9/9。几何探针强制动画，不等同自然复现。主代理统一验证证据见 `tasks/results/rotation-hit-probe/root-verification.json`。
-- macOS：用户报告点击离猪很远的透明空白处也会显示/激活猪窗口，干扰其他应用。Linux 点测 (940,600) 时宠物焦点由 true 变 false，焦点落到终端；这不能证明 Mac 反馈。用户补充的系统、外壳版本和触发步骤尚未收到，Mac 未实机复现，不判定根因。
+- macOS：用户报告点击离猪很远的透明空白处也会显示/激活猪窗口，干扰其他应用。此前 Linux 点测 (940,600) 时宠物焦点由 true 变 false、焦点落到终端，不能证明 Mac 反馈；当时尚未收到用户补充的系统、外壳版本和触发步骤，未实机复现或判定 Mac 根因。2026-10-27 未发布源码候选已将绘制 `shape` 与输入 `hitShape` 分开，双窗口和透明舞台按真实光标控制鼠标穿透；当前仅有原生光标/穿透设置观察及渲染器手势验证，未完成系统鼠标点击后方应用的验收，不据此关闭用户原始反馈。Windows/Linux 本轮原生回归及原始触发条件下的 macOS 复验仍待完成。
 
 ## 已确认的后续方向：DSH 外部桌宠模式
 

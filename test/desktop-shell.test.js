@@ -37,7 +37,7 @@ test('桌面版：拖猪由主进程采样，不写页面坐标', async () => {
 
   const scene = sceneOf(dom)
   const offsetBefore = hostOf(dom).style.right
-  scene.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, screenX: 1000, screenY: 900, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 1000, screenY: 900, pointerId: 1 })
   scene.fire('pointermove', { clientX: 130, clientY: 90, screenX: 1030, screenY: 890, pointerId: 1 })
   scene.fire('pointermove', { clientX: 150, clientY: 60, screenX: 1050, screenY: 860, pointerId: 1 })
   scene.fire('pointerup', { pointerId: 1 })
@@ -52,7 +52,7 @@ test('0.2.1 旧外壳只有 moveBy 时仍按屏幕坐标增量拖动', async () 
   const shell = { moveBy: (dx, dy) => moves.push([dx, dy]), room: () => null }
   const { dom, store } = await mount({ windowExtra: { __dshPiggyShell: shell } })
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, screenX: 400, screenY: 300, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 400, screenY: 300, pointerId: 1 })
   scene.fire('pointermove', { clientX: 110, clientY: 95, screenX: 420, screenY: 290, pointerId: 1 })
   scene.fire('pointermove', { clientX: 110, clientY: 95, screenX: 437, screenY: 285, pointerId: 1 })
   scene.fire('pointerup', { pointerId: 1 })
@@ -69,7 +69,7 @@ test('丢失指针捕获会结束桌面拖动，移动时给主进程发送心�
   }
   const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 20, clientY: 20, screenX: 100, screenY: 100, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 100, screenY: 100, pointerId: 1 })
   scene.fire('pointermove', { clientX: 30, clientY: 20, screenX: 110, screenY: 100, pointerId: 1 })
   scene.fire('lostpointercapture', { pointerId: 1 })
   scene.fire('pointermove', { clientX: 40, clientY: 20, screenX: 120, screenY: 100, pointerId: 1 })
@@ -92,7 +92,7 @@ test('按住 1.5 秒不移动后再拖，桌面窗口仍跟着鼠标，松开即
   const cleared = new Set()
   window.clearInterval = id => cleared.add(id)
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 20, clientY: 20, screenX: 100, screenY: 100, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 100, screenY: 100, pointerId: 1 })
   // 手感层：4px 之前不算拖动，也不开始心跳（来回摸不能把窗口推着走）。
   assert.equal(intervals.filter(timer => timer.delay === 250).length, 0, '4px 之前不开始拖动')
   scene.fire('pointermove', { clientX: 30, clientY: 20, screenX: 110, screenY: 100, pointerId: 1 })
@@ -128,7 +128,7 @@ test('桌面版：窗口自己在动时仍把整个拖动交给主进程', async
   openPanel(dom, 'status')
 
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, screenX: 1000, screenY: 800, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 1000, screenY: 800, pointerId: 1 })
   // 窗口跟着挪了 40px：clientX 只涨了 20，屏幕坐标老老实实涨了 40。
   scene.fire('pointermove', { clientX: 120, clientY: 100, screenX: 1040, screenY: 760, pointerId: 1 })
   scene.fire('pointerup', { pointerId: 1 })
@@ -142,7 +142,7 @@ test('桌面版：窗口跟随鼠标时，拖拽松开不能误判成摸猪', as
   const scene = sceneOf(dom)
   const pig = findByClass(hostOf(dom), 'dp-pig')
   pig.removeAttribute('data-react')
-  scene.fire('pointerdown', { button: 0, clientX: 60, clientY: 60, screenX: 1000, screenY: 800, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 1000, screenY: 800, pointerId: 1 })
   scene.fire('pointermove', { clientX: 60, clientY: 60, screenX: 1040, screenY: 800, pointerId: 1 })
   scene.fire('pointerup', { pointerId: 1 })
   assert.equal(pig.getAttribute('data-react'), null)
@@ -152,8 +152,8 @@ test('网页版：没有外壳时行为不变（坐标写盘、面板按视口�
   const { dom, store } = await mount()
   openPanel(dom, 'status')
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, screenX: 800, screenY: 600, pointerId: 1 })
-  scene.fire('pointermove', { clientX: 130, clientY: 90, screenX: 830, screenY: 590, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 800, screenY: 600, pointerId: 1 })
+  scene.fire('pointermove', { clientX: 65, clientY: 21, screenX: 830, screenY: 590, pointerId: 1 })
   scene.fire('pointerup', { pointerId: 1 })
   await settle()
   assert.notEqual(store.get('dsh-piggy:position'), undefined, '网页版照旧记住位置')
@@ -212,14 +212,11 @@ test('真实顺序（shell.js → client.js）：按住猪拖，窗口跟着走�
     addEventListener: (name, fn) => { (winListeners[name] ??= []).push(fn) },
     removeEventListener: () => {},
   }
-  // 元素补上 shell 要用的 closest（假 DOM 里没实现）。
+  // 补齐旧外壳使用的 nodeName 和布局尺寸；保留公共假 DOM 的选择器和父链。
   const makeElement = tag => {
     const node = dom.document.createElement(tag)
     // 假 DOM 只记了 tagName，shell.js 按 nodeName 认脚本。
     node.nodeName = tag
-    node.closest = () => null
-    // 假 DOM 缺的两个接口（真浏览器里永远有）。
-    node.querySelectorAll = () => []
     node.offsetParent = null
     node.offsetLeft = 0
     node.offsetTop = 0
@@ -262,7 +259,7 @@ test('真实顺序（shell.js → client.js）：按住猪拖，窗口跟着走�
   assert.notEqual(scene, null, '要能找到场景')
   const before = { right: host.style.right, bottom: host.style.bottom, top: host.style.top, left: host.style.left }
 
-  scene.fire('pointerdown', { button: 0, clientX: 60, clientY: 60, screenX: 1560, screenY: 760, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 1560, screenY: 760, pointerId: 1 })
   scene.fire('pointermove', { clientX: 70, clientY: 60, screenX: 1570, screenY: 760, pointerId: 1 })
   scene.fire('pointermove', { clientX: 110, clientY: 40, screenX: 1610, screenY: 740, pointerId: 1 })
   scene.fire('pointerup', { clientX: 110, clientY: 40, screenX: 1610, screenY: 740, pointerId: 1 })
@@ -319,7 +316,7 @@ test('When pressing without moving, then desktop geometry remains available unti
   const { shell, calls } = fakeShell(null)
   const { dom } = await mount({ windowExtra: { __dshPiggyShell: shell } })
   const scene = sceneOf(dom)
-  scene.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, screenX: 600, screenY: 500, pointerId: 1 })
+  scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31, screenX: 600, screenY: 500, pointerId: 1 })
   assert.equal(scene.getAttribute('data-dragging'), 'true', 'pressed appearance remains active')
   assert.notEqual(scene.getAttribute('data-window-dragging'), 'true', 'press alone must not freeze native drawing shape')
   assert.deepEqual(calls.drag, [])

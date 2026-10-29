@@ -16,7 +16,7 @@ test('stage shape includes the shared body envelope at every supported size and 
         getBoundingClientRect: () => ({left:300,top:200,width:size,height:size}) }
       const host = { style: { translate: shift }, querySelector: selector => selector === '.dp-pig' ? pig : null }
       const expected = bodyVisualBounds(pigLayoutBox(host))
-      const report = collectStageShape(host, document, bodyVisualBounds)
+      const report = collectStageShape(host, document, { drawingBounds: bodyVisualBounds })
       assert.ok(report.shape.some(rect => rect.x <= expected.x && rect.y <= expected.y
         && rect.x + rect.width >= expected.x + expected.width
         && rect.y + rect.height >= expected.y + expected.height), `size ${size}, slide ${shift}`)

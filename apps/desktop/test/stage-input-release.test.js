@@ -254,13 +254,16 @@ async function mountPage(label) {
     stageShell: {
       role: 'stage',
       setInteracting: active => { sent.push([clock.now(), active === true]) },
-      report: payload => { reports.push({ shape: payload.shape, interacting: payload.interacting }) },
+      report: payload => { reports.push(payload) },
       geometry: () => geometry, askGeometry: () => geometry, onGeometry: () => () => {},
       onInteractionOff: handler => { doc.interactionOff = handler; return () => { doc.interactionOff = null } },
     },
     piggyShell: {},
     piggyGame: { mount: options => { mounted = options; return () => { mounted = null } } },
-    piggyStage: { isFlying: () => state.flying },
+    piggyStage: {
+      isFlying: () => state.flying,
+      hitRegions: () => [{ x: 120, y: 80, width: 30, height: 35 }, { x: 180, y: 80, width: 20, height: 20 }],
+    },
     addEventListener: onWindow.add, removeEventListener: onWindow.remove,
   }
   const saved = new Map(GLOBALS.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
@@ -297,7 +300,7 @@ async function mountPage(label) {
     mounted: () => mounted,
     last: () => (sent.length === 0 ? null : sent[sent.length - 1][1]),
     trues: () => sent.filter(entry => entry[1] === true).length,
-    down: init => onWindow.fire('pointerdown', { target: inside(), pointerId: 1, button: 0, buttons: 1, ...init }),
+    down: init => onWindow.fire('pointerdown', { target: inside(), pointerId: 1, button: 0, buttons: 1, clientX: 130, clientY: 90, ...init }),
     move: init => onWindow.fire('pointermove', { target: inside(), pointerId: 1, buttons: 1, ...init }),
     up: init => onWindow.fire('pointerup', { target: inside(), pointerId: 1, button: 0, buttons: 0, ...init }),
     hide: () => { state.hidden = true; onDocument.fire('visibilitychange', {}) },
@@ -310,7 +313,7 @@ async function withPage(label, body) {
 }
 
 test('page: a button press whose pointerup was lost does not hold the whole stage', () => withPage('button-lost-up', page => {
-  page.down({ target: page.outside() })
+  page.down({ target: page.outside(), clientX: 500, clientY: 500 })
   assert.equal(page.last(), null, 'presses outside the pig host never claim the stage')
   // 点面板按钮（导出存档/日志会弹原生保存框）：接管开始，pointerup 没回到页面。
   page.down({ pointerId: 7 })

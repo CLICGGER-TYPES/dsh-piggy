@@ -17,14 +17,14 @@ import { commitSlide } from './slide.js'
 import { installPanel, startPanel } from './panel-window.js'
 import { installExt } from './ext-window.js'
 import { DESKTOP_CSS } from './css.js'
-
+import { startHitTracking } from './hit-tracking.js'
+import { suppressNativeTooltips } from './tooltips.js'
 /** 页面 ↔ 桌面程序的约定版本：以后桌面程序加新的基础动作时加一。
  * v3：外壳支持 piggyShell.logs.save（导出日志时弹系统「另存为」）。
  * v4：外壳 0.6.0 起猪和面板各一个窗口（piggyShell.role / panel / onStateChanged）。
  * v5：外壳支持 piggyShell.saves.save（二进制存档另存为）。
  * v6：外壳支持 piggyShell.flyMove（A2 抛掷，窗口跟着飞）。 */
 export const DESKTOP_VERSION = 6
-
 /** 窗口差这么多以内就不改。取 2 而不是 0/1：Windows 分数缩放下读回来常差 1px，Electron 源码自己也说
  *  GetWindowBoundsInScreen 有约 1px 误差（native_window_views.cc）。贴着噪声改就会来回抖。 */
 const TOLERANCE = 2
@@ -106,7 +106,7 @@ function tick() {
   next = measure.boxes(h)
   if (next === null) return
 
-  hitRects = next.shape
+  hitRects = next.hitShape
   if (mouse.x >= 0) updateHit(mouse.x, mouse.y)
 
   // 还没拿到窗口在哪：先不摆（以前按 (0,0) 算，启动时会把窗口摆错一次）。几何一到会再量。
@@ -138,14 +138,15 @@ function tick() {
     const dx = fresh.x - old.x
     const dy = fresh.y - old.y
     next.shape = next.shape.map(rect => ({ ...rect, x: rect.x + dx, y: rect.y + dy }))
-    hitRects = next.shape
+    next.hitShape = next.hitShape.map(rect => ({ ...rect, x: rect.x + dx, y: rect.y + dy }))
+    hitRects = next.hitShape
   }
   // A desktop-edge scene shift must not carry long speech outside the native
   // window. Re-measure after fitting so drawing and pointer shapes agree.
   measure.fitBubble(h, info)
   next = measure.boxes(h)
   if (next === null) return
-  hitRects = next.shape
+  hitRects = next.hitShape
   const move = !sameBounds(want, bounds, TOLERANCE)
   // 同一个目标连续失败多次：以窗口管理器的实际位置为准重定家，只 place 一次实际位置。
   // 不能在第一帧就接受 —— X11 的 setBounds 是异步的，刚开始回读可能还是旧值。
@@ -168,7 +169,7 @@ function tick() {
   const key = measure.keyOf(next)
   if (!move && key === lastKey) return
   lastKey = key
-  const request = { shape: next.shape, bounds: move ? want : undefined, pig: undefined, speech: undefined }
+  const request = { shape: next.shape, hitShape: next.hitShape, bounds: move ? want : undefined, pig: undefined, speech: undefined }
   // 拆窗口时顺带报猪在窗口里的框（内容可能刚在窗口里挪过）：外壳 0.6.1 起面板按它贴着猪。
   const pigNode = h.querySelector('.dp-pig')
   if (pigNode) request.pig = layoutBox(pigNode)
@@ -366,14 +367,7 @@ export function install(shell) {
       if (pig !== null) placement.rehome(info.window, pig, info.workAreas ?? [info.workArea])
     } : undefined,
   }
-  // 系统原生的 title 小提示在 Windows 透明置顶窗口上会画坏：鼠标移上去时改成 aria-label。
-  document.addEventListener('mouseover', function (event) {
-    const target = /** @type {any} */ (event.target)
-    const titled = target !== null && typeof target.closest === 'function' ? target.closest('[title]') : null
-    if (titled === null) return
-    if (!titled.getAttribute('aria-label')) titled.setAttribute('aria-label', titled.getAttribute('title'))
-    titled.removeAttribute('title')
-  }, true)
+  suppressNativeTooltips()
   document.addEventListener('mousemove', function (event) { updateHit(event.clientX, event.clientY) }, true)
   document.documentElement.addEventListener('mouseleave', function () {
     if (dragging()) return
@@ -383,7 +377,7 @@ export function install(shell) {
   })
 }
 
-/** 游戏挂载之后调用：只在内容真的变了时量（DOM 变化、窗口改大小、松手），另有 1 秒兜底。 */
+/** 挂载后跟踪布局和当前墨迹；动画仅更新输入，捕获期间不争用原生几何。 */
 export function start() {
   if (role === 'panel') { startPanel(); return }
   if (role === 'ext') return
@@ -394,6 +388,7 @@ export function start() {
   window.addEventListener('resize', schedule)
   window.addEventListener('pointerup', schedule)
   setInterval(function () { if (!dragging() && !flying) tick() }, 1000)
+  startHitTracking({ host, shell: bridge, blocked: dragging, onShape: rects => { hitRects = rects; if (mouse.x >= 0) updateHit(mouse.x, mouse.y) } })
   tick()
 }
 

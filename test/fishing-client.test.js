@@ -372,7 +372,7 @@ test('U24-7 closing a hooked fight resolves it exactly once', async () => {
   const { dom, calls } = await mount({ status: status({ rod, spots, pending: hooked }) })
   openPanel(dom, 'fishing')
   const before = calls.length
-  sceneOf(dom).fire('contextmenu', { preventDefault() {} })
+  sceneOf(dom).fire('contextmenu', { clientX: 35, clientY: 31, preventDefault() {} })
   await settle()
   const posts = calls.slice(before).filter(call => call.method === 'POST')
   assert.equal(posts.length, 1)

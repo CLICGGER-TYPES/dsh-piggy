@@ -18103,6 +18103,123 @@
     return { y: bubble.y, side: "above" };
   }
 
+  // src/client/hit-regions.js
+  var PIG_PARTS = ".dp-pig-img,.dp-pig-sleep,.dp-pig-emoji,.dp-slot";
+  var CONTROLS = '.dp-card,.dp-bubble,.dp-daily,.dp-hud,.dp-work,.dp-poke-hint,.dp-pomo,button,a,input,select,textarea,[role="button"]';
+  var BLOCK_PET = '.dp-bubble,.dp-card,button,a,input,select,textarea,[role="button"]';
+  var parentElement = (node) => node.parentElement ?? (node.parentNode?.nodeType === 9 ? null : node.parentNode);
+  function isVisible(node) {
+    for (let walk = node; walk; walk = parentElement(walk)) {
+      if (walk.hidden) return false;
+      const style = getComputedStyle(walk);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+      if (style.opacity !== "" && style.opacity !== void 0 && Number(style.opacity) <= 0.01) return false;
+    }
+    return true;
+  }
+  function nodeRect(node) {
+    const box = node.getBoundingClientRect?.();
+    if (!box || !(box.width > 0) || !(box.height > 0)) return null;
+    return { x: box.left ?? box.x, y: box.top ?? box.y, width: box.width, height: box.height };
+  }
+  function multiply(one, two) {
+    return [
+      one[0] * two[0] + one[2] * two[1],
+      one[1] * two[0] + one[3] * two[1],
+      one[0] * two[2] + one[2] * two[3],
+      one[1] * two[2] + one[3] * two[3]
+    ];
+  }
+  function linearTransform(style) {
+    const transform = String(style.transform ?? "");
+    const values = transform.slice(transform.indexOf("(") + 1, -1).split(",").map(Number);
+    let matrix = [1, 0, 0, 1];
+    if (transform.startsWith("matrix(") && values.length === 6) matrix = values.slice(0, 4);
+    if (transform.startsWith("matrix3d(") && values.length === 16) matrix = [values[0], values[1], values[4], values[5]];
+    const scale2 = String(style.scale ?? "none").split(/\s+/).map(Number);
+    if (Number.isFinite(scale2[0])) matrix = multiply([scale2[0], 0, 0, scale2[1] ?? scale2[0]], matrix);
+    const rotate2 = String(style.rotate ?? "none");
+    if (rotate2 !== "none" && Number.isFinite(parseFloat(rotate2))) {
+      const angle = parseFloat(rotate2) * (rotate2.endsWith("rad") ? 1 : rotate2.endsWith("turn") ? Math.PI * 2 : Math.PI / 180);
+      matrix = multiply([Math.cos(angle), Math.sin(angle), -Math.sin(angle), Math.cos(angle)], matrix);
+    }
+    return matrix;
+  }
+  function inkRect(node, ink) {
+    const box = nodeRect(node);
+    if (box === null) return null;
+    const width = node.offsetWidth || box.width, height = node.offsetHeight || box.height;
+    let matrix = [1, 0, 0, 1];
+    for (let walk = node; walk; walk = parentElement(walk)) matrix = multiply(linearTransform(getComputedStyle(walk)), matrix);
+    const project = (x, y) => ({ x: matrix[0] * x * width + matrix[2] * y * height, y: matrix[1] * x * width + matrix[3] * y * height });
+    const corners3 = (bounds2) => [project(bounds2[0], bounds2[1]), project(bounds2[2], bounds2[1]), project(bounds2[0], bounds2[3]), project(bounds2[2], bounds2[3])];
+    const extent = (points) => ({ left: Math.min(...points.map((p) => p.x)), top: Math.min(...points.map((p) => p.y)), right: Math.max(...points.map((p) => p.x)), bottom: Math.max(...points.map((p) => p.y)) });
+    const full = extent(corners3([0, 0, 1, 1])), part = extent(corners3(ink));
+    const sx = box.width / (full.right - full.left), sy = box.height / (full.bottom - full.top);
+    if (!Number.isFinite(sx) || !Number.isFinite(sy)) return null;
+    return {
+      x: box.x + (part.left - full.left) * sx,
+      y: box.y + (part.top - full.top) * sy,
+      width: (part.right - part.left) * sx,
+      height: (part.bottom - part.top) * sy
+    };
+  }
+  function imageInk(node) {
+    const src = node.getAttribute("src") || "";
+    const custom = customArtInk(src);
+    if (custom !== null) return custom;
+    const path = src.split("/art/")[1]?.split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
+    const bounds2 = ART_BOUNDS2[path] ?? [0, 0, 1, 1];
+    const width = node.offsetWidth || 1, height = node.offsetHeight || width;
+    const naturalWidth = node.naturalWidth || width, naturalHeight = node.naturalHeight || height;
+    const fit = Math.min(width / naturalWidth, height / naturalHeight);
+    const contained = {
+      x: (1 - naturalWidth * fit / width) / 2,
+      y: (1 - naturalHeight * fit / height) / 2,
+      width: naturalWidth * fit / width,
+      height: naturalHeight * fit / height
+    };
+    const ink = framedInkBox(contained, bounds2);
+    return [ink.x, ink.y, ink.x + ink.width, ink.y + ink.height];
+  }
+  function textRect(node) {
+    if (!node.textContent?.trim()) return null;
+    if (typeof document.createRange !== "function") return nodeRect(node);
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const box = range.getBoundingClientRect();
+    return box.width > 0 && box.height > 0 ? { x: box.left, y: box.top, width: box.width, height: box.height } : null;
+  }
+  function collectPigHitRects(host3) {
+    const rects = [];
+    for (const node of host3.querySelectorAll(PIG_PARTS)) {
+      if (!isVisible(node)) continue;
+      const image = node.matches?.(".dp-pig-img,.dp-pig-sleep");
+      if (image && (!node.getAttribute("src") || node.complete === false || node.naturalWidth === 0)) continue;
+      const rect = image ? inkRect(node, imageInk(node)) : textRect(node);
+      if (rect !== null) rects.push(rect);
+    }
+    return rects;
+  }
+  function collectHitRects(host3) {
+    const rects = collectPigHitRects(host3);
+    for (const node of host3.querySelectorAll(CONTROLS)) {
+      if (!isVisible(node)) continue;
+      const surface = node.closest?.(".dp-card,.dp-bubble");
+      if (surface && surface !== node) continue;
+      const rect = nodeRect(node);
+      if (rect !== null) rects.push(rect);
+    }
+    return rects;
+  }
+  function hitsRects(rects, event) {
+    return rects.some((rect) => event.clientX >= rect.x && event.clientX < rect.x + rect.width && event.clientY >= rect.y && event.clientY < rect.y + rect.height);
+  }
+  function hitsPig(host3, event) {
+    if (event.target?.closest?.(BLOCK_PET)) return false;
+    return hitsRects(collectPigHitRects(host3), event);
+  }
+
   // src/client/desktop/measure.js
   function framedBox(node, box) {
     if (!node.matches?.(".dp-pig-img,.dp-pig-sleep")) return box;
@@ -18290,7 +18407,7 @@
         const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) };
         shape.push({ x: fx.x, y: fx.y, width: Math.ceil(pigBox.x + pigBox.width + 36) - fx.x, height: Math.ceil(pigBox.y + 12) - fx.y });
       }
-      return { content, shape, pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
+      return { content, shape, hitShape: collectHitRects(host3), pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
     }
     function sides() {
       return SIDE;
@@ -18321,7 +18438,7 @@
       ];
       const tail = [];
       for (const s of next.shape) tail.push(s.x, s.y, s.width, s.height);
-      return head.concat(tail.map((n) => Math.floor(n / STEP))).join(",");
+      return [...head, ...tail.map((n) => Math.floor(n / STEP)), "hit", ...next.hitShape.flatMap((rect) => [rect.x, rect.y, rect.width, rect.height].map(Math.round))].join(",");
     }
     function fitWindow(content, win) {
       if (win && (content.width !== win.width || content.height !== win.height)) {
@@ -18697,6 +18814,43 @@
     '[data-piggy-role="pet"] .dp-card,[data-piggy-role="pet"] .dp-hud{display:none!important}'
   ].join("\n");
 
+  // src/client/desktop/hit-tracking.js
+  function startHitTracking(deps) {
+    let lastKey2 = "", lastAt2 = -Infinity;
+    function frame3(at) {
+      requestAnimationFrame(frame3);
+      if (deps.blocked()) {
+        lastKey2 = "";
+        return;
+      }
+      if (Number.isFinite(at) && at - lastAt2 < 32) return;
+      lastAt2 = at;
+      const host3 = deps.host();
+      if (host3 === null) return;
+      const hitShape = collectHitRects(host3);
+      const key2 = hitShape.map((rect) => [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(",")).join(";");
+      if (key2 === lastKey2) return;
+      lastKey2 = key2;
+      deps.onShape(hitShape);
+      deps.shell.place({ hitShape });
+    }
+    requestAnimationFrame(frame3);
+  }
+
+  // src/client/desktop/tooltips.js
+  function suppressNativeTooltips() {
+    document.addEventListener("mouseover", function(event) {
+      const target = (
+        /** @type {any} */
+        event.target
+      );
+      const titled = target !== null && typeof target.closest === "function" ? target.closest("[title]") : null;
+      if (titled === null) return;
+      if (!titled.getAttribute("aria-label")) titled.setAttribute("aria-label", titled.getAttribute("title"));
+      titled.removeAttribute("title");
+    }, true);
+  }
+
   // src/client/desktop/index.js
   var DESKTOP_VERSION = 6;
   var TOLERANCE2 = 2;
@@ -18780,7 +18934,7 @@
     measure.pin(h, side, next.hostBox, next.contentBox);
     next = measure.boxes(h);
     if (next === null) return;
-    hitRects = next.shape;
+    hitRects = next.hitShape;
     if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
     if (info === null || !info.window) {
       lastKey = null;
@@ -18815,12 +18969,13 @@
       const dx = fresh.x - old.x;
       const dy = fresh.y - old.y;
       next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
-      hitRects = next.shape;
+      next.hitShape = next.hitShape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
+      hitRects = next.hitShape;
     }
     measure.fitBubble(h, info);
     next = measure.boxes(h);
     if (next === null) return;
-    hitRects = next.shape;
+    hitRects = next.hitShape;
     const move = !sameBounds(want, bounds2, TOLERANCE2);
     const clampState = windowClamp.observe(want, bounds2);
     if (clampState === "accept") {
@@ -18840,7 +18995,7 @@
     const key2 = measure.keyOf(next);
     if (!move && key2 === lastKey) return;
     lastKey = key2;
-    const request = { shape: next.shape, bounds: move ? want : void 0, pig: void 0, speech: void 0 };
+    const request = { shape: next.shape, hitShape: next.hitShape, bounds: move ? want : void 0, pig: void 0, speech: void 0 };
     const pigNode = h.querySelector(".dp-pig");
     if (pigNode) request.pig = layoutBox(pigNode);
     const speech = h.querySelector('.dp-bubble[data-bubble-side="below"]');
@@ -19037,16 +19192,7 @@
         if (pig !== null) placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
       } : void 0
     };
-    document.addEventListener("mouseover", function(event) {
-      const target = (
-        /** @type {any} */
-        event.target
-      );
-      const titled = target !== null && typeof target.closest === "function" ? target.closest("[title]") : null;
-      if (titled === null) return;
-      if (!titled.getAttribute("aria-label")) titled.setAttribute("aria-label", titled.getAttribute("title"));
-      titled.removeAttribute("title");
-    }, true);
+    suppressNativeTooltips();
     document.addEventListener("mousemove", function(event) {
       updateHit(event.clientX, event.clientY);
     }, true);
@@ -19072,6 +19218,10 @@
     setInterval(function() {
       if (!dragging() && !flying) tick();
     }, 1e3);
+    startHitTracking({ host: host2, shell: bridge2, blocked: dragging, onShape: (rects) => {
+      hitRects = rects;
+      if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
+    } });
     tick();
   }
   var desktop = { version: DESKTOP_VERSION, install: install2, start };
@@ -19155,7 +19305,7 @@
     }
     function onPointerDown(event) {
       if (event.button !== 0 || drag !== null) return;
-      if (event.target?.closest?.(".dp-bubble,button,a,input,select,textarea,[role=button]")) return;
+      if (!hitsPig(c.host, event)) return;
       stopHeartbeat();
       stopHeartbeat = function() {
       };
@@ -26373,6 +26523,7 @@
       syncGeometry: api.syncGeometry,
       walk: true,
       drawingBounds: (box) => stageDrawingBounds(box, pig),
+      hitRegions: collectHitRects,
       isFlying() {
         return flying2;
       }
@@ -26918,6 +27069,7 @@
         }
       });
       scene6.addEventListener("contextmenu", function(event) {
+        if (!hitsPig(host3, event)) return;
         event.preventDefault();
         setOpen(!isOpen);
       });

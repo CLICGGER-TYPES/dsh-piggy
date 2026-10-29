@@ -213,11 +213,10 @@ function createStageWindow() {
   })
   stageWin.on('always-on-top-changed', (event, on) => { if (!on && !quitting && Date.now() > reassertingUntil) setTimeout(() => reassertTop('lost'), 200) })
   stageWin.on('closed', () => { stageWin = null })
-  if (!shaped) {
-    hitTimer = setInterval(() => presenter.refreshHit(), 16)
-    hitTimer.unref?.()
-    cleanup.add(() => { if (hitTimer !== null) clearInterval(hitTimer); hitTimer = null })
-  }
+  // Linux 的原生形状继续保留绘制空间；独立输入区域也由光标轮询控制穿透。
+  hitTimer = setInterval(() => presenter.refreshHit(), 16)
+  hitTimer.unref?.()
+  cleanup.add(() => { clearInterval(hitTimer); hitTimer = null })
   cleanup.add(() => { if (stageWin !== null && !stageWin.isDestroyed()) stageWin.destroy(); stageWin = null })
   cleanup.add(() => interactionLease.dispose())
   cleanup.add(() => presenter.dispose())

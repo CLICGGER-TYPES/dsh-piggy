@@ -17,8 +17,9 @@
  */
 
 import { createInteractionHold } from './lease.js'
-import { collectStageShape, stageShapeKey } from './overlay-shape.js'
+import { collectStageHitShape, collectStageShape, stageShapeKey } from './overlay-shape.js'
 import { installSavePicker } from './stage-compat.js'
+import { pointerHitsShape } from './shape.js'
 
 const stageShell = /** @type {any} */ (window).stageShell
 const piggyShell = /** @type {any} */ (window).piggyShell
@@ -76,6 +77,7 @@ function mountStage(game) {
   let host = null
   let scheduled = false
   let lastKey = ''
+  let lastHitKey = ''
   let disposed = false
   const removers = []
 
@@ -102,7 +104,7 @@ function mountStage(game) {
     if (disposed) return
     if (host === null) host = document.querySelector('[data-dsh-pig]')
     if (host === null) return
-    const report = collectStageShape(host, document, /** @type {any} */ (window).piggyStage?.drawingBounds)
+    const report = collectStageShape(host, document, /** @type {any} */ (window).piggyStage)
     if (report === null) return
     const interacting = hold.active()
     // 页面 zoom / 显示器切换会改 dpr 和 CSS 视口，猪的矩形可能一模一样；
@@ -112,16 +114,24 @@ function mountStage(game) {
       width: /** @type {any} */ (window).innerWidth,
       height: /** @type {any} */ (window).innerHeight,
     }
-    const key = [stageShapeKey(report.shape), interacting ? '1' : '0', String(dpr), viewport.width + 'x' + viewport.height].join('|')
+    lastHitKey = stageShapeKey(report.hitShape)
+    const key = [stageShapeKey(report.shape), lastHitKey, interacting ? '1' : '0', String(dpr), viewport.width + 'x' + viewport.height].join('|')
     if (key === lastKey) return
     lastKey = key
-    stageShell?.report?.({ shape: report.shape, visible: report.visible, dpr, viewport, interacting })
+    stageShell?.report?.({ ...report, dpr, viewport, interacting })
   }
 
   function onPointerDown(event) {
-    const target = /** @type {any} */ (event?.target)
-    if (typeof target?.closest !== 'function') return
-    if (target.closest('[data-dsh-pig]') === null) return
+    if (host === null) return
+    const api = /** @type {any} */ (window).piggyStage ?? {}
+    const hitShape = collectStageHitShape(host, document, api)
+    if (hitShape !== undefined) {
+      // host/scene 的透明布局空间不能获取整窗租约；坐标和报告共用 CSS 视口。
+      if (!pointerHitsShape({ x: event.clientX, y: event.clientY }, { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }, hitShape)) return
+    } else {
+      const target = /** @type {any} */ (event?.target)
+      if (typeof target?.closest !== 'function' || target.closest('[data-dsh-pig]') === null) return
+    }
     hold.pointerDown({ pointerId: event.pointerId, button: event.button })
   }
 
@@ -147,9 +157,10 @@ function mountStage(game) {
   function attach(hostNode) {
     host = hostNode
     const observer = new MutationObserver(schedule)
-    observer.observe(host, {
+    // 弹窗可以挂在 body；它们显隐后也要及时撤回输入，不能只监听 host。
+    observer.observe(document.body, {
       subtree: true, childList: true, attributes: true, characterData: true,
-      attributeFilter: ['style', 'hidden', 'src', 'data-open', 'data-panel-side', 'data-panel-vertical',
+      attributeFilter: ['style', 'class', 'hidden', 'src', 'data-open', 'data-panel-side', 'data-panel-vertical',
         'data-dragging', 'data-window-dragging', 'data-mood', 'data-react', 'data-feed', 'data-away', 'data-idle',
         'data-stage', 'data-ext-view', 'data-size', 'data-bubble-side', 'data-gift-side', 'data-gift-held'],
     })
@@ -181,6 +192,13 @@ function mountStage(game) {
     removers.push(() => document.removeEventListener('animationend', schedule))
     removers.push(() => document.removeEventListener('visibilitychange', onVisibility))
     if (document.fonts?.ready) document.fonts.ready.then(schedule).catch(function () {})
+    // CSS 呼吸/翻转不产生 DOM mutation；只采样真实输入，变化时才重报绘制与输入。
+    const hitTimer = setInterval(() => {
+      if (disposed || hold.active() || document.visibilityState === 'hidden') return
+      const api = /** @type {any} */ (window).piggyStage ?? {}
+      if (stageShapeKey(collectStageHitShape(host, document, api)) !== lastHitKey) schedule()
+    }, 32)
+    removers.push(() => clearInterval(hitTimer))
 
     const offs = [
       stageShell?.onGeometry?.(onGeometry),
