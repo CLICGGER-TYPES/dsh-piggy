@@ -9643,9 +9643,7 @@
     }
     const actions2 = el("div", "dp-actions");
     const commit2 = button("dp-mini", { "data-cloud": "commit" }, () => cloudAction(ui, rerender3, CLOUD_URL.commit, {}));
-    commit2.textContent = "\u624B\u52A8\u63D0\u4EA4";
-    const push = button("dp-mini", { "data-cloud": "push" }, () => cloudAction(ui, rerender3, CLOUD_URL.push, {}));
-    push.textContent = "\u7ACB\u5373\u63A8\u9001";
+    commit2.textContent = "\u7ACB\u5373\u4FDD\u5B58\u5230\u4E91\u7AEF";
     const pull = button("dp-mini", { "data-cloud": "pull" }, () => {
       const now2 = Date.now();
       if (now2 - cloud.armPull > 4e3) {
@@ -9658,7 +9656,7 @@
       void cloudAction(ui, rerender3, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch });
     });
     pull.textContent = "\u4ECE\u4E91\u7AEF\u62C9\u53D6";
-    for (const node of [commit2, push, pull]) {
+    for (const node of [commit2, pull]) {
       node.disabled = state.busy;
       actions2.appendChild(node);
     }

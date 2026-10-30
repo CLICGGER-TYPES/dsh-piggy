@@ -422,9 +422,8 @@ function renderCloud(ui, parent, rerender) {
 
   const actions = el('div', 'dp-actions')
   const commit = button('dp-mini', { 'data-cloud': 'commit' }, () => cloudAction(ui, rerender, CLOUD_URL.commit, {}))
-  commit.textContent = '手动提交'
-  const push = button('dp-mini', { 'data-cloud': 'push' }, () => cloudAction(ui, rerender, CLOUD_URL.push, {}))
-  push.textContent = '立即推送'
+  commit.textContent = '立即保存到云端'
+
   const pull = button('dp-mini', { 'data-cloud': 'pull' }, () => {
     const now = Date.now()
     if (now - cloud.armPull > 4000) {
@@ -437,7 +436,7 @@ function renderCloud(ui, parent, rerender) {
     void cloudAction(ui, rerender, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch })
   })
   pull.textContent = '从云端拉取'
-  for (const node of [commit, push, pull]) { node.disabled = state.busy; actions.appendChild(node) }
+  for (const node of [commit, pull]) { node.disabled = state.busy; actions.appendChild(node) }
   box.appendChild(actions)
 
   if (cloud.notice !== '') box.appendChild(el('div', 'dp-dim', cloud.notice))
