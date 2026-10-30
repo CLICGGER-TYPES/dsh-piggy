@@ -28,7 +28,7 @@ export function apply(ctx, config = {}) {
 
   function ensureRuntime() {
     if (runtime !== null) return runtime
-    runtime = createGameRuntime({ statePath, journalHeader: environmentNote({
+    runtime = createGameRuntime({ statePath, cloudSave: config.cloudSave, journalHeader: environmentNote({
       运行形态: 'DSH 插件', 存档路径: statePath, DSH_HOME: process.env.DSH_HOME ?? '', Node: process.version,
     }) })
     return runtime
