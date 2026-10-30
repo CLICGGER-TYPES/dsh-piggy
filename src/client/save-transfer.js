@@ -352,7 +352,7 @@ async function loadCloud(ui, rerender) {
     if (cloud.status.enabled) {
       const [branches, history] = await Promise.all([
         cloudFetch(CLOUD_URL.branches),
-        cloudFetch(CLOUD_URL.history + '?branch=' + encodeURIComponent(cloud.branch || cloud.status.branch || '')),
+        cloudFetch(CLOUD_URL.history + '?branch=' + encodeURIComponent(cloud.status.branch || '')),
       ])
       cloud.branches = branches.branches ?? []
       cloud.history = history
@@ -400,26 +400,6 @@ function renderCloud(ui, parent, rerender) {
     return
   }
 
-  if (cloud.branches.length > 0) {
-    const pick = el('select', 'dp-select', null)
-    for (const branch of cloud.branches) {
-      const option = el('option', null, branch)
-      option.value = branch
-      if (branch === (cloud.branch || cloud.status.branch)) option.selected = true
-      pick.appendChild(option)
-    }
-    pick.addEventListener('change', function () {
-      cloud.branch = pick.value
-      cloud.history = null
-      cloud.armPull = 0
-      void loadCloud(ui, rerender)
-    })
-    const row = el('div', 'dp-row')
-    row.appendChild(el('span', null, '分支'))
-    row.appendChild(pick)
-    box.appendChild(row)
-  }
-
   const actions = el('div', 'dp-actions')
   const commit = button('dp-mini', { 'data-cloud': 'commit' }, () => cloudAction(ui, rerender, CLOUD_URL.commit, {}))
   commit.textContent = '保存到云端'
@@ -433,7 +413,7 @@ function renderCloud(ui, parent, rerender) {
       return
     }
     cloud.armPull = 0
-    void cloudAction(ui, rerender, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch, hash: cloud.pick })
+    void cloudAction(ui, rerender, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick })
   })
   pull.textContent = '从云端拉取'
   for (const node of [commit, pull]) { node.disabled = state.busy; actions.appendChild(node) }
