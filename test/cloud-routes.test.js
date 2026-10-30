@@ -4,7 +4,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
-  CLOUD_BRANCHES_ROUTE, CLOUD_PULL_ROUTE, CLOUD_PUSH_ROUTE, CLOUD_STATUS_ROUTE, createCloudRoutes,
+  CLOUD_BRANCHES_ROUTE, CLOUD_COMMIT_ROUTE, CLOUD_HISTORY_ROUTE, CLOUD_PULL_ROUTE, CLOUD_PUSH_ROUTE, CLOUD_STATUS_ROUTE,
+  createCloudRoutes,
 } from '../runtime/cloud-routes.js'
 
 /** 造一个最小的 req/res：req 是 async 可迭代的请求体，res 收集状态码与 JSON。 */
@@ -29,6 +30,8 @@ function routesWith(overrides = {}) {
     branches: async () => { calls.branches += 1; return ['main', 'alt'] },
     pull: async branch => { calls.pull.push(branch); return { applied: true, meta: { lastSeenAt: 1 } } },
     push: async () => { calls.push += 1; return { committed: { message: 'save: x' } } },
+    commit: async () => { calls.commit = (calls.commit ?? 0) + 1; return { committed: { message: 'save-manual: x' } } },
+    history: async branch => ({ manual: { hash: 'aaa', subject: 'save-manual: x' }, auto: [{ hash: 'bbb', subject: 'save: y' }], branch }),
     ...overrides,
   })
   return { routes, calls }
@@ -90,4 +93,21 @@ test('非法 JSON 与错方法被拒绝', async () => {
   wrong.req.method = 'GET'
   await find(routes, CLOUD_PUSH_ROUTE).handler(wrong.req, wrong.res)
   assert.equal(wrong.res.status, 405)
+})
+
+test('commit 与 history 走各自的路径', async () => {
+  const { routes, calls } = routesWith()
+  const commit = fakePair({})
+  await find(routes, CLOUD_COMMIT_ROUTE).handler(commit.req, commit.res)
+  assert.equal(commit.res.json().ok, true)
+  assert.equal(calls.commit, 1)
+
+  const history = fakePair()
+  history.req.method = 'GET'
+  history.req.url = '/dsh-piggy/cloud/history?branch=alt'
+  await find(routes, CLOUD_HISTORY_ROUTE).handler(history.req, history.res)
+  const body = history.res.json()
+  assert.equal(body.branch, 'alt')
+  assert.equal(body.manual.subject, 'save-manual: x')
+  assert.equal(body.auto.length, 1)
 })

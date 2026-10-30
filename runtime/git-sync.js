@@ -61,13 +61,13 @@ export function shouldCommit({ lastCommitAt = 0, now, debounceMs = DEFAULT_DEBOU
 }
 
 /** 提交信息：一行，方便 git log 扫。 */
-export function commitMessage({ lastSeenAt, level, coins }) {
+export function commitMessage({ lastSeenAt, level, coins }, manual = false) {
   const at = new Date(lastSeenAt || Date.now())
   const pad = value => String(value).padStart(2, '0')
   const iso = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
   const lv = Number.isFinite(level) ? `Lv.${level}` : 'Lv.?'
   const money = Number.isFinite(coins) ? `${coins}c` : '?c'
-  return `save: ${iso} ${lv} ${money}`
+  return `${manual ? 'save-manual' : 'save'}: ${iso} ${lv} ${money}`
 }
 
 /**
@@ -127,9 +127,15 @@ export function createGitSync(options) {
   }
 
   /** 把当前存档写成 save.zip + meta.json（不提交）。 */
-  async function writeSnapshot() {
+  async function writeSnapshot(force = false) {
     const snapshot = await archive()
     if (!Buffer.isBuffer(snapshot?.buffer)) throw new Error('git-sync: archive() 没有返回 buffer')
+    // 存档字节没变就不重写：否则 meta 的 exportedAt 每次都变，定时推送会把历史灌满空提交。
+    const previous = force ? null : await readFile(join(worktree, SAVE_FILE)).catch(() => null)
+    if (previous !== null && previous.equals(snapshot.buffer)) {
+      const current = await readMeta()
+      if (current !== null) return current
+    }
     await writeFile(join(worktree, SAVE_FILE), snapshot.buffer)
     const meta = {
       schemaVersion: META_SCHEMA,
@@ -151,12 +157,12 @@ export function createGitSync(options) {
   }
 
   /** 提交（没有变化就返回 null）。 */
-  async function commit(meta) {
+  async function commit(meta, manual = false) {
     if (!(await dirty())) return null
     await exec(['add', '-A'])
     const message = meta === undefined || meta === null
-      ? commitMessage({ lastSeenAt: at() })
-      : commitMessage(meta)
+      ? commitMessage({ lastSeenAt: at() }, manual)
+      : commitMessage(meta, manual)
     const { stdout } = await exec(['commit', '-q', '-m', message])
     return { message, stdout }
   }
@@ -199,14 +205,37 @@ export function createGitSync(options) {
   }
 
   /** 导出 + 提交 + 推送；失败只回错误，不抛到调用方。 */
-  async function pushSnapshot() {
+  async function pushSnapshot(options = {}) {
     await ensure()
-    const meta = await writeSnapshot()
-    const committed = await commit(meta)
+    const meta = await writeSnapshot(options.manual === true)
+    const committed = await commit(meta, options.manual === true)
     await push()
     return { meta, committed }
   }
 
+  /**
+   * 设置页的存档列表：最后一次手动提交 + 最近 limit 次自动提交。
+   * 只读当前分支的提交历史，不切工作树。
+   */
+  async function history(targetBranch = branch, limit = 10) {
+    const name = String(targetBranch ?? '').trim()
+    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
+    await ensure()
+    await exec(['fetch', '-q', 'origin', name])
+    const { stdout } = await exec(['log', `origin/${name}`, '--format=%H%x09%cI%x09%s', '-n', '80'])
+    const items = []
+    for (const line of stdout.split(/\r?\n/u)) {
+      if (line.trim() === '') continue
+      const [hash, at, subject] = line.split('\t')
+      if (!subject) continue
+      const manual = subject.startsWith('save-manual:')
+      if (manual || subject.startsWith('save:')) items.push({ hash, at, subject, manual })
+    }
+    return {
+      manual: items.find(item => item.manual) ?? null,
+      auto: items.filter(item => !item.manual).slice(0, limit),
+    }
+  }
   /** 远端有哪些存档分支（设置页下拉框用）。 */
   async function listBranches() {
     await ensure()
@@ -248,5 +277,5 @@ export function createGitSync(options) {
     return { applied: true, meta, summary: parsed.summary, result }
   }
 
-  return { worktree, ensure, readMeta, writeSnapshot, dirty, commit, push, pull, pullIfNewer, pushSnapshot, listBranches, readBranchSave, applyBranch }
+  return { worktree, ensure, readMeta, writeSnapshot, dirty, commit, push, pull, pullIfNewer, pushSnapshot, listBranches, readBranchSave, applyBranch, history }
 }

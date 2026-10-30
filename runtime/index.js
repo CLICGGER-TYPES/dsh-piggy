@@ -124,6 +124,12 @@ export function createGameRuntime(options) {
         status: async () => ({ enabled: true, remote: cloud.remote, branch: cloud.branch, device: cloud.device, lastPushAt: cloud.lastPushAt }),
         branches: () => cloud.sync.listBranches(),
         pull: branch => cloud.sync.applyBranch(branch),
+        commit: async () => {
+          const result = await cloud.sync.pushSnapshot({ manual: true })
+          cloud.lastPushAt = Date.now()
+          return result
+        },
+        history: branch => cloud.sync.history(branch === '' ? cloud.branch : branch),
         push: async () => {
           const result = await cloud.sync.pushSnapshot()
           cloud.lastPushAt = Date.now()

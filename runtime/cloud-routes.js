@@ -7,6 +7,8 @@ export const CLOUD_STATUS_ROUTE = '/dsh-piggy/cloud/status'
 export const CLOUD_BRANCHES_ROUTE = '/dsh-piggy/cloud/branches'
 export const CLOUD_PULL_ROUTE = '/dsh-piggy/cloud/pull'
 export const CLOUD_PUSH_ROUTE = '/dsh-piggy/cloud/push'
+export const CLOUD_COMMIT_ROUTE = '/dsh-piggy/cloud/commit'
+export const CLOUD_HISTORY_ROUTE = '/dsh-piggy/cloud/history'
 
 /** 请求体上限：这里只有分支名，1 KB 足够。 */
 const BODY_LIMIT = 1024
@@ -39,6 +41,8 @@ async function readJson(req) {
  * @param {() => Promise<string[]>} deps.branches
  * @param {(branch: string) => Promise<any>} deps.pull
  * @param {() => Promise<any>} deps.push
+ * @param {() => Promise<any>} deps.commit
+ * @param {(branch: string) => Promise<any>} deps.history
  */
 export function createCloudRoutes(deps) {
   const wrap = handler => async (req, res) => {
@@ -81,6 +85,23 @@ export function createCloudRoutes(deps) {
       handler: wrap(async (req, res) => {
         if (req.method !== 'POST') return sendJson(res, 405, { ok: false, reason: 'method' })
         const result = await deps.push()
+        sendJson(res, 200, { ok: true, ...result })
+      }),
+    },
+    {
+      path: CLOUD_COMMIT_ROUTE,
+      handler: wrap(async (req, res) => {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, reason: 'method' })
+        const result = await deps.commit()
+        sendJson(res, 200, { ok: true, ...result })
+      }),
+    },
+    {
+      path: CLOUD_HISTORY_ROUTE,
+      handler: wrap(async (req, res) => {
+        if (req.method !== 'GET') return sendJson(res, 405, { ok: false, reason: 'method' })
+        const branch = new URL(String(req.url ?? ''), 'http://local').searchParams.get('branch') ?? ''
+        const result = await deps.history(branch)
         sendJson(res, 200, { ok: true, ...result })
       }),
     },

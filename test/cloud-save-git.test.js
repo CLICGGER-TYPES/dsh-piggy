@@ -170,3 +170,30 @@ test('listBranches 列出远端分支，applyBranch 读指定分支的存档', a
     await rm(root, { recursive: true, force: true })
   }
 })
+test('history 返回最后一次手动提交与最近十次自动提交', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'piggy-git-'))
+  try {
+    const bare = await makeRemote(root)
+    let bytes = 'zip-0'
+    let seen = 5000
+    const sync = createGitSync({
+      statePath: join(root, 'state.json'), directory: join(root, 'work-h'), remote: bare, branch: 'main',
+      archive: async () => ({ buffer: Buffer.from(bytes), stateVersion: 15, lastSeenAt: seen, level: 5, coins: 1 }),
+      parse: async (name, buffer) => ({ files: new Map([[name, buffer]]) }),
+      importFiles: async () => {},
+    })
+    await sync.pushSnapshot()
+    await sync.pushSnapshot()
+    assert.equal((await sync.history('main')).auto.length, 1, '内容没变不应产生新提交')
+    for (let index = 0; index < 3; index += 1) { bytes = 'zip-' + (index + 1); seen += 1000; await sync.pushSnapshot() }
+    await sync.pushSnapshot({ manual: true })
+
+    const list = await sync.history('main')
+    assert.ok(list.manual)
+    assert.match(list.manual.subject, /^save-manual:/)
+    assert.equal(list.auto.length, 4)
+    assert.ok(list.auto.every(item => item.subject.startsWith('save:')))
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
