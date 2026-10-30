@@ -232,6 +232,7 @@ export function renderSaveTransferSettings(ui, section) {
   actions.appendChild(exportButton)
   actions.appendChild(importButton)
   transfer.box.appendChild(actions)
+  renderCloud(ui, section)
 
   if (!state.open) return
   const overlay = el('div', 'dp-save-overlay')
@@ -305,4 +306,137 @@ function displayDate(value) {
 
 function alert(text, className = 'dp-alert dp-legacy') {
   return el('div', className, String(text))
+}
+
+// --- 云存档（git） ---
+const CLOUD_URL = {
+  status: '/dsh-piggy/cloud/status',
+  pull: '/dsh-piggy/cloud/pull',
+  commit: '/dsh-piggy/cloud/commit',
+  history: '/dsh-piggy/cloud/history',
+}
+
+const cloud = { loaded: false, loading: false, status: null, history: null, error: '', notice: '', armPull: 0, pick: '', listOpen: false, paint: null }
+
+async function cloudFetch(url, options) {
+  const response = await fetch(url, { cache: 'no-store', ...(options ?? {}) })
+  const body = await response.json().catch(() => null)
+  if (!response.ok || body === null) throw new Error(body?.message || ('HTTP ' + response.status))
+  if (body.ok === false) throw new Error(body.message || body.reason || '云存档操作失败')
+  return body
+}
+
+function cloudTime(value) {
+  if (!value) return '—'
+  const at = new Date(value)
+  if (Number.isNaN(at.getTime())) return String(value)
+  const pad = n => String(n).padStart(2, '0')
+  return pad(at.getMonth() + 1) + '-' + pad(at.getDate()) + ' ' + pad(at.getHours()) + ':' + pad(at.getMinutes())
+}
+
+function cloudRow(label, value) {
+  const row = el('div', 'dp-row')
+  row.appendChild(el('span', null, label))
+  row.appendChild(el('b', null, String(value)))
+  return row
+}
+
+async function loadCloud(ui) {
+  if (cloud.loading) return
+  cloud.loading = true
+  cloud.error = ''
+  try {
+    cloud.status = await cloudFetch(CLOUD_URL.status)
+    if (cloud.status.enabled) {
+      cloud.history = await cloudFetch(CLOUD_URL.history + '?branch=' + encodeURIComponent(cloud.status.branch || ''))
+      cloud.loaded = true
+    }
+  } catch (error) {
+    cloud.error = messageOf(error)
+  } finally {
+    cloud.loading = false
+    if (typeof cloud.paint === 'function') cloud.paint()
+  }
+}
+
+async function cloudAction(ui, url, body) {
+  if (state.busy) return
+  state.busy = true
+  cloud.notice = '处理中…'
+  cloud.error = ''
+  if (typeof cloud.paint === 'function') cloud.paint()
+  try {
+    await cloudFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) })
+    cloud.notice = '完成'
+    await loadCloud(ui)
+  } catch (error) {
+    cloud.error = messageOf(error)
+    cloud.notice = ''
+  } finally {
+    state.busy = false
+    if (typeof cloud.paint === 'function') cloud.paint()
+  }
+}
+
+function renderCloud(ui, section) {
+  // 注意：section() 会把标题和简介画进 holder.box，而 paint() 要清空自己的内容，
+  // 所以必须再套一层容器，否则标题会被一起清掉。
+  const holder = section(ui, '云存档', '备份进度，通过云把小猪带到另一台设备')
+  const box = el('div', 'dp-cloud-body')
+  box.setAttribute('data-cloud-section', 'true')
+  holder.box.appendChild(box)
+  cloud.paint = function paint() {
+    box.textContent = ''
+
+    if (cloud.error !== '') box.appendChild(el('div', 'dp-dim', '云存档：' + cloud.error))
+    if (cloud.status === null || cloud.status.enabled !== true) {
+      box.appendChild(el('p', 'dp-dim', cloud.loading ? '正在读取云存档状态…' : '在配置里打开 cloudSave 后可用（remote 指向存存档的私有仓库）。'))
+      return
+    }
+    if (!cloud.loaded) {
+      box.appendChild(el('p', 'dp-dim', '正在读取存档列表…'))
+      return
+    }
+
+    const actions = el('div', 'dp-actions')
+    const commit = button('dp-mini', { 'data-cloud': 'commit' }, () => cloudAction(ui, CLOUD_URL.commit, {}))
+    commit.textContent = '保存到云端'
+    const pull = button('dp-mini', { 'data-cloud': 'pull' }, () => {
+      const now = Date.now()
+      if (now - cloud.armPull > 4000) {
+        cloud.armPull = now
+        cloud.notice = '再点一次确认覆盖本地存档'
+        paint()
+        return
+      }
+      cloud.armPull = 0
+      void cloudAction(ui, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick })
+    })
+    pull.textContent = '从云端拉取'
+    for (const node of [commit, pull]) { node.disabled = state.busy; actions.appendChild(node) }
+    box.appendChild(actions)
+    if (cloud.notice !== '') box.appendChild(el('div', 'dp-dim', cloud.notice))
+
+    const history = cloud.history
+    if (!history) return
+    const rows = [history.manual, ...(history.auto ?? [])].filter(Boolean)
+    if (rows.length === 0) {
+      box.appendChild(el('div', 'dp-dim', '云端还没有存档'))
+      return
+    }
+    if (cloud.pick === '') cloud.pick = rows[0].hash
+    const details = el('details', 'dp-cloud-list')
+    if (cloud.listOpen) details.open = true
+    details.addEventListener('toggle', function () { cloud.listOpen = details.open })
+    details.appendChild(el('summary', null, '存档列表（' + rows.length + '）'))
+    for (const item of rows) {
+      const row = cloudRow((cloud.pick === item.hash ? '● ' : '○ ') + cloudTime(item.at), item.subject.replace(/^save(-manual)?:\s*/, ''))
+      row.style.cursor = 'pointer'
+      row.addEventListener('click', function () { cloud.pick = item.hash; paint() })
+      details.appendChild(row)
+    }
+    box.appendChild(details)
+  }
+  cloud.paint()
+  if (!cloud.loaded && !cloud.loading) void loadCloud(ui)
 }

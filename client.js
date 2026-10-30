@@ -9466,6 +9466,7 @@
     actions2.appendChild(exportButton);
     actions2.appendChild(importButton);
     transfer.box.appendChild(actions2);
+    renderCloud(ui, section2);
     if (!state.open) return;
     const overlay = el("div", "dp-save-overlay");
     overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
@@ -9538,6 +9539,133 @@
   }
   function alert(text, className = "dp-alert dp-legacy") {
     return el("div", className, String(text));
+  }
+  var CLOUD_URL = {
+    status: "/dsh-piggy/cloud/status",
+    pull: "/dsh-piggy/cloud/pull",
+    commit: "/dsh-piggy/cloud/commit",
+    history: "/dsh-piggy/cloud/history"
+  };
+  var cloud = { loaded: false, loading: false, status: null, history: null, error: "", notice: "", armPull: 0, pick: "", listOpen: false, paint: null };
+  async function cloudFetch(url, options) {
+    const response = await fetch(url, { cache: "no-store", ...options ?? {} });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || body === null) throw new Error(body?.message || "HTTP " + response.status);
+    if (body.ok === false) throw new Error(body.message || body.reason || "\u4E91\u5B58\u6863\u64CD\u4F5C\u5931\u8D25");
+    return body;
+  }
+  function cloudTime(value) {
+    if (!value) return "\u2014";
+    const at = new Date(value);
+    if (Number.isNaN(at.getTime())) return String(value);
+    const pad = (n) => String(n).padStart(2, "0");
+    return pad(at.getMonth() + 1) + "-" + pad(at.getDate()) + " " + pad(at.getHours()) + ":" + pad(at.getMinutes());
+  }
+  function cloudRow(label, value) {
+    const row2 = el("div", "dp-row");
+    row2.appendChild(el("span", null, label));
+    row2.appendChild(el("b", null, String(value)));
+    return row2;
+  }
+  async function loadCloud(ui) {
+    if (cloud.loading) return;
+    cloud.loading = true;
+    cloud.error = "";
+    try {
+      cloud.status = await cloudFetch(CLOUD_URL.status);
+      if (cloud.status.enabled) {
+        cloud.history = await cloudFetch(CLOUD_URL.history + "?branch=" + encodeURIComponent(cloud.status.branch || ""));
+        cloud.loaded = true;
+      }
+    } catch (error) {
+      cloud.error = messageOf(error);
+    } finally {
+      cloud.loading = false;
+      if (typeof cloud.paint === "function") cloud.paint();
+    }
+  }
+  async function cloudAction(ui, url, body) {
+    if (state.busy) return;
+    state.busy = true;
+    cloud.notice = "\u5904\u7406\u4E2D\u2026";
+    cloud.error = "";
+    if (typeof cloud.paint === "function") cloud.paint();
+    try {
+      await cloudFetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
+      cloud.notice = "\u5B8C\u6210";
+      await loadCloud(ui);
+    } catch (error) {
+      cloud.error = messageOf(error);
+      cloud.notice = "";
+    } finally {
+      state.busy = false;
+      if (typeof cloud.paint === "function") cloud.paint();
+    }
+  }
+  function renderCloud(ui, section2) {
+    const holder = section2(ui, "\u4E91\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u901A\u8FC7\u4E91\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
+    const box = el("div", "dp-cloud-body");
+    box.setAttribute("data-cloud-section", "true");
+    holder.box.appendChild(box);
+    cloud.paint = function paint() {
+      box.textContent = "";
+      if (cloud.error !== "") box.appendChild(el("div", "dp-dim", "\u4E91\u5B58\u6863\uFF1A" + cloud.error));
+      if (cloud.status === null || cloud.status.enabled !== true) {
+        box.appendChild(el("p", "dp-dim", cloud.loading ? "\u6B63\u5728\u8BFB\u53D6\u4E91\u5B58\u6863\u72B6\u6001\u2026" : "\u5728\u914D\u7F6E\u91CC\u6253\u5F00 cloudSave \u540E\u53EF\u7528\uFF08remote \u6307\u5411\u5B58\u5B58\u6863\u7684\u79C1\u6709\u4ED3\u5E93\uFF09\u3002"));
+        return;
+      }
+      if (!cloud.loaded) {
+        box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u5B58\u6863\u5217\u8868\u2026"));
+        return;
+      }
+      const actions2 = el("div", "dp-actions");
+      const commit2 = button("dp-mini", { "data-cloud": "commit" }, () => cloudAction(ui, CLOUD_URL.commit, {}));
+      commit2.textContent = "\u4FDD\u5B58\u5230\u4E91\u7AEF";
+      const pull = button("dp-mini", { "data-cloud": "pull" }, () => {
+        const now2 = Date.now();
+        if (now2 - cloud.armPull > 4e3) {
+          cloud.armPull = now2;
+          cloud.notice = "\u518D\u70B9\u4E00\u6B21\u786E\u8BA4\u8986\u76D6\u672C\u5730\u5B58\u6863";
+          paint();
+          return;
+        }
+        cloud.armPull = 0;
+        void cloudAction(ui, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick });
+      });
+      pull.textContent = "\u4ECE\u4E91\u7AEF\u62C9\u53D6";
+      for (const node of [commit2, pull]) {
+        node.disabled = state.busy;
+        actions2.appendChild(node);
+      }
+      box.appendChild(actions2);
+      if (cloud.notice !== "") box.appendChild(el("div", "dp-dim", cloud.notice));
+      const history = cloud.history;
+      if (!history) return;
+      const rows3 = [history.manual, ...history.auto ?? []].filter(Boolean);
+      if (rows3.length === 0) {
+        box.appendChild(el("div", "dp-dim", "\u4E91\u7AEF\u8FD8\u6CA1\u6709\u5B58\u6863"));
+        return;
+      }
+      if (cloud.pick === "") cloud.pick = rows3[0].hash;
+      const details2 = el("details", "dp-cloud-list");
+      if (cloud.listOpen) details2.open = true;
+      details2.addEventListener("toggle", function() {
+        cloud.listOpen = details2.open;
+      });
+      details2.appendChild(el("summary", null, "\u5B58\u6863\u5217\u8868\uFF08" + rows3.length + "\uFF09"));
+      for (const item of rows3) {
+        const row2 = cloudRow((cloud.pick === item.hash ? "\u25CF " : "\u25CB ") + cloudTime(item.at), item.subject.replace(/^save(-manual)?:\s*/, ""));
+        row2.style.cursor = "pointer";
+        row2.addEventListener("click", function() {
+          cloud.pick = item.hash;
+          paint();
+        });
+        details2.appendChild(row2);
+      }
+      box.appendChild(details2);
+    };
+    cloud.paint();
+    if (!cloud.loaded && !cloud.loading) void loadCloud(ui);
   }
 
   // src/client/external-ui.js
@@ -24477,12 +24605,12 @@
     return motionValue$1.animation;
   }
 
-  // node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -24498,12 +24626,12 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -24518,7 +24646,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -24539,7 +24667,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -24547,7 +24675,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -24560,7 +24688,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -24742,7 +24870,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -24773,7 +24901,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -24798,7 +24926,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }

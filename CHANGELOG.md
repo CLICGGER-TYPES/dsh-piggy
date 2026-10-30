@@ -7,6 +7,12 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+### 云存档（git）
+- 设置 → 存档新增「云存档」：显示远端与推送分支，可选分支、立即推送、手动提交、从云端拉取（二次点击确认）。
+- 自动推送在运行中按防抖间隔执行、退出时补推一次；不做自动拉取，拉取只在设置页手动触发。
+- 手动提交记为 `save-manual:`，列表接口返回最后一次手动提交与最近十次自动提交；存档字节没变时自动推送不产生提交。
+- 存档提交到独立的私有数据仓库，配置项：`cloudSave.enabled / remote / branch / device / debounceMs / insecureSkipTlsVerify`。
+
 ## [0.37.2-rc.5] — 2026-10-27 · 菜园自然托管与扩展更新
 
 配套桌面外壳0.6.8-rc.3，存档仍为v15，菜园数据仍为v5。测试版只供手动查看，不主动提示更新。
