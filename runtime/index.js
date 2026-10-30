@@ -14,6 +14,9 @@ import { acquireGameLock } from './owner-lock.js'
 import { recoverSaveImportSync, commitSaveImport } from './save-transaction.js'
 import { recoverMergeSync } from './merge-transaction.js'
 import { createSaveTransfer } from './save-transfer.js'
+import { createCloudRoutes } from './cloud-routes.js'
+import { createGitSync } from './git-sync.js'
+import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWorkEvent } from './work-events.js'
 
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
@@ -30,6 +33,48 @@ export function createGameRuntime(options) {
   let epoch = 0
   let routes = []
   const mounts = new Set(), active = new Set()
+
+  /**
+   * 云存档：只在配置启用时创建。不做自动拉取——用户已定，拉取只在设置页手动点，
+   * 并且可以选分支（见 docs/design/cloud-save-git.md）。
+   * @type {{sync:any,remote:string,branch:string,device:string,debounceMs:number,lastPushAt:number}|null}
+   */
+  let cloud = null
+  /** @type {NodeJS.Timeout|null} */
+  let cloudTimer = null
+
+  function createCloudSync() {
+    const config = options.cloudSave
+    if (config === null || typeof config !== 'object' || config.enabled !== true) return null
+    const remote = typeof config.remote === 'string' ? config.remote.trim() : ''
+    if (remote === '') return null
+    const branch = typeof config.branch === 'string' && config.branch !== '' ? config.branch : 'main'
+    const device = typeof config.device === 'string' ? config.device : ''
+    const debounceMs = Number.isFinite(config.debounceMs) && config.debounceMs > 0 ? config.debounceMs : 10 * 60 * 1000
+    const archive = () => createSaveArchive({ statePath: options.statePath, state: store?.state ?? null })
+    const sync = createGitSync({
+      statePath: options.statePath,
+      remote,
+      branch,
+      device,
+      insecureSkipTlsVerify: config.insecureSkipTlsVerify === true,
+      archive,
+      parse: (_name, buffer) => parseSaveArchive(buffer),
+      importFiles: files => commitSaveImport({ statePath: options.statePath, files, backup: archive().buffer }),
+    })
+    return { sync, remote, branch, device, debounceMs, lastPushAt: 0 }
+  }
+
+  /** 运行中定时推送（防抖窗口），失败只记日志，不影响游戏。 */
+  function startCloudTimer() {
+    if (cloud === null || cloudTimer !== null) return
+    cloudTimer = setInterval(() => {
+      void cloud.sync.pushSnapshot()
+        .then(() => { if (cloud !== null) cloud.lastPushAt = Date.now() })
+        .catch(error => { store?.journal?.record?.('warn', 'cloud', '云存档推送失败', { reason: String(error?.message ?? error) }) })
+    }, cloud.debounceMs)
+    if (typeof cloudTimer.unref === 'function') cloudTimer.unref()
+  }
 
   function prepare() {
     if (closed) throw new Error('game runtime closed')
@@ -70,14 +115,30 @@ export function createGameRuntime(options) {
         return result
       }
     }
+    if (cloud === null) cloud = createCloudSync()
     const next = []
     registerGameRoutes({ register(route) { next.push(route); return () => {} } }, store, { fetch: options.fetch })
     routes = next
+    if (cloud !== null) {
+      next.push(...createCloudRoutes({
+        status: async () => ({ enabled: true, remote: cloud.remote, branch: cloud.branch, device: cloud.device, lastPushAt: cloud.lastPushAt }),
+        branches: () => cloud.sync.listBranches(),
+        pull: branch => cloud.sync.applyBranch(branch),
+        push: async () => {
+          const result = await cloud.sync.pushSnapshot()
+          cloud.lastPushAt = Date.now()
+          return result
+        },
+      }))
+      startCloudTimer()
+    }
   }
   try { recoverSaveImportSync(options.statePath); recoverMergeSync(options.statePath); open() }
   catch (error) { store?.dispose(); release(); throw error }
 
   function finishDispose() {
+    if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
+    if (cloud !== null && !fault) void cloud.sync.pushSnapshot().catch(() => {})
     if (!fault) { ledger.finish(store); store.flush() }
     closed = true
     for (const dispose of mounts) dispose()
