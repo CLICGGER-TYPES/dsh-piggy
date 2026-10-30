@@ -232,7 +232,7 @@ export function renderSaveTransferSettings(ui, section) {
   actions.appendChild(exportButton)
   actions.appendChild(importButton)
   transfer.box.appendChild(actions)
-  renderCloud(ui, transfer.box, rerender)
+  renderCloud(ui, transfer.box)
 
   if (!state.open) return
   const overlay = el('div', 'dp-save-overlay')
@@ -308,17 +308,15 @@ function alert(text, className = 'dp-alert dp-legacy') {
   return el('div', className, String(text))
 }
 
-// --- 云存档（git）：状态、分支、手动提交、推送、拉取、最近提交列表 ---
+// --- 云存档（git） ---
 const CLOUD_URL = {
   status: '/dsh-piggy/cloud/status',
-  branches: '/dsh-piggy/cloud/branches',
   pull: '/dsh-piggy/cloud/pull',
-  push: '/dsh-piggy/cloud/push',
   commit: '/dsh-piggy/cloud/commit',
   history: '/dsh-piggy/cloud/history',
 }
 
-const cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: '', error: '', notice: '', armPull: 0, pick: '' }
+const cloud = { loaded: false, loading: false, status: null, history: null, error: '', notice: '', armPull: 0, pick: '', listOpen: false, paint: null }
 
 async function cloudFetch(url, options) {
   const response = await fetch(url, { cache: 'no-store', ...(options ?? {}) })
@@ -343,97 +341,102 @@ function cloudRow(label, value) {
   return row
 }
 
-async function loadCloud(ui, rerender) {
+async function loadCloud(ui) {
   if (cloud.loading) return
   cloud.loading = true
   cloud.error = ''
   try {
     cloud.status = await cloudFetch(CLOUD_URL.status)
     if (cloud.status.enabled) {
-      const [branches, history] = await Promise.all([
-        cloudFetch(CLOUD_URL.branches),
-        cloudFetch(CLOUD_URL.history + '?branch=' + encodeURIComponent(cloud.status.branch || '')),
-      ])
-      cloud.branches = branches.branches ?? []
-      cloud.history = history
-      if (!cloud.branch) cloud.branch = cloud.status.branch || cloud.branches[0] || ''
+      cloud.history = await cloudFetch(CLOUD_URL.history + '?branch=' + encodeURIComponent(cloud.status.branch || ''))
+      cloud.loaded = true
     }
-    cloud.loaded = true
   } catch (error) {
     cloud.error = messageOf(error)
   } finally {
     cloud.loading = false
-    if (typeof rerender === 'function') rerender()
+    if (typeof cloud.paint === 'function') cloud.paint()
   }
 }
 
-async function cloudAction(ui, rerender, url, body) {
+async function cloudAction(ui, url, body) {
   if (state.busy) return
   state.busy = true
   cloud.notice = '处理中…'
-  rerender()
+  cloud.error = ''
+  if (typeof cloud.paint === 'function') cloud.paint()
   try {
-    const result = await cloudFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) })
+    await cloudFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) })
     cloud.notice = '完成'
-    if (result.manual === null || result.auto !== undefined) cloud.history = result
-    await loadCloud(ui, rerender)
+    await loadCloud(ui)
   } catch (error) {
     cloud.error = messageOf(error)
+    cloud.notice = ''
   } finally {
     state.busy = false
-    rerender()
+    if (typeof cloud.paint === 'function') cloud.paint()
   }
 }
 
-function renderCloud(ui, parent, rerender) {
+function renderCloud(ui, parent) {
   const box = el('div', 'dp-cloud')
-  const head = el('div', 'dp-row')
-  head.appendChild(el('b', null, '云存档（git）'))
-  head.appendChild(el('span', 'dp-dim', cloud.status?.enabled ? (cloud.status.remote || '') : '未启用'))
-  box.appendChild(head)
+  parent.appendChild(box)
+  cloud.paint = function paint() {
+    box.textContent = ''
+    const head = el('div', 'dp-row')
+    head.appendChild(el('b', null, '云存档（git）'))
+    head.appendChild(el('span', 'dp-dim', cloud.status?.enabled ? (cloud.status.remote || '') : '未启用'))
+    box.appendChild(head)
 
-  if (!cloud.loaded && !cloud.loading) void loadCloud(ui, rerender)
-  if (cloud.error !== '') box.appendChild(el('div', 'dp-dim', '云存档：' + cloud.error))
-  if (cloud.status === null || cloud.status.enabled !== true) {
-    box.appendChild(el('p', 'dp-dim', '在配置里打开 cloudSave 后可用（remote 指向存存档的私有仓库）。'))
-    parent.appendChild(box)
-    return
-  }
-
-  const actions = el('div', 'dp-actions')
-  const commit = button('dp-mini', { 'data-cloud': 'commit' }, () => cloudAction(ui, rerender, CLOUD_URL.commit, {}))
-  commit.textContent = '保存到云端'
-
-  const pull = button('dp-mini', { 'data-cloud': 'pull' }, () => {
-    const now = Date.now()
-    if (now - cloud.armPull > 4000) {
-      cloud.armPull = now
-      cloud.notice = '再点一次确认覆盖本地存档'
-      rerender()
+    if (cloud.error !== '') box.appendChild(el('div', 'dp-dim', '云存档：' + cloud.error))
+    if (cloud.status === null || cloud.status.enabled !== true) {
+      box.appendChild(el('p', 'dp-dim', cloud.loading ? '正在读取云存档状态…' : '在配置里打开 cloudSave 后可用（remote 指向存存档的私有仓库）。'))
       return
     }
-    cloud.armPull = 0
-    void cloudAction(ui, rerender, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick })
-  })
-  pull.textContent = '从云端拉取'
-  for (const node of [commit, pull]) { node.disabled = state.busy; actions.appendChild(node) }
-  box.appendChild(actions)
+    if (!cloud.loaded) {
+      box.appendChild(el('p', 'dp-dim', '正在读取存档列表…'))
+      return
+    }
 
-  if (cloud.notice !== '') box.appendChild(el('div', 'dp-dim', cloud.notice))
+    const actions = el('div', 'dp-actions')
+    const commit = button('dp-mini', { 'data-cloud': 'commit' }, () => cloudAction(ui, CLOUD_URL.commit, {}))
+    commit.textContent = '保存到云端'
+    const pull = button('dp-mini', { 'data-cloud': 'pull' }, () => {
+      const now = Date.now()
+      if (now - cloud.armPull > 4000) {
+        cloud.armPull = now
+        cloud.notice = '再点一次确认覆盖本地存档'
+        paint()
+        return
+      }
+      cloud.armPull = 0
+      void cloudAction(ui, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick })
+    })
+    pull.textContent = '从云端拉取'
+    for (const node of [commit, pull]) { node.disabled = state.busy; actions.appendChild(node) }
+    box.appendChild(actions)
+    if (cloud.notice !== '') box.appendChild(el('div', 'dp-dim', cloud.notice))
 
-  const history = cloud.history
-  if (history) {
-    if (cloud.pick === '') cloud.pick = history.manual?.hash ?? history.auto?.[0]?.hash ?? ''
-    if (history.manual) box.appendChild(cloudRow('上次手动存档', cloudTime(history.manual.at)))
-    const auto = history.auto ?? []
-    box.appendChild(el('div', 'dp-dim', auto.length > 0 ? '最近自动存档 ' + auto.length + ' 条' : '还没有自动存档'))
-    const rows = [history.manual, ...auto].filter(Boolean)
+    const history = cloud.history
+    if (!history) return
+    const rows = [history.manual, ...(history.auto ?? [])].filter(Boolean)
+    if (rows.length === 0) {
+      box.appendChild(el('div', 'dp-dim', '云端还没有存档'))
+      return
+    }
+    if (cloud.pick === '') cloud.pick = rows[0].hash
+    const details = el('details', 'dp-cloud-list')
+    if (cloud.listOpen) details.open = true
+    details.addEventListener('toggle', function () { cloud.listOpen = details.open })
+    details.appendChild(el('summary', null, '存档列表（' + rows.length + '）'))
     for (const item of rows) {
       const row = cloudRow((cloud.pick === item.hash ? '● ' : '○ ') + cloudTime(item.at), item.subject.replace(/^save(-manual)?:\s*/, ''))
       row.style.cursor = 'pointer'
-      row.addEventListener('click', function () { cloud.pick = item.hash; rerender() })
-      box.appendChild(row)
+      row.addEventListener('click', function () { cloud.pick = item.hash; paint() })
+      details.appendChild(row)
     }
+    box.appendChild(details)
   }
-  parent.appendChild(box)
+  cloud.paint()
+  if (!cloud.loaded && !cloud.loading) void loadCloud(ui)
 }

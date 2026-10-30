@@ -9466,7 +9466,7 @@
     actions2.appendChild(exportButton);
     actions2.appendChild(importButton);
     transfer.box.appendChild(actions2);
-    renderCloud(ui, transfer.box, rerender2);
+    renderCloud(ui, transfer.box);
     if (!state.open) return;
     const overlay = el("div", "dp-save-overlay");
     overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
@@ -9542,13 +9542,11 @@
   }
   var CLOUD_URL = {
     status: "/dsh-piggy/cloud/status",
-    branches: "/dsh-piggy/cloud/branches",
     pull: "/dsh-piggy/cloud/pull",
-    push: "/dsh-piggy/cloud/push",
     commit: "/dsh-piggy/cloud/commit",
     history: "/dsh-piggy/cloud/history"
   };
-  var cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: "", error: "", notice: "", armPull: 0, pick: "" };
+  var cloud = { loaded: false, loading: false, status: null, history: null, error: "", notice: "", armPull: 0, pick: "", listOpen: false, paint: null };
   async function cloudFetch(url, options) {
     const response = await fetch(url, { cache: "no-store", ...options ?? {} });
     const body = await response.json().catch(() => null);
@@ -9569,98 +9567,107 @@
     row2.appendChild(el("b", null, String(value)));
     return row2;
   }
-  async function loadCloud(ui, rerender3) {
+  async function loadCloud(ui) {
     if (cloud.loading) return;
     cloud.loading = true;
     cloud.error = "";
     try {
       cloud.status = await cloudFetch(CLOUD_URL.status);
       if (cloud.status.enabled) {
-        const [branches, history] = await Promise.all([
-          cloudFetch(CLOUD_URL.branches),
-          cloudFetch(CLOUD_URL.history + "?branch=" + encodeURIComponent(cloud.status.branch || ""))
-        ]);
-        cloud.branches = branches.branches ?? [];
-        cloud.history = history;
-        if (!cloud.branch) cloud.branch = cloud.status.branch || cloud.branches[0] || "";
+        cloud.history = await cloudFetch(CLOUD_URL.history + "?branch=" + encodeURIComponent(cloud.status.branch || ""));
+        cloud.loaded = true;
       }
-      cloud.loaded = true;
     } catch (error) {
       cloud.error = messageOf(error);
     } finally {
       cloud.loading = false;
-      if (typeof rerender3 === "function") rerender3();
+      if (typeof cloud.paint === "function") cloud.paint();
     }
   }
-  async function cloudAction(ui, rerender3, url, body) {
+  async function cloudAction(ui, url, body) {
     if (state.busy) return;
     state.busy = true;
     cloud.notice = "\u5904\u7406\u4E2D\u2026";
-    rerender3();
+    cloud.error = "";
+    if (typeof cloud.paint === "function") cloud.paint();
     try {
-      const result = await cloudFetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
+      await cloudFetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
       cloud.notice = "\u5B8C\u6210";
-      if (result.manual === null || result.auto !== void 0) cloud.history = result;
-      await loadCloud(ui, rerender3);
+      await loadCloud(ui);
     } catch (error) {
       cloud.error = messageOf(error);
+      cloud.notice = "";
     } finally {
       state.busy = false;
-      rerender3();
+      if (typeof cloud.paint === "function") cloud.paint();
     }
   }
-  function renderCloud(ui, parent, rerender3) {
+  function renderCloud(ui, parent) {
     const box = el("div", "dp-cloud");
-    const head = el("div", "dp-row");
-    head.appendChild(el("b", null, "\u4E91\u5B58\u6863\uFF08git\uFF09"));
-    head.appendChild(el("span", "dp-dim", cloud.status?.enabled ? cloud.status.remote || "" : "\u672A\u542F\u7528"));
-    box.appendChild(head);
-    if (!cloud.loaded && !cloud.loading) void loadCloud(ui, rerender3);
-    if (cloud.error !== "") box.appendChild(el("div", "dp-dim", "\u4E91\u5B58\u6863\uFF1A" + cloud.error));
-    if (cloud.status === null || cloud.status.enabled !== true) {
-      box.appendChild(el("p", "dp-dim", "\u5728\u914D\u7F6E\u91CC\u6253\u5F00 cloudSave \u540E\u53EF\u7528\uFF08remote \u6307\u5411\u5B58\u5B58\u6863\u7684\u79C1\u6709\u4ED3\u5E93\uFF09\u3002"));
-      parent.appendChild(box);
-      return;
-    }
-    const actions2 = el("div", "dp-actions");
-    const commit2 = button("dp-mini", { "data-cloud": "commit" }, () => cloudAction(ui, rerender3, CLOUD_URL.commit, {}));
-    commit2.textContent = "\u4FDD\u5B58\u5230\u4E91\u7AEF";
-    const pull = button("dp-mini", { "data-cloud": "pull" }, () => {
-      const now2 = Date.now();
-      if (now2 - cloud.armPull > 4e3) {
-        cloud.armPull = now2;
-        cloud.notice = "\u518D\u70B9\u4E00\u6B21\u786E\u8BA4\u8986\u76D6\u672C\u5730\u5B58\u6863";
-        rerender3();
+    parent.appendChild(box);
+    cloud.paint = function paint() {
+      box.textContent = "";
+      const head = el("div", "dp-row");
+      head.appendChild(el("b", null, "\u4E91\u5B58\u6863\uFF08git\uFF09"));
+      head.appendChild(el("span", "dp-dim", cloud.status?.enabled ? cloud.status.remote || "" : "\u672A\u542F\u7528"));
+      box.appendChild(head);
+      if (cloud.error !== "") box.appendChild(el("div", "dp-dim", "\u4E91\u5B58\u6863\uFF1A" + cloud.error));
+      if (cloud.status === null || cloud.status.enabled !== true) {
+        box.appendChild(el("p", "dp-dim", cloud.loading ? "\u6B63\u5728\u8BFB\u53D6\u4E91\u5B58\u6863\u72B6\u6001\u2026" : "\u5728\u914D\u7F6E\u91CC\u6253\u5F00 cloudSave \u540E\u53EF\u7528\uFF08remote \u6307\u5411\u5B58\u5B58\u6863\u7684\u79C1\u6709\u4ED3\u5E93\uFF09\u3002"));
         return;
       }
-      cloud.armPull = 0;
-      void cloudAction(ui, rerender3, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick });
-    });
-    pull.textContent = "\u4ECE\u4E91\u7AEF\u62C9\u53D6";
-    for (const node of [commit2, pull]) {
-      node.disabled = state.busy;
-      actions2.appendChild(node);
-    }
-    box.appendChild(actions2);
-    if (cloud.notice !== "") box.appendChild(el("div", "dp-dim", cloud.notice));
-    const history = cloud.history;
-    if (history) {
-      if (cloud.pick === "") cloud.pick = history.manual?.hash ?? history.auto?.[0]?.hash ?? "";
-      if (history.manual) box.appendChild(cloudRow("\u4E0A\u6B21\u624B\u52A8\u5B58\u6863", cloudTime(history.manual.at)));
-      const auto2 = history.auto ?? [];
-      box.appendChild(el("div", "dp-dim", auto2.length > 0 ? "\u6700\u8FD1\u81EA\u52A8\u5B58\u6863 " + auto2.length + " \u6761" : "\u8FD8\u6CA1\u6709\u81EA\u52A8\u5B58\u6863"));
-      const rows3 = [history.manual, ...auto2].filter(Boolean);
+      if (!cloud.loaded) {
+        box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u5B58\u6863\u5217\u8868\u2026"));
+        return;
+      }
+      const actions2 = el("div", "dp-actions");
+      const commit2 = button("dp-mini", { "data-cloud": "commit" }, () => cloudAction(ui, CLOUD_URL.commit, {}));
+      commit2.textContent = "\u4FDD\u5B58\u5230\u4E91\u7AEF";
+      const pull = button("dp-mini", { "data-cloud": "pull" }, () => {
+        const now2 = Date.now();
+        if (now2 - cloud.armPull > 4e3) {
+          cloud.armPull = now2;
+          cloud.notice = "\u518D\u70B9\u4E00\u6B21\u786E\u8BA4\u8986\u76D6\u672C\u5730\u5B58\u6863";
+          paint();
+          return;
+        }
+        cloud.armPull = 0;
+        void cloudAction(ui, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick });
+      });
+      pull.textContent = "\u4ECE\u4E91\u7AEF\u62C9\u53D6";
+      for (const node of [commit2, pull]) {
+        node.disabled = state.busy;
+        actions2.appendChild(node);
+      }
+      box.appendChild(actions2);
+      if (cloud.notice !== "") box.appendChild(el("div", "dp-dim", cloud.notice));
+      const history = cloud.history;
+      if (!history) return;
+      const rows3 = [history.manual, ...history.auto ?? []].filter(Boolean);
+      if (rows3.length === 0) {
+        box.appendChild(el("div", "dp-dim", "\u4E91\u7AEF\u8FD8\u6CA1\u6709\u5B58\u6863"));
+        return;
+      }
+      if (cloud.pick === "") cloud.pick = rows3[0].hash;
+      const details2 = el("details", "dp-cloud-list");
+      if (cloud.listOpen) details2.open = true;
+      details2.addEventListener("toggle", function() {
+        cloud.listOpen = details2.open;
+      });
+      details2.appendChild(el("summary", null, "\u5B58\u6863\u5217\u8868\uFF08" + rows3.length + "\uFF09"));
       for (const item of rows3) {
         const row2 = cloudRow((cloud.pick === item.hash ? "\u25CF " : "\u25CB ") + cloudTime(item.at), item.subject.replace(/^save(-manual)?:\s*/, ""));
         row2.style.cursor = "pointer";
         row2.addEventListener("click", function() {
           cloud.pick = item.hash;
-          rerender3();
+          paint();
         });
-        box.appendChild(row2);
+        details2.appendChild(row2);
       }
-    }
-    parent.appendChild(box);
+      box.appendChild(details2);
+    };
+    cloud.paint();
+    if (!cloud.loaded && !cloud.loading) void loadCloud(ui);
   }
 
   // src/client/external-ui.js
