@@ -40,6 +40,17 @@ export async function defaultGit(args, { cwd, sslVerify = true }) {
   return { stdout: result.stdout, stderr: result.stderr }
 }
 
+/** 取二进制（`git show <ref>:save.zip`）用的执行器；文本执行器会按 utf8 解码，不能拿来读 zip。 */
+export async function defaultGitBinary(args, { cwd, sslVerify = true }) {
+  const full = sslVerify ? ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', ...args]
+    : ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', '-c', 'http.sslVerify=false', ...args]
+  const result = await run('git', full, {
+    cwd, windowsHide: true, encoding: 'buffer', maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  })
+  return result.stdout
+}
+
 /**
  * 现在该不该提交。纯函数，单测直接算边界。
  * @param {{ lastCommitAt?: number, now: number, debounceMs?: number, dirty?: boolean }} input
@@ -78,6 +89,7 @@ export function createGitSync(options) {
     statePath, directory, remote, branch = 'main', device = '',
     parse, importFiles, archive,
     git = defaultGit,
+    gitBinary = defaultGitBinary,
     now = Date.now,
     insecureSkipTlsVerify = false,
   } = options
@@ -88,6 +100,7 @@ export function createGitSync(options) {
   const worktree = directory ?? join(dirname(statePath), 'cloud-save')
   const at = () => (typeof now === 'function' ? now() : now)
   const exec = args => git(args, { cwd: worktree, sslVerify: !insecureSkipTlsVerify })
+  const execBinary = args => gitBinary(args, { cwd: worktree, sslVerify: !insecureSkipTlsVerify })
 
   async function exists(target) {
     try { await access(target); return true } catch { return false }
@@ -194,5 +207,46 @@ export function createGitSync(options) {
     return { meta, committed }
   }
 
-  return { worktree, ensure, readMeta, writeSnapshot, dirty, commit, push, pull, pullIfNewer, pushSnapshot }
+  /** 远端有哪些存档分支（设置页下拉框用）。 */
+  async function listBranches() {
+    await ensure()
+    const { stdout } = await exec(['ls-remote', '--heads', 'origin'])
+    return stdout
+      .split(/\r?\n/u)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => line.split('\t')[1] ?? '')
+      .filter(ref => ref.startsWith('refs/heads/'))
+      .map(ref => ref.slice('refs/heads/'.length))
+      .sort()
+  }
+
+  /**
+   * 直接把某个远端分支的存档读出来（不切分支、不动工作树）。
+   * 设置页的「从云端拉取」选哪个分支就读哪个。
+   * @param {string} targetBranch
+   */
+  async function readBranchSave(targetBranch) {
+    const name = String(targetBranch ?? '').trim()
+    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
+    await ensure()
+    await exec(['fetch', '-q', 'origin', name])
+    const metaRaw = await exec(['show', `origin/${name}:${META_FILE}`]).then(r => r.stdout)
+    const meta = JSON.parse(metaRaw)
+    const buffer = await execBinary(['show', `origin/${name}:${SAVE_FILE}`])
+    return { meta, buffer }
+  }
+
+  /**
+   * 手动拉取：读分支 → 解析 → 交给运行时替换。不判断新旧，用户点的就是要覆盖。
+   * @param {string} targetBranch
+   */
+  async function applyBranch(targetBranch) {
+    const { meta, buffer } = await readBranchSave(targetBranch)
+    const parsed = await parse(SAVE_FILE, buffer)
+    const result = await importFiles(parsed.files)
+    return { applied: true, meta, summary: parsed.summary, result }
+  }
+
+  return { worktree, ensure, readMeta, writeSnapshot, dirty, commit, push, pull, pullIfNewer, pushSnapshot, listBranches, readBranchSave, applyBranch }
 }

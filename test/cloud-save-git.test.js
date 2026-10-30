@@ -135,3 +135,38 @@ test('没有远端存档时拉取不报错', async () => {
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test('listBranches 列出远端分支，applyBranch 读指定分支的存档', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'piggy-git-'))
+  try {
+    const bare = await makeRemote(root)
+    const mainSave = fakeSave('zip-main', { lastSeenAt: 3000 })
+    const main = createGitSync({
+      statePath: join(root, 'state.json'), directory: join(root, 'work-main'), remote: bare, branch: 'main',
+      archive: mainSave.archive, parse: mainSave.parse, importFiles: mainSave.importFiles,
+    })
+    await main.pushSnapshot()
+
+    const altSave = fakeSave('zip-alt', { lastSeenAt: 4000 })
+    const alt = createGitSync({
+      statePath: join(root, 'state.json'), directory: join(root, 'work-alt'), remote: bare, branch: 'alt',
+      archive: altSave.archive, parse: altSave.parse, importFiles: altSave.importFiles,
+    })
+    await alt.pushSnapshot()
+
+    const branches = await main.listBranches()
+    assert.deepEqual(branches, ['alt', 'main'])
+
+    const target = fakeSave('unused', { lastSeenAt: 0 })
+    const reader = createGitSync({
+      statePath: join(root, 'state.json'), directory: join(root, 'work-read'), remote: bare, branch: 'main',
+      archive: target.archive, parse: target.parse, importFiles: target.importFiles,
+    })
+    const applied = await reader.applyBranch('alt')
+    assert.equal(applied.applied, true)
+    assert.equal(applied.meta.lastSeenAt, 4000)
+    assert.equal(target.calls.imported?.get(SAVE_FILE)?.toString(), 'zip-alt')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
