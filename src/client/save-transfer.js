@@ -379,8 +379,12 @@ async function cloudAction(ui, url, body) {
 }
 
 function renderCloud(ui, section) {
-  const box = section(ui, '云存档', '备份进度，通过云把小猪带到另一台设备').box
+  // 注意：section() 会把标题和简介画进 holder.box，而 paint() 要清空自己的内容，
+  // 所以必须再套一层容器，否则标题会被一起清掉。
+  const holder = section(ui, '云存档', '备份进度，通过云把小猪带到另一台设备')
+  const box = el('div', 'dp-cloud-body')
   box.setAttribute('data-cloud-section', 'true')
+  holder.box.appendChild(box)
   cloud.paint = function paint() {
     box.textContent = ''
 

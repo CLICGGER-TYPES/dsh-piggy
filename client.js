@@ -9603,8 +9603,10 @@
     }
   }
   function renderCloud(ui, section2) {
-    const box = section2(ui, "\u4E91\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u901A\u8FC7\u4E91\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907").box;
+    const holder = section2(ui, "\u4E91\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u901A\u8FC7\u4E91\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907");
+    const box = el("div", "dp-cloud-body");
     box.setAttribute("data-cloud-section", "true");
+    holder.box.appendChild(box);
     cloud.paint = function paint() {
       box.textContent = "";
       if (cloud.error !== "") box.appendChild(el("div", "dp-dim", "\u4E91\u5B58\u6863\uFF1A" + cloud.error));
