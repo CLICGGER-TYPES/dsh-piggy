@@ -51,7 +51,18 @@ export function createGameRuntime(options) {
     const branch = typeof config.branch === 'string' && config.branch !== '' ? config.branch : 'main'
     const device = typeof config.device === 'string' ? config.device : ''
     const debounceMs = Number.isFinite(config.debounceMs) && config.debounceMs > 0 ? config.debounceMs : 10 * 60 * 1000
-    const archive = () => createSaveArchive({ statePath: options.statePath, state: store?.state ?? null })
+    const archive = () => {
+      const built = createSaveArchive({ statePath: options.statePath, state: store?.state ?? null })
+      return {
+        buffer: built.buffer,
+        name: built.name,
+        summary: built.summary,
+        stateVersion: store?.state?.version ?? null,
+        lastSeenAt: store?.state?.lastSeenAt ?? null,
+        level: built.summary?.level ?? null,
+        coins: store?.state?.coins ?? null,
+      }
+    }
     const sync = createGitSync({
       statePath: options.statePath,
       remote,
@@ -60,7 +71,13 @@ export function createGameRuntime(options) {
       insecureSkipTlsVerify: config.insecureSkipTlsVerify === true,
       archive,
       parse: (_name, buffer) => parseSaveArchive(buffer),
-      importFiles: files => commitSaveImport({ statePath: options.statePath, files, backup: archive().buffer }),
+      importFiles: async files => {
+        const result = await commitSaveImport({ statePath: options.statePath, files, backup: archive().buffer })
+        // 覆盖后必须重开 Store，否则内存里还是旧档；云存档是手动低频操作，直接走 restart。
+        restart()
+        try { options.onStateChanged?.() } catch { /* 刷新通知失败不影响导入 */ }
+        return result
+      },
     })
     return { sync, remote, branch, device, debounceMs, lastPushAt: 0 }
   }
