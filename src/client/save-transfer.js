@@ -232,7 +232,7 @@ export function renderSaveTransferSettings(ui, section) {
   actions.appendChild(exportButton)
   actions.appendChild(importButton)
   transfer.box.appendChild(actions)
-  renderCloud(ui, transfer.box)
+  renderCloud(ui, section)
 
   if (!state.open) return
   const overlay = el('div', 'dp-save-overlay')
@@ -378,13 +378,9 @@ async function cloudAction(ui, url, body) {
   }
 }
 
-function renderCloud(ui, parent) {
-  const box = el('div', 'dp-cloud')
-  // 和上面的导出/导入按钮隔开，读起来是一块独立功能区。
-  box.style.marginTop = '14px'
-  box.style.paddingTop = '12px'
-  box.style.borderTop = '1.5px dashed rgba(0,0,0,0.12)'
-  parent.appendChild(box)
+function renderCloud(ui, section) {
+  const box = section(ui, '云存档', '备份进度，通过云把小猪带到另一台设备').box
+  box.setAttribute('data-cloud-section', 'true')
   cloud.paint = function paint() {
     box.textContent = ''
     const head = el('div', 'dp-row')

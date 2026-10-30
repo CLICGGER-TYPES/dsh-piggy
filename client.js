@@ -9466,7 +9466,7 @@
     actions2.appendChild(exportButton);
     actions2.appendChild(importButton);
     transfer.box.appendChild(actions2);
-    renderCloud(ui, transfer.box);
+    renderCloud(ui, section2);
     if (!state.open) return;
     const overlay = el("div", "dp-save-overlay");
     overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
@@ -9602,12 +9602,9 @@
       if (typeof cloud.paint === "function") cloud.paint();
     }
   }
-  function renderCloud(ui, parent) {
-    const box = el("div", "dp-cloud");
-    box.style.marginTop = "14px";
-    box.style.paddingTop = "12px";
-    box.style.borderTop = "1.5px dashed rgba(0,0,0,0.12)";
-    parent.appendChild(box);
+  function renderCloud(ui, section2) {
+    const box = section2(ui, "\u4E91\u5B58\u6863", "\u5907\u4EFD\u8FDB\u5EA6\uFF0C\u901A\u8FC7\u4E91\u628A\u5C0F\u732A\u5E26\u5230\u53E6\u4E00\u53F0\u8BBE\u5907").box;
+    box.setAttribute("data-cloud-section", "true");
     cloud.paint = function paint() {
       box.textContent = "";
       const head = el("div", "dp-row");
