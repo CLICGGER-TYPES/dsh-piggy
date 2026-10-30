@@ -197,3 +197,27 @@ test('history 返回最后一次手动提交与最近十次自动提交', async 
     await rm(root, { recursive: true, force: true })
   }
 })
+test('远端已有历史时，新的工作树也能推上去（接在远端提交之上）', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'piggy-git-'))
+  try {
+    const bare = await makeRemote(root)
+    const first = fakeSave('zip-first', { lastSeenAt: 1000 })
+    await createGitSync({
+      statePath: join(root, 'state.json'), directory: join(root, 'work-1'), remote: bare, branch: 'main',
+      archive: first.archive, parse: first.parse, importFiles: first.importFiles,
+    }).pushSnapshot()
+
+    const second = fakeSave('zip-second', { lastSeenAt: 2000 })
+    const result = await createGitSync({
+      statePath: join(root, 'state.json'), directory: join(root, 'work-2'), remote: bare, branch: 'main',
+      archive: second.archive, parse: second.parse, importFiles: second.importFiles,
+    }).pushSnapshot()
+
+    assert.ok(result.committed, '应该产生提交')
+    const log = await run('git', ['--git-dir', bare, 'log', '--format=%s', 'main'])
+    const subjects = log.stdout.split('\n').filter(Boolean)
+    assert.equal(subjects.length, 2, '远端应有两条提交：' + subjects.join(' | '))
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

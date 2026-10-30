@@ -207,6 +207,12 @@ export function createGitSync(options) {
   /** 导出 + 提交 + 推送；失败只回错误，不抛到调用方。 */
   async function pushSnapshot(options = {}) {
     await ensure()
+    // 远端可能已经有历史（别的机器推过，或本地工作树是新建的）：先 fetch，再把本地
+    // 提交「接」到远端最新提交之上，避免 unrelated histories / non-fast-forward。
+    try {
+      await exec(['fetch', '-q', 'origin', branch])
+      await exec(['reset', '--soft', `origin/${branch}`])
+    } catch { /* 远端还没有这个分支：第一次推送，什么都不用做 */ }
     const meta = await writeSnapshot(options.manual === true)
     const committed = await commit(meta, options.manual === true)
     await push()
