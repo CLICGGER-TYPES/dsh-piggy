@@ -9548,7 +9548,7 @@
     commit: "/dsh-piggy/cloud/commit",
     history: "/dsh-piggy/cloud/history"
   };
-  var cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: "", error: "", notice: "", armPull: 0 };
+  var cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: "", error: "", notice: "", armPull: 0, pick: "" };
   async function cloudFetch(url, options) {
     const response = await fetch(url, { cache: "no-store", ...options ?? {} });
     const body = await response.json().catch(() => null);
@@ -9578,7 +9578,7 @@
       if (cloud.status.enabled) {
         const [branches, history] = await Promise.all([
           cloudFetch(CLOUD_URL.branches),
-          cloudFetch(CLOUD_URL.history + "?branch=" + encodeURIComponent(cloud.branch || cloud.status.branch || ""))
+          cloudFetch(CLOUD_URL.history + "?branch=" + encodeURIComponent(cloud.status.branch || ""))
         ]);
         cloud.branches = branches.branches ?? [];
         cloud.history = history;
@@ -9622,28 +9622,9 @@
       parent.appendChild(box);
       return;
     }
-    if (cloud.branches.length > 0) {
-      const pick = el("select", "dp-select", null);
-      for (const branch of cloud.branches) {
-        const option = el("option", null, branch);
-        option.value = branch;
-        if (branch === (cloud.branch || cloud.status.branch)) option.selected = true;
-        pick.appendChild(option);
-      }
-      pick.addEventListener("change", function() {
-        cloud.branch = pick.value;
-        cloud.history = null;
-        cloud.armPull = 0;
-        void loadCloud(ui, rerender3);
-      });
-      const row2 = el("div", "dp-row");
-      row2.appendChild(el("span", null, "\u5206\u652F"));
-      row2.appendChild(pick);
-      box.appendChild(row2);
-    }
     const actions2 = el("div", "dp-actions");
     const commit2 = button("dp-mini", { "data-cloud": "commit" }, () => cloudAction(ui, rerender3, CLOUD_URL.commit, {}));
-    commit2.textContent = "\u7ACB\u5373\u4FDD\u5B58\u5230\u4E91\u7AEF";
+    commit2.textContent = "\u4FDD\u5B58\u5230\u4E91\u7AEF";
     const pull = button("dp-mini", { "data-cloud": "pull" }, () => {
       const now2 = Date.now();
       if (now2 - cloud.armPull > 4e3) {
@@ -9653,7 +9634,7 @@
         return;
       }
       cloud.armPull = 0;
-      void cloudAction(ui, rerender3, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch });
+      void cloudAction(ui, rerender3, CLOUD_URL.pull, { branch: cloud.status.branch, hash: cloud.pick });
     });
     pull.textContent = "\u4ECE\u4E91\u7AEF\u62C9\u53D6";
     for (const node of [commit2, pull]) {
@@ -9664,10 +9645,20 @@
     if (cloud.notice !== "") box.appendChild(el("div", "dp-dim", cloud.notice));
     const history = cloud.history;
     if (history) {
+      if (cloud.pick === "") cloud.pick = history.manual?.hash ?? history.auto?.[0]?.hash ?? "";
       if (history.manual) box.appendChild(cloudRow("\u4E0A\u6B21\u624B\u52A8\u5B58\u6863", cloudTime(history.manual.at)));
       const auto2 = history.auto ?? [];
       box.appendChild(el("div", "dp-dim", auto2.length > 0 ? "\u6700\u8FD1\u81EA\u52A8\u5B58\u6863 " + auto2.length + " \u6761" : "\u8FD8\u6CA1\u6709\u81EA\u52A8\u5B58\u6863"));
-      for (const item of auto2) box.appendChild(cloudRow("\xB7 " + cloudTime(item.at), item.subject.replace(/^save:\s*/, "")));
+      const rows3 = [history.manual, ...auto2].filter(Boolean);
+      for (const item of rows3) {
+        const row2 = cloudRow((cloud.pick === item.hash ? "\u25CF " : "\u25CB ") + cloudTime(item.at), item.subject.replace(/^save(-manual)?:\s*/, ""));
+        row2.style.cursor = "pointer";
+        row2.addEventListener("click", function() {
+          cloud.pick = item.hash;
+          rerender3();
+        });
+        box.appendChild(row2);
+      }
     }
     parent.appendChild(box);
   }
