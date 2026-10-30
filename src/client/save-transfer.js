@@ -380,6 +380,10 @@ async function cloudAction(ui, url, body) {
 
 function renderCloud(ui, parent) {
   const box = el('div', 'dp-cloud')
+  // 和上面的导出/导入按钮隔开，读起来是一块独立功能区。
+  box.style.marginTop = '14px'
+  box.style.paddingTop = '12px'
+  box.style.borderTop = '1.5px dashed rgba(0,0,0,0.12)'
   parent.appendChild(box)
   cloud.paint = function paint() {
     box.textContent = ''

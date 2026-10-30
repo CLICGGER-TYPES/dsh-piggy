@@ -9604,6 +9604,9 @@
   }
   function renderCloud(ui, parent) {
     const box = el("div", "dp-cloud");
+    box.style.marginTop = "14px";
+    box.style.paddingTop = "12px";
+    box.style.borderTop = "1.5px dashed rgba(0,0,0,0.12)";
     parent.appendChild(box);
     cloud.paint = function paint() {
       box.textContent = "";
