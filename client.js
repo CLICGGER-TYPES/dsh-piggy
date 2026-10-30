@@ -9607,10 +9607,7 @@
     box.setAttribute("data-cloud-section", "true");
     cloud.paint = function paint() {
       box.textContent = "";
-      const head = el("div", "dp-row");
-      head.appendChild(el("b", null, "\u4E91\u5B58\u6863\uFF08git\uFF09"));
-      head.appendChild(el("span", "dp-dim", cloud.status?.enabled ? cloud.status.remote || "" : "\u672A\u542F\u7528"));
-      box.appendChild(head);
+      if (cloud.status?.enabled) box.appendChild(el("p", "dp-dim", cloud.status.remote || ""));
       if (cloud.error !== "") box.appendChild(el("div", "dp-dim", "\u4E91\u5B58\u6863\uFF1A" + cloud.error));
       if (cloud.status === null || cloud.status.enabled !== true) {
         box.appendChild(el("p", "dp-dim", cloud.loading ? "\u6B63\u5728\u8BFB\u53D6\u4E91\u5B58\u6863\u72B6\u6001\u2026" : "\u5728\u914D\u7F6E\u91CC\u6253\u5F00 cloudSave \u540E\u53EF\u7528\uFF08remote \u6307\u5411\u5B58\u5B58\u6863\u7684\u79C1\u6709\u4ED3\u5E93\uFF09\u3002"));

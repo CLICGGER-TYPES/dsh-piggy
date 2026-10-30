@@ -383,10 +383,7 @@ function renderCloud(ui, section) {
   box.setAttribute('data-cloud-section', 'true')
   cloud.paint = function paint() {
     box.textContent = ''
-    const head = el('div', 'dp-row')
-    head.appendChild(el('b', null, '云存档（git）'))
-    head.appendChild(el('span', 'dp-dim', cloud.status?.enabled ? (cloud.status.remote || '') : '未启用'))
-    box.appendChild(head)
+    if (cloud.status?.enabled) box.appendChild(el('p', 'dp-dim', cloud.status.remote || ''))
 
     if (cloud.error !== '') box.appendChild(el('div', 'dp-dim', '云存档：' + cloud.error))
     if (cloud.status === null || cloud.status.enabled !== true) {
