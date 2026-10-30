@@ -223,6 +223,29 @@ export function createGitSync(options) {
    * 设置页的存档列表：最后一次手动提交 + 最近 limit 次自动提交。
    * 只读当前分支的提交历史，不切工作树。
    */
+  /**
+   * 读某一次提交里的存档（列表里选中哪条就读哪条）。
+   * @param {{branch:string, hash:string}} target
+   */
+  async function readCommitSave({ branch: targetBranch, hash }) {
+    const name = String(targetBranch ?? '').trim()
+    const commit = String(hash ?? '').trim()
+    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
+    if (!/^[0-9a-f]{7,40}$/u.test(commit)) throw new Error('git-sync: 提交号不合法')
+    await ensure()
+    await exec(['fetch', '-q', 'origin', name])
+    const meta = JSON.parse(await exec(['show', `${commit}:${META_FILE}`]).then(r => r.stdout))
+    const buffer = await execBinary(['show', `${commit}:${SAVE_FILE}`])
+    return { meta, buffer }
+  }
+
+  /** 手动拉取指定提交。 */
+  async function applyCommit(target) {
+    const { meta, buffer } = await readCommitSave(target)
+    const parsed = await parse(SAVE_FILE, buffer)
+    const result = await importFiles(parsed.files)
+    return { applied: true, meta, summary: parsed.summary, result }
+  }
   async function history(targetBranch = branch, limit = 10) {
     const name = String(targetBranch ?? '').trim()
     if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
@@ -283,5 +306,5 @@ export function createGitSync(options) {
     return { applied: true, meta, summary: parsed.summary, result }
   }
 
-  return { worktree, ensure, readMeta, writeSnapshot, dirty, commit, push, pull, pullIfNewer, pushSnapshot, listBranches, readBranchSave, applyBranch, history }
+  return { worktree, ensure, readMeta, writeSnapshot, dirty, commit, push, pull, pullIfNewer, pushSnapshot, listBranches, readBranchSave, applyBranch, history, readCommitSave, applyCommit }
 }

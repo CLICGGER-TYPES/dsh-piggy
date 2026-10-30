@@ -40,6 +40,7 @@ async function readJson(req) {
  * @param {() => Promise<any>} deps.status
  * @param {() => Promise<string[]>} deps.branches
  * @param {(branch: string) => Promise<any>} deps.pull
+ * @param {(target: { branch: string, hash: string }) => Promise<any>} deps.pullCommit
  * @param {() => Promise<any>} deps.push
  * @param {() => Promise<any>} deps.commit
  * @param {(branch: string) => Promise<any>} deps.history
@@ -76,8 +77,9 @@ export function createCloudRoutes(deps) {
         if (body === null) return sendJson(res, 400, { ok: false, reason: 'invalid-body' })
         const branch = typeof body.branch === 'string' ? body.branch.trim() : ''
         if (branch === '') return sendJson(res, 400, { ok: false, reason: 'missing-branch' })
-        const result = await deps.pull(branch)
-        sendJson(res, 200, { ok: result?.applied === true, branch, ...result })
+        const hash = typeof body.hash === 'string' ? body.hash.trim() : ''
+        const result = hash === '' ? await deps.pull(branch) : await deps.pullCommit({ branch, hash })
+        sendJson(res, 200, { ok: result?.applied === true, branch, hash, ...result })
       }),
     },
     {

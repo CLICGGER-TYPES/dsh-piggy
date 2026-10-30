@@ -318,7 +318,7 @@ const CLOUD_URL = {
   history: '/dsh-piggy/cloud/history',
 }
 
-const cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: '', error: '', notice: '', armPull: 0 }
+const cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: '', error: '', notice: '', armPull: 0, pick: '' }
 
 async function cloudFetch(url, options) {
   const response = await fetch(url, { cache: 'no-store', ...(options ?? {}) })
@@ -422,7 +422,7 @@ function renderCloud(ui, parent, rerender) {
 
   const actions = el('div', 'dp-actions')
   const commit = button('dp-mini', { 'data-cloud': 'commit' }, () => cloudAction(ui, rerender, CLOUD_URL.commit, {}))
-  commit.textContent = '立即保存到云端'
+  commit.textContent = '保存到云端'
 
   const pull = button('dp-mini', { 'data-cloud': 'pull' }, () => {
     const now = Date.now()
@@ -433,7 +433,7 @@ function renderCloud(ui, parent, rerender) {
       return
     }
     cloud.armPull = 0
-    void cloudAction(ui, rerender, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch })
+    void cloudAction(ui, rerender, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch, hash: cloud.pick })
   })
   pull.textContent = '从云端拉取'
   for (const node of [commit, pull]) { node.disabled = state.busy; actions.appendChild(node) }
@@ -443,10 +443,17 @@ function renderCloud(ui, parent, rerender) {
 
   const history = cloud.history
   if (history) {
+    if (cloud.pick === '') cloud.pick = history.manual?.hash ?? history.auto?.[0]?.hash ?? ''
     if (history.manual) box.appendChild(cloudRow('上次手动存档', cloudTime(history.manual.at)))
     const auto = history.auto ?? []
     box.appendChild(el('div', 'dp-dim', auto.length > 0 ? '最近自动存档 ' + auto.length + ' 条' : '还没有自动存档'))
-    for (const item of auto) box.appendChild(cloudRow('· ' + cloudTime(item.at), item.subject.replace(/^save:\s*/, '')))
+    const rows = [history.manual, ...auto].filter(Boolean)
+    for (const item of rows) {
+      const row = cloudRow((cloud.pick === item.hash ? '● ' : '○ ') + cloudTime(item.at), item.subject.replace(/^save(-manual)?:\s*/, ''))
+      row.style.cursor = 'pointer'
+      row.addEventListener('click', function () { cloud.pick = item.hash; rerender() })
+      box.appendChild(row)
+    }
   }
   parent.appendChild(box)
 }
