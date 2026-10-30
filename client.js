@@ -9466,6 +9466,7 @@
     actions2.appendChild(exportButton);
     actions2.appendChild(importButton);
     transfer.box.appendChild(actions2);
+    renderCloud(ui, transfer.box, rerender2);
     if (!state.open) return;
     const overlay = el("div", "dp-save-overlay");
     overlay.style.cssText = "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box";
@@ -9538,6 +9539,139 @@
   }
   function alert(text, className = "dp-alert dp-legacy") {
     return el("div", className, String(text));
+  }
+  var CLOUD_URL = {
+    status: "/dsh-piggy/cloud/status",
+    branches: "/dsh-piggy/cloud/branches",
+    pull: "/dsh-piggy/cloud/pull",
+    push: "/dsh-piggy/cloud/push",
+    commit: "/dsh-piggy/cloud/commit",
+    history: "/dsh-piggy/cloud/history"
+  };
+  var cloud = { loaded: false, loading: false, status: null, branches: [], history: null, branch: "", error: "", notice: "", armPull: 0 };
+  async function cloudFetch(url, options) {
+    const response = await fetch(url, { cache: "no-store", ...options ?? {} });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || body === null) throw new Error(body?.message || "HTTP " + response.status);
+    if (body.ok === false) throw new Error(body.message || body.reason || "\u4E91\u5B58\u6863\u64CD\u4F5C\u5931\u8D25");
+    return body;
+  }
+  function cloudTime(value) {
+    if (!value) return "\u2014";
+    const at = new Date(value);
+    if (Number.isNaN(at.getTime())) return String(value);
+    const pad = (n) => String(n).padStart(2, "0");
+    return pad(at.getMonth() + 1) + "-" + pad(at.getDate()) + " " + pad(at.getHours()) + ":" + pad(at.getMinutes());
+  }
+  function cloudRow(label, value) {
+    const row2 = el("div", "dp-row");
+    row2.appendChild(el("span", null, label));
+    row2.appendChild(el("b", null, String(value)));
+    return row2;
+  }
+  async function loadCloud(ui, rerender3) {
+    if (cloud.loading) return;
+    cloud.loading = true;
+    cloud.error = "";
+    try {
+      cloud.status = await cloudFetch(CLOUD_URL.status);
+      if (cloud.status.enabled) {
+        const [branches, history] = await Promise.all([
+          cloudFetch(CLOUD_URL.branches),
+          cloudFetch(CLOUD_URL.history + "?branch=" + encodeURIComponent(cloud.branch || cloud.status.branch || ""))
+        ]);
+        cloud.branches = branches.branches ?? [];
+        cloud.history = history;
+        if (!cloud.branch) cloud.branch = cloud.status.branch || cloud.branches[0] || "";
+      }
+      cloud.loaded = true;
+    } catch (error) {
+      cloud.error = messageOf(error);
+    } finally {
+      cloud.loading = false;
+      if (typeof rerender3 === "function") rerender3();
+    }
+  }
+  async function cloudAction(ui, rerender3, url, body) {
+    if (state.busy) return;
+    state.busy = true;
+    cloud.notice = "\u5904\u7406\u4E2D\u2026";
+    rerender3();
+    try {
+      const result = await cloudFetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
+      cloud.notice = "\u5B8C\u6210";
+      if (result.manual === null || result.auto !== void 0) cloud.history = result;
+      await loadCloud(ui, rerender3);
+    } catch (error) {
+      cloud.error = messageOf(error);
+    } finally {
+      state.busy = false;
+      rerender3();
+    }
+  }
+  function renderCloud(ui, parent, rerender3) {
+    const box = el("div", "dp-cloud");
+    const head = el("div", "dp-row");
+    head.appendChild(el("b", null, "\u4E91\u5B58\u6863\uFF08git\uFF09"));
+    head.appendChild(el("span", "dp-dim", cloud.status?.enabled ? cloud.status.remote || "" : "\u672A\u542F\u7528"));
+    box.appendChild(head);
+    if (!cloud.loaded && !cloud.loading) void loadCloud(ui, rerender3);
+    if (cloud.error !== "") box.appendChild(el("div", "dp-dim", "\u4E91\u5B58\u6863\uFF1A" + cloud.error));
+    if (cloud.status === null || cloud.status.enabled !== true) {
+      box.appendChild(el("p", "dp-dim", "\u5728\u914D\u7F6E\u91CC\u6253\u5F00 cloudSave \u540E\u53EF\u7528\uFF08remote \u6307\u5411\u5B58\u5B58\u6863\u7684\u79C1\u6709\u4ED3\u5E93\uFF09\u3002"));
+      parent.appendChild(box);
+      return;
+    }
+    if (cloud.branches.length > 0) {
+      const pick = el("select", "dp-select", null);
+      for (const branch of cloud.branches) {
+        const option = el("option", null, branch);
+        option.value = branch;
+        if (branch === (cloud.branch || cloud.status.branch)) option.selected = true;
+        pick.appendChild(option);
+      }
+      pick.addEventListener("change", function() {
+        cloud.branch = pick.value;
+        cloud.history = null;
+        cloud.armPull = 0;
+        void loadCloud(ui, rerender3);
+      });
+      const row2 = el("div", "dp-row");
+      row2.appendChild(el("span", null, "\u5206\u652F"));
+      row2.appendChild(pick);
+      box.appendChild(row2);
+    }
+    const actions2 = el("div", "dp-actions");
+    const commit2 = button("dp-mini", { "data-cloud": "commit" }, () => cloudAction(ui, rerender3, CLOUD_URL.commit, {}));
+    commit2.textContent = "\u624B\u52A8\u63D0\u4EA4";
+    const push = button("dp-mini", { "data-cloud": "push" }, () => cloudAction(ui, rerender3, CLOUD_URL.push, {}));
+    push.textContent = "\u7ACB\u5373\u63A8\u9001";
+    const pull = button("dp-mini", { "data-cloud": "pull" }, () => {
+      const now2 = Date.now();
+      if (now2 - cloud.armPull > 4e3) {
+        cloud.armPull = now2;
+        cloud.notice = "\u518D\u70B9\u4E00\u6B21\u786E\u8BA4\u8986\u76D6\u672C\u5730\u5B58\u6863";
+        rerender3();
+        return;
+      }
+      cloud.armPull = 0;
+      void cloudAction(ui, rerender3, CLOUD_URL.pull, { branch: cloud.branch || cloud.status.branch });
+    });
+    pull.textContent = "\u4ECE\u4E91\u7AEF\u62C9\u53D6";
+    for (const node of [commit2, push, pull]) {
+      node.disabled = state.busy;
+      actions2.appendChild(node);
+    }
+    box.appendChild(actions2);
+    if (cloud.notice !== "") box.appendChild(el("div", "dp-dim", cloud.notice));
+    const history = cloud.history;
+    if (history) {
+      if (history.manual) box.appendChild(cloudRow("\u4E0A\u6B21\u624B\u52A8\u5B58\u6863", cloudTime(history.manual.at)));
+      const auto2 = history.auto ?? [];
+      box.appendChild(el("div", "dp-dim", auto2.length > 0 ? "\u6700\u8FD1\u81EA\u52A8\u5B58\u6863 " + auto2.length + " \u6761" : "\u8FD8\u6CA1\u6709\u81EA\u52A8\u5B58\u6863"));
+      for (const item of auto2) box.appendChild(cloudRow("\xB7 " + cloudTime(item.at), item.subject.replace(/^save:\s*/, "")));
+    }
+    parent.appendChild(box);
   }
 
   // src/client/external-ui.js
@@ -24477,12 +24611,12 @@
     return motionValue$1.animation;
   }
 
-  // node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -24498,12 +24632,12 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -24518,7 +24652,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -24539,7 +24673,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -24547,7 +24681,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -24560,7 +24694,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -24742,7 +24876,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -24773,7 +24907,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -24798,7 +24932,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // node_modules/motion/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
