@@ -80,7 +80,7 @@ class XSession:
         self.run.identity.update({"display": self.display, "screen": f"{g['screenWidth']}x{g['screenHeight']}x24",
                                   "ports": ports, "displaySelectedAtRunStart": True,
                                   "portsSelectedAtRunStart": True})
-        self.run.write_identity()
+        self.run.ledger._write()
         self.prepare_layout_directories()
         cookie = secrets.token_hex(16)
         auth_env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": str(self.run.out / "home"),
