@@ -223,12 +223,18 @@ def build_local_artifacts(cfg, run_root):
     for name in ("artifacts", "logs", "reports", "scripts"):
         (run_root / name).mkdir(parents=True, exist_ok=True, mode=0o700)
     source_archive = run_root / "artifacts" / "source-3585.tar.gz"
+    archive_result = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", wanted],
+                                    capture_output=True, timeout=180, check=False)
+    archive_stderr = run_root / "logs" / "git-archive.stderr.log"
+    archive_stderr.write_bytes(archive_result.stderr)
+    if archive_result.returncode:
+        raise RuntimeError(f"TOOL: git archive of M1 baseline failed; see {archive_stderr}")
     with source_archive.open("wb") as raw:
         with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, compresslevel=4) as compressed:
-            result = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", wanted],
-                                    stdout=compressed, stderr=subprocess.PIPE, timeout=180, check=False)
-    if result.returncode:
-        raise RuntimeError("TOOL: git archive of M1 baseline failed")
+            compressed.write(archive_result.stdout)
+    with source_archive.open("rb") as archive_head:
+        if archive_head.read(2) != b"\x1f\x8b":
+            raise RuntimeError("TOOL: source archive is not gzip-compressed")
     manifest = source_manifest_from_archive(source_archive)
     source_manifest = run_root / "artifacts" / "source-3585-manifest.json"
     atomic_json(source_manifest, manifest)
