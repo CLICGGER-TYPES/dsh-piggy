@@ -244,10 +244,14 @@ function helperRecipe(key, level) {
 }
 function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {};
+  const hired = raw.hired === true;
   const level = Math.min(2, count(raw.level));
   const barn = Math.min(3, count(raw.barn));
   data.helper = {
-    hired: raw.hired === true,
+    hired,
+    enabled: hired && raw.enabled !== false,
+    xpQuarterRemainder: Math.min(3, count(raw.xpQuarterRemainder)),
+    xpEligibleAt: Number.isFinite(raw.xpEligibleAt) ? raw.xpEligibleAt : null,
     level,
     barn,
     lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
@@ -282,12 +286,24 @@ function nextEvent(data, helper, managed, at, now, blocked) {
   }
   return pick;
 }
-function harvestHere(data, helper, managed, next) {
+function awardHelperExperience(data, helper, crop, eventAt) {
+  if (Number.isFinite(helper.xpEligibleAt) && eventAt <= helper.xpEligibleAt) return;
+  if (data.exp >= EXP_CAP) {
+    helper.xpQuarterRemainder = 0;
+    return;
+  }
+  const quarters = helper.xpQuarterRemainder + 3 * crop.exp;
+  const gained = Math.floor(quarters / 4);
+  data.exp = Math.min(EXP_CAP, data.exp + gained);
+  helper.xpQuarterRemainder = data.exp >= EXP_CAP ? 0 : quarters % 4;
+}
+function harvestHere(data, helper, managed, next, awardExperience) {
   const plot = data.plots[next.index];
   const crop = next.crop;
   keepClean(plot, next.at, next.index);
   const state = plotState(plot, next.at);
   recordHarvest(data, crop.key, Math.max(1, state?.yield ?? 1), helper.stock);
+  if (awardExperience) awardHelperExperience(data, helper, crop, next.at);
   helper.targets[next.index] = crop.key;
   if (plot.season < crop.seasons) {
     const season = plot.season + 1;
@@ -325,7 +341,7 @@ function tidy(data, managed, now) {
     keepClean(plot, now, index);
   }
 }
-function settlePlots(data, helper, managed, start, now) {
+function settlePlots(data, helper, managed, start, now, awardExperience) {
   for (let index = 0; index < managed; index += 1) {
     const crop = cropFor(data.plots[index]?.crop);
     if (crop !== null) helper.targets[index] = crop.key;
@@ -338,12 +354,12 @@ function settlePlots(data, helper, managed, start, now) {
     if (next === null) break;
     at = Math.max(at, next.when);
     if (next.crop === null) plantHere(data, helper, managed, next, at, blocked);
-    else harvestHere(data, helper, managed, { at: next.when, index: next.index, crop: next.crop });
+    else harvestHere(data, helper, managed, { at: next.when, index: next.index, crop: next.crop }, awardExperience);
   }
   if (step === MAX_STEPS && nextEvent(data, helper, managed, at, now, blocked) !== null) throw new Error("菜园离线农活过多，未推进结算时间；请联系维护者检查存档。");
   tidy(data, managed, now);
 }
-function settleHelper(data, now) {
+function settleHelper(data, now, { awardExperience = true } = {}) {
   if (weatherAt(now) === "rain") for (const plot of data.plots) {
     if (plot?.fallow) plot.pests.dry = null;
     else if (plot?.pests?.dry <= now) plot.pests.dry = droughtAt(now);
@@ -353,7 +369,8 @@ function settleHelper(data, now) {
   if (!managed || !Number.isFinite(now)) return;
   const start = helper.lastAt ?? now;
   if (now < start) return;
-  settlePlots(data, helper, managed, start, now);
+  if (!helper.enabled) return;
+  settlePlots(data, helper, managed, start, now, awardExperience);
   helper.lastAt = now;
 }
 function helperView(data) {
@@ -363,18 +380,19 @@ function helperView(data) {
   const seedless = managed > 0 && !data.plots.slice(0, managed).some((plot) => cropFor(plot?.crop)) && !helper.targets.slice(0, managed).some((key) => key && amountFor(data, "seeds", key) > 0);
   return {
     hired: helper.hired,
+    enabled: helper.enabled,
     plots: managed,
     stored: helperCount(data),
     usedHours: helper.usedMs / 36e5,
     capacityHours: null,
     full: false,
-    continuous: true,
+    continuous: helper.enabled,
     seedless,
     missing: [...new Set(missing)].map((key) => cropFor(key).label)
   };
 }
 function helperPlotView(data, index, state) {
-  if (index >= helperPlots(data) || state === null || state.ripe || state.withered) return {};
+  if (!data.helper.enabled || index >= helperPlots(data) || state === null || state.ripe || state.withered) return {};
   return { helperNote: "帮工照料中", pests: [] };
 }
 function helperShelf(data, balance) {
@@ -393,6 +411,7 @@ function helperBuy(data, payload, api) {
     if (helper.hired) return { ok: false, reason: "owned" };
     if (!purse(api).spend(HELPER_PRICES.hire, "helper")) return { ok: false, reason: "poor" };
     helper.hired = true;
+    helper.enabled = true;
     helper.lastAt = api.now;
   } else {
     if (kind !== "level" || !helper.hired) return { ok: false, reason: "locked" };
@@ -402,6 +421,15 @@ function helperBuy(data, payload, api) {
     helper.level += 1;
   }
   return { ok: true };
+}
+function toggleHelper(data, payload, api) {
+  const helper = data.helper;
+  if (!helper.hired) return { ok: false, reason: "locked" };
+  if (typeof payload?.enabled !== "boolean") return { ok: false, reason: "unavailable" };
+  if (payload.enabled === helper.enabled) return { ok: false, reason: "already" };
+  helper.enabled = payload.enabled;
+  if (Number.isFinite(api?.now)) helper.lastAt = Number.isFinite(helper.lastAt) ? Math.max(helper.lastAt, api.now) : api.now;
+  return { ok: true, enabled: helper.enabled };
 }
 function collectHelper(data) {
   if (!helperCount(data)) return { ok: false, reason: "empty" };
@@ -450,7 +478,7 @@ function refundOldBarn(data) {
   data.helper.barn = 0;
   data.helperBarnRefunded = true;
 }
-function normalize(data) {
+function normalize(data, now = Date.now()) {
   if (count(data.version) < 4) {
     const old = { ...data };
     for (const key of Object.keys(data)) delete data[key];
@@ -476,7 +504,24 @@ function normalize(data) {
   if (!known) data.onboarding = lessonProgress(data) ? lessonDone(true) : { step: "offer", rewarded: false, legacy: false, plantedAt: null, wateredAt: null };
   else if (raw === null || !["offer", "planted", "done"].includes(raw.step) || raw.step === "planted" && !Number.isFinite(raw.plantedAt) || raw.step !== "done" && (raw.rewarded || raw.legacy)) data.onboarding = lessonDone(true);
   else data.onboarding = raw.step === "done" ? { step: "done", rewarded: true, legacy: raw.legacy === true, plantedAt: Number.isFinite(raw.plantedAt) ? raw.plantedAt : null, wateredAt: Number.isFinite(raw.wateredAt) ? raw.wateredAt : null } : { step: raw.step, rewarded: false, legacy: false, plantedAt: raw.step === "offer" ? null : raw.plantedAt, wateredAt: raw.step === "offer" ? null : Number.isFinite(raw.wateredAt) ? raw.wateredAt : null };
-  data.version = Math.max(5, count(data.version));
+  if (count(data.version) < 6) {
+    const previousHelperCheckpoint = data.helper.lastAt;
+    data.helper.enabled = data.helper.hired === true;
+    data.helper.xpQuarterRemainder = 0;
+    if (data.helper.hired && !Number.isFinite(now)) throw new Error("帮工存档迁移缺少有效时间，未推进检查点。");
+    settleHelper(data, now, { awardExperience: false });
+    data.helper.enabled = data.helper.hired === true;
+    data.helper.xpQuarterRemainder = 0;
+    if (data.helper.hired && Number.isFinite(now)) {
+      const legacyCheckpoint = Number.isFinite(previousHelperCheckpoint) ? previousHelperCheckpoint : now;
+      data.helper.lastAt = Math.max(Number.isFinite(data.helper.lastAt) ? data.helper.lastAt : now, now);
+      data.helper.xpEligibleAt = Math.max(now, legacyCheckpoint);
+    } else if (!data.helper.hired) {
+      data.helper.lastAt = null;
+      data.helper.xpEligibleAt = null;
+    }
+  }
+  data.version = Math.max(6, count(data.version));
   return data;
 }
 function newGround() {
@@ -638,9 +683,10 @@ var actions = {
 actions.hire = (data, payload, api) => helperBuy(data, { item: "helper-hire" }, api);
 actions.upgrade = (data, payload, api) => helperBuy(data, { item: "helper-" + payload?.kind }, api);
 actions.collect = (data) => collectHelper(data);
+actions.toggleHelper = (data, payload, api) => toggleHelper(data, payload, api);
 
 // src/extensions/farm/merge.js
-var FARM_DATA_VERSION = 5;
+var FARM_DATA_VERSION = 6;
 var KNOWN = /* @__PURE__ */ new Set([
   "version",
   "unlocked",
@@ -675,13 +721,13 @@ function sumCounts(...maps) {
   }
   return out;
 }
-function prepare(data, side) {
+function prepare(data, side, now) {
   if (!isObject(data)) throw new Error("菜园数据（" + side + "）不是对象，无法合并");
   const version = Math.floor(Number(data.version));
   if (Number.isSafeInteger(version) && version > FARM_DATA_VERSION) {
     throw new Error("菜园数据（" + side + "）版本 " + version + " 比当前扩展新，请先更新菜园再合并");
   }
-  return normalize(structuredClone(data));
+  return normalize(structuredClone(data), now);
 }
 function plotRank(plot, now) {
   if (!isObject(plot)) return [-1, 0];
@@ -726,6 +772,9 @@ function mergeHelper(out, t, s) {
   const context = pickHelperContext(t, s);
   out.helper = {
     hired,
+    enabled: hired && context.enabled === true,
+    xpQuarterRemainder: context.xpQuarterRemainder,
+    xpEligibleAt: context.xpEligibleAt,
     level,
     barn: Math.max(t.barn, s.barn),
     lastAt: hired && Number.isFinite(context.lastAt) ? context.lastAt : null,
@@ -756,8 +805,8 @@ function mergeLesson(out, t, s, warnings) {
   out.onboarding = pick.step === "planted" ? { step: "planted", rewarded: false, legacy: false, plantedAt: pick.plantedAt, wateredAt: Number.isFinite(pick.wateredAt) ? pick.wateredAt : null } : { step: "offer", rewarded: false, legacy: false, plantedAt: null, wateredAt: null };
 }
 function mergeStates(targetData, sourceData, now = Date.now()) {
-  const t = prepare(targetData, "桌宠");
-  const s = prepare(sourceData, "内嵌猪");
+  const t = prepare(targetData, "桌宠", now);
+  const s = prepare(sourceData, "内嵌猪", now);
   const warnings = [];
   const out = {
     version: FARM_DATA_VERSION,
@@ -791,7 +840,7 @@ function mergeStates(targetData, sourceData, now = Date.now()) {
 
 // src/extensions/farm/view.js
 function view(data, api) {
-  const d = normalize(structuredClone(data));
+  const d = normalize(structuredClone(data), api.now);
   settleHelper(d, api.now);
   const wallet = purse(api), balance = wallet.balance() + d.refund;
   const level = levelOf(d.exp);
@@ -888,7 +937,7 @@ var game = {
 };
 for (const [key, action] of Object.entries(game.actions)) {
   game.actions[key] = (data, payload, api) => {
-    normalize(data);
+    normalize(data, api?.now);
     payRefund(data, api);
     settleHelper(data, api?.now);
     const result = action(data, payload, api);

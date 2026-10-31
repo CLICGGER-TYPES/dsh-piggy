@@ -3,7 +3,8 @@
  * 音效配方：全部程序合成，不引入音频文件。
  *
  * 每个配方只描述「几个振荡器/噪声 + 音量包络」；播放、去重、免打扰和
- * AudioContext 生命周期在 sound.js。配方是纯函数，测试里可以单独检查参数。
+ * AudioContext 生命周期在 audio-context.js（sound.js 保留兼容包装）。配方是
+ * 纯数据，测试里可以单独检查参数。
  * @module dsh-piggy/client/sounds
  */
 

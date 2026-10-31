@@ -7,6 +7,8 @@
 
 import { randomUUID } from 'node:crypto'
 
+import { SESSION_BOUNDARY } from '../../runtime/session-context.js'
+import { pendingMergeConfig } from './external-lifecycle.js'
 import { readDsHistory, dsBackupForMerge, markDsRolledBack, recordDsMerge, restoreEmbeddedFromBackup, retireEmbedded, cleanupDsOldMerges, listSourceBackups } from './external-merge.js'
 import { removeConfig } from './external-files.js'
 
@@ -16,10 +18,31 @@ const MERGE_ID = /^[a-f0-9-]{36}$/
 
 export function createCommitFlow(ctx) {
   const { statePath, now, outbox, client } = ctx
+  let pollTimer = null
+
+  /** 结果未知/预览尚未结算时持续只读查询；不重新提交、不再相加。 */
+  function schedulePoll() {
+    if (pollTimer !== null) return
+    pollTimer = setTimeout(() => { pollTimer = null; void pollMergeStatus() }, 1000)
+    pollTimer.unref?.()
+  }
+
+  /** 控制器会话已处置后不再写存档/配置；调用方拿到现有风格的 reason。 */
+  function sessionProblem() {
+    const session = ctx.getSession?.()
+    if (session === undefined || session === null) return SESSION_BOUNDARY.FOREIGN
+    return session.disposed ? SESSION_BOUNDARY.DISPOSED : null
+  }
 
   async function finalizeCommit(body, previous) {
     const config = ctx.getConfig()
     const mergeId = body.mergeId ?? previous?.mergeId ?? config?.mergeId
+    const problem = sessionProblem()
+    if (problem !== null) {
+      // 桌面可能已经提交；这里只报告“目标已提交但本会话不能落盘”，下一次 init
+      // 会按 merging/merge-unknown 只查询原事务，不重新相加。
+      return { ok: false, reason: problem, targetCommitted: true, mergeId, target: body.result ?? null, backups: body.backups ?? null }
+    }
     const backupName = previous?.backupName ?? config?.backup ?? dsBackupForMerge(statePath, mergeId)
     let retired
     try {
@@ -59,8 +82,13 @@ export function createCommitFlow(ctx) {
   }
 
   async function commitMerge(choices) {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     const preview = ctx.getPreview()
     if (preview === null) return { ok: false, reason: 'unknown-preview' }
+    if (typeof preview.sessionId !== 'string' || preview.sessionId !== ctx.getSession().id) {
+      return { ok: false, reason: SESSION_BOUNDARY.STALE, mergeId: preview.mergeId }
+    }
     if (now() >= preview.expiresAt) { await ctx.cancelPreview('expired'); return { ok: false, reason: 'preview-expired' } }
     const config = ctx.getConfig()
     ctx.saveConfig({
@@ -95,14 +123,18 @@ export function createCommitFlow(ctx) {
   }
 
   async function pollMergeStatus() {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     const config = ctx.getConfig()
-    if (config?.pigState !== 'merge-unknown' && config?.pigState !== 'merging') return { ok: true, ...ctx.status() }
+    // merge-unknown（提交失败/断线）和 connection=merging（请求发出后崩溃）都只
+    // 查询桌面原事务；不拿旧预览重新提交，也不把源端再次相加。
+    if (config?.pigState !== 'merge-unknown' && config?.connection !== 'merging') return { ok: true, ...ctx.status() }
     const mergeId = config.mergeId
     if (typeof mergeId !== 'string' || !MERGE_ID.test(mergeId)) return { ok: false, reason: 'bad-state' }
     let response
     try { response = await client.mergeStatus(mergeId) } catch { return { ok: false, reason: 'disconnected' } }
     if (response.status !== 200 || response.json === null) return { ok: false, reason: 'disconnected' }
-    const state = response.json.status
+    const state = typeof response.json.status === 'string' ? response.json.status : 'unknown'
     if (state === 'committed') return finalizeCommit({ ok: true, mergeId, result: response.json.result, backups: response.json.backups }, null)
     if (state === 'failed' || state === 'rolled-back' || state === 'unknown') {
       const since = Number(config.mergeStartedAt ?? config.updatedAt ?? 0)
@@ -111,11 +143,14 @@ export function createCommitFlow(ctx) {
         return { ok: false, reason: state, restored: result.ok === true }
       }
     }
+    schedulePoll()
     return { ok: false, reason: 'pending', status: state }
   }
 
   async function rollbackMerge(mergeId) {
     if (typeof mergeId !== 'string' || !MERGE_ID.test(mergeId)) return { ok: false, reason: 'bad-merge-id' }
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem, mergeId }
     const config = ctx.getConfig()
     if (config === null) {
       const history = readDsHistory(statePath)
@@ -136,8 +171,12 @@ export function createCommitFlow(ctx) {
     }
     const backupName = config?.backup ?? dsBackupForMerge(statePath, mergeId)
     if (backupName === null || backupName === undefined) return { ok: false, reason: 'source-backup-missing', partial: true, restored: { target: targetRestored, source: false } }
+    const problemAfterTarget = sessionProblem()
+    if (problemAfterTarget !== null) {
+      return { ok: false, reason: problemAfterTarget, partial: true, restored: { target: targetRestored, source: false } }
+    }
     try {
-      restoreEmbeddedFromBackup({ statePath, backupName, nowMs: now() })
+      restoreEmbeddedFromBackup({ statePath, backupName, nowMs: now(), authority: ctx.persistence?.() ?? null })
       removeConfig(statePath)
       ctx.setConfig(null)
       markDsRolledBack(statePath, mergeId, now())
@@ -155,12 +194,16 @@ export function createCommitFlow(ctx) {
   }
 
   async function restoreEmbedded(backupName) {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
+    // 目标合并事务未到终态时只允许读/查原事务，不能恢复/覆盖源端。
+    if (pendingMergeConfig(ctx.getConfig())) return { ok: false, reason: 'busy' }
     const history = readDsHistory(statePath)
     const entry = history.ok ? history.history.merges.at(-1) : null
     const name = typeof backupName === 'string' && backupName !== '' ? backupName : (entry?.sourceBackup ?? listSourceBackups(statePath).at(-1) ?? null)
     if (name === null) return { ok: false, reason: 'no-backup' }
     try {
-      const restored = restoreEmbeddedFromBackup({ statePath, backupName: name, nowMs: now() })
+      const restored = restoreEmbeddedFromBackup({ statePath, backupName: name, nowMs: now(), authority: ctx.persistence?.() ?? null })
       removeConfig(statePath)
       ctx.setConfig(null)
       ctx.setMode('normal')

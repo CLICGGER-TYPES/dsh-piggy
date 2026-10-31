@@ -27,6 +27,7 @@
     ".fm-big{display:flex;flex-direction:column;width:100%;max-width:1180px;min-height:100%;height:100%;margin:0 auto;padding:16px;gap:10px;overflow:auto}.fm-big>*{flex-shrink:0}.fm-big .fm-s-header{min-height:40px}.fm-big .fm-exp{width:80px}.fm-b-body{display:flex;flex-direction:column;gap:10px;flex:1 0 auto;min-height:0}.fm-b-stage{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;flex:1 0 auto}.fm-big .fm-s-goal{font-size:16px;min-height:22px}.fm-big .fm-s-scene{flex:1 1 auto;min-height:340px;aspect-ratio:auto}.fm-big .fm-s-field{grid-template-columns:repeat(6,minmax(0,1fr));gap:14px 12px;height:70%;width:auto;aspect-ratio:2.9;max-width:90%;left:50%;right:auto;top:auto;bottom:7%;transform:translateX(-50%)}.fm-b-controls{display:flex;flex-direction:column;gap:8px;min-width:0;width:100%;max-width:760px;margin:0 auto;flex:none}.fm-b-controls .fm-s-detail,.fm-b-controls .fm-s-plank{width:100%}.fm-b-controls .fm-dock{width:100%;max-width:254px;align-self:center}.fm-b-controls .fm-advanced-grid{grid-template-columns:repeat(auto-fit,minmax(88px,1fr))}.fm-big .fm-s-detail{grid-template-rows:28px 20px minmax(34px,auto);min-height:94px}.fm-big .fm-s-detail-head>b{font-size:18px}.fm-big .fm-s-detail>small{font-size:12px}.fm-b-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.fm-big .fm-bubble{width:24px;height:24px}",
     "@media(max-width:820px){.fm-b-body{display:flex;flex-direction:column;flex:none;min-height:auto}.fm-b-stage,.fm-b-controls{flex:none;width:100%}.fm-big .fm-s-scene{min-height:640px;flex:none}.fm-big .fm-s-field{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;aspect-ratio:.725;max-width:100%;min-height:540px}.fm-big .fm-exp{width:32px}}" + "@media(prefers-reduced-motion:reduce){.fm *{animation:none!important;transition:none!important}.fm-plot[data-farm-fx]::after{opacity:0!important}.fm-s-scene[data-farm-fx]::after{opacity:0!important}.fm-toast{opacity:1}}",
     '.dp-content:has(>.fm[data-farm-integrated]){scrollbar-gutter:stable}.fm-big{scrollbar-gutter:stable}.dp-content:has(>.fm[data-farm-integrated]>.fm-pop)>.dp-drill,.dp-content:has(>.fm[data-farm-integrated]>.fm-mask)>.dp-drill,.fm:has(>.fm-pop)>.fm-s-header,.fm:has(>.fm-mask)>.fm-s-header{display:none}',
+    '.fm-helper-panel{display:grid;gap:8px}.fm-helper-card{display:grid;gap:6px;min-width:0;padding:8px;border:1px solid var(--animal-border);border-radius:var(--ac-radius-card,16px);background:var(--animal-bg-content)}.fm-helper-status,.fm-helper-storage,.fm-helper-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.fm-helper-status-main{display:flex;align-items:center;gap:8px;min-width:0}.fm-helper-status-icon{width:34px;height:34px;flex:none}.fm-helper-copy{display:grid;gap:2px;min-width:0}.fm-helper-copy>b{font-size:13px;color:var(--animal-text)}.fm-helper-copy>small{font-size:11px;color:var(--animal-text-body)}.fm-helper-badge,.fm-helper-price{border-radius:var(--ac-pill,50px);padding:4px 8px;font-size:10px;white-space:nowrap;background:var(--ac-warning-bg,#fff2c9);color:var(--animal-text)}.fm-helper-badge[data-enabled="true"]{background:var(--ac-primary-bg,#d7f5ef)}.fm-helper-price{font-weight:800}.fm-helper-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;padding:8px 10px;text-align:left}.fm-helper-toggle-copy{display:grid;gap:2px}.fm-helper-toggle-copy>b{font-size:12px;color:var(--animal-text)}.fm-helper-toggle-copy>small,.fm-helper-footer{font-size:10px;color:var(--animal-text-body)}.fm-helper-switch{position:relative;display:block;width:40px;height:24px;flex:none;border-radius:var(--ac-pill,50px);background:var(--ac-border,#c4b89e);transition:background .16s var(--animal-ease)}.fm-helper-switch>i{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--ac-bg-content,#fff8e3);transition:transform .16s var(--animal-ease)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch{background:var(--animal-primary)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch>i{transform:translateX(16px)}.fm-helper-action{justify-self:end;flex:none;min-height:30px;padding:4px 10px;font-size:11px}.fm-helper-footer{line-height:1.45;padding:0 2px;text-align:center}',
     '.fm-s-detail{position:relative}.fm-s-detail[data-has-action]>small{padding-right:98px}.fm-s-detail .fm-s-acts{position:absolute;right:4px;bottom:4px;display:block;padding:0;max-width:48%}.fm .fm-s-detail .fm-main{min-height:30px;font-size:12px;padding:4px 8px;display:block;white-space:normal}.fm-s-detail .fm-main>small{display:none}' + '.fm:not(.fm-big) .fm-dock-btn{min-height:56px;padding:4px;gap:2px}.fm:not(.fm-big) .fm-dock-btn>img{width:32px;height:32px}.fm .fm-s-field .fm-plot[data-farm-target="true"],.fm .fm-s-field .fm-plot:focus-visible{outline:none;box-shadow:none;border:0}.fm .fm-plot[data-farm-target="true"]::before,.fm .fm-plot:focus-visible::before{content:"";position:absolute;inset:-3px;box-sizing:border-box;border:2px solid var(--ac-bg-input,#fffbe7);border-radius:8px;box-shadow:inset 0 0 0 2px var(--animal-primary);mask:linear-gradient(var(--animal-primary) 0 0) left top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right bottom/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) left bottom/12px 12px no-repeat;pointer-events:none;z-index:1}.fm-bubble{z-index:2}',
   ].join('')
   function ensureStyle() {
@@ -411,8 +412,8 @@
     app.content.appendChild(root)
     return root
   }
-  function helperText(helper) { return !helper.hired ? '雇帮工猪' : helper.full ? '帮工仓库满了' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.seedless ? '帮工没种子' : '帮工 · ' + helper.plots + ' 块地' }
-  function helperClick(app, helper) { if (!helper.hired) return sendAction(app, 'hire', {}); if (helper.stored > 0 || helper.full) return sendAction(app, 'collect', {}); if (helper.missing.length || helper.seedless) return goShop(app, 'seed'); say(app, '帮工正在照顾 ' + helper.plots + ' 块地') }
+  function helperText(helper) { return !helper.hired ? '雇帮工猪' : helper.full ? '帮工仓库满了' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : !helper.enabled ? '帮工已暂停' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.seedless ? '帮工没种子' : '帮工 · ' + helper.plots + ' 块地' }
+  function helperClick(app, helper) { if (!helper.hired) return sendAction(app, 'hire', {}); if (helper.stored > 0 || helper.full) return sendAction(app, 'collect', {}); if (!helper.enabled) return goShop(app, 'helper'); if (helper.missing.length || helper.seedless) return goShop(app, 'seed'); say(app, '帮工正在照顾 ' + helper.plots + ' 块地') }
   function frame(app, node) {
     node.className += ' fm-paper'; node.setAttribute('data-farm-frame', 'css-paper')
     return node
@@ -497,6 +498,56 @@
     var node = app.el('div', 'fm-note', text); if (extra) extra.forEach(function (child) { put(node, child) })
     return node
   }
+  function renderHelperControls(app, data, box, items) {
+    var helper = data.helper, enabled = helper.enabled === true
+    var panel = put(box, app.el('section', 'fm-helper-panel')); panel.setAttribute('aria-label', '帮工托管')
+    var status = put(panel, app.el('div', 'fm-helper-card fm-helper-status'))
+    var main = put(status, app.el('div', 'fm-helper-status-main'))
+    put(main, img(app, 'fm-helper-status-icon', 'tab-icon-helper'))
+    var copy = put(main, app.el('div', 'fm-helper-copy'))
+    put(copy, app.el('b', null, '帮工猪'))
+    put(copy, app.el('small', null, '已雇用 · 管 ' + helper.plots + ' 块地'))
+    var badge = put(status, app.el('span', 'fm-helper-badge', enabled ? '正在托管' : '已暂停'))
+    badge.setAttribute('data-enabled', String(enabled))
+
+    var toggle = put(panel, app.button('dp-btn fm-helper-card fm-helper-toggle', {
+      type: 'button', role: 'switch', 'aria-checked': String(enabled),
+      'aria-label': enabled ? '暂停帮工托管' : '开启帮工托管', 'data-farm-helper-toggle': 'true',
+    }, function () {
+      if (inflight) return
+      rememberScroll(app, pageKey(app))
+      sendAction(app, 'toggleHelper', { enabled: !enabled })
+    }))
+    var toggleCopy = put(toggle, app.el('span', 'fm-helper-toggle-copy'))
+    put(toggleCopy, app.el('b', null, '托管开关 · ' + (enabled ? '开启中' : '暂停中')))
+    put(toggleCopy, app.el('small', null, '控制整个帮工托管'))
+    var switchTrack = put(toggle, app.el('span', 'fm-helper-switch')); switchTrack.setAttribute('aria-hidden', 'true')
+    put(switchTrack, app.el('i'))
+    toggle.disabled = !!inflight
+
+    var upgrade = items.find(function (item) { return item.key === 'helper-level' })
+    if (upgrade) {
+      var upgradeCard = put(panel, app.el('div', 'fm-helper-card fm-helper-upgrade'))
+      var upgradeHead = put(upgradeCard, app.el('div', 'fm-helper-card-head'))
+      put(upgradeHead, app.el('b', 'fm-helper-label', '帮工升级'))
+      put(upgradeHead, app.el('span', 'fm-helper-price', upgrade.price.toLocaleString('zh-CN') + ' 菜币'))
+      put(upgradeCard, app.el('small', 'fm-helper-desc', '下一档：' + upgrade.label + ' · ' + upgrade.note))
+      var upgradeButton = put(upgradeCard, button(app, 'fm-helper-action', { 'data-farm-item': upgrade.key, 'aria-label': '查看帮工升级' }, '查看升级', function () {
+        rememberScroll(app, pageKey(app)); purchase = upgrade; quantity = 1; modalReturn = { attr: 'data-farm-item', value: upgrade.key }; app.rerender()
+      }))
+      upgradeButton.setAttribute('aria-disabled', String(!!upgrade.disabled))
+    }
+
+    var storage = put(panel, app.el('div', 'fm-helper-card fm-helper-storage'))
+    var storageCopy = put(storage, app.el('div', 'fm-helper-copy'))
+    put(storageCopy, app.el('b', null, '帮工仓'))
+    put(storageCopy, app.el('small', null, helper.stored > 0 ? helper.stored + ' 个待领取 · 库存会保留' : '暂时没有待领取'))
+    if (helper.stored > 0) put(storage, button(app, 'fm-helper-action', { 'data-farm-helper-storage': 'open' }, '去背包', function () { goBag(app, 'crop') }))
+
+    put(panel, app.el('small', 'fm-helper-footer', enabled
+      ? '帮工照料、收获后入仓并按现有种子补种；作物按原时间自然生长。'
+      : '暂停时照料、收获与补种停止；作物自然生长，帮工仓库存仍可领取。'))
+  }
   function renderShop(app, data, box) {
     var wallet = put(box, app.el('div', 'fm-shop-wallet'))
     put(wallet, img(app, 'fm-shop-coin', 'coin-veg')); put(wallet, app.el('span', null, '菜币 ' + data.balance))
@@ -505,14 +556,19 @@
       var node = put(tabs, bg(app, app.button('dp-btn fm-tab', { role: 'tab', 'data-farm-tab': tab[0], 'aria-selected': String(shopTab === tab[0]) }, function () { rememberScroll(app, pageKey(app)); shopTab = tab[0]; app.rerender() }), shopTab === tab[0] ? 'shop-tab-active' : 'shop-tab'))
       put(node, img(app, null, 'tab-icon-' + tab[0])); put(node, app.el('span', null, tab[1]))
     })
-    var grid = put(box, app.el('div', 'dp-tiles fm-tiles')); grid.setAttribute('role', 'tabpanel')
-    grid.setAttribute('data-scroll-key', 'farm-shop:' + shopTab)
-    shopItems(data).filter(function (item) { return item.category === shopTab }).sort(function (a, b) { return Number(a.disabled) - Number(b.disabled) }).forEach(function (item) {
+    var items = shopItems(data)
+    if (shopTab === 'helper' && data.helper && data.helper.hired) renderHelperControls(app, data, box, items)
+    var visibleItems = items.filter(function (item) { return item.category === shopTab && !(shopTab === 'helper' && data.helper && data.helper.hired && item.key === 'helper-level') })
+    if (visibleItems.length) {
+      var grid = put(box, app.el('div', 'dp-tiles fm-tiles')); grid.setAttribute('role', 'tabpanel')
+      grid.setAttribute('data-scroll-key', 'farm-shop:' + shopTab)
+      visibleItems.sort(function (a, b) { return Number(a.disabled) - Number(b.disabled) }).forEach(function (item) {
       var seed = seedOf(data, item.key)
       var note = item.price + ' 菜币' + (item.locked ? ' · 需要 ' + item.level + ' 级' : item.owned ? ' · 已拥有' : item.disabled ? ' · 菜币不足' : '')
       put(grid, tileNode(app, { color: { seed: 'green', tool: 'blue', fert: 'teal', helper: 'purple' }[item.category], emoji: item.emoji, art: product(app, item, 'fm-product'), label: item.label, note: note, badge: seed && seed.count > 0 ? '×' + seed.count : '', locked: item.locked, dim: !!item.disabled, data: { 'data-farm-item': item.key, 'aria-disabled': String(!!item.disabled) },
         onPick: function () { rememberScroll(app, pageKey(app)); purchase = item; quantity = 1; modalReturn = { attr: 'data-farm-item', value: item.key }; app.rerender() } }))
-    })
+      })
+    }
   }
   function renderBag(app, data, box) {
     var tabs = put(box, app.el('div', 'fm-tabs fm-tabs-3')); tabs.setAttribute('role', 'tablist')

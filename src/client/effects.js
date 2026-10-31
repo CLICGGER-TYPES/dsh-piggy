@@ -12,8 +12,8 @@ import { el } from './dom.js'
 import { createSpeech } from './speech.js'
 
 /**
- * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, isStopped: () => boolean, isAway?: () => boolean }} deps
- * @returns {{ react: Function, burst: Function, transform: Function, flash: Function, showBubble: Function, showLine: Function, hideBubble: Function, toast: Function, dispose: Function, setFeel: Function }}
+ * @param {{ scene: object, pig: object, pigArt: object, pigEmoji: object, card: object, bubble: object, pomoHint?: object, root?: object, art?: { sync: () => boolean }, isStopped: () => boolean, isAway?: () => boolean }} deps
+ * @returns {{ react: Function, burst: (emojis: string[], count: number) => void, transform: Function, flash: Function, showBubble: Function, showLine: Function, hideBubble: Function, toast: Function, dispose: Function, setFeel: Function }}
  */
 export function createEffects(deps) {
   var scene = deps.scene
@@ -23,7 +23,10 @@ export function createEffects(deps) {
   // 番茄钟角标（C2）：气泡说话时给它让位，两者位置本来就挨着。
   var pomoHint = deps.pomoHint ?? null
   var isStopped = deps.isStopped
+  var layerRoot = deps.root ?? null
 
+  var disposed = false
+  var timers = new Set()
   var reactTimer = null
   var feelHooks = null
   const speech = createSpeech({ bubble, pomoHint })
@@ -31,9 +34,32 @@ export function createEffects(deps) {
   var transformTimer = null
   var transformLayer = null
 
+  function later(fn, ms) {
+    var id = window.setTimeout(function () {
+      timers.delete(id)
+      if (disposed) return
+      fn()
+    }, ms)
+    timers.add(id)
+    return id
+  }
+
+  function cancelTimer(id) {
+    if (id === null) return
+    window.clearTimeout(id)
+    timers.delete(id)
+  }
+
+  function syncArt() {
+    if (disposed) return false
+    if (deps.art !== null && deps.art !== undefined && typeof deps.art.sync === 'function') return deps.art.sync()
+    return syncPigArt(pig, deps.pigArt, deps.pigEmoji)
+  }
+
 /** Full-screen promotion effect, replaced on a second transformation. */
 function transform(kind) {
-  if (transformTimer !== null) window.clearTimeout(transformTimer)
+  if (disposed) return
+  if (transformTimer !== null) cancelTimer(transformTimer)
   if (transformLayer !== null) transformLayer.remove()
   var emojis = kind === 'contract' ? ['😈', '🔥'] : ['👑', '✨']
   var layer = el('div', 'dp-transform')
@@ -50,9 +76,9 @@ function transform(kind) {
   pop.style.left = (center.left + center.width / 2) + 'px'
   pop.style.top = (center.top + center.height / 2) + 'px'
   layer.appendChild(pop)
-  document.body.appendChild(layer)
+  ;(layerRoot ?? document.body).appendChild(layer)
   transformLayer = layer
-  transformTimer = window.setTimeout(function () {
+  transformTimer = later(function () {
     layer.remove()
     if (transformLayer === layer) transformLayer = null
     transformTimer = null
@@ -64,36 +90,39 @@ function transform(kind) {
 var JUMP_KINDS = { levelup: true, away: true, feed: true, play: true }
 
 function applyReact(kind, ms) {
+  if (disposed) return
   // Re-assigning the same value does NOT restart a CSS animation, so
   // clicking three times quickly only played it once. Dropping the
   // attribute and forcing a reflow makes every click start from zero.
   pig.removeAttribute('data-react')
   void pig.offsetWidth
   pig.setAttribute('data-react', kind)
-  syncPigArt(pig, deps.pigArt, deps.pigEmoji)
-  reactTimer = window.setTimeout(function () {
-    pig.removeAttribute('data-react')
-    syncPigArt(pig, deps.pigArt, deps.pigEmoji)
+  syncArt()
+  reactTimer = later(function () {
     reactTimer = null
+    pig.removeAttribute('data-react')
+    syncArt()
   }, ms || 900)
 }
 
 function react(kind, ms) {
-  if (reactTimer !== null) window.clearTimeout(reactTimer)
+  if (disposed) return
+  if (reactTimer !== null) cancelTimer(reactTimer)
   // 手感在时，跳跃类先蹲一下：物理层压 8%，120ms 后再设 data-react。
   // 移除定时器从真正设属性那一刻算起，动作尾巴不会被截掉。
   if (feelHooks !== null && JUMP_KINDS[kind] === true) {
     feelHooks.crouch(120)
-    reactTimer = window.setTimeout(function () { applyReact(kind, ms) }, 120)
+    reactTimer = later(function () { applyReact(kind, ms) }, 120)
     return
   }
   applyReact(kind, ms)
 }
 
 function burst(emojis, count) {
+  if (disposed) return
   for (var i = 0; i < (count || 1); i += 1) {
     (function (index) {
-      window.setTimeout(function () {
+      later(function () {
         if (isStopped()) return
         var node = el('span', 'dp-fx', emojis[index % emojis.length])
         node.style.setProperty('--dx', Math.round((Math.random() - 0.5) * 46) + 'px')
@@ -103,7 +132,7 @@ function burst(emojis, count) {
         node.style.left = (spot.x + Math.round((Math.random() - 0.5) * 22)) + 'px'
         node.style.top = spot.y + 'px'
         scene.appendChild(node)
-        window.setTimeout(function () { node.remove() }, 1200)
+        later(function () { node.remove() }, 1200)
       }, index * 110)
     })(i)
   }
@@ -140,6 +169,7 @@ var REACTIONS = {
 var SPOKEN_BY_HOST = { feed: true, bathe: true, play: true, pet: true, work: true, study: true, trip: true, buy: true, use: true }
 
 function flash(action, extra) {
+  if (disposed) return
   var spec = REACTIONS[action]
   if (spec === undefined) return
   // 在外面做照料只给粒子反馈，不能把活动立绘换成喂食/洗澡的反应图（用户 2026-10-24）。
@@ -150,15 +180,18 @@ function flash(action, extra) {
 }
 
 function toast(text) {
+  if (disposed) return
   var node = el('div', 'dp-toast', text)
   card.insertBefore(node, card.firstChild)
-  window.setTimeout(function () { node.remove() }, 4800)
+  later(function () { node.remove() }, 4800)
 }
   /** Drop the pending timers — the panel is going away, nothing should fire. */
   function dispose() {
-    if (reactTimer !== null) window.clearTimeout(reactTimer)
+    if (disposed) return
+    disposed = true
+    for (const id of timers) window.clearTimeout(id)
+    timers.clear()
     speech.dispose()
-    if (transformTimer !== null) window.clearTimeout(transformTimer)
     if (transformLayer !== null) transformLayer.remove()
     reactTimer = null
     transformTimer = null

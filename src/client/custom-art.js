@@ -47,10 +47,25 @@ function srcKey(src) {
   return index < 0 ? text : text.slice(index + 5)
 }
 
-/** 已量过的自定义墨迹（归一化到显示元素盒）；未知/未加载/非自定义返回 null。 */
-export function customArtInk(src) {
-  const key = srcKey(src)
+/**
+ * 已量过的自定义墨迹（归一化到显示元素盒）；未知/未加载/非自定义返回 null。
+ * 传入 cacheKey 时按资源身份缓存（namespace/pack/key@revision），否则沿用
+ * 现有「/art/ 路径 + 版本串」缓存键，旧调用完全不变。
+ * @param {string} src
+ * @param {string | null} [cacheKey]
+ */
+export function customArtInk(src, cacheKey) {
+  const key = typeof cacheKey === 'string' && cacheKey !== '' ? cacheKey : srcKey(src)
   return key === '' ? null : INK_CACHE.get(key) ?? null
+}
+
+/**
+ * 只作废一个明确资源身份的墨迹；F04 的 revision/replace 用它做定向失效，
+ * 不影响别的 namespace/pack 或同一 short key 的其他 revision。
+ * @param {unknown} cacheKey
+ */
+export function forgetCustomArtCache(cacheKey) {
+  if (typeof cacheKey === 'string' && cacheKey !== '') INK_CACHE.delete(cacheKey)
 }
 
 /**
@@ -59,10 +74,11 @@ export function customArtInk(src) {
  * @param {any} image 已解码的 <img>
  * @param {string} src 带版本串的显示地址（和 image 的 src 属性同一串）
  * @param {boolean} [sleep]
+ * @param {string | null} [cacheKey] 资源身份；缺省时沿用 srcKey(src)
  * @returns {[number, number, number, number] | null}
  */
-export function measureCustomArt(image, src, sleep = false) {
-  const key = srcKey(src)
+export function measureCustomArt(image, src, sleep = false, cacheKey) {
+  const key = typeof cacheKey === 'string' && cacheKey !== '' ? cacheKey : srcKey(src)
   if (key === '') return null
   const cached = INK_CACHE.get(key)
   if (cached !== undefined) return cached
@@ -224,20 +240,27 @@ export function refreshCustomArt(art) {
   // 同 key 重导入：旧地址的 ink 和取景一起同步作废，不等下一次渲染。
   forgetInk(art)
   writeStore(CUSTOM_ART_KEY, JSON.stringify(Object.fromEntries(map)))
-  notify()
+  notify([art])
   return version
 }
 
-/** 自定义立绘版本变了（重新导入、或别的窗口写入了新版本）；返回取消订阅。 */
+/**
+ * 自定义立绘版本变了（重新导入、或别的窗口写入了新版本）；返回取消订阅。
+ * 监听函数收到被改动的根 art key 数组，用来只清这一套皮肤的取景/墨迹；
+ * 不接收参数的旧监听仍按原来的「有变化」处理。
+ * @param {(changed: readonly string[] | null) => void} fn
+ */
 export function onCustomArtChange(fn) {
   ensureStorageBridge()
   listeners.add(fn)
   return () => listeners.delete(fn)
 }
 
-function notify() {
+/** @param {readonly string[] | null} changed */
+function notify(changed) {
+  const detail = Array.isArray(changed) ? Object.freeze([...changed]) : null
   for (const fn of [...listeners]) {
-    try { fn() } catch (error) { console.warn('自定义立绘刷新失败', error) }
+    try { fn(detail) } catch (error) { console.warn('自定义立绘刷新失败', error) }
   }
 }
 
@@ -246,10 +269,12 @@ function onStorage(event) {
   if (key !== CUSTOM_ART_KEY && key !== null && key !== undefined) return
   const previous = versions === null ? new Map() : new Map(versions)
   versions = readVersions()
+  /** @type {string[]} */
+  const changed = []
   for (const root of new Set([...previous.keys(), ...versions.keys()])) {
-    if ((previous.get(root) ?? 0) !== (versions.get(root) ?? 0)) forgetInk(root)
+    if ((previous.get(root) ?? 0) !== (versions.get(root) ?? 0)) { forgetInk(root); changed.push(root) }
   }
-  notify()
+  notify(changed)
 }
 
 /** 和 skin-contact 一样：每个 window 只挂一次 storage 监听，Node 测试里换假 window 也能走同一条路。 */

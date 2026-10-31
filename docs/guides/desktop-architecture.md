@@ -64,8 +64,10 @@
 
 ## IPC 消息全表
 
-页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧在 `apps/desktop/main.js`，
-每个处理函数开头用 `fromPet(event)` / `fromPage(event)` 核对是哪个窗口发的，**新加消息也要核对**。
+页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧由 `apps/desktop/main.js`
+（组合根）和 `apps/desktop/lib/ipc/` 共同注册：`updates.js` 管更新/外壳更新，`system.js` 管外部连接、
+退出/导出/打开、全屏和代理；可变服务和窗口状态仍由 `main.js` 持有。每个处理函数开头用
+`fromPet(event)` / `fromPage(event)` 核对是哪个窗口发的，**新加消息也要核对**。
 
 ### 猪窗口 → 主进程
 
@@ -114,7 +116,9 @@
 
 | 文件 | 内容 |
 |---|---|
-| `apps/desktop/main.js` | 主进程：两个窗口、拖动（`dragTick`）、面板窗口一节、IPC |
+| `apps/desktop/main.js` | 主进程组合根：两个窗口、拖动（`dragTick`）、面板、生命周期；可变服务仍由这里持有 |
+| `apps/desktop/lib/ipc/updates.js` | 更新/外壳更新 IPC 注册（`piggy:updates:*`、`piggy:shell:*`）；`releases` 状态归此模块 |
+| `apps/desktop/lib/ipc/system.js` | 系统类 IPC 注册：外部连接、退出/导出/打开、全屏和代理；状态仍由 `main.js` 持有 |
 | `apps/desktop/lib/background-host.js`、`runtime-worker.js` | 游戏 Worker 的异步代理、路由和快照转发 |
 | `apps/desktop/lib/background-versions.js`、`versions-worker.js` | 更新 Worker、Chromium 下载衔接和版本操作 |
 | `apps/desktop/lib/fullscreen.js`、`fullscreen-worker.js` | 全屏偏好及 Windows 后台探测器 |

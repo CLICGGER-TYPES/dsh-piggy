@@ -46,7 +46,15 @@ export function ensureEconomy(state) {
     .slice(-LEDGER.days)
     .map(day => ({ day: day.day, in: cleanCounts(day.in), out: cleanCounts(day.out) }))
   const fatigue = Number.isFinite(raw.fatigue) ? Math.max(0, Math.min(1, raw.fatigue)) : 0
-  state.economy = { totals, days, fatigue }
+  const next = { totals, days, fatigue }
+  // Unknown economy.* fields are an opaque legacy namespace owned once by the
+  // owner document. Normalization must not erase them while sanitizing the
+  // known ledger fields. They are not interpreted or given gameplay meaning.
+  for (const [key, value] of Object.entries(raw)) {
+    if (key === 'totals' || key === 'days' || key === 'fatigue') continue
+    Object.defineProperty(next, key, { value, writable: true, enumerable: true, configurable: true })
+  }
+  state.economy = next
   return state.economy
 }
 

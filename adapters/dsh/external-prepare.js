@@ -10,9 +10,10 @@
  */
 
 import { abandonPomodoro, callOffActivity, keepFish, mergeSummary } from '../../core.js'
+import { SESSION_BOUNDARY, persistenceIssue, sessionOf } from '../../runtime/session-context.js'
 import { readStateFile, writeStateFile } from '../../store/state-file.js'
-import { stateFingerprint } from './external-files.js'
-import { readReceipts } from './external-lifecycle.js'
+import { readConfig, stateFingerprint } from './external-files.js'
+import { pendingMergeConfig, readReceipts } from './external-lifecycle.js'
 
 const TARGETS = ['activity', 'pomodoro', 'fishing']
 
@@ -50,7 +51,10 @@ export function terminateActivity(state, target, at) {
 
 /**
  * 已暂存源端的终结：读文件 → 按暂停时刻终结 → 原子写 → 复检 → 更新配置指纹。
- * @param {any} ctx 控制器上下文（statePath/now/getConfig/saveConfig/getPreview/getMode）
+ * 写之前先证明这份文件仍由当前控制器会话按冻结指纹拥有（磁盘配置 clientId、
+ * paused/mergeId/suspendedAt 一致、文件指纹匹配、单目标旧存档）；不匹配就拒绝，
+ * 不覆盖别的会话/导入/手改的存档。
+ * @param {any} ctx 控制器上下文（statePath/now/getConfig/saveConfig/getPreview/getMode/getSession/sourceBinding/persistence）
  * @param {string} target
  */
 export async function preparePausedSource(ctx, target) {
@@ -58,10 +62,30 @@ export async function preparePausedSource(ctx, target) {
   const config = ctx.getConfig()
   if (ctx.getMode() !== 'external' || config?.pigState !== 'paused') return { ok: false, reason: 'not-paused' }
   if (ctx.getPreview() !== null) return { ok: false, reason: 'busy' }
+  if (pendingMergeConfig(config)) return { ok: false, reason: 'busy' }
+  const session = ctx.getSession?.()
+  if (session === undefined || session === null) return { ok: false, reason: SESSION_BOUNDARY.FOREIGN }
+  if (session.disposed) return { ok: false, reason: SESSION_BOUNDARY.DISPOSED }
+  const source = ctx.sourceBinding?.()
+  if (source === null || source === undefined) return { ok: false, reason: 'source-not-frozen' }
+  const disk = readConfig(ctx.statePath)
+  if (!disk.ok || disk.config === null) return { ok: false, reason: SESSION_BOUNDARY.FOREIGN }
+  if (disk.config.clientId !== config.clientId || disk.config.pigState !== 'paused' ||
+      (disk.config.mergeId ?? null) !== (config.mergeId ?? null) || disk.config.suspendedAt !== config.suspendedAt) {
+    return { ok: false, reason: SESSION_BOUNDARY.FOREIGN }
+  }
   const at = Number(config.suspendedAt)
   if (!Number.isFinite(at) || at <= 0) return { ok: false, reason: 'bad-pause-clock' }
   const loaded = readStateFile(ctx.statePath, at)
   if (loaded.state === null) return { ok: false, reason: 'absent' }
+  // 只按控制器显式声明的持久化能力判断；未知旧字段（包括叫 pigs 的）原样保留。
+  const persistence = persistenceIssue(ctx.persistence?.() ?? null)
+  if (persistence !== null) return { ok: false, reason: persistence }
+  let receipts
+  try { receipts = readReceipts(ctx.statePath) }
+  catch { return { ok: false, reason: SESSION_BOUNDARY.SOURCE_CHANGED } }
+  try { source.assertMatches({ statePath: ctx.statePath, fingerprint: stateFingerprint(loaded.state, receipts) }) }
+  catch (error) { return { ok: false, reason: error?.code ?? SESSION_BOUNDARY.SOURCE_CHANGED } }
   const before = structuredClone(loaded.state)
   const result = terminateActivity(loaded.state, target, at)
   if (result === null) return { ok: false, reason: 'unknown-target' }
@@ -75,11 +99,11 @@ export async function preparePausedSource(ctx, target) {
     return { ok: false, reason: 'write-failed', message: error instanceof Error ? error.message : String(error) }
   }
   try {
-    const receipts = readReceipts(ctx.statePath)
+    const receiptsAfter = readReceipts(ctx.statePath)
     ctx.saveConfig({
       ...config,
       pigState: 'paused',
-      stateHash: stateFingerprint(loaded.state, receipts),
+      stateHash: stateFingerprint(loaded.state, receiptsAfter),
       lastSummary: mergeSummary(loaded.state),
       localSummary: mergeSummary(loaded.state),
       updatedAt: ctx.now(),
@@ -94,7 +118,8 @@ export async function preparePausedSource(ctx, target) {
 /** 运行中/普通模式：交给本地运行时，在 exclusive 里结算并终结。 */
 export async function prepareLiveSource(ctx, target) {
   if (!TARGETS.includes(target)) return { ok: false, reason: 'unknown-target' }
+  if (pendingMergeConfig(ctx.getConfig?.())) return { ok: false, reason: 'busy' }
   const runtime = ctx.embedded().ensure()
   if (runtime === undefined || typeof runtime.prepareMerge !== 'function') return { ok: false, reason: 'embedded-unavailable' }
-  return runtime.prepareMerge(target)
+  return runtime.prepareMerge(target, sessionOf(runtime))
 }

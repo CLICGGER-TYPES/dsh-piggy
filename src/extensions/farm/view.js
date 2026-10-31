@@ -9,7 +9,7 @@ import { cropFor, levelOf, plotState, weatherAt } from './pure.js'
 
 /** @param {any} data @param {any} api */
 export function view(data, api) {
-  const d = normalize(structuredClone(data))
+  const d = normalize(structuredClone(data), api.now)
   settleHelper(d, api.now)
   const wallet = purse(api), balance = wallet.balance() + d.refund
   const level = levelOf(d.exp)

@@ -352,7 +352,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   }
   const t = fakeApi(0)
   farm.actions.buy(old, { item: 'nothing' }, t.api)
-  assert.equal(old.version, 5)
+  assert.equal(old.version, 6)
   assert.equal(old.unlocked, 6)
   assert.equal(old.harvest.pumpkin, 2)
   assert.equal(old.harvest.carrot, 1 + 4)
@@ -384,7 +384,7 @@ test('view 不改存档；货架列种子、肥料、工具和帮工，用菜币
   assert.equal(normalize(structuredClone(data)).plots.length, 18)
 })
 
-test('帮工猪（自然托管）：管的地照常按真实时间长大、成熟进帮工仓、按同种种子补种，不给经验也不吃体力', () => {
+test('帮工猪：两块 10 XP 作物按每块 75% 给 15 菜园 XP，收仓不重复给 XP 或体力', () => {
   const data = establishedFarm()
   const t = fakeApi()
   data.exp = 10000
@@ -401,16 +401,136 @@ test('帮工猪（自然托管）：管的地照常按真实时间长大、成�
   t.api.now = T0 + 14 * H
   farm.actions.buy(data, { item: 'nothing' }, t.api)
   assert.equal(data.harvests.radish, 2, '两块到点各收一次')
-  assert.ok(data.helper.stock.radish >= 2 * 21, '收成进帮工仓：' + data.helper.stock.radish)
+  assert.equal(data.helper.stock.radish, 2 * 24, '收成按两块地各自的真实产量进帮工仓')
   assert.equal(data.plots[0].crop, 'radish', '收完用现有种子补种同一种作物')
   assert.equal(data.plots[0].plantedAt, T0 + 14 * H, '补种从真实收获时刻起算')
   assert.equal(data.seeds.radish, 50 - 2 - 2, '补种扣两颗种子')
-  assert.equal(data.exp, exp, '帮工不给玩家经验')
+  assert.equal(data.exp, exp + 15, '两次 10 XP 收获累计为 15 菜园 XP，不按 24 个产量倍增')
+  assert.equal(data.helper.xpQuarterRemainder, 0, '两个半点 XP 余数合并为整数后清零')
   assert.equal(t.tired(), tired, '帮工不吃玩家体力')
+  const afterAutomaticHarvest = data.exp
   assert.equal(farm.actions.collect(data, {}, t.api).ok, true)
-  assert.ok(data.harvest.radish >= 2 * 21)
+  assert.equal(data.harvest.radish, 2 * 24)
+  assert.equal(data.exp, afterAutomaticHarvest, '把帮工仓收进玩家仓不再次结算经验')
   assert.equal(farm.actions.collect(data, {}, t.api).reason, 'empty', '收仓只搬一次')
   assert.equal(data.plots[0].plantedAt, T0 + 14 * H, '收仓不动生长时间')
+})
+
+test('菜园 XP 跟作物 exp 走：10 XP 收获给 7 余 2，后续 12 XP 收获给 9 余 2', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 1 }, t.api)
+  farm.actions.buy(data, { item: 'apple', count: 1 }, t.api)
+  assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).ok, true)
+  assert.equal(farm.actions.plant(data, { plot: 1, item: 'apple' }, t.api).ok, true)
+  farm.actions.hire(data, {}, t.api)
+
+  t.api.now = T0 + 14 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.helper.stock.radish, 24, '白萝卜实际收进帮工仓')
+  assert.equal(data.harvests.radish, 1)
+  assert.equal(data.exp, 7, 'crop.exp 为 10 时先结算 7 菜园 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 2, '第一次 10 XP 留四分之二')
+
+  t.api.now = T0 + 20 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.helper.stock.apple, 24, '苹果实际收进帮工仓')
+  assert.equal(data.harvests.apple, 1)
+  assert.equal(data.exp, 16, '保留的四分之二加 12 XP 作物后再给 9')
+  assert.equal(data.helper.xpQuarterRemainder, 2, '第二次结算后仍余四分之二')
+  assert.equal(data.seeds.radish, 0)
+  assert.equal(data.seeds.apple, 0)
+})
+
+test('菜园 XP 到 EXP_CAP 后封顶并清除四分之一余数', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  data.exp = EXP_CAP - 5
+  farm.actions.buy(data, { item: 'radish', count: 1 }, t.api)
+  assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).ok, true)
+  farm.actions.hire(data, {}, t.api)
+  data.helper.xpQuarterRemainder = 2
+
+  t.api.now = T0 + 14 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.helper.stock.radish, 24)
+  assert.equal(data.exp, EXP_CAP, '成功收获后只封顶，不溢出 EXP_CAP')
+  assert.equal(data.helper.xpQuarterRemainder, 0, '达到上限后丢弃未用余数')
+})
+
+test('暂停整个帮工仍可收仓且作物自然成熟；恢复只结算当前 checkpoint 的一次新收获', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 3 }, t.api)
+  assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).ok, true)
+  noPests(data.plots[0])
+  farm.actions.hire(data, {}, t.api)
+
+  t.api.now = T0 + 14 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.harvests.radish, 1, '暂停前的一次成熟收获正常完成')
+  assert.equal(data.helper.stock.radish, 24)
+  assert.equal(data.exp, 7)
+  assert.equal(data.helper.xpQuarterRemainder, 2)
+  assert.equal(data.seeds.radish, 1, '暂停前自动补种一次')
+  assert.equal(data.plots[0].plantedAt, T0 + 14 * H)
+  // The helper sowed a new plot at the first harvest; fix that second crop's own roll and pest schedule too.
+  data.plots[0].roll = 0
+  noPests(data.plots[0])
+
+  assert.deepEqual(farm.actions.toggleHelper(data, { enabled: false }, t.api), { ok: true, enabled: false })
+  assert.equal(data.helper.lastAt, T0 + 14 * H, '暂停 checkpoint 写在最后一次启用结算时刻')
+  const expAtPause = data.exp
+  assert.equal(farm.actions.collect(data, {}, t.api).ok, true, '暂停期间仍可把已有帮工仓收进玩家仓')
+  assert.equal(data.harvest.radish, 24)
+  assert.equal(data.helper.stock.radish, 0)
+  assert.equal(data.exp, expAtPause, '领取库存不重复发 XP')
+
+  t.api.now = T0 + 42 * H
+  const beforeView = structuredClone(data)
+  const pausedView = farm.view(data, t.api)
+  assert.equal(pausedView.helper.enabled, false)
+  assert.equal(pausedView.helper.continuous, false)
+  assert.equal(pausedView.plots[0].ripe, true, '暂停时自然生长继续到成熟')
+  assert.equal(pausedView.plots[0].helperNote, undefined, '暂停时不显示照料中')
+  assert.deepEqual(data, beforeView, '暂停页 view 只投影，不结算或落盘')
+
+  assert.equal(farm.actions.buy(data, { item: 'radish', count: 1 }, t.api).ok, true)
+  assert.equal(data.harvests.radish, 1, '暂停期间的普通动作不自动收获')
+  assert.equal(data.helper.stock.radish, 0)
+  assert.equal(data.seeds.radish, 2, '暂停期间不补种，只保留原种子并记录玩家购买')
+  assert.equal(data.plots[0].plantedAt, T0 + 14 * H, '暂停期间不改作物的生长起点')
+  assert.equal(data.helper.lastAt, T0 + 14 * H, '暂停期间不推进托管 checkpoint')
+  assert.equal(data.exp, expAtPause)
+
+  assert.deepEqual(farm.actions.toggleHelper(data, { enabled: true }, t.api), { ok: true, enabled: true })
+  assert.equal(data.helper.lastAt, T0 + 42 * H, '恢复以当前时刻作为新 checkpoint')
+  assert.equal(data.harvests.radish, 2, '恢复只收当前仍成熟的一株，不追补暂停期间的多轮')
+  assert.equal(data.helper.stock.radish, 24)
+  assert.equal(data.harvest.radish, 24, '暂停前领取的库存仍保留')
+  assert.equal(data.seeds.radish, 1, '恢复后只补种一次')
+  assert.equal(data.plots[0].plantedAt, T0 + 42 * H, '补种从恢复 checkpoint 起算')
+  assert.equal(data.exp, 15, '两次 10 XP 收获共给 15 菜园 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 0)
+  const resumed = { harvests: data.harvests.radish, stock: data.helper.stock.radish, seeds: data.seeds.radish, exp: data.exp }
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.deepEqual({ harvests: data.harvests.radish, stock: data.helper.stock.radish, seeds: data.seeds.radish, exp: data.exp }, resumed, '同一 checkpoint 再结算不追补或重复收获')
+})
+
+test('启用帮工的 view 投影成熟收获与 XP，但不写回存档', () => {
+  const data = establishedFarm()
+  const t = fakeApi()
+  farm.actions.buy(data, { item: 'radish', count: 1 }, t.api)
+  assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).ok, true)
+  farm.actions.hire(data, {}, t.api)
+  const before = structuredClone(data)
+
+  t.api.now = T0 + 14 * H
+  const view = farm.view(data, t.api)
+  assert.equal(view.exp, 7, 'view 投影自动收获的 7 菜园 XP')
+  assert.equal(view.helper.stored, 24, 'view 投影实际收获数量')
+  assert.equal(view.harvest.find(item => item.key === 'radish').count, 0, '投影库存仍留在帮工仓')
+  assert.deepEqual(data, before, 'XP、库存、地块、种子与 checkpoint 全不落盘')
 })
 
 test('帮工每种作物、每档管地：收成就是地块真实产量，没有配方折扣', () => {

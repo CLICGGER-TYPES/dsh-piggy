@@ -37,7 +37,7 @@ const REASONS = {
   'invalid-bundle': '读不懂这个文件',
   'game-too-old': '这个扩展要更新的游戏',
   'too-large': '扩展包太大',
-  'broken-extension': '扩展装上了但加载出错',
+  'broken-extension': '扩展加载失败',
   'download-failed': '没能写进扩展目录',
   absent: '还没有猪',
 }

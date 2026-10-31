@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import { dirname } from 'node:path'
 import { mkdirSync, readFileSync, unlinkSync } from 'node:fs'
-import { createStore } from '../store.js'
+import { STORE_INTERNALS, createStore } from '../store.js'
 import { dispatch } from '../commands.js'
 import { snapshot } from '../snapshot.js'
 import { MERGE_RULES_VERSION, abandonPomodoro, callOffActivity, keepFish, mergeSummary } from '../core.js'
@@ -11,6 +11,10 @@ import { artFile } from '../store/art-route.js'
 import { registerGameRoutes } from '../routes.js'
 import { openWorkLedger } from './work-ledger.js'
 import { acquireGameLock } from './owner-lock.js'
+import {
+  SESSION_BOUNDARY, SESSION_SCOPE, SESSION_TRANSPORT, SessionBoundaryError, assertApplicationUsable, assertLiveSession,
+  bindRuntimeSession, createSessionBinding, persistenceIssue,
+} from './session-context.js'
 import { recoverSaveImportSync, commitSaveImport } from './save-transaction.js'
 import { recoverMergeSync } from './merge-transaction.js'
 import { createSaveTransfer } from './save-transfer.js'
@@ -29,16 +33,58 @@ export function createGameRuntime(options) {
   let runtimeId = randomUUID()
   let epoch = 0
   let routes = []
+  /** @type {import('./session-context.js').SessionBinding|null} */
+  let session = null
+  /** @type {any} */
+  let api = null
   const mounts = new Set(), active = new Set()
 
-  function prepare() {
+  /**
+   * 纯运行态检查：不碰 ledger/store，也不做 prepare/flush。closed/fault 的
+   * 原有 503 优先级必须早于会话 target/owner 探测，但正常运行时不能因此提前
+   * 产生任何写入。
+   */
+  function assertOperational() {
     if (closed) throw new Error('game runtime closed')
     if (fault) throw Object.assign(new Error('存档恢复未完成，请检查磁盘后重新启动'), { status: 503 })
+  }
+  function prepare() {
+    assertOperational()
     ledger.finish(store)
   }
   function available() {
     if (busy) throw Object.assign(new Error('正在处理存档，请稍后重试'), { status: 503 })
     prepare()
+  }
+  /**
+   * 显式带来的会话必须就是当前这一代运行时；缺省只使用运行时自己的 embedded
+   * 会话，不回退到“同路径的别的猪/别的运行时”。
+   * @param {unknown} [binding]
+   */
+  function selectSession(binding) {
+    if (session === null) throw new Error('game runtime has no session')
+    /** @type {import('./session-context.js').SessionBinding} */
+    const active = /** @type {any} */ (binding === undefined || binding === null ? session : binding)
+    if (active !== session) {
+      const internals = /** @type {any} */ (store)[STORE_INTERNALS]
+      if (internals === undefined || internals === null) throw new Error('store internals missing')
+      // 先给出处置/过期/外来的精确原因；再用对象身份拒绝“复制了同样元数据”
+      // 的另一个已发放绑定。运行时的能力只认自己的那一份句柄。
+      assertLiveSession(active, {
+        runtimeId,
+        generation,
+        application: internals.application,
+        commandScope: internals.commands.scope,
+        owner: internals.application.owner,
+        target: internals.application.target,
+      })
+      throw new SessionBoundaryError(SESSION_BOUNDARY.FOREIGN, 'session is not this runtime binding')
+    }
+    active.assertLive()
+    // 会话身份/liveness 还不够：target 可能已被 release，owner 可能已 dispose。
+    // 在 ledger/WAL/resource/body/save 之前用 F02 权威能力拒绝。
+    assertApplicationUsable(active.assertApplication())
+    return active
   }
   /** 显式写操作才 +1；轮询/被动 decay 不改变 epoch（#14 6.6）。 */
   const READ_ONLY = new Set(['state', 'filePath', 'journal', 'freshen', 'drainPending', 'extensionOn',
@@ -54,11 +100,26 @@ export function createGameRuntime(options) {
     const nextLedger = openWorkLedger({ directory: `${options.statePath}.work-events`,
       statePath: options.statePath, now: options.now })
     const nextStore = createStore(options.statePath, { now: options.now })
+    const internals = /** @type {any} */ (nextStore)[STORE_INTERNALS]
+    if (internals === undefined || internals === null) {
+      throw new Error('store internals missing; refusing to open an unbindable runtime')
+    }
     ledger = nextLedger
     store = nextStore
     const ownGeneration = ++generation
     runtimeId = randomUUID()
     epoch = 0
+    // 同一运行时对象的重开也会换代：旧句柄/旧会话在 dispose 后拒绝，不靠文件名复活。
+    if (session !== null) session.dispose()
+    session = createSessionBinding({
+      scope: SESSION_SCOPE.HOST_RUNTIME,
+      transport: { kind: SESSION_TRANSPORT.EMBEDDED, origin: 'in-process' },
+      application: internals.application,
+      commands: internals.commands,
+      runtimeId,
+      generation: ownGeneration,
+    })
+    if (api !== null) bindRuntimeSession(api, session)
     if (options.journalHeader) store.journal?.header?.(options.journalHeader)
     for (const [key, method] of Object.entries(store)) {
       if (typeof method !== 'function' || READ_ONLY.has(key)) continue
@@ -80,6 +141,7 @@ export function createGameRuntime(options) {
   function finishDispose() {
     if (!fault) { ledger.finish(store); store.flush() }
     closed = true
+    session?.dispose()
     for (const dispose of mounts) dispose()
     mounts.clear()
     transfer.clear()
@@ -97,8 +159,9 @@ export function createGameRuntime(options) {
   }
 
   /** 在 exclusive 内重新结算、结清 WAL、flush，并返回可供合并计算的内存快照。 */
-  function snapshotForWrite() {
-    if (closed) throw new Error('game runtime closed')
+  function snapshotForWrite(binding) {
+    assertOperational()
+    selectSession(binding)
     const state = store.freshen()
     ledger.finish(store)
     store.flush(true)
@@ -230,7 +293,7 @@ export function createGameRuntime(options) {
     })
   }
 
-  return {
+  const created = {
     handle, mountRoutes, exclusive, restart, snapshotForWrite,
     statePath: options.statePath,
     view(drain = false) {
@@ -250,32 +313,50 @@ export function createGameRuntime(options) {
       }
     },
     art(name) { return artFile({ filePath: options.statePath }, name) },
-    prepareMerge(target) {
+    prepareMerge(target, binding) {
+      // 在 exclusive 的例行 flush 之前就拒绝故障/过期/外来会话，避免旧句柄碰这份存档。
+      assertOperational()
+      selectSession(binding)
       return exclusive(async () => {
+        selectSession(binding)
+        if (closed) throw new Error('game runtime closed')
         const state = store.state
         if (state === null) return { ok: false, reason: 'absent', alreadyFinished: true }
+        const internals = /** @type {any} */ (store)[STORE_INTERNALS]
+        if (internals === undefined || internals === null) throw new Error('store internals missing')
+        // 只按显式持久化能力判断，不按存档里的 pigs/pigBodies 等旧字段名猜。
+        const persistence = persistenceIssue(internals.persistence)
+        if (persistence !== null) return { ok: false, reason: persistence }
         const nowMs = options.now?.() ?? Date.now()
-        let result
-        if (target === 'activity') {
-          const had = state.activity !== null && state.activity !== undefined
-          const called = callOffActivity(state, nowMs)
-          result = { ok: true, alreadyFinished: had && called.ok !== true, summary: { had, result: called } }
-        } else if (target === 'pomodoro') {
-          const had = state.pomodoro?.startedAt !== null && state.pomodoro?.startedAt !== undefined
-          const abandoned = abandonPomodoro(state, nowMs)
-          result = { ok: true, alreadyFinished: had && abandoned.ok === true && abandoned.abandoned === false, summary: { had, result: abandoned } }
-        } else if (target === 'fishing') {
-          const pending = state.fishing?.pending ?? null
-          if (pending === null) result = { ok: true, alreadyFinished: true, summary: { kept: false } }
-          else if (pending.phase === 'caught') {
-            const kept = keepFish(state, nowMs)
-            result = { ok: true, alreadyFinished: true, summary: { kept: kept.ok === true, result: kept } }
-          } else {
-            // 手动钓鱼等待/搏斗：鱼跑掉，抛竿用掉的鱼饵不退。
-            state.fishing.pending = null
-            result = { ok: true, alreadyFinished: false, summary: { kept: false, escaped: true } }
-          }
-        } else result = { ok: false, reason: 'unknown-target' }
+        /** @type {{ok:boolean, [key:string]: unknown}|null} */
+        let result = null
+        const application = internals.application
+        // 终结也是 owner 事务：活动/退款/番茄/钓鱼与目标猪 body 一致提交或回滚，
+        // 不再直接改 store.state 后 flush。
+        application.owner.transact(application.target, live => {
+          if (target === 'activity') {
+            const had = live.activity !== null && live.activity !== undefined
+            const called = callOffActivity(live, nowMs)
+            result = { ok: true, alreadyFinished: had && called.ok !== true, summary: { had, result: called } }
+          } else if (target === 'pomodoro') {
+            const had = live.pomodoro?.startedAt !== null && live.pomodoro?.startedAt !== undefined
+            const abandoned = abandonPomodoro(live, nowMs)
+            result = { ok: true, alreadyFinished: had && abandoned.ok === true && abandoned.abandoned === false, summary: { had, result: abandoned } }
+          } else if (target === 'fishing') {
+            const pending = live.fishing?.pending ?? null
+            if (pending === null) result = { ok: true, alreadyFinished: true, summary: { kept: false } }
+            else if (pending.phase === 'caught') {
+              const kept = keepFish(live, nowMs)
+              result = { ok: true, alreadyFinished: true, summary: { kept: kept.ok === true, result: kept } }
+            } else {
+              // 手动钓鱼等待/搏斗：鱼跑掉，抛竿用掉的鱼饵不退。
+              live.fishing.pending = null
+              result = { ok: true, alreadyFinished: false, summary: { kept: false, escaped: true } }
+            }
+          } else result = { ok: false, reason: 'unknown-target' }
+          return result
+        })
+        if (result === null) throw new Error('prepareMerge produced no result')
         if (result.ok !== false) store.flush(true)
         return result
       })
@@ -291,7 +372,9 @@ export function createGameRuntime(options) {
     targetInstalled() {
       return store.ext?.installedKeys?.() ?? []
     },
-    acceptWorkEvent(event) {
+    acceptWorkEvent(event, binding) {
+      assertOperational()
+      selectSession(binding)
       try {
         available()
         const result = ledger.receive(store, event)
@@ -303,7 +386,12 @@ export function createGameRuntime(options) {
         throw error
       }
     },
-    dispatchCommand(command, input) { available(); return dispatch(store, command, input) },
+    dispatchCommand(command, input, binding) {
+      assertOperational()
+      selectSession(binding)
+      available()
+      return dispatch(store, command, input)
+    },
     record: (...args) => store.journal?.record?.(...args),
     dispose() {
       if (closed) return
@@ -311,4 +399,7 @@ export function createGameRuntime(options) {
       else finishDispose()
     },
   }
+  if (session === null) throw new Error('game runtime has no session')
+  api = bindRuntimeSession(created, session)
+  return api
 }

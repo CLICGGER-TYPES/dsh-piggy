@@ -2,6 +2,7 @@
 /** DSH 只负责宿主事件、服务注册和默认位置；游戏规则与持久化由运行时负责。 */
 import { randomUUID } from 'node:crypto'
 import { createGameRuntime } from '../../runtime/index.js'
+import { sessionOf } from '../../runtime/session-context.js'
 import { defaultStatePath, moveLegacySaveDir } from '../../store/state-file.js'
 import { environmentNote } from '../../environment.js'
 import { createWorkObserver } from './work-observer.js'
@@ -133,9 +134,13 @@ export function apply(ctx, config = {}) {
   controller.setCommandName(command)
 
   // Host callbacks have no durable identity; keep each generated event ID stable across 503 retries.
-  const observer = createWorkObserver({ accept: event => controller.mode === 'external'
-    ? controller.enqueue(event)
-    : embedded.ensure().acceptWorkEvent(event), source: 'dsh', producer: randomUUID(),
+  // The accept callback names the exact runtime generation whose session owns the save; a
+  // replaced/disposed runtime refuses instead of falling back to another pig or file.
+  const observer = createWorkObserver({ accept: event => {
+    if (controller.mode === 'external') return controller.enqueue(event)
+    const runtime = embedded.ensure()
+    return runtime.acceptWorkEvent(event, sessionOf(runtime))
+  }, source: 'dsh', producer: randomUUID(),
   warn: message => console.warn(message) })
   const observe = type => observer.observe(type)
   ctx.on('agent/inbox/claimed', () => observe('message'))
@@ -159,7 +164,8 @@ export function apply(ctx, config = {}) {
       // 内嵌模式必须保持同步返回（旧宿主与兼容测试按同步结果读 text）；外部模式返回 Promise。
       try {
         if (controller.mode === 'external') return controller.panel.command(String(invocation.rawInput ?? ''))
-        return embedded.ensure().dispatchCommand(command, String(invocation.rawInput ?? ''))
+        const runtime = embedded.ensure()
+        return runtime.dispatchCommand(command, String(invocation.rawInput ?? ''), sessionOf(runtime))
       } catch (error) {
         return { kind: 'error', text: `🐖 猪摔了一跤：${error instanceof Error ? error.message : String(error)}` }
       }

@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createContext, runInContext } from 'node:vm'
 import { saveArchive } from '../../apps/desktop/lib/save-export.js'
+import { registerExternalIpc, registerSystemActionsIpc } from '../../apps/desktop/lib/ipc/system.js'
+import { registerUpdatesIpc } from '../../apps/desktop/lib/ipc/updates.js'
 
 export function shellLifecycle(host, install = () => ({ ok: true }), options = {}) {
   const source = readFileSync(new URL('../../apps/desktop/main.js', import.meta.url), 'utf8')
@@ -16,9 +18,11 @@ export function shellLifecycle(host, install = () => ({ ok: true }), options = {
   const context = createContext({
     host, hostStarting: null, versions: options.versions ?? null, versionsStarting: null,
     win: { isDestroyed: () => false, webContents: pages.pet },
-    panelWin: { isDestroyed: () => false, webContents: pages.panel }, extWin: null,
+    panelWin: { isDestroyed: () => false, webContents: pages.panel },
+    extensionWindow: { current: () => null, owns: () => false },
+    autostart: { flush: () => Promise.resolve() },
     hitTimer: 1, fullscreenWatch: null, topGuardTimer: null, displayWatchTimer: null, stateTimer: null,
-    proxySettings: null, autostartWriting: Promise.resolve(),
+    proxySettings: null,
     join, saveArchive, writeFile: options.writeFile,
     stopDrag() {}, clearInterval() {}, clearTimeout() {}, flushWindowState() {}, flushLogs() {},
     process: { env: {} },
@@ -28,6 +32,7 @@ export function shellLifecycle(host, install = () => ({ ok: true }), options = {
     log: (...args) => messages.push(args),
     setTimeout: callback => scheduled.push(callback),
     ipcMain: { handle: (name, callback) => handlers.set(name, callback) },
+    registerExternalIpc,
     shellUpdates: options.shellUpdates ?? { status: () => ({ readyVersion: '0.6.7' }), install, async close() {} },
     app: {
       getPath: () => '/downloads',
@@ -46,11 +51,45 @@ export function shellLifecycle(host, install = () => ({ ok: true }), options = {
     assert.ok(first >= 0 && last > first, `生产生命周期代码边界不存在：${start} → ${end}`)
     runInContext(source.slice(first, last), context, { filename: 'desktop-main-lifecycle.js' })
   }
-  load('let quitting = false', 'let tray = null')
+  load('let quitting = false', '/** 合并确认')
+  load('function fromPanelOnly(event)', 'function registerProtocol')
   load('async function requireSavedGame()', '// ---- 更新 App')
   load('let hostClosed = false', "app.on('window-all-closed'")
-  load('let releases = []', "ipcMain.handle('piggy:quit'")
-  load('const exportWrites = new Set()', "ipcMain.handle('piggy:open'")
+  load('const exportWrites = new Set()', 'registerSystemActionsIpc({')
+  // 更新/外壳更新与系统动作的注册已移入 lib/ipc/；仍调用生产注册函数，注入下面 VM 里同一组
+  // 状态和闭包（exportWrites 仍是 VM 里那个 Set），测试断言不变。
+  const vm = expression => runInContext(expression, context)
+  registerUpdatesIpc({
+    ipcMain: context.ipcMain,
+    fromPage: vm('fromPage'),
+    toPages: vm('toPages'),
+    getVersions: () => context.versions,
+    getShellUpdates: () => context.shellUpdates,
+    isActionActive: () => vm('activeAction !== null'),
+    reserveAction: vm('reserveAction'),
+    releaseAction: vm('releaseAction'),
+    requireSavedGame: vm('requireSavedGame'),
+    backupSave: context.backupSave,
+    restartGame: vm('restartGame'),
+    closeShellResources: vm('closeShellResources'),
+    recoverAction: vm('recoverAction'),
+    isHostClosed: () => vm('hostClosed'),
+    isCapture: () => false,
+    setTimeout: vm('setTimeout'),
+    log: context.log,
+  })
+  registerSystemActionsIpc({
+    ipcMain: context.ipcMain,
+    app: context.app,
+    dialog: context.dialog,
+    shell: { openExternal() {} },
+    fromPage: vm('fromPage'),
+    getWin: () => context.win,
+    isQuitting: () => vm('quitting'),
+    exportWrites: vm('exportWrites'),
+    log: context.log,
+    writeFile: options.writeFile,
+  })
   const request = (name, args = [], role = 'pet') => handlers.get(name)({ sender: pages[role] }, ...args)
   return {
     request,

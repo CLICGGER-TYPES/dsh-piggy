@@ -10,10 +10,24 @@ import { readFileSync } from 'node:fs'
 
 import { mergeSummary, migrate, resumeSuspendedPig } from '../../core.js'
 import { createSaveArchive } from '../../runtime/save-archive.js'
+import { SESSION_BOUNDARY, sessionOf } from '../../runtime/session-context.js'
 import { readStateFile, writeStateFile } from '../../store/state-file.js'
 import { removeConfig, stateFingerprint } from './external-files.js'
 import { createSourceBackup } from './external-merge.js'
 import { blockersFromDetails, sourceBlockers, targetBlockers } from './external-support.js'
+
+/**
+ * 目标合并事务尚未到终态时，源端只能读/查状态，不能恢复、清理或开始新预览。
+ * 崩溃窗口会留下 pigState=paused + connection=merging（没有内存 preview）；
+ * 旧 disconnect 只看 pigState 会误放行。覆盖两者，不把 merged/正常 paused 当 pending。
+ * @param {any} config
+ * @returns {boolean}
+ */
+export function pendingMergeConfig(config) {
+  if (config === null || config === undefined) return false
+  if (config.pigState === 'merge-unknown' || config.pigState === 'rolling-back') return true
+  return config.connection === 'merging' || config.connection === 'rolling-back' || config.connection === 'merge-unknown'
+}
 
 export function readReceipts(statePath) {
   try {
@@ -25,7 +39,16 @@ export function readReceipts(statePath) {
 export function createLifecycle(ctx) {
   const { statePath, now, options, outbox, client } = ctx
 
+  /** 控制器会话已处置后不再写存档/配置；调用方拿到现有风格的 reason。 */
+  function sessionProblem() {
+    const session = ctx.getSession?.()
+    if (session === undefined || session === null) return SESSION_BOUNDARY.FOREIGN
+    return session.disposed ? SESSION_BOUNDARY.DISPOSED : null
+  }
+
   async function resumeSource(suspendedAt, { verifyHash = true } = {}) {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     if (ctx.getMode() === 'normal' && ctx.embedded().runtime() !== null) { ctx.setPreview(null); return { ok: true } }
     const loaded = readStateFile(statePath, now())
     if (loaded.state === null) {
@@ -53,6 +76,8 @@ export function createLifecycle(ctx) {
   }
 
   async function cancelPreview(reason) {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     if (ctx.getExpiry() !== null) { clearTimeout(ctx.getExpiry()); ctx.setExpiry(null) }
     const previous = ctx.getPreview()
     if (previous === null) return { ok: true, reason }
@@ -60,7 +85,7 @@ export function createLifecycle(ctx) {
     outbox.resume()
     if (previous.previousMode === 'paused') {
       const config = ctx.getConfig()
-      if (config !== null) ctx.saveConfig({ ...config, connection: 'connected', pigState: 'paused', mergeId: null, suspendedAt: previous.previousSuspendedAt ?? previous.frozenAt })
+      if (config !== null) ctx.saveConfig({ ...config, connection: 'connected', pigState: 'paused', mergeId: null, backup: null, suspendedAt: previous.previousSuspendedAt ?? previous.frozenAt })
       ctx.setMode('external')
       return { ok: true, reason, restored: 'paused' }
     }
@@ -69,6 +94,8 @@ export function createLifecycle(ctx) {
   }
 
   async function connect(connectMode = 'connect') {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     if (connectMode === 'merge') {
       const config = ctx.getConfig()
       if (ctx.getMode() === 'external' && config?.pigState === 'merged') return { ok: false, reason: 'already-merged' }
@@ -99,7 +126,9 @@ export function createLifecycle(ctx) {
     if (!detected.ok) return { ok: false, reason: detected.reason }
     const runtime = ctx.embedded().ensure()
     let frozen = null
-    await runtime.exclusive(async () => { frozen = runtime.snapshotForWrite(); return null })
+    await runtime.exclusive(async () => { frozen = runtime.snapshotForWrite(sessionOf(runtime)); return null })
+    const problemAfterFreeze = sessionProblem()
+    if (problemAfterFreeze !== null) return { ok: false, reason: problemAfterFreeze }
     const snapshot = /** @type {any} */ (frozen)
     if (snapshot === null) throw new Error('embedded runtime returned no state')
     const next = {
@@ -128,7 +157,10 @@ export function createLifecycle(ctx) {
   }
 
   async function previewMerge() {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     const config = ctx.getConfig()
+    if (pendingMergeConfig(config)) return { ok: false, reason: 'busy' }
     if (ctx.getMode() === 'external' && config !== null && config.pigState !== 'paused') {
       return { ok: false, reason: config.pigState === 'merged' ? 'already-merged' : 'busy' }
     }
@@ -138,6 +170,12 @@ export function createLifecycle(ctx) {
     const previousSuspendedAt = previousMode === 'paused' ? config?.suspendedAt ?? now() : null
     const frozen = /** @type {any} */ (await ctx.freezeSource())
     if (frozen === null || frozen.state === null) return { ok: false, reason: 'no-source-pig' }
+    // 已暂存源端在预览前也要核对冻结指纹：手改/导入/另一会话改过的文件不能
+    // 直接当这份源猪去合并。旧配置没有指纹时保持原行为（无法校验）。
+    if (previousMode === 'paused' && typeof config?.stateHash === 'string') {
+      const actual = stateFingerprint(frozen.state, frozen.receipts)
+      if (actual !== config.stateHash) return { ok: false, reason: 'state-changed' }
+    }
     const frozenAt = now()
     let archive
     try { archive = createSaveArchive({ statePath, state: frozen.state, gameVersion: options.gameVersion ?? '', nowMs: frozenAt }) }
@@ -151,6 +189,8 @@ export function createLifecycle(ctx) {
       return { ok: false, reason, status: response.status, details, blockers: blockersFromDetails(reason, details) }
     }
     const report = response.json
+    const problemAfterPreview = sessionProblem()
+    if (problemAfterPreview !== null) return { ok: false, reason: problemAfterPreview }
     let backup
     try { backup = createSourceBackup({ statePath, state: frozen.state, gameVersion: options.gameVersion ?? '', nowMs: frozenAt, mergeId: report.mergeId }) }
     catch (cause) { return { ok: false, reason: 'source-backup-failed', message: cause instanceof Error ? cause.message : String(cause) } }
@@ -164,6 +204,9 @@ export function createLifecycle(ctx) {
       stateHash: stateFingerprint(frozen.state, frozen.receipts),
       mergeId: report.mergeId,
       previewToken: report.previewToken,
+      // 预览备份名落配置：提交请求发出后崩溃时，重启轮询只能靠它找到源端备份，
+      // 不能依赖已丢失的内存预览对象。
+      backup: backup.name,
       sourceSha256,
       lastSummary: mergeSummary(frozen.state),
       localSummary: report.source?.summary ?? mergeSummary(frozen.state),
@@ -183,6 +226,8 @@ export function createLifecycle(ctx) {
       backupName: backup.name,
       previousMode,
       report,
+      // 预览只属于创建它的控制器会话；另一个会话/重开的进程不能拿它提交。
+      sessionId: ctx.getSession().id,
     })
     if (ctx.getExpiry() !== null) clearTimeout(ctx.getExpiry())
     const delay = Math.max(0, Math.min(report.expiresAt - now(), 2 ** 31 - 1))
@@ -192,8 +237,10 @@ export function createLifecycle(ctx) {
   }
 
   async function disconnect(flags = {}) {
+    const problem = sessionProblem()
+    if (problem !== null) return { ok: false, reason: problem }
     const config = ctx.getConfig()
-    if (ctx.getPreview() !== null || (config !== null && ['merging', 'rolling-back', 'merge-unknown'].includes(config.pigState))) return { ok: false, reason: 'busy' }
+    if (ctx.getPreview() !== null || pendingMergeConfig(config)) return { ok: false, reason: 'busy' }
     if (ctx.isConfigCorrupt()) return { ok: false, reason: 'config-corrupt' }
     if (config?.pigState === 'merged') return { ok: false, reason: 'already-merged' }
     const queued = outbox.status().queued

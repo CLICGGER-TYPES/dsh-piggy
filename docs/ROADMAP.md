@@ -1,5 +1,13 @@
 # 路线图与待办
 
+## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
+
+- G0 源码基线选用 `749f4cbac0e7114b60845c095c9b0e16e25a8442`（origin/main，已核验文档主线）；产品行为继续冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`。两者相差 9 个文件，只有 `.github/workflows/integrated-candidate.yml`、CHANGELOG/README/ROADMAP/screenshots；产品代码、资源、锁文件与生成产物无差异。
+- 本地 `code/` 仍是 `98865316dc4fca60b2e5856cbf7de39816b05dd8`（落后 origin/main 102 个提交，含用户文档修改），未 reset/pull；`worktrees/release-rc5-20261027` 与 `worktrees/farm-natural-helper-20261027` 保持只读原状。
+- 独立克隆与 G0 快照在 D01 任务目录 `src/piggy-g0` 与 `artifacts/g0-source.tar.gz`；快照排除 `.git`、`node_modules`、生成构建目录和个人配置，保留 `client.js`、`extensions/farm/server.js`、`packages/pet-core/src/data/art-revisions.js` 等随源码提交的生成文件。
+- 旧 `organization-contracts-20261026` 的 171 项脏改动已逐件分类：发布附件回读检查交给 D02，审图工具交给 D06；生命周期契约与外部联动已在 RC5 中交付，交 D05 复核；其余为已交付或过期版本，不整体覆盖。文件级清单见 D01 任务记录，所有权见 `reports/ownership.json`。
+- D01 只维护文档状态、根集成导入、生成产物与最终打包；D02-D06 的独立实现不在本任务内。本轮未运行产品测试、构建或 VM，基线 UI 验收由独立 T01 负责。
+
 ## 2026-10-27 菜园自然托管及RC5（已交付）
 
 - [PR26](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/26)已合并；不可变发行标签`v0.37.2-rc.5`，源码`9e58204893646e547ca35ab1588f48d5c1a15893`。游戏/npm双包0.37.2-rc.5，外壳仍0.6.8-rc.3；纸感菜园4.2.0、经典3.2.0。GitHub与Gitee均已公开；npm两包rc均为RC5，latest仍0.37.0，GitHub稳定版仍0.37.1。

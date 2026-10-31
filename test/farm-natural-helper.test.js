@@ -1,6 +1,6 @@
 // @ts-check
-// 菜园「自然托管」回归（用户 2026-10-27 批准）：托管地按原成熟时间并行生长，成熟进帮工仓、同种种子自动补种，
-// 不给经验、不扣体力，没有加速批次、六小时停工和 400 预算。存档仍是 farm v5：pending 一律 null、usedMs 一律 0。
+// 菜园「自然托管」回归（用户 2026-10-27 批准）：托管地按原成熟时间并行生长，成熟进帮工仓、同种种子自动补种；
+// 自动收获给菜园经验的 75%，不扣体力，没有加速批次、六小时停工和 400 预算。当前存档为 farm v6。
 import assert from 'node:assert/strict'
 import { beforeEach, test } from 'node:test'
 
@@ -42,7 +42,7 @@ function api(balance = 100_000) {
   return { api: host, bag, said, balance: () => balance, tired: () => tired }
 }
 
-/** 干净的 v5 熟地存档：18 块空地，第一课已完成，9 级（种子等级不挡路）。 */
+/** 干净的 v6 熟地存档：18 块空地，第一课已完成，9 级（种子等级不挡路）。 */
 function farm9() {
   const data = Object.assign(farm.init(), { plots: Array(PLOTS).fill(null) })
   data.exp = 10000
@@ -289,39 +289,93 @@ test('view 反复调用不改变后续结果，也不推进全局随机', () => 
   assert.equal(draws, before + 4, '手动种一颗要抽 4 次：roll + 三样灾害')
 })
 
-test('旧存档的 pending / usedMs 只做幂等清理，不发果、不动种植时间，库存保留', () => {
+test('v5 迁移先按旧规则收成熟作物且不补 XP，再写 v6 checkpoint 并保留库存', () => {
   const raw = {
     version: 5, unlocked: 6,
-    plots: [{ crop: 'radish', season: 1, plantedAt: T0, boostMs: 0, roll: 1, pests: { weed: null, bug: null, dry: null } }, null, null, null, null, null],
+    plots: [
+      { crop: 'radish', season: 1, plantedAt: T0 - 14 * H, boostMs: 0, roll: 1, pests: { weed: null, bug: null, dry: null } },
+      { crop: 'radish', season: 1, plantedAt: T0, boostMs: 0, roll: 0, pests: { weed: null, bug: null, dry: null } },
+      null, null, null, null,
+    ],
     seeds: {}, harvest: { radish: 3 }, acquired: { radish: 30 }, harvests: { radish: 1 }, tools: {}, fert: {}, exp: 200, refund: 0,
-    helper: { hired: true, level: 1, barn: 0, lastAt: T0 - 5 * H, usedMs: 6 * H, cursor: 3, pending: { index: 0, crop: 'radish', plantedAt: T0, remainingMs: 60000, yield: 3 }, targets: ['radish'], stock: { radish: 7 } },
+    helper: { hired: true, level: 1, barn: 0, lastAt: T0 - 5 * H, usedMs: 6 * H, cursor: 0, pending: { index: 0, crop: 'radish', plantedAt: T0 - 14 * H, remainingMs: 60000, yield: 3 }, targets: ['radish', 'radish'], stock: { radish: 7 } },
     onboarding: { step: 'done', rewarded: true, legacy: false, plantedAt: null, wateredAt: null },
   }
-  const once = normalize(structuredClone(raw))
-  assert.equal(once.version, 5, '字段形状仍是 v5，不升版')
+  const migrationAt = T0 + H
+  const once = normalize(structuredClone(raw), migrationAt)
+  assert.equal(once.version, 6, 'v5 迁移输出当前 v6')
+  assert.equal(once.helper.enabled, true, '旧雇用档默认继续托管')
+  assert.equal(once.helper.xpQuarterRemainder, 0, '迁移不带入旧版不存在的 XP 余数')
+  assert.equal(once.helper.xpEligibleAt, migrationAt, '首次新规则 XP 从迁移 checkpoint 之后开始')
+  assert.equal(once.helper.lastAt, migrationAt, '迁移 checkpoint 推进到当前时刻')
   assert.equal(once.helper.pending, null, '旧批次清成 null')
   assert.equal(once.helper.usedMs, 0, '工作预算清成 0')
-  assert.equal(once.helper.stock.radish, 7, '已经落进帮工仓的果保留')
+  assert.equal(once.helper.stock.radish, 7 + 25, '已成熟旧地按旧规则入帮工仓，原库存保留')
   assert.equal(once.helper.targets[0], 'radish')
-  assert.equal(once.plots[0].plantedAt, T0, '种植时间不动')
-  assert.equal(once.plots[0].roll, 1)
-  assert.equal(once.harvest.radish, 3, 'normalize 不发果')
-  assert.deepEqual(normalize(structuredClone(once)), once, 'normalize 幂等')
+  assert.equal(once.plots[0], null, '迁移先结算已成熟旧作物')
+  assert.equal(once.plots[1].plantedAt, T0, '未成熟作物的真实种植时间不动')
+  assert.equal(once.plots[1].roll, 0)
+  assert.equal(once.harvest.radish, 3, '旧帮工收成不流入玩家仓库')
+  assert.equal(once.harvests.radish, 2, '迁移只结算已成熟地块一次')
+  assert.equal(once.exp, 200, '旧规则成熟事件不补历史 XP')
+  assert.deepEqual(normalize(structuredClone(once), migrationAt), once, 'v6 normalize 幂等')
 
   const t = api()
   const data = structuredClone(once)
-  t.api.now = T0 + H
+  t.api.now = migrationAt
   farm.actions.buy(data, { item: 'nothing' }, t.api)
-  assert.equal(data.helper.stock.radish, 7, '还没熟：结算不发果')
-  assert.equal(data.harvests.radish, 1)
+  assert.equal(data.helper.stock.radish, 32, '迁移后同一 checkpoint 不重复结算旧果')
+  assert.equal(data.harvests.radish, 2)
+  assert.equal(data.exp, 200, 'checkpoint 相等时仍不补 XP')
   t.api.now = T0 + 14 * H
   farm.actions.buy(data, { item: 'nothing' }, t.api)
-  assert.equal(data.harvests.radish, 2, '到点才收一次')
-  assert.ok(data.helper.stock.radish >= 7 + 21)
+  assert.equal(data.harvests.radish, 3, '迁移后新成熟的地块照常收一次')
+  assert.equal(data.helper.stock.radish, 32 + 24)
+  assert.equal(data.exp, 207, '新成熟事件按 10 XP 作物的 75% 结算')
+  assert.equal(data.helper.xpQuarterRemainder, 2)
   assert.equal(data.helper.lastAt, T0 + 14 * H)
   const after = structuredClone(data.helper.stock)
   farm.actions.buy(data, { item: 'nothing' }, t.api)
   assert.deepEqual(data.helper.stock, after, '同一时刻再结算不重复发果')
+  assert.equal(data.exp, 207, '同一事件不重复记 XP')
+})
+
+test('v5 未来 checkpoint 前的旧成熟事件不补 XP，checkpoint 后的新收获正常计入', () => {
+  const raw = {
+    version: 5, unlocked: 6,
+    plots: [{ crop: 'radish', season: 1, plantedAt: T0, boostMs: 0, roll: 0, pests: { weed: null, bug: null, dry: null } }, null, null, null, null, null],
+    seeds: { radish: 2 }, harvest: {}, acquired: {}, harvests: {}, tools: {}, fert: {}, exp: 200, refund: 0,
+    helper: { hired: true, level: 0, barn: 0, lastAt: T0 + 30 * H, usedMs: 0, cursor: 0, pending: null, targets: ['radish'], stock: {} },
+    onboarding: { step: 'done', rewarded: true, legacy: false, plantedAt: null, wateredAt: null },
+  }
+  const data = normalize(structuredClone(raw), T0 + 20 * H)
+  assert.equal(data.version, 6)
+  assert.equal(data.helper.lastAt, T0 + 30 * H, '迁移保留已有未来 checkpoint')
+  assert.equal(data.helper.xpEligibleAt, T0 + 30 * H, '旧成熟事件须等到 future checkpoint 才能结算')
+  assert.equal(data.exp, 200, '迁移时不追补历史 XP')
+
+  const t = api()
+  t.api.now = T0 + 29 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.harvests.radish ?? 0, 0, 'checkpoint 之前不处理旧成熟事件')
+  assert.equal(data.exp, 200)
+  assert.equal(data.helper.lastAt, T0 + 30 * H, '时钟仍在 checkpoint 之前时不把检查点挪回过去')
+
+  t.api.now = T0 + 30 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.harvests.radish, 1, '旧成熟作物在 checkpoint 只结算一次')
+  assert.equal(data.exp, 200, 'eventAt 与 xpEligibleAt 相等时不补历史 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 0)
+  assert.equal(data.plots[0].plantedAt, T0 + 30 * H, '旧作物结算后只从当前 checkpoint 补种')
+  assert.equal(data.seeds.radish, 1)
+
+  t.api.now = T0 + 44 * H
+  farm.actions.buy(data, { item: 'nothing' }, t.api)
+  assert.equal(data.harvests.radish, 2, '迁移后新成熟的一株正常收获')
+  assert.equal(data.exp, 207, 'checkpoint 后的新 10 XP 收获增加 7 菜园 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 2)
+  assert.equal(data.helper.xpEligibleAt, T0 + 30 * H)
+  assert.equal(data.helper.lastAt, T0 + 44 * H)
 })
 
 test('回退旧扩展安全：存档形状不变，同一份数据不会藏着重复收成', () => {
@@ -332,11 +386,14 @@ test('回退旧扩展安全：存档形状不变，同一份数据不会藏着�
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
   t.api.now = T0 + 14 * H
   farm.actions.buy(data, { item: 'nothing' }, t.api)
-  assert.deepEqual(Object.keys(data.helper).sort(), ['barn', 'cursor', 'hired', 'lastAt', 'level', 'pending', 'stock', 'targets', 'usedMs'])
-  assert.equal(data.version, 5)
+  assert.deepEqual(Object.keys(data.helper).sort(), ['barn', 'cursor', 'enabled', 'hired', 'lastAt', 'level', 'pending', 'stock', 'targets', 'usedMs', 'xpEligibleAt', 'xpQuarterRemainder'])
+  assert.equal(data.version, 6)
   assert.equal(data.helper.pending, null)
   assert.equal(data.helper.usedMs, 0)
+  assert.equal(data.helper.enabled, true)
   assert.equal(data.helper.stock.radish, 24, '收成只在帮工仓里出现一次')
+  assert.equal(data.exp, 10007, '新自动收获按 10 XP 作物给 7 菜园 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 2)
   assert.equal(data.harvest.radish ?? 0, 0, '没进玩家仓库')
   assert.equal(data.plots[0].crop, 'radish', '地块已经换上新一株（旧扩展不会把同一块地再收一遍）')
   assert.equal(data.harvests.radish, 1)

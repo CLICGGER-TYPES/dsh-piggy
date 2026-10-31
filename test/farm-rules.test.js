@@ -210,7 +210,8 @@ test('自然托管：按地块真实成熟时间收成，没有 400 上限、也
   assert.equal(data.harvests.radish, 28, '100 小时里四块地每块走满七轮')
   assert.ok(data.helper.stock.radish >= 28 * 21 && data.helper.stock.radish <= 28 * 26, '每块都按自己的 roll 收，没有小时产出上限：' + data.helper.stock.radish)
   assert.equal(data.seeds.radish, 50 - 4 - 28, '每收一块补一颗：整株收完才扣种子')
-  assert.equal(data.exp, before, '帮工不给玩家经验')
+  assert.equal(data.exp, before + 210, '28 次 10 XP 白萝卜收获共给 210 菜园 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 0, '整批 28 次收获后的四分之一余数为零')
 })
 
 test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留茬）', () => {
@@ -220,7 +221,7 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
     seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {},
   }
   normalize(old)
-  assert.equal(old.version, 5)
+  assert.equal(old.version, 6)
   assert.equal(old.unlocked, 8)
   assert.equal(old.plots.length, PLOTS)
   assert.ok(old.plots.every(plot => plot === null), '迁移后地块全空')

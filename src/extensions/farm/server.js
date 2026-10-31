@@ -39,7 +39,7 @@ const game = {
 // 所有动作走同一道入口：先迁移/补齐、付迁移退款、结算帮工，成功后再结算一次并报成就进度。
 for (const [key, action] of Object.entries(game.actions)) {
   game.actions[key] = (data, payload, api) => {
-    normalize(data)
+    normalize(data, api?.now)
     payRefund(data, api)
     settleHelper(data, api?.now)
     const result = action(data, payload, api)
