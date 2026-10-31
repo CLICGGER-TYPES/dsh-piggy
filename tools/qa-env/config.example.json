@@ -4,7 +4,7 @@
     "taskId": "QAENVV01",
     "actor": "PI-05",
     "runBatchId": "REPLACE_WITH_SHORT_UNIQUE_BATCH",
-    "sessionPrefix": "dsh-piggy-QAENVV01"
+    "sessionPrefix": "dsh-piggy-QAENVV01-PI-05"
   },
   "lease": {
     "id": "REPLACE_WITH_ROOT_LEASE_ID",
