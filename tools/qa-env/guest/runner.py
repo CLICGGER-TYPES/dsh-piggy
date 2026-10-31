@@ -99,7 +99,7 @@ class GuestRun:
 def config_paths(cfg, layout):
     cache = pathlib.Path(cfg["guest"]["taskRoot"]) / "cache"
     return {
-        "toolRoot": cache / "qa-env", "sourceRoot": cache / "source-3585",
+        "toolRoot": pathlib.Path(cfg["inputs"]["toolkitRoot"]), "sourceRoot": cache / "source-3585",
         "depsRoot": cache / "toolchain" / "node_modules",
         "appImage": cache / "M1FINAL.AppImage", "electronZip": cache / "electron-v44.5.1-linux-x64.zip",
     }
@@ -154,11 +154,24 @@ def setup_cache_and_source(run, paths):
         raise RuntimeError("ENV: pinned M1 source cache is incomplete")
     if not (tool / "toolchain-versions.json").is_file() or not (deps / "typescript" / "bin" / "tsc").is_file():
         raise RuntimeError("ENV: offline QA toolkit/dependency cache is incomplete")
+    toolkit_marker = tool / ".qaenv-toolkit-identity.json"
+    if not toolkit_marker.is_file() or toolkit_marker.read_text(encoding="utf-8").strip() != cfg["hostIdentity"]["toolkitArchiveSha256"]:
+        raise RuntimeError("ASSERTION: versioned QA toolkit cache identity does not match this run")
     verify_source_manifest(source, inputs["sourceManifest"])
     electron_runtime = pathlib.Path(run.layout["electron44RuntimeRoot"])
     electron_bin = electron_runtime / "electron"
+    owner_marker = electron_runtime / ".qaenv-owner.json"
+    if not electron_runtime.is_dir() or not owner_marker.is_file():
+        raise RuntimeError("TOOL: pristine Electron runtime directory was not pre-created by this run")
+    try:
+        marker_data = json.loads(owner_marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise RuntimeError("TOOL: Electron runtime directory owner marker is unreadable") from error
+    if marker_data.get("runId") != run.layout["runId"]:
+        raise RuntimeError("TOOL: Electron runtime directory belongs to another run")
     if not electron_bin.is_file():
-        electron_runtime.mkdir(parents=True, mode=0o700)
+        if any(path.name != ".qaenv-owner.json" for path in electron_runtime.iterdir()):
+            raise RuntimeError("TOOL: Electron runtime directory is not empty before ZIP extraction")
         with zipfile.ZipFile(inputs["electronZip"]) as archive:
             for member in archive.infolist():
                 destination = (electron_runtime / member.filename).resolve()
@@ -669,7 +682,8 @@ def main():
                                     int(cfg["timeouts"]["runtimeProbeSeconds"]))
         run.identity.update({"runtimeVersions": versions, "sourceCommit": cfg["hostIdentity"]["sourceCommit"],
                              "appImageSha256": cfg["hostIdentity"]["appImageSha256"],
-                             "electron44ZipSha256": cfg["hostIdentity"]["electron44ZipSha256"]})
+                             "electron44ZipSha256": cfg["hostIdentity"]["electron44ZipSha256"],
+                             "toolkitArchiveSha256": cfg["hostIdentity"]["toolkitArchiveSha256"]})
         run.ledger._write()
         if args.run_label == "a":
             typecheck(run, source, deps, app_run_node, int(cfg["timeouts"]["typecheckSeconds"]))

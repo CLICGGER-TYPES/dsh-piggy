@@ -58,14 +58,8 @@ class XSession:
             return f":{number}"
         raise RuntimeError("ENV: no free X display in configured range")
 
-    def start(self, port_roles):
-        g = self.cfg["guest"]
-        self.display = self.choose_display(g["displayBase"], g["displayCount"])
-        ports = self.choose_ports(g["portBase"], g["portCount"], port_roles)
-        self.run.identity.update({"display": self.display, "screen": f"{g['screenWidth']}x{g['screenHeight']}x24",
-                                  "ports": ports, "displaySelectedAtRunStart": True,
-                                  "portsSelectedAtRunStart": True})
-        self.run.write_identity()
+    def prepare_layout_directories(self):
+        """核对并准备本次布局的短路径目录，不启动 X 服务。"""
         roots = [self.layout[k] for k in ("nativeShortRoot", "nativeTmpDir", "nativeXdgRuntimeDir", "nativeCacheDir")]
         roots += [str(self.native_auth.parent), str(self.snap_auth.parent), self.layout["chromiumTmpDir"],
                   self.layout["chromiumXdgRuntimeDir"], self.layout["chromiumProfile"],
@@ -78,10 +72,19 @@ class XSession:
         if self.layout["nativeTmpDir"] != str(pathlib.Path(self.layout["nativeTmpDir"]).resolve()):
             raise RuntimeError("CONFIG: native TMPDIR must be canonical")
         self.native_auth.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+    def start(self, port_roles):
+        g = self.cfg["guest"]
+        self.display = self.choose_display(g["displayBase"], g["displayCount"])
+        ports = self.choose_ports(g["portBase"], g["portCount"], port_roles)
+        self.run.identity.update({"display": self.display, "screen": f"{g['screenWidth']}x{g['screenHeight']}x24",
+                                  "ports": ports, "displaySelectedAtRunStart": True,
+                                  "portsSelectedAtRunStart": True})
+        self.run.write_identity()
+        self.prepare_layout_directories()
         cookie = secrets.token_hex(16)
         auth_env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": str(self.run.out / "home"),
                     "XAUTHORITY": str(self.native_auth), "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC"}
-        self.native_auth.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.native_auth.touch(mode=0o600)
         os.chmod(self.native_auth, 0o600)
         _run(["xauth", "-f", str(self.native_auth), "add", self.display,

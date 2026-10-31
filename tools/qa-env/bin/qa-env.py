@@ -65,6 +65,11 @@ def command_exists(name):
     return shutil.which(name) is not None
 
 
+def tmux_session_exists(session):
+    return subprocess.run(["tmux", "has-session", "-t", session], stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL, check=False).returncode == 0
+
+
 def check_private_path(path, label, *, require_private=False):
     target = pathlib.Path(path)
     if not target.is_file():
@@ -171,9 +176,7 @@ def preflight(cfg, *, require_new_run=True):
     session = f"{cfg['task']['sessionPrefix']}-{cfg['task']['runBatchId']}"
     if not re.fullmatch(r"[A-Za-z0-9_-]{3,64}", session):
         raise RuntimeError("CONFIG: tmux session name is invalid/too long")
-    exists = subprocess.run(["tmux", "has-session", "-t", session], stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL, check=False)
-    if exists.returncode == 0:
+    if tmux_session_exists(session):
         raise RuntimeError("TOOL: task-named tmux session already exists")
     if cfg["guest"]["screenWidth"] != 1600 or cfg["guest"]["screenHeight"] != 1000:
         raise RuntimeError("CONFIG: QAENV basic GTK fixture requires the approved 1600x1000 private display")
@@ -239,12 +242,22 @@ def build_local_artifacts(cfg, run_root):
     source_manifest = run_root / "artifacts" / "source-3585-manifest.json"
     atomic_json(source_manifest, manifest)
     toolkit_archive = run_root / "artifacts" / "qa-env-toolkit.tar.gz"
-    with tarfile.open(toolkit_archive, "w:gz", compresslevel=6) as archive:
-        base = repo / "tools" / "qa-env"
-        for path in sorted(base.rglob("*")):
-            if "__pycache__" in path.parts or path.suffix == ".pyc":
-                continue
-            archive.add(path, arcname=(pathlib.Path("qa-env") / path.relative_to(base)).as_posix(), recursive=False)
+    base = repo / "tools" / "qa-env"
+    def normalize_toolkit_member(member):
+        member.mtime = 0
+        member.uid = 0
+        member.gid = 0
+        member.uname = ""
+        member.gname = ""
+        return member
+    with toolkit_archive.open("wb") as raw:
+        with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, compresslevel=6) as compressed:
+            with tarfile.open(fileobj=compressed, mode="w|") as archive:
+                for path in sorted(base.rglob("*")):
+                    if "__pycache__" in path.parts or path.suffix == ".pyc":
+                        continue
+                    archive.add(path, arcname=path.relative_to(base).as_posix(), recursive=False,
+                                filter=normalize_toolkit_member)
     hashes = {"sourceArchive": sha256(source_archive), "sourceManifest": sha256(source_manifest),
               "toolkitArchive": sha256(toolkit_archive)}
     atomic_json(run_root / "reports" / "local-artifacts.json", {
@@ -259,18 +272,21 @@ def build_local_artifacts(cfg, run_root):
             "toolkitArchive": toolkit_archive, "hashes": hashes}
 
 
-def guest_config(cfg, layout):
+def guest_config(cfg, layout, toolkit_sha256):
     guest_root = pathlib.Path(cfg["guest"]["taskRoot"])
     cache = guest_root / "cache"
     run_root = pathlib.Path(layout["guestRunRoot"])
+    toolkit_root = cache / f"qa-env-{toolkit_sha256[:16]}"
     return {
         "schemaVersion": 1,
         "task": {"taskId": cfg["task"]["taskId"], "actor": cfg["task"]["actor"], "runBatchId": cfg["task"]["runBatchId"]},
         "guest": {key: cfg["guest"][key] for key in ("taskRoot", "nativeShortRootParent", "snapShortRootParent", "chromiumLauncher", "displayBase", "displayCount", "screenWidth", "screenHeight", "portBase", "portCount")},
         "hostIdentity": {"sourceCommit": cfg["host"]["sourceCommit"], "appImageSha256": cfg["host"]["appImageSha256"],
-                         "electron44ZipSha256": cfg["host"]["electron44ZipSha256"]},
+                         "electron44ZipSha256": cfg["host"]["electron44ZipSha256"],
+                         "toolkitArchiveSha256": toolkit_sha256},
         "inputs": {"sourceManifest": str(cache / "source-3585-manifest.json"),
-                   "appImage": str(cache / "M1FINAL.AppImage"), "electronZip": str(cache / "electron-v44.5.1-linux-x64.zip")},
+                   "appImage": str(cache / "M1FINAL.AppImage"), "electronZip": str(cache / "electron-v44.5.1-linux-x64.zip"),
+                   "toolkitRoot": str(toolkit_root)},
         "toolchainVersions": json.loads((pathlib.Path(cfg["host"]["repoRoot"]) / "tools" / "qa-env" / "toolchain-versions.json").read_text(encoding="utf-8")),
         "timeouts": cfg["timeouts"], "runRoot": str(run_root),
     }
@@ -300,10 +316,11 @@ def remote_cache_items(cfg, local_artifacts):
     host = cfg["host"]
     root = pathlib.Path(cfg["guest"]["taskRoot"])
     cache = root / "cache"
+    toolkit_name = f"qa-env-toolkit-{local_artifacts['hashes']['toolkitArchive'][:16]}.tar.gz"
     return [
         (local_artifacts["sourceArchive"], cache / "source-3585.tar.gz", local_artifacts["hashes"]["sourceArchive"]),
         (local_artifacts["sourceManifest"], cache / "source-3585-manifest.json", local_artifacts["hashes"]["sourceManifest"]),
-        (local_artifacts["toolkitArchive"], cache / "qa-env-toolkit.tar.gz", local_artifacts["hashes"]["toolkitArchive"]),
+        (local_artifacts["toolkitArchive"], cache / toolkit_name, local_artifacts["hashes"]["toolkitArchive"]),
         (pathlib.Path(host["toolchainArchive"]), cache / "toolchain-deps.tar.gz", host["toolchainArchiveSha256"]),
         (pathlib.Path(host["appImage"]), cache / "M1FINAL.AppImage", host["appImageSha256"]),
         (pathlib.Path(host["electron44Zip"]), cache / "electron-v44.5.1-linux-x64.zip", host["electron44ZipSha256"]),
@@ -334,21 +351,26 @@ def build_transport(cfg, run_root, layouts, artifacts):
     cache_manifest = run_root / "artifacts" / "guest-cache-manifest.json"
     items = {str(remote): expected for _, remote, expected in remote_cache_items(cfg, artifacts)}
     atomic_json(cache_manifest, {"task": cfg["task"]["taskId"], "sourceCommit": cfg["host"]["sourceCommit"], "items": items})
-    cache_manifest_remote = cache / "qa-env-cache-manifest.json"
-    extracted_manifest_remote = cache / "qa-env-extracted-manifest.json"
-    lines += [make_scp_command(cfg, cache_manifest, str(cache_manifest_remote) + ".part-" + cfg["task"]["runBatchId"]),
-              make_remote_command(cfg, f"mv {q(str(cache_manifest_remote)+'.part-'+cfg['task']['runBatchId'])} {q(cache_manifest_remote)}")]
-    extract = (f"set -e; if [ -f {q(extracted_manifest_remote)} ]; then cmp -s {q(cache_manifest_remote)} {q(extracted_manifest_remote)}; "
-               f"else test ! -e {q(cache / 'source-3585')}; test ! -e {q(cache / 'qa-env')}; test ! -e {q(cache / 'toolchain')}; "
-               f"mkdir -m 700 -p {q(cache / 'source-3585')} {q(cache / 'toolchain')}; "
-               f"tar -xzf {q(cache / 'source-3585.tar.gz')} -C {q(cache / 'source-3585')}; "
-               f"tar -xzf {q(cache / 'qa-env-toolkit.tar.gz')} -C {q(cache)}; "
-               f"tar -xzf {q(cache / 'toolchain-deps.tar.gz')} -C {q(cache / 'toolchain')}; "
-               f"chmod 700 {q(cache / 'source-3585')} {q(cache / 'qa-env')} {q(cache / 'toolchain')}; "
-               f"cp {q(cache_manifest_remote)} {q(extracted_manifest_remote)}; fi")
+    toolkit_sha = artifacts["hashes"]["toolkitArchive"]
+    toolkit_root = cache / f"qa-env-{toolkit_sha[:16]}"
+    toolkit_archive = cache / f"qa-env-toolkit-{toolkit_sha[:16]}.tar.gz"
+    toolkit_temp = cache / f"qa-env-{toolkit_sha[:16]}.part-{cfg['task']['runBatchId']}"
+    toolkit_marker = toolkit_root / ".qaenv-toolkit-identity.json"
+    marker_check = ("python3 -c 'import pathlib,sys; "
+                    "sys.exit(0 if pathlib.Path(sys.argv[1]).read_text(encoding=\"utf-8\").strip()==sys.argv[2] else 1)' "
+                    f"{q(toolkit_marker)} {q(toolkit_sha)}")
+    extract = (f"set -e; if [ ! -d {q(cache / 'source-3585')} ]; then mkdir -m 700 {q(cache / 'source-3585')}; "
+               f"tar -xzf {q(cache / 'source-3585.tar.gz')} -C {q(cache / 'source-3585')}; fi; "
+               f"if [ ! -d {q(cache / 'toolchain' / 'node_modules')} ]; then mkdir -m 700 -p {q(cache / 'toolchain')}; "
+               f"tar -xzf {q(cache / 'toolchain-deps.tar.gz')} -C {q(cache / 'toolchain')}; fi; "
+               f"if [ -d {q(toolkit_root)} ]; then test -f {q(toolkit_marker)}; {marker_check}; "
+               f"else test ! -e {q(toolkit_temp)}; mkdir -m 700 {q(toolkit_temp)}; "
+               f"tar -xzf {q(toolkit_archive)} -C {q(toolkit_temp)}; printf '%s\\n' {q(toolkit_sha)} > {q(toolkit_temp / '.qaenv-toolkit-identity.json')}; "
+               f"mv {q(toolkit_temp)} {q(toolkit_root)}; fi; "
+               f"chmod 700 {q(cache / 'source-3585')} {q(cache / 'toolchain')} {q(toolkit_root)}")
     lines.append(make_remote_command(cfg, extract))
     for layout in layouts:
-        guest_cfg = guest_config(cfg, layout)
+        guest_cfg = guest_config(cfg, layout, toolkit_sha)
         local_cfg = run_root / "scripts" / f"{layout['runId']}-guest-config.json"
         atomic_json(local_cfg, guest_cfg)
         remote_config = cache / "configs" / f"{layout['runId']}.json"
@@ -359,7 +381,7 @@ def build_transport(cfg, run_root, layouts, artifacts):
         run_root_guest = pathlib.Path(layout["guestRunRoot"])
         lines.append(make_remote_command(cfg, f"test ! -e {q(run_root_guest)}"))
         remote_cfg = cache / "configs" / f"{run_id}.json"
-        guest_entry = cache / "qa-env" / "guest" / "runner.py"
+        guest_entry = toolkit_root / "guest" / "runner.py"
         timeout_seconds = int(cfg["timeouts"]["runSeconds"])
         runner_env = f"env -i PATH=/usr/local/bin:/usr/bin:/bin HOME={q(cache)} LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC PYTHONDONTWRITEBYTECODE=1"
         remote_run = make_remote_command(cfg, f"{runner_env} timeout --signal=INT --kill-after=12s {timeout_seconds}s python3 {q(guest_entry)} --config {q(remote_cfg)} --run-label {layout['label']}")
@@ -412,24 +434,28 @@ def run_batch(cfg, pre):
     while time.monotonic() < deadline:
         if rcfile.is_file():
             break
-        active = subprocess.run(["tmux", "has-session", "-t", session], stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL, check=False)
-        if active.returncode:
+        if not tmux_session_exists(session):
             break
         time.sleep(1)
     if not rcfile.is_file():
-        try:
-            subprocess.run(["tmux", "send-keys", "-t", session, "C-c"], timeout=3, check=False)
+        session_alive = tmux_session_exists(session)
+        if session_alive:
+            subprocess.run(["tmux", "send-keys", "-t", session, "C-c"], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=3, check=False)
             time.sleep(5)
-        finally:
-            subprocess.run(["tmux", "kill-session", "-t", session], timeout=3, check=False)
-        result = {"runBatchId": cfg["task"]["runBatchId"], "status": "TOOL_TIMEOUT", "finishedAtUtc": utc(),
+            if tmux_session_exists(session):
+                subprocess.run(["tmux", "kill-session", "-t", session], stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL, timeout=3, check=False)
+        result = {"runBatchId": cfg["task"]["runBatchId"],
+                  "status": "TOOL_TIMEOUT" if session_alive else "TOOL_EXIT_WITHOUT_RC", "finishedAtUtc": utc(),
                   "tmuxSession": session, "hostLog": str(run_root / "logs" / "transport.log"),
                   "automaticRetry": False}
         atomic_json(run_root / "reports" / "progress.json", result)
         return 40
     code = int(rcfile.read_text(encoding="utf-8").strip())
-    subprocess.run(["tmux", "kill-session", "-t", session], timeout=3, check=False)
+    if tmux_session_exists(session):
+        subprocess.run(["tmux", "kill-session", "-t", session], stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, timeout=3, check=False)
     evidence_records = []
     for layout in derive_batch(cfg):
         archive_path = run_root / "artifacts" / f"{layout['runId']}-evidence.tar.gz"
