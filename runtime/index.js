@@ -18,17 +18,23 @@ import {
 import { recoverSaveImportSync, commitSaveImport } from './save-transaction.js'
 import { recoverMergeSync } from './merge-transaction.js'
 import { createSaveTransfer } from './save-transfer.js'
+import { createCloudRoutes } from './cloud-routes.js'
+import { createGitSync } from './git-sync.js'
+import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWorkEvent } from './work-events.js'
 
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
- * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object}} options */
+ * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object,
+ * cloudSave?:{enabled?:boolean,remote?:string,branch?:string,device?:string,debounceMs?:number,insecureSkipTlsVerify?:boolean}|null}} options */
 export function createGameRuntime(options) {
   mkdirSync(dirname(options.statePath), { recursive: true })
   const release = acquireGameLock(options.statePath)
   let ledger
   /** @type {ReturnType<typeof createStore>} */
   let store
-  let closed = false, busy = false, generation = 0
+  let closed = false, accepting = true, busy = false, generation = 0
+  let disposePromise = null
+  let cleanupDone = false
   let fault = null
   let runtimeId = randomUUID()
   let epoch = 0
@@ -37,7 +43,10 @@ export function createGameRuntime(options) {
   let session = null
   /** @type {any} */
   let api = null
-  const mounts = new Set(), active = new Set()
+  const mounts = new Set(), active = new Set(), specialActive = new Set(), exclusiveActive = new Set()
+  let cloudRoutes = new Set()
+  let cloud = null
+  let cloudTimer = null
 
   /**
    * 纯运行态检查：不碰 ledger/store，也不做 prepare/flush。closed/fault 的
@@ -48,12 +57,18 @@ export function createGameRuntime(options) {
     if (closed) throw new Error('game runtime closed')
     if (fault) throw Object.assign(new Error('存档恢复未完成，请检查磁盘后重新启动'), { status: 503 })
   }
+  function assertAccepting() {
+    assertOperational()
+    if (!accepting) throw Object.assign(new Error('game runtime closing'), { status: 503 })
+  }
   function prepare() {
     assertOperational()
     ledger.finish(store)
   }
-  function available() {
+  function available(allowClosing = false) {
     if (busy) throw Object.assign(new Error('正在处理存档，请稍后重试'), { status: 503 })
+    if (allowClosing) assertOperational()
+    else assertAccepting()
     prepare()
   }
   /**
@@ -96,6 +111,49 @@ export function createGameRuntime(options) {
     return true
   }
 
+  function createCloudSync() {
+    const config = options.cloudSave
+    if (config === null || typeof config !== 'object' || config.enabled !== true) return null
+    const remote = typeof config.remote === 'string' ? config.remote.trim() : ''
+    if (remote === '') return null
+    const branch = typeof config.branch === 'string' && config.branch !== '' ? config.branch : 'main'
+    const device = typeof config.device === 'string' ? config.device : ''
+    const debounceMs = Number.isFinite(config.debounceMs) && config.debounceMs > 0 ? config.debounceMs : 10 * 60 * 1000
+    const archive = () => {
+      const built = createSaveArchive({ statePath: options.statePath, state: store?.state ?? null })
+      return {
+        buffer: built.buffer,
+        name: built.name,
+        summary: built.summary,
+        stateVersion: store?.state?.version ?? null,
+        lastSeenAt: store?.state?.lastSeenAt ?? null,
+        level: built.summary?.level ?? null,
+        coins: store?.state?.coins ?? null,
+      }
+    }
+    const sync = createGitSync({
+      statePath: options.statePath,
+      remote,
+      branch,
+      device,
+      insecureSkipTlsVerify: config.insecureSkipTlsVerify === true,
+      archive,
+      parse: (_name, buffer) => parseSaveArchive(buffer),
+      importFiles: files => replaceSaveFiles(files, archive().buffer),
+    })
+    return { sync, remote, branch, device, debounceMs, lastPushAt: 0 }
+  }
+
+  function startCloudTimer() {
+    if (cloud === null || cloudTimer !== null) return
+    cloudTimer = setInterval(() => {
+      void cloud.sync.sequence(sync => exclusive(() => sync.pushSnapshot(), true))
+        .then(() => { if (cloud !== null) cloud.lastPushAt = Date.now() })
+        .catch(error => { store?.journal?.record?.('warn', 'cloud', '云存档推送失败', { reason: String(error?.message ?? error) }) })
+    }, cloud.debounceMs)
+    cloudTimer.unref?.()
+  }
+
   function open() {
     const nextLedger = openWorkLedger({ directory: `${options.statePath}.work-events`,
       statePath: options.statePath, now: options.now })
@@ -133,20 +191,53 @@ export function createGameRuntime(options) {
     }
     const next = []
     registerGameRoutes({ register(route) { next.push(route); return () => {} } }, store, { fetch: options.fetch })
+    if (cloud === null) cloud = createCloudSync()
+    cloudRoutes = new Set()
+    if (cloud !== null) {
+      const routes = createCloudRoutes({
+        status: async () => ({ enabled: true, remoteConfigured: true, branch: cloud.branch, device: cloud.device, lastPushAt: cloud.lastPushAt }),
+        branches: () => cloud.sync.listBranches(),
+        pull: branch => cloud.sync.sequence(sync => exclusive(() => sync.applyBranch(branch), true)),
+        pullCommit: target => cloud.sync.sequence(sync => exclusive(() => sync.applyCommit(target), true)),
+        commit: () => cloud.sync.sequence(async sync => {
+          const result = await exclusive(() => sync.pushSnapshot({ manual: true }), true)
+          cloud.lastPushAt = Date.now()
+          return result
+        }),
+        history: branch => cloud.sync.history(branch === '' ? cloud.branch : branch),
+        push: () => cloud.sync.sequence(async sync => {
+          const result = await exclusive(() => sync.pushSnapshot(), true)
+          cloud.lastPushAt = Date.now()
+          return result
+        }),
+      })
+      for (const route of routes) cloudRoutes.add(route)
+      next.push(...routes)
+      startCloudTimer()
+    }
     routes = next
   }
   try { recoverSaveImportSync(options.statePath); recoverMergeSync(options.statePath); open() }
   catch (error) { store?.dispose(); release(); throw error }
 
-  function finishDispose() {
-    if (!fault) { ledger.finish(store); store.flush() }
+  function finishDispose({ flush = true } = {}) {
+    if (cleanupDone) return
+    accepting = false
+    if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
     closed = true
     session?.dispose()
     for (const dispose of mounts) dispose()
     mounts.clear()
     transfer.clear()
-    if (!fault) store.dispose()
-    release()
+    try {
+      if (flush && !fault) { ledger.finish(store); store.flush() }
+    } finally {
+      try { if (!fault) store.dispose() }
+      finally {
+        release()
+        cleanupDone = true
+      }
+    }
   }
   function readReceipts() {
     try {
@@ -184,72 +275,86 @@ export function createGameRuntime(options) {
     open()
   }
 
-  async function exclusive(operation) {
-    available()
-    busy = true
+  async function replaceSaveFiles(files, backup) {
+    store.dispose()
     try {
-      await Promise.allSettled([...active])
-      prepare()
-      await store.ext?.ready
-      prepare()
-      ledger.finish(store)
-      store.flush(true)
-      return await operation()
-    } finally {
-      busy = false
-      if (closed) finishDispose()
-    }
-  }
-  const transfer = createSaveTransfer({ statePath: options.statePath, getStore: () => store,
-    now: options.now, exclusive, isBusy: () => busy, async replace(files, backup) {
-      store.dispose()
-      try {
-        const result = await commitSaveImport({ statePath: options.statePath, files, backup,
-          nowMs: options.now?.() ?? Date.now(), async activate() {
+      const result = await commitSaveImport({ statePath: options.statePath, files, backup,
+        nowMs: options.now?.() ?? Date.now(), async activate() {
+          if (closed) throw new Error('game runtime closed')
+          if (files.get('state.json')?.toString() === 'null') unlinkSync(options.statePath)
+          try {
+            open()
+            await store.ext?.ready
             if (closed) throw new Error('game runtime closed')
-            if (files.get('state.json')?.toString() === 'null') unlinkSync(options.statePath)
-            try {
-              open()
-              await store.ext?.ready
-              if (closed) throw new Error('game runtime closed')
-              store.flush(true)
-            } catch (error) {
-              store.installCommittedState(null)
-              store.dispose()
-              throw error
-            }
-          } })
-        try { options.onStateChanged?.() } catch (error) {
-          store.journal?.record?.('error', 'save', '存档已导入，但刷新通知失败', { reason: error.message })
-        }
-        return result
-      } catch (error) {
-        // 回滚前先撤掉部分激活的新 Store 的定时器，别让它写回旧档。
+            store.flush(true)
+          } catch (error) {
+            store.installCommittedState(null)
+            store.dispose()
+            throw error
+          }
+        } })
+      try { options.onStateChanged?.() } catch (error) {
+        store.journal?.record?.('error', 'save', '存档已导入，但刷新通知失败', { reason: error.message })
+      }
+      return result
+    } catch (error) {
+      // 回滚前先撤掉部分激活的新 Store 的定时器，别让它写回旧档。
+      store.installCommittedState(null)
+      store.dispose()
+      if (error.recoveryError) {
+        try { recoverSaveImportSync(options.statePath) }
+        catch (recoveryError) { fault = recoveryError; throw error }
+      }
+      try {
+        open()
+      } catch (reopenError) {
+        // 回滚已恢复旧档，但运行时重开失败；不能让旧路由配新 store 继续跑，故障关闭等重启。
         store.installCommittedState(null)
         store.dispose()
-        if (error.recoveryError) {
-          try { recoverSaveImportSync(options.statePath) }
-          catch (recoveryError) { fault = recoveryError; throw error }
-        }
-        try {
-          open()
-        } catch (reopenError) {
-          // 回滚已恢复旧档，但运行时重开失败；不能让旧路由配新 store 继续跑，故障关闭等重启。
-          store.installCommittedState(null)
-          store.dispose()
-          fault = reopenError
-          throw error
-        }
+        fault = reopenError
         throw error
       }
-    } })
+      throw error
+    }
+  }
+
+  async function exclusive(operation, allowClosing = false) {
+    available(allowClosing)
+    busy = true
+    let pending
+    pending = (async () => {
+      try {
+        await Promise.allSettled([...active])
+        prepare()
+        await store.ext?.ready
+        prepare()
+        ledger.finish(store)
+        store.flush(true)
+        return await operation()
+      } finally {
+        busy = false
+        if (closed && cloud === null) finishDispose()
+      }
+    })()
+    exclusiveActive.add(pending)
+    try {
+      return await pending
+    } finally { exclusiveActive.delete(pending) }
+  }
+  const transfer = createSaveTransfer({ statePath: options.statePath, getStore: () => store,
+    now: options.now, exclusive, isBusy: () => busy, replace: replaceSaveFiles })
 
   async function invoke(routeKey, req, res) {
     const route = [...routes, ...transfer.routes].find(r => r.path === routeKey)
     if (!route) { res.writeHead(404); return res.end('not found') }
-    if (transfer.routes.includes(route)) {
-      if (closed) throw new Error('game runtime closed')
-      return route.handler(req, res)
+    if (transfer.routes.includes(route) || cloudRoutes.has(route)) {
+      if (!accepting) {
+        res.writeHead(503, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+        return res.end(JSON.stringify({ ok: false, error: 'game runtime closing' }))
+      }
+      const pending = Promise.resolve().then(() => route.handler(req, res))
+      specialActive.add(pending)
+      try { return await pending } finally { specialActive.delete(pending) }
     }
     if (!(closed && route.path === '/dsh-piggy/logs/export')) {
       try { available() } catch (error) {
@@ -299,7 +404,7 @@ export function createGameRuntime(options) {
     view(drain = false) {
       // 合并/导入期间仍要能给面板返回「最后一次快照 + ok:false」。
       if (!busy) available()
-      else if (closed || fault) throw new Error('game runtime unavailable')
+      else if (closed || !accepting || fault) throw new Error('game runtime unavailable')
       return snapshot(store, { drain })
     },
     gameInfo() {
@@ -315,7 +420,7 @@ export function createGameRuntime(options) {
     art(name) { return artFile({ filePath: options.statePath }, name) },
     prepareMerge(target, binding) {
       // 在 exclusive 的例行 flush 之前就拒绝故障/过期/外来会话，避免旧句柄碰这份存档。
-      assertOperational()
+      assertAccepting()
       selectSession(binding)
       return exclusive(async () => {
         selectSession(binding)
@@ -373,7 +478,7 @@ export function createGameRuntime(options) {
       return store.ext?.installedKeys?.() ?? []
     },
     acceptWorkEvent(event, binding) {
-      assertOperational()
+      assertAccepting()
       selectSession(binding)
       try {
         available()
@@ -387,16 +492,64 @@ export function createGameRuntime(options) {
       }
     },
     dispatchCommand(command, input, binding) {
-      assertOperational()
+      assertAccepting()
       selectSession(binding)
       available()
       return dispatch(store, command, input)
     },
     record: (...args) => store.journal?.record?.(...args),
     dispose() {
-      if (closed) return
-      if (busy) closed = true
-      else finishDispose()
+      if (disposePromise !== null) return disposePromise
+      if (closed) return Promise.resolve({ alreadyClosed: true })
+      accepting = false
+      if (cloud === null) {
+        if (busy) {
+          closed = true
+          disposePromise = Promise.allSettled([...active, ...specialActive, ...exclusiveActive])
+            .then(() => { finishDispose(); return { localPersisted: true, cloudPush: 'disabled' } })
+          return disposePromise
+        }
+        finishDispose()
+        return Promise.resolve({ localPersisted: true, cloudPush: 'disabled' })
+      }
+
+      if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
+      for (const unmount of mounts) unmount()
+      mounts.clear()
+      transfer.clear()
+      disposePromise = (async () => {
+        const pending = [...active, ...specialActive, ...exclusiveActive]
+        await Promise.allSettled(pending)
+        await cloud.sync.drain()
+
+        let persistenceError = null
+        if (!fault) {
+          try { ledger.finish(store); store.flush() }
+          catch (error) { persistenceError = error }
+        }
+
+        let cloudPush = fault
+          ? { ok: false, reason: 'runtime-fault' }
+          : persistenceError !== null
+            ? { ok: false, reason: 'local-persist-failed' }
+            : { ok: false, reason: 'not-attempted' }
+        try {
+          const closeResult = await cloud.sync.close({ finalPush: !fault && persistenceError === null })
+          if (closeResult.finalPush === true) {
+            cloud.lastPushAt = Date.now()
+            cloudPush = { ok: true, at: cloud.lastPushAt }
+          }
+        } catch (error) {
+          cloudPush = { ok: false, reason: 'final-push-failed', message: String(error?.message ?? error) }
+          try { store.journal?.record?.('warn', 'cloud', '关闭时最终云推送失败', { reason: cloudPush.message }) } catch { /* the returned close result is still authoritative */ }
+          console.warn(`[dsh-piggy] final cloud push failed: ${cloudPush.message}`)
+        }
+
+        finishDispose({ flush: false })
+        if (persistenceError !== null) throw persistenceError
+        return { localPersisted: !fault, cloudPush }
+      })()
+      return disposePromise
     },
   }
   if (session === null) throw new Error('game runtime has no session')

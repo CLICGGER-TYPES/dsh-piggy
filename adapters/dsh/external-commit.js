@@ -46,13 +46,13 @@ export function createCommitFlow(ctx) {
     const backupName = previous?.backupName ?? config?.backup ?? dsBackupForMerge(statePath, mergeId)
     let retired
     try {
-      retired = retireEmbedded({
+      retired = await retireEmbedded({
         statePath, mergeId, backupName, now, stopRuntime: () => ctx.stopEmbedded(),
         config: config === null ? ctx.baseConfig() : config, saveConfig: ctx.saveConfig,
       })
     } catch (cause) {
       ctx.saveConfig({ ...(ctx.getConfig() ?? ctx.baseConfig()), pigState: 'merged', connection: 'connected', mergeId, target: ctx.getTarget(), retirementPending: true })
-      ctx.setMode('external')
+      await ctx.setMode('external')
       return {
         ok: false, reason: 'retire-failed', targetCommitted: true, mergeId,
         message: cause instanceof Error ? cause.message : String(cause),
@@ -73,7 +73,7 @@ export function createCommitFlow(ctx) {
     })
     ctx.setPreview(null)
     if (ctx.getExpiry() !== null) { clearTimeout(ctx.getExpiry()); ctx.setExpiry(null) }
-    ctx.setMode('external')
+    await ctx.setMode('external')
     ctx.setConnection('connected')
     outbox.resume()
     ctx.scheduleDelivery(0)
@@ -181,14 +181,14 @@ export function createCommitFlow(ctx) {
       ctx.setConfig(null)
       markDsRolledBack(statePath, mergeId, now())
       ctx.setPreview(null)
-      ctx.setMode('normal')
+      await ctx.setMode('normal')
       outbox.resume()
       ctx.embedded().ensure()
       await ctx.refreshTargetSummary().catch(() => {})
       return { ok: true, mergeId, restored: { target: true, source: true }, backups: { source: backupName } }
     } catch (cause) {
       ctx.saveConfig({ ...(config ?? ctx.baseConfig()), pigState: 'rolling-back', connection: 'disconnected', mergeId, rollback: { mergeId, targetRestored: true } })
-      ctx.setMode('external')
+      await ctx.setMode('external')
       return { ok: false, reason: 'partial', restored: { target: true, source: false }, message: cause instanceof Error ? cause.message : String(cause) }
     }
   }
@@ -206,7 +206,7 @@ export function createCommitFlow(ctx) {
       const restored = restoreEmbeddedFromBackup({ statePath, backupName: name, nowMs: now(), authority: ctx.persistence?.() ?? null })
       removeConfig(statePath)
       ctx.setConfig(null)
-      ctx.setMode('normal')
+      await ctx.setMode('normal')
       outbox.resume()
       ctx.embedded().ensure()
       return { ok: true, restored, ...ctx.status() }

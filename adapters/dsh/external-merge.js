@@ -113,9 +113,9 @@ function renameIfPresent(from, to) {
 
 /**
  * 源端退役：标记 → 退出运行时 → 两个改名分别幂等。已完成的步骤不重复做。
- * @param {{statePath:string, mergeId:string, backupName:string, stopRuntime?:()=>void, now?:()=>number, config?:any, saveConfig?:(config:any)=>void}} options
+ * @param {{statePath:string, mergeId:string, backupName:string, stopRuntime?:()=>Promise<void>|void, now?:()=>number, config?:any, saveConfig?:(config:any)=>void}} options
  */
-export function retireEmbedded(options) {
+export async function retireEmbedded(options) {
   const { statePath, mergeId } = options
   const now = options.now ?? (() => Date.now())
   let marker = readMarker(statePath).marker
@@ -132,7 +132,7 @@ export function retireEmbedded(options) {
     backup: options.backupName ?? null,
     updatedAt: now(),
   })
-  options.stopRuntime?.()
+  await options.stopRuntime?.()
   if (!marker.stateRenamed) {
     marker.stateRenamed = renameIfPresent(statePath, retiredStatePath(statePath, mergeId))
     writeMarker(statePath, marker)

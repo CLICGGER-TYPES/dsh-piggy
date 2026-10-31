@@ -36,7 +36,7 @@ const BUSY_STATES = new Set(['merging', 'rolling-back', 'merge-unknown'])
  * @param {typeof fetch} [options.fetch]
  * @param {() => number} [options.now]
  * @param {string} [options.gameVersion]
- * @param {(mode:'normal'|'external')=>void} [options.onModeChange]
+ * @param {(mode:'normal'|'external')=>void|Promise<void>} [options.onModeChange]
  * @param {(message:string)=>void} [options.warn]
  * @param {string} [options.dshHome]
  * @param {string[]} [options.markerPaths]
@@ -90,10 +90,10 @@ export function createExternalController(options) {
     return config
   }
 
-  function applyMode(next) {
+  async function applyMode(next) {
     if (mode === next) return
     mode = next
-    options.onModeChange?.(next)
+    await options.onModeChange?.(next)
   }
 
   function baseConfig() {
@@ -340,12 +340,12 @@ export function createExternalController(options) {
     outbox.load()
     const retirement = recoverRetirement(statePath)
     if (configCorrupt) {
-      applyMode('external')
+      await applyMode('external')
       connection = 'disconnected'
       return status()
     }
     if (retirement.retired) {
-      applyMode('external')
+      await applyMode('external')
       connection = restoredConnection()
       await refresh().catch(() => {})
       if (config?.pigState === 'merge-unknown' || config?.connection === 'merging') setTimeout(() => { void commit.pollMergeStatus() }, 1000).unref?.()
@@ -353,7 +353,7 @@ export function createExternalController(options) {
       return status()
     }
     if (config !== null && config.pigState !== 'none') {
-      applyMode('external')
+      await applyMode('external')
       connection = restoredConnection()
       await refresh().catch(() => {})
       // merging 是提交请求已发出但结果未落盘的崩溃窗口；和 merge-unknown 一样
@@ -362,7 +362,7 @@ export function createExternalController(options) {
       delivery.schedule(0)
       return status()
     }
-    applyMode('normal')
+    await applyMode('normal')
     outbox.resume()
     delivery.schedule(0)
     return status()

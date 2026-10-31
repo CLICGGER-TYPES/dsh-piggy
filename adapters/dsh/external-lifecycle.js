@@ -53,7 +53,7 @@ export function createLifecycle(ctx) {
     const loaded = readStateFile(statePath, now())
     if (loaded.state === null) {
       removeConfig(statePath)
-      ctx.setMode('normal')
+      await ctx.setMode('normal')
       ctx.embedded().ensure()
       return { ok: true, empty: true }
     }
@@ -69,7 +69,7 @@ export function createLifecycle(ctx) {
     ctx.setConfig(null)
     ctx.setPreview(null)
     outbox.resume()
-    ctx.setMode('normal')
+    await ctx.setMode('normal')
     ctx.embedded().ensure()
     ctx.scheduleDelivery(0)
     return { ok: true, elapsed: result.elapsed }
@@ -86,7 +86,7 @@ export function createLifecycle(ctx) {
     if (previous.previousMode === 'paused') {
       const config = ctx.getConfig()
       if (config !== null) ctx.saveConfig({ ...config, connection: 'connected', pigState: 'paused', mergeId: null, backup: null, suspendedAt: previous.previousSuspendedAt ?? previous.frozenAt })
-      ctx.setMode('external')
+      await ctx.setMode('external')
       return { ok: true, reason, restored: 'paused' }
     }
     const result = await resumeSource(previous.frozenAt, { verifyHash: false })
@@ -148,8 +148,8 @@ export function createLifecycle(ctx) {
       updatedAt: now(),
     }
     ctx.saveConfig(next)
-    ctx.stopEmbedded()
-    ctx.setMode('external')
+    await ctx.stopEmbedded()
+    await ctx.setMode('external')
     outbox.resume()
     ctx.scheduleDelivery(0)
     ctx.markSeen()
@@ -212,8 +212,8 @@ export function createLifecycle(ctx) {
       localSummary: report.source?.summary ?? mergeSummary(frozen.state),
       updatedAt: frozenAt,
     })
-    ctx.stopEmbedded()
-    ctx.setMode('external')
+    await ctx.stopEmbedded()
+    await ctx.setMode('external')
     ctx.setConnection('connected')
     outbox.pause()
     ctx.setPreview({
@@ -260,7 +260,7 @@ export function createLifecycle(ctx) {
     }
     outbox.clear()
     outbox.removeFile()
-    ctx.setMode('normal')
+    await ctx.setMode('normal')
     ctx.embedded().ensure()
     return { ok: true, ...ctx.status() }
   }

@@ -29,7 +29,7 @@ export function apply(ctx, config = {}) {
 
   function ensureRuntime() {
     if (runtime !== null) return runtime
-    runtime = createGameRuntime({ statePath, journalHeader: environmentNote({
+    runtime = createGameRuntime({ statePath, cloudSave: config.cloudSave, journalHeader: environmentNote({
       运行形态: 'DSH 插件', 存档路径: statePath, DSH_HOME: process.env.DSH_HOME ?? '', Node: process.version,
     }) })
     return runtime
@@ -106,28 +106,28 @@ export function apply(ctx, config = {}) {
       syncRoutes()
       return current
     },
-    stop: () => {
+    stop: async () => {
       unmountEmbedded()
       const old = runtime
       runtime = null
-      try { old?.dispose() } catch (error) {
-        console.warn(`[dsh-piggy] embedded runtime dispose failed: ${error instanceof Error ? error.message : String(error)}`)
-      }
+      return old?.dispose()
     },
     runtime: () => runtime,
   }
 
   const controller = createExternalController({
     statePath, embedded,
-    onModeChange: next => {
+    onModeChange: async next => {
       // 离开内嵌模式就把它的运行时交还出去；回内嵌模式时 syncRoutes 会重建。
+      let disposalError = null
       if (next === 'external') {
         unmountEmbedded()
         const old = runtime
         runtime = null
-        try { old?.dispose() } catch { /* dispose already logged by embedded.stop */ }
+        try { await old?.dispose() } catch (error) { disposalError = error }
       }
       syncRoutes()
+      if (disposalError !== null) throw disposalError
     },
     warn: message => console.warn(`[dsh-piggy] ${message}`),
   })
@@ -180,16 +180,15 @@ export function apply(ctx, config = {}) {
     console.warn(`[dsh-piggy] external mode init failed: ${error instanceof Error ? error.message : String(error)}`)
   })
 
-  ctx.effect(() => () => {
+  ctx.effect(() => async () => {
     closed = true
     observer.dispose()
     controller.close()
     unmountEmbedded()
     unmountPanel()
     unmountManagement()
-    try { runtime?.dispose() } catch (error) {
-      console.warn(`[dsh-piggy] runtime dispose failed: ${error instanceof Error ? error.message : String(error)}`)
-    }
+    const old = runtime
     runtime = null
+    await old?.dispose()
   })
 }
