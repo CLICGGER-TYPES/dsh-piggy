@@ -34,6 +34,7 @@ import { pointerHitsShape, sanitizeReport } from './shape.js'
  */
 export function createPresenter(deps) {
   let lastShape = []
+  let lastHitShape = []
   let hadShape = false
   let interacting = false
   let awaitingShape = false
@@ -72,6 +73,9 @@ export function createPresenter(deps) {
     try {
       stageWin.setShape(rects.length > 0 ? rects : [{ x: 0, y: 0, width: 1, height: 1 }])
     } catch (error) { deps.log('setShape failed', String(error)) }
+    // 原生形状更新可能重置输入，即使提交失败也要恢复当前穿透，不能只比较旧命中。
+    lastHit = null
+    refreshHit()
   }
 
   /** 换算不可用：记日志并按「不命中」放行桌面，不退回错误的 DIP 基准。 */
@@ -109,7 +113,7 @@ export function createPresenter(deps) {
       hitProblem = ''
       const width = lastViewport?.width ?? (lastDpr !== null ? contentPhysical.width / lastDpr : content.width)
       const height = lastViewport?.height ?? (lastDpr !== null ? contentPhysical.height / lastDpr : content.height)
-      return pointerHitsShape(cursor, { x: 0, y: 0, width, height }, lastShape)
+      return pointerHitsShape(cursor, { x: 0, y: 0, width, height }, lastHitShape)
     } catch (error) {
       rejectHit('screen conversion failed: ' + String(error), {})
       return false
@@ -121,12 +125,12 @@ export function createPresenter(deps) {
       const hit = physicalPointerHit(stageWin)
       if (hit !== undefined) return hit
     }
-    return pointerHitsShape(deps.screen.getCursorScreenPoint(), stageWin.getBounds(), lastShape)
+    return pointerHitsShape(deps.screen.getCursorScreenPoint(), stageWin.getBounds(), lastHitShape)
   }
 
   function refreshHit() {
     const stageWin = win()
-    if (shaped || stageWin === null || !stageWin.isVisible()) return
+    if (stageWin === null || !stageWin.isVisible()) return
     const hit = interacting || awaitingShape || pointerHit(stageWin)
     if (hit === lastHit) return
     lastHit = hit
@@ -162,6 +166,7 @@ export function createPresenter(deps) {
     const report = sanitizeReport(payload, stageWin.getContentBounds())
     if (report === null) return
     lastShape = report.shape
+    lastHitShape = report.hitShape ?? report.shape
     lastDpr = report.dpr ?? null
     lastViewport = report.viewport ?? null
     if (report.visible?.pig) lastPig = report.visible.pig
@@ -194,6 +199,7 @@ export function createPresenter(deps) {
       if (awaitingTimer !== null) { clearTimeout(awaitingTimer); awaitingTimer = null }
       awaitingShape = false
       lastShape = []
+      lastHitShape = []
       lastDpr = null
       lastViewport = null
       lastPig = null

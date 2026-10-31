@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('stageShell', {
     if (payload === null || typeof payload !== 'object') return
     ipcRenderer.send('stage:report', {
       shape: Array.isArray(payload.shape) ? payload.shape.slice(0, 64) : [],
+      ...(Object.hasOwn(payload, 'hitShape') ? { hitShape: Array.isArray(payload.hitShape) ? payload.hitShape.slice(0, 64) : [] } : {}),
       visible: payload.visible ?? null,
       dpr: sanitizeDpr(payload.dpr),
       viewport: sanitizeViewport(payload.viewport),
