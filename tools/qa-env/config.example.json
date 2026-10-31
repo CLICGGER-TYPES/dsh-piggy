@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "task": {
+    "taskId": "QAENVV01",
+    "actor": "PI-05",
+    "runBatchId": "REPLACE_WITH_SHORT_UNIQUE_BATCH",
+    "sessionPrefix": "dsh-piggy-QAENVV01"
+  },
+  "lease": {
+    "id": "REPLACE_WITH_ROOT_LEASE_ID",
+    "task": "QAENVV01",
+    "actor": "PI-05",
+    "guestUuid": "REPLACE_WITH_ROOT_GUEST_UUID",
+    "qemuUri": "qemu:///system",
+    "guardPid": 0,
+    "leaseFile": "REPLACE_WITH_ROOT_LEASE_JSON",
+    "guardFile": "REPLACE_WITH_ROOT_GUARD_JSON"
+  },
+  "host": {
+    "repoRoot": "REPLACE_WITH_ISOLATED_QAENV_WORKTREE",
+    "runRoot": "REPLACE_WITH_PRIVATE_WORK_OUTPUT_ROOT",
+    "sourceCommit": "3585c2f758b108fc1bfdb954ab3543e333cdf06c",
+    "appImage": "REPLACE_WITH_M1FINAL_APPIMAGE_PATH",
+    "appImageSha256": "41c0d844c09256779f529937e24b352c94ecacf8efe59225364d6bc9a5c23d7d",
+    "toolchainArchive": "REPLACE_WITH_QAENV_TOOLCHAIN_ARCHIVE",
+    "toolchainArchiveSha256": "04909d7afcfb574b299c4904d4b07045e19b8330ec9eb93e8526612449faa06e",
+    "electron44Zip": "REPLACE_WITH_EXISTING_CACHED_ELECTRON44_ZIP",
+    "electron44ZipSha256": "5bcd217611d6843ececd6c9e9c1fcd1da3ab066c43d8b1a9e4b44689a1fba6f5"
+  },
+  "ssh": {
+    "host": "REPLACE_WITH_LEASED_GUEST_ADDRESS",
+    "port": 22,
+    "user": "REPLACE_WITH_LEASED_GUEST_USER",
+    "identityFile": "REPLACE_WITH_PRIVATE_KEY_PATH",
+    "knownHostsFile": "REPLACE_WITH_PINNED_KNOWN_HOSTS_FILE",
+    "knownHostsSha256": "REPLACE_WITH_PINNED_FILE_SHA256",
+    "hostKeyFingerprint": "REPLACE_WITH_PINNED_SHA256_FINGERPRINT"
+  },
+  "guest": {
+    "taskRoot": "/var/tmp/dsh-piggy-QAENVV01",
+    "nativeShortRootParent": "/var/tmp/q",
+    "snapShortRootParent": "REPLACE_WITH_GUEST_HOME/snap/chromium/common/q",
+    "chromiumLauncher": "/snap/bin/chromium",
+    "displayBase": 100,
+    "displayCount": 20,
+    "screenWidth": 1600,
+    "screenHeight": 1000,
+    "portBase": 53100,
+    "portCount": 100,
+    "scratchFilesystemRequired": "non-tmpfs"
+  },
+  "timeouts": {
+    "preflightSeconds": 20,
+    "runtimeProbeSeconds": 45,
+    "appImageReadySeconds": 35,
+    "electronFixtureReadySeconds": 20,
+    "chromiumReadySeconds": 25,
+    "fileDialogSeconds": 20,
+    "shortChildSeconds": 3,
+    "runSeconds": 240,
+    "hostSeconds": 720
+  }
+}

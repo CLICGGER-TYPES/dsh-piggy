@@ -1,0 +1,24 @@
+{
+  "source": "existing host cache; offline copy only",
+  "electronRuntime": {
+    "version": "44.5.1",
+    "node": "24.21.0",
+    "chromium": "152.0.7977.130"
+  },
+  "packages": {
+    "typescript": "5.9.3",
+    "esbuild": "0.28.2",
+    "@esbuild/linux-x64": "0.28.2",
+    "@types/node": "24.19.0",
+    "undici-types": "7.24.6",
+    "electron": "44.5.1",
+    "electron-updater": "6.7.3",
+    "builder-util-runtime": "9.7.0",
+    "tiny-typed-emitter": "2.1.0",
+    "lazy-val": "1.0.5",
+    "electron-updater/node_modules/semver": "7.7.4"
+  },
+  "packageManagerInstall": false,
+  "networkDownloads": false,
+  "globalInstall": false
+}

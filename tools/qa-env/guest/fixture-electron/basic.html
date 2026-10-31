@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QAENV deterministic input fixture</title>
+  <style>
+    :root { color-scheme: light; font: 18px/1.45 sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px; background: #f4f0e6; color: #27221c; }
+    main { width: min(900px, calc(100vw - 56px)); margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    .run { margin: 0 0 20px; font: 14px monospace; }
+    section { margin: 16px 0; padding: 14px; background: white; border: 1px solid #aaa18d; border-radius: 8px; }
+    label, button { margin-right: 8px; }
+    input[type=text] { width: 320px; height: 40px; font: inherit; }
+    button { min-height: 40px; padding: 4px 14px; font: inherit; }
+    #scroll-region { height: 230px; overflow: auto; border: 1px solid #777; padding: 10px; }
+    #scroll-region p { margin: 7px 0; }
+    output, pre { display: block; margin-top: 8px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 120px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>QAENV basic input fixture</h1>
+    <p class="run">runId: <output id="run-id"></output></p>
+    <section aria-label="Text and button">
+      <label for="text-input">Text input</label>
+      <input id="text-input" type="text" autocomplete="off">
+      <button id="increment" type="button">Increment</button>
+      <output id="input-value">(empty)</output>
+      <output id="click-count" data-count="0">clicks: 0</output>
+    </section>
+    <section aria-label="Scroll region">
+      <p>Scroll this panel using real wheel input. The visible value confirms that the page received it.</p>
+      <output id="scroll-value">scrollTop: 0</output>
+      <div id="scroll-region" tabindex="0" aria-label="Scrollable rows"></div>
+    </section>
+    <section aria-label="File selection">
+      <label for="file-input">Choose a sample file</label>
+      <input id="file-input" type="file" accept=".txt">
+      <output id="file-name">file: none</output>
+      <output id="file-size">bytes: 0</output>
+      <pre id="file-content">content: none</pre>
+    </section>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search)
+    const runId = params.get('runId') || 'missing-run-id'
+    document.title = `QAENV fixture ${runId}`
+    document.querySelector('#run-id').textContent = runId
+    const scrollRegion = document.querySelector('#scroll-region')
+    for (let i = 1; i <= 32; i += 1) {
+      const row = document.createElement('p')
+      row.textContent = `Scrollable row ${String(i).padStart(2, '0')}`
+      row.dataset.row = String(i)
+      scrollRegion.appendChild(row)
+    }
+    scrollRegion.addEventListener('scroll', () => {
+      document.querySelector('#scroll-value').textContent = `scrollTop: ${Math.round(scrollRegion.scrollTop)}`
+    })
+    document.querySelector('#text-input').addEventListener('input', event => {
+      document.querySelector('#input-value').textContent = `value: ${event.target.value}`
+    })
+    document.querySelector('#increment').addEventListener('click', () => {
+      const output = document.querySelector('#click-count')
+      const count = Number(output.dataset.count || 0) + 1
+      output.dataset.count = String(count)
+      output.textContent = `clicks: ${count}`
+    })
+    document.querySelector('#file-input').addEventListener('change', async event => {
+      const file = event.target.files?.[0]
+      if (!file) return
+      const content = await file.text()
+      document.querySelector('#file-name').textContent = `file: ${file.name}`
+      document.querySelector('#file-size').textContent = `bytes: ${file.size}`
+      document.querySelector('#file-content').textContent = `content: ${content.slice(0, 512)}`
+    })
+  </script>
+</body>
+</html>
