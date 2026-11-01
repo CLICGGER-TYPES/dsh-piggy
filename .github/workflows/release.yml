@@ -38,7 +38,20 @@ jobs:
       - name: 测试
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
+          node --input-type=module -e "import { copyFileSync } from 'node:fs'; import { join } from 'node:path'; copyFileSync('client.js', join(process.env.RUNNER_TEMP, 'client-tag.js'))"
           npm run build
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { copyFileSync, readFileSync } from 'node:fs'
+          import { join } from 'node:path'
+          const canonical = text => text.replace(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm, '$1node_modules/')
+          const tagged = readFileSync(process.env.RUNNER_TEMP + '/client-tag.js', 'utf8')
+          const rebuilt = readFileSync('client.js', 'utf8')
+          assert.equal(canonical(rebuilt), canonical(tagged), 'rebuilt client code differs from the tagged build')
+          const normalized = [...rebuilt.matchAll(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm)].length
+          console.log(`client.js canonical build match (normalized ${normalized} node_modules comment prefixes)`)
+          copyFileSync(join(process.env.RUNNER_TEMP, 'client-tag.js'), 'client.js')
+          NODE
           git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
           npm test
           npm run typecheck
