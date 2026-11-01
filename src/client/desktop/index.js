@@ -272,6 +272,7 @@ export function install(shell) {
     // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
     role: 'pet',
     proxy: shell.proxy,
+    cloudSave: shell.cloudSave,
     saves: shell.saves,
     ext: shell.ext,
     fullscreen: shell.fullscreen, external: shell.external ?? null,

@@ -143,6 +143,10 @@ async function request(message) {
   if (message.method === 'record') return host.record(...message.args)
   if (message.method === 'external:enable') return externalEnable(message.args[0] ?? {})
   if (message.method === 'external:disable') return externalDisable()
+  if (message.method === 'cloud:configure') return typeof host.configureCloudSave === 'function'
+    ? host.configureCloudSave(message.args[0]) : { ok: false, reason: '当前游戏包不支持云存档设置' }
+  if (message.method === 'cloud:test') return typeof host.testCloudSave === 'function'
+    ? host.testCloudSave(message.args[0]) : { ok: false, reason: '当前游戏包不支持云存档设置' }
   if (message.method === 'metadata') {
     return metadata()
   }
@@ -184,6 +188,7 @@ port.on('message', message => {
 
 try {
   host = await startHost(workerData.gameDir, workerData.statePath, { fetch: fetchFromMain,
+    cloudSave: workerData.cloudSave ?? null,
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
   installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,

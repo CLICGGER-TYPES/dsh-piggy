@@ -35,10 +35,10 @@ const MANAGEMENT = ['/dsh-piggy/external/status', '/dsh-piggy/external/recheck',
   '/dsh-piggy/external/merge/commit', '/dsh-piggy/external/merge/cancel', '/dsh-piggy/external/merge/rollback',
   '/dsh-piggy/external/merge/status', '/dsh-piggy/external/restore', '/dsh-piggy/external/retire/retry']
 
-function setup(register) {
+function setup(register, cloudSettings = null) {
   const routes = []
   const webServer = { register: route => { routes.push(route); return () => { const at = routes.indexOf(route); if (at >= 0) routes.splice(at, 1) } } }
-  const dispose = register(webServer, controller)
+  const dispose = register(webServer, controller, cloudSettings)
   const find = (kind, path) => routes.find(route => route.kind === kind && route.path === path)
   const call = async (kind, path, method = 'GET', url = path, body = undefined, headers = {}) => {
     const route = find(kind, path)
@@ -117,4 +117,25 @@ test('merge/status 同时接受 GET 和 POST（客户端轮询用 GET），其�
   const post = await call('exact', '/dsh-piggy/external/merge/status', 'POST', '/dsh-piggy/external/merge/status', '{}', { 'content-type': 'application/json' })
   assert.equal(post.status, 200)
   assert.equal((await call('exact', '/dsh-piggy/external/merge/status', 'PUT')).status, 405)
+})
+
+test('DSH 云设置路由在同步关闭时可读写并只读探测，拒绝跨站请求', async () => {
+  let config = { version: 1, enabled: false, provider: 'github', remote: '', branch: 'main' }
+  const cloudSettings = {
+    cloudSettings: () => ({ ok: true, config: { ...config } }),
+    saveCloudSettings: async value => { config = { ...value }; return { ok: true, config: { ...config } } },
+    testCloudSettings: async value => ({ ok: true, checkedHost: new URL(value.remote).hostname }),
+  }
+  const { call, dispose } = setup(registerManagementRoutes, cloudSettings)
+  const settingsPath = '/dsh-piggy/cloud/settings'
+  const testPath = '/dsh-piggy/cloud/test-connection'
+  assert.equal(JSON.parse((await call('exact', settingsPath)).body).config.enabled, false)
+  assert.equal((await call('exact', settingsPath, 'POST', settingsPath, '{}', { origin: 'https://evil.example', host: '127.0.0.1', 'content-type': 'application/json' })).status, 403)
+  const next = { version: 1, enabled: true, provider: 'github', remote: 'https://github.com/acme/pig.git', branch: 'main' }
+  const saved = await call('exact', settingsPath, 'POST', settingsPath, JSON.stringify(next), { 'content-type': 'application/json' })
+  assert.equal(JSON.parse(saved.body).ok, true)
+  assert.equal(config.remote, next.remote)
+  const checked = await call('exact', testPath, 'POST', testPath, JSON.stringify(next), { 'content-type': 'application/json' })
+  assert.deepEqual(JSON.parse(checked.body), { ok: true, checkedHost: 'github.com' })
+  dispose()
 })

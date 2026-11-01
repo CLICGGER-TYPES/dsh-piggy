@@ -50,9 +50,26 @@ function safeGitDetail(error) {
 
 function gitFailure(error, command, timeoutMs) {
   const timedOut = error?.killed === true || error?.signal === 'SIGKILL' || error?.code === 'ETIMEDOUT'
+  if (error?.code === 'ENOENT') return Object.assign(new Error('git is not installed or not available on PATH'), { code: 'GIT_MISSING' })
   return Object.assign(new Error(timedOut
     ? `git ${command} timed out after ${timeoutMs} ms`
     : `git ${command} failed: ${safeGitDetail(error)}`), { code: timedOut ? 'GIT_TIMEOUT' : 'GIT_FAILED' })
+}
+
+/**
+ * Read-only remote probe used by the settings screen. It never calls ensure(),
+ * initializes a repository, changes an origin, or reads/writes a save archive.
+ * @param {{remote:string,cwd:string,git?:(args:string[],options:{cwd:string,sslVerify?:boolean,timeoutMs?:number})=>Promise<{stdout:string,stderr:string}>,timeoutMs?:number}} input
+ */
+export async function testGitRemote({ remote, cwd, git = defaultGit, timeoutMs = 15_000 }) {
+  try {
+    await git(['ls-remote', '--symref', remote, 'HEAD'], { cwd, timeoutMs: boundedTimeout(timeoutMs) })
+    return { ok: true }
+  } catch (error) {
+    const code = /** @type {any} */ (error)?.code
+    const reason = code === 'GIT_TIMEOUT' ? '连接超时' : code === 'GIT_MISSING' ? '当前环境没有可用的 Git' : '无法连接，请检查地址和本机 Git 凭据配置'
+    return { ok: false, reason }
+  }
 }
 
 /**

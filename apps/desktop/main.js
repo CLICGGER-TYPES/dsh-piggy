@@ -53,6 +53,8 @@ import { createWindowState } from './lib/window-state.js'
 import { createAutostart } from './lib/autostart.js'
 import { createDesktopTray } from './lib/tray.js'
 import { registerExternalIpc, registerSystemActionsIpc, registerFullscreenIpc, registerProxyIpc } from './lib/ipc/system.js'
+import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
+import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
 import { registerUpdatesIpc } from './lib/ipc/updates.js'
 
 const { autoUpdater } = updaterPackage
@@ -130,6 +132,7 @@ protocol.registerSchemesAsPrivileged([
 
 // Testing: keep a throwaway save and settings away from the real ones.
 const dataPaths = configureDesktopData(app)
+const cloudSaveSettings = createCloudSaveConfigStore(dataPaths.userData)
 const gotLock = !needsX11 && app.requestSingleInstanceLock()
 // 第二个进程拿不到单实例锁就马上退出：先同步留一行再退。第一个进程可能还没 ready、
 // 甚至卡在启动里，它的 second-instance 行不一定写得出来；没有这一行，日志里就看不出
@@ -1535,6 +1538,7 @@ registerProxyIpc({
   ipcMain, fromPage,
   getProxySettings: () => proxySettings,
 })
+registerCloudSaveIpc({ ipcMain, fromPage, getHost: () => host, settings: cloudSaveSettings })
 
 app.whenReady().then(async () => {
   if (needsX11 || !gotLock || quitting) return
@@ -1567,7 +1571,9 @@ app.whenReady().then(async () => {
   const gameDir = await versions.activeDir()
   if (quitting) return
   const workEventsDirectory = join(app.getPath('userData'), 'work-endpoint')
+  const localCloudSettings = cloudSaveSettings.load()
   hostStarting = startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
+    cloudSave: localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null,
     optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
     workEventsAutoStart: process.argv.includes('--work-events'),
     onConfirm: plan => confirmMerge(plan),

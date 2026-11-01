@@ -208,6 +208,17 @@ export const CSS_TABS = [
   '.dp-proxy-actions .dp-proxy-clear{margin-left:auto}',
   '.dp-proxy-status{font-size:10px;line-height:1.5;margin-top:9px;color:var(--ac-text-muted);overflow-wrap:anywhere}',
   '.dp-proxy-error{color:var(--ac-error)}',
+  '.dp-cloud-form{display:grid;gap:8px;margin:7px 0 8px}',
+  '.dp-cloud-field{display:grid;gap:4px;font-size:10px}',
+  '.dp-cloud-advanced{font-size:10px;color:var(--ac-text-muted)}',
+  '.dp-cloud-advanced summary{cursor:pointer;padding:3px 0 6px}',
+  '.dp-cloud-advanced .dp-cloud-field{margin:2px 0 6px}',
+  '.dp-cloud-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}',
+  '.dp-cloud-summary{display:grid;gap:4px;margin-top:8px;padding:8px 9px;border:1px solid var(--ac-border-light);border-radius:9px;background:var(--ac-bg-content)}',
+  '.dp-cloud-summary b{font-size:11px;color:var(--ac-text)}',
+  '.dp-cloud-value{font-size:10px;line-height:1.35;color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-word}',
+  '.dp-cloud-note,.dp-cloud-status{font-size:10px;line-height:1.45;color:var(--ac-text-muted);overflow-wrap:anywhere}',
+  '.dp-cloud-error{color:var(--ac-error)}',
 
   /* ---------- segmented control ---------- */
   '.dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}',

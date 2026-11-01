@@ -5875,14 +5875,14 @@
     const text = String(value ?? "");
     return text.length > limit ? text.slice(0, limit) + "\u2026" : text;
   };
-  function record(level, scope, message2, fields = {}) {
+  function record(level, scope, message3, fields = {}) {
     seq += 1;
     entries.push({
       id: "c" + seq,
       at: Date.now(),
       level: ["debug", "info", "warn", "error"].includes(level) ? level : "info",
       scope: clip(scope, 32),
-      message: clip(message2, MAX_TEXT),
+      message: clip(message3, MAX_TEXT),
       fields: fields !== null && typeof fields === "object" ? fields : {}
     });
     if (entries.length > LIMIT) entries.splice(0, entries.length - LIMIT);
@@ -5964,8 +5964,8 @@
     const body = obj(data);
     const nested = obj(body.error);
     const code = str(body.reason, str(nested.code, str(body.error, status2 > 0 ? "http-" + status2 : "network")));
-    const message2 = str(body.message, str(nested.message, ""));
-    return { code, message: message2 || (status2 > 0 ? "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + status2 : "\u8FDE\u4E0D\u4E0A\u5BBF\u4E3B") };
+    const message3 = str(body.message, str(nested.message, ""));
+    return { code, message: message3 || (status2 > 0 ? "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + status2 : "\u8FDE\u4E0D\u4E0A\u5BBF\u4E3B") };
   }
   async function call(url, method, body, timeout) {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
@@ -6944,6 +6944,7 @@
     window.__dshPiggyShell = {
       role: "panel",
       proxy: bridge3.proxy,
+      cloudSave: bridge3.cloudSave,
       saves: bridge3.saves,
       ext: bridge3.ext,
       fullscreen: bridge3.fullscreen,
@@ -10160,6 +10161,256 @@
     return el("div", className, String(text));
   }
 
+  // src/client/tabs/cloud-save.js
+  var DEFAULT = Object.freeze({ version: 1, enabled: false, provider: "github", remote: "", branch: "main" });
+  var config = null;
+  var loading3 = false;
+  var busy4 = false;
+  var editing = false;
+  var draft2 = null;
+  var message2 = "";
+  var failed = false;
+  function cloudApi() {
+    const shell2 = typeof window === "undefined" ? null : (
+      /** @type {any} */
+      window
+    );
+    return shell2?.__dshPiggyShell?.cloudSave ?? shell2?.__dshPiggyCloudSave ?? null;
+  }
+  function providerName(key2) {
+    return key2 === "github" ? "GitHub" : key2 === "gitee" ? "Gitee" : "\u5176\u4ED6 Git";
+  }
+  function statusBox(box, text, isFailure = false) {
+    const status2 = el("div", isFailure ? "dp-cloud-status dp-cloud-error" : "dp-cloud-status", text);
+    status2.setAttribute("role", "status");
+    status2.hidden = text === "";
+    box.appendChild(status2);
+  }
+  function readConfig(ui, api, box) {
+    if (loading3 || config !== null) return;
+    loading3 = true;
+    statusBox(box, "\u6B63\u5728\u8BFB\u53D6\u4E91\u5B58\u6863\u8BBE\u7F6E\u2026");
+    Promise.resolve(api.get()).then((result) => {
+      if (result?.ok === true && result.config) {
+        config = { ...DEFAULT, ...result.config };
+        message2 = "";
+        failed = false;
+      } else {
+        config = { ...DEFAULT };
+        message2 = result?.reason || "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
+        failed = true;
+      }
+    }).catch(() => {
+      config = { ...DEFAULT };
+      message2 = "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
+      failed = true;
+    }).finally(() => {
+      loading3 = false;
+      if (ui.tab === "settings") ui.renderContent();
+    });
+  }
+  function renderCloudSaveSettings(ui, section2) {
+    const api = cloudApi();
+    if (api === null || typeof api.get !== "function" || typeof api.set !== "function" || typeof api.test !== "function") return;
+    const setting = section2(ui, "\u4E91\u5B58\u6863", "\u8FDE\u63A5 Git \u4ED3\u5E93\uFF1B\u9996\u6B21\u540C\u6B65\u4F1A\u53E6\u884C\u786E\u8BA4");
+    const box = setting.box;
+    if (config === null) {
+      readConfig(ui, api, box);
+      if (message2) statusBox(box, message2, failed);
+      return;
+    }
+    if (draft2 === null) draft2 = { ...config };
+    async function save(next, afterSave = () => {
+    }) {
+      if (busy4) return;
+      busy4 = true;
+      failed = false;
+      message2 = "\u6B63\u5728\u4FDD\u5B58\u2026";
+      if (ui.tab === "settings") ui.renderContent();
+      try {
+        const result = await api.set(next);
+        if (result?.ok !== true || !result.config) throw new Error(result?.reason || "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u4FDD\u5B58");
+        config = { ...DEFAULT, ...result.config };
+        draft2 = { ...config };
+        editing = false;
+        message2 = "";
+        afterSave();
+      } catch (error) {
+        failed = true;
+        message2 = error instanceof Error ? error.message : "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u4FDD\u5B58";
+      } finally {
+        busy4 = false;
+        if (ui.tab === "settings") ui.renderContent();
+      }
+    }
+    function toggle() {
+      const next = { ...config, enabled: !config.enabled };
+      void save(next, () => {
+        if (config.enabled && !config.remote) {
+          editing = true;
+          draft2 = { ...config };
+        }
+      });
+    }
+    const toggleControl = button("dp-switch", {
+      "data-cloud-enabled": config.enabled ? "on" : "off",
+      "aria-pressed": String(config.enabled),
+      "aria-label": "\u4E91\u5B58\u6863"
+    }, toggle);
+    toggleControl.disabled = busy4;
+    toggleControl.appendChild(el("span", "dp-switch-knob"));
+    toggleControl.appendChild(el("span", "dp-switch-text", config.enabled ? "\u5F00" : "\u5173"));
+    setting.head.appendChild(toggleControl);
+    if (!config.enabled) {
+      const note3 = el("small", "dp-cloud-note", config.remote ? "\u5DF2\u5173\u95ED\uFF1B\u4ED3\u5E93\u914D\u7F6E\u4FDD\u7559\u5728\u672C\u673A" : "\u5173\u95ED\u65F6\u4E0D\u8FDE\u63A5\u4ED3\u5E93");
+      box.appendChild(note3);
+      if (config.remote) {
+        const saved = el("div", "dp-cloud-summary");
+        saved.appendChild(el("b", null, providerName(config.provider)));
+        const address = el("span", "dp-cloud-value", config.remote);
+        saved.appendChild(address);
+        box.appendChild(saved);
+      }
+      statusBox(box, message2, failed);
+      return;
+    }
+    if (!config.remote || editing) {
+      if (draft2 === null || !editing) draft2 = { ...config };
+      const form = el("div", "dp-cloud-form");
+      const provider = (
+        /** @type {HTMLSelectElement} */
+        el("select", "dp-setting-field")
+      );
+      provider.setAttribute("aria-label", "Git \u5E73\u53F0");
+      provider.setAttribute("data-cloud-provider", "true");
+      for (const [key2, label] of [["github", "GitHub"], ["gitee", "Gitee"], ["git", "\u5176\u4ED6 Git"]]) {
+        const option = (
+          /** @type {HTMLOptionElement} */
+          el("option", null, label)
+        );
+        option.value = key2;
+        provider.appendChild(option);
+      }
+      provider.value = draft2.provider;
+      provider.disabled = busy4;
+      provider.addEventListener("change", () => {
+        draft2.provider = provider.value;
+      });
+      const providerLabel = el("label", "dp-cloud-field");
+      providerLabel.appendChild(el("span", "dp-dim", "Git \u5E73\u53F0"));
+      providerLabel.appendChild(provider);
+      form.appendChild(providerLabel);
+      const remote = (
+        /** @type {HTMLInputElement} */
+        el("input", "dp-setting-field")
+      );
+      remote.type = "text";
+      remote.autocomplete = "off";
+      remote.spellcheck = false;
+      remote.placeholder = draft2.provider === "github" ? "https://github.com/\u7528\u6237\u540D/\u4ED3\u5E93.git" : draft2.provider === "gitee" ? "https://gitee.com/\u7528\u6237\u540D/\u4ED3\u5E93.git" : "https://Git \u670D\u52A1\u5668/\u7528\u6237\u540D/\u4ED3\u5E93.git";
+      remote.setAttribute("aria-label", "\u4ED3\u5E93\u5730\u5740");
+      remote.setAttribute("data-cloud-remote", "true");
+      remote.value = draft2.remote;
+      remote.disabled = busy4;
+      let saveButton = null;
+      remote.addEventListener("input", () => {
+        draft2.remote = remote.value;
+        if (saveButton !== null) saveButton.disabled = busy4 || remote.value.trim() === "";
+      });
+      const remoteLabel = el("label", "dp-cloud-field");
+      remoteLabel.appendChild(el("span", "dp-dim", "\u4ED3\u5E93\u5730\u5740"));
+      remoteLabel.appendChild(remote);
+      form.appendChild(remoteLabel);
+      const advanced = el("details", "dp-cloud-advanced");
+      advanced.appendChild(el("summary", null, "\u9AD8\u7EA7\u8BBE\u7F6E"));
+      const branch = (
+        /** @type {HTMLInputElement} */
+        el("input", "dp-setting-field")
+      );
+      branch.type = "text";
+      branch.autocomplete = "off";
+      branch.placeholder = "main";
+      branch.setAttribute("aria-label", "\u5206\u652F");
+      branch.setAttribute("data-cloud-branch", "true");
+      branch.value = draft2.branch || "main";
+      branch.disabled = busy4;
+      branch.addEventListener("input", () => {
+        draft2.branch = branch.value;
+      });
+      const branchLabel = el("label", "dp-cloud-field");
+      branchLabel.appendChild(el("span", "dp-dim", "\u5206\u652F"));
+      branchLabel.appendChild(branch);
+      advanced.appendChild(branchLabel);
+      form.appendChild(advanced);
+      box.appendChild(form);
+      const actions3 = el("div", "dp-cloud-actions");
+      const saveControl = button("dp-mini", { "data-cloud-action": "save" }, () => {
+        void save({ ...draft2, enabled: true, remote: remote.value.trim(), branch: branch.value.trim() || "main" });
+      });
+      saveButton = saveControl;
+      saveControl.textContent = "\u4FDD\u5B58";
+      saveControl.disabled = busy4 || remote.value.trim() === "";
+      actions3.appendChild(saveControl);
+      if (config.remote) {
+        const cancel2 = button("dp-mini dp-mini-plain", { "data-cloud-action": "cancel" }, () => {
+          draft2 = { ...config };
+          editing = false;
+          ui.renderContent();
+        });
+        cancel2.textContent = "\u53D6\u6D88";
+        cancel2.disabled = busy4;
+        actions3.appendChild(cancel2);
+      }
+      box.appendChild(actions3);
+      statusBox(box, message2 || "\u586B\u5199\u4ED3\u5E93\u5730\u5740\u540E\u4FDD\u5B58", failed);
+      return;
+    }
+    const summary = el("div", "dp-cloud-summary");
+    summary.appendChild(el("b", null, providerName(config.provider)));
+    summary.appendChild(el("span", "dp-cloud-value", config.remote));
+    summary.appendChild(el("span", "dp-cloud-note", "\u5206\u652F \xB7 " + config.branch));
+    summary.appendChild(el("span", "dp-cloud-status", "\u72B6\u6001 \xB7 \u5F85\u8FDE\u63A5"));
+    summary.appendChild(el("span", "dp-cloud-note", "\u6700\u8FD1\u540C\u6B65 \xB7 \u6682\u65E0"));
+    box.appendChild(summary);
+    const actions2 = el("div", "dp-cloud-actions");
+    const test2 = button("dp-mini", { "data-cloud-action": "test" }, async () => {
+      if (busy4) return;
+      busy4 = true;
+      failed = false;
+      message2 = "\u6B63\u5728\u6D4B\u8BD5\u8FDE\u63A5\u2026";
+      ui.renderContent();
+      try {
+        const result = await api.test({ ...config });
+        failed = result?.ok !== true;
+        message2 = failed ? result?.reason || "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25" : "\u8FDE\u63A5\u6D4B\u8BD5\u901A\u8FC7\uFF1B\u5C1A\u672A\u540C\u6B65\u5B58\u6863";
+      } catch {
+        failed = true;
+        message2 = "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25";
+      } finally {
+        busy4 = false;
+        if (ui.tab === "settings") ui.renderContent();
+      }
+    });
+    test2.textContent = "\u6D4B\u8BD5\u8FDE\u63A5";
+    test2.disabled = busy4;
+    actions2.appendChild(test2);
+    const edit = button("dp-mini dp-mini-plain", { "data-cloud-action": "edit" }, () => {
+      draft2 = { ...config };
+      editing = true;
+      message2 = "";
+      ui.renderContent();
+    });
+    edit.textContent = "\u7F16\u8F91";
+    edit.disabled = busy4;
+    actions2.appendChild(edit);
+    const close = button("dp-mini dp-mini-plain", { "data-cloud-action": "close" }, toggle);
+    close.textContent = "\u5173\u95ED";
+    close.disabled = busy4;
+    actions2.appendChild(close);
+    box.appendChild(actions2);
+    statusBox(box, message2, failed);
+  }
+
   // src/client/external-ui.js
   function createOverlay(ui, options) {
     const overlay = el("div", "dp-save-overlay dp-ext-overlay");
@@ -10355,11 +10606,11 @@
     const entry = section2(ui, "\u5916\u90E8\u684C\u5BA0");
     const box = entry.box;
     box.setAttribute("data-external-pet", "true");
-    const busy4 = state4.busy === true;
+    const busy5 = state4.busy === true;
     if (status2 === null) {
       statusLine(box, state4.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state4.error === "" ? "warn" : "warn");
       if (state4.error !== "") note2(box, state4.error, true);
-      cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+      cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
       return;
     }
     const desktop2 = status2.desktop;
@@ -10369,9 +10620,9 @@
       statusLine(box, "\u5916\u90E8\u684C\u5BA0\u914D\u7F6E\u8BFB\u4E0D\u51FA\u6765", "warn");
       note2(box, "\u914D\u7F6E\u6587\u4EF6\u635F\u574F\u6216\u8BFB\u4E0D\u4E86\uFF1B\u539F\u6587\u4EF6\u4F1A\u6539\u540D\u7559\u8BC1\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u5220\u9664\uFF0C\u4E5F\u4E0D\u4F1A\u6253\u5F00\u5DF2\u5408\u5E76\u7684\u65E7\u5B58\u6863\u3002", true);
       cardActions(box, [
-        { key: "recheck", label: "\u91CD\u8BD5\u8BFB\u53D6", onPick: handlers.recheck, disabled: busy4 },
-        { key: "restore-backup", label: "\u4ECE\u6700\u8FD1\u5408\u5E76\u5907\u4EFD\u6062\u590D", onPick: handlers.restoreBackup, disabled: busy4 },
-        status2.pigState === "merged" ? { key: "recover-local", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: handlers.recoverLocal, disabled: busy4, wide: true } : { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy4, wide: true }
+        { key: "recheck", label: "\u91CD\u8BD5\u8BFB\u53D6", onPick: handlers.recheck, disabled: busy5 },
+        { key: "restore-backup", label: "\u4ECE\u6700\u8FD1\u5408\u5E76\u5907\u4EFD\u6062\u590D", onPick: handlers.restoreBackup, disabled: busy5 },
+        status2.pigState === "merged" ? { key: "recover-local", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: handlers.recoverLocal, disabled: busy5, wide: true } : { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy5, wide: true }
       ]);
       return;
     }
@@ -10380,18 +10631,18 @@
         statusLine(box, "\u6CA1\u627E\u5230\u5DF2\u5F00\u542F\u8054\u52A8\u7684\u684C\u9762\u7248", "warn");
         if (status2.error === "disabled" || desktop2.reason === "external-disabled") note2(box, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002\u53BB\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D\u3002");
         else if (status2.error === "no-pair" || status2.error === "pair-not-offered" || desktop2.reason === "pair-unavailable") note2(box, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u8BF7\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
-        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
         return;
       }
       if (!desktop2.enabled) {
         statusLine(box, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8", "warn");
         note2(box, "\u53BB\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D\uFF0C\u518D\u56DE\u6765\u91CD\u65B0\u68C0\u6D4B\u3002");
-        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
         return;
       }
       statusLine(box, "\u684C\u9762\u7248\u5DF2\u5C31\u7EEA \xB7 " + summaryLine(target), "ok");
       note2(box, "\u8FDE\u63A5\u540E\uFF0CDSH \u7684\u5DE5\u4F5C\u548C\u9762\u677F\u64CD\u4F5C\u90FD\u4EA4\u7ED9\u684C\u9762\u4E0A\u7684\u732A\u3002");
-      cardActions(box, [{ key: "connect", label: "\u8FDE\u63A5\u684C\u9762\u732A", primary: true, onPick: handlers.connect, disabled: busy4, wide: true }]);
+      cardActions(box, [{ key: "connect", label: "\u8FDE\u63A5\u684C\u9762\u732A", primary: true, onPick: handlers.connect, disabled: busy5, wide: true }]);
       return;
     }
     if (status2.merged) {
@@ -10399,16 +10650,16 @@
         statusLine(box, "\u25CF \u5DF2\u5408\u5E76\u5230\u684C\u5BA0 \xB7 " + summaryLine(target), "ok");
         note2(box, "\u5185\u5D4C\u732A\u5DF2\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF1B\u53EA\u80FD\u64A4\u9500\u6700\u8FD1\u4E00\u6B21\u5408\u5E76\u3002");
         cardActions(box, [
-          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 },
-          { key: "rollback", label: "\u64A4\u9500\u5408\u5E76", onPick: handlers.rollback, disabled: busy4 || !status2.canRollback }
+          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 },
+          { key: "rollback", label: "\u64A4\u9500\u5408\u5E76", onPick: handlers.rollback, disabled: busy5 || !status2.canRollback }
         ]);
       } else {
         statusLine(box, "\u25CB \u5DF2\u5408\u5E76 \xB7 \u684C\u9762\u7248\u6CA1\u5F00" + lastAtText(status2), "warn");
         note2(box, "\u5185\u5D4C\u732A\u5DF2\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF1B\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + status2.queued + " \u6761\uFF09\u3002");
         note2(box, "\u64A4\u9500\u5408\u5E76\u8981\u7B49\u684C\u9762\u7248\u8FDE\u4E0A\uFF1B\u4ECD\u53EF\u9009\u62E9\u300C\u53EA\u6062\u590D\u5185\u5D4C\u732A\u300D\u3002");
         cardActions(box, [
-          { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy4 },
-          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 }
+          { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy5 },
+          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 }
         ]);
       }
       return;
@@ -10417,8 +10668,8 @@
       statusLine(box, "\u25CF \u5DF2\u8FDE\u63A5 \xB7 " + summaryLine(target), "ok");
       note2(box, "DSH \u7684\u5DE5\u4F5C\u6B63\u5728\u6295\u7ED9\u684C\u9762\u4E0A\u7684\u732A\u3002");
       cardActions(box, [
-        { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 },
-        status2.pigState === "paused" ? { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy4 } : null
+        { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 },
+        status2.pigState === "paused" ? { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy5 } : null
       ]);
       return;
     }
@@ -10432,8 +10683,8 @@
     statusLine(box, "\u25CB \u6CA1\u8FDE\u4E0A\u684C\u9762\u7248" + lastAtText(status2), "warn");
     note2(box, "\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + status2.queued + " \u6761\uFF09\uFF1B\u9762\u677F\u663E\u793A\u6700\u540E\u4E00\u6B21\u540C\u6B65\u7684\u72B6\u6001\u3002");
     cardActions(box, [
-      { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy4 },
-      { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 }
+      { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy5 },
+      { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 }
     ]);
   }
   function renderManageDialog(ui, state4, handlers, view) {
@@ -11920,6 +12171,7 @@
     if (extFresh) openExtensions.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
     extensions.head.appendChild(openExtensions);
     renderSaveTransferSettings(ui, section);
+    renderCloudSaveSettings(ui, section);
     if (desktopShell() === null && stageShell() === null) renderExternalPetSettings(ui, section);
     else renderExternalDesktopSettings(ui, section, desktopShell()?.external ?? stageShell()?.external);
     const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
@@ -13000,8 +13252,8 @@
         var run = ctx[fx.name];
         if (typeof run === "function") run.apply(null, Array.isArray(fx.args) ? fx.args : []);
       });
-      shell2.panel.on(function(message2) {
-        if (message2?.type === "closed" || message2?.type === "open") updatePetPanelState(ctx, message2.type === "open");
+      shell2.panel.on(function(message3) {
+        if (message3?.type === "closed" || message3?.type === "open") updatePetPanelState(ctx, message3.type === "open");
       });
       return role2;
     }
@@ -13015,18 +13267,18 @@
       if (ctx.extBig) ctx.tab = "ext:" + ctx.extBig;
       return role2;
     }
-    shell2.panel.on(function(message2) {
-      if (message2 === null || typeof message2 !== "object") return;
-      if (message2.type === "open") {
-        shell2.setAnchor({ vertical: message2.vertical === "below" ? "below" : "above", maxHeight: Number(message2.maxHeight) || 520 });
+    shell2.panel.on(function(message3) {
+      if (message3 === null || typeof message3 !== "object") return;
+      if (message3.type === "open") {
+        shell2.setAnchor({ vertical: message3.vertical === "below" ? "below" : "above", maxHeight: Number(message3.maxHeight) || 520 });
         if (!ctx.isOpen) ctx.setOpen(true);
         else ctx.fitPanel();
         shell2.syncGeometry();
-      } else if (message2.type === "closed") {
+      } else if (message3.type === "closed") {
         if (ctx.isOpen) ctx.setOpen(false);
-      } else if (message2.type === "blur") {
+      } else if (message3.type === "blur") {
         const saveTransferActive = ctx.content?.querySelector?.('[data-save-transfer-active="true"]');
-        if (message2.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks2.isFishing() || typing() || saveTransferActive) return;
+        if (message3.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks2.isFishing() || typing() || saveTransferActive) return;
         ctx.setOpen(false);
       }
     });
@@ -13686,6 +13938,17 @@
     ".dp-proxy-actions .dp-proxy-clear{margin-left:auto}",
     ".dp-proxy-status{font-size:10px;line-height:1.5;margin-top:9px;color:var(--ac-text-muted);overflow-wrap:anywhere}",
     ".dp-proxy-error{color:var(--ac-error)}",
+    ".dp-cloud-form{display:grid;gap:8px;margin:7px 0 8px}",
+    ".dp-cloud-field{display:grid;gap:4px;font-size:10px}",
+    ".dp-cloud-advanced{font-size:10px;color:var(--ac-text-muted)}",
+    ".dp-cloud-advanced summary{cursor:pointer;padding:3px 0 6px}",
+    ".dp-cloud-advanced .dp-cloud-field{margin:2px 0 6px}",
+    ".dp-cloud-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}",
+    ".dp-cloud-summary{display:grid;gap:4px;margin-top:8px;padding:8px 9px;border:1px solid var(--ac-border-light);border-radius:9px;background:var(--ac-bg-content)}",
+    ".dp-cloud-summary b{font-size:11px;color:var(--ac-text)}",
+    ".dp-cloud-value{font-size:10px;line-height:1.35;color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-word}",
+    ".dp-cloud-note,.dp-cloud-status{font-size:10px;line-height:1.45;color:var(--ac-text-muted);overflow-wrap:anywhere}",
+    ".dp-cloud-error{color:var(--ac-error)}",
     /* ---------- segmented control ---------- */
     ".dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}",
     ".dp-seg button{font:inherit;font-size:10.5px;font-weight:600;color:var(--ac-text-muted);",
@@ -14953,10 +15216,10 @@
     return row2;
   }
   function editableField(ui, key2, label, value) {
-    var editing = ui.cardEdit !== null && ui.cardEdit.field === key2;
+    var editing2 = ui.cardEdit !== null && ui.cardEdit.field === key2;
     var row2 = el("div", "dp-vcard-row" + (key2 === "motto" ? " dp-vcard-motto-row" : ""));
     row2.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
-    if (editing) {
+    if (editing2) {
       appendEditor(ui, row2, key2);
       return row2;
     }
@@ -15014,8 +15277,8 @@
   }
   function profileEditor(ui, profile) {
     var box = el("div", "dp-vcard-row dp-vcard-once");
-    var draft2 = ui.profileDraft;
-    if (!draft2) {
+    var draft3 = ui.profileDraft;
+    if (!draft3) {
       var open = button("dp-mini", { "data-card-once": "open" }, function() {
         ui.profileDraft = { personality: profile.personality ? profile.personality.key : profile.personalities[0].key, month: profile.birthdayParts.month, day: profile.birthdayParts.day };
         ui.renderContent();
@@ -15037,9 +15300,9 @@
       option.value = p.key;
       pick.appendChild(option);
     });
-    pick.value = draft2.personality;
+    pick.value = draft3.personality;
     pick.addEventListener("change", function() {
-      draft2.personality = pick.value;
+      draft3.personality = pick.value;
     });
     var number2 = function(key2, max, value) {
       var input = (
@@ -15052,7 +15315,7 @@
       input.value = String(value);
       input.setAttribute("data-card-once", key2);
       input.addEventListener("input", function() {
-        draft2[key2] = Number(input.value);
+        draft3[key2] = Number(input.value);
       });
       return input;
     };
@@ -15066,9 +15329,9 @@
     first.appendChild(pick);
     var second = line6();
     second.appendChild(el("span", "dp-vcard-label", "\u751F\u65E5\uFF1A"));
-    second.appendChild(number2("month", 12, draft2.month));
+    second.appendChild(number2("month", 12, draft3.month));
     second.appendChild(el("span", null, "\u6708"));
-    second.appendChild(number2("day", 31, draft2.day));
+    second.appendChild(number2("day", 31, draft3.day));
     second.appendChild(el("span", null, "\u65E5"));
     var third = line6();
     var save = button("dp-mini", { "data-card-once": "save" }, function() {
@@ -19462,6 +19725,7 @@
       // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
       role: "pet",
       proxy: shell2.proxy,
+      cloudSave: shell2.cloudSave,
       saves: shell2.saves,
       ext: shell2.ext,
       fullscreen: shell2.fullscreen,
@@ -20456,7 +20720,7 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/array.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -20467,7 +20731,7 @@
       arr2.splice(index, 1);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/clamp.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -20476,42 +20740,42 @@
     return v;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/format-error-message.mjs
-  function formatErrorMessage(message2, errorCode) {
-    return errorCode ? `${message2}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message2;
+  // ../../../../../code/node_modules/motion-utils/dist/es/format-error-message.mjs
+  function formatErrorMessage(message3, errorCode) {
+    return errorCode ? `${message3}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message3;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/errors.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
   };
   if (typeof process !== "undefined" && true) {
-    warning = (check, message2, errorCode) => {
+    warning = (check, message3, errorCode) => {
       if (!check && typeof console !== "undefined") {
-        console.warn(formatErrorMessage(message2, errorCode));
+        console.warn(formatErrorMessage(message3, errorCode));
       }
     };
-    invariant = (check, message2, errorCode) => {
+    invariant = (check, message3, errorCode) => {
       if (!check) {
-        throw new Error(formatErrorMessage(message2, errorCode));
+        throw new Error(formatErrorMessage(message3, errorCode));
       }
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/global-config.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/is-object.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/memo.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -20522,19 +20786,19 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/noop.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/pipe.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/progress.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
@@ -20567,29 +20831,29 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/time-conversion.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/warn-once.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
-  function warnOnce(condition, message2, errorCode) {
-    if (condition || warned.has(message2))
+  function warnOnce(condition, message3, errorCode) {
+    if (condition || warned.has(message3))
       return;
-    console.warn(formatErrorMessage(message2, errorCode));
-    warned.add(message2);
+    console.warn(formatErrorMessage(message3, errorCode));
+    warned.add(message3);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/wrap.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -20613,45 +20877,45 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/back.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/circ.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/ease.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -20680,14 +20944,14 @@
     return definition;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -20705,10 +20969,10 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
   var checkStringStartsWith = (token2) => (key2) => typeof key2 === "string" && key2.startsWith(token2);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
@@ -20724,7 +20988,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -20739,18 +21003,18 @@
     default: 1
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -20766,7 +21030,7 @@
     };
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -20778,7 +21042,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -20812,7 +21076,7 @@
     transform: rgba.transform
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -20829,7 +21093,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -20838,7 +21102,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -20860,10 +21124,10 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -20954,7 +21218,7 @@
     getAnimatableNone
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -20992,17 +21256,17 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -21038,7 +21302,7 @@
     };
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -21048,7 +21312,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -21118,7 +21382,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -21145,7 +21409,7 @@
     return mixer(from, to);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -21165,7 +21429,7 @@
     // Compute
   ];
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -21228,7 +21492,7 @@
     return step;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
   function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
@@ -21290,10 +21554,10 @@
     return { schedule: schedule4, cancel: cancel2, state: state4, steps };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -21307,7 +21571,7 @@
     };
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -21317,7 +21581,7 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
@@ -21331,7 +21595,7 @@
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -21350,7 +21614,7 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -21608,7 +21872,7 @@
     return options;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
     const state4 = {
@@ -21674,7 +21938,7 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -21719,7 +21983,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -21728,19 +21992,19 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
@@ -21781,7 +22045,7 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -21793,7 +22057,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -21802,7 +22066,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -21816,11 +22080,11 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -21843,7 +22107,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -21874,7 +22138,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -22178,7 +22442,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -22202,7 +22466,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -22212,13 +22476,13 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/int.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -22252,7 +22516,7 @@
     originZ: px
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -22317,7 +22581,7 @@
     numOctaves: int
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -22339,7 +22603,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -22348,14 +22612,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -22437,7 +22701,7 @@
     return parseFloat(value.trim());
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -22460,7 +22724,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -22509,7 +22773,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -22655,27 +22919,27 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -22685,10 +22949,10 @@
     return true;
   }, "linearEasing");
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -22701,7 +22965,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -22716,7 +22980,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -22739,12 +23003,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -22755,7 +23019,7 @@
     return options;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -22903,7 +23167,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -22918,7 +23182,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -22985,7 +23249,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -22999,7 +23263,7 @@
     return false;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -23026,13 +23290,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -23041,7 +23305,7 @@
     "backgroundColor"
   ]);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -23052,7 +23316,7 @@
     return false;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -23087,12 +23351,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -23141,10 +23405,10 @@
     return transformString;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -23712,7 +23976,7 @@
     return group;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -23850,7 +24114,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -23930,7 +24194,7 @@
     return max;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -23938,7 +24202,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -24264,7 +24528,7 @@
     return new MotionValue(init, options);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -24273,7 +24537,7 @@
     return transition;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -24282,7 +24546,7 @@
     return valueTransition;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -24313,7 +24577,7 @@
     return ease;
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -24334,7 +24598,7 @@
     return false;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -24393,7 +24657,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -24419,7 +24683,7 @@
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -24430,28 +24694,28 @@
     ...transformPropOrder
   ]);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/test.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -24462,7 +24726,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -24483,7 +24747,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -24610,7 +24874,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -24674,17 +24938,17 @@
     return first === null ? void 0 : first;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -24702,7 +24966,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -24726,7 +24990,7 @@
     });
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -24813,7 +25077,7 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
@@ -24837,7 +25101,7 @@
     });
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
   function buildTransform2(state4) {
     let transform = "";
@@ -24859,7 +25123,7 @@
     return transform || "none";
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
   var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
   var addStyleValue = (element, state4, key2, value) => {
@@ -24920,7 +25184,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -24932,7 +25196,7 @@
     "offsetAnchor"
   ];
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
@@ -24958,7 +25222,7 @@
     return state4.set(key2, value, render);
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/svg/index.mjs
   function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
@@ -25004,7 +25268,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -25024,12 +25288,12 @@
     };
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -25062,7 +25326,7 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/effects/prop/index.mjs
   var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
     return state4.set(key2, value, () => {
       subject2[key2] = value.get();
@@ -25075,7 +25339,7 @@
     }
   });
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -25184,10 +25448,10 @@
     }
   };
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -25262,7 +25526,7 @@
     return unit ? v + unit : v;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -25273,7 +25537,7 @@
     });
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -25284,7 +25548,7 @@
     return value;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -25294,22 +25558,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/render/store.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // ../../../../../code/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -25325,12 +25589,12 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -25345,7 +25609,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -25366,7 +25630,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -25374,7 +25638,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -25387,7 +25651,7 @@
     }
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -25569,7 +25833,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -25600,7 +25864,7 @@
     return animations;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -25625,7 +25889,7 @@
     return animations;
   }
 
-  // ../../../T03-PI-09/artifacts/remote-evidence-20261029T091744.560549Z/artifacts/r14-aux-review-20261029/deps/node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
@@ -27573,7 +27837,7 @@
       }
       var view = normalize(null);
       var stopped = false;
-      var busy4 = false;
+      var busy5 = false;
       function feelShell() {
         return desktopShell() ?? stageShell()?.feelShell?.() ?? null;
       }
@@ -27811,10 +28075,10 @@
           userBottom = next;
         },
         get busy() {
-          return busy4;
+          return busy5;
         },
         set busy(next) {
-          busy4 = next;
+          busy5 = next;
         },
         justBought: null,
         homePage: 0,
@@ -27997,7 +28261,7 @@
           return stopped;
         },
         isBusy: function() {
-          return busy4;
+          return busy5;
         },
         isOpen: function() {
           return isOpen;
@@ -28083,6 +28347,24 @@
   // adapters/dsh/client.js
   var game = { mount: mountGame, desktop };
   window.piggyGame = game;
+  var requestCloudSettings = async (method, path, value) => {
+    try {
+      const response = await fetch(path, method === "GET" ? { cache: "no-store" } : {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(value ?? {})
+      });
+      const body = await response.json();
+      return response.ok ? body : { ok: false, reason: body?.reason || "\u4E91\u5B58\u6863\u8BBE\u7F6E\u8BF7\u6C42\u5931\u8D25" };
+    } catch {
+      return { ok: false, reason: "\u65E0\u6CD5\u8BFB\u53D6\u4E91\u5B58\u6863\u8BBE\u7F6E" };
+    }
+  };
+  window.__dshPiggyCloudSave = {
+    get: () => requestCloudSettings("GET", "/dsh-piggy/cloud/settings"),
+    set: (value) => requestCloudSettings("POST", "/dsh-piggy/cloud/settings", value),
+    test: (value) => requestCloudSettings("POST", "/dsh-piggy/cloud/test-connection", value)
+  };
   if (
     /** @type {any} */
     window.__ModuleLoader__

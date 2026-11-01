@@ -117,6 +117,11 @@ contextBridge.exposeInMainWorld('piggyShell', {
     clear: () => ipcRenderer.invoke('piggy:proxy:clear'),
     test: () => ipcRenderer.invoke('piggy:proxy:test'),
   },
+  cloudSave: {
+    get: () => ipcRenderer.invoke('piggy:cloud:get'),
+    set: config => ipcRenderer.invoke('piggy:cloud:set', config),
+    test: config => ipcRenderer.invoke('piggy:cloud:test', config),
+  },
   /** 全屏时小猪隐藏还是照常显示（外壳 0.6.5 起）：get → {mode, supported, checking, reason, platform}。 */
   fullscreen: {
     get: () => ipcRenderer.invoke('piggy:fullscreen:get'),

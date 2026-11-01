@@ -19,13 +19,14 @@ import { recoverSaveImportSync, commitSaveImport } from './save-transaction.js'
 import { recoverMergeSync } from './merge-transaction.js'
 import { createSaveTransfer } from './save-transfer.js'
 import { createCloudRoutes } from './cloud-routes.js'
-import { createGitSync } from './git-sync.js'
+import { createGitSync, testGitRemote } from './git-sync.js'
+import { normalizeCloudSaveSettings } from './cloud-save-settings.js'
 import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWorkEvent } from './work-events.js'
 
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
  * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object,
- * cloudSave?:{enabled?:boolean,remote?:string,branch?:string,device?:string,debounceMs?:number,insecureSkipTlsVerify?:boolean}|null}} options */
+ * cloudSave?:{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,insecureSkipTlsVerify?:boolean,syncReady?:boolean}|null}} options */
 export function createGameRuntime(options) {
   mkdirSync(dirname(options.statePath), { recursive: true })
   const release = acquireGameLock(options.statePath)
@@ -47,6 +48,10 @@ export function createGameRuntime(options) {
   let cloudRoutes = new Set()
   let cloud = null
   let cloudTimer = null
+  let cloudTransition = false
+  let cloudConfig = options.cloudSave ?? null
+  let cloudConfigureTail = Promise.resolve()
+  let cloudConfigureCount = 0
 
   /**
    * 纯运行态检查：不碰 ledger/store，也不做 prepare/flush。closed/fault 的
@@ -111,14 +116,14 @@ export function createGameRuntime(options) {
     return true
   }
 
-  function createCloudSync() {
-    const config = options.cloudSave
-    if (config === null || typeof config !== 'object' || config.enabled !== true) return null
+  function createCloudSync(config = cloudConfig) {
+    if (config === null || typeof config !== 'object' || config.enabled !== true || config.syncReady === false) return null
     const remote = typeof config.remote === 'string' ? config.remote.trim() : ''
     if (remote === '') return null
     const branch = typeof config.branch === 'string' && config.branch !== '' ? config.branch : 'main'
     const device = typeof config.device === 'string' ? config.device : ''
-    const debounceMs = Number.isFinite(config.debounceMs) && config.debounceMs > 0 ? config.debounceMs : 10 * 60 * 1000
+    const debounceMs = typeof config.debounceMs === 'number' && Number.isFinite(config.debounceMs) && config.debounceMs > 0
+      ? config.debounceMs : 10 * 60 * 1000
     const archive = () => {
       const built = createSaveArchive({ statePath: options.statePath, state: store?.state ?? null })
       return {
@@ -147,11 +152,101 @@ export function createGameRuntime(options) {
   function startCloudTimer() {
     if (cloud === null || cloudTimer !== null) return
     cloudTimer = setInterval(() => {
-      void cloud.sync.sequence(sync => exclusive(() => sync.pushSnapshot(), true))
-        .then(() => { if (cloud !== null) cloud.lastPushAt = Date.now() })
-        .catch(error => { store?.journal?.record?.('warn', 'cloud', '云存档推送失败', { reason: String(error?.message ?? error) }) })
+      const activeCloud = cloud
+      if (cloudTransition || activeCloud === null) return
+      void cloudSequence(activeCloud, sync => exclusive(() => sync.pushSnapshot(), true))
+        .then(() => { if (cloud === activeCloud) activeCloud.lastPushAt = Date.now() })
+        .catch(error => {
+          const cause = /** @type {any} */ (error)
+          if (cause?.code !== 'CLOUD_DISABLED') store?.journal?.record?.('warn', 'cloud', '云存档推送失败', { reason: String(cause?.message ?? cause) })
+        })
     }, cloud.debounceMs)
     cloudTimer.unref?.()
+  }
+
+  function activeCloud() {
+    if (cloudTransition || cloud === null) throw Object.assign(new Error('云存档尚未启用或配置不完整'), { code: 'CLOUD_DISABLED', status: 409 })
+    return cloud
+  }
+
+  function cloudSequence(current, operation) {
+    return current.sync.sequence(sync => {
+      // A queued operation accepted before the user closed or changed settings
+      // must not start a new Git command against the previous remote.
+      if (cloudTransition || cloud !== current) throw Object.assign(new Error('云存档设置已更改'), { code: 'CLOUD_DISABLED', status: 409 })
+      return operation(sync)
+    })
+  }
+
+  function cloudRouteList() {
+    const getCloud = () => activeCloud()
+    return createCloudRoutes({
+      status: async () => cloud === null
+        ? { enabled: false, remoteConfigured: false, lastPushAt: 0 }
+        : { enabled: true, remoteConfigured: true, branch: cloud.branch, device: cloud.device, lastPushAt: cloud.lastPushAt },
+      branches: () => { const current = getCloud(); return cloudSequence(current, sync => sync.listBranches()) },
+      pull: branch => { const current = getCloud(); return cloudSequence(current, sync => exclusive(() => sync.applyBranch(branch), true)) },
+      pullCommit: target => { const current = getCloud(); return cloudSequence(current, sync => exclusive(() => sync.applyCommit(target), true)) },
+      commit: () => { const current = getCloud(); return cloudSequence(current, async sync => {
+        const result = await exclusive(() => sync.pushSnapshot({ manual: true }), true)
+        current.lastPushAt = Date.now()
+        return result
+      }) },
+      history: branch => { const current = getCloud(); return cloudSequence(current, sync => sync.history(branch === '' ? current.branch : branch)) },
+      push: () => { const current = getCloud(); return cloudSequence(current, async sync => {
+        const result = await exclusive(() => sync.pushSnapshot(), true)
+        current.lastPushAt = Date.now()
+        return result
+      }) },
+    })
+  }
+
+  async function configureCloudSaveNow(value) {
+    assertAccepting()
+    const normalized = normalizeCloudSaveSettings(value)
+    // First-sync/restore requires a separate user-facing decision flow. Until that
+    // flow exists, local settings cannot arm automatic pushes or cloud restore routes.
+    const nextConfig = { ...normalized, syncReady: value?.syncReady === true }
+    const oldCloud = cloud
+    const previousConfig = cloudConfig
+    cloudTransition = true
+    if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
+    cloud = null
+    try {
+      // Prevent new cloud route work first, then let already-owned operations drain.
+      await Promise.allSettled([...specialActive])
+      await oldCloud?.sync.close({ finalPush: false })
+      cloudConfig = nextConfig
+      options.cloudSave = nextConfig
+      cloud = createCloudSync(nextConfig)
+      if (cloud !== null) startCloudTimer()
+      return { ok: true, config: nextConfig, enabled: cloud !== null }
+    } catch (error) {
+      // Configuration changes never leave a half-active service behind. Recreate the
+      // previous service without triggering its shutdown final push.
+      cloudConfig = previousConfig
+      options.cloudSave = previousConfig
+      cloud = createCloudSync(previousConfig)
+      if (cloud !== null) startCloudTimer()
+      return { ok: false, reason: '云存档设置暂时无法应用' }
+    } finally { cloudTransition = false }
+  }
+
+  function configureCloudSave(value) {
+    cloudConfigureCount += 1
+    const pending = cloudConfigureTail.then(() => configureCloudSaveNow(value))
+    cloudConfigureTail = pending.then(() => { cloudConfigureCount -= 1 }, () => { cloudConfigureCount -= 1 })
+    return pending
+  }
+
+  async function testCloudSave(value) {
+    let config
+    try { config = normalizeCloudSaveSettings({ ...value, enabled: value?.enabled === true }) }
+    catch (error) { return { ok: false, reason: error instanceof Error ? error.message : '云存档设置无效' } }
+    if (!config.remote) return { ok: false, reason: '请先填写仓库地址' }
+    // This call is intentionally outside cloud.sync's mutation queue: ls-remote is
+    // read-only and must not wait on a queue it is itself trying to inspect.
+    return testGitRemote({ remote: config.remote, cwd: dirname(options.statePath) })
   }
 
   function open() {
@@ -191,30 +286,10 @@ export function createGameRuntime(options) {
     }
     const next = []
     registerGameRoutes({ register(route) { next.push(route); return () => {} } }, store, { fetch: options.fetch })
-    if (cloud === null) cloud = createCloudSync()
-    cloudRoutes = new Set()
-    if (cloud !== null) {
-      const routes = createCloudRoutes({
-        status: async () => ({ enabled: true, remoteConfigured: true, branch: cloud.branch, device: cloud.device, lastPushAt: cloud.lastPushAt }),
-        branches: () => cloud.sync.listBranches(),
-        pull: branch => cloud.sync.sequence(sync => exclusive(() => sync.applyBranch(branch), true)),
-        pullCommit: target => cloud.sync.sequence(sync => exclusive(() => sync.applyCommit(target), true)),
-        commit: () => cloud.sync.sequence(async sync => {
-          const result = await exclusive(() => sync.pushSnapshot({ manual: true }), true)
-          cloud.lastPushAt = Date.now()
-          return result
-        }),
-        history: branch => cloud.sync.history(branch === '' ? cloud.branch : branch),
-        push: () => cloud.sync.sequence(async sync => {
-          const result = await exclusive(() => sync.pushSnapshot(), true)
-          cloud.lastPushAt = Date.now()
-          return result
-        }),
-      })
-      for (const route of routes) cloudRoutes.add(route)
-      next.push(...routes)
-      startCloudTimer()
-    }
+    if (cloud === null) cloud = createCloudSync(cloudConfig)
+    cloudRoutes = new Set(cloudRouteList())
+    next.push(...cloudRoutes)
+    startCloudTimer()
     routes = next
   }
   try { recoverSaveImportSync(options.statePath); recoverMergeSync(options.statePath); open() }
@@ -399,7 +474,7 @@ export function createGameRuntime(options) {
   }
 
   const created = {
-    handle, mountRoutes, exclusive, restart, snapshotForWrite,
+    handle, mountRoutes, exclusive, restart, snapshotForWrite, configureCloudSave, testCloudSave,
     statePath: options.statePath,
     view(drain = false) {
       // 合并/导入期间仍要能给面板返回「最后一次快照 + ok:false」。
@@ -502,6 +577,13 @@ export function createGameRuntime(options) {
       if (disposePromise !== null) return disposePromise
       if (closed) return Promise.resolve({ alreadyClosed: true })
       accepting = false
+      if (cloudConfigureCount > 0) {
+        disposePromise = cloudConfigureTail.then(() => {
+          disposePromise = null
+          return created.dispose()
+        })
+        return disposePromise
+      }
       if (cloud === null) {
         if (busy) {
           closed = true

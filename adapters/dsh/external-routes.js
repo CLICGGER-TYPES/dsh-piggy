@@ -134,7 +134,12 @@ export function registerPanelRoutes(webServer, controller) {
  * 管理路由：/dsh-piggy/external/*。两个模式都挂，切换、恢复、撤销都不撤。
  * @returns {() => void} disposer
  */
-export function registerManagementRoutes(webServer, controller) {
+/**
+ * @param {any} webServer
+ * @param {any} controller
+ * @param {{cloudSettings:()=>any,saveCloudSettings:(value:any)=>Promise<any>,testCloudSettings:(value:any)=>Promise<any>}|null} [cloudSettings]
+ */
+export function registerManagementRoutes(webServer, controller, cloudSettings = null) {
   const registry = routeRegistry(webServer)
   const { register } = registry
 
@@ -202,6 +207,24 @@ export function registerManagementRoutes(webServer, controller) {
     if (req.method !== 'POST') return sendJson(res, 405, { ok: false, reason: 'method' })
     sendJson(res, 200, await controller.retryRetirement())
   })
+
+  // Device-local cloud configuration is available in either embedded or external mode.
+  // The settings and read-only probe routes are separate from cloud save/pull routes.
+  if (cloudSettings !== null) {
+    register('exact', '/dsh-piggy/cloud/settings', async (req, res) => {
+      if (req.method === 'GET') return sendJson(res, 200, cloudSettings.cloudSettings())
+      if (req.method !== 'POST') return sendJson(res, 405, { ok: false, reason: 'method' })
+      const body = await readJson(req)
+      if (body === null) return sendJson(res, 415, { ok: false, reason: 'json-required' })
+      sendJson(res, 200, await cloudSettings.saveCloudSettings(body))
+    })
+    register('exact', '/dsh-piggy/cloud/test-connection', async (req, res) => {
+      if (req.method !== 'POST') return sendJson(res, 405, { ok: false, reason: 'method' })
+      const body = await readJson(req)
+      if (body === null) return sendJson(res, 415, { ok: false, reason: 'json-required' })
+      sendJson(res, 200, await cloudSettings.testCloudSettings(body))
+    })
+  }
 
   return registry.dispose
 }
