@@ -14,7 +14,7 @@
 ## 2026-11-02 桌面 renderer controller 拆分（本地候选，待独立验收）
 
 - MODD01 从本地基线 `91ef248ed273db72a5dc7f34de434d5088422528` 拆出兼容门面、pet/layout/input controllers；desktop `version=6`、pet/panel/ext 路由、旧壳降级、shape/hitShape、拖动/飞行几何顺序保留。生成 `client.js` 已更新，SHA-256 `ec893dcdbfae081147b4da9f76016ea24e9bbbdf14127eedffb170c1041e006d`。
-- 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 11/11，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。完整测试套件和独立 QMODD01 原生 UI 验收尚未完成；本分支未合入或发布。
+- 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 9/9，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。完整测试套件和独立 QMODD01 原生 UI 验收尚未完成；本分支未合入或发布。
 - 范围仍限于 renderer controller 拆分：`apps/desktop/main.js` 未拆（主进程模块拆分仍未实现），farm client 源模块化 E 尚未实现；真实多猪入口/稳定 IDs、按猪独立存档及实际联网也都未实现。此次不表示整体架构工作已完成。
 
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
