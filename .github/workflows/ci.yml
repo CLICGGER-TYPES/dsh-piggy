@@ -40,17 +40,15 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict'
-          import { copyFileSync, readFileSync } from 'node:fs'
-          import { join } from 'node:path'
+          import { readFileSync } from 'node:fs'
           const canonical = text => text.replace(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm, '$1node_modules/')
           const tagged = readFileSync(process.env.RUNNER_TEMP + '/client-tag.js', 'utf8')
           const rebuilt = readFileSync('client.js', 'utf8')
           assert.equal(canonical(rebuilt), canonical(tagged), 'rebuilt client code differs from the tagged build')
           const normalized = [...rebuilt.matchAll(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm)].length
           console.log(`client.js canonical build match (normalized ${normalized} node_modules comment prefixes)`)
-          copyFileSync(join(process.env.RUNNER_TEMP, 'client-tag.js'), 'client.js')
           NODE
-          git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
+          git diff --exit-code -- extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
       - name: Validate Windows native QA syntax
         if: runner.os == 'Windows'
         shell: powershell
@@ -64,3 +62,8 @@ jobs:
         run: node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
       - name: Type check
         run: npm run typecheck
+      - name: Restore tagged bundle and verify committed generated files
+        shell: bash
+        run: |
+          node --input-type=module -e "import { copyFileSync } from 'node:fs'; import { join } from 'node:path'; copyFileSync(join(process.env.RUNNER_TEMP, 'client-tag.js'), 'client.js')"
+          git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
