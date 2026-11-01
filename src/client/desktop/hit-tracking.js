@@ -5,11 +5,20 @@
  */
 import { collectHitRects } from '../hit-regions.js'
 
-/** @param {{host:()=>any,shell:any,blocked:()=>boolean,onShape:(rects:any[])=>void}} deps */
+/** @param {{host:()=>any,shell:any,blocked:()=>boolean,onShape:(rects:any[])=>void,windowObject?:Window}} deps */
 export function startHitTracking(deps) {
   let lastKey = '', lastAt = -Infinity
+  let stopped = false
+  let frameId = null
+  const requestFrame = deps.windowObject?.requestAnimationFrame?.bind(deps.windowObject)
+    ?? requestAnimationFrame
+  const cancelFrame = deps.windowObject?.cancelAnimationFrame?.bind(deps.windowObject)
+    ?? globalThis.cancelAnimationFrame?.bind(globalThis)
+    ?? (() => {})
+
   function frame(at) {
-    requestAnimationFrame(frame)
+    if (stopped) return
+    frameId = requestFrame(frame)
     if (deps.blocked()) { lastKey = ''; return }
     if (Number.isFinite(at) && at - lastAt < 32) return
     lastAt = at
@@ -22,5 +31,11 @@ export function startHitTracking(deps) {
     deps.onShape(hitShape)
     deps.shell.place({ hitShape })
   }
-  requestAnimationFrame(frame)
+  frameId = requestFrame(frame)
+  return function stop() {
+    if (stopped) return
+    stopped = true
+    if (frameId !== null) cancelFrame(frameId)
+    frameId = null
+  }
 }

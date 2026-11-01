@@ -11,6 +11,12 @@
 
 - MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 暂缓，farm 4.2.1 公开附件保持不变。
 
+## 2026-11-02 桌面 renderer controller 拆分（本地候选，待独立验收）
+
+- MODD01 从本地基线 `91ef248ed273db72a5dc7f34de434d5088422528` 拆出兼容门面、pet/layout/input controllers；desktop `version=6`、pet/panel/ext 路由、旧壳降级、shape/hitShape、拖动/飞行几何顺序保留。生成 `client.js` 已更新，SHA-256 `ec893dcdbfae081147b4da9f76016ea24e9bbbdf14127eedffb170c1041e006d`。
+- 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 11/11，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。完整测试套件和独立 QMODD01 原生 UI 验收尚未完成；本分支未合入或发布。
+- 范围仍限于 renderer controller 拆分：`apps/desktop/main.js` 未拆（主进程模块拆分仍未实现），farm client 源模块化 E 尚未实现；真实多猪入口/稳定 IDs、按猪独立存档及实际联网也都未实现。此次不表示整体架构工作已完成。
+
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
 
 - G0 源码基线选用 `749f4cbac0e7114b60845c095c9b0e16e25a8442`（origin/main，已核验文档主线）；产品行为继续冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`。两者相差 9 个文件，只有 `.github/workflows/integrated-candidate.yml`、CHANGELOG/README/ROADMAP/screenshots；产品代码、资源、锁文件与生成产物无差异。

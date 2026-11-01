@@ -99,7 +99,7 @@
     let pending2 = null;
     let frame3 = null;
     let isDisposed = false;
-    function schedule4() {
+    function schedule3() {
       if (active2.size || !pending2 || frame3 !== null || isDisposed) return;
       frame3 = environment.requestAnimationFrame(() => {
         frame3 = null;
@@ -114,11 +114,11 @@
     }
     function up(event) {
       active2.delete(event.pointerId);
-      schedule4();
+      schedule3();
     }
     function blur() {
       active2.clear();
-      schedule4();
+      schedule3();
     }
     card2.addEventListener("pointerdown", down, true);
     environment.addEventListener?.("pointerup", up, true);
@@ -156,58 +156,58 @@
     if (left < 42 || right < 42) return right > left ? "right" : "left";
     return pig.x + pig.width / 2 < area.x + area.width / 2 ? "right" : "left";
   }
-  function attachDailyPlacement({ host: host3, pig, daily, bubble, geometry: geometry2, onGeometry }) {
-    let scheduled3 = false;
+  function attachDailyPlacement({ host: host2, pig, daily, bubble, geometry, onGeometry }) {
+    let scheduled2 = false;
     let disposed = false;
     function sync() {
-      scheduled3 = false;
-      if (disposed || host3.getAttribute("data-gift-held") === "true") return;
+      scheduled2 = false;
+      if (disposed || host2.getAttribute("data-gift-held") === "true") return;
       let x = 0, y = 0, node = pig;
       while (node && node !== document.body) {
         x += node.offsetLeft || 0;
         y += node.offsetTop || 0;
         node = node.offsetParent;
       }
-      const geo = geometry2();
+      const geo = geometry();
       const origin = geo?.window ?? { x: 0, y: 0 };
       const box = { x: origin.x + x, y: origin.y + y, width: pig.offsetWidth, height: pig.offsetHeight };
       const area = geo?.workArea ?? nearestArea({ x: box.x + box.width / 2, y: box.y + box.height / 2 }, geo?.workAreas ?? []) ?? { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
       const side = giftSideFor(box, area);
-      if (host3.getAttribute("data-gift-side") !== side) host3.setAttribute("data-gift-side", side);
+      if (host2.getAttribute("data-gift-side") !== side) host2.setAttribute("data-gift-side", side);
     }
-    function schedule4() {
-      if (!disposed && !scheduled3) {
-        scheduled3 = true;
+    function schedule3() {
+      if (!disposed && !scheduled2) {
+        scheduled2 = true;
         queueMicrotask(sync);
       }
     }
     const hold = createRenderHold(daily);
     function release() {
-      host3.removeAttribute("data-gift-held");
+      host2.removeAttribute("data-gift-held");
       sync();
     }
     function down(event) {
       if (event.button !== 0 || daily.getAttribute("data-action") !== "openGift" || bubble.hidden) return;
-      host3.setAttribute("data-gift-held", "true");
+      host2.setAttribute("data-gift-held", "true");
       hold.defer(release);
     }
     daily.addEventListener("pointerdown", down);
-    const observer = new MutationObserver(schedule4);
-    observer.observe(host3, { attributes: true, subtree: true, attributeFilter: ["hidden", "style", "data-action", "data-open"] });
-    const resize = typeof ResizeObserver === "function" ? new ResizeObserver(schedule4) : null;
+    const observer = new MutationObserver(schedule3);
+    observer.observe(host2, { attributes: true, subtree: true, attributeFilter: ["hidden", "style", "data-action", "data-open"] });
+    const resize = typeof ResizeObserver === "function" ? new ResizeObserver(schedule3) : null;
     resize?.observe(pig);
-    const off = onGeometry?.(schedule4);
-    window.addEventListener("resize", schedule4);
+    const off = onGeometry?.(schedule3);
+    window.addEventListener("resize", schedule3);
     sync();
     return () => {
       disposed = true;
       hold.dispose();
       daily.removeEventListener("pointerdown", down);
-      host3.removeAttribute("data-gift-held");
+      host2.removeAttribute("data-gift-held");
       observer.disconnect();
       resize?.disconnect();
       if (typeof off === "function") off();
-      window.removeEventListener("resize", schedule4);
+      window.removeEventListener("resize", schedule3);
     };
   }
 
@@ -5783,7 +5783,7 @@
       if (local === 0 || server === 0) return server;
       return Math.abs(server - local) > 1500 ? server : local;
     }
-    function tick2() {
+    function tick() {
       if (isStopped()) {
         window.clearInterval(timer2);
         return;
@@ -5813,8 +5813,8 @@
         if (rest === 0) breakEndsAt = 0;
       }
     }
-    var timer2 = window.setInterval(tick2, 1e3);
-    return { tick: tick2, dispose: function() {
+    var timer2 = window.setInterval(tick, 1e3);
+    return { tick, dispose: function() {
       window.clearInterval(timer2);
     } };
   }
@@ -6934,8 +6934,8 @@
     ctx.card.style.maxHeight = Math.max(120, Math.round(anchor.maxHeight - hudHeight)) + "px";
     schedule2();
   }
-  function installPanel(bridge3) {
-    shell = bridge3;
+  function installPanel(bridge2) {
+    shell = bridge2;
     document.documentElement.setAttribute("data-piggy-role", "panel");
     const style = document.createElement("style");
     style.setAttribute("data-piggy-panel-style", "");
@@ -6943,16 +6943,16 @@
     document.head.appendChild(style);
     window.__dshPiggyShell = {
       role: "panel",
-      proxy: bridge3.proxy,
-      cloudSave: bridge3.cloudSave,
-      saves: bridge3.saves,
-      ext: bridge3.ext,
-      fullscreen: bridge3.fullscreen,
-      external: bridge3.external ?? null,
-      geometry: bridge3.geometry,
+      proxy: bridge2.proxy,
+      cloudSave: bridge2.cloudSave,
+      saves: bridge2.saves,
+      ext: bridge2.ext,
+      fullscreen: bridge2.fullscreen,
+      external: bridge2.external ?? null,
+      geometry: bridge2.geometry,
       split: true,
-      panel: bridge3.panel,
-      onStateChanged: bridge3.onStateChanged,
+      panel: bridge2.panel,
+      onStateChanged: bridge2.onStateChanged,
       // 面板窗口里没有猪可拖：这些是给「认桌面版」用的空动作（desktop-shell.js 按 beginDrag 认）。
       beginDrag: function() {
       },
@@ -7337,12 +7337,12 @@
   var activeVersion = {};
   var rerender = null;
   function bridge() {
-    var host3 = (
+    var host2 = (
       /** @type {any} */
       window
     );
-    if (!host3.dshPiggyExtensions) {
-      host3.dshPiggyExtensions = {
+    if (!host2.dshPiggyExtensions) {
+      host2.dshPiggyExtensions = {
         register: function(key2, impl) {
           if (typeof key2 !== "string" || impl === null || typeof impl !== "object") return;
           var scriptId = document.currentScript?.getAttribute("data-piggy-extension");
@@ -7353,7 +7353,7 @@
         }
       };
     }
-    return host3.dshPiggyExtensions;
+    return host2.dshPiggyExtensions;
   }
   function ensureScript(key2, version) {
     bridge();
@@ -7771,10 +7771,10 @@
       ui.content.appendChild(el("div", "dp-ext-later", "\u6B63\u5728\u8BFB\u53D6\u5728\u7EBF\u6269\u5C55\u2026\u2026"));
       return;
     }
-    var installed2 = {};
-    for (var i = 0; i < ui.view.extensions.length; i += 1) if (ui.view.extensions[i].installed) installed2[ui.view.extensions[i].key] = true;
+    var installed3 = {};
+    for (var i = 0; i < ui.view.extensions.length; i += 1) if (ui.view.extensions[i].installed) installed3[ui.view.extensions[i].key] = true;
     var entries2 = online.entries.filter(function(entry) {
-      return !installed2[entry.key];
+      return !installed3[entry.key];
     });
     if (online.error && entries2.length === 0) {
       ui.content.appendChild(el("div", "dp-ext-later", "\u8BFB\u4E0D\u5230\u5728\u7EBF\u6269\u5C55\u76EE\u5F55\uFF08" + online.error + "\uFF09\uFF0C\u7A0D\u540E\u70B9\u5237\u65B0"));
@@ -8044,11 +8044,11 @@
   // src/client/pat-cursor.js
   var SIZE = 32;
   var drawnFor = null;
-  function applyPatCursor(host3) {
+  function applyPatCursor(host2) {
     if (typeof document === "undefined" || typeof document.createElement !== "function" || typeof getComputedStyle !== "function") return;
     let family = "sans-serif";
     try {
-      family = String(getComputedStyle(host3).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
+      family = String(getComputedStyle(host2).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
     } catch {
       return;
     }
@@ -8071,7 +8071,7 @@
         ctx.textBaseline = "middle";
         ctx.fillText("\u{1F44B}", SIZE / 2, SIZE / 2 + 1);
         const url = canvas.toDataURL("image/png");
-        if (typeof url === "string" && url.startsWith("data:image/png")) host3.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
+        if (typeof url === "string" && url.startsWith("data:image/png")) host2.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
       } catch {
       }
     };
@@ -8119,9 +8119,9 @@
       return false;
     }
   }
-  function applyEmojiStyle(host3) {
-    host3.setAttribute("data-emoji", emojiStyle());
-    applyPatCursor(host3);
+  function applyEmojiStyle(host2) {
+    host2.setAttribute("data-emoji", emojiStyle());
+    applyPatCursor(host2);
   }
 
   // src/client/pig-size.js
@@ -8144,21 +8144,21 @@
   function displayedPigSize(stageSize) {
     return stageSize * pigSize();
   }
-  function applyPigBox(host3, width) {
-    const style = host3?.style;
+  function applyPigBox(host2, width) {
+    const style = host2?.style;
     if (typeof style?.setProperty !== "function") return;
     style.setProperty("--pig-size", width + "px");
     style.setProperty("--pig-scale", String(pigSize()));
   }
-  function syncPigSize(host3, stageSize) {
-    applyPigBox(host3, displayedPigSize(stageSize));
+  function syncPigSize(host2, stageSize) {
+    applyPigBox(host2, displayedPigSize(stageSize));
   }
-  function attachSizePreference(host3, getStage, onChanged) {
+  function attachSizePreference(host2, getStage, onChanged) {
     function onStorage3(event) {
       if (event.key !== PIG_SIZE_KEY) return;
       const stage2 = getStage();
       if (!stage2) return;
-      syncPigSize(host3, stage2.size);
+      syncPigSize(host2, stage2.size);
       onChanged?.();
     }
     window.addEventListener("storage", onStorage3);
@@ -8198,10 +8198,10 @@
     };
     return stageAreaNow() ?? { width: window.innerWidth, height: window.innerHeight };
   }
-  function applyBubbleSize(host3) {
+  function applyBubbleSize(host2) {
     const scale2 = limitBubbleSize(bubbleSize(), availableArea());
-    if (typeof host3?.style?.setProperty !== "function") return scale2;
-    if (host3.style.getPropertyValue("--bubble-scale") !== String(scale2)) host3.style.setProperty("--bubble-scale", String(scale2));
+    if (typeof host2?.style?.setProperty !== "function") return scale2;
+    if (host2.style.getPropertyValue("--bubble-scale") !== String(scale2)) host2.style.setProperty("--bubble-scale", String(scale2));
     return scale2;
   }
   function setBubbleSize(value) {
@@ -8209,15 +8209,15 @@
     writeStore(BUBBLE_SIZE_KEY, String(scale2));
     return scale2;
   }
-  function attachBubbleSizePreference(host3, onChanged) {
+  function attachBubbleSizePreference(host2, onChanged) {
     function update() {
-      applyBubbleSize(host3);
+      applyBubbleSize(host2);
       onChanged?.();
     }
     function onStorage3(event) {
       if (event.key === BUBBLE_SIZE_KEY || event.key === null) update();
     }
-    applyBubbleSize(host3);
+    applyBubbleSize(host2);
     window.addEventListener("storage", onStorage3);
     window.addEventListener("resize", update);
     return () => {
@@ -8367,7 +8367,7 @@
     let referenceFrames = [];
     const now2 = () => performance.now();
     const allowed = () => !disposed && !document.hidden && !c.isStopped() && effectiveFeelMode() === "full" && c.canPlay() && (!active2 || capturedArt === c.pig.getAttribute("data-art")) && c.pig.getAttribute("data-feel-flip") !== "true";
-    function measure2() {
+    function measure() {
       const image = c.pigArt;
       const src = image?.getAttribute("src") || "";
       const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
@@ -8425,7 +8425,7 @@
       capturedArt = bounds2 = contact = null;
       c.render();
     }
-    function tick2(time2) {
+    function tick(time2) {
       raf3 = 0;
       if (!allowed()) {
         cancel2();
@@ -8447,14 +8447,14 @@
         frame3 = next;
         draw();
       }
-      raf3 = requestAnimationFrame(tick2);
+      raf3 = requestAnimationFrame(tick);
     }
     function press() {
       if (!ready || !allowed()) return false;
       previewHeld = false;
       previewUntil = 0;
       c.cancelMicro();
-      bounds2 = measure2();
+      bounds2 = measure();
       contact = measureContact();
       capturedArt = c.pig.getAttribute("data-art");
       c.pig.setAttribute("data-pet-snap", "true");
@@ -8465,7 +8465,7 @@
       start2 = now2();
       frame3 = 0;
       draw();
-      raf3 = requestAnimationFrame(tick2);
+      raf3 = requestAnimationFrame(tick);
       return true;
     }
     function release() {
@@ -8966,7 +8966,7 @@
     if (CUSTOM_FRAME_PENDING.get(image) === key2) return;
     applyFrame(image, null);
     CUSTOM_FRAME_PENDING.set(image, key2);
-    function measure2() {
+    function measure() {
       CUSTOM_FRAME_PENDING.delete(image);
       if (current3 !== null && !current3()) return;
       if (image.getAttribute("src") !== src) return;
@@ -8978,8 +8978,8 @@
       applyFrame(image, frame3);
       if (done !== null) done(frame3);
     }
-    if (image.complete && image.naturalWidth > 0) measure2();
-    else image.addEventListener?.("load", measure2, { once: true });
+    if (image.complete && image.naturalWidth > 0) measure();
+    else image.addEventListener?.("load", measure, { once: true });
   }
   function artFrameFor(src) {
     if (typeof src !== "string" || src === "") return null;
@@ -9379,9 +9379,9 @@
       /** @type {any} */
       window.piggyShell
     ) : void 0;
-    const bridge3 = shell2?.logs;
-    if (bridge3 === void 0 || typeof bridge3.save !== "function") return null;
-    const result = await bridge3.save(name, text);
+    const bridge2 = shell2?.logs;
+    if (bridge2 === void 0 || typeof bridge2.save !== "function") return null;
+    const result = await bridge2.save(name, text);
     if (result?.ok === true) return { ok: true, path: String(result.path ?? "") };
     if (result?.canceled === true) return { ok: false, canceled: true };
     return { ok: false, reason: String(result?.reason ?? "\u5916\u58F3\u6CA1\u80FD\u4FDD\u5B58") };
@@ -12290,8 +12290,8 @@
         return;
       }
       const stageSize = ui.view.hatched ? ui.view.pig.stage.size : ui.view.boxStage.size;
-      const geometry2 = desktopShell()?.geometry?.();
-      const area = geometry2?.workArea;
+      const geometry = desktopShell()?.geometry?.();
+      const area = geometry?.workArea;
       const available = Math.min(area?.width || window.screen?.availWidth || window.innerWidth, area?.height || window.screen?.availHeight || window.innerHeight);
       const scale2 = Math.min(value / 100, available / (stageSize * 2));
       setPigSize(scale2);
@@ -12762,7 +12762,7 @@
       }, 380);
     }
     const feel2 = feelOf(fish3);
-    function tick2(now2) {
+    function tick(now2) {
       if (!stillOpen(ui)) return finish(false);
       if (!s.startedAt) s.startedAt = now2;
       const dt = s.last ? Math.min(50, now2 - s.last) : 16;
@@ -12777,10 +12777,10 @@
         if (s.misses >= 3) return finish(false);
       }
       paint();
-      frame = raf(tick2);
+      frame = raf(tick);
     }
     paint();
-    frame = raf(tick2);
+    frame = raf(tick);
   }
   var BAR_HEIGHT = 220;
   function renderBar(ui, fish3, s, finish, root) {
@@ -12830,7 +12830,7 @@
       }
       s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * surgeOf(s, feel2, now2, dt));
     }
-    function tick2(now2) {
+    function tick(now2) {
       if (!stillOpen(ui)) return finish(false);
       const dt = s.last ? Math.min(50, now2 - s.last) : 16;
       s.last = now2;
@@ -12855,9 +12855,9 @@
       stage2.setAttribute("data-progress", s.progress.toFixed(0));
       if (s.progress >= 100) return finish(true);
       if (s.progress <= 0) return finish(false);
-      frame = raf(tick2);
+      frame = raf(tick);
     }
-    frame = raf(tick2);
+    frame = raf(tick);
   }
   function renderPull(ui, fish3, s, finish, root) {
     const d = difficultyOf(fish3);
@@ -12890,7 +12890,7 @@
     stage2.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
     root.appendChild(stage2);
     holdControls(stage2, s);
-    function tick2(now2) {
+    function tick(now2) {
       if (!stillOpen(ui)) return finish(false);
       const dt = s.last ? Math.min(50, now2 - s.last) : 16;
       s.last = now2;
@@ -12916,9 +12916,9 @@
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
       if (s.distance <= 0) return finish(true);
-      frame = raf(tick2);
+      frame = raf(tick);
     }
-    frame = raf(tick2);
+    frame = raf(tick);
   }
 
   // src/client/switch-activity.js
@@ -13245,7 +13245,7 @@
     let nextNibble = Date.now() + 1500 + Math.random() * 2500;
     let nibbleUntil = 0;
     waitUi = ui;
-    function tick2() {
+    function tick() {
       if (waitUi !== ui) return;
       const now2 = Date.now();
       if (now2 < pending2.bitesAt - 900 && now2 >= nextNibble) {
@@ -13267,9 +13267,9 @@
         ui.send("fishHook");
         return;
       }
-      waitFrame = raf2(tick2);
+      waitFrame = raf2(tick);
     }
-    waitFrame = raf2(tick2);
+    waitFrame = raf2(tick);
   }
   function renderResult(ui, fish3) {
     const root = fishShell(ui);
@@ -14781,14 +14781,14 @@
   }
   function animatePanelClose(ctx) {
     const { below, origin } = panelOrigin(ctx);
-    const host3 = ctx.host;
+    const host2 = ctx.host;
     for (const node of [ctx.card, ctx.hud]) {
       if (!node || node.hidden || !canAnimate(node) || typeof node.cloneNode !== "function") continue;
       const ghost = node.cloneNode(true);
       ghost.setAttribute("data-ghost", "true");
       ghost.setAttribute("aria-hidden", "true");
-      const fromTop = host3.style.top !== "" && host3.style.top !== "auto";
-      const fromLeft = host3.style.left !== "" && host3.style.left !== "auto";
+      const fromTop = host2.style.top !== "" && host2.style.top !== "auto";
+      const fromLeft = host2.style.left !== "" && host2.style.left !== "auto";
       const style = ghost.style;
       style.pointerEvents = "none";
       style.margin = "0";
@@ -14796,9 +14796,9 @@
       style.height = node.offsetHeight + "px";
       style.maxHeight = "none";
       style.top = fromTop ? node.offsetTop + "px" : "auto";
-      style.bottom = fromTop ? "auto" : host3.offsetHeight - node.offsetTop - node.offsetHeight + "px";
+      style.bottom = fromTop ? "auto" : host2.offsetHeight - node.offsetTop - node.offsetHeight + "px";
       style.left = fromLeft ? node.offsetLeft + "px" : "auto";
-      style.right = fromLeft ? "auto" : host3.offsetWidth - node.offsetLeft - node.offsetWidth + "px";
+      style.right = fromLeft ? "auto" : host2.offsetWidth - node.offsetLeft - node.offsetWidth + "px";
       style.transformOrigin = origin;
       node.parentNode.insertBefore(ghost, node.nextSibling);
       const fade = ghost.animate([
@@ -17837,9 +17837,9 @@
       setSkinContactOverride(art, point);
       paint();
     }
-    let dragging2 = false;
+    let dragging = false;
     pad.addEventListener("pointerdown", function(event) {
-      dragging2 = true;
+      dragging = true;
       event.preventDefault?.();
       try {
         pad.setPointerCapture?.(event.pointerId);
@@ -17849,13 +17849,13 @@
       previewHand(art, true);
     });
     pad.addEventListener("pointermove", function(event) {
-      if (!dragging2) return;
+      if (!dragging) return;
       place(event);
       renewSkinContactPreview();
     });
     const stop = function() {
-      if (!dragging2) return;
-      dragging2 = false;
+      if (!dragging) return;
+      dragging = false;
       previewHand(art, false);
     };
     pad.addEventListener("pointerup", stop);
@@ -18073,7 +18073,7 @@
       }
       return merged2;
     }
-    function schedule4() {
+    function schedule3() {
       if (timer2 !== null) clearTimeout(timer2);
       timer2 = null;
       if (held || pending2 === null) return;
@@ -18086,18 +18086,18 @@
     }
     function down() {
       held = true;
-      schedule4();
+      schedule3();
     }
     function up() {
       if (!held) return;
       held = false;
       readyAt = Date.now() + 150;
-      schedule4();
+      schedule3();
     }
     function blur() {
       held = false;
       readyAt = 0;
-      schedule4();
+      schedule3();
     }
     root.addEventListener("pointerdown", down, true);
     events.addEventListener("pointerup", up, true);
@@ -18118,7 +18118,7 @@
           const accumulated = pending2?.hasSnapshot ? mergeSnapshots(pending2.snapshot, snapshot) : snapshot;
           pending2 = { run, snapshot: accumulated, hasSnapshot: true };
         } else pending2 = { run, snapshot: void 0, hasSnapshot: false };
-        schedule4();
+        schedule3();
         return true;
       },
       dispose() {
@@ -18192,7 +18192,7 @@
       if (target === null) return;
       dispatch(target);
     }
-    function schedule4(seen) {
+    function schedule3(seen) {
       if (win !== null && typeof win.requestAnimationFrame === "function") {
         win.requestAnimationFrame(function() {
           flush2(seen);
@@ -18212,7 +18212,7 @@
     return function restore2() {
       if (restoring || pending2 || x === null) return false;
       pending2 = true;
-      schedule4(seq2);
+      schedule3(seq2);
       return true;
     };
   }
@@ -18593,6 +18593,459 @@
     return dev;
   }
 
+  // src/client/feel/config.js
+  var FEEL = Object.freeze({
+    /** 压扁（正）上限，用户拍板 18%。 */
+    squashMax: 0.18,
+    /** 拎起拉长上限，用户拍板 10%。 */
+    holdMax: 0.1,
+    /** 按压量。 */
+    pressSquash: 0.04,
+    /** 横向缩放 = 1 + volumeK * 压扁；小于 1 更像圆滚滚的动物。 */
+    volumeK: 0.72,
+    /** 拎起时横向收窄的比例。 */
+    holdNarrow: 0.4,
+    /** 拖动倾斜上限（度）。 */
+    tiltMaxDrag: 18,
+    /** 飞行倾斜上限（度）。 */
+    tiltMaxFly: 20,
+    /** 屏幕水平速度 → 倾斜角（度 / (px/s)）。 */
+    tiltGain: 0.012,
+    /** 按压弹簧。 */
+    press: Object.freeze({ stiffness: 600, damping: 26, mass: 1 }),
+    /** 挤压/拉长弹簧：欠阻尼，2~3 次可见回弹，约 0.75s 收住。 */
+    squash: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
+    /** 拎起弹簧：接近临界阻尼，不上下晃。 */
+    hold: Object.freeze({ stiffness: 300, damping: 26, mass: 1 }),
+    /** 倾斜弹簧：松手约 0.45s 回正。 */
+    tilt: Object.freeze({ stiffness: 220, damping: 16, mass: 1 }),
+    /** 落地冲击弹簧：同样 2~3 次回弹。 */
+    impact: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
+    /** 翻卡片。 */
+    turnMs: 180,
+    turnBulge: 0.04,
+    /** 动作图切换遮挡。 */
+    swapMs: 90,
+    swapApplyMs: 55,
+    swapMaxDelayMs: 140,
+    /** 手势阈值。 */
+    dragPx: 4,
+    liftPx: 6,
+    /** 来回摸：1200ms 内累计 320px，800ms 冷却。 */
+    strokeWindowMs: 1200,
+    strokePx: 320,
+    strokeCooldownMs: 800,
+    /** 桌面抛掷：只认松手前最后一小段仍在快速移动。 */
+    throwMin: 180,
+    throwTailMs: 60,
+    throwIdleMs: 60,
+    throwMax: 2200,
+    gravity: 2400,
+    airDrag: 0.12,
+    restitution: 0.52,
+    floorFriction: 0.82,
+    landVy: 520,
+    dizzyImpact: 1500,
+    dizzyMs: 2400,
+    flightMaxMs: 3500,
+    /** 轻柔模式缩放。 */
+    softScale: 0.6,
+    /** 收尾判定：所有通道小于这些值就算回稳。 */
+    settleEpsilon: 4e-3,
+    settleTilt: 0.35
+  });
+  function modeScale(mode) {
+    return mode === "soft" ? FEEL.softScale : 1;
+  }
+
+  // src/client/feel/envelope.js
+  var corners = (box) => [
+    { x: box.x, y: box.y },
+    { x: box.x + box.width, y: box.y },
+    { x: box.x, y: box.y + box.height },
+    { x: box.x + box.width, y: box.y + box.height }
+  ];
+  function bounds(points) {
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const point of points) {
+      left = Math.min(left, point.x);
+      top = Math.min(top, point.y);
+      right = Math.max(right, point.x);
+      bottom = Math.max(bottom, point.y);
+    }
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  }
+  function union(...boxes) {
+    return bounds(boxes.flatMap(corners));
+  }
+  function transformed(box, pivot, state4) {
+    const radians = state4.rotate * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    return corners(box).map((point) => {
+      const x = (point.x - pivot.x) * state4.scaleX;
+      const y = (point.y - pivot.y) * state4.scaleY;
+      return {
+        x: pivot.x + x * cos - y * sin,
+        y: pivot.y + x * sin + y * cos + state4.dy
+      };
+    });
+  }
+  function poseEnvelope(box, pose, pigBox = box) {
+    const bodyPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y + pigBox.height * 0.85 };
+    const holdPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y };
+    const body = transformed(box, bodyPivot, {
+      scaleX: 1 + FEEL.volumeK * pose.squash,
+      scaleY: 1 - pose.squash,
+      rotate: pose.tilt,
+      dy: -pose.hop
+    });
+    const hold = transformed(
+      {
+        x: Math.min(...body.map((p) => p.x)),
+        y: Math.min(...body.map((p) => p.y)),
+        width: Math.max(...body.map((p) => p.x)) - Math.min(...body.map((p) => p.x)),
+        height: Math.max(...body.map((p) => p.y)) - Math.min(...body.map((p) => p.y))
+      },
+      holdPivot,
+      { scaleX: 1 - FEEL.holdNarrow * pose.hold, scaleY: 1 + pose.hold, rotate: 0, dy: 0 }
+    );
+    const exact = corners(box).map((point) => {
+      const bodyPoint = {
+        x: bodyPivot.x + (point.x - bodyPivot.x) * (1 + FEEL.volumeK * pose.squash),
+        y: bodyPivot.y + (point.y - bodyPivot.y) * (1 - pose.squash) - pose.hop
+      };
+      const radians = pose.tilt * Math.PI / 180;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+      const rotated = {
+        x: bodyPivot.x + (bodyPoint.x - bodyPivot.x) * cos - (bodyPoint.y - bodyPivot.y) * sin,
+        y: bodyPivot.y + (bodyPoint.x - bodyPivot.x) * sin + (bodyPoint.y - bodyPivot.y) * cos
+      };
+      return {
+        x: holdPivot.x + (rotated.x - holdPivot.x) * (1 - FEEL.holdNarrow * pose.hold),
+        y: holdPivot.y + (rotated.y - holdPivot.y) * (1 + pose.hold)
+      };
+    });
+    return union(bounds(hold), bounds(exact));
+  }
+  function feelEnvelope(pigBox, pose, artBox = pigBox) {
+    if (pigBox.width <= 0 || pigBox.height <= 0) return { x: pigBox.x, y: pigBox.y, width: pigBox.width, height: pigBox.height };
+    if (pose !== void 0) {
+      return poseEnvelope(artBox, {
+        squash: Number.isFinite(pose.squash) ? pose.squash : 0,
+        hold: Number.isFinite(pose.hold) ? pose.hold : 0,
+        tilt: Number.isFinite(pose.tilt) ? pose.tilt : 0,
+        hop: Number.isFinite(pose.hop) ? pose.hop : 0
+      }, pigBox);
+    }
+    const squashes = [FEEL.squashMax, -FEEL.squashMax * 0.45];
+    const tilts = [-FEEL.tiltMaxFly, FEEL.tiltMaxFly];
+    const boxes = [];
+    for (const squash of squashes) {
+      for (const tilt3 of tilts) {
+        boxes.push(poseEnvelope(artBox, { squash, hold: FEEL.holdMax, tilt: tilt3, hop: 0 }, pigBox));
+        boxes.push(poseEnvelope(artBox, { squash, hold: 0, tilt: tilt3, hop: 0 }, pigBox));
+      }
+    }
+    return union(...boxes);
+  }
+
+  // src/client/desktop/visual-bounds.js
+  function bodyVisualBounds(pig) {
+    const art = artMarginFor(pig.width);
+    const pose = feelEnvelope(
+      { x: 0, y: 0, width: pig.width, height: pig.height },
+      void 0,
+      { x: -art, y: 0, width: pig.width + art * 2, height: pig.height }
+    );
+    const left = Math.max(art, -pose.x);
+    const right = Math.max(art, pose.x + pose.width - pig.width);
+    const top = Math.max(8, -pose.y);
+    const bottom = Math.max(12, pose.y + pose.height - pig.height);
+    return {
+      x: pig.x - left,
+      y: pig.y - top,
+      width: pig.width + left + right,
+      height: pig.height + top + bottom
+    };
+  }
+
+  // src/client/desktop/flight-bridge.js
+  function createFlightBridge(c) {
+    return {
+      supported: typeof c.shell.flyMove === "function",
+      start: function() {
+        const info = c.readGeometry();
+        if (info === null || info === void 0 || !info.window) return null;
+        const pig = c.pigInWindow(info.window);
+        if (pig === null) return null;
+        return {
+          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
+          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
+          visual: bodyVisualBounds(pig),
+          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
+          area: info.workArea,
+          areas: info.workAreas ?? [info.workArea]
+        };
+      },
+      move: function(x, y, slide) {
+        if (typeof c.shell.flyMove !== "function") return;
+        c.shell.flyMove({ x, y, slide: slide ?? { x: 0, y: 0 } });
+      },
+      setFlying: function(on) {
+        c.setFlying(on === true);
+        if (!c.isFlying()) {
+          c.forgetLayout();
+          c.tick();
+        }
+      },
+      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
+      finish: function(last) {
+        c.setFlying(false);
+        if (last !== null && last !== void 0 && last.window && last.pig) {
+          const pig = {
+            x: last.pig.x + (last.slide?.x ?? 0),
+            y: last.pig.y + (last.slide?.y ?? 0),
+            width: last.pig.width,
+            height: last.pig.height
+          };
+          c.rehome(last.window, pig, last.areas ?? []);
+        }
+        c.clearSlide(last?.slide ?? { x: 0, y: 0 });
+        c.forgetLayout();
+        c.tick();
+      }
+    };
+  }
+
+  // src/client/hit-regions.js
+  var PIG_PARTS = ".dp-pig-img,.dp-pig-sleep,.dp-pig-emoji,.dp-slot";
+  var CONTROLS = '.dp-card,.dp-bubble,.dp-daily,.dp-hud,.dp-work,.dp-poke-hint,.dp-pomo,button,a,input,select,textarea,[role="button"]';
+  var BLOCK_PET = '.dp-bubble,.dp-card,button,a,input,select,textarea,[role="button"]';
+  var parentElement = (node) => node.parentElement ?? (node.parentNode?.nodeType === 9 ? null : node.parentNode);
+  function isVisible(node) {
+    for (let walk = node; walk; walk = parentElement(walk)) {
+      if (walk.hidden) return false;
+      const style = getComputedStyle(walk);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+      if (style.opacity !== "" && style.opacity !== void 0 && Number(style.opacity) <= 0.01) return false;
+    }
+    return true;
+  }
+  function nodeRect(node) {
+    const box = node.getBoundingClientRect?.();
+    if (!box || !(box.width > 0) || !(box.height > 0)) return null;
+    return { x: box.left ?? box.x, y: box.top ?? box.y, width: box.width, height: box.height };
+  }
+  function multiply(one, two) {
+    return [
+      one[0] * two[0] + one[2] * two[1],
+      one[1] * two[0] + one[3] * two[1],
+      one[0] * two[2] + one[2] * two[3],
+      one[1] * two[2] + one[3] * two[3]
+    ];
+  }
+  function linearTransform(style) {
+    const transform = String(style.transform ?? "");
+    const values = transform.slice(transform.indexOf("(") + 1, -1).split(",").map(Number);
+    let matrix = [1, 0, 0, 1];
+    if (transform.startsWith("matrix(") && values.length === 6) matrix = values.slice(0, 4);
+    if (transform.startsWith("matrix3d(") && values.length === 16) matrix = [values[0], values[1], values[4], values[5]];
+    const scale2 = String(style.scale ?? "none").split(/\s+/).map(Number);
+    if (Number.isFinite(scale2[0])) matrix = multiply([scale2[0], 0, 0, scale2[1] ?? scale2[0]], matrix);
+    const rotate2 = String(style.rotate ?? "none");
+    if (rotate2 !== "none" && Number.isFinite(parseFloat(rotate2))) {
+      const angle = parseFloat(rotate2) * (rotate2.endsWith("rad") ? 1 : rotate2.endsWith("turn") ? Math.PI * 2 : Math.PI / 180);
+      matrix = multiply([Math.cos(angle), Math.sin(angle), -Math.sin(angle), Math.cos(angle)], matrix);
+    }
+    return matrix;
+  }
+  function inkRect(node, ink) {
+    const box = nodeRect(node);
+    if (box === null) return null;
+    const width = node.offsetWidth || box.width, height = node.offsetHeight || box.height;
+    let matrix = [1, 0, 0, 1];
+    for (let walk = node; walk; walk = parentElement(walk)) matrix = multiply(linearTransform(getComputedStyle(walk)), matrix);
+    const project = (x, y) => ({ x: matrix[0] * x * width + matrix[2] * y * height, y: matrix[1] * x * width + matrix[3] * y * height });
+    const corners3 = (bounds2) => [project(bounds2[0], bounds2[1]), project(bounds2[2], bounds2[1]), project(bounds2[0], bounds2[3]), project(bounds2[2], bounds2[3])];
+    const extent = (points) => ({ left: Math.min(...points.map((p) => p.x)), top: Math.min(...points.map((p) => p.y)), right: Math.max(...points.map((p) => p.x)), bottom: Math.max(...points.map((p) => p.y)) });
+    const full = extent(corners3([0, 0, 1, 1])), part = extent(corners3(ink));
+    const sx = box.width / (full.right - full.left), sy = box.height / (full.bottom - full.top);
+    if (!Number.isFinite(sx) || !Number.isFinite(sy)) return null;
+    return {
+      x: box.x + (part.left - full.left) * sx,
+      y: box.y + (part.top - full.top) * sy,
+      width: (part.right - part.left) * sx,
+      height: (part.bottom - part.top) * sy
+    };
+  }
+  function imageInk(node) {
+    const src = node.getAttribute("src") || "";
+    const custom = customArtInk(src);
+    if (custom !== null) return custom;
+    const path = src.split("/art/")[1]?.split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
+    const bounds2 = ART_BOUNDS2[path] ?? [0, 0, 1, 1];
+    const width = node.offsetWidth || 1, height = node.offsetHeight || width;
+    const naturalWidth = node.naturalWidth || width, naturalHeight = node.naturalHeight || height;
+    const fit = Math.min(width / naturalWidth, height / naturalHeight);
+    const contained = {
+      x: (1 - naturalWidth * fit / width) / 2,
+      y: (1 - naturalHeight * fit / height) / 2,
+      width: naturalWidth * fit / width,
+      height: naturalHeight * fit / height
+    };
+    const ink = framedInkBox(contained, bounds2);
+    return [ink.x, ink.y, ink.x + ink.width, ink.y + ink.height];
+  }
+  function textRect(node) {
+    if (!node.textContent?.trim()) return null;
+    if (typeof document.createRange !== "function") return nodeRect(node);
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const box = range.getBoundingClientRect();
+    return box.width > 0 && box.height > 0 ? { x: box.left, y: box.top, width: box.width, height: box.height } : null;
+  }
+  function collectPigHitRects(host2) {
+    const rects = [];
+    for (const node of host2.querySelectorAll(PIG_PARTS)) {
+      if (!isVisible(node)) continue;
+      const image = node.matches?.(".dp-pig-img,.dp-pig-sleep");
+      if (image && (!node.getAttribute("src") || node.complete === false || node.naturalWidth === 0)) continue;
+      const rect = image ? inkRect(node, imageInk(node)) : textRect(node);
+      if (rect !== null) rects.push(rect);
+    }
+    return rects;
+  }
+  function collectHitRects(host2) {
+    const rects = collectPigHitRects(host2);
+    for (const node of host2.querySelectorAll(CONTROLS)) {
+      if (!isVisible(node)) continue;
+      const surface = node.closest?.(".dp-card,.dp-bubble");
+      if (surface && surface !== node) continue;
+      const rect = nodeRect(node);
+      if (rect !== null) rects.push(rect);
+    }
+    return rects;
+  }
+  function hitsRects(rects, event) {
+    return rects.some((rect) => event.clientX >= rect.x && event.clientX < rect.x + rect.width && event.clientY >= rect.y && event.clientY < rect.y + rect.height);
+  }
+  function hitsPig(host2, event) {
+    if (event.target?.closest?.(BLOCK_PET)) return false;
+    return hitsRects(collectPigHitRects(host2), event);
+  }
+
+  // src/client/desktop/hit-tracking.js
+  function startHitTracking(deps) {
+    let lastKey = "", lastAt = -Infinity;
+    let stopped = false;
+    let frameId = null;
+    const requestFrame = deps.windowObject?.requestAnimationFrame?.bind(deps.windowObject) ?? requestAnimationFrame;
+    const cancelFrame2 = deps.windowObject?.cancelAnimationFrame?.bind(deps.windowObject) ?? globalThis.cancelAnimationFrame?.bind(globalThis) ?? (() => {
+    });
+    function frame3(at) {
+      if (stopped) return;
+      frameId = requestFrame(frame3);
+      if (deps.blocked()) {
+        lastKey = "";
+        return;
+      }
+      if (Number.isFinite(at) && at - lastAt < 32) return;
+      lastAt = at;
+      const host2 = deps.host();
+      if (host2 === null) return;
+      const hitShape = collectHitRects(host2);
+      const key2 = hitShape.map((rect) => [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(",")).join(";");
+      if (key2 === lastKey) return;
+      lastKey = key2;
+      deps.onShape(hitShape);
+      deps.shell.place({ hitShape });
+    }
+    frameId = requestFrame(frame3);
+    return function stop() {
+      if (stopped) return;
+      stopped = true;
+      if (frameId !== null) cancelFrame2(frameId);
+      frameId = null;
+    };
+  }
+
+  // src/client/desktop/input-controller.js
+  function createInputController(deps) {
+    let hitRects = [];
+    let lastHit = null;
+    let mouse = { x: -1, y: -1 };
+    let mousemoveInstalled = false;
+    let mouseleaveInstalled = false;
+    let stopTracking = null;
+    function updateHit(x, y) {
+      mouse = { x, y };
+      if (typeof deps.shell.setHit !== "function") return;
+      let inside2 = deps.blocked();
+      for (let i = 0; !inside2 && i < hitRects.length; i += 1) {
+        const rect = hitRects[i];
+        inside2 = x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
+      }
+      if (inside2 === lastHit) return;
+      lastHit = inside2;
+      deps.shell.setHit(inside2);
+    }
+    function setHitRects(rects) {
+      hitRects = Array.isArray(rects) ? rects : [];
+      if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
+    }
+    function onMouseMove(event) {
+      updateHit(event.clientX, event.clientY);
+    }
+    function onMouseLeave() {
+      if ((deps.leaveBlocked ?? deps.blocked)()) return;
+      mouse = { x: -1, y: -1 };
+      lastHit = false;
+      if (typeof deps.shell.setHit === "function") deps.shell.setHit(false);
+    }
+    function install3() {
+      if (!mousemoveInstalled) {
+        deps.documentObject.addEventListener("mousemove", onMouseMove, true);
+        mousemoveInstalled = true;
+      }
+      if (!mouseleaveInstalled) {
+        deps.documentObject.documentElement.addEventListener("mouseleave", onMouseLeave);
+        mouseleaveInstalled = true;
+      }
+    }
+    function startTracking() {
+      if (stopTracking !== null) return;
+      stopTracking = startHitTracking({
+        host: deps.getHost,
+        shell: deps.shell,
+        // Geometry capture pauses hit-shape polling during native drag only;
+        // flying still refreshes the drawing hit shape while setHit stays gated.
+        blocked: deps.trackingBlocked ?? deps.blocked,
+        onShape: setHitRects,
+        windowObject: deps.windowObject
+      });
+    }
+    function dispose() {
+      if (stopTracking !== null) {
+        stopTracking();
+        stopTracking = null;
+      }
+      if (mousemoveInstalled) {
+        deps.documentObject.removeEventListener("mousemove", onMouseMove, true);
+        mousemoveInstalled = false;
+      }
+      if (mouseleaveInstalled) {
+        deps.documentObject.documentElement.removeEventListener("mouseleave", onMouseLeave);
+        mouseleaveInstalled = false;
+      }
+    }
+    return { install: install3, startTracking, setHitRects, updateHit, dispose };
+  }
+
   // src/client/desktop/motion-envelope.js
   var PIG_TRANSFORM_ORIGIN = Object.freeze({ x: 0.5, y: 0.85 });
   var PIG_MOTION = Object.freeze({
@@ -18720,7 +19173,7 @@
     "dp-play-hop": PIG_ANIMATION_MOTION["dp-play-hop"],
     "dp-squash": PIG_ANIMATION_MOTION["dp-squash"]
   });
-  var corners = (box) => [
+  var corners2 = (box) => [
     { x: box.x, y: box.y },
     { x: box.x + box.width, y: box.y },
     { x: box.x, y: box.y + box.height },
@@ -18734,21 +19187,21 @@
     return { x: left, y: top, width: right - left, height: bottom - top };
   }
   function scaledCorners(box, pivot, scale2, translateY = 0) {
-    return corners(box).map((point) => ({
+    return corners2(box).map((point) => ({
       x: pivot.x + (point.x - pivot.x) * scale2,
       y: pivot.y + (point.y - pivot.y) * scale2 + translateY
     }));
   }
   function unionBoxes(...boxes) {
-    return boundsOf(boxes.flatMap(corners));
+    return boundsOf(boxes.flatMap(corners2));
   }
   function spinEnvelope(box, pivot) {
-    const radius = Math.max(...corners(box).map((point) => Math.hypot(point.x - pivot.x, point.y - pivot.y))) * PIG_MOTION.spinScale;
+    const radius = Math.max(...corners2(box).map((point) => Math.hypot(point.x - pivot.x, point.y - pivot.y))) * PIG_MOTION.spinScale;
     return { x: pivot.x - radius, y: pivot.y - radius, width: radius * 2, height: radius * 2 };
   }
   function jumpEnvelope(box, pivot) {
     return boundsOf([
-      ...corners(box),
+      ...corners2(box),
       ...scaledCorners(box, pivot, PIG_MOTION.jumpPeakScale, -PIG_MOTION.jumpRise),
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
@@ -18757,7 +19210,7 @@
     const radians = state4.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
-    return corners(box).map((point) => {
+    return corners2(box).map((point) => {
       const x = (point.x - pivot.x) * state4.scaleX;
       const y = (point.y - pivot.y) * state4.scaleY;
       if (state4.translateFirst) {
@@ -18797,187 +19250,6 @@
     return unionBoxes(staticBox, spinEnvelope(staticBox, pivot), jumpEnvelope(staticBox, pivot));
   }
 
-  // src/client/feel/config.js
-  var FEEL = Object.freeze({
-    /** 压扁（正）上限，用户拍板 18%。 */
-    squashMax: 0.18,
-    /** 拎起拉长上限，用户拍板 10%。 */
-    holdMax: 0.1,
-    /** 按压量。 */
-    pressSquash: 0.04,
-    /** 横向缩放 = 1 + volumeK * 压扁；小于 1 更像圆滚滚的动物。 */
-    volumeK: 0.72,
-    /** 拎起时横向收窄的比例。 */
-    holdNarrow: 0.4,
-    /** 拖动倾斜上限（度）。 */
-    tiltMaxDrag: 18,
-    /** 飞行倾斜上限（度）。 */
-    tiltMaxFly: 20,
-    /** 屏幕水平速度 → 倾斜角（度 / (px/s)）。 */
-    tiltGain: 0.012,
-    /** 按压弹簧。 */
-    press: Object.freeze({ stiffness: 600, damping: 26, mass: 1 }),
-    /** 挤压/拉长弹簧：欠阻尼，2~3 次可见回弹，约 0.75s 收住。 */
-    squash: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
-    /** 拎起弹簧：接近临界阻尼，不上下晃。 */
-    hold: Object.freeze({ stiffness: 300, damping: 26, mass: 1 }),
-    /** 倾斜弹簧：松手约 0.45s 回正。 */
-    tilt: Object.freeze({ stiffness: 220, damping: 16, mass: 1 }),
-    /** 落地冲击弹簧：同样 2~3 次回弹。 */
-    impact: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
-    /** 翻卡片。 */
-    turnMs: 180,
-    turnBulge: 0.04,
-    /** 动作图切换遮挡。 */
-    swapMs: 90,
-    swapApplyMs: 55,
-    swapMaxDelayMs: 140,
-    /** 手势阈值。 */
-    dragPx: 4,
-    liftPx: 6,
-    /** 来回摸：1200ms 内累计 320px，800ms 冷却。 */
-    strokeWindowMs: 1200,
-    strokePx: 320,
-    strokeCooldownMs: 800,
-    /** 桌面抛掷：只认松手前最后一小段仍在快速移动。 */
-    throwMin: 180,
-    throwTailMs: 60,
-    throwIdleMs: 60,
-    throwMax: 2200,
-    gravity: 2400,
-    airDrag: 0.12,
-    restitution: 0.52,
-    floorFriction: 0.82,
-    landVy: 520,
-    dizzyImpact: 1500,
-    dizzyMs: 2400,
-    flightMaxMs: 3500,
-    /** 轻柔模式缩放。 */
-    softScale: 0.6,
-    /** 收尾判定：所有通道小于这些值就算回稳。 */
-    settleEpsilon: 4e-3,
-    settleTilt: 0.35
-  });
-  function modeScale(mode) {
-    return mode === "soft" ? FEEL.softScale : 1;
-  }
-
-  // src/client/feel/envelope.js
-  var corners2 = (box) => [
-    { x: box.x, y: box.y },
-    { x: box.x + box.width, y: box.y },
-    { x: box.x, y: box.y + box.height },
-    { x: box.x + box.width, y: box.y + box.height }
-  ];
-  function bounds(points) {
-    let left = Infinity;
-    let top = Infinity;
-    let right = -Infinity;
-    let bottom = -Infinity;
-    for (const point of points) {
-      left = Math.min(left, point.x);
-      top = Math.min(top, point.y);
-      right = Math.max(right, point.x);
-      bottom = Math.max(bottom, point.y);
-    }
-    return { x: left, y: top, width: right - left, height: bottom - top };
-  }
-  function union(...boxes) {
-    return bounds(boxes.flatMap(corners2));
-  }
-  function transformed(box, pivot, state4) {
-    const radians = state4.rotate * Math.PI / 180;
-    const cos = Math.cos(radians);
-    const sin = Math.sin(radians);
-    return corners2(box).map((point) => {
-      const x = (point.x - pivot.x) * state4.scaleX;
-      const y = (point.y - pivot.y) * state4.scaleY;
-      return {
-        x: pivot.x + x * cos - y * sin,
-        y: pivot.y + x * sin + y * cos + state4.dy
-      };
-    });
-  }
-  function poseEnvelope(box, pose, pigBox = box) {
-    const bodyPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y + pigBox.height * 0.85 };
-    const holdPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y };
-    const body = transformed(box, bodyPivot, {
-      scaleX: 1 + FEEL.volumeK * pose.squash,
-      scaleY: 1 - pose.squash,
-      rotate: pose.tilt,
-      dy: -pose.hop
-    });
-    const hold = transformed(
-      {
-        x: Math.min(...body.map((p) => p.x)),
-        y: Math.min(...body.map((p) => p.y)),
-        width: Math.max(...body.map((p) => p.x)) - Math.min(...body.map((p) => p.x)),
-        height: Math.max(...body.map((p) => p.y)) - Math.min(...body.map((p) => p.y))
-      },
-      holdPivot,
-      { scaleX: 1 - FEEL.holdNarrow * pose.hold, scaleY: 1 + pose.hold, rotate: 0, dy: 0 }
-    );
-    const exact = corners2(box).map((point) => {
-      const bodyPoint = {
-        x: bodyPivot.x + (point.x - bodyPivot.x) * (1 + FEEL.volumeK * pose.squash),
-        y: bodyPivot.y + (point.y - bodyPivot.y) * (1 - pose.squash) - pose.hop
-      };
-      const radians = pose.tilt * Math.PI / 180;
-      const cos = Math.cos(radians);
-      const sin = Math.sin(radians);
-      const rotated = {
-        x: bodyPivot.x + (bodyPoint.x - bodyPivot.x) * cos - (bodyPoint.y - bodyPivot.y) * sin,
-        y: bodyPivot.y + (bodyPoint.x - bodyPivot.x) * sin + (bodyPoint.y - bodyPivot.y) * cos
-      };
-      return {
-        x: holdPivot.x + (rotated.x - holdPivot.x) * (1 - FEEL.holdNarrow * pose.hold),
-        y: holdPivot.y + (rotated.y - holdPivot.y) * (1 + pose.hold)
-      };
-    });
-    return union(bounds(hold), bounds(exact));
-  }
-  function feelEnvelope(pigBox, pose, artBox = pigBox) {
-    if (pigBox.width <= 0 || pigBox.height <= 0) return { x: pigBox.x, y: pigBox.y, width: pigBox.width, height: pigBox.height };
-    if (pose !== void 0) {
-      return poseEnvelope(artBox, {
-        squash: Number.isFinite(pose.squash) ? pose.squash : 0,
-        hold: Number.isFinite(pose.hold) ? pose.hold : 0,
-        tilt: Number.isFinite(pose.tilt) ? pose.tilt : 0,
-        hop: Number.isFinite(pose.hop) ? pose.hop : 0
-      }, pigBox);
-    }
-    const squashes = [FEEL.squashMax, -FEEL.squashMax * 0.45];
-    const tilts = [-FEEL.tiltMaxFly, FEEL.tiltMaxFly];
-    const boxes = [];
-    for (const squash of squashes) {
-      for (const tilt3 of tilts) {
-        boxes.push(poseEnvelope(artBox, { squash, hold: FEEL.holdMax, tilt: tilt3, hop: 0 }, pigBox));
-        boxes.push(poseEnvelope(artBox, { squash, hold: 0, tilt: tilt3, hop: 0 }, pigBox));
-      }
-    }
-    return union(...boxes);
-  }
-
-  // src/client/desktop/visual-bounds.js
-  function bodyVisualBounds(pig) {
-    const art = artMarginFor(pig.width);
-    const pose = feelEnvelope(
-      { x: 0, y: 0, width: pig.width, height: pig.height },
-      void 0,
-      { x: -art, y: 0, width: pig.width + art * 2, height: pig.height }
-    );
-    const left = Math.max(art, -pose.x);
-    const right = Math.max(art, pose.x + pose.width - pig.width);
-    const top = Math.max(8, -pose.y);
-    const bottom = Math.max(12, pose.y + pose.height - pig.height);
-    return {
-      x: pig.x - left,
-      y: pig.y - top,
-      width: pig.width + left + right,
-      height: pig.height + top + bottom
-    };
-  }
-
   // src/client/desktop/bubble-geometry.js
   function fitBubbleHorizontally(bubble, pig, windowBounds, workArea) {
     const left = Math.max(0, workArea.x - windowBounds.x) + 6;
@@ -18993,123 +19265,6 @@
     const below = feetPoint(pig).y + BUBBLE_GAP;
     if (!aboveFits && below >= top && below + bubble.height <= bottom) return { y: below, side: "below" };
     return { y: bubble.y, side: "above" };
-  }
-
-  // src/client/hit-regions.js
-  var PIG_PARTS = ".dp-pig-img,.dp-pig-sleep,.dp-pig-emoji,.dp-slot";
-  var CONTROLS = '.dp-card,.dp-bubble,.dp-daily,.dp-hud,.dp-work,.dp-poke-hint,.dp-pomo,button,a,input,select,textarea,[role="button"]';
-  var BLOCK_PET = '.dp-bubble,.dp-card,button,a,input,select,textarea,[role="button"]';
-  var parentElement = (node) => node.parentElement ?? (node.parentNode?.nodeType === 9 ? null : node.parentNode);
-  function isVisible(node) {
-    for (let walk = node; walk; walk = parentElement(walk)) {
-      if (walk.hidden) return false;
-      const style = getComputedStyle(walk);
-      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
-      if (style.opacity !== "" && style.opacity !== void 0 && Number(style.opacity) <= 0.01) return false;
-    }
-    return true;
-  }
-  function nodeRect(node) {
-    const box = node.getBoundingClientRect?.();
-    if (!box || !(box.width > 0) || !(box.height > 0)) return null;
-    return { x: box.left ?? box.x, y: box.top ?? box.y, width: box.width, height: box.height };
-  }
-  function multiply(one, two) {
-    return [
-      one[0] * two[0] + one[2] * two[1],
-      one[1] * two[0] + one[3] * two[1],
-      one[0] * two[2] + one[2] * two[3],
-      one[1] * two[2] + one[3] * two[3]
-    ];
-  }
-  function linearTransform(style) {
-    const transform = String(style.transform ?? "");
-    const values = transform.slice(transform.indexOf("(") + 1, -1).split(",").map(Number);
-    let matrix = [1, 0, 0, 1];
-    if (transform.startsWith("matrix(") && values.length === 6) matrix = values.slice(0, 4);
-    if (transform.startsWith("matrix3d(") && values.length === 16) matrix = [values[0], values[1], values[4], values[5]];
-    const scale2 = String(style.scale ?? "none").split(/\s+/).map(Number);
-    if (Number.isFinite(scale2[0])) matrix = multiply([scale2[0], 0, 0, scale2[1] ?? scale2[0]], matrix);
-    const rotate2 = String(style.rotate ?? "none");
-    if (rotate2 !== "none" && Number.isFinite(parseFloat(rotate2))) {
-      const angle = parseFloat(rotate2) * (rotate2.endsWith("rad") ? 1 : rotate2.endsWith("turn") ? Math.PI * 2 : Math.PI / 180);
-      matrix = multiply([Math.cos(angle), Math.sin(angle), -Math.sin(angle), Math.cos(angle)], matrix);
-    }
-    return matrix;
-  }
-  function inkRect(node, ink) {
-    const box = nodeRect(node);
-    if (box === null) return null;
-    const width = node.offsetWidth || box.width, height = node.offsetHeight || box.height;
-    let matrix = [1, 0, 0, 1];
-    for (let walk = node; walk; walk = parentElement(walk)) matrix = multiply(linearTransform(getComputedStyle(walk)), matrix);
-    const project = (x, y) => ({ x: matrix[0] * x * width + matrix[2] * y * height, y: matrix[1] * x * width + matrix[3] * y * height });
-    const corners3 = (bounds2) => [project(bounds2[0], bounds2[1]), project(bounds2[2], bounds2[1]), project(bounds2[0], bounds2[3]), project(bounds2[2], bounds2[3])];
-    const extent = (points) => ({ left: Math.min(...points.map((p) => p.x)), top: Math.min(...points.map((p) => p.y)), right: Math.max(...points.map((p) => p.x)), bottom: Math.max(...points.map((p) => p.y)) });
-    const full = extent(corners3([0, 0, 1, 1])), part = extent(corners3(ink));
-    const sx = box.width / (full.right - full.left), sy = box.height / (full.bottom - full.top);
-    if (!Number.isFinite(sx) || !Number.isFinite(sy)) return null;
-    return {
-      x: box.x + (part.left - full.left) * sx,
-      y: box.y + (part.top - full.top) * sy,
-      width: (part.right - part.left) * sx,
-      height: (part.bottom - part.top) * sy
-    };
-  }
-  function imageInk(node) {
-    const src = node.getAttribute("src") || "";
-    const custom = customArtInk(src);
-    if (custom !== null) return custom;
-    const path = src.split("/art/")[1]?.split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
-    const bounds2 = ART_BOUNDS2[path] ?? [0, 0, 1, 1];
-    const width = node.offsetWidth || 1, height = node.offsetHeight || width;
-    const naturalWidth = node.naturalWidth || width, naturalHeight = node.naturalHeight || height;
-    const fit = Math.min(width / naturalWidth, height / naturalHeight);
-    const contained = {
-      x: (1 - naturalWidth * fit / width) / 2,
-      y: (1 - naturalHeight * fit / height) / 2,
-      width: naturalWidth * fit / width,
-      height: naturalHeight * fit / height
-    };
-    const ink = framedInkBox(contained, bounds2);
-    return [ink.x, ink.y, ink.x + ink.width, ink.y + ink.height];
-  }
-  function textRect(node) {
-    if (!node.textContent?.trim()) return null;
-    if (typeof document.createRange !== "function") return nodeRect(node);
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    const box = range.getBoundingClientRect();
-    return box.width > 0 && box.height > 0 ? { x: box.left, y: box.top, width: box.width, height: box.height } : null;
-  }
-  function collectPigHitRects(host3) {
-    const rects = [];
-    for (const node of host3.querySelectorAll(PIG_PARTS)) {
-      if (!isVisible(node)) continue;
-      const image = node.matches?.(".dp-pig-img,.dp-pig-sleep");
-      if (image && (!node.getAttribute("src") || node.complete === false || node.naturalWidth === 0)) continue;
-      const rect = image ? inkRect(node, imageInk(node)) : textRect(node);
-      if (rect !== null) rects.push(rect);
-    }
-    return rects;
-  }
-  function collectHitRects(host3) {
-    const rects = collectPigHitRects(host3);
-    for (const node of host3.querySelectorAll(CONTROLS)) {
-      if (!isVisible(node)) continue;
-      const surface = node.closest?.(".dp-card,.dp-bubble");
-      if (surface && surface !== node) continue;
-      const rect = nodeRect(node);
-      if (rect !== null) rects.push(rect);
-    }
-    return rects;
-  }
-  function hitsRects(rects, event) {
-    return rects.some((rect) => event.clientX >= rect.x && event.clientX < rect.x + rect.width && event.clientY >= rect.y && event.clientY < rect.y + rect.height);
-  }
-  function hitsPig(host3, event) {
-    if (event.target?.closest?.(BLOCK_PET)) return false;
-    return hitsRects(collectPigHitRects(host3), event);
   }
 
   // src/client/desktop/measure.js
@@ -19154,13 +19309,13 @@
   function createMeasure(env) {
     const state4 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
-    function boxes(host3) {
-      const pigNode = host3.querySelector(".dp-pig");
+    function boxes(host2) {
+      const pigNode = host2.querySelector(".dp-pig");
       const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode);
       const anchors = characterGeometry(pigBox);
       const pigInk = { x: pigBox.x, y: pigBox.y, r: pigBox.x + pigBox.width, b: pigBox.y + pigBox.height };
-      const nodes = [host3];
-      const all = host3.querySelectorAll("*");
+      const nodes = [host2];
+      const all = host2.querySelectorAll("*");
       for (let a = 0; a < all.length; a += 1) {
         const candidate = all[a];
         const inCard = candidate.closest(".dp-card");
@@ -19168,8 +19323,8 @@
         if (inCard !== null && inCard !== candidate || candidate.closest(".dp-fx") !== null) continue;
         nodes.push(candidate);
       }
-      const geometry2 = env.geometry();
-      const speechScale = Number(host3.style?.getPropertyValue?.("--bubble-scale")) || 1;
+      const geometry = env.geometry();
+      const speechScale = Number(host2.style?.getPropertyValue?.("--bubble-scale")) || 1;
       const bubbleSize2 = { width: BUBBLE_ZONE.width * speechScale, height: BUBBLE_ZONE.height * speechScale };
       let rects = [];
       const bubbleRects = [];
@@ -19189,14 +19344,14 @@
         else rects.push(rect);
       }
       if (rects.length === 0) return null;
-      const hostBox = layoutBox(host3);
+      const hostBox = layoutBox(host2);
       let bubbleZone = null;
       if (reserves && pigNode !== null) {
-        const above = geometry2 === null ? bubbleSize2.height : geometry2.window.y + anchors.headTop.y - geometry2.workArea.y - PAD;
+        const above = geometry === null ? bubbleSize2.height : geometry.window.y + anchors.headTop.y - geometry.workArea.y - PAD;
         const want = Math.max(0, Math.min(bubbleSize2.height, Math.round(above)));
         if (state4.bubbleHeight === null || Math.abs(want - state4.bubbleHeight) >= STEP * 2) state4.bubbleHeight = want;
         const height = state4.bubbleHeight;
-        const zoneLeft = host3.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
+        const zoneLeft = host2.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: anchors.headTop.y - height, r: zoneLeft + bubbleSize2.width, b: anchors.headTop.y };
       }
       let merged2 = true;
@@ -19257,7 +19412,7 @@
       };
       const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height };
       const animatedRects = [];
-      const hungerNode = host3.querySelector(".dp-hunger-bubble");
+      const hungerNode = host2.querySelector(".dp-hunger-bubble");
       if (pigNode !== null && hungerNode !== null && visible(hungerNode)) {
         animatedRects.push({
           x: pigBox.x + pigBox.width,
@@ -19295,16 +19450,16 @@
         const y = Math.max(0, Math.floor(rect.y) - SHAPE_SLACK);
         return { x, y, width: Math.ceil(rect.r) + SHAPE_SLACK - x, height: Math.ceil(rect.b) + SHAPE_SLACK - y };
       }).filter((rect) => rect.width > 0 && rect.height > 0);
-      if (pigNode !== null && host3.querySelector(".dp-fx") !== null) {
+      if (pigNode !== null && host2.querySelector(".dp-fx") !== null) {
         const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) };
         shape.push({ x: fx.x, y: fx.y, width: Math.ceil(pigBox.x + pigBox.width + 36) - fx.x, height: Math.ceil(pigBox.y + 12) - fx.y });
       }
-      return { content, shape, hitShape: collectHitRects(host3), pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
+      return { content, shape, hitShape: collectHitRects(host2), pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
     }
     function sides() {
       return SIDE;
     }
-    function pin(host3, side, hostBox, contentBox) {
+    function pin(host2, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
       const shift = { x: state4.shift.x + state4.anchor.x, y: state4.shift.y + state4.anchor.y };
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
@@ -19314,10 +19469,10 @@
       const key2 = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
       if (key2 === state4.pinned) return;
       state4.pinned = key2;
-      host3.style.left = want.left;
-      host3.style.right = want.right;
-      host3.style.top = want.top;
-      host3.style.bottom = want.bottom;
+      host2.style.left = want.left;
+      host2.style.right = want.right;
+      host2.style.top = want.top;
+      host2.style.bottom = want.bottom;
     }
     function keyOf(next) {
       const head = [
@@ -19337,16 +19492,16 @@
         state4.anchor = { x: 0, y: 0 };
       }
     }
-    function fitBubble(host3, geometry2) {
-      const bubble = host3.querySelector(".dp-bubble");
-      const pig = host3.querySelector(".dp-pig");
-      if (!bubble || !pig || !geometry2?.window || !geometry2?.workArea) return;
+    function fitBubble(host2, geometry) {
+      const bubble = host2.querySelector(".dp-bubble");
+      const pig = host2.querySelector(".dp-pig");
+      if (!bubble || !pig || !geometry?.window || !geometry?.workArea) return;
       if (bubble.hidden) return;
       const parent = bubble.offsetParent;
       if (!parent) return;
-      const originalLeft = host3.getAttribute("data-panel-side") === "right" ? 6 : parent.clientWidth - 6 - bubble.offsetWidth;
+      const originalLeft = host2.getAttribute("data-panel-side") === "right" ? 6 : parent.clientWidth - 6 - bubble.offsetWidth;
       const box = { ...layoutBox(bubble), x: layoutBox(parent).x + originalLeft };
-      const fitted = fitBubbleHorizontally(box, layoutBox(pig), geometry2.window, geometry2.workArea);
+      const fitted = fitBubbleHorizontally(box, layoutBox(pig), geometry.window, geometry.workArea);
       const clipped = Math.abs(fitted.x - box.x) >= 0.5;
       const left = clipped ? originalLeft + fitted.x - box.x + "px" : "";
       const right = clipped ? "auto" : "";
@@ -19362,7 +19517,7 @@
       const pigBox = layoutBox(pig);
       const anchors = characterGeometry(pigBox);
       const originalY = bubbleSlot(anchors, "above", { width: bubble.offsetWidth, height: bubble.offsetHeight }).y;
-      const vertical = fitBubbleVertically({ y: originalY, height: bubble.offsetHeight }, pigBox, geometry2.window, geometry2.workArea);
+      const vertical = fitBubbleVertically({ y: originalY, height: bubble.offsetHeight }, pigBox, geometry.window, geometry.workArea);
       const below = vertical.side === "below";
       const top = below ? vertical.y - layoutBox(parent).y + "px" : "";
       const bottom = below ? "auto" : "";
@@ -19585,66 +19740,420 @@
     };
   }
 
-  // src/client/desktop/flight-bridge.js
-  function createFlightBridge(c) {
+  // src/client/desktop/slide.js
+  function commitSlide(host2, state4, slide) {
+    const x = Number(slide?.x) || 0;
+    const y = Number(slide?.y) || 0;
+    if (host2 !== null && (x !== 0 || y !== 0)) {
+      host2.style.right = (parseFloat(host2.style.right) || 0) - x + "px";
+      host2.style.bottom = (parseFloat(host2.style.bottom) || 0) - y + "px";
+    }
+    if (host2 !== null) host2.style.translate = "";
+    state4.anchor = { x: state4.anchor.x + state4.shift.x + x, y: state4.anchor.y + state4.shift.y + y };
+    state4.shift = { x: 0, y: 0 };
+    state4.pinned = "";
+  }
+
+  // src/client/desktop/layout-controller.js
+  var TOLERANCE2 = 2;
+  var STALE_WAIT_MS = 500;
+  function createLayoutController(deps) {
+    const shell2 = deps.shell;
+    const requestFrame = deps.windowObject.requestAnimationFrame?.bind(deps.windowObject) ?? requestAnimationFrame;
+    let lastKey = null;
+    let staleSince = (
+      /** @type {number|null} */
+      null
+    );
+    let clampNotice = null;
+    let scheduled2 = false;
+    const windowClamp = createWindowClamp();
+    function geometry() {
+      return typeof shell2.geometry === "function" ? shell2.geometry() : null;
+    }
+    const measure = createMeasure({ platform: shell2.platform || "", geometry });
+    const placement = createPlacement();
+    function layoutStale(win) {
+      return Math.abs(deps.windowObject.innerWidth - win.width) > 1 || Math.abs(deps.windowObject.innerHeight - win.height) > 1;
+    }
+    function readGeometry() {
+      if (typeof shell2.place === "function") {
+        const fresh = shell2.place({});
+        if (fresh !== null && fresh !== void 0 && fresh.window) return fresh;
+      }
+      return geometry();
+    }
+    function pigInWindow(win) {
+      const host2 = deps.getHost();
+      const pigNode = host2?.querySelector(".dp-pig");
+      const size = placement.pigSize();
+      const homeTL = placement.homeTopLeft();
+      if (pigNode && !layoutStale(win)) return layoutBox(pigNode);
+      if (homeTL !== null) return { x: homeTL.x - win.x, y: homeTL.y - win.y, width: size.width, height: size.height };
+      return pigNode ? layoutBox(pigNode) : null;
+    }
+    function schedule3() {
+      if (scheduled2) return;
+      scheduled2 = true;
+      requestFrame(function() {
+        scheduled2 = false;
+        if (!deps.isDragging() && !deps.isFlying()) tick();
+      });
+    }
+    function tick() {
+      if (deps.isDragging() || deps.isFlying()) return;
+      const host2 = deps.getHost();
+      if (host2 === null) return;
+      const info = readGeometry();
+      if (info !== null && info.window && layoutStale(info.window)) {
+        const at = typeof performance === "object" ? performance.now() : Date.now();
+        if (staleSince === null) staleSince = at;
+        if (at - staleSince < STALE_WAIT_MS) {
+          lastKey = null;
+          schedule3();
+          return;
+        }
+      }
+      staleSince = null;
+      let next = measure.boxes(host2);
+      if (next === null) return;
+      measure.fitWindow(next.content, info?.window);
+      const side = measure.sides();
+      measure.pin(host2, side, next.hostBox, next.contentBox);
+      next = measure.boxes(host2);
+      if (next === null) return;
+      deps.setHitRects(next.hitShape);
+      if (info === null || !info.window) {
+        lastKey = null;
+        return;
+      }
+      if (Math.abs(deps.windowObject.screenX - info.window.x) > 1 || Math.abs(deps.windowObject.screenY - info.window.y) > 1) {
+        lastKey = null;
+        schedule3();
+        return;
+      }
+      const bounds2 = info.window;
+      const areas = info.workAreas ?? [info.workArea];
+      const grownX = side.horizontal === "right" ? next.content.width - bounds2.width : 0;
+      const grownY = side.vertical === "bottom" ? next.content.height - bounds2.height : 0;
+      const want = placement.decide({
+        width: next.content.width,
+        height: next.content.height,
+        pig: next.pig,
+        artMargin: artMarginFor(next.pig.width),
+        visual: bodyVisualBounds(next.pig),
+        pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
+        pigNow: { x: next.pigBox.x, y: next.pigBox.y },
+        shift: measure.state.shift
+      }, bounds2, areas);
+      placement.persist(areas);
+      const clamp6 = placement.clamp();
+      const old = measure.state.shift;
+      const fresh = { x: -clamp6.dx, y: -clamp6.dy };
+      if (fresh.x !== old.x || fresh.y !== old.y) {
+        measure.state.shift = fresh;
+        measure.pin(host2, side, next.hostBox, next.contentBox);
+        const dx = fresh.x - old.x;
+        const dy = fresh.y - old.y;
+        next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
+        next.hitShape = next.hitShape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
+      }
+      measure.fitBubble(host2, info);
+      next = measure.boxes(host2);
+      if (next === null) return;
+      deps.setHitRects(next.hitShape);
+      const move = !sameBounds(want, bounds2, TOLERANCE2);
+      const clampState = windowClamp.observe(want, bounds2);
+      if (clampState === "accept") {
+        const pig = pigInWindow(bounds2);
+        if (pig !== null) {
+          placement.acceptWindow(bounds2, pig, areas);
+          const notice = JSON.stringify({ want, actual: bounds2 });
+          if (clampNotice !== notice) {
+            clampNotice = notice;
+            console.warn("[piggy-desktop] wm clamp accepted " + notice);
+          }
+          lastKey = null;
+          shell2.place({ bounds: { ...bounds2 } });
+          return;
+        }
+      }
+      const key2 = measure.keyOf(next);
+      if (!move && key2 === lastKey) return;
+      lastKey = key2;
+      const request = {
+        shape: next.shape,
+        hitShape: next.hitShape,
+        bounds: move ? want : void 0,
+        pig: void 0,
+        speech: void 0
+      };
+      const pigNode = host2.querySelector(".dp-pig");
+      if (pigNode) request.pig = layoutBox(pigNode);
+      const speech = host2.querySelector('.dp-bubble[data-bubble-side="below"]');
+      request.speech = speech && !speech.hidden ? layoutBox(speech) : null;
+      if (move) {
+        console.warn("[piggy-desktop] move " + JSON.stringify({
+          open: host2.getAttribute("data-open"),
+          side,
+          from: bounds2,
+          to: want,
+          home: placement.home(),
+          shift: measure.state.shift,
+          content: { w: next.content.width, h: next.content.height },
+          pigBox: next.pigBox,
+          ghosts: host2.querySelectorAll("[data-ghost]").length,
+          display: displayNote(info)
+        }));
+      }
+      shell2.place(request);
+    }
+    function commit2(host2, slide) {
+      commitSlide(host2, measure.state, slide);
+    }
     return {
-      supported: typeof c.shell.flyMove === "function",
-      start: function() {
-        const info = c.readGeometry();
-        if (info === null || info === void 0 || !info.window) return null;
-        const pig = c.pigInWindow(info.window);
-        if (pig === null) return null;
-        return {
-          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
-          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
-          visual: bodyVisualBounds(pig),
-          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
-          area: info.workArea,
-          areas: info.workAreas ?? [info.workArea]
-        };
-      },
-      move: function(x, y, slide) {
-        if (typeof c.shell.flyMove !== "function") return;
-        c.shell.flyMove({ x, y, slide: slide ?? { x: 0, y: 0 } });
-      },
-      setFlying: function(on) {
-        c.setFlying(on === true);
-        if (!c.isFlying()) {
-          c.forgetLayout();
-          c.tick();
-        }
-      },
-      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
-      finish: function(last) {
-        c.setFlying(false);
-        if (last !== null && last !== void 0 && last.window && last.pig) {
-          const pig = {
-            x: last.pig.x + (last.slide?.x ?? 0),
-            y: last.pig.y + (last.slide?.y ?? 0),
-            width: last.pig.width,
-            height: last.pig.height
-          };
-          c.rehome(last.window, pig, last.areas ?? []);
-        }
-        c.clearSlide(last?.slide ?? { x: 0, y: 0 });
-        c.forgetLayout();
-        c.tick();
+      readGeometry,
+      pigInWindow,
+      tick,
+      schedule: schedule3,
+      recover: (foot, areas) => placement.recover(foot, areas),
+      rehome: (win, pig, areas) => placement.rehome(win, pig, areas),
+      commit: commit2,
+      forget: () => {
+        lastKey = null;
       }
     };
   }
 
-  // src/client/desktop/slide.js
-  function commitSlide(host3, state4, slide) {
-    const x = Number(slide?.x) || 0;
-    const y = Number(slide?.y) || 0;
-    if (host3 !== null && (x !== 0 || y !== 0)) {
-      host3.style.right = (parseFloat(host3.style.right) || 0) - x + "px";
-      host3.style.bottom = (parseFloat(host3.style.bottom) || 0) - y + "px";
+  // src/client/desktop/tooltips.js
+  function suppressNativeTooltips(documentObject = document) {
+    documentObject.addEventListener("mouseover", function(event) {
+      const target = (
+        /** @type {any} */
+        event.target
+      );
+      const titled = target !== null && typeof target.closest === "function" ? target.closest("[title]") : null;
+      if (titled === null) return;
+      if (!titled.getAttribute("aria-label")) titled.setAttribute("aria-label", titled.getAttribute("title"));
+      titled.removeAttribute("title");
+    }, true);
+  }
+
+  // src/client/desktop/pet-controller.js
+  function createPetController(deps) {
+    const shell2 = deps.shell;
+    let dragSlide = { x: 0, y: 0 };
+    let flying = false;
+    let installed3 = false;
+    let started2 = false;
+    let installing2 = false;
+    let starting2 = false;
+    let geometrySubscribed = false;
+    let dragSlideSubscribed = false;
+    let geometryAsked = false;
+    let adapterInstalled = false;
+    let tooltipsInstalled = false;
+    let observerInstalled = false;
+    let resizeListenerInstalled = false;
+    let pointerupListenerInstalled = false;
+    let intervalId = null;
+    function host2() {
+      return deps.getHost();
     }
-    if (host3 !== null) host3.style.translate = "";
-    state4.anchor = { x: state4.anchor.x + state4.shift.x + x, y: state4.anchor.y + state4.shift.y + y };
-    state4.shift = { x: 0, y: 0 };
-    state4.pinned = "";
+    function dragging() {
+      const scene6 = host2()?.querySelector(".dp-scene");
+      return scene6 != null && scene6.getAttribute("data-window-dragging") === "true";
+    }
+    const input = createInputController({
+      shell: shell2,
+      documentObject: deps.documentObject,
+      windowObject: deps.windowObject,
+      getHost: host2,
+      blocked: () => dragging() || flying,
+      trackingBlocked: dragging,
+      leaveBlocked: dragging
+    });
+    const layout = createLayoutController({
+      shell: shell2,
+      windowObject: deps.windowObject,
+      getHost: host2,
+      isDragging: dragging,
+      isFlying: () => flying,
+      setHitRects: input.setHitRects
+    });
+    const flight = createFlightBridge({
+      shell: shell2,
+      readGeometry: layout.readGeometry,
+      pigInWindow: layout.pigInWindow,
+      rehome: layout.rehome,
+      setFlying: (on) => {
+        flying = on;
+      },
+      isFlying: () => flying,
+      clearSlide: (slide) => {
+        dragSlide = { x: 0, y: 0 };
+        layout.commit(host2(), slide);
+      },
+      forgetLayout: layout.forget,
+      tick: layout.tick
+    });
+    function install3() {
+      if (installed3 || installing2) return;
+      installing2 = true;
+      try {
+        if (!geometrySubscribed && typeof shell2.onGeometry === "function") {
+          shell2.onGeometry(() => layout.schedule());
+          geometrySubscribed = true;
+        }
+        if (!dragSlideSubscribed && typeof shell2.onDragSlide === "function") {
+          shell2.onDragSlide((slide) => {
+            if (!dragging()) return;
+            dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 };
+            const root = host2();
+            if (root !== null) root.style.translate = dragSlide.x === 0 && dragSlide.y === 0 ? "" : dragSlide.x + "px " + dragSlide.y + "px";
+          });
+          dragSlideSubscribed = true;
+        }
+        if (!geometryAsked && typeof shell2.askGeometry === "function") {
+          shell2.askGeometry();
+          geometryAsked = true;
+        }
+        if (!adapterInstalled) {
+          const adapter = {
+            role: "pet",
+            proxy: shell2.proxy,
+            cloudSave: shell2.cloudSave,
+            saves: shell2.saves,
+            ext: shell2.ext,
+            fullscreen: shell2.fullscreen,
+            external: shell2.external ?? null,
+            split: true,
+            onRecover: shell2.onRecover,
+            recoverHome(foot) {
+              const info = layout.readGeometry();
+              const areas = info?.workAreas ?? (info?.workArea ? [info.workArea] : []);
+              layout.recover(foot, areas);
+              flying = false;
+              dragSlide = { x: 0, y: 0 };
+              layout.forget();
+              layout.commit(host2(), dragSlide);
+              layout.tick();
+            },
+            dragVisualBounds: shell2.dragVisualBounds === true,
+            onStateChanged: shell2.onStateChanged,
+            panel: {
+              toggle(open) {
+                const info = layout.readGeometry();
+                const pig = info && info.window ? layout.pigInWindow(info.window) : null;
+                shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
+              },
+              on: shell2.panel.on,
+              onFx: shell2.panel.onFx,
+              raisePet: shell2.panel.raisePet
+            },
+            beginDrag(origin) {
+              const info = layout.readGeometry();
+              const pig = info && info.window ? layout.pigInWindow(info.window) : null;
+              dragSlide = { x: 0, y: 0 };
+              if (typeof shell2.beginDrag !== "function") return;
+              shell2.beginDrag(pig === null ? null : {
+                x: pig.x,
+                y: pig.y,
+                width: pig.width,
+                height: pig.height,
+                visual: bodyVisualBounds(pig),
+                slide: typeof shell2.onDragSlide === "function",
+                origin: origin !== null && origin !== void 0 && Number.isFinite(origin.x) && Number.isFinite(origin.y) ? { x: origin.x, y: origin.y } : void 0
+              });
+            },
+            dragHeartbeat() {
+              if (typeof shell2.dragHeartbeat === "function") shell2.dragHeartbeat();
+            },
+            endDrag(release) {
+              if (typeof shell2.endDrag !== "function") return;
+              shell2.endDrag(release ?? null);
+              const info = layout.readGeometry();
+              if (info && info.window) {
+                if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) {
+                  dragSlide = info.dragSlide;
+                }
+                const inWindow = layout.pigInWindow(info.window);
+                const pig = inWindow === null ? null : {
+                  ...inWindow,
+                  x: inWindow.x + dragSlide.x,
+                  y: inWindow.y + dragSlide.y
+                };
+                if (pig !== null) layout.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
+              }
+              layout.commit(host2(), dragSlide);
+              dragSlide = { x: 0, y: 0 };
+              layout.forget();
+              layout.schedule();
+            },
+            syncGeometry() {
+              layout.tick();
+            },
+            flight,
+            moveBy: typeof shell2.moveBy === "function" ? function(dx, dy) {
+              shell2.moveBy(dx, dy);
+              const info = layout.readGeometry();
+              const pig = info && info.window ? layout.pigInWindow(info.window) : null;
+              if (pig !== null) layout.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
+            } : void 0
+          };
+          deps.windowObject.__dshPiggyShell = adapter;
+          adapterInstalled = true;
+        }
+        if (!tooltipsInstalled) {
+          suppressNativeTooltips(deps.documentObject);
+          tooltipsInstalled = true;
+        }
+        input.install();
+        installed3 = true;
+      } finally {
+        installing2 = false;
+      }
+    }
+    function start2() {
+      if (!installed3 || started2 || starting2) return;
+      starting2 = true;
+      try {
+        const root = host2();
+        const MutationObserverClass = (
+          /** @type {any} */
+          deps.windowObject.MutationObserver
+        );
+        if (!observerInstalled && root !== null && typeof MutationObserverClass === "function") {
+          new MutationObserverClass(layout.schedule).observe(root, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            characterData: true
+          });
+          observerInstalled = true;
+        }
+        if (!resizeListenerInstalled) {
+          deps.windowObject.addEventListener("resize", layout.schedule);
+          resizeListenerInstalled = true;
+        }
+        if (!pointerupListenerInstalled) {
+          deps.windowObject.addEventListener("pointerup", layout.schedule);
+          pointerupListenerInstalled = true;
+        }
+        if (intervalId === null) {
+          const setIntervalForWindow = deps.windowObject.setInterval?.bind(deps.windowObject) ?? setInterval;
+          intervalId = setIntervalForWindow(function() {
+            if (!dragging() && !flying) layout.tick();
+          }, 1e3);
+        }
+        input.startTracking();
+        layout.tick();
+        started2 = true;
+      } finally {
+        starting2 = false;
+      }
+    }
+    return { install: install3, start: start2 };
   }
 
   // src/client/desktop/ext-window.js
@@ -19657,7 +20166,7 @@
     '[data-piggy-role="ext"] [data-ext-view="big"] .dp-card{background:#7fae5a!important}',
     '[data-piggy-role="ext"] [data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;height:100%}'
   ].join("\n");
-  function installExt(bridge3) {
+  function installExt(bridge2) {
     document.documentElement.setAttribute("data-piggy-role", "ext");
     const style = document.createElement("style");
     style.setAttribute("data-piggy-ext-style", "");
@@ -19665,14 +20174,14 @@
     document.head.appendChild(style);
     window.__dshPiggyShell = {
       role: "ext",
-      extKey: typeof bridge3.extKey === "string" ? bridge3.extKey : null,
-      ext: bridge3.ext,
-      proxy: bridge3.proxy,
-      saves: bridge3.saves,
-      fullscreen: bridge3.fullscreen,
+      extKey: typeof bridge2.extKey === "string" ? bridge2.extKey : null,
+      ext: bridge2.ext,
+      proxy: bridge2.proxy,
+      saves: bridge2.saves,
+      fullscreen: bridge2.fullscreen,
       split: true,
-      panel: bridge3.panel,
-      onStateChanged: bridge3.onStateChanged,
+      panel: bridge2.panel,
+      onStateChanged: bridge2.onStateChanged,
       // 这里没有猪可拖：给「认桌面版」用的空动作（desktop-shell.js 按 beginDrag 认）。
       beginDrag: function() {
       },
@@ -19706,416 +20215,97 @@
     '[data-piggy-role="pet"] .dp-card,[data-piggy-role="pet"] .dp-hud{display:none!important}'
   ].join("\n");
 
-  // src/client/desktop/hit-tracking.js
-  function startHitTracking(deps) {
-    let lastKey2 = "", lastAt = -Infinity;
-    function frame3(at) {
-      requestAnimationFrame(frame3);
-      if (deps.blocked()) {
-        lastKey2 = "";
-        return;
-      }
-      if (Number.isFinite(at) && at - lastAt < 32) return;
-      lastAt = at;
-      const host3 = deps.host();
-      if (host3 === null) return;
-      const hitShape = collectHitRects(host3);
-      const key2 = hitShape.map((rect) => [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(",")).join(";");
-      if (key2 === lastKey2) return;
-      lastKey2 = key2;
-      deps.onShape(hitShape);
-      deps.shell.place({ hitShape });
-    }
-    requestAnimationFrame(frame3);
-  }
-
-  // src/client/desktop/tooltips.js
-  function suppressNativeTooltips() {
-    document.addEventListener("mouseover", function(event) {
-      const target = (
-        /** @type {any} */
-        event.target
-      );
-      const titled = target !== null && typeof target.closest === "function" ? target.closest("[title]") : null;
-      if (titled === null) return;
-      if (!titled.getAttribute("aria-label")) titled.setAttribute("aria-label", titled.getAttribute("title"));
-      titled.removeAttribute("title");
-    }, true);
-  }
-
   // src/client/desktop/index.js
   var DESKTOP_VERSION = 6;
-  var TOLERANCE2 = 2;
-  var bridge2 = (
-    /** @type {any} */
-    null
-  );
+  var installed2 = false;
+  var started = false;
+  var installing = false;
+  var starting = false;
+  var contextWindow = null;
+  var contextDocument = null;
+  var contextShell = null;
   var role = (
     /** @type {'pet'|'panel'|'ext'|null} */
     null
   );
-  var dragSlide = { x: 0, y: 0 };
-  var flying = false;
-  var measure = (
-    /** @type {any} */
-    null
-  );
-  var placement = (
-    /** @type {any} */
-    null
-  );
-  var lastKey = null;
-  var windowClamp = createWindowClamp();
-  var clampNotice = null;
-  var hitRects = [];
-  var lastHit = null;
-  var mouse = { x: -1, y: -1 };
-  var scheduled2 = false;
-  var staleSince = (
-    /** @type {number|null} */
-    null
-  );
-  var STALE_WAIT_MS = 500;
-  function host2() {
-    return (
-      /** @type {any} */
-      document.querySelector("[data-dsh-pig]")
-    );
+  var petController = null;
+  function selectContext(shell2) {
+    const shellChanged = shell2 !== void 0 && contextShell !== shell2;
+    if (contextWindow === window && contextDocument === document && !shellChanged) return true;
+    if (installing || starting) return false;
+    contextWindow = window;
+    contextDocument = document;
+    if (shell2 !== void 0) contextShell = shell2;
+    installed2 = false;
+    started = false;
+    role = null;
+    petController = null;
+    return true;
   }
-  function geometry() {
-    return typeof bridge2.geometry === "function" ? bridge2.geometry() : null;
-  }
-  function dragging() {
-    const scene6 = document.querySelector("[data-dsh-pig] .dp-scene");
-    return scene6 !== null && scene6.getAttribute("data-window-dragging") === "true";
-  }
-  function updateHit(x, y) {
-    mouse = { x, y };
-    if (typeof bridge2.setHit !== "function") return;
-    let inside2 = dragging() || flying;
-    for (let i = 0; !inside2 && i < hitRects.length; i += 1) {
-      const r = hitRects[i];
-      inside2 = x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height;
-    }
-    if (inside2 === lastHit) return;
-    lastHit = inside2;
-    bridge2.setHit(inside2);
-  }
-  function layoutStale(win) {
-    return Math.abs(window.innerWidth - win.width) > 1 || Math.abs(window.innerHeight - win.height) > 1;
-  }
-  function tick() {
-    if (dragging() || flying) return;
-    const h = host2();
-    if (h === null) return;
-    const info = readGeometry();
-    if (info !== null && info.window && layoutStale(info.window)) {
-      const at = typeof performance === "object" ? performance.now() : Date.now();
-      if (staleSince === null) staleSince = at;
-      if (at - staleSince < STALE_WAIT_MS) {
-        lastKey = null;
-        schedule3();
-        return;
-      }
-    }
-    staleSince = null;
-    let next = measure.boxes(h);
-    if (next === null) return;
-    measure.fitWindow(next.content, info?.window);
-    const side = measure.sides();
-    measure.pin(h, side, next.hostBox, next.contentBox);
-    next = measure.boxes(h);
-    if (next === null) return;
-    hitRects = next.hitShape;
-    if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
-    if (info === null || !info.window) {
-      lastKey = null;
-      return;
-    }
-    if (Math.abs(window.screenX - info.window.x) > 1 || Math.abs(window.screenY - info.window.y) > 1) {
-      lastKey = null;
-      schedule3();
-      return;
-    }
-    const bounds2 = info.window;
-    const areas = info.workAreas ?? [info.workArea];
-    const grownX = side.horizontal === "right" ? next.content.width - bounds2.width : 0;
-    const grownY = side.vertical === "bottom" ? next.content.height - bounds2.height : 0;
-    const want = placement.decide({
-      width: next.content.width,
-      height: next.content.height,
-      pig: next.pig,
-      artMargin: artMarginFor(next.pig.width),
-      visual: bodyVisualBounds(next.pig),
-      pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
-      pigNow: { x: next.pigBox.x, y: next.pigBox.y },
-      shift: measure.state.shift
-    }, bounds2, areas);
-    placement.persist(areas);
-    const clamp6 = placement.clamp();
-    const old = measure.state.shift;
-    const fresh = { x: -clamp6.dx, y: -clamp6.dy };
-    if (fresh.x !== old.x || fresh.y !== old.y) {
-      measure.state.shift = fresh;
-      measure.pin(h, side, next.hostBox, next.contentBox);
-      const dx = fresh.x - old.x;
-      const dy = fresh.y - old.y;
-      next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
-      next.hitShape = next.hitShape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
-      hitRects = next.hitShape;
-    }
-    measure.fitBubble(h, info);
-    next = measure.boxes(h);
-    if (next === null) return;
-    hitRects = next.hitShape;
-    const move = !sameBounds(want, bounds2, TOLERANCE2);
-    const clampState = windowClamp.observe(want, bounds2);
-    if (clampState === "accept") {
-      const pig = pigInWindow(bounds2);
-      if (pig !== null) {
-        placement.acceptWindow(bounds2, pig, areas);
-        const notice = JSON.stringify({ want, actual: bounds2 });
-        if (clampNotice !== notice) {
-          clampNotice = notice;
-          console.warn("[piggy-desktop] wm clamp accepted " + notice);
-        }
-        lastKey = null;
-        bridge2.place({ bounds: { ...bounds2 } });
-        return;
-      }
-    }
-    const key2 = measure.keyOf(next);
-    if (!move && key2 === lastKey) return;
-    lastKey = key2;
-    const request = { shape: next.shape, hitShape: next.hitShape, bounds: move ? want : void 0, pig: void 0, speech: void 0 };
-    const pigNode = h.querySelector(".dp-pig");
-    if (pigNode) request.pig = layoutBox(pigNode);
-    const speech = h.querySelector('.dp-bubble[data-bubble-side="below"]');
-    request.speech = speech && !speech.hidden ? layoutBox(speech) : null;
-    if (move) {
-      console.warn("[piggy-desktop] move " + JSON.stringify({
-        open: h.getAttribute("data-open"),
-        side,
-        from: bounds2,
-        to: want,
-        home: placement.home(),
-        shift: measure.state.shift,
-        content: { w: next.content.width, h: next.content.height },
-        pigBox: next.pigBox,
-        ghosts: h.querySelectorAll("[data-ghost]").length,
-        display: displayNote(info)
-      }));
-    }
-    bridge2.place(request);
-  }
-  function pigInWindow(win) {
-    const h = host2();
-    const pigNode = h?.querySelector(".dp-pig");
-    const size = placement.pigSize();
-    const homeTL = placement.homeTopLeft();
-    if (pigNode && !layoutStale(win)) return layoutBox(pigNode);
-    if (homeTL !== null) return { x: homeTL.x - win.x, y: homeTL.y - win.y, width: size.width, height: size.height };
-    return pigNode ? layoutBox(pigNode) : null;
-  }
-  function readGeometry() {
-    if (typeof bridge2.place === "function") {
-      const fresh = bridge2.place({});
-      if (fresh !== null && fresh !== void 0 && fresh.window) return fresh;
-    }
-    return geometry();
-  }
-  function schedule3() {
-    if (scheduled2) return;
-    scheduled2 = true;
-    requestAnimationFrame(function() {
-      scheduled2 = false;
-      if (!dragging() && !flying) tick();
-    });
-  }
-  function install2(shell2) {
-    bridge2 = shell2;
-    const split = shell2.panel !== void 0 && typeof shell2.panel.toggle === "function";
-    if (!split) {
-      console.warn("[piggy-desktop] shell has no split windows\uFF08\u8BF7\u628A\u684C\u9762\u7A0B\u5E8F\u66F4\u65B0\u5230 0.6.0 \u4EE5\u4E0A\uFF09");
-      window.__dshPiggyShellOutdated = true;
-      return;
-    }
-    role = shell2.role === "panel" ? "panel" : shell2.role === "ext" ? "ext" : "pet";
-    if (role === "ext") {
-      const style2 = document.createElement("style");
-      style2.setAttribute("data-piggy-desktop-style", "");
-      style2.textContent = DESKTOP_CSS;
-      document.head.appendChild(style2);
-      installExt(shell2);
-      return;
-    }
-    if (role === "panel") {
-      const style2 = document.createElement("style");
-      style2.setAttribute("data-piggy-desktop-style", "");
-      style2.textContent = DESKTOP_CSS;
-      document.head.appendChild(style2);
-      installPanel(shell2);
-      return;
-    }
-    document.documentElement.setAttribute("data-piggy-role", "pet");
-    const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell2[name] !== "function");
-    if (missing.length > 0) {
-      console.warn("[piggy-desktop] shell is too old, missing: " + missing.join(", ") + "\uFF08\u8BF7\u66F4\u65B0\u684C\u9762\u7A0B\u5E8F\uFF09");
-      window.__dshPiggyShellOutdated = true;
-    }
-    placement = createPlacement();
-    measure = createMeasure({ platform: shell2.platform || "", geometry });
+  function installStyle() {
+    if (document.querySelector("[data-piggy-desktop-style]")) return;
     const style = document.createElement("style");
     style.setAttribute("data-piggy-desktop-style", "");
     style.textContent = DESKTOP_CSS;
     document.head.appendChild(style);
-    if (typeof shell2.onGeometry === "function") shell2.onGeometry(function() {
-      schedule3();
-    });
-    if (typeof shell2.onDragSlide === "function") {
-      shell2.onDragSlide(function(slide) {
-        if (!dragging()) return;
-        dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 };
-        const h = host2();
-        if (h !== null) h.style.translate = dragSlide.x === 0 && dragSlide.y === 0 ? "" : dragSlide.x + "px " + dragSlide.y + "px";
-      });
-    }
-    if (typeof shell2.askGeometry === "function") shell2.askGeometry();
-    window.__dshPiggyShell = {
-      // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
-      role: "pet",
-      proxy: shell2.proxy,
-      cloudSave: shell2.cloudSave,
-      saves: shell2.saves,
-      ext: shell2.ext,
-      fullscreen: shell2.fullscreen,
-      external: shell2.external ?? null,
-      split: true,
-      onRecover: shell2.onRecover,
-      recoverHome: function(foot) {
-        const info = readGeometry(), areas = info?.workAreas ?? (info?.workArea ? [info.workArea] : []);
-        placement.recover(foot, areas);
-        flying = false;
-        dragSlide = { x: 0, y: 0 };
-        lastKey = null;
-        commitSlide(host2(), measure.state, dragSlide);
-        tick();
-      },
-      dragVisualBounds: shell2.dragVisualBounds === true,
-      onStateChanged: shell2.onStateChanged,
-      panel: {
-        toggle: function(open) {
-          const info = readGeometry();
-          const pig = info && info.window ? pigInWindow(info.window) : null;
-          shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
-        },
-        on: shell2.panel.on,
-        onFx: shell2.panel.onFx,
-        raisePet: shell2.panel.raisePet
-      },
-      /** @param {{x:number,y:number}|null} [origin] pointerdown 时的屏幕坐标：延迟到 4px 才开始拖动时，窗口不会落后手指。 */
-      beginDrag: function(origin) {
-        const info = readGeometry();
-        const pig = info && info.window ? pigInWindow(info.window) : null;
-        dragSlide = { x: 0, y: 0 };
-        if (typeof shell2.beginDrag !== "function") return;
-        shell2.beginDrag(pig === null ? null : {
-          x: pig.x,
-          y: pig.y,
-          width: pig.width,
-          height: pig.height,
-          visual: bodyVisualBounds(pig),
-          slide: typeof shell2.onDragSlide === "function",
-          origin: origin !== null && origin !== void 0 && Number.isFinite(origin.x) && Number.isFinite(origin.y) ? { x: origin.x, y: origin.y } : void 0
+  }
+  function install2(shell2) {
+    if (installing || !selectContext(shell2) || installed2) return;
+    installing = true;
+    try {
+      const split = shell2.panel !== void 0 && typeof shell2.panel.toggle === "function";
+      if (!split) {
+        console.warn("[piggy-desktop] shell has no split windows\uFF08\u8BF7\u628A\u684C\u9762\u7A0B\u5E8F\u66F4\u65B0\u5230 0.6.0 \u4EE5\u4E0A\uFF09");
+        window.__dshPiggyShellOutdated = true;
+        installed2 = true;
+        return;
+      }
+      role = shell2.role === "panel" ? "panel" : shell2.role === "ext" ? "ext" : "pet";
+      if (role === "ext") {
+        installStyle();
+        installExt(shell2);
+        installed2 = true;
+        return;
+      }
+      if (role === "panel") {
+        installStyle();
+        installPanel(shell2);
+        installed2 = true;
+        return;
+      }
+      document.documentElement.setAttribute("data-piggy-role", "pet");
+      const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell2[name] !== "function");
+      if (missing.length > 0) {
+        console.warn("[piggy-desktop] shell is too old, missing: " + missing.join(", ") + "\uFF08\u8BF7\u66F4\u65B0\u684C\u9762\u7A0B\u5E8F\uFF09");
+        window.__dshPiggyShellOutdated = true;
+      }
+      if (petController === null) {
+        petController = createPetController({
+          shell: shell2,
+          documentObject: document,
+          windowObject: window,
+          // Compatibility getter for the existing single-pig page. New callers can
+          // provide an instance-scoped root through createPetController directly.
+          getHost: () => document.querySelector("[data-dsh-pig]")
         });
-      },
-      dragHeartbeat: function() {
-        if (typeof shell2.dragHeartbeat === "function") shell2.dragHeartbeat();
-      },
-      endDrag: function(release) {
-        if (typeof shell2.endDrag !== "function") return;
-        shell2.endDrag(release ?? null);
-        const info = readGeometry();
-        if (info && info.window) {
-          if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) dragSlide = info.dragSlide;
-          const inWindow = pigInWindow(info.window);
-          const pig = inWindow === null ? null : { ...inWindow, x: inWindow.x + dragSlide.x, y: inWindow.y + dragSlide.y };
-          if (pig !== null) {
-            placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
-          }
-        }
-        commitSlide(host2(), measure.state, dragSlide);
-        dragSlide = { x: 0, y: 0 };
-        lastKey = null;
-        schedule3();
-      },
-      syncGeometry: function() {
-        tick();
-      },
-      // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
-      // A2 抛掷：页面算好窗口位置，外壳只 setBounds；旧外壳没有 flyMove，supported=false，
-      // 页面自动退回原地落地。具体实现见 flight-bridge.js。
-      flight: createFlightBridge({
-        shell: shell2,
-        readGeometry,
-        pigInWindow,
-        rehome: function(win, pig, areas) {
-          placement.rehome(win, pig, areas);
-        },
-        setFlying: function(on) {
-          flying = on;
-        },
-        isFlying: function() {
-          return flying;
-        },
-        clearSlide: function(slide) {
-          dragSlide = { x: 0, y: 0 };
-          const h = host2();
-          commitSlide(h, measure.state, slide);
-        },
-        forgetLayout: function() {
-          lastKey = null;
-        },
-        tick
-      }),
-      moveBy: typeof shell2.moveBy === "function" ? function(dx, dy) {
-        shell2.moveBy(dx, dy);
-        const info = readGeometry();
-        const pig = info && info.window ? pigInWindow(info.window) : null;
-        if (pig !== null) placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
-      } : void 0
-    };
-    suppressNativeTooltips();
-    document.addEventListener("mousemove", function(event) {
-      updateHit(event.clientX, event.clientY);
-    }, true);
-    document.documentElement.addEventListener("mouseleave", function() {
-      if (dragging()) return;
-      mouse = { x: -1, y: -1 };
-      lastHit = false;
-      if (typeof shell2.setHit === "function") shell2.setHit(false);
-    });
+      }
+      installStyle();
+      petController.install();
+      installed2 = true;
+    } finally {
+      installing = false;
+    }
   }
   function start() {
-    if (role === "panel") {
-      startPanel();
-      return;
+    if (starting || !selectContext() || !installed2 || started) return;
+    starting = true;
+    try {
+      if (role === "panel") startPanel();
+      else if (role !== "ext") petController?.start();
+      started = true;
+    } finally {
+      starting = false;
     }
-    if (role === "ext") return;
-    const h = host2();
-    if (h !== null && typeof MutationObserver === "function") {
-      new MutationObserver(schedule3).observe(h, { subtree: true, childList: true, attributes: true, characterData: true });
-    }
-    window.addEventListener("resize", schedule3);
-    window.addEventListener("pointerup", schedule3);
-    setInterval(function() {
-      if (!dragging() && !flying) tick();
-    }, 1e3);
-    startHitTracking({ host: host2, shell: bridge2, blocked: dragging, onShape: (rects) => {
-      hitRects = rects;
-      if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
-    } });
-    tick();
   }
   var desktop = { version: DESKTOP_VERSION, install: install2, start };
 
@@ -20329,11 +20519,11 @@
     function onPointerUp(event) {
       if (drag === null) return;
       const speed = c.isPanelOpen?.() === true ? { vx: 0, vy: 0 } : velocity();
-      const started = drag.started;
+      const started2 = drag.started;
       const patted = drag.patted;
       const snap = drag.snap;
       endDrag(pointerScreen(event));
-      if (started) {
+      if (started2) {
         c.feel.release({ vx: speed.vx, vy: speed.vy, dragged: true });
         return;
       }
@@ -20349,10 +20539,10 @@
     }
     function onPointerCancel() {
       if (drag === null) return;
-      const started = drag.started;
+      const started2 = drag.started;
       cancelPetSnap(c.pig);
       endDrag();
-      c.feel.release({ vx: 0, vy: 0, dragged: started });
+      c.feel.release({ vx: 0, vy: 0, dragged: started2 });
     }
     c.scene.addEventListener("pointerdown", onPointerDown);
     c.scene.addEventListener("pointermove", onPointerMove);
@@ -20975,7 +21165,7 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/array.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -20986,7 +21176,7 @@
       arr2.splice(index, 1);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/clamp.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -20995,12 +21185,12 @@
     return v;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/format-error-message.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/format-error-message.mjs
   function formatErrorMessage(message3, errorCode) {
     return errorCode ? `${message3}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message3;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/errors.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
@@ -21018,19 +21208,19 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/global-config.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/is-object.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/memo.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -21041,19 +21231,19 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/noop.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/pipe.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/progress.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
@@ -21086,14 +21276,14 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/time-conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/warn-once.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
   function warnOnce(condition, message3, errorCode) {
     if (condition || warned.has(message3))
@@ -21102,13 +21292,13 @@
     warned.add(message3);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/wrap.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -21132,45 +21322,45 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/back.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/circ.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/ease.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -21199,14 +21389,14 @@
     return definition;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -21224,10 +21414,10 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
   var checkStringStartsWith = (token2) => (key2) => typeof key2 === "string" && key2.startsWith(token2);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
@@ -21243,7 +21433,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -21258,18 +21448,18 @@
     default: 1
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -21285,7 +21475,7 @@
     };
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -21297,7 +21487,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -21331,7 +21521,7 @@
     transform: rgba.transform
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -21348,7 +21538,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -21357,7 +21547,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -21379,10 +21569,10 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -21473,7 +21663,7 @@
     getAnimatableNone
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -21511,17 +21701,17 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -21557,7 +21747,7 @@
     };
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -21567,7 +21757,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -21637,7 +21827,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -21664,7 +21854,7 @@
     return mixer(from, to);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -21684,7 +21874,7 @@
     // Compute
   ];
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -21747,7 +21937,7 @@
     return step;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
   function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
@@ -21792,7 +21982,7 @@
         scheduleNextBatch(processBatch);
       }
     };
-    const schedule4 = stepsOrder.reduce((acc, key2) => {
+    const schedule3 = stepsOrder.reduce((acc, key2) => {
       const step = steps[key2];
       acc[key2] = (process2, keepAlive = false, immediate = false) => {
         if (!runNextFrame)
@@ -21806,13 +21996,13 @@
         steps[stepsOrder[i]].cancel(process2);
       }
     };
-    return { schedule: schedule4, cancel: cancel2, state: state4, steps };
+    return { schedule: schedule3, cancel: cancel2, state: state4, steps };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -21826,7 +22016,7 @@
     };
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -21836,7 +22026,7 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
@@ -21850,7 +22040,7 @@
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -21869,7 +22059,7 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -22127,7 +22317,7 @@
     return options;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
     const state4 = {
@@ -22193,7 +22383,7 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -22238,7 +22428,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -22247,19 +22437,19 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
@@ -22300,7 +22490,7 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -22312,7 +22502,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -22321,7 +22511,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -22335,11 +22525,11 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -22362,7 +22552,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -22393,7 +22583,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -22697,7 +22887,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -22721,7 +22911,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -22731,13 +22921,13 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/int.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -22771,7 +22961,7 @@
     originZ: px
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -22836,7 +23026,7 @@
     numOctaves: int
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -22858,7 +23048,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -22867,14 +23057,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -22956,7 +23146,7 @@
     return parseFloat(value.trim());
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -22979,7 +23169,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -23028,7 +23218,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -23174,27 +23364,27 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -23204,10 +23394,10 @@
     return true;
   }, "linearEasing");
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -23220,7 +23410,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -23235,7 +23425,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -23258,12 +23448,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -23274,7 +23464,7 @@
     return options;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -23422,7 +23612,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -23437,7 +23627,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -23504,7 +23694,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -23518,7 +23708,7 @@
     return false;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -23545,13 +23735,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -23560,7 +23750,7 @@
     "backgroundColor"
   ]);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -23571,7 +23761,7 @@
     return false;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -23606,12 +23796,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -23660,10 +23850,10 @@
     return transformString;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -24231,7 +24421,7 @@
     return group;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -24369,7 +24559,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -24449,7 +24639,7 @@
     return max;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -24457,7 +24647,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -24783,7 +24973,7 @@
     return new MotionValue(init, options);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -24792,7 +24982,7 @@
     return transition;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -24801,7 +24991,7 @@
     return valueTransition;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -24832,7 +25022,7 @@
     return ease;
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -24853,7 +25043,7 @@
     return false;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -24912,7 +25102,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -24938,7 +25128,7 @@
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -24949,28 +25139,28 @@
     ...transformPropOrder
   ]);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/test.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -24981,7 +25171,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -25002,7 +25192,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -25129,7 +25319,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -25193,17 +25383,17 @@
     return first === null ? void 0 : first;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -25221,7 +25411,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -25245,7 +25435,7 @@
     });
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -25332,7 +25522,7 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
@@ -25356,7 +25546,7 @@
     });
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
   function buildTransform2(state4) {
     let transform = "";
@@ -25378,7 +25568,7 @@
     return transform || "none";
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
   var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
   var addStyleValue = (element, state4, key2, value) => {
@@ -25439,7 +25629,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -25451,7 +25641,7 @@
     "offsetAnchor"
   ];
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
@@ -25477,7 +25667,7 @@
     return state4.set(key2, value, render);
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/svg/index.mjs
   function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
@@ -25523,7 +25713,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -25543,12 +25733,12 @@
     };
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -25581,7 +25771,7 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/prop/index.mjs
   var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
     return state4.set(key2, value, () => {
       subject2[key2] = value.get();
@@ -25594,7 +25784,7 @@
     }
   });
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -25703,10 +25893,10 @@
     }
   };
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -25781,7 +25971,7 @@
     return unit ? v + unit : v;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -25792,7 +25982,7 @@
     });
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -25803,7 +25993,7 @@
     return value;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -25813,22 +26003,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/render/store.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -25844,12 +26034,12 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -25864,7 +26054,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -25885,7 +26075,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -25893,7 +26083,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -25906,7 +26096,7 @@
     }
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -26088,7 +26278,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -26119,7 +26309,7 @@
     return animations;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -26144,7 +26334,7 @@
     return animations;
   }
 
-  // ../../../CLOUDUI02-PI-01/artifacts/typecheck-compare-final/toolchain/node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
@@ -26356,7 +26546,7 @@
       }
       finish();
     }
-    function schedule4(delay) {
+    function schedule3(delay) {
       clear();
       attempts = 0;
       timer2 = setTimeout(check, delay ?? 700);
@@ -26374,9 +26564,9 @@
           c.onGeometry();
         }
         if (c.pig.getAttribute("data-feel") !== "active") c.pig.setAttribute("data-feel", "active");
-        schedule4(800);
+        schedule3(800);
       },
-      schedule: schedule4,
+      schedule: schedule3,
       clear,
       finish,
       isActive: function() {
@@ -26415,7 +26605,7 @@
     const pig = deps.pig;
     const pigHold = deps.pigHold;
     const pigBody = deps.pigBody;
-    const host3 = deps.host;
+    const host2 = deps.host;
     const getShell = deps.getShell;
     const onGeometry = deps.onGeometry ?? function() {
     };
@@ -26433,7 +26623,7 @@
     let justWoke = false;
     let lifted = false;
     let liftSoundPlayed = false;
-    let dragging2 = false;
+    let dragging = false;
     let flipToken = 0;
     let facing = (pig.getAttribute("data-walk") || "") === "right" ? "right" : "left";
     let flipFrom = facing;
@@ -26527,7 +26717,7 @@
     }
     function releasePig(options) {
       if (!enabled()) return "off";
-      dragging2 = false;
+      dragging = false;
       const vx = Number(options?.vx) || 0;
       const vy = Number(options?.vy) || 0;
       const speed = Math.hypot(vx, vy);
@@ -26629,7 +26819,7 @@
     }
     function coverSwap(apply) {
       if (typeof apply !== "function") return;
-      if (!enabled() || dragging2 || runner.isFlying() || pig.getAttribute("data-pet-snap") === "true" || pig.getAttribute("data-react") !== null || pig.getAttribute("data-micro-action") !== null) {
+      if (!enabled() || dragging || runner.isFlying() || pig.getAttribute("data-pet-snap") === "true" || pig.getAttribute("data-react") !== null || pig.getAttribute("data-micro-action") !== null) {
         apply();
         return;
       }
@@ -26651,7 +26841,7 @@
     }
     const runner = createFlightRunner({
       getShell,
-      host: host3,
+      host: host2,
       onStart: function() {
         settle.begin();
       },
@@ -26730,7 +26920,7 @@
       },
       catchFlight,
       setDragging: function(on) {
-        dragging2 = on === true;
+        dragging = on === true;
       },
       dispose: function() {
         disposed = true;
@@ -26770,8 +26960,8 @@
     var style = doc.createElement("style");
     style.textContent = (desktopShell() === null ? WEB_EMOJI_FACE : "") + CSS;
     doc.head.appendChild(style);
-    var host3 = doc.createElement("div");
-    host3.setAttribute(MOUNTED, "");
+    var host2 = doc.createElement("div");
+    host2.setAttribute(MOUNTED, "");
     var card2 = el("div", "dp-card");
     var scene6 = el("div", "dp-scene");
     var hud = el("div", "dp-hud");
@@ -26856,21 +27046,21 @@
     card2.appendChild(content);
     card2.appendChild(footer);
     card2.appendChild(bar);
-    host3.appendChild(card2);
-    host3.appendChild(scene6);
+    host2.appendChild(card2);
+    host2.appendChild(scene6);
     if (root !== null) {
-      root.appendChild(host3);
+      root.appendChild(host2);
     } else if (doc.body !== null && doc.body !== void 0) {
-      doc.body.appendChild(host3);
+      doc.body.appendChild(host2);
     } else {
       doc.addEventListener("DOMContentLoaded", function() {
         try {
-          doc.body.appendChild(host3);
+          doc.body.appendChild(host2);
         } catch (error) {
         }
       }, { once: true });
     }
-    return { font, style, host: host3, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote: linkNote2 };
+    return { font, style, host: host2, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote: linkNote2 };
   }
 
   // src/client/presentation-context.js
@@ -27051,8 +27241,8 @@
     }
     return { x, y, width: node.offsetWidth || 0, height: node.offsetHeight || 0 };
   }
-  function hostInset(host3, side) {
-    const value = Number.parseFloat(getComputedStyle(host3)[side]);
+  function hostInset(host2, side) {
+    const value = Number.parseFloat(getComputedStyle(host2)[side]);
     return Number.isFinite(value) ? value : null;
   }
   function pigEnvelope(pig) {
@@ -27180,12 +27370,12 @@
     }
     return best;
   }
-  function spaceScale(geometry2) {
-    const scale2 = Number(geometry2?.space?.scale);
+  function spaceScale(geometry) {
+    const scale2 = Number(geometry?.space?.scale);
     return Number.isFinite(scale2) && scale2 > 0 ? scale2 : null;
   }
-  function pairedDisplays(geometry2) {
-    const list = Array.isArray(geometry2?.space?.displays) ? geometry2.space.displays : [];
+  function pairedDisplays(geometry) {
+    const list = Array.isArray(geometry?.space?.displays) ? geometry.space.displays : [];
     const paired = [];
     for (const item of list) {
       const scaleFactor = Number(item?.scaleFactor);
@@ -27196,33 +27386,33 @@
     }
     return paired;
   }
-  function hasSpace(geometry2) {
-    return spaceScale(geometry2) !== null && pairedDisplays(geometry2).length > 0;
+  function hasSpace(geometry) {
+    return spaceScale(geometry) !== null && pairedDisplays(geometry).length > 0;
   }
-  function toPhysicalPoint(value, geometry2) {
+  function toPhysicalPoint(value, geometry) {
     const point = pointOf(value);
     if (point === null) return null;
-    const scale2 = spaceScale(geometry2);
+    const scale2 = spaceScale(geometry);
     return scale2 === null ? point : { x: point.x * scale2, y: point.y * scale2 };
   }
-  function toCanonicalPoint(value, geometry2) {
+  function toCanonicalPoint(value, geometry) {
     const point = pointOf(value);
     if (point === null) return null;
-    const scale2 = spaceScale(geometry2);
+    const scale2 = spaceScale(geometry);
     return scale2 === null ? point : { x: point.x / scale2, y: point.y / scale2 };
   }
-  function canonicalFootForPig(pigBox, geometry2) {
+  function canonicalFootForPig(pigBox, geometry) {
     const box = rectOf(pigBox);
-    const win = rectOf(geometry2?.window);
+    const win = rectOf(geometry?.window);
     if (box === null || win === null) return null;
     return { x: win.x + box.x + box.width / 2, y: win.y + box.y + box.height };
   }
-  function physicalFootForPig(pigBox, geometry2) {
-    const foot = canonicalFootForPig(pigBox, geometry2);
-    return foot === null ? null : toPhysicalPoint(foot, geometry2);
+  function physicalFootForPig(pigBox, geometry) {
+    const foot = canonicalFootForPig(pigBox, geometry);
+    return foot === null ? null : toPhysicalPoint(foot, geometry);
   }
-  function canonicalFootFromPhysical(value, geometry2) {
-    return toCanonicalPoint(value, geometry2);
+  function canonicalFootFromPhysical(value, geometry) {
+    return toCanonicalPoint(value, geometry);
   }
   function displayForPhysicalPoint(value, displays) {
     const point = pointOf(value);
@@ -27261,19 +27451,19 @@
       y: display.dipWorkArea.y + (point.y - display.physicalWorkArea.y) / display.scaleFactor
     };
   }
-  function rescaleGeometry(geometry2, scaleValue) {
+  function rescaleGeometry(geometry, scaleValue) {
     const scale2 = Number(scaleValue);
-    const oldScale = spaceScale(geometry2);
-    const displays = pairedDisplays(geometry2);
-    const win = rectOf(geometry2?.window);
-    if (!(scale2 > 0) || oldScale === null || displays.length === 0 || win === null) return geometry2;
-    const content = rectOf(geometry2?.space?.content) ?? { x: win.x * oldScale, y: win.y * oldScale, width: win.width * oldScale, height: win.height * oldScale };
+    const oldScale = spaceScale(geometry);
+    const displays = pairedDisplays(geometry);
+    const win = rectOf(geometry?.window);
+    if (!(scale2 > 0) || oldScale === null || displays.length === 0 || win === null) return geometry;
+    const content = rectOf(geometry?.space?.content) ?? { x: win.x * oldScale, y: win.y * oldScale, width: win.width * oldScale, height: win.height * oldScale };
     const div = (area) => ({ x: area.x / scale2, y: area.y / scale2, width: area.width / scale2, height: area.height / scale2 });
     return {
-      ...geometry2,
+      ...geometry,
       window: div(content),
       workAreas: displays.map((display) => div(display.physicalWorkArea)),
-      space: { ...geometry2.space, scale: scale2 }
+      space: { ...geometry.space, scale: scale2 }
     };
   }
 
@@ -27281,12 +27471,12 @@
   var round3 = (value) => Math.round(Number(value) || 0);
   var STAGE_POSITION_MIGRATION_KEY = "dsh-piggy:stage-position-v1";
   var POSITION_SYNC_SLACK = 2;
-  function desktopPositionForStage(pig, geometry2) {
-    if (!pig || !geometry2?.window) return null;
-    const foot = { x: geometry2.window.x + pig.x + pig.width / 2, y: geometry2.window.y + pig.y + pig.height };
-    if (hasSpace(geometry2)) {
-      const physical = toPhysicalPoint(foot, geometry2);
-      const display = displayForPhysicalPoint(physical, pairedDisplays(geometry2));
+  function desktopPositionForStage(pig, geometry) {
+    if (!pig || !geometry?.window) return null;
+    const foot = { x: geometry.window.x + pig.x + pig.width / 2, y: geometry.window.y + pig.y + pig.height };
+    if (hasSpace(geometry)) {
+      const physical = toPhysicalPoint(foot, geometry);
+      const display = displayForPhysicalPoint(physical, pairedDisplays(geometry));
       if (display === null) return null;
       const dip = dipPointFromPhysical(physical, display);
       return {
@@ -27296,8 +27486,8 @@
         y: round3(dip.y - display.dipWorkArea.y)
       };
     }
-    if (!Array.isArray(geometry2.workAreas)) return null;
-    const area = nearestArea2(foot, geometry2.workAreas);
+    if (!Array.isArray(geometry.workAreas)) return null;
+    const area = nearestArea2(foot, geometry.workAreas);
     if (!area) return null;
     return { v: 3, area: { ...area }, x: round3(foot.x - area.x), y: round3(foot.y - area.y) };
   }
@@ -27344,20 +27534,20 @@
     const area = { x: Number(value.x), y: Number(value.y), width: Number(value.width), height: Number(value.height) };
     return [area.x, area.y, area.width, area.height].every(Number.isFinite) ? area : null;
   }
-  function savedHomeFoot(raw, pigSize2, geometry2) {
+  function savedHomeFoot(raw, pigSize2, geometry) {
     if (raw === null || typeof raw !== "object") return null;
     if (!Number.isFinite(raw.x) || !Number.isFinite(raw.y)) return null;
-    if (!hasSpace(geometry2)) {
+    if (!hasSpace(geometry)) {
       const rect = savedPigTopLeft(raw, pigSize2);
       return rect === null ? null : { x: rect.x + rect.width / 2, y: rect.y + rect.height };
     }
-    const displays = pairedDisplays(geometry2);
+    const displays = pairedDisplays(geometry);
     if (raw.v === 3) {
       const area = savedArea(raw.area);
       const dipFoot = area === null ? { x: raw.x, y: raw.y } : { x: area.x + raw.x, y: area.y + raw.y };
       const display2 = area === null ? displayForDipPoint(dipFoot, displays) : displayForDipArea(area, displays);
       if (display2 === null) return null;
-      return toCanonicalPoint(physicalPointFromDip(dipFoot, display2), geometry2);
+      return toCanonicalPoint(physicalPointFromDip(dipFoot, display2), geometry);
     }
     const dipTopLeft = { x: raw.x, y: raw.y };
     const display = displayForDipPoint(dipTopLeft, displays);
@@ -27369,35 +27559,35 @@
       x: physicalTopLeft.x + width * display.scaleFactor / 2,
       y: physicalTopLeft.y + height * display.scaleFactor
     };
-    return toCanonicalPoint(physicalFoot, geometry2);
+    return toCanonicalPoint(physicalFoot, geometry);
   }
-  function savedHomeRect(raw, pigSize2, geometry2) {
-    if (!hasSpace(geometry2)) return savedPigTopLeft(raw, pigSize2);
-    const foot = savedHomeFoot(raw, pigSize2, geometry2);
+  function savedHomeRect(raw, pigSize2, geometry) {
+    if (!hasSpace(geometry)) return savedPigTopLeft(raw, pigSize2);
+    const foot = savedHomeFoot(raw, pigSize2, geometry);
     return foot === null ? null : rectAtFoot(foot, pigSize2);
   }
-  function legacyHomeFoot(point, pigSize2, geometry2) {
+  function legacyHomeFoot(point, pigSize2, geometry) {
     if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
-    if (!hasSpace(geometry2)) {
+    if (!hasSpace(geometry)) {
       const rect = legacyPigRect(point, pigSize2);
       return rect === null ? null : { x: rect.x + rect.width / 2, y: rect.y + rect.height };
     }
-    const display = displayForDipPoint(point, pairedDisplays(geometry2));
+    const display = displayForDipPoint(point, pairedDisplays(geometry));
     if (display === null) return null;
     const physicalTopLeft = physicalPointFromDip(point, display);
     const physicalFoot = {
       x: physicalTopLeft.x + pigSize2.width * display.scaleFactor / 2,
       y: physicalTopLeft.y + pigSize2.height * display.scaleFactor
     };
-    return toCanonicalPoint(physicalFoot, geometry2);
+    return toCanonicalPoint(physicalFoot, geometry);
   }
-  function legacyHomeRect(point, pigSize2, geometry2) {
-    if (!hasSpace(geometry2)) return legacyPigRect(point, pigSize2);
-    const foot = legacyHomeFoot(point, pigSize2, geometry2);
+  function legacyHomeRect(point, pigSize2, geometry) {
+    if (!hasSpace(geometry)) return legacyPigRect(point, pigSize2);
+    const foot = legacyHomeFoot(point, pigSize2, geometry);
     return foot === null ? null : rectAtFoot(foot, pigSize2);
   }
-  function scaleOf(geometry2) {
-    return spaceScale(geometry2) ?? 1;
+  function scaleOf(geometry) {
+    return spaceScale(geometry) ?? 1;
   }
   function rebaseGeometryFoot(pendingFoot, pigBox, previous, next, skip = false) {
     if (skip === true || !previous?.window || !next?.window) return pendingFoot ?? null;
@@ -27406,11 +27596,11 @@
     const physical = pendingFoot !== null && pendingFoot !== void 0 ? toPhysicalPoint(pendingFoot, previous) : physicalFootForPig(pigBox, previous);
     return physical === null ? pendingFoot ?? null : canonicalFootFromPhysical(physical, next);
   }
-  function pigBoxForGeometry(pigBox, hostBox, right, bottom, geometry2) {
-    if (!geometry2?.window || !pigBox || !hostBox || !Number.isFinite(right) || !Number.isFinite(bottom)) return pigBox;
+  function pigBoxForGeometry(pigBox, hostBox, right, bottom, geometry) {
+    if (!geometry?.window || !pigBox || !hostBox || !Number.isFinite(right) || !Number.isFinite(bottom)) return pigBox;
     return {
-      x: geometry2.window.width - right - hostBox.width + (pigBox.x - hostBox.x),
-      y: geometry2.window.height - bottom - hostBox.height + (pigBox.y - hostBox.y),
+      x: geometry.window.width - right - hostBox.width + (pigBox.x - hostBox.x),
+      y: geometry.window.height - bottom - hostBox.height + (pigBox.y - hostBox.y),
       width: pigBox.width,
       height: pigBox.height
     };
@@ -27420,15 +27610,15 @@
     const oldPigBox = hasPending ? pigBox : pigBoxForGeometry(pigBox, hostBox, right, bottom, previous);
     return rebaseGeometryFoot(pendingFoot, oldPigBox, previous, next, skip);
   }
-  function geometryMatchesViewport(geometry2, width, height) {
-    const win = geometry2?.window;
+  function geometryMatchesViewport(geometry, width, height) {
+    const win = geometry?.window;
     return win !== void 0 && win !== null && Math.abs(win.width - Number(width)) <= 2 && Math.abs(win.height - Number(height)) <= 2;
   }
-  function rescaleGeometryForDpr(geometry2, dpr) {
-    if (!geometry2?.space) return geometry2;
+  function rescaleGeometryForDpr(geometry, dpr) {
+    if (!geometry?.space) return geometry;
     const scale2 = Number(dpr);
-    if (!(scale2 > 0) || Math.abs(scale2 - scaleOf(geometry2)) <= 1e-6) return geometry2;
-    return rescaleGeometry(geometry2, scale2);
+    if (!(scale2 > 0) || Math.abs(scale2 - scaleOf(geometry)) <= 1e-6) return geometry;
+    return rescaleGeometry(geometry, scale2);
   }
   function toPageRect(rect, origin) {
     return { x: rect.x - origin.x, y: rect.y - origin.y, width: rect.width, height: rect.height };
@@ -27449,17 +27639,17 @@
     }
     return true;
   }
-  function workAreaForPig(pigBox, geometry2) {
-    if (!pigBox || !geometry2 || !geometry2.window) return null;
-    const areas = Array.isArray(geometry2.workAreas) ? geometry2.workAreas : [];
-    if (areas.length === 0) return geometry2.window;
-    const centre = { x: geometry2.window.x + pigBox.x + pigBox.width / 2, y: geometry2.window.y + pigBox.y + pigBox.height / 2 };
-    return nearestArea2(centre, areas) ?? geometry2.window;
+  function workAreaForPig(pigBox, geometry) {
+    if (!pigBox || !geometry || !geometry.window) return null;
+    const areas = Array.isArray(geometry.workAreas) ? geometry.workAreas : [];
+    if (areas.length === 0) return geometry.window;
+    const centre = { x: geometry.window.x + pigBox.x + pigBox.width / 2, y: geometry.window.y + pigBox.y + pigBox.height / 2 };
+    return nearestArea2(centre, areas) ?? geometry.window;
   }
-  function stagePanelArea(pigBox, geometry2) {
-    const origin = geometry2?.window;
+  function stagePanelArea(pigBox, geometry) {
+    const origin = geometry?.window;
     if (!origin) return null;
-    const area = workAreaForPig(pigBox, geometry2);
+    const area = workAreaForPig(pigBox, geometry);
     return area === null ? null : toPageRect(area, origin);
   }
   function nearestArea2(point, areas) {
@@ -27487,10 +27677,10 @@
     const y = Math.min(Math.max(rect.y, area.y), area.y + area.height - height);
     return { offset: { x: round3(x - rect.x), y: round3(y - rect.y) }, moved: x !== rect.x || y !== rect.y };
   }
-  function positionForScreenFoot(foot, currentPig, host3, geometry2) {
-    if (!foot || !Number.isFinite(foot.x) || !Number.isFinite(foot.y) || !geometry2?.window) return null;
-    const target = { x: foot.x - geometry2.window.x - currentPig.width / 2, y: foot.y - geometry2.window.y - currentPig.height, width: currentPig.width, height: currentPig.height };
-    return positionForPig(target, host3, geometry2.window, currentPig);
+  function positionForScreenFoot(foot, currentPig, host2, geometry) {
+    if (!foot || !Number.isFinite(foot.x) || !Number.isFinite(foot.y) || !geometry?.window) return null;
+    const target = { x: foot.x - geometry.window.x - currentPig.width / 2, y: foot.y - geometry.window.y - currentPig.height, width: currentPig.width, height: currentPig.height };
+    return positionForPig(target, host2, geometry.window, currentPig);
   }
 
   // src/client/stage-home.js
@@ -27523,15 +27713,15 @@
     const bottom = previous.bottom - next.bottom;
     return Math.abs(right) <= slack && Math.abs(bottom) <= slack ? null : { right, bottom };
   }
-  function createStageAnchor(pig, host3, shift) {
+  function createStageAnchor(pig, host2, shift) {
     let previous = null;
-    const measure2 = () => footAnchor(layoutBox2(pig), layoutBox2(host3));
+    const measure = () => footAnchor(layoutBox2(pig), layoutBox2(host2));
     return {
       remember() {
-        previous = measure2();
+        previous = measure();
       },
       restore() {
-        const next = measure2();
+        const next = measure();
         const adjustment = anchorAdjustment(previous, next);
         previous = next;
         if (adjustment !== null) shift(adjustment);
@@ -27591,9 +27781,9 @@
         restore2();
       } };
     }
-    const { ctx, host: host3, pig, bubble, card: card2, setOpen, clampPig, fitPanel } = deps;
-    let geometry2 = null;
-    let flying2 = false;
+    const { ctx, host: host2, pig, bubble, card: card2, setOpen, clampPig, fitPanel } = deps;
+    let geometry = null;
+    let flying = false;
     let flightGuard = null;
     let settleFrame = 0;
     let bubbleFrame = 0;
@@ -27602,14 +27792,14 @@
     const fitSpeechPanel = createStageSpeechPanel(card2, fitPanel);
     let lastFlightWindow = null;
     function currentGeometry() {
-      if (geometry2 === null) {
+      if (geometry === null) {
         try {
           const live = options.geometry?.();
-          if (live !== null && live !== void 0 && live.window) geometry2 = live;
+          if (live !== null && live !== void 0 && live.window) geometry = live;
         } catch {
         }
       }
-      return geometry2;
+      return geometry;
     }
     function scheduleSettle() {
       if (settleFrame !== 0) return;
@@ -27622,7 +27812,7 @@
       if (bubbleFrame !== 0) return;
       bubbleFrame = requestAnimationFrame(() => {
         bubbleFrame = 0;
-        applyBubbleSize(host3);
+        applyBubbleSize(host2);
         fitBubble();
       });
     }
@@ -27631,13 +27821,13 @@
       pendingHome = null;
       ctx.userRight = ROUND(right);
       ctx.userBottom = ROUND(bottom);
-      host3.style.left = "auto";
-      host3.style.top = "auto";
-      host3.style.right = ctx.userRight + "px";
-      host3.style.bottom = ctx.userBottom + "px";
+      host2.style.left = "auto";
+      host2.style.top = "auto";
+      host2.style.right = ctx.userRight + "px";
+      host2.style.bottom = ctx.userBottom + "px";
       clampPig();
-      const appliedRight = hostInset(host3, "right");
-      const appliedBottom = hostInset(host3, "bottom");
+      const appliedRight = hostInset(host2, "right");
+      const appliedBottom = hostInset(host2, "bottom");
       if (appliedRight !== null) ctx.userRight = appliedRight;
       if (appliedBottom !== null) ctx.userBottom = appliedBottom;
       footAnchor2.remember();
@@ -27649,11 +27839,11 @@
       scheduleBubble();
       if (resettle) scheduleSettle();
     }
-    const footAnchor2 = createStageAnchor(pig, host3, (shift) => {
-      setPosition((hostInset(host3, "right") ?? ctx.userRight) + shift.right, (hostInset(host3, "bottom") ?? ctx.userBottom) + shift.bottom, false);
+    const footAnchor2 = createStageAnchor(pig, host2, (shift) => {
+      setPosition((hostInset(host2, "right") ?? ctx.userRight) + shift.right, (hostInset(host2, "bottom") ?? ctx.userBottom) + shift.bottom, false);
     });
     function settle() {
-      if (flying2) return;
+      if (flying) return;
       const geo = currentGeometry();
       if (geo === null || !geo.window || !Array.isArray(geo.workAreas) || geo.workAreas.length === 0) return;
       if (!geometryMatchesViewport(geo, window.innerWidth, window.innerHeight)) return;
@@ -27662,7 +27852,7 @@
         if (!migrated) return;
       }
       if (pendingHome !== null) {
-        const next = positionForScreenFoot(pendingHome, layoutBox2(pig), layoutBox2(host3), geo);
+        const next = positionForScreenFoot(pendingHome, layoutBox2(pig), layoutBox2(host2), geo);
         pendingHome = null;
         if (next) setPosition(next.right, next.bottom, false);
       }
@@ -27670,14 +27860,14 @@
       const envelope = pigEnvelope(pig);
       if (envelope === null) return;
       let target = envelope;
-      if (host3.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
+      if (host2.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
         const rect = card2.getBoundingClientRect();
         if (rect.width > 1 && rect.height > 1) target = union2(envelope, { x: rect.left, y: rect.top, width: rect.width, height: rect.height });
       }
       const screen = { x: target.x + geo.window.x, y: target.y + geo.window.y, width: target.width, height: target.height };
       const moved = constrainRectToAreas(screen, geo.workAreas);
       if (moved.moved) {
-        setPosition((hostInset(host3, "right") ?? ctx.userRight) - moved.offset.x, (hostInset(host3, "bottom") ?? ctx.userBottom) - moved.offset.y, false);
+        setPosition((hostInset(host2, "right") ?? ctx.userRight) - moved.offset.x, (hostInset(host2, "bottom") ?? ctx.userBottom) - moved.offset.y, false);
         scheduleBubble();
         return;
       }
@@ -27706,7 +27896,7 @@
       const pageArea = toPageRect(area, origin);
       const pageWindow = { x: 0, y: 0, width: origin.width, height: origin.height };
       let menu = null;
-      if (host3.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
+      if (host2.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
         const box = layoutBox2(card2);
         if (box.width > 1 && box.height > 1) menu = box;
       }
@@ -27742,23 +27932,23 @@
       } else if (node.getAttribute(name) !== value) node.setAttribute(name, value);
     }
     function beginFlight() {
-      flying2 = true;
+      flying = true;
       options.setInteracting?.(true);
       if (flightGuard !== null) clearTimeout(flightGuard);
       flightGuard = setTimeout(() => {
         flightGuard = null;
-        if (flying2) flightBridge.finish(lastFlightWindow);
+        if (flying) flightBridge.finish(lastFlightWindow);
       }, FLIGHT_GUARD_MS);
     }
     function endFlight() {
-      flying2 = false;
+      flying = false;
       lastFlightWindow = null;
       if (flightGuard !== null) {
         clearTimeout(flightGuard);
         flightGuard = null;
       }
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (flying2) return;
+        if (flying) return;
         options.setInteracting?.(false);
         scheduleSettle();
         scheduleBubble();
@@ -27767,17 +27957,17 @@
     function placeHostAt(screenX, screenY) {
       const geo = currentGeometry();
       if (geo === null || !geo.window) return;
-      host3.style.right = "auto";
-      host3.style.bottom = "auto";
-      host3.style.left = ROUND(screenX - geo.window.x) + "px";
-      host3.style.top = ROUND(screenY - geo.window.y) + "px";
+      host2.style.right = "auto";
+      host2.style.bottom = "auto";
+      host2.style.left = ROUND(screenX - geo.window.x) + "px";
+      host2.style.top = ROUND(screenY - geo.window.y) + "px";
     }
     const flightBridge = {
       supported: true,
       start() {
         const geo = currentGeometry(), pigBox = layoutBox2(pig);
         if (geo === null || !geo.window || !Array.isArray(geo.workAreas) || pigBox.width < 1) return null;
-        const hostRect = host3.getBoundingClientRect();
+        const hostRect = host2.getBoundingClientRect();
         const local = { x: pigBox.x - hostRect.left, y: pigBox.y - hostRect.top, width: pigBox.width, height: pigBox.height };
         const visual = bodyVisualBounds(local);
         const home = { x: geo.window.x + pigBox.x + pigBox.width / 2, y: geo.window.y + pigBox.y + pigBox.height };
@@ -27793,34 +27983,34 @@
         };
       },
       move(x, y) {
-        flying2 = true;
+        flying = true;
         lastFlightWindow = { x, y, width: lastFlightWindow?.width ?? 0, height: lastFlightWindow?.height ?? 0 };
         placeHostAt(x, y);
       },
       setFlying(on) {
-        if (on === true && !flying2) beginFlight();
+        if (on === true && !flying) beginFlight();
       },
       finish(last) {
-        if (flying2) {
+        if (flying) {
           const final = last?.window ?? lastFlightWindow ?? { x: lastFlightWindow?.x ?? 0, y: lastFlightWindow?.y ?? 0 };
           const slide = last?.slide ?? { x: 0, y: 0 };
           placeHostAt(final.x + (Number(slide.x) || 0), final.y + (Number(slide.y) || 0));
-          host3.style.translate = "";
-          const rect = host3.getBoundingClientRect();
+          host2.style.translate = "";
+          const rect = host2.getBoundingClientRect();
           setPosition(window.innerWidth - rect.right, window.innerHeight - rect.bottom);
         }
         endFlight();
       }
     };
     function moveBy(dx, dy) {
-      if (flying2) return;
-      const right = hostInset(host3, "right") ?? ctx.userRight;
-      const bottom = hostInset(host3, "bottom") ?? ctx.userBottom;
+      if (flying) return;
+      const right = hostInset(host2, "right") ?? ctx.userRight;
+      const bottom = hostInset(host2, "bottom") ?? ctx.userBottom;
       setPosition(right - (Number(dx) || 0), bottom - (Number(dy) || 0), true);
     }
     function migratePosition() {
       const geo = currentGeometry();
-      if (geo === null || !geo.window || flying2) return;
+      if (geo === null || !geo.window || flying) return;
       const pigBox = layoutBox2(pig);
       if (pigBox.width < 8 || pigBox.height < 8) return;
       let homeRaw = null;
@@ -27833,7 +28023,7 @@
         legacyPig: geo.legacyPig,
         allowLegacy: !migrated,
         pigSize: { width: pigBox.width, height: pigBox.height },
-        hostBox: layoutBox2(host3),
+        hostBox: layoutBox2(host2),
         pigBox,
         geometry: geo,
         current: { right: ctx.userRight, bottom: ctx.userBottom }
@@ -27843,7 +28033,7 @@
       if (home.position !== null) setPosition(home.position.right, home.position.bottom);
     }
     function stageBubbleArea() {
-      return workAreaForPig(layoutBox2(pig), geometry2);
+      return workAreaForPig(layoutBox2(pig), geometry);
     }
     function canCollapse() {
       if (ctx.isOpen !== true || !autoCollapseEnabled()) return false;
@@ -27856,8 +28046,8 @@
     }
     function onGeometry(info) {
       if (info === null || info === void 0) return;
-      pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host3), hostInset(host3, "right") ?? ctx.userRight, hostInset(host3, "bottom") ?? ctx.userBottom, geometry2, info, flying2);
-      geometry2 = info;
+      pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host2), hostInset(host2, "right") ?? ctx.userRight, hostInset(host2, "bottom") ?? ctx.userBottom, geometry, info, flying);
+      geometry = info;
       if (!migrated) migratePosition();
       scheduleBubble();
       scheduleSettle();
@@ -27867,15 +28057,15 @@
     }
     function onPointerUp() {
       setTimeout(() => {
-        if (!flying2) scheduleSettle();
+        if (!flying) scheduleSettle();
       }, 0);
     }
     function onResize() {
       const geo = currentGeometry();
       const next = rescaleGeometryForDpr(geo, window.devicePixelRatio);
       if (geo !== null && next !== geo) {
-        pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host3), hostInset(host3, "right") ?? ctx.userRight, hostInset(host3, "bottom") ?? ctx.userBottom, geo, next, flying2);
-        geometry2 = next;
+        pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host2), hostInset(host2, "right") ?? ctx.userRight, hostInset(host2, "bottom") ?? ctx.userBottom, geo, next, flying);
+        geometry = next;
       }
       scheduleBubble();
       scheduleSettle();
@@ -27894,12 +28084,12 @@
       scheduleBubble();
       scheduleSettle();
     });
-    observer.observe(host3, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "style", "data-open", "data-bubble-side", "data-fitted"] });
+    observer.observe(host2, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "style", "data-open", "data-bubble-side", "data-fitted"] });
     const api = {
       role: "stage",
       setPosition,
       recover(home) {
-        flying2 = false;
+        flying = false;
         pendingHome = null;
         lastFlightWindow = null;
         options.setInteracting?.(false);
@@ -27907,7 +28097,7 @@
           clearTimeout(flightGuard);
           flightGuard = null;
         }
-        host3.style.translate = "";
+        host2.style.translate = "";
         writeStore(DESKTOP_HOME_KEY, JSON.stringify({ v: 3, area: home.area, x: home.x, y: home.y }));
         migratePosition();
         footAnchor2.remember();
@@ -27936,7 +28126,7 @@
       fullscreen: shell2?.fullscreen ?? null,
       external: shell2?.external ?? null,
       isFlying() {
-        return flying2;
+        return flying;
       },
       feelShell() {
         return { flight: flightBridge };
@@ -27957,7 +28147,7 @@
       drawingBounds: (box) => stageDrawingBounds(box, pig),
       hitRegions: collectHitRects,
       isFlying() {
-        return flying2;
+        return flying;
       }
     };
     window.piggyStage = publicApi;
@@ -27975,7 +28165,7 @@
       settleFrame = 0;
       bubbleFrame = 0;
       flightGuard = null;
-      flying2 = false;
+      flying = false;
       options.setInteracting?.(false);
       setStageAreaProvider(null);
       unregisterStageShell(api);
@@ -28056,7 +28246,7 @@
   }
 
   // src/client/box-poke.js
-  function createBoxPoke({ getView, showBubble, react, host: host3, burst, send: send2 }) {
+  function createBoxPoke({ getView, showBubble, react, host: host2, burst, send: send2 }) {
     let boxPokes = 0;
     return function pokeBox() {
       if (isExternalMode(getView()) && getView().pig === null) {
@@ -28067,13 +28257,13 @@
       react("poke", 560);
       if (boxPokes >= BOX_POKES_TO_OPEN) {
         boxPokes = 0;
-        host3.removeAttribute("data-poke");
+        host2.removeAttribute("data-poke");
         showBubble("\u54C7\u2014\u2014\uFF01", 1200);
         burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
         send2("hatch");
         return;
       }
-      host3.setAttribute("data-poke", String(boxPokes));
+      host2.setAttribute("data-poke", String(boxPokes));
       burst(["\u{1F4A8}"], 2);
       showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
     };
@@ -28128,7 +28318,7 @@
       });
       var parts = presentation.parts;
       var {
-        host: host3,
+        host: host2,
         card: card2,
         scene: scene6,
         hud,
@@ -28162,19 +28352,19 @@
       var userRight = savedPos === null ? 18 : savedPos.right;
       var userBottom = savedPos === null ? 18 : savedPos.bottom;
       if (deskShell === null) {
-        host3.style.right = userRight + "px";
-        host3.style.bottom = userBottom + "px";
+        host2.style.right = userRight + "px";
+        host2.style.bottom = userBottom + "px";
       } else {
-        host3.style.right = "auto";
-        host3.style.bottom = "auto";
+        host2.style.right = "auto";
+        host2.style.bottom = "auto";
       }
       var icons = {};
       var stopSizePreference = attachSizePreference(
-        host3,
+        host2,
         () => view.hatched ? view.pig?.stage : view.boxStage,
         syncGeometry2
       );
-      var stopBubbleSizePreference = attachBubbleSizePreference(host3, syncGeometry2);
+      var stopBubbleSizePreference = attachBubbleSizePreference(host2, syncGeometry2);
       var tab = "home";
       var stage2 = "primary";
       var stagePicked = false;
@@ -28194,7 +28384,7 @@
       var react = fx.react, burst = fx.burst, flash = fx.flash;
       var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
       var ctx = {
-        host: host3,
+        host: host2,
         card: card2,
         content,
         footer,
@@ -28400,7 +28590,7 @@
       var stageBridge = stageOptions === null ? null : createStageBridge({
         options: stageOptions,
         ctx,
-        host: host3,
+        host: host2,
         pig,
         bubble,
         card: card2,
@@ -28412,7 +28602,7 @@
       var stopRecovery = bindRecovery({
         role: recoveryRole,
         shell: recoveryRole === "pet" ? deskShell : recoveryRole === "stage" ? stageOptions : null,
-        host: host3,
+        host: host2,
         pig,
         getStageSize: function() {
           return view.hatched ? view.pig?.stage : view.boxStage;
@@ -28424,7 +28614,7 @@
       });
       var dailyGeometry = stageOptions ?? deskShell;
       var stopDailyPlacement = attachDailyPlacement({
-        host: host3,
+        host: host2,
         pig,
         daily: dailyHint,
         bubble,
@@ -28448,10 +28638,10 @@
       });
       var pokeBox = createBoxPoke({ getView: function() {
         return view;
-      }, showBubble, react, host: host3, burst, send: send2 });
+      }, showBubble, react, host: host2, burst, send: send2 });
       var gestures = attachGestures({
         scene: scene6,
-        host: host3,
+        host: host2,
         pig,
         feel: feel2,
         audio: presentation.audio,
@@ -28486,13 +28676,13 @@
         }
       });
       scene6.addEventListener("contextmenu", function(event) {
-        if (!hitsPig(host3, event)) return;
+        if (!hitsPig(host2, event)) return;
         event.preventDefault();
         setOpen(!isOpen);
       });
       var autoCollapse = splitRole !== null ? { dispose: function() {
       } } : attachAutoCollapse({
-        host: host3,
+        host: host2,
         isOpen: function() {
           return isOpen;
         },
@@ -28551,7 +28741,7 @@
         setEnabled: function(next) {
           devMode = next;
         },
-        host: host3,
+        host: host2,
         paintBar,
         setOpen,
         select: select2,

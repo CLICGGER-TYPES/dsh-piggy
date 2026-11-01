@@ -8,7 +8,7 @@ test('direct geometry requests cannot take placement ownership during native dra
     name === 'data-dragging' || (name === 'data-window-dragging' && scene.dragging) ? 'true' : null }
   const body = {}
   const host = { style:{right:'0px',bottom:'0px',translate:''}, offsetLeft:0,offsetTop:0,offsetWidth:0,offsetHeight:0,offsetParent:body,
-    querySelector:()=>null,querySelectorAll:()=>[],closest:()=>null,getAttribute:()=>null }
+    querySelector:selector=>selector==='.dp-scene'?scene:null,querySelectorAll:()=>[],closest:()=>null,getAttribute:()=>null }
   const raf = [], calls = []
   globalThis.document = { body, head:{appendChild(){}}, createElement:()=>({setAttribute(){}}),
     documentElement:{setAttribute(){},addEventListener(){}}, addEventListener(){},
@@ -46,7 +46,8 @@ test('飞行倾斜继续提交当前墨迹输入，只有原生拖动暂停，�
   let inkX = 20
   const ink = { textContent: 'pig', parentElement: null, matches: () => false,
     getBoundingClientRect: () => ({ left: inkX, top: 30, width: 20, height: 20 }) }
-  const host = { style: {}, querySelector: () => null, querySelectorAll: selector => selector.includes('.dp-pig-emoji') ? [ink] : [] }
+  const host = { style: {}, querySelector: selector => selector === '.dp-scene' ? scene : null,
+    querySelectorAll: selector => selector.includes('.dp-pig-emoji') ? [ink] : [] }
   globalThis.document = { body, head: { appendChild() {} }, createElement: () => ({ setAttribute() {} }),
     documentElement: { setAttribute() {}, addEventListener() {} }, addEventListener() {},
     querySelector: selector => selector.endsWith('.dp-scene') ? scene : host }
