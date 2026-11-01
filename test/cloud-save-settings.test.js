@@ -22,16 +22,21 @@ test('cloud settings default off, accept HTTPS/SSH repositories and reject embed
   assert.throws(() => normalizeCloudSaveSettings({ enabled: true, provider: 'git', remote: 'file:///tmp/pig.git', branch: 'main' }), /HTTPS 或 SSH/)
 })
 
-test('cloud settings persist atomically in an owner-only file separate from game save data', () => {
+test('cloud settings persist atomically in a separate file; POSIX permissions are owner-only', () => {
   const root = temp()
   const file = join(root, 'user-data', 'cloud-save-settings.json')
   try {
     assert.equal(readCloudSaveSettings(file).missing, true)
     const config = writeCloudSaveSettings(file, { enabled: false, provider: 'gitee', remote: 'https://gitee.com/acme/pig.git', branch: 'main' })
     assert.deepEqual(readCloudSaveSettings(file).config, config)
-    assert.equal(statSync(file).mode & 0o777, 0o600)
+    // Node exposes POSIX mode bits on POSIX hosts. On Windows, chmod/mode do not
+    // express the inherited ACL on the userData directory, which this test does
+    // not inspect.
+    if (process.platform !== 'win32') {
+      assert.equal(statSync(file).mode & 0o777, 0o600)
+      chmodSync(file, 0o600)
+    }
     assert.deepEqual(Object.keys(JSON.parse(readFileSync(file, 'utf8'))).sort(), ['branch', 'enabled', 'provider', 'remote', 'version'])
-    chmodSync(file, 0o600)
     assert.equal(existsSync(join(root, 'state.json')), false)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
