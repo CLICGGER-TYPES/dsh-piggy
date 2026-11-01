@@ -610,6 +610,7 @@ export function createGameRuntime(options) {
           catch (error) { persistenceError = error }
         }
 
+        /** @type {{ok: false, reason: string, message?: string} | {ok: true, at: number}} */
         let cloudPush = fault
           ? { ok: false, reason: 'runtime-fault' }
           : persistenceError !== null

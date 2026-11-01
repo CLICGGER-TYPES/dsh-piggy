@@ -88,7 +88,12 @@ export async function defaultGit(args, { cwd, sslVerify = true, timeoutMs: reque
   } catch (error) { throw gitFailure(error, args[0] ?? 'command', timeoutMs) }
 }
 
-/** 取二进制（`git show <ref>:save.zip`）用的执行器；文本执行器会按 utf8 解码，不能拿来读 zip。 */
+/**
+ * 取二进制（`git show <ref>:save.zip`）用的执行器；文本执行器会按 utf8 解码，不能拿来读 zip。
+ * @param {string[]} args
+ * @param {{ cwd: string, sslVerify?: boolean, timeoutMs?: number }} options
+ * @returns {Promise<Buffer>}
+ */
 export async function defaultGitBinary(args, { cwd, sslVerify = true, timeoutMs: requestedTimeoutMs = DEFAULT_GIT_TIMEOUT_MS }) {
   const timeoutMs = boundedTimeout(requestedTimeoutMs)
   const full = sslVerify ? ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', ...args]
@@ -99,7 +104,7 @@ export async function defaultGitBinary(args, { cwd, sslVerify = true, timeoutMs:
       timeout: timeoutMs, killSignal: 'SIGKILL',
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' },
     })
-    return result.stdout
+    return /** @type {Buffer} */ (result.stdout)
   } catch (error) { throw gitFailure(error, args[0] ?? 'command', timeoutMs) }
 }
 
@@ -112,13 +117,17 @@ export function shouldCommit({ lastCommitAt = 0, now, debounceMs = DEFAULT_DEBOU
   return now - lastCommitAt >= debounceMs
 }
 
-/** 提交信息：一行，方便 git log 扫。 */
+/**
+ * 提交信息：一行，方便 git log 扫。
+ * @param {{lastSeenAt?: number | null, level?: number | null, coins?: number | null}} meta
+ * @param {boolean} [manual]
+ */
 export function commitMessage({ lastSeenAt, level, coins }, manual = false) {
   const at = new Date(lastSeenAt || Date.now())
   const pad = value => String(value).padStart(2, '0')
   const iso = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
-  const lv = Number.isFinite(level) ? `Lv.${level}` : 'Lv.?'
-  const money = Number.isFinite(coins) ? `${coins}c` : '?c'
+  const lv = typeof level === 'number' && Number.isFinite(level) ? `Lv.${level}` : 'Lv.?'
+  const money = typeof coins === 'number' && Number.isFinite(coins) ? `${coins}c` : '?c'
   return `${manual ? 'save-manual' : 'save'}: ${iso} ${lv} ${money}`
 }
 
@@ -129,10 +138,11 @@ export function commitMessage({ lastSeenAt, level, coins }, manual = false) {
  * @param {string} options.remote 远端地址
  * @param {string} [options.branch]
  * @param {string} [options.device] 写进 meta.json 的设备名
- * @param {(name: string, bytes: Buffer) => Promise<{ files: Map<string, Buffer>, summary?: any }>} options.parse
+ * @param {(name: string, bytes: Buffer) => Promise<{ files: Map<string, Buffer>, summary?: any }> | { files: Map<string, Buffer>, summary?: any }} options.parse
  * @param {(files: Map<string, Buffer>) => Promise<any>} options.importFiles 把解析出的文件交给运行时替换
- * @param {() => Promise<{ buffer: Buffer, stateVersion?: number, lastSeenAt?: number, level?: number, coins?: number }>} options.archive
+ * @param {() => Promise<{ buffer: Buffer, stateVersion?: number, lastSeenAt?: number, level?: number, coins?: number }> | { buffer: Buffer, stateVersion?: number, lastSeenAt?: number, level?: number, coins?: number }} options.archive
  * @param {(args: string[], options: { cwd: string, sslVerify?: boolean, timeoutMs?: number }) => Promise<{ stdout: string, stderr: string }>} [options.git]
+ * @param {(args: string[], options: { cwd: string, sslVerify?: boolean, timeoutMs?: number }) => Promise<Buffer>} [options.gitBinary]
  * @param {number} [options.gitTimeoutMs]
  * @param {number} [options.maxQueuedOperations]
  * @param {number | (() => number)} [options.now]
