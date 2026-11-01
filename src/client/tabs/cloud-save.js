@@ -10,6 +10,103 @@ let editing = false
 let draft = null
 let message = ''
 let failed = false
+let advancedOpen = false
+
+/** @typedef {{name:string,value:string|null}} CloudDataAttribute */
+/** @typedef {{tagName:string,className:string,ariaLabel:string|null,dataAttributes:CloudDataAttribute[]}} CloudFocusSignature */
+/** @typedef {{focusAttr:string|null,advancedOpen:boolean,focusSignature:CloudFocusSignature|null,value?:string,selection?:{start:number,end:number,direction:'forward'|'backward'|'none'|null}}} CloudSettingsUiState */
+
+/** @param {Element|null|undefined} node @returns {CloudDataAttribute[]} */
+function cloudDataAttributes(node) {
+  if (!node) return []
+  const raw = node.attributes
+  const names = raw && typeof raw[Symbol.iterator] === 'function'
+    ? Array.from(raw, attr => attr.name)
+    : Object.keys(raw || {})
+  return names.filter(name => name.startsWith('data-')).map(name => ({ name, value: node.getAttribute(name) }))
+}
+
+/** Keep unrelated panel renders from replacing the user's unsaved cloud form. */
+export function cloudSettingsDraftOpen() {
+  return editing || (config?.enabled === true && !config.remote)
+}
+
+/** @param {HTMLElement} content @returns {CloudSettingsUiState|null} */
+export function captureCloudSettingsUiState(content) {
+  if (!cloudSettingsDraftOpen()) return null
+  const doc = content.ownerDocument || (typeof document === 'undefined' ? null : document)
+  const active = doc?.activeElement
+  const focusAttr = ['data-cloud-provider', 'data-cloud-remote', 'data-cloud-branch', 'data-cloud-advanced-summary']
+    .find(attr => active && content.contains(active) && active.hasAttribute?.(attr)) || null
+  const details = Array.from(content.querySelectorAll('details')).find(node =>
+    typeof node.className === 'string' && node.className.split(/\s+/).includes('dp-cloud-advanced'))
+  const state = {
+    focusAttr,
+    advancedOpen: details ? details.open === true : advancedOpen,
+    focusSignature: active && content.contains(active) ? {
+      tagName: active.tagName,
+      className: typeof active.className === 'string' ? active.className : '',
+      ariaLabel: active.getAttribute?.('aria-label') ?? null,
+      dataAttributes: cloudDataAttributes(active),
+    } : null,
+  }
+  if (focusAttr && active && (active.tagName === 'INPUT' || active.tagName === 'SELECT')) {
+    const field = /** @type {HTMLInputElement|HTMLSelectElement} */ (active)
+    state.value = field.value
+  }
+  if (focusAttr && active?.tagName === 'INPUT') {
+    const input = /** @type {HTMLInputElement} */ (active)
+    if (typeof input.selectionStart === 'number' && typeof input.selectionEnd === 'number') {
+      state.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection }
+    }
+  }
+  return state
+}
+
+/** @param {HTMLElement} content @param {CloudSettingsUiState|null} state */
+export function restoreCloudSettingsUiState(content, state) {
+  if (!state) return
+  const details = Array.from(content.querySelectorAll('details')).find(node =>
+    typeof node.className === 'string' && node.className.split(/\s+/).includes('dp-cloud-advanced'))
+  if (details) {
+    details.open = state.advancedOpen
+    advancedOpen = state.advancedOpen
+  }
+  const focusable = Array.from(content.querySelectorAll('button, input, select, summary'))
+  const directTarget = state.focusAttr
+    ? focusable.find(node => node.hasAttribute?.(state.focusAttr))
+    : undefined
+  const signatureMatches = state.focusSignature
+    ? focusable.filter(node => node.tagName === state.focusSignature.tagName
+      && (typeof node.className === 'string' ? node.className : '') === state.focusSignature.className
+      && node.getAttribute?.('aria-label') === state.focusSignature.ariaLabel
+      && JSON.stringify(cloudDataAttributes(node).map(attr => attr.name)) === JSON.stringify(state.focusSignature.dataAttributes.map(attr => attr.name)))
+    : []
+  const exactSignatureMatches = signatureMatches.filter(node =>
+    JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state.focusSignature?.dataAttributes))
+  const target = directTarget || (exactSignatureMatches.length === 1 ? exactSignatureMatches[0] : signatureMatches.length === 1 ? signatureMatches[0] : undefined)
+  if (!target) return
+  if (state.value !== undefined && (target.tagName === 'INPUT' || target.tagName === 'SELECT')) {
+    const field = /** @type {HTMLInputElement|HTMLSelectElement} */ (target)
+    field.value = state.value
+    if (draft !== null) {
+      if (state.focusAttr === 'data-cloud-provider') draft.provider = state.value
+      else if (state.focusAttr === 'data-cloud-remote') draft.remote = state.value
+      else if (state.focusAttr === 'data-cloud-branch') draft.branch = state.value
+    }
+  }
+  const element = /** @type {HTMLElement} */ (target)
+  const disabled = 'disabled' in target && target.disabled === true
+  if (!disabled && typeof element.focus === 'function') element.focus({ preventScroll: true })
+  else {
+    const doc = content.ownerDocument || (typeof document === 'undefined' ? null : document)
+    if (!disabled && doc && 'activeElement' in doc) Reflect.set(doc, 'activeElement', target)
+  }
+  if (state.selection && target.tagName === 'INPUT') {
+    const input = /** @type {HTMLInputElement} */ (target)
+    if (typeof input.setSelectionRange === 'function') input.setSelectionRange(state.selection.start, state.selection.end, state.selection.direction || 'none')
+  }
+}
 
 function cloudApi() {
   const shell = typeof window === 'undefined' ? null : /** @type {any} */ (window)
@@ -71,6 +168,7 @@ export function renderCloudSaveSettings(ui, section) {
       config = { ...DEFAULT, ...result.config }
       draft = { ...config }
       editing = false
+      advancedOpen = false
       message = ''
       afterSave()
     } catch (error) {
@@ -87,6 +185,7 @@ export function renderCloudSaveSettings(ui, section) {
     void save(next, () => {
       if (config.enabled && !config.remote) {
         editing = true
+        advancedOpen = false
         draft = { ...config }
       }
     })
@@ -155,7 +254,12 @@ export function renderCloudSaveSettings(ui, section) {
     form.appendChild(remoteLabel)
 
     const advanced = el('details', 'dp-cloud-advanced')
-    advanced.appendChild(el('summary', null, '高级设置'))
+    advanced.open = advancedOpen
+    const advancedSummary = el('summary', null, '高级设置')
+    advancedSummary.setAttribute('data-cloud-advanced-summary', 'true')
+    advancedSummary.addEventListener('click', () => { advancedOpen = !advanced.open })
+    advanced.appendChild(advancedSummary)
+    advanced.addEventListener('toggle', () => { advancedOpen = advanced.open })
     const branch = /** @type {HTMLInputElement} */ (el('input', 'dp-setting-field'))
     branch.type = 'text'
     branch.autocomplete = 'off'
@@ -181,7 +285,7 @@ export function renderCloudSaveSettings(ui, section) {
     saveControl.disabled = busy || remote.value.trim() === ''
     actions.appendChild(saveControl)
     if (config.remote) {
-      const cancel = button('dp-mini dp-mini-plain', { 'data-cloud-action': 'cancel' }, () => { draft = { ...config }; editing = false; ui.renderContent() })
+      const cancel = button('dp-mini dp-mini-plain', { 'data-cloud-action': 'cancel' }, () => { draft = { ...config }; editing = false; advancedOpen = false; ui.renderContent() })
       cancel.textContent = '取消'
       cancel.disabled = busy
       actions.appendChild(cancel)
@@ -216,7 +320,7 @@ export function renderCloudSaveSettings(ui, section) {
   test.textContent = '测试连接'
   test.disabled = busy
   actions.appendChild(test)
-  const edit = button('dp-mini dp-mini-plain', { 'data-cloud-action': 'edit' }, () => { draft = { ...config }; editing = true; message = ''; ui.renderContent() })
+  const edit = button('dp-mini dp-mini-plain', { 'data-cloud-action': 'edit' }, () => { draft = { ...config }; editing = true; advancedOpen = false; message = ''; ui.renderContent() })
   edit.textContent = '编辑'
   edit.disabled = busy
   actions.appendChild(edit)

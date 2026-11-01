@@ -10170,6 +10170,93 @@
   var draft2 = null;
   var message2 = "";
   var failed = false;
+  var advancedOpen = false;
+  function cloudDataAttributes(node) {
+    if (!node) return [];
+    const raw = node.attributes;
+    const names = raw && typeof raw[Symbol.iterator] === "function" ? Array.from(raw, (attr) => attr.name) : Object.keys(raw || {});
+    return names.filter((name) => name.startsWith("data-")).map((name) => ({ name, value: node.getAttribute(name) }));
+  }
+  function cloudSettingsDraftOpen() {
+    return editing || config?.enabled === true && !config.remote;
+  }
+  function captureCloudSettingsUiState(content) {
+    if (!cloudSettingsDraftOpen()) return null;
+    const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
+    const active2 = doc?.activeElement;
+    const focusAttr = ["data-cloud-provider", "data-cloud-remote", "data-cloud-branch", "data-cloud-advanced-summary"].find((attr) => active2 && content.contains(active2) && active2.hasAttribute?.(attr)) || null;
+    const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
+    const state4 = {
+      focusAttr,
+      advancedOpen: details2 ? details2.open === true : advancedOpen,
+      focusSignature: active2 && content.contains(active2) ? {
+        tagName: active2.tagName,
+        className: typeof active2.className === "string" ? active2.className : "",
+        ariaLabel: active2.getAttribute?.("aria-label") ?? null,
+        dataAttributes: cloudDataAttributes(active2)
+      } : null
+    };
+    if (focusAttr && active2 && (active2.tagName === "INPUT" || active2.tagName === "SELECT")) {
+      const field3 = (
+        /** @type {HTMLInputElement|HTMLSelectElement} */
+        active2
+      );
+      state4.value = field3.value;
+    }
+    if (focusAttr && active2?.tagName === "INPUT") {
+      const input = (
+        /** @type {HTMLInputElement} */
+        active2
+      );
+      if (typeof input.selectionStart === "number" && typeof input.selectionEnd === "number") {
+        state4.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection };
+      }
+    }
+    return state4;
+  }
+  function restoreCloudSettingsUiState(content, state4) {
+    if (!state4) return;
+    const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
+    if (details2) {
+      details2.open = state4.advancedOpen;
+      advancedOpen = state4.advancedOpen;
+    }
+    const focusable = Array.from(content.querySelectorAll("button, input, select, summary"));
+    const directTarget = state4.focusAttr ? focusable.find((node) => node.hasAttribute?.(state4.focusAttr)) : void 0;
+    const signatureMatches = state4.focusSignature ? focusable.filter((node) => node.tagName === state4.focusSignature.tagName && (typeof node.className === "string" ? node.className : "") === state4.focusSignature.className && node.getAttribute?.("aria-label") === state4.focusSignature.ariaLabel && JSON.stringify(cloudDataAttributes(node).map((attr) => attr.name)) === JSON.stringify(state4.focusSignature.dataAttributes.map((attr) => attr.name))) : [];
+    const exactSignatureMatches = signatureMatches.filter((node) => JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state4.focusSignature?.dataAttributes));
+    const target = directTarget || (exactSignatureMatches.length === 1 ? exactSignatureMatches[0] : signatureMatches.length === 1 ? signatureMatches[0] : void 0);
+    if (!target) return;
+    if (state4.value !== void 0 && (target.tagName === "INPUT" || target.tagName === "SELECT")) {
+      const field3 = (
+        /** @type {HTMLInputElement|HTMLSelectElement} */
+        target
+      );
+      field3.value = state4.value;
+      if (draft2 !== null) {
+        if (state4.focusAttr === "data-cloud-provider") draft2.provider = state4.value;
+        else if (state4.focusAttr === "data-cloud-remote") draft2.remote = state4.value;
+        else if (state4.focusAttr === "data-cloud-branch") draft2.branch = state4.value;
+      }
+    }
+    const element = (
+      /** @type {HTMLElement} */
+      target
+    );
+    const disabled = "disabled" in target && target.disabled === true;
+    if (!disabled && typeof element.focus === "function") element.focus({ preventScroll: true });
+    else {
+      const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
+      if (!disabled && doc && "activeElement" in doc) Reflect.set(doc, "activeElement", target);
+    }
+    if (state4.selection && target.tagName === "INPUT") {
+      const input = (
+        /** @type {HTMLInputElement} */
+        target
+      );
+      if (typeof input.setSelectionRange === "function") input.setSelectionRange(state4.selection.start, state4.selection.end, state4.selection.direction || "none");
+    }
+  }
   function cloudApi() {
     const shell2 = typeof window === "undefined" ? null : (
       /** @type {any} */
@@ -10233,6 +10320,7 @@
         config = { ...DEFAULT, ...result.config };
         draft2 = { ...config };
         editing = false;
+        advancedOpen = false;
         message2 = "";
         afterSave();
       } catch (error) {
@@ -10248,6 +10336,7 @@
       void save(next, () => {
         if (config.enabled && !config.remote) {
           editing = true;
+          advancedOpen = false;
           draft2 = { ...config };
         }
       });
@@ -10322,7 +10411,16 @@
       remoteLabel.appendChild(remote);
       form.appendChild(remoteLabel);
       const advanced = el("details", "dp-cloud-advanced");
-      advanced.appendChild(el("summary", null, "\u9AD8\u7EA7\u8BBE\u7F6E"));
+      advanced.open = advancedOpen;
+      const advancedSummary = el("summary", null, "\u9AD8\u7EA7\u8BBE\u7F6E");
+      advancedSummary.setAttribute("data-cloud-advanced-summary", "true");
+      advancedSummary.addEventListener("click", () => {
+        advancedOpen = !advanced.open;
+      });
+      advanced.appendChild(advancedSummary);
+      advanced.addEventListener("toggle", () => {
+        advancedOpen = advanced.open;
+      });
       const branch = (
         /** @type {HTMLInputElement} */
         el("input", "dp-setting-field")
@@ -10355,6 +10453,7 @@
         const cancel2 = button("dp-mini dp-mini-plain", { "data-cloud-action": "cancel" }, () => {
           draft2 = { ...config };
           editing = false;
+          advancedOpen = false;
           ui.renderContent();
         });
         cancel2.textContent = "\u53D6\u6D88";
@@ -10397,6 +10496,7 @@
     const edit = button("dp-mini dp-mini-plain", { "data-cloud-action": "edit" }, () => {
       draft2 = { ...config };
       editing = true;
+      advancedOpen = false;
       message2 = "";
       ui.renderContent();
     });
@@ -18214,6 +18314,7 @@
     }
     function renderContent() {
       if (renderHold.defer(renderContent) || externalRenderBlocked()) return false;
+      var cloudSettingsState = ctx.tab === "settings" ? captureCloudSettingsUiState(ctx.content) : null;
       var scrollTop = ctx.content.scrollTop;
       var page = ctx.content.querySelectorAll("[data-scroll-page]")[0]?.getAttribute("data-scroll-page");
       var scrollPositions = /* @__PURE__ */ new Map();
@@ -18222,7 +18323,11 @@
           scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
         }
       });
-      preserveFarmTriggerFocus(ctx.content, paintContent);
+      preserveFarmTriggerFocus(ctx.content, function() {
+        var result = paintContent();
+        if (cloudSettingsState !== null) restoreCloudSettingsUiState(ctx.content, cloudSettingsState);
+        return result;
+      });
       var nextPage = ctx.content.querySelectorAll("[data-scroll-page]")[0]?.getAttribute("data-scroll-page");
       if (nextPage !== page) ctx.content.scrollTop = 0;
       else if (scrollTop !== 0) ctx.content.scrollTop = scrollTop;
@@ -18391,7 +18496,7 @@
       processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return false;
       if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return false;
-      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true" || document.activeElement?.getAttribute?.("data-bubble-scale") === "true")) return false;
+      if (ctx.tab === "settings" && (cloudSettingsDraftOpen() || document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true" || document.activeElement?.getAttribute?.("data-bubble-scale") === "true")) return false;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return false;
       if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return false;
       var currentFishing = ctx.view.fishing.pending;
