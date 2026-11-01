@@ -3168,7 +3168,11 @@
     ["gacha-gold", "\u91D1\u8272\u60CA\u559C", "gacha", "\u626D\u86CB", "gold", "total", 1, "\u6B21", "\u83B7\u5F97\u4E00\u6B21\u91D1\u8272\u626D\u86CB\u5956\u52B1\uFF0C\u4FDD\u5E95\u83B7\u5F97\u7684\u4E5F\u7B97\u3002"],
     ["blindbox-first", "\u6446\u4EF6\u65B0\u670B\u53CB", "blindbox", "\u76F2\u76D2", "figure", "kinds", 1, "\u79CD", "\u5F97\u5230\u7B2C\u4E00\u4E2A\u6446\u4EF6\uFF0C\u5BFB\u8BBF\u548C\u51ED\u8BC1\u5151\u6362\u90FD\u7B97\u3002"],
     ["blindbox-ten", "\u5C0F\u732A\u6536\u85CF\u5BB6", "blindbox", "\u76F2\u76D2", "figure", "kinds", 10, "\u79CD", "\u62E5\u6709\u8FC7\u5341\u79CD\u4E0D\u540C\u6446\u4EF6\uFF0C\u91CD\u590D\u6446\u4EF6\u4E0D\u589E\u52A0\u79CD\u7C7B\u3002"],
-    ["blindbox-six", "\u516D\u661F\u76F8\u9047", "blindbox", "\u76F2\u76D2", "six-star", "kinds", 1, "\u79CD", "\u5F97\u5230\u4E00\u4E2A\u516D\u661F\u6446\u4EF6\uFF0C\u51ED\u8BC1\u5151\u6362\u4E5F\u80FD\u8FBE\u6210\u3002"]
+    ["blindbox-six", "\u516D\u661F\u76F8\u9047", "blindbox", "\u76F2\u76D2", "six-star", "kinds", 1, "\u79CD", "\u5F97\u5230\u4E00\u4E2A\u516D\u661F\u6446\u4EF6\uFF0C\u51ED\u8BC1\u5151\u6362\u4E5F\u80FD\u8FBE\u6210\u3002"],
+    // 第二期继续消费已有公共事件，不读取扩展私有数据。
+    ["farm-hundred", "\u767E\u6B21\u4E30\u6536", "farm", "\u83DC\u56ED", "harvest", "total", 100, "\u6B21", "\u7D2F\u8BA1\u6210\u529F\u6536\u83B7\u4E00\u767E\u6B21\u4F5C\u7269\uFF0C\u6BCF\u5757\u5730\u6BCF\u5B63\u6536\u83B7\u7B97\u4E00\u6B21\uFF0C\u4E0D\u6309\u4F5C\u7269\u4E2A\u6570\u8BA1\u6570\u3002"],
+    ["farm-fifteen", "\u56DB\u5B63\u83DC\u7BEE", "farm", "\u83DC\u56ED", "harvest", "kinds", 15, "\u79CD", "\u6210\u529F\u6536\u83B7\u5341\u4E94\u79CD\u4E0D\u540C\u4F5C\u7269\uFF0C\u4E70\u79CD\u3001\u79CD\u4E0B\u548C\u91CD\u590D\u6536\u540C\u4E00\u79CD\u90FD\u4E0D\u589E\u52A0\u79CD\u7C7B\u3002"],
+    ["mine-twenty", "\u77FF\u6D1E\u5C3D\u5934", "mine", "\u77FF\u6D1E", "depth", "maximum", 20, "\u5C42", "\u6CBF\u68AF\u5B50\u771F\u6B63\u62B5\u8FBE\u7B2C\u4E8C\u5341\u5C42\uFF0C\u4E70\u5230\u9AD8\u7EA7\u9550\u8FD8\u4E0D\u7B97\u3002"]
   ];
   var EXTENSION_ACHIEVEMENTS = Object.freeze(rows.map(([key2, label, extension, group, event, mode, target, unit, description]) => Object.freeze({ key: key2, label, extension, group, event, mode, target, unit, description, emoji: "\u{1F3C5}", metric: "extension", art: "badge-pig-" + key2 })));
 
@@ -3189,7 +3193,11 @@
     ["souvenirs-three", "\u53E3\u888B\u91CC\u7684\u8FDC\u65B9", "\u6536\u85CF", "\u{1F41A}", "souvenirKinds", 3, "\u79CD", "\u56FE\u9274\u8BB0\u5F55\u4E09\u79CD\u4E0D\u540C\u7684\u65C5\u884C\u7EAA\u5FF5\u54C1\u3002"],
     ["king", "\u52A0\u5195\u65F6\u523B", "\u664B\u5347", "\u{1F451}", "king", 1, "\u6B21", "\u4EB2\u81EA\u5B8C\u6210\u732A\u732A\u738B\u52A0\u5195\uFF0C\u4E70\u5230\u738B\u51A0\u8FD8\u4E0D\u7B97\u3002"],
     ["devil", "\u5C0F\u5C0F\u6076\u9B54", "\u664B\u5347", "\u{1F608}", "devil", 1, "\u6B21", "\u4EB2\u81EA\u5B8C\u6210\u6076\u9B54\u5951\u7EA6\uFF0C\u8C03\u76AE\u4E5F\u6709\u81EA\u5DF1\u7684\u5FBD\u7AE0\u3002"],
-    ["grown-up", "\u957F\u5927\u5566", "\u6210\u957F", "\u{1F437}", "level", 40, "\u7EA7", "\u6210\u957F\u5230\u56DB\u5341\u7EA7\uFF0C\u8FCE\u6765\u6210\u5E74\u3002"]
+    ["grown-up", "\u957F\u5927\u5566", "\u6210\u957F", "\u{1F437}", "level", 40, "\u7EA7", "\u6210\u957F\u5230\u56DB\u5341\u7EA7\uFF0C\u8FCE\u6765\u6210\u5E74\u3002"],
+    // 第二期沿用已有图鉴与累计记录，不为新门槛额外维护一份统计。
+    ["fish-twenty", "\u6C34\u8FB9\u535A\u7269\u5B66\u5BB6", "\u6536\u85CF", "\u{1F3A3}", "fishKinds", 20, "\u79CD", "\u56FE\u9274\u8BB0\u5F55\u4E8C\u5341\u79CD\u4E0D\u540C\u7684\u9C7C\uFF0C\u5356\u6389\u6216\u5582\u6389\u4E5F\u4FDD\u7559\u8BB0\u5F55\u3002"],
+    ["fish-hundred", "\u9C7C\u7BD3\u6EE1\u6EE1", "\u6536\u85CF", "\u{1F41F}", "fishCaught", 100, "\u6761", "\u7D2F\u8BA1\u6355\u83B7\u5165\u888B\u4E00\u767E\u6761\u9C7C\uFF0C\u5305\u542B\u81EA\u52A8\u9493\u9C7C\uFF1B\u8131\u94A9\u4E0D\u7B97\u3002"],
+    ["souvenirs-ten", "\u884C\u56CA\u91CC\u7684\u6545\u4E8B", "\u6536\u85CF", "\u{1F41A}", "souvenirKinds", 10, "\u79CD", "\u56FE\u9274\u8BB0\u5F55\u5341\u79CD\u4E0D\u540C\u7684\u65C5\u884C\u7EAA\u5FF5\u54C1\uFF0C\u540C\u4E00\u79CD\u53EA\u7B97\u4E00\u6B21\u3002"]
   ];
   var ACHIEVEMENTS = Object.freeze([...rows2.map(([key2, label, group, emoji, metric, target, unit, description]) => Object.freeze({ key: key2, label, group, emoji, metric, target, unit, description, art: "badge-pig-" + key2 })), ...EXTENSION_ACHIEVEMENTS]);
 
@@ -3413,7 +3421,13 @@
     "skin-wizard-sleep": "pigs/skins/skin-wizard/sleep.png",
     "skin-wizard-study": "pigs/skins/skin-wizard/study.png",
     "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
-    "skin-wizard-work": "pigs/skins/skin-wizard/work.png"
+    "skin-wizard-work": "pigs/skins/skin-wizard/work.png",
+    "badge-pig-fish-twenty": "pigs/badges/badge-pig-fish-twenty.png",
+    "badge-pig-fish-hundred": "pigs/badges/badge-pig-fish-hundred.png",
+    "badge-pig-souvenirs-ten": "pigs/badges/badge-pig-souvenirs-ten.png",
+    "badge-pig-farm-hundred": "pigs/badges/badge-pig-farm-hundred.png",
+    "badge-pig-farm-fifteen": "pigs/badges/badge-pig-farm-fifteen.png",
+    "badge-pig-mine-twenty": "pigs/badges/badge-pig-mine-twenty.png"
   });
 
   // packages/pet-core/src/data/art-revisions.js
@@ -3423,8 +3437,10 @@
     "badge-pig-blindbox-ten": "0c2d076bfd61",
     "badge-pig-clean-ten": "6003eb8595a0",
     "badge-pig-devil": "89cb8d3e629f",
+    "badge-pig-farm-fifteen": "d88e56deb8d9",
     "badge-pig-farm-first": "5d1652cb0fe0",
     "badge-pig-farm-five": "deb83c643582",
+    "badge-pig-farm-hundred": "a422ff1a1356",
     "badge-pig-farm-ten": "0149eff14413",
     "badge-pig-first-class": "12a7524937d8",
     "badge-pig-first-fish": "b61fec5ff7ff",
@@ -3432,6 +3448,8 @@
     "badge-pig-first-meal": "e5fbc9564601",
     "badge-pig-first-trip": "f8ac4b6899d0",
     "badge-pig-fish-five": "5c35eb850433",
+    "badge-pig-fish-hundred": "7f144268212c",
+    "badge-pig-fish-twenty": "8d5083e971f8",
     "badge-pig-gacha-first": "a57d94f99dd9",
     "badge-pig-gacha-gold": "4996ffc1006d",
     "badge-pig-gacha-machines": "77f0da6b8e33",
@@ -3442,8 +3460,10 @@
     "badge-pig-mine-deep": "d94d942494c1",
     "badge-pig-mine-first": "c0ff5e419ad4",
     "badge-pig-mine-fossils": "c5a8a6273d0b",
+    "badge-pig-mine-twenty": "45ecfcd23c9a",
     "badge-pig-pet-hundred": "d44a2084eeba",
     "badge-pig-play-twenty": "d1bcbd208fe4",
+    "badge-pig-souvenirs-ten": "dcaa94dcb678",
     "badge-pig-souvenirs-three": "7ea9125dab52",
     "badge-pig-trips-ten": "7a993658b297",
     "career-astronaut": "9c4f6a1d855d",
@@ -20825,7 +20845,7 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/array.mjs
+  // node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -20836,7 +20856,7 @@
       arr2.splice(index, 1);
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/clamp.mjs
+  // node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -20845,12 +20865,12 @@
     return v;
   };
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/format-error-message.mjs
+  // node_modules/motion-utils/dist/es/format-error-message.mjs
   function formatErrorMessage(message3, errorCode) {
     return errorCode ? `${message3}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message3;
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/errors.mjs
+  // node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
@@ -20868,19 +20888,19 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/global-config.mjs
+  // node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/is-object.mjs
+  // node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/memo.mjs
+  // node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -20891,19 +20911,19 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/noop.mjs
+  // node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/pipe.mjs
+  // node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/progress.mjs
+  // node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
@@ -20936,14 +20956,14 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/time-conversion.mjs
+  // node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/warn-once.mjs
+  // node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
   function warnOnce(condition, message3, errorCode) {
     if (condition || warned.has(message3))
@@ -20952,13 +20972,13 @@
     warned.add(message3);
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/wrap.mjs
+  // node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -20982,45 +21002,45 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/back.mjs
+  // node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/circ.mjs
+  // node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/ease.mjs
+  // node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // ../../../../../code/node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -21049,14 +21069,14 @@
     return definition;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -21074,10 +21094,10 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
   var checkStringStartsWith = (token2) => (key2) => typeof key2 === "string" && key2.startsWith(token2);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
@@ -21093,7 +21113,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -21108,18 +21128,18 @@
     default: 1
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -21135,7 +21155,7 @@
     };
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -21147,7 +21167,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -21181,7 +21201,7 @@
     transform: rgba.transform
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -21198,7 +21218,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -21207,7 +21227,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -21229,10 +21249,10 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -21323,7 +21343,7 @@
     getAnimatableNone
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -21361,17 +21381,17 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -21407,7 +21427,7 @@
     };
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -21417,7 +21437,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -21487,7 +21507,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -21514,7 +21534,7 @@
     return mixer(from, to);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -21534,7 +21554,7 @@
     // Compute
   ];
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -21597,7 +21617,7 @@
     return step;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
   function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
@@ -21659,10 +21679,10 @@
     return { schedule: schedule4, cancel: cancel2, state: state4, steps };
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -21676,7 +21696,7 @@
     };
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -21686,7 +21706,7 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
@@ -21700,7 +21720,7 @@
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -21719,7 +21739,7 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -21977,7 +21997,7 @@
     return options;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
     const state4 = {
@@ -22043,7 +22063,7 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -22088,7 +22108,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -22097,19 +22117,19 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
@@ -22150,7 +22170,7 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -22162,7 +22182,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -22171,7 +22191,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -22185,11 +22205,11 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -22212,7 +22232,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -22243,7 +22263,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -22547,7 +22567,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -22571,7 +22591,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -22581,13 +22601,13 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/int.mjs
+  // node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -22621,7 +22641,7 @@
     originZ: px
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -22686,7 +22706,7 @@
     numOctaves: int
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -22708,7 +22728,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -22717,14 +22737,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -22806,7 +22826,7 @@
     return parseFloat(value.trim());
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -22829,7 +22849,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -22878,7 +22898,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -23024,27 +23044,27 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -23054,10 +23074,10 @@
     return true;
   }, "linearEasing");
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -23070,7 +23090,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -23085,7 +23105,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -23108,12 +23128,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -23124,7 +23144,7 @@
     return options;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -23272,7 +23292,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -23287,7 +23307,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -23354,7 +23374,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -23368,7 +23388,7 @@
     return false;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -23395,13 +23415,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -23410,7 +23430,7 @@
     "backgroundColor"
   ]);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -23421,7 +23441,7 @@
     return false;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -23456,12 +23476,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -23510,10 +23530,10 @@
     return transformString;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -24081,7 +24101,7 @@
     return group;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -24219,7 +24239,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -24299,7 +24319,7 @@
     return max;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -24307,7 +24327,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/index.mjs
+  // node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -24633,7 +24653,7 @@
     return new MotionValue(init, options);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -24642,7 +24662,7 @@
     return transition;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -24651,7 +24671,7 @@
     return valueTransition;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -24682,7 +24702,7 @@
     return ease;
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -24703,7 +24723,7 @@
     return false;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -24762,7 +24782,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -24788,7 +24808,7 @@
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -24799,28 +24819,28 @@
     ...transformPropOrder
   ]);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/test.mjs
+  // node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -24831,7 +24851,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -24852,7 +24872,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -24979,7 +24999,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -25043,17 +25063,17 @@
     return first === null ? void 0 : first;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -25071,7 +25091,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -25095,7 +25115,7 @@
     });
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -25182,7 +25202,7 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
@@ -25206,7 +25226,7 @@
     });
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
   function buildTransform2(state4) {
     let transform = "";
@@ -25228,7 +25248,7 @@
     return transform || "none";
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
   var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
   var addStyleValue = (element, state4, key2, value) => {
@@ -25289,7 +25309,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -25301,7 +25321,7 @@
     "offsetAnchor"
   ];
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
@@ -25327,7 +25347,7 @@
     return state4.set(key2, value, render);
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  // node_modules/motion-dom/dist/es/effects/svg/index.mjs
   function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
@@ -25373,7 +25393,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -25393,12 +25413,12 @@
     };
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -25431,7 +25451,7 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  // node_modules/motion-dom/dist/es/effects/prop/index.mjs
   var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
     return state4.set(key2, value, () => {
       subject2[key2] = value.get();
@@ -25444,7 +25464,7 @@
     }
   });
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -25553,10 +25573,10 @@
     }
   };
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -25631,7 +25651,7 @@
     return unit ? v + unit : v;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -25642,7 +25662,7 @@
     });
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -25653,7 +25673,7 @@
     return value;
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -25663,22 +25683,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/render/store.mjs
+  // node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // ../../../../../code/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -25694,12 +25714,12 @@
     }
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -25714,7 +25734,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -25735,7 +25755,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -25743,7 +25763,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -25756,7 +25776,7 @@
     }
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -25938,7 +25958,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -25969,7 +25989,7 @@
     return animations;
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -25994,7 +26014,7 @@
     return animations;
   }
 
-  // ../../../../../code/node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }

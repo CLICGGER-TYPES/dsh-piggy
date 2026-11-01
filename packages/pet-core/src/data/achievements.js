@@ -20,6 +20,10 @@ const rows = [
   ['king', '加冕时刻', '晋升', '👑', 'king', 1, '次', '亲自完成猪猪王加冕，买到王冠还不算。'],
   ['devil', '小小恶魔', '晋升', '😈', 'devil', 1, '次', '亲自完成恶魔契约，调皮也有自己的徽章。'],
   ['grown-up', '长大啦', '成长', '🐷', 'level', 40, '级', '成长到四十级，迎来成年。'],
+  // 第二期沿用已有图鉴与累计记录，不为新门槛额外维护一份统计。
+  ['fish-twenty', '水边博物学家', '收藏', '🎣', 'fishKinds', 20, '种', '图鉴记录二十种不同的鱼，卖掉或喂掉也保留记录。'],
+  ['fish-hundred', '鱼篓满满', '收藏', '🐟', 'fishCaught', 100, '条', '累计捕获入袋一百条鱼，包含自动钓鱼；脱钩不算。'],
+  ['souvenirs-ten', '行囊里的故事', '收藏', '🐚', 'souvenirKinds', 10, '种', '图鉴记录十种不同的旅行纪念品，同一种只算一次。'],
 ]
 /** @type {readonly Readonly<Achievement>[]} */
 export const ACHIEVEMENTS = Object.freeze([...rows.map(([key,label,group,emoji,metric,target,unit,description]) =>

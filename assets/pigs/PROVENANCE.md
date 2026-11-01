@@ -1,5 +1,9 @@
 # 无描边平涂 PNG 素材
 
+## 成就第二期（2026-11-01）
+
+新增六枚独立徽章，未替换原有图案。内置 image_gen 生成，按用户反馈修正非钓鱼额头装饰和肢体；从修正版母版切片，沿用 tools/prepare-pig-art.py 的 prepare 导出256×256透明PNG。逐字提示词、采用轮次和导出方法见 docs/art-prompts/achievements-phase-two.md；源图/成品哈希、切片坐标和真实透明边界见 manifest.json。项目现有Noto Emoji衍生署名继续适用。
+
 2026-10-13 由旧版 1:1 重画，当前只有一套无描边平涂，原有181张，另追加下文两张用户审定微动作。全部使用内置 image_gen 生成/编辑并经审图选定；角色、脸型、比例、姿势、服饰与道具沿用旧版，不以程序删除轮廓线。
 
 已导出成品由 tools/prepare-flat-art.py 放入 base/forms/skins/feedback/badges 主路径。原尺寸原稿、参考和审图历史保留在独立素材工作区 face-restore/2026-10-12/。本次接入只使用已经导出的图片，不再修改像素。
