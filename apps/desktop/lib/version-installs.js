@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } 
 import { join } from 'node:path'
 
 import { matchesPreparedFiles, unpackVersionFiles } from './version-files.js'
+import { readGameSchema } from './version-schema.js'
 
 /**
  * @param {{ root: string, temporaryDir?: string,
@@ -24,6 +25,8 @@ export function createVersionInstalls(options) {
     signal.throwIfAborted()
     const version = String(release.version)
     if (!/^[0-9A-Za-z.+-]{1,40}$/.test(version) || version === '.' || version === '..') throw new Error('版本号不对')
+    const manifestVersion = release.manifest?.version
+    if (manifestVersion !== undefined && String(manifestVersion).replace(/^v/, '') !== version) throw new Error('游戏清单版本与目标版本不一致，没换')
     const urls = Array.isArray(release.packUrls) && release.packUrls.length > 0 ? release.packUrls : [String(release.packUrl)]
     const parts = Array.isArray(release.manifest.parts) ? release.manifest.parts : null
     if (parts !== null && parts.length !== urls.length) throw new Error('游戏包分卷对不上，没换')
@@ -53,6 +56,8 @@ export function createVersionInstalls(options) {
       const files = unpackVersionFiles(pack, staging)
       const stateVersion = release.manifest.stateVersion
       if (!Number.isSafeInteger(stateVersion) || stateVersion < 0) throw new Error('游戏清单缺少有效存档版本，没换')
+      if (options.gameVersion(staging) !== version) throw new Error('游戏包内容版本与目标版本不一致，没换')
+      if (readGameSchema(staging, `下载版本 v${version}`, 'install') !== stateVersion) throw new Error('游戏包存档版本与清单不一致，没换')
       const id = ++sequence
       onProgress(1)
       signal.throwIfAborted()
