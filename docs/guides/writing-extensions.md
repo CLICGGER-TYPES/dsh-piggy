@@ -231,4 +231,4 @@ GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `sc
 
 ### 未发布候选与公开目录
 
-源码扩展升版后，先把两渠道新条目保存在 `release-candidates/extensions/registry.json` 与 `registry-gitee.json`。CI以候选目录核对源码，公开 `extensions/registry*.json` 继续保留已交付的版本，并校验其官方身份；不能同版本改下载内容。确认发行后，先上传扩展附件并逐件回读校验，再把候选目录晋级公开目录，最后删除候选副本。离线安装器按源码打包，并用官方清单校验，不依赖公开目录先行。
+源码扩展升版后，把渠道候选条目分别保存在 `release-candidates/extensions/registry.json` 与 `registry-gitee.json`。CI以候选目录核对源码，公开 `extensions/registry.json` 与 `registry-gitee.json` 各自保留该渠道已交付的版本，并校验其官方文件身份；不能同版本改下载内容。每个渠道都必须先上传对应附件并按该渠道 URL 回读校验，之后才能单独把该渠道候选条目晋级公开目录。缺少附件的渠道继续保留旧公开版本，不能因为另一渠道已发布就提前晋级。相同扩展的同版本条目在两渠道必须具有相同的版本、中间件要求、文件列表、逐文件哈希和整包哈希，只有附件域名随渠道变化。日常GitHub目录检查可用 `node scripts/extension-release-check.mjs --host github --key farm`；两渠道附件齐备后显式使用 `--host both` 检查，仍可单独用 `--host gitee`。离线安装器按源码打包，并用官方清单校验，不依赖公开目录先行。

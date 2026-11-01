@@ -31,9 +31,9 @@ GitHub预览版下载：[0.37.2-rc.6发行页](https://github.com/CLICGGER-TYPES
 
 夸克目录含安装器、便携版、六个扩展包（含经典菜园备选）、说明和校验清单，共10文件。GitHub和夸克完整版内含游戏；完整Windows安装器另附五项默认不选的离线扩展。Gitee受100MiB限制，首次启动需联网下载游戏。
 
-RC6的菜园4.2.1按自然时长生长，帮工负责照料、收获及现有同种种子补种；帮工托管可暂停，帮工收菜按手动收菜经验的75%增加菜园经验。菜园与金币、背包共用当前存档，猪的成长数值独立；多猪正式入口仍未上线。GitHub已独立提供[菜园4.2.1扩展包](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.2.1/ext-farm-4.2.1.piggyext)，但GitHub与Gitee在线目录暂仍是4.2.0，等Gitee也有同版资产后再双渠道更新。
+RC6的菜园4.2.1按自然时长生长，帮工负责照料、收获及现有同种种子补种；帮工托管可暂停，帮工收菜按手动收菜经验的75%增加菜园经验。菜园与金币、背包共用当前存档，猪的成长数值独立；多猪正式入口仍未上线。GitHub已提供[菜园4.2.1扩展包](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.2.1/ext-farm-4.2.1.piggyext)，本次目录更新只覆盖GitHub渠道；本次不发布Gitee目录更新，现有Gitee目录保持4.2.0。
 
-已有菜园的玩家：先更新桌面外壳到0.6.8-rc.4；要提前用4.2.1时，下载上方GitHub扩展包，再在「设置 → 扩展 → 从文件导入」选择它。在线目录尚未双渠道升级，点击「刷新」不会出现4.2.1；Linux AppImage也不会覆盖已有扩展。
+已有菜园的玩家：先更新桌面外壳到0.6.8-rc.4。GitHub渠道可在「设置 → 扩展」点击刷新后更新到4.2.1；本次不发布Gitee目录更新，该渠道现有版本为4.2.0。也可下载上方GitHub扩展包，在「设置 → 扩展 → 从文件导入」手动安装；Linux AppImage不会覆盖已有扩展。
 
 <details>
 <summary>当前 Windows 安装效果（RC5 公开包实拍）</summary>

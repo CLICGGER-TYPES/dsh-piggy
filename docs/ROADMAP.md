@@ -1,5 +1,12 @@
 # 路线图与待办
 
+## 2026-11-01 RC6 菜园目录渠道状态（当前）
+
+- RC6 游戏0.37.2-rc.6 / 桌面外壳0.6.8-rc.4 已发布。菜园4.2.1扩展包已独立发布，GitHub bundle SHA-256 为 `bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0`，minGame 为0.37.2。
+- GitHub公开farm目录条目为4.2.1，Gitee公开目录保持4.2.0；本次不发布Gitee目录更新。
+- GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
+- 当前RC6只接入云存档配置与只读连接测试；云上传、恢复和自动合并仍未实现。多猪正式入口和稳定ID仍未实现。
+
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
 
 - G0 源码基线选用 `749f4cbac0e7114b60845c095c9b0e16e25a8442`（origin/main，已核验文档主线）；产品行为继续冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`。两者相差 9 个文件，只有 `.github/workflows/integrated-candidate.yml`、CHANGELOG/README/ROADMAP/screenshots；产品代码、资源、锁文件与生成产物无差异。

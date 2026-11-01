@@ -27,8 +27,11 @@ const gameVersion = JSON.parse(readFileSync(new URL('../package.json', import.me
 
 const folders = readdirSync(ROOT, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name)
 const published = JSON.parse(readFileSync(new URL('registry.json', ROOT), 'utf8'))
+const publishedGitee = JSON.parse(readFileSync(new URL('registry-gitee.json', ROOT), 'utf8'))
 const candidateUrl = new URL('../release-candidates/extensions/registry.json', import.meta.url)
 const registry = existsSync(candidateUrl) ? JSON.parse(readFileSync(candidateUrl, 'utf8')) : published
+const candidateGiteeUrl = new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url)
+const registryGitee = existsSync(candidateGiteeUrl) ? JSON.parse(readFileSync(candidateGiteeUrl, 'utf8')) : publishedGitee
 const manifestOf = key => JSON.parse(readFileSync(new URL(key + '/manifest.json', ROOT), 'utf8'))
 const sha256 = url => createHash('sha256').update(readFileSync(url)).digest('hex')
 
@@ -97,7 +100,7 @@ test('扩展的 server.js 导出合规：动作是函数；声明了公共事件
 })
 
 // A new source version does not authorize advertising an unuploaded download.
-test('公开目录保持可信旧版本，候选必须升版且不能同版本改内容', () => {
+test('公开目录与候选目录保留可信官方身份，不能回退或同版本改内容', () => {
   const official = JSON.parse(readFileSync(new URL('../store/official-extensions.json', import.meta.url), 'utf8'))
   for (const entry of published.extensions.filter(item => !item.builtin)) {
     const known = official[entry.key]?.[entry.version]
@@ -110,4 +113,70 @@ test('公开目录保持可信旧版本，候选必须升版且不能同版本�
       assert.equal(next.bundle.sha256, entry.bundle.sha256)
     }
   }
+})
+
+test('各渠道目录校验官方文件身份、渠道下载地址和同版本元数据', () => {
+  const official = JSON.parse(readFileSync(new URL('../store/official-extensions.json', import.meta.url), 'utf8'))
+  const channelRegistries = [
+    { label: 'GitHub public', host: 'github', registry: published },
+    { label: 'Gitee public', host: 'gitee', registry: publishedGitee },
+    { label: 'GitHub candidate', host: 'github', registry },
+    { label: 'Gitee candidate', host: 'gitee', registry: registryGitee },
+  ]
+
+  function checkChannel({ label, host, registry: channelRegistry }) {
+    const origin = host === 'github'
+      ? 'https://github.com/CLICGGER-TYPES/dsh-piggy'
+      : 'https://gitee.com/clicgger/dsh-piggy'
+    for (const entry of channelRegistry.extensions.filter(item => item.builtin !== true)) {
+      const known = official[entry.key]?.[entry.version]
+      assert.ok(known, `${label} ${entry.key}@${entry.version} has no official file identity`)
+      const names = Object.keys(known).sort()
+      assert.deepEqual(Object.keys(entry.files ?? {}).sort(), names, `${label} ${entry.key}@${entry.version} file list`)
+      const tagBase = `${origin}/releases/download/ext-${entry.key}-${entry.version}`
+      assert.equal(entry.bundle?.url, `${tagBase}/ext-${entry.key}-${entry.version}.piggyext`, `${label} ${entry.key}@${entry.version} bundle URL`)
+      assert.match(entry.bundle?.sha256 ?? '', /^[a-f0-9]{64}$/, `${label} ${entry.key}@${entry.version} bundle SHA256`)
+      for (const name of names) {
+        const spec = entry.files[name]
+        assert.equal(spec.sha256, known[name], `${label} ${entry.key}@${entry.version} official hash: ${name}`)
+        assert.equal(spec.url, `${tagBase}/${name.replace(/^assets\//, '')}`, `${label} ${entry.key}@${entry.version} channel URL: ${name}`)
+      }
+    }
+  }
+
+  function withoutUrls(value) {
+    if (Array.isArray(value)) return value.map(withoutUrls)
+    if (value !== null && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value)
+        .filter(([key]) => key !== 'url')
+        .map(([key, nested]) => [key, withoutUrls(nested)]))
+    }
+    return value
+  }
+
+  function checkSameVersion(left, right, label) {
+    const rightByIdentity = new Map(right.extensions.map(entry => [`${entry.key}@${entry.version ?? ''}`, entry]))
+    for (const entry of left.extensions) {
+      const twin = rightByIdentity.get(`${entry.key}@${entry.version ?? ''}`)
+      if (twin) assert.deepEqual(withoutUrls(entry), withoutUrls(twin), `${label} ${entry.key}@${entry.version ?? 'builtin'} metadata`)
+    }
+  }
+
+  for (const channel of channelRegistries) checkChannel(channel)
+  checkSameVersion(published, publishedGitee, 'public channel parity')
+  checkSameVersion(registry, registryGitee, 'candidate channel parity')
+  checkSameVersion(published, registry, 'GitHub public/candidate same-version parity')
+  checkSameVersion(publishedGitee, registryGitee, 'Gitee public/candidate same-version parity')
+
+  const githubFarm = published.extensions.find(entry => entry.key === 'farm')
+  const githubCandidateFarm = registry.extensions.find(entry => entry.key === 'farm')
+  const giteeFarm = publishedGitee.extensions.find(entry => entry.key === 'farm')
+  assert.equal(githubFarm?.version, '4.2.1')
+  assert.equal(githubFarm?.minGame, '0.37.2')
+  assert.equal(githubFarm?.bundle?.sha256, 'bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0')
+  assert.equal(Object.keys(githubFarm?.files ?? {}).length, 287)
+  assert.deepEqual(withoutUrls(githubFarm), withoutUrls(githubCandidateFarm), 'GitHub public farm must match the published 4.2.1 candidate')
+  assert.equal(giteeFarm?.version, '4.2.0')
+  assert.equal(giteeFarm?.minGame, '0.37.2')
+  assert.equal(giteeFarm?.bundle?.sha256, '51c4f1ca631b18366db64fa254c63885bff3c07e19347651e4fd5096db2aad0d')
 })
