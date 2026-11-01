@@ -297,6 +297,9 @@ export function createGameRuntime(options) {
 
   function finishDispose({ flush = true } = {}) {
     if (cleanupDone) return
+    // A failed final write must leave the live Store, owner lock and routes intact so
+    // the caller can repair the filesystem and retry shutdown. Persist before teardown.
+    if (flush && !fault) { ledger.finish(store); store.flush() }
     accepting = false
     if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
     closed = true
@@ -304,14 +307,10 @@ export function createGameRuntime(options) {
     for (const dispose of mounts) dispose()
     mounts.clear()
     transfer.clear()
-    try {
-      if (flush && !fault) { ledger.finish(store); store.flush() }
-    } finally {
-      try { if (!fault) store.dispose() }
-      finally {
-        release()
-        cleanupDone = true
-      }
+    try { if (!fault) store.dispose() }
+    finally {
+      release()
+      cleanupDone = true
     }
   }
   function readReceipts() {
@@ -588,10 +587,14 @@ export function createGameRuntime(options) {
         if (busy) {
           closed = true
           disposePromise = Promise.allSettled([...active, ...specialActive, ...exclusiveActive])
-            .then(() => { finishDispose(); return { localPersisted: true, cloudPush: 'disabled' } })
+            .then(() => {
+              try { finishDispose(); return { localPersisted: true, cloudPush: 'disabled' } }
+              catch (error) { closed = false; accepting = true; disposePromise = null; throw error }
+            })
           return disposePromise
         }
-        finishDispose()
+        try { finishDispose() }
+        catch (error) { accepting = true; throw error }
         return Promise.resolve({ localPersisted: true, cloudPush: 'disabled' })
       }
 

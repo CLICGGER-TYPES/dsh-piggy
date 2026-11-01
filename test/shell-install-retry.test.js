@@ -81,3 +81,30 @@ for (const retry of ['安装', '退出']) {
     }
   })
 }
+
+test('普通退出保存失败显示既有错误对话框，恢复可操作状态后能重试', async () => {
+  let attempts = 0
+  const host = { async dispose() {
+    attempts += 1
+    if (attempts === 1) throw new Error('EISDIR: state.json.tmp')
+    return { saved: true }
+  } }
+  const lifecycle = shellLifecycle(host)
+
+  await lifecycle.quit()
+  assert.equal(attempts, 1)
+  assert.equal(lifecycle.dialogs.length, 1)
+  assert.equal(lifecycle.dialogs[0].message, '操作未完成')
+  assert.match(lifecycle.dialogs[0].detail, /EISDIR: state\.json\.tmp/)
+  assert.equal(lifecycle.state().quitting, false)
+  assert.equal(lifecycle.state().closed, false)
+  assert.equal(lifecycle.state().closing, false)
+  assert.equal(lifecycle.state().hitTimer, 1)
+  assert.equal(lifecycle.state().exits, 0)
+
+  await lifecycle.quit()
+  assert.equal(attempts, 2)
+  assert.equal(lifecycle.dialogs.length, 1)
+  assert.equal(lifecycle.state().closed, true)
+  assert.equal(lifecycle.state().exits, 1)
+})

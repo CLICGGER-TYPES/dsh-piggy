@@ -38,7 +38,7 @@
 - **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
 - 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 直接写单文件时允许 600 行，不能靠压行或删注释满足上限。
 - 菜园服务端是**源码拆分 + 单文件分发**：规则在 `src/extensions/farm/`（data / pure / plot-rules / helper / migration / actions / view / server 组装），每个源模块 ≤400 行、要 `// @ts-check` 并过 `npm run typecheck`；`extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 生成，不手改。生成的单文件不压行、不引运行时依赖，下载协议仍是 manifest.json / server.js / client.js + assets。
-- 临时窄范围例外：`extensions/farm/client.js` 最多 680 行。菜园购买和铲除确认的焦点进入、Tab 环绕和返回必须随单文件客户端下载；当前三文件扩展协议不能加载额外模块，本轮不扩张协议，也不靠压行满足守卫。后续支持扩展客户端构建拆分时移除此例外；其余扩展仍为 600 行。
+- 本版冻结的精确行数上限例外：`store/api.js` 413、`store/legacy-state.js` 657、`store/owner-resources.js` 458、`src/client/desktop/index.js` 401、`extensions/farm/client.js` 736。它们分别承载共享存档适配、旧单猪视图桥接、owner 事务、桌面交互和三文件扩展客户端；这些数值是上限，不是继续增长的额度。后续单独拆分并撤销对应例外。菜园购买和铲除确认的焦点管理仍随单文件客户端下载；当前扩展协议不加载额外模块，本轮不扩张协议，也不靠压行满足守卫。其余普通源码仍为 400 行，其他单文件扩展仍为 600 行。
 
 ## 命名
 

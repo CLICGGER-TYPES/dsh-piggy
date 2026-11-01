@@ -59,7 +59,7 @@ jobs:
       - name: 建 Release 并上传游戏包
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes $([[ "$TAG" == *-* ]] && echo --prerelease)
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes --draft $([[ "$TAG" == *-* ]] && echo --prerelease)
           gh release upload "$TAG" dist-game/* --clobber
 
   desktop:

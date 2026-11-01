@@ -550,12 +550,12 @@ test('帮工每种作物、每档管地：收成就是地块真实产量，没�
   }
 })
 
-test('新开荒地：六块全干，每块有草或杂草；除草、铲杂草和浇水各 +2 经验', () => {
+test('新开荒地：六块无旱，每块有草或杂草；除草、铲杂草和浇水各 +2 经验', () => {
   let draw = 0
   setRandom(() => [0.1, 0.1, 0.9, 0.2, 0.9][draw++ % 5])
   const data = farm.init(), t = fakeApi()
   const plots = farm.view(data, t.api).plots.slice(0, 6)
-  assert.equal(plots.filter(plot => plot.pests.includes('dry')).length, 6)
+  assert.equal(plots.filter(plot => plot.pests.includes('dry')).length, 0, 'v6 初始化检查点结清空地干旱')
   assert.ok(plots.every(plot => plot.stubble || plot.pests.includes('weed')))
   assert.ok(plots.filter(plot => plot.pests.includes('weed')).length > 3)
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
@@ -565,7 +565,8 @@ test('新开荒地：六块全干，每块有草或杂草；除草、铲杂草�
   assert.equal(farm.actions.clear(data, { plot: 0 }, t.api).ok, true)
   assert.equal(data.exp - start, 4)
   assert.equal(farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api).ok, true)
-  assert.ok(plotState(data.plots[0], t.api.now).pests.includes('dry'), '干土允许播种，种下仍干')
+  data.plots[0].pests.dry = t.api.now // explicit due dry event; fresh fallow plots are normalized clear
+  assert.ok(plotState(data.plots[0], t.api.now).pests.includes('dry'), 'fixture has an explicitly due dry event')
   assert.equal(farm.actions.care(data, { plot: 0, kind: 'dry' }, t.api).ok, true)
   assert.equal(data.exp - start, 6)
   assert.equal(farm.actions.unlock(data, { plot: 6 }, t.api).ok, true)

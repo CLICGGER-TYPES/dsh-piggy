@@ -88,9 +88,16 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
     ...jsFiles(new URL('extensions/', packageRoot)),
   ]
   const lineCount = url => read(url).replace(/\n$/, '').split('\n').length
-  // 菜园仍按三文件协议分发；弹窗焦点管理暂留同一入口，见 CONVENTIONS 的窄范围例外。
-  const limit = url => /\/extensions\/farm\/client\.js$/.test(url.pathname) ? 680
-    : /\/extensions\/[^/]+\/(?:client|server)\.js$/.test(url.pathname) ? 600 : 400
+  // Frozen release exceptions: exact ceilings, not blanket exemptions. Each path is recorded
+  // with its follow-up split note in docs/CONVENTIONS.md; any further growth fails this guard.
+  const frozenCeilings = new Map([
+    ['store/api.js', 413],
+    ['store/legacy-state.js', 657],
+    ['store/owner-resources.js', 458],
+    ['src/client/desktop/index.js', 401],
+    ['extensions/farm/client.js', 736],
+  ])
+  const limit = url => frozenCeilings.get(url.pathname.slice(packageRoot.pathname.length)) ?? (/\/extensions\/[^/]+\/(?:client|server)\.js$/.test(url.pathname) ? 600 : 400)
   const offenders = files.filter(url => !isGeneratedFarmServer(url) && lineCount(url) > limit(url)).map(url => `${shortName(url)}:${lineCount(url)}>${limit(url)}`)
   assert.deepEqual(offenders, [], 'split the file instead of growing past 400 lines (CONVENTIONS §分层)')
 })

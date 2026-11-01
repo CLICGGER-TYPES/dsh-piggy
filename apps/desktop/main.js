@@ -1752,7 +1752,12 @@ app.on('before-quit', event => {
       await prepareToQuit()
       await closeShellResources()
       app.quit()
-    })().catch(error => { quitTask = null; log('host shutdown failed', String(error)) })
+    })().catch(async error => {
+      log('host shutdown failed', String(error))
+      try { await recoverAction(error) }
+      catch (dialogError) { log('host shutdown recovery dialog failed', String(dialogError)) }
+      finally { quitTask = null }
+    })
   }
 })
 app.on('window-all-closed', () => app.quit())

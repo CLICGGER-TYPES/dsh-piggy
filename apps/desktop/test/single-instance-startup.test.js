@@ -20,6 +20,7 @@ async function runStartup(userData, hasLock) {
   const context = createContext({
     needsX11: false, quitting: false, join, resolve,
     configureDesktopData: () => ({ userData, statePath: join(userData, 'state.json') }),
+    createCloudSaveConfigStore: () => ({ load: () => ({ ok: false }) }),
     migrateDesktopData() { calls.push('migration') },
     process: { platform: 'win32', env: { PIGGY_USERDATA: userData }, argv: [] },
     app: { setPath() {}, getPath: () => userData, getVersion: () => '0.6.6', isPackaged: false,

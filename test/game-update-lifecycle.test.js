@@ -99,6 +99,9 @@ test('准备期间退出只取消准备；迟到令牌不提交，保存失败�
   assert.deepEqual(calls.committed, [])
   assert.deepEqual(lifecycle.backups, [])
   assert.ok(lifecycle.messages.some(parts => parts[0] === 'host shutdown failed' && parts[1] === String(saveError)))
+  assert.equal(lifecycle.dialogs.length, 1, 'normal quit save failure must show the existing recovery dialog')
+  assert.equal(lifecycle.dialogs[0].message, '操作未完成')
+  assert.match(lifecycle.dialogs[0].detail, /测试注入：退出保存被阻挡/)
   assert.equal((await lifecycle.request('piggy:updates:list', [true], 'panel')).ok, true)
   assert.equal(calls.list, 2, '恢复后真实列表 handler 仍调用同一个版本服务')
   const retrying = lifecycle.request('piggy:updates:install', [target.version], 'panel')
@@ -119,7 +122,7 @@ test('准备期间退出只取消准备；迟到令牌不提交，保存失败�
   assert.equal(lifecycle.state().exits, 1)
   assert.equal(lifecycle.state().relaunches, 1)
   assert.equal(lifecycle.state().scheduled, 0)
-  assert.deepEqual(lifecycle.dialogs, [])
+  assert.equal(lifecycle.dialogs.length, 1, 'a successful retry does not show a second error dialog')
 })
 
 test('保存与提交阶段退出和另一窗口请求保持排他，只保存、备份和提交一次后退出', { timeout: 5000 }, async () => {
