@@ -7,6 +7,10 @@
 - GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
 - 当前RC6只接入云存档配置与只读连接测试；云上传、恢复和自动合并仍未实现。多猪正式入口和稳定ID仍未实现。
 
+## 2026-11-01 存储模块拆分（进行中）
+
+- MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 暂缓，farm 4.2.1 公开附件保持不变。
+
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
 
 - G0 源码基线选用 `749f4cbac0e7114b60845c095c9b0e16e25a8442`（origin/main，已核验文档主线）；产品行为继续冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`。两者相差 9 个文件，只有 `.github/workflows/integrated-candidate.yml`、CHANGELOG/README/ROADMAP/screenshots；产品代码、资源、锁文件与生成产物无差异。

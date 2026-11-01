@@ -38,7 +38,7 @@
 - **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
 - 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 直接写单文件时允许 600 行，不能靠压行或删注释满足上限。
 - 菜园服务端是**源码拆分 + 单文件分发**：规则在 `src/extensions/farm/`（data / pure / plot-rules / helper / migration / actions / view / server 组装），每个源模块 ≤400 行、要 `// @ts-check` 并过 `npm run typecheck`；`extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 生成，不手改。生成的单文件不压行、不引运行时依赖，下载协议仍是 manifest.json / server.js / client.js + assets。
-- 本版冻结的精确行数上限例外：`store/api.js` 413、`store/legacy-state.js` 657、`store/owner-resources.js` 458、`src/client/desktop/index.js` 401、`extensions/farm/client.js` 736。它们分别承载共享存档适配、旧单猪视图桥接、owner 事务、桌面交互和三文件扩展客户端；这些数值是上限，不是继续增长的额度。后续单独拆分并撤销对应例外。菜园购买和铲除确认的焦点管理仍随单文件客户端下载；当前扩展协议不加载额外模块，本轮不扩张协议，也不靠压行满足守卫。其余普通源码仍为 400 行，其他单文件扩展仍为 600 行。
+- 本版冻结的精确行数上限例外：`src/client/desktop/index.js` 401、`extensions/farm/client.js` 736。它们分别承载桌面交互和三文件扩展客户端；这些数值是上限，不是继续增长的额度。旧存档拆分、live facade 与混合容器 adapter 已拆到独立的 `store/legacy-projection.js`、`store/legacy-facade.js`、`store/legacy-mixed-adapter.js`（另有内部 brand/helper）；owner transaction 与 target lifecycle 分置于 `store/owner-resources.js` 和 `store/owner-targets.js`；store API 命令组分置于 `store/api-actions.js`、`store/api-fishing.js`、`store/api-inventory.js`、`store/api-profile.js`、`store/api-lifecycle.js`。这些新模块都受普通 400 行守卫约束；MODSPLIT02 相关 focused checks 45/45 通过，完整套件未重跑。`store/api.js` 保留原有属性 getter 和 API 方法顺序。菜园购买和铲除确认的焦点管理仍随单文件客户端下载；当前扩展协议不加载额外模块，本轮不扩张协议，也不靠压行满足守卫。其余普通源码仍为 400 行，其他单文件扩展仍为 600 行。
 
 ## 命名
 

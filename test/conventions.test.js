@@ -91,9 +91,6 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
   // Frozen release exceptions: exact ceilings, not blanket exemptions. Each path is recorded
   // with its follow-up split note in docs/CONVENTIONS.md; any further growth fails this guard.
   const frozenCeilings = new Map([
-    ['store/api.js', 413],
-    ['store/legacy-state.js', 657],
-    ['store/owner-resources.js', 458],
     ['src/client/desktop/index.js', 401],
     ['extensions/farm/client.js', 736],
   ])
