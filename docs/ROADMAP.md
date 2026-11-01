@@ -17,6 +17,14 @@
 - 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 9/9，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。完整测试套件和独立 QMODD01 原生 UI 验收尚未完成；本分支未合入或发布。
 - 范围仍限于 renderer controller 拆分：`apps/desktop/main.js` 未拆（主进程模块拆分仍未实现），farm client 源模块化 E 尚未实现；真实多猪入口/稳定 IDs、按猪独立存档及实际联网也都未实现。此次不表示整体架构工作已完成。
 
+## 2026-11-02 Farm client 源码模块化（隔离候选，验证待做）
+
+- 从 `9cf4c544acfe23a2441f212536c821900f90e4fa` 开始，把公开客户端的单一临时状态工厂、DOM/素材宿主工具、动作与焦点、菜地视图和商店/背包视图分到 `src/extensions/farm/client/`。入口仍创建一个 client instance 并注册一次 farm render；`manifest.json` / `server.js` / `client.js` + assets 下载协议、宿主接口与现有 UI/动作语义不变。
+- `scripts/build-farm-client.mjs` 复用既有 esbuild loader，`scripts/build.mjs` 同时生成菜园 client/server；新增 client freshness/单文件分发守卫，删除旧的 `extensions/farm/client.js` 精确 736 行上限。作者模块均小于 400 行并带 `@ts-check`。workflow 的两处生成物差异守卫也包含 farm client。
+- 隔离候选生成的 `extensions/farm/client.js` 为 95,447 bytes / SHA-256 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。受限验证：首轮 7 个受影响文件 58/58 通过；类型边界修正后，最终 farm client freshness/单文件契约 2/2 通过，TypeScript 5.9.3 typecheck exit 0。最终类型修正仅补 `EventTarget` / `window` 的 JSDoc 类型边界；没有 UI/动作规则改动。完整套件和独立 PI-05 UI 尚未完成。
+- 公开 farm 4.2.1 包、registry、server、manifest 和 assets 均未修改；当前 manifest 仍显示4.2.1，但新 client 不能以4.2.1身份发布。新附件版本尚未决定。
+- 本次只拆客户端代码，不改 farm server/merge/migration、币和物品、种植收获、帮工开关/75%经验规则，不实现真实多猪、稳定 ID 或网络功能。
+
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
 
 - G0 源码基线选用 `749f4cbac0e7114b60845c095c9b0e16e25a8442`（origin/main，已核验文档主线）；产品行为继续冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`。两者相差 9 个文件，只有 `.github/workflows/integrated-candidate.yml`、CHANGELOG/README/ROADMAP/screenshots；产品代码、资源、锁文件与生成产物无差异。
