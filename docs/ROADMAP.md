@@ -21,8 +21,9 @@
 
 - 从 `9cf4c544acfe23a2441f212536c821900f90e4fa` 开始，把公开客户端的单一临时状态工厂、DOM/素材宿主工具、动作与焦点、菜地视图和商店/背包视图分到 `src/extensions/farm/client/`。入口仍创建一个 client instance 并注册一次 farm render；`manifest.json` / `server.js` / `client.js` + assets 下载协议、宿主接口与现有 UI/动作语义不变。
 - `scripts/build-farm-client.mjs` 复用既有 esbuild loader，`scripts/build.mjs` 同时生成菜园 client/server；新增 client freshness/单文件分发守卫，删除旧的 `extensions/farm/client.js` 精确 736 行上限。作者模块均小于 400 行并带 `@ts-check`。workflow 的两处生成物差异守卫也包含 farm client。
-- 隔离候选生成的 `extensions/farm/client.js` 为 95,447 bytes / SHA-256 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。受限验证：首轮 7 个受影响文件 58/58 通过；类型边界修正后，最终 farm client freshness/单文件契约 2/2 通过，TypeScript 5.9.3 typecheck exit 0。最终类型修正仅补 `EventTarget` / `window` 的 JSDoc 类型边界；没有 UI/动作规则改动。完整套件和独立 PI-05 UI 尚未完成。
-- 公开 farm 4.2.1 包、registry、server、manifest 和 assets 均未修改；当前 manifest 仍显示4.2.1，但新 client 不能以4.2.1身份发布。新附件版本尚未决定。
+- 为保持发布版本与内容一一对应，隔离源码候选使用未占用的 farm `4.2.2`（GitHub 远端无 `ext-farm-4.2.2` tag）。候选 client 为 95,447 bytes / SHA-256 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`；其 GitHub candidate registry 与离线官方 hash 仅供本地校验，未发布。
+- 受限验证：7 个受影响文件首轮 58/58 通过；类型边界修正后，最终 farm client freshness/单文件契约 2/2 通过，TypeScript 5.9.3 typecheck exit 0。完整套件和独立 PI-05 UI 尚未完成。
+- GitHub公开 farm 4.2.1 tag/bundle/registry/旧官方 hash保持原身份；Gitee公开与candidate仍为4.2.0/既有4.2.1，本轮不上传或修改。server、manifest之外的 assets、minGame与服务端玩法未变；无本地包发布。
 - 本次只拆客户端代码，不改 farm server/merge/migration、币和物品、种植收获、帮工开关/75%经验规则，不实现真实多猪、稳定 ID 或网络功能。
 
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
