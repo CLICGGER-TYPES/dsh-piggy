@@ -1,5 +1,5 @@
 // @ts-check
-import { normalizeCloudSaveSettings } from '../../../../runtime/cloud-save-settings.js'
+import { normalizeCloudSaveSettings } from '../cloud-save-settings.js'
 
 /** Desktop cloud-settings IPC. It only touches the local settings file/runtime control API. */
 export function registerCloudSaveIpc({ ipcMain, fromPage, getHost, settings }) {

@@ -1,6 +1,6 @@
 // @ts-check
 import { join } from 'node:path'
-import { DEFAULT_CLOUD_SETTINGS, readCloudSaveSettings, writeCloudSaveSettings } from '../../../runtime/cloud-save-settings.js'
+import { DEFAULT_CLOUD_SETTINGS, readCloudSaveSettings, writeCloudSaveSettings } from './cloud-save-settings.js'
 
 /** Device-local settings file; deliberately outside state.json and save archives. */
 export function createCloudSaveConfigStore(userData) {

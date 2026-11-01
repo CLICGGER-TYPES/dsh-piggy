@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -7,6 +7,12 @@ import { test } from 'node:test'
 import { createCloudSaveConfigStore } from '../lib/cloud-save-config.js'
 import { registerCloudSaveIpc } from '../lib/ipc/cloud-save.js'
 import { readCloudSaveSettings } from '../../../runtime/cloud-save-settings.js'
+
+test('desktop cloud settings leaf is byte-identical to the DSH runtime canonical source', () => {
+  const desktopHelper = readFileSync(new URL('../lib/cloud-save-settings.js', import.meta.url), 'utf8')
+  const runtimeHelper = readFileSync(new URL('../../../runtime/cloud-save-settings.js', import.meta.url), 'utf8')
+  assert.equal(desktopHelper, runtimeHelper)
+})
 
 test('desktop cloud IPC persists only local configuration and applies it without testing or syncing', async () => {
   const root = mkdtempSync(join(tmpdir(), 'piggy-cloud-ipc-'))
