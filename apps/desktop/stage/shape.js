@@ -2,8 +2,8 @@
 /**
  * 舞台形状消息的纯函数：页面报什么、主进程信什么、什么时候不重复设。
  *
- * Linux 的 setShape 同时决定「可点」和「绘制」；Windows/macOS 只拿这份矩形做鼠标命中。
- * 所以形状必须来自页面真实布局，主进程只做数字清洗和去重，不猜猪在哪。
+ * Linux 的 setShape 保留绘制包络；鼠标命中只使用独立 hitShape。
+ * 旧页面未报 hitShape 时仍沿用 shape。主进程只清洗数字，不猜猪在哪。
  * @module dsh-piggy-desktop/stage/shape
  */
 
@@ -103,6 +103,7 @@ export function sanitizeReport(payload, bounds) {
     visible: sanitizeVisible(payload.visible, cssBounds),
     interacting: payload.interacting === true,
   }
+  if (Object.hasOwn(payload, 'hitShape')) report.hitShape = sanitizeShape(payload.hitShape, cssBounds)
   if (dpr !== null) report.dpr = dpr
   if (viewport !== null) report.viewport = viewport
   return report

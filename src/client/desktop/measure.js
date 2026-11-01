@@ -16,6 +16,7 @@ import { fixedMotionReserve, motionEnvelope, PIG_TRANSFORM_ORIGIN } from './moti
 import { bodyVisualBounds } from './visual-bounds.js'
 import { fitBubbleHorizontally, fitBubbleVertically } from './bubble-geometry.js'
 import { bubbleSlot, characterGeometry, framedArtBox } from '../character-geometry.js'
+import { collectHitRects } from '../hit-regions.js'
 
 /** Stable image bounds include framing, without measuring animated transforms. */
 export function framedBox(node, box) {
@@ -234,7 +235,7 @@ export function createMeasure(env) {
       const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) }
       shape.push({ x: fx.x, y: fx.y, width: Math.ceil(pigBox.x + pigBox.width + 36) - fx.x, height: Math.ceil(pigBox.y + 12) - fx.y })
     }
-    return { content, shape, pig, hostBox, pigBox, contentBox: { left, top, right, bottom } }
+    return { content, shape, hitShape: collectHitRects(host), pig, hostBox, pigBox, contentBox: { left, top, right, bottom } }
   }
 
   /** 整块内容钉在窗口哪两条边（固定右下角）。 */
@@ -263,7 +264,7 @@ export function createMeasure(env) {
       Math.floor(next.pig.x / STEP), Math.floor(next.pig.y / STEP), Math.floor(next.pigBox.x), Math.floor(next.pigBox.y)]
     const tail = []
     for (const s of next.shape) tail.push(s.x, s.y, s.width, s.height)
-    return head.concat(tail.map(n => Math.floor(n / STEP))).join(',')
+    return [...head, ...tail.map(n => Math.floor(n / STEP)), 'hit', ...next.hitShape.flatMap(rect => [rect.x, rect.y, rect.width, rect.height].map(Math.round))].join(',')
   }
 
   // 落地偏移只适用于交接时的窗口。体型/缩放改变外框后回到标准布局，

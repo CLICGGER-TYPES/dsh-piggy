@@ -26,6 +26,7 @@ import { constrainRectToAreas, desktopPositionForStage, geometryMatchesViewport,
 import { applyPigFx, forwardPigFx, registerStageShell, unregisterStageShell } from './stage-shell.js'
 import { createStageAnchor } from './stage-anchor.js'
 import { bindStageEvents } from './stage-events.js'
+import { collectHitRects } from './hit-regions.js'
 
 const FLIGHT_GUARD_MS = 15000
 const ROUND = value => Math.round(Number(value) || 0)
@@ -371,10 +372,10 @@ export function createStageBridge(deps) {
   const publicApi = {
     setPosition, setOpen, ext: api.ext, syncGeometry: api.syncGeometry, walk: true,
     drawingBounds: box => stageDrawingBounds(box, pig),
+    hitRegions: collectHitRects,
     isFlying() { return flying },
   }
   ;/** @type {any} */ (window).piggyStage = publicApi
-
   function dispose() {
     observer.disconnect()
     for (const off of subscriptions.splice(0)) { try { off() } catch { /* already gone */ } }
