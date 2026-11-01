@@ -108,9 +108,11 @@ test('显示器对账兜底：漏了 display 事件也能自愈', () => {
 })
 
 test('窗口改动容差不贴着 Electron 的 ±1px 噪声（容差 1 会来回纠正）', () => {
-  const index = readFileSync(new URL('../../../src/client/desktop/index.js', import.meta.url), 'utf8')
-  assert.match(index, /const TOLERANCE = 2/)
-  assert.match(index, /~1 ?像素误差|约 1px 误差|1px 误差/)
+  const layout = readFileSync(new URL('../../../src/client/desktop/layout-controller.js', import.meta.url), 'utf8')
+  const geometry = readFileSync(new URL('../../../src/client/desktop/geometry.js', import.meta.url), 'utf8')
+  assert.match(layout, /const TOLERANCE = 2/)
+  assert.match(layout, /sameBounds\(want, bounds, TOLERANCE\)/)
+  assert.match(geometry, /Math\.abs\(a\.x - b\.x\) <= tolerance/)
 })
 
 test('量几何稳定性不能量精灵本身：它一直在做待机动画（dp-bob）', () => {
