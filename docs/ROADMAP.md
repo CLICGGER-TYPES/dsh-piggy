@@ -26,6 +26,12 @@
 - Windows 有限代表 UI 使用的是 PKG07W 的 `0f1884c` 候选，不是 c566：已观察实际启动、4 次点击孵化、面板、设置和扩展页面；随后真实点击 page2 的 `Exit` tile，浮动宠物与面板视觉消失并返回桌面。未枚举进程或存档锁，也未验证重开持久化。farm 的 UI 安装入口、完整 NSIS 安装/卸载、macOS、DSH 和 OpenCode 尚未覆盖。
 - 整体桌面架构仍未完成：主进程其余窗口/生命周期边界、稳定猪 ID、本机多猪持久化及 LAN/公网网络未实现。云存档上传、恢复与冲突处理继续按用户要求暂缓；Gitee 不发布。公开 RC6/farm 4.2.1 不变，farm 4.2.2 独立候选包未公开。
 
+## 2026-11-02 EXITTRACE01 与 DSHCUR01 补充证据（诊断/包检查，不代表验收完成）
+
+- EXITTRACE01 使用 MAIN01 源码 `c566873432023171e9951d8f3c0f8624fc51318a` 与私有 Linux AppImage（143,020,279 bytes，SHA-256 `332c2b4cfeb58a8dd3d60845bfa0ed958ce9126af226a8c417146ded498de506`）。A 完成三次孵化并真实右键，但面板在首次 readback 中未显示，日志没有 `panel shown`/`panel closed`；正常 Exit 未到达，结果为 NOCOVER。此次证据不能确认面板未显示的原因，也不能归因于 blur 链。
+- B 执行一次冻结的 stop 控制；SIGTERM 的 Python audit 记录为 07:44:30.835/.840 的调用前 attempt，随后在 07:44:30.875107 记录 Chromium GPU fatal。audit attempt 不证明内核已投递信号，也不能单独证明其触发 fatal。A 清理阶段同类 fatal 日志也只出现在审计 TERM attempt 之后；正常 Exit 路径和长期 GPU 稳定性仍未验证，原始证据保留。
+- DSHCUR01 私有 npm 包为 7,045,671 bytes，SHA-256 `1bad7e2b6685442a2e2bf0078cd0f1878b0e91f33a953680fe8b089fa569c8af`；608 个包内文件与当前 MAIN01 源码逐字节相符。这只是静态打包检查，未做当前候选的真实 DSH/OpenCode 运行验收。当前 `PATH` 查找未找到 Chromium，但不足以判断系统未安装；`/snap/bin/chromium` 尚待 QA 核查。
+
 ## 2026-11-01 存储模块拆分（进行中）
 
 - MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 是 2026-11-01 对存储拆分子项的暂缓记录；2026-11-02 renderer D 与 farm client E 源码及有限 Linux UI 状态见上文。farm 4.2.1 公开附件保持不变。
