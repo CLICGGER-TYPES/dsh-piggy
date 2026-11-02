@@ -12,16 +12,19 @@
 - PR41 源码候选 `a7ce5727a3842fa7a834a1767aab773c2ebb64fa` 基于 `5b7823ef8d941ebee96b07f91bb2170730921b07`，仅更新桌面运行时声明、锁文件和本路线图。Electron 45.2.1 使用 Chromium 156.0.8078.75；主进程输入算法、游戏数据、schema 与产品 UI 没有因运行时切换而改动。本候选未合并、未发布。
 - [PR41 CI](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/41380319515) 双平台通过：Linux 2407/2419 项通过、0 失败、12 跳过；Windows 2414/2419 项通过、0 失败、5 跳过；构建、类型检查与生成物 freshness 均通过。
 - 私有 PKG06 AppImage 已构建并完成静态回读，大小 143,020,760 bytes，SHA-256 `1a09b9ca0db95b9a9e0e94b24023c39ab0b6823167497c8027d08fe63846573f`。72 个 Electron 45.2.1 官方 ZIP 成员、桌面 ASAR 配置源和 375 个游戏文件均按记录做了字节核对。该私有包曾在隔离 Linux VM 中用于 R05/R06/R08 原生 UI 验收，未公开发布。
-- R05 观察到真实宠物点击使 `data-poke=1`；OS 指针与 Electron 屏幕坐标已记录；本轮 90.01 秒内 46 个样本显示进程组和 CDP 均存活，未出现 GPU fatal。R06 通过三次真实点击孵化，并完成右键开面板、导航、设置页滚动和普通开关操作；DOM `data`/`aria` 与本机 `localStorage` 读回相符。孵化前后截图和 `data-unhatched=false` 已记录，视觉收起按真实界面接受；原生 hidden-state 检查仍为 NOCOVER。
+- R05 观察到真实宠物点击使 `data-poke=1`；OS 指针与 Electron 屏幕坐标已记录；90.01 秒内 46 个样本显示进程组和 CDP 均存活，观察窗口内未见 GPU fatal，但原始 stderr 在窗口结束后的清理阶段记录到 fatal（03:26:58.494Z）。这不等于关闭过程无 fatal 或长期稳定。R06 通过三次真实点击孵化，并完成右键开面板、导航、设置页滚动和普通开关操作；DOM `data`/`aria` 与本机 `localStorage` 读回相符。孵化前后截图和 `data-unhatched=false` 已记录，视觉收起按真实界面接受；原生 hidden-state 检查仍为 NOCOVER。
 - R08 的 C7 步骤全部 exit 0：真实孵化、面板操作以及 farm 4.2.2 菜园、商店、工具与种子页面操作通过；实际加载的 farm client SHA-256 为 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。受限空白点的 X11 press/release 各一次、renderer 未收到 trusted 输入通过；此结果不代表像素级点击穿透精度。R08 原始收据 `farmUi.reason` 留有旧 fallback 字符串，状态与逐项证据均为 PASS；未修改原始日志或重测。
 - 本轮完成桌面 renderer controller D 与 farm client E 源码拆分及有限 Linux 默认流程代表 UI；尚未覆盖设置持久化重开、Windows/macOS、DSH/OpenCode、完整 flight 视觉、主进程完整拆分、稳定猪 ID 或在线多猪。R05 的 90 秒观察不等于长期稳定性结论。历史 R33F 曾在同一 Electron 45.2.1 候选中出现 GPU process fatal，根因未定位；不能宣称已修复。
 - GitHub 公开 RC6 与 farm 4.2.1 tag、bundle、registry 和旧 hash 保持不变；Gitee 不更新，4.2.2 候选未公开。云存档上传、恢复与冲突处理继续暂缓。
 
-## 2026-11-02 MAIN01 主进程协议边界拆分（源码候选，未做 UI）
+## 2026-11-02 MAIN01 主进程协议边界拆分（PR42 草稿，有限 Linux UI 已验证）
 
-- 把 `piggy://` 静态资源与 `/dsh-piggy/…` 请求转发抽到 `apps/desktop/lib/game-protocol.js`。`main.js` 保留 scheme 权限声明、原注册时序与 `registerProtocol(gameDir)` 薄装配；新模块用 live host/closing getter 和原有状态通知回调，不另建服务所有权。
-- 协议行为保持原契约：文件边界/MIME/图和字体缓存、Electron `net.fetch(file://...)`、URL 解码及 query、仅 POST 读取 `arrayBuffer`、关闭前 503、host 响应字段和异常、POST 完成后适配器通知、`/client.js` 的 game 根与其余 renderer 根。host 的 `onSnapshot` 仍是独立通知路径。
-- focused 协议测试 6/6 通过，项目 typecheck exit 0。未运行全套测试、构建、打包或 UI/VM；独立 QMAIN01 原生验收另行负责。本候选未 push/合并/发布。
+- 已将 `piggy://` 静态资源与 `/dsh-piggy/…` 请求转发抽到 `apps/desktop/lib/game-protocol.js`。基于 `0f1884c9f5728c5258d10dd237705b81347bf02c` 的源码候选为 `c566873432023171e9951d8f3c0f8624fc51318a`，已推送至[PR42草稿](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/42)。`main.js` 保留 scheme 权限声明、原注册时序与 `registerProtocol(gameDir)` 薄装配；新模块保留 live host/closing getter 和原有状态通知回调。
+- [PR42 CI](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/41392852728) 双平台全绿：Linux 2,425 项（2,413 通过、12 跳过、0 失败）；Windows 2,425 项（2,420 通过、5 跳过、0 失败）。
+- 独立 Linux 真实 UI 对该 c566 候选完成有限代表流程：私有 Electron 45.2.1 AppImage 为 143,020,279 bytes / SHA-256 `332c2b4cfeb58a8dd3d60845bfa0ed958ce9126af226a8c417146ded498de506`；10 次真实 XTest 输入、孵化、面板及 farm 菜园/商店/工具/种子页面操作通过；实际加载的 farm client SHA-256 为 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。源码、私有包、raw 日志与截图已独立审阅；这不代表完整交互或跨平台原生验收。
+- 该 Linux 轮次的 Chromium GPU fatal 首次出现在 05:32:19.794Z，晚于 UI batch 完成（05:32:19.701Z）和 xev 清理（05:32:19.748Z），早于 AppImage 清理（05:32:24.947Z）。旧 a7 候选 R05/R08 raw stderr 也记录到同类 fatal；缺少精确 SIGTERM 发送时点，因此不能判为协议拆分回归，也不能宣称清理诱发、GPU 已修复或长期稳定。原始日志保留。
+- Windows 有限代表 UI 使用的是 PKG07W 的 `0f1884c` 候选，不是 c566：已观察实际启动、4 次点击孵化、面板、设置和扩展页面；随后真实点击 page2 的 `Exit` tile，浮动宠物与面板视觉消失并返回桌面。未枚举进程或存档锁，也未验证重开持久化。farm 的 UI 安装入口、完整 NSIS 安装/卸载、macOS、DSH 和 OpenCode 尚未覆盖。
+- 整体桌面架构仍未完成：主进程其余窗口/生命周期边界、稳定猪 ID、本机多猪持久化及 LAN/公网网络未实现。云存档上传、恢复与冲突处理继续按用户要求暂缓；Gitee 不发布。公开 RC6/farm 4.2.1 不变，farm 4.2.2 独立候选包未公开。
 
 ## 2026-11-01 存储模块拆分（进行中）
 
