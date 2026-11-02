@@ -6,12 +6,10 @@
  */
 
 import { attachDailyPlacement } from './daily-placement.js'
-import { createEffects } from './effects.js'
 import { createIo } from './io.js'
 import { installCapture, record } from './journal.js'
 import { createLayout } from './layout.js'
 import { createPanel } from './panel.js'
-import { createScene } from './scene.js'
 import { CSS } from './styles.js'
 import { ACT_URL, ART_URL, CARE_LABEL, DEV_TAB, KIND_ORDER, KIND_TITLE, MOUNTED, MODES, NO_ITEM_LINE, OPEN_KEY, PANEL_GAP, PANEL_MARGIN, PANEL_MIN_HEIGHT, PANEL_WIDTH, PIG_PADDING_X, POLL_MS, POSITION_KEY, SCENE_RESERVE, STAGES, STATE_URL, TABS } from './constants.js'
 import { button, el, meter } from './dom.js'
@@ -28,14 +26,12 @@ import { arr, num, obj, str } from './values.js'
 import { desktop } from './desktop/index.js'
 import { attachLife } from './life.js'
 import { playPigPet } from './pig-actions.js'
-import { forceFeedbackArt, setArtSwapHook, syncPigArt } from './art.js'
 import { attachGestures } from './gestures.js'
-import { createFeel } from './feel/index.js'
+import { hitsPig } from './hit-regions.js'
+import { createPresentationContext } from './presentation-context.js'
 import { stageShell } from './stage-shell.js'
 import { createStageBridge } from './stage-bridge.js'
 import { bindRecovery } from './recover.js'
-import { configureSound } from './sound.js'
-import { createBirthday } from './birthday.js'
 import { attachSizePreference } from './pig-size.js'
 import { attachBubbleSizePreference } from './bubble-size.js'
 import { createBoxPoke } from './box-poke.js'
@@ -45,6 +41,9 @@ export function mountGame(mountOptions) {
     var stageCandidate = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.stage : null
     var stageOptions = stageCandidate !== null && typeof stageCandidate === 'object'
       && (stageCandidate.role === 'stage' || stageCandidate.role === 'ext') ? stageCandidate : null
+    // Optional dependency seam for an explicitly created private art-resource
+    // registry. The normal product path passes nothing and keeps default art.
+    var artResources = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.artResources : null
 
     function mount() {
       if (document.querySelector('[' + MOUNTED + ']') !== null) {
@@ -56,8 +55,34 @@ export function mountGame(mountOptions) {
       // request is non-blocking (`display=swap`) and the token font stack falls
       // back to system faces, so an offline or blocked load degrades quietly
       // instead of breaking the panel.
-      var parts = createScene()
-      var { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
+      //
+      // ---- state ----
+      var view = normalize(null)
+      var stopped = false
+      var busy = false
+      // 舞台里外壳仍是 null；位置、气泡、散步这类需要外壳的入口单独从适配器取。
+      function feelShell() { return desktopShell() ?? stageShell()?.feelShell?.() ?? null }
+      function moveShell() { return desktopShell() ?? stageShell()?.moveShell?.() ?? null }
+      function syncGeometry() { desktopShell()?.syncGeometry?.(); stageShell()?.syncGeometry?.() }
+
+      // The normal mount consumes the same presentation factory exposed for
+      // intentionally created fixtures. State and transport are explicit
+      // bindings; `send` is assigned after the panel/io context exists, but all
+      // callers that use it run after mount.
+      var presentation = createPresentationContext({
+        state: {
+          getView: function () { return view },
+          isStopped: function () { return stopped },
+          isAway: function () { return view.activity !== null },
+          isQuiet: function () { return view.dialogue.quiet === true },
+        },
+        transport: { send: function (action, extra) { return send(action, extra) } },
+        getShell: feelShell,
+        onGeometry: syncGeometry,
+        artResources: artResources,
+      })
+      var parts = presentation.parts
+      var { host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
         progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote } = parts
       // 桌面版外壳：用时现取（外壳脚本比 client 先跑，但晚到也不能当网页版 —— 那样拖动
       // 只挪页面里的猪、窗口不跟）。
@@ -89,13 +114,6 @@ export function mountGame(mountOptions) {
        */
 
       var icons = {}
-      // 舞台里外壳仍是 null；位置、气泡、散步这类需要外壳的入口单独从适配器取。
-      function feelShell() { return desktopShell() ?? stageShell()?.feelShell?.() ?? null }
-      function moveShell() { return desktopShell() ?? stageShell()?.moveShell?.() ?? null }
-      function syncGeometry() { desktopShell()?.syncGeometry?.(); stageShell()?.syncGeometry?.() }
-
-      // ---- state ----
-      var view = normalize(null)
       var stopSizePreference = attachSizePreference(host,
         () => view.hatched ? view.pig?.stage : view.boxStage,
         syncGeometry)
@@ -122,26 +140,11 @@ export function mountGame(mountOptions) {
       var lastPendingAt = 0
       var lastPendingId = 0
       var pollTimer = null
-      var fx = createEffects({
-        scene: scene, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, card: card, bubble: bubble, pomoHint: pomoHint,
-        isStopped: function () { return stopped },
-        isAway: function () { return view.activity !== null },
-      })
+      var fx = presentation.effects
+      var art = presentation.art
+      var feel = presentation.feel
       var react = fx.react, burst = fx.burst, flash = fx.flash
       var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast
-      var stopped = false
-      var busy = false
-      // 物理层：A1 原地手感 + A2 抛出。装不上（测试环境/旧浏览器）时自己退回 off。
-      var feel = createFeel({
-        pig: pig, pigHold: pigHold, pigBody: pigBody, scene: scene, host: host,
-        pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst),
-        getShell: feelShell,
-        isQuiet: function () { return view.dialogue.quiet === true },
-        onGeometry: syncGeometry,
-      })
-      configureSound({ isQuiet: function () { return view.dialogue.quiet === true } })
-      setArtSwapHook(function (apply) { feel.coverSwap(apply) })
-      fx.setFeel(feel)
 
       /** The shell hands the modules an explicit context instead of sharing a scope. */
       var ctx = {
@@ -225,11 +228,11 @@ export function mountGame(mountOptions) {
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)
       ctx.petShy = function () { playPigPet(pig) } // 摸猪害羞：本窗口直接播；面板窗口里 attachLife 是 null，wireSplit 会换成转发（PIG_FX: petShy）
       // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
-      ctx.previewArt = function (name) { forceFeedbackArt(name); syncPigArt(pig, pigArt, pigEmoji) }
+      ctx.previewArt = function (name) { art.forceFeedbackArt(name); art.sync() }
       ctx.cancelNap = function () { if (ctx.life) ctx.life.cancelNap() }
       ctx.idleNow = function (key) { if (ctx.life) ctx.life.idleNow(key) }
       ctx.walkNow = function () { if (ctx.life) ctx.life.walkNow() }
-      var birthday = createBirthday({ ctx: ctx, pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: burst, render: function () { refresh() } })
+      var birthday = presentation.createBirthday(ctx, function () { refresh() })
       // 外壳 0.6.0 起猪和面板各一个窗口（split.js）；老外壳和网页版是 null。
       var splitRole = wireSplit(ctx, { refresh: function () { refresh() }, isFishing: function () { return tab === 'fishing' && view.fishing.pending?.phase === 'hooked' } })
       // 整屏舞台：只注册受限适配器，不改 window.__dshPiggyShell，网页版拖动/排版照旧。
@@ -278,7 +281,7 @@ export function mountGame(mountOptions) {
 
       // 手势：单击 / 来回摸 / 拖动 / 拎起 / 空中接住。窗口延迟到 4px 才开始动。
       var gestures = attachGestures({
-        scene: scene, host: host, pig: pig, feel: feel,
+        scene: scene, host: host, pig: pig, feel: feel, audio: presentation.audio,
         getView: function () { return view },
         send: send,
         pokeBox: pokeBox,
@@ -295,6 +298,7 @@ export function mountGame(mountOptions) {
       })
 
       scene.addEventListener('contextmenu', function (event) {
+        if (!hitsPig(host, event)) return
         event.preventDefault()
         setOpen(!isOpen)
       })
@@ -314,12 +318,16 @@ export function mountGame(mountOptions) {
       pollTimer = window.setInterval(refresh, POLL_MS)
 
       // 打招呼、闲聊、按时间说话、自己找事做、桌面散步（G 批次）都在 life.js。
-      var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife({
+      // life.js 原样把 {...c} 转给 attachPigActions；这里显式带上可选 registry，
+      // 普通挂载不传时是 null，玩家回落到默认动作包/按猪绑定的表。
+      var lifeOptions = {
         send: send, isStopped: function () { return stopped }, isBusy: function () { return busy },
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return gestures.isDragging() },
         pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: moveShell,
         feel: feel,
-      })
+        artResources: artResources,
+      }
+      var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife(lifeOptions)
       ctx.life = life // 调试页「散步一次」「做个小动作」用
       var stopResize = layout.attachResize()
 
@@ -348,14 +356,10 @@ export function mountGame(mountOptions) {
         life?.dispose()
         stopDailyPlacement()
         stageBridge?.dispose?.()
-        setArtSwapHook(null)
-        fx.setFeel(null)
-        feel.dispose()
-        fx.dispose()
+        // One presentation owns one host/style/font/art/effects/feel/birthday
+        // lifetime. Disposing A never touches a second fixture's DOM or timers.
+        presentation.dispose()
         pollTimer = null
-        host.remove()
-        style.remove()
-        font.remove()
       }
 
       return dispose

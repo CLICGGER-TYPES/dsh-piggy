@@ -38,10 +38,23 @@ jobs:
       - name: 测试
         run: |
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
+          node --input-type=module -e "import { copyFileSync } from 'node:fs'; import { join } from 'node:path'; copyFileSync('client.js', join(process.env.RUNNER_TEMP, 'client-tag.js'))"
           npm run build
-          git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync } from 'node:fs'
+          const canonical = text => text.replace(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm, '$1node_modules/')
+          const tagged = readFileSync(process.env.RUNNER_TEMP + '/client-tag.js', 'utf8')
+          const rebuilt = readFileSync('client.js', 'utf8')
+          assert.equal(canonical(rebuilt), canonical(tagged), 'rebuilt client code differs from the tagged build')
+          const normalized = [...rebuilt.matchAll(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm)].length
+          console.log(`client.js canonical build match (normalized ${normalized} node_modules comment prefixes)`)
+          NODE
+          git diff --exit-code -- extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
           npm test
           npm run typecheck
+          node --input-type=module -e "import { copyFileSync } from 'node:fs'; import { join } from 'node:path'; copyFileSync(join(process.env.RUNNER_TEMP, 'client-tag.js'), 'client.js')"
+          git diff --exit-code -- client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
       - name: 游戏包
         run: node apps/desktop/scripts/release-game.mjs dist-game
       - name: 改动说明（CHANGELOG 这一版的小节 + 下载指引；GitHub 再在后面接 PR 与贡献者列表）
@@ -59,7 +72,7 @@ jobs:
       - name: 建 Release 并上传游戏包
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes $([[ "$TAG" == *-* ]] && echo --prerelease)
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes --draft $([[ "$TAG" == *-* ]] && echo --prerelease)
           gh release upload "$TAG" dist-game/* --clobber
 
   desktop:

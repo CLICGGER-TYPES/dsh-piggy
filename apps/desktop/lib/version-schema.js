@@ -5,14 +5,16 @@ import { join } from 'node:path'
 
 const validSchema = value => Number.isSafeInteger(value) && value >= 0
 
-/** 只读取已发布游戏的数字常量，不加载或执行旧游戏模块。 */
-function readGameSchema(directory, label) {
+/** 只读取游戏目录的数字常量，不加载或执行游戏模块。 */
+/** @param {string} directory @param {string} label @param {'rollback'|'install'} [context] */
+export function readGameSchema(directory, label, context = 'rollback') {
+  const failureSuffix = context === 'install' ? '，没换' : '，不能回退'
   let source
   try { source = readFileSync(join(directory, 'packages/pet-core/src/core/constants.js'), 'utf8') }
-  catch { throw new Error(`无法确认${label}的存档版本，不能回退`) }
+  catch { throw new Error(`无法确认${label}的存档版本${failureSuffix}`) }
   const declarations = [...source.matchAll(/^[\t ]*export[\t ]+const[\t ]+STATE_VERSION[\t ]*=[\t ]*(0|[1-9]\d*)[\t ]*;?[\t ]*(?:\/\/[^\r\n]*)?\r?$/gm)]
   const schema = declarations.length === 1 ? Number(declarations[0][1]) : null
-  if (!validSchema(schema)) throw new Error(`${label}没有可识别的存档版本，不能回退`)
+  if (!validSchema(schema)) throw new Error(`${label}没有可识别的存档版本${failureSuffix}`)
   return schema
 }
 

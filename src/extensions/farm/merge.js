@@ -1,12 +1,12 @@
 // @ts-check
 // 菜园合并钩子（#14 外部桌宠：把内嵌猪的菜园并进桌面猪的菜园）。
-// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v5，再按下面这套规则合，最后再过一次 normalize。
+// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v6，再按下面这套规则合，最后再过一次 normalize。
 // 规则写在 docs/guides/writing-extensions.md「合并钩子」（#14 设计稿 6.4）。
 //
 // 规则：资产（种子、仓库、图鉴数量、历史收获、肥料、帮工仓、欠着的退款）两边相加；
 // 进度（开垦块数、经验、帮工等级）取更高；同一块地只能留一份，取更靠后/种得更晚的一方；
 // 帮工只保留「结算得更晚」那一侧的指针和管区目标，旧批次（pending）不再合并。
-// 数据版本比当前新（> 5）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
+// 数据版本比当前新（> 6）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
 import { EXP_CAP, PLOTS, START_PLOTS } from './data.js'
 import { HELPER_PLOTS } from './helper.js'
 import { normalize } from './migration.js'
@@ -14,7 +14,7 @@ import { lessonAt } from './plot-rules.js'
 import { count, cropFor, isObject, plotState } from './pure.js'
 
 /** 当前这份服务端读写的数据版本（normalize 的终点）。 */
-export const FARM_DATA_VERSION = 5
+export const FARM_DATA_VERSION = 6
 
 const KNOWN = new Set(['version', 'unlocked', 'plots', 'seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert',
   'exp', 'refund', 'helperBarnRefund', 'helperBarnRefunded', 'helper', 'onboarding'])
@@ -42,13 +42,13 @@ function sumCounts(...maps) {
 }
 
 /** 确认是对象、版本不比当前新，再深拷贝一份来改：入参一份不动。 */
-function prepare(data, side) {
+function prepare(data, side, now) {
   if (!isObject(data)) throw new Error('菜园数据（' + side + '）不是对象，无法合并')
   const version = Math.floor(Number(data.version))
   if (Number.isSafeInteger(version) && version > FARM_DATA_VERSION) {
     throw new Error('菜园数据（' + side + '）版本 ' + version + ' 比当前扩展新，请先更新菜园再合并')
   }
-  return normalize(structuredClone(data))
+  return normalize(structuredClone(data), now)
 }
 
 /** 地块状态统一成「越靠后越好」：成熟 > 生长中（进度高）> 空地/休耕 > 枯苗。 */
@@ -61,7 +61,7 @@ function plotRank(plot, now) {
   return state.ripe === true ? [3, 1] : [2, Math.max(0, Math.min(0.999999, state.progress))]
 }
 
-/** 交出去的每块地都要是合法 v5 形状；坏数字按「没有」处理，不让整个钩子失败。 */
+/** 交出去的每块地都要是合法 v6 形状；坏数字按「没有」处理，不让整个钩子失败。 */
 function cleanPlot(plot) {
   if (!isObject(plot)) return null
   if (plot.fallow === true) return { fallow: true, stubble: plot.stubble === true, pests: { dry: plot.pests?.dry === 0 ? 0 : null, weed: plot.pests?.weed === 0 ? 0 : null } }
@@ -101,7 +101,9 @@ function mergeHelper(out, t, s) {
   const level = Math.max(t.level, s.level)
   const context = pickHelperContext(t, s)
   out.helper = {
-    hired, level, barn: Math.max(t.barn, s.barn),
+    hired, enabled: hired && context.enabled === true, xpQuarterRemainder: context.xpQuarterRemainder,
+    xpEligibleAt: context.xpEligibleAt,
+    level, barn: Math.max(t.barn, s.barn),
     lastAt: hired && Number.isFinite(context.lastAt) ? context.lastAt : null,
     usedMs: 0,
     cursor: context.cursor,
@@ -136,8 +138,8 @@ function mergeLesson(out, t, s, warnings) {
  * @param {number} [now] 判定生长/成熟用的时刻；宿主调用时不传，用当前时间
  */
 export function mergeStates(targetData, sourceData, now = Date.now()) {
-  const t = prepare(targetData, '桌宠')
-  const s = prepare(sourceData, '内嵌猪')
+  const t = prepare(targetData, '桌宠', now)
+  const s = prepare(sourceData, '内嵌猪', now)
   const warnings = []
   const out = {
     version: FARM_DATA_VERSION,

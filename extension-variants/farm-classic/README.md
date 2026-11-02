@@ -4,7 +4,7 @@
 
 构建：`node scripts/farm-classic-bundle.mjs /tmp/piggy-extensions`。在游戏设置的扩展管理中导入生成的 `ext-farm-3.1.2.piggyext`。建议先更新游戏到 0.37.2-rc.4，再安装此兼容包。下载：[GitHub](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/ext-farm-3.1.2) / [Gitee](https://gitee.com/clicgger/dsh-piggy/releases/tag/ext-farm-3.1.2)。新版外观仍是扩展目录里的默认版本。
 
-客户端以仓库 `ext-farm-3.0.0` 标签为来源，增加当前字段/操作适配并隔离 CSS 类名。服务端直接由 `scripts/farm-classic-files.mjs` 复用 `extensions/farm/server.js`，不维护第二份养成规则。`data-bridge.js` 仅适配界面快照和动作名称，不修改存档。
+客户端以仓库 `ext-farm-3.0.0` 标签为来源，增加当前字段/操作适配并隔离 CSS 类名。服务端直接由 `scripts/farm-classic-files.mjs` 复用 `extensions/farm/server.js`，不维护第二份养成规则。现代与经典客户端独立迭代，各自 manifest 版本的小版本和补丁号不要求同步；兼容性由生成包复用同一份 `server.js` 字节、相同的 `mergeHook` 与兼容的 `minGame` 保证。`data-bridge.js` 仅适配界面快照和动作名称，不修改存档。
 
 本目录 assets 下的图片逐字节取自 `ext-farm-3.0.0:extensions/farm/assets/`；未复制的图片由构建器复用当前菜园素材。原图制作与许可沿用该标签的 `extensions/farm/PROVENANCE.md`，本轮未重新绘制素材。
 

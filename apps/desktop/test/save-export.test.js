@@ -145,7 +145,7 @@ test('dialog and disk errors return a clear failure without reporting success', 
 })
 
 test('IPC save handler validates the page source before exposing the native dialog', () => {
-  const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const source = readFileSync(new URL('../lib/ipc/system.js', import.meta.url), 'utf8')
   const handler = source.slice(source.indexOf("ipcMain.handle('piggy:save-archive'"), source.indexOf("ipcMain.handle('piggy:open'"))
   assert.match(handler, /if\s*\(!fromPage\(event\)\)\s*return\s*\{\s*ok:\s*false/)
   assert.match(handler, /return saveArchive\(/)

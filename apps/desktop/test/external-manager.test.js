@@ -163,11 +163,12 @@ test('启动失败：保留开关、状态带错误、标记写 enabled:false/pa
 
 test('IPC 边界：只有面板窗口能开关；preload 暴露 external.get/set；合并确认用原生对话框', () => {
   const main = readFileSync(new URL('main.js', new URL('../', import.meta.url)), 'utf8')
+  const system = readFileSync(new URL('lib/ipc/system.js', new URL('../', import.meta.url)), 'utf8')
   const preload = readFileSync(new URL('preload.cjs', new URL('../', import.meta.url)), 'utf8')
   assert.match(main, /function fromPanelOnly\(event\)/)
-  assert.match(main, /if \(!fromPanelOnly\(event\) \|\| externalManager === null\)/)
-  assert.match(main, /piggy:external:get/)
-  assert.match(main, /piggy:external:set/)
+  assert.match(system, /if \(!fromPanelOnly\(event\) \|\| externalManager === null\)/)
+  assert.match(system, /piggy:external:get/)
+  assert.match(system, /piggy:external:set/)
   assert.match(main, /dialog\.showMessageBox\(win, \{/)
   assert.match(preload, /external: \{/)
   assert.match(preload, /piggy:external:get/)

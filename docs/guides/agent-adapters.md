@@ -98,16 +98,16 @@ OpenCode 接入以 [WolalaQAQ/opencode-piggy](https://github.com/WolalaQAQ/openc
 
 ### 当前目录兼容性（源码静态对比）
 
-RC5 桌面版默认把工作接口发现文件放在桌面的 `piggy` 数据目录：
+RC6 桌面版默认把工作接口发现文件放在桌面的 `piggy` 数据目录：
 
-| 平台 | RC5 桌面默认 `work-endpoint` |
+| 平台 | RC6 桌面默认 `work-endpoint` |
 |---|---|
 | Windows | `%APPDATA%\piggy\work-endpoint` |
 | macOS | `~/Library/Application Support/piggy/work-endpoint` |
 | Linux | `${XDG_DATA_HOME:-~/.local/share}/piggy/work-endpoint`（仅绝对路径的 `XDG_DATA_HOME` 生效） |
 
-上面固定提交的插件在未设置选项时，仍先查 `<配置根目录>/dsh-piggy/work-endpoint`，再查 `<配置根目录>/dsh-piggy-desktop/work-endpoint`（Linux 配置根目录为 `${XDG_CONFIG_HOME:-~/.config}`）。所以三个平台都用默认值时，插件不会自动发现 RC5 桌面新建的 `piggy/work-endpoint`。这是对固定版本源码的静态对比，不是在真实界面复现的 bug，也不代表 Windows 已通过或失败。
+上面固定提交的插件在未设置选项时，仍先查 `<配置根目录>/dsh-piggy/work-endpoint`，再查 `<配置根目录>/dsh-piggy-desktop/work-endpoint`（Linux 配置根目录为 `${XDG_CONFIG_HOME:-~/.config}`）。所以三个平台都用默认值时，插件不会自动发现 RC6 桌面新建的 `piggy/work-endpoint`。这是对固定版本源码的静态对比，不是在真实界面复现的 bug，也不代表 Windows 已通过或失败。
 
 需要在插件配置里把 `gameDirectory` 指向桌面实际的 `work-endpoint` 目录（`endpoint.json` 所在目录），不要指向 `state.json` 或它的上级 userData。写法见 upstream 的[配置游戏目录与队列](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/docs/guides/opencode.md#配置游戏目录与队列)；只使用其中已有的选项，不另造命令行参数。另一种已实现的方式是给桌面和 **OpenCode 服务进程**设置同一个 `PIGGY_USERDATA`（指向 userData 目录本身，即 `work-endpoint` 的父目录），插件会读取 `$PIGGY_USERDATA/work-endpoint`；只在启动桌面的终端里设置不会影响已经运行的 OpenCode 服务。
 
-不要通过移动、复制或软链个人存档，也不要伪造 `endpoint.json` 或令牌来绕过目录问题。这里只描述 RC5 与固定版本第三方插件的现状；本仓库不改第三方代码，也不声称已经修复默认自动发现。
+不要通过移动、复制或软链个人存档，也不要伪造 `endpoint.json` 或令牌来绕过目录问题。这里只描述 RC6 与固定版本第三方插件的现状；本仓库不改第三方代码，也不声称已经修复默认自动发现。OpenCode 说明仅基于上述固定提交的源码静态分析，不代表已完成 OpenCode 实机或 UI 验收。

@@ -13,13 +13,16 @@ import { renameSync } from 'node:fs'
 
 import { mergeSummary } from '../../core.js'
 import { readStateFile } from '../../store/state-file.js'
+import {
+  SESSION_BOUNDARY, SESSION_SCOPE, SESSION_TRANSPORT, createFrozenSourceBinding, createSessionBinding, sessionOf,
+} from '../../runtime/session-context.js'
 import { detectDesktop, readEndpoints } from './external-discovery.js'
 import { createPairClient, createWorkClient } from './external-client.js'
 import { configPath, dshHomes, readConfig, stateFingerprint, writeConfig } from './external-files.js'
 import { recoverRetirement } from './external-merge.js'
 import { createOutbox } from './external-outbox.js'
 import { createExternalPanel } from './external-panel.js'
-import { createLifecycle, readReceipts } from './external-lifecycle.js'
+import { createLifecycle, pendingMergeConfig, readReceipts } from './external-lifecycle.js'
 import { createCommitFlow } from './external-commit.js'
 import { prepareLiveSource, preparePausedSource } from './external-prepare.js'
 import { createDelivery } from './external-delivery.js'
@@ -33,7 +36,7 @@ const BUSY_STATES = new Set(['merging', 'rolling-back', 'merge-unknown'])
  * @param {typeof fetch} [options.fetch]
  * @param {() => number} [options.now]
  * @param {string} [options.gameVersion]
- * @param {(mode:'normal'|'external')=>void} [options.onModeChange]
+ * @param {(mode:'normal'|'external')=>void|Promise<void>} [options.onModeChange]
  * @param {(message:string)=>void} [options.warn]
  * @param {string} [options.dshHome]
  * @param {string[]} [options.markerPaths]
@@ -60,8 +63,19 @@ export function createExternalController(options) {
   let commandName = 'pig'
 
   const outbox = createOutbox({ statePath, now, warn })
+  // 这个控制器的显式会话：loopback 配对目标 + 本机 DSH 配置能力。它不持久化、
+  // 不是稳定身份；close() 会处置它，迟到的投递/写盘不再改变队列或文件。
+  const session = createSessionBinding({
+    scope: SESSION_SCOPE.EXTERNAL_CONTROLLER,
+    transport: { kind: SESSION_TRANSPORT.LOOPBACK_PAIR, origin: '127.0.0.1' },
+    capability: { kind: 'external-dsh-host', statePath, configPath: configPath(statePath) },
+    generation: 0,
+  })
   let read = readConfig(statePath)
   let config = read.ok ? read.config : null
+  // 提交请求发出后崩溃时，配置里的 connection 可能停在 merging；恢复连接状态，
+  // 让 init 只查询原事务而不是把界面当成可操作。
+  if (read.ok && config !== null && BUSY_STATES.has(config.connection)) connection = config.connection
   if (!read.ok && !read.missing) {
     configCorrupt = true
     try { renameSync(configPath(statePath), `${configPath(statePath)}.corrupt-${now()}`) } catch { /* evidence kept */ }
@@ -76,10 +90,10 @@ export function createExternalController(options) {
     return config
   }
 
-  function applyMode(next) {
+  async function applyMode(next) {
     if (mode === next) return
     mode = next
-    options.onModeChange?.(next)
+    await options.onModeChange?.(next)
   }
 
   function baseConfig() {
@@ -98,8 +112,11 @@ export function createExternalController(options) {
   }
 
   async function refresh() {
+    if (session.disposed) return { ok: false, reason: SESSION_BOUNDARY.DISPOSED }
     if (configCorrupt) return { ok: false, reason: 'config-corrupt' }
     const result = await detectDesktop({ fetch: fetchImpl, markerPaths, homes, now, timeoutMs: options.timeoutMs ?? 3000 })
+    // 发现请求返回时控制器可能已经关闭：不要在关闭后写配置/摘要。
+    if (session.disposed) return { ok: false, reason: SESSION_BOUNDARY.DISPOSED }
     if (!result.ok) {
       error = result.reason
       if (!BUSY_STATES.has(connection)) connection = mode === 'external' && connection === 'connected' ? 'reconnecting' : 'disconnected'
@@ -130,6 +147,7 @@ export function createExternalController(options) {
    * @param {any} summary summarizeSnapshot() 的紧凑摘要
    */
   function noteTargetSummary(summary) {
+    if (session.disposed) return
     if (summary === null || typeof summary !== 'object') return
     const known = target ?? config?.target ?? null
     if (known === null || sameSummary(known.summary ?? null, summary)) return
@@ -217,13 +235,30 @@ export function createExternalController(options) {
     const runtime = options.embedded.ensure()
     if (runtime === undefined || typeof runtime.exclusive !== 'function') throw Object.assign(new Error('embedded runtime unavailable'), { code: 'embedded-unavailable' })
     let result = null
-    await runtime.exclusive(async () => { result = runtime.snapshotForWrite(); return null })
+    await runtime.exclusive(async () => { result = runtime.snapshotForWrite(sessionOf(runtime)); return null })
     if (result === null) throw Object.assign(new Error('embedded runtime returned no state'), { code: 'embedded-unavailable' })
     return { .../** @type {any} */ (result), live: true }
   }
 
+  /** 已暂存源端的精确能力；只有 paused + 有指纹时才允许写。 */
+  function sourceBindingFor(current) {
+    if (current === null || current.pigState !== 'paused' || session.disposed) return null
+    return createFrozenSourceBinding({
+      session, statePath,
+      stateHash: typeof current.stateHash === 'string' ? current.stateHash : null,
+      suspendedAt: current.suspendedAt,
+      mergeId: current.mergeId,
+    })
+  }
+
   const ctx = {
     statePath, now, options, outbox, client, workClient,
+    getSession: () => session,
+    isSessionLive: () => !session.disposed,
+    sourceBinding: () => sourceBindingFor(config),
+    // 暂停源端没有活跃 store/target 权威；显式 legacy 单目标（或 null）才允许
+    // 全平写/恢复。未来多目标控制器必须在这里返回显式非 legacy 能力。
+    persistence: () => null,
     getConfig: () => config,
     setConfig: next => { config = next },
     saveConfig, baseConfig, refresh, refreshEndpoints,
@@ -256,7 +291,8 @@ export function createExternalController(options) {
   ctx.resumeSource = (suspendedAt, options) => lifecycle.resumeSource(suspendedAt, options)
   const commit = createCommitFlow(ctx)
   const delivery = createDelivery({
-    outbox, workClient, active: () => mode === 'external' && !closed,
+    outbox, workClient, active: () => mode === 'external' && !closed && !session.disposed,
+    isLive: () => !closed && !session.disposed,
     refreshEndpoints: () => { void refreshEndpoints() },
     setError: next => { error = next },
   })
@@ -270,37 +306,63 @@ export function createExternalController(options) {
     lastSnapshot: () => lastSnapshot,
     setSnapshot: snapshot => { lastSnapshot = snapshot },
     noteSummary: summary => { noteTargetSummary(summary) },
-    markSeen: () => { lastAt = now(); if (!BUSY_STATES.has(connection)) connection = 'connected'; error = null },
+    markSeen: () => {
+      if (session.disposed) return
+      lastAt = now()
+      if (!BUSY_STATES.has(connection)) connection = 'connected'
+      error = null
+    },
     markUnavailable: reason => { if (!BUSY_STATES.has(connection)) connection = 'disconnected'; error = reason },
     refreshEndpoints: () => { void refreshEndpoints() },
   })
   ctx.getPanel = () => panel
 
+  /** 关闭后的面板代理不再发网络请求、不再改摘要；返回现有形状的拒绝。 */
+  const publicPanel = {
+    ...panel,
+    state: () => (session.disposed
+      ? { ...(lastSnapshot ?? { ok: false }), ok: false, reason: SESSION_BOUNDARY.DISPOSED, link: link() }
+      : panel.state()),
+    act: body => (session.disposed
+      ? { ...(lastSnapshot ?? { ok: false }), ok: false, reason: SESSION_BOUNDARY.DISPOSED, link: link() }
+      : panel.act(body)),
+    command: input => (session.disposed
+      ? { ok: false, kind: 'error', text: '桌宠连接已关闭；动作没有执行。' }
+      : panel.command(input)),
+  }
+
+  /** 重启时保留提交/撤销进行中的连接状态，不允许把 merging 当成可操作。 */
+  function restoredConnection() {
+    return config !== null && BUSY_STATES.has(config.connection) ? config.connection : 'connecting'
+  }
+
   async function init() {
     outbox.load()
     const retirement = recoverRetirement(statePath)
     if (configCorrupt) {
-      applyMode('external')
+      await applyMode('external')
       connection = 'disconnected'
       return status()
     }
     if (retirement.retired) {
-      applyMode('external')
-      connection = 'connecting'
+      await applyMode('external')
+      connection = restoredConnection()
       await refresh().catch(() => {})
-      if (config?.pigState === 'merge-unknown') setTimeout(() => { void commit.pollMergeStatus() }, 1000).unref?.()
+      if (config?.pigState === 'merge-unknown' || config?.connection === 'merging') setTimeout(() => { void commit.pollMergeStatus() }, 1000).unref?.()
       delivery.schedule(0)
       return status()
     }
     if (config !== null && config.pigState !== 'none') {
-      applyMode('external')
-      connection = 'connecting'
+      await applyMode('external')
+      connection = restoredConnection()
       await refresh().catch(() => {})
-      if (config.pigState === 'merge-unknown') setTimeout(() => { void commit.pollMergeStatus() }, 1000).unref?.()
+      // merging 是提交请求已发出但结果未落盘的崩溃窗口；和 merge-unknown 一样
+      // 只查询原事务，不重新提交、不再相加。
+      if (config.pigState === 'merge-unknown' || config.connection === 'merging') setTimeout(() => { void commit.pollMergeStatus() }, 1000).unref?.()
       delivery.schedule(0)
       return status()
     }
-    applyMode('normal')
+    await applyMode('normal')
     outbox.resume()
     delivery.schedule(0)
     return status()
@@ -317,6 +379,9 @@ export function createExternalController(options) {
   }
 
   async function prepare(target, side = 'target') {
+    if (session.disposed) return { ok: false, reason: SESSION_BOUNDARY.DISPOSED }
+    // 目标合并事务未到终态时，源端和目标端都不接受新的 prepare。
+    if (pendingMergeConfig(config)) return { ok: false, reason: 'busy' }
     if (!['activity', 'pomodoro', 'fishing'].includes(target)) return { ok: false, reason: 'unknown-target' }
     if (side === 'source') return prepareSource(target)
     const detected = await refresh()
@@ -329,7 +394,7 @@ export function createExternalController(options) {
   }
 
   return {
-    init, refresh, status, link, panel, outbox, prepare,
+    init, refresh, status, link, panel: publicPanel, outbox, prepare,
     setCommandName(name) { commandName = name },
     get commandName() { return commandName },
     connect: mode => lifecycle.connect(mode),
@@ -343,6 +408,7 @@ export function createExternalController(options) {
     retryRetirement: () => commit.retryRetirement(),
     enqueue(event) {
       if (mode !== 'external') return { ok: false, reason: 'embedded' }
+      if (session.disposed) return { ok: false, reason: SESSION_BOUNDARY.DISPOSED }
       const result = outbox.add(event)
       delivery.schedule(0)
       return result
@@ -352,6 +418,7 @@ export function createExternalController(options) {
       delivery.close()
       if (expiryTimer !== null) clearTimeout(expiryTimer)
       outbox.flush()
+      session.dispose()
     },
     get mode() { return mode },
     get connection() { return connection },

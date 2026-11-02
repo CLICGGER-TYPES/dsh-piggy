@@ -25,15 +25,15 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm由维护者确认后通过GitHub Actions可信发布，主包与别名包同步；RC只更新`rc`标签，保持稳定入口。npm `latest`目前仍是0.37.0，与GitHub稳定游戏0.37.1分别标示。
 
-> 本轮预览版：游戏0.37.2-rc.5 / 外壳0.6.8-rc.3。包含指定猪脸图标、五项离线可选扩展、默认piggy数据目录及可选DSH桌宠联动。测试版需手动查看，不主动提示更新。
+> 本轮GitHub预览版：游戏0.37.2-rc.6 / 外壳0.6.8-rc.4。先更新桌面外壳，再更新游戏；旧RC3外壳缺少云设置IPC。RC6包括安全更新、帮工托管与75%菜园经验、默认关闭的云存档配置和只读连接测试；不包含云上传、恢复或自动合并，也尚未上线多猪正式入口和稳定ID。
 
-预览版下载：[夸克 Windows 完整版](https://pan.quark.cn/s/6b55bc9dc8c9) · [GitHub](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5) · [Gitee Windows 瘦包](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5)。
+GitHub预览版下载：[0.37.2-rc.6发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.6)。Gitee、夸克和npm仍是RC5，尚未同步RC6；[Gitee旧预览版](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5) · [夸克旧完整版](https://pan.quark.cn/s/6b55bc9dc8c9)。
 
 夸克目录含安装器、便携版、六个扩展包（含经典菜园备选）、说明和校验清单，共10文件。GitHub和夸克完整版内含游戏；完整Windows安装器另附五项默认不选的离线扩展。Gitee受100MiB限制，首次启动需联网下载游戏。
 
-本轮另外修复菜园托管地串行生长与旧扩展下载缺件：菜园4.2.0／经典3.2.0按自然时长并行生长，帮工负责照料、收获及现有同种种子补种。原有进度保留。
+RC6的菜园4.2.1按自然时长生长，帮工负责照料、收获及现有同种种子补种；帮工托管可暂停，帮工收菜按手动收菜经验的75%增加菜园经验。菜园与金币、背包共用当前存档，猪的成长数值独立；多猪正式入口仍未上线。GitHub已提供[菜园4.2.1扩展包](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-farm-4.2.1/ext-farm-4.2.1.piggyext)，本次目录更新只覆盖GitHub渠道；本次不发布Gitee目录更新，现有Gitee目录保持4.2.0。
 
-已有菜园的玩家：更新游戏后，到「设置 → 扩展」点击「刷新」，再更新菜园到4.2.0。安装器只补缺失项，不会覆盖已有扩展版本。
+已有菜园的玩家：先更新桌面外壳到0.6.8-rc.4。GitHub渠道可在「设置 → 扩展」点击刷新后更新到4.2.1；本次不发布Gitee目录更新，该渠道现有版本为4.2.0。也可下载上方GitHub扩展包，在「设置 → 扩展 → 从文件导入」手动安装；Linux AppImage不会覆盖已有扩展。
 
 <details>
 <summary>当前 Windows 安装效果（RC5 公开包实拍）</summary>
@@ -48,7 +48,7 @@
 
 </details>
 
-[历史RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，不是本轮RC5。
+[历史RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，不是当前RC6。
 
 Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。此前 RC2 的 Windows 安装器、更新清单和游戏包已归档；RC3、RC4国内原始包另有独立归档。
 
@@ -60,7 +60,7 @@ Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧�
 dsh plugin --profile web add dsh-piggy
 ```
 
-不带版本号会安装npm `latest`（目前0.37.0）；本轮预览版已同步npm，用下面的精确版本安装：
+不带版本号会安装npm `latest`（目前0.37.0）。npm 的 `rc` 标签仍指向RC5；RC6尚待npm渠道同步，下面是当前可安装的精确版本：
 
 ```sh
 dsh plugin --profile web add dsh-piggy@0.37.2-rc.5

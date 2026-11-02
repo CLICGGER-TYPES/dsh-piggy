@@ -60,12 +60,15 @@
 
 带非空 `pending` 的快照必须把同一份消息送到各窗口，因为生成快照时已经取走这些消息。Worker 先发送原始 JSON 快照文本，再返回对应路由响应；主线程只转发，preload 在页面进程解析并保持 `onStateChanged` 的对象接口。此类快照不能替换成空刷新通知，也不能只保留最新一份。POST 请求体用 ArrayBuffer 转移到 Worker 后再解析文本；二进制响应也在 Worker 内整理为独立 ArrayBuffer 后转移，不转移可能来自池化 Buffer 的底层存储。这些路径仍会完整接收请求体或响应体，并非端到端流式传输。
 
-正常退出先停接工作事件，再完成游戏保存和资源清理。如果保存失败且宿主仍可运行，重新建立工作接口并发布发现文件后才返回保存错误，界面恢复时接口也可重新发现。外壳更新关闭后不再接受新操作，取消已有下载，并等待在途检查、下载清理和签名验证完成。检查阶段尚无可用取消 token 时等待检查返回；签名验证等待原验证器结束，避免直接终止 Worker 留下 PowerShell 子进程。
+正常退出先停接工作事件，再完成游戏保存和资源清理。如果保存失败且宿主仍可运行，重新建立工作接口并发布发现文件后才返回保存错误，界面恢复时接口也可重新发现。主进程退出协调由 `apps/desktop/lib/desktop-lifecycle.js` 持有；`main.js` 注入 live resource getter 和平台回调，模块在对应 await 之后重新读取版本服务与宿主，不缓存旧引用。外壳更新关闭后不再接受新操作，取消已有下载，并等待在途检查、下载清理和签名验证完成。检查阶段尚无可用取消 token 时等待检查返回；签名验证等待原验证器结束，避免直接终止 Worker 留下 PowerShell 子进程。
 
 ## IPC 消息全表
 
-页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧在 `apps/desktop/main.js`，
-每个处理函数开头用 `fromPet(event)` / `fromPage(event)` 核对是哪个窗口发的，**新加消息也要核对**。
+页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧由 `apps/desktop/main.js`
+（组合根）、`apps/desktop/lib/ipc/` 和 `desktop-lifecycle.js` 共同注册：`updates.js` 管更新/外壳更新，
+`system.js` 管外部连接、退出请求、导出/打开、全屏和代理，生命周期模块协调退出与关闭；窗口与服务仍由 `main.js` 装配。
+每个处理函数开头用
+`fromPet(event)` / `fromPage(event)` 核对是哪个窗口发的，**新加消息也要核对**。
 
 ### 猪窗口 → 主进程
 
@@ -114,7 +117,11 @@
 
 | 文件 | 内容 |
 |---|---|
-| `apps/desktop/main.js` | 主进程：两个窗口、拖动（`dragTick`）、面板窗口一节、IPC |
+| `apps/desktop/main.js` | 主进程组合根：窗口、拖动（`dragTick`）、面板与服务装配；持有运行时服务句柄并注入 live getter |
+| `apps/desktop/lib/game-protocol.js` | 处理 `piggy://` 静态资源与 `/dsh-piggy/…` 宿主请求；由组合根注入协议注册、`net.fetch`、renderer/game 根目录及 live host/关闭/状态通知回调 |
+| `apps/desktop/lib/desktop-lifecycle.js` | 唯一持有主进程关闭/退出状态、动作预约、保存与资源 flush 顺序；通过 getter 获取当前 host、版本和关闭资源 |
+| `apps/desktop/lib/ipc/updates.js` | 更新/外壳更新 IPC 注册（`piggy:updates:*`、`piggy:shell:*`）；`releases` 状态归此模块 |
+| `apps/desktop/lib/ipc/system.js` | 系统类 IPC 注册：外部连接、退出/导出/打开、全屏和代理；状态仍由 `main.js` 持有 |
 | `apps/desktop/lib/background-host.js`、`runtime-worker.js` | 游戏 Worker 的异步代理、路由和快照转发 |
 | `apps/desktop/lib/background-versions.js`、`versions-worker.js` | 更新 Worker、Chromium 下载衔接和版本操作 |
 | `apps/desktop/lib/fullscreen.js`、`fullscreen-worker.js` | 全屏偏好及 Windows 后台探测器 |
@@ -122,11 +129,18 @@
 | `apps/desktop/lib/panel-geometry.js` | 面板窗口摆哪（纯函数，有单测） |
 | `apps/desktop/lib/window-geometry.js` | 拖动时窗口怎么跟鼠标、夹在哪些屏里 |
 | `apps/desktop/preload.cjs` | `window.piggyShell` |
-| `src/client/desktop/index.js` | 猪窗口页面：每轮量猪、按家算窗口、拖动起止 |
+| `src/client/desktop/index.js` | 兼容门面：保留 `version/install/start` 和 pet/panel/ext 角色分派 |
+| `src/client/desktop/pet-controller.js` | 每个 pet renderer 的 shell adapter、拖动/飞行状态和单次 install/start 生命周期 |
+| `src/client/desktop/layout-controller.js` | 该 renderer 唯一的测量/摆放/几何回读协调循环 |
+| `src/client/desktop/input-controller.js`、`hit-tracking.js` | 该 renderer 的 pointer/hitShape 状态及 `setHit` / `place({hitShape})` 桥接 |
 | `src/client/desktop/place.js` | 「家」模型 |
 | `src/client/desktop/measure.js` | 猪窗口的固定框、气泡预留、可点区域 |
 | `src/client/desktop/panel-window.js` | 面板窗口页面：排版、报尺寸 |
 | `src/client/split.js`、`pending.js` | 两边页面的分工（谁演反应、谁出提示条） |
+
+主进程仍在原位置声明 `piggy` scheme 权限，并在宿主启动后注册协议。协议模块只转发宿主响应；host 的 `onSnapshot` 通知仍独立存在，可能在 `handle` 返回前通知页面；协议适配器自身的 POST 刷新通知仍在 `host.handle` 成功后安排。
+
+猪页面的可变状态按一个 pet renderer 分工持有：`pet-controller.js` 唯一持有它的 shell bridge、拖动/飞行标志和启动幂等状态；`layout-controller.js` 唯一持有 measure、placement、WM clamp 和布局调度；`input-controller.js` 唯一持有 pointer、hitRect 和 legacy `setHit` 状态。入口仍以 `desktop.version/install/start` 暴露兼容的单 renderer adapter。它给 controller 注入 `getHost`；当前默认 getter 仍定位唯一 `[data-dsh-pig]` 根，以后每个宿主可以给出自己的 root。该 seam 不提供稳定 pig ID、分实例存档或多猪入口；`place.js` 仍写现有 `dsh-piggy:desktop-pig` 位置键。
 
 ## 怎么验收（改了窗口/拖动相关的东西必须做）
 

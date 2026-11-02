@@ -2,11 +2,15 @@
 /** DSH 只负责宿主事件、服务注册和默认位置；游戏规则与持久化由运行时负责。 */
 import { randomUUID } from 'node:crypto'
 import { createGameRuntime } from '../../runtime/index.js'
-import { defaultStatePath, moveLegacySaveDir } from '../../store/state-file.js'
+import { sessionOf } from '../../runtime/session-context.js'
+import { defaultStatePath, dshHome, moveLegacySaveDir } from '../../store/state-file.js'
+import { join } from 'node:path'
 import { environmentNote } from '../../environment.js'
 import { createWorkObserver } from './work-observer.js'
 import { createExternalController } from './external-controller.js'
 import { registerManagementRoutes, registerPanelRoutes } from './external-routes.js'
+import { DEFAULT_CLOUD_SETTINGS, normalizeCloudSaveSettings, readCloudSaveSettings, writeCloudSaveSettings } from '../../runtime/cloud-save-settings.js'
+import { testGitRemote } from '../../runtime/git-sync.js'
 
 export const name = 'dsh-piggy'
 export const inject = []
@@ -17,6 +21,13 @@ export function apply(ctx, config = {}) {
   const customPath = typeof config.statePath === 'string' && config.statePath.trim() !== ''
   if (!customPath) moveLegacySaveDir()
   const statePath = customPath ? config.statePath : defaultStatePath()
+  const cloudSettingsPath = join(dshHome(), 'dsh-piggy', 'cloud-save-settings.json')
+  const loadedCloudSettings = readCloudSaveSettings(cloudSettingsPath)
+  let cloudSettings = loadedCloudSettings.ok ? loadedCloudSettings.config : { ...DEFAULT_CLOUD_SETTINGS }
+  if (loadedCloudSettings.ok && loadedCloudSettings.missing && config.cloudSave !== undefined) {
+    try { cloudSettings = normalizeCloudSaveSettings(config.cloudSave) } catch { /* invalid legacy config stays off */ }
+  }
+  let cloudSettingsFailure = loadedCloudSettings.ok === true ? '' : loadedCloudSettings.reason
 
   /** @type {ReturnType<typeof createGameRuntime>|null} */
   let runtime = null
@@ -28,7 +39,7 @@ export function apply(ctx, config = {}) {
 
   function ensureRuntime() {
     if (runtime !== null) return runtime
-    runtime = createGameRuntime({ statePath, journalHeader: environmentNote({
+    runtime = createGameRuntime({ statePath, cloudSave: { ...cloudSettings, syncReady: false }, journalHeader: environmentNote({
       运行形态: 'DSH 插件', 存档路径: statePath, DSH_HOME: process.env.DSH_HOME ?? '', Node: process.version,
     }) })
     return runtime
@@ -66,7 +77,36 @@ export function apply(ctx, config = {}) {
 
   function mountManagement() {
     if (webServer === null || managementRoutes !== null || closed) return
-    managementRoutes = registerManagementRoutes(webServer, controller)
+    managementRoutes = registerManagementRoutes(webServer, controller, {
+      cloudSettings: () => cloudSettingsFailure
+        ? { ok: false, reason: cloudSettingsFailure }
+        : { ok: true, config: { ...cloudSettings } },
+      saveCloudSettings: async value => {
+        let next
+        try { next = normalizeCloudSaveSettings(value) }
+        catch (error) { return { ok: false, reason: error instanceof Error ? error.message : '云存档设置无效' } }
+        const previous = cloudSettings
+        if (runtime !== null) {
+          const applied = await runtime.configureCloudSave({ ...next, syncReady: false })
+          if (applied?.ok !== true) return { ok: false, reason: applied?.reason ?? '云存档设置暂时无法应用' }
+        }
+        try {
+          cloudSettings = writeCloudSaveSettings(cloudSettingsPath, next)
+          cloudSettingsFailure = ''
+          return { ok: true, config: { ...cloudSettings } }
+        } catch {
+          if (runtime !== null) await runtime.configureCloudSave({ ...previous, syncReady: false }).catch(() => {})
+          return { ok: false, reason: '云存档设置无法保存到本机' }
+        }
+      },
+      testCloudSettings: async value => {
+        let next
+        try { next = normalizeCloudSaveSettings({ ...value, enabled: value?.enabled === true }) }
+        catch (error) { return { ok: false, reason: error instanceof Error ? error.message : '云存档设置无效' } }
+        if (!next.remote) return { ok: false, reason: '请先填写仓库地址' }
+        return testGitRemote({ remote: next.remote, cwd: process.cwd() })
+      },
+    })
   }
 
   function unmountManagement() {
@@ -105,37 +145,41 @@ export function apply(ctx, config = {}) {
       syncRoutes()
       return current
     },
-    stop: () => {
+    stop: async () => {
       unmountEmbedded()
       const old = runtime
       runtime = null
-      try { old?.dispose() } catch (error) {
-        console.warn(`[dsh-piggy] embedded runtime dispose failed: ${error instanceof Error ? error.message : String(error)}`)
-      }
+      return old?.dispose()
     },
     runtime: () => runtime,
   }
 
   const controller = createExternalController({
     statePath, embedded,
-    onModeChange: next => {
+    onModeChange: async next => {
       // 离开内嵌模式就把它的运行时交还出去；回内嵌模式时 syncRoutes 会重建。
+      let disposalError = null
       if (next === 'external') {
         unmountEmbedded()
         const old = runtime
         runtime = null
-        try { old?.dispose() } catch { /* dispose already logged by embedded.stop */ }
+        try { await old?.dispose() } catch (error) { disposalError = error }
       }
       syncRoutes()
+      if (disposalError !== null) throw disposalError
     },
     warn: message => console.warn(`[dsh-piggy] ${message}`),
   })
   controller.setCommandName(command)
 
   // Host callbacks have no durable identity; keep each generated event ID stable across 503 retries.
-  const observer = createWorkObserver({ accept: event => controller.mode === 'external'
-    ? controller.enqueue(event)
-    : embedded.ensure().acceptWorkEvent(event), source: 'dsh', producer: randomUUID(),
+  // The accept callback names the exact runtime generation whose session owns the save; a
+  // replaced/disposed runtime refuses instead of falling back to another pig or file.
+  const observer = createWorkObserver({ accept: event => {
+    if (controller.mode === 'external') return controller.enqueue(event)
+    const runtime = embedded.ensure()
+    return runtime.acceptWorkEvent(event, sessionOf(runtime))
+  }, source: 'dsh', producer: randomUUID(),
   warn: message => console.warn(message) })
   const observe = type => observer.observe(type)
   ctx.on('agent/inbox/claimed', () => observe('message'))
@@ -159,7 +203,8 @@ export function apply(ctx, config = {}) {
       // 内嵌模式必须保持同步返回（旧宿主与兼容测试按同步结果读 text）；外部模式返回 Promise。
       try {
         if (controller.mode === 'external') return controller.panel.command(String(invocation.rawInput ?? ''))
-        return embedded.ensure().dispatchCommand(command, String(invocation.rawInput ?? ''))
+        const runtime = embedded.ensure()
+        return runtime.dispatchCommand(command, String(invocation.rawInput ?? ''), sessionOf(runtime))
       } catch (error) {
         return { kind: 'error', text: `🐖 猪摔了一跤：${error instanceof Error ? error.message : String(error)}` }
       }
@@ -174,16 +219,15 @@ export function apply(ctx, config = {}) {
     console.warn(`[dsh-piggy] external mode init failed: ${error instanceof Error ? error.message : String(error)}`)
   })
 
-  ctx.effect(() => () => {
+  ctx.effect(() => async () => {
     closed = true
     observer.dispose()
     controller.close()
     unmountEmbedded()
     unmountPanel()
     unmountManagement()
-    try { runtime?.dispose() } catch (error) {
-      console.warn(`[dsh-piggy] runtime dispose failed: ${error instanceof Error ? error.message : String(error)}`)
-    }
+    const old = runtime
     runtime = null
+    await old?.dispose()
   })
 }

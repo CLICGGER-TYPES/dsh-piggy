@@ -60,10 +60,13 @@ test('天气按日期定晴雨：同一天各时段一致，夜雨与白天是�
   assert.equal(weatherAt(RAINY), 'rain')
 })
 
-test('雨天浇湿已经干的空地：动作写回存档，view 只读不写', () => {
+test('雨天浇湿已干空地：动作写回存档，view 只读不写', () => {
   const t = fakeApi(SUNNY)
   const data = farm.init()
-  assert.ok(data.plots.slice(0, START_PLOTS).every(plot => plot.pests.dry === 0), '新地本来是干的')
+  // v6 init checkpoint clears fallow dryness; make the pre-existing dry plots explicit
+  // so this case continues to exercise rain clearing rather than depend on startup defaults.
+  for (const plot of data.plots.slice(0, START_PLOTS)) plot.pests.dry = 0
+  assert.ok(data.plots.slice(0, START_PLOTS).every(plot => plot.pests.dry === 0), 'fixture begins with explicitly dry land')
 
   const before = structuredClone(data)
   assert.equal(farm.view(data, t.api).plots.slice(0, START_PLOTS).filter(plot => plot.pests.includes('dry')).length, START_PLOTS)
@@ -210,7 +213,8 @@ test('自然托管：按地块真实成熟时间收成，没有 400 上限、也
   assert.equal(data.harvests.radish, 28, '100 小时里四块地每块走满七轮')
   assert.ok(data.helper.stock.radish >= 28 * 21 && data.helper.stock.radish <= 28 * 26, '每块都按自己的 roll 收，没有小时产出上限：' + data.helper.stock.radish)
   assert.equal(data.seeds.radish, 50 - 4 - 28, '每收一块补一颗：整株收完才扣种子')
-  assert.equal(data.exp, before, '帮工不给玩家经验')
+  assert.equal(data.exp, before + 210, '28 次 10 XP 白萝卜收获共给 210 菜园 XP')
+  assert.equal(data.helper.xpQuarterRemainder, 0, '整批 28 次收获后的四分之一余数为零')
 })
 
 test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留茬）', () => {
@@ -220,7 +224,7 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
     seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {},
   }
   normalize(old)
-  assert.equal(old.version, 5)
+  assert.equal(old.version, 6)
   assert.equal(old.unlocked, 8)
   assert.equal(old.plots.length, PLOTS)
   assert.ok(old.plots.every(plot => plot === null), '迁移后地块全空')
@@ -229,7 +233,7 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
   setRandom(() => 0.5)
   const fresh = farm.init()
   assert.equal(fresh.unlocked, START_PLOTS)
-  assert.ok(fresh.plots.slice(0, START_PLOTS).every(plot => plot.fallow === true && plot.pests.dry === 0), '只有新开局才生成荒地')
+  assert.ok(fresh.plots.slice(0, START_PLOTS).every(plot => plot.fallow === true && plot.pests.dry === null), '只有新开局才生成荒地；v6 初始化检查点结清空地干旱')
   assert.ok(fresh.plots.slice(START_PLOTS).every(plot => plot === null))
 
   const small = normalize({ version: 3, unlocked: 2, plots: [], seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {} })

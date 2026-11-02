@@ -1,8 +1,8 @@
 // @ts-check
-// 帮工猪：自然托管（用户 2026-10-27 批准）。托管地按原成熟时间、原收成并行生长，帮工持续浇水 / 除草 / 除虫，
-// 熟了收进帮工仓，仓库里有同种种子就自动补种，缺种子就停空地。不给经验、不扣体力，也没有加速批次和工作时间预算。
-// 存档仍是 farm v5：pending 一律 null、usedMs 一律 0，真实生长只看 plot.plantedAt / boostMs / season。
-import { CROPS, PESTS, PLOTS, REGROW_AT } from './data.js'
+// 帮工猪：自然托管（用户 2026-10-27 批准）。托管地按原成熟时间、原收成并行生长，启用时持续浇水 / 除草 / 除虫，
+// 熟了收进帮工仓，仓库里有同种种子就自动补种，缺种子就停空地。暂停不影响自然生长和库存领取；自动收获发 75% 菜园经验。
+// 存档 v6：pending 一律 null、usedMs 一律 0；真实生长只看 plot.plantedAt / boostMs / season。
+import { CROPS, EXP_CAP, PESTS, PLOTS, REGROW_AT } from './data.js'
 import { purse } from './host.js'
 import { amountFor, plantPlot, recordHarvest } from './plot-rules.js'
 import { count, cropFor, droughtAt, isObject, nextPest, plotState, ripeAt, seasonMs, sow, stableRandom, weatherAt } from './pure.js'
@@ -34,10 +34,12 @@ export function helperRecipe(key, level) {
 /** 归一化只做幂等清理：旧批次清成 null、工作预算清成 0，不动已经种下的地块，也不发果。 */
 export function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {}
+  const hired = raw.hired === true
   const level = Math.min(2, count(raw.level))
   const barn = Math.min(3, count(raw.barn)) // 农具档已下架：只读取、只 clamp；紧接着 refundOldBarn 按档位退款并清零
   data.helper = {
-    hired: raw.hired === true, level, barn,
+    hired, enabled: hired && raw.enabled !== false, xpQuarterRemainder: Math.min(3, count(raw.xpQuarterRemainder)),
+    xpEligibleAt: Number.isFinite(raw.xpEligibleAt) ? raw.xpEligibleAt : null, level, barn,
     lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
     usedMs: 0,
     cursor: count(raw.cursor) % PLOTS,
@@ -78,12 +80,25 @@ function nextEvent(data, helper, managed, at, now, blocked) {
 }
 
 /** 收一块托管地：产量按地块自己的 roll（帮工一直打理，没有灾害减产）；多季先长下一季，整株收完才腾地补种。 */
-function harvestHere(data, helper, managed, next) {
+function awardHelperExperience(data, helper, crop, eventAt) {
+  if (Number.isFinite(helper.xpEligibleAt) && eventAt <= helper.xpEligibleAt) return
+  if (data.exp >= EXP_CAP) {
+    helper.xpQuarterRemainder = 0
+    return
+  }
+  const quarters = helper.xpQuarterRemainder + 3 * crop.exp
+  const gained = Math.floor(quarters / 4)
+  data.exp = Math.min(EXP_CAP, data.exp + gained)
+  helper.xpQuarterRemainder = data.exp >= EXP_CAP ? 0 : quarters % 4
+}
+
+function harvestHere(data, helper, managed, next, awardExperience) {
   const plot = data.plots[next.index]
   const crop = next.crop
   keepClean(plot, next.at, next.index)
   const state = plotState(plot, next.at)
   recordHarvest(data, crop.key, Math.max(1, state?.yield ?? 1), helper.stock)
+  if (awardExperience) awardHelperExperience(data, helper, crop, next.at)
   helper.targets[next.index] = crop.key
   if (plot.season < crop.seasons) {
     const season = plot.season + 1
@@ -125,7 +140,7 @@ function tidy(data, managed, now) {
  * 结算主循环：按成熟时刻一件件处理，同刻按 cursor 排队。收成用真实的成熟时刻（离线多久就补多少轮），
  * 补种用结算时钟且不早于 lastAt：没雇帮工的那段不会掉出“追溯种上”的果。
  */
-function settlePlots(data, helper, managed, start, now) {
+function settlePlots(data, helper, managed, start, now, awardExperience) {
   // 托管地在长什么就认下什么：玩家自己种的作物也归帮工按原样补种。
   for (let index = 0; index < managed; index += 1) {
     const crop = cropFor(data.plots[index]?.crop)
@@ -139,7 +154,7 @@ function settlePlots(data, helper, managed, start, now) {
     if (next === null) break
     at = Math.max(at, next.when)
     if (next.crop === null) plantHere(data, helper, managed, next, at, blocked)
-    else harvestHere(data, helper, managed, { at: next.when, index: next.index, crop: next.crop })
+    else harvestHere(data, helper, managed, { at: next.when, index: next.index, crop: next.crop }, awardExperience)
   }
   // 不静默丢弃超大离线存档的剩余农活：失败由宿主事务回滚，lastAt 不会被推进。
   if (step === MAX_STEPS && nextEvent(data, helper, managed, at, now, blocked) !== null) throw new Error('菜园离线农活过多，未推进结算时间；请联系维护者检查存档。')
@@ -150,7 +165,7 @@ function settlePlots(data, helper, managed, start, now) {
  * 自然托管结算：从 helper.lastAt 走到 now，按成熟时间顺序收成、补种（六块同时熟也不会漏）。
  * 只按存档里真实的 plantedAt / boostMs / season 推进；lastAt 只进不退，回拨那一段不重算、不重发。
  */
-export function settleHelper(data, now) {
+export function settleHelper(data, now, { awardExperience = true } = {}) {
   // 雨把已经干的地浇湿；view 在副本结算，动作时写回，下一次旱灾推到下一个晴天。
   if (weatherAt(now) === 'rain') for (const plot of data.plots) {
     if (plot?.fallow) plot.pests.dry = null
@@ -161,7 +176,8 @@ export function settleHelper(data, now) {
   if (!managed || !Number.isFinite(now)) return
   const start = helper.lastAt ?? now
   if (now < start) return
-  settlePlots(data, helper, managed, start, now)
+  if (!helper.enabled) return
+  settlePlots(data, helper, managed, start, now, awardExperience)
   helper.lastAt = now
 }
 
@@ -173,12 +189,12 @@ export function helperView(data) {
   // 没在干活的两种原因：管区里没有在长的作物，也没有任何「这块地指定的作物」的种子（不替玩家挑种子）。
   const seedless = managed > 0 && !data.plots.slice(0, managed).some(plot => cropFor(plot?.crop)) &&
     !helper.targets.slice(0, managed).some(key => key && amountFor(data, 'seeds', key) > 0)
-  return { hired: helper.hired, plots: managed, stored: helperCount(data), usedHours: helper.usedMs / 3600000,
-    capacityHours: null, full: false, continuous: true, seedless, missing: [...new Set(missing)].map(key => cropFor(key).label) }
+  return { hired: helper.hired, enabled: helper.enabled, plots: managed, stored: helperCount(data), usedHours: helper.usedMs / 3600000,
+    capacityHours: null, full: false, continuous: helper.enabled, seedless, missing: [...new Set(missing)].map(key => cropFor(key).label) }
 }
 /** 托管地照常按真实时间长大：只多一句「帮工在看着」，不改 progress / remainingMs / stage（view.js 已经铺好真实值）。 */
 export function helperPlotView(data, index, state) {
-  if (index >= helperPlots(data) || state === null || state.ripe || state.withered) return {}
+  if (!data.helper.enabled || index >= helperPlots(data) || state === null || state.ripe || state.withered) return {}
   return { helperNote: '帮工照料中', pests: [] }
 }
 export function helperShelf(data, balance) {
@@ -198,6 +214,7 @@ export function helperBuy(data, payload, api) {
     if (helper.hired) return { ok: false, reason: 'owned' }
     if (!purse(api).spend(HELPER_PRICES.hire, 'helper')) return { ok: false, reason: 'poor' }
     helper.hired = true
+    helper.enabled = true
     helper.lastAt = api.now
   } else {
     // 农具档已下架：helper-barn 一律拒，别再让玩家买到没有效果的档位。
@@ -208,6 +225,17 @@ export function helperBuy(data, payload, api) {
     helper.level += 1
   }
   return { ok: true }
+}
+
+/** 在动作入口已结算到 api.now 后切换整个帮工托管；暂停时保留较新的检查点。 */
+export function toggleHelper(data, payload, api) {
+  const helper = data.helper
+  if (!helper.hired) return { ok: false, reason: 'locked' }
+  if (typeof payload?.enabled !== 'boolean') return { ok: false, reason: 'unavailable' }
+  if (payload.enabled === helper.enabled) return { ok: false, reason: 'already' }
+  helper.enabled = payload.enabled
+  if (Number.isFinite(api?.now)) helper.lastAt = Number.isFinite(helper.lastAt) ? Math.max(helper.lastAt, api.now) : api.now
+  return { ok: true, enabled: helper.enabled }
 }
 /** 收仓：只把帮工仓里的收成搬进玩家仓库，地块和生长时间一个都不动。 */
 export function collectHelper(data) {

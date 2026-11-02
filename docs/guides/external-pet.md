@@ -1,6 +1,6 @@
 # 外部桌宠模式
 
-> 状态：公开预览版 **0.37.2-rc.5**（配套桌面外壳 0.6.8-rc.3）已在 [GitHub](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5) 和 [Gitee](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5) 发布，npm 的 `rc` 通道也已提供该版本。本文只描述这个公开版本的实现；字段和事务细节见[外部桌宠合并规则](../design/external-merge-rules.md)，接入其他 agent 见[接入指南](agent-adapters.md)。
+> 状态：公开预览版 **0.37.2-rc.6**（配套桌面外壳 0.6.8-rc.4）已在 [GitHub](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.6) 发布。Gitee 发布已取消，本文不提供 Gitee 发布入口。本文只描述这个公开版本的实现；字段和事务细节见[外部桌宠合并规则](../design/external-merge-rules.md)，接入其他 agent 见[接入指南](agent-adapters.md)。
 
 默认仍然是 DSH 内嵌猪和桌面猪各养一只。外部桌宠是可选连接，不会在后台自动合并两份存档；只有用户在 DSH 中明确选择「把内嵌猪合并到桌面猪」并完成预览、确认后，才会执行一次性合并。
 
@@ -84,4 +84,4 @@
 - [外部桌宠合并规则](../design/external-merge-rules.md)：字段、身份选择、扩展钩子、副本和事务细节。
 - [接入其他 agent 框架](agent-adapters.md)：工作事件协议、独立进程接口和 OpenCode 当前实现。
 - [路线图](../ROADMAP.md)：版本状态和公开发布记录。
-- 公开发行：[GitHub v0.37.2-rc.5](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5)、[Gitee v0.37.2-rc.5](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5)。
+- 公开发行：[GitHub v0.37.2-rc.6](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.6)。

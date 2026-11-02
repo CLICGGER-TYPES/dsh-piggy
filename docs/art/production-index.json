@@ -1,0 +1,292 @@
+{
+  "schema": 1,
+  "kind": "dsh-piggy-production-resource-index-sample",
+  "bounded": true,
+  "sourceCommit": "7628d86219c242eb5f37e7443a8f497587100f1b",
+  "generatedFrom": [
+    "assets/pigs/manifest.json",
+    "docs/art/pig-inventory.csv",
+    "assets/fishing/manifest.json",
+    "assets/animations/pet-hand/manifest.json",
+    "assets/animations/piglet-pet/manifest.json",
+    "packages/pet-core/src/data/art-assets.js",
+    "packages/pet-core/src/data/art-revisions.js"
+  ],
+  "description": "Bounded supported sample, not a complete asset ledger. Full manifest coverage is summarized in coverage; this file contains no approval claims.",
+  "sampleCount": 8,
+  "sampleSelection": "three review-bound piglet assets, one pending pig, one reviewed badge, one fishing asset, two animation atlases",
+  "reviewPolicy": {
+    "checkedMeans": "structure issue reported; needs revision",
+    "uncheckedMeans": "no issue selected; not approval",
+    "inactivePreviousMeans": "old revision feedback retained; not resolved",
+    "approvalRequires": [
+      "assetId",
+      "revision",
+      "outputSha256"
+    ],
+    "currentApprovedRecords": 0,
+    "notes": "revision strings are source labels; only reviewDecision.status=approved is an approval claim"
+  },
+  "coverage": {
+    "manifestRecords": 192,
+    "sampleCount": 8,
+    "byKind": {
+      "pig": 183,
+      "fishing": 7,
+      "animation": 2
+    },
+    "byReviewStatus": {
+      "user-directed": 5,
+      "reviewed": 179,
+      "pending": 1,
+      "not-recorded": 7
+    },
+    "verified": {
+      "pigManifestHashes": "183/183",
+      "artAssetKeys": "183/183",
+      "artRevisionPrefixes": "183/183",
+      "fishingExportHashes": "7/7",
+      "animationHashes": "2/2"
+    },
+    "excluded": [
+      "assets/piggy-emoji.woff2 (third-party font; license file separate)",
+      "assets/ui-*.svg (historical/unused entries kept by docs/ASSETS.md)",
+      "apps/desktop/build icons and tray (desktop packaging provenance)",
+      "extensions/*/assets (extension art packs have their own manifests)",
+      "docs/art/reviews historical review images (not runtime assets)",
+      "working originals and unapproved candidates outside this repository"
+    ]
+  },
+  "historicalApproval": {
+    "path": "docs/art/reviews/no-outline/manifest.json",
+    "records": 181,
+    "status": "user-approved",
+    "keyOverlapWithCurrentAssets": 181,
+    "bindsCurrentOutputHashes": 0,
+    "note": "approval ledger binds older no-outline revisions; current paths/hashes differ"
+  },
+  "samples": [
+    {
+      "assetId": "pigs:piglet",
+      "path": "assets/pigs/base/piglet/idle.png",
+      "revision": "piglet-flat-v1-no-blush-20261027",
+      "revisionBasis": "assets/pigs/manifest.json#version",
+      "role": {
+        "kind": "pig",
+        "category": "base",
+        "actor": "piglet",
+        "action": "idle"
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": "docs/art-prompts/flat-pigs/piglet.txt",
+        "reference": "bfc9d9f^:assets/piglet.svg"
+      },
+      "provenance": "assets/pigs/PROVENANCE.md",
+      "outputSha256": "7543c26400e0e94f52e1139858db688fd47f5fa30e2e37a330be449bc273a957",
+      "bytes": 14151,
+      "reviewDecision": {
+        "status": "user-directed",
+        "approval": false,
+        "scope": "blush-removal-only",
+        "evidence": "assets/pigs/PROVENANCE.md"
+      },
+      "supersedes": {
+        "sha256": "aa4ad4da35bb09320070cfeb3c779728f1681287ae2948e43eea1130416fb0e8",
+        "revision": null,
+        "basis": "assets/pigs/manifest.json#retouch.beforeSha256"
+      }
+    },
+    {
+      "assetId": "pigs:piglet-blink",
+      "path": "assets/pigs/base/piglet/blink.png",
+      "revision": "user-approved-batch1-no-blush-20261027",
+      "revisionBasis": "assets/pigs/manifest.json#version",
+      "role": {
+        "kind": "pig",
+        "category": "base",
+        "actor": "piglet",
+        "action": "blink"
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": "docs/art-prompts/flat-pigs/blink.md",
+        "reference": "piglet idle"
+      },
+      "provenance": "assets/pigs/PROVENANCE.md",
+      "outputSha256": "8d487ac28119c441d084993a0b00cd971febd65f3a82afc7d541134424374858",
+      "bytes": 43637,
+      "reviewDecision": {
+        "status": "user-directed",
+        "approval": false,
+        "scope": "blush-removal-only",
+        "evidence": "assets/pigs/PROVENANCE.md"
+      },
+      "supersedes": {
+        "sha256": "b2bf3dc3f0f159b91ba863a1238f852153b4a8c0d991db53705a95e269bb8994",
+        "revision": null,
+        "basis": "assets/pigs/manifest.json#retouch.beforeSha256"
+      }
+    },
+    {
+      "assetId": "pigs:piglet-shy-pet",
+      "path": "assets/pigs/base/piglet/shy-pet.png",
+      "revision": "user-approved-batch1-no-blush-20261027",
+      "revisionBasis": "assets/pigs/manifest.json#version",
+      "role": {
+        "kind": "pig",
+        "category": "base",
+        "actor": "piglet",
+        "action": "shy-pet"
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": "docs/art-prompts/flat-pigs/shy-pet.md",
+        "reference": "piglet idle"
+      },
+      "provenance": "assets/pigs/PROVENANCE.md",
+      "outputSha256": "d20a491df29b361ebb532a1792c45472f5783df09934efdc1374637b5f255a4e",
+      "bytes": 43877,
+      "reviewDecision": {
+        "status": "user-directed",
+        "approval": false,
+        "scope": "blush-removal-only",
+        "evidence": "assets/pigs/PROVENANCE.md"
+      },
+      "supersedes": {
+        "sha256": "f1ba917cdafa51894e2c323c277e3bdbfaad18e0636d7ed2ad19fbb6da66b938",
+        "revision": null,
+        "basis": "assets/pigs/manifest.json#retouch.beforeSha256"
+      }
+    },
+    {
+      "assetId": "pigs:pig-fat-work",
+      "path": "assets/pigs/forms/pig-fat/work.png",
+      "revision": "pig-fat-work-flat-v1",
+      "revisionBasis": "assets/pigs/manifest.json#version",
+      "role": {
+        "kind": "pig",
+        "category": "forms",
+        "actor": "pig-fat",
+        "action": "work"
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": "docs/art-prompts/flat-pigs/pig-fat-work.txt",
+        "reference": "bfc9d9f^:assets/pig-fat-work.svg"
+      },
+      "provenance": "assets/pigs/PROVENANCE.md",
+      "outputSha256": "b096a13c648d1319fb9971ba3e796aab3242dde6c4bcdbf082c13b5d09cb3841",
+      "bytes": 5504,
+      "reviewDecision": {
+        "status": "pending",
+        "approval": false,
+        "evidence": "docs/art/pig-inventory.csv"
+      },
+      "supersedes": null
+    },
+    {
+      "assetId": "pigs:badge-pig-first-fish",
+      "path": "assets/pigs/badges/badge-pig-first-fish.png",
+      "revision": "badge-pig-first-fish-flat-v1",
+      "revisionBasis": "assets/pigs/manifest.json#version",
+      "role": {
+        "kind": "pig",
+        "category": "badges",
+        "actor": "badge-pig-first-fish",
+        "action": "badge"
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": "docs/art-prompts/flat-pigs/badge-pig-first-fish.txt",
+        "reference": "bfc9d9f^:assets/badge-pig-first-fish.svg"
+      },
+      "provenance": "assets/pigs/PROVENANCE.md",
+      "outputSha256": "b61fec5ff7ff0aa912b00b2800b5119a89031168f94675a5c65c792bcee2980b",
+      "bytes": 7274,
+      "reviewDecision": {
+        "status": "reviewed",
+        "approval": false,
+        "evidence": "docs/art/pig-inventory.csv"
+      },
+      "supersedes": null
+    },
+    {
+      "assetId": "fishing:scene-river",
+      "path": "assets/fishing/scene-river.png",
+      "revision": null,
+      "revisionBasis": "sha256-only",
+      "role": {
+        "kind": "fishing",
+        "name": "scene-river",
+        "usage": "scene"
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": null,
+        "detailsRef": "assets/fishing/manifest.json"
+      },
+      "provenance": "assets/fishing/PROVENANCE.md",
+      "outputSha256": "20bf68ad2766374bdc82d5adc4ac61a1c18bee1ae320bf69332fe2163b8357df",
+      "bytes": 541562,
+      "reviewDecision": {
+        "status": "not-recorded",
+        "approval": false,
+        "evidence": null
+      },
+      "supersedes": null
+    },
+    {
+      "assetId": "animation:pet-hand",
+      "path": "assets/animations/pet-hand/hand.webp",
+      "revision": "hd-hand-spring-9",
+      "revisionBasis": "assets/animations/pet-hand/manifest.json#revision",
+      "role": {
+        "kind": "animation",
+        "name": "pet-hand",
+        "runtimeLoaded": true
+      },
+      "source": {
+        "tool": "image_gen",
+        "promptRef": "docs/art-prompts/pet-hand-hd.txt",
+        "detailsRef": "assets/animations/pet-hand/manifest.json"
+      },
+      "provenance": "assets/animations/pet-hand/PROVENANCE.md",
+      "outputSha256": "79dc2bdb794544387ff18c7ad846e76853fca497c8d3beed81de837b7a3bb296",
+      "bytes": 155512,
+      "reviewDecision": {
+        "status": "user-directed",
+        "approval": false,
+        "scope": "compression-9pct-and-integration",
+        "evidence": "assets/animations/pet-hand/PROVENANCE.md"
+      },
+      "supersedes": null
+    },
+    {
+      "assetId": "animation:piglet-pet",
+      "path": "assets/animations/piglet-pet/reference.webp",
+      "revision": "original-gif-v07",
+      "revisionBasis": "assets/animations/piglet-pet/manifest.json#revision",
+      "role": {
+        "kind": "animation",
+        "name": "piglet-pet",
+        "runtimeLoaded": false
+      },
+      "source": {
+        "tool": "user-provided-gif",
+        "promptRef": null,
+        "detailsRef": "assets/animations/piglet-pet/manifest.json"
+      },
+      "provenance": "assets/animations/piglet-pet/PROVENANCE.md",
+      "outputSha256": "53ffa4383eacbbfffe314a57ac99590eaaaf854e81ee2d5d16248b2b6194d2f7",
+      "bytes": 10368,
+      "reviewDecision": {
+        "status": "user-directed",
+        "approval": false,
+        "scope": "use-user-provided-gif",
+        "evidence": "assets/animations/piglet-pet/PROVENANCE.md"
+      },
+      "supersedes": null
+    }
+  ]
+}

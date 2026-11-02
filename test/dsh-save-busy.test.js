@@ -92,6 +92,12 @@ test('real runtime 503 during export freeze retries both DSH events with their o
     while (!fetchStarted) await new Promise(resolve => setImmediate(resolve))
 
     const exporting = runtime.handle('GET', '/dsh-piggy/save/export')
+    // handle() routes asynchronously; wait until export owns the exclusive write lock,
+    // rather than racing the route's first microtask with the observer events.
+    for (let attempt = 0; attempt < 100 && !runtime.gameInfo().busy; attempt += 1) {
+      await new Promise(resolve => setImmediate(resolve))
+    }
+    assert.equal(runtime.gameInfo().busy, true, '导出已取得写锁后才验证工作事件重试')
     assert.equal(observer.observe('turn'), true)
     assert.equal(observer.observe('message'), true)
     assert.equal(observer.pendingCount(), 2)

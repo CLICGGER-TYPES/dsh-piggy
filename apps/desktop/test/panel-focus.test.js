@@ -13,7 +13,7 @@ for(const [title,cursor,close] of [
 ])test(title,()=>{
  const sent=[],tasks=[]
  const panelWin={isDestroyed:()=>false,isVisible:()=>true,getBounds:()=>({x:100,y:100,width:292,height:520})}
- const ctx={panelOpen:true,panelWin,win:{},extWin:null,panelAnchor:{vertical:'above'},panelSize:{width:292,height:370},
+ const ctx={panelOpen:true,panelWin,win:{},extensionWindow:{current:()=>null},panelAnchor:{vertical:'above'},panelSize:{width:292,height:370},
   BrowserWindow:{getFocusedWindow:()=>null},screen:{getCursorScreenPoint:()=>cursor},panelContentRect,pointerHitsShape,
   sendPanel:m=>sent.push(m),setTimeout:fn=>tasks.push(fn)}
  const check=runInNewContext(source.slice(start,end)+'\npanelFocusLeft',ctx);check();tasks[0]()

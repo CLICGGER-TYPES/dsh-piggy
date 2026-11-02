@@ -20,6 +20,7 @@ import { createSaveArchive } from '../runtime/save-archive.js'
 import { createStore } from '../store.js'
 import { createExtRuntime } from '../store/ext-runtime.js'
 import { createJournal } from '../store/journal.js'
+import { farmClassicFiles } from '../scripts/farm-classic-files.mjs'
 import { describeExtensionConflicts } from '../packages/pet-core/src/core/merge-identity.js'
 import farm from '../extensions/farm/server.js'
 import mine from '../extensions/mine/server.js'
@@ -55,18 +56,19 @@ test('官方四个扩展（含经典菜园）都声明 mergeHook 1，服务端�
     assert.match(manifest.version, /^\d+\.\d+\.\d+$/)
   }
   const classic = JSON.parse(readFileSync(new URL('../extension-variants/farm-classic/manifest.json', import.meta.url), 'utf8'))
+  const modern = manifestOf('farm')
   assert.equal(classic.key, 'farm')
   assert.equal(classic.mergeHook, 1)
-  // 经典菜园有自己的大版本号，但跟现代菜园共用同一份服务端：小版本和补丁位一起走。
-  const [, classicMinor, classicPatch] = classic.version.split('.')
-  const [, modernMinor, modernPatch] = manifestOf('farm').version.split('.')
-  assert.deepEqual([classicMinor, classicPatch], [modernMinor, modernPatch], '经典菜园和现代菜园共用同一份服务端，小版本一起走')
+  assert.equal(classic.mergeHook, modern.mergeHook, '两种菜园客户端声明兼容的合并钩子')
+  assert.equal(classic.minGame, modern.minGame, '两种菜园客户端声明兼容的最低游戏版本')
+  assert.deepEqual(Buffer.from(farmClassicFiles()['server.js'], 'utf8'), readFileSync(new URL('../extensions/farm/server.js', import.meta.url)),
+    '经典菜园包必须复用现代菜园的同一份服务端字节')
   for (const extension of [farm, mine, gacha, blindbox]) assert.equal(typeof extension.mergeStates, 'function')
 })
 
 // ---------------------------------------------------------------- 菜园
 
-/** v5 的干净起点：地块自己摆，避免 init() 的随机荒地影响断言。 */
+/** v6 的干净起点：地块自己摆，避免 init() 的随机荒地影响断言。 */
 function farming() {
   const state = farm.init()
   state.unlocked = 6
@@ -89,7 +91,7 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
   target.fert = { 'fert-1': 2 }
   target.plots[0] = plot('radish', NOW - 15 * H) // 14 小时熟的萝卜：已经成熟
   target.plots[1] = plot('apple', NOW - 5 * H)
-  target.helper = { hired: true, level: 1, barn: 0, lastAt: NOW - 3 * H, usedMs: 3 * H, cursor: 3, pending: null, targets: Array(18).fill(null), stock: { radish: 4 } }
+  target.helper = { hired: true, enabled: true, xpQuarterRemainder: 1, xpEligibleAt: NOW - 6 * H, level: 1, barn: 0, lastAt: NOW - 3 * H, usedMs: 3 * H, cursor: 3, pending: null, targets: Array(18).fill(null), stock: { radish: 4 } }
   target.helper.targets[2] = 'apple'
 
   const source = farming()
@@ -102,7 +104,7 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
   source.fert = { 'fert-1': 1, 'fert-3': 1 }
   source.plots[0] = plot('radish', NOW - 2 * H) // 同一天，但桌宠那块已经熟了
   source.plots[2] = plot('apple', NOW - 10 * H) // 比桌宠那块的 -6 小时更靠后
-  source.helper = { hired: true, level: 0, barn: 0, lastAt: NOW - 1 * H, usedMs: 5 * H, cursor: 7, pending: null, targets: Array(18).fill(null), stock: { apple: 3 } }
+  source.helper = { hired: true, enabled: false, xpQuarterRemainder: 2, xpEligibleAt: NOW - 2 * H, level: 0, barn: 0, lastAt: NOW - 1 * H, usedMs: 5 * H, cursor: 7, pending: null, targets: Array(18).fill(null), stock: { apple: 3 } }
   source.helper.targets[2] = 'apple'
   source.onboarding = { step: 'planted', rewarded: false, legacy: false, plantedAt: NOW - MIN, wateredAt: null }
 
@@ -113,7 +115,7 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
   assertPlainData(result)
   const merged = result.data
 
-  assert.equal(merged.version, 5)
+  assert.equal(merged.version, 6)
   assert.equal(merged.unlocked, 12, '开垦块数取高')
   assert.equal(merged.exp, 1500, '经验取高，不相加')
   assert.deepEqual(merged.seeds, { radish: 7, apple: 1, carrot: 2 }, '种子每种相加')
@@ -133,6 +135,10 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
 
   assert.equal(merged.helper.hired, true)
   assert.equal(merged.helper.level, 1, '帮工等级取高')
+  assert.equal(merged.helper.enabled, false, '启用状态跟随 checkpoint 更新的一边，不做 OR')
+  assert.equal(merged.helper.xpQuarterRemainder, 2, 'XP 余数跟随最新 helper 上下文')
+  assert.equal(merged.helper.xpEligibleAt, NOW - 2 * H, 'XP eligibility checkpoint 跟随最新 helper 上下文')
+  assert.equal(merged.helper.lastAt, NOW - 1 * H, '托管结算 checkpoint 跟随最新 helper 上下文')
   assert.equal(merged.helper.usedMs, 0, '自然托管没有工作预算')
   assert.equal(merged.helper.cursor, 7, '指针和管区跟结算得更晚的一方')
   assert.equal(merged.helper.targets[2], 'apple')
@@ -176,7 +182,7 @@ test('菜园：帮工的旧批次不再合并，仓里已落袋的果保留一�
   assert.equal(dropped.data.helper.stock.apple, 3, '仓里的果一个不少')
 })
 
-test('菜园：经典/旧版数据先迁移到 v5 再合并，收获、退款、帮工仓和首课都不丢', () => {
+test('菜园：经典/旧版数据先迁移到 v6 再合并，收获、退款、帮工仓和首课都不丢', () => {
   const target = farming()
   target.unlocked = 8
   target.harvest = { sprout: 1 }
@@ -199,7 +205,7 @@ test('菜园：经典/旧版数据先迁移到 v5 再合并，收获、退款、
   const result = merge(farm, target, legacy)
   assertPlainData(result)
   const merged = result.data
-  assert.equal(merged.version, 5, '迁移后写当前版本')
+  assert.equal(merged.version, 6, '迁移后写当前版本')
   assert.equal(merged.harvest.sprout, 3, '桌宠 1 + 旧地里长完的 2')
   assert.equal(merged.acquired.sprout, 5)
   assert.equal(merged.harvest.scallion, 7, '旧地里的白菜按旧产量 3 个进仓库，再加原来的 4 个')
@@ -240,9 +246,9 @@ test('菜园：数量不超游戏约束；版本比扩展新或不是对象就�
   assert.equal(merged.helper.level, 2, '帮工最多升到 2 级')
   assert.equal(merged.helper.usedMs, 0, '自然托管没有工作预算：旧工时一律清零')
 
-  const v6 = Object.assign(farming(), { version: 6 })
-  assert.throws(() => merge(farm, v6, farming()), /版本 6 比当前扩展新/)
-  assert.throws(() => merge(farm, farming(), v6), /版本 6 比当前扩展新/)
+  const v7 = Object.assign(farming(), { version: 7 })
+  assert.throws(() => merge(farm, v7, farming()), /版本 7 比当前扩展新/)
+  assert.throws(() => merge(farm, farming(), v7), /版本 7 比当前扩展新/)
   for (const bad of [null, [], 'farm', 42]) assert.throws(() => merge(farm, bad, farming()), /不是对象/)
 })
 

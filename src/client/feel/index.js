@@ -9,19 +9,17 @@
  * 窗口跟飞在 feel/flight-run.js。旧外壳没有 flyMove 时自动退回原地落地。
  * @module dsh-piggy/client/feel
  */
-import { clearEffectArt, showEffectArt, syncPigArt } from '../art.js'
-import { playSound } from '../sound.js'
+import { syncPigArt } from '../art.js'
+import { playAudioCue } from '../audio-context.js'
 import { FEEL, modeScale } from './config.js'
 import { createDizzy } from './dizzy.js'
 import { createFlightRunner } from './flight-run.js'
 import { createMotor } from './motor.js'
 import { effectiveFeelMode, onFeelModeChange } from './settings.js'
 import { createSettle } from './settle.js'
-
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
 }
-
 function canAnimate() {
   try {
     return typeof window !== 'undefined'
@@ -39,6 +37,7 @@ function canAnimate() {
  *   getShell: () => any,
  *   isQuiet?: () => boolean,
  *   onGeometry?: () => void,
+ *   art?: { sync: () => boolean, showEffectArt: (name: string) => void, clearEffectArt: () => void }, audio?: { play: (key: string, options?: { soft?: boolean }) => boolean },
  * }} deps
  */
 export function createFeel(deps) {
@@ -48,7 +47,8 @@ export function createFeel(deps) {
   const host = deps.host
   const getShell = deps.getShell
   const onGeometry = deps.onGeometry ?? function () {}
-
+  const art = deps.art ?? null
+  const syncArt = () => disposed ? false : (typeof art?.sync === 'function' ? art.sync() : syncPigArt(pig, deps.pigArt, deps.pigEmoji))
   const motor = canAnimate() ? createMotor(pigHold, pigBody) : null
   let mode = motor === null ? 'off' : effectiveFeelMode()
   let disposed = false
@@ -86,12 +86,13 @@ export function createFeel(deps) {
   function wake() {
     if (pig.getAttribute('data-idle') === 'nap') {
       pig.removeAttribute('data-idle')
-      syncPigArt(pig, deps.pigArt, deps.pigEmoji)
+      syncArt()
     }
     justWoke = true
     if (wakeTimer !== null) clearTimeout(wakeTimer)
     wakeTimer = setTimeout(function () {
       wakeTimer = null
+      if (disposed) return
       justWoke = false
     }, 1500)
   }
@@ -137,7 +138,7 @@ export function createFeel(deps) {
     lifted = false
     liftSoundPlayed = false
     motor.pressTarget(FEEL.pressSquash * scale() * restingFactor())
-    playSound('tap')
+    playAudioCue(deps.audio, 'tap')
     settle.begin()
   }
 
@@ -147,7 +148,7 @@ export function createFeel(deps) {
     motor.holdTarget(FEEL.holdMax * scale() * restingFactor())
     motor.pressTarget(0)
     if (!liftSoundPlayed && !sleeping()) {
-      playSound('lift')
+      playAudioCue(deps.audio, 'lift')
       liftSoundPlayed = true
     }
     settle.begin()
@@ -184,7 +185,7 @@ export function createFeel(deps) {
       applyImpact(clamp(0.04 + speed / 9000, 0.04, FEEL.squashMax))
       if (speed > 240) {
         burstDust(clamp(Math.round(speed / 600), 1, 3))
-        playSound(speed > 900 ? 'land-hard' : 'land-soft', { soft: mode === 'soft' })
+        playAudioCue(deps.audio, speed > 900 ? 'land-hard' : 'land-soft', { soft: mode === 'soft' })
       }
     } else if (tapTimer === null) {
       // 单击：等 250ms 看宿主会不会回 data-react="pet"；没回来就自己轻弹一下。
@@ -201,7 +202,7 @@ export function createFeel(deps) {
   function tap() {
     if (!enabled() || immobileStage()) return
     applyImpact(0.06 * scale())
-    playSound('tap')
+    playAudioCue(deps.audio, 'tap')
   }
 
   function crouch(ms) {
@@ -210,14 +211,15 @@ export function createFeel(deps) {
     if (crouchTimer !== null) clearTimeout(crouchTimer)
     crouchTimer = setTimeout(function () {
       crouchTimer = null
+      if (disposed) return
       motor.pressTarget(0)
     }, ms ?? 120)
     settle.begin()
   }
 
   const dizzyFx = createDizzy({
-    pig: pig, pigArt: deps.pigArt, pigEmoji: deps.pigEmoji,
-    burst: deps.burst, getMode: function () { return mode },
+    pig: pig, pigArt: deps.pigArt, pigEmoji: deps.pigEmoji, art: art,
+    burst: deps.burst, getMode: function () { return mode }, audio: deps.audio,
   })
 
   // ---- 翻卡片 ----
@@ -256,7 +258,7 @@ export function createFeel(deps) {
     if (!wasFlipping) flipFrom = facing
     const target = direction === flipFrom ? 0 : 1
     pig.setAttribute('data-feel-flip', 'true')
-    playSound('flip', { soft: mode === 'soft' })
+    playAudioCue(deps.audio, 'flip', { soft: mode === 'soft' })
     settle.begin()
     motor.flipTo(target, function (done) {
       if (!done || token !== flipToken || disposed) return
@@ -296,6 +298,7 @@ export function createFeel(deps) {
     settle.begin()
     swapTimer = setTimeout(function () {
       swapTimer = null
+      if (disposed) return
       const run = pendingSwap
       pendingSwap = null
       flashing = false
@@ -318,7 +321,7 @@ export function createFeel(deps) {
       const limit = FEEL.tiltMaxFly * scale()
       motor.tiltTarget(clamp(-vx * FEEL.tiltGain, -limit, limit))
     },
-    onSound: function (key) { playSound(key, { soft: mode === 'soft' }) },
+    onSound: function (key) { playAudioCue(deps.audio, key, { soft: mode === 'soft' }) },
     onFinish: function (result) {
       if (motor !== null) motor.tiltTarget(0)
       if (result.dizzy) dizzyFx.trigger()
@@ -329,7 +332,7 @@ export function createFeel(deps) {
   function catchFlight() {
     if (!runner.catch()) return false
     applyImpact(0.06 * scale())
-    playSound('catch', { soft: mode === 'soft' })
+    playAudioCue(deps.audio, 'catch', { soft: mode === 'soft' })
     return true
   }
 

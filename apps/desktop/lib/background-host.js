@@ -6,7 +6,8 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
   const worker = new Worker(new URL('./runtime-worker.js', import.meta.url), {
     workerData: { gameDir, statePath, workEventsDirectory: options.workEventsDirectory,
       optionalExtensionsDirectory: options.optionalExtensionsDirectory,
-      workEventsAutoStart: options.workEventsAutoStart !== false, gameVersion: options.gameVersion ?? '' },
+      workEventsAutoStart: options.workEventsAutoStart !== false, gameVersion: options.gameVersion ?? '',
+      cloudSave: options.cloudSave ?? null },
   })
   const pending = new Map()
   const fetches = new Map()
@@ -91,6 +92,8 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     metadata: () => request('metadata'),
     externalEnable: options => request('external:enable', [options]),
     externalDisable: () => request('external:disable'),
+    configureCloudSave: value => request('cloud:configure', [value]),
+    testCloudSave: value => request('cloud:test', [value]),
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {
       if (closing) return closing

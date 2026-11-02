@@ -12,7 +12,8 @@ import { startDragHeartbeat } from './drag-heartbeat.js'
 import { FEEL } from './feel/config.js'
 import { recentVelocity } from './feel/velocity.js'
 import { partAt } from './pet-parts.js'
-import { playSound, unlockSound } from './sound.js'
+import { playAudioCue, unlockAudioCue } from './audio-context.js'
+import { hitsPig } from './hit-regions.js'
 
 function pointerScreen(event) {
   return {
@@ -30,6 +31,7 @@ function pointerScreen(event) {
  *   clampPig:()=>void, fitPanel:()=>void,
  *   desktopShell:()=>any, isDesktop:boolean, writePosition:()=>void,
  *   isPanelOpen?:()=>boolean,
+ *   audio?:{ play:(key:string, options?:{soft?:boolean})=>boolean, unlock:()=>any },
  * }} c
  */
 export function attachGestures(c) {
@@ -84,7 +86,7 @@ export function attachGestures(c) {
 
   function onPointerDown(event) {
     if (event.button !== 0 || drag !== null) return
-    if (event.target?.closest?.('.dp-bubble,button,a,input,select,textarea,[role=button]')) return
+    if (!hitsPig(c.host, event)) return
     stopHeartbeat()
     stopHeartbeat = function () {}
     const screen = pointerScreen(event)
@@ -96,7 +98,7 @@ export function attachGestures(c) {
     if (c.getView().hatched === true) c.send('touch')
     const snap = beginPetSnap(c.pig)
     if (!snap) c.feel.press()
-    unlockSound()
+    unlockAudioCue(c.audio)
     drag = {
       x: event.clientX, y: event.clientY,
       lastClientX: event.clientX, lastClientY: event.clientY,
@@ -137,7 +139,7 @@ export function attachGestures(c) {
         drag.pathStart = now
         drag.lastStroke = now
         drag.patted = true
-        playSound('purr')
+        playAudioCue(c.audio, 'purr')
         const view = c.getView()
         if (view.hatched === true && !view.dead) c.send('pet', { part: partAt(c.pig, event) }, { petAnimated: drag.snap })
       }

@@ -33,10 +33,12 @@ test('the shell fallback puts the current window inside the primary work area be
 
 test('both tray implementations expose the same plain recovery label and scoped renderer callback', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const desktopTray = readFileSync(new URL('../lib/tray.js', import.meta.url), 'utf8')
   const stageSystem = readFileSync(new URL('../stage/system.js', import.meta.url), 'utf8')
   const preload = readFileSync(new URL('../preload.cjs', import.meta.url), 'utf8')
   const stagePreload = readFileSync(new URL('../stage/preload.cjs', import.meta.url), 'utf8')
-  assert.match(main, /\{ label: '恢复小猪', click: \(\) => \{ recoverPig\(\);/)
+  assert.match(main, /recoverPig,/)
+  assert.match(desktopTray, /\{ label: '恢复小猪', click: \(\) => \{ options\.recoverPig\(\);/)
   assert.match(stageSystem, /\{ label: '恢复小猪', click: \(\) => \{ options\.onRecover\(\) \} \}/)
   assert.match(main, /piggy:recover/)
   assert.match(stageSystem, /stage:recover/)

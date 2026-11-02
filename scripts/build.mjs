@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * 生成内置素材缓存版本、面板 client.js，以及菜园扩展的服务端单文件。
+ * 生成内置素材缓存版本、面板 client.js，以及菜园扩展的单文件客户端和服务端。
  *
  * 菜园 server.js 必须单文件下载，源码却在 src/extensions/farm/；这里复用两个
  * 构建函数，避免 npm run build 只更新其中一个产物。
@@ -13,6 +13,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildClient } from './build-client.mjs'
+import { buildFarmClient } from './build-farm-client.mjs'
 import { buildFarmServer } from './build-farm-server.mjs'
 import { buildArtRevisions } from './build-art-revisions.mjs'
 
@@ -23,6 +24,7 @@ copyFileSync(join(packageRoot, 'runtime/owner-lock.js'), join(packageRoot, 'apps
 writeFileSync(join(packageRoot, 'packages/pet-core/src/data/art-revisions.js'), buildArtRevisions())
 const outputs = [
   ['client.js', await buildClient()],
+  ['extensions/farm/client.js', await buildFarmClient()],
   ['extensions/farm/server.js', await buildFarmServer()],
 ]
 for (const [name, text] of outputs) {

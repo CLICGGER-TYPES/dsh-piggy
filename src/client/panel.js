@@ -31,6 +31,7 @@ import { renderStatusTab } from './tabs/status.js'
 import { renderStudyTab } from './tabs/study.js'
 import { renderSkinsTab } from './tabs/skins.js'
 import { renderSettingsTab } from './tabs/settings.js'
+import { captureCloudSettingsUiState, cloudSettingsDraftOpen, restoreCloudSettingsUiState } from './tabs/cloud-save.js'
 import { renderExtensionsTab } from './tabs/extensions.js'
 import { renderDownloadedApp } from './ext-apps.js'
 import { applyExtensions, enabledTabs } from './extensions.js'
@@ -135,6 +136,9 @@ export function createPanel(ctx) {
       }
       function renderContent() {
         if (renderHold.defer(renderContent) || externalRenderBlocked()) return false
+        // A settings callback can repaint the other controls while preserving
+        // the cloud editor's input, caret, draft disclosure, and focused node.
+        var cloudSettingsState = ctx.tab === 'settings' ? captureCloudSettingsUiState(ctx.content) : null
         var scrollTop = ctx.content.scrollTop
         var page = ctx.content.querySelectorAll('[data-scroll-page]')[0]?.getAttribute('data-scroll-page')
         // 2026-10-13：内部浮层按稳定名称保留滚动；重绘后同一商品仍在原位置，不串到别的页签。
@@ -144,7 +148,11 @@ export function createPanel(ctx) {
             scrollPositions.set(node.getAttribute('data-scroll-key'), { top: node.scrollTop, left: node.scrollLeft })
           }
         })
-        preserveFarmTriggerFocus(ctx.content, paintContent)
+        preserveFarmTriggerFocus(ctx.content, function () {
+          var result = paintContent()
+          if (cloudSettingsState !== null) restoreCloudSettingsUiState(ctx.content, cloudSettingsState)
+          return result
+        })
         // 重绘刚把整棵内容换掉：此刻写 scrollTop 会为整棵树强制一次同步布局（实测 3–4ms，读那一下是在旧布局上读、便宜）。没人滚过就一步都不写——写 0 也一样会强制布局。
         var nextPage = ctx.content.querySelectorAll('[data-scroll-page]')[0]?.getAttribute('data-scroll-page')
         if (nextPage !== page) ctx.content.scrollTop = 0
@@ -351,7 +359,7 @@ export function createPanel(ctx) {
         if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return false
         if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return false
         // Replacing a focused input drops the caret (including IME composition).
-        if (ctx.tab === 'settings' && (document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true' || document.activeElement?.getAttribute?.('data-bubble-scale') === 'true')) return false
+        if (ctx.tab === 'settings' && (cloudSettingsDraftOpen() || document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true' || document.activeElement?.getAttribute?.('data-bubble-scale') === 'true')) return false
         if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return false
         if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return false
         // The QTE and waiting animation own their DOM until the phase changes.

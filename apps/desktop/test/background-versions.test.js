@@ -19,13 +19,18 @@ const files = {
   'client.js': 'const fixture = "prepared game"\n',
   'packages/pet-core/src/core/constants.js': 'export const STATE_VERSION = 14\n',
 }
-const pack = gzipSync(Buffer.from(JSON.stringify({
+const packFiles = files => gzipSync(Buffer.from(JSON.stringify({
   files: Object.fromEntries(Object.entries(files).map(([name, content]) => [name, Buffer.from(content).toString('base64')])),
 })))
+const pack = packFiles(files)
 const release = {
   version: '0.38.0', packUrl: 'https://fixture.invalid/game.json.gz',
   manifest: { stateVersion: 14, size: pack.length, sha256: createHash('sha256').update(pack).digest('hex') },
 }
+const releaseFor = (bytes, manifest = {}) => ({
+  ...release,
+  manifest: { ...release.manifest, ...manifest, size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') },
+})
 
 function deferred() {
   let resolve
@@ -270,6 +275,31 @@ test('提交重新读取准备之后提高的存档版本，拒绝切换并允�
   assert.equal(await versions.activeDir(), bundledDir)
   await assert.rejects(readFile(join(root, 'active.json')), { code: 'ENOENT' })
   await versions.discardPrepared(prepared)
+  assert.deepEqual(await stagedEntries(root), [])
+})
+
+for (const [name, candidateFiles, manifest, expected] of [
+  ['package version 与目标版本不符', { ...files, 'package.json': JSON.stringify({ version: '0.39.0' }) }, {}, /游戏包内容版本与目标版本不一致/],
+  ['源码存档版本与清单不符', { ...files, 'packages/pet-core/src/core/constants.js': 'export const STATE_VERSION = 12\n' }, {}, /游戏包存档版本与清单不一致/],
+]) {
+  test(`拒绝${name}，保留旧游戏和存档`, { timeout: 10_000 }, async t => {
+    const candidate = packFiles(candidateFiles)
+    let requests = 0
+    const { versions, root, bundledDir, statePath } = await setup(t, async () => new Response(requests++ === 0 ? candidate : pack))
+    await assert.rejects(versions.prepareInstall(releaseFor(candidate, manifest)), expected)
+    assert.equal(await versions.activeDir(), bundledDir)
+    assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), { version: 12 })
+    await assert.rejects(readFile(join(root, 'active.json')), { code: 'ENOENT' })
+    assert.deepEqual(await stagedEntries(root), [])
+    assert.deepEqual(await versions.commitInstall(await versions.prepareInstall(release)), { ok: true, version: release.version }, '失败后使用原准备与提交入口重试可安装正确版本')
+    assert.equal(await versions.current().then(value => value.version), release.version)
+  })
+}
+
+test('拒绝与目标版本不一致的游戏清单', { timeout: 10_000 }, async t => {
+  const { versions, root, bundledDir } = await setup(t)
+  await assert.rejects(versions.prepareInstall({ ...release, manifest: { ...release.manifest, version: '0.39.0' } }), /清单版本与目标版本不一致/)
+  assert.equal(await versions.activeDir(), bundledDir)
   assert.deepEqual(await stagedEntries(root), [])
 })
 

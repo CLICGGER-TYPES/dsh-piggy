@@ -15,21 +15,30 @@ import { CSS } from './styles.js'
 var WEB_EMOJI_FACE = '@font-face{font-family:"Piggy Emoji";font-style:normal;font-weight:400;'
   + 'font-display:swap;src:url(/dsh-piggy/emoji.woff2) format("woff2")}'
 
-/** Build the widget once and hand every element back to the shell. */
-export function createScene() {
-var font = document.createElement('link')
+/**
+ * Build the widget once and hand every element back to the shell.
+ *
+ * `options.root` is an explicit, private mounting root for an intentionally
+ * created presentation fixture. Omitting it keeps the current behavior (append
+ * to document.body); the host-level duplicate guard stays in mountGame.
+ */
+export function createScene(options) {
+var opts = options !== null && typeof options === 'object' ? options : {}
+var root = opts.root ?? null
+var doc = root !== null && root.ownerDocument !== null && root.ownerDocument !== undefined ? root.ownerDocument : document
+var font = doc.createElement('link')
 font.rel = 'stylesheet'
 font.href = 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900'
   + '&family=Noto+Sans+SC:wght@400;500;700&display=swap'
-document.head.appendChild(font)
+doc.head.appendChild(font)
 
-var style = document.createElement('style')
+var style = doc.createElement('style')
 // 网页版自带这套 emoji：很多机器没有对应的表情，或者长得跟别处完全不一样（Windows 10 缺新表情）。
 // 桌面版由外壳提供同一个字体家族，这里不能再声明一次，否则同名字体两边打架。
 style.textContent = (desktopShell() === null ? WEB_EMOJI_FACE : '') + CSS
-document.head.appendChild(style)
+doc.head.appendChild(style)
 
-var host = document.createElement('div')
+var host = doc.createElement('div')
 host.setAttribute(MOUNTED, '')
 
 var card = el('div', 'dp-card')
@@ -56,7 +65,7 @@ scene.appendChild(bubble)
 var work = el('div', 'dp-work')
 var prop = el('span', 'dp-prop', '💼')
 var progressWrap = el('div', 'dp-progress')
-var progressFill = document.createElement('i')
+var progressFill = doc.createElement('i')
 progressWrap.appendChild(progressFill)
 work.appendChild(prop)
 work.appendChild(progressWrap)
@@ -82,11 +91,11 @@ scene.appendChild(soul)
 
 // Drawn stages (the piglet, the elder pig) use an <img>; the rest fall
 // back to the emoji. Both live in the pig box so the layout never cares.
-var pigArt = document.createElement('img')
+var pigArt = doc.createElement('img')
 pigArt.className = 'dp-pig-img'
 pigArt.alt = ''
 pigArt.hidden = true
-var pigSleep = document.createElement('img')
+var pigSleep = doc.createElement('img')
 pigSleep.className = 'dp-pig-sleep'
 pigSleep.alt = ''
 pigSleep.draggable = false
@@ -112,7 +121,7 @@ pigBody.appendChild(dressSlots)
 var hungerBubble = el('span', 'dp-hunger-bubble')
 hungerBubble.setAttribute('role', 'img')
 hungerBubble.setAttribute('aria-label', '饿了')
-var hungerCloud = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+var hungerCloud = doc.createElementNS('http://www.w3.org/2000/svg', 'svg')
 hungerCloud.setAttribute('viewBox', '0 0 54 50')
 hungerCloud.setAttribute('aria-hidden', 'true')
 hungerCloud.innerHTML = '<path d="M14 33C4 33 1 22 8 17C5 9 13 3 21 7C27 0 39 3 40 11C52 12 53 26 44 29C40 38 29 38 25 33C20 37 16 36 14 33Z"/><circle cx="13" cy="40" r="3"/><circle cx="7" cy="46" r="1.8"/>'
@@ -153,11 +162,13 @@ card.appendChild(footer)
 card.appendChild(bar)
 host.appendChild(card)
 host.appendChild(scene)
-if (document.body !== null && document.body !== undefined) {
-  document.body.appendChild(host)
+if (root !== null) {
+  root.appendChild(host)
+} else if (doc.body !== null && doc.body !== undefined) {
+  doc.body.appendChild(host)
 } else {
-  document.addEventListener('DOMContentLoaded', function () {
-    try { document.body.appendChild(host) } catch (error) { /* shell not ready */ }
+  doc.addEventListener('DOMContentLoaded', function () {
+    try { doc.body.appendChild(host) } catch (error) { /* shell not ready */ }
   }, { once: true })
 }
 

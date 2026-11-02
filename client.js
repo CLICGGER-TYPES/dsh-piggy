@@ -99,7 +99,7 @@
     let pending2 = null;
     let frame3 = null;
     let isDisposed = false;
-    function schedule4() {
+    function schedule3() {
       if (active2.size || !pending2 || frame3 !== null || isDisposed) return;
       frame3 = environment.requestAnimationFrame(() => {
         frame3 = null;
@@ -114,11 +114,11 @@
     }
     function up(event) {
       active2.delete(event.pointerId);
-      schedule4();
+      schedule3();
     }
     function blur() {
       active2.clear();
-      schedule4();
+      schedule3();
     }
     card2.addEventListener("pointerdown", down, true);
     environment.addEventListener?.("pointerup", up, true);
@@ -156,58 +156,58 @@
     if (left < 42 || right < 42) return right > left ? "right" : "left";
     return pig.x + pig.width / 2 < area.x + area.width / 2 ? "right" : "left";
   }
-  function attachDailyPlacement({ host: host3, pig, daily, bubble, geometry: geometry2, onGeometry }) {
-    let scheduled3 = false;
+  function attachDailyPlacement({ host: host2, pig, daily, bubble, geometry, onGeometry }) {
+    let scheduled2 = false;
     let disposed = false;
     function sync() {
-      scheduled3 = false;
-      if (disposed || host3.getAttribute("data-gift-held") === "true") return;
+      scheduled2 = false;
+      if (disposed || host2.getAttribute("data-gift-held") === "true") return;
       let x = 0, y = 0, node = pig;
       while (node && node !== document.body) {
         x += node.offsetLeft || 0;
         y += node.offsetTop || 0;
         node = node.offsetParent;
       }
-      const geo = geometry2();
+      const geo = geometry();
       const origin = geo?.window ?? { x: 0, y: 0 };
       const box = { x: origin.x + x, y: origin.y + y, width: pig.offsetWidth, height: pig.offsetHeight };
       const area = geo?.workArea ?? nearestArea({ x: box.x + box.width / 2, y: box.y + box.height / 2 }, geo?.workAreas ?? []) ?? { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
       const side = giftSideFor(box, area);
-      if (host3.getAttribute("data-gift-side") !== side) host3.setAttribute("data-gift-side", side);
+      if (host2.getAttribute("data-gift-side") !== side) host2.setAttribute("data-gift-side", side);
     }
-    function schedule4() {
-      if (!disposed && !scheduled3) {
-        scheduled3 = true;
+    function schedule3() {
+      if (!disposed && !scheduled2) {
+        scheduled2 = true;
         queueMicrotask(sync);
       }
     }
     const hold = createRenderHold(daily);
     function release() {
-      host3.removeAttribute("data-gift-held");
+      host2.removeAttribute("data-gift-held");
       sync();
     }
     function down(event) {
       if (event.button !== 0 || daily.getAttribute("data-action") !== "openGift" || bubble.hidden) return;
-      host3.setAttribute("data-gift-held", "true");
+      host2.setAttribute("data-gift-held", "true");
       hold.defer(release);
     }
     daily.addEventListener("pointerdown", down);
-    const observer = new MutationObserver(schedule4);
-    observer.observe(host3, { attributes: true, subtree: true, attributeFilter: ["hidden", "style", "data-action", "data-open"] });
-    const resize = typeof ResizeObserver === "function" ? new ResizeObserver(schedule4) : null;
+    const observer = new MutationObserver(schedule3);
+    observer.observe(host2, { attributes: true, subtree: true, attributeFilter: ["hidden", "style", "data-action", "data-open"] });
+    const resize = typeof ResizeObserver === "function" ? new ResizeObserver(schedule3) : null;
     resize?.observe(pig);
-    const off = onGeometry?.(schedule4);
-    window.addEventListener("resize", schedule4);
+    const off = onGeometry?.(schedule3);
+    window.addEventListener("resize", schedule3);
     sync();
     return () => {
       disposed = true;
       hold.dispose();
       daily.removeEventListener("pointerdown", down);
-      host3.removeAttribute("data-gift-held");
+      host2.removeAttribute("data-gift-held");
       observer.disconnect();
       resize?.disconnect();
       if (typeof off === "function") off();
-      window.removeEventListener("resize", schedule4);
+      window.removeEventListener("resize", schedule3);
     };
   }
 
@@ -278,509 +278,159 @@
     { key: "graduate", label: "\u7814\u7A76\u751F" }
   ];
 
-  // src/client/feedback-framing.js
-  var FRAME_HEIGHT = 0.84375;
-  var FEEDBACK_FRAMING = Object.freeze({
-    "allergy": [1.0909, 0, 0],
-    "birthday": [0.9643, 0, 0],
-    "collection-badge": [0.9818, 0, 0],
-    "collection-bubbles": [1.0909, 0, 0],
-    "collection-cage": [0.9643, 0.19, 0],
-    "collection-check": [1.064, 0, 0.21],
-    "collection-chicken": [0.9643, 0, 0],
-    "collection-courier": [1, 0, 0],
-    "collection-fever": [1.1676, 0, 0.23],
-    "collection-fitness": [1.3012, 0, 0],
-    "collection-letter": [1.2414, 0, 0],
-    "collection-mosquito": [1.2558, 0, 0],
-    "collection-scallion": [1.0237, 0, 0.2],
-    "collection-snack": [1.2067, 0, 0.24],
-    "collection-soup": [0.9643, 0.19, 0],
-    "collection-stack": [0.9643, 0, 0],
-    "collection-taro": [1.1551, 0, 0.23],
-    "collection-throne": [0.9643, 0, 0],
-    "courier": [0.9954, 0, 0.19],
-    "death-day": [1.4595, 0, 0],
-    "faint": [1.1077, 0, 0.22],
-    "fishing": [1.1368, 0, 0],
-    "ghost-grave": [1.1613, 0, 0],
-    "hungry": [1.0237, 0, 0.2],
-    "lie-flat": [1.2273, 0, 0],
-    "music-earbuds": [1.0435, 0, 0.2],
-    "music-headphones-v2": [1.2558, 0, 0],
-    "music-rainbow": [1.7561, 0, 0.34],
-    "painting": [1.0537, 0, 0.21],
-    "recruit": [1.0335, 0, 0.2],
-    "runny-nose": [0.9643, 0, 0],
-    "sleep-cloud": [1.3252, 0, 0.26],
-    "study-book": [1.1803, 0, 0.23],
-    "study-determined": [1.2135, 0, 0],
-    "study-pink-book": [1.0237, 0, 0.2],
-    "suspended": [0.9643, 0.19, 0],
-    "turning": [1.1868, 0, 0],
-    "twitch": [1.1676, 0, 0.23]
-  });
-  var BUILTIN_FRAMING = Object.freeze({
-    "pigs/skins/career-astronaut/idle.png": [1.0693, 0, 0],
-    "pigs/skins/career-astronaut/bathe.png": [1.0335, 0, 0.2],
-    "pigs/skins/career-astronaut/eat.png": [1.0693, 0, 0],
-    "pigs/skins/career-astronaut/pet.png": [0.9774, 0, 0.19],
-    "pigs/skins/career-astronaut/play.png": [0.9643, 0.19, 0],
-    "pigs/skins/career-astronaut/relaxed.png": [1.0693, 0, 0],
-    "pigs/skins/career-astronaut/sleep.png": [1.3758, 0, 0.27],
-    "pigs/skins/career-astronaut/study.png": [0.9954, 0, 0.19],
-    "pigs/skins/career-astronaut/trip.png": [1.08, 0, 0],
-    "pigs/skins/career-astronaut/work.png": [1.102, 0, 0],
-    "pigs/skins/career-chef/idle.png": [0.9643, 0, 0],
-    "pigs/skins/career-chef/bathe.png": [1.0385, 0, 0],
-    "pigs/skins/career-chef/eat.png": [0.9643, 0.19, 0],
-    "pigs/skins/career-chef/pet.png": [0.9643, 0, 0],
-    "pigs/skins/career-chef/play.png": [0.9643, 0, 0],
-    "pigs/skins/career-chef/relaxed.png": [0.9643, 0.19, 0],
-    "pigs/skins/career-chef/sleep.png": [1.2414, 0, 0],
-    "pigs/skins/career-chef/study.png": [0.9643, 0, 0],
-    "pigs/skins/career-chef/trip.png": [0.9643, 0, 0],
-    "pigs/skins/career-chef/work.png": [0.9908, 0, 0],
-    "pigs/base/elder/idle.png": [1.0854, 0, 0.21],
-    "pigs/forms/pig-devil/idle.png": [1.0435, 0, 0.2],
-    "pigs/forms/pig-devil/bathe.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-devil/eat.png": [1.2, 0, 0],
-    "pigs/forms/pig-devil/fly.png": [1.1134, 0, 0],
-    "pigs/forms/pig-devil/pet.png": [1.0746, 0, 0.21],
-    "pigs/forms/pig-devil/play.png": [0.9643, 0, 0],
-    "pigs/forms/pig-devil/relaxed.png": [1.0385, 0, 0],
-    "pigs/forms/pig-devil/sleep.png": [1.3585, 0, 0.27],
-    "pigs/forms/pig-devil/study.png": [1.2706, 0, 0],
-    "pigs/forms/pig-devil/trip.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-devil/work.png": [1.1613, 0, 0],
-    "pigs/forms/pig-fat/idle.png": [1.0964, 0, 0.21],
-    "pigs/forms/pig-fat/bathe.png": [1.0435, 0, 0.2],
-    "pigs/forms/pig-fat/eat.png": [1.2203, 0, 0.24],
-    "pigs/forms/pig-fat/pet.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-fat/play.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-fat/relaxed.png": [1.0964, 0, 0.21],
-    "pigs/forms/pig-fat/sleep.png": [1.4497, 0, 0.28],
-    "pigs/forms/pig-fat/study.png": [1.102, 0, 0],
-    "pigs/forms/pig-fat/trip.png": [1.0909, 0, 0],
-    "pigs/forms/pig-fat/work.png": [1.3091, 0, 0.26],
-    "pigs/forms/pig-king/idle.png": [1.0047, 0, 0.2],
-    "pigs/forms/pig-king/bathe.png": [0.9818, 0, 0],
-    "pigs/forms/pig-king/eat.png": [0.9643, 0, 0],
-    "pigs/forms/pig-king/pet.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-king/play.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-king/relaxed.png": [1.0047, 0, 0.2],
-    "pigs/forms/pig-king/sleep.png": [1.2632, 0, 0.25],
-    "pigs/forms/pig-king/study.png": [1.0385, 0, 0],
-    "pigs/forms/pig-king/trip.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-king/work.png": [1.1429, 0, 0.22],
-    "pigs/forms/pig-round/idle.png": [1.1077, 0, 0.22],
-    "pigs/forms/pig-round/bathe.png": [1.0237, 0, 0.2],
-    "pigs/forms/pig-round/eat.png": [1.0435, 0, 0.2],
-    "pigs/forms/pig-round/pet.png": [1.1134, 0, 0],
-    "pigs/forms/pig-round/play.png": [0.9863, 0, 0.19],
-    "pigs/forms/pig-round/relaxed.png": [1.1134, 0, 0],
-    "pigs/forms/pig-round/sleep.png": [1.3935, 0, 0.27],
-    "pigs/forms/pig-round/study.png": [0.9643, 0.19, 0],
-    "pigs/forms/pig-round/trip.png": [1.1077, 0, 0.22],
-    "pigs/forms/pig-round/work.png": [1.2857, 0, 0],
-    "pigs/base/piglet/idle.png": [1.0693, 0, 0],
-    "pigs/base/piglet/bathe.png": [1.3333, 0, 0],
-    "pigs/base/piglet/blink.png": [1.0693, 0, 0],
-    "pigs/base/piglet/eat.png": [1.3333, 0, 0],
-    "pigs/base/piglet/play.png": [1.1309, 0, 0.22],
-    "pigs/base/piglet/shy-pet.png": [1.0693, 0, 0],
-    "pigs/base/piglet/sleep.png": [1.3585, 0, 0.27],
-    "pigs/base/piglet/work.png": [1.8783, 0, 0.37],
-    "pigs/skins/skin-angel/idle.png": [0.9818, 0, 0],
-    "pigs/skins/skin-angel/bathe.png": [0.9643, 0.19, 0],
-    "pigs/skins/skin-angel/eat.png": [0.9643, 0.19, 0],
-    "pigs/skins/skin-angel/pet.png": [0.9643, 0, 0],
-    "pigs/skins/skin-angel/play.png": [0.9643, 0.19, 0],
-    "pigs/skins/skin-angel/relaxed.png": [0.9643, 0.19, 0],
-    "pigs/skins/skin-angel/sleep.png": [1.3846, 0, 0],
-    "pigs/skins/skin-angel/study.png": [0.9643, 0.19, 0],
-    "pigs/skins/skin-angel/trip.png": [0.9686, 0, 0.19],
-    "pigs/skins/skin-angel/work.png": [1.0189, 0, 0],
-    "pigs/skins/skin-detective/idle.png": [0.9908, 0, 0],
-    "pigs/skins/skin-detective/bathe.png": [1.0385, 0, 0],
-    "pigs/skins/skin-detective/eat.png": [0.9954, 0, 0.19],
-    "pigs/skins/skin-detective/pet.png": [0.9643, 0, 0],
-    "pigs/skins/skin-detective/play.png": [0.9643, 0, 0],
-    "pigs/skins/skin-detective/relaxed.png": [0.9954, 0, 0.19],
-    "pigs/skins/skin-detective/sleep.png": [1.2632, 0, 0.25],
-    "pigs/skins/skin-detective/study.png": [0.9643, 0, 0],
-    "pigs/skins/skin-detective/trip.png": [0.9774, 0, 0.19],
-    "pigs/skins/skin-detective/work.png": [1.0485, 0, 0],
-    "pigs/skins/skin-mint/idle.png": [1.0693, 0, 0],
-    "pigs/skins/skin-mint/bathe.png": [1.0693, 0, 0],
-    "pigs/skins/skin-mint/eat.png": [1.0693, 0, 0],
-    "pigs/skins/skin-mint/pet.png": [1.0693, 0, 0],
-    "pigs/skins/skin-mint/play.png": [1.0693, 0, 0],
-    "pigs/skins/skin-mint/sleep.png": [1.3416, 0, 0.26],
-    "pigs/skins/skin-mint/work.png": [1.6489, 0, 0.32],
-    "pigs/skins/skin-pirate/idle.png": [1.0746, 0, 0.21],
-    "pigs/skins/skin-pirate/bathe.png": [1.0385, 0, 0],
-    "pigs/skins/skin-pirate/eat.png": [1, 0, 0],
-    "pigs/skins/skin-pirate/pet.png": [0.9643, 0, 0],
-    "pigs/skins/skin-pirate/play.png": [0.9643, 0, 0],
-    "pigs/skins/skin-pirate/relaxed.png": [1.0693, 0, 0],
-    "pigs/skins/skin-pirate/sleep.png": [1.3585, 0, 0.27],
-    "pigs/skins/skin-pirate/study.png": [0.9643, 0.19, 0],
-    "pigs/skins/skin-pirate/trip.png": [1.0693, 0, 0],
-    "pigs/skins/skin-pirate/work.png": [1.1309, 0, 0.22],
-    "pigs/skins/skin-wizard/idle.png": [0.973, 0, 3.42],
-    "pigs/skins/skin-wizard/bathe.png": [1.0693, 0, 7.94],
-    "pigs/skins/skin-wizard/eat.png": [1.1134, 0, 6.52],
-    "pigs/skins/skin-wizard/pet.png": [0.973, 0, 3.42],
-    "pigs/skins/skin-wizard/play.png": [1, 0, 4.69],
-    "pigs/skins/skin-wizard/relaxed.png": [0.9774, 0, 3.63],
-    "pigs/skins/skin-wizard/sleep.png": [1.102, 0, 7.75],
-    "pigs/skins/skin-wizard/study.png": [0.8926, 0, -0.35],
-    "pigs/skins/skin-wizard/trip.png": [0.973, 0, 3.42],
-    "pigs/skins/skin-wizard/work.png": [1.2857, 0, 13.06]
-  });
-  var ART_BOUNDS = Object.freeze({
-    "pigs/base/piglet/idle.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/career-chef/idle.png": [0.070312, 0.0625, 0.929688, 0.9375],
-    "pigs/skins/skin-angel/idle.png": [0.0625, 0.070312, 0.9375, 0.929688],
-    "pigs/forms/pig-round/idle.png": [0.0625, 0.117188, 0.9375, 0.878906],
-    "pigs/forms/pig-fat/idle.png": [0.0625, 0.113281, 0.9375, 0.882812],
-    "pigs/forms/pig-king/idle.png": [0.0625, 0.078125, 0.9375, 0.917969],
-    "pigs/skins/skin-mint/idle.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/forms/pig-devil/idle.png": [0.0625, 0.09375, 0.9375, 0.902344],
-    "pigs/skins/career-astronaut/idle.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/skin-detective/idle.png": [0.0625, 0.074219, 0.9375, 0.925781],
-    "pigs/skins/skin-pirate/idle.png": [0.0625, 0.105469, 0.9375, 0.890625],
-    "pigs/skins/skin-wizard/idle.png": [0.058594, 0.03125, 0.941406, 0.898438],
-    "pigs/base/piglet/eat.png": [0.0625, 0.183594, 0.9375, 0.816406],
-    "pigs/base/piglet/play.png": [0.0625, 0.125, 0.9375, 0.871094],
-    "pigs/base/piglet/sleep.png": [0.0625, 0.1875, 0.9375, 0.808594],
-    "pigs/skins/career-chef/eat.png": [0.066406, 0.0625, 0.929688, 0.9375],
-    "pigs/skins/career-chef/play.png": [0.160156, 0.0625, 0.839844, 0.9375],
-    "pigs/skins/career-chef/sleep.png": [0.0625, 0.160156, 0.9375, 0.839844],
-    "pigs/skins/skin-pirate/eat.png": [0.0625, 0.078125, 0.9375, 0.921875],
-    "pigs/skins/skin-pirate/play.png": [0.140625, 0.0625, 0.859375, 0.9375],
-    "pigs/skins/skin-pirate/sleep.png": [0.0625, 0.1875, 0.9375, 0.808594],
-    "pigs/skins/skin-wizard/eat.png": [0.058594, 0.0625, 0.941406, 0.820312],
-    "pigs/skins/skin-wizard/play.png": [0.058594, 0.03125, 0.941406, 0.875],
-    "pigs/skins/skin-wizard/sleep.png": [0.058594, 0.046875, 0.941406, 0.8125],
-    "pigs/forms/pig-round/eat.png": [0.0625, 0.09375, 0.9375, 0.902344],
-    "pigs/forms/pig-round/play.png": [0.0625, 0.070312, 0.9375, 0.925781],
-    "pigs/forms/pig-round/sleep.png": [0.0625, 0.195312, 0.9375, 0.800781],
-    "pigs/forms/pig-fat/eat.png": [0.0625, 0.152344, 0.9375, 0.84375],
-    "pigs/forms/pig-fat/play.png": [0.0625, 0.0625, 0.933594, 0.9375],
-    "pigs/forms/pig-fat/sleep.png": [0.0625, 0.207031, 0.9375, 0.789062],
-    "pigs/skins/skin-mint/eat.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/skin-mint/play.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/skin-mint/sleep.png": [0.0625, 0.183594, 0.9375, 0.8125],
-    "pigs/skins/skin-detective/eat.png": [0.0625, 0.074219, 0.9375, 0.921875],
-    "pigs/skins/skin-detective/play.png": [0.140625, 0.0625, 0.859375, 0.9375],
-    "pigs/skins/skin-detective/sleep.png": [0.0625, 0.164062, 0.9375, 0.832031],
-    "pigs/forms/pig-king/eat.png": [0.0625, 0.0625, 0.9375, 0.9375],
-    "pigs/forms/pig-king/sleep.png": [0.0625, 0.164062, 0.9375, 0.832031],
-    "pigs/forms/pig-devil/eat.png": [0.0625, 0.148438, 0.9375, 0.851562],
-    "pigs/forms/pig-devil/play.png": [0.101562, 0.0625, 0.898438, 0.9375],
-    "pigs/forms/pig-devil/sleep.png": [0.0625, 0.1875, 0.9375, 0.808594],
-    "pigs/skins/skin-angel/eat.png": [0.066406, 0.0625, 0.929688, 0.9375],
-    "pigs/skins/skin-angel/play.png": [0.160156, 0.0625, 0.835938, 0.9375],
-    "pigs/skins/skin-angel/sleep.png": [0.0625, 0.195312, 0.9375, 0.804688],
-    "pigs/skins/career-astronaut/eat.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/career-astronaut/play.png": [0.113281, 0.0625, 0.882812, 0.9375],
-    "pigs/skins/career-astronaut/sleep.png": [0.0625, 0.191406, 0.9375, 0.804688],
-    "pigs/forms/pig-king/play.png": [0.097656, 0.0625, 0.898438, 0.9375],
-    "pigs/skins/career-chef/pet.png": [0.082031, 0.0625, 0.917969, 0.9375],
-    "pigs/skins/career-chef/relaxed.png": [0.066406, 0.0625, 0.929688, 0.9375],
-    "pigs/skins/skin-pirate/pet.png": [0.066406, 0.0625, 0.933594, 0.9375],
-    "pigs/skins/skin-pirate/relaxed.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/skin-wizard/pet.png": [0.058594, 0.03125, 0.941406, 0.898438],
-    "pigs/skins/skin-wizard/relaxed.png": [0.058594, 0.03125, 0.941406, 0.894531],
-    "pigs/skins/career-astronaut/pet.png": [0.0625, 0.066406, 0.9375, 0.929688],
-    "pigs/skins/career-astronaut/relaxed.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/forms/pig-round/pet.png": [0.0625, 0.121094, 0.9375, 0.878906],
-    "pigs/forms/pig-fat/pet.png": [0.09375, 0.0625, 0.902344, 0.9375],
-    "pigs/forms/pig-round/relaxed.png": [0.0625, 0.121094, 0.9375, 0.878906],
-    "pigs/forms/pig-fat/relaxed.png": [0.0625, 0.113281, 0.9375, 0.882812],
-    "pigs/forms/pig-king/pet.png": [0.078125, 0.0625, 0.917969, 0.9375],
-    "pigs/forms/pig-king/relaxed.png": [0.0625, 0.078125, 0.9375, 0.917969],
-    "pigs/forms/pig-devil/pet.png": [0.0625, 0.105469, 0.9375, 0.890625],
-    "pigs/forms/pig-devil/relaxed.png": [0.0625, 0.09375, 0.9375, 0.90625],
-    "pigs/skins/skin-angel/pet.png": [0.074219, 0.0625, 0.925781, 0.9375],
-    "pigs/skins/skin-angel/relaxed.png": [0.0625, 0.0625, 0.933594, 0.9375],
-    "pigs/skins/skin-mint/pet.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/skin-detective/pet.png": [0.074219, 0.0625, 0.925781, 0.9375],
-    "pigs/skins/skin-detective/relaxed.png": [0.0625, 0.074219, 0.9375, 0.921875],
-    "pigs/forms/pig-round/bathe.png": [0.0625, 0.085938, 0.9375, 0.910156],
-    "pigs/forms/pig-fat/bathe.png": [0.0625, 0.09375, 0.9375, 0.902344],
-    "pigs/base/piglet/bathe.png": [0.0625, 0.183594, 0.9375, 0.816406],
-    "pigs/skins/career-chef/bathe.png": [0.0625, 0.09375, 0.9375, 0.90625],
-    "pigs/skins/skin-pirate/bathe.png": [0.0625, 0.09375, 0.9375, 0.90625],
-    "pigs/skins/skin-wizard/bathe.png": [0.058594, 0.03125, 0.941406, 0.820312],
-    "pigs/skins/skin-detective/bathe.png": [0.0625, 0.09375, 0.9375, 0.90625],
-    "pigs/forms/pig-king/bathe.png": [0.0625, 0.070312, 0.9375, 0.929688],
-    "pigs/skins/skin-mint/bathe.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/career-astronaut/bathe.png": [0.0625, 0.089844, 0.9375, 0.90625],
-    "pigs/forms/pig-devil/bathe.png": [0.070312, 0.0625, 0.925781, 0.9375],
-    "pigs/skins/skin-angel/bathe.png": [0.070312, 0.0625, 0.925781, 0.9375],
-    "pigs/skins/career-chef/study.png": [0.109375, 0.0625, 0.890625, 0.9375],
-    "pigs/skins/career-chef/trip.png": [0.085938, 0.0625, 0.914062, 0.9375],
-    "pigs/skins/skin-pirate/work.png": [0.0625, 0.125, 0.9375, 0.871094],
-    "pigs/skins/skin-pirate/study.png": [0.066406, 0.0625, 0.929688, 0.9375],
-    "pigs/skins/skin-pirate/trip.png": [0.0625, 0.105469, 0.9375, 0.894531],
-    "pigs/skins/skin-wizard/work.png": [0.058594, 0.070312, 0.941406, 0.726562],
-    "pigs/skins/skin-wizard/study.png": [0.058594, 0.03125, 0.941406, 0.976562],
-    "pigs/skins/skin-wizard/trip.png": [0.058594, 0.03125, 0.941406, 0.898438],
-    "pigs/skins/career-astronaut/work.png": [0.0625, 0.117188, 0.9375, 0.882812],
-    "pigs/skins/career-astronaut/study.png": [0.0625, 0.074219, 0.9375, 0.921875],
-    "pigs/skins/career-astronaut/trip.png": [0.0625, 0.109375, 0.9375, 0.890625],
-    "pigs/skins/career-chef/work.png": [0.0625, 0.074219, 0.9375, 0.925781],
-    "pigs/forms/pig-round/work.png": [0.0625, 0.171875, 0.9375, 0.828125],
-    "pigs/forms/pig-round/study.png": [0.074219, 0.0625, 0.921875, 0.9375],
-    "pigs/forms/pig-round/trip.png": [0.0625, 0.117188, 0.9375, 0.878906],
-    "pigs/forms/pig-fat/work.png": [0.0625, 0.175781, 0.9375, 0.820312],
-    "pigs/forms/pig-fat/study.png": [0.0625, 0.117188, 0.9375, 0.882812],
-    "pigs/forms/pig-fat/trip.png": [0.0625, 0.113281, 0.9375, 0.886719],
-    "pigs/forms/pig-king/work.png": [0.0625, 0.128906, 0.9375, 0.867188],
-    "pigs/forms/pig-king/study.png": [0.0625, 0.09375, 0.9375, 0.90625],
-    "pigs/forms/pig-king/trip.png": [0.066406, 0.0625, 0.929688, 0.9375],
-    "pigs/forms/pig-devil/work.png": [0.0625, 0.136719, 0.9375, 0.863281],
-    "pigs/forms/pig-devil/study.png": [0.0625, 0.167969, 0.9375, 0.832031],
-    "pigs/forms/pig-devil/trip.png": [0.082031, 0.0625, 0.914062, 0.9375],
-    "pigs/skins/skin-angel/work.png": [0.0625, 0.085938, 0.9375, 0.914062],
-    "pigs/skins/skin-angel/study.png": [0.097656, 0.0625, 0.898438, 0.9375],
-    "pigs/skins/skin-angel/trip.png": [0.0625, 0.0625, 0.9375, 0.933594],
-    "pigs/skins/skin-detective/work.png": [0.0625, 0.097656, 0.9375, 0.902344],
-    "pigs/skins/skin-detective/study.png": [0.085938, 0.0625, 0.914062, 0.9375],
-    "pigs/skins/skin-detective/trip.png": [0.0625, 0.066406, 0.9375, 0.929688],
-    "pigs/base/elder/idle.png": [0.0625, 0.109375, 0.9375, 0.886719],
-    "pigs/forms/pig-devil/fly.png": [0.0625, 0.121094, 0.9375, 0.878906],
-    "pigs/base/piglet/work.png": [0.0625, 0.273438, 0.9375, 0.722656],
-    "pigs/feedback/allergy.png": [0.0625, 0.113281, 0.9375, 0.886719],
-    "pigs/feedback/birthday.png": [0.0625, 0.0625, 0.9375, 0.9375],
-    "pigs/feedback/collection-badge.png": [0.0625, 0.070312, 0.9375, 0.929688],
-    "pigs/feedback/collection-bubbles.png": [0.0625, 0.113281, 0.9375, 0.886719],
-    "pigs/feedback/collection-cage.png": [0.097656, 0.0625, 0.898438, 0.9375],
-    "pigs/skins/skin-mint/work.png": [0.0625, 0.242188, 0.9375, 0.753906],
-    "pigs/badges/badge-pig-blindbox-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-blindbox-six.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-blindbox-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-clean-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-devil.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-farm-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-farm-five.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-farm-ten.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-first-class.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-first-fish.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-first-job.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-first-meal.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-first-trip.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-fish-five.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-gacha-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-gacha-gold.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-gacha-machines.png": [0.121094, 0.0625, 0.878906, 0.9375],
-    "pigs/badges/badge-pig-grown-up.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-jobs-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-king.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-mine-deep.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-mine-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-mine-fossils.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-pet-hundred.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-play-twenty.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-souvenirs-three.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/badges/badge-pig-trips-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/feedback/collection-check.png": [0.0625, 0.101562, 0.9375, 0.894531],
-    "pigs/feedback/collection-chicken.png": [0.101562, 0.0625, 0.898438, 0.9375],
-    "pigs/feedback/collection-courier.png": [0.0625, 0.078125, 0.9375, 0.921875],
-    "pigs/feedback/collection-fever.png": [0.0625, 0.136719, 0.9375, 0.859375],
-    "pigs/feedback/collection-fitness.png": [0.0625, 0.175781, 0.9375, 0.824219],
-    "pigs/feedback/collection-letter.png": [0.0625, 0.160156, 0.9375, 0.839844],
-    "pigs/feedback/collection-mosquito.png": [0.0625, 0.164062, 0.9375, 0.835938],
-    "pigs/feedback/collection-scallion.png": [0.0625, 0.085938, 0.9375, 0.910156],
-    "pigs/feedback/collection-snack.png": [0.0625, 0.148438, 0.9375, 0.847656],
-    "pigs/feedback/collection-soup.png": [0.101562, 0.0625, 0.894531, 0.9375],
-    "pigs/feedback/collection-stack.png": [0.183594, 0.0625, 0.816406, 0.9375],
-    "pigs/feedback/collection-taro.png": [0.0625, 0.132812, 0.9375, 0.863281],
-    "pigs/feedback/collection-throne.png": [0.089844, 0.0625, 0.910156, 0.9375],
-    "pigs/feedback/courier.png": [0.0625, 0.074219, 0.9375, 0.921875],
-    "pigs/feedback/faint.png": [0.0625, 0.117188, 0.9375, 0.878906],
-    "pigs/feedback/fishing.png": [0.0625, 0.128906, 0.9375, 0.871094],
-    "pigs/feedback/ghost-grave.png": [0.0625, 0.136719, 0.9375, 0.863281],
-    "pigs/feedback/hungry.png": [0.0625, 0.085938, 0.9375, 0.910156],
-    "pigs/feedback/lie-flat.png": [0.0625, 0.15625, 0.9375, 0.84375],
-    "pigs/feedback/music-earbuds.png": [0.0625, 0.09375, 0.9375, 0.902344],
-    "pigs/feedback/music-headphones-v2.png": [0.0625, 0.164062, 0.9375, 0.835938],
-    "pigs/feedback/music-rainbow.png": [0.0625, 0.257812, 0.9375, 0.738281],
-    "pigs/feedback/painting.png": [0.0625, 0.097656, 0.9375, 0.898438],
-    "pigs/feedback/recruit.png": [0.0625, 0.089844, 0.9375, 0.90625],
-    "pigs/feedback/runny-nose.png": [0.078125, 0.0625, 0.921875, 0.9375],
-    "pigs/feedback/sleep-cloud.png": [0.0625, 0.179688, 0.9375, 0.816406],
-    "pigs/feedback/study-book.png": [0.0625, 0.140625, 0.9375, 0.855469],
-    "pigs/feedback/study-determined.png": [0.0625, 0.152344, 0.9375, 0.847656],
-    "pigs/feedback/study-pink-book.png": [0.0625, 0.085938, 0.9375, 0.910156],
-    "pigs/feedback/suspended.png": [0.183594, 0.0625, 0.8125, 0.9375],
-    "pigs/feedback/turning.png": [0.0625, 0.144531, 0.9375, 0.855469],
-    "pigs/feedback/twitch.png": [0.0625, 0.136719, 0.9375, 0.859375],
-    "pigs/badges/badge-pig-jobs-hundred.png": [0.132812, 0.0625, 0.863281, 0.9375],
-    "pigs/feedback/death-day.png": [0.0625, 0.210938, 0.9375, 0.789062],
-    "pigs/base/piglet/blink.png": [0.058594, 0.105469, 0.941406, 0.894531],
-    "pigs/base/piglet/shy-pet.png": [0.058594, 0.105469, 0.941406, 0.898438]
-  });
-  var MAX_ART_ASPECT = 1.947826;
+  // src/client/values.js
+  var isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+  var obj = (v) => isObj(v) ? v : {};
+  var arr = (v) => Array.isArray(v) ? v : [];
+  var num = (v, dflt) => typeof v === "number" && isFinite(v) ? v : dflt;
+  var str = (v, dflt) => typeof v === "string" && v !== "" ? v : dflt;
 
-  // src/client/art-framing.js
-  var FRAME_HEIGHT2 = FRAME_HEIGHT;
-  var ART_BOUNDS2 = ART_BOUNDS;
-  var MAX_ART_ASPECT2 = MAX_ART_ASPECT;
-  function builtinFrame(src) {
-    const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
-    const name = path.split("/").pop()?.replace(/\.png$/, "");
-    return BUILTIN_FRAMING[path] ?? FEEDBACK_FRAMING[name] ?? null;
+  // src/client/dom.js
+  function el(tag3, className, text) {
+    var node = document.createElement(tag3);
+    if (className) node.className = className;
+    if (text !== void 0) node.textContent = text;
+    return node;
   }
-  function applyFrame(image, frame3) {
-    if (typeof image.style?.setProperty !== "function") return;
-    image.style.setProperty("--art-zoom", frame3 ? String(frame3[0]) : "1");
-    image.style.setProperty("--art-x", frame3 ? frame3[1] + "%" : "0%");
-    image.style.setProperty("--art-y", frame3 ? frame3[2] + "%" : "0%");
-  }
-  function artMarginFor(width) {
-    return Math.max(40, (MAX_ART_ASPECT2 * FRAME_HEIGHT2 - 1) * width / 2 + 6);
-  }
-
-  // src/client/pet-snap-geometry.js
-  var PET_PRESSURE = Object.freeze([0, 0.5, 1, -0.3, 0.1]);
-  var HAND_POSES = Object.freeze([
-    { wrist: 300, y: 41, angle: -6, sink: 0 },
-    { wrist: 293.5, y: 49, angle: 0, sink: 1.2 },
-    { wrist: 301.5, y: 51, angle: 4, sink: 2.2 },
-    { wrist: 278, y: 47, angle: 0, sink: 1.2 },
-    { wrist: 272, y: 44, angle: -6, sink: 0.2 }
-  ]);
-  function petPose(frame3) {
-    const pressure = PET_PRESSURE[frame3] * 0.09;
-    const hand = HAND_POSES[frame3];
-    return {
-      sx: 1 + pressure * 0.55,
-      sy: 1 - pressure,
-      handY: hand.y + 71.5 * pressure - hand.sink,
-      wrist: hand.wrist,
-      angle: hand.angle
-    };
-  }
-  function framedPetBounds(bounds2, zoom = 1, x = 0, y = 0) {
-    return {
-      left: 0.5 + (bounds2[0] - 0.5) * zoom + x / 100,
-      top: 0.5 + (bounds2[1] - 0.5) * zoom + y / 100,
-      right: 0.5 + (bounds2[2] - 0.5) * zoom + x / 100,
-      bottom: 0.5 + (bounds2[3] - 0.5) * zoom + y / 100
-    };
-  }
-  function canPlayPetSnap(pig) {
-    const read2 = (name) => pig.getAttribute("data-" + name) || "";
-    return (Boolean(read2("art")) || ["piglet", "young", "middle"].includes(read2("stage"))) && !["box", "grave", "dead-day"].includes(read2("stage")) && !read2("activity") && !read2("idle") && !read2("illness") && read2("party") !== "true" && !["sleepy", "dead", "sick"].includes(read2("mood")) && (!read2("react") || read2("react") === "pet");
-  }
-
-  // src/client/storage.js
-  function readStore(key2) {
-    try {
-      var value = window.localStorage.getItem(key2);
-      return value !== null ? value : window.localStorage.getItem(key2.replace(/^dsh-piggy:/, "dsh-pig:"));
-    } catch (error) {
-      return null;
-    }
-  }
-  function writeStore(key2, value) {
-    try {
-      window.localStorage.setItem(key2, value);
-    } catch (error) {
-    }
-  }
-
-  // src/client/feel/settings.js
-  var FEEL_KEY = "dsh-piggy:feel";
-  var SOUND_KEY = "dsh-piggy:sound";
-  var FEEL_MODES = Object.freeze(["full", "soft", "off"]);
-  var SOUND_VOLUMES = Object.freeze([0, 1, 2]);
-  function cleanMode(value) {
-    return typeof value === "string" && FEEL_MODES.includes(value) ? value : "full";
-  }
-  function feelMode() {
-    return cleanMode(readStore(FEEL_KEY));
-  }
-  function setFeelMode(mode) {
-    writeStore(FEEL_KEY, cleanMode(mode));
-    notifyFeel();
-  }
-  function prefersReducedMotion() {
-    try {
-      return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches === true;
-    } catch {
-      return false;
-    }
-  }
-  function effectiveFeelMode() {
-    return prefersReducedMotion() ? "off" : feelMode();
-  }
-  var feelListeners = /* @__PURE__ */ new Set();
-  function onFeelModeChange(fn) {
-    feelListeners.add(fn);
-    return function() {
-      feelListeners.delete(fn);
-    };
-  }
-  function notifyFeel() {
-    var mode = effectiveFeelMode();
-    feelListeners.forEach(function(fn) {
-      try {
-        fn(mode);
-      } catch {
-      }
+  function button(className, attrs, onClick) {
+    var node = el("button", className);
+    node.type = "button";
+    for (var key2 in attrs) node.setAttribute(key2, attrs[key2]);
+    node.addEventListener("click", function(event) {
+      event.stopPropagation();
+      onClick(event);
     });
+    return node;
   }
-  try {
-    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-      window.addEventListener("storage", function(event) {
-        if (event !== null && event !== void 0 && event.key === FEEL_KEY) notifyFeel();
-      });
+  function meter(value, variant) {
+    var wrap2 = el("div", "dp-meter" + (variant ? " " + variant : ""));
+    var fill = document.createElement("i");
+    fill.style.width = Math.max(0, Math.min(100, num(value, 0))) + "%";
+    wrap2.appendChild(fill);
+    return wrap2;
+  }
+  function sideScroller(strip, active2) {
+    if (typeof strip.addEventListener === "function") {
+      strip.addEventListener("wheel", function(event) {
+        if (strip.scrollWidth <= strip.clientWidth) return;
+        var delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+        if (delta === 0) return;
+        strip.scrollLeft += delta;
+        event.preventDefault();
+      }, { passive: false });
     }
-  } catch {
-  }
-  function soundSettings() {
-    var raw = null;
-    try {
-      raw = JSON.parse(readStore(SOUND_KEY) || "null");
-    } catch {
-      raw = null;
+    if (active2 && typeof active2.offsetLeft === "number") {
+      strip.scrollLeft = Math.max(0, active2.offsetLeft - (strip.clientWidth - active2.offsetWidth) / 2);
     }
-    var on = raw !== null && typeof raw === "object" && raw.on === true;
-    var volume = raw !== null && typeof raw === "object" && Number.isFinite(raw.volume) ? Math.round(raw.volume) : 2;
-    if (!SOUND_VOLUMES.includes(volume)) volume = 2;
-    return { on, volume };
-  }
-  function setSoundSettings(next) {
-    var current3 = soundSettings();
-    var on = next.on === void 0 ? current3.on : next.on === true;
-    var volume = next.volume === void 0 ? current3.volume : Math.round(Number(next.volume));
-    if (!SOUND_VOLUMES.includes(volume)) volume = current3.volume;
-    writeStore(SOUND_KEY, JSON.stringify({ on, volume }));
-    return { on, volume };
   }
 
-  // src/client/pet-hand-settings.js
-  var PET_HAND_KEY = "dsh-piggy:pet-hand";
-  var listeners = /* @__PURE__ */ new Set();
-  function petHandEnabled() {
-    return readStore(PET_HAND_KEY) !== "off";
+  // src/client/normalize-dex.js
+  function normalizeDex(raw) {
+    const source = obj(raw);
+    const out = {};
+    for (const section2 of ["forms", "skins", "fish", "items", "souvenirs", "achievements"]) {
+      out[section2] = arr(source[section2]).map(function(value) {
+        const entry = obj(value);
+        return {
+          key: str(entry.key, ""),
+          label: str(entry.label, ""),
+          emoji: str(entry.emoji, "\u{1F4E6}"),
+          art: str(entry.art, ""),
+          description: str(entry.description, ""),
+          hint: str(entry.hint, ""),
+          kind: str(entry.kind, ""),
+          kindLabel: str(entry.kindLabel, ""),
+          acquired: entry.acquired === true,
+          firstAt: typeof entry.firstAt === "number" ? entry.firstAt : null,
+          count: num(entry.count, 0),
+          condition: str(entry.condition, ""),
+          availability: ["ready", "off", "not-installed", "update-required"].includes(entry.availability) ? entry.availability : "ready",
+          group: str(entry.group, ""),
+          progress: Math.max(0, num(entry.progress, 0)),
+          target: Math.max(1, num(entry.target, 1)),
+          unit: str(entry.unit, ""),
+          recovered: entry.recovered === true,
+          maxSizeCm: typeof entry.maxSizeCm === "number" ? entry.maxSizeCm : null,
+          requirements: arr(entry.requirements).map(function(value2) {
+            const requirement = obj(value2);
+            return { key: str(requirement.key, ""), label: str(requirement.label, ""), have: num(requirement.have, 0), need: num(requirement.need, 0), met: requirement.met === true };
+          })
+        };
+      }).filter((entry) => entry.key !== "");
+    }
+    return out;
   }
-  function setPetHandEnabled(on) {
-    writeStore(PET_HAND_KEY, on ? "on" : "off");
-    listeners.forEach((fn) => fn());
+
+  // src/client/normalize-fishing.js
+  function feel(value, difficulty) {
+    const entry = obj(value);
+    return {
+      difficulty: num(entry.difficulty, difficulty),
+      speed: num(entry.speed, 1),
+      burst: num(entry.burst, 0),
+      burstScale: num(entry.burstScale, 1),
+      drift: num(entry.drift, 0),
+      jitter: num(entry.jitter, 0),
+      zone: num(entry.zone, 1),
+      hold: num(entry.hold, 1),
+      rod: str(entry.rod, "")
+    };
   }
-  function onPetHandChange(fn) {
-    listeners.add(fn);
-    return () => listeners.delete(fn);
+  function fish(value) {
+    const entry = obj(value);
+    const difficulty = num(entry.difficulty, 1);
+    return {
+      id: str(entry.id, ""),
+      key: str(entry.key, ""),
+      label: str(entry.label, "\u9C7C"),
+      emoji: str(entry.emoji, "\u{1F41F}"),
+      rarity: str(entry.rarity, "common"),
+      behavior: str(entry.behavior, "smooth"),
+      difficulty,
+      sizeCm: num(entry.sizeCm, 0),
+      price: num(entry.price, 0),
+      phase: str(entry.phase, ""),
+      castPower: num(entry.castPower, 0),
+      bitesAt: num(entry.bitesAt, 0),
+      hookUntil: num(entry.hookUntil, 0),
+      expiresAt: num(entry.expiresAt, 0),
+      // 搏斗玩法（ring / bar / pull，没有就是老宿主：圆盘）；maxCm 用来说「大个的」。
+      fight: str(entry.fight, "ring"),
+      maxCm: num(entry.maxCm, 0),
+      feel: feel(entry.feel, difficulty)
+    };
   }
-  if (typeof window !== "undefined") window.addEventListener?.("storage", (event) => {
-    if (event.key === PET_HAND_KEY || event.key === null) listeners.forEach((fn) => fn());
-  });
+  function automation(value) {
+    if (!isObj(value)) return null;
+    return {
+      unlocked: value.unlocked === true,
+      stored: num(value.stored, 0),
+      usedHours: num(value.usedHours, 0),
+      capacityHours: 6,
+      full: value.full === true,
+      baitLimit: num(value.baitLimit, 0),
+      choices: arr(value.choices).filter(isObj).map((choice) => ({ minutes: num(choice.minutes, 30), attempts: num(choice.attempts, 6), legacy: choice.minutes <= 60 })),
+      upgrades: arr(value.upgrades).filter(isObj).map((upgrade) => ({ kind: str(upgrade.kind, ""), label: str(upgrade.label, ""), price: num(upgrade.price, 0) })).filter((upgrade) => ["basket", "duration", "baitBox"].includes(upgrade.kind))
+    };
+  }
+  function normalizeFishing(raw) {
+    const source = obj(raw);
+    const rod = obj(source.rod);
+    return {
+      automation: automation(source.automation),
+      pending: isObj(source.pending) ? fish(source.pending) : null,
+      bag: arr(source.bag).map(fish).filter((entry) => entry.id !== ""),
+      period: str(source.period, ""),
+      autoTrips: num(source.autoTrips, 0),
+      rod: { level: num(rod.level, 1), label: str(rod.label, "\u9C7C\u7AFF"), emoji: str(rod.emoji, "\u{1F3A3}") },
+      nextRod: isObj(source.nextRod) ? { level: num(source.nextRod.level, 2), label: str(source.nextRod.label, ""), emoji: str(source.nextRod.emoji, "\u{1F3A3}"), price: num(source.nextRod.price, 0) } : null,
+      spot: str(source.spot, "river"),
+      spots: arr(source.spots).map((value) => {
+        const spot = obj(value);
+        return { key: str(spot.key, ""), label: str(spot.label, ""), emoji: str(spot.emoji, "\u{1F3DE}"), price: num(spot.price, 0), unlocked: spot.unlocked === true, open: spot.open !== false, kinds: num(spot.kinds, 0) };
+      }).filter((spot) => spot.key !== "")
+    };
+  }
 
   // packages/pet-core/src/data/minutes.js
   var MINUTES = Object.freeze({
@@ -3287,51 +2937,51 @@
   });
 
   // packages/pet-core/src/data/fish.js
-  var fish = (key2, label, emoji, spot, rarity, times, behavior, difficulty, minCm, maxCm, price) => Object.freeze({ key: key2, label, emoji, spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price });
+  var fish2 = (key2, label, emoji, spot, rarity, times, behavior, difficulty, minCm, maxCm, price) => Object.freeze({ key: key2, label, emoji, spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price });
   var ALL_DAY = ["early", "noon", "evening", "night"];
   var FISH = Object.freeze([
     // C5 的 15 种（价格、时段、手感都不改，只按水域分到钓点）
-    fish("fish_crucian", "\u9CAB\u9C7C", "\u{1F41F}", "river", "common", ["early", "noon", "evening"], "smooth", 12, 12, 32, 8),
-    fish("fish_carp", "\u9CA4\u9C7C", "\u{1F41F}", "river", "common", ["noon", "evening"], "smooth", 18, 20, 55, 12),
-    fish("fish_sardine", "\u6C99\u4E01\u9C7C", "\u{1F41F}", "sea", "common", ["early", "noon"], "dash", 22, 10, 26, 14),
-    fish("fish_anchovy", "\u9CC0\u9C7C", "\u{1F41F}", "sea", "common", ["early", "evening"], "dash", 25, 8, 22, 16),
-    fish("fish_perch", "\u6CB3\u9C88", "\u{1F420}", "river", "common", ["noon", "evening"], "sink", 28, 16, 38, 18),
-    fish("fish_bream", "\u9CCA\u9C7C", "\u{1F41F}", "river", "common", ["early", "noon"], "rise", 30, 18, 42, 20),
-    fish("fish_catfish", "\u9CB6\u9C7C", "\u{1F421}", "river", "common", ["evening", "night"], "sink", 34, 24, 68, 24),
-    fish("fish_mackerel", "\u9752\u82B1\u9C7C", "\u{1F41F}", "sea", "common", ["noon", "evening"], "mixed", 38, 22, 48, 28),
-    fish("fish_salmon", "\u9C91\u9C7C", "\u{1F41F}", "river", "uncommon", ["early", "evening"], "dash", 48, 38, 92, 48),
-    fish("fish_puffer", "\u6CB3\u8C5A", "\u{1F421}", "sea", "uncommon", ["noon"], "mixed", 55, 18, 40, 62),
-    fish("fish_eel", "\u9CD7\u9C7C", "\u{1F40D}", "river", "uncommon", ["evening", "night"], "rise", 61, 42, 110, 78),
-    fish("fish_tuna", "\u91D1\u67AA\u9C7C", "\u{1F41F}", "sea", "uncommon", ["early", "noon"], "dash", 66, 70, 180, 96),
-    fish("fish_sturgeon", "\u9C9F\u9C7C", "\u{1F41F}", "river", "rare", ["night"], "sink", 78, 85, 220, 160),
-    fish("fish_koi", "\u9EC4\u91D1\u9526\u9CA4", "\u{1F38F}", "river", "rare", ["early", "evening"], "mixed", 86, 30, 88, 220),
-    fish("fish_moon", "\u6708\u5F71\u9C7C", "\u{1F319}", "night", "legend", ["night"], "mixed", 100, 60, 160, 300),
+    fish2("fish_crucian", "\u9CAB\u9C7C", "\u{1F41F}", "river", "common", ["early", "noon", "evening"], "smooth", 12, 12, 32, 8),
+    fish2("fish_carp", "\u9CA4\u9C7C", "\u{1F41F}", "river", "common", ["noon", "evening"], "smooth", 18, 20, 55, 12),
+    fish2("fish_sardine", "\u6C99\u4E01\u9C7C", "\u{1F41F}", "sea", "common", ["early", "noon"], "dash", 22, 10, 26, 14),
+    fish2("fish_anchovy", "\u9CC0\u9C7C", "\u{1F41F}", "sea", "common", ["early", "evening"], "dash", 25, 8, 22, 16),
+    fish2("fish_perch", "\u6CB3\u9C88", "\u{1F420}", "river", "common", ["noon", "evening"], "sink", 28, 16, 38, 18),
+    fish2("fish_bream", "\u9CCA\u9C7C", "\u{1F41F}", "river", "common", ["early", "noon"], "rise", 30, 18, 42, 20),
+    fish2("fish_catfish", "\u9CB6\u9C7C", "\u{1F421}", "river", "common", ["evening", "night"], "sink", 34, 24, 68, 24),
+    fish2("fish_mackerel", "\u9752\u82B1\u9C7C", "\u{1F41F}", "sea", "common", ["noon", "evening"], "mixed", 38, 22, 48, 28),
+    fish2("fish_salmon", "\u9C91\u9C7C", "\u{1F41F}", "river", "uncommon", ["early", "evening"], "dash", 48, 38, 92, 48),
+    fish2("fish_puffer", "\u6CB3\u8C5A", "\u{1F421}", "sea", "uncommon", ["noon"], "mixed", 55, 18, 40, 62),
+    fish2("fish_eel", "\u9CD7\u9C7C", "\u{1F40D}", "river", "uncommon", ["evening", "night"], "rise", 61, 42, 110, 78),
+    fish2("fish_tuna", "\u91D1\u67AA\u9C7C", "\u{1F41F}", "sea", "uncommon", ["early", "noon"], "dash", 66, 70, 180, 96),
+    fish2("fish_sturgeon", "\u9C9F\u9C7C", "\u{1F41F}", "river", "rare", ["night"], "sink", 78, 85, 220, 160),
+    fish2("fish_koi", "\u9EC4\u91D1\u9526\u9CA4", "\u{1F38F}", "river", "rare", ["early", "evening"], "mixed", 86, 30, 88, 220),
+    fish2("fish_moon", "\u6708\u5F71\u9C7C", "\u{1F319}", "night", "legend", ["night"], "mixed", 100, 60, 160, 300),
     // 钓鱼 2.0 新加的 25 种
-    fish("fish_loach", "\u6CE5\u9CC5", "\u{1F41F}", "river", "common", ALL_DAY, "smooth", 8, 8, 20, 6),
-    fish("fish_crayfish", "\u5C0F\u9F99\u867E", "\u{1F99E}", "river", "common", ["noon", "evening", "night"], "sink", 14, 8, 15, 10),
-    fish("fish_ricefield_eel", "\u9EC4\u9CDD", "\u{1F40D}", "river", "uncommon", ["evening", "night"], "rise", 45, 25, 70, 40),
-    fish("fish_goldfish", "\u91D1\u9C7C", "\u{1F420}", "lake", "common", ["early", "noon"], "smooth", 10, 5, 15, 6),
-    fish("fish_grass_carp", "\u8349\u9C7C", "\u{1F41F}", "lake", "common", ["early", "noon", "evening"], "smooth", 20, 30, 90, 10),
-    fish("fish_silver_carp", "\u9CA2\u9C7C", "\u{1F41F}", "lake", "common", ["noon", "evening"], "rise", 24, 30, 80, 12),
-    fish("fish_icefish", "\u94F6\u9C7C", "\u{1F41F}", "lake", "common", ["early", "evening"], "dash", 26, 5, 12, 14),
-    fish("fish_trout", "\u8679\u9CDF", "\u{1F41F}", "lake", "uncommon", ["early", "evening"], "dash", 44, 30, 70, 40),
-    fish("fish_crab", "\u5927\u95F8\u87F9", "\u{1F980}", "lake", "uncommon", ["evening", "night"], "sink", 48, 8, 15, 45),
-    fish("fish_mandarin", "\u9CDC\u9C7C", "\u{1F41F}", "lake", "uncommon", ["evening", "night"], "mixed", 54, 25, 60, 50),
-    fish("fish_pike", "\u72D7\u9C7C", "\u{1F41F}", "lake", "uncommon", ["noon", "evening"], "dash", 62, 40, 120, 60),
-    fish("fish_paddlefish", "\u767D\u9C9F", "\u{1F41F}", "lake", "rare", ["night"], "sink", 82, 100, 300, 200),
-    fish("fish_lake_shadow", "\u6E56\u4E2D\u5DE8\u5F71", "\u{1F311}", "lake", "legend", ["night"], "mixed", 98, 200, 500, 600),
-    fish("fish_ribbonfish", "\u5E26\u9C7C", "\u{1F41F}", "sea", "common", ["evening", "night"], "rise", 30, 50, 120, 16),
-    fish("fish_croaker", "\u9EC4\u82B1\u9C7C", "\u{1F41F}", "sea", "common", ["early", "noon"], "smooth", 32, 20, 45, 18),
-    fish("fish_flounder", "\u6BD4\u76EE\u9C7C", "\u{1F41F}", "sea", "uncommon", ["noon", "evening"], "sink", 46, 25, 60, 50),
-    fish("fish_octopus", "\u7AE0\u9C7C", "\u{1F419}", "sea", "uncommon", ["evening", "night"], "mixed", 58, 30, 90, 60),
-    fish("fish_swordfish", "\u65D7\u9C7C", "\u{1F41F}", "sea", "rare", ["noon"], "dash", 84, 150, 300, 220),
-    fish("fish_whale_shark", "\u5C0F\u9CB8\u9CA8", "\u{1F988}", "sea", "legend", ["early", "noon"], "smooth", 95, 300, 600, 700),
-    fish("fish_firefly", "\u8424\u5149\u9C7C", "\u2728", "night", "common", ["night"], "dash", 28, 5, 15, 10),
-    fish("fish_lantern", "\u706F\u7B3C\u9C7C", "\u{1F3EE}", "night", "common", ["night"], "rise", 34, 6, 18, 12),
-    fish("fish_ghost", "\u5E7D\u7075\u9C7C", "\u{1F47B}", "night", "uncommon", ["night"], "mixed", 60, 20, 50, 55),
-    fish("fish_star_ray", "\u661F\u6591\u9CD0", "\u2B50", "night", "rare", ["night"], "sink", 80, 60, 150, 160),
-    fish("fish_arowana", "\u9F99\u9C7C", "\u{1F409}", "night", "rare", ["night"], "dash", 88, 60, 120, 200),
-    fish("fish_night_whale", "\u591C\u4E4B\u9CB8", "\u{1F40B}", "night", "legend", ["night"], "mixed", 100, 400, 900, 600)
+    fish2("fish_loach", "\u6CE5\u9CC5", "\u{1F41F}", "river", "common", ALL_DAY, "smooth", 8, 8, 20, 6),
+    fish2("fish_crayfish", "\u5C0F\u9F99\u867E", "\u{1F99E}", "river", "common", ["noon", "evening", "night"], "sink", 14, 8, 15, 10),
+    fish2("fish_ricefield_eel", "\u9EC4\u9CDD", "\u{1F40D}", "river", "uncommon", ["evening", "night"], "rise", 45, 25, 70, 40),
+    fish2("fish_goldfish", "\u91D1\u9C7C", "\u{1F420}", "lake", "common", ["early", "noon"], "smooth", 10, 5, 15, 6),
+    fish2("fish_grass_carp", "\u8349\u9C7C", "\u{1F41F}", "lake", "common", ["early", "noon", "evening"], "smooth", 20, 30, 90, 10),
+    fish2("fish_silver_carp", "\u9CA2\u9C7C", "\u{1F41F}", "lake", "common", ["noon", "evening"], "rise", 24, 30, 80, 12),
+    fish2("fish_icefish", "\u94F6\u9C7C", "\u{1F41F}", "lake", "common", ["early", "evening"], "dash", 26, 5, 12, 14),
+    fish2("fish_trout", "\u8679\u9CDF", "\u{1F41F}", "lake", "uncommon", ["early", "evening"], "dash", 44, 30, 70, 40),
+    fish2("fish_crab", "\u5927\u95F8\u87F9", "\u{1F980}", "lake", "uncommon", ["evening", "night"], "sink", 48, 8, 15, 45),
+    fish2("fish_mandarin", "\u9CDC\u9C7C", "\u{1F41F}", "lake", "uncommon", ["evening", "night"], "mixed", 54, 25, 60, 50),
+    fish2("fish_pike", "\u72D7\u9C7C", "\u{1F41F}", "lake", "uncommon", ["noon", "evening"], "dash", 62, 40, 120, 60),
+    fish2("fish_paddlefish", "\u767D\u9C9F", "\u{1F41F}", "lake", "rare", ["night"], "sink", 82, 100, 300, 200),
+    fish2("fish_lake_shadow", "\u6E56\u4E2D\u5DE8\u5F71", "\u{1F311}", "lake", "legend", ["night"], "mixed", 98, 200, 500, 600),
+    fish2("fish_ribbonfish", "\u5E26\u9C7C", "\u{1F41F}", "sea", "common", ["evening", "night"], "rise", 30, 50, 120, 16),
+    fish2("fish_croaker", "\u9EC4\u82B1\u9C7C", "\u{1F41F}", "sea", "common", ["early", "noon"], "smooth", 32, 20, 45, 18),
+    fish2("fish_flounder", "\u6BD4\u76EE\u9C7C", "\u{1F41F}", "sea", "uncommon", ["noon", "evening"], "sink", 46, 25, 60, 50),
+    fish2("fish_octopus", "\u7AE0\u9C7C", "\u{1F419}", "sea", "uncommon", ["evening", "night"], "mixed", 58, 30, 90, 60),
+    fish2("fish_swordfish", "\u65D7\u9C7C", "\u{1F41F}", "sea", "rare", ["noon"], "dash", 84, 150, 300, 220),
+    fish2("fish_whale_shark", "\u5C0F\u9CB8\u9CA8", "\u{1F988}", "sea", "legend", ["early", "noon"], "smooth", 95, 300, 600, 700),
+    fish2("fish_firefly", "\u8424\u5149\u9C7C", "\u2728", "night", "common", ["night"], "dash", 28, 5, 15, 10),
+    fish2("fish_lantern", "\u706F\u7B3C\u9C7C", "\u{1F3EE}", "night", "common", ["night"], "rise", 34, 6, 18, 12),
+    fish2("fish_ghost", "\u5E7D\u7075\u9C7C", "\u{1F47B}", "night", "uncommon", ["night"], "mixed", 60, 20, 50, 55),
+    fish2("fish_star_ray", "\u661F\u6591\u9CD0", "\u2B50", "night", "rare", ["night"], "sink", 80, 60, 150, 160),
+    fish2("fish_arowana", "\u9F99\u9C7C", "\u{1F409}", "night", "rare", ["night"], "dash", 88, 60, 120, 200),
+    fish2("fish_night_whale", "\u591C\u4E4B\u9CB8", "\u{1F40B}", "night", "legend", ["night"], "mixed", 100, 400, 900, 600)
   ]);
   var FISH_FIGHTS = Object.freeze(["ring", "bar", "pull"]);
   var FISH_SPOTS = Object.freeze([
@@ -3577,780 +3227,6 @@
     if (x < 0 || x > 1 || y < 0 || y > 1) return null;
     const round4 = (value) => Math.round(value * 1e4) / 1e4;
     return { x: round4(x), y: round4(y) };
-  }
-
-  // src/client/character-geometry.js
-  var BUBBLE_GAP = 10;
-  var BUBBLE_TAIL_INSET = 5;
-  var BUBBLE_TAIL_MIN = 10;
-  var BUBBLE_TAIL_MAX = 20;
-  var HAND_CONTACT = Object.freeze({ x: 0.3, y: 0.58 });
-  var finite = (value, fallback) => Number.isFinite(value) ? Number(value) : fallback;
-  function artFitSize(box) {
-    return Math.min(finite(box.width, 0), finite(box.height, 0));
-  }
-  function frameOrigin(box, framing) {
-    const fit = artFitSize(box);
-    const zoom = finite(framing?.zoom, 0) > 0 ? finite(framing?.zoom, 1) : 1;
-    const shiftX = finite(framing?.shiftX, 0);
-    const shiftY = finite(framing?.shiftY, 0);
-    const mirrored = framing?.mirrored === true;
-    return {
-      x: box.x + box.width / 2 + (mirrored ? -shiftX : shiftX) * box.width / 100,
-      y: box.y + box.height / 2 + shiftY * box.height / 100,
-      size: fit * zoom,
-      mirrored
-    };
-  }
-  function unionBox(a, b) {
-    const x = Math.min(a.x, b.x);
-    const y = Math.min(a.y, b.y);
-    const r = Math.max(a.x + a.width, b.x + b.width);
-    const btm = Math.max(a.y + a.height, b.y + b.height);
-    return { x, y, width: r - x, height: btm - y };
-  }
-  function framedArtBox(box, framing = {}) {
-    const bounds2 = framing.bounds ?? [0, 0, 1, 1];
-    const frame3 = frameOrigin(box, framing);
-    const mirrored = frame3.mirrored;
-    const left = mirrored ? 1 - bounds2[2] : bounds2[0];
-    const right = mirrored ? 1 - bounds2[0] : bounds2[2];
-    return {
-      x: frame3.x + (left - 0.5) * frame3.size,
-      y: frame3.y + (bounds2[1] - 0.5) * frame3.size,
-      width: (right - left) * frame3.size,
-      height: (bounds2[3] - bounds2[1]) * frame3.size
-    };
-  }
-  function artPointToLayout(box, normalized, framing = {}) {
-    const frame3 = frameOrigin(box, framing);
-    const nx = frame3.mirrored ? 1 - normalized.x : normalized.x;
-    return { x: frame3.x + (nx - 0.5) * frame3.size, y: frame3.y + (normalized.y - 0.5) * frame3.size };
-  }
-  function layoutPointToArt(box, point, framing = {}) {
-    const frame3 = frameOrigin(box, framing);
-    if (frame3.size <= 0) return { x: 0.5, y: 0.5 };
-    const dx = (finite(point.x, frame3.x) - frame3.x) / frame3.size;
-    const dy = (finite(point.y, frame3.y) - frame3.y) / frame3.size;
-    return { x: frame3.mirrored ? 1 - (0.5 + dx) : 0.5 + dx, y: 0.5 + dy };
-  }
-  function boxPoint(box, point) {
-    const width = finite(box.width, 0);
-    const height = finite(box.height, 0);
-    const x = width > 0 ? (finite(point.x, box.x) - box.x) / width : 0;
-    const y = height > 0 ? (finite(point.y, box.y) - box.y) / height : 0;
-    return { x, y, inside: width > 0 && height > 0 && x >= 0 && x <= 1 && y >= 0 && y <= 1 };
-  }
-  function feetPoint(box) {
-    return { x: finite(box.x, 0) + finite(box.width, 0) / 2, y: finite(box.y, 0) + finite(box.height, 0) };
-  }
-  function headTopPoint(box) {
-    return { x: finite(box.x, 0) + finite(box.width, 0) / 2, y: finite(box.y, 0) };
-  }
-  function bubbleSlot(anchors, side, size) {
-    const height = finite(size?.height, 0);
-    const width = finite(size?.width, 0);
-    if (side === "below") return { x: anchors.feet.x - width / 2, y: anchors.feet.y + BUBBLE_GAP };
-    return { x: anchors.headTop.x - width / 2, y: anchors.headTop.y - BUBBLE_GAP - height };
-  }
-  function bubbleTailLeft(bubble, head, inset = BUBBLE_TAIL_INSET) {
-    const width = finite(bubble.width, 0);
-    return Math.max(BUBBLE_TAIL_MIN, Math.min(width - BUBBLE_TAIL_MAX, finite(head.x, 0) - finite(bubble.x, 0) - inset));
-  }
-  function characterGeometry(box, framing = {}) {
-    const layout = { x: finite(box.x, 0), y: finite(box.y, 0), width: finite(box.width, 0), height: finite(box.height, 0) };
-    const art = framedArtBox(layout, framing);
-    return {
-      box: layout,
-      mirrored: framing.mirrored === true,
-      art,
-      /** 静止绘制范围：布局盒 ∪ 立绘可见范围（宽立绘会伸出正方形盒子）。 */
-      visible: unionBox(layout, art),
-      /** 可点范围：仍是那个正方形布局盒，和以前一致。 */
-      hit: { ...layout },
-      feet: feetPoint(layout),
-      headTop: headTopPoint(layout),
-      contact: artPointToLayout(layout, HAND_CONTACT, framing)
-    };
-  }
-
-  // src/client/skin-contact.js
-  var SKIN_CONTACT_KEY = "dsh-piggy:skin-contacts";
-  var PET_PREVIEW_KEY = "dsh-piggy:pet-snap-preview";
-  var PET_PREVIEW_TTL_MS = 3e3;
-  var PET_PREVIEW_LEASE_MS = 4e3;
-  var PET_PREVIEW_RENEW_MS = 800;
-  var PET_CONTACT_HEIGHT = 78.90625;
-  var ART_KEY = /^[a-z0-9-]{1,64}$/;
-  var PREVIEW_ACTIONS = /* @__PURE__ */ new Set(["press", "release", "cancel"]);
-  var UNIT_BOX = Object.freeze({ x: 0, y: 0, width: 1, height: 1 });
-  var listeners2 = /* @__PURE__ */ new Set();
-  var previewListeners = /* @__PURE__ */ new Set();
-  var bridgedWindow = null;
-  function cleanMap(raw) {
-    const out = {};
-    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return out;
-    for (const [art, value] of Object.entries(raw)) {
-      const contact = normalizeSkinContact(value);
-      if (contact !== null && ART_KEY.test(art)) out[art] = contact;
-    }
-    return out;
-  }
-  function cleanAuto(raw) {
-    const out = {};
-    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return out;
-    for (const [art, value] of Object.entries(raw)) {
-      if (value === true && ART_KEY.test(art)) out[art] = true;
-    }
-    return out;
-  }
-  function readSkinContacts() {
-    ensureStorageBridge();
-    const raw = readStore(SKIN_CONTACT_KEY);
-    let parsed = null;
-    try {
-      parsed = JSON.parse(raw ?? "");
-    } catch {
-      parsed = null;
-    }
-    const source = parsed !== null && typeof parsed === "object" ? parsed : {};
-    return {
-      overrides: cleanMap(
-        /** @type {any} */
-        source.overrides
-      ),
-      declared: cleanMap(
-        /** @type {any} */
-        source.declared
-      ),
-      auto: cleanAuto(
-        /** @type {any} */
-        source.auto
-      )
-    };
-  }
-  function writeSkinContacts(state4) {
-    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state4));
-    listeners2.forEach((fn) => fn());
-  }
-  function effectiveSkinContact(art) {
-    if (typeof art !== "string" || !ART_KEY.test(art)) return null;
-    const state4 = readSkinContacts();
-    if (state4.overrides[art] !== void 0) return state4.overrides[art];
-    if (state4.auto[art] === true) return null;
-    return state4.declared[art] ?? null;
-  }
-  function skinContactSource(art) {
-    if (typeof art !== "string" || !ART_KEY.test(art)) return "auto";
-    const state4 = readSkinContacts();
-    if (state4.overrides[art] !== void 0) return "local";
-    if (state4.auto[art] === true) return "auto";
-    if (state4.declared[art] !== void 0) return "pack";
-    return "auto";
-  }
-  function setSkinContactOverride(art, contact) {
-    if (typeof art !== "string" || !ART_KEY.test(art)) return false;
-    const state4 = readSkinContacts();
-    if (contact === null) delete state4.overrides[art];
-    else {
-      const value = normalizeSkinContact(contact);
-      if (value === null) return false;
-      state4.overrides[art] = value;
-      delete state4.auto[art];
-    }
-    writeSkinContacts(state4);
-    return true;
-  }
-  function setDeclaredSkinContact(art, contact) {
-    if (typeof art !== "string" || !ART_KEY.test(art)) return false;
-    const value = normalizeSkinContact(contact);
-    if (value === null) return false;
-    const state4 = readSkinContacts();
-    const current3 = state4.declared[art];
-    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state4.auto[art] !== true) return true;
-    state4.declared[art] = value;
-    delete state4.auto[art];
-    writeSkinContacts(state4);
-    return true;
-  }
-  function clearSkinContact(art) {
-    if (typeof art !== "string" || !ART_KEY.test(art)) return false;
-    const state4 = readSkinContacts();
-    delete state4.overrides[art];
-    delete state4.declared[art];
-    state4.auto[art] = true;
-    writeSkinContacts(state4);
-    return true;
-  }
-  function syncDeclaredSkinContacts(skins) {
-    const entries2 = Array.isArray(skins?.entries) ? skins.entries : [];
-    const state4 = readSkinContacts();
-    let changed = false;
-    for (const entry of entries2) {
-      if (entry === null || typeof entry !== "object") continue;
-      const art = entry.art;
-      if (typeof art !== "string" || !ART_KEY.test(art)) continue;
-      const contact = normalizeSkinContact(entry.contact);
-      if (contact !== null) {
-        if (state4.auto[art] === true) continue;
-        const current3 = state4.declared[art];
-        if (current3 !== void 0 && current3.x === contact.x && current3.y === contact.y) continue;
-        state4.declared[art] = contact;
-        changed = true;
-      } else if (state4.auto[art] !== true && state4.declared[art] !== void 0 && entry.contactStated === true) {
-        delete state4.declared[art];
-        changed = true;
-      }
-    }
-    if (changed) writeSkinContacts(state4);
-    return changed;
-  }
-  function onSkinContactChange(fn) {
-    ensureStorageBridge();
-    listeners2.add(fn);
-    return () => listeners2.delete(fn);
-  }
-  function onPetSnapPreview(fn) {
-    ensureStorageBridge();
-    previewListeners.add(fn);
-    return () => previewListeners.delete(fn);
-  }
-  function parsePreview(raw) {
-    if (typeof raw !== "string" || raw === "") return null;
-    let value = null;
-    try {
-      value = JSON.parse(raw);
-    } catch {
-      return null;
-    }
-    if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
-    const { id, art, action, at } = (
-      /** @type {{id?: unknown, art?: unknown, action?: unknown, at?: unknown}} */
-      value
-    );
-    if (typeof art !== "string" || !ART_KEY.test(art)) return null;
-    if (typeof action !== "string" || !PREVIEW_ACTIONS.has(action)) return null;
-    if (typeof at !== "number" || !Number.isFinite(at)) return null;
-    if (Math.abs(Date.now() - at) > PET_PREVIEW_TTL_MS) return null;
-    return { id: typeof id === "string" ? id : "", art, action: (
-      /** @type {'press'|'release'|'cancel'} */
-      action
-    ), at };
-  }
-  function dispatchPreview(payload) {
-    if (payload === null) return false;
-    for (const fn of previewListeners) {
-      try {
-        fn(payload);
-      } catch (error) {
-        console.warn("\u6478\u6478\u624B\u9884\u89C8\u901A\u77E5\u5904\u7406\u5931\u8D25", error);
-      }
-    }
-    return true;
-  }
-  var previewSeq = 0;
-  var previewOwner = null;
-  var previewSentAt = 0;
-  function sendPreview(art, action) {
-    const payload = { id: Date.now().toString(36) + "-" + ++previewSeq, art, action, at: Date.now() };
-    writeStore(PET_PREVIEW_KEY, JSON.stringify(payload));
-    dispatchPreview(payload);
-    return payload.id;
-  }
-  function startSkinContactPreview(art) {
-    if (typeof art !== "string" || !ART_KEY.test(art)) return false;
-    if (previewOwner !== null && previewOwner !== art) cancelSkinContactPreview();
-    previewOwner = art;
-    previewSentAt = Date.now();
-    sendPreview(art, "press");
-    return true;
-  }
-  function renewSkinContactPreview() {
-    if (previewOwner === null) return false;
-    const now2 = Date.now();
-    if (now2 - previewSentAt < PET_PREVIEW_RENEW_MS) return false;
-    previewSentAt = now2;
-    sendPreview(previewOwner, "press");
-    return true;
-  }
-  function endSkinContactPreview() {
-    return finishPreview("release");
-  }
-  function cancelSkinContactPreview() {
-    return finishPreview("cancel");
-  }
-  function finishPreview(action) {
-    if (previewOwner === null) return false;
-    const art = previewOwner;
-    previewOwner = null;
-    previewSentAt = 0;
-    sendPreview(art, action);
-    return true;
-  }
-  function cancelOwnPreview() {
-    cancelSkinContactPreview();
-  }
-  function onStorage(event) {
-    const key2 = (
-      /** @type {StorageEvent | null} */
-      event?.key
-    );
-    if (key2 === SKIN_CONTACT_KEY || key2 === null || key2 === void 0) listeners2.forEach((fn) => fn());
-    if (key2 === PET_PREVIEW_KEY) dispatchPreview(parsePreview(
-      /** @type {any} */
-      event?.newValue
-    ));
-  }
-  function ensureStorageBridge() {
-    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
-    if (bridgedWindow === window) return;
-    bridgedWindow = window;
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("blur", cancelOwnPreview);
-    if (typeof document !== "undefined" && typeof document?.addEventListener === "function") {
-      document.addEventListener("visibilitychange", function() {
-        if (document.hidden) cancelOwnPreview();
-      });
-    }
-  }
-  function framedSkinPoint(point, zoom = 1, x = 0, y = 0) {
-    return artPointToLayout(UNIT_BOX, point, { zoom, shiftX: x, shiftY: y });
-  }
-  function unframedSkinPoint(point, zoom = 1, x = 0, y = 0) {
-    return layoutPointToArt(UNIT_BOX, point, { zoom, shiftX: x, shiftY: y });
-  }
-  function clampSkinContact(point) {
-    const round4 = (value) => Math.round(Math.min(1, Math.max(0, value)) * 1e5) / 1e5;
-    return { x: round4(point.x), y: round4(point.y) };
-  }
-  function autoSkinContact(bounds2) {
-    return { x: (bounds2.left + bounds2.right) / 2, y: bounds2.top };
-  }
-  function handScaleRatio(bounds2) {
-    return (bounds2.bottom - bounds2.top) / PET_CONTACT_HEIGHT;
-  }
-  function skinContactShift(bounds2, target) {
-    if (target === null || target === void 0) return { dx: 0, dy: 0 };
-    const auto2 = autoSkinContact(bounds2);
-    return { dx: target.x - auto2.x, dy: target.y - auto2.y };
-  }
-  ensureStorageBridge();
-
-  // src/client/custom-art.js
-  var CUSTOM_CANVAS = 128;
-  var CUSTOM_SLEEP_WIDTH = 192;
-  var CUSTOM_SLEEP_HEIGHT = 160;
-  var CUSTOM_ART_KEY = "dsh-piggy:custom-art-versions";
-  var ART_KEY2 = /^custom-[a-z0-9-]{1,41}$/;
-  var listeners3 = /* @__PURE__ */ new Set();
-  var INK_CACHE = /* @__PURE__ */ new Map();
-  var versions = null;
-  var bridgedWindow2 = null;
-  function customArtCanvas(sleep = false) {
-    return sleep ? { width: CUSTOM_SLEEP_WIDTH, height: CUSTOM_SLEEP_HEIGHT } : { width: CUSTOM_CANVAS, height: CUSTOM_CANVAS };
-  }
-  function srcKey(src) {
-    const text = typeof src === "string" ? src : "";
-    const index = text.indexOf("/art/");
-    return index < 0 ? text : text.slice(index + 5);
-  }
-  function customArtInk(src) {
-    const key2 = srcKey(src);
-    return key2 === "" ? null : INK_CACHE.get(key2) ?? null;
-  }
-  function measureCustomArt(image, src, sleep = false) {
-    const key2 = srcKey(src);
-    if (key2 === "") return null;
-    const cached = INK_CACHE.get(key2);
-    if (cached !== void 0) return cached;
-    const canvas = customArtCanvas(sleep);
-    const ink = containedInk(image, canvas.width, canvas.height);
-    if (ink === null) return null;
-    INK_CACHE.set(key2, ink);
-    return ink;
-  }
-  function framedInkBox(box, ink, framing = {}) {
-    const zoom = Number(framing.zoom) > 0 ? Number(framing.zoom) : 1;
-    const shiftX = Number(framing.shiftX) || 0;
-    const shiftY = Number(framing.shiftY) || 0;
-    const mirrored = framing.mirrored === true;
-    const left = mirrored ? 1 - ink[2] : ink[0];
-    const right = mirrored ? 1 - ink[0] : ink[2];
-    const shift = mirrored ? -shiftX : shiftX;
-    return {
-      x: box.x + box.width * (0.5 + (left - 0.5) * zoom + shift / 100),
-      y: box.y + box.height * (0.5 + (ink[1] - 0.5) * zoom + shiftY / 100),
-      width: box.width * (right - left) * zoom,
-      height: box.height * (ink[3] - ink[1]) * zoom
-    };
-  }
-  function customArtVisibleBox(node, box) {
-    if (node === null || node === void 0 || typeof node.getAttribute !== "function") return null;
-    const ink = customArtInk(node.getAttribute("src") || "");
-    if (ink === null) return null;
-    const style = node.style;
-    const sleep = node.matches?.(".dp-pig-sleep") === true;
-    return framedInkBox(box, ink, {
-      zoom: Number(style?.getPropertyValue?.("--art-zoom")) || 1,
-      shiftX: parseFloat(style?.getPropertyValue?.("--art-x")) || 0,
-      shiftY: parseFloat(style?.getPropertyValue?.("--art-y")) || 0,
-      mirrored: !sleep && node.closest?.(".dp-pig")?.getAttribute("data-walk") === "right"
-    });
-  }
-  function forgetInk(art) {
-    for (const key2 of [...INK_CACHE.keys()]) {
-      const path = key2.split("?")[0];
-      if (path === art || path.startsWith(art + "-")) INK_CACHE.delete(key2);
-    }
-  }
-  function containedInk(image, canvasWidth = CUSTOM_CANVAS, canvasHeight = CUSTOM_CANVAS) {
-    const naturalWidth = Number(image?.naturalWidth) || 0;
-    const naturalHeight = Number(image?.naturalHeight) || naturalWidth;
-    if (!(naturalWidth > 0) || !(naturalHeight > 0)) return null;
-    const fit = Math.min(canvasWidth / naturalWidth, canvasHeight / naturalHeight);
-    if (!(fit > 0)) return null;
-    const width = naturalWidth * fit;
-    const height = naturalHeight * fit;
-    try {
-      const canvas = document.createElement("canvas");
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      const context2 = canvas.getContext?.("2d", { willReadFrequently: true });
-      if (!context2) return null;
-      context2.drawImage(image, (canvasWidth - width) / 2, (canvasHeight - height) / 2, width, height);
-      const pixels = context2.getImageData(0, 0, canvasWidth, canvasHeight).data;
-      let left = canvasWidth, top = canvasHeight, right = 0, bottom = 0;
-      for (let y = 0; y < canvasHeight; y += 1) for (let x = 0; x < canvasWidth; x += 1) {
-        if (pixels[(y * canvasWidth + x) * 4 + 3] <= 16) continue;
-        left = Math.min(left, x);
-        top = Math.min(top, y);
-        right = Math.max(right, x + 1);
-        bottom = Math.max(bottom, y + 1);
-      }
-      if (right <= left || bottom <= top) return null;
-      return [left / canvasWidth, top / canvasHeight, right / canvasWidth, bottom / canvasHeight];
-    } catch {
-      return null;
-    }
-  }
-  function frameFromInk(ink) {
-    const height = ink[3] - ink[1];
-    if (!(height > 0)) return null;
-    const zoom = FRAME_HEIGHT2 / height;
-    return [
-      zoom,
-      (0.5 - (ink[0] + ink[2]) / 2) * zoom * 100,
-      (0.5 - (ink[1] + ink[3]) / 2) * zoom * 100
-    ];
-  }
-  function readVersions() {
-    const raw = readStore(CUSTOM_ART_KEY);
-    let parsed = null;
-    try {
-      parsed = JSON.parse(raw ?? "");
-    } catch {
-      parsed = null;
-    }
-    const map = /* @__PURE__ */ new Map();
-    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
-      for (const [key2, value] of Object.entries(parsed)) {
-        const version = Number(value);
-        if (ART_KEY2.test(key2) && Number.isInteger(version) && version > 0) map.set(key2, version);
-      }
-    }
-    return map;
-  }
-  function ensureVersions() {
-    if (versions === null) versions = readVersions();
-    return versions;
-  }
-  function rootArt(art) {
-    const map = ensureVersions();
-    let best = "";
-    for (const key2 of map.keys()) {
-      if (art === key2 || art.startsWith(key2 + "-")) {
-        if (key2.length > best.length) best = key2;
-      }
-    }
-    return best === "" ? null : best;
-  }
-  function customArtVersion(art) {
-    if (typeof art !== "string" || !ART_KEY2.test(art)) return 0;
-    const root = rootArt(art);
-    return root === null ? 0 : ensureVersions().get(root) ?? 0;
-  }
-  function refreshCustomArt(art) {
-    if (typeof art !== "string" || !ART_KEY2.test(art)) return 0;
-    const map = ensureVersions();
-    const version = (map.get(art) ?? 0) + 1;
-    map.set(art, version);
-    forgetInk(art);
-    writeStore(CUSTOM_ART_KEY, JSON.stringify(Object.fromEntries(map)));
-    notify();
-    return version;
-  }
-  function onCustomArtChange(fn) {
-    ensureStorageBridge2();
-    listeners3.add(fn);
-    return () => listeners3.delete(fn);
-  }
-  function notify() {
-    for (const fn of [...listeners3]) {
-      try {
-        fn();
-      } catch (error) {
-        console.warn("\u81EA\u5B9A\u4E49\u7ACB\u7ED8\u5237\u65B0\u5931\u8D25", error);
-      }
-    }
-  }
-  function onStorage2(event) {
-    const key2 = (
-      /** @type {StorageEvent | null} */
-      event?.key
-    );
-    if (key2 !== CUSTOM_ART_KEY && key2 !== null && key2 !== void 0) return;
-    const previous = versions === null ? /* @__PURE__ */ new Map() : new Map(versions);
-    versions = readVersions();
-    for (const root of /* @__PURE__ */ new Set([...previous.keys(), ...versions.keys()])) {
-      if ((previous.get(root) ?? 0) !== (versions.get(root) ?? 0)) forgetInk(root);
-    }
-    notify();
-  }
-  function ensureStorageBridge2() {
-    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
-    if (bridgedWindow2 === window) return;
-    bridgedWindow2 = window;
-    window.addEventListener("storage", onStorage2);
-  }
-  ensureStorageBridge2();
-
-  // src/client/pet-snap.js
-  var players = /* @__PURE__ */ new WeakMap();
-  var SNAP_FRAME_MS = 60;
-  var SNAP_FRAMES = 5;
-  var SNAP_CYCLE_MS = SNAP_FRAME_MS * SNAP_FRAMES;
-  function beginPetSnap(pig) {
-    return players.get(pig)?.press() === true;
-  }
-  function releasePetSnap(pig) {
-    players.get(pig)?.release();
-  }
-  function cancelPetSnap(pig) {
-    players.get(pig)?.cancel();
-  }
-  function confirmPetSnap(pig) {
-    return players.get(pig)?.confirm() === true;
-  }
-  function attachPetSnap(c) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext?.("2d");
-    const body = c.pig.querySelector?.(".dp-pig-body");
-    const parent = c.pig.querySelector?.(".dp-pig-hold");
-    if (!ctx || !parent) return { dispose() {
-    } };
-    canvas.className = "dp-pet-snap";
-    canvas.setAttribute("aria-hidden", "true");
-    canvas.hidden = true;
-    canvas.width = canvas.height = 512;
-    parent.appendChild(canvas);
-    let ready = false, disposed = false, active2 = false, held = false;
-    let frame3 = 0, raf3 = 0, start2 = 0, stopAt = Infinity;
-    let capturedArt = null;
-    let bounds2 = null;
-    let contact = null;
-    let previewHeld = false, previewUntil = 0;
-    let referenceFrames = [];
-    const now2 = () => performance.now();
-    const allowed = () => !disposed && !document.hidden && !c.isStopped() && effectiveFeelMode() === "full" && c.canPlay() && (!active2 || capturedArt === c.pig.getAttribute("data-art")) && c.pig.getAttribute("data-feel-flip") !== "true";
-    function measure2() {
-      const image = c.pigArt;
-      const src = image?.getAttribute("src") || "";
-      const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
-      let ink = ART_BOUNDS2[path] || customArtInk(src);
-      if (!ink && image?.complete && image.naturalWidth > 0) ink = measureCustomArt(image, src);
-      const style = image?.style;
-      return framedPetBounds(
-        ink || [0.08, 0.08, 0.92, 0.92],
-        Number(style?.getPropertyValue("--art-zoom")) || 1,
-        parseFloat(style?.getPropertyValue("--art-x")) || 0,
-        parseFloat(style?.getPropertyValue("--art-y")) || 0
-      );
-    }
-    function measureContact() {
-      const declared = effectiveSkinContact(c.pig.getAttribute("data-art") || "");
-      if (declared === null) return null;
-      const style = c.pigArt?.style;
-      return framedSkinPoint(
-        declared,
-        Number(style?.getPropertyValue("--art-zoom")) || 1,
-        parseFloat(style?.getPropertyValue("--art-x")) || 0,
-        parseFloat(style?.getPropertyValue("--art-y")) || 0
-      );
-    }
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (!bounds2) return;
-      const pose = petPose(frame3);
-      body.style.setProperty("--pet-sx", String(pose.sx));
-      body.style.setProperty("--pet-sy", String(pose.sy));
-      body.style.setProperty("--pet-origin-x", (c.pig.getAttribute("data-walk") === "right" ? 100 - (bounds2.left + bounds2.right) * 50 : (bounds2.left + bounds2.right) * 50) + "%");
-      body.style.setProperty("--pet-origin-y", bounds2.bottom * 100 + "%");
-      if (!petHandEnabled() || !referenceFrames[frame3]) return;
-      const ratio = handScaleRatio(bounds2);
-      const shift = skinContactShift(bounds2, contact);
-      const ox = (bounds2.left + bounds2.right) / 2 - 59 * ratio + shift.dx;
-      const oy = bounds2.bottom - 109.453125 * ratio + shift.dy;
-      ctx.save();
-      ctx.setTransform(256, 0, 0, 256, 128, 128);
-      ctx.translate(ox, oy + pose.handY * ratio);
-      ctx.rotate(pose.angle * Math.PI / 180);
-      ctx.scale(105 / 500 * ratio, 105 / 500 * ratio);
-      ctx.drawImage(referenceFrames[frame3], -18, -pose.wrist, 514, 514);
-      ctx.restore();
-    }
-    function cancel2() {
-      cancelAnimationFrame(raf3);
-      raf3 = 0;
-      active2 = held = false;
-      previewHeld = false;
-      previewUntil = 0;
-      canvas.hidden = true;
-      c.pig.removeAttribute("data-pet-snap");
-      for (const key2 of ["--pet-sx", "--pet-sy", "--pet-origin-x", "--pet-origin-y"]) body.style.removeProperty(key2);
-      capturedArt = bounds2 = contact = null;
-      c.render();
-    }
-    function tick2(time2) {
-      raf3 = 0;
-      if (!allowed()) {
-        cancel2();
-        return;
-      }
-      if (previewHeld && time2 >= previewUntil) {
-        previewHeld = false;
-        previewUntil = 0;
-        release();
-      }
-      const elapsed = Math.max(0, time2 - start2);
-      if (!held && elapsed >= stopAt) {
-        if (c.pig.getAttribute("data-react") === "pet") c.pig.removeAttribute("data-react");
-        cancel2();
-        return;
-      }
-      const next = Math.floor(elapsed / SNAP_FRAME_MS) % SNAP_FRAMES;
-      if (next !== frame3) {
-        frame3 = next;
-        draw();
-      }
-      raf3 = requestAnimationFrame(tick2);
-    }
-    function press() {
-      if (!ready || !allowed()) return false;
-      previewHeld = false;
-      previewUntil = 0;
-      c.cancelMicro();
-      bounds2 = measure2();
-      contact = measureContact();
-      capturedArt = c.pig.getAttribute("data-art");
-      c.pig.setAttribute("data-pet-snap", "true");
-      held = active2 = true;
-      stopAt = Infinity;
-      canvas.hidden = false;
-      cancelAnimationFrame(raf3);
-      start2 = now2();
-      frame3 = 0;
-      draw();
-      raf3 = requestAnimationFrame(tick2);
-      return true;
-    }
-    function release() {
-      if (!active2 || !held) return;
-      held = false;
-      stopAt = Math.max(1, Math.ceil((now2() - start2) / SNAP_CYCLE_MS)) * SNAP_CYCLE_MS;
-    }
-    function confirm() {
-      if (held && active2) return true;
-      if (c.isDragging() || !press()) return false;
-      release();
-      return true;
-    }
-    const player = {
-      press,
-      release,
-      cancel: cancel2,
-      confirm,
-      /** 皮肤页调校准滑点/拖动时：正在播的手立刻按新接触点重画，不用松手重按。 */
-      refreshContact() {
-        if (!active2) return;
-        contact = measureContact();
-        draw();
-      }
-    };
-    players.set(c.pig, player);
-    const load2 = (src) => {
-      const image = new Image();
-      image.src = src;
-      return image.decode().then(() => image);
-    };
-    load2(ART_URL + "animations/pet-hand/hand.webp?v=hd-spring-9").then(async (image) => {
-      const frames = await Promise.all(Array.from({ length: SNAP_FRAMES }, (_, i) => createImageBitmap(image, i * 256, 0, 256, 256)));
-      if (disposed) {
-        frames.forEach((frame4) => frame4.close());
-        return;
-      }
-      referenceFrames = frames;
-      ready = true;
-    }).catch((error) => console.warn("\u6478\u6478\u5C0F\u624B\u52A0\u8F7D\u5931\u8D25\uFF0C\u4FDD\u7559\u73B0\u6709\u7ACB\u7ED8", error));
-    const onState = () => {
-      if (active2 && !allowed()) cancel2();
-    };
-    const observer = new MutationObserver(onState);
-    observer.observe(c.pig, { attributes: true, childList: true, subtree: true, attributeFilter: ["data-art", "data-stage", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react", "data-feel-flip"] });
-    const offFeel = onFeelModeChange(onState);
-    const offHand = onPetHandChange(() => {
-      if (active2) draw();
-    });
-    const offContact = onSkinContactChange(() => {
-      if (active2) {
-        contact = measureContact();
-        draw();
-      }
-    });
-    const offPreview = onPetSnapPreview((event) => {
-      if (disposed || event.art !== (c.pig.getAttribute("data-art") || "")) return;
-      if (event.action === "press") {
-        if (!previewHeld) {
-          if (active2 && held) return;
-          if (!press()) return;
-          previewHeld = true;
-        }
-        previewUntil = now2() + PET_PREVIEW_LEASE_MS;
-        return;
-      }
-      if (!previewHeld) return;
-      previewHeld = false;
-      previewUntil = 0;
-      if (event.action === "release") release();
-      else cancel2();
-    });
-    const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    media?.addEventListener?.("change", onState);
-    document.addEventListener("visibilitychange", onState);
-    return { dispose() {
-      disposed = true;
-      observer.disconnect();
-      offFeel();
-      offHand();
-      offContact();
-      offPreview();
-      media?.removeEventListener?.("change", onState);
-      document.removeEventListener("visibilitychange", onState);
-      cancel2();
-      canvas.remove();
-      referenceFrames.forEach((image) => image.close());
-      referenceFrames = [];
-      players.delete(c.pig);
-    } };
   }
 
   // packages/pet-core/src/data/art-assets.js
@@ -4732,780 +3608,1423 @@
     return PIG_ART_ASSETS[key2];
   }
 
-  // src/client/art-path.js
-  function artSource(key2) {
-    const path = builtinArtPath(key2) ?? (key2.startsWith("custom-") ? key2 : key2 + ".svg");
-    const version = key2.startsWith("custom-") ? customArtVersion(key2) : PIG_ART_REVISIONS[key2];
-    return ART_URL + path + (version ? "?v=" + version : "");
+  // src/client/feedback-framing.js
+  var FRAME_HEIGHT = 0.84375;
+  var FEEDBACK_FRAMING = Object.freeze({
+    "allergy": [1.0909, 0, 0],
+    "birthday": [0.9643, 0, 0],
+    "collection-badge": [0.9818, 0, 0],
+    "collection-bubbles": [1.0909, 0, 0],
+    "collection-cage": [0.9643, 0.19, 0],
+    "collection-check": [1.064, 0, 0.21],
+    "collection-chicken": [0.9643, 0, 0],
+    "collection-courier": [1, 0, 0],
+    "collection-fever": [1.1676, 0, 0.23],
+    "collection-fitness": [1.3012, 0, 0],
+    "collection-letter": [1.2414, 0, 0],
+    "collection-mosquito": [1.2558, 0, 0],
+    "collection-scallion": [1.0237, 0, 0.2],
+    "collection-snack": [1.2067, 0, 0.24],
+    "collection-soup": [0.9643, 0.19, 0],
+    "collection-stack": [0.9643, 0, 0],
+    "collection-taro": [1.1551, 0, 0.23],
+    "collection-throne": [0.9643, 0, 0],
+    "courier": [0.9954, 0, 0.19],
+    "death-day": [1.4595, 0, 0],
+    "faint": [1.1077, 0, 0.22],
+    "fishing": [1.1368, 0, 0],
+    "ghost-grave": [1.1613, 0, 0],
+    "hungry": [1.0237, 0, 0.2],
+    "lie-flat": [1.2273, 0, 0],
+    "music-earbuds": [1.0435, 0, 0.2],
+    "music-headphones-v2": [1.2558, 0, 0],
+    "music-rainbow": [1.7561, 0, 0.34],
+    "painting": [1.0537, 0, 0.21],
+    "recruit": [1.0335, 0, 0.2],
+    "runny-nose": [0.9643, 0, 0],
+    "sleep-cloud": [1.3252, 0, 0.26],
+    "study-book": [1.1803, 0, 0.23],
+    "study-determined": [1.2135, 0, 0],
+    "study-pink-book": [1.0237, 0, 0.2],
+    "suspended": [0.9643, 0.19, 0],
+    "turning": [1.1868, 0, 0],
+    "twitch": [1.1676, 0, 0.23]
+  });
+  var BUILTIN_FRAMING = Object.freeze({
+    "pigs/skins/career-astronaut/idle.png": [1.0693, 0, 0],
+    "pigs/skins/career-astronaut/bathe.png": [1.0335, 0, 0.2],
+    "pigs/skins/career-astronaut/eat.png": [1.0693, 0, 0],
+    "pigs/skins/career-astronaut/pet.png": [0.9774, 0, 0.19],
+    "pigs/skins/career-astronaut/play.png": [0.9643, 0.19, 0],
+    "pigs/skins/career-astronaut/relaxed.png": [1.0693, 0, 0],
+    "pigs/skins/career-astronaut/sleep.png": [1.3758, 0, 0.27],
+    "pigs/skins/career-astronaut/study.png": [0.9954, 0, 0.19],
+    "pigs/skins/career-astronaut/trip.png": [1.08, 0, 0],
+    "pigs/skins/career-astronaut/work.png": [1.102, 0, 0],
+    "pigs/skins/career-chef/idle.png": [0.9643, 0, 0],
+    "pigs/skins/career-chef/bathe.png": [1.0385, 0, 0],
+    "pigs/skins/career-chef/eat.png": [0.9643, 0.19, 0],
+    "pigs/skins/career-chef/pet.png": [0.9643, 0, 0],
+    "pigs/skins/career-chef/play.png": [0.9643, 0, 0],
+    "pigs/skins/career-chef/relaxed.png": [0.9643, 0.19, 0],
+    "pigs/skins/career-chef/sleep.png": [1.2414, 0, 0],
+    "pigs/skins/career-chef/study.png": [0.9643, 0, 0],
+    "pigs/skins/career-chef/trip.png": [0.9643, 0, 0],
+    "pigs/skins/career-chef/work.png": [0.9908, 0, 0],
+    "pigs/base/elder/idle.png": [1.0854, 0, 0.21],
+    "pigs/forms/pig-devil/idle.png": [1.0435, 0, 0.2],
+    "pigs/forms/pig-devil/bathe.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-devil/eat.png": [1.2, 0, 0],
+    "pigs/forms/pig-devil/fly.png": [1.1134, 0, 0],
+    "pigs/forms/pig-devil/pet.png": [1.0746, 0, 0.21],
+    "pigs/forms/pig-devil/play.png": [0.9643, 0, 0],
+    "pigs/forms/pig-devil/relaxed.png": [1.0385, 0, 0],
+    "pigs/forms/pig-devil/sleep.png": [1.3585, 0, 0.27],
+    "pigs/forms/pig-devil/study.png": [1.2706, 0, 0],
+    "pigs/forms/pig-devil/trip.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-devil/work.png": [1.1613, 0, 0],
+    "pigs/forms/pig-fat/idle.png": [1.0964, 0, 0.21],
+    "pigs/forms/pig-fat/bathe.png": [1.0435, 0, 0.2],
+    "pigs/forms/pig-fat/eat.png": [1.2203, 0, 0.24],
+    "pigs/forms/pig-fat/pet.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-fat/play.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-fat/relaxed.png": [1.0964, 0, 0.21],
+    "pigs/forms/pig-fat/sleep.png": [1.4497, 0, 0.28],
+    "pigs/forms/pig-fat/study.png": [1.102, 0, 0],
+    "pigs/forms/pig-fat/trip.png": [1.0909, 0, 0],
+    "pigs/forms/pig-fat/work.png": [1.3091, 0, 0.26],
+    "pigs/forms/pig-king/idle.png": [1.0047, 0, 0.2],
+    "pigs/forms/pig-king/bathe.png": [0.9818, 0, 0],
+    "pigs/forms/pig-king/eat.png": [0.9643, 0, 0],
+    "pigs/forms/pig-king/pet.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-king/play.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-king/relaxed.png": [1.0047, 0, 0.2],
+    "pigs/forms/pig-king/sleep.png": [1.2632, 0, 0.25],
+    "pigs/forms/pig-king/study.png": [1.0385, 0, 0],
+    "pigs/forms/pig-king/trip.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-king/work.png": [1.1429, 0, 0.22],
+    "pigs/forms/pig-round/idle.png": [1.1077, 0, 0.22],
+    "pigs/forms/pig-round/bathe.png": [1.0237, 0, 0.2],
+    "pigs/forms/pig-round/eat.png": [1.0435, 0, 0.2],
+    "pigs/forms/pig-round/pet.png": [1.1134, 0, 0],
+    "pigs/forms/pig-round/play.png": [0.9863, 0, 0.19],
+    "pigs/forms/pig-round/relaxed.png": [1.1134, 0, 0],
+    "pigs/forms/pig-round/sleep.png": [1.3935, 0, 0.27],
+    "pigs/forms/pig-round/study.png": [0.9643, 0.19, 0],
+    "pigs/forms/pig-round/trip.png": [1.1077, 0, 0.22],
+    "pigs/forms/pig-round/work.png": [1.2857, 0, 0],
+    "pigs/base/piglet/idle.png": [1.0693, 0, 0],
+    "pigs/base/piglet/bathe.png": [1.3333, 0, 0],
+    "pigs/base/piglet/blink.png": [1.0693, 0, 0],
+    "pigs/base/piglet/eat.png": [1.3333, 0, 0],
+    "pigs/base/piglet/play.png": [1.1309, 0, 0.22],
+    "pigs/base/piglet/shy-pet.png": [1.0693, 0, 0],
+    "pigs/base/piglet/sleep.png": [1.3585, 0, 0.27],
+    "pigs/base/piglet/work.png": [1.8783, 0, 0.37],
+    "pigs/skins/skin-angel/idle.png": [0.9818, 0, 0],
+    "pigs/skins/skin-angel/bathe.png": [0.9643, 0.19, 0],
+    "pigs/skins/skin-angel/eat.png": [0.9643, 0.19, 0],
+    "pigs/skins/skin-angel/pet.png": [0.9643, 0, 0],
+    "pigs/skins/skin-angel/play.png": [0.9643, 0.19, 0],
+    "pigs/skins/skin-angel/relaxed.png": [0.9643, 0.19, 0],
+    "pigs/skins/skin-angel/sleep.png": [1.3846, 0, 0],
+    "pigs/skins/skin-angel/study.png": [0.9643, 0.19, 0],
+    "pigs/skins/skin-angel/trip.png": [0.9686, 0, 0.19],
+    "pigs/skins/skin-angel/work.png": [1.0189, 0, 0],
+    "pigs/skins/skin-detective/idle.png": [0.9908, 0, 0],
+    "pigs/skins/skin-detective/bathe.png": [1.0385, 0, 0],
+    "pigs/skins/skin-detective/eat.png": [0.9954, 0, 0.19],
+    "pigs/skins/skin-detective/pet.png": [0.9643, 0, 0],
+    "pigs/skins/skin-detective/play.png": [0.9643, 0, 0],
+    "pigs/skins/skin-detective/relaxed.png": [0.9954, 0, 0.19],
+    "pigs/skins/skin-detective/sleep.png": [1.2632, 0, 0.25],
+    "pigs/skins/skin-detective/study.png": [0.9643, 0, 0],
+    "pigs/skins/skin-detective/trip.png": [0.9774, 0, 0.19],
+    "pigs/skins/skin-detective/work.png": [1.0485, 0, 0],
+    "pigs/skins/skin-mint/idle.png": [1.0693, 0, 0],
+    "pigs/skins/skin-mint/bathe.png": [1.0693, 0, 0],
+    "pigs/skins/skin-mint/eat.png": [1.0693, 0, 0],
+    "pigs/skins/skin-mint/pet.png": [1.0693, 0, 0],
+    "pigs/skins/skin-mint/play.png": [1.0693, 0, 0],
+    "pigs/skins/skin-mint/sleep.png": [1.3416, 0, 0.26],
+    "pigs/skins/skin-mint/work.png": [1.6489, 0, 0.32],
+    "pigs/skins/skin-pirate/idle.png": [1.0746, 0, 0.21],
+    "pigs/skins/skin-pirate/bathe.png": [1.0385, 0, 0],
+    "pigs/skins/skin-pirate/eat.png": [1, 0, 0],
+    "pigs/skins/skin-pirate/pet.png": [0.9643, 0, 0],
+    "pigs/skins/skin-pirate/play.png": [0.9643, 0, 0],
+    "pigs/skins/skin-pirate/relaxed.png": [1.0693, 0, 0],
+    "pigs/skins/skin-pirate/sleep.png": [1.3585, 0, 0.27],
+    "pigs/skins/skin-pirate/study.png": [0.9643, 0.19, 0],
+    "pigs/skins/skin-pirate/trip.png": [1.0693, 0, 0],
+    "pigs/skins/skin-pirate/work.png": [1.1309, 0, 0.22],
+    "pigs/skins/skin-wizard/idle.png": [0.973, 0, 3.42],
+    "pigs/skins/skin-wizard/bathe.png": [1.0693, 0, 7.94],
+    "pigs/skins/skin-wizard/eat.png": [1.1134, 0, 6.52],
+    "pigs/skins/skin-wizard/pet.png": [0.973, 0, 3.42],
+    "pigs/skins/skin-wizard/play.png": [1, 0, 4.69],
+    "pigs/skins/skin-wizard/relaxed.png": [0.9774, 0, 3.63],
+    "pigs/skins/skin-wizard/sleep.png": [1.102, 0, 7.75],
+    "pigs/skins/skin-wizard/study.png": [0.8926, 0, -0.35],
+    "pigs/skins/skin-wizard/trip.png": [0.973, 0, 3.42],
+    "pigs/skins/skin-wizard/work.png": [1.2857, 0, 13.06]
+  });
+  var ART_BOUNDS = Object.freeze({
+    "pigs/base/piglet/idle.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/career-chef/idle.png": [0.070312, 0.0625, 0.929688, 0.9375],
+    "pigs/skins/skin-angel/idle.png": [0.0625, 0.070312, 0.9375, 0.929688],
+    "pigs/forms/pig-round/idle.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/forms/pig-fat/idle.png": [0.0625, 0.113281, 0.9375, 0.882812],
+    "pigs/forms/pig-king/idle.png": [0.0625, 0.078125, 0.9375, 0.917969],
+    "pigs/skins/skin-mint/idle.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/forms/pig-devil/idle.png": [0.0625, 0.09375, 0.9375, 0.902344],
+    "pigs/skins/career-astronaut/idle.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/skin-detective/idle.png": [0.0625, 0.074219, 0.9375, 0.925781],
+    "pigs/skins/skin-pirate/idle.png": [0.0625, 0.105469, 0.9375, 0.890625],
+    "pigs/skins/skin-wizard/idle.png": [0.058594, 0.03125, 0.941406, 0.898438],
+    "pigs/base/piglet/eat.png": [0.0625, 0.183594, 0.9375, 0.816406],
+    "pigs/base/piglet/play.png": [0.0625, 0.125, 0.9375, 0.871094],
+    "pigs/base/piglet/sleep.png": [0.0625, 0.1875, 0.9375, 0.808594],
+    "pigs/skins/career-chef/eat.png": [0.066406, 0.0625, 0.929688, 0.9375],
+    "pigs/skins/career-chef/play.png": [0.160156, 0.0625, 0.839844, 0.9375],
+    "pigs/skins/career-chef/sleep.png": [0.0625, 0.160156, 0.9375, 0.839844],
+    "pigs/skins/skin-pirate/eat.png": [0.0625, 0.078125, 0.9375, 0.921875],
+    "pigs/skins/skin-pirate/play.png": [0.140625, 0.0625, 0.859375, 0.9375],
+    "pigs/skins/skin-pirate/sleep.png": [0.0625, 0.1875, 0.9375, 0.808594],
+    "pigs/skins/skin-wizard/eat.png": [0.058594, 0.0625, 0.941406, 0.820312],
+    "pigs/skins/skin-wizard/play.png": [0.058594, 0.03125, 0.941406, 0.875],
+    "pigs/skins/skin-wizard/sleep.png": [0.058594, 0.046875, 0.941406, 0.8125],
+    "pigs/forms/pig-round/eat.png": [0.0625, 0.09375, 0.9375, 0.902344],
+    "pigs/forms/pig-round/play.png": [0.0625, 0.070312, 0.9375, 0.925781],
+    "pigs/forms/pig-round/sleep.png": [0.0625, 0.195312, 0.9375, 0.800781],
+    "pigs/forms/pig-fat/eat.png": [0.0625, 0.152344, 0.9375, 0.84375],
+    "pigs/forms/pig-fat/play.png": [0.0625, 0.0625, 0.933594, 0.9375],
+    "pigs/forms/pig-fat/sleep.png": [0.0625, 0.207031, 0.9375, 0.789062],
+    "pigs/skins/skin-mint/eat.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/skin-mint/play.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/skin-mint/sleep.png": [0.0625, 0.183594, 0.9375, 0.8125],
+    "pigs/skins/skin-detective/eat.png": [0.0625, 0.074219, 0.9375, 0.921875],
+    "pigs/skins/skin-detective/play.png": [0.140625, 0.0625, 0.859375, 0.9375],
+    "pigs/skins/skin-detective/sleep.png": [0.0625, 0.164062, 0.9375, 0.832031],
+    "pigs/forms/pig-king/eat.png": [0.0625, 0.0625, 0.9375, 0.9375],
+    "pigs/forms/pig-king/sleep.png": [0.0625, 0.164062, 0.9375, 0.832031],
+    "pigs/forms/pig-devil/eat.png": [0.0625, 0.148438, 0.9375, 0.851562],
+    "pigs/forms/pig-devil/play.png": [0.101562, 0.0625, 0.898438, 0.9375],
+    "pigs/forms/pig-devil/sleep.png": [0.0625, 0.1875, 0.9375, 0.808594],
+    "pigs/skins/skin-angel/eat.png": [0.066406, 0.0625, 0.929688, 0.9375],
+    "pigs/skins/skin-angel/play.png": [0.160156, 0.0625, 0.835938, 0.9375],
+    "pigs/skins/skin-angel/sleep.png": [0.0625, 0.195312, 0.9375, 0.804688],
+    "pigs/skins/career-astronaut/eat.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/career-astronaut/play.png": [0.113281, 0.0625, 0.882812, 0.9375],
+    "pigs/skins/career-astronaut/sleep.png": [0.0625, 0.191406, 0.9375, 0.804688],
+    "pigs/forms/pig-king/play.png": [0.097656, 0.0625, 0.898438, 0.9375],
+    "pigs/skins/career-chef/pet.png": [0.082031, 0.0625, 0.917969, 0.9375],
+    "pigs/skins/career-chef/relaxed.png": [0.066406, 0.0625, 0.929688, 0.9375],
+    "pigs/skins/skin-pirate/pet.png": [0.066406, 0.0625, 0.933594, 0.9375],
+    "pigs/skins/skin-pirate/relaxed.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/skin-wizard/pet.png": [0.058594, 0.03125, 0.941406, 0.898438],
+    "pigs/skins/skin-wizard/relaxed.png": [0.058594, 0.03125, 0.941406, 0.894531],
+    "pigs/skins/career-astronaut/pet.png": [0.0625, 0.066406, 0.9375, 0.929688],
+    "pigs/skins/career-astronaut/relaxed.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/forms/pig-round/pet.png": [0.0625, 0.121094, 0.9375, 0.878906],
+    "pigs/forms/pig-fat/pet.png": [0.09375, 0.0625, 0.902344, 0.9375],
+    "pigs/forms/pig-round/relaxed.png": [0.0625, 0.121094, 0.9375, 0.878906],
+    "pigs/forms/pig-fat/relaxed.png": [0.0625, 0.113281, 0.9375, 0.882812],
+    "pigs/forms/pig-king/pet.png": [0.078125, 0.0625, 0.917969, 0.9375],
+    "pigs/forms/pig-king/relaxed.png": [0.0625, 0.078125, 0.9375, 0.917969],
+    "pigs/forms/pig-devil/pet.png": [0.0625, 0.105469, 0.9375, 0.890625],
+    "pigs/forms/pig-devil/relaxed.png": [0.0625, 0.09375, 0.9375, 0.90625],
+    "pigs/skins/skin-angel/pet.png": [0.074219, 0.0625, 0.925781, 0.9375],
+    "pigs/skins/skin-angel/relaxed.png": [0.0625, 0.0625, 0.933594, 0.9375],
+    "pigs/skins/skin-mint/pet.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/skin-detective/pet.png": [0.074219, 0.0625, 0.925781, 0.9375],
+    "pigs/skins/skin-detective/relaxed.png": [0.0625, 0.074219, 0.9375, 0.921875],
+    "pigs/forms/pig-round/bathe.png": [0.0625, 0.085938, 0.9375, 0.910156],
+    "pigs/forms/pig-fat/bathe.png": [0.0625, 0.09375, 0.9375, 0.902344],
+    "pigs/base/piglet/bathe.png": [0.0625, 0.183594, 0.9375, 0.816406],
+    "pigs/skins/career-chef/bathe.png": [0.0625, 0.09375, 0.9375, 0.90625],
+    "pigs/skins/skin-pirate/bathe.png": [0.0625, 0.09375, 0.9375, 0.90625],
+    "pigs/skins/skin-wizard/bathe.png": [0.058594, 0.03125, 0.941406, 0.820312],
+    "pigs/skins/skin-detective/bathe.png": [0.0625, 0.09375, 0.9375, 0.90625],
+    "pigs/forms/pig-king/bathe.png": [0.0625, 0.070312, 0.9375, 0.929688],
+    "pigs/skins/skin-mint/bathe.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/career-astronaut/bathe.png": [0.0625, 0.089844, 0.9375, 0.90625],
+    "pigs/forms/pig-devil/bathe.png": [0.070312, 0.0625, 0.925781, 0.9375],
+    "pigs/skins/skin-angel/bathe.png": [0.070312, 0.0625, 0.925781, 0.9375],
+    "pigs/skins/career-chef/study.png": [0.109375, 0.0625, 0.890625, 0.9375],
+    "pigs/skins/career-chef/trip.png": [0.085938, 0.0625, 0.914062, 0.9375],
+    "pigs/skins/skin-pirate/work.png": [0.0625, 0.125, 0.9375, 0.871094],
+    "pigs/skins/skin-pirate/study.png": [0.066406, 0.0625, 0.929688, 0.9375],
+    "pigs/skins/skin-pirate/trip.png": [0.0625, 0.105469, 0.9375, 0.894531],
+    "pigs/skins/skin-wizard/work.png": [0.058594, 0.070312, 0.941406, 0.726562],
+    "pigs/skins/skin-wizard/study.png": [0.058594, 0.03125, 0.941406, 0.976562],
+    "pigs/skins/skin-wizard/trip.png": [0.058594, 0.03125, 0.941406, 0.898438],
+    "pigs/skins/career-astronaut/work.png": [0.0625, 0.117188, 0.9375, 0.882812],
+    "pigs/skins/career-astronaut/study.png": [0.0625, 0.074219, 0.9375, 0.921875],
+    "pigs/skins/career-astronaut/trip.png": [0.0625, 0.109375, 0.9375, 0.890625],
+    "pigs/skins/career-chef/work.png": [0.0625, 0.074219, 0.9375, 0.925781],
+    "pigs/forms/pig-round/work.png": [0.0625, 0.171875, 0.9375, 0.828125],
+    "pigs/forms/pig-round/study.png": [0.074219, 0.0625, 0.921875, 0.9375],
+    "pigs/forms/pig-round/trip.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/forms/pig-fat/work.png": [0.0625, 0.175781, 0.9375, 0.820312],
+    "pigs/forms/pig-fat/study.png": [0.0625, 0.117188, 0.9375, 0.882812],
+    "pigs/forms/pig-fat/trip.png": [0.0625, 0.113281, 0.9375, 0.886719],
+    "pigs/forms/pig-king/work.png": [0.0625, 0.128906, 0.9375, 0.867188],
+    "pigs/forms/pig-king/study.png": [0.0625, 0.09375, 0.9375, 0.90625],
+    "pigs/forms/pig-king/trip.png": [0.066406, 0.0625, 0.929688, 0.9375],
+    "pigs/forms/pig-devil/work.png": [0.0625, 0.136719, 0.9375, 0.863281],
+    "pigs/forms/pig-devil/study.png": [0.0625, 0.167969, 0.9375, 0.832031],
+    "pigs/forms/pig-devil/trip.png": [0.082031, 0.0625, 0.914062, 0.9375],
+    "pigs/skins/skin-angel/work.png": [0.0625, 0.085938, 0.9375, 0.914062],
+    "pigs/skins/skin-angel/study.png": [0.097656, 0.0625, 0.898438, 0.9375],
+    "pigs/skins/skin-angel/trip.png": [0.0625, 0.0625, 0.9375, 0.933594],
+    "pigs/skins/skin-detective/work.png": [0.0625, 0.097656, 0.9375, 0.902344],
+    "pigs/skins/skin-detective/study.png": [0.085938, 0.0625, 0.914062, 0.9375],
+    "pigs/skins/skin-detective/trip.png": [0.0625, 0.066406, 0.9375, 0.929688],
+    "pigs/base/elder/idle.png": [0.0625, 0.109375, 0.9375, 0.886719],
+    "pigs/forms/pig-devil/fly.png": [0.0625, 0.121094, 0.9375, 0.878906],
+    "pigs/base/piglet/work.png": [0.0625, 0.273438, 0.9375, 0.722656],
+    "pigs/feedback/allergy.png": [0.0625, 0.113281, 0.9375, 0.886719],
+    "pigs/feedback/birthday.png": [0.0625, 0.0625, 0.9375, 0.9375],
+    "pigs/feedback/collection-badge.png": [0.0625, 0.070312, 0.9375, 0.929688],
+    "pigs/feedback/collection-bubbles.png": [0.0625, 0.113281, 0.9375, 0.886719],
+    "pigs/feedback/collection-cage.png": [0.097656, 0.0625, 0.898438, 0.9375],
+    "pigs/skins/skin-mint/work.png": [0.0625, 0.242188, 0.9375, 0.753906],
+    "pigs/badges/badge-pig-blindbox-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-blindbox-six.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-blindbox-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-clean-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-devil.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-farm-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-farm-five.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-farm-ten.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-first-class.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-first-fish.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-first-job.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-first-meal.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-first-trip.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-fish-five.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-gacha-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-gacha-gold.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-gacha-machines.png": [0.121094, 0.0625, 0.878906, 0.9375],
+    "pigs/badges/badge-pig-grown-up.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-jobs-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-king.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-mine-deep.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-mine-first.png": [0.136719, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-mine-fossils.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-pet-hundred.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-play-twenty.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-souvenirs-three.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/badges/badge-pig-trips-ten.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/feedback/collection-check.png": [0.0625, 0.101562, 0.9375, 0.894531],
+    "pigs/feedback/collection-chicken.png": [0.101562, 0.0625, 0.898438, 0.9375],
+    "pigs/feedback/collection-courier.png": [0.0625, 0.078125, 0.9375, 0.921875],
+    "pigs/feedback/collection-fever.png": [0.0625, 0.136719, 0.9375, 0.859375],
+    "pigs/feedback/collection-fitness.png": [0.0625, 0.175781, 0.9375, 0.824219],
+    "pigs/feedback/collection-letter.png": [0.0625, 0.160156, 0.9375, 0.839844],
+    "pigs/feedback/collection-mosquito.png": [0.0625, 0.164062, 0.9375, 0.835938],
+    "pigs/feedback/collection-scallion.png": [0.0625, 0.085938, 0.9375, 0.910156],
+    "pigs/feedback/collection-snack.png": [0.0625, 0.148438, 0.9375, 0.847656],
+    "pigs/feedback/collection-soup.png": [0.101562, 0.0625, 0.894531, 0.9375],
+    "pigs/feedback/collection-stack.png": [0.183594, 0.0625, 0.816406, 0.9375],
+    "pigs/feedback/collection-taro.png": [0.0625, 0.132812, 0.9375, 0.863281],
+    "pigs/feedback/collection-throne.png": [0.089844, 0.0625, 0.910156, 0.9375],
+    "pigs/feedback/courier.png": [0.0625, 0.074219, 0.9375, 0.921875],
+    "pigs/feedback/faint.png": [0.0625, 0.117188, 0.9375, 0.878906],
+    "pigs/feedback/fishing.png": [0.0625, 0.128906, 0.9375, 0.871094],
+    "pigs/feedback/ghost-grave.png": [0.0625, 0.136719, 0.9375, 0.863281],
+    "pigs/feedback/hungry.png": [0.0625, 0.085938, 0.9375, 0.910156],
+    "pigs/feedback/lie-flat.png": [0.0625, 0.15625, 0.9375, 0.84375],
+    "pigs/feedback/music-earbuds.png": [0.0625, 0.09375, 0.9375, 0.902344],
+    "pigs/feedback/music-headphones-v2.png": [0.0625, 0.164062, 0.9375, 0.835938],
+    "pigs/feedback/music-rainbow.png": [0.0625, 0.257812, 0.9375, 0.738281],
+    "pigs/feedback/painting.png": [0.0625, 0.097656, 0.9375, 0.898438],
+    "pigs/feedback/recruit.png": [0.0625, 0.089844, 0.9375, 0.90625],
+    "pigs/feedback/runny-nose.png": [0.078125, 0.0625, 0.921875, 0.9375],
+    "pigs/feedback/sleep-cloud.png": [0.0625, 0.179688, 0.9375, 0.816406],
+    "pigs/feedback/study-book.png": [0.0625, 0.140625, 0.9375, 0.855469],
+    "pigs/feedback/study-determined.png": [0.0625, 0.152344, 0.9375, 0.847656],
+    "pigs/feedback/study-pink-book.png": [0.0625, 0.085938, 0.9375, 0.910156],
+    "pigs/feedback/suspended.png": [0.183594, 0.0625, 0.8125, 0.9375],
+    "pigs/feedback/turning.png": [0.0625, 0.144531, 0.9375, 0.855469],
+    "pigs/feedback/twitch.png": [0.0625, 0.136719, 0.9375, 0.859375],
+    "pigs/badges/badge-pig-jobs-hundred.png": [0.132812, 0.0625, 0.863281, 0.9375],
+    "pigs/feedback/death-day.png": [0.0625, 0.210938, 0.9375, 0.789062],
+    "pigs/base/piglet/blink.png": [0.058594, 0.105469, 0.941406, 0.894531],
+    "pigs/base/piglet/shy-pet.png": [0.058594, 0.105469, 0.941406, 0.898438]
+  });
+  var MAX_ART_ASPECT = 1.947826;
+
+  // src/client/art-framing.js
+  var FRAME_HEIGHT2 = FRAME_HEIGHT;
+  var ART_BOUNDS2 = ART_BOUNDS;
+  var MAX_ART_ASPECT2 = MAX_ART_ASPECT;
+  function builtinFrame(src) {
+    const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
+    const name = path.split("/").pop()?.replace(/\.png$/, "");
+    return BUILTIN_FRAMING[path] ?? FEEDBACK_FRAMING[name] ?? null;
   }
-  function hasBuiltinArt(key2) {
-    return Object.hasOwn(PIG_ART_ASSETS, key2);
+  function applyFrame(image, frame3) {
+    if (typeof image.style?.setProperty !== "function") return;
+    image.style.setProperty("--art-zoom", frame3 ? String(frame3[0]) : "1");
+    image.style.setProperty("--art-x", frame3 ? frame3[1] + "%" : "0%");
+    image.style.setProperty("--art-y", frame3 ? frame3[2] + "%" : "0%");
+  }
+  function artMarginFor(width) {
+    return Math.max(40, (MAX_ART_ASPECT2 * FRAME_HEIGHT2 - 1) * width / 2 + 6);
   }
 
-  // src/client/pig-actions.js
-  var PLAYERS = /* @__PURE__ */ new WeakMap();
-  var BLINK_INTERVAL = { min: 8e3, max: 16e3 };
-  var ACTION_DURATION = { blink: 100, "shy-pet": 420 };
-  var ACTION_ART = { blink: "piglet-blink", "shy-pet": "piglet-shy-pet" };
-  function canPlayPigAction(pig, action) {
-    const read2 = (name) => pig.getAttribute("data-" + name) || "";
-    return read2("art") === "piglet" && !["box", "grave", "dead-day"].includes(read2("stage")) && !read2("activity") && !read2("idle") && !read2("illness") && read2("party") !== "true" && !["sick", "dirty", "sleepy", "dead", "hungry", "lonely"].includes(read2("mood")) && (!read2("react") || action === "shy-pet" && read2("react") === "pet");
+  // src/client/storage.js
+  function readStore(key2) {
+    try {
+      var value = window.localStorage.getItem(key2);
+      return value !== null ? value : window.localStorage.getItem(key2.replace(/^dsh-piggy:/, "dsh-pig:"));
+    } catch (error) {
+      return null;
+    }
   }
-  function pigActionArt(pig) {
-    return PLAYERS.get(pig)?.currentArt() || null;
+  function writeStore(key2, value) {
+    try {
+      window.localStorage.setItem(key2, value);
+    } catch (error) {
+    }
   }
-  function playPigPet(pig) {
-    if (!confirmPetSnap(pig)) PLAYERS.get(pig)?.play("shy-pet");
+
+  // src/client/custom-art.js
+  var CUSTOM_CANVAS = 128;
+  var CUSTOM_SLEEP_WIDTH = 192;
+  var CUSTOM_SLEEP_HEIGHT = 160;
+  var CUSTOM_ART_KEY = "dsh-piggy:custom-art-versions";
+  var ART_KEY = /^custom-[a-z0-9-]{1,41}$/;
+  var listeners = /* @__PURE__ */ new Set();
+  var INK_CACHE = /* @__PURE__ */ new Map();
+  var versions = null;
+  var bridgedWindow = null;
+  function customArtCanvas(sleep = false) {
+    return sleep ? { width: CUSTOM_SLEEP_WIDTH, height: CUSTOM_SLEEP_HEIGHT } : { width: CUSTOM_CANVAS, height: CUSTOM_CANVAS };
   }
-  function attachPigActions(c) {
-    const clock = c.clock || window;
-    const random = c.random || Math.random;
-    const ready = /* @__PURE__ */ new Set();
-    let active2 = null, frameTimer = null, blinkTimer = null, disposed = false;
-    const isBlocked = () => disposed || c.isStopped() || c.isDragging() || document.hidden === true || c.pig.closest?.('[data-dragging="true"]') != null;
-    const clearFrame = () => {
-      clock.clearTimeout(frameTimer);
-      frameTimer = null;
-      active2 = null;
-      c.pig.removeAttribute?.("data-micro-action");
-    };
-    function currentArt() {
-      if (active2 && (isBlocked() || !canPlayPigAction(c.pig, active2))) clearFrame();
-      return active2 ? ACTION_ART[active2] : null;
-    }
-    function play(action) {
-      if (isBlocked() || !ready.has(action) || !canPlayPigAction(c.pig, action)) return;
-      if (c.pig.getAttribute("data-pet-snap") === "true") return;
-      if (action === "blink" && active2) return;
-      clearFrame();
-      active2 = action;
-      c.pig.setAttribute?.("data-micro-action", action);
-      c.render();
-      frameTimer = clock.setTimeout(() => {
-        clearFrame();
-        c.render();
-      }, ACTION_DURATION[action]);
-    }
-    function scheduleBlink() {
-      clock.clearTimeout(blinkTimer);
-      blinkTimer = clock.setTimeout(() => {
-        blinkTimer = null;
-        if (!isBlocked()) play("blink");
-        scheduleBlink();
-      }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
-    }
-    function cancel2() {
-      clearFrame();
-      clock.clearTimeout(blinkTimer);
-      blinkTimer = null;
-      c.render();
-    }
-    function visibility() {
-      cancel2();
-      if (!isBlocked()) scheduleBlink();
-    }
-    const player = { currentArt, play };
-    PLAYERS.set(c.pig, player);
-    const preload = c.preload || ((src) => {
-      if (typeof Image !== "function") return Promise.resolve(false);
-      const image = new Image();
-      image.src = src;
-      return image.decode().then(() => true);
-    });
-    for (const action of Object.keys(ACTION_ART)) {
-      preload(artSource(ACTION_ART[action])).then((loaded) => {
-        if (!disposed && loaded !== false) ready.add(action);
-      }).catch((error) => console.error("\u5C0F\u732A\u52A8\u4F5C\u56FE\u7247\u89E3\u7801\u5931\u8D25", action, error));
-    }
-    document.addEventListener?.("visibilitychange", visibility);
-    const gestureTarget = c.pig.parentNode || c.pig;
-    gestureTarget.addEventListener?.("pointercancel", visibility);
-    gestureTarget.addEventListener?.("lostpointercapture", visibility);
-    const observer = typeof MutationObserver === "function" ? new MutationObserver(() => {
-      if (active2 && !currentArt()) c.render();
-      else if (blinkTimer === null && !isBlocked()) scheduleBlink();
-    }) : null;
-    observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
-    scheduleBlink();
+  function srcKey(src) {
+    const text = typeof src === "string" ? src : "";
+    const index = text.indexOf("/art/");
+    return index < 0 ? text : text.slice(index + 5);
+  }
+  function customArtInk(src, cacheKey) {
+    const key2 = typeof cacheKey === "string" && cacheKey !== "" ? cacheKey : srcKey(src);
+    return key2 === "" ? null : INK_CACHE.get(key2) ?? null;
+  }
+  function forgetCustomArtCache(cacheKey) {
+    if (typeof cacheKey === "string" && cacheKey !== "") INK_CACHE.delete(cacheKey);
+  }
+  function measureCustomArt(image, src, sleep = false, cacheKey) {
+    const key2 = typeof cacheKey === "string" && cacheKey !== "" ? cacheKey : srcKey(src);
+    if (key2 === "") return null;
+    const cached = INK_CACHE.get(key2);
+    if (cached !== void 0) return cached;
+    const canvas = customArtCanvas(sleep);
+    const ink = containedInk(image, canvas.width, canvas.height);
+    if (ink === null) return null;
+    INK_CACHE.set(key2, ink);
+    return ink;
+  }
+  function framedInkBox(box, ink, framing = {}) {
+    const zoom = Number(framing.zoom) > 0 ? Number(framing.zoom) : 1;
+    const shiftX = Number(framing.shiftX) || 0;
+    const shiftY = Number(framing.shiftY) || 0;
+    const mirrored = framing.mirrored === true;
+    const left = mirrored ? 1 - ink[2] : ink[0];
+    const right = mirrored ? 1 - ink[0] : ink[2];
+    const shift = mirrored ? -shiftX : shiftX;
     return {
-      cancel: cancel2,
-      dispose() {
-        observer?.disconnect();
-        disposed = true;
-        cancel2();
-        PLAYERS.delete(c.pig);
-        document.removeEventListener?.("visibilitychange", visibility);
-        gestureTarget.removeEventListener?.("pointercancel", visibility);
-        gestureTarget.removeEventListener?.("lostpointercapture", visibility);
-      }
+      x: box.x + box.width * (0.5 + (left - 0.5) * zoom + shift / 100),
+      y: box.y + box.height * (0.5 + (ink[1] - 0.5) * zoom + shiftY / 100),
+      width: box.width * (right - left) * zoom,
+      height: box.height * (ink[3] - ink[1]) * zoom
     };
   }
-
-  // src/client/feedback-art.js
-  var MOOD_ART = {
-    lonely: ["lie-flat"]
-  };
-  var ILLNESS_ART = {
-    "cold:1": ["runny-nose"],
-    "cold:2": ["collection-fever"],
-    "cold:3": ["runny-nose"],
-    "skin:1": ["allergy"],
-    "skin:2": ["allergy"],
-    "skin:3": ["allergy"],
-    "skin:4": ["allergy"],
-    "dizzy:1": ["faint"],
-    "dizzy:2": ["faint"],
-    "dizzy:3": ["faint"]
-  };
-  var REACTION_ART = {};
-  var IDLE_ART = {};
-  var WITHDRAWN_FEEDBACK_ART = Object.freeze({
-    happy: ["music-rainbow", "collection-stack"],
-    feed: ["collection-snack", "collection-soup"],
-    bathe: ["collection-bubbles"],
-    play: ["collection-chicken", "turning"],
-    levelup: ["collection-throne"],
-    roll: ["turning", "collection-taro"],
-    butterfly: ["collection-chicken", "collection-scallion"],
-    look: ["collection-letter"],
-    walk: ["collection-chicken", "collection-scallion"],
-    trip: ["collection-chicken", "collection-taro", "collection-scallion"]
-  });
-  var WORK_ART = {
-    flyers: "collection-letter",
-    singer: "music-headphones-v2",
-    songwriter: "music-earbuds",
-    cartoonist: "painting",
-    athlete: "collection-fitness",
-    coach: "collection-fitness",
-    gardener: "collection-scallion",
-    florist: "collection-scallion",
-    ceo: "collection-throne",
-    star: "music-rainbow"
-  };
-  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
-  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
-  var INTEREST_ART = {
-    fitness: ["collection-fitness"],
-    guitar: ["music-earbuds", "music-headphones-v2"],
-    dancing: ["music-earbuds", "music-headphones-v2"],
-    calligraphy: ["painting"],
-    photography: ["painting"],
-    other: ["study-determined"]
-  };
-  var TRIP_ART = [];
-  var BIRTHDAY_ART = "birthday";
-  var FEEDBACK_ART_TABLES = Object.freeze({
-    stage: STAGE_ART,
-    birthday: [BIRTHDAY_ART],
-    reaction: REACTION_ART,
-    illness: ILLNESS_ART,
-    mood: MOOD_ART,
-    work: WORK_ART,
-    study: STUDY_ART,
-    interest: INTEREST_ART,
-    fishing: ["fishing"],
-    trip: TRIP_ART,
-    idle: IDLE_ART
-  });
-  var UNUSED_FEEDBACK_ART = Object.freeze([
-    "collection-badge",
-    "collection-check",
-    "collection-cage",
-    "suspended",
-    "twitch",
-    // 2026-10-21：脏和饿保留原猪，苍蝇和食物想象泡独立显示。
-    "collection-mosquito",
-    "hungry",
-    // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
-    "sleep-cloud"
-  ]);
-  function choose(options, hour) {
-    return options[Math.abs(Math.floor(hour)) % options.length];
-  }
-  function feedbackArtFor(state4) {
-    if (STAGE_ART[state4.stage]) return choose(STAGE_ART[state4.stage], state4.hour);
-    if (state4.party === true) return BIRTHDAY_ART;
-    if (state4.base && state4.base !== "piglet") return null;
-    if (REACTION_ART[state4.reaction]) return choose(REACTION_ART[state4.reaction], state4.hour);
-    if (state4.mood === "sick") return ILLNESS_ART[state4.illness ?? ""] ? choose(ILLNESS_ART[state4.illness ?? ""], state4.hour) : null;
-    if (state4.mood === "dirty" || state4.mood === "hungry") return null;
-    if (state4.activityKind === "work") return WORK_ART[state4.activityKey] ?? null;
-    if (state4.activityKind === "study") return choose(STUDY_ART, state4.hour);
-    if (state4.activityKind === "interest") return choose(INTEREST_ART[state4.activityKey] ?? INTEREST_ART.other, state4.hour);
-    if (state4.activityKind === "fishing") return "fishing";
-    if (state4.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state4.hour) : null;
-    if (IDLE_ART[state4.idle]) return choose(IDLE_ART[state4.idle], state4.hour);
-    if (MOOD_ART[state4.mood]) return choose(MOOD_ART[state4.mood], state4.hour);
-    return null;
-  }
-
-  // src/client/art.js
-  var REACTION_ART2 = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
-  var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
-  var SLEEP_ART = /* @__PURE__ */ new Set([
-    "piglet",
-    "pig-round",
-    "pig-fat",
-    "pig-king",
-    "pig-devil",
-    "skin-mint",
-    "career-chef",
-    "career-astronaut",
-    "skin-detective",
-    "skin-angel",
-    "skin-pirate",
-    "skin-wizard"
-  ]);
-  var CUSTOM_FRAME_CACHE = /* @__PURE__ */ new Map();
-  var CUSTOM_FRAME_PENDING = /* @__PURE__ */ new WeakMap();
-  var ART_SELECTION = /* @__PURE__ */ new WeakMap();
-  onCustomArtChange(() => {
-    CUSTOM_FRAME_CACHE.clear();
-  });
-  function frameCustomImage(image, src, sleep = false, onFrame = null) {
-    const done = typeof onFrame === "function" ? onFrame : null;
-    if (!src.includes("/custom-")) {
-      const frame3 = builtinFrame(src);
-      applyFrame(image, frame3);
-      if (done !== null) done(frame3);
-      return;
-    }
-    const cached = CUSTOM_FRAME_CACHE.get(src);
-    if (cached !== void 0) {
-      applyFrame(image, cached);
-      if (done !== null) done(cached);
-      return;
-    }
-    if (CUSTOM_FRAME_PENDING.get(image) === src) return;
-    applyFrame(image, null);
-    CUSTOM_FRAME_PENDING.set(image, src);
-    function measure2() {
-      CUSTOM_FRAME_PENDING.delete(image);
-      if (image.getAttribute("src") !== src) return;
-      const ink = customArtInk(src) ?? measureCustomArt(image, src, sleep);
-      const frame3 = ink === null ? null : frameFromInk(ink);
-      if (frame3 === null) return;
-      CUSTOM_FRAME_CACHE.set(src, frame3);
-      applyFrame(image, frame3);
-      if (done !== null) done(frame3);
-    }
-    if (image.complete && image.naturalWidth > 0) measure2();
-    else image.addEventListener?.("load", measure2, { once: true });
-  }
-  function artFrameFor(src) {
-    if (typeof src !== "string" || src === "") return null;
-    return CUSTOM_FRAME_CACHE.get(src) ?? builtinFrame(src) ?? null;
-  }
-  function syncSleepArt(art, scenes, image) {
-    var custom = typeof art === "string" && art.startsWith("custom-") && scenes.includes("sleep");
-    var name = SLEEP_ART.has(art) ? art : "piglet";
-    var src = artSource((custom ? art : name) + "-sleep");
-    if (image.getAttribute("src") !== src) image.src = src;
-    frameCustomImage(image, src, true);
-  }
-  var forcedFeedback = null;
-  var effectArt = null;
-  function showEffectArt(name) {
-    effectArt = typeof name === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null;
-  }
-  function clearEffectArt() {
-    effectArt = null;
-  }
-  var artSwapHook = null;
-  function setArtSwapHook(hook) {
-    artSwapHook = typeof hook === "function" ? hook : null;
-  }
-  function swapSource(apply) {
-    if (artSwapHook === null) apply();
-    else artSwapHook(apply);
-  }
-  function forceFeedbackArt(name) {
-    forcedFeedback = typeof name === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null;
-  }
-  function syncPigArt(pig, image, emoji) {
-    if (pig.getAttribute("data-pet-snap") === "true") return !image.hidden;
-    const selection = {};
-    ART_SELECTION.set(image, selection);
-    const applySelected = (apply) => swapSource(() => {
-      if (ART_SELECTION.get(image) === selection && pig.getAttribute("data-pet-snap") !== "true") apply();
+  function customArtVisibleBox(node, box) {
+    if (node === null || node === void 0 || typeof node.getAttribute !== "function") return null;
+    const ink = customArtInk(node.getAttribute("src") || "");
+    if (ink === null) return null;
+    const style = node.style;
+    const sleep = node.matches?.(".dp-pig-sleep") === true;
+    return framedInkBox(box, ink, {
+      zoom: Number(style?.getPropertyValue?.("--art-zoom")) || 1,
+      shiftX: parseFloat(style?.getPropertyValue?.("--art-x")) || 0,
+      shiftY: parseFloat(style?.getPropertyValue?.("--art-y")) || 0,
+      mirrored: !sleep && node.closest?.(".dp-pig")?.getAttribute("data-walk") === "right"
     });
-    var base = pig.getAttribute("data-art") || "";
-    pigActionArt(pig);
-    var feedback = forcedFeedback || effectArt || feedbackArtFor({
-      stage: pig.getAttribute("data-stage") || "",
-      base,
-      mood: pig.getAttribute("data-mood") || "",
-      reaction: pig.getAttribute("data-react") || "",
-      idle: pig.getAttribute("data-idle") || "",
-      activityKind: pig.getAttribute("data-activity") || "",
-      activityKey: pig.getAttribute("data-activity-key") || "",
-      illness: pig.getAttribute("data-illness") || "",
-      party: pig.getAttribute("data-party") === "true",
-      hour: Math.floor(Date.now() / 36e5)
-    });
-    if (feedback) {
-      var feedbackSrc = artSource("feedback/" + feedback);
-      if (image.getAttribute("src") !== feedbackSrc) {
-        applySelected(function() {
-          image.src = feedbackSrc;
-          applyFrame(image, builtinFrame(feedbackSrc));
-        });
+  }
+  function forgetInk(art) {
+    for (const key2 of [...INK_CACHE.keys()]) {
+      const path = key2.split("?")[0];
+      if (path === art || path.startsWith(art + "-")) INK_CACHE.delete(key2);
+    }
+  }
+  function containedInk(image, canvasWidth = CUSTOM_CANVAS, canvasHeight = CUSTOM_CANVAS) {
+    const naturalWidth = Number(image?.naturalWidth) || 0;
+    const naturalHeight = Number(image?.naturalHeight) || naturalWidth;
+    if (!(naturalWidth > 0) || !(naturalHeight > 0)) return null;
+    const fit = Math.min(canvasWidth / naturalWidth, canvasHeight / naturalHeight);
+    if (!(fit > 0)) return null;
+    const width = naturalWidth * fit;
+    const height = naturalHeight * fit;
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const context = canvas.getContext?.("2d", { willReadFrequently: true });
+      if (!context) return null;
+      context.drawImage(image, (canvasWidth - width) / 2, (canvasHeight - height) / 2, width, height);
+      const pixels = context.getImageData(0, 0, canvasWidth, canvasHeight).data;
+      let left = canvasWidth, top = canvasHeight, right = 0, bottom = 0;
+      for (let y = 0; y < canvasHeight; y += 1) for (let x = 0; x < canvasWidth; x += 1) {
+        if (pixels[(y * canvasWidth + x) * 4 + 3] <= 16) continue;
+        left = Math.min(left, x);
+        top = Math.min(top, y);
+        right = Math.max(right, x + 1);
+        bottom = Math.max(bottom, y + 1);
       }
-      image.hidden = false;
-      pig.setAttribute("data-feedback", "true");
-      if (emoji) emoji.hidden = true;
-      return true;
+      if (right <= left || bottom <= top) return null;
+      return [left / canvasWidth, top / canvasHeight, right / canvasWidth, bottom / canvasHeight];
+    } catch {
+      return null;
     }
-    if (!base) {
-      applyFrame(image, null);
-      image.hidden = true;
-      if (image.getAttribute("src")) image.removeAttribute("src");
-      pig.setAttribute("data-feedback", "false");
-      if (emoji) emoji.hidden = false;
-      return false;
+  }
+  function frameFromInk(ink) {
+    const height = ink[3] - ink[1];
+    if (!(height > 0)) return null;
+    const zoom = FRAME_HEIGHT2 / height;
+    return [
+      zoom,
+      (0.5 - (ink[0] + ink[2]) / 2) * zoom * 100,
+      (0.5 - (ink[1] + ink[3]) / 2) * zoom * 100
+    ];
+  }
+  function readVersions() {
+    const raw = readStore(CUSTOM_ART_KEY);
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw ?? "");
+    } catch {
+      parsed = null;
     }
-    var microArt = pigActionArt(pig);
-    if (microArt && !forcedFeedback) {
-      var microSrc = artSource(microArt);
-      if (image.getAttribute("src") !== microSrc) {
-        applySelected(function() {
-          image.src = microSrc;
-          applyFrame(image, builtinFrame(artSource("piglet")));
-        });
+    const map = /* @__PURE__ */ new Map();
+    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const [key2, value] of Object.entries(parsed)) {
+        const version = Number(value);
+        if (ART_KEY.test(key2) && Number.isInteger(version) && version > 0) map.set(key2, version);
       }
-      image.hidden = false;
-      pig.setAttribute("data-feedback", "false");
-      if (emoji) emoji.hidden = true;
-      return true;
     }
-    var art = base;
-    if (pig.getAttribute("data-art-actions") === "true" || base === "piglet") {
-      var action = REACTION_ART2[pig.getAttribute("data-react")] || ACTIVITY_ART[pig.getAttribute("data-activity")];
-      var scenes = String(pig.getAttribute("data-art-scenes") || "").split(",");
-      if (action && (base === "piglet" || scenes[0] === "" || scenes.indexOf(action) >= 0) && (base.startsWith("custom-") || hasBuiltinArt(base + "-" + action))) art += "-" + action;
+    return map;
+  }
+  function ensureVersions() {
+    if (versions === null) versions = readVersions();
+    return versions;
+  }
+  function rootArt(art) {
+    const map = ensureVersions();
+    let best = "";
+    for (const key2 of map.keys()) {
+      if (art === key2 || art.startsWith(key2 + "-")) {
+        if (key2.length > best.length) best = key2;
+      }
     }
-    var src = artSource(art);
-    if (image.getAttribute("src") !== src) {
-      applySelected(function() {
-        image.src = src;
-        frameCustomImage(image, src);
-      });
+    return best === "" ? null : best;
+  }
+  function customArtVersion(art) {
+    if (typeof art !== "string" || !ART_KEY.test(art)) return 0;
+    const root = rootArt(art);
+    return root === null ? 0 : ensureVersions().get(root) ?? 0;
+  }
+  function refreshCustomArt(art) {
+    if (typeof art !== "string" || !ART_KEY.test(art)) return 0;
+    const map = ensureVersions();
+    const version = (map.get(art) ?? 0) + 1;
+    map.set(art, version);
+    forgetInk(art);
+    writeStore(CUSTOM_ART_KEY, JSON.stringify(Object.fromEntries(map)));
+    notify([art]);
+    return version;
+  }
+  function onCustomArtChange(fn) {
+    ensureStorageBridge();
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+  function notify(changed) {
+    const detail = Array.isArray(changed) ? Object.freeze([...changed]) : null;
+    for (const fn of [...listeners]) {
+      try {
+        fn(detail);
+      } catch (error) {
+        console.warn("\u81EA\u5B9A\u4E49\u7ACB\u7ED8\u5237\u65B0\u5931\u8D25", error);
+      }
     }
-    image.hidden = false;
-    pig.setAttribute("data-feedback", "false");
-    if (emoji) emoji.hidden = true;
-    return true;
   }
+  function onStorage(event) {
+    const key2 = (
+      /** @type {StorageEvent | null} */
+      event?.key
+    );
+    if (key2 !== CUSTOM_ART_KEY && key2 !== null && key2 !== void 0) return;
+    const previous = versions === null ? /* @__PURE__ */ new Map() : new Map(versions);
+    versions = readVersions();
+    const changed = [];
+    for (const root of /* @__PURE__ */ new Set([...previous.keys(), ...versions.keys()])) {
+      if ((previous.get(root) ?? 0) !== (versions.get(root) ?? 0)) {
+        forgetInk(root);
+        changed.push(root);
+      }
+    }
+    notify(changed);
+  }
+  function ensureStorageBridge() {
+    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+    if (bridgedWindow === window) return;
+    bridgedWindow = window;
+    window.addEventListener("storage", onStorage);
+  }
+  ensureStorageBridge();
 
-  // src/client/pet-parts.js
-  var PART_FX = {
-    head: ["\u2764\uFE0F"],
-    ears: ["\u3030\uFE0F", "\u2764\uFE0F"],
-    nose: ["\u{1F4A6}"],
-    belly: ["\u{1F606}", "\u2764\uFE0F"],
-    back: ["\u2728"],
-    tail: ["\u{1F300}"],
-    feet: ["\u{1F43E}"]
-  };
-  function partFor(fx, fy) {
-    if (fy > 0.8) return "feet";
-    if (fx > 0.8 && fy < 0.45) return "tail";
-    if (fx < 0.42 && fy > 0.58) return "nose";
-    if (fx < 0.45 && fy < 0.38) return "ears";
-    if (fx < 0.5) return "head";
-    if (fy > 0.6) return "belly";
-    return "back";
+  // src/client/art-resources.js
+  var ART_RESOURCE_SCHEMA = 1;
+  var LEGACY_NAMESPACE = "dsh-piggy";
+  var DEFAULT_PACK_REVISION = "1";
+  var HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Za-z0-9][A-Za-z0-9._/-]{0,199})(?:@([A-Za-z0-9._-]{1,128}))?$/;
+  function handleOf(namespace, pack, key2) {
+    return namespace + "/" + pack + "/" + key2;
   }
-  function partAt(pig, event) {
-    if (!pig || typeof pig.getBoundingClientRect !== "function" || typeof event?.clientX !== "number") return "head";
-    var rect = pig.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0) return "head";
-    var box = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-    var point = { x: event.clientX, y: event.clientY };
-    if (!boxPoint(box, point).inside) return "head";
-    var normalized = layoutPointToArt(box, point, { mirrored: pig.getAttribute?.("data-walk") === "right" });
-    return partFor(normalized.x, normalized.y);
+  function idOf(descriptor) {
+    return handleOf(descriptor.namespace, descriptor.pack, descriptor.key);
   }
-
-  // src/client/values.js
-  var isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
-  var obj = (v) => isObj(v) ? v : {};
-  var arr = (v) => Array.isArray(v) ? v : [];
-  var num = (v, dflt) => typeof v === "number" && isFinite(v) ? v : dflt;
-  var str = (v, dflt) => typeof v === "string" && v !== "" ? v : dflt;
-
-  // src/client/dom.js
-  function el(tag3, className, text) {
-    var node = document.createElement(tag3);
-    if (className) node.className = className;
-    if (text !== void 0) node.textContent = text;
-    return node;
+  function urlOf(descriptor) {
+    return ART_URL + descriptor.source.path + (descriptor.revision === "" ? "" : "?v=" + descriptor.revision);
   }
-  function button(className, attrs, onClick) {
-    var node = el("button", className);
-    node.type = "button";
-    for (var key2 in attrs) node.setAttribute(key2, attrs[key2]);
-    node.addEventListener("click", function(event) {
-      event.stopPropagation();
-      onClick(event);
+  function registeredCacheKey(descriptor) {
+    return idOf(descriptor) + "@" + descriptor.revision;
+  }
+  function artKeyOf(descriptor) {
+    const source = descriptor.source;
+    if (source.scheme === "builtin" || source.scheme === "custom") return source.key;
+    if (source.scheme === "path") return handleOf(descriptor.namespace, descriptor.pack, descriptor.key);
+    return descriptor.key;
+  }
+  function resolved(descriptor, legacy2) {
+    const id = idOf(descriptor);
+    const url = urlOf(descriptor);
+    const scheme = descriptor.source.scheme;
+    return Object.freeze({
+      descriptor,
+      ref: Object.freeze({
+        namespace: descriptor.namespace,
+        pack: descriptor.pack,
+        key: descriptor.key,
+        revision: descriptor.revision
+      }),
+      id,
+      cacheKey: legacy2 ? url : registeredCacheKey(descriptor),
+      url,
+      artKey: artKeyOf(descriptor),
+      scheme,
+      exists: scheme !== "legacy",
+      legacy: legacy2
     });
-    return node;
   }
-  function meter(value, variant) {
-    var wrap2 = el("div", "dp-meter" + (variant ? " " + variant : ""));
-    var fill = document.createElement("i");
-    fill.style.width = Math.max(0, Math.min(100, num(value, 0))) + "%";
-    wrap2.appendChild(fill);
-    return wrap2;
+  function parseHandle(value) {
+    if (value.includes("..") || value.includes("//")) return null;
+    const match = HANDLE.exec(value);
+    if (match === null) return null;
+    return Object.freeze({
+      namespace: match[1],
+      pack: match[2],
+      key: match[3],
+      revision: match[4] ?? ""
+    });
   }
-  function sideScroller(strip, active2) {
-    if (typeof strip.addEventListener === "function") {
-      strip.addEventListener("wheel", function(event) {
-        if (strip.scrollWidth <= strip.clientWidth) return;
-        var delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-        if (delta === 0) return;
-        strip.scrollLeft += delta;
-        event.preventDefault();
-      }, { passive: false });
+  function createState(parent, legacy2, buildDescriptor2) {
+    const records = /* @__PURE__ */ new Map();
+    const shortKeys = /* @__PURE__ */ new Map();
+    const listeners4 = /* @__PURE__ */ new Set();
+    let locked = false;
+    function rebuildShortKeys() {
+      shortKeys.clear();
+      const seen = /* @__PURE__ */ new Map();
+      for (const descriptor of records.values()) {
+        const list = seen.get(descriptor.key) ?? [];
+        list.push(idOf(descriptor));
+        seen.set(descriptor.key, list);
+      }
+      for (const [key2, ids] of seen) if (ids.length === 1) shortKeys.set(key2, ids[0]);
     }
-    if (active2 && typeof active2.offsetLeft === "number") {
-      strip.scrollLeft = Math.max(0, active2.offsetLeft - (strip.clientWidth - active2.offsetWidth) / 2);
+    function resolveRef(ref) {
+      if (ref === null || typeof ref !== "object") return null;
+      const { namespace, pack, key: key2 } = ref;
+      if (typeof namespace !== "string" || typeof pack !== "string" || typeof key2 !== "string") return null;
+      const descriptor = records.get(handleOf(namespace, pack, key2));
+      if (descriptor === void 0) return parent === null ? null : parent.resolveRef(ref);
+      if (ref.revision !== void 0 && ref.revision !== "" && String(ref.revision) !== descriptor.revision) return null;
+      return resolved(descriptor, false);
     }
-  }
-
-  // src/client/speech.js
-  function createSpeech({ bubble, pomoHint = null }) {
-    let timer2 = null;
-    let hold = null;
-    let version = 0;
-    let disposed = false;
-    function reset() {
-      version += 1;
-      if (timer2 !== null) window.clearTimeout(timer2);
-      timer2 = null;
-      if (hold !== null) hold.dispose();
-      hold = null;
-      return version;
+    function resolveString(value) {
+      if (typeof value !== "string") return null;
+      const short = shortKeys.get(value);
+      if (short !== void 0) {
+        const descriptor = records.get(short);
+        if (descriptor !== void 0) return resolved(descriptor, false);
+      }
+      const ref = parseHandle(value);
+      if (ref !== null) {
+        const own = resolveRef(ref);
+        if (own !== null) return own;
+        const inherited = legacy2 === null ? null : legacy2(value);
+        return inherited === null ? null : resolved(inherited, true);
+      }
+      if (parent !== null) {
+        const inherited = parent.resolveString(value);
+        if (inherited !== null) return inherited;
+      }
+      const fallback = legacy2 === null ? null : legacy2(value);
+      return fallback === null ? null : resolved(fallback, true);
     }
-    function expire(current3, restorePomo) {
-      if (current3 !== version) return;
-      const close = () => {
-        if (current3 !== version) return;
-        bubble.hidden = true;
-        if (hold !== null) hold.dispose();
-        hold = null;
-        if (restorePomo && pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute("data-pomo") !== "on";
+    function notify2(change) {
+      for (const listener of [...listeners4]) {
+        try {
+          listener(change);
+        } catch (error) {
+          console.warn("\u827A\u672F\u8D44\u6E90\u53D8\u66F4\u901A\u77E5\u5931\u8D25", error);
+        }
+      }
+    }
+    function subscribe(listener) {
+      if (typeof listener !== "function") throw new Error("[dsh-piggy] art resource listener must be a function");
+      listeners4.add(listener);
+      return function() {
+        listeners4.delete(listener);
       };
-      if (hold !== null && hold.defer(close)) return;
-      close();
     }
-    function showBubble(text, ms) {
-      if (disposed) return;
-      const current3 = reset();
-      bubble.setAttribute("data-bubble-shown", "true");
-      bubble.textContent = "";
-      bubble.appendChild(el("span", "dp-bubble-text", text));
-      bubble.hidden = false;
-      if (pomoHint !== null) pomoHint.hidden = true;
-      timer2 = window.setTimeout(() => {
-        if (current3 !== version) return;
-        timer2 = null;
-        expire(current3, true);
-      }, ms || 2600);
-    }
-    function showLine(text, replies, onReply, ms) {
-      if (disposed) return;
-      if (replies.length === 0) {
-        showBubble(text, ms || 2600);
-        return;
+    function registerPack(pack, options) {
+      if (locked) throw new Error("[dsh-piggy] art resource registry is locked");
+      if (pack === null || typeof pack !== "object") throw new Error("[dsh-piggy] art resource pack must be an object");
+      if (!Array.isArray(pack.resources) || pack.resources.length === 0) throw new Error("[dsh-piggy] art resource pack needs resources");
+      const namespace = pack.namespace;
+      const packName = pack.pack;
+      if (typeof namespace !== "string" || typeof packName !== "string" || namespace === "" || packName === "") {
+        throw new Error("[dsh-piggy] art resource pack needs namespace/pack");
       }
-      const current3 = reset();
-      bubble.textContent = "";
-      bubble.appendChild(el("span", "dp-bubble-text", text));
-      const row2 = el("div", "dp-bubble-replies", "");
-      hold = createRenderHold(row2);
-      replies.forEach((label, index) => {
-        const answer = el("button", "dp-reply", label);
-        answer.type = "button";
-        answer.addEventListener("click", (event) => {
-          event.stopPropagation();
-          if (current3 !== version || bubble.hidden) return;
-          reset();
-          bubble.hidden = true;
-          onReply(index);
-        });
-        row2.appendChild(answer);
-      });
-      bubble.appendChild(row2);
-      bubble.hidden = false;
-      timer2 = window.setTimeout(() => {
-        if (current3 !== version) return;
-        timer2 = null;
-        expire(current3, false);
-      }, Math.max(6e3, ms || 0));
+      const packRevision = pack.revision === void 0 ? DEFAULT_PACK_REVISION : String(pack.revision);
+      const replace = options?.replace === true;
+      const prepared = /* @__PURE__ */ new Map();
+      for (const declaration of pack.resources) {
+        const descriptor = buildDescriptor2(declaration, namespace, packName, packRevision);
+        const handle = idOf(descriptor);
+        if (prepared.has(handle)) throw new Error("[dsh-piggy] duplicate art resource in pack: " + handle);
+        if (records.has(handle) && !replace) throw new Error("[dsh-piggy] duplicate art resource: " + handle);
+        prepared.set(handle, descriptor);
+      }
+      const changes = [];
+      for (const [handle, descriptor] of prepared) {
+        const previous = records.get(handle);
+        records.set(handle, descriptor);
+        changes.push(Object.freeze({
+          key: descriptor.key,
+          revision: descriptor.revision,
+          previousRevision: previous === void 0 ? null : previous.revision,
+          cacheKey: registeredCacheKey(descriptor),
+          previousCacheKey: previous === void 0 ? null : registeredCacheKey(previous)
+        }));
+      }
+      rebuildShortKeys();
+      if (changes.length > 0) notify2(Object.freeze({ namespace, pack: packName, changes: Object.freeze(changes) }));
+      return Object.freeze([...prepared.values()]);
     }
-    function hideBubble() {
-      reset();
-      bubble.hidden = true;
-    }
-    return { showBubble, showLine, hideBubble, dispose() {
-      disposed = true;
-      hideBubble();
+    return { registerPack, resolveRef, resolveString, subscribe, records, parent, lock: function() {
+      locked = true;
     } };
   }
-
-  // src/client/effects.js
-  function createEffects(deps) {
-    var scene6 = deps.scene;
-    var pig = deps.pig;
-    var card2 = deps.card;
-    var bubble = deps.bubble;
-    var pomoHint = deps.pomoHint ?? null;
-    var isStopped = deps.isStopped;
-    var reactTimer = null;
-    var feelHooks = null;
-    const speech = createSpeech({ bubble, pomoHint });
-    const { showBubble, showLine } = speech;
-    var transformTimer = null;
-    var transformLayer = null;
-    function transform(kind) {
-      if (transformTimer !== null) window.clearTimeout(transformTimer);
-      if (transformLayer !== null) transformLayer.remove();
-      var emojis = kind === "contract" ? ["\u{1F608}", "\u{1F525}"] : ["\u{1F451}", "\u2728"];
-      var layer = el("div", "dp-transform");
-      layer.setAttribute("aria-hidden", "true");
-      for (var i = 0; i < 16; i += 1) {
-        var falling = el("span", "dp-transform-fall", emojis[i % 2]);
-        falling.style.left = i * 47 % 101 + "%";
-        falling.style.setProperty("--delay", i % 5 * 0.07 + "s");
-        falling.style.setProperty("--drift", (i % 3 - 1) * 34 + "px");
-        layer.appendChild(falling);
-      }
-      var center = pig.getBoundingClientRect();
-      var pop = el("span", "dp-transform-pop", emojis[0]);
-      pop.style.left = center.left + center.width / 2 + "px";
-      pop.style.top = center.top + center.height / 2 + "px";
-      layer.appendChild(pop);
-      document.body.appendChild(layer);
-      transformLayer = layer;
-      transformTimer = window.setTimeout(function() {
-        layer.remove();
-        if (transformLayer === layer) transformLayer = null;
-        transformTimer = null;
-      }, 1450);
-    }
-    var JUMP_KINDS = { levelup: true, away: true, feed: true, play: true };
-    function applyReact(kind, ms) {
-      pig.removeAttribute("data-react");
-      void pig.offsetWidth;
-      pig.setAttribute("data-react", kind);
-      syncPigArt(pig, deps.pigArt, deps.pigEmoji);
-      reactTimer = window.setTimeout(function() {
-        pig.removeAttribute("data-react");
-        syncPigArt(pig, deps.pigArt, deps.pigEmoji);
-        reactTimer = null;
-      }, ms || 900);
-    }
-    function react(kind, ms) {
-      if (reactTimer !== null) window.clearTimeout(reactTimer);
-      if (feelHooks !== null && JUMP_KINDS[kind] === true) {
-        feelHooks.crouch(120);
-        reactTimer = window.setTimeout(function() {
-          applyReact(kind, ms);
-        }, 120);
-        return;
-      }
-      applyReact(kind, ms);
-    }
-    function burst(emojis, count) {
-      for (var i = 0; i < (count || 1); i += 1) {
-        (function(index) {
-          window.setTimeout(function() {
-            if (isStopped()) return;
-            var node = el("span", "dp-fx", emojis[index % emojis.length]);
-            node.style.setProperty("--dx", Math.round((Math.random() - 0.5) * 46) + "px");
-            var spot = headSpot();
-            node.style.left = spot.x + Math.round((Math.random() - 0.5) * 22) + "px";
-            node.style.top = spot.y + "px";
-            scene6.appendChild(node);
-            window.setTimeout(function() {
-              node.remove();
-            }, 1200);
-          }, index * 110);
-        })(i);
-      }
-    }
-    function headSpot() {
-      var fallback = { x: 24, y: 8 };
-      if (typeof pig.getBoundingClientRect !== "function" || typeof scene6.getBoundingClientRect !== "function") return fallback;
-      var p = pig.getBoundingClientRect();
-      var s = scene6.getBoundingClientRect();
-      if (p.width === 0 && p.height === 0) return fallback;
-      return { x: p.left - s.left + p.width / 2, y: p.top - s.top - 20 };
-    }
-    var REACTIONS = {
-      hatch: { kind: "levelup", ms: 980, fx: ["\u{1F95A}", "\u2728", "\u{1F416}", "\u{1F389}"], count: 4, say: "\u5B75\u51FA\u6765\u5566\uFF01" },
-      feed: { kind: "feed", ms: 900, fx: ["\u{1F34E}", "\u{1F60B}", "\u2728"], count: 3, say: "\u5403\u6389\u4E86\uFF01" },
-      bathe: { kind: "bathe", ms: 1050, fx: ["\u{1FAE7}", "\u{1FAE7}", "\u{1F4A7}", "\u2728"], count: 4, say: "\u6D17\u5E72\u51C0\u5566\uFF5E" },
-      play: { kind: "play", ms: 900, fx: ["\u{1F3BE}", "\u2B50", "\u{1F4A8}"], count: 3, say: "\u597D\u5F00\u5FC3\uFF01" },
-      pet: { kind: "pet", ms: 420, fx: ["\u2764\uFE0F"], count: 1, say: "\u597D\u8212\u670D\u2026" },
-      work: { kind: "away", ms: 900, fx: ["\u{1F4BC}", "\u{1F9F1}", "\u{1FA99}"], count: 3, say: "\u51FA\u95E8\u6253\u5DE5\uFF01" },
-      study: { kind: "away", ms: 900, fx: ["\u{1F4DA}", "\u270F\uFE0F", "\u{1F9E0}"], count: 3, say: "\u4E0A\u5B66\u53BB\uFF01" },
-      trip: { kind: "away", ms: 900, fx: ["\u{1F9F3}", "\u{1F5FA}", "\u2728"], count: 3, say: "\u51FA\u53D1\u65C5\u884C\uFF01" },
-      calloff: { kind: "refuse", ms: 520, fx: ["\u{1F4A8}"], count: 1, say: "\u63D0\u524D\u56DE\u6765\u4E86\u2026" },
-      buy: { kind: "pet", ms: 620, fx: ["\u{1FA99}", "\u{1F6D2}"], count: 2, say: "\u4E70\u5230\u4E86\uFF01" },
-      use: { kind: "pet", ms: 620, fx: ["\u2728"], count: 2, say: "\u7528\u6389\u4E86\u3002" }
+  var STATE_OF = /* @__PURE__ */ new WeakMap();
+  function publicRegistry(state4, readonly) {
+    const api = {
+      readonly,
+      registerPack: readonly ? function() {
+        throw new Error("[dsh-piggy] the default art resource registry is read-only");
+      } : state4.registerPack,
+      resolve: function(value) {
+        if (typeof value === "string") return state4.resolveString(value);
+        if (value !== null && typeof value === "object") return state4.resolveRef(value);
+        return null;
+      },
+      resolveRef: state4.resolveRef,
+      resolveString: state4.resolveString,
+      list: function(options) {
+        const kind = options?.kind;
+        const includeParent = options?.includeParent !== false;
+        const found = /* @__PURE__ */ new Map();
+        for (const descriptor of state4.records.values()) {
+          if (kind !== void 0 && descriptor.kind !== kind) continue;
+          found.set(idOf(descriptor), resolved(descriptor, false));
+        }
+        if (includeParent && state4.parent !== null) {
+          for (const entry of state4.parent.list({ kind, includeParent: true })) {
+            if (!found.has(entry.id)) found.set(entry.id, entry);
+          }
+        }
+        return Object.freeze([...found.values()]);
+      },
+      has: function(value) {
+        const entry = typeof value === "string" ? state4.resolveString(value) : state4.resolveRef(value);
+        return entry !== null && entry.exists;
+      },
+      subscribe: state4.subscribe
     };
-    var SPOKEN_BY_HOST = { feed: true, bathe: true, play: true, pet: true, work: true, study: true, trip: true, buy: true, use: true };
-    function flash(action, extra) {
-      var spec = REACTIONS[action];
-      if (spec === void 0) return;
-      if (deps.isAway?.() !== true) react(spec.kind, spec.ms);
-      var part = action === "pet" && extra ? PART_FX[extra.part] : void 0;
-      burst(part ?? spec.fx, part ? part.length : spec.count);
-      if (!SPOKEN_BY_HOST[action]) showBubble(spec.say, 1600);
+    STATE_OF.set(api, state4);
+    return Object.freeze(api);
+  }
+  function sealArtResourceRegistry(registry2) {
+    const state4 = STATE_OF.get(registry2);
+    if (state4 === void 0) throw new Error("[dsh-piggy] unknown art resource registry");
+    state4.lock();
+    return publicRegistry(state4, true);
+  }
+  function createArtResourceRegistryBase(options) {
+    if (typeof options.buildDescriptor !== "function") throw new Error("[dsh-piggy] art resource builder is required");
+    const parent = options.parent ?? null;
+    if (parent !== null && (typeof parent !== "object" || typeof parent.resolveRef !== "function" || typeof parent.resolveString !== "function")) {
+      throw new Error("[dsh-piggy] invalid art resource parent registry");
     }
-    function toast(text) {
-      var node = el("div", "dp-toast", text);
-      card2.insertBefore(node, card2.firstChild);
-      window.setTimeout(function() {
-        node.remove();
-      }, 4800);
+    if (parent !== null && parent.readonly !== true) {
+      throw new Error("[dsh-piggy] art resource parent registry must be read-only");
     }
-    function dispose() {
-      if (reactTimer !== null) window.clearTimeout(reactTimer);
-      speech.dispose();
-      if (transformTimer !== null) window.clearTimeout(transformTimer);
-      if (transformLayer !== null) transformLayer.remove();
-      reactTimer = null;
-      transformTimer = null;
-      transformLayer = null;
+    const legacy2 = typeof options.legacy === "function" ? options.legacy : null;
+    return publicRegistry(createState(parent, legacy2, options.buildDescriptor), false);
+  }
+
+  // src/client/art-path.js
+  var TOKEN = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+  var KEY = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/;
+  var CUSTOM_KEY = /^custom-[a-z0-9-]{1,41}$/;
+  var SOURCE_PATH = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}\.(?:png|svg|webp)$/;
+  var SAFE_ART_STRING = /^[A-Za-z0-9._/@-]+$/;
+  var LEGACY_ELIGIBILITY = Object.freeze({
+    art: "piglet",
+    stageNot: Object.freeze(["box", "grave", "dead-day"]),
+    absent: Object.freeze(["activity", "idle", "illness"]),
+    moodNot: Object.freeze(["sick", "dirty", "sleepy", "dead", "hungry", "lonely"]),
+    react: Object.freeze([]),
+    party: false
+  });
+  function token(value, label) {
+    if (typeof value !== "string" || !TOKEN.test(value)) throw new Error("[dsh-piggy] invalid art resource " + label);
+    return value;
+  }
+  function resourceKey(value, label) {
+    if (typeof value !== "string" || value === "" || value.length > 200 || value.startsWith("/") || value.endsWith("/") || value.includes("..") || value.includes("//") || !KEY.test(value)) {
+      throw new Error("[dsh-piggy] invalid art resource " + label);
     }
-    return {
-      react,
-      burst,
-      transform,
-      flash,
-      showBubble,
-      showLine,
-      hideBubble: speech.hideBubble,
-      toast,
-      dispose,
-      /** 物理层装好后由 shell 接上；关闭手感时传 null。 */
-      setFeel: function(feel2) {
-        feelHooks = feel2;
+    return value;
+  }
+  function revisionString(value) {
+    if (typeof value === "number") {
+      if (!Number.isFinite(value) || value < 0 || !Number.isInteger(value)) throw new Error("[dsh-piggy] invalid art resource revision");
+      return String(value);
+    }
+    if (typeof value !== "string" || value === "" || value.length > 128 || !/^[A-Za-z0-9._-]+$/.test(value)) {
+      throw new Error("[dsh-piggy] invalid art resource revision");
+    }
+    return value;
+  }
+  function normalizeSource(value) {
+    if (value === null || typeof value !== "object") throw new Error("[dsh-piggy] art resource source must be an object");
+    const source = (
+      /** @type {import('./art-resources.js').ArtResourceSourceInput} */
+      value
+    );
+    if (source.scheme === "builtin") {
+      if (typeof source.key !== "string" || !Object.hasOwn(PIG_ART_ASSETS, source.key)) {
+        throw new Error("[dsh-piggy] builtin art resource key is not in PIG_ART_ASSETS");
       }
+      const path = builtinArtPath(source.key);
+      if (path === void 0 || PIG_ART_REVISIONS[source.key] === void 0) {
+        throw new Error("[dsh-piggy] builtin art resource has no path/revision");
+      }
+      return Object.freeze({ scheme: "builtin", key: source.key, path });
+    }
+    if (source.scheme === "custom") {
+      if (typeof source.key !== "string" || !CUSTOM_KEY.test(source.key)) throw new Error("[dsh-piggy] invalid custom art resource key");
+      return Object.freeze({ scheme: "custom", key: source.key, path: source.key });
+    }
+    if (source.scheme === "path") {
+      if (typeof source.path !== "string" || source.path.length > 256 || source.path.startsWith("/") || source.path.includes("..") || source.path.includes("//") || source.path.includes("\\") || source.path.includes("?") || source.path.includes("#") || !SOURCE_PATH.test(source.path)) {
+        throw new Error("[dsh-piggy] invalid art resource path");
+      }
+      return Object.freeze({ scheme: "path", path: source.path });
+    }
+    throw new Error("[dsh-piggy] unsupported art resource source scheme");
+  }
+  function tokenList(value, allowEmpty = false) {
+    if (!Array.isArray(value)) throw new Error("[dsh-piggy] art eligibility lists must be arrays");
+    const list = value.map((item) => {
+      if (typeof item !== "string" || !(allowEmpty && item === "") && !/^[a-z0-9-]{1,64}$/.test(item)) {
+        throw new Error("[dsh-piggy] invalid art eligibility token");
+      }
+      return item;
+    });
+    return Object.freeze(list);
+  }
+  function normalizeFrame(value) {
+    if (value === void 0 || value === null) return null;
+    if (!Array.isArray(value) || value.length !== 3) throw new Error("[dsh-piggy] art resource frame must have three numbers");
+    const frame3 = value.map(Number);
+    if (!frame3.every(Number.isFinite)) throw new Error("[dsh-piggy] art resource frame must have three finite numbers");
+    return Object.freeze(
+      /** @type {[number, number, number]} */
+      [frame3[0], frame3[1], frame3[2]]
+    );
+  }
+  function normalizeEligibility(value) {
+    if (value === void 0 || value === null) return null;
+    if (typeof value !== "object" || Array.isArray(value)) throw new Error("[dsh-piggy] art eligibility must be an object");
+    const input = (
+      /** @type {import('./art-resources.js').ArtEligibility} */
+      value
+    );
+    for (const name of Object.keys(input)) {
+      if (!["art", "stageNot", "absent", "react", "moodNot", "party"].includes(name)) {
+        throw new Error("[dsh-piggy] unsupported art eligibility field: " + name);
+      }
+    }
+    const out = {};
+    if (input.art !== void 0) out.art = resourceKey(input.art, "eligibility art");
+    if (input.stageNot !== void 0) out.stageNot = tokenList(input.stageNot);
+    if (input.absent !== void 0) out.absent = tokenList(input.absent);
+    if (input.react !== void 0) out.react = tokenList(input.react, true);
+    if (input.moodNot !== void 0) out.moodNot = tokenList(input.moodNot);
+    if (input.party !== void 0) {
+      if (typeof input.party !== "boolean") throw new Error("[dsh-piggy] art eligibility party must be a boolean");
+      out.party = input.party;
+    }
+    return Object.freeze(out);
+  }
+  function normalizeFallback(value) {
+    if (value === void 0 || value === null) return null;
+    if (typeof value === "string") {
+      return Object.freeze({ namespace: LEGACY_NAMESPACE, pack: "actions", key: resourceKey(value, "fallback key"), revision: "" });
+    }
+    if (typeof value !== "object") throw new Error("[dsh-piggy] art resource fallback must be a reference or action key");
+    const input = (
+      /** @type {import('./art-resources.js').ArtResourceRefInput} */
+      value
+    );
+    return Object.freeze({
+      namespace: token(input.namespace, "fallback namespace"),
+      pack: token(input.pack, "fallback pack"),
+      key: resourceKey(input.key, "fallback key"),
+      revision: input.revision === void 0 ? "" : revisionString(input.revision)
+    });
+  }
+  function buildDescriptor(declaration, namespace, pack, packRevision) {
+    if (declaration === null || typeof declaration !== "object") throw new Error("[dsh-piggy] art resource must be an object");
+    for (const name of Object.keys(declaration)) {
+      if (!["key", "kind", "source", "revision", "frame", "duration", "eligibility", "fallback"].includes(name)) {
+        throw new Error("[dsh-piggy] unsupported art resource field: " + name);
+      }
+    }
+    const ns = token(namespace, "namespace");
+    const packName = token(pack, "pack");
+    const key2 = resourceKey(declaration.key, "key");
+    const kind = declaration.kind ?? "art";
+    if (!["art", "action", "skin"].includes(kind)) throw new Error("[dsh-piggy] unsupported art resource kind");
+    const source = normalizeSource(declaration.source);
+    const revision = source.scheme === "builtin" ? PIG_ART_REVISIONS[source.key] ?? "" : revisionString(declaration.revision === void 0 ? packRevision : declaration.revision);
+    if (revision === "") throw new Error("[dsh-piggy] art resource needs a non-empty revision");
+    let duration = null;
+    if (declaration.duration !== void 0) {
+      if (!Number.isFinite(declaration.duration) || declaration.duration <= 0) throw new Error("[dsh-piggy] art action duration must be positive");
+      duration = declaration.duration;
+    }
+    if (kind === "action" && duration === null) throw new Error("[dsh-piggy] art action needs a duration");
+    if (kind !== "action" && duration !== null) throw new Error("[dsh-piggy] duration is only valid for art actions");
+    const eligibility = normalizeEligibility(declaration.eligibility);
+    if (kind !== "action" && eligibility !== null) throw new Error("[dsh-piggy] eligibility is only valid for art actions");
+    const fallback = normalizeFallback(declaration.fallback);
+    if (kind !== "action" && fallback !== null) throw new Error("[dsh-piggy] fallback is only valid for art actions");
+    return Object.freeze({
+      namespace: ns,
+      pack: packName,
+      key: key2,
+      revision,
+      kind,
+      source,
+      frame: normalizeFrame(declaration.frame),
+      duration,
+      eligibility,
+      fallback,
+      schema: ART_RESOURCE_SCHEMA
+    });
+  }
+  function legacyDescriptor(key2) {
+    const path = builtinArtPath(key2);
+    if (path !== void 0) {
+      return Object.freeze({
+        namespace: LEGACY_NAMESPACE,
+        pack: "builtin",
+        key: key2,
+        revision: PIG_ART_REVISIONS[key2] ?? "",
+        kind: "art",
+        source: Object.freeze({ scheme: "builtin", key: key2, path }),
+        frame: null,
+        duration: null,
+        eligibility: null,
+        fallback: null,
+        schema: ART_RESOURCE_SCHEMA
+      });
+    }
+    if (key2.startsWith("custom-")) {
+      const version = customArtVersion(key2);
+      return Object.freeze({
+        namespace: LEGACY_NAMESPACE,
+        pack: "custom",
+        key: key2,
+        revision: version > 0 ? String(version) : "",
+        kind: "art",
+        source: Object.freeze({ scheme: "custom", key: key2, path: key2 }),
+        frame: null,
+        duration: null,
+        eligibility: null,
+        fallback: null,
+        schema: ART_RESOURCE_SCHEMA
+      });
+    }
+    return Object.freeze({
+      namespace: LEGACY_NAMESPACE,
+      pack: "legacy",
+      key: key2,
+      revision: "",
+      kind: "art",
+      source: Object.freeze({ scheme: "legacy", path: key2 + ".svg" }),
+      frame: null,
+      duration: null,
+      eligibility: null,
+      fallback: null,
+      schema: ART_RESOURCE_SCHEMA
+    });
+  }
+  var DEFAULT_ACTION_PACK = Object.freeze({
+    namespace: LEGACY_NAMESPACE,
+    pack: "actions",
+    revision: "1",
+    resources: Object.freeze([
+      Object.freeze({
+        key: "blink",
+        kind: "action",
+        source: Object.freeze({ scheme: "builtin", key: "piglet-blink" }),
+        duration: 100,
+        eligibility: LEGACY_ELIGIBILITY
+      }),
+      Object.freeze({
+        key: "shy-pet",
+        kind: "action",
+        source: Object.freeze({ scheme: "builtin", key: "piglet-shy-pet" }),
+        duration: 420,
+        eligibility: Object.freeze({ ...LEGACY_ELIGIBILITY, react: Object.freeze(["", "pet"]) })
+      })
+    ])
+  });
+  var defaultState = createArtResourceRegistryBase({ parent: null, legacy: legacyDescriptor, buildDescriptor });
+  defaultState.registerPack(DEFAULT_ACTION_PACK);
+  var defaultArtResources = sealArtResourceRegistry(defaultState);
+  function resolveArtResource(value, registry2) {
+    const target = registry2 ?? defaultArtResources;
+    if (typeof value === "string") return target.resolveString(value);
+    if (value !== null && typeof value === "object") return target.resolveRef(value);
+    return null;
+  }
+  function resolveArtSource(key2, registry2) {
+    if (typeof key2 !== "string") throw new TypeError("art key must be a string");
+    const entry = resolveArtResource(key2, registry2);
+    if (entry === null) throw new Error("[dsh-piggy] unresolved art resource: " + key2);
+    return entry;
+  }
+  function artSource(key2, registry2) {
+    return resolveArtSource(key2, registry2).url;
+  }
+  function hasArtResource(key2, registry2) {
+    return resolveArtSource(key2, registry2).exists;
+  }
+  function normalizeArtKey(value, registry2) {
+    if (typeof value !== "string" || value === "" || value.length > 200) return "";
+    if (value.startsWith("/") || value.includes("..") || value.includes("//") || value.includes("\\") || value.includes("?") || value.includes("#") || !SAFE_ART_STRING.test(value)) return "";
+    const target = registry2 ?? defaultArtResources;
+    return target.resolveString(value) === null ? "" : value;
+  }
+  var PIG_RESOURCES = /* @__PURE__ */ new WeakMap();
+  function bindArtResources(pig, registry2) {
+    if (pig !== null && typeof pig === "object") PIG_RESOURCES.set(pig, registry2);
+  }
+  function unbindArtResources(pig, registry2) {
+    if (pig !== null && typeof pig === "object" && PIG_RESOURCES.get(pig) === registry2) PIG_RESOURCES.delete(pig);
+  }
+  function artResourcesForPig(pig) {
+    if (pig === null || typeof pig !== "object") return null;
+    return PIG_RESOURCES.get(pig) ?? null;
+  }
+
+  // src/client/character-geometry.js
+  var BUBBLE_GAP = 10;
+  var BUBBLE_TAIL_INSET = 5;
+  var BUBBLE_TAIL_MIN = 10;
+  var BUBBLE_TAIL_MAX = 20;
+  var HAND_CONTACT = Object.freeze({ x: 0.3, y: 0.58 });
+  var finite = (value, fallback) => Number.isFinite(value) ? Number(value) : fallback;
+  function artFitSize(box) {
+    return Math.min(finite(box.width, 0), finite(box.height, 0));
+  }
+  function frameOrigin(box, framing) {
+    const fit = artFitSize(box);
+    const zoom = finite(framing?.zoom, 0) > 0 ? finite(framing?.zoom, 1) : 1;
+    const shiftX = finite(framing?.shiftX, 0);
+    const shiftY = finite(framing?.shiftY, 0);
+    const mirrored = framing?.mirrored === true;
+    return {
+      x: box.x + box.width / 2 + (mirrored ? -shiftX : shiftX) * box.width / 100,
+      y: box.y + box.height / 2 + shiftY * box.height / 100,
+      size: fit * zoom,
+      mirrored
+    };
+  }
+  function unionBox(a, b) {
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
+    const r = Math.max(a.x + a.width, b.x + b.width);
+    const btm = Math.max(a.y + a.height, b.y + b.height);
+    return { x, y, width: r - x, height: btm - y };
+  }
+  function framedArtBox(box, framing = {}) {
+    const bounds2 = framing.bounds ?? [0, 0, 1, 1];
+    const frame3 = frameOrigin(box, framing);
+    const mirrored = frame3.mirrored;
+    const left = mirrored ? 1 - bounds2[2] : bounds2[0];
+    const right = mirrored ? 1 - bounds2[0] : bounds2[2];
+    return {
+      x: frame3.x + (left - 0.5) * frame3.size,
+      y: frame3.y + (bounds2[1] - 0.5) * frame3.size,
+      width: (right - left) * frame3.size,
+      height: (bounds2[3] - bounds2[1]) * frame3.size
+    };
+  }
+  function artPointToLayout(box, normalized, framing = {}) {
+    const frame3 = frameOrigin(box, framing);
+    const nx = frame3.mirrored ? 1 - normalized.x : normalized.x;
+    return { x: frame3.x + (nx - 0.5) * frame3.size, y: frame3.y + (normalized.y - 0.5) * frame3.size };
+  }
+  function layoutPointToArt(box, point, framing = {}) {
+    const frame3 = frameOrigin(box, framing);
+    if (frame3.size <= 0) return { x: 0.5, y: 0.5 };
+    const dx = (finite(point.x, frame3.x) - frame3.x) / frame3.size;
+    const dy = (finite(point.y, frame3.y) - frame3.y) / frame3.size;
+    return { x: frame3.mirrored ? 1 - (0.5 + dx) : 0.5 + dx, y: 0.5 + dy };
+  }
+  function boxPoint(box, point) {
+    const width = finite(box.width, 0);
+    const height = finite(box.height, 0);
+    const x = width > 0 ? (finite(point.x, box.x) - box.x) / width : 0;
+    const y = height > 0 ? (finite(point.y, box.y) - box.y) / height : 0;
+    return { x, y, inside: width > 0 && height > 0 && x >= 0 && x <= 1 && y >= 0 && y <= 1 };
+  }
+  function feetPoint(box) {
+    return { x: finite(box.x, 0) + finite(box.width, 0) / 2, y: finite(box.y, 0) + finite(box.height, 0) };
+  }
+  function headTopPoint(box) {
+    return { x: finite(box.x, 0) + finite(box.width, 0) / 2, y: finite(box.y, 0) };
+  }
+  function bubbleSlot(anchors, side, size) {
+    const height = finite(size?.height, 0);
+    const width = finite(size?.width, 0);
+    if (side === "below") return { x: anchors.feet.x - width / 2, y: anchors.feet.y + BUBBLE_GAP };
+    return { x: anchors.headTop.x - width / 2, y: anchors.headTop.y - BUBBLE_GAP - height };
+  }
+  function bubbleTailLeft(bubble, head, inset = BUBBLE_TAIL_INSET) {
+    const width = finite(bubble.width, 0);
+    return Math.max(BUBBLE_TAIL_MIN, Math.min(width - BUBBLE_TAIL_MAX, finite(head.x, 0) - finite(bubble.x, 0) - inset));
+  }
+  function characterGeometry(box, framing = {}) {
+    const layout = { x: finite(box.x, 0), y: finite(box.y, 0), width: finite(box.width, 0), height: finite(box.height, 0) };
+    const art = framedArtBox(layout, framing);
+    return {
+      box: layout,
+      mirrored: framing.mirrored === true,
+      art,
+      /** 静止绘制范围：布局盒 ∪ 立绘可见范围（宽立绘会伸出正方形盒子）。 */
+      visible: unionBox(layout, art),
+      /** 可点范围：仍是那个正方形布局盒，和以前一致。 */
+      hit: { ...layout },
+      feet: feetPoint(layout),
+      headTop: headTopPoint(layout),
+      contact: artPointToLayout(layout, HAND_CONTACT, framing)
     };
   }
 
-  // src/client/normalize-dex.js
-  function normalizeDex(raw) {
-    const source = obj(raw);
+  // src/client/skin-contact.js
+  var SKIN_CONTACT_KEY = "dsh-piggy:skin-contacts";
+  var PET_PREVIEW_KEY = "dsh-piggy:pet-snap-preview";
+  var PET_PREVIEW_TTL_MS = 3e3;
+  var PET_PREVIEW_LEASE_MS = 4e3;
+  var PET_PREVIEW_RENEW_MS = 800;
+  var PET_CONTACT_HEIGHT = 78.90625;
+  var ART_KEY2 = /^[a-z0-9-]{1,64}$/;
+  var PREVIEW_ACTIONS = /* @__PURE__ */ new Set(["press", "release", "cancel"]);
+  var UNIT_BOX = Object.freeze({ x: 0, y: 0, width: 1, height: 1 });
+  var listeners2 = /* @__PURE__ */ new Set();
+  var previewListeners = /* @__PURE__ */ new Set();
+  var bridgedWindow2 = null;
+  function cleanMap(raw) {
     const out = {};
-    for (const section2 of ["forms", "skins", "fish", "items", "souvenirs", "achievements"]) {
-      out[section2] = arr(source[section2]).map(function(value) {
-        const entry = obj(value);
-        return {
-          key: str(entry.key, ""),
-          label: str(entry.label, ""),
-          emoji: str(entry.emoji, "\u{1F4E6}"),
-          art: str(entry.art, ""),
-          description: str(entry.description, ""),
-          hint: str(entry.hint, ""),
-          kind: str(entry.kind, ""),
-          kindLabel: str(entry.kindLabel, ""),
-          acquired: entry.acquired === true,
-          firstAt: typeof entry.firstAt === "number" ? entry.firstAt : null,
-          count: num(entry.count, 0),
-          condition: str(entry.condition, ""),
-          availability: ["ready", "off", "not-installed", "update-required"].includes(entry.availability) ? entry.availability : "ready",
-          group: str(entry.group, ""),
-          progress: Math.max(0, num(entry.progress, 0)),
-          target: Math.max(1, num(entry.target, 1)),
-          unit: str(entry.unit, ""),
-          recovered: entry.recovered === true,
-          maxSizeCm: typeof entry.maxSizeCm === "number" ? entry.maxSizeCm : null,
-          requirements: arr(entry.requirements).map(function(value2) {
-            const requirement = obj(value2);
-            return { key: str(requirement.key, ""), label: str(requirement.label, ""), have: num(requirement.have, 0), need: num(requirement.need, 0), met: requirement.met === true };
-          })
-        };
-      }).filter((entry) => entry.key !== "");
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return out;
+    for (const [art, value] of Object.entries(raw)) {
+      const contact = normalizeSkinContact(value);
+      if (contact !== null && ART_KEY2.test(art)) out[art] = contact;
     }
     return out;
   }
-
-  // src/client/normalize-fishing.js
-  function feel(value, difficulty) {
-    const entry = obj(value);
+  function cleanAuto(raw) {
+    const out = {};
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return out;
+    for (const [art, value] of Object.entries(raw)) {
+      if (value === true && ART_KEY2.test(art)) out[art] = true;
+    }
+    return out;
+  }
+  function readSkinContacts() {
+    ensureStorageBridge2();
+    const raw = readStore(SKIN_CONTACT_KEY);
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw ?? "");
+    } catch {
+      parsed = null;
+    }
+    const source = parsed !== null && typeof parsed === "object" ? parsed : {};
     return {
-      difficulty: num(entry.difficulty, difficulty),
-      speed: num(entry.speed, 1),
-      burst: num(entry.burst, 0),
-      burstScale: num(entry.burstScale, 1),
-      drift: num(entry.drift, 0),
-      jitter: num(entry.jitter, 0),
-      zone: num(entry.zone, 1),
-      hold: num(entry.hold, 1),
-      rod: str(entry.rod, "")
+      overrides: cleanMap(
+        /** @type {any} */
+        source.overrides
+      ),
+      declared: cleanMap(
+        /** @type {any} */
+        source.declared
+      ),
+      auto: cleanAuto(
+        /** @type {any} */
+        source.auto
+      )
     };
   }
-  function fish2(value) {
-    const entry = obj(value);
-    const difficulty = num(entry.difficulty, 1);
-    return {
-      id: str(entry.id, ""),
-      key: str(entry.key, ""),
-      label: str(entry.label, "\u9C7C"),
-      emoji: str(entry.emoji, "\u{1F41F}"),
-      rarity: str(entry.rarity, "common"),
-      behavior: str(entry.behavior, "smooth"),
-      difficulty,
-      sizeCm: num(entry.sizeCm, 0),
-      price: num(entry.price, 0),
-      phase: str(entry.phase, ""),
-      castPower: num(entry.castPower, 0),
-      bitesAt: num(entry.bitesAt, 0),
-      hookUntil: num(entry.hookUntil, 0),
-      expiresAt: num(entry.expiresAt, 0),
-      // 搏斗玩法（ring / bar / pull，没有就是老宿主：圆盘）；maxCm 用来说「大个的」。
-      fight: str(entry.fight, "ring"),
-      maxCm: num(entry.maxCm, 0),
-      feel: feel(entry.feel, difficulty)
-    };
+  function writeSkinContacts(state4) {
+    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state4));
+    listeners2.forEach((fn) => fn());
   }
-  function automation(value) {
-    if (!isObj(value)) return null;
-    return {
-      unlocked: value.unlocked === true,
-      stored: num(value.stored, 0),
-      usedHours: num(value.usedHours, 0),
-      capacityHours: 6,
-      full: value.full === true,
-      baitLimit: num(value.baitLimit, 0),
-      choices: arr(value.choices).filter(isObj).map((choice) => ({ minutes: num(choice.minutes, 30), attempts: num(choice.attempts, 6), legacy: choice.minutes <= 60 })),
-      upgrades: arr(value.upgrades).filter(isObj).map((upgrade) => ({ kind: str(upgrade.kind, ""), label: str(upgrade.label, ""), price: num(upgrade.price, 0) })).filter((upgrade) => ["basket", "duration", "baitBox"].includes(upgrade.kind))
-    };
+  function effectiveSkinContact(art) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return null;
+    const state4 = readSkinContacts();
+    if (state4.overrides[art] !== void 0) return state4.overrides[art];
+    if (state4.auto[art] === true) return null;
+    return state4.declared[art] ?? null;
   }
-  function normalizeFishing(raw) {
-    const source = obj(raw);
-    const rod = obj(source.rod);
-    return {
-      automation: automation(source.automation),
-      pending: isObj(source.pending) ? fish2(source.pending) : null,
-      bag: arr(source.bag).map(fish2).filter((entry) => entry.id !== ""),
-      period: str(source.period, ""),
-      autoTrips: num(source.autoTrips, 0),
-      rod: { level: num(rod.level, 1), label: str(rod.label, "\u9C7C\u7AFF"), emoji: str(rod.emoji, "\u{1F3A3}") },
-      nextRod: isObj(source.nextRod) ? { level: num(source.nextRod.level, 2), label: str(source.nextRod.label, ""), emoji: str(source.nextRod.emoji, "\u{1F3A3}"), price: num(source.nextRod.price, 0) } : null,
-      spot: str(source.spot, "river"),
-      spots: arr(source.spots).map((value) => {
-        const spot = obj(value);
-        return { key: str(spot.key, ""), label: str(spot.label, ""), emoji: str(spot.emoji, "\u{1F3DE}"), price: num(spot.price, 0), unlocked: spot.unlocked === true, open: spot.open !== false, kinds: num(spot.kinds, 0) };
-      }).filter((spot) => spot.key !== "")
-    };
+  function skinContactSource(art) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return "auto";
+    const state4 = readSkinContacts();
+    if (state4.overrides[art] !== void 0) return "local";
+    if (state4.auto[art] === true) return "auto";
+    if (state4.declared[art] !== void 0) return "pack";
+    return "auto";
   }
+  function setSkinContactOverride(art, contact) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
+    const state4 = readSkinContacts();
+    if (contact === null) delete state4.overrides[art];
+    else {
+      const value = normalizeSkinContact(contact);
+      if (value === null) return false;
+      state4.overrides[art] = value;
+      delete state4.auto[art];
+    }
+    writeSkinContacts(state4);
+    return true;
+  }
+  function setDeclaredSkinContact(art, contact) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
+    const value = normalizeSkinContact(contact);
+    if (value === null) return false;
+    const state4 = readSkinContacts();
+    const current3 = state4.declared[art];
+    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state4.auto[art] !== true) return true;
+    state4.declared[art] = value;
+    delete state4.auto[art];
+    writeSkinContacts(state4);
+    return true;
+  }
+  function clearSkinContact(art) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
+    const state4 = readSkinContacts();
+    delete state4.overrides[art];
+    delete state4.declared[art];
+    state4.auto[art] = true;
+    writeSkinContacts(state4);
+    return true;
+  }
+  function syncDeclaredSkinContacts(skins) {
+    const entries2 = Array.isArray(skins?.entries) ? skins.entries : [];
+    const state4 = readSkinContacts();
+    let changed = false;
+    for (const entry of entries2) {
+      if (entry === null || typeof entry !== "object") continue;
+      const art = entry.art;
+      if (typeof art !== "string" || !ART_KEY2.test(art)) continue;
+      const contact = normalizeSkinContact(entry.contact);
+      if (contact !== null) {
+        if (state4.auto[art] === true) continue;
+        const current3 = state4.declared[art];
+        if (current3 !== void 0 && current3.x === contact.x && current3.y === contact.y) continue;
+        state4.declared[art] = contact;
+        changed = true;
+      } else if (state4.auto[art] !== true && state4.declared[art] !== void 0 && entry.contactStated === true) {
+        delete state4.declared[art];
+        changed = true;
+      }
+    }
+    if (changed) writeSkinContacts(state4);
+    return changed;
+  }
+  function onSkinContactChange(fn) {
+    ensureStorageBridge2();
+    listeners2.add(fn);
+    return () => listeners2.delete(fn);
+  }
+  function onPetSnapPreview(fn) {
+    ensureStorageBridge2();
+    previewListeners.add(fn);
+    return () => previewListeners.delete(fn);
+  }
+  function parsePreview(raw) {
+    if (typeof raw !== "string" || raw === "") return null;
+    let value = null;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+    const { id, art, action, at } = (
+      /** @type {{id?: unknown, art?: unknown, action?: unknown, at?: unknown}} */
+      value
+    );
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return null;
+    if (typeof action !== "string" || !PREVIEW_ACTIONS.has(action)) return null;
+    if (typeof at !== "number" || !Number.isFinite(at)) return null;
+    if (Math.abs(Date.now() - at) > PET_PREVIEW_TTL_MS) return null;
+    return { id: typeof id === "string" ? id : "", art, action: (
+      /** @type {'press'|'release'|'cancel'} */
+      action
+    ), at };
+  }
+  function dispatchPreview(payload) {
+    if (payload === null) return false;
+    for (const fn of previewListeners) {
+      try {
+        fn(payload);
+      } catch (error) {
+        console.warn("\u6478\u6478\u624B\u9884\u89C8\u901A\u77E5\u5904\u7406\u5931\u8D25", error);
+      }
+    }
+    return true;
+  }
+  var previewSeq = 0;
+  var previewOwner = null;
+  var previewSentAt = 0;
+  function sendPreview(art, action) {
+    const payload = { id: Date.now().toString(36) + "-" + ++previewSeq, art, action, at: Date.now() };
+    writeStore(PET_PREVIEW_KEY, JSON.stringify(payload));
+    dispatchPreview(payload);
+    return payload.id;
+  }
+  function startSkinContactPreview(art) {
+    if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
+    if (previewOwner !== null && previewOwner !== art) cancelSkinContactPreview();
+    previewOwner = art;
+    previewSentAt = Date.now();
+    sendPreview(art, "press");
+    return true;
+  }
+  function renewSkinContactPreview() {
+    if (previewOwner === null) return false;
+    const now2 = Date.now();
+    if (now2 - previewSentAt < PET_PREVIEW_RENEW_MS) return false;
+    previewSentAt = now2;
+    sendPreview(previewOwner, "press");
+    return true;
+  }
+  function endSkinContactPreview() {
+    return finishPreview("release");
+  }
+  function cancelSkinContactPreview() {
+    return finishPreview("cancel");
+  }
+  function finishPreview(action) {
+    if (previewOwner === null) return false;
+    const art = previewOwner;
+    previewOwner = null;
+    previewSentAt = 0;
+    sendPreview(art, action);
+    return true;
+  }
+  function cancelOwnPreview() {
+    cancelSkinContactPreview();
+  }
+  function onStorage2(event) {
+    const key2 = (
+      /** @type {StorageEvent | null} */
+      event?.key
+    );
+    if (key2 === SKIN_CONTACT_KEY || key2 === null || key2 === void 0) listeners2.forEach((fn) => fn());
+    if (key2 === PET_PREVIEW_KEY) dispatchPreview(parsePreview(
+      /** @type {any} */
+      event?.newValue
+    ));
+  }
+  function ensureStorageBridge2() {
+    if (typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+    if (bridgedWindow2 === window) return;
+    bridgedWindow2 = window;
+    window.addEventListener("storage", onStorage2);
+    window.addEventListener("blur", cancelOwnPreview);
+    if (typeof document !== "undefined" && typeof document?.addEventListener === "function") {
+      document.addEventListener("visibilitychange", function() {
+        if (document.hidden) cancelOwnPreview();
+      });
+    }
+  }
+  function framedSkinPoint(point, zoom = 1, x = 0, y = 0) {
+    return artPointToLayout(UNIT_BOX, point, { zoom, shiftX: x, shiftY: y });
+  }
+  function unframedSkinPoint(point, zoom = 1, x = 0, y = 0) {
+    return layoutPointToArt(UNIT_BOX, point, { zoom, shiftX: x, shiftY: y });
+  }
+  function clampSkinContact(point) {
+    const round4 = (value) => Math.round(Math.min(1, Math.max(0, value)) * 1e5) / 1e5;
+    return { x: round4(point.x), y: round4(point.y) };
+  }
+  function autoSkinContact(bounds2) {
+    return { x: (bounds2.left + bounds2.right) / 2, y: bounds2.top };
+  }
+  function handScaleRatio(bounds2) {
+    return (bounds2.bottom - bounds2.top) / PET_CONTACT_HEIGHT;
+  }
+  function skinContactShift(bounds2, target) {
+    if (target === null || target === void 0) return { dx: 0, dy: 0 };
+    const auto2 = autoSkinContact(bounds2);
+    return { dx: target.x - auto2.x, dy: target.y - auto2.y };
+  }
+  ensureStorageBridge2();
 
   // src/client/normalize-skins.js
   function normalizeSkins(raw) {
@@ -5518,7 +5037,7 @@
           key: str(entry.key, ""),
           label: str(entry.label, "\u76AE\u80A4"),
           emoji: str(entry.emoji, "\u{1F3A8}"),
-          art: str(entry.art, ""),
+          art: normalizeArtKey(str(entry.art, "")),
           author: str(entry.author, ""),
           description: str(entry.description, ""),
           custom: entry.custom === true,
@@ -5691,9 +5210,9 @@
   function normalize(raw) {
     var d = obj(raw);
     var pig = isObj(d.pig) ? d.pig : null;
-    var legacy = pig !== null && !("coins" in pig) && !("health" in pig);
+    var legacy2 = pig !== null && !("coins" in pig) && !("health" in pig);
     return {
-      legacy,
+      legacy: legacy2,
       version: str(d.version, ""),
       // Trust the flag when the host sends one; for older hosts "a pig exists" is the answer.
       hatched: d.hatched === true || d.hatched === void 0 && pig !== null,
@@ -6264,7 +5783,7 @@
       if (local === 0 || server === 0) return server;
       return Math.abs(server - local) > 1500 ? server : local;
     }
-    function tick2() {
+    function tick() {
       if (isStopped()) {
         window.clearInterval(timer2);
         return;
@@ -6294,8 +5813,8 @@
         if (rest === 0) breakEndsAt = 0;
       }
     }
-    var timer2 = window.setInterval(tick2, 1e3);
-    return { tick: tick2, dispose: function() {
+    var timer2 = window.setInterval(tick, 1e3);
+    return { tick, dispose: function() {
       window.clearInterval(timer2);
     } };
   }
@@ -6356,14 +5875,14 @@
     const text = String(value ?? "");
     return text.length > limit ? text.slice(0, limit) + "\u2026" : text;
   };
-  function record(level, scope, message2, fields = {}) {
+  function record(level, scope, message3, fields = {}) {
     seq += 1;
     entries.push({
       id: "c" + seq,
       at: Date.now(),
       level: ["debug", "info", "warn", "error"].includes(level) ? level : "info",
       scope: clip(scope, 32),
-      message: clip(message2, MAX_TEXT),
+      message: clip(message3, MAX_TEXT),
       fields: fields !== null && typeof fields === "object" ? fields : {}
     });
     if (entries.length > LIMIT) entries.splice(0, entries.length - LIMIT);
@@ -6445,8 +5964,8 @@
     const body = obj(data);
     const nested = obj(body.error);
     const code = str(body.reason, str(nested.code, str(body.error, status2 > 0 ? "http-" + status2 : "network")));
-    const message2 = str(body.message, str(nested.message, ""));
-    return { code, message: message2 || (status2 > 0 ? "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + status2 : "\u8FDE\u4E0D\u4E0A\u5BBF\u4E3B") };
+    const message3 = str(body.message, str(nested.message, ""));
+    return { code, message: message3 || (status2 > 0 ? "\u5BBF\u4E3B\u8FD4\u56DE HTTP " + status2 : "\u8FDE\u4E0D\u4E0A\u5BBF\u4E3B") };
   }
   async function call(url, method, body, timeout) {
     const controller = typeof AbortController === "function" ? new AbortController() : null;
@@ -7415,8 +6934,8 @@
     ctx.card.style.maxHeight = Math.max(120, Math.round(anchor.maxHeight - hudHeight)) + "px";
     schedule2();
   }
-  function installPanel(bridge3) {
-    shell = bridge3;
+  function installPanel(bridge2) {
+    shell = bridge2;
     document.documentElement.setAttribute("data-piggy-role", "panel");
     const style = document.createElement("style");
     style.setAttribute("data-piggy-panel-style", "");
@@ -7424,15 +6943,16 @@
     document.head.appendChild(style);
     window.__dshPiggyShell = {
       role: "panel",
-      proxy: bridge3.proxy,
-      saves: bridge3.saves,
-      ext: bridge3.ext,
-      fullscreen: bridge3.fullscreen,
-      external: bridge3.external ?? null,
-      geometry: bridge3.geometry,
+      proxy: bridge2.proxy,
+      cloudSave: bridge2.cloudSave,
+      saves: bridge2.saves,
+      ext: bridge2.ext,
+      fullscreen: bridge2.fullscreen,
+      external: bridge2.external ?? null,
+      geometry: bridge2.geometry,
       split: true,
-      panel: bridge3.panel,
-      onStateChanged: bridge3.onStateChanged,
+      panel: bridge2.panel,
+      onStateChanged: bridge2.onStateChanged,
       // 面板窗口里没有猪可拖：这些是给「认桌面版」用的空动作（desktop-shell.js 按 beginDrag 认）。
       beginDrag: function() {
       },
@@ -7817,12 +7337,12 @@
   var activeVersion = {};
   var rerender = null;
   function bridge() {
-    var host3 = (
+    var host2 = (
       /** @type {any} */
       window
     );
-    if (!host3.dshPiggyExtensions) {
-      host3.dshPiggyExtensions = {
+    if (!host2.dshPiggyExtensions) {
+      host2.dshPiggyExtensions = {
         register: function(key2, impl) {
           if (typeof key2 !== "string" || impl === null || typeof impl !== "object") return;
           var scriptId = document.currentScript?.getAttribute("data-piggy-extension");
@@ -7833,7 +7353,7 @@
         }
       };
     }
-    return host3.dshPiggyExtensions;
+    return host2.dshPiggyExtensions;
   }
   function ensureScript(key2, version) {
     bridge();
@@ -8006,7 +7526,7 @@
     "invalid-bundle": "\u8BFB\u4E0D\u61C2\u8FD9\u4E2A\u6587\u4EF6",
     "game-too-old": "\u8FD9\u4E2A\u6269\u5C55\u8981\u66F4\u65B0\u7684\u6E38\u620F",
     "too-large": "\u6269\u5C55\u5305\u592A\u5927",
-    "broken-extension": "\u6269\u5C55\u88C5\u4E0A\u4E86\u4F46\u52A0\u8F7D\u51FA\u9519",
+    "broken-extension": "\u6269\u5C55\u52A0\u8F7D\u5931\u8D25",
     "download-failed": "\u6CA1\u80FD\u5199\u8FDB\u6269\u5C55\u76EE\u5F55",
     absent: "\u8FD8\u6CA1\u6709\u732A"
   };
@@ -8251,10 +7771,10 @@
       ui.content.appendChild(el("div", "dp-ext-later", "\u6B63\u5728\u8BFB\u53D6\u5728\u7EBF\u6269\u5C55\u2026\u2026"));
       return;
     }
-    var installed2 = {};
-    for (var i = 0; i < ui.view.extensions.length; i += 1) if (ui.view.extensions[i].installed) installed2[ui.view.extensions[i].key] = true;
+    var installed3 = {};
+    for (var i = 0; i < ui.view.extensions.length; i += 1) if (ui.view.extensions[i].installed) installed3[ui.view.extensions[i].key] = true;
     var entries2 = online.entries.filter(function(entry) {
-      return !installed2[entry.key];
+      return !installed3[entry.key];
     });
     if (online.error && entries2.length === 0) {
       ui.content.appendChild(el("div", "dp-ext-later", "\u8BFB\u4E0D\u5230\u5728\u7EBF\u6269\u5C55\u76EE\u5F55\uFF08" + online.error + "\uFF09\uFF0C\u7A0D\u540E\u70B9\u5237\u65B0"));
@@ -8466,6 +7986,24 @@
     ui.content.appendChild(row2);
   }
 
+  // src/client/pet-hand-settings.js
+  var PET_HAND_KEY = "dsh-piggy:pet-hand";
+  var listeners3 = /* @__PURE__ */ new Set();
+  function petHandEnabled() {
+    return readStore(PET_HAND_KEY) !== "off";
+  }
+  function setPetHandEnabled(on) {
+    writeStore(PET_HAND_KEY, on ? "on" : "off");
+    listeners3.forEach((fn) => fn());
+  }
+  function onPetHandChange(fn) {
+    listeners3.add(fn);
+    return () => listeners3.delete(fn);
+  }
+  if (typeof window !== "undefined") window.addEventListener?.("storage", (event) => {
+    if (event.key === PET_HAND_KEY || event.key === null) listeners3.forEach((fn) => fn());
+  });
+
   // src/client/auto-collapse.js
   var AUTO_COLLAPSE_KEY = "dsh-piggy:auto-collapse";
   function autoCollapseEnabled() {
@@ -8474,24 +8012,24 @@
   function setAutoCollapse(enabled) {
     writeStore(AUTO_COLLAPSE_KEY, enabled ? "true" : "false");
   }
-  function attachAutoCollapse(context2) {
+  function attachAutoCollapse(context) {
     function focusedInput() {
       const active2 = document.activeElement;
       const tag3 = active2?.tagName?.toLowerCase?.() ?? "";
       return tag3 === "input" || tag3 === "textarea" || active2?.getAttribute?.("contenteditable") === "true";
     }
     function canClose() {
-      return context2.isOpen() && autoCollapseEnabled() && !context2.isDragging() && !focusedInput() && !context2.isFishing();
+      return context.isOpen() && autoCollapseEnabled() && !context.isDragging() && !focusedInput() && !context.isFishing();
     }
     function onOutsidePointer(event) {
       if (!canClose() || event.button !== 0) return;
       for (let node = event.target; node !== null && node !== void 0; node = node.parentNode) {
-        if (node === context2.host) return;
+        if (node === context.host) return;
       }
-      context2.setOpen(false);
+      context.setOpen(false);
     }
     function onWindowBlur() {
-      if (context2.isDesktop() && desktopRole() !== "panel" && canClose()) context2.setOpen(false);
+      if (context.isDesktop() && desktopRole() !== "panel" && canClose()) context.setOpen(false);
     }
     document.addEventListener("pointerdown", onOutsidePointer, true);
     window.addEventListener?.("blur", onWindowBlur);
@@ -8506,11 +8044,11 @@
   // src/client/pat-cursor.js
   var SIZE = 32;
   var drawnFor = null;
-  function applyPatCursor(host3) {
+  function applyPatCursor(host2) {
     if (typeof document === "undefined" || typeof document.createElement !== "function" || typeof getComputedStyle !== "function") return;
     let family = "sans-serif";
     try {
-      family = String(getComputedStyle(host3).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
+      family = String(getComputedStyle(host2).getPropertyValue("--ac-font") || "").trim() || "sans-serif";
     } catch {
       return;
     }
@@ -8533,7 +8071,7 @@
         ctx.textBaseline = "middle";
         ctx.fillText("\u{1F44B}", SIZE / 2, SIZE / 2 + 1);
         const url = canvas.toDataURL("image/png");
-        if (typeof url === "string" && url.startsWith("data:image/png")) host3.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
+        if (typeof url === "string" && url.startsWith("data:image/png")) host2.style.setProperty("--pat-cursor", `url(${url}) 14 18, pointer`);
       } catch {
       }
     };
@@ -8581,9 +8119,9 @@
       return false;
     }
   }
-  function applyEmojiStyle(host3) {
-    host3.setAttribute("data-emoji", emojiStyle());
-    applyPatCursor(host3);
+  function applyEmojiStyle(host2) {
+    host2.setAttribute("data-emoji", emojiStyle());
+    applyPatCursor(host2);
   }
 
   // src/client/pig-size.js
@@ -8606,21 +8144,21 @@
   function displayedPigSize(stageSize) {
     return stageSize * pigSize();
   }
-  function applyPigBox(host3, width) {
-    const style = host3?.style;
+  function applyPigBox(host2, width) {
+    const style = host2?.style;
     if (typeof style?.setProperty !== "function") return;
     style.setProperty("--pig-size", width + "px");
     style.setProperty("--pig-scale", String(pigSize()));
   }
-  function syncPigSize(host3, stageSize) {
-    applyPigBox(host3, displayedPigSize(stageSize));
+  function syncPigSize(host2, stageSize) {
+    applyPigBox(host2, displayedPigSize(stageSize));
   }
-  function attachSizePreference(host3, getStage, onChanged) {
+  function attachSizePreference(host2, getStage, onChanged) {
     function onStorage3(event) {
       if (event.key !== PIG_SIZE_KEY) return;
       const stage2 = getStage();
       if (!stage2) return;
-      syncPigSize(host3, stage2.size);
+      syncPigSize(host2, stage2.size);
       onChanged?.();
     }
     window.addEventListener("storage", onStorage3);
@@ -8660,10 +8198,10 @@
     };
     return stageAreaNow() ?? { width: window.innerWidth, height: window.innerHeight };
   }
-  function applyBubbleSize(host3) {
+  function applyBubbleSize(host2) {
     const scale2 = limitBubbleSize(bubbleSize(), availableArea());
-    if (typeof host3?.style?.setProperty !== "function") return scale2;
-    if (host3.style.getPropertyValue("--bubble-scale") !== String(scale2)) host3.style.setProperty("--bubble-scale", String(scale2));
+    if (typeof host2?.style?.setProperty !== "function") return scale2;
+    if (host2.style.getPropertyValue("--bubble-scale") !== String(scale2)) host2.style.setProperty("--bubble-scale", String(scale2));
     return scale2;
   }
   function setBubbleSize(value) {
@@ -8671,21 +8209,992 @@
     writeStore(BUBBLE_SIZE_KEY, String(scale2));
     return scale2;
   }
-  function attachBubbleSizePreference(host3, onChanged) {
+  function attachBubbleSizePreference(host2, onChanged) {
     function update() {
-      applyBubbleSize(host3);
+      applyBubbleSize(host2);
       onChanged?.();
     }
     function onStorage3(event) {
       if (event.key === BUBBLE_SIZE_KEY || event.key === null) update();
     }
-    applyBubbleSize(host3);
+    applyBubbleSize(host2);
     window.addEventListener("storage", onStorage3);
     window.addEventListener("resize", update);
     return () => {
       window.removeEventListener("storage", onStorage3);
       window.removeEventListener("resize", update);
     };
+  }
+
+  // src/client/pet-snap-geometry.js
+  var PET_PRESSURE = Object.freeze([0, 0.5, 1, -0.3, 0.1]);
+  var HAND_POSES = Object.freeze([
+    { wrist: 300, y: 41, angle: -6, sink: 0 },
+    { wrist: 293.5, y: 49, angle: 0, sink: 1.2 },
+    { wrist: 301.5, y: 51, angle: 4, sink: 2.2 },
+    { wrist: 278, y: 47, angle: 0, sink: 1.2 },
+    { wrist: 272, y: 44, angle: -6, sink: 0.2 }
+  ]);
+  function petPose(frame3) {
+    const pressure = PET_PRESSURE[frame3] * 0.09;
+    const hand = HAND_POSES[frame3];
+    return {
+      sx: 1 + pressure * 0.55,
+      sy: 1 - pressure,
+      handY: hand.y + 71.5 * pressure - hand.sink,
+      wrist: hand.wrist,
+      angle: hand.angle
+    };
+  }
+  function framedPetBounds(bounds2, zoom = 1, x = 0, y = 0) {
+    return {
+      left: 0.5 + (bounds2[0] - 0.5) * zoom + x / 100,
+      top: 0.5 + (bounds2[1] - 0.5) * zoom + y / 100,
+      right: 0.5 + (bounds2[2] - 0.5) * zoom + x / 100,
+      bottom: 0.5 + (bounds2[3] - 0.5) * zoom + y / 100
+    };
+  }
+  function canPlayPetSnap(pig) {
+    const read2 = (name) => pig.getAttribute("data-" + name) || "";
+    return (Boolean(read2("art")) || ["piglet", "young", "middle"].includes(read2("stage"))) && !["box", "grave", "dead-day"].includes(read2("stage")) && !read2("activity") && !read2("idle") && !read2("illness") && read2("party") !== "true" && !["sleepy", "dead", "sick"].includes(read2("mood")) && (!read2("react") || read2("react") === "pet");
+  }
+
+  // src/client/feel/settings.js
+  var FEEL_KEY = "dsh-piggy:feel";
+  var SOUND_KEY = "dsh-piggy:sound";
+  var FEEL_MODES = Object.freeze(["full", "soft", "off"]);
+  var SOUND_VOLUMES = Object.freeze([0, 1, 2]);
+  function cleanMode(value) {
+    return typeof value === "string" && FEEL_MODES.includes(value) ? value : "full";
+  }
+  function feelMode() {
+    return cleanMode(readStore(FEEL_KEY));
+  }
+  function setFeelMode(mode) {
+    writeStore(FEEL_KEY, cleanMode(mode));
+    notifyFeel();
+  }
+  function prefersReducedMotion() {
+    try {
+      return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches === true;
+    } catch {
+      return false;
+    }
+  }
+  function effectiveFeelMode() {
+    return prefersReducedMotion() ? "off" : feelMode();
+  }
+  var feelListeners = /* @__PURE__ */ new Set();
+  function onFeelModeChange(fn) {
+    feelListeners.add(fn);
+    return function() {
+      feelListeners.delete(fn);
+    };
+  }
+  function notifyFeel() {
+    var mode = effectiveFeelMode();
+    feelListeners.forEach(function(fn) {
+      try {
+        fn(mode);
+      } catch {
+      }
+    });
+  }
+  try {
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("storage", function(event) {
+        if (event !== null && event !== void 0 && event.key === FEEL_KEY) notifyFeel();
+      });
+    }
+  } catch {
+  }
+  function soundSettings() {
+    var raw = null;
+    try {
+      raw = JSON.parse(readStore(SOUND_KEY) || "null");
+    } catch {
+      raw = null;
+    }
+    var on = raw !== null && typeof raw === "object" && raw.on === true;
+    var volume = raw !== null && typeof raw === "object" && Number.isFinite(raw.volume) ? Math.round(raw.volume) : 2;
+    if (!SOUND_VOLUMES.includes(volume)) volume = 2;
+    return { on, volume };
+  }
+  function setSoundSettings(next) {
+    var current3 = soundSettings();
+    var on = next.on === void 0 ? current3.on : next.on === true;
+    var volume = next.volume === void 0 ? current3.volume : Math.round(Number(next.volume));
+    if (!SOUND_VOLUMES.includes(volume)) volume = current3.volume;
+    writeStore(SOUND_KEY, JSON.stringify({ on, volume }));
+    return { on, volume };
+  }
+
+  // src/client/pet-snap.js
+  var players = /* @__PURE__ */ new WeakMap();
+  var SNAP_FRAME_MS = 60;
+  var SNAP_FRAMES = 5;
+  var SNAP_CYCLE_MS = SNAP_FRAME_MS * SNAP_FRAMES;
+  function beginPetSnap(pig) {
+    return players.get(pig)?.press() === true;
+  }
+  function releasePetSnap(pig) {
+    players.get(pig)?.release();
+  }
+  function cancelPetSnap(pig) {
+    players.get(pig)?.cancel();
+  }
+  function confirmPetSnap(pig) {
+    return players.get(pig)?.confirm() === true;
+  }
+  function attachPetSnap(c) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext?.("2d");
+    const body = c.pig.querySelector?.(".dp-pig-body");
+    const parent = c.pig.querySelector?.(".dp-pig-hold");
+    if (!ctx || !parent) return { dispose() {
+    } };
+    canvas.className = "dp-pet-snap";
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.hidden = true;
+    canvas.width = canvas.height = 512;
+    parent.appendChild(canvas);
+    let ready = false, disposed = false, active2 = false, held = false;
+    let frame3 = 0, raf3 = 0, start2 = 0, stopAt = Infinity;
+    let capturedArt = null;
+    let bounds2 = null;
+    let contact = null;
+    let previewHeld = false, previewUntil = 0;
+    let referenceFrames = [];
+    const now2 = () => performance.now();
+    const allowed = () => !disposed && !document.hidden && !c.isStopped() && effectiveFeelMode() === "full" && c.canPlay() && (!active2 || capturedArt === c.pig.getAttribute("data-art")) && c.pig.getAttribute("data-feel-flip") !== "true";
+    function measure() {
+      const image = c.pigArt;
+      const src = image?.getAttribute("src") || "";
+      const path = src.slice(ART_URL.length).split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
+      let ink = ART_BOUNDS2[path] || customArtInk(src);
+      if (!ink && image?.complete && image.naturalWidth > 0) ink = measureCustomArt(image, src);
+      const style = image?.style;
+      return framedPetBounds(
+        ink || [0.08, 0.08, 0.92, 0.92],
+        Number(style?.getPropertyValue("--art-zoom")) || 1,
+        parseFloat(style?.getPropertyValue("--art-x")) || 0,
+        parseFloat(style?.getPropertyValue("--art-y")) || 0
+      );
+    }
+    function measureContact() {
+      const declared = effectiveSkinContact(c.pig.getAttribute("data-art") || "");
+      if (declared === null) return null;
+      const style = c.pigArt?.style;
+      return framedSkinPoint(
+        declared,
+        Number(style?.getPropertyValue("--art-zoom")) || 1,
+        parseFloat(style?.getPropertyValue("--art-x")) || 0,
+        parseFloat(style?.getPropertyValue("--art-y")) || 0
+      );
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!bounds2) return;
+      const pose = petPose(frame3);
+      body.style.setProperty("--pet-sx", String(pose.sx));
+      body.style.setProperty("--pet-sy", String(pose.sy));
+      body.style.setProperty("--pet-origin-x", (c.pig.getAttribute("data-walk") === "right" ? 100 - (bounds2.left + bounds2.right) * 50 : (bounds2.left + bounds2.right) * 50) + "%");
+      body.style.setProperty("--pet-origin-y", bounds2.bottom * 100 + "%");
+      if (!petHandEnabled() || !referenceFrames[frame3]) return;
+      const ratio = handScaleRatio(bounds2);
+      const shift = skinContactShift(bounds2, contact);
+      const ox = (bounds2.left + bounds2.right) / 2 - 59 * ratio + shift.dx;
+      const oy = bounds2.bottom - 109.453125 * ratio + shift.dy;
+      ctx.save();
+      ctx.setTransform(256, 0, 0, 256, 128, 128);
+      ctx.translate(ox, oy + pose.handY * ratio);
+      ctx.rotate(pose.angle * Math.PI / 180);
+      ctx.scale(105 / 500 * ratio, 105 / 500 * ratio);
+      ctx.drawImage(referenceFrames[frame3], -18, -pose.wrist, 514, 514);
+      ctx.restore();
+    }
+    function cancel2() {
+      cancelAnimationFrame(raf3);
+      raf3 = 0;
+      active2 = held = false;
+      previewHeld = false;
+      previewUntil = 0;
+      canvas.hidden = true;
+      c.pig.removeAttribute("data-pet-snap");
+      for (const key2 of ["--pet-sx", "--pet-sy", "--pet-origin-x", "--pet-origin-y"]) body.style.removeProperty(key2);
+      capturedArt = bounds2 = contact = null;
+      c.render();
+    }
+    function tick(time2) {
+      raf3 = 0;
+      if (!allowed()) {
+        cancel2();
+        return;
+      }
+      if (previewHeld && time2 >= previewUntil) {
+        previewHeld = false;
+        previewUntil = 0;
+        release();
+      }
+      const elapsed = Math.max(0, time2 - start2);
+      if (!held && elapsed >= stopAt) {
+        if (c.pig.getAttribute("data-react") === "pet") c.pig.removeAttribute("data-react");
+        cancel2();
+        return;
+      }
+      const next = Math.floor(elapsed / SNAP_FRAME_MS) % SNAP_FRAMES;
+      if (next !== frame3) {
+        frame3 = next;
+        draw();
+      }
+      raf3 = requestAnimationFrame(tick);
+    }
+    function press() {
+      if (!ready || !allowed()) return false;
+      previewHeld = false;
+      previewUntil = 0;
+      c.cancelMicro();
+      bounds2 = measure();
+      contact = measureContact();
+      capturedArt = c.pig.getAttribute("data-art");
+      c.pig.setAttribute("data-pet-snap", "true");
+      held = active2 = true;
+      stopAt = Infinity;
+      canvas.hidden = false;
+      cancelAnimationFrame(raf3);
+      start2 = now2();
+      frame3 = 0;
+      draw();
+      raf3 = requestAnimationFrame(tick);
+      return true;
+    }
+    function release() {
+      if (!active2 || !held) return;
+      held = false;
+      stopAt = Math.max(1, Math.ceil((now2() - start2) / SNAP_CYCLE_MS)) * SNAP_CYCLE_MS;
+    }
+    function confirm() {
+      if (held && active2) return true;
+      if (c.isDragging() || !press()) return false;
+      release();
+      return true;
+    }
+    const player = {
+      press,
+      release,
+      cancel: cancel2,
+      confirm,
+      /** 皮肤页调校准滑点/拖动时：正在播的手立刻按新接触点重画，不用松手重按。 */
+      refreshContact() {
+        if (!active2) return;
+        contact = measureContact();
+        draw();
+      }
+    };
+    players.set(c.pig, player);
+    const load2 = (src) => {
+      const image = new Image();
+      image.src = src;
+      return image.decode().then(() => image);
+    };
+    load2(ART_URL + "animations/pet-hand/hand.webp?v=hd-spring-9").then(async (image) => {
+      const frames = await Promise.all(Array.from({ length: SNAP_FRAMES }, (_, i) => createImageBitmap(image, i * 256, 0, 256, 256)));
+      if (disposed) {
+        frames.forEach((frame4) => frame4.close());
+        return;
+      }
+      referenceFrames = frames;
+      ready = true;
+    }).catch((error) => console.warn("\u6478\u6478\u5C0F\u624B\u52A0\u8F7D\u5931\u8D25\uFF0C\u4FDD\u7559\u73B0\u6709\u7ACB\u7ED8", error));
+    const onState = () => {
+      if (active2 && !allowed()) cancel2();
+    };
+    const observer = new MutationObserver(onState);
+    observer.observe(c.pig, { attributes: true, childList: true, subtree: true, attributeFilter: ["data-art", "data-stage", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react", "data-feel-flip"] });
+    const offFeel = onFeelModeChange(onState);
+    const offHand = onPetHandChange(() => {
+      if (active2) draw();
+    });
+    const offContact = onSkinContactChange(() => {
+      if (active2) {
+        contact = measureContact();
+        draw();
+      }
+    });
+    const offPreview = onPetSnapPreview((event) => {
+      if (disposed || event.art !== (c.pig.getAttribute("data-art") || "")) return;
+      if (event.action === "press") {
+        if (!previewHeld) {
+          if (active2 && held) return;
+          if (!press()) return;
+          previewHeld = true;
+        }
+        previewUntil = now2() + PET_PREVIEW_LEASE_MS;
+        return;
+      }
+      if (!previewHeld) return;
+      previewHeld = false;
+      previewUntil = 0;
+      if (event.action === "release") release();
+      else cancel2();
+    });
+    const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    media?.addEventListener?.("change", onState);
+    document.addEventListener("visibilitychange", onState);
+    return { dispose() {
+      disposed = true;
+      observer.disconnect();
+      offFeel();
+      offHand();
+      offContact();
+      offPreview();
+      media?.removeEventListener?.("change", onState);
+      document.removeEventListener("visibilitychange", onState);
+      cancel2();
+      canvas.remove();
+      referenceFrames.forEach((image) => image.close());
+      referenceFrames = [];
+      players.delete(c.pig);
+    } };
+  }
+
+  // src/client/pig-actions.js
+  var PLAYERS = /* @__PURE__ */ new WeakMap();
+  var BLINK_INTERVAL = { min: 8e3, max: 16e3 };
+  var ACTION_DURATION = Object.freeze(Object.fromEntries(
+    defaultArtResources.list({ kind: "action" }).map((entry) => [entry.descriptor.key, entry.descriptor.duration ?? 0])
+  ));
+  function resolveAction(value, artResources) {
+    if (value !== null && typeof value === "object" && "descriptor" in value && "cacheKey" in value) {
+      const entry2 = (
+        /** @type {import('./art-resources.js').ResolvedArtResource} */
+        value
+      );
+      return entry2.descriptor.kind === "action" ? entry2 : null;
+    }
+    const entry = resolveArtResource(value, artResources ?? defaultArtResources);
+    return entry !== null && entry.descriptor.kind === "action" ? entry : null;
+  }
+  function matchesPigActionEligibility(pig, eligibility) {
+    if (eligibility === null) return true;
+    if (pig === null || typeof pig !== "object" || typeof pig.getAttribute !== "function") return false;
+    const read2 = (name) => pig.getAttribute("data-" + name) || "";
+    if (eligibility.art !== void 0 && read2("art") !== eligibility.art) return false;
+    if (eligibility.stageNot !== void 0 && eligibility.stageNot.includes(read2("stage"))) return false;
+    if (eligibility.absent !== void 0) {
+      for (const name of eligibility.absent) if (read2(name) !== "") return false;
+    }
+    if (eligibility.party !== void 0 && read2("party") === "true" !== eligibility.party) return false;
+    if (eligibility.moodNot !== void 0 && eligibility.moodNot.includes(read2("mood"))) return false;
+    if (eligibility.react !== void 0) {
+      const react = read2("react");
+      if (eligibility.react.length === 0 ? react !== "" : !eligibility.react.includes(react)) return false;
+    }
+    return true;
+  }
+  function pigActionResource(pig) {
+    return PLAYERS.get(pig)?.currentResource() || null;
+  }
+  function playPigPet(pig) {
+    if (!confirmPetSnap(pig)) PLAYERS.get(pig)?.play("shy-pet");
+  }
+  function attachPigActions(c) {
+    const clock = c.clock || window;
+    const random = c.random || Math.random;
+    const artResources = c.artResources || artResourcesForPig(c.pig) || defaultArtResources;
+    const ready = /* @__PURE__ */ new Set();
+    let active2 = null, frameTimer = null, blinkTimer = null;
+    let disposed = false;
+    const isBlocked = () => disposed || c.isStopped() || c.isDragging() || document.hidden === true || c.pig.closest?.('[data-dragging="true"]') != null;
+    const clearFrame = () => {
+      clock.clearTimeout(frameTimer);
+      frameTimer = null;
+      active2 = null;
+      c.pig.removeAttribute?.("data-micro-action");
+    };
+    function currentResource() {
+      if (active2 !== null && (isBlocked() || !matchesPigActionEligibility(c.pig, active2.descriptor.eligibility))) clearFrame();
+      return active2;
+    }
+    function currentArt() {
+      const entry = currentResource();
+      return entry === null ? null : entry.artKey;
+    }
+    function playable(action) {
+      let entry = resolveAction(action, artResources);
+      const seen = /* @__PURE__ */ new Set();
+      let depth = 0;
+      while (entry !== null && !matchesPigActionEligibility(c.pig, entry.descriptor.eligibility) && depth < 4) {
+        if (seen.has(entry.cacheKey)) return null;
+        seen.add(entry.cacheKey);
+        const fallback = entry.descriptor.fallback;
+        entry = fallback === null ? null : resolveAction(fallback, artResources);
+        depth += 1;
+      }
+      return entry;
+    }
+    function play(action) {
+      if (isBlocked()) return false;
+      const target = playable(action);
+      if (target === null) return false;
+      if (!ready.has(target.cacheKey)) return false;
+      if (c.pig.getAttribute("data-pet-snap") === "true") return false;
+      if (target.descriptor.key === "blink" && active2 !== null) return false;
+      clearFrame();
+      active2 = target;
+      c.pig.setAttribute?.("data-micro-action", target.descriptor.key);
+      c.render();
+      frameTimer = clock.setTimeout(() => {
+        clearFrame();
+        c.render();
+      }, target.descriptor.duration ?? 0);
+      return true;
+    }
+    function scheduleBlink() {
+      clock.clearTimeout(blinkTimer);
+      blinkTimer = clock.setTimeout(() => {
+        blinkTimer = null;
+        if (!isBlocked()) play("blink");
+        scheduleBlink();
+      }, BLINK_INTERVAL.min + random() * (BLINK_INTERVAL.max - BLINK_INTERVAL.min));
+    }
+    function cancel2() {
+      clearFrame();
+      clock.clearTimeout(blinkTimer);
+      blinkTimer = null;
+      c.render();
+    }
+    function visibility() {
+      cancel2();
+      if (!isBlocked()) scheduleBlink();
+    }
+    const player = { currentArt, currentResource, play };
+    PLAYERS.set(c.pig, player);
+    const preload = c.preload || ((src) => {
+      if (typeof Image !== "function") return Promise.resolve(false);
+      const image = new Image();
+      image.src = src;
+      return image.decode().then(() => true);
+    });
+    for (const entry of artResources.list({ kind: "action" })) {
+      preload(entry.url).then((loaded) => {
+        if (!disposed && loaded !== false) ready.add(entry.cacheKey);
+      }).catch((error) => console.error("\u5C0F\u732A\u52A8\u4F5C\u56FE\u7247\u89E3\u7801\u5931\u8D25", entry.descriptor.key, error));
+    }
+    document.addEventListener?.("visibilitychange", visibility);
+    const gestureTarget = c.pig.parentNode || c.pig;
+    gestureTarget.addEventListener?.("pointercancel", visibility);
+    gestureTarget.addEventListener?.("lostpointercapture", visibility);
+    const observer = typeof MutationObserver === "function" ? new MutationObserver(() => {
+      if (active2 !== null && !currentArt()) c.render();
+      else if (blinkTimer === null && !isBlocked()) scheduleBlink();
+    }) : null;
+    observer?.observe(c.pig.parentNode, { attributes: true, subtree: true, attributeFilter: ["data-dragging", "data-art", "data-mood", "data-idle", "data-activity", "data-illness", "data-party", "data-react"] });
+    scheduleBlink();
+    return {
+      cancel: cancel2,
+      play,
+      dispose() {
+        observer?.disconnect();
+        disposed = true;
+        cancel2();
+        PLAYERS.delete(c.pig);
+        document.removeEventListener?.("visibilitychange", visibility);
+        gestureTarget.removeEventListener?.("pointercancel", visibility);
+        gestureTarget.removeEventListener?.("lostpointercapture", visibility);
+      }
+    };
+  }
+
+  // src/client/feedback-art.js
+  var MOOD_ART = {
+    lonely: ["lie-flat"]
+  };
+  var ILLNESS_ART = {
+    "cold:1": ["runny-nose"],
+    "cold:2": ["collection-fever"],
+    "cold:3": ["runny-nose"],
+    "skin:1": ["allergy"],
+    "skin:2": ["allergy"],
+    "skin:3": ["allergy"],
+    "skin:4": ["allergy"],
+    "dizzy:1": ["faint"],
+    "dizzy:2": ["faint"],
+    "dizzy:3": ["faint"]
+  };
+  var REACTION_ART = {};
+  var IDLE_ART = {};
+  var WITHDRAWN_FEEDBACK_ART = Object.freeze({
+    happy: ["music-rainbow", "collection-stack"],
+    feed: ["collection-snack", "collection-soup"],
+    bathe: ["collection-bubbles"],
+    play: ["collection-chicken", "turning"],
+    levelup: ["collection-throne"],
+    roll: ["turning", "collection-taro"],
+    butterfly: ["collection-chicken", "collection-scallion"],
+    look: ["collection-letter"],
+    walk: ["collection-chicken", "collection-scallion"],
+    trip: ["collection-chicken", "collection-taro", "collection-scallion"]
+  });
+  var WORK_ART = {
+    flyers: "collection-letter",
+    singer: "music-headphones-v2",
+    songwriter: "music-earbuds",
+    cartoonist: "painting",
+    athlete: "collection-fitness",
+    coach: "collection-fitness",
+    gardener: "collection-scallion",
+    florist: "collection-scallion",
+    ceo: "collection-throne",
+    star: "music-rainbow"
+  };
+  var STAGE_ART = { box: ["courier", "collection-courier"], "dead-day": ["death-day"], grave: ["ghost-grave"] };
+  var STUDY_ART = ["study-book", "study-pink-book", "study-determined"];
+  var INTEREST_ART = {
+    fitness: ["collection-fitness"],
+    guitar: ["music-earbuds", "music-headphones-v2"],
+    dancing: ["music-earbuds", "music-headphones-v2"],
+    calligraphy: ["painting"],
+    photography: ["painting"],
+    other: ["study-determined"]
+  };
+  var TRIP_ART = [];
+  var BIRTHDAY_ART = "birthday";
+  var FEEDBACK_ART_TABLES = Object.freeze({
+    stage: STAGE_ART,
+    birthday: [BIRTHDAY_ART],
+    reaction: REACTION_ART,
+    illness: ILLNESS_ART,
+    mood: MOOD_ART,
+    work: WORK_ART,
+    study: STUDY_ART,
+    interest: INTEREST_ART,
+    fishing: ["fishing"],
+    trip: TRIP_ART,
+    idle: IDLE_ART
+  });
+  var UNUSED_FEEDBACK_ART = Object.freeze([
+    "collection-badge",
+    "collection-check",
+    "collection-cage",
+    "suspended",
+    "twitch",
+    // 2026-10-21：脏和饿保留原猪，苍蝇和食物想象泡独立显示。
+    "collection-mosquito",
+    "hungry",
+    // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
+    "sleep-cloud"
+  ]);
+  function choose(options, hour) {
+    return options[Math.abs(Math.floor(hour)) % options.length];
+  }
+  function feedbackArtFor(state4) {
+    if (STAGE_ART[state4.stage]) return choose(STAGE_ART[state4.stage], state4.hour);
+    if (state4.party === true) return BIRTHDAY_ART;
+    if (state4.base && state4.base !== "piglet") return null;
+    if (REACTION_ART[state4.reaction]) return choose(REACTION_ART[state4.reaction], state4.hour);
+    if (state4.mood === "sick") return ILLNESS_ART[state4.illness ?? ""] ? choose(ILLNESS_ART[state4.illness ?? ""], state4.hour) : null;
+    if (state4.mood === "dirty" || state4.mood === "hungry") return null;
+    if (state4.activityKind === "work") return WORK_ART[state4.activityKey] ?? null;
+    if (state4.activityKind === "study") return choose(STUDY_ART, state4.hour);
+    if (state4.activityKind === "interest") return choose(INTEREST_ART[state4.activityKey] ?? INTEREST_ART.other, state4.hour);
+    if (state4.activityKind === "fishing") return "fishing";
+    if (state4.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state4.hour) : null;
+    if (IDLE_ART[state4.idle]) return choose(IDLE_ART[state4.idle], state4.hour);
+    if (MOOD_ART[state4.mood]) return choose(MOOD_ART[state4.mood], state4.hour);
+    return null;
+  }
+
+  // src/client/art-selection.js
+  var ART_SELECTION = /* @__PURE__ */ new WeakMap();
+  var SELECTED_RESOURCE = /* @__PURE__ */ new WeakMap();
+  var RENDERED_FRAME = /* @__PURE__ */ new WeakMap();
+  function resourceHandleOf(resource) {
+    const descriptor = resource.descriptor;
+    return descriptor.namespace + "/" + descriptor.pack + "/" + descriptor.key;
+  }
+  function trackSelectedResource(image, selection, resource) {
+    if (image === null || resource === null || resource.legacy) {
+      SELECTED_RESOURCE.delete(image);
+      return;
+    }
+    SELECTED_RESOURCE.set(image, {
+      selection,
+      handle: resourceHandleOf(resource),
+      descriptor: resource.descriptor
+    });
+  }
+  function resourceIsCurrent(artResources, resource) {
+    if (resource.legacy) return true;
+    const descriptor = resource.descriptor;
+    const current3 = artResources.resolveRef({
+      namespace: descriptor.namespace,
+      pack: descriptor.pack,
+      key: descriptor.key
+    });
+    return current3 !== null && current3.descriptor === descriptor;
+  }
+  function sameFrame(left, right) {
+    if (left === right) return true;
+    return left !== null && right !== null && left[0] === right[0] && left[1] === right[1] && left[2] === right[2];
+  }
+  function renderResourceFrame(image, resource, fallback, src) {
+    const frame3 = resource.descriptor.frame ?? fallback;
+    applyFrame(image, frame3);
+    RENDERED_FRAME.set(image, { src, frame: frame3 });
+  }
+  function frameNeedsRender(image, resource, fallback, src) {
+    const rendered = RENDERED_FRAME.get(image);
+    return rendered === void 0 || rendered.src !== src || !sameFrame(rendered.frame, resource.descriptor.frame ?? fallback);
+  }
+  function setSelection(image, selection) {
+    ART_SELECTION.set(image, selection);
+  }
+  function isSelection(image, selection) {
+    return image !== null && ART_SELECTION.get(image) === selection;
+  }
+  function clearSelection(image) {
+    if (image === null) return;
+    ART_SELECTION.delete(image);
+    SELECTED_RESOURCE.delete(image);
+    RENDERED_FRAME.delete(image);
+  }
+  function clearSelectedResource(image) {
+    if (image === null) return;
+    SELECTED_RESOURCE.delete(image);
+    RENDERED_FRAME.delete(image);
+  }
+  function invalidateSelection(image, selection) {
+    if (image === null || ART_SELECTION.get(image) !== selection) return;
+    ART_SELECTION.delete(image);
+    const selected = SELECTED_RESOURCE.get(image);
+    if (selected !== void 0 && selected.selection === selection) SELECTED_RESOURCE.delete(image);
+  }
+  function applyResourceSelection(options) {
+    const { image, selection, resource, fallback, artResources, applySelected } = options;
+    const src = resource.url;
+    const renderDescriptorFrame = options.renderDescriptorFrame !== false;
+    trackSelectedResource(image, selection, resource);
+    const isCurrent2 = resource.legacy ? null : function() {
+      return resourceIsCurrent(artResources, resource);
+    };
+    if (image.getAttribute("src") !== src) {
+      applySelected(function() {
+        image.src = src;
+        if (typeof options.onLoaded === "function") options.onLoaded();
+        if (renderDescriptorFrame) renderResourceFrame(image, resource, fallback, src);
+      }, isCurrent2);
+    } else if (renderDescriptorFrame && frameNeedsRender(image, resource, fallback, src)) {
+      applySelected(function() {
+        renderResourceFrame(image, resource, fallback, src);
+      }, isCurrent2);
+    }
+  }
+  function invalidateChangedResource(image, change, item, artResources) {
+    const selection = ART_SELECTION.get(image);
+    const selected = SELECTED_RESOURCE.get(image);
+    if (selection === void 0 || selected === void 0 || selected.selection !== selection) return;
+    if (selected.handle !== change.namespace + "/" + change.pack + "/" + item.key) return;
+    const current3 = artResources.resolveRef({ namespace: change.namespace, pack: change.pack, key: item.key });
+    if (current3 === null || current3.descriptor !== selected.descriptor) invalidateSelection(image, selection);
+  }
+
+  // src/client/art.js
+  var REACTION_ART2 = { feed: "eat", bathe: "bathe", play: "play", pet: "pet", cure: "relaxed", levelup: "relaxed" };
+  var ACTIVITY_ART = { work: "work", study: "study", interest: "study", trip: "trip", fishing: "fish" };
+  var SLEEP_ART = /* @__PURE__ */ new Set([
+    "piglet",
+    "pig-round",
+    "pig-fat",
+    "pig-king",
+    "pig-devil",
+    "skin-mint",
+    "career-chef",
+    "career-astronaut",
+    "skin-detective",
+    "skin-angel",
+    "skin-pirate",
+    "skin-wizard"
+  ]);
+  var CUSTOM_FRAME_CACHE = /* @__PURE__ */ new Map();
+  var CUSTOM_FRAME_PENDING = /* @__PURE__ */ new WeakMap();
+  var ART_CONTEXTS = /* @__PURE__ */ new WeakMap();
+  var DISPOSED_PIGS = /* @__PURE__ */ new WeakSet();
+  onCustomArtChange((changed) => {
+    if (!Array.isArray(changed)) {
+      CUSTOM_FRAME_CACHE.clear();
+      return;
+    }
+    for (const art of changed) forgetFramesForArt(String(art));
+  });
+  function cacheKeyBelongsToArt(cacheKey, art) {
+    if (typeof cacheKey !== "string" || art === "") return false;
+    const withoutVersion = cacheKey.split("?")[0];
+    if (withoutVersion.includes("@") && !withoutVersion.includes("/art/")) return false;
+    const marker = "/" + art;
+    return withoutVersion === art || withoutVersion.endsWith(marker) || withoutVersion.includes(marker + "-");
+  }
+  function forgetFramesForArt(art) {
+    for (const key2 of [...CUSTOM_FRAME_CACHE.keys()]) {
+      if (cacheKeyBelongsToArt(key2, art)) CUSTOM_FRAME_CACHE.delete(key2);
+    }
+  }
+  function forgetFrameForCacheKey(cacheKey) {
+    if (typeof cacheKey !== "string" || cacheKey === "") return;
+    CUSTOM_FRAME_CACHE.delete(cacheKey);
+    forgetCustomArtCache(cacheKey);
+  }
+  function frameCustomImage(image, src, sleep = false, onFrame = null, isCurrent2 = null, cacheKey = null) {
+    const done = typeof onFrame === "function" ? onFrame : null;
+    const current3 = typeof isCurrent2 === "function" ? isCurrent2 : null;
+    const explicitKey = typeof cacheKey === "string" && cacheKey !== "" ? cacheKey : null;
+    const key2 = explicitKey ?? src;
+    if (current3 !== null && !current3()) return;
+    if (!src.includes("/custom-")) {
+      const frame3 = builtinFrame(src);
+      applyFrame(image, frame3);
+      if (done !== null) done(frame3);
+      return;
+    }
+    const cached = CUSTOM_FRAME_CACHE.get(key2);
+    if (cached !== void 0) {
+      if (current3 !== null && !current3()) return;
+      applyFrame(image, cached);
+      if (done !== null) done(cached);
+      return;
+    }
+    if (CUSTOM_FRAME_PENDING.get(image) === key2) return;
+    applyFrame(image, null);
+    CUSTOM_FRAME_PENDING.set(image, key2);
+    function measure() {
+      CUSTOM_FRAME_PENDING.delete(image);
+      if (current3 !== null && !current3()) return;
+      if (image.getAttribute("src") !== src) return;
+      const ink = customArtInk(src, explicitKey) ?? measureCustomArt(image, src, sleep, explicitKey);
+      const frame3 = ink === null ? null : frameFromInk(ink);
+      if (frame3 === null) return;
+      CUSTOM_FRAME_CACHE.set(key2, frame3);
+      if (current3 !== null && !current3()) return;
+      applyFrame(image, frame3);
+      if (done !== null) done(frame3);
+    }
+    if (image.complete && image.naturalWidth > 0) measure();
+    else image.addEventListener?.("load", measure, { once: true });
+  }
+  function artFrameFor(src) {
+    if (typeof src !== "string" || src === "") return null;
+    return CUSTOM_FRAME_CACHE.get(src) ?? builtinFrame(src) ?? null;
+  }
+  function syncSleepArt(art, scenes, image, artResources) {
+    const key2 = typeof art === "string" ? art : "";
+    const base = resolveArtSource(key2, artResources);
+    const custom = base.scheme === "custom" && scenes.includes("sleep");
+    const own = SLEEP_ART.has(key2) || scenes.includes("sleep") && (custom || hasArtResource(key2 + "-sleep", artResources));
+    const name = own ? key2 : "piglet";
+    const resolved2 = resolveArtSource(name + "-sleep", artResources);
+    if (image.getAttribute("src") !== resolved2.url) image.src = resolved2.url;
+    frameCustomImage(image, resolved2.url, true, null, null, resolved2.legacy ? null : resolved2.cacheKey);
+    if (resolved2.descriptor.frame !== null && resolved2.scheme !== "custom") applyFrame(image, resolved2.descriptor.frame);
+  }
+  function cleanFeedbackName(name) {
+    return typeof name === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(name) ? name : null;
+  }
+  var legacy = null;
+  function legacyContext() {
+    if (legacy === null) legacy = createArtContext({});
+    return legacy;
+  }
+  function showEffectArt(name) {
+    legacyContext().showEffectArt(cleanFeedbackName(name));
+  }
+  function clearEffectArt() {
+    legacyContext().clearEffectArt();
+  }
+  function swapSource(context, apply) {
+    if (context.disposed) return;
+    if (context.artSwapHook === null) apply();
+    else context.artSwapHook(apply);
+  }
+  function syncPigArtWith(context, pig, image, emoji) {
+    if (context.disposed) return false;
+    if (pig.getAttribute("data-pet-snap") === "true") return !image.hidden;
+    const selection = {};
+    setSelection(image, selection);
+    const applySelected = (apply, isCurrent2) => swapSource(context, () => {
+      if (context.disposed) return;
+      if (!isSelection(image, selection) || pig.getAttribute("data-pet-snap") === "true") return;
+      if (typeof isCurrent2 === "function" && !isCurrent2()) return;
+      apply();
+    });
+    var base = pig.getAttribute("data-art") || "";
+    var microResource = pigActionResource(pig);
+    var feedback = context.forcedFeedback || context.effectArt || feedbackArtFor({
+      stage: pig.getAttribute("data-stage") || "",
+      base,
+      mood: pig.getAttribute("data-mood") || "",
+      reaction: pig.getAttribute("data-react") || "",
+      idle: pig.getAttribute("data-idle") || "",
+      activityKind: pig.getAttribute("data-activity") || "",
+      activityKey: pig.getAttribute("data-activity-key") || "",
+      illness: pig.getAttribute("data-illness") || "",
+      party: pig.getAttribute("data-party") === "true",
+      hour: Math.floor(Date.now() / 36e5)
+    });
+    if (feedback) {
+      var feedbackResource = resolveArtSource("feedback/" + feedback, context.artResources);
+      applyResourceSelection({
+        image,
+        selection,
+        resource: feedbackResource,
+        fallback: builtinFrame(feedbackResource.url),
+        artResources: context.artResources,
+        applySelected
+      });
+      image.hidden = false;
+      pig.setAttribute("data-feedback", "true");
+      if (emoji) emoji.hidden = true;
+      return true;
+    }
+    if (!base) {
+      clearSelectedResource(image);
+      applyFrame(image, null);
+      image.hidden = true;
+      if (image.getAttribute("src")) image.removeAttribute("src");
+      pig.setAttribute("data-feedback", "false");
+      if (emoji) emoji.hidden = false;
+      return false;
+    }
+    if (microResource && !context.forcedFeedback) {
+      applyResourceSelection({
+        image,
+        selection,
+        resource: microResource,
+        fallback: builtinFrame(artSource("piglet")),
+        artResources: context.artResources,
+        applySelected
+      });
+      image.hidden = false;
+      pig.setAttribute("data-feedback", "false");
+      if (emoji) emoji.hidden = true;
+      return true;
+    }
+    var art = base;
+    if (pig.getAttribute("data-art-actions") === "true" || base === "piglet") {
+      var action = REACTION_ART2[pig.getAttribute("data-react")] || ACTIVITY_ART[pig.getAttribute("data-activity")];
+      var scenes = String(pig.getAttribute("data-art-scenes") || "").split(",");
+      if (action && (base === "piglet" || scenes[0] === "" || scenes.indexOf(action) >= 0) && (base.startsWith("custom-") || hasArtResource(base + "-" + action, context.artResources))) art += "-" + action;
+    }
+    var resolved2 = resolveArtSource(art, context.artResources);
+    var src = resolved2.url;
+    applyResourceSelection({
+      image,
+      selection,
+      resource: resolved2,
+      fallback: builtinFrame(src),
+      artResources: context.artResources,
+      applySelected,
+      renderDescriptorFrame: resolved2.scheme !== "custom",
+      onLoaded: function() {
+        frameCustomImage(image, src, false, null, function() {
+          return !context.disposed && isSelection(image, selection) && image.getAttribute("src") === src;
+        }, resolved2.legacy ? null : resolved2.cacheKey);
+      }
+    });
+    image.hidden = false;
+    pig.setAttribute("data-feedback", "false");
+    if (emoji) emoji.hidden = true;
+    return true;
+  }
+  function createArtContext(options) {
+    const opts = options ?? {};
+    const pig = opts.pig ?? null;
+    const image = opts.image ?? null;
+    const emoji = opts.emoji ?? null;
+    const artResources = opts.artResources !== void 0 && opts.artResources !== null && typeof opts.artResources.resolveString === "function" ? opts.artResources : defaultArtResources;
+    let stopResourceChanges = null;
+    if (pig !== null) {
+      const existing = ART_CONTEXTS.get(pig);
+      if (existing !== void 0 && existing.disposed === false) {
+        throw new Error("[dsh-piggy] this pig already has a live presentation art context");
+      }
+    }
+    const context = {
+      pig,
+      image,
+      emoji,
+      artResources,
+      disposed: false,
+      forcedFeedback: null,
+      effectArt: null,
+      artSwapHook: null,
+      isAlive: function() {
+        return context.disposed === false;
+      },
+      sync: function() {
+        if (context.disposed) return false;
+        if (context.pig === null || context.image === null) return false;
+        return syncPigArtWith(context, context.pig, context.image, context.emoji);
+      },
+      showEffectArt: function(name) {
+        if (context.disposed) return;
+        context.effectArt = cleanFeedbackName(name);
+      },
+      clearEffectArt: function() {
+        if (context.disposed) return;
+        context.effectArt = null;
+      },
+      forceFeedbackArt: function(name) {
+        if (context.disposed) return;
+        context.forcedFeedback = cleanFeedbackName(name);
+      },
+      setArtSwapHook: function(hook) {
+        if (context.disposed) return;
+        context.artSwapHook = typeof hook === "function" ? hook : null;
+      },
+      dispose: function() {
+        if (context.disposed) return;
+        context.disposed = true;
+        context.forcedFeedback = null;
+        context.effectArt = null;
+        context.artSwapHook = null;
+        if (stopResourceChanges !== null) {
+          stopResourceChanges();
+          stopResourceChanges = null;
+        }
+        if (context.pig === null) {
+          clearSelection(context.image);
+          return;
+        }
+        const current3 = ART_CONTEXTS.get(context.pig);
+        if (current3 !== void 0 && current3 !== context) return;
+        unbindArtResources(context.pig, context.artResources);
+        clearSelection(context.image);
+        if (current3 === context) ART_CONTEXTS.delete(context.pig);
+        DISPOSED_PIGS.add(context.pig);
+      }
+    };
+    if (artResources !== null && typeof artResources.subscribe === "function") {
+      stopResourceChanges = artResources.subscribe(function(change) {
+        const image2 = context.image;
+        for (const item of change.changes) {
+          forgetFrameForCacheKey(item.previousCacheKey);
+          if (image2 !== null) invalidateChangedResource(image2, change, item, artResources);
+        }
+      });
+    }
+    if (pig !== null) {
+      DISPOSED_PIGS.delete(pig);
+      ART_CONTEXTS.set(pig, context);
+      bindArtResources(pig, artResources);
+    }
+    return context;
+  }
+  function syncPigArt(pig, image, emoji) {
+    const context = pig !== null && typeof pig === "object" ? ART_CONTEXTS.get(pig) : void 0;
+    const target = context !== void 0 && context.disposed === false ? context : legacyContext();
+    if (pig !== null && typeof pig === "object" && DISPOSED_PIGS.has(pig)) return false;
+    if (context !== void 0 && context.disposed === false) return syncPigArtWith(context, pig, image, emoji);
+    return syncPigArtWith(target, pig, image, emoji);
   }
 
   // src/client/life.js
@@ -8870,9 +9379,9 @@
       /** @type {any} */
       window.piggyShell
     ) : void 0;
-    const bridge3 = shell2?.logs;
-    if (bridge3 === void 0 || typeof bridge3.save !== "function") return null;
-    const result = await bridge3.save(name, text);
+    const bridge2 = shell2?.logs;
+    if (bridge2 === void 0 || typeof bridge2.save !== "function") return null;
+    const result = await bridge2.save(name, text);
     if (result?.ok === true) return { ok: true, path: String(result.path ?? "") };
     if (result?.canceled === true) return { ok: false, canceled: true };
     return { ok: false, reason: String(result?.reason ?? "\u5916\u58F3\u6CA1\u80FD\u4FDD\u5B58") };
@@ -8943,38 +9452,33 @@
   });
   var SOUND_KEYS = Object.freeze(Object.keys(RECIPES));
 
-  // src/client/sound.js
-  var context = null;
-  var master = null;
-  var compressor = null;
-  var lastAt = /* @__PURE__ */ Object.create(null);
+  // src/client/audio-context.js
+  var AUDIO_DEBOUNCE_MS = 60;
+  var AUDIO_VOICE_BUDGET = 3;
+  var device = null;
   var voices = 0;
-  var quietCheck = function() {
-    return false;
-  };
+  var channels = /* @__PURE__ */ new Set();
+  var states = /* @__PURE__ */ new WeakMap();
+  var defaultChannel = null;
   function allowedRole() {
-    var role2 = desktopRole();
+    const role2 = desktopRole();
     return role2 === null || role2 === "pet";
   }
-  function configureSound(options) {
-    if (typeof options?.isQuiet === "function") quietCheck = options.isQuiet;
-  }
-  function unlockSound() {
-    if (!soundSettings().on) return null;
-    return ensureContext();
-  }
-  function ensureContext() {
-    if (context !== null) {
-      if (context.state === "suspended") context.resume?.().catch?.(function() {
+  function ensureDevice() {
+    if (device !== null) {
+      if (device.context.state === "suspended") device.context.resume?.().catch?.(function() {
       });
-      return context;
+      return device.context;
     }
+    let context = null;
+    let master = null;
+    let compressor = null;
     try {
-      var audioWindow = typeof window !== "undefined" ? (
+      const audioWindow = typeof window !== "undefined" ? (
         /** @type {any} */
         window
       ) : null;
-      var Ctor = audioWindow === null ? null : audioWindow.AudioContext || audioWindow.webkitAudioContext;
+      const Ctor = audioWindow === null ? null : audioWindow.AudioContext || audioWindow.webkitAudioContext;
       if (typeof Ctor !== "function") return null;
       context = new Ctor();
       compressor = context.createDynamicsCompressor?.() ?? null;
@@ -8991,52 +9495,89 @@
       } else {
         master.connect(context.destination);
       }
+      device = { context, master, compressor };
       if (context.state === "suspended") context.resume?.().catch?.(function() {
       });
       return context;
     } catch {
-      context = null;
-      master = null;
-      compressor = null;
+      try {
+        context?.close?.();
+      } catch {
+      }
+      device = null;
       return null;
     }
   }
+  function retireVoice(voice) {
+    if (voice.done) return;
+    voice.done = true;
+    voice.state.active.delete(voice);
+    voices = Math.max(0, voices - 1);
+    try {
+      voice.source.stop?.();
+    } catch {
+    }
+    try {
+      voice.source.disconnect?.();
+    } catch {
+    }
+    try {
+      voice.filter?.disconnect?.();
+    } catch {
+    }
+    try {
+      voice.gain.disconnect?.();
+    } catch {
+    }
+  }
+  function registerVoice(state4, source, gain, filter2) {
+    const voice = { source, gain, filter: filter2, state: state4, done: false };
+    state4.active.add(voice);
+    voices += 1;
+    source.onended = function() {
+      retireVoice(voice);
+    };
+    return voice;
+  }
   function noiseBuffer(ctx, seconds) {
-    var length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
-    var buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-    var data = buffer.getChannelData(0);
-    var seed = 2654435769;
-    for (var i = 0; i < length; i += 1) {
+    const length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let seed = 2654435769;
+    for (let i = 0; i < length; i += 1) {
       seed = seed * 1664525 + 1013904223 >>> 0;
       data[i] = seed / 4294967295 * 2 - 1;
     }
     return buffer;
   }
-  function tone(ctx, destination, spec, start2, volume) {
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    var duration = spec.ms / 1e3;
+  function startTone(ctx, destination, spec, start2, volume, state4) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const duration = spec.ms / 1e3;
     osc.type = spec.type;
     osc.frequency.setValueAtTime(Math.max(20, spec.from), start2);
     if (spec.to !== spec.from) osc.frequency.exponentialRampToValueAtTime(Math.max(20, spec.to), start2 + duration);
-    var peak = Math.max(1e-4, spec.gain * volume);
+    const peak = Math.max(1e-4, spec.gain * volume);
     gain.gain.setValueAtTime(1e-4, start2);
     gain.gain.exponentialRampToValueAtTime(peak, start2 + Math.min(0.02, duration * 0.2));
     gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
     osc.connect(gain);
     gain.connect(destination);
-    osc.start(start2);
-    osc.stop(start2 + duration + 0.02);
-    voices += 1;
-    osc.onended = function() {
-      voices = Math.max(0, voices - 1);
-    };
+    const voice = registerVoice(state4, osc, gain, null);
+    try {
+      osc.start(start2);
+      osc.stop(start2 + duration + 0.02);
+    } catch (error) {
+      retireVoice(voice);
+      throw error;
+    }
+    return voice;
   }
-  function noise(ctx, destination, spec, start2, volume) {
-    var source = ctx.createBufferSource();
-    var filter2 = ctx.createBiquadFilter();
-    var gain = ctx.createGain();
-    var duration = spec.ms / 1e3;
+  function startNoise(ctx, destination, spec, start2, volume, state4) {
+    const source = ctx.createBufferSource();
+    const filter2 = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    const duration = spec.ms / 1e3;
     source.buffer = noiseBuffer(ctx, duration);
     filter2.type = spec.type ?? "lowpass";
     filter2.frequency.setValueAtTime(Math.max(40, spec.from), start2);
@@ -9047,33 +9588,113 @@
     source.connect(filter2);
     filter2.connect(gain);
     gain.connect(destination);
-    source.start(start2);
-    source.stop(start2 + duration + 0.01);
-    voices += 1;
-    source.onended = function() {
-      voices = Math.max(0, voices - 1);
-    };
-  }
-  function playSound(key2, options) {
-    var recipe = RECIPES[key2];
-    if (recipe === void 0) return false;
-    var settings = soundSettings();
-    if (!settings.on) return false;
-    if (!allowedRole() || quietCheck() === true) return false;
-    var now2 = Date.now();
-    if (now2 - (lastAt[key2] ?? 0) < 60) return false;
-    if (voices >= 3) return false;
-    var ctx = ensureContext();
-    if (ctx === null || master === null) return false;
-    lastAt[key2] = now2;
-    var level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
-    var volume = level * (options?.soft === true ? 0.65 : 1);
-    var start2 = ctx.currentTime + 5e-3;
-    for (var i = 0; i < recipe.tones.length; i += 1) {
-      tone(ctx, master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume);
+    const voice = registerVoice(state4, source, gain, filter2);
+    try {
+      source.start(start2);
+      source.stop(start2 + duration + 0.01);
+    } catch (error) {
+      retireVoice(voice);
+      throw error;
     }
-    if (recipe.noise !== void 0) noise(ctx, master, recipe.noise, start2, volume);
+    return voice;
+  }
+  function startRecipe(state4, recipe, volume) {
+    if (device === null) return false;
+    const ctx = device.context;
+    const start2 = ctx.currentTime + 5e-3;
+    const created = [];
+    try {
+      for (let i = 0; i < recipe.tones.length; i += 1) {
+        created.push(startTone(ctx, device.master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume, state4));
+      }
+      if (recipe.noise !== void 0) created.push(startNoise(ctx, device.master, recipe.noise, start2, volume, state4));
+      return true;
+    } catch {
+      for (let i = 0; i < created.length; i += 1) retireVoice(created[i]);
+      return false;
+    }
+  }
+  function stopState(state4) {
+    const active2 = Array.from(state4.active);
+    for (let i = 0; i < active2.length; i += 1) retireVoice(active2[i]);
+  }
+  function playChannel(state4, key2, options) {
+    if (state4.disposed) return false;
+    const recipe = RECIPES[key2];
+    if (recipe === void 0) return false;
+    const settings = soundSettings();
+    if (!settings.on) return false;
+    if (!allowedRole() || state4.quiet() === true) return false;
+    const now2 = Date.now();
+    if (now2 - (state4.lastAt[key2] ?? 0) < AUDIO_DEBOUNCE_MS) return false;
+    if (voices >= AUDIO_VOICE_BUDGET) return false;
+    if (ensureDevice() === null) return false;
+    const level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
+    const volume = level * (options?.soft === true ? 0.65 : 1);
+    if (!startRecipe(state4, recipe, volume)) return false;
+    state4.lastAt[key2] = now2;
     return true;
+  }
+  function createAudioChannel(options) {
+    const opts = options ?? {};
+    const state4 = {
+      quiet: typeof opts.isQuiet === "function" ? opts.isQuiet : function() {
+        return false;
+      },
+      lastAt: /* @__PURE__ */ Object.create(null),
+      active: /* @__PURE__ */ new Set(),
+      disposed: false
+    };
+    const channel = {
+      get disposed() {
+        return state4.disposed;
+      },
+      isQuiet: function() {
+        return state4.quiet() === true;
+      },
+      /** Legacy configureSound seam; presentation channels bind at creation instead. */
+      setQuiet: function(check) {
+        if (typeof check === "function" && !state4.disposed) state4.quiet = check;
+        return channel;
+      },
+      play: function(key2, playOptions) {
+        return playChannel(state4, key2, playOptions);
+      },
+      unlock: function() {
+        if (state4.disposed) return null;
+        if (!soundSettings().on) return null;
+        return ensureDevice();
+      },
+      stop: function() {
+        stopState(state4);
+      },
+      dispose: function() {
+        if (state4.disposed) return;
+        state4.disposed = true;
+        stopState(state4);
+        channels.delete(channel);
+      }
+    };
+    states.set(channel, state4);
+    channels.add(channel);
+    return channel;
+  }
+  function defaultAudioChannel() {
+    if (defaultChannel === null) defaultChannel = createAudioChannel();
+    return defaultChannel;
+  }
+  function playAudioCue(channel, key2, options) {
+    if (channel !== null && channel !== void 0 && typeof channel.play === "function") return channel.play(key2, options);
+    return defaultAudioChannel().play(key2, options);
+  }
+  function unlockAudioCue(channel) {
+    if (channel !== null && channel !== void 0 && typeof channel.unlock === "function") return channel.unlock();
+    return defaultAudioChannel().unlock();
+  }
+
+  // src/client/sound.js
+  function unlockSound() {
+    return defaultAudioChannel().unlock();
   }
 
   // src/client/tabs/proxy.js
@@ -9540,6 +10161,356 @@
     return el("div", className, String(text));
   }
 
+  // src/client/tabs/cloud-save.js
+  var DEFAULT = Object.freeze({ version: 1, enabled: false, provider: "github", remote: "", branch: "main" });
+  var config = null;
+  var loading3 = false;
+  var busy4 = false;
+  var editing = false;
+  var draft2 = null;
+  var message2 = "";
+  var failed = false;
+  var advancedOpen = false;
+  function cloudDataAttributes(node) {
+    if (!node) return [];
+    const raw = node.attributes;
+    const names = raw && typeof raw[Symbol.iterator] === "function" ? Array.from(raw, (attr) => attr.name) : Object.keys(raw || {});
+    return names.filter((name) => name.startsWith("data-")).map((name) => ({ name, value: node.getAttribute(name) }));
+  }
+  function cloudSettingsDraftOpen() {
+    return editing || config?.enabled === true && !config.remote;
+  }
+  function captureCloudSettingsUiState(content) {
+    if (!cloudSettingsDraftOpen()) return null;
+    const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
+    const active2 = doc?.activeElement;
+    const focusAttr = ["data-cloud-provider", "data-cloud-remote", "data-cloud-branch", "data-cloud-advanced-summary"].find((attr) => active2 && content.contains(active2) && active2.hasAttribute?.(attr)) || null;
+    const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
+    const state4 = {
+      focusAttr,
+      advancedOpen: details2 ? details2.open === true : advancedOpen,
+      focusSignature: active2 && content.contains(active2) ? {
+        tagName: active2.tagName,
+        className: typeof active2.className === "string" ? active2.className : "",
+        ariaLabel: active2.getAttribute?.("aria-label") ?? null,
+        dataAttributes: cloudDataAttributes(active2)
+      } : null
+    };
+    if (focusAttr && active2 && (active2.tagName === "INPUT" || active2.tagName === "SELECT")) {
+      const field3 = (
+        /** @type {HTMLInputElement|HTMLSelectElement} */
+        active2
+      );
+      state4.value = field3.value;
+    }
+    if (focusAttr && active2?.tagName === "INPUT") {
+      const input = (
+        /** @type {HTMLInputElement} */
+        active2
+      );
+      if (typeof input.selectionStart === "number" && typeof input.selectionEnd === "number") {
+        state4.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection };
+      }
+    }
+    return state4;
+  }
+  function restoreCloudSettingsUiState(content, state4) {
+    if (!state4) return;
+    const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
+    if (details2) {
+      details2.open = state4.advancedOpen;
+      advancedOpen = state4.advancedOpen;
+    }
+    const focusable = Array.from(content.querySelectorAll("button, input, select, summary"));
+    const directTarget = state4.focusAttr ? focusable.find((node) => node.hasAttribute?.(state4.focusAttr)) : void 0;
+    const signatureMatches = state4.focusSignature ? focusable.filter((node) => node.tagName === state4.focusSignature.tagName && (typeof node.className === "string" ? node.className : "") === state4.focusSignature.className && node.getAttribute?.("aria-label") === state4.focusSignature.ariaLabel && JSON.stringify(cloudDataAttributes(node).map((attr) => attr.name)) === JSON.stringify(state4.focusSignature.dataAttributes.map((attr) => attr.name))) : [];
+    const exactSignatureMatches = signatureMatches.filter((node) => JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state4.focusSignature?.dataAttributes));
+    const target = directTarget || (exactSignatureMatches.length === 1 ? exactSignatureMatches[0] : signatureMatches.length === 1 ? signatureMatches[0] : void 0);
+    if (!target) return;
+    if (state4.value !== void 0 && (target.tagName === "INPUT" || target.tagName === "SELECT")) {
+      const field3 = (
+        /** @type {HTMLInputElement|HTMLSelectElement} */
+        target
+      );
+      field3.value = state4.value;
+      if (draft2 !== null) {
+        if (state4.focusAttr === "data-cloud-provider") draft2.provider = state4.value;
+        else if (state4.focusAttr === "data-cloud-remote") draft2.remote = state4.value;
+        else if (state4.focusAttr === "data-cloud-branch") draft2.branch = state4.value;
+      }
+    }
+    const element = (
+      /** @type {HTMLElement} */
+      target
+    );
+    const disabled = "disabled" in target && target.disabled === true;
+    if (!disabled && typeof element.focus === "function") element.focus({ preventScroll: true });
+    else {
+      const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
+      if (!disabled && doc && "activeElement" in doc) Reflect.set(doc, "activeElement", target);
+    }
+    if (state4.selection && target.tagName === "INPUT") {
+      const input = (
+        /** @type {HTMLInputElement} */
+        target
+      );
+      if (typeof input.setSelectionRange === "function") input.setSelectionRange(state4.selection.start, state4.selection.end, state4.selection.direction || "none");
+    }
+  }
+  function cloudApi() {
+    const shell2 = typeof window === "undefined" ? null : (
+      /** @type {any} */
+      window
+    );
+    return shell2?.__dshPiggyShell?.cloudSave ?? shell2?.__dshPiggyCloudSave ?? null;
+  }
+  function providerName(key2) {
+    return key2 === "github" ? "GitHub" : key2 === "gitee" ? "Gitee" : "\u5176\u4ED6 Git";
+  }
+  function statusBox(box, text, isFailure = false) {
+    const status2 = el("div", isFailure ? "dp-cloud-status dp-cloud-error" : "dp-cloud-status", text);
+    status2.setAttribute("role", "status");
+    status2.hidden = text === "";
+    box.appendChild(status2);
+  }
+  function readConfig(ui, api, box) {
+    if (loading3 || config !== null) return;
+    loading3 = true;
+    statusBox(box, "\u6B63\u5728\u8BFB\u53D6\u4E91\u5B58\u6863\u8BBE\u7F6E\u2026");
+    Promise.resolve(api.get()).then((result) => {
+      if (result?.ok === true && result.config) {
+        config = { ...DEFAULT, ...result.config };
+        message2 = "";
+        failed = false;
+      } else {
+        config = { ...DEFAULT };
+        message2 = result?.reason || "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
+        failed = true;
+      }
+    }).catch(() => {
+      config = { ...DEFAULT };
+      message2 = "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u8BFB\u53D6";
+      failed = true;
+    }).finally(() => {
+      loading3 = false;
+      if (ui.tab === "settings") ui.renderContent();
+    });
+  }
+  function renderCloudSaveSettings(ui, section2) {
+    const api = cloudApi();
+    if (api === null || typeof api.get !== "function" || typeof api.set !== "function" || typeof api.test !== "function") return;
+    const setting = section2(ui, "\u4E91\u5B58\u6863", "\u8FDE\u63A5 Git \u4ED3\u5E93\uFF1B\u9996\u6B21\u540C\u6B65\u4F1A\u53E6\u884C\u786E\u8BA4");
+    const box = setting.box;
+    if (config === null) {
+      readConfig(ui, api, box);
+      if (message2) statusBox(box, message2, failed);
+      return;
+    }
+    if (draft2 === null) draft2 = { ...config };
+    async function save(next, afterSave = () => {
+    }) {
+      if (busy4) return;
+      busy4 = true;
+      failed = false;
+      message2 = "\u6B63\u5728\u4FDD\u5B58\u2026";
+      if (ui.tab === "settings") ui.renderContent();
+      try {
+        const result = await api.set(next);
+        if (result?.ok !== true || !result.config) throw new Error(result?.reason || "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u4FDD\u5B58");
+        config = { ...DEFAULT, ...result.config };
+        draft2 = { ...config };
+        editing = false;
+        advancedOpen = false;
+        message2 = "";
+        afterSave();
+      } catch (error) {
+        failed = true;
+        message2 = error instanceof Error ? error.message : "\u4E91\u5B58\u6863\u8BBE\u7F6E\u65E0\u6CD5\u4FDD\u5B58";
+      } finally {
+        busy4 = false;
+        if (ui.tab === "settings") ui.renderContent();
+      }
+    }
+    function toggle() {
+      const next = { ...config, enabled: !config.enabled };
+      void save(next, () => {
+        if (config.enabled && !config.remote) {
+          editing = true;
+          advancedOpen = false;
+          draft2 = { ...config };
+        }
+      });
+    }
+    const toggleControl = button("dp-switch", {
+      "data-cloud-enabled": config.enabled ? "on" : "off",
+      "aria-pressed": String(config.enabled),
+      "aria-label": "\u4E91\u5B58\u6863"
+    }, toggle);
+    toggleControl.disabled = busy4;
+    toggleControl.appendChild(el("span", "dp-switch-knob"));
+    toggleControl.appendChild(el("span", "dp-switch-text", config.enabled ? "\u5F00" : "\u5173"));
+    setting.head.appendChild(toggleControl);
+    if (!config.enabled) {
+      const note3 = el("small", "dp-cloud-note", config.remote ? "\u5DF2\u5173\u95ED\uFF1B\u4ED3\u5E93\u914D\u7F6E\u4FDD\u7559\u5728\u672C\u673A" : "\u5173\u95ED\u65F6\u4E0D\u8FDE\u63A5\u4ED3\u5E93");
+      box.appendChild(note3);
+      if (config.remote) {
+        const saved = el("div", "dp-cloud-summary");
+        saved.appendChild(el("b", null, providerName(config.provider)));
+        const address = el("span", "dp-cloud-value", config.remote);
+        saved.appendChild(address);
+        box.appendChild(saved);
+      }
+      statusBox(box, message2, failed);
+      return;
+    }
+    if (!config.remote || editing) {
+      if (draft2 === null || !editing) draft2 = { ...config };
+      const form = el("div", "dp-cloud-form");
+      const provider = (
+        /** @type {HTMLSelectElement} */
+        el("select", "dp-setting-field")
+      );
+      provider.setAttribute("aria-label", "Git \u5E73\u53F0");
+      provider.setAttribute("data-cloud-provider", "true");
+      for (const [key2, label] of [["github", "GitHub"], ["gitee", "Gitee"], ["git", "\u5176\u4ED6 Git"]]) {
+        const option = (
+          /** @type {HTMLOptionElement} */
+          el("option", null, label)
+        );
+        option.value = key2;
+        provider.appendChild(option);
+      }
+      provider.value = draft2.provider;
+      provider.disabled = busy4;
+      provider.addEventListener("change", () => {
+        draft2.provider = provider.value;
+      });
+      const providerLabel = el("label", "dp-cloud-field");
+      providerLabel.appendChild(el("span", "dp-dim", "Git \u5E73\u53F0"));
+      providerLabel.appendChild(provider);
+      form.appendChild(providerLabel);
+      const remote = (
+        /** @type {HTMLInputElement} */
+        el("input", "dp-setting-field")
+      );
+      remote.type = "text";
+      remote.autocomplete = "off";
+      remote.spellcheck = false;
+      remote.placeholder = draft2.provider === "github" ? "https://github.com/\u7528\u6237\u540D/\u4ED3\u5E93.git" : draft2.provider === "gitee" ? "https://gitee.com/\u7528\u6237\u540D/\u4ED3\u5E93.git" : "https://Git \u670D\u52A1\u5668/\u7528\u6237\u540D/\u4ED3\u5E93.git";
+      remote.setAttribute("aria-label", "\u4ED3\u5E93\u5730\u5740");
+      remote.setAttribute("data-cloud-remote", "true");
+      remote.value = draft2.remote;
+      remote.disabled = busy4;
+      let saveButton = null;
+      remote.addEventListener("input", () => {
+        draft2.remote = remote.value;
+        if (saveButton !== null) saveButton.disabled = busy4 || remote.value.trim() === "";
+      });
+      const remoteLabel = el("label", "dp-cloud-field");
+      remoteLabel.appendChild(el("span", "dp-dim", "\u4ED3\u5E93\u5730\u5740"));
+      remoteLabel.appendChild(remote);
+      form.appendChild(remoteLabel);
+      const advanced = el("details", "dp-cloud-advanced");
+      advanced.open = advancedOpen;
+      const advancedSummary = el("summary", null, "\u9AD8\u7EA7\u8BBE\u7F6E");
+      advancedSummary.setAttribute("data-cloud-advanced-summary", "true");
+      advancedSummary.addEventListener("click", () => {
+        advancedOpen = !advanced.open;
+      });
+      advanced.appendChild(advancedSummary);
+      advanced.addEventListener("toggle", () => {
+        advancedOpen = advanced.open;
+      });
+      const branch = (
+        /** @type {HTMLInputElement} */
+        el("input", "dp-setting-field")
+      );
+      branch.type = "text";
+      branch.autocomplete = "off";
+      branch.placeholder = "main";
+      branch.setAttribute("aria-label", "\u5206\u652F");
+      branch.setAttribute("data-cloud-branch", "true");
+      branch.value = draft2.branch || "main";
+      branch.disabled = busy4;
+      branch.addEventListener("input", () => {
+        draft2.branch = branch.value;
+      });
+      const branchLabel = el("label", "dp-cloud-field");
+      branchLabel.appendChild(el("span", "dp-dim", "\u5206\u652F"));
+      branchLabel.appendChild(branch);
+      advanced.appendChild(branchLabel);
+      form.appendChild(advanced);
+      box.appendChild(form);
+      const actions3 = el("div", "dp-cloud-actions");
+      const saveControl = button("dp-mini", { "data-cloud-action": "save" }, () => {
+        void save({ ...draft2, enabled: true, remote: remote.value.trim(), branch: branch.value.trim() || "main" });
+      });
+      saveButton = saveControl;
+      saveControl.textContent = "\u4FDD\u5B58";
+      saveControl.disabled = busy4 || remote.value.trim() === "";
+      actions3.appendChild(saveControl);
+      if (config.remote) {
+        const cancel2 = button("dp-mini dp-mini-plain", { "data-cloud-action": "cancel" }, () => {
+          draft2 = { ...config };
+          editing = false;
+          advancedOpen = false;
+          ui.renderContent();
+        });
+        cancel2.textContent = "\u53D6\u6D88";
+        cancel2.disabled = busy4;
+        actions3.appendChild(cancel2);
+      }
+      box.appendChild(actions3);
+      statusBox(box, message2 || "\u586B\u5199\u4ED3\u5E93\u5730\u5740\u540E\u4FDD\u5B58", failed);
+      return;
+    }
+    const summary = el("div", "dp-cloud-summary");
+    summary.appendChild(el("b", null, providerName(config.provider)));
+    summary.appendChild(el("span", "dp-cloud-value", config.remote));
+    summary.appendChild(el("span", "dp-cloud-note", "\u5206\u652F \xB7 " + config.branch));
+    summary.appendChild(el("span", "dp-cloud-status", "\u72B6\u6001 \xB7 \u5F85\u8FDE\u63A5"));
+    summary.appendChild(el("span", "dp-cloud-note", "\u6700\u8FD1\u540C\u6B65 \xB7 \u6682\u65E0"));
+    box.appendChild(summary);
+    const actions2 = el("div", "dp-cloud-actions");
+    const test2 = button("dp-mini", { "data-cloud-action": "test" }, async () => {
+      if (busy4) return;
+      busy4 = true;
+      failed = false;
+      message2 = "\u6B63\u5728\u6D4B\u8BD5\u8FDE\u63A5\u2026";
+      ui.renderContent();
+      try {
+        const result = await api.test({ ...config });
+        failed = result?.ok !== true;
+        message2 = failed ? result?.reason || "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25" : "\u8FDE\u63A5\u6D4B\u8BD5\u901A\u8FC7\uFF1B\u5C1A\u672A\u540C\u6B65\u5B58\u6863";
+      } catch {
+        failed = true;
+        message2 = "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25";
+      } finally {
+        busy4 = false;
+        if (ui.tab === "settings") ui.renderContent();
+      }
+    });
+    test2.textContent = "\u6D4B\u8BD5\u8FDE\u63A5";
+    test2.disabled = busy4;
+    actions2.appendChild(test2);
+    const edit = button("dp-mini dp-mini-plain", { "data-cloud-action": "edit" }, () => {
+      draft2 = { ...config };
+      editing = true;
+      advancedOpen = false;
+      message2 = "";
+      ui.renderContent();
+    });
+    edit.textContent = "\u7F16\u8F91";
+    edit.disabled = busy4;
+    actions2.appendChild(edit);
+    const close = button("dp-mini dp-mini-plain", { "data-cloud-action": "close" }, toggle);
+    close.textContent = "\u5173\u95ED";
+    close.disabled = busy4;
+    actions2.appendChild(close);
+    box.appendChild(actions2);
+    statusBox(box, message2, failed);
+  }
+
   // src/client/external-ui.js
   function createOverlay(ui, options) {
     const overlay = el("div", "dp-save-overlay dp-ext-overlay");
@@ -9710,9 +10681,9 @@
     const at = clockText2(status2.lastAt);
     return at === "" ? "" : " \xB7 \u4E0A\u6B21 " + at;
   };
-  function statusLine(card2, text, tone2) {
+  function statusLine(card2, text, tone) {
     const line6 = el("span", "dp-ext-state", text);
-    line6.setAttribute("data-tone", tone2);
+    line6.setAttribute("data-tone", tone);
     card2.appendChild(line6);
     return line6;
   }
@@ -9735,11 +10706,11 @@
     const entry = section2(ui, "\u5916\u90E8\u684C\u5BA0");
     const box = entry.box;
     box.setAttribute("data-external-pet", "true");
-    const busy4 = state4.busy === true;
+    const busy5 = state4.busy === true;
     if (status2 === null) {
       statusLine(box, state4.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state4.error === "" ? "warn" : "warn");
       if (state4.error !== "") note2(box, state4.error, true);
-      cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+      cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
       return;
     }
     const desktop2 = status2.desktop;
@@ -9749,9 +10720,9 @@
       statusLine(box, "\u5916\u90E8\u684C\u5BA0\u914D\u7F6E\u8BFB\u4E0D\u51FA\u6765", "warn");
       note2(box, "\u914D\u7F6E\u6587\u4EF6\u635F\u574F\u6216\u8BFB\u4E0D\u4E86\uFF1B\u539F\u6587\u4EF6\u4F1A\u6539\u540D\u7559\u8BC1\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u5220\u9664\uFF0C\u4E5F\u4E0D\u4F1A\u6253\u5F00\u5DF2\u5408\u5E76\u7684\u65E7\u5B58\u6863\u3002", true);
       cardActions(box, [
-        { key: "recheck", label: "\u91CD\u8BD5\u8BFB\u53D6", onPick: handlers.recheck, disabled: busy4 },
-        { key: "restore-backup", label: "\u4ECE\u6700\u8FD1\u5408\u5E76\u5907\u4EFD\u6062\u590D", onPick: handlers.restoreBackup, disabled: busy4 },
-        status2.pigState === "merged" ? { key: "recover-local", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: handlers.recoverLocal, disabled: busy4, wide: true } : { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy4, wide: true }
+        { key: "recheck", label: "\u91CD\u8BD5\u8BFB\u53D6", onPick: handlers.recheck, disabled: busy5 },
+        { key: "restore-backup", label: "\u4ECE\u6700\u8FD1\u5408\u5E76\u5907\u4EFD\u6062\u590D", onPick: handlers.restoreBackup, disabled: busy5 },
+        status2.pigState === "merged" ? { key: "recover-local", label: "\u53EA\u6062\u590D\u5185\u5D4C\u732A", onPick: handlers.recoverLocal, disabled: busy5, wide: true } : { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy5, wide: true }
       ]);
       return;
     }
@@ -9760,18 +10731,18 @@
         statusLine(box, "\u6CA1\u627E\u5230\u5DF2\u5F00\u542F\u8054\u52A8\u7684\u684C\u9762\u7248", "warn");
         if (status2.error === "disabled" || desktop2.reason === "external-disabled") note2(box, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002\u53BB\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D\u3002");
         else if (status2.error === "no-pair" || status2.error === "pair-not-offered" || desktop2.reason === "pair-unavailable") note2(box, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u8BF7\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
-        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
         return;
       }
       if (!desktop2.enabled) {
         statusLine(box, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8", "warn");
         note2(box, "\u53BB\u684C\u9762\u7248\u300C\u8BBE\u7F6E \u2192 \u5916\u90E8\u8FDE\u63A5\u300D\u6253\u5F00\u300C\u5141\u8BB8 DSH \u8054\u52A8\u300D\uFF0C\u518D\u56DE\u6765\u91CD\u65B0\u68C0\u6D4B\u3002");
-        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy4, wide: true }]);
+        cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
         return;
       }
       statusLine(box, "\u684C\u9762\u7248\u5DF2\u5C31\u7EEA \xB7 " + summaryLine(target), "ok");
       note2(box, "\u8FDE\u63A5\u540E\uFF0CDSH \u7684\u5DE5\u4F5C\u548C\u9762\u677F\u64CD\u4F5C\u90FD\u4EA4\u7ED9\u684C\u9762\u4E0A\u7684\u732A\u3002");
-      cardActions(box, [{ key: "connect", label: "\u8FDE\u63A5\u684C\u9762\u732A", primary: true, onPick: handlers.connect, disabled: busy4, wide: true }]);
+      cardActions(box, [{ key: "connect", label: "\u8FDE\u63A5\u684C\u9762\u732A", primary: true, onPick: handlers.connect, disabled: busy5, wide: true }]);
       return;
     }
     if (status2.merged) {
@@ -9779,16 +10750,16 @@
         statusLine(box, "\u25CF \u5DF2\u5408\u5E76\u5230\u684C\u5BA0 \xB7 " + summaryLine(target), "ok");
         note2(box, "\u5185\u5D4C\u732A\u5DF2\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF1B\u53EA\u80FD\u64A4\u9500\u6700\u8FD1\u4E00\u6B21\u5408\u5E76\u3002");
         cardActions(box, [
-          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 },
-          { key: "rollback", label: "\u64A4\u9500\u5408\u5E76", onPick: handlers.rollback, disabled: busy4 || !status2.canRollback }
+          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 },
+          { key: "rollback", label: "\u64A4\u9500\u5408\u5E76", onPick: handlers.rollback, disabled: busy5 || !status2.canRollback }
         ]);
       } else {
         statusLine(box, "\u25CB \u5DF2\u5408\u5E76 \xB7 \u684C\u9762\u7248\u6CA1\u5F00" + lastAtText(status2), "warn");
         note2(box, "\u5185\u5D4C\u732A\u5DF2\u6536\u8FDB\u5907\u4EFD\u5E76\u9000\u5F79\uFF1B\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + status2.queued + " \u6761\uFF09\u3002");
         note2(box, "\u64A4\u9500\u5408\u5E76\u8981\u7B49\u684C\u9762\u7248\u8FDE\u4E0A\uFF1B\u4ECD\u53EF\u9009\u62E9\u300C\u53EA\u6062\u590D\u5185\u5D4C\u732A\u300D\u3002");
         cardActions(box, [
-          { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy4 },
-          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 }
+          { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy5 },
+          { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 }
         ]);
       }
       return;
@@ -9797,8 +10768,8 @@
       statusLine(box, "\u25CF \u5DF2\u8FDE\u63A5 \xB7 " + summaryLine(target), "ok");
       note2(box, "DSH \u7684\u5DE5\u4F5C\u6B63\u5728\u6295\u7ED9\u684C\u9762\u4E0A\u7684\u732A\u3002");
       cardActions(box, [
-        { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 },
-        status2.pigState === "paused" ? { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy4 } : null
+        { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 },
+        status2.pigState === "paused" ? { key: "withdraw", label: "\u5207\u56DE\u5185\u5D4C\u732A", onPick: handlers.withdraw, disabled: busy5 } : null
       ]);
       return;
     }
@@ -9812,8 +10783,8 @@
     statusLine(box, "\u25CB \u6CA1\u8FDE\u4E0A\u684C\u9762\u7248" + lastAtText(status2), "warn");
     note2(box, "\u5DE5\u4F5C\u4E8B\u4EF6\u5728\u6392\u961F\uFF08" + status2.queued + " \u6761\uFF09\uFF1B\u9762\u677F\u663E\u793A\u6700\u540E\u4E00\u6B21\u540C\u6B65\u7684\u72B6\u6001\u3002");
     cardActions(box, [
-      { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy4 },
-      { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy4 }
+      { key: "recheck", label: "\u91CD\u65B0\u8FDE\u63A5", onPick: handlers.recheck, disabled: busy5 },
+      { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 }
     ]);
   }
   function renderManageDialog(ui, state4, handlers, view) {
@@ -11192,7 +12163,7 @@
   }
 
   // src/client/external-desktop.js
-  var states = /* @__PURE__ */ new WeakMap();
+  var states2 = /* @__PURE__ */ new WeakMap();
   function redraw(state4) {
     if (state4.ui?.tab === "settings") state4.ui.renderContent();
   }
@@ -11202,10 +12173,10 @@
     state4.failed = value.ok === false || Boolean(value.error);
   }
   function stateFor(api, ui) {
-    let state4 = states.get(api);
+    let state4 = states2.get(api);
     if (state4 === void 0) {
       state4 = { value: null, failed: false, loading: true, busy: false, ui };
-      states.set(api, state4);
+      states2.set(api, state4);
       api.onStatus?.((value) => {
         accept(state4, value);
         redraw(state4);
@@ -11300,6 +12271,7 @@
     if (extFresh) openExtensions.appendChild(el("b", "dp-tile-badge dp-update-dot", "!"));
     extensions.head.appendChild(openExtensions);
     renderSaveTransferSettings(ui, section);
+    renderCloudSaveSettings(ui, section);
     if (desktopShell() === null && stageShell() === null) renderExternalPetSettings(ui, section);
     else renderExternalDesktopSettings(ui, section, desktopShell()?.external ?? stageShell()?.external);
     const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
@@ -11318,8 +12290,8 @@
         return;
       }
       const stageSize = ui.view.hatched ? ui.view.pig.stage.size : ui.view.boxStage.size;
-      const geometry2 = desktopShell()?.geometry?.();
-      const area = geometry2?.workArea;
+      const geometry = desktopShell()?.geometry?.();
+      const area = geometry?.workArea;
       const available = Math.min(area?.width || window.screen?.availWidth || window.innerWidth, area?.height || window.screen?.availHeight || window.innerHeight);
       const scale2 = Math.min(value / 100, available / (stageSize * 2));
       setPigSize(scale2);
@@ -11790,7 +12762,7 @@
       }, 380);
     }
     const feel2 = feelOf(fish3);
-    function tick2(now2) {
+    function tick(now2) {
       if (!stillOpen(ui)) return finish(false);
       if (!s.startedAt) s.startedAt = now2;
       const dt = s.last ? Math.min(50, now2 - s.last) : 16;
@@ -11805,10 +12777,10 @@
         if (s.misses >= 3) return finish(false);
       }
       paint();
-      frame = raf(tick2);
+      frame = raf(tick);
     }
     paint();
-    frame = raf(tick2);
+    frame = raf(tick);
   }
   var BAR_HEIGHT = 220;
   function renderBar(ui, fish3, s, finish, root) {
@@ -11858,7 +12830,7 @@
       }
       s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * surgeOf(s, feel2, now2, dt));
     }
-    function tick2(now2) {
+    function tick(now2) {
       if (!stillOpen(ui)) return finish(false);
       const dt = s.last ? Math.min(50, now2 - s.last) : 16;
       s.last = now2;
@@ -11883,9 +12855,9 @@
       stage2.setAttribute("data-progress", s.progress.toFixed(0));
       if (s.progress >= 100) return finish(true);
       if (s.progress <= 0) return finish(false);
-      frame = raf(tick2);
+      frame = raf(tick);
     }
-    frame = raf(tick2);
+    frame = raf(tick);
   }
   function renderPull(ui, fish3, s, finish, root) {
     const d = difficultyOf(fish3);
@@ -11918,7 +12890,7 @@
     stage2.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
     root.appendChild(stage2);
     holdControls(stage2, s);
-    function tick2(now2) {
+    function tick(now2) {
       if (!stillOpen(ui)) return finish(false);
       const dt = s.last ? Math.min(50, now2 - s.last) : 16;
       s.last = now2;
@@ -11944,9 +12916,9 @@
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
       if (s.distance <= 0) return finish(true);
-      frame = raf(tick2);
+      frame = raf(tick);
     }
-    frame = raf(tick2);
+    frame = raf(tick);
   }
 
   // src/client/switch-activity.js
@@ -12146,18 +13118,18 @@
     const closed = currentSpot(ui).open === false;
     const row2 = el("div", "dp-fish-auto-row");
     const reasons = [];
-    for (const { minutes, attempts, legacy = minutes <= 60 } of choices) {
-      const boxed = !legacy && automation2?.baitLimit > 0;
+    for (const { minutes, attempts, legacy: legacy2 = minutes <= 60 } of choices) {
+      const boxed = !legacy2 && automation2?.baitLimit > 0;
       const need = boxed ? 1 : attempts;
       const have = ui.view.inventory[baitState.selected] ?? 0;
       const go = button("dp-mini dp-fish-auto-go", { "data-fish-auto": String(minutes) }, function() {
         startOrSwitch(ui, "\u81EA\u52A8\u9493\u9C7C " + minutes + " \u5206\u949F", "fishAuto", { minutes, bait: baitState.selected });
       });
       go.textContent = `${minutes} \u5206\u949F` + (boxed ? "\uFF08\u81EA\u52A8\u8865\u9975\uFF09" : `\uFF08\u9C7C\u9975 ${need} \u4E2A\uFF09`);
-      go.disabled = !canStart(ui) || have < need || !legacy && automation2?.full === true || closed;
+      go.disabled = !canStart(ui) || have < need || !legacy2 && automation2?.full === true || closed;
       if (go.disabled && reasons.length === 0) {
         if (!canStart(ui)) reasons.push("\u732A\u73B0\u5728\u4E0D\u80FD\u51FA\u95E8");
-        else if (!legacy && automation2?.full) reasons.push(automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86\uFF0C\u5148\u6536\u4E00\u4E0B" : "\u9493\u9C7C\u6B47\u4E86\uFF0C\u5148\u63A5\u7740\u5E72");
+        else if (!legacy2 && automation2?.full) reasons.push(automation2.stored > 0 ? "\u9C7C\u7BD3\u6EE1\u4E86\uFF0C\u5148\u6536\u4E00\u4E0B" : "\u9493\u9C7C\u6B47\u4E86\uFF0C\u5148\u63A5\u7740\u5E72");
         else if (closed) reasons.push("\u8FD9\u4E2A\u9493\u70B9\u73B0\u5728\u6CA1\u6709\u5F00");
         else reasons.push("\u9C7C\u9975\u53EA\u5269 " + have + " \u4E2A\uFF0C\u4E0D\u591F " + need + " \u4E2A");
       }
@@ -12273,7 +13245,7 @@
     let nextNibble = Date.now() + 1500 + Math.random() * 2500;
     let nibbleUntil = 0;
     waitUi = ui;
-    function tick2() {
+    function tick() {
       if (waitUi !== ui) return;
       const now2 = Date.now();
       if (now2 < pending2.bitesAt - 900 && now2 >= nextNibble) {
@@ -12295,9 +13267,9 @@
         ui.send("fishHook");
         return;
       }
-      waitFrame = raf2(tick2);
+      waitFrame = raf2(tick);
     }
-    waitFrame = raf2(tick2);
+    waitFrame = raf2(tick);
   }
   function renderResult(ui, fish3) {
     const root = fishShell(ui);
@@ -12380,8 +13352,8 @@
         var run = ctx[fx.name];
         if (typeof run === "function") run.apply(null, Array.isArray(fx.args) ? fx.args : []);
       });
-      shell2.panel.on(function(message2) {
-        if (message2?.type === "closed" || message2?.type === "open") updatePetPanelState(ctx, message2.type === "open");
+      shell2.panel.on(function(message3) {
+        if (message3?.type === "closed" || message3?.type === "open") updatePetPanelState(ctx, message3.type === "open");
       });
       return role2;
     }
@@ -12395,18 +13367,18 @@
       if (ctx.extBig) ctx.tab = "ext:" + ctx.extBig;
       return role2;
     }
-    shell2.panel.on(function(message2) {
-      if (message2 === null || typeof message2 !== "object") return;
-      if (message2.type === "open") {
-        shell2.setAnchor({ vertical: message2.vertical === "below" ? "below" : "above", maxHeight: Number(message2.maxHeight) || 520 });
+    shell2.panel.on(function(message3) {
+      if (message3 === null || typeof message3 !== "object") return;
+      if (message3.type === "open") {
+        shell2.setAnchor({ vertical: message3.vertical === "below" ? "below" : "above", maxHeight: Number(message3.maxHeight) || 520 });
         if (!ctx.isOpen) ctx.setOpen(true);
         else ctx.fitPanel();
         shell2.syncGeometry();
-      } else if (message2.type === "closed") {
+      } else if (message3.type === "closed") {
         if (ctx.isOpen) ctx.setOpen(false);
-      } else if (message2.type === "blur") {
+      } else if (message3.type === "blur") {
         const saveTransferActive = ctx.content?.querySelector?.('[data-save-transfer-active="true"]');
-        if (message2.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks2.isFishing() || typing() || saveTransferActive) return;
+        if (message3.toPet || !ctx.isOpen || !autoCollapseEnabled() || hooks2.isFishing() || typing() || saveTransferActive) return;
         ctx.setOpen(false);
       }
     });
@@ -12476,25 +13448,40 @@
   }
   function createBirthday(c) {
     var timer2 = null;
+    var disposed = false;
+    function syncArt() {
+      if (disposed) return false;
+      if (c.art !== null && c.art !== void 0 && typeof c.art.sync === "function") return c.art.sync();
+      return syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+    }
     c.ctx.birthdayNow = function() {
+      if (disposed) return;
       c.ctx.cakeForced = true;
       c.render();
     };
     return {
       /** 点了蛋糕：猪短暂换成生日图、冒彩带，蛋糕今天不再冒。 */
       celebrate: function() {
+        if (disposed) return;
         writeStore(CAKE_KEY, today());
         c.ctx.cakeForced = false;
         c.pig.setAttribute("data-party", "true");
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        syncArt();
         c.burst(["\u{1F382}", "\u{1F389}", "\u{1F388}"], 6);
         c.render();
         if (timer2 !== null) window.clearTimeout(timer2);
         timer2 = window.setTimeout(function() {
           timer2 = null;
+          if (disposed) return;
           c.pig.removeAttribute("data-party");
-          syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+          syncArt();
         }, PARTY_MS);
+      },
+      dispose: function() {
+        if (disposed) return;
+        disposed = true;
+        if (timer2 !== null) window.clearTimeout(timer2);
+        timer2 = null;
       }
     };
   }
@@ -13051,6 +14038,17 @@
     ".dp-proxy-actions .dp-proxy-clear{margin-left:auto}",
     ".dp-proxy-status{font-size:10px;line-height:1.5;margin-top:9px;color:var(--ac-text-muted);overflow-wrap:anywhere}",
     ".dp-proxy-error{color:var(--ac-error)}",
+    ".dp-cloud-form{display:grid;gap:8px;margin:7px 0 8px}",
+    ".dp-cloud-field{display:grid;gap:4px;font-size:10px}",
+    ".dp-cloud-advanced{font-size:10px;color:var(--ac-text-muted)}",
+    ".dp-cloud-advanced summary{cursor:pointer;padding:3px 0 6px}",
+    ".dp-cloud-advanced .dp-cloud-field{margin:2px 0 6px}",
+    ".dp-cloud-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}",
+    ".dp-cloud-summary{display:grid;gap:4px;margin-top:8px;padding:8px 9px;border:1px solid var(--ac-border-light);border-radius:9px;background:var(--ac-bg-content)}",
+    ".dp-cloud-summary b{font-size:11px;color:var(--ac-text)}",
+    ".dp-cloud-value{font-size:10px;line-height:1.35;color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-word}",
+    ".dp-cloud-note,.dp-cloud-status{font-size:10px;line-height:1.45;color:var(--ac-text-muted);overflow-wrap:anywhere}",
+    ".dp-cloud-error{color:var(--ac-error)}",
     /* ---------- segmented control ---------- */
     ".dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}",
     ".dp-seg button{font:inherit;font-size:10.5px;font-weight:600;color:var(--ac-text-muted);",
@@ -13783,14 +14781,14 @@
   }
   function animatePanelClose(ctx) {
     const { below, origin } = panelOrigin(ctx);
-    const host3 = ctx.host;
+    const host2 = ctx.host;
     for (const node of [ctx.card, ctx.hud]) {
       if (!node || node.hidden || !canAnimate(node) || typeof node.cloneNode !== "function") continue;
       const ghost = node.cloneNode(true);
       ghost.setAttribute("data-ghost", "true");
       ghost.setAttribute("aria-hidden", "true");
-      const fromTop = host3.style.top !== "" && host3.style.top !== "auto";
-      const fromLeft = host3.style.left !== "" && host3.style.left !== "auto";
+      const fromTop = host2.style.top !== "" && host2.style.top !== "auto";
+      const fromLeft = host2.style.left !== "" && host2.style.left !== "auto";
       const style = ghost.style;
       style.pointerEvents = "none";
       style.margin = "0";
@@ -13798,9 +14796,9 @@
       style.height = node.offsetHeight + "px";
       style.maxHeight = "none";
       style.top = fromTop ? node.offsetTop + "px" : "auto";
-      style.bottom = fromTop ? "auto" : host3.offsetHeight - node.offsetTop - node.offsetHeight + "px";
+      style.bottom = fromTop ? "auto" : host2.offsetHeight - node.offsetTop - node.offsetHeight + "px";
       style.left = fromLeft ? node.offsetLeft + "px" : "auto";
-      style.right = fromLeft ? "auto" : host3.offsetWidth - node.offsetLeft - node.offsetWidth + "px";
+      style.right = fromLeft ? "auto" : host2.offsetWidth - node.offsetLeft - node.offsetWidth + "px";
       style.transformOrigin = origin;
       node.parentNode.insertBefore(ghost, node.nextSibling);
       const fade = ghost.animate([
@@ -14318,10 +15316,10 @@
     return row2;
   }
   function editableField(ui, key2, label, value) {
-    var editing = ui.cardEdit !== null && ui.cardEdit.field === key2;
+    var editing2 = ui.cardEdit !== null && ui.cardEdit.field === key2;
     var row2 = el("div", "dp-vcard-row" + (key2 === "motto" ? " dp-vcard-motto-row" : ""));
     row2.appendChild(el("span", "dp-vcard-label", label + "\uFF1A"));
-    if (editing) {
+    if (editing2) {
       appendEditor(ui, row2, key2);
       return row2;
     }
@@ -14379,8 +15377,8 @@
   }
   function profileEditor(ui, profile) {
     var box = el("div", "dp-vcard-row dp-vcard-once");
-    var draft2 = ui.profileDraft;
-    if (!draft2) {
+    var draft3 = ui.profileDraft;
+    if (!draft3) {
       var open = button("dp-mini", { "data-card-once": "open" }, function() {
         ui.profileDraft = { personality: profile.personality ? profile.personality.key : profile.personalities[0].key, month: profile.birthdayParts.month, day: profile.birthdayParts.day };
         ui.renderContent();
@@ -14402,9 +15400,9 @@
       option.value = p.key;
       pick.appendChild(option);
     });
-    pick.value = draft2.personality;
+    pick.value = draft3.personality;
     pick.addEventListener("change", function() {
-      draft2.personality = pick.value;
+      draft3.personality = pick.value;
     });
     var number2 = function(key2, max, value) {
       var input = (
@@ -14417,7 +15415,7 @@
       input.value = String(value);
       input.setAttribute("data-card-once", key2);
       input.addEventListener("input", function() {
-        draft2[key2] = Number(input.value);
+        draft3[key2] = Number(input.value);
       });
       return input;
     };
@@ -14431,9 +15429,9 @@
     first.appendChild(pick);
     var second = line6();
     second.appendChild(el("span", "dp-vcard-label", "\u751F\u65E5\uFF1A"));
-    second.appendChild(number2("month", 12, draft2.month));
+    second.appendChild(number2("month", 12, draft3.month));
     second.appendChild(el("span", null, "\u6708"));
-    second.appendChild(number2("day", 31, draft2.day));
+    second.appendChild(number2("day", 31, draft3.day));
     second.appendChild(el("span", null, "\u65E5"));
     var third = line6();
     var save = button("dp-mini", { "data-card-once": "save" }, function() {
@@ -16839,9 +17837,9 @@
       setSkinContactOverride(art, point);
       paint();
     }
-    let dragging2 = false;
+    let dragging = false;
     pad.addEventListener("pointerdown", function(event) {
-      dragging2 = true;
+      dragging = true;
       event.preventDefault?.();
       try {
         pad.setPointerCapture?.(event.pointerId);
@@ -16851,13 +17849,13 @@
       previewHand(art, true);
     });
     pad.addEventListener("pointermove", function(event) {
-      if (!dragging2) return;
+      if (!dragging) return;
       place(event);
       renewSkinContactPreview();
     });
     const stop = function() {
-      if (!dragging2) return;
-      dragging2 = false;
+      if (!dragging) return;
+      dragging = false;
       previewHand(art, false);
     };
     pad.addEventListener("pointerup", stop);
@@ -17075,7 +18073,7 @@
       }
       return merged2;
     }
-    function schedule4() {
+    function schedule3() {
       if (timer2 !== null) clearTimeout(timer2);
       timer2 = null;
       if (held || pending2 === null) return;
@@ -17088,18 +18086,18 @@
     }
     function down() {
       held = true;
-      schedule4();
+      schedule3();
     }
     function up() {
       if (!held) return;
       held = false;
       readyAt = Date.now() + 150;
-      schedule4();
+      schedule3();
     }
     function blur() {
       held = false;
       readyAt = 0;
-      schedule4();
+      schedule3();
     }
     root.addEventListener("pointerdown", down, true);
     events.addEventListener("pointerup", up, true);
@@ -17120,7 +18118,7 @@
           const accumulated = pending2?.hasSnapshot ? mergeSnapshots(pending2.snapshot, snapshot) : snapshot;
           pending2 = { run, snapshot: accumulated, hasSnapshot: true };
         } else pending2 = { run, snapshot: void 0, hasSnapshot: false };
-        schedule4();
+        schedule3();
         return true;
       },
       dispose() {
@@ -17194,7 +18192,7 @@
       if (target === null) return;
       dispatch(target);
     }
-    function schedule4(seen) {
+    function schedule3(seen) {
       if (win !== null && typeof win.requestAnimationFrame === "function") {
         win.requestAnimationFrame(function() {
           flush2(seen);
@@ -17214,7 +18212,7 @@
     return function restore2() {
       if (restoring || pending2 || x === null) return false;
       pending2 = true;
-      schedule4(seq2);
+      schedule3(seq2);
       return true;
     };
   }
@@ -17316,6 +18314,7 @@
     }
     function renderContent() {
       if (renderHold.defer(renderContent) || externalRenderBlocked()) return false;
+      var cloudSettingsState = ctx.tab === "settings" ? captureCloudSettingsUiState(ctx.content) : null;
       var scrollTop = ctx.content.scrollTop;
       var page = ctx.content.querySelectorAll("[data-scroll-page]")[0]?.getAttribute("data-scroll-page");
       var scrollPositions = /* @__PURE__ */ new Map();
@@ -17324,7 +18323,11 @@
           scrollPositions.set(node.getAttribute("data-scroll-key"), { top: node.scrollTop, left: node.scrollLeft });
         }
       });
-      preserveFarmTriggerFocus(ctx.content, paintContent);
+      preserveFarmTriggerFocus(ctx.content, function() {
+        var result = paintContent();
+        if (cloudSettingsState !== null) restoreCloudSettingsUiState(ctx.content, cloudSettingsState);
+        return result;
+      });
       var nextPage = ctx.content.querySelectorAll("[data-scroll-page]")[0]?.getAttribute("data-scroll-page");
       if (nextPage !== page) ctx.content.scrollTop = 0;
       else if (scrollTop !== 0) ctx.content.scrollTop = scrollTop;
@@ -17347,10 +18350,10 @@
       }
       if (ctx.host.getAttribute("data-open") !== "true") return;
       if (ctx.view.legacy) {
-        var legacy = el("div", "dp-alert dp-legacy");
-        legacy.appendChild(el("b", null, "\u26A0\uFE0F \u5BBF\u4E3B\u662F\u65E7\u7248\u672C"));
-        legacy.appendChild(el("div", null, "\u91D1\u5E01\u3001\u5065\u5EB7\u3001\u6253\u5DE5\u3001\u5546\u5E97\u8FD9\u4E9B\u662F\u65B0\u589E\u7684\uFF0C\u91CD\u542F dsh\uFF08\u4E0D\u662F\u5237\u65B0\u9875\u9762\uFF09\u4E4B\u540E\u624D\u4F1A\u51FA\u73B0\u3002"));
-        ctx.content.appendChild(legacy);
+        var legacy2 = el("div", "dp-alert dp-legacy");
+        legacy2.appendChild(el("b", null, "\u26A0\uFE0F \u5BBF\u4E3B\u662F\u65E7\u7248\u672C"));
+        legacy2.appendChild(el("div", null, "\u91D1\u5E01\u3001\u5065\u5EB7\u3001\u6253\u5DE5\u3001\u5546\u5E97\u8FD9\u4E9B\u662F\u65B0\u589E\u7684\uFF0C\u91CD\u542F dsh\uFF08\u4E0D\u662F\u5237\u65B0\u9875\u9762\uFF09\u4E4B\u540E\u624D\u4F1A\u51FA\u73B0\u3002"));
+        ctx.content.appendChild(legacy2);
       }
       if (renderEmptyPanel(ctx)) return;
       var bigView = Boolean(ctx.extBig) && ctx.tab === "ext:" + ctx.extBig;
@@ -17493,7 +18496,7 @@
       processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return false;
       if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return false;
-      if (ctx.tab === "settings" && (document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true" || document.activeElement?.getAttribute?.("data-bubble-scale") === "true")) return false;
+      if (ctx.tab === "settings" && (cloudSettingsDraftOpen() || document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true" || document.activeElement?.getAttribute?.("data-bubble-scale") === "true")) return false;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return false;
       if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return false;
       var currentFishing = ctx.view.fishing.pending;
@@ -17512,117 +18515,6 @@
       pointerRepaint.dispose();
       renderHold.dispose();
     } };
-  }
-
-  // src/client/scene.js
-  var WEB_EMOJI_FACE = '@font-face{font-family:"Piggy Emoji";font-style:normal;font-weight:400;font-display:swap;src:url(/dsh-piggy/emoji.woff2) format("woff2")}';
-  function createScene() {
-    var font = document.createElement("link");
-    font.rel = "stylesheet";
-    font.href = "https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap";
-    document.head.appendChild(font);
-    var style = document.createElement("style");
-    style.textContent = (desktopShell() === null ? WEB_EMOJI_FACE : "") + CSS;
-    document.head.appendChild(style);
-    var host3 = document.createElement("div");
-    host3.setAttribute(MOUNTED, "");
-    var card2 = el("div", "dp-card");
-    var scene6 = el("div", "dp-scene");
-    var hud = el("div", "dp-hud");
-    var hudName = el("div", null, "\u732A\u732A");
-    var hudCoins = el("div", null, "\u{1FA99} 0");
-    var hudHealth = el("div", null, "\u{1F49A} 5/5");
-    hud.appendChild(hudName);
-    hud.appendChild(hudCoins);
-    hud.appendChild(hudHealth);
-    scene6.appendChild(hud);
-    var bubble = el("div", "dp-bubble", "");
-    bubble.hidden = true;
-    scene6.appendChild(bubble);
-    var work = el("div", "dp-work");
-    var prop = el("span", "dp-prop", "\u{1F4BC}");
-    var progressWrap = el("div", "dp-progress");
-    var progressFill = document.createElement("i");
-    progressWrap.appendChild(progressFill);
-    work.appendChild(prop);
-    work.appendChild(progressWrap);
-    work.hidden = true;
-    scene6.appendChild(work);
-    var pokeHint = el("div", "dp-poke-hint");
-    pokeHint.appendChild(el("span", null, "\u{1F446}"));
-    pokeHint.appendChild(el("span", null, "\u6233\u4E09\u4E0B"));
-    pokeHint.hidden = true;
-    scene6.appendChild(pokeHint);
-    var dailyHint = el("button", "dp-daily");
-    dailyHint.hidden = true;
-    scene6.appendChild(dailyHint);
-    var soul = el("span", "dp-soul", "\u{1F47B}");
-    soul.hidden = true;
-    scene6.appendChild(soul);
-    var pigArt = document.createElement("img");
-    pigArt.className = "dp-pig-img";
-    pigArt.alt = "";
-    pigArt.hidden = true;
-    var pigSleep = document.createElement("img");
-    pigSleep.className = "dp-pig-sleep";
-    pigSleep.alt = "";
-    pigSleep.draggable = false;
-    var pigEmoji = el("span", "dp-pig-emoji", "\u{1F416}");
-    var pig = el("div", "dp-pig");
-    var pigHold = el("div", "dp-pig-hold");
-    var pigBody = el("div", "dp-pig-body");
-    pig.appendChild(pigHold);
-    pigHold.appendChild(pigBody);
-    pigBody.appendChild(pigArt);
-    pigBody.appendChild(pigEmoji);
-    pigBody.appendChild(pigSleep);
-    var napBubble = el("span", "dp-nap-zzz", "Zzz");
-    napBubble.setAttribute("aria-hidden", "true");
-    pigBody.appendChild(napBubble);
-    var dressSlots = el("div", "dp-dress");
-    pigBody.appendChild(dressSlots);
-    var hungerBubble = el("span", "dp-hunger-bubble");
-    hungerBubble.setAttribute("role", "img");
-    hungerBubble.setAttribute("aria-label", "\u997F\u4E86");
-    var hungerCloud = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    hungerCloud.setAttribute("viewBox", "0 0 54 50");
-    hungerCloud.setAttribute("aria-hidden", "true");
-    hungerCloud.innerHTML = '<path d="M14 33C4 33 1 22 8 17C5 9 13 3 21 7C27 0 39 3 40 11C52 12 53 26 44 29C40 38 29 38 25 33C20 37 16 36 14 33Z"/><circle cx="13" cy="40" r="3"/><circle cx="7" cy="46" r="1.8"/>';
-    hungerBubble.appendChild(hungerCloud);
-    hungerBubble.appendChild(el("span", "dp-hunger-food", "\u{1F955}"));
-    pig.appendChild(hungerBubble);
-    var pomoHint = el("div", "dp-pomo");
-    pomoHint.setAttribute("data-pomo-pill", "true");
-    pomoHint.hidden = true;
-    pigBody.appendChild(pomoHint);
-    scene6.appendChild(pig);
-    scene6.title = "\u5DE6\u952E\u6478\u6478 \xB7 \u53F3\u952E\u6253\u5F00\u9762\u677F \xB7 \u62D6\u52A8\u53EF\u79FB\u52A8";
-    var bar = el("div", "dp-bar");
-    var linkBar = el("div", "dp-link");
-    linkBar.hidden = true;
-    var linkNote2 = el("div", "dp-link-note");
-    linkNote2.hidden = true;
-    var content = el("div", "dp-content");
-    var footer = el("div", "dp-panel-footer");
-    footer.hidden = true;
-    card2.appendChild(linkBar);
-    card2.appendChild(linkNote2);
-    card2.appendChild(content);
-    card2.appendChild(footer);
-    card2.appendChild(bar);
-    host3.appendChild(card2);
-    host3.appendChild(scene6);
-    if (document.body !== null && document.body !== void 0) {
-      document.body.appendChild(host3);
-    } else {
-      document.addEventListener("DOMContentLoaded", function() {
-        try {
-          document.body.appendChild(host3);
-        } catch (error) {
-        }
-      }, { once: true });
-    }
-    return { font, style, host: host3, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote: linkNote2 };
   }
 
   // src/client/position.js
@@ -17699,6 +18591,459 @@
     }, ui.showBubble);
     dev.install();
     return dev;
+  }
+
+  // src/client/feel/config.js
+  var FEEL = Object.freeze({
+    /** 压扁（正）上限，用户拍板 18%。 */
+    squashMax: 0.18,
+    /** 拎起拉长上限，用户拍板 10%。 */
+    holdMax: 0.1,
+    /** 按压量。 */
+    pressSquash: 0.04,
+    /** 横向缩放 = 1 + volumeK * 压扁；小于 1 更像圆滚滚的动物。 */
+    volumeK: 0.72,
+    /** 拎起时横向收窄的比例。 */
+    holdNarrow: 0.4,
+    /** 拖动倾斜上限（度）。 */
+    tiltMaxDrag: 18,
+    /** 飞行倾斜上限（度）。 */
+    tiltMaxFly: 20,
+    /** 屏幕水平速度 → 倾斜角（度 / (px/s)）。 */
+    tiltGain: 0.012,
+    /** 按压弹簧。 */
+    press: Object.freeze({ stiffness: 600, damping: 26, mass: 1 }),
+    /** 挤压/拉长弹簧：欠阻尼，2~3 次可见回弹，约 0.75s 收住。 */
+    squash: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
+    /** 拎起弹簧：接近临界阻尼，不上下晃。 */
+    hold: Object.freeze({ stiffness: 300, damping: 26, mass: 1 }),
+    /** 倾斜弹簧：松手约 0.45s 回正。 */
+    tilt: Object.freeze({ stiffness: 220, damping: 16, mass: 1 }),
+    /** 落地冲击弹簧：同样 2~3 次回弹。 */
+    impact: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
+    /** 翻卡片。 */
+    turnMs: 180,
+    turnBulge: 0.04,
+    /** 动作图切换遮挡。 */
+    swapMs: 90,
+    swapApplyMs: 55,
+    swapMaxDelayMs: 140,
+    /** 手势阈值。 */
+    dragPx: 4,
+    liftPx: 6,
+    /** 来回摸：1200ms 内累计 320px，800ms 冷却。 */
+    strokeWindowMs: 1200,
+    strokePx: 320,
+    strokeCooldownMs: 800,
+    /** 桌面抛掷：只认松手前最后一小段仍在快速移动。 */
+    throwMin: 180,
+    throwTailMs: 60,
+    throwIdleMs: 60,
+    throwMax: 2200,
+    gravity: 2400,
+    airDrag: 0.12,
+    restitution: 0.52,
+    floorFriction: 0.82,
+    landVy: 520,
+    dizzyImpact: 1500,
+    dizzyMs: 2400,
+    flightMaxMs: 3500,
+    /** 轻柔模式缩放。 */
+    softScale: 0.6,
+    /** 收尾判定：所有通道小于这些值就算回稳。 */
+    settleEpsilon: 4e-3,
+    settleTilt: 0.35
+  });
+  function modeScale(mode) {
+    return mode === "soft" ? FEEL.softScale : 1;
+  }
+
+  // src/client/feel/envelope.js
+  var corners = (box) => [
+    { x: box.x, y: box.y },
+    { x: box.x + box.width, y: box.y },
+    { x: box.x, y: box.y + box.height },
+    { x: box.x + box.width, y: box.y + box.height }
+  ];
+  function bounds(points) {
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const point of points) {
+      left = Math.min(left, point.x);
+      top = Math.min(top, point.y);
+      right = Math.max(right, point.x);
+      bottom = Math.max(bottom, point.y);
+    }
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  }
+  function union(...boxes) {
+    return bounds(boxes.flatMap(corners));
+  }
+  function transformed(box, pivot, state4) {
+    const radians = state4.rotate * Math.PI / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    return corners(box).map((point) => {
+      const x = (point.x - pivot.x) * state4.scaleX;
+      const y = (point.y - pivot.y) * state4.scaleY;
+      return {
+        x: pivot.x + x * cos - y * sin,
+        y: pivot.y + x * sin + y * cos + state4.dy
+      };
+    });
+  }
+  function poseEnvelope(box, pose, pigBox = box) {
+    const bodyPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y + pigBox.height * 0.85 };
+    const holdPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y };
+    const body = transformed(box, bodyPivot, {
+      scaleX: 1 + FEEL.volumeK * pose.squash,
+      scaleY: 1 - pose.squash,
+      rotate: pose.tilt,
+      dy: -pose.hop
+    });
+    const hold = transformed(
+      {
+        x: Math.min(...body.map((p) => p.x)),
+        y: Math.min(...body.map((p) => p.y)),
+        width: Math.max(...body.map((p) => p.x)) - Math.min(...body.map((p) => p.x)),
+        height: Math.max(...body.map((p) => p.y)) - Math.min(...body.map((p) => p.y))
+      },
+      holdPivot,
+      { scaleX: 1 - FEEL.holdNarrow * pose.hold, scaleY: 1 + pose.hold, rotate: 0, dy: 0 }
+    );
+    const exact = corners(box).map((point) => {
+      const bodyPoint = {
+        x: bodyPivot.x + (point.x - bodyPivot.x) * (1 + FEEL.volumeK * pose.squash),
+        y: bodyPivot.y + (point.y - bodyPivot.y) * (1 - pose.squash) - pose.hop
+      };
+      const radians = pose.tilt * Math.PI / 180;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+      const rotated = {
+        x: bodyPivot.x + (bodyPoint.x - bodyPivot.x) * cos - (bodyPoint.y - bodyPivot.y) * sin,
+        y: bodyPivot.y + (bodyPoint.x - bodyPivot.x) * sin + (bodyPoint.y - bodyPivot.y) * cos
+      };
+      return {
+        x: holdPivot.x + (rotated.x - holdPivot.x) * (1 - FEEL.holdNarrow * pose.hold),
+        y: holdPivot.y + (rotated.y - holdPivot.y) * (1 + pose.hold)
+      };
+    });
+    return union(bounds(hold), bounds(exact));
+  }
+  function feelEnvelope(pigBox, pose, artBox = pigBox) {
+    if (pigBox.width <= 0 || pigBox.height <= 0) return { x: pigBox.x, y: pigBox.y, width: pigBox.width, height: pigBox.height };
+    if (pose !== void 0) {
+      return poseEnvelope(artBox, {
+        squash: Number.isFinite(pose.squash) ? pose.squash : 0,
+        hold: Number.isFinite(pose.hold) ? pose.hold : 0,
+        tilt: Number.isFinite(pose.tilt) ? pose.tilt : 0,
+        hop: Number.isFinite(pose.hop) ? pose.hop : 0
+      }, pigBox);
+    }
+    const squashes = [FEEL.squashMax, -FEEL.squashMax * 0.45];
+    const tilts = [-FEEL.tiltMaxFly, FEEL.tiltMaxFly];
+    const boxes = [];
+    for (const squash of squashes) {
+      for (const tilt3 of tilts) {
+        boxes.push(poseEnvelope(artBox, { squash, hold: FEEL.holdMax, tilt: tilt3, hop: 0 }, pigBox));
+        boxes.push(poseEnvelope(artBox, { squash, hold: 0, tilt: tilt3, hop: 0 }, pigBox));
+      }
+    }
+    return union(...boxes);
+  }
+
+  // src/client/desktop/visual-bounds.js
+  function bodyVisualBounds(pig) {
+    const art = artMarginFor(pig.width);
+    const pose = feelEnvelope(
+      { x: 0, y: 0, width: pig.width, height: pig.height },
+      void 0,
+      { x: -art, y: 0, width: pig.width + art * 2, height: pig.height }
+    );
+    const left = Math.max(art, -pose.x);
+    const right = Math.max(art, pose.x + pose.width - pig.width);
+    const top = Math.max(8, -pose.y);
+    const bottom = Math.max(12, pose.y + pose.height - pig.height);
+    return {
+      x: pig.x - left,
+      y: pig.y - top,
+      width: pig.width + left + right,
+      height: pig.height + top + bottom
+    };
+  }
+
+  // src/client/desktop/flight-bridge.js
+  function createFlightBridge(c) {
+    return {
+      supported: typeof c.shell.flyMove === "function",
+      start: function() {
+        const info = c.readGeometry();
+        if (info === null || info === void 0 || !info.window) return null;
+        const pig = c.pigInWindow(info.window);
+        if (pig === null) return null;
+        return {
+          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
+          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
+          visual: bodyVisualBounds(pig),
+          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
+          area: info.workArea,
+          areas: info.workAreas ?? [info.workArea]
+        };
+      },
+      move: function(x, y, slide) {
+        if (typeof c.shell.flyMove !== "function") return;
+        c.shell.flyMove({ x, y, slide: slide ?? { x: 0, y: 0 } });
+      },
+      setFlying: function(on) {
+        c.setFlying(on === true);
+        if (!c.isFlying()) {
+          c.forgetLayout();
+          c.tick();
+        }
+      },
+      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
+      finish: function(last) {
+        c.setFlying(false);
+        if (last !== null && last !== void 0 && last.window && last.pig) {
+          const pig = {
+            x: last.pig.x + (last.slide?.x ?? 0),
+            y: last.pig.y + (last.slide?.y ?? 0),
+            width: last.pig.width,
+            height: last.pig.height
+          };
+          c.rehome(last.window, pig, last.areas ?? []);
+        }
+        c.clearSlide(last?.slide ?? { x: 0, y: 0 });
+        c.forgetLayout();
+        c.tick();
+      }
+    };
+  }
+
+  // src/client/hit-regions.js
+  var PIG_PARTS = ".dp-pig-img,.dp-pig-sleep,.dp-pig-emoji,.dp-slot";
+  var CONTROLS = '.dp-card,.dp-bubble,.dp-daily,.dp-hud,.dp-work,.dp-poke-hint,.dp-pomo,button,a,input,select,textarea,[role="button"]';
+  var BLOCK_PET = '.dp-bubble,.dp-card,button,a,input,select,textarea,[role="button"]';
+  var parentElement = (node) => node.parentElement ?? (node.parentNode?.nodeType === 9 ? null : node.parentNode);
+  function isVisible(node) {
+    for (let walk = node; walk; walk = parentElement(walk)) {
+      if (walk.hidden) return false;
+      const style = getComputedStyle(walk);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+      if (style.opacity !== "" && style.opacity !== void 0 && Number(style.opacity) <= 0.01) return false;
+    }
+    return true;
+  }
+  function nodeRect(node) {
+    const box = node.getBoundingClientRect?.();
+    if (!box || !(box.width > 0) || !(box.height > 0)) return null;
+    return { x: box.left ?? box.x, y: box.top ?? box.y, width: box.width, height: box.height };
+  }
+  function multiply(one, two) {
+    return [
+      one[0] * two[0] + one[2] * two[1],
+      one[1] * two[0] + one[3] * two[1],
+      one[0] * two[2] + one[2] * two[3],
+      one[1] * two[2] + one[3] * two[3]
+    ];
+  }
+  function linearTransform(style) {
+    const transform = String(style.transform ?? "");
+    const values = transform.slice(transform.indexOf("(") + 1, -1).split(",").map(Number);
+    let matrix = [1, 0, 0, 1];
+    if (transform.startsWith("matrix(") && values.length === 6) matrix = values.slice(0, 4);
+    if (transform.startsWith("matrix3d(") && values.length === 16) matrix = [values[0], values[1], values[4], values[5]];
+    const scale2 = String(style.scale ?? "none").split(/\s+/).map(Number);
+    if (Number.isFinite(scale2[0])) matrix = multiply([scale2[0], 0, 0, scale2[1] ?? scale2[0]], matrix);
+    const rotate2 = String(style.rotate ?? "none");
+    if (rotate2 !== "none" && Number.isFinite(parseFloat(rotate2))) {
+      const angle = parseFloat(rotate2) * (rotate2.endsWith("rad") ? 1 : rotate2.endsWith("turn") ? Math.PI * 2 : Math.PI / 180);
+      matrix = multiply([Math.cos(angle), Math.sin(angle), -Math.sin(angle), Math.cos(angle)], matrix);
+    }
+    return matrix;
+  }
+  function inkRect(node, ink) {
+    const box = nodeRect(node);
+    if (box === null) return null;
+    const width = node.offsetWidth || box.width, height = node.offsetHeight || box.height;
+    let matrix = [1, 0, 0, 1];
+    for (let walk = node; walk; walk = parentElement(walk)) matrix = multiply(linearTransform(getComputedStyle(walk)), matrix);
+    const project = (x, y) => ({ x: matrix[0] * x * width + matrix[2] * y * height, y: matrix[1] * x * width + matrix[3] * y * height });
+    const corners3 = (bounds2) => [project(bounds2[0], bounds2[1]), project(bounds2[2], bounds2[1]), project(bounds2[0], bounds2[3]), project(bounds2[2], bounds2[3])];
+    const extent = (points) => ({ left: Math.min(...points.map((p) => p.x)), top: Math.min(...points.map((p) => p.y)), right: Math.max(...points.map((p) => p.x)), bottom: Math.max(...points.map((p) => p.y)) });
+    const full = extent(corners3([0, 0, 1, 1])), part = extent(corners3(ink));
+    const sx = box.width / (full.right - full.left), sy = box.height / (full.bottom - full.top);
+    if (!Number.isFinite(sx) || !Number.isFinite(sy)) return null;
+    return {
+      x: box.x + (part.left - full.left) * sx,
+      y: box.y + (part.top - full.top) * sy,
+      width: (part.right - part.left) * sx,
+      height: (part.bottom - part.top) * sy
+    };
+  }
+  function imageInk(node) {
+    const src = node.getAttribute("src") || "";
+    const custom = customArtInk(src);
+    if (custom !== null) return custom;
+    const path = src.split("/art/")[1]?.split("?")[0].replace(/^pigs\/no-outline\//, "pigs/");
+    const bounds2 = ART_BOUNDS2[path] ?? [0, 0, 1, 1];
+    const width = node.offsetWidth || 1, height = node.offsetHeight || width;
+    const naturalWidth = node.naturalWidth || width, naturalHeight = node.naturalHeight || height;
+    const fit = Math.min(width / naturalWidth, height / naturalHeight);
+    const contained = {
+      x: (1 - naturalWidth * fit / width) / 2,
+      y: (1 - naturalHeight * fit / height) / 2,
+      width: naturalWidth * fit / width,
+      height: naturalHeight * fit / height
+    };
+    const ink = framedInkBox(contained, bounds2);
+    return [ink.x, ink.y, ink.x + ink.width, ink.y + ink.height];
+  }
+  function textRect(node) {
+    if (!node.textContent?.trim()) return null;
+    if (typeof document.createRange !== "function") return nodeRect(node);
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const box = range.getBoundingClientRect();
+    return box.width > 0 && box.height > 0 ? { x: box.left, y: box.top, width: box.width, height: box.height } : null;
+  }
+  function collectPigHitRects(host2) {
+    const rects = [];
+    for (const node of host2.querySelectorAll(PIG_PARTS)) {
+      if (!isVisible(node)) continue;
+      const image = node.matches?.(".dp-pig-img,.dp-pig-sleep");
+      if (image && (!node.getAttribute("src") || node.complete === false || node.naturalWidth === 0)) continue;
+      const rect = image ? inkRect(node, imageInk(node)) : textRect(node);
+      if (rect !== null) rects.push(rect);
+    }
+    return rects;
+  }
+  function collectHitRects(host2) {
+    const rects = collectPigHitRects(host2);
+    for (const node of host2.querySelectorAll(CONTROLS)) {
+      if (!isVisible(node)) continue;
+      const surface = node.closest?.(".dp-card,.dp-bubble");
+      if (surface && surface !== node) continue;
+      const rect = nodeRect(node);
+      if (rect !== null) rects.push(rect);
+    }
+    return rects;
+  }
+  function hitsRects(rects, event) {
+    return rects.some((rect) => event.clientX >= rect.x && event.clientX < rect.x + rect.width && event.clientY >= rect.y && event.clientY < rect.y + rect.height);
+  }
+  function hitsPig(host2, event) {
+    if (event.target?.closest?.(BLOCK_PET)) return false;
+    return hitsRects(collectPigHitRects(host2), event);
+  }
+
+  // src/client/desktop/hit-tracking.js
+  function startHitTracking(deps) {
+    let lastKey = "", lastAt = -Infinity;
+    let stopped = false;
+    let frameId = null;
+    const requestFrame = deps.windowObject?.requestAnimationFrame?.bind(deps.windowObject) ?? requestAnimationFrame;
+    const cancelFrame2 = deps.windowObject?.cancelAnimationFrame?.bind(deps.windowObject) ?? globalThis.cancelAnimationFrame?.bind(globalThis) ?? (() => {
+    });
+    function frame3(at) {
+      if (stopped) return;
+      frameId = requestFrame(frame3);
+      if (deps.blocked()) {
+        lastKey = "";
+        return;
+      }
+      if (Number.isFinite(at) && at - lastAt < 32) return;
+      lastAt = at;
+      const host2 = deps.host();
+      if (host2 === null) return;
+      const hitShape = collectHitRects(host2);
+      const key2 = hitShape.map((rect) => [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(",")).join(";");
+      if (key2 === lastKey) return;
+      lastKey = key2;
+      deps.onShape(hitShape);
+      deps.shell.place({ hitShape });
+    }
+    frameId = requestFrame(frame3);
+    return function stop() {
+      if (stopped) return;
+      stopped = true;
+      if (frameId !== null) cancelFrame2(frameId);
+      frameId = null;
+    };
+  }
+
+  // src/client/desktop/input-controller.js
+  function createInputController(deps) {
+    let hitRects = [];
+    let lastHit = null;
+    let mouse = { x: -1, y: -1 };
+    let mousemoveInstalled = false;
+    let mouseleaveInstalled = false;
+    let stopTracking = null;
+    function updateHit(x, y) {
+      mouse = { x, y };
+      if (typeof deps.shell.setHit !== "function") return;
+      let inside2 = deps.blocked();
+      for (let i = 0; !inside2 && i < hitRects.length; i += 1) {
+        const rect = hitRects[i];
+        inside2 = x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
+      }
+      if (inside2 === lastHit) return;
+      lastHit = inside2;
+      deps.shell.setHit(inside2);
+    }
+    function setHitRects(rects) {
+      hitRects = Array.isArray(rects) ? rects : [];
+      if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
+    }
+    function onMouseMove(event) {
+      updateHit(event.clientX, event.clientY);
+    }
+    function onMouseLeave() {
+      if ((deps.leaveBlocked ?? deps.blocked)()) return;
+      mouse = { x: -1, y: -1 };
+      lastHit = false;
+      if (typeof deps.shell.setHit === "function") deps.shell.setHit(false);
+    }
+    function install3() {
+      if (!mousemoveInstalled) {
+        deps.documentObject.addEventListener("mousemove", onMouseMove, true);
+        mousemoveInstalled = true;
+      }
+      if (!mouseleaveInstalled) {
+        deps.documentObject.documentElement.addEventListener("mouseleave", onMouseLeave);
+        mouseleaveInstalled = true;
+      }
+    }
+    function startTracking() {
+      if (stopTracking !== null) return;
+      stopTracking = startHitTracking({
+        host: deps.getHost,
+        shell: deps.shell,
+        // Geometry capture pauses hit-shape polling during native drag only;
+        // flying still refreshes the drawing hit shape while setHit stays gated.
+        blocked: deps.trackingBlocked ?? deps.blocked,
+        onShape: setHitRects,
+        windowObject: deps.windowObject
+      });
+    }
+    function dispose() {
+      if (stopTracking !== null) {
+        stopTracking();
+        stopTracking = null;
+      }
+      if (mousemoveInstalled) {
+        deps.documentObject.removeEventListener("mousemove", onMouseMove, true);
+        mousemoveInstalled = false;
+      }
+      if (mouseleaveInstalled) {
+        deps.documentObject.documentElement.removeEventListener("mouseleave", onMouseLeave);
+        mouseleaveInstalled = false;
+      }
+    }
+    return { install: install3, startTracking, setHitRects, updateHit, dispose };
   }
 
   // src/client/desktop/motion-envelope.js
@@ -17828,7 +19173,7 @@
     "dp-play-hop": PIG_ANIMATION_MOTION["dp-play-hop"],
     "dp-squash": PIG_ANIMATION_MOTION["dp-squash"]
   });
-  var corners = (box) => [
+  var corners2 = (box) => [
     { x: box.x, y: box.y },
     { x: box.x + box.width, y: box.y },
     { x: box.x, y: box.y + box.height },
@@ -17842,21 +19187,21 @@
     return { x: left, y: top, width: right - left, height: bottom - top };
   }
   function scaledCorners(box, pivot, scale2, translateY = 0) {
-    return corners(box).map((point) => ({
+    return corners2(box).map((point) => ({
       x: pivot.x + (point.x - pivot.x) * scale2,
       y: pivot.y + (point.y - pivot.y) * scale2 + translateY
     }));
   }
   function unionBoxes(...boxes) {
-    return boundsOf(boxes.flatMap(corners));
+    return boundsOf(boxes.flatMap(corners2));
   }
   function spinEnvelope(box, pivot) {
-    const radius = Math.max(...corners(box).map((point) => Math.hypot(point.x - pivot.x, point.y - pivot.y))) * PIG_MOTION.spinScale;
+    const radius = Math.max(...corners2(box).map((point) => Math.hypot(point.x - pivot.x, point.y - pivot.y))) * PIG_MOTION.spinScale;
     return { x: pivot.x - radius, y: pivot.y - radius, width: radius * 2, height: radius * 2 };
   }
   function jumpEnvelope(box, pivot) {
     return boundsOf([
-      ...corners(box),
+      ...corners2(box),
       ...scaledCorners(box, pivot, PIG_MOTION.jumpPeakScale, -PIG_MOTION.jumpRise),
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
@@ -17865,7 +19210,7 @@
     const radians = state4.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
-    return corners(box).map((point) => {
+    return corners2(box).map((point) => {
       const x = (point.x - pivot.x) * state4.scaleX;
       const y = (point.y - pivot.y) * state4.scaleY;
       if (state4.translateFirst) {
@@ -17880,14 +19225,14 @@
       };
     });
   }
-  function keyframeEnvelope(states2, box, pivot) {
-    return boundsOf(states2.flatMap((state4) => keyframeCorners(box, pivot, state4)));
+  function keyframeEnvelope(states3, box, pivot) {
+    return boundsOf(states3.flatMap((state4) => keyframeCorners(box, pivot, state4)));
   }
   function motionEnvelope(name) {
     if (name === "dp-spin") return spinEnvelope;
     if (name === "dp-jump") return jumpEnvelope;
-    const states2 = Object.hasOwn(PIG_ANIMATION_MOTION, name) ? PIG_ANIMATION_MOTION[name] : void 0;
-    return states2 === void 0 ? null : (box, pivot) => keyframeEnvelope(states2, box, pivot);
+    const states3 = Object.hasOwn(PIG_ANIMATION_MOTION, name) ? PIG_ANIMATION_MOTION[name] : void 0;
+    return states3 === void 0 ? null : (box, pivot) => keyframeEnvelope(states3, box, pivot);
   }
   function fixedMotionReserve(pigBox) {
     const artWidth = MAX_ART_ASPECT2 * FRAME_HEIGHT2 * pigBox.width;
@@ -17903,187 +19248,6 @@
       y: pigBox.y + pigBox.height * PIG_TRANSFORM_ORIGIN.y
     };
     return unionBoxes(staticBox, spinEnvelope(staticBox, pivot), jumpEnvelope(staticBox, pivot));
-  }
-
-  // src/client/feel/config.js
-  var FEEL = Object.freeze({
-    /** 压扁（正）上限，用户拍板 18%。 */
-    squashMax: 0.18,
-    /** 拎起拉长上限，用户拍板 10%。 */
-    holdMax: 0.1,
-    /** 按压量。 */
-    pressSquash: 0.04,
-    /** 横向缩放 = 1 + volumeK * 压扁；小于 1 更像圆滚滚的动物。 */
-    volumeK: 0.72,
-    /** 拎起时横向收窄的比例。 */
-    holdNarrow: 0.4,
-    /** 拖动倾斜上限（度）。 */
-    tiltMaxDrag: 18,
-    /** 飞行倾斜上限（度）。 */
-    tiltMaxFly: 20,
-    /** 屏幕水平速度 → 倾斜角（度 / (px/s)）。 */
-    tiltGain: 0.012,
-    /** 按压弹簧。 */
-    press: Object.freeze({ stiffness: 600, damping: 26, mass: 1 }),
-    /** 挤压/拉长弹簧：欠阻尼，2~3 次可见回弹，约 0.75s 收住。 */
-    squash: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
-    /** 拎起弹簧：接近临界阻尼，不上下晃。 */
-    hold: Object.freeze({ stiffness: 300, damping: 26, mass: 1 }),
-    /** 倾斜弹簧：松手约 0.45s 回正。 */
-    tilt: Object.freeze({ stiffness: 220, damping: 16, mass: 1 }),
-    /** 落地冲击弹簧：同样 2~3 次回弹。 */
-    impact: Object.freeze({ stiffness: 260, damping: 14, mass: 1 }),
-    /** 翻卡片。 */
-    turnMs: 180,
-    turnBulge: 0.04,
-    /** 动作图切换遮挡。 */
-    swapMs: 90,
-    swapApplyMs: 55,
-    swapMaxDelayMs: 140,
-    /** 手势阈值。 */
-    dragPx: 4,
-    liftPx: 6,
-    /** 来回摸：1200ms 内累计 320px，800ms 冷却。 */
-    strokeWindowMs: 1200,
-    strokePx: 320,
-    strokeCooldownMs: 800,
-    /** 桌面抛掷：只认松手前最后一小段仍在快速移动。 */
-    throwMin: 180,
-    throwTailMs: 60,
-    throwIdleMs: 60,
-    throwMax: 2200,
-    gravity: 2400,
-    airDrag: 0.12,
-    restitution: 0.52,
-    floorFriction: 0.82,
-    landVy: 520,
-    dizzyImpact: 1500,
-    dizzyMs: 2400,
-    flightMaxMs: 3500,
-    /** 轻柔模式缩放。 */
-    softScale: 0.6,
-    /** 收尾判定：所有通道小于这些值就算回稳。 */
-    settleEpsilon: 4e-3,
-    settleTilt: 0.35
-  });
-  function modeScale(mode) {
-    return mode === "soft" ? FEEL.softScale : 1;
-  }
-
-  // src/client/feel/envelope.js
-  var corners2 = (box) => [
-    { x: box.x, y: box.y },
-    { x: box.x + box.width, y: box.y },
-    { x: box.x, y: box.y + box.height },
-    { x: box.x + box.width, y: box.y + box.height }
-  ];
-  function bounds(points) {
-    let left = Infinity;
-    let top = Infinity;
-    let right = -Infinity;
-    let bottom = -Infinity;
-    for (const point of points) {
-      left = Math.min(left, point.x);
-      top = Math.min(top, point.y);
-      right = Math.max(right, point.x);
-      bottom = Math.max(bottom, point.y);
-    }
-    return { x: left, y: top, width: right - left, height: bottom - top };
-  }
-  function union(...boxes) {
-    return bounds(boxes.flatMap(corners2));
-  }
-  function transformed(box, pivot, state4) {
-    const radians = state4.rotate * Math.PI / 180;
-    const cos = Math.cos(radians);
-    const sin = Math.sin(radians);
-    return corners2(box).map((point) => {
-      const x = (point.x - pivot.x) * state4.scaleX;
-      const y = (point.y - pivot.y) * state4.scaleY;
-      return {
-        x: pivot.x + x * cos - y * sin,
-        y: pivot.y + x * sin + y * cos + state4.dy
-      };
-    });
-  }
-  function poseEnvelope(box, pose, pigBox = box) {
-    const bodyPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y + pigBox.height * 0.85 };
-    const holdPivot = { x: pigBox.x + pigBox.width * 0.5, y: pigBox.y };
-    const body = transformed(box, bodyPivot, {
-      scaleX: 1 + FEEL.volumeK * pose.squash,
-      scaleY: 1 - pose.squash,
-      rotate: pose.tilt,
-      dy: -pose.hop
-    });
-    const hold = transformed(
-      {
-        x: Math.min(...body.map((p) => p.x)),
-        y: Math.min(...body.map((p) => p.y)),
-        width: Math.max(...body.map((p) => p.x)) - Math.min(...body.map((p) => p.x)),
-        height: Math.max(...body.map((p) => p.y)) - Math.min(...body.map((p) => p.y))
-      },
-      holdPivot,
-      { scaleX: 1 - FEEL.holdNarrow * pose.hold, scaleY: 1 + pose.hold, rotate: 0, dy: 0 }
-    );
-    const exact = corners2(box).map((point) => {
-      const bodyPoint = {
-        x: bodyPivot.x + (point.x - bodyPivot.x) * (1 + FEEL.volumeK * pose.squash),
-        y: bodyPivot.y + (point.y - bodyPivot.y) * (1 - pose.squash) - pose.hop
-      };
-      const radians = pose.tilt * Math.PI / 180;
-      const cos = Math.cos(radians);
-      const sin = Math.sin(radians);
-      const rotated = {
-        x: bodyPivot.x + (bodyPoint.x - bodyPivot.x) * cos - (bodyPoint.y - bodyPivot.y) * sin,
-        y: bodyPivot.y + (bodyPoint.x - bodyPivot.x) * sin + (bodyPoint.y - bodyPivot.y) * cos
-      };
-      return {
-        x: holdPivot.x + (rotated.x - holdPivot.x) * (1 - FEEL.holdNarrow * pose.hold),
-        y: holdPivot.y + (rotated.y - holdPivot.y) * (1 + pose.hold)
-      };
-    });
-    return union(bounds(hold), bounds(exact));
-  }
-  function feelEnvelope(pigBox, pose, artBox = pigBox) {
-    if (pigBox.width <= 0 || pigBox.height <= 0) return { x: pigBox.x, y: pigBox.y, width: pigBox.width, height: pigBox.height };
-    if (pose !== void 0) {
-      return poseEnvelope(artBox, {
-        squash: Number.isFinite(pose.squash) ? pose.squash : 0,
-        hold: Number.isFinite(pose.hold) ? pose.hold : 0,
-        tilt: Number.isFinite(pose.tilt) ? pose.tilt : 0,
-        hop: Number.isFinite(pose.hop) ? pose.hop : 0
-      }, pigBox);
-    }
-    const squashes = [FEEL.squashMax, -FEEL.squashMax * 0.45];
-    const tilts = [-FEEL.tiltMaxFly, FEEL.tiltMaxFly];
-    const boxes = [];
-    for (const squash of squashes) {
-      for (const tilt3 of tilts) {
-        boxes.push(poseEnvelope(artBox, { squash, hold: FEEL.holdMax, tilt: tilt3, hop: 0 }, pigBox));
-        boxes.push(poseEnvelope(artBox, { squash, hold: 0, tilt: tilt3, hop: 0 }, pigBox));
-      }
-    }
-    return union(...boxes);
-  }
-
-  // src/client/desktop/visual-bounds.js
-  function bodyVisualBounds(pig) {
-    const art = artMarginFor(pig.width);
-    const pose = feelEnvelope(
-      { x: 0, y: 0, width: pig.width, height: pig.height },
-      void 0,
-      { x: -art, y: 0, width: pig.width + art * 2, height: pig.height }
-    );
-    const left = Math.max(art, -pose.x);
-    const right = Math.max(art, pose.x + pose.width - pig.width);
-    const top = Math.max(8, -pose.y);
-    const bottom = Math.max(12, pose.y + pose.height - pig.height);
-    return {
-      x: pig.x - left,
-      y: pig.y - top,
-      width: pig.width + left + right,
-      height: pig.height + top + bottom
-    };
   }
 
   // src/client/desktop/bubble-geometry.js
@@ -18145,13 +19309,13 @@
   function createMeasure(env) {
     const state4 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
-    function boxes(host3) {
-      const pigNode = host3.querySelector(".dp-pig");
+    function boxes(host2) {
+      const pigNode = host2.querySelector(".dp-pig");
       const pigBox = pigNode === null ? { x: 0, y: 0, width: 0, height: 0 } : layoutBox(pigNode);
       const anchors = characterGeometry(pigBox);
       const pigInk = { x: pigBox.x, y: pigBox.y, r: pigBox.x + pigBox.width, b: pigBox.y + pigBox.height };
-      const nodes = [host3];
-      const all = host3.querySelectorAll("*");
+      const nodes = [host2];
+      const all = host2.querySelectorAll("*");
       for (let a = 0; a < all.length; a += 1) {
         const candidate = all[a];
         const inCard = candidate.closest(".dp-card");
@@ -18159,8 +19323,8 @@
         if (inCard !== null && inCard !== candidate || candidate.closest(".dp-fx") !== null) continue;
         nodes.push(candidate);
       }
-      const geometry2 = env.geometry();
-      const speechScale = Number(host3.style?.getPropertyValue?.("--bubble-scale")) || 1;
+      const geometry = env.geometry();
+      const speechScale = Number(host2.style?.getPropertyValue?.("--bubble-scale")) || 1;
       const bubbleSize2 = { width: BUBBLE_ZONE.width * speechScale, height: BUBBLE_ZONE.height * speechScale };
       let rects = [];
       const bubbleRects = [];
@@ -18180,14 +19344,14 @@
         else rects.push(rect);
       }
       if (rects.length === 0) return null;
-      const hostBox = layoutBox(host3);
+      const hostBox = layoutBox(host2);
       let bubbleZone = null;
       if (reserves && pigNode !== null) {
-        const above = geometry2 === null ? bubbleSize2.height : geometry2.window.y + anchors.headTop.y - geometry2.workArea.y - PAD;
+        const above = geometry === null ? bubbleSize2.height : geometry.window.y + anchors.headTop.y - geometry.workArea.y - PAD;
         const want = Math.max(0, Math.min(bubbleSize2.height, Math.round(above)));
         if (state4.bubbleHeight === null || Math.abs(want - state4.bubbleHeight) >= STEP * 2) state4.bubbleHeight = want;
         const height = state4.bubbleHeight;
-        const zoneLeft = host3.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
+        const zoneLeft = host2.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: anchors.headTop.y - height, r: zoneLeft + bubbleSize2.width, b: anchors.headTop.y };
       }
       let merged2 = true;
@@ -18248,7 +19412,7 @@
       };
       const pig = { x: pigBox.x - content.x, y: pigBox.y - content.y, width: pigBox.width, height: pigBox.height };
       const animatedRects = [];
-      const hungerNode = host3.querySelector(".dp-hunger-bubble");
+      const hungerNode = host2.querySelector(".dp-hunger-bubble");
       if (pigNode !== null && hungerNode !== null && visible(hungerNode)) {
         animatedRects.push({
           x: pigBox.x + pigBox.width,
@@ -18286,16 +19450,16 @@
         const y = Math.max(0, Math.floor(rect.y) - SHAPE_SLACK);
         return { x, y, width: Math.ceil(rect.r) + SHAPE_SLACK - x, height: Math.ceil(rect.b) + SHAPE_SLACK - y };
       }).filter((rect) => rect.width > 0 && rect.height > 0);
-      if (pigNode !== null && host3.querySelector(".dp-fx") !== null) {
+      if (pigNode !== null && host2.querySelector(".dp-fx") !== null) {
         const fx = { x: Math.max(0, Math.floor(pigBox.x - 36)), y: Math.max(0, Math.floor(pigBox.y - 84)) };
         shape.push({ x: fx.x, y: fx.y, width: Math.ceil(pigBox.x + pigBox.width + 36) - fx.x, height: Math.ceil(pigBox.y + 12) - fx.y });
       }
-      return { content, shape, pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
+      return { content, shape, hitShape: collectHitRects(host2), pig, hostBox, pigBox, contentBox: { left, top, right, bottom } };
     }
     function sides() {
       return SIDE;
     }
-    function pin(host3, side, hostBox, contentBox) {
+    function pin(host2, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
       const shift = { x: state4.shift.x + state4.anchor.x, y: state4.shift.y + state4.anchor.y };
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
@@ -18305,10 +19469,10 @@
       const key2 = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
       if (key2 === state4.pinned) return;
       state4.pinned = key2;
-      host3.style.left = want.left;
-      host3.style.right = want.right;
-      host3.style.top = want.top;
-      host3.style.bottom = want.bottom;
+      host2.style.left = want.left;
+      host2.style.right = want.right;
+      host2.style.top = want.top;
+      host2.style.bottom = want.bottom;
     }
     function keyOf(next) {
       const head = [
@@ -18321,23 +19485,23 @@
       ];
       const tail = [];
       for (const s of next.shape) tail.push(s.x, s.y, s.width, s.height);
-      return head.concat(tail.map((n) => Math.floor(n / STEP))).join(",");
+      return [...head, ...tail.map((n) => Math.floor(n / STEP)), "hit", ...next.hitShape.flatMap((rect) => [rect.x, rect.y, rect.width, rect.height].map(Math.round))].join(",");
     }
     function fitWindow(content, win) {
       if (win && (content.width !== win.width || content.height !== win.height)) {
         state4.anchor = { x: 0, y: 0 };
       }
     }
-    function fitBubble(host3, geometry2) {
-      const bubble = host3.querySelector(".dp-bubble");
-      const pig = host3.querySelector(".dp-pig");
-      if (!bubble || !pig || !geometry2?.window || !geometry2?.workArea) return;
+    function fitBubble(host2, geometry) {
+      const bubble = host2.querySelector(".dp-bubble");
+      const pig = host2.querySelector(".dp-pig");
+      if (!bubble || !pig || !geometry?.window || !geometry?.workArea) return;
       if (bubble.hidden) return;
       const parent = bubble.offsetParent;
       if (!parent) return;
-      const originalLeft = host3.getAttribute("data-panel-side") === "right" ? 6 : parent.clientWidth - 6 - bubble.offsetWidth;
+      const originalLeft = host2.getAttribute("data-panel-side") === "right" ? 6 : parent.clientWidth - 6 - bubble.offsetWidth;
       const box = { ...layoutBox(bubble), x: layoutBox(parent).x + originalLeft };
-      const fitted = fitBubbleHorizontally(box, layoutBox(pig), geometry2.window, geometry2.workArea);
+      const fitted = fitBubbleHorizontally(box, layoutBox(pig), geometry.window, geometry.workArea);
       const clipped = Math.abs(fitted.x - box.x) >= 0.5;
       const left = clipped ? originalLeft + fitted.x - box.x + "px" : "";
       const right = clipped ? "auto" : "";
@@ -18353,7 +19517,7 @@
       const pigBox = layoutBox(pig);
       const anchors = characterGeometry(pigBox);
       const originalY = bubbleSlot(anchors, "above", { width: bubble.offsetWidth, height: bubble.offsetHeight }).y;
-      const vertical = fitBubbleVertically({ y: originalY, height: bubble.offsetHeight }, pigBox, geometry2.window, geometry2.workArea);
+      const vertical = fitBubbleVertically({ y: originalY, height: bubble.offsetHeight }, pigBox, geometry.window, geometry.workArea);
       const below = vertical.side === "below";
       const top = below ? vertical.y - layoutBox(parent).y + "px" : "";
       const bottom = below ? "auto" : "";
@@ -18576,66 +19740,420 @@
     };
   }
 
-  // src/client/desktop/flight-bridge.js
-  function createFlightBridge(c) {
+  // src/client/desktop/slide.js
+  function commitSlide(host2, state4, slide) {
+    const x = Number(slide?.x) || 0;
+    const y = Number(slide?.y) || 0;
+    if (host2 !== null && (x !== 0 || y !== 0)) {
+      host2.style.right = (parseFloat(host2.style.right) || 0) - x + "px";
+      host2.style.bottom = (parseFloat(host2.style.bottom) || 0) - y + "px";
+    }
+    if (host2 !== null) host2.style.translate = "";
+    state4.anchor = { x: state4.anchor.x + state4.shift.x + x, y: state4.anchor.y + state4.shift.y + y };
+    state4.shift = { x: 0, y: 0 };
+    state4.pinned = "";
+  }
+
+  // src/client/desktop/layout-controller.js
+  var TOLERANCE2 = 2;
+  var STALE_WAIT_MS = 500;
+  function createLayoutController(deps) {
+    const shell2 = deps.shell;
+    const requestFrame = deps.windowObject.requestAnimationFrame?.bind(deps.windowObject) ?? requestAnimationFrame;
+    let lastKey = null;
+    let staleSince = (
+      /** @type {number|null} */
+      null
+    );
+    let clampNotice = null;
+    let scheduled2 = false;
+    const windowClamp = createWindowClamp();
+    function geometry() {
+      return typeof shell2.geometry === "function" ? shell2.geometry() : null;
+    }
+    const measure = createMeasure({ platform: shell2.platform || "", geometry });
+    const placement = createPlacement();
+    function layoutStale(win) {
+      return Math.abs(deps.windowObject.innerWidth - win.width) > 1 || Math.abs(deps.windowObject.innerHeight - win.height) > 1;
+    }
+    function readGeometry() {
+      if (typeof shell2.place === "function") {
+        const fresh = shell2.place({});
+        if (fresh !== null && fresh !== void 0 && fresh.window) return fresh;
+      }
+      return geometry();
+    }
+    function pigInWindow(win) {
+      const host2 = deps.getHost();
+      const pigNode = host2?.querySelector(".dp-pig");
+      const size = placement.pigSize();
+      const homeTL = placement.homeTopLeft();
+      if (pigNode && !layoutStale(win)) return layoutBox(pigNode);
+      if (homeTL !== null) return { x: homeTL.x - win.x, y: homeTL.y - win.y, width: size.width, height: size.height };
+      return pigNode ? layoutBox(pigNode) : null;
+    }
+    function schedule3() {
+      if (scheduled2) return;
+      scheduled2 = true;
+      requestFrame(function() {
+        scheduled2 = false;
+        if (!deps.isDragging() && !deps.isFlying()) tick();
+      });
+    }
+    function tick() {
+      if (deps.isDragging() || deps.isFlying()) return;
+      const host2 = deps.getHost();
+      if (host2 === null) return;
+      const info = readGeometry();
+      if (info !== null && info.window && layoutStale(info.window)) {
+        const at = typeof performance === "object" ? performance.now() : Date.now();
+        if (staleSince === null) staleSince = at;
+        if (at - staleSince < STALE_WAIT_MS) {
+          lastKey = null;
+          schedule3();
+          return;
+        }
+      }
+      staleSince = null;
+      let next = measure.boxes(host2);
+      if (next === null) return;
+      measure.fitWindow(next.content, info?.window);
+      const side = measure.sides();
+      measure.pin(host2, side, next.hostBox, next.contentBox);
+      next = measure.boxes(host2);
+      if (next === null) return;
+      deps.setHitRects(next.hitShape);
+      if (info === null || !info.window) {
+        lastKey = null;
+        return;
+      }
+      if (Math.abs(deps.windowObject.screenX - info.window.x) > 1 || Math.abs(deps.windowObject.screenY - info.window.y) > 1) {
+        lastKey = null;
+        schedule3();
+        return;
+      }
+      const bounds2 = info.window;
+      const areas = info.workAreas ?? [info.workArea];
+      const grownX = side.horizontal === "right" ? next.content.width - bounds2.width : 0;
+      const grownY = side.vertical === "bottom" ? next.content.height - bounds2.height : 0;
+      const want = placement.decide({
+        width: next.content.width,
+        height: next.content.height,
+        pig: next.pig,
+        artMargin: artMarginFor(next.pig.width),
+        visual: bodyVisualBounds(next.pig),
+        pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
+        pigNow: { x: next.pigBox.x, y: next.pigBox.y },
+        shift: measure.state.shift
+      }, bounds2, areas);
+      placement.persist(areas);
+      const clamp6 = placement.clamp();
+      const old = measure.state.shift;
+      const fresh = { x: -clamp6.dx, y: -clamp6.dy };
+      if (fresh.x !== old.x || fresh.y !== old.y) {
+        measure.state.shift = fresh;
+        measure.pin(host2, side, next.hostBox, next.contentBox);
+        const dx = fresh.x - old.x;
+        const dy = fresh.y - old.y;
+        next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
+        next.hitShape = next.hitShape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
+      }
+      measure.fitBubble(host2, info);
+      next = measure.boxes(host2);
+      if (next === null) return;
+      deps.setHitRects(next.hitShape);
+      const move = !sameBounds(want, bounds2, TOLERANCE2);
+      const clampState = windowClamp.observe(want, bounds2);
+      if (clampState === "accept") {
+        const pig = pigInWindow(bounds2);
+        if (pig !== null) {
+          placement.acceptWindow(bounds2, pig, areas);
+          const notice = JSON.stringify({ want, actual: bounds2 });
+          if (clampNotice !== notice) {
+            clampNotice = notice;
+            console.warn("[piggy-desktop] wm clamp accepted " + notice);
+          }
+          lastKey = null;
+          shell2.place({ bounds: { ...bounds2 } });
+          return;
+        }
+      }
+      const key2 = measure.keyOf(next);
+      if (!move && key2 === lastKey) return;
+      lastKey = key2;
+      const request = {
+        shape: next.shape,
+        hitShape: next.hitShape,
+        bounds: move ? want : void 0,
+        pig: void 0,
+        speech: void 0
+      };
+      const pigNode = host2.querySelector(".dp-pig");
+      if (pigNode) request.pig = layoutBox(pigNode);
+      const speech = host2.querySelector('.dp-bubble[data-bubble-side="below"]');
+      request.speech = speech && !speech.hidden ? layoutBox(speech) : null;
+      if (move) {
+        console.warn("[piggy-desktop] move " + JSON.stringify({
+          open: host2.getAttribute("data-open"),
+          side,
+          from: bounds2,
+          to: want,
+          home: placement.home(),
+          shift: measure.state.shift,
+          content: { w: next.content.width, h: next.content.height },
+          pigBox: next.pigBox,
+          ghosts: host2.querySelectorAll("[data-ghost]").length,
+          display: displayNote(info)
+        }));
+      }
+      shell2.place(request);
+    }
+    function commit2(host2, slide) {
+      commitSlide(host2, measure.state, slide);
+    }
     return {
-      supported: typeof c.shell.flyMove === "function",
-      start: function() {
-        const info = c.readGeometry();
-        if (info === null || info === void 0 || !info.window) return null;
-        const pig = c.pigInWindow(info.window);
-        if (pig === null) return null;
-        return {
-          home: { x: info.window.x + pig.x + pig.width / 2, y: info.window.y + pig.y + pig.height },
-          pig: { x: pig.x, y: pig.y, width: pig.width, height: pig.height },
-          visual: bodyVisualBounds(pig),
-          window: { x: info.window.x, y: info.window.y, width: info.window.width, height: info.window.height },
-          area: info.workArea,
-          areas: info.workAreas ?? [info.workArea]
-        };
-      },
-      move: function(x, y, slide) {
-        if (typeof c.shell.flyMove !== "function") return;
-        c.shell.flyMove({ x, y, slide: slide ?? { x: 0, y: 0 } });
-      },
-      setFlying: function(on) {
-        c.setFlying(on === true);
-        if (!c.isFlying()) {
-          c.forgetLayout();
-          c.tick();
-        }
-      },
-      /** 落地/接住后重定家：用最后一次请求的窗口位置 + 猪在窗口里的框 + slide，不依赖异步回读。 */
-      finish: function(last) {
-        c.setFlying(false);
-        if (last !== null && last !== void 0 && last.window && last.pig) {
-          const pig = {
-            x: last.pig.x + (last.slide?.x ?? 0),
-            y: last.pig.y + (last.slide?.y ?? 0),
-            width: last.pig.width,
-            height: last.pig.height
-          };
-          c.rehome(last.window, pig, last.areas ?? []);
-        }
-        c.clearSlide(last?.slide ?? { x: 0, y: 0 });
-        c.forgetLayout();
-        c.tick();
+      readGeometry,
+      pigInWindow,
+      tick,
+      schedule: schedule3,
+      recover: (foot, areas) => placement.recover(foot, areas),
+      rehome: (win, pig, areas) => placement.rehome(win, pig, areas),
+      commit: commit2,
+      forget: () => {
+        lastKey = null;
       }
     };
   }
 
-  // src/client/desktop/slide.js
-  function commitSlide(host3, state4, slide) {
-    const x = Number(slide?.x) || 0;
-    const y = Number(slide?.y) || 0;
-    if (host3 !== null && (x !== 0 || y !== 0)) {
-      host3.style.right = (parseFloat(host3.style.right) || 0) - x + "px";
-      host3.style.bottom = (parseFloat(host3.style.bottom) || 0) - y + "px";
+  // src/client/desktop/tooltips.js
+  function suppressNativeTooltips(documentObject = document) {
+    documentObject.addEventListener("mouseover", function(event) {
+      const target = (
+        /** @type {any} */
+        event.target
+      );
+      const titled = target !== null && typeof target.closest === "function" ? target.closest("[title]") : null;
+      if (titled === null) return;
+      if (!titled.getAttribute("aria-label")) titled.setAttribute("aria-label", titled.getAttribute("title"));
+      titled.removeAttribute("title");
+    }, true);
+  }
+
+  // src/client/desktop/pet-controller.js
+  function createPetController(deps) {
+    const shell2 = deps.shell;
+    let dragSlide = { x: 0, y: 0 };
+    let flying = false;
+    let installed3 = false;
+    let started2 = false;
+    let installing2 = false;
+    let starting2 = false;
+    let geometrySubscribed = false;
+    let dragSlideSubscribed = false;
+    let geometryAsked = false;
+    let adapterInstalled = false;
+    let tooltipsInstalled = false;
+    let observerInstalled = false;
+    let resizeListenerInstalled = false;
+    let pointerupListenerInstalled = false;
+    let intervalId = null;
+    function host2() {
+      return deps.getHost();
     }
-    if (host3 !== null) host3.style.translate = "";
-    state4.anchor = { x: state4.anchor.x + state4.shift.x + x, y: state4.anchor.y + state4.shift.y + y };
-    state4.shift = { x: 0, y: 0 };
-    state4.pinned = "";
+    function dragging() {
+      const scene6 = host2()?.querySelector(".dp-scene");
+      return scene6 != null && scene6.getAttribute("data-window-dragging") === "true";
+    }
+    const input = createInputController({
+      shell: shell2,
+      documentObject: deps.documentObject,
+      windowObject: deps.windowObject,
+      getHost: host2,
+      blocked: () => dragging() || flying,
+      trackingBlocked: dragging,
+      leaveBlocked: dragging
+    });
+    const layout = createLayoutController({
+      shell: shell2,
+      windowObject: deps.windowObject,
+      getHost: host2,
+      isDragging: dragging,
+      isFlying: () => flying,
+      setHitRects: input.setHitRects
+    });
+    const flight = createFlightBridge({
+      shell: shell2,
+      readGeometry: layout.readGeometry,
+      pigInWindow: layout.pigInWindow,
+      rehome: layout.rehome,
+      setFlying: (on) => {
+        flying = on;
+      },
+      isFlying: () => flying,
+      clearSlide: (slide) => {
+        dragSlide = { x: 0, y: 0 };
+        layout.commit(host2(), slide);
+      },
+      forgetLayout: layout.forget,
+      tick: layout.tick
+    });
+    function install3() {
+      if (installed3 || installing2) return;
+      installing2 = true;
+      try {
+        if (!geometrySubscribed && typeof shell2.onGeometry === "function") {
+          shell2.onGeometry(() => layout.schedule());
+          geometrySubscribed = true;
+        }
+        if (!dragSlideSubscribed && typeof shell2.onDragSlide === "function") {
+          shell2.onDragSlide((slide) => {
+            if (!dragging()) return;
+            dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 };
+            const root = host2();
+            if (root !== null) root.style.translate = dragSlide.x === 0 && dragSlide.y === 0 ? "" : dragSlide.x + "px " + dragSlide.y + "px";
+          });
+          dragSlideSubscribed = true;
+        }
+        if (!geometryAsked && typeof shell2.askGeometry === "function") {
+          shell2.askGeometry();
+          geometryAsked = true;
+        }
+        if (!adapterInstalled) {
+          const adapter = {
+            role: "pet",
+            proxy: shell2.proxy,
+            cloudSave: shell2.cloudSave,
+            saves: shell2.saves,
+            ext: shell2.ext,
+            fullscreen: shell2.fullscreen,
+            external: shell2.external ?? null,
+            split: true,
+            onRecover: shell2.onRecover,
+            recoverHome(foot) {
+              const info = layout.readGeometry();
+              const areas = info?.workAreas ?? (info?.workArea ? [info.workArea] : []);
+              layout.recover(foot, areas);
+              flying = false;
+              dragSlide = { x: 0, y: 0 };
+              layout.forget();
+              layout.commit(host2(), dragSlide);
+              layout.tick();
+            },
+            dragVisualBounds: shell2.dragVisualBounds === true,
+            onStateChanged: shell2.onStateChanged,
+            panel: {
+              toggle(open) {
+                const info = layout.readGeometry();
+                const pig = info && info.window ? layout.pigInWindow(info.window) : null;
+                shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
+              },
+              on: shell2.panel.on,
+              onFx: shell2.panel.onFx,
+              raisePet: shell2.panel.raisePet
+            },
+            beginDrag(origin) {
+              const info = layout.readGeometry();
+              const pig = info && info.window ? layout.pigInWindow(info.window) : null;
+              dragSlide = { x: 0, y: 0 };
+              if (typeof shell2.beginDrag !== "function") return;
+              shell2.beginDrag(pig === null ? null : {
+                x: pig.x,
+                y: pig.y,
+                width: pig.width,
+                height: pig.height,
+                visual: bodyVisualBounds(pig),
+                slide: typeof shell2.onDragSlide === "function",
+                origin: origin !== null && origin !== void 0 && Number.isFinite(origin.x) && Number.isFinite(origin.y) ? { x: origin.x, y: origin.y } : void 0
+              });
+            },
+            dragHeartbeat() {
+              if (typeof shell2.dragHeartbeat === "function") shell2.dragHeartbeat();
+            },
+            endDrag(release) {
+              if (typeof shell2.endDrag !== "function") return;
+              shell2.endDrag(release ?? null);
+              const info = layout.readGeometry();
+              if (info && info.window) {
+                if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) {
+                  dragSlide = info.dragSlide;
+                }
+                const inWindow = layout.pigInWindow(info.window);
+                const pig = inWindow === null ? null : {
+                  ...inWindow,
+                  x: inWindow.x + dragSlide.x,
+                  y: inWindow.y + dragSlide.y
+                };
+                if (pig !== null) layout.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
+              }
+              layout.commit(host2(), dragSlide);
+              dragSlide = { x: 0, y: 0 };
+              layout.forget();
+              layout.schedule();
+            },
+            syncGeometry() {
+              layout.tick();
+            },
+            flight,
+            moveBy: typeof shell2.moveBy === "function" ? function(dx, dy) {
+              shell2.moveBy(dx, dy);
+              const info = layout.readGeometry();
+              const pig = info && info.window ? layout.pigInWindow(info.window) : null;
+              if (pig !== null) layout.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
+            } : void 0
+          };
+          deps.windowObject.__dshPiggyShell = adapter;
+          adapterInstalled = true;
+        }
+        if (!tooltipsInstalled) {
+          suppressNativeTooltips(deps.documentObject);
+          tooltipsInstalled = true;
+        }
+        input.install();
+        installed3 = true;
+      } finally {
+        installing2 = false;
+      }
+    }
+    function start2() {
+      if (!installed3 || started2 || starting2) return;
+      starting2 = true;
+      try {
+        const root = host2();
+        const MutationObserverClass = (
+          /** @type {any} */
+          deps.windowObject.MutationObserver
+        );
+        if (!observerInstalled && root !== null && typeof MutationObserverClass === "function") {
+          new MutationObserverClass(layout.schedule).observe(root, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            characterData: true
+          });
+          observerInstalled = true;
+        }
+        if (!resizeListenerInstalled) {
+          deps.windowObject.addEventListener("resize", layout.schedule);
+          resizeListenerInstalled = true;
+        }
+        if (!pointerupListenerInstalled) {
+          deps.windowObject.addEventListener("pointerup", layout.schedule);
+          pointerupListenerInstalled = true;
+        }
+        if (intervalId === null) {
+          const setIntervalForWindow = deps.windowObject.setInterval?.bind(deps.windowObject) ?? setInterval;
+          intervalId = setIntervalForWindow(function() {
+            if (!dragging() && !flying) layout.tick();
+          }, 1e3);
+        }
+        input.startTracking();
+        layout.tick();
+        started2 = true;
+      } finally {
+        starting2 = false;
+      }
+    }
+    return { install: install3, start: start2 };
   }
 
   // src/client/desktop/ext-window.js
@@ -18648,7 +20166,7 @@
     '[data-piggy-role="ext"] [data-ext-view="big"] .dp-card{background:#7fae5a!important}',
     '[data-piggy-role="ext"] [data-ext-view="big"] .dp-content{padding:0!important;overflow:hidden!important;height:100%}'
   ].join("\n");
-  function installExt(bridge3) {
+  function installExt(bridge2) {
     document.documentElement.setAttribute("data-piggy-role", "ext");
     const style = document.createElement("style");
     style.setAttribute("data-piggy-ext-style", "");
@@ -18656,14 +20174,14 @@
     document.head.appendChild(style);
     window.__dshPiggyShell = {
       role: "ext",
-      extKey: typeof bridge3.extKey === "string" ? bridge3.extKey : null,
-      ext: bridge3.ext,
-      proxy: bridge3.proxy,
-      saves: bridge3.saves,
-      fullscreen: bridge3.fullscreen,
+      extKey: typeof bridge2.extKey === "string" ? bridge2.extKey : null,
+      ext: bridge2.ext,
+      proxy: bridge2.proxy,
+      saves: bridge2.saves,
+      fullscreen: bridge2.fullscreen,
       split: true,
-      panel: bridge3.panel,
-      onStateChanged: bridge3.onStateChanged,
+      panel: bridge2.panel,
+      onStateChanged: bridge2.onStateChanged,
       // 这里没有猪可拖：给「认桌面版」用的空动作（desktop-shell.js 按 beginDrag 认）。
       beginDrag: function() {
       },
@@ -18699,380 +20217,95 @@
 
   // src/client/desktop/index.js
   var DESKTOP_VERSION = 6;
-  var TOLERANCE2 = 2;
-  var bridge2 = (
-    /** @type {any} */
-    null
-  );
+  var installed2 = false;
+  var started = false;
+  var installing = false;
+  var starting = false;
+  var contextWindow = null;
+  var contextDocument = null;
+  var contextShell = null;
   var role = (
     /** @type {'pet'|'panel'|'ext'|null} */
     null
   );
-  var dragSlide = { x: 0, y: 0 };
-  var flying = false;
-  var measure = (
-    /** @type {any} */
-    null
-  );
-  var placement = (
-    /** @type {any} */
-    null
-  );
-  var lastKey = null;
-  var windowClamp = createWindowClamp();
-  var clampNotice = null;
-  var hitRects = [];
-  var lastHit = null;
-  var mouse = { x: -1, y: -1 };
-  var scheduled2 = false;
-  var staleSince = (
-    /** @type {number|null} */
-    null
-  );
-  var STALE_WAIT_MS = 500;
-  function host2() {
-    return (
-      /** @type {any} */
-      document.querySelector("[data-dsh-pig]")
-    );
+  var petController = null;
+  function selectContext(shell2) {
+    const shellChanged = shell2 !== void 0 && contextShell !== shell2;
+    if (contextWindow === window && contextDocument === document && !shellChanged) return true;
+    if (installing || starting) return false;
+    contextWindow = window;
+    contextDocument = document;
+    if (shell2 !== void 0) contextShell = shell2;
+    installed2 = false;
+    started = false;
+    role = null;
+    petController = null;
+    return true;
   }
-  function geometry() {
-    return typeof bridge2.geometry === "function" ? bridge2.geometry() : null;
-  }
-  function dragging() {
-    const scene6 = document.querySelector("[data-dsh-pig] .dp-scene");
-    return scene6 !== null && scene6.getAttribute("data-window-dragging") === "true";
-  }
-  function updateHit(x, y) {
-    mouse = { x, y };
-    if (typeof bridge2.setHit !== "function") return;
-    let inside2 = dragging() || flying;
-    for (let i = 0; !inside2 && i < hitRects.length; i += 1) {
-      const r = hitRects[i];
-      inside2 = x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height;
-    }
-    if (inside2 === lastHit) return;
-    lastHit = inside2;
-    bridge2.setHit(inside2);
-  }
-  function layoutStale(win) {
-    return Math.abs(window.innerWidth - win.width) > 1 || Math.abs(window.innerHeight - win.height) > 1;
-  }
-  function tick() {
-    if (dragging() || flying) return;
-    const h = host2();
-    if (h === null) return;
-    const info = readGeometry();
-    if (info !== null && info.window && layoutStale(info.window)) {
-      const at = typeof performance === "object" ? performance.now() : Date.now();
-      if (staleSince === null) staleSince = at;
-      if (at - staleSince < STALE_WAIT_MS) {
-        lastKey = null;
-        schedule3();
-        return;
-      }
-    }
-    staleSince = null;
-    let next = measure.boxes(h);
-    if (next === null) return;
-    measure.fitWindow(next.content, info?.window);
-    const side = measure.sides();
-    measure.pin(h, side, next.hostBox, next.contentBox);
-    next = measure.boxes(h);
-    if (next === null) return;
-    hitRects = next.shape;
-    if (mouse.x >= 0) updateHit(mouse.x, mouse.y);
-    if (info === null || !info.window) {
-      lastKey = null;
-      return;
-    }
-    if (Math.abs(window.screenX - info.window.x) > 1 || Math.abs(window.screenY - info.window.y) > 1) {
-      lastKey = null;
-      schedule3();
-      return;
-    }
-    const bounds2 = info.window;
-    const areas = info.workAreas ?? [info.workArea];
-    const grownX = side.horizontal === "right" ? next.content.width - bounds2.width : 0;
-    const grownY = side.vertical === "bottom" ? next.content.height - bounds2.height : 0;
-    const want = placement.decide({
-      width: next.content.width,
-      height: next.content.height,
-      pig: next.pig,
-      artMargin: artMarginFor(next.pig.width),
-      visual: bodyVisualBounds(next.pig),
-      pigWindow: { x: next.pigBox.x + grownX, y: next.pigBox.y + grownY },
-      pigNow: { x: next.pigBox.x, y: next.pigBox.y },
-      shift: measure.state.shift
-    }, bounds2, areas);
-    placement.persist(areas);
-    const clamp6 = placement.clamp();
-    const old = measure.state.shift;
-    const fresh = { x: -clamp6.dx, y: -clamp6.dy };
-    if (fresh.x !== old.x || fresh.y !== old.y) {
-      measure.state.shift = fresh;
-      measure.pin(h, side, next.hostBox, next.contentBox);
-      const dx = fresh.x - old.x;
-      const dy = fresh.y - old.y;
-      next.shape = next.shape.map((rect) => ({ ...rect, x: rect.x + dx, y: rect.y + dy }));
-      hitRects = next.shape;
-    }
-    measure.fitBubble(h, info);
-    next = measure.boxes(h);
-    if (next === null) return;
-    hitRects = next.shape;
-    const move = !sameBounds(want, bounds2, TOLERANCE2);
-    const clampState = windowClamp.observe(want, bounds2);
-    if (clampState === "accept") {
-      const pig = pigInWindow(bounds2);
-      if (pig !== null) {
-        placement.acceptWindow(bounds2, pig, areas);
-        const notice = JSON.stringify({ want, actual: bounds2 });
-        if (clampNotice !== notice) {
-          clampNotice = notice;
-          console.warn("[piggy-desktop] wm clamp accepted " + notice);
-        }
-        lastKey = null;
-        bridge2.place({ bounds: { ...bounds2 } });
-        return;
-      }
-    }
-    const key2 = measure.keyOf(next);
-    if (!move && key2 === lastKey) return;
-    lastKey = key2;
-    const request = { shape: next.shape, bounds: move ? want : void 0, pig: void 0, speech: void 0 };
-    const pigNode = h.querySelector(".dp-pig");
-    if (pigNode) request.pig = layoutBox(pigNode);
-    const speech = h.querySelector('.dp-bubble[data-bubble-side="below"]');
-    request.speech = speech && !speech.hidden ? layoutBox(speech) : null;
-    if (move) {
-      console.warn("[piggy-desktop] move " + JSON.stringify({
-        open: h.getAttribute("data-open"),
-        side,
-        from: bounds2,
-        to: want,
-        home: placement.home(),
-        shift: measure.state.shift,
-        content: { w: next.content.width, h: next.content.height },
-        pigBox: next.pigBox,
-        ghosts: h.querySelectorAll("[data-ghost]").length,
-        display: displayNote(info)
-      }));
-    }
-    bridge2.place(request);
-  }
-  function pigInWindow(win) {
-    const h = host2();
-    const pigNode = h?.querySelector(".dp-pig");
-    const size = placement.pigSize();
-    const homeTL = placement.homeTopLeft();
-    if (pigNode && !layoutStale(win)) return layoutBox(pigNode);
-    if (homeTL !== null) return { x: homeTL.x - win.x, y: homeTL.y - win.y, width: size.width, height: size.height };
-    return pigNode ? layoutBox(pigNode) : null;
-  }
-  function readGeometry() {
-    if (typeof bridge2.place === "function") {
-      const fresh = bridge2.place({});
-      if (fresh !== null && fresh !== void 0 && fresh.window) return fresh;
-    }
-    return geometry();
-  }
-  function schedule3() {
-    if (scheduled2) return;
-    scheduled2 = true;
-    requestAnimationFrame(function() {
-      scheduled2 = false;
-      if (!dragging() && !flying) tick();
-    });
-  }
-  function install2(shell2) {
-    bridge2 = shell2;
-    const split = shell2.panel !== void 0 && typeof shell2.panel.toggle === "function";
-    if (!split) {
-      console.warn("[piggy-desktop] shell has no split windows\uFF08\u8BF7\u628A\u684C\u9762\u7A0B\u5E8F\u66F4\u65B0\u5230 0.6.0 \u4EE5\u4E0A\uFF09");
-      window.__dshPiggyShellOutdated = true;
-      return;
-    }
-    role = shell2.role === "panel" ? "panel" : shell2.role === "ext" ? "ext" : "pet";
-    if (role === "ext") {
-      const style2 = document.createElement("style");
-      style2.setAttribute("data-piggy-desktop-style", "");
-      style2.textContent = DESKTOP_CSS;
-      document.head.appendChild(style2);
-      installExt(shell2);
-      return;
-    }
-    if (role === "panel") {
-      const style2 = document.createElement("style");
-      style2.setAttribute("data-piggy-desktop-style", "");
-      style2.textContent = DESKTOP_CSS;
-      document.head.appendChild(style2);
-      installPanel(shell2);
-      return;
-    }
-    document.documentElement.setAttribute("data-piggy-role", "pet");
-    const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell2[name] !== "function");
-    if (missing.length > 0) {
-      console.warn("[piggy-desktop] shell is too old, missing: " + missing.join(", ") + "\uFF08\u8BF7\u66F4\u65B0\u684C\u9762\u7A0B\u5E8F\uFF09");
-      window.__dshPiggyShellOutdated = true;
-    }
-    placement = createPlacement();
-    measure = createMeasure({ platform: shell2.platform || "", geometry });
+  function installStyle() {
+    if (document.querySelector("[data-piggy-desktop-style]")) return;
     const style = document.createElement("style");
     style.setAttribute("data-piggy-desktop-style", "");
     style.textContent = DESKTOP_CSS;
     document.head.appendChild(style);
-    if (typeof shell2.onGeometry === "function") shell2.onGeometry(function() {
-      schedule3();
-    });
-    if (typeof shell2.onDragSlide === "function") {
-      shell2.onDragSlide(function(slide) {
-        if (!dragging()) return;
-        dragSlide = { x: Number(slide?.x) || 0, y: Number(slide?.y) || 0 };
-        const h = host2();
-        if (h !== null) h.style.translate = dragSlide.x === 0 && dragSlide.y === 0 ? "" : dragSlide.x + "px " + dragSlide.y + "px";
-      });
-    }
-    if (typeof shell2.askGeometry === "function") shell2.askGeometry();
-    window.__dshPiggyShell = {
-      // 面板在另一个窗口里，右键只是叫主进程把它开/关在猪旁边。
-      role: "pet",
-      proxy: shell2.proxy,
-      saves: shell2.saves,
-      ext: shell2.ext,
-      fullscreen: shell2.fullscreen,
-      external: shell2.external ?? null,
-      split: true,
-      onRecover: shell2.onRecover,
-      recoverHome: function(foot) {
-        const info = readGeometry(), areas = info?.workAreas ?? (info?.workArea ? [info.workArea] : []);
-        placement.recover(foot, areas);
-        flying = false;
-        dragSlide = { x: 0, y: 0 };
-        lastKey = null;
-        commitSlide(host2(), measure.state, dragSlide);
-        tick();
-      },
-      dragVisualBounds: shell2.dragVisualBounds === true,
-      onStateChanged: shell2.onStateChanged,
-      panel: {
-        toggle: function(open) {
-          const info = readGeometry();
-          const pig = info && info.window ? pigInWindow(info.window) : null;
-          shell2.panel.toggle(open, pig === null ? null : { x: pig.x, y: pig.y, width: pig.width, height: pig.height });
-        },
-        on: shell2.panel.on,
-        onFx: shell2.panel.onFx,
-        raisePet: shell2.panel.raisePet
-      },
-      /** @param {{x:number,y:number}|null} [origin] pointerdown 时的屏幕坐标：延迟到 4px 才开始拖动时，窗口不会落后手指。 */
-      beginDrag: function(origin) {
-        const info = readGeometry();
-        const pig = info && info.window ? pigInWindow(info.window) : null;
-        dragSlide = { x: 0, y: 0 };
-        if (typeof shell2.beginDrag !== "function") return;
-        shell2.beginDrag(pig === null ? null : {
-          x: pig.x,
-          y: pig.y,
-          width: pig.width,
-          height: pig.height,
-          visual: bodyVisualBounds(pig),
-          slide: typeof shell2.onDragSlide === "function",
-          origin: origin !== null && origin !== void 0 && Number.isFinite(origin.x) && Number.isFinite(origin.y) ? { x: origin.x, y: origin.y } : void 0
+  }
+  function install2(shell2) {
+    if (installing || !selectContext(shell2) || installed2) return;
+    installing = true;
+    try {
+      const split = shell2.panel !== void 0 && typeof shell2.panel.toggle === "function";
+      if (!split) {
+        console.warn("[piggy-desktop] shell has no split windows\uFF08\u8BF7\u628A\u684C\u9762\u7A0B\u5E8F\u66F4\u65B0\u5230 0.6.0 \u4EE5\u4E0A\uFF09");
+        window.__dshPiggyShellOutdated = true;
+        installed2 = true;
+        return;
+      }
+      role = shell2.role === "panel" ? "panel" : shell2.role === "ext" ? "ext" : "pet";
+      if (role === "ext") {
+        installStyle();
+        installExt(shell2);
+        installed2 = true;
+        return;
+      }
+      if (role === "panel") {
+        installStyle();
+        installPanel(shell2);
+        installed2 = true;
+        return;
+      }
+      document.documentElement.setAttribute("data-piggy-role", "pet");
+      const missing = ["place", "beginDrag", "endDrag"].filter((name) => typeof shell2[name] !== "function");
+      if (missing.length > 0) {
+        console.warn("[piggy-desktop] shell is too old, missing: " + missing.join(", ") + "\uFF08\u8BF7\u66F4\u65B0\u684C\u9762\u7A0B\u5E8F\uFF09");
+        window.__dshPiggyShellOutdated = true;
+      }
+      if (petController === null) {
+        petController = createPetController({
+          shell: shell2,
+          documentObject: document,
+          windowObject: window,
+          // Compatibility getter for the existing single-pig page. New callers can
+          // provide an instance-scoped root through createPetController directly.
+          getHost: () => document.querySelector("[data-dsh-pig]")
         });
-      },
-      dragHeartbeat: function() {
-        if (typeof shell2.dragHeartbeat === "function") shell2.dragHeartbeat();
-      },
-      endDrag: function(release) {
-        if (typeof shell2.endDrag !== "function") return;
-        shell2.endDrag(release ?? null);
-        const info = readGeometry();
-        if (info && info.window) {
-          if (info.dragSlide && Number.isFinite(info.dragSlide.x) && Number.isFinite(info.dragSlide.y)) dragSlide = info.dragSlide;
-          const inWindow = pigInWindow(info.window);
-          const pig = inWindow === null ? null : { ...inWindow, x: inWindow.x + dragSlide.x, y: inWindow.y + dragSlide.y };
-          if (pig !== null) {
-            placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
-          }
-        }
-        commitSlide(host2(), measure.state, dragSlide);
-        dragSlide = { x: 0, y: 0 };
-        lastKey = null;
-        schedule3();
-      },
-      syncGeometry: function() {
-        tick();
-      },
-      // 桌面散步（G 批次）：用外壳本来就有的 moveBy 挪窗口，新位置由主进程推回来的几何记住。
-      // A2 抛掷：页面算好窗口位置，外壳只 setBounds；旧外壳没有 flyMove，supported=false，
-      // 页面自动退回原地落地。具体实现见 flight-bridge.js。
-      flight: createFlightBridge({
-        shell: shell2,
-        readGeometry,
-        pigInWindow,
-        rehome: function(win, pig, areas) {
-          placement.rehome(win, pig, areas);
-        },
-        setFlying: function(on) {
-          flying = on;
-        },
-        isFlying: function() {
-          return flying;
-        },
-        clearSlide: function(slide) {
-          dragSlide = { x: 0, y: 0 };
-          const h = host2();
-          commitSlide(h, measure.state, slide);
-        },
-        forgetLayout: function() {
-          lastKey = null;
-        },
-        tick
-      }),
-      moveBy: typeof shell2.moveBy === "function" ? function(dx, dy) {
-        shell2.moveBy(dx, dy);
-        const info = readGeometry();
-        const pig = info && info.window ? pigInWindow(info.window) : null;
-        if (pig !== null) placement.rehome(info.window, pig, info.workAreas ?? [info.workArea]);
-      } : void 0
-    };
-    document.addEventListener("mouseover", function(event) {
-      const target = (
-        /** @type {any} */
-        event.target
-      );
-      const titled = target !== null && typeof target.closest === "function" ? target.closest("[title]") : null;
-      if (titled === null) return;
-      if (!titled.getAttribute("aria-label")) titled.setAttribute("aria-label", titled.getAttribute("title"));
-      titled.removeAttribute("title");
-    }, true);
-    document.addEventListener("mousemove", function(event) {
-      updateHit(event.clientX, event.clientY);
-    }, true);
-    document.documentElement.addEventListener("mouseleave", function() {
-      if (dragging()) return;
-      mouse = { x: -1, y: -1 };
-      lastHit = false;
-      if (typeof shell2.setHit === "function") shell2.setHit(false);
-    });
+      }
+      installStyle();
+      petController.install();
+      installed2 = true;
+    } finally {
+      installing = false;
+    }
   }
   function start() {
-    if (role === "panel") {
-      startPanel();
-      return;
+    if (starting || !selectContext() || !installed2 || started) return;
+    starting = true;
+    try {
+      if (role === "panel") startPanel();
+      else if (role !== "ext") petController?.start();
+      started = true;
+    } finally {
+      starting = false;
     }
-    if (role === "ext") return;
-    const h = host2();
-    if (h !== null && typeof MutationObserver === "function") {
-      new MutationObserver(schedule3).observe(h, { subtree: true, childList: true, attributes: true, characterData: true });
-    }
-    window.addEventListener("resize", schedule3);
-    window.addEventListener("pointerup", schedule3);
-    setInterval(function() {
-      if (!dragging() && !flying) tick();
-    }, 1e3);
-    tick();
   }
   var desktop = { version: DESKTOP_VERSION, install: install2, start };
 
@@ -19098,6 +20331,36 @@
     const dt = (last.t - previous.t) / 1e3;
     if (dt <= 0 || dt > tailMs / 1e3) return { vx: 0, vy: 0 };
     return { vx: (last.x - previous.x) / dt, vy: (last.y - previous.y) / dt };
+  }
+
+  // src/client/pet-parts.js
+  var PART_FX = {
+    head: ["\u2764\uFE0F"],
+    ears: ["\u3030\uFE0F", "\u2764\uFE0F"],
+    nose: ["\u{1F4A6}"],
+    belly: ["\u{1F606}", "\u2764\uFE0F"],
+    back: ["\u2728"],
+    tail: ["\u{1F300}"],
+    feet: ["\u{1F43E}"]
+  };
+  function partFor(fx, fy) {
+    if (fy > 0.8) return "feet";
+    if (fx > 0.8 && fy < 0.45) return "tail";
+    if (fx < 0.42 && fy > 0.58) return "nose";
+    if (fx < 0.45 && fy < 0.38) return "ears";
+    if (fx < 0.5) return "head";
+    if (fy > 0.6) return "belly";
+    return "back";
+  }
+  function partAt(pig, event) {
+    if (!pig || typeof pig.getBoundingClientRect !== "function" || typeof event?.clientX !== "number") return "head";
+    var rect = pig.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return "head";
+    var box = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+    var point = { x: event.clientX, y: event.clientY };
+    if (!boxPoint(box, point).inside) return "head";
+    var normalized = layoutPointToArt(box, point, { mirrored: pig.getAttribute?.("data-walk") === "right" });
+    return partFor(normalized.x, normalized.y);
   }
 
   // src/client/gestures.js
@@ -19155,7 +20418,7 @@
     }
     function onPointerDown(event) {
       if (event.button !== 0 || drag !== null) return;
-      if (event.target?.closest?.(".dp-bubble,button,a,input,select,textarea,[role=button]")) return;
+      if (!hitsPig(c.host, event)) return;
       stopHeartbeat();
       stopHeartbeat = function() {
       };
@@ -19165,7 +20428,7 @@
       if (c.getView().hatched === true) c.send("touch");
       const snap = beginPetSnap(c.pig);
       if (!snap) c.feel.press();
-      unlockSound();
+      unlockAudioCue(c.audio);
       drag = {
         x: event.clientX,
         y: event.clientY,
@@ -19219,7 +20482,7 @@
           drag.pathStart = now2;
           drag.lastStroke = now2;
           drag.patted = true;
-          playSound("purr");
+          playAudioCue(c.audio, "purr");
           const view = c.getView();
           if (view.hatched === true && !view.dead) c.send("pet", { part: partAt(c.pig, event) }, { petAnimated: drag.snap });
         }
@@ -19256,11 +20519,11 @@
     function onPointerUp(event) {
       if (drag === null) return;
       const speed = c.isPanelOpen?.() === true ? { vx: 0, vy: 0 } : velocity();
-      const started = drag.started;
+      const started2 = drag.started;
       const patted = drag.patted;
       const snap = drag.snap;
       endDrag(pointerScreen(event));
-      if (started) {
+      if (started2) {
         c.feel.release({ vx: speed.vx, vy: speed.vy, dragged: true });
         return;
       }
@@ -19276,10 +20539,10 @@
     }
     function onPointerCancel() {
       if (drag === null) return;
-      const started = drag.started;
+      const started2 = drag.started;
       cancelPetSnap(c.pig);
       endDrag();
-      c.feel.release({ vx: 0, vy: 0, dragged: started });
+      c.feel.release({ vx: 0, vy: 0, dragged: started2 });
     }
     c.scene.addEventListener("pointerdown", onPointerDown);
     c.scene.addEventListener("pointermove", onPointerMove);
@@ -19303,10 +20566,283 @@
     };
   }
 
+  // src/client/speech.js
+  function createSpeech({ bubble, pomoHint = null }) {
+    let timer2 = null;
+    let hold = null;
+    let version = 0;
+    let disposed = false;
+    function reset() {
+      version += 1;
+      if (timer2 !== null) window.clearTimeout(timer2);
+      timer2 = null;
+      if (hold !== null) hold.dispose();
+      hold = null;
+      return version;
+    }
+    function expire(current3, restorePomo) {
+      if (current3 !== version) return;
+      const close = () => {
+        if (current3 !== version) return;
+        bubble.hidden = true;
+        if (hold !== null) hold.dispose();
+        hold = null;
+        if (restorePomo && pomoHint !== null) pomoHint.hidden = pomoHint.getAttribute("data-pomo") !== "on";
+      };
+      if (hold !== null && hold.defer(close)) return;
+      close();
+    }
+    function showBubble(text, ms) {
+      if (disposed) return;
+      const current3 = reset();
+      bubble.setAttribute("data-bubble-shown", "true");
+      bubble.textContent = "";
+      bubble.appendChild(el("span", "dp-bubble-text", text));
+      bubble.hidden = false;
+      if (pomoHint !== null) pomoHint.hidden = true;
+      timer2 = window.setTimeout(() => {
+        if (current3 !== version) return;
+        timer2 = null;
+        expire(current3, true);
+      }, ms || 2600);
+    }
+    function showLine(text, replies, onReply, ms) {
+      if (disposed) return;
+      if (replies.length === 0) {
+        showBubble(text, ms || 2600);
+        return;
+      }
+      const current3 = reset();
+      bubble.textContent = "";
+      bubble.appendChild(el("span", "dp-bubble-text", text));
+      const row2 = el("div", "dp-bubble-replies", "");
+      hold = createRenderHold(row2);
+      replies.forEach((label, index) => {
+        const answer = el("button", "dp-reply", label);
+        answer.type = "button";
+        answer.addEventListener("click", (event) => {
+          event.stopPropagation();
+          if (current3 !== version || bubble.hidden) return;
+          reset();
+          bubble.hidden = true;
+          onReply(index);
+        });
+        row2.appendChild(answer);
+      });
+      bubble.appendChild(row2);
+      bubble.hidden = false;
+      timer2 = window.setTimeout(() => {
+        if (current3 !== version) return;
+        timer2 = null;
+        expire(current3, false);
+      }, Math.max(6e3, ms || 0));
+    }
+    function hideBubble() {
+      reset();
+      bubble.hidden = true;
+    }
+    return { showBubble, showLine, hideBubble, dispose() {
+      disposed = true;
+      hideBubble();
+    } };
+  }
+
+  // src/client/effects.js
+  function createEffects(deps) {
+    var scene6 = deps.scene;
+    var pig = deps.pig;
+    var card2 = deps.card;
+    var bubble = deps.bubble;
+    var pomoHint = deps.pomoHint ?? null;
+    var isStopped = deps.isStopped;
+    var layerRoot = deps.root ?? null;
+    var disposed = false;
+    var timers = /* @__PURE__ */ new Set();
+    var reactTimer = null;
+    var feelHooks = null;
+    const speech = createSpeech({ bubble, pomoHint });
+    const { showBubble, showLine } = speech;
+    var transformTimer = null;
+    var transformLayer = null;
+    function later(fn, ms) {
+      var id = window.setTimeout(function() {
+        timers.delete(id);
+        if (disposed) return;
+        fn();
+      }, ms);
+      timers.add(id);
+      return id;
+    }
+    function cancelTimer(id) {
+      if (id === null) return;
+      window.clearTimeout(id);
+      timers.delete(id);
+    }
+    function syncArt() {
+      if (disposed) return false;
+      if (deps.art !== null && deps.art !== void 0 && typeof deps.art.sync === "function") return deps.art.sync();
+      return syncPigArt(pig, deps.pigArt, deps.pigEmoji);
+    }
+    function transform(kind) {
+      if (disposed) return;
+      if (transformTimer !== null) cancelTimer(transformTimer);
+      if (transformLayer !== null) transformLayer.remove();
+      var emojis = kind === "contract" ? ["\u{1F608}", "\u{1F525}"] : ["\u{1F451}", "\u2728"];
+      var layer = el("div", "dp-transform");
+      layer.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < 16; i += 1) {
+        var falling = el("span", "dp-transform-fall", emojis[i % 2]);
+        falling.style.left = i * 47 % 101 + "%";
+        falling.style.setProperty("--delay", i % 5 * 0.07 + "s");
+        falling.style.setProperty("--drift", (i % 3 - 1) * 34 + "px");
+        layer.appendChild(falling);
+      }
+      var center = pig.getBoundingClientRect();
+      var pop = el("span", "dp-transform-pop", emojis[0]);
+      pop.style.left = center.left + center.width / 2 + "px";
+      pop.style.top = center.top + center.height / 2 + "px";
+      layer.appendChild(pop);
+      (layerRoot ?? document.body).appendChild(layer);
+      transformLayer = layer;
+      transformTimer = later(function() {
+        layer.remove();
+        if (transformLayer === layer) transformLayer = null;
+        transformTimer = null;
+      }, 1450);
+    }
+    var JUMP_KINDS = { levelup: true, away: true, feed: true, play: true };
+    function applyReact(kind, ms) {
+      if (disposed) return;
+      pig.removeAttribute("data-react");
+      void pig.offsetWidth;
+      pig.setAttribute("data-react", kind);
+      syncArt();
+      reactTimer = later(function() {
+        reactTimer = null;
+        pig.removeAttribute("data-react");
+        syncArt();
+      }, ms || 900);
+    }
+    function react(kind, ms) {
+      if (disposed) return;
+      if (reactTimer !== null) cancelTimer(reactTimer);
+      if (feelHooks !== null && JUMP_KINDS[kind] === true) {
+        feelHooks.crouch(120);
+        reactTimer = later(function() {
+          applyReact(kind, ms);
+        }, 120);
+        return;
+      }
+      applyReact(kind, ms);
+    }
+    function burst(emojis, count) {
+      if (disposed) return;
+      for (var i = 0; i < (count || 1); i += 1) {
+        (function(index) {
+          later(function() {
+            if (isStopped()) return;
+            var node = el("span", "dp-fx", emojis[index % emojis.length]);
+            node.style.setProperty("--dx", Math.round((Math.random() - 0.5) * 46) + "px");
+            var spot = headSpot();
+            node.style.left = spot.x + Math.round((Math.random() - 0.5) * 22) + "px";
+            node.style.top = spot.y + "px";
+            scene6.appendChild(node);
+            later(function() {
+              node.remove();
+            }, 1200);
+          }, index * 110);
+        })(i);
+      }
+    }
+    function headSpot() {
+      var fallback = { x: 24, y: 8 };
+      if (typeof pig.getBoundingClientRect !== "function" || typeof scene6.getBoundingClientRect !== "function") return fallback;
+      var p = pig.getBoundingClientRect();
+      var s = scene6.getBoundingClientRect();
+      if (p.width === 0 && p.height === 0) return fallback;
+      return { x: p.left - s.left + p.width / 2, y: p.top - s.top - 20 };
+    }
+    var REACTIONS = {
+      hatch: { kind: "levelup", ms: 980, fx: ["\u{1F95A}", "\u2728", "\u{1F416}", "\u{1F389}"], count: 4, say: "\u5B75\u51FA\u6765\u5566\uFF01" },
+      feed: { kind: "feed", ms: 900, fx: ["\u{1F34E}", "\u{1F60B}", "\u2728"], count: 3, say: "\u5403\u6389\u4E86\uFF01" },
+      bathe: { kind: "bathe", ms: 1050, fx: ["\u{1FAE7}", "\u{1FAE7}", "\u{1F4A7}", "\u2728"], count: 4, say: "\u6D17\u5E72\u51C0\u5566\uFF5E" },
+      play: { kind: "play", ms: 900, fx: ["\u{1F3BE}", "\u2B50", "\u{1F4A8}"], count: 3, say: "\u597D\u5F00\u5FC3\uFF01" },
+      pet: { kind: "pet", ms: 420, fx: ["\u2764\uFE0F"], count: 1, say: "\u597D\u8212\u670D\u2026" },
+      work: { kind: "away", ms: 900, fx: ["\u{1F4BC}", "\u{1F9F1}", "\u{1FA99}"], count: 3, say: "\u51FA\u95E8\u6253\u5DE5\uFF01" },
+      study: { kind: "away", ms: 900, fx: ["\u{1F4DA}", "\u270F\uFE0F", "\u{1F9E0}"], count: 3, say: "\u4E0A\u5B66\u53BB\uFF01" },
+      trip: { kind: "away", ms: 900, fx: ["\u{1F9F3}", "\u{1F5FA}", "\u2728"], count: 3, say: "\u51FA\u53D1\u65C5\u884C\uFF01" },
+      calloff: { kind: "refuse", ms: 520, fx: ["\u{1F4A8}"], count: 1, say: "\u63D0\u524D\u56DE\u6765\u4E86\u2026" },
+      buy: { kind: "pet", ms: 620, fx: ["\u{1FA99}", "\u{1F6D2}"], count: 2, say: "\u4E70\u5230\u4E86\uFF01" },
+      use: { kind: "pet", ms: 620, fx: ["\u2728"], count: 2, say: "\u7528\u6389\u4E86\u3002" }
+    };
+    var SPOKEN_BY_HOST = { feed: true, bathe: true, play: true, pet: true, work: true, study: true, trip: true, buy: true, use: true };
+    function flash(action, extra) {
+      if (disposed) return;
+      var spec = REACTIONS[action];
+      if (spec === void 0) return;
+      if (deps.isAway?.() !== true) react(spec.kind, spec.ms);
+      var part = action === "pet" && extra ? PART_FX[extra.part] : void 0;
+      burst(part ?? spec.fx, part ? part.length : spec.count);
+      if (!SPOKEN_BY_HOST[action]) showBubble(spec.say, 1600);
+    }
+    function toast(text) {
+      if (disposed) return;
+      var node = el("div", "dp-toast", text);
+      card2.insertBefore(node, card2.firstChild);
+      later(function() {
+        node.remove();
+      }, 4800);
+    }
+    function dispose() {
+      if (disposed) return;
+      disposed = true;
+      for (const id of timers) window.clearTimeout(id);
+      timers.clear();
+      speech.dispose();
+      if (transformLayer !== null) transformLayer.remove();
+      reactTimer = null;
+      transformTimer = null;
+      transformLayer = null;
+    }
+    return {
+      react,
+      burst,
+      transform,
+      flash,
+      showBubble,
+      showLine,
+      hideBubble: speech.hideBubble,
+      toast,
+      dispose,
+      /** 物理层装好后由 shell 接上；关闭手感时传 null。 */
+      setFeel: function(feel2) {
+        feelHooks = feel2;
+      }
+    };
+  }
+
   // src/client/feel/dizzy.js
   function createDizzy(c) {
     let timer2 = null;
     let disposed = false;
+    function artContext() {
+      return c.art !== null && c.art !== void 0 && typeof c.art.sync === "function" ? c.art : null;
+    }
+    function syncArt() {
+      const art = artContext();
+      if (art !== null) return art.sync();
+      return syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+    }
+    function showFaint() {
+      const art = artContext();
+      if (art !== null) art.showEffectArt("faint");
+      else showEffectArt("faint");
+    }
+    function clearFaint() {
+      const art = artContext();
+      if (art !== null) art.clearEffectArt();
+      else clearEffectArt();
+    }
     function healthyPiglet() {
       const stage2 = c.pig.getAttribute("data-stage") || "";
       const mood = c.pig.getAttribute("data-mood") || "";
@@ -19315,23 +20851,23 @@
     function cancel2() {
       if (c.pig.getAttribute("data-react") !== "dizzy") return;
       c.pig.removeAttribute("data-react");
-      clearEffectArt();
-      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      clearFaint();
+      syncArt();
     }
     function trigger() {
       if (disposed) return;
       if (timer2 !== null) clearTimeout(timer2);
-      if (healthyPiglet()) showEffectArt("faint");
+      if (healthyPiglet()) showFaint();
       c.pig.setAttribute("data-react", "dizzy");
-      syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+      syncArt();
       c.burst(["\u{1F4AB}", "\u2728", "\u{1F4AB}"], 3);
-      playSound("dizzy", { soft: c.getMode() === "soft" });
+      playAudioCue(c.audio, "dizzy", { soft: c.getMode() === "soft" });
       timer2 = setTimeout(function() {
         timer2 = null;
         if (disposed) return;
         c.pig.removeAttribute("data-react");
-        clearEffectArt();
-        syncPigArt(c.pig, c.pigArt, c.pigEmoji);
+        clearFaint();
+        syncArt();
       }, FEEL.dizzyMs);
     }
     return {
@@ -19629,7 +21165,7 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/array.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -19640,7 +21176,7 @@
       arr2.splice(index, 1);
   }
 
-  // node_modules/motion-utils/dist/es/clamp.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -19649,42 +21185,42 @@
     return v;
   };
 
-  // node_modules/motion-utils/dist/es/format-error-message.mjs
-  function formatErrorMessage(message2, errorCode) {
-    return errorCode ? `${message2}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message2;
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/format-error-message.mjs
+  function formatErrorMessage(message3, errorCode) {
+    return errorCode ? `${message3}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message3;
   }
 
-  // node_modules/motion-utils/dist/es/errors.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
   };
   if (typeof process !== "undefined" && true) {
-    warning = (check, message2, errorCode) => {
+    warning = (check, message3, errorCode) => {
       if (!check && typeof console !== "undefined") {
-        console.warn(formatErrorMessage(message2, errorCode));
+        console.warn(formatErrorMessage(message3, errorCode));
       }
     };
-    invariant = (check, message2, errorCode) => {
+    invariant = (check, message3, errorCode) => {
       if (!check) {
-        throw new Error(formatErrorMessage(message2, errorCode));
+        throw new Error(formatErrorMessage(message3, errorCode));
       }
     };
   }
 
-  // node_modules/motion-utils/dist/es/global-config.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // node_modules/motion-utils/dist/es/is-object.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // node_modules/motion-utils/dist/es/memo.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -19695,19 +21231,19 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/noop.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // node_modules/motion-utils/dist/es/pipe.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // node_modules/motion-utils/dist/es/progress.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
@@ -19740,29 +21276,29 @@
     }
   };
 
-  // node_modules/motion-utils/dist/es/time-conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // node_modules/motion-utils/dist/es/warn-once.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
-  function warnOnce(condition, message2, errorCode) {
-    if (condition || warned.has(message2))
+  function warnOnce(condition, message3, errorCode) {
+    if (condition || warned.has(message3))
       return;
-    console.warn(formatErrorMessage(message2, errorCode));
-    warned.add(message2);
+    console.warn(formatErrorMessage(message3, errorCode));
+    warned.add(message3);
   }
 
-  // node_modules/motion-utils/dist/es/wrap.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -19786,45 +21322,45 @@
     };
   }
 
-  // node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // node_modules/motion-utils/dist/es/easing/back.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // node_modules/motion-utils/dist/es/easing/circ.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // node_modules/motion-utils/dist/es/easing/ease.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -19853,14 +21389,14 @@
     return definition;
   };
 
-  // node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -19878,11 +21414,11 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
-  var checkStringStartsWith = (token) => (key2) => typeof key2 === "string" && key2.startsWith(token);
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  var checkStringStartsWith = (token2) => (key2) => typeof key2 === "string" && key2.startsWith(token2);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
     const startsWithToken = startsAsVariableToken(value);
@@ -19897,7 +21433,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -19912,18 +21448,18 @@
     default: 1
   };
 
-  // node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -19939,7 +21475,7 @@
     };
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -19951,7 +21487,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -19985,7 +21521,7 @@
     transform: rgba.transform
   };
 
-  // node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -20002,7 +21538,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -20011,7 +21547,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -20033,10 +21569,10 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -20127,7 +21663,7 @@
     getAnimatableNone
   };
 
-  // node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -20165,17 +21701,17 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -20211,7 +21747,7 @@
     };
   };
 
-  // node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -20221,7 +21757,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -20291,7 +21827,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -20318,7 +21854,7 @@
     return mixer(from, to);
   }
 
-  // node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -20338,7 +21874,7 @@
     // Compute
   ];
 
-  // node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -20401,7 +21937,7 @@
     return step;
   }
 
-  // node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
   function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
@@ -20446,7 +21982,7 @@
         scheduleNextBatch(processBatch);
       }
     };
-    const schedule4 = stepsOrder.reduce((acc, key2) => {
+    const schedule3 = stepsOrder.reduce((acc, key2) => {
       const step = steps[key2];
       acc[key2] = (process2, keepAlive = false, immediate = false) => {
         if (!runNextFrame)
@@ -20460,13 +21996,13 @@
         steps[stepsOrder[i]].cancel(process2);
       }
     };
-    return { schedule: schedule4, cancel: cancel2, state: state4, steps };
+    return { schedule: schedule3, cancel: cancel2, state: state4, steps };
   }
 
-  // node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -20480,7 +22016,7 @@
     };
   };
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -20490,7 +22026,7 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
@@ -20504,7 +22040,7 @@
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -20523,7 +22059,7 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -20781,7 +22317,7 @@
     return options;
   };
 
-  // node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
     const state4 = {
@@ -20847,7 +22383,7 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -20892,7 +22428,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -20901,19 +22437,19 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
@@ -20954,7 +22490,7 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -20966,7 +22502,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -20975,7 +22511,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -20989,11 +22525,11 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -21016,7 +22552,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -21047,7 +22583,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -21172,10 +22708,10 @@
      * If resolved, it ends at the last resolved keyframe, which is in the
      * same unit as the others, rather than at finalKeyframe.
      */
-    sampleAt(timestamp, resolved) {
+    sampleAt(timestamp, resolved2) {
       const { options, totalDuration } = this;
       const t = this.at(timestamp) - (options.delay || 0);
-      return t >= totalDuration && options.type !== inertia ? getFinalKeyframe(options.keyframes, options, resolved ? void 0 : options.finalKeyframe) : this.generate(Math.max(t, 0), t < 0).value;
+      return t >= totalDuration && options.type !== inertia ? getFinalKeyframe(options.keyframes, options, resolved2 ? void 0 : options.finalKeyframe) : this.generate(Math.max(t, 0), t < 0).value;
     }
     /**
      * The generator's state `currentTime` ms after the delay, without
@@ -21351,7 +22887,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -21375,7 +22911,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -21385,13 +22921,13 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/types/int.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -21425,7 +22961,7 @@
     originZ: px
   };
 
-  // node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -21490,7 +23026,7 @@
     numOctaves: int
   };
 
-  // node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -21512,7 +23048,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -21521,14 +23057,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -21610,7 +23146,7 @@
     return parseFloat(value.trim());
   }
 
-  // node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -21633,7 +23169,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -21682,7 +23218,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -21828,27 +23364,27 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -21858,10 +23394,10 @@
     return true;
   }, "linearEasing");
 
-  // node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -21874,7 +23410,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -21889,7 +23425,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -21912,12 +23448,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -21928,7 +23464,7 @@
     return options;
   }
 
-  // node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -22076,7 +23612,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -22091,7 +23627,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -22158,7 +23694,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -22172,7 +23708,7 @@
     return false;
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -22199,13 +23735,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -22214,7 +23750,7 @@
     "backgroundColor"
   ]);
 
-  // node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -22225,7 +23761,7 @@
     return false;
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -22260,12 +23796,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -22314,10 +23850,10 @@
     return transformString;
   }
 
-  // node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -22885,7 +24421,7 @@
     return group;
   }
 
-  // node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -23023,7 +24559,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -23103,7 +24639,7 @@
     return max;
   }
 
-  // node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -23111,7 +24647,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -23437,7 +24973,7 @@
     return new MotionValue(init, options);
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -23446,7 +24982,7 @@
     return transition;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -23455,7 +24991,7 @@
     return valueTransition;
   }
 
-  // node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -23486,7 +25022,7 @@
     return ease;
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -23507,7 +25043,7 @@
     return false;
   }
 
-  // node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -23566,7 +25102,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -23581,18 +25117,18 @@
   var maxDepth = 4;
   function getVariableValue(current3, element, depth = 1) {
     invariant(depth <= maxDepth, `Max CSS variable fallback depth detected in property "${current3}". This may indicate a circular fallback dependency.`, "max-css-var-depth");
-    const [token, fallback] = parseCSSVariable(current3);
-    if (!token)
+    const [token2, fallback] = parseCSSVariable(current3);
+    if (!token2)
       return;
-    const resolved = window.getComputedStyle(element).getPropertyValue(token);
-    if (resolved) {
-      const trimmed = resolved.trim();
+    const resolved2 = window.getComputedStyle(element).getPropertyValue(token2);
+    if (resolved2) {
+      const trimmed = resolved2.trim();
       return isNumericalString(trimmed) ? parseFloat(trimmed) : trimmed;
     }
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -23603,28 +25139,28 @@
     ...transformPropOrder
   ]);
 
-  // node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // node_modules/motion-dom/dist/es/value/types/test.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -23635,7 +25171,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -23656,7 +25192,7 @@
     }
   }
 
-  // node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -23695,9 +25231,9 @@
         if (typeof keyframe2 === "string") {
           keyframe2 = keyframe2.trim();
           if (isCSSVariableToken(keyframe2)) {
-            const resolved = getVariableValue(keyframe2, element.current);
-            if (resolved !== void 0) {
-              unresolvedKeyframes[i] = resolved;
+            const resolved2 = getVariableValue(keyframe2, element.current);
+            if (resolved2 !== void 0) {
+              unresolvedKeyframes[i] = resolved2;
             }
             if (i === unresolvedKeyframes.length - 1) {
               this.finalKeyframe = keyframe2;
@@ -23783,7 +25319,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -23847,17 +25383,17 @@
     return first === null ? void 0 : first;
   }
 
-  // node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -23875,7 +25411,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -23899,7 +25435,7 @@
     });
   }
 
-  // node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -23986,7 +25522,7 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
@@ -24010,7 +25546,7 @@
     });
   }
 
-  // node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
   function buildTransform2(state4) {
     let transform = "";
@@ -24032,7 +25568,7 @@
     return transform || "none";
   }
 
-  // node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
   var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
   var addStyleValue = (element, state4, key2, value) => {
@@ -24093,7 +25629,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -24105,7 +25641,7 @@
     "offsetAnchor"
   ];
 
-  // node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
@@ -24131,7 +25667,7 @@
     return state4.set(key2, value, render);
   };
 
-  // node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/svg/index.mjs
   function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
@@ -24177,7 +25713,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -24197,12 +25733,12 @@
     };
   }
 
-  // node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -24235,7 +25771,7 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/prop/index.mjs
   var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
     return state4.set(key2, value, () => {
       subject2[key2] = value.get();
@@ -24248,7 +25784,7 @@
     }
   });
 
-  // node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -24357,10 +25893,10 @@
     }
   };
 
-  // node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -24435,7 +25971,7 @@
     return unit ? v + unit : v;
   }
 
-  // node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -24446,7 +25982,7 @@
     });
   }
 
-  // node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -24457,7 +25993,7 @@
     return value;
   }
 
-  // node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -24467,22 +26003,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // node_modules/motion-dom/dist/es/render/store.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -24498,12 +26034,12 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -24518,7 +26054,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -24539,7 +26075,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -24547,7 +26083,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -24560,7 +26096,7 @@
     }
   }
 
-  // node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -24742,7 +26278,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -24773,7 +26309,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -24798,7 +26334,7 @@
     return animations;
   }
 
-  // node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
@@ -25010,7 +26546,7 @@
       }
       finish();
     }
-    function schedule4(delay) {
+    function schedule3(delay) {
       clear();
       attempts = 0;
       timer2 = setTimeout(check, delay ?? 700);
@@ -25028,9 +26564,9 @@
           c.onGeometry();
         }
         if (c.pig.getAttribute("data-feel") !== "active") c.pig.setAttribute("data-feel", "active");
-        schedule4(800);
+        schedule3(800);
       },
-      schedule: schedule4,
+      schedule: schedule3,
       clear,
       finish,
       isActive: function() {
@@ -25069,10 +26605,12 @@
     const pig = deps.pig;
     const pigHold = deps.pigHold;
     const pigBody = deps.pigBody;
-    const host3 = deps.host;
+    const host2 = deps.host;
     const getShell = deps.getShell;
     const onGeometry = deps.onGeometry ?? function() {
     };
+    const art = deps.art ?? null;
+    const syncArt = () => disposed ? false : typeof art?.sync === "function" ? art.sync() : syncPigArt(pig, deps.pigArt, deps.pigEmoji);
     const motor = canAnimate3() ? createMotor(pigHold, pigBody) : null;
     let mode = motor === null ? "off" : effectiveFeelMode();
     let disposed = false;
@@ -25085,7 +26623,7 @@
     let justWoke = false;
     let lifted = false;
     let liftSoundPlayed = false;
-    let dragging2 = false;
+    let dragging = false;
     let flipToken = 0;
     let facing = (pig.getAttribute("data-walk") || "") === "right" ? "right" : "left";
     let flipFrom = facing;
@@ -25102,12 +26640,13 @@
     function wake() {
       if (pig.getAttribute("data-idle") === "nap") {
         pig.removeAttribute("data-idle");
-        syncPigArt(pig, deps.pigArt, deps.pigEmoji);
+        syncArt();
       }
       justWoke = true;
       if (wakeTimer !== null) clearTimeout(wakeTimer);
       wakeTimer = setTimeout(function() {
         wakeTimer = null;
+        if (disposed) return;
         justWoke = false;
       }, 1500);
     }
@@ -25148,7 +26687,7 @@
       lifted = false;
       liftSoundPlayed = false;
       motor.pressTarget(FEEL.pressSquash * scale2() * restingFactor());
-      playSound("tap");
+      playAudioCue(deps.audio, "tap");
       settle.begin();
     }
     function liftPig() {
@@ -25157,7 +26696,7 @@
       motor.holdTarget(FEEL.holdMax * scale2() * restingFactor());
       motor.pressTarget(0);
       if (!liftSoundPlayed && !sleeping()) {
-        playSound("lift");
+        playAudioCue(deps.audio, "lift");
         liftSoundPlayed = true;
       }
       settle.begin();
@@ -25178,7 +26717,7 @@
     }
     function releasePig(options) {
       if (!enabled()) return "off";
-      dragging2 = false;
+      dragging = false;
       const vx = Number(options?.vx) || 0;
       const vy = Number(options?.vy) || 0;
       const speed = Math.hypot(vx, vy);
@@ -25190,7 +26729,7 @@
         applyImpact(clamp5(0.04 + speed / 9e3, 0.04, FEEL.squashMax));
         if (speed > 240) {
           burstDust(clamp5(Math.round(speed / 600), 1, 3));
-          playSound(speed > 900 ? "land-hard" : "land-soft", { soft: mode === "soft" });
+          playAudioCue(deps.audio, speed > 900 ? "land-hard" : "land-soft", { soft: mode === "soft" });
         }
       } else if (tapTimer === null) {
         tapTimer = setTimeout(function() {
@@ -25205,7 +26744,7 @@
     function tap() {
       if (!enabled() || immobileStage()) return;
       applyImpact(0.06 * scale2());
-      playSound("tap");
+      playAudioCue(deps.audio, "tap");
     }
     function crouch(ms) {
       if (!enabled() || immobileStage()) return;
@@ -25213,6 +26752,7 @@
       if (crouchTimer !== null) clearTimeout(crouchTimer);
       crouchTimer = setTimeout(function() {
         crouchTimer = null;
+        if (disposed) return;
         motor.pressTarget(0);
       }, ms ?? 120);
       settle.begin();
@@ -25221,10 +26761,12 @@
       pig,
       pigArt: deps.pigArt,
       pigEmoji: deps.pigEmoji,
+      art,
       burst: deps.burst,
       getMode: function() {
         return mode;
-      }
+      },
+      audio: deps.audio
     });
     function applyFacing(direction) {
       facing = direction;
@@ -25250,15 +26792,15 @@
         return;
       }
       flipToken += 1;
-      const token = flipToken;
+      const token2 = flipToken;
       const wasFlipping = Math.abs(motor.flipValue()) > 1e-3;
       if (!wasFlipping) flipFrom = facing;
       const target = direction === flipFrom ? 0 : 1;
       pig.setAttribute("data-feel-flip", "true");
-      playSound("flip", { soft: mode === "soft" });
+      playAudioCue(deps.audio, "flip", { soft: mode === "soft" });
       settle.begin();
       motor.flipTo(target, function(done) {
-        if (!done || token !== flipToken || disposed) return;
+        if (!done || token2 !== flipToken || disposed) return;
         if (target === 1) applyFacing(direction);
         else applyFacing(flipFrom);
         pig.removeAttribute("data-feel-flip");
@@ -25277,7 +26819,7 @@
     }
     function coverSwap(apply) {
       if (typeof apply !== "function") return;
-      if (!enabled() || dragging2 || runner.isFlying() || pig.getAttribute("data-pet-snap") === "true" || pig.getAttribute("data-react") !== null || pig.getAttribute("data-micro-action") !== null) {
+      if (!enabled() || dragging || runner.isFlying() || pig.getAttribute("data-pet-snap") === "true" || pig.getAttribute("data-react") !== null || pig.getAttribute("data-micro-action") !== null) {
         apply();
         return;
       }
@@ -25288,6 +26830,7 @@
       settle.begin();
       swapTimer = setTimeout(function() {
         swapTimer = null;
+        if (disposed) return;
         const run = pendingSwap;
         pendingSwap = null;
         flashing = false;
@@ -25298,7 +26841,7 @@
     }
     const runner = createFlightRunner({
       getShell,
-      host: host3,
+      host: host2,
       onStart: function() {
         settle.begin();
       },
@@ -25310,7 +26853,7 @@
         motor.tiltTarget(clamp5(-vx * FEEL.tiltGain, -limit, limit));
       },
       onSound: function(key2) {
-        playSound(key2, { soft: mode === "soft" });
+        playAudioCue(deps.audio, key2, { soft: mode === "soft" });
       },
       onFinish: function(result) {
         if (motor !== null) motor.tiltTarget(0);
@@ -25321,7 +26864,7 @@
     function catchFlight() {
       if (!runner.catch()) return false;
       applyImpact(0.06 * scale2());
-      playSound("catch", { soft: mode === "soft" });
+      playAudioCue(deps.audio, "catch", { soft: mode === "soft" });
       return true;
     }
     function onAnimationEnd(event) {
@@ -25377,7 +26920,7 @@
       },
       catchFlight,
       setDragging: function(on) {
-        dragging2 = on === true;
+        dragging = on === true;
       },
       dispose: function() {
         disposed = true;
@@ -25402,6 +26945,235 @@
         pigHold.style.willChange = "";
       }
     };
+  }
+
+  // src/client/scene.js
+  var WEB_EMOJI_FACE = '@font-face{font-family:"Piggy Emoji";font-style:normal;font-weight:400;font-display:swap;src:url(/dsh-piggy/emoji.woff2) format("woff2")}';
+  function createScene(options) {
+    var opts = options !== null && typeof options === "object" ? options : {};
+    var root = opts.root ?? null;
+    var doc = root !== null && root.ownerDocument !== null && root.ownerDocument !== void 0 ? root.ownerDocument : document;
+    var font = doc.createElement("link");
+    font.rel = "stylesheet";
+    font.href = "https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap";
+    doc.head.appendChild(font);
+    var style = doc.createElement("style");
+    style.textContent = (desktopShell() === null ? WEB_EMOJI_FACE : "") + CSS;
+    doc.head.appendChild(style);
+    var host2 = doc.createElement("div");
+    host2.setAttribute(MOUNTED, "");
+    var card2 = el("div", "dp-card");
+    var scene6 = el("div", "dp-scene");
+    var hud = el("div", "dp-hud");
+    var hudName = el("div", null, "\u732A\u732A");
+    var hudCoins = el("div", null, "\u{1FA99} 0");
+    var hudHealth = el("div", null, "\u{1F49A} 5/5");
+    hud.appendChild(hudName);
+    hud.appendChild(hudCoins);
+    hud.appendChild(hudHealth);
+    scene6.appendChild(hud);
+    var bubble = el("div", "dp-bubble", "");
+    bubble.hidden = true;
+    scene6.appendChild(bubble);
+    var work = el("div", "dp-work");
+    var prop = el("span", "dp-prop", "\u{1F4BC}");
+    var progressWrap = el("div", "dp-progress");
+    var progressFill = doc.createElement("i");
+    progressWrap.appendChild(progressFill);
+    work.appendChild(prop);
+    work.appendChild(progressWrap);
+    work.hidden = true;
+    scene6.appendChild(work);
+    var pokeHint = el("div", "dp-poke-hint");
+    pokeHint.appendChild(el("span", null, "\u{1F446}"));
+    pokeHint.appendChild(el("span", null, "\u6233\u4E09\u4E0B"));
+    pokeHint.hidden = true;
+    scene6.appendChild(pokeHint);
+    var dailyHint = el("button", "dp-daily");
+    dailyHint.hidden = true;
+    scene6.appendChild(dailyHint);
+    var soul = el("span", "dp-soul", "\u{1F47B}");
+    soul.hidden = true;
+    scene6.appendChild(soul);
+    var pigArt = doc.createElement("img");
+    pigArt.className = "dp-pig-img";
+    pigArt.alt = "";
+    pigArt.hidden = true;
+    var pigSleep = doc.createElement("img");
+    pigSleep.className = "dp-pig-sleep";
+    pigSleep.alt = "";
+    pigSleep.draggable = false;
+    var pigEmoji = el("span", "dp-pig-emoji", "\u{1F416}");
+    var pig = el("div", "dp-pig");
+    var pigHold = el("div", "dp-pig-hold");
+    var pigBody = el("div", "dp-pig-body");
+    pig.appendChild(pigHold);
+    pigHold.appendChild(pigBody);
+    pigBody.appendChild(pigArt);
+    pigBody.appendChild(pigEmoji);
+    pigBody.appendChild(pigSleep);
+    var napBubble = el("span", "dp-nap-zzz", "Zzz");
+    napBubble.setAttribute("aria-hidden", "true");
+    pigBody.appendChild(napBubble);
+    var dressSlots = el("div", "dp-dress");
+    pigBody.appendChild(dressSlots);
+    var hungerBubble = el("span", "dp-hunger-bubble");
+    hungerBubble.setAttribute("role", "img");
+    hungerBubble.setAttribute("aria-label", "\u997F\u4E86");
+    var hungerCloud = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+    hungerCloud.setAttribute("viewBox", "0 0 54 50");
+    hungerCloud.setAttribute("aria-hidden", "true");
+    hungerCloud.innerHTML = '<path d="M14 33C4 33 1 22 8 17C5 9 13 3 21 7C27 0 39 3 40 11C52 12 53 26 44 29C40 38 29 38 25 33C20 37 16 36 14 33Z"/><circle cx="13" cy="40" r="3"/><circle cx="7" cy="46" r="1.8"/>';
+    hungerBubble.appendChild(hungerCloud);
+    hungerBubble.appendChild(el("span", "dp-hunger-food", "\u{1F955}"));
+    pig.appendChild(hungerBubble);
+    var pomoHint = el("div", "dp-pomo");
+    pomoHint.setAttribute("data-pomo-pill", "true");
+    pomoHint.hidden = true;
+    pigBody.appendChild(pomoHint);
+    scene6.appendChild(pig);
+    scene6.title = "\u5DE6\u952E\u6478\u6478 \xB7 \u53F3\u952E\u6253\u5F00\u9762\u677F \xB7 \u62D6\u52A8\u53EF\u79FB\u52A8";
+    var bar = el("div", "dp-bar");
+    var linkBar = el("div", "dp-link");
+    linkBar.hidden = true;
+    var linkNote2 = el("div", "dp-link-note");
+    linkNote2.hidden = true;
+    var content = el("div", "dp-content");
+    var footer = el("div", "dp-panel-footer");
+    footer.hidden = true;
+    card2.appendChild(linkBar);
+    card2.appendChild(linkNote2);
+    card2.appendChild(content);
+    card2.appendChild(footer);
+    card2.appendChild(bar);
+    host2.appendChild(card2);
+    host2.appendChild(scene6);
+    if (root !== null) {
+      root.appendChild(host2);
+    } else if (doc.body !== null && doc.body !== void 0) {
+      doc.body.appendChild(host2);
+    } else {
+      doc.addEventListener("DOMContentLoaded", function() {
+        try {
+          doc.body.appendChild(host2);
+        } catch (error) {
+        }
+      }, { once: true });
+    }
+    return { font, style, host: host2, card: card2, scene: scene6, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote: linkNote2 };
+  }
+
+  // src/client/presentation-context.js
+  function noop2() {
+  }
+  function createPresentationContext(options) {
+    const opts = options ?? {};
+    const root = opts.root ?? null;
+    const state4 = opts.state ?? {};
+    const transport = opts.transport ?? {};
+    const parts = opts.parts ?? createScene({ root });
+    const art = createArtContext({
+      pig: parts.pig,
+      image: parts.pigArt,
+      emoji: parts.pigEmoji,
+      artResources: opts.artResources ?? null
+    });
+    let disposed = false;
+    let birthday = null;
+    function getView() {
+      if (typeof state4.getView === "function") return state4.getView();
+      return null;
+    }
+    function isStopped() {
+      if (disposed) return true;
+      return typeof state4.isStopped === "function" ? state4.isStopped() === true : false;
+    }
+    function isAway() {
+      return typeof state4.isAway === "function" ? state4.isAway() === true : false;
+    }
+    function isQuiet() {
+      return typeof state4.isQuiet === "function" ? state4.isQuiet() === true : false;
+    }
+    const audio = createAudioChannel({ isQuiet });
+    const effects2 = createEffects({
+      scene: parts.scene,
+      pig: parts.pig,
+      pigArt: parts.pigArt,
+      pigEmoji: parts.pigEmoji,
+      card: parts.card,
+      bubble: parts.bubble,
+      pomoHint: parts.pomoHint,
+      root,
+      art,
+      isStopped,
+      isAway
+    });
+    const feel2 = createFeel({
+      pig: parts.pig,
+      pigHold: parts.pigHold,
+      pigBody: parts.pigBody,
+      scene: parts.scene,
+      host: parts.host,
+      pigArt: parts.pigArt,
+      pigEmoji: parts.pigEmoji,
+      burst: effects2.burst,
+      getShell: typeof opts.getShell === "function" ? opts.getShell : function() {
+        return null;
+      },
+      isQuiet,
+      onGeometry: typeof opts.onGeometry === "function" ? opts.onGeometry : noop2,
+      art,
+      audio
+    });
+    art.setArtSwapHook(function(apply) {
+      feel2.coverSwap(apply);
+    });
+    effects2.setFeel(feel2);
+    const context = {
+      parts,
+      art,
+      audio,
+      effects: effects2,
+      feel: feel2,
+      state: state4,
+      transport,
+      get disposed() {
+        return disposed;
+      },
+      getView,
+      /**
+       * Create the optional birthday controller once the caller's UI context is
+       * ready. The presentation owns its timer and disposes it with the instance.
+       */
+      createBirthday: function(ui, render) {
+        if (disposed) return { celebrate: noop2, dispose: noop2 };
+        if (birthday !== null) birthday.dispose();
+        birthday = createBirthday({
+          ctx: ui !== null && ui !== void 0 ? ui : {},
+          pig: parts.pig,
+          pigArt: parts.pigArt,
+          pigEmoji: parts.pigEmoji,
+          burst: effects2.burst,
+          render: typeof render === "function" ? render : noop2,
+          art
+        });
+        return birthday;
+      },
+      dispose: function() {
+        if (disposed) return;
+        disposed = true;
+        if (birthday !== null) birthday.dispose();
+        birthday = null;
+        audio.dispose();
+        art.dispose();
+        effects2.dispose();
+        feel2.dispose();
+        parts.host.remove();
+        parts.style.remove();
+        parts.font.remove();
+      }
+    };
+    return context;
   }
 
   // src/client/bubble-fit.js
@@ -25469,8 +27241,8 @@
     }
     return { x, y, width: node.offsetWidth || 0, height: node.offsetHeight || 0 };
   }
-  function hostInset(host3, side) {
-    const value = Number.parseFloat(getComputedStyle(host3)[side]);
+  function hostInset(host2, side) {
+    const value = Number.parseFloat(getComputedStyle(host2)[side]);
     return Number.isFinite(value) ? value : null;
   }
   function pigEnvelope(pig) {
@@ -25598,12 +27370,12 @@
     }
     return best;
   }
-  function spaceScale(geometry2) {
-    const scale2 = Number(geometry2?.space?.scale);
+  function spaceScale(geometry) {
+    const scale2 = Number(geometry?.space?.scale);
     return Number.isFinite(scale2) && scale2 > 0 ? scale2 : null;
   }
-  function pairedDisplays(geometry2) {
-    const list = Array.isArray(geometry2?.space?.displays) ? geometry2.space.displays : [];
+  function pairedDisplays(geometry) {
+    const list = Array.isArray(geometry?.space?.displays) ? geometry.space.displays : [];
     const paired = [];
     for (const item of list) {
       const scaleFactor = Number(item?.scaleFactor);
@@ -25614,33 +27386,33 @@
     }
     return paired;
   }
-  function hasSpace(geometry2) {
-    return spaceScale(geometry2) !== null && pairedDisplays(geometry2).length > 0;
+  function hasSpace(geometry) {
+    return spaceScale(geometry) !== null && pairedDisplays(geometry).length > 0;
   }
-  function toPhysicalPoint(value, geometry2) {
+  function toPhysicalPoint(value, geometry) {
     const point = pointOf(value);
     if (point === null) return null;
-    const scale2 = spaceScale(geometry2);
+    const scale2 = spaceScale(geometry);
     return scale2 === null ? point : { x: point.x * scale2, y: point.y * scale2 };
   }
-  function toCanonicalPoint(value, geometry2) {
+  function toCanonicalPoint(value, geometry) {
     const point = pointOf(value);
     if (point === null) return null;
-    const scale2 = spaceScale(geometry2);
+    const scale2 = spaceScale(geometry);
     return scale2 === null ? point : { x: point.x / scale2, y: point.y / scale2 };
   }
-  function canonicalFootForPig(pigBox, geometry2) {
+  function canonicalFootForPig(pigBox, geometry) {
     const box = rectOf(pigBox);
-    const win = rectOf(geometry2?.window);
+    const win = rectOf(geometry?.window);
     if (box === null || win === null) return null;
     return { x: win.x + box.x + box.width / 2, y: win.y + box.y + box.height };
   }
-  function physicalFootForPig(pigBox, geometry2) {
-    const foot = canonicalFootForPig(pigBox, geometry2);
-    return foot === null ? null : toPhysicalPoint(foot, geometry2);
+  function physicalFootForPig(pigBox, geometry) {
+    const foot = canonicalFootForPig(pigBox, geometry);
+    return foot === null ? null : toPhysicalPoint(foot, geometry);
   }
-  function canonicalFootFromPhysical(value, geometry2) {
-    return toCanonicalPoint(value, geometry2);
+  function canonicalFootFromPhysical(value, geometry) {
+    return toCanonicalPoint(value, geometry);
   }
   function displayForPhysicalPoint(value, displays) {
     const point = pointOf(value);
@@ -25679,19 +27451,19 @@
       y: display.dipWorkArea.y + (point.y - display.physicalWorkArea.y) / display.scaleFactor
     };
   }
-  function rescaleGeometry(geometry2, scaleValue) {
+  function rescaleGeometry(geometry, scaleValue) {
     const scale2 = Number(scaleValue);
-    const oldScale = spaceScale(geometry2);
-    const displays = pairedDisplays(geometry2);
-    const win = rectOf(geometry2?.window);
-    if (!(scale2 > 0) || oldScale === null || displays.length === 0 || win === null) return geometry2;
-    const content = rectOf(geometry2?.space?.content) ?? { x: win.x * oldScale, y: win.y * oldScale, width: win.width * oldScale, height: win.height * oldScale };
+    const oldScale = spaceScale(geometry);
+    const displays = pairedDisplays(geometry);
+    const win = rectOf(geometry?.window);
+    if (!(scale2 > 0) || oldScale === null || displays.length === 0 || win === null) return geometry;
+    const content = rectOf(geometry?.space?.content) ?? { x: win.x * oldScale, y: win.y * oldScale, width: win.width * oldScale, height: win.height * oldScale };
     const div = (area) => ({ x: area.x / scale2, y: area.y / scale2, width: area.width / scale2, height: area.height / scale2 });
     return {
-      ...geometry2,
+      ...geometry,
       window: div(content),
       workAreas: displays.map((display) => div(display.physicalWorkArea)),
-      space: { ...geometry2.space, scale: scale2 }
+      space: { ...geometry.space, scale: scale2 }
     };
   }
 
@@ -25699,12 +27471,12 @@
   var round3 = (value) => Math.round(Number(value) || 0);
   var STAGE_POSITION_MIGRATION_KEY = "dsh-piggy:stage-position-v1";
   var POSITION_SYNC_SLACK = 2;
-  function desktopPositionForStage(pig, geometry2) {
-    if (!pig || !geometry2?.window) return null;
-    const foot = { x: geometry2.window.x + pig.x + pig.width / 2, y: geometry2.window.y + pig.y + pig.height };
-    if (hasSpace(geometry2)) {
-      const physical = toPhysicalPoint(foot, geometry2);
-      const display = displayForPhysicalPoint(physical, pairedDisplays(geometry2));
+  function desktopPositionForStage(pig, geometry) {
+    if (!pig || !geometry?.window) return null;
+    const foot = { x: geometry.window.x + pig.x + pig.width / 2, y: geometry.window.y + pig.y + pig.height };
+    if (hasSpace(geometry)) {
+      const physical = toPhysicalPoint(foot, geometry);
+      const display = displayForPhysicalPoint(physical, pairedDisplays(geometry));
       if (display === null) return null;
       const dip = dipPointFromPhysical(physical, display);
       return {
@@ -25714,8 +27486,8 @@
         y: round3(dip.y - display.dipWorkArea.y)
       };
     }
-    if (!Array.isArray(geometry2.workAreas)) return null;
-    const area = nearestArea2(foot, geometry2.workAreas);
+    if (!Array.isArray(geometry.workAreas)) return null;
+    const area = nearestArea2(foot, geometry.workAreas);
     if (!area) return null;
     return { v: 3, area: { ...area }, x: round3(foot.x - area.x), y: round3(foot.y - area.y) };
   }
@@ -25762,20 +27534,20 @@
     const area = { x: Number(value.x), y: Number(value.y), width: Number(value.width), height: Number(value.height) };
     return [area.x, area.y, area.width, area.height].every(Number.isFinite) ? area : null;
   }
-  function savedHomeFoot(raw, pigSize2, geometry2) {
+  function savedHomeFoot(raw, pigSize2, geometry) {
     if (raw === null || typeof raw !== "object") return null;
     if (!Number.isFinite(raw.x) || !Number.isFinite(raw.y)) return null;
-    if (!hasSpace(geometry2)) {
+    if (!hasSpace(geometry)) {
       const rect = savedPigTopLeft(raw, pigSize2);
       return rect === null ? null : { x: rect.x + rect.width / 2, y: rect.y + rect.height };
     }
-    const displays = pairedDisplays(geometry2);
+    const displays = pairedDisplays(geometry);
     if (raw.v === 3) {
       const area = savedArea(raw.area);
       const dipFoot = area === null ? { x: raw.x, y: raw.y } : { x: area.x + raw.x, y: area.y + raw.y };
       const display2 = area === null ? displayForDipPoint(dipFoot, displays) : displayForDipArea(area, displays);
       if (display2 === null) return null;
-      return toCanonicalPoint(physicalPointFromDip(dipFoot, display2), geometry2);
+      return toCanonicalPoint(physicalPointFromDip(dipFoot, display2), geometry);
     }
     const dipTopLeft = { x: raw.x, y: raw.y };
     const display = displayForDipPoint(dipTopLeft, displays);
@@ -25787,35 +27559,35 @@
       x: physicalTopLeft.x + width * display.scaleFactor / 2,
       y: physicalTopLeft.y + height * display.scaleFactor
     };
-    return toCanonicalPoint(physicalFoot, geometry2);
+    return toCanonicalPoint(physicalFoot, geometry);
   }
-  function savedHomeRect(raw, pigSize2, geometry2) {
-    if (!hasSpace(geometry2)) return savedPigTopLeft(raw, pigSize2);
-    const foot = savedHomeFoot(raw, pigSize2, geometry2);
+  function savedHomeRect(raw, pigSize2, geometry) {
+    if (!hasSpace(geometry)) return savedPigTopLeft(raw, pigSize2);
+    const foot = savedHomeFoot(raw, pigSize2, geometry);
     return foot === null ? null : rectAtFoot(foot, pigSize2);
   }
-  function legacyHomeFoot(point, pigSize2, geometry2) {
+  function legacyHomeFoot(point, pigSize2, geometry) {
     if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
-    if (!hasSpace(geometry2)) {
+    if (!hasSpace(geometry)) {
       const rect = legacyPigRect(point, pigSize2);
       return rect === null ? null : { x: rect.x + rect.width / 2, y: rect.y + rect.height };
     }
-    const display = displayForDipPoint(point, pairedDisplays(geometry2));
+    const display = displayForDipPoint(point, pairedDisplays(geometry));
     if (display === null) return null;
     const physicalTopLeft = physicalPointFromDip(point, display);
     const physicalFoot = {
       x: physicalTopLeft.x + pigSize2.width * display.scaleFactor / 2,
       y: physicalTopLeft.y + pigSize2.height * display.scaleFactor
     };
-    return toCanonicalPoint(physicalFoot, geometry2);
+    return toCanonicalPoint(physicalFoot, geometry);
   }
-  function legacyHomeRect(point, pigSize2, geometry2) {
-    if (!hasSpace(geometry2)) return legacyPigRect(point, pigSize2);
-    const foot = legacyHomeFoot(point, pigSize2, geometry2);
+  function legacyHomeRect(point, pigSize2, geometry) {
+    if (!hasSpace(geometry)) return legacyPigRect(point, pigSize2);
+    const foot = legacyHomeFoot(point, pigSize2, geometry);
     return foot === null ? null : rectAtFoot(foot, pigSize2);
   }
-  function scaleOf(geometry2) {
-    return spaceScale(geometry2) ?? 1;
+  function scaleOf(geometry) {
+    return spaceScale(geometry) ?? 1;
   }
   function rebaseGeometryFoot(pendingFoot, pigBox, previous, next, skip = false) {
     if (skip === true || !previous?.window || !next?.window) return pendingFoot ?? null;
@@ -25824,11 +27596,11 @@
     const physical = pendingFoot !== null && pendingFoot !== void 0 ? toPhysicalPoint(pendingFoot, previous) : physicalFootForPig(pigBox, previous);
     return physical === null ? pendingFoot ?? null : canonicalFootFromPhysical(physical, next);
   }
-  function pigBoxForGeometry(pigBox, hostBox, right, bottom, geometry2) {
-    if (!geometry2?.window || !pigBox || !hostBox || !Number.isFinite(right) || !Number.isFinite(bottom)) return pigBox;
+  function pigBoxForGeometry(pigBox, hostBox, right, bottom, geometry) {
+    if (!geometry?.window || !pigBox || !hostBox || !Number.isFinite(right) || !Number.isFinite(bottom)) return pigBox;
     return {
-      x: geometry2.window.width - right - hostBox.width + (pigBox.x - hostBox.x),
-      y: geometry2.window.height - bottom - hostBox.height + (pigBox.y - hostBox.y),
+      x: geometry.window.width - right - hostBox.width + (pigBox.x - hostBox.x),
+      y: geometry.window.height - bottom - hostBox.height + (pigBox.y - hostBox.y),
       width: pigBox.width,
       height: pigBox.height
     };
@@ -25838,15 +27610,15 @@
     const oldPigBox = hasPending ? pigBox : pigBoxForGeometry(pigBox, hostBox, right, bottom, previous);
     return rebaseGeometryFoot(pendingFoot, oldPigBox, previous, next, skip);
   }
-  function geometryMatchesViewport(geometry2, width, height) {
-    const win = geometry2?.window;
+  function geometryMatchesViewport(geometry, width, height) {
+    const win = geometry?.window;
     return win !== void 0 && win !== null && Math.abs(win.width - Number(width)) <= 2 && Math.abs(win.height - Number(height)) <= 2;
   }
-  function rescaleGeometryForDpr(geometry2, dpr) {
-    if (!geometry2?.space) return geometry2;
+  function rescaleGeometryForDpr(geometry, dpr) {
+    if (!geometry?.space) return geometry;
     const scale2 = Number(dpr);
-    if (!(scale2 > 0) || Math.abs(scale2 - scaleOf(geometry2)) <= 1e-6) return geometry2;
-    return rescaleGeometry(geometry2, scale2);
+    if (!(scale2 > 0) || Math.abs(scale2 - scaleOf(geometry)) <= 1e-6) return geometry;
+    return rescaleGeometry(geometry, scale2);
   }
   function toPageRect(rect, origin) {
     return { x: rect.x - origin.x, y: rect.y - origin.y, width: rect.width, height: rect.height };
@@ -25867,17 +27639,17 @@
     }
     return true;
   }
-  function workAreaForPig(pigBox, geometry2) {
-    if (!pigBox || !geometry2 || !geometry2.window) return null;
-    const areas = Array.isArray(geometry2.workAreas) ? geometry2.workAreas : [];
-    if (areas.length === 0) return geometry2.window;
-    const centre = { x: geometry2.window.x + pigBox.x + pigBox.width / 2, y: geometry2.window.y + pigBox.y + pigBox.height / 2 };
-    return nearestArea2(centre, areas) ?? geometry2.window;
+  function workAreaForPig(pigBox, geometry) {
+    if (!pigBox || !geometry || !geometry.window) return null;
+    const areas = Array.isArray(geometry.workAreas) ? geometry.workAreas : [];
+    if (areas.length === 0) return geometry.window;
+    const centre = { x: geometry.window.x + pigBox.x + pigBox.width / 2, y: geometry.window.y + pigBox.y + pigBox.height / 2 };
+    return nearestArea2(centre, areas) ?? geometry.window;
   }
-  function stagePanelArea(pigBox, geometry2) {
-    const origin = geometry2?.window;
+  function stagePanelArea(pigBox, geometry) {
+    const origin = geometry?.window;
     if (!origin) return null;
-    const area = workAreaForPig(pigBox, geometry2);
+    const area = workAreaForPig(pigBox, geometry);
     return area === null ? null : toPageRect(area, origin);
   }
   function nearestArea2(point, areas) {
@@ -25905,10 +27677,10 @@
     const y = Math.min(Math.max(rect.y, area.y), area.y + area.height - height);
     return { offset: { x: round3(x - rect.x), y: round3(y - rect.y) }, moved: x !== rect.x || y !== rect.y };
   }
-  function positionForScreenFoot(foot, currentPig, host3, geometry2) {
-    if (!foot || !Number.isFinite(foot.x) || !Number.isFinite(foot.y) || !geometry2?.window) return null;
-    const target = { x: foot.x - geometry2.window.x - currentPig.width / 2, y: foot.y - geometry2.window.y - currentPig.height, width: currentPig.width, height: currentPig.height };
-    return positionForPig(target, host3, geometry2.window, currentPig);
+  function positionForScreenFoot(foot, currentPig, host2, geometry) {
+    if (!foot || !Number.isFinite(foot.x) || !Number.isFinite(foot.y) || !geometry?.window) return null;
+    const target = { x: foot.x - geometry.window.x - currentPig.width / 2, y: foot.y - geometry.window.y - currentPig.height, width: currentPig.width, height: currentPig.height };
+    return positionForPig(target, host2, geometry.window, currentPig);
   }
 
   // src/client/stage-home.js
@@ -25922,9 +27694,9 @@
       return { source: "home", position };
     }
     if (input.allowLegacy !== true) return none;
-    const legacy = legacyHomeRect(input.legacyPig, input.pigSize, input.geometry);
-    if (legacy === null) return none;
-    return { source: "legacy", position: positionForScreenRect(legacy, input.hostBox, input.pigBox, input.geometry.window) };
+    const legacy2 = legacyHomeRect(input.legacyPig, input.pigSize, input.geometry);
+    if (legacy2 === null) return none;
+    return { source: "legacy", position: positionForScreenRect(legacy2, input.hostBox, input.pigBox, input.geometry.window) };
   }
 
   // src/client/stage-anchor.js
@@ -25941,15 +27713,15 @@
     const bottom = previous.bottom - next.bottom;
     return Math.abs(right) <= slack && Math.abs(bottom) <= slack ? null : { right, bottom };
   }
-  function createStageAnchor(pig, host3, shift) {
+  function createStageAnchor(pig, host2, shift) {
     let previous = null;
-    const measure2 = () => footAnchor(layoutBox2(pig), layoutBox2(host3));
+    const measure = () => footAnchor(layoutBox2(pig), layoutBox2(host2));
     return {
       remember() {
-        previous = measure2();
+        previous = measure();
       },
       restore() {
-        const next = measure2();
+        const next = measure();
         const adjustment = anchorAdjustment(previous, next);
         previous = next;
         if (adjustment !== null) shift(adjustment);
@@ -26009,9 +27781,9 @@
         restore2();
       } };
     }
-    const { ctx, host: host3, pig, bubble, card: card2, setOpen, clampPig, fitPanel } = deps;
-    let geometry2 = null;
-    let flying2 = false;
+    const { ctx, host: host2, pig, bubble, card: card2, setOpen, clampPig, fitPanel } = deps;
+    let geometry = null;
+    let flying = false;
     let flightGuard = null;
     let settleFrame = 0;
     let bubbleFrame = 0;
@@ -26020,14 +27792,14 @@
     const fitSpeechPanel = createStageSpeechPanel(card2, fitPanel);
     let lastFlightWindow = null;
     function currentGeometry() {
-      if (geometry2 === null) {
+      if (geometry === null) {
         try {
           const live = options.geometry?.();
-          if (live !== null && live !== void 0 && live.window) geometry2 = live;
+          if (live !== null && live !== void 0 && live.window) geometry = live;
         } catch {
         }
       }
-      return geometry2;
+      return geometry;
     }
     function scheduleSettle() {
       if (settleFrame !== 0) return;
@@ -26040,7 +27812,7 @@
       if (bubbleFrame !== 0) return;
       bubbleFrame = requestAnimationFrame(() => {
         bubbleFrame = 0;
-        applyBubbleSize(host3);
+        applyBubbleSize(host2);
         fitBubble();
       });
     }
@@ -26049,13 +27821,13 @@
       pendingHome = null;
       ctx.userRight = ROUND(right);
       ctx.userBottom = ROUND(bottom);
-      host3.style.left = "auto";
-      host3.style.top = "auto";
-      host3.style.right = ctx.userRight + "px";
-      host3.style.bottom = ctx.userBottom + "px";
+      host2.style.left = "auto";
+      host2.style.top = "auto";
+      host2.style.right = ctx.userRight + "px";
+      host2.style.bottom = ctx.userBottom + "px";
       clampPig();
-      const appliedRight = hostInset(host3, "right");
-      const appliedBottom = hostInset(host3, "bottom");
+      const appliedRight = hostInset(host2, "right");
+      const appliedBottom = hostInset(host2, "bottom");
       if (appliedRight !== null) ctx.userRight = appliedRight;
       if (appliedBottom !== null) ctx.userBottom = appliedBottom;
       footAnchor2.remember();
@@ -26067,11 +27839,11 @@
       scheduleBubble();
       if (resettle) scheduleSettle();
     }
-    const footAnchor2 = createStageAnchor(pig, host3, (shift) => {
-      setPosition((hostInset(host3, "right") ?? ctx.userRight) + shift.right, (hostInset(host3, "bottom") ?? ctx.userBottom) + shift.bottom, false);
+    const footAnchor2 = createStageAnchor(pig, host2, (shift) => {
+      setPosition((hostInset(host2, "right") ?? ctx.userRight) + shift.right, (hostInset(host2, "bottom") ?? ctx.userBottom) + shift.bottom, false);
     });
     function settle() {
-      if (flying2) return;
+      if (flying) return;
       const geo = currentGeometry();
       if (geo === null || !geo.window || !Array.isArray(geo.workAreas) || geo.workAreas.length === 0) return;
       if (!geometryMatchesViewport(geo, window.innerWidth, window.innerHeight)) return;
@@ -26080,7 +27852,7 @@
         if (!migrated) return;
       }
       if (pendingHome !== null) {
-        const next = positionForScreenFoot(pendingHome, layoutBox2(pig), layoutBox2(host3), geo);
+        const next = positionForScreenFoot(pendingHome, layoutBox2(pig), layoutBox2(host2), geo);
         pendingHome = null;
         if (next) setPosition(next.right, next.bottom, false);
       }
@@ -26088,14 +27860,14 @@
       const envelope = pigEnvelope(pig);
       if (envelope === null) return;
       let target = envelope;
-      if (host3.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
+      if (host2.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
         const rect = card2.getBoundingClientRect();
         if (rect.width > 1 && rect.height > 1) target = union2(envelope, { x: rect.left, y: rect.top, width: rect.width, height: rect.height });
       }
       const screen = { x: target.x + geo.window.x, y: target.y + geo.window.y, width: target.width, height: target.height };
       const moved = constrainRectToAreas(screen, geo.workAreas);
       if (moved.moved) {
-        setPosition((hostInset(host3, "right") ?? ctx.userRight) - moved.offset.x, (hostInset(host3, "bottom") ?? ctx.userBottom) - moved.offset.y, false);
+        setPosition((hostInset(host2, "right") ?? ctx.userRight) - moved.offset.x, (hostInset(host2, "bottom") ?? ctx.userBottom) - moved.offset.y, false);
         scheduleBubble();
         return;
       }
@@ -26124,7 +27896,7 @@
       const pageArea = toPageRect(area, origin);
       const pageWindow = { x: 0, y: 0, width: origin.width, height: origin.height };
       let menu = null;
-      if (host3.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
+      if (host2.getAttribute("data-open") === "true" && card2 !== null && !card2.hidden) {
         const box = layoutBox2(card2);
         if (box.width > 1 && box.height > 1) menu = box;
       }
@@ -26160,23 +27932,23 @@
       } else if (node.getAttribute(name) !== value) node.setAttribute(name, value);
     }
     function beginFlight() {
-      flying2 = true;
+      flying = true;
       options.setInteracting?.(true);
       if (flightGuard !== null) clearTimeout(flightGuard);
       flightGuard = setTimeout(() => {
         flightGuard = null;
-        if (flying2) flightBridge.finish(lastFlightWindow);
+        if (flying) flightBridge.finish(lastFlightWindow);
       }, FLIGHT_GUARD_MS);
     }
     function endFlight() {
-      flying2 = false;
+      flying = false;
       lastFlightWindow = null;
       if (flightGuard !== null) {
         clearTimeout(flightGuard);
         flightGuard = null;
       }
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (flying2) return;
+        if (flying) return;
         options.setInteracting?.(false);
         scheduleSettle();
         scheduleBubble();
@@ -26185,17 +27957,17 @@
     function placeHostAt(screenX, screenY) {
       const geo = currentGeometry();
       if (geo === null || !geo.window) return;
-      host3.style.right = "auto";
-      host3.style.bottom = "auto";
-      host3.style.left = ROUND(screenX - geo.window.x) + "px";
-      host3.style.top = ROUND(screenY - geo.window.y) + "px";
+      host2.style.right = "auto";
+      host2.style.bottom = "auto";
+      host2.style.left = ROUND(screenX - geo.window.x) + "px";
+      host2.style.top = ROUND(screenY - geo.window.y) + "px";
     }
     const flightBridge = {
       supported: true,
       start() {
         const geo = currentGeometry(), pigBox = layoutBox2(pig);
         if (geo === null || !geo.window || !Array.isArray(geo.workAreas) || pigBox.width < 1) return null;
-        const hostRect = host3.getBoundingClientRect();
+        const hostRect = host2.getBoundingClientRect();
         const local = { x: pigBox.x - hostRect.left, y: pigBox.y - hostRect.top, width: pigBox.width, height: pigBox.height };
         const visual = bodyVisualBounds(local);
         const home = { x: geo.window.x + pigBox.x + pigBox.width / 2, y: geo.window.y + pigBox.y + pigBox.height };
@@ -26211,34 +27983,34 @@
         };
       },
       move(x, y) {
-        flying2 = true;
+        flying = true;
         lastFlightWindow = { x, y, width: lastFlightWindow?.width ?? 0, height: lastFlightWindow?.height ?? 0 };
         placeHostAt(x, y);
       },
       setFlying(on) {
-        if (on === true && !flying2) beginFlight();
+        if (on === true && !flying) beginFlight();
       },
       finish(last) {
-        if (flying2) {
+        if (flying) {
           const final = last?.window ?? lastFlightWindow ?? { x: lastFlightWindow?.x ?? 0, y: lastFlightWindow?.y ?? 0 };
           const slide = last?.slide ?? { x: 0, y: 0 };
           placeHostAt(final.x + (Number(slide.x) || 0), final.y + (Number(slide.y) || 0));
-          host3.style.translate = "";
-          const rect = host3.getBoundingClientRect();
+          host2.style.translate = "";
+          const rect = host2.getBoundingClientRect();
           setPosition(window.innerWidth - rect.right, window.innerHeight - rect.bottom);
         }
         endFlight();
       }
     };
     function moveBy(dx, dy) {
-      if (flying2) return;
-      const right = hostInset(host3, "right") ?? ctx.userRight;
-      const bottom = hostInset(host3, "bottom") ?? ctx.userBottom;
+      if (flying) return;
+      const right = hostInset(host2, "right") ?? ctx.userRight;
+      const bottom = hostInset(host2, "bottom") ?? ctx.userBottom;
       setPosition(right - (Number(dx) || 0), bottom - (Number(dy) || 0), true);
     }
     function migratePosition() {
       const geo = currentGeometry();
-      if (geo === null || !geo.window || flying2) return;
+      if (geo === null || !geo.window || flying) return;
       const pigBox = layoutBox2(pig);
       if (pigBox.width < 8 || pigBox.height < 8) return;
       let homeRaw = null;
@@ -26251,7 +28023,7 @@
         legacyPig: geo.legacyPig,
         allowLegacy: !migrated,
         pigSize: { width: pigBox.width, height: pigBox.height },
-        hostBox: layoutBox2(host3),
+        hostBox: layoutBox2(host2),
         pigBox,
         geometry: geo,
         current: { right: ctx.userRight, bottom: ctx.userBottom }
@@ -26261,7 +28033,7 @@
       if (home.position !== null) setPosition(home.position.right, home.position.bottom);
     }
     function stageBubbleArea() {
-      return workAreaForPig(layoutBox2(pig), geometry2);
+      return workAreaForPig(layoutBox2(pig), geometry);
     }
     function canCollapse() {
       if (ctx.isOpen !== true || !autoCollapseEnabled()) return false;
@@ -26274,8 +28046,8 @@
     }
     function onGeometry(info) {
       if (info === null || info === void 0) return;
-      pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host3), hostInset(host3, "right") ?? ctx.userRight, hostInset(host3, "bottom") ?? ctx.userBottom, geometry2, info, flying2);
-      geometry2 = info;
+      pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host2), hostInset(host2, "right") ?? ctx.userRight, hostInset(host2, "bottom") ?? ctx.userBottom, geometry, info, flying);
+      geometry = info;
       if (!migrated) migratePosition();
       scheduleBubble();
       scheduleSettle();
@@ -26285,15 +28057,15 @@
     }
     function onPointerUp() {
       setTimeout(() => {
-        if (!flying2) scheduleSettle();
+        if (!flying) scheduleSettle();
       }, 0);
     }
     function onResize() {
       const geo = currentGeometry();
       const next = rescaleGeometryForDpr(geo, window.devicePixelRatio);
       if (geo !== null && next !== geo) {
-        pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host3), hostInset(host3, "right") ?? ctx.userRight, hostInset(host3, "bottom") ?? ctx.userBottom, geo, next, flying2);
-        geometry2 = next;
+        pendingHome = rebaseStageFoot(pendingHome, layoutBox2(pig), layoutBox2(host2), hostInset(host2, "right") ?? ctx.userRight, hostInset(host2, "bottom") ?? ctx.userBottom, geo, next, flying);
+        geometry = next;
       }
       scheduleBubble();
       scheduleSettle();
@@ -26312,12 +28084,12 @@
       scheduleBubble();
       scheduleSettle();
     });
-    observer.observe(host3, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "style", "data-open", "data-bubble-side", "data-fitted"] });
+    observer.observe(host2, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "style", "data-open", "data-bubble-side", "data-fitted"] });
     const api = {
       role: "stage",
       setPosition,
       recover(home) {
-        flying2 = false;
+        flying = false;
         pendingHome = null;
         lastFlightWindow = null;
         options.setInteracting?.(false);
@@ -26325,7 +28097,7 @@
           clearTimeout(flightGuard);
           flightGuard = null;
         }
-        host3.style.translate = "";
+        host2.style.translate = "";
         writeStore(DESKTOP_HOME_KEY, JSON.stringify({ v: 3, area: home.area, x: home.x, y: home.y }));
         migratePosition();
         footAnchor2.remember();
@@ -26354,7 +28126,7 @@
       fullscreen: shell2?.fullscreen ?? null,
       external: shell2?.external ?? null,
       isFlying() {
-        return flying2;
+        return flying;
       },
       feelShell() {
         return { flight: flightBridge };
@@ -26373,8 +28145,9 @@
       syncGeometry: api.syncGeometry,
       walk: true,
       drawingBounds: (box) => stageDrawingBounds(box, pig),
+      hitRegions: collectHitRects,
       isFlying() {
-        return flying2;
+        return flying;
       }
     };
     window.piggyStage = publicApi;
@@ -26392,7 +28165,7 @@
       settleFrame = 0;
       bubbleFrame = 0;
       flightGuard = null;
-      flying2 = false;
+      flying = false;
       options.setInteracting?.(false);
       setStageAreaProvider(null);
       unregisterStageShell(api);
@@ -26473,7 +28246,7 @@
   }
 
   // src/client/box-poke.js
-  function createBoxPoke({ getView, showBubble, react, host: host3, burst, send: send2 }) {
+  function createBoxPoke({ getView, showBubble, react, host: host2, burst, send: send2 }) {
     let boxPokes = 0;
     return function pokeBox() {
       if (isExternalMode(getView()) && getView().pig === null) {
@@ -26484,13 +28257,13 @@
       react("poke", 560);
       if (boxPokes >= BOX_POKES_TO_OPEN) {
         boxPokes = 0;
-        host3.removeAttribute("data-poke");
+        host2.removeAttribute("data-poke");
         showBubble("\u54C7\u2014\u2014\uFF01", 1200);
         burst(["\u2728", "\u{1F389}", "\u{1F4A8}"], 6);
         send2("hatch");
         return;
       }
-      host3.setAttribute("data-poke", String(boxPokes));
+      host2.setAttribute("data-poke", String(boxPokes));
       burst(["\u{1F4A8}"], 2);
       showBubble(BOX_POKE_LINES[boxPokes - 1], 2200);
     };
@@ -26501,17 +28274,51 @@
     var devMode = false;
     var stageCandidate = mountOptions !== null && typeof mountOptions === "object" ? mountOptions.stage : null;
     var stageOptions = stageCandidate !== null && typeof stageCandidate === "object" && (stageCandidate.role === "stage" || stageCandidate.role === "ext") ? stageCandidate : null;
+    var artResources = mountOptions !== null && typeof mountOptions === "object" ? mountOptions.artResources : null;
     function mount() {
       if (document.querySelector("[" + MOUNTED + "]") !== null) {
         console.warn("[dsh-piggy] \u5DF2\u5B58\u5728\u5B9E\u4F8B\uFF0C\u8DF3\u8FC7\u91CD\u590D\u6302\u8F7D");
         return () => {
         };
       }
-      var parts = createScene();
+      var view = normalize(null);
+      var stopped = false;
+      var busy5 = false;
+      function feelShell() {
+        return desktopShell() ?? stageShell()?.feelShell?.() ?? null;
+      }
+      function moveShell() {
+        return desktopShell() ?? stageShell()?.moveShell?.() ?? null;
+      }
+      function syncGeometry2() {
+        desktopShell()?.syncGeometry?.();
+        stageShell()?.syncGeometry?.();
+      }
+      var presentation = createPresentationContext({
+        state: {
+          getView: function() {
+            return view;
+          },
+          isStopped: function() {
+            return stopped;
+          },
+          isAway: function() {
+            return view.activity !== null;
+          },
+          isQuiet: function() {
+            return view.dialogue.quiet === true;
+          }
+        },
+        transport: { send: function(action, extra) {
+          return send2(action, extra);
+        } },
+        getShell: feelShell,
+        onGeometry: syncGeometry2,
+        artResources
+      });
+      var parts = presentation.parts;
       var {
-        font,
-        style,
-        host: host3,
+        host: host2,
         card: card2,
         scene: scene6,
         hud,
@@ -26545,30 +28352,19 @@
       var userRight = savedPos === null ? 18 : savedPos.right;
       var userBottom = savedPos === null ? 18 : savedPos.bottom;
       if (deskShell === null) {
-        host3.style.right = userRight + "px";
-        host3.style.bottom = userBottom + "px";
+        host2.style.right = userRight + "px";
+        host2.style.bottom = userBottom + "px";
       } else {
-        host3.style.right = "auto";
-        host3.style.bottom = "auto";
+        host2.style.right = "auto";
+        host2.style.bottom = "auto";
       }
       var icons = {};
-      function feelShell() {
-        return desktopShell() ?? stageShell()?.feelShell?.() ?? null;
-      }
-      function moveShell() {
-        return desktopShell() ?? stageShell()?.moveShell?.() ?? null;
-      }
-      function syncGeometry2() {
-        desktopShell()?.syncGeometry?.();
-        stageShell()?.syncGeometry?.();
-      }
-      var view = normalize(null);
       var stopSizePreference = attachSizePreference(
-        host3,
+        host2,
         () => view.hatched ? view.pig?.stage : view.boxStage,
         syncGeometry2
       );
-      var stopBubbleSizePreference = attachBubbleSizePreference(host3, syncGeometry2);
+      var stopBubbleSizePreference = attachBubbleSizePreference(host2, syncGeometry2);
       var tab = "home";
       var stage2 = "primary";
       var stagePicked = false;
@@ -26582,52 +28378,13 @@
       var lastPendingAt = 0;
       var lastPendingId = 0;
       var pollTimer = null;
-      var fx = createEffects({
-        scene: scene6,
-        pig,
-        pigArt,
-        pigEmoji,
-        card: card2,
-        bubble,
-        pomoHint,
-        isStopped: function() {
-          return stopped;
-        },
-        isAway: function() {
-          return view.activity !== null;
-        }
-      });
+      var fx = presentation.effects;
+      var art = presentation.art;
+      var feel2 = presentation.feel;
       var react = fx.react, burst = fx.burst, flash = fx.flash;
       var showBubble = fx.showBubble, showLine = fx.showLine, toast = fx.toast;
-      var stopped = false;
-      var busy4 = false;
-      var feel2 = createFeel({
-        pig,
-        pigHold,
-        pigBody,
-        scene: scene6,
-        host: host3,
-        pigArt,
-        pigEmoji,
-        burst: (
-          /** @type {any} */
-          burst
-        ),
-        getShell: feelShell,
-        isQuiet: function() {
-          return view.dialogue.quiet === true;
-        },
-        onGeometry: syncGeometry2
-      });
-      configureSound({ isQuiet: function() {
-        return view.dialogue.quiet === true;
-      } });
-      setArtSwapHook(function(apply) {
-        feel2.coverSwap(apply);
-      });
-      fx.setFeel(feel2);
       var ctx = {
-        host: host3,
+        host: host2,
         card: card2,
         content,
         footer,
@@ -26764,10 +28521,10 @@
           userBottom = next;
         },
         get busy() {
-          return busy4;
+          return busy5;
         },
         set busy(next) {
-          busy4 = next;
+          busy5 = next;
         },
         justBought: null,
         homePage: 0,
@@ -26810,8 +28567,8 @@
         playPigPet(pig);
       };
       ctx.previewArt = function(name) {
-        forceFeedbackArt(name);
-        syncPigArt(pig, pigArt, pigEmoji);
+        art.forceFeedbackArt(name);
+        art.sync();
       };
       ctx.cancelNap = function() {
         if (ctx.life) ctx.life.cancelNap();
@@ -26822,9 +28579,9 @@
       ctx.walkNow = function() {
         if (ctx.life) ctx.life.walkNow();
       };
-      var birthday = createBirthday({ ctx, pig, pigArt, pigEmoji, burst, render: function() {
+      var birthday = presentation.createBirthday(ctx, function() {
         refresh2();
-      } });
+      });
       var splitRole = wireSplit(ctx, { refresh: function() {
         refresh2();
       }, isFishing: function() {
@@ -26833,7 +28590,7 @@
       var stageBridge = stageOptions === null ? null : createStageBridge({
         options: stageOptions,
         ctx,
-        host: host3,
+        host: host2,
         pig,
         bubble,
         card: card2,
@@ -26845,7 +28602,7 @@
       var stopRecovery = bindRecovery({
         role: recoveryRole,
         shell: recoveryRole === "pet" ? deskShell : recoveryRole === "stage" ? stageOptions : null,
-        host: host3,
+        host: host2,
         pig,
         getStageSize: function() {
           return view.hatched ? view.pig?.stage : view.boxStage;
@@ -26857,7 +28614,7 @@
       });
       var dailyGeometry = stageOptions ?? deskShell;
       var stopDailyPlacement = attachDailyPlacement({
-        host: host3,
+        host: host2,
         pig,
         daily: dailyHint,
         bubble,
@@ -26881,12 +28638,13 @@
       });
       var pokeBox = createBoxPoke({ getView: function() {
         return view;
-      }, showBubble, react, host: host3, burst, send: send2 });
+      }, showBubble, react, host: host2, burst, send: send2 });
       var gestures = attachGestures({
         scene: scene6,
-        host: host3,
+        host: host2,
         pig,
         feel: feel2,
+        audio: presentation.audio,
         getView: function() {
           return view;
         },
@@ -26918,12 +28676,13 @@
         }
       });
       scene6.addEventListener("contextmenu", function(event) {
+        if (!hitsPig(host2, event)) return;
         event.preventDefault();
         setOpen(!isOpen);
       });
       var autoCollapse = splitRole !== null ? { dispose: function() {
       } } : attachAutoCollapse({
-        host: host3,
+        host: host2,
         isOpen: function() {
           return isOpen;
         },
@@ -26943,13 +28702,13 @@
       render(view);
       refresh2();
       pollTimer = window.setInterval(refresh2, POLL_MS);
-      var life = splitRole === "panel" || splitRole === "ext" ? null : attachLife({
+      var lifeOptions = {
         send: send2,
         isStopped: function() {
           return stopped;
         },
         isBusy: function() {
-          return busy4;
+          return busy5;
         },
         isOpen: function() {
           return isOpen;
@@ -26972,15 +28731,17 @@
           showBubble
         ),
         desktopShell: moveShell,
-        feel: feel2
-      });
+        feel: feel2,
+        artResources
+      };
+      var life = splitRole === "panel" || splitRole === "ext" ? null : attachLife(lifeOptions);
       ctx.life = life;
       var stopResize = layout.attachResize();
       var dev = attachDevMode({
         setEnabled: function(next) {
           devMode = next;
         },
-        host: host3,
+        host: host2,
         paintBar,
         setOpen,
         select: select2,
@@ -27006,14 +28767,8 @@
         life?.dispose();
         stopDailyPlacement();
         stageBridge?.dispose?.();
-        setArtSwapHook(null);
-        fx.setFeel(null);
-        feel2.dispose();
-        fx.dispose();
+        presentation.dispose();
         pollTimer = null;
-        host3.remove();
-        style.remove();
-        font.remove();
       }
       return dispose;
     }
@@ -27039,6 +28794,24 @@
   // adapters/dsh/client.js
   var game = { mount: mountGame, desktop };
   window.piggyGame = game;
+  var requestCloudSettings = async (method, path, value) => {
+    try {
+      const response = await fetch(path, method === "GET" ? { cache: "no-store" } : {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(value ?? {})
+      });
+      const body = await response.json();
+      return response.ok ? body : { ok: false, reason: body?.reason || "\u4E91\u5B58\u6863\u8BBE\u7F6E\u8BF7\u6C42\u5931\u8D25" };
+    } catch {
+      return { ok: false, reason: "\u65E0\u6CD5\u8BFB\u53D6\u4E91\u5B58\u6863\u8BBE\u7F6E" };
+    }
+  };
+  window.__dshPiggyCloudSave = {
+    get: () => requestCloudSettings("GET", "/dsh-piggy/cloud/settings"),
+    set: (value) => requestCloudSettings("POST", "/dsh-piggy/cloud/settings", value),
+    test: (value) => requestCloudSettings("POST", "/dsh-piggy/cloud/test-connection", value)
+  };
   if (
     /** @type {any} */
     window.__ModuleLoader__

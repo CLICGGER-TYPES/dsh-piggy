@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { createContext, runInContext } from 'node:vm'
 
 import { startBackgroundVersions } from '../lib/background-versions.js'
+import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
@@ -17,9 +18,10 @@ const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
 async function runStartup(userData, hasLock) {
   const calls = [], messages = []
   let quits = 0, ready = 0
-  const context = createContext({
+  const sandbox = {
     needsX11: false, quitting: false, join, resolve,
     configureDesktopData: () => ({ userData, statePath: join(userData, 'state.json') }),
+    createCloudSaveConfigStore: () => ({ load: () => ({ ok: false }) }),
     migrateDesktopData() { calls.push('migration') },
     process: { platform: 'win32', env: { PIGGY_USERDATA: userData }, argv: [] },
     app: { setPath() {}, getPath: () => userData, getVersion: () => '0.6.6', isPackaged: false,
@@ -40,7 +42,9 @@ async function runStartup(userData, hasLock) {
       context.quitting = true
       return versions
     },
-  })
+  }
+  sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
+  const context = createContext(sandbox)
   const lockStart = source.indexOf('// Testing: keep a throwaway save')
   const lockEnd = source.indexOf('/** The game shipped inside the app', lockStart)
   const readyStart = source.indexOf('app.whenReady().then(async () => {')

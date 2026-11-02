@@ -28,6 +28,109 @@ test('气泡大小可加减和输入，独立保存，轮询不打断正在输�
   assert.equal(findByAttr(contentOf(dom), 'data-bubble-scale', 'true'), percent)
 })
 
+test('云存档设置先关闭、配置后显式测试，关闭保留仓库且保存不测试', async () => {
+  let cloud = { version: 1, enabled: false, provider: 'github', remote: '', branch: 'main' }
+  const saved = [], tested = []
+  const { dom } = await mount({ fetch: async (url, options) => {
+    if (String(url).includes('/dsh-piggy/cloud/settings')) {
+      if (options?.method === 'POST') { cloud = JSON.parse(options.body); saved.push({ ...cloud }) }
+      return { ok: true, status: 200, async json() { return { ok: true, config: { ...cloud } } } }
+    }
+    if (String(url).includes('/dsh-piggy/cloud/test-connection')) {
+      tested.push(JSON.parse(options.body))
+      return { ok: true, status: 200, async json() { return { ok: true } } }
+    }
+    return undefined
+  } })
+  openPanel(dom)
+  const content = contentOf(dom)
+  findByAttr(content, 'data-app', 'settings').fire('click')
+  await settle()
+  assert.equal(findByAttr(content, 'data-cloud-enabled', 'off').getAttribute('aria-pressed'), 'false')
+
+  findByAttr(content, 'data-cloud-enabled', 'off').fire('click')
+  await settle()
+  const remote = findByAttr(content, 'data-cloud-remote', 'true')
+  assert.ok(remote, content.allText())
+  remote.value = 'https://github.com/acme/pig.git'
+  remote.fire('input')
+  findByAttr(content, 'data-cloud-action', 'save').fire('click')
+  await settle()
+  assert.equal(cloud.enabled, true)
+  assert.equal(cloud.remote, 'https://github.com/acme/pig.git')
+  assert.equal(tested.length, 0, 'saving the address never starts a connection test')
+  assert.ok(content.allText().includes('待连接'))
+  assert.ok(findByAttr(content, 'data-cloud-action', 'test'))
+
+  findByAttr(content, 'data-cloud-action', 'test').fire('click')
+  await settle()
+  assert.equal(tested.length, 1)
+  assert.ok(content.allText().includes('尚未同步存档'))
+
+  findByAttr(content, 'data-cloud-action', 'close').fire('click')
+  await settle()
+  assert.equal(cloud.enabled, false)
+  assert.equal(cloud.remote, 'https://github.com/acme/pig.git')
+  assert.ok(saved.every(value => value.enabled !== undefined))
+})
+
+test('云设置草稿不受轮询影响，其他设置重绘保留草稿/焦点/披露且显式保存仍刷新', async () => {
+  let cloud = { version: 1, enabled: false, provider: 'github', remote: '', branch: 'main' }
+  const { dom, intervals } = await mount({ fetch: async (url, options) => {
+    if (String(url).includes('/dsh-piggy/cloud/settings')) {
+      if (options?.method === 'POST') cloud = JSON.parse(options.body)
+      return { ok: true, status: 200, async json() { return { ok: true, config: { ...cloud } } } }
+    }
+    if (String(url).includes('/dsh-piggy/cloud/test-connection')) return { ok: true, status: 200, async json() { return { ok: true } } }
+    return undefined
+  } })
+  openPanel(dom)
+  const content = contentOf(dom)
+  findByAttr(content, 'data-app', 'settings').fire('click')
+  await settle()
+  findByAttr(content, 'data-cloud-enabled', 'off').fire('click')
+  await settle()
+
+  const remote = findByAttr(content, 'data-cloud-remote', 'true')
+  remote.value = 'https://github.com/acme/pig.git'
+  remote.fire('input')
+  const branch = findByAttr(content, 'data-cloud-branch', 'true')
+  branch.value = 'release'
+  branch.fire('input')
+
+  const advanced = findByClass(content, 'dp-cloud-advanced')
+  const summary = findByAttr(content, 'data-cloud-advanced-summary', 'true')
+  summary.fire('click')
+  advanced.open = true // Fake DOM has no native <details> default action.
+  advanced.fire('toggle')
+  dom.document.activeElement = branch
+  for (const timer of intervals.filter(timer => timer.delay === 4000)) await timer.fn()
+  await settle()
+  assert.equal(findByAttr(content, 'data-cloud-branch', 'true'), branch, 'poll leaves the focused input node in place')
+  assert.equal(findByClass(content, 'dp-cloud-advanced'), advanced, 'poll leaves the disclosure node in place')
+  assert.equal(advanced.open, true)
+
+  const soundToggle = findByAttr(content, 'data-sound', 'off')
+  dom.document.activeElement = soundToggle // The user has moved focus away from the cloud editor.
+  soundToggle.fire('click')
+  const remoteAfterSettingsRender = findByAttr(content, 'data-cloud-remote', 'true')
+  const branchAfterSettingsRender = findByAttr(content, 'data-cloud-branch', 'true')
+  const advancedAfterSettingsRender = findByClass(content, 'dp-cloud-advanced')
+  const soundToggleAfterSettingsRender = findByAttr(content, 'data-sound', 'on')
+  assert.notEqual(branchAfterSettingsRender, branch, 'the unrelated settings action may repaint the panel')
+  assert.ok(soundToggleAfterSettingsRender, 'the explicit sound change becomes visible')
+  assert.equal(remoteAfterSettingsRender.value, 'https://github.com/acme/pig.git')
+  assert.equal(branchAfterSettingsRender.value, 'release')
+  assert.equal(advancedAfterSettingsRender.open, true, 'the disclosure remains open after the repaint')
+  assert.equal(dom.document.activeElement, soundToggleAfterSettingsRender, 'the repaint preserves focus on the sound control the user chose')
+
+  findByAttr(content, 'data-cloud-action', 'save').fire('click')
+  await settle()
+  assert.equal(cloud.remote, 'https://github.com/acme/pig.git')
+  assert.equal(cloud.branch, 'release')
+  assert.ok(findByAttr(content, 'data-cloud-action', 'test'), 'explicit cloud save refreshes to the saved summary')
+})
+
 test('扩展收进设置；有扩展更新时设置方块和入口都有红点，返回设置', async () => {
   const extensions = [
     { key: 'pomodoro', label: '番茄钟', on: true, installed: true, builtin: true, apps: ['pomodoro'], dexSections: [], shopKinds: [] },

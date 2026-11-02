@@ -12,6 +12,7 @@ import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readF
 import { dirname, join } from 'node:path'
 
 import { createSaveArchive, parseSaveArchive } from '../../runtime/save-archive.js'
+import { persistenceIssue } from '../../runtime/session-context.js'
 import { mergeBackupName } from '../../runtime/merge-backup.js'
 import { readStateFile } from '../../store/state-file.js'
 import {
@@ -112,9 +113,9 @@ function renameIfPresent(from, to) {
 
 /**
  * 源端退役：标记 → 退出运行时 → 两个改名分别幂等。已完成的步骤不重复做。
- * @param {{statePath:string, mergeId:string, backupName:string, stopRuntime?:()=>void, now?:()=>number, config?:any, saveConfig?:(config:any)=>void}} options
+ * @param {{statePath:string, mergeId:string, backupName:string, stopRuntime?:()=>Promise<void>|void, now?:()=>number, config?:any, saveConfig?:(config:any)=>void}} options
  */
-export function retireEmbedded(options) {
+export async function retireEmbedded(options) {
   const { statePath, mergeId } = options
   const now = options.now ?? (() => Date.now())
   let marker = readMarker(statePath).marker
@@ -131,7 +132,7 @@ export function retireEmbedded(options) {
     backup: options.backupName ?? null,
     updatedAt: now(),
   })
-  options.stopRuntime?.()
+  await options.stopRuntime?.()
   if (!marker.stateRenamed) {
     marker.stateRenamed = renameIfPresent(statePath, retiredStatePath(statePath, mergeId))
     writeMarker(statePath, marker)
@@ -185,8 +186,12 @@ export function validateBackup(statePath, backupName, nowMs) {
   return { file, parsed, name }
 }
 
-/** 只恢复内嵌猪：备份 → 临时读到能迁移 → 原子放回 state + receipts。 */
-export function restoreEmbeddedFromBackup({ statePath, backupName, nowMs }) {
+/**
+ * 只恢复内嵌猪：备份 → 临时读到能迁移 → 原子放回 state + receipts。
+ * `authority` 是调用方显式声明的持久化能力；只有声明为非 legacy 目标/格式时
+ * 才拒绝，不按备份里的未知字段名推断多目标。
+ */
+export function restoreEmbeddedFromBackup({ statePath, backupName, nowMs, authority = null }) {
   const validated = validateBackup(statePath, backupName, nowMs)
   const stateBytes = validated.parsed.files.get('state.json')
   if (stateBytes === undefined) throw new Error('备份里没有 state.json')
@@ -195,6 +200,12 @@ export function restoreEmbeddedFromBackup({ statePath, backupName, nowMs }) {
   atomic(temp, stateBytes)
   const read = readStateFile(temp, nowMs)
   if (read.state === null) { rmSync(temp, { force: true }); throw new Error('备份里的存档读不出来') }
+  // 只按显式能力判断。未知旧字段原样恢复，不把它们当保留字或删除。
+  const persistence = persistenceIssue(authority)
+  if (persistence !== null) {
+    rmSync(temp, { force: true })
+    throw Object.assign(new Error('备份包含当前版本不能安全恢复的多目标存档'), { code: persistence })
+  }
   renameSync(temp, statePath)
   syncDir(dirname(statePath))
   if (receiptsBytes !== undefined) atomic(join(`${statePath}.work-events`, 'receipts.json'), receiptsBytes)

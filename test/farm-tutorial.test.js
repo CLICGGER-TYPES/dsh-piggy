@@ -210,7 +210,7 @@ test('老玩家（有经验/种子/仓库/工具/肥料/地块/帮工/退款）�
   assert.equal(t.balance(), 99, '只看一眼不发钱')
   assert.equal(rich.version, 4, 'view 只读，迁移标记等第一次成功动作再落盘')
   const migrated = normalize(structuredClone(rich))
-  assert.equal(migrated.version, 5, '迁移升级到 v5')
+  assert.equal(migrated.version, 6, '迁移升级到 v6')
   const result = farm.actions.onboarding(migrated, { op: 'harvest' }, t.api)
   assert.equal(result.reason, 'already')
   assert.equal(t.balance(), 99, '不发钱')
@@ -268,7 +268,7 @@ test('坏第一课字段不让白拿：done 强制 rewarded、planted 缺时间�
     assert.deepEqual([d.onboarding.step, d.onboarding.legacy, d.onboarding.rewarded], ['done', true, true], JSON.stringify(bad))
   }
   const timed = set({ step: 'planted', rewarded: false, legacy: false, plantedAt: T0, wateredAt: T0 + 60_000 })
-  assert.equal(timed.version, 5)
+  assert.equal(timed.version, 6)
   assert.equal(farm.view(timed, { ...fakeApi().api, now: T0 }).onboarding.readyAt, T0 + LESSON.wateredMs, '浇水时刻不改 2 分钟上限')
 })
 
@@ -343,10 +343,10 @@ test('历史农具档即使没有预置退款也算老进度，迁移退款只�
   assert.deepEqual([again.helperBarnRefund, again.refund], [0, 0], '重读不再退一次')
 })
 
-test('4.0 → 5.0 迁移保留全部旧字段；3.x 老存档也走同一条路，不静默清零', () => {
+test('4.0 → 6.0 迁移保留全部旧字段；3.x 老存档也走同一条路，不静默清零', () => {
   const four = v4({ exp: 42, seeds: { radish: 2 }, harvest: { radish: 3 }, acquired: { radish: 8 }, harvests: { radish: 3 }, tools: { sickle: true }, fert: { 'fert-2': 1 }, refund: 7, unlocked: 7 })
   const migrated = normalize(four)
-  assert.equal(migrated.version, 5)
+  assert.equal(migrated.version, 6)
   assert.deepEqual([migrated.exp, migrated.unlocked, migrated.refund], [42, 7, 7])
   assert.deepEqual(migrated.seeds, { radish: 2 })
   assert.deepEqual(migrated.harvest, { radish: 3 })
@@ -358,7 +358,7 @@ test('4.0 → 5.0 迁移保留全部旧字段；3.x 老存档也走同一条路�
 
   const three = { version: 3, unlocked: 6, plots: [{ crop: 'carrot', stage: 1, plantedAt: T0, wateredAt: null }], seeds: { carrot: 2 }, harvest: { carrot: 1 }, acquired: { carrot: 4 }, tools: { can: true }, fertilizer: 3, helper: { hired: true, level: 0, barn: 0 } }
   const old = normalize(three)
-  assert.equal(old.version, 5)
+  assert.equal(old.version, 6)
   assert.equal(old.seeds.carrot, 2)
   assert.equal(old.harvest.carrot, 1 + 4, '3.x 地里的胡萝卜按旧产量进仓库')
   assert.equal(old.harvests.carrot, 2, '仓库里 8 个胡萝卜 / 每个 4 个 = 2 次')

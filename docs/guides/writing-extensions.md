@@ -225,10 +225,12 @@ export default {
 发行版**只传这一个 `.piggyext`**：0.36.1 起游戏在线安装只下整包（目录条目的 `bundle`）。例外：`minGame` 还低于 0.36.1 的版本（0.36.0 及更早的游戏也能装），要照旧把三个文件和 `assets/` 里的图**平铺**一起传，老游戏按 `files` 逐个下 →
 GitHub 发**预发布、不设 latest** 的 `ext-<key>-<版本>`、Gitee 用 `scripts/gitee-release.mjs` 上传 → 回读附件校验通过 → 提交目录、推 main → 用全新存档在线装一次验证。
 
-附件上传后运行 `node scripts/extension-release-check.mjs`（默认 GitHub/Gitee 都检查）。仅核对某渠道或扩展可用 `--host github --key farm,mine`。它只读本地候选目录和公开下载地址，不上传、不改目录、不推送；非零退出时不能发布该目录。它会核对整包、包内版本与文件散列；`minGame < 0.36.1` 的扩展还逐件回读旧宿主需要的代码和图片。HTTP 404、内容不符和网络失败分别保留实际结果，不能用本地标签是否存在代替下载验证。
+附件上传后运行 `node scripts/extension-release-check.mjs`（默认 GitHub/Gitee 都检查）。仅核对某渠道或扩展可用 `--host github --key farm,mine`。默认优先选择存在的本地候选目录；没有候选时回退到公开目录。它只读所选目录和对应公开下载地址，不上传、不改目录、不推送；非零退出时不能把该目录晋级。它会核对整包、包内版本与文件散列；`minGame < 0.36.1` 的扩展还逐件回读旧宿主需要的代码和图片。HTTP 404、内容不符和网络失败分别保留实际结果，不能用本地标签是否存在代替下载验证。
 
-`.github/workflows/extensions-check.yml` 对目录变更的 PR 执行同一检查，也支持手动只读执行；权限仅 `contents: read`。候选文件尚未上传时检查失败是发布依赖未就绪，不应跳过检查或把候选目录提前推成线上目录。网络失败需重试核对，不等于已证明附件不存在；此检查也不能代替最终游戏中的实际安装验收。
+`.github/workflows/extensions-check.yml` 在目录变更的 PR 和 main push 上先运行 checker fixture 与源码候选一致性测试，再显式回读 GitHub 已发布目录 `extensions/registry.json` 的附件。未上传的 GitHub 候选不会被误当成已发布附件。手动 `workflow_dispatch` 保留候选优先的远端预检语义；候选附件未上传时，HTTP 404 必须失败，上传后再运行预检。权限仅 `contents: read`。网络失败需重试核对，不等于已证明附件不存在；此检查也不能代替最终游戏中的实际安装验收。
 
 ### 未发布候选与公开目录
 
-源码扩展升版后，先把两渠道新条目保存在 `release-candidates/extensions/registry.json` 与 `registry-gitee.json`。CI以候选目录核对源码，公开 `extensions/registry*.json` 继续保留已交付的版本，并校验其官方身份；不能同版本改下载内容。确认发行后，先上传扩展附件并逐件回读校验，再把候选目录晋级公开目录，最后删除候选副本。离线安装器按源码打包，并用官方清单校验，不依赖公开目录先行。
+源码扩展升版后，把 GitHub 与 Gitee 候选条目分别保存在 `release-candidates/extensions/registry.json` 与 `registry-gitee.json`。两个渠道独立发布、独立推进版本；一边暂停或取消发行时，另一边可以使用较新的候选，暂停的渠道保留自己的候选和公开版本。每份目录都必须保持相同扩展 key 集合、对应 key 的 `minGame`，并用该条目的版本、官方逐文件哈希和本渠道附件 URL 校验完整性；候选中同一个 key 只有在两边版本号相同的情况下，才要求 `mergeHook`、文件列表、逐文件哈希与整包哈希一致，只有附件域名随渠道变化。每个渠道都必须先上传自己的附件并按该渠道 URL 回读校验，之后才能单独把该渠道候选晋级公开目录；缺少附件的渠道继续保留旧公开版本，不能因为另一渠道已发布就提前晋级。离线安装器按源码打包，并用官方清单校验，不依赖公开目录先行。
+
+现代菜园与经典外观共用服务端，但客户端可独立迭代，各自 manifest 版本不要求小版本或补丁号相同。兼容契约由两包内 `server.js` 字节一致、`mergeHook` 相同且 `minGame` 兼容来保证；无需为了客户端改版而无意义地升级另一种外观。
