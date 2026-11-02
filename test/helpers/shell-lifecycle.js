@@ -39,7 +39,7 @@ export function shellLifecycle(host, install = () => ({ ok: true }), options = {
       flushWindowState: () => options.flushWindowState?.(), flushLogs: () => options.flushLogs?.(),
     }),
   })
-  const fromPage = event => Object.values(pages).includes(event.sender)
+  const fromPage = event => !lifecycle.quitting && Object.values(pages).includes(event.sender)
   const toPages = (channel, ...args) => {
     for (const [role, page] of Object.entries(pages)) page.send(channel, ...args)
   }
