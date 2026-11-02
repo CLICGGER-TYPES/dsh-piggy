@@ -56,6 +56,7 @@ test('候选渠道版本可独立演进；key、minGame 和同版本内容保持
   if (!existsSync(path)) return
   const github = JSON.parse(readFileSync(path, 'utf8'))
   const gitee = JSON.parse(readFileSync(new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url), 'utf8'))
+  const official = JSON.parse(readFileSync(new URL('../store/official-extensions.json', import.meta.url), 'utf8'))
   assert.doesNotMatch(JSON.stringify(gitee), /github/i)
   assert.deepEqual(gitee.extensions.map(item => item.key).sort(), github.extensions.map(item => item.key).sort())
   const withoutUrls = value => {
@@ -77,5 +78,31 @@ test('候选渠道版本可独立演进；key、minGame 和同版本内容保持
     assert.deepEqual(withoutUrls(twin), withoutUrls(item), `${item.key}@${item.version} candidate metadata`)
     assert.equal(twin.bundle.sha256, item.bundle.sha256)
     for (const [name, file] of Object.entries(item.files)) assert.equal(twin.files[name].sha256, file.sha256)
+  }
+  const sha256Pattern = /^[a-f0-9]{64}$/
+  for (const [label, registry, channel] of [['GitHub', github, GITHUB], ['Gitee', gitee, GITEE]]) {
+    for (const item of registry.extensions.filter(item => !item.builtin)) {
+      const identity = `${item.key}@${item.version}`
+      const known = official[item.key]?.[item.version]
+      assert.ok(known, `${label} candidate ${identity} has no official file hashes`)
+      assert.match(item.version, /^\d+\.\d+\.\d+$/, `${label} candidate ${identity} version`)
+      assert.match(item.minGame, /^\d+\.\d+\.\d+$/, `${label} candidate ${identity} minGame`)
+      assert.ok(item.bundle && typeof item.bundle === 'object', `${label} candidate ${identity} bundle`)
+      const tagBase = `${channel.downloadBase}/ext-${item.key}-${item.version}`
+      assert.equal(item.bundle.url, `${tagBase}/ext-${item.key}-${item.version}.piggyext`, `${label} candidate ${identity} bundle URL`)
+      assert.match(item.bundle.sha256 ?? '', sha256Pattern, `${label} candidate ${identity} bundle SHA256`)
+      assert.ok(item.files && typeof item.files === 'object' && !Array.isArray(item.files), `${label} candidate ${identity} files`)
+      const names = Object.keys(known).sort()
+      assert.deepEqual(Object.keys(item.files).sort(), names, `${label} candidate ${identity} file list`)
+      for (const name of names) {
+        const spec = item.files[name]
+        assert.ok(spec && typeof spec === 'object', `${label} candidate ${identity} ${name} spec`)
+        assert.equal(spec.url, `${tagBase}/${name.replace(/^assets\//, '')}`, `${label} candidate ${identity} ${name} URL`)
+        assert.match(spec.sha256 ?? '', sha256Pattern, `${label} candidate ${identity} ${name} SHA256`)
+      }
+      const fileHashes = Object.fromEntries(names.map(name => [name, item.files[name].sha256]))
+      const officialHashes = Object.fromEntries(names.map(name => [name, known[name]]))
+      assert.deepEqual(fileHashes, officialHashes, `${label} candidate ${identity} official file hashes`)
+    }
   }
 })

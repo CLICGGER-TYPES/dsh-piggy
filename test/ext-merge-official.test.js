@@ -61,7 +61,7 @@ test('官方四个扩展（含经典菜园）都声明 mergeHook 1，服务端�
   assert.equal(classic.mergeHook, 1)
   assert.equal(classic.mergeHook, modern.mergeHook, '两种菜园客户端声明兼容的合并钩子')
   assert.equal(classic.minGame, modern.minGame, '两种菜园客户端声明兼容的最低游戏版本')
-  assert.deepEqual(farmClassicFiles()['server.js'], readFileSync(new URL('../extensions/farm/server.js', import.meta.url)),
+  assert.deepEqual(Buffer.from(farmClassicFiles()['server.js'], 'utf8'), readFileSync(new URL('../extensions/farm/server.js', import.meta.url)),
     '经典菜园包必须复用现代菜园的同一份服务端字节')
   for (const extension of [farm, mine, gacha, blindbox]) assert.equal(typeof extension.mergeStates, 'function')
 })
