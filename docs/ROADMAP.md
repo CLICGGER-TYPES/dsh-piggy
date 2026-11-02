@@ -7,6 +7,12 @@
 - GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
 - 当前RC6只接入云存档配置与只读连接测试；云上传、恢复和自动合并仍未实现。多猪正式入口和稳定ID仍未实现。
 
+## 2026-11-02 Electron 45.2.1 Linux X11 候选（待独立复验）
+
+- PR33CURSOR02 从源码提交 `5b7823ef8d941ebee96b07f91bb2170730921b07` 派生，仅把桌面开发运行时及锁文件从 Electron 44.5.1 调整到 45.2.1；该版本的 Chromium 156.0.8078.75 含 X11 指针缓存有效性修复。没有改主进程输入算法、游戏数据、schema 或 UI。
+- 先前 PR33F 的同一 45.2.1 Linux Xvfb AppImage 在交互快照后出现 zygote/Network Service 错误和 Chromium GPU process fatal，随后进程组/CDP 端口消失；没有证据指向 QA SIGTERM，根因仍未知。本次版本号相同，不能据此宣称 GPU 稳定问题已解决。
+- 当前仅源码候选，未重新运行测试、打包或 UI；既有 PR33F 定向测试/typecheck 结果不代表本候选已验证。待源码审查后再做局部核验、私有包和独立 PI-05 UI 验收，不发布。
+
 ## 2026-11-01 存储模块拆分（进行中）
 
 - MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 暂缓，farm 4.2.1 公开附件保持不变。
