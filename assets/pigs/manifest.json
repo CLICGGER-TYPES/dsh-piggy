@@ -5355,23 +5355,23 @@
     "path": "pigs/badges/badge-pig-fish-twenty.png",
     "actor": "badge-pig-fish-twenty",
     "action": "badge",
-    "version": "fish-twenty-normal-20261102",
+    "version": "fish-twenty-normal-no-dot-20261102",
     "tool": "image_gen",
     "prompt": "docs/art-prompts/achievements-phase-two.md",
     "reference": "assets/pigs/badges/badge-pig-farm-ten.png",
-    "sourceSha256": "0eb74cde430f7e1cc4887583220fa946f787f16d51e93413018260695b12bcfd",
+    "sourceSha256": "339eecb08a70139583bf7d1288bb9c7d687547373fc89b2a462ed755055d9bdd",
     "sourceDimensions": [
       512,
       512
     ],
     "sourceBounds": [
       64,
-      33,
+      32,
       466,
-      481
+      480
     ],
     "sourceSheet": "docs/screenshots/achievements-phase-two-badges.png",
-    "sourceSheetSha256": "74f34e81bc7c4f755352df17f4fed24b9dfb78353f01aca26fec4a63513de569",
+    "sourceSheetSha256": "7c1ce71429a334c1b529556229e712a78dc76b43346754663d8c471c0b2fa9e3",
     "sourceCell": [
       0,
       0,
@@ -5384,19 +5384,19 @@
       228,
       240
     ],
-    "sha256": "66f23333664a524ab6258a1c8a29a2922690e4b2ad703ef3e78930eb4b4de723",
-    "bytes": 9954
+    "sha256": "43e1049042b1478ad6d6b6006d2759d5c6d250d91918b861955e2adf54e40087",
+    "bytes": 9630
   },
   {
     "key": "badge-pig-fish-hundred",
     "path": "pigs/badges/badge-pig-fish-hundred.png",
     "actor": "badge-pig-fish-hundred",
     "action": "badge",
-    "version": "fish-hundred-normal-20261102",
+    "version": "fish-hundred-normal-no-dot-20261102",
     "tool": "image_gen",
     "prompt": "docs/art-prompts/achievements-phase-two.md",
     "reference": "assets/pigs/badges/badge-pig-farm-ten.png",
-    "sourceSha256": "823dde80af433ccccaab14548518244aa49d2615f2c4300200a0a10bcd1a0fb7",
+    "sourceSha256": "9f9bc8ec91a79b1253b4e9acebe4cf35424098b9fb498a9536e698cead0ccca2",
     "sourceDimensions": [
       512,
       512
@@ -5405,10 +5405,10 @@
       57,
       33,
       459,
-      482
+      480
     ],
     "sourceSheet": "docs/screenshots/achievements-phase-two-badges.png",
-    "sourceSheetSha256": "74f34e81bc7c4f755352df17f4fed24b9dfb78353f01aca26fec4a63513de569",
+    "sourceSheetSha256": "7c1ce71429a334c1b529556229e712a78dc76b43346754663d8c471c0b2fa9e3",
     "sourceCell": [
       512,
       0,
@@ -5421,19 +5421,19 @@
       228,
       240
     ],
-    "sha256": "dc81934f7d6693106695bbe7f4d35a2bd9762e13e437c8f3066ab84f10020109",
-    "bytes": 11112
+    "sha256": "fd952ae4a9c0478e540ad5b8ccd2c86204707ef9b846beb02a755ee391d1869e",
+    "bytes": 10571
   },
   {
     "key": "badge-pig-souvenirs-ten",
     "path": "pigs/badges/badge-pig-souvenirs-ten.png",
     "actor": "badge-pig-souvenirs-ten",
     "action": "badge",
-    "version": "souvenirs-ten-normal-20261102",
+    "version": "souvenirs-ten-normal-no-dot-20261102",
     "tool": "image_gen",
     "prompt": "docs/art-prompts/achievements-phase-two.md",
     "reference": "assets/pigs/badges/badge-pig-farm-ten.png",
-    "sourceSha256": "f05ab0504fabbb340d8ecc6dec4b97dd3896bb1b2b0acc1a81e898d61a4ea7fc",
+    "sourceSha256": "9e8b99c0c0e4f77c26d0c2795cffda655f7367d82f9611cfcb88f98f76d46e56",
     "sourceDimensions": [
       512,
       512
@@ -5442,10 +5442,10 @@
       48,
       32,
       450,
-      481
+      480
     ],
     "sourceSheet": "docs/screenshots/achievements-phase-two-badges.png",
-    "sourceSheetSha256": "74f34e81bc7c4f755352df17f4fed24b9dfb78353f01aca26fec4a63513de569",
+    "sourceSheetSha256": "7c1ce71429a334c1b529556229e712a78dc76b43346754663d8c471c0b2fa9e3",
     "sourceCell": [
       1024,
       0,
@@ -5458,19 +5458,19 @@
       228,
       240
     ],
-    "sha256": "0a917947ee382f57b3f7d8b94f9917186f146b23202a8956396d9a9ee3a4e0e6",
-    "bytes": 8256
+    "sha256": "51936117880e66faf840c61f9a4a0fd0ddcddbc8d57e9e529834e3e52c401121",
+    "bytes": 8392
   },
   {
     "key": "badge-pig-farm-hundred",
     "path": "pigs/badges/badge-pig-farm-hundred.png",
     "actor": "badge-pig-farm-hundred",
     "action": "badge",
-    "version": "farm-hundred-normal-20261102",
+    "version": "farm-hundred-normal-no-dot-20261102",
     "tool": "image_gen",
     "prompt": "docs/art-prompts/achievements-phase-two.md",
     "reference": "assets/pigs/badges/badge-pig-farm-ten.png",
-    "sourceSha256": "5e1117beea14e77e403a4cd809908e9d22314af1bb9467fbd9a30fcc3c827c5e",
+    "sourceSha256": "440ddb71345e83ab4f958a60211abf57abe70cdd4f69ec8284aaac4999c3ca89",
     "sourceDimensions": [
       512,
       512
@@ -5479,10 +5479,10 @@
       64,
       24,
       466,
-      476
+      475
     ],
     "sourceSheet": "docs/screenshots/achievements-phase-two-badges.png",
-    "sourceSheetSha256": "74f34e81bc7c4f755352df17f4fed24b9dfb78353f01aca26fec4a63513de569",
+    "sourceSheetSha256": "7c1ce71429a334c1b529556229e712a78dc76b43346754663d8c471c0b2fa9e3",
     "sourceCell": [
       0,
       512,
@@ -5492,22 +5492,22 @@
     "bounds": [
       28,
       16,
-      227,
+      228,
       240
     ],
-    "sha256": "de2e973242588901aa68821c7898f160c1d416933fba511fbdc77a0fdf099feb",
-    "bytes": 8535
+    "sha256": "19fe9583ef16ce680835b5e15a1adb0b9b63bad0d5718d703a50a4faadbf1c48",
+    "bytes": 8560
   },
   {
     "key": "badge-pig-farm-fifteen",
     "path": "pigs/badges/badge-pig-farm-fifteen.png",
     "actor": "badge-pig-farm-fifteen",
     "action": "badge",
-    "version": "farm-fifteen-normal-20261102",
+    "version": "farm-fifteen-normal-no-dot-20261102",
     "tool": "image_gen",
     "prompt": "docs/art-prompts/achievements-phase-two.md",
     "reference": "assets/pigs/badges/badge-pig-farm-ten.png",
-    "sourceSha256": "1c51d711a8fc4bc08068cbbd3acc0331e24a43756b92e29f5e3fe078c6b8e89e",
+    "sourceSha256": "9d1bd18b0246c04590aa59cf87e4aab5d136b640f74f00c7f2d630a304e1cd3b",
     "sourceDimensions": [
       512,
       512
@@ -5515,11 +5515,11 @@
     "sourceBounds": [
       57,
       25,
-      459,
-      476
+      458,
+      475
     ],
     "sourceSheet": "docs/screenshots/achievements-phase-two-badges.png",
-    "sourceSheetSha256": "74f34e81bc7c4f755352df17f4fed24b9dfb78353f01aca26fec4a63513de569",
+    "sourceSheetSha256": "7c1ce71429a334c1b529556229e712a78dc76b43346754663d8c471c0b2fa9e3",
     "sourceCell": [
       512,
       512,
@@ -5532,31 +5532,31 @@
       228,
       240
     ],
-    "sha256": "eeac7c4729f57a3df5a14beeb7efb72941a49e881b403041f5489f30c559e812",
-    "bytes": 9675
+    "sha256": "3213559ddfa036b51604ff855576a16453743521bda95d67aa5fa2db1dca8014",
+    "bytes": 9513
   },
   {
     "key": "badge-pig-mine-twenty",
     "path": "pigs/badges/badge-pig-mine-twenty.png",
     "actor": "badge-pig-mine-twenty",
     "action": "badge",
-    "version": "mine-twenty-normal-20261102",
+    "version": "mine-twenty-normal-no-dot-20261102",
     "tool": "image_gen",
     "prompt": "docs/art-prompts/achievements-phase-two.md",
     "reference": "assets/pigs/badges/badge-pig-farm-ten.png",
-    "sourceSha256": "8b523ddfc82ecb1b1e1606dd84e8f9b52e4bc88f8afd037fd8220347bdf5b916",
+    "sourceSha256": "76fa248a86e63d262c6a06ef069a9748293560ec51e1ce59c663a9ff033be4c9",
     "sourceDimensions": [
       512,
       512
     ],
     "sourceBounds": [
-      48,
-      25,
+      49,
+      24,
       450,
-      476
+      475
     ],
     "sourceSheet": "docs/screenshots/achievements-phase-two-badges.png",
-    "sourceSheetSha256": "74f34e81bc7c4f755352df17f4fed24b9dfb78353f01aca26fec4a63513de569",
+    "sourceSheetSha256": "7c1ce71429a334c1b529556229e712a78dc76b43346754663d8c471c0b2fa9e3",
     "sourceCell": [
       1024,
       512,
@@ -5566,10 +5566,10 @@
     "bounds": [
       28,
       16,
-      228,
+      227,
       240
     ],
-    "sha256": "a78489d4182f378471603fed5b82544c3aa249d2a0bf8dae9082b17e7ec1771c",
-    "bytes": 9642
+    "sha256": "000a57b81b31d86366ee90d86e0b8f527a6d6bd9eabf2d3d34fe94273be8439c",
+    "bytes": 9282
   }
 ]

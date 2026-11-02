@@ -19,3 +19,9 @@ Bottom-middle: mint green badge, a small basket of carrot, tomato, corn and eggp
 Bottom-right: slate blue badge, small pickaxe and one purple crystal at lower right. No helmet is needed; keep the pig identical.
 The normal pig itself must look exactly like the reference in all six. These are small 256px game icons; use few clean simple shapes for props matching the reference. No text or numerals. Whole badge silhouettes fully visible, equal size, centered in equal square cells with ample transparent margins. Fully transparent alpha=0 outside badges and in gutters, no glow or shadow.
 ```
+
+## 六处鼻旁高光移除
+
+```text
+Use case: precise-object-edit. Remove ONLY the SIX small solid WHITE DOTS immediately to the LEFT of each pig's pink snout in this six-badge sheet, one dot per pig. Reconstruct the covered tiny area with the same peach face color beneath, seamlessly. Preserve all actual eyes, black nostrils, snout shape, pink blush, ears, body, tail, normal standing legs, accessories, badge backgrounds, ribbons, proportions, positions, colors and transparency EXACTLY. Do not remove any other white areas such as the book pages or medal interior. Do not redraw the pigs or alter anatomy. No new details. Only six tiny white decorative face spots are removed. Keep the same 3 columns by 2 rows canvas dimensions and fully transparent outside-badge regions.
+```
