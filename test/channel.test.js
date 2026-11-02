@@ -50,21 +50,30 @@ test('Gitee 在线扩展目录：地址用 Gitee，官方哈希与同版本 GitH
   assert.equal(giteeFarm?.bundle?.sha256, '51c4f1ca631b18366db64fa254c63885bff3c07e19347651e4fd5096db2aad0d')
 })
 
-test('候选渠道目录互相匹配，Gitee候选不包含GitHub链接', async () => {
+test('候选渠道版本可独立演进；key、minGame 和同版本内容保持一致', async () => {
   const { existsSync } = await import('node:fs')
   const path = new URL('../release-candidates/extensions/registry.json', import.meta.url)
   if (!existsSync(path)) return
   const github = JSON.parse(readFileSync(path, 'utf8'))
   const gitee = JSON.parse(readFileSync(new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url), 'utf8'))
   assert.doesNotMatch(JSON.stringify(gitee), /github/i)
-  assert.deepEqual(gitee.extensions.map(item => item.key + '@' + item.version), github.extensions.map(item => item.key + '@' + item.version))
+  assert.deepEqual(gitee.extensions.map(item => item.key).sort(), github.extensions.map(item => item.key).sort())
   const withoutUrls = value => {
     if (Array.isArray(value)) return value.map(withoutUrls)
     if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'url').map(([key, nested]) => [key, withoutUrls(nested)]))
     return value
   }
-  for (const item of github.extensions.filter(item => !item.builtin)) {
-    const twin = gitee.extensions.find(other => other.key === item.key)
+  const giteeByKey = new Map(gitee.extensions.map(item => [item.key, item]))
+  for (const item of github.extensions) {
+    const twin = giteeByKey.get(item.key)
+    assert.ok(twin, `${item.key} missing from Gitee candidate`)
+    if (item.builtin === true) {
+      assert.equal(twin.version, item.version, `${item.key} builtin version across candidate channels`)
+      assert.deepEqual(withoutUrls(twin), withoutUrls(item), `${item.key} builtin candidate metadata`)
+      continue
+    }
+    assert.equal(twin.minGame, item.minGame, `${item.key} minGame across candidate channels`)
+    if (twin.version !== item.version) continue
     assert.deepEqual(withoutUrls(twin), withoutUrls(item), `${item.key}@${item.version} candidate metadata`)
     assert.equal(twin.bundle.sha256, item.bundle.sha256)
     for (const [name, file] of Object.entries(item.files)) assert.equal(twin.files[name].sha256, file.sha256)

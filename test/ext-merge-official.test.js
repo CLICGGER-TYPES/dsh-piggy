@@ -20,6 +20,7 @@ import { createSaveArchive } from '../runtime/save-archive.js'
 import { createStore } from '../store.js'
 import { createExtRuntime } from '../store/ext-runtime.js'
 import { createJournal } from '../store/journal.js'
+import { farmClassicFiles } from '../scripts/farm-classic-files.mjs'
 import { describeExtensionConflicts } from '../packages/pet-core/src/core/merge-identity.js'
 import farm from '../extensions/farm/server.js'
 import mine from '../extensions/mine/server.js'
@@ -55,12 +56,13 @@ test('官方四个扩展（含经典菜园）都声明 mergeHook 1，服务端�
     assert.match(manifest.version, /^\d+\.\d+\.\d+$/)
   }
   const classic = JSON.parse(readFileSync(new URL('../extension-variants/farm-classic/manifest.json', import.meta.url), 'utf8'))
+  const modern = manifestOf('farm')
   assert.equal(classic.key, 'farm')
   assert.equal(classic.mergeHook, 1)
-  // 经典菜园有自己的大版本号，但跟现代菜园共用同一份服务端：小版本和补丁位一起走。
-  const [, classicMinor, classicPatch] = classic.version.split('.')
-  const [, modernMinor, modernPatch] = manifestOf('farm').version.split('.')
-  assert.deepEqual([classicMinor, classicPatch], [modernMinor, modernPatch], '经典菜园和现代菜园共用同一份服务端，小版本一起走')
+  assert.equal(classic.mergeHook, modern.mergeHook, '两种菜园客户端声明兼容的合并钩子')
+  assert.equal(classic.minGame, modern.minGame, '两种菜园客户端声明兼容的最低游戏版本')
+  assert.deepEqual(farmClassicFiles()['server.js'], readFileSync(new URL('../extensions/farm/server.js', import.meta.url)),
+    '经典菜园包必须复用现代菜园的同一份服务端字节')
   for (const extension of [farm, mine, gacha, blindbox]) assert.equal(typeof extension.mergeStates, 'function')
 })
 
