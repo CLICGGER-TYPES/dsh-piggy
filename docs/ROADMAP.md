@@ -5,21 +5,21 @@
 - RC6 游戏0.37.2-rc.6 / 桌面外壳0.6.8-rc.4 已发布。菜园4.2.1扩展包已独立发布，GitHub bundle SHA-256 为 `bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0`，minGame 为0.37.2。
 - GitHub公开farm目录条目为4.2.1，Gitee公开目录保持4.2.0；本次不发布Gitee目录更新。
 - GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
-- 当前RC6只接入云存档配置与只读连接测试；云上传、恢复和自动合并仍未实现。多猪正式入口和稳定ID仍未实现。
+- 当前RC6只接入云存档配置与只读连接测试；云存档上传、恢复与冲突处理均暂缓、尚未实现。多猪正式入口和稳定ID仍未实现。
 
 ## 2026-11-02 Electron 45.2.1 Linux X11 候选（CI、私有包及有限原生 UI 已验证）
 
 - PR41 源码候选 `a7ce5727a3842fa7a834a1767aab773c2ebb64fa` 基于 `5b7823ef8d941ebee96b07f91bb2170730921b07`，仅更新桌面运行时声明、锁文件和本路线图。Electron 45.2.1 使用 Chromium 156.0.8078.75；主进程输入算法、游戏数据、schema 与产品 UI 没有因运行时切换而改动。本候选未合并、未发布。
 - [PR41 CI](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/41380319515) 双平台通过：Linux 2407/2419 项通过、0 失败、12 跳过；Windows 2414/2419 项通过、0 失败、5 跳过；构建、类型检查与生成物 freshness 均通过。
-- 私有 PKG06 AppImage 已构建并完成静态回读，大小 143,020,760 bytes，SHA-256 `1a09b9ca0db95b9a9e0e94b24023c39ab0b6823167497c8027d08fe63846573f`。72 个 Electron 45.2.1 官方 ZIP 成员、桌面 ASAR 配置源和 375 个游戏文件均按记录做了字节核对。该包没有启动或发布。
+- 私有 PKG06 AppImage 已构建并完成静态回读，大小 143,020,760 bytes，SHA-256 `1a09b9ca0db95b9a9e0e94b24023c39ab0b6823167497c8027d08fe63846573f`。72 个 Electron 45.2.1 官方 ZIP 成员、桌面 ASAR 配置源和 375 个游戏文件均按记录做了字节核对。该私有包曾在隔离 Linux VM 中用于 R05/R06/R08 原生 UI 验收，未公开发布。
 - R05 观察到真实宠物点击使 `data-poke=1`；OS 指针与 Electron 屏幕坐标已记录；本轮 90.01 秒内 46 个样本显示进程组和 CDP 均存活，未出现 GPU fatal。R06 通过三次真实点击孵化，并完成右键开面板、导航、设置页滚动和普通开关操作；DOM `data`/`aria` 与本机 `localStorage` 读回相符。孵化前后截图和 `data-unhatched=false` 已记录，视觉收起按真实界面接受；原生 hidden-state 检查仍为 NOCOVER。
 - R08 的 C7 步骤全部 exit 0：真实孵化、面板操作以及 farm 4.2.2 菜园、商店、工具与种子页面操作通过；实际加载的 farm client SHA-256 为 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。受限空白点的 X11 press/release 各一次、renderer 未收到 trusted 输入通过；此结果不代表像素级点击穿透精度。R08 原始收据 `farmUi.reason` 留有旧 fallback 字符串，状态与逐项证据均为 PASS；未修改原始日志或重测。
-- 本轮完成 farm D/E 源码拆分及有限 Linux 默认流程代表 UI；尚未覆盖设置持久化重开、Windows/macOS、DSH/OpenCode、完整 flight 视觉、主进程完整拆分、稳定猪 ID 或在线多猪。R05 的 90 秒观察不等于长期稳定性结论。先前同一 Electron 45.2.1 候选仍出现 GPU process fatal，根因未定位；不能宣称已修复。
-- GitHub 公开 RC6 与 farm 4.2.1 tag、bundle、registry 和旧 hash 保持不变；Gitee 不更新，4.2.2 候选未公开。云存档上传、恢复与自动合并继续暂缓。
+- 本轮完成桌面 renderer controller D 与 farm client E 源码拆分及有限 Linux 默认流程代表 UI；尚未覆盖设置持久化重开、Windows/macOS、DSH/OpenCode、完整 flight 视觉、主进程完整拆分、稳定猪 ID 或在线多猪。R05 的 90 秒观察不等于长期稳定性结论。历史 R33F 曾在同一 Electron 45.2.1 候选中出现 GPU process fatal，根因未定位；不能宣称已修复。
+- GitHub 公开 RC6 与 farm 4.2.1 tag、bundle、registry 和旧 hash 保持不变；Gitee 不更新，4.2.2 候选未公开。云存档上传、恢复与冲突处理继续暂缓。
 
 ## 2026-11-01 存储模块拆分（进行中）
 
-- MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 暂缓，farm 4.2.1 公开附件保持不变。
+- MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 是 2026-11-01 对存储拆分子项的暂缓记录；2026-11-02 renderer D 与 farm client E 源码及有限 Linux UI 状态见上文。farm 4.2.1 公开附件保持不变。
 
 ## 2026-11-02 桌面 renderer controller 拆分（候选，有限 Linux 原生验收完成）
 
