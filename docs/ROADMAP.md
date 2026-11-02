@@ -18,7 +18,7 @@
 
 - 基线为已合并 PR43 的 `b5dedefb68b50b41ceb4f696730f65398f67f2b2`。`desktop-lifecycle.js` 统一持有关闭状态与动作预约，保留存档保存、失败重试、退出等待与外壳安装时保留 `shellUpdates` 的顺序；`main.js` 继续装配运行时资源，窗口与启动编排仍留在组合根。
 - PR44 已合入 main，CI 双平台成功。开发侧相关 Node 契约 29/29 通过；完整本机类型检查因隔离 checkout 缺 Electron 相关依赖未完成，使用 CI 验证。
-- QDESKFINAL01 对 PKG09 的真实 Exit 点击记录为 NOCOVER：点击后 18 秒仍观察到应用组、runtime lock 与 CDP；随后启动第二个实例，单实例门禁拒绝。之后的 UI/API 读数可能受到 AppImage 提取目录复用/清理影响；首次进程组最终为空但未记录退出码或 TERM，不能据此确认正常退出或重开持久化。
+- QDESKFINAL01 exit-final03 对 PKG09 完成一次核心 Linux 正常退出与同 profile 冷重开验收：真实 Exit 点击后约 1.26 秒进程组为空、CDP 不可达、runtime lock 释放；冷重开后 `hatched=true` 且 coins 仍为 500。附加的第二次 Exit 因截图文件 `O_EXCL` 重名未点击，记为 NOCOVER；runner exit 1 只反映这项可选覆盖未完成，不否定前述一次正常退出与冷重开结果，也不代表长期稳定性。
 
 ## 2026-11-02 WINOWN01 面板窗口所有权拆分（本地候选）
 
