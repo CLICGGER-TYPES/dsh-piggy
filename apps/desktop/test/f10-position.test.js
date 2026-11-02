@@ -98,8 +98,9 @@ test('窗口位置必须在构造时就给，不能先建再挪（Electron 自�
   // Electron 源码 shell/browser/native_window_views.cc 里写着：构造时不给 x/y 的话，
   // HWND 会先按主屏 DPI 建在 (0,0)、之后再挪，副屏上会「缩水」（secondary-creation
   // deflation symptom）。所以 start 必须摊进构造参数。
-  const ctor = main.slice(main.indexOf('new BrowserWindow({'), main.indexOf('win.setAlwaysOnTop'))
-  assert.match(ctor, /\.\.\.start/, '构造时就带上算好的 x/y/width/height')
+  const ownerCall = main.indexOf('petWindow.create({')
+  const create = main.slice(ownerCall, main.indexOf("url: 'piggy://app/index.html'", ownerCall))
+  assert.match(create, /options:\s*\{\s*\.\.\.start/, '创建时就带上算好的 x/y/width/height')
 })
 
 test('显示器对账兜底：漏了 display 事件也能自愈', () => {

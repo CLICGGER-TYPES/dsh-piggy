@@ -11,8 +11,8 @@ test('拖动心跳超过两秒才过期：页面忙一下不掐断拖动', () =>
 
 test('渲染进程退出会停拖动；窗口失焦不停（Windows 上按住拖动时也可能失焦，停了猪就卡在原地）', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  assert.doesNotMatch(main, /win\.on\('blur',\s*stopDrag\)/)
-  assert.match(main, /win\.webContents\.on\('render-process-gone',\s*\([^)]*\)\s*=>\s*\{\s*stopDrag\(\)/)
+  assert.doesNotMatch(main, /onBlur:\s*\(window\)\s*=>\s*stopDrag\(\)/)
+  assert.match(main, /onRendererGone:\s*\(window, event, details\)\s*=>\s*\{\s*stopDrag\(\)/)
 })
 
 test('拖动开始和结束都清掉面板打开时记下的原位，内容再变不会把猪拽回去', () => {
@@ -35,11 +35,11 @@ test('心跳顺带挪窗口；拖动不写逐帧日志；旧游戏包的 moveBy 
 test('窗口销毁后到达的页面消息不处理（Windows 上切换版本时弹过「Object has been destroyed」）', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   // 外壳 0.6.0 起有两个窗口：猪窗口（fromPet，只有它能挪猪）和面板窗口，两边都先查 isDestroyed。
-  assert.match(main, /function fromPet\(event\) \{\s*return !desktopLifecycle\.quitting && win !== null && !win\.isDestroyed\(\) && event\.sender === win\.webContents/)
+  assert.match(main, /function fromPet\(event\) \{\s*return !desktopLifecycle\.quitting && getPetWindow\(\) !== null && !getPetWindow\(\)\.isDestroyed\(\) && event\.sender === getPetWindow\(\)\.webContents/)
   assert.match(main, /function fromPage\(event\) \{\s*return fromPet\(event\) \|\| \(!desktopLifecycle\.quitting && getPanelWindow\(\) !== null && !getPanelWindow\(\)\.isDestroyed\(\) && event\.sender === getPanelWindow\(\)\.webContents\)/)
-  assert.doesNotMatch(main, /event\.sender !== win\.webContents/)
+  assert.doesNotMatch(main, /event\.sender !== getPetWindow\(\)\.webContents/)
   // 只查 null 不查 isDestroyed 的地方都不该再有
-  assert.doesNotMatch(main, /if \(win === null\) return/)
+  assert.doesNotMatch(main, /if \(getPetWindow\(\) === null\) return/)
   assert.match(main, /process\.on\('uncaughtException'/)
 })
 

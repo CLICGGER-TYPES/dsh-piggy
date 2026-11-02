@@ -8,7 +8,7 @@
 
 | 窗口 | 里面有什么 | 谁决定它在哪、多大 |
 |---|---|---|
-| **猪窗口**（`win`，role=`pet`） | 只有猪、气泡、签到/打工小道具 | 游戏包算（`src/client/desktop/`），外壳照做（`piggy:place`）；拖动中由外壳按鼠标算（`dragTick`） |
+| **猪窗口**（`petWindow.current()`，role=`pet`） | 只有猪、气泡、签到/打工小道具 | 游戏包算（`src/client/desktop/`），外壳照做（`piggy:place`）；拖动中由外壳按鼠标算（`dragTick`） |
 | **面板窗口**（`panelWin`，role=`panel`） | 只有面板（名牌 + 卡片） | 外壳按猪的位置算（`apps/desktop/lib/panel-geometry.js`），页面只报自己多大 |
 
 页面怎么知道自己在哪个窗口：`window.piggyShell.role`（preload 从启动参数 `--piggy-role=panel` 读）。
@@ -117,7 +117,8 @@
 
 | 文件 | 内容 |
 |---|---|
-| `apps/desktop/main.js` | 主进程组合根：pet 窗口、拖动（`dragTick`）、面板几何/交互与服务装配；以 live getter 使用面板窗口 |
+| `apps/desktop/main.js` | 主进程组合根：窗口装配、拖动（`dragTick`）、面板几何/交互与服务装配；通过 live getter 使用窗口所有者的句柄 |
+| `apps/desktop/lib/pet-window.js` | 猪 `BrowserWindow` 唯一所有者：创建、当前句柄、加载/renderer 事件与销毁；不持有窗口位置、drag、flight 或 shape 状态 |
 | `apps/desktop/lib/panel-window.js` | 面板 BrowserWindow 唯一所有者：创建、当前句柄、renderer 就绪、renderer 退出与销毁 |
 | `apps/desktop/lib/game-protocol.js` | 处理 `piggy://` 静态资源与 `/dsh-piggy/…` 宿主请求；由组合根注入协议注册、`net.fetch`、renderer/game 根目录及 live host/关闭/状态通知回调 |
 | `apps/desktop/lib/desktop-lifecycle.js` | 唯一持有主进程关闭/退出状态、动作预约、保存与资源 flush 顺序；通过 getter 获取当前 host、版本和关闭资源 |
@@ -139,6 +140,8 @@
 | `src/client/desktop/panel-window.js` | 面板窗口页面：排版、报尺寸 |
 
 主进程的 `panel-window.js` 拥有单一面板 `BrowserWindow` 句柄和 renderer 就绪状态；`main.js` 通过 getter 获取当前窗口。面板开关、位置/大小、shape/hit 区域、焦点和菜单布局仍由 `main.js` 组合现有模块处理，窗口创建或 Linux 显示器重建也走同一所有者。
+
+主进程的 `pet-window.js` 唯一持有猪 `BrowserWindow` 句柄，并将 ready、页面加载、加载失败、renderer 退出与关闭事件只交给当前窗口。`main.js` 通过 live getter 装配它；Linux 显示器重建替换当前句柄后，旧窗口的迟到事件不会影响新窗口。窗口位置、显示门、drag、flight 和 shape 算法仍由组合根处理。
 | `src/client/split.js`、`pending.js` | 两边页面的分工（谁演反应、谁出提示条） |
 
 主进程仍在原位置声明 `piggy` scheme 权限，并在宿主启动后注册协议。协议模块只转发宿主响应；host 的 `onSnapshot` 通知仍独立存在，可能在 `handle` 返回前通知页面；协议适配器自身的 POST 刷新通知仍在 `host.handle` 成功后安排。

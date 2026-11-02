@@ -169,7 +169,7 @@ test('IPC 边界：只有面板窗口能开关；preload 暴露 external.get/set
   assert.match(system, /if \(!fromPanelOnly\(event\) \|\| externalManager === null\)/)
   assert.match(system, /piggy:external:get/)
   assert.match(system, /piggy:external:set/)
-  assert.match(main, /dialog\.showMessageBox\(win, \{/)
+  assert.match(main, /dialog\.showMessageBox\(getPetWindow\(\), \{/)
   assert.match(preload, /external: \{/)
   assert.match(preload, /piggy:external:get/)
   assert.match(preload, /piggy:external:set/)

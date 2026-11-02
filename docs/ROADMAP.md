@@ -12,7 +12,7 @@
 - [PR36](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/36) 存储模块拆分已合入 main：保留 v15 数据格式、legacy 四个出口、60 项 API 名称/顺序、live getter 与保存/回滚时序；相关 45 项测试、TypeScript 5.9.3 类型检查与构建通过。未声称该项有新增原生 UI 覆盖。
 - PR42 的 `piggy://` 协议路由抽离已随 PR43 集成进入 main，当前模块为 `apps/desktop/lib/game-protocol.js`。双平台 CI 均为 2,425 项，Linux 2,413 通过/12 跳过、Windows 2,420 通过/5 跳过，零失败。c566 候选的隔离 Linux VM 有限真实 UI 覆盖包括孵化、面板、菜园、商店、工具和种子流程；Windows 记录来自较早的 0f1884c 候选，不能算作 c566 的 Windows UI 验收。
 - [PR43](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/43) QA 操作库已合入 main；CI 中 Linux 标准库契约 9/9 通过，15 个 Python 源文件 AST 检查通过。独立执行者用 r6 原型通过真实 native input 点击 DSH Continue，Notice 消失并进入下一页。键入、滚轮、拖拽和桌面 hatch 未在该次 UI 中验证；此项不代表完整 DSH/OpenCode 或 Windows 原生 UI 验收。
-- 当前 main 尚未把窗口与启动编排整体移出 `main.js`；本次 MAIN02 只处理退出生命周期，覆盖状态另见下文。
+- 当前 main 尚未把窗口与启动编排整体移出 `main.js`；面板与猪窗口句柄分别由 `panel-window.js`、`pet-window.js` 单一持有，装配与几何/交互算法仍在组合根。
 
 ## 2026-11-02 MAIN02 主进程退出生命周期拆分（PR44 已合入）
 
@@ -20,10 +20,15 @@
 - PR44 已合入 main，CI 双平台成功。开发侧相关 Node 契约 29/29 通过；完整本机类型检查因隔离 checkout 缺 Electron 相关依赖未完成，使用 CI 验证。
 - QDESKFINAL01 exit-final03 对 PKG09 完成一次核心 Linux 正常退出与同 profile 冷重开验收：真实 Exit 点击后约 1.26 秒进程组为空、CDP 不可达、runtime lock 释放；冷重开后 `hatched=true` 且 coins 仍为 500。附加的第二次 Exit 因截图文件 `O_EXCL` 重名未点击，记为 NOCOVER；runner exit 1 只反映这项可选覆盖未完成，不否定前述一次正常退出与冷重开结果，也不代表长期稳定性。
 
-## 2026-11-02 WINOWN01 面板窗口所有权拆分（本地候选）
+## 2026-11-02 WINOWN01 面板窗口所有权拆分（PR45 已推送，CI 通过）
 
 - 基线为 main `4abcac24dcbba6c12236fd59cddd2ba71d38f125`。`apps/desktop/lib/panel-window.js` 单独持有面板 `BrowserWindow`、renderer 就绪态及创建/renderer 退出/销毁生命周期；`main.js` 通过 live getter 访问句柄。面板开关、几何、菜单、焦点和 hit/shape 算法保留在原组合根，pet 拖动/飞行不变。
-- 定向窗口/生命周期契约 20/20 通过，主进程与新模块语法检查通过；没有运行产品 UI/VM。提交待根审查。
+- 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0` 已推送 PR45；Linux 与 Windows CI 全绿。定向窗口/生命周期契约 24/24 通过；真实 UI 待与猪窗口所有权候选组合后做一轮验收。
+
+## 2026-11-02 PETOWN01 猪窗口所有权拆分（隔离候选）
+
+- 基于 WINOWN01 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0`，`apps/desktop/lib/pet-window.js` 唯一持有猪 `BrowserWindow` 句柄，并转发 ready、加载失败、renderer 退出与关闭事件；旧窗口迟到事件不能污染当前句柄。`main.js` 用 live getter 装配窗口；显示门、位置、drag、flight 与 shape 算法不变。
+- 定向桌面窗口/输入及生命周期测试 132/132 通过，覆盖新旧窗口替换、Linux 显示重建、show gate、IPC 所有权与拖动/shape 路径。未运行产品 UI/VM；待与 WINOWN01 合并候选统一做一轮定向桌面 UI。
 
 ## 2026-11-02 Electron 45.2.1 Linux X11 候选（CI、私有包及有限原生 UI 已验证）
 
