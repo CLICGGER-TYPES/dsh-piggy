@@ -66,6 +66,7 @@ test('panel-window owns one current window and resets readiness across renderer 
   const details = { reason: 'crashed' }
   first.webContents.emit('render-process-gone', {}, details)
   assert.equal(panel.current(), null)
+  assert.equal(panel.isReady(), false)
   assert.equal(events.filter(([kind]) => kind === 'gone').length, 1)
 
   const second = panel.ensure()
@@ -81,5 +82,6 @@ test('panel-window owns one current window and resets readiness across renderer 
   assert.equal(events.filter(([kind]) => kind === 'blur').length, 1)
   panel.destroy(second)
   assert.equal(panel.current(), null)
+  assert.equal(panel.isReady(), false)
   assert.equal(second.isDestroyed(), true)
 })

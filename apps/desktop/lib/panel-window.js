@@ -60,7 +60,7 @@ export function createPanelWindow(deps) {
 
   return {
     current: () => current,
-    isReady: () => ready,
+    isReady: () => ready && current !== null && !current.isDestroyed(),
     ensure,
     forget,
     destroy,
