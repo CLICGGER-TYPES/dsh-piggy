@@ -14,10 +14,16 @@
 - [PR43](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/43) QA 操作库已合入 main；CI 中 Linux 标准库契约 9/9 通过，15 个 Python 源文件 AST 检查通过。独立执行者用 r6 原型通过真实 native input 点击 DSH Continue，Notice 消失并进入下一页。键入、滚轮、拖拽和桌面 hatch 未在该次 UI 中验证；此项不代表完整 DSH/OpenCode 或 Windows 原生 UI 验收。
 - 当前 main 尚未把窗口与启动编排整体移出 `main.js`；本次 MAIN02 只处理退出生命周期，覆盖状态另见下文。
 
-## 2026-11-02 MAIN02 主进程退出生命周期拆分（本地候选）
+## 2026-11-02 MAIN02 主进程退出生命周期拆分（PR44 已合入）
 
 - 基线为已合并 PR43 的 `b5dedefb68b50b41ceb4f696730f65398f67f2b2`。`desktop-lifecycle.js` 统一持有关闭状态与动作预约，保留存档保存、失败重试、退出等待与外壳安装时保留 `shellUpdates` 的顺序；`main.js` 继续装配运行时资源，窗口与启动编排仍留在组合根。
-- 开发侧相关 Node 契约 29/29 通过，生命周期模块单文件 TypeScript 检查通过；完整本机类型检查因隔离 checkout 缺 Electron 相关依赖未完成，CI 检查待执行。本候选尚未提交审查或进入 CI，未做 UI/VM 验收。
+- PR44 已合入 main，CI 双平台成功。开发侧相关 Node 契约 29/29 通过；完整本机类型检查因隔离 checkout 缺 Electron 相关依赖未完成，使用 CI 验证。
+- QDESKFINAL01 对 PKG09 的真实 Exit 点击记录为 NOCOVER：点击后 18 秒仍观察到应用组、runtime lock 与 CDP；随后启动第二个实例，单实例门禁拒绝。之后的 UI/API 读数可能受到 AppImage 提取目录复用/清理影响；首次进程组最终为空但未记录退出码或 TERM，不能据此确认正常退出或重开持久化。
+
+## 2026-11-02 WINOWN01 面板窗口所有权拆分（本地候选）
+
+- 基线为 main `4abcac24dcbba6c12236fd59cddd2ba71d38f125`。`apps/desktop/lib/panel-window.js` 单独持有面板 `BrowserWindow`、renderer 就绪态及创建/renderer 退出/销毁生命周期；`main.js` 通过 live getter 访问句柄。面板开关、几何、菜单、焦点和 hit/shape 算法保留在原组合根，pet 拖动/飞行不变。
+- 定向窗口/生命周期契约 20/20 通过，主进程与新模块语法检查通过；没有运行产品 UI/VM。提交待根审查。
 
 ## 2026-11-02 Electron 45.2.1 Linux X11 候选（CI、私有包及有限原生 UI 已验证）
 

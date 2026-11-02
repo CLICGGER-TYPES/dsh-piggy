@@ -36,7 +36,7 @@ test('窗口销毁后到达的页面消息不处理（Windows 上切换版本时
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   // 外壳 0.6.0 起有两个窗口：猪窗口（fromPet，只有它能挪猪）和面板窗口，两边都先查 isDestroyed。
   assert.match(main, /function fromPet\(event\) \{\s*return !desktopLifecycle\.quitting && win !== null && !win\.isDestroyed\(\) && event\.sender === win\.webContents/)
-  assert.match(main, /function fromPage\(event\) \{\s*return fromPet\(event\) \|\| \(!desktopLifecycle\.quitting && panelWin !== null && !panelWin\.isDestroyed\(\) && event\.sender === panelWin\.webContents\)/)
+  assert.match(main, /function fromPage\(event\) \{\s*return fromPet\(event\) \|\| \(!desktopLifecycle\.quitting && getPanelWindow\(\) !== null && !getPanelWindow\(\)\.isDestroyed\(\) && event\.sender === getPanelWindow\(\)\.webContents\)/)
   assert.doesNotMatch(main, /event\.sender !== win\.webContents/)
   // 只查 null 不查 isDestroyed 的地方都不该再有
   assert.doesNotMatch(main, /if \(win === null\) return/)

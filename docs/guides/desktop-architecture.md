@@ -117,7 +117,8 @@
 
 | 文件 | 内容 |
 |---|---|
-| `apps/desktop/main.js` | 主进程组合根：窗口、拖动（`dragTick`）、面板与服务装配；持有运行时服务句柄并注入 live getter |
+| `apps/desktop/main.js` | 主进程组合根：pet 窗口、拖动（`dragTick`）、面板几何/交互与服务装配；以 live getter 使用面板窗口 |
+| `apps/desktop/lib/panel-window.js` | 面板 BrowserWindow 唯一所有者：创建、当前句柄、renderer 就绪、renderer 退出与销毁 |
 | `apps/desktop/lib/game-protocol.js` | 处理 `piggy://` 静态资源与 `/dsh-piggy/…` 宿主请求；由组合根注入协议注册、`net.fetch`、renderer/game 根目录及 live host/关闭/状态通知回调 |
 | `apps/desktop/lib/desktop-lifecycle.js` | 唯一持有主进程关闭/退出状态、动作预约、保存与资源 flush 顺序；通过 getter 获取当前 host、版本和关闭资源 |
 | `apps/desktop/lib/ipc/updates.js` | 更新/外壳更新 IPC 注册（`piggy:updates:*`、`piggy:shell:*`）；`releases` 状态归此模块 |
@@ -136,6 +137,8 @@
 | `src/client/desktop/place.js` | 「家」模型 |
 | `src/client/desktop/measure.js` | 猪窗口的固定框、气泡预留、可点区域 |
 | `src/client/desktop/panel-window.js` | 面板窗口页面：排版、报尺寸 |
+
+主进程的 `panel-window.js` 拥有单一面板 `BrowserWindow` 句柄和 renderer 就绪状态；`main.js` 通过 getter 获取当前窗口。面板开关、位置/大小、shape/hit 区域、焦点和菜单布局仍由 `main.js` 组合现有模块处理，窗口创建或 Linux 显示器重建也走同一所有者。
 | `src/client/split.js`、`pending.js` | 两边页面的分工（谁演反应、谁出提示条） |
 
 主进程仍在原位置声明 `piggy` scheme 权限，并在宿主启动后注册协议。协议模块只转发宿主响应；host 的 `onSnapshot` 通知仍独立存在，可能在 `handle` 返回前通知页面；协议适配器自身的 POST 刷新通知仍在 `host.handle` 成功后安排。

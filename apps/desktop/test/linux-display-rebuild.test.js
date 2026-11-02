@@ -61,7 +61,7 @@ test('重建 Linux 窗口时丢弃旧页面的独立输入区域', async () => {
   const previous = { isDestroyed: () => false, hide() {}, removeAllListeners() {}, webContents: { removeAllListeners() {} }, destroy() {} }
   let resetInput = false
   const sandbox = {
-    quitting: false, win: previous, panelWin: null, petAsked: { x: 0, y: 0, width: 132, height: 152 },
+    quitting: false, win: previous, getPanelWindow: () => null, panelWindow: { destroy() {}, forget() {} }, petAsked: { x: 0, y: 0, width: 132, height: 152 },
     lastPigWindow: { x: 10, y: 10 }, WINDOW_PADDING: 10, lastContent: {}, restingPigScreen: {},
     lastShape: [{}], placedShape: [{}], placedHitShape: [{ x: 20, y: 20, width: 60, height: 60 }], hasPlacedShape: true,
     stopDrag() {}, resizeShape: { cancel() {} }, closePanel() {}, ensurePanelWindow() {}, pushGeometry() {}, log() {},

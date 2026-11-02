@@ -43,7 +43,7 @@ test('反应消息、全屏恢复和3秒守卫都不能抬回获得焦点的大�
   let moves = 0, tops = 0
   const win = { isDestroyed: () => false, isVisible: () => true, moveTop: () => moves++, setAlwaysOnTop: () => tops++ }
   let syncs = 0
-  const context = { win, panelWin: win, extensionLayer: { isFocused: () => true, sync() { syncs++ } }, Date, log() {}, reassertingUntil: 0, quitting: false }
+  const context = { win, getPanelWindow: () => win, extensionLayer: { isFocused: () => true, sync() { syncs++ } }, Date, log() {}, reassertingUntil: 0, quitting: false }
   context.desktopLifecycle = desktopLifecycleStateAdapter(context)
   runInNewContext(extract('raisePetAbovePanel') + '\n' + extract('reassertTop') + '\nraisePetAbovePanel(); reassertTop("check"); reassertTop("lost"); reassertTop("fullscreen-ended")', context)
   assert.equal(moves, 0)

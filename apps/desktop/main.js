@@ -2,7 +2,7 @@
 /**
  * dsh-piggy 桌面版的主进程（外壳）。整体结构和全部 IPC 消息见 docs/guides/desktop-architecture.md。
  *
- * - 两个透明置顶窗口（外壳 0.6.0 起）：猪窗口 win（固定大小，只装猪和气泡）和面板窗口 panelWin
+ * - 两个透明置顶窗口（外壳 0.6.0 起）：猪窗口 win（固定大小，只装猪和气泡）和面板窗口
  *   （贴在猪旁边，见文件后半「面板窗口」一节和 lib/panel-geometry.js）。同一份游戏包在两边各跑一份，
  *   按 piggyShell.role 各显示一半。
  * - 窗口摆哪、哪里可点由游戏包算（src/client/desktop/），这里只照做（piggy:place）；拖动由这里按
@@ -44,6 +44,7 @@ import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
 import { createExtensionWindow } from './lib/extension-window.js'
+import { createPanelWindow } from './lib/panel-window.js'
 import { createExternalManager } from './lib/external.js'
 import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
@@ -176,7 +177,34 @@ let petAsked = null
  * 小窗口、菜单另开窗口：开面板时猪的窗口一动不动，拖动只挪窗口。见 docs/archive/tasks/I-round.md。
  * 只有新游戏包会叫它（piggyShell.panel.toggle）；老游戏包照旧单窗口。
  */
-let panelWin = null
+const panelWindow = createPanelWindow({
+  BrowserWindow,
+  options: {
+    width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
+    transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
+    alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
+    ...auxiliaryWindowOptions(process.platform),
+    backgroundColor: '#00000000',
+    webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
+      additionalArguments: ['--piggy-role=panel'] },
+  },
+  url: 'piggy://app/index.html',
+  frameCap: FRAME_CAP,
+  devTools: process.env.PIGGY_DEVTOOLS === '1',
+  log,
+  onCreated: () => {
+    panelAsked = null
+    panelShapeKey = ''
+    panelHasNativeShape = false
+    extensionLayer.sync()
+  },
+  onReady: () => {
+    if (panelOpen && panelAnchor !== null) sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
+  },
+  onRendererGone: () => closePanel('crash'),
+  onBlur: panelFocusLeft,
+})
+const getPanelWindow = panelWindow.current
 /** 扩展的大窗口（role=ext）和它显示的扩展；一次只开一个。 */
 const extensionWindow = createExtensionWindow({
   BrowserWindow, screen, ipcMain,
@@ -184,13 +212,13 @@ const extensionWindow = createExtensionWindow({
   preload: join(HERE, 'preload.cjs'),
   url: 'piggy://app/index.html',
   getLayer: () => extensionLayer,
-  getPanel: () => panelWin,
+  getPanel: getPanelWindow,
   isPanelOpen: () => panelOpen,
   fromPage: event => fromPage(event),
   fromExt: event => fromExt(event),
   log,
 })
-const extensionLayer = createExtensionLayer({ extension: () => extensionWindow.current(), overlays: () => [panelWin, win] })
+const extensionLayer = createExtensionLayer({ extension: () => extensionWindow.current(), overlays: () => [getPanelWindow(), win] })
 /** 主进程关闭/退出状态统一由 lifecycle 持有；资源句柄在实际关闭时动态读取。 */
 const desktopLifecycle = createDesktopLifecycle({
   app, dialog, log, stopDrag, relaunch,
@@ -207,7 +235,7 @@ const desktopLifecycle = createDesktopLifecycle({
  * 主进程直接弹了错误框（用户 2026-10-05 实测）。所以先查 isDestroyed。
  */
 function fromPage(event) {
-  return fromPet(event) || (!desktopLifecycle.quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents) || fromExt(event)
+  return fromPet(event) || (!desktopLifecycle.quitting && getPanelWindow() !== null && !getPanelWindow().isDestroyed() && event.sender === getPanelWindow().webContents) || fromExt(event)
 }
 /** 扩展的大窗口（外壳 0.6.5 起，菜园的大农场）。 */
 function fromExt(event) {
@@ -219,7 +247,7 @@ function fromPet(event) {
 }
 /** 发给两个窗口的页面（下载进度、存档变了这类两边都要知道的事）。 */
 function toPages(channel, ...args) {
-  for (const target of [win, panelWin, extensionWindow.current()]) {
+  for (const target of [win, getPanelWindow(), extensionWindow.current()]) {
     if (target !== null && !target.isDestroyed()) target.webContents.send(channel, ...args)
   }
 }
@@ -252,7 +280,7 @@ function planLine(label, summary) {
 }
 
 function fromPanelOnly(event) {
-  return !desktopLifecycle.quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents
+  return !desktopLifecycle.quitting && getPanelWindow() !== null && !getPanelWindow().isDestroyed() && event.sender === getPanelWindow().webContents
 }
 
 function registerProtocol(gameDir) {
@@ -551,7 +579,7 @@ async function createWindow(override = null) {
 async function rebuildLinuxViews() {
   if (desktopLifecycle.quitting || win === null || win.isDestroyed()) return
   const previous = win
-  const previousPanel = panelWin
+  const previousPanel = getPanelWindow()
   const bounds = petAsked ?? previous.getBounds()
   const pig = lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
   const saved = { ...bounds, pig: { x: bounds.x + pig.x, y: bounds.y + pig.y } }
@@ -573,9 +601,9 @@ async function rebuildLinuxViews() {
   if (previousPanel && !previousPanel.isDestroyed()) {
     previousPanel.removeAllListeners()
     previousPanel.webContents.removeAllListeners()
-    previousPanel.destroy()
+    panelWindow.destroy(previousPanel)
   }
-  panelWin = null
+  panelWindow.forget(previousPanel)
   if (desktopLifecycle.quitting) return
   ensurePanelWindow()
   pushGeometry()
@@ -1005,7 +1033,7 @@ ipcMain.on('piggy:shape', (event, rects) => {
 })
 
 // ---------------------------------------------------------------------------
-// 面板窗口（外壳 0.6.0 起，见文件头 panelWin 的说明）
+// 面板窗口（外壳 0.6.0 起，窗口句柄与renderer就绪状态由 lib/panel-window.js 持有）
 // ---------------------------------------------------------------------------
 
 /** 面板现在开着没有（用户眼里的「开」，窗口可能还在等页面报尺寸）。 */
@@ -1025,8 +1053,6 @@ let panelShapeKey = ''
 let panelHasNativeShape = false
 /** 最近一次给面板窗口设的位置：没变就不再 setBounds。 */
 let panelAsked = null
-/** 面板页面加载好没有：没好之前的「打开」先记着，加载完再发。 */
-let panelReady = false
 
 let stateTimer = null
 /** 存档变了：两个窗口都刷新（合并 30ms 内的多次，一次动作可能连发几个请求）。 */
@@ -1066,22 +1092,23 @@ function panelReferenceOnScreen() {
 }
 
 function sendPanel(message) {
-  if (panelWin !== null && !panelWin.isDestroyed() && panelReady) panelWin.webContents.send('piggy:panel', message)
+  const target = getPanelWindow()
+  if (target !== null && !target.isDestroyed() && panelWindow.isReady()) target.webContents.send('piggy:panel', message)
 }
 
 /** 固定外框只让实际卡片和名牌接收点击，透明预留区继续点到桌面。 */
 function refreshPanelHit() {
-  if (!panelFixedViewport || !panelOpen || !panelAnchor || !panelWin || panelWin.isDestroyed() || !panelWin.isVisible()) return
-  const bounds = panelWin.getBounds()
+  if (!panelFixedViewport || !panelOpen || !panelAnchor || !getPanelWindow() || getPanelWindow().isDestroyed() || !getPanelWindow().isVisible()) return
+  const bounds = getPanelWindow().getBounds()
   const hit = pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])
   if (hit === panelHit) return
   panelHit = hit
-  panelWin.setIgnoreMouseEvents(!hit, { forward: true })
+  getPanelWindow().setIgnoreMouseEvents(!hit, { forward: true })
 }
 
-const panelShape = createResizeShape(() => panelWin, rects => {
-  if (panelWin && !panelWin.isDestroyed() && process.platform !== 'darwin') panelWin.setShape(rects)
-}, () => screen.getDisplayMatching(panelWin.getBounds()).scaleFactor)
+const panelShape = createResizeShape(() => getPanelWindow(), rects => {
+  if (getPanelWindow() && !getPanelWindow().isDestroyed() && process.platform !== 'darwin') getPanelWindow().setShape(rects)
+}, () => screen.getDisplayMatching(getPanelWindow().getBounds()).scaleFactor)
 
 function stopPanelHit() {
   if (panelHitTimer !== null) clearInterval(panelHitTimer)
@@ -1106,39 +1133,12 @@ function raisePetAbovePanel() {
   if (extensionLayer.isFocused()) return
   if (win === null || win.isDestroyed() || !win.isVisible()) return
   // 置顶标记仍为 true 时，菜单也可能被其他应用盖住；先抬菜单，再抬猪。
-  if (panelWin !== null && !panelWin.isDestroyed() && panelWin.isVisible()) panelWin.moveTop()
+  if (getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible()) getPanelWindow().moveTop()
   win.moveTop()
 }
 
 function ensurePanelWindow() {
-  if (panelWin !== null && !panelWin.isDestroyed()) return panelWin
-  panelReady = false
-  panelAsked = null
-  panelShapeKey = ''
-  panelHasNativeShape = false
-  panelWin = new BrowserWindow({
-    width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
-    transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
-    alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
-    ...auxiliaryWindowOptions(process.platform),
-    backgroundColor: '#00000000',
-    webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
-      additionalArguments: ['--piggy-role=panel'] },
-  })
-  extensionLayer.sync()
-  if (FRAME_CAP > 0) panelWin.webContents.setFrameRate(FRAME_CAP)
-  panelWin.loadURL('piggy://app/index.html')
-  panelWin.webContents.on('did-finish-load', () => {
-    panelReady = true
-    log('panel page loaded')
-    if (panelOpen && panelAnchor !== null) sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
-  })
-  panelWin.webContents.on('console-message', (e, level, message) => { if (level >= 2) log('panel:', message) })
-  panelWin.webContents.on('render-process-gone', (e, d) => { log('panel renderer gone', JSON.stringify(d)); panelWin = null; closePanel('crash') })
-  // 点到别处（焦点离开面板、也没到猪身上）：告诉面板页面，它按「点外面自动收起」的设置决定收不收。
-  panelWin.on('blur', panelFocusLeft)
-  if (process.env.PIGGY_DEVTOOLS === '1') panelWin.webContents.openDevTools({ mode: 'detach' })
-  return panelWin
+  return panelWindow.ensure()
 }
 
 /**
@@ -1150,10 +1150,10 @@ function panelFocusLeft() {
   setTimeout(() => {
     if (!panelOpen) return
     const focused = BrowserWindow.getFocusedWindow()
-    if (focused !== null && (focused === win || focused === panelWin || focused === extensionWindow.current())) return
+    if (focused !== null && (focused === win || focused === getPanelWindow() || focused === extensionWindow.current())) return
     // 原生窗口重新映射时焦点可能暂空，指针仍在真实面板内不能算外部点击。
-    if (focused === null && panelAnchor && panelSize && panelWin && !panelWin.isDestroyed() && panelWin.isVisible()) {
-      const bounds = panelWin.getBounds()
+    if (focused === null && panelAnchor && panelSize && getPanelWindow() && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible()) {
+      const bounds = getPanelWindow().getBounds()
       if (pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])) return
     }
     sendPanel({ type: 'blur', toPet: false })
@@ -1162,7 +1162,7 @@ function panelFocusLeft() {
 
 /** 把面板窗口放到该在的地方；第一次有尺寸时才显示（免得先闪一个空窗口）。 */
 function placePanel() {
-  if (!panelOpen || panelWin === null || panelWin.isDestroyed()) return
+  if (!panelOpen || getPanelWindow() === null || getPanelWindow().isDestroyed()) return
   const next = panelBounds()
   if (next === null) return
   // 切页、拖动后换边及可用高度变化都从同一份内容框计算轮廓。
@@ -1178,20 +1178,20 @@ function placePanel() {
       }
     } else if (panelHasNativeShape) {
       panelShape.cancel()
-      panelWin.setShape([{x: 0, y: 0, width: next.width, height: next.height}])
+      getPanelWindow().setShape([{x: 0, y: 0, width: next.width, height: next.height}])
       panelShapeKey = ''
       panelHasNativeShape = false
     }
   }
   if (panelAsked === null || panelAsked.x !== next.x || panelAsked.y !== next.y
     || panelAsked.width !== next.width || panelAsked.height !== next.height) {
-    panelWin.setBounds(next)
+    getPanelWindow().setBounds(next)
     panelAsked = next
   }
-  if (panelSize !== null && !panelWin.isVisible()) {
+  if (panelSize !== null && !getPanelWindow().isVisible()) {
     // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
     //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
-    panelWin.showInactive()
+    getPanelWindow().showInactive()
     raisePetAbovePanel()
     log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical }))
     if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:panel', { type: 'open' })
@@ -1220,7 +1220,7 @@ function closePanel(why) {
   panelShape.cancel()
   panelShapeKey = ''
   stopPanelHit()
-  if (panelWin !== null && !panelWin.isDestroyed()) panelWin.hide()
+  if (getPanelWindow() !== null && !getPanelWindow().isDestroyed()) getPanelWindow().hide()
   sendPanel({ type: 'closed' })
   if (win !== null && !win.isDestroyed()) win.webContents.send('piggy:panel', { type: 'closed' })
   log('panel closed', why)
@@ -1228,7 +1228,7 @@ function closePanel(why) {
 
 /** 猪窗口挪了（拖动、散步、贴边修正）：面板按猪的新位置重摆，不重新挑朝向（松手后再挑）。 */
 function followPig() {
-  if (!panelOpen || panelWin === null || panelWin.isDestroyed() || !panelWin.isVisible()) return
+  if (!panelOpen || getPanelWindow() === null || getPanelWindow().isDestroyed() || !getPanelWindow().isVisible()) return
   placePanel()
 }
 
@@ -1247,7 +1247,7 @@ function reanchorPanel() {
 ipcMain.on('piggy:panel:toggle', (event, request) => {
   if (!fromPet(event)) return
   const action = panelToggleAction({ requestedOpen: request?.open === true, isOpen: panelOpen,
-    isVisible: panelWin !== null && !panelWin.isDestroyed() && panelWin.isVisible() })
+    isVisible: getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible() })
   if (action === 'open') openPanel(request.pig)
   else if (action === 'close') closePanel('pet')
   else {
@@ -1258,7 +1258,7 @@ ipcMain.on('piggy:panel:toggle', (event, request) => {
 })
 /** 面板页面：内容量好了多大。 */
 ipcMain.on('piggy:panel:size', (event, size) => {
-  if (!fromPage(event) || event.sender !== panelWin?.webContents) return
+  if (!fromPage(event) || event.sender !== getPanelWindow()?.webContents) return
   const width = Number(size?.width)
   const height = Number(size?.height)
   if (!(width > 0) || !(height > 0)) return
@@ -1268,7 +1268,7 @@ ipcMain.on('piggy:panel:size', (event, size) => {
   if (panelFixedViewport) startPanelHit()
   else {
     stopPanelHit()
-    panelWin.setIgnoreMouseEvents(false)
+    getPanelWindow().setIgnoreMouseEvents(false)
   }
   placePanel()
   if (process.platform === 'darwin') refreshPanelHit()
@@ -1283,7 +1283,7 @@ ipcMain.on('piggy:pet-raise', event => {
 })
 
 ipcMain.on('piggy:pig-fx', (event, fx) => {
-  if (!fromPage(event) || (event.sender !== panelWin?.webContents && !extensionWindow.owns(event.sender))) return
+  if (!fromPage(event) || (event.sender !== getPanelWindow()?.webContents && !extensionWindow.owns(event.sender))) return
   if (win === null || win.isDestroyed() || typeof fx?.name !== 'string') return
   win.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
   raisePetAbovePanel()
@@ -1426,7 +1426,7 @@ function reassertTop(why) {
   if (desktopLifecycle.quitting) return
   if (extensionLayer.isFocused()) { extensionLayer.sync(); return }
   reassertingUntil = Date.now() + 1000
-  for (const target of [panelWin, win]) {
+  for (const target of [getPanelWindow(), win]) {
     if (target === null || target.isDestroyed() || !target.isVisible()) continue
     target.setAlwaysOnTop(false)
     target.setAlwaysOnTop(true, 'floating')
@@ -1439,7 +1439,7 @@ function reassertTop(why) {
 function applyMacSpaces() {
   if (process.platform !== 'darwin' || fullscreenWatch === null) return
   const show = fullscreenWatch.mode() === 'show'
-  for (const target of [win, panelWin]) {
+  for (const target of [win, getPanelWindow()]) {
     if (target === null || target.isDestroyed()) continue
     target.setVisibleOnAllWorkspaces(show, { visibleOnFullScreen: show })
   }
@@ -1499,7 +1499,7 @@ async function startFullscreenWatch() {
   })
   topGuardTimer = setInterval(() => {
     if (win === null || win.isDestroyed() || !win.isVisible()) return
-    if (!win.isAlwaysOnTop() || (panelWin !== null && !panelWin.isDestroyed() && panelWin.isVisible() && !panelWin.isAlwaysOnTop())) reassertTop('check')
+    if (!win.isAlwaysOnTop() || (getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible() && !getPanelWindow().isAlwaysOnTop())) reassertTop('check')
   }, 3000)
   topGuardTimer.unref?.()
 }
@@ -1570,7 +1570,7 @@ app.whenReady().then(async () => {
   })
   try { await externalManager.init() } catch (error) { log('external manager init failed', String(error)) }
   if (desktopLifecycle.quitting) return
-  log('panel preloaded', JSON.stringify({ visible: panelWin.isVisible(), focused: panelWin.isFocused() }))
+  log('panel preloaded', JSON.stringify({ visible: getPanelWindow().isVisible(), focused: getPanelWindow().isFocused() }))
   await startFullscreenWatch()
   if (desktopLifecycle.quitting) return
   firstRun?.destroy()
