@@ -27,7 +27,7 @@ function fixture({ isPanelVisible = true, isExtensionFocused = false } = {}) {
     showInactive() { this.visible = true; calls.push('show') },
   }
   const context = {
-    win, getPanelWindow: () => panelWin, extensionLayer: { isFocused: () => isExtensionFocused },
+    getPetWindow: () => win, getPanelWindow: () => panelWin, extensionLayer: { isFocused: () => isExtensionFocused },
     process: { platform: 'win32' }, panelOpen: true,
     panelFixedViewport: false, panelHasNativeShape: false,
     panelBounds: () => ({ x: 10, y: 20, width: 292, height: 520 }),

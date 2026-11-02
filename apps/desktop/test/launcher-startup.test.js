@@ -174,17 +174,19 @@ test('第二次启动时第一个进程的日志能对上前一个进程的 pid 
 })
 
 test('显示门一直不开时日志能区分卡在哪一步', () => {
-  assert.match(MAIN, /did-finish-load[\s\S]{0,500}showGate\.status\(\)/, 'page loaded 要带上显示门状态')
+  const petWindow = readFileSync(new URL('../lib/pet-window.js', import.meta.url), 'utf8')
+  assert.match(petWindow, /webContents\.on\('did-finish-load'/, 'pet window owner must forward page load completion')
+  assert.match(MAIN, /onDidFinishLoad:[\s\S]{0,500}showGate\.status\(\)/, 'page loaded 要带上显示门状态')
   assert.match(MAIN, /page loaded before show gate opened/, '加载完但没显示要单独一行')
   assert.match(MAIN, /log\('show fallback'/, 'Linux 超时兜底显示也要留下证据')
   assert.match(MAIN, /'unresponsive'[\s\S]{0,200}showGate\.status\(\)/, '窗口卡住时记下显示门状态')
 })
 
 test('窗口还没显示过就崩：先写日志再弹一次，然后退出', () => {
-  assert.match(MAIN, /render-process-gone[\s\S]{0,600}reportStartupCrash\(details, gate\)/,
+  assert.match(MAIN, /onRendererGone:\s*\(window, event, details\)\s*=>\s*\{[\s\S]{0,300}reportStartupCrash\(window, details, gate\)/,
     '启动时渲染进程退出也必须可见，不能只留一行日志')
   assert.match(MAIN, /async function reportStartupCrash[\s\S]{0,900}pageCrashReason\(details\)[\s\S]{0,300}app\.quit\(\)/)
-  assert.match(MAIN, /renderer gone[\s\S]{0,300}visible: win\?\.isVisible\?\.\(\) === true[\s\S]{0,200}gate/,
+  assert.match(MAIN, /renderer gone[\s\S]{0,300}visible: window\.isVisible\(\)[\s\S]{0,200}gate/,
     '日志要记下崩溃时窗口是否已显示、显示门状态')
 })
 

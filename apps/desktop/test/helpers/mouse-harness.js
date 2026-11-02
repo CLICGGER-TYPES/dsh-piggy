@@ -10,6 +10,7 @@ import { pointerHitsShape } from '../../lib/pointer-hit.js'
 import { validDragOrigin } from '../../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../../lib/window-show.js'
 import { auxiliaryWindowOptions } from '../../lib/auxiliary-window.js'
+import { createPetWindow } from '../../lib/pet-window.js'
 import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../../main.js', import.meta.url), 'utf8')
@@ -24,7 +25,12 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   const webContents = { on: (event, callback) => pageEvents.set(event, callback), setFrameRate() {}, send: (...args) => sent.push(args),
     ...(frameSubscription ? { isDestroyed:()=>false, beginFrameSubscription:fn=>frames.push(fn), endFrameSubscription:()=>ended.push(true) } : {}) }
   class WindowStub {
-    constructor(bounds) { state.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } }
+    constructor(options) {
+      state.destroyed = false
+      windowEvents.clear()
+      pageEvents.clear()
+      state.bounds = { x: options.x, y: options.y, width: options.width, height: options.height }
+    }
     webContents = webContents
     isDestroyed() { return state.destroyed }
     isVisible() { return true }
@@ -40,10 +46,11 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     once(event, callback) { windowEvents.set(event, callback) }
     on(event, callback) { windowEvents.set(event, callback) }
   }
+  const petWindow = createPetWindow({ BrowserWindow: WindowStub })
   const sandbox = {
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
-    win: null, quitting: false, petAsked: null, panelPig: null, dragStats: null,
+    petWindow, getPetWindow: petWindow.current, quitting: false, petAsked: null, panelPig: null, dragStats: null,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
     readWindowState: () => null, pigDisplay: () => display, join: (...parts) => parts.join('/'),
     screen: { getCursorScreenPoint: () => state.cursor, getAllDisplays: () => [display],
