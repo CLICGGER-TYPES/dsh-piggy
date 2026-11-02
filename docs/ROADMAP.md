@@ -17,6 +17,12 @@
 - 本轮完成桌面 renderer controller D 与 farm client E 源码拆分及有限 Linux 默认流程代表 UI；尚未覆盖设置持久化重开、Windows/macOS、DSH/OpenCode、完整 flight 视觉、主进程完整拆分、稳定猪 ID 或在线多猪。R05 的 90 秒观察不等于长期稳定性结论。历史 R33F 曾在同一 Electron 45.2.1 候选中出现 GPU process fatal，根因未定位；不能宣称已修复。
 - GitHub 公开 RC6 与 farm 4.2.1 tag、bundle、registry 和旧 hash 保持不变；Gitee 不更新，4.2.2 候选未公开。云存档上传、恢复与冲突处理继续暂缓。
 
+## 2026-11-02 MAIN01 主进程协议边界拆分（源码候选，未做 UI）
+
+- 把 `piggy://` 静态资源与 `/dsh-piggy/…` 请求转发抽到 `apps/desktop/lib/game-protocol.js`。`main.js` 保留 scheme 权限声明、原注册时序与 `registerProtocol(gameDir)` 薄装配；新模块用 live host/closing getter 和原有状态通知回调，不另建服务所有权。
+- 协议行为保持原契约：文件边界/MIME/图和字体缓存、Electron `net.fetch(file://...)`、URL 解码及 query、仅 POST 读取 `arrayBuffer`、关闭前 503、host 响应字段和异常、POST 完成后适配器通知、`/client.js` 的 game 根与其余 renderer 根。host 的 `onSnapshot` 仍是独立通知路径。
+- focused 协议测试 6/6 通过，项目 typecheck exit 0。未运行全套测试、构建、打包或 UI/VM；独立 QMAIN01 原生验收另行负责。本候选未 push/合并/发布。
+
 ## 2026-11-01 存储模块拆分（进行中）
 
 - MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 是 2026-11-01 对存储拆分子项的暂缓记录；2026-11-02 renderer D 与 farm client E 源码及有限 Linux UI 状态见上文。farm 4.2.1 公开附件保持不变。

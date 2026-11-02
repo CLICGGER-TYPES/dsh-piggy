@@ -20,13 +20,14 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { access, appendFile, copyFile, mkdir, rename } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, extname, join, resolve, sep } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
+import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
@@ -48,7 +49,6 @@ import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
 import { reportStartupFailure, pageCrashReason } from './lib/startup-failure.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
-import { readPostBody } from './lib/save-export.js'
 import { createWindowState } from './lib/window-state.js'
 import { createAutostart } from './lib/autostart.js'
 import { createDesktopTray } from './lib/tray.js'
@@ -149,28 +149,6 @@ if (!needsX11 && !gotLock) {
 const bundledGameDir = () => bundledDesktopGame(app, HERE)
 
 const statePath = () => dataPaths.statePath
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.ttf': 'font/ttf' }
-
-/** Serve a file from `root`, refusing anything that climbs out of it. */
-async function serveFile(root, rel) {
-  const base = resolve(root)
-  const file = resolve(base, rel)
-  if (!file.startsWith(base + sep)) return new Response('not found', { status: 404 })
-  const type = MIME[extname(file)] ?? 'application/octet-stream'
-  // 立绘、字体让浏览器缓存：摸猪时立绘在「摸」和「平常」之间来回换，
-  // 不缓存的话每次都要重新取一遍，Windows 上会空一帧（猪闪一下）。
-  const cache = /^(image|font)\//.test(type) ? { 'cache-control': 'max-age=86400' } : {}
-  try {
-    // Chromium 的 file loader 支持 ASAR，字体也不必整块读进主进程再复制。
-    const response = await net.fetch(pathToFileURL(file).href)
-    if (!response.ok) {
-      await response.body?.cancel()
-      return new Response('not found', { status: 404 })
-    }
-    return new Response(response.body, { headers: { 'content-type': type, ...cache } })
-  } catch { return new Response('not found', { status: 404 }) }
-}
 
 let host = null
 let hostStarting = null
@@ -282,20 +260,14 @@ function fromPanelOnly(event) {
 }
 
 function registerProtocol(gameDir) {
-  protocol.handle('piggy', async request => {
-    const url = new URL(request.url)
-    const path = decodeURIComponent(url.pathname)
-    if (path.startsWith('/dsh-piggy/')) {
-      const body = request.method === 'POST' ? await readPostBody(request) : undefined
-      if (quitting) return new Response('game runtime closing', { status: 503 })
-      const out = await host.handle(request.method, path + url.search, body)
-      // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
-      // 不然面板里喂完食，猪要过几秒才有反应。
-      if (request.method === 'POST') announceStateChanged()
-      return new Response(out.body, { status: out.status, headers: out.headers })
-    }
-    if (path === '/client.js') return serveFile(gameDir, 'client.js')
-    return serveFile(join(HERE, 'renderer'), path === '/' ? 'index.html' : path.slice(1))
+  registerGameProtocol({
+    protocol,
+    fetchFile: net.fetch.bind(net),
+    rendererDir: join(HERE, 'renderer'),
+    gameDir,
+    getHost: () => host,
+    isQuitting: () => quitting,
+    onStateChanged: announceStateChanged,
   })
 }
 
