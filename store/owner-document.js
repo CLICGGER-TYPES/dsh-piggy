@@ -100,6 +100,11 @@ function isPlainRecord(value) {
   return prototype === Object.prototype || prototype === null
 }
 
+/** @param {string} key @returns {key is keyof typeof MIXED_CONTAINER_RULES} */
+function isKnownMixedContainer(key) {
+  return isMixedContainer(key)
+}
+
 /** @param {Record<string, unknown>} value @param {Set<string>} allowed @param {string} label */
 function assertExactKeys(value, allowed, label) {
   const keys = Object.keys(value)
@@ -108,14 +113,14 @@ function assertExactKeys(value, allowed, label) {
   }
 }
 
-/** @param {unknown} value @param {string} label */
+/** @param {unknown} value @param {string} label @returns {asserts value is string} */
 function assertId(value, label) {
   if (typeof value !== 'string' || !ID_PATTERN.test(value) || RESERVED_KEYS.has(value)) {
     throw new TypeError(`${label} is invalid`)
   }
 }
 
-/** @param {Record<string, unknown>} value @param {string} label */
+/** @param {unknown} value @param {string} label @returns {asserts value is Record<string, unknown>} */
 function assertPlainPart(value, label) {
   if (!isPlainRecord(value)) throw new TypeError(`${label} must be a plain object`)
 }
@@ -128,7 +133,7 @@ function assertPlainPart(value, label) {
 function assertCanonicalResources(resources) {
   for (const [key, value] of Object.entries(resources)) {
     if (isOwnerTopLevel(key)) continue
-    if (!isMixedContainer(key)) throw new TypeError('owner resources contain a non-owner field')
+    if (!isKnownMixedContainer(key)) throw new TypeError('owner resources contain a non-owner field')
     assertCanonicalMixedPart(key, value, 'owner', 'owner resources')
   }
 }
@@ -137,7 +142,7 @@ function assertCanonicalResources(resources) {
 function assertCanonicalPigBody(body) {
   for (const [key, value] of Object.entries(body)) {
     if (isPigTopLevel(key)) continue
-    if (!isMixedContainer(key)) throw new TypeError('pig body contains a non-pig field')
+    if (!isKnownMixedContainer(key)) throw new TypeError('pig body contains a non-pig field')
     assertCanonicalMixedPart(key, value, 'pig', 'pig body')
   }
 }
@@ -162,7 +167,7 @@ function assertCanonicalOpaque(opaque) {
     if (isFormatKey(key) || isOwnerTopLevel(key) || isPigTopLevel(key)) {
       throw new TypeError('legacy opaque data overlaps a declared state field')
     }
-    if (!isMixedContainer(key)) continue
+    if (!isKnownMixedContainer(key)) continue
     if (!isPlainRecord(value)) continue // splitLegacyState 会把形状错误的旧混合容器整体留在 opaque。
     const rules = MIXED_CONTAINER_RULES[/** @type {keyof typeof MIXED_CONTAINER_RULES} */ (key)]
     const declared = new Set([...rules.owner, ...rules.pig])
@@ -187,27 +192,33 @@ export function validateOwnerDocument(value) {
   if (value.documentVersion !== OWNER_DOCUMENT_VERSION) {
     throw new TypeError('owner document version is unsupported')
   }
-  assertId(value.ownerId, 'ownerId')
-  assertPlainPart(value.legacyFormat, 'legacyFormat')
-  if (Object.keys(value.legacyFormat).some(key => !FORMAT_KEY_SET.has(key))) {
+  const ownerId = value.ownerId
+  assertId(ownerId, 'ownerId')
+  const legacyFormat = value.legacyFormat
+  assertPlainPart(legacyFormat, 'legacyFormat')
+  if (Object.keys(legacyFormat).some(key => !FORMAT_KEY_SET.has(key))) {
     throw new TypeError('legacy format contains an undeclared field')
   }
-  if (value.legacyFormat.version !== STATE_VERSION) throw new TypeError('legacy format version is unsupported')
-  assertPlainPart(value.resources, 'resources')
-  assertPlainPart(value.opaque, 'opaque')
-  assertCanonicalResources(value.resources)
-  assertCanonicalOpaque(value.opaque)
+  if (legacyFormat.version !== STATE_VERSION) throw new TypeError('legacy format version is unsupported')
+  const resources = value.resources
+  assertPlainPart(resources, 'resources')
+  const opaque = value.opaque
+  assertPlainPart(opaque, 'opaque')
+  assertCanonicalResources(resources)
+  assertCanonicalOpaque(opaque)
   if (!Array.isArray(value.pigs)) throw new TypeError('owner document pigs must be an array')
 
   const pigIds = new Set()
   for (const pig of value.pigs) {
     if (!isPlainRecord(pig)) throw new TypeError('owner document pig record must be a plain object')
     assertExactKeys(pig, PIG_RECORD_KEYS, 'owner document pig record')
-    assertId(pig.pigId, 'pigId')
-    if (pigIds.has(pig.pigId)) throw new TypeError('owner document contains duplicate pigId')
-    pigIds.add(pig.pigId)
-    assertPlainPart(pig.body, 'pig body')
-    assertCanonicalPigBody(pig.body)
+    const pigId = pig.pigId
+    assertId(pigId, 'pigId')
+    if (pigIds.has(pigId)) throw new TypeError('owner document contains duplicate pigId')
+    pigIds.add(pigId)
+    const body = pig.body
+    assertPlainPart(body, 'pig body')
+    assertCanonicalPigBody(body)
   }
 
   return /** @type {OwnerDocument} */ (structuredClone(value))

@@ -36,6 +36,12 @@ function clone(value) {
   return structuredClone(value)
 }
 
+/** @param {unknown} value @returns {Record<string, unknown>} */
+function asRecord(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('expected a record')
+  return /** @type {Record<string, unknown>} */ (value)
+}
+
 test('flat v15 round-trips through validated owner document JSON without losing opaque data', () => {
   const original = legacyV15()
   const document = ownerDocumentFromLegacyV15(original, { ownerId: 'owner-a', pigId: 'pig-a' })
@@ -50,10 +56,10 @@ test('flat v15 round-trips through validated owner document JSON without losing 
       dialogue: { quiet: false }, economy: { fatigue: 0.2 }, fishing: { pending: null, spot: 'river' },
     },
   }])
-  assert.deepEqual(document.opaque.extData, { mine: { ore: 3 } })
-  assert.deepEqual(document.opaque.futureTopLevel, { nested: ['keep', 1] })
-  assert.equal(document.opaque.economy.futureEconomyField, 'keep-economy')
-  assert.equal(document.opaque.fishing.futureFishField, 'keep-fishing')
+  assert.deepEqual(asRecord(document.opaque.extData), { mine: { ore: 3 } })
+  assert.deepEqual(asRecord(document.opaque.futureTopLevel), { nested: ['keep', 1] })
+  assert.equal(asRecord(document.opaque.economy).futureEconomyField, 'keep-economy')
+  assert.equal(asRecord(document.opaque.fishing).futureFishField, 'keep-fishing')
 
   const serialized = serializeOwnerDocument(document)
   const parsed = parseOwnerDocument(serialized)
@@ -72,14 +78,14 @@ test('two pig records share owner resources while projecting independent bodies'
   assert.equal(first.coins, second.coins)
   assert.deepEqual(first.inventory, second.inventory)
   assert.deepEqual(first.customSkins, second.customSkins)
-  assert.deepEqual(first.extData.farm, second.extData.farm)
+  assert.deepEqual(asRecord(first.extData).farm, asRecord(second.extData).farm)
   assert.equal(first.name, '甲')
   assert.equal(second.name, '乙')
   assert.equal(first.skin, 'default')
   assert.equal(second.skin, 'pink')
-  assert.equal(first.economy.fatigue, 0.2)
-  assert.equal(second.economy.fatigue, 0.8)
-  assert.deepEqual(first.extData.mine, second.extData.mine, 'opaque legacy data stays once in the owner document')
+  assert.equal(asRecord(first.economy).fatigue, 0.2)
+  assert.equal(asRecord(second.economy).fatigue, 0.8)
+  assert.deepEqual(asRecord(first.extData).mine, asRecord(second.extData).mine, 'opaque legacy data stays once in the owner document')
 })
 
 test('invalid version, IDs, duplicate pig IDs, shape, and unsafe keys reject without mutation', () => {
@@ -164,7 +170,8 @@ test('known state fields must stay in their canonical ownership buckets', () => 
 test('legacy conversion requires normalized v15 and explicit safe IDs', () => {
   assert.throws(() => ownerDocumentFromLegacyV15({ ...legacyV15(), version: 14 }, { ownerId: 'o', pigId: 'p' }), /legacy state version is unsupported/)
   assert.throws(() => ownerDocumentFromLegacyV15(legacyV15(), { ownerId: 'o/p', pigId: 'p' }), /ownerId is invalid/)
-  assert.throws(() => ownerDocumentFromLegacyV15(legacyV15(), { ownerId: 'owner-a' }), /owner and pig IDs has an invalid shape/)
+  const extraIds = { ownerId: 'owner-a', pigId: 'pig-a', extra: true }
+  assert.throws(() => ownerDocumentFromLegacyV15(legacyV15(), extraIds), /owner and pig IDs has an invalid shape/)
   assert.throws(() => projectOwnerDocumentToLegacyV15(
     ownerDocumentFromLegacyV15(legacyV15(), { ownerId: 'owner-a', pigId: 'pig-a' }),
     'missing',
