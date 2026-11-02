@@ -385,7 +385,7 @@ test('stage shape (drawingBounds callback) covers the measured custom art, not o
     const { collectStageShape } = await import('../apps/desktop/stage/overlay-shape.js')
     const { stageDrawingBounds } = await import('../src/client/stage-dom.js')
     const doc = { querySelectorAll: () => [] }
-    const report = collectStageShape(host, doc, box => stageDrawingBounds(box, pig))
+    const report = collectStageShape(host, doc, { drawingBounds: box => stageDrawingBounds(box, pig) })
     const art = { x: 100 + size / 2 - 3.375 * size / 2, y: 100 + size / 2 - FRAME_HEIGHT * size / 2,
       width: 3.375 * size, height: FRAME_HEIGHT * size }
     const covered = rect => rect.x <= art.x + .01 && rect.y <= art.y + .01

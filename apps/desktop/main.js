@@ -20,13 +20,14 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { access, appendFile, copyFile, mkdir, rename } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, extname, join, resolve, sep } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
+import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
@@ -48,7 +49,6 @@ import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
 import { reportStartupFailure, pageCrashReason } from './lib/startup-failure.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
-import { readPostBody } from './lib/save-export.js'
 import { createWindowState } from './lib/window-state.js'
 import { createAutostart } from './lib/autostart.js'
 import { createDesktopTray } from './lib/tray.js'
@@ -149,28 +149,6 @@ if (!needsX11 && !gotLock) {
 const bundledGameDir = () => bundledDesktopGame(app, HERE)
 
 const statePath = () => dataPaths.statePath
-
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.ttf': 'font/ttf' }
-
-/** Serve a file from `root`, refusing anything that climbs out of it. */
-async function serveFile(root, rel) {
-  const base = resolve(root)
-  const file = resolve(base, rel)
-  if (!file.startsWith(base + sep)) return new Response('not found', { status: 404 })
-  const type = MIME[extname(file)] ?? 'application/octet-stream'
-  // 立绘、字体让浏览器缓存：摸猪时立绘在「摸」和「平常」之间来回换，
-  // 不缓存的话每次都要重新取一遍，Windows 上会空一帧（猪闪一下）。
-  const cache = /^(image|font)\//.test(type) ? { 'cache-control': 'max-age=86400' } : {}
-  try {
-    // Chromium 的 file loader 支持 ASAR，字体也不必整块读进主进程再复制。
-    const response = await net.fetch(pathToFileURL(file).href)
-    if (!response.ok) {
-      await response.body?.cancel()
-      return new Response('not found', { status: 404 })
-    }
-    return new Response(response.body, { headers: { 'content-type': type, ...cache } })
-  } catch { return new Response('not found', { status: 404 }) }
-}
 
 let host = null
 let hostStarting = null
@@ -282,20 +260,14 @@ function fromPanelOnly(event) {
 }
 
 function registerProtocol(gameDir) {
-  protocol.handle('piggy', async request => {
-    const url = new URL(request.url)
-    const path = decodeURIComponent(url.pathname)
-    if (path.startsWith('/dsh-piggy/')) {
-      const body = request.method === 'POST' ? await readPostBody(request) : undefined
-      if (quitting) return new Response('game runtime closing', { status: 503 })
-      const out = await host.handle(request.method, path + url.search, body)
-      // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
-      // 不然面板里喂完食，猪要过几秒才有反应。
-      if (request.method === 'POST') announceStateChanged()
-      return new Response(out.body, { status: out.status, headers: out.headers })
-    }
-    if (path === '/client.js') return serveFile(gameDir, 'client.js')
-    return serveFile(join(HERE, 'renderer'), path === '/' ? 'index.html' : path.slice(1))
+  registerGameProtocol({
+    protocol,
+    fetchFile: net.fetch.bind(net),
+    rendererDir: join(HERE, 'renderer'),
+    gameDir,
+    getHost: () => host,
+    isQuitting: () => quitting,
+    onStateChanged: announceStateChanged,
   })
 }
 
@@ -375,15 +347,17 @@ function applyBounds(next, why) {
  * （用户 2026-10-05：装了 0.2.5 右键开关菜单仍闪白屏）。穿透模式下窗口区域从不变化。
  * PIGGY_SHAPE=1 可退回旧做法，方便对比排查。
  */
-const PASSTHROUGH = process.platform === 'win32' && process.env.PIGGY_SHAPE !== '1'
+const SKIP_NATIVE_SHAPE = process.platform === 'win32' && process.env.PIGGY_SHAPE !== '1'
+/** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
+const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || process.platform === 'darwin'
 let passthroughHit = false
 let passthroughForward = null
 /** 未知能力不安装全局转发钩子；有效 place 确认现代能力后不再降级（2026-10-16）。 */
 let passthroughMode = 'unknown'
 let hitTimer = null
 function setHit(hit) {
-  if (!PASSTHROUGH || win === null || win.isDestroyed()) return
-  const forward = passthroughMode === 'legacy'
+  if ((!MOUSE_PASSTHROUGH && placedHitShape === null) || win === null || win.isDestroyed()) return
+  const forward = passthroughMode === 'legacy' && MOUSE_PASSTHROUGH
   if (hit === passthroughHit && forward === passthroughForward) return
   passthroughHit = hit
   passthroughForward = forward
@@ -408,25 +382,28 @@ function isPlaceRequest(request) {
   return request !== null && typeof request === 'object' && !Array.isArray(request)
     && [request.bounds, request.pig].every(rect => rect === undefined || (isMouseRect(rect) && rect.width > 0 && rect.height > 0))
     && (request.shape === undefined || isMouseShape(request.shape))
+    && (request.hitShape === undefined || isMouseShape(request.hitShape))
 }
 
 /** 穿透窗口可能收不到第一次 mousemove；主进程读取光标，保证首次点击就能命中猪。 */
 function shiftedShape(rects, slide) {
   if (slide.x === 0 && slide.y === 0) return rects
   return rects.map(rect => ({
-    x: Math.max(0, rect.x + slide.x),
-    y: Math.max(0, rect.y + slide.y),
+    x: rect.x + slide.x,
+    y: rect.y + slide.y,
     width: rect.width,
     height: rect.height,
   }))
 }
 
 function refreshHit() {
-  if (!PASSTHROUGH || !hasPlacedShape || win === null || win.isDestroyed() || dragSession !== null) return
+  if (win === null || win.isDestroyed() || dragSession !== null) return
+  if (!hasPlacedShape && placedHitShape === null) return
   const bounds = win.getBounds()
-  const shape = flightShapeActive || dragShapeActive
+  // 只有旧契约把动作整窗绘制区域也当输入；新契约不能让透明预留抢走桌面点击。
+  const shape = placedHitShape === null && (flightShapeActive || dragShapeActive)
     ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
-    : shiftedShape(placedShape, flightSlide)
+    : shiftedShape(placedHitShape ?? placedShape, flightShapeActive ? flightSlide : dragShapeActive ? lastDragSlide : flightSlide)
   setHit(pointerHitsShape(screen.getCursorScreenPoint(), bounds, shape))
 }
 
@@ -441,13 +418,16 @@ function applyFlightBounds(x, y) {
   petAsked = { ...next }
 }
 
-/**
- * 只让窗口的一部分可点（其余点击落到桌面）。Electron 只在 Windows / Linux 支持；
- * macOS 上跳过 —— 窗口已经只有猪和面板那么大，四周 16px 的透明边会挡一下点击，影响不大。
- */
+/** 原生 shape 仍负责绘制裁剪；不能用更小的输入区域裁掉动作和特效。 */
 function applyShape(rects) {
-  if (PASSTHROUGH || win === null || win.isDestroyed() || process.platform === 'darwin' || typeof win.setShape !== 'function') return
+  if (SKIP_NATIVE_SHAPE || win === null || win.isDestroyed() || process.platform === 'darwin' || typeof win.setShape !== 'function') return
   win.setShape(rects)
+  if (placedHitShape !== null) {
+    // 原生绘制提交后重新应用独立输入，不能仅凭上次的命中布尔值跳过。
+    passthroughForward = null
+    if (dragSession !== null) setHit(true)
+    else refreshHit()
+  }
 }
 
 /** 上次退出时猪的屏幕位置：启动后第一次收到内容上报时按它摆窗口。 */
@@ -498,11 +478,16 @@ async function createWindow(override = null) {
   // 会把新尺寸 damage 复制进旧尺寸缓冲，在 pixman_blt 里 SIGSEGV。
   showGate = createShowGate({ platform: process.platform })
   // 页面还没报猪在哪时完全穿透，也不启用未知游戏的鼠标转发。
-  if (PASSTHROUGH) { passthroughMode = 'unknown'; passthroughForward = null; setHit(false) }
-  if (PASSTHROUGH) {
-    hitTimer = setInterval(refreshHit, 16)
-    hitTimer.unref?.()
-  }
+  if (MOUSE_PASSTHROUGH) { passthroughMode = 'unknown'; passthroughForward = null; setHit(false) }
+  clearInterval(hitTimer)
+  hitTimer = setInterval(refreshHit, 16)
+  hitTimer.unref?.()
+  win.once('closed', () => {
+    stopDrag()
+    resizeShape.cancel()
+    clearInterval(hitTimer)
+    hitTimer = null
+  })
   win.loadURL('piggy://app/index.html')
   // 启动摆放最多管 3 秒：之后一律按猪当前位置算，免得哪次没对上就一直往回拽。
   win.once('ready-to-show', () => { setTimeout(() => { if (win === createdWindow) savedPigScreen = null }, 3000) })
@@ -583,6 +568,7 @@ async function rebuildLinuxViews() {
   restingPigScreen = null
   lastShape = []
   placedShape = []
+  placedHitShape = null
   hasPlacedShape = false
   await createWindow(saved)
   previous.removeAllListeners()
@@ -601,9 +587,11 @@ async function rebuildLinuxViews() {
 }
 
 let lastShape = []
-/** 页面最近一次摆放时给的可点区域（拖动中猪在窗口里滑时要跟着挪，见 dragTick）。 */
+/** 页面最近一次摆放时给的保守绘制区域。 */
 let placedShape = []
 let hasPlacedShape = false
+/** 未提供独立输入区域的旧游戏仍沿用 shape；提供后不被缺字段的旧消息扩大输入。 */
+let placedHitShape = null
 /** A2 抛掷：窗口被夹在屏幕里时，可点/可见形状要跟着猪在窗口里滑。 */
 let flightSlide = { x: 0, y: 0 }
 let lastFlightShapeSlide = null
@@ -744,7 +732,7 @@ function dragTick(cursorOverride) {
   const wanted = dragPigBounds(petAsked ?? win.getBounds(), pig, dragSession.pigScreen, dragSession.cursor, cursor, areas, dragSession.visual)
   if (!dragShapeActive) {
     dragShapeActive = true
-    if (!PASSTHROUGH) {
+    if (!SKIP_NATIVE_SHAPE) {
       const bounds = win.getBounds()
       applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
     }
@@ -769,10 +757,11 @@ function dragTick(cursorOverride) {
   }
 }
 function stopDrag() {
-  if (dragTimer !== null) clearInterval(dragTimer)
+  clearInterval(dragTimer)
   dragTimer = null
   dragSession = null
   dragStats = null
+  refreshHit()
 }
 
 /** 页面要几何：给它推一次（订阅晚于 did-finish-load 时靠这个）。 */
@@ -783,6 +772,7 @@ ipcMain.on('piggy:geometry:ask', (event) => {
 
 ipcMain.on('piggy:drag:start', (event, given) => {
   if (!fromPet(event)) return
+  if (given != null && (!isMouseRect(given) || given.width <= 0 || given.height <= 0)) return
   stopDrag()
   const bounds = win.getBounds()
   // A1：页面可能延迟到移动 4px 才发 drag:start，带上 pointerdown 的屏幕坐标当起点。
@@ -796,8 +786,13 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   const acceptedOrigin = validDragOrigin(rawOrigin, cursorNow, originArea)
   const dragOrigin = acceptedOrigin ?? cursorNow
   // 新游戏包会把猪在窗口里的位置和大小一起带过来（它自己量的，不再经过 piggy:content）。
-  const pigFromPage = Number.isFinite(given?.x) && Number.isFinite(given?.y) && given?.width > 0 && given?.height > 0
+  const pigFromPage = isMouseRect(given) && given.width > 0 && given.height > 0
     ? { x: given.x, y: given.y, width: given.width, height: given.height } : null
+  // 延迟拖动的 origin 已由页面在 pointerdown 时验证；摸摸动画可能已改变当前墨迹，不能拿新帧否认旧命中。
+  // 无合法 origin 的旧调用仍按当前输入判断，透明区域不能直接取得捕获。
+  const inputSlide = flightShapeActive ? flightSlide : dragShapeActive ? lastDragSlide : { x: 0, y: 0 }
+  if (placedHitShape !== null && (pigFromPage === null
+    || (acceptedOrigin === null && !pointerHitsShape(dragOrigin, bounds, shiftedShape(placedHitShape, inputSlide))))) return
   const pig = pigFromPage ?? lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
   dragSession = {
     cursor: dragOrigin,
@@ -821,8 +816,8 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   // 拖动期间每一帧都不写日志（60Hz 会刷爆），但起止各记一行：出问题时能看出拖了多远、
   // 起始窗口和猪的位置对不对得上（2026-10-06 的偏移排查就是缺这一段）。
   dragShapeActive = true
-  if (!PASSTHROUGH) applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
-  refreshHit()
+  if (!SKIP_NATIVE_SHAPE) applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
+  setHit(true)
   resizeShape.cancel()
   log('drag start', JSON.stringify({ bounds, pigScreen: dragSession.pigScreen, pigFromPage: pigFromPage !== null,
     origin: acceptedOrigin }))
@@ -876,8 +871,18 @@ ipcMain.on('piggy:place', (event, request) => {
   // place({}) is a synchronous geometry query, not a landing/placement commit.
   // During native dragging even old pages must not compete with dragTick by
   // moving the window or restoring a stale precise drawing shape.
-  const reading = request.bounds === undefined && request.shape === undefined && request.pig === undefined
+  const reading = request.bounds === undefined && request.shape === undefined && request.hitShape === undefined && request.pig === undefined
   if (reading || dragSession !== null) {
+    event.returnValue = geometryOf(win.getBounds(), geometrySeq)
+    return
+  }
+  // 动画可单独更新真实输入；不能因此结束尚未提交新画面的整窗绘制保护。
+  if (request.bounds === undefined && request.shape === undefined && request.pig === undefined) {
+    const slide = flightShapeActive ? flightSlide : dragShapeActive ? lastDragSlide : { x: 0, y: 0 }
+    placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
+      x: rect.x - slide.x, y: rect.y - slide.y, width: rect.width, height: rect.height,
+    }))
+    refreshHit()
     event.returnValue = geometryOf(win.getBounds(), geometrySeq)
     return
   }
@@ -885,9 +890,9 @@ ipcMain.on('piggy:place', (event, request) => {
   const motionHandoff = Array.isArray(request.shape) && (dragShapeActive || flightShapeActive)
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
     const next = { x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }
-    if (process.platform === 'linux' && !PASSTHROUGH) resizeShape.begin(next, motionHandoff)
+    if (process.platform === 'linux') resizeShape.begin(next, motionHandoff)
     applyBounds(next, 'place')
-  } else if (motionHandoff && process.platform === 'linux' && !PASSTHROUGH) {
+  } else if (motionHandoff && process.platform === 'linux') {
     // commitSlide transfers translate into layout without changing the window
     // size. Keep the old backing frame whole until the new layout is painted,
     // just as on resize; otherwise its new precise shape clips the old pig.
@@ -907,6 +912,9 @@ ipcMain.on('piggy:place', (event, request) => {
   lastFlightShapeSlide = null
   flightShapeActive = false
   dragShapeActive = false
+  if (Array.isArray(request.hitShape)) placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
+    x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+  }))
   if (Array.isArray(request?.shape)) {
     hasPlacedShape = true
     placedShape = request.shape.slice(0, 64).map(r => ({
@@ -914,11 +922,11 @@ ipcMain.on('piggy:place', (event, request) => {
       width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
     }))
     resizeShape.update(placedShape)
-    refreshHit()
     // 新游戏包的第一次摆放就带真实尺寸和形状：窗口此前一直藏着，
     // 现在 setBounds + setShape 都做完了，可以显示了（Linux 防 Xwayland resize 崩溃）。
     if (showGate !== null && showGate.content()) showPigWindow()
   }
+  refreshHit()
   // 游戏包 0.33.1 起顺带报猪在窗口里的框（贴屏幕边时内容在窗口里挪过）：面板按它贴猪。
   const pig = request?.pig
   let panelPigChanged = false
@@ -947,11 +955,11 @@ ipcMain.on('piggy:place', (event, request) => {
  */
 ipcMain.on('piggy:flight:move', (event, frame) => {
   if (!fromPet(event)) return
+  if (dragSession !== null) return
   if (frame === null || typeof frame !== 'object') return
   if (!Number.isFinite(frame.x) || !Number.isFinite(frame.y)) return
-  const slide = frame.slide !== null && frame.slide !== undefined && typeof frame.slide === 'object'
-    ? { x: Number(frame.slide.x) || 0, y: Number(frame.slide.y) || 0 } : { x: 0, y: 0 }
-  if (!Number.isFinite(slide.x) || !Number.isFinite(slide.y)) return
+  const slide = frame.slide === undefined ? { x: 0, y: 0 } : frame.slide
+  if (slide === null || typeof slide !== 'object' || ![slide.x, slide.y].every(Number.isFinite)) return
   if (passthroughMode !== 'modern') {
     passthroughMode = 'modern'
     setHit(passthroughHit)
@@ -961,18 +969,17 @@ ipcMain.on('piggy:flight:move', (event, frame) => {
   flightSlide = slide
   if (!flightShapeActive) {
     flightShapeActive = true
-    // 整个窗口都算可见/可点：飞行中窗口每帧都在动，逐帧 setShape 会把透明窗口
-    // 刷成空白（用户看到的「猪贴图消失」），而且窗口被夹时形状滑动容易裁到猪。
-    // 落地/接住后页面会发 place，恢复精确形状。
-    if (!PASSTHROUGH) {
+    // 只扩大绘制：逐帧 setShape 会刷空透明窗口，输入仍跟随当前立绘区域。
+    // 落地/接住后页面会发 place，恢复精确绘制形状。
+    if (!SKIP_NATIVE_SHAPE) {
       const bounds = win.getBounds()
       applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
     }
-    refreshHit()
   }
+  refreshHit()
 })
 
-/** 页面判断鼠标在不在猪/面板上（只在 Windows 穿透模式下生效）。 */
+/** 旧游戏页面判断命中；现代游戏由主进程读取光标，不依赖穿透窗口收到 mousemove。 */
 ipcMain.on('piggy:hit', (event, hit) => {
   if (!fromPet(event) || typeof hit !== 'boolean') return
   if (hasPlacedShape) return
@@ -1694,8 +1701,9 @@ let quitTask = null
 function closeShellResources({ keepShellUpdates = false } = {}) {
   if (shellClosing) return shellClosing
   const fullscreenStopping = fullscreenWatch?.stop()
-  for (const timer of [topGuardTimer, displayWatchTimer, hitTimer]) if (timer !== null) clearInterval(timer)
-  if (stateTimer !== null) clearTimeout(stateTimer)
+  for (const timer of [topGuardTimer, displayWatchTimer, hitTimer]) clearInterval(timer)
+  hitTimer = null
+  clearTimeout(stateTimer)
   shellClosing = (async () => {
     await Promise.all([fullscreenStopping, keepShellUpdates ? undefined : shellUpdates?.close(), flushWindowState(), proxySettings?.flush(), fullscreenWatch?.flush(), autostart.flush(),
       Promise.allSettled([...exportWrites])])
@@ -1721,7 +1729,7 @@ function prepareToQuit() {
   })().then(result => {
     hostClosed = true
     if (!result.saved) log('host worker exited; WAL retained; shutdown without save')
-    if (hitTimer !== null) clearInterval(hitTimer)
+    clearInterval(hitTimer)
     hitTimer = null
     return result
   }).catch(error => { hostClosing = null; quitting = false; throw error })

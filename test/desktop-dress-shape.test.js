@@ -279,7 +279,7 @@ test('the stage shape already covers the same dress ink through its drawing boun
           const report = collectStageShape(
             { querySelector: selector => selector === '.dp-pig' ? pig : null, getAttribute: () => null },
             { querySelectorAll: () => [] },
-            box => stageDrawingBounds(box, pig))
+            { drawingBounds: box => stageDrawingBounds(box, pig) })
           assert.ok(report !== null)
           const label = `${emoji} ${base}px@${scale}x`
           assert.ok(covers(report.shape, rect.box), `${label}: 画出来的盒子要在舞台 shape 里`)

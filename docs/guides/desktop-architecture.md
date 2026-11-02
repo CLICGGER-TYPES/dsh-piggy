@@ -117,6 +117,7 @@
 | 文件 | 内容 |
 |---|---|
 | `apps/desktop/main.js` | 主进程组合根：两个窗口、拖动（`dragTick`）、面板、生命周期；可变服务仍由这里持有 |
+| `apps/desktop/lib/game-protocol.js` | 处理 `piggy://` 静态资源与 `/dsh-piggy/…` 宿主请求；由组合根注入协议注册、`net.fetch`、renderer/game 根目录及 live host/关闭/状态通知回调 |
 | `apps/desktop/lib/ipc/updates.js` | 更新/外壳更新 IPC 注册（`piggy:updates:*`、`piggy:shell:*`）；`releases` 状态归此模块 |
 | `apps/desktop/lib/ipc/system.js` | 系统类 IPC 注册：外部连接、退出/导出/打开、全屏和代理；状态仍由 `main.js` 持有 |
 | `apps/desktop/lib/background-host.js`、`runtime-worker.js` | 游戏 Worker 的异步代理、路由和快照转发 |
@@ -126,11 +127,18 @@
 | `apps/desktop/lib/panel-geometry.js` | 面板窗口摆哪（纯函数，有单测） |
 | `apps/desktop/lib/window-geometry.js` | 拖动时窗口怎么跟鼠标、夹在哪些屏里 |
 | `apps/desktop/preload.cjs` | `window.piggyShell` |
-| `src/client/desktop/index.js` | 猪窗口页面：每轮量猪、按家算窗口、拖动起止 |
+| `src/client/desktop/index.js` | 兼容门面：保留 `version/install/start` 和 pet/panel/ext 角色分派 |
+| `src/client/desktop/pet-controller.js` | 每个 pet renderer 的 shell adapter、拖动/飞行状态和单次 install/start 生命周期 |
+| `src/client/desktop/layout-controller.js` | 该 renderer 唯一的测量/摆放/几何回读协调循环 |
+| `src/client/desktop/input-controller.js`、`hit-tracking.js` | 该 renderer 的 pointer/hitShape 状态及 `setHit` / `place({hitShape})` 桥接 |
 | `src/client/desktop/place.js` | 「家」模型 |
 | `src/client/desktop/measure.js` | 猪窗口的固定框、气泡预留、可点区域 |
 | `src/client/desktop/panel-window.js` | 面板窗口页面：排版、报尺寸 |
 | `src/client/split.js`、`pending.js` | 两边页面的分工（谁演反应、谁出提示条） |
+
+主进程仍在原位置声明 `piggy` scheme 权限，并在宿主启动后注册协议。协议模块只转发宿主响应；host 的 `onSnapshot` 通知仍独立存在，可能在 `handle` 返回前通知页面；协议适配器自身的 POST 刷新通知仍在 `host.handle` 成功后安排。
+
+猪页面的可变状态按一个 pet renderer 分工持有：`pet-controller.js` 唯一持有它的 shell bridge、拖动/飞行标志和启动幂等状态；`layout-controller.js` 唯一持有 measure、placement、WM clamp 和布局调度；`input-controller.js` 唯一持有 pointer、hitRect 和 legacy `setHit` 状态。入口仍以 `desktop.version/install/start` 暴露兼容的单 renderer adapter。它给 controller 注入 `getHost`；当前默认 getter 仍定位唯一 `[data-dsh-pig]` 根，以后每个宿主可以给出自己的 root。该 seam 不提供稳定 pig ID、分实例存档或多猪入口；`place.js` 仍写现有 `dsh-piggy:desktop-pig` 位置键。
 
 ## 怎么验收（改了窗口/拖动相关的东西必须做）
 

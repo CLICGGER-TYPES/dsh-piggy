@@ -50,23 +50,59 @@ test('Gitee 在线扩展目录：地址用 Gitee，官方哈希与同版本 GitH
   assert.equal(giteeFarm?.bundle?.sha256, '51c4f1ca631b18366db64fa254c63885bff3c07e19347651e4fd5096db2aad0d')
 })
 
-test('候选渠道目录互相匹配，Gitee候选不包含GitHub链接', async () => {
+test('候选渠道版本可独立演进；key、minGame 和同版本内容保持一致', async () => {
   const { existsSync } = await import('node:fs')
   const path = new URL('../release-candidates/extensions/registry.json', import.meta.url)
   if (!existsSync(path)) return
   const github = JSON.parse(readFileSync(path, 'utf8'))
   const gitee = JSON.parse(readFileSync(new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url), 'utf8'))
+  const official = JSON.parse(readFileSync(new URL('../store/official-extensions.json', import.meta.url), 'utf8'))
   assert.doesNotMatch(JSON.stringify(gitee), /github/i)
-  assert.deepEqual(gitee.extensions.map(item => item.key + '@' + item.version), github.extensions.map(item => item.key + '@' + item.version))
+  assert.deepEqual(gitee.extensions.map(item => item.key).sort(), github.extensions.map(item => item.key).sort())
   const withoutUrls = value => {
     if (Array.isArray(value)) return value.map(withoutUrls)
     if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'url').map(([key, nested]) => [key, withoutUrls(nested)]))
     return value
   }
-  for (const item of github.extensions.filter(item => !item.builtin)) {
-    const twin = gitee.extensions.find(other => other.key === item.key)
+  const giteeByKey = new Map(gitee.extensions.map(item => [item.key, item]))
+  for (const item of github.extensions) {
+    const twin = giteeByKey.get(item.key)
+    assert.ok(twin, `${item.key} missing from Gitee candidate`)
+    if (item.builtin === true) {
+      assert.equal(twin.version, item.version, `${item.key} builtin version across candidate channels`)
+      assert.deepEqual(withoutUrls(twin), withoutUrls(item), `${item.key} builtin candidate metadata`)
+      continue
+    }
+    assert.equal(twin.minGame, item.minGame, `${item.key} minGame across candidate channels`)
+    if (twin.version !== item.version) continue
     assert.deepEqual(withoutUrls(twin), withoutUrls(item), `${item.key}@${item.version} candidate metadata`)
     assert.equal(twin.bundle.sha256, item.bundle.sha256)
     for (const [name, file] of Object.entries(item.files)) assert.equal(twin.files[name].sha256, file.sha256)
+  }
+  const sha256Pattern = /^[a-f0-9]{64}$/
+  for (const [label, registry, channel] of [['GitHub', github, GITHUB], ['Gitee', gitee, GITEE]]) {
+    for (const item of registry.extensions.filter(item => !item.builtin)) {
+      const identity = `${item.key}@${item.version}`
+      const known = official[item.key]?.[item.version]
+      assert.ok(known, `${label} candidate ${identity} has no official file hashes`)
+      assert.match(item.version, /^\d+\.\d+\.\d+$/, `${label} candidate ${identity} version`)
+      assert.match(item.minGame, /^\d+\.\d+\.\d+$/, `${label} candidate ${identity} minGame`)
+      assert.ok(item.bundle && typeof item.bundle === 'object', `${label} candidate ${identity} bundle`)
+      const tagBase = `${channel.downloadBase}/ext-${item.key}-${item.version}`
+      assert.equal(item.bundle.url, `${tagBase}/ext-${item.key}-${item.version}.piggyext`, `${label} candidate ${identity} bundle URL`)
+      assert.match(item.bundle.sha256 ?? '', sha256Pattern, `${label} candidate ${identity} bundle SHA256`)
+      assert.ok(item.files && typeof item.files === 'object' && !Array.isArray(item.files), `${label} candidate ${identity} files`)
+      const names = Object.keys(known).sort()
+      assert.deepEqual(Object.keys(item.files).sort(), names, `${label} candidate ${identity} file list`)
+      for (const name of names) {
+        const spec = item.files[name]
+        assert.ok(spec && typeof spec === 'object', `${label} candidate ${identity} ${name} spec`)
+        assert.equal(spec.url, `${tagBase}/${name.replace(/^assets\//, '')}`, `${label} candidate ${identity} ${name} URL`)
+        assert.match(spec.sha256 ?? '', sha256Pattern, `${label} candidate ${identity} ${name} SHA256`)
+      }
+      const fileHashes = Object.fromEntries(names.map(name => [name, item.files[name].sha256]))
+      const officialHashes = Object.fromEntries(names.map(name => [name, known[name]]))
+      assert.deepEqual(fileHashes, officialHashes, `${label} candidate ${identity} official file hashes`)
+    }
   }
 })

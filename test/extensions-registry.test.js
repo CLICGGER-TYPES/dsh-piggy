@@ -175,7 +175,15 @@ test('各渠道目录校验官方文件身份、渠道下载地址和同版本�
   assert.equal(githubFarm?.minGame, '0.37.2')
   assert.equal(githubFarm?.bundle?.sha256, 'bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0')
   assert.equal(Object.keys(githubFarm?.files ?? {}).length, 287)
-  assert.deepEqual(withoutUrls(githubFarm), withoutUrls(githubCandidateFarm), 'GitHub public farm must match the published 4.2.1 candidate')
+  assert.equal(githubFarm?.files?.['client.js']?.sha256, '72b64888f96633773c2a83cff15e7ea3fe987d3c3baf3e2c19204b0d8f09d5f3', 'public farm 4.2.1 keeps its released client identity')
+  assert.equal(githubCandidateFarm?.version, '4.2.2', 'the unuploaded source candidate uses a fresh version')
+  assert.equal(githubCandidateFarm?.minGame, '0.37.2')
+  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, 'b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200', 'farm 4.2.2 candidate points at the current built client')
+  assert.equal(Object.keys(githubCandidateFarm?.files ?? {}).length, 287)
+  for (const name of Object.keys(githubFarm?.files ?? {}).filter(name => name !== 'manifest.json' && name !== 'client.js')) {
+    assert.equal(githubCandidateFarm?.files?.[name]?.sha256, githubFarm?.files?.[name]?.sha256, 'the 4.2.2 client refactor keeps ' + name)
+  }
+  assert.notEqual(githubCandidateFarm?.bundle?.sha256, githubFarm?.bundle?.sha256, 'the candidate bundle identity follows its new manifest/client version')
   assert.equal(giteeFarm?.version, '4.2.0')
   assert.equal(giteeFarm?.minGame, '0.37.2')
   assert.equal(giteeFarm?.bundle?.sha256, '51c4f1ca631b18366db64fa254c63885bff3c07e19347651e4fd5096db2aad0d')
