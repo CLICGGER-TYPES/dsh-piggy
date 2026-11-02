@@ -7,28 +7,32 @@
 - GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
 - 当前RC6只接入云存档配置与只读连接测试；云上传、恢复和自动合并仍未实现。多猪正式入口和稳定ID仍未实现。
 
-## 2026-11-02 Electron 45.2.1 Linux X11 候选（待独立复验）
+## 2026-11-02 Electron 45.2.1 Linux X11 候选（CI、私有包及有限原生 UI 已验证）
 
-- PR33CURSOR02 从源码提交 `5b7823ef8d941ebee96b07f91bb2170730921b07` 派生，仅把桌面开发运行时及锁文件从 Electron 44.5.1 调整到 45.2.1；该版本的 Chromium 156.0.8078.75 含 X11 指针缓存有效性修复。没有改主进程输入算法、游戏数据、schema 或 UI。
-- 先前 PR33F 的同一 45.2.1 Linux Xvfb AppImage 在交互快照后出现 zygote/Network Service 错误和 Chromium GPU process fatal，随后进程组/CDP 端口消失；没有证据指向 QA SIGTERM，根因仍未知。本次版本号相同，不能据此宣称 GPU 稳定问题已解决。
-- 当前仅源码候选，未重新运行测试、打包或 UI；既有 PR33F 定向测试/typecheck 结果不代表本候选已验证。待源码审查后再做局部核验、私有包和独立 PI-05 UI 验收，不发布。
+- PR41 源码候选 `a7ce5727a3842fa7a834a1767aab773c2ebb64fa` 基于 `5b7823ef8d941ebee96b07f91bb2170730921b07`，仅更新桌面运行时声明、锁文件和本路线图。Electron 45.2.1 使用 Chromium 156.0.8078.75；主进程输入算法、游戏数据、schema 与产品 UI 没有因运行时切换而改动。本候选未合并、未发布。
+- [PR41 CI](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/41380319515) 双平台通过：Linux 2407/2419 项通过、0 失败、12 跳过；Windows 2414/2419 项通过、0 失败、5 跳过；构建、类型检查与生成物 freshness 均通过。
+- 私有 PKG06 AppImage 已构建并完成静态回读，大小 143,020,760 bytes，SHA-256 `1a09b9ca0db95b9a9e0e94b24023c39ab0b6823167497c8027d08fe63846573f`。72 个 Electron 45.2.1 官方 ZIP 成员、桌面 ASAR 配置源和 375 个游戏文件均按记录做了字节核对。该包没有启动或发布。
+- R05 观察到真实宠物点击使 `data-poke=1`；OS 指针与 Electron 屏幕坐标已记录；本轮 90.01 秒内 46 个样本显示进程组和 CDP 均存活，未出现 GPU fatal。R06 通过三次真实点击孵化，并完成右键开面板、导航、设置页滚动和普通开关操作；DOM `data`/`aria` 与本机 `localStorage` 读回相符。孵化前后截图和 `data-unhatched=false` 已记录，视觉收起按真实界面接受；原生 hidden-state 检查仍为 NOCOVER。
+- R08 的 C7 步骤全部 exit 0：真实孵化、面板操作以及 farm 4.2.2 菜园、商店、工具与种子页面操作通过；实际加载的 farm client SHA-256 为 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。受限空白点的 X11 press/release 各一次、renderer 未收到 trusted 输入通过；此结果不代表像素级点击穿透精度。R08 原始收据 `farmUi.reason` 留有旧 fallback 字符串，状态与逐项证据均为 PASS；未修改原始日志或重测。
+- 本轮完成 farm D/E 源码拆分及有限 Linux 默认流程代表 UI；尚未覆盖设置持久化重开、Windows/macOS、DSH/OpenCode、完整 flight 视觉、主进程完整拆分、稳定猪 ID 或在线多猪。R05 的 90 秒观察不等于长期稳定性结论。先前同一 Electron 45.2.1 候选仍出现 GPU process fatal，根因未定位；不能宣称已修复。
+- GitHub 公开 RC6 与 farm 4.2.1 tag、bundle、registry 和旧 hash 保持不变；Gitee 不更新，4.2.2 候选未公开。云存档上传、恢复与自动合并继续暂缓。
 
 ## 2026-11-01 存储模块拆分（进行中）
 
 - MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 暂缓，farm 4.2.1 公开附件保持不变。
 
-## 2026-11-02 桌面 renderer controller 拆分（本地候选，待独立验收）
+## 2026-11-02 桌面 renderer controller 拆分（候选，有限 Linux 原生验收完成）
 
 - MODD01 从本地基线 `91ef248ed273db72a5dc7f34de434d5088422528` 拆出兼容门面、pet/layout/input controllers；desktop `version=6`、pet/panel/ext 路由、旧壳降级、shape/hitShape、拖动/飞行几何顺序保留。生成 `client.js` 已更新，SHA-256 `ec893dcdbfae081147b4da9f76016ea24e9bbbdf14127eedffb170c1041e006d`。
-- 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 9/9，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。完整测试套件和独立 QMODD01 原生 UI 验收尚未完成；本分支未合入或发布。
-- 范围仍限于 renderer controller 拆分：`apps/desktop/main.js` 未拆（主进程模块拆分仍未实现），farm client 源模块化 E 尚未实现；真实多猪入口/稳定 IDs、按猪独立存档及实际联网也都未实现。此次不表示整体架构工作已完成。
+- 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 9/9，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。R05/R06/R08 的 Linux 原生代表流程已按顶部状态记录；完整桌面交互与跨平台验收仍未完成，本分支未合入或发布。
+- 范围仍限于 renderer controller 拆分：`apps/desktop/main.js` 未拆（主进程模块拆分仍未实现）；farm client 源模块化 E 已在下方候选中完成。真实多猪入口/稳定 IDs、按猪独立存档及实际联网也都未实现。此次不表示整体架构工作已完成。
 
-## 2026-11-02 Farm client 源码模块化（隔离候选，验证待做）
+## 2026-11-02 Farm client 源码模块化（隔离候选，CI 与有限 Linux UI 已验证）
 
 - 从 `9cf4c544acfe23a2441f212536c821900f90e4fa` 开始，把公开客户端的单一临时状态工厂、DOM/素材宿主工具、动作与焦点、菜地视图和商店/背包视图分到 `src/extensions/farm/client/`。入口仍创建一个 client instance 并注册一次 farm render；`manifest.json` / `server.js` / `client.js` + assets 下载协议、宿主接口与现有 UI/动作语义不变。
 - `scripts/build-farm-client.mjs` 复用既有 esbuild loader，`scripts/build.mjs` 同时生成菜园 client/server；新增 client freshness/单文件分发守卫，删除旧的 `extensions/farm/client.js` 精确 736 行上限。作者模块均小于 400 行并带 `@ts-check`。workflow 的两处生成物差异守卫也包含 farm client。
 - 为保持发布版本与内容一一对应，隔离源码候选使用未占用的 farm `4.2.2`（GitHub 远端无 `ext-farm-4.2.2` tag）。候选 client 为 95,447 bytes / SHA-256 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`；其 GitHub candidate registry 与离线官方 hash 仅供本地校验，未发布。
-- 受限验证：7 个受影响文件首轮 58/58 通过；类型边界修正后，最终 farm client freshness/单文件契约 2/2 通过，TypeScript 5.9.3 typecheck exit 0。完整套件和独立 PI-05 UI 尚未完成。
+- CI 41380319515 的双平台构建、类型检查与 freshness 均通过；R08 在 Linux 私有候选中实际加载 4.2.2 并完成菜园/商店/工具/种子代表交互，client SHA 与 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200` 相同。完整跨平台验收仍未完成，候选未发布。
 - GitHub公开 farm 4.2.1 tag/bundle/registry/旧官方 hash保持原身份；Gitee公开与candidate仍为4.2.0/既有4.2.1，本轮不上传或修改。server、manifest之外的 assets、minGame与服务端玩法未变；无本地包发布。
 - 本次只拆客户端代码，不改 farm server/merge/migration、币和物品、种植收获、帮工开关/75%经验规则，不实现真实多猪、稳定 ID 或网络功能。
 
