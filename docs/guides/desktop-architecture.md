@@ -60,13 +60,14 @@
 
 带非空 `pending` 的快照必须把同一份消息送到各窗口，因为生成快照时已经取走这些消息。Worker 先发送原始 JSON 快照文本，再返回对应路由响应；主线程只转发，preload 在页面进程解析并保持 `onStateChanged` 的对象接口。此类快照不能替换成空刷新通知，也不能只保留最新一份。POST 请求体用 ArrayBuffer 转移到 Worker 后再解析文本；二进制响应也在 Worker 内整理为独立 ArrayBuffer 后转移，不转移可能来自池化 Buffer 的底层存储。这些路径仍会完整接收请求体或响应体，并非端到端流式传输。
 
-正常退出先停接工作事件，再完成游戏保存和资源清理。如果保存失败且宿主仍可运行，重新建立工作接口并发布发现文件后才返回保存错误，界面恢复时接口也可重新发现。外壳更新关闭后不再接受新操作，取消已有下载，并等待在途检查、下载清理和签名验证完成。检查阶段尚无可用取消 token 时等待检查返回；签名验证等待原验证器结束，避免直接终止 Worker 留下 PowerShell 子进程。
+正常退出先停接工作事件，再完成游戏保存和资源清理。如果保存失败且宿主仍可运行，重新建立工作接口并发布发现文件后才返回保存错误，界面恢复时接口也可重新发现。主进程退出协调由 `apps/desktop/lib/desktop-lifecycle.js` 持有；`main.js` 注入 live resource getter 和平台回调，模块在对应 await 之后重新读取版本服务与宿主，不缓存旧引用。外壳更新关闭后不再接受新操作，取消已有下载，并等待在途检查、下载清理和签名验证完成。检查阶段尚无可用取消 token 时等待检查返回；签名验证等待原验证器结束，避免直接终止 Worker 留下 PowerShell 子进程。
 
 ## IPC 消息全表
 
 页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧由 `apps/desktop/main.js`
-（组合根）和 `apps/desktop/lib/ipc/` 共同注册：`updates.js` 管更新/外壳更新，`system.js` 管外部连接、
-退出/导出/打开、全屏和代理；可变服务和窗口状态仍由 `main.js` 持有。每个处理函数开头用
+（组合根）、`apps/desktop/lib/ipc/` 和 `desktop-lifecycle.js` 共同注册：`updates.js` 管更新/外壳更新，
+`system.js` 管外部连接、退出请求、导出/打开、全屏和代理，生命周期模块协调退出与关闭；窗口与服务仍由 `main.js` 装配。
+每个处理函数开头用
 `fromPet(event)` / `fromPage(event)` 核对是哪个窗口发的，**新加消息也要核对**。
 
 ### 猪窗口 → 主进程
@@ -116,8 +117,9 @@
 
 | 文件 | 内容 |
 |---|---|
-| `apps/desktop/main.js` | 主进程组合根：两个窗口、拖动（`dragTick`）、面板、生命周期；可变服务仍由这里持有 |
+| `apps/desktop/main.js` | 主进程组合根：窗口、拖动（`dragTick`）、面板与服务装配；持有运行时服务句柄并注入 live getter |
 | `apps/desktop/lib/game-protocol.js` | 处理 `piggy://` 静态资源与 `/dsh-piggy/…` 宿主请求；由组合根注入协议注册、`net.fetch`、renderer/game 根目录及 live host/关闭/状态通知回调 |
+| `apps/desktop/lib/desktop-lifecycle.js` | 唯一持有主进程关闭/退出状态、动作预约、保存与资源 flush 顺序；通过 getter 获取当前 host、版本和关闭资源 |
 | `apps/desktop/lib/ipc/updates.js` | 更新/外壳更新 IPC 注册（`piggy:updates:*`、`piggy:shell:*`）；`releases` 状态归此模块 |
 | `apps/desktop/lib/ipc/system.js` | 系统类 IPC 注册：外部连接、退出/导出/打开、全屏和代理；状态仍由 `main.js` 持有 |
 | `apps/desktop/lib/background-host.js`、`runtime-worker.js` | 游戏 Worker 的异步代理、路由和快照转发 |
