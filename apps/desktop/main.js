@@ -27,6 +27,7 @@ import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, prot
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
+import { createDesktopRuntime } from './lib/desktop-runtime.js'
 import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
@@ -153,13 +154,13 @@ const bundledGameDir = () => bundledDesktopGame(app, HERE)
 
 const statePath = () => dataPaths.statePath
 
-let host = null
-let hostStarting = null
+/** Startup handles and their pending promises have one owner; composition order stays here. */
+const desktopRuntime = createDesktopRuntime({
+  startHostWorker: startBackgroundHost,
+  startVersionsWorker: startBackgroundVersions,
+})
 /** 外部连接开关（设置 → 外部连接）。 */
 let externalManager = null
-/** @type {Awaited<ReturnType<typeof startBackgroundVersions>> | null} */
-let versions = null
-let versionsStarting = null
 /** @type {ReturnType<typeof createShellUpdates> | null} */
 let shellUpdates = null
 const petWindow = createPetWindow({ BrowserWindow })
@@ -226,7 +227,7 @@ const desktopLifecycle = createDesktopLifecycle({
   app, dialog, log, stopDrag, relaunch,
   isCapture: () => Boolean(process.env.PIGGY_CAPTURE),
   clearInterval, clearTimeout,
-  getResources: () => ({ host, hostStarting, versions, versionsStarting, shellUpdates, proxySettings, fullscreenWatch,
+  getResources: () => ({ ...desktopRuntime.getShutdownResources(), shellUpdates, proxySettings, fullscreenWatch,
     externalManager, autostart, exportWrites, topGuardTimer, displayWatchTimer, hitTimer, stateTimer, flushWindowState, flushLogs }),
   setExternalManager: manager => { externalManager = manager },
   setHitTimer: timer => { hitTimer = timer },
@@ -291,7 +292,7 @@ function registerProtocol(gameDir) {
     fetchFile: net.fetch.bind(net),
     rendererDir: join(HERE, 'renderer'),
     gameDir,
-    getHost: () => host,
+    getHost: () => desktopRuntime.getHost(),
     isQuitting: () => desktopLifecycle.quitting,
     onStateChanged: announceStateChanged,
   })
@@ -1380,7 +1381,7 @@ registerExternalIpc({
 // ---- 更新 App（页面里的 tabs/update.js）通过这几个口子调用 ----
 registerUpdatesIpc({
   ipcMain, fromPage, toPages,
-  getVersions: () => versions,
+  getVersions: () => desktopRuntime.getVersions(),
   getShellUpdates: () => shellUpdates,
   isActionActive: () => desktopLifecycle.activeAction !== null,
   reserveAction: desktopLifecycle.reserveAction, releaseAction: desktopLifecycle.releaseAction,
@@ -1509,7 +1510,7 @@ registerProxyIpc({
   ipcMain, fromPage,
   getProxySettings: () => proxySettings,
 })
-registerCloudSaveIpc({ ipcMain, fromPage, getHost: () => host, settings: cloudSaveSettings })
+registerCloudSaveIpc({ ipcMain, fromPage, getHost: () => desktopRuntime.getHost(), settings: cloudSaveSettings })
 
 app.whenReady().then(async () => {
   if (needsX11 || !gotLock || desktopLifecycle.quitting) return
@@ -1525,33 +1526,31 @@ app.whenReady().then(async () => {
     currentVersion: app.getVersion(), updater: autoUpdater,
     onProgress: fraction => toPages('piggy:shell-progress', fraction),
   })
-  versionsStarting = startBackgroundVersions({
+  await desktopRuntime.startVersions({
     userData: app.getPath('userData'), bundledDir: bundledGameDir(), shellVersion: app.getVersion(),
     statePath: statePath(), releasesUrl: process.env.PIGGY_RELEASES_URL || undefined, log,
     // Chromium's network stack: follows the system proxy, which plain fetch does not.
     fetch: /** @type {any} */ (net.fetch.bind(net)),
   })
-  versions = await versionsStarting
-  if (desktopLifecycle.quitting) { await versions.close(); return }
+  if (desktopLifecycle.quitting) { await desktopRuntime.getVersions().close(); return }
   // Gitee 的 Windows 安装包不带游戏：第一次先下载（first-run.js）。
   let firstRun = null
-  if (await versions.needsGame()) {
-    firstRun = await downloadFirstGame({ versions, pinPath: gamePinPath(app, HERE), here: HERE, releasesPage: RELEASES_PAGE, log })
+  if (await desktopRuntime.getVersions().needsGame()) {
+    firstRun = await downloadFirstGame({ versions: desktopRuntime.getVersions(), pinPath: gamePinPath(app, HERE), here: HERE, releasesPage: RELEASES_PAGE, log })
     if (firstRun === null) { app.quit(); return }
   }
-  const gameDir = await versions.activeDir()
+  const gameDir = await desktopRuntime.getVersions().activeDir()
   if (desktopLifecycle.quitting) return
   const workEventsDirectory = join(app.getPath('userData'), 'work-endpoint')
   const localCloudSettings = cloudSaveSettings.load()
-  hostStarting = startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
+  await desktopRuntime.startHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
     cloudSave: localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null,
     optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
     workEventsAutoStart: process.argv.includes('--work-events'),
     onConfirm: plan => confirmMerge(plan),
     onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
-  host = await hostStarting
   if (desktopLifecycle.quitting) return
-  hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
+  hostJournal = /** @type {any} */ (desktopRuntime.getHost())?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
   await createWindow()
@@ -1559,7 +1558,7 @@ app.whenReady().then(async () => {
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
   ensurePanelWindow()
   externalManager = createExternalManager({
-    userData: app.getPath('userData'), host, appVersion: app.getVersion(), log,
+    userData: app.getPath('userData'), host: desktopRuntime.getHost(), appVersion: app.getVersion(), log,
     onConfirm: plan => confirmMerge(plan),
   })
   try { await externalManager.init() } catch (error) { log('external manager init failed', String(error)) }
@@ -1652,7 +1651,7 @@ process.on('uncaughtException', error => { log('uncaught', error?.stack ?? Strin
 app.on('second-instance', () => {
   // 第二次双击没反应时，日志要能说明「第二次确实进来了」，以及第一扇窗当时的状态。
   // pid 和第二个进程的「second launch rejected」行对得上；host 说明第一次启动走到哪了。
-  log('second instance', JSON.stringify({ pid: process.pid, host: host !== null, window: getPetWindow() !== null, visible: getPetWindow()?.isVisible?.() === true, showPending: showGate?.pending === true }))
+  log('second instance', JSON.stringify({ pid: process.pid, host: desktopRuntime.getHost() !== null, window: getPetWindow() !== null, visible: getPetWindow()?.isVisible?.() === true, showPending: showGate?.pending === true }))
   getPetWindow()?.showInactive()
 })
 desktopLifecycle.registerBeforeQuit()
