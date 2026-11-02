@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { createLinuxDisplayRebuild } from '../lib/linux-display-rebuild.js'
 import { readFileSync } from 'node:fs'
 import { createContext, runInContext } from 'node:vm'
+import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 test('only Linux topology changes rebuild views; dock work-area changes do not', async () => {
   for (const platform of ['linux', 'win32', 'darwin']) {
@@ -59,13 +60,15 @@ test('重建 Linux 窗口时丢弃旧页面的独立输入区域', async () => {
   const end = source.indexOf('\nlet lastShape =', start)
   const previous = { isDestroyed: () => false, hide() {}, removeAllListeners() {}, webContents: { removeAllListeners() {} }, destroy() {} }
   let resetInput = false
-  const context = createContext({
+  const sandbox = {
     quitting: false, win: previous, panelWin: null, petAsked: { x: 0, y: 0, width: 132, height: 152 },
     lastPigWindow: { x: 10, y: 10 }, WINDOW_PADDING: 10, lastContent: {}, restingPigScreen: {},
     lastShape: [{}], placedShape: [{}], placedHitShape: [{ x: 20, y: 20, width: 60, height: 60 }], hasPlacedShape: true,
     stopDrag() {}, resizeShape: { cancel() {} }, closePanel() {}, ensurePanelWindow() {}, pushGeometry() {}, log() {},
     createWindow: async () => { resetInput = runInContext('placedHitShape === null && !hasPlacedShape', context); context.win = { getBounds: () => ({}) } },
-  })
+  }
+  sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
+  const context = createContext(sandbox)
   assert.ok(start > 0 && end > start)
   runInContext(source.slice(start, end), context)
   await runInContext('rebuildLinuxViews()', context)
