@@ -36,7 +36,7 @@
 
 ## 徽章审稿
 
-六枚独立透明 PNG 的总览见 [徽章图](../screenshots/achievements-phase-two-badges.png)，顺序对应上表。保持原有横向身体和侧身朝向，两只前蹄微抬并与主题道具接触，后脚正常支撑。逐字提示词与导出方法见 [素材记录](../art-prompts/achievements-phase-two.md)，哈希、切片位置、透明边界和大小登记在 assets/pigs/manifest.json。
+六枚独立透明 PNG 的总览见 [徽章图](../screenshots/achievements-phase-two-badges.png)，顺序对应上表。沿用用户指定的原有正常小猪徽章画法，身体与四肢站姿保持，道具位于身旁。逐字提示词与导出方法见 [素材记录](../art-prompts/achievements-phase-two.md)，哈希、切片位置、透明边界和大小登记在 assets/pigs/manifest.json。
 
 新图进入 assets/pigs/badges/，不借用旧徽章，也不替换原有图案。只增加静态素材与数据表，游戏和扩展版本均保持，尚未创建发行或发布 npm。
 
