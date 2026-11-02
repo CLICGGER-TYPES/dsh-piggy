@@ -51,6 +51,7 @@ import { reportStartupFailure, pageCrashReason } from './lib/startup-failure.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
 import { createWindowState } from './lib/window-state.js'
 import { createAutostart } from './lib/autostart.js'
+import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
 import { createDesktopTray } from './lib/tray.js'
 import { registerExternalIpc, registerSystemActionsIpc, registerFullscreenIpc, registerProxyIpc } from './lib/ipc/system.js'
 import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
@@ -190,36 +191,31 @@ const extensionWindow = createExtensionWindow({
   log,
 })
 const extensionLayer = createExtensionLayer({ extension: () => extensionWindow.current(), overlays: () => [panelWin, win] })
-/** 正在退出/重启：关掉窗口前先置位，之后到达的页面消息一律不处理。 */
-let quitting = false
-/** 导入与版本切换共用一次预约，直到重启/安装完成前不接受第二次切换。 */
-let activeAction = null
-let quitAfterAction = false
-function reserveAction(kind, phase = 'commit') {
-  if (quitting || activeAction !== null) return null
-  activeAction = { kind, phase, cancelled: false }
-  return activeAction
-}
-function releaseAction(action) {
-  if (activeAction !== action) return
-  activeAction = null
-  if (quitAfterAction) { quitAfterAction = false; app.quit() }
-}
+/** 主进程关闭/退出状态统一由 lifecycle 持有；资源句柄在实际关闭时动态读取。 */
+const desktopLifecycle = createDesktopLifecycle({
+  app, dialog, log, stopDrag, relaunch,
+  isCapture: () => Boolean(process.env.PIGGY_CAPTURE),
+  clearInterval, clearTimeout,
+  getResources: () => ({ host, hostStarting, versions, versionsStarting, shellUpdates, proxySettings, fullscreenWatch,
+    externalManager, autostart, exportWrites, topGuardTimer, displayWatchTimer, hitTimer, stateTimer, flushWindowState, flushLogs }),
+  setExternalManager: manager => { externalManager = manager },
+  setHitTimer: timer => { hitTimer = timer },
+})
 /**
  * 消息是不是这扇窗口的页面发来的。窗口销毁后再读 win.webContents 会抛
  * 「Object has been destroyed」—— Windows 上在更新页切换版本时，旧页面的消息还在路上，
  * 主进程直接弹了错误框（用户 2026-10-05 实测）。所以先查 isDestroyed。
  */
 function fromPage(event) {
-  return fromPet(event) || (!quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents) || fromExt(event)
+  return fromPet(event) || (!desktopLifecycle.quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents) || fromExt(event)
 }
 /** 扩展的大窗口（外壳 0.6.5 起，菜园的大农场）。 */
 function fromExt(event) {
-  return !quitting && extensionWindow.owns(event.sender)
+  return !desktopLifecycle.quitting && extensionWindow.owns(event.sender)
 }
 /** 只有猪窗口能挪猪、改形状（面板窗口的页面也装了同一套游戏包，不许它动猪窗口）。 */
 function fromPet(event) {
-  return !quitting && win !== null && !win.isDestroyed() && event.sender === win.webContents
+  return !desktopLifecycle.quitting && win !== null && !win.isDestroyed() && event.sender === win.webContents
 }
 /** 发给两个窗口的页面（下载进度、存档变了这类两边都要知道的事）。 */
 function toPages(channel, ...args) {
@@ -256,7 +252,7 @@ function planLine(label, summary) {
 }
 
 function fromPanelOnly(event) {
-  return !quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents
+  return !desktopLifecycle.quitting && panelWin !== null && !panelWin.isDestroyed() && event.sender === panelWin.webContents
 }
 
 function registerProtocol(gameDir) {
@@ -266,7 +262,7 @@ function registerProtocol(gameDir) {
     rendererDir: join(HERE, 'renderer'),
     gameDir,
     getHost: () => host,
-    isQuitting: () => quitting,
+    isQuitting: () => desktopLifecycle.quitting,
     onStateChanged: announceStateChanged,
   })
 }
@@ -442,7 +438,7 @@ function showPigWindow() {
 
 async function createWindow(override = null) {
   const saved = override ?? await readWindowState()
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
   if (savedPigScreen !== null) {
     // 显示器拔掉或换了分辨率：猪至少要整只留在某块屏上。
@@ -514,7 +510,7 @@ async function createWindow(override = null) {
   let startupPageFailureReported = false
   win.webContents.on('did-fail-load', async (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
     log('page failed', JSON.stringify({ errorCode, errorDescription, url: validatedURL, mainFrame: isMainFrame }))
-    if (isMainFrame !== true || quitting || startupPageFailureReported || win === null || win.isDestroyed() || win.isVisible() || showGate?.pending !== true) return
+    if (isMainFrame !== true || desktopLifecycle.quitting || startupPageFailureReported || win === null || win.isDestroyed() || win.isVisible() || showGate?.pending !== true) return
     startupPageFailureReported = true
     let logPath = 'piggy.log'
     try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
@@ -539,7 +535,7 @@ async function createWindow(override = null) {
     void reportStartupCrash(details, gate)
   })
   async function reportStartupCrash(details, gate) {
-    if (quitting || startupPageFailureReported || win === null || win.isDestroyed() || win.isVisible() || gate?.pending !== true) return
+    if (desktopLifecycle.quitting || startupPageFailureReported || win === null || win.isDestroyed() || win.isVisible() || gate?.pending !== true) return
     startupPageFailureReported = true
     let logPath = 'piggy.log'
     try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
@@ -553,7 +549,7 @@ async function createWindow(override = null) {
 
 /** Refresh native pixel/DIP caches by using the already-tested cold view path. */
 async function rebuildLinuxViews() {
-  if (quitting || win === null || win.isDestroyed()) return
+  if (desktopLifecycle.quitting || win === null || win.isDestroyed()) return
   const previous = win
   const previousPanel = panelWin
   const bounds = petAsked ?? previous.getBounds()
@@ -580,7 +576,7 @@ async function rebuildLinuxViews() {
     previousPanel.destroy()
   }
   panelWin = null
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   ensurePanelWindow()
   pushGeometry()
   log('display views rebuilt', JSON.stringify({ bounds: win.getBounds() }))
@@ -1305,11 +1301,11 @@ async function dshSavePath() {
 
 /** Copy DSH's pig over this one, keeping a copy of this one first. */
 async function importFromDsh() {
-  const action = reserveAction('import', 'prepare')
+  const action = desktopLifecycle.reserveAction('import', 'prepare')
   if (action === null) return
   try {
     const source = await dshSavePath()
-    if (action.cancelled || quitting) return
+    if (action.cancelled || desktopLifecycle.quitting) return
     if (source === null) {
       await dialog.showMessageBox({ type: 'info', message: '没找到 DSH 里的猪', detail: '默认找 ~/.dsh/dsh-piggy/state.json（或 DSH_HOME 下面）。' })
       return
@@ -1319,22 +1315,22 @@ async function importFromDsh() {
       message: '把 DSH 里的猪接过来？',
       detail: `从 ${source} 复制一份过来。桌面版现在这只会先备份，不会丢。`,
     })
-    if (action.cancelled || quitting || response !== 0) return
+    if (action.cancelled || desktopLifecycle.quitting || response !== 0) return
     action.phase = 'commit'
-    await requireSavedGame()
+    await desktopLifecycle.requireSavedGame()
     const target = statePath()
     await mkdir(dirname(target), { recursive: true })
     await backupSave('import')
     await copyFile(source, target + '.importing')
     await rename(target + '.importing', target)
-    await restartGame()
+    await desktopLifecycle.restartGame()
   } catch (error) {
-    if (!action.cancelled) await recoverAction(error)
-  } finally { releaseAction(action) }
+    if (!action.cancelled) await desktopLifecycle.recoverAction(error)
+  } finally { desktopLifecycle.releaseAction(action) }
 }
 
 /** 开机自启的持久化：Windows 走 Electron 登录项，Linux 写 autostart 条目（见 lib/autostart.js）。 */
-const autostart = createAutostart({ app, log, isQuitting: () => quitting })
+const autostart = createAutostart({ app, log, isQuitting: () => desktopLifecycle.quitting })
 
 /** 托盘图标和菜单；窗口动作仍由主进程现有的入口处理。 */
 const tray = createDesktopTray({
@@ -1350,12 +1346,12 @@ const tray = createDesktopTray({
   importFromDsh,
   quit: () => app.quit(),
   log,
-  isQuitting: () => quitting,
+  isQuitting: () => desktopLifecycle.quitting,
 })
 
 /** 托盘恢复：清掉陈旧拖动/抛掷锚点，先把窗口移到主屏可见处，再让猪页把尺寸和家复位。 */
 function recoverPig() {
-  if (quitting || win === null || win.isDestroyed()) return
+  if (desktopLifecycle.quitting || win === null || win.isDestroyed()) return
   const payload = recoveryPayload(screen.getPrimaryDisplay())
   if (payload === null) return
   stopDrag()
@@ -1380,34 +1376,6 @@ async function backupSave(label) {
   await copyFile(file, `${file}.before-${label}-${new Date().toISOString().replace(/[:.]/g, '-')}`)
 }
 
-async function requireSavedGame() {
-  const result = await prepareToQuit()
-  if (result.saved !== true) throw new Error('游戏未成功保存，已取消切换；未完成的工作记录保留在磁盘上')
-}
-
-/** 关闭后的备份或激活失败不能留下一个已没有游戏宿主的窗口。 */
-async function recoverAction(error) {
-  log('desktop action failed', String(error))
-  try {
-    await dialog.showMessageBox({ type: 'error', message: '操作未完成',
-      detail: `${error instanceof Error ? error.message : String(error)}${hostClosed ? '\n将重新启动当前游戏。' : ''}` })
-  } finally {
-    if (hostClosed) await restartGame()
-  }
-}
-
-/** Load the new game: flush the save first, then start over. */
-async function restartGame() {
-  quitting = true
-  try { await prepareToQuit() } catch (error) { log('host shutdown failed', String(error)); return }
-  await closeShellResources()
-  if (quitAfterAction) return app.exit(0)
-  // Testing runs one launch at a time; the next one is started by hand.
-  if (process.env.PIGGY_CAPTURE) return app.exit(0)
-  relaunch()
-  app.exit(0)
-}
-
 // ---- 外部连接（设置 → 外部连接）：只允许面板窗口，扩展大窗口不行 ----
 registerExternalIpc({
   ipcMain, fromPanelOnly,
@@ -1420,10 +1388,12 @@ registerUpdatesIpc({
   ipcMain, fromPage, toPages,
   getVersions: () => versions,
   getShellUpdates: () => shellUpdates,
-  isActionActive: () => activeAction !== null,
-  reserveAction, releaseAction,
-  requireSavedGame, backupSave, restartGame, closeShellResources, recoverAction,
-  isHostClosed: () => hostClosed,
+  isActionActive: () => desktopLifecycle.activeAction !== null,
+  reserveAction: desktopLifecycle.reserveAction, releaseAction: desktopLifecycle.releaseAction,
+  requireSavedGame: desktopLifecycle.requireSavedGame, backupSave,
+  restartGame: desktopLifecycle.restartGame, closeShellResources: desktopLifecycle.closeShellResources,
+  recoverAction: desktopLifecycle.recoverAction,
+  isHostClosed: () => desktopLifecycle.hostClosed,
   isCapture: () => Boolean(process.env.PIGGY_CAPTURE),
   log,
 })
@@ -1432,7 +1402,7 @@ const exportWrites = new Set()
 registerSystemActionsIpc({
   ipcMain, app, dialog, shell, fromPage,
   getWin: () => win,
-  isQuitting: () => quitting,
+  isQuitting: () => desktopLifecycle.quitting,
   exportWrites,
   log,
 })
@@ -1453,7 +1423,7 @@ let reassertingUntil = 0
  * 光调一次 setAlwaysOnTop(true) 在 Electron 里可能因为「状态没变」被跳过，所以先关再开。
  */
 function reassertTop(why) {
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   if (extensionLayer.isFocused()) { extensionLayer.sync(); return }
   reassertingUntil = Date.now() + 1000
   for (const target of [panelWin, win]) {
@@ -1477,7 +1447,7 @@ function applyMacSpaces() {
 
 /** @param {{fullscreen:boolean, samePigScreen:boolean} | null} probe */
 function onFullscreenProbe(probe) {
-  if (quitting || win === null || win.isDestroyed() || fullscreenWatch === null) return
+  if (desktopLifecycle.quitting || win === null || win.isDestroyed() || fullscreenWatch === null) return
   const covering = probe !== null && probe.fullscreen === true && probe.samePigScreen === true
   const ended = pigScreenFullscreen && !covering
   pigScreenFullscreen = covering
@@ -1520,12 +1490,12 @@ async function startFullscreenWatch() {
     onProbe: onFullscreenProbe,
   })
   await fullscreenWatch.init()
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   fullscreenWatch.start()
   applyMacSpaces()
   // 置顶守护：系统把置顶清掉时马上抢回来；有的情况下没有事件，再每 3 秒核对一次。
   win.on('always-on-top-changed', (event, on) => {
-    if (!on && !quitting && Date.now() > reassertingUntil) setTimeout(() => reassertTop('lost'), 200)
+    if (!on && !desktopLifecycle.quitting && Date.now() > reassertingUntil) setTimeout(() => reassertTop('lost'), 200)
   })
   topGuardTimer = setInterval(() => {
     if (win === null || win.isDestroyed() || !win.isVisible()) return
@@ -1548,12 +1518,12 @@ registerProxyIpc({
 registerCloudSaveIpc({ ipcMain, fromPage, getHost: () => host, settings: cloudSaveSettings })
 
 app.whenReady().then(async () => {
-  if (needsX11 || !gotLock || quitting) return
+  if (needsX11 || !gotLock || desktopLifecycle.quitting) return
   migrateDesktopData(dataPaths)
   proxySettings = createProxy({ path: join(app.getPath('userData'), 'proxy.json'),
     sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
   await proxySettings.init()
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   log('start', app.getVersion(), process.platform, process.env.XDG_SESSION_TYPE ?? '')
   shellUpdates = createShellUpdates({
     mode: shellUpdateMode({ platform: process.platform, packaged: app.isPackaged,
@@ -1568,7 +1538,7 @@ app.whenReady().then(async () => {
     fetch: /** @type {any} */ (net.fetch.bind(net)),
   })
   versions = await versionsStarting
-  if (quitting) { await versions.close(); return }
+  if (desktopLifecycle.quitting) { await versions.close(); return }
   // Gitee 的 Windows 安装包不带游戏：第一次先下载（first-run.js）。
   let firstRun = null
   if (await versions.needsGame()) {
@@ -1576,7 +1546,7 @@ app.whenReady().then(async () => {
     if (firstRun === null) { app.quit(); return }
   }
   const gameDir = await versions.activeDir()
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   const workEventsDirectory = join(app.getPath('userData'), 'work-endpoint')
   const localCloudSettings = cloudSaveSettings.load()
   hostStarting = startBackgroundHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
@@ -1586,12 +1556,12 @@ app.whenReady().then(async () => {
     onConfirm: plan => confirmMerge(plan),
     onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
   host = await hostStarting
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   hostJournal = /** @type {any} */ (host)?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
   await createWindow()
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
   ensurePanelWindow()
   externalManager = createExternalManager({
@@ -1599,13 +1569,13 @@ app.whenReady().then(async () => {
     onConfirm: plan => confirmMerge(plan),
   })
   try { await externalManager.init() } catch (error) { log('external manager init failed', String(error)) }
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   log('panel preloaded', JSON.stringify({ visible: panelWin.isVisible(), focused: panelWin.isFocused() }))
   await startFullscreenWatch()
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   firstRun?.destroy()
   await tray.create(gameDir)
-  if (quitting) return
+  if (desktopLifecycle.quitting) return
   // 用户机器上到底是什么显示器、什么缩放：以前日志里没有，Windows 的问题只能靠猜。
   log('displays', JSON.stringify(screen.getAllDisplays().map(display => ({ id: display.id, label: display.label,
     bounds: display.bounds, workArea: display.workArea, scale: display.scaleFactor, internal: display.internal }))))
@@ -1617,7 +1587,7 @@ app.whenReady().then(async () => {
     onError: error => log('display view rebuild failed', String(error)),
   })
   const reclamp = (why, detail) => {
-    if (quitting || win === null || win.isDestroyed()) return
+    if (desktopLifecycle.quitting || win === null || win.isDestroyed()) return
     if (displayRebuild.changed() || displayRebuild.busy()) return
     const bounds = win.getBounds()
     applyBounds(desktopViewportBounds(bounds, screen.getAllDisplays().map(display => display.workArea)), 'display')
@@ -1691,81 +1661,5 @@ app.on('second-instance', () => {
   log('second instance', JSON.stringify({ pid: process.pid, host: host !== null, window: win !== null, visible: win?.isVisible?.() === true, showPending: showGate?.pending === true }))
   win?.showInactive()
 })
-let hostClosed = false
-let hostClosing = null
-let shellClosed = false
-let shellClosing = null
-let quitTask = null
-
-/** 版本激活仍要用 worker；安装外壳时保留更新器，完成安装交接。 */
-function closeShellResources({ keepShellUpdates = false } = {}) {
-  if (shellClosing) return shellClosing
-  const fullscreenStopping = fullscreenWatch?.stop()
-  for (const timer of [topGuardTimer, displayWatchTimer, hitTimer]) clearInterval(timer)
-  hitTimer = null
-  clearTimeout(stateTimer)
-  shellClosing = (async () => {
-    await Promise.all([fullscreenStopping, keepShellUpdates ? undefined : shellUpdates?.close(), flushWindowState(), proxySettings?.flush(), fullscreenWatch?.flush(), autostart.flush(),
-      Promise.allSettled([...exportWrites])])
-    try { await versions?.close() } catch (error) { log('versions shutdown failed', String(error)) }
-    await flushLogs()
-    shellClosed = true
-  })().catch(error => { shellClosing = null; throw error })
-  return shellClosing
-}
-
-/** 退出与安装共用一次后台关闭；保存失败时允许重试，不提前停命中轮询。 */
-function prepareToQuit() {
-  if (hostClosing) return hostClosing
-  quitting = true
-  stopDrag()
-  hostClosing = (async () => {
-    // VM 生命周期测试只加载这段代码，没有外部开关变量；真实主进程里它始终存在。
-    if (typeof externalManager !== 'undefined') {
-      try { await externalManager?.close() } catch (error) { log('external shutdown failed', String(error)) }
-      externalManager = null
-    }
-    return host ? host.dispose() : { saved: true }
-  })().then(result => {
-    hostClosed = true
-    if (!result.saved) log('host worker exited; WAL retained; shutdown without save')
-    clearInterval(hitTimer)
-    hitTimer = null
-    return result
-  }).catch(error => { hostClosing = null; quitting = false; throw error })
-  return hostClosing
-}
-app.on('before-quit', event => {
-  if (shellClosed) return
-  event.preventDefault()
-  if (activeAction !== null) {
-    quitAfterAction = true
-    if (activeAction.phase === 'prepare') {
-      const action = activeAction
-      action.cancelled = true
-      quitting = true
-      if (action.kind === 'import') releaseAction(action)
-      else void versions.cancelPreparation().catch(error => log('versions cancellation failed', String(error)))
-    }
-    return
-  }
-  if (quitTask === null) {
-    quitTask = (async () => {
-      quitting = true
-      // 只等正在创建的资源，不等首次下载窗口的用户选择；最终 quit 会正常关闭那个窗口。
-      await Promise.allSettled([proxySettings?.init(), versionsStarting, hostStarting])
-      if (!host) {
-        try { await versions?.close() } catch (error) { log('versions shutdown failed', String(error)) }
-      }
-      await prepareToQuit()
-      await closeShellResources()
-      app.quit()
-    })().catch(async error => {
-      log('host shutdown failed', String(error))
-      try { await recoverAction(error) }
-      catch (dialogError) { log('host shutdown recovery dialog failed', String(dialogError)) }
-      finally { quitTask = null }
-    })
-  }
-})
+desktopLifecycle.registerBeforeQuit()
 app.on('window-all-closed', () => app.quit())

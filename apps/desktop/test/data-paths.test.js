@@ -123,7 +123,10 @@ test('both desktop entry points configure data before locking and migrate only a
     assert.ok(source.includes('const statePath = () => dataPaths.statePath'))
     assert.ok(source.indexOf('configureDesktopData(app)') < source.indexOf('const gotLock'))
     const ready = source.indexOf('app.whenReady().then(async () => {')
-    const guard = source.indexOf('if (needsX11 || !gotLock || quitting) return', ready)
+    const guardSource = relative === '../main.js'
+      ? 'if (needsX11 || !gotLock || desktopLifecycle.quitting) return'
+      : 'if (needsX11 || !gotLock || quitting) return'
+    const guard = source.indexOf(guardSource, ready)
     const migration = source.indexOf('migrateDesktopData(dataPaths)', ready)
     assert.ok(ready > 0 && guard > ready && migration > guard)
   }

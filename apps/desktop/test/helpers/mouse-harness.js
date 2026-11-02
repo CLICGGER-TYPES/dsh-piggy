@@ -10,6 +10,7 @@ import { pointerHitsShape } from '../../lib/pointer-hit.js'
 import { validDragOrigin } from '../../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../../lib/window-show.js'
 import { auxiliaryWindowOptions } from '../../lib/auxiliary-window.js'
+import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../../main.js', import.meta.url), 'utf8')
 
@@ -39,7 +40,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     once(event, callback) { windowEvents.set(event, callback) }
     on(event, callback) { windowEvents.set(event, callback) }
   }
-  const context = createContext({
+  const sandbox = {
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     win: null, quitting: false, petAsked: null, panelPig: null, dragStats: null,
@@ -52,7 +53,9 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     setTimeout() {}, log() {}, followPig() {}, scheduleWindowStateSave() {}, reanchorPanel() {},
     ipcMain: { on: (channel, callback) => handlers.set(channel, callback) },
     Date: { now: () => state.now },
-  })
+  }
+  sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
+  const context = createContext(sandbox)
   const fromPet = source.indexOf('function fromPet(event)')
   runInContext(source.slice(fromPet, source.indexOf('\n/**', fromPet)), context)
   const start = source.indexOf('function workAreaFor(bounds)')

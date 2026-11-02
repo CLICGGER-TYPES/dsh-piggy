@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createExtensionLayer } from '../lib/extension-layer.js'
+import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 test('大扩展焦点、失焦、最小化、关闭及守卫重入统一置顶状态', () => {
   const pet = { top: true, visible: false, isDestroyed: () => false,
@@ -43,6 +44,7 @@ test('反应消息、全屏恢复和3秒守卫都不能抬回获得焦点的大�
   const win = { isDestroyed: () => false, isVisible: () => true, moveTop: () => moves++, setAlwaysOnTop: () => tops++ }
   let syncs = 0
   const context = { win, panelWin: win, extensionLayer: { isFocused: () => true, sync() { syncs++ } }, Date, log() {}, reassertingUntil: 0, quitting: false }
+  context.desktopLifecycle = desktopLifecycleStateAdapter(context)
   runInNewContext(extract('raisePetAbovePanel') + '\n' + extract('reassertTop') + '\nraisePetAbovePanel(); reassertTop("check"); reassertTop("lost"); reassertTop("fullscreen-ended")', context)
   assert.equal(moves, 0)
   assert.equal(tops, 0)
