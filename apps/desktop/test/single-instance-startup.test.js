@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { createContext, runInContext } from 'node:vm'
 
 import { startBackgroundVersions } from '../lib/background-versions.js'
+import { createDesktopRuntime } from '../lib/desktop-runtime.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
@@ -29,7 +30,7 @@ async function runStartup(userData, hasLock) {
       // Electron 44 可以在 quit 请求后继续触发 ready；故意不在这里改变 quitting。
       quit() { quits++ }, whenReady() { ready++; return Promise.resolve() } },
     session: { defaultSession: {}, fromPartition: () => ({}) },
-    proxySettings: null, shellUpdates: null, versions: null, versionsStarting: null,
+    proxySettings: null, shellUpdates: null,
     createProxy() { calls.push('proxy'); return { async init() { calls.push('proxy-init') } } },
     shellUpdateMode: () => 'development', autoUpdater: {},
     createShellUpdates() { calls.push('shell'); return {} },
@@ -43,6 +44,10 @@ async function runStartup(userData, hasLock) {
       return versions
     },
   }
+  sandbox.desktopRuntime = createDesktopRuntime({
+    startVersionsWorker: options => sandbox.startBackgroundVersions(options),
+    startHostWorker: async () => { throw new Error('startup should return before creating the host') },
+  })
   sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
   const context = createContext(sandbox)
   const lockStart = source.indexOf('// Testing: keep a throwaway save')

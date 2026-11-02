@@ -20,15 +20,20 @@
 - PR44 已合入 main，CI 双平台成功。开发侧相关 Node 契约 29/29 通过；完整本机类型检查因隔离 checkout 缺 Electron 相关依赖未完成，使用 CI 验证。
 - QDESKFINAL01 exit-final03 对 PKG09 完成一次核心 Linux 正常退出与同 profile 冷重开验收：真实 Exit 点击后约 1.26 秒进程组为空、CDP 不可达、runtime lock 释放；冷重开后 `hatched=true` 且 coins 仍为 500。附加的第二次 Exit 因截图文件 `O_EXCL` 重名未点击，记为 NOCOVER；runner exit 1 只反映这项可选覆盖未完成，不否定前述一次正常退出与冷重开结果，也不代表长期稳定性。
 
-## 2026-11-02 WINOWN01 面板窗口所有权拆分（PR45 已推送，CI 通过）
+## 2026-11-03 HOSTOWN01 启动运行时句柄所有权拆分（隔离候选）
+
+- 基线为 main `5d8c786fe4dea6042e23175570cb315378893e0a`。新 `apps/desktop/lib/desktop-runtime.js` 唯一持有后台 host、版本服务及两个启动 Promise；`main.js` 仍保留迁移、代理/更新器、版本、首次游戏下载、host、协议、窗口与托盘的原顺序，只通过 live getter 获取句柄。
+- 定向 Node 契约 6/6 通过，覆盖 pending 立即可见、host/versions 启动拒绝传播、退出等待两项启动后再读 live host 并关闭版本服务；相关 JS syntax checks 通过。隔离 checkout 没有 TypeScript 编译器，本地完整 typecheck 未运行，由 PR CI 验证。无产品 UI、VM、打包验收。
+
+## 2026-11-02 WINOWN01 面板窗口所有权拆分（PR45 已合入）
 
 - 基线为 main `4abcac24dcbba6c12236fd59cddd2ba71d38f125`。`apps/desktop/lib/panel-window.js` 单独持有面板 `BrowserWindow`、renderer 就绪态及创建/renderer 退出/销毁生命周期；`main.js` 通过 live getter 访问句柄。面板开关、几何、菜单、焦点和 hit/shape 算法保留在原组合根，pet 拖动/飞行不变。
-- 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0` 已推送 PR45；Linux 与 Windows CI 全绿。定向窗口/生命周期契约 24/24 通过；真实 UI 待与猪窗口所有权候选组合后做一轮验收。
+- 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0` 已合入 main；`102cc73cd42ab3ff3b2739fafcb7fd4b4c2d523c` 的猪窗口所有权也已合入，当前 main 为 `5d8c786fe4dea6042e23175570cb315378893e0a`。主线 CI `41475536965` 成功。
 
-## 2026-11-02 PETOWN01 猪窗口所有权拆分（隔离候选）
+## 2026-11-02 PETOWN01 猪窗口所有权拆分（PR46 已合入）
 
 - 基于 WINOWN01 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0`，`apps/desktop/lib/pet-window.js` 唯一持有猪 `BrowserWindow` 句柄，并转发 ready、加载失败、renderer 退出与关闭事件；旧窗口迟到事件不能污染当前句柄。`main.js` 用 live getter 装配窗口；显示门、位置、drag、flight 与 shape 算法不变。
-- 定向桌面窗口/输入及生命周期测试 132/132 通过，覆盖新旧窗口替换、Linux 显示重建、show gate、IPC 所有权与拖动/shape 路径。未运行产品 UI/VM；待与 WINOWN01 合并候选统一做一轮定向桌面 UI。
+- 定向桌面窗口/输入及生命周期测试 132/132 通过，覆盖新旧窗口替换、Linux 显示重建、show gate、IPC 所有权与拖动/shape 路径。PKG10 Linux 定向 UI 覆盖孵化和面板开关；DRAGSETTLE02 真实拖动记录 drag start/end/ticks、mouseup 已释放，等待同一 owned 窗口及猪位置连续稳定约 590ms 后真实右击重开面板，`data-open=true` 并可见。该有限流程不代表完整 flight 视觉、长期稳定或 Windows/macOS 原生 UI 验收。
 
 ## 2026-11-02 Electron 45.2.1 Linux X11 候选（CI、私有包及有限原生 UI 已验证）
 
