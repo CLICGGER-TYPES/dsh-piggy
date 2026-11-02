@@ -58,6 +58,9 @@ jobs:
             [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
             if ($errors.Count) { $errors | Write-Error; exit 1 }
           }
+      - name: Linux QA operations standard-library contracts
+        if: runner.os == 'Linux'
+        run: python3 -m unittest discover -s tools/qaops/tests -p 'test_*.py' -v
       - name: Serial regression tests
         run: node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
       - name: Type check
