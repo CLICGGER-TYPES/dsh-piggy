@@ -72,7 +72,11 @@ export function createOwnerLanClient({ baseUrl, clientId = randomUUID(), fetch =
       if (result.status === 200) {
         nextSequence = Math.max(nextSequence, result.body.nextSequence)
         pending.delete(requestId)
-      } else if (Number.isSafeInteger(result.body.nextSequence)) nextSequence = result.body.nextSequence
+      } else {
+        if (Number.isSafeInteger(result.body.nextSequence)) nextSequence = result.body.nextSequence
+        // 明确 4xx 拒绝发生在操作提交前；408/5xx 或无响应仍需保留原请求供幂等重试。
+        if (result.status >= 400 && result.status < 500 && result.status !== 408) pending.delete(requestId)
+      }
       return { ...result, requestId }
     })
   }

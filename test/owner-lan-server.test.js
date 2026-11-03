@@ -110,6 +110,10 @@ test('two paired LAN clients stay bound to separate pigs, share owner resources,
     assert.equal(stateAfterRetryB.body.state.pig.coins, 494, 'both targets see shared owner money')
     assert.equal(stateAfterRetryA.body.state.pig.name, '甲新')
     assert.equal(stateAfterRetryB.body.state.pig.name, '乙')
+    const denied = await clientA.action('not-allowed')
+    assert.equal(denied.status, 403)
+    const afterDenial = await clientA.action('touch')
+    assert.equal(afterDenial.status, 200, 'a definite rejection clears the client pending slot')
     await clientA.close()
     await assert.rejects(clientA.state(), /not paired/, 'a closed client has discarded its token')
   } finally {
