@@ -42,8 +42,10 @@ export function mountGame(mountOptions) {
     var stageOptions = stageCandidate !== null && typeof stageCandidate === 'object'
       && (stageCandidate.role === 'stage' || stageCandidate.role === 'ext') ? stageCandidate : null
     // Optional dependency seam for an explicitly created private art-resource
-    // registry. The normal product path passes nothing and keeps default art.
+    // registry and a caller-bound data identity. The normal product path passes
+    // neither and keeps the legacy default state/resources.
     var artResources = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.artResources : null
+    var identity = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.identity : null
 
     function mount() {
       if (document.querySelector('[' + MOUNTED + ']') !== null) {
@@ -80,6 +82,7 @@ export function mountGame(mountOptions) {
         getShell: feelShell,
         onGeometry: syncGeometry,
         artResources: artResources,
+        identity: identity,
       })
       var parts = presentation.parts
       var { host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
@@ -325,7 +328,7 @@ export function mountGame(mountOptions) {
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return gestures.isDragging() },
         pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: moveShell,
         feel: feel,
-        artResources: artResources,
+        artResources: presentation.artResources,
       }
       var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife(lifeOptions)
       ctx.life = life // 调试页「散步一次」「做个小动作」用

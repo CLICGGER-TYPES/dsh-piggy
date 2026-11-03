@@ -21165,7 +21165,7 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/array.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/array.mjs
   function addUniqueItem(arr2, item) {
     if (arr2.indexOf(item) === -1)
       arr2.push(item);
@@ -21176,7 +21176,7 @@
       arr2.splice(index, 1);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/clamp.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/clamp.mjs
   var clamp3 = (min, max, v) => {
     if (v > max)
       return max;
@@ -21185,12 +21185,12 @@
     return v;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/format-error-message.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/format-error-message.mjs
   function formatErrorMessage(message3, errorCode) {
     return errorCode ? `${message3}. For more information and steps for solving, visit https://motion.dev/troubleshooting/${errorCode}` : message3;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/errors.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/errors.mjs
   var warning = () => {
   };
   var invariant = () => {
@@ -21208,19 +21208,19 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/global-config.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/global-config.mjs
   var MotionGlobalConfig = {};
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-numerical-string.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/is-numerical-string.mjs
   var isNumericalString = (v) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(v);
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-object.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/is-object.mjs
   var isObject = (value) => typeof value === "object" && value !== null;
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/is-zero-value-string.mjs
   var isZeroValueString = (v) => /^0[^.\s]+$/u.test(v);
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/memo.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/memo.mjs
   // @__NO_SIDE_EFFECTS__
   function memo(callback) {
     let result;
@@ -21231,19 +21231,19 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/noop.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/noop.mjs
   var noop = /* @__NO_SIDE_EFFECTS__ */ (any) => any;
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/pipe.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/pipe.mjs
   var pipe = (...transformers) => transformers.reduce((a, b) => (v) => b(a(v)));
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/progress.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/progress.mjs
   var progress = /* @__NO_SIDE_EFFECTS__ */ (from, to, value) => {
     const range = to - from;
     return range ? (value - from) / range : 1;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/subscription-manager.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/subscription-manager.mjs
   var SubscriptionManager = class {
     constructor() {
       this.subscriptions = [];
@@ -21276,14 +21276,14 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/time-conversion.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/time-conversion.mjs
   var secondsToMilliseconds = /* @__NO_SIDE_EFFECTS__ */ (seconds) => seconds * 1e3;
   var millisecondsToSeconds = /* @__NO_SIDE_EFFECTS__ */ (milliseconds) => milliseconds / 1e3;
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/velocity-per-second.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/velocity-per-second.mjs
   var velocityPerSecond = /* @__NO_SIDE_EFFECTS__ */ (velocity, frameDuration) => frameDuration ? velocity * (1e3 / frameDuration) : 0;
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/warn-once.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/warn-once.mjs
   var warned = /* @__PURE__ */ new Set();
   function warnOnce(condition, message3, errorCode) {
     if (condition || warned.has(message3))
@@ -21292,13 +21292,13 @@
     warned.add(message3);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/wrap.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/wrap.mjs
   var wrap = (min, max, v) => {
     const rangeSize = max - min;
     return ((v - min) % rangeSize + rangeSize) % rangeSize + min;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/cubic-bezier.mjs
   var calcBezier = (t, a1, a2) => t * (3 * (1 - t) * ((1 - t) * a1 + t * a2) + t * t);
   // @__NO_SIDE_EFFECTS__
   function cubicBezier(mX1, mY1, mX2, mY2) {
@@ -21322,45 +21322,45 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/modifiers/mirror.mjs
   var mirrorEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => p <= 0.5 ? easing(2 * p) / 2 : (2 - easing(2 * (1 - p))) / 2;
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/modifiers/reverse.mjs
   var reverseEasing = /* @__NO_SIDE_EFFECTS__ */ (easing) => (p) => 1 - easing(1 - p);
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/back.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/back.mjs
   var backOut = /* @__PURE__ */ cubicBezier(0.33, 1.53, 0.69, 0.99);
   var backIn = /* @__PURE__ */ reverseEasing(backOut);
   var backInOut = /* @__PURE__ */ mirrorEasing(backIn);
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/anticipate.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/anticipate.mjs
   var anticipate = (p) => p >= 1 ? 1 : (p *= 2) < 1 ? 0.5 * backIn(p) : 0.5 * (2 - Math.pow(2, -10 * (p - 1)));
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/circ.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/circ.mjs
   var circIn = (p) => 1 - Math.sin(Math.acos(p));
   var circOut = reverseEasing(circIn);
   var circInOut = mirrorEasing(circIn);
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/ease.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/ease.mjs
   var easeIn = /* @__PURE__ */ cubicBezier(0.42, 0, 1, 1);
   var easeOut = /* @__PURE__ */ cubicBezier(0, 0, 0.58, 1);
   var easeInOut = /* @__PURE__ */ cubicBezier(0.42, 0, 0.58, 1);
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/utils/is-easing-array.mjs
   var isEasingArray = /* @__NO_SIDE_EFFECTS__ */ (ease2) => {
     return Array.isArray(ease2) && typeof ease2[0] !== "number";
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/utils/get-easing-for-segment.mjs
   // @__NO_SIDE_EFFECTS__
   function getEasingForSegment(easing, i) {
     return isEasingArray(easing) ? easing[wrap(0, easing.length, i)] : easing;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/utils/is-bezier-definition.mjs
   var isBezierDefinition = /* @__NO_SIDE_EFFECTS__ */ (easing) => Array.isArray(easing) && typeof easing[0] === "number";
 
-  // ../../artifacts/toolchain/node_modules/motion-utils/dist/es/easing/utils/map.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-utils/dist/es/easing/utils/map.mjs
   var easingLookup = {
     linear: noop,
     easeIn,
@@ -21389,14 +21389,14 @@
     return definition;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/frameloop/frame-data.mjs
   var frameData = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
   var now;
   function clearTime() {
     now = void 0;
@@ -21414,10 +21414,10 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/sanitize.mjs
   var sanitize = (v) => Math.round(v * 1e5) / 1e5;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/is-css-variable.mjs
   var checkStringStartsWith = (token2) => (key2) => typeof key2 === "string" && key2.startsWith(token2);
   var startsAsVariableToken = /* @__PURE__ */ checkStringStartsWith("var(--");
   var isCSSVariableToken = (value) => {
@@ -21433,7 +21433,7 @@
     return value.split("/*")[0].includes("var(--");
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/numbers/index.mjs
   var number = {
     test: (v) => typeof v === "number",
     parse: parseFloat,
@@ -21448,18 +21448,18 @@
     default: 1
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/float-regex.mjs
   var floatRegex = /-?(?:\d+(?:\.\d+)?|\.\d+)/gu;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/is-nullish.mjs
   function isNullish(v) {
     return v == null;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/single-color-regex.mjs
   var singleColorRegex = /^(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))$/iu;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/color/utils.mjs
   var isColorString = (type, testProp) => (v) => {
     return Boolean(typeof v === "string" && singleColorRegex.test(v) && v.startsWith(type) || testProp && !isNullish(v) && Object.prototype.hasOwnProperty.call(v, testProp));
   };
@@ -21475,7 +21475,7 @@
     };
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/color/rgba.mjs
   var clampRgbUnit = (v) => clamp3(0, 255, v);
   var rgbUnit = {
     ...number,
@@ -21487,7 +21487,7 @@
     transform: ({ red, green, blue, alpha: alpha$1 = 1 }) => "rgba(" + rgbUnit.transform(red) + ", " + rgbUnit.transform(green) + ", " + rgbUnit.transform(blue) + ", " + sanitize(alpha.transform(alpha$1)) + ")"
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/color/hex.mjs
   function parseHex(v) {
     let r = "";
     let g = "";
@@ -21521,7 +21521,7 @@
     transform: rgba.transform
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/numbers/units.mjs
   var createUnitType = /* @__NO_SIDE_EFFECTS__ */ (unit) => ({
     test: (v) => typeof v === "string" && v.endsWith(unit) && v.split(" ").length === 1,
     parse: parseFloat,
@@ -21538,7 +21538,7 @@
     transform: (v) => percent.transform(v * 100)
   }))();
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/color/hsla.mjs
   var hsla = {
     test: /* @__PURE__ */ isColorString("hsl", "hue"),
     parse: /* @__PURE__ */ splitColor("hue", "saturation", "lightness"),
@@ -21547,7 +21547,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/color/index.mjs
   var color = {
     test: (v) => rgba.test(v) || hex.test(v) || hsla.test(v),
     parse: (v) => {
@@ -21569,10 +21569,10 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/color-regex.mjs
   var colorRegex = /(?:#[\da-f]{3,8}|(?:rgb|hsl)a?\((?:-?[\d.]+%?[,\s]+){2}-?[\d.]+%?\s*(?:[,/]\s*)?(?:\b\d+(?:\.\d+)?|\.\d+)?%?\))/giu;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/complex/index.mjs
   var hasFloat = /* @__PURE__ */ new RegExp(floatRegex.source);
   var hasColor = /* @__PURE__ */ new RegExp(colorRegex.source, "i");
   function test(v) {
@@ -21663,7 +21663,7 @@
     getAnimatableNone
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/color/hsla-to-rgba.mjs
   function hueToRgb(p, q, t) {
     if (t < 0)
       t += 1;
@@ -21701,17 +21701,17 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/mix/immediate.mjs
   function mixImmediate(a, b) {
     return (p) => p > 0 ? b : a;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/number.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/mix/number.mjs
   var mixNumber = (from, to, progress2) => {
     return from + (to - from) * progress2;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/color.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/mix/color.mjs
   var mixLinearColor = (from, to, v) => {
     const fromExpo = from * from;
     const expo = v * (to * to - fromExpo) + fromExpo;
@@ -21747,7 +21747,7 @@
     };
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/mix/visibility.mjs
   var invisibleValues = /* @__PURE__ */ new Set(["none", "hidden"]);
   function mixVisibility(origin, target) {
     if (invisibleValues.has(origin)) {
@@ -21757,7 +21757,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/mix/complex.mjs
   function mixNumber2(a, b) {
     return (p) => mixNumber(a, b, p);
   }
@@ -21827,7 +21827,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/mix/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/mix/index.mjs
   var unitValue = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-z%]*)$/iu;
   function mixUnit(from, to) {
     const a = unitValue.exec(from);
@@ -21854,7 +21854,7 @@
     return mixer(from, to);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/order.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/frameloop/order.mjs
   var stepsOrder = [
     "setup",
     // Compute
@@ -21874,7 +21874,7 @@
     // Compute
   ];
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/frameloop/render-step.mjs
   function createRenderStep(runNextFrame) {
     let thisFrame = /* @__PURE__ */ new Set();
     let nextFrame = /* @__PURE__ */ new Set();
@@ -21937,7 +21937,7 @@
     return step;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
   function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state4 = {
     delta: 0,
@@ -21999,10 +21999,10 @@
     return { schedule: schedule3, cancel: cancel2, state: state4, steps };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/frameloop/frame.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/frameloop/frame.mjs
   var { schedule: frame2, cancel: cancelFrame, steps: frameSteps } = /* @__PURE__ */ createRenderBatcher(typeof requestAnimationFrame !== "undefined" ? requestAnimationFrame : noop, true, frameData);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/drivers/frame.mjs
   var frameloopDriver = (update) => {
     const passTimestamp = ({ timestamp }) => update(timestamp);
     return {
@@ -22016,7 +22016,7 @@
     };
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/linear.mjs
   var generateLinearEasing = (easing, duration, resolution = 10) => {
     let points = "";
     const numPoints = Math.max(Math.round(duration / resolution), 2);
@@ -22026,7 +22026,7 @@
     return `linear(${points.substring(0, points.length - 2)})`;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/utils/calc-duration.mjs
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
@@ -22040,7 +22040,7 @@
     return duration >= maxDuration ? Infinity : duration;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/utils/create-generator-easing.mjs
   function createGeneratorEasing(options, scale2 = 100, createGenerator) {
     const { keyframes: k, velocity: v } = options;
     const delta = k && k[k.length - 1] - k[0];
@@ -22059,7 +22059,7 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/spring.mjs
   var springDefaults = {
     // Default spring physics
     stiffness: 100,
@@ -22317,7 +22317,7 @@
     return options;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
     const state4 = {
@@ -22383,7 +22383,7 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/interpolate.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/interpolate.mjs
   function createMixers(output, ease2, customMixer) {
     const mixers = [];
     const mixerFactory = customMixer || MotionGlobalConfig.mix || mix;
@@ -22428,7 +22428,7 @@
     return isClamp ? (v) => interpolator(clamp3(input[0], input[inputLength - 1], v)) : interpolator;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/fill.mjs
   function fillOffset(offset, remaining) {
     const min = offset[offset.length - 1];
     for (let i = 1; i <= remaining; i++) {
@@ -22437,19 +22437,19 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/default.mjs
   function defaultOffset(arr2) {
     const offset = [0];
     fillOffset(offset, arr2.length - 1);
     return offset;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/offsets/time.mjs
   function convertOffsetToTimes(offset, duration) {
     return offset.map((o) => o * duration);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/keyframes.mjs
   function defaultEasing(values, easing) {
     return values.map(() => easing || easeInOut).splice(0, values.length - 1);
   }
@@ -22490,7 +22490,7 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/utils/velocity.mjs
   var velocitySampleDuration = 5;
   function getGeneratorVelocity(resolveValue, t, current3) {
     const prevT = Math.max(t - velocitySampleDuration, 0);
@@ -22502,7 +22502,7 @@
     return generator.velocity ? generator.velocity(t) : getGeneratorVelocity((s) => generator.next(s).value, t, generator.next(t).value);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/get-final.mjs
   var isNotNull = (value) => value !== null;
   function getFinalKeyframe(keyframes2, { repeat, repeatType = "loop" }, finalKeyframe, speed = 1) {
     const resolvedKeyframes = keyframes2.filter(isNotNull);
@@ -22511,7 +22511,7 @@
     return !index || finalKeyframe === void 0 ? resolvedKeyframes[index] : finalKeyframe;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/replace-transition-type.mjs
   var transitionTypeMap = {
     decay: inertia,
     inertia,
@@ -22525,11 +22525,11 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
   var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
     return {
       kind,
@@ -22552,7 +22552,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/WithPromise.mjs
   var WithPromise = class {
     constructor() {
       this.isResolved = false;
@@ -22583,7 +22583,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/JSAnimation.mjs
   var percentToProgress = (percent2) => percent2 / 100;
   var round2 = (value) => Math.round(value * 1e4) / 1e4;
   var JSAnimation = class extends WithPromise {
@@ -22887,7 +22887,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/complex/filter.mjs
   var maxDefaults = /* @__PURE__ */ new Set(["brightness", "contrast", "saturate", "opacity"]);
   function applyDefaultFilter(v) {
     const [name, value] = v.slice(0, -1).split("(");
@@ -22911,7 +22911,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/complex/mask.mjs
   var mask = {
     ...complex,
     getAnimatableNone: (v) => {
@@ -22921,13 +22921,13 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/int.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/int.mjs
   var int = {
     ...number,
     transform: Math.round
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/maps/transform.mjs
   var transformValueTypes = {
     rotate: degrees,
     /**
@@ -22961,7 +22961,7 @@
     originZ: px
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/maps/number.mjs
   var numberValueTypes = {
     // Border props
     borderWidth: px,
@@ -23026,7 +23026,7 @@
     numOctaves: int
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/maps/defaults.mjs
   var defaultValueTypes = {
     ...numberValueTypes,
     // Color props
@@ -23048,7 +23048,7 @@
   };
   var getDefaultValueType = (key2) => defaultValueTypes[key2];
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/animatable-none.mjs
   var customTypes = /* @__PURE__ */ new Set([filter, mask]);
   function getAnimatableNone2(key2, value) {
     let defaultValueType = getDefaultValueType(key2);
@@ -23057,14 +23057,14 @@
     return defaultValueType.getAnimatableNone ? defaultValueType.getAnimatableNone(value) : void 0;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/fill-wildcards.mjs
   function fillWildcards(keyframes2) {
     for (let i = 1; i < keyframes2.length; i++) {
       keyframes2[i] ?? (keyframes2[i] = keyframes2[i - 1]);
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/dom/parse-transform.mjs
   var radToDeg = (rad) => rad * 180 / Math.PI;
   var rotate = (v) => {
     const angle = radToDeg(Math.atan2(v[1], v[0]));
@@ -23146,7 +23146,7 @@
     return parseFloat(value.trim());
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/utils/keys-transform.mjs
   var transformPropOrder = [
     "transformPerspective",
     "x",
@@ -23169,7 +23169,7 @@
   ];
   var transformProps = /* @__PURE__ */ (() => /* @__PURE__ */ new Set([...transformPropOrder, "pathRotation"]))();
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/unit-conversion.mjs
   var isNumOrPxType = (v) => v === number || v === px;
   var transformKeys = /* @__PURE__ */ new Set(["x", "y", "z"]);
   var nonTranslationalTransformKeys = transformPropOrder.filter((key2) => !transformKeys.has(key2));
@@ -23218,7 +23218,7 @@
   positionalValues.translateX = positionalValues.x;
   positionalValues.translateY = positionalValues.y;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/KeyframesResolver.mjs
   var toResolve = /* @__PURE__ */ new Set();
   var isScheduled = false;
   var anyNeedsMeasurement = false;
@@ -23364,27 +23364,27 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/dom/is-css-var.mjs
   var isCSSVar = (name) => name.startsWith("--");
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/dom/style-set.mjs
   function setStyle(element, name, value) {
     isCSSVar(name) ? element.style.setProperty(name, value) : element.style[name] = value;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/supports/flags.mjs
   var supportsFlags = {};
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/supports/memo.mjs
   function memoSupports(callback, supportsFlag) {
     const memoized = memo(callback);
     return () => supportsFlags[supportsFlag] ?? memoized();
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/supports/scroll-timeline.mjs
   var supportsScrollTimeline = /* @__PURE__ */ memoSupports(() => window.ScrollTimeline !== void 0, "scrollTimeline");
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/supports/linear-easing.mjs
   var supportsLinearEasing = /* @__PURE__ */ memoSupports(() => {
     try {
       document.createElement("div").animate({ opacity: 0 }, { easing: "linear(0, 1)" });
@@ -23394,10 +23394,10 @@
     return true;
   }, "linearEasing");
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/easing/cubic-bezier.mjs
   var cubicBezierAsString = ([a, b, c, d]) => `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/easing/supported.mjs
   var supportedWaapiEasing = {
     linear: "linear",
     ease: "ease",
@@ -23410,7 +23410,7 @@
     backOut: /* @__PURE__ */ cubicBezierAsString([0.33, 1.53, 0.69, 0.99])
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/easing/map-easing.mjs
   function mapEasingToNativeEasing(easing, duration) {
     if (!easing) {
       return void 0;
@@ -23425,7 +23425,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/start-waapi-animation.mjs
   function startWaapiAnimation(element, valueName, keyframes2, { delay = 0, duration = 300, repeat = 0, repeatType = "loop", ease: ease2 = "easeOut", times } = {}, pseudoElement = void 0) {
     const keyframeOptions = {
       [valueName]: keyframes2
@@ -23448,12 +23448,12 @@
     return element.animate(keyframeOptions, options);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/generators/utils/is-generator.mjs
   function isGenerator(type) {
     return typeof type === "function" && "applyToOptions" in type;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/apply-generator.mjs
   function applyGeneratorOptions({ type, ...options }) {
     if (isGenerator(type) && supportsLinearEasing()) {
       return type.applyToOptions(options);
@@ -23464,7 +23464,7 @@
     return options;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/NativeAnimation.mjs
   var NativeAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -23612,7 +23612,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/unsupported-easing.mjs
   var unsupportedEasingFunctions = {
     anticipate,
     backInOut,
@@ -23627,7 +23627,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/NativeAnimationExtended.mjs
   var sampleDelta = 10;
   var NativeAnimationExtended = class extends NativeAnimation {
     constructor(options) {
@@ -23694,7 +23694,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/is-animatable.mjs
   var isAnimatable = (value, name) => {
     if (name === "zIndex")
       return false;
@@ -23708,7 +23708,7 @@
     return false;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/can-animate.mjs
   function hasKeyframesChanged(keyframes2) {
     const current3 = keyframes2[0];
     if (keyframes2.length === 1)
@@ -23735,13 +23735,13 @@
     return hasKeyframesChanged(keyframes2) || (type === "spring" || isGenerator(type)) && velocity;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/make-animation-instant.mjs
   function makeAnimationInstant(options) {
     options.duration = 0;
     options.type = "keyframes";
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/accelerated-values.mjs
   var acceleratedValues = /* @__PURE__ */ new Set([
     "opacity",
     "clipPath",
@@ -23750,7 +23750,7 @@
     "backgroundColor"
   ]);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/utils/is-browser-color.mjs
   var browserColorFunctions = /^(?:oklch|oklab|lab|lch|color|color-mix|light-dark)\(/;
   function hasBrowserOnlyColors(keyframes2) {
     for (let i = 0; i < keyframes2.length; i++) {
@@ -23761,7 +23761,7 @@
     return false;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/supports/waapi.mjs
   var colorProperties = /* @__PURE__ */ new Set([
     "color",
     "backgroundColor",
@@ -23796,12 +23796,12 @@
     !onUpdate && !repeatDelay && repeatType !== "mirror" && damping !== 0 && type !== "inertia";
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/utils/get-as-type.mjs
   var getValueAsType = (value, type) => {
     return type && typeof value === "number" ? type.transform(value) : value;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/html/utils/build-transform.mjs
   var translateAlias = {
     x: "translateX",
     y: "translateY",
@@ -23850,10 +23850,10 @@
     return transformString;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/transforms/groups.mjs
   var transformGroups = /* @__PURE__ */ new WeakMap();
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/waapi/transforms/TransformAnimation.mjs
   var maxSamples = 200;
   var easingTolerance = 1e-3;
   var sampleTolerance = 0.1;
@@ -24421,7 +24421,7 @@
     return group;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/AsyncMotionValueAnimation.mjs
   var AsyncMotionValueAnimation = class extends WithPromise {
     constructor(options) {
       super();
@@ -24559,7 +24559,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/GroupAnimation.mjs
   var GroupAnimation = class {
     constructor(animations) {
       this.stop = () => this.runAll("stop");
@@ -24639,7 +24639,7 @@
     return max;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/GroupAnimationWithThen.mjs
   var GroupAnimationWithThen = class extends GroupAnimation {
     then(onResolve, _onReject) {
       return this.finished.finally(onResolve).then(() => {
@@ -24647,7 +24647,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/index.mjs
   var MAX_VELOCITY_DELTA = 30;
   var isFloat = (value) => {
     return !isNaN(parseFloat(value));
@@ -24973,7 +24973,7 @@
     return new MotionValue(init, options);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/resolve-transition.mjs
   function resolveTransition(transition, parentTransition) {
     if (transition?.inherit && parentTransition) {
       const { inherit: _, ...rest } = transition;
@@ -24982,7 +24982,7 @@
     return transition;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/get-value-transition.mjs
   function getValueTransition(transition, key2) {
     const valueTransition = transition?.[key2] ?? transition?.["default"] ?? transition;
     if (valueTransition !== transition) {
@@ -24991,7 +24991,7 @@
     return valueTransition;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/default-transitions.mjs
   var underDampedSpring = {
     type: "spring",
     stiffness: 500,
@@ -25022,7 +25022,7 @@
     return ease;
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/is-transition-defined.mjs
   var orchestrationKeys = /* @__PURE__ */ new Set([
     "when",
     "delay",
@@ -25043,7 +25043,7 @@
     return false;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/interfaces/motion-value.mjs
   var animateMotionValue = (name, value, target, transition = {}, element, isHandoff) => (onComplete) => {
     const valueTransition = getValueTransition(transition, name) || {};
     const delay = valueTransition.delay || transition.delay || 0;
@@ -25102,7 +25102,7 @@
     return valueTransition.isSync ? new JSAnimation(options) : new AsyncMotionValueAnimation(options);
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/utils/css-variables-conversion.mjs
   var splitCSSVariableRegex = (
     // eslint-disable-next-line redos-detector/no-unsafe-regex -- false positive, as it can match a lot of words
     /^var\(--(?:([\w-]+)|([\w-]+), ?([a-zA-Z\d ()%#.,-]+))\)/u
@@ -25128,7 +25128,7 @@
     return isCSSVariableToken(fallback) ? getVariableValue(fallback, element, depth + 1) : fallback;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/utils/keys-position.mjs
   var positionalKeys = /* @__PURE__ */ new Set([
     "width",
     "height",
@@ -25139,28 +25139,28 @@
     ...transformPropOrder
   ]);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/utils/is-motion-value.mjs
   var isMotionValue = (value) => Boolean(value && value.getVelocity);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/dom/utils/camel-to-dash.mjs
   function camelToDash(str2) {
     return str2.replace(/([A-Z])/g, (match) => `-${match.toLowerCase()}`);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/auto.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/auto.mjs
   var auto = {
     test: (v) => v === "auto",
     parse: (v) => v
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/test.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/test.mjs
   var testValueType = (v) => (type) => type.test(v);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/types/dimensions.mjs
   var dimensionValueTypes = [number, px, percent, degrees, vw, vh, auto];
   var findDimensionValueType = (v) => dimensionValueTypes.find(testValueType(v));
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/is-none.mjs
   function isNone(value) {
     if (typeof value === "number") {
       return value === 0;
@@ -25171,7 +25171,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/utils/make-none-animatable.mjs
   var invalidTemplates = /* @__PURE__ */ new Set(["auto", "none", "0"]);
   function makeNoneKeyframesAnimatable(unresolvedKeyframes, noneKeyframeIndexes, name) {
     let i = 0;
@@ -25192,7 +25192,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/keyframes/DOMKeyframesResolver.mjs
   var DOMKeyframesResolver = class extends KeyframeResolver {
     constructor(unresolvedKeyframes, onComplete, name, motionValue2, element) {
       super(unresolvedKeyframes, onComplete, name, motionValue2, element, true);
@@ -25319,7 +25319,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/animate/effects.mjs
   var effects = [];
   function addEffect(effect) {
     invariant(typeof effect.test === "function" && typeof effect.read === "function", "Effects passed to animate.addEffect() need test() and read().", "effect-missing-test");
@@ -25383,17 +25383,17 @@
     return first === null ? void 0 : first;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/is-html-element.mjs
   function isHTMLElement(element) {
     return isObject(element) && "offsetHeight" in element && !("ownerSVGElement" in element);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/is-svg-element.mjs
   function isSVGElement(element) {
     return isObject(element) && "ownerSVGElement" in element;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/utils/resolve-elements.mjs
   function resolveElements(elementOrSelector, scope, selectorCache) {
     if (elementOrSelector == null) {
       return [];
@@ -25411,7 +25411,7 @@
     return Array.from(elementOrSelector).filter((element) => element != null);
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/utils/create-dom-effect.mjs
   function createSelectorEffect(subjectEffect) {
     const effect = (subject2, values) => {
       const elements = resolveElements(subject2);
@@ -25435,7 +25435,7 @@
     });
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/MotionValueState.mjs
   var MotionValueState = class {
     /**
      * @param step - The frameloop step renders are scheduled in. Defaults
@@ -25522,7 +25522,7 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/utils/create-effect.mjs
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
@@ -25546,7 +25546,7 @@
     });
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/style/transform.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
   function buildTransform2(state4) {
     let transform = "";
@@ -25568,7 +25568,7 @@
     return transform || "none";
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/style/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
   var styleValue = (state4, key2) => getValueAsType(state4.get(key2)?.get(), numberValueTypes[key2]);
   var addStyleValue = (element, state4, key2, value) => {
@@ -25629,7 +25629,7 @@
   });
   var styleEffect = /* @__PURE__ */ createSelectorEffect(styleSubjectEffect);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/svg/utils/build-attrs.mjs
   var cssStyleProperties = [
     "transform",
     "opacity",
@@ -25641,7 +25641,7 @@
     "offsetAnchor"
   ];
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/attr/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/attr/index.mjs
   function canSetAsProperty(element, name) {
     if (!(name in element))
       return false;
@@ -25667,7 +25667,7 @@
     return state4.set(key2, value, render);
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/svg/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/svg/index.mjs
   function addSVGPathValue(element, state4, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
@@ -25713,7 +25713,7 @@
     return key2.replace(/^attr([A-Z])/, (_, firstChar) => firstChar.toLowerCase());
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/projection/geometry/conversion.mjs
   function convertBoundingBoxToBox({ top, left, right, bottom }) {
     return {
       x: { min: left, max: right },
@@ -25733,12 +25733,12 @@
     };
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/projection/utils/measure.mjs
   function measureViewportBox(instance, transformPoint) {
     return convertBoundingBoxToBox(transformBoxPoints(instance.getBoundingClientRect(), transformPoint));
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/element.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/animate/element.mjs
   var noProps = {};
   var getElementEffect = (element) => isSVGElement(element) ? svgSubjectEffect : styleSubjectEffect;
   var EffectSubject = class {
@@ -25771,7 +25771,7 @@
     return animateEffectSubject(effect, element, keyframes2, transition, new EffectSubject(effect, element));
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/effects/prop/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/effects/prop/index.mjs
   var propEffect = /* @__PURE__ */ createEffect((subject2, state4, key2, value) => {
     return state4.set(key2, value, () => {
       subject2[key2] = value.get();
@@ -25784,7 +25784,7 @@
     }
   });
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/FollowAnimation.mjs
   var active = /* @__PURE__ */ new Set();
   var tickAll = ({ timestamp }) => {
     active.forEach((animation) => animation.tick(timestamp));
@@ -25893,10 +25893,10 @@
     }
   };
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/utils/as-number.mjs
   var asNumber = (v) => typeof v === "number" ? v : parseFloat(v);
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/utils/follow.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/utils/follow.mjs
   function follow(value, source, options) {
     const initialValue = value.get();
     let activeAnimation = null;
@@ -25971,7 +25971,7 @@
     return unit ? v + unit : v;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/subscribe-value.mjs
   function subscribeValue(inputValues, outputValue, getLatest) {
     const update = () => outputValue.set(getLatest());
     const scheduleUpdate = () => frame2.preRender(update, false, true);
@@ -25982,7 +25982,7 @@
     });
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/transform-value.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/transform-value.mjs
   function transformValue(transform) {
     const collectedValues = [];
     collectMotionValues.current = collectedValues;
@@ -25993,7 +25993,7 @@
     return value;
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/value/spring-value.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/value/spring-value.mjs
   function springValue(source, options) {
     const value = motionValue(isMotionValue(source) ? source.get() : source);
     attachSpring(value, source, options);
@@ -26003,22 +26003,22 @@
     return follow(value, source, { ...options, type: spring });
   }
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/render/store.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/render/store.mjs
   var visualElementStore = /* @__PURE__ */ new WeakMap();
 
-  // ../../artifacts/toolchain/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/motion-dom/dist/es/animation/animate/single-value.mjs
   function animateSingleValue(value, keyframes2, options) {
     const motionValue$1 = isMotionValue(value) ? value : motionValue(value);
     motionValue$1.start(animateMotionValue("", motionValue$1, keyframes2, options));
     return motionValue$1.animation;
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/utils/is-dom-keyframes.mjs
   function isDOMKeyframes(keyframes2) {
     return typeof keyframes2 === "object" && !Array.isArray(keyframes2);
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/animate/resolve-subjects.mjs
   function resolveSubjects(subject2, keyframes2, scope, selectorCache) {
     if (subject2 == null) {
       return [];
@@ -26034,12 +26034,12 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-repeat-duration.mjs
   function calculateRepeatDuration(duration, repeat, repeatDelay) {
     return duration * (repeat + 1) + repeatDelay * repeat;
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/calc-time.mjs
   function calcNextTime(current3, next, prev, labels) {
     if (typeof next === "number") {
       return next;
@@ -26054,7 +26054,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/edit.mjs
   function eraseKeyframes(sequence, startTime, endTime) {
     for (let i = 0; i < sequence.length; i++) {
       const keyframe2 = sequence[i];
@@ -26075,7 +26075,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/normalize-times.mjs
   function normalizeTimes(times, repeat, repeatDelayUnits = 0) {
     const totalUnits = repeat + 1 + repeat * repeatDelayUnits;
     for (let i = 0; i < times.length; i++) {
@@ -26083,7 +26083,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/sequence/utils/sort.mjs
   function compareByTime(a, b) {
     if (a.at === b.at) {
       if (a.value === null)
@@ -26096,7 +26096,7 @@
     }
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/sequence/create.mjs
   var defaultSegmentEasing = "easeInOut";
   var MAX_REPEAT = 20;
   function createAnimationsFromSequence(sequence, { defaultTransition = {}, ...sequenceTransition } = {}, scope, generators) {
@@ -26278,7 +26278,7 @@
   var isNumber = (keyframe2) => typeof keyframe2 === "number";
   var isNumberKeyframesArray = (keyframes2) => keyframes2.every(isNumber);
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/animate/subject.mjs
   function isSingleValue(subject2, keyframes2) {
     return isMotionValue(subject2) || typeof subject2 === "number" || typeof subject2 === "string" && !isDOMKeyframes(keyframes2);
   }
@@ -26309,7 +26309,7 @@
     return animations;
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/animate/sequence.mjs
   function animateSequence(sequence, options, scope) {
     const animations = [];
     const processedSequence = sequence.map((segment) => {
@@ -26334,7 +26334,7 @@
     return animations;
   }
 
-  // ../../artifacts/toolchain/node_modules/framer-motion/dist/es/animation/animate/index.mjs
+  // ../../../TESTKITQ01-PI-05/testkit-v1-r3/testkit/deps/node_modules/framer-motion/dist/es/animation/animate/index.mjs
   function isSequence(value) {
     return Array.isArray(value) && value.some(Array.isArray);
   }
@@ -27066,11 +27066,25 @@
   // src/client/presentation-context.js
   function noop2() {
   }
+  var ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+  function normalizeIdentity(value) {
+    if (value === void 0 || value === null) return null;
+    if (typeof value !== "object" || Array.isArray(value)) throw new TypeError("presentation identity must be an ownerId/pigId pair");
+    const record2 = (
+      /** @type {Record<string, unknown>} */
+      value
+    );
+    if (Object.keys(record2).sort().join(",") !== "ownerId,pigId" || typeof record2.ownerId !== "string" || !ID_PATTERN.test(record2.ownerId) || typeof record2.pigId !== "string" || !ID_PATTERN.test(record2.pigId)) {
+      throw new TypeError("presentation identity must contain valid ownerId and pigId values");
+    }
+    return Object.freeze({ ownerId: record2.ownerId, pigId: record2.pigId });
+  }
   function createPresentationContext(options) {
     const opts = options ?? {};
     const root = opts.root ?? null;
     const state4 = opts.state ?? {};
     const transport = opts.transport ?? {};
+    const identity = normalizeIdentity(opts.identity);
     const parts = opts.parts ?? createScene({ root });
     const art = createArtContext({
       pig: parts.pig,
@@ -27132,11 +27146,15 @@
     const context = {
       parts,
       art,
+      artResources: art.artResources,
       audio,
       effects: effects2,
       feel: feel2,
       state: state4,
       transport,
+      get identity() {
+        return identity;
+      },
       get disposed() {
         return disposed;
       },
@@ -28275,6 +28293,7 @@
     var stageCandidate = mountOptions !== null && typeof mountOptions === "object" ? mountOptions.stage : null;
     var stageOptions = stageCandidate !== null && typeof stageCandidate === "object" && (stageCandidate.role === "stage" || stageCandidate.role === "ext") ? stageCandidate : null;
     var artResources = mountOptions !== null && typeof mountOptions === "object" ? mountOptions.artResources : null;
+    var identity = mountOptions !== null && typeof mountOptions === "object" ? mountOptions.identity : null;
     function mount() {
       if (document.querySelector("[" + MOUNTED + "]") !== null) {
         console.warn("[dsh-piggy] \u5DF2\u5B58\u5728\u5B9E\u4F8B\uFF0C\u8DF3\u8FC7\u91CD\u590D\u6302\u8F7D");
@@ -28314,7 +28333,8 @@
         } },
         getShell: feelShell,
         onGeometry: syncGeometry2,
-        artResources
+        artResources,
+        identity
       });
       var parts = presentation.parts;
       var {
@@ -28732,7 +28752,7 @@
         ),
         desktopShell: moveShell,
         feel: feel2,
-        artResources
+        artResources: presentation.artResources
       };
       var life = splitRole === "panel" || splitRole === "ext" ? null : attachLife(lifeOptions);
       ctx.life = life;
