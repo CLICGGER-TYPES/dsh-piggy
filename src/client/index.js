@@ -184,6 +184,10 @@ export function mountGame(mountOptions) {
         showLine: showLine,
         hideBubble: fx.hideBubble,
         toast: toast,
+        bindPresentationIdentity: function (value) {
+          if (stopped) return false
+          return presentation.bindIdentity(value)
+        },
         get view() { return view }, set view(next) { view = next },
         get tab() { return tab }, set tab(next) { tab = next },
         get stage() { return stage }, set stage(next) { stage = next },

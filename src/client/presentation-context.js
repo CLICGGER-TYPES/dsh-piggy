@@ -9,7 +9,9 @@
  * module-global mounted selector.
  *
  * Optional owner/pig IDs label a caller-bound instance; they are not credentials
- * or a source of state/permission. The caller shares one art registry across an
+ * or a source of state/permission. A host may bind them once from the same
+ * session-bound state response; an established presentation cannot be retargeted.
+ * The caller shares one art registry across an
  * owner's presentations, while this context owns only its art binding and audio
  * channel. There is no process-global active pig.
  * @module dsh-piggy/client/presentation-context
@@ -57,7 +59,7 @@ export function createPresentationContext(options) {
   const root = opts.root ?? null
   const state = opts.state ?? {}
   const transport = opts.transport ?? {}
-  const identity = normalizeIdentity(opts.identity)
+  let identity = normalizeIdentity(opts.identity)
   const parts = opts.parts ?? createScene({ root: root })
   const art = createArtContext({
     pig: parts.pig,
@@ -84,6 +86,16 @@ export function createPresentationContext(options) {
 
   function isQuiet() {
     return typeof state.isQuiet === 'function' ? state.isQuiet() === true : false
+  }
+
+  /** Bind identity from a session-bound host response only if this context has none yet. */
+  function bindIdentity(value) {
+    let next
+    try { next = normalizeIdentity(value) } catch { return false }
+    if (next === null) return identity === null
+    if (identity !== null) return identity.ownerId === next.ownerId && identity.pigId === next.pigId
+    identity = next
+    return true
   }
 
   const audio = createAudioChannel({ isQuiet: isQuiet })
@@ -132,6 +144,7 @@ export function createPresentationContext(options) {
     transport: transport,
     get identity() { return identity },
     get disposed() { return disposed },
+    bindIdentity: bindIdentity,
     getView: getView,
     /**
      * Create the optional birthday controller once the caller's UI context is

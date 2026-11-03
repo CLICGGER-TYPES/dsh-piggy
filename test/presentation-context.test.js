@@ -322,6 +322,13 @@ test('presentation identity is optional for the legacy single-pig caller and rej
   try {
     assert.equal(legacy.identity, null)
     assert.strictEqual(legacy.artResources, (await import('../src/client/art-path.js')).defaultArtResources)
+    assert.equal(legacy.bindIdentity({ ownerId: 'owner-one', pigId: 'pig-a' }), true,
+      'the bound host response can label an initially unbound legacy-compatible presentation')
+    assert.equal(Object.isFrozen(legacy.identity), true)
+    assert.equal(legacy.bindIdentity({ ownerId: 'owner-one', pigId: 'pig-b' }), false,
+      'a later response cannot retarget an established presentation')
+    assert.deepEqual(legacy.identity, { ownerId: 'owner-one', pigId: 'pig-a' })
+    assert.equal(legacy.bindIdentity({ ownerId: 'owner-one' }), false, 'invalid response context is ignored')
     assert.throws(() => createPresentationContext({ identity: { ownerId: 'owner-one' } }), /ownerId and pigId/)
   } finally {
     legacy.dispose()
