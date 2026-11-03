@@ -150,7 +150,7 @@ function validateManifestReceipts(raw, document) {
   return validateOwnerReceipts(JSON.parse(raw.toString('utf8')), document)
 }
 
-/** @param {Buffer} buffer @param {string} ownerId @param {string} pigId @param {number} nowMs */
+/** @param {Buffer} buffer @param {string|null} ownerId @param {string|null} pigId @param {number} nowMs */
 function parseOwnerArchive(buffer, ownerId, pigId, nowMs) {
   let files
   try { files = readZip(buffer) } catch { return null }
@@ -162,7 +162,7 @@ function parseOwnerArchive(buffer, ownerId, pigId, nowMs) {
   if (!isRecord(manifest) || Object.keys(manifest).sort().join(',') !== [...manifestKeys].sort().join(',') ||
       manifest.format !== OWNER_ARCHIVE_FORMAT || manifest.version !== OWNER_ARCHIVE_VERSION ||
       manifest.documentVersion !== OWNER_DOCUMENT_VERSION || manifest.legacyFormatVersion !== STATE_VERSION ||
-      typeof manifest.ownerId !== 'string' || !ID_PATTERN.test(manifest.ownerId) || manifest.ownerId !== ownerId ||
+      typeof manifest.ownerId !== 'string' || !ID_PATTERN.test(manifest.ownerId) || (ownerId !== null && manifest.ownerId !== ownerId) ||
       typeof manifest.createdAt !== 'number' || !Number.isSafeInteger(manifest.createdAt) || manifest.createdAt < 0 || typeof manifest.gameVersion !== 'string' ||
       !Array.isArray(manifest.pigIds) || !isRecord(manifest.files)) throw new Error('owner archive format, version or owner identity is invalid')
   const manifestRecord = /** @type {Record<string, unknown>} */ (manifest)
@@ -177,7 +177,7 @@ function parseOwnerArchive(buffer, ownerId, pigId, nowMs) {
       document.pigs.map(pig => pig.pigId).join('\0') !== manifestPigIds.join('\0')) {
     throw new Error('owner archive manifest does not match its document identities')
   }
-  if (!document.pigs.some(pig => pig.pigId === pigId)) throw new Error('requested pigId is not present in owner archive')
+  if (pigId !== null && !document.pigs.some(pig => pig.pigId === pigId)) throw new Error('requested pigId is not present in owner archive')
   const names = [...files.keys()].filter(name => name !== OWNER_ARCHIVE_MANIFEST)
   if (Object.keys(manifestFiles).length !== names.length || names.some(name => !Object.hasOwn(manifestFiles, name))) {
     throw new Error('owner archive file list does not match manifest')
@@ -224,6 +224,72 @@ function parseLegacyArchive(buffer, ownerId, pigId, nowMs) {
   }
   const warnings = [...new Set([...(parsed.warnings ?? []), ...validateSidecars(document, sidecars, nowMs)])]
   return { document, sidecars, receipts, warnings, archiveSha256: sha256(buffer), format: 'legacy-flat-v15' }
+}
+
+/** @param {import('../store/owner-document.js').OwnerDocument} document */
+function ownerArchiveSummary(document) {
+  const pigs = document.pigs.slice(0, 20).map((pig, index) => {
+    const state = pig.body
+    return {
+      label: `小猪 ${index + 1}`,
+      name: typeof state.name === 'string' ? state.name.slice(0, 40) : '未命名',
+      ageMs: Number.isFinite(state.ageMs) ? state.ageMs : null,
+      xp: Number.isFinite(state.xp) ? state.xp : null,
+      weightG: Number.isFinite(state.weightG) ? state.weightG : null,
+      wornCount: Array.isArray(state.worn) ? state.worn.length : 0,
+    }
+  })
+  const resources = document.resources
+  const hasInventory = isRecord(resources.inventory)
+  const inventory = hasInventory ? Object.values(resources.inventory) : []
+  const inventoryCount = hasInventory ? inventory.reduce((total, value) => total +
+    (typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0), 0) : null
+  const extData = isRecord(resources.extData) ? resources.extData : null
+  const farm = extData !== null && isRecord(extData.farm) ? extData.farm : null
+  const plots = farm !== null && Array.isArray(farm.plots) ? farm.plots : []
+  const planted = plots.reduce((total, plot) => total +
+    (isRecord(plot) && typeof plot.crop === 'string' ? 1 : 0), 0)
+  return {
+    pigCount: document.pigs.length,
+    pigs,
+    shared: {
+      coins: typeof resources.coins === 'number' && Number.isFinite(resources.coins) ? resources.coins : null,
+      inventoryCount,
+      garden: farm === null ? null : {
+        experience: typeof farm.exp === 'number' && Number.isFinite(farm.exp) ? farm.exp : null,
+        unlocked: typeof farm.unlocked === 'number' && Number.isSafeInteger(farm.unlocked) ? farm.unlocked : null,
+        planted,
+      },
+    },
+  }
+}
+
+/** Convert a validated flat-save ZIP into a complete one-pig archive without touching its source. */
+export function exportLegacySaveArchiveAsOwnerDocumentArchive({ archiveBuffer, ownerId, pigId, nowMs = Date.now() }) {
+  if (!Buffer.isBuffer(archiveBuffer)) throw new TypeError('legacy archive export needs ZIP bytes')
+  if (typeof ownerId !== 'string' || !ID_PATTERN.test(ownerId) || typeof pigId !== 'string' || !ID_PATTERN.test(pigId)) {
+    throw new TypeError('legacy archive export requires explicit owner and pig IDs')
+  }
+  if (!Number.isSafeInteger(nowMs) || nowMs < 0) throw new TypeError('export nowMs must be a nonnegative safe integer')
+  const parsed = parseLegacyArchive(archiveBuffer, ownerId, pigId, nowMs)
+  const documentBytes = Buffer.from(serializeOwnerDocument(parsed.document))
+  const archiveFiles = new Map([[OWNER_DOCUMENT_ENTRY, documentBytes], ...parsed.sidecars])
+  if (parsed.receipts !== null) archiveFiles.set(OWNER_RECEIPTS_ENTRY, Buffer.from(JSON.stringify(parsed.receipts)))
+  const fileRecords = Object.fromEntries([...archiveFiles].map(([name, body]) => [name, { size: body.length, sha256: sha256(body) }]))
+  const manifest = {
+    format: OWNER_ARCHIVE_FORMAT,
+    version: OWNER_ARCHIVE_VERSION,
+    documentVersion: parsed.document.documentVersion,
+    legacyFormatVersion: parsed.document.legacyFormat.version,
+    createdAt: nowMs,
+    gameVersion: PACKAGE_VERSION,
+    ownerId,
+    pigIds: [pigId],
+    files: fileRecords,
+  }
+  const buffer = makeZip([...archiveFiles, [OWNER_ARCHIVE_MANIFEST, Buffer.from(JSON.stringify(manifest))]])
+  readZip(buffer)
+  return { buffer, name: 'piggy-owner-save.zip', ownerId, pigIds: [pigId], warnings: parsed.warnings }
 }
 
 /** 完整导出 owner 文档、已支持 sidecars 与收据；设备 localStorage/cloud settings 不属于存档。 */
@@ -290,10 +356,11 @@ export function exportOwnerDocumentArchive({ ownerDocumentPath, ownerId, nowMs =
 }
 
 /** Preview is read-only; importing never merges into or overwrites an existing owner root. */
-export function createOwnerDocumentArchiveImporter({ ownerDocumentPath, ownerId, pigId, now = Date.now }) {
+export function createOwnerDocumentArchiveImporter({ ownerDocumentPath, ownerId = null, pigId = null, allowLegacy = true, now = Date.now }) {
   if (typeof ownerDocumentPath !== 'string' || !isAbsolute(ownerDocumentPath) ||
-      typeof ownerId !== 'string' || !ID_PATTERN.test(ownerId) || typeof pigId !== 'string' || !ID_PATTERN.test(pigId)) {
-    throw new TypeError('importer needs explicit ownerDocumentPath, ownerId and initial pigId')
+      (ownerId !== null && (typeof ownerId !== 'string' || !ID_PATTERN.test(ownerId))) ||
+      (pigId !== null && (typeof pigId !== 'string' || !ID_PATTERN.test(pigId))) || typeof allowLegacy !== 'boolean') {
+    throw new TypeError('importer needs an absolute target and valid optional identity context')
   }
   const previews = new Map()
   function preview(input) {
@@ -306,16 +373,23 @@ export function createOwnerDocumentArchiveImporter({ ownerDocumentPath, ownerId,
       const parentStat = lstatSync(parent)
       if (!parentStat.isDirectory() || parentStat.isSymbolicLink()) throw new Error('owner import target parent must be a real directory')
       const ownerArchive = parseOwnerArchive(input, ownerId, pigId, now())
-      const parsed = ownerArchive ?? parseLegacyArchive(input, ownerId, pigId, now())
+      if (ownerArchive === null && !allowLegacy) throw new Error('请选择完整存档 ZIP；单猪存档请使用当前小猪存档入口')
+      const parsed = ownerArchive ?? parseLegacyArchive(input, ownerId ?? randomUUID(), pigId ?? randomUUID(), now())
       const token = randomUUID()
       previews.clear()
       previews.set(token, { parsed, expires: now() + PREVIEW_TTL_MS })
+      const initialPigId = pigId ?? parsed.document.pigs[0]?.pigId
+      if (typeof initialPigId !== 'string' || !parsed.document.pigs.some(pig => pig.pigId === initialPigId)) {
+        throw new Error('owner archive has no available pig target')
+      }
       return {
         ok: true,
         token,
         format: parsed.format,
         ownerId: parsed.document.ownerId,
         pigIds: parsed.document.pigs.map(pig => pig.pigId),
+        initialPigId,
+        summary: ownerArchiveSummary(parsed.document),
         sharedResources: Object.keys(parsed.document.resources),
         warnings: [...parsed.warnings],
         deviceSettings: 'excluded',
@@ -344,7 +418,8 @@ export function createOwnerDocumentArchiveImporter({ ownerDocumentPath, ownerId,
         pigIds: entry.parsed.document.pigs.map(pig => pig.pigId),
       })
       previews.delete(token)
-      return { ok: true, ownerId: result.document.ownerId, pigIds: result.document.pigs.map(pig => pig.pigId), cleanupDeferred: result.cleanupDeferred }
+      return { ok: true, ownerId: result.document.ownerId, pigIds: result.document.pigs.map(pig => pig.pigId),
+        initialPigId: pigId ?? result.document.pigs[0]?.pigId, cleanupDeferred: result.cleanupDeferred }
     } catch (error) {
       return { ok: false, reason: error instanceof Error ? error.message : 'owner archive import failed' }
     }

@@ -152,6 +152,17 @@ contextBridge.exposeInMainWorld('piggyShell', {
       return ipcRenderer.invoke('piggy:save-archive', { name: String(name), bytes })
     },
   },
+  /** Complete owner archive; import is staged by the host and switched only after the current host saves. */
+  ownerArchives: {
+    status: () => ipcRenderer.invoke('piggy:owner-archive:status'),
+    export: () => ipcRenderer.invoke('piggy:owner-archive:export'),
+    preview: bytes => {
+      if (!(bytes instanceof Uint8Array)) return Promise.resolve({ ok: false, reason: '存档数据格式不正确' })
+      if (bytes.byteLength === 0 || bytes.byteLength > MAX_SAVE_BYTES) return Promise.resolve({ ok: false, reason: '存档大小无效或超过 128 MiB' })
+      return ipcRenderer.invoke('piggy:owner-archive:preview', bytes)
+    },
+    importAndSwitch: (token, options) => ipcRenderer.invoke('piggy:owner-archive:import-and-switch', String(token), { acceptWarnings: options?.acceptWarnings === true }),
+  },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
   /** 这个页面在哪个窗口里：'pet'、'panel'，或者扩展的大窗口 'ext'（外壳 0.6.5 起）。 */

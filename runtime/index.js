@@ -25,6 +25,9 @@ import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 import { createOwnerDocumentRuntime } from './owner-document-runtime.js'
 export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWorkEvent } from './work-events.js'
 
+/** Explicit marker checked by the desktop before an OwnerDocument path reaches this runtime. */
+export const OWNER_ARCHIVE_RUNTIME_API_VERSION = 1
+
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
  * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object,
  * cloudSave?:{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,insecureSkipTlsVerify?:boolean,syncReady?:boolean}|null,

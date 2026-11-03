@@ -74,6 +74,19 @@ test('saveArchive opens only a ZIP save dialog and writes the selected destinati
   assert.deepEqual(f.writes[0].bytes, Buffer.from(ZIP_BYTES))
 })
 
+test('saveArchive accepts only the dated complete-owner archive filename family', async () => {
+  const accepted = setup()
+  assert.deepEqual(await saveArchive({ dialog: accepted.dialog, downloadsDir: '/downloads',
+    name: 'piggy-owner-save-20261103-1430.zip', bytes: ZIP_BYTES, writeFile: accepted.writeFile }), { ok: true })
+  assert.equal(accepted.calls.length, 1)
+  const rejected = setup()
+  const result = await saveArchive({ dialog: rejected.dialog, downloadsDir: '/downloads',
+    name: 'piggy-owner-save-anything.zip', bytes: ZIP_BYTES, writeFile: rejected.writeFile })
+  assert.equal(result.ok, false)
+  assert.equal(rejected.calls.length, 0)
+  assert.equal(rejected.writes.length, 0)
+})
+
 test('saveArchive waits for asynchronous writes before reporting success', async () => {
   const f = setup()
   let finish, reported = false

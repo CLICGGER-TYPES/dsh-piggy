@@ -82,6 +82,10 @@ function fakeShell() {
 test('pet controllers keep shell and lifecycle state per renderer and start only once', () => {
   const docA = fakeDocument(), winA = fakeWindow(), a = fakeShell()
   const docB = fakeDocument(), winB = fakeWindow(), b = fakeShell()
+  const ownerArchivesA = { status() { return 'panel-only bridge from preload' } }
+  const ownerArchivesB = { status() { return 'second renderer bridge' } }
+  a.shell.ownerArchives = ownerArchivesA
+  b.shell.ownerArchives = ownerArchivesB
   let hostReadsA = 0, hostReadsB = 0
   const controllerA = createPetController({ shell: a.shell, documentObject: docA, windowObject: winA,
     getHost: () => { hostReadsA += 1; return null } })
@@ -111,6 +115,8 @@ test('pet controllers keep shell and lifecycle state per renderer and start only
   assert.ok(hostReadsB > 0)
   assert.notEqual(winA.__dshPiggyShell, winB.__dshPiggyShell)
   assert.notEqual(winA.__dshPiggyShell.panel.toggle, winB.__dshPiggyShell.panel.toggle)
+  assert.equal(winA.__dshPiggyShell.ownerArchives, ownerArchivesA, 'pet adapter preserves its renderer-specific preload bridge')
+  assert.equal(winB.__dshPiggyShell.ownerArchives, ownerArchivesB, 'another pet adapter cannot reuse a stale bridge')
   winA.__dshPiggyShell.panel.toggle(true)
   winB.__dshPiggyShell.panel.toggle(false)
   assert.deepEqual(a.calls.panelToggle, [[true, null]])
