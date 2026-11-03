@@ -76,7 +76,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 - **是什么**：一只「QQ 宠物」式的电子猪。同一份代码有两种形态：**DSH 插件**（住在 DeepSeek Harness 网页里）和**桌面版**（Electron，Windows / Linux / macOS）。
 - **稳定代码入口**：项目总目录中的 `code/`（当前 main）；已复核候选另保留在总目录 `worktrees/runtime-c/`。远端 GitHub `CLICGGER-TYPES/dsh-piggy` 和 Gitee `clicgger/dsh-piggy` 的发布仍按第 9 节流程执行。
-- **每次改完必跑**：`npm run build && npm test && npm run typecheck`（历史整合主机全量 1124 项；最新候选结果以本页当前状态与对应验证记录为准）。
+- **改完跑什么（按测试分层，详见 `AGENTS.md`）**：本地改动跑相关单测 + `npm run build` + `npm run typecheck`（L1）；全量 `npm test` 在合并前/CI 跑，不要每次改完都全量（L2/L4）。UI 改动用开发构建真实看一遍，不重新打包；只有打包/更新/安装器/平台路径改动或候选冻结时才打一次包。
 - **「怎么加 X」先看 `docs/guides/`**：[开发新功能（总则）](guides/adding-features.md)、[写扩展](guides/writing-extensions.md)、[加台词](guides/adding-lines.md)、[加成就](guides/adding-achievements.md)、[界面规范](guides/ui-style.md)、[桌面架构与 IPC](guides/desktop-architecture.md)。
 - **用户报问题时先让他导出日志**：「设置 → 日志 → 导出日志」，一份文件里同时有宿主、浏览器和桌面外壳三边的现场（见 [日志与导出](design/log-export.md)）。
 - **发版**：改版本号 + 写 CHANGELOG → 提交 → 推 `v*` 标签 → GitHub Actions 发 GitHub、并构建 Gitee 渠道的包 → **本机**跑 `scripts/gitee-publish.sh` 推 Gitee → npm 由人手动发。详见第 9 节。
