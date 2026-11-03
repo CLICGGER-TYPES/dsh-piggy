@@ -32,6 +32,7 @@ import {
   assertLiveSession,
   bindRuntimeSession,
   createSessionBinding,
+  createOwnerLanSessionBinding,
 } from './session-context.js'
 import { WORK_EVENT_WINDOW_MS, validateWorkEvent, workError } from './work-events.js'
 import { readWorkJson, removeWorkFile, writeWorkJson } from './work-files.js'
@@ -458,7 +459,8 @@ export function createOwnerDocumentRuntime(options) {
     }
     const internals = store[STORE_INTERNALS]
     if (internals === undefined || internals === null) throw new Error('owner target store internals missing')
-    const session = createSessionBinding({
+    const createBinding = transport?.kind === SESSION_TRANSPORT.LAN ? createOwnerLanSessionBinding : createSessionBinding
+    const session = createBinding({
       scope: SESSION_SCOPE.HOST_RUNTIME,
       transport,
       application: internals.application,

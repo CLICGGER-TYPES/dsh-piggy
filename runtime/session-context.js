@@ -69,15 +69,12 @@ export class SessionBoundaryError extends Error {
 /** @param {unknown} value @returns {value is Record<string, any>} */
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 
-/**
- * @param {unknown} input
- * @returns {{kind:string, origin:string}}
- */
-function normalizeTransport(input) {
+/** @param {unknown} input @param {boolean} [allowPairedOwnerLan] @returns {{kind:string,origin:string}} */
+function normalizeTransport(input, allowPairedOwnerLan = false) {
   if (!isRecord(input)) throw new TypeError('session binding needs an explicit transport')
   const kind = typeof input.kind === 'string' ? input.kind : ''
   if (!TRANSPORT_KINDS.includes(kind)) throw new TypeError(`unknown session transport: ${kind}`)
-  if (UNSUPPORTED_TRANSPORTS.has(kind)) {
+  if (UNSUPPORTED_TRANSPORTS.has(kind) || (kind === SESSION_TRANSPORT.LAN && !allowPairedOwnerLan)) {
     throw new SessionBoundaryError(SESSION_BOUNDARY.UNSUPPORTED_PERSISTENCE, `${kind} transport is declared but not implemented`)
   }
   const origin = typeof input.origin === 'string' && input.origin !== '' ? input.origin : ''
@@ -103,13 +100,14 @@ const issuedSessions = new WeakSet()
  * 建立一个显式会话能力。必须给出 scope、transport 和 application 或 capability；
  * 不读取任何“当前猪/当前文件”全局槽位。
  * @param {SessionCreateOptions} options
+ * @param {boolean} [allowPairedOwnerLan] 是否由 OwnerDocument runtime 配对入口调用
  * @returns {SessionBinding}
  */
-export function createSessionBinding(options) {
+function createSessionBindingInternal(options, allowPairedOwnerLan = false) {
   if (!isRecord(options)) throw new TypeError('session binding needs explicit options')
   const scope = typeof options.scope === 'string' ? options.scope : ''
   if (scope === '') throw new TypeError('session binding needs an explicit scope')
-  const transport = normalizeTransport(options.transport)
+  const transport = normalizeTransport(options.transport, allowPairedOwnerLan)
   const application = options.application ?? null
   if (application !== null && (typeof application.assertScope !== 'function' || application.scope === undefined)) {
     throw new TypeError('session binding application must be a live application context')
@@ -174,6 +172,30 @@ export function createSessionBinding(options) {
   }
   issuedSessions.add(binding)
   return Object.freeze(binding)
+}
+
+/**
+ * 普通调用方不能自行声明 LAN transport；OwnerDocument runtime 只在服务端完成配对和
+ * roster 校验后调用此入口创建 host-runtime 绑定。
+ * @param {SessionCreateOptions} options
+ * @returns {SessionBinding}
+ */
+export function createOwnerLanSessionBinding(options) {
+  if (!isRecord(options) || options.scope !== SESSION_SCOPE.HOST_RUNTIME ||
+      options.transport?.kind !== SESSION_TRANSPORT.LAN || options.application == null || options.commands == null) {
+    throw new SessionBoundaryError(SESSION_BOUNDARY.UNSUPPORTED_PERSISTENCE,
+      'LAN sessions require a paired OwnerDocument host runtime')
+  }
+  return createSessionBindingInternal(options, true)
+}
+
+/**
+ * 建立普通会话能力；任意调用方不能借此伪造 LAN 配对。
+ * @param {SessionCreateOptions} options
+ * @returns {SessionBinding}
+ */
+export function createSessionBinding(options) {
+  return createSessionBindingInternal(options)
 }
 
 /**
