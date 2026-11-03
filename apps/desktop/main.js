@@ -31,6 +31,7 @@ import { createDesktopRuntime } from './lib/desktop-runtime.js'
 import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
+import { readOwnerDocumentConfig } from './lib/owner-document-config.js'
 import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
 import { recoverBounds, recoveryPayload } from './lib/pig-recovery.js'
 import { createProxy } from './lib/proxy.js'
@@ -64,6 +65,7 @@ import { registerUpdatesIpc } from './lib/ipc/updates.js'
 const { autoUpdater } = updaterPackage
 
 const HERE = dirname(fileURLToPath(import.meta.url))
+const ownerDocumentConfig = readOwnerDocumentConfig()
 
 /**
  * 帧率：**不设上限，跟显示器刷新率同步**（Chromium 默认就是 vsync）。
@@ -1541,10 +1543,14 @@ app.whenReady().then(async () => {
   }
   const gameDir = await desktopRuntime.getVersions().activeDir()
   if (desktopLifecycle.quitting) return
-  const workEventsDirectory = join(app.getPath('userData'), 'work-endpoint')
+  const hostStatePath = ownerDocumentConfig?.ownerDocumentPath ?? statePath()
+  const workEventsDirectory = ownerDocumentConfig
+    ? `${ownerDocumentConfig.ownerDocumentPath}.work-events`
+    : join(app.getPath('userData'), 'work-endpoint')
   const localCloudSettings = cloudSaveSettings.load()
-  await desktopRuntime.startHost(gameDir, statePath(), { fetch: net.fetch.bind(net), workEventsDirectory,
-    cloudSave: localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null,
+  await desktopRuntime.startHost(gameDir, hostStatePath, { fetch: net.fetch.bind(net), workEventsDirectory,
+    cloudSave: ownerDocumentConfig ? null : (localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null),
+    ...(ownerDocumentConfig === null ? {} : { ownerDocument: ownerDocumentConfig }),
     optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
     workEventsAutoStart: process.argv.includes('--work-events'),
     onConfirm: plan => confirmMerge(plan),
@@ -1557,12 +1563,14 @@ app.whenReady().then(async () => {
   if (desktopLifecycle.quitting) return
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
   ensurePanelWindow()
-  externalManager = createExternalManager({
-    userData: app.getPath('userData'), host: desktopRuntime.getHost(), appVersion: app.getVersion(), log,
-    onConfirm: plan => confirmMerge(plan),
-  })
-  try { await externalManager.init() } catch (error) { log('external manager init failed', String(error)) }
-  if (desktopLifecycle.quitting) return
+  if (ownerDocumentConfig === null) {
+    externalManager = createExternalManager({
+      userData: app.getPath('userData'), host: desktopRuntime.getHost(), appVersion: app.getVersion(), log,
+      onConfirm: plan => confirmMerge(plan),
+    })
+    try { await externalManager.init() } catch (error) { log('external manager init failed', String(error)) }
+    if (desktopLifecycle.quitting) return
+  }
   log('panel preloaded', JSON.stringify({ visible: getPanelWindow().isVisible(), focused: getPanelWindow().isFocused() }))
   await startFullscreenWatch()
   if (desktopLifecycle.quitting) return

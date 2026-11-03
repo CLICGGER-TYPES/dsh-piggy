@@ -16,6 +16,12 @@ export const name = 'dsh-piggy'
 export const inject = []
 
 export function apply(ctx, config = {}) {
+  if (Object.hasOwn(config, 'ownerDocumentPath')) {
+    if (typeof config.ownerDocumentPath !== 'string' || config.ownerDocumentPath.trim() === '') {
+      throw new TypeError('ownerDocumentPath opt-in must be a non-empty explicit path')
+    }
+    return applyOwnerDocumentOptIn(ctx, config)
+  }
   const command = typeof config.command === 'string' && /^[a-z][a-z0-9-]{0,23}$/.test(config.command)
     ? config.command : 'pig'
   const customPath = typeof config.statePath === 'string' && config.statePath.trim() !== ''
@@ -226,6 +232,79 @@ export function apply(ctx, config = {}) {
     unmountEmbedded()
     unmountPanel()
     unmountManagement()
+    const old = runtime
+    runtime = null
+    await old?.dispose()
+  })
+}
+
+/**
+ * 隔离候选 opt-in：不装载外部连接/云同步控制器，仍暴露同一单猪 state/act 路由和命令形状。
+ * 多 target 只能由显式 OwnerRuntime session 调用，不从公共请求参数猜目标。
+ */
+function applyOwnerDocumentOptIn(ctx, config) {
+  const command = typeof config.command === 'string' && /^[a-z][a-z0-9-]{0,23}$/.test(config.command)
+    ? config.command : 'pig'
+  const ownerDocumentPath = config.ownerDocumentPath
+  let runtime = null
+  let unmount = null
+  let closed = false
+
+  function ensureRuntime() {
+    if (closed) throw new Error('dsh-piggy disposed')
+    if (runtime !== null) return runtime
+    runtime = createGameRuntime({
+      statePath: ownerDocumentPath,
+      ownerDocumentPath,
+      legacyStatePath: config.legacyStatePath,
+      ownerId: config.ownerId,
+      pigId: config.pigId,
+      journalHeader: environmentNote({
+        运行形态: 'DSH OwnerDocument opt-in',
+        存档路径: ownerDocumentPath,
+        Node: process.version,
+      }),
+    })
+    return runtime
+  }
+
+  const observer = createWorkObserver({ accept: event => {
+    const current = ensureRuntime()
+    return current.acceptWorkEvent(event, sessionOf(current))
+  }, source: 'dsh', producer: randomUUID(), warn: message => console.warn(`[dsh-piggy] ${message}`) })
+  const observe = type => observer.observe(type)
+  ctx.on('agent/inbox/claimed', () => observe('message'))
+  ctx.on('agent/turn-stopping', () => observe('turn'))
+  ctx.on('agent/error', () => observe('agentError'))
+  ctx.on('tools/result', (_exec, result) => observe(result?.isError === true ? 'toolError' : 'tool'))
+
+  ctx.inject(['webServer'], webCtx => {
+    const webServer = webCtx.webServer
+    if (webServer === undefined || webServer === null) return () => {}
+    const current = ensureRuntime()
+    unmount = current.mountRoutes(webServer, sessionOf(current))
+    return () => { unmount?.(); unmount = null }
+  })
+
+  ctx.inject(['commands'], commandCtx => commandCtx.commands.register({
+    name: command,
+    description: 'your pig 🐖: status · study · work · shop · travel · bag',
+    input: { hint: '[hatch|feed|bathe|play|pet|study <科目>|work <job>|trip <目的地>|shop|buy|use|weigh|about]' },
+    handler: invocation => {
+      try {
+        const current = ensureRuntime()
+        return current.dispatchCommand(command, String(invocation.rawInput ?? ''), sessionOf(current))
+      } catch (error) {
+        return { kind: 'error', text: `🐖 猪摔了一跤：${error instanceof Error ? error.message : String(error)}` }
+      }
+    },
+  }))
+
+  ctx.effect(() => async () => {
+    closed = true
+    observer.dispose()
+    unmount?.()
+    unmount = null
     const old = runtime
     runtime = null
     await old?.dispose()
