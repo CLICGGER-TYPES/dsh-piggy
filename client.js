@@ -20130,6 +20130,10 @@
     return { x: home.x - offset.x, y: home.y - offset.y };
   }
   var PIG_SCREEN_KEY = "dsh-piggy:desktop-pig";
+  var PIG_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+  function pigScreenKey(pigId) {
+    return typeof pigId === "string" && PIG_ID_PATTERN.test(pigId) ? PIG_SCREEN_KEY + ":" + pigId : null;
+  }
   var STORE_VERSION = 3;
   function inside(area, point) {
     return point.x >= area.x && point.x < area.x + area.width && point.y >= area.y && point.y < area.y + area.height;
@@ -20147,7 +20151,10 @@
     }
     return ranges.find((a) => point.x >= a.x && point.x <= a.x + a.width) ?? fallback;
   }
-  function createPlacement() {
+  function createPlacement(options = {}) {
+    const scopedKey = pigScreenKey(options.pigId);
+    const primary = scopedKey !== null && options.primary === true;
+    const writesLegacy = scopedKey === null || primary;
     let home = null;
     let pending2 = (
       /** @type {any} */
@@ -20156,15 +20163,23 @@
     let stored = "";
     let lastClamp = { dx: 0, dy: 0 };
     let lastPigSize = { width: 56, height: 56 };
-    function readSaved() {
+    function readKey(key2) {
       let raw = null;
       try {
-        raw = JSON.parse(localStorage.getItem(PIG_SCREEN_KEY) || "null");
+        raw = JSON.parse(localStorage.getItem(key2) || "null");
       } catch {
         return null;
       }
       if (raw === null || typeof raw !== "object" || !Number.isFinite(raw.x) || !Number.isFinite(raw.y)) return null;
       return raw;
+    }
+    function readSaved() {
+      if (scopedKey !== null) {
+        const scoped = readKey(scopedKey);
+        if (scoped !== null) return scoped;
+        if (!primary) return null;
+      }
+      return readKey(PIG_SCREEN_KEY);
     }
     function homeFromSaved(raw, pigSize2, areas) {
       const list = Array.isArray(areas) ? areas : [];
@@ -20198,9 +20213,17 @@
       const key2 = JSON.stringify(payloadFor(home, areas));
       if (key2 === stored) return;
       stored = key2;
-      try {
-        localStorage.setItem(PIG_SCREEN_KEY, key2);
-      } catch {
+      if (scopedKey !== null) {
+        try {
+          localStorage.setItem(scopedKey, key2);
+        } catch {
+        }
+      }
+      if (writesLegacy) {
+        try {
+          localStorage.setItem(PIG_SCREEN_KEY, key2);
+        } catch {
+        }
       }
     }
     function decide(report, bounds2, areas) {
@@ -20363,7 +20386,7 @@
       return typeof shell2.geometry === "function" ? shell2.geometry() : null;
     }
     const measure = createMeasure({ platform: shell2.platform || "", geometry });
-    const placement = createPlacement();
+    const placement = createPlacement({ pigId: deps.pigId ?? null, primary: deps.primary === true });
     function layoutStale(win) {
       return Math.abs(deps.windowObject.innerWidth - win.width) > 1 || Math.abs(deps.windowObject.innerHeight - win.height) > 1;
     }
@@ -20533,6 +20556,8 @@
   // src/client/desktop/pet-controller.js
   function createPetController(deps) {
     const shell2 = deps.shell;
+    const pigId = typeof deps.pigId === "string" ? deps.pigId : null;
+    const primary = pigId !== null && deps.primary === true;
     let dragSlide = { x: 0, y: 0 };
     let flying = false;
     let installed3 = false;
@@ -20570,7 +20595,9 @@
       getHost: host2,
       isDragging: dragging,
       isFlying: () => flying,
-      setHitRects: input.setHitRects
+      setHitRects: input.setHitRects,
+      pigId,
+      primary
     });
     const flight = createFlightBridge({
       shell: shell2,
@@ -20612,6 +20639,10 @@
         if (!adapterInstalled) {
           const adapter = {
             role: "pet",
+            /** 多猪：这个宠物窗口自己的身份；旧外壳/单猪时 pigId 是 null，不暴露 multiPig。 */
+            pigId,
+            primary,
+            ...pigId !== null ? { multiPig: true } : {},
             proxy: shell2.proxy,
             cloudSave: shell2.cloudSave,
             saves: shell2.saves,
@@ -20808,7 +20839,12 @@
   ].join("\n");
 
   // src/client/desktop/index.js
-  var DESKTOP_VERSION = 6;
+  var DESKTOP_VERSION = 7;
+  var PIG_ID_PATTERN2 = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+  function pigContext(shell2) {
+    const pigId = typeof shell2?.pigId === "string" && PIG_ID_PATTERN2.test(shell2.pigId) ? shell2.pigId : null;
+    return { pigId, primary: pigId !== null && shell2.primary === true };
+  }
   var installed2 = false;
   var started = false;
   var installing = false;
@@ -20872,10 +20908,13 @@
         window.__dshPiggyShellOutdated = true;
       }
       if (petController === null) {
+        const { pigId, primary } = pigContext(shell2);
         petController = createPetController({
           shell: shell2,
           documentObject: document,
           windowObject: window,
+          pigId,
+          primary,
           // Compatibility getter for the existing single-pig page. New callers can
           // provide an instance-scoped root through createPetController directly.
           getHost: () => document.querySelector("[data-dsh-pig]")

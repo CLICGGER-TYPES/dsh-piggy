@@ -27,6 +27,14 @@ function topLeftAtFeet(home, size) {
 }
 
 const PIG_SCREEN_KEY = 'dsh-piggy:desktop-pig'
+/** 多猪：每只猪一个位置键；pigId 非法/缺失时返回 null（退回旧单猪键）。 */
+const PIG_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
+
+/** @param {unknown} pigId @returns {string|null} */
+export function pigScreenKey(pigId) {
+  return typeof pigId === 'string' && PIG_ID_PATTERN.test(pigId) ? PIG_SCREEN_KEY + ':' + pigId : null
+}
+
 const STORE_VERSION = 3
 
 /** @param {{x:number,y:number,width:number,height:number}} area @param {{x:number,y:number}} point */
@@ -51,7 +59,17 @@ function horizontalSpan(point, areas, fallback) {
   return ranges.find(a => point.x >= a.x && point.x <= a.x + a.width) ?? fallback
 }
 
-export function createPlacement() {
+/**
+ * @param {{pigId?: string|null, primary?: boolean, platform?: string}} [options]
+ *   pigId 合法时位置写各窗口自己的键；primary 额外读写旧单猪键（舞台兼容 + 首次迁移）。
+ *   旧外壳没有 pigId，仍只用旧键。
+ */
+export function createPlacement(options = {}) {
+  const scopedKey = pigScreenKey(options.pigId)
+  const primary = scopedKey !== null && options.primary === true
+  // 多猪主猪：写自己的键，同时继续写旧键，舞台/旧页面读到的还是主猪的家。
+  // 非主猪：只碰 scoped 键。没有 pigId：只碰旧键（旧外壳/网页版）。
+  const writesLegacy = scopedKey === null || primary
   /** 猪脚底中心的屏幕点；还不知道就是 null。 */
   let home = null
   /** 存档里读出来、还没换算成家的位置（v2 旧格式存的是左上角，要等知道猪多大才能换算）。 */
@@ -61,12 +79,26 @@ export function createPlacement() {
   let lastClamp = { dx: 0, dy: 0 }
   let lastPigSize = { width: 56, height: 56 }
 
-  /** 读存档：v3 存脚底中心相对工作区的偏移；v2 存左上角（可能带猪大小）；更早的是绝对坐标。 */
-  function readSaved() {
+  /** 读一个键里的原始存档；坏数据当没有。 */
+  function readKey(key) {
     let raw = null
-    try { raw = JSON.parse(localStorage.getItem(PIG_SCREEN_KEY) || 'null') } catch { return null }
+    try { raw = JSON.parse(localStorage.getItem(key) || 'null') } catch { return null }
     if (raw === null || typeof raw !== 'object' || !Number.isFinite(raw.x) || !Number.isFinite(raw.y)) return null
     return raw
+  }
+
+  /**
+   * 读存档：v3 存脚底中心相对工作区的偏移；v2 存左上角（可能带猪大小）；更早的是绝对坐标。
+   * scoped 键优先。主猪 scoped 还没有时读旧键（首次启动迁移）；非主猪不读旧键。
+   * 没有 pigId 时和以前一样只读旧键。
+   */
+  function readSaved() {
+    if (scopedKey !== null) {
+      const scoped = readKey(scopedKey)
+      if (scoped !== null) return scoped
+      if (!primary) return null
+    }
+    return readKey(PIG_SCREEN_KEY)
   }
 
   /** 存档 → 家（屏幕上的脚底中心）。显示器拔了就落到最近的屏上（用户 2026-10-06 确认这是预期行为）。 */
@@ -105,13 +137,18 @@ export function createPlacement() {
       : { v: STORE_VERSION, area: { x: area.x, y: area.y, width: area.width, height: area.height }, x: point.x - area.x, y: point.y - area.y }
   }
 
-  /** 家写进存档（只在家变了的时候写）。 */
+  /** 家写进存档（只在家变了的时候写）；主猪同时写旧键，非主猪只写自己的键。 */
   function persist(areas) {
     if (home === null) return
     const key = JSON.stringify(payloadFor(home, areas))
     if (key === stored) return
     stored = key
-    try { localStorage.setItem(PIG_SCREEN_KEY, key) } catch { /* 存不下就下次从默认位置开始 */ }
+    if (scopedKey !== null) {
+      try { localStorage.setItem(scopedKey, key) } catch { /* 存不下就下次从默认位置开始 */ }
+    }
+    if (writesLegacy) {
+      try { localStorage.setItem(PIG_SCREEN_KEY, key) } catch { /* 同上 */ }
+    }
   }
 
   /**

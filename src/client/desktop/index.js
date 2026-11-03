@@ -6,7 +6,16 @@ import { installExt } from './ext-window.js'
 import { DESKTOP_CSS } from './css.js'
 
 /** Page ↔ desktop-shell protocol; geometry changes do not add a shell capability. */
-export const DESKTOP_VERSION = 6
+export const DESKTOP_VERSION = 7
+
+/** Same whitelist as the owner document and preload: alphanumeric first, ._:- after, ≤128. */
+const PIG_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
+
+/** Read the pet identity from the preload shell; old shells have no pigId and stay single-pig. */
+function pigContext(shell) {
+  const pigId = typeof shell?.pigId === 'string' && PIG_ID_PATTERN.test(shell.pigId) ? shell.pigId : null
+  return { pigId, primary: pigId !== null && shell.primary === true }
+}
 
 let installed = false
 let started = false
@@ -76,10 +85,13 @@ export function install(shell) {
       ;/** @type {any} */ (window).__dshPiggyShellOutdated = true
     }
     if (petController === null) {
+      const { pigId, primary } = pigContext(shell)
       petController = createPetController({
         shell,
         documentObject: document,
         windowObject: window,
+        pigId,
+        primary,
         // Compatibility getter for the existing single-pig page. New callers can
         // provide an instance-scoped root through createPetController directly.
         getHost: () => document.querySelector('[data-dsh-pig]'),
