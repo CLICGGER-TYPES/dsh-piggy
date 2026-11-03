@@ -554,8 +554,10 @@ test('新开荒地：六块无旱，每块有草或杂草；除草、铲杂草�
   let draw = 0
   setRandom(() => [0.1, 0.1, 0.9, 0.2, 0.9][draw++ % 5])
   const data = farm.init(), t = fakeApi()
+  // 新地的 dry:0 是内部哨兵；本用例测杂草/留茬/照料，先显式清掉，避免依赖当天晴雨。
+  for (const plot of data.plots.slice(0, 6)) plot.pests.dry = null
   const plots = farm.view(data, t.api).plots.slice(0, 6)
-  assert.equal(plots.filter(plot => plot.pests.includes('dry')).length, 0, 'v6 初始化检查点结清空地干旱')
+  assert.equal(plots.filter(plot => plot.pests.includes('dry')).length, 0, '空地没有待处理的干旱')
   assert.ok(plots.every(plot => plot.stubble || plot.pests.includes('weed')))
   assert.ok(plots.filter(plot => plot.pests.includes('weed')).length > 3)
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
