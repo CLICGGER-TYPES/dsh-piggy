@@ -3168,7 +3168,11 @@
     ["gacha-gold", "\u91D1\u8272\u60CA\u559C", "gacha", "\u626D\u86CB", "gold", "total", 1, "\u6B21", "\u83B7\u5F97\u4E00\u6B21\u91D1\u8272\u626D\u86CB\u5956\u52B1\uFF0C\u4FDD\u5E95\u83B7\u5F97\u7684\u4E5F\u7B97\u3002"],
     ["blindbox-first", "\u6446\u4EF6\u65B0\u670B\u53CB", "blindbox", "\u76F2\u76D2", "figure", "kinds", 1, "\u79CD", "\u5F97\u5230\u7B2C\u4E00\u4E2A\u6446\u4EF6\uFF0C\u5BFB\u8BBF\u548C\u51ED\u8BC1\u5151\u6362\u90FD\u7B97\u3002"],
     ["blindbox-ten", "\u5C0F\u732A\u6536\u85CF\u5BB6", "blindbox", "\u76F2\u76D2", "figure", "kinds", 10, "\u79CD", "\u62E5\u6709\u8FC7\u5341\u79CD\u4E0D\u540C\u6446\u4EF6\uFF0C\u91CD\u590D\u6446\u4EF6\u4E0D\u589E\u52A0\u79CD\u7C7B\u3002"],
-    ["blindbox-six", "\u516D\u661F\u76F8\u9047", "blindbox", "\u76F2\u76D2", "six-star", "kinds", 1, "\u79CD", "\u5F97\u5230\u4E00\u4E2A\u516D\u661F\u6446\u4EF6\uFF0C\u51ED\u8BC1\u5151\u6362\u4E5F\u80FD\u8FBE\u6210\u3002"]
+    ["blindbox-six", "\u516D\u661F\u76F8\u9047", "blindbox", "\u76F2\u76D2", "six-star", "kinds", 1, "\u79CD", "\u5F97\u5230\u4E00\u4E2A\u516D\u661F\u6446\u4EF6\uFF0C\u51ED\u8BC1\u5151\u6362\u4E5F\u80FD\u8FBE\u6210\u3002"],
+    // 第二期继续消费已有公共事件，不读取扩展私有数据。
+    ["farm-hundred", "\u767E\u6B21\u4E30\u6536", "farm", "\u83DC\u56ED", "harvest", "total", 100, "\u6B21", "\u7D2F\u8BA1\u6210\u529F\u6536\u83B7\u4E00\u767E\u6B21\u4F5C\u7269\uFF0C\u6BCF\u5757\u5730\u6BCF\u5B63\u6536\u83B7\u7B97\u4E00\u6B21\uFF0C\u4E0D\u6309\u4F5C\u7269\u4E2A\u6570\u8BA1\u6570\u3002"],
+    ["farm-fifteen", "\u56DB\u5B63\u83DC\u7BEE", "farm", "\u83DC\u56ED", "harvest", "kinds", 15, "\u79CD", "\u6210\u529F\u6536\u83B7\u5341\u4E94\u79CD\u4E0D\u540C\u4F5C\u7269\uFF0C\u4E70\u79CD\u3001\u79CD\u4E0B\u548C\u91CD\u590D\u6536\u540C\u4E00\u79CD\u90FD\u4E0D\u589E\u52A0\u79CD\u7C7B\u3002"],
+    ["mine-twenty", "\u77FF\u6D1E\u5C3D\u5934", "mine", "\u77FF\u6D1E", "depth", "maximum", 20, "\u5C42", "\u6CBF\u68AF\u5B50\u771F\u6B63\u62B5\u8FBE\u7B2C\u4E8C\u5341\u5C42\uFF0C\u4E70\u5230\u9AD8\u7EA7\u9550\u8FD8\u4E0D\u7B97\u3002"]
   ];
   var EXTENSION_ACHIEVEMENTS = Object.freeze(rows.map(([key2, label, extension, group, event, mode, target, unit, description]) => Object.freeze({ key: key2, label, extension, group, event, mode, target, unit, description, emoji: "\u{1F3C5}", metric: "extension", art: "badge-pig-" + key2 })));
 
@@ -3189,7 +3193,11 @@
     ["souvenirs-three", "\u53E3\u888B\u91CC\u7684\u8FDC\u65B9", "\u6536\u85CF", "\u{1F41A}", "souvenirKinds", 3, "\u79CD", "\u56FE\u9274\u8BB0\u5F55\u4E09\u79CD\u4E0D\u540C\u7684\u65C5\u884C\u7EAA\u5FF5\u54C1\u3002"],
     ["king", "\u52A0\u5195\u65F6\u523B", "\u664B\u5347", "\u{1F451}", "king", 1, "\u6B21", "\u4EB2\u81EA\u5B8C\u6210\u732A\u732A\u738B\u52A0\u5195\uFF0C\u4E70\u5230\u738B\u51A0\u8FD8\u4E0D\u7B97\u3002"],
     ["devil", "\u5C0F\u5C0F\u6076\u9B54", "\u664B\u5347", "\u{1F608}", "devil", 1, "\u6B21", "\u4EB2\u81EA\u5B8C\u6210\u6076\u9B54\u5951\u7EA6\uFF0C\u8C03\u76AE\u4E5F\u6709\u81EA\u5DF1\u7684\u5FBD\u7AE0\u3002"],
-    ["grown-up", "\u957F\u5927\u5566", "\u6210\u957F", "\u{1F437}", "level", 40, "\u7EA7", "\u6210\u957F\u5230\u56DB\u5341\u7EA7\uFF0C\u8FCE\u6765\u6210\u5E74\u3002"]
+    ["grown-up", "\u957F\u5927\u5566", "\u6210\u957F", "\u{1F437}", "level", 40, "\u7EA7", "\u6210\u957F\u5230\u56DB\u5341\u7EA7\uFF0C\u8FCE\u6765\u6210\u5E74\u3002"],
+    // 第二期沿用已有图鉴与累计记录，不为新门槛额外维护一份统计。
+    ["fish-twenty", "\u6C34\u8FB9\u535A\u7269\u5B66\u5BB6", "\u6536\u85CF", "\u{1F3A3}", "fishKinds", 20, "\u79CD", "\u56FE\u9274\u8BB0\u5F55\u4E8C\u5341\u79CD\u4E0D\u540C\u7684\u9C7C\uFF0C\u5356\u6389\u6216\u5582\u6389\u4E5F\u4FDD\u7559\u8BB0\u5F55\u3002"],
+    ["fish-hundred", "\u9C7C\u7BD3\u6EE1\u6EE1", "\u6536\u85CF", "\u{1F41F}", "fishCaught", 100, "\u6761", "\u7D2F\u8BA1\u6355\u83B7\u5165\u888B\u4E00\u767E\u6761\u9C7C\uFF0C\u5305\u542B\u81EA\u52A8\u9493\u9C7C\uFF1B\u8131\u94A9\u4E0D\u7B97\u3002"],
+    ["souvenirs-ten", "\u884C\u56CA\u91CC\u7684\u6545\u4E8B", "\u6536\u85CF", "\u{1F41A}", "souvenirKinds", 10, "\u79CD", "\u56FE\u9274\u8BB0\u5F55\u5341\u79CD\u4E0D\u540C\u7684\u65C5\u884C\u7EAA\u5FF5\u54C1\uFF0C\u540C\u4E00\u79CD\u53EA\u7B97\u4E00\u6B21\u3002"]
   ];
   var ACHIEVEMENTS = Object.freeze([...rows2.map(([key2, label, group, emoji, metric, target, unit, description]) => Object.freeze({ key: key2, label, group, emoji, metric, target, unit, description, art: "badge-pig-" + key2 })), ...EXTENSION_ACHIEVEMENTS]);
 
@@ -3413,7 +3421,13 @@
     "skin-wizard-sleep": "pigs/skins/skin-wizard/sleep.png",
     "skin-wizard-study": "pigs/skins/skin-wizard/study.png",
     "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
-    "skin-wizard-work": "pigs/skins/skin-wizard/work.png"
+    "skin-wizard-work": "pigs/skins/skin-wizard/work.png",
+    "badge-pig-fish-twenty": "pigs/badges/badge-pig-fish-twenty.png",
+    "badge-pig-fish-hundred": "pigs/badges/badge-pig-fish-hundred.png",
+    "badge-pig-souvenirs-ten": "pigs/badges/badge-pig-souvenirs-ten.png",
+    "badge-pig-farm-hundred": "pigs/badges/badge-pig-farm-hundred.png",
+    "badge-pig-farm-fifteen": "pigs/badges/badge-pig-farm-fifteen.png",
+    "badge-pig-mine-twenty": "pigs/badges/badge-pig-mine-twenty.png"
   });
 
   // packages/pet-core/src/data/art-revisions.js
@@ -3423,8 +3437,10 @@
     "badge-pig-blindbox-ten": "0c2d076bfd61",
     "badge-pig-clean-ten": "6003eb8595a0",
     "badge-pig-devil": "89cb8d3e629f",
+    "badge-pig-farm-fifteen": "3213559ddfa0",
     "badge-pig-farm-first": "5d1652cb0fe0",
     "badge-pig-farm-five": "deb83c643582",
+    "badge-pig-farm-hundred": "19fe9583ef16",
     "badge-pig-farm-ten": "0149eff14413",
     "badge-pig-first-class": "12a7524937d8",
     "badge-pig-first-fish": "b61fec5ff7ff",
@@ -3432,6 +3448,8 @@
     "badge-pig-first-meal": "e5fbc9564601",
     "badge-pig-first-trip": "f8ac4b6899d0",
     "badge-pig-fish-five": "5c35eb850433",
+    "badge-pig-fish-hundred": "fd952ae4a9c0",
+    "badge-pig-fish-twenty": "43e1049042b1",
     "badge-pig-gacha-first": "a57d94f99dd9",
     "badge-pig-gacha-gold": "4996ffc1006d",
     "badge-pig-gacha-machines": "77f0da6b8e33",
@@ -3442,8 +3460,10 @@
     "badge-pig-mine-deep": "d94d942494c1",
     "badge-pig-mine-first": "c0ff5e419ad4",
     "badge-pig-mine-fossils": "c5a8a6273d0b",
+    "badge-pig-mine-twenty": "000a57b81b31",
     "badge-pig-pet-hundred": "d44a2084eeba",
     "badge-pig-play-twenty": "d1bcbd208fe4",
+    "badge-pig-souvenirs-ten": "51936117880e",
     "badge-pig-souvenirs-three": "7ea9125dab52",
     "badge-pig-trips-ten": "7a993658b297",
     "career-astronaut": "9c4f6a1d855d",

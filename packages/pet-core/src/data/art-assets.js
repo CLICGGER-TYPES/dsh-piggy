@@ -185,4 +185,10 @@ export const PIG_ART_ASSETS = Object.freeze({
   "skin-wizard-study": "pigs/skins/skin-wizard/study.png",
   "skin-wizard-trip": "pigs/skins/skin-wizard/trip.png",
   "skin-wizard-work": "pigs/skins/skin-wizard/work.png",
+  "badge-pig-fish-twenty": "pigs/badges/badge-pig-fish-twenty.png",
+  "badge-pig-fish-hundred": "pigs/badges/badge-pig-fish-hundred.png",
+  "badge-pig-souvenirs-ten": "pigs/badges/badge-pig-souvenirs-ten.png",
+  "badge-pig-farm-hundred": "pigs/badges/badge-pig-farm-hundred.png",
+  "badge-pig-farm-fifteen": "pigs/badges/badge-pig-farm-fifteen.png",
+  "badge-pig-mine-twenty": "pigs/badges/badge-pig-mine-twenty.png",
 })

@@ -14,6 +14,10 @@ const rows = [
   ['blindbox-first', '摆件新朋友', 'blindbox', '盲盒', 'figure', 'kinds', 1, '种', '得到第一个摆件，寻访和凭证兑换都算。'],
   ['blindbox-ten', '小猪收藏家', 'blindbox', '盲盒', 'figure', 'kinds', 10, '种', '拥有过十种不同摆件，重复摆件不增加种类。'],
   ['blindbox-six', '六星相遇', 'blindbox', '盲盒', 'six-star', 'kinds', 1, '种', '得到一个六星摆件，凭证兑换也能达成。'],
+  // 第二期继续消费已有公共事件，不读取扩展私有数据。
+  ['farm-hundred', '百次丰收', 'farm', '菜园', 'harvest', 'total', 100, '次', '累计成功收获一百次作物，每块地每季收获算一次，不按作物个数计数。'],
+  ['farm-fifteen', '四季菜篮', 'farm', '菜园', 'harvest', 'kinds', 15, '种', '成功收获十五种不同作物，买种、种下和重复收同一种都不增加种类。'],
+  ['mine-twenty', '矿洞尽头', 'mine', '矿洞', 'depth', 'maximum', 20, '层', '沿梯子真正抵达第二十层，买到高级镐还不算。'],
 ]
 export const EXTENSION_ACHIEVEMENTS = Object.freeze(rows.map(([key, label, extension, group, event, mode, target, unit, description]) =>
   Object.freeze({ key, label, extension, group, event, mode, target, unit, description, emoji: '🏅', metric: 'extension', art: 'badge-pig-' + key })))
