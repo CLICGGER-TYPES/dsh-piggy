@@ -27,6 +27,10 @@ export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWor
 
 /** Explicit marker checked by the desktop before an OwnerDocument path reaches this runtime. */
 export const OWNER_ARCHIVE_RUNTIME_API_VERSION = 1
+/** Explicit local roster API marker; legacy v15 runtime packages do not implement it. */
+export const OWNER_PIG_RUNTIME_API_VERSION = 1
+/** Explicit full-owner-archive cloud API marker; legacy flat archives are not accepted by this path. */
+export const OWNER_CLOUD_RUNTIME_API_VERSION = 1
 
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
  * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object,
@@ -37,9 +41,6 @@ export function createGameRuntime(options) {
   if (Object.hasOwn(options, 'ownerDocumentPath')) {
     if (typeof options.ownerDocumentPath !== 'string' || options.ownerDocumentPath.trim() === '') {
       throw new TypeError('owner-document opt-in needs an explicit ownerDocumentPath')
-    }
-    if (options.cloudSave?.enabled === true) {
-      throw new Error('owner-document opt-in does not support cloud saves')
     }
     if (typeof options.pigId !== 'string' || options.pigId.trim() === '') {
       throw new TypeError('owner-document opt-in needs an explicit pigId target')
@@ -55,6 +56,7 @@ export function createGameRuntime(options) {
       ...(options.onSnapshot === undefined ? {} : { onSnapshot: options.onSnapshot }),
       ...(options.journalHeader === undefined ? {} : { journalHeader: options.journalHeader }),
       ...(options.transport === undefined ? {} : { transport: options.transport }),
+      ...(options.cloudSave === undefined ? {} : { cloudSave: options.cloudSave }),
     })
   }
   mkdirSync(dirname(options.statePath), { recursive: true })

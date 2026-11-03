@@ -106,6 +106,19 @@
 `piggy:updates:*`（游戏包版本切换）、`piggy:shell:*`（外壳更新）、`piggy:open`（用系统浏览器开链接）、
 `piggy:save-log`（导出日志另存为）、`piggy:save-archive`（完整存档 ZIP 另存为，0.37.1-rc.2 起）、`piggy:quit`。都是 `invoke`（返回 Promise）。
 
+### 面板专用的本机多猪服务
+
+`window.piggyShell.ownerPigs.status/list/select(pigId)/addAndSelect()` 由 `apps/desktop/lib/ipc/owner-pigs.js`
+注册，统一执行 `fromPanelOnly` 校验。渲染器只能请求选一个当前 OwnerDocument roster 中已经存在的 `pigId`，或请求主进程新建并选择；不能传 ownerId、owner 文档路径、猪本体或共享资源。新 ID 由主进程生成。新增猪在运行时按既有 `core/egg.js:layEgg` 建未孵化纸盒，再经 `splitLegacyState(...).body` 只持久化猪本体；coins、inventory、菜园等仍留在 owner resources。
+
+切换和新增都复用 `owner-archive-selection.json` 的 pending/active 选择与 lifecycle 保存、重启、失败回滚。该桥只对带 `OWNER_PIG_RUNTIME_API_VERSION` 能力的 OwnerDocument 游戏包开放；默认 v15 单猪运行时与 DSH 插件的固定 `pigId` 配置不因此改变。当前没有接入多猪页面；已有服务按选中目标重启现有宿主，这既没有实现多只桌面窗口并行显示，也不把并行显示从用户目标中排除。
+
+### OwnerDocument 完整档云同步服务
+
+带 `OWNER_CLOUD_RUNTIME_API_VERSION` 的游戏包通过 `cloudSave.firstSync(direction)` 提供显式首次同步服务；普通云设置仍默认关闭，配置保存本身不会启用同步。`local-to-cloud` 仅允许向所选的空远端分支首次发布完整 owner ZIP；同一内容可幂等确认，远端身份不符或已有不同历史会拒绝，不使用旧 flat `state.json` ZIP覆盖历史。`cloud-to-local` 只读取并验证远端完整档，交给现有完整档预览和“导入副本并切换”事务，绝不覆盖当前 owner 文件。用户确认导入后，本机 `owner-cloud-ready.json` 绑定 owner 与远端/分支；重启时只有身份和配置均匹配才启用现有 Git 队列的定时完整档推送与历史读取。
+
+owner cloud first-sync 与历史读取只注册给面板 IPC。HTTP `/dsh-piggy/cloud/*` 路由仍在 OwnerDocument 模式拒绝；旧 v15 cloud backend 仍是单独路径，DSH 的 OwnerDocument cloud 配置尚未接通。当前仅提供 API/服务，不含首次同步选择 UI，也不实现 owner 模式的历史恢复覆盖；需要恢复时继续创建独立副本。跨房间网络、LAN/公网发现与权限、云端合并均未实现。
+
 ### 旧消息（只给老游戏包，别删）
 
 | 通道 | 给谁 | 什么时候能删 |

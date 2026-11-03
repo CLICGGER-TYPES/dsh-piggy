@@ -121,6 +121,10 @@ contextBridge.exposeInMainWorld('piggyShell', {
     get: () => ipcRenderer.invoke('piggy:cloud:get'),
     set: config => ipcRenderer.invoke('piggy:cloud:set', config),
     test: config => ipcRenderer.invoke('piggy:cloud:test', config),
+    ownerStatus: () => ipcRenderer.invoke('piggy:cloud:owner-status'),
+    firstSync: direction => ipcRenderer.invoke('piggy:cloud:first-sync', String(direction)),
+    importFirstSync: (token, options) => ipcRenderer.invoke('piggy:cloud:import-first-sync', String(token), { acceptWarnings: options?.acceptWarnings === true }),
+    ownerHistory: branch => ipcRenderer.invoke('piggy:cloud:owner-history', String(branch ?? '')),
   },
   /** 全屏时小猪隐藏还是照常显示（外壳 0.6.5 起）：get → {mode, supported, checking, reason, platform}。 */
   fullscreen: {
@@ -162,6 +166,16 @@ contextBridge.exposeInMainWorld('piggyShell', {
       return ipcRenderer.invoke('piggy:owner-archive:preview', bytes)
     },
     importAndSwitch: (token, options) => ipcRenderer.invoke('piggy:owner-archive:import-and-switch', String(token), { acceptWarnings: options?.acceptWarnings === true }),
+  },
+  /** Local roster for one explicit OwnerDocument. IDs label same-owner targets; the main process validates every switch. */
+  ownerPigs: {
+    status: () => ipcRenderer.invoke('piggy:owner-pigs:status'),
+    list: () => ipcRenderer.invoke('piggy:owner-pigs:list'),
+    select: pigId => {
+      if (typeof pigId !== 'string' || pigId.length > 128) return Promise.resolve({ ok: false, reason: '小猪选择无效' })
+      return ipcRenderer.invoke('piggy:owner-pigs:select', pigId)
+    },
+    addAndSelect: () => ipcRenderer.invoke('piggy:owner-pigs:add-and-select'),
   },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
