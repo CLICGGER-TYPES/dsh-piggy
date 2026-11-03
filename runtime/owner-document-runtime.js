@@ -476,7 +476,13 @@ export function createOwnerDocumentRuntime(options) {
     /** @type {{kind:string,path:string,handler:Function}[]} */
     const routes = []
     const routeStore = scopedStore(entry)
-    registerGameRoutes({ register(route) { routes.push(route); return () => {} } }, routeStore, { fetch: options.fetch })
+    registerGameRoutes({ register(route) { routes.push(route); return () => {} } }, routeStore, {
+      fetch: options.fetch,
+      // The state route is already pinned to this one session. Attach its data
+      // identity to that response; IDs label the presentation but do not select
+      // or authorize the target.
+      presentationIdentity: { ownerId, pigId: entry.pigId },
+    })
     const webServer = { register(route) { routes.push(route); return () => {} } }
     registerOwnerModeRefusalRoutes(webServer)
     routeSets.set(session, routes)

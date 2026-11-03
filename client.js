@@ -6846,6 +6846,13 @@
           }
           return;
         }
+        if (ctx.stopped !== true && typeof ctx.bindPresentationIdentity === "function" && typeof res.headers?.get === "function") {
+          var ownerId = res.headers.get("x-dsh-owner-id");
+          var pigId = res.headers.get("x-dsh-pig-id");
+          if (typeof ownerId === "string" && typeof pigId === "string") {
+            ctx.bindPresentationIdentity({ ownerId, pigId });
+          }
+        }
         var key2 = pollKey(next);
         if (key2 !== paintedKey) {
           try {
@@ -27084,7 +27091,7 @@
     const root = opts.root ?? null;
     const state4 = opts.state ?? {};
     const transport = opts.transport ?? {};
-    const identity = normalizeIdentity(opts.identity);
+    let identity = normalizeIdentity(opts.identity);
     const parts = opts.parts ?? createScene({ root });
     const art = createArtContext({
       pig: parts.pig,
@@ -27107,6 +27114,18 @@
     }
     function isQuiet() {
       return typeof state4.isQuiet === "function" ? state4.isQuiet() === true : false;
+    }
+    function bindIdentity(value) {
+      let next;
+      try {
+        next = normalizeIdentity(value);
+      } catch {
+        return false;
+      }
+      if (next === null) return identity === null;
+      if (identity !== null) return identity.ownerId === next.ownerId && identity.pigId === next.pigId;
+      identity = next;
+      return true;
     }
     const audio = createAudioChannel({ isQuiet });
     const effects2 = createEffects({
@@ -27158,6 +27177,7 @@
       get disposed() {
         return disposed;
       },
+      bindIdentity,
       getView,
       /**
        * Create the optional birthday controller once the caller's UI context is
@@ -28439,6 +28459,10 @@
         showLine,
         hideBubble: fx.hideBubble,
         toast,
+        bindPresentationIdentity: function(value) {
+          if (stopped) return false;
+          return presentation.bindIdentity(value);
+        },
         get view() {
           return view;
         },

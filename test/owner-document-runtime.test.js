@@ -67,9 +67,14 @@ test('opt-in migration preserves v15 bytes; bound sessions share owner commands 
     assert.equal(storeA.state.inventory.apple, storeB.state.inventory.apple)
     assert.deepEqual(storeA.state.extData.farm, storeB.state.extData.farm)
 
+    const stateResponseA = await first.handle('GET', '/dsh-piggy/state', undefined, sessionA)
     const stateResponse = await first.handle('GET', '/dsh-piggy/state', undefined, sessionB)
     assert.equal(stateResponse.status, 200)
+    assert.equal(stateResponseA.headers['x-dsh-pig-id'], 'pig-a')
+    assert.equal(stateResponse.headers['x-dsh-owner-id'], 'owner-local')
+    assert.equal(stateResponse.headers['x-dsh-pig-id'], 'pig-b', 'the response carries this request binding, not a process-global target')
     const stateView = JSON.parse(String(stateResponse.body))
+    assert.equal(Object.hasOwn(stateView, 'ownerId'), false, 'identity metadata does not change the legacy state body')
     assert.equal(stateView.pig.name, '乙', 'legacy /state route is bound to the supplied target session')
     const actResponse = await first.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'feed' }), sessionB)
     assert.equal(actResponse.status, 200)
@@ -267,6 +272,19 @@ test('two opened owner runtimes share no stale mutable slot; only the winner of 
   }
 })
 
+test('legacy v15 state route does not publish owner identity headers', async t => {
+  const f = fixture()
+  t.after(() => rmSync(f.directory, { recursive: true, force: true }))
+  const runtime = createGameRuntime({ statePath: f.legacyPath, now: () => Date.now() })
+  try {
+    const response = await runtime.handle('GET', '/dsh-piggy/state')
+    assert.equal(response.status, 200)
+    assert.equal(response.headers['x-dsh-owner-id'], undefined)
+    assert.equal(response.headers['x-dsh-pig-id'], undefined)
+    assert.equal(JSON.parse(String(response.body)).pig.name, '甲')
+  } finally { await runtime.dispose() }
+})
+
 test('DSH and Desktop explicit adapters retain the old state/act host contract', async t => {
   const dshFixture = fixture()
   const desktopFixture = fixture()
@@ -314,6 +332,8 @@ test('DSH and Desktop explicit adapters retain the old state/act host contract',
   }
   const dshState = await request(routes.find(route => route.path === '/dsh-piggy/state'), 'GET')
   assert.equal(dshState.status, 200)
+  assert.equal(dshState.headers['x-dsh-owner-id'], 'dsh-owner')
+  assert.equal(dshState.headers['x-dsh-pig-id'], 'dsh-pig')
   assert.equal(JSON.parse(dshState.body).pig.name, 'DSH猪')
   const cleanupFactory = effectFactory
   if (cleanupFactory === null) throw new Error('DSH owner opt-in did not register cleanup')
@@ -330,6 +350,8 @@ test('DSH and Desktop explicit adapters retain the old state/act host contract',
   try {
     const desktopState = await desktopHost.handle('GET', '/dsh-piggy/state')
     assert.equal(desktopState.status, 200)
+    assert.equal(desktopState.headers['x-dsh-owner-id'], 'desktop-owner')
+    assert.equal(desktopState.headers['x-dsh-pig-id'], 'desktop-pig')
     assert.equal(JSON.parse(String(desktopState.body)).pig.name, '甲')
   } finally {
     await desktopHost.dispose()

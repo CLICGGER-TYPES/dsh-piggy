@@ -26,6 +26,12 @@
 - 同一 owner 的展示可按调用方提供共享 art/action registry 引用；各自 state provider、DOM/action player 与 audio channel 仍按 presentation 隔离。`customSkins`、skin/worn 归属表、skin pack 文件路径不变；声音配方仍为现有静态表，AudioContext/音量仍为设备级。
 - 无头 Node 契约 58/58 通过，完整 typecheck exit 0；现有构建刷新根 `client.js`（SHA-256 `67f4bde8a073ce4e261f40e7753e6a08c684ec6bb27273eefe95b2b318644715`），farm client/server 生成物未变。PR CI 与独立 UI 尚待完成；没有新 skin/audio pack、selector、玩法或数据格式。
 
+## 2026-11-03 ADAPTEROWN01 owner 身份进入展示上下文（隔离候选）
+
+- DSH 和 Desktop owner 路径继续共用同一 `OwnerDocumentRuntime`。owner `/state` 响应只在 headers 标出该 route 所绑定 session 的 `ownerId`/`pigId`；客户端 presentation 首次收到后绑定一次，后续响应不能把实例改绑到另一只猪。身份只是数据标签，不选目标、不授权；默认 v15 状态体与响应 headers 不变。
+- `createArtContext` 在没有调用方专属资源表时仍选现有只读 `defaultArtResources`，且已提供给动作 player。当前 host 没有 owner 专属 resource-registry 载入/传输入口，这批不复制 registry、不新造 asset 协议；owner skin sidecar 继续走现有共享文件路径。
+- 这是来源码级 adapter 接线；没有增加 UI/目标选择器、存档字段或网络功能。独立桌面/DSH UI 验收尚未覆盖。
+
 ## 2026-11-02 主线集成与实际覆盖（PR36、PR42 协议改动、PR43）
 
 - [PR36](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/36) 存储模块拆分已合入 main：保留 v15 数据格式、legacy 四个出口、60 项 API 名称/顺序、live getter 与保存/回滚时序；相关 45 项测试、TypeScript 5.9.3 类型检查与构建通过。未声称该项有新增原生 UI 覆盖。

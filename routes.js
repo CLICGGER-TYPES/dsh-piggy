@@ -137,15 +137,24 @@ const OPERATIONS = {
   giveAll: store => store.grantAll(),
 }
 
-/** GET /dsh-piggy/state — the one shape the panel reads. */
-function registerStateRoute(webServer, store) {
+/**
+ * GET /dsh-piggy/state — the one shape the panel reads.
+ * @param {{ownerId:string,pigId:string}|null} presentationIdentity
+ */
+function registerStateRoute(webServer, store, presentationIdentity = null) {
   return webServer.register({
     kind: 'exact',
     path: STATE_ROUTE,
     handler: async (req, res) => {
       if (req.method !== 'GET') return sendJson(res, 405, { error: 'method not allowed; use GET' }, { allow: 'GET' })
       try {
-        sendJson(res, 200, snapshot(store), { 'cache-control': 'no-store' })
+        /** @type {Record<string, string>} */
+        const headers = { 'cache-control': 'no-store' }
+        if (presentationIdentity !== null) {
+          headers['x-dsh-owner-id'] = presentationIdentity.ownerId
+          headers['x-dsh-pig-id'] = presentationIdentity.pigId
+        }
+        sendJson(res, 200, snapshot(store), headers)
       } catch (error) {
         sendJson(res, 500, { error: error instanceof Error ? error.message : String(error) })
       }
@@ -367,9 +376,10 @@ export function registerRoutes(ctx, store, options = {}) {
 /** 框架无关路由注册；DSH 服务等待和生命周期由适配器负责。 */
 export function registerGameRoutes(webServer, store, options = {}) {
   if (store.ext === undefined) store.ext = createExtRuntime(store, { gameVersion: PACKAGE_VERSION, fetch: options.fetch })
+    const presentationIdentity = options.presentationIdentity ?? null
     const disposers = []
     try {
-      disposers.push(registerStateRoute(webServer, store))
+      disposers.push(registerStateRoute(webServer, store, presentationIdentity))
       disposers.push(registerArtRoute(webServer, store, sendJson))
       disposers.push(registerSkinRoute(webServer, store))
       disposers.push(registerActRoute(webServer, store))
