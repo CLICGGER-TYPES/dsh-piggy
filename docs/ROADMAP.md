@@ -20,6 +20,12 @@
 - 多猪/云/帮工原型在独立 `UI_PROTO_OWNER_ARCHIVE01-PI-01`：左侧展示共享 owner 资源/每猪身份和云同步方向，右侧已更正为菜园帮工在菜园场景中的工作/巡逻/休息；规则草案注明休息时作物自然生长、暂停不追补、恢复沿用现有周期。动画/节奏仍需用户确认；本候选没有改帮工玩法、75% 经验或任何 UI。
 - 仍未实现：LAN/公网客户端传输与认证/会话权限、多猪并行窗口、跨设备目标显示与重连、owner 云 API 的 UI、DSH owner 云接线、帮工新动画；owner IDs 仍只是数据身份而非授权。
 
+## 2026-11-03 LANTRANSPORT01 私有 LAN 会话服务（独立候选，未合并）
+
+- 在 PR58 OwnerDocument 会话基线上增加显式面板 API 与真实 HTTP listener；默认不启动并绑定 loopback，只有面板明确启动后才监听。配置地址只接受具体 RFC1918/link-local 私有 IPv4，拒绝通配与公网地址。60 秒一次性邀请绑定服务端 roster 中的一只猪，配对后的 bearer token固定到该目标 session；状态、命令和动作请求不能自行指定 owner/pig。
+- 协议限制请求体/头部，拒绝 `Origin`，对命令/动作做白名单校验；每个会话使用有序序号和 requestId 回执，连接中断后可查询当前序号并重放相同请求。服务关闭会处置 listener/session/临时令牌，服务进程重启后需重新配对。LAN HTTP 未加密，只用于可信私有网络，不能用于公网部署。
+- focused Node socket/manager 契约覆盖两个真实 loopback HTTP 客户端、同一 owner 下不同猪本体隔离与共享金币、同序号并发写保护、一次性配对、配对响应丢失恢复、动作响应丢失后的幂等重试；另有 typecheck。此为本机真实 socket 合同，不是跨设备网络、产品 UI 或真实局域网验收。单 listener 不能接入另一台设备自己的 owner 档。尚无邀请/连接界面、自动发现、持久设备身份、跨进程回执、TLS/公网服务、房间或多猪并行窗口；DSH 外部控制器也未接入此服务。
+
 ## 2026-11-03 M2 OwnerFlow（显式 opt-in 隔离候选，未合并/未做 UI 验收）
 
 - 在 D01 OwnerDocument 纯 codec、D02 文件事务/迁移库之后，当前隔离候选把两者接到 `createGameRuntime`、DSH adapter 与桌面 host。只有调用者显式提供 `ownerDocumentPath`、`pigId` 和初始化所需的 `legacyStatePath`/`ownerId` 才进入此路径；默认 DSH/Desktop 路径仍各自使用原 v15 单猪存档，不自动共享或合并。

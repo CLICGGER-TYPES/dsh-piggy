@@ -8,6 +8,7 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
       optionalExtensionsDirectory: options.optionalExtensionsDirectory,
       workEventsAutoStart: options.workEventsAutoStart !== false, gameVersion: options.gameVersion ?? '',
       cloudSave: options.cloudSave ?? null,
+      ownerNetworkDirectory: options.ownerNetworkDirectory ?? null,
       ownerDocument: options.ownerDocument ?? null },
   })
   const pending = new Map()
@@ -100,6 +101,10 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     firstSyncCloud: direction => request('cloud:first-sync', [direction]),
     ownerCloudHistory: branch => request('cloud:owner-history', [branch]),
     ownerCloudStatus: () => request('cloud:owner-status'),
+    ownerLanStatus: () => request('owner-lan:status'),
+    startOwnerLan: options => request('owner-lan:start', [options ?? {}]),
+    createOwnerLanInvitation: pigId => request('owner-lan:invite', [pigId]),
+    stopOwnerLan: () => request('owner-lan:stop'),
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {
       if (closing) return closing

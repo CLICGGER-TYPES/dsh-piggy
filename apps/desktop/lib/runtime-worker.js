@@ -12,7 +12,7 @@ const port = parentPort
 const fetches = new Map()
 const tasks = new Set()
 let sequence = 0
-let host, endpoint, pairServer
+let host, endpoint, pairServer, ownerLanServer
 let closing = false
 const confirmations = new Map()
 let confirmSequence = 0
@@ -98,12 +98,28 @@ async function externalDisable() {
   return { ok: true }
 }
 
+async function startOwnerLan(listenAddress) {
+  if (host?.kind !== 'owner-document-multi-target' || typeof host.openPigSession !== 'function') {
+    throw new Error('owner LAN sessions require an explicit OwnerDocument runtime')
+  }
+  if (ownerLanServer !== undefined) return ownerLanServer.status()
+  if (typeof workerData.ownerNetworkDirectory !== 'string' || workerData.ownerNetworkDirectory === '') {
+    throw new Error('owner LAN session directory is unavailable')
+  }
+  const { startOwnerLanServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/owner-lan-server.js')).href)
+  ownerLanServer = await startOwnerLanServer({ runtime: host, directory: workerData.ownerNetworkDirectory,
+    ...(typeof listenAddress === 'string' && listenAddress !== '' ? { listenAddress } : {}) })
+  return ownerLanServer.status()
+}
+
 async function request(message) {
   if (closing) throw new Error('game runtime closed')
   if (message.method === 'dispose') {
     closing = true
     let endpointStopped = !endpoint
     try {
+      await ownerLanServer?.close()
+      ownerLanServer = undefined
       await pairServer?.close()
       pairServer = undefined
       await endpoint?.close()
@@ -151,6 +167,18 @@ async function request(message) {
   if (message.method === 'owner:create-pig') {
     if (typeof host?.createPigTarget !== 'function') throw new Error('当前游戏版本不支持新增小猪')
     return host.createPigTarget(...message.args)
+  }
+  if (message.method === 'owner-lan:status') return ownerLanServer?.status() ?? { running: false, pairedClients: 0 }
+  if (message.method === 'owner-lan:start') return startOwnerLan(message.args[0]?.listenAddress)
+  if (message.method === 'owner-lan:invite') {
+    if (ownerLanServer === undefined) throw new Error('owner LAN listener is not running')
+    return ownerLanServer.createInvitation(message.args[0])
+  }
+  if (message.method === 'owner-lan:stop') {
+    const current = ownerLanServer
+    ownerLanServer = undefined
+    await current?.close()
+    return { running: false, pairedClients: 0 }
   }
   if (message.method === 'external:enable') return externalEnable(message.args[0] ?? {})
   if (message.method === 'external:disable') return externalDisable()

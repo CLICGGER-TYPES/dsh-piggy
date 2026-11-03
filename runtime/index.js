@@ -31,6 +31,8 @@ export const OWNER_ARCHIVE_RUNTIME_API_VERSION = 1
 export const OWNER_PIG_RUNTIME_API_VERSION = 1
 /** Explicit full-owner-archive cloud API marker; legacy flat archives are not accepted by this path. */
 export const OWNER_CLOUD_RUNTIME_API_VERSION = 1
+/** Explicit authenticated private-LAN owner-session service marker; no server starts by default. */
+export const OWNER_LAN_RUNTIME_API_VERSION = 1
 
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
  * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object,

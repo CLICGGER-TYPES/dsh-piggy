@@ -6,8 +6,8 @@
  * 本模块只做身份、生命周期和拒绝原因，不实现网络、认证、房间或持久 ID：
  * - SessionId/RuntimeId 是进程内临时能力，不写存档、不当跨设备身份；
  * - OwnerId/PigId/RoomId 是未来稳定身份的保留名字，本切片没有实现；
- * - embedded / loopback-pair 是当前真实 transport；lan / public-server 只声明
- *   为未实现，不创建 socket、不改监听地址。
+ * - embedded / loopback-pair 是当前产品 transport；LAN 绑定只由显式 owner session
+ *   server 在配对认证后发放；public-server 仍未实现。
  *
  * @module dsh-piggy/runtime/session-context
  */
@@ -28,8 +28,8 @@ export const SESSION_SCOPE = Object.freeze({
 })
 
 /**
- * 当前真实 transport 是进程内 embedded 与本机 loopback 配对。LAN/public-server
- * 是声明中的未来责任，未实现：构造这类绑定会直接拒绝。
+ * LAN 仅是已经配对的本地 owner-session transport 标签；它自身不验证认证。
+ * public-server 仍拒绝，不能由数据身份或任意网络请求构造。
  */
 export const SESSION_TRANSPORT = Object.freeze({
   EMBEDDED: 'embedded',
@@ -43,7 +43,7 @@ const TRANSPORT_KINDS = Object.freeze([
   SESSION_TRANSPORT.EMBEDDED, SESSION_TRANSPORT.LOOPBACK_PAIR, SESSION_TRANSPORT.LAN, SESSION_TRANSPORT.PUBLIC_SERVER,
 ])
 /** @type {Set<string>} */
-const UNSUPPORTED_TRANSPORTS = new Set([SESSION_TRANSPORT.LAN, SESSION_TRANSPORT.PUBLIC_SERVER])
+const UNSUPPORTED_TRANSPORTS = new Set([SESSION_TRANSPORT.PUBLIC_SERVER])
 
 /** 拒绝原因。沿用现有适配器的字符串 reason 风格，方便局部返回而不是抛错。 */
 export const SESSION_BOUNDARY = Object.freeze({
@@ -69,15 +69,12 @@ export class SessionBoundaryError extends Error {
 /** @param {unknown} value @returns {value is Record<string, any>} */
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 
-/**
- * @param {unknown} input
- * @returns {{kind:string, origin:string}}
- */
-function normalizeTransport(input) {
+/** @param {unknown} input @param {boolean} [allowPairedOwnerLan] @returns {{kind:string,origin:string}} */
+function normalizeTransport(input, allowPairedOwnerLan = false) {
   if (!isRecord(input)) throw new TypeError('session binding needs an explicit transport')
   const kind = typeof input.kind === 'string' ? input.kind : ''
   if (!TRANSPORT_KINDS.includes(kind)) throw new TypeError(`unknown session transport: ${kind}`)
-  if (UNSUPPORTED_TRANSPORTS.has(kind)) {
+  if (UNSUPPORTED_TRANSPORTS.has(kind) || (kind === SESSION_TRANSPORT.LAN && !allowPairedOwnerLan)) {
     throw new SessionBoundaryError(SESSION_BOUNDARY.UNSUPPORTED_PERSISTENCE, `${kind} transport is declared but not implemented`)
   }
   const origin = typeof input.origin === 'string' && input.origin !== '' ? input.origin : ''
@@ -103,13 +100,14 @@ const issuedSessions = new WeakSet()
  * 建立一个显式会话能力。必须给出 scope、transport 和 application 或 capability；
  * 不读取任何“当前猪/当前文件”全局槽位。
  * @param {SessionCreateOptions} options
+ * @param {boolean} [allowPairedOwnerLan] 是否由 OwnerDocument runtime 配对入口调用
  * @returns {SessionBinding}
  */
-export function createSessionBinding(options) {
+function createSessionBindingInternal(options, allowPairedOwnerLan = false) {
   if (!isRecord(options)) throw new TypeError('session binding needs explicit options')
   const scope = typeof options.scope === 'string' ? options.scope : ''
   if (scope === '') throw new TypeError('session binding needs an explicit scope')
-  const transport = normalizeTransport(options.transport)
+  const transport = normalizeTransport(options.transport, allowPairedOwnerLan)
   const application = options.application ?? null
   if (application !== null && (typeof application.assertScope !== 'function' || application.scope === undefined)) {
     throw new TypeError('session binding application must be a live application context')
@@ -174,6 +172,30 @@ export function createSessionBinding(options) {
   }
   issuedSessions.add(binding)
   return Object.freeze(binding)
+}
+
+/**
+ * 普通调用方不能自行声明 LAN transport；OwnerDocument runtime 只在服务端完成配对和
+ * roster 校验后调用此入口创建 host-runtime 绑定。
+ * @param {SessionCreateOptions} options
+ * @returns {SessionBinding}
+ */
+export function createOwnerLanSessionBinding(options) {
+  if (!isRecord(options) || options.scope !== SESSION_SCOPE.HOST_RUNTIME ||
+      options.transport?.kind !== SESSION_TRANSPORT.LAN || options.application == null || options.commands == null) {
+    throw new SessionBoundaryError(SESSION_BOUNDARY.UNSUPPORTED_PERSISTENCE,
+      'LAN sessions require a paired OwnerDocument host runtime')
+  }
+  return createSessionBindingInternal(options, true)
+}
+
+/**
+ * 建立普通会话能力；任意调用方不能借此伪造 LAN 配对。
+ * @param {SessionCreateOptions} options
+ * @returns {SessionBinding}
+ */
+export function createSessionBinding(options) {
+  return createSessionBindingInternal(options)
 }
 
 /**
@@ -391,10 +413,12 @@ export function persistenceIssue(authority) {
  */
 
 /*
- * 将来的 LAN/公网契约（只声明责任，没有实现）：
- * - 稳定 OwnerId/PigId/RoomId 必须由服务端签发并持久化；
- * - 会话认证、房间加入、重连/重放、资源 revision 与素材命名空间由服务端负责；
- * - 当前进程能力、loopback 令牌、昵称、文件路径、RuntimeId 都不能当网络身份；
+ * LAN session issuer 在配对成功后可创建 kind='lan' 的进程内绑定；令牌和邀请由
+ * owner-lan-server 管理，不能从请求里的 ownerId/pigId 推导权限。
+ * 仍未实现的公网/跨进程责任：
+ * - 持久 OwnerId/PigId/RoomId 和跨进程/服务器身份；
+ * - 公网认证、加密传输、房间策略、持久资源 revision 与素材命名空间；
+ * - loopback/LAN 临时令牌、昵称、文件路径、RuntimeId 都不能当稳定网络身份；
  * - snapshot 必须带资源 revision 和目标 PigId，receipt 必须区分 accepted/completed/
  *   replayed/rejected，崩溃恢复下的 exactly-once 不能由本模块假装提供。
  * 这些未实现项在 docs/guides/session-context.md 中逐项列出。
