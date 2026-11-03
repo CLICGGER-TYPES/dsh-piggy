@@ -21,6 +21,7 @@ import { renderProxySettings } from './proxy.js'
 import { renderFullscreenSettings } from './fullscreen.js'
 import { extensionUpdateAvailable } from './extensions.js'
 import { renderSaveTransferSettings } from '../save-transfer.js'
+import { renderOwnerPigSettings } from '../owner-pigs.js'
 import { renderCloudSaveSettings } from './cloud-save.js'
 import { renderExternalPetSettings } from '../external-pet.js'
 import { renderExternalDesktopSettings } from '../external-desktop.js'
@@ -72,6 +73,7 @@ export function renderSettingsTab(ui) {
   extensions.head.appendChild(openExtensions)
 
   renderSaveTransferSettings(ui, section)
+  renderOwnerPigSettings(ui, section)
   renderCloudSaveSettings(ui, section)
 
   // 外部桌宠入口固定在「存档」之后、「小猪大小」之前（设计 4.1）。
