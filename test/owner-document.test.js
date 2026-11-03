@@ -167,6 +167,31 @@ test('known state fields must stay in their canonical ownership buckets', () => 
   rejectedUnchanged(unknownFormatField)
 })
 
+test('primitive legacy mixed opaque is retained only when it has no canonical owner or pig part', () => {
+  const rejectedUnchanged = input => {
+    const before = clone(input)
+    assert.throws(() => validateOwnerDocument(input), /conflicts with a canonical field/)
+    assert.deepEqual(input, before)
+  }
+
+  const ownerCollision = ownerDocumentFromLegacyV15(legacyV15(), { ownerId: 'owner-a', pigId: 'pig-a' })
+  ownerCollision.opaque.economy = null
+  rejectedUnchanged(ownerCollision)
+
+  const pigCollision = ownerDocumentFromLegacyV15(legacyV15(), { ownerId: 'owner-a', pigId: 'pig-a' })
+  delete pigCollision.resources.economy
+  pigCollision.opaque.economy = 'legacy primitive'
+  rejectedUnchanged(pigCollision)
+
+  for (const legacyValue of [null, 'legacy primitive', [1, 2]]) {
+    const legacy = { version: 15, economy: legacyValue }
+    const before = clone(legacy)
+    const document = ownerDocumentFromLegacyV15(legacy, { ownerId: 'owner-a', pigId: 'pig-a' })
+    assert.deepEqual(projectOwnerDocumentToLegacyV15(document, 'pig-a'), before)
+    assert.deepEqual(legacy, before)
+  }
+})
+
 test('legacy conversion requires normalized v15 and explicit safe IDs', () => {
   assert.throws(() => ownerDocumentFromLegacyV15({ ...legacyV15(), version: 14 }, { ownerId: 'o', pigId: 'p' }), /legacy state version is unsupported/)
   assert.throws(() => ownerDocumentFromLegacyV15(legacyV15(), { ownerId: 'o/p', pigId: 'p' }), /ownerId is invalid/)
