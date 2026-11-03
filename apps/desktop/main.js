@@ -18,10 +18,10 @@ import { auxiliaryWindowOptions } from './lib/auxiliary-window.js'
 import { createLinuxDisplayRebuild } from './lib/linux-display-rebuild.js'
 import { spawn } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { access, appendFile, copyFile, mkdir, rename } from 'node:fs/promises'
+import { access, appendFile, copyFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
@@ -57,8 +57,11 @@ import { createWindowState } from './lib/window-state.js'
 import { createAutostart } from './lib/autostart.js'
 import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
 import { createDesktopTray } from './lib/tray.js'
+import { createOwnerArchiveSelectionStore } from './lib/owner-archive-selection.js'
+import { createOwnerArchiveManager } from './lib/owner-archive-manager.js'
 import { registerExternalIpc, registerSystemActionsIpc, registerFullscreenIpc, registerProxyIpc } from './lib/ipc/system.js'
 import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
+import { registerOwnerArchiveIpc } from './lib/ipc/owner-archive.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
 import { registerUpdatesIpc } from './lib/ipc/updates.js'
 import { createStartupTrace } from './lib/startup-trace.js'
@@ -66,7 +69,11 @@ import { createStartupTrace } from './lib/startup-trace.js'
 const { autoUpdater } = updaterPackage
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const ownerDocumentConfig = readOwnerDocumentConfig()
+const taskOwnerDocumentConfig = readOwnerDocumentConfig()
+let ownerDocumentConfig = taskOwnerDocumentConfig === null ? null : { ...taskOwnerDocumentConfig, source: 'task' }
+let ownerArchiveSwitchPending = false
+let ownerArchiveRuntimeSupported = false
+let activeGameDirectory = null
 
 /**
  * 帧率：**不设上限，跟显示器刷新率同步**（Chromium 默认就是 vsync）。
@@ -166,6 +173,7 @@ protocol.registerSchemesAsPrivileged([
 // Testing: keep a throwaway save and settings away from the real ones.
 const dataPaths = configureDesktopData(app)
 const cloudSaveSettings = createCloudSaveConfigStore(dataPaths.userData)
+const ownerArchiveSelectionStore = createOwnerArchiveSelectionStore(dataPaths.userData)
 const gotLock = !needsX11 && app.requestSingleInstanceLock()
 // 第二个进程拿不到单实例锁就马上退出：先同步留一行再退。第一个进程可能还没 ready、
 // 甚至卡在启动里，它的 second-instance 行不一定写得出来；没有这一行，日志里就看不出
@@ -182,6 +190,42 @@ if (!needsX11 && !gotLock) {
 const bundledGameDir = () => bundledDesktopGame(app, HERE)
 
 const statePath = () => dataPaths.statePath
+
+/** Only this explicit marker permits the current game package to receive an OwnerDocument path. */
+async function hasOwnerArchiveRuntime(gameDir) {
+  try {
+    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
+    return runtime.OWNER_ARCHIVE_RUNTIME_API_VERSION === 1
+  } catch { return false }
+}
+
+/** Strip local selection metadata before crossing into the game runtime. */
+function runtimeOwnerConfig(config) {
+  if (config === null) return null
+  return {
+    ownerDocumentPath: config.ownerDocumentPath,
+    ...(typeof config.legacyStatePath === 'string' ? { legacyStatePath: config.legacyStatePath } : {}),
+    ...(typeof config.ownerId === 'string' ? { ownerId: config.ownerId } : {}),
+    pigId: config.pigId,
+  }
+}
+
+function applyStoredOwnerSelection(selection) {
+  ownerDocumentConfig = selection === null ? null : { ...selection, source: 'selection' }
+}
+
+/** Roll a pending owner switch back only after the attempted runtime has stopped writing. */
+async function restorePreviousOwnerSelectionAndRestart(cause) {
+  if (!ownerArchiveSwitchPending) return false
+  ownerArchiveSelectionStore.rollbackPending()
+  ownerArchiveSwitchPending = false
+  log('owner archive startup rolled back', cause instanceof Error ? cause.message : 'startup failed')
+  await desktopLifecycle.requireSavedGame()
+  await desktopLifecycle.closeShellResources()
+  relaunch()
+  app.exit(0)
+  return true
+}
 
 /** Startup handles and their pending promises have one owner; composition order stays here. */
 const desktopRuntime = createDesktopRuntime({
@@ -1448,6 +1492,26 @@ registerSystemActionsIpc({
   exportWrites,
   log,
 })
+const ownerArchiveManager = createOwnerArchiveManager({
+  archiveRoot: ownerArchiveSelectionStore.archiveRoot,
+  downloadsDir: app.getPath('downloads'),
+  dialog,
+  getWin: () => getPanelWindow(),
+  getHost: () => desktopRuntime.getHost(),
+  getGameDir: () => activeGameDirectory,
+  getOwnerConfig: () => ownerDocumentConfig,
+  isSupported: () => ownerArchiveRuntimeSupported,
+  selectionStore: ownerArchiveSelectionStore,
+  lifecycle: desktopLifecycle,
+  async writeFile(path, bytes) {
+    const writing = writeFile(path, bytes)
+    exportWrites.add(writing)
+    try { await writing } finally { exportWrites.delete(writing) }
+  },
+  isQuitting: () => desktopLifecycle.quitting,
+  log,
+})
+registerOwnerArchiveIpc({ ipcMain, fromPanelOnly, manager: ownerArchiveManager })
 
 // ---- 全屏时隐藏 / 照常显示，以及置顶守护（外壳 0.6.5，见 lib/fullscreen.js） ----
 /** @type {ReturnType<typeof createFullscreenWatch> | null} */
@@ -1563,6 +1627,11 @@ registerCloudSaveIpc({ ipcMain, fromPage, getHost: () => desktopRuntime.getHost(
 app.whenReady().then(async () => {
   if (needsX11 || !gotLock || desktopLifecycle.quitting) return
   migrateDesktopData(dataPaths)
+  if (taskOwnerDocumentConfig === null) {
+    const selected = ownerArchiveSelectionStore.read()
+    ownerArchiveSwitchPending = selected.pending !== null
+    applyStoredOwnerSelection(selected.pending?.next ?? selected.active)
+  }
   proxySettings = createProxy({ path: join(app.getPath('userData'), 'proxy.json'),
     sessions: [session.defaultSession, session.fromPartition('electron-updater', { cache: false })] })
   await proxySettings.init()
@@ -1589,6 +1658,20 @@ app.whenReady().then(async () => {
   }
   const gameDir = await desktopRuntime.getVersions().activeDir()
   if (desktopLifecycle.quitting) return
+  activeGameDirectory = gameDir
+  ownerArchiveRuntimeSupported = await hasOwnerArchiveRuntime(gameDir)
+  if (ownerDocumentConfig !== null && !ownerArchiveRuntimeSupported) {
+    if (ownerArchiveSwitchPending) {
+      ownerArchiveSelectionStore.rollbackPending()
+      ownerArchiveSwitchPending = false
+      const previous = ownerArchiveSelectionStore.read()
+      applyStoredOwnerSelection(previous.active)
+      log('owner archive switch refused', 'active game package does not support owner archives; previous selection restored')
+    }
+    if (ownerDocumentConfig !== null) {
+      throw new Error('当前游戏版本不支持已选择的完整存档；原存档选择已保留，请先恢复兼容的游戏版本')
+    }
+  }
   const versionsForIdentity = desktopRuntime.getVersions()
   const runtimeIdentity = current => JSON.stringify({
     shell: safeVersion(app.getVersion()),
@@ -1604,13 +1687,21 @@ app.whenReady().then(async () => {
     ? `${ownerDocumentConfig.ownerDocumentPath}.work-events`
     : join(app.getPath('userData'), 'work-endpoint')
   const localCloudSettings = cloudSaveSettings.load()
-  await desktopRuntime.startHost(gameDir, hostStatePath, { fetch: net.fetch.bind(net), workEventsDirectory,
-    cloudSave: ownerDocumentConfig ? null : (localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null),
-    ...(ownerDocumentConfig === null ? {} : { ownerDocument: ownerDocumentConfig }),
-    optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
-    workEventsAutoStart: process.argv.includes('--work-events'),
-    onConfirm: plan => confirmMerge(plan),
-    onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
+  try {
+    await desktopRuntime.startHost(gameDir, hostStatePath, { fetch: net.fetch.bind(net), workEventsDirectory,
+      cloudSave: ownerDocumentConfig ? null : (localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null),
+      ...(ownerDocumentConfig === null ? {} : { ownerDocument: runtimeOwnerConfig(ownerDocumentConfig) }),
+      optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
+      workEventsAutoStart: process.argv.includes('--work-events'),
+      onConfirm: plan => confirmMerge(plan),
+      onSnapshot: view => toPages('piggy:state-changed', view), onStateChanged: announceStateChanged })
+  } catch (error) {
+    if (ownerArchiveSwitchPending) {
+      await restorePreviousOwnerSelectionAndRestart(error)
+      return
+    }
+    throw error
+  }
   if (desktopLifecycle.quitting) return
   hostJournal = /** @type {any} */ (desktopRuntime.getHost())?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
@@ -1670,7 +1761,22 @@ app.whenReady().then(async () => {
   displayWatchTimer.unref?.()
   getPetWindow().webContents.on('did-finish-load', () => pushGeometry())
   pushGeometry()
+  if (ownerArchiveSwitchPending) {
+    ownerArchiveSelectionStore.commitPending()
+    ownerArchiveSwitchPending = false
+    const selected = ownerArchiveSelectionStore.read()
+    applyStoredOwnerSelection(selected.active)
+    log('owner archive selection activated')
+  }
 }).catch(async error => {
+  if (ownerArchiveSwitchPending) {
+    try {
+      await restorePreviousOwnerSelectionAndRestart(error)
+      return
+    } catch (rollbackError) {
+      log('owner archive startup rollback failed', rollbackError instanceof Error ? rollbackError.message : 'rollback failed')
+    }
+  }
   let logPath = 'piggy.log'
   try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
   await reportStartupFailure({ dialog, log, error, logPath, version: app.getVersion(), platform: process.platform })
