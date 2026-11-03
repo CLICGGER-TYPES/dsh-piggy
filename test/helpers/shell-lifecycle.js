@@ -1,107 +1,78 @@
 // @ts-check
-/** 执行生产更新、安装与退出回调；只替换 Electron 外围，不复制协调逻辑或启动安装器。 */
+/** 用真实生命周期模块和真实 IPC 注册器，替换 Electron、窗口与外部资源。 */
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { createContext, runInContext } from 'node:vm'
-import { saveArchive } from '../../apps/desktop/lib/save-export.js'
-import { registerExternalIpc, registerSystemActionsIpc } from '../../apps/desktop/lib/ipc/system.js'
+import { registerSystemActionsIpc } from '../../apps/desktop/lib/ipc/system.js'
 import { registerUpdatesIpc } from '../../apps/desktop/lib/ipc/updates.js'
+import { createDesktopLifecycle } from '../../apps/desktop/lib/desktop-lifecycle.js'
 
 export function shellLifecycle(host, install = () => ({ ok: true }), options = {}) {
-  const source = readFileSync(new URL('../../apps/desktop/main.js', import.meta.url), 'utf8')
   const handlers = new Map(), scheduled = [], messages = [], dialogs = [], backups = [], notifications = []
   const pages = Object.fromEntries(['pet', 'panel'].map(role => [role, {
     send: (...args) => notifications.push([role, ...args]),
   }]))
-  let exits = 0, relaunches = 0
-  const context = createContext({
-    host, hostStarting: null, versions: options.versions ?? null, versionsStarting: null,
-    win: { isDestroyed: () => false, webContents: pages.pet },
-    panelWin: { isDestroyed: () => false, webContents: pages.panel },
-    extensionWindow: { current: () => null, owns: () => false },
-    autostart: { flush: () => Promise.resolve() },
-    hitTimer: 1, fullscreenWatch: null, topGuardTimer: null, displayWatchTimer: null, stateTimer: null,
-    proxySettings: null,
-    join, saveArchive, writeFile: options.writeFile,
-    stopDrag() {}, clearInterval() {}, clearTimeout() {}, flushWindowState() {}, flushLogs() {},
-    process: { env: {} },
-    async backupSave(label) { backups.push(label); await options.backupSave?.(label) },
-    relaunch() { relaunches++ },
-    dialog: { async showMessageBox(options) { dialogs.push(options) }, showSaveDialog: options.showSaveDialog },
-    log: (...args) => messages.push(args),
-    setTimeout: callback => scheduled.push(callback),
-    ipcMain: { handle: (name, callback) => handlers.set(name, callback) },
-    registerExternalIpc,
-    shellUpdates: options.shellUpdates ?? { status: () => ({ readyVersion: '0.6.7' }), install, async close() {} },
-    app: {
-      getPath: () => '/downloads',
-      on: (name, callback) => handlers.set(name, callback),
-      exit(code) { assert.equal(code, 0); exits++ },
-      quit() {
-        let prevented = false
-        handlers.get('before-quit')({ preventDefault() { prevented = true } })
-        if (!prevented) exits++
-      },
+  let exits = 0, relaunches = 0, hitTimer = 1
+  const versions = options.versions ?? null
+  const shellUpdates = options.shellUpdates ?? { status: () => ({ readyVersion: '0.6.7' }), install, async close() {} }
+  const exportWrites = new Set()
+  const log = (...args) => messages.push(args)
+  const app = {
+    getPath: () => '/downloads',
+    on: (name, callback) => handlers.set(name, callback),
+    exit(code) { assert.equal(code, 0); exits++ },
+    quit() {
+      let prevented = false
+      handlers.get('before-quit')({ preventDefault() { prevented = true } })
+      if (!prevented) exits++
     },
-  })
-  // 预约、保存门禁、错误恢复和关闭共用生产闭包，不能以测试里的成功实现代替。
-  const load = (start, end) => {
-    const first = source.indexOf(start), last = source.indexOf(end, first)
-    assert.ok(first >= 0 && last > first, `生产生命周期代码边界不存在：${start} → ${end}`)
-    runInContext(source.slice(first, last), context, { filename: 'desktop-main-lifecycle.js' })
   }
-  load('let quitting = false', '/** 合并确认')
-  load('function fromPanelOnly(event)', 'function registerProtocol')
-  load('async function requireSavedGame()', '// ---- 更新 App')
-  load('let hostClosed = false', "app.on('window-all-closed'")
-  load('const exportWrites = new Set()', 'registerSystemActionsIpc({')
-  // 更新/外壳更新与系统动作的注册已移入 lib/ipc/；仍调用生产注册函数，注入下面 VM 里同一组
-  // 状态和闭包（exportWrites 仍是 VM 里那个 Set），测试断言不变。
-  const vm = expression => runInContext(expression, context)
+  const dialog = {
+    async showMessageBox(options) { dialogs.push(options) },
+    showSaveDialog: options.showSaveDialog,
+  }
+  const lifecycle = createDesktopLifecycle({
+    app, dialog, log, stopDrag() {}, relaunch() { relaunches++ }, isCapture: () => false,
+    clearInterval() {}, clearTimeout() {}, setExternalManager() {}, setHitTimer: timer => { hitTimer = timer },
+    getResources: () => ({
+      host, hostStarting: null, versions, versionsStarting: null, shellUpdates, proxySettings: null,
+      fullscreenWatch: null, externalManager: null, autostart: { flush: () => Promise.resolve() },
+      exportWrites, topGuardTimer: null, displayWatchTimer: null, hitTimer, stateTimer: null,
+      flushWindowState: () => options.flushWindowState?.(), flushLogs: () => options.flushLogs?.(),
+    }),
+  })
+  const fromPage = event => !lifecycle.quitting && Object.values(pages).includes(event.sender)
+  const toPages = (channel, ...args) => {
+    for (const [role, page] of Object.entries(pages)) page.send(channel, ...args)
+  }
+  const backupSave = async label => { backups.push(label); await options.backupSave?.(label) }
+  const ipcMain = { handle: (name, callback) => handlers.set(name, callback) }
+
+  lifecycle.registerBeforeQuit()
   registerUpdatesIpc({
-    ipcMain: context.ipcMain,
-    fromPage: vm('fromPage'),
-    toPages: vm('toPages'),
-    getVersions: () => context.versions,
-    getShellUpdates: () => context.shellUpdates,
-    isActionActive: () => vm('activeAction !== null'),
-    reserveAction: vm('reserveAction'),
-    releaseAction: vm('releaseAction'),
-    requireSavedGame: vm('requireSavedGame'),
-    backupSave: context.backupSave,
-    restartGame: vm('restartGame'),
-    closeShellResources: vm('closeShellResources'),
-    recoverAction: vm('recoverAction'),
-    isHostClosed: () => vm('hostClosed'),
-    isCapture: () => false,
-    setTimeout: vm('setTimeout'),
-    log: context.log,
+    ipcMain, fromPage, toPages, getVersions: () => versions, getShellUpdates: () => shellUpdates,
+    isActionActive: () => lifecycle.activeAction !== null,
+    reserveAction: lifecycle.reserveAction, releaseAction: lifecycle.releaseAction,
+    requireSavedGame: lifecycle.requireSavedGame, backupSave, restartGame: lifecycle.restartGame,
+    closeShellResources: lifecycle.closeShellResources, recoverAction: lifecycle.recoverAction,
+    isHostClosed: () => lifecycle.hostClosed, isCapture: () => false,
+    setTimeout: callback => scheduled.push(callback), log,
   })
   registerSystemActionsIpc({
-    ipcMain: context.ipcMain,
-    app: context.app,
-    dialog: context.dialog,
-    shell: { openExternal() {} },
-    fromPage: vm('fromPage'),
-    getWin: () => context.win,
-    isQuitting: () => vm('quitting'),
-    exportWrites: vm('exportWrites'),
-    log: context.log,
-    writeFile: options.writeFile,
+    ipcMain, app, dialog, shell: { openExternal() {} }, fromPage, getWin: () => null,
+    isQuitting: () => lifecycle.quitting, exportWrites, log, writeFile: options.writeFile,
   })
+
   const request = (name, args = [], role = 'pet') => handlers.get(name)({ sender: pages[role] }, ...args)
   return {
     request,
     install: () => request('piggy:shell:install'),
     runInstall: () => scheduled.shift()(),
     runScheduled: () => scheduled.shift()(),
-    quit: () => { context.app.quit(); return runInContext('quitTask', context) },
-    waitForQuit: () => runInContext('quitTask', context),
-    state: () => ({ quitting: runInContext('quitting', context), closed: runInContext('hostClosed', context),
-      closing: runInContext('hostClosing !== null', context), action: runInContext('activeAction', context),
-      quitAfterAction: runInContext('quitAfterAction', context), shellClosed: runInContext('shellClosed', context),
-      hitTimer: context.hitTimer, scheduled: scheduled.length, exits, relaunches }),
+    quit: () => { app.quit(); return lifecycle.quitTask },
+    waitForQuit: () => lifecycle.quitTask,
+    state: () => ({ quitting: lifecycle.quitting, closed: lifecycle.hostClosed,
+      closing: lifecycle.hostClosing !== null, action: lifecycle.activeAction,
+      quitAfterAction: lifecycle.quitAfterAction, shellClosed: lifecycle.shellClosed,
+      hitTimer, scheduled: scheduled.length, exits, relaunches }),
     messages, dialogs, backups, notifications,
   }
 }

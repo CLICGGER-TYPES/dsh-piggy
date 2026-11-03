@@ -69,6 +69,9 @@ function confirmInMain(plan) {
 }
 
 async function externalEnable(message) {
+  if (host?.kind === 'owner-document-multi-target') {
+    throw new Error('owner-document opt-in does not support external-pair networking')
+  }
   const directory = typeof message.directory === 'string' && message.directory !== '' ? message.directory : workerData.workEventsDirectory
   if (!directory) throw new Error('external mode needs a work endpoint directory')
   const info = await metadata()
@@ -188,12 +191,18 @@ port.on('message', message => {
 
 try {
   host = await startHost(workerData.gameDir, workerData.statePath, { fetch: fetchFromMain,
-    cloudSave: workerData.cloudSave ?? null,
+    cloudSave: workerData.ownerDocument ? null : (workerData.cloudSave ?? null),
+    ownerDocument: workerData.ownerDocument ?? undefined,
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
-  installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
-    onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
-  await installerExtensions.apply()
+  // Installer selections inspect the legacy v15 `hatched` field before choosing
+  // when to import. An OwnerDocument envelope is not that flat state; defer this
+  // importer until extension ownership is explicitly adapted to owner/pig targets.
+  if (workerData.ownerDocument === null) {
+    installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
+      onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
+    await installerExtensions.apply()
+  }
   if (workerData.workEventsDirectory && workerData.workEventsAutoStart !== false) await startEndpoint()
   port.postMessage({ kind: 'ready' })
 } catch (error) {

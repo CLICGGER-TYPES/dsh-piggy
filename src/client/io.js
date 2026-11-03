@@ -235,6 +235,16 @@ export function createIo(ctx) {
             }
             return
           }
+          // Owner mode tags this non-stale response with the identity of the
+          // session that served it. Do not bind after this presentation has
+          // been disposed; legacy v15 responses carry no such headers.
+          if (ctx.stopped !== true && typeof ctx.bindPresentationIdentity === 'function' && typeof res.headers?.get === 'function') {
+            var ownerId = res.headers.get('x-dsh-owner-id')
+            var pigId = res.headers.get('x-dsh-pig-id')
+            if (typeof ownerId === 'string' && typeof pigId === 'string') {
+              ctx.bindPresentationIdentity({ ownerId: ownerId, pigId: pigId })
+            }
+          }
           // 快照「画面上」没变就不重画：整块内容（菜园一屏 160 个节点、52 张图）拆了重建是白干，
           // 顺手还会把悬停卡、开着的弹层抹掉。指纹按显示精度压过（见 poll-key.js）。
           var key = pollKey(next)

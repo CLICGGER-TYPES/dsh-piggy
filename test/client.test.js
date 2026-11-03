@@ -110,7 +110,10 @@ function fakeDom() {
       if (this._text === '') this.scrollTop = 0
     }
 
-    getBoundingClientRect() { return this.rect }
+    getBoundingClientRect() {
+      if (this.rect.width > 0 || !this.matches('.dp-pig-img,.dp-pig-sleep,.dp-pig-emoji')) return this.rect
+      return { x: 0, y: 0, left: 0, top: 0, right: 70, bottom: 62, width: 70, height: 62 }
+    }
 
     appendChild(child) {
       child.parentNode = this
@@ -138,6 +141,8 @@ function fakeDom() {
     addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn) }
     removeEventListener(name, fn) { this.listeners[name] = (this.listeners[name] ?? []).filter(entry => entry !== fn) }
     setPointerCapture() {}
+    get src() { return this.getAttribute('src') || '' }
+    set src(value) { this.setAttribute('src', value) }
     matches(selector) {
       return selector.split(',').some(part => part.startsWith('.')
         ? this.className.split(/\s+/).includes(part.slice(1)) : this.tagName === part)
@@ -290,7 +295,7 @@ const settle = () => new Promise(resolve => setImmediate(resolve))
 /** Open the panel by tapping the pig. */
 function openPanel(dom, app = 'status') {
   // The menu lives on the context menu; a left click only pats the pig.
-  sceneOf(dom).fire('contextmenu', { preventDefault() {} })
+  sceneOf(dom).fire('contextmenu', { clientX: 35, clientY: 31, preventDefault() {} })
   // B9: the panel opens on the home screen. Most tests are about one app, so
   // they land in it the way a user would: tap its tile.
   if (app !== 'home' && contentOf(dom) !== undefined) {
@@ -301,8 +306,8 @@ function openPanel(dom, app = 'status') {
 
 /** Left-click the pig (a pat, not the menu). */
 function patPig(dom) {
-  sceneOf(dom).fire('pointerdown', { button: 0, clientX: 0, clientY: 0 })
-  sceneOf(dom).fire('pointerup', {})
+  sceneOf(dom).fire('pointerdown', { button: 0, clientX: 35, clientY: 31 })
+  sceneOf(dom).fire('pointerup', { clientX: 35, clientY: 31 })
 }
 
 /** Switch to one of the six icons. */
@@ -1484,7 +1489,7 @@ test('a box that already has a save is still pokeable', async () => {
 
   const host = hostOf(dom)
   const scene = sceneOf(dom)
-  const poke = () => { scene.fire('pointerdown', { button: 0, clientX: 0, clientY: 0 }); scene.fire('pointerup', {}) }
+  const poke = () => { scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31 }); scene.fire('pointerup', { clientX: 35, clientY: 31 }) }
 
   assert.equal(host.attributes['data-unhatched'], 'true', 'an existing-but-unhatched save shows the box')
   assert.equal(findByClass(host, 'dp-poke-hint').hidden, false, 'with its hint')
@@ -1512,7 +1517,7 @@ test('a new box takes three pokes to open, not one', async () => {
 
   const host = hostOf(dom)
   const scene = sceneOf(dom)
-  const poke = () => { scene.fire('pointerdown', { button: 0, clientX: 0, clientY: 0 }); scene.fire('pointerup', {}) }
+  const poke = () => { scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31 }); scene.fire('pointerup', { clientX: 35, clientY: 31 }) }
 
   assert.equal(host.attributes['data-unhatched'], 'true', 'the box announces itself')
   assert.equal(findByClass(host, 'dp-poke-hint').hidden, false, 'and shows a hint')
@@ -1958,9 +1963,9 @@ test('the pig is clamped to the window but never pushed around', async () => {
   pigEl.rect = { x: 0, y: 0, top: 712, left: 1200, right: 1260, bottom: 768, width: 60, height: 56 }
 
   const dragBy = (dx, dy) => {
-    scene.fire('pointerdown', { button: 0, clientX: 0, clientY: 0 })
-    scene.fire('pointermove', { clientX: dx, clientY: dy })
-    scene.fire('pointerup', {})
+    scene.fire('pointerdown', { button: 0, clientX: 35, clientY: 31 })
+    scene.fire('pointermove', { clientX: 35 + dx, clientY: 31 + dy })
+    scene.fire('pointerup', { clientX: 35 + dx, clientY: 31 + dy })
   }
 
   // Dragged far past the top-left: pulled back just far enough to stay visible.
@@ -2037,11 +2042,11 @@ test('right-click opens the menu and left-click only pats the pig', async () => 
 
   // The menu is on the context menu.
   let prevented = false
-  sceneOf(dom).fire('contextmenu', { preventDefault() { prevented = true } })
+  sceneOf(dom).fire('contextmenu', { clientX: 35, clientY: 31, preventDefault() { prevented = true } })
   assert.equal(prevented, true, 'the native context menu must be suppressed')
   assert.equal(host.attributes['data-open'], 'true')
 
-  sceneOf(dom).fire('contextmenu', { preventDefault() {} })
+  sceneOf(dom).fire('contextmenu', { clientX: 35, clientY: 31, preventDefault() {} })
   assert.equal(host.attributes['data-open'], 'false', 'and it toggles back')
 
   // The tooltip is the only discoverability right-click gets.

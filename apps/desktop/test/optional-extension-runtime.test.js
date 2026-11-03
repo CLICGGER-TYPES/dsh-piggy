@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { after, before, test } from 'node:test'
 import { createGameRuntime } from '../../../runtime/index.js'
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg, reset } from '../../../core.js'
 import { createInstallerExtensions } from '../lib/optional-extensions.js'
 import { startBackgroundHost } from '../lib/background-host.js'
 import { buildOptionalExtensions } from '../scripts/pack-optional-extensions.mjs'
@@ -129,6 +129,46 @@ test('real background Worker defers selection, installs after hatch, then preser
     assert.equal(sha(readFileSync(join(f.directory, 'installer-extensions.json'))), receipt)
     assert.equal((await host.handle('GET', '/dsh-piggy/state')).status, 200)
   } finally { await host?.dispose() }
+})
+
+test('OwnerDocument Worker does not treat its envelope as a hatched v15 save for installer selection', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'piggy-owner-installer-worker-'))
+  const packs = join(directory, 'installer')
+  mkdirSync(packs)
+  writeFileSync(join(packs, 'selection.json'), JSON.stringify({ version: 1, keys: ['gacha'] }))
+  writeFileSync(join(packs, 'catalog.json'), JSON.stringify(built.catalog))
+  for (const item of built.catalog.items) {
+    writeFileSync(join(packs, item.file), readFileSync(join(packed, 'packs', item.file)))
+  }
+  const legacyStatePath = join(directory, 'legacy-v15.json')
+  const legacy = reset(NOW)
+  assert.equal(legacy.hatched, false)
+  writeFileSync(legacyStatePath, JSON.stringify(legacy))
+  const ownerDocumentPath = join(directory, 'owner-document.json')
+  let host
+  t.after(async () => {
+    await host?.dispose()
+    rmSync(directory, { recursive: true, force: true })
+  })
+
+  host = await startBackgroundHost(ROOT, ownerDocumentPath, {
+    ownerDocument: { ownerDocumentPath, legacyStatePath, ownerId: 'owner-installer-test', pigId: 'pig-a' },
+    optionalExtensionsDirectory: packs,
+    workEventsAutoStart: false,
+    fetch: async () => { throw new Error('offline owner Worker test') },
+  })
+  const before = JSON.parse(readFileSync(ownerDocumentPath, 'utf8'))
+  assert.equal(before.pigs[0].body.hatched, false)
+  assert.equal(existsSync(join(directory, 'extensions', 'gacha', 'manifest.json')), false)
+  assert.equal(existsSync(join(directory, 'installer-extensions.json')), false)
+
+  const hatch = await host.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: 'hatch' }))
+  assert.equal(hatch.status, 200)
+  const after = JSON.parse(readFileSync(ownerDocumentPath, 'utf8'))
+  assert.equal(after.pigs[0].body.hatched, true)
+  assert.equal(existsSync(join(directory, 'extensions', 'gacha', 'manifest.json')), false,
+    'legacy installer import remains deferred until owner/pig extension context is implemented')
+  assert.equal(existsSync(join(directory, 'installer-extensions.json')), false)
 })
 
 test('bootstrap import does not consume pending reactions before the UI reads them', async t => {

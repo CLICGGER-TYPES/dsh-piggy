@@ -13,7 +13,8 @@ import { pathToFileURL } from 'node:url'
  * Load the game from `gameDir` and serve its routes.
  * @param {string} gameDir  a folder laid out like apps/desktop/game (see scripts/pack-game.mjs)
  * @param {string} statePath where this pig's save lives
- * @param {{ fetch?: typeof globalThis.fetch, onSnapshot?: (view: any) => void }} [options]
+ * @param {{ fetch?: typeof globalThis.fetch, onSnapshot?: (view: any) => void,
+ *   ownerDocument?:import('./owner-document-config.js').OwnerDocumentConfig }} [options]
  */
 async function startLegacyHost(gameDir, statePath, options = {}) {
   const load = name => import(pathToFileURL(join(gameDir, name)).href)
@@ -74,6 +75,25 @@ async function startLegacyHost(gameDir, statePath, options = {}) {
 }
 
 export async function startHost(gameDir, statePath, options = {}) {
+  if (options.ownerDocument !== undefined) {
+    if (!existsSync(join(gameDir, 'runtime/index.js'))) {
+      throw new Error('owner-document opt-in requires a game package with runtime/index.js')
+    }
+    const { createGameRuntime } = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
+    const { environmentNote } = await import(pathToFileURL(join(gameDir, 'environment.js')).href)
+    const ownerOptions = options.ownerDocument
+    return createGameRuntime({
+      ...options,
+      ...ownerOptions,
+      statePath: ownerOptions.ownerDocumentPath,
+      journalHeader: environmentNote({
+        运行形态: '桌面 OwnerDocument opt-in',
+        存档路径: ownerOptions.ownerDocumentPath,
+        Node: process.version,
+        ...(typeof process.versions.electron === 'string' ? { Electron: process.versions.electron } : {}),
+      }),
+    })
+  }
   if (!existsSync(join(gameDir, 'runtime/index.js'))) return startLegacyHost(gameDir, statePath, options)
   const { createGameRuntime } = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
   const { environmentNote } = await import(pathToFileURL(join(gameDir, 'environment.js')).href)

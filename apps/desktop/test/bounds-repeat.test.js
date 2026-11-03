@@ -13,10 +13,11 @@ function windowHarness(offset = { x: 0, y: 0, width: 1, height: 1 }) {
   const requested = [], effects = []
   const read = bounds => Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, value + (offset[key] ?? 0)]))
   let actual = read(REQUEST)
+  const win = { isDestroyed: () => false, getBounds: () => ({ ...actual }),
+    setBounds(next) { requested.push({ ...next }); actual = read(next) } }
   const context = {
     BOUNDS_TOLERANCE: 2, petAsked: { ...REQUEST },
-    win: { isDestroyed: () => false, getBounds: () => ({ ...actual }),
-      setBounds(next) { requested.push({ ...next }); actual = read(next) } },
+    getPetWindow: () => win,
     followPig: () => effects.push('follow'), scheduleWindowStateSave: () => effects.push('save'),
     pushGeometry: () => effects.push('geometry'), log() {},
   }

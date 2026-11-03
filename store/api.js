@@ -10,70 +10,11 @@
  *
  * @module dsh-piggy/store/api
  */
-import {
-  act as coreAct,
-  touch as coreTouch,
-  adopt as coreAdopt,
-  ageFromNow as coreAgeFromNow,
-  applyDevPatch as coreDevPatch,
-  buy as coreBuy,
-  callOffActivity as coreCallOff,
-  decay,
-  drainPending,
-  feed as coreFeed,
-  grantAll as coreGrantAll,
-  hatch as coreHatch,
-  hatchEgg,
-  chat as coreChat,
-  rename as coreRename,
-  replyToLine as coreReplyToLine,
-  openGift as coreOpenGift,
-  writeDiaryIfNewDay as coreWriteDiary,
-  startPomodoro as coreStartPomodoro,
-  settlePomodoro as coreSettlePomodoro,
-  abandonPomodoro as coreAbandonPomodoro,
-  extensionOn as coreExtensionOn,
-  setExtension as coreSetExtension,
-  extensionsView as coreExtensionsView,
-  SHOP as CORE_SHOP,
-  recordOnline as coreRecordOnline,
-  signIn as coreSignIn,
-  reset as coreReset,
-  seeDoctor as coreSeeDoctor,
-  setCatchphrase as coreSetCatchphrase,
-  setMotto as coreSetMotto,
-  editProfile as coreEditProfile,
-  crown as coreCrown,
-  setOwnerName as coreSetOwnerName,
-  setQuiet as coreSetQuiet,
-  setOfflineFeed as coreSetOfflineFeed,
-  sellSouvenir as coreSellSouvenir,
-  setTimeScale as coreSetTimeScale,
-  startInterest as coreStartInterest,
-  startStudy as coreStartStudy,
-  startTrip as coreStartTrip,
-  startWork as coreStartWork,
-  takeOff as coreTakeOff,
-  useItem as coreUseItem,
-  wearItem as coreWearItem,
-  castFishing as coreCastFishing,
-  feedFish as coreFeedFish,
-  grantFish as coreGrantFish,
-  hookFishing as coreHookFishing,
-  keepFish as coreKeepFish,
-  resolveFishing as coreResolveFishing,
-  sellFish as coreSellFish,
-  buyRod as coreBuyRod,
-  buyFishingAutomation as coreBuyFishingAutomation,
-  collectAutoFish as coreCollectAutoFish,
-  chooseSpot as coreChooseSpot,
-  exchangeCurrency as coreExchange,
-  skipFishingWait as coreSkipFishingWait,
-  startAutoFishing as coreStartAutoFishing,
-  selectSkin as coreSelectSkin,
-  registerCustomSkin as coreRegisterCustomSkin,
-  sayAfter as coreSayAfter,
-} from '../core.js'
+import { createApiActions } from './api-actions.js'
+import { createApiFishing } from './api-fishing.js'
+import { createApiInventory } from './api-inventory.js'
+import { createApiLifecycle } from './api-lifecycle.js'
+import { createApiProfile } from './api-profile.js'
 import { createCommandContext } from './command-context.js'
 import { createApplicationContext } from './target-context.js'
 
@@ -96,6 +37,19 @@ import { createApplicationContext } from './target-context.js'
  * @property {() => void} [settle] - F02 lifecycle replacement: settle achievements then save
  * @property {() => void} dispose - flush and stop the timer
  * @property {object} [journal] - 运行日志（设置 → 日志 → 导出）
+ */
+
+/**
+ * 每个命令组接收的 live runtime；这里只传 getters/command boundaries，
+ * 不把当前存档对象作为构造时快照。
+ * @typedef {object} ApiRuntime
+ * @property {ApplicationContext} application
+ * @property {CommandContext} commands
+ * @property {() => number} now
+ * @property {() => object|null} getState
+ * @property {(next: object|null) => void} setState
+ * @property {(fn: (state: object) => object) => object} mutate
+ * @property {() => void} settleAndSave
  */
 
 /**
@@ -147,6 +101,13 @@ export function createApi(control) {
   // 在线游标属于 owner runtime（旧入口为每个上下文一个），不是每个 API
   // 私有字段；它不写入存档，也不新增字段/计时器。
 
+  const runtime = { application, commands, now, getState, setState, mutate, settleAndSave }
+  const actions = createApiActions(runtime)
+  const fishing = createApiFishing(runtime)
+  const inventory = createApiInventory(runtime)
+  const profile = createApiProfile(runtime)
+  const lifecycle = createApiLifecycle(runtime)
+
   return {
     /** The live state (null until an egg is laid). Exposed for rendering. */
     get state() { return getState() },
@@ -165,247 +126,61 @@ export function createApi(control) {
      */
     mutate: fn => mutate(fn),
 
-    /** Digest one observed harness event; silently ignored before hatching. */
-    feed(event) {
-      const state = getState()
-      if (state === null) return []
-      try {
-        const result = commands.runFor(commands.scope, live => ({ crossed: coreFeed(live, event, now()) }))
-        if (Array.isArray(result?.crossed)) return result.crossed
-        if (result?.reason === 'error') {
-          console.warn(`[dsh-piggy] feed failed: event="${event}" reason="${result.message ?? 'error'}"`)
-        }
-        return []
-      } catch (error) {
-        console.warn(`[dsh-piggy] feed failed: event="${event}" reason="${error instanceof Error ? error.message : String(error)}"`)
-        return []
-      }
-    },
-
-    /** Fold wall-clock decay in (and resolve work/illness) then hand back state. */
-    freshen() {
-      const state = getState()
-      if (state === null) return null
-      try {
-        const nowMs = now()
-        const cursor = application.owner.onlineCursor
-        const result = commands.runFor(commands.scope, live => {
-          // 在线时长按真实时间累计（与调试页的时间倍率无关）；每次读状态就是
-          // 一次「面板还在轮询」的证据。共享 owner 的 cursor 让 A/B 同一段
-          // 真实时间只计一次；旧 createApi 上下文仍各自拥有等价游标。
-          coreRecordOnline(live, cursor, nowMs)
-          decay(live, nowMs)
-          // 离线活动先按发生时间逐段结算、翻页；最后再归到当前游戏日。
-          coreWriteDiary(live, nowMs)
-          // 番茄钟到点就在下一次请求结算（关着面板也算），奖励与计数都在核心侧。
-          // 番茄钟扩展关着就不结算（关的时候进行中的那一个已经放弃）。
-          if (coreExtensionOn(live, 'pomodoro')) coreSettlePomodoro(live, nowMs)
-          return { ok: true }
-        })
-        const failed = result !== null && typeof result === 'object' && result.ok === false
-        if (!failed) {
-          // Legacy createApi commits may return undefined/false even though the
-          // callback ran; only a structured failure withholds the cursor.
-          application.owner.onlineCursor = nowMs
-        } else if (result.reason === 'error') {
-          // Keep the stale-but-valid state, but say why it is stale.
-          console.warn(`[dsh-piggy] decay failed: reason="${result.message ?? 'error'}"`)
-        }
-      } catch (error) {
-        console.warn(`[dsh-piggy] decay failed: reason="${error instanceof Error ? error.message : String(error)}"`)
-      }
-      return getState()
-    },
-
-    /** Apply one care action with its cooldown, spending `itemKey` when given. */
-    act: (action, itemKey) => mutate(live => coreAct(live, action, now(), itemKey)),
-
-    /** 拿起/抛出/戳一下：只刷新活跃时间，不消耗物品、不加心情。 */
-    touch: () => mutate(live => coreTouch(live, now())),
-
-    /** Send the pig out to work. */
-    startWork: (jobKey, short = false) => mutate(live => coreSayAfter(live, coreStartWork(live, jobKey, now(), short === true), 'workStart', now())),
-
-    /** Send the pig to class. */
-    startStudy: (subjectKey, stageKey) => mutate(live => coreSayAfter(live, coreStartStudy(live, subjectKey, stageKey, now()), 'studyStart', now())),
-
-    /** Send the pig to an 兴趣课. */
-    startInterest: interestKey => mutate(live => coreSayAfter(live, coreStartInterest(live, interestKey, now()), 'studyStart', now())),
-
-    /** Debug: one of everything (consumables, 装扮, coins). */
-    grantAll: () => mutate(live => coreGrantAll(live, now())),
-
-    /** Send the pig travelling. */
-    startTrip: tripKey => mutate(live => coreSayAfter(live, coreStartTrip(live, tripKey, now()), 'tripStart', now())),
-    castFishing: (power, bait) => mutate(live => coreCastFishing(live, Number(power), now(), undefined, bait)),
-    hookFishing: () => mutate(live => coreHookFishing(live, now())),
-    resolveFishing: success => mutate(live => coreResolveFishing(live, success === true, now())),
-    keepFish: () => mutate(live => coreKeepFish(live, now())),
-    feedFish: id => mutate(live => coreFeedFish(live, id, now())),
-    sellFish: id => mutate(live => coreSellFish(live, id, now())),
-    buyRod: () => mutate(live => coreBuyRod(live, now())),
-    buyFishingAutomation: kind => mutate(live => coreBuyFishingAutomation(live, kind, now())),
-    collectAutoFish: () => mutate(live => coreCollectAutoFish(live, now())),
-    chooseSpot: key => mutate(live => coreChooseSpot(live, key, now())),
-    /** 扩展币 ↔ 金币（规则 1）。 */
-    exchange: (key, direction, amount) => mutate(live => coreExchange(live, key, direction === 'fromGold' ? 'fromGold' : 'toGold', amount, now())),
-    startAutoFishing: (minutes, bait) => mutate(live => coreStartAutoFishing(live, Number(minutes), now(), bait)),
-    grantFish: key => mutate(live => ({ ok: coreGrantFish(live, key, now()) !== null })),
-    skipFishingWait: () => mutate(live => coreSkipFishingWait(live, now())),
-    selectSkin: key => mutate(live => coreSayAfter(live, coreSelectSkin(live, key, now()), 'skin', now())),
-    registerCustomSkin: metadata => mutate(live => coreRegisterCustomSkin(live, metadata, now())),
-
-    /** Bring the pig home early (work forfeits pay; study/trips are refunded). */
-    callOffActivity: () => mutate(live => coreCallOff(live, now())),
-
-    /** Back-compat alias. */
-    callOffWork: () => mutate(live => coreCallOff(live, now())),
-
-    /** Buy one item into the backpack. */
-    buy: itemKey => mutate(live => {
-      // 关掉的扩展的商品（比如钓鱼关了的鱼饵）不卖。
-      const kind = CORE_SHOP.find(item => item.key === itemKey)?.kind
-      const owner = coreExtensionsView(live).find(extension => !extension.on && extension.shopKinds.includes(kind))
-      return owner === undefined ? coreSayAfter(live, coreBuy(live, itemKey, now()), 'buy', now()) : { ok: false, reason: 'extension-off' }
-    }),
-    /** 扩展开关（存档里）。 */
-    setExtension: (key, on) => mutate(live => coreSetExtension(live, key, on, now())),
-    /** 某个扩展开没开（没有猪时按默认）。 */
-    extensionOn: key => coreExtensionOn(getState(), key),
-
-    /** Use one item from the backpack. */
-    useItem: itemKey => mutate(live => coreUseItem(live, itemKey, now())),
-
-    /** 看医生: pay to be cured without buying the medicine. */
-    seeDoctor: () => mutate(live => coreSayAfter(live, coreSeeDoctor(live, now()), null, now())),
-    sellSouvenir: souvenirKey => mutate(live => coreSellSouvenir(live, souvenirKey, now())),
-
-    /** The pig speaks up on its own: 'enter' after a while away, 'idle', or 'time'（按时间说的话）. */
-    chat: reason => mutate(live => coreChat(live, reason === 'enter' || reason === 'time' ? reason : 'idle', now())),
-
-    /** 免打扰 on or off. */
-    setOfflineFeed: on => mutate(live => coreSetOfflineFeed(live, on)),
-    setQuiet: on => mutate(live => coreSetQuiet(live, on)),
-
-    /** The pig's catchphrase (居民卡). */
-    setCatchphrase: text => mutate(live => coreSetCatchphrase(live, text)),
-
-    /** The line on the pig's card (居民卡). */
-    setMotto: text => mutate(live => coreSetMotto(live, text)),
-    /** 居民卡：自由修改性格、生日。 */
-    editProfile: change => mutate(live => coreEditProfile(live, change)),
-
-    /** 加冕: the owner picks a form the pig qualifies for. */
-    crown: formKey => mutate(live => coreCrown(live, now(), formKey || undefined)),
-
-    /** What the pig calls its owner. */
-    setOwnerName: name => mutate(live => coreSetOwnerName(live, name)),
-
-    /** The owner answers the pig's latest line. */
-    reply: (lineId, replyIndex) => mutate(live => coreReplyToLine(live, lineId, replyIndex, now())),
-
-    /** 领今天的签到礼包。 */
-    signIn: () => mutate(live => coreSignIn(live, now())),
-    /** C2: 开一个番茄（15/25/45 分钟）／放弃当前这个。 */
-    startPomodoro: minutes => mutate(live => coreStartPomodoro(live, Number(minutes), now())),
-    abandonPomodoro: () => mutate(live => coreAbandonPomodoro(live, now())),
-
-    /** 开一个攒着的在线礼包。 */
-    openGift: () => mutate(live => coreOpenGift(live, now())),
-    wear: (itemKey, on) => mutate(live => (on ? coreWearItem(live, itemKey, now()) : coreTakeOff(live, itemKey, now()))),
-
-    /** Open the box. Only works when there is no living pig yet. */
-    hatch() {
-      const state = getState()
-      // A save that exists but is not hatched is a box — reset and adopt both
-      // produce one. Refusing because `state !== null` left the box unopenable.
-      if (state !== null && state.hatched === true) return false
-      setState(state === null ? hatchEgg(now()) : coreHatch(state, now()))
-      settleAndSave()
-      return true
-    },
-
-    /** Change how fast the pig ages. */
-    setTimeScale(scale) {
-      const state = getState()
-      if (state === null) return false
-      return mutate(live => { coreSetTimeScale(live, scale, now()); return true }) === true
-    },
-
-    /** Put the age back on the real clock. */
-    ageFromNow() {
-      const state = getState()
-      if (state === null) return false
-      return mutate(live => { coreAgeFromNow(live, now()); return true }) === true
-    },
-
-    /** Developer mode: force the pig into any state. */
-    dev(patch) {
-      // Through mutate(): a patch that blows up halfway must not be written.
-      return mutate(live => { coreDevPatch(live, patch, now()); return true }) === true
-    },
-
-    /** Start from a brand new box, living pig or not. */
-    reset() {
-      setState(coreReset(now()))
-      settleAndSave()
-      return true
-    },
-
-    /**
-     * Start over with a fresh box, keeping the old pig's memories. Only offered
-     * once a pig has died — you cannot throw a living one away.
-     */
-    adopt() {
-      const state = getState()
-      if (state === null) return false
-      if (state.dead !== true) return false
-      setState(coreAdopt(state, now()))
-      settleAndSave()
-      return true
-    },
-
-    /** Rename the pig; null when the name is unusable or the pig is absent. */
-    rename(rawName) {
-      const state = getState()
-      if (state === null) return null
-      try {
-        const result = commands.runFor(
-          commands.scope,
-          live => ({ cleaned: coreRename(live, rawName, now()) }),
-          { saveWhen: value => value.cleaned !== null },
-        )
-        if (typeof result?.cleaned === 'string') return result.cleaned
-        if (result?.reason === 'error') {
-          console.warn(`[dsh-piggy] rename failed: reason="${result.message ?? 'error'}"`)
-        }
-        return null
-      } catch (error) {
-        console.warn(`[dsh-piggy] rename failed: reason="${error instanceof Error ? error.message : String(error)}"`)
-        return null
-      }
-    },
-
-    /** Take the queued announcements (work done, got sick, got better…). */
-    drainPending() {
-      const state = getState()
-      if (state === null) return []
-      try {
-        const result = commands.runFor(
-          commands.scope,
-          live => ({ events: drainPending(live) }),
-          { saveWhen: value => value.events.length > 0 },
-        )
-        if (Array.isArray(result?.events)) return result.events
-        if (result?.reason === 'error') {
-          console.warn(`[dsh-piggy] drainPending failed: reason="${result.message ?? 'error'}"`)
-        }
-        return []
-      } catch (error) {
-        console.warn(`[dsh-piggy] drainPending failed: reason="${error instanceof Error ? error.message : String(error)}"`)
-        return []
-      }
-    },
+    feed: actions.feed,
+    freshen: actions.freshen,
+    act: actions.act,
+    touch: actions.touch,
+    startWork: actions.startWork,
+    startStudy: actions.startStudy,
+    startInterest: actions.startInterest,
+    grantAll: actions.grantAll,
+    startTrip: actions.startTrip,
+    castFishing: fishing.castFishing,
+    hookFishing: fishing.hookFishing,
+    resolveFishing: fishing.resolveFishing,
+    keepFish: fishing.keepFish,
+    feedFish: fishing.feedFish,
+    sellFish: fishing.sellFish,
+    buyRod: fishing.buyRod,
+    buyFishingAutomation: fishing.buyFishingAutomation,
+    collectAutoFish: fishing.collectAutoFish,
+    chooseSpot: fishing.chooseSpot,
+    exchange: inventory.exchange,
+    startAutoFishing: fishing.startAutoFishing,
+    grantFish: fishing.grantFish,
+    skipFishingWait: fishing.skipFishingWait,
+    selectSkin: profile.selectSkin,
+    registerCustomSkin: profile.registerCustomSkin,
+    callOffActivity: actions.callOffActivity,
+    callOffWork: actions.callOffWork,
+    buy: inventory.buy,
+    setExtension: inventory.setExtension,
+    extensionOn: inventory.extensionOn,
+    useItem: inventory.useItem,
+    seeDoctor: inventory.seeDoctor,
+    sellSouvenir: inventory.sellSouvenir,
+    chat: profile.chat,
+    setOfflineFeed: profile.setOfflineFeed,
+    setQuiet: profile.setQuiet,
+    setCatchphrase: profile.setCatchphrase,
+    setMotto: profile.setMotto,
+    editProfile: profile.editProfile,
+    crown: profile.crown,
+    setOwnerName: profile.setOwnerName,
+    reply: profile.reply,
+    signIn: profile.signIn,
+    startPomodoro: profile.startPomodoro,
+    abandonPomodoro: profile.abandonPomodoro,
+    openGift: profile.openGift,
+    wear: inventory.wear,
+    hatch: lifecycle.hatch,
+    setTimeScale: lifecycle.setTimeScale,
+    ageFromNow: lifecycle.ageFromNow,
+    dev: lifecycle.dev,
+    reset: lifecycle.reset,
+    adopt: lifecycle.adopt,
+    rename: lifecycle.rename,
+    drainPending: lifecycle.drainPending,
 
     /** Flush any pending write and stop the timer. Called on plugin unload. */
     dispose,

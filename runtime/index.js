@@ -22,12 +22,41 @@ import { createCloudRoutes } from './cloud-routes.js'
 import { createGitSync, testGitRemote } from './git-sync.js'
 import { normalizeCloudSaveSettings } from './cloud-save-settings.js'
 import { createSaveArchive, parseSaveArchive } from './save-archive.js'
+import { createOwnerDocumentRuntime } from './owner-document-runtime.js'
 export { WORK_EVENT_VERSION, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS, validateWorkEvent } from './work-events.js'
+
+/** Explicit marker checked by the desktop before an OwnerDocument path reaches this runtime. */
+export const OWNER_ARCHIVE_RUNTIME_API_VERSION = 1
 
 /** @param {{statePath:string,fetch?:typeof globalThis.fetch,onSnapshot?:(view:any)=>void,
  * onStateChanged?:()=>void,now?:()=>number,journalHeader?:object,
- * cloudSave?:{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,insecureSkipTlsVerify?:boolean,syncReady?:boolean}|null}} options */
+ * cloudSave?:{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,insecureSkipTlsVerify?:boolean,syncReady?:boolean}|null,
+ * ownerDocumentPath?:string,legacyStatePath?:string,ownerId?:string,pigId?:string,
+ * transport?:{kind:string,origin:string}}} options */
 export function createGameRuntime(options) {
+  if (Object.hasOwn(options, 'ownerDocumentPath')) {
+    if (typeof options.ownerDocumentPath !== 'string' || options.ownerDocumentPath.trim() === '') {
+      throw new TypeError('owner-document opt-in needs an explicit ownerDocumentPath')
+    }
+    if (options.cloudSave?.enabled === true) {
+      throw new Error('owner-document opt-in does not support cloud saves')
+    }
+    if (typeof options.pigId !== 'string' || options.pigId.trim() === '') {
+      throw new TypeError('owner-document opt-in needs an explicit pigId target')
+    }
+    return createOwnerDocumentRuntime({
+      ownerDocumentPath: options.ownerDocumentPath,
+      pigId: options.pigId,
+      ...(options.legacyStatePath === undefined ? {} : { legacyStatePath: options.legacyStatePath }),
+      ...(options.ownerId === undefined ? {} : { ownerId: options.ownerId }),
+      ...(options.now === undefined ? {} : { now: options.now }),
+      ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
+      ...(options.onStateChanged === undefined ? {} : { onStateChanged: options.onStateChanged }),
+      ...(options.onSnapshot === undefined ? {} : { onSnapshot: options.onSnapshot }),
+      ...(options.journalHeader === undefined ? {} : { journalHeader: options.journalHeader }),
+      ...(options.transport === undefined ? {} : { transport: options.transport }),
+    })
+  }
   mkdirSync(dirname(options.statePath), { recursive: true })
   const release = acquireGameLock(options.statePath)
   let ledger

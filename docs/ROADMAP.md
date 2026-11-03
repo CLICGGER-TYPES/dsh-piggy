@@ -10,7 +10,111 @@
 - RC6 游戏0.37.2-rc.6 / 桌面外壳0.6.8-rc.4 已发布。菜园4.2.1扩展包已独立发布，GitHub bundle SHA-256 为 `bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0`，minGame 为0.37.2。
 - GitHub公开farm目录条目为4.2.1，Gitee公开目录保持4.2.0；本次不发布Gitee目录更新。
 - GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
-- 当前RC6只接入云存档配置与只读连接测试；云上传、恢复和自动合并仍未实现。多猪正式入口和稳定ID仍未实现。
+- 当前RC6只接入云存档配置与只读连接测试；云存档上传、恢复与冲突处理均暂缓、尚未实现。多猪正式入口和稳定ID仍未实现。
+
+## 2026-11-03 M2 OwnerFlow（显式 opt-in 隔离候选，未合并/未做 UI 验收）
+
+- 在 D01 OwnerDocument 纯 codec、D02 文件事务/迁移库之后，当前隔离候选把两者接到 `createGameRuntime`、DSH adapter 与桌面 host。只有调用者显式提供 `ownerDocumentPath`、`pigId` 和初始化所需的 `legacyStatePath`/`ownerId` 才进入此路径；默认 DSH/Desktop 路径仍各自使用原 v15 单猪存档，不自动共享或合并。
+- owner 文档用调用者提供的稳定 `ownerId` 与 `pigId` 保存一份共享资源和多个猪 body。现有单猪命令、`/state`、`/act` 适配到绑定的 session；owner 内金币、背包、菜园等共享，猪名字/成长等 body 分开。`reset`/`adopt` 只替换当前猪 body。ID 只标识数据，不能作为授权。
+- 创建 owner 文档时只读取明确指定的旧 v15 文件，保留源字节不变；目标文件的迁移/写入使用 D02 事务与 revision CAS。并发进程可打开同一目标，但旧 revision 的写入会被拒绝，当前候选不提供实时跨进程同步。owner 模式拒绝 flat archive 与 cloud 操作；云存档上传、恢复、冲突处理继续暂缓。
+- 当前隔离分支针对 owner/runtime/store、旧兼容路径和 DSH/Desktop 接线的定向 Node 契约为 131/131；变更生产 JS 的 TypeScript 5.9.3 定向检查与语法检查通过。PR50 双平台 CI `41566650671`、文档状态后续 CI `41567617112` 均通过。owner-document Desktop 模式暂不运行只识别 flat v15 的安装器选择导入，待 extension target/context 接线。私有 Electron 45.2.1 AppImage（source `a498c894`）已构建并静态回读：143,045,231 bytes，SHA-256 `aaf9d2c36eddbb42a8ef81362342449a52710de01dcb6bbc44c36b4b1be70d96`，379 个 game payload 文件逐字节一致；应用未执行，独立真实桌面/DSH UI 验收仍待完成，不把 Node/静态回读记为端到端产品验收。
+
+## 2026-11-03 ARCHIVEOWN01 存档服务边界（显式 API 候选，未接生产入口）
+
+- 新 `runtime/owner-document-archive.js` 提供显式 owner document ZIP 导出、只读预检、确认后导入与恢复 API；旧 flat v15 只在调用者指定 ownerId/pigId 后映射为单猪 owner document。导入仅创建全新 owner 根目录，已有目标一律拒绝，不猜测跨 owner 合并或覆盖策略；目录发布沿用 D02 文件事务与同文件系统原子 rename。
+- owner ZIP 记录完整 owner document、通过现有校验的皮肤/官方扩展 sidecars 与 work receipts。损坏身份/引用/收据、pending work WAL、未支持资源或不完整证据会拒绝或要求明确接受现有 warning；localStorage、设备偏好与 cloud settings 不打包或写回。旧 v15 源字节保持不变。
+- ARCHIVEOWN01 当时只交付 archive/service contract，尚未接入桌面设置或导入界面。ARCHIVEUI01 在此基础上增加桌面主进程入口与独立设备选择；候选动态验收状态见下一节，不能把服务层契约误记为已通过 UI。
+
+## 2026-11-03 ARCHIVEUI01 完整存档桌面入口（候选，等待独立 UI 验收）
+
+- 设置页保留现有“当前小猪存档”flat v15入口；进入 OwnerDocument 模式后为保护共享资源，旧单猪导入/导出控件停用且说明原因，flat 导入仍由宿主拒绝。完整档入口只在活动游戏运行时导出 owner-archive capability 时显示，DSH/stage/旧缓存游戏包不会显示或接收 OwnerDocument 路径。
+- 默认 legacy v15 完整档导出只在内存映射为单猪 owner 文档，原 `state.json` 字节不改、也不自动迁移。完整档 ZIP 预览显示各猪成长摘要及共享金币、背包、菜园；设备 localStorage/显示/声音偏好不打包。导入只创建新的本机 owner 根目录，拒绝已有目录；旧 owner、原 v15 与兄弟猪不会覆盖或合并。
+- 用户批准“导入并切换”：完整事务回读成功后先保存并停止旧宿主，再写独立 `owner-archive-selection.json` pending 选择并重启。新运行时 capability、OwnerDocument、目标猪与窗口启动成功后提交 active；启动失败回滚原选择、保留已导入副本。该流程不实现 owner 选择器、跨 owner 合并、联网或云上传。
+- ARCHIVEUI01 开发候选的定向 source tests/typecheck/build 已通过；CI与独立桌面 UI尚待完成。Node/契约检查不记为产品 UI 验收。
+
+## 2026-11-03 RESOURCEFLOW01 展示资源上下文接线（隔离候选，未做 UI）
+
+- 基于 M2 `a498c8941e1fd7485d4c6f7e95ad5cc3e86534e6`。`PresentationContext` 可选接收不可变 `ownerId`/`pigId` 标签，并公开它实际采用的 art registry；`mountGame` 把同一 identity 和 registry 交给展示上下文与动作 player。缺省 identity 继续为 null、默认 art registry 与旧单猪挂载不变。IDs 只是数据标签，不是认证或授权。
+- 同一 owner 的展示可按调用方提供共享 art/action registry 引用；各自 state provider、DOM/action player 与 audio channel 仍按 presentation 隔离。`customSkins`、skin/worn 归属表、skin pack 文件路径不变；声音配方仍为现有静态表，AudioContext/音量仍为设备级。
+- 无头 Node 契约 58/58 通过，完整 typecheck exit 0；现有构建刷新根 `client.js`（SHA-256 `67f4bde8a073ce4e261f40e7753e6a08c684ec6bb27273eefe95b2b318644715`），farm client/server 生成物未变。PR CI 与独立 UI 尚待完成；没有新 skin/audio pack、selector、玩法或数据格式。
+
+## 2026-11-03 ADAPTEROWN01 owner 身份进入展示上下文（隔离候选）
+
+- DSH 和 Desktop owner 路径继续共用同一 `OwnerDocumentRuntime`。owner `/state` 响应只在 headers 标出该 route 所绑定 session 的 `ownerId`/`pigId`；客户端 presentation 首次收到后绑定一次，后续响应不能把实例改绑到另一只猪。身份只是数据标签，不选目标、不授权；默认 v15 状态体与响应 headers 不变。
+- `createArtContext` 在没有调用方专属资源表时仍选现有只读 `defaultArtResources`，且已提供给动作 player。当前 host 没有 owner 专属 resource-registry 载入/传输入口，这批不复制 registry、不新造 asset 协议；owner skin sidecar 继续走现有共享文件路径。
+- 这是来源码级 adapter 接线；没有增加 UI/目标选择器、存档字段或网络功能。独立桌面/DSH UI 验收尚未覆盖。
+
+## 2026-11-02 主线集成与实际覆盖（PR36、PR42 协议改动、PR43）
+
+- [PR36](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/36) 存储模块拆分已合入 main：保留 v15 数据格式、legacy 四个出口、60 项 API 名称/顺序、live getter 与保存/回滚时序；相关 45 项测试、TypeScript 5.9.3 类型检查与构建通过。未声称该项有新增原生 UI 覆盖。
+- PR42 的 `piggy://` 协议路由抽离已随 PR43 集成进入 main，当前模块为 `apps/desktop/lib/game-protocol.js`。双平台 CI 均为 2,425 项，Linux 2,413 通过/12 跳过、Windows 2,420 通过/5 跳过，零失败。c566 候选的隔离 Linux VM 有限真实 UI 覆盖包括孵化、面板、菜园、商店、工具和种子流程；Windows 记录来自较早的 0f1884c 候选，不能算作 c566 的 Windows UI 验收。
+- [PR43](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/43) QA 操作库已合入 main；CI 中 Linux 标准库契约 9/9 通过，15 个 Python 源文件 AST 检查通过。独立执行者用 r6 原型通过真实 native input 点击 DSH Continue，Notice 消失并进入下一页。键入、滚轮、拖拽和桌面 hatch 未在该次 UI 中验证；此项不代表完整 DSH/OpenCode 或 Windows 原生 UI 验收。
+- 当前 main 尚未把窗口与启动编排整体移出 `main.js`；面板与猪窗口句柄分别由 `panel-window.js`、`pet-window.js` 单一持有，装配与几何/交互算法仍在组合根。
+
+## 2026-11-02 MAIN02 主进程退出生命周期拆分（PR44 已合入）
+
+- 基线为已合并 PR43 的 `b5dedefb68b50b41ceb4f696730f65398f67f2b2`。`desktop-lifecycle.js` 统一持有关闭状态与动作预约，保留存档保存、失败重试、退出等待与外壳安装时保留 `shellUpdates` 的顺序；`main.js` 继续装配运行时资源，窗口与启动编排仍留在组合根。
+- PR44 已合入 main，CI 双平台成功。开发侧相关 Node 契约 29/29 通过；完整本机类型检查因隔离 checkout 缺 Electron 相关依赖未完成，使用 CI 验证。
+- QDESKFINAL01 exit-final03 对 PKG09 完成一次核心 Linux 正常退出与同 profile 冷重开验收：真实 Exit 点击后约 1.26 秒进程组为空、CDP 不可达、runtime lock 释放；冷重开后 `hatched=true` 且 coins 仍为 500。附加的第二次 Exit 因截图文件 `O_EXCL` 重名未点击，记为 NOCOVER；runner exit 1 只反映这项可选覆盖未完成，不否定前述一次正常退出与冷重开结果，也不代表长期稳定性。
+
+## 2026-11-03 HOSTOWN01 启动运行时句柄所有权拆分（隔离候选）
+
+- 基线为 main `5d8c786fe4dea6042e23175570cb315378893e0a`。新 `apps/desktop/lib/desktop-runtime.js` 唯一持有后台 host、版本服务及两个启动 Promise；`main.js` 仍保留迁移、代理/更新器、版本、首次游戏下载、host、协议、窗口与托盘的原顺序，只通过 live getter 获取句柄。
+- 定向 Node 契约 6/6 通过，覆盖 pending 立即可见、host/versions 启动拒绝传播、退出等待两项启动后再读 live host 并关闭版本服务；相关 JS syntax checks 通过。隔离 checkout 没有 TypeScript 编译器，本地完整 typecheck 未运行，由 PR CI 验证。无产品 UI、VM、打包验收。
+
+## 2026-11-02 WINOWN01 面板窗口所有权拆分（PR45 已合入）
+
+- 基线为 main `4abcac24dcbba6c12236fd59cddd2ba71d38f125`。`apps/desktop/lib/panel-window.js` 单独持有面板 `BrowserWindow`、renderer 就绪态及创建/renderer 退出/销毁生命周期；`main.js` 通过 live getter 访问句柄。面板开关、几何、菜单、焦点和 hit/shape 算法保留在原组合根，pet 拖动/飞行不变。
+- 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0` 已合入 main；`102cc73cd42ab3ff3b2739fafcb7fd4b4c2d523c` 的猪窗口所有权也已合入，当前 main 为 `5d8c786fe4dea6042e23175570cb315378893e0a`。主线 CI `41475536965` 成功。
+
+## 2026-11-02 PETOWN01 猪窗口所有权拆分（PR46 已合入）
+
+- 基于 WINOWN01 最终提交 `536f1657777b2a264df268d42da15fc753a18dc0`，`apps/desktop/lib/pet-window.js` 唯一持有猪 `BrowserWindow` 句柄，并转发 ready、加载失败、renderer 退出与关闭事件；旧窗口迟到事件不能污染当前句柄。`main.js` 用 live getter 装配窗口；显示门、位置、drag、flight 与 shape 算法不变。
+- 定向桌面窗口/输入及生命周期测试 132/132 通过，覆盖新旧窗口替换、Linux 显示重建、show gate、IPC 所有权与拖动/shape 路径。PKG10 Linux 定向 UI 覆盖孵化和面板开关；DRAGSETTLE02 真实拖动记录 drag start/end/ticks、mouseup 已释放，等待同一 owned 窗口及猪位置连续稳定约 590ms 后真实右击重开面板，`data-open=true` 并可见。该有限流程不代表完整 flight 视觉、长期稳定或 Windows/macOS 原生 UI 验收。
+
+## 2026-11-02 Electron 45.2.1 Linux X11 候选（CI、私有包及有限原生 UI 已验证）
+
+- PR41 源码候选 `a7ce5727a3842fa7a834a1767aab773c2ebb64fa` 基于 `5b7823ef8d941ebee96b07f91bb2170730921b07`，只更新桌面运行时声明和锁文件。Electron 45.2.1 使用 Chromium 156.0.8078.75；主进程输入算法、游戏数据、schema 与产品 UI 没有因运行时切换而改动。运行时源码已随后续协议/QA 整合进入当前 main。
+- [PR41 CI](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/41380319515) 双平台通过：Linux 2407/2419 项通过、0 失败、12 跳过；Windows 2414/2419 项通过、0 失败、5 跳过；构建、类型检查与生成物 freshness 均通过。
+- 私有 PKG06 AppImage 已构建并完成静态回读，大小 143,020,760 bytes，SHA-256 `1a09b9ca0db95b9a9e0e94b24023c39ab0b6823167497c8027d08fe63846573f`。72 个 Electron 45.2.1 官方 ZIP 成员、桌面 ASAR 配置源和 375 个游戏文件均按记录做了字节核对。该私有包曾在隔离 Linux VM 中用于 R05/R06/R08 原生 UI 验收，未公开发布。
+- R05 观察到真实宠物点击使 `data-poke=1`；OS 指针与 Electron 屏幕坐标已记录；90.01 秒内 46 个样本显示进程组和 CDP 均存活，观察窗口内未见 GPU fatal，但原始 stderr 在窗口结束后的清理阶段记录到 fatal（03:26:58.494Z）。这不等于关闭过程无 fatal 或长期稳定。R06 通过三次真实点击孵化，并完成右键开面板、导航、设置页滚动和普通开关操作；DOM `data`/`aria` 与本机 `localStorage` 读回相符。孵化前后截图和 `data-unhatched=false` 已记录，视觉收起按真实界面接受；原生 hidden-state 检查仍为 NOCOVER。
+- R08 的 C7 步骤全部 exit 0：真实孵化、面板操作以及 farm 4.2.2 菜园、商店、工具与种子页面操作通过；实际加载的 farm client SHA-256 为 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。受限空白点的 X11 press/release 各一次、renderer 未收到 trusted 输入通过；此结果不代表像素级点击穿透精度。R08 原始收据 `farmUi.reason` 留有旧 fallback 字符串，状态与逐项证据均为 PASS；未修改原始日志或重测。
+- 本轮完成桌面 renderer controller D 与 farm client E 源码拆分及有限 Linux 默认流程代表 UI；尚未覆盖设置持久化重开、Windows/macOS、DSH/OpenCode、完整 flight 视觉、主进程完整拆分、稳定猪 ID 或在线多猪。R05 的 90 秒观察不等于长期稳定性结论。历史 R33F 曾在同一 Electron 45.2.1 候选中出现 GPU process fatal，根因未定位；不能宣称已修复。
+- GitHub 公开 RC6 与 farm 4.2.1 tag、bundle、registry 和旧 hash 保持不变；Gitee 不更新，4.2.2 候选未公开。云存档上传、恢复与冲突处理继续暂缓。
+
+## 2026-11-02 MAIN01 主进程协议边界拆分（已进入 main，有限 Linux UI 已验证）
+
+- 已将 `piggy://` 静态资源与 `/dsh-piggy/…` 请求转发抽到 `apps/desktop/lib/game-protocol.js`。基于 `0f1884c9f5728c5258d10dd237705b81347bf02c` 的源码候选为 `c566873432023171e9951d8f3c0f8624fc51318a`，协议改动随 PR43 集成进入 main。`main.js` 保留 scheme 权限声明、原注册时序与 `registerProtocol(gameDir)` 薄装配；新模块保留 live host/closing getter 和原有状态通知回调。
+- [PR42 CI](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/41392852728) 双平台全绿：Linux 2,425 项（2,413 通过、12 跳过、0 失败）；Windows 2,425 项（2,420 通过、5 跳过、0 失败）。
+- 独立 Linux 真实 UI 对该 c566 候选完成有限代表流程：私有 Electron 45.2.1 AppImage 为 143,020,279 bytes / SHA-256 `332c2b4cfeb58a8dd3d60845bfa0ed958ce9126af226a8c417146ded498de506`；10 次真实 XTest 输入、孵化、面板及 farm 菜园/商店/工具/种子页面操作通过；实际加载的 farm client SHA-256 为 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`。源码、私有包、raw 日志与截图已独立审阅；这不代表完整交互或跨平台原生验收。
+- 该 Linux 轮次的 Chromium GPU fatal 首次出现在 05:32:19.794Z，晚于 UI batch 完成（05:32:19.701Z）和 xev 清理（05:32:19.748Z），早于 AppImage 清理（05:32:24.947Z）。旧 a7 候选 R05/R08 raw stderr 也记录到同类 fatal；缺少精确 SIGTERM 发送时点，因此不能判为协议拆分回归，也不能宣称清理诱发、GPU 已修复或长期稳定。原始日志保留。
+- Windows 有限代表 UI 使用的是 PKG07W 的 `0f1884c` 候选，不是 c566：已观察实际启动、4 次点击孵化、面板、设置和扩展页面；随后真实点击 page2 的 `Exit` tile，浮动宠物与面板视觉消失并返回桌面。未枚举进程或存档锁，也未验证重开持久化。farm 的 UI 安装入口、完整 NSIS 安装/卸载、macOS、DSH 和 OpenCode 尚未覆盖。
+- 整体桌面架构仍未完成：主进程窗口与启动编排、稳定猪 ID、本机多猪持久化及 LAN/公网网络未实现。云存档上传、恢复与冲突处理继续按用户要求暂缓；Gitee 不发布。公开 RC6/farm 4.2.1 不变，farm 4.2.2 独立候选包未公开。
+
+## 2026-11-02 EXITTRACE01 与 DSHCUR01 补充证据（诊断/包检查，不代表验收完成）
+
+- EXITTRACE01 使用 MAIN01 源码 `c566873432023171e9951d8f3c0f8624fc51318a` 与私有 Linux AppImage（143,020,279 bytes，SHA-256 `332c2b4cfeb58a8dd3d60845bfa0ed958ce9126af226a8c417146ded498de506`）。A 完成三次孵化并真实右键，但面板在首次 readback 中未显示，日志没有 `panel shown`/`panel closed`；正常 Exit 未到达，结果为 NOCOVER。此次证据不能确认面板未显示的原因，也不能归因于 blur 链。
+- B 执行一次冻结的 stop 控制；SIGTERM 的 Python audit 记录为 07:44:30.835/.840 的调用前 attempt，随后在 07:44:30.875107 记录 Chromium GPU fatal。audit attempt 不证明内核已投递信号，也不能单独证明其触发 fatal。A 清理阶段同类 fatal 日志也只出现在审计 TERM attempt 之后；正常 Exit 路径和长期 GPU 稳定性仍未验证，原始证据保留。
+- DSHCUR01 私有 npm 包为 7,045,671 bytes，SHA-256 `1bad7e2b6685442a2e2bf0078cd0f1878b0e91f33a953680fe8b089fa569c8af`；608 个包内文件与当前 MAIN01 源码逐字节相符。这只是静态打包检查，未做当前候选的真实 DSH/OpenCode 运行验收。当前 `PATH` 查找未找到 Chromium，但不足以判断系统未安装；`/snap/bin/chromium` 尚待 QA 核查。
+
+## 2026-11-01 存储模块拆分（PR36 已合入）
+
+- MODSPLIT02-B/C/A 源码拆分已完成：legacy-state 兼容入口仍只导出原四个符号；owner-resources 继续唯一持有 canonical resources、同步事务与 rollback，owner-targets 仅管理 target holder/facade 生命周期；store/api.js 保持原 API 属性顺序、live getter 与方法签名，命令实现按职责分组。相关 focused tests 45/45 通过，typecheck 与 build 通过；未重跑完整套件或产品 UI。MODSPLIT02-D/E 是 2026-11-01 对存储拆分子项的暂缓记录；2026-11-02 renderer D 与 farm client E 源码及有限 Linux UI 状态见上文。farm 4.2.1 公开附件保持不变。
+
+## 2026-11-02 桌面 renderer controller 拆分（候选，有限 Linux 原生验收完成）
+
+- MODD01 从本地基线 `91ef248ed273db72a5dc7f34de434d5088422528` 拆出兼容门面、pet/layout/input controllers；desktop `version=6`、pet/panel/ext 路由、旧壳降级、shape/hitShape、拖动/飞行几何顺序保留。生成 `client.js` 已更新，SHA-256 `ec893dcdbfae081147b4da9f76016ea24e9bbbdf14127eedffb170c1041e006d`。
+- 开发侧受限验证：RC6 离线 esbuild 构建完成；controller/drag/hit focused 最终 15/15，bundle 与 convention 守卫 9/9，最后 bundle freshness 2/2，TypeScript 5.9.3 typecheck exit 0。R05/R06/R08 的 Linux 原生代表流程已按顶部状态记录；完整桌面交互与跨平台验收仍未完成；该候选后续整合状态见顶部。
+- 范围仍限于 renderer controller 拆分。随后 `game-protocol.js` 与 `desktop-lifecycle.js` 已把协议和退出生命周期移出 `main.js`；窗口/启动编排仍留在组合根。farm client 源模块化 E 已在下方集成。真实多猪入口/稳定 IDs、按猪独立存档及实际联网也都未实现；整体架构仍未完成。
+
+## 2026-11-02 Farm client 源码模块化（隔离候选，CI 与有限 Linux UI 已验证）
+
+- 从 `9cf4c544acfe23a2441f212536c821900f90e4fa` 开始，把公开客户端的单一临时状态工厂、DOM/素材宿主工具、动作与焦点、菜地视图和商店/背包视图分到 `src/extensions/farm/client/`。入口仍创建一个 client instance 并注册一次 farm render；`manifest.json` / `server.js` / `client.js` + assets 下载协议、宿主接口与现有 UI/动作语义不变。
+- `scripts/build-farm-client.mjs` 复用既有 esbuild loader，`scripts/build.mjs` 同时生成菜园 client/server；新增 client freshness/单文件分发守卫，删除旧的 `extensions/farm/client.js` 精确 736 行上限。作者模块均小于 400 行并带 `@ts-check`。workflow 的两处生成物差异守卫也包含 farm client。
+- 为保持发布版本与内容一一对应，隔离源码候选使用未占用的 farm `4.2.2`（GitHub 远端无 `ext-farm-4.2.2` tag）。候选 client 为 95,447 bytes / SHA-256 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200`；其 GitHub candidate registry 与离线官方 hash 仅供本地校验，未发布。
+- CI 41380319515 的双平台构建、类型检查与 freshness 均通过；R08 在 Linux 私有候选中实际加载 4.2.2 并完成菜园/商店/工具/种子代表交互，client SHA 与 `b2a1aa42732ade32108a74b9e8c6286297154f37261e553952f59dd87dd41200` 相同。完整跨平台验收仍未完成，候选未发布。
+- GitHub公开 farm 4.2.1 tag/bundle/registry/旧官方 hash保持原身份；Gitee公开与candidate仍为4.2.0/既有4.2.1，本轮不上传或修改。server、manifest之外的 assets、minGame与服务端玩法未变；无本地包发布。
+- 本次只拆客户端代码，不改 farm server/merge/migration、币和物品、种植收获、帮工开关/75%经验规则，不实现真实多猪、稳定 ID 或网络功能。
 
 ## 2026-10-28 D01 G0 基线冻结（进行中，待独立 T01）
 

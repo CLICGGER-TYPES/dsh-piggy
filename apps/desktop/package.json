@@ -16,7 +16,7 @@
     "dist:win:offline": "npm run pack-game && node scripts/pack-optional-extensions.mjs && electron-builder --win nsis --config electron-builder.optional.cjs"
   },
   "devDependencies": {
-    "electron": "44.5.1",
+    "electron": "45.2.1",
     "electron-builder": "26.15.3"
   },
   "build": {
@@ -94,7 +94,7 @@
     }
   },
   "allowScripts": {
-    "electron@44.5.1": true
+    "electron@45.2.1": true
   },
   "piggy": {
     "minShell": "0.6.8-rc.4"

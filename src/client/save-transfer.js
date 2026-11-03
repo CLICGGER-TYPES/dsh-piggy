@@ -3,6 +3,7 @@
 import { button, el } from './dom.js'
 import { desktopShell } from './desktop-shell.js'
 import { isExternalMode, MIRROR_NOTE } from './external-link.js'
+import { ownerArchiveStatus, renderOwnerArchiveSettings } from './owner-archive-transfer.js'
 
 const EXPORT_URL = '/dsh-piggy/save/export'
 const PREVIEW_URL = '/dsh-piggy/save/preview'
@@ -195,6 +196,9 @@ async function commitImport(ui) {
 /** Called on each settings paint; state is module-owned so polling can rebuild the DOM safely. */
 export function renderSaveTransferSettings(ui, section) {
   state.ui = ui
+  const archiveStatus = ownerArchiveStatus()
+  const ownerMode = archiveStatus?.mode === 'owner'
+  const ownerStatusLoading = typeof desktopShell()?.ownerArchives?.status === 'function' && archiveStatus === null
   // 外部桌宠：存档导入导出归桌面版管，这里禁用并说明（设计 4.9 白名单）。
   if (isExternalMode(ui.view)) {
     const box = section(ui, '存档', '备份进度，或把小猪带到另一台设备')
@@ -209,13 +213,14 @@ export function renderSaveTransferSettings(ui, section) {
     box.box.appendChild(el('p', 'dp-dim', MIRROR_NOTE))
     return
   }
-  const transfer = section(ui, '存档', '备份进度，或把小猪带到另一台设备')
+  const transfer = section(ui, '当前小猪存档', '备份这只小猪的进度，或导入单猪存档')
   transfer.box.setAttribute('data-save-transfer-active', String(state.open || state.busy || state.loading))
   const actions = el('div', 'dp-actions')
   const exportButton = button('dp-mini', { 'data-save-trigger': 'export' }, () => exportSave(ui))
   exportButton.textContent = state.busy && !state.open ? '导出中…' : '导出存档'
-  exportButton.disabled = state.busy || !ui.view?.pig
-  if (!ui.view?.pig) exportButton.title = '接到小猪后即可备份'
+  exportButton.disabled = state.busy || !ui.view?.pig || ownerMode || ownerStatusLoading
+  if (ownerMode) exportButton.title = '完整存档模式下，请使用全部小猪与共享资产入口'
+  else if (!ui.view?.pig) exportButton.title = '接到小猪后即可备份'
   const importButton = button('dp-mini', { 'data-save-trigger': 'import' }, () => {
     if (state.busy) return
     state.open = true
@@ -228,12 +233,17 @@ export function renderSaveTransferSettings(ui, section) {
     input?.click()
   })
   importButton.textContent = '导入存档'
-  importButton.disabled = state.busy || state.loading
+  importButton.disabled = state.busy || state.loading || ownerMode || ownerStatusLoading
   actions.appendChild(exportButton)
   actions.appendChild(importButton)
   transfer.box.appendChild(actions)
+  if (ownerStatusLoading) transfer.box.appendChild(el('p', 'dp-dim', '正在读取当前存档模式…'))
+  else if (ownerMode) transfer.box.appendChild(el('p', 'dp-dim', '当前使用完整档模式。单猪存档导入/导出暂不可用；请使用完整存档入口。'))
 
-  if (!state.open) return
+  if (!state.open) {
+    renderOwnerArchiveSettings(ui, section)
+    return
+  }
   const overlay = el('div', 'dp-save-overlay')
   overlay.style.cssText = 'position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(70,48,25,.38);padding:12px;box-sizing:border-box'
   const dialog = el('div', 'dp-set')

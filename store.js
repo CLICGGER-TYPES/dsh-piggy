@@ -44,11 +44,17 @@ const isThenable = value => value !== null &&
 /**
  * Open (or lazily create on first hatch) the save file.
  * @param {string} [filePath] - where the save lives.
- * @param {object} [options] - test seams.
+ * @param {object} [options] - test seams and explicit owner-backed target injection.
  * @param {() => number} [options.now] - injectable clock.
  * @param {Function} [options.setTimer] - injectable scheduler.
  * @param {Function} [options.clearTimer] - injectable canceller.
  * @param {object} [options.journal] - 自定义日志本（测试或桌面外壳用）。
+ * @param {import('./store/owner-resources.js').OwnerAuthority} [options.ownerAuthority] - explicit OwnerDocument owner
+ * @param {import('./store/owner-resources.js').PigTarget} [options.pigTarget] - target already registered with ownerAuthority
+ * @param {(target: import('./store/owner-resources.js').PigTarget) => void} [options.persistOwnerDocument] - synchronous owner-document CAS writer
+ * @param {(target: import('./store/owner-resources.js').PigTarget, next: Record<string, unknown>|null) => void|(() => void)} [options.replaceState] - optional target-scoped lifecycle replacement; may return an undo for settle failure
+ * @param {(target: import('./store/owner-resources.js').PigTarget) => object|null} [options.readState] - optional isolated live-state read adapter
+ * @param {{kind:string,targets?:number,ownerId?:string}} [options.persistence] - explicit persistence capability metadata
  */
 export function createStore(filePath = defaultStatePath(), options = {}) {
   const now = options.now ?? (() => Date.now())
@@ -61,17 +67,35 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
   let dirty = false
   let timer = null
   let closed = false
+  let pendingReplacementRollback = null
 
-  const opened = readStateFile(filePath, now(), journal)
+  const suppliedOwner = options.ownerAuthority ?? null
+  const suppliedTarget = options.pigTarget ?? null
+  if ((suppliedOwner === null) !== (suppliedTarget === null)) {
+    throw new TypeError('owner-backed store needs both ownerAuthority and pigTarget')
+  }
+  if (suppliedOwner !== null && (typeof options.persistOwnerDocument !== 'function' ||
+      typeof options.replaceState !== 'function' || typeof options.readState !== 'function' ||
+      options.persistence?.kind !== 'owner-document-multi-target')) {
+    throw new TypeError('owner-backed store needs its document writer, isolated state adapter, and explicit persistence capability')
+  }
+  const opened = suppliedOwner === null
+    ? readStateFile(filePath, now(), journal)
+    : { state: null, needsSave: false }
   // 一个 owner 权威 + 旧单猪存档适配出的一个 target。资源/本体在内存里分开，
   // 但对外仍是一份 v15 扁平存档和同一个 createStore 形状。
-  const owner = createOwnerResources()
-  const target = owner.mountLegacyTarget(opened.state)
+  const ownsOwner = suppliedOwner === null
+  const owner = suppliedOwner ?? createOwnerResources()
+  const target = suppliedTarget ?? owner.mountLegacyTarget(opened.state)
   dirty = opened.needsSave
   report('info', 'save', '存档打开', { path: filePath, version: target.state?.version ?? null, hatched: target.state !== null, needsSave: dirty })
 
   function scheduleSave() {
     dirty = true
+    if (typeof options.persistOwnerDocument === 'function') {
+      writeNow()
+      return
+    }
     if (timer !== null) return
     timer = setTimer(() => {
       timer = null
@@ -93,7 +117,8 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
     // 同步回 canonical/opaque；写盘仍然只写一个 v15 扁平对象。
     const state = target.state
     if (!dirty || state === null) return
-    writeStateFile(filePath, state)
+    if (typeof options.persistOwnerDocument === 'function') options.persistOwnerDocument(target)
+    else writeStateFile(filePath, state)
     dirty = false
   }
 
@@ -144,16 +169,42 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
    */
   function settle() {
     if (target.state === null) return
-    owner.transact(target, live => {
-      settleAchievements(live, now())
-      return { ok: true }
-    })
-    scheduleSave()
+    try {
+      const execute = live => {
+        settleAchievements(live, now())
+        return { ok: true }
+      }
+      if (typeof options.persistOwnerDocument === 'function') {
+        owner.transact(target, execute, { afterSuccess: () => scheduleSave() })
+      } else {
+        owner.transact(target, execute)
+        scheduleSave()
+      }
+      pendingReplacementRollback = null
+    } catch (error) {
+      const rollback = pendingReplacementRollback
+      pendingReplacementRollback = null
+      try { rollback?.() } catch (rollbackError) {
+        if (error instanceof Error) /** @type {Error & {rollbackError?: unknown}} */ (error).rollbackError = rollbackError
+      }
+      throw error
+    }
   }
 
   // 每个 store/runtime 一个应用上下文。新路径的 owner/target 是真实权威；
   // 句柄读取 live facade，所以 hatch/reset/import/replace 会立刻被看到。
-  const application = createApplicationContext({ owner, target, now })
+  const application = createApplicationContext({
+    owner,
+    target,
+    now,
+    ...(typeof options.readState === 'function' ? { readState: () => options.readState(target) } : {}),
+    ...(typeof options.replaceState === 'function'
+      ? { replaceState: next => {
+        const undo = options.replaceState(target, next)
+        if (typeof undo === 'function') pendingReplacementRollback = undo
+      } }
+      : {}),
+  })
   const commands = createCommandContext({ context: application, commit })
 
   const api = createApi({
@@ -170,20 +221,24 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
         timer = null
       }
       try {
-        writeNow()
+        // OwnerDocument commits are synchronous inside the owner transaction. A
+        // remaining dirty flag means that commit failed and the runtime is already
+        // faulted; a dispose-time retry must not turn a failed command into a late write.
+        if (typeof options.persistOwnerDocument === 'function') dirty = false
+        else writeNow()
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error)
         console.warn(`[dsh-piggy] final save failed: path="${filePath}" reason="${reason}"`)
         report('error', 'save', '退出前最后一次写入失败', { path: filePath, reason })
       } finally {
-        owner.dispose()
+        if (ownsOwner) owner.dispose()
       }
     },
   })
   // 显式的持久化能力声明：当前只有旧单目标扁平档。运行时用它判断是否允许
   // 全平持久化；不从存档字段名推断多目标（未知旧字段仍原样保留）。
   // 名字与 runtime/session-context.js 的 FLAT_PERSISTENCE.LEGACY_SINGLE_TARGET 一致。
-  const persistence = Object.freeze({ kind: 'legacy-flat-single-target', targets: 1, legacyTarget: true })
+  const persistence = options.persistence ?? Object.freeze({ kind: 'legacy-flat-single-target', targets: 1, legacyTarget: true })
   const store = Object.assign(api, {
     /** 工作事务先保存基线并撤下节流计时器，失败后不能再写回旧状态。 */
     flush(force = false) {

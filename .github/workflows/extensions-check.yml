@@ -8,6 +8,18 @@ on:
       - release-candidates/extensions/registry-gitee.json
       - scripts/extension-release-check.mjs
       - test/extension-release-check.test.js
+      - test/extensions-registry.test.js
+      - .github/workflows/extensions-check.yml
+  push:
+    branches: [main]
+    paths:
+      - extensions/registry.json
+      - extensions/registry-gitee.json
+      - release-candidates/extensions/registry.json
+      - release-candidates/extensions/registry-gitee.json
+      - scripts/extension-release-check.mjs
+      - test/extension-release-check.test.js
+      - test/extensions-registry.test.js
       - .github/workflows/extensions-check.yml
   workflow_dispatch:
     inputs:
@@ -38,9 +50,16 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Verify the read-only checker against local HTTP fixtures
-        run: node --test test/extension-release-check.test.js
-      - name: Verify public attachments before publishing the catalog
+      - name: Verify checker fixtures and source candidate consistency
+        run: node --test test/extension-release-check.test.js test/extensions-registry.test.js
+      - name: Verify published GitHub attachments for source changes
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        shell: bash
+        run: |
+          args=(--host github --registry extensions/registry.json)
+          node scripts/extension-release-check.mjs "${args[@]}"
+      - name: Verify selected candidate attachments for manual preflight
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           args=(--host "$CHECK_HOST")

@@ -27,6 +27,7 @@ import { desktop } from './desktop/index.js'
 import { attachLife } from './life.js'
 import { playPigPet } from './pig-actions.js'
 import { attachGestures } from './gestures.js'
+import { hitsPig } from './hit-regions.js'
 import { createPresentationContext } from './presentation-context.js'
 import { stageShell } from './stage-shell.js'
 import { createStageBridge } from './stage-bridge.js'
@@ -41,8 +42,10 @@ export function mountGame(mountOptions) {
     var stageOptions = stageCandidate !== null && typeof stageCandidate === 'object'
       && (stageCandidate.role === 'stage' || stageCandidate.role === 'ext') ? stageCandidate : null
     // Optional dependency seam for an explicitly created private art-resource
-    // registry. The normal product path passes nothing and keeps default art.
+    // registry and a caller-bound data identity. The normal product path passes
+    // neither and keeps the legacy default state/resources.
     var artResources = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.artResources : null
+    var identity = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.identity : null
 
     function mount() {
       if (document.querySelector('[' + MOUNTED + ']') !== null) {
@@ -79,6 +82,7 @@ export function mountGame(mountOptions) {
         getShell: feelShell,
         onGeometry: syncGeometry,
         artResources: artResources,
+        identity: identity,
       })
       var parts = presentation.parts
       var { host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
@@ -180,6 +184,10 @@ export function mountGame(mountOptions) {
         showLine: showLine,
         hideBubble: fx.hideBubble,
         toast: toast,
+        bindPresentationIdentity: function (value) {
+          if (stopped) return false
+          return presentation.bindIdentity(value)
+        },
         get view() { return view }, set view(next) { view = next },
         get tab() { return tab }, set tab(next) { tab = next },
         get stage() { return stage }, set stage(next) { stage = next },
@@ -297,6 +305,7 @@ export function mountGame(mountOptions) {
       })
 
       scene.addEventListener('contextmenu', function (event) {
+        if (!hitsPig(host, event)) return
         event.preventDefault()
         setOpen(!isOpen)
       })
@@ -323,7 +332,7 @@ export function mountGame(mountOptions) {
         isOpen: function () { return isOpen }, getView: function () { return view }, isDragging: function () { return gestures.isDragging() },
         pig: pig, pigArt: pigArt, pigEmoji: pigEmoji, burst: /** @type {any} */ (burst), showBubble: /** @type {any} */ (showBubble), desktopShell: moveShell,
         feel: feel,
-        artResources: artResources,
+        artResources: presentation.artResources,
       }
       var life = splitRole === 'panel' || splitRole === 'ext' ? null : attachLife(lifeOptions)
       ctx.life = life // 调试页「散步一次」「做个小动作」用

@@ -53,10 +53,17 @@ test('a dialog that cannot open still leaves a log line', async () => {
 
 test('main.js reports startup failures visibly and logs page-load failures', () => {
   const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  assert.match(source, /\.catch\(async error => \{[\s\S]{0,300}?reportStartupFailure\(\{ dialog, log, error,/)
+  const petWindow = readFileSync(new URL('../lib/pet-window.js', import.meta.url), 'utf8')
+  const readyStart = source.indexOf('app.whenReady().then(async () => {')
+  const captureStart = source.indexOf('async function captureForCheck', readyStart)
+  assert.ok(readyStart >= 0 && captureStart > readyStart, 'the production ready handler remains identifiable')
+  const readyFlow = source.slice(readyStart, captureStart)
+  assert.match(readyFlow, /\.catch\(async error => \{[\s\S]*?await reportStartupFailure\(\{ dialog, log, error,/)
+  assert.match(readyFlow, /await reportStartupFailure\(\{ dialog, log, error,[\s\S]{0,160}app\.quit\(\)/)
   assert.ok(!/\.catch\(error => \{ log\('startup failed', String\(error\)\); app\.quit\(\) \}\)/.test(source),
     'the old silent log-and-quit path must be gone')
-  assert.match(source, /did-fail-load[\s\S]{0,900}reportStartupFailure/, 'a page that never loads must be visible, not just logged')
+  assert.match(petWindow, /webContents\.on\('did-fail-load'/, 'the window owner must forward page-load failure events')
+  assert.match(source, /onDidFailLoad:[\s\S]{0,900}reportStartupFailure/, 'a page that never loads must be visible, not just logged')
 })
 
 test('fatal log finishes before the modal dialog opens', async () => {

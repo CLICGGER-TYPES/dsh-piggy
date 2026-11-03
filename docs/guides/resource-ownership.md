@@ -1,8 +1,7 @@
 # 资源归属、每猪本体与旧存档适配（F02）
 
-状态：F02 源码实现，未打包、未独立验收。本文说明“同一主人共用家当、每只猪
-本体独立”的当前源码边界；它不是多猪 UI、联机、稳定身份或存档迁移已完成的
-声明。
+状态：本文记录 F02 的资源归属与旧单猪适配基线；后续 M2 显式 opt-in 候选的
+边界和状态见第 7 节。本文不代表多猪 UI、联网或完整产品迁移已完成。
 
 ## 1. 一句话模型
 
@@ -163,10 +162,9 @@ sum/max/union 仍然只是合并策略，不是归属权威，不能拿来反推
   原样带入的未知字段才保留。B 不能删除未知键（known-only 替换会保留现有 opaque）。
 - 写入：仍由同一个 `writeStateFile` 写一份扁平 JSON；字段/值/可选/未知数据
   无损 round-trip。键顺序可能不同，语义相等是契约。
-- 不升版本、不新增 ID/revision/文件/数据库，不访问真实用户存档。
-- 多猪持久化、稳定 `ownerId`/`pigId`、迁移、房间身份、命令 ID/重试/去重都
-  明确延后；当前 `attachPig` 只是私有内存构造，不是已发布多猪功能。
-- 旧 `reset`/`adopt` 仍保留整份存档/继承语义；不能拿它们当“再加一只猪”。
+- 在 F02 默认 v15 路径中不升版本、不新增 ID/revision/文件/数据库，也不访问真实用户存档。
+- 截至 F02，多猪持久化、稳定 `ownerId`/`pigId`、迁移、房间身份、命令 ID/重试/去重均延后；当时的 `attachPig` 只是私有内存构造。
+- 默认 v15 路径的 `reset`/`adopt` 仍保留整份单猪存档/继承语义；不能拿它们当“再加一只猪”。M2 owner-document 路径的 body-only 行为见第 7 节。
 
 ## 6. 未收敛路径与诚实边界
 
@@ -174,28 +172,50 @@ sum/max/union 仍然只是合并策略，不是归属权威，不能拿来反推
   它现在经 `store.mutate` 进入 owner 事务，但不是按扩展逐字段的 owner/pig 设计。
 - `store/ext-install.js` 的安装回滚仍会整份删除/恢复扁平 facade；同样经 owner
   事务，不做多猪持久化。
-- `runtime/work-ledger.js` 仍以整份状态 WAL + `installCommittedState` 提交；现在
-  通过 owner 整份替换协调，但不是多猪工作记录。
+- 默认 v15 `runtime/work-ledger.js` 仍以整份状态 WAL + `installCommittedState` 提交；owner-document opt-in 使用 owner 文档事务路径，细节见第 7 节。
 - `runtime/save-transfer.js`、`runtime/merge-service.js` 仍重开/替换整份旧档。
 - `adapters/dsh/external-prepare.js`、`external-lifecycle.js`、
   `external-controller.js`、`external-merge.js` 仍是文件级整份状态路径，本切片
   不改；F06 收敛。
 - `achievements`/`daily` 归 owner，在线轮询已有共享 owner cursor；但 `stats`
-  仍是每猪。同一个 owner 的内存多目标只是私有夹具；成就计数按多猪聚合还没有产品
-  规则/验收，不能据此声称多猪成就/奖励已经完整正确。
+  仍是每猪。同一个 owner 的目标在 F02 只是内存夹具；M2 opt-in 候选能持久化多个
+  target，但成就计数按多猪聚合还没有产品规则/真实 UI 验收，不能据此声称多猪
+  成就/奖励已经完整正确。
 - 多目标视图在共享资源出现**全新顶层键**时依赖事务后的 sibling refresh 或该视图
   自己的 ensureXxx 读取；没有公开多猪 UI，因此没有“所有视图实时同步新键”的产品
   承诺。
 - 没有网络认证、房间权限、远端 exactly-once/去重/重放保护。未来 transport 必须
   增加已认证 owner/pig 上下文、命令 ID、版本、重试/重复规则和持久迁移。
 
-## 7. 独立验收建议（开发者不执行）
+## 7. M2 OwnerDocument opt-in 候选（2026-11-03；源码契约已接线，UI 未验）
 
-独立 V02 应自己设计并运行：双 target 共享金币/背包/菜园且 body 独立；A 消耗后
+- 只有调用者明确提供独立 `ownerDocumentPath` 才启用；首次迁移还必须明确传入
+  `legacyStatePath`、`ownerId` 和 `pigId`。旧 v15 源文件按字节保持不变，默认
+  DSH 与 Desktop 的 `statePath` 仍互相独立，不因同一进程或相同昵称自动合档。
+- owner document 把 stable `ownerId`、多个 stable `pigId`、共享 resources、逐猪
+  body、format 与 opaque 数据分开保存。调用者负责提供 ID；ID 只是数据身份，不能
+  当作认证或权限。现有命令及 `/state`、`/act` 通过显式 session 绑定 target；没有
+  进程全局 active-pig 槽或请求参数选猪。
+- owner 模式下 reset/adopt/hatch 只替换当前猪 body并保留 owner resources 与其他
+  target。工作事件的完整 before/next owner 文档、revision、target/session 和收据
+  进入同一恢复流程；收据去重分区含 ownerId 与 pigId。flat archive、import/export、
+  cloud endpoints 在该模式显式拒绝。
+- 文件层使用 owner-document 事务、CAS revision 和短提交锁。多个进程可打开同一
+  owner 文件，但写入陈旧 revision 会被拒绝并要求重新打开；没有实时跨进程同步。
+- Desktop owner-document 模式暂不调用只读取旧 flat v15 `hatched` 字段的安装器
+  预选导入器，避免把 owner document envelope 误认为已孵化存档。RESOURCEFLOW01
+  已将可选 owner/pig 标签和实际 art registry 从 mount 传到 presentation/action player；
+  扩展安装到 owner target、由运行时选择逐猪资源上下文仍未接入，默认 v15 安装器流程不变。
+- 当前隔离 Node/类型契约已验证，且有一份私有 Electron 45.2.1 AppImage 完成静态回读
+  （143,045,231 bytes，SHA-256 `aaf9d2c36eddbb42a8ef81362342449a52710de01dcb6bbc44c36b4b1be70d96`）；它未执行，也未接默认生产存档或做真实 UI 验收。没有正式多猪选择器、联网/房间权限、跨设备共享或声音包；相关桌面与 DSH UI 验收仍待独立执行。
+
+## 8. 独立验收建议（开发者不执行）
+
+F02 阶段列出的基础矩阵包含：双 target 共享金币/背包/菜园且 body 独立；A 消耗后
 B 看到同一余额但 body 不变；并发/顺序扣款不超卖；throw/thenable/外来 target/
 重入/absent 不半更新；显式 `{ok:false,reason}` 不部分提交且不排保存；A 释放不影响
 B/owner；共享 owner 在线游标 A/B 同时间/交错只计一次、失败回滚、无持久 cursor
 字段；B 不能写未声明 opaque，A legacy 仍可读写；旧 v15 与 farm v5 round-trip；
 未知 economy/fishing/extData/顶层字段不丢；公共 `store.mutate` 单参数、
 `installCommittedState`、保存节流、回滚/无多余写盘；然后才由后续 UI 验收验证
-真实入口。源码检查不是 UI 通过。
+真实入口。M2 增加了 opt-in Node/文件事务契约；这些契约和源码检查不是 UI 通过。
