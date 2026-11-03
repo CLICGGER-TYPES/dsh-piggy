@@ -14,6 +14,12 @@
 - 创建 owner 文档时只读取明确指定的旧 v15 文件，保留源字节不变；目标文件的迁移/写入使用 D02 事务与 revision CAS。并发进程可打开同一目标，但旧 revision 的写入会被拒绝，当前候选不提供实时跨进程同步。owner 模式拒绝 flat archive 与 cloud 操作；云存档上传、恢复、冲突处理继续暂缓。
 - 当前隔离分支针对 owner/runtime/store、旧兼容路径和 DSH/Desktop 接线的定向 Node 契约为 131/131；变更生产 JS 的 TypeScript 5.9.3 定向检查与语法检查通过。PR50 双平台 CI `41566650671`、文档状态后续 CI `41567617112` 均通过。owner-document Desktop 模式暂不运行只识别 flat v15 的安装器选择导入，待 extension target/context 接线。私有 Electron 45.2.1 AppImage（source `a498c894`）已构建并静态回读：143,045,231 bytes，SHA-256 `aaf9d2c36eddbb42a8ef81362342449a52710de01dcb6bbc44c36b4b1be70d96`，379 个 game payload 文件逐字节一致；应用未执行，独立真实桌面/DSH UI 验收仍待完成，不把 Node/静态回读记为端到端产品验收。
 
+## 2026-11-03 ARCHIVEOWN01 存档服务边界（显式 API 候选，未接生产入口）
+
+- 新 `runtime/owner-document-archive.js` 提供显式 owner document ZIP 导出、只读预检、确认后导入与恢复 API；旧 flat v15 只在调用者指定 ownerId/pigId 后映射为单猪 owner document。导入仅创建全新 owner 根目录，已有目标一律拒绝，不猜测跨 owner 合并或覆盖策略；目录发布沿用 D02 文件事务与同文件系统原子 rename。
+- owner ZIP 记录完整 owner document、通过现有校验的皮肤/官方扩展 sidecars 与 work receipts。损坏身份/引用/收据、pending work WAL、未支持资源或不完整证据会拒绝或要求明确接受现有 warning；localStorage、设备偏好与 cloud settings 不打包或写回。旧 v15 源字节保持不变。
+- 该 API 尚未接入生产 runtime、store、route、设置或导入界面，也没有 UI 验收；它只提供后续入口可复用的 archive/service contract。相关临时目录契约与类型/测试结果见 ARCHIVEOWN01 开发交接，不能记为用户存档迁移已完成。
+
 ## 2026-11-03 RESOURCEFLOW01 展示资源上下文接线（隔离候选，未做 UI）
 
 - 基于 M2 `a498c8941e1fd7485d4c6f7e95ad5cc3e86534e6`。`PresentationContext` 可选接收不可变 `ownerId`/`pigId` 标签，并公开它实际采用的 art registry；`mountGame` 把同一 identity 和 registry 交给展示上下文与动作 player。缺省 identity 继续为 null、默认 art registry 与旧单猪挂载不变。IDs 只是数据标签，不是认证或授权。
