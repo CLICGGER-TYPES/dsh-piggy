@@ -7,10 +7,13 @@ import { createLayoutController } from './layout-controller.js'
 import { suppressNativeTooltips } from './tooltips.js'
 
 /**
- * @param {{shell:any, documentObject:Document, windowObject:Window, getHost:()=>any}} deps
+ * @param {{shell:any, documentObject:Document, windowObject:Window, getHost:()=>any,
+ *   pigId?:string|null, primary?:boolean}} deps
  */
 export function createPetController(deps) {
   const shell = deps.shell
+  const pigId = typeof deps.pigId === 'string' ? deps.pigId : null
+  const primary = pigId !== null && deps.primary === true
   let dragSlide = { x: 0, y: 0 }
   let flying = false
   let installed = false
@@ -50,6 +53,8 @@ export function createPetController(deps) {
     isDragging: dragging,
     isFlying: () => flying,
     setHitRects: input.setHitRects,
+    pigId,
+    primary,
   })
 
   const flight = createFlightBridge({
@@ -94,6 +99,10 @@ export function createPetController(deps) {
       if (!adapterInstalled) {
         const adapter = {
           role: 'pet',
+          /** 多猪：这个宠物窗口自己的身份；旧外壳/单猪时 pigId 是 null，不暴露 multiPig。 */
+          pigId,
+          primary,
+          ...(pigId !== null ? { multiPig: true } : {}),
           proxy: shell.proxy,
           cloudSave: shell.cloudSave,
           saves: shell.saves,

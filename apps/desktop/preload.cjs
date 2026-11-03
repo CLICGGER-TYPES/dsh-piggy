@@ -10,6 +10,18 @@ const role = argv.includes('--piggy-role=panel') ? 'panel' : argv.includes('--pi
 /** 扩展大窗口（role=ext，外壳 0.6.5 起）显示的是哪个扩展。 */
 const extKey = role === 'ext' ? (argv.find(arg => arg.startsWith('--piggy-ext=')) || '').slice('--piggy-ext='.length) : null
 
+/** 和 owner document 同一套 ID 白名单：字母数字开头，允许 ._:-，最多 128 个字符。 */
+const PIG_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
+function argumentValue(prefix) {
+  const arg = argv.find(item => item.startsWith(prefix))
+  return arg === undefined ? null : arg.slice(prefix.length)
+}
+/** 这个宠物窗口是哪只猪（多猪，外壳 MULTIPIGWIN02 起）；旧外壳不带参数就是 null。 */
+const requestedPigId = argumentValue('--piggy-pig=')
+const pigId = requestedPigId !== null && PIG_ID_PATTERN.test(requestedPigId) ? requestedPigId : null
+/** 主猪（面板、舞台兼容都跟着它走）；只有 pigId 合法时才可能为 true。 */
+const primary = pigId !== null && argv.includes('--piggy-primary=1')
+
 /** 恢复事件只接受主屏 DIP 工作区；坏载荷不交给页面。 */
 function recoveryWorkArea(value) {
   const area = value === null || typeof value !== 'object' ? null : value.workArea
@@ -192,6 +204,11 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 这个页面在哪个窗口里：'pet'、'panel'，或者扩展的大窗口 'ext'（外壳 0.6.5 起）。 */
   role,
   extKey,
+  /** 多猪（外壳 MULTIPIGWIN02 起）：这个宠物窗口的 pigId 与是否主猪；旧外壳是 null/false。 */
+  pigId,
+  primary,
+  /** 只有 pigId 合法时才暴露，旧外壳/无参数时页面按单猪处理。 */
+  ...(pigId !== null ? { multiPig: true } : {}),
   /** 扩展的大窗口（外壳 0.6.5 起）：open(key) 开（已开着就拿到前面），close() 只有大窗口自己能叫。 */
   ext: {
     open: key => ipcRenderer.send('piggy:ext:open', String(key)),
