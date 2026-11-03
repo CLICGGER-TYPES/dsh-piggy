@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { Readable } from 'node:stream'
 import { test } from 'node:test'
 
@@ -133,7 +134,7 @@ test('DSH control route restores a cloud owner into DSH_HOME and serves it after
   const gitConfig = join(root, 'gitconfig')
   writeFileSync(gitConfig, [
     '[user]', '  name = piggy-test', '  email = piggy@localhost',
-    `[url "file://${remote}"]`, `  insteadOf = ${remoteUrl}`,
+    `[url "${pathToFileURL(remote).href}"]`, `  insteadOf = ${remoteUrl}`,
   ].join('\n'))
   const previousConfig = process.env.GIT_CONFIG_GLOBAL
   const previousNoSystem = process.env.GIT_CONFIG_NOSYSTEM
