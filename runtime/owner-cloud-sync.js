@@ -7,6 +7,7 @@ import { STATE_VERSION } from '../core.js'
 import { createOwnerDocumentArchiveImporter, exportOwnerDocumentArchive } from './owner-document-archive.js'
 import { createGitSync } from './git-sync.js'
 import { readZip } from './save-zip.js'
+import { readWorkJson, writeWorkJson } from './work-files.js'
 
 /** @param {Buffer} buffer @param {string} ownerDocumentPath @param {() => number} now */
 function inspectArchive(buffer, ownerDocumentPath, now) {
@@ -32,6 +33,7 @@ function sameArchivePayload(left, right) {
  * First sync is explicit: local-to-cloud creates only an empty branch, while
  * cloud-to-local returns validated bytes for the desktop's copy-and-switch flow.
  * @param {{ownerDocumentPath:string,ownerId:string,remote:string,branch?:string,provider?:string,device?:string,
+ *   baseHead?:string|null,
  *   now?:()=>number,git?:(args:string[],options:{cwd:string,sslVerify?:boolean,timeoutMs?:number})=>Promise<{stdout:string,stderr:string}>,
  *   gitBinary?:(args:string[],options:{cwd:string,sslVerify?:boolean,timeoutMs?:number})=>Promise<Buffer>}} options
  */
@@ -39,6 +41,30 @@ export function createOwnerCloudSync(options) {
   const now = options.now ?? Date.now
   const branch = options.branch ?? 'main'
   const directoryKey = createHash('sha256').update(`${options.remote}\0${branch}`).digest('hex').slice(0, 24)
+  const baseStatePath = join(dirname(options.ownerDocumentPath), `.owner-cloud-base-${directoryKey}.json`)
+  const remoteDigest = createHash('sha256').update(options.remote).digest('hex')
+  let baseHead = options.baseHead ?? null
+
+  function persistBaseHead(head) {
+    if (!(head === null || /^[a-f0-9]{40,64}$/iu.test(head))) throw new Error('owner cloud base head is invalid')
+    writeWorkJson(baseStatePath, { version: 1, ownerId: options.ownerId, remoteDigest, branch, remoteHead: head })
+    baseHead = head
+  }
+
+  const savedBase = readWorkJson(baseStatePath)
+  if (savedBase !== null) {
+    if (Object.keys(savedBase).sort().join(',') !== 'branch,ownerId,remoteDigest,remoteHead,version' ||
+        savedBase.version !== 1 || savedBase.ownerId !== options.ownerId || savedBase.remoteDigest !== remoteDigest ||
+        savedBase.branch !== branch || !(savedBase.remoteHead === null ||
+          (typeof savedBase.remoteHead === 'string' && /^[a-f0-9]{40,64}$/iu.test(savedBase.remoteHead)))) {
+      throw new Error('owner cloud base state is invalid; evidence preserved')
+    }
+    // The local worktree may know about a successful push after the device marker
+    // was last written. Its owner/remote binding is checked above, so prefer it.
+    baseHead = savedBase.remoteHead
+  } else if (options.baseHead !== undefined && options.baseHead !== null) {
+    persistBaseHead(options.baseHead)
+  }
   const makeArchive = () => {
     const built = exportOwnerDocumentArchive({ ownerDocumentPath: options.ownerDocumentPath, ownerId: options.ownerId, nowMs: now() })
     const preview = inspectArchive(built.buffer, options.ownerDocumentPath, now)
@@ -58,6 +84,7 @@ export function createOwnerCloudSync(options) {
     remote: options.remote,
     branch,
     device: options.device ?? '',
+    sameArchive: sameArchivePayload,
     ...(options.git === undefined ? {} : { git: options.git }),
     ...(options.gitBinary === undefined ? {} : { gitBinary: options.gitBinary }),
     archive: makeArchive,
@@ -75,25 +102,27 @@ export function createOwnerCloudSync(options) {
     try {
       return await sync.sequence(async api => {
         await api.ensure()
-        const branches = await api.listBranches()
         if (direction === 'local-to-cloud') {
           const local = makeArchive()
-          if (branches.includes(branch)) {
+          const remoteHead = await api.readRemoteHead(branch)
+          if (remoteHead !== null) {
             const remote = await api.readBranchSave(branch)
             const remoteInfo = inspectArchive(remote.buffer, options.ownerDocumentPath, now)
             if (remoteInfo.ownerId !== options.ownerId) return { ok: false, reason: 'remote-owner-mismatch' }
-            if (sameArchivePayload(remote.buffer, local.buffer)) return { ok: true, alreadyCurrent: true }
+            if (sameArchivePayload(remote.buffer, local.buffer)) {
+              persistBaseHead(remoteHead)
+              return { ok: true, alreadyCurrent: true, remoteHead }
+            }
             return { ok: false, reason: 'remote-has-history' }
           }
-          // Do not use pushSnapshot here: its legacy fast-forward preparation can
-          // adopt a branch that appeared after the empty-branch check. A plain push
-          // fails safely if another writer creates this branch concurrently.
-          const meta = await api.writeSnapshot(true)
-          await api.commit(meta, true)
-          await api.push()
-          return { ok: true, created: true }
+          if (baseHead !== null) return { ok: false, reason: 'remote-branch-missing' }
+          const pushed = await api.pushSnapshotFromHead(null)
+          if (pushed.ok !== true || typeof pushed.remoteHead !== 'string') return pushed
+          persistBaseHead(pushed.remoteHead)
+          return { ok: true, created: true, remoteHead: pushed.remoteHead }
         }
-        if (!branches.includes(branch)) return { ok: false, reason: 'remote-branch-empty' }
+        const remoteHead = await api.readRemoteHead(branch)
+        if (remoteHead === null) return { ok: false, reason: 'remote-branch-empty' }
         const remote = await api.readBranchSave(branch)
         const preview = inspectArchive(remote.buffer, options.ownerDocumentPath, now)
         return {
@@ -102,6 +131,7 @@ export function createOwnerCloudSync(options) {
           ownerId: preview.ownerId,
           pigIds: preview.pigIds,
           summary: preview.summary,
+          remoteHead,
         }
       })
     } catch (error) {
@@ -109,12 +139,41 @@ export function createOwnerCloudSync(options) {
     }
   }
 
+  async function pushSnapshot() {
+    try {
+      return await sync.sequence(async api => {
+        const expectedHead = baseHead
+        if (expectedHead === null) return { ok: false, reason: 'first-sync-required' }
+        const remoteHead = await api.readRemoteHead(branch)
+        if (remoteHead === null) return { ok: false, reason: 'remote-branch-missing' }
+        if (remoteHead !== expectedHead) {
+          const remote = await api.readBranchSave(branch)
+          const remoteInfo = inspectArchive(remote.buffer, options.ownerDocumentPath, now)
+          if (remoteInfo.ownerId !== options.ownerId) return { ok: false, reason: 'remote-owner-mismatch' }
+          const local = makeArchive()
+          if (sameArchivePayload(remote.buffer, local.buffer)) {
+            persistBaseHead(remoteHead)
+            return { ok: true, alreadyCurrent: true, remoteHead }
+          }
+          return { ok: false, reason: 'remote-advanced', remoteHead }
+        }
+        const result = await api.pushSnapshotFromHead(expectedHead)
+        if (result.ok === true && typeof result.remoteHead === 'string') persistBaseHead(result.remoteHead)
+        return result
+      })
+    } catch (error) {
+      return { ok: false, reason: 'push-failed', code: typeof error === 'object' && error !== null && 'code' in error
+        ? String(error.code) : 'CLOUD_FAILED' }
+    }
+  }
+
   return Object.freeze({
     worktree: sync.worktree,
     firstSync,
-    pushSnapshot: () => sync.pushSnapshot(),
+    baseHead: () => baseHead,
+    pushSnapshot,
     history: (targetBranch = branch) => sync.history(targetBranch),
-    close: options => sync.close(options),
+    close: () => sync.close({ finalPush: false }),
     drain: () => sync.drain(),
   })
 }

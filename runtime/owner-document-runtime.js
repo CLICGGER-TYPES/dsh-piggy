@@ -89,7 +89,7 @@ function isRecord(value) {
  * @property {(view:unknown)=>void} [onSnapshot]
  * @property {object} [journalHeader]
  * @property {{kind:string,origin:string}} [transport]
- * @property {{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,syncReady?:boolean}|null} [cloudSave]
+ * @property {{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,syncReady?:boolean,cloudBaseHead?:string|null}|null} [cloudSave]
  */
 
 /** @param {unknown} value @param {string} label */
@@ -181,6 +181,7 @@ export function createOwnerDocumentRuntime(options) {
       branch: typeof config.branch === 'string' && config.branch !== '' ? config.branch : 'main',
       provider: typeof config.provider === 'string' ? config.provider : 'github',
       device: typeof config.device === 'string' ? config.device : '',
+      baseHead: typeof config.cloudBaseHead === 'string' ? config.cloudBaseHead : null,
       now,
     })
   }
@@ -192,7 +193,12 @@ export function createOwnerDocumentRuntime(options) {
     cloudTimer = setInterval(() => {
       const current = cloud
       if (cloudTransition || current === null) return
-      void current.pushSnapshot().catch(error => {
+      void current.pushSnapshot().then(result => {
+        if (result?.ok === true) return
+        journal.record('warn', 'cloud', '完整云存档推送未应用', {
+          reason: typeof result?.reason === 'string' ? result.reason : 'CLOUD_FAILED',
+        })
+      }).catch(error => {
         const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'CLOUD_FAILED'
         journal.record('warn', 'cloud', '完整云存档推送失败', { code })
       })
@@ -208,13 +214,17 @@ export function createOwnerDocumentRuntime(options) {
     const previous = cloudConfig
     const sameConnection = previous?.enabled === true && normalized.enabled === true &&
       previous.provider === normalized.provider && previous.remote === normalized.remote && previous.branch === normalized.branch
-    const next = { ...normalized, syncReady: value?.syncReady === true || (sameConnection && previous?.syncReady === true) }
+    const next = { ...normalized,
+      syncReady: value?.syncReady === true || (sameConnection && previous?.syncReady === true),
+      cloudBaseHead: typeof value?.cloudBaseHead === 'string' ? value.cloudBaseHead :
+        (sameConnection && typeof previous?.cloudBaseHead === 'string' ? previous.cloudBaseHead : null),
+    }
     cloudTransition = true
     if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
     const old = cloud
     cloud = null
     try {
-      await old?.close({ finalPush: false })
+      await old?.close()
       cloudConfig = next
       cloud = createCloud(next)
       if (cloud !== null) startCloudTimer()
@@ -245,11 +255,12 @@ export function createOwnerDocumentRuntime(options) {
       branch: typeof cloudConfig.branch === 'string' && cloudConfig.branch !== '' ? cloudConfig.branch : 'main',
       provider: typeof cloudConfig.provider === 'string' ? cloudConfig.provider : 'github',
       device: typeof cloudConfig.device === 'string' ? cloudConfig.device : '', now,
+      baseHead: typeof cloudConfig.cloudBaseHead === 'string' ? cloudConfig.cloudBaseHead : null,
     }) : null
     const service = current ?? temporary
     if (service === null) return { ok: false, reason: '云存档服务不可用' }
     try { return await service.firstSync(direction) }
-    finally { await temporary?.close({ finalPush: false }) }
+    finally { await temporary?.close() }
   }
 
   async function testCloudSave(value) {
@@ -901,8 +912,8 @@ export function createOwnerDocumentRuntime(options) {
         let cloudPush = { ok: false, reason: 'disabled' }
         if (cloud !== null) {
           try {
-            const result = await cloud.close({ finalPush: fault === null })
-            cloudPush = result.finalPush ? { ok: true } : { ok: false, reason: 'not-pushed' }
+            cloudPush = fault === null ? await cloud.pushSnapshot() : { ok: false, reason: 'runtime-fault' }
+            await cloud.close()
           } catch { cloudPush = { ok: false, reason: 'final-push-failed' } }
         }
         cloud = null

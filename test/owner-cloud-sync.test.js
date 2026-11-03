@@ -9,7 +9,7 @@ import { test } from 'node:test'
 
 import { hatchEgg } from '../core.js'
 import { createOwnerCloudSync } from '../runtime/owner-cloud-sync.js'
-import { writeOwnerDocumentFile } from '../runtime/owner-document-file.js'
+import { inspectOwnerDocumentFile, writeOwnerDocumentFile } from '../runtime/owner-document-file.js'
 import { ownerDocumentFromLegacyV15 } from '../store/owner-document.js'
 import { readZip } from '../runtime/save-zip.js'
 
@@ -43,8 +43,10 @@ test('owner first sync pushes a complete archive only to an empty branch and clo
   const local = syncFor(ownerDocumentPath, 'owner-a', f.remote)
   try {
     const pushed = await local.firstSync('local-to-cloud')
-    assert.deepEqual(pushed, { ok: true, created: true })
-    assert.deepEqual(await local.firstSync('local-to-cloud'), { ok: true, alreadyCurrent: true })
+    assert.equal(pushed.ok, true)
+    assert.equal(pushed.created, true)
+    assert.match(pushed.remoteHead, /^[a-f0-9]{40,64}$/u)
+    assert.deepEqual(await local.firstSync('local-to-cloud'), { ok: true, alreadyCurrent: true, remoteHead: pushed.remoteHead })
     const remoteView = syncFor(receivingPath, 'owner-b', f.remote)
     try {
       const pulled = await remoteView.firstSync('cloud-to-local')
@@ -73,4 +75,50 @@ test('owner first sync refuses a branch with different history and preserves its
     const after = execFileSync('git', ['--git-dir', f.remote, 'rev-parse', 'refs/heads/main'], { encoding: 'utf8' }).trim()
     assert.equal(after, before)
   } finally { await changed.close({ finalPush: false }); rmSync(f.root, { recursive: true, force: true }) }
+})
+
+test('two devices sharing one owner base refuse a stale automatic push after the other device advances', async () => {
+  const f = fixture()
+  const pathA = ownerFile(f.root, 'owner-shared', 'pig-a', 900, '-device-a')
+  const pathB = ownerFile(f.root, 'owner-shared', 'pig-a', 900, '-device-b')
+  assert.deepEqual(readFileSync(pathA), readFileSync(pathB), 'both devices start from the same owner document')
+  const deviceA = syncFor(pathA, 'owner-shared', f.remote)
+  let deviceB
+  try {
+    const first = await deviceA.firstSync('local-to-cloud')
+    assert.equal(first.ok, true)
+    const cloudRead = syncFor(pathB, 'owner-shared', f.remote)
+    try {
+      const remoteBase = await cloudRead.firstSync('cloud-to-local')
+      assert.equal(remoteBase.ok, true)
+      deviceB = createOwnerCloudSync({ ownerDocumentPath: pathB, ownerId: 'owner-shared', remote: f.remote,
+        branch: 'main', baseHead: remoteBase.remoteHead, now: () => 1_800_000_001_000 })
+      assert.deepEqual(await deviceB.pushSnapshot(), { ok: true, remoteHead: remoteBase.remoteHead, alreadyCurrent: true })
+    } finally { await cloudRead.close() }
+
+    const current = inspectOwnerDocumentFile(pathA)
+    assert.equal(current.kind, 'owner-document')
+    if (current.kind !== 'owner-document') throw new Error('owner A was not readable')
+    const updated = structuredClone(current.document)
+    updated.resources.coins = 901
+    writeOwnerDocumentFile({ filePath: pathA, document: updated, expectedRevision: current.revision })
+    const advanced = await deviceA.pushSnapshot()
+    assert.equal(advanced.ok, true)
+    const denied = await deviceB.pushSnapshot()
+    assert.equal(denied.ok, false)
+    assert.equal(denied.reason, 'remote-advanced')
+    assert.equal(denied.remoteHead, advanced.remoteHead)
+
+    const remote = await deviceB.history('main')
+    assert.ok(remote.auto.length > 0 || remote.manual !== null, 'the accepted remote history remains readable')
+    const saved = await deviceB.firstSync('cloud-to-local')
+    const payload = readZip(Buffer.from(saved.archive))
+    assert.equal(JSON.parse(payload.get('owner-document.json').toString('utf8')).resources.coins, 901,
+      'the remote still contains device A latest coins after device B refused its stale push')
+    assert.equal(inspectOwnerDocumentFile(pathB).document.resources.coins, 900, 'refusal does not mutate device B local document')
+  } finally {
+    await deviceA.close()
+    await deviceB?.close()
+    rmSync(f.root, { recursive: true, force: true })
+  }
 })

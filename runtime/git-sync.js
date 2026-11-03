@@ -141,6 +141,7 @@ export function commitMessage({ lastSeenAt, level, coins }, manual = false) {
  * @param {(name: string, bytes: Buffer) => Promise<{ files: Map<string, Buffer>, summary?: any }> | { files: Map<string, Buffer>, summary?: any }} options.parse
  * @param {(files: Map<string, Buffer>) => Promise<any>} options.importFiles 把解析出的文件交给运行时替换
  * @param {() => Promise<{ buffer: Buffer, stateVersion?: number, lastSeenAt?: number, level?: number, coins?: number }> | { buffer: Buffer, stateVersion?: number, lastSeenAt?: number, level?: number, coins?: number }} options.archive
+ * @param {(previous:Buffer,next:Buffer)=>boolean} [options.sameArchive] Cloud formats with nondeterministic manifests may compare validated payloads.
  * @param {(args: string[], options: { cwd: string, sslVerify?: boolean, timeoutMs?: number }) => Promise<{ stdout: string, stderr: string }>} [options.git]
  * @param {(args: string[], options: { cwd: string, sslVerify?: boolean, timeoutMs?: number }) => Promise<Buffer>} [options.gitBinary]
  * @param {number} [options.gitTimeoutMs]
@@ -151,7 +152,7 @@ export function commitMessage({ lastSeenAt, level, coins }, manual = false) {
 export function createGitSync(options) {
   const {
     statePath, directory, remote, branch = 'main', device = '',
-    parse, importFiles, archive,
+    parse, importFiles, archive, sameArchive = (previous, next) => previous.equals(next),
     git = defaultGit,
     gitBinary = defaultGitBinary,
     now = Date.now,
@@ -215,7 +216,7 @@ export function createGitSync(options) {
     if (!Buffer.isBuffer(snapshot?.buffer)) throw new Error('git-sync: archive() 没有返回 buffer')
     // 存档字节没变就不重写：否则 meta 的 exportedAt 每次都变，定时推送会把历史灌满空提交。
     const previous = force ? null : await readFile(join(worktree, SAVE_FILE)).catch(() => null)
-    if (previous !== null && previous.equals(snapshot.buffer)) {
+    if (previous !== null && sameArchive(previous, snapshot.buffer)) {
       const current = await readMetaUnlocked()
       if (current !== null) return current
     }
@@ -252,6 +253,64 @@ export function createGitSync(options) {
 
   async function pushUnlocked() {
     await exec(['push', '-q', 'origin', branch])
+  }
+
+  /** Return the exact remote branch head without updating the local worktree. */
+  async function readRemoteHeadUnlocked(targetBranch = branch) {
+    const name = String(targetBranch ?? '').trim()
+    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
+    await ensureUnlocked()
+    const { stdout } = await exec(['ls-remote', '--heads', 'origin', name])
+    const ref = `refs/heads/${name}`
+    const line = stdout.split(/\r?\n/u).find(item => item.trim().split('\t')[1] === ref)
+    if (line === undefined) return null
+    const head = line.trim().split('\t')[0]
+    if (!/^[a-f0-9]{40,64}$/iu.test(head)) throw new Error('git-sync: remote branch head is invalid')
+    return head.toLowerCase()
+  }
+
+  /**
+   * Create a normal fast-forward commit only if the remote head is still the caller's acknowledged base.
+   * Unlike pushSnapshotUnlocked this path never resets the local branch to a newer remote head.
+   * @param {string|null} expectedHead
+   */
+  async function pushSnapshotFromHeadUnlocked(expectedHead) {
+    if (!(expectedHead === null || /^[a-f0-9]{40,64}$/iu.test(expectedHead))) {
+      throw new Error('git-sync: expected remote head is invalid')
+    }
+    await ensureUnlocked()
+    const actualHead = await readRemoteHeadUnlocked(branch)
+    if (actualHead !== expectedHead) return { ok: false, reason: 'remote-advanced', remoteHead: actualHead }
+
+    if (actualHead !== null) {
+      await exec(['fetch', '-q', 'origin', branch])
+      const fetchedHead = (await exec(['rev-parse', '--verify', `refs/remotes/origin/${branch}`])).stdout.trim().toLowerCase()
+      if (fetchedHead !== actualHead) return { ok: false, reason: 'remote-advanced', remoteHead: fetchedHead }
+      let localHead = null
+      try { localHead = (await exec(['rev-parse', '--verify', 'HEAD'])).stdout.trim() }
+      catch (error) {
+        if (!/needed a single revision|unknown revision|bad revision/i.test(safeGitDetail(error))) throw error
+      }
+      if (!localHead) {
+        await exec(['checkout', '-q', '-B', branch, `origin/${branch}`])
+      } else {
+        try { await exec(['merge-base', '--is-ancestor', actualHead, 'HEAD']) }
+        catch { return { ok: false, reason: 'local-history-conflict', remoteHead: actualHead } }
+      }
+    }
+
+    const meta = await writeSnapshotUnlocked(false)
+    const committed = await commitUnlocked(meta, false)
+    if (committed === null) return { ok: true, remoteHead: actualHead, alreadyCurrent: true }
+    try { await pushUnlocked() }
+    catch (error) {
+      const latest = await readRemoteHeadUnlocked(branch).catch(() => actualHead)
+      if (latest !== actualHead) return { ok: false, reason: 'remote-advanced', remoteHead: latest }
+      throw error
+    }
+    const remoteHead = await readRemoteHeadUnlocked(branch)
+    if (remoteHead === null) return { ok: false, reason: 'remote-branch-missing', remoteHead: null }
+    return { ok: true, remoteHead, committed: true }
   }
 
   /** 拉取；没有远端分支时当作成功（第一次初始化）。 */
@@ -404,6 +463,8 @@ export function createGitSync(options) {
     pushSnapshot: pushSnapshotUnlocked,
     listBranches: listBranchesUnlocked,
     readBranchSave: readBranchSaveUnlocked,
+    readRemoteHead: readRemoteHeadUnlocked,
+    pushSnapshotFromHead: pushSnapshotFromHeadUnlocked,
     applyBranch: applyBranchUnlocked,
     history: historyUnlocked,
     readCommitSave: readCommitSaveUnlocked,
@@ -440,6 +501,8 @@ export function createGitSync(options) {
     pushSnapshot: enqueueMethod(pushSnapshotUnlocked),
     listBranches: enqueueMethod(listBranchesUnlocked),
     readBranchSave: enqueueMethod(readBranchSaveUnlocked),
+    readRemoteHead: enqueueMethod(readRemoteHeadUnlocked),
+    pushSnapshotFromHead: enqueueMethod(pushSnapshotFromHeadUnlocked),
     applyBranch: enqueueMethod(applyBranchUnlocked),
     history: enqueueMethod(historyUnlocked),
     readCommitSave: enqueueMethod(readCommitSaveUnlocked),

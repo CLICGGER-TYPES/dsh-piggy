@@ -41,6 +41,12 @@ export function createOwnerPigManager(deps) {
     return { config, host }
   }
 
+  function assertSelectionStillCurrent(config) {
+    const selection = deps.selectionStore.read()
+    if (selection.pending !== null) throw new Error('已有存档切换需要先恢复')
+    if (!sameSelection(config, selection.active)) throw new Error('当前小猪选择已变化，请重新打开管理面板')
+  }
+
   function status() {
     try {
       const { config, host } = currentContext()
@@ -86,12 +92,18 @@ export function createOwnerPigManager(deps) {
     const action = deps.lifecycle.reserveAction(actionName)
     if (action === null) return { ok: false, reason: '另一个操作正在进行' }
     try {
+      const beforeClose = currentContext()
+      if (!sameSelection(beforeClose.config, context.config)) throw new Error('当前小猪选择已变化，请重试')
+      const roster = await beforeClose.host.listOwnerPigs()
+      if (roster?.ownerId !== context.config.ownerId || !Array.isArray(roster.pigs) ||
+          !roster.pigs.some(pig => pig?.pigId === pigId)) throw new Error('所选小猪不属于当前本机完整存档')
       await deps.lifecycle.requireSavedGame()
-      const current = currentContext()
-      if (!sameSelection(current.config, context.config)) throw new Error('当前小猪选择已变化，请重试')
+      // requireSavedGame closes and disposes the live host. Validate only the captured
+      // device selection after that point; never query a runtime that is shutting down.
+      assertSelectionStillCurrent(context.config)
       deps.selectionStore.stage({
-        ownerDocumentPath: current.config.ownerDocumentPath,
-        ownerId: current.config.ownerId,
+        ownerDocumentPath: context.config.ownerDocumentPath,
+        ownerId: context.config.ownerId,
         pigId,
       })
       setImmediate(() => {
@@ -138,19 +150,20 @@ export function createOwnerPigManager(deps) {
     let pigId = null
     let created = false
     try {
-      await deps.lifecycle.requireSavedGame()
-      const current = currentContext()
-      if (!sameSelection(current.config, context.config)) throw new Error('当前小猪选择已变化，请重试')
+      const beforeClose = currentContext()
+      if (!sameSelection(beforeClose.config, context.config)) throw new Error('当前小猪选择已变化，请重试')
       // The renderer never chooses the new identity or its owner. The owner runtime
       // seeds an unhatched egg and projects only its pig-owned body before writing.
       pigId = randomUUID()
-      const result = await current.host.createOwnerPig(pigId)
-      if (result === null || typeof result !== 'object' || result.ownerId !== current.config.ownerId ||
+      const result = await beforeClose.host.createOwnerPig(pigId)
+      if (result === null || typeof result !== 'object' || result.ownerId !== beforeClose.config.ownerId ||
           result.pig?.pigId !== pigId || result.pig?.hatched !== false) {
         throw new Error('新增小猪回读不匹配')
       }
       created = true
-      deps.selectionStore.stage({ ownerDocumentPath: current.config.ownerDocumentPath, ownerId: current.config.ownerId, pigId })
+      await deps.lifecycle.requireSavedGame()
+      assertSelectionStillCurrent(context.config)
+      deps.selectionStore.stage({ ownerDocumentPath: context.config.ownerDocumentPath, ownerId: context.config.ownerId, pigId })
       setImmediate(() => {
         void deps.lifecycle.restartGame().catch(async error => {
           try { deps.selectionStore.rollbackPending() } catch (rollbackError) {

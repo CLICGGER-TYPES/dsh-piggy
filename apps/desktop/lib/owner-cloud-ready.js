@@ -30,19 +30,23 @@ export function createOwnerCloudReadyStore(userData) {
     try {
       const value = JSON.parse(readFileSync(file, 'utf8'))
       if (value === null || typeof value !== 'object' || Array.isArray(value) ||
-          Object.keys(value).sort().join(',') !== 'branch,configDigest,ownerId,version' || value.version !== VERSION ||
+          Object.keys(value).sort().join(',') !== 'baseHead,branch,configDigest,ownerId,version' || value.version !== VERSION ||
           typeof value.ownerId !== 'string' || !ID.test(value.ownerId) || typeof value.branch !== 'string' ||
-          typeof value.configDigest !== 'string' || !DIGEST.test(value.configDigest)) {
+          typeof value.configDigest !== 'string' || !DIGEST.test(value.configDigest) ||
+          !(value.baseHead === null || (typeof value.baseHead === 'string' && /^[a-f0-9]{40,64}$/iu.test(value.baseHead)))) {
         return { ok: false, reason: 'owner cloud marker is invalid' }
       }
       return { ok: true, missing: false, value }
     } catch { return { ok: false, reason: 'owner cloud marker is invalid' } }
   }
-  function write(ownerId, config) {
+  function write(ownerId, config, baseHead = null) {
     if (typeof ownerId !== 'string' || !ID.test(ownerId) || typeof config?.branch !== 'string' ||
-        typeof config?.remote !== 'string' || typeof config?.provider !== 'string') throw new TypeError('owner cloud marker identity is invalid')
+        typeof config?.remote !== 'string' || typeof config?.provider !== 'string' ||
+        !(baseHead === null || (typeof baseHead === 'string' && /^[a-f0-9]{40,64}$/iu.test(baseHead)))) {
+      throw new TypeError('owner cloud marker identity is invalid')
+    }
     mkdirSync(directory, { recursive: true, mode: 0o700 })
-    const value = { version: VERSION, ownerId, branch: config.branch, configDigest: configDigest(config) }
+    const value = { version: VERSION, ownerId, branch: config.branch, configDigest: configDigest(config), baseHead }
     const temp = `${file}.${process.pid}.${randomUUID()}.tmp`
     const fd = openSync(temp, 'wx', 0o600)
     try { writeFileSync(fd, JSON.stringify(value) + '\n'); fsyncSync(fd) }

@@ -10,6 +10,7 @@ import { hatchEgg } from '../../../core.js'
 import { ownerDocumentFromLegacyV15 } from '../../../store/owner-document.js'
 import { writeOwnerDocumentFile } from '../../../runtime/owner-document-file.js'
 import { createOwnerArchiveSelectionStore } from '../lib/owner-archive-selection.js'
+import { createDesktopLifecycle } from '../lib/desktop-lifecycle.js'
 import { createOwnerPigManager } from '../lib/owner-pig-manager.js'
 import { registerOwnerPigsIpc } from '../lib/ipc/owner-pigs.js'
 import { startBackgroundHost } from '../lib/background-host.js'
@@ -36,69 +37,95 @@ test('panel owner-pig service creates a durable body-only pig and switches the s
   selectionStore.stage({ ownerDocumentPath, ownerId, pigId: originalPigId })
   selectionStore.commitPending()
 
-  let selectedPigId = originalPigId
-  let host = await startBackgroundHost(ROOT, ownerDocumentPath, {
-    ownerDocument: { ownerDocumentPath, ownerId, pigId: selectedPigId }, workEventsAutoStart: false,
-  })
-  let releaseRestart
-  let restarted = new Promise(resolve => { releaseRestart = resolve })
-  const lifecycle = {
-    hostClosed: false,
-    reserveAction() { return {} },
-    async requireSavedGame() { await host.handle('GET', '/dsh-piggy/state'); return { saved: true } },
-    async restartGame() {
-      await host.dispose()
-      selectionStore.commitPending()
-      selectedPigId = selectionStore.read().active.pigId
-      host = await startBackgroundHost(ROOT, ownerDocumentPath, {
-        ownerDocument: { ownerDocumentPath, ownerId, pigId: selectedPigId }, workEventsAutoStart: false,
-      })
-      releaseRestart()
-    },
-    releaseAction() {},
-    async recoverAction() {},
+  async function launch(pigId) {
+    return startBackgroundHost(ROOT, ownerDocumentPath, {
+      ownerDocument: { ownerDocumentPath, ownerId, pigId }, workEventsAutoStart: false,
+    })
   }
-  const manager = createOwnerPigManager({
-    getHost: () => host,
-    getOwnerConfig: () => ({ ownerDocumentPath, ownerId, pigId: selectedPigId, source: 'selection' }),
-    isSupported: () => true,
-    selectionStore,
-    lifecycle,
-    isQuitting: () => false,
-    log() {},
-  })
+  function makeProcess(initialHost, initialPigId) {
+    let host = initialHost
+    let selectedPigId = initialPigId
+    let resolveRestart, rejectRestart
+    const restarted = new Promise((resolve, reject) => { resolveRestart = resolve; rejectRestart = reject })
+    const resources = () => ({
+      host, hostStarting: null, versions: null, versionsStarting: null, shellUpdates: null, proxySettings: null,
+      fullscreenWatch: null, externalManager: null, autostart: { flush: async () => {} }, exportWrites: new Set(),
+      topGuardTimer: null, displayWatchTimer: null, hitTimer: null, stateTimer: null,
+      flushWindowState: async () => {}, flushLogs: async () => {},
+    })
+    const lifecycle = createDesktopLifecycle({
+      app: { on() {}, quit() {}, exit() {} },
+      dialog: { async showMessageBox() { return { response: 0 } } },
+      log() {}, stopDrag() {}, isCapture: () => false,
+      clearInterval, clearTimeout,
+      getResources: resources,
+      setExternalManager() {}, setHitTimer() {},
+      relaunch() {
+        const pending = selectionStore.read().pending
+        if (pending === null) { rejectRestart(new Error('test restart had no pending selection')); return }
+        void launch(pending.next.pigId).then(nextHost => {
+          selectionStore.commitPending()
+          host = nextHost
+          selectedPigId = pending.next.pigId
+          resolveRestart()
+        }, rejectRestart)
+      },
+    })
+    const manager = createOwnerPigManager({
+      getHost: () => host,
+      getOwnerConfig: () => ({ ownerDocumentPath, ownerId, pigId: selectedPigId, source: 'selection' }),
+      isSupported: () => true,
+      selectionStore,
+      lifecycle,
+      isQuitting: () => lifecycle.quitting,
+      log() {},
+    })
+    return { manager, lifecycle, restarted, getHost: () => host, getPigId: () => selectedPigId }
+  }
+
+  const initialHost = await launch(originalPigId)
+  const firstProcess = makeProcess(initialHost, originalPigId)
+  let finalHost = firstProcess.getHost()
 
   try {
-    assert.deepEqual(manager.status(), { ok: true, available: true, mode: 'owner', activePigId: originalPigId, hostReady: true })
-    const initialRoster = await manager.list()
+    assert.deepEqual(firstProcess.manager.status(), { ok: true, available: true, mode: 'owner', activePigId: originalPigId, hostReady: true })
+    const initialRoster = await firstProcess.manager.list()
     assert.equal(initialRoster.ok, true)
     assert.equal(initialRoster.pigs.length, 1)
     assert.equal(initialRoster.pigs[0].selected, true)
-    assert.equal((await manager.select('foreign-pig')).ok, false, 'renderer cannot select an ID absent from this owner runtime')
+    assert.equal((await firstProcess.manager.select('foreign-pig')).ok, false, 'renderer cannot select an ID absent from this owner runtime')
 
-    const added = await manager.addAndSelect()
+    const added = await firstProcess.manager.addAndSelect()
     assert.equal(added.ok, true)
     assert.equal(added.restarting, true)
     assert.match(added.pigId, /^[0-9a-f-]{36}$/)
-    await restarted
+    await firstProcess.restarted
 
     const selected = selectionStore.read().active
     assert.equal(selected.ownerId, ownerId)
     assert.equal(selected.ownerDocumentPath, ownerDocumentPath)
     assert.equal(selected.pigId, added.pigId)
-    const response = await host.handle('GET', '/dsh-piggy/state')
+    const secondProcess = makeProcess(firstProcess.getHost(), added.pigId)
+    const response = await secondProcess.getHost().handle('GET', '/dsh-piggy/state')
     const current = JSON.parse(String(response.body))
     assert.equal(current.pig.name, '猪猪')
     assert.equal(current.hatched, false)
     assert.equal(current.pig.coins, 765)
     assert.equal(current.pigId, undefined, 'identity remains a response header, not a new flat-state field')
-    const roster = await manager.list()
+    const roster = await secondProcess.manager.list()
     assert.equal(roster.ok, true)
     assert.deepEqual(roster.pigs.map(pig => pig.pigId), [originalPigId, added.pigId])
     assert.equal(roster.pigs[0].selected, false)
     assert.equal(roster.pigs[1].selected, true)
+    const switched = await secondProcess.manager.select(originalPigId)
+    assert.equal(switched.ok, true)
+    assert.equal(switched.restarting, true)
+    await secondProcess.restarted
+    assert.equal(selectionStore.read().active.pigId, originalPigId)
+    assert.equal(secondProcess.getPigId(), originalPigId)
+    finalHost = secondProcess.getHost()
   } finally {
-    await host.dispose().catch(() => {})
+    await finalHost.dispose().catch(() => {})
   }
 })
 

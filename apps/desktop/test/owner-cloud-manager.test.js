@@ -9,14 +9,15 @@ import { createOwnerCloudManager } from '../lib/owner-cloud-manager.js'
 import { createOwnerCloudReadyStore } from '../lib/owner-cloud-ready.js'
 
 const config = { version: 1, enabled: true, provider: 'github', remote: 'https://github.com/acme/pig.git', branch: 'main' }
+const REMOTE_HEAD = 'a'.repeat(40)
 
 test('local-to-cloud first sync persists a device-local owner/branch binding before enabling the queue', async () => {
   const root = mkdtempSync(join(tmpdir(), 'piggy-owner-cloud-manager-'))
   const ready = createOwnerCloudReadyStore(root)
   const calls = []
   const host = {
-    async firstSyncCloud(direction) { calls.push(['first-sync', direction]); return { ok: true, created: true } },
-    async configureCloudSave(value) { calls.push(['configure', value.syncReady]); return { ok: true } },
+    async firstSyncCloud(direction) { calls.push(['first-sync', direction]); return { ok: true, created: true, remoteHead: REMOTE_HEAD } },
+    async configureCloudSave(value) { calls.push(['configure', value.syncReady, value.cloudBaseHead]); return { ok: true } },
   }
   const manager = createOwnerCloudManager({
     getHost: () => host,
@@ -31,8 +32,9 @@ test('local-to-cloud first sync persists a device-local owner/branch binding bef
     assert.deepEqual(await manager.firstSync('local-to-cloud'), {
       ok: true, direction: 'local-to-cloud', created: true, alreadyCurrent: false,
     })
-    assert.deepEqual(calls, [['first-sync', 'local-to-cloud'], ['configure', true]])
+    assert.deepEqual(calls, [['first-sync', 'local-to-cloud'], ['configure', true, REMOTE_HEAD]])
     assert.equal(ready.matches('owner-local', config), true)
+    assert.equal(ready.read().value.baseHead, REMOTE_HEAD)
     assert.equal(ready.matches('owner-other', config), false)
     assert.equal(ready.matches('owner-local', { ...config, remote: 'https://github.com/acme/other.git' }), false)
   } finally { rmSync(root, { recursive: true, force: true }) }
@@ -46,7 +48,7 @@ test('cloud-to-local remains a validated owner-archive preview until explicit co
   const manager = createOwnerCloudManager({
     getHost: () => ({ async firstSyncCloud(direction) {
       assert.equal(direction, 'cloud-to-local')
-      return { ok: true, archive: new Uint8Array([1, 2, 3]), ownerId: 'owner-remote' }
+      return { ok: true, archive: new Uint8Array([1, 2, 3]), ownerId: 'owner-remote', remoteHead: REMOTE_HEAD }
     } }),
     getOwnerConfig: () => activeOwner,
     settings: { load: () => ({ ok: true, config }) },
@@ -74,6 +76,7 @@ test('cloud-to-local remains a validated owner-archive preview until explicit co
     assert.deepEqual(switched, { ok: true, restarting: true, cloudReadyAfterRestart: true })
     assert.equal(imported, 1)
     assert.equal(ready.matches('owner-remote', config), true)
+    assert.equal(ready.read().value.baseHead, REMOTE_HEAD)
     assert.equal(ready.matches(activeOwner.ownerId, config), false, 'the current owner is not overwritten or re-bound')
   } finally { rmSync(root, { recursive: true, force: true }) }
 })

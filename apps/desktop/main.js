@@ -1794,9 +1794,13 @@ app.whenReady().then(async () => {
     ? `${ownerDocumentConfig.ownerDocumentPath}.work-events`
     : join(app.getPath('userData'), 'work-endpoint')
   const localCloudSettings = cloudSaveSettings.load()
+  const ownerCloudReady = ownerDocumentConfig === null ? null : ownerCloudReadyStore.read()
+  const ownerCloudReadyActive = ownerDocumentConfig !== null && localCloudSettings.ok &&
+    ownerCloudReadyStore.matches(ownerDocumentConfig.ownerId, localCloudSettings.config)
   const cloudRuntimeConfig = localCloudSettings.ok
-    ? { ...localCloudSettings.config, syncReady: ownerDocumentConfig === null ? false :
-      ownerCloudReadyStore.matches(ownerDocumentConfig.ownerId, localCloudSettings.config) }
+    ? { ...localCloudSettings.config, syncReady: ownerCloudReadyActive,
+      ...(ownerCloudReadyActive && ownerCloudReady?.ok === true && ownerCloudReady.value !== null
+        ? { cloudBaseHead: ownerCloudReady.value.baseHead } : {}) }
     : null
   try {
     await desktopRuntime.startHost(gameDir, hostStatePath, { fetch: net.fetch.bind(net), workEventsDirectory,

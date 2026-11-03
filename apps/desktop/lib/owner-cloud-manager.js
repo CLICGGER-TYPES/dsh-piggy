@@ -8,7 +8,7 @@ function sameConfig(left, right) {
 
 /** @param {{getHost:()=>any,getOwnerConfig:()=>any,settings:any,readyStore:any,archiveManager:any,isSupported:()=>boolean,isQuitting:()=>boolean}} deps */
 export function createOwnerCloudManager(deps) {
-  /** @type {Map<string,{ownerId:string,config:any,expires:number}>} */
+  /** @type {Map<string,{ownerId:string,baseHead:string,config:any,expires:number}>} */
   const previews = new Map()
 
   function current() {
@@ -48,9 +48,10 @@ export function createOwnerCloudManager(deps) {
     }
 
     if (direction === 'local-to-cloud') {
+      if (typeof result.remoteHead !== 'string') return { ok: false, reason: '首次同步没有可保存的远端版本' }
       try {
-        deps.readyStore.write(owner.ownerId, config)
-        const enabled = await host.configureCloudSave({ ...config, syncReady: true })
+        deps.readyStore.write(owner.ownerId, config, result.remoteHead)
+        const enabled = await host.configureCloudSave({ ...config, syncReady: true, cloudBaseHead: result.remoteHead })
         if (enabled?.ok !== true) {
           deps.readyStore.clear(owner.ownerId, config)
           return { ok: false, reason: enabled?.reason ?? '已上传，但本机自动同步未能启用' }
@@ -68,7 +69,8 @@ export function createOwnerCloudManager(deps) {
     if (preview?.ok !== true || typeof preview.token !== 'string') return preview
     const ownerId = deps.archiveManager.previewOwnerId(preview.token)
     if (typeof ownerId !== 'string' || ownerId !== result.ownerId) return { ok: false, reason: '云端完整档身份回读不匹配' }
-    previews.set(preview.token, { ownerId, config: { ...config }, expires: Date.now() + 10 * 60 * 1000 })
+    if (typeof result.remoteHead !== 'string') return { ok: false, reason: '云端档缺少可验证的版本基线' }
+    previews.set(preview.token, { ownerId, baseHead: result.remoteHead, config: { ...config }, expires: Date.now() + 10 * 60 * 1000 })
     return { ok: true, direction, token: preview.token, summary: preview.summary, warnings: preview.warnings,
       deviceSettings: 'excluded', switchAfterImport: true }
   }
@@ -86,7 +88,7 @@ export function createOwnerCloudManager(deps) {
       deps.archiveManager.clear()
       return { ok: false, reason: '云存档设置已更改，请重新预览' }
     }
-    try { deps.readyStore.write(pending.ownerId, pending.config) }
+    try { deps.readyStore.write(pending.ownerId, pending.config, pending.baseHead) }
     catch { return { ok: false, reason: '本机云同步状态无法保存；当前存档未切换' } }
     const result = await deps.archiveManager.importAndSwitch(token, { acceptWarnings: options.acceptWarnings === true })
     if (result?.ok !== true) {
