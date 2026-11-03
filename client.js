@@ -9867,6 +9867,7 @@
   // src/client/owner-archive-transfer.js
   var EXPORTING = "\u6B63\u5728\u5BFC\u51FA\u2026";
   var IMPORTING = "\u6B63\u5728\u5BFC\u5165\u5E76\u5207\u6362\u2026";
+  var MAX_ARCHIVE_BYTES = 128 * 1024 * 1024;
   var ownerState = {
     status: null,
     statusPromise: null,
@@ -9945,6 +9946,12 @@
   }
   async function previewFile(file) {
     if (!file || ownerState.busy) return;
+    if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > MAX_ARCHIVE_BYTES) {
+      ownerState.error = "\u5B58\u6863\u6587\u4EF6\u4E3A\u7A7A\u3001\u5927\u5C0F\u65E0\u6548\u6216\u8D85\u8FC7 128 MiB";
+      ownerState.loading = false;
+      rerender2();
+      return;
+    }
     const generation = ++ownerState.generation;
     ownerState.loading = true;
     ownerState.preview = null;

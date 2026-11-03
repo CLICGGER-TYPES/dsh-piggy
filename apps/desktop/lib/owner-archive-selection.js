@@ -1,7 +1,7 @@
 // @ts-check
 /** Device-local active owner selection with a recoverable switch intent. */
 import { randomUUID } from 'node:crypto'
-import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeSync } from 'node:fs'
+import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 
 const VERSION = 1
@@ -103,7 +103,7 @@ export function createOwnerArchiveSelectionStore(userData) {
     mkdirSync(directory, { recursive: true, mode: 0o700 })
     const temp = `${file}.${process.pid}.${randomUUID()}.tmp`
     const fd = openSync(temp, 'wx', 0o600)
-    try { writeSync(fd, JSON.stringify(normalized) + '\n'); fsyncSync(fd) }
+    try { writeFileSync(fd, JSON.stringify(normalized) + '\n'); fsyncSync(fd) }
     catch (error) { try { unlinkSync(temp) } catch { /* preserve original error */ }; throw error }
     finally { closeSync(fd) }
     try { renameSync(temp, file); syncDirectory(directory) }

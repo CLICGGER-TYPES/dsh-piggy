@@ -5,6 +5,7 @@ import { desktopShell } from './desktop-shell.js'
 
 const EXPORTING = '正在导出…'
 const IMPORTING = '正在导入并切换…'
+const MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
 const ownerState = {
   status: null,
   statusPromise: null,
@@ -86,6 +87,12 @@ function installEscape() {
 
 async function previewFile(file) {
   if (!file || ownerState.busy) return
+  if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > MAX_ARCHIVE_BYTES) {
+    ownerState.error = '存档文件为空、大小无效或超过 128 MiB'
+    ownerState.loading = false
+    rerender()
+    return
+  }
   const generation = ++ownerState.generation
   ownerState.loading = true
   ownerState.preview = null

@@ -80,7 +80,12 @@ test('owner archive UI keeps flat import disabled in owner mode and requires exp
     dom.content.querySelector('[data-owner-archive-import="true"]').click()
     const picker = dom.content.querySelector('[data-owner-archive-file="true"]')
     assert.ok(picker)
-    picker.files = [{ arrayBuffer: async () => Uint8Array.from([0x50, 0x4b]).buffer }]
+    picker.files = [{ size: 128 * 1024 * 1024 + 1, async arrayBuffer() { throw new Error('oversized files must be rejected before reading') } }]
+    picker.fire('change')
+    await tick()
+    assert.equal(calls.length, 0, 'oversized files are rejected before arrayBuffer is read')
+    assert.match(dom.content.allText, /超过 128 MiB/)
+    picker.files = [{ size: 2, arrayBuffer: async () => Uint8Array.from([0x50, 0x4b]).buffer }]
     picker.fire('change')
     await tick(); await tick()
     assert.equal(calls[0].method, 'preview')

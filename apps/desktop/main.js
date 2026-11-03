@@ -215,13 +215,23 @@ function applyStoredOwnerSelection(selection) {
 }
 
 /** Roll a pending owner switch back only after the attempted runtime has stopped writing. */
+async function notifyOwnerArchiveSwitchFailed() {
+  await dialog.showMessageBox({
+    type: 'info',
+    title: '没有切换存档',
+    message: '新存档副本没有启用。之前的存档选择已恢复，新副本仍保留在本机。',
+    detail: '应用将重新启动；你可以稍后重试。',
+  })
+}
+
 async function restorePreviousOwnerSelectionAndRestart(cause) {
   if (!ownerArchiveSwitchPending) return false
   ownerArchiveSelectionStore.rollbackPending()
   ownerArchiveSwitchPending = false
-  log('owner archive startup rolled back', cause instanceof Error ? cause.message : 'startup failed')
+  log('owner archive startup rolled back', cause instanceof Error ? cause.name : 'startup failed')
   await desktopLifecycle.requireSavedGame()
   await desktopLifecycle.closeShellResources()
+  await notifyOwnerArchiveSwitchFailed()
   relaunch()
   app.exit(0)
   return true
@@ -1667,6 +1677,7 @@ app.whenReady().then(async () => {
       const previous = ownerArchiveSelectionStore.read()
       applyStoredOwnerSelection(previous.active)
       log('owner archive switch refused', 'active game package does not support owner archives; previous selection restored')
+      await notifyOwnerArchiveSwitchFailed()
     }
     if (ownerDocumentConfig !== null) {
       throw new Error('当前游戏版本不支持已选择的完整存档；原存档选择已保留，请先恢复兼容的游戏版本')
