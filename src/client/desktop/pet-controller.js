@@ -97,6 +97,7 @@ export function createPetController(deps) {
           proxy: shell.proxy,
           cloudSave: shell.cloudSave,
           saves: shell.saves,
+          ownerArchives: shell.ownerArchives,
           ext: shell.ext,
           fullscreen: shell.fullscreen,
           external: shell.external ?? null,

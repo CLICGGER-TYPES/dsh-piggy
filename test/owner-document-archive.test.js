@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 
 import { hatchEgg, STATE_VERSION } from '../core.js'
-import { exportOwnerDocumentArchive, createOwnerDocumentArchiveImporter, OWNER_ARCHIVE_MANIFEST, OWNER_DOCUMENT_ENTRY, OWNER_RECEIPTS_ENTRY } from '../runtime/owner-document-archive.js'
+import { exportLegacySaveArchiveAsOwnerDocumentArchive, exportOwnerDocumentArchive, createOwnerDocumentArchiveImporter, OWNER_ARCHIVE_MANIFEST, OWNER_DOCUMENT_ENTRY, OWNER_RECEIPTS_ENTRY } from '../runtime/owner-document-archive.js'
 import { createSaveArchive } from '../runtime/save-archive.js'
 import { readZip, makeZip } from '../runtime/save-zip.js'
 import { ownerDocumentFromLegacyV15, projectOwnerDocumentToLegacyV15, serializeOwnerDocument } from '../store/owner-document.js'
@@ -153,6 +153,44 @@ test('explicit legacy v15 import keeps coins and saved per-pig preferences and n
     assert.equal(flat.dialogue.quiet, true)
     assert.deepEqual(readFileSync(legacyPath), bytes)
     assert.deepEqual(legacyArchive, archiveBefore)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('legacy v15 export makes a one-pig complete archive in memory; complete importer rejects flat archives', () => {
+  const root = temp(), legacyRoot = join(root, 'legacy'), targetPath = join(root, 'copy', 'owner-document.json')
+  mkdirSync(legacyRoot)
+  try {
+    const legacyPath = join(legacyRoot, 'state.json'), state = legacyPig('当前猪')
+    state.coins = 1_234
+    state.inventory.apple = 3
+    const sourceBytes = Buffer.from(JSON.stringify(state))
+    writeFileSync(legacyPath, sourceBytes)
+    installSkinFiles(legacyRoot)
+    const flat = createSaveArchive({ statePath: legacyPath, state, gameVersion: '0.37.2-rc.6', nowMs: NOW }).buffer
+    const exported = exportLegacySaveArchiveAsOwnerDocumentArchive({ archiveBuffer: flat, ownerId: 'owner-copy', pigId: 'pig-copy', nowMs: NOW })
+    const entries = readZip(exported.buffer)
+    assert.equal(entries.has(OWNER_DOCUMENT_ENTRY), true)
+    assert.equal(JSON.parse(entries.get(OWNER_ARCHIVE_MANIFEST).toString('utf8')).pigIds[0], 'pig-copy')
+    assert.deepEqual(readFileSync(legacyPath), sourceBytes, 'complete export leaves the current v15 file unchanged')
+
+    const importer = createOwnerDocumentArchiveImporter({ ownerDocumentPath: targetPath, allowLegacy: false, now: () => NOW })
+    const preview = importer.preview(exported.buffer)
+    assert.equal(preview.ok, true, JSON.stringify(preview))
+    if (!preview.ok) throw new Error(preview.reason)
+    assert.equal(preview.initialPigId, 'pig-copy')
+    assert.equal(preview.summary.pigs[0].name, '当前猪')
+    assert.equal(preview.summary.shared.coins, 1_234)
+    assert.equal(preview.summary.shared.inventoryCount, 3)
+    const imported = importer.import(preview.token)
+    assert.equal(imported.ok, true, JSON.stringify(imported))
+    assert.equal(imported.initialPigId, 'pig-copy')
+
+    const refuseFlat = createOwnerDocumentArchiveImporter({
+      ownerDocumentPath: join(root, 'flat-target', 'owner-document.json'), allowLegacy: false, now: () => NOW,
+    }).preview(flat)
+    assert.equal(refuseFlat.ok, false)
+    assert.match(refuseFlat.reason, /单猪存档请使用当前小猪存档入口/)
+    assert.equal(inspectOwnerDocumentFile(targetPath).kind, 'owner-document')
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 

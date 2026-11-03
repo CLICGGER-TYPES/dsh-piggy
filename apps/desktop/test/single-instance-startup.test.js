@@ -11,6 +11,7 @@ import { createContext, runInContext } from 'node:vm'
 
 import { startBackgroundVersions } from '../lib/background-versions.js'
 import { createDesktopRuntime } from '../lib/desktop-runtime.js'
+import { createOwnerArchiveSelectionStore } from '../lib/owner-archive-selection.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
@@ -21,8 +22,13 @@ async function runStartup(userData, hasLock) {
   let quits = 0, ready = 0
   const sandbox = {
     needsX11: false, quitting: false, join, resolve,
+    taskOwnerDocumentConfig: null, ownerDocumentConfig: null, ownerArchiveSwitchPending: false,
+    ownerArchiveRuntimeSupported: false, activeGameDirectory: null,
+    handleStartupFailure: async error => { messages.push(['startup failed', error?.message]) },
+    reportStartupFailure: async ({ error }) => { messages.push(['startup failed', error?.message]) },
     configureDesktopData: () => ({ userData, statePath: join(userData, 'state.json') }),
     createCloudSaveConfigStore: () => ({ load: () => ({ ok: false }) }),
+    createOwnerArchiveSelectionStore,
     migrateDesktopData() { calls.push('migration') },
     process: { platform: 'win32', env: { PIGGY_USERDATA: userData }, argv: [] },
     app: { setPath() {}, getPath: () => userData, getVersion: () => '0.6.6', isPackaged: false,
@@ -44,6 +50,7 @@ async function runStartup(userData, hasLock) {
       return versions
     },
   }
+  sandbox.applyStoredOwnerSelection = selection => { sandbox.ownerDocumentConfig = selection }
   sandbox.desktopRuntime = createDesktopRuntime({
     startVersionsWorker: options => sandbox.startBackgroundVersions(options),
     startHostWorker: async () => { throw new Error('startup should return before creating the host') },

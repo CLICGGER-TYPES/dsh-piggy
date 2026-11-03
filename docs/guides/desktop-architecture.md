@@ -170,6 +170,10 @@
 
 桌面协议 v5 新增 `piggyShell.saves.save(name, Uint8Array)` / `piggy:save-archive`，只接受受限 ZIP 名称与字节，由系统保存框选目的地。协议 POST 使用 `arrayBuffer()`，不能将 ZIP 按 UTF-8 文本转码。旧外壳检测不到新方法时走浏览器下载，不提高 minShell。
 
+完整 owner 存档是桌面端的独立入口：只有当前 `runtime/index.js` 显式导出 `OWNER_ARCHIVE_RUNTIME_API_VERSION = 1` 才会显示。默认 v15 单猪存档导出时，经现有宿主导出 ZIP 后在内存中投影成一猪完整档，源 `state.json` 不迁移、不改写；OwnerDocument 模式导出整份 owner ZIP。预览与新根导入由 panel-only 主进程 IPC 调用既有 OwnerDocument archive 校验与目录事务，渲染器只持有一次性预览 token，不提供目标路径或 ID。导入只发布到 `userData/owner-archives/<随机目录>/owner-document.json`，不覆盖旧 v15、当前 owner 或兄弟猪；localStorage/本机显示与声音偏好留在设备上。
+
+确认“导入并切换”后，当前宿主先保存并停止写入，主进程才将设备选择记录原子写成 `owner-archive-selection.json` 的 pending 项并按原生命周期重启。新宿主先验证运行时 capability、owner 文档和首只档内猪；窗口启动成功后把 pending 提交为 active。选择文件与游戏存档/owner ZIP分开保存；损坏或缺失的 active 选择失败关闭，不回退成空 v15。启动失败时恢复原 active 选择，已导入副本保留。OwnerDocument 模式的旧 flat 单猪导入仍拒绝；本机偏好不随完整档覆盖。
+
 
 ### 2026-10-21：体型变化与原生裁剪
 

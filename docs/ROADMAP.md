@@ -18,7 +18,14 @@
 
 - 新 `runtime/owner-document-archive.js` 提供显式 owner document ZIP 导出、只读预检、确认后导入与恢复 API；旧 flat v15 只在调用者指定 ownerId/pigId 后映射为单猪 owner document。导入仅创建全新 owner 根目录，已有目标一律拒绝，不猜测跨 owner 合并或覆盖策略；目录发布沿用 D02 文件事务与同文件系统原子 rename。
 - owner ZIP 记录完整 owner document、通过现有校验的皮肤/官方扩展 sidecars 与 work receipts。损坏身份/引用/收据、pending work WAL、未支持资源或不完整证据会拒绝或要求明确接受现有 warning；localStorage、设备偏好与 cloud settings 不打包或写回。旧 v15 源字节保持不变。
-- 该 API 尚未接入生产 runtime、store、route、设置或导入界面，也没有 UI 验收；它只提供后续入口可复用的 archive/service contract。相关临时目录契约与类型/测试结果见 ARCHIVEOWN01 开发交接，不能记为用户存档迁移已完成。
+- ARCHIVEOWN01 当时只交付 archive/service contract，尚未接入桌面设置或导入界面。ARCHIVEUI01 在此基础上增加桌面主进程入口与独立设备选择；候选动态验收状态见下一节，不能把服务层契约误记为已通过 UI。
+
+## 2026-11-03 ARCHIVEUI01 完整存档桌面入口（候选，等待独立 UI 验收）
+
+- 设置页保留现有“当前小猪存档”flat v15入口；进入 OwnerDocument 模式后为保护共享资源，旧单猪导入/导出控件停用且说明原因，flat 导入仍由宿主拒绝。完整档入口只在活动游戏运行时导出 owner-archive capability 时显示，DSH/stage/旧缓存游戏包不会显示或接收 OwnerDocument 路径。
+- 默认 legacy v15 完整档导出只在内存映射为单猪 owner 文档，原 `state.json` 字节不改、也不自动迁移。完整档 ZIP 预览显示各猪成长摘要及共享金币、背包、菜园；设备 localStorage/显示/声音偏好不打包。导入只创建新的本机 owner 根目录，拒绝已有目录；旧 owner、原 v15 与兄弟猪不会覆盖或合并。
+- 用户批准“导入并切换”：完整事务回读成功后先保存并停止旧宿主，再写独立 `owner-archive-selection.json` pending 选择并重启。新运行时 capability、OwnerDocument、目标猪与窗口启动成功后提交 active；启动失败回滚原选择、保留已导入副本。该流程不实现 owner 选择器、跨 owner 合并、联网或云上传。
+- ARCHIVEUI01 开发候选的定向 source tests/typecheck/build 已通过；CI与独立桌面 UI尚待完成。Node/契约检查不记为产品 UI 验收。
 
 ## 2026-11-03 RESOURCEFLOW01 展示资源上下文接线（隔离候选，未做 UI）
 
