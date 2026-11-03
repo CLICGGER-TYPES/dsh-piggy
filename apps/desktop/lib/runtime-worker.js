@@ -195,9 +195,14 @@ try {
     ownerDocument: workerData.ownerDocument ?? undefined,
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
-  installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
-    onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
-  await installerExtensions.apply()
+  // Installer selections inspect the legacy v15 `hatched` field before choosing
+  // when to import. An OwnerDocument envelope is not that flat state; defer this
+  // importer until extension ownership is explicitly adapted to owner/pig targets.
+  if (workerData.ownerDocument === null) {
+    installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
+      onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
+    await installerExtensions.apply()
+  }
   if (workerData.workEventsDirectory && workerData.workEventsAutoStart !== false) await startEndpoint()
   port.postMessage({ kind: 'ready' })
 } catch (error) {

@@ -202,6 +202,9 @@ sum/max/union 仍然只是合并策略，不是归属权威，不能拿来反推
   cloud endpoints 在该模式显式拒绝。
 - 文件层使用 owner-document 事务、CAS revision 和短提交锁。多个进程可打开同一
   owner 文件，但写入陈旧 revision 会被拒绝并要求重新打开；没有实时跨进程同步。
+- Desktop owner-document 模式暂不调用只读取旧 flat v15 `hatched` 字段的安装器
+  预选导入器，避免把 owner document envelope 误认为已孵化存档；扩展安装与逐猪
+  target/context 接线留待后续任务，默认 v15 安装器流程不变。
 - 当前仅有隔离 Node/类型契约验证，未接默认生产存档、未打包或真实 UI 验收；没有
   正式多猪选择器、联网/房间权限、跨设备共享或声音包。相关桌面与 DSH 真实 UI
   验收仍待独立执行。
