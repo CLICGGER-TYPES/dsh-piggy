@@ -1,7 +1,8 @@
 // @ts-check
 /** DSH 只负责宿主事件、服务注册和默认位置；游戏规则与持久化由运行时负责。 */
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { createGameRuntime } from '../../runtime/index.js'
+import { inspectOwnerDocumentFile } from '../../runtime/owner-document-file.js'
 import { sessionOf } from '../../runtime/session-context.js'
 import { defaultStatePath, dshHome, moveLegacySaveDir } from '../../store/state-file.js'
 import { join } from 'node:path'
@@ -11,6 +12,9 @@ import { createExternalController } from './external-controller.js'
 import { registerManagementRoutes, registerPanelRoutes } from './external-routes.js'
 import { DEFAULT_CLOUD_SETTINGS, normalizeCloudSaveSettings, readCloudSaveSettings, writeCloudSaveSettings } from '../../runtime/cloud-save-settings.js'
 import { testGitRemote } from '../../runtime/git-sync.js'
+import { createDshOwnerCloudBridge } from './owner-cloud.js'
+import { createDshOwnerNetworkService } from './owner-network.js'
+import { registerDshOwnerControlRoutes } from './owner-control-routes.js'
 
 export const name = 'dsh-piggy'
 export const inject = []
@@ -246,8 +250,17 @@ function applyOwnerDocumentOptIn(ctx, config) {
   const command = typeof config.command === 'string' && /^[a-z][a-z0-9-]{0,23}$/.test(config.command)
     ? config.command : 'pig'
   const ownerDocumentPath = config.ownerDocumentPath
+  const inspected = inspectOwnerDocumentFile(ownerDocumentPath)
+  const ownerId = typeof config.ownerId === 'string' ? config.ownerId
+    : inspected.kind === 'owner-document' ? inspected.document.ownerId : null
+  const cloudReadyKey = createHash('sha256').update(ownerDocumentPath).digest('hex')
+  const ownerCloud = createDshOwnerCloudBridge({
+    readyDirectory: join(dshHome(), 'dsh-piggy', 'owner-cloud', cloudReadyKey), ownerId, config: config.ownerCloud,
+  })
   let runtime = null
   let unmount = null
+  let unmountOwnerControl = null
+  let networkService = null
   let closed = false
 
   function ensureRuntime() {
@@ -259,6 +272,7 @@ function applyOwnerDocumentOptIn(ctx, config) {
       legacyStatePath: config.legacyStatePath,
       ownerId: config.ownerId,
       pigId: config.pigId,
+      cloudSave: ownerCloud.runtimeConfig(),
       journalHeader: environmentNote({
         运行形态: 'DSH OwnerDocument opt-in',
         存档路径: ownerDocumentPath,
@@ -266,6 +280,13 @@ function applyOwnerDocumentOptIn(ctx, config) {
       }),
     })
     return runtime
+  }
+
+  function getNetworkService() {
+    if (networkService !== null) return networkService
+    const current = ensureRuntime()
+    networkService = createDshOwnerNetworkService({ ownerDocumentPath, runtime: current, config })
+    return networkService
   }
 
   const observer = createWorkObserver({ accept: event => {
@@ -283,7 +304,16 @@ function applyOwnerDocumentOptIn(ctx, config) {
     if (webServer === undefined || webServer === null) return () => {}
     const current = ensureRuntime()
     unmount = current.mountRoutes(webServer, sessionOf(current))
-    return () => { unmount?.(); unmount = null }
+    unmountOwnerControl = registerDshOwnerControlRoutes(webServer, {
+      getRuntime: ensureRuntime,
+      getNetwork: getNetworkService,
+      getCloud: () => ownerCloud,
+    })
+    return () => {
+      unmount?.(); unmount = null
+      unmountOwnerControl?.(); unmountOwnerControl = null
+      void networkService?.stop().catch(() => {})
+    }
   })
 
   ctx.inject(['commands'], commandCtx => commandCtx.commands.register({
@@ -305,6 +335,9 @@ function applyOwnerDocumentOptIn(ctx, config) {
     observer.dispose()
     unmount?.()
     unmount = null
+    unmountOwnerControl?.()
+    unmountOwnerControl = null
+    await networkService?.close()
     const old = runtime
     runtime = null
     await old?.dispose()

@@ -7,7 +7,10 @@ export function registerOwnerNetworkIpc({ ipcMain, fromPanelOnly, manager }) {
   })
   ipcMain.handle('piggy:owner-network:start', (event, options) => {
     if (!fromPanelOnly(event)) return { ok: false, reason: '来源不对' }
-    return manager.start({ listenAddress: typeof options?.listenAddress === 'string' ? options.listenAddress : undefined })
+    return manager.start({
+      listenAddress: typeof options?.listenAddress === 'string' ? options.listenAddress : undefined,
+      advertisedHost: typeof options?.advertisedHost === 'string' ? options.advertisedHost : undefined,
+    })
   })
   ipcMain.handle('piggy:owner-network:invite', (event, pigId) => {
     if (!fromPanelOnly(event)) return { ok: false, reason: '来源不对' }

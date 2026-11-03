@@ -180,7 +180,10 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 面板专用的 owner 私有 LAN 会话；只有调用 start() 才启动服务。 */
   ownerNetwork: {
     status: () => ipcRenderer.invoke('piggy:owner-network:status'),
-    start: options => ipcRenderer.invoke('piggy:owner-network:start', { listenAddress: options?.listenAddress }),
+    start: options => ipcRenderer.invoke('piggy:owner-network:start', {
+      listenAddress: options?.listenAddress,
+      advertisedHost: options?.advertisedHost,
+    }),
     invite: pigId => ipcRenderer.invoke('piggy:owner-network:invite', String(pigId)),
     stop: () => ipcRenderer.invoke('piggy:owner-network:stop'),
   },

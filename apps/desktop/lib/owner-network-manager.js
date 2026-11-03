@@ -45,7 +45,10 @@ export function createOwnerNetworkManager(deps) {
     let current
     try { current = context() }
     catch (error) { return { ok: false, reason: error instanceof Error ? error.message : '本机网络会话暂不可用' } }
-    try { return { ok: true, ...(await current.host.startOwnerLan({ listenAddress: options.listenAddress })) } }
+    try { return { ok: true, ...(await current.host.startOwnerLan({
+      listenAddress: options.listenAddress,
+      advertisedHost: options.advertisedHost,
+    })) } }
     catch (error) {
       const reason = error instanceof Error ? error.message : '本机网络会话启动失败'
       deps.log('owner LAN start refused', reason)
