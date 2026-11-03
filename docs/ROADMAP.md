@@ -12,7 +12,13 @@
 - 在 D01 OwnerDocument 纯 codec、D02 文件事务/迁移库之后，当前隔离候选把两者接到 `createGameRuntime`、DSH adapter 与桌面 host。只有调用者显式提供 `ownerDocumentPath`、`pigId` 和初始化所需的 `legacyStatePath`/`ownerId` 才进入此路径；默认 DSH/Desktop 路径仍各自使用原 v15 单猪存档，不自动共享或合并。
 - owner 文档用调用者提供的稳定 `ownerId` 与 `pigId` 保存一份共享资源和多个猪 body。现有单猪命令、`/state`、`/act` 适配到绑定的 session；owner 内金币、背包、菜园等共享，猪名字/成长等 body 分开。`reset`/`adopt` 只替换当前猪 body。ID 只标识数据，不能作为授权。
 - 创建 owner 文档时只读取明确指定的旧 v15 文件，保留源字节不变；目标文件的迁移/写入使用 D02 事务与 revision CAS。并发进程可打开同一目标，但旧 revision 的写入会被拒绝，当前候选不提供实时跨进程同步。owner 模式拒绝 flat archive 与 cloud 操作；云存档上传、恢复、冲突处理继续暂缓。
-- 当前隔离分支针对 owner/runtime/store、旧兼容路径和 DSH/Desktop 接线的定向 Node 契约为 131/131；变更生产 JS 的 TypeScript 5.9.3 定向检查与语法检查通过。PR50 双平台 CI `41566650671` 通过。owner-document Desktop 模式暂不运行只识别 flat v15 的安装器选择导入，待 extension target/context 接线。私有打包及独立真实桌面/DSH UI 验收仍待完成，不把 D01/D02 库或本地契约测试记为端到端产品验收。
+- 当前隔离分支针对 owner/runtime/store、旧兼容路径和 DSH/Desktop 接线的定向 Node 契约为 131/131；变更生产 JS 的 TypeScript 5.9.3 定向检查与语法检查通过。PR50 双平台 CI `41566650671`、文档状态后续 CI `41567617112` 均通过。owner-document Desktop 模式暂不运行只识别 flat v15 的安装器选择导入，待 extension target/context 接线。私有 Electron 45.2.1 AppImage（source `a498c894`）已构建并静态回读：143,045,231 bytes，SHA-256 `aaf9d2c36eddbb42a8ef81362342449a52710de01dcb6bbc44c36b4b1be70d96`，379 个 game payload 文件逐字节一致；应用未执行，独立真实桌面/DSH UI 验收仍待完成，不把 Node/静态回读记为端到端产品验收。
+
+## 2026-11-03 RESOURCEFLOW01 展示资源上下文接线（隔离候选，未做 UI）
+
+- 基于 M2 `a498c8941e1fd7485d4c6f7e95ad5cc3e86534e6`。`PresentationContext` 可选接收不可变 `ownerId`/`pigId` 标签，并公开它实际采用的 art registry；`mountGame` 把同一 identity 和 registry 交给展示上下文与动作 player。缺省 identity 继续为 null、默认 art registry 与旧单猪挂载不变。IDs 只是数据标签，不是认证或授权。
+- 同一 owner 的展示可按调用方提供共享 art/action registry 引用；各自 state provider、DOM/action player 与 audio channel 仍按 presentation 隔离。`customSkins`、skin/worn 归属表、skin pack 文件路径不变；声音配方仍为现有静态表，AudioContext/音量仍为设备级。
+- 无头 Node 契约 58/58 通过，完整 typecheck exit 0；现有构建刷新根 `client.js`（SHA-256 `67f4bde8a073ce4e261f40e7753e6a08c684ec6bb27273eefe95b2b318644715`），farm client/server 生成物未变。PR CI 与独立 UI 尚待完成；没有新 skin/audio pack、selector、玩法或数据格式。
 
 ## 2026-11-02 主线集成与实际覆盖（PR36、PR42 协议改动、PR43）
 

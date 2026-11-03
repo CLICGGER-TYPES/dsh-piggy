@@ -8,9 +8,10 @@
  * different state objects; it never depends on "the last mounted pig" or on a
  * module-global mounted selector.
  *
- * Out of scope here: owner/currency resources, save identity, network rooms,
- * a public multi-pig selector, sound policy and action/skin descriptors. Those
- * stay in F01/F02/F04/F05 or a later integration task.
+ * Optional owner/pig IDs label a caller-bound instance; they are not credentials
+ * or a source of state/permission. The caller shares one art registry across an
+ * owner's presentations, while this context owns only its art binding and audio
+ * channel. There is no process-global active pig.
  * @module dsh-piggy/client/presentation-context
  */
 import { createArtContext } from './art.js'
@@ -22,6 +23,23 @@ import { createScene } from './scene.js'
 
 function noop() {}
 
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
+
+/** @typedef {{ ownerId: string, pigId: string }} PresentationIdentity */
+
+/** @param {unknown} value @returns {PresentationIdentity|null} */
+function normalizeIdentity(value) {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'object' || Array.isArray(value)) throw new TypeError('presentation identity must be an ownerId/pigId pair')
+  const record = /** @type {Record<string, unknown>} */ (value)
+  if (Object.keys(record).sort().join(',') !== 'ownerId,pigId' ||
+      typeof record.ownerId !== 'string' || !ID_PATTERN.test(record.ownerId) ||
+      typeof record.pigId !== 'string' || !ID_PATTERN.test(record.pigId)) {
+    throw new TypeError('presentation identity must contain valid ownerId and pigId values')
+  }
+  return Object.freeze({ ownerId: record.ownerId, pigId: record.pigId })
+}
+
 /**
  * @param {{
  *   root?: any,
@@ -31,6 +49,7 @@ function noop() {}
  *   getShell?: () => any,
  *   onGeometry?: () => void,
  *   artResources?: import('./art-resources.js').ArtResourceRegistry | null,
+ *   identity?: PresentationIdentity | null,
  * }} [options]
  */
 export function createPresentationContext(options) {
@@ -38,6 +57,7 @@ export function createPresentationContext(options) {
   const root = opts.root ?? null
   const state = opts.state ?? {}
   const transport = opts.transport ?? {}
+  const identity = normalizeIdentity(opts.identity)
   const parts = opts.parts ?? createScene({ root: root })
   const art = createArtContext({
     pig: parts.pig,
@@ -104,11 +124,13 @@ export function createPresentationContext(options) {
   const context = {
     parts: parts,
     art: art,
+    artResources: art.artResources,
     audio: audio,
     effects: effects,
     feel: feel,
     state: state,
     transport: transport,
+    get identity() { return identity },
     get disposed() { return disposed },
     getView: getView,
     /**

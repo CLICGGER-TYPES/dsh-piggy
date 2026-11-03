@@ -11,7 +11,8 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
-import { artSource } from '../src/client/art-path.js'
+import { artSource, createArtResourceRegistry } from '../src/client/art-path.js'
+import { attachPigActions } from '../src/client/pig-actions.js'
 import { fakeDom } from './helpers/bundle.js'
 
 function installEnvironment() {
@@ -221,6 +222,114 @@ test('a delayed reaction timer is owned by its instance and dies with it', async
   }
 })
 
+test('owner resource definitions are shared by reference while identity, skin view, actions and channel stay per presentation', async () => {
+  const dom = installEnvironment()
+  const { createPresentationContext } = await import('../src/client/presentation-context.js')
+  const ownerResources = createArtResourceRegistry()
+  ownerResources.registerPack({
+    namespace: 'owner-one',
+    pack: 'visuals',
+    revision: 'skin-v1',
+    resources: [
+      { key: 'rose', kind: 'skin', source: { scheme: 'path', path: 'pigs/rose.png' } },
+      { key: 'wave', kind: 'action', source: { scheme: 'builtin', key: 'piglet-blink' }, duration: 240 },
+    ],
+  })
+  const unrelatedOwnerResources = createArtResourceRegistry()
+  const viewA = { pig: { skin: 'owner-one/visuals/rose', worn: ['rose-hat'] } }
+  const viewB = { pig: { skin: 'piglet', worn: [] } }
+  const a = createPresentationContext({
+    root: root(dom), identity: { ownerId: 'owner-one', pigId: 'pig-a' }, artResources: ownerResources,
+    state: { getView: () => viewA, isStopped: () => false, isQuiet: () => false },
+  })
+  const b = createPresentationContext({
+    root: root(dom), identity: { ownerId: 'owner-one', pigId: 'pig-b' }, artResources: ownerResources,
+    state: { getView: () => viewB, isStopped: () => false, isQuiet: () => false },
+  })
+  const clock = () => {
+    let sequence = 0
+    return { setTimeout: () => ++sequence, clearTimeout: () => {} }
+  }
+  const playerA = attachPigActions({
+    pig: a.parts.pig, artResources: a.artResources, isStopped: () => false, isDragging: () => false,
+    render() {}, clock: clock(), random: () => 0, preload: () => Promise.resolve(true),
+  })
+  const playerB = attachPigActions({
+    pig: b.parts.pig, artResources: b.artResources, isStopped: () => false, isDragging: () => false,
+    render() {}, clock: clock(), random: () => 0, preload: () => Promise.resolve(true),
+  })
+  try {
+    await new Promise(resolve => setImmediate(resolve))
+    assert.deepEqual(a.identity, { ownerId: 'owner-one', pigId: 'pig-a' })
+    assert.equal(Object.isFrozen(a.identity), true, 'the identity label cannot be retargeted after construction')
+    assert.throws(() => { a.identity = { ownerId: 'owner-one', pigId: 'pig-b' } }, TypeError)
+    assert.equal(b.identity.pigId, 'pig-b')
+    assert.strictEqual(a.artResources, ownerResources)
+    assert.strictEqual(b.artResources, ownerResources, 'one owner registry is shared by reference')
+    assert.equal(ownerResources.resolveString('owner-one/visuals/wave')?.descriptor.kind, 'action')
+    const foreignResource = unrelatedOwnerResources.resolveString('owner-one/visuals/wave')
+    assert.equal(foreignResource?.exists, false,
+      'another owner registry cannot resolve this owner pack as a real resource')
+    assert.equal(foreignResource?.legacy, true, 'the pre-existing unknown-string fallback remains available')
+
+    for (const presentation of [a, b]) {
+      presentation.parts.pig.setAttribute('data-stage', 'piglet')
+      presentation.parts.pig.setAttribute('data-mood', 'fine')
+      presentation.parts.pig.setAttribute('data-art', presentation.getView().pig.skin)
+      assert.equal(presentation.art.sync(), true)
+    }
+    assert.equal(a.parts.pigArt.src, artSource(viewA.pig.skin, ownerResources))
+    assert.equal(b.parts.pigArt.src, artSource(viewB.pig.skin, ownerResources))
+    assert.notEqual(a.parts.pigArt.src, b.parts.pigArt.src, 'each presentation selects art from its own pig body')
+    assert.notEqual(a.audio, b.audio, 'audio channels are per presentation')
+
+    assert.equal(playerA.play('owner-one/visuals/wave'), true)
+    assert.equal(playerB.play('owner-one/visuals/wave'), true, 'shared action registration does not share player state')
+    assert.equal(a.parts.pig.getAttribute('data-micro-action'), 'wave')
+    assert.equal(b.parts.pig.getAttribute('data-micro-action'), 'wave')
+
+    viewA.pig.skin = 'skin-mint'
+    viewA.pig.worn.push('custom-hat')
+    assert.equal(a.getView().pig.skin, 'skin-mint')
+    assert.deepEqual(a.getView().pig.worn, ['rose-hat', 'custom-hat'])
+    assert.equal(b.getView().pig.skin, 'piglet', 'changing A does not change B skin')
+    assert.deepEqual(b.getView().pig.worn, [], 'changing A does not change B worn selection')
+    a.parts.pig.setAttribute('data-art', a.getView().pig.skin)
+    a.art.sync()
+    assert.equal(b.parts.pigArt.src, artSource(viewB.pig.skin, ownerResources), 'A selection does not repaint B')
+
+    playerA.dispose()
+    a.dispose()
+    assert.equal(a.audio.disposed, true)
+    assert.equal(b.audio.disposed, false)
+    assert.equal(b.parts.pig.getAttribute('data-micro-action'), 'wave', 'A teardown leaves B action active')
+    assert.equal(ownerResources.resolveString('owner-one/visuals/wave')?.descriptor.kind, 'action',
+      'presentation teardown does not dispose the shared owner registry')
+  } finally {
+    playerA.dispose()
+    playerB.dispose()
+    a.dispose()
+    b.dispose()
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
+
+test('presentation identity is optional for the legacy single-pig caller and rejects a partial pair', async () => {
+  const dom = installEnvironment()
+  const { createPresentationContext } = await import('../src/client/presentation-context.js')
+  const legacy = createPresentationContext({ root: root(dom), state: { isStopped: () => false } })
+  try {
+    assert.equal(legacy.identity, null)
+    assert.strictEqual(legacy.artResources, (await import('../src/client/art-path.js')).defaultArtResources)
+    assert.throws(() => createPresentationContext({ identity: { ownerId: 'owner-one' } }), /ownerId and pigId/)
+  } finally {
+    legacy.dispose()
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
+
 test('normal mount consumes the same presentation factory and owns its disposal', async () => {
   const source = await readFile(new URL('../src/client/index.js', import.meta.url), 'utf8')
   assert.match(source, /var presentation = createPresentationContext\(\{/)
@@ -228,5 +337,7 @@ test('normal mount consumes the same presentation factory and owns its disposal'
   assert.match(source, /var feel = presentation\.feel/)
   assert.match(source, /presentation\.createBirthday\(ctx, function \(\) \{ refresh\(\) \}\)/)
   assert.match(source, /presentation\.dispose\(\)/)
+  assert.match(source, /identity: identity,/)
+  assert.match(source, /artResources: presentation\.artResources,/)
   assert.doesNotMatch(source, /setArtSwapHook\(function \(apply\) \{ feel\.coverSwap\(apply\) \}\)/, 'the old module-global hook must not be used by the normal path')
 })

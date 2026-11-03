@@ -203,11 +203,11 @@ sum/max/union 仍然只是合并策略，不是归属权威，不能拿来反推
 - 文件层使用 owner-document 事务、CAS revision 和短提交锁。多个进程可打开同一
   owner 文件，但写入陈旧 revision 会被拒绝并要求重新打开；没有实时跨进程同步。
 - Desktop owner-document 模式暂不调用只读取旧 flat v15 `hatched` 字段的安装器
-  预选导入器，避免把 owner document envelope 误认为已孵化存档；扩展安装与逐猪
-  target/context 接线留待后续任务，默认 v15 安装器流程不变。
-- 当前仅有隔离 Node/类型契约验证，未接默认生产存档、未打包或真实 UI 验收；没有
-  正式多猪选择器、联网/房间权限、跨设备共享或声音包。相关桌面与 DSH 真实 UI
-  验收仍待独立执行。
+  预选导入器，避免把 owner document envelope 误认为已孵化存档。RESOURCEFLOW01
+  已将可选 owner/pig 标签和实际 art registry 从 mount 传到 presentation/action player；
+  扩展安装到 owner target、由运行时选择逐猪资源上下文仍未接入，默认 v15 安装器流程不变。
+- 当前隔离 Node/类型契约已验证，且有一份私有 Electron 45.2.1 AppImage 完成静态回读
+  （143,045,231 bytes，SHA-256 `aaf9d2c36eddbb42a8ef81362342449a52710de01dcb6bbc44c36b4b1be70d96`）；它未执行，也未接默认生产存档或做真实 UI 验收。没有正式多猪选择器、联网/房间权限、跨设备共享或声音包；相关桌面与 DSH UI 验收仍待独立执行。
 
 ## 8. 独立验收建议（开发者不执行）
 
