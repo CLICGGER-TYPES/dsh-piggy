@@ -90,11 +90,16 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     /** @param {string} method @param {string} url @param {string | ArrayBuffer} [body] */
     handle: (method, url, body) => request('handle', [method, url, body], body instanceof ArrayBuffer ? [body] : []),
     acceptWorkEvent: event => request('acceptWorkEvent', [event]),
+    listOwnerPigs: () => request('owner:list-pigs'),
+    createOwnerPig: pigId => request('owner:create-pig', [pigId]),
     metadata: () => request('metadata'),
     externalEnable: options => request('external:enable', [options]),
     externalDisable: () => request('external:disable'),
     configureCloudSave: value => request('cloud:configure', [value]),
     testCloudSave: value => request('cloud:test', [value]),
+    firstSyncCloud: direction => request('cloud:first-sync', [direction]),
+    ownerCloudHistory: branch => request('cloud:owner-history', [branch]),
+    ownerCloudStatus: () => request('cloud:owner-status'),
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {
       if (closing) return closing

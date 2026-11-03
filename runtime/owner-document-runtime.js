@@ -6,7 +6,7 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 
 import { dispatch } from '../commands.js'
-import { feed, settleAchievements } from '../core.js'
+import { feed, layEgg, settleAchievements } from '../core.js'
 import { PACKAGE_VERSION } from '../snapshot.js'
 import { createOwnerDocumentStore } from '../store/owner-document-store.js'
 import { OWNER_DOCUMENT_VERSION, projectOwnerDocumentToLegacyV15, serializeOwnerDocument, validateOwnerDocument } from '../store/owner-document.js'
@@ -35,6 +35,9 @@ import {
 } from './session-context.js'
 import { WORK_EVENT_WINDOW_MS, validateWorkEvent, workError } from './work-events.js'
 import { readWorkJson, removeWorkFile, writeWorkJson } from './work-files.js'
+import { createOwnerCloudSync } from './owner-cloud-sync.js'
+import { normalizeCloudSaveSettings } from './cloud-save-settings.js'
+import { testGitRemote } from './git-sync.js'
 
 const OWNER_PERSISTENCE = 'owner-document-multi-target'
 const RECEIPT_LIMIT = 20_000
@@ -86,6 +89,7 @@ function isRecord(value) {
  * @property {(view:unknown)=>void} [onSnapshot]
  * @property {object} [journalHeader]
  * @property {{kind:string,origin:string}} [transport]
+ * @property {{enabled?:boolean,remote?:string,branch?:string,provider?:string,device?:string,debounceMs?:number,syncReady?:boolean}|null} [cloudSave]
  */
 
 /** @param {unknown} value @param {string} label */
@@ -160,6 +164,101 @@ export function createOwnerDocumentRuntime(options) {
   let ownerId = ''
   let receipts = new Map()
   let defaultSession = null
+  let cloudConfig = options.cloudSave ?? null
+  let cloud = null
+  let cloudTimer = null
+  let cloudTransition = false
+  let cloudConfigureTail = Promise.resolve()
+  let cloudConfigureCount = 0
+
+  function createCloud(config = cloudConfig) {
+    if (config === null || typeof config !== 'object' || config.enabled !== true || config.syncReady !== true ||
+        typeof config.remote !== 'string' || config.remote.trim() === '') return null
+    return createOwnerCloudSync({
+      ownerDocumentPath,
+      ownerId,
+      remote: config.remote,
+      branch: typeof config.branch === 'string' && config.branch !== '' ? config.branch : 'main',
+      provider: typeof config.provider === 'string' ? config.provider : 'github',
+      device: typeof config.device === 'string' ? config.device : '',
+      now,
+    })
+  }
+
+  function startCloudTimer() {
+    if (cloud === null || cloudTimer !== null) return
+    const debounceMs = typeof cloudConfig?.debounceMs === 'number' && Number.isFinite(cloudConfig.debounceMs) && cloudConfig.debounceMs > 0
+      ? cloudConfig.debounceMs : 10 * 60 * 1000
+    cloudTimer = setInterval(() => {
+      const current = cloud
+      if (cloudTransition || current === null) return
+      void current.pushSnapshot().catch(error => {
+        const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'CLOUD_FAILED'
+        journal.record('warn', 'cloud', '完整云存档推送失败', { code })
+      })
+    }, debounceMs)
+    cloudTimer.unref?.()
+  }
+
+  async function configureCloudSaveNow(value) {
+    assertAccepting()
+    let normalized
+    try { normalized = normalizeCloudSaveSettings(value) }
+    catch (error) { return { ok: false, reason: error instanceof Error ? error.message : '云存档设置无效' } }
+    const previous = cloudConfig
+    const sameConnection = previous?.enabled === true && normalized.enabled === true &&
+      previous.provider === normalized.provider && previous.remote === normalized.remote && previous.branch === normalized.branch
+    const next = { ...normalized, syncReady: value?.syncReady === true || (sameConnection && previous?.syncReady === true) }
+    cloudTransition = true
+    if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
+    const old = cloud
+    cloud = null
+    try {
+      await old?.close({ finalPush: false })
+      cloudConfig = next
+      cloud = createCloud(next)
+      if (cloud !== null) startCloudTimer()
+      return { ok: true, enabled: cloud !== null }
+    } catch {
+      cloudConfig = previous
+      cloud = createCloud(previous)
+      if (cloud !== null) startCloudTimer()
+      return { ok: false, reason: '云存档设置暂时无法应用' }
+    } finally { cloudTransition = false }
+  }
+
+  function configureCloudSave(value) {
+    cloudConfigureCount += 1
+    const pending = cloudConfigureTail.then(() => configureCloudSaveNow(value))
+    cloudConfigureTail = pending.then(() => { cloudConfigureCount -= 1 }, () => { cloudConfigureCount -= 1 })
+    return pending
+  }
+
+  async function firstSyncCloud(direction) {
+    assertAccepting()
+    if (cloudConfig?.enabled !== true || typeof cloudConfig.remote !== 'string' || cloudConfig.remote.trim() === '') {
+      return { ok: false, reason: '请先启用并保存仓库地址' }
+    }
+    const current = cloud
+    const temporary = current === null ? createOwnerCloudSync({
+      ownerDocumentPath, ownerId, remote: cloudConfig.remote,
+      branch: typeof cloudConfig.branch === 'string' && cloudConfig.branch !== '' ? cloudConfig.branch : 'main',
+      provider: typeof cloudConfig.provider === 'string' ? cloudConfig.provider : 'github',
+      device: typeof cloudConfig.device === 'string' ? cloudConfig.device : '', now,
+    }) : null
+    const service = current ?? temporary
+    if (service === null) return { ok: false, reason: '云存档服务不可用' }
+    try { return await service.firstSync(direction) }
+    finally { await temporary?.close({ finalPush: false }) }
+  }
+
+  async function testCloudSave(value) {
+    let config
+    try { config = normalizeCloudSaveSettings({ ...value, enabled: value?.enabled === true }) }
+    catch (error) { return { ok: false, reason: error instanceof Error ? error.message : '云存档设置无效' } }
+    if (!config.remote) return { ok: false, reason: '请先填写仓库地址' }
+    return testGitRemote({ remote: config.remote, cwd: dirname(ownerDocumentPath) })
+  }
 
   function assertHealthy() {
     if (closed) throw new Error('owner document runtime closed')
@@ -661,6 +760,8 @@ export function createOwnerDocumentRuntime(options) {
     }
     if (typeof options.journalHeader === 'object' && options.journalHeader !== null) journal.header(options.journalHeader)
     defaultSession = openPigSession(options.pigId, options.transport ?? { kind: SESSION_TRANSPORT.EMBEDDED, origin: 'in-process' })
+    cloud = createCloud()
+    startCloudTimer()
   } catch (error) {
     try { for (const store of ownerStores.values()) store.dispose() } catch { /* preserve startup failure */ }
     try { owner?.dispose() } catch { /* preserve startup failure */ }
@@ -668,6 +769,18 @@ export function createOwnerDocumentRuntime(options) {
   }
 
   function addPigTarget(pigId, body) {
+    registerPigTarget(pigId, body)
+    return openPigSession(pigId, { kind: SESSION_TRANSPORT.EMBEDDED, origin: 'in-process' })
+  }
+
+  /**
+   * Register and durably append one target without selecting it for a caller.
+   * The body is validated by the OwnerDocument writer; owner resources are not
+   * accepted here and remain the one canonical shared copy.
+   * @param {string} pigId
+   * @param {Record<string, unknown>} body
+   */
+  function registerPigTarget(pigId, body) {
     assertAccepting()
     if (typeof pigId !== 'string' || targetById.has(pigId)) throw new TypeError('new pigId must be explicit and unused')
     if (!isRecord(body)) throw new TypeError('new pig body must be an explicit object')
@@ -687,7 +800,41 @@ export function createOwnerDocumentRuntime(options) {
       try { target.release() } catch { /* keep the persistence error */ }
       throw error
     }
-    return openPigSession(pigId, { kind: SESSION_TRANSPORT.EMBEDDED, origin: 'in-process' })
+    return target
+  }
+
+  function pigSummary(pigId, target) {
+    const body = target.body
+    if (body === null || body === undefined) throw new Error('owner pig target is absent')
+    return {
+      pigId,
+      name: typeof body.name === 'string' ? body.name : '猪猪',
+      hatched: body.hatched === true,
+      dead: body.dead === true,
+      stage: typeof body.stage === 'string' ? body.stage : null,
+      activity: isRecord(body.activity) && typeof body.activity.kind === 'string' ? body.activity.kind : null,
+    }
+  }
+
+  /** Local management summary; identity labels never grant a session or authority. */
+  function listPigTargets() {
+    assertAccepting()
+    return {
+      ownerId,
+      pigs: [...targetById].map(([pigId, target]) => pigSummary(pigId, target)),
+    }
+  }
+
+  /**
+   * Create the existing fresh unhatched pig-box state, then keep only its pig
+   * body in the owner document. Coins, inventory, farm and other owner data
+   * remain shared and are never copied from the seed state.
+   * @param {string} pigId
+   */
+  function createPigTarget(pigId) {
+    const body = splitLegacyState(layEgg(now())).body
+    const target = registerPigTarget(pigId, body)
+    return { ownerId, pig: pigSummary(pigId, target) }
   }
 
   const defaultEntry = sessions.get(defaultSession)
@@ -704,6 +851,8 @@ export function createOwnerDocumentRuntime(options) {
     record,
     openPigSession,
     addPigTarget,
+    listPigTargets,
+    createPigTarget,
     storeForSession(binding) { return selectTargetSession(binding).view },
     stateForSession(binding) {
       const entry = selectTargetSession(binding)
@@ -721,22 +870,48 @@ export function createOwnerDocumentRuntime(options) {
       return result
     },
     acceptWorkEvent,
-    configureCloudSave() { return Promise.resolve({ ok: false, reason: 'owner-document mode does not support cloud saves' }) },
-    testCloudSave() { return Promise.resolve({ ok: false, reason: 'owner-document mode does not support cloud saves' }) },
+    configureCloudSave,
+    testCloudSave,
+    firstSyncCloud: firstSyncCloud,
+    ownerCloudHistory(targetBranch) {
+      if (cloud === null || cloudTransition) return Promise.resolve({ ok: false, reason: '云存档尚未完成首次同步' })
+      return cloud.history(targetBranch).then(history => ({ ok: true, ...history }), () => ({ ok: false, reason: '云端历史暂时无法读取' }))
+    },
+    ownerCloudStatus() {
+      return { enabled: cloud !== null, ready: cloudConfig?.syncReady === true && cloud !== null,
+        branch: typeof cloudConfig?.branch === 'string' ? cloudConfig.branch : 'main' }
+    },
     metadata() { return { persistence: OWNER_PERSISTENCE, ownerId, targets: targetById.size } },
     dispose() {
       if (disposePromise !== null) return disposePromise
       if (closed) return Promise.resolve({ localPersisted: true, cloudPush: 'disabled' })
       accepting = false
+      if (cloudConfigureCount > 0) {
+        disposePromise = cloudConfigureTail.then(() => {
+          disposePromise = null
+          return runtime.dispose()
+        })
+        return disposePromise
+      }
+      if (cloudTimer !== null) { clearInterval(cloudTimer); cloudTimer = null }
       disposePromise = (async () => {
         await Promise.allSettled([...activeRouteTasks])
         if (fault === null) for (const store of ownerStores.values()) store.flush()
+        /** @type {{ok:boolean,reason?:string}} */
+        let cloudPush = { ok: false, reason: 'disabled' }
+        if (cloud !== null) {
+          try {
+            const result = await cloud.close({ finalPush: fault === null })
+            cloudPush = result.finalPush ? { ok: true } : { ok: false, reason: 'not-pushed' }
+          } catch { cloudPush = { ok: false, reason: 'final-push-failed' } }
+        }
+        cloud = null
         for (const store of ownerStores.values()) store.dispose()
         for (const session of sessions.keys()) session.dispose()
         for (const unmount of [...mountedRoutes]) unmount()
         owner.dispose()
         closed = true
-        return { localPersisted: true, cloudPush: 'disabled' }
+        return { localPersisted: true, cloudPush }
       })().catch(error => {
         accepting = true
         disposePromise = null

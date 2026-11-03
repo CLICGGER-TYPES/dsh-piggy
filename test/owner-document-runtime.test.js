@@ -116,6 +116,69 @@ test('opt-in migration preserves v15 bytes; bound sessions share owner commands 
   }
 })
 
+test('owner pig creation projects only a fresh pig body and persists shared resources once', async t => {
+  const f = fixture()
+  t.after(() => rmSync(f.directory, { recursive: true, force: true }))
+  const runtime = open(f, 'pig-a')
+  let pigB
+  try {
+    runtime.store.mutate(live => {
+      live.coins = 1234
+      live.inventory = { apple: 3 }
+      live.extData = { farm: { version: 6, plots: [{ plantedAt: NOW, crop: 'apple' }], seeds: { apple: 4 }, harvest: {} } }
+      return { ok: true }
+    })
+    const before = structuredClone(runtime.store.state)
+    assert.deepEqual(runtime.listPigTargets().pigs.map(pig => pig.pigId), ['pig-a'])
+    assert.throws(() => runtime.createPigTarget('pig-a'), /new pigId must be explicit and unused/)
+    assert.deepEqual(runtime.listPigTargets().pigs.map(pig => pig.pigId), ['pig-a'], 'a duplicate identity cannot append or replace a target')
+
+    const created = runtime.createPigTarget('pig-b')
+    assert.equal(created.ownerId, 'owner-local')
+    assert.deepEqual(created.pig, {
+      pigId: 'pig-b', name: '猪猪', hatched: false, dead: false, stage: 'box', activity: null,
+    })
+    const sessionB = runtime.openPigSession('pig-b', { kind: 'embedded', origin: 'new-pig-test' })
+    pigB = runtime.storeForSession(sessionB)
+    assert.equal(pigB.state.name, '猪猪')
+    assert.equal(pigB.state.hatched, false)
+    assert.equal(pigB.state.coins, 1234)
+    assert.deepEqual(pigB.state.inventory, { apple: 3 })
+    assert.deepEqual(pigB.state.extData.farm, before.extData.farm)
+    assert.equal(runtime.store.state.name, '甲', 'creating a sibling must not alter the current body')
+
+    pigB.mutate(live => { live.name = '乙'; live.ageMs = 987; return { ok: true } })
+    assert.equal(runtime.store.state.name, '甲')
+    assert.equal(pigB.state.name, '乙')
+    assert.equal(pigB.state.ageMs, 987)
+    assert.equal(runtime.store.state.coins, 1234)
+    assert.equal(pigB.state.coins, 1234)
+
+    const saved = inspectOwnerDocumentFile(f.ownerDocumentPath)
+    assert.equal(saved.kind, 'owner-document')
+    if (saved.kind !== 'owner-document') throw new Error('expected owner document')
+    const savedPig = saved.document.pigs.find(pig => pig.pigId === 'pig-b')
+    assert.ok(savedPig)
+    assert.equal(Object.hasOwn(savedPig.body, 'coins'), false)
+    assert.equal(Object.hasOwn(savedPig.body, 'inventory'), false)
+    assert.equal(Object.hasOwn(savedPig.body, 'extData'), false)
+    assert.deepEqual(saved.document.resources.inventory, { apple: 3 })
+    assert.equal(saved.document.resources.coins, 1234)
+    assert.deepEqual(saved.document.resources.extData.farm, before.extData.farm)
+  } finally {
+    await runtime.dispose()
+  }
+
+  const reopened = open(f, 'pig-b')
+  try {
+    assert.equal(reopened.store.state.name, '乙')
+    assert.equal(reopened.store.state.ageMs, 987)
+    assert.equal(reopened.store.state.coins, 1234)
+    assert.deepEqual(reopened.store.state.inventory, { apple: 3 })
+    assert.deepEqual(reopened.listPigTargets().pigs.map(pig => pig.pigId), ['pig-a', 'pig-b'])
+  } finally { await reopened.dispose() }
+})
+
 test('hatch of an explicit box target cannot award shared starting resources again', async t => {
   const f = fixture()
   t.after(() => rmSync(f.directory, { recursive: true, force: true }))

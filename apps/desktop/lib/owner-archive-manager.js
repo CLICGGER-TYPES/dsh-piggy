@@ -26,7 +26,7 @@ function ownerSaveName(nowMs = Date.now()) {
  *   isQuitting:()=>boolean,log:(...parts:any[])=>any}} deps
  */
 export function createOwnerArchiveManager(deps) {
-  /** @type {Map<string, {importer:any,ownerDocumentPath:string,initialPigId:string,expires:number}>} */
+  /** @type {Map<string, {importer:any,ownerDocumentPath:string,ownerId:string,initialPigId:string,expires:number}>} */
   const previews = new Map()
   let loadedDir = ''
   let loadedApi = null
@@ -136,7 +136,8 @@ export function createOwnerArchiveManager(deps) {
           ? preview.reason : '完整存档无法验证；请确认所选 ZIP 内容完整且未损坏'
         return { ok: false, reason }
       }
-      previews.set(preview.token, { importer, ownerDocumentPath, initialPigId: preview.initialPigId, expires: Date.now() + 10 * 60 * 1000 })
+      previews.set(preview.token, { importer, ownerDocumentPath, ownerId: preview.ownerId,
+        initialPigId: preview.initialPigId, expires: Date.now() + 10 * 60 * 1000 })
       return {
         ok: true,
         token: preview.token,
@@ -219,5 +220,12 @@ export function createOwnerArchiveManager(deps) {
     previews.clear()
   }
 
-  return Object.freeze({ status, exportArchive, previewArchive, importAndSwitch, clear })
+  /** Main-process-only identity lookup used to bind a cloud first-sync decision to its preview token. */
+  function previewOwnerId(token) {
+    const entry = previews.get(token)
+    if (!entry || entry.expires <= Date.now()) return null
+    return entry.ownerId
+  }
+
+  return Object.freeze({ status, exportArchive, previewArchive, previewOwnerId, importAndSwitch, clear })
 }

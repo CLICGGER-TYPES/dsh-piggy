@@ -59,10 +59,14 @@ import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
 import { createDesktopTray } from './lib/tray.js'
 import { createOwnerArchiveSelectionStore } from './lib/owner-archive-selection.js'
 import { createOwnerArchiveManager } from './lib/owner-archive-manager.js'
+import { createOwnerPigManager } from './lib/owner-pig-manager.js'
+import { createOwnerCloudManager } from './lib/owner-cloud-manager.js'
 import { registerExternalIpc, registerSystemActionsIpc, registerFullscreenIpc, registerProxyIpc } from './lib/ipc/system.js'
 import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
 import { registerOwnerArchiveIpc } from './lib/ipc/owner-archive.js'
+import { registerOwnerPigsIpc } from './lib/ipc/owner-pigs.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
+import { createOwnerCloudReadyStore } from './lib/owner-cloud-ready.js'
 import { registerUpdatesIpc } from './lib/ipc/updates.js'
 import { createStartupTrace } from './lib/startup-trace.js'
 
@@ -73,6 +77,8 @@ const taskOwnerDocumentConfig = readOwnerDocumentConfig()
 let ownerDocumentConfig = taskOwnerDocumentConfig === null ? null : { ...taskOwnerDocumentConfig, source: 'task' }
 let ownerArchiveSwitchPending = false
 let ownerArchiveRuntimeSupported = false
+let ownerPigRuntimeSupported = false
+let ownerCloudRuntimeSupported = false
 let activeGameDirectory = null
 
 /**
@@ -173,6 +179,7 @@ protocol.registerSchemesAsPrivileged([
 // Testing: keep a throwaway save and settings away from the real ones.
 const dataPaths = configureDesktopData(app)
 const cloudSaveSettings = createCloudSaveConfigStore(dataPaths.userData)
+const ownerCloudReadyStore = createOwnerCloudReadyStore(dataPaths.userData)
 const ownerArchiveSelectionStore = createOwnerArchiveSelectionStore(dataPaths.userData)
 const gotLock = !needsX11 && app.requestSingleInstanceLock()
 // 第二个进程拿不到单实例锁就马上退出：先同步留一行再退。第一个进程可能还没 ready、
@@ -196,6 +203,22 @@ async function hasOwnerArchiveRuntime(gameDir) {
   try {
     const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
     return runtime.OWNER_ARCHIVE_RUNTIME_API_VERSION === 1
+  } catch { return false }
+}
+
+/** Only this explicit capability enables panel-local pig target management. */
+async function hasOwnerPigRuntime(gameDir) {
+  try {
+    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
+    return runtime.OWNER_PIG_RUNTIME_API_VERSION === 1
+  } catch { return false }
+}
+
+/** Owner cloud transport uses complete owner archives and an explicit first-sync direction. */
+async function hasOwnerCloudRuntime(gameDir) {
+  try {
+    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
+    return runtime.OWNER_CLOUD_RUNTIME_API_VERSION === 1
   } catch { return false }
 }
 
@@ -1565,6 +1588,25 @@ const ownerArchiveManager = createOwnerArchiveManager({
   log,
 })
 registerOwnerArchiveIpc({ ipcMain, fromPanelOnly, manager: ownerArchiveManager })
+const ownerPigManager = createOwnerPigManager({
+  getHost: () => desktopRuntime.getHost(),
+  getOwnerConfig: () => ownerDocumentConfig,
+  isSupported: () => ownerPigRuntimeSupported,
+  selectionStore: ownerArchiveSelectionStore,
+  lifecycle: desktopLifecycle,
+  isQuitting: () => desktopLifecycle.quitting,
+  log,
+})
+registerOwnerPigsIpc({ ipcMain, fromPanelOnly, manager: ownerPigManager })
+const ownerCloudManager = createOwnerCloudManager({
+  getHost: () => desktopRuntime.getHost(),
+  getOwnerConfig: () => ownerDocumentConfig,
+  settings: cloudSaveSettings,
+  readyStore: ownerCloudReadyStore,
+  archiveManager: ownerArchiveManager,
+  isSupported: () => ownerCloudRuntimeSupported,
+  isQuitting: () => desktopLifecycle.quitting,
+})
 
 // ---- 全屏时隐藏 / 照常显示，以及置顶守护（外壳 0.6.5，见 lib/fullscreen.js） ----
 /** @type {ReturnType<typeof createFullscreenWatch> | null} */
@@ -1675,7 +1717,7 @@ registerProxyIpc({
   ipcMain, fromPage,
   getProxySettings: () => proxySettings,
 })
-registerCloudSaveIpc({ ipcMain, fromPage, getHost: () => desktopRuntime.getHost(), settings: cloudSaveSettings })
+registerCloudSaveIpc({ ipcMain, fromPage, fromPanelOnly, getHost: () => desktopRuntime.getHost(), settings: cloudSaveSettings, ownerCloud: ownerCloudManager })
 
 app.whenReady().then(async () => {
   if (needsX11 || !gotLock || desktopLifecycle.quitting) return
@@ -1722,6 +1764,8 @@ app.whenReady().then(async () => {
   if (desktopLifecycle.quitting) return
   activeGameDirectory = gameDir
   ownerArchiveRuntimeSupported = await hasOwnerArchiveRuntime(gameDir)
+  ownerPigRuntimeSupported = await hasOwnerPigRuntime(gameDir)
+  ownerCloudRuntimeSupported = await hasOwnerCloudRuntime(gameDir)
   if (ownerDocumentConfig !== null && !ownerArchiveRuntimeSupported) {
     if (ownerArchiveSwitchPending) {
       ownerArchiveSelectionStore.rollbackPending()
@@ -1750,9 +1794,13 @@ app.whenReady().then(async () => {
     ? `${ownerDocumentConfig.ownerDocumentPath}.work-events`
     : join(app.getPath('userData'), 'work-endpoint')
   const localCloudSettings = cloudSaveSettings.load()
+  const cloudRuntimeConfig = localCloudSettings.ok
+    ? { ...localCloudSettings.config, syncReady: ownerDocumentConfig === null ? false :
+      ownerCloudReadyStore.matches(ownerDocumentConfig.ownerId, localCloudSettings.config) }
+    : null
   try {
     await desktopRuntime.startHost(gameDir, hostStatePath, { fetch: net.fetch.bind(net), workEventsDirectory,
-      cloudSave: ownerDocumentConfig ? null : (localCloudSettings.ok ? { ...localCloudSettings.config, syncReady: false } : null),
+      cloudSave: ownerDocumentConfig !== null && !ownerCloudRuntimeSupported ? null : cloudRuntimeConfig,
       ...(ownerDocumentConfig === null ? {} : { ownerDocument: runtimeOwnerConfig(ownerDocumentConfig) }),
       optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
       workEventsAutoStart: process.argv.includes('--work-events'),

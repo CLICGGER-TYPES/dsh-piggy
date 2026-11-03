@@ -144,8 +144,22 @@ async function request(message) {
   }
   if (message.method === 'acceptWorkEvent') return host.acceptWorkEvent(...message.args)
   if (message.method === 'record') return host.record(...message.args)
+  if (message.method === 'owner:list-pigs') {
+    if (typeof host?.listPigTargets !== 'function') throw new Error('当前游戏版本不支持多猪管理')
+    return host.listPigTargets()
+  }
+  if (message.method === 'owner:create-pig') {
+    if (typeof host?.createPigTarget !== 'function') throw new Error('当前游戏版本不支持新增小猪')
+    return host.createPigTarget(...message.args)
+  }
   if (message.method === 'external:enable') return externalEnable(message.args[0] ?? {})
   if (message.method === 'external:disable') return externalDisable()
+  if (message.method === 'cloud:first-sync') return typeof host.firstSyncCloud === 'function'
+    ? host.firstSyncCloud(message.args[0]) : { ok: false, reason: '当前存档模式不支持完整档首次同步' }
+  if (message.method === 'cloud:owner-history') return typeof host.ownerCloudHistory === 'function'
+    ? host.ownerCloudHistory(message.args[0]) : { ok: false, reason: '当前存档模式没有完整档云端历史' }
+  if (message.method === 'cloud:owner-status') return typeof host.ownerCloudStatus === 'function'
+    ? host.ownerCloudStatus() : { enabled: false, ready: false, branch: 'main' }
   if (message.method === 'cloud:configure') return typeof host.configureCloudSave === 'function'
     ? host.configureCloudSave(message.args[0]) : { ok: false, reason: '当前游戏包不支持云存档设置' }
   if (message.method === 'cloud:test') return typeof host.testCloudSave === 'function'
@@ -191,7 +205,7 @@ port.on('message', message => {
 
 try {
   host = await startHost(workerData.gameDir, workerData.statePath, { fetch: fetchFromMain,
-    cloudSave: workerData.ownerDocument ? null : (workerData.cloudSave ?? null),
+    cloudSave: workerData.cloudSave ?? null,
     ownerDocument: workerData.ownerDocument ?? undefined,
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
