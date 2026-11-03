@@ -45,12 +45,26 @@ async function readJson(req) {
  * @param {() => Promise<any>} deps.commit
  * @param {(branch: string) => Promise<any>} deps.history
  */
+/** 连不上 git 的常见报错：对界面只回一句短话，完整原因在插件日志里。 */
+const NETWORK_FAILURE = /could not resolve|unable to access|connection|timed out|timeout|ssl|certificate|proxy|network|failed to connect|econn|enotfound|etimedout/i
+
+/**
+ * 把底层异常翻译成给界面看的短消息。
+ * @param {unknown} error
+ * @returns {{ reason: string, message: string }}
+ */
+export function describeCloudError(error) {
+  const text = error instanceof Error ? error.message : String(error)
+  if (NETWORK_FAILURE.test(text)) return { reason: 'network', message: '无法连接到 git' }
+  return { reason: 'error', message: text }
+}
+
 export function createCloudRoutes(deps) {
   const wrap = handler => async (req, res) => {
     try {
       await handler(req, res)
     } catch (error) {
-      sendJson(res, 200, { ok: false, reason: 'error', message: error instanceof Error ? error.message : String(error) })
+      sendJson(res, 200, { ok: false, ...describeCloudError(error) })
     }
   }
 
