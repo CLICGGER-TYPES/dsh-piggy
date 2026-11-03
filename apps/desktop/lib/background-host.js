@@ -7,7 +7,8 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     workerData: { gameDir, statePath, workEventsDirectory: options.workEventsDirectory,
       optionalExtensionsDirectory: options.optionalExtensionsDirectory,
       workEventsAutoStart: options.workEventsAutoStart !== false, gameVersion: options.gameVersion ?? '',
-      cloudSave: options.cloudSave ?? null },
+      cloudSave: options.cloudSave ?? null,
+      ownerDocument: options.ownerDocument ?? null },
   })
   const pending = new Map()
   const fetches = new Map()

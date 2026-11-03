@@ -7,6 +7,13 @@
 - GitHub目录严格检查覆盖各渠道逐文件官方SHA、渠道下载URL及同版本双渠道元数据一致性。RC6真实AppImage刷新/更新界面复验仍待完成，不记录为已通过。
 - 当前RC6只接入云存档配置与只读连接测试；云存档上传、恢复与冲突处理均暂缓、尚未实现。多猪正式入口和稳定ID仍未实现。
 
+## 2026-11-03 M2 OwnerFlow（显式 opt-in 隔离候选，未合并/未做 UI 验收）
+
+- 在 D01 OwnerDocument 纯 codec、D02 文件事务/迁移库之后，当前隔离候选把两者接到 `createGameRuntime`、DSH adapter 与桌面 host。只有调用者显式提供 `ownerDocumentPath`、`pigId` 和初始化所需的 `legacyStatePath`/`ownerId` 才进入此路径；默认 DSH/Desktop 路径仍各自使用原 v15 单猪存档，不自动共享或合并。
+- owner 文档用调用者提供的稳定 `ownerId` 与 `pigId` 保存一份共享资源和多个猪 body。现有单猪命令、`/state`、`/act` 适配到绑定的 session；owner 内金币、背包、菜园等共享，猪名字/成长等 body 分开。`reset`/`adopt` 只替换当前猪 body。ID 只标识数据，不能作为授权。
+- 创建 owner 文档时只读取明确指定的旧 v15 文件，保留源字节不变；目标文件的迁移/写入使用 D02 事务与 revision CAS。并发进程可打开同一目标，但旧 revision 的写入会被拒绝，当前候选不提供实时跨进程同步。owner 模式拒绝 flat archive 与 cloud 操作；云存档上传、恢复、冲突处理继续暂缓。
+- 当前隔离分支针对 owner/runtime/store、旧兼容路径和 DSH/Desktop 接线的定向 Node 契约为 123/123；变更生产 JS 的 TypeScript 5.9.3 定向检查与语法检查通过。完整 PR CI、打包及独立真实桌面/DSH UI 验收仍待完成，不把 D01/D02 库或本地契约测试记为端到端产品验收。
+
 ## 2026-11-02 主线集成与实际覆盖（PR36、PR42 协议改动、PR43）
 
 - [PR36](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/36) 存储模块拆分已合入 main：保留 v15 数据格式、legacy 四个出口、60 项 API 名称/顺序、live getter 与保存/回滚时序；相关 45 项测试、TypeScript 5.9.3 类型检查与构建通过。未声称该项有新增原生 UI 覆盖。

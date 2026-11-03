@@ -204,6 +204,37 @@ test('one transaction commits shared spend and pig body together; other pig body
   assert.equal(b.state.satiety, 70)
 })
 
+test('owner-document body replacement preserves owner resources and sibling bodies, and rolls back on persistence failure', () => {
+  const { owner, target: a } = oneOwner()
+  const bodyB = structuredClone(a.body)
+  bodyB.name = '乙'
+  bodyB.economy.fatigue = 0.9
+  const b = owner.attachPig({ body: bodyB })
+  const beforeA = structuredClone(a.body)
+  const beforeB = structuredClone(b.body)
+  const beforeCoins = owner.state.coins
+  const beforeInventory = structuredClone(owner.state.inventory)
+
+  const replacement = structuredClone(a.body)
+  replacement.name = '甲重置'
+  replacement.satiety = 12
+  owner.replacePigBody(a, replacement)
+
+  assert.equal(a.body.name, '甲重置')
+  assert.equal(b.body.name, '乙')
+  assert.equal(b.body.economy.fatigue, 0.9)
+  assert.equal(owner.state.coins, beforeCoins)
+  assert.deepEqual(owner.state.inventory, beforeInventory)
+
+  const failedReplacement = structuredClone(a.body)
+  failedReplacement.name = '不应提交'
+  assert.throws(() => owner.replacePigBody(a, failedReplacement, () => { throw new Error('disk conflict') }), /disk conflict/)
+  assert.deepEqual(a.body, { ...beforeA, name: '甲重置', satiety: 12 })
+  assert.deepEqual(b.body, beforeB)
+  assert.equal(owner.state.coins, beforeCoins)
+  assert.deepEqual(owner.state.inventory, beforeInventory)
+})
+
 test('sequential operations cannot overspend one shared balance', () => {
   const { owner, target: a } = oneOwner()
   const bodyB = structuredClone(a.body)

@@ -65,6 +65,7 @@ export function isExplicitRefusal(value) {
  * @property {(options: {body: Record<string, unknown>}) => PigTarget} attachPig
  * @property {(target: PigTarget, execute: (state: Record<string, unknown>) => unknown, options?: TransactOptions) => unknown} transact
  * @property {(target: PigTarget, next: Record<string, unknown>|null) => void} replaceLegacyState
+ * @property {(target: PigTarget, body: Record<string, unknown>, afterSuccess?: (state: Record<string, unknown>) => void) => void} replacePigBody
  * @property {(target: PigTarget) => void} releaseTarget
  * @property {() => void} dispose
  */
@@ -304,6 +305,41 @@ export function createOwnerResources() {
       targetLifecycle.assertUsable(target)
       if (active) throw new Error('owner resource transaction is not reentrant')
       replaceTarget(target, next)
+    },
+    /**
+     * Owner-document lifecycle adapter: replace only one target's canonical body.
+     * Shared resources, opaque legacy fields, format, and sibling bodies remain owned
+     * by this authority. `afterSuccess` runs synchronously and a failure restores the
+     * previous complete flat view, allowing a durable owner-document write to be part
+     * of this replacement boundary.
+     * @param {PigTarget} target
+     * @param {Record<string, unknown>} body
+     * @param {(state: Record<string, unknown>) => void} [afterSuccess]
+     */
+    replacePigBody(target, body, afterSuccess) {
+      const holder = targetLifecycle.assertUsable(target)
+      if (active) throw new Error('owner resource transaction is not reentrant')
+      if (!isObject(body) || isLegacyView(body)) throw new TypeError('pig body replacement must be a plain object')
+      if (holder.body === null) throw new Error('cannot replace an absent pig body')
+      targetLifecycle.syncLiveTargets(null)
+      const parts = splitLegacyState(body)
+      if (Object.keys(parts.resources).length > 0 || Object.keys(parts.opaque).length > 0 || Object.keys(parts.format).length > 0) {
+        throw new TypeError('pig body replacement must not include owner resources, opaque fields, or format metadata')
+      }
+      const previous = composeLegacyState({ resources, body: holder.body, opaque, format })
+      const next = composeLegacyState({ resources, body: parts.body, opaque, format })
+      active = true
+      try {
+        replaceTarget(target, next)
+        const state = target.state
+        if (state === null) throw new Error('pig body replacement produced no legacy state')
+        afterSuccess?.(state)
+      } catch (error) {
+        replaceTarget(target, previous)
+        throw error
+      } finally {
+        active = false
+      }
     },
     /** @param {PigTarget} target */
     releaseTarget(target) {

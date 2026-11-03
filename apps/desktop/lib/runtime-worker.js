@@ -69,6 +69,9 @@ function confirmInMain(plan) {
 }
 
 async function externalEnable(message) {
+  if (host?.kind === 'owner-document-multi-target') {
+    throw new Error('owner-document opt-in does not support external-pair networking')
+  }
   const directory = typeof message.directory === 'string' && message.directory !== '' ? message.directory : workerData.workEventsDirectory
   if (!directory) throw new Error('external mode needs a work endpoint directory')
   const info = await metadata()
@@ -188,7 +191,8 @@ port.on('message', message => {
 
 try {
   host = await startHost(workerData.gameDir, workerData.statePath, { fetch: fetchFromMain,
-    cloudSave: workerData.cloudSave ?? null,
+    cloudSave: workerData.ownerDocument ? null : (workerData.cloudSave ?? null),
+    ownerDocument: workerData.ownerDocument ?? undefined,
     onStateChanged: () => port.postMessage({ kind: 'changed' }),
   })
   installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,

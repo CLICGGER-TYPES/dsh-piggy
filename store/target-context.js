@@ -34,6 +34,8 @@ export { OWNER_RESOURCE_PATHS, PIG_BODY_PATHS }
  * @property {(next: object|null) => void} [setState] - 旧入口：替换 live 状态
  * @property {OwnerAuthority} [owner] - 新入口：每主人唯一资源权威
  * @property {AuthorityPigTarget} [target] - 新入口：绑定到该 owner 的目标猪
+ * @property {(next: Record<string, unknown>|null) => void} [replaceState] - owner-backed target 的自定义替换边界
+ * @property {() => object|null} [readState] - owner-backed target 的隔离旧视图读取
  * @property {() => number} now - 注入的时钟
  */
 
@@ -109,9 +111,12 @@ export function createApplicationContext(options) {
       target,
       scope,
       now: options.now,
-      get state() { return target.state },
-      /** 旧 lifecycle 的整份替换；仍保留“整份旧档”语义，不是新增一只猪的流程。 */
-      replaceState(next) { owner.replaceLegacyState(target, next) },
+      get state() { return options.readState === undefined ? target.state : options.readState() },
+      /** 旧 lifecycle 的替换默认仍是整份旧状态；owner-backed runtime 可注入 target-only 边界。 */
+      replaceState(next) {
+        if (options.replaceState !== undefined) return options.replaceState(next)
+        owner.replaceLegacyState(target, next)
+      },
       /**
        * 拒绝来自另一 store/猪/主人的 scope，而不是回退到当前猪。
        * @param {ApplicationScope} candidate
