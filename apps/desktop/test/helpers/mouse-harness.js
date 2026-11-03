@@ -11,6 +11,7 @@ import { validDragOrigin } from '../../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../../lib/window-show.js'
 import { auxiliaryWindowOptions } from '../../lib/auxiliary-window.js'
 import { createPetWindow } from '../../lib/pet-window.js'
+import { createStartupTrace } from '../../lib/startup-trace.js'
 import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../../main.js', import.meta.url), 'utf8')
@@ -58,16 +59,20 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     setInterval: (callback, delay) => { const timer = { callback, delay, active: true }; intervals.push(timer); return timer },
     clearInterval: timer => { if (timer) timer.active = false },
     setTimeout() {}, log() {}, followPig() {}, scheduleWindowStateSave() {}, reanchorPanel() {},
+    startupInputTrace: createStartupTrace(() => {}, () => state.now),
     ipcMain: { on: (channel, callback) => handlers.set(channel, callback) },
     Date: { now: () => state.now },
   }
   sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
   const context = createContext(sandbox)
+  const traceStart = source.indexOf('function startupApiErrorKind(error)')
+  const traceEnd = source.indexOf('\nasync function flushLogs', traceStart)
   const fromPet = source.indexOf('function fromPet(event)')
   runInContext(source.slice(fromPet, source.indexOf('\n/**', fromPet)), context)
   const start = source.indexOf('function workAreaFor(bounds)')
   const end = source.indexOf('\n// ---------------------------------------------------------------------------\n// 面板窗口', start)
-  assert.ok(fromPet > 0 && start > 0 && end > start, '必须加载生产窗口和鼠标入口')
+  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && start > 0 && end > start, '必须加载生产诊断、窗口和鼠标入口')
+  runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(start, end), context)
   await runInContext('createWindow()', context)
   return {
