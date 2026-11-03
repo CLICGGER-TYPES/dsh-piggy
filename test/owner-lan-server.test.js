@@ -1,5 +1,6 @@
 // @ts-check
 import assert from 'node:assert/strict'
+import { request as httpsRequest } from 'node:https'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -20,6 +21,24 @@ function ownerFixture(root) {
   state.inventory = { apple: 2 }
   writeFileSync(legacyStatePath, JSON.stringify(state))
   return { legacyStatePath, ownerDocumentPath: join(root, 'owner', 'owner-document.json') }
+}
+
+function httpsFetch(ca) {
+  return (input, init = {}) => new Promise((resolve, reject) => {
+    const url = new URL(String(input))
+    const request = httpsRequest(url, { method: init.method ?? 'GET', headers: init.headers ?? {}, ca,
+      signal: init.signal, agent: false }, response => {
+      const chunks = []
+      response.on('data', chunk => chunks.push(chunk))
+      response.once('end', () => resolve(new Response(Buffer.concat(chunks), {
+        status: response.statusCode,
+        headers: { 'content-type': response.headers['content-type'] ?? 'application/json' },
+      })))
+    })
+    request.once('error', reject)
+    if (init.body !== undefined) request.write(init.body)
+    request.end()
+  })
 }
 
 test('two paired LAN clients stay bound to separate pigs, share owner resources, and retry one lost response once', async t => {
@@ -118,6 +137,35 @@ test('two paired LAN clients stay bound to separate pigs, share owner resources,
     await assert.rejects(clientA.state(), /not paired/, 'a closed client has discarded its token')
   } finally {
     if (server !== undefined) await server.close().catch(() => {})
+    await runtime.dispose().catch(() => {})
+  }
+})
+
+test('a public bind requires TLS; the configured HTTPS service is exercised only on loopback', async t => {
+  const root = mkdtempSync(join(tmpdir(), 'piggy-owner-tls-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const { legacyStatePath, ownerDocumentPath } = ownerFixture(root)
+  const runtime = createGameRuntime({ statePath: ownerDocumentPath, ownerDocumentPath, legacyStatePath,
+    ownerId: 'owner-tls', pigId: 'pig-tls', now: () => Date.now() })
+  const key = readFileSync(new URL('./fixtures/owner-lan-tls/test-only.key', import.meta.url))
+  const cert = readFileSync(new URL('./fixtures/owner-lan-tls/test-only.crt', import.meta.url))
+  let server
+  try {
+    await assert.rejects(startOwnerLanServer({ runtime, directory: join(root, 'public-http'),
+      listenAddress: '203.0.113.4' }), /TLS/)
+    server = await startOwnerLanServer({ runtime, directory: join(root, 'loopback-https'),
+      listenAddress: '127.0.0.1', tls: { key, cert } })
+    const status = server.status()
+    assert.equal(status.protocol, 'https')
+    const client = createOwnerLanClient({ baseUrl: `https://127.0.0.1:${status.port}`, clientId: 'device-tls',
+      fetch: httpsFetch(cert) })
+    const paired = await client.pair(server.createInvitation('pig-tls').invitation)
+    assert.deepEqual(paired, { ownerId: 'owner-tls', pigId: 'pig-tls', nextSequence: 1 })
+    const state = await client.state()
+    assert.equal(state.status, 200, 'TLS client can use the paired authenticated protocol')
+    await client.close()
+  } finally {
+    await server?.close().catch(() => {})
     await runtime.dispose().catch(() => {})
   }
 })

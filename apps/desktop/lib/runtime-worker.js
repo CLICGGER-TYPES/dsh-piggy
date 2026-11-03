@@ -98,7 +98,7 @@ async function externalDisable() {
   return { ok: true }
 }
 
-async function startOwnerLan(listenAddress) {
+async function startOwnerLan(options = {}) {
   if (host?.kind !== 'owner-document-multi-target' || typeof host.openPigSession !== 'function') {
     throw new Error('owner LAN sessions require an explicit OwnerDocument runtime')
   }
@@ -107,8 +107,12 @@ async function startOwnerLan(listenAddress) {
     throw new Error('owner LAN session directory is unavailable')
   }
   const { startOwnerLanServer } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/owner-lan-server.js')).href)
+  const { readOwnerNetworkTls } = await import(pathToFileURL(join(workerData.gameDir, 'runtime/owner-network-tls.js')).href)
+  const tls = await readOwnerNetworkTls(workerData.ownerNetworkDirectory)
   ownerLanServer = await startOwnerLanServer({ runtime: host, directory: workerData.ownerNetworkDirectory,
-    ...(typeof listenAddress === 'string' && listenAddress !== '' ? { listenAddress } : {}) })
+    ...(typeof options.listenAddress === 'string' && options.listenAddress !== '' ? { listenAddress: options.listenAddress } : {}),
+    ...(typeof options.advertisedHost === 'string' && options.advertisedHost !== '' ? { advertisedHost: options.advertisedHost } : {}),
+    ...(tls === null ? {} : { tls }) })
   return ownerLanServer.status()
 }
 
@@ -169,7 +173,7 @@ async function request(message) {
     return host.createPigTarget(...message.args)
   }
   if (message.method === 'owner-lan:status') return ownerLanServer?.status() ?? { running: false, pairedClients: 0 }
-  if (message.method === 'owner-lan:start') return startOwnerLan(message.args[0]?.listenAddress)
+  if (message.method === 'owner-lan:start') return startOwnerLan(message.args[0] ?? {})
   if (message.method === 'owner-lan:invite') {
     if (ownerLanServer === undefined) throw new Error('owner LAN listener is not running')
     return ownerLanServer.createInvitation(message.args[0])

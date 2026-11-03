@@ -1,8 +1,11 @@
 // @ts-check
 /** 只在显式启动后提供绑定到一只 OwnerDocument 猪的私有 LAN 会话。 */
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
-import { createServer } from 'node:http'
+import { createServer as createHttpServer } from 'node:http'
+import { createServer as createHttpsServer } from 'node:https'
+import { isIP } from 'node:net'
 import { join } from 'node:path'
+import { createSecureContext } from 'node:tls'
 
 import { SESSION_TRANSPORT } from './session-context.js'
 import { PAIR_ACTION_SET, PAIR_COMMAND_SET, commandVerb } from './pair-actions.js'
@@ -20,6 +23,7 @@ const MAX_INVITES = 32
 const MAX_CLIENTS = 8
 const MAX_BODY = 4096
 const MAX_REPLAYS = 256
+const MAX_TLS_BYTES = 1024 * 1024
 
 function sha256(value) { return createHash('sha256').update(value).digest('hex') }
 
@@ -68,8 +72,30 @@ function authHeader(request) {
 
 function bodyFingerprint(path, body) { return sha256(`${path}\n${JSON.stringify(body)}`) }
 
+function normalizeTls(value) {
+  if (value === undefined || value === null) return null
+  if (value === null || typeof value !== 'object' || Array.isArray(value) ||
+      !(Buffer.isBuffer(value.key) || typeof value.key === 'string') ||
+      !(Buffer.isBuffer(value.cert) || typeof value.cert === 'string')) {
+    throw new Error('owner network TLS requires both a certificate and private key')
+  }
+  const key = Buffer.isBuffer(value.key) ? value.key : Buffer.from(value.key)
+  const cert = Buffer.isBuffer(value.cert) ? value.cert : Buffer.from(value.cert)
+  if (key.length === 0 || cert.length === 0 || key.length > MAX_TLS_BYTES || cert.length > MAX_TLS_BYTES) {
+    throw new Error('owner network TLS materials are empty or too large')
+  }
+  try { createSecureContext({ key, cert }) }
+  catch { throw new Error('owner network TLS certificate and key do not form a valid pair') }
+  return { key, cert }
+}
+
+function validAdvertisedHost(host) {
+  return (typeof host === 'string' && (isIP(host) === 4 ||
+    (host.length <= 253 && /^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$/u.test(host) && !host.includes('..'))))
+}
+
 /**
- * @param {{runtime:any,directory:string,listenAddress?:string,now?:()=>number}} options
+ * @param {{runtime:any,directory:string,listenAddress?:string,advertisedHost?:string,tls?:{key:Buffer|string,cert:Buffer|string},now?:()=>number}} options
  */
 export async function startOwnerLanServer(options) {
   if (options.runtime?.kind !== 'owner-document-multi-target' ||
@@ -77,7 +103,16 @@ export async function startOwnerLanServer(options) {
     throw new Error('owner LAN transport requires an explicit OwnerDocument runtime')
   }
   const listenAddress = options.listenAddress ?? '127.0.0.1'
-  if (!isPrivateIpv4(listenAddress)) throw new Error('owner LAN listener accepts only a specific loopback or private IPv4 address')
+  const tls = normalizeTls(options.tls)
+  if (isIP(listenAddress) !== 4 || listenAddress === '0.0.0.0' ||
+      (!isPrivateIpv4(listenAddress) && tls === null)) {
+    throw new Error('owner network listener requires private IPv4 or TLS on a specific public IPv4 address')
+  }
+  const advertisedHost = options.advertisedHost ?? listenAddress
+  if (!validAdvertisedHost(advertisedHost) || (tls === null && advertisedHost !== listenAddress)) {
+    throw new Error('owner network advertised host is invalid for this listener')
+  }
+  const protocol = tls === null ? 'http' : 'https'
   await secureDirectory(options.directory)
   const release = acquireGameLock(join(options.directory, 'owner-lan-server'))
   const discoveryPath = join(options.directory, 'owner-lan.json')
@@ -95,7 +130,7 @@ export async function startOwnerLanServer(options) {
   let closing = false
   let port = 0
   let closePromise
-  const expectedHost = () => `${listenAddress}:${port}`
+  const expectedHost = () => `${advertisedHost}:${port}`
 
   function checkEnvelope(request) {
     if (closing) throw fail(503, 'server-closing')
@@ -210,6 +245,8 @@ export async function startOwnerLanServer(options) {
           throw fail(403, 'command-not-allowed')
         }
         result = await options.runtime.dispatchCommand('pig', body.input, client.session)
+      } else if (path === '/v1/work') {
+        result = await options.runtime.acceptWorkEvent(body.event, client.session)
       } else {
         if (typeof body.action !== 'string' || !PAIR_ACTION_SET.has(body.action)) throw fail(403, 'action-not-allowed')
         result = await options.runtime.handle('POST', '/dsh-piggy/act', JSON.stringify({ action: body.action }), client.session)
@@ -247,9 +284,10 @@ export async function startOwnerLanServer(options) {
       return send(response, 200, { ok: true, ownerId: client.ownerId, pigId: client.pigId,
         epoch: options.runtime.epoch?.() ?? null, state })
     }
-    if (request.method === 'POST' && (path === '/v1/command' || path === '/v1/action')) {
+    if (request.method === 'POST' && (path === '/v1/command' || path === '/v1/action' || path === '/v1/work')) {
       const body = await readJson(request)
-      const expectedKeys = path === '/v1/command' ? ['input', 'requestId', 'sequence'] : ['action', 'requestId', 'sequence']
+      const expectedKeys = path === '/v1/command' ? ['input', 'requestId', 'sequence'] :
+        path === '/v1/action' ? ['action', 'requestId', 'sequence'] : ['event', 'requestId', 'sequence']
       if (!exactKeys(body, expectedKeys) || !Number.isSafeInteger(body.sequence) || body.sequence < 1 ||
           typeof body.requestId !== 'string' || !REQUEST_ID.test(body.requestId)) throw fail(400, 'request-shape-invalid')
       const fingerprint = bodyFingerprint(path, body)
@@ -264,14 +302,17 @@ export async function startOwnerLanServer(options) {
     throw fail(404, 'not-found')
   }
 
-  const server = createServer({ maxHeaderSize: 16 * 1024 }, (request, response) => {
+  const handleRequest = (request, response) => {
     const task = Promise.resolve().then(() => route(request, response)).catch(error => {
       if (!response.headersSent && !response.destroyed) send(response, error?.status ?? 500,
         { ok: false, reason: error?.code ?? 'server-error', ...(Number.isSafeInteger(error?.nextSequence) ? { nextSequence: error.nextSequence } : {}) })
       request.resume()
     }).finally(() => requests.delete(task))
     requests.add(task)
-  })
+  }
+  const server = tls === null
+    ? createHttpServer({ maxHeaderSize: 16 * 1024 }, handleRequest)
+    : createHttpsServer({ ...tls, maxHeaderSize: 16 * 1024 }, handleRequest)
   server.requestTimeout = 10_000
   server.headersTimeout = 10_000
   server.timeout = 10_000
@@ -285,13 +326,14 @@ export async function startOwnerLanServer(options) {
   if (!address || typeof address === 'string') { release(); throw new Error('owner LAN listener has no IPv4 address') }
   port = address.port
   try {
-    writeWorkJson(discoveryPath, { version: 1, role: 'piggy-owner-lan', host: listenAddress, port, pid: process.pid, serverId })
+    writeWorkJson(discoveryPath, { version: 1, role: 'piggy-owner-lan', host: listenAddress,
+      advertisedHost, protocol, port, pid: process.pid, serverId })
   } catch (error) {
     await new Promise(resolve => server.close(resolve)); release(); throw error
   }
   let listenerStopped = false
   return Object.freeze({
-    status() { return { running: !closing, host: listenAddress, port, pairedClients: clients.size } },
+    status() { return { running: !closing, host: advertisedHost, listenAddress, protocol, port, pairedClients: clients.size } },
     createInvitation(pigId) {
       if (closing) throw new Error('owner LAN server is closing')
       for (const [key, invite] of invitations) if (invite.expiresAt <= now()) invitations.delete(key)
@@ -302,7 +344,7 @@ export async function startOwnerLanServer(options) {
       const invitation = randomBytes(32).toString('hex')
       const expiresAt = now() + INVITE_TTL_MS
       invitations.set(sha256(invitation), { ownerId: roster.ownerId, pigId, expiresAt })
-      return { invitation, ownerId: roster.ownerId, pigId, expiresAt, host: listenAddress, port }
+      return { invitation, ownerId: roster.ownerId, pigId, expiresAt, host: advertisedHost, protocol, port }
     },
     close() {
       if (closePromise !== undefined) return closePromise

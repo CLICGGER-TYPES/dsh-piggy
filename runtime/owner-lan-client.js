@@ -1,16 +1,25 @@
 // @ts-check
 /** 绑定单一猪会话的最小 HTTP 客户端，保留明确重连与幂等重试。 */
 import { randomBytes, randomUUID } from 'node:crypto'
+import { isIP } from 'node:net'
 
 import { isPrivateIpv4 } from './owner-lan-address.js'
 
 const CLIENT_ID = /^[A-Za-z0-9_.:-]{1,80}$/u
 
+function validSecureHost(host) {
+  return typeof host === 'string' && host !== '0.0.0.0' && host !== '::' &&
+    (isIP(host) === 4 || (host.length <= 253 &&
+      /^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$/u.test(host) && !host.includes('..')))
+}
+
 /** @param {{baseUrl:string,clientId?:string,fetch?:typeof globalThis.fetch}} options */
 export function createOwnerLanClient({ baseUrl, clientId = randomUUID(), fetch = globalThis.fetch }) {
   const base = new URL(baseUrl)
-  if (base.protocol !== 'http:' || base.username !== '' || base.password !== '' || base.search !== '' || base.hash !== '' ||
-      base.pathname !== '/' || !isPrivateIpv4(base.hostname)) throw new TypeError('owner LAN client requires an explicit private IPv4 HTTP endpoint')
+  const validScheme = base.protocol === 'http:' ? isPrivateIpv4(base.hostname)
+    : base.protocol === 'https:' && validSecureHost(base.hostname)
+  if (!validScheme || base.username !== '' || base.password !== '' || base.search !== '' || base.hash !== '' ||
+      base.pathname !== '/') throw new TypeError('owner network client requires a private HTTP or TLS endpoint')
   if (!CLIENT_ID.test(clientId)) throw new TypeError('owner LAN clientId is invalid')
   let token = null
   let nextSequence = 1
@@ -25,7 +34,7 @@ export function createOwnerLanClient({ baseUrl, clientId = randomUUID(), fetch =
   }
 
   async function request(path, init = {}) {
-    return fetch(new URL(path, base), { ...init, signal: AbortSignal.timeout(10_000) })
+    return fetch(new URL(path, base), { ...init, redirect: 'error', signal: AbortSignal.timeout(10_000) })
   }
 
   async function pair(invitation) {
@@ -107,5 +116,6 @@ export function createOwnerLanClient({ baseUrl, clientId = randomUUID(), fetch =
 
   return Object.freeze({ clientId, pair, session, reconnect: session, state,
     command: (input, requestId) => mutate('/v1/command', 'input', input, requestId),
-    action: (action, requestId) => mutate('/v1/action', 'action', action, requestId), retry, close })
+    action: (action, requestId) => mutate('/v1/action', 'action', action, requestId),
+    work: (event, requestId) => mutate('/v1/work', 'event', event, requestId), retry, close })
 }

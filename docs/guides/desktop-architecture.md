@@ -117,13 +117,15 @@
 
 带 `OWNER_CLOUD_RUNTIME_API_VERSION` 的游戏包通过 `cloudSave.firstSync(direction)` 提供显式首次同步服务；普通云设置仍默认关闭，配置保存本身不会启用同步。`local-to-cloud` 仅允许向所选的空远端分支首次发布完整 owner ZIP；同一内容可幂等确认，远端身份不符或已有不同历史会拒绝，不使用旧 flat `state.json` ZIP覆盖历史。`cloud-to-local` 只读取并验证远端完整档，交给现有完整档预览和“导入副本并切换”事务，绝不覆盖当前 owner 文件。用户确认导入后，本机 `owner-cloud-ready.json` 绑定 owner 与远端/分支；重启时只有身份和配置均匹配才启用现有 Git 队列的定时完整档推送与历史读取。
 
-owner cloud first-sync 与历史读取只注册给面板 IPC。HTTP `/dsh-piggy/cloud/*` 路由仍在 OwnerDocument 模式拒绝；旧 v15 cloud backend 仍是单独路径，DSH 的 OwnerDocument cloud 配置尚未接通。当前仅提供 API/服务，不含首次同步选择 UI，也不实现 owner 模式的历史恢复覆盖；需要恢复时继续创建独立副本。LAN API 候选见下节；跨房间发现/管理、多猪并行 UI、公网传输与云端合并均未实现。
+owner cloud first-sync 与历史读取仍注册给面板 IPC。OwnerDocument 模式下旧 flat `/dsh-piggy/cloud/*` 路由继续拒绝；v15 cloud backend 仍是独立路径。DSHLANPUBLIC01 候选另外给显式 DSH OwnerDocument opt-in 接入 `config.ownerCloud`：默认关闭，只允许选择 `local-to-cloud` 首次同步，复用完整 owner ZIP、Git queue 和 CAS base；readiness marker 存于 DSH_HOME 并按 owner/remote/branch 匹配。DSH 暂拒绝 `cloud-to-local`，因为尚无安全的副本导入/切换入口。此候选没有 DSH 云设置 UI，也没有真实 DSH 运行验收。
 
 ### OwnerDocument 私有 LAN 会话候选
 
-`window.piggyShell.ownerNetwork.status/start({listenAddress})/invite(pigId)/stop()` 是面板专用的服务控制 API；页面不能传 OwnerDocument 路径或 ownerId。服务只对显式 OwnerDocument runtime 提供，默认不启动，缺省监听 loopback；显式地址只接受一个具体的私有 IPv4，不接受 `0.0.0.0`、公网地址或自动发现。一次性 60 秒邀请由 trusted panel 按已有 roster 的 pigId 生成，配对后 HTTP token 在服务端固定绑定一个 session/target；后续请求不接受 pigId/ownerId 字段。
+`window.piggyShell.ownerNetwork.status/start({listenAddress})/invite(pigId)/stop()` 是面板专用的桌面服务 API；页面不能传 OwnerDocument 路径或 ownerId。服务只对显式 OwnerDocument runtime 提供，默认不启动。没有 TLS 材料时只允许具体私有 IPv4；`0.0.0.0` 始终拒绝。有有效证书/密钥时，服务可使用 HTTPS 绑定一个具体地址。桌面 worker 从 userData 的 `owner-network/tls.key` 和 `tls.crt` 读取证书，文件必须属于当前用户且 POSIX 权限为 0600。一次性 60 秒邀请由 trusted panel 按已有 roster 的 pigId 生成，配对后 bearer token 在服务端固定绑定一个 session/target；后续请求不接受 pigId/ownerId 字段。
 
-`runtime/owner-lan-server.js` 和 `runtime/owner-lan-client.js` 提供有界 JSON 的 `/v1/pair`、`/v1/session`、`/v1/state`、白名单 `/v1/command`/`/v1/action` 和 session close。每 session 有序号和 requestId 去重，断线后可用内存 token 查询 nextSequence 并重试同一请求；runtime 进程停止会撤销所有 session、token 和内存回执，需重新配对。一个 listener 绑定一份 OwnerDocument；被邀请客户端可操作该 owner roster 中指定的猪，不能带入另一台设备的 owner 文档或存档。当前 HTTP 内容未加密，只用于可信私有网络；不支持公网部署、TLS、长期 token/房间、跨进程持久回执或公网身份。API/Node socket 契约不是产品 UI 或真实跨设备 UI 验收；没有加房间界面、发现服务或自动启动。
+`runtime/owner-lan-server.js` 和 `runtime/owner-lan-client.js` 提供有界 JSON 的 `/v1/pair`、`/v1/session`、`/v1/state`、白名单 `/v1/command`/`/v1/action` 和 session close。每 session 有序号和 requestId 去重，断线后可用内存 token 查询 nextSequence 并重试同一请求；runtime 进程停止会撤销所有 session、token 和内存回执，需重新配对。一个 listener 绑定一份 OwnerDocument；被邀请客户端可操作该 owner roster 中指定的猪，不能带入另一台设备的 owner 文档或存档。
+
+DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/dsh-piggy/owner/pigs`、`/pigs/:pigId/state|act|command`、`/network/status|start|invite|stop`、`/cloud/status|first-sync|history`。猪 ID 只在当前 owner roster 内定位数据；每个 state/act/command 请求单独创建并处置绑定 session，不使用进程级 active target。`ownerNetwork.enabled` 缺省关闭，且即使开启配置也必须显式调用本地 `POST /network/start` 才监听；TLS 文件放在 `<ownerDocumentPath>.network/tls.key` 与 `tls.crt`，均需私有权限。控制路由、邀请发放与 TLS 服务只做过隔离 Node/loopback HTTPS 契约测试，没有真实 DSH、多设备 LAN 或公网部署验收。仍未实现房间/邀请 UI、自动发现、长期设备身份、跨进程回执，以及不同 owner 各自带猪进入同一场景。
 
 ### 旧消息（只给老游戏包，别删）
 
