@@ -1,4 +1,6 @@
-# dsh-piggy 维护交接文档（2026-10-28 更新，最新发布 RC5；下面 2026-10-27 段落为历史记录）
+# dsh-piggy 维护交接文档（2026-11-03 更新；最新已公开 RC6，RC7/外壳 RC5 准备中）
+
+2026-11-03 RC7准备：发布源基线为已合并 main `7b42b94ba4571354657fb3ddd3e9c525a9c3dc53`，目标游戏 `0.37.2-rc.7`、桌面外壳 `0.6.8-rc.5`。本分支只更新发布版本元数据与说明，不改玩法；尚未合并、打 tag 或生成 Release。用户本轮只授权 GitHub RC；Gitee已取消，npm包仍由维护者另行确认，不在本轮发布。Windows只有部分代表流程证据、360告警未知，PR60 TLS/DSH接线不包含于该版本。资产和发布手顺见下文9.2。
 
 2026-10-28 D01 G0：开发基线取 `749f4cbac0e7114b60845c095c9b0e16e25a8442`，产品行为冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`；最新发布状态、候选恢复与 T01 边界以 [ROADMAP](ROADMAP.md) 顶部为准。G0 快照排除 `.git`、`node_modules`、生成构建目录和个人配置，保留随源码提交的生成文件；旧组织树不整体覆盖，文件级归属见 D01 任务记录。
 
@@ -271,11 +273,9 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 
 1. 改上表里的版本号；在 `CHANGELOG.md` 写 `## [x.y.z] — 日期 · 主题` 小节（发布说明从这里取，写全改动）；README 同步。
 2. `npm run build && npm test && npm run typecheck` → 提交（如 `release: v0.33.1 — 一句话`）→ 推 main。
-3. 打标签推送：`git tag v0.33.1 && git push origin v0.33.1`。两条工作流自动跑：
-   - `.github/workflows/release.yml` → **GitHub Release**：游戏包 + Windows 安装 / 便携版 + Linux AppImage + macOS dmg + 更新清单；
-   - `.github/workflows/release-gitee.yml` → **只构建** Gitee 渠道的游戏包和 Windows 安装包，存成 artifact，不往 Gitee 推。
-   然后在**本机**：`GITEE_TOKEN=<令牌> bash scripts/gitee-publish.sh vX.Y.Z`（推代码和标签、建发行版、传附件、核对、删旧安装包，见 9.4）。
-4. 等两边都绿，核对两边的附件齐全（GitHub `gh release view vX`；Gitee 看发行版页面）。
+3. 主线合入且版本文件校验后，由维护者打不可移动的标签并推送：`git tag vX.Y.Z-rc.N && git push origin vX.Y.Z-rc.N`。`.github/workflows/release.yml` 会测试并构建游戏包、Windows 安装/便携版、Linux AppImage、macOS DMG 与桌面更新清单；RC 首次生成的是 **draft prerelease**，资产齐全并核对后还需维护者明确解除 draft。`.github/workflows/release-gitee.yml` 会随 tag 自动启动，但只构建 Gitee artifact、不向 Gitee 发布。
+   用户已取消 Gitee 发布：本轮不得运行本机 `scripts/gitee-publish.sh`；对本次 tag 的 Gitee build-only workflow 由 root 取消或仅保留构建结果，不上传。
+4. 核对 GitHub Release 附件后，可用 GitHub API 返回的 `assets[].digest` 生成 `SHA256SUMS`，上传到同一个 draft Release。确认候选仍是预发布后，由维护者执行 `gh release edit vX.Y.Z-rc.N --draft=false --prerelease --latest=false`；stable latest 不变。发布后用 `gh release view vX.Y.Z-rc.N` 核对资产与 `SHA256SUMS`。
 5. **npm 由维护者确认发布**：可用 `.github/workflows/npm-publish.yml` 的 `inspect`（默认只读）核对后，维护者选择 `publish` 走 OIDC；首次需在两个包设置 GitHub Actions Trusted Publisher（`CLICGGER-TYPES` / `dsh-piggy` / `npm-publish.yml`，Environment 留空，允许 `npm publish`）。真实 npm 发布不得未经授权执行。旧的本机手动路径仍可使用：
    ```bash
    cd code && npm login && npm publish --access public && npm view dsh-piggy version

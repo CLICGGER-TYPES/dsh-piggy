@@ -25,9 +25,13 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm由维护者确认后通过GitHub Actions可信发布，主包与别名包同步；RC只更新`rc`标签，保持稳定入口。npm `latest`目前仍是0.37.0，与GitHub稳定游戏0.37.1分别标示。
 
-> 本轮GitHub预览版：游戏0.37.2-rc.6 / 外壳0.6.8-rc.4。先更新桌面外壳，再更新游戏；旧RC3外壳缺少云设置IPC。RC6包括安全更新、帮工托管与75%菜园经验、默认关闭的云存档配置和只读连接测试；不包含云上传、恢复或自动合并，也尚未上线多猪正式入口和稳定ID。
+> **本轮 GitHub RC：游戏 0.37.2-rc.7 / 桌面外壳 0.6.8-rc.5。** 先更新桌面外壳 RC5，再更新游戏 RC7。安装包、游戏包与更新清单由 GitHub 发行工作流构建。
 
-GitHub预览版下载：[0.37.2-rc.6发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.6)。Gitee、夸克和npm仍是RC5，尚未同步RC6；[Gitee旧预览版](https://gitee.com/clicgger/dsh-piggy/releases/tag/v0.37.2-rc.5) · [夸克旧完整版](https://pan.quark.cn/s/6b55bc9dc8c9)。
+本轮[GitHub RC7发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.7)由 tag 工作流创建并附加资产；上一版公开 RC6 为[游戏0.37.2-rc.6 / 外壳0.6.8-rc.4](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.6)。Gitee发布已取消，夸克不会随本次更新；npm `rc` 仍由维护者单独发布，本次没有npm包。历史Gitee/夸克RC5仅供旧安装器回退，不能代替本轮RC7。
+
+RC7包含现有完整档导出/预览/新副本导入切换UI、OwnerDocument共享资源与猪目标服务、默认关闭的完整档云同步与冲突保护、默认关闭的私有LAN配对服务、更新启动失败的一次兼容版本回退，以及六项进阶徽章。OwnerDocument多猪管理/新增/切换的新UI、云首次同步与历史恢复UI尚未提供；存档仍为v15，默认v15/DSH路径不自动迁移或合并。本次主线的Owner LAN仍是可信私网HTTP，不支持TLS/公网；DSH OwnerDocument LAN/云恢复接线在后续PR60，不包含于本RC；也没有不同owner各带猪加入同一场景或多猪并行窗口UI。
+
+验收边界：Windows只有部分代表路径证据，精确RC7安装、自动切换与完整退出重开仍待验收；360安全软件告警来源未知，未宣称解决；macOS与真实DSH全流程也未完成。本段发布准备不代表上述覆盖已通过。
 
 夸克目录含安装器、便携版、六个扩展包（含经典菜园备选）、说明和校验清单，共10文件。GitHub和夸克完整版内含游戏；完整Windows安装器另附五项默认不选的离线扩展。Gitee受100MiB限制，首次启动需联网下载游戏。
 
@@ -48,9 +52,9 @@ RC6的菜园4.2.1按自然时长生长，帮工负责照料、收获及现有同
 
 </details>
 
-[历史RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，不是当前RC6。
+[历史RC3夸克Windows完整版](https://pan.quark.cn/s/62eefaa3c173)继续保留；它是游戏0.37.2-rc.3 / 外壳0.6.8-rc.2，与本轮RC7无关。
 
-Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧游戏包仍供回退；需要正式版安装器请使用上方 GitHub 或夸克入口。此前 RC2 的 Windows 安装器、更新清单和游戏包已归档；RC3、RC4国内原始包另有独立归档。
+Gitee 历史发行档案仍保留旧 Windows 安装器与其游戏包供回退；本次及后续新 RC 不发布到 Gitee。需要正式版安装器请使用上方 GitHub 或夸克入口。此前 RC2 的 Windows 安装器、更新清单和游戏包已归档；RC3、RC4国内原始包另有独立归档。
 
 [国内旧版主归档（夸克）](https://pan.quark.cn/s/a4484e98dec8)保留此前14个版本，其中6个版本有完整Windows双包、8个更早版本只剩游戏包。[RC3国内原始包归档](https://pan.quark.cn/s/80a3aa07111e)另存游戏0.37.2-rc.3 / 外壳0.6.8-rc.2的原Gitee安装版、便携版、游戏包、更新清单和校验文件。[RC4国内原始包归档](https://pan.quark.cn/s/a1712a93536c)保留其原Gitee瘦包与校验文件。历史安装器首次启动依赖的游戏包继续保留在Gitee。
 
@@ -60,7 +64,7 @@ Gitee 受附件容量限制，仅保留最新版本的 Windows 安装器，旧�
 dsh plugin --profile web add dsh-piggy
 ```
 
-不带版本号会安装npm `latest`（目前0.37.0）。npm 的 `rc` 标签仍指向RC5；RC6尚待npm渠道同步，下面是当前可安装的精确版本：
+不带版本号会安装npm `latest`（目前0.37.0）。npm 的 `rc` 标签仍指向RC5；RC6和本次RC7都没有同步至npm，且本次准备不发布npm，下面是当前可安装的精确版本：
 
 ```sh
 dsh plugin --profile web add dsh-piggy@0.37.2-rc.5
@@ -74,7 +78,7 @@ dsh plugin --profile web add dsh-piggy@0.37.2-rc.5
 
 ### 桌面版
 
-从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版，或从 [Gitee 最新预览版](https://gitee.com/clicgger/dsh-piggy/releases)下载 RC。Linux 和 macOS 安装包只在 GitHub 提供。
+从 [GitHub 稳定版](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/latest)下载对应系统的文件。国内 Windows 用户可从上方夸克入口下载正式版。Gitee 新版发行已取消，已有附件仅作历史留档；Linux 和 macOS 安装包只在 GitHub 提供。
 
 | 系统 | 下载文件 |
 |---|---|
