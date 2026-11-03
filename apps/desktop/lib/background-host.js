@@ -64,7 +64,7 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
       pending.delete(message.id)
       if (message.error) task.reject(new Error(message.error))
       else task.resolve(message.value)
-    } else if (message.kind === 'snapshot') options.onSnapshot?.(message.value)
+    } else if (message.kind === 'snapshot') options.onSnapshot?.(message.value, message.session ?? null)
     else if (message.kind === 'changed') options.onStateChanged?.()
     else if (message.kind === 'confirm') {
       Promise.resolve(options.onConfirm?.(message.plan)).then(
@@ -88,8 +88,12 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
   }
 
   return {
-    /** @param {string} method @param {string} url @param {string | ArrayBuffer} [body] */
-    handle: (method, url, body) => request('handle', [method, url, body], body instanceof ArrayBuffer ? [body] : []),
+    /** @param {string} method @param {string} url @param {string | ArrayBuffer} [body] @param {string} [session] */
+    handle: (method, url, body, session) => request('handle', [method, url, body, session], body instanceof ArrayBuffer ? [body] : []),
+    /** @param {string} pigId */
+    openPigSession: pigId => request('open-session', [pigId]),
+    /** @param {string} token */
+    closePigSession: token => request('close-session', [token]),
     acceptWorkEvent: event => request('acceptWorkEvent', [event]),
     listOwnerPigs: () => request('owner:list-pigs'),
     createOwnerPig: pigId => request('owner:create-pig', [pigId]),

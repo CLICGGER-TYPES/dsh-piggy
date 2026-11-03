@@ -4,15 +4,15 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { registerGameProtocol } from '../lib/game-protocol.js'
+import { registerGameProtocol, createSessionResolver, pigIdFromRequest } from '../lib/game-protocol.js'
 
 function register({ rendererDir, gameDir, fetchFile, getHost = () => ({ handle: async () => ({ status: 200, headers: {}, body: '' }) }),
-  isQuitting = () => false, onStateChanged = () => {} }) {
+  isQuitting = () => false, onStateChanged = () => {}, resolveSession, sessions }) {
   let registeredScheme = null
   let handler = null
   registerGameProtocol({
     protocol: { handle(scheme, callback) { registeredScheme = scheme; handler = callback } },
-    fetchFile, rendererDir, gameDir, getHost, isQuitting, onStateChanged,
+    fetchFile, rendererDir, gameDir, getHost, isQuitting, onStateChanged, resolveSession, sessions,
   })
   assert.equal(registeredScheme, 'piggy')
   assert.equal(typeof handler, 'function')
@@ -192,4 +192,51 @@ test('file fetch non-ok bodies are cancelled, and traversal or fetch errors retu
   assert.equal(failed.status, 404)
   assert.equal(await failed.text(), 'not found')
   assert.equal(fetchCount, 2)
+})
+
+test('?pig=<pigId> resolves to that worker session while requests without pig stay on the default session', async () => {
+  const calls = []
+  const handler = register({
+    rendererDir: '/unused/renderer', gameDir: '/unused/game',
+    fetchFile: async () => { throw new Error('API request must not use file fetch') },
+    getHost: () => ({ async handle(method, url, body, session) {
+      calls.push({ method, url, session })
+      return { status: 200, headers: {}, body: '' }
+    } }),
+    sessions: new Map([['pig-b', 'token-b']]),
+  })
+  await handler(request('piggy://app/dsh-piggy/state?pig=pig-b'))
+  await handler(request('piggy://app/dsh-piggy/state'))
+  assert.deepEqual(calls, [
+    { method: 'GET', url: '/dsh-piggy/state?pig=pig-b', session: 'token-b' },
+    { method: 'GET', url: '/dsh-piggy/state', session: undefined },
+  ])
+})
+
+test('injected resolveSession may be async; an unknown pig is rejected instead of falling back to the default session', async () => {
+  assert.equal(pigIdFromRequest({ url: 'piggy://app/dsh-piggy/state?pig=pig-b' }), 'pig-b')
+  assert.equal(pigIdFromRequest({ url: 'piggy://app/dsh-piggy/state' }), null)
+  assert.equal(pigIdFromRequest({ url: 'not a url' }), null)
+
+  let touches = 0
+  const handler = register({
+    rendererDir: '/unused/renderer', gameDir: '/unused/game',
+    fetchFile: async () => { throw new Error('API request must not use file fetch') },
+    getHost: () => ({ async handle(method, url, body, session) {
+      touches += 1
+      assert.equal(session, 'token-a')
+      return { status: 200, headers: {}, body: 'ok' }
+    } }),
+    resolveSession: async request => createSessionResolver(new Map([['pig-a', 'token-a']]))(request),
+  })
+  const response = await handler(request('piggy://app/dsh-piggy/state?pig=pig-a'))
+  assert.equal(await response.text(), 'ok')
+  assert.equal(touches, 1)
+
+  await assert.rejects(handler(request('piggy://app/dsh-piggy/state?pig=missing')), error => {
+    assert.match(error.message, /no desktop session for pig missing/)
+    assert.equal(error.status, 404)
+    return true
+  })
+  assert.equal(touches, 1, 'unknown pig must not reach the host under the default session')
 })
