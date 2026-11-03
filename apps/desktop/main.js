@@ -61,6 +61,7 @@ import { registerExternalIpc, registerSystemActionsIpc, registerFullscreenIpc, r
 import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
 import { registerUpdatesIpc } from './lib/ipc/updates.js'
+import { createStartupTrace } from './lib/startup-trace.js'
 
 const { autoUpdater } = updaterPackage
 
@@ -99,6 +100,32 @@ function log(...parts) {
   // 同一句话也进游戏自己的日志：设置里导出的那一份要能看到窗口和更新出了什么事。
   try { hostJournal?.record('info', 'shell', parts.join(' ')) } catch { /* 日志不许反过来把猪弄挂 */ }
   return logWriting
+}
+
+const startupInputTrace = createStartupTrace((...parts) => { void log(...parts) })
+
+function safeVersion(value) {
+  return typeof value === 'string' && /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/.test(value) ? value : 'unknown'
+}
+
+function startupApiErrorKind(error) {
+  if (error instanceof TypeError) return 'TypeError'
+  if (error instanceof RangeError) return 'RangeError'
+  return error instanceof Error ? 'Error' : 'UnknownError'
+}
+
+/** @param {'pet'|'panel'} role @param {string} source @param {boolean} ignore @param {boolean|'omitted'} forward @param {() => void} invoke */
+function traceSetIgnoreMouseEvents(role, source, ignore, forward, invoke) {
+  const mode = role === 'pet' ? passthroughMode : 'panel'
+  const detail = { role, mode, source, ignore, forward }
+  const key = `mouse-api:${role}:${mode}:${source}:${ignore}:${forward}`
+  try {
+    invoke()
+  } catch (error) {
+    startupInputTrace.record(key + ':threw', 'startup mouse API', JSON.stringify({ ...detail, callResult: 'threw', errorClass: startupApiErrorKind(error) }))
+    throw error
+  }
+  startupInputTrace.record(key + ':returned', 'startup mouse API', JSON.stringify({ ...detail, callResult: 'returned' }))
 }
 
 async function flushLogs() {
@@ -384,19 +411,27 @@ let passthroughForward = null
 /** 未知能力不安装全局转发钩子；有效 place 确认现代能力后不再降级（2026-10-16）。 */
 let passthroughMode = 'unknown'
 let hitTimer = null
-function setHit(hit) {
+function setHit(hit, source = 'hit-state') {
   if ((!MOUSE_PASSTHROUGH && placedHitShape === null) || getPetWindow() === null || getPetWindow().isDestroyed()) return
   const forward = passthroughMode === 'legacy' && MOUSE_PASSTHROUGH
   if (hit === passthroughHit && forward === passthroughForward) return
   passthroughHit = hit
   passthroughForward = forward
-  getPetWindow().setIgnoreMouseEvents(!hit, { forward })
+  traceSetIgnoreMouseEvents('pet', source, !hit, forward,
+    () => getPetWindow().setIgnoreMouseEvents(!hit, { forward }))
 }
 
-function setLegacyHit(hit = passthroughHit) {
+function setPassthroughMode(next, source) {
+  if (next === passthroughMode) return
+  const previous = passthroughMode
+  passthroughMode = next
+  startupInputTrace.record(`mouse-mode:${previous}:${next}:${source}`, 'startup mouse mode', JSON.stringify({ from: previous, to: next, source }))
+}
+
+function setLegacyHit(hit = passthroughHit, source = 'legacy') {
   if (passthroughMode === 'modern') return
-  passthroughMode = 'legacy'
-  setHit(hit)
+  setPassthroughMode('legacy', source)
+  setHit(hit, source)
 }
 
 /** 只把合法的窗口协议消息作为能力证据，不能让坏消息启用全局转发。 */
@@ -433,7 +468,7 @@ function refreshHit() {
   const shape = placedHitShape === null && (flightShapeActive || dragShapeActive)
     ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
     : shiftedShape(placedHitShape ?? placedShape, flightShapeActive ? flightSlide : dragShapeActive ? lastDragSlide : flightSlide)
-  setHit(pointerHitsShape(screen.getCursorScreenPoint(), bounds, shape))
+  setHit(pointerHitsShape(screen.getCursorScreenPoint(), bounds, shape), 'cursor-hit-test')
 }
 
 /** 抛掷只挪窗口，不重排、不 followPig、不推几何、不写 window.json（A2）。 */
@@ -454,7 +489,7 @@ function applyShape(rects) {
   if (placedHitShape !== null) {
     // 原生绘制提交后重新应用独立输入，不能仅凭上次的命中布尔值跳过。
     passthroughForward = null
-    if (dragSession !== null) setHit(true)
+    if (dragSession !== null) setHit(true, 'shape-commit')
     else refreshHit()
   }
 }
@@ -504,7 +539,15 @@ async function createWindow(override = null) {
       if (FRAME_CAP > 0) window.webContents.setFrameRate(FRAME_CAP)
       // Linux 先等页面报真实内容和形状再显示，避免 rootless Xwayland 旧尺寸缓冲 SIGSEGV。
       showGate = createShowGate({ platform: process.platform })
-      if (MOUSE_PASSTHROUGH) { passthroughMode = 'unknown'; passthroughForward = null; setHit(false) }
+      startupInputTrace.begin()
+      if (MOUSE_PASSTHROUGH) {
+        setPassthroughMode('unknown', 'pet-window-configure')
+        passthroughForward = null
+        startupInputTrace.record('pet-window-configure', 'startup mouse configuration', JSON.stringify({ platform: process.platform, passthrough: MOUSE_PASSTHROUGH, mode: passthroughMode }))
+        setHit(false, 'pet-window-configure')
+      } else {
+        startupInputTrace.record('pet-window-configure', 'startup mouse configuration', JSON.stringify({ platform: process.platform, passthrough: MOUSE_PASSTHROUGH, mode: passthroughMode }))
+      }
       clearInterval(hitTimer)
       hitTimer = setInterval(refreshHit, 16)
       hitTimer.unref?.()
@@ -644,7 +687,7 @@ ipcMain.on('piggy:content', (event, content) => {
     if (content?.immediate === true) event.returnValue = null
     return
   }
-  setLegacyHit()
+  setLegacyHit(undefined, 'piggy:content')
   const anchor = { vertical: content?.anchor?.vertical === 'top' ? 'top' : 'bottom', horizontal: content?.anchor?.horizontal === 'left' ? 'left' : 'right' }
   const bounds = getPetWindow().getBounds()
   const pigWindow = { x: Number(content?.pigWindow?.x), y: Number(content?.pigWindow?.y) }
@@ -838,7 +881,7 @@ ipcMain.on('piggy:drag:start', (event, given) => {
   // 起始窗口和猪的位置对不对得上（2026-10-06 的偏移排查就是缺这一段）。
   dragShapeActive = true
   if (!SKIP_NATIVE_SHAPE) applyShape([{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
-  setHit(true)
+  setHit(true, 'drag-start')
   resizeShape.cancel()
   log('drag start', JSON.stringify({ bounds, pigScreen: dragSession.pigScreen, pigFromPage: pigFromPage !== null,
     origin: acceptedOrigin }))
@@ -886,8 +929,8 @@ const resizeShape = createResizeShape(() => getPetWindow(), applyShape, () => sc
 ipcMain.on('piggy:place', (event, request) => {
   if (!fromPet(event) || !isPlaceRequest(request)) { event.returnValue = null; return }
   if (passthroughMode !== 'modern') {
-    passthroughMode = 'modern'
-    setHit(passthroughHit)
+    setPassthroughMode('modern', 'piggy:place')
+    setHit(passthroughHit, 'piggy:place')
   }
   // place({}) is a synchronous geometry query, not a landing/placement commit.
   // During native dragging even old pages must not compete with dragTick by
@@ -982,8 +1025,8 @@ ipcMain.on('piggy:flight:move', (event, frame) => {
   const slide = frame.slide === undefined ? { x: 0, y: 0 } : frame.slide
   if (slide === null || typeof slide !== 'object' || ![slide.x, slide.y].every(Number.isFinite)) return
   if (passthroughMode !== 'modern') {
-    passthroughMode = 'modern'
-    setHit(passthroughHit)
+    setPassthroughMode('modern', 'piggy:flight:move')
+    setHit(passthroughHit, 'piggy:flight:move')
   }
   resizeShape.cancel()
   applyFlightBounds(frame.x, frame.y)
@@ -1004,7 +1047,7 @@ ipcMain.on('piggy:flight:move', (event, frame) => {
 ipcMain.on('piggy:hit', (event, hit) => {
   if (!fromPet(event) || typeof hit !== 'boolean') return
   if (hasPlacedShape) return
-  setLegacyHit(hit)
+  setLegacyHit(hit, 'piggy:hit')
 })
 
 /** 旧游戏包（0.27.2 及以前）只会发鼠标增量：照旧支持，回退版本时拖动不坏。 */
@@ -1021,7 +1064,7 @@ ipcMain.on('piggy:move', (event, delta) => {
 ipcMain.on('piggy:shape', (event, rects) => {
   if (!fromPet(event) || !isMouseShape(rects)) return
   if (lastShape.length === 0 && rects.length > 0) log('first shape', JSON.stringify(rects))
-  setLegacyHit()
+  setLegacyHit(undefined, 'piggy:shape')
   lastShape = rects
   applyShape(rects.slice(0, 64).map(r => ({
     x: Math.round(Number(r.x) || 0), y: Math.round(Number(r.y) || 0),
@@ -1100,7 +1143,8 @@ function refreshPanelHit() {
   const hit = pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])
   if (hit === panelHit) return
   panelHit = hit
-  getPanelWindow().setIgnoreMouseEvents(!hit, { forward: true })
+  traceSetIgnoreMouseEvents('panel', 'panel-hit', !hit, true,
+    () => getPanelWindow().setIgnoreMouseEvents(!hit, { forward: true }))
 }
 
 const panelShape = createResizeShape(() => getPanelWindow(), rects => {
@@ -1265,7 +1309,8 @@ ipcMain.on('piggy:panel:size', (event, size) => {
   if (panelFixedViewport) startPanelHit()
   else {
     stopPanelHit()
-    getPanelWindow().setIgnoreMouseEvents(false)
+    traceSetIgnoreMouseEvents('panel', 'panel-variable-viewport', false, 'omitted',
+      () => getPanelWindow().setIgnoreMouseEvents(false))
   }
   placePanel()
   if (process.platform === 'darwin') refreshPanelHit()
@@ -1488,6 +1533,7 @@ async function startFullscreenWatch() {
   })
   await fullscreenWatch.init()
   if (desktopLifecycle.quitting) return
+  log('fullscreen probe starting', JSON.stringify({ platform: process.platform, mode: fullscreenWatch.mode() }))
   fullscreenWatch.start()
   applyMacSpaces()
   // 置顶守护：系统把置顶清掉时马上抢回来；有的情况下没有事件，再每 3 秒核对一次。
@@ -1543,6 +1589,16 @@ app.whenReady().then(async () => {
   }
   const gameDir = await desktopRuntime.getVersions().activeDir()
   if (desktopLifecycle.quitting) return
+  const versionsForIdentity = desktopRuntime.getVersions()
+  const runtimeIdentity = current => JSON.stringify({
+    shell: safeVersion(app.getVersion()),
+    electron: safeVersion(process.versions.electron),
+    game: safeVersion(current?.version),
+    gameBundled: typeof current?.bundled === 'boolean' ? current.bundled : null,
+  })
+  void Promise.resolve().then(() => versionsForIdentity?.current?.())
+    .then(current => log('runtime identity', runtimeIdentity(current)))
+    .catch(() => log('runtime identity', runtimeIdentity(null)))
   const hostStatePath = ownerDocumentConfig?.ownerDocumentPath ?? statePath()
   const workEventsDirectory = ownerDocumentConfig
     ? `${ownerDocumentConfig.ownerDocumentPath}.work-events`
