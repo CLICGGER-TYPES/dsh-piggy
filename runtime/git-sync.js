@@ -282,11 +282,11 @@ export function createGitSync(options) {
     const actualHead = await readRemoteHeadUnlocked(branch)
     if (actualHead !== expectedHead) return { ok: false, reason: 'remote-advanced', remoteHead: actualHead }
 
+    let localHead = null
     if (actualHead !== null) {
       await exec(['fetch', '-q', 'origin', branch])
       const fetchedHead = (await exec(['rev-parse', '--verify', `refs/remotes/origin/${branch}`])).stdout.trim().toLowerCase()
       if (fetchedHead !== actualHead) return { ok: false, reason: 'remote-advanced', remoteHead: fetchedHead }
-      let localHead = null
       try { localHead = (await exec(['rev-parse', '--verify', 'HEAD'])).stdout.trim() }
       catch (error) {
         if (!/needed a single revision|unknown revision|bad revision/i.test(safeGitDetail(error))) throw error
@@ -297,11 +297,19 @@ export function createGitSync(options) {
         try { await exec(['merge-base', '--is-ancestor', actualHead, 'HEAD']) }
         catch { return { ok: false, reason: 'local-history-conflict', remoteHead: actualHead } }
       }
+    } else {
+      try { localHead = (await exec(['rev-parse', '--verify', 'HEAD'])).stdout.trim().toLowerCase() }
+      catch (error) {
+        if (!/needed a single revision|unknown revision|bad revision/i.test(safeGitDetail(error))) throw error
+      }
     }
 
     const meta = await writeSnapshotUnlocked(false)
     const committed = await commitUnlocked(meta, false)
-    if (committed === null) return { ok: true, remoteHead: actualHead, alreadyCurrent: true }
+    localHead = (await exec(['rev-parse', '--verify', 'HEAD'])).stdout.trim().toLowerCase()
+    if (committed === null && localHead === actualHead) {
+      return { ok: true, remoteHead: actualHead, alreadyCurrent: true }
+    }
     try { await pushUnlocked() }
     catch (error) {
       const latest = await readRemoteHeadUnlocked(branch).catch(() => actualHead)
@@ -310,7 +318,8 @@ export function createGitSync(options) {
     }
     const remoteHead = await readRemoteHeadUnlocked(branch)
     if (remoteHead === null) return { ok: false, reason: 'remote-branch-missing', remoteHead: null }
-    return { ok: true, remoteHead, committed: true }
+    if (remoteHead !== localHead) return { ok: false, reason: 'remote-advanced', remoteHead }
+    return { ok: true, remoteHead: localHead, committed: committed !== null, pushed: true }
   }
 
   /** 拉取；没有远端分支时当作成功（第一次初始化）。 */

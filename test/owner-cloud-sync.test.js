@@ -10,6 +10,7 @@ import { test } from 'node:test'
 import { hatchEgg } from '../core.js'
 import { createOwnerCloudSync } from '../runtime/owner-cloud-sync.js'
 import { inspectOwnerDocumentFile, writeOwnerDocumentFile } from '../runtime/owner-document-file.js'
+import { defaultGit } from '../runtime/git-sync.js'
 import { ownerDocumentFromLegacyV15 } from '../store/owner-document.js'
 import { readZip } from '../runtime/save-zip.js'
 
@@ -121,4 +122,79 @@ test('two devices sharing one owner base refuse a stale automatic push after the
     await deviceB?.close()
     rmSync(f.root, { recursive: true, force: true })
   }
+})
+
+test('owner push does not acknowledge a remote commit that races immediately after its own push', async () => {
+  const f = fixture(), ownerDocumentPath = ownerFile(f.root, 'owner-race', 'pig-race', 700)
+  let advanceRemoteAfterPush = false
+  const git = async (args, gitOptions) => {
+    const result = await defaultGit(args, gitOptions)
+    if (advanceRemoteAfterPush && args[0] === 'push') {
+      advanceRemoteAfterPush = false
+      const pushedHead = execFileSync('git', ['--git-dir', f.remote, 'rev-parse', 'refs/heads/main'], { encoding: 'utf8' }).trim()
+      const tree = execFileSync('git', ['--git-dir', f.remote, 'show', '-s', '--format=%T', pushedHead], { encoding: 'utf8' }).trim()
+      const concurrentHead = execFileSync('git', ['-c', 'user.name=other-device', '-c', 'user.email=other@localhost',
+        '--git-dir', f.remote, 'commit-tree', tree, '-p', pushedHead, '-m', 'concurrent-device'], { encoding: 'utf8' }).trim()
+      execFileSync('git', ['--git-dir', f.remote, 'update-ref', 'refs/heads/main', concurrentHead])
+    }
+    return result
+  }
+  const sync = createOwnerCloudSync({ ownerDocumentPath, ownerId: 'owner-race', remote: f.remote, branch: 'main', git })
+  try {
+    const initial = await sync.firstSync('local-to-cloud')
+    assert.equal(initial.ok, true)
+    const current = inspectOwnerDocumentFile(ownerDocumentPath)
+    assert.equal(current.kind, 'owner-document')
+    if (current.kind !== 'owner-document') throw new Error('race fixture owner document was not readable')
+    const updated = structuredClone(current.document)
+    updated.resources.coins = 701
+    writeOwnerDocumentFile({ filePath: ownerDocumentPath, document: updated, expectedRevision: current.revision })
+
+    advanceRemoteAfterPush = true
+    const result = await sync.pushSnapshot()
+    const remoteHead = execFileSync('git', ['--git-dir', f.remote, 'rev-parse', 'refs/heads/main'], { encoding: 'utf8' }).trim()
+    assert.equal(result.ok, false)
+    assert.equal(result.reason, 'remote-advanced')
+    assert.equal(result.remoteHead, remoteHead)
+    assert.notEqual(remoteHead, initial.remoteHead)
+    assert.equal(sync.baseHead(), initial.remoteHead, 'an unobserved post-push head is not accepted as this device\'s base')
+  } finally { await sync.close(); rmSync(f.root, { recursive: true, force: true }) }
+})
+
+test('owner push retries a locally committed snapshot after a transient push failure', async () => {
+  const f = fixture(), ownerDocumentPath = ownerFile(f.root, 'owner-retry', 'pig-retry', 800)
+  let failNextPush = false
+  const git = async (args, gitOptions) => {
+    if (failNextPush && args[0] === 'push') {
+      failNextPush = false
+      throw Object.assign(new Error('simulated transport failure'), { code: 'GIT_FAILED' })
+    }
+    return defaultGit(args, gitOptions)
+  }
+  const sync = createOwnerCloudSync({ ownerDocumentPath, ownerId: 'owner-retry', remote: f.remote, branch: 'main', git })
+  try {
+    const initial = await sync.firstSync('local-to-cloud')
+    assert.equal(initial.ok, true)
+    const current = inspectOwnerDocumentFile(ownerDocumentPath)
+    assert.equal(current.kind, 'owner-document')
+    if (current.kind !== 'owner-document') throw new Error('retry fixture owner document was not readable')
+    const updated = structuredClone(current.document)
+    updated.resources.coins = 801
+    writeOwnerDocumentFile({ filePath: ownerDocumentPath, document: updated, expectedRevision: current.revision })
+
+    failNextPush = true
+    const firstAttempt = await sync.pushSnapshot()
+    assert.equal(firstAttempt.ok, false)
+    assert.equal(firstAttempt.reason, 'push-failed')
+    assert.equal(sync.baseHead(), initial.remoteHead)
+    const retry = await sync.pushSnapshot()
+    assert.equal(retry.ok, true)
+    assert.equal(retry.alreadyCurrent, undefined, 'a local commit ahead of remote must still be pushed')
+    assert.equal(retry.pushed, true)
+    assert.equal(retry.committed, false, 'retry pushes the already-created local commit')
+    const remoteHead = execFileSync('git', ['--git-dir', f.remote, 'rev-parse', 'refs/heads/main'], { encoding: 'utf8' }).trim()
+    const remoteArchive = execFileSync('git', ['--git-dir', f.remote, 'show', `${remoteHead}:save.zip`])
+    const remoteFiles = readZip(remoteArchive)
+    assert.equal(JSON.parse(remoteFiles.get('owner-document.json').toString('utf8')).resources.coins, 801)
+  } finally { await sync.close(); rmSync(f.root, { recursive: true, force: true }) }
 })
