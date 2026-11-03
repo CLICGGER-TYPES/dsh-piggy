@@ -6,8 +6,8 @@
  * 本模块只做身份、生命周期和拒绝原因，不实现网络、认证、房间或持久 ID：
  * - SessionId/RuntimeId 是进程内临时能力，不写存档、不当跨设备身份；
  * - OwnerId/PigId/RoomId 是未来稳定身份的保留名字，本切片没有实现；
- * - embedded / loopback-pair 是当前真实 transport；lan / public-server 只声明
- *   为未实现，不创建 socket、不改监听地址。
+ * - embedded / loopback-pair 是当前产品 transport；LAN 绑定只由显式 owner session
+ *   server 在配对认证后发放；public-server 仍未实现。
  *
  * @module dsh-piggy/runtime/session-context
  */
@@ -28,8 +28,8 @@ export const SESSION_SCOPE = Object.freeze({
 })
 
 /**
- * 当前真实 transport 是进程内 embedded 与本机 loopback 配对。LAN/public-server
- * 是声明中的未来责任，未实现：构造这类绑定会直接拒绝。
+ * LAN 仅是已经配对的本地 owner-session transport 标签；它自身不验证认证。
+ * public-server 仍拒绝，不能由数据身份或任意网络请求构造。
  */
 export const SESSION_TRANSPORT = Object.freeze({
   EMBEDDED: 'embedded',
@@ -43,7 +43,7 @@ const TRANSPORT_KINDS = Object.freeze([
   SESSION_TRANSPORT.EMBEDDED, SESSION_TRANSPORT.LOOPBACK_PAIR, SESSION_TRANSPORT.LAN, SESSION_TRANSPORT.PUBLIC_SERVER,
 ])
 /** @type {Set<string>} */
-const UNSUPPORTED_TRANSPORTS = new Set([SESSION_TRANSPORT.LAN, SESSION_TRANSPORT.PUBLIC_SERVER])
+const UNSUPPORTED_TRANSPORTS = new Set([SESSION_TRANSPORT.PUBLIC_SERVER])
 
 /** 拒绝原因。沿用现有适配器的字符串 reason 风格，方便局部返回而不是抛错。 */
 export const SESSION_BOUNDARY = Object.freeze({
@@ -391,10 +391,12 @@ export function persistenceIssue(authority) {
  */
 
 /*
- * 将来的 LAN/公网契约（只声明责任，没有实现）：
- * - 稳定 OwnerId/PigId/RoomId 必须由服务端签发并持久化；
- * - 会话认证、房间加入、重连/重放、资源 revision 与素材命名空间由服务端负责；
- * - 当前进程能力、loopback 令牌、昵称、文件路径、RuntimeId 都不能当网络身份；
+ * LAN session issuer 在配对成功后可创建 kind='lan' 的进程内绑定；令牌和邀请由
+ * owner-lan-server 管理，不能从请求里的 ownerId/pigId 推导权限。
+ * 仍未实现的公网/跨进程责任：
+ * - 持久 OwnerId/PigId/RoomId 和跨进程/服务器身份；
+ * - 公网认证、加密传输、房间策略、持久资源 revision 与素材命名空间；
+ * - loopback/LAN 临时令牌、昵称、文件路径、RuntimeId 都不能当稳定网络身份；
  * - snapshot 必须带资源 revision 和目标 PigId，receipt 必须区分 accepted/completed/
  *   replayed/rejected，崩溃恢复下的 exactly-once 不能由本模块假装提供。
  * 这些未实现项在 docs/guides/session-context.md 中逐项列出。

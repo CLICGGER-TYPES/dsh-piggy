@@ -61,10 +61,12 @@ import { createOwnerArchiveSelectionStore } from './lib/owner-archive-selection.
 import { createOwnerArchiveManager } from './lib/owner-archive-manager.js'
 import { createOwnerPigManager } from './lib/owner-pig-manager.js'
 import { createOwnerCloudManager } from './lib/owner-cloud-manager.js'
+import { createOwnerNetworkManager } from './lib/owner-network-manager.js'
 import { registerExternalIpc, registerSystemActionsIpc, registerFullscreenIpc, registerProxyIpc } from './lib/ipc/system.js'
 import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
 import { registerOwnerArchiveIpc } from './lib/ipc/owner-archive.js'
 import { registerOwnerPigsIpc } from './lib/ipc/owner-pigs.js'
+import { registerOwnerNetworkIpc } from './lib/ipc/owner-network.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
 import { createOwnerCloudReadyStore } from './lib/owner-cloud-ready.js'
 import { registerUpdatesIpc } from './lib/ipc/updates.js'
@@ -79,6 +81,7 @@ let ownerArchiveSwitchPending = false
 let ownerArchiveRuntimeSupported = false
 let ownerPigRuntimeSupported = false
 let ownerCloudRuntimeSupported = false
+let ownerLanRuntimeSupported = false
 let activeGameDirectory = null
 
 /**
@@ -180,6 +183,7 @@ protocol.registerSchemesAsPrivileged([
 const dataPaths = configureDesktopData(app)
 const cloudSaveSettings = createCloudSaveConfigStore(dataPaths.userData)
 const ownerCloudReadyStore = createOwnerCloudReadyStore(dataPaths.userData)
+const ownerNetworkDirectory = join(dataPaths.userData, 'owner-network')
 const ownerArchiveSelectionStore = createOwnerArchiveSelectionStore(dataPaths.userData)
 const gotLock = !needsX11 && app.requestSingleInstanceLock()
 // 第二个进程拿不到单实例锁就马上退出：先同步留一行再退。第一个进程可能还没 ready、
@@ -219,6 +223,14 @@ async function hasOwnerCloudRuntime(gameDir) {
   try {
     const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
     return runtime.OWNER_CLOUD_RUNTIME_API_VERSION === 1
+  } catch { return false }
+}
+
+/** owner 私有 LAN 会话必须由面板显式启用。 */
+async function hasOwnerLanRuntime(gameDir) {
+  try {
+    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
+    return runtime.OWNER_LAN_RUNTIME_API_VERSION === 1
   } catch { return false }
 }
 
@@ -1607,6 +1619,15 @@ const ownerCloudManager = createOwnerCloudManager({
   isSupported: () => ownerCloudRuntimeSupported,
   isQuitting: () => desktopLifecycle.quitting,
 })
+const ownerNetworkManager = createOwnerNetworkManager({
+  getHost: () => desktopRuntime.getHost(),
+  getOwnerConfig: () => ownerDocumentConfig,
+  isSupported: () => ownerLanRuntimeSupported,
+  selectionStore: ownerArchiveSelectionStore,
+  isQuitting: () => desktopLifecycle.quitting,
+  log,
+})
+registerOwnerNetworkIpc({ ipcMain, fromPanelOnly, manager: ownerNetworkManager })
 
 // ---- 全屏时隐藏 / 照常显示，以及置顶守护（外壳 0.6.5，见 lib/fullscreen.js） ----
 /** @type {ReturnType<typeof createFullscreenWatch> | null} */
@@ -1766,6 +1787,7 @@ app.whenReady().then(async () => {
   ownerArchiveRuntimeSupported = await hasOwnerArchiveRuntime(gameDir)
   ownerPigRuntimeSupported = await hasOwnerPigRuntime(gameDir)
   ownerCloudRuntimeSupported = await hasOwnerCloudRuntime(gameDir)
+  ownerLanRuntimeSupported = await hasOwnerLanRuntime(gameDir)
   if (ownerDocumentConfig !== null && !ownerArchiveRuntimeSupported) {
     if (ownerArchiveSwitchPending) {
       ownerArchiveSelectionStore.rollbackPending()
@@ -1804,6 +1826,7 @@ app.whenReady().then(async () => {
     : null
   try {
     await desktopRuntime.startHost(gameDir, hostStatePath, { fetch: net.fetch.bind(net), workEventsDirectory,
+      ownerNetworkDirectory,
       cloudSave: ownerDocumentConfig !== null && !ownerCloudRuntimeSupported ? null : cloudRuntimeConfig,
       ...(ownerDocumentConfig === null ? {} : { ownerDocument: runtimeOwnerConfig(ownerDocumentConfig) }),
       optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),

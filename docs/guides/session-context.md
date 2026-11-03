@@ -1,8 +1,6 @@
 # 会话边界：运行时、外部控制器与未来传输契约（F06）
 
-状态：F06 源码实现，未打包、未独立验收。本文说明当前本地单猪产品如何把
-工作事件、命令、快照和合并操作绑定到明确的宿主/运行时/会话，以及未来
-LAN/公网需要哪些责任。它不把本机多猪、联机、稳定身份或存档迁移写成已完成。
+状态：F06 会话边界已实现；LANTRANSPORT01 在独立候选增加显式配对的私有 LAN owner session 服务，尚未合并或做产品 UI/跨设备验收。本文保留 loopback/OwnerDocument 边界并区分当前 LAN 候选与仍未实现的公网责任；它不把公网、房间、稳定网络身份或完整联机写成已完成。
 
 ## 1. 为什么要有这一层
 
@@ -57,7 +55,7 @@ DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ─�
 | `kind: 'session-binding'` | 判别字段；伪造的 `{owner,target}` 对象不算 |
 | `id` | 临时 SessionId（随机），不持久化 |
 | `scope` | `host-runtime` 或 `external-controller` |
-| `transport` | `{kind, origin}`；当前只有 `embedded` / `loopback-pair` |
+| `transport` | `{kind, origin}`；当前候选支持 `embedded` / `loopback-pair` / 经邀请认证创建的 `lan` session |
 | `application` | 真实 owner/target 应用上下文；外部控制器为 null |
 | `commands` | 与 application 同一 store 的命令边界 |
 | `owner` / `target` / `commandScope` | 由 application/commands 直接派生的句柄 |
@@ -163,7 +161,7 @@ DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ─�
 
 ## 5. 持久化范围
 
-当前真实支持：
+截至 F06 的已实现能力：
 
 - 一位主人的一份扁平 v15/farmv5 `state.json`；
 - 由该文档适配出一只 legacy 猪（F02 owner resources + body）；
@@ -176,7 +174,7 @@ DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ─�
 - 每猪独立存档/资源副本；
 - 在没有显式多目标能力/schema marker 的情况下把整份存档当成多目标来合并/恢复；
 - 把“切回/恢复”当成添加猪、加入房间或去重；
-- LAN/公网服务器、认证、房间、重连/重放、持久 revision、素材命名空间；
+- 已合入产品仍没有 LAN/公网 listener 或连接 UI；独立 LAN 候选见 §6。公网服务器与身份、房间、跨进程持久 revision、素材命名空间仍未实现；
 - 把进程能力、loopback token、昵称、路径、`runtimeId` 当网络身份。
 
 `persistenceIssue(authority)` 只读取真实 store/控制器显式声明的持久化能力：
@@ -185,19 +183,13 @@ DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ─�
 和 owner legacy-opaque 原样保留。未来多目标格式必须带显式 schema marker/能力
 声明，届时由这里拒绝全平持久化，而不是覆盖/复制整份别的猪存档。
 
-## 6. 未来 LAN/公网需要什么
+## 6. 当前私有 LAN 候选与公网未实现项
 
-以下都是未实现项；当前代码不创建 socket、不把 `127.0.0.1` 改成 `0.0.0.0`、
-不改端口/CORS/防火墙，也不把私有 API 暴露到局域网/公网。
+`runtime/owner-lan-server.js` 在明确调用后创建一个 OwnerDocument session listener。默认绑定 `127.0.0.1`；显式绑定只接受具体 RFC1918/link-local 私有 IPv4，拒绝 `0.0.0.0` 与公网地址。发现文件不包含邀请/token。面板通过 panel-only IPC 生成一次性邀请，邀请绑定服务器确认过的 owner/pig roster 目标；配对后服务器创建 `kind:'lan'` binding，并将随机 bearer token 映射到该 binding。单个 listener 只服务一份 OwnerDocument，客户端不能带入另一位用户的 owner 档。后续状态/命令/动作不接受 `pigId`/`ownerId`，每个连接只读写绑定猪，共有资源仍经同一 OwnerAuthority。
 
-- 服务端签发的稳定 `OwnerId`/`PigId`/`RoomId` 和持久存档格式/迁移；
-- 会话认证、房间成员与权限，不能复用本机进程能力；
-- 重连/重放策略、持久收据与资源 `revision`（以及崩溃下 exactly-once 的明确
-  unsupported 响应）；
-- 快照携带 `PigId` + 资源 revision；素材按 owner/pig 命名空间隔离；
-- 多目标持久化格式、每猪 body 写入与旧档迁移；
-- 服务端/客户端明确区分 accepted/completed/replayed/rejected 回执；
-- 真实 UI 原型与用户确认后才能加房间/选择器入口。
+请求限长、Origin 被拒绝、Host 必须精确匹配、邀请一次性/限时/限速。命令/动作有白名单；每 session 的序号/requestId 在本进程内去重，重连可读取 nextSequence 并重试相同请求。关闭 listener 会处置全部 session/token/内存回执；进程重启需重新配对。这只是进程内重放保护，不是崩溃后 exactly-once。
+
+LAN HTTP 本身不加密，因此候选只适用于用户信任的私有网络，不能称为公网/Internet 传输。尚未实现：一台用户连接并携带自己的独立 owner/pig 档、跨 owner 会话、正式邀请/连接 UI、公网 TLS/加密身份、持久 room/member 权限、跨进程 durable revision/receipts、服务端/客户端重启后的持续身份与重连、DSH 实际外部客户端接线、房间发现/中继/多猪并行 UI。当前 Node 双客户端合同是本机 loopback socket 验证，不是跨设备真实 UI 验收。
 
 ## 7. 兼容与保留
 
@@ -210,10 +202,10 @@ DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ─�
   归档失败行为不变。
 - F02 资源/事务、F03 绑定表现、F04 资源命名、F05 音频通道字节不变。
 
-## 8. 本切片明确未做
+## 8. 仍未做
 
 - 本机多猪产品入口、`pigId`/`ownerId` 持久化、存档迁移；
-- 真实联机/房间/认证/服务器；
+- 产品 UI / 真实跨设备验收、房间及公网/端到端加密、跨进程持久认证；
 - 新 UI 布局/流程/选择器；
 - 产品单元/契约/UI 测试与构建（由 D01/V06 统一处理）；
 - helper 75% XP、开关、lazy/rest、美术、巡逻（继续延后）。

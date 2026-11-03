@@ -177,6 +177,13 @@ contextBridge.exposeInMainWorld('piggyShell', {
     },
     addAndSelect: () => ipcRenderer.invoke('piggy:owner-pigs:add-and-select'),
   },
+  /** 面板专用的 owner 私有 LAN 会话；只有调用 start() 才启动服务。 */
+  ownerNetwork: {
+    status: () => ipcRenderer.invoke('piggy:owner-network:status'),
+    start: options => ipcRenderer.invoke('piggy:owner-network:start', { listenAddress: options?.listenAddress }),
+    invite: pigId => ipcRenderer.invoke('piggy:owner-network:invite', String(pigId)),
+    stop: () => ipcRenderer.invoke('piggy:owner-network:stop'),
+  },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
   /** 这个页面在哪个窗口里：'pet'、'panel'，或者扩展的大窗口 'ext'（外壳 0.6.5 起）。 */

@@ -117,7 +117,13 @@
 
 带 `OWNER_CLOUD_RUNTIME_API_VERSION` 的游戏包通过 `cloudSave.firstSync(direction)` 提供显式首次同步服务；普通云设置仍默认关闭，配置保存本身不会启用同步。`local-to-cloud` 仅允许向所选的空远端分支首次发布完整 owner ZIP；同一内容可幂等确认，远端身份不符或已有不同历史会拒绝，不使用旧 flat `state.json` ZIP覆盖历史。`cloud-to-local` 只读取并验证远端完整档，交给现有完整档预览和“导入副本并切换”事务，绝不覆盖当前 owner 文件。用户确认导入后，本机 `owner-cloud-ready.json` 绑定 owner 与远端/分支；重启时只有身份和配置均匹配才启用现有 Git 队列的定时完整档推送与历史读取。
 
-owner cloud first-sync 与历史读取只注册给面板 IPC。HTTP `/dsh-piggy/cloud/*` 路由仍在 OwnerDocument 模式拒绝；旧 v15 cloud backend 仍是单独路径，DSH 的 OwnerDocument cloud 配置尚未接通。当前仅提供 API/服务，不含首次同步选择 UI，也不实现 owner 模式的历史恢复覆盖；需要恢复时继续创建独立副本。跨房间网络、LAN/公网发现与权限、云端合并均未实现。
+owner cloud first-sync 与历史读取只注册给面板 IPC。HTTP `/dsh-piggy/cloud/*` 路由仍在 OwnerDocument 模式拒绝；旧 v15 cloud backend 仍是单独路径，DSH 的 OwnerDocument cloud 配置尚未接通。当前仅提供 API/服务，不含首次同步选择 UI，也不实现 owner 模式的历史恢复覆盖；需要恢复时继续创建独立副本。LAN API 候选见下节；跨房间发现/管理、多猪并行 UI、公网传输与云端合并均未实现。
+
+### OwnerDocument 私有 LAN 会话候选
+
+`window.piggyShell.ownerNetwork.status/start({listenAddress})/invite(pigId)/stop()` 是面板专用的服务控制 API；页面不能传 OwnerDocument 路径或 ownerId。服务只对显式 OwnerDocument runtime 提供，默认不启动，缺省监听 loopback；显式地址只接受一个具体的私有 IPv4，不接受 `0.0.0.0`、公网地址或自动发现。一次性 60 秒邀请由 trusted panel 按已有 roster 的 pigId 生成，配对后 HTTP token 在服务端固定绑定一个 session/target；后续请求不接受 pigId/ownerId 字段。
+
+`runtime/owner-lan-server.js` 和 `runtime/owner-lan-client.js` 提供有界 JSON 的 `/v1/pair`、`/v1/session`、`/v1/state`、白名单 `/v1/command`/`/v1/action` 和 session close。每 session 有序号和 requestId 去重，断线后可用内存 token 查询 nextSequence 并重试同一请求；runtime 进程停止会撤销所有 session、token 和内存回执，需重新配对。一个 listener 绑定一份 OwnerDocument；被邀请客户端可操作该 owner roster 中指定的猪，不能带入另一台设备的 owner 文档或存档。当前 HTTP 内容未加密，只用于可信私有网络；不支持公网部署、TLS、长期 token/房间、跨进程持久回执或公网身份。API/Node socket 契约不是产品 UI 或真实跨设备 UI 验收；没有加房间界面、发现服务或自动启动。
 
 ### 旧消息（只给老游戏包，别删）
 
