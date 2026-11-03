@@ -17,6 +17,33 @@ function pigContext(shell) {
   return { pigId, primary: pigId !== null && shell.primary === true }
 }
 
+/**
+ * Every same-origin /dsh-piggy request from this window has to name its pig.
+ * The shell also routes via the document Referer, but that depends on the
+ * network stack keeping it; an explicit query survives proxies and future
+ * Chromium referrer-policy changes. Old game packages never call this.
+ * @param {string|null} pigId
+ */
+function scopeFetchToPig(pigId) {
+  if (pigId === null || typeof window === 'undefined' || typeof window.fetch !== 'function') return
+  const scoped = /** @type {any} */ (window)
+  if (scoped.__piggyFetchPig === pigId) return
+  const original = window.fetch.bind(window)
+  window.fetch = (input, init) => {
+    try {
+      const raw = typeof input === 'string' ? input : input instanceof Request ? input.url : input instanceof URL ? input.href : String(input)
+      const url = new URL(raw, window.location.href)
+      if (url.origin === window.location.origin && url.pathname.startsWith('/dsh-piggy/') && !url.searchParams.has('pig')) {
+        url.searchParams.set('pig', pigId)
+        if (input instanceof Request) return original(new Request(url.href, input), init)
+        return original(url.href, init)
+      }
+    } catch { /* 非 URL / 相对路径异常：原样交给 fetch */ }
+    return original(input, init)
+  }
+  scoped.__piggyFetchPig = pigId
+}
+
 let installed = false
 let started = false
 let installing = false
@@ -86,6 +113,7 @@ export function install(shell) {
     }
     if (petController === null) {
       const { pigId, primary } = pigContext(shell)
+      scopeFetchToPig(pigId)
       petController = createPetController({
         shell,
         documentObject: document,

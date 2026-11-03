@@ -12,7 +12,7 @@ test('拖动心跳超过两秒才过期：页面忙一下不掐断拖动', () =>
 test('渲染进程退出会停拖动；窗口失焦不停（Windows 上按住拖动时也可能失焦，停了猪就卡在原地）', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   assert.doesNotMatch(main, /onBlur:\s*\(window\)\s*=>\s*stopDrag\(\)/)
-  assert.match(main, /onRendererGone:\s*\(window, event, details\)\s*=>\s*\{\s*stopDrag\(\)/)
+  assert.match(main, /onRendererGone:\s*\(window, event, details\)\s*=>\s*\{\s*stopDrag\(pet\)/)
 })
 
 test('拖动开始和结束都清掉面板打开时记下的原位，内容再变不会把猪拽回去', () => {
@@ -26,7 +26,7 @@ test('拖动开始和结束都清掉面板打开时记下的原位，内容再�
 test('心跳顺带挪窗口；拖动不写逐帧日志；旧游戏包的 moveBy 仍有主进程接口', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   const beat = main.slice(main.indexOf("ipcMain.on('piggy:drag:heartbeat'"), main.indexOf("ipcMain.on('piggy:drag:end'"))
-  assert.match(beat, /dragTick\(\)/)
+  assert.match(beat, /dragTick\(pet\)/)
   assert.match(main, /why !== 'drag'/)
   assert.doesNotMatch(main, /appendFileSync/)
   assert.match(main, /ipcMain\.on\('piggy:move'/)
@@ -34,9 +34,10 @@ test('心跳顺带挪窗口；拖动不写逐帧日志；旧游戏包的 moveBy 
 
 test('窗口销毁后到达的页面消息不处理（Windows 上切换版本时弹过「Object has been destroyed」）', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  // 外壳 0.6.0 起有两个窗口：猪窗口（fromPet，只有它能挪猪）和面板窗口，两边都先查 isDestroyed。
-  assert.match(main, /function fromPet\(event\) \{\s*return !desktopLifecycle\.quitting && getPetWindow\(\) !== null && !getPetWindow\(\)\.isDestroyed\(\) && event\.sender === getPetWindow\(\)\.webContents/)
-  assert.match(main, /function fromPage\(event\) \{\s*return fromPet\(event\) \|\| \(!desktopLifecycle\.quitting && getPanelWindow\(\) !== null && !getPanelWindow\(\)\.isDestroyed\(\) && event\.sender === getPanelWindow\(\)\.webContents\)/)
+  // 外壳 0.6.8 起每只猪的窗口都由 registry 按 sender 查找；窗口销毁时先摘映射，迟到的消息被拒绝。
+  assert.match(main, /function fromPet\(event\) \{\s*return petForEvent\(event\) !== null/)
+  assert.match(main, /function petForEvent\(event\) \{\s*if \(desktopLifecycle\.quitting\) return null\s*const pet = pets\.bySender\(event\?\.sender\)[\s\S]{0,220}pet\.window\.isDestroyed\(\)/)
+  assert.match(main, /function fromPage\(event\) \{\s*return fromPet\(event\) \|\| \(!desktopLifecycle\.quitting && getPanelWindow\(\) !== null/)
   assert.doesNotMatch(main, /event\.sender !== getPetWindow\(\)\.webContents/)
   // 只查 null 不查 isDestroyed 的地方都不该再有
   assert.doesNotMatch(main, /if \(getPetWindow\(\) === null\) return/)
@@ -46,7 +47,7 @@ test('窗口销毁后到达的页面消息不处理（Windows 上切换版本时
 
 test('开关面板不算「内容变了」；非拖动时窗口差 2px 以内不重设（Windows 缩放下差 1px 会闪）', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  const changed = main.slice(main.indexOf('const changed = '), main.indexOf('if (savedPigScreen !== null) {', main.indexOf('const changed = ')))
+  const changed = main.slice(main.indexOf('const changed = '), main.indexOf('if (pet.savedPigScreen !== null) {', main.indexOf('const changed = ')))
   assert.doesNotMatch(changed, /panelOpen/)
   assert.match(main, /const BOUNDS_TOLERANCE = 2/)
   assert.match(main, /const tolerance = \(why === 'drag' \|\| why === 'move'\) && !sameRequest \? 0 : BOUNDS_TOLERANCE/)

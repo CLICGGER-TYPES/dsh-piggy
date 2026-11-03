@@ -213,6 +213,32 @@ test('?pig=<pigId> resolves to that worker session while requests without pig st
   ])
 })
 
+test('pet window URL carries ?pig; same-origin API fetches may only expose it through Referer', async () => {
+  const calls = []
+  const handler = register({
+    rendererDir: '/unused/renderer', gameDir: '/unused/game',
+    fetchFile: async () => { throw new Error('API request must not use file fetch') },
+    getHost: () => ({ async handle(method, url, body, session) {
+      calls.push({ method, url, session })
+      return { status: 200, headers: {}, body: '' }
+    } }),
+    sessions: new Map([['pig-a', 'token-a'], ['pig-b', 'token-b']]),
+  })
+  const request = (headers) => ({
+    url: 'piggy://app/dsh-piggy/state', method: 'GET',
+    headers: { get: name => headers[name] ?? null },
+    arrayBuffer: async () => new ArrayBuffer(0),
+  })
+  await handler(request({ referer: 'piggy://app/index.html?pig=pig-b' }))
+  await handler(request({ referer: 'piggy://app/index.html' }))
+  await handler(request({ referer: 'piggy://app/index.html?pig=pig-a' }))
+  assert.deepEqual(calls, [
+    { method: 'GET', url: '/dsh-piggy/state', session: 'token-b' },
+    { method: 'GET', url: '/dsh-piggy/state', session: undefined },
+    { method: 'GET', url: '/dsh-piggy/state', session: 'token-a' },
+  ])
+})
+
 test('injected resolveSession may be async; an unknown pig is rejected instead of falling back to the default session', async () => {
   assert.equal(pigIdFromRequest({ url: 'piggy://app/dsh-piggy/state?pig=pig-b' }), 'pig-b')
   assert.equal(pigIdFromRequest({ url: 'piggy://app/dsh-piggy/state' }), null)

@@ -16,6 +16,7 @@
  * @property {any} topGuardTimer
  * @property {any} displayWatchTimer
  * @property {any} hitTimer
+ * @property {any[]} [hitTimers]
  * @property {any} stateTimer
  * @property {() => Promise<any>} flushWindowState
  * @property {() => Promise<any>} flushLogs
@@ -63,7 +64,7 @@ export function createDesktopLifecycle(deps) {
     if (shellClosing) return shellClosing
     const resources = deps.getResources()
     const fullscreenStopping = resources.fullscreenWatch?.stop()
-    for (const timer of [resources.topGuardTimer, resources.displayWatchTimer, resources.hitTimer]) deps.clearInterval(timer)
+    for (const timer of [resources.topGuardTimer, resources.displayWatchTimer, resources.hitTimer, ...(resources.hitTimers ?? [])]) deps.clearInterval(timer)
     deps.setHitTimer(null)
     deps.clearTimeout(resources.stateTimer)
     shellClosing = (async () => {

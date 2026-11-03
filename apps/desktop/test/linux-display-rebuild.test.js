@@ -57,17 +57,19 @@ test('a failed native rebuild releases its gate and reports the error', async ()
 test('重建 Linux 窗口时丢弃旧页面的独立输入区域', async () => {
   const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   const start = source.indexOf('async function rebuildLinuxViews()')
-  const end = source.indexOf('\nlet lastShape =', start)
+  const end = source.indexOf('\n/**\n * The renderer reports', start)
   const previous = { isDestroyed: () => false, hide() {}, removeAllListeners() {}, webContents: { removeAllListeners() {} }, destroy() {} }
-  let currentWindow = previous
+  const pet = { primary: true, pigId: 'pig-a', window: previous, petAsked: { x: 0, y: 0, width: 132, height: 152 },
+    lastPigWindow: { x: 10, y: 10 }, lastContent: {}, restingPigScreen: {},
+    lastShape: [{}], placedShape: [{}], placedHitShape: [{ x: 20, y: 20, width: 60, height: 60 }], hasPlacedShape: true,
+    resizeShape: { cancel() {} }, owner: { destroy: window => window.destroy() } }
   let resetInput = false
   const sandbox = {
-    quitting: false, getPetWindow: () => currentWindow, petWindow: { destroy: window => window.destroy() },
-    getPanelWindow: () => null, panelWindow: { destroy() {}, forget() {} }, petAsked: { x: 0, y: 0, width: 132, height: 152 },
-    lastPigWindow: { x: 10, y: 10 }, WINDOW_PADDING: 10, lastContent: {}, restingPigScreen: {},
-    lastShape: [{}], placedShape: [{}], placedHitShape: [{ x: 20, y: 20, width: 60, height: 60 }], hasPlacedShape: true,
-    stopDrag() {}, resizeShape: { cancel() {} }, closePanel() {}, ensurePanelWindow() {}, pushGeometry() {}, log() {},
-    createWindow: async () => { resetInput = runInContext('placedHitShape === null && !hasPlacedShape', context); currentWindow = { getBounds: () => ({}) } },
+    quitting: false, pet, primaryPet: () => pet, pets: { all: () => [pet], primary: () => pet },
+    getPanelWindow: () => null, panelWindow: { destroy() {}, forget() {} },
+    stopDrag() {}, closePanel() {}, ensurePanelWindow() {}, pushGeometry() {}, log() {},
+    WINDOW_PADDING: 10,
+    createWindow: async () => { resetInput = runInContext('pet.placedHitShape === null && !pet.hasPlacedShape', context); pet.window = { getBounds: () => ({}) } },
   }
   sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
   const context = createContext(sandbox)
