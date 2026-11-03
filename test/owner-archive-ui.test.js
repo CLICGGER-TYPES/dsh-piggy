@@ -59,8 +59,14 @@ test('owner archive UI keeps flat import disabled in owner mode and requires exp
     async importAndSwitch(token, options) { calls.push({ method: 'import', token, options }); return { ok: true, restarting: true } },
   }
   globalThis.document = dom.document
-  globalThis.window = { __dshPiggyShell: { beginDrag() {}, ownerArchives: api } }
+  dom.document.documentElement = dom.document.createElement('html')
+  dom.document.head = dom.document.createElement('head')
+  globalThis.window = {}
   try {
+    const { installPanel } = await import('../src/client/desktop/panel-window.js?owner-archive-ui-bridge')
+    installPanel({ ownerArchives: api })
+    assert.equal(globalThis.window.__dshPiggyShell.ownerArchives, api,
+      'the actual panel adapter must forward the preload capability consumed by Settings')
     const { renderSaveTransferSettings } = await import('../src/client/save-transfer.js?owner-archive-ui-test')
     const section = (ui, title, note) => {
       const box = document.createElement('section'), head = document.createElement('header')
