@@ -13,7 +13,8 @@ const STALE_WAIT_MS = 500
 
 /**
  * @param {{shell:any, windowObject:Window, getHost:()=>any, isDragging:()=>boolean,
- *   isFlying:()=>boolean, setHitRects:(rects:any[])=>void}} deps
+ *   isFlying:()=>boolean, setHitRects:(rects:any[])=>void,
+ *   pigId?:string|null, primary?:boolean}} deps
  */
 export function createLayoutController(deps) {
   const shell = deps.shell
@@ -30,7 +31,8 @@ export function createLayoutController(deps) {
   }
 
   const measure = createMeasure({ platform: shell.platform || '', geometry })
-  const placement = createPlacement()
+  // One pet per window: stay on getHost's single root, but save under this window's pigId.
+  const placement = createPlacement({ pigId: deps.pigId ?? null, primary: deps.primary === true })
 
   function layoutStale(win) {
     return Math.abs(deps.windowObject.innerWidth - win.width) > 1
