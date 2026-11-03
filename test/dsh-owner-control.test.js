@@ -143,7 +143,7 @@ test('DSH OwnerDocument routes bind each request to its own pig; TLS pairing is 
   await fixture.dispose()
 })
 
-test('DSH OwnerDocument cloud bridge performs only explicit local-to-cloud first sync and persists matching readiness', async t => {
+test('DSH OwnerDocument cloud bridge delegates cloud-to-local to preview and persists local-to-cloud readiness', async t => {
   const root = mkdtempSync(join(tmpdir(), 'piggy-dsh-owner-cloud-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
   const ownerDocumentPath = join(root, 'owner-document.json')
@@ -156,10 +156,12 @@ test('DSH OwnerDocument cloud bridge performs only explicit local-to-cloud first
     async configureCloudSave(value) { calls.push(['configure', value.syncReady, value.cloudBaseHead]); return { ok: true } },
     async ownerCloudHistory() { return { ok: true, commits: [] } },
   }
-  const cloud = createDshOwnerCloudBridge({ readyDirectory: root, ownerId: 'owner-cloud', config: settings })
+  const cloud = createDshOwnerCloudBridge({ readyDirectory: root, ownerId: 'owner-cloud', config: settings,
+    restore: async () => ({ ok: true, token: 'restore-preview' }) })
   assert.equal(cloud.runtimeConfig().syncReady, false)
-  const refused = await cloud.firstSync(runtime, 'cloud-to-local')
-  assert.equal(refused.ok, false, 'DSH does not overwrite or silently switch to a remote owner')
+  assert.deepEqual(await cloud.firstSync(runtime, 'cloud-to-local'), { ok: true, token: 'restore-preview' },
+    'cloud-to-local delegates to the validated copy-and-switch preview instead of refusing')
+  assert.deepEqual(calls, [], 'cloud-to-local never writes a readiness marker or first-syncs in the other direction')
   const synced = await cloud.firstSync(runtime, 'local-to-cloud')
   assert.equal(synced.ok, true)
   assert.deepEqual(calls, [['first', 'local-to-cloud'], ['configure', true, 'a'.repeat(40)]])

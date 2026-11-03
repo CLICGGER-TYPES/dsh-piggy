@@ -30,8 +30,8 @@
 
 - DSH 的显式 OwnerDocument opt-in 新增仅限 loopback 的 `/dsh-piggy/owner/*` 控制路由。路由按每次请求创建并处置 pig session；可列出/新增同一 OwnerDocument 的猪，并对明确 `pigId` 查询状态、执行现有命令/动作，不设置进程级 active pig。默认 v15 DSH 入口及原命令/路由不变；这不是多猪 UI，也不是多 owner 合并。
 - DSH owner 网络保持默认关闭，需显式插件配置 `ownerNetwork.enabled=true` 后再由 loopback POST 启动。邀请仍由既有一次性配对协议发放，绑定同一 OwnerDocument 中的单只猪。TLS 证书/密钥从 owner 文档旁私有 `.network` 目录读取；只有证书密钥有效时才允许绑定一个具体公网 IPv4，拒绝通配地址。证书与握手只在 127.0.0.1 测试，没有部署或实际监听公网。
-- DSH `ownerCloud` 默认关闭；显式 `local-to-cloud` 首次同步复用完整 OwnerDocument ZIP、既有 Git 队列和远端 CAS 基线。本机 readiness marker 放在 DSH_HOME 并按 owner/remote/branch 匹配。当前 DSH 适配拒绝 `cloud-to-local`，因为还没有安全的副本导入与切换入口；桌面端既有 owner 完整档导入仍保留。
-- 定向本机 Node 覆盖 DSH 多目标请求会话、owner 共享金币/独立猪名、loopback HTTPS 配对以及云 readiness 重开；只在本机临时 owner 档和 TLS 测试证书上运行，不是 DSH 实机/跨设备 UI 或公网验收。仍未实现：DSH 云端恢复副本切换、外部设备的信任配置 UI、不同 owner 各带一猪进入同一世界、公网部署/房间与多猪并行展示。
+- DSH `ownerCloud` 默认关闭；显式 `local-to-cloud` 首次同步复用完整 OwnerDocument ZIP、既有 Git 队列和远端 CAS 基线。本机 readiness marker 放在 DSH_HOME 并按 owner/remote/branch 匹配。`cloud-to-local` 已接安全恢复路径：远端完整档先预览，确认后由既有导入事务在 DSH_HOME 的独立根建立副本，选择记录 pending/active，只有副本回读并成功打开才切换；失败回退原选择并保留新副本。桌面端既有 owner 完整档导入仍保留。
+- 定向本机 Node 覆盖 DSH 多目标请求会话、owner 共享金币/独立猪名、loopback HTTPS 配对、云 readiness 重开以及云端恢复副本的导入/切换/回滚；只在本机临时 owner 档和 TLS 测试证书上运行，不是 DSH 实机/跨设备 UI 或公网验收。仍未实现：DSH 云设置与恢复 UI、外部设备的信任配置 UI、不同 owner 各带一猪进入同一世界、公网部署/房间与多猪并行展示。
 
 ## 2026-11-03 M2 OwnerFlow（显式 opt-in 隔离候选，未合并/未做 UI 验收）
 

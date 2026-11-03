@@ -117,7 +117,7 @@
 
 带 `OWNER_CLOUD_RUNTIME_API_VERSION` 的游戏包通过 `cloudSave.firstSync(direction)` 提供显式首次同步服务；普通云设置仍默认关闭，配置保存本身不会启用同步。`local-to-cloud` 仅允许向所选的空远端分支首次发布完整 owner ZIP；同一内容可幂等确认，远端身份不符或已有不同历史会拒绝，不使用旧 flat `state.json` ZIP覆盖历史。`cloud-to-local` 只读取并验证远端完整档，交给现有完整档预览和“导入副本并切换”事务，绝不覆盖当前 owner 文件。用户确认导入后，本机 `owner-cloud-ready.json` 绑定 owner 与远端/分支；重启时只有身份和配置均匹配才启用现有 Git 队列的定时完整档推送与历史读取。
 
-owner cloud first-sync 与历史读取仍注册给面板 IPC。OwnerDocument 模式下旧 flat `/dsh-piggy/cloud/*` 路由继续拒绝；v15 cloud backend 仍是独立路径。DSHLANPUBLIC01 候选另外给显式 DSH OwnerDocument opt-in 接入 `config.ownerCloud`：默认关闭，只允许选择 `local-to-cloud` 首次同步，复用完整 owner ZIP、Git queue 和 CAS base；readiness marker 存于 DSH_HOME 并按 owner/remote/branch 匹配。DSH 暂拒绝 `cloud-to-local`，因为尚无安全的副本导入/切换入口。此候选没有 DSH 云设置 UI，也没有真实 DSH 运行验收。
+owner cloud first-sync 与历史读取仍注册给面板 IPC。OwnerDocument 模式下旧 flat `/dsh-piggy/cloud/*` 路由继续拒绝；v15 cloud backend 仍是独立路径。DSH 显式 OwnerDocument opt-in 接入 `config.ownerCloud`：默认关闭，`local-to-cloud` 首次同步复用完整 owner ZIP、Git queue 和 CAS base；readiness marker 存于 DSH_HOME 并按 owner/remote/branch 匹配。`cloud-to-local` 读取并验证远端完整档后返回预览 token，用户确认 `POST /dsh-piggy/owner/cloud/restore` 才经现有导入事务在 DSH_HOME 的独立 `owner-archives/` 根建立新副本；选择记录使用 pending/active，只有新副本回读并成功打开后才切换，失败回退原选择并保留新副本。选择文件损坏或活动副本丢失时启动失败关闭，不退回空档、不覆盖旧档。此候选没有 DSH 云设置/恢复 UI，也没有真实 DSH 运行验收。
 
 ### OwnerDocument 私有 LAN 会话候选
 

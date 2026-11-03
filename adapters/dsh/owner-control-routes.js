@@ -49,7 +49,7 @@ function responseBody(result) {
   try { return JSON.parse(String(result.body)) } catch { return { ok: false, reason: 'owner-runtime-response-invalid' } }
 }
 
-/** @param {any} webServer @param {{getRuntime:()=>any,getNetwork:()=>any,getCloud:()=>any}} deps */
+/** @param {any} webServer @param {{getRuntime:()=>any,getNetwork:()=>any,getCloud:()=>any,getRestore:()=>any,getSelection:()=>any}} deps */
 export function registerDshOwnerControlRoutes(webServer, deps) {
   return webServer.register({ kind: 'prefix', path: OWNER_PREFIX, handler: async (req, res) => {
     if (!isLoopback(req.socket?.remoteAddress) || !sameOrigin(req)) return sendJson(res, 403, { ok: false, reason: 'loopback-only' })
@@ -122,10 +122,26 @@ export function registerDshOwnerControlRoutes(webServer, deps) {
         const result = await deps.getCloud().firstSync(deps.getRuntime(), body.direction)
         return sendJson(res, result?.ok === true ? 200 : 409, result)
       }
+      if (path === '/cloud/restore' && req.method === 'POST') {
+        const body = await readBody(req)
+        if (body === null) return sendJson(res, 400, { ok: false, reason: 'restore-selection-invalid' })
+        const allowed = Object.keys(body).every(key => ['acceptWarnings', 'pigId', 'token'].includes(key))
+        if (!allowed || typeof body.token !== 'string' || body.token === '' || body.token.length > 128 ||
+            (body.acceptWarnings !== undefined && typeof body.acceptWarnings !== 'boolean') ||
+            (body.pigId !== undefined && (typeof body.pigId !== 'string' || !PIG_ID.test(body.pigId)))) {
+          return sendJson(res, 400, { ok: false, reason: 'restore-selection-invalid' })
+        }
+        const result = await deps.getRestore().import(body.token, {
+          acceptWarnings: body.acceptWarnings === true,
+          ...(body.pigId === undefined ? {} : { pigId: body.pigId }),
+        })
+        return sendJson(res, result?.ok === true ? 200 : 409, result)
+      }
       if (path === '/cloud/history' && req.method === 'GET') {
         const result = await deps.getCloud().history(deps.getRuntime())
         return sendJson(res, result?.ok === true ? 200 : 409, result)
       }
+      if (path === '/selection' && req.method === 'GET') return sendJson(res, 200, { ok: true, ...deps.getSelection() })
       return sendJson(res, 404, { ok: false, reason: 'not-found' })
     } catch (error) {
       const reason = safeReason(error)

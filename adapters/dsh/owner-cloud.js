@@ -7,29 +7,79 @@ import { secureDirectory } from '../../runtime/work-directory.js'
 import { DEFAULT_CLOUD_SETTINGS, normalizeCloudSaveSettings } from '../../runtime/cloud-save-settings.js'
 
 const READY_VERSION = 1
+const READY_FILE = 'owner-cloud-ready.json'
 const HEAD = /^[a-f0-9]{40,64}$/iu
 
+/** @param {any} config */
+function settingsOf(config) {
+  return normalizeCloudSaveSettings(config ?? { ...DEFAULT_CLOUD_SETTINGS })
+}
+
+/** @param {any} config */
 function configDigest(config) {
   return createHash('sha256').update(JSON.stringify([config.provider, config.remote, config.branch])).digest('hex')
 }
 
-/** @param {{readyDirectory:string,ownerId:string|null,config:any}} options */
-export function createDshOwnerCloudBridge({ readyDirectory, ownerId, config }) {
-  const settings = normalizeCloudSaveSettings(config ?? { ...DEFAULT_CLOUD_SETTINGS })
-  const readyPath = join(readyDirectory, 'owner-cloud-ready.json')
+/** Stable identity of the cloud connection a readiness record belongs to. @param {any} config */
+export function ownerCloudConfigDigest(config) {
+  return configDigest(settingsOf(config))
+}
+
+/** @param {unknown} value @returns {value is {version:1,ownerId:string,configDigest:string,baseHead:string|null}} */
+function isReadyRecord(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const record = /** @type {Record<string, unknown>} */ (value)
+  return Object.keys(record).sort().join(',') === 'baseHead,configDigest,ownerId,version' &&
+    record.version === READY_VERSION && typeof record.ownerId === 'string' &&
+    typeof record.configDigest === 'string' && /^[a-f0-9]{64}$/iu.test(record.configDigest) &&
+    (record.baseHead === null || (typeof record.baseHead === 'string' && HEAD.test(record.baseHead)))
+}
+
+/** Write the device-local readiness record for one exact owner/archive root.
+ * @param {{readyDirectory:string,ownerId:string,config:any,baseHead:string|null}} input
+ * @returns {Promise<{version:1,ownerId:string,configDigest:string,baseHead:string|null}>} */
+export async function writeOwnerCloudReady({ readyDirectory, ownerId, config, baseHead }) {
+  if (typeof ownerId !== 'string' || ownerId === '') throw new TypeError('owner cloud readiness needs an ownerId')
+  if (!(baseHead === null || (typeof baseHead === 'string' && HEAD.test(baseHead)))) {
+    throw new TypeError('owner cloud readiness needs a verified remote head')
+  }
+  const settings = settingsOf(config)
+  /** @type {{version:1,ownerId:string,configDigest:string,baseHead:string|null}} */
+  const record = { version: READY_VERSION, ownerId, configDigest: configDigest(settings), baseHead }
+  await secureDirectory(readyDirectory)
+  writeWorkJson(join(readyDirectory, READY_FILE), record)
+  return record
+}
+
+/** Clear only this owner/connection's readiness record; other records are evidence and stay. */
+export function clearOwnerCloudReady({ readyDirectory, ownerId, config }) {
+  const path = join(readyDirectory, READY_FILE)
+  let current
+  try { current = readWorkJson(path) } catch { return false }
+  if (!isReadyRecord(current) || current.ownerId !== ownerId ||
+      current.configDigest !== configDigest(settingsOf(config))) return false
+  removeWorkFile(path)
+  return true
+}
+
+/**
+ * @param {{readyDirectory:string,ownerId:string|null,config:any,restore?:(runtime:any)=>Promise<any>}} options
+ */
+export function createDshOwnerCloudBridge({ readyDirectory, ownerId, config, restore = null }) {
+  const settings = settingsOf(config)
+  const readyPath = join(readyDirectory, READY_FILE)
   let markerError = null
+  /** @type {{version:1,ownerId:string,configDigest:string,baseHead:string|null}|null} */
   let marker = null
   try {
     marker = readWorkJson(readyPath)
-    if (marker !== null && (Object.keys(marker).sort().join(',') !== 'baseHead,configDigest,ownerId,version' ||
-        marker.version !== READY_VERSION || typeof marker.ownerId !== 'string' ||
-        typeof marker.configDigest !== 'string' || !/^[a-f0-9]{64}$/iu.test(marker.configDigest) ||
-        !(marker.baseHead === null || (typeof marker.baseHead === 'string' && HEAD.test(marker.baseHead))))) {
+    if (marker !== null && !isReadyRecord(marker)) {
       markerError = 'DSH OwnerDocument cloud readiness record is invalid; evidence was kept'
       marker = null
     }
   } catch {
     markerError = 'DSH OwnerDocument cloud readiness record cannot be read; evidence was kept'
+    marker = null
   }
 
   function matches(actualOwnerId = ownerId) {
@@ -48,8 +98,13 @@ export function createDshOwnerCloudBridge({ readyDirectory, ownerId, config }) {
   }
 
   async function firstSync(runtime, direction) {
+    if (direction === 'cloud-to-local') {
+      if (!settings.enabled || settings.remote === '') return { ok: false, reason: 'Configure and enable ownerCloud in the DSH plugin settings first' }
+      if (typeof restore !== 'function') return { ok: false, reason: 'Owner cloud restore is not available in this DSH runtime' }
+      try { return await restore(runtime) } catch { return { ok: false, reason: 'Owner cloud restore could not validate the remote archive' } }
+    }
     if (direction !== 'local-to-cloud') {
-      return { ok: false, reason: 'DSH currently supports first sync from this local owner to an empty cloud branch; cloud restore needs copy-and-switch support' }
+      return { ok: false, reason: 'First sync direction is required' }
     }
     if (!settings.enabled || settings.remote === '') return { ok: false, reason: 'Configure and enable ownerCloud in the DSH plugin settings first' }
     if (markerError !== null) return { ok: false, reason: markerError }
@@ -59,22 +114,19 @@ export function createDshOwnerCloudBridge({ readyDirectory, ownerId, config }) {
     try { result = await runtime.firstSyncCloud('local-to-cloud') }
     catch { return { ok: false, reason: 'Owner cloud first sync failed' } }
     if (result?.ok !== true || typeof result.remoteHead !== 'string' || !HEAD.test(result.remoteHead)) return result?.ok === false ? result : { ok: false, reason: 'Owner cloud did not return a verified remote head' }
-    const next = { version: READY_VERSION, ownerId: actualOwnerId, configDigest: configDigest(settings), baseHead: result.remoteHead }
     try {
-      await secureDirectory(readyDirectory)
-      writeWorkJson(readyPath, next)
-      marker = next
+      marker = await writeOwnerCloudReady({ readyDirectory, ownerId: actualOwnerId, config: settings, baseHead: result.remoteHead })
       const applied = await runtime.configureCloudSave({ ...settings, syncReady: true, cloudBaseHead: result.remoteHead })
       if (applied?.ok !== true) {
         marker = null
-        removeWorkFile(readyPath)
+        clearOwnerCloudReady({ readyDirectory, ownerId: actualOwnerId, config: settings })
         return { ok: false, reason: 'Remote first sync succeeded, but local automatic sync could not be activated' }
       }
       return { ok: true, direction, created: result.created === true, alreadyCurrent: result.alreadyCurrent === true,
         automaticPushEnabled: true }
     } catch {
       marker = null
-      try { removeWorkFile(readyPath) } catch { /* keep corrupt/read-only evidence; no secret is stored */ }
+      try { clearOwnerCloudReady({ readyDirectory, ownerId: actualOwnerId, config: settings }) } catch { /* keep evidence; no secret is stored */ }
       return { ok: false, reason: 'Remote first sync succeeded, but local readiness could not be saved' }
     }
   }
