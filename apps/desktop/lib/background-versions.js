@@ -169,8 +169,11 @@ export async function startBackgroundVersions(options) {
   try { await ready } catch (error) { await close(); throw error }
   return {
     activeDir: () => request('activeDir'),
+    beginStartupCheck: () => request('beginStartupCheck'),
+    confirmStartup: token => request('confirmStartup', [token]),
     needsGame: () => request('needsGame'),
     current: () => request('current'),
+    failStartup: token => request('failStartup', [token]),
     saveVersion: () => request('saveVersion'),
     list: (settings = {}) => request('list', [settings]),
     rollback: () => request('rollback'),
@@ -181,7 +184,7 @@ export async function startBackgroundVersions(options) {
     cancelPreparation,
     async installPinned(pin, onProgress = undefined) {
       const prepared = await prepare('preparePinned', pin, onProgress)
-      try { return await request('commitInstall', [prepared]) }
+      try { return await request('commitInstall', [prepared, { startupCheck: false }]) }
       finally { await discardPrepared(prepared) }
     },
     close,

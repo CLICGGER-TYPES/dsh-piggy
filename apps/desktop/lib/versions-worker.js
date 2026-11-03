@@ -20,7 +20,7 @@ function download(url, headers, destination, onBytes) {
 
 try {
   const versions = createVersions({ ...workerData, download, now: () => clock ?? Date.now() })
-  const methods = new Set(['activeDir', 'needsGame', 'current', 'saveVersion', 'list', 'rollback', 'readPin', 'prepareInstall', 'preparePinned', 'commitInstall', 'discardPrepared', 'cancelPreparation'])
+  const methods = new Set(['activeDir', 'beginStartupCheck', 'confirmStartup', 'needsGame', 'current', 'failStartup', 'saveVersion', 'list', 'rollback', 'readPin', 'prepareInstall', 'preparePinned', 'commitInstall', 'discardPrepared', 'cancelPreparation'])
   parentPort.on('message', async message => {
     if (message.kind === 'download-result') {
       clock = message.now

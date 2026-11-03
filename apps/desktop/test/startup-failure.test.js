@@ -18,6 +18,13 @@ test('startup failure is visible in a dialog that points at the log', () => {
   assert.match(options.detail, /0\.6\.7/)
 })
 
+test('a failed update names the recovered version before relaunch', () => {
+  const options = startupFailureDialog({ error: new Error('host start failed'), logPath: '/tmp/piggy.log', version: '0.6.8', platform: 'linux', recoveredVersion: '0.37.0' })
+  assert.match(options.title, /恢复旧版本/)
+  assert.match(options.message, /已恢复到 0\.37\.0/)
+  assert.match(options.message, /重新启动/)
+})
+
 test('the reporter keeps the log line and shows the same failure once', async () => {
   const logs = []
   const opened = []
@@ -51,14 +58,17 @@ test('a dialog that cannot open still leaves a log line', async () => {
   assert.ok(logs.some(line => line.startsWith('startup failure dialog failed ')))
 })
 
-test('main.js reports startup failures visibly and logs page-load failures', () => {
+test('main.js routes startup, page-load and pre-visible renderer failures through update recovery', () => {
   const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
   const petWindow = readFileSync(new URL('../lib/pet-window.js', import.meta.url), 'utf8')
-  assert.match(source, /\.catch\(async error => \{[\s\S]{0,300}?reportStartupFailure\(\{ dialog, log, error,/)
+  assert.match(source, /async function handleStartupFailure\(error\)[\s\S]{0,900}versions\.failStartup\(token\)/)
+  assert.match(source, /\.catch\(handleStartupFailure\)/)
   assert.ok(!/\.catch\(error => \{ log\('startup failed', String\(error\)\); app\.quit\(\) \}\)/.test(source),
     'the old silent log-and-quit path must be gone')
   assert.match(petWindow, /webContents\.on\('did-fail-load'/, 'the window owner must forward page-load failure events')
-  assert.match(source, /onDidFailLoad:[\s\S]{0,900}reportStartupFailure/, 'a page that never loads must be visible, not just logged')
+  assert.match(source, /onDidFailLoad:[\s\S]{0,500}handleStartupFailure/, 'a page that never loads must enter the same recovery path')
+  assert.match(source, /await handleStartupFailure\(new Error\(pageCrashReason\(details\)\)\)/, 'a pre-visible renderer crash must enter the same recovery path')
+  assert.match(source, /startupSetupComplete = true[\s\S]{0,240}confirmUpdateStartupIfReady\(\)/)
 })
 
 test('fatal log finishes before the modal dialog opens', async () => {

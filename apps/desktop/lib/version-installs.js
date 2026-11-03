@@ -10,7 +10,7 @@ import { readGameSchema } from './version-schema.js'
 /**
  * @param {{ root: string, temporaryDir?: string,
  *   download: (url: string, headers: Record<string, string>, destination: string, onBytes?: (bytes: number) => void, signal?: AbortSignal) => Promise<{ ok: boolean, status: number }>,
- *   activate: (version: string) => void, installed: (version: string) => boolean, gameVersion: (directory: string) => string,
+ *   activate: (version: string, options?: {startupCheck?: boolean}) => void, installed: (version: string) => boolean, gameVersion: (directory: string) => string,
  *   saveVersion: () => number, recordSchema: (version: string, schema: number) => void }} options
  */
 export function createVersionInstalls(options) {
@@ -81,7 +81,7 @@ export function createVersionInstalls(options) {
     return state.task
   }
 
-  function commitInstall(prepared) {
+  function commitInstall(prepared, { startupCheck = true } = {}) {
     const entry = preparedInstalls.get(prepared.id)
     if (!entry || entry.version !== prepared.version || entry.generation !== generation) throw new Error('准备好的游戏版本已失效，请重新下载')
     if (entry.stateVersion < options.saveVersion()) throw new Error('存档太新，这个版本读不了，没换')
@@ -94,7 +94,7 @@ export function createVersionInstalls(options) {
     }
     rmSync(entry.directory, { recursive: true, force: true })
     options.recordSchema(entry.version, entry.stateVersion)
-    options.activate(entry.version)
+    options.activate(entry.version, { startupCheck })
     preparedInstalls.delete(prepared.id)
     return { ok: true, version: entry.version }
   }
@@ -119,8 +119,8 @@ export function createVersionInstalls(options) {
     return cancelling
   }
 
-  async function finishInstall(prepared) {
-    try { return commitInstall(prepared) }
+  async function finishInstall(prepared, options = {}) {
+    try { return commitInstall(prepared, options) }
     finally { await discardPrepared(prepared) }
   }
 
@@ -139,7 +139,7 @@ export function createVersionInstalls(options) {
 
   /** @param {{ version: string, manifest: any, urls: string[] }} pin @param {(fraction: number) => void} [onProgress] */
   async function installPinned(pin, onProgress = () => {}) {
-    return finishInstall(await preparePinned(pin, onProgress))
+    return finishInstall(await preparePinned(pin, onProgress), { startupCheck: false })
   }
 
   return { prepareInstall, preparePinned, commitInstall, discardPrepared, cancelPreparation, install, installPinned }

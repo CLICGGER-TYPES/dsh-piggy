@@ -188,6 +188,11 @@ const desktopRuntime = createDesktopRuntime({
   startHostWorker: startBackgroundHost,
   startVersionsWorker: startBackgroundVersions,
 })
+let startupUpdateToken = null
+let startupSetupComplete = false
+let startupRendererLoaded = false
+let startupWindowWasVisible = false
+let startupFailureHandling = false
 /** 外部连接开关（设置 → 外部连接）。 */
 let externalManager = null
 /** @type {ReturnType<typeof createShellUpdates> | null} */
@@ -502,6 +507,44 @@ function showPigWindow() {
   if (getPetWindow() === null || getPetWindow().isDestroyed() || getPetWindow().isVisible()) return
   getPetWindow().showInactive()
   log('shown', JSON.stringify(getPetWindow().getBounds()), getPetWindow().isVisible())
+  startupWindowWasVisible = getPetWindow().isVisible()
+  confirmUpdateStartupIfReady()
+}
+
+function confirmUpdateStartupIfReady() {
+  if (startupUpdateToken === null || !startupSetupComplete || !startupRendererLoaded || !startupWindowWasVisible) return
+  const token = startupUpdateToken
+  startupUpdateToken = null
+  const versions = desktopRuntime.getVersions()
+  if (versions === null) return
+  void versions.confirmStartup(token).then(result => {
+    log('game update startup healthy', JSON.stringify({ confirmed: result.ok === true, version: result.version ?? null }))
+  }).catch(() => { log('game update startup health confirmation failed') })
+}
+
+async function handleStartupFailure(error) {
+  if (startupFailureHandling) return
+  startupFailureHandling = true
+  let recoveredVersion = null
+  const token = startupUpdateToken
+  if (token !== null) {
+    const versions = desktopRuntime.getVersions()
+    if (versions !== null) {
+      try {
+        const result = await versions.failStartup(token)
+        if (result.ok === true) recoveredVersion = result.version
+        await log('game update startup recovery', JSON.stringify({ recovered: result.ok === true, version: result.version ?? null, reason: result.reason ?? null }))
+      } catch {
+        await log('game update startup recovery failed')
+      }
+    }
+    startupUpdateToken = null
+  }
+  let logPath = 'piggy.log'
+  try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
+  await reportStartupFailure({ dialog, log, error, logPath, version: app.getVersion(), platform: process.platform, recoveredVersion })
+  if (recoveredVersion !== null) relaunch()
+  app.quit()
 }
 
 async function createWindow(override = null) {
@@ -572,22 +615,17 @@ async function createWindow(override = null) {
       }, SHOW_FALLBACK_MS).unref?.()
     },
     onDidFinishLoad: () => {
+      startupRendererLoaded = true
       const gate = showGate === null ? null : showGate.status()
       log('page loaded', JSON.stringify({ gate }))
       if (gate?.pending === true) log('page loaded before show gate opened', JSON.stringify({ waiting: gate.waiting }))
+      confirmUpdateStartupIfReady()
     },
     onDidFailLoad: async (window, event, errorCode, errorDescription, validatedURL, isMainFrame) => {
       log('page failed', JSON.stringify({ errorCode, errorDescription, url: validatedURL, mainFrame: isMainFrame }))
       if (isMainFrame !== true || desktopLifecycle.quitting || startupPageFailureReported || window.isDestroyed() || window.isVisible() || showGate?.pending !== true) return
       startupPageFailureReported = true
-      let logPath = 'piggy.log'
-      try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
-      await reportStartupFailure({
-        dialog, log,
-        error: new Error(`游戏页面加载失败：${errorDescription}（${errorCode}）`),
-        logPath, version: app.getVersion(), platform: process.platform,
-      })
-      app.quit()
+      await handleStartupFailure(new Error(`游戏页面加载失败：${errorDescription}（${errorCode}）`))
     },
     onRendererGone: (window, event, details) => {
       stopDrag()
@@ -608,10 +646,7 @@ async function createWindow(override = null) {
   async function reportStartupCrash(window, details, gate) {
     if (desktopLifecycle.quitting || startupPageFailureReported || window.isDestroyed() || window.isVisible() || gate?.pending !== true) return
     startupPageFailureReported = true
-    let logPath = 'piggy.log'
-    try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
-    await reportStartupFailure({ dialog, log, error: new Error(pageCrashReason(details)), logPath, version: app.getVersion(), platform: process.platform })
-    app.quit()
+    await handleStartupFailure(new Error(pageCrashReason(details)))
   }
 }
 
@@ -1581,6 +1616,15 @@ app.whenReady().then(async () => {
     fetch: /** @type {any} */ (net.fetch.bind(net)),
   })
   if (desktopLifecycle.quitting) { await desktopRuntime.getVersions().close(); return }
+  const startupCheck = await desktopRuntime.getVersions().beginStartupCheck()
+  if (startupCheck.status === 'attempting') {
+    startupUpdateToken = startupCheck.token
+    log('game update startup check began', JSON.stringify({ version: startupCheck.version }))
+  } else if (startupCheck.status === 'recovered') {
+    log('interrupted game update startup recovered', JSON.stringify({ version: startupCheck.version }))
+  } else if (startupCheck.status === 'recovery-unavailable') {
+    log('interrupted game update recovery unavailable', startupCheck.reason)
+  }
   // Gitee 的 Windows 安装包不带游戏：第一次先下载（first-run.js）。
   let firstRun = null
   if (await desktopRuntime.getVersions().needsGame()) {
@@ -1670,12 +1714,10 @@ app.whenReady().then(async () => {
   displayWatchTimer.unref?.()
   getPetWindow().webContents.on('did-finish-load', () => pushGeometry())
   pushGeometry()
-}).catch(async error => {
-  let logPath = 'piggy.log'
-  try { logPath = join(app.getPath('userData'), 'piggy.log') } catch { /* 连 userData 都读不到时至少弹框 */ }
-  await reportStartupFailure({ dialog, log, error, logPath, version: app.getVersion(), platform: process.platform })
-  app.quit()
-})
+  startupSetupComplete = true
+  if (getPetWindow() !== null && !getPetWindow().isDestroyed()) startupWindowWasVisible = startupWindowWasVisible || getPetWindow().isVisible()
+  confirmUpdateStartupIfReady()
+}).catch(handleStartupFailure)
 
 /**
  * Testing: run a list of steps against the page and photograph it (with its

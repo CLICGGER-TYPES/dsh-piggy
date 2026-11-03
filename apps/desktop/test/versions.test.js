@@ -96,6 +96,8 @@ test('installing checks the download, switches to it, and rollback goes back', a
 
     assert.deepEqual(versions.rollback(), { ok: true, version: '0.24.0' })
     assert.equal(versions.activeDir(), bundled)
+    assert.equal(Object.hasOwn(JSON.parse(readFileSync(join(dir, 'versions', 'active.json'), 'utf8')), 'startupPending'), false,
+      '人工回退不进入自动更新的启动检查')
     // And forward again: the downloaded one is still there.
     assert.equal(versions.rollback().ok, true)
     assert.equal(versions.activeDir(), join(dir, 'versions', manifest.version))
@@ -187,6 +189,8 @@ test('an installer without a game downloads the pinned one first and keeps it ac
     assert.deepEqual(await first.installPinned(pin), { ok: true, version: manifest.version })
     assert.equal(first.needsGame(), false)
     assert.equal(first.current().previousIsBundled, false)
+    assert.equal(Object.hasOwn(JSON.parse(readFileSync(join(dir, 'versions', 'active.json'), 'utf8')), 'startupPending'), false,
+      '首次启动安装配套游戏不被当成需要重启的热更新')
     assert.equal(first.rollback().ok, false, 'there is no bundled game to go back to')
 
     // The shell updates itself: with no bundled game to fall back on, keep using the downloaded one.
