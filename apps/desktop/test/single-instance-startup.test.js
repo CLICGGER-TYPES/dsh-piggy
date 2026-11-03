@@ -12,6 +12,7 @@ import { createContext, runInContext } from 'node:vm'
 import { startBackgroundVersions } from '../lib/background-versions.js'
 import { createDesktopRuntime } from '../lib/desktop-runtime.js'
 import { createOwnerArchiveSelectionStore } from '../lib/owner-archive-selection.js'
+import { createOwnerCloudReadyStore } from '../lib/owner-cloud-ready.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
@@ -28,6 +29,7 @@ async function runStartup(userData, hasLock) {
     reportStartupFailure: async ({ error }) => { messages.push(['startup failed', error?.message]) },
     configureDesktopData: () => ({ userData, statePath: join(userData, 'state.json') }),
     createCloudSaveConfigStore: () => ({ load: () => ({ ok: false }) }),
+    createOwnerCloudReadyStore,
     createOwnerArchiveSelectionStore,
     migrateDesktopData() { calls.push('migration') },
     process: { platform: 'win32', env: { PIGGY_USERDATA: userData }, argv: [] },
