@@ -24,6 +24,7 @@ async function runStartup(userData, hasLock) {
     needsX11: false, quitting: false, join, resolve,
     taskOwnerDocumentConfig: null, ownerDocumentConfig: null, ownerArchiveSwitchPending: false,
     ownerArchiveRuntimeSupported: false, activeGameDirectory: null,
+    handleStartupFailure: async error => { messages.push(['startup failed', error?.message]) },
     reportStartupFailure: async ({ error }) => { messages.push(['startup failed', error?.message]) },
     configureDesktopData: () => ({ userData, statePath: join(userData, 'state.json') }),
     createCloudSaveConfigStore: () => ({ load: () => ({ ok: false }) }),

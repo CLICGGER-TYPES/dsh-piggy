@@ -115,6 +115,75 @@ test('传输中取消会终止响应流，等待清理后仍能再次准备和�
   assert.equal(await readFile(join(await versions.activeDir(), 'client.js'), 'utf8'), files['client.js'])
 })
 
+test('更新启动健康点清除待检标记，正常运行版本不会自动回退', { timeout: 10_000 }, async t => {
+  const { versions, root } = await setup(t)
+  const prepared = await versions.prepareInstall(release)
+  assert.deepEqual(await versions.commitInstall(prepared), { ok: true, version: release.version })
+  const check = await versions.beginStartupCheck()
+  assert.equal(check.status, 'attempting')
+  assert.equal(check.version, release.version)
+  assert.equal(typeof check.token, 'string')
+  assert.deepEqual(await versions.confirmStartup(check.token), { ok: true, version: release.version })
+  assert.equal(Object.hasOwn(JSON.parse(await readFile(join(root, 'active.json'), 'utf8')), 'startupPending'), false)
+  assert.equal((await versions.current()).version, release.version)
+})
+
+test('进程在更新启动健康点前退出时，下次启动只回退一次且不改存档', { timeout: 10_000 }, async t => {
+  const fixture = await setup(t)
+  const { versions: first, dir, bundledDir, statePath, root } = fixture
+  const beforeSave = await readFile(statePath)
+  const prepared = await first.prepareInstall(release)
+  await first.commitInstall(prepared)
+  const attempt = await first.beginStartupCheck()
+  assert.equal(attempt.status, 'attempting')
+  await first.close()
+
+  const restarted = await startBackgroundVersions({ userData: dir, bundledDir, statePath, shellVersion: '0.6.6', fetch: async () => new Response(pack) })
+  t.after(() => restarted.close())
+  assert.deepEqual(await restarted.beginStartupCheck(), { status: 'recovered', version: '0.37.0' })
+  assert.equal(await restarted.activeDir(), bundledDir)
+  assert.deepEqual(await readFile(statePath), beforeSave)
+  assert.equal((await restarted.beginStartupCheck()).status, 'none', 'recovery clears the one-shot marker')
+  assert.equal((await restarted.current()).previous, release.version, 'the manually selectable version history is retained')
+})
+
+test('上一版本不兼容时保留新激活记录与存档，并清掉自动重启标记', { timeout: 10_000 }, async t => {
+  const { versions, root, statePath } = await setup(t)
+  await writeFile(statePath, JSON.stringify({ version: 13 }))
+  const prepared = await versions.prepareInstall(release)
+  await versions.commitInstall(prepared)
+  const attempt = await versions.beginStartupCheck()
+  assert.equal(attempt.status, 'attempting')
+  const failed = await versions.failStartup(attempt.token)
+  assert.equal(failed.ok, false)
+  assert.match(failed.reason, /只支持存档 12/)
+  assert.equal((await versions.current()).version, release.version)
+  assert.equal(Object.hasOwn(JSON.parse(await readFile(join(root, 'active.json'), 'utf8')), 'startupPending'), false)
+  assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), { version: 13 })
+  assert.equal((await versions.beginStartupCheck()).status, 'none')
+})
+
+test('没有可用上一版本时只清除待检标记，不改新版本或存档', { timeout: 10_000 }, async t => {
+  const fixture = await setup(t)
+  const { versions: initial, dir, bundledDir, statePath, root } = fixture
+  await initial.close()
+  await rm(join(bundledDir, 'package.json'), { force: true })
+  const versions = await startBackgroundVersions({ userData: dir, bundledDir, statePath, shellVersion: '0.6.6', fetch: async () => new Response(pack) })
+  t.after(() => versions.close())
+  const beforeSave = await readFile(statePath)
+  const prepared = await versions.prepareInstall(release)
+  await versions.commitInstall(prepared)
+  const attempt = await versions.beginStartupCheck()
+  assert.equal(attempt.status, 'attempting')
+  const failed = await versions.failStartup(attempt.token)
+  assert.equal(failed.ok, false)
+  assert.match(failed.reason, /没有可用的上一版本/)
+  assert.equal((await versions.current()).version, release.version)
+  assert.deepEqual(await readFile(statePath), beforeSave)
+  assert.equal(Object.hasOwn(JSON.parse(await readFile(join(root, 'active.json'), 'utf8')), 'startupPending'), false)
+  assert.equal((await versions.beginStartupCheck()).status, 'none')
+})
+
 test('立即取消会拒绝迟到的下载请求，不关闭版本服务', { timeout: 10_000 }, async t => {
   let requests = 0
   const { versions, root, bundledDir } = await setup(t, async () => {

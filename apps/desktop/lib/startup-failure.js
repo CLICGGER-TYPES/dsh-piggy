@@ -26,13 +26,14 @@ export function pageCrashReason(details) {
 }
 
 /**
- * @param {{ error: unknown, logPath: string, version: string, platform: string }} options
+ * @param {{ error: unknown, logPath: string, version: string, platform: string, recoveredVersion?: string|null }} options
  */
-export function startupFailureDialog({ error, logPath, version, platform }) {
+export function startupFailureDialog({ error, logPath, version, platform, recoveredVersion = null }) {
   return {
     type: 'error',
-    title: 'dsh-piggy 没能启动',
-    message: '启动时出错了，猪没能出来。',
+    title: recoveredVersion === null ? 'dsh-piggy 没能启动' : 'dsh-piggy 正在恢复旧版本',
+    message: recoveredVersion === null ? '启动时出错了，猪没能出来。'
+      : `更新后的游戏版本没能启动，已恢复到 ${recoveredVersion}，关闭提示后会重新启动。`,
     detail: `${reasonOf(error)}\n\n日志：${logPath}\n版本：${version} · ${platform}`,
     buttons: ['关闭'],
     noLink: true,
@@ -42,12 +43,12 @@ export function startupFailureDialog({ error, logPath, version, platform }) {
 /**
  * 写日志并弹框。弹框本身失败（无显示器等）时只记日志，不让诊断把退出流程卡死。
  * @param {{ dialog: { showMessageBoxSync: (options: any) => any }, log: (...parts: any[]) => void,
- *   error: unknown, logPath: string, version: string, platform: string }} options
+ *   error: unknown, logPath: string, version: string, platform: string, recoveredVersion?: string|null }} options
  */
-export async function reportStartupFailure({ dialog, log, error, logPath, version, platform }) {
+export async function reportStartupFailure({ dialog, log, error, logPath, version, platform, recoveredVersion = null }) {
   // Wait for the asynchronous journal before a modal dialog blocks the loop.
   await log('startup failed', error instanceof Error && error.stack ? error.stack : String(error))
-  const options = startupFailureDialog({ error, logPath, version, platform })
+  const options = startupFailureDialog({ error, logPath, version, platform, recoveredVersion })
   try {
     dialog.showMessageBoxSync(options)
     await log('startup failure shown', JSON.stringify({ dialog: 'shown' }))

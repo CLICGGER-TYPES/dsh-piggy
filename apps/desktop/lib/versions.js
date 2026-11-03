@@ -15,6 +15,7 @@
  * 纯 Node（fetch、zlib、fs），不依赖 Electron；网络、时间都能换，测试直接跑。
  * @module dsh-piggy-desktop/versions
  */
+import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CHANNEL } from './channel.js'
@@ -78,6 +79,7 @@ export function createVersions(options) {
   let cache = null
   /** @type {Promise<any[]>|null} 正在问的那一次，两个窗口同时来就共用 */
   let asking = null
+  let startupAttemptId = null
 
   const readJson = file => { try { return JSON.parse(readFileSync(file, 'utf8')) } catch { return null } }
   const gameVersion = dir => readJson(join(dir, 'package.json'))?.version ?? '?'
@@ -98,6 +100,96 @@ export function createVersions(options) {
     const active = typeof saved.active === 'string' && installed(saved.active) ? saved.active : null
     const previous = (saved.previous === 'bundled' && hasBundled) || (typeof saved.previous === 'string' && saved.previous !== 'bundled' && installed(saved.previous)) ? saved.previous : null
     return { active, previous: previous === (active ?? 'bundled') ? null : previous }
+  }
+
+  function writeActiveRecord(value) {
+    mkdirSync(root, { recursive: true })
+    writeFileSync(activeTemporaryFile, JSON.stringify(value))
+    renameSync(activeTemporaryFile, activeFile)
+  }
+
+  function pendingStartupRecord() {
+    const saved = readJson(activeFile)
+    if (saved === null || saved.shell !== options.shellVersion || saved.startupPending === null || typeof saved.startupPending !== 'object') return null
+    const pending = saved.startupPending
+    if (typeof pending.id !== 'string' || pending.id === '' || typeof pending.version !== 'string' ||
+        pending.version !== saved.active || !['bundled', null].includes(pending.previous) && typeof pending.previous !== 'string' ||
+        typeof pending.attempted !== 'boolean') return null
+    return { saved, pending }
+  }
+
+  function clearStartupPending(saved) {
+    const clean = { ...saved }
+    delete clean.startupPending
+    writeActiveRecord(clean)
+  }
+
+  function restorePreviousAfterStartupFailure(saved, pending) {
+    const failedVersion = pending.version
+    const previous = pending.previous
+    if (previous === null || (previous === 'bundled' && !hasBundled) ||
+        (previous !== 'bundled' && !installed(previous))) {
+      clearStartupPending(saved)
+      return { ok: false, reason: '没有可用的上一版本，保留当前版本与存档' }
+    }
+    try {
+      const supported = schemas.supported(previous)
+      const savedVersion = saveVersion()
+      if (supported < savedVersion) {
+        clearStartupPending(saved)
+        return { ok: false, reason: `上一版本只支持存档 ${supported}，当前存档为 ${savedVersion}，保留当前版本与存档` }
+      }
+      writeActiveRecord({ active: previous === 'bundled' ? null : previous, previous: failedVersion, shell: options.shellVersion })
+      return { ok: true, version: previous === 'bundled' ? gameVersion(options.bundledDir) : previous }
+    } catch (error) {
+      clearStartupPending(saved)
+      return { ok: false, reason: error instanceof Error ? error.message : '无法确认上一版本兼容性，保留当前版本与存档' }
+    }
+  }
+
+  /**
+   * Mark an update activation as under its first-start check. A process that
+   * reaches the health point clears this marker; an interrupted attempt is
+   * rolled back once by the next process before it opens the game save.
+   */
+  function beginStartupCheck() {
+    const entry = pendingStartupRecord()
+    if (entry === null) return { status: 'none' }
+    const { saved, pending } = entry
+    if (startupAttemptId === pending.id) return { status: 'attempting', token: pending.id, version: pending.version }
+    if (pending.attempted) {
+      const restored = restorePreviousAfterStartupFailure(saved, pending)
+      startupAttemptId = null
+      return restored.ok
+        ? { status: 'recovered', version: restored.version }
+        : { status: 'recovery-unavailable', reason: restored.reason }
+    }
+    pending.attempted = true
+    writeActiveRecord({ ...saved, startupPending: pending })
+    startupAttemptId = pending.id
+    return { status: 'attempting', token: pending.id, version: pending.version }
+  }
+
+  /** Called only after the main game window is loaded and visible. */
+  function confirmStartup(token) {
+    const entry = pendingStartupRecord()
+    if (entry === null || entry.pending.id !== token || startupAttemptId !== token || entry.pending.attempted !== true) {
+      return { ok: false, reason: '启动检查已失效' }
+    }
+    clearStartupPending(entry.saved)
+    startupAttemptId = null
+    return { ok: true, version: entry.pending.version }
+  }
+
+  /** Roll back the failed first start, without touching save files or looping. */
+  function failStartup(token) {
+    const entry = pendingStartupRecord()
+    if (entry === null || entry.pending.id !== token || startupAttemptId !== token || entry.pending.attempted !== true) {
+      return { ok: false, reason: '启动检查已失效' }
+    }
+    const restored = restorePreviousAfterStartupFailure(entry.saved, entry.pending)
+    startupAttemptId = null
+    return restored
   }
 
   /** The folder the game should load from right now. */
@@ -254,13 +346,14 @@ export function createVersions(options) {
   }
 
   /** Point at `version` (or 'bundled'), remembering where we came from. */
-  function activate(version) {
+  function activate(version, { startupCheck = false } = {}) {
     const rec = record()
     const was = rec.active ?? 'bundled'
     mkdirSync(root, { recursive: true })
-    const next = { active: version === 'bundled' ? null : version, previous: was === version ? rec.previous : was, shell: options.shellVersion }
-    writeFileSync(activeTemporaryFile, JSON.stringify(next))
-    renameSync(activeTemporaryFile, activeFile)
+    const next = { active: version === 'bundled' ? null : version, previous: was === version ? rec.previous : was,
+      shell: options.shellVersion,
+      ...(startupCheck ? { startupPending: { id: randomUUID(), version, previous: was, attempted: false } } : {}) }
+    writeActiveRecord(next)
   }
 
   /** Go back to the version used before the last switch. */
@@ -280,7 +373,7 @@ export function createVersions(options) {
 
   const installs = createVersionInstalls({ root, temporaryDir: options.temporaryDir, download, activate, installed, gameVersion,
     saveVersion, recordSchema: schemas.record })
-  return { activeDir, current, list, needsGame, rollback, saveVersion, readPin: readJson, ...installs }
+  return { activeDir, beginStartupCheck, confirmStartup, current, failStartup, list, needsGame, rollback, saveVersion, readPin: readJson, ...installs }
 }
 
 /**
