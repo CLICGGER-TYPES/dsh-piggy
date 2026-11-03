@@ -107,11 +107,11 @@ test('successful actions commit reports once, bound their source and merge notif
   assert.equal(state.achievements.events.farm.harvest.total, 10)
 })
 
-test('uninstalled unseen goals stay out of the catalogue; twelve new pig badge files exist', () => {
+test('uninstalled unseen goals stay out of the catalogue; extension pig badge files exist', () => {
   const state = hatchEgg(NOW)
   assert.equal(achievementsView(state).length, CORE_COUNT)
   installExtension(state, 'farm', {})
-  assert.equal(achievementsView(state).length, 19)
+  assert.equal(achievementsView(state).length, CORE_COUNT + ACHIEVEMENTS.filter(item => item.extension === 'farm').length)
   for (const item of ACHIEVEMENTS.filter(item => item.extension)) assert.equal(existsSync(new URL('../assets/' + PIG_ART_ASSETS[item.art], import.meta.url)), true)
 })
 
