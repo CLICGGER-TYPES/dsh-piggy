@@ -185,7 +185,10 @@ test('显示门一直不开时日志能区分卡在哪一步', () => {
 test('窗口还没显示过就崩：先写日志再弹一次，然后退出', () => {
   assert.match(MAIN, /onRendererGone:\s*\(window, event, details\)\s*=>\s*\{[\s\S]{0,300}reportStartupCrash\(window, details, gate\)/,
     '启动时渲染进程退出也必须可见，不能只留一行日志')
-  assert.match(MAIN, /async function reportStartupCrash[\s\S]{0,900}pageCrashReason\(details\)[\s\S]{0,300}app\.quit\(\)/)
+  assert.match(MAIN, /async function reportStartupCrash[\s\S]{0,500}handleStartupFailure\(new Error\(pageCrashReason\(details\)\)\)/,
+    '未显示窗口的崩溃必须交给统一启动失败处理')
+  assert.match(MAIN, /async function handleStartupFailure[\s\S]{0,2500}app\.quit\(\)/,
+    '统一启动失败处理在写日志/提示后退出')
   assert.match(MAIN, /renderer gone[\s\S]{0,300}visible: window\.isVisible\(\)[\s\S]{0,200}gate/,
     '日志要记下崩溃时窗口是否已显示、显示门状态')
 })
