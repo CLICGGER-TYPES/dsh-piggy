@@ -13,21 +13,21 @@ import {
   recoverOwnerDocumentTransaction,
   writeOwnerDocumentFile,
 } from '../runtime/owner-document-file.js'
-import { ownerDocumentFromLegacyV15, serializeOwnerDocument } from '../store/owner-document.js'
+import { ownerDocumentFromLegacyV15, projectOwnerDocumentToLegacyV15, serializeOwnerDocument } from '../store/owner-document.js'
 import { acquireGameLock } from '../runtime/owner-lock.js'
 
 function fixtureDir() {
   return mkdtempSync(join(tmpdir(), 'dsh-piggy-owner-file-'))
 }
 
-function legacyV15() {
+function legacyV15(name = '甲') {
   return {
     version: 15,
-    name: '甲',
+    name,
     bornAt: 1_800_000_000_000,
     hatched: true,
     stage: 'piglet',
-    skin: 'default',
+    skin: name === '甲' ? 'default' : 'pink',
     coins: 500,
     inventory: { apple: 2 },
     economy: { totals: { work: 3 }, fatigue: 0.2, future: 'keep' },
@@ -36,8 +36,8 @@ function legacyV15() {
   }
 }
 
-function documentFixture(ownerId = 'owner-a', pigId = 'pig-a') {
-  return ownerDocumentFromLegacyV15(legacyV15(), { ownerId, pigId })
+function documentFixture(ownerId = 'owner-a', pigId = 'pig-a', name = '甲') {
+  return ownerDocumentFromLegacyV15(legacyV15(name), { ownerId, pigId })
 }
 
 function sha256(bytes) {
@@ -98,6 +98,17 @@ test('inspection distinguishes missing, corrupt, unknown, legacy v15 and owner d
     assert.equal(legacy.kind, 'legacy-v15')
     if (legacy.kind === 'legacy-v15') assert.deepEqual(legacy.legacyState, legacyV15())
 
+    const legacyWithUnknownVersionKey = { ...legacyV15(), documentVersion: 77 }
+    const unknownVersionBytes = Buffer.from(JSON.stringify(legacyWithUnknownVersionKey))
+    writeFileSync(path, unknownVersionBytes)
+    const unknownVersionLegacy = inspectOwnerDocumentFile(path)
+    assert.equal(unknownVersionLegacy.kind, 'legacy-v15', 'unknown v15 top-level data remains legacy opaque')
+    const projected = projectOwnerDocumentToLegacyV15(
+      ownerDocumentFromLegacyV15(legacyWithUnknownVersionKey, { ownerId: 'owner-a', pigId: 'pig-a' }),
+      'pig-a',
+    )
+    assert.deepEqual(projected, legacyWithUnknownVersionKey)
+
     const document = documentFixture()
     writeFileSync(path, serializeOwnerDocument(document))
     const owner = inspectOwnerDocumentFile(path)
@@ -139,8 +150,23 @@ test('create and update use revision CAS while preserving committed identities',
 
     const changedPig = structuredClone(latest.document)
     changedPig.pigs[0].pigId = 'pig-b'
-    assert.throws(() => writeOwnerDocumentFile({ filePath: path, document: changedPig, expectedRevision: latest.revision }), /pigId set is immutable/)
+    assert.throws(() => writeOwnerDocumentFile({ filePath: path, document: changedPig, expectedRevision: latest.revision }), /existing pigId cannot be removed or reassigned/)
     assert.deepEqual(readFileSync(path), beforeStale)
+
+    const appendedPig = structuredClone(latest.document)
+    const explicitNewPig = documentFixture('owner-a', 'pig-b', '乙').pigs[0]
+    appendedPig.pigs.push(explicitNewPig)
+    const appended = writeOwnerDocumentFile({ filePath: path, document: appendedPig, expectedRevision: latest.revision })
+    assert.deepEqual(appended.document.pigs.map(pig => pig.pigId), ['pig-a', 'pig-b'])
+    assert.equal(appended.document.pigs[0].body.name, latest.document.pigs[0].body.name)
+
+    const afterAppend = inspectOwnerDocumentFile(path)
+    if (afterAppend.kind !== 'owner-document') throw new Error('expected owner document after pig append')
+    const removedPig = structuredClone(afterAppend.document)
+    removedPig.pigs.pop()
+    const beforeRemoval = readFileSync(path)
+    assert.throws(() => writeOwnerDocumentFile({ filePath: path, document: removedPig, expectedRevision: afterAppend.revision }), /existing pigId cannot be removed or reassigned/)
+    assert.deepEqual(readFileSync(path), beforeRemoval, 'refused pig removal leaves the persisted document unchanged')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -151,7 +177,8 @@ test('migration locks source and target, persists caller IDs, and leaves source 
   try {
     const legacyPath = join(directory, 'legacy-state.json')
     const ownerPath = join(directory, 'owner-document.json')
-    const sourceBytes = Buffer.from(JSON.stringify(legacyV15()))
+    const legacyWithUnknownVersionKey = { ...legacyV15(), documentVersion: 77 }
+    const sourceBytes = Buffer.from(JSON.stringify(legacyWithUnknownVersionKey))
     writeFileSync(legacyPath, sourceBytes)
     assert.throws(() => migrateLegacyV15File({
       legacyPath,
@@ -173,6 +200,7 @@ test('migration locks source and target, persists caller IDs, and leaves source 
     })
     assert.equal(result.document.ownerId, 'stable-owner')
     assert.deepEqual(result.document.pigs.map(pig => pig.pigId), ['stable-pig'])
+    assert.equal(result.document.opaque.documentVersion, 77, 'legacy opaque key survives explicit file migration')
     assert.deepEqual(readFileSync(legacyPath), sourceBytes)
     const reopened = inspectOwnerDocumentFile(ownerPath)
     assert.equal(reopened.kind, 'owner-document')
@@ -243,6 +271,17 @@ test('recover rolls back applying transactions and preserves committed transacti
     assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: true, rolledBack: true })
     assert.deepEqual(readFileSync(path), oldBytes)
 
+    const rollbackCompletedTx = writeTransactionFixture(path, {
+      phase: 'applying',
+      oldBytes,
+      newBytes,
+      expectedRevision: sha256(oldBytes),
+    })
+    rmSync(join(rollbackCompletedTx, 'owner.json'), { force: true })
+    assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: true, rolledBack: true })
+    assert.equal(existsSync(rollbackCompletedTx), false)
+    assert.deepEqual(readFileSync(path), oldBytes)
+
     const committedDocument = structuredClone(initial.document)
     committedDocument.resources.coins = 777
     const committedBytes = Buffer.from(serializeOwnerDocument(committedDocument))
@@ -252,6 +291,9 @@ test('recover rolls back applying transactions and preserves committed transacti
       newBytes: committedBytes,
       expectedRevision: sha256(oldBytes),
     })
+    rmSync(join(tx, 'owner.json'), { force: true })
+    rmSync(join(tx, 'old.bin'), { force: true })
+    rmSync(join(tx, 'new.bin'), { force: true })
     writeFileSync(path, committedBytes)
     assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: false, committedCleanup: true })
     assert.equal(existsSync(tx), false)
@@ -267,6 +309,10 @@ test('precommit owner marker permits cleanup only while target revision is uncha
     const path = join(directory, 'owner.json')
     const tx = transactionDirectory(path)
     mkdirSync(tx, { mode: 0o700 })
+    assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: false, emptyPrecommitCleaned: true })
+    assert.equal(existsSync(tx), false)
+
+    mkdirSync(tx, { mode: 0o700 })
     writeFileSync(join(tx, 'owner.json'), JSON.stringify({
       version: 1,
       targetPath: resolve(path),
@@ -279,6 +325,7 @@ test('precommit owner marker permits cleanup only while target revision is uncha
     assert.equal(inspectOwnerDocumentFile(path).kind, 'missing')
 
     mkdirSync(tx, { mode: 0o700 })
+    writeFileSync(join(tx, 'foreign.bin'), 'unrecognized precommit bytes')
     assert.throws(() => recoverOwnerDocumentTransaction(path), /owner marker missing/)
     assert.equal(existsSync(tx), true, 'unowned incomplete transaction is preserved for inspection')
   } finally {

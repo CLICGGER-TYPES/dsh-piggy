@@ -5,7 +5,7 @@
  * @module dsh-piggy/runtime/owner-document-file
  */
 import { createHash, randomBytes } from 'node:crypto'
-import { lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, unlinkSync } from 'node:fs'
+import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmdirSync, unlinkSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { TextDecoder } from 'node:util'
 
@@ -144,6 +144,11 @@ export function inspectOwnerDocumentFile(filePath) {
   if (!decoded.valid) return { kind: 'invalid-json', revision }
   if (!isPlainRecord(decoded.value)) return { kind: 'unknown-format', revision }
 
+  // v15 允许把未知顶层字段留在 opaque；version===15 的扁平档优先于同名 opaque 键。
+  if (decoded.value.version === STATE_VERSION) {
+    return { kind: 'legacy-v15', revision, legacyState: /** @type {Record<string, unknown>} */ (structuredClone(decoded.value)) }
+  }
+
   if (Object.hasOwn(decoded.value, 'documentVersion')) {
     if (decoded.value.documentVersion !== OWNER_DOCUMENT_VERSION) {
       return { kind: 'unsupported-version', revision, version: decoded.value.documentVersion }
@@ -153,9 +158,6 @@ export function inspectOwnerDocumentFile(filePath) {
     } catch (error) {
       return { kind: 'invalid-document', revision, reason: error instanceof Error ? error.message : 'invalid owner document' }
     }
-  }
-  if (decoded.value.version === STATE_VERSION) {
-    return { kind: 'legacy-v15', revision, legacyState: /** @type {Record<string, unknown>} */ (structuredClone(decoded.value)) }
   }
   if (typeof decoded.value.version === 'number') {
     return { kind: 'unsupported-version', revision, version: decoded.value.version }
@@ -177,10 +179,9 @@ function assertExpectedRevision(current, expectedRevision) {
 /** @param {ReturnType<typeof validateOwnerDocument>} previous @param {ReturnType<typeof validateOwnerDocument>} next */
 function assertStableIdentity(previous, next) {
   if (previous.ownerId !== next.ownerId) throw new Error('ownerId is immutable after document creation')
-  const previousIds = previous.pigs.map(pig => pig.pigId).sort()
-  const nextIds = next.pigs.map(pig => pig.pigId).sort()
-  if (previousIds.length !== nextIds.length || previousIds.some((pigId, index) => pigId !== nextIds[index])) {
-    throw new Error('pigId set is immutable in this storage slice')
+  const nextIds = new Set(next.pigs.map(pig => pig.pigId))
+  if (previous.pigs.some(pig => !nextIds.has(pig.pigId))) {
+    throw new Error('existing pigId cannot be removed or reassigned in this storage slice')
   }
 }
 
@@ -222,31 +223,85 @@ function currentRevision(filePath) {
   return raw === null ? 'missing' : sha256(raw)
 }
 
+/**
+ * 删除已验证事务目录时总把 journal 留到最后：若清理中断，recover 仍能辨别提交状态。
+ * @param {string} tx
+ * @param {string} filePath
+ */
+function cleanupTransactionDirectory(tx, filePath) {
+  const allowed = new Set([OWNER_MARKER, OLD_BYTES, NEW_BYTES, JOURNAL])
+  if (readdirSync(tx).some(name => !allowed.has(name))) {
+    throw new Error('owner document transaction contains unknown files; evidence preserved')
+  }
+  for (const name of [OLD_BYTES, NEW_BYTES, OWNER_MARKER]) {
+    const file = join(tx, name)
+    if (readRegularFile(file) !== null) unlinkSync(file)
+  }
+  syncDirectory(tx)
+  const journal = join(tx, JOURNAL)
+  if (readRegularFile(journal) !== null) unlinkSync(journal)
+  syncDirectory(tx)
+  if (readdirSync(tx).length !== 0) throw new Error('owner document transaction cleanup is incomplete; evidence preserved')
+  rmdirSync(tx)
+  syncDirectory(dirname(filePath))
+}
+
 /** @param {string} filePath */
 function recoverLocked(filePath) {
   const tx = transactionDirectory(filePath)
   if (!assertTransactionDirectory(tx)) return { recovered: false }
 
-  const ownerPath = join(tx, OWNER_MARKER)
-  const ownerRaw = readTransactionJson(ownerPath)
-  if (ownerRaw === null) throw new Error('owner document precommit owner marker missing; evidence preserved')
-  const owner = validateOwnerMarker(ownerRaw)
-  if (owner.targetPath !== filePath) throw new Error('owner document precommit marker path mismatch; evidence preserved')
-
   const journalPath = join(tx, JOURNAL)
   const journalRaw = readTransactionJson(journalPath)
   if (journalRaw === null) {
+    const ownerRaw = readTransactionJson(join(tx, OWNER_MARKER))
+    if (ownerRaw === null) {
+      if (readdirSync(tx).length === 0) {
+        rmdirSync(tx)
+        syncDirectory(dirname(filePath))
+        return { recovered: false, emptyPrecommitCleaned: true }
+      }
+      throw new Error('owner document precommit owner marker missing; evidence preserved')
+    }
+    const owner = validateOwnerMarker(ownerRaw)
+    if (owner.targetPath !== filePath) throw new Error('owner document precommit marker path mismatch; evidence preserved')
     if (currentRevision(filePath) !== owner.expectedRevision) {
       throw new Error('owner document changed before journal publication; evidence preserved')
     }
-    rmSync(tx, { recursive: true, force: true })
-    syncDirectory(dirname(filePath))
+    cleanupTransactionDirectory(tx, filePath)
     return { recovered: false, precommitCleaned: true }
   }
 
   const journal = validateJournal(journalRaw)
-  if (journal.targetPath !== filePath || journal.token !== owner.token ||
-    (owner.expectedRevision === 'missing' ? journal.hadExisting : journal.oldRevision !== owner.expectedRevision)) {
+  if (journal.targetPath !== filePath) throw new Error('owner document journal path mismatch; evidence preserved')
+
+  if (journal.phase === 'committed') {
+    const current = inspectOwnerDocumentFile(filePath)
+    if (current.kind !== 'owner-document' || current.revision !== journal.newRevision) {
+      throw new Error('committed owner document does not match journal; evidence preserved')
+    }
+    cleanupTransactionDirectory(tx, filePath)
+    return { recovered: false, committedCleanup: true }
+  }
+
+  const originalRevision = journal.hadExisting ? /** @type {string} */ (journal.oldRevision) : 'missing'
+  const current = currentRevision(filePath)
+  if (current === originalRevision) {
+    const ownerRaw = readTransactionJson(join(tx, OWNER_MARKER))
+    if (ownerRaw !== null) {
+      const owner = validateOwnerMarker(ownerRaw)
+      if (owner.targetPath !== filePath || owner.token !== journal.token || owner.expectedRevision !== originalRevision) {
+        throw new Error('owner document journal does not match its owner marker; evidence preserved')
+      }
+    }
+    cleanupTransactionDirectory(tx, filePath)
+    return { recovered: true, rolledBack: true }
+  }
+
+  const ownerRaw = readTransactionJson(join(tx, OWNER_MARKER))
+  if (ownerRaw === null) throw new Error('owner document applying journal is missing its owner marker; evidence preserved')
+  const owner = validateOwnerMarker(ownerRaw)
+  if (owner.targetPath !== filePath || owner.token !== journal.token || owner.expectedRevision !== originalRevision) {
     throw new Error('owner document journal does not match its owner marker; evidence preserved')
   }
   const newRaw = readRegularFile(join(tx, NEW_BYTES))
@@ -256,16 +311,6 @@ function recoverLocked(filePath) {
   const stagedInspection = inspectBytes(newRaw)
   if (stagedInspection.kind !== 'owner-document') throw new Error('owner document staged bytes failed validation; evidence preserved')
 
-  if (journal.phase === 'committed') {
-    const current = inspectOwnerDocumentFile(filePath)
-    if (current.kind !== 'owner-document' || current.revision !== journal.newRevision) {
-      throw new Error('committed owner document does not match journal; evidence preserved')
-    }
-    rmSync(tx, { recursive: true, force: true })
-    syncDirectory(dirname(filePath))
-    return { recovered: false, committedCleanup: true }
-  }
-
   if (journal.hadExisting) {
     const oldRaw = readRegularFile(join(tx, OLD_BYTES))
     if (oldRaw === null || sha256(oldRaw) !== journal.oldRevision) {
@@ -274,7 +319,6 @@ function recoverLocked(filePath) {
     if (inspectBytes(oldRaw).kind !== 'owner-document') {
       throw new Error('owner document rollback snapshot failed codec validation; evidence preserved')
     }
-    const current = currentRevision(filePath)
     if (current !== journal.oldRevision && current !== journal.newRevision && current !== 'missing') {
       throw new Error('owner document changed during transaction; evidence preserved')
     }
@@ -284,7 +328,6 @@ function recoverLocked(filePath) {
       throw new Error('owner document rollback readback failed; evidence preserved')
     }
   } else {
-    const current = currentRevision(filePath)
     if (current === journal.newRevision) {
       unlinkSync(filePath)
       syncDirectory(dirname(filePath))
@@ -292,8 +335,7 @@ function recoverLocked(filePath) {
       throw new Error('unexpected owner document exists during create rollback; evidence preserved')
     }
   }
-  rmSync(tx, { recursive: true, force: true })
-  syncDirectory(dirname(filePath))
+  cleanupTransactionDirectory(tx, filePath)
   return { recovered: true, rolledBack: true }
 }
 
@@ -366,8 +408,7 @@ function commitLocked(filePath, newBytes, expectedRevision) {
     }
     atomicWrite(join(tx, JOURNAL), Buffer.from(JSON.stringify({ ...journal, phase: 'committed' })))
     try {
-      rmSync(tx, { recursive: true, force: true })
-      syncDirectory(dirname(filePath))
+      cleanupTransactionDirectory(tx, filePath)
       return { document: readback.document, revision: readback.revision, cleanupDeferred: false }
     } catch {
       return { document: readback.document, revision: readback.revision, cleanupDeferred: true }
