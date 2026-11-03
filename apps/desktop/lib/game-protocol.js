@@ -26,25 +26,62 @@ async function serveFile(fetchFile, root, rel) {
 }
 
 /**
+ * Renderer requests opt into one pig with `?pig=<pigId>`. The id labels the
+ * target; callers still have to map it to an issued worker session token.
+ * @param {{ url: string }} request
+ * @returns {string|null}
+ */
+export function pigIdFromRequest(request) {
+  try {
+    const pigId = new URL(request.url).searchParams.get('pig')
+    return typeof pigId === 'string' && pigId !== '' ? pigId : null
+  } catch { return null }
+}
+
+/**
+ * Build a resolver for `registerGameProtocol({ sessions })`: `?pig=<pigId>`
+ * becomes the opaque worker token, while requests without `?pig` keep using
+ * the runtime's default session. An unknown pig fails instead of silently
+ * acting on the default pig.
+ * @param {Map<string, string> | ((pigId: string) => string | null | undefined)} sessions
+ * @returns {(request: { url: string }) => string|null}
+ */
+export function createSessionResolver(sessions) {
+  return request => {
+    const pigId = pigIdFromRequest(request)
+    if (pigId === null) return null
+    const token = typeof sessions === 'function' ? sessions(pigId) : sessions.get(pigId)
+    if (typeof token !== 'string' || token === '') {
+      throw Object.assign(new Error(`no desktop session for pig ${pigId}`), { status: 404 })
+    }
+    return token
+  }
+}
+
+/**
  * Register the desktop game's existing custom protocol handler.
  * @param {{
  *   protocol: { handle: (scheme: string, handler: (request: Request) => Promise<Response>) => void },
  *   fetchFile: (url: string) => Promise<Response>,
  *   rendererDir: string,
  *   gameDir: string,
- *   getHost: () => { handle: (method: string, url: string, body?: ArrayBuffer) => Promise<any> },
+ *   getHost: () => { handle: (method: string, url: string, body?: ArrayBuffer, session?: string) => Promise<any> },
  *   isQuitting: () => boolean,
  *   onStateChanged: () => void,
+ *   resolveSession?: (request: Request) => string|null|Promise<string|null>,
+ *   sessions?: Map<string, string> | ((pigId: string) => string|null|undefined),
  * }} options
  */
-export function registerGameProtocol({ protocol, fetchFile, rendererDir, gameDir, getHost, isQuitting, onStateChanged }) {
+export function registerGameProtocol({ protocol, fetchFile, rendererDir, gameDir, getHost, isQuitting, onStateChanged, resolveSession, sessions }) {
+  const resolve = resolveSession ?? (sessions === undefined ? () => null : createSessionResolver(sessions))
   protocol.handle('piggy', async request => {
     const url = new URL(request.url)
     const path = decodeURIComponent(url.pathname)
     if (path.startsWith('/dsh-piggy/')) {
       const body = request.method === 'POST' ? await readPostBody(request) : undefined
       if (isQuitting()) return new Response('game runtime closing', { status: 503 })
-      const out = await getHost().handle(request.method, path + url.search, body)
+      const session = await resolve(request)
+      const out = await getHost().handle(request.method, path + url.search, body, session ?? undefined)
       // 存档变了（任一个窗口里做了动作）：告诉两个窗口马上刷新，别等 4 秒一次的轮询，
       // 不然面板里喂完食，猪要过几秒才有反应。
       if (request.method === 'POST') onStateChanged()

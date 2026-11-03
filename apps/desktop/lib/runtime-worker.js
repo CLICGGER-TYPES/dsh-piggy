@@ -1,6 +1,7 @@
 // @ts-check
 /** 桌面游戏 Store、路由和工作接口共用后台单写者，窗口线程不执行落盘。 */
 import { parentPort, workerData } from 'node:worker_threads'
+import { randomBytes } from 'node:crypto'
 import { startHost } from './host.js'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -11,6 +12,8 @@ if (!parentPort) throw new Error('game runtime requires a parent port')
 const port = parentPort
 const fetches = new Map()
 const tasks = new Set()
+/** @type {Map<string, any>} token -> owner session binding */
+const sessions = new Map()
 let sequence = 0
 let host, endpoint, pairServer, ownerLanServer
 let closing = false
@@ -116,10 +119,27 @@ async function startOwnerLan(options = {}) {
   return ownerLanServer.status()
 }
 
+function newSessionToken() {
+  for (;;) {
+    const token = randomBytes(32).toString('base64url')
+    if (!sessions.has(token)) return token
+  }
+}
+
+/** @param {unknown} token */
+function bindSession(token) {
+  if (typeof token !== 'string' || token === '') throw new Error('game session token is invalid')
+  const session = sessions.get(token)
+  if (session === undefined) throw new Error('unknown or closed game session')
+  return session
+}
+
 async function request(message) {
   if (closing) throw new Error('game runtime closed')
   if (message.method === 'dispose') {
     closing = true
+    // Map 只保存派发给窗口的 token；绑定本身仍由 host.dispose() 统一处置。
+    sessions.clear()
     let endpointStopped = !endpoint
     try {
       await ownerLanServer?.close()
@@ -147,20 +167,40 @@ async function request(message) {
     return
   }
   if (message.method === 'handle') {
-    const out = await host.handle(...message.args)
+    const token = message.args[3]
+    const session = token === undefined || token === null ? undefined : bindSession(token)
+    const out = await host.handle(message.args[0], message.args[1], message.args[2], session)
     let hatched
     if (String(out.headers['content-type'] ?? '').includes('application/json')) {
       const text = String(out.body)
       const view = JSON.parse(text)
       if (typeof view.hatched === 'boolean') hatched = view.hatched
       // 这份响应已取走 pending；先广播原文，不能另取快照或合并丢掉中间消息。
-      if (Array.isArray(view.pending) && view.pending.length > 0) port.postMessage({ kind: 'snapshot', value: text })
+      // token 决定快照属于哪个窗口；无 token 的默认会话用 null，保持旧行为。
+      if (Array.isArray(view.pending) && view.pending.length > 0) {
+        port.postMessage({ kind: 'snapshot', value: text, session: token ?? null })
+      }
     }
     if (message.args[0] === 'POST' && out.status === 200) {
       const addons = await installerExtensions?.apply(hatched)
       if (addons?.changed) port.postMessage({ kind: 'changed' })
     }
     return out
+  }
+  if (message.method === 'open-session') {
+    if (typeof host?.openPigSession !== 'function') throw new Error('当前游戏版本不支持多猪会话')
+    const pigId = message.args[0]
+    if (typeof pigId !== 'string' || pigId === '') throw new Error('open-session requires an explicit pigId')
+    const session = host.openPigSession(pigId, { kind: 'embedded', origin: 'desktop-window' })
+    const token = newSessionToken()
+    sessions.set(token, session)
+    return { token, pigId }
+  }
+  if (message.method === 'close-session') {
+    const session = bindSession(message.args[0])
+    sessions.delete(message.args[0])
+    session.dispose()
+    return { ok: true }
   }
   if (message.method === 'acceptWorkEvent') return host.acceptWorkEvent(...message.args)
   if (message.method === 'record') return host.record(...message.args)
@@ -246,7 +286,7 @@ try {
   // importer until extension ownership is explicitly adapted to owner/pig targets.
   if (workerData.ownerDocument === null) {
     installerExtensions = createInstallerExtensions({ directory: workerData.optionalExtensionsDirectory, statePath: workerData.statePath, host,
-      onSnapshot: value => port.postMessage({ kind: 'snapshot', value }) })
+      onSnapshot: value => port.postMessage({ kind: 'snapshot', value, session: null }) })
     await installerExtensions.apply()
   }
   if (workerData.workEventsDirectory && workerData.workEventsAutoStart !== false) await startEndpoint()
