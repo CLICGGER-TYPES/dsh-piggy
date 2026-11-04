@@ -4,6 +4,7 @@ import { createFarmState } from './state.js'
 import { createFarmHostTools } from './host.js'
 import { createFarmEvents } from './events.js'
 import { createFarmGardenRenderer } from './render-garden.js'
+import { createFarmHelperRenderer } from './render-helper.js'
 import { createFarmCommerceRenderer } from './render-commerce.js'
 
 /** @returns {{render:(app:import('./host.js').FarmHost)=>void}} */
@@ -14,6 +15,7 @@ export function createFarmClient() {
   modules.host = createFarmHostTools()
   modules.events = createFarmEvents(state, modules)
   modules.garden = createFarmGardenRenderer(state, modules)
+  modules.helper = createFarmHelperRenderer(state, modules)
   modules.commerce = createFarmCommerceRenderer(state, modules)
 
   /** @param {import('./host.js').FarmHost} app */

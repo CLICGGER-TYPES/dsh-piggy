@@ -218,27 +218,63 @@ export function createFarmEvents(state, modules) {
       return result
     }
 
+  /** 手动让一只帮工休息 / 叫醒；too-tired 说明为什么叫不醒，already / unavailable 只给轻提示。 */
+  function setRest(app, id, resting) {
+      if (state.inflight) return null
+      var result = sendAction(app, 'setHelperRest', { id: id, resting: resting === true })
+      if (result && typeof result.then === 'function') result.then(function (next) {
+        if (!next || next.ok !== false) return
+        if (next.reason === 'too-tired') return say(app, '帮工太累了，等精力回到 20% 以上再叫醒')
+        if (next.reason === 'already') return say(app, resting ? '这只帮工已经在休息了' : '这只帮工是班次休息，到点会自动回来')
+        if (next.reason === 'unavailable') return say(app, '这只帮工现在改不了休息状态')
+      })
+      return result
+  }
+
+  /** 切换自动 / 手动排班；只影响以后雇佣的默认角色，不改已有帮工的角色。 */
+  function setSchedule(app, mode) {
+      if (state.inflight) return null
+      var result = sendAction(app, 'setHelperSchedule', { mode: mode })
+      if (result && typeof result.then === 'function') result.then(function (next) {
+        if (!next || next.ok !== false) return
+        if (next.reason === 'already') return say(app, mode === 'auto' ? '已经是自动排班' : '已经是手动排班')
+        if (next.reason === 'unavailable') return say(app, '排班现在改不了')
+      })
+      return result
+  }
+
   function helperCount(helper) { return Number(helper.count) || (Array.isArray(helper.workers) ? helper.workers.length : 1) }
+
+  function helperWorkers(helper) { return Array.isArray(helper.workers) ? helper.workers : [] }
 
   function helperText(helper) {
       if (!helper.hired) return '雇帮工猪'
       if (helper.full) return '帮工仓库满了'
       if (helper.stored > 0) return '帮工收了 ' + helper.stored + ' 个'
       if (!helper.enabled) return '帮工已暂停'
+      var workers = helperWorkers(helper)
+      if (workers.length && !workers.some(function (worker) { return worker.role === 'harvest' })) return '没有收菜帮工，菜不会自动收'
       if (helper.missing.length) return '缺' + helper.missing.join('、') + '种子'
       if (helper.seedless) return '帮工没种子'
+      if (helper.onDuty === 0 && helper.resting > 0) return '帮工都在休息'
       if (helper.plots === 0) return '没有收菜帮工，菜不会自动收'
       return helperCount(helper) > 1 ? '帮工 ×' + helperCount(helper) + ' · 收 ' + helper.plots + ' 块' : '帮工 · ' + helper.plots + ' 块地'
     }
 
-  function helperClick(app, helper) {
+  function helperClick(app, helper, now) {
       if (!helper.hired) return sendAction(app, 'hire', {})
       if (helper.stored > 0 || helper.full) return sendAction(app, 'collect', {})
       if (!helper.enabled) return goShop(app, 'helper')
+      var workers = helperWorkers(helper)
+      if (workers.length && !workers.some(function (worker) { return worker.role === 'harvest' })) return goShop(app, 'helper')
       if (helper.missing.length || helper.seedless) return goShop(app, 'seed')
+      if (helper.onDuty === 0 && helper.resting > 0) {
+        var wait = Number.isFinite(helper.restUntil) && Number.isFinite(now) ? Math.max(0, helper.restUntil - now) : 0
+        return say(app, '帮工在休息' + (wait > 0 ? '，' + shortTime(wait) + ' 后回来' : '，精力恢复后回来'))
+      }
       if (helper.plots === 0) return goShop(app, 'helper')
       say(app, helperCount(helper) > 1 ? '帮工 ×' + helperCount(helper) + ' 正在照顾 ' + helper.plots + ' 块地' : '帮工正在照顾 ' + helper.plots + ' 块地')
     }
 
-  return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, setRole, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick }
+  return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, setRole, setRest, setSchedule, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick }
 }
