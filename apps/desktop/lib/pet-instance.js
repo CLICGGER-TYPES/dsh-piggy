@@ -31,6 +31,9 @@ export const MAX_PIG_WINDOWS = 4
  * @property {any[]} placedShape
  * @property {boolean} hasPlacedShape
  * @property {any[]|null} placedHitShape
+ * @property {boolean} hasPlacedHitShape
+ * @property {boolean} hitPending
+ * @property {number} hitPendingAt
  * @property {{x:number,y:number}} flightSlide
  * @property {{x:number,y:number}|null} lastFlightShapeSlide
  * @property {boolean} flightShapeActive
@@ -73,6 +76,9 @@ export function createPetState(identity = {}) {
     placedShape: [],
     hasPlacedShape: false,
     placedHitShape: null,
+    hasPlacedHitShape: false,
+    hitPending: false,
+    hitPendingAt: 0,
     flightSlide: { x: 0, y: 0 },
     lastFlightShapeSlide: null,
     flightShapeActive: false,

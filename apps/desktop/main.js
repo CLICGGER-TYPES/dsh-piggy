@@ -729,6 +729,8 @@ ipcMain.on('piggy:place', (event, request) => {
     pet.placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
       x: rect.x - slide.x, y: rect.y - slide.y, width: rect.width, height: rect.height,
     }))
+    pet.hasPlacedHitShape = true
+    pet.hitPending = false
     refreshHit(pet)
     event.returnValue = geometryOf(window.getBounds(), pet)
     return
@@ -759,9 +761,14 @@ ipcMain.on('piggy:place', (event, request) => {
   pet.lastFlightShapeSlide = null
   pet.flightShapeActive = false
   pet.dragShapeActive = false
-  if (Array.isArray(request.hitShape)) pet.placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
-    x: rect.x, y: rect.y, width: rect.width, height: rect.height,
-  }))
+  if (Array.isArray(request.hitShape)) {
+    pet.placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
+      x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+    }))
+    pet.hasPlacedHitShape = true
+    // 这次 place 带来了新的输入面：窗口移动期间挂起的命中可以恢复。
+    pet.hitPending = false
+  }
   if (Array.isArray(request?.shape)) {
     pet.hasPlacedShape = true
     pet.placedShape = request.shape.slice(0, 64).map(r => ({
