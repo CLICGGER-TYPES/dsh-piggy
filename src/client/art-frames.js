@@ -10,9 +10,9 @@
  * @module dsh-piggy/client/art-frames
  */
 import { ART_RESOURCE_SCHEMA } from './art-resources.js'
-import { ART_URL } from './constants.js'
+import { artPathUrl } from './art-resource-identity.js'
 
-const FRAME_PATH = /^actions\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\/\d{2}\.(?:png|webp)$/
+const FRAME_PATH = /^(?:actions\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\/\d{2}\.(?:png|webp)|ext\/[a-z0-9-]{2,24}\/actions\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\/\d{2}\.(?:png|webp))$/
 const MIN_FRAMES = 2
 const MAX_FRAMES = 48
 
@@ -66,7 +66,7 @@ export function normalizeFrames(value) {
  * @param {import('./art-resources.js').ArtFrame} frame
  */
 export function artFrameUrl(frame) {
-  return ART_URL + frame.path + (frame.revision === '' ? '' : '?v=' + frame.revision)
+  return artPathUrl(frame.path, frame.revision)
 }
 
 /**
@@ -84,13 +84,14 @@ export function resolveActionFrame(action, index) {
   if (!Array.isArray(frames) || !Number.isInteger(index) || index < 0 || index >= frames.length) return null
   const frame = frames[index]
   const url = artFrameUrl(frame)
+  const external = frame.path.startsWith('ext/')
   const frameDescriptor = Object.freeze({
     namespace: descriptor.namespace,
     pack: descriptor.pack,
     key: descriptor.key,
     revision: frame.revision,
     kind: 'action',
-    source: Object.freeze({ scheme: 'path', path: frame.path }),
+    source: Object.freeze({ scheme: external ? 'ext' : 'path', path: frame.path }),
     frame: descriptor.frame,
     frames: null,
     duration: frame.durationMs,
@@ -111,7 +112,7 @@ export function resolveActionFrame(action, index) {
     cacheKey: url,
     url: url,
     artKey: descriptor.key,
-    scheme: 'path',
+    scheme: external ? 'ext' : 'path',
     exists: true,
     legacy: true,
   })

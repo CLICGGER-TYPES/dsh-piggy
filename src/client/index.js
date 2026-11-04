@@ -26,6 +26,8 @@ import { arr, num, obj, str } from './values.js'
 import { desktop } from './desktop/index.js'
 import { attachLife } from './life.js'
 import { playPigPet } from './pig-actions.js'
+import { attachExtensionActions } from './ext-actions.js'
+import { createArtResourceRegistry } from './art-path.js'
 import { attachGestures } from './gestures.js'
 import { hitsPig } from './hit-regions.js'
 import { createPresentationContext } from './presentation-context.js'
@@ -41,12 +43,10 @@ export function mountGame(mountOptions) {
     var stageCandidate = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.stage : null
     var stageOptions = stageCandidate !== null && typeof stageCandidate === 'object'
       && (stageCandidate.role === 'stage' || stageCandidate.role === 'ext') ? stageCandidate : null
-    // Optional dependency seam for an explicitly created private art-resource
-    // registry and a caller-bound data identity. The normal product path passes
-    // neither and keeps the legacy default state/resources.
+    // Optional writable registry; a child keeps first-party packs in the default parent.
     var artResources = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.artResources : null
+    if (artResources === null || artResources === undefined) artResources = createArtResourceRegistry()
     var identity = mountOptions !== null && typeof mountOptions === 'object' ? mountOptions.identity : null
-
     function mount() {
       if (document.querySelector('[' + MOUNTED + ']') !== null) {
         console.warn('[dsh-piggy] 已存在实例，跳过重复挂载')
@@ -218,7 +218,9 @@ export function mountGame(mountOptions) {
       ctx.paintBar = layout.paintBar
       ctx.buildIcon = layout.buildIcon
       ctx.clampPig = layout.clampPig
-      var render = panel.render, renderContent = panel.renderContent
+      var renderPanel = panel.render, renderContent = panel.renderContent, extActions = null
+      // 每次重画后对齐第三方动作包；画的是面板，注册的是猪窗口共用的 registry。
+      var render = function (next) { var painted = renderPanel(next); if (extActions !== null) extActions.sync(ctx.view?.extensions); return painted }
       var setOpen = panel.setOpen, select = panel.select
       var fitPanel = layout.fitPanel, clampPig = layout.clampPig
       var paintBar = layout.paintBar, buildIcon = layout.buildIcon
@@ -226,14 +228,15 @@ export function mountGame(mountOptions) {
       var io = createIo(ctx)
       var send = io.send, refresh = io.refresh
       ctx.send = send; ctx.refresh = refresh
-      ctx.render = render
-      ctx.renderContent = renderContent
+      ctx.render = render; ctx.renderContent = renderContent
       ctx.setOpen = setOpen
       ctx.fitPanel = fitPanel
       ctx.flash = flash
 
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)
       ctx.petShy = function () { playPigPet(pig) } // 摸猪害羞：本窗口直接播；面板窗口里 attachLife 是 null，wireSplit 会换成转发（PIG_FX: petShy）
+      // 第三方动作入口：先装本窗口的播放器，面板/大界面接着由 wireSplit 换成转发。
+      extActions = attachExtensionActions({ ctx: ctx, pig: pig, registry: presentation.artResources, target: typeof document === 'undefined' ? null : document })
       // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
       ctx.previewArt = function (name) { art.forceFeedbackArt(name); art.sync() }
       ctx.cancelNap = function () { if (ctx.life) ctx.life.cancelNap() }
@@ -363,6 +366,7 @@ export function mountGame(mountOptions) {
         dev.dispose()
         if (pollTimer !== null) window.clearInterval(pollTimer)
         life?.dispose()
+        extActions?.dispose()
         stopDailyPlacement()
         stageBridge?.dispose?.()
         // One presentation owns one host/style/font/art/effects/feel/birthday

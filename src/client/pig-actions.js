@@ -185,19 +185,42 @@ export function attachPigActions(c) {
     image.src = src
     return image.decode().then(() => true)
   })
-  for (const entry of artResources.list({ kind: 'action' })) {
+  /** Preload one action (single image or all frames) and mark it playable. */
+  function loadAction(entry) {
+    if (ready.has(entry.cacheKey)) return
+    const cacheKey = entry.cacheKey
     const frames = entry.descriptor.frames
     // 单图动作保持原来的 preload 调用与完成时机；帧动作等整段都解码成功才算 ready。
     if (frames === null) {
       preload(entry.url).then(loaded => {
-        if (!disposed && loaded !== false) ready.add(entry.cacheKey)
+        if (!disposed && loaded !== false) ready.add(cacheKey)
       }).catch(error => console.error('小猪动作图片解码失败', entry.descriptor.key, error))
     } else {
       Promise.all(frames.map(frame => preload(artFrameUrl(frame)))).then(results => {
-        if (!disposed && results.every(loaded => loaded !== false)) ready.add(entry.cacheKey)
+        if (!disposed && results.every(loaded => loaded !== false)) ready.add(cacheKey)
       }).catch(error => console.error('小猪动作图片解码失败', entry.descriptor.key, error))
     }
   }
+  for (const entry of artResources.list({ kind: 'action' })) loadAction(entry)
+  // Third-party packs arrive after the first snapshot (or are replaced when an
+  // extension updates). Preload them as they appear and drop removed ones.
+  const stopResourceChanges = typeof artResources.subscribe === 'function'
+    ? artResources.subscribe(change => {
+      for (const item of change.changes) {
+        if (item.removed === true) {
+          ready.delete(item.previousCacheKey)
+          if (active !== null && active.descriptor.namespace === change.namespace
+            && active.descriptor.pack === change.pack && active.descriptor.key === item.key) {
+            clearFrame()
+            c.render()
+          }
+          continue
+        }
+        const entry = artResources.resolveRef({ namespace: change.namespace, pack: change.pack, key: item.key })
+        if (entry !== null && entry.descriptor.kind === 'action') loadAction(entry)
+      }
+    })
+    : function () {}
   document.addEventListener?.('visibilitychange', visibility)
   // 指针捕获设在 .dp-scene 上（index.js），pointercancel / lostpointercapture 的 target 是它而不是
   // 猪本身；挂在 .dp-pig 上永远不会触发（F4）。没有父节点（测试环境）时退回猪本身。
@@ -215,6 +238,7 @@ export function attachPigActions(c) {
     play,
     dispose() {
       observer?.disconnect()
+      stopResourceChanges()
       disposed = true
       cancel()
       PLAYERS.delete(c.pig)

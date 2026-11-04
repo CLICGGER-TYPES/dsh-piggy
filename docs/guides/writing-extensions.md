@@ -210,6 +210,85 @@ export default {
 - 面板要简洁：不放大段说明文字、不加刻度条之类的装饰（用户明确要求过）。
 - 出错只影响自己的页面（宿主会接住异常显示「这个扩展出错了」）。
 
+### 动作素材包（可选，0.37.2 起）
+
+扩展可以自带动作帧，让猪在面板里做出扩展自己的动作。目录和 `manifest.json` 一起提交：
+
+```text
+extensions/my-extension/
+  manifest.json
+  server.js
+  client.js
+  actions/wave/
+    pack.json
+    hello/00.png
+    hello/01.png
+```
+
+`manifest.json` 声明包名（不写 `assetPacks` 就完全不会碰这两个目录）：
+
+```json
+{
+  "key": "my-extension",
+  "version": "1.0.0",
+  "minGame": "0.37.2",
+  "assetPacks": { "actions": ["wave"] }
+}
+```
+
+`actions/wave/pack.json`：
+
+```json
+{
+  "pack": "wave",
+  "revision": 1,
+  "actions": [
+    {
+      "key": "hello",
+      "kind": "action",
+      "durationMs": 400,
+      "frames": { "fps": 10 },
+      "eligibility": { "art": "piglet" }
+    }
+  ]
+}
+```
+
+- 帧文件必须从 `00.png` 连续（或全用 `.webp`），2–48 帧，同一动作不能混格式；
+  单帧 ≤128 KB、长边 ≤512 px。`durationMs` 必须等于总帧时长。
+- 安装器目前只收帧序列；`source` 单图是客户端向前兼容形状，还不在第三方安装协议里。
+- 不需要写 `namespace`。运行时固定用 `ext-<扩展 key>`，不可能覆盖第一方动作。
+- 动作 `sound` 在音效注册接入前不会播放；先不要把关键反馈只放在声音上。
+
+`client.js` 里派发公开事件即可播放（不需要、也不应该直接操作猪窗口）：
+
+```js
+;(function () {
+  'use strict'
+  window.dshPiggyExtensions.register('my-extension', {
+    render(app) {
+      var button = app.button('dp-btn', {}, function () {
+        document.dispatchEvent(new CustomEvent('dsh-piggy:action', {
+          detail: { key: 'ext-my-extension/wave/hello' },
+        }))
+      })
+      button.textContent = '挥挥手'
+      app.content.appendChild(button)
+    },
+  })
+})()
+```
+
+事件契约：
+
+- 事件名固定 `dsh-piggy:action`，`detail.key` 固定
+  `ext-<扩展 key>/<pack>/<action>`。
+- 只播放当前已安装、已启用且成功注册的动作；未知 key、第一方 key、裸短名都会被忽略。
+- 桌面版拆窗口时，扩展页面在面板/大界面窗口，客户端会把播放转发到猪窗口；
+  网页版在同一页面直接播。
+- 动作是否真的开场还受现有规则约束（猪在拖动/睡觉/隐藏页、eligibility 不满足、
+  图片还没解码完时会被跳过）。
+
 ## 本地测试
 
 - **规则**：写 `test/unit/host/<key>.test.js`（扩展规则）或 `test/unit/client/<key>.test.js`（界面），直接 `import` 扩展的 `server.js`，用假 `api` 调动作（照 `test/unit/host/farm.test.js`）。数值单里的数字写成断言。

@@ -1,8 +1,8 @@
-# 第三方素材包 M3（安装 / 校验 / 静态路由）
+# 第三方素材包 M3（安装 / 校验 / 静态路由 / 播放）
 
 > 2026-11-04 · 目标：先让第三方扩展可以安全地携带动作和音效素材，安装、更新、卸载、回滚都不破坏第一方素材。
-> 第一刀做安装、校验、命名空间和摘要；第二刀加只读静态路由和 `/state` 摘要字段。
-> 两刀都**不接运行时注册和播放**：文件装进来、能列举、能安全读取，但播放器不会播放它们。运行时见 §12。
+> 第一刀做安装、校验、命名空间和摘要；第二刀加只读静态路由和 `/state` 摘要字段；
+> 第三刀接客户端动作注册与 DOM 播放入口。音效注册和 UI 仍未接。
 
 ## 0. 一句话
 
@@ -20,10 +20,10 @@ schema 做完整校验，命名空间固定为 `ext-<extension-key>`，永远不
 - 扩展列表带只读素材包摘要（数量/帧数/文件数/字节/可用状态/基址）。
 - 卸载时素材包随扩展目录一起删除。
 - 第二刀：`actions/`、`sounds/` 的只读静态路由，只给 manifest 和 `pack.json` 都声明过的文件。
+- 第三刀：客户端把可用动作包注册进可写 registry，并提供 `dsh-piggy:action` 播放入口（见 §12）。
 
 **本刀不做**
 
-- 不把动作注册进客户端 `createArtResourceRegistry`。
 - 不把音效注册进 `sounds.js` / `audio-context.js`。
 - 不做扩展页上的素材包卡片/试听/预览 UI（只把摘要穿过快照归一化）。
 - 不把第三方扩展文件放进存档备份（和现有 `server.js` 一样，重装扩展后重新下载）。
@@ -207,14 +207,14 @@ extensions/<key>/
 
 | 操作 | 文件 | 存档 | 素材包 |
 |---|---|---|---|
-| 启用 / 停用 | 不动 | `state.extensions[key]` | 文件保留；本刀运行时未注册，列表仍显示摘要 |
+| 启用 / 停用 | 不动 | `state.extensions[key]` | 文件保留；启用/停用时客户端注册或注销，列表仍显示摘要 |
 | 卸载 | 整个 `extensions/<key>/` 删除 | 清 `extData[key]`、钱包结算（现有规则） | 一起删除，不残留 |
 | 更新 | 整个目录换名替换 | 保留 `extData[key]` | 旧包整体消失，新包整体出现 |
 | 更新失败（校验/加载/init） | 回滚旧目录 | 回滚到事务前 | 旧包原样保留 |
 | 首次安装失败 | 删除 staging | 不建数据 | 不残留 |
 
-停用不会删除素材包：用户再次启用时不需要重新下载。运行时的注册/注销在下一刀接入；
-本刀只保证文件语义。
+停用不会删除素材包：用户再次启用时不需要重新下载。客户端注册/注销见 §12；
+本节只保证文件语义。
 
 ## 9. 存储与列举
 
@@ -258,7 +258,8 @@ GET /dsh-piggy/ext/<key>/sounds/<pack>/<sound>.ogg|wav
 - 读取时再次检查真实路径仍在扩展目录内，并轻量核对图片/音频 magic 与大小上限。
 - MIME 固定为 json/png/webp/ogg/wav；响应带内容 hash 的 `etag` 和 `cache-control: no-cache`，
   `If-None-Match` 命中时 304。
-- 路由和 `extensions.js` 都不注册播放器资源；播放/生命周期仍是下一刀。
+- 路由和 `extensions.js` 都不注册播放器资源；播放/生命周期由第三刀的
+  `ext-actions.js` 在客户端完成，见 §12。
 
 ## 10. 打包格式
 
@@ -290,22 +291,85 @@ GET /dsh-piggy/ext/<key>/sounds/<pack>/<sound>.ogg|wav
 - 更新替换旧素材包、保留存档数据；代码加载失败回滚旧包；坏素材包在换文件前失败。
 - 现有 `ext-runtime` / `ext-install-rollback` / `ext-import` 测试保持通过。
 
-## 12. 剩余（后续）
+## 12. 客户端注册/播放入口（第三刀）
 
-1. **运行时注册**：把 `actions/<pack>/pack.json` 转成 `ArtResourcePackInput`
-   (`namespace: ext-<key>`, `pack`, `resources`) 并 `registerPack`；音效建立每扩展的注册表，
-   解析 `ext-<key>/<sound>`。
-2. **静态路由**（第二刀已完成）：`GET /dsh-piggy/ext/<key>/actions/...`、`/sounds/...`，
-   只给已加载扩展且在 manifest 声明内的路径；见 §9.1。
-3. **播放与生命周期**：扩展停用/卸载/更新时反注册，正在播放的帧动作安全结束；音频解码失败
-   回退到包内 `synth` 或静音。
-4. **UI**：扩展卡片显示“动作 N / 音效 M”，更新前预览；本刀只有快照字段，没有界面。
-5. **存档备份**：第三方扩展仍不进存档 ZIP；若以后官方扩展使用素材包，需要把
+### 12.1 注册链路
+
+挂载 `mountGame()` 时：
+
+- 没传 `artResources` 就创建一个**可写子 registry**，父级仍是只读的
+  `defaultArtResources`；传了就用调用方的可写 registry。第一方动作包始终留在父级。
+- 每次 `/state` 快照重画后，从 `extensions[].assetPacks.actions` 里取
+  `available === true` 且扩展处于启用/已安装状态的包。
+- 只信任由 key/pack 推导出的 `base`：
+  `/dsh-piggy/ext/<key>/actions/<pack>/`；摘要里的 `base` 对不上就跳过该包。
+- `GET <base>pack.json`，转换成 `ArtResourcePackInput`：
+  - `namespace` 固定 `ext-<extension-key>`，`pack` 沿用目录名；
+  - `pack.json.actions[]` 的 `durationMs` 转成 registry 的 `duration`；
+  - `frames: { fps }` 或 `{ durationsMs }`：帧数由总时长反推（fps 用累积边界取整，
+    与安装器算法一致），帧路径为 `ext/<key>/actions/<pack>/<action>/<NN>.png|webp`；
+  - `frames: [{ path, revision, durationMs }]`（生成器形状）：逐帧保留时长，
+    相对路径补上 `ext/<key>/` 前缀；
+  - `source` 单图：URL 为 `base + 文件名`，在 registry 里存成
+    `{ scheme: 'ext', path: 'ext/<key>/actions/<pack>/<file>' }`；
+  - 动作 `fallback` 字符串改写为本扩展同包的引用，显式 namespace 只能是本扩展；
+  - 音效引用暂时丢弃，避免第三方同名动作误触发第一方音效。
+- 帧格式（PNG/WebP）不在 `pack.json` 里声明：客户端只探测该动作的 `00.png`，
+  404 再试 `00.webp`（静态路由只接受 GET）。
+- 注册用 `registerPack({ replace: true })`；更新前先 `unregisterPack(namespace, pack)`，
+  保证新 `pack.json` 里删掉的动作不会残留。停用、卸载、`available: false` 都走同一条注销路径。
+- 挂载销毁时移除事件监听并注销所有第三方包；正在播放的帧动作由 registry 的
+  `removed` 通知结束，不会留下旧计时器。
+
+### 12.2 播放入口（公开契约）
+
+扩展自己的 `client.js` 派发 DOM 事件：
+
+```js
+document.dispatchEvent(new CustomEvent('dsh-piggy:action', {
+  detail: { key: 'ext-my-extension/wave/hello' },
+}))
+```
+
+- `detail.key` 必须是 `ext-<extension-key>/<pack>/<action>`。
+- 客户端只接受 `ext-` 前缀且当前**已注册**的 handle；未知 key、第一方
+  `dsh-piggy/...`、裸短名一律忽略。
+- 客户端在自己的 registry 里解析 handle，再调用 `playPigAction(pig, key)`；
+  动作是否真的开场仍受现有 eligibility、拖动、隐藏页、preload 就绪等规则约束。
+- 桌面拆窗口时，扩展 `client.js` 在面板/大界面窗口里跑，事件经
+  `PIG_FX` 的 `playAction` 转发到猪窗口播放；网页版在同一个 document 里直接播。
+- 这是第三方动作唯一的公开入口；不要直接改猪窗口 DOM，也不要依赖内部函数。
+
+### 12.3 失败隔离
+
+- `pack.json` 404/坏 JSON/非法字段/不认识的 base/registry 冲突都只注销或跳过**该包**，
+  `console.warn` 每个包每个快照签名只报一次；其它扩展和第一方动作继续工作。
+- 失败记忆按包摘要签名（版本、entries/frames/files/bytes）缓存；扩展更新或包内容
+  摘要变化后会自动重试。
+- 第一方命名空间 `dsh-piggy` 永远在父级 registry，第三方包没有写入路径能覆盖它。
+
+### 12.4 本刀仍不做
+
+1. **音效**：`sounds` 包不注册、不播放；动作描述符里的 `sound` 先丢弃。
+2. **UI**：扩展页仍只显示摘要，没有“试播/预览”按钮。
+3. **触发时机**：第三方动作只能由扩展 `client.js` 的显式事件播放；`trigger.on`
+   （pet/feed/idle 等）暂不接入自动触发。
+4. **单图安装**：客户端转换支持 `source` 单图，但 M3 安装器仍只收帧序列（§5.2），
+   单图形状留给后续安装协议或内置包使用。
+
+## 13. 剩余（后续）
+
+1. **音效注册**：音效建立每扩展的注册表，解析 `ext-<key>/<sound>`；解码失败回退到
+   包内 `synth` 或静音。
+2. **自动触发**：把 `pack.json` 的 `trigger.on` 接到现有 pet/feed/idle 事件，仍只接受
+   已注册的第三方动作。
+3. **UI**：扩展卡片显示“动作 N / 音效 M”，更新前预览/试播；本刀只有快照字段和事件入口。
+4. **存档备份**：第三方扩展仍不进存档 ZIP；若以后官方扩展使用素材包，需要把
    `actions/`、`sounds/` 加入 `runtime/save-archive.js` 的文件白名单与官方哈希清单。
-6. **发布链路**：`extension-entry.mjs` / `extension-bundle.mjs` 已能打包 `assetPacks`；
+5. **发布链路**：`extension-entry.mjs` / `extension-bundle.mjs` 已能打包 `assetPacks`；
    带素材包的扩展是否走逐文件旧目录仍未支持（附件名不能带斜杠），发布时只发整包。
 
-## 13. 明确不采用的方案
+## 14. 明确不采用的方案
 
 - **自动扫描 `actions/`、`sounds/` 目录，不要求 manifest 声明**：会安装未声明文件，无法在
   下载前判断包内容，也让“声明与实际一致”无法验证。采用显式白名单。

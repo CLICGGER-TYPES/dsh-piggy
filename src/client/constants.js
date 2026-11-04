@@ -10,6 +10,9 @@
 export const STATE_URL = '/dsh-piggy/state'
 // Hand-drawn stages are served from the plugin's own /art route.
 export const ART_URL = '/dsh-piggy/art/'
+// Host root for third-party `ext/<key>/actions/...` paths. The `/ext` routes
+// are validated by the host; the client never builds them from author input.
+export const EXT_URL = '/dsh-piggy/'
 export const ACT_URL = '/dsh-piggy/act'
 export const POLL_MS = 4000
 
