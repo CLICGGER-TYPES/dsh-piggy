@@ -11,7 +11,7 @@
  *   sounds/<pack>/<sound>.ogg|wav
  *
  * 命名空间由扩展 key 推导为 `ext-<key>`，不信任 pack.json 里的任何 namespace 字段；
- * 音效对外 id 是 `ext-<key>/<sound>`，因此不会覆盖第一方 `dsh-piggy` 或内置音效。
+ * 音效对外 id 是 `ext-<key>/<pack>/<sound>`，因此不会覆盖第一方 `dsh-piggy` 或内置音效。
  *
  * 本文件只放常量、路径和 schema 基础校验；安装流程在 ext-asset-validate.js，
  * 已安装摘要 ext-asset-summary.js。ext-asset-packs.js 是稳定入口。

@@ -14,6 +14,8 @@ extensions/<key>/
   server.js       规则：数据怎么变（在宿主进程里跑，ES module）
   client.js       面板页面（普通脚本，在面板里跑）
   assets/         可选：界面用的图片（0.36 起，manifest 里 `assets` 列出）
+  actions/        可选：动作素材包（0.37.2 起，见「动作素材包」）
+  sounds/         可选：音效素材包（0.37.2 起，见「音效素材包」）
 ```
 
 - `key`：小写字母、数字、`-`，2～24 个字，**等于文件夹名**。
@@ -258,7 +260,8 @@ extensions/my-extension/
   单帧 ≤128 KB、长边 ≤512 px。`durationMs` 必须等于总帧时长。
 - 安装器目前只收帧序列；`source` 单图是客户端向前兼容形状，还不在第三方安装协议里。
 - 不需要写 `namespace`。运行时固定用 `ext-<扩展 key>`，不可能覆盖第一方动作。
-- 动作 `sound` 在音效注册接入前不会播放；先不要把关键反馈只放在声音上。
+- 动作 `sound` 可写本扩展音效 key（`beep`）或 `<音效包>/<key>`（`sfx/beep`）；
+  播放动作时自动带上，见下面「音效素材包」。没注册对应音效时静音，不会误播第一方同名音效。
 
 `client.js` 里派发公开事件即可播放（不需要、也不应该直接操作猪窗口）：
 
@@ -288,6 +291,79 @@ extensions/my-extension/
   网页版在同一页面直接播。
 - 动作是否真的开场还受现有规则约束（猪在拖动/睡觉/隐藏页、eligibility 不满足、
   图片还没解码完时会被跳过）。
+
+### 音效素材包（可选，0.37.2 起）
+
+扩展可以自带音效，在动作之外单独播放，或绑定到动作上：
+
+```text
+extensions/my-extension/
+  sounds/sfx/
+    pack.json
+    beep.ogg
+```
+
+`manifest.json` 和动作包一起声明：
+
+```json
+{
+  "key": "my-extension",
+  "version": "1.0.0",
+  "minGame": "0.37.2",
+  "assetPacks": { "actions": ["wave"], "sounds": ["sfx"] }
+}
+```
+
+`sounds/sfx/pack.json`（同一包里 `file` 和 `synth` 二选一）：
+
+```json
+{
+  "pack": "sfx",
+  "revision": 1,
+  "sounds": [
+    {
+      "key": "beep",
+      "synth": { "tones": [{ "type": "sine", "from": 660, "to": 520, "ms": 70, "gain": 0.35 }] }
+    },
+    {
+      "key": "pop",
+      "file": "pop.ogg",
+      "durationMs": 400,
+      "gain": 0.8,
+      "debounceMs": 120,
+      "fallback": "synth:beep"
+    }
+  ]
+}
+```
+
+- 音频文件只收 `.ogg` / `.wav`，名字必须等于 `<key>.ogg` 或 `<key>.wav`；
+  单个 ≤30 KB，文件音效必须写 20–1500 的 `durationMs`。
+- `synth` 的 `tones` / `noise` 与第一方内置音效同一套参数：类型
+  `sine` / `triangle` / `sawtooth` / `square`，频率 20–20000，时长 10–5000ms。
+- `gain` 0–1、`debounceMs` 0–2000（同一只猪重复触发的最短间隔）、`fallback`
+  写本扩展音效 key 或 `synth:<key>`。文件 404/解码失败时先回退 fallback，
+  再静音，不会抛异常。
+- 一个扩展里的音效 key 跨包不能重复；对外 id 固定
+  `ext-<扩展 key>/<pack>/<sound>`，不可能覆盖第一方音效。
+
+`client.js` 里派发公开事件播放（只接受已注册的 `ext-` key）：
+
+```js
+document.dispatchEvent(new CustomEvent('dsh-piggy:sound', {
+  detail: { key: 'ext-my-extension/sfx/beep' },
+}))
+```
+
+事件契约：
+
+- 事件名固定 `dsh-piggy:sound`，`detail.key` 推荐写完整的
+  `ext-<扩展 key>/<pack>/<sound>`；裸 `ext-<key>/<sound>` 只在扩展内短名唯一时可用。
+- 只播放当前已安装、已启用且成功注册的音效；未知 key、第一方 key、裸短名都会被忽略。
+- 桌面版拆窗口时，客户端会把播放转发到猪窗口；音效仍受音效开关、音量档、
+  免打扰和并发声部上限约束。
+- 动作里写 `"sound": "sfx/beep"`（或裸 `"beep"`）就会在该动作开场时自动播放，
+  不需要再派发事件。
 
 ## 本地测试
 

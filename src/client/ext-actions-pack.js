@@ -12,6 +12,7 @@ import { EXT_URL } from './constants.js'
 export const EXT_KEY = /^[a-z0-9-]{2,24}$/
 export const EXT_PACK = /^[a-z][a-z0-9-]{0,31}$/
 const ACTION = /^[a-z][a-z0-9-]{0,47}$/
+const SOUND_REF = /^(?:[a-z][a-z0-9-]{0,31}\/)?[a-z][a-z0-9-]{0,47}$/
 const REVISION = /^[A-Za-z0-9._-]{1,128}$/
 
 /** @param {string} key @param {string} pack */
@@ -69,6 +70,20 @@ function extPath(key, pack, value) {
     return 'ext/' + key + '/' + value
   }
   return 'ext/' + key + '/actions/' + pack + '/' + value.replace(/^\.\//, '')
+}
+
+/**
+ * Authored action sounds are `beep` or `<sound-pack>/beep`; the runtime table
+ * is namespaced, so prefix this extension. A bare key becomes
+ * `ext-<key>/<sound>` and resolves inside the extension (ambiguous cross-pack
+ * short names are rejected at play time).
+ * @param {string} key
+ * @param {unknown} value
+ */
+function actionSound(key, value) {
+  if (value === undefined) return undefined
+  if (typeof value !== 'string' || !SOUND_REF.test(value)) throw new Error('invalid action sound')
+  return 'ext-' + key + '/' + value
 }
 
 /**
@@ -226,8 +241,9 @@ export async function buildExtensionActionPack(input) {
     if (action.eligibility !== undefined && action.eligibility !== null) declaration.eligibility = action.eligibility
     const fallback = fallbackOf(action.fallback, namespace, pack)
     if (fallback !== undefined) declaration.fallback = fallback
-    // Sounds are deliberately not registered in M3's third cut. Keep the
-    // action silent rather than falling through to a first-party sound key.
+    // 动作 sound 在运行时查本扩展音效表；没注册时静音，绝不落到第一方同名 key。
+    const sound = actionSound(key, action.sound)
+    if (sound !== undefined) declaration.sound = sound
     resources.push(declaration)
   }
   return { namespace: namespace, pack: pack, revision: revision, resources: resources }

@@ -2,7 +2,8 @@
 
 > 2026-11-04 · 目标：先让第三方扩展可以安全地携带动作和音效素材，安装、更新、卸载、回滚都不破坏第一方素材。
 > 第一刀做安装、校验、命名空间和摘要；第二刀加只读静态路由和 `/state` 摘要字段；
-> 第三刀接客户端动作注册与 DOM 播放入口。音效注册和 UI 仍未接。
+> 第三刀接客户端动作注册与 DOM 播放入口；第四刀接音效注册与播放，M3 运行时链路完成。
+> UI 卡片和 `trigger.on` 自动触发仍未接。
 
 ## 0. 一句话
 
@@ -21,11 +22,13 @@ schema 做完整校验，命名空间固定为 `ext-<extension-key>`，永远不
 - 卸载时素材包随扩展目录一起删除。
 - 第二刀：`actions/`、`sounds/` 的只读静态路由，只给 manifest 和 `pack.json` 都声明过的文件。
 - 第三刀：客户端把可用动作包注册进可写 registry，并提供 `dsh-piggy:action` 播放入口（见 §12）。
+- 第四刀：客户端把可用音效包注册进 `audio-context` 的扩展表，提供 `dsh-piggy:sound`
+  播放入口，动作 `sound` 绑定 `ext-` key；文件失败回退 synth，再失败静音（见 §13）。
 
 **本刀不做**
 
-- 不把音效注册进 `sounds.js` / `audio-context.js`。
 - 不做扩展页上的素材包卡片/试听/预览 UI（只把摘要穿过快照归一化）。
+- 不把 `pack.json.trigger.on` 接到自动触发；第三方动作/音效仍由扩展显式事件播放。
 - 不把第三方扩展文件放进存档备份（和现有 `server.js` 一样，重装扩展后重新下载）。
 
 ## 2. 目录布局
@@ -86,7 +89,7 @@ extensions/<key>/
 | 资源 | 第一方 | 第三方 |
 |---|---|---|
 | 动作 handle | `dsh-piggy/<pack>/<action>` | `ext-<extension-key>/<pack>/<action>` |
-| 音效 id | `<key>` / `sfx/<key>` | `ext-<extension-key>/<sound-key>` |
+| 音效 id | `<key>` / `sfx/<key>` | `ext-<extension-key>/<pack>/<sound-key>` |
 | 注册表 | `dsh-piggy` | 按扩展隔离 |
 
 - **命名空间不由 `pack.json` 提供**。`pack.json` 里出现 `namespace` 字段会被当作未知字段拒绝；
@@ -95,10 +98,11 @@ extensions/<key>/
 - 音效 id 加扩展前缀后，即使第三方音效叫 `tap`，也不会覆盖内置 `tap`。
 - `pack.json.pack` 冒充 `dsh-piggy` 也不行：写了必须等于目录名，且 handle 仍带
   `ext-<key>` 前缀。
-- 动作的 `sound` 做语法校验，可以写裸 `beep`，也可以写 `<sound-pack>/beep`；运行时先查
-  本扩展，未命中再按第一方 key 回退。显式的 `fallback` 引用不能指向别的扩展 namespace；
-  字符串 fallback 由运行时按“本扩展 → 第一方”的顺序解析。安装阶段不要求引用的目标已经存在
-  （前向引用/第一方回退是合法用法）。
+- 动作的 `sound` 做语法校验，可以写裸 `beep`，也可以写 `<sound-pack>/beep`；客户端注册动作时
+  一律改写成 `ext-<key>/<sound>` 或 `ext-<key>/<pack>/<sound>`，只在扩展音效表里解析，
+  不会误触发第一方同名音效。音效条目自己的 `fallback` 仍可写 `synth:<key>` 回退到内置 synth。
+  显式动作 `fallback` 引用不能指向别的扩展 namespace；字符串 fallback 由运行时按“本扩展”
+  解析。安装阶段不要求引用的目标已经存在（前向引用是合法用法）。
 
 ## 5. 上限
 
@@ -213,7 +217,7 @@ extensions/<key>/
 | 更新失败（校验/加载/init） | 回滚旧目录 | 回滚到事务前 | 旧包原样保留 |
 | 首次安装失败 | 删除 staging | 不建数据 | 不残留 |
 
-停用不会删除素材包：用户再次启用时不需要重新下载。客户端注册/注销见 §12；
+停用不会删除素材包：用户再次启用时不需要重新下载。客户端注册/注销见 §12、§13；
 本节只保证文件语义。
 
 ## 9. 存储与列举
@@ -313,7 +317,8 @@ GET /dsh-piggy/ext/<key>/sounds/<pack>/<sound>.ogg|wav
   - `source` 单图：URL 为 `base + 文件名`，在 registry 里存成
     `{ scheme: 'ext', path: 'ext/<key>/actions/<pack>/<file>' }`；
   - 动作 `fallback` 字符串改写为本扩展同包的引用，显式 namespace 只能是本扩展；
-  - 音效引用暂时丢弃，避免第三方同名动作误触发第一方音效。
+  - 动作 `sound` 改写为 `ext-<key>/<pack>/<sound>`（裸 key 保留为
+    `ext-<key>/<sound>`），由音效表解析；没注册时静音。
 - 帧格式（PNG/WebP）不在 `pack.json` 里声明：客户端只探测该动作的 `00.png`，
   404 再试 `00.webp`（静态路由只接受 GET）。
 - 注册用 `registerPack({ replace: true })`；更新前先 `unregisterPack(namespace, pack)`，
@@ -348,28 +353,71 @@ document.dispatchEvent(new CustomEvent('dsh-piggy:action', {
   摘要变化后会自动重试。
 - 第一方命名空间 `dsh-piggy` 永远在父级 registry，第三方包没有写入路径能覆盖它。
 
-### 12.4 本刀仍不做
+### 12.4 第三刀仍不做
 
-1. **音效**：`sounds` 包不注册、不播放；动作描述符里的 `sound` 先丢弃。
-2. **UI**：扩展页仍只显示摘要，没有“试播/预览”按钮。
-3. **触发时机**：第三方动作只能由扩展 `client.js` 的显式事件播放；`trigger.on`
+1. **UI**：扩展页仍只显示摘要，没有“试播/预览”按钮。
+2. **触发时机**：第三方动作只能由扩展 `client.js` 的显式事件播放；`trigger.on`
    （pet/feed/idle 等）暂不接入自动触发。
-4. **单图安装**：客户端转换支持 `source` 单图，但 M3 安装器仍只收帧序列（§5.2），
+3. **单图安装**：客户端转换支持 `source` 单图，但 M3 安装器仍只收帧序列（§5.2），
    单图形状留给后续安装协议或内置包使用。
 
-## 13. 剩余（后续）
+## 13. 客户端音效注册/播放（第四刀）
 
-1. **音效注册**：音效建立每扩展的注册表，解析 `ext-<key>/<sound>`；解码失败回退到
-   包内 `synth` 或静音。
-2. **自动触发**：把 `pack.json` 的 `trigger.on` 接到现有 pet/feed/idle 事件，仍只接受
-   已注册的第三方动作。
-3. **UI**：扩展卡片显示“动作 N / 音效 M”，更新前预览/试播；本刀只有快照字段和事件入口。
+### 13.1 注册链路
+
+- 每次 `/state` 快照重画后，从 `extensions[].assetPacks.sounds` 里取
+  `available === true` 且扩展处于启用/已安装状态的包。
+- 只信任由 key/pack 推导出的 `base`：
+  `/dsh-piggy/ext/<key>/sounds/<pack>/`；摘要里的 `base` 对不上就跳过该包。
+- `GET <base>pack.json`，校验后注册到 `audio-context` 的扩展音效表：
+  - 对外 key 固定 `ext-<extension-key>/<pack>/<sound-key>`；
+  - `synth` 条目沿用第一方的 tones/noise 参数，播放时走同一个合成器；
+  - `file` 条目存绝对 URL `base + file`，首次播放先 synth 回退，解码完成后优先播文件；
+  - 保留 `gain`、`debounceMs`、`fallback`；文件解码缓存按包摘要签名失效。
+- 注册/更新/卸载与动作包同一条 diff 生命周期：停用、删除、`available: false` 都注销；
+  更新时先注销旧包再注册新包，`pack.json` 里删掉的音效不会残留。
+- 挂载销毁时注销全部第三方音效包并移除事件监听。
+- 第一方 `RECIPES` / `SOUND_FILES` 永远先查；扩展只能占用 `ext-` 前缀。
+
+### 13.2 播放入口（公开契约）
+
+扩展自己的 `client.js` 派发 DOM 事件：
+
+```js
+document.dispatchEvent(new CustomEvent('dsh-piggy:sound', {
+  detail: { key: 'ext-my-extension/sfx/beep' },
+}))
+```
+
+- `detail.key` 推荐固定 `ext-<extension-key>/<pack>/<sound>`；裸 `ext-<key>/<sound>`
+  只在扩展内短名唯一时可用。
+- 客户端只接受当前**已注册**的 `ext-` key；未知 key、第一方 key、裸短名一律忽略。
+- 桌面拆窗口时，事件经 `PIG_FX` 的 `playSound` 转发到猪窗口，用猪窗口的展示通道播放；
+  网页版在同一个 document 里直接播。
+- 动作 `pack.json` 里的 `sound: "sfx/beep"` 注册后变成 `ext-<key>/sfx/beep`，播放该动作时
+  由现有 `c.audio.play(sound)` 自动带上，不需要额外事件。
+- 是否出声仍受音效开关、音量档、每通道去重、免打扰、设备 3 声部上限约束。
+
+### 13.3 失败隔离
+
+- `pack.json` 404/坏 JSON/非法字段/不认识的 base 都只注销或跳过**该包**，
+  `console.warn` 每个包每个快照签名只报一次；其它扩展和第一方音效继续工作。
+- 文件 404、解码失败或格式不支持时，按条目 `fallback` 找本扩展 synth，再找内置
+  `RECIPES`；都没有就静音，不抛异常，也不反复请求坏文件。
+- 第一方音效表不被写入，扩展卸载后其 key 立即不可播放；重新启用会重新注册并恢复。
+
+## 14. 剩余（后续）
+
+1. **自动触发**：把 `pack.json` 的 `trigger.on` 接到现有 pet/feed/idle 事件，仍只接受
+   已注册的第三方动作；音效跟随动作或显式事件。
+2. **UI**：扩展卡片显示“动作 N / 音效 M”，更新前预览/试播；本刀只有快照字段和事件入口。
+3. **单图安装**：客户端转换支持 `source` 单图，但 M3 安装器仍只收帧序列（§5.2）。
 4. **存档备份**：第三方扩展仍不进存档 ZIP；若以后官方扩展使用素材包，需要把
    `actions/`、`sounds/` 加入 `runtime/save-archive.js` 的文件白名单与官方哈希清单。
 5. **发布链路**：`extension-entry.mjs` / `extension-bundle.mjs` 已能打包 `assetPacks`；
    带素材包的扩展是否走逐文件旧目录仍未支持（附件名不能带斜杠），发布时只发整包。
 
-## 14. 明确不采用的方案
+## 15. 明确不采用的方案
 
 - **自动扫描 `actions/`、`sounds/` 目录，不要求 manifest 声明**：会安装未声明文件，无法在
   下载前判断包内容，也让“声明与实际一致”无法验证。采用显式白名单。

@@ -138,7 +138,11 @@ export function attachPigActions(c) {
     // 动作自带音效：只走当前展示实例的通道，不跨窗口。
     const sound = target.descriptor.sound
     if (typeof sound === 'string' && sound !== '' && c.audio !== undefined && typeof c.audio.play === 'function') {
-      const cue = sound.includes('/') ? sound.slice(sound.lastIndexOf('/') + 1) : sound
+      // 第一方历史 sound 可以写 `sfx/tap`，播放时去掉包名；第三方已转成完整的
+      // `ext-<key>/<pack>/<sound>`，必须原样交给扩展音效表。
+      const cue = sound.startsWith('ext-')
+        ? sound
+        : sound.includes('/') ? sound.slice(sound.lastIndexOf('/') + 1) : sound
       c.audio.play(cue)
     }
     if (frames === null) {

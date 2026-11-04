@@ -10,7 +10,10 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
-import { createAudioChannel, resetAudioDevice } from '../../../src/client/audio-context.js'
+import {
+  clearExtensionSounds, createAudioChannel, registerExtensionSoundPack, resetAudioDevice,
+  resolveExtensionSound, unregisterExtensionSoundPack,
+} from '../../../src/client/audio-context.js'
 import { setSoundSettings } from '../../../src/client/feel/settings.js'
 import { configureSound, playSound, resetSound, unlockSound } from '../../../src/client/sound.js'
 import { fakeDom } from '../../helpers/bundle.js'
@@ -167,6 +170,7 @@ function enableSound() {
 function cleanup(t, env) {
   t.after(function () {
     resetAudioDevice()
+    clearExtensionSounds()
     delete globalThis.window
     delete globalThis.document
     env.FakeAudioContext.instances.length = 0
@@ -429,5 +433,89 @@ test('文件音效先回退合成，解码后优先播放音频', async (t) => {
   assert.equal(channel.play('boom'), true, '解码后播放文件 buffer')
   const context = env.FakeAudioContext.instances[0]
   assert.equal(context.sources.some(source => source.buffer !== null), true, '使用了 AudioBufferSource')
+  channel.dispose()
+})
+
+test('扩展音效：synth/文件 URL、去重、音量和 fallback 都走扩展表', async (t) => {
+  const env = installWindow()
+  cleanup(t, env)
+  enableSound()
+  globalThis.fetch = async function () {
+    return { ok: true, arrayBuffer: async function () { return new ArrayBuffer(16) } }
+  }
+  t.after(function () { delete globalThis.fetch })
+
+  registerExtensionSoundPack({
+    namespace: 'ext-demo',
+    pack: 'sfx',
+    sounds: [
+      { key: 'beep', synth: { tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 0.5 }] }, debounceMs: 0 },
+      { key: 'tick', synth: { tones: [{ type: 'square', from: 300, to: 280, ms: 40, gain: 0.2 }] } },
+      { key: 'boom', url: '/dsh-piggy/ext/demo/sounds/sfx/boom.ogg', durationMs: 400, gain: 0.5, debounceMs: 0, fallback: 'synth:beep', cacheKey: 'boom@1' },
+    ],
+  })
+  const channel = createAudioChannel()
+
+  assert.equal(channel.play('ext-demo/sfx/beep'), true)
+  const tone = env.FakeAudioContext.instances[0].sources[0]
+  const peak = Math.max(...tone.connections[0].gain.events.filter(event => event.kind === 'ramp').map(event => event.value))
+  assert.ok(Math.abs(peak - 0.82 * 0.5) < 1e-9, '扩展 gain 与全局音量相乘')
+
+  assert.equal(channel.play('ext-demo/sfx/tick'), true)
+  assert.equal(channel.play('ext-demo/sfx/tick'), false, '默认 60ms 去重')
+
+  setSoundSettings({ on: true, volume: 0 })
+  assert.equal(channel.play('ext-demo/sfx/beep'), true)
+  const quietTone = env.FakeAudioContext.instances[0].sources.at(-1)
+  const quietPeak = Math.max(...quietTone.connections[0].gain.events.filter(event => event.kind === 'ramp').map(event => event.value))
+  assert.ok(Math.abs(quietPeak - 0.32 * 0.5) < 1e-9, '音量档位作用于扩展音效')
+  setSoundSettings({ on: true, volume: 2 })
+
+  channel.stop()
+  assert.equal(channel.play('ext-demo/sfx/boom'), true, '首次播放先用 fallback synth')
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(channel.play('ext-demo/sfx/boom'), true, '解码后播放文件 buffer')
+  const context = env.FakeAudioContext.instances[0]
+  assert.equal(context.sources.some(source => source.buffer !== null), true, '使用了 AudioBufferSource')
+  assert.equal(resolveExtensionSound('ext-demo/beep')?.key, 'ext-demo/sfx/beep', '省略 pack 时按扩展内唯一短名解析')
+  channel.dispose()
+})
+
+test('扩展音效卸载后不可播放，重新注册恢复；坏 URL 静音且不影响第一方', async (t) => {
+  const env = installWindow()
+  cleanup(t, env)
+  enableSound()
+  globalThis.fetch = async function () {
+    return { ok: false, status: 404, arrayBuffer: async function () { return new ArrayBuffer(0) } }
+  }
+  t.after(function () { delete globalThis.fetch })
+
+  registerExtensionSoundPack({
+    namespace: 'ext-demo',
+    pack: 'sfx',
+    sounds: [
+      { key: 'broken', url: '/dsh-piggy/ext/demo/sounds/sfx/broken.ogg', durationMs: 400, debounceMs: 0 },
+      { key: 'rescued', url: '/dsh-piggy/ext/demo/sounds/sfx/rescued.ogg', durationMs: 400, debounceMs: 0, fallback: 'synth:beep' },
+      { key: 'beep', synth: { tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 0.4 }] }, debounceMs: 0 },
+    ],
+  })
+  const channel = createAudioChannel()
+
+  assert.equal(channel.play('ext-demo/sfx/broken'), false, '没有 synth 可回退时静音且不抛')
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(channel.play('ext-demo/sfx/broken'), false, '坏文件缓存后仍然静音')
+  assert.equal(channel.play('ext-demo/sfx/rescued'), true, '坏文件回退包内 synth')
+  assert.equal(channel.play('tap'), true, '第一方音效照常')
+
+  assert.equal(unregisterExtensionSoundPack('ext-demo', 'sfx'), 3)
+  assert.equal(channel.play('ext-demo/sfx/beep'), false, '卸载后 key 不再可播放')
+  assert.equal(channel.play('lift'), true, '第一方不受卸载影响')
+
+  channel.stop()
+  registerExtensionSoundPack({
+    namespace: 'ext-demo', pack: 'sfx',
+    sounds: [{ key: 'beep', synth: { tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 0.4 }] }, debounceMs: 0 }],
+  })
+  assert.equal(channel.play('ext-demo/sfx/beep'), true, '重新启用恢复')
   channel.dispose()
 })
