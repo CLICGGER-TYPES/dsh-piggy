@@ -285,3 +285,72 @@ test('重建窗口只保留新窗口的一份输入轮询', async () => {
   assert.equal(shell.intervals.filter(timer => timer.active && timer.delay === 16).length, 1)
   assert.equal(shell.intervals.filter(timer => !timer.active && timer.delay === 16).length, 1)
 })
+
+const SCREEN_100 = {
+  bounds: { x: 0, y: 0, width: 1280, height: 800 },
+  workArea: { x: 0, y: 0, width: 1280, height: 800 },
+  scaleFactor: 1,
+  physicalBounds: { x: 0, y: 0, width: 1280, height: 800 },
+}
+const SCREEN_200 = {
+  bounds: { x: 1280, y: 0, width: 1280, height: 800 },
+  workArea: { x: 1280, y: 0, width: 1280, height: 800 },
+  scaleFactor: 2,
+  physicalBounds: { x: 1280, y: 0, width: 2560, height: 1600 },
+}
+
+test('Windows 混合 DPI：光标在 200% 屏、窗口在 100% 屏时按物理像素命中', async () => {
+  const shell = await mouseHarness({ platform: 'win32', displays: [SCREEN_100, SCREEN_200] })
+  const bounds = { x: 1000, y: 100, width: 400, height: 300 }
+  // 光标 DIP (1290,150) 在右屏，物理点 (1300,300)；窗口在左屏，内容物理原点 (1000,100)。
+  shell.send('piggy:place', { bounds, shape: DRAW, hitShape: [{ x: 285, y: 40, width: 20, height: 20 }] })
+  shell.cursorAt(1290, 150)
+  shell.poll()
+  assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false }, '旧 DIP 相减会把透明预留当命中')
+  shell.send('piggy:place', { hitShape: [{ x: 285, y: 190, width: 20, height: 20 }] })
+  shell.poll()
+  assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false }, '物理位置落在真实输入面上')
+})
+
+test('Windows 同屏 200%：物理换算和原来的 DIP 相减结论一致', async () => {
+  const shell = await mouseHarness({ platform: 'win32', displays: [SCREEN_100, SCREEN_200] })
+  const bounds = { x: 1400, y: 100, width: 200, height: 200 }
+  shell.send('piggy:place', { bounds, shape: DRAW, hitShape: [{ x: 40, y: 40, width: 20, height: 20 }] })
+  shell.cursorAt(1450, 150)
+  shell.poll()
+  assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false })
+  shell.cursorAt(1460, 150)
+  shell.poll()
+  assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false }, '右边界按窗口逻辑坐标排他')
+})
+
+for (const platform of ['darwin', 'win32']) {
+  test(`页面报过 hitShape 后，placedHitShape 为空不再回退绘制轮廓：${platform}`, async () => {
+    const shell = await mouseHarness({ platform })
+    shell.send('piggy:place', PLACE)
+    assert.equal(shell.primary.hasPlacedHitShape, true)
+    shell.primary.placedHitShape = null
+    shell.point(250, 250)
+    shell.poll()
+    assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false },
+      '窗口内但不在输入面上的点不能因为绘制轮廓整窗可点')
+  })
+
+  test(`窗口 bounds 变化后旧 hitShape 暂停，等本次 place 的新输入面恢复：${platform}`, async () => {
+    const shell = await mouseHarness({ platform })
+    shell.send('piggy:place', PLACE)
+    shell.point(110, 130)
+    shell.poll()
+    assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false })
+    const moved = { x: 900, y: 500, width: 400, height: 360 }
+    shell.send('piggy:place', { bounds: moved })
+    assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false }, '换位置那一刻先放行桌面')
+    shell.point(110, 130)
+    shell.poll()
+    assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false }, '16ms 轮询不能拿旧形状恢复')
+    shell.send('piggy:place', { bounds: moved, shape: DRAW, hitShape: HIT })
+    shell.point(110, 130)
+    shell.poll()
+    assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false }, '新 place 到达后同步恢复')
+  })
+}

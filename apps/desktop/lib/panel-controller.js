@@ -5,6 +5,7 @@
  * 窗口句柄仍由 lib/panel-window.js 唯一持有；这里只持有面板自身的状态机，
  * 通过 deps 读取主进程的窗口、猪和全局日志入口。逻辑从 main.js 原样搬来。
  */
+import { cursorHitsWindow } from './hit-physical.js'
 import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, panelContentRect, panelReferenceFor, panelViewportSize, pigScreenBox } from './panel-geometry.js'
 import { panelToggleAction } from './panel-toggle.js'
 import { pointerHitsShape } from './pointer-hit.js'
@@ -122,8 +123,11 @@ export function createPanelController(deps) {
   /** 固定外框只让实际卡片和名牌接收点击，透明预留区继续点到桌面。 */
   function refreshPanelHit() {
     if (!panelFixedViewport || !panelOpen || !panelAnchor || !deps.getPanelWindow() || deps.getPanelWindow().isDestroyed() || !deps.getPanelWindow().isVisible()) return
-    const bounds = deps.getPanelWindow().getBounds()
-    const hit = pointerHitsShape(deps.screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])
+    const window = deps.getPanelWindow()
+    const bounds = window.getBounds()
+    // 和猪窗口同一套换算：Windows 跨屏按物理像素，其它平台保持 DIP 相减。
+    const { hit } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window,
+      shape: [panelContentRect(bounds, panelAnchor, panelSize)] })
     if (hit === panelHit) return
     panelHit = hit
     deps.traceSetIgnoreMouseEvents('panel', 'panel', 'panel-hit', !hit, true,

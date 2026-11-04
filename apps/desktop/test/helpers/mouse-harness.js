@@ -18,11 +18,58 @@ import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../../main.js', import.meta.url), 'utf8')
 
-export async function mouseHarness({ platform = 'win32', env = {}, frameSubscription = false, scaleFactor = 1, resetsInputOnShape = false } = {}) {
+export async function mouseHarness({ platform = 'win32', env = {}, frameSubscription = false, scaleFactor = 1, resetsInputOnShape = false, displays = null } = {}) {
   const handlers = new Map(), intervals = [], mouse = [], shapes = [], sent = []
   const windowEvents = new Map(), pageEvents = new Map()
   const area = { x: 0, y: 0, width: 1920, height: 1040 }
-  const display = { workArea: area, bounds: area, scaleFactor, displayFrequency: 60 }
+  // 默认单屏；显式传 displays 时用每块屏自己的 bounds/scaleFactor 模拟混合 DPI。
+  const displayList = (displays ?? [{ bounds: area, workArea: area, scaleFactor }]).map((entry, index) => {
+    const bounds = { ...(entry.bounds ?? area) }
+    const factor = entry.scaleFactor ?? scaleFactor
+    return {
+      id: entry.id ?? index + 1,
+      label: entry.label ?? `display-${index + 1}`,
+      bounds,
+      workArea: { ...(entry.workArea ?? bounds) },
+      scaleFactor: factor,
+      physicalBounds: { ...(entry.physicalBounds ?? {
+        x: bounds.x * factor, y: bounds.y * factor, width: bounds.width * factor, height: bounds.height * factor,
+      }) },
+      displayFrequency: 60,
+      internal: index === 0,
+    }
+  })
+  const primaryDisplay = displayList[0]
+  const insideDisplay = (display, point) => point.x >= display.bounds.x && point.x < display.bounds.x + display.bounds.width
+    && point.y >= display.bounds.y && point.y < display.bounds.y + display.bounds.height
+  const nearestDisplay = point => displayList.reduce((best, display) => {
+    const distance = (a, b) => Math.abs(a - b)
+    const cx = display.bounds.x + display.bounds.width / 2
+    const cy = display.bounds.y + display.bounds.height / 2
+    const bx = best.bounds.x + best.bounds.width / 2
+    const by = best.bounds.y + best.bounds.height / 2
+    return distance(point.x, cx) + distance(point.y, cy) < distance(point.x, bx) + distance(point.y, by) ? display : best
+  })
+  const displayAtPoint = point => displayList.find(display => insideDisplay(display, point)) ?? nearestDisplay(point)
+  const displayForRect = rect => {
+    let best = null
+    let bestArea = 0
+    for (const display of displayList) {
+      const width = Math.min(rect.x + rect.width, display.bounds.x + display.bounds.width) - Math.max(rect.x, display.bounds.x)
+      const height = Math.min(rect.y + rect.height, display.bounds.y + display.bounds.height) - Math.max(rect.y, display.bounds.y)
+      const overlap = Math.max(0, width) * Math.max(0, height)
+      if (overlap > bestArea) { bestArea = overlap; best = display }
+    }
+    return best ?? displayAtPoint({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 })
+  }
+  const dipPoint = (point, display) => ({
+    x: display.physicalBounds.x + (point.x - display.bounds.x) * display.scaleFactor,
+    y: display.physicalBounds.y + (point.y - display.bounds.y) * display.scaleFactor,
+  })
+  const dipRect = (rect, display) => {
+    const origin = dipPoint(rect, display)
+    return { x: origin.x, y: origin.y, width: rect.width * display.scaleFactor, height: rect.height * display.scaleFactor }
+  }
   const state = { bounds: null, cursor: { x: 0, y: 0 }, destroyed: false, now: 1000, ignoresMouse: false }
   const frames = [], ended = []
   const webContents = { id: 1, on: (event, callback) => pageEvents.set(event, callback), setFrameRate() {}, send: (...args) => sent.push(args),
@@ -38,6 +85,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     isDestroyed() { return state.destroyed }
     isVisible() { return true }
     getBounds() { return { ...state.bounds } }
+    getContentBounds() { return { ...state.bounds } }
     setBounds(bounds) { state.bounds = { ...bounds } }
     setIgnoreMouseEvents(ignore, options) { state.ignoresMouse = ignore; mouse.push({ ignore, forward: options.forward }) }
     setShape(rects) {
@@ -59,9 +107,17 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     panel: { followPig() {}, reanchorPanel() {}, focusLeft() {}, close() {}, ensure() {}, forgetTarget() {} },
     pigSessions: new Map(), quitting: false,
     startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,
-    readWindowState: () => null, pigDisplay: () => display, join: (...parts) => parts.join('/'),
-    screen: { getCursorScreenPoint: () => state.cursor, getAllDisplays: () => [display],
-      getDisplayMatching: () => display, getDisplayNearestPoint: () => display, getPrimaryDisplay: () => display },
+    readWindowState: () => null, pigDisplay: () => primaryDisplay, join: (...parts) => parts.join('/'),
+    screen: {
+      getCursorScreenPoint: () => state.cursor,
+      getAllDisplays: () => displayList,
+      getDisplayMatching: rect => displayForRect(rect),
+      getDisplayNearestPoint: point => displayAtPoint(point),
+      getPrimaryDisplay: () => primaryDisplay,
+      // 和 Electron 同样的口径：光标按光标所在屏，矩形按窗口所在屏。
+      dipToScreenPoint: point => dipPoint(point, displayAtPoint(point)),
+      dipToScreenRect: (win, rect) => dipRect(rect, displayForRect(win?.getBounds?.() ?? rect)),
+    },
     setInterval: (callback, delay) => { const timer = { callback, delay, active: true }; intervals.push(timer); return timer },
     clearInterval: timer => { if (timer) timer.active = false },
     setTimeout() {}, log() {}, followPig() {}, scheduleWindowStateSave() {}, reanchorPanel() {}, closePanel() {}, ensurePanelWindow() {},
@@ -114,7 +170,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   runInContext(source.slice(start, end), context)
   await manager.createWindow()
   return {
-    mouse, shapes, sent, intervals, state, pets, primary,
+    mouse, shapes, sent, intervals, state, pets, primary, displays: displayList,
     recreate: () => manager.createWindow(),
     send(channel, payload, sender = webContents) {
       const event = { sender, returnValue: undefined }
@@ -124,6 +180,8 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     poll() { for (const timer of intervals.filter(timer => timer.active && timer.delay === 16)) timer.callback() },
     tickDrag() { runInContext('dragTick(primaryPet())', context) },
     point(x, y) { state.cursor = { x: state.bounds.x + x, y: state.bounds.y + y } },
+    /** 光标按屏幕 DIP 直接给（跨屏测试用），不叠加窗口原点。 */
+    cursorAt(x, y) { state.cursor = { x, y } },
     close() { state.destroyed = true; windowEvents.get('closed')() },
     crash() { pageEvents.get('render-process-gone')({}, { reason: 'crashed' }) },
     dragging: () => primary.dragSession !== null,

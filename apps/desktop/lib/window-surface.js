@@ -6,10 +6,12 @@
  * 拖动引擎和 IPC 仍留在组合根；这里只做「作用于窗口」的部分，方便单独测。
  * Electron 对象、屏、面板和日志都由调用方经 deps 传入。
  */
-import { pointerHitsShape } from './pointer-hit.js'
+import { cursorHitsWindow } from './hit-physical.js'
 
 /** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
 const BOUNDS_TOLERANCE = 2
+/** 换位置后最多等这么久的新 hitShape；页面不再上报时恢复按当前形状命中，不能永久不可点。 */
+const HIT_PENDING_MS = 600
 
 /**
  * @param {{
@@ -34,6 +36,8 @@ export function createWindowSurface(deps) {
   /** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
   const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || deps.platform === 'darwin'
   let geometrySeq = 0
+  /** 同一种换算错误只记一次，避免 16ms 轮询刷日志。 */
+  let hitProblem = ''
 
   /** 这块窗口落在哪块屏上，就用那块屏的工作区。 */
   function workAreaFor(bounds) {
@@ -80,6 +84,13 @@ export function createWindowSurface(deps) {
     const tolerance = (why === 'drag' || why === 'move') && !sameRequest ? 0 : BOUNDS_TOLERANCE
     if (Math.abs(delta.x) <= tolerance && Math.abs(delta.y) <= tolerance
       && Math.abs(delta.width) <= tolerance && Math.abs(delta.height) <= tolerance) return null
+    // 窗口换了位置/大小：旧 hitShape 属于上一轮摆放，先放行桌面，等这次 place 的新 hitShape 再恢复。
+    // 拖动期间命中被强制保持为 true（dragSession），不能在这里清。
+    if (why === 'place' && pet.dragSession === null && pet.placedHitShape !== null && pet.hasPlacedHitShape === true) {
+      pet.hitPending = true
+      pet.hitPendingAt = Date.now()
+      setHit(pet, false, 'placement-pending')
+    }
     window.setBounds(next)
     pet.petAsked = { ...next }
     deps.panel.followPig(pet)
@@ -143,13 +154,27 @@ export function createWindowSurface(deps) {
   function refreshHit(pet) {
     const window = pet?.window
     if (window === null || window === undefined || window.isDestroyed() || pet.dragSession !== null) return
-    if (!pet.hasPlacedShape && pet.placedHitShape === null) return
+    if (!pet.hasPlacedShape && pet.placedHitShape === null && pet.hasPlacedHitShape !== true) return
+    // 等待本轮 place 的新 hitShape：期间一律放行桌面，不能拿上一轮的命中继续点。
+    // 页面不再上报时按当前窗口局部形状恢复，避免换位置后永久点不到猪。
+    if (pet.hitPending && Date.now() - pet.hitPendingAt >= HIT_PENDING_MS) pet.hitPending = false
+    if (pet.hitPending) { setHit(pet, false, 'placement-pending'); return }
+    // 页面报过独立输入面后，缺 hitShape 时不再拿含透明预留的绘制轮廓兜底。
+    if (pet.placedHitShape === null && pet.hasPlacedHitShape === true) {
+      setHit(pet, false, 'missing-hit-shape')
+      return
+    }
     const bounds = window.getBounds()
     // 只有旧契约把动作整窗绘制区域也当输入；新契约不能让透明预留抢走桌面点击。
     const shape = pet.placedHitShape === null && (pet.flightShapeActive || pet.dragShapeActive)
       ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
       : shiftedShape(pet.placedHitShape ?? pet.placedShape, pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : pet.flightSlide)
-    setHit(pet, pointerHitsShape(deps.screen.getCursorScreenPoint(), bounds, shape), 'cursor-hit-test')
+    const { hit, problem } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window, shape })
+    if (problem !== hitProblem) {
+      hitProblem = problem
+      if (problem !== '') deps.log('hit conversion rejected', problem)
+    }
+    setHit(pet, hit, 'cursor-hit-test')
   }
 
   /** 抛掷只挪窗口，不重排、不 followPig、不推几何、不写 window.json（A2）。 */

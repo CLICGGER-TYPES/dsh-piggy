@@ -247,6 +247,9 @@ export function createWindowManager(deps) {
     pet.placedShape = []
     pet.placedHitShape = null
     pet.hasPlacedShape = false
+    pet.hasPlacedHitShape = false
+    pet.hitPending = false
+    pet.hitPendingAt = 0
     await createWindow(saved)
     previous.removeAllListeners()
     previous.webContents.removeAllListeners()
