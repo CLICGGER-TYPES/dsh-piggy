@@ -63,6 +63,8 @@ export function createWindowManager(deps) {
   async function createPigWindow(pet, override = null) {
     if (pet === null || pet === undefined || deps.desktopLifecycle.quitting) return
     const saved = override ?? (pet.primary ? await deps.readWindowState() : null)
+    // 新猪第一次由页面摆放时，如果和已有宠物窗口重合，主进程会再错开一次。
+    pet.staggerPending = saved === null && pet.primary !== true
     if (deps.desktopLifecycle.quitting) return
     pet.savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
     if (pet.savedPigScreen !== null) {

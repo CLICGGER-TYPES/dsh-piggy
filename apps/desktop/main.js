@@ -27,7 +27,7 @@ import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
 import { readOwnerDocumentConfig } from './lib/owner-document-config.js'
-import { MIN_WINDOW, WINDOW_PADDING, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
+import { MIN_WINDOW, WINDOW_PADDING, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint, staggerPetBounds } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE } from './lib/versions.js'
 import { startBackgroundVersions } from './lib/background-versions.js'
@@ -739,7 +739,14 @@ ipcMain.on('piggy:place', (event, request) => {
   const b = request?.bounds
   const motionHandoff = Array.isArray(request.shape) && (pet.dragShapeActive || pet.flightShapeActive)
   if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
-    const next = { x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }
+    let next = { x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }
+    if (pet.staggerPending) {
+      const others = pets.all()
+        .filter(other => other !== pet && other.window !== null && other.window !== undefined && !other.window.isDestroyed())
+        .map(other => other.window.getBounds())
+      next = staggerPetBounds(next, others, screen.getDisplayMatching(next).workArea)
+      pet.staggerPending = false
+    }
     if (process.platform === 'linux') pet.resizeShape?.begin(next, motionHandoff)
     applyBounds(pet, next, 'place')
   } else if (motionHandoff && process.platform === 'linux') {
