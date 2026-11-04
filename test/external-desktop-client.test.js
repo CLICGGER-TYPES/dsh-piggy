@@ -69,6 +69,36 @@ test('开启/关闭使用原开关组件，通知更新状态且离开设置后�
   } finally { s.restore() }
 })
 
+test('「外部连接」卡片下显示最近投递；读取失败时整块隐藏', async () => {
+  const now = Date.now()
+  const ok = setup({
+    get: async () => ({ ok: true, enabled: true, running: true }),
+    set: async enabled => ({ ok: true, enabled, running: enabled }),
+    workEventSources: async () => ({ ok: true, sources: [
+      { source: 'dsh', count: 12, lastAt: now - 60_000, types: { turn: 7, tool: 5 } },
+      { source: 'opencode', count: 2, lastAt: now - 2 * 86_400_000, types: { message: 2 } },
+    ] }),
+  })
+  try {
+    await settle()
+    const block = findByAttr(ok.content, 'data-work-sources', 'true')
+    assert.ok(block, ok.content.allText())
+    assert.match(block.allText(), /最近投递/)
+    assert.equal(findByAttr(ok.content, 'data-work-source', 'dsh').allText().includes('12 条'), true)
+  } finally { ok.restore() }
+
+  const failed = setup({
+    get: async () => ({ ok: true, enabled: true, running: true }),
+    set: async enabled => ({ ok: true, enabled, running: enabled }),
+    workEventSources: async () => ({ ok: false, sources: [] }),
+  })
+  try {
+    await settle()
+    assert.equal(findByAttr(failed.content, 'data-work-sources', 'true'), undefined)
+    assert.doesNotMatch(failed.content.allText(), /最近投递/)
+  } finally { failed.restore() }
+})
+
 test('实际split面板适配层保留联动接口，设置开关可调用原生桥', async () => {
   const { installPanel } = await import('../src/client/desktop/panel-window.js')
   const { desktopShell } = await import('../src/client/desktop-shell.js')

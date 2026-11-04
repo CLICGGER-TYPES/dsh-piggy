@@ -155,6 +155,8 @@ contextBridge.exposeInMainWorld('piggyShell', {
     set: enabled => ipcRenderer.invoke('piggy:external:set', enabled === true),
     onStatus: callback => { ipcRenderer.on('piggy:external', (event, status) => callback(status)) },
   },
+  /** 设置 → 外部连接 → 最近投递：只读来源聚合；旧外壳没有这个口子。 */
+  workEventSources: () => ipcRenderer.invoke('piggy:work-event-sources'),
   openPage: url => ipcRenderer.invoke('piggy:open', String(url)),
   /** 设置 → 日志 → 导出：主进程弹系统「另存为」，写盘。 */
   logs: {

@@ -1,6 +1,7 @@
 // @ts-check
 /** 桌面设置的联动许可；只通过外壳 IPC 开关，不向页面暴露发现文件或令牌。 */
 import { button, el } from './dom.js'
+import { renderWorkSources } from './work-sources.js'
 
 const states = new WeakMap()
 
@@ -56,4 +57,5 @@ export function renderExternalDesktopSettings(ui, section, api) {
   else if (enabled && state.value?.running === true) text = '已允许外部联动；只允许这台电脑连接'
   else if (enabled) text = '已开启许可，但连接服务尚未就绪，请重试'
   setting.box.appendChild(el('small', 'dp-dim', text))
+  renderWorkSources(ui, setting.box, api.workEventSources)
 }
