@@ -6847,15 +6847,20 @@
     }
     async function refresh2() {
       if (ctx.stopped) return;
+      var pauseUntil = typeof window === "undefined" ? 0 : (
+        /** @type {any} */
+        window.__dshPiggyPollPauseUntil
+      );
+      if (typeof pauseUntil === "number" && pauseUntil > Date.now()) return;
       ctx.fitPanel();
       var startedAt = actionSeq;
       try {
         var res = await fetch(STATE_URL, { cache: "no-store" });
         if (!res.ok) {
-          var failure2 = await res.json().catch(function() {
+          var failure3 = await res.json().catch(function() {
             return null;
           });
-          if (busyResponse(res.status, failure2)) return;
+          if (busyResponse(res.status, failure3)) return;
           throw new Error("HTTP " + res.status);
         }
         var next = await res.json();
@@ -6871,6 +6876,10 @@
           var pigId = res.headers.get("x-dsh-pig-id");
           if (typeof ownerId === "string" && typeof pigId === "string") {
             ctx.bindPresentationIdentity({ ownerId, pigId });
+            if (typeof window !== "undefined" && /** @type {any} */
+            window.__dshPiggyOwnerCloud) {
+              window.__dshPiggyOwnerMode = true;
+            }
           }
         }
         var key2 = pollKey(next);
@@ -10887,6 +10896,8 @@
     });
   }
   function renderCloudSaveSettings(ui, section2) {
+    if (typeof window !== "undefined" && /** @type {any} */
+    window.__dshPiggyOwnerMode === true) return;
     const api = cloudApi();
     if (api === null || typeof api.get !== "function" || typeof api.set !== "function" || typeof api.test !== "function") return;
     const setting = section2(ui, "\u4E91\u5B58\u6863", "\u8FDE\u63A5 Git \u4ED3\u5E93\uFF1B\u9996\u6B21\u540C\u6B65\u4F1A\u53E6\u884C\u786E\u8BA4");
@@ -11101,6 +11112,172 @@
     statusBox(box, message2, failed);
   }
 
+  // src/client/owner-cloud-bridge.js
+  function isOwnerCloudApi(value) {
+    return value !== null && typeof value === "object" && typeof value.ownerStatus === "function" && typeof value.firstSync === "function" && typeof value.importFirstSync === "function" && typeof value.ownerHistory === "function";
+  }
+  function resolveOwnerCloudBinding() {
+    const desktop2 = desktopShell()?.cloudSave;
+    if (isOwnerCloudApi(desktop2)) {
+      return { api: desktop2, transport: "desktop", restartAfterImport: true };
+    }
+    const dsh = typeof window === "undefined" ? null : (
+      /** @type {any} */
+      window.__dshPiggyOwnerCloud
+    );
+    if (isOwnerCloudApi(dsh)) {
+      return { api: dsh, transport: "dsh", restartAfterImport: dsh.restartAfterImport === true };
+    }
+    return null;
+  }
+
+  // src/client/owner-cloud-desktop.js
+  var UPLOADING = "\u6B63\u5728\u4E0A\u4F20\u5B8C\u6574\u6863\u2026";
+  var READING = "\u6B63\u5728\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u2026";
+  function renderDesktopDirections(box, status2, busy5, onSync) {
+    box.appendChild(el("p", "dp-dim", "\u9996\u6B21\u540C\u6B65\u8981\u624B\u52A8\u9009\u62E9\u65B9\u5411\uFF1B\u4E0D\u4F1A\u81EA\u52A8\u8986\u76D6\u4E91\u7AEF\u6216\u672C\u673A\u3002"));
+    if (!status2.enabled) {
+      box.appendChild(el("div", "dp-alert dp-legacy", "\u5148\u5728\u4E0A\u9762\u7684\u300C\u4E91\u5B58\u6863\u300D\u542F\u7528\u5E76\u586B\u5199\u4ED3\u5E93\u5730\u5740\uFF0C\u624D\u80FD\u505A\u9996\u6B21\u540C\u6B65\u3002"));
+    }
+    const actions2 = el("div", "dp-actions");
+    const upload = button("dp-mini dp-btn-wide", { "data-owner-cloud-first-sync": "local-to-cloud" }, () => {
+      onSync("local-to-cloud");
+    });
+    upload.textContent = busy5 === "upload" ? UPLOADING : "\u672C\u673A\u5B8C\u6574\u6863\u4E0A\u4F20\u5230\u4E91\u7AEF";
+    upload.disabled = busy5 !== "" || !status2.enabled;
+    actions2.appendChild(upload);
+    const download2 = button("dp-btn dp-btn-wide", { "data-owner-cloud-first-sync": "cloud-to-local" }, () => {
+      onSync("cloud-to-local");
+    });
+    download2.textContent = busy5 === "download" ? READING : "\u4ECE\u4E91\u7AEF\u6062\u590D\u5230\u672C\u673A\u526F\u672C";
+    download2.disabled = busy5 !== "" || !status2.enabled;
+    actions2.appendChild(download2);
+    box.appendChild(actions2);
+  }
+
+  // src/client/owner-cloud-dsh.js
+  var DSH_REASON_TEXT = Object.freeze({
+    "loopback-only": "\u5B8C\u6574\u6863\u4E91\u540C\u6B65\u53EA\u5728\u672C\u673A\u6253\u5F00 DSH \u65F6\u53EF\u7528\u3002\u8FDC\u7A0B\u8BBF\u95EE\u4E0D\u63D0\u4F9B\u6062\u590D\u5165\u53E3\uFF1B\u8BF7\u7528 127.0.0.1 \u6216 localhost \u76F4\u63A5\u6253\u5F00 DSH\u3002\u672C\u673A\u663E\u793A\u4E0E\u58F0\u97F3\u504F\u597D\u4E0D\u53D7\u5F71\u54CD\u3002",
+    "owner-cloud-unsupported": "\u5F53\u524D DSH \u6216\u63D2\u4EF6\u7248\u672C\u6CA1\u6709\u5B8C\u6574\u6863\u4E91\u80FD\u529B\u3002\u5347\u7EA7\u63D2\u4EF6\u5E76\u91CD\u65B0\u52A0\u8F7D DSH \u540E\u518D\u8BD5\u3002",
+    "bad-response": "\u5F53\u524D DSH \u6216\u63D2\u4EF6\u7248\u672C\u6CA1\u6709\u5B8C\u6574\u6863\u4E91\u80FD\u529B\u3002\u5347\u7EA7\u63D2\u4EF6\u5E76\u91CD\u65B0\u52A0\u8F7D DSH \u540E\u518D\u8BD5\u3002",
+    "owner-switching": "\u6B63\u5728\u5207\u6362\u5B8C\u6574\u6863\uFF0C\u8BF7\u7A0D\u540E\u91CD\u65B0\u68C0\u67E5\u3002",
+    network: "\u65E0\u6CD5\u8FDE\u63A5 DSH \u540E\u7AEF\uFF1B\u8BF7\u68C0\u67E5\u5BBF\u4E3B\u662F\u5426\u8FD8\u5728\u8FD0\u884C\uFF0C\u7136\u540E\u91CD\u65B0\u68C0\u67E5\u3002",
+    timeout: "\u8BFB\u53D6\u5B8C\u6574\u6863\u4E91\u540C\u6B65\u72B6\u6001\u8D85\u65F6\uFF1B\u53EF\u4EE5\u91CD\u65B0\u68C0\u67E5\u3002",
+    "request-invalid": "\u8FD9\u4E2A\u6062\u590D\u8BF7\u6C42\u65E0\u6548\uFF0C\u5F53\u524D\u5B58\u6863\u6CA1\u6709\u6539\u53D8\u3002",
+    method: "\u5F53\u524D\u7248\u672C\u4E0D\u652F\u6301\u8FD9\u4E2A\u64CD\u4F5C\u3002",
+    unknown: "\u6062\u590D\u8BF7\u6C42\u7684\u7ED3\u679C\u672A\u77E5\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u91CD\u8BD5\uFF1B\u8BF7\u68C0\u67E5\u5F53\u524D\u5B8C\u6574\u6863\u3002",
+    "remote-branch-empty": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u8FD8\u6CA1\u6709\u5B8C\u6574\u6863\uFF1B\u8BF7\u5148\u5728\u53E6\u4E00\u53F0\u8BBE\u5907\u6216\u684C\u9762\u7248\u4E0A\u4F20\u3002",
+    "remote-has-history": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u5DF2\u6709\u5176\u4ED6\u5B8C\u6574\u6863\u5386\u53F2\uFF0C\u4E0D\u80FD\u76F4\u63A5\u8986\u76D6\uFF1B\u8BF7\u6539\u7528\u6B63\u786E\u7684\u4E91\u7AEF\u5B58\u6863\u3002",
+    "first-sync-required": "\u8FD9\u4E2A\u5B8C\u6574\u6863\u8FD8\u6CA1\u6709\u9996\u6B21\u540C\u6B65\u8BB0\u5F55\u3002"
+  });
+  var RETRY_CODES = /* @__PURE__ */ new Set(["owner-switching", "network", "timeout"]);
+  function dshReason(code, reason) {
+    if (Object.hasOwn(DSH_REASON_TEXT, code)) return DSH_REASON_TEXT[code];
+    if (typeof reason === "string" && Object.hasOwn(DSH_REASON_TEXT, reason)) return DSH_REASON_TEXT[reason];
+    if (typeof reason === "string" && reason !== "") return reason;
+    return "\u5B8C\u6574\u6863\u4E91\u540C\u6B65\u6682\u65F6\u4E0D\u53EF\u7528";
+  }
+  function renderDshUnavailable(box, status2, onRetry) {
+    const code = typeof status2.code === "string" ? status2.code : "";
+    box.appendChild(el("p", "dp-dim", dshReason(code, status2.reason)));
+    if (code === "loopback-only") {
+      box.appendChild(el("p", "dp-dim", "\u672C\u673A\u6587\u4EF6\u3001\u540E\u53F0\u540C\u6B65\u548C\u732A\u7684\u72B6\u6001\u90FD\u4E0D\u53D7\u5F71\u54CD\u3002"));
+    }
+    if (RETRY_CODES.has(code)) {
+      const actions2 = el("div", "dp-actions");
+      const retry3 = button("dp-mini", { "data-owner-cloud-retry": "true" }, onRetry);
+      retry3.textContent = "\u91CD\u65B0\u68C0\u67E5";
+      actions2.appendChild(retry3);
+      box.appendChild(actions2);
+    }
+  }
+  function renderDshRestoreEntry(box, status2, options) {
+    if (!status2.enabled) {
+      box.appendChild(el(
+        "div",
+        "dp-alert dp-legacy",
+        "\u5728 DSH \u63D2\u4EF6\u914D\u7F6E\u91CC\u542F\u7528 ownerCloud \u5E76\u586B\u5199\u4ED3\u5E93\u5730\u5740\u548C\u5206\u652F\uFF0C\u7136\u540E\u91CD\u65B0\u52A0\u8F7D DSH\u3002\u9875\u9762\u53EA\u8BFB\uFF0C\u4E0D\u80FD\u5728\u8FD9\u91CC\u4FEE\u6539\u914D\u7F6E\u3002"
+      ));
+      return;
+    }
+    if (options.unknown) {
+      box.appendChild(el("p", "dp-dim", "\u7ED3\u679C\u672A\u77E5\u65F6\u4E0D\u4F1A\u81EA\u52A8\u91CD\u8BD5\uFF1B\u5148\u91CD\u65B0\u68C0\u67E5\u5F53\u524D\u5B8C\u6574\u6863\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u518D\u6B21\u6062\u590D\u3002"));
+      const actions3 = el("div", "dp-actions");
+      const check = button("dp-mini", { "data-owner-cloud-check": "true" }, options.onCheck);
+      check.textContent = "\u91CD\u65B0\u68C0\u67E5\u5F53\u524D\u5B8C\u6574\u6863";
+      actions3.appendChild(check);
+      box.appendChild(actions3);
+      return;
+    }
+    box.appendChild(el(
+      "p",
+      "dp-dim",
+      "\u4ECE\u4E91\u7AEF\u6062\u590D\u53EA\u8BFB\u53D6\u8FDC\u7AEF\u5B8C\u6574\u6863\uFF1A\u5148\u9884\u89C8\uFF0C\u786E\u8BA4\u540E\u5EFA\u7ACB\u72EC\u7ACB\u526F\u672C\u5E76\u5207\u6362\uFF1B\u5F53\u524D\u5B58\u6863\u4FDD\u7559\uFF0C\u4E0D\u4F1A\u8986\u76D6\u4E91\u7AEF\u6216\u672C\u673A\u3002"
+    ));
+    const actions2 = el("div", "dp-actions");
+    const restore2 = button("dp-btn dp-btn-wide", {
+      "data-owner-cloud-restore": "true",
+      "data-owner-cloud-first-sync": "cloud-to-local"
+    }, options.onRestore);
+    restore2.textContent = options.busy === "download" ? "\u6B63\u5728\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u2026" : "\u4ECE\u4E91\u7AEF\u6062\u590D\u5230\u672C\u673A\u526F\u672C";
+    restore2.disabled = options.busy !== "";
+    actions2.appendChild(restore2);
+    box.appendChild(actions2);
+  }
+
+  // src/client/owner-cloud-state.js
+  var REASON_TEXT = Object.freeze({
+    "remote-has-history": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u5DF2\u6709\u5176\u4ED6\u5B8C\u6574\u6863\u5386\u53F2\uFF0C\u4E0D\u80FD\u76F4\u63A5\u4E0A\u4F20\u8986\u76D6\uFF1B\u8BF7\u6362\u4E00\u4E2A\u7A7A\u5206\u652F\uFF0C\u6216\u6539\u4E3A\u4ECE\u4E91\u7AEF\u6062\u590D\u3002",
+    "remote-owner-mismatch": "\u4E91\u7AEF\u5B58\u6863\u5C5E\u4E8E\u53E6\u4E00\u4EFD\u5B8C\u6574\u6863\uFF0C\u4E0D\u80FD\u4E0E\u5F53\u524D\u5B8C\u6574\u6863\u6DF7\u7528\u3002",
+    "remote-branch-empty": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u8FD8\u6CA1\u6709\u5B8C\u6574\u6863\uFF1B\u53EF\u4EE5\u5148\u4E0A\u4F20\u672C\u673A\u5B8C\u6574\u6863\u3002",
+    "remote-advanced": "\u4E91\u7AEF\u5DF2\u7ECF\u6709\u66F4\u65B0\u7684\u5B58\u6863\uFF0C\u672C\u673A\u6CA1\u6709\u8986\u76D6\u5B83\u3002\u8BF7\u5148\u5728\u53E6\u4E00\u53F0\u8BBE\u5907\u5B8C\u6210\u540C\u6B65\u540E\u518D\u8BD5\u3002",
+    "first-sync-required": "\u8FD9\u4E2A\u5B8C\u6574\u6863\u8FD8\u6CA1\u6709\u9996\u6B21\u540C\u6B65\u8BB0\u5F55\uFF1B\u8BF7\u5148\u5B8C\u6210\u4E00\u6B21\u9996\u6B21\u540C\u6B65\u3002"
+  });
+  function friendlyReason(transport, reason, fallback) {
+    if (reason === "") return fallback;
+    const dshText = transport === "dsh" ? DSH_REASON_TEXT[reason] : void 0;
+    return dshText ?? REASON_TEXT[reason] ?? reason;
+  }
+  function describeFailure(transport, result, fallback) {
+    const reason = typeof result?.reason === "string" && result.reason !== "" ? result.reason : "";
+    const code = typeof result?.code === "string" ? result.code : "";
+    const known = (value) => value !== "" && (Object.hasOwn(REASON_TEXT, value) || Object.hasOwn(DSH_REASON_TEXT, value));
+    const key2 = known(reason) ? reason : code !== "" ? code : reason;
+    return {
+      text: known(key2) ? friendlyReason(transport, key2, fallback) : reason !== "" ? reason : fallback,
+      code: key2 === "" ? null : key2
+    };
+  }
+  function normalizeStatus3(result) {
+    if (result === null || typeof result !== "object" || result.available !== true) {
+      return {
+        available: false,
+        ready: false,
+        enabled: false,
+        branch: "main",
+        code: typeof result?.code === "string" ? result.code : null,
+        reason: typeof result?.reason === "string" ? result.reason : ""
+      };
+    }
+    return {
+      available: true,
+      ready: result.ready === true,
+      enabled: result.enabled === true,
+      branch: typeof result.branch === "string" && result.branch !== "" ? result.branch : "main",
+      code: typeof result.code === "string" ? result.code : null,
+      reason: typeof result.reason === "string" ? result.reason : ""
+    };
+  }
+  function normalizeCommit(value) {
+    if (value === null || typeof value !== "object") return null;
+    return {
+      hash: typeof value.hash === "string" ? value.hash : "",
+      at: typeof value.at === "string" ? value.at : "",
+      subject: typeof value.subject === "string" ? value.subject : "",
+      manual: value.manual === true
+    };
+  }
+
   // src/client/owner-cloud-view.js
   var IMPORTING2 = "\u6B63\u5728\u4FDD\u5B58\u5E76\u5207\u6362\u2026";
   function summaryRow2(parent, label, value) {
@@ -11147,7 +11324,7 @@
     summaryRow2(box, "\u80CC\u5305", inventoryCount === null ? "\u672A\u8BB0\u5F55" : `${inventoryCount} \u4EF6\u7269\u54C1`);
     summaryRow2(box, "\u83DC\u56ED", gardenSummary2(shared.garden));
     box.appendChild(el("p", "dp-dim", "\u672C\u673A\u663E\u793A\u4E0E\u58F0\u97F3\u504F\u597D\u4FDD\u7559\u5728\u6B64\u8BBE\u5907\uFF0C\u4E0D\u968F\u4E91\u7AEF\u5B58\u6863\u8986\u76D6\u3002"));
-    box.appendChild(el("p", "dp-dim", "\u6062\u590D\u4F1A\u5EFA\u7ACB\u72EC\u7ACB\u5B58\u6863\u526F\u672C\u5E76\u5207\u6362\u5230\u65B0\u526F\u672C\uFF1B\u5F53\u524D\u5B58\u6863\u4FDD\u7559\uFF0C\u5B8C\u6210\u540E\u5E94\u7528\u4F1A\u91CD\u542F\u3002"));
+    box.appendChild(el("p", "dp-dim", options.restartAfterImport === false ? "\u6062\u590D\u4F1A\u5EFA\u7ACB\u72EC\u7ACB\u5B58\u6863\u526F\u672C\u5E76\u5207\u6362\u5230\u65B0\u526F\u672C\uFF1B\u5F53\u524D\u5B58\u6863\u4FDD\u7559\uFF0CDSH \u4E0D\u4F1A\u91CD\u542F\u3002" : "\u6062\u590D\u4F1A\u5EFA\u7ACB\u72EC\u7ACB\u5B58\u6863\u526F\u672C\u5E76\u5207\u6362\u5230\u65B0\u526F\u672C\uFF1B\u5F53\u524D\u5B58\u6863\u4FDD\u7559\uFF0C\u5B8C\u6210\u540E\u5E94\u7528\u4F1A\u91CD\u542F\u3002"));
     for (const warning2 of preview2.warnings) {
       box.appendChild(el("div", "dp-alert dp-legacy", warning2));
     }
@@ -11226,15 +11403,7 @@
   }
 
   // src/client/owner-cloud-save.js
-  var UPLOADING = "\u6B63\u5728\u4E0A\u4F20\u5B8C\u6574\u6863\u2026";
-  var READING = "\u6B63\u5728\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u2026";
-  var REASON_TEXT = Object.freeze({
-    "remote-has-history": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u5DF2\u6709\u5176\u4ED6\u5B8C\u6574\u6863\u5386\u53F2\uFF0C\u4E0D\u80FD\u76F4\u63A5\u4E0A\u4F20\u8986\u76D6\uFF1B\u8BF7\u6362\u4E00\u4E2A\u7A7A\u5206\u652F\uFF0C\u6216\u6539\u4E3A\u4ECE\u4E91\u7AEF\u6062\u590D\u3002",
-    "remote-owner-mismatch": "\u4E91\u7AEF\u5B58\u6863\u5C5E\u4E8E\u53E6\u4E00\u4EFD\u5B8C\u6574\u6863\uFF0C\u4E0D\u80FD\u4E0E\u5F53\u524D\u5B8C\u6574\u6863\u6DF7\u7528\u3002",
-    "remote-branch-empty": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u8FD8\u6CA1\u6709\u5B8C\u6574\u6863\uFF1B\u53EF\u4EE5\u5148\u4E0A\u4F20\u672C\u673A\u5B8C\u6574\u6863\u3002",
-    "remote-advanced": "\u4E91\u7AEF\u5DF2\u7ECF\u6709\u66F4\u65B0\u7684\u5B58\u6863\uFF0C\u672C\u673A\u6CA1\u6709\u8986\u76D6\u5B83\u3002\u8BF7\u5148\u5728\u53E6\u4E00\u53F0\u8BBE\u5907\u5B8C\u6210\u540C\u6B65\u540E\u518D\u8BD5\u3002",
-    "first-sync-required": "\u8FD9\u4E2A\u5B8C\u6574\u6863\u8FD8\u6CA1\u6709\u9996\u6B21\u540C\u6B65\u8BB0\u5F55\uFF1B\u8BF7\u5148\u5B8C\u6210\u4E00\u6B21\u9996\u6B21\u540C\u6B65\u3002"
-  });
+  var POLL_PAUSE_MS = 6e4;
   var state3 = {
     /** @type {OwnerCloudStatus|null} */
     status: null,
@@ -11256,60 +11425,50 @@
     error: "",
     /** @type {string|null} */
     errorCode: null,
+    /** @type {'desktop'|'dsh'} */
+    transport: "desktop",
+    restartAfterImport: true,
     switching: false,
+    /** Result unknown after a restore request: never retry the same token. */
+    unknown: false,
+    notice: "",
     /** @type {any} */
     ui: null,
     generation: 0
   };
-  function ownerCloudApi() {
-    const api = desktopShell()?.cloudSave;
-    return api !== null && typeof api === "object" && typeof api.ownerStatus === "function" && typeof api.firstSync === "function" && typeof api.importFirstSync === "function" && typeof api.ownerHistory === "function" ? api : null;
-  }
   function rerender5() {
     state3.ui?.renderContent?.();
   }
   function reasonOf2(result) {
     return typeof result?.reason === "string" && result.reason !== "" ? result.reason : "";
   }
-  function friendlyReason(reason, fallback) {
-    if (reason === "") return fallback;
-    return REASON_TEXT[reason] ?? reason;
-  }
   function clearError() {
     state3.error = "";
     state3.errorKind = "";
     state3.errorCode = null;
+    state3.unknown = false;
   }
   function setFailure(result, fallback) {
-    const reason = reasonOf2(result);
-    state3.error = friendlyReason(reason, fallback);
-    state3.errorKind = Object.hasOwn(REASON_TEXT, reason) ? "legacy" : "dead";
-    state3.errorCode = reason === "" ? null : reason;
+    const described = describeFailure(state3.transport, result, fallback);
+    state3.error = described.text;
+    state3.errorKind = Object.hasOwn(REASON_TEXT, reasonOf2(result)) ? "legacy" : "dead";
+    state3.errorCode = described.code;
   }
-  function setOperationError(text) {
+  function setOperationError(text, code = null) {
     state3.error = text;
     state3.errorKind = "dead";
-    state3.errorCode = null;
-  }
-  function normalizeStatus3(result) {
-    if (result === null || typeof result !== "object" || result.available !== true) {
-      return { available: false, ready: false, enabled: false, branch: "main" };
-    }
-    return {
-      available: true,
-      ready: result.ready === true,
-      enabled: result.enabled === true,
-      branch: typeof result.branch === "string" && result.branch !== "" ? result.branch : "main"
-    };
+    state3.errorCode = code;
   }
   async function requestStatus3(ui) {
     if (state3.statusPromise !== null || state3.switching) return;
-    const api = ownerCloudApi();
-    if (api === null) return;
+    const binding = resolveOwnerCloudBinding();
+    if (binding === null) return;
+    state3.transport = binding.transport;
+    state3.restartAfterImport = binding.restartAfterImport;
     const generation = state3.generation;
     const promise = (async () => {
       try {
-        return normalizeStatus3(await api.ownerStatus());
+        return normalizeStatus3(await binding.api.ownerStatus());
       } catch {
         return normalizeStatus3(null);
       }
@@ -11322,15 +11481,6 @@
     if (state3.ui === ui) rerender5();
     if (status2.available && status2.ready) void requestHistory(ui);
   }
-  function normalizeCommit(value) {
-    if (value === null || typeof value !== "object") return null;
-    return {
-      hash: typeof value.hash === "string" ? value.hash : "",
-      at: typeof value.at === "string" ? value.at : "",
-      subject: typeof value.subject === "string" ? value.subject : "",
-      manual: value.manual === true
-    };
-  }
   async function requestHistory(ui) {
     const status2 = state3.status;
     if (status2 === null || !status2.available || !status2.ready || state3.switching) return;
@@ -11340,16 +11490,14 @@
       state3.historyBranch = status2.branch;
     }
     if (state3.history !== null) return;
-    const api = ownerCloudApi();
-    if (api === null) return;
+    const binding = resolveOwnerCloudBinding();
+    if (binding === null) return;
     const branch = status2.branch;
     const generation = state3.generation;
     const promise = (async () => {
       try {
-        const result = await api.ownerHistory(branch);
-        if (result?.ok !== true) {
-          return { ok: false, reason: friendlyReason(reasonOf2(result), "\u4E91\u7AEF\u5386\u53F2\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6") };
-        }
+        const result = await binding.api.ownerHistory(branch);
+        if (result?.ok !== true) return { ok: false, reason: describeFailure(state3.transport, result, "\u4E91\u7AEF\u5386\u53F2\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6").text };
         const manual = normalizeCommit(result.manual);
         const auto2 = Array.isArray(result.auto) ? result.auto.map(normalizeCommit).filter((commit2) => commit2 !== null) : [];
         return { ok: true, manual, auto: auto2 };
@@ -11364,18 +11512,27 @@
     state3.history = history;
     if (state3.ui === ui) rerender5();
   }
+  function pausePolling() {
+    if (typeof window !== "undefined") window.__dshPiggyPollPauseUntil = Date.now() + POLL_PAUSE_MS;
+  }
+  function resumePolling() {
+    if (typeof window !== "undefined") delete /** @type {any} */
+    window.__dshPiggyPollPauseUntil;
+  }
   async function startFirstSync(ui, direction) {
-    if (state3.busy !== "" || state3.switching) return;
-    const api = ownerCloudApi();
-    if (api === null) return;
+    if (state3.busy !== "" || state3.switching || state3.unknown) return;
+    if (state3.transport === "dsh" && direction !== "cloud-to-local") return;
+    const binding = resolveOwnerCloudBinding();
+    if (binding === null) return;
     state3.busy = direction === "local-to-cloud" ? "upload" : "download";
     state3.preview = null;
     state3.acknowledgeWarnings = false;
+    state3.notice = "";
     clearError();
     rerender5();
     let result = null;
     try {
-      result = await api.firstSync(direction);
+      result = await binding.api.firstSync(direction);
     } catch (error) {
       setOperationError((direction === "local-to-cloud" ? "\u4E0A\u4F20\u6CA1\u6709\u5B8C\u6210\uFF1A" : "\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u6CA1\u6709\u5B8C\u6210\uFF1A") + (error instanceof Error ? error.message : "\u8BF7\u7A0D\u540E\u91CD\u8BD5"));
     }
@@ -11391,7 +11548,7 @@
       return;
     }
     if (direction === "local-to-cloud") {
-      const current3 = state3.status ?? { available: true, ready: false, enabled: true, branch: "main" };
+      const current3 = state3.status ?? { available: true, ready: false, enabled: true, branch: "main", code: null, reason: "" };
       state3.status = { ...current3, available: true, ready: true, enabled: true };
       state3.history = null;
       state3.historyBranch = null;
@@ -11416,27 +11573,57 @@
   async function importPreview(ui) {
     if (state3.busy !== "" || state3.switching || state3.preview === null) return;
     if (state3.preview.warnings.length > 0 && !state3.acknowledgeWarnings) return;
-    const api = ownerCloudApi();
-    if (api === null) return;
+    const binding = resolveOwnerCloudBinding();
+    if (binding === null) return;
     const token2 = state3.preview.token;
+    const dsh = state3.transport === "dsh";
     state3.busy = "import";
     clearError();
     rerender5();
+    if (dsh) pausePolling();
     let result = null;
     try {
-      result = await api.importFirstSync(token2, { acceptWarnings: state3.acknowledgeWarnings === true });
+      result = await binding.api.importFirstSync(token2, { acceptWarnings: state3.acknowledgeWarnings === true });
     } catch (error) {
-      setOperationError("\u6062\u590D\u6CA1\u6709\u5B8C\u6210\uFF1A" + (error instanceof Error ? error.message : "\u8BF7\u7A0D\u540E\u91CD\u8BD5"));
+      if (dsh) {
+        state3.unknown = true;
+        setOperationError(DSH_REASON_TEXT.unknown, "unknown");
+      } else {
+        setOperationError("\u6062\u590D\u6CA1\u6709\u5B8C\u6210\uFF1A" + (error instanceof Error ? error.message : "\u8BF7\u7A0D\u540E\u91CD\u8BD5"));
+      }
+    } finally {
+      if (dsh) resumePolling();
     }
     state3.busy = "";
+    if (dsh && state3.switching) return;
     if (result?.ok !== true) {
       if (result !== null) {
-        const prefix = result.imported === true ? "\u526F\u672C\u5DF2\u5EFA\u7ACB\uFF0C\u4F46\u6CA1\u6709\u5207\u6362\u3002" : "\u6062\u590D\u6CA1\u6709\u5B8C\u6210\u3002";
-        setOperationError(prefix + (reasonOf2(result) || "\u5F53\u524D\u5B58\u6863\u4FDD\u6301\u4E0D\u53D8"));
+        if (dsh && result.unknown === true) {
+          state3.unknown = true;
+          setFailure(result, "\u6062\u590D\u8BF7\u6C42\u7684\u7ED3\u679C\u672A\u77E5");
+        } else {
+          const described = describeFailure(state3.transport, result, "\u5F53\u524D\u5B58\u6863\u4FDD\u6301\u4E0D\u53D8");
+          const prefix = result.imported === true ? "\u526F\u672C\u5DF2\u5EFA\u7ACB\uFF0C\u4F46\u6CA1\u6709\u5207\u6362\u3002" : "\u6062\u590D\u6CA1\u6709\u5B8C\u6210\u3002";
+          setOperationError(prefix + described.text, described.code);
+        }
       }
       state3.preview = null;
       state3.acknowledgeWarnings = false;
       rerender5();
+      return;
+    }
+    if (dsh) {
+      const current3 = state3.status ?? { available: true, ready: true, enabled: true, branch: "main", code: null, reason: "" };
+      state3.preview = null;
+      state3.acknowledgeWarnings = false;
+      clearError();
+      state3.status = { ...current3, available: true, enabled: true, ready: true };
+      state3.history = null;
+      state3.historyBranch = state3.status.branch;
+      state3.notice = "\u5DF2\u5207\u6362\u5230\u65B0\u526F\u672C\uFF0C\u6B63\u5728\u5237\u65B0\u2026";
+      rerender5();
+      ui.refresh?.();
+      void requestHistory(ui);
       return;
     }
     state3.switching = true;
@@ -11449,47 +11636,52 @@
     clearError();
     rerender5();
   }
-  function renderDirections(ui, box, status2) {
-    box.appendChild(el("p", "dp-dim", "\u9996\u6B21\u540C\u6B65\u8981\u624B\u52A8\u9009\u62E9\u65B9\u5411\uFF1B\u4E0D\u4F1A\u81EA\u52A8\u8986\u76D6\u4E91\u7AEF\u6216\u672C\u673A\u3002"));
-    if (!status2.enabled) {
-      box.appendChild(el("div", "dp-alert dp-legacy", "\u5148\u5728\u4E0A\u9762\u7684\u300C\u4E91\u5B58\u6863\u300D\u542F\u7528\u5E76\u586B\u5199\u4ED3\u5E93\u5730\u5740\uFF0C\u624D\u80FD\u505A\u9996\u6B21\u540C\u6B65\u3002"));
-    }
-    const actions2 = el("div", "dp-actions");
-    const upload = button("dp-mini dp-btn-wide", { "data-owner-cloud-first-sync": "local-to-cloud" }, () => {
-      void startFirstSync(ui, "local-to-cloud");
-    });
-    upload.textContent = state3.busy === "upload" ? UPLOADING : "\u672C\u673A\u5B8C\u6574\u6863\u4E0A\u4F20\u5230\u4E91\u7AEF";
-    upload.disabled = state3.busy !== "" || !status2.enabled;
-    actions2.appendChild(upload);
-    const download2 = button("dp-btn dp-btn-wide", { "data-owner-cloud-first-sync": "cloud-to-local" }, () => {
-      void startFirstSync(ui, "cloud-to-local");
-    });
-    download2.textContent = state3.busy === "download" ? READING : "\u4ECE\u4E91\u7AEF\u6062\u590D\u5230\u672C\u673A\u526F\u672C";
-    download2.disabled = state3.busy !== "" || !status2.enabled;
-    actions2.appendChild(download2);
-    box.appendChild(actions2);
+  function retryStatus(ui) {
+    state3.generation += 1;
+    state3.statusPromise = null;
+    state3.status = null;
+    state3.history = null;
+    state3.historyBranch = null;
+    state3.notice = "";
+    clearError();
+    rerender5();
+    void requestStatus3(ui);
   }
   function renderOwnerCloudSaveSettings(ui, section2) {
     state3.ui = ui;
-    if (ownerCloudApi() === null) return;
+    const binding = resolveOwnerCloudBinding();
+    if (binding === null) return;
+    state3.transport = binding.transport;
+    state3.restartAfterImport = binding.restartAfterImport;
     if (state3.status === null) {
       void requestStatus3(ui);
       const loading4 = section2(ui, "\u5B8C\u6574\u6863\u4E91\u540C\u6B65", "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7");
       loading4.box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u5B8C\u6574\u6863\u4E91\u540C\u6B65\u2026"));
       return;
     }
-    if (state3.status.available !== true) return;
+    if (state3.status.available !== true) {
+      if (state3.transport !== "dsh") return;
+      const offline = section2(ui, "\u5B8C\u6574\u6863\u4E91\u540C\u6B65", "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7\uFF1B\u53EA\u5728\u672C\u673A\u53EF\u7528");
+      renderDshUnavailable(offline.box, state3.status, () => retryStatus(ui));
+      return;
+    }
     const status2 = state3.status;
-    const setting = section2(ui, "\u5B8C\u6574\u6863\u4E91\u540C\u6B65", "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7\uFF1B\u53EA\u540C\u6B65\u8FD9\u4E00\u4EFD");
+    const dsh = state3.transport === "dsh";
+    const setting = section2(ui, "\u5B8C\u6574\u6863\u4E91\u540C\u6B65", dsh ? "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7\uFF1B\u4ECE\u4E91\u7AEF\u6062\u590D\u5230\u65B0\u526F\u672C" : "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7\uFF1B\u53EA\u540C\u6B65\u8FD9\u4E00\u4EFD");
     const box = setting.box;
     const stateKey = state3.switching ? "switching" : status2.ready ? "connected" : status2.enabled ? "pending" : "disconnected";
-    const stateLabel = state3.switching ? "\u6B63\u5728\u5207\u6362" : status2.ready ? "\u5DF2\u8FDE\u63A5" : status2.enabled ? "\u5F85\u9996\u6B21\u540C\u6B65" : "\u672A\u8FDE\u63A5";
+    const stateLabel = state3.switching ? "\u6B63\u5728\u5207\u6362" : status2.ready ? "\u5DF2\u8FDE\u63A5" : dsh ? status2.enabled ? "\u5F85\u4ECE\u4E91\u7AEF\u6062\u590D" : "\u672A\u914D\u7F6E" : status2.enabled ? "\u5F85\u9996\u6B21\u540C\u6B65" : "\u672A\u8FDE\u63A5";
     const summary = el("div", "dp-cloud-summary");
     summary.setAttribute("data-owner-cloud-status", stateKey);
     summary.appendChild(el("b", null, stateLabel));
     summary.appendChild(el("span", "dp-cloud-note", "\u5206\u652F \xB7 " + status2.branch));
-    summary.appendChild(el("span", "dp-cloud-note", state3.switching ? "\u6B63\u5728\u4FDD\u5B58\u5F53\u524D\u5B58\u6863\u5E76\u5207\u6362\uFF1B\u5E94\u7528\u4F1A\u81EA\u52A8\u91CD\u542F\u3002" : status2.ready ? "\u81EA\u52A8\u540C\u6B65\u5DF2\u542F\u7528" : status2.enabled ? "\u5C1A\u672A\u5B8C\u6210\u9996\u6B21\u540C\u6B65" : "\u5148\u5728\u4E0A\u9762\u7684\u300C\u4E91\u5B58\u6863\u300D\u542F\u7528"));
+    summary.appendChild(el("span", "dp-cloud-note", state3.switching ? "\u6B63\u5728\u4FDD\u5B58\u5F53\u524D\u5B58\u6863\u5E76\u5207\u6362\uFF1B\u5E94\u7528\u4F1A\u81EA\u52A8\u91CD\u542F\u3002" : status2.ready ? "\u81EA\u52A8\u540C\u6B65\u5DF2\u542F\u7528" : dsh ? status2.enabled ? "\u5C1A\u672A\u4ECE\u4E91\u7AEF\u6062\u590D" : "\u5728 DSH \u63D2\u4EF6\u914D\u7F6E\u91CC\u542F\u7528 ownerCloud" : status2.enabled ? "\u5C1A\u672A\u5B8C\u6210\u9996\u6B21\u540C\u6B65" : "\u5148\u5728\u4E0A\u9762\u7684\u300C\u4E91\u5B58\u6863\u300D\u542F\u7528"));
     box.appendChild(summary);
+    if (state3.notice !== "") {
+      const notice = el("div", "dp-cloud-status", state3.notice);
+      notice.setAttribute("data-owner-cloud-notice", "true");
+      box.appendChild(notice);
+    }
     if (state3.error !== "") {
       const alert2 = el("div", state3.errorKind === "legacy" ? "dp-alert dp-legacy" : "dp-alert dp-dead", state3.error);
       if (state3.errorCode !== null) alert2.setAttribute("data-owner-cloud-error", state3.errorCode);
@@ -11501,6 +11693,7 @@
         acknowledgeWarnings: state3.acknowledgeWarnings,
         switching: state3.switching,
         busy: state3.busy,
+        restartAfterImport: state3.restartAfterImport,
         onToggleWarnings: (checked) => {
           state3.acknowledgeWarnings = checked;
           rerender5();
@@ -11514,8 +11707,25 @@
       });
       return;
     }
+    if (dsh) {
+      renderDshRestoreEntry(box, status2, {
+        busy: state3.busy,
+        unknown: state3.unknown,
+        onRestore: () => {
+          void startFirstSync(ui, "cloud-to-local");
+        },
+        onCheck: () => retryStatus(ui)
+      });
+      if (status2.ready) {
+        if (state3.history === null && state3.historyPromise === null) void requestHistory(ui);
+        renderOwnerCloudHistory(box, state3.history);
+      }
+      return;
+    }
     if (!status2.ready) {
-      renderDirections(ui, box, status2);
+      renderDesktopDirections(box, status2, state3.busy, (direction) => {
+        void startFirstSync(ui, direction);
+      });
       return;
     }
     renderOwnerCloudHistory(box, state3.history);
@@ -29904,6 +30114,170 @@
     return exports;
   }
 
+  // adapters/dsh/owner-cloud-client.js
+  var OWNER_CLOUD_PATHS = Object.freeze({
+    status: "/dsh-piggy/owner/cloud/status",
+    firstSync: "/dsh-piggy/owner/cloud/first-sync",
+    restore: "/dsh-piggy/owner/cloud/restore",
+    history: "/dsh-piggy/owner/cloud/history",
+    selection: "/dsh-piggy/owner/selection"
+  });
+  var OWNER_CLOUD_TIMEOUTS = Object.freeze({
+    status: 3e4,
+    firstSync: 3e5,
+    restore: 6e5,
+    history: 6e4,
+    selection: 3e4
+  });
+  var OWNER_CLOUD_REASONS = Object.freeze({
+    loopback: "\u5B8C\u6574\u6863\u4E91\u540C\u6B65\u53EA\u5728\u672C\u673A\u6253\u5F00 DSH \u65F6\u53EF\u7528",
+    unsupported: "\u5F53\u524D DSH \u6216\u63D2\u4EF6\u7248\u672C\u6CA1\u6709\u5B8C\u6574\u6863\u4E91\u80FD\u529B",
+    switching: "\u6B63\u5728\u5207\u6362\u5B8C\u6574\u6863\uFF0C\u8BF7\u7A0D\u540E",
+    network: "\u65E0\u6CD5\u8FDE\u63A5 DSH \u540E\u7AEF",
+    timeout: "\u8BF7\u6C42\u8D85\u65F6\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5",
+    unknown: "\u6062\u590D\u8BF7\u6C42\u7684\u7ED3\u679C\u672A\u77E5\uFF1B\u8BF7\u68C0\u67E5\u5F53\u524D\u5B8C\u6574\u6863",
+    invalid: "\u8BF7\u6C42\u65E0\u6548",
+    method: "\u5F53\u524D\u7248\u672C\u4E0D\u652F\u6301\u8FD9\u4E2A\u64CD\u4F5C",
+    conflict: "\u8BF7\u6C42\u6CA1\u6709\u5B8C\u6210",
+    server: "\u5B8C\u6574\u6863\u8BF7\u6C42\u5931\u8D25",
+    token: "\u6062\u590D\u4EE4\u724C\u65E0\u6548",
+    direction: "\u9996\u6B21\u540C\u6B65\u65B9\u5411\u65E0\u6548"
+  });
+  function failure2(code, reason, extra = {}) {
+    return { ok: false, code, reason, ...extra };
+  }
+  function unavailable(code, reason) {
+    return { ok: false, available: false, code, reason };
+  }
+  function timedOut(error) {
+    const value = (
+      /** @type {any} */
+      error
+    );
+    return value?.name === "AbortError" || value?.code === "timeout";
+  }
+  function reasonOf3(response) {
+    const body = response?.body;
+    return body !== null && typeof body === "object" && typeof body.reason === "string" ? body.reason : "";
+  }
+  function keepFlags(body, shape) {
+    if (body === null || typeof body !== "object") return;
+    if (typeof body.imported === "boolean") shape.imported = body.imported;
+    if (typeof body.switched === "boolean") shape.switched = body.switched;
+  }
+  function responseFailure(response) {
+    const status2 = typeof response?.status === "number" ? response.status : 0;
+    const reason = reasonOf3(response);
+    const flags = {};
+    keepFlags(response?.body, flags);
+    const parsed = response?.parseError !== true && status2 !== 0;
+    if (!parsed) return failure2("bad-response", OWNER_CLOUD_REASONS.unsupported, flags);
+    if (status2 === 403) return failure2("loopback-only", OWNER_CLOUD_REASONS.loopback, flags);
+    if (status2 === 404) return failure2("owner-cloud-unsupported", OWNER_CLOUD_REASONS.unsupported, flags);
+    if (status2 === 405) return failure2("method", OWNER_CLOUD_REASONS.method, flags);
+    if (status2 === 400) return failure2("request-invalid", OWNER_CLOUD_REASONS.invalid, flags);
+    if (status2 === 503) return failure2("owner-switching", OWNER_CLOUD_REASONS.switching, flags);
+    if (status2 === 409) return failure2(reason === "" ? "conflict" : reason, reason === "" ? OWNER_CLOUD_REASONS.conflict : reason, flags);
+    if (status2 >= 400) return failure2("server", reason === "" ? OWNER_CLOUD_REASONS.server : reason, flags);
+    if (status2 >= 200 && status2 < 300) return bodyFailure(response?.body);
+    return failure2("bad-response", reason === "" ? OWNER_CLOUD_REASONS.unsupported : reason, flags);
+  }
+  function bodyFailure(body) {
+    const reason = typeof body?.reason === "string" ? body.reason : "";
+    const flags = {};
+    keepFlags(body, flags);
+    return failure2(reason === "" ? "conflict" : reason, reason === "" ? OWNER_CLOUD_REASONS.conflict : reason, flags);
+  }
+  function normalizeStatus4(body) {
+    if (body === null || typeof body !== "object" || body.ok !== true) {
+      return unavailable("bad-response", OWNER_CLOUD_REASONS.unsupported);
+    }
+    return {
+      ok: true,
+      available: true,
+      enabled: body.configured === true,
+      configured: body.configured === true,
+      ready: body.ready === true,
+      branch: typeof body.branch === "string" && body.branch !== "" ? body.branch : "main",
+      directionRequired: body.directionRequired === true,
+      markerError: typeof body.markerError === "string" ? body.markerError : null,
+      transport: "dsh",
+      restartAfterImport: false
+    };
+  }
+  function createDshOwnerCloudClient(request) {
+    if (typeof request !== "function") throw new TypeError("DshOwnerCloudClient needs a request function");
+    async function call2(method, path, body, timeoutMs) {
+      try {
+        const response = await request(method, path, body, { timeoutMs });
+        return response !== null && typeof response === "object" ? response : { status: 0, body: null, parseError: true };
+      } catch (error) {
+        return { thrown: error };
+      }
+    }
+    function thrownFailure(result, unknownResult) {
+      if (unknownResult) return failure2("unknown", OWNER_CLOUD_REASONS.unknown, { unknown: true });
+      return timedOut(result.thrown) ? failure2("timeout", OWNER_CLOUD_REASONS.timeout, { retryable: true }) : failure2("network", OWNER_CLOUD_REASONS.network, { retryable: true });
+    }
+    function successBody(response) {
+      return response?.parseError !== true && response?.status === 200 && response?.body !== null && typeof response?.body === "object" && response.body.ok === true;
+    }
+    async function ownerStatus() {
+      const response = await call2("GET", OWNER_CLOUD_PATHS.status, void 0, OWNER_CLOUD_TIMEOUTS.status);
+      if (response.thrown !== void 0) {
+        const mapped = thrownFailure(response, false);
+        return { ok: false, available: false, code: mapped.code, reason: mapped.reason };
+      }
+      if (successBody(response)) return normalizeStatus4(response.body);
+      return { ...responseFailure(response), available: false };
+    }
+    async function firstSync(direction) {
+      if (direction !== "cloud-to-local" && direction !== "local-to-cloud") {
+        return failure2("request-invalid", OWNER_CLOUD_REASONS.direction);
+      }
+      const response = await call2("POST", OWNER_CLOUD_PATHS.firstSync, { direction }, OWNER_CLOUD_TIMEOUTS.firstSync);
+      if (response.thrown !== void 0) return thrownFailure(response, false);
+      if (!successBody(response)) return responseFailure(response);
+      const body = response.body;
+      return direction === "cloud-to-local" ? { ...body, switchAfterImport: true } : body;
+    }
+    async function importFirstSync(token2, options = {}) {
+      if (typeof token2 !== "string" || token2 === "" || token2.length > 128) {
+        return failure2("request-invalid", OWNER_CLOUD_REASONS.token);
+      }
+      const body = { token: token2 };
+      if (options.acceptWarnings === true) body.acceptWarnings = true;
+      if (typeof options.pigId === "string" && options.pigId !== "") body.pigId = options.pigId;
+      const response = await call2("POST", OWNER_CLOUD_PATHS.restore, body, OWNER_CLOUD_TIMEOUTS.restore);
+      if (response.thrown !== void 0) return thrownFailure(response, true);
+      if (!successBody(response)) return responseFailure(response);
+      return response.body;
+    }
+    async function ownerHistory(_branch) {
+      const response = await call2("GET", OWNER_CLOUD_PATHS.history, void 0, OWNER_CLOUD_TIMEOUTS.history);
+      if (response.thrown !== void 0) return thrownFailure(response, false);
+      if (!successBody(response)) return responseFailure(response);
+      return response.body;
+    }
+    async function selection() {
+      const response = await call2("GET", OWNER_CLOUD_PATHS.selection, void 0, OWNER_CLOUD_TIMEOUTS.selection);
+      if (response.thrown !== void 0) return thrownFailure(response, false);
+      if (!successBody(response)) return responseFailure(response);
+      return response.body;
+    }
+    return Object.freeze({
+      version: 1,
+      transport: "dsh",
+      restartAfterImport: false,
+      ownerStatus,
+      firstSync,
+      importFirstSync,
+      restore: importFirstSync,
+      ownerHistory,
+      selection
+    });
+  }
+
   // adapters/dsh/client.js
   var game = { mount: mountGame, desktop };
   window.piggyGame = game;
@@ -29925,6 +30299,31 @@
     set: (value) => requestCloudSettings("POST", "/dsh-piggy/cloud/settings", value),
     test: (value) => requestCloudSettings("POST", "/dsh-piggy/cloud/test-connection", value)
   };
+  var requestOwnerCloud = async (method, path, value, options) => {
+    const timeoutMs = typeof options?.timeoutMs === "number" && options.timeoutMs > 0 ? options.timeoutMs : 0;
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timer2 = controller !== null && timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+      const init = { method, credentials: "same-origin", cache: "no-store" };
+      if (controller !== null) init.signal = controller.signal;
+      if (method !== "GET") {
+        init.headers = { "content-type": "application/json" };
+        init.body = JSON.stringify(value ?? {});
+      }
+      const response = await fetch(path, init);
+      let body = null;
+      let parseError = false;
+      try {
+        body = await response.json();
+      } catch {
+        parseError = true;
+      }
+      return { status: response.status, body, parseError };
+    } finally {
+      if (timer2 !== null) clearTimeout(timer2);
+    }
+  };
+  window.__dshPiggyOwnerCloud = createDshOwnerCloudClient(requestOwnerCloud);
   if (
     /** @type {any} */
     window.__ModuleLoader__

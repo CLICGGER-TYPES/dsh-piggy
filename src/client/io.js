@@ -208,6 +208,11 @@ export function createIo(ctx) {
 
       async function refresh() {
         if (ctx.stopped) return
+        // Owner switching unmounts the old runtime for a moment. A short,
+        // self-expiring pause keeps the four-second poll from flashing
+        // "connection lost" while restore is in flight.
+        var pauseUntil = typeof window === 'undefined' ? 0 : /** @type {any} */ (window).__dshPiggyPollPauseUntil
+        if (typeof pauseUntil === 'number' && pauseUntil > Date.now()) return
         // A poll can change the live content (a job finishing, an illness
         // starting), so re-check the panel still fits.
         ctx.fitPanel()
@@ -243,6 +248,11 @@ export function createIo(ctx) {
             var pigId = res.headers.get('x-dsh-pig-id')
             if (typeof ownerId === 'string' && typeof pigId === 'string') {
               ctx.bindPresentationIdentity({ ownerId: ownerId, pigId: pigId })
+              // The DSH adapter injects this bridge; desktop owner mode uses the
+              // desktop shell instead and keeps its flat settings form.
+              if (typeof window !== 'undefined' && /** @type {any} */ (window).__dshPiggyOwnerCloud) {
+                /** @type {any} */ (window).__dshPiggyOwnerMode = true
+              }
             }
           }
           // 快照「画面上」没变就不重画：整块内容（菜园一屏 160 个节点、52 张图）拆了重建是白干，
