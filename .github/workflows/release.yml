@@ -92,6 +92,7 @@ jobs:
         run: npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2
       - name: 生成游戏产物
         working-directory: .
+        shell: bash
         run: |
           npm run build
           for file in client.js extensions/farm/client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js; do
