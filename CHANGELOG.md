@@ -7,6 +7,16 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+## [0.37.2-rc.13] — 2026-11-04 · 帧动作与结构收尾
+
+配套桌面外壳 0.6.8-rc.10，存档仍为 v15。
+
+- 动作包支持多帧序列：frames 支持 fps 或 durationsMs，帧文件 00.png…；校验连续、尺寸、大小、总时长，按帧切图并预加载，现有单图动作视觉不变。
+- 桌面主进程 main.js 1159→744 行，拆出拖动引擎与几何 IPC。
+- 桌面渲染壳 shell.js 450→75 行，拆出 measure/anchor/room/report/tooltip。
+- 测试目录分层到 test/unit/{core,host,client} 与 test/integration；262 个测试文件仅移动与改路径。
+- README 改版、贡献者与致谢恢复；发布前检查清单加入贡献者/贴图核对。
+
 ## [0.37.2-rc.12] — 2026-11-04 · 旧多猪位置迁移
 
 配套桌面外壳 0.6.8-rc.9，存档仍为 v15。
