@@ -81,7 +81,7 @@ test('F12 lets only transparent panel padding cross the edge during a size chang
 })
 
 test('显示器变化要主动告诉游戏包：窗口没挪动也得推几何', () => {
-  const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const main = readFileSync(new URL('../lib/display-watch.js', import.meta.url), 'utf8')
   // applyBounds 有 2px 死区：分辨率/缩放变了但窗口刚好不用挪时，它不会推几何，
   // 页面就会一直用旧的工作区列表。所以显示器事件必须自己再推一次并记一行。
   assert.match(main, /screen\.on\('display-metrics-changed',\s*\(event, display, changedMetrics\)\s*=>/)
@@ -104,8 +104,8 @@ test('窗口位置必须在构造时就给，不能先建再挪（Electron 自�
 })
 
 test('显示器对账兜底：漏了 display 事件也能自愈', () => {
-  const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  assert.match(main, /displayWatchTimer = setInterval\([\s\S]*?screen\.getAllDisplays\(\)[\s\S]*?reclamp\('reconcile'/, '每 10 秒比一次工作区列表')
+  const main = readFileSync(new URL('../lib/display-watch.js', import.meta.url), 'utf8')
+  assert.match(main, /const timer = scheduleInterval\([\s\S]*?screen\.getAllDisplays\(\)[\s\S]*?reclamp\('reconcile'/, '每 10 秒比一次工作区列表')
 })
 
 test('窗口改动容差不贴着 Electron 的 ±1px 噪声（容差 1 会来回纠正）', () => {

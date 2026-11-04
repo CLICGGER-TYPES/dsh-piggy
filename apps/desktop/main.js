@@ -12,16 +12,12 @@
  * - 游戏运行时在后台单写者中执行，界面经 piggy:// 访问。
  * - 存档在 userData/state.json，默认数据目录名为 piggy，跟 DSH 里那只各养各的；托盘里可以导入。
  */
-import { panelViewportSize, panelContentRect } from './lib/panel-geometry.js'
 import { createResizeShape } from './lib/resize-shape.js'
 import { auxiliaryWindowOptions } from './lib/auxiliary-window.js'
-import { createLinuxDisplayRebuild } from './lib/linux-display-rebuild.js'
 import { spawn } from 'node:child_process'
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { access, appendFile, copyFile, mkdir, rename, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { appendFile, mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
@@ -32,21 +28,27 @@ import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
 import { readOwnerDocumentConfig } from './lib/owner-document-config.js'
-import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
-import { recoverBounds, recoveryPayload } from './lib/pig-recovery.js'
+import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint, pigDisplayAtCursor } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE } from './lib/versions.js'
 import { startBackgroundVersions } from './lib/background-versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
 import { validDragOrigin } from './lib/drag-origin.js'
-import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, pigScreenBox, panelReferenceFor } from './lib/panel-geometry.js'
-import { panelToggleAction } from './lib/panel-toggle.js'
+import { PANEL_FALLBACK } from './lib/panel-geometry.js'
 import { pointerHitsShape } from './lib/pointer-hit.js'
-import { createFullscreenWatch, shouldHide } from './lib/fullscreen.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
 import { createExtensionWindow } from './lib/extension-window.js'
 import { createPanelWindow } from './lib/panel-window.js'
+import { createPanelController } from './lib/panel-controller.js'
+import { createFullscreenController } from './lib/fullscreen-controller.js'
+import { createDesktopServices } from './lib/desktop-services.js'
+import { createDisplayWatch } from './lib/display-watch.js'
+import { createMergeConfirm } from './lib/merge-confirm.js'
+import { createPetRoster } from './lib/pet-roster.js'
+import { createCaptureCheck } from './lib/capture-check.js'
+import { createShellLaunch } from './lib/shell-launch.js'
+import { hasOwnerArchiveRuntime, hasOwnerPigRuntime, hasOwnerCloudRuntime, hasOwnerLanRuntime, runtimeOwnerConfig, notifyOwnerArchiveSwitchFailed } from './lib/owner-runtime.js'
 import { createPetWindow } from './lib/pet-window.js'
 import { MAX_PIG_WINDOWS, createPetRegistry, createPetState } from './lib/pet-instance.js'
 import { createExternalManager } from './lib/external.js'
@@ -55,9 +57,7 @@ import { downloadFirstGame, gamePinPath } from './first-run.js'
 import { reportStartupFailure, pageCrashReason } from './lib/startup-failure.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
 import { createWindowState } from './lib/window-state.js'
-import { createAutostart } from './lib/autostart.js'
 import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
-import { createDesktopTray } from './lib/tray.js'
 import { createOwnerArchiveSelectionStore } from './lib/owner-archive-selection.js'
 import { createOwnerArchiveManager } from './lib/owner-archive-manager.js'
 import { createOwnerPigManager } from './lib/owner-pig-manager.js'
@@ -68,6 +68,7 @@ import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
 import { registerOwnerArchiveIpc } from './lib/ipc/owner-archive.js'
 import { registerOwnerPigsIpc } from './lib/ipc/owner-pigs.js'
 import { registerOwnerNetworkIpc } from './lib/ipc/owner-network.js'
+import { registerPanelIpc } from './lib/ipc/panel.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
 import { createOwnerCloudReadyStore } from './lib/owner-cloud-ready.js'
 import { registerUpdatesIpc } from './lib/ipc/updates.js'
@@ -154,24 +155,10 @@ let hostJournal = null
 /** 显示器兜底对账的定时器（见 app.whenReady 里的 displayWatchTimer）。 */
 let displayWatchTimer = null
 
-/**
- * Start again with `args`. Inside an AppImage the running copy is a temporary
- * mount that vanishes with this process, so the AppImage file itself is relaunched.
- */
-function relaunch(args = process.argv.slice(1)) {
-  app.relaunch(process.env.APPIMAGE ? { execPath: process.env.APPIMAGE, args } : { args })
-}
-
-// Wayland does not let a window stay on top or cut its own shape; XWayland does.
-// The platform is chosen before this file runs, so a Wayland start relaunches once under X11.
-const X11_FLAG = '--ozone-platform=x11'
-const needsX11 = process.platform === 'linux' && Boolean(process.env.WAYLAND_DISPLAY)
-  && process.env.PIGGY_WAYLAND !== '1' && !process.argv.includes(X11_FLAG)
-if (needsX11) {
-  // app.relaunch only fires on a normal quit, which never comes this early; start the copy by hand.
-  spawn(process.env.APPIMAGE ?? process.execPath, [...process.argv.slice(1), X11_FLAG], { detached: true, stdio: 'ignore' }).unref()
-  app.exit(0)
-}
+const { relaunch, ensureX11 } = createShellLaunch({
+  app, spawnProcess: spawn, platform: process.platform, env: process.env, argv: process.argv, execPath: process.execPath,
+})
+const needsX11 = ensureX11()
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'piggy', privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -200,61 +187,8 @@ const bundledGameDir = () => bundledDesktopGame(app, HERE)
 
 const statePath = () => dataPaths.statePath
 
-/** Only this explicit marker permits the current game package to receive an OwnerDocument path. */
-async function hasOwnerArchiveRuntime(gameDir) {
-  try {
-    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
-    return runtime.OWNER_ARCHIVE_RUNTIME_API_VERSION === 1
-  } catch { return false }
-}
-
-/** Only this explicit capability enables panel-local pig target management. */
-async function hasOwnerPigRuntime(gameDir) {
-  try {
-    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
-    return runtime.OWNER_PIG_RUNTIME_API_VERSION === 1
-  } catch { return false }
-}
-
-/** Owner cloud transport uses complete owner archives and an explicit first-sync direction. */
-async function hasOwnerCloudRuntime(gameDir) {
-  try {
-    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
-    return runtime.OWNER_CLOUD_RUNTIME_API_VERSION === 1
-  } catch { return false }
-}
-
-/** owner 私有 LAN 会话必须由面板显式启用。 */
-async function hasOwnerLanRuntime(gameDir) {
-  try {
-    const runtime = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
-    return runtime.OWNER_LAN_RUNTIME_API_VERSION === 1
-  } catch { return false }
-}
-
-/** Strip local selection metadata before crossing into the game runtime. */
-function runtimeOwnerConfig(config) {
-  if (config === null) return null
-  return {
-    ownerDocumentPath: config.ownerDocumentPath,
-    ...(typeof config.legacyStatePath === 'string' ? { legacyStatePath: config.legacyStatePath } : {}),
-    ...(typeof config.ownerId === 'string' ? { ownerId: config.ownerId } : {}),
-    pigId: config.pigId,
-  }
-}
-
 function applyStoredOwnerSelection(selection) {
   ownerDocumentConfig = selection === null ? null : { ...selection, source: 'selection' }
-}
-
-/** Roll a pending owner switch back only after the attempted runtime has stopped writing. */
-async function notifyOwnerArchiveSwitchFailed() {
-  await dialog.showMessageBox({
-    type: 'info',
-    title: '没有切换存档',
-    message: '新存档副本没有启用。之前的存档选择已恢复，新副本仍保留在本机。',
-    detail: '应用将重新启动；你可以稍后重试。',
-  })
 }
 
 async function restorePreviousOwnerSelectionAndRestart(cause) {
@@ -264,7 +198,7 @@ async function restorePreviousOwnerSelectionAndRestart(cause) {
   log('owner archive startup rolled back', cause instanceof Error ? cause.name : 'startup failed')
   await desktopLifecycle.requireSavedGame()
   await desktopLifecycle.closeShellResources()
-  await notifyOwnerArchiveSwitchFailed()
+  await notifyOwnerArchiveSwitchFailed(dialog)
   relaunch()
   app.exit(0)
   return true
@@ -308,6 +242,8 @@ function primaryPet() {
  * 小窗口、菜单另开窗口：开面板时猪的窗口一动不动，拖动只挪窗口。见 docs/archive/tasks/I-round.md。
  * 只有新游戏包会叫它（piggyShell.panel.toggle）；老游戏包照旧单窗口。
  */
+/** 面板状态机；在 panelWindow / extensionLayer 之后装配。 */
+let panel = null
 const panelWindow = createPanelWindow({
   BrowserWindow,
   options: {
@@ -320,16 +256,14 @@ const panelWindow = createPanelWindow({
       additionalArguments: ['--piggy-role=panel'] },
   },
   // 面板页面按 ?pig= 路由到对应 worker session；换猪时重建面板窗口。
-  url: () => panelUrl(),
+  url: () => panel.url(),
   frameCap: FRAME_CAP,
   devTools: process.env.PIGGY_DEVTOOLS === '1',
   log,
-  onCreated: () => panelViewCreated(),
-  onReady: () => {
-    if (panelOpen && panelAnchor !== null) sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
-  },
-  onRendererGone: () => closePanel('crash'),
-  onBlur: panelFocusLeft,
+  onCreated: () => panel?.viewCreated(),
+  onReady: () => panel?.handleReady(),
+  onRendererGone: () => panel?.close('crash'),
+  onBlur: () => panel?.focusLeft(),
 })
 const getPanelWindow = panelWindow.current
 /** 扩展的大窗口（role=ext）和它显示的扩展；一次只开一个。 */
@@ -340,22 +274,32 @@ const extensionWindow = createExtensionWindow({
   url: 'piggy://app/index.html',
   getLayer: () => extensionLayer,
   getPanel: getPanelWindow,
-  isPanelOpen: () => panelOpen,
+  isPanelOpen: () => panel?.isOpen() === true,
   fromPage: event => fromPage(event),
   fromExt: event => fromExt(event),
   log,
 })
 const extensionLayer = createExtensionLayer({ extension: () => extensionWindow.current(), overlays: () => [getPanelWindow(), ...pets.all().map(pet => pet.window)] })
+panel = createPanelController({
+  panelWindow, getPanelWindow, screen, BrowserWindow, platform: process.platform,
+  pets, primaryPet, getPetWindow, extensionWindow, extensionLayer, ipcMain,
+  petForEvent, fromPage, toPages, log, traceSetIgnoreMouseEvents,
+})
 /** 主进程关闭/退出状态统一由 lifecycle 持有；资源句柄在实际关闭时动态读取。 */
 const desktopLifecycle = createDesktopLifecycle({
   app, dialog, log, stopDrag: () => stopDrag(), relaunch,
   isCapture: () => Boolean(process.env.PIGGY_CAPTURE),
   clearInterval, clearTimeout,
-  getResources: () => ({ ...desktopRuntime.getShutdownResources(), shellUpdates, proxySettings, fullscreenWatch,
-    externalManager, autostart, exportWrites, topGuardTimer, displayWatchTimer, hitTimer: primaryPet()?.hitTimer ?? null,
-    hitTimers: pets.all().map(pet => pet.hitTimer), stateTimer, flushWindowState, flushLogs }),
+  getResources: () => ({ ...desktopRuntime.getShutdownResources(), shellUpdates, proxySettings, fullscreenWatch: fullscreen.watch(),
+    externalManager, autostart, exportWrites, topGuardTimer: fullscreen.topGuardTimer(), displayWatchTimer, hitTimer: primaryPet()?.hitTimer ?? null,
+    hitTimers: pets.all().map(pet => pet.hitTimer), stateTimer: panel.pendingStateTimer(), flushWindowState, flushLogs }),
   setExternalManager: manager => { externalManager = manager },
   setHitTimer: timer => { const pet = primaryPet(); if (pet !== null) pet.hitTimer = timer },
+})
+/** 全屏隐藏与置顶守护；状态在 lib/fullscreen-controller.js。 */
+const fullscreen = createFullscreenController({
+  app, screen, pets, primaryPet, getPetWindow, getPanelWindow, extensionLayer, panel,
+  isQuitting: () => desktopLifecycle.quitting, platform: process.platform, pid: process.pid, log,
 })
 /**
  * 消息是不是这扇窗口的页面发来的。窗口销毁后直接读 webContents 会抛
@@ -411,31 +355,7 @@ function toPages(channel, ...args) {
 }
 
 /** 合并确认：内容由桌面端自己算；窗口隐藏时先显示窗口。 */
-async function confirmMerge(plan) {
-  try {
-    if (getPetWindow() === null || getPetWindow().isDestroyed()) return false
-    if (!getPetWindow().isVisible()) getPetWindow().show()
-    getPetWindow().focus()
-    const result = typeof plan?.target === 'object'
-      ? `合并前会分别备份两只猪。合并后内嵌猪会退役，不再长大。`
-      : '合并前会分别备份两只猪。'
-    const answer = await dialog.showMessageBox(getPetWindow(), {
-      type: 'question', buttons: ['取消', '允许合并'], defaultId: 0, cancelId: 0, noLink: true,
-      title: 'DSH 想把内嵌猪合并到这只猪',
-      message: 'DSH 想把内嵌猪合并到这只猪',
-      detail: `${planLine('桌宠', plan?.target)}${planLine('内嵌', plan?.source)}${planLine('合并后', plan?.result)}\n${result}`,
-    })
-    return answer.response === 1
-  } catch (error) {
-    log('merge confirm failed', String(error))
-    return false
-  }
-}
-
-function planLine(label, summary) {
-  if (summary === null || summary === undefined) return ''
-  return `${label}：${summary.name ?? ''} · Lv.${summary.level ?? '?'} · 金币 ${summary.coins ?? 0}\n`
-}
+const { confirmMerge } = createMergeConfirm({ dialog, getPetWindow, log })
 
 function fromPanelOnly(event) {
   return !desktopLifecycle.quitting && getPanelWindow() !== null && !getPanelWindow().isDestroyed() && event.sender === getPanelWindow().webContents
@@ -449,14 +369,9 @@ function registerProtocol(gameDir) {
     gameDir,
     getHost: () => desktopRuntime.getHost(),
     isQuitting: () => desktopLifecycle.quitting,
-    onStateChanged: announceStateChanged,
+    onStateChanged: panel.announceStateChanged,
     sessions: pigSessions,
   })
-}
-
-/** The screen the mouse is on when the pig starts: where you just double-clicked. */
-function pigDisplay() {
-  return screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
 }
 
 /** 上次把猪停在哪儿（窗口位置），下次开机照旧。 */
@@ -518,7 +433,7 @@ function applyBounds(pet, next, why) {
     && Math.abs(delta.width) <= tolerance && Math.abs(delta.height) <= tolerance) return null
   window.setBounds(next)
   pet.petAsked = { ...next }
-  followPig(pet)
+  panel.followPig(pet)
   // 拖动时每秒要挪几十次：别每次都写日志（Windows 上同步写盘会卡住主进程）。
   if (why !== 'drag' && why !== 'move') log('bounds', why, pet.pigId ?? 'legacy', JSON.stringify(next))
   if (pet.primary) scheduleWindowStateSave()
@@ -698,7 +613,7 @@ async function createPigWindow(pet, override = null) {
     const box = clampBounds({ ...pet.savedPigScreen, width: MIN_WINDOW.width, height: MIN_WINDOW.height }, pigArea)
     pet.savedPigScreen = { x: box.x, y: box.y }
   }
-  const area = saved === null ? pigDisplay().workArea : screen.getDisplayMatching(saved).workArea
+  const area = saved === null ? pigDisplayAtCursor(screen).workArea : screen.getDisplayMatching(saved).workArea
   const width = saved === null ? FALLBACK_CONTENT.width + WINDOW_PADDING * 2 : saved.width
   const height = saved === null ? FALLBACK_CONTENT.height + WINDOW_PADDING * 2 : saved.height
   const anchorRight = saved === null ? 18 : null
@@ -794,7 +709,7 @@ async function createPigWindow(pet, override = null) {
       void reportStartupCrash(window, details, gate)
     },
     afterLoad: window => {
-      window.on('blur', () => panelFocusLeft())
+      window.on('blur', () => panel.focusLeft())
       window.on('unresponsive', () => log('window unresponsive', JSON.stringify({ gate: pet.showGate === null ? null : pet.showGate.status(), pigId: pet.pigId })))
       window.on('responsive', () => log('window responsive', pet.pigId ?? 'legacy'))
       window.webContents.on('console-message', (event, level, message) => { if (level >= 2) log('page:', message, pet.pigId ?? '') })
@@ -821,16 +736,13 @@ function handlePetWindowClosed(pet) {
   pet.webContentsId = null
   closePetSession(pet)
   // 面板正服务这只猪：它没了，面板也收起，下一次右键按还活着的那只重开。
-  if (panelTarget === pet) {
-    panelTarget = null
-    closePanel('pet-closed')
-  }
+  panel.forgetTarget(pet)
   if (pet.primary) {
-    closePanel('pet-closed')
+    panel.close('pet-closed')
     log('primary pet window closed; panel closed, tray/recover stay primary-only')
   }
   if (pets.all().length === 0) {
-    closePanel('all-pets-closed')
+    panel.close('all-pets-closed')
     log('all pet windows closed')
   }
 }
@@ -848,90 +760,6 @@ function closePetSession(pet) {
     .catch(error => log('pet session close failed', pigId ?? 'legacy', String(error)))
 }
 
-/** 和 owner document / preload 同一套 ID 白名单。 */
-const PIG_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
-
-/** roster 只接受同一 owner 的合法 pigId，顺序保留。 */
-function rosterPigIds(roster) {
-  if (roster === null || typeof roster !== 'object') return []
-  if (typeof ownerDocumentConfig?.ownerId === 'string' && roster.ownerId !== ownerDocumentConfig.ownerId) return []
-  if (!Array.isArray(roster.pigs)) return []
-  return [...new Set(roster.pigs
-    .map(pig => pig?.pigId)
-    .filter(pigId => typeof pigId === 'string' && PIG_ID_PATTERN.test(pigId)))]
-}
-
-/**
- * 启动时决定开一只还是多只：
- *   - 只有 OWNER_PIG_RUNTIME_API_VERSION === 1 且同一 owner 的 roster > 1 才多窗口；
- *   - 主猪（owner 选择的那只）必须在前 4 只里；
- *   - 只要有一只 session 开不出来，就回滚全部并退回原来的单窗口。
- */
-async function createPetWindows() {
-  const primaryId = typeof ownerDocumentConfig?.pigId === 'string' && PIG_ID_PATTERN.test(ownerDocumentConfig.pigId)
-    ? ownerDocumentConfig.pigId : null
-  let plan = []
-  if (ownerPigRuntimeSupported && primaryId !== null) {
-    try {
-      const host = desktopRuntime.getHost()
-      const roster = await host.listOwnerPigs()
-      const pigIds = rosterPigIds(roster)
-      if (pigIds.length > 1 && pigIds.includes(primaryId)) {
-        plan = [primaryId, ...pigIds.filter(pigId => pigId !== primaryId)].slice(0, MAX_PIG_WINDOWS)
-      }
-    } catch (error) {
-      log('multi-pig roster unavailable', String(error))
-    }
-  }
-  if (plan.length > 1) {
-    const opened = []
-    try {
-      for (const pigId of plan) {
-        const session = await desktopRuntime.getHost().openPigSession(pigId)
-        if (session === null || typeof session.token !== 'string' || session.token === '' || session.pigId !== pigId) {
-          throw new Error(`pig session mismatch for ${pigId}`)
-        }
-        opened.push({ pigId, token: session.token })
-      }
-    } catch (error) {
-      log('multi-pig session failed; falling back to one window', String(error))
-      for (const item of opened) {
-        try { await desktopRuntime.getHost().closePigSession(item.token) } catch { /* 回滚失败只影响下一次启动 */ }
-      }
-      plan = []
-    }
-    if (plan.length > 1) {
-      multiPigActive = true
-      for (const item of opened) {
-        const pet = item.pigId === primaryId ? primaryPetState : createPetState({})
-        pet.pigId = item.pigId
-        pet.token = item.token
-        pet.primary = item.pigId === primaryId
-        pet.multiPig = true
-        pigSessions.set(item.pigId, item.token)
-        pets.add(pet)
-      }
-      log('multi-pig enabled', JSON.stringify({
-        pigs: plan, max: MAX_PIG_WINDOWS, primary: primaryId,
-        limits: ['panel:retarget-on-context-menu', 'tray:primary', 'fullscreen:primary-probe', 'recover:primary', 'second-instance:primary'],
-      }))
-    }
-  }
-  if (!multiPigActive) {
-    log('multi-pig disabled', JSON.stringify({ supported: ownerPigRuntimeSupported, owner: ownerDocumentConfig !== null, pigId: primaryId }))
-  }
-  await createWindow()
-  if (desktopLifecycle.quitting) return
-  for (const pet of pets.all()) {
-    if (pet === primaryPetState) continue
-    try { await createPigWindow(pet) } catch (error) {
-      log('pet window failed', pet.pigId ?? 'legacy', String(error))
-      closePetSession(pet)
-      pets.remove(pet)
-    }
-  }
-}
-
 /** Refresh native pixel/DIP caches by using the already-tested cold view path. */
 async function rebuildLinuxViews() {
   const pet = primaryPet()
@@ -943,7 +771,7 @@ async function rebuildLinuxViews() {
   const saved = { ...bounds, pig: { x: bounds.x + pig.x, y: bounds.y + pig.y } }
   stopDrag(pet)
   pet.resizeShape?.cancel()
-  closePanel('display')
+  panel.close('display')
   previous.hide()
   pet.lastContent = null
   pet.lastPigWindow = null
@@ -963,7 +791,7 @@ async function rebuildLinuxViews() {
   }
   panelWindow.forget(previousPanel)
   if (desktopLifecycle.quitting) return
-  ensurePanelWindow()
+  panel.ensure()
   pushGeometry(pet)
   log('display views rebuilt', JSON.stringify({ bounds: pet.window.getBounds(), pigId: pet.pigId }))
 }
@@ -1110,7 +938,7 @@ function dragTick(pet, cursorOverride) {
     pet.dragSession.lastSlide = slide
     pet.lastDragSlide = slide
     window.webContents.send('piggy:drag-slide', slide)
-    followPig(pet)
+    panel.followPig(pet)
     // 拖动期间用整窗形状（drag:start 时设置）：窗口被夹住时猪在窗口里滑，
     // 逐帧改 setShape 既慢又容易在 X11 上把猪裁掉/刷空。松手后页面 place 恢复精确形状。
   }
@@ -1218,7 +1046,7 @@ ipcMain.on('piggy:drag:end', (event, release) => {
   }
   stopDrag(pet)
   pet.restingPigScreen = null
-  reanchorPanel(pet)
+  panel.reanchorPanel(pet)
   // 页面紧接着要读几何重定家：把最后一帧 slide 一起同步返回，避免 send/sendSync 乱序。
   event.returnValue = geometryOf(pet.window?.getBounds() ?? { x: 0, y: 0, width: 0, height: 0 }, geometrySeq, pet)
 })
@@ -1310,8 +1138,8 @@ ipcMain.on('piggy:place', (event, request) => {
     pet.panelSpeech = next
   }
   if (pet.dragSession === null && pet.primary) {
-    if (speechChanged) reanchorPanel(pet)
-    else if (panelPigChanged) followPig(pet)
+    if (speechChanged) panel.reanchorPanel(pet)
+    else if (panelPigChanged) panel.followPig(pet)
   }
   event.returnValue = geometryOf(window.getBounds(), geometrySeq, pet)
 })
@@ -1364,7 +1192,7 @@ ipcMain.on('piggy:move', (event, delta) => {
   if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return
   pet.restingPigScreen = null
   applyBounds(pet, moveAcrossDisplays(pet.window.getBounds(), dx, dy, screen.getAllDisplays().map(display => display.workArea)), 'move')
-  if (pet.primary) reanchorPanel(pet)
+  if (pet.primary) panel.reanchorPanel(pet)
 })
 
 ipcMain.on('piggy:shape', (event, rects) => {
@@ -1379,439 +1207,33 @@ ipcMain.on('piggy:shape', (event, rects) => {
   })))
 })
 
-// ---------------------------------------------------------------------------
-// 面板窗口（外壳 0.6.0 起，窗口句柄与renderer就绪状态由 lib/panel-window.js 持有）
-// ---------------------------------------------------------------------------
+// 面板窗口：开关、贴猪几何、命中区域、z 序都在 lib/panel-controller.js，IPC 在 lib/ipc/panel.js。
+registerPanelIpc({ ipcMain, fromPage, getPanelWindow, extensionWindow, panel })
+const captureForCheck = createCaptureCheck({ app, getPetWindow, primaryPet })
 
-/** 面板现在开着没有（用户眼里的「开」，窗口可能还在等页面报尺寸）。 */
-let panelOpen = false
-/** 这次面板朝哪边开、最高多高：打开时定一次，拖动松手后重新定。 */
-let panelAnchor = null
-/** 面板页面最近报的尺寸。 */
-let panelSize = null
-let panelFixedViewport = false
-let panelHitTimer = null
-let panelHit = null
-let panelShapeKey = ''
-let panelHasNativeShape = false
-/** 最近一次给面板窗口设的位置：没变就不再 setBounds。 */
-let panelAsked = null
-/**
- * 面板当前服务哪只猪。null = 沿用主猪；多猪时右键第二只把面板改绑到它。
- * 面板页面按 ?pig= 路由 worker session，所以换猪必须换页面（见 openPanel）。
- */
-let panelTarget = null
-/** 当前面板页面按哪个 pigId 加载；null 表示默认会话（主猪的旧路径）。 */
-let panelLoadedPigId = null
-
-let stateTimer = null
-/** 存档变了：两个窗口都刷新（合并 30ms 内的多次，一次动作可能连发几个请求）。 */
-function announceStateChanged() {
-  if (stateTimer !== null) return
-  stateTimer = setTimeout(() => { stateTimer = null; toPages('piggy:state-changed') }, 30)
-}
-
-/** 面板服务的那只猪：改绑目标还活着就用它，否则回主猪。 */
-function panelTargetPet() {
-  if (panelTarget !== null && pets.all().includes(panelTarget)) {
-    const window = panelTarget.window
-    if (window !== null && window !== undefined && !window.isDestroyed()) return panelTarget
-  }
-  return primaryPet()
-}
-
-/** 面板页面 URL：带 ?pig= 时 game-protocol 把请求路由到这只猪的 session。 */
-function panelUrl() {
-  const pigId = panelTargetPet()?.pigId ?? null
-  return pigId === null ? 'piggy://app/index.html' : `piggy://app/index.html?pig=${encodeURIComponent(pigId)}`
-}
-
-/** 主猪在屏幕上的框（拖到屏幕边时加上猪在窗口里滑出去的那一截）。 */
-function pigOnScreen() {
-  const pet = panelTargetPet()
-  if (pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelPig === null) return null
-  return pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelPig, pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
-}
-
-/** 按猪现在的位置决定面板朝哪边开、最高多高。 */
-function decidePanelAnchor() {
-  const pig = panelReferenceOnScreen()
-  if (pig === null) return null
-  return panelAnchorFor(pig, screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea,
-    panelSize?.width ?? PANEL_FALLBACK.width, panelAnchor?.horizontal)
-}
-
-/** 面板窗口该在哪：每次都从猪现在在哪直接算（见 lib/panel-geometry.js 文件头）。 */
-function panelBounds() {
-  const pet = panelTargetPet()
-  const pig = panelReferenceOnScreen()
-  if (pig === null || panelAnchor === null) return null
-  return panelBoundsFor(pig, panelAnchor, panelViewportSize(panelAnchor, panelSize, panelFixedViewport),
-    pet?.dragSession !== null && pet?.dragSession !== undefined ? screen.getAllDisplays().map(display => display.workArea) : null)
-}
-
-function panelReferenceOnScreen() {
-  const pet = panelTargetPet()
-  const pig = pigOnScreen()
-  if (pig === null || pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelSpeech === null) return pig
-  const speech = pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelSpeech,
-    pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
-  return panelReferenceFor(pig, speech)
-}
-
-function sendPanel(message) {
-  const target = getPanelWindow()
-  if (target !== null && !target.isDestroyed() && panelWindow.isReady()) target.webContents.send('piggy:panel', message)
-}
-
-/** 固定外框只让实际卡片和名牌接收点击，透明预留区继续点到桌面。 */
-function refreshPanelHit() {
-  if (!panelFixedViewport || !panelOpen || !panelAnchor || !getPanelWindow() || getPanelWindow().isDestroyed() || !getPanelWindow().isVisible()) return
-  const bounds = getPanelWindow().getBounds()
-  const hit = pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])
-  if (hit === panelHit) return
-  panelHit = hit
-  traceSetIgnoreMouseEvents('panel', 'panel', 'panel-hit', !hit, true,
-    () => getPanelWindow().setIgnoreMouseEvents(!hit, { forward: true }))
-}
-
-const panelShape = createResizeShape(() => getPanelWindow(), rects => {
-  if (getPanelWindow() && !getPanelWindow().isDestroyed() && process.platform !== 'darwin') getPanelWindow().setShape(rects)
-}, () => screen.getDisplayMatching(getPanelWindow().getBounds()).scaleFactor)
-
-function stopPanelHit() {
-  if (panelHitTimer !== null) clearInterval(panelHitTimer)
-  panelHitTimer = null
-  panelHit = null
-}
-
-function startPanelHit() {
-  if (process.platform !== 'darwin' || !panelFixedViewport || !panelOpen || panelHitTimer !== null) return
-  refreshPanelHit()
-  panelHitTimer = setInterval(refreshPanelHit, 16)
-  panelHitTimer.unref?.()
-}
-
-/** 面板页面换猪/重建后，旧的尺寸、位置和命中缓存全部作废。 */
-function resetPanelView() {
-  panelShape.cancel()
-  panelShapeKey = ''
-  panelHasNativeShape = false
-  panelAsked = null
-  panelSize = null
-  panelFixedViewport = false
-  stopPanelHit()
-}
-
-/** panel-window 的 onCreated：记录这次页面是按哪只猪加载的。 */
-function panelViewCreated() {
-  resetPanelView()
-  panelLoadedPigId = panelTargetPet()?.pigId ?? null
-  extensionLayer.sync()
-}
-
-/**
- * 把猪窗口抬到面板窗口上面（用户 2026-10-08 反馈）。
- * 两个窗口同为 floating 置顶，点面板时系统把面板抬到最上，猪的动作和气泡被盖住；
- * 所以面板转来反应（piggy:pig-fx）时抬一次。
- * 只改 z 序不改大小；猪窗口除猪本体外都穿透点击，压在上面不挡面板操作。
- */
-function raisePetAbovePanel() {
-  if (extensionLayer.isFocused()) return
-  const pet = panelTargetPet()
-  if (pet === null || pet.window === null || pet.window.isDestroyed() || !pet.window.isVisible()) return
-  // 置顶标记仍为 true 时，菜单也可能被其他应用盖住；先抬菜单，再抬猪。
-  if (getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible()) getPanelWindow().moveTop()
-  pet.window.moveTop()
-}
-
-/** 右键第二只时也把它叫到前面：置顶窗口也要先可见。 */
-function focusPetWindow(pet) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed()) return
-  if (!window.isVisible()) window.showInactive()
-  window.moveTop()
-  window.focus?.()
-}
-
-function ensurePanelWindow() {
-  return panelWindow.ensure()
-}
-
-/**
- * 焦点离开了面板服务的那只猪或面板窗口：如果也没落到另一个上，就是点到别处了。
- * 面板打开时不抢焦点（见 placePanel），焦点多半还在猪窗口上，所以两个窗口的失焦都要听。
- * 多猪时焦点落到别的猪也算「点到别处」。
- */
-function panelFocusLeft() {
-  if (!panelOpen) return
-  setTimeout(() => {
-    if (!panelOpen) return
-    const focused = BrowserWindow.getFocusedWindow()
-    const pet = panelTargetPet()
-    if (focused !== null && (focused === pet?.window || focused === getPanelWindow() || focused === extensionWindow.current())) return
-    // 原生窗口重新映射时焦点可能暂空，指针仍在真实面板内不能算外部点击。
-    if (focused === null && panelAnchor && panelSize && getPanelWindow() && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible()) {
-      const bounds = getPanelWindow().getBounds()
-      if (pointerHitsShape(screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])) return
-    }
-    sendPanel({ type: 'blur', toPet: false })
-  }, 0)
-}
-
-/** 把面板窗口放到该在的地方；第一次有尺寸时才显示（免得先闪一个空窗口）。 */
-function placePanel() {
-  if (!panelOpen || getPanelWindow() === null || getPanelWindow().isDestroyed()) return
-  const next = panelBounds()
-  if (next === null) return
-  // 切页、拖动后换边及可用高度变化都从同一份内容框计算轮廓。
-  if (process.platform !== 'darwin') {
-    if (panelFixedViewport) {
-      const rect = panelContentRect(next, panelAnchor, panelSize)
-      const key = [next.width, next.height, rect.y, rect.width, rect.height].join(',')
-      if (key !== panelShapeKey) {
-        panelShape.begin(next, true)
-        panelShape.update([rect])
-        panelShapeKey = key
-        panelHasNativeShape = true
-      }
-    } else if (panelHasNativeShape) {
-      panelShape.cancel()
-      getPanelWindow().setShape([{x: 0, y: 0, width: next.width, height: next.height}])
-      panelShapeKey = ''
-      panelHasNativeShape = false
-    }
-  }
-  if (panelAsked === null || panelAsked.x !== next.x || panelAsked.y !== next.y
-    || panelAsked.width !== next.width || panelAsked.height !== next.height) {
-    getPanelWindow().setBounds(next)
-    panelAsked = next
-  }
-  if (panelSize !== null && !getPanelWindow().isVisible()) {
-    // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
-    //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
-    getPanelWindow().showInactive()
-    raisePetAbovePanel()
-    log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical, pigId: panelTargetPet()?.pigId ?? null }))
-    const pet = panelTargetPet()
-    if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'open' })
-  }
-}
-
-/**
- * 开面板，并把面板改绑到这只猪。
- * 面板页面的 API 请求按 URL 的 ?pig= 路由；已加载的页面不是这只猪时重建面板窗口
- * （不是改一个变量：否则面板会贴在新猪旁边却显示旧猪的数据）。
- */
-function openPanel(pig, pet = panelTargetPet()) {
-  if (pet === null) return
-  const targetPigId = pet.pigId ?? null
-  if (getPanelWindow() !== null && panelLoadedPigId !== targetPigId) {
-    if (panelOpen) closePanel('retarget')
-    panelWindow.destroy()
-    resetPanelView()
-    panelOpen = false
-  }
-  panelTarget = pet
-  if (Number.isFinite(pig?.x) && Number.isFinite(pig?.y) && pig?.width > 0 && pig?.height > 0) {
-    pet.panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
-  }
-  if (pet.panelPig === null) return
-  ensurePanelWindow()
-  panelOpen = true
-  startPanelHit()
-  // 每次打开都按默认规则重新挑对齐边（保持对齐只在拖完重定时用）
-  panelAnchor = null
-  panelAnchor = decidePanelAnchor()
-  if (panelAnchor === null) return
-  sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
-  placePanel()
-}
-
-function closePanel(why) {
-  if (!panelOpen) return
-  panelOpen = false
-  panelShape.cancel()
-  panelShapeKey = ''
-  stopPanelHit()
-  if (getPanelWindow() !== null && !getPanelWindow().isDestroyed()) getPanelWindow().hide()
-  sendPanel({ type: 'closed' })
-  const pet = panelTargetPet()
-  if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'closed' })
-  log('panel closed', why)
-}
-
-/** 面板服务的那只猪挪了（拖动、散步、贴边修正）：面板按它的新位置重摆，不重新挑朝向（松手后再挑）。 */
-function followPig(pet = primaryPet()) {
-  if (pet === null || pet !== panelTargetPet()) return
-  if (!panelOpen || getPanelWindow() === null || getPanelWindow().isDestroyed() || !getPanelWindow().isVisible()) return
-  placePanel()
-}
-
-/** 拖完 / 散步完：猪到了新地方，重新决定面板朝哪边开（放不下就换边）。 */
-function reanchorPanel(pet = primaryPet()) {
-  if (pet === null || pet !== panelTargetPet()) return
-  if (!panelOpen) return
-  const next = decidePanelAnchor()
-  if (next === null) return
-  const changed = panelAnchor === null || next.vertical !== panelAnchor.vertical || next.maxHeight !== panelAnchor.maxHeight
-  panelAnchor = next
-  if (changed) sendPanel({ type: 'open', vertical: next.vertical, maxHeight: next.maxHeight })
-  placePanel()
-}
-
-/** 猪页面：右键开/关面板（带上猪在窗口里的框）。多猪时把同一个面板改绑到当前这只。 */
-ipcMain.on('piggy:panel:toggle', (event, request) => {
-  const pet = petForEvent(event)
-  if (pet === null) return
-  const serving = panelOpen && panelTargetPet() === pet
-  if (panelOpen && !serving) {
-    // 另一只猪的面板开着：右键谁就切到谁，不先收起再等第二次点击。
-    focusPetWindow(pet)
-    openPanel(request?.pig, pet)
-    log('panel retargeted', pet.pigId ?? 'legacy')
-    return
-  }
-  const action = panelToggleAction({ requestedOpen: request?.open === true, isOpen: panelOpen,
-    isVisible: getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible() })
-  if (action === 'open') openPanel(request?.pig, pet)
-  else if (action === 'close') closePanel('pet')
-  else {
-    // 首次加载期间复按只保持打开意图；回传状态，免得猪页面误以为已经关闭。
-    pet.window.webContents.send('piggy:panel', { type: 'open' })
-    log('panel loading click kept')
-  }
-})
-/** 面板页面：内容量好了多大。 */
-ipcMain.on('piggy:panel:size', (event, size) => {
-  if (!fromPage(event) || event.sender !== getPanelWindow()?.webContents) return
-  const width = Number(size?.width)
-  const height = Number(size?.height)
-  if (!(width > 0) || !(height > 0)) return
-  panelSize = { width: Math.ceil(width), height: Math.ceil(height) }
-  // 新 preload 透传第三个参数；旧游戏包/旧 preload 自动沿用可变外框。
-  panelFixedViewport = size.fixedViewport === true
-  if (panelFixedViewport) startPanelHit()
-  else {
-    stopPanelHit()
-    traceSetIgnoreMouseEvents('panel', 'panel', 'panel-variable-viewport', false, 'omitted',
-      () => getPanelWindow().setIgnoreMouseEvents(false))
-  }
-  placePanel()
-  if (process.platform === 'darwin') refreshPanelHit()
-})
-/** 任一页面：收起面板（面板里点了收起、点外面自动收起）。 */
-ipcMain.on('piggy:panel:close', event => { if (fromPage(event)) closePanel('page') })
-/** 面板页面里对猪的反应（喂食时猪的动作、冒气泡）：转给面板当前服务的那只猪窗口去演。 */
-// 猪窗口自己冒气泡（签到、点猪的反应）时也抬一次，跟面板转来的反应一样（用户 2026-10-10：气泡被面板盖住）。
-ipcMain.on('piggy:pet-raise', event => {
-  const pet = panelTargetPet()
-  if (!fromPage(event) || pet === null || event.sender !== pet.window?.webContents) return
-  raisePetAbovePanel()
-})
-
-ipcMain.on('piggy:pig-fx', (event, fx) => {
-  if (!fromPage(event) || (event.sender !== getPanelWindow()?.webContents && !extensionWindow.owns(event.sender))) return
-  const pet = panelTargetPet()
-  if (pet === null || pet.window === null || pet.window.isDestroyed() || typeof fx?.name !== 'string') return
-  pet.window.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
-  raisePetAbovePanel()
-})
-
-/** Where the DSH plugin keeps its pig (the folder moved from dsh-pig to dsh-piggy). */
-async function dshSavePath() {
-  const home = process.env.DSH_HOME?.trim() ? resolve(process.env.DSH_HOME.trim()) : join(homedir(), '.dsh')
-  for (const folder of ['dsh-piggy', 'dsh-pig']) {
-    const file = join(home, folder, 'state.json')
-    try { await access(file); return file } catch (error) { if (error.code !== 'ENOENT') throw error }
-  }
-  return null
-}
-
-/** Copy DSH's pig over this one, keeping a copy of this one first. */
-async function importFromDsh() {
-  const action = desktopLifecycle.reserveAction('import', 'prepare')
-  if (action === null) return
-  try {
-    const source = await dshSavePath()
-    if (action.cancelled || desktopLifecycle.quitting) return
-    if (source === null) {
-      await dialog.showMessageBox({ type: 'info', message: '没找到 DSH 里的猪', detail: '默认找 ~/.dsh/dsh-piggy/state.json（或 DSH_HOME 下面）。' })
-      return
-    }
-    const { response } = await dialog.showMessageBox({
-      type: 'question', buttons: ['导入', '算了'], defaultId: 0, cancelId: 1,
-      message: '把 DSH 里的猪接过来？',
-      detail: `从 ${source} 复制一份过来。桌面版现在这只会先备份，不会丢。`,
-    })
-    if (action.cancelled || desktopLifecycle.quitting || response !== 0) return
-    action.phase = 'commit'
-    await desktopLifecycle.requireSavedGame()
-    const target = statePath()
-    await mkdir(dirname(target), { recursive: true })
-    await backupSave('import')
-    await copyFile(source, target + '.importing')
-    await rename(target + '.importing', target)
-    await desktopLifecycle.restartGame()
-  } catch (error) {
-    if (!action.cancelled) await desktopLifecycle.recoverAction(error)
-  } finally { desktopLifecycle.releaseAction(action) }
-}
-
-/** 开机自启的持久化：Windows 走 Electron 登录项，Linux 写 autostart 条目（见 lib/autostart.js）。 */
-const autostart = createAutostart({ app, log, isQuitting: () => desktopLifecycle.quitting })
-
-/** 托盘图标和菜单；窗口动作仍由主进程现有的入口处理。 */
-const tray = createDesktopTray({
-  Tray, Menu, nativeImage,
-  icon: join(HERE, 'build', 'tray.png'),
-  pig: {
-    visible: () => getPetWindow()?.isVisible() === true,
-    hide: () => {
-      closePanel('tray')
-      for (const pet of pets.all()) { if (pet.window !== null && !pet.window.isDestroyed()) pet.window.hide() }
-    },
-    show: () => {
-      for (const pet of pets.all()) {
-        if (pet.window !== null && !pet.window.isDestroyed() && !pet.window.isVisible()) pet.window.showInactive()
-      }
-    },
-  },
-  autostart,
-  recoverPig,
-  importFromDsh,
-  quit: () => app.quit(),
-  log,
+/** 启动时的单猪/多猪计划；实现见 lib/pet-roster.js。 */
+const petRoster = createPetRoster({
+  getOwnerDocumentConfig: () => ownerDocumentConfig,
+  isOwnerPigRuntimeSupported: () => ownerPigRuntimeSupported,
+  getHost: () => desktopRuntime.getHost(),
+  pets, primaryPetState, pigSessions,
+  createWindow, createPigWindow, closePetSession, createPetState,
+  maxPigWindows: MAX_PIG_WINDOWS,
   isQuitting: () => desktopLifecycle.quitting,
+  isMultiPigActive: () => multiPigActive,
+  setMultiPigActive: value => { multiPigActive = value },
+  log,
 })
 
-/** 托盘恢复：清掉主猪陈旧的拖动/抛掷锚点，先把窗口移到主屏可见处，再让猪页把尺寸和家复位。 */
-function recoverPig() {
-  const pet = primaryPet()
-  if (desktopLifecycle.quitting || pet === null || pet.window === null || pet.window.isDestroyed()) return
-  const payload = recoveryPayload(screen.getPrimaryDisplay())
-  if (payload === null) return
-  stopDrag(pet)
-  pet.resizeShape?.cancel()
-  pet.dragShapeActive = false
-  pet.flightShapeActive = false
-  pet.flightSlide = { x: 0, y: 0 }
-  pet.lastDragSlide = { x: 0, y: 0 }
-  pet.lastFlightShapeSlide = null
-  pet.savedPigScreen = null
-  pet.restingPigScreen = null
-  pet.window.showInactive()
-  applyBounds(pet, recoverBounds(pet.window.getBounds(), payload.workArea), 'recover')
-  pet.window.webContents.send('piggy:recover', payload)
-  log('recover', JSON.stringify({ ...payload, pigId: pet.pigId }))
-}
 
-/** Keep a copy of the save before the game code under it changes. */
-async function backupSave(label) {
-  const file = statePath()
-  try { await access(file) } catch (error) { if (error.code === 'ENOENT') return; throw error }
-  await copyFile(file, `${file}.before-${label}-${new Date().toISOString().replace(/[:.]/g, '-')}`)
-}
+/** 导入/备份/恢复与托盘；实现见 lib/desktop-services.js。 */
+const services = createDesktopServices({
+  app, dialog, Tray, Menu, nativeImage,
+  iconPath: join(HERE, 'build', 'tray.png'),
+  log, statePath, desktopLifecycle, getPetWindow, primaryPet, pets, screen,
+  stopDrag, applyBounds, panel,
+})
+const { tray, autostart, recoverPig, backupSave } = services
 
 // ---- 外部连接（设置 → 外部连接）：只允许面板窗口，扩展大窗口不行 ----
 registerExternalIpc({
@@ -1892,123 +1314,10 @@ const ownerNetworkManager = createOwnerNetworkManager({
 })
 registerOwnerNetworkIpc({ ipcMain, fromPanelOnly, manager: ownerNetworkManager })
 
-// ---- 全屏时隐藏 / 照常显示，以及置顶守护（外壳 0.6.5，见 lib/fullscreen.js） ----
-/** @type {ReturnType<typeof createFullscreenWatch> | null} */
-let fullscreenWatch = null
-/** 是不是因为全屏才把猪藏起来的（托盘「藏起来」不算，全屏结束时不去动它）。 */
-let hiddenForFullscreen = false
-/** 全屏隐藏时具体藏了哪些窗口；恢复时只把当时可见的放回来。 */
-const hiddenPetsForFullscreen = new Set()
-/** 上一次探测：猪所在的屏是不是有程序全屏。 */
-let pigScreenFullscreen = false
-let topGuardTimer = null
-/** 重设置顶时会先关再开，自己会触发 always-on-top-changed(false)；这段时间里的事件不当作「被系统清掉」。 */
-let reassertingUntil = 0
-
-/**
- * 重新置顶。Windows 上别的程序全屏、退出时，系统有时把猪窗口的置顶清掉，之后猪就一直压在别的窗口下面；
- * 光调一次 setAlwaysOnTop(true) 在 Electron 里可能因为「状态没变」被跳过，所以先关再开。
- */
-function reassertTop(why) {
-  if (desktopLifecycle.quitting) return
-  if (extensionLayer.isFocused()) { extensionLayer.sync(); return }
-  reassertingUntil = Date.now() + 1000
-  for (const target of [getPanelWindow(), ...pets.all().map(pet => pet.window)]) {
-    if (target === null || target === undefined || target.isDestroyed() || !target.isVisible()) continue
-    target.setAlwaysOnTop(false)
-    target.setAlwaysOnTop(true, 'floating')
-  }
-  const primary = getPetWindow()
-  if (primary !== null && !primary.isDestroyed() && primary.isVisible()) primary.moveTop()
-  log('top reasserted', why)
-}
-
-/** macOS：「照常显示」时让猪跟进全屏程序的桌面空间；「隐藏」就留在原来的空间（系统默认）。 */
-function applyMacSpaces() {
-  if (process.platform !== 'darwin' || fullscreenWatch === null) return
-  const show = fullscreenWatch.mode() === 'show'
-  for (const target of [getPanelWindow(), ...pets.all().map(pet => pet.window)]) {
-    if (target === null || target === undefined || target.isDestroyed()) continue
-    target.setVisibleOnAllWorkspaces(show, { visibleOnFullScreen: show })
-  }
-}
-
-/**
- * @param {{fullscreen:boolean, samePigScreen:boolean} | null} probe
- * 第一版只按主猪所在屏幕判断；一旦要藏，就把所有可见猪窗口一起藏，恢复时也只恢复当时可见的。
- */
-function onFullscreenProbe(probe) {
-  if (desktopLifecycle.quitting || getPetWindow() === null || getPetWindow().isDestroyed() || fullscreenWatch === null) return
-  const covering = probe !== null && probe.fullscreen === true && probe.samePigScreen === true
-  const ended = pigScreenFullscreen && !covering
-  pigScreenFullscreen = covering
-  if (shouldHide(fullscreenWatch.mode(), probe)) {
-    if (!hiddenForFullscreen && pets.all().some(pet => pet.window?.isVisible() === true) && !pets.all().some(pet => pet.dragSession !== null)) {
-      hiddenForFullscreen = true
-      hiddenPetsForFullscreen.clear()
-      closePanel('fullscreen')
-      for (const pet of pets.all()) {
-        const window = pet.window
-        if (window === null || window.isDestroyed() || !window.isVisible()) continue
-        hiddenPetsForFullscreen.add(pet)
-        window.hide()
-      }
-      log('fullscreen: pig hidden', JSON.stringify({ pigs: [...hiddenPetsForFullscreen].map(pet => pet.pigId) }))
-    }
-    return
-  }
-  if (hiddenForFullscreen) {
-    hiddenForFullscreen = false
-    for (const pet of hiddenPetsForFullscreen) {
-      if (pet.window !== null && !pet.window.isDestroyed()) pet.window.showInactive()
-    }
-    hiddenPetsForFullscreen.clear()
-    log('fullscreen: pig back')
-    reassertTop('fullscreen-ended')
-    return
-  }
-  if (ended) reassertTop('fullscreen-ended')
-  // 「照常显示」：全屏程序自己也是置顶窗口，每秒把猪抬回它上面一次。
-  else if (covering && getPetWindow().isVisible()) raisePetAbovePanel()
-}
-
-async function startFullscreenWatch() {
-  fullscreenWatch = createFullscreenWatch({
-    path: join(app.getPath('userData'), 'fullscreen.json'), platform: process.platform, selfPid: process.pid, log,
-    pigHwnd: () => {
-      try {
-        const handle = getPetWindow().getNativeWindowHandle()
-        return String(handle.length >= 8 ? handle.readBigUInt64LE(0) : handle.readUInt32LE(0))
-      } catch { return '0' }
-    },
-    pigDisplayBounds: () => {
-      if (getPetWindow() === null || getPetWindow().isDestroyed()) return null
-      const display = screen.getDisplayMatching(getPetWindow().getBounds())
-      const scale = display.scaleFactor || 1
-      return { x: display.bounds.x * scale, y: display.bounds.y * scale, width: display.bounds.width * scale, height: display.bounds.height * scale }
-    },
-    onProbe: onFullscreenProbe,
-  })
-  await fullscreenWatch.init()
-  if (desktopLifecycle.quitting) return
-  log('fullscreen probe starting', JSON.stringify({ platform: process.platform, mode: fullscreenWatch.mode() }))
-  fullscreenWatch.start()
-  applyMacSpaces()
-  // 置顶守护：系统把置顶清掉时马上抢回来；有的情况下没有事件，再每 3 秒核对一次。
-  getPetWindow().on('always-on-top-changed', (event, on) => {
-    if (!on && !desktopLifecycle.quitting && Date.now() > reassertingUntil) setTimeout(() => reassertTop('lost'), 200)
-  })
-  topGuardTimer = setInterval(() => {
-    if (getPetWindow() === null || getPetWindow().isDestroyed() || !getPetWindow().isVisible()) return
-    if (!getPetWindow().isAlwaysOnTop() || (getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible() && !getPanelWindow().isAlwaysOnTop())) reassertTop('check')
-  }, 3000)
-  topGuardTimer.unref?.()
-}
-
 registerFullscreenIpc({
   ipcMain, fromPage,
-  getFullscreenWatch: () => fullscreenWatch,
-  applyMacSpaces,
+  getFullscreenWatch: () => fullscreen.watch(),
+  applyMacSpaces: fullscreen.applyMacSpaces,
 })
 
 let proxySettings = null
@@ -2073,7 +1382,7 @@ app.whenReady().then(async () => {
       const previous = ownerArchiveSelectionStore.read()
       applyStoredOwnerSelection(previous.active)
       log('owner archive switch refused', 'active game package does not support owner archives; previous selection restored')
-      await notifyOwnerArchiveSwitchFailed()
+      await notifyOwnerArchiveSwitchFailed(dialog)
     }
     if (ownerDocumentConfig !== null) {
       throw new Error('当前游戏版本不支持已选择的完整存档；原存档选择已保留，请先恢复兼容的游戏版本')
@@ -2110,7 +1419,7 @@ app.whenReady().then(async () => {
       optionalExtensionsDirectory: join(app.isPackaged ? process.resourcesPath : HERE, 'optional-extensions'),
       workEventsAutoStart: process.argv.includes('--work-events'),
       onConfirm: plan => confirmMerge(plan),
-      onSnapshot: (view, session) => deliverSnapshot(view, session), onStateChanged: announceStateChanged })
+      onSnapshot: (view, session) => deliverSnapshot(view, session), onStateChanged: panel.announceStateChanged })
   } catch (error) {
     if (ownerArchiveSwitchPending) {
       await restorePreviousOwnerSelectionAndRestart(error)
@@ -2122,10 +1431,10 @@ app.whenReady().then(async () => {
   hostJournal = /** @type {any} */ (desktopRuntime.getHost())?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
   registerProtocol(gameDir)
-  await createPetWindows()
+  await petRoster.createPetWindows()
   if (desktopLifecycle.quitting) return
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
-  ensurePanelWindow()
+  panel.ensure()
   if (ownerDocumentConfig === null) {
     externalManager = createExternalManager({
       userData: app.getPath('userData'), host: desktopRuntime.getHost(), appVersion: app.getVersion(), log,
@@ -2135,10 +1444,10 @@ app.whenReady().then(async () => {
     if (desktopLifecycle.quitting) return
   }
   log('panel preloaded', JSON.stringify({ visible: getPanelWindow().isVisible(), focused: getPanelWindow().isFocused() }))
-  await startFullscreenWatch()
+  await fullscreen.start()
   if (desktopLifecycle.quitting) return
   firstRun?.destroy()
-  await tray.create(gameDir)
+  await services.tray.create(gameDir)
   if (desktopLifecycle.quitting) return
   // 用户机器上到底是什么显示器、什么缩放：以前日志里没有，Windows 的问题只能靠猜。
   log('displays', JSON.stringify(screen.getAllDisplays().map(display => ({ id: display.id, label: display.label,
@@ -2146,39 +1455,11 @@ app.whenReady().then(async () => {
   // The window follows its screen's work area when it changes (taskbar moved, resolution changed).
   // 显式告诉游戏包「显示器变了」：applyBounds 有 2px 死区，窗口不需要挪的时候它不会推几何，
   // 页面手里的 workAreas 就会一直用旧的那份（分辨率变了但窗口刚好没动 → 用的是旧工作区）。
-  const displayRebuild = createLinuxDisplayRebuild({
-    platform: process.platform, displays: () => screen.getAllDisplays(), rebuild: rebuildLinuxViews,
-    onError: error => log('display view rebuild failed', String(error)),
+  const displayWatch = createDisplayWatch({
+    screen, pets, isQuitting: () => desktopLifecycle.quitting, rebuildLinuxViews,
+    applyBounds, pushGeometry, log, platform: process.platform,
   })
-  const reclamp = (why, detail) => {
-    if (desktopLifecycle.quitting || pets.all().length === 0) return
-    if (displayRebuild.changed() || displayRebuild.busy()) return
-    const areas = screen.getAllDisplays().map(display => display.workArea)
-    for (const pet of pets.all()) {
-      const window = pet.window
-      if (window === null || window.isDestroyed()) continue
-      applyBounds(pet, desktopViewportBounds(window.getBounds(), areas), 'display')
-      pushGeometry(pet)
-    }
-    log('display', why, JSON.stringify(detail ?? {}))
-  }
-  screen.on('display-metrics-changed', (event, display, changedMetrics) => {
-    reclamp('metrics-changed', { id: display?.id, scale: display?.scaleFactor, workArea: display?.workArea, changed: changedMetrics })
-  })
-  screen.on('display-added', (event, display) => reclamp('added', { id: display?.id, bounds: display?.bounds, scale: display?.scaleFactor }))
-  screen.on('display-removed', (event, display) => reclamp('removed', { id: display?.id, bounds: display?.bounds }))
-  // 兜底对账：显示器事件在个别平台/驱动下会漏（Shimeji 干脆每 5 秒轮询一次，因为 AWT 没有事件）。
-  // 我们订阅了事件，再每 10 秒比一次工作区列表，不一样就当作「显示器变了」处理一次。
-  let lastDisplayKey = ''
-  displayWatchTimer = setInterval(() => {
-    if (pets.all().every(pet => pet.window === null || pet.window.isDestroyed())) return
-    const key = JSON.stringify(screen.getAllDisplays().map(display =>
-      [display.id, display.workArea.x, display.workArea.y, display.workArea.width, display.workArea.height, display.scaleFactor]))
-    if (key === lastDisplayKey) return
-    lastDisplayKey = key
-    reclamp('reconcile', { displays: screen.getAllDisplays().length })
-  }, 10000)
-  displayWatchTimer.unref?.()
+  displayWatchTimer = displayWatch.start()
   for (const pet of pets.all()) pushGeometry(pet)
   if (ownerArchiveSwitchPending) {
     ownerArchiveSelectionStore.commitPending()
@@ -2191,38 +1472,6 @@ app.whenReady().then(async () => {
   if (getPetWindow() !== null && !getPetWindow().isDestroyed()) startupWindowWasVisible = startupWindowWasVisible || getPetWindow().isVisible()
   confirmUpdateStartupIfReady()
 }).catch(handleStartupFailure)
-
-/**
- * Testing: run a list of steps against the page and photograph it (with its
- * transparency), printing the clickable regions each time; then quit. Wayland
- * desktops cannot be screenshotted from here, so this is how the window is
- * checked. Steps (PIGGY_CAPTURE_STEPS, JSON): { js } runs code in the page,
- * { click } clicks a selector inside the pig, { wait } pauses, { shot } saves a PNG.
- */
-async function captureForCheck(dir) {
-  const wait = ms => new Promise(done => setTimeout(done, ms))
-  const steps = process.env.PIGGY_CAPTURE_STEPS
-    ? JSON.parse(process.env.PIGGY_CAPTURE_STEPS)
-    : [{ shot: 'first' }, { js: "document.querySelector('[data-dsh-pig] .dp-scene').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))" }, { shot: 'toggled' }]
-  mkdirSync(dir, { recursive: true })
-  await wait(2500)
-  for (const step of steps) {
-    if (step.wait) await wait(step.wait)
-    if (step.js) await getPetWindow().webContents.executeJavaScript(step.js).catch(error => console.log('[capture] js failed', String(error)))
-    if (step.click) {
-      const ok = await getPetWindow().webContents.executeJavaScript(`(() => { const n = document.querySelector('[data-dsh-pig] ${step.click.replace(/'/g, "\\'")}'); if (n) n.click(); return n !== null })()`)
-      console.log('[capture] click', step.click, ok)
-      await wait(400)
-    }
-    if (step.shot) {
-      await wait(1200)
-      const image = await getPetWindow().webContents.capturePage()
-      writeFileSync(join(dir, step.shot + '.png'), image.toPNG())
-      console.log('[capture]', step.shot, JSON.stringify({ shape: primaryPet()?.lastShape ?? [] }))
-    }
-  }
-  app.quit()
-}
 
 // 兜底：主进程里漏网的异常只写日志，不弹「A JavaScript error occurred」那种错误框吓人。
 process.on('uncaughtException', error => { log('uncaught', error?.stack ?? String(error)) })

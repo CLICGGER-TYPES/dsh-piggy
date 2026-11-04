@@ -55,7 +55,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     createPetWindow, pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
-    panelTarget: null,
+    panel: { followPig() {}, reanchorPanel() {}, focusLeft() {}, close() {}, ensure() {}, forgetTarget() {} },
     pigSessions: new Map(), quitting: false,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
     startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,
@@ -76,7 +76,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   const fromPet = source.indexOf('function fromPet(event)')
   const fromPetEnd = source.indexOf('\n/** 发给所有窗口的页面', fromPet)
   const start = source.indexOf('function workAreaFor(bounds)')
-  const end = source.indexOf('\n// ---------------------------------------------------------------------------\n// 面板窗口', start)
+  const end = source.indexOf('\n// 面板窗口：', start)
   assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet && start > 0 && end > start, '必须加载生产诊断、窗口和鼠标入口')
   runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(fromPet, fromPetEnd), context)

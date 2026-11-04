@@ -62,7 +62,7 @@ async function runStartup(userData, hasLock) {
   const lockStart = source.indexOf('// Testing: keep a throwaway save')
   const lockEnd = source.indexOf('/** The game shipped inside the app', lockStart)
   const readyStart = source.indexOf('app.whenReady().then(async () => {')
-  const readyEnd = source.indexOf('\n/**', readyStart)
+  const readyEnd = source.indexOf('}).catch(handleStartupFailure)', readyStart) + '}).catch(handleStartupFailure)'.length
   assert.ok(lockStart >= 0 && lockEnd > lockStart && readyStart > lockEnd && readyEnd > readyStart)
   runInContext(source.slice(lockStart, lockEnd), context)
   await runInContext(source.slice(readyStart, readyEnd), context)

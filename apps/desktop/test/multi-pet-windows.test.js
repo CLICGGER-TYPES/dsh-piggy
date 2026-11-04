@@ -20,6 +20,9 @@ import { panelAnchorFor, panelBoundsFor, panelContentRect, panelReferenceFor, pa
 import { panelToggleAction } from '../lib/panel-toggle.js'
 import { createPetWindow } from '../lib/pet-window.js'
 import { createPanelWindow } from '../lib/panel-window.js'
+import { createPanelController } from '../lib/panel-controller.js'
+import { createPetRoster } from '../lib/pet-roster.js'
+import { registerPanelIpc } from '../lib/ipc/panel.js'
 import { createPetRegistry, createPetState } from '../lib/pet-instance.js'
 import { createStartupTrace } from '../lib/startup-trace.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
@@ -132,12 +135,13 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
   const primary = states[0]
   const second = states[1] ?? null
 
+  const extensionWindow = { current: () => null, owns: () => false }
   const sandbox = {
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin,
     SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions, createPetWindow,
     process: { platform: 'linux', env: {} }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
-    ...(panel ? {} : { panelTarget: null }),
+    panel: { followPig() {}, reanchorPanel() {}, focusLeft() {}, close: why => closedPanel.push(why), ensure() {}, forgetTarget() {} },
     pigSessions: new Map(states.map(pet => [pet.pigId, pet.token])), quitting: false,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
     startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,
@@ -156,7 +160,7 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
       panelWindow: null,
       getPanelWindow: () => panelWindow?.current() ?? null,
       fromPage: event => pets.bySender(event?.sender) !== null || panelWindow?.current()?.webContents === event?.sender,
-      extensionWindow: { current: () => null, owns: () => false },
+      extensionWindow,
       extensionLayer: { isFocused: () => false, sync() {} },
       toPages() {},
     } : {}),
@@ -175,25 +179,52 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
   const fromPet = source.indexOf('function fromPet(event)')
   const fromPetEnd = source.indexOf('\n/** 发给所有窗口的页面', fromPet)
   const engineStart = source.indexOf('function workAreaFor(bounds)')
-  const engineEnd = source.indexOf('\n// ---------------------------------------------------------------------------\n// 面板窗口', engineStart)
+  const engineEnd = source.indexOf('\n// 面板窗口：', engineStart)
   assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet && engineStart > 0 && engineEnd > engineStart)
   runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(fromPet, fromPetEnd), context)
   runInContext(source.slice(engineStart, engineEnd), context)
+  let panelController = null
   if (panel) {
-    const panelStart = source.indexOf('let panelOpen = false')
-    const panelEnd = source.indexOf('\n/** Where the DSH plugin keeps its pig', panelStart)
-    assert.ok(panelStart > 0 && panelEnd > panelStart, '必须加载生产面板组合根')
-    runInContext(source.slice(panelStart, panelEnd), context)
+    panelController = createPanelController({
+      panelWindow: { isReady: () => panelWindow?.current()?.loaded === true, ensure: () => panelWindow.ensure(),
+        destroy: () => panelWindow.destroy(), forget: () => panelWindow.forget() },
+      getPanelWindow: () => panelWindow?.current() ?? null,
+      screen: sandbox.screen,
+      BrowserWindow: WindowStub,
+      platform: 'linux',
+      pets,
+      primaryPet: () => pets.primary(),
+      getPetWindow: () => pets.primary()?.window ?? null,
+      extensionWindow,
+      extensionLayer: { isFocused: () => false, sync() {} },
+      ipcMain: sandbox.ipcMain,
+      petForEvent: event => context.petForEvent(event),
+      fromPage: event => context.fromPage(event),
+      toPages() {},
+      log() {},
+      traceSetIgnoreMouseEvents() {},
+      setTimeout() {},
+      setInterval: sandbox.setInterval,
+      clearInterval: sandbox.clearInterval,
+    })
+    registerPanelIpc({
+      ipcMain: sandbox.ipcMain,
+      fromPage: event => context.fromPage(event),
+      getPanelWindow: () => panelWindow?.current() ?? null,
+      extensionWindow,
+      panel: panelController,
+    })
+    sandbox.panel = panelController
     panelWindow = createPanelWindow({
       BrowserWindow: PanelWindowStub,
       options: { x: 0, y: 0, width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, show: false },
-      url: () => runInContext('panelUrl()', context),
+      url: () => panelController.url(),
       log() {},
-      onCreated: () => runInContext('panelViewCreated()', context),
+      onCreated: () => panelController.viewCreated(),
     })
     sandbox.panelWindow = panelWindow
-    runInContext('ensurePanelWindow()', context)
+    panelController.ensure()
   }
   for (let index = 0; index < states.length; index += 1) {
     await runInContext(`createPigWindow(pets.all()[${index}])`, context)
@@ -206,10 +237,10 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
   }
   return {
     windows, panelWindows, pets, states, primary, second, closeCalls, closedPanel, context,
-    panelUrl: () => panelWindow?.current()?.url ?? null,
+    panelUrl: () => panelController?.url() ?? null,
     panelWindow: () => panelWindow?.current() ?? null,
-    panelOpen: () => runInContext('panelOpen', context),
-    panelTargetId: () => runInContext('panelTargetPet()?.pigId ?? null', context),
+    panelOpen: () => panelController?.isOpen() === true,
+    panelTargetId: () => panelController?.targetPet()?.pigId ?? null,
     send,
     place: (window, request) => send(window, 'piggy:place', request),
     content: (window, value) => send(window, 'piggy:content', value),
@@ -551,6 +582,7 @@ function planHarness({ roster, failPig = null }) {
   const closed = []
   const windows = []
   const logs = []
+  const extensionWindow = { current: () => null, owns: () => false }
   const sandbox = {
     ownerDocumentConfig: { ownerId: 'owner-1', pigId: 'pig-c' },
     ownerPigRuntimeSupported: true,
@@ -573,11 +605,23 @@ function planHarness({ roster, failPig = null }) {
     log: (...parts) => logs.push(parts),
     desktopLifecycle: { quitting: false },
   }
+  const petRoster = createPetRoster({
+    getOwnerDocumentConfig: () => sandbox.ownerDocumentConfig,
+    isOwnerPigRuntimeSupported: () => sandbox.ownerPigRuntimeSupported,
+    getHost: () => sandbox.desktopRuntime.getHost(),
+    pets, primaryPetState: primary, pigSessions,
+    createWindow: sandbox.createWindow,
+    createPigWindow: sandbox.createPigWindow,
+    closePetSession: pet => { if (pet.token !== null) closed.push(pet.token) },
+    createPetState,
+    maxPigWindows: sandbox.MAX_PIG_WINDOWS,
+    isQuitting: () => false,
+    isMultiPigActive: () => sandbox.multiPigActive,
+    setMultiPigActive: value => { sandbox.multiPigActive = value },
+    log: sandbox.log,
+  })
+  sandbox.createPetWindows = () => petRoster.createPetWindows()
   const context = createContext(sandbox)
-  const start = source.indexOf('/** 和 owner document / preload 同一套 ID 白名单。 */')
-  const end = source.indexOf('/** Refresh native pixel/DIP caches', start)
-  assert.ok(start > 0 && end > start)
-  runInContext(source.slice(start, end), context)
   return { sandbox, pets, primary, pigSessions, opened, closed, windows, logs, context }
 }
 
