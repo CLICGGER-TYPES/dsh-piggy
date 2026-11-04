@@ -4,8 +4,8 @@ on:
     paths:
       - extensions/registry.json
       - extensions/registry-gitee.json
-      - release-candidates/extensions/registry.json
-      - release-candidates/extensions/registry-gitee.json
+      - release/candidates/extensions/registry.json
+      - release/candidates/extensions/registry-gitee.json
       - scripts/extension-release-check.mjs
       - test/extension-release-check.test.js
       - test/extensions-registry.test.js
@@ -15,8 +15,8 @@ on:
     paths:
       - extensions/registry.json
       - extensions/registry-gitee.json
-      - release-candidates/extensions/registry.json
-      - release-candidates/extensions/registry-gitee.json
+      - release/candidates/extensions/registry.json
+      - release/candidates/extensions/registry-gitee.json
       - scripts/extension-release-check.mjs
       - test/extension-release-check.test.js
       - test/extensions-registry.test.js

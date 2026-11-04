@@ -52,10 +52,10 @@ test('Gitee 在线扩展目录：地址用 Gitee，官方哈希与同版本 GitH
 
 test('候选渠道版本可独立演进；key、minGame 和同版本内容保持一致', async () => {
   const { existsSync } = await import('node:fs')
-  const path = new URL('../release-candidates/extensions/registry.json', import.meta.url)
+  const path = new URL('../release/candidates/extensions/registry.json', import.meta.url)
   if (!existsSync(path)) return
   const github = JSON.parse(readFileSync(path, 'utf8'))
-  const gitee = JSON.parse(readFileSync(new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url), 'utf8'))
+  const gitee = JSON.parse(readFileSync(new URL('../release/candidates/extensions/registry-gitee.json', import.meta.url), 'utf8'))
   const official = JSON.parse(readFileSync(new URL('../store/official-extensions.json', import.meta.url), 'utf8'))
   assert.doesNotMatch(JSON.stringify(gitee), /github/i)
   assert.deepEqual(gitee.extensions.map(item => item.key).sort(), github.extensions.map(item => item.key).sort())

@@ -17,6 +17,7 @@
 | `src/extensions/farm/` | 菜园服务端源码（构建成 `extensions/farm/server.js`，**不要手改产物**；下载协议仍是三个文件 + assets） |
 | `apps/desktop/` | 桌面外壳（主进程、preload、打包配置） |
 | `extensions/<key>/` | 在线扩展（菜园、矿洞、扭蛋、盲盒），玩家下载安装 |
+| `release/` | 发布相关：`candidates/` 是未晋级的在线扩展目录，`extension-variants/` 是手动导入变体；规则见 [release/README.md](release/README.md) |
 | `assets/` | 游戏里的图和字体；每类放哪、怎么命名、出处见 [docs/ASSETS.md](docs/ASSETS.md)（新增素材要登记，测试会查） |
 | `docs/` | 文档；`docs/ROADMAP.md` 是**唯一的待办清单**，`docs/numbers/` 是用户确认过的数值单，`docs/archive/` 是历史文档（不再更新） |
 

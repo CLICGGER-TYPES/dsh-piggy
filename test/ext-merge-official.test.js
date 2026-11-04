@@ -55,7 +55,7 @@ test('官方四个扩展（含经典菜园）都声明 mergeHook 1，服务端�
     assert.equal(manifest.mergeHook, 1, key + ' 的 manifest 要写 mergeHook: 1')
     assert.match(manifest.version, /^\d+\.\d+\.\d+$/)
   }
-  const classic = JSON.parse(readFileSync(new URL('../extension-variants/farm-classic/manifest.json', import.meta.url), 'utf8'))
+  const classic = JSON.parse(readFileSync(new URL('../release/extension-variants/farm-classic/manifest.json', import.meta.url), 'utf8'))
   const modern = manifestOf('farm')
   assert.equal(classic.key, 'farm')
   assert.equal(classic.mergeHook, 1)
