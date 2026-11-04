@@ -132,5 +132,5 @@ https://raw.githubusercontent.com/CLICGGER-TYPES/dsh-piggy/main/extensions/regis
 扩展可以在 `actions/<pack>/`、`sounds/<pack>/` 里携带动作帧和音效，manifest 用可选的
 `assetPacks: { actions?: string[], sounds?: string[] }` 声明。安装前会按第一方 `pack.json`
 schema 校验帧、音效、尺寸、路径和命名空间（`ext-<extension-key>`），详见
-[asset-packs-m3.md](asset-packs-m3.md)。本阶段只做安装/校验/列举/卸载，运行时注册和播放
-在下一刀接入。
+[asset-packs-m3.md](asset-packs-m3.md)。安装/校验/列举/卸载、客户端注册与播放、
+扩展卡片上的只读摘要与试播/试听均已接入。

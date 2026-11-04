@@ -50,6 +50,7 @@ export function createExtensionActionRuntime(options) {
   /** @type {Map<string, string>} */
   const failed = new Map()
   let disposed = false
+  /** @type {Promise<any>} */
   let tail = Promise.resolve()
 
   /** @param {string} id */
@@ -58,6 +59,65 @@ export function createExtensionActionRuntime(options) {
     if (entry === undefined) return
     active.delete(id)
     try { registry.unregisterPack(entry.namespace, entry.pack) } catch (error) { warn('第三方动作包注销失败：' + entry.namespace + '/' + entry.pack, error) }
+  }
+
+  /**
+   * Read and register one wanted pack. Callers keep failures isolated.
+   * @param {NonNullable<ReturnType<typeof wanted>>} item
+   */
+  async function install(item) {
+    const input = await readExtensionActionPack({
+      key: item.key, pack: item.pack, version: item.version || '1', base: item.base, fetch: fetchImpl,
+    })
+    if (disposed) return null
+    // Remove the old revision before installing the new one so actions that
+    // disappeared from pack.json do not linger in the registry.
+    if (active.has(item.id)) removeActive(item.id)
+    registry.registerPack(input, { replace: true })
+    active.set(item.id, { namespace: item.namespace, pack: item.pack, key: item.key, signature: item.signature, input: input })
+    failed.delete(item.id)
+    return input
+  }
+
+  /**
+   * First action handle of a registered pack, or '' when it is not loaded yet.
+   * @param {NonNullable<ReturnType<typeof wanted>>} item
+   */
+  function firstKey(item) {
+    const entry = active.get(item.id)
+    const first = entry?.input?.resources?.find(resource => resource.kind === 'action')
+    return first === undefined ? '' : item.namespace + '/' + item.pack + '/' + first.key
+  }
+
+  /**
+   * Resolve the first action handle for the read-only preview button. Uses the
+   * already registered pack when possible, otherwise fetches pack.json once.
+   * Never throws: a preview failure is silent in the UI.
+   * @param {any} extension
+   * @param {any} summary
+   */
+  async function previewKey(extension, summary) {
+    if (extension === null || typeof extension !== 'object') return ''
+    if (extension.installed === false || extension.on === false) return ''
+    const item = wanted(extension, summary)
+    if (item === null) return ''
+    const cached = firstKey(item)
+    if (cached !== '') return cached
+    const run = tail.then(async () => {
+      const again = firstKey(item)
+      if (again !== '') return again
+      if (disposed || registry.readonly === true) return ''
+      try {
+        const input = await install(item)
+        if (input === null) return ''
+        const first = input.resources.find(resource => resource.kind === 'action')
+        return first === undefined ? '' : item.namespace + '/' + item.pack + '/' + first.key
+      } catch {
+        return ''
+      }
+    }).catch(() => '')
+    tail = run
+    return run
   }
 
   /**
@@ -108,16 +168,7 @@ export function createExtensionActionRuntime(options) {
       if (current !== undefined && current.signature === item.signature && current.input !== undefined) continue
       if (failed.get(id) === item.signature) continue
       try {
-        const input = await readExtensionActionPack({
-          key: item.key, pack: item.pack, version: item.version || '1', base: item.base, fetch: fetchImpl,
-        })
-        if (disposed) return
-        // Remove the old revision before installing the new one so actions that
-        // disappeared from pack.json do not linger in the registry.
-        if (active.has(id)) removeActive(id)
-        registry.registerPack(input, { replace: true })
-        active.set(id, { namespace: item.namespace, pack: item.pack, key: item.key, signature: item.signature, input: input })
-        failed.delete(id)
+        if (await install(item) === null) return
       } catch (error) {
         failed.set(id, item.signature)
         const message = error instanceof Error ? error.message : String(error)
@@ -171,6 +222,7 @@ export function createExtensionActionRuntime(options) {
     sync: sync,
     owns: owns,
     handle: handle,
+    previewKey: previewKey,
     dispose: function () {
       if (disposed) return
       disposed = true

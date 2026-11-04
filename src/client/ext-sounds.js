@@ -50,6 +50,7 @@ export function createExtensionSoundRuntime(options) {
   /** @type {Map<string, string>} */
   const failed = new Map()
   let disposed = false
+  /** @type {Promise<any>} */
   let tail = Promise.resolve()
 
   /** @param {string} id */
@@ -58,6 +59,53 @@ export function createExtensionSoundRuntime(options) {
     if (entry === undefined) return
     active.delete(id)
     try { unregisterExtensionSoundPack(entry.namespace, entry.pack) } catch (error) { warn('第三方音效包注销失败：' + entry.namespace + '/' + entry.pack, error) }
+  }
+
+  /**
+   * Read and register one wanted sound pack. Callers keep failures isolated.
+   * @param {NonNullable<ReturnType<typeof wanted>>} item
+   */
+  async function install(item) {
+    const input = await readExtensionSoundPack({
+      key: item.key, pack: item.pack, base: item.base, fetch: fetchImpl, tag: item.tag,
+    })
+    if (disposed) return null
+    // Remove the old revision before installing the new one so sounds that
+    // disappeared from pack.json do not linger in the table.
+    if (active.has(item.id)) removeActive(item.id)
+    const keys = registerExtensionSoundPack({ namespace: input.namespace, pack: input.pack, sounds: input.sounds })
+    active.set(item.id, { namespace: item.namespace, pack: item.pack, key: item.key, signature: item.signature, keys: keys })
+    failed.delete(item.id)
+    return keys
+  }
+
+  /**
+   * Resolve the first sound handle for the read-only preview button. Uses the
+   * already registered pack when possible, otherwise fetches pack.json once.
+   * Never throws: a preview failure is silent in the UI.
+   * @param {any} extension
+   * @param {any} summary
+   */
+  async function previewKey(extension, summary) {
+    if (extension === null || typeof extension !== 'object') return ''
+    if (extension.installed === false || extension.on === false) return ''
+    const item = wanted(extension, summary)
+    if (item === null) return ''
+    const cached = active.get(item.id)?.keys?.[0] ?? ''
+    if (cached !== '') return cached
+    const run = tail.then(async () => {
+      const again = active.get(item.id)?.keys?.[0] ?? ''
+      if (again !== '') return again
+      if (disposed) return ''
+      try {
+        const keys = await install(item)
+        return keys === null ? '' : keys[0] ?? ''
+      } catch {
+        return ''
+      }
+    }).catch(() => '')
+    tail = run
+    return run
   }
 
   /**
@@ -109,16 +157,7 @@ export function createExtensionSoundRuntime(options) {
       if (current !== undefined && current.signature === item.signature) continue
       if (failed.get(id) === item.signature) continue
       try {
-        const input = await readExtensionSoundPack({
-          key: item.key, pack: item.pack, base: item.base, fetch: fetchImpl, tag: item.tag,
-        })
-        if (disposed) return
-        // Remove the old revision before installing the new one so sounds that
-        // disappeared from pack.json do not linger in the table.
-        if (active.has(id)) removeActive(id)
-        const keys = registerExtensionSoundPack({ namespace: input.namespace, pack: input.pack, sounds: input.sounds })
-        active.set(id, { namespace: item.namespace, pack: item.pack, key: item.key, signature: item.signature, keys: keys })
-        failed.delete(id)
+        if (await install(item) === null) return
       } catch (error) {
         failed.set(id, item.signature)
         const message = error instanceof Error ? error.message : String(error)
@@ -166,6 +205,7 @@ export function createExtensionSoundRuntime(options) {
     sync: sync,
     owns: owns,
     handle: handle,
+    previewKey: previewKey,
     dispose: function () {
       if (disposed) return
       disposed = true

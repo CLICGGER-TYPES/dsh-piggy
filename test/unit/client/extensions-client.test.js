@@ -9,6 +9,50 @@ const ext = (pomodoro, fishing) => [
   { key: 'fishing', label: '钓鱼', emoji: '🎣', description: '钓鱼', on: fishing, apps: ['fishing'], dexSections: ['fish'], shopKinds: ['bait'] },
 ]
 
+/** 素材包卡片的测试数据：动作包 4 个 / 音效包 1 个。 */
+const actionPack = (pack, extra = {}) => ({
+  kind: 'actions', pack: pack, namespace: 'ext-assetpack',
+  base: '/dsh-piggy/ext/assetpack/actions/' + pack + '/',
+  entries: 1, frames: 2, files: 3, bytes: 100, available: true, ...extra,
+})
+const soundPack = (extra = {}) => ({
+  kind: 'sounds', pack: 'sfx', namespace: 'ext-assetpack',
+  base: '/dsh-piggy/ext/assetpack/sounds/sfx/',
+  entries: 3, frames: 0, files: 4, bytes: 50, available: true, ...extra,
+})
+function assetExtension(overrides = {}) {
+  return {
+    key: 'assetpack', label: '素材扩展', emoji: '🎨', description: '', on: true, installed: true, builtin: false,
+    version: '1.0.0', apps: [], dexSections: [], shopKinds: [],
+    assetPacks: {
+      actions: [actionPack('wave'), actionPack('idle'), actionPack('walk'), actionPack('sit')],
+      sounds: [soundPack()],
+    },
+    ...overrides,
+  }
+}
+
+const jsonResponse = value => ({ ok: true, status: 200, async text() { return JSON.stringify(value) } })
+
+/** 只回应素材包 pack.json；其他请求交回挂具的默认 /state。 */
+async function assetFetch(url) {
+  const path = String(url)
+  const action = /\/actions\/([a-z-]+)\/pack\.json$/.exec(path)
+  if (action !== null) {
+    return jsonResponse({ pack: action[1], actions: [{ key: 'hello', kind: 'action', source: 'hello.png', durationMs: 200 }] })
+  }
+  if (/\/sounds\/[a-z-]+\/pack\.json$/.test(path)) {
+    return jsonResponse({ pack: 'sfx', sounds: [{ key: 'beep', synth: { tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 0.3 }] } }] })
+  }
+  return undefined
+}
+
+/** 让运行时注册/试播链上的微任务跑完。 */
+async function flush(times = 16) {
+  for (let index = 0; index < times; index += 1) await settle()
+}
+
+
 function openExtensions(dom) {
   openPanel(dom, 'settings')
   findByAttr(contentOf(dom), 'data-open-extensions', 'true').fire('click')
@@ -185,4 +229,79 @@ test('下载扩展的图片清单和框材质穿过快照归一化，不回退�
   const entry = normalizeExtensions([{ key: 'farm', builtin: false, assets: ['bg-big-night-rain.webp', 'card-frame.webp', 123], assetLayout: layout }])[0]
   assert.deepEqual(entry.assets, ['bg-big-night-rain.webp', 'card-frame.webp'])
   assert.deepEqual(entry.assetLayout, layout)
+})
+
+test('M3 扩展卡片只读展示素材包摘要，动作/音效计数与包名最多 3 个', async () => {
+  const { dom } = await mount({
+    status: { ...SNAPSHOT, extensions: [...ext(true, true), assetExtension()] },
+    fetch: assetFetch,
+  })
+  openExtensions(dom)
+  const card = findByAttr(contentOf(dom), 'data-extension', 'assetpack')
+  assert.notEqual(card, undefined)
+  const assets = findByAttr(card, 'data-ext-assets', 'assetpack')
+  assert.notEqual(assets, undefined)
+  assert.match(assets.allText(), /动作包 4 个 · 4 个动作 · 8 帧/)
+  assert.match(assets.allText(), /wave · idle · walk \+1/)
+  assert.match(assets.allText(), /音效包 1 个 · 3 条/)
+  assert.equal(findByAttr(assets, 'data-ext-asset-play', 'actions').textContent, '试播')
+  assert.equal(findByAttr(assets, 'data-ext-asset-play', 'sounds').textContent, '试听')
+})
+
+test('M3 扩展停用或素材包不可用时显示「不可用」，且不出现试播按钮', async () => {
+  const off = assetExtension({ on: false })
+  const first = await mount({ status: { ...SNAPSHOT, extensions: [...ext(true, true), off] } })
+  openExtensions(first.dom)
+  let card = findByAttr(contentOf(first.dom), 'data-extension', 'assetpack')
+  assert.match(card.allText(), /不可用/)
+  assert.equal(findByAttr(card, 'data-ext-asset-play', 'actions'), undefined)
+  assert.equal(findByAttr(card, 'data-ext-asset-play', 'sounds'), undefined)
+
+  const broken = assetExtension({
+    assetPacks: {
+      actions: [actionPack('wave', { available: false })],
+      sounds: [soundPack()],
+    },
+  })
+  const second = await mount({ status: { ...SNAPSHOT, extensions: [...ext(true, true), broken] }, fetch: assetFetch })
+  openExtensions(second.dom)
+  card = findByAttr(contentOf(second.dom), 'data-extension', 'assetpack')
+  assert.match(card.allText(), /动作包 1 个 · 1 个动作 · 2 帧 不可用/)
+  assert.equal(findByAttr(card, 'data-ext-asset-play', 'actions'), undefined, '不可用动作包没有试播')
+  assert.notEqual(findByAttr(card, 'data-ext-asset-play', 'sounds'), undefined, '可用音效包照常试听')
+})
+
+test('M3 试播/试听派发公开事件和正确的 ext handle', async () => {
+  const seen = []
+  const one = assetExtension({
+    assetPacks: { actions: [actionPack('wave')], sounds: [soundPack()] },
+  })
+  const { dom } = await mount({
+    status: { ...SNAPSHOT, extensions: [...ext(true, true), one] },
+    fetch: assetFetch,
+  })
+  dom.document.dispatchEvent = event => {
+    for (const listener of dom.documentListeners[event.type] ?? []) listener(event)
+  }
+  dom.document.addEventListener('dsh-piggy:action', event => seen.push([event.type, event.detail.key]))
+  dom.document.addEventListener('dsh-piggy:sound', event => seen.push([event.type, event.detail.key]))
+  openExtensions(dom)
+
+  findByAttr(contentOf(dom), 'data-ext-asset-play', 'actions').fire('click')
+  await flush()
+  findByAttr(contentOf(dom), 'data-ext-asset-play', 'sounds').fire('click')
+  await flush()
+
+  assert.deepEqual(seen, [
+    ['dsh-piggy:action', 'ext-assetpack/wave/hello'],
+    ['dsh-piggy:sound', 'ext-assetpack/sfx/beep'],
+  ])
+})
+
+test('M3 旧快照没有 assetPacks 字段时整块隐藏，不报错', async () => {
+  const { dom } = await mount({ status: SNAPSHOT })
+  openExtensions(dom)
+  assert.equal(findByAttr(contentOf(dom), 'data-ext-assets', 'pomodoro'), undefined)
+  assert.equal(findByAttr(contentOf(dom), 'data-ext-assets', 'fishing'), undefined)
+  assert.doesNotMatch(contentOf(dom).allText(), /动作包|音效包/)
 })

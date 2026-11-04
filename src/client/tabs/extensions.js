@@ -8,6 +8,7 @@
  * 下载来的扩展自己的 App 页（页签 ext:<key>）也从这里转出去。
  */
 import { button, el } from '../dom.js'
+import { renderAssetPacks } from '../ext-asset-ui.js'
 import { renderDownloadedApp } from '../ext-apps.js'
 import { importCard } from '../ext-import.js'
 import { arr, obj, str } from '../values.js'
@@ -129,6 +130,8 @@ function localCard(ui, extension, external) {
   if (note) card.appendChild(el('div', 'dp-ext-note', note))
   if (extension.error) card.appendChild(el('div', 'dp-ext-note', '加载出错：' + extension.error))
   if (download.failed === extension.key) card.appendChild(el('div', 'dp-ext-note', '没装上：' + download.error))
+  var assetPacks = renderAssetPacks(ui, extension)
+  if (assetPacks !== null) card.appendChild(assetPacks)
   var newer = online.entries.find(function (entry) { return entry.key === extension.key && entry.update === true })
 
   // 开关和删除并排放在卡片左下（rc.1 反馈）。
