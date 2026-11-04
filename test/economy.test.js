@@ -160,7 +160,8 @@ test('nothing outside core/economy.js changes coins with += or -=', () => {
     }
   }
   for (const dir of ['packages/pet-core/src', 'store']) walk(join(root, dir))
-  for (const file of ['index.js', 'routes.js', 'snapshot.js', 'commands.js']) {
+  for (const file of ['index.js', 'routes.js', 'snapshot.js', 'commands.js',
+    'src/host/routes.js', 'src/host/snapshot.js', 'src/host/commands.js']) {
     if (/\bcoins\s*[-+]=/.test(readFileSync(join(root, file), 'utf8'))) offenders.push(file)
   }
   assert.deepEqual(offenders, [], 'use earnCoins / spendCoins / refundCoins so the ledger stays right')

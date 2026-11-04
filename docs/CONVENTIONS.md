@@ -28,7 +28,7 @@
 | `data/` | 静态数值表、常量 | 逻辑、IO、`Date.now()` |
 | `core/` | 纯领域函数：`(state, ..., nowMs) => result` | 读写文件、发请求、操作 DOM、自己取时间 |
 | `store/` | 存档读写、原子写、迁移 | 业务规则 |
-| `index.js` `snapshot.js` `commands.js` `routes.js` | 组装：注册路由/命令、把状态序列化成面板用的形状 | 堆积业务规则 |
+| `src/host/` | 组装：注册路由/命令、把状态序列化成面板用的形状；根目录 `index.js` 是插件入口，`snapshot.js` `commands.js` `routes.js` 只留兼容门面 | 堆积业务规则 |
 | `src/client/` | 渲染与交互 | 自己重算业务规则（只读快照字段） |
 
 - 时间是外部输入，**必须作为参数传进 `core/`**。
