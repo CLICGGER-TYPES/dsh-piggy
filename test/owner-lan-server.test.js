@@ -63,6 +63,7 @@ test('two paired LAN clients stay bound to separate pigs, share owner resources,
     assert.equal((await fetch(`${baseUrl}/v1/state`)).status, 401)
 
     const invitationA = server.createInvitation('pig-a')
+    assert.equal(invitationA.expiresAt - NOW, 180_000, '邀请有效期 3 分钟')
     const invitationB = server.createInvitation('pig-b')
     let dropNextCommandResponse = false
     let dropNextPairResponse = true

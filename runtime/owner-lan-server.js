@@ -17,7 +17,7 @@ export { createOwnerLanClient } from './owner-lan-client.js'
 
 const CLIENT_ID = /^[A-Za-z0-9_.:-]{1,80}$/u
 const REQUEST_ID = /^[A-Za-z0-9_-]{8,80}$/u
-const INVITE_TTL_MS = 60_000
+const INVITE_TTL_MS = 180_000
 const SESSION_IDLE_MS = 30 * 60_000
 const MAX_INVITES = 32
 const MAX_CLIENTS = 8
