@@ -39,6 +39,8 @@ npx electron . --work-events
 
 接收器监听 `127.0.0.1` 的随机端口，发现文件位于 Electron userData 下的 `work-endpoint/endpoint.json`。文件包含 `version`、`role: "piggy-work-events"`、`port`、`token` 和 `pid`。目录只向当前用户开放，不要分享发现文件。
 
+发现按以下优先级：`PIGGY_USERDATA/work-endpoint` → 平台默认 userData 的 `piggy/work-endpoint` → `$DSH_HOME/dsh-piggy/desktop-app.json`。一个 endpoint 目录只对应一只猪，不要在这份协议里额外传 `pigId`。
+
 适配器读取发现文件，以 `Authorization: Bearer <token>` 调用：
 
 | 方法与路径 | 用途 |
@@ -80,7 +82,7 @@ node runtime/serve.mjs --work-events --state-path=/absolute/path/to/state.json -
 
 回复成功前，游戏状态和收据已经通过旁路事务提交。网络中断后可以重复投递同一事件。桥的入队确认与游戏提交确认是两件事；桥只能在游戏确认后移除事件。
 
-运行时按当前游戏时间结算，`at` 用于投递窗口与身份校验，不把离线队列回放成历史时间模拟。窗口内最多保留 20,000 个收据，满时返回 `429`，不会提前逐出去重记录；过期事件返回 `422`，适配器应将这些结果交由自己的队列策略处理。
+运行时按当前游戏时间结算，`at` 用于投递窗口与身份校验，不把离线队列回放成历史时间模拟。窗口内最多保留 20,000 个收据，满时返回 `429`，不会提前逐出去重记录；响应带 `Retry-After: 60`，适配器必须按这个秒数退避，不要立刻重试。收据按 `(source, id)` 去重、全局共享 7 天窗口；多个 agent 应各自限速，避免一个来源占满公共窗口。过期事件返回 `422`。
 
 ## 存档与线程
 
@@ -96,11 +98,11 @@ DSH 的存档默认位置、斜杠命令和五类工作计数保持原样。DSH 
 
 安装、配置、离线包和排障以 upstream 的[插件使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)、[Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 和 OpenCode 官方的[插件文档](https://opencode.ai/docs/plugins/)为准。上述固定提交的实现入口为 [direct-client.js](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/packages/opencode-piggy/direct-client.js)、[game-endpoint.js](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/packages/opencode-piggy/game-endpoint.js) 和 [paths.js](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/packages/opencode-piggy/paths.js)。旧版文档提到的独立桥和 `runtime-adapter.js` 是早期原型，不属于本文固定分析的提交。
 
-### 当前目录兼容性（源码静态对比）
+### 稳定发现契约（rc.9）
 
-RC6 桌面版默认把工作接口发现文件放在桌面的 `piggy` 数据目录：
+桌面版默认把工作接口发现文件放在桌面的 `piggy` 数据目录：
 
-| 平台 | RC6 桌面默认 `work-endpoint` |
+| 平台 | 桌面默认 `work-endpoint` |
 |---|---|
 | Windows | `%APPDATA%\piggy\work-endpoint` |
 | macOS | `~/Library/Application Support/piggy/work-endpoint` |
@@ -110,4 +112,4 @@ RC6 桌面版默认把工作接口发现文件放在桌面的 `piggy` 数据目�
 
 需要在插件配置里把 `gameDirectory` 指向桌面实际的 `work-endpoint` 目录（`endpoint.json` 所在目录），不要指向 `state.json` 或它的上级 userData。写法见 upstream 的[配置游戏目录与队列](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/docs/guides/opencode.md#配置游戏目录与队列)；只使用其中已有的选项，不另造命令行参数。另一种已实现的方式是给桌面和 **OpenCode 服务进程**设置同一个 `PIGGY_USERDATA`（指向 userData 目录本身，即 `work-endpoint` 的父目录），插件会读取 `$PIGGY_USERDATA/work-endpoint`；只在启动桌面的终端里设置不会影响已经运行的 OpenCode 服务。
 
-不要通过移动、复制或软链个人存档，也不要伪造 `endpoint.json` 或令牌来绕过目录问题。这里只描述 RC6 与固定版本第三方插件的现状；本仓库不改第三方代码，也不声称已经修复默认自动发现。OpenCode 说明仅基于上述固定提交的源码静态分析，不代表已完成 OpenCode 实机或 UI 验收。
+不要通过移动、复制或软链个人存档，也不要伪造 `endpoint.json` 或令牌来绕过目录问题。本仓库不改第三方代码；固定版本插件若默认路径不同，显式设置 `gameDirectory` 即可，不能靠移动或复制存档绕过。OpenCode 说明仅基于上述固定提交的源码静态分析，不代表已完成 OpenCode 实机或 UI 验收。
