@@ -65,7 +65,8 @@
 ## IPC 消息全表
 
 页面一侧都经 `window.piggyShell`（`apps/desktop/preload.cjs`）。主进程一侧由 `apps/desktop/main.js`
-（组合根）、`apps/desktop/lib/ipc/` 和 `desktop-lifecycle.js` 共同注册：`updates.js` 管更新/外壳更新，
+（组合根）、`apps/desktop/lib/ipc/`、`geometry-ipc.js`、`drag-engine.js` 和
+`desktop-lifecycle.js` 共同注册：`updates.js` 管更新/外壳更新，
 `system.js` 管外部连接、退出请求、导出/打开、全屏和代理，生命周期模块协调退出与关闭；窗口与服务仍由 `main.js` 装配。
 每个处理函数开头用
 `fromPet(event)` / `fromPage(event)` 核对是哪个窗口发的，**新加消息也要核对**。
@@ -166,7 +167,9 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 
 | 文件 | 内容 |
 |---|---|
-| `apps/desktop/main.js` | 主进程组合根：窗口装配、拖动（`dragTick`）、面板几何/交互与服务装配；通过 live getter 使用窗口所有者的句柄 |
+| `apps/desktop/main.js` | 主进程组合根：窗口装配、面板几何/交互与服务装配；通过 live getter 使用窗口所有者的句柄 |
+| `apps/desktop/lib/drag-engine.js` | 拖动状态机：按下/心跳/松手、按屏刷新率 tick、窗口位置与停止拖动定时器 |
+| `apps/desktop/lib/geometry-ipc.js` | 游戏包几何 IPC：`piggy:content`、`piggy:place`、`piggy:flight:move`、旧版 hit/move/shape；窗口作用仍由 `window-surface.js` 提供 |
 | `apps/desktop/lib/pet-window.js` | 猪 `BrowserWindow` 唯一所有者：创建、当前句柄、加载/renderer 事件与销毁；不持有窗口位置、drag、flight 或 shape 状态 |
 | `apps/desktop/lib/panel-window.js` | 面板 BrowserWindow 唯一所有者：创建、当前句柄、renderer 就绪、renderer 退出与销毁 |
 | `apps/desktop/lib/game-protocol.js` | 处理 `piggy://` 静态资源与 `/dsh-piggy/…` 宿主请求；由组合根注入协议注册、`net.fetch`、renderer/game 根目录及 live host/关闭/状态通知回调 |
@@ -193,7 +196,7 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 
 主进程的 `panel-window.js` 拥有单一面板 `BrowserWindow` 句柄和 renderer 就绪状态；`main.js` 通过 getter 获取当前窗口。面板开关、位置/大小、shape/hit 区域、焦点和菜单布局仍由 `main.js` 组合现有模块处理，窗口创建或 Linux 显示器重建也走同一所有者。
 
-主进程的 `pet-window.js` 是**每一只猪**的 `BrowserWindow` 句柄所有者；`main.js` 为每只猪各建一个 owner，并将 ready、页面加载、加载失败、renderer 退出与关闭事件只交给当前窗口。`apps/desktop/lib/pet-instance.js` 持有每只猪的 `petAsked`、shape、drag、hit、showGate 和 `resizeShape`；`getPetWindow()` 只表示主猪窗口，面板/托盘/全屏/恢复仍以它为准。Linux 显示器重建第一版只替换主猪句柄，旧窗口的迟到事件不会影响新窗口；其他猪窗口只做工作区夹取。窗口位置、显示门、drag、flight 和 shape 算法仍由组合根处理。
+主进程的 `pet-window.js` 是**每一只猪**的 `BrowserWindow` 句柄所有者；`main.js` 为每只猪各建一个 owner，并将 ready、页面加载、加载失败、renderer 退出与关闭事件只交给当前窗口。`apps/desktop/lib/pet-instance.js` 持有每只猪的 `petAsked`、shape、drag、hit、showGate 和 `resizeShape`；`getPetWindow()` 只表示主猪窗口，面板/托盘/全屏/恢复仍以它为准。Linux 显示器重建第一版只替换主猪句柄，旧窗口的迟到事件不会影响新窗口；其他猪窗口只做工作区夹取。窗口位置、显示门、drag/flight 和 shape 的窗口操作由 `window-surface.js` 提供，拖动状态机在 `drag-engine.js`，页面触发的几何变更在 `geometry-ipc.js`。
 
 `desktop-runtime.js` 唯一持有后台 host、版本服务及其启动 Promise。`main.js` 仍按原 `whenReady` 顺序执行数据迁移、代理与更新器、版本服务、首次游戏下载、host、协议和窗口装配；它不再保存这些句柄的第二份状态。关闭流程等待启动 Promise 后重新通过 `getShutdownResources()` 读取当前句柄，再按 `desktop-lifecycle.js` 原有顺序关闭。
 

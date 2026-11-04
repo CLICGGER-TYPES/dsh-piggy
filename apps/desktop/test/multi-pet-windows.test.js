@@ -27,6 +27,8 @@ import { createPetRegistry, createPetState } from '../lib/pet-instance.js'
 import { createStartupTrace } from '../lib/startup-trace.js'
 import { createWindowManager } from '../lib/window-manager.js'
 import { createWindowSurface } from '../lib/window-surface.js'
+import { createDragEngine, registerDragIpc } from '../lib/drag-engine.js'
+import { registerGeometryIpc } from '../lib/geometry-ipc.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
@@ -257,10 +259,18 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
     shiftedShape: surface.shiftedShape, workAreaFor: surface.workAreaFor, pushGeometry: surface.pushGeometry,
     geometryOf: surface.geometryOf, currentSeq: surface.currentSeq, SKIP_NATIVE_SHAPE: surface.skipNativeShape,
   })
-  const engineStart = source.indexOf("ipcMain.on('piggy:content'")
-  const engineEnd = source.indexOf('\n// 面板窗口：', engineStart)
-  assert.ok(engineStart > 0 && engineEnd > engineStart)
-  runInContext(source.slice(engineStart, engineEnd), context)
+  const dragEngine = createDragEngine({
+    screen: sandbox.screen, pets, petForEvent: event => context.petForEvent(event),
+    panel: sandbox.panel, log: sandbox.log, surface,
+    setInterval: sandbox.setInterval, clearInterval: sandbox.clearInterval,
+  })
+  sandbox.stopDrag = pet => dragEngine.stopDrag(pet)
+  registerGeometryIpc({
+    ipcMain: sandbox.ipcMain, screen: sandbox.screen, pets, platform: 'linux',
+    petForEvent: event => context.petForEvent(event), panel: sandbox.panel, log: sandbox.log,
+    showPigWindow: pet => sandbox.showPigWindow(pet), surface,
+  })
+  registerDragIpc({ ipcMain: sandbox.ipcMain, engine: dragEngine })
   for (let index = 0; index < states.length; index += 1) {
     await manager.createPigWindow(pets.all()[index])
   }
