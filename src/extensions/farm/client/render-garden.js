@@ -121,7 +121,7 @@ export function createFarmGardenRenderer(state, modules) {
       var grid = modules.host.put(drawer, app.el('div', 'fm-advanced-grid'))
       allTools(app, data).forEach(function (spec) { modules.host.put(grid, toolSlot(app, spec)) })
       var actions = modules.host.put(drawer, app.el('div', 'fm-advanced-actions'))
-      if (data.helper) modules.host.put(actions, modules.host.button(app, 'fm-nav-action', { 'data-farm-helper': data.helper.hired ? 'collect' : 'hire', 'aria-label': modules.events.helperText(data.helper) }, modules.events.helperText(data.helper), function () { modules.events.rememberScroll(app, modules.events.pageKey(app)); modules.events.helperClick(app, data.helper) }))
+      if (data.helper) modules.host.put(actions, modules.host.button(app, 'fm-nav-action', { 'data-farm-helper': data.helper.hired ? 'collect' : 'hire', 'aria-label': modules.events.helperText(data.helper) }, modules.events.helperText(data.helper), function () { modules.events.rememberScroll(app, modules.events.pageKey(app)); modules.events.helperClick(app, data.helper, data.now) }))
       if (app.mode !== 'big') metaRow(app, data, drawer)
     }
 

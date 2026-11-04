@@ -178,7 +178,7 @@ test('各渠道目录校验官方文件身份、渠道下载地址和同版本�
   assert.equal(githubFarm?.files?.['client.js']?.sha256, '72b64888f96633773c2a83cff15e7ea3fe987d3c3baf3e2c19204b0d8f09d5f3', 'public farm 4.2.1 keeps its released client identity')
   assert.equal(githubCandidateFarm?.version, '4.4.0', 'the unuploaded source candidate uses a fresh version')
   assert.equal(githubCandidateFarm?.minGame, '0.37.2')
-  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, 'f98f3872ba0b452b602e00b0dcad5cc8d764d7fedee97d5a49db3ad5752a218f', 'farm 4.4.0 candidate carries the multi-helper UI client')
+  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, '093b14489a2144dc0c7acdb3ad42d06415b73453ee7a89b5daf648c304c5e278', 'farm 4.4.0 candidate carries the energy/rest UI client')
   assert.equal(Object.keys(githubCandidateFarm?.files ?? {}).length, 287)
   for (const name of Object.keys(githubFarm?.files ?? {}).filter(name => name.startsWith('assets/'))) {
     assert.equal(githubCandidateFarm?.files?.[name]?.sha256, githubFarm?.files?.[name]?.sha256, 'the 4.4.0 energy rules keep ' + name)

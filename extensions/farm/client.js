@@ -67,6 +67,7 @@
       ".dp-content:has(>.fm[data-farm-integrated]){scrollbar-gutter:stable}.fm-big{scrollbar-gutter:stable}.dp-content:has(>.fm[data-farm-integrated]>.fm-pop)>.dp-drill,.dp-content:has(>.fm[data-farm-integrated]>.fm-mask)>.dp-drill,.fm:has(>.fm-pop)>.fm-s-header,.fm:has(>.fm-mask)>.fm-s-header{display:none}",
       '.fm-helper-panel{display:grid;gap:8px}.fm-helper-card{display:grid;gap:6px;min-width:0;padding:8px;border:1px solid var(--animal-border);border-radius:var(--ac-radius-card,16px);background:var(--animal-bg-content)}.fm-helper-status,.fm-helper-storage,.fm-helper-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.fm-helper-status-main{display:flex;align-items:center;gap:8px;min-width:0}.fm-helper-status-icon{width:34px;height:34px;flex:none}.fm-helper-copy{display:grid;gap:2px;min-width:0}.fm-helper-copy>b{font-size:13px;color:var(--animal-text)}.fm-helper-copy>small{font-size:11px;color:var(--animal-text-body)}.fm-helper-badge,.fm-helper-price{border-radius:var(--ac-pill,50px);padding:4px 8px;font-size:10px;white-space:nowrap;background:var(--ac-warning-bg,#fff2c9);color:var(--animal-text)}.fm-helper-badge[data-enabled="true"]{background:var(--ac-primary-bg,#d7f5ef)}.fm-helper-price{font-weight:800}.fm-helper-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;padding:8px 10px;text-align:left}.fm-helper-toggle-copy{display:grid;gap:2px}.fm-helper-toggle-copy>b{font-size:12px;color:var(--animal-text)}.fm-helper-toggle-copy>small,.fm-helper-footer{font-size:10px;color:var(--animal-text-body)}.fm-helper-switch{position:relative;display:block;width:40px;height:24px;flex:none;border-radius:var(--ac-pill,50px);background:var(--ac-border,#c4b89e);transition:background .16s var(--animal-ease)}.fm-helper-switch>i{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--ac-bg-content,#fff8e3);transition:transform .16s var(--animal-ease)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch{background:var(--animal-primary)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch>i{transform:translateX(16px)}.fm-helper-action{justify-self:end;flex:none;min-height:30px;padding:4px 10px;font-size:11px}.fm-helper-footer{line-height:1.45;padding:0 2px;text-align:center}',
       '.fm-helper-workers{display:grid;gap:6px;min-width:0}.fm-helper-worker{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0;padding:6px 8px;border:1px solid var(--ac-border-light,#e5dcc6);border-radius:var(--ac-radius-sm,12px);background:var(--animal-bg,#f8f8f0)}.fm-helper-worker-id{flex:none;font-size:12px;font-weight:800;color:var(--animal-text)}.fm-role-badge{flex:none;border-radius:var(--ac-pill,50px);padding:3px 8px;font-size:10px;line-height:1.4;white-space:nowrap;background:var(--ac-primary-bg,#d7f5ef);color:var(--animal-text)}.fm-role-badge[data-role="patrol"]{background:var(--ac-warning-bg,#fff2c9)}.fm-helper-worker-plots{flex:1 1 auto;min-width:0;font-size:11px;color:var(--animal-text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fm-role-btn{flex:none;margin-left:auto;min-height:28px;padding:3px 10px;font-size:11px;white-space:nowrap}.fm-helper-warning{font-size:11px;line-height:1.45;padding:2px 2px 0;color:var(--animal-text)}',
+      '.fm-helper-hint{font-size:10px;line-height:1.45;padding:0 2px;color:var(--animal-text-body)}.fm-energy{flex:1 0 100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;min-width:0}.fm-energy-track{grid-column:1/-1;display:block;height:6px;border-radius:var(--ac-pill,50px);background:var(--ac-border-light,#e5dcc6);overflow:hidden}.fm-energy-track>i{display:block;height:100%;border-radius:inherit;background:var(--ac-success,#87c96d)}.fm-energy[data-state="patrol"] .fm-energy-track>i{background:var(--animal-primary)}.fm-energy[data-state="resting"] .fm-energy-track>i{background:var(--ac-warning,#e0a03a)}.fm-energy[data-state="idle"] .fm-energy-track>i{background:var(--ac-text-disabled,#a99d86)}.fm-energy[data-state="paused"]{opacity:.6}.fm-energy[data-state="paused"] .fm-energy-track>i{background:var(--ac-border,#c4b89e)}.fm-energy-copy{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:10px;line-height:1.35;color:var(--animal-text-body);min-width:0}.fm-energy-copy>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fm-energy-copy>.fm-energy-state{font-weight:800;color:var(--animal-text)}.fm-energy[data-state="resting"] .fm-energy-state{color:var(--ac-warning,#b7791f)}.fm-helper-worker-acts{display:flex;align-items:center;gap:6px;flex:none;margin-left:auto}.fm-helper-worker-acts .fm-role-btn{margin-left:0}.fm .fm-helper-rest{min-height:28px;padding:3px 10px;font-size:11px;white-space:nowrap}.fm-helper-schedule{display:grid;gap:6px}.fm-helper-schedule-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}.fm .fm-helper-schedule-btn{min-height:30px;padding:4px 8px;font-size:11px}.fm-helper-schedule-btn[aria-pressed="true"]{background:var(--ac-primary-bg,#d7f5ef);border-color:var(--animal-primary)}.fm-helper-schedule-btn:disabled{opacity:.65}.fm-helper-schedule-current{font-size:10px;color:var(--animal-text-body)}.fm-helper-schedule-note{font-size:10px;line-height:1.45;color:var(--animal-text-body)}',
       '.fm-s-detail{position:relative}.fm-s-detail[data-has-action]>small{padding-right:98px}.fm-s-detail .fm-s-acts{position:absolute;right:4px;bottom:4px;display:block;padding:0;max-width:48%}.fm .fm-s-detail .fm-main{min-height:30px;font-size:12px;padding:4px 8px;display:block;white-space:normal}.fm-s-detail .fm-main>small{display:none}.fm:not(.fm-big) .fm-dock-btn{min-height:56px;padding:4px;gap:2px}.fm:not(.fm-big) .fm-dock-btn>img{width:32px;height:32px}.fm .fm-s-field .fm-plot[data-farm-target="true"],.fm .fm-s-field .fm-plot:focus-visible{outline:none;box-shadow:none;border:0}.fm .fm-plot[data-farm-target="true"]::before,.fm .fm-plot:focus-visible::before{content:"";position:absolute;inset:-3px;box-sizing:border-box;border:2px solid var(--ac-bg-input,#fffbe7);border-radius:8px;box-shadow:inset 0 0 0 2px var(--animal-primary);mask:linear-gradient(var(--animal-primary) 0 0) left top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right bottom/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) left bottom/12px 12px no-repeat;pointer-events:none;z-index:1}.fm-bubble{z-index:2}'
     ].join("");
     const cssArt = { "ui-slot": true, "ui-button": true, "ui-main": true, "ui-note": true, "ui-small-plank": true, "ui-big-toolbar": true, "ui-big-topbar": true, "ui-exp-frame": true, "progress-track": true, "progress-fill": true, "shop-title": true, "buy-title": true, "pack-title": true, "shop-tab": true, "shop-tab-active": true, "shop-item": true, "shop-item-locked": true, "pack-slot": true, "pack-slot-selected": true, "info-row": true, "stepper-field": true, "btn-confirm": true, "btn-cancel": true, "status-chip": true, "status-chip-active": true, "big-sign-expand": true, "card-tail": true, "stepper-plus": true, "stepper-minus": true };
@@ -457,28 +458,65 @@
       });
       return result;
     }
+    function setRest(app, id, resting) {
+      if (state.inflight) return null;
+      var result = sendAction(app, "setHelperRest", { id, resting: resting === true });
+      if (result && typeof result.then === "function") result.then(function(next) {
+        if (!next || next.ok !== false) return;
+        if (next.reason === "too-tired") return say(app, "\u5E2E\u5DE5\u592A\u7D2F\u4E86\uFF0C\u7B49\u7CBE\u529B\u56DE\u5230 20% \u4EE5\u4E0A\u518D\u53EB\u9192");
+        if (next.reason === "already") return say(app, resting ? "\u8FD9\u53EA\u5E2E\u5DE5\u5DF2\u7ECF\u5728\u4F11\u606F\u4E86" : "\u8FD9\u53EA\u5E2E\u5DE5\u662F\u73ED\u6B21\u4F11\u606F\uFF0C\u5230\u70B9\u4F1A\u81EA\u52A8\u56DE\u6765");
+        if (next.reason === "unavailable") return say(app, "\u8FD9\u53EA\u5E2E\u5DE5\u73B0\u5728\u6539\u4E0D\u4E86\u4F11\u606F\u72B6\u6001");
+      });
+      return result;
+    }
+    function setSchedule(app, mode) {
+      if (state.inflight) return null;
+      var result = sendAction(app, "setHelperSchedule", { mode });
+      if (result && typeof result.then === "function") result.then(function(next) {
+        if (!next || next.ok !== false) return;
+        if (next.reason === "already") return say(app, mode === "auto" ? "\u5DF2\u7ECF\u662F\u81EA\u52A8\u6392\u73ED" : "\u5DF2\u7ECF\u662F\u624B\u52A8\u6392\u73ED");
+        if (next.reason === "unavailable") return say(app, "\u6392\u73ED\u73B0\u5728\u6539\u4E0D\u4E86");
+      });
+      return result;
+    }
     function helperCount(helper) {
       return Number(helper.count) || (Array.isArray(helper.workers) ? helper.workers.length : 1);
+    }
+    function helperWorkers(helper) {
+      return Array.isArray(helper.workers) ? helper.workers : [];
     }
     function helperText(helper) {
       if (!helper.hired) return "\u96C7\u5E2E\u5DE5\u732A";
       if (helper.full) return "\u5E2E\u5DE5\u4ED3\u5E93\u6EE1\u4E86";
       if (helper.stored > 0) return "\u5E2E\u5DE5\u6536\u4E86 " + helper.stored + " \u4E2A";
       if (!helper.enabled) return "\u5E2E\u5DE5\u5DF2\u6682\u505C";
+      var workers = helperWorkers(helper);
+      if (workers.length && !workers.some(function(worker) {
+        return worker.role === "harvest";
+      })) return "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536";
       if (helper.missing.length) return "\u7F3A" + helper.missing.join("\u3001") + "\u79CD\u5B50";
       if (helper.seedless) return "\u5E2E\u5DE5\u6CA1\u79CD\u5B50";
+      if (helper.onDuty === 0 && helper.resting > 0) return "\u5E2E\u5DE5\u90FD\u5728\u4F11\u606F";
       if (helper.plots === 0) return "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536";
       return helperCount(helper) > 1 ? "\u5E2E\u5DE5 \xD7" + helperCount(helper) + " \xB7 \u6536 " + helper.plots + " \u5757" : "\u5E2E\u5DE5 \xB7 " + helper.plots + " \u5757\u5730";
     }
-    function helperClick(app, helper) {
+    function helperClick(app, helper, now) {
       if (!helper.hired) return sendAction(app, "hire", {});
       if (helper.stored > 0 || helper.full) return sendAction(app, "collect", {});
       if (!helper.enabled) return goShop(app, "helper");
+      var workers = helperWorkers(helper);
+      if (workers.length && !workers.some(function(worker) {
+        return worker.role === "harvest";
+      })) return goShop(app, "helper");
       if (helper.missing.length || helper.seedless) return goShop(app, "seed");
+      if (helper.onDuty === 0 && helper.resting > 0) {
+        var wait = Number.isFinite(helper.restUntil) && Number.isFinite(now) ? Math.max(0, helper.restUntil - now) : 0;
+        return say(app, "\u5E2E\u5DE5\u5728\u4F11\u606F" + (wait > 0 ? "\uFF0C" + shortTime(wait) + " \u540E\u56DE\u6765" : "\uFF0C\u7CBE\u529B\u6062\u590D\u540E\u56DE\u6765"));
+      }
       if (helper.plots === 0) return goShop(app, "helper");
       say(app, helperCount(helper) > 1 ? "\u5E2E\u5DE5 \xD7" + helperCount(helper) + " \u6B63\u5728\u7167\u987E " + helper.plots + " \u5757\u5730" : "\u5E2E\u5DE5\u6B63\u5728\u7167\u987E " + helper.plots + " \u5757\u5730");
     }
-    return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, setRole, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick };
+    return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, setRole, setRest, setSchedule, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick };
   }
 
   // src/extensions/farm/client/render-garden.js
@@ -668,7 +706,7 @@
       var actions = modules.host.put(drawer, app.el("div", "fm-advanced-actions"));
       if (data.helper) modules.host.put(actions, modules.host.button(app, "fm-nav-action", { "data-farm-helper": data.helper.hired ? "collect" : "hire", "aria-label": modules.events.helperText(data.helper) }, modules.events.helperText(data.helper), function() {
         modules.events.rememberScroll(app, modules.events.pageKey(app));
-        modules.events.helperClick(app, data.helper);
+        modules.events.helperClick(app, data.helper, data.now);
       }));
       if (app.mode !== "big") metaRow(app, data, drawer);
     }
@@ -896,47 +934,8 @@
     return { reclaimSign, plotCard, plotLabel, levelBadge, metaRow, toolSlot, careCount, fertCount, allTools, renderDrawer, dock, header, mainAction, lessonOf, lessonText, lessonAction, goalText, lessonTile, doLesson, detailCard, renderGarden, renderTip };
   }
 
-  // src/extensions/farm/client/render-commerce.js
-  function createFarmCommerceRenderer(state, modules) {
-    function product(app, item, className) {
-      if (item.category !== "seed") return modules.host.img(app, className, itemArt(item), item.emoji);
-      var packet = modules.host.bg(app, app.el("span", className + " fm-packet"), "seed-packet");
-      modules.host.put(packet, modules.host.img(app, null, itemArt(item), item.emoji));
-      return packet;
-    }
-    function itemArt(item) {
-      return item.key.indexOf("helper-") === 0 ? "tab-icon-helper" : item.key.indexOf("fert-") === 0 ? item.key : item.category === "tool" ? "tool-" + item.key : "produce-" + item.key;
-    }
-    function shopItems(data) {
-      return data.shelf.items.map(function(entry) {
-        var seed = modules.events.seedOf(data, entry.key), tool = data.tools.find(function(item) {
-          return item.key === entry.key;
-        });
-        return Object.assign({}, entry, seed || {}, { label: entry.label, category: seed ? "seed" : tool ? "tool" : entry.key.indexOf("helper-") === 0 ? "helper" : "fert", owned: tool && tool.owned });
-      });
-    }
-    function tileNode(app, spec) {
-      var node = app.button("dp-tile fm-tile" + (spec.soft === false ? "" : " dp-tile-soft"), spec.data || {}, function() {
-        spec.onPick();
-      });
-      node.setAttribute("data-color", spec.color || "green");
-      if (spec.locked) node.setAttribute("data-locked", "true");
-      if (spec.dim) node.setAttribute("data-dim", "true");
-      var icon = modules.host.put(node, app.el("span", "dp-tile-icon"));
-      if (spec.art) modules.host.put(icon, spec.art);
-      else modules.host.put(icon, app.el("span", "dp-tile-e", spec.emoji || "\u{1F331}"));
-      if (spec.badge) modules.host.put(icon, app.el("b", "dp-tile-badge", spec.badge));
-      modules.host.put(node, app.el("span", "dp-tile-n", spec.label));
-      if (spec.note) modules.host.put(node, app.el("span", "dp-tile-note", spec.note));
-      return node;
-    }
-    function emptyTile(app, text, extra) {
-      var node = app.el("div", "fm-note", text);
-      if (extra) extra.forEach(function(child) {
-        modules.host.put(node, child);
-      });
-      return node;
-    }
+  // src/extensions/farm/client/render-helper.js
+  function createFarmHelperRenderer(state, modules) {
     function helperToggle(app, panel, enabled) {
       var toggle = modules.host.put(panel, app.button("dp-btn fm-helper-card fm-helper-toggle", {
         type: "button",
@@ -970,6 +969,60 @@
     }
     function helperFooter(app, panel, enabled) {
       modules.host.put(panel, app.el("small", "fm-helper-footer", enabled ? "\u5E2E\u5DE5\u7167\u6599\u3001\u6536\u83B7\u540E\u5165\u4ED3\u5E76\u6309\u73B0\u6709\u79CD\u5B50\u8865\u79CD\uFF1B\u4F5C\u7269\u6309\u539F\u65F6\u95F4\u81EA\u7136\u751F\u957F\u3002" : "\u6682\u505C\u65F6\u7167\u6599\u3001\u6536\u83B7\u4E0E\u8865\u79CD\u505C\u6B62\uFF1B\u4F5C\u7269\u81EA\u7136\u751F\u957F\uFF0C\u5E2E\u5DE5\u4ED3\u5E93\u5B58\u4ECD\u53EF\u9886\u53D6\u3002"));
+    }
+    function helperVisualState(worker) {
+      if (worker.status === "paused") return "paused";
+      if (worker.idle === true) return "idle";
+      return worker.status || "idle";
+    }
+    function helperStatusWord(worker) {
+      if (worker.status === "paused") return "\u5DF2\u6682\u505C";
+      if (worker.idle === true) return "\u5F85\u547D";
+      if (worker.status === "resting") return "\u4F11\u606F\u4E2D";
+      if (worker.status === "idle") return "\u5F85\u547D";
+      if (worker.status === "patrol") return "\u5DE1\u903B\u4E2D";
+      return "\u5DE5\u4F5C\u4E2D";
+    }
+    function helperEnergyPercent(worker) {
+      var energy = Number(worker.energy);
+      if (!Number.isFinite(energy)) energy = 0;
+      return Math.max(0, Math.min(100, Math.round(energy * 100)));
+    }
+    function helperEnergyNote(worker) {
+      var shortTime = modules.events.shortTime;
+      if (worker.status === "paused") return "\u6258\u7BA1\u6682\u505C";
+      if (worker.idle === true) return "\u7BA1\u533A\u6CA1\u6D3B\uFF0C\u5148\u6B47\u7740";
+      if (worker.status === "resting") return worker.restRemainingMs > 0 ? shortTime(worker.restRemainingMs) + "\u540E\u56DE\u6765" : "\u9A6C\u4E0A\u56DE\u6765";
+      if (worker.status === "idle") return "\u7BA1\u533A\u6CA1\u6D3B\uFF0C\u5148\u6B47\u7740";
+      return worker.workRemainingMs > 0 ? "\u8FD8\u5269 " + shortTime(worker.workRemainingMs) : "\u7CBE\u529B\u5145\u8DB3";
+    }
+    function helperSchedule(app, panel, schedule) {
+      var current = schedule === "manual" ? "manual" : "auto";
+      var card = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-schedule"));
+      var head = modules.host.put(card, app.el("div", "fm-helper-card-head"));
+      modules.host.put(head, app.el("b", "fm-helper-label", "\u6392\u73ED"));
+      modules.host.put(head, app.el("span", "fm-helper-schedule-current", current === "auto" ? "\u81EA\u52A8" : "\u624B\u52A8"));
+      var modes = modules.host.put(card, app.el("div", "fm-helper-schedule-modes"));
+      [["auto", "\u81EA\u52A8\u6392\u73ED"], ["manual", "\u624B\u52A8\u6392\u73ED"]].forEach(function(mode) {
+        var active = current === mode[0];
+        var button = modules.host.put(modes, modules.host.button(app, "fm-helper-schedule-btn", {
+          type: "button",
+          "data-farm-schedule": mode[0],
+          "aria-pressed": String(active),
+          "aria-label": mode[1]
+        }, mode[1], function() {
+          if (state.inflight || current === mode[0]) return;
+          modules.events.rememberScroll(app, modules.events.pageKey(app));
+          modules.events.setSchedule(app, mode[0]);
+        }));
+        button.disabled = !!state.inflight || active;
+      });
+      modules.host.put(card, app.el("small", "fm-helper-schedule-note", current === "auto" ? "\u81EA\u52A8\uFF1A\u65B0\u96C7\u6309\u9700\u5206\u5DE5\uFF0C\u540C\u89D2\u8272\u5E2E\u5DE5\u73ED\u6B21\u81EA\u52A8\u9519\u5CF0\uFF08\u6BCF\u53EA\u5DEE 30 \u5206\u949F\u4E0A\u73ED\uFF09\u3002" : "\u624B\u52A8\uFF1A\u65B0\u96C7\u9ED8\u8BA4\u6536\u83DC\uFF0C\u53EF\u4EE5\u9010\u53EA\u4F11\u606F / \u53EB\u9192\u3002"));
+    }
+    function helperEnergyReady(helper) {
+      return Array.isArray(helper.workers) && helper.workers.length > 0 && helper.workers.every(function(worker) {
+        return Number.isFinite(worker.energy) && typeof worker.status === "string";
+      });
     }
     function helperStatus(app, panel, title, note, enabled) {
       var status = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-status"));
@@ -1016,28 +1069,71 @@
         return worker.role === "patrol";
       }).length;
       var harvest = workers.length - patrol;
+      var onDuty = Number.isFinite(helper.onDuty) ? helper.onDuty : workers.filter(function(worker) {
+        return worker.working === true;
+      }).length;
+      var restingCount = Number.isFinite(helper.resting) ? helper.resting : workers.filter(function(worker) {
+        return worker.status === "resting";
+      }).length;
+      var restStatus = workers.filter(function(worker) {
+        return worker.status === "resting" && worker.idle !== true;
+      }).length;
+      var sleeping = workers.filter(function(worker) {
+        return worker.idle === true;
+      }).length;
       var panel = modules.host.put(box, app.el("section", "fm-helper-panel"));
       panel.setAttribute("aria-label", "\u5E2E\u5DE5\u6258\u7BA1");
       helperStatus(
         app,
         panel,
         "\u5E2E\u5DE5 " + workers.length + "/" + max,
-        "\u6536\u83DC " + harvest + " \u53EA \xB7 \u5DE1\u903B " + patrol + " \u53EA \xB7 \u5171\u7BA1 " + helper.plots + " \u5757\u5730",
+        "\u6536\u83DC " + harvest + " \u53EA \xB7 \u5DE1\u903B " + patrol + " \u53EA \xB7 \u5728\u5C97 " + onDuty + " / \u4F11\u606F " + restingCount + " \xB7 \u5171\u7BA1 " + helper.plots + " \u5757\u5730",
         enabled
       );
+      helperToggle(app, panel, enabled);
+      helperSchedule(app, panel, helper.schedule);
+      if (harvest === 0) {
+        modules.host.put(panel, app.el("small", "fm-helper-warning", "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536"));
+        modules.host.put(panel, app.el("small", "fm-helper-hint", "\u5DE1\u903B\u5E2E\u5DE5\u4E0D\u5360\u5730\uFF1B\u81F3\u5C11\u7559\u4E00\u53EA\u6536\u83DC\u5E2E\u5DE5\u624D\u4F1A\u81EA\u52A8\u6536\u83B7\u3002"));
+      } else if (!enabled) {
+        modules.host.put(panel, app.el("small", "fm-helper-hint", "\u6258\u7BA1\u5DF2\u6682\u505C\uFF1B\u6062\u590D\u540E\u6309\u5404\u81EA\u7CBE\u529B\u590D\u5DE5\uFF0C\u719F\u5730\u4F1A\u7B49\u590D\u5DE5\u518D\u6536\u3002"));
+      } else if (restStatus === workers.length && onDuty === 0) {
+        var wait = Number.isFinite(helper.restUntil) ? Math.max(0, helper.restUntil - data.now) : 0;
+        modules.host.put(panel, app.el("small", "fm-helper-hint", "\u5E2E\u5DE5\u90FD\u5728\u4F11\u606F" + (wait > 0 ? "\uFF0C" + modules.events.shortTime(wait) + "\u540E\u9646\u7EED\u56DE\u6765" : "\uFF0C\u7CBE\u529B\u6062\u590D\u540E\u81EA\u52A8\u56DE\u6765") + "\uFF1B\u719F\u5730\u4F1A\u7B49\u590D\u5DE5\u518D\u6536\u3002"));
+      } else if (sleeping === workers.length && onDuty === 0) {
+        modules.host.put(panel, app.el("small", "fm-helper-hint", "\u7BA1\u533A\u6682\u65F6\u6CA1\u6D3B\uFF0C\u5E2E\u5DE5\u5728\u5F85\u547D\u4F11\u606F\uFF1B\u79CD\u4E0A\u4F5C\u7269\u540E\u4F1A\u81EA\u52A8\u56DE\u6765\u3002"));
+      }
       var list = modules.host.put(panel, app.el("div", "fm-helper-workers"));
       list.setAttribute("role", "list");
       list.setAttribute("aria-label", "\u5E2E\u5DE5\u5217\u8868");
       workers.forEach(function(worker) {
+        var visual = helperVisualState(worker);
         var row = modules.host.put(list, app.el("div", "fm-helper-worker"));
         row.setAttribute("role", "listitem");
         row.setAttribute("data-farm-helper-worker", String(worker.id));
+        row.setAttribute("data-state", visual);
         modules.host.put(row, app.el("b", "fm-helper-worker-id", "#" + worker.id));
         var badge = modules.host.put(row, app.el("span", "fm-role-badge", worker.roleLabel || (worker.role === "patrol" ? "\u5DE1\u903B" : "\u6536\u83DC")));
         badge.setAttribute("data-role", worker.role === "patrol" ? "patrol" : "harvest");
         modules.host.put(row, app.el("span", "fm-helper-worker-plots", worker.role === "patrol" ? "\u4E0D\u5360\u5730" : "\u6536 " + (worker.plotCount || 0) + " \u5757"));
+        var acts = modules.host.put(row, app.el("div", "fm-helper-worker-acts"));
+        var manualRest = worker.resting === true;
+        if (worker.status !== "paused" && (manualRest || worker.status !== "resting")) {
+          var restButton = modules.host.put(acts, modules.host.button(app, "fm-helper-rest", {
+            type: "button",
+            "data-farm-rest": manualRest ? "wake" : "rest",
+            "data-farm-helper-id": String(worker.id),
+            "aria-label": (manualRest ? "\u53EB\u9192" : "\u8BA9") + " #" + worker.id + " \u5E2E\u5DE5" + (manualRest ? "\u590D\u5DE5" : "\u4F11\u606F"),
+            "aria-disabled": String(!!state.inflight)
+          }, manualRest ? "\u53EB\u9192" : "\u4F11\u606F", function() {
+            if (state.inflight) return;
+            modules.events.rememberScroll(app, modules.events.pageKey(app));
+            modules.events.setRest(app, worker.id, !manualRest);
+          }));
+          restButton.disabled = !!state.inflight;
+        }
         var target = worker.role === "patrol" ? "harvest" : "patrol";
-        var button = modules.host.put(row, modules.host.button(app, "fm-role-btn", {
+        var button = modules.host.put(acts, modules.host.button(app, "fm-role-btn", {
           type: "button",
           "data-farm-role": target,
           "data-farm-helper-id": String(worker.id),
@@ -1049,9 +1145,21 @@
           modules.events.setRole(app, worker.id, target);
         }));
         button.disabled = !!state.inflight;
+        var percent = helperEnergyPercent(worker);
+        var energy = modules.host.put(row, app.el("div", "fm-energy"));
+        energy.setAttribute("data-state", visual);
+        energy.setAttribute("data-farm-helper-energy", String(worker.id));
+        var track = modules.host.put(energy, app.el("span", "fm-energy-track"));
+        track.setAttribute("role", "progressbar");
+        track.setAttribute("aria-valuemin", "0");
+        track.setAttribute("aria-valuemax", "100");
+        track.setAttribute("aria-valuenow", String(percent));
+        track.setAttribute("aria-label", "\u5E2E\u5DE5 #" + worker.id + " \u7CBE\u529B " + percent + "% \xB7 " + helperStatusWord(worker));
+        modules.host.put(track, app.el("i")).style.width = percent + "%";
+        var copy = modules.host.put(energy, app.el("span", "fm-energy-copy"));
+        modules.host.put(copy, app.el("span", "fm-energy-state", helperStatusWord(worker)));
+        modules.host.put(copy, app.el("span", "fm-energy-value", percent + "% \xB7 " + helperEnergyNote(worker)));
       });
-      if (helper.plots === 0) modules.host.put(panel, app.el("small", "fm-helper-warning", "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536"));
-      helperToggle(app, panel, enabled);
       var additional = items.find(function(item) {
         return item.key === "helper-additional";
       });
@@ -1076,8 +1184,52 @@
       helperFooter(app, panel, enabled);
     }
     function renderHelperControls(app, data, box, items) {
-      if (Array.isArray(data.helper.workers) && data.helper.workers.length) return renderHelperCrew(app, data, box, items);
+      if (helperEnergyReady(data.helper)) return renderHelperCrew(app, data, box, items);
       return renderHelperSingle(app, data, box, items);
+    }
+    return { renderHelperSingle, renderHelperCrew, renderHelperControls, helperEnergyReady };
+  }
+
+  // src/extensions/farm/client/render-commerce.js
+  function createFarmCommerceRenderer(state, modules) {
+    function product(app, item, className) {
+      if (item.category !== "seed") return modules.host.img(app, className, itemArt(item), item.emoji);
+      var packet = modules.host.bg(app, app.el("span", className + " fm-packet"), "seed-packet");
+      modules.host.put(packet, modules.host.img(app, null, itemArt(item), item.emoji));
+      return packet;
+    }
+    function itemArt(item) {
+      return item.key.indexOf("helper-") === 0 ? "tab-icon-helper" : item.key.indexOf("fert-") === 0 ? item.key : item.category === "tool" ? "tool-" + item.key : "produce-" + item.key;
+    }
+    function shopItems(data) {
+      return data.shelf.items.map(function(entry) {
+        var seed = modules.events.seedOf(data, entry.key), tool = data.tools.find(function(item) {
+          return item.key === entry.key;
+        });
+        return Object.assign({}, entry, seed || {}, { label: entry.label, category: seed ? "seed" : tool ? "tool" : entry.key.indexOf("helper-") === 0 ? "helper" : "fert", owned: tool && tool.owned });
+      });
+    }
+    function tileNode(app, spec) {
+      var node = app.button("dp-tile fm-tile" + (spec.soft === false ? "" : " dp-tile-soft"), spec.data || {}, function() {
+        spec.onPick();
+      });
+      node.setAttribute("data-color", spec.color || "green");
+      if (spec.locked) node.setAttribute("data-locked", "true");
+      if (spec.dim) node.setAttribute("data-dim", "true");
+      var icon = modules.host.put(node, app.el("span", "dp-tile-icon"));
+      if (spec.art) modules.host.put(icon, spec.art);
+      else modules.host.put(icon, app.el("span", "dp-tile-e", spec.emoji || "\u{1F331}"));
+      if (spec.badge) modules.host.put(icon, app.el("b", "dp-tile-badge", spec.badge));
+      modules.host.put(node, app.el("span", "dp-tile-n", spec.label));
+      if (spec.note) modules.host.put(node, app.el("span", "dp-tile-note", spec.note));
+      return node;
+    }
+    function emptyTile(app, text, extra) {
+      var node = app.el("div", "fm-note", text);
+      if (extra) extra.forEach(function(child) {
+        modules.host.put(node, child);
+      });
+      return node;
     }
     function renderShop(app, data, box) {
       var wallet = modules.host.put(box, app.el("div", "fm-shop-wallet"));
@@ -1095,8 +1247,8 @@
         modules.host.put(node, app.el("span", null, tab[1]));
       });
       var items = shopItems(data);
-      if (state.shopTab === "helper" && data.helper && data.helper.hired) renderHelperControls(app, data, box, items);
-      var crew = data.helper && data.helper.hired && Array.isArray(data.helper.workers) && data.helper.workers.length > 0;
+      if (state.shopTab === "helper" && data.helper && data.helper.hired) modules.helper.renderHelperControls(app, data, box, items);
+      var crew = data.helper && data.helper.hired && modules.helper.helperEnergyReady(data.helper);
       var visibleItems = items.filter(function(item) {
         if (item.category !== state.shopTab) return false;
         if (!(state.shopTab === "helper" && data.helper && data.helper.hired)) return true;
@@ -1380,7 +1532,7 @@
         }, cancel);
       }
     }
-    return { product, itemArt, shopItems, tileNode, emptyTile, renderHelperControls, renderShop, renderBag, modal, modalButtons, renderPurchase, pageHead, renderLayers };
+    return { product, itemArt, shopItems, tileNode, emptyTile, renderShop, renderBag, modal, modalButtons, renderPurchase, pageHead, renderLayers };
   }
 
   // src/extensions/farm/client/entry.js
@@ -1390,6 +1542,7 @@
     modules.host = createFarmHostTools();
     modules.events = createFarmEvents(state, modules);
     modules.garden = createFarmGardenRenderer(state, modules);
+    modules.helper = createFarmHelperRenderer(state, modules);
     modules.commerce = createFarmCommerceRenderer(state, modules);
     function render(app) {
       modules.host.ensureStyle(app);
