@@ -87,6 +87,16 @@ jobs:
         with: { node-version: 22 }
       - name: 装依赖
         run: npm ci
+      - name: 装根依赖与构建工具
+        working-directory: .
+        run: npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2
+      - name: 生成游戏产物
+        working-directory: .
+        run: |
+          npm run build
+          for file in client.js extensions/farm/client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js; do
+            test -s "$file" || { echo "missing generated artifact: $file"; exit 1; }
+          done
       - name: 打包
         shell: bash
         run: |
