@@ -12,7 +12,7 @@ const PACK = JSON.stringify({
   pack: 'wave',
   revision: 1,
   actions: [
-    { key: 'hello', kind: 'action', source: { scheme: 'path', path: 'hello.png' }, durationMs: 200 },
+    { key: 'hello', kind: 'action', source: { scheme: 'path', path: 'hello.png' }, durationMs: 200, trigger: { on: 'pet' } },
     { key: 'pulse', kind: 'action', frames: { fps: 10 }, durationMs: 200 },
     { key: 'sway', kind: 'action', frames: { durationsMs: [50, 150] }, durationMs: 200 },
   ],
@@ -291,4 +291,18 @@ test('注册后动态到达的帧动作会被播放器预加载并真的播放',
   player.dispose()
   runtime.dispose()
   globalThis.document = savedDocument
+})
+
+test('trigger.on 自动播放已注册动作', async () => {
+  const registry = createArtResourceRegistry()
+  const played = []
+  const runtime = createExtensionActionRuntime({
+    registry, play: key => { played.push(key); return true },
+    target: eventTarget(), fetch: fakeFetch(demoRoutes()).fetch,
+  })
+  await runtime.sync([extension(KEY, 'wave')])
+  assert.equal(runtime.trigger('pet'), true)
+  assert.deepEqual(played, ['ext-demo/wave/hello'])
+  assert.equal(runtime.trigger('feed'), false)
+  runtime.dispose()
 })

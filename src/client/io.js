@@ -115,6 +115,10 @@ export function createIo(ctx) {
           ctx.render(next)
           if (action === 'reply' && next?.ok === true) ctx.cancelNap?.()
           if (action === 'pet' && next?.ok === true && options?.petAnimated !== true) ctx.petShy?.()
+          if (next?.ok === true) {
+            const trigger = action === 'touch' ? 'tap' : action
+            if (trigger === 'pet' || trigger === 'feed' || trigger === 'play' || trigger === 'tap') ctx.extAssets?.trigger?.(trigger)
+          }
           // 现代宿主由 pending 合并奖励和台词；旧宿主没有奖励事件时才补回执，避免覆盖回复。
           if ((action === 'signIn' || action === 'openGift') && next?.ok === true
             && !(Array.isArray(next.pending) && next.pending.some(function (event) { return event.kind === 'gift' }))) {
