@@ -5853,6 +5853,20 @@
       },
       usedHours: function() {
         return 0;
+      },
+      // 精力条按 5% 画，剩余时间按分钟画；4 秒轮询不该因为小数变化重绘整块菜园。
+      energy: function(ratio) {
+        return Math.round(ratio * 20);
+      },
+      restRemainingMs: function(ms) {
+        return Math.ceil(ms / 6e4);
+      },
+      workRemainingMs: function(ms) {
+        return Math.ceil(ms / 6e4);
+      },
+      // 班次锚点只是内部相位，界面画的是剩余时间/精力；每次 view 重算锚点不该触发重绘。
+      shiftAt: function() {
+        return 0;
       }
     }
   };
