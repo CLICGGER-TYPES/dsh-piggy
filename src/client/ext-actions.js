@@ -24,7 +24,8 @@ export const EXT_ACTION_EVENT = 'dsh-piggy:action'
  *   pack: string,
  *   key: string,
  *   signature: string,
- *   input?: import('./art-resources.js').ArtResourcePackInput,
+ *   triggers: Record<string, string>,
+ *   input?: import('./art-resources.js').ArtResourcePackInput & { triggers: Record<string, string> },
  * }} ActivePack
  */
 
@@ -74,7 +75,7 @@ export function createExtensionActionRuntime(options) {
     // disappeared from pack.json do not linger in the registry.
     if (active.has(item.id)) removeActive(item.id)
     registry.registerPack(input, { replace: true })
-    active.set(item.id, { namespace: item.namespace, pack: item.pack, key: item.key, signature: item.signature, input: input })
+    active.set(item.id, { namespace: item.namespace, pack: item.pack, key: item.key, signature: item.signature, triggers: input.triggers ?? {}, input: input })
     failed.delete(item.id)
     return input
   }
@@ -216,12 +217,24 @@ export function createExtensionActionRuntime(options) {
     handle(event?.detail)
   }
 
+  /** Play the first installed action whose pack declares this trigger. */
+  function trigger(/** @type {string} */ event) {
+    if (typeof event !== 'string' || event === '') return false
+    for (const entry of active.values()) {
+      for (const [key, on] of Object.entries(entry.triggers)) {
+        if (on === event) return handle({ key: key })
+      }
+    }
+    return false
+  }
+
   target?.addEventListener?.(EXT_ACTION_EVENT, onActionEvent)
 
   return {
     sync: sync,
     owns: owns,
     handle: handle,
+    trigger: trigger,
     previewKey: previewKey,
     dispose: function () {
       if (disposed) return

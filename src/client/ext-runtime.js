@@ -32,6 +32,7 @@ export function attachExtensionRuntimes(options) {
   return {
     actions: actions,
     sounds: sounds,
+    trigger: function (/** @type {string} */ event) { return actions.trigger(event) },
     /** @param {any} extensions */
     sync: function (extensions) {
       actions.sync(extensions)

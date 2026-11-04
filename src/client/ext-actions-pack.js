@@ -168,7 +168,7 @@ async function detectFrameFormat(fetchImpl, base, actionKey) {
  *   body: string,
  *   fetch: (url: string, init?: any) => Promise<any>,
  * }} input
- * @returns {Promise<import('./art-resources.js').ArtResourcePackInput>}
+ * @returns {Promise<import('./art-resources.js').ArtResourcePackInput & { triggers: Record<string, string> }>}
  */
 export async function buildExtensionActionPack(input) {
   const { key, pack } = input
@@ -182,6 +182,8 @@ export async function buildExtensionActionPack(input) {
   const base = extensionPackBase(key, pack)
   /** @type {import('./art-resources.js').ArtResourceDeclaration[]} */
   const resources = []
+  /** @type {Record<string, string>} */
+  const triggers = {}
   const seen = new Set()
   for (const action of value.actions) {
     if (action === null || typeof action !== 'object' || Array.isArray(action)) throw new Error('action must be an object')
@@ -245,8 +247,10 @@ export async function buildExtensionActionPack(input) {
     const sound = actionSound(key, action.sound)
     if (sound !== undefined) declaration.sound = sound
     resources.push(declaration)
+    const trigger = action.trigger !== null && typeof action.trigger === 'object' ? action.trigger.on : null
+    if (typeof trigger === 'string' && trigger !== '') triggers[namespace + '/' + pack + '/' + action.key] = trigger
   }
-  return { namespace: namespace, pack: pack, revision: revision, resources: resources }
+  return { namespace: namespace, pack: pack, revision: revision, resources: resources, triggers: triggers }
 }
 
 /** @param {(url: string, init?: any) => Promise<any>} fetchImpl @param {string} url */
