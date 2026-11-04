@@ -54,22 +54,22 @@ test('扩展包：三个文件原样打包，读回来校验值不变；乱写�
   assert.equal(parseBundle(JSON.stringify({ format: 'dsh-piggy-extension', files: evil })).ok, false, 'a key cannot climb out of the extensions folder')
 })
 
-test('未发布的 farm 4.3.0 候选 hashes 精确匹配本地清单，断网导入仍识别为官方', async () => {
+test('未发布的 farm 4.4.0 候选 hashes 精确匹配本地清单，断网导入仍识别为官方', async () => {
   const farmFiles = files('farm')
   const bundle = makeBundle(farmFiles)
   const parsed = parseBundle(bundle)
   assert.equal(parsed.ok, true)
-  assert.equal(parsed.manifest.version, '4.3.0')
+  assert.equal(parsed.manifest.version, '4.4.0')
   const official = officialList()
   assert.equal(official.farm['4.2.1']?.['client.js'], '72b64888f96633773c2a83cff15e7ea3fe987d3c3baf3e2c19204b0d8f09d5f3', '公开 farm 4.2.1 的旧 client 身份必须保留')
-  assert.deepEqual(official.farm['4.3.0'], parsed.hashes, 'farm 4.3.0 的 287 个文件 hash 全部对上')
+  assert.deepEqual(official.farm['4.4.0'], parsed.hashes, 'farm 4.4.0 的 287 个文件 hash 全部对上')
 
   const { dir, store, done } = setup()
   try {
     const result = await store.ext.importBundle(bundle, false)
     assert.equal(result.ok, true)
     assert.equal(result.official, true)
-    assert.equal(result.version, '4.3.0')
+    assert.equal(result.version, '4.4.0')
     assert.notEqual(store.state.extData.farm, undefined, 'its data is created from init()')
     assert.equal(existsSync(join(dir, 'extensions', 'farm', LOCAL_MARK)), false)
     assert.equal(store.ext.list(store.state).find(entry => entry.key === 'farm').local, false)

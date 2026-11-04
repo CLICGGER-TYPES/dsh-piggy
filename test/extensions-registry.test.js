@@ -176,12 +176,12 @@ test('各渠道目录校验官方文件身份、渠道下载地址和同版本�
   assert.equal(githubFarm?.bundle?.sha256, 'bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0')
   assert.equal(Object.keys(githubFarm?.files ?? {}).length, 287)
   assert.equal(githubFarm?.files?.['client.js']?.sha256, '72b64888f96633773c2a83cff15e7ea3fe987d3c3baf3e2c19204b0d8f09d5f3', 'public farm 4.2.1 keeps its released client identity')
-  assert.equal(githubCandidateFarm?.version, '4.3.0', 'the unuploaded source candidate uses a fresh version')
+  assert.equal(githubCandidateFarm?.version, '4.4.0', 'the unuploaded source candidate uses a fresh version')
   assert.equal(githubCandidateFarm?.minGame, '0.37.2')
-  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, 'f98f3872ba0b452b602e00b0dcad5cc8d764d7fedee97d5a49db3ad5752a218f', 'farm 4.3.0 candidate carries the multi-helper UI client')
+  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, 'f98f3872ba0b452b602e00b0dcad5cc8d764d7fedee97d5a49db3ad5752a218f', 'farm 4.4.0 candidate carries the multi-helper UI client')
   assert.equal(Object.keys(githubCandidateFarm?.files ?? {}).length, 287)
   for (const name of Object.keys(githubFarm?.files ?? {}).filter(name => name.startsWith('assets/'))) {
-    assert.equal(githubCandidateFarm?.files?.[name]?.sha256, githubFarm?.files?.[name]?.sha256, 'the 4.3.0 data-model slice keeps ' + name)
+    assert.equal(githubCandidateFarm?.files?.[name]?.sha256, githubFarm?.files?.[name]?.sha256, 'the 4.4.0 energy rules keep ' + name)
   }
   assert.notEqual(githubCandidateFarm?.bundle?.sha256, githubFarm?.bundle?.sha256, 'the candidate bundle identity follows its new manifest/client version')
   assert.equal(giteeFarm?.version, '4.2.0')

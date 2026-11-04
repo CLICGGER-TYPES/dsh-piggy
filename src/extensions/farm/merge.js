@@ -1,14 +1,14 @@
 // @ts-check
 // 菜园合并钩子（#14 外部桌宠：把内嵌猪的菜园并进桌面猪的菜园）。
-// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v7，再按下面这套规则合，最后再过一次 normalize。
+// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v8，再按下面这套规则合，最后再过一次 normalize。
 // 规则写在 docs/guides/writing-extensions.md「合并钩子」（#14 设计稿 6.4）。
 //
 // 规则：资产（种子、仓库、图鉴数量、历史收获、肥料、帮工仓、欠着的退款）两边相加；
 // 进度（开垦块数、经验、帮工等级）取更高；同一块地只能留一份，取更靠后/种得更晚的一方；
 // 帮工只保留「结算得更晚」那一侧的指针、排班和管区目标，旧批次（pending）不再合并；
 // workers 数量取两边较多的（封顶 5，不按角色相加，避免两台设备各雇 5 只变 10 只），
-// 角色/hiredAt 取「结算更晚」的一侧，locked 两边同 id 任一为 true 就算锁。
-// 数据版本比当前新（> 7）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
+// 角色/hiredAt/shiftAt/resting/idle 取「结算更晚」的一侧，locked 两边同 id 任一为 true 就算锁。
+// 数据版本比当前新（> 8）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
 import { EXP_CAP, PLOTS, START_PLOTS } from './data.js'
 import { HELPER_MAX } from './helper.js'
 import { normalize } from './migration.js'
@@ -16,7 +16,7 @@ import { lessonAt } from './plot-rules.js'
 import { count, cropFor, isObject, plotState } from './pure.js'
 
 /** 当前这份服务端读写的数据版本（normalize 的终点）。 */
-export const FARM_DATA_VERSION = 7
+export const FARM_DATA_VERSION = 8
 
 const KNOWN = new Set(['version', 'unlocked', 'plots', 'seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert',
   'exp', 'refund', 'helperBarnRefund', 'helperBarnRefunded', 'helper', 'onboarding'])
@@ -114,6 +114,9 @@ function mergeHelper(out, t, s) {
       role: pick.role === 'patrol' ? 'patrol' : 'harvest', // 角色跟「结算更晚」的一侧
       locked: primary?.locked === true || secondary?.locked === true,
       hiredAt: Number.isFinite(pick.hiredAt) ? pick.hiredAt : null,
+      shiftAt: Number.isFinite(pick.shiftAt) ? pick.shiftAt : null,
+      resting: pick.resting === true,
+      idle: pick.idle === true,
     })
   }
   const hired = workers.length > 0
@@ -187,7 +190,7 @@ export function mergeStates(targetData, sourceData, now = Date.now()) {
   for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value
   const unknown = Object.keys(s).filter(key => !KNOWN.has(key))
   if (unknown.length > 0) warnings.push('菜园：内嵌猪有当前版本不认识的字段（' + unknown.slice(0, 6).join('、') + '），没有合并')
-  normalize(out)
+  normalize(out, now)
   out.unlocked = Math.max(START_PLOTS, Math.min(PLOTS, out.unlocked))
   for (let index = out.unlocked; index < PLOTS; index += 1) out.plots[index] = null
   return { data: out, warnings, conflicts: [] }

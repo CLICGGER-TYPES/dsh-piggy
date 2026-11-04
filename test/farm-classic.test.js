@@ -30,7 +30,7 @@ test('classic farm bundles the identical current server and a valid classic clie
   const bundle = parseBundle(makeBundle(files))
   assert.equal(bundle.ok, true)
   assert.equal(bundle.key, 'farm')
-  assert.equal(bundle.manifest.version, '3.2.2')
+  assert.equal(bundle.manifest.version, '3.2.3')
   const data = farm.init(), clock = api()
   const view = farm.view(data, clock), before = structuredClone(view)
   const ui = renderFarm(view, 'panel', {}, files['client.js'])
@@ -95,7 +95,7 @@ test('released hosts below 0.37.2 refuse both current farm bundles before saving
         assert.deepEqual(requested, [registryUrl], 'only the catalog is requested; no extension file is downloaded')
         assert.deepEqual(readFileSync(path), beforeSave, 'the save is untouched')
         assert.deepEqual(readFileSync(join(installed, 'manifest.json')), beforeManifest, 'the installed files are untouched')
-        assert.equal(store.state.extData.farm.version, 7)
+        assert.equal(store.state.extData.farm.version, 8)
         assert.equal(store.state.wallets.farm.balance, 4321)
       } finally { store.dispose(); rmSync(dir, { recursive: true, force: true }) }
     }
@@ -121,7 +121,7 @@ test('0.37.2-rc.1 current -> classic -> current preserves farm v7 fields and wal
       assert.deepEqual(store.state.extData.farm, progress)
       assert.deepEqual(store.state.wallets.farm, wallet)
     }
-    assert.equal(store.state.extData.farm.version, 7)
+    assert.equal(store.state.extData.farm.version, 8)
     assert.deepEqual(store.state.extData.farm.onboarding, { step: 'done', rewarded: true, legacy: true, plantedAt: 111, wateredAt: 222 })
     for (const version of ['3.1.0', '4.0.10', '3.0.0']) {
     const unsafe = extensionFiles('farm')

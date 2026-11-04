@@ -115,7 +115,7 @@ test('菜园：金样例——两边资产相加、进度取高、同块地取�
   assertPlainData(result)
   const merged = result.data
 
-  assert.equal(merged.version, 7)
+  assert.equal(merged.version, 8)
   assert.equal(merged.unlocked, 12, '开垦块数取高')
   assert.equal(merged.exp, 1500, '经验取高，不相加')
   assert.deepEqual(merged.seeds, { radish: 7, apple: 1, carrot: 2 }, '种子每种相加')
@@ -205,7 +205,7 @@ test('菜园：经典/旧版数据先迁移到 v7 再合并，收获、退款、
   const result = merge(farm, target, legacy)
   assertPlainData(result)
   const merged = result.data
-  assert.equal(merged.version, 7, '迁移后写当前版本')
+  assert.equal(merged.version, 8, '迁移后写当前版本')
   assert.equal(merged.harvest.sprout, 3, '桌宠 1 + 旧地里长完的 2')
   assert.equal(merged.acquired.sprout, 5)
   assert.equal(merged.harvest.scallion, 7, '旧地里的白菜按旧产量 3 个进仓库，再加原来的 4 个')
@@ -246,9 +246,9 @@ test('菜园：数量不超游戏约束；版本比扩展新或不是对象就�
   assert.equal(merged.helper.level, 2, '帮工最多升到 2 级')
   assert.equal(merged.helper.usedMs, 0, '自然托管没有工作预算：旧工时一律清零')
 
-  const future = Object.assign(farming(), { version: 8 })
-  assert.throws(() => merge(farm, future, farming()), /版本 8 比当前扩展新/)
-  assert.throws(() => merge(farm, farming(), future), /版本 8 比当前扩展新/)
+  const future = Object.assign(farming(), { version: 9 })
+  assert.throws(() => merge(farm, future, farming()), /版本 9 比当前扩展新/)
+  assert.throws(() => merge(farm, farming(), future), /版本 9 比当前扩展新/)
   for (const bad of [null, [], 'farm', 42]) assert.throws(() => merge(farm, bad, farming()), /不是对象/)
 })
 

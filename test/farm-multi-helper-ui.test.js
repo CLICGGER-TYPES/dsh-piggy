@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import farm from '../extensions/farm/server.js'
+import farm, { setHelperEnergy } from '../extensions/farm/server.js'
 
 import { api, establishedFarm, plain, renderFarm } from './helpers/farm-ui.js'
 
@@ -29,6 +29,8 @@ function openHelperShop(view) {
   ui.find('data-farm-tab', 'helper').fire('click')
   return ui
 }
+
+setHelperEnergy(false) // E1 只测旧多帮工布局；精力条在 E2 的 UI 用例里开
 
 test('帮工页签：总览 N/5 + 总覆盖块数，每只一行带角色徽章、覆盖块数和改角色按钮', () => {
   const { data, clock } = crew(2, ['harvest', 'patrol'])

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { beforeEach, test } from 'node:test'
 
-import farm, { CROPS, HELPER_MAX, HELPER_PLOTS, HELPER_PLOTS_PER_WORKER, HELPER_PRICES, PLOTS, normalize, setRandom, weatherAt } from '../extensions/farm/server.js'
+import farm, { CROPS, HELPER_MAX, HELPER_PLOTS, HELPER_PLOTS_PER_WORKER, HELPER_PRICES, PLOTS, normalize, setHelperEnergy, setRandom, weatherAt } from '../extensions/farm/server.js'
 
 const H = 3600000
 
@@ -18,7 +18,7 @@ function sunnyNoon() {
 }
 const T0 = sunnyNoon()
 
-beforeEach(() => setRandom(() => 0.5))
+beforeEach(() => { setHelperEnergy(false); setRandom(() => 0.5) })
 
 function api(balance = 100_000) {
   let funds = balance
@@ -89,7 +89,7 @@ test('覆盖 = 4 × 收菜帮工只数，封顶已开垦数；巡逻 0 块；5 �
 test('v6 → v7：level 0/1/2 补 1/2/4 只收菜帮工，覆盖仍是 4/8/16，迁移不结算、不补 XP', () => {
   for (const [level, count, plots] of [[0, 1, 4], [1, 2, 8], [2, 4, 16]]) {
     const migrated = normalize(v6({ level }), T0)
-    assert.equal(migrated.version, 7)
+    assert.equal(migrated.version, 8)
     assert.equal(migrated.helper.workers.length, count, 'level ' + level + ' → ' + count + ' 只')
     assert.deepEqual(migrated.helper.workers.map(entry => entry.role), Array(count).fill('harvest'))
     assert.deepEqual(migrated.helper.workers.map(entry => entry.id), Array.from({ length: count }, (_, index) => index + 1))
@@ -136,7 +136,7 @@ test('坏 workers 安全夹取：截断 5、重编号、非法 role 归收菜、
     helper: { hired: true, enabled: true, level: 2, barn: 0, lastAt: null, cursor: 0, pending: null, targets: Array(PLOTS).fill(null), stock: {} },
     onboarding: { step: 'done', rewarded: true, legacy: false, plantedAt: null, wateredAt: null },
   }, T0)
-  assert.equal(repaired.version, 7)
+  assert.equal(repaired.version, 8)
   assert.equal(repaired.helper.workers.length, 4, 'level 2 的旧档补回 4 只')
   assert.equal(repaired.helper.hired, true)
 
@@ -161,7 +161,7 @@ test('merge：workers 数量取 max（≤5）、role/hiredAt 取 context、locke
   assert.equal(source.helper.workers.length, 4)
 
   const merged = farm.mergeStates(target, source, now).data
-  assert.equal(merged.version, 7)
+  assert.equal(merged.version, 8)
   assert.equal(merged.helper.workers.length, 4, '取两边较多的 4 只，不按设备相加')
   assert.equal(merged.helper.hired, true)
   assert.equal(merged.helper.schedule, 'manual', '排班跟 context')
@@ -278,7 +278,7 @@ test('雇佣：首雇 1500 只给 1 只；追加 1500/只到 5 只；再雇 limi
   assert.equal(farm.actions.hire(data, {}, t.api).ok, true)
   assert.equal(t.balance(), before - 1500, '首雇 1500')
   assert.equal(data.helper.workers.length, 1)
-  assert.deepEqual(data.helper.workers[0], { id: 1, role: 'harvest', locked: false, hiredAt: T0 })
+  assert.deepEqual(data.helper.workers[0], { id: 1, role: 'harvest', locked: false, hiredAt: T0, shiftAt: T0, resting: false, idle: false })
   assert.equal(data.helper.hired, true)
   assert.equal(data.helper.enabled, true)
   assert.equal(data.helper.lastAt, T0, '首雇从当下开始托管')

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import farm, {
   CROPS, EXP_CAP, EXP_PER_LEVEL, FERTILIZERS, PEST_LOSS, PEST_MS, PLOTS, RECLAIM_PRICE, START_PLOTS, TOOLS,
-  levelOf, normalize, plotState, setRandom, weatherAt, HELPER_PLOTS, HELPER_WINDOW, helperRecipe,
+  levelOf, normalize, plotState, setHelperEnergy, setRandom, weatherAt, HELPER_PLOTS, HELPER_WINDOW, helperRecipe,
 } from '../extensions/farm/server.js'
 
 // 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。
@@ -48,7 +48,7 @@ export function fakeApi(balance = 100_000) {
 }
 
 // 默认让随机数返回 0.5：产量浮动 roll = 0，灾害在 ln2 × 4 小时 ≈ 2.77 小时后来。
-beforeEach(() => setRandom(() => 0.5))
+beforeEach(() => { setHelperEnergy(false); setRandom(() => 0.5) })
 const FIRST_PEST = Math.round(Math.LN2 * PEST_MS)
 const noPests = plot => { plot.pests = { weed: 1e15, bug: 1e15, dry: 1e15 } }
 
@@ -352,7 +352,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   }
   const t = fakeApi(0)
   farm.actions.buy(old, { item: 'nothing' }, t.api)
-  assert.equal(old.version, 7)
+  assert.equal(old.version, 8)
   assert.equal(old.unlocked, 6)
   assert.equal(old.harvest.pumpkin, 2)
   assert.equal(old.harvest.carrot, 1 + 4)
