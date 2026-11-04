@@ -30,6 +30,13 @@ const NAMED_EXPORTS = [
   'PEST_LOSS', 'PEST_MS', 'PLOTS', 'RECLAIM_PRICE', 'STAGES', 'START_PLOTS', 'TOOLS', 'cropFor',
   'default', 'helperEnergyAt', 'helperNextWorkAt', 'helperPatrolOnDuty', 'helperRecipe', 'helperWorkingAt', 'levelOf', 'normalize', 'plotState', 'progress', 'setHelperEnergy', 'setRandom',
   'settleHelper', 'weatherAt',
+  // v9 巡逻区 / 偷窃
+  'HELPER_PATROL_ZONE_PLOTS', 'THEFT_GAP_HELPER', 'THEFT_GAP_NO_HELPER', 'THEFT_GUARD_CHANCE', 'THEFT_HEAVY_CHANCE',
+  'THEFT_HEAVY_LOSS', 'THEFT_LOG_MAX', 'THEFT_LOOKBACK_MS', 'THEFT_LOSS_CAP', 'THEFT_MAX_EVENTS', 'THEFT_NORMAL_LOSS',
+  'THEFT_SOON_MS', 'alignTheft', 'hasTheftTargets', 'helperPatrolWorkers', 'nextTheftAt', 'normalizeTheft',
+  'patrolOwnerOfZone', 'patrolZoneCount', 'patrolZoneOf', 'patrolZoneRange', 'patrolZones', 'pickTheftTarget',
+  'resolveTheft', 'setTheft', 'settleTheftOnly', 'skipTheftClock', 'theftEnabled', 'theftView', 'zoneGuardState',
+  'zoneGuardedAt',
 ]
 
 test('the committed farm server is exactly the readable bundle built from src/extensions/farm', async () => {
@@ -51,7 +58,7 @@ test('the generated server has the original named/default exports and no runtime
   assert.ok(!/\bfrom\s+['"][^'"]+['"]/.test(text.replace(/\/\/.*$/gm, '')), 'no module specifiers at runtime')
   assert.ok(!/\brequire\s*\(/.test(text), 'no CommonJS require')
   const imported = await import(generatedUrl.href + '?distribution=' + Date.now())
-  assert.deepEqual(Object.keys(imported).sort(), NAMED_EXPORTS)
+  assert.deepEqual(Object.keys(imported).sort(), [...NAMED_EXPORTS].sort())
   assert.equal(imported.default.eventVersion, 1)
   assert.equal(typeof imported.default.init, 'function')
   assert.equal(typeof imported.default.view, 'function')
@@ -92,7 +99,7 @@ test('the three-file download installs in an isolated directory and runs the tut
     store.ext = runtime
     await runtime.ready
     assert.equal((await runtime.install('farm')).ok, true)
-    assert.equal(store.state.extData.farm.version, 8)
+    assert.equal(store.state.extData.farm.version, 9)
     assert.equal(store.state.extData.farm.onboarding.step, 'offer')
     assert.equal(store.state.extData.farm.onboarding.legacy, false)
 

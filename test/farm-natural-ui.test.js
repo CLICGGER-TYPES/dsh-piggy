@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
-import {test} from 'node:test'
-import farm from '../extensions/farm/server.js'
+import { test} from 'node:test'
+import farm, { setTheft } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import {farmClassicFiles} from '../scripts/farm-classic-files.mjs'
 import {api,establishedFarm,H,T0,renderFarm} from './helpers/farm-ui.js'
 

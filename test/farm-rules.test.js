@@ -3,10 +3,12 @@
 import assert from 'node:assert/strict'
 import { test, beforeEach } from 'node:test'
 
-import farm, {
+import farm, { setTheft,
   CROPS, PLOTS, START_PLOTS,
   normalize, plotState, setRandom, weatherAt,
 } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 const H = 3600000
 
@@ -224,7 +226,7 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
     seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {},
   }
   normalize(old)
-  assert.equal(old.version, 8)
+  assert.equal(old.version, 9)
   assert.equal(old.unlocked, 8)
   assert.equal(old.plots.length, PLOTS)
   assert.ok(old.plots.every(plot => plot === null), '迁移后地块全空')

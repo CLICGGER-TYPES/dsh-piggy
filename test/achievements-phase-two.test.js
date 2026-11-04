@@ -6,7 +6,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { adopt, achievementsView, hatchEgg, migrate, settleAchievements } from '../core.js'
 import { FISH, ALL_SOUVENIRS } from '../data.js'
-import farm, { CROPS } from '../extensions/farm/server.js'
+import farm, { setTheft,  CROPS } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import mine, { generateMap } from '../extensions/mine/server.js'
 import { NOW, setupExtensions } from './helpers/extension-achievements.js'
 const entry = (state, key) => achievementsView(state).find(item => item.key === key)

@@ -2,10 +2,18 @@
 // 菜园给面板的 view：只读副本，结算帮工但不写回；地块、商店、图鉴和第一课的数据形状都在这里。
 import { CROPS, FERTILIZERS, LESSON, PLOTS, RECLAIM_PRICE, TOOLS } from './data.js'
 import { helperPlotView, helperPlots, helperShelf, helperView, settleHelper } from './helper.js'
+import { patrolZoneCount, patrolZoneOf, patrolZoneRange, zoneGuardedAt } from './helper-patrol.js'
 import { purse } from './host.js'
 import { normalize } from './migration.js'
 import { amountFor, lessonAt, owns } from './plot-rules.js'
 import { cropFor, levelOf, plotState, weatherAt } from './pure.js'
+import { theftView } from './theft.js'
+
+/** 被偷过的地怎么解释：优先用最近一次事件的类型，日志丢了就写通用说法。 */
+function theftLossNote(event, loss) {
+  const who = event === undefined ? '被偷过' : event.kind === 'bird' ? '被鸟啄过' : event.heavy ? '被野猪拱过' : '被小偷猪拱过'
+  return who + ' · 少收 ' + Math.round(loss * 100) + '%'
+}
 
 /** @param {any} data @param {any} api */
 export function view(data, api) {
@@ -14,12 +22,28 @@ export function view(data, api) {
   const wallet = purse(api), balance = wallet.balance() + d.refund
   const level = levelOf(d.exp)
   const managed = helperPlots(d, api.now)
+  const zoneTotal = patrolZoneCount(d)
+  const guarded = index => patrolZoneOf(index) < zoneTotal && zoneGuardedAt(d, patrolZoneOf(index), api.now)
+  // 最近一次偷到某块地的日志：只用于文案（鸟 / 猪 / 重损），不参与结算。
+  const lossEvents = new Map()
+  for (const event of d.theft?.log ?? []) if (event.loss > 0 && !lossEvents.has(event.plot)) lossEvents.set(event.plot, event)
   const plots = d.plots.map((plot, index) => {
     if (index >= d.unlocked) return { index, wild: true, next: index === d.unlocked }
     const state = plotState(plot, api.now)
-    if (state === null || state.empty) return { index, empty: true, stubble: state?.stubble || false, pests: state?.pests || [], helper: index < managed }
+    if (state === null || state.empty) {
+      const zone = patrolZoneOf(index)
+      const range = patrolZoneRange(d, zone)
+      return { index, empty: true, stubble: state?.stubble || false, pests: state?.pests || [], helper: index < managed,
+        zone, zoneFrom: range.from, zoneTo: range.to, guarded: guarded(index) }
+    }
     const crop = cropFor(state.crop)
-    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state, api.now) }
+    const zone = patrolZoneOf(index)
+    const range = patrolZoneRange(d, zone)
+    const loss = state.loss ?? 0
+    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed,
+      zone, zoneFrom: range.from, zoneTo: range.to, guarded: guarded(index),
+      lossPercent: Math.round(loss * 100), lossNote: loss > 0 ? theftLossNote(lossEvents.get(index), loss) : null,
+      ...helperPlotView(d, index, state, api.now) }
   })
   const tally = test => plots.filter(test).length
   const counts = { ripe: tally(plot => plot.ripe), pests: tally(plot => plot.pests?.length > 0), withered: tally(plot => plot.withered), empty: tally(plot => plot.empty) }
@@ -40,6 +64,7 @@ export function view(data, api) {
     seeds,
     harvest: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'harvest', crop.key), sell: crop.sell, food: crop.food ?? null, foodLabel: crop.foodLabel ?? null })),
     helper: helperView(d, api.now),
+    theft: theftView(d, api.now),
     shelf: {
       key: 'farm', label: '菜园商店', emoji: '🌱', color: 'green', currency: { label: wallet.currency.label, emoji: wallet.currency.emoji, balance },
       items: [

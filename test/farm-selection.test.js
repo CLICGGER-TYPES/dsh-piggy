@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import farm from '../extensions/farm/server.js'
+import farm, { setTheft } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import { api, establishedFarm, plain, renderFarm, T0 } from './helpers/farm-ui.js'
 
 test('点选普通地块后详情、高亮和主操作保持同一目标，轮询不跳回首块', () => {

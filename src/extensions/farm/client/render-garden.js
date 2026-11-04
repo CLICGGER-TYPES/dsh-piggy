@@ -44,9 +44,15 @@ export function createFarmGardenRenderer(state, modules) {
       modules.events.pestsOf(plot).forEach(function (pest, n) { var bubble = modules.host.put(card, modules.host.img(app, 'fm-bubble', 'plot-bubble-' + (pest === 'dry' ? 'water' : pest))); bubble.style.right = kind === 'big' ? 'calc(50% - 36px + ' + n * 24 + 'px)' : (n * 23) + '%'; bubble.setAttribute('data-farm-bubble', pest) })
       if (state.tip && state.tipPlot === index && Date.now() - state.tipAt < 2400) renderTip(app, card)
       if (plot.empty) return card
+      if (plot.guarded === true && plot.withered !== true) {
+        var guard = modules.host.put(card, app.el('span', 'fm-plot-guard', '守')); guard.setAttribute('aria-hidden', 'true')
+        card.setAttribute('data-farm-guard', 'true')
+        card.setAttribute('aria-label', plotLabel(plot) + ' 有人守')
+      }
+      if (plot.lossPercent > 0) card.setAttribute('data-farm-loss', String(plot.lossPercent))
       modules.host.put(card, modules.host.img(app, 'fm-crop', modules.events.cropArt(plot), plot.emoji))
       if (modules.events.pestsOf(plot).indexOf('weed') >= 0) modules.host.put(card, modules.host.img(app, 'fm-pest', 'weed')).setAttribute('data-pest', 'weed')
-      var chip = plot.ripe ? '收 ' + plot.yield + ' 个' : plot.withered ? '枯了' : ''
+      var chip = plot.ripe ? '收 ' + plot.yield + ' 个' + (plot.lossPercent > 0 ? ' · −' + plot.lossPercent + '%' : '') : plot.withered ? '枯了' : ''
       if (chip) modules.host.put(card, app.el('span', 'fm-chip', chip))
       return card
     }
@@ -229,6 +235,8 @@ export function createFarmGardenRenderer(state, modules) {
       modules.host.put(line, app.el('span', null, '生长进度'))
       var track = modules.host.put(line, app.el('span', 'fm-s-track')); modules.host.put(track, app.el('i')).style.width = Math.round(progress * 100) + '%'
       var text = on ? on.canPlant ? '课内' + on.seed.label + ' ×' + on.seed.count : on.canHarvest ? '点主按钮收获' : on.canWater ? '浇水后 2 分钟成熟' : '还剩 ' + modules.events.shortTime(on.remainingMs) : plot.empty ? '先选种子 / 去商店买' : plot.ripe ? '收 ' + plot.yield + ' 个 · 等主按钮' : plot.withered ? '用铁锹铲掉' : (plot.helper && data.helper && data.helper.continuous ? '帮工照料 · ' : '') + '还剩 ' + modules.events.shortTime(plot.remainingMs)
+      if (!on && plot && !plot.wild && Number.isInteger(plot.zone)) text += ' · 巡逻区 ' + (plot.zone + 1) + '（' + plot.zoneFrom + '–' + plot.zoneTo + ' 号地）· ' + (plot.guarded === true ? '有人守' : '无人看守')
+      if (!on && plot && plot.lossPercent > 0) text += ' · ' + plot.lossNote
       modules.host.put(box, app.el('small', null, text))
       return box
     }

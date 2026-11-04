@@ -188,7 +188,7 @@
         effect(index, 'water')
         app.send('water', { plot: index })
       } else {
-        tip = plot.cropEmoji + ' ' + plot.label + ' · ' + (plot.helperManaged ? (plot.helperNote || '帮工照料') + (helperContinuous(data) || plot.helperNote === '帮工处理中' ? ' · ' + shortTime(plot.remainingMs) : '') : '还要 ' + shortTime(plot.remainingMs))
+        tip = plot.cropEmoji + ' ' + plot.label + ' · ' + (plot.helperManaged ? (plot.helperNote || '帮工照料') + (plot.loss > 0 ? '' : helperContinuous(data) || plot.helperNote === '帮工处理中' ? ' · ' + shortTime(plot.remainingMs) : '') : '还要 ' + shortTime(plot.remainingMs) + (plot.loss > 0 ? ' · 被偷过，少收 ' + Math.round(plot.loss * 100) + '%' : ''))
         app.rerender()
       }
     })

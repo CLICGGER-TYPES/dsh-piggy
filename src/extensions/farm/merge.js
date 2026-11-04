@@ -1,6 +1,6 @@
 // @ts-check
 // 菜园合并钩子（#14 外部桌宠：把内嵌猪的菜园并进桌面猪的菜园）。
-// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v8，再按下面这套规则合，最后再过一次 normalize。
+// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v9，再按下面这套规则合，最后再过一次 normalize。
 // 规则写在 docs/guides/writing-extensions.md「合并钩子」（#14 设计稿 6.4）。
 //
 // 规则：资产（种子、仓库、图鉴数量、历史收获、肥料、帮工仓、欠着的退款）两边相加；
@@ -8,7 +8,7 @@
 // 帮工只保留「结算得更晚」那一侧的指针、排班和管区目标，旧批次（pending）不再合并；
 // workers 数量取两边较多的（封顶 5，不按角色相加，避免两台设备各雇 5 只变 10 只），
 // 角色/hiredAt/shiftAt/resting/idle 取「结算更晚」的一侧，locked 两边同 id 任一为 true 就算锁。
-// 数据版本比当前新（> 8）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
+// 数据版本比当前新（> 9）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
 import { EXP_CAP, PLOTS, START_PLOTS } from './data.js'
 import { HELPER_MAX } from './helper.js'
 import { normalize } from './migration.js'
@@ -16,10 +16,10 @@ import { lessonAt } from './plot-rules.js'
 import { count, cropFor, isObject, plotState } from './pure.js'
 
 /** 当前这份服务端读写的数据版本（normalize 的终点）。 */
-export const FARM_DATA_VERSION = 8
+export const FARM_DATA_VERSION = 9
 
 const KNOWN = new Set(['version', 'unlocked', 'plots', 'seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert',
-  'exp', 'refund', 'helperBarnRefund', 'helperBarnRefunded', 'helper', 'onboarding'])
+  'exp', 'refund', 'helperBarnRefund', 'helperBarnRefunded', 'helper', 'onboarding', 'theft'])
 const SAFE = Number.MAX_SAFE_INTEGER
 
 /** 存档里的 key 会拼进新对象：`__proto__` 这类名字一律不收。 */
@@ -71,6 +71,7 @@ function cleanPlot(plot) {
   const crop = cropFor(plot.crop)
   if (crop === null) return null
   const pest = kind => (Number.isFinite(plot.pests?.[kind]) ? plot.pests[kind] : null)
+  const loss = Number.isFinite(plot.loss) ? Math.max(0, Math.min(0.9, Math.round(plot.loss * 100) / 100)) : 0
   return {
     crop: crop.key,
     season: Math.max(1, Math.min(crop.seasons, Math.floor(Number(plot.season)) || 1)),
@@ -78,6 +79,7 @@ function cleanPlot(plot) {
     boostMs: Number.isFinite(plot.boostMs) ? Math.max(0, plot.boostMs) : 0,
     roll: Number.isFinite(plot.roll) ? Math.max(-3, Math.min(2, Math.floor(plot.roll))) : 0,
     pests: { weed: pest('weed'), bug: pest('bug'), dry: pest('dry') },
+    ...(loss > 0 ? { loss } : {}),
   }
 }
 
@@ -135,6 +137,44 @@ function mergeHelper(out, t, s) {
   }
 }
 
+/** 偷窃游标跟「结算更晚」的一侧；两边都没结算时看 theft.at 更晚、再退到 seq 更大。 */
+function pickTheftContext(target, source) {
+  const settledAt = helper => (Number.isFinite(helper.lastAt) ? helper.lastAt : -Infinity)
+  const t = settledAt(target.helper), s = settledAt(source.helper)
+  if (t !== s) return s > t ? source : target
+  const ta = Number.isFinite(target.theft?.at) ? target.theft.at : -Infinity
+  const sa = Number.isFinite(source.theft?.at) ? source.theft.at : -Infinity
+  if (ta !== sa) return sa > ta ? source : target
+  return (source.theft?.seq ?? 0) > (target.theft?.seq ?? 0) ? source : target
+}
+
+/** 日志并集：按 at + plot + kind 去重，按 at 倒序，只留 5 条。 */
+function mergeTheftLog(left, right) {
+  const seen = new Set()
+  const out = []
+  for (const event of [...(left ?? []), ...(right ?? [])]) {
+    if (!isObject(event) || !Number.isFinite(event.at)) continue
+    const key = event.at + '|' + event.plot + '|' + event.kind
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ ...event })
+  }
+  return out.sort((a, b) => b.at - a.at).slice(0, 5)
+}
+
+/**
+ * theft 游标跟「结算更晚」的一侧；seq 取 max（避免两边独立玩后日志序号重复）；
+ * 日志两边并集。地块 loss 不在这里相加：它跟 pickPlot 选中的那份快照走。
+ */
+function mergeTheft(out, t, s) {
+  const ctx = pickTheftContext(t, s)
+  out.theft = {
+    at: Number.isFinite(ctx.theft?.at) ? ctx.theft.at : null,
+    seq: Math.max(t.theft?.seq ?? 0, s.theft?.seq ?? 0),
+    log: mergeTheftLog(t.theft?.log, s.theft?.log),
+  }
+}
+
 /** 第一课只算一次：任一边做完就算做完；都没做完就留更靠后的那一步（进度高、到点早）。 */
 function mergeLesson(out, t, s, warnings) {
   const done = t.step === 'done' ? t : s.step === 'done' ? s : null
@@ -185,6 +225,7 @@ export function mergeStates(targetData, sourceData, now = Date.now()) {
   // 工具是买过的永久解锁，两边都算；认不出的 key 原样留着。
   for (const map of [t.tools, s.tools]) for (const [key, value] of Object.entries(map)) if (value === true && safeKey(key)) out.tools[key] = true
   mergeHelper(out, t.helper, s.helper)
+  mergeTheft(out, t, s)
   mergeLesson(out, t.onboarding, s.onboarding, warnings)
   // 桌宠自己的未来字段原样保留；内嵌猪的认不出字段不猜，只提示。
   for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value
