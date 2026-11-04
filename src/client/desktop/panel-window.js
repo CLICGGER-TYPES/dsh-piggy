@@ -77,6 +77,7 @@ export function installPanel(bridge) {
     saves: bridge.saves,
     ownerArchives: bridge.ownerArchives,
     ownerPigs: bridge.ownerPigs,
+    ownerNetwork: bridge.ownerNetwork,
     ext: bridge.ext,
     fullscreen: bridge.fullscreen,
     external: bridge.external ?? null,

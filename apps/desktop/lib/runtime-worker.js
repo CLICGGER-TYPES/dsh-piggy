@@ -15,7 +15,10 @@ const tasks = new Set()
 /** @type {Map<string, any>} token -> owner session binding */
 const sessions = new Map()
 let sequence = 0
-let host, endpoint, pairServer, ownerLanServer
+let host, endpoint, pairServer, ownerLanServer, ownerLanClient
+let ownerLanClientPeer = null
+let ownerLanClientStateAt = 0
+let ownerLanClientFactory
 let closing = false
 const confirmations = new Map()
 let confirmSequence = 0
@@ -119,6 +122,83 @@ async function startOwnerLan(options = {}) {
   return ownerLanServer.status()
 }
 
+/** 加入侧：只保留只读客户端；token 只在 client 闭包里，不跨线程返回。 */
+async function loadOwnerLanClient() {
+  if (ownerLanClientFactory === undefined) {
+    const loading = import(pathToFileURL(join(workerData.gameDir, 'runtime/owner-lan-client.js')).href)
+      .then(module => module.createOwnerLanClient)
+    ownerLanClientFactory = loading
+    loading.catch(() => { if (ownerLanClientFactory === loading) ownerLanClientFactory = undefined })
+  }
+  return ownerLanClientFactory
+}
+
+function ownerLanPeer(body) {
+  const pig = body?.state?.pig
+  return {
+    ownerId: typeof body?.ownerId === 'string' ? body.ownerId : '',
+    pigId: typeof body?.pigId === 'string' ? body.pigId : '',
+    name: typeof pig?.name === 'string' ? pig.name : '',
+    stage: typeof pig?.stage === 'string' ? pig.stage : '',
+    hatched: body?.state?.hatched === true,
+  }
+}
+
+async function joinOwnerLanClient(options = {}) {
+  if (ownerLanClient !== undefined) throw new Error('owner LAN client is already paired')
+  const baseUrl = typeof options.baseUrl === 'string' ? options.baseUrl : ''
+  const invitation = typeof options.invitation === 'string' ? options.invitation : ''
+  if (baseUrl === '' || invitation === '') throw new Error('owner LAN join requires an endpoint and an invitation')
+  const createOwnerLanClient = await loadOwnerLanClient()
+  const client = createOwnerLanClient({ baseUrl })
+  try {
+    const paired = await client.pair(invitation)
+    const result = await client.state()
+    if (result.status !== 200) throw new Error(result.body?.reason ?? 'owner-lan-state-unavailable')
+    ownerLanClient = client
+    ownerLanClientPeer = ownerLanPeer({ ...result.body, ownerId: paired.ownerId, pigId: paired.pigId })
+    ownerLanClientStateAt = Date.now()
+    return { joining: true, connected: true, peer: ownerLanClientPeer }
+  } catch (error) {
+    try { await client.close() } catch { /* 未配对或对端已断开，本地引用直接丢弃 */ }
+    throw error
+  }
+}
+
+async function ownerLanClientStatus() {
+  if (ownerLanClient === undefined) return { joining: false }
+  // 面板每 4 秒重绘一次；8 秒内只回缓存，避免把对端打满。
+  if (Date.now() - ownerLanClientStateAt < 8_000) return { joining: true, connected: true, peer: ownerLanClientPeer }
+  let result
+  try {
+    result = await ownerLanClient.state()
+  } catch {
+    return { joining: true, connected: false, peer: ownerLanClientPeer, reason: 'unreachable' }
+  }
+  if (result.status === 401) {
+    const reason = typeof result.body?.reason === 'string' ? result.body.reason : 'session-expired'
+    // 服务端已判定会话失效，不必再发一次 close 请求。
+    await leaveOwnerLanClient(false)
+    return { joining: false, reason }
+  }
+  if (result.status !== 200) return { joining: true, connected: true, peer: ownerLanClientPeer }
+  ownerLanClientPeer = ownerLanPeer(result.body)
+  ownerLanClientStateAt = Date.now()
+  return { joining: true, connected: true, peer: ownerLanClientPeer }
+}
+
+async function leaveOwnerLanClient(notify = true) {
+  const client = ownerLanClient
+  ownerLanClient = undefined
+  ownerLanClientPeer = null
+  ownerLanClientStateAt = 0
+  if (client === undefined) return { joining: false }
+  if (notify) {
+    try { await client.close() } catch { /* 对端不可达也要清掉本地 token */ }
+  }
+  return { joining: false }
+}
+
 function newSessionToken() {
   for (;;) {
     const token = randomBytes(32).toString('base64url')
@@ -144,6 +224,7 @@ async function request(message) {
     try {
       await ownerLanServer?.close()
       ownerLanServer = undefined
+      await leaveOwnerLanClient()
       await pairServer?.close()
       pairServer = undefined
       await endpoint?.close()
@@ -224,6 +305,9 @@ async function request(message) {
     await current?.close()
     return { running: false, pairedClients: 0 }
   }
+  if (message.method === 'owner-lan-client:join') return joinOwnerLanClient(message.args[0] ?? {})
+  if (message.method === 'owner-lan-client:status') return ownerLanClientStatus()
+  if (message.method === 'owner-lan-client:leave') return leaveOwnerLanClient()
   if (message.method === 'external:enable') return externalEnable(message.args[0] ?? {})
   if (message.method === 'external:disable') return externalDisable()
   if (message.method === 'cloud:first-sync') return typeof host.firstSyncCloud === 'function'

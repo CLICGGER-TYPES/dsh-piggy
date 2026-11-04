@@ -219,6 +219,21 @@ export const CSS_TABS = [
   '.dp-cloud-value{font-size:10px;line-height:1.35;color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-word}',
   '.dp-cloud-note,.dp-cloud-status{font-size:10px;line-height:1.45;color:var(--ac-text-muted);overflow-wrap:anywhere}',
   '.dp-cloud-error{color:var(--ac-error)}',
+  // 局域网联机：复用云存档那组表单/摘要的尺寸，只加等宽邀请串和分隔线。
+  '.dp-lan-badge{font-size:9.5px;font-weight:700;color:var(--ac-text-muted)}',
+  '.dp-lan-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}',
+  '.dp-lan-field{display:grid;gap:4px;font-size:10px;margin-top:8px}',
+  '.dp-lan-input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}',
+  '.dp-lan-card{display:grid;gap:3px;margin-top:8px;padding:8px 9px;border:1px solid var(--ac-border-light);border-radius:9px;background:var(--ac-bg-content)}',
+  '.dp-lan-card b{font-size:11px;color:var(--ac-text);overflow-wrap:anywhere}',
+  '.dp-lan-invite{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1.45;',
+  'margin:6px 0;padding:7px 8px;border:1px solid var(--ac-border-light);border-radius:8px;',
+  'background:var(--ac-bg-input);color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-all;user-select:text}',
+  '.dp-lan-status{font-size:10px;line-height:1.45;color:var(--ac-success);overflow-wrap:anywhere}',
+  '.dp-lan-error{font-size:10px;line-height:1.45;color:var(--ac-error);overflow-wrap:anywhere}',
+  '.dp-lan-join{display:grid;gap:5px;margin-top:11px;padding-top:9px;border-top:1px dashed var(--ac-border-light)}',
+  '.dp-lan-join-head{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}',
+  '.dp-lan-join-head b{font-size:11px;color:var(--ac-text)}',
 
   /* ---------- segmented control ---------- */
   '.dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}',
