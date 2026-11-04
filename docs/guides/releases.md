@@ -11,7 +11,7 @@
 
 - 稳定版：[GitHub v0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
 - 当前预览版：[GitHub v0.37.2-rc.11](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.11)
-- 全部版本与逐版本变更：[Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases) / [CHANGELOG](../CHANGELOG.md)
+- 全部版本与逐版本变更：[Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases) / [CHANGELOG](../../CHANGELOG.md)
 
 RC 只更新 `rc` 标签，不改变稳定入口；预览版默认折叠在更新列表里，不弹气泡、不亮红点，也不会自动安装。
 
