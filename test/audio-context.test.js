@@ -120,6 +120,7 @@ function installWindow() {
     createBufferSource() { return new FakeBufferSource(this) }
     createBiquadFilter() { return new FakeFilter() }
     createDynamicsCompressor() { return new FakeCompressor() }
+    decodeAudioData() { return Promise.resolve({ duration: 0.4 }) }
     createBuffer(channels, length, sampleRate) {
       assert.equal(channels, 1)
       return {
@@ -407,4 +408,26 @@ test('the normal mount path uses the presentation channel, not a last-configured
   assert.match(gestures, /playAudioCue\(c\.audio, 'purr'\)/)
   assert.match(feel, /playAudioCue\(deps\.audio/)
   assert.match(dizzy, /playAudioCue\(c\.audio, 'dizzy'/)
+})
+
+test('文件音效先回退合成，解码后优先播放音频', async (t) => {
+  const env = installWindow()
+  cleanup(t, env)
+  enableSound()
+  globalThis.fetch = async function () {
+    return { ok: true, arrayBuffer: async function () { return new ArrayBuffer(16) } }
+  }
+  t.after(function () { delete globalThis.fetch })
+  const channel = createAudioChannel({
+    isQuiet: () => false,
+    soundFiles: {
+      boom: { url: 'sounds/sfx/boom.ogg?v=abc', durationMs: 400, gain: 0.9, debounceMs: 0, fallback: 'synth:tap' },
+    },
+  })
+  assert.equal(channel.play('boom'), true, '首次播放先用 synth 回退')
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(channel.play('boom'), true, '解码后播放文件 buffer')
+  const context = env.FakeAudioContext.instances[0]
+  assert.equal(context.sources.some(source => source.buffer !== null), true, '使用了 AudioBufferSource')
+  channel.dispose()
 })

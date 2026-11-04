@@ -9,6 +9,7 @@
  * 这样历史包 `actions` 可以放在 `base/` 下，cache key 与旧版完全一致。
  */
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, relative } from 'node:path'
 
 import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
@@ -187,6 +188,7 @@ export function loadActionPacks(root, options = {}) {
       }
       if (checked.eligibility !== undefined) resource.eligibility = checked.eligibility
       if (checked.fallback !== undefined) resource.fallback = checked.fallback
+      if (checked.sound !== undefined) resource.sound = checked.sound
       resources.push(resource)
       if (checked.trigger !== undefined) triggers[`${packId}/${checked.key}`] = Object.freeze({ ...checked.trigger })
     })
@@ -264,7 +266,7 @@ export function checkAssets(root, options = {}) {
 
 const TONE_TYPES = new Set(['sine', 'triangle', 'sawtooth', 'square'])
 const FILTER_TYPES = new Set(['lowpass', 'highpass', 'bandpass'])
-const SOUND_FIELDS = new Set(['key', 'synth', 'file', 'gain', 'debounceMs', 'priority', 'maxVoices', 'loop', 'fallback'])
+const SOUND_FIELDS = new Set(['key', 'synth', 'file', 'durationMs', 'codec', 'gain', 'debounceMs', 'priority', 'maxVoices', 'loop', 'fallback'])
 const SYNTH_FIELDS = new Set(['tones', 'noise'])
 
 /** @param {any} value @param {string} label @param {number} min @param {number} max @param {string[]} problems */
@@ -308,15 +310,17 @@ function checkSynth(synth, label, problems) {
 /**
  * 读取并校验所有音效包。M2a 只接受 `synth`；音频文件留给 M2b。
  * @param {string} root
- * @returns {{ recipes: Record<string, any>, problems: string[] }}
+ * @returns {{ recipes: Record<string, any>, files: Record<string, any>, problems: string[] }}
  */
 export function loadSoundPacks(root) {
   /** @type {string[]} */
   const problems = []
   /** @type {Record<string, any>} */
   const recipes = {}
+  /** @type {Record<string, any>} */
+  const files = {}
   const base = join(root, 'assets/sounds')
-  if (!existsSync(base)) return { recipes, problems: ['assets/sounds: 目录不存在'] }
+  if (!existsSync(base)) return { recipes, files, problems: ['assets/sounds: 目录不存在'] }
   const seen = new Set()
   for (const dir of readdirSync(base).sort()) {
     if (dir.startsWith('_') || dir.startsWith('.')) continue
@@ -345,9 +349,10 @@ export function loadSoundPacks(root) {
       if (seen.has(sound.key)) problems.push(`${at}.key: 音效 "${sound.key}" 重复`)
       seen.add(sound.key)
       if (sound.file !== undefined) {
-        problems.push(`${at}.file: 音频文件尚未接入（M2b）；当前请用 synth`)
+        const entry = checkSoundFile(join(dirPath, sound.file), dir, sound, at, problems)
+        if (entry !== null) files[sound.key] = entry
       } else if (sound.synth === undefined) {
-        problems.push(`${at}: 需要 synth（或 M2b 的 file）`)
+        problems.push(`${at}: 需要 synth 或 file`)
       } else {
         checkSynth(sound.synth, `${at}.synth`, problems)
         recipes[sound.key] = sound.synth
@@ -357,9 +362,67 @@ export function loadSoundPacks(root) {
       if (sound.priority !== undefined) inRange(sound.priority, `${at}.priority`, 0, 100, problems)
       if (sound.maxVoices !== undefined) inRange(sound.maxVoices, `${at}.maxVoices`, 1, 2, problems)
       if (sound.loop !== undefined && typeof sound.loop !== 'boolean') problems.push(`${at}.loop: 必须是布尔值`)
+      if (sound.fallback !== undefined && (typeof sound.fallback !== 'string' || !/^(?:synth:)?[a-z][a-z0-9-]{0,47}$/.test(sound.fallback))) {
+        problems.push(`${at}.fallback: 必须是 key 或 synth:<key>`)
+      }
     })
   }
-  return { recipes, problems }
+  return { recipes, files, problems }
+}
+
+const MAX_SOUND_BYTES = 30 * 1024
+const AUDIO_EXTENSIONS = new Set(['ogg', 'wav'])
+
+/**
+ * 校验一个音频文件：扩展名、大小、magic、时长字段。
+ * 返回运行时要用的 URL 与内容哈希（用于缓存失效）。
+ * @param {string} path
+ * @param {string} packDir
+ * @param {any} sound
+ * @param {string} at
+ * @param {string[]} problems
+ * @returns {{ url: string, bytes: number, revision: string, durationMs: number, gain?: number, debounceMs?: number, maxVoices?: number, fallback?: string } | null}
+ */
+function checkSoundFile(path, packDir, sound, at, problems) {
+  const file = sound.file
+  if (typeof file !== 'string' || !/^[a-z][a-z0-9-]{0,47}\.(?:ogg|wav)$/.test(file)) {
+    problems.push(`${at}.file: 必须是 <key>.ogg 或 <key>.wav`)
+    return null
+  }
+  if (!Number.isInteger(sound.durationMs) || sound.durationMs < 20 || sound.durationMs > 1500) {
+    problems.push(`${at}.durationMs: 文件音效必须写 20–1500 的整数毫秒`)
+    return null
+  }
+  if (!existsSync(path)) {
+    problems.push(`${at}.file: 找不到 assets/sounds/${packDir}/${file}`)
+    return null
+  }
+  const info = statSync(path)
+  if (info.size > MAX_SOUND_BYTES) {
+    problems.push(`${at}.file: ${info.size} B，超过上限 ${MAX_SOUND_BYTES} B（建议 Opus ≤1.5s）`)
+    return null
+  }
+  const body = readFileSync(path)
+  const ext = file.slice(file.lastIndexOf('.') + 1)
+  const ogg = body.subarray(0, 4).toString('ascii') === 'OggS'
+  const wav = body.subarray(0, 4).toString('ascii') === 'RIFF' && body.subarray(8, 12).toString('ascii') === 'WAVE'
+  if ((ext === 'ogg' && !ogg) || (ext === 'wav' && !wav)) {
+    problems.push(`${at}.file: 内容不是有效的 ${ext.toUpperCase()} 音频`)
+    return null
+  }
+  const revision = createHash('sha256').update(body).digest('hex').slice(0, 12)
+  /** @type {any} */
+  const entry = {
+    url: `sounds/${packDir}/${file}?v=${revision}`,
+    bytes: info.size,
+    revision,
+    durationMs: sound.durationMs,
+  }
+  if (sound.gain !== undefined) entry.gain = sound.gain
+  if (sound.debounceMs !== undefined) entry.debounceMs = sound.debounceMs
+  if (sound.maxVoices !== undefined) entry.maxVoices = sound.maxVoices
+  if (sound.fallback !== undefined) entry.fallback = sound.fallback
+  return entry
 }
 
 /**
@@ -368,17 +431,19 @@ export function loadSoundPacks(root) {
  * @returns {string}
  */
 export function buildSoundPacks(root) {
-  const { recipes, problems } = loadSoundPacks(root)
+  const { recipes, files, problems } = loadSoundPacks(root)
   if (problems.length > 0) throw new Error('sound packs are invalid:\n' + problems.join('\n'))
   return [
     '// @ts-check',
     '/**',
     ' * 由 scripts/build-asset-packs.mjs 从 assets/sounds 下各包的 pack.json 生成，勿手改。',
-    ' * 新增音效只需改 pack.json；音效文件（M2b）接入前只支持 synth 配方。',
+    ' * synth 是程序合成回退；file 是可选音频文件（相对 /dsh-piggy/art/）。',
     ' * @module dsh-piggy/client/sounds.generated',
     ' */',
     "  /** @type {Record<string, { tones: Array<{ type: string, from: number, to: number, ms: number, gain: number, delay?: number, sweep?: string }>, noise?: { from: number, to: number, ms: number, gain: number, type?: string } }>} */",
     `export const SOUND_RECIPES = Object.freeze(${JSON.stringify(recipes, null, 2)})`,
+    "  /** @type {Record<string, { url: string, bytes: number, revision: string, durationMs: number, gain?: number, debounceMs?: number, maxVoices?: number, fallback?: string }>} */",
+    `export const SOUND_FILES = Object.freeze(${JSON.stringify(files, null, 2)})`,
     '',
   ].join('\n')
 }

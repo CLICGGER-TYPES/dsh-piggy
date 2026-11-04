@@ -124,6 +124,12 @@ export function attachPigActions(c) {
     // 2026-10-13 只暂停当前动效（CSS 里限定 :not([data-react])）；animation:none 会把呼吸中途的位置重置，实测跳 6.8px。
     c.pig.setAttribute?.('data-micro-action', target.descriptor.key)
     c.render()
+    // 动作自带音效：只走当前展示实例的通道，不跨窗口。
+    const sound = target.descriptor.sound
+    if (typeof sound === 'string' && sound !== '' && c.audio !== undefined && typeof c.audio.play === 'function') {
+      const cue = sound.includes('/') ? sound.slice(sound.lastIndexOf('/') + 1) : sound
+      c.audio.play(cue)
+    }
     frameTimer = clock.setTimeout(() => { clearFrame(); c.render() }, target.descriptor.duration ?? 0)
     return true
   }

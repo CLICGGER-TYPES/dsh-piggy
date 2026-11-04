@@ -48,6 +48,7 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  *   duration: number | null,
  *   eligibility: ArtEligibility | null,
  *   fallback: ArtResourceRef | null,
+ *   sound?: string,
  *   schema: number,
  * }} ArtResourceDescriptor
  * @typedef {{
@@ -70,6 +71,7 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  *   duration?: number,
  *   eligibility?: ArtEligibility,
  *   fallback?: ArtResourceRefInput | string | null,
+ *   sound?: string,
  * }} ArtResourceDeclaration
  * @typedef {{ namespace: string, pack: string, revision?: string | number, resources: readonly ArtResourceDeclaration[] }} ArtResourcePackInput
  * @typedef {{
