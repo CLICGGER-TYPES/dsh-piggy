@@ -10,8 +10,8 @@ import { secureDirectory } from './work-directory.js'
 export { secureDirectory } from './work-directory.js'
 
 
-function send(response, status, body) {
-  response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+function send(response, status, body, headers = {}) {
+  response.writeHead(status, { ...headers, 'content-type': 'application/json', 'cache-control': 'no-store' })
   response.end(JSON.stringify(body))
 }
 
@@ -61,8 +61,11 @@ export async function startWorkEventServer({ directory, runtime }) {
 
   const server = createServer({ maxHeaderSize: 16384 }, (request, response) => {
     const task = handle(request, response).catch(error => {
-      if (!response.headersSent && !response.destroyed) send(response, error.status ?? 503,
-        { ok: false, reason: error.status ? error.message : 'game commit unavailable' })
+      const status = error.status ?? 503
+      // 收据容量是全局共享的；429 明确要求客户端退避，不要立刻重试。
+      if (!response.headersSent && !response.destroyed) send(response, status,
+        { ok: false, reason: error.status ? error.message : 'game commit unavailable' },
+        status === 429 ? { 'retry-after': '60' } : {})
       request.resume()
     }).finally(() => requests.delete(task))
     requests.add(task)
