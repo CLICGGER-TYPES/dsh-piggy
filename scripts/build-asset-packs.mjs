@@ -8,10 +8,14 @@ import { writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildAssetPacks } from './asset-packs.mjs'
+import { buildAssetPacks, buildSoundPacks } from './asset-packs.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const path = join(root, 'src/client/packs.generated.js')
-const text = buildAssetPacks(root)
-writeFileSync(path, text)
-console.log(`asset packs: wrote ${path} (${text.length} bytes)`)
+for (const [name, text] of [
+  ['src/client/packs.generated.js', buildAssetPacks(root)],
+  ['src/client/sounds.generated.js', buildSoundPacks(root)],
+]) {
+  const target = join(root, name)
+  writeFileSync(target, text)
+  console.log(`asset packs: wrote ${target} (${text.length} bytes)`)
+}

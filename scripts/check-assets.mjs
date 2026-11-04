@@ -17,7 +17,8 @@ const args = process.argv.slice(2)
 const onlyIndex = args.indexOf('--pack')
 const only = onlyIndex === -1 ? undefined : args[onlyIndex + 1]
 const generatedPath = join(root, 'src/client/packs.generated.js')
-const problems = checkAssets(root, { only, generatedPath })
+const generatedSoundPath = join(root, 'src/client/sounds.generated.js')
+const problems = checkAssets(root, { only, generatedPath, generatedSoundPath })
 if (problems.length > 0) {
   console.error('素材包校验失败：')
   for (const problem of problems) console.error('  ' + problem)

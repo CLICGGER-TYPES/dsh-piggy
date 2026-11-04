@@ -234,12 +234,13 @@ export function buildAssetPacks(root) {
 /**
  * 校验并把问题格式化成可直接定位的文本。
  * @param {string} root
- * @param {{ only?: string, generatedPath?: string }} [options]
+ * @param {{ only?: string, generatedPath?: string, generatedSoundPath?: string }} [options]
  * @returns {string[]}
  */
 export function checkAssets(root, options = {}) {
   const { problems } = loadActionPacks(root, { only: options.only })
-  const out = [...problems]
+  const { problems: soundProblems } = loadSoundPacks(root)
+  const out = [...problems, ...soundProblems]
   if (options.generatedPath !== undefined && problems.length === 0 && options.only === undefined) {
     if (!existsSync(options.generatedPath)) {
       out.push(`${relative(root, options.generatedPath)}: 尚未生成；运行 npm run assets:sync`)
@@ -249,5 +250,135 @@ export function checkAssets(root, options = {}) {
       if (actual !== expected) out.push(`${relative(root, options.generatedPath)}: 已过期；运行 npm run assets:sync`)
     }
   }
+  if (options.generatedSoundPath !== undefined && soundProblems.length === 0) {
+    if (!existsSync(options.generatedSoundPath)) {
+      out.push(`${relative(root, options.generatedSoundPath)}: 尚未生成；运行 npm run assets:sync`)
+    } else {
+      const expected = buildSoundPacks(root)
+      const actual = readFileSync(options.generatedSoundPath, 'utf8')
+      if (actual !== expected) out.push(`${relative(root, options.generatedSoundPath)}: 已过期；运行 npm run assets:sync`)
+    }
+  }
   return out
+}
+
+const TONE_TYPES = new Set(['sine', 'triangle', 'sawtooth', 'square'])
+const FILTER_TYPES = new Set(['lowpass', 'highpass', 'bandpass'])
+const SOUND_FIELDS = new Set(['key', 'synth', 'file', 'gain', 'debounceMs', 'priority', 'maxVoices', 'loop', 'fallback'])
+const SYNTH_FIELDS = new Set(['tones', 'noise'])
+
+/** @param {any} value @param {string} label @param {number} min @param {number} max @param {string[]} problems */
+function inRange(value, label, min, max, problems) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
+    problems.push(`${label}: 必须在 ${min}–${max} 之间`)
+    return false
+  }
+  return true
+}
+
+/** @param {any} synth @param {string} label @param {string[]} problems */
+function checkSynth(synth, label, problems) {
+  if (!onlyFields(synth, SYNTH_FIELDS, label, problems)) return
+  if (!Array.isArray(synth.tones)) {
+    problems.push(`${label}.tones: 必须是数组`)
+  } else {
+    synth.tones.forEach((/** @type {any} */ tone, /** @type {number} */ index) => {
+      const at = `${label}.tones[${index}]`
+      if (!onlyFields(tone, new Set(['type', 'from', 'to', 'ms', 'gain', 'delay', 'sweep']), at, problems)) return
+      if (!TONE_TYPES.has(tone.type)) problems.push(`${at}.type: 只能是 ${[...TONE_TYPES].join(' / ')}`)
+      inRange(tone.from, `${at}.from`, 20, 20000, problems)
+      inRange(tone.to, `${at}.to`, 20, 20000, problems)
+      inRange(tone.ms, `${at}.ms`, 10, 5000, problems)
+      inRange(tone.gain, `${at}.gain`, 0, 1, problems)
+      if (tone.delay !== undefined) inRange(tone.delay, `${at}.delay`, 0, 5000, problems)
+      if (tone.sweep !== undefined && typeof tone.sweep !== 'string') problems.push(`${at}.sweep: 必须是字符串`)
+    })
+  }
+  if (synth.noise !== undefined) {
+    const noise = synth.noise
+    if (!onlyFields(noise, new Set(['from', 'to', 'ms', 'gain', 'type']), `${label}.noise`, problems)) return
+    inRange(noise.from, `${label}.noise.from`, 20, 20000, problems)
+    inRange(noise.to, `${label}.noise.to`, 20, 20000, problems)
+    inRange(noise.ms, `${label}.noise.ms`, 10, 5000, problems)
+    inRange(noise.gain, `${label}.noise.gain`, 0, 1, problems)
+    if (noise.type !== undefined && !FILTER_TYPES.has(noise.type)) problems.push(`${label}.noise.type: 只能是 ${[...FILTER_TYPES].join(' / ')}`)
+  }
+}
+
+/**
+ * 读取并校验所有音效包。M2a 只接受 `synth`；音频文件留给 M2b。
+ * @param {string} root
+ * @returns {{ recipes: Record<string, any>, problems: string[] }}
+ */
+export function loadSoundPacks(root) {
+  /** @type {string[]} */
+  const problems = []
+  /** @type {Record<string, any>} */
+  const recipes = {}
+  const base = join(root, 'assets/sounds')
+  if (!existsSync(base)) return { recipes, problems: ['assets/sounds: 目录不存在'] }
+  const seen = new Set()
+  for (const dir of readdirSync(base).sort()) {
+    if (dir.startsWith('_') || dir.startsWith('.')) continue
+    const dirPath = join(base, dir)
+    if (!statSync(dirPath).isDirectory()) continue
+    const manifestPath = join(dirPath, 'pack.json')
+    if (!existsSync(manifestPath)) {
+      problems.push(`${relative(root, manifestPath)}: 缺少 pack.json`)
+      continue
+    }
+    const manifest = readJson(manifestPath, relative(root, manifestPath), problems)
+    if (manifest === null) continue
+    if (!onlyFields(manifest, new Set(['pack', 'revision', 'sounds']), relative(root, manifestPath), problems)) continue
+    if (!Array.isArray(manifest.sounds) || manifest.sounds.length === 0) {
+      problems.push(`${relative(root, manifestPath)}.sounds: 至少要有一个音效`)
+      continue
+    }
+    manifest.sounds.forEach((/** @type {any} */ sound, /** @type {number} */ index) => {
+      const label = `${relative(root, manifestPath)} sounds[${index}]`
+      if (!onlyFields(sound, SOUND_FIELDS, label, problems)) return
+      if (typeof sound.key !== 'string' || !KEY.test(sound.key)) {
+        problems.push(`${label}.key: 必须匹配 ^[a-z][a-z0-9-]{0,47}$`)
+        return
+      }
+      const at = `${label}(${sound.key})`
+      if (seen.has(sound.key)) problems.push(`${at}.key: 音效 "${sound.key}" 重复`)
+      seen.add(sound.key)
+      if (sound.file !== undefined) {
+        problems.push(`${at}.file: 音频文件尚未接入（M2b）；当前请用 synth`)
+      } else if (sound.synth === undefined) {
+        problems.push(`${at}: 需要 synth（或 M2b 的 file）`)
+      } else {
+        checkSynth(sound.synth, `${at}.synth`, problems)
+        recipes[sound.key] = sound.synth
+      }
+      if (sound.gain !== undefined) inRange(sound.gain, `${at}.gain`, 0, 1, problems)
+      if (sound.debounceMs !== undefined) inRange(sound.debounceMs, `${at}.debounceMs`, 0, 2000, problems)
+      if (sound.priority !== undefined) inRange(sound.priority, `${at}.priority`, 0, 100, problems)
+      if (sound.maxVoices !== undefined) inRange(sound.maxVoices, `${at}.maxVoices`, 1, 2, problems)
+      if (sound.loop !== undefined && typeof sound.loop !== 'boolean') problems.push(`${at}.loop: 必须是布尔值`)
+    })
+  }
+  return { recipes, problems }
+}
+
+/**
+ * 生成 `src/client/sounds.generated.js` 的文本。
+ * @param {string} root
+ * @returns {string}
+ */
+export function buildSoundPacks(root) {
+  const { recipes, problems } = loadSoundPacks(root)
+  if (problems.length > 0) throw new Error('sound packs are invalid:\n' + problems.join('\n'))
+  return [
+    '// @ts-check',
+    '/**',
+    ' * 由 scripts/build-asset-packs.mjs 从 assets/sounds 下各包的 pack.json 生成，勿手改。',
+    ' * 新增音效只需改 pack.json；音效文件（M2b）接入前只支持 synth 配方。',
+    ' * @module dsh-piggy/client/sounds.generated',
+    ' */',
+    "  /** @type {Record<string, { tones: Array<{ type: string, from: number, to: number, ms: number, gain: number, delay?: number, sweep?: string }>, noise?: { from: number, to: number, ms: number, gain: number, type?: string } }>} */",
+    `export const SOUND_RECIPES = Object.freeze(${JSON.stringify(recipes, null, 2)})`,
+    '',
+  ].join('\n')
 }
