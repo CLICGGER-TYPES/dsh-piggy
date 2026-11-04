@@ -19,9 +19,12 @@ export function createShellLaunch(deps) {
   /**
    * Start again with `args`. Inside an AppImage the running copy is a temporary
    * mount that vanishes with this process, so the AppImage file itself is relaunched.
+   * Windows portable has the same problem: process.execPath points at the extracted
+   * copy under %TEMP%, so relaunch the original portable exe from the wrapper env.
    */
   function relaunch(args = deps.argv.slice(1)) {
-    deps.app.relaunch(deps.env.APPIMAGE ? { execPath: deps.env.APPIMAGE, args } : { args })
+    const execPath = deps.env.APPIMAGE ?? deps.env.PORTABLE_EXECUTABLE_FILE
+    deps.app.relaunch(execPath ? { execPath, args } : { args })
   }
 
   /** @returns {boolean} 当前进程是否需要在 X11 下重启（调用时可能已经退出）。 */
