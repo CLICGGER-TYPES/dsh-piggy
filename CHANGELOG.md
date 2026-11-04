@@ -7,6 +7,13 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+## [0.37.2-rc.12] — 2026-11-04 · 旧多猪位置迁移
+
+配套桌面外壳 0.6.8-rc.9，存档仍为 v15。
+
+- 修复旧版本可能把两只猪的 home 存到同一位置：启动时保留 pigId 较小的一只，其余改用槽位默认位置并写回。
+- README 改版：首页收紧，新增 rc.11 实机主菜单图，恢复贡献者与致谢；补充云存档贡献者 Skipanic。
+
 ## [0.37.2-rc.11] — 2026-11-04 · 三只猪窗口错开
 
 配套桌面外壳 0.6.8-rc.9，存档仍为 v15。
