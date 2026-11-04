@@ -113,7 +113,7 @@ npm run typecheck
 
 | 贡献者 | 贡献 |
 |---|---|
-| [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)） |
+| [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)）；六项进阶成就与六枚互动徽章贴图（[#38](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/38)，含后续高光与站姿重绘） |
 | [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题（[#5](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/5)） |
 | [@Skipanic](https://github.com/Skipanic) | 云存档改用 git 同步的设计（[#34](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/34)）与推送、手动提交、按提交恢复实现（[#35](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/35)）；为完整档云同步方向提供建议 |
 | [@tetezi](https://github.com/tetezi) | 面板动作时猪窗口置顶、右键不误摸、脏和生病状态的苍蝇/病毒图标、恢复桌面版状态变色与心情优先级调整，附回归测试（[#8](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/8)，随 [#9](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/9) 合入） |
