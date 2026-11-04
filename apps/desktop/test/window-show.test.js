@@ -94,9 +94,10 @@ test('ready-to-show 一直不来时显示门永远 pending：只记诊断，不�
 
 test('启动不再先设空形状再按兜底尺寸显示（避免 Xwayland resize 崩溃）', () => {
   const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const geometry = readFileSync(new URL('../lib/geometry-ipc.js', import.meta.url), 'utf8')
   const manager = readFileSync(new URL('../lib/window-manager.js', import.meta.url), 'utf8')
   assert.ok(!/^\s*applyShape\(\[\]\)/m.test(source), 'main.js 不应在内容上报前设置空形状')
   assert.ok(!/^\s*applyShape\(\[\]\)/m.test(manager), 'window-manager.js 不应在内容上报前设置空形状')
-  assert.equal((source.match(/pet\.showGate\.content\(\)\) showPigWindow\(pet\)/g) || []).length, 2, 'place 和 content 两条启动路径都要经过显示门')
+  assert.equal((geometry.match(/pet\.showGate\.content\(\)\) deps\.showPigWindow\(pet\)/g) || []).length, 2, 'place 和 content 两条启动路径都要经过显示门')
   assert.match(manager, /pet\.showGate\.readyToShow\(\)\) showPigWindow\(pet\)/, 'ready-to-show 也要经过显示门')
 })

@@ -5,8 +5,8 @@
  * - 两个透明置顶窗口（外壳 0.6.0 起）：猪窗口（固定大小，只装猪和气泡）和面板窗口
  *   （贴在猪旁边，见文件后半「面板窗口」一节和 lib/panel-geometry.js）。同一份游戏包在两边各跑一份，
  *   按 piggyShell.role 各显示一半。
- * - 窗口摆哪、哪里可点由游戏包算（src/client/desktop/），这里只照做（piggy:place）；拖动由这里按
- *   鼠标位置算（dragTick），因为页面在拖动中拿不到可靠的屏幕坐标。
+ * - 窗口摆哪、哪里可点由游戏包算（src/client/desktop/），主进程照做（lib/geometry-ipc.js 的 piggy:place）；
+ *   拖动由 lib/drag-engine.js 按鼠标位置算（dragTick），因为页面在拖动中拿不到可靠的屏幕坐标。
  * - 几何一律以「请求值」为准，不把 getBounds() 读回来再设回去：Windows 分数缩放下读回值有 1px 误差，
  *   读了再设就会一帧帧累加（2026-10-07 面板越跑越远就是这么来的，见 petAsked）。
  * - 游戏运行时在后台单写者中执行，界面经 piggy:// 访问。
@@ -27,15 +27,11 @@ import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
 import { readOwnerDocumentConfig } from './lib/owner-document-config.js'
-import { MIN_WINDOW, WINDOW_PADDING, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint, staggerPetBounds } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE } from './lib/versions.js'
 import { startBackgroundVersions } from './lib/background-versions.js'
 import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
-import { dragHeartbeatExpired } from './lib/drag-watchdog.js'
-import { validDragOrigin } from './lib/drag-origin.js'
 import { PANEL_FALLBACK } from './lib/panel-geometry.js'
-import { pointerHitsShape } from './lib/pointer-hit.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
 import { createExtensionWindow } from './lib/extension-window.js'
 import { createPanelWindow } from './lib/panel-window.js'
@@ -54,6 +50,8 @@ import { downloadFirstGame, gamePinPath } from './first-run.js'
 import { reportStartupFailure } from './lib/startup-failure.js'
 import { createWindowManager } from './lib/window-manager.js'
 import { createWindowSurface } from './lib/window-surface.js'
+import { createDragEngine, registerDragIpc } from './lib/drag-engine.js'
+import { registerGeometryIpc } from './lib/geometry-ipc.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
 import { createWindowState } from './lib/window-state.js'
 import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
@@ -149,6 +147,12 @@ async function flushLogs() {
 let hostJournal = null
 /** 显示器兜底对账的定时器（见 app.whenReady 里的 displayWatchTimer）。 */
 let displayWatchTimer = null
+/** 拖动状态机；surface 装配后创建，实现见 lib/drag-engine.js。 */
+let dragEngine = null
+/** 停掉一只猪的拖动；不传 pet 时停全部（退出/显示器重建）。 */
+function stopDrag(pet = null) {
+  return dragEngine === null ? undefined : dragEngine.stopDrag(pet)
+}
 
 const { relaunch, ensureX11 } = createShellLaunch({
   app, spawnProcess: spawn, platform: process.platform, env: process.env, argv: process.argv, execPath: process.execPath,
@@ -385,6 +389,10 @@ const surface = createWindowSurface({
   screen, platform: process.platform, env: process.env, panel,
   scheduleWindowStateSave, log, startupInputTrace, traceSetIgnoreMouseEvents,
 })
+dragEngine = createDragEngine({
+  screen, pets, petForEvent, panel, log, surface,
+  setInterval, clearInterval,
+})
 /** 猪窗口的生命周期；实现见 lib/window-manager.js。 */
 const windows = createWindowManager({
   BrowserWindow, screen, pets, primaryPet, panel, panelWindow, getPanelWindow,
@@ -399,11 +407,7 @@ const windows = createWindowManager({
   getCaptureCheck: () => captureForCheck,
 })
 const { createWindow, createPigWindow, closePetSession, rebuildLinuxViews, showPigWindow } = windows
-const {
-  applyBounds, applyFlightBounds, applyShape, refreshHit, setHit, setLegacyHit,
-  setPassthroughMode, isMouseRect, isMouseShape, isPlaceRequest, shiftedShape,
-  workAreaFor, pushGeometry, geometryOf, currentSeq, skipNativeShape: SKIP_NATIVE_SHAPE,
-} = surface
+const { applyBounds, pushGeometry } = surface
 
 function confirmUpdateStartupIfReady() {
   if (startupUpdateToken === null || !startupSetupComplete || !startupRendererLoaded || !startupWindowWasVisible) return
@@ -449,430 +453,11 @@ async function handleStartupFailure(error) {
   app.quit()
 }
 
-/**
- * The renderer reports the already-pinned pig and content in one frame.
- * Position and resize the window in one setBounds call around that pig point.
- */
-ipcMain.on('piggy:content', (event, content) => {
-  const pet = petForEvent(event)
-  if (pet === null) {
-    if (content?.immediate === true) event.returnValue = null
-    return
-  }
-  const width = content?.width
-  const height = content?.height
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0
-    || (content.shape !== undefined && !isMouseShape(content.shape))) {
-    if (content?.immediate === true) event.returnValue = null
-    return
-  }
-  const window = pet.window
-  setLegacyHit(pet, undefined, 'piggy:content')
-  const anchor = { vertical: content?.anchor?.vertical === 'top' ? 'top' : 'bottom', horizontal: content?.anchor?.horizontal === 'left' ? 'left' : 'right' }
-  const bounds = window.getBounds()
-  const pigWindow = { x: Number(content?.pigWindow?.x), y: Number(content?.pigWindow?.y) }
-  const hasPigWindow = Number.isFinite(pigWindow.x) && Number.isFinite(pigWindow.y)
-  const pigSize = Number(content?.pig?.width) > 0 && Number(content?.pig?.height) > 0
-    ? { width: Number(content.pig.width), height: Number(content.pig.height) } : pet.lastPigSize
-  const sizeChanged = pet.lastPigWindow !== null
-    && (pet.lastPigSize.width !== pigSize.width || pet.lastPigSize.height !== pigSize.height)
-  const panelOpen = content?.panelOpen === true
-  const changed = pet.lastContent === null
-    || pet.lastContent.width !== width || pet.lastContent.height !== height
-    || pet.lastContent.anchor.vertical !== anchor.vertical || pet.lastContent.anchor.horizontal !== anchor.horizontal
-    || sizeChanged
-    || (hasPigWindow && pet.lastPigWindow !== null && (pigWindow.x !== pet.lastPigWindow.x || pigWindow.y !== pet.lastPigWindow.y))
-
-  if (pet.savedPigScreen !== null) {
-    // 用「这次摆之前」的窗口 + 页面实际量到的猪位置判断：窗口已经不用再改、猪确实在存下的位置上。
-    const pigNow = { x: Number(content?.pigNow?.x), y: Number(content?.pigNow?.y) }
-    const settled = bounds.width === Math.max(MIN_WINDOW.width, Math.round(width))
-      && bounds.height === Math.max(MIN_WINDOW.height, Math.round(height))
-      && Math.abs(bounds.x + pigNow.x - pet.savedPigScreen.x) <= 1 && Math.abs(bounds.y + pigNow.y - pet.savedPigScreen.y) <= 1
-    if (settled || panelOpen) pet.savedPigScreen = null
-  }
-
-  // 开、关面板本身不挪窗口（收起时窗口按打开时的范围留着位置）。只在打开那一刻记下猪的原位，
-  // 面板开着时内容变化要按它摆回。以前开关面板也算「内容变了」，Windows 缩放下差 1px 就会
-  // 重新 setBounds 一次，整块内容往上闪一下（用户 2026-10-05）。
-  if (panelOpen && pet.lastContent?.panelOpen !== true && hasPigWindow) {
-    const base = pet.lastPigWindow ?? pigWindow
-    pet.restingPigScreen = pet.savedPigScreen ?? { x: bounds.x + base.x, y: bounds.y + base.y }
-  }
-  let moved = null
-  if (changed && hasPigWindow) {
-    const pigNow = { x: Number(content?.pigNow?.x), y: Number(content?.pigNow?.y) }
-    const before = pet.lastPigWindow ?? (Number.isFinite(pigNow.x) && Number.isFinite(pigNow.y) ? pigNow : pigWindow)
-    // 启动时以存下来的猪位置为准，直到页面量到的实际位置（pigNow，不是预测值）和它对上：
-    // 启动那几次上报里窗口还在改大小，按预测值摆会让猪每次启动漂几像素。
-    const pigBefore = pet.savedPigScreen ?? { x: bounds.x + before.x, y: bounds.y + before.y }
-    // 启动时页面先画占位的纸盒，拿到存档才换成真正的猪：这个尺寸变化不是「调了小猪大小」，
-    // 不能按脚底中心挪，直接摆回存下的位置（存的就是真猪的左上角）。
-    const target = pet.savedPigScreen !== null ? pet.savedPigScreen
-      : sizeChanged
-        ? resizedPigScreenPoint(pet.restingPigScreen ?? pigBefore, pet.lastPigSize, pigSize)
-        : (pet.restingPigScreen ?? pigBefore)
-    if (sizeChanged && pet.restingPigScreen !== null) pet.restingPigScreen = target
-    const area = screen.getDisplayNearestPoint(target).workArea
-    moved = applyBounds(pet, contentBoundsForPig({
-      width, height, pigWindow: { ...pigWindow, ...pigSize }, panelOpen,
-      allowPanelOverflow: sizeChanged,
-    }, target, area), 'content')
-  }
-  if (!panelOpen) pet.restingPigScreen = null
-
-  pet.lastContent = { width, height, anchor, panelOpen }
-  if (hasPigWindow) pet.lastPigWindow = pigWindow
-  pet.lastPigSize = pigSize
-  // 记下「猪在屏幕上哪儿」：实机核对展开面板时它有没有动（日志里是 DIP 坐标）。
-  const pigOnScreen = hasPigWindow ? { x: window.getBounds().x + pigWindow.x, y: window.getBounds().y + pigWindow.y } : null
-  log('content', JSON.stringify({ pigId: pet.pigId, window: window.getBounds(), anchor, panelOpen, pigOnScreen, target: pet.restingPigScreen, moved }))
-  const shape = Array.isArray(content.shape) ? content.shape : []
-  applyShape(pet, shape.slice(0, 64).map(r => ({
-    x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
-    width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
-  })))
-  if (pet.showGate !== null && pet.showGate.content()) showPigWindow(pet)
-  pet.lastShape = shape
-  if (content?.immediate === true) {
-    const current = window.getBounds()
-    event.returnValue = { window: current, workArea: workAreaFor(current), seq: currentSeq() }
-  }
+// 游戏包几何/输入面 IPC：实现见 lib/geometry-ipc.js；拖动 IPC 见 lib/drag-engine.js。
+registerGeometryIpc({
+  ipcMain, screen, pets, platform: process.platform, petForEvent, panel, log, showPigWindow, surface,
 })
-
-/** 这块屏的刷新率；拿不到就按 60。 */
-function refreshRateAt(point) {
-  const display = point === null || point === undefined ? screen.getPrimaryDisplay() : screen.getDisplayNearestPoint(point)
-  const hz = Number(display?.displayFrequency)
-  return Number.isFinite(hz) && hz >= 30 ? Math.min(240, Math.round(hz)) : 60
-}
-
-function dragTick(pet, cursorOverride) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed() || pet.dragSession === null) return
-  if (pet.dragStats !== null) {
-    const now = Date.now()
-    pet.dragStats.ticks += 1
-    pet.dragStats.maxGap = Math.max(pet.dragStats.maxGap, now - pet.dragStats.last)
-    pet.dragStats.last = now
-  }
-  if (dragHeartbeatExpired(pet.dragSession.lastHeartbeat, Date.now())) { stopDrag(pet); return }
-  // 松手时页面把最后的屏幕坐标带过来：输入队列偶尔会把最后一次 move 排在 end 后面，
-  // 只用主进程此刻读到的光标会少走一小段（贴边快速拖动时最明显）。
-  const cursor = cursorOverride !== null && cursorOverride !== undefined
-    && Number.isFinite(cursorOverride.x) && Number.isFinite(cursorOverride.y)
-    ? { x: cursorOverride.x, y: cursorOverride.y } : screen.getCursorScreenPoint()
-  // 夹取按「所有屏」算，不按鼠标当前在哪块屏：鼠标一过两块屏的缝就换夹取范围，
-  // 会把猪整只弹回去（上下屏最明显）。见 lib/window-geometry.js 的 dragPigBounds。
-  const areas = screen.getAllDisplays().map(display => display.workArea)
-  // 按「猪」算，不按起始窗口算：拖动中窗口大小可能变（冒气泡、面板换页），
-  // 用起始窗口的大小去 setBounds 会把窗口来回改大改小，猪就一抽一抽的。
-  const pig = pet.dragSession.pig ?? { ...(pet.lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }), ...pet.lastPigSize }
-  // 窗口大小用请求值，不用回读值（见 petAsked 的说明）
-  const wanted = dragPigBounds(pet.petAsked ?? window.getBounds(), pig, pet.dragSession.pigScreen, pet.dragSession.cursor, cursor, areas, pet.dragSession.visual)
-  if (!pet.dragShapeActive) {
-    pet.dragShapeActive = true
-    if (!SKIP_NATIVE_SHAPE) {
-      const bounds = window.getBounds()
-      applyShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
-    }
-    refreshHit(pet)
-  }
-  if (!pet.dragSession.slide) { applyBounds(pet, wanted, 'drag'); return }
-  // 窗口只在整个桌面的外沿夹取，屏幕接缝允许跨过；猪在窗口里滑过外沿留白：
-  // GNOME 等窗口管理器不让程序把窗口摆到屏幕外，猪窗口四周又有透明留白（气泡区），
-  // 拖到屏幕边上时窗口被卡住、猪就停在离边一大截的地方，松手才瞬移过去
-  // （2026-10-07 虚拟机真拖录像逐帧看到的）。现在窗口夹在工作区里，超出去的那一截
-  // 告诉页面，让它把猪在窗口里挪过去——猪一路跟着鼠标走到边上。
-  const held = desktopViewportBounds(wanted, areas)
-  const slide = { x: wanted.x - held.x, y: wanted.y - held.y }
-  applyBounds(pet, held, 'drag')
-  if (slide.x !== pet.dragSession.lastSlide.x || slide.y !== pet.dragSession.lastSlide.y) {
-    pet.dragSession.lastSlide = slide
-    pet.lastDragSlide = slide
-    window.webContents.send('piggy:drag-slide', slide)
-    panel.followPig(pet)
-    // 拖动期间用整窗形状（drag:start 时设置）：窗口被夹住时猪在窗口里滑，
-    // 逐帧改 setShape 既慢又容易在 X11 上把猪裁掉/刷空。松手后页面 place 恢复精确形状。
-  }
-}
-/** 停掉一只猪的拖动；不传 pet 时停全部（退出/显示器重建）。 */
-function stopDrag(pet = null) {
-  const targets = pet === null ? pets.all() : [pet]
-  for (const target of targets) {
-    clearInterval(target.dragTimer)
-    target.dragTimer = null
-    target.dragSession = null
-    target.dragStats = null
-    refreshHit(target)
-  }
-}
-
-/** 页面要几何：给它推一次（订阅晚于 did-finish-load 时靠这个）。 */
-ipcMain.on('piggy:geometry:ask', (event) => {
-  const pet = petForEvent(event)
-  if (pet === null) return
-  pushGeometry(pet)
-})
-
-ipcMain.on('piggy:drag:start', (event, given) => {
-  const pet = petForEvent(event)
-  if (pet === null) return
-  if (given != null && (!isMouseRect(given) || given.width <= 0 || given.height <= 0)) return
-  stopDrag(pet)
-  const bounds = pet.window.getBounds()
-  // A1：页面可能延迟到移动 4px 才发 drag:start，带上 pointerdown 的屏幕坐标当起点。
-  // 快速甩动时第一帧就可能离 pointerdown 上百像素，不能按 32px 拒绝；
-  // 只拒绝非有限值、超出 512px 或不在当前屏工作区内的坏消息。
-  const cursorNow = screen.getCursorScreenPoint()
-  const rawOrigin = given?.origin
-  const originValid = rawOrigin !== null && rawOrigin !== undefined
-    && Number.isFinite(rawOrigin.x) && Number.isFinite(rawOrigin.y)
-  const originArea = originValid ? screen.getDisplayNearestPoint(rawOrigin).workArea : null
-  const acceptedOrigin = validDragOrigin(rawOrigin, cursorNow, originArea)
-  const dragOrigin = acceptedOrigin ?? cursorNow
-  // 新游戏包会把猪在窗口里的位置和大小一起带过来（它自己量的，不再经过 piggy:content）。
-  const pigFromPage = isMouseRect(given) && given.width > 0 && given.height > 0
-    ? { x: given.x, y: given.y, width: given.width, height: given.height } : null
-  // 延迟拖动的 origin 已由页面在 pointerdown 时验证；摸摸动画可能已改变当前墨迹，不能拿新帧否认旧命中。
-  // 无合法 origin 的旧调用仍按当前输入判断，透明区域不能直接取得捕获。
-  const inputSlide = pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : { x: 0, y: 0 }
-  if (pet.placedHitShape !== null && (pigFromPage === null
-    || (acceptedOrigin === null && !pointerHitsShape(dragOrigin, bounds, shiftedShape(pet.placedHitShape, inputSlide))))) return
-  const pig = pigFromPage ?? pet.lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
-  pet.dragSession = {
-    cursor: dragOrigin,
-    pigScreen: { x: bounds.x + pig.x, y: bounds.y + pig.y },
-    pig: pigFromPage,
-    visual: pigFromPage !== null && isMouseRect(given?.visual) && given.visual.width > 0 && given.visual.height > 0
-      && given.visual.x <= pigFromPage.x && given.visual.y <= pigFromPage.y
-      && given.visual.x + given.visual.width >= pigFromPage.x + pigFromPage.width
-      && given.visual.y + given.visual.height >= pigFromPage.y + pigFromPage.height
-      ? { ...given.visual } : null,
-    lastHeartbeat: Date.now(),
-    // 页面说它会接 piggy:drag-slide（猪在窗口里滑），主进程才把窗口夹在屏幕里
-    slide: given?.slide === true,
-    lastSlide: { x: 0, y: 0 },
-  }
-  pet.lastDragSlide = { x: 0, y: 0 }
-  // 猪被拖走了：面板打开时记下的「原位」作废，否则下一次内容变化（比如点商店）
-  // 会把窗口拽回原位 —— 用户看到的「瞬移」「拖着拖着卡在原地」。
-  pet.restingPigScreen = null
-  pet.savedPigScreen = null
-  // 拖动期间每一帧都不写日志（60Hz 会刷爆），但起止各记一行：出问题时能看出拖了多远、
-  // 起始窗口和猪的位置对不对得上（2026-10-06 的偏移排查就是缺这一段）。
-  pet.dragShapeActive = true
-  if (!SKIP_NATIVE_SHAPE) applyShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
-  setHit(pet, true, 'drag-start')
-  pet.resizeShape?.cancel()
-  log('drag start', JSON.stringify({ pigId: pet.pigId, bounds, pigScreen: pet.dragSession.pigScreen, pigFromPage: pigFromPage !== null,
-    origin: acceptedOrigin }))
-  // tick 频率跟显示器刷新率走，不再写死 60Hz：144Hz 屏上窗口 60Hz 地动、画面 144Hz 地刷，
-  // 一样是抽帧（用户 2026-10-07：「帧数应该跟显示器同步」）。
-  const hz = refreshRateAt(pet.dragSession.cursor)
-  pet.dragTimer = setInterval(() => dragTick(pet), 1000 / hz)
-  pet.dragStats = { hz, ticks: 0, last: Date.now(), maxGap: 0 }
-})
-ipcMain.on('piggy:drag:heartbeat', event => {
-  const pet = petForEvent(event)
-  if (pet === null || pet.dragSession === null) return
-  pet.dragSession.lastHeartbeat = Date.now()
-  // 页面每次 pointermove 都会发心跳，跟着屏幕刷新走；顺手挪一次窗口，
-  // 比只靠主进程定时器（Windows 上计时精度约 15.6ms）更顺。
-  dragTick(pet)
-})
-ipcMain.on('piggy:drag:end', (event, release) => {
-  const pet = petForEvent(event)
-  if (pet === null) return
-  // 页面的 release 坐标可能比主进程此刻读到的光标旧（输入队列延迟）；
-  // 主进程的光标是最新值，最后一帧用它算 slide。
-  dragTick(pet)
-  if (pet.dragSession !== null) {
-    const bounds = pet.window === null || pet.window.isDestroyed() ? null : pet.window.getBounds()
-    // 猪在窗口里的位置：页面给了就用它，没给就用上次量到的（和 dragTick 同一套兜底）。
-    const pig = pet.dragSession.pig ?? pet.lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
-    const startWindow = { x: pet.dragSession.pigScreen.x - pig.x, y: pet.dragSession.pigScreen.y - pig.y }
-    log('drag end', JSON.stringify({ pigId: pet.pigId, bounds, from: startWindow, movedBy: bounds === null ? null
-      : { x: bounds.x - startWindow.x, y: bounds.y - startWindow.y } }))
-    // tick 是不是跟得上刷新率：maxGap 远大于 1000/hz 就说明主进程被别的活挡住了。
-    if (pet.dragStats !== null) log('drag ticks', JSON.stringify(pet.dragStats))
-  }
-  stopDrag(pet)
-  pet.restingPigScreen = null
-  panel.reanchorPanel(pet)
-  // 页面紧接着要读几何重定家：把最后一帧 slide 一起同步返回，避免 send/sendSync 乱序。
-  event.returnValue = geometryOf(pet.window?.getBounds() ?? { x: 0, y: 0, width: 0, height: 0 }, pet)
-})
-
-/**
- * 新游戏包的桌面逻辑：窗口摆哪、多大、哪里可点，都由页面算好，主进程只照做。
- * 同步返回改完后的几何，页面同一轮里就能接着用。以后这类调整只发游戏包，不用再发桌面程序。
- */
-ipcMain.on('piggy:place', (event, request) => {
-  const pet = petForEvent(event)
-  if (pet === null || !isPlaceRequest(request)) { event.returnValue = null; return }
-  const window = pet.window
-  if (pet.passthroughMode !== 'modern') {
-    setPassthroughMode(pet, 'modern', 'piggy:place')
-    setHit(pet, pet.passthroughHit, 'piggy:place')
-  }
-  // place({}) is a synchronous geometry query, not a landing/placement commit.
-  // During native dragging even old pages must not compete with dragTick by
-  // moving the window or restoring a stale precise drawing shape.
-  const reading = request.bounds === undefined && request.shape === undefined && request.hitShape === undefined && request.pig === undefined
-  if (reading || pet.dragSession !== null) {
-    event.returnValue = geometryOf(window.getBounds(), pet)
-    return
-  }
-  // 动画可单独更新真实输入；不能因此结束尚未提交新画面的整窗绘制保护。
-  if (request.bounds === undefined && request.shape === undefined && request.pig === undefined) {
-    const slide = pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : { x: 0, y: 0 }
-    pet.placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
-      x: rect.x - slide.x, y: rect.y - slide.y, width: rect.width, height: rect.height,
-    }))
-    pet.hasPlacedHitShape = true
-    pet.hitPending = false
-    refreshHit(pet)
-    event.returnValue = geometryOf(window.getBounds(), pet)
-    return
-  }
-  const b = request?.bounds
-  const motionHandoff = Array.isArray(request.shape) && (pet.dragShapeActive || pet.flightShapeActive)
-  if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
-    let next = { x: Math.round(b.x), y: Math.round(b.y), width: Math.max(MIN_WINDOW.width, Math.round(b.width)), height: Math.max(MIN_WINDOW.height, Math.round(b.height)) }
-    if (pet.staggerPending) {
-      const others = pets.all()
-        .filter(other => other !== pet && other.window !== null && other.window !== undefined && !other.window.isDestroyed())
-        .map(other => other.window.getBounds())
-      next = staggerPetBounds(next, others, screen.getDisplayMatching(next).workArea)
-      pet.staggerPending = false
-    }
-    if (process.platform === 'linux') pet.resizeShape?.begin(next, motionHandoff)
-    applyBounds(pet, next, 'place')
-  } else if (motionHandoff && process.platform === 'linux') {
-    // commitSlide transfers translate into layout without changing the window
-    // size. Keep the old backing frame whole until the new layout is painted,
-    // just as on resize; otherwise its new precise shape clips the old pig.
-    pet.resizeShape?.begin(window.getBounds(), true)
-  }
-  // setBounds 是异步的（X11 要等 ConfigureNotify 回来），紧跟其后的 getBounds() 可能还是旧值。
-  // 页面拿这个旧值做闭环核对，就会算出假偏差、再照着它挪窗口 —— 用户看到的「越修越偏」。
-  // 这里把「请求值 vs 立刻回读值」的差记下来，先把机制钉死。
-  if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
-    const after = window.getBounds()
-    if (Math.abs(after.x - Math.round(b.x)) > 1 || Math.abs(after.y - Math.round(b.y)) > 1) {
-      log('place-stale', JSON.stringify({ pigId: pet.pigId, asked: { x: Math.round(b.x), y: Math.round(b.y) }, read: after }))
-    }
-  }
-  // 落地/接住后的正常摆放：抛掷滑动归零，形状回到未平移的版本。
-  pet.flightSlide = { x: 0, y: 0 }
-  pet.lastFlightShapeSlide = null
-  pet.flightShapeActive = false
-  pet.dragShapeActive = false
-  if (Array.isArray(request.hitShape)) {
-    pet.placedHitShape = request.hitShape.slice(0, 64).map(rect => ({
-      x: rect.x, y: rect.y, width: rect.width, height: rect.height,
-    }))
-    pet.hasPlacedHitShape = true
-    // 这次 place 带来了新的输入面：窗口移动期间挂起的命中可以恢复。
-    pet.hitPending = false
-  }
-  if (Array.isArray(request?.shape)) {
-    pet.hasPlacedShape = true
-    pet.placedShape = request.shape.slice(0, 64).map(r => ({
-      x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
-      width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
-    }))
-    pet.resizeShape?.update(pet.placedShape)
-    // 新游戏包的第一次摆放就带真实尺寸和形状：窗口此前一直藏着，
-    // 现在 setBounds + setShape 都做完了，可以显示了（Linux 防 Xwayland resize 崩溃）。
-    if (pet.showGate !== null && pet.showGate.content()) showPigWindow(pet)
-  }
-  refreshHit(pet)
-  // 游戏包 0.33.1 起顺带报猪在窗口里的框（贴屏幕边时内容在窗口里挪过）：面板按它贴猪。
-  const pig = request?.pig
-  let panelPigChanged = false
-  if (pig && [pig.x, pig.y, pig.width, pig.height].every(Number.isFinite) && pig.width > 0 && pig.height > 0) {
-    panelPigChanged = pet.panelPig === null || pet.panelPig.x !== pig.x || pet.panelPig.y !== pig.y || pet.panelPig.width !== pig.width || pet.panelPig.height !== pig.height
-    pet.panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
-  }
-  let speechChanged = false
-  if (Object.hasOwn(request, 'speech')) {
-    const s = request.speech
-    const next = s && [s.x, s.y, s.width, s.height].every(Number.isFinite) && s.width > 0 && s.height > 0
-      ? { x: s.x, y: s.y, width: s.width, height: s.height } : null
-    speechChanged = JSON.stringify(pet.panelSpeech) !== JSON.stringify(next)
-    pet.panelSpeech = next
-  }
-  if (pet.dragSession === null && pet.primary) {
-    if (speechChanged) panel.reanchorPanel(pet)
-    else if (panelPigChanged) panel.followPig(pet)
-  }
-  event.returnValue = geometryOf(window.getBounds(), pet)
-})
-
-/**
- * A2 抛掷：页面每帧算好窗口位置和 slide，主进程只挪窗口。
- * 和旧的 piggy:move（鼠标增量）是两条通道，payload 和语义都不同。
- */
-ipcMain.on('piggy:flight:move', (event, frame) => {
-  const pet = petForEvent(event)
-  if (pet === null) return
-  if (pet.dragSession !== null) return
-  if (frame === null || typeof frame !== 'object') return
-  if (!Number.isFinite(frame.x) || !Number.isFinite(frame.y)) return
-  const slide = frame.slide === undefined ? { x: 0, y: 0 } : frame.slide
-  if (slide === null || typeof slide !== 'object' || ![slide.x, slide.y].every(Number.isFinite)) return
-  if (pet.passthroughMode !== 'modern') {
-    setPassthroughMode(pet, 'modern', 'piggy:flight:move')
-    setHit(pet, pet.passthroughHit, 'piggy:flight:move')
-  }
-  pet.resizeShape?.cancel()
-  applyFlightBounds(pet, frame.x, frame.y)
-  pet.flightSlide = slide
-  if (!pet.flightShapeActive) {
-    pet.flightShapeActive = true
-    // 只扩大绘制：逐帧 setShape 会刷空透明窗口，输入仍跟随当前立绘区域。
-    // 落地/接住后页面会发 place，恢复精确绘制形状。
-    if (!SKIP_NATIVE_SHAPE) {
-      const bounds = pet.window.getBounds()
-      applyShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
-    }
-  }
-  refreshHit(pet)
-})
-
-/** 旧游戏页面判断命中；现代游戏由主进程读取光标，不依赖穿透窗口收到 mousemove。 */
-ipcMain.on('piggy:hit', (event, hit) => {
-  const pet = petForEvent(event)
-  if (pet === null || typeof hit !== 'boolean') return
-  if (pet.hasPlacedShape) return
-  setLegacyHit(pet, hit, 'piggy:hit')
-})
-
-/** 旧游戏包（0.27.2 及以前）只会发鼠标增量：照旧支持，回退版本时拖动不坏。 */
-ipcMain.on('piggy:move', (event, delta) => {
-  const pet = petForEvent(event)
-  if (pet === null) return
-  const dx = Number(delta?.dx)
-  const dy = Number(delta?.dy)
-  if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return
-  pet.restingPigScreen = null
-  applyBounds(pet, moveAcrossDisplays(pet.window.getBounds(), dx, dy, screen.getAllDisplays().map(display => display.workArea)), 'move')
-  if (pet.primary) panel.reanchorPanel(pet)
-})
-
-ipcMain.on('piggy:shape', (event, rects) => {
-  const pet = petForEvent(event)
-  if (pet === null || !isMouseShape(rects)) return
-  if (pet.lastShape.length === 0 && rects.length > 0) log('first shape', pet.pigId ?? 'legacy', JSON.stringify(rects))
-  setLegacyHit(pet, undefined, 'piggy:shape')
-  pet.lastShape = rects
-  applyShape(pet, rects.slice(0, 64).map(r => ({
-    x: Math.round(Number(r.x) || 0), y: Math.round(Number(r.y) || 0),
-    width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
-  })))
-})
+registerDragIpc({ ipcMain, engine: dragEngine })
 
 // 面板窗口：开关、贴猪几何、命中区域、z 序都在 lib/panel-controller.js，IPC 在 lib/ipc/panel.js。
 registerPanelIpc({ ipcMain, fromPage, getPanelWindow, extensionWindow, panel })

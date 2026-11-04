@@ -16,21 +16,26 @@ test('渲染进程退出会停拖动；窗口失焦不停（Windows 上按住拖
 })
 
 test('拖动开始和结束都清掉面板打开时记下的原位，内容再变不会把猪拽回去', () => {
-  const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
-  const start = main.slice(main.indexOf("ipcMain.on('piggy:drag:start'"), main.indexOf("ipcMain.on('piggy:drag:heartbeat'"))
-  const end = main.slice(main.indexOf("ipcMain.on('piggy:drag:end'"), main.indexOf("ipcMain.on('piggy:move'"))
+  const engine = readFileSync(new URL('../lib/drag-engine.js', import.meta.url), 'utf8')
+  const start = engine.slice(engine.indexOf('function startDrag(event, given) {'), engine.indexOf('/** 页面每次 pointermove 都会发心跳'))
+  const end = engine.slice(engine.indexOf('function endDrag(event) {'), engine.indexOf('return { refreshRateAt'))
+  assert.match(engine, /ipcMain\.on\('piggy:drag:start'/)
+  assert.match(engine, /ipcMain\.on\('piggy:drag:heartbeat'/)
+  assert.match(engine, /ipcMain\.on\('piggy:drag:end'/)
   assert.match(start, /restingPigScreen = null/)
   assert.match(end, /restingPigScreen = null/)
 })
 
 test('心跳顺带挪窗口；拖动不写逐帧日志；旧游戏包的 moveBy 仍有主进程接口', () => {
   const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const engine = readFileSync(new URL('../lib/drag-engine.js', import.meta.url), 'utf8')
+  const geometry = readFileSync(new URL('../lib/geometry-ipc.js', import.meta.url), 'utf8')
   const surface = readFileSync(new URL('../lib/window-surface.js', import.meta.url), 'utf8')
-  const beat = main.slice(main.indexOf("ipcMain.on('piggy:drag:heartbeat'"), main.indexOf("ipcMain.on('piggy:drag:end'"))
+  const beat = engine.slice(engine.indexOf('function heartbeatDrag'), engine.indexOf('function endDrag'))
   assert.match(beat, /dragTick\(pet\)/)
   assert.match(surface, /why !== 'drag'/)
   assert.doesNotMatch(main, /appendFileSync/)
-  assert.match(main, /ipcMain\.on\('piggy:move'/)
+  assert.match(geometry, /ipcMain\.on\('piggy:move'/)
 })
 
 test('窗口销毁后到达的页面消息不处理（Windows 上切换版本时弹过「Object has been destroyed」）', () => {
@@ -59,9 +64,9 @@ test('外壳 0.3.0 起：加载器优先用游戏包自带的桌面逻辑，老�
   const loader = readFileSync(new URL('../renderer/loader.js', import.meta.url), 'utf8')
   assert.match(loader, /plugin\.desktop && typeof plugin\.desktop\.install === 'function'/)
   assert.match(loader, /old\.src = 'shell\.js'/)
-  const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const geometry = readFileSync(new URL('../lib/geometry-ipc.js', import.meta.url), 'utf8')
   const surface = readFileSync(new URL('../lib/window-surface.js', import.meta.url), 'utf8')
-  assert.match(main, /ipcMain\.on\('piggy:place'/)
+  assert.match(geometry, /ipcMain\.on\('piggy:place'/)
   assert.match(surface, /workAreas: displays\.map\(display => display\.workArea\)/)
   // 几何里还要带上每块屏的缩放：Windows 分数缩放的问题靠它才看得见。
   assert.match(surface, /scaleFactor: display\.scaleFactor/)

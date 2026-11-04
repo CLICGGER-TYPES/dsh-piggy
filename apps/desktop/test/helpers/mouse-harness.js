@@ -14,6 +14,8 @@ import { createPetRegistry, createPetState } from '../../lib/pet-instance.js'
 import { createStartupTrace } from '../../lib/startup-trace.js'
 import { createWindowManager } from '../../lib/window-manager.js'
 import { createWindowSurface } from '../../lib/window-surface.js'
+import { createDragEngine, registerDragIpc } from '../../lib/drag-engine.js'
+import { registerGeometryIpc } from '../../lib/geometry-ipc.js'
 import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../../main.js', import.meta.url), 'utf8')
@@ -162,12 +164,22 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   const traceEnd = source.indexOf('\nasync function flushLogs', traceStart)
   const fromPet = source.indexOf('function fromPet(event)')
   const fromPetEnd = source.indexOf('\n/** 发给所有窗口的页面', fromPet)
-  const start = source.indexOf("ipcMain.on('piggy:content'")
-  const end = source.indexOf('\n// 面板窗口：', start)
-  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet && start > 0 && end > start, '必须加载生产诊断、窗口和鼠标入口')
+  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet, '必须加载生产诊断和发送者校验')
   runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(fromPet, fromPetEnd), context)
-  runInContext(source.slice(start, end), context)
+  const dragEngine = createDragEngine({
+    screen: sandbox.screen, pets, petForEvent: event => context.petForEvent(event),
+    panel: sandbox.panel, log: sandbox.log, surface,
+    setInterval: sandbox.setInterval, clearInterval: sandbox.clearInterval,
+    now: () => state.now,
+  })
+  sandbox.stopDrag = pet => dragEngine.stopDrag(pet)
+  registerGeometryIpc({
+    ipcMain: sandbox.ipcMain, screen: sandbox.screen, pets, platform,
+    petForEvent: event => context.petForEvent(event), panel: sandbox.panel, log: sandbox.log,
+    showPigWindow: pet => sandbox.showPigWindow(pet), surface,
+  })
+  registerDragIpc({ ipcMain: sandbox.ipcMain, engine: dragEngine })
   await manager.createWindow()
   return {
     mouse, shapes, sent, intervals, state, pets, primary, displays: displayList,
@@ -178,7 +190,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
       return event.returnValue
     },
     poll() { for (const timer of intervals.filter(timer => timer.active && timer.delay === 16)) timer.callback() },
-    tickDrag() { runInContext('dragTick(primaryPet())', context) },
+    tickDrag() { dragEngine.dragTick(primary) },
     point(x, y) { state.cursor = { x: state.bounds.x + x, y: state.bounds.y + y } },
     /** 光标按屏幕 DIP 直接给（跨屏测试用），不叠加窗口原点。 */
     cursorAt(x, y) { state.cursor = { x, y } },

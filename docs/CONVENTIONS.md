@@ -6,7 +6,7 @@
 
 | 通用规范 | 本项目 | 为什么 |
 |---|---|---|
-| 文件 ≤ 约 400 行 | 普通源码、外壳模块（`apps/desktop/lib/`）和直接编写的下载扩展遵守；后者因协议只下载单文件允许 ≤600 行。菜园 `client.js` / `server.js` 从 `src/extensions/farm/` 模块生成，作者模块均 ≤400 行；**豁免**：构建产物根 `client.js` 与 `extensions/farm/{client,server}.js`（须有生成横幅）、外壳主进程 `apps/desktop/main.js`（约 1000 行，待拆，见 HANDOFF） | 根 `client.js` 和菜园单文件都是 esbuild 产物；`main.js` 里窗口、拖动、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
+| 文件 ≤ 约 400 行 | 普通源码、外壳模块（`apps/desktop/lib/`）和直接编写的下载扩展遵守；后者因协议只下载单文件允许 ≤600 行。菜园 `client.js` / `server.js` 从 `src/extensions/farm/` 模块生成，作者模块均 ≤400 行；**豁免**：构建产物根 `client.js` 与 `extensions/farm/{client,server}.js`（须有生成横幅）、外壳主进程 `apps/desktop/main.js`（约 740 行，Electron 全局接线；拖动和几何 IPC 已拆到 `lib/drag-engine.js`、`lib/geometry-ipc.js`） | 根 `client.js` 和菜园单文件都是 esbuild 产物；`main.js` 里窗口、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
 | 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留**；在线扩展注释里的 ★（星级）保留 | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
 | 不引入构建步骤 | **允许**，用于面板插件和菜园客户端/服务端的单文件产物 | DSH 的面板按 classic `<script src>` 加载 `client.js`，扩展下载协议只收单个 farm `client.js` / `server.js`；源码拆分后由 esbuild 生成，运行时不加载额外模块 |
 
