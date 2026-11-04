@@ -33,7 +33,8 @@ export function isAssetPackFile(name) {
       && (parts[2] === 'pack.json' || /^[a-z][a-z0-9-]{0,47}\.(?:ogg|wav)$/.test(parts[2]))
   }
   if (parts.length === 3 && parts[0] === 'actions') {
-    return /^[a-z][a-z0-9-]{0,31}$/.test(parts[1]) && parts[2] === 'pack.json'
+    return /^[a-z][a-z0-9-]{0,31}$/.test(parts[1])
+      && (parts[2] === 'pack.json' || /^[a-z0-9][a-z0-9._-]*\.(?:png|webp)$/.test(parts[2]))
   }
   if (parts.length === 4 && parts[0] === 'actions') {
     return /^[a-z][a-z0-9-]{0,31}$/.test(parts[1]) && /^[a-z][a-z0-9-]{0,47}$/.test(parts[2])

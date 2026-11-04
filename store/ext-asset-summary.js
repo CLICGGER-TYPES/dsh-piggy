@@ -56,18 +56,30 @@ export function assetPackSummaryFromDisk(root, key, manifest) {
     let frames = 0
     let files = 0
     let bytes = 0
+    /** @type {Set<string>} */
+    const sourceFiles = new Set()
     try {
       const stat = lstatSync(join(dir, 'pack.json'))
       if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('not a regular file')
       files += 1
       bytes += stat.size
       const packJson = JSON.parse(readFileSync(join(dir, 'pack.json'), 'utf8'))
-      if (Array.isArray(packJson?.actions)) actionsCount = packJson.actions.length
+      if (Array.isArray(packJson?.actions)) {
+        actionsCount = packJson.actions.length
+        for (const action of packJson.actions) {
+          const source = action?.source
+          if (typeof source === 'string') sourceFiles.add(source)
+          else if (source !== null && typeof source === 'object' && typeof source.path === 'string') sourceFiles.add(source.path)
+        }
+      }
       if (packJson?.pack !== undefined && packJson.pack !== pack) packErrors.push(`actions/${pack}/pack.json.pack 与目录名不一致`)
     } catch { packErrors.push(`读不懂 actions/${pack}/pack.json`) }
     for (const [name, info] of entries) {
       if (name === 'pack.json') continue
-      if (!info.isDirectory) continue
+      if (!info.isDirectory) {
+        if (sourceFiles.has(name)) { frames += 1; files += 1; bytes += info.size }
+        continue
+      }
       for (const [frameName, frameInfo] of filesIn(join(dir, name), packErrors)) {
         if (frameInfo.isDirectory || !/^\d{2}\.(?:png|webp)$/.test(frameName)) continue
         frames += 1
