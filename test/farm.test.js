@@ -538,10 +538,11 @@ test('帮工每种作物、每档管地：收成就是地块真实产量，没�
     const data = establishedFarm(), t = fakeApi()
     data.exp = 10000
     const managed = Math.min(data.unlocked, HELPER_PLOTS[level])
-    data.helper.level = level
+    const workers = HELPER_PLOTS[level] / 4 // 覆盖只由收菜只数决定；旧 level 不再参与
     data.seeds[crop.key] = managed * 2
     for (let index = 0; index < managed; index += 1) farm.actions.plant(data, { plot: index, item: crop.key }, t.api)
     farm.actions.hire(data, {}, t.api)
+    data.helper.workers = Array.from({ length: workers }, (_, index) => ({ id: index + 1, role: 'harvest', locked: false, hiredAt: null }))
     let expected = 0
     for (const plot of data.plots.slice(0, managed)) expected += Math.max(1, crop.yield + plot.roll)
     t.api.now = T0 + crop.hours * H
@@ -757,8 +758,9 @@ test('农具档下架：商店不卖、结算不吃 barn，旧存档 barn 退款
   farm.actions.hire(data, {}, t.api)
   const keys = farm.view(data, t.api).shelf.items.map(item => item.key)
   assert.ok(!keys.includes('helper-barn'), '商店不再卖农具档：' + keys.join(','))
-  assert.ok(keys.includes('helper-level'), '管地数一档还在')
-  assert.equal(farm.actions.upgrade(data, { kind: 'barn' }, t.api).reason, 'locked', 'helperBuy 拒收 barn')
+  assert.ok(keys.includes('helper-additional'), '已雇后卖追加雇佣')
+  assert.ok(!keys.includes('helper-level'), '旧的管地数一档也下架了')
+  assert.equal(farm.actions.upgrade(data, { kind: 'barn' }, t.api).reason, 'unavailable', 'helperBuy 拒收 barn')
   for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
   const run = barn => {
     const copy = structuredClone(data), host = fakeApi()

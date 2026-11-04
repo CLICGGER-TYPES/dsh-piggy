@@ -25,8 +25,8 @@ const gameVersion = JSON.parse(readFileSync(new URL('package.json', packageRoot)
 
 /** 菜园服务端导出的全部名字；少一个老面板或老测试就会断。 */
 const NAMED_EXPORTS = [
-  'CARE_EXP', 'CROPS', 'EXERT', 'EXP_CAP', 'EXP_PER_LEVEL', 'FERTILIZERS', 'HELPER_PLOTS',
-  'HELPER_PRICES', 'HELPER_SHARE', 'HELPER_WINDOW', 'LESSON', 'OLD_HELPER_BARN_PRICES', 'PESTS',
+  'CARE_EXP', 'CROPS', 'EXERT', 'EXP_CAP', 'EXP_PER_LEVEL', 'FERTILIZERS', 'HELPER_MAX', 'HELPER_PLOTS',
+  'HELPER_PLOTS_PER_WORKER', 'HELPER_PRICES', 'HELPER_SHARE', 'HELPER_WINDOW', 'LESSON', 'OLD_HELPER_BARN_PRICES', 'PESTS',
   'PEST_LOSS', 'PEST_MS', 'PLOTS', 'RECLAIM_PRICE', 'STAGES', 'START_PLOTS', 'TOOLS', 'cropFor',
   'default', 'helperRecipe', 'levelOf', 'normalize', 'plotState', 'progress', 'setRandom',
   'settleHelper', 'weatherAt',
@@ -58,7 +58,8 @@ test('the generated server has the original named/default exports and no runtime
   assert.equal(typeof imported.progress, 'function')
   assert.deepEqual(Object.keys(imported.default.actions).sort(), [
     'buy', 'care', 'careAll', 'clear', 'clearAll', 'collect', 'fertilize', 'harvest', 'harvestAll',
-    'hire', 'onboarding', 'plant', 'plantAll', 'sell', 'store', 'toggleHelper', 'unlock', 'upgrade',
+    'hire', 'hireAdditional', 'onboarding', 'plant', 'plantAll', 'sell', 'setHelperRole',
+    'setHelperSchedule', 'store', 'toggleHelper', 'unlock', 'upgrade',
   ])
 })
 

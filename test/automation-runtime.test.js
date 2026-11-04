@@ -21,6 +21,6 @@ test('帮工动作失败整笔撤回；删除只清自己的帮工和仓、按�
     assert.equal(run.store.state.wallets.mine, undefined)
     assert.equal(run.store.state.coins, coins + wallet)
     assert.equal(run.store.state.extData.farm.helper.hired, true)
-    assert.equal(run.store.state.wallets.farm.balance, 7500)
+    assert.equal(run.store.state.wallets.farm.balance, 8500, '菜园首雇 1500（2026-11-04 起）')
   } finally { run.dispose() }
 })

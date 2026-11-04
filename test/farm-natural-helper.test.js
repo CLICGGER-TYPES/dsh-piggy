@@ -53,6 +53,11 @@ function farm9() {
 const cropOf = key => CROPS.find(crop => crop.key === key)
 const rollsOf = (data, count) => data.plots.slice(0, count).map(plot => plot.roll)
 const naturalYield = (crop, roll) => Math.max(1, crop.yield + roll)
+/** Slice 1 起首雇只给 1 只：回归用例要按只数控制覆盖，雇完直接换成 N 只收菜帮工。 */
+function hireHarvesters(data, t, count) {
+  assert.equal(farm.actions.hire(data, {}, t.api).ok, true)
+  data.helper.workers = Array.from({ length: count }, (_, index) => ({ id: index + 1, role: 'harvest', locked: false, hiredAt: null }))
+}
 const sumOf = (data, count) => data.plots.slice(0, count).reduce((sum, plot) => sum + (plot ? naturalYield(cropOf(plot.crop), plot.roll) : 0), 0)
 /** 只比较「长得对不对」：灾害时间每次结算按当前时刻重算，本来就不是存档事实。 */
 const growingShape = data => ({
@@ -66,9 +71,8 @@ beforeEach(() => setRandom(() => 0.5))
 test('六块小白菜同刻种：25 分钟六块都在长、2 小时一块没收，18 小时同刻收六块并按现有种子补种', () => {
   const t = api()
   const data = farm9()
-  data.helper.level = 1 // 管 8 块地
   data.seeds.cabbage = 12
-  farm.actions.hire(data, {}, t.api)
+  hireHarvesters(data, t, 2) // 管 8 块地
   for (const plot of [0, 1, 2, 3, 4, 5]) assert.equal(farm.actions.plant(data, { plot, item: 'cabbage' }, t.api).ok, true)
   const rolls = rollsOf(data, 6)
   const crop = cropOf('cabbage')
@@ -106,9 +110,8 @@ test('六块小白菜同刻种：25 分钟六块都在长、2 小时一块没收
 test('托管地只清灾害：已种下的 roll、plantedAt、boostMs 一个都不改', () => {
   const t = api()
   const data = farm9()
-  data.helper.level = 1
   data.seeds.radish = 10
-  farm.actions.hire(data, {}, t.api)
+  hireHarvesters(data, t, 1)
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
   data.plots[0].roll = 2
   data.plots[0].boostMs = 3 * H
@@ -136,7 +139,6 @@ test('离线多轮：一次结算到底，和逐小时结算的结果完全一�
   const setup = () => {
     const t = api()
     const data = farm9()
-    data.helper.level = 0 // 管 4 块地
     data.seeds.radish = 40
     farm.actions.hire(data, {}, t.api)
     for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
@@ -160,7 +162,6 @@ test('离线多轮：一次结算到底，和逐小时结算的结果完全一�
 test('同种种子不够时按 cursor 轮着补：先种前两块，买第二包后轮到后两块', () => {
   const t = api()
   const data = farm9()
-  data.helper.level = 0
   for (const index of [0, 1, 2, 3]) data.helper.targets[index] = 'radish'
   farm.actions.hire(data, {}, t.api)
   farm.actions.buy(data, { item: 'radish', count: 2 }, t.api)
@@ -177,7 +178,6 @@ test('多季作物：自动收满季数才枯萎，整株结束才消耗下一�
   const data = farm9()
   data.exp = 2100 // 7 级：南瓜
   const crop = cropOf('pumpkin')
-  data.helper.level = 0
   data.seeds.pumpkin = 3
   farm.actions.hire(data, {}, t.api)
   farm.actions.plant(data, { plot: 0, item: 'pumpkin' }, t.api)
@@ -210,7 +210,6 @@ test('多季作物：自动收满季数才枯萎，整株结束才消耗下一�
 test('缺种子停空地：收完不补、如实报缺哪种；买了种子下一次结算补上', () => {
   const t = api()
   const data = farm9()
-  data.helper.level = 0
   data.seeds.radish = 4
   farm.actions.hire(data, {}, t.api)
   for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
@@ -235,7 +234,6 @@ test('缺种子停空地：收完不补、如实报缺哪种；买了种子下�
 test('收仓只搬仓库：重复收仓不重复发货，也不动地块和生长时间', () => {
   const t = api()
   const data = farm9()
-  data.helper.level = 0
   data.seeds.radish = 8
   farm.actions.hire(data, {}, t.api)
   for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
@@ -256,7 +254,6 @@ test('view 反复调用不改变后续结果，也不推进全局随机', () => 
   const setup = () => {
     const t = api()
     const data = farm9()
-    data.helper.level = 0
     data.seeds.radish = 20
     farm.actions.hire(data, {}, t.api)
     for (const plot of [0, 1, 2, 3]) farm.actions.plant(data, { plot, item: 'radish' }, t.api)
@@ -416,9 +413,8 @@ test('新手试种不被误判已有进度：空存档和只有旧工时 / 旧�
 test('helperView 兼容字段：full 恒 false、capacityHours 为 null、continuous 只在 view 里；地块显示真实进度', () => {
   const t = api()
   const data = farm9()
-  data.helper.level = 1
   data.seeds.cabbage = 2
-  farm.actions.hire(data, {}, t.api)
+  hireHarvesters(data, t, 2)
   farm.actions.plant(data, { plot: 0, item: 'cabbage' }, t.api)
   t.api.now = T0 + 9 * H
   const view = farm.view(data, t.api)
@@ -458,9 +454,8 @@ test('雇用前早已成熟的多季作物只在雇用时收第一季，下一�
 test('异常超长离线超过结算保护时明确失败，不静默把结算时钟跳到当前时间', () => {
   const t = api(), data = farm9()
   data.unlocked = 18
-  data.helper.level = 2
   data.seeds.radish = 1_000_000
-  farm.actions.hire(data, {}, t.api)
+  hireHarvesters(data, t, 4)
   for (let plot = 0; plot < 16; plot++) farm.actions.plant(data, {plot,item:'radish'}, t.api)
   const lastAt = data.helper.lastAt
   t.api.now = T0 + 100 * 365 * 24 * H

@@ -6,8 +6,9 @@ import {api,establishedFarm,H,T0,renderFarm} from './helpers/farm-ui.js'
 
 test('六块托管地的纸感小农场与大农场均展示自然剩余时间，不再出现两小时排队', () => {
   const data=establishedFarm(), clock=api()
-  data.exp=10000; data.helper.level=1; data.seeds.cabbage=12
+  data.exp=10000; data.seeds.cabbage=12
   farm.actions.hire(data,{},clock)
+  data.helper.workers=Array.from({length:2},(_,index)=>({id:index+1,role:'harvest',locked:false,hiredAt:null}))
   for(let plot=0;plot<6;plot++) farm.actions.plant(data,{plot,item:'cabbage'},clock)
   clock.now=T0+25*60000
   const view=farm.view(data,clock)
