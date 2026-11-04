@@ -130,3 +130,19 @@ test('没有小猪时也提交收据，重复不再应用，通知只发一次',
     assert.equal(existsSync(statePath), false)
   } finally { runtime.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })
+
+test('workEventSources 按来源聚合最近收据，不返回正文', () => {
+  const directory = temp(), statePath = join(directory, 'state.json')
+  writeFileSync(statePath, JSON.stringify(hatchEgg(NOW)))
+  const runtime = createGameRuntime({ statePath, now: () => NOW })
+  try {
+    runtime.acceptWorkEvent(event({ source: 'dsh', id: 'dsh:1', type: 'turn' }))
+    runtime.acceptWorkEvent(event({ source: 'dsh', id: 'dsh:2', type: 'tool' }))
+    runtime.acceptWorkEvent(event({ source: 'opencode', id: 'oc:1', type: 'turn' }))
+    const sources = runtime.workEventSources()
+    assert.deepEqual(sources.map(entry => entry.source), ['dsh', 'opencode'])
+    assert.deepEqual(sources[0].types, { turn: 1, tool: 1 })
+    assert.deepEqual(sources[1], { source: 'opencode', count: 1, lastAt: NOW, types: { turn: 1 } })
+    assert.equal(Object.hasOwn(sources[0], 'id'), false)
+  } finally { runtime.dispose(); rmSync(directory, { recursive: true, force: true }) }
+})

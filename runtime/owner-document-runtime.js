@@ -197,6 +197,7 @@ export function createOwnerDocumentRuntime(options) {
       return result
     },
     acceptWorkEvent: workEvents.acceptWorkEvent,
+    workEventSources: workEvents.sources,
     configureCloudSave: cloudController.configure,
     testCloudSave: cloudController.test,
     firstSyncCloud: cloudController.firstSync,

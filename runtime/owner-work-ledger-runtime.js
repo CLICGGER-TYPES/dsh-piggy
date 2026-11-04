@@ -5,6 +5,7 @@ import { writeOwnerDocumentFile } from './owner-document-file.js'
 import { isRecord, sha256, stableText } from './owner-runtime-json.js'
 import { inspectCurrentOwnerDocument } from './owner-runtime-state.js'
 import { WORK_EVENT_WINDOW_MS, validateWorkEvent, workError } from './work-events.js'
+import { summarizeWorkSources } from './work-ledger-summary.js'
 import { readWorkJson, removeWorkFile, writeWorkJson } from './work-files.js'
 
 const RECEIPT_LIMIT = 20_000
@@ -145,5 +146,9 @@ export function createOwnerWorkLedger(options) {
     writeReceiptSet(next)
   }
 
-  return { recover, findEvent, pruneTo, assertCapacity, writeEventReceipt }
+  function sources() {
+    return summarizeWorkSources([...receipts.values()], { now: now() })
+  }
+
+  return { recover, findEvent, pruneTo, assertCapacity, writeEventReceipt, sources }
 }

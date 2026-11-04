@@ -284,6 +284,10 @@ async function request(message) {
     return { ok: true }
   }
   if (message.method === 'acceptWorkEvent') return host.acceptWorkEvent(...message.args)
+  if (message.method === 'work-event-sources') {
+    if (typeof host?.workEventSources !== 'function') return { ok: false, sources: [] }
+    return { ok: true, sources: host.workEventSources() }
+  }
   if (message.method === 'record') return host.record(...message.args)
   if (message.method === 'owner:list-pigs') {
     if (typeof host?.listPigTargets !== 'function') throw new Error('当前游戏版本不支持多猪管理')
