@@ -706,7 +706,8 @@ async function createPigWindow(pet, override = null) {
   const width = saved === null ? FALLBACK_CONTENT.width + WINDOW_PADDING * 2 : saved.width
   const height = saved === null ? FALLBACK_CONTENT.height + WINDOW_PADDING * 2 : saved.height
   const anchorRight = saved === null ? 18 : null
-  const stagger = pet.primary ? 0 : Math.max(0, pets.all().indexOf(pet)) * 28
+  // 多猪首启错开：28px 不够，窗口几乎叠在一起；每只副猪向左上挪 140px。
+  const stagger = pet.primary ? 0 : Math.max(0, pets.all().indexOf(pet)) * 140
   const start = saved === null
     ? clampBounds({ x: area.x + area.width - width - anchorRight - stagger, y: area.y + area.height - height - anchorRight - stagger, width, height }, area)
     : clampBounds({ ...saved, width, height }, area)

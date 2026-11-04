@@ -147,6 +147,7 @@ test('两只 pet 窗口的 content/place 各自算自己的窗口，互不覆盖
   assert.match(b.url, /index\.html\?pig=pig-b$/)
   assert.equal(a.options.webPreferences.additionalArguments.includes('--piggy-primary=1'), true)
   assert.equal(b.options.webPreferences.additionalArguments.includes('--piggy-primary=1'), false)
+  assert.ok(b.getBounds().x <= a.getBounds().x - 100, 'secondary pet window starts cascaded away from the primary')
 
   const bBefore = b.getBounds()
   shell.place(a, { bounds: { x: 100, y: 120, width: 320, height: 300 }, shape: SHAPE, pig: PIG })
