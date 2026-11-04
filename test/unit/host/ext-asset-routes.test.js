@@ -261,3 +261,36 @@ test('/state 的素材包摘要带 kind、数量、可用状态和基址，旧�
     } finally { dispose() }
   } finally { t.done() }
 })
+
+test('单图 source 动作的文件可读取，摘要按 1 帧统计', async () => {
+  const t = setup()
+  try {
+    const files = {
+      'manifest.json': JSON.stringify({
+        key: KEY, label: '单图扩展', emoji: '🎨', version: '1.0.0',
+        assetPacks: { actions: ['still'], sounds: [] },
+      }),
+      'server.js': 'export default { init() { return { saved: 0 } }, actions: { ping() { return { ok: true } } } }',
+      'client.js': 'void 0',
+      'actions/still/pack.json': JSON.stringify({
+        pack: 'still',
+        actions: [{ key: 'still', kind: 'action', source: 'still.png', durationMs: 100 }],
+      }),
+      'actions/still/still.png': PNG,
+    }
+    const imported = await t.runtime.importBundle(makeBundle(files), true)
+    assert.equal(imported.ok, true, JSON.stringify(imported))
+    const { routes, dispose } = routesFor(t.store)
+    try {
+      const image = await request(routes, `/dsh-piggy/ext/${KEY}/actions/still/still.png`)
+      assert.equal(image.status, 200)
+      assert.equal(image.headers['content-type'], 'image/png')
+      assert.deepEqual(image.body, PNG)
+      const state = await request(routes, '/dsh-piggy/state')
+      const pack = JSON.parse(state.text).extensions.find(item => item.key === KEY).assetPacks.actions.find(item => item.pack === 'still')
+      assert.equal(pack.frames, 1)
+      assert.equal(pack.entries, 1)
+      assert.equal(pack.available, true)
+    } finally { dispose() }
+  } finally { t.done() }
+})

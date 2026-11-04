@@ -400,3 +400,47 @@ test('坏素材包的更新在换文件前就失败，旧版本原样保留', as
     assert.equal(t.runtime.list(t.store.state).find(item => item.key === KEY).version, '1.0.0')
   } finally { t.done() }
 })
+
+test('单图 source 动作可安装，缺文件、坏图和与 frames 冲突都被拒绝', async t => {
+  const setupOne = setup()
+  try {
+    const files = packageFiles()
+    delete files['actions/wave/wave/00.png']
+    delete files['actions/wave/wave/01.png']
+    files['actions/wave/pack.json'] = JSON.stringify({
+      pack: 'wave',
+      actions: [{ key: 'wave', kind: 'action', source: 'wave.png', durationMs: 200 }],
+    })
+    files['actions/wave/wave.png'] = PNG
+    const result = await setupOne.importFiles(files)
+    assert.equal(result.ok, true, JSON.stringify(result))
+    const entry = setupOne.runtime.list(setupOne.store.state)[0]
+    assert.equal(entry.assetPacks.actions[0].frames, 1)
+    assert.equal(entry.assetPacks.actions[0].entries, 1)
+  } finally { setupOne.done() }
+
+  for (const [label, mutate] of [
+    ['missing', files => { delete files['actions/wave/wave.png'] }],
+    ['bad-magic', files => { files['actions/wave/wave.png'] = Buffer.from('not a png') }],
+    ['both', files => {
+      const manifest = JSON.parse(String(files['actions/wave/pack.json']))
+      manifest.actions[0].frames = { fps: 10 }
+      files['actions/wave/pack.json'] = JSON.stringify(manifest)
+    }],
+  ]) {
+    const item = setup()
+    try {
+      const files = packageFiles()
+      delete files['actions/wave/wave/00.png']
+      delete files['actions/wave/wave/01.png']
+      files['actions/wave/pack.json'] = JSON.stringify({
+        pack: 'wave',
+        actions: [{ key: 'wave', kind: 'action', source: 'wave.png', durationMs: 200 }],
+      })
+      files['actions/wave/wave.png'] = PNG
+      mutate(files)
+      const result = await item.importFiles(files)
+      assert.equal(result.ok, false, label + ': ' + JSON.stringify(result))
+    } finally { item.done() }
+  }
+})

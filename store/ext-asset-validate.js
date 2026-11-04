@@ -4,21 +4,22 @@
  * @module dsh-piggy/store/ext-asset-validate
  */
 import {
-  ACTION_FIELDS, ASSET_KEY, MAX_ACTION_MS, MAX_ACTIONS_PER_PACK, MAX_EXTENSION_PACK_BYTES,
+  ACTION_FIELDS, ASSET_KEY, MAX_ACTION_MS, MAX_ACTIONS_PER_PACK, MAX_EXTENSION_PACK_BYTES, MAX_FRAME_EDGE,
   MAX_EXTENSION_PACK_FILES, MAX_FRAME_BYTES, MAX_PACK_BYTES, MAX_PACK_FILES, MAX_PACK_JSON_BYTES,
   MAX_SOUND_BYTES, MAX_SOUND_MS, MAX_SOUNDS_PER_PACK, PACK_ID, SOUND_FIELDS, SOUND_REF, TRIGGERS,
-  assetPackBase, checkEligibility, checkFrameFiles, checkPathName, checkSynth, declaredAssetPacks, frameTiming, inRange,
-  isAssetPackPath, isRecord, onlyFields, readJson,
+  FRAME_FILE, SINGLE_FILE, assetPackBase, checkEligibility, checkFrameFiles, checkPathName, checkSynth, declaredAssetPacks, frameTiming, inRange,
+  isAssetPackPath, isRecord, imageSize, onlyFields, readJson,
 } from './ext-asset-schema.js'
 
 /**
  * @param {any} action
  * @param {Map<string, Buffer>} frames
+ * @param {Map<string, Buffer>} files
  * @param {string} label
  * @param {string[]} problems
- * @returns {{ key: string, frames: number, bytes: number, sound: string|null, fallback: any } | null}
+ * @returns {{ key: string, frames: number, bytes: number, sound: string|null, fallback: any, source: string|null } | null}
  */
-function checkAction(action, frames, label, problems) {
+function checkAction(action, frames, files, label, problems) {
   if (!onlyFields(action, ACTION_FIELDS, label, problems)) return null
   if (typeof action.key !== 'string' || !ASSET_KEY.test(action.key)) {
     problems.push(`${label}.key: 必须匹配 ${ASSET_KEY}`)
@@ -27,19 +28,45 @@ function checkAction(action, frames, label, problems) {
   const at = `${label}(${action.key})`
   if (action.kind !== 'action') problems.push(`${at}.kind: 只能是 "action"`)
   if (action.frame !== undefined) problems.push(`${at}.frame: 不要手写取景/命中框；帧元数据由安装器计算`)
-  if (action.source !== undefined) problems.push(`${at}.source: 第三方素材包只支持 frames 帧序列，不能引用第一方或外部图片`)
-  if (action.motion !== undefined) problems.push(`${at}.motion: 第三方素材包只支持 frames 帧序列，不能引用第一方 CSS 动效`)
-  if (action.frames === undefined) {
-    problems.push(`${at}.frames: 第三方动作必须声明 fps 或 durationsMs`)
+  let source = null
+  if (action.source !== undefined) {
+    const raw = action.source
+    if (typeof raw === 'string') source = raw
+    else if (isRecord(raw) && (raw.scheme === undefined || raw.scheme === 'path') && typeof raw.path === 'string') source = raw.path
+    else problems.push(`${at}.source: 必须是相对图片路径或 { scheme: "path", path }`)
+    if (source !== null && (!SINGLE_FILE.test(source) || source.includes('..'))) {
+      problems.push(`${at}.source: 单图动作只接受素材包根目录的 png/webp 文件名`)
+      source = null
+    }
+  }
+  if (action.motion !== undefined) problems.push(`${at}.motion: 第三方素材包不支持第一方 CSS 动效`)
+  if (action.frames !== undefined && source !== null) problems.push(`${at}: source 和 frames 只能二选一`)
+  if (action.frames === undefined && source === null) {
+    problems.push(`${at}.frames: 第三方动作必须声明 frames 或 source`)
     return null
   }
   if (!Number.isInteger(action.durationMs) || action.durationMs <= 0 || action.durationMs > MAX_ACTION_MS) {
     problems.push(`${at}.durationMs: 必须是 1–${MAX_ACTION_MS} 的整数毫秒`)
   }
-  const timing = frameTiming(action.frames, frames.size, at, problems)
-  const checked = checkFrameFiles(frames, at, problems)
-  if (timing !== null && checked !== null && Number.isInteger(action.durationMs) && action.durationMs !== timing.total) {
-    problems.push(`${at}.durationMs: 是 ${action.durationMs}ms，但 ${checked.count} 帧总时长为 ${timing.total}ms`)
+  let timing = null
+  let checked = null
+  if (action.frames !== undefined) {
+    timing = frameTiming(action.frames, frames.size, at, problems)
+    checked = checkFrameFiles(frames, at, problems)
+    if (timing !== null && checked !== null && Number.isInteger(action.durationMs) && action.durationMs !== timing.total) {
+      problems.push(`${at}.durationMs: 是 ${action.durationMs}ms，但 ${checked.count} 帧总时长为 ${timing.total}ms`)
+    }
+  } else {
+    const body = files.get(source)
+    if (body === undefined) problems.push(`${at}.source: 找不到文件 ${source}`)
+    else {
+      const ext = source.slice(source.lastIndexOf('.') + 1)
+      if (body.length > MAX_FRAME_BYTES) problems.push(`${at}.source: ${source} 有 ${body.length} B，超过单帧上限 ${MAX_FRAME_BYTES} B`)
+      const size = imageSize(body, ext)
+      if (size === null || size.width <= 0 || size.height <= 0) problems.push(`${at}.source: ${source} 内容不是有效的 ${ext.toUpperCase()}`)
+      else if (Math.max(size.width, size.height) > MAX_FRAME_EDGE) problems.push(`${at}.source: ${source} 是 ${size.width}×${size.height}，长边超过 ${MAX_FRAME_EDGE}`)
+      checked = { count: 1, bytes: body.length, ext }
+    }
   }
   checkEligibility(action.eligibility, `${at}.eligibility`, problems)
   if (action.trigger !== undefined) {
@@ -67,7 +94,7 @@ function checkAction(action, frames, label, problems) {
       problems.push(`${at}.fallback: 必须是同扩展动作 key 或引用对象`)
     }
   }
-  return { key: action.key, frames: checked?.count ?? 0, bytes: checked?.bytes ?? 0, sound: typeof action.sound === 'string' ? action.sound : null, fallback }
+  return { key: action.key, frames: checked?.count ?? 0, bytes: checked?.bytes ?? 0, sound: typeof action.sound === 'string' ? action.sound : null, fallback, source }
 }
 
 /**
@@ -178,7 +205,7 @@ export function validateAssetPackFiles(key, input, manifest) {
   problems.push(...declared.problems)
   const declaredActions = new Set(declared.actions)
   const declaredSounds = new Set(declared.sounds)
-  /** @type {Map<string, { packJson?: Buffer, frames: Map<string, Map<string, Buffer>> }>} */
+  /** @type {Map<string, { packJson?: Buffer, frames: Map<string, Map<string, Buffer>>, files: Map<string, Buffer> }>} */
   const actionGroups = new Map()
   /** @type {Map<string, { packJson?: Buffer, files: Map<string, Buffer> }>} */
   const soundGroups = new Map()
@@ -194,14 +221,17 @@ export function validateAssetPackFiles(key, input, manifest) {
         problems.push(`未在 manifest.assetPacks.actions 声明的素材包：${pack}`)
         continue
       }
-      /** @type {{ packJson?: Buffer, frames: Map<string, Map<string, Buffer>> }} */
-      const group = actionGroups.get(pack) ?? { frames: new Map() }
+      /** @type {{ packJson?: Buffer, frames: Map<string, Map<string, Buffer>>, files: Map<string, Buffer> }} */
+      const group = actionGroups.get(pack) ?? { frames: new Map(), files: new Map() }
       if (rest[0] === 'pack.json') group.packJson = /** @type {Buffer} */ (files.get(name))
-      else {
+      else if (rest.length === 1) group.files.set(rest[0], /** @type {Buffer} */ (files.get(name)))
+      else if (FRAME_FILE.test(rest[1])) {
         const action = rest[0]
         const map = group.frames.get(action) ?? new Map()
         map.set(rest[1], /** @type {Buffer} */ (files.get(name)))
         group.frames.set(action, map)
+      } else {
+        group.files.set(rest[0] + '/' + rest[1], /** @type {Buffer} */ (files.get(name)))
       }
       actionGroups.set(pack, group)
     } else {
@@ -243,18 +273,19 @@ export function validateAssetPackFiles(key, input, manifest) {
     }
     if (packJson.actions.length > MAX_ACTIONS_PER_PACK) problems.push(`actions/${pack}/pack.json.actions: 最多 ${MAX_ACTIONS_PER_PACK} 个动作`)
     const used = new Set()
+    const usedFiles = new Set()
     let packFrameFiles = 0
     let packBytes = group.packJson.length
     packJson.actions.forEach((/** @type {any} */ action, /** @type {number} */ index) => {
       const label = `actions/${pack}/pack.json actions[${index}]`
       if (isRecord(action) && typeof action.key === 'string') {
         const frameMap = group.frames.get(action.key)
-        if (frameMap === undefined) {
+        if (action.frames !== undefined && frameMap === undefined) {
           problems.push(`${label}.frames: 找不到帧目录 actions/${pack}/${action.key}`)
           return
         }
-        used.add(action.key)
-        const checked = checkAction(action, frameMap, label, problems)
+        if (action.frames !== undefined) used.add(action.key)
+        const checked = checkAction(action, frameMap ?? new Map(), group.files, label, problems)
         if (checked === null) return
         if (seenActionKeys.has(checked.key)) problems.push(`${label}.key: 动作 "${checked.key}" 在扩展里重复（${seenActionKeys.get(checked.key)}）`)
         seenActionKeys.set(checked.key, pack)
@@ -268,6 +299,7 @@ export function validateAssetPackFiles(key, input, manifest) {
             problems.push(`${label}.fallback.pack: 引用了未声明的动作包 ${checked.fallback.pack}`)
           }
         }
+        if (checked.source !== null) usedFiles.add(checked.source)
         packFrameFiles += checked.frames
         packBytes += checked.bytes
         actions.push({ pack, key: checked.key, frames: checked.frames, bytes: checked.bytes })
@@ -276,7 +308,10 @@ export function validateAssetPackFiles(key, input, manifest) {
     for (const action of group.frames.keys()) {
       if (!used.has(action)) problems.push(`actions/${pack}/${action}: 帧目录没有在 pack.json 里声明`)
     }
-    const count = packFrameFiles + 1
+    for (const file of group.files.keys()) {
+      if (!usedFiles.has(file)) problems.push(`actions/${pack}/${file}: 图片没有在 pack.json 里声明`)
+    }
+    const count = packFrameFiles + group.files.size + 1
     if (count > MAX_PACK_FILES) problems.push(`actions/${pack}: ${count} 个文件，超过上限 ${MAX_PACK_FILES}`)
     if (packBytes > MAX_PACK_BYTES) problems.push(`actions/${pack}: ${Math.round(packBytes / 1024)}KB，超过上限 6MB`)
   }

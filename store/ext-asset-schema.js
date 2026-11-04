@@ -43,6 +43,7 @@ export function assetPackBase(key, kind, pack) {
   return `/dsh-piggy/ext/${key}/${kind}/${pack}/`
 }
 export const FRAME_FILE = /^(\d{2})\.(png|webp)$/
+export const SINGLE_FILE = /^[a-z0-9][a-z0-9._-]*\.(png|webp)$/
 export const SOUND_FILE = /^([a-z][a-z0-9-]{0,47})\.(ogg|wav)$/
 export const SOUND_REF = /^(?:[a-z][a-z0-9-]{0,31}\/)?[a-z][a-z0-9-]{0,47}$/
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
@@ -101,10 +102,10 @@ export function isAssetPackPath(name) {
     return PACK_ID.test(parts[1]) && (parts[2] === 'pack.json' || SOUND_FILE.test(parts[2]))
   }
   if (parts.length === 3 && parts[0] === 'actions') {
-    return PACK_ID.test(parts[1]) && parts[2] === 'pack.json'
+    return PACK_ID.test(parts[1]) && (parts[2] === 'pack.json' || SINGLE_FILE.test(parts[2]))
   }
   if (parts.length === 4 && parts[0] === 'actions') {
-    return PACK_ID.test(parts[1]) && ASSET_KEY.test(parts[2]) && FRAME_FILE.test(parts[3])
+    return PACK_ID.test(parts[1]) && ASSET_KEY.test(parts[2]) && (FRAME_FILE.test(parts[3]) || SINGLE_FILE.test(parts[3]))
   }
   return false
 }

@@ -13,7 +13,7 @@ import { join, resolve, sep } from 'node:path'
 
 import {
   ASSET_KEY, MAX_FRAME_BYTES, MAX_FRAME_EDGE, MAX_PACK_JSON_BYTES, MAX_SOUND_BYTES,
-  PACK_ID, SOUND_FILE, declaredAssetPacks, imageSize,
+  PACK_ID, SINGLE_FILE, SOUND_FILE, declaredAssetPacks, imageSize,
 } from './ext-asset-schema.js'
 
 const ACTION_FRAME = /^([a-z][a-z0-9-]{0,47})\/(\d{2})\.(png|webp)$/
@@ -45,7 +45,8 @@ function safeParts(kind, file) {
   if (!parts.every(part => /^[a-z0-9][a-z0-9._-]*$/.test(part))) return null
   if (file === PACK_JSON) return parts
   if (kind === 'actions') {
-    return parts.length === 2 && ASSET_KEY.test(parts[0]) && /^\d{2}\.(?:png|webp)$/.test(parts[1]) ? parts : null
+    if (parts.length === 1 && SINGLE_FILE.test(parts[0])) return parts
+    return parts.length === 2 && ASSET_KEY.test(parts[0]) && (/^\d{2}\.(?:png|webp)$/.test(parts[1]) || SINGLE_FILE.test(parts[1])) ? parts : null
   }
   return parts.length === 1 && SOUND_FILE.test(parts[0]) ? parts : null
 }
@@ -119,19 +120,28 @@ export function readAssetPackFile(root, entry, key, kind, pack, file) {
   if (file !== PACK_JSON) {
     if (kind === 'actions') {
       const match = ACTION_FRAME.exec(file)
-      if (match === null) return fail(404)
-      const actionKey = match[1]
-      const frameIndex = Number(match[2])
-      const action = entries.find((/** @type {any} */ item) => item !== null && typeof item === 'object' && item.key === actionKey)
-      if (action === undefined || action.kind !== 'action' || action.frames === null
-        || typeof action.frames !== 'object' || Array.isArray(action.frames)) return fail(404)
-      // durationsMs 直接给出帧数；fps + durationMs 也能反推出安装时校验过的帧数。
-      let count = null
-      if (Array.isArray(action.frames.durationsMs)) count = action.frames.durationsMs.length
-      else if (Number.isInteger(action.frames.fps) && Number.isInteger(action.durationMs) && action.durationMs > 0) {
-        count = Math.round(action.durationMs * action.frames.fps / 1000)
+      if (match === null) {
+        const action = entries.find((/** @type {any} */ item) => {
+          if (item === null || typeof item !== 'object' || item.kind !== 'action') return false
+          const source = item.source
+          if (typeof source === 'string') return source === file
+          return source !== null && typeof source === 'object' && source.scheme === 'path' && source.path === file
+        })
+        if (action === undefined) return fail(404)
+      } else {
+        const actionKey = match[1]
+        const frameIndex = Number(match[2])
+        const action = entries.find((/** @type {any} */ item) => item !== null && typeof item === 'object' && item.key === actionKey)
+        if (action === undefined || action.kind !== 'action' || action.frames === null
+          || typeof action.frames !== 'object' || Array.isArray(action.frames)) return fail(404)
+        // durationsMs 直接给出帧数；fps + durationMs 也能反推出安装时校验过的帧数。
+        let count = null
+        if (Array.isArray(action.frames.durationsMs)) count = action.frames.durationsMs.length
+        else if (Number.isInteger(action.frames.fps) && Number.isInteger(action.durationMs) && action.durationMs > 0) {
+          count = Math.round(action.durationMs * action.frames.fps / 1000)
+        }
+        if (count !== null && frameIndex >= count) return fail(404)
       }
-      if (count !== null && frameIndex >= count) return fail(404)
     } else {
       const soundKey = file.slice(0, file.lastIndexOf('.'))
       const sound = entries.find((/** @type {any} */ item) => item !== null && typeof item === 'object' && item.key === soundKey && item.file === file)

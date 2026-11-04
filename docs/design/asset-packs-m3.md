@@ -127,15 +127,15 @@ extensions/<key>/
 第一方动作包继续使用 `scripts/asset-packs.mjs` 的 6 MB / 256 文件预算；第三方与它同量级，
 但额外限制扩展总预算，避免一个扩展塞进多个满包。
 
-### 5.2 帧
+### 5.2 动作图片
 
 - 文件名固定两位序号：`00.png`、`01.png`……必须从 00 连续；缺号、跳号、多文件都拒绝。
 - 一个动作只能用一种格式：全 PNG 或全 WebP，不能混用。
 - 单帧 ≤ 128 KB，长边 ≤ 512 px；安装器读 PNG IHDR / WebP VP8X、VP8L、VP8 头取尺寸。
 - 内容必须与扩展名 magic 一致；只有扩展名对、内容不是有效图片的拒收。
 - 动作必须写 `frames: { fps }` 或 `frames: { durationsMs }`；`durationMs` 必须等于帧总时长。
-- 第三方动作**只支持帧序列**：`source`（引用第一方/外部图片）和 `motion`（引用第一方 CSS
-  动效）都拒绝。这样素材包自包含，不会把路径指向扩展目录之外。
+- 单图动作：`source` 写素材包根目录的文件名（如 `wave.png`），`durationMs` 必填；文件同样校验 magic、≤128 KB、长边 ≤512 px。
+- `source` 与 `frames` 二选一；`motion`（第一方 CSS 动效）仍拒绝。这样素材包自包含，不会把路径指向扩展目录之外。
 
 ### 5.3 音效
 
@@ -358,8 +358,7 @@ document.dispatchEvent(new CustomEvent('dsh-piggy:action', {
 1. **UI**：扩展页仍只显示摘要，没有“试播/预览”按钮。
 2. **触发时机**：第三方动作只能由扩展 `client.js` 的显式事件播放；`trigger.on`
    （pet/feed/idle 等）暂不接入自动触发。
-3. **单图安装**：客户端转换支持 `source` 单图，但 M3 安装器仍只收帧序列（§5.2），
-   单图形状留给后续安装协议或内置包使用。
+3. **单图安装**：安装器已支持 `source` 单图（素材包根目录文件名）；更复杂的图集仍留给后续。
 
 ## 13. 客户端音效注册/播放（第四刀）
 
@@ -423,7 +422,7 @@ document.dispatchEvent(new CustomEvent('dsh-piggy:sound', {
 1. **自动触发**：把 `pack.json` 的 `trigger.on` 接到现有 pet/feed/idle 事件，仍只接受
    已注册的第三方动作；音效跟随动作或显式事件。
 2. **UI（已完成）**：扩展卡片已显示动作/音效包摘要并支持试播/试听，见 §13.4。
-3. **单图安装**：客户端转换支持 `source` 单图，但 M3 安装器仍只收帧序列（§5.2）。
+3. **图集/GIF**：仍不支持。
 4. **存档备份**：第三方扩展仍不进存档 ZIP；若以后官方扩展使用素材包，需要把
    `actions/`、`sounds/` 加入 `runtime/save-archive.js` 的文件白名单与官方哈希清单。
 5. **发布链路**：`extension-entry.mjs` / `extension-bundle.mjs` 已能打包 `assetPacks`；
