@@ -14,7 +14,8 @@ import { startBackgroundHost } from '../lib/background-host.js'
 import { buildOptionalExtensions } from '../scripts/pack-optional-extensions.mjs'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
-const NOW = Date.UTC(2026, 9, 27, 12)
+// 用当前时间：固定日期会让孵化出的猪在几天后按真实时钟老死，测试随日期变红。
+const NOW = Date.now()
 let packed, built
 before(() => {
   packed = mkdtempSync(join(tmpdir(), 'piggy-installer-packs-'))
