@@ -14,7 +14,8 @@ const PIG_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 /** Read the pet identity from the preload shell; old shells have no pigId and stay single-pig. */
 function pigContext(shell) {
   const pigId = typeof shell?.pigId === 'string' && PIG_ID_PATTERN.test(shell.pigId) ? shell.pigId : null
-  return { pigId, primary: pigId !== null && shell.primary === true }
+  const slot = pigId !== null && Number.isInteger(shell?.slot) && shell.slot >= 0 && shell.slot <= 3 ? shell.slot : null
+  return { pigId, primary: pigId !== null && shell.primary === true, slot }
 }
 
 /**
@@ -112,7 +113,7 @@ export function install(shell) {
       ;/** @type {any} */ (window).__dshPiggyShellOutdated = true
     }
     if (petController === null) {
-      const { pigId, primary } = pigContext(shell)
+      const { pigId, primary, slot } = pigContext(shell)
       scopeFetchToPig(pigId)
       petController = createPetController({
         shell,
@@ -120,6 +121,7 @@ export function install(shell) {
         windowObject: window,
         pigId,
         primary,
+        slot,
         // Compatibility getter for the existing single-pig page. New callers can
         // provide an instance-scoped root through createPetController directly.
         getHost: () => document.querySelector('[data-dsh-pig]'),

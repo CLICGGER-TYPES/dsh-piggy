@@ -8,7 +8,7 @@ import { suppressNativeTooltips } from './tooltips.js'
 
 /**
  * @param {{shell:any, documentObject:Document, windowObject:Window, getHost:()=>any,
- *   pigId?:string|null, primary?:boolean}} deps
+ *   pigId?:string|null, primary?:boolean, slot?:number|null}} deps
  */
 export function createPetController(deps) {
   const shell = deps.shell
@@ -55,6 +55,7 @@ export function createPetController(deps) {
     setHitRects: input.setHitRects,
     pigId,
     primary,
+    slot: deps.slot,
   })
 
   const flight = createFlightBridge({

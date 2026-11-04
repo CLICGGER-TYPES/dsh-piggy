@@ -188,3 +188,17 @@ test('pet adapter exposes the window identity only when pigId is valid', () => {
   assert.equal(singleWin.__dshPiggyShell.primary, false)
   assert.equal(Object.hasOwn(singleWin.__dshPiggyShell, 'multiPig'), false)
 })
+
+test('new pigs without a saved home use their slot offset and stay deterministic', () => {
+  memory.clear()
+  const win = { x: 646, y: 246, width: 364, height: 332 }
+  const at = { x: 228, y: 120 }
+  for (const [slot, x] of [[1, 1495], [2, 1115], [3, 735]]) {
+    const placement = createPlacement({ pigId: 'pig-slot-' + slot, primary: false, slot })
+    placement.decide(report(304, 204, at), win, AREA)
+    assert.deepEqual(placement.home(), { x, y: 996 }, 'slot ' + slot)
+  }
+  const noSlot = createPlacement({ pigId: 'pig-no-slot', primary: false })
+  noSlot.decide(report(304, 204, at), win, AREA)
+  assert.deepEqual(noSlot.home(), foot(win, at), 'no slot keeps the old bounds fallback')
+})

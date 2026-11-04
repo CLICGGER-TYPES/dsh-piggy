@@ -93,7 +93,7 @@ export function createWindowManager(deps) {
     let startupPageFailureReported = false
     const url = pet.pigId === null ? 'piggy://app/index.html' : `piggy://app/index.html?pig=${encodeURIComponent(pet.pigId)}`
     const pigArguments = pet.pigId === null ? []
-      : ['--piggy-role=pet', `--piggy-pig=${pet.pigId}`, ...(pet.primary ? ['--piggy-primary=1'] : [])]
+      : ['--piggy-role=pet', `--piggy-pig=${pet.pigId}`, ...(pet.primary ? ['--piggy-primary=1'] : []), `--piggy-slot=${Math.max(0, deps.pets.all().indexOf(pet))}`]
     pet.owner.create({
       options: {
         ...start,
