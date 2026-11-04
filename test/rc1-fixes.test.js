@@ -2,15 +2,19 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { SNAPSHOT, contentOf, findByAttr, findByClass, hostOf, mount, openPanel, settle } from './helpers/bundle.js'
+import { press } from './helpers/pointer.js'
 
-test('the sign-in bubble stops pointerup too, so tapping it never pats the pig instead', async () => {
-  const { dom } = await mount({ status: { ...SNAPSHOT, daily: { ...SNAPSHOT.daily, canSignIn: true } } })
+test('the sign-in bubble owns the whole gesture, so tapping it never pats the pig instead', async () => {
+  const daily = { ...SNAPSHOT.daily, canSignIn: true, signInDay: 2 }
+  const { dom, calls } = await mount({
+    status: { ...SNAPSHOT, daily },
+    actResult: { ...SNAPSHOT, daily: { ...daily, canSignIn: false, signInTotal: 2 } },
+  })
   const hint = findByClass(hostOf(dom), 'dp-daily')
-  for (const type of ['pointerdown', 'pointerup']) {
-    let stopped = false
-    hint.fire(type, { stopPropagation() { stopped = true } })
-    assert.equal(stopped, true, type)
-  }
+  for (const type of ['pointerdown', 'pointerup', 'click']) press(hint, type, { clientX: 35, clientY: 31 })
+  await settle(); await settle()
+  const posted = calls.filter(call => call.method === 'POST').map(call => JSON.parse(call.body).action)
+  assert.deepEqual(posted, ['signIn'], '签到只发签到，没有 touch/pet')
 })
 
 test('while the pig is out, starting work asks first, then calls it back and goes', async () => {

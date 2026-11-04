@@ -13,7 +13,11 @@ import { FEEL } from './feel/config.js'
 import { recentVelocity } from './feel/velocity.js'
 import { partAt } from './pet-parts.js'
 import { playAudioCue, unlockAudioCue } from './audio-context.js'
-import { hitsPig } from './hit-regions.js'
+import { hitsPig, hitsRects } from './hit-regions.js'
+
+// 图标（签到/礼包）按下后，动作返回可能立刻把它隐藏或换位；同一坐标的下一击
+// 就会落到场景上。这里给原矩形留一层很短（≤300ms）的防穿透盾。
+const SHIELD_MS = 300
 
 function pointerScreen(event) {
   return {
@@ -37,6 +41,27 @@ function pointerScreen(event) {
 export function attachGestures(c) {
   let drag = null
   let stopHeartbeat = function () {}
+  /** @type {{x:number,y:number,width:number,height:number,until:number}[]} */
+  let shields = []
+
+  /** 记下被点控件此刻的矩形：动作返回后它可能已经不在指针下面。 */
+  function shieldFrom(node) {
+    const box = node?.getBoundingClientRect?.()
+    if (!box || !(box.width > 0) || !(box.height > 0)) return
+    const now = performance.now()
+    shields = shields.filter(rect => rect.until > now)
+    shields.push({ x: box.left ?? box.x, y: box.top ?? box.y, width: box.width, height: box.height,
+      until: now + SHIELD_MS })
+    // 按下和 click 之间按钮可能已经被挪动；留最近两个原矩形就够覆盖一次交互。
+    if (shields.length > 2) shields.shift()
+  }
+
+  /** @param {{clientX:number,clientY:number}} event */
+  function shielded(event) {
+    const now = performance.now()
+    shields = shields.filter(rect => rect.until > now)
+    return shields.some(rect => hitsRects([rect], event))
+  }
 
   function velocity() {
     if (drag === null) return { vx: 0, vy: 0 }
@@ -86,6 +111,10 @@ export function attachGestures(c) {
 
   function onPointerDown(event) {
     if (event.button !== 0 || drag !== null) return
+    // 点在签到/礼包上：即使它自己的 stopPropagation 因为 DOM 已换掉而没跑到，
+    // 也不许场景开始拖动或摸摸。
+    if (event.target?.closest?.('.dp-daily') ?? false) return
+    if (shielded(event)) return
     if (!hitsPig(c.host, event)) return
     stopHeartbeat()
     stopHeartbeat = function () {}
@@ -216,6 +245,7 @@ export function attachGestures(c) {
 
   return {
     isDragging: function () { return drag !== null },
+    shieldFrom: shieldFrom,
     dispose: function () {
       c.scene.removeEventListener('pointerdown', onPointerDown)
       c.scene.removeEventListener('pointermove', onPointerMove)
@@ -225,6 +255,7 @@ export function attachGestures(c) {
       stopHeartbeat()
       c.scene.removeAttribute('data-window-dragging')
       drag = null
+      shields = []
     },
   }
 }

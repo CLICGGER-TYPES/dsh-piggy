@@ -64,7 +64,9 @@ export const CSS_TABS = [
   // 猪头上的日常气泡（签到 / 礼包）：不用新颜色，沿用主色与卡片底色。
   // 挂在场景**上方**（不是 top 边缘）：折叠时场景就是猪本身，用 top:-6px
   // 会让气泡叠在猪头上（用户反馈 #6）。
-  '.dp-daily{position:absolute;bottom:calc(100% + 7px);left:50%;width:36px;margin-left:-18px;',
+  // 日历/礼包必须压在猪的装扮（z-index:3）和摸摸物理层（z-index:4）之上：
+  // 200%/500% 时帽子会顶到日历附近，否则指针会先命中猪而不是这个按钮。
+  '.dp-daily{position:absolute;bottom:calc(100% + 7px);left:50%;width:36px;margin-left:-18px;z-index:5;',
   'font:inherit;font-size:15px;line-height:1;padding:3px 0;cursor:pointer;text-align:center;',
   'border:2px solid var(--ac-border);border-radius:50px;background:var(--ac-bg-input);',
   'box-shadow:0 3px 0 rgba(61,52,40,.14);animation:dp-daily-bob 2.4s var(--ac-ease) infinite}',
