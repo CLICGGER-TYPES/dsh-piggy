@@ -65,6 +65,7 @@ function horizontalSpan(point, areas, fallback) {
  *   旧外壳没有 pigId，仍只用旧键。
  */
 export function createPlacement(options = {}) {
+  const pigId = typeof options.pigId === 'string' ? options.pigId : null
   const scopedKey = pigScreenKey(options.pigId)
   const primary = scopedKey !== null && options.primary === true
   // 多猪主猪：写自己的键，同时继续写旧键，舞台/旧页面读到的还是主猪的家。
@@ -93,10 +94,38 @@ export function createPlacement(options = {}) {
    * scoped 键优先。主猪 scoped 还没有时读旧键（首次启动迁移）；非主猪不读旧键。
    * 没有 pigId 时和以前一样只读旧键。
    */
+  /** 存档里的绝对脚底点，只用于判断两只猪是否被旧版本摆到了同一个位置。 */
+  function savedHome(raw) {
+    if (raw === null) return null
+    const area = raw.v === STORE_VERSION && raw.area ? raw.area : null
+    return { x: (area ? area.x : 0) + raw.x, y: (area ? area.y : 0) + raw.y }
+  }
+
+  /** 旧版本可能把两只猪存到同一个位置；保留 pigId 较小的一只，其余用槽位默认值。 */
+  function hasEarlierDuplicate(key, raw) {
+    if (pigId === null || typeof localStorage.key !== 'function' || !Number.isInteger(localStorage.length)) return false
+    const mine = savedHome(raw)
+    if (mine === null) return false
+    const prefix = PIG_SCREEN_KEY + ':'
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const otherKey = localStorage.key(index)
+      if (typeof otherKey !== 'string' || otherKey === key || !otherKey.startsWith(prefix)) continue
+      const otherId = otherKey.slice(prefix.length)
+      if (otherId >= pigId) continue
+      const other = savedHome(readKey(otherKey))
+      if (other === null) continue
+      if (Math.abs(other.x - mine.x) <= 16 && Math.abs(other.y - mine.y) <= 16) return true
+    }
+    return false
+  }
+
   function readSaved() {
     if (scopedKey !== null) {
       const scoped = readKey(scopedKey)
-      if (scoped !== null) return scoped
+      if (scoped !== null) {
+        if (primary || !hasEarlierDuplicate(scopedKey, scoped)) return scoped
+        return null
+      }
       if (!primary) return null
     }
     return readKey(PIG_SCREEN_KEY)
