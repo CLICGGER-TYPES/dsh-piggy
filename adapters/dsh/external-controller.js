@@ -11,7 +11,6 @@
 import { randomUUID } from 'node:crypto'
 import { renameSync } from 'node:fs'
 
-import { mergeSummary } from '../../core.js'
 import { readStateFile } from '../../store/state-file.js'
 import {
   SESSION_BOUNDARY, SESSION_SCOPE, SESSION_TRANSPORT, createFrozenSourceBinding, createSessionBinding, sessionOf,
@@ -26,6 +25,7 @@ import { createLifecycle, pendingMergeConfig, readReceipts } from './external-li
 import { createCommitFlow } from './external-commit.js'
 import { prepareLiveSource, preparePausedSource } from './external-prepare.js'
 import { createDelivery } from './external-delivery.js'
+import { createStatusView, sameSummary } from './external-status.js'
 
 const BUSY_STATES = new Set(['merging', 'rolling-back', 'merge-unknown'])
 
@@ -131,14 +131,6 @@ export function createExternalController(options) {
     return result
   }
 
-  /** 摘要是否一样：只比紧凑摘要里的字段，变了才写配置，别每 4 秒写一次盘。 */
-  function sameSummary(a, b) {
-    if (a === b) return true
-    if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false
-    return a.name === b.name && a.level === b.level && a.days === b.days && a.coins === b.coins &&
-      a.items === b.items && a.badges === b.badges && a.dead === b.dead && a.hatched === b.hatched && a.box === b.box
-  }
-
   /**
    * 面板真拿到快照/动作结果后，用它刷新桌面猪的摘要。
    *
@@ -166,66 +158,12 @@ export function createExternalController(options) {
     if (refreshed !== null) endpoint = refreshed
   }
 
-  function link() {
-    // merged/dead 是只读展示字段：顶部标签据此区分「已合并」和「桌面猪已离开」。
-    const summary = lastSnapshot?.pig?.dead === true ? { dead: true } : (target?.summary ?? null)
-    return {
-      state: mode === 'normal' ? 'connected' : connection,
-      lastAt,
-      queued: outbox.status().queued,
-      merged: config?.pigState === 'merged',
-      dead: summary?.dead === true || lastSnapshot?.dead === true,
-    }
-  }
-
-  function snapshotsSummary() {
-    try {
-      const state = readStateFile(statePath, now()).state
-      return state === null ? null : mergeSummary(state)
-    } catch { return null }
-  }
-
-  function status() {
-    const queue = outbox.status()
-    const localSummary = config?.localSummary ?? (mode === 'normal' ? snapshotsSummary() : null)
-    const desktop = target === null ? { found: false, running: true, enabled: false, reason: error ?? '', appVersion: '', gameVersion: '', stateVersion: 0, mergeRulesVersion: 0, pid: 0 } : {
-      found: true, running: true, enabled: true, reason: error ?? '',
-      appVersion: target.appVersion ?? '', gameVersion: target.gameVersion ?? '',
-      stateVersion: target.stateVersion ?? 0, mergeRulesVersion: target.mergeRulesVersion ?? 0, pid: target.pid ?? 0,
-    }
-    return {
-      ok: true,
-      mode: mode === 'normal' ? 'embedded' : 'external',
-      pigState: config?.pigState ?? 'none',
-      connection: mode === 'normal' ? 'embedded' : connection,
-      clientId: config?.clientId ?? null,
-      target: target === null ? (config?.target ?? null) : { ...target, enabled: target.enabled ?? true, reason: error ?? '' },
-      desktop,
-      source: { summary: localSummary, hasPig: localSummary !== null },
-      lastSummary: config?.lastSummary ?? lastSnapshot?.pig ?? null,
-      queued: queue.queued,
-      queueBytes: queue.bytes,
-      dropped: queue.dropped,
-      lastAt,
-      error: error ?? (configCorrupt ? 'config-corrupt' : null),
-      preview: preview === null ? null : { mergeId: preview.mergeId, expiresAt: preview.expiresAt },
-      mergeId: config?.mergeId ?? preview?.mergeId ?? null,
-      can: {
-        connect: mode === 'normal',
-        merge: mode === 'normal' || config?.pigState === 'paused',
-        rollback: config?.pigState === 'merged',
-        restoreEmbedded: config?.pigState === 'merged',
-        act: mode === 'external' && connection === 'connected',
-      },
-      merged: config?.pigState === 'merged',
-      canMerge: mode === 'normal' || config?.pigState === 'paused',
-      canRollback: config?.pigState === 'merged',
-      canRecoverInternal: config?.pigState === 'merged',
-      canAct: mode === 'external' && connection === 'connected',
-      configCorrupt,
-      retirementPending: config?.retirementPending === true,
-    }
-  }
+  const { link, status } = createStatusView({
+    statePath,
+    now,
+    outbox,
+    state: () => ({ mode, connection, target, error, config, configCorrupt, preview, lastAt, lastSnapshot }),
+  })
 
   async function freezeSource() {
     if (mode === 'external' && config?.pigState === 'paused') {
