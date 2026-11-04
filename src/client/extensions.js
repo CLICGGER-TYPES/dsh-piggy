@@ -21,7 +21,8 @@ function normalizeAssetPacks(raw) {
   const list = kind => arr(value[kind]).map(item => {
     const pack = obj(item)
     return {
-      pack: str(pack.pack, ''), namespace: str(pack.namespace, ''),
+      kind: str(pack.kind, kind), pack: str(pack.pack, ''), namespace: str(pack.namespace, ''),
+      base: str(pack.base, ''), available: pack.available !== false,
       entries: num(pack.entries, 0), frames: num(pack.frames, 0), files: num(pack.files, 0), bytes: num(pack.bytes, 0),
     }
   }).filter(item => item.pack !== '' || item.namespace !== '')

@@ -1,7 +1,8 @@
-# 第三方素材包 M3（第一刀：安装 / 校验 / 命名空间）
+# 第三方素材包 M3（安装 / 校验 / 静态路由）
 
 > 2026-11-04 · 目标：先让第三方扩展可以安全地携带动作和音效素材，安装、更新、卸载、回滚都不破坏第一方素材。
-> 本刀**不接运行时注册和播放**：文件装进来、能列举、能回滚，但播放器不会播放它们。运行时见 §12。
+> 第一刀做安装、校验、命名空间和摘要；第二刀加只读静态路由和 `/state` 摘要字段。
+> 两刀都**不接运行时注册和播放**：文件装进来、能列举、能安全读取，但播放器不会播放它们。运行时见 §12。
 
 ## 0. 一句话
 
@@ -16,14 +17,14 @@ schema 做完整校验，命名空间固定为 `ext-<extension-key>`，永远不
 - manifest 声明与实际目录一致性、`pack.json` 校验。
 - ZIP / `.piggyext` 两种安装入口的文件白名单、路径逃逸、符号链接、大小写冲突、magic、尺寸、数量上限。
 - 安装事务沿用现有“临时目录 → 换名 → 试加载 → 提交”，失败回滚。
-- 扩展列表带只读素材包摘要（数量/帧数/文件数/字节）。
+- 扩展列表带只读素材包摘要（数量/帧数/文件数/字节/可用状态/基址）。
 - 卸载时素材包随扩展目录一起删除。
+- 第二刀：`actions/`、`sounds/` 的只读静态路由，只给 manifest 和 `pack.json` 都声明过的文件。
 
 **本刀不做**
 
 - 不把动作注册进客户端 `createArtResourceRegistry`。
 - 不把音效注册进 `sounds.js` / `audio-context.js`。
-- 不提供 `/dsh-piggy/ext/<key>/actions/...` 或 `/sounds/...` 的静态路由。
 - 不做扩展页上的素材包卡片/试听/预览 UI（只把摘要穿过快照归一化）。
 - 不把第三方扩展文件放进存档备份（和现有 `server.js` 一样，重装扩展后重新下载）。
 
@@ -222,19 +223,42 @@ extensions/<key>/
 ```js
 assetPacks: {
   actions: [
-    { pack: 'wave', namespace: 'ext-my-extension', entries: 2, frames: 18, files: 19, bytes: 41234 }
+    { kind: 'actions', pack: 'wave', namespace: 'ext-my-extension',
+      base: '/dsh-piggy/ext/my-extension/actions/wave/',
+      entries: 2, frames: 18, files: 19, bytes: 41234, available: true }
   ],
   sounds: [
-    { pack: 'sfx', namespace: 'ext-my-extension', entries: 3, files: 4, bytes: 5120 }
+    { kind: 'sounds', pack: 'sfx', namespace: 'ext-my-extension',
+      base: '/dsh-piggy/ext/my-extension/sounds/sfx/',
+      entries: 3, files: 4, bytes: 5120, available: true }
   ],
   ...(读取目录出错时才有 error: '读不懂 actions/.../pack.json')
 }
 ```
 
+- `entries` 是动作/音效数量，`frames` 只给动作包；摘要不塞完整帧列表。
+- `available` 为 false 表示这个包读不懂或没有条目；`base` 是只读静态路由的基址。
+- 没有素材包的老扩展仍然是 `{ actions: [], sounds: [] }`，其它字段不变。
 - 摘要从磁盘 `lstat` / 目录列举得到，不写存档、不改扩展目录。
 - 扩展加载失败（`server.js` 抛错）仍然保留 manifest 和摘要，方便面板显示“扩展坏了，
   但素材包还在”。
 - 客户端 `normalizeExtensions()` 只做字段归一化，不渲染；UI 卡片留到下一刀。
+
+### 9.1 静态路由（第二刀）
+
+```text
+GET /dsh-piggy/ext/<key>/actions/<pack>/pack.json
+GET /dsh-piggy/ext/<key>/actions/<pack>/<action>/<NN>.png|webp
+GET /dsh-piggy/ext/<key>/sounds/<pack>/pack.json
+GET /dsh-piggy/ext/<key>/sounds/<pack>/<sound>.ogg|wav
+```
+
+- 只服务已加载、manifest 声明、`pack.json` 里确实列出的文件；未声明/不存在 404，
+  路径逃逸、符号链接、反斜杠等不安全路径 403，非 GET 405。
+- 读取时再次检查真实路径仍在扩展目录内，并轻量核对图片/音频 magic 与大小上限。
+- MIME 固定为 json/png/webp/ogg/wav；响应带内容 hash 的 `etag` 和 `cache-control: no-cache`，
+  `If-None-Match` 命中时 304。
+- 路由和 `extensions.js` 都不注册播放器资源；播放/生命周期仍是下一刀。
 
 ## 10. 打包格式
 
@@ -266,13 +290,13 @@ assetPacks: {
 - 更新替换旧素材包、保留存档数据；代码加载失败回滚旧包；坏素材包在换文件前失败。
 - 现有 `ext-runtime` / `ext-install-rollback` / `ext-import` 测试保持通过。
 
-## 12. 剩余（下一刀）
+## 12. 剩余（后续）
 
 1. **运行时注册**：把 `actions/<pack>/pack.json` 转成 `ArtResourcePackInput`
    (`namespace: ext-<key>`, `pack`, `resources`) 并 `registerPack`；音效建立每扩展的注册表，
    解析 `ext-<key>/<sound>`。
-2. **静态路由**：`GET /dsh-piggy/ext/<key>/actions/...`、`/sounds/...`，只给已加载扩展且
-   在 manifest 声明内的路径；沿用现有 `assetFile` 的“只给名单里的”原则。
+2. **静态路由**（第二刀已完成）：`GET /dsh-piggy/ext/<key>/actions/...`、`/sounds/...`，
+   只给已加载扩展且在 manifest 声明内的路径；见 §9.1。
 3. **播放与生命周期**：扩展停用/卸载/更新时反注册，正在播放的帧动作安全结束；音频解码失败
    回退到包内 `synth` 或静音。
 4. **UI**：扩展卡片显示“动作 N / 音效 M”，更新前预览；本刀只有快照字段，没有界面。

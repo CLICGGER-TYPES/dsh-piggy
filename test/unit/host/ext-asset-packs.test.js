@@ -96,7 +96,9 @@ test('带 actions/sounds 的扩展从 JSON 扩展包装好、列出摘要并随�
     assert.ok(entry)
     assert.equal(entry.assetPacks.actions.length, 1)
     assert.deepEqual(entry.assetPacks.actions[0], {
-      pack: 'wave', namespace: 'ext-' + KEY, entries: 1, frames: 2, files: 3, bytes: entry.assetPacks.actions[0].bytes,
+      kind: 'actions', pack: 'wave', namespace: 'ext-' + KEY,
+      base: `/dsh-piggy/ext/${KEY}/actions/wave/`,
+      entries: 1, frames: 2, files: 3, bytes: entry.assetPacks.actions[0].bytes, available: true,
     })
     assert.equal(entry.assetPacks.sounds[0].namespace, 'ext-' + KEY)
     assert.equal(entry.assetPacks.sounds[0].entries, 1)
