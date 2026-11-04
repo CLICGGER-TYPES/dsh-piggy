@@ -64,3 +64,13 @@ Windows 安装版和 Linux AppImage 支持 App 内下载并重启安装外壳；
 - 三只猪窗口按槽位错开的修复在 rc.11 验证；混合 DPI 双屏仍需实机确认。
 - macOS、真实跨设备 LAN/云、360 安全软件未验收。
 - Owner LAN 仍是可信私网 HTTP，不支持 TLS/公网。
+
+## 发布前检查
+
+- [ ] 新 PR 作者是否进入 README 贡献者表
+- [ ] 新贴图/素材是否写了出处、PROVENANCE 和致谢
+- [ ] CHANGELOG 是否提到对应贡献
+- [ ] README 主图是否为当前版本实拍，不混用旧版本截图
+- [ ] 游戏版本、桌面外壳版本、tag 三者一致
+- [ ] Release 资产齐全，并上传 farm/classic 扩展与 `SHA256SUMS`
+- [ ] npm 主包与别名包版本一致，`rc` 标签手动发布
