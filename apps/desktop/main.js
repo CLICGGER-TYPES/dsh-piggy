@@ -12,7 +12,6 @@
  * - 游戏运行时在后台单写者中执行，界面经 piggy:// 访问。
  * - 存档在 userData/state.json，默认数据目录名为 piggy，跟 DSH 里那只各养各的；托盘里可以导入。
  */
-import { createResizeShape } from './lib/resize-shape.js'
 import { auxiliaryWindowOptions } from './lib/auxiliary-window.js'
 import { spawn } from 'node:child_process'
 import { appendFile, mkdir, writeFile } from 'node:fs/promises'
@@ -28,7 +27,7 @@ import { registerGameProtocol } from './lib/game-protocol.js'
 import { configureDesktopData, bundledDesktopGame } from './lib/data-paths.js'
 import { migrateDesktopData } from './lib/data-migration.js'
 import { readOwnerDocumentConfig } from './lib/owner-document-config.js'
-import { MIN_WINDOW, WINDOW_PADDING, clampBounds, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint, pigDisplayAtCursor } from './lib/window-geometry.js'
+import { MIN_WINDOW, WINDOW_PADDING, contentBoundsForPig, dragPigBounds, desktopViewportBounds, moveAcrossDisplays, resizedPigScreenPoint } from './lib/window-geometry.js'
 import { createProxy } from './lib/proxy.js'
 import { RELEASES_PAGE } from './lib/versions.js'
 import { startBackgroundVersions } from './lib/background-versions.js'
@@ -49,12 +48,12 @@ import { createPetRoster } from './lib/pet-roster.js'
 import { createCaptureCheck } from './lib/capture-check.js'
 import { createShellLaunch } from './lib/shell-launch.js'
 import { hasOwnerArchiveRuntime, hasOwnerPigRuntime, hasOwnerCloudRuntime, hasOwnerLanRuntime, runtimeOwnerConfig, notifyOwnerArchiveSwitchFailed } from './lib/owner-runtime.js'
-import { createPetWindow } from './lib/pet-window.js'
 import { MAX_PIG_WINDOWS, createPetRegistry, createPetState } from './lib/pet-instance.js'
 import { createExternalManager } from './lib/external.js'
-import { SHOW_FALLBACK_MS, createShowGate } from './lib/window-show.js'
 import { downloadFirstGame, gamePinPath } from './first-run.js'
-import { reportStartupFailure, pageCrashReason } from './lib/startup-failure.js'
+import { reportStartupFailure } from './lib/startup-failure.js'
+import { createWindowManager } from './lib/window-manager.js'
+import { createWindowSurface } from './lib/window-surface.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
 import { createWindowState } from './lib/window-state.js'
 import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
@@ -96,11 +95,6 @@ let activeGameDirectory = null
  * 要在弱机器上压帧率可以用 PIGGY_FPS 环境变量兜底（排查用）。
  */
 const FRAME_CAP = Number(process.env.PIGGY_FPS) || 0
-/** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
-const BOUNDS_TOLERANCE = 2
-
-/** 页面还没报内容框之前的兜底尺寸：折叠的猪 + 留白。 */
-const FALLBACK_CONTENT = { width: 132, height: 152 }
 
 let logDirectoryReady = null
 let logWriting = Promise.resolve()
@@ -385,169 +379,30 @@ const {
   flush: flushWindowState, schedule: scheduleWindowStateSave,
 } = windowState
 
-/** 这块窗口落在哪块屏上，就用那块屏的工作区。 */
-function workAreaFor(bounds) {
-  return screen.getDisplayMatching(bounds).workArea
-}
-
-/** 把窗口几何推给页面：面板要朝屏幕里侧开。 */
-let geometrySeq = 0
-function pushGeometry(pet) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed()) return
-  const bounds = window.getBounds()
-  window.webContents.send('piggy:geometry', geometryOf(bounds, ++geometrySeq, pet))
-}
-
-/** 窗口、它所在屏的工作区、所有屏的工作区：游戏包里的桌面逻辑按这些自己算窗口摆哪。 */
-function geometryOf(bounds, seq, pet = null) {
-  const displays = screen.getAllDisplays()
-  return {
-    window: bounds,
-    workArea: workAreaFor(bounds),
-    workAreas: displays.map(display => display.workArea),
-    // 显示器清单（含每块屏的缩放）：Windows 125%/150% 下的问题一直只能靠 2px 容差硬扛，
-    // 把这些发给游戏包，日志里才能看出「是哪块屏、什么缩放」。
-    displays: displays.map(display => ({ id: display.id, label: display.label,
-      bounds: display.bounds, workArea: display.workArea, scaleFactor: display.scaleFactor, internal: display.internal })),
-    dragSlide: pet?.lastDragSlide ?? { x: 0, y: 0 },
-    seq,
-  }
-}
-
-/**
- * 挪/改窗口。返回这次实际改了多少（没改返回 null），写进日志方便排查。
- * 除了拖动，差 2px 以内一律不动：Windows 125%/150% 缩放下 setBounds 设的尺寸和 getBounds
- * 读回来的常差 1px，精确比较会让每次内容上报都重新 setBounds，透明窗口就闪一下。
- */
-function applyBounds(pet, next, why) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed()) return null
-  const before = window.getBounds()
-  const delta = { x: next.x - before.x, y: next.y - before.y, width: next.width - before.width, height: next.height - before.height }
-  // 分数缩放回读可能比请求大 1px；目标没变时不要每个拖动 tick 重设同一窗口。
-  // 新目标仍用零容差，保证 1px 鼠标位移可达；真实外部偏移超出容差时继续纠正。
-  const sameRequest = pet.petAsked !== null && ['x', 'y', 'width', 'height'].every(key => pet.petAsked[key] === next[key])
-  const tolerance = (why === 'drag' || why === 'move') && !sameRequest ? 0 : BOUNDS_TOLERANCE
-  if (Math.abs(delta.x) <= tolerance && Math.abs(delta.y) <= tolerance
-    && Math.abs(delta.width) <= tolerance && Math.abs(delta.height) <= tolerance) return null
-  window.setBounds(next)
-  pet.petAsked = { ...next }
-  panel.followPig(pet)
-  // 拖动时每秒要挪几十次：别每次都写日志（Windows 上同步写盘会卡住主进程）。
-  if (why !== 'drag' && why !== 'move') log('bounds', why, pet.pigId ?? 'legacy', JSON.stringify(next))
-  if (pet.primary) scheduleWindowStateSave()
-  pushGeometry(pet)
-  return delta
-}
-
-/**
- * Windows 上不用 setShape，改用鼠标穿透：现代游戏由主进程轮询命中，旧游戏由页面上报。
- * setShape 在 Windows 上是 SetWindowRgn，开关面板时可点区域整块变化，透明分层窗口会闪一下白
- * （用户 2026-10-05：装了 0.2.5 右键开关菜单仍闪白屏）。穿透模式下窗口区域从不变化。
- * PIGGY_SHAPE=1 可退回旧做法，方便对比排查。
- */
-const SKIP_NATIVE_SHAPE = process.platform === 'win32' && process.env.PIGGY_SHAPE !== '1'
-/** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
-const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || process.platform === 'darwin'
-function setHit(pet, hit, source = 'hit-state') {
-  const window = pet?.window
-  if ((!MOUSE_PASSTHROUGH && pet.placedHitShape === null) || window === null || window === undefined || window.isDestroyed()) return
-  const forward = pet.passthroughMode === 'legacy' && MOUSE_PASSTHROUGH
-  if (hit === pet.passthroughHit && forward === pet.passthroughForward) return
-  pet.passthroughHit = hit
-  pet.passthroughForward = forward
-  traceSetIgnoreMouseEvents('pet', pet.passthroughMode, source, !hit, forward,
-    () => window.setIgnoreMouseEvents(!hit, { forward }))
-}
-
-function setPassthroughMode(pet, next, source) {
-  if (next === pet.passthroughMode) return
-  const previous = pet.passthroughMode
-  pet.passthroughMode = next
-  startupInputTrace.record(`mouse-mode:${previous}:${next}:${source}`, 'startup mouse mode', JSON.stringify({ from: previous, to: next, source, pigId: pet.pigId }))
-}
-
-function setLegacyHit(pet, hit = pet.passthroughHit, source = 'legacy') {
-  if (pet.passthroughMode === 'modern') return
-  setPassthroughMode(pet, 'legacy', source)
-  setHit(pet, hit, source)
-}
-
-/** 只把合法的窗口协议消息作为能力证据，不能让坏消息启用全局转发。 */
-function isMouseRect(rect) {
-  return rect != null && [rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)
-    && rect.width >= 0 && rect.height >= 0
-}
-function isMouseShape(rects) {
-  return Array.isArray(rects) && rects.every(isMouseRect)
-}
-function isPlaceRequest(request) {
-  return request !== null && typeof request === 'object' && !Array.isArray(request)
-    && [request.bounds, request.pig].every(rect => rect === undefined || (isMouseRect(rect) && rect.width > 0 && rect.height > 0))
-    && (request.shape === undefined || isMouseShape(request.shape))
-    && (request.hitShape === undefined || isMouseShape(request.hitShape))
-}
-
-/** 穿透窗口可能收不到第一次 mousemove；主进程读取光标，保证首次点击就能命中猪。 */
-function shiftedShape(rects, slide) {
-  if (slide.x === 0 && slide.y === 0) return rects
-  return rects.map(rect => ({
-    x: rect.x + slide.x,
-    y: rect.y + slide.y,
-    width: rect.width,
-    height: rect.height,
-  }))
-}
-
-function refreshHit(pet) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed() || pet.dragSession !== null) return
-  if (!pet.hasPlacedShape && pet.placedHitShape === null) return
-  const bounds = window.getBounds()
-  // 只有旧契约把动作整窗绘制区域也当输入；新契约不能让透明预留抢走桌面点击。
-  const shape = pet.placedHitShape === null && (pet.flightShapeActive || pet.dragShapeActive)
-    ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
-    : shiftedShape(pet.placedHitShape ?? pet.placedShape, pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : pet.flightSlide)
-  setHit(pet, pointerHitsShape(screen.getCursorScreenPoint(), bounds, shape), 'cursor-hit-test')
-}
-
-/** 抛掷只挪窗口，不重排、不 followPig、不推几何、不写 window.json（A2）。 */
-function applyFlightBounds(pet, x, y) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed()) return
-  const size = pet.petAsked ?? window.getBounds()
-  const next = { x: Math.round(x), y: Math.round(y), width: size.width, height: size.height }
-  if (pet.petAsked !== null && pet.petAsked.x === next.x && pet.petAsked.y === next.y
-    && pet.petAsked.width === next.width && pet.petAsked.height === next.height) return
-  window.setBounds(next)
-  pet.petAsked = { ...next }
-}
-
-/** 原生 shape 仍负责绘制裁剪；不能用更小的输入区域裁掉动作和特效。 */
-function applyShape(pet, rects) {
-  const window = pet?.window
-  if (SKIP_NATIVE_SHAPE || window === null || window === undefined || window.isDestroyed() || process.platform === 'darwin' || typeof window.setShape !== 'function') return
-  window.setShape(rects)
-  if (pet.placedHitShape !== null) {
-    // 原生绘制提交后重新应用独立输入，不能仅凭上次的命中布尔值跳过。
-    pet.passthroughForward = null
-    if (pet.dragSession !== null) setHit(pet, true, 'shape-commit')
-    else refreshHit(pet)
-  }
-}
-
-/** 显示一只猪窗口（只显示一次；日志保留原来的 shown 行格式）。 */
-function showPigWindow(pet) {
-  const window = pet?.window
-  if (window === null || window === undefined || window.isDestroyed() || window.isVisible()) return
-  window.showInactive()
-  log('shown', pet.pigId ?? 'legacy', JSON.stringify(window.getBounds()), window.isVisible())
-  if (pet.primary) {
-    startupWindowWasVisible = window.isVisible()
-    confirmUpdateStartupIfReady()
-  }
-}
+/** 窗口几何与输入面；实现见 lib/window-surface.js。 */
+const surface = createWindowSurface({
+  screen, platform: process.platform, env: process.env, panel,
+  scheduleWindowStateSave, log, startupInputTrace, traceSetIgnoreMouseEvents,
+})
+/** 猪窗口的生命周期；实现见 lib/window-manager.js。 */
+const windows = createWindowManager({
+  BrowserWindow, screen, pets, primaryPet, panel, panelWindow, getPanelWindow,
+  desktopLifecycle, desktopRuntime, pigSessions, platform: process.platform, env: process.env,
+  preloadPath: join(HERE, 'preload.cjs'), frameCap: FRAME_CAP, log, startupInputTrace,
+  readWindowState, surface,
+  stopDrag: pet => stopDrag(pet),
+  confirmUpdateStartupIfReady,
+  onRendererLoaded: () => { startupRendererLoaded = true },
+  onPrimaryWindowShown: window => { startupWindowWasVisible = window.isVisible(); confirmUpdateStartupIfReady() },
+  handleStartupFailure: error => handleStartupFailure(error),
+  getCaptureCheck: () => captureForCheck,
+})
+const { createWindow, createPigWindow, closePetSession, rebuildLinuxViews, showPigWindow } = windows
+const {
+  applyBounds, applyFlightBounds, applyShape, refreshHit, setHit, setLegacyHit,
+  setPassthroughMode, isMouseRect, isMouseShape, isPlaceRequest, shiftedShape,
+  workAreaFor, pushGeometry, geometryOf, currentSeq, skipNativeShape: SKIP_NATIVE_SHAPE,
+} = surface
 
 function confirmUpdateStartupIfReady() {
   if (startupUpdateToken === null || !startupSetupComplete || !startupRendererLoaded || !startupWindowWasVisible) return
@@ -591,209 +446,6 @@ async function handleStartupFailure(error) {
   await reportStartupFailure({ dialog, log, error, logPath, version: app.getVersion(), platform: process.platform, recoveredVersion })
   if (recoveredVersion !== null) relaunch()
   app.quit()
-}
-
-/** 主猪窗口入口：保留原来的调用方式（测试和窗口重建都走这里）。 */
-async function createWindow(override = null) {
-  return createPigWindow(pets.primary(), override)
-}
-
-/**
- * 给一只猪创建 pet window。多猪时每只窗口各有自己的 BrowserWindow、命中轮询和形状缓存；
- * window.json 仍只记主猪（第一版限制，见 docs/guides/desktop-architecture.md）。
- */
-async function createPigWindow(pet, override = null) {
-  if (pet === null || pet === undefined || desktopLifecycle.quitting) return
-  const saved = override ?? (pet.primary ? await readWindowState() : null)
-  if (desktopLifecycle.quitting) return
-  pet.savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
-  if (pet.savedPigScreen !== null) {
-    // 显示器拔掉或换了分辨率：猪至少要整只留在某块屏上。
-    const pigArea = screen.getDisplayNearestPoint(pet.savedPigScreen).workArea
-    const box = clampBounds({ ...pet.savedPigScreen, width: MIN_WINDOW.width, height: MIN_WINDOW.height }, pigArea)
-    pet.savedPigScreen = { x: box.x, y: box.y }
-  }
-  const area = saved === null ? pigDisplayAtCursor(screen).workArea : screen.getDisplayMatching(saved).workArea
-  const width = saved === null ? FALLBACK_CONTENT.width + WINDOW_PADDING * 2 : saved.width
-  const height = saved === null ? FALLBACK_CONTENT.height + WINDOW_PADDING * 2 : saved.height
-  const anchorRight = saved === null ? 18 : null
-  // 多猪首启错开：只横向排开。纵向错开会把后面的窗口顶到工作区上沿，
-  // 页面在 y=0 处会触发贴边/视觉范围换算，反而把猪挤到另一块屏；横向排不受影响。
-  // 步长取 380px（实测展开窗口约 364×328），小屏按可用宽度收窄，4 只仍尽量不重叠。
-  const cascadeSteps = Math.max(1, pets.all().length - 1)
-  const cascadeRoom = Math.max(0, area.width - width - anchorRight)
-  const staggerStep = Math.max(140, Math.min(380, Math.floor(cascadeRoom / cascadeSteps)))
-  const stagger = pet.primary ? 0 : Math.max(0, pets.all().indexOf(pet)) * staggerStep
-  const start = saved === null
-    ? clampBounds({ x: area.x + area.width - width - anchorRight - stagger, y: area.y + area.height - height - anchorRight, width, height }, area)
-    : clampBounds({ ...saved, width, height }, area)
-  pet.petAsked = { ...start }
-  pet.resizeShape ??= createResizeShape(() => pet.window, rects => applyShape(pet, rects), () => screen.getDisplayMatching(pet.window.getBounds()).scaleFactor)
-  pet.owner ??= createPetWindow({ BrowserWindow })
-  let startupPageFailureReported = false
-  const url = pet.pigId === null ? 'piggy://app/index.html' : `piggy://app/index.html?pig=${encodeURIComponent(pet.pigId)}`
-  const pigArguments = pet.pigId === null ? []
-    : ['--piggy-role=pet', `--piggy-pig=${pet.pigId}`, ...(pet.primary ? ['--piggy-primary=1'] : [])]
-  pet.owner.create({
-    options: {
-      ...start,
-      transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
-      alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
-      ...auxiliaryWindowOptions(process.platform),
-      backgroundColor: '#00000000',
-      // 后台页也要维持 rAF 测量/形状上报频率，避免猪慢半拍或窗口移动后画面滞留。
-      webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
-        ...(pigArguments.length === 0 ? {} : { additionalArguments: pigArguments }) },
-    },
-    url,
-    configure: window => {
-      pet.window = window
-      pet.webContentsId = Number.isInteger(window.webContents?.id) ? window.webContents.id : null
-      pets.bindWindow(pet)
-      window.setAlwaysOnTop(true, 'floating')
-      if (FRAME_CAP > 0) window.webContents.setFrameRate(FRAME_CAP)
-      // Linux 先等页面报真实内容和形状再显示，避免 rootless Xwayland 旧尺寸缓冲 SIGSEGV。
-      pet.showGate = createShowGate({ platform: process.platform })
-      startupInputTrace.begin()
-      if (MOUSE_PASSTHROUGH) {
-        setPassthroughMode(pet, 'unknown', 'pet-window-configure')
-        pet.passthroughForward = null
-        startupInputTrace.record('pet-window-configure', 'startup mouse configuration', JSON.stringify({ platform: process.platform, passthrough: MOUSE_PASSTHROUGH, mode: pet.passthroughMode, pigId: pet.pigId }))
-        setHit(pet, false, 'pet-window-configure')
-      } else {
-        startupInputTrace.record('pet-window-configure', 'startup mouse configuration', JSON.stringify({ platform: process.platform, passthrough: MOUSE_PASSTHROUGH, mode: pet.passthroughMode, pigId: pet.pigId }))
-      }
-      clearInterval(pet.hitTimer)
-      pet.hitTimer = setInterval(() => refreshHit(pet), 16)
-      pet.hitTimer.unref?.()
-    },
-    onClosed: () => {
-      stopDrag(pet)
-      pet.resizeShape?.cancel()
-      clearInterval(pet.hitTimer)
-      pet.hitTimer = null
-      handlePetWindowClosed(pet)
-    },
-    onReadyToShow: window => {
-      // 启动摆放最多管 3 秒：之后一律按猪当前位置算，免得哪次没对上就一直往回拽。
-      setTimeout(() => { if (pet.window === window) pet.savedPigScreen = null }, 3000)
-      log('ready-to-show', pet.pigId ?? 'legacy')
-      if (pet.showGate !== null && pet.showGate.readyToShow()) showPigWindow(pet)
-      // 页面一直不报内容：兜底显示，不能永远不出现。
-      setTimeout(() => {
-        if (pet.window === window && pet.showGate !== null && pet.showGate.timeout()) {
-          log('show fallback', JSON.stringify(pet.showGate.status()))
-          showPigWindow(pet)
-        }
-      }, SHOW_FALLBACK_MS).unref?.()
-    },
-    onDidFinishLoad: () => {
-      startupRendererLoaded = true
-      const gate = pet.showGate === null ? null : pet.showGate.status()
-      log('page loaded', JSON.stringify({ gate, pigId: pet.pigId }))
-      if (gate?.pending === true) log('page loaded before show gate opened', JSON.stringify({ waiting: gate.waiting }))
-      pushGeometry(pet)
-      if (pet.primary) confirmUpdateStartupIfReady()
-    },
-    onDidFailLoad: async (window, event, errorCode, errorDescription, validatedURL, isMainFrame) => {
-      log('page failed', JSON.stringify({ errorCode, errorDescription, url: validatedURL, mainFrame: isMainFrame, pigId: pet.pigId }))
-      if (isMainFrame !== true || desktopLifecycle.quitting || startupPageFailureReported || window.isDestroyed() || window.isVisible() || pet.showGate?.pending !== true) return
-      startupPageFailureReported = true
-      await handleStartupFailure(new Error(`游戏页面加载失败：${errorDescription}（${errorCode}）`))
-    },
-    onRendererGone: (window, event, details) => {
-      stopDrag(pet)
-      const gate = pet.showGate === null ? null : pet.showGate.status()
-      log('renderer gone', JSON.stringify(details), JSON.stringify({ visible: window.isVisible(), gate, pigId: pet.pigId }))
-      // 窗口还没显示过就崩：先留日志再提示；已显示的运行中故障只记日志。
-      void reportStartupCrash(window, details, gate)
-    },
-    afterLoad: window => {
-      window.on('blur', () => panel.focusLeft())
-      window.on('unresponsive', () => log('window unresponsive', JSON.stringify({ gate: pet.showGate === null ? null : pet.showGate.status(), pigId: pet.pigId })))
-      window.on('responsive', () => log('window responsive', pet.pigId ?? 'legacy'))
-      window.webContents.on('console-message', (event, level, message) => { if (level >= 2) log('page:', message, pet.pigId ?? '') })
-      if (process.env.PIGGY_DEVTOOLS === '1') window.webContents.openDevTools({ mode: 'detach' })
-      if (process.env.PIGGY_CAPTURE && pet.primary) window.webContents.once('did-finish-load', () => { captureForCheck(process.env.PIGGY_CAPTURE) })
-    },
-  })
-  async function reportStartupCrash(window, details, gate) {
-    if (desktopLifecycle.quitting || startupPageFailureReported || window.isDestroyed() || window.isVisible() || gate?.pending !== true) return
-    startupPageFailureReported = true
-    await handleStartupFailure(new Error(pageCrashReason(details)))
-  }
-}
-
-/**
- * 一只 pet window 真的关了（重建时的旧窗口不会走到这里，pet-window 只在 current 匹配时回调）。
- * 只销毁自己的映射和 session；全部关完后关闭面板，等待原有托盘/退出路径。
- */
-function handlePetWindowClosed(pet) {
-  pet.closing = true
-  // 先按 webContents.id 从 registry 摘掉，再清字段：remove 需要旧的 id 才能删映射。
-  pets.remove(pet)
-  pet.window = null
-  pet.webContentsId = null
-  closePetSession(pet)
-  // 面板正服务这只猪：它没了，面板也收起，下一次右键按还活着的那只重开。
-  panel.forgetTarget(pet)
-  if (pet.primary) {
-    panel.close('pet-closed')
-    log('primary pet window closed; panel closed, tray/recover stay primary-only')
-  }
-  if (pets.all().length === 0) {
-    panel.close('all-pets-closed')
-    log('all pet windows closed')
-  }
-}
-
-/** 关窗口时释放这只猪的 worker session；应用退出时 host 已经先释放，失败只记日志。 */
-function closePetSession(pet) {
-  if (pet.token === null) return
-  const token = pet.token
-  const pigId = pet.pigId
-  pet.token = null
-  if (pigId !== null) pigSessions.delete(pigId)
-  const host = desktopRuntime.getHost()
-  if (host === null || desktopLifecycle.quitting) return
-  void Promise.resolve(host.closePigSession(token))
-    .catch(error => log('pet session close failed', pigId ?? 'legacy', String(error)))
-}
-
-/** Refresh native pixel/DIP caches by using the already-tested cold view path. */
-async function rebuildLinuxViews() {
-  const pet = primaryPet()
-  if (desktopLifecycle.quitting || pet === null || pet.window === null || pet.window.isDestroyed()) return
-  const previous = pet.window
-  const previousPanel = getPanelWindow()
-  const bounds = pet.petAsked ?? previous.getBounds()
-  const pig = pet.lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
-  const saved = { ...bounds, pig: { x: bounds.x + pig.x, y: bounds.y + pig.y } }
-  stopDrag(pet)
-  pet.resizeShape?.cancel()
-  panel.close('display')
-  previous.hide()
-  pet.lastContent = null
-  pet.lastPigWindow = null
-  pet.restingPigScreen = null
-  pet.lastShape = []
-  pet.placedShape = []
-  pet.placedHitShape = null
-  pet.hasPlacedShape = false
-  await createWindow(saved)
-  previous.removeAllListeners()
-  previous.webContents.removeAllListeners()
-  pet.owner?.destroy(previous)
-  if (previousPanel && !previousPanel.isDestroyed()) {
-    previousPanel.removeAllListeners()
-    previousPanel.webContents.removeAllListeners()
-    panelWindow.destroy(previousPanel)
-  }
-  panelWindow.forget(previousPanel)
-  if (desktopLifecycle.quitting) return
-  panel.ensure()
-  pushGeometry(pet)
-  log('display views rebuilt', JSON.stringify({ bounds: pet.window.getBounds(), pigId: pet.pigId }))
 }
 
 /**
@@ -883,7 +535,7 @@ ipcMain.on('piggy:content', (event, content) => {
   pet.lastShape = shape
   if (content?.immediate === true) {
     const current = window.getBounds()
-    event.returnValue = { window: current, workArea: workAreaFor(current), seq: geometrySeq }
+    event.returnValue = { window: current, workArea: workAreaFor(current), seq: currentSeq() }
   }
 })
 
@@ -1048,7 +700,7 @@ ipcMain.on('piggy:drag:end', (event, release) => {
   pet.restingPigScreen = null
   panel.reanchorPanel(pet)
   // 页面紧接着要读几何重定家：把最后一帧 slide 一起同步返回，避免 send/sendSync 乱序。
-  event.returnValue = geometryOf(pet.window?.getBounds() ?? { x: 0, y: 0, width: 0, height: 0 }, geometrySeq, pet)
+  event.returnValue = geometryOf(pet.window?.getBounds() ?? { x: 0, y: 0, width: 0, height: 0 }, pet)
 })
 
 /**
@@ -1068,7 +720,7 @@ ipcMain.on('piggy:place', (event, request) => {
   // moving the window or restoring a stale precise drawing shape.
   const reading = request.bounds === undefined && request.shape === undefined && request.hitShape === undefined && request.pig === undefined
   if (reading || pet.dragSession !== null) {
-    event.returnValue = geometryOf(window.getBounds(), geometrySeq, pet)
+    event.returnValue = geometryOf(window.getBounds(), pet)
     return
   }
   // 动画可单独更新真实输入；不能因此结束尚未提交新画面的整窗绘制保护。
@@ -1078,7 +730,7 @@ ipcMain.on('piggy:place', (event, request) => {
       x: rect.x - slide.x, y: rect.y - slide.y, width: rect.width, height: rect.height,
     }))
     refreshHit(pet)
-    event.returnValue = geometryOf(window.getBounds(), geometrySeq, pet)
+    event.returnValue = geometryOf(window.getBounds(), pet)
     return
   }
   const b = request?.bounds
@@ -1141,7 +793,7 @@ ipcMain.on('piggy:place', (event, request) => {
     if (speechChanged) panel.reanchorPanel(pet)
     else if (panelPigChanged) panel.followPig(pet)
   }
-  event.returnValue = geometryOf(window.getBounds(), geometrySeq, pet)
+  event.returnValue = geometryOf(window.getBounds(), pet)
 })
 
 /**

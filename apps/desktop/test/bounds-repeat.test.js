@@ -4,9 +4,9 @@ import { runInNewContext } from 'node:vm'
 import { test } from 'node:test'
 
 // 执行真实窗口设置入口；仅模拟已录得的 Windows 分数缩放回读误差。
-const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../lib/window-surface.js', import.meta.url), 'utf8')
 const start = source.indexOf('function applyBounds(pet, next, why)')
-const end = source.indexOf('\n/**', start)
+const end = source.indexOf('\n\n  function setHit', start)
 const REQUEST = { x: 200, y: 100, width: 356, height: 284 }
 
 function windowHarness(offset = { x: 0, y: 0, width: 1, height: 1 }) {
@@ -18,9 +18,11 @@ function windowHarness(offset = { x: 0, y: 0, width: 1, height: 1 }) {
   const pet = { primary: true, pigId: 'pig-a', window: win, petAsked: { ...REQUEST }, lastDragSlide: { x: 0, y: 0 } }
   const context = {
     BOUNDS_TOLERANCE: 2,
-    primaryPet: () => pet,
-    panel: { followPig: () => effects.push('follow') }, scheduleWindowStateSave: () => effects.push('save'),
-    pushGeometry: () => effects.push('geometry'), log() {},
+    deps: {
+      panel: { followPig: () => effects.push('follow') }, scheduleWindowStateSave: () => effects.push('save'),
+      log() {},
+    },
+    pushGeometry: () => effects.push('geometry'),
   }
   runInNewContext(source.slice(start, end), context)
   return { apply: (next, why = 'drag') => context.applyBounds(pet, { ...next }, why), requested, effects,

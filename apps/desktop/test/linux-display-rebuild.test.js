@@ -55,9 +55,9 @@ test('a failed native rebuild releases its gate and reports the error', async ()
 })
 
 test('重建 Linux 窗口时丢弃旧页面的独立输入区域', async () => {
-  const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const source = readFileSync(new URL('../lib/window-manager.js', import.meta.url), 'utf8')
   const start = source.indexOf('async function rebuildLinuxViews()')
-  const end = source.indexOf('\n/**\n * The renderer reports', start)
+  const end = source.indexOf('\n\n  return {\n    createWindow,', start)
   const previous = { isDestroyed: () => false, hide() {}, removeAllListeners() {}, webContents: { removeAllListeners() {} }, destroy() {} }
   const pet = { primary: true, pigId: 'pig-a', window: previous, petAsked: { x: 0, y: 0, width: 132, height: 152 },
     lastPigWindow: { x: 10, y: 10 }, lastContent: {}, restingPigScreen: {},
@@ -65,13 +65,18 @@ test('重建 Linux 窗口时丢弃旧页面的独立输入区域', async () => {
     resizeShape: { cancel() {} }, owner: { destroy: window => window.destroy() } }
   let resetInput = false
   const sandbox = {
-    quitting: false, pet, primaryPet: () => pet, pets: { all: () => [pet], primary: () => pet },
-    getPanelWindow: () => null, panelWindow: { destroy() {}, forget() {} },
-    stopDrag() {}, panel: { close() {}, ensure() {} }, pushGeometry() {}, log() {},
+    quitting: false, pet,
     WINDOW_PADDING: 10,
     createWindow: async () => { resetInput = runInContext('pet.placedHitShape === null && !pet.hasPlacedShape', context); pet.window = { getBounds: () => ({}) } },
+    deps: {
+      primaryPet: () => pet,
+      getPanelWindow: () => null,
+      panelWindow: { destroy() {}, forget() {} },
+      stopDrag() {}, panel: { close() {}, ensure() {} }, log() {},
+      surface: { pushGeometry() {} },
+    },
   }
-  sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
+  sandbox.deps.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
   const context = createContext(sandbox)
   assert.ok(start > 0 && end > start)
   runInContext(source.slice(start, end), context)

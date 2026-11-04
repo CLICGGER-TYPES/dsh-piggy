@@ -10,9 +10,10 @@ import { pointerHitsShape } from '../../lib/pointer-hit.js'
 import { validDragOrigin } from '../../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../../lib/window-show.js'
 import { auxiliaryWindowOptions } from '../../lib/auxiliary-window.js'
-import { createPetWindow } from '../../lib/pet-window.js'
 import { createPetRegistry, createPetState } from '../../lib/pet-instance.js'
 import { createStartupTrace } from '../../lib/startup-trace.js'
+import { createWindowManager } from '../../lib/window-manager.js'
+import { createWindowSurface } from '../../lib/window-surface.js'
 import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../../main.js', import.meta.url), 'utf8')
@@ -54,10 +55,9 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   const sandbox = {
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
-    createPetWindow, pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
+    pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
     panel: { followPig() {}, reanchorPanel() {}, focusLeft() {}, close() {}, ensure() {}, forgetTarget() {} },
     pigSessions: new Map(), quitting: false,
-    BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
     startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,
     readWindowState: () => null, pigDisplay: () => display, join: (...parts) => parts.join('/'),
     screen: { getCursorScreenPoint: () => state.cursor, getAllDisplays: () => [display],
@@ -71,20 +71,51 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   }
   sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
   const context = createContext(sandbox)
+  const surface = createWindowSurface({
+    screen: sandbox.screen, platform, env, panel: sandbox.panel,
+    scheduleWindowStateSave: sandbox.scheduleWindowStateSave, log: sandbox.log,
+    startupInputTrace: sandbox.startupInputTrace,
+    traceSetIgnoreMouseEvents: (...args) => sandbox.traceSetIgnoreMouseEvents(...args),
+  })
+  const manager = createWindowManager({
+    BrowserWindow: WindowStub, screen: sandbox.screen, pets, primaryPet: sandbox.primaryPet,
+    panel: sandbox.panel, panelWindow: { destroy() {}, forget() {} }, getPanelWindow: () => null,
+    desktopLifecycle: sandbox.desktopLifecycle, desktopRuntime: { getHost: () => null }, pigSessions: sandbox.pigSessions,
+    platform, env, preloadPath: 'preload.cjs', frameCap: 0, log: sandbox.log,
+    startupInputTrace: sandbox.startupInputTrace, readWindowState: sandbox.readWindowState, surface,
+    setTimeout: sandbox.setTimeout, setInterval: sandbox.setInterval, clearInterval: sandbox.clearInterval,
+    stopDrag: pet => sandbox.stopDrag(pet),
+    confirmUpdateStartupIfReady() {},
+    onRendererLoaded: () => { sandbox.startupRendererLoaded = true },
+    onPrimaryWindowShown: window => { sandbox.startupWindowWasVisible = window.isVisible() },
+    handleStartupFailure: async () => {},
+    getCaptureCheck: () => async () => {},
+  })
+  Object.assign(sandbox, {
+    createWindow: manager.createWindow, createPigWindow: manager.createPigWindow,
+    closePetSession: manager.closePetSession, rebuildLinuxViews: manager.rebuildLinuxViews,
+    showPigWindow: manager.showPigWindow,
+    applyBounds: surface.applyBounds, applyFlightBounds: surface.applyFlightBounds,
+    applyShape: surface.applyShape, refreshHit: surface.refreshHit,
+    setHit: surface.setHit, setLegacyHit: surface.setLegacyHit, setPassthroughMode: surface.setPassthroughMode,
+    isMouseRect: surface.isMouseRect, isMouseShape: surface.isMouseShape, isPlaceRequest: surface.isPlaceRequest,
+    shiftedShape: surface.shiftedShape, workAreaFor: surface.workAreaFor, pushGeometry: surface.pushGeometry,
+    geometryOf: surface.geometryOf, currentSeq: surface.currentSeq, SKIP_NATIVE_SHAPE: surface.skipNativeShape,
+  })
   const traceStart = source.indexOf('function startupApiErrorKind(error)')
   const traceEnd = source.indexOf('\nasync function flushLogs', traceStart)
   const fromPet = source.indexOf('function fromPet(event)')
   const fromPetEnd = source.indexOf('\n/** 发给所有窗口的页面', fromPet)
-  const start = source.indexOf('function workAreaFor(bounds)')
+  const start = source.indexOf("ipcMain.on('piggy:content'")
   const end = source.indexOf('\n// 面板窗口：', start)
   assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet && start > 0 && end > start, '必须加载生产诊断、窗口和鼠标入口')
   runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(fromPet, fromPetEnd), context)
   runInContext(source.slice(start, end), context)
-  await runInContext('createWindow()', context)
+  await manager.createWindow()
   return {
     mouse, shapes, sent, intervals, state, pets, primary,
-    recreate: () => runInContext('createWindow()', context),
+    recreate: () => manager.createWindow(),
     send(channel, payload, sender = webContents) {
       const event = { sender, returnValue: undefined }
       handlers.get(channel)(event, payload)
