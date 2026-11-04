@@ -14,7 +14,9 @@ import { test } from 'node:test'
 
 import { SNAPSHOT, fakeDom, contentOf, findByAttr, findByClass, hostOf, mount, openPanel, sceneOf, settle } from './helpers/bundle.js'
 
-const SHELL_SRC = readFileSync(new URL('../apps/desktop/renderer/shell.js', import.meta.url), 'utf8')
+/** 顺序和 renderer/index.html 一致：模块先注册工厂，shell.js 最后装配。 */
+const SHELL_PARTS = ['shell-measure.js', 'shell-anchor.js', 'shell-room.js', 'shell-report.js', 'shell-tooltip.js', 'shell.js']
+const SHELL_SOURCES = SHELL_PARTS.map(name => readFileSync(new URL(`../apps/desktop/renderer/${name}`, import.meta.url), 'utf8'))
 
 /** 外壳：屏幕 1920x1040，猪停在右下角，上方空间 900、下方 100。 */
 function fakeShell(room) {
@@ -248,8 +250,10 @@ test('真实顺序（shell.js → client.js）：按住猪拖，窗口跟着走�
     }
     return child
   }
-  const runShell = new Function('window', 'document', 'getComputedStyle', 'setInterval', SHELL_SRC)
-  runShell(globalThis.window, globalThis.document, globalThis.getComputedStyle, globalThis.window.setInterval)
+  for (const source of SHELL_SOURCES) {
+    const runShell = new Function('window', 'document', 'getComputedStyle', 'setInterval', source)
+    runShell(globalThis.window, globalThis.document, globalThis.getComputedStyle, globalThis.window.setInterval)
+  }
   await loading
   await settle()
 

@@ -32,7 +32,7 @@
   游戏包 `apps/desktop/package.json` 的 `piggy.minShell` 视情况提高，`src/client/desktop/index.js` 的 `DESKTOP_VERSION` 加一；只优化现有动作不必增加约定版本。
   2026-10-18：`DESKTOP_VERSION=6`，新增 `piggy:flight:move`；`minShell` 不提高（旧外壳仍能跑 A1，只是不抛）。
 - 游戏包要兼容「新游戏包 + 刚好满足 minShell 的旧外壳」：用新动作前先 `typeof shell.xxx === 'function'`。
-- 外壳要兼容「老游戏包」：老游戏包会退回外壳自带的 `renderer/shell.js` 和下表「旧」消息，别删。
+- 外壳要兼容「老游戏包」：老游戏包会退回外壳自带的 `renderer/shell.js`（装配入口）和同目录的 `shell-*.js` 模块，以及下表「旧」消息，别删。
 
 ### Windows 鼠标转发
 
@@ -159,7 +159,7 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 
 | 通道 | 给谁 | 什么时候能删 |
 |---|---|---|
-| `piggy:content`、`piggy:shape` | 外壳 0.3.0 以前的游戏包（用 `renderer/shell.js` 那套） | 等游戏包的 `minShell` 和「回退到老版本」的最低版本都过了 0.27.x，且外壳不再提供回退到那些版本 |
+| `piggy:content`、`piggy:shape` | 外壳 0.3.0 以前的游戏包（用 `renderer/shell*.js` 那套） | 等游戏包的 `minShell` 和「回退到老版本」的最低版本都过了 0.27.x，且外壳不再提供回退到那些版本 |
 | `piggy:move`（`moveBy`） | 0.27.2 及以前的游戏包拖动；新游戏包的「散步」也还在用 | 散步改用 `place` 之后 |
 
 ## 关键文件

@@ -86,8 +86,9 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
     ...jsFiles(new URL('store/', packageRoot)),
     ...jsFiles(new URL('src/client/', packageRoot)),
     ...jsFiles(new URL('src/extensions/', packageRoot)),
-    // 桌面外壳的模块和在线扩展同样受限；apps/desktop/main.js 暂时豁免（见 CONVENTIONS「豁免」）
+    // 桌面外壳的模块（含 renderer 里的旧外壳）和在线扩展同样受限；apps/desktop/main.js 暂时豁免（见 CONVENTIONS「豁免」）
     ...jsFiles(new URL('apps/desktop/lib/', packageRoot)),
+    ...jsFiles(new URL('apps/desktop/renderer/', packageRoot)),
     ...jsFiles(new URL('extensions/', packageRoot)),
   ]
   const lineCount = url => read(url).replace(/\n$/, '').split('\n').length
@@ -99,7 +100,9 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
 test('源码、外壳模块和在线扩展的规则文件开头都有 // @ts-check', () => {
   const files = [...jsFiles(new URL('src/host/', packageRoot)),
     ...jsFiles(new URL('src/extensions/', packageRoot)),
-    ...jsFiles(new URL('apps/desktop/lib/', packageRoot)), new URL('apps/desktop/main.js', packageRoot),
+    ...jsFiles(new URL('apps/desktop/lib/', packageRoot)),
+    ...jsFiles(new URL('apps/desktop/renderer/', packageRoot)),
+    new URL('apps/desktop/main.js', packageRoot),
     ...jsFiles(new URL('extensions/', packageRoot)).filter(url => url.pathname.endsWith('server.js'))]
   const offenders = files.filter(url => !isGeneratedFarmServer(url) && !read(url).startsWith('// @ts-check')).map(shortName)
   assert.deepEqual(offenders, [])

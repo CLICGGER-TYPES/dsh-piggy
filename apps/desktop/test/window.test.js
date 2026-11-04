@@ -7,7 +7,7 @@
  *    量框必须用布局盒，取整到 4px 再比较。
  * 2. 拖猪的时候窗口跟着走（屏幕坐标）。
  *
- * 测试用假 DOM 跑真实的 renderer/shell.js：getBoundingClientRect 会像动画那样抖，
+ * 测试用假 DOM 跑真实的 renderer/shell*.js：getBoundingClientRect 会像动画那样抖，
  * 布局盒（offsetLeft/offsetTop/offsetWidth/offsetHeight）是稳的 —— 正好区分两种量法。
  */
 import assert from 'node:assert/strict'
@@ -16,7 +16,9 @@ import { test } from 'node:test'
 
 import { ANCHOR_TOLERANCE, WINDOW_PADDING, anchorCorrection, clampBounds, contentBounds, dragPigBounds, movedBounds, moveAcrossDisplays, quantizeKey } from '../lib/window-geometry.js'
 
-const SHELL = readFileSync(new URL('../renderer/shell.js', import.meta.url), 'utf8')
+/** 顺序和 renderer/index.html 一致：模块先注册工厂，shell.js 最后装配。 */
+const SHELL_PARTS = ['shell-measure.js', 'shell-anchor.js', 'shell-room.js', 'shell-report.js', 'shell-tooltip.js', 'shell.js']
+const SHELL_SOURCES = SHELL_PARTS.map(name => readFileSync(new URL(`../renderer/${name}`, import.meta.url), 'utf8'))
 
 /** 一个只够跑 shell.js 的假页面：猪 + 一块面板。 */
 function fakePage(options = {}) {
@@ -145,12 +147,14 @@ function fakePage(options = {}) {
 
   return {
     window, document, body, host, scene, pig, card, listeners, order,
-    /** 跑一遍真实 shell.js。 */
+    /** 按 index.html 的顺序跑一遍真实的 shell 模块。 */
     run() {
-      const factory = new Function('window', 'document', 'getComputedStyle', 'setInterval', 'requestAnimationFrame', SHELL)
-      factory(window, document, styleOf,
-        fn => { timers.push(fn); return timers.length },
-        () => 0)
+      for (const source of SHELL_SOURCES) {
+        const factory = new Function('window', 'document', 'getComputedStyle', 'setInterval', 'requestAnimationFrame', source)
+        factory(window, document, styleOf,
+          fn => { timers.push(fn); return timers.length },
+          () => 0)
+      }
       // 让动画抖动往后走几个相位。
       return () => { phase += 0.7 }
     },
