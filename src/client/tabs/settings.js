@@ -23,6 +23,7 @@ import { extensionUpdateAvailable } from './extensions.js'
 import { renderSaveTransferSettings } from '../save-transfer.js'
 import { renderOwnerPigSettings } from '../owner-pigs.js'
 import { renderCloudSaveSettings } from './cloud-save.js'
+import { renderOwnerCloudSaveSettings } from '../owner-cloud-save.js'
 import { renderExternalPetSettings } from '../external-pet.js'
 import { renderExternalDesktopSettings } from '../external-desktop.js'
 
@@ -75,6 +76,7 @@ export function renderSettingsTab(ui) {
   renderSaveTransferSettings(ui, section)
   renderOwnerPigSettings(ui, section)
   renderCloudSaveSettings(ui, section)
+  renderOwnerCloudSaveSettings(ui, section)
 
   // 外部桌宠入口固定在「存档」之后、「小猪大小」之前（设计 4.1）。
   // 只在 DSH 网页版显示；桌面版设置里是「外部连接」，不当成自己连自己。
