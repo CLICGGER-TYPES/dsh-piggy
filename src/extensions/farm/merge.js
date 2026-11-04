@@ -1,20 +1,22 @@
 // @ts-check
 // 菜园合并钩子（#14 外部桌宠：把内嵌猪的菜园并进桌面猪的菜园）。
-// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v6，再按下面这套规则合，最后再过一次 normalize。
+// 只相信自己的 normalize：两边的数据先各自补齐/迁移到 v7，再按下面这套规则合，最后再过一次 normalize。
 // 规则写在 docs/guides/writing-extensions.md「合并钩子」（#14 设计稿 6.4）。
 //
 // 规则：资产（种子、仓库、图鉴数量、历史收获、肥料、帮工仓、欠着的退款）两边相加；
 // 进度（开垦块数、经验、帮工等级）取更高；同一块地只能留一份，取更靠后/种得更晚的一方；
-// 帮工只保留「结算得更晚」那一侧的指针和管区目标，旧批次（pending）不再合并。
-// 数据版本比当前新（> 6）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
+// 帮工只保留「结算得更晚」那一侧的指针、排班和管区目标，旧批次（pending）不再合并；
+// workers 数量取两边较多的（封顶 5，不按角色相加，避免两台设备各雇 5 只变 10 只），
+// 角色/hiredAt 取「结算更晚」的一侧，locked 两边同 id 任一为 true 就算锁。
+// 数据版本比当前新（> 7）就抛错，交给宿主退回「二选一」，不拿旧规则硬读新数据。
 import { EXP_CAP, PLOTS, START_PLOTS } from './data.js'
-import { HELPER_PLOTS } from './helper.js'
+import { HELPER_MAX } from './helper.js'
 import { normalize } from './migration.js'
 import { lessonAt } from './plot-rules.js'
 import { count, cropFor, isObject, plotState } from './pure.js'
 
 /** 当前这份服务端读写的数据版本（normalize 的终点）。 */
-export const FARM_DATA_VERSION = 6
+export const FARM_DATA_VERSION = 7
 
 const KNOWN = new Set(['version', 'unlocked', 'plots', 'seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert',
   'exp', 'refund', 'helperBarnRefund', 'helperBarnRefunded', 'helper', 'onboarding'])
@@ -97,9 +99,24 @@ function pickHelperContext(target, source) {
 }
 
 function mergeHelper(out, t, s) {
-  const hired = t.hired === true || s.hired === true
   const level = Math.max(t.level, s.level)
   const context = pickHelperContext(t, s)
+  const other = context === t ? s : t
+  // 只数取 max，不按角色/设备相加；id 连续重排后按位置对齐两边同一只帮工。
+  const count = Math.min(HELPER_MAX, Math.max(t.workers.length, s.workers.length))
+  const workers = []
+  for (let id = 1; id <= count; id += 1) {
+    const primary = context.workers[id - 1], secondary = other.workers[id - 1]
+    const pick = primary ?? secondary
+    if (pick === undefined) continue
+    workers.push({
+      id,
+      role: pick.role === 'patrol' ? 'patrol' : 'harvest', // 角色跟「结算更晚」的一侧
+      locked: primary?.locked === true || secondary?.locked === true,
+      hiredAt: Number.isFinite(pick.hiredAt) ? pick.hiredAt : null,
+    })
+  }
+  const hired = workers.length > 0
   out.helper = {
     hired, enabled: hired && context.enabled === true, xpQuarterRemainder: context.xpQuarterRemainder,
     xpEligibleAt: context.xpEligibleAt,
@@ -110,6 +127,8 @@ function mergeHelper(out, t, s) {
     pending: null,
     targets: Array.from({ length: PLOTS }, (_, index) => context.targets[index] ?? null),
     stock: sumCounts(t.stock, s.stock),
+    schedule: context.schedule,
+    workers,
   }
 }
 

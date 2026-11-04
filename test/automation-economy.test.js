@@ -73,7 +73,8 @@ test('菜园自然托管：收成按地块真实生长与 roll，不再有预算
     data.seeds[crop.key] = 999
     for (let index = 0; index < plots; index += 1) farm.actions.plant(data, { plot: index, item: crop.key }, host)
     farm.actions.hire(data, {}, host)
-    data.helper.level = [4, 8, 16].indexOf(plots)
+    // v7：覆盖块数由收菜帮工只数决定（每只 4 块），不再读旧 level。
+    data.helper.workers = Array.from({ length: plots / 4 }, (_, index) => ({ id: index + 1, role: 'harvest', locked: false, hiredAt: null }))
     const before = structuredClone(data.plots.slice(0, plots))
     host.now = NOW + crop.hours * 3600000
     // 到点结算一次：每块地都按自己的 roll 收一次，不封仓、不按预算打折。

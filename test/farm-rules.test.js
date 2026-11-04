@@ -63,7 +63,7 @@ test('天气按日期定晴雨：同一天各时段一致，夜雨与白天是�
 test('雨天浇湿已干空地：动作写回存档，view 只读不写', () => {
   const t = fakeApi(SUNNY)
   const data = farm.init()
-  // v6 init checkpoint clears fallow dryness; make the pre-existing dry plots explicit
+  // v7 init checkpoint clears fallow dryness; make the pre-existing dry plots explicit
   // so this case continues to exercise rain clearing rather than depend on startup defaults.
   for (const plot of data.plots.slice(0, START_PLOTS)) plot.pests.dry = 0
   assert.ok(data.plots.slice(0, START_PLOTS).every(plot => plot.pests.dry === 0), 'fixture begins with explicitly dry land')
@@ -224,7 +224,7 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
     seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {},
   }
   normalize(old)
-  assert.equal(old.version, 6)
+  assert.equal(old.version, 7)
   assert.equal(old.unlocked, 8)
   assert.equal(old.plots.length, PLOTS)
   assert.ok(old.plots.every(plot => plot === null), '迁移后地块全空')

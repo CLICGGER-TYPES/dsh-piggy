@@ -1,6 +1,6 @@
 // @ts-check
 // 菜园「自然托管」回归（用户 2026-10-27 批准）：托管地按原成熟时间并行生长，成熟进帮工仓、同种种子自动补种；
-// 自动收获给菜园经验的 75%，不扣体力，没有加速批次、六小时停工和 400 预算。当前存档为 farm v6。
+// 自动收获给菜园经验的 75%，不扣体力，没有加速批次、六小时停工和 400 预算。当前存档为 farm v7（v7 多了 helper.workers/schedule，结算仍是单游标）。
 import assert from 'node:assert/strict'
 import { beforeEach, test } from 'node:test'
 
@@ -42,7 +42,7 @@ function api(balance = 100_000) {
   return { api: host, bag, said, balance: () => balance, tired: () => tired }
 }
 
-/** 干净的 v6 熟地存档：18 块空地，第一课已完成，9 级（种子等级不挡路）。 */
+/** 干净的 v7 熟地存档：18 块空地，第一课已完成，9 级（种子等级不挡路）。 */
 function farm9() {
   const data = Object.assign(farm.init(), { plots: Array(PLOTS).fill(null) })
   data.exp = 10000
@@ -289,7 +289,7 @@ test('view 反复调用不改变后续结果，也不推进全局随机', () => 
   assert.equal(draws, before + 4, '手动种一颗要抽 4 次：roll + 三样灾害')
 })
 
-test('v5 迁移先按旧规则收成熟作物且不补 XP，再写 v6 checkpoint 并保留库存', () => {
+test('v5 迁移先按旧规则收成熟作物且不补 XP，再写 v7 checkpoint 并保留库存', () => {
   const raw = {
     version: 5, unlocked: 6,
     plots: [
@@ -303,7 +303,7 @@ test('v5 迁移先按旧规则收成熟作物且不补 XP，再写 v6 checkpoint
   }
   const migrationAt = T0 + H
   const once = normalize(structuredClone(raw), migrationAt)
-  assert.equal(once.version, 6, 'v5 迁移输出当前 v6')
+  assert.equal(once.version, 7, 'v5 迁移输出当前 v7')
   assert.equal(once.helper.enabled, true, '旧雇用档默认继续托管')
   assert.equal(once.helper.xpQuarterRemainder, 0, '迁移不带入旧版不存在的 XP 余数')
   assert.equal(once.helper.xpEligibleAt, migrationAt, '首次新规则 XP 从迁移 checkpoint 之后开始')
@@ -318,7 +318,7 @@ test('v5 迁移先按旧规则收成熟作物且不补 XP，再写 v6 checkpoint
   assert.equal(once.harvest.radish, 3, '旧帮工收成不流入玩家仓库')
   assert.equal(once.harvests.radish, 2, '迁移只结算已成熟地块一次')
   assert.equal(once.exp, 200, '旧规则成熟事件不补历史 XP')
-  assert.deepEqual(normalize(structuredClone(once), migrationAt), once, 'v6 normalize 幂等')
+  assert.deepEqual(normalize(structuredClone(once), migrationAt), once, 'v7 normalize 幂等')
 
   const t = api()
   const data = structuredClone(once)
@@ -349,7 +349,7 @@ test('v5 未来 checkpoint 前的旧成熟事件不补 XP，checkpoint 后的新
     onboarding: { step: 'done', rewarded: true, legacy: false, plantedAt: null, wateredAt: null },
   }
   const data = normalize(structuredClone(raw), T0 + 20 * H)
-  assert.equal(data.version, 6)
+  assert.equal(data.version, 7)
   assert.equal(data.helper.lastAt, T0 + 30 * H, '迁移保留已有未来 checkpoint')
   assert.equal(data.helper.xpEligibleAt, T0 + 30 * H, '旧成熟事件须等到 future checkpoint 才能结算')
   assert.equal(data.exp, 200, '迁移时不追补历史 XP')
@@ -386,8 +386,8 @@ test('回退旧扩展安全：存档形状不变，同一份数据不会藏着�
   farm.actions.plant(data, { plot: 0, item: 'radish' }, t.api)
   t.api.now = T0 + 14 * H
   farm.actions.buy(data, { item: 'nothing' }, t.api)
-  assert.deepEqual(Object.keys(data.helper).sort(), ['barn', 'cursor', 'enabled', 'hired', 'lastAt', 'level', 'pending', 'stock', 'targets', 'usedMs', 'xpEligibleAt', 'xpQuarterRemainder'])
-  assert.equal(data.version, 6)
+  assert.deepEqual(Object.keys(data.helper).sort(), ['barn', 'cursor', 'enabled', 'hired', 'lastAt', 'level', 'pending', 'schedule', 'stock', 'targets', 'usedMs', 'workers', 'xpEligibleAt', 'xpQuarterRemainder'])
+  assert.equal(data.version, 7)
   assert.equal(data.helper.pending, null)
   assert.equal(data.helper.usedMs, 0)
   assert.equal(data.helper.enabled, true)

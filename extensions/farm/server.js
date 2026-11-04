@@ -222,6 +222,8 @@ function sayHarvest(result) {
 
 // src/extensions/farm/helper.js
 var HELPER_PLOTS = [4, 8, 16];
+var HELPER_MAX = 5;
+var HELPER_PLOTS_PER_WORKER = 4;
 var HELPER_SHARE = 0.9;
 var HELPER_WINDOW = 6 * 36e5;
 var HELPER_PRICES = { hire: 2500, level: [0, 2e3, 6e3] };
@@ -242,11 +244,24 @@ function helperRecipe(key, level) {
   }
   return best ?? make(1, 1, true);
 }
+var helperWorkersForLevel = (level) => HELPER_PLOTS[Math.min(2, count(level))] / HELPER_PLOTS_PER_WORKER;
+function helperWorkerList(level = 0) {
+  const n = Math.max(1, Math.min(HELPER_MAX, helperWorkersForLevel(level)));
+  return Array.from({ length: n }, (_, index) => ({ id: index + 1, role: "harvest", locked: false, hiredAt: null }));
+}
 function normalizeHelper(data) {
   const raw = isObject(data.helper) ? data.helper : {};
-  const hired = raw.hired === true;
   const level = Math.min(2, count(raw.level));
   const barn = Math.min(3, count(raw.barn));
+  let workers = (Array.isArray(raw.workers) ? raw.workers : []).filter(isObject).slice(0, HELPER_MAX).map((worker, index) => ({
+    id: index + 1,
+    // 连续重编号：id 只给 UI/动作定位，别信存档里的旧 id
+    role: worker.role === "patrol" ? "patrol" : "harvest",
+    locked: worker.locked === true,
+    hiredAt: Number.isFinite(worker.hiredAt) ? worker.hiredAt : null
+  }));
+  if (raw.hired === true && workers.length === 0) workers = helperWorkerList(level);
+  const hired = workers.length > 0;
   data.helper = {
     hired,
     enabled: hired && raw.enabled !== false,
@@ -259,11 +274,14 @@ function normalizeHelper(data) {
     cursor: count(raw.cursor) % PLOTS,
     pending: null,
     targets: Array.from({ length: PLOTS }, (_, index) => cropFor(raw.targets?.[index]) ? raw.targets[index] : null),
-    stock: Object.fromEntries(CROPS.map((crop) => [crop.key, count(raw.stock?.[crop.key])]))
+    stock: Object.fromEntries(CROPS.map((crop) => [crop.key, count(raw.stock?.[crop.key])])),
+    schedule: raw.schedule === "manual" ? "manual" : "auto",
+    workers
   };
 }
 var helperCount = (data) => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0);
-var helperPlots = (data) => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS[data.helper.level]) : 0;
+var helperHarvestWorkers = (data) => (Array.isArray(data.helper.workers) ? data.helper.workers : []).filter((worker) => worker.role === "harvest").length;
+var helperPlots = (data) => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS_PER_WORKER * helperHarvestWorkers(data)) : 0;
 var helperRandom = (...parts) => stableRandom("helper", ...parts);
 function keepClean(plot, at, index) {
   if (!isObject(plot.pests)) plot.pests = { weed: null, bug: null, dry: null };
@@ -365,11 +383,15 @@ function settleHelper(data, now, { awardExperience = true } = {}) {
     else if (plot?.pests?.dry <= now) plot.pests.dry = droughtAt(now);
   }
   const helper = data.helper;
-  const managed = helperPlots(data);
-  if (!managed || !Number.isFinite(now)) return;
+  if (!Number.isFinite(now)) return;
   const start = helper.lastAt ?? now;
   if (now < start) return;
   if (!helper.enabled) return;
+  const managed = helperPlots(data);
+  if (managed === 0) {
+    if (helper.hired === true) helper.lastAt = now;
+    return;
+  }
   settlePlots(data, helper, managed, start, now, awardExperience);
   helper.lastAt = now;
 }
@@ -378,6 +400,24 @@ function helperView(data) {
   const managed = helperPlots(data);
   const missing = helper.targets.slice(0, managed).filter((key, index) => key && (!data.plots[index] || data.plots[index].fallow) && amountFor(data, "seeds", key) === 0);
   const seedless = managed > 0 && !data.plots.slice(0, managed).some((plot) => cropFor(plot?.crop)) && !helper.targets.slice(0, managed).some((key) => key && amountFor(data, "seeds", key) > 0);
+  const workers = [];
+  let offset = 0;
+  for (const worker of helper.workers) {
+    const role = worker.role === "patrol" ? "patrol" : "harvest";
+    const plotCount = role === "harvest" ? Math.max(0, Math.min(HELPER_PLOTS_PER_WORKER, managed - offset)) : 0;
+    const plots = Array.from({ length: plotCount }, (_, index) => offset + index);
+    offset += plotCount;
+    const working = plots.some((index) => cropFor(data.plots[index]?.crop) !== null);
+    workers.push({
+      id: worker.id,
+      role,
+      roleLabel: role === "harvest" ? "收菜" : "巡逻",
+      locked: worker.locked === true,
+      plots,
+      plotCount,
+      status: !helper.enabled ? "paused" : role === "patrol" ? "patrol" : working ? "working" : "idle"
+    });
+  }
   return {
     hired: helper.hired,
     enabled: helper.enabled,
@@ -388,7 +428,13 @@ function helperView(data) {
     full: false,
     continuous: helper.enabled,
     seedless,
-    missing: [...new Set(missing)].map((key) => cropFor(key).label)
+    missing: [...new Set(missing)].map((key) => cropFor(key).label),
+    count: helper.workers.length,
+    max: HELPER_MAX,
+    canHire: helper.workers.length < HELPER_MAX,
+    hirePrice: HELPER_PRICES.hire,
+    schedule: helper.schedule,
+    workers
   };
 }
 function helperPlotView(data, index, state) {
@@ -412,13 +458,11 @@ function helperBuy(data, payload, api) {
     if (!purse(api).spend(HELPER_PRICES.hire, "helper")) return { ok: false, reason: "poor" };
     helper.hired = true;
     helper.enabled = true;
+    helper.workers = helperWorkerList(helper.level);
     helper.lastAt = api.now;
   } else {
     if (kind !== "level" || !helper.hired) return { ok: false, reason: "locked" };
-    const price = HELPER_PRICES.level[helper.level + 1];
-    if (price === void 0) return { ok: false, reason: "owned" };
-    if (!purse(api).spend(price, "helper")) return { ok: false, reason: "poor" };
-    helper.level += 1;
+    return { ok: false, reason: "unavailable" };
   }
   return { ok: true };
 }
@@ -521,7 +565,7 @@ function normalize(data, now = Date.now()) {
       data.helper.xpEligibleAt = null;
     }
   }
-  data.version = Math.max(6, count(data.version));
+  data.version = Math.max(7, count(data.version));
   return data;
 }
 function newGround() {
@@ -686,7 +730,7 @@ actions.collect = (data) => collectHelper(data);
 actions.toggleHelper = (data, payload, api) => toggleHelper(data, payload, api);
 
 // src/extensions/farm/merge.js
-var FARM_DATA_VERSION = 6;
+var FARM_DATA_VERSION = 7;
 var KNOWN = /* @__PURE__ */ new Set([
   "version",
   "unlocked",
@@ -767,9 +811,24 @@ function pickHelperContext(target, source) {
   return settledAt(source) > settledAt(target) ? source : target;
 }
 function mergeHelper(out, t, s) {
-  const hired = t.hired === true || s.hired === true;
   const level = Math.max(t.level, s.level);
   const context = pickHelperContext(t, s);
+  const other = context === t ? s : t;
+  const count2 = Math.min(HELPER_MAX, Math.max(t.workers.length, s.workers.length));
+  const workers = [];
+  for (let id = 1; id <= count2; id += 1) {
+    const primary = context.workers[id - 1], secondary = other.workers[id - 1];
+    const pick = primary ?? secondary;
+    if (pick === void 0) continue;
+    workers.push({
+      id,
+      role: pick.role === "patrol" ? "patrol" : "harvest",
+      // 角色跟「结算更晚」的一侧
+      locked: primary?.locked === true || secondary?.locked === true,
+      hiredAt: Number.isFinite(pick.hiredAt) ? pick.hiredAt : null
+    });
+  }
+  const hired = workers.length > 0;
   out.helper = {
     hired,
     enabled: hired && context.enabled === true,
@@ -782,7 +841,9 @@ function mergeHelper(out, t, s) {
     cursor: context.cursor,
     pending: null,
     targets: Array.from({ length: PLOTS }, (_, index) => context.targets[index] ?? null),
-    stock: sumCounts(t.stock, s.stock)
+    stock: sumCounts(t.stock, s.stock),
+    schedule: context.schedule,
+    workers
   };
 }
 function mergeLesson(out, t, s, warnings) {
