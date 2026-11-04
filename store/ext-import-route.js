@@ -2,7 +2,8 @@
 /**
  * POST /dsh-piggy/extensions/import —— 本地导入扩展包（store/ext-import.js）。
  *
- * 请求体是 base64 文本，解开是 JSON `{ bundle: 扩展包原文, confirm: 布尔 }`：桌面版的本地协议把请求体当文本读，
+ * 请求体是 base64 文本，解开是 JSON `{ bundle: 扩展包原文, confirm: 布尔 }` 或
+ * `{ zip: ZIP 的 base64, confirm: 布尔 }`：桌面版的本地协议把请求体当文本读，
  * 跟导入皮肤一样用 base64 才不会把中文读坏。导入成功回快照，好让面板马上看到新扩展。
  * @module dsh-piggy/store/ext-import-route
  */
@@ -22,9 +23,10 @@ export function registerExtImportRoute(webServer, store, snapshot) {
       }
       let body
       try { body = JSON.parse(Buffer.from(Buffer.concat(chunks).toString('ascii').trim(), 'base64').toString('utf8')) } catch { return send(400, { ok: false, reason: 'invalid-bundle', message: '这不是扩展包' }) }
-      if (body === null || typeof body !== 'object' || typeof body.bundle !== 'string') return send(400, { ok: false, reason: 'invalid-bundle', message: '这不是扩展包' })
+      if (body === null || typeof body !== 'object' || (typeof body.bundle !== 'string' && typeof body.zip !== 'string')) return send(400, { ok: false, reason: 'invalid-bundle', message: '这不是扩展包' })
       try {
-        const result = await store.ext.importBundle(body.bundle, body.confirm === true)
+        const input = typeof body.zip === 'string' ? Buffer.from(body.zip, 'base64') : body.bundle
+        const result = await store.ext.importBundle(input, body.confirm === true)
         if (result.ok !== true) return send(200, result)
         send(200, { ...(body.snapshot === false ? {} : snapshot(store)), ...result, ok: true })
       } catch (error) {

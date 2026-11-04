@@ -7,6 +7,9 @@
  *   放在扩展目录的 `assets/` 里；在线目录的 `files` 里对应 `"assets/bg.webp": { url, sha256 }`。
  *   名字只许小写字母、数字、横线加 .webp / .png，单张 ≤512KB；0.37.0 起不限制图片张数和合计大小。
  *   面板里用 `app.asset('bg.webp')` 拿地址（GET /dsh-piggy/ext/<key>/assets/<name>）。
+ * - 素材包（v0.37.2 起，设计见 docs/design/asset-packs-m3.md）：manifest 的 `assetPacks`
+ *   列出包名，文件放在 `actions/<pack>/`、`sounds/<pack>/`；这里是第一道路径白名单，
+ *   完整 schema/尺寸/magic 校验在 store/ext-asset-packs.js。
  * @module dsh-piggy/store/ext-files
  */
 
@@ -14,6 +17,37 @@ export const CODE_FILES = Object.freeze(['manifest.json', 'server.js', 'client.j
 export const MAX_FILE_BYTES = 512 * 1024
 export const ASSET_NAME = /^[a-z0-9][a-z0-9-]{0,47}\.(?:webp|png)$/
 export const ASSET_TYPES = Object.freeze({ webp: 'image/webp', png: 'image/png' })
+
+/**
+ * 扩展目录里允许写入的素材包文件。实际安装还会再核对 manifest 声明和 pack.json；
+ * 这里只做第一道白名单，脚本、HTML、SVG、外链和不认识的目录一律不放行。
+ * @param {string} name 相对扩展目录的路径
+ */
+export function isAssetPackFile(name) {
+  if (typeof name !== 'string' || name.length === 0 || name.length > 200) return false
+  if (name.startsWith('/') || name.includes('\\') || name.includes('..') || name.includes('\0') || name.includes('?') || name.includes('#')) return false
+  const parts = name.split('/')
+  if (parts.some(part => part === '' || part === '.')) return false
+  if (parts.length === 3 && parts[0] === 'sounds') {
+    return /^[a-z][a-z0-9-]{0,31}$/.test(parts[1])
+      && (parts[2] === 'pack.json' || /^[a-z][a-z0-9-]{0,47}\.(?:ogg|wav)$/.test(parts[2]))
+  }
+  if (parts.length === 3 && parts[0] === 'actions') {
+    return /^[a-z][a-z0-9-]{0,31}$/.test(parts[1]) && parts[2] === 'pack.json'
+  }
+  if (parts.length === 4 && parts[0] === 'actions') {
+    return /^[a-z][a-z0-9-]{0,31}$/.test(parts[1]) && /^[a-z][a-z0-9-]{0,47}$/.test(parts[2])
+      && /^\d{2}\.(?:png|webp)$/.test(parts[3])
+  }
+  return false
+}
+
+/** @param {string} name 相对扩展目录的路径 */
+export function isExtensionFile(name) {
+  if (CODE_FILES.includes(name)) return true
+  if (name.startsWith('assets/') && ASSET_NAME.test(name.slice('assets/'.length))) return true
+  return isAssetPackFile(name)
+}
 
 /**
  * manifest 里声明的图片名单；写错了返回 null（整个扩展当坏包拒绝，免得装上缺图）。

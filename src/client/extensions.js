@@ -9,10 +9,24 @@
 import { arr, num, obj, str } from './values.js'
 
 /** 老宿主没有扩展列表时，按「全部打开」处理。 */
+const EMPTY_PACKS = () => ({ actions: [], sounds: [] })
 const DEFAULTS = [
-  { key: 'pomodoro', label: '番茄钟', emoji: '🍅', description: '', on: true, apps: ['pomodoro'], dexSections: [], shopKinds: [], installed: true, builtin: true, version: '', app: null, error: null },
-  { key: 'fishing', label: '钓鱼', emoji: '🎣', description: '', on: true, apps: ['fishing'], dexSections: ['fish'], shopKinds: ['bait'], installed: true, builtin: true, version: '', app: null, error: null },
+  { key: 'pomodoro', label: '番茄钟', emoji: '🍅', description: '', on: true, apps: ['pomodoro'], dexSections: [], shopKinds: [], installed: true, builtin: true, version: '', app: null, error: null, assetPacks: EMPTY_PACKS() },
+  { key: 'fishing', label: '钓鱼', emoji: '🎣', description: '', on: true, apps: ['fishing'], dexSections: ['fish'], shopKinds: ['bait'], installed: true, builtin: true, version: '', app: null, error: null, assetPacks: EMPTY_PACKS() },
 ]
+
+/** 素材包摘要只用于展示；坏字段丢掉，不让一个扩展拖垮整个扩展列表。 @param {unknown} raw */
+function normalizeAssetPacks(raw) {
+  const value = obj(raw)
+  const list = kind => arr(value[kind]).map(item => {
+    const pack = obj(item)
+    return {
+      pack: str(pack.pack, ''), namespace: str(pack.namespace, ''),
+      entries: num(pack.entries, 0), frames: num(pack.frames, 0), files: num(pack.files, 0), bytes: num(pack.bytes, 0),
+    }
+  }).filter(item => item.pack !== '' || item.namespace !== '')
+  return { actions: list('actions'), sounds: list('sounds'), ...(typeof value.error === 'string' ? { error: value.error } : {}) }
+}
 
 /** @param {unknown} raw */
 export function normalizeExtensions(raw) {
@@ -26,7 +40,7 @@ export function normalizeExtensions(raw) {
       key: str(entry.key, ''), label: str(entry.label, ''), emoji: str(entry.emoji, '🧩'),
       description: str(entry.description, ''), on: entry.on !== false,
       apps: strings('apps'), dexSections: strings('dexSections'), shopKinds: strings('shopKinds'),
-      assets: strings('assets'), assetLayout: obj(entry.assetLayout),
+      assets: strings('assets'), assetLayout: obj(entry.assetLayout), assetPacks: normalizeAssetPacks(entry.assetPacks),
       // v0.30：装没装、是不是内置、下载扩展的版本和主菜单格子、加载出错。
       installed: entry.installed !== false, builtin: entry.builtin !== false, version: str(entry.version, ''),
       // 本地导入的非官方扩展（不会被在线目录提示更新）。

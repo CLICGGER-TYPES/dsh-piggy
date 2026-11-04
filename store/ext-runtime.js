@@ -62,7 +62,7 @@ export function createExtRuntime(store, options) {
   const wait = options.sleep ?? sleep
   // 没有存档路径（测试里的假存档）就当一个扩展都没装。
   const root = () => typeof store.filePath === 'string' ? join(dirname(store.filePath), 'extensions') : ''
-  /** @type {Map<string, {manifest: any, module: any, error: string|null}>} 已加载的扩展：由这里创建，加载器和视图共用。 */
+  /** @type {Map<string, {manifest: any, module: any, error: string|null, assetPacks?: any}>} 已加载的扩展：由这里创建，加载器和视图共用。 */
   const loaded = new Map()
 
   /** 下载和目录读取的失败都从这里出去：控制台一份（进日志），返回值一份（进界面）。 */

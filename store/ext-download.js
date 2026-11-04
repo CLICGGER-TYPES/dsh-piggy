@@ -8,8 +8,9 @@
  * @module dsh-piggy/store/ext-download
  */
 import { createHash } from 'node:crypto'
-import { ASSET_NAME, MAX_FILE_BYTES, assetNames, describeAssetList, describeFetchError, describeFileTooBig, fileList, inBatches } from './ext-files.js'
-import { BUNDLE_BYTES, parseBundle } from './ext-import.js'
+import { MAX_FILE_BYTES, assetNames, describeAssetList, describeFetchError, describeFileTooBig, inBatches, isExtensionFile } from './ext-files.js'
+import { BUNDLE_BYTES, BUNDLE_FILES, parseBundle } from './ext-import.js'
+import { validateAssetPackFiles } from './ext-asset-packs.js'
 
 /** 同时下载几个文件（只有逐个下载的老条目用得上）。 */
 const DOWNLOAD_PARALLEL = 6
@@ -19,7 +20,7 @@ const DOWNLOAD_PARALLEL = 6
  */
 const DOWNLOAD_ATTEMPTS = 3
 const DOWNLOAD_TIMEOUT_MS = 12_000
-/** 整包不限制合计大小，给慢网多留点时间。 */
+/** 整包最多 28MB，给慢网多留点时间。 */
 const BUNDLE_TIMEOUT_MS = 60_000
 const RETRY_BACKOFF_MS = [400, 1200]
 
@@ -81,17 +82,21 @@ export function createDownloads(deps) {
       deps.warn(`extension install failed: key="${key}" reason="${message}"`)
       return failed(message)
     }
-    const bundle = parseBundle(buffer.toString('utf8'))
-    if ('message' in bundle) return failed(name + ' 打不开：' + bundle.message)
-    if (!bundle.ok || bundle.key !== key || bundle.manifest.version !== entry.version) return failed(name + ' 和目录里的版本对不上')
+    const bundle = parseBundle(buffer)
+    if (bundle.ok !== true) return failed(name + ' 打不开：' + bundle.message)
+    if (bundle.key !== key || bundle.manifest.version !== entry.version) return failed(name + ' 和目录里的版本对不上')
     return { ok: /** @type {true} */ (true), files: bundle.files }
   }
 
-  /** 老条目：代码三件和图片逐个下载。 */
+  /** 老条目：按目录里的文件清单逐个下载。0.37.2 起素材包也必须走整包，平铺附件放不下目录。 */
   async function fromFiles(key, entry) {
-    const assets = Object.keys(entry.files ?? {}).filter(name => name.startsWith('assets/')).map(name => name.slice('assets/'.length))
-    if (!assets.every(name => ASSET_NAME.test(name))) return failed('目录里的图片名不对')
-    const specs = fileList(assets).map(name => ({ name, spec: entry.files?.[name] }))
+    const names = Object.keys(entry.files ?? {})
+    for (const name of BUNDLE_FILES) if (!names.includes(name)) return failed('目录里缺少 ' + name)
+    for (const name of names) {
+      if (!isExtensionFile(name)) return failed('目录里有不允许的文件：' + name)
+      if (name.startsWith('actions/') || name.startsWith('sounds/')) return failed('带素材包的扩展只支持整包下载，目录里不能平铺素材包文件')
+    }
+    const specs = names.map(name => ({ name, spec: entry.files?.[name] }))
     for (const { name, spec } of specs) {
       if (!usable(spec)) return failed('目录里缺少 ' + name)
       if (!deps.sourceOk(spec.url)) return failed('来源不对：' + name)
@@ -107,7 +112,10 @@ export function createDownloads(deps) {
       const why = describeAssetList(manifest)
       return failed('扩展的 manifest 图片清单不对' + (why === '' ? '' : '（' + why + '）'))
     }
+    const assets = names.filter(name => name.startsWith('assets/')).map(name => name.slice('assets/'.length))
     if (declared.length !== assets.length || !declared.every(name => assets.includes(name))) return failed('扩展的图片清单和目录对不上')
+    const packs = validateAssetPackFiles(key, files, manifest)
+    if (packs.ok !== true) return failed('素材包校验失败：' + packs.message)
     return { ok: /** @type {true} */ (true), files }
   }
 

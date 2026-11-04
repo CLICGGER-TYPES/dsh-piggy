@@ -14,20 +14,29 @@ const NAMES = ['manifest.json', 'server.js', 'client.js']
 let pending = null
 let busy = false
 
-/** 读选中的文件，拼成扩展包原文；读不懂返回 null。 @param {File[]} files */
+/** 读选中的文件，拼成扩展包原文或 ZIP；读不懂返回 null。 @param {File[]} files */
 async function bundleOf(files) {
-  if (files.length === 1) return files[0].text()
+  if (files.length === 1) {
+    const buffer = await files[0].arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    if (bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && (bytes[2] === 0x03 || bytes[2] === 0x05)) return { zip: base64Bytes(bytes) }
+    return { bundle: new TextDecoder().decode(bytes) }
+  }
   const texts = {}
   for (const file of files) if (NAMES.includes(file.name)) texts[file.name] = await file.text()
   if (!NAMES.every(name => typeof texts[name] === 'string')) return null
   let key = ''
   try { key = str(obj(JSON.parse(texts['manifest.json'])).key, '') } catch { return null }
-  return JSON.stringify({ format: 'dsh-piggy-extension', version: 1, key, files: texts })
+  return { bundle: JSON.stringify({ format: 'dsh-piggy-extension', version: 1, key, files: texts }) }
 }
 
 /** UTF-8 → base64（桌面版的本地协议把请求体当文本读，跟导入皮肤一样走 base64）。 @param {string} text */
 function base64(text) {
-  const bytes = new TextEncoder().encode(text)
+  return base64Bytes(new TextEncoder().encode(text))
+}
+
+/** 字节 → base64。 @param {Uint8Array} bytes */
+function base64Bytes(bytes) {
   let binary = ''
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)))
   return btoa(binary)
@@ -42,11 +51,11 @@ const REASONS = {
   absent: '还没有猪',
 }
 
-/** @param {any} ui @param {string} bundle @param {boolean} confirm */
-function send(ui, bundle, confirm) {
+/** @param {any} ui @param {{bundle?: string, zip?: string}} payload @param {boolean} confirm */
+function send(ui, payload, confirm) {
   busy = true
   ui.renderContent()
-  fetch('/dsh-piggy/extensions/import', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: base64(JSON.stringify({ bundle, confirm })) })
+  fetch('/dsh-piggy/extensions/import', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: base64(JSON.stringify({ ...payload, confirm })) })
     .then(response => response.json())
     .then(data => {
       busy = false
@@ -58,7 +67,7 @@ function send(ui, bundle, confirm) {
         ui.showBubble('装好了：' + str(result.label, '扩展') + (result.official === true ? '' : '（本地导入）'))
         return
       }
-      if (result.reason === 'unofficial') { pending = { bundle, label: str(result.label, str(result.key, '扩展')), version: str(result.version, '') }; ui.renderContent(); return }
+      if (result.reason === 'unofficial') { pending = { payload, label: str(result.label, str(result.key, '扩展')), version: str(result.version, '') }; ui.renderContent(); return }
       pending = null
       ui.renderContent()
       const why = REASONS[str(result.reason, '')] ?? '导入失败'
@@ -73,13 +82,13 @@ export function importCard(ui) {
   const head = el('div', 'dp-set-head')
   head.appendChild(el('span', 'dp-ext-emoji', '📦'))
   head.appendChild(el('b', null, '从文件导入'))
-  head.appendChild(el('small', 'dp-dim', '下载不了时，用别处拿到的扩展包（.piggyext），或一起选中扩展的三个文件。'))
+  head.appendChild(el('small', 'dp-dim', '下载不了时，用别处拿到的扩展包（.piggyext 或 .zip），或一起选中扩展的三个文件。'))
   card.appendChild(head)
   if (pending !== null) {
     const ask = pending
     card.appendChild(el('div', 'dp-ext-note dp-ext-warn', '「' + ask.label + (ask.version ? ' ' + ask.version : '') + '」不是官方扩展。扩展里的代码在游戏里什么都能做，只装你信得过的人给的。'))
     const row = el('div', 'dp-ext-actions')
-    const yes = button('dp-mini dp-ext-danger', { 'data-ext-import-confirm': 'true' }, () => send(ui, ask.bundle, true))
+    const yes = button('dp-mini dp-ext-danger', { 'data-ext-import-confirm': 'true' }, () => send(ui, ask.payload, true))
     yes.textContent = busy ? '导入中…' : '仍要导入'
     yes.disabled = busy
     const no = button('dp-mini dp-mini-plain', { 'data-ext-import-cancel': 'true' }, () => { pending = null; ui.renderContent() })
@@ -94,15 +103,15 @@ export function importCard(ui) {
   const input = /** @type {HTMLInputElement} */ (el('input'))
   input.type = 'file'
   input.multiple = true
-  input.setAttribute('accept', '.piggyext,.json,.js')
+  input.setAttribute('accept', '.piggyext,.zip,.json,.js')
   input.setAttribute('data-ext-import', 'file')
   input.disabled = busy
   input.addEventListener('change', () => {
     const files = Array.from(input.files ?? [])
     if (files.length === 0) return
-    bundleOf(files).then(bundle => {
-      if (bundle === null) { ui.showBubble('要选一个 .piggyext，或者 manifest.json、server.js、client.js 三个一起选'); return }
-      send(ui, bundle, false)
+    bundleOf(files).then(payload => {
+      if (payload === null) { ui.showBubble('要选一个 .piggyext / .zip，或者 manifest.json、server.js、client.js 三个一起选'); return }
+      send(ui, payload, false)
     }).catch(() => ui.showBubble('读不了这个文件'))
   })
   pick.appendChild(input)
