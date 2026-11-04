@@ -7,6 +7,19 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+## [0.37.2-rc.10] — 2026-11-04 · 结构收口与多猪窗口修复
+
+配套桌面外壳 0.6.8-rc.8，存档仍为 v15；菜园仍为 4.5.0 / 经典版 3.2.4。本次为 GitHub RC/pre-release；不发布 Gitee，npm 由维护者手动处理。
+
+- Windows 实机确认：新增小猪后应用约 11 秒自动重启，新猪写入并成为当前。
+- 修复新增猪窗口与已有宠物窗口完全重叠：第一次摆放时向左错开，用户手动拖动不受影响。
+- 设置页「外部连接」新增只读「最近投递」：按来源显示最近 7 天的相对时间、条数与主要类型。
+- 根组装层 routes/commands/snapshot 收进 src/host/，根文件保留薄门面。
+- 发布相关目录收进 release/：candidates 与 extension-variants。
+- 拆分 git-sync、session-context、external-controller 三个 400+ 行文件，行为不变。
+
+已知限制：多猪三窗口不重叠与混合 DPI 双屏需下一轮实机确认；macOS、真实跨设备 LAN/云、360 未验收；TLS/公网未实现。
+
 ## [0.37.2-rc.9] — 2026-11-04 · 联机有效期、Windows 重启与结构收尾
 
 配套桌面外壳 0.6.8-rc.7，存档仍为 v15；菜园仍为 4.5.0 / 经典版 3.2.4。本次为 GitHub RC/pre-release；不发布 Gitee，npm 由维护者手动处理。
