@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/CLICGGER-TYPES/dsh-piggy" alt="license"></a>
 </p>
 
-<p align="center"><img src="docs/screenshots/b10-home-ready.png" width="420" alt="小猪与主菜单"></p>
+<p align="center"><img src="docs/screenshots/readme-panel-home.png" width="380" alt="小猪与主菜单"></p>
 
 养一只会长大、上学、打工、旅行，也会跟你搭话的小猪。QQ 宠物式的单机养成，动森 NookPhone 风格的界面；同一份代码提供两种形态：住在 DeepSeek Harness 网页里的 DSH 插件，和独立的桌面版。
 
@@ -61,20 +61,6 @@ dsh plugin --profile web add dsh-piggy
 | macOS | Apple 芯片选 `arm64.dmg`，Intel 选 `x64.dmg` |
 
 macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/2c571e9aaecc)。
-
-## 界面
-
-<p align="center">
-  <img src="docs/screenshots/readme-rc5-farm-natural.png" width="640" alt="菜园：作物按真实时间生长">
-</p>
-
-<p align="center"><sub>菜园：18 块地、真实时间生长、帮工照料</sub></p>
-
-<p align="center">
-  <img src="docs/screenshots/pig-fat-actions.gif" width="560" alt="小猪的动作">
-</p>
-
-<p align="center"><sub>摸摸、喂食、打滚、打盹</sub></p>
 
 ## 玩法
 
