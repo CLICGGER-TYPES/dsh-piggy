@@ -46,7 +46,7 @@ line('这个好吃，下次还要这个', '记住了')           // 带一个回
 
 ## 写错了会怎样（测试兜底）
 
-`npm test` 会拦下这些（`test/lines-guard.test.js`、`test/helpers/strict-lines.js`）：
+`npm test` 会拦下这些（`test/unit/core/lines-guard.test.js`、`test/helpers/strict-lines.js`）：
 
 - 代码里 `say()` 点名的场景、时段/节日/摸部位表里的场景，台词表里没有 → 红。测试里走到任何未知场景直接抛错。
 - 超长、用了别的占位符、场景只有一句 → 红。

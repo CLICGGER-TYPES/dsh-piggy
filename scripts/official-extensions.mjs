@@ -1,6 +1,6 @@
 // 把扩展目录（extensions/registry.json）里每个下载扩展当前版本的三个文件校验值，并进游戏自带的官方清单
 // store/official-extensions.json。清单只增不减：以前发过的官方版本也一直认得（本地导入旧版也算官方）。
-// 用法：node scripts/official-extensions.mjs        改完扩展、重算目录之后跑一次（test/ext-import.test.js 会检查有没有漏）
+// 用法：node scripts/official-extensions.mjs        改完扩展、重算目录之后跑一次（test/unit/host/ext-import.test.js 会检查有没有漏）
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const registry = JSON.parse(readFileSync(new URL('../extensions/registry.json', import.meta.url), 'utf8'))

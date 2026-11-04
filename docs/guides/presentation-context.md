@@ -81,11 +81,11 @@ frame cache/measurement helpers remain device-wide.
 
 ## Fixture
 
-`test/presentation-context.test.js` authors two explicit roots and two distinct
+`test/unit/client/presentation-context.test.js` authors two explicit roots and two distinct
 state bindings, checks independent feedback and queued swaps, and checks that
 disposing A leaves B usable. It is author-only in this source handoff; the
 developer did not execute it. Independent V03/PI-04 should run it together with
-the corrected `test/owner-resources.test.js` on the frozen candidate.
+the corrected `test/unit/host/owner-resources.test.js` on the frozen candidate.
 
 ## Not in this slice
 

@@ -206,7 +206,7 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 
 ## 怎么验收（改了窗口/拖动相关的东西必须做）
 
-单元测试（`test/panel-geometry.test.js`、`test/desktop-page.test.js`、`test/split.test.js`）只证明算法对。
+单元测试（`test/unit/client/panel-geometry.test.js`、`test/unit/client/desktop-page.test.js`、`test/unit/client/split.test.js`）只证明算法对。
 **窗口真的显示在哪，只能真鼠标拖 + 录屏逐帧看**——只看拖动起止坐标会漏掉中间的跳动和漂移。
 
 1. **Linux（GNOME Wayland）**：`node tools/desktop-geometry-check.mjs all`，加 `PIGGY_FILM_DIR=/tmp/film` 录下每次真拖，

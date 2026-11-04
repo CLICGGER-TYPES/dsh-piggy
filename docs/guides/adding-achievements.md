@@ -34,7 +34,7 @@
    新计数指标必须在领域层**真的有地方加**它（如 `care.js` 的 `state.stats.feeds += 1`），否则成就永远解锁不了。
 2. **专门算法**：图鉴种类数（`fishKinds`、`souvenirKinds`）、形态（`king`、`devil`）、等级（`level`）。
    要新加这种，在 `packages/pet-core/src/core/achievements.js` 的 `SPECIAL` 和 `progressFor` 里写算法，
-   并同步 `test/achievements-guard.test.js` 里的 `SPECIAL`。
+   并同步 `test/unit/core/achievements-guard.test.js` 里的 `SPECIAL`。
 
 **不在 `SPECIAL` 里的指标一律当计数处理**——写错名字不会报错，只会永远是 0。`npm test` 会检查每个计数指标在领域层有人累加。
 
@@ -59,7 +59,7 @@
 
 ## 写错了会怎样（测试兜底）
 
-`test/achievements-guard.test.js`：key 重复、计数指标没人累加、扩展事件/字段没登记、徽章文件缺失或规格不对，都会红。
+`test/unit/core/achievements-guard.test.js`：key 重复、计数指标没人累加、扩展事件/字段没登记、徽章文件缺失或规格不对，都会红。
 其他测试里的成就数量按数据推算，加成就不用改测试里的数字。
 
 ## 加完之后

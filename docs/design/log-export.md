@@ -65,5 +65,5 @@
 
 ## 相关的坑
 
-- 新增的宿主侧模块要同时加进 `package.json` 的 `files` 和 `apps/desktop/scripts/pack-game.mjs` 的 `GAME_FILES`，否则 npm 包或桌面游戏包里会缺文件（`test/conventions.test.js` 守前一半）。
+- 新增的宿主侧模块要同时加进 `package.json` 的 `files` 和 `apps/desktop/scripts/pack-game.mjs` 的 `GAME_FILES`，否则 npm 包或桌面游戏包里会缺文件（`test/unit/host/conventions.test.js` 守前一半）。
 - 桌面外壳加了 `piggyShell.logs.save` 这种新基础动作，要升 `apps/desktop/package.json` 的版本和 `DESKTOP_VERSION`。

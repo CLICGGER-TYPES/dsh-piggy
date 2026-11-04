@@ -4,7 +4,7 @@
  *
  * 假设：每 2 秒操作一次（ACTIONS_PER_HOUR = 1800）；吃饭按面包算（饱食 32 点 10 金币）；扩展币按汇率折金币。
  * 用法：node tools/economy-sim.mjs        打印各玩法、各工具档的时薪
- *      test/automation-economy.test.js 检查 J2 实施基准；帮工速度直接引用玩法常量。
+ *      test/unit/core/automation-economy.test.js 检查 J2 实施基准；帮工速度直接引用玩法常量。
  */
 import { fileURLToPath } from 'node:url'
 

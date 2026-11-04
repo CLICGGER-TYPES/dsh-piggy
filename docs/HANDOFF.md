@@ -121,7 +121,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 | `packages/dsh-plugin-piggy/` | npm 别名包（给社区目录检索用，只依赖 `dsh-piggy`） |
 | `cordis.patch.yml` | DSH 加载插件用的配置层；`name` 必须和 package.json 的 `name` 一致 |
 | `docs/` | 文档；`docs/ROADMAP.md` 路线图和待办，`docs/numbers/` 用户确认过的数值单，`docs/ASSETS.md` 素材总表，`docs/archive/` 历史文档（旧交接、各轮任务卡） |
-| `test/`、`apps/desktop/test/` | node:test 测试 |
+| `test/unit/`、`test/integration/`、`apps/desktop/test/` | node:test 分层测试 |
 | `tools/` | 预览页（`tools/preview.html`）、字体工具等 |
 
 ---
@@ -162,7 +162,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 ### 4.5 经济体系（0.35.0 起，[设计](design/economy.md)）
 
-- **金币只走一个入口**：`core/economy.js` 的 `earnCoins` / `spendCoins` / `refundCoins`，每笔按来源记账（调试页「经济」能看）。直接写 `state.coins +=` 会被 `test/economy.test.js` 拦下。
+- **金币只走一个入口**：`core/economy.js` 的 `earnCoins` / `spendCoins` / `refundCoins`，每笔按来源记账（调试页「经济」能看）。直接写 `state.coins +=` 会被 `test/unit/core/economy.test.js` 拦下。
 - **扩展币钱包**：钱包在宿主 `state.wallets[扩展名]`，扩展在 manifest 声明 `economy.currency`（名字、图标、汇率；`buyable: false` 表示只能挣不能用金币买），用 `api.wallet` 加减。换成金币不收费、用金币买多收 5%；删扩展时按存着的汇率自动结清。
 - **不设每天上限**，靠「玩累了」（`exert`）和收入区间控节奏：主动玩法 300～2500 金币/小时，挂机 60～1200。改数值先跑 `node tools/economy-sim.mjs` 看区间，各玩法的区间测试会守着。
 - 当前数字：[J1 数值单](numbers/J1-economy.md)；扩展自动化（K1，交给 codex）：[design/automation.md](design/automation.md)。
@@ -190,7 +190,7 @@ node node_modules/electron/install.js
 
 1. 开工：`git status` 干净、`git pull` 到最新 `main`。多人 / 多 agent 同时做时，每人一个分支 + `git worktree`，做完合回 `main` 后删掉分支和工作目录（别再堆一堆旧分支）。
 2. 改 bug：**先写能复现的失败测试**，再修。新功能覆盖正常路径和边界。
-3. 改了 `src/client/` 一定 `npm run build`；`client.js` 不提交（`test/bundle.test.js` 会在构建后检查它和源码一致）。
+3. 改了 `src/client/` 一定 `npm run build`；`client.js` 不提交（`test/unit/host/bundle.test.js` 会在构建后检查它和源码一致）。
 4. `npm run build && npm test && npm run typecheck` 全绿。
 5. **界面改动要在真实环境看**：网页版起一个隔离 DSH 实例（第 8 节），桌面版启动真窗口截图看像素；只看代码或只量坐标不算验收。
 6. 提交：中文、一个提交只做一件事、不加 AI 署名（不要 `Co-Authored-By: Claude/AI`）、用户能感知的变化写进 `CHANGELOG.md`、功能变了同步改 `README.md` 和玩家文档。
@@ -250,7 +250,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 
 ### 8.3 测试
 
-- `npm test` 跑根目录 `test/**` 和 `apps/desktop/test/*`。历史整合版本主机/Linux CLI/Windows CLI 各 1106 项通过，Esc 阶段 host 1115，追蝴蝶阶段 host 1118；当前客户端 host 全量 1124，Windows Node24 动画相关 9/9。上述平台计数对应不同阶段，不代表最新候选三平台均跑过 1124 项。原生 GUI 实测另行记录。客户端测试用假 DOM（`test/helpers/bundle.js`）。
+- `npm test` 跑 `test/**`（unit/integration 分层）和 `apps/desktop/test/*`。历史整合版本主机/Linux CLI/Windows CLI 各 1106 项通过，Esc 阶段 host 1115，追蝴蝶阶段 host 1118；当前客户端 host 全量 1124，Windows Node24 动画相关 9/9。上述平台计数对应不同阶段，不代表最新候选三平台均跑过 1124 项。原生 GUI 实测另行记录。客户端测试用假 DOM（`test/helpers/bundle.js`）。
 - 测试不依赖真时钟、网络、执行顺序。
 
 ---
@@ -294,7 +294,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 ### 9.4 两个发布渠道（GitHub / Gitee）
 
 - 规则：**GitHub 那套保持原样；Gitee 是独立的一套**——Gitee 发出去的游戏包和外壳，检查更新、下载游戏包、在线扩展只走 gitee.com，不能依赖 GitHub（用户明确要求）。
-- 地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 复制成 `channel.js` 和 `apps/desktop/lib/channel.js`。**仓库里提交的永远是 github**（`test/channel.test.js` 守着）。
+- 地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 复制成 `channel.js` 和 `apps/desktop/lib/channel.js`。**仓库里提交的永远是 github**（`test/unit/host/channel.test.js` 守着）。
 - Gitee 工作流先用默认渠道跑测试，再切 gitee 打包，构建后用 `scripts/scan-channel.mjs` 扫描，发现 GitHub 地址就失败。
 - Gitee 限制：发行版附件**单个 ≤ 100MiB（104,857,600 字节，实测）**、单仓库附件**总量 ≤ 1GB**。所以 Gitee 安装包另有瘦身：`apps/desktop/electron-builder.gitee.cjs`（最大压缩、只留中英文语言包）、`tools/slim-emoji-font.py`（emoji 字体只留用到的）。**Gitee 只发 Windows 安装包**（用户 2026-10-10：「gitee 不发 linux 和 mac 了」），Linux / macOS 只在 GitHub；游戏包照样每版都发，已装 Gitee 版的 Linux / mac 外壳仍能在 App 里更新游戏。当前大小（0.35.0 / 外壳 0.6.4）：Windows 92.7MiB（**不带游戏**，见下）。0.35.0 是最后一个在 Gitee 带 Linux / mac 安装包的版本，下次发版的清理步骤会把它们当旧安装包删掉。超限的文件 CI 不上传并给警告。发版后自动删除旧版本的安装包附件（游戏包保留）。
 - **Gitee 一律从维护者本机推**（用户 2026-10-07 定）：GitHub Actions 不再碰 Gitee（机房连 Gitee 经常卡死或被重置，旧流程的清理步骤还在上传失败时删了旧安装包，Gitee 一段时间没有安装包可下）。
@@ -348,9 +348,9 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 
 ## 13. 常见坑
 
-- `client.js` 忘了重建 → `test/bundle.test.js` 失败。
+- `client.js` 忘了重建 → `test/unit/host/bundle.test.js` 失败。
 - 改了扩展的 `manifest.json` / `server.js` / `client.js` 却没升版本、没重算目录 → 校验值对不上，玩家下载失败。用 `node scripts/extension-entry.mjs <key> [--host gitee]` 重算两份目录里那一条。
-- 游戏里加了新 emoji 没重新裁网页版字体 → 网页上显示系统表情或方框。`test/emoji-coverage.test.js` 会报，按它开头的命令重新裁。
+- 游戏里加了新 emoji 没重新裁网页版字体 → 网页上显示系统表情或方框。`test/unit/host/emoji-coverage.test.js` 会报，按它开头的命令重新裁。
 - 往桌面测试虚拟机 rsync 代码会把 Electron 的 `chrome-sandbox` 权限冲掉，启动报 SUID sandbox：要 `sudo chown root` 加 `chmod 4755` 改回来。
 - `cordis.patch.yml` 的 `name` 和 package.json `name` 不一致 → 插件前端静默不挂载。
 - 网页里 `window.confirm()` 会冻住页面；DSH 面板里不要用原生弹窗。

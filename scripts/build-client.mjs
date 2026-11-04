@@ -5,7 +5,7 @@
  *
  * DSH 的客户端插件是按 classic <script src> 加载的**单文件**（见
  * packages/client/modules/src/client/system.ts 的 loadBundle），源码拆分之后
- * 必须有这一步；产物 client.js 不提交，由 test/bundle.test.js 在构建后守住新鲜度。
+ * 必须有这一步；产物 client.js 不提交，由 test/unit/host/bundle.test.js 在构建后守住新鲜度。
  *
  * 用法：node scripts/build-client.mjs
  */

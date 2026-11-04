@@ -1,6 +1,6 @@
 # 素材总表
 
-`assets/` 每个文件按本页登记；`test/assets-registry.test.js` 检查漏登记和空登记。当前只有一套无描边平涂透明 PNG，2026-10-13 由旧版 1:1 重画。
+`assets/` 每个文件按本页登记；`test/unit/host/assets-registry.test.js` 检查漏登记和空登记。当前只有一套无描边平涂透明 PNG，2026-10-13 由旧版 1:1 重画。
 
 ## 桌面应用标识
 

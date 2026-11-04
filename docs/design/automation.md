@@ -72,10 +72,10 @@
 - 按用户本轮要求不升存档版本；`ensureFishing` 补 `automation` 默认值。旧 30/60 分钟每 3 分钟一竿、预付饵、直接进背包；新 120/240 分钟才用新鱼篓、鱼饵盒及 4.5 分钟间隔。新行程进度在重启时保留。
 
 ### 每一步都要
-- `npm run build && npm test && npm run typecheck` 全绿；普通源码 ≤400 行，单文件下载的扩展 server.js ≤600 行（`test/conventions.test.js` 守着）。
-- 新测试：结算按时间差、仓满就停、离线很久回来只结到仓满、钱不够买不了、老存档（没有帮工字段）能读、经济区间（用模拟函数，参照 `test/fishing-gear.test.js` 最后一个测试）。
+- `npm run build && npm test && npm run typecheck` 全绿；普通源码 ≤400 行，单文件下载的扩展 server.js ≤600 行（`test/unit/host/conventions.test.js` 守着）。
+- 新测试：结算按时间差、仓满就停、离线很久回来只结到仓满、钱不够买不了、老存档（没有帮工字段）能读、经济区间（用模拟函数，参照 `test/unit/core/fishing-gear.test.js` 最后一个测试）。
 - 本轮扩展仍为未发版的 2.1.0，`minGame` 保持 0.35.0，两份目录 `extensions/registry.json` 和 `registry-gitee.json` 用 `node scripts/extension-entry.mjs <key> [--host gitee]` 重算那一条。
-- 新 emoji 要重新裁网页版字体：`uv run --with fonttools --with brotli python tools/slim-emoji-font.py --web-out assets/piggy-emoji.woff2`（`test/emoji-coverage.test.js` 会提醒）。
+- 新 emoji 要重新裁网页版字体：`uv run --with fonttools --with brotli python tools/slim-emoji-font.py --web-out assets/piggy-emoji.woff2`（`test/unit/host/emoji-coverage.test.js` 会提醒）。
 - CHANGELOG「Unreleased」写清楚；J2、本页、`docs/ROADMAP.md` 同步。
 - 提交信息用中文、不加 AI 署名；**不要发版、不要推标签**，开 PR 给 Claude 验收。
 - **界面自测在虚拟机里做**（用户 2026-10-09）：用维护者电脑上的 Linux、Windows 测试虚拟机（账号地址问维护者，不进仓库），别在维护者正用的桌面上开窗口。四种状态截图放 `/zyx/DSH/workspaces/dsh/k1-automation-review/round-2/`，在 PR 描述写路径，写清楚测了什么、没测什么。测完把虚拟机关掉。Claude 最后再在虚拟机里验收一遍。

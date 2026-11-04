@@ -1,0 +1,300 @@
+// @ts-check
+/**
+ * 桌面版拆成两个窗口后（外壳 0.6.0 起）两边页面的分工（src/client/split.js、pending.js）。
+ *
+ * 同一份游戏包两边都跑，分工错了的表现是「同一件事演两遍」或「谁都不演」，
+ * 这类错单看一个窗口发现不了，所以按角色分别验证。
+ */
+import assert from 'node:assert/strict'
+import { afterEach, test } from 'node:test'
+
+import { PIG_FX, splitSetOpen, wireSplit } from '../../../src/client/split.js'
+import { processPending } from '../../../src/client/pending.js'
+import { attachPigActions, pigActionArt, playPigPet } from '../../../src/client/pig-actions.js'
+
+/** 假外壳：记下页面发给主进程的每条消息，并能模拟主进程推回来的消息。 */
+function fakeShell(role) {
+  const sent = []
+  const listeners = { panel: [], fx: [], state: [] }
+  const shell = {
+    role, split: true,
+    beginDrag() {}, endDrag() {}, syncGeometry() { sent.push(['sync']) },
+    setAnchor(anchor) { sent.push(['anchor', anchor]) },
+    onStateChanged(fn) { listeners.state.push(fn) },
+    panel: {
+      toggle(open) { sent.push(['toggle', open]) },
+      close() { sent.push(['close']) },
+      fx(name, args) { sent.push(['fx', name, args]) },
+      raisePet() { sent.push(['raise']) },
+      on(fn) { listeners.panel.push(fn) },
+      onFx(fn) { listeners.fx.push(fn) },
+    },
+  }
+  globalThis.window = /** @type {any} */ ({ __dshPiggyShell: shell })
+  return { shell, sent, emit: (kind, message) => listeners[kind].forEach(fn => fn(message)) }
+}
+
+function fakeCtx() {
+  const calls = []
+  const node = () => ({ hidden: false, attrs: {}, setAttribute(name, value) { this.attrs[name] = value } })
+  return {
+    calls, isOpen: false, host: node(), card: node(), hud: node(),
+    setOpen(next) { calls.push(['setOpen', next]); this.isOpen = next },
+    fitPanel() { calls.push(['fitPanel']) },
+    flash(...args) { calls.push(['flash', ...args]) },
+    react(...args) { calls.push(['react', ...args]) },
+    burst(...args) { calls.push(['burst', ...args]) },
+    showBubble(...args) { calls.push(['showBubble', ...args]) },
+    transform(...args) { calls.push(['transform', ...args]) },
+    toast(text) { calls.push(['toast', text]) },
+    lastPendingId: 0, lastPendingAt: 0,
+  }
+}
+
+afterEach(() => { delete globalThis.window })
+
+test('不是拆窗口（网页版、老外壳）时两个函数都不接手', () => {
+  const ctx = fakeCtx()
+  assert.equal(wireSplit(ctx, { refresh() {}, isFishing: () => false }), null)
+  assert.equal(splitSetOpen(ctx, true), false)
+})
+
+test('猪窗口：开关只叫主进程，自己永远不显示面板；状态没变不发（挂载时那次关不能关掉别人刚开的面板）', () => {
+  const { sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  assert.equal(splitSetOpen(ctx, false), true)
+  assert.deepEqual(sent, [])
+  splitSetOpen(ctx, true)
+  assert.deepEqual(sent, [['toggle', true]])
+  assert.equal(ctx.host.attrs['data-open'], 'false')
+  assert.equal(ctx.card.hidden, true)
+})
+
+test('猪窗口：面板开着时标 data-panel-open，签到气泡挪到猪旁边，往屏幕中间那侧放', () => {
+  const { shell } = fakeShell('pet')
+  const ctx = fakeCtx()
+  splitSetOpen(ctx, true)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'true')
+  assert.equal(ctx.host.attrs['data-daily-side'], 'left', 'no window position known: left of the pig')
+  Object.assign(globalThis.window, { __dshPiggyShell: shell, screenX: 40, innerWidth: 200, screen: { availLeft: 0, availWidth: 1280 } })
+  splitSetOpen(ctx, false)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'false')
+  splitSetOpen(ctx, true)
+  assert.equal(ctx.host.attrs['data-daily-side'], 'right', 'pig near the left edge: bubble goes to its right')
+})
+
+test('猪窗口：面板窗口转来的反应照演，名单外的不演', () => {
+  const { emit } = fakeShell('pet')
+  const ctx = fakeCtx()
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  emit('fx', { name: 'showBubble', args: ['好吃', 2000] })
+  emit('fx', { name: 'setOpen', args: [true] })
+  assert.deepEqual(ctx.calls, [['showBubble', '好吃', 2000]])
+})
+
+test('opening the menu raises an existing speech bubble without replaying or replacing it', () => {
+  const { emit, sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  ctx.bubble = { hidden: false }
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  emit('panel', { type: 'open' })
+  assert.deepEqual(sent.filter(entry => entry[0] === 'raise'), [['raise']])
+  assert.deepEqual(ctx.calls, [], 'opening a menu must not replay the line or reset its scroll')
+  ctx.bubble.hidden = true
+  emit('panel', { type: 'closed' })
+  emit('panel', { type: 'open' })
+  assert.equal(sent.filter(entry => entry[0] === 'raise').length, 1, 'no speech means no extra raise')
+})
+
+test('面板窗口：对猪的反应都转给猪窗口，主进程的开/关/失焦驱动面板', () => {
+  const { sent, emit } = fakeShell('panel')
+  const ctx = fakeCtx()
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  for (const name of PIG_FX) ctx[name]('x')
+  assert.deepEqual(sent.filter(entry => entry[0] === 'fx').map(entry => entry[1]), PIG_FX)
+  emit('panel', { type: 'open', vertical: 'below', maxHeight: 300 })
+  assert.deepEqual(ctx.calls.at(-1), ['setOpen', true])
+  assert.deepEqual(sent.find(entry => entry[0] === 'anchor'), ['anchor', { vertical: 'below', maxHeight: 300 }])
+  emit('panel', { type: 'blur', toPet: true })
+  assert.equal(ctx.isOpen, true, '焦点到了猪身上不收')
+  emit('panel', { type: 'closed' })
+  assert.equal(ctx.isOpen, false)
+})
+
+test('面板窗口摸猪：害羞帧转给猪窗口演（F1）', async () => {
+  const attrs = { 'data-art': 'piglet', 'data-mood': 'fine' }
+  const pig = {
+    parentNode: null,
+    getAttribute: key => attrs[key] || null,
+    setAttribute(key, value) { attrs[key] = value },
+    removeAttribute(key) { delete attrs[key] },
+    addEventListener() {}, removeEventListener() {},
+  }
+  const savedDocument = globalThis.document
+  globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} }
+  const player = attachPigActions({ pig, clock: { setTimeout: () => 1, clearTimeout() {} },
+    preload: async () => {}, isStopped: () => false, isDragging: () => false, render() {} })
+  await Promise.resolve(); await Promise.resolve()
+  // 猪窗口：本窗口有播放器，petShy 直接播。
+  const petShell = fakeShell('pet')
+  const petCtx = Object.assign(fakeCtx(), { petShy: () => playPigPet(pig) })
+  assert.equal(wireSplit(petCtx, { refresh() {}, isFishing: () => false }), 'pet')
+  // 面板窗口：attachLife 是 null，petShy 被换成一个转发；面板里点「摸摸」走的就是它。
+  const panelShell = fakeShell('panel')
+  const panelCtx = Object.assign(fakeCtx(), { petShy: () => assert.fail('面板里不该自己播') })
+  assert.equal(wireSplit(panelCtx, { refresh() {}, isFishing: () => false }), 'panel')
+  assert.ok(PIG_FX.includes('petShy'), 'petShy 要在转给猪窗口的名单里')
+  panelCtx.petShy()
+  const relay = panelShell.sent.filter(entry => entry[0] === 'fx')
+  assert.deepEqual(relay, [['fx', 'petShy', []]])
+  // 主进程把这条转给猪窗口（fireSplit 里就是 onFx）。
+  for (const [, name, args] of relay) petCtx[name](...args)
+  assert.equal(pigActionArt(pig), 'piglet-shy-pet', '害羞帧要在猪窗口里真的播起来')
+  player.dispose()
+  globalThis.document = savedDocument
+})
+
+test('任一窗口收到「存档变了」都刷新', () => {
+  for (const role of ['pet', 'panel']) {
+    const { emit } = fakeShell(role)
+    let refreshed = 0
+    wireSplit(fakeCtx(), { refresh() { refreshed += 1 }, isFishing: () => false })
+    emit('state', undefined)
+    assert.equal(refreshed, 1, role)
+  }
+})
+
+test('排队消息两边各管一半：猪的反应只在猪窗口演，提示条只在面板窗口出', () => {
+  const pending = [
+    { id: 1, at: 1, kind: 'line', text: '饿了' },
+    { id: 2, at: 2, kind: 'levelup', text: '升级啦' },
+  ]
+  const run = role => {
+    fakeShell(role)
+    const ctx = Object.assign(fakeCtx(), { view: { pending, dialogue: { quiet: false } } })
+    const lines = []
+    processPending(ctx, event => lines.push(event.text))
+    return { lines, kinds: ctx.calls.map(call => call[0]) }
+  }
+  const pet = run('pet')
+  assert.deepEqual(pet.lines, ['饿了'])
+  assert.ok(pet.kinds.includes('react'))
+  assert.ok(!pet.kinds.includes('toast'))
+  const panel = run('panel')
+  assert.deepEqual(panel.lines, [])
+  assert.deepEqual(panel.kinds, ['toast'])
+})
+
+test('晚到或合并的排队消息按 id 升序补演，较大 id 不会吞掉较小 id 的接话', () => {
+  fakeShell(null)
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false } } })
+  const lines = []
+  processPending(ctx, event => lines.push(event.text), [
+    { id: 702, at: 702, kind: 'line', text: '新台词', replies: [] },
+    { id: 701, at: 701, kind: 'line', text: '接话', replies: [] },
+  ])
+  assert.deepEqual(lines, ['接话', '新台词'], 'the lower id is not treated as already seen')
+  assert.equal(ctx.lastPendingId, 702)
+})
+
+test('drained snapshot messages reach both windows and duplicate events are ignored', () => {
+  for (const role of ['pet', 'panel']) {
+    const { emit } = fakeShell(role)
+    const ctx = fakeCtx()
+    const lines = []
+    ctx.render = view => { ctx.view = view; processPending(ctx, event => lines.push(event.text)) }
+    wireSplit(ctx, { refresh() { assert.fail('a consumed event cannot be refetched') }, isFishing: () => false })
+    const view = { pending: [{ id: 123, at: 1000, kind: 'line', text: 'hello' }], dialogue: { quiet: false } }
+    emit('state', view)
+    ctx.render(view)
+    assert.deepEqual(lines, role === 'pet' ? ['hello'] : [])
+  }
+})
+
+test('猪窗口：面板开着时猪自己冒气泡，先请主进程把猪窗口抬到面板上面；面板收着时不抬', () => {
+  const { sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  ctx.showBubble('签到好啦', 1200)
+  assert.deepEqual(sent, [], 'panel closed: nothing to cover the bubble')
+  ctx.isOpen = true
+  ctx.showBubble('签到好啦', 1200)
+  assert.deepEqual(sent, [['raise']])
+  assert.deepEqual(ctx.calls.filter(call => call[0] === 'showBubble').length, 2, 'the bubble itself still shows')
+})
+
+test('离线喂食摘要在桌面面板关闭时仍可见，两个窗口分别去重', () => {
+  for (const role of ['pet', 'panel']) {
+    fakeShell(role)
+    const ctx = Object.assign(fakeCtx(), { view: { pending: [{ id: 9, at: 9, kind: 'offline-food', text: '你不在的时候，猪猪自己吃了 苹果×2' }], dialogue: { quiet: false } } })
+    processPending(ctx, () => {})
+    processPending(ctx, () => {})
+    assert.equal(ctx.calls.filter(call => call[0] === (role === 'pet' ? 'showBubble' : 'toast')).length, 1)
+  }
+})
+
+test('原生打开和加载中保持打开的确认恢复猪页状态，不再发送开关请求', () => {
+  const { emit, sent } = fakeShell('pet')
+  const ctx = fakeCtx()
+  wireSplit(ctx, { refresh() {}, isFishing: () => false })
+  splitSetOpen(ctx, true)
+  splitSetOpen(ctx, false)
+  const count = sent.length
+  emit('panel', { type: 'open' })
+  assert.equal(ctx.isOpen, true)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'true')
+  assert.equal(sent.length, count)
+  emit('panel', { type: 'closed' })
+  assert.equal(ctx.isOpen, false)
+  assert.equal(ctx.host.attrs['data-panel-open'], 'false')
+})
+
+test('离线进食和徽章同时到达时，最后显示进食摘要而不是被徽章覆盖', () => {
+  fakeShell('pet')
+  const summary = '你不在的时候，猪猪自己吃了 苹果×14'
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false }, pending: [
+    { id: 1, at: 1, kind: 'offline-food', text: summary },
+    { id: 2, at: 2, kind: 'achievement', text: '获得小猪徽章：开饭啦' },
+  ] } })
+  processPending(ctx, () => {})
+  assert.equal(ctx.calls.filter(call => call[0] === 'showBubble').at(-1)[1], summary)
+})
+test('网页面板收起时离线摘要仍在猪上可见', () => {
+  fakeShell(null)
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false }, pending: [{ id: 1, at: 1, kind: 'offline-food', text: '背包里没吃的了' }] } })
+  processPending(ctx, () => {})
+  assert.equal(ctx.calls.filter(call => call[0] === 'showBubble').length, 1)
+})
+
+test('存档原生选择器和导入预览期间失焦不收面板，结束后恢复自动收起', () => {
+  const { emit } = fakeShell('panel')
+  const ctx = fakeCtx()
+  let transferActive = true
+  ctx.content = { querySelector: () => transferActive ? {} : null }
+  ctx.isOpen = true
+  const oldDocument = globalThis.document
+  globalThis.document = { activeElement: null }
+  try {
+    wireSplit(ctx, { refresh() {}, isFishing: () => false })
+    emit('panel', { type: 'blur', toPet: false })
+    assert.equal(ctx.isOpen, true, '存档操作失焦后必须仍能看到预览')
+    transferActive = false
+    emit('panel', { type: 'blur', toPet: false })
+    assert.equal(ctx.isOpen, false, '存档操作结束后保留原来的自动收起偏好')
+  } finally { globalThis.document = oldDocument }
+})
+
+// Responses can arrive in separate batches; sorting only one batch is insufficient.
+test('跨响应乱序的接话只展示一次，较新的事件不能吞掉晚到接话', () => {
+  fakeShell(null)
+  const ctx = Object.assign(fakeCtx(), { view: { dialogue: { quiet: false } } })
+  const lines = []
+  const show = event => lines.push(event.text)
+  const newer = { id: 702, at: 702, kind: 'line', text: 'newer', replies: [] }
+  const followup = { id: 701, at: 701, kind: 'line', text: 'followup', replies: [] }
+  processPending(ctx, show, [newer])
+  processPending(ctx, show, [followup])
+  processPending(ctx, show, [newer, followup])
+  assert.deepEqual(lines, ['newer', 'followup'])
+  assert.equal(ctx.lastPendingId, 702)
+})

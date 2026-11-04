@@ -210,5 +210,5 @@ LAN HTTP 本身不加密，因此候选只适用于用户信任的私有网络�
 - 产品单元/契约/UI 测试与构建（由 D01/V06 统一处理）；
 - helper 75% XP、开关、lazy/rest、美术、巡逻（继续延后）。
 
-开发者只写源码与作者测试；`test/session-context.test.js` 在本交接中未执行，
+开发者只写源码与作者测试；`test/integration/session-context.test.js` 在本交接中未执行，
 独立 V06/PI-08 应在冻结候选上运行并另设计关键用例。
