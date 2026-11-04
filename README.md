@@ -25,13 +25,13 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm由维护者确认后通过GitHub Actions可信发布，主包与别名包同步；RC只更新`rc`标签，保持稳定入口。npm `latest`目前仍是0.37.0，与GitHub稳定游戏0.37.1分别标示。
 
-> **本轮 GitHub RC：游戏 0.37.2-rc.9 / 桌面外壳 0.6.8-rc.7。** 先更新桌面外壳 RC7，再更新游戏 RC9。安装包、游戏包与更新清单由 GitHub 发行工作流构建。
+> **本轮 GitHub RC：游戏 0.37.2-rc.10 / 桌面外壳 0.6.8-rc.8。** 先更新桌面外壳 RC8，再更新游戏 RC10。安装包、游戏包与更新清单由 GitHub 发行工作流构建。
 
-本轮[GitHub RC9发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.9)由 tag 工作流创建并附加资产；上一版公开 RC8 为[游戏0.37.2-rc.8 / 外壳0.6.8-rc.6](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.8)。Gitee发布已取消，夸克不会随本次更新；npm `rc` 仍由维护者单独发布，本次没有npm包。历史Gitee/夸克RC5仅供旧安装器回退，不能代替本轮RC9。
+本轮[GitHub RC10发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.10)由 tag 工作流创建并附加资产；上一版公开 RC9 为[游戏0.37.2-rc.9 / 外壳0.6.8-rc.7](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.9)。Gitee发布已取消，夸克不会随本次更新；npm `rc` 仍由维护者单独发布，本次没有npm包。历史Gitee/夸克RC5仅供旧安装器回退，不能代替本轮RC10。
 
-RC9在RC8的多帮工/巡逻/多窗口基础上，补齐 Windows portable 新增小猪后的自动重启、LAN 邀请延长到 3 分钟，并合入主进程/owner runtime/组合根拆分、生成物移出 git、动作与音效素材包、Windows 混合 DPI 命中与日历/礼物误触修复。存档仍为 v15；菜园仍为 4.5.0 / 经典版 3.2.4。Owner LAN 仍是可信私网 HTTP，不支持 TLS/公网。
+RC10 在 RC9 基础上合入结构 P2、发布目录收口、三个大文件拆分、设置页「最近投递」和多猪窗口重叠修复；Windows 已实机确认自动重启约 11 秒。存档仍为 v15；菜园仍为 4.5.0 / 经典版 3.2.4。Owner LAN 仍是可信私网 HTTP，不支持 TLS/公网。
 
-验收边界：Windows 单猪启动/孵化/面板/正常退出/重开与双猪共享金币已实机通过；自动重启修复需在 RC9 包上复验；Windows 混合 DPI 双屏、macOS、真实跨设备 LAN/云与 360 仍未验收。本段发布准备不代表上述覆盖已通过。
+验收边界：Windows 单猪、双猪、共享金币、自动重启已实机通过；三窗口不重叠与混合 DPI 双屏需在 RC10 包上复验；macOS、真实跨设备 LAN/云与 360 仍未验收。本段发布准备不代表上述覆盖已通过。
 
 夸克目录含安装器、便携版、六个扩展包（含经典菜园备选）、说明和校验清单，共10文件。GitHub和夸克完整版内含游戏；完整Windows安装器另附五项默认不选的离线扩展。Gitee受100MiB限制，首次启动需联网下载游戏。
 
