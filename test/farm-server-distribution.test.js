@@ -3,7 +3,7 @@
 // 新鲜度、导出契约、无运行时 import，以及「三文件协议装进隔离临时目录后第一课真的能走」都在这里。
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -39,16 +39,17 @@ const NAMED_EXPORTS = [
   'zoneGuardedAt',
 ]
 
-test('the committed farm server is exactly the readable bundle built from src/extensions/farm', async () => {
-  const committed = readFileSync(generatedUrl, 'utf8')
+test('the generated farm server on disk is exactly the readable bundle built from src/extensions/farm', async () => {
+  assert.ok(existsSync(generatedUrl), 'extensions/farm/server.js is missing — run `npm run build` first')
+  const generated = readFileSync(generatedUrl, 'utf8')
   const rebuilt = await buildFarmServer()
-  assert.equal(committed, rebuilt, 'extensions/farm/server.js is stale — run `npm run build`')
-  assert.match(committed, /^\/\/ GENERATED FILE\. Edit src\/extensions\/farm\//)
-  assert.match(committed, /download protocol is still manifest\.json \+ server\.js \+ client\.js \+ assets/)
+  assert.equal(generated, rebuilt, 'extensions/farm/server.js is stale — run `npm run build`')
+  assert.match(generated, /^\/\/ GENERATED FILE\. Edit src\/extensions\/farm\//)
+  assert.match(generated, /download protocol is still manifest\.json \+ server\.js \+ client\.js \+ assets/)
   // 不是压成一行的产物：按模块分段，缩进和空行都在。
-  assert.ok(committed.split('\n').length > 300, 'the distribution should stay readable, not minified')
+  assert.ok(generated.split('\n').length > 300, 'the distribution should stay readable, not minified')
   for (const module of ['data.js', 'host.js', 'pure.js', 'plot-rules.js', 'helper.js', 'migration.js', 'actions.js', 'view.js', 'server.js']) {
-    assert.match(committed, new RegExp('// src/extensions/farm/' + module.replace('.', '\\.')))
+    assert.match(generated, new RegExp('// src/extensions/farm/' + module.replace('.', '\\.')))
   }
 })
 

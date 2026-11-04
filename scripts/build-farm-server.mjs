@@ -5,7 +5,7 @@
  *
  * 菜园源码在 src/extensions/farm/，但在线扩展协议只有 manifest.json / server.js /
  * client.js + assets，运行时不加载额外模块。这里用已有的 esbuild 把源码打成
- * 可读的 ESM（不压缩、不引外部依赖），产物提交入库，由 freshness 测试守住。
+ * 可读的 ESM（不压缩、不引外部依赖），产物不提交，由构建后的 freshness 测试守住。
  *
  * 用法：npm run build（生成 client.js 后再生成它）
  *       node scripts/build-farm-server.mjs（只生成菜园服务端）

@@ -111,21 +111,12 @@ jobs:
           npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
           test -f scripts/npm-release-plan.mjs || { echo 'This tag predates the release planner; use the existing manual release path'; exit 1; }
           npm ci --prefix apps/desktop --no-audit --no-fund
-          cp client.js "$RUNNER_TEMP/client-tag.js"
           npm run build
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict'
-          import { readFileSync } from 'node:fs'
-          const canonical = text => text.replace(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm, '$1node_modules/')
-          const tagged = readFileSync(process.env.RUNNER_TEMP + '/client-tag.js', 'utf8')
-          const rebuilt = readFileSync('client.js', 'utf8')
-          assert.equal(canonical(rebuilt), canonical(tagged), 'rebuilt client code differs from the tagged build')
-          NODE
+          for file in client.js extensions/farm/client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js; do
+            test -s "$file" || { echo "missing generated artifact: $file"; exit 1; }
+          done
           npm test
           npm run typecheck
-          # Pack the exact tagged client after verifying machine-dependent module comments only.
-          cp "$RUNNER_TEMP/client-tag.js" client.js
-          git diff --exit-code -- client.js
 
       - name: Pack both packages for review and for the plan
         run: |
