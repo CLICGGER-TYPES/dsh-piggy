@@ -34,18 +34,7 @@ export function createFarmCommerceRenderer(state, modules) {
       return node
     }
 
-  function renderHelperControls(app, data, box, items) {
-      var helper = data.helper, enabled = helper.enabled === true
-      var panel = modules.host.put(box, app.el('section', 'fm-helper-panel')); panel.setAttribute('aria-label', '帮工托管')
-      var status = modules.host.put(panel, app.el('div', 'fm-helper-card fm-helper-status'))
-      var main = modules.host.put(status, app.el('div', 'fm-helper-status-main'))
-      modules.host.put(main, modules.host.img(app, 'fm-helper-status-icon', 'tab-icon-helper'))
-      var copy = modules.host.put(main, app.el('div', 'fm-helper-copy'))
-      modules.host.put(copy, app.el('b', null, '帮工猪'))
-      modules.host.put(copy, app.el('small', null, '已雇用 · 管 ' + helper.plots + ' 块地'))
-      var badge = modules.host.put(status, app.el('span', 'fm-helper-badge', enabled ? '正在托管' : '已暂停'))
-      badge.setAttribute('data-enabled', String(enabled))
-
+  function helperToggle(app, panel, enabled) {
       var toggle = modules.host.put(panel, app.button('dp-btn fm-helper-card fm-helper-toggle', {
         type: 'button', role: 'switch', 'aria-checked': String(enabled),
         'aria-label': enabled ? '暂停帮工托管' : '开启帮工托管', 'data-farm-helper-toggle': 'true',
@@ -60,6 +49,42 @@ export function createFarmCommerceRenderer(state, modules) {
       var switchTrack = modules.host.put(toggle, app.el('span', 'fm-helper-switch')); switchTrack.setAttribute('aria-hidden', 'true')
       modules.host.put(switchTrack, app.el('i'))
       toggle.disabled = !!state.inflight
+      return toggle
+    }
+
+  function helperStorage(app, panel, helper) {
+      var storage = modules.host.put(panel, app.el('div', 'fm-helper-card fm-helper-storage'))
+      var storageCopy = modules.host.put(storage, app.el('div', 'fm-helper-copy'))
+      modules.host.put(storageCopy, app.el('b', null, '帮工仓'))
+      modules.host.put(storageCopy, app.el('small', null, helper.stored > 0 ? helper.stored + ' 个待领取 · 库存会保留' : '暂时没有待领取'))
+      if (helper.stored > 0) modules.host.put(storage, modules.host.button(app, 'fm-helper-action', { 'data-farm-helper-storage': 'open' }, '去背包', function () { modules.events.goBag(app, 'crop') }))
+      return storage
+    }
+
+  function helperFooter(app, panel, enabled) {
+      modules.host.put(panel, app.el('small', 'fm-helper-footer', enabled
+        ? '帮工照料、收获后入仓并按现有种子补种；作物按原时间自然生长。'
+        : '暂停时照料、收获与补种停止；作物自然生长，帮工仓库存仍可领取。'))
+    }
+
+  function helperStatus(app, panel, title, note, enabled) {
+      var status = modules.host.put(panel, app.el('div', 'fm-helper-card fm-helper-status'))
+      var main = modules.host.put(status, app.el('div', 'fm-helper-status-main'))
+      modules.host.put(main, modules.host.img(app, 'fm-helper-status-icon', 'tab-icon-helper'))
+      var copy = modules.host.put(main, app.el('div', 'fm-helper-copy'))
+      modules.host.put(copy, app.el('b', null, title))
+      modules.host.put(copy, app.el('small', null, note))
+      var badge = modules.host.put(status, app.el('span', 'fm-helper-badge', enabled ? '正在托管' : '已暂停'))
+      badge.setAttribute('data-enabled', String(enabled))
+      return status
+    }
+
+  /** 旧服务端（4.2.x）没有 workers：退回原单帮工卡片，升级档也照旧。 */
+  function renderHelperSingle(app, data, box, items) {
+      var helper = data.helper, enabled = helper.enabled === true
+      var panel = modules.host.put(box, app.el('section', 'fm-helper-panel')); panel.setAttribute('aria-label', '帮工托管')
+      helperStatus(app, panel, '帮工猪', '已雇用 · 管 ' + helper.plots + ' 块地', enabled)
+      helperToggle(app, panel, enabled)
 
       var upgrade = items.find(function (item) { return item.key === 'helper-level' })
       if (upgrade) {
@@ -74,15 +99,66 @@ export function createFarmCommerceRenderer(state, modules) {
         upgradeButton.setAttribute('aria-disabled', String(!!upgrade.disabled))
       }
 
-      var storage = modules.host.put(panel, app.el('div', 'fm-helper-card fm-helper-storage'))
-      var storageCopy = modules.host.put(storage, app.el('div', 'fm-helper-copy'))
-      modules.host.put(storageCopy, app.el('b', null, '帮工仓'))
-      modules.host.put(storageCopy, app.el('small', null, helper.stored > 0 ? helper.stored + ' 个待领取 · 库存会保留' : '暂时没有待领取'))
-      if (helper.stored > 0) modules.host.put(storage, modules.host.button(app, 'fm-helper-action', { 'data-farm-helper-storage': 'open' }, '去背包', function () { modules.events.goBag(app, 'crop') }))
+      helperStorage(app, panel, helper)
+      helperFooter(app, panel, enabled)
+    }
 
-      modules.host.put(panel, app.el('small', 'fm-helper-footer', enabled
-        ? '帮工照料、收获后入仓并按现有种子补种；作物按原时间自然生长。'
-        : '暂停时照料、收获与补种停止；作物自然生长，帮工仓库存仍可领取。'))
+  /** 多帮工总览 + 列表：每只一行，角色按钮只改角色，不碰结算。 */
+  function renderHelperCrew(app, data, box, items) {
+      var helper = data.helper, enabled = helper.enabled === true, workers = helper.workers
+      var max = helper.max || 5
+      var patrol = workers.filter(function (worker) { return worker.role === 'patrol' }).length
+      var harvest = workers.length - patrol
+      var panel = modules.host.put(box, app.el('section', 'fm-helper-panel')); panel.setAttribute('aria-label', '帮工托管')
+      helperStatus(app, panel, '帮工 ' + workers.length + '/' + max,
+        '收菜 ' + harvest + ' 只 · 巡逻 ' + patrol + ' 只 · 共管 ' + helper.plots + ' 块地', enabled)
+
+      var list = modules.host.put(panel, app.el('div', 'fm-helper-workers')); list.setAttribute('role', 'list'); list.setAttribute('aria-label', '帮工列表')
+      workers.forEach(function (worker) {
+        var row = modules.host.put(list, app.el('div', 'fm-helper-worker')); row.setAttribute('role', 'listitem'); row.setAttribute('data-farm-helper-worker', String(worker.id))
+        modules.host.put(row, app.el('b', 'fm-helper-worker-id', '#' + worker.id))
+        var badge = modules.host.put(row, app.el('span', 'fm-role-badge', worker.roleLabel || (worker.role === 'patrol' ? '巡逻' : '收菜')))
+        badge.setAttribute('data-role', worker.role === 'patrol' ? 'patrol' : 'harvest')
+        modules.host.put(row, app.el('span', 'fm-helper-worker-plots', worker.role === 'patrol' ? '不占地' : '收 ' + (worker.plotCount || 0) + ' 块'))
+        var target = worker.role === 'patrol' ? 'harvest' : 'patrol'
+        var button = modules.host.put(row, modules.host.button(app, 'fm-role-btn', {
+          type: 'button', 'data-farm-role': target, 'data-farm-helper-id': String(worker.id),
+          'aria-label': '把 #' + worker.id + ' 帮工改成' + (target === 'harvest' ? '收菜' : '巡逻'),
+          'aria-disabled': String(!!state.inflight),
+        }, target === 'harvest' ? '改收菜' : '改巡逻', function () {
+          if (state.inflight) return
+          modules.events.rememberScroll(app, modules.events.pageKey(app))
+          modules.events.setRole(app, worker.id, target)
+        }))
+        button.disabled = !!state.inflight
+      })
+
+      if (helper.plots === 0) modules.host.put(panel, app.el('small', 'fm-helper-warning', '没有收菜帮工，菜不会自动收'))
+
+      helperToggle(app, panel, enabled)
+
+      var additional = items.find(function (item) { return item.key === 'helper-additional' })
+      if (additional) {
+        var hireCard = modules.host.put(panel, app.el('div', 'fm-helper-card'))
+        var hireHead = modules.host.put(hireCard, app.el('div', 'fm-helper-card-head'))
+        modules.host.put(hireHead, app.el('b', 'fm-helper-label', '再雇一只帮工猪'))
+        modules.host.put(hireHead, app.el('span', 'fm-helper-price', additional.price.toLocaleString('zh-CN') + ' 菜币'))
+        modules.host.put(hireCard, app.el('small', 'fm-helper-desc', '默认收菜 4 块地，雇来后可随时改成巡逻。'))
+        var hireButton = modules.host.put(hireCard, modules.host.button(app, 'fm-helper-action', { 'data-farm-item': additional.key, 'aria-label': '追加雇佣帮工猪' }, '去雇佣', function () {
+          if (state.inflight) return
+          modules.events.rememberScroll(app, modules.events.pageKey(app)); state.purchase = additional; state.quantity = 1; state.modalReturn = { attr: 'data-farm-item', value: additional.key }; app.rerender()
+        }))
+        hireButton.setAttribute('aria-disabled', String(!!state.inflight || !!additional.disabled))
+        hireButton.disabled = !!state.inflight
+      }
+
+      helperStorage(app, panel, helper)
+      helperFooter(app, panel, enabled)
+    }
+
+  function renderHelperControls(app, data, box, items) {
+      if (Array.isArray(data.helper.workers) && data.helper.workers.length) return renderHelperCrew(app, data, box, items)
+      return renderHelperSingle(app, data, box, items)
     }
 
   function renderShop(app, data, box) {
@@ -95,7 +171,13 @@ export function createFarmCommerceRenderer(state, modules) {
       })
       var items = shopItems(data)
       if (state.shopTab === 'helper' && data.helper && data.helper.hired) renderHelperControls(app, data, box, items)
-      var visibleItems = items.filter(function (item) { return item.category === state.shopTab && !(state.shopTab === 'helper' && data.helper && data.helper.hired && item.key === 'helper-level') })
+      // 帮工面板已经带升级 / 追加雇佣入口，货架不再重复放同一张卡片。
+      var crew = data.helper && data.helper.hired && Array.isArray(data.helper.workers) && data.helper.workers.length > 0
+      var visibleItems = items.filter(function (item) {
+        if (item.category !== state.shopTab) return false
+        if (!(state.shopTab === 'helper' && data.helper && data.helper.hired)) return true
+        return item.key !== 'helper-level' && !(crew && item.key === 'helper-additional')
+      })
       if (visibleItems.length) {
         var grid = modules.host.put(box, app.el('div', 'dp-tiles fm-tiles')); grid.setAttribute('role', 'tabpanel')
         grid.setAttribute('data-scroll-key', 'farm-shop:' + state.shopTab)

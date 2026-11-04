@@ -206,9 +206,39 @@ export function createFarmEvents(state, modules) {
       }
     }
 
-  function helperText(helper) { return !helper.hired ? '雇帮工猪' : helper.full ? '帮工仓库满了' : helper.stored > 0 ? '帮工收了 ' + helper.stored + ' 个' : !helper.enabled ? '帮工已暂停' : helper.missing.length ? '缺' + helper.missing.join('、') + '种子' : helper.seedless ? '帮工没种子' : '帮工 · ' + helper.plots + ' 块地' }
+  /** 改一只帮工的角色；already 静默，unavailable 轻提示，成功由重画体现。 */
+  function setRole(app, id, role) {
+      if (state.inflight) return null
+      var result = sendAction(app, 'setHelperRole', { id: id, role: role })
+      if (result && typeof result.then === 'function') result.then(function (next) {
+        if (!next || next.ok !== false) return
+        if (next.reason === 'already') return
+        if (next.reason === 'unavailable') say(app, '这只帮工现在换不了角色')
+      })
+      return result
+    }
 
-  function helperClick(app, helper) { if (!helper.hired) return sendAction(app, 'hire', {}); if (helper.stored > 0 || helper.full) return sendAction(app, 'collect', {}); if (!helper.enabled) return goShop(app, 'helper'); if (helper.missing.length || helper.seedless) return goShop(app, 'seed'); say(app, '帮工正在照顾 ' + helper.plots + ' 块地') }
+  function helperCount(helper) { return Number(helper.count) || (Array.isArray(helper.workers) ? helper.workers.length : 1) }
 
-  return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick }
+  function helperText(helper) {
+      if (!helper.hired) return '雇帮工猪'
+      if (helper.full) return '帮工仓库满了'
+      if (helper.stored > 0) return '帮工收了 ' + helper.stored + ' 个'
+      if (!helper.enabled) return '帮工已暂停'
+      if (helper.missing.length) return '缺' + helper.missing.join('、') + '种子'
+      if (helper.seedless) return '帮工没种子'
+      if (helper.plots === 0) return '没有收菜帮工，菜不会自动收'
+      return helperCount(helper) > 1 ? '帮工 ×' + helperCount(helper) + ' · 收 ' + helper.plots + ' 块' : '帮工 · ' + helper.plots + ' 块地'
+    }
+
+  function helperClick(app, helper) {
+      if (!helper.hired) return sendAction(app, 'hire', {})
+      if (helper.stored > 0 || helper.full) return sendAction(app, 'collect', {})
+      if (!helper.enabled) return goShop(app, 'helper')
+      if (helper.missing.length || helper.seedless) return goShop(app, 'seed')
+      if (helper.plots === 0) return goShop(app, 'helper')
+      say(app, helperCount(helper) > 1 ? '帮工 ×' + helperCount(helper) + ' 正在照顾 ' + helper.plots + ' 块地' : '帮工正在照顾 ' + helper.plots + ' 块地')
+    }
+
+  return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, setRole, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick }
 }
