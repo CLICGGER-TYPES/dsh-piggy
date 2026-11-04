@@ -25,9 +25,9 @@
 
 夸克网盘只提供 Windows 安装包的手动下载，不替代客户端现有的游戏包/外壳自动更新渠道。npm由维护者确认后通过GitHub Actions可信发布，主包与别名包同步；RC只更新`rc`标签，保持稳定入口。npm `latest`目前仍是0.37.0，与GitHub稳定游戏0.37.1分别标示。
 
-> **本轮 GitHub RC：游戏 0.37.2-rc.7 / 桌面外壳 0.6.8-rc.5。** 先更新桌面外壳 RC5，再更新游戏 RC7。安装包、游戏包与更新清单由 GitHub 发行工作流构建。
+> **本轮 GitHub RC：游戏 0.37.2-rc.8 / 桌面外壳 0.6.8-rc.6。** 先更新桌面外壳 RC6，再更新游戏 RC8。安装包、游戏包与更新清单由 GitHub 发行工作流构建。
 
-本轮[GitHub RC7发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.7)由 tag 工作流创建并附加资产；上一版公开 RC6 为[游戏0.37.2-rc.6 / 外壳0.6.8-rc.4](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.6)。Gitee发布已取消，夸克不会随本次更新；npm `rc` 仍由维护者单独发布，本次没有npm包。历史Gitee/夸克RC5仅供旧安装器回退，不能代替本轮RC7。
+本轮[GitHub RC8发行页](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.8)由 tag 工作流创建并附加资产；上一版公开 RC7 为[游戏0.37.2-rc.7 / 外壳0.6.8-rc.5](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.7)。Gitee发布已取消，夸克不会随本次更新；npm `rc` 仍由维护者单独发布，本次没有npm包。历史Gitee/夸克RC5仅供旧安装器回退，不能代替本轮RC8。
 
 RC7包含现有完整档导出/预览/新副本导入切换UI、OwnerDocument共享资源与猪目标服务、默认关闭的完整档云同步与冲突保护、默认关闭的私有LAN配对服务、更新启动失败的一次兼容版本回退，以及六项进阶徽章。OwnerDocument多猪管理/新增/切换的新UI、云首次同步与历史恢复UI尚未提供；存档仍为v15，默认v15/DSH路径不自动迁移或合并。本次主线的Owner LAN仍是可信私网HTTP，不支持TLS/公网；DSH OwnerDocument LAN/云恢复接线在后续PR60，不包含于本RC；也没有不同owner各带猪加入同一场景或多猪并行窗口UI。
 
