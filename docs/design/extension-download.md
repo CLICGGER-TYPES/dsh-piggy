@@ -126,3 +126,11 @@ https://raw.githubusercontent.com/CLICGGER-TYPES/dsh-piggy/main/extensions/regis
 - **兼容**：带图片的扩展 `minGame` 设成 0.36.0，老游戏看到的是「要更新游戏」，不会装出一个缺图的版本。
 - **整包下载（v0.36.1，2026-10-11）**：用户嫌发行版堆几十张图、请求太多。目录条目加 `bundle: { url, sha256 }`，指向同一发行版的 `ext-<key>-<版本>.piggyext`；新游戏只下这一个文件（超时 60 秒、重试同上），核对 sha256 后用本地导入同一个 `parseBundle` 拆开，再核对名字和版本（`store/ext-download.js`）。`files` 照旧保留：0.36.0 及更早的游戏只认它，官方识别也按它对。`minGame` ≥ 0.36.1 的扩展版本发行版只传整包，`files` 里的地址不会有人下载。
 - **素材来源**：菜园、矿洞的原稿、逐字提示词、审图拼图和切图脚本在总目录 `art-source/ext-ui/`（不进仓库），`tools/pack-assets.py` 把审过的图缩成两倍显示大小的 WebP 放进 `extensions/<key>/assets/`。
+
+## 9. 第三方动作 / 音效素材包（M3，v0.37.2）
+
+扩展可以在 `actions/<pack>/`、`sounds/<pack>/` 里携带动作帧和音效，manifest 用可选的
+`assetPacks: { actions?: string[], sounds?: string[] }` 声明。安装前会按第一方 `pack.json`
+schema 校验帧、音效、尺寸、路径和命名空间（`ext-<extension-key>`），详见
+[asset-packs-m3.md](asset-packs-m3.md)。本阶段只做安装/校验/列举/卸载，运行时注册和播放
+在下一刀接入。

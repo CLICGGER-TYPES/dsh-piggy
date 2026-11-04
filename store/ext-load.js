@@ -17,6 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { extensionOn, openWallet } from '../core.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { assetNames } from './ext-files.js'
+import { assetPackSummaryFromDisk } from './ext-asset-packs.js'
 import { LOCAL_MARK } from './ext-import.js'
 
 /** 只接受普通对象/数组/字符串/有限数字/布尔/null；拒绝函数、循环引用和原型污染。 */
@@ -42,7 +43,7 @@ function plainData(value, depth) {
  * @param {{
  *   store: any,
  *   root: () => string,
- *   loaded: Map<string, {manifest: any, module: any, error: string|null}>,
+ *   loaded: Map<string, {manifest: any, module: any, error: string|null, assetPacks?: any}>,
  *   now: () => number,
  *   keyPattern: RegExp,
  * }} deps
@@ -69,6 +70,7 @@ export function createLoader(deps) {
   async function inspect(key, cacheToken) {
     const manifest = readManifest(key)
     if (manifest === null) return null
+    const assetPacks = assetPackSummaryFromDisk(deps.root(), key, manifest)
     try {
       const file = join(deps.root(), key, 'server.js')
       const stat = statSync(file)
@@ -76,9 +78,9 @@ export function createLoader(deps) {
       const url = pathToFileURL(file).href + '?v=' + stat.mtimeMs + '-' + stat.size + token
       const imported = await import(url)
       const module = imported.default ?? imported
-      return { manifest, module, error: null }
+      return { manifest, module, error: null, assetPacks }
     } catch (error) {
-      return { manifest, module: null, error: error instanceof Error ? error.message : String(error) }
+      return { manifest, module: null, error: error instanceof Error ? error.message : String(error), assetPacks }
     }
   }
 
@@ -116,7 +118,7 @@ export function createLoader(deps) {
       if (entry.module === null) throw new Error(entry.error ?? '扩展加载失败')
       adopt(key, entry)
     } catch (error) {
-      deps.loaded.set(key, { manifest: entry.manifest, module: null, error: error instanceof Error ? error.message : String(error) })
+      deps.loaded.set(key, { manifest: entry.manifest, module: null, error: error instanceof Error ? error.message : String(error), assetPacks: entry.assetPacks })
     }
     return deps.loaded.get(key)
   }
@@ -157,6 +159,7 @@ export function createLoader(deps) {
       app: entry.manifest.app ? { emoji: String(entry.manifest.app.emoji ?? entry.manifest.emoji ?? '🧩'), label: String(entry.manifest.app.label ?? entry.manifest.label ?? key) } : null,
       assets: assetNames(entry.manifest) ?? [],
       assetLayout: entry.manifest.assetLayout ?? {},
+      assetPacks: structuredClone(entry.assetPacks ?? { actions: [], sounds: [] }),
       error: entry.error,
       apps: [], dexSections: [], shopKinds: [],
     }))

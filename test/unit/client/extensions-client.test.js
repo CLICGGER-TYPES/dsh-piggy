@@ -154,7 +154,7 @@ test('扩展页有「从文件导入」；本地导入的非官方扩展卡片�
   openExtensions(dom)
   const input = findByAttr(contentOf(dom), 'data-ext-import', 'file')
   assert.notEqual(input, undefined, 'the import picker is there')
-  assert.equal(input.getAttribute('accept'), '.piggyext,.json,.js')
+  assert.equal(input.getAttribute('accept'), '.piggyext,.zip,.json,.js')
   assert.match(findByAttr(contentOf(dom), 'data-extension', 'piggybank').allText(), /存钱罐 1\.0\.0 · 本地导入/)
   assert.doesNotMatch(findByAttr(contentOf(dom), 'data-extension', 'pomodoro').allText(), /本地导入/)
 })

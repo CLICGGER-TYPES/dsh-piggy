@@ -16,10 +16,11 @@
  * @module dsh-piggy/store/ext-install
  */
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 
 import { installExtension, openWallet, removeExtension } from '../core.js'
-import { ASSET_NAME, CODE_FILES } from './ext-files.js'
+import { isExtensionFile } from './ext-files.js'
+import { validateAssetPackFiles } from './ext-asset-packs.js'
 import { LOCAL_MARK, makeImporter } from './ext-import.js'
 
 /** 和 store/ext-runtime.js 的目录名校验一致（key 不能爬出 extensions/）。 */
@@ -244,14 +245,18 @@ export function createInstaller(deps) {
     }
     const root = deps.root()
     if (root === '') return failure('absent', '')
+    const checked = validateAssetPackFiles(key, files)
+    if (checked.ok !== true) return failure('download-failed', '素材包校验失败：' + checked.message)
     const stamp = nextStamp()
     const staging = join(root, '.' + key + '-' + stamp)
     const backup = join(root, '.' + key + '-' + stamp + '.bak')
     try {
       mkdirSync(join(staging, 'assets'), { recursive: true })
       for (const [name, buffer] of files) {
-        if (!CODE_FILES.includes(name) && !(name.startsWith('assets/') && ASSET_NAME.test(name.slice('assets/'.length)))) throw new Error('不认识的文件：' + name)
-        writeFileSync(join(staging, name), buffer)
+        if (!isExtensionFile(name)) throw new Error('不认识的文件：' + name)
+        const target = join(staging, name)
+        mkdirSync(dirname(target), { recursive: true })
+        writeFileSync(target, buffer)
       }
       if (local) writeFileSync(join(staging, LOCAL_MARK), JSON.stringify({ importedAt: deps.now() }))
     } catch (error) {
@@ -274,9 +279,10 @@ export function createInstaller(deps) {
   /** 删除：核心清数据；下载的再把文件删掉。 */
   function remove(key) {
     const result = deps.store.mutate(state => removeExtension(state, key, deps.now()))
-    if (result.ok && deps.hasLoaded(key)) {
-      deps.forgetLoaded(key)
-      rmSync(join(deps.root(), key), { recursive: true, force: true })
+    if (result.ok) {
+      if (deps.hasLoaded(key)) deps.forgetLoaded(key)
+      const root = deps.root()
+      if (root !== '' && KEY.test(key)) rmSync(join(root, key), { recursive: true, force: true })
     }
     return result
   }

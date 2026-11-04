@@ -1,0 +1,294 @@
+# 第三方素材包 M3（第一刀：安装 / 校验 / 命名空间）
+
+> 2026-11-04 · 目标：先让第三方扩展可以安全地携带动作和音效素材，安装、更新、卸载、回滚都不破坏第一方素材。
+> 本刀**不接运行时注册和播放**：文件装进来、能列举、能回滚，但播放器不会播放它们。运行时见 §12。
+
+## 0. 一句话
+
+扩展目录里多两个固定目录 `actions/<pack>/`、`sounds/<pack>/`；manifest 可选声明
+`assetPacks: { actions?: string[], sounds?: string[] }`；安装前按第一方同一套 `pack.json`
+schema 做完整校验，命名空间固定为 `ext-<extension-key>`，永远不能覆盖 `dsh-piggy`。
+
+## 1. 范围
+
+**本刀做**
+
+- manifest 声明与实际目录一致性、`pack.json` 校验。
+- ZIP / `.piggyext` 两种安装入口的文件白名单、路径逃逸、符号链接、大小写冲突、magic、尺寸、数量上限。
+- 安装事务沿用现有“临时目录 → 换名 → 试加载 → 提交”，失败回滚。
+- 扩展列表带只读素材包摘要（数量/帧数/文件数/字节）。
+- 卸载时素材包随扩展目录一起删除。
+
+**本刀不做**
+
+- 不把动作注册进客户端 `createArtResourceRegistry`。
+- 不把音效注册进 `sounds.js` / `audio-context.js`。
+- 不提供 `/dsh-piggy/ext/<key>/actions/...` 或 `/sounds/...` 的静态路由。
+- 不做扩展页上的素材包卡片/试听/预览 UI（只把摘要穿过快照归一化）。
+- 不把第三方扩展文件放进存档备份（和现有 `server.js` 一样，重装扩展后重新下载）。
+
+## 2. 目录布局
+
+```text
+extensions/<key>/
+  manifest.json
+  server.js
+  client.js
+  assets/                        现有：扩展界面图片
+  actions/                       新：动作素材包
+    <pack>/
+      pack.json
+      <action-key>/
+        00.png | 00.webp
+        01.png | 01.webp
+        …
+  sounds/                        新：音效素材包
+    <pack>/
+      pack.json
+      <sound-key>.ogg | <sound-key>.wav
+```
+
+规则：
+
+- 一个目录一个包；`pack` 名就是目录名。`pack.json.pack` 可省略（默认目录名），写了必须
+  与目录名相等；第三方不允许第一方 `base/` 目录 + `pack: "actions"` 的历史例外。
+- 动作 key 目录名必须等于 `pack.json.actions[].key`。
+- 音效文件名必须等于 `<key>.ogg` 或 `<key>.wav`。
+- 包目录里只允许 `pack.json`、帧文件或音频文件；`PROVENANCE.md`、`README`、脚本、SVG、
+  HTML 一律拒收。第一方的 `PROVENANCE.md` 只用于源码仓库，不进入第三方安装包。
+- 扩展可以只有 `actions`、只有 `sounds`，或两者都有；不声明 `assetPacks` 就是都没有。
+
+## 3. manifest 声明
+
+`assetPacks` 可选，缺省等价于 `{ "actions": [], "sounds": [] }`：
+
+```json
+{
+  "key": "my-extension",
+  "version": "1.2.0",
+  "minGame": "0.37.2",
+  "assetPacks": {
+    "actions": ["wave", "sit"],
+    "sounds": ["sfx"]
+  }
+}
+```
+
+- 只认 `actions` / `sounds` 两个字段；未知字段、非数组、重复包名直接拒绝。
+- 声明了哪个包，就必须有对应 `pack.json`；没声明的目录里出现任何 `actions/`、`sounds/`
+  文件都拒绝。这是“声明与实际目录一致”的硬规则。
+- 不写 `assetPacks` 而目录里出现 `actions/` 或 `sounds/` 文件，也拒绝。
+- 向后兼容：老扩展的 manifest 没有这个字段，安装逻辑完全不碰这两个目录。
+
+## 4. 命名空间
+
+| 资源 | 第一方 | 第三方 |
+|---|---|---|
+| 动作 handle | `dsh-piggy/<pack>/<action>` | `ext-<extension-key>/<pack>/<action>` |
+| 音效 id | `<key>` / `sfx/<key>` | `ext-<extension-key>/<sound-key>` |
+| 注册表 | `dsh-piggy` | 按扩展隔离 |
+
+- **命名空间不由 `pack.json` 提供**。`pack.json` 里出现 `namespace` 字段会被当作未知字段拒绝；
+  安装器始终用 `ext-<key>` 推导。这样扩展不能冒充第一方，也不能冒充另一个扩展。
+- 同一个扩展里，动作 key 跨包不能重复，音效 key 跨包不能重复。这样运行时短名解析不会歧义。
+- 音效 id 加扩展前缀后，即使第三方音效叫 `tap`，也不会覆盖内置 `tap`。
+- `pack.json.pack` 冒充 `dsh-piggy` 也不行：写了必须等于目录名，且 handle 仍带
+  `ext-<key>` 前缀。
+- 动作的 `sound` 做语法校验，可以写裸 `beep`，也可以写 `<sound-pack>/beep`；运行时先查
+  本扩展，未命中再按第一方 key 回退。显式的 `fallback` 引用不能指向别的扩展 namespace；
+  字符串 fallback 由运行时按“本扩展 → 第一方”的顺序解析。安装阶段不要求引用的目标已经存在
+  （前向引用/第一方回退是合法用法）。
+
+## 5. 上限
+
+### 5.1 目录 / 数量
+
+| 项 | 上限 |
+|---|---|
+| 扩展 key | `^[a-z0-9-]{2,24}$`（沿用现有） |
+| 包名 `pack` | `^[a-z][a-z0-9-]{0,31}$` |
+| 动作 / 音效 key | `^[a-z][a-z0-9-]{0,47}$` |
+| 每个动作包的 `actions` | 64 条 |
+| 每个音效包的 `sounds` | 64 条 |
+| 动作帧数 | 2–48 帧 |
+| 每个素材包文件数 | 256 |
+| 每个素材包字节数 | 6 MB |
+| 单个扩展全部素材包文件数 | 384 |
+| 单个扩展全部素材包字节数 | 8 MB |
+| 单个动作总时长 | 1–10,000 ms |
+| 单个 `pack.json` | 512 KB |
+| 整个扩展包（ZIP / JSON `.piggyext`） | 28 MB |
+
+第一方动作包继续使用 `scripts/asset-packs.mjs` 的 6 MB / 256 文件预算；第三方与它同量级，
+但额外限制扩展总预算，避免一个扩展塞进多个满包。
+
+### 5.2 帧
+
+- 文件名固定两位序号：`00.png`、`01.png`……必须从 00 连续；缺号、跳号、多文件都拒绝。
+- 一个动作只能用一种格式：全 PNG 或全 WebP，不能混用。
+- 单帧 ≤ 128 KB，长边 ≤ 512 px；安装器读 PNG IHDR / WebP VP8X、VP8L、VP8 头取尺寸。
+- 内容必须与扩展名 magic 一致；只有扩展名对、内容不是有效图片的拒收。
+- 动作必须写 `frames: { fps }` 或 `frames: { durationsMs }`；`durationMs` 必须等于帧总时长。
+- 第三方动作**只支持帧序列**：`source`（引用第一方/外部图片）和 `motion`（引用第一方 CSS
+  动效）都拒绝。这样素材包自包含，不会把路径指向扩展目录之外。
+
+### 5.3 音效
+
+- 只接受 `.ogg`（`OggS`）和 `.wav`（`RIFF…WAVE`）。
+- 单文件 ≤ 30 KB；文件音效必须写 20–1500 ms 的 `durationMs`。
+- 文件名必须与 key 同名：`beep` → `beep.ogg` / `beep.wav`；不允许子目录。
+- 同一个 key 只能 `synth` 或 `file` 二选一；`synth` 继续使用第一方同一套参数校验，不需要文件。
+- `gain` 0–1、`debounceMs` 0–2000、`priority` 0–100、`maxVoices` 1–2、`loop` 布尔值。
+
+## 6. 路径与安全
+
+安装器对**每一个**文件路径做以下检查（JSON 包和 ZIP 同一套）：
+
+1. 相对路径，不能以 `/` 开头，不能有盘符，不能有 `\`、`?`、`#`、NUL。
+2. 不能有空段、`.`、`..`；不能有 `//`。
+3. 只允许小写 ASCII 字母、数字、`.`、`_`、`-`、`/`。因此天然不会出现大小写冲突；
+   仍会再按 lower-case 做一次重复检查，挡住未来放宽命名后的回归。
+4. 顶层只允许 `manifest.json`、`server.js`、`client.js`、`assets/`、`actions/`、`sounds/`。
+5. `actions/`、`sounds/` 下只允许 §2 的精确形状；脚本、HTML、SVG、外链、`local.json`
+   等一律拒收。
+6. ZIP：拒绝符号链接（central directory external attributes）、目录项以外的空段、重复文件、
+   重叠数据区、CRC 不符、解压后超限、文件名 UTF-8 不能往返的条目。
+7. 从磁盘读摘要时用 `lstat`；符号链接和非普通文件只标错，不跟随。
+
+注意：ZIP 里的空目录项会被忽略，不当作文件；真正的文件仍必须逐条通过上面的路径规则。
+不提供“解压到临时目录再扫描”的路径——安装器只在内存里得到 `Map<相对路径, Buffer>`，
+写盘时逐级 `mkdir` 并写普通文件。
+
+## 7. 安装管道
+
+### 7.1 入口
+
+1. **在线整包**：目录条目的 `bundle` 下载 `.piggyext`（JSON）→ `parseBundle`。
+2. **本地导入**：面板选 `.piggyext` JSON，或直接选手工 ZIP；宿主把 ZIP 按二进制收下 →
+   `parseBundle(Buffer)`。
+3. **旧式逐文件**：`entry.files` 只允许代码和 `assets/`；带 `actions/`、`sounds/` 的扩展
+   必须走整包（发行版附件名不能带斜杠），旧式目录会明确拒绝，不会装出半个包。
+
+### 7.2 校验顺序
+
+```text
+读包
+  → 包总大小 ≤ 28MB
+  → ZIP 结构安全（符号链接/路径/CRC/重叠/条目数）
+  → 代码三件齐全、各 ≤512KB
+  → 顶层路径白名单
+  → manifest.json 可解析、key 合法
+  → assets 名单与实际图片一一对应
+  → assetPacks 声明合法、声明与实际目录一致
+  → pack.json 可解析、字段白名单、pack 名等于目录名
+  → 动作帧连续/同格式/magic/尺寸/字节/时长
+  → 音效文件同名/magic/字节/时长、synth 参数
+  → 动作 sound/fallback 语法合法；显式 fallback namespace 只能是本扩展
+  → 扩展总文件数/总字节
+```
+
+任何一步失败都返回 `invalid-bundle`（本地导入）或 `download-failed`（在线安装），
+`message` 里写清哪个文件、哪个字段、期望什么。**校验在换文件之前完成**，失败不会碰旧目录。
+
+### 7.3 写盘与事务
+
+`store/ext-install.js` 的 `place()` 再校验一次（防调用方绕过），然后：
+
+1. 在 `extensions/.<key>-<stamp>/` 建 staging，按文件路径逐级建目录。
+2. 写 `local.json`（仅非官方本地导入）。
+3. 按现有流程换名：旧目录 → `.bak`，staging → 目标目录。
+4. `inspect` 试加载新 `server.js`；失败回滚文件、模块和存档。
+5. 成功后才删 `.bak`。
+
+素材包和代码在同一个目录里，所以天然共享同一次换名/回滚，不需要第二套事务。
+
+## 8. 启用 / 停用 / 卸载 / 更新 / 回滚
+
+| 操作 | 文件 | 存档 | 素材包 |
+|---|---|---|---|
+| 启用 / 停用 | 不动 | `state.extensions[key]` | 文件保留；本刀运行时未注册，列表仍显示摘要 |
+| 卸载 | 整个 `extensions/<key>/` 删除 | 清 `extData[key]`、钱包结算（现有规则） | 一起删除，不残留 |
+| 更新 | 整个目录换名替换 | 保留 `extData[key]` | 旧包整体消失，新包整体出现 |
+| 更新失败（校验/加载/init） | 回滚旧目录 | 回滚到事务前 | 旧包原样保留 |
+| 首次安装失败 | 删除 staging | 不建数据 | 不残留 |
+
+停用不会删除素材包：用户再次启用时不需要重新下载。运行时的注册/注销在下一刀接入；
+本刀只保证文件语义。
+
+## 9. 存储与列举
+
+`runtime.list(state)` 的每条扩展多一个只读字段：
+
+```js
+assetPacks: {
+  actions: [
+    { pack: 'wave', namespace: 'ext-my-extension', entries: 2, frames: 18, files: 19, bytes: 41234 }
+  ],
+  sounds: [
+    { pack: 'sfx', namespace: 'ext-my-extension', entries: 3, files: 4, bytes: 5120 }
+  ],
+  ...(读取目录出错时才有 error: '读不懂 actions/.../pack.json')
+}
+```
+
+- 摘要从磁盘 `lstat` / 目录列举得到，不写存档、不改扩展目录。
+- 扩展加载失败（`server.js` 抛错）仍然保留 manifest 和摘要，方便面板显示“扩展坏了，
+  但素材包还在”。
+- 客户端 `normalizeExtensions()` 只做字段归一化，不渲染；UI 卡片留到下一刀。
+
+## 10. 打包格式
+
+### 10.1 `.piggyext` JSON（现有格式，向后兼容）
+
+- `version` 从 2 升到 3 表示带素材包；没有素材包时仍是 1/2，字节不变。
+- 新增可选 `assetPacks: { "actions/<pack>/...": "<base64>", "sounds/<pack>/...": "<base64>" }`。
+- 旧宿主不认识 `assetPacks`，但它的白名单会拒绝 `actions/` 文件，因此不会装出半包；
+  发布带素材包的扩展时 `minGame` 至少写本版本。
+
+### 10.2 ZIP（本地导入）
+
+- ZIP 根目录直接放 `manifest.json`、`server.js`、`client.js`、`assets/`、`actions/`、`sounds/`；
+  不要求外层再套一层文件夹。
+- 允许空目录项但会忽略；不允许符号链接、路径逃逸、绝对路径、反斜杠、大小写冲突。
+- 在线下载仍优先 `.piggyext`；ZIP 是本地导入的补充，不改变在线目录协议。
+
+## 11. 测试
+
+`test/unit/host/ext-asset-packs.test.js` 覆盖：
+
+- 合法 JSON 扩展包带 actions/sounds 安装成功、摘要正确、卸载清空。
+- 同一内容打包成 ZIP 安装成功。
+- 未声明文件、声明缺 `pack.json`、路径逃逸、`.` 段、绝对路径、大小写、脚本/SVG 拒绝。
+- 帧缺号、混格式、坏 magic、超大帧、超长边拒绝。
+- 音效坏 magic、超 30KB、文件名与 key 不一致拒绝；纯 synth 可安装。
+- 重复动作 key、`pack.json` 写 `namespace`、`pack` 冒充 `dsh-piggy` 拒绝。
+- ZIP 路径逃逸、符号链接拒绝。
+- 更新替换旧素材包、保留存档数据；代码加载失败回滚旧包；坏素材包在换文件前失败。
+- 现有 `ext-runtime` / `ext-install-rollback` / `ext-import` 测试保持通过。
+
+## 12. 剩余（下一刀）
+
+1. **运行时注册**：把 `actions/<pack>/pack.json` 转成 `ArtResourcePackInput`
+   (`namespace: ext-<key>`, `pack`, `resources`) 并 `registerPack`；音效建立每扩展的注册表，
+   解析 `ext-<key>/<sound>`。
+2. **静态路由**：`GET /dsh-piggy/ext/<key>/actions/...`、`/sounds/...`，只给已加载扩展且
+   在 manifest 声明内的路径；沿用现有 `assetFile` 的“只给名单里的”原则。
+3. **播放与生命周期**：扩展停用/卸载/更新时反注册，正在播放的帧动作安全结束；音频解码失败
+   回退到包内 `synth` 或静音。
+4. **UI**：扩展卡片显示“动作 N / 音效 M”，更新前预览；本刀只有快照字段，没有界面。
+5. **存档备份**：第三方扩展仍不进存档 ZIP；若以后官方扩展使用素材包，需要把
+   `actions/`、`sounds/` 加入 `runtime/save-archive.js` 的文件白名单与官方哈希清单。
+6. **发布链路**：`extension-entry.mjs` / `extension-bundle.mjs` 已能打包 `assetPacks`；
+   带素材包的扩展是否走逐文件旧目录仍未支持（附件名不能带斜杠），发布时只发整包。
+
+## 13. 明确不采用的方案
+
+- **自动扫描 `actions/`、`sounds/` 目录，不要求 manifest 声明**：会安装未声明文件，无法在
+  下载前判断包内容，也让“声明与实际一致”无法验证。采用显式白名单。
+- **在 `pack.json` 里写 `namespace`**：第三方可以冒充第一方或别的扩展。命名空间必须由
+  安装器从扩展 key 推导。
+- **允许 `source: { scheme: 'path' }` 或外链**：等于把任意路径交给素材包；第三方只允许
+  自包含帧序列。
+- **为素材包单独做一套 ZIP 解析器**：复用 `store/zip.js`（`runtime/save-zip.js` 兼容转出）
+  的路径/符号链接/CRC/重叠检查，只加 `allowDirectories` 选项，减少两套解析器漂移。
+- **为每个包单独做事务**：素材包和代码同属一个扩展目录，复用现有目录换名/回滚即可。
