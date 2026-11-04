@@ -1,0 +1,36 @@
+{
+  "pack": "actions",
+  "revision": 1,
+  "actions": [
+    {
+      "key": "blink",
+      "kind": "action",
+      "source": { "scheme": "builtin", "key": "piglet-blink" },
+      "durationMs": 100,
+      "eligibility": {
+        "art": "piglet",
+        "stageNot": ["box", "grave", "dead-day"],
+        "absent": ["activity", "idle", "illness"],
+        "moodNot": ["sick", "dirty", "sleepy", "dead", "hungry", "lonely"],
+        "react": [],
+        "party": false
+      },
+      "trigger": { "on": "idle" }
+    },
+    {
+      "key": "shy-pet",
+      "kind": "action",
+      "source": { "scheme": "builtin", "key": "piglet-shy-pet" },
+      "durationMs": 420,
+      "eligibility": {
+        "art": "piglet",
+        "stageNot": ["box", "grave", "dead-day"],
+        "absent": ["activity", "idle", "illness"],
+        "moodNot": ["sick", "dirty", "sleepy", "dead", "hungry", "lonely"],
+        "react": ["", "pet"],
+        "party": false
+      },
+      "trigger": { "on": "pet" }
+    }
+  ]
+}
