@@ -28,9 +28,9 @@ const gameVersion = JSON.parse(readFileSync(new URL('../package.json', import.me
 const folders = readdirSync(ROOT, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name)
 const published = JSON.parse(readFileSync(new URL('registry.json', ROOT), 'utf8'))
 const publishedGitee = JSON.parse(readFileSync(new URL('registry-gitee.json', ROOT), 'utf8'))
-const candidateUrl = new URL('../release-candidates/extensions/registry.json', import.meta.url)
+const candidateUrl = new URL('../release/candidates/extensions/registry.json', import.meta.url)
 const registry = existsSync(candidateUrl) ? JSON.parse(readFileSync(candidateUrl, 'utf8')) : published
-const candidateGiteeUrl = new URL('../release-candidates/extensions/registry-gitee.json', import.meta.url)
+const candidateGiteeUrl = new URL('../release/candidates/extensions/registry-gitee.json', import.meta.url)
 const registryGitee = existsSync(candidateGiteeUrl) ? JSON.parse(readFileSync(candidateGiteeUrl, 'utf8')) : publishedGitee
 const manifestOf = key => JSON.parse(readFileSync(new URL(key + '/manifest.json', ROOT), 'utf8'))
 const sha256 = url => createHash('sha256').update(readFileSync(url)).digest('hex')

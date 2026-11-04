@@ -3,7 +3,7 @@ import { extensionFiles } from './extension-files.mjs'
 
 /** Classic appearance with the exact current server, not a downgrade migration. */
 export function farmClassicFiles() {
-  const root = new URL('../extension-variants/farm-classic/', import.meta.url)
+  const root = new URL('../release/extension-variants/farm-classic/', import.meta.url)
   const shared = extensionFiles('farm')
   const manifest = readFileSync(new URL('manifest.json', root), 'utf8')
   const bridge = readFileSync(new URL('data-bridge.js', root), 'utf8')

@@ -3,7 +3,7 @@
  * 只读回读扩展附件：确认候选目录里的整包、包内身份和逐文件散列都真的下载得到。
  * 全部成功后才允许把候选目录晋级为公开目录；本脚本不上传、不修改目录、不推送。
  *
- * 目录选择顺序：存在 release-candidates/extensions/registry*.json 时先查候选，
+ * 目录选择顺序：存在 release/candidates/extensions/registry*.json 时先查候选，
  * 没有候选才查公开的 extensions/registry*.json（和 test/extensions-registry.test.js 一致）。
  * 0.36.1 起新宿主只下整包，所以现代扩展只回读 bundle；minGame < 0.36.1 的旧宿主
  * 仍逐件下载，必须另外回读 files 里的代码和图片，整包有效不能证明旧链路可用。
@@ -28,7 +28,7 @@ const REPO_ROOT = new URL('..', import.meta.url)
 /** @type {Record<string,string>} */
 const PUBLIC_REGISTRY = { github: 'extensions/registry.json', gitee: 'extensions/registry-gitee.json' }
 /** @type {Record<string,string>} */
-const CANDIDATE_REGISTRY = { github: 'release-candidates/extensions/registry.json', gitee: 'release-candidates/extensions/registry-gitee.json' }
+const CANDIDATE_REGISTRY = { github: 'release/candidates/extensions/registry.json', gitee: 'release/candidates/extensions/registry-gitee.json' }
 const USAGE = 'usage: extension-release-check.mjs [--host github|gitee|both] [--key farm,mine] [--registry <file>] [--timeout-ms <ms>]'
 
 /** 带稳定错误码的检查失败，CLI 和 fixture 都按 code 判断，不再靠文案匹配。 */

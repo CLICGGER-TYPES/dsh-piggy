@@ -229,7 +229,7 @@
 - [Windows原生安装器](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40487988819)16项通过：默认/单项/全部/返回/取消/改选、已有版本/进度保留、重启、默认piggy路径迁移、首次孵化、卸载保档及split/stage联动许可。五个离线可选扩展随完整NSIS包，默认不选。
 - [Linux直接AppImage及真实DSH](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40487988862)17项通过：实际tgz安装、旧目录361文件不动、AppImage游戏351文件与npm包逐字节相同、两模式/许可重启、喂食/摸背回复/刷新、连接只照顾桌面猪、断线冻结/宿主重启/离线切回、真实轮询后弹层节点与位置不变、取消预览、原生确认合并、撤销。界面与存档都核对余额：合并1500/6苹果，撤销后桌面1000/4、内嵌500/2，页面错误0。
 - 原生受测提交`d53f040`；全部用托管虚拟机和原生鼠标/键盘，未启动本地VM或物理GUI。Windows单屏100%；Linux Xvfb/Openbox/picom软件显示、FUSE直接AppImage，`--no-sandbox --disable-gpu --ozone-platform=x11`。macOS、混合DPI多屏、硬件GPU与原生Wayland未覆盖；没有新增真实模型调用，不把旧ARK证据冒充本轮。公开npm精确版本须实际发布后再验。
-- 公开`extensions/registry*.json`与9989a6c字节一致；待发目录单放`release-candidates/extensions`，先附件上传回读再晋级目录。候选沿用内部游戏rc.4/外壳rc.3标识，不代表公开发行；GitHub公开RC仍rc.3，稳定版0.37.1。
+- 公开`extensions/registry*.json`与9989a6c字节一致；待发目录单放`release/candidates/extensions`，先附件上传回读再晋级目录。候选沿用内部游戏rc.4/外壳rc.3标识，不代表公开发行；GitHub公开RC仍rc.3，稳定版0.37.1。
 - 工作证据`deliverables/piggy-work/integrated-candidate-20261027/`；统一用户审阅`deliverables/piggy-review/integrated-candidate-20261027/index.html`。新RC编号、渠道与夸克交付范围下一步讨论，六款新猪/钓鱼动作继续暂缓，目录/资源架构整理留后续。
 
 ## 2026-10-27 整合后先完成Windows离线安装器
