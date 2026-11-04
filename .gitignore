@@ -31,3 +31,4 @@ apps/desktop/build/optional-extensions.generated.nsh
 
 # Generated action/sound pack module
 /src/client/packs.generated.js
+/src/client/sounds.generated.js

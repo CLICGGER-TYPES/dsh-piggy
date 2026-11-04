@@ -16,13 +16,14 @@ import { buildClient } from './build-client.mjs'
 import { buildFarmClient } from './build-farm-client.mjs'
 import { buildFarmServer } from './build-farm-server.mjs'
 import { buildArtRevisions } from './build-art-revisions.mjs'
-import { buildAssetPacks } from './asset-packs.mjs'
+import { buildAssetPacks, buildSoundPacks } from './asset-packs.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // Shell migration and game runtime must use the identical save-owner lock protocol.
 copyFileSync(join(packageRoot, 'runtime/owner-lock.js'), join(packageRoot, 'apps/desktop/lib/save-owner-lock.js'))
 // 动作包元数据先生成模块，再打 client.js，保证构建与源码一致。
 writeFileSync(join(packageRoot, 'src/client/packs.generated.js'), buildAssetPacks(packageRoot))
+writeFileSync(join(packageRoot, 'src/client/sounds.generated.js'), buildSoundPacks(packageRoot))
 // 客户端打包前写入实际素材版本，避免新游戏仍命中旧PNG的一小时缓存。
 writeFileSync(join(packageRoot, 'packages/pet-core/src/data/art-revisions.js'), buildArtRevisions())
 const outputs = [

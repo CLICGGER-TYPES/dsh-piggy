@@ -1,8 +1,8 @@
 # 新增一个音效
 
-## 现在（M1）
+## 现在（M2a）
 
-音效全部是程序合成配方，集中在 `src/client/sounds.js` 的 `RECIPES`。新增一个“已有事件”的声音仍然是改代码，但只有一处。
+内置音效配方在 `assets/sounds/builtin/pack.json`；`src/client/sounds.generated.js` 由构建生成，**不要手改**。
 
 当前可用的 key：
 
@@ -10,20 +10,33 @@
 tap lift toss bounce land-soft land-hard dizzy purr flip catch
 ```
 
-加一条配方：
+加一个“已有事件”的声音：
 
-```js
-// src/client/sounds.js
-RECIPES['new-cue'] = {
-  tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 0.3 }],
+1. 在 `assets/sounds/builtin/pack.json` 的 `sounds` 里加一条：
+
+```json
+{
+  "key": "new-cue",
+  "synth": {
+    "tones": [{ "type": "sine", "from": 440, "to": 660, "ms": 80, "gain": 0.3 }]
+  }
 }
 ```
 
-再在触发点调用 `playSound('new-cue')`（或现有 `audio-context` 的 cue 入口）。音量、去重、免打扰、每窗口通道都不用动。
+2. 生成并校验：
 
-## 目标（M2）
+```bash
+npm run assets:sync
+npm run check:assets
+```
 
-改完后，新增/替换音效不再改播放器：
+3. 在触发点调用 `playSound('new-cue')`（或现有 `audio-context` 的 cue 入口）。音量、去重、免打扰、每窗口通道都不用动。
+
+全新的触发事件仍然需要一行 call site；已有事件换声音只改 JSON。
+
+## 目标（M2b）
+
+文件音效接入后，新增/替换音效不再改播放器：
 
 1. 把 `wag.ogg` 放进 `assets/sounds/sfx/`（Opus，44.1kHz，单声道，≤1.5s，≤30KB）。
 2. 在 `assets/sounds/sfx/pack.json` 加一条：
@@ -54,8 +67,8 @@ RECIPES['new-cue'] = {
 
 ## 还没做
 
-- 音频文件加载、解码缓存、`sound-registry`：M2。
-- 每动作绑定音效：M2，届时 `pack.json` 的 `sound` 字段生效。
+- 音频文件加载、解码缓存、`sound-registry`：M2b。
+- 每动作绑定音效：M2b，届时动作 `pack.json` 的 `sound` 字段生效。
 - 第三方音效包：M3，后置。
 
-在 M2 落地前，`pack.json` 里的 `sound` 字段只会被校验格式，不会播放。
+在 M2b 落地前，动作 `pack.json` 里的 `sound` 字段只会被校验格式，不会播放。

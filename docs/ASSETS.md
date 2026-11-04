@@ -63,6 +63,7 @@ pigs/PROVENANCE.md
 pigs/feedback/README.md
 pigs/feedback/PROVENANCE.md
 actions/*/pack.json
+sounds/*/pack.json
 PROVENANCE.md
 ui-*.svg
 piggy-emoji.woff2
