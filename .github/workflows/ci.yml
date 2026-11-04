@@ -31,24 +31,14 @@ jobs:
         run: npm ci --prefix apps/desktop --ignore-scripts --no-audit --no-fund
       - name: Install pinned build tools
         run: npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
-      - name: Save committed client bundle
-        run: node --input-type=module -e "import { copyFileSync } from 'node:fs'; import { join } from 'node:path'; copyFileSync('client.js', join(process.env.RUNNER_TEMP, 'client-tag.js'))"
-      - name: Build
+      - name: Build generated artifacts
         run: npm run build
-      - name: Committed generated files match the clean build
+      - name: Verify generated artifacts exist
         shell: bash
         run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict'
-          import { readFileSync } from 'node:fs'
-          const canonical = text => text.replace(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm, '$1node_modules/')
-          const tagged = readFileSync(process.env.RUNNER_TEMP + '/client-tag.js', 'utf8')
-          const rebuilt = readFileSync('client.js', 'utf8')
-          assert.equal(canonical(rebuilt), canonical(tagged), 'rebuilt client code differs from the tagged build')
-          const normalized = [...rebuilt.matchAll(/^([ \t]*\/\/ )(?:[^ \r\n]*\/)?node_modules\//gm)].length
-          console.log(`client.js canonical build match (normalized ${normalized} node_modules comment prefixes)`)
-          NODE
-          git diff --exit-code -- extensions/farm/client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js
+          for file in client.js extensions/farm/client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js; do
+            test -s "$file" || { echo "missing generated artifact: $file"; exit 1; }
+          done
       - name: Validate Windows native QA syntax
         if: runner.os == 'Windows'
         shell: powershell
@@ -65,8 +55,3 @@ jobs:
         run: node scripts/test.mjs --test-concurrency=1 "test/**/*.test.js" "apps/desktop/test/*.test.js"
       - name: Type check
         run: npm run typecheck
-      - name: Restore tagged bundle and verify committed generated files
-        shell: bash
-        run: |
-          node --input-type=module -e "import { copyFileSync } from 'node:fs'; import { join } from 'node:path'; copyFileSync(join(process.env.RUNNER_TEMP, 'client-tag.js'), 'client.js')"
-          git diff --exit-code -- client.js extensions/farm/client.js extensions/farm/server.js packages/pet-core/src/data/art-revisions.js apps/desktop/lib/save-owner-lock.js

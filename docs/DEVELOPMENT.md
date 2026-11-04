@@ -11,7 +11,7 @@ npm test
 npm run typecheck
 ```
 
-`--no-save --package-lock=false` 不修改依赖清单。`npm run build` 把 `src/client/` 生成到根目录 `client.js`；修改客户端源码后必须重新生成并提交该文件。
+`--no-save --package-lock=false` 不修改依赖清单。`npm run build` 把 `src/client/` 生成到根目录 `client.js`；生成物不提交，修改源码后重新构建，测试和发版流程都会先构建。
 
 ## 调试模式
 

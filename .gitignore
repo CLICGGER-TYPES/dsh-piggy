@@ -20,3 +20,11 @@ dist/
 # Generated offline installer payloads
 apps/desktop/build/optional-extensions/
 apps/desktop/build/optional-extensions.generated.nsh
+
+# Generated build artifacts (npm run build / apps/desktop pack-game)
+/client.js
+/extensions/farm/client.js
+/extensions/farm/server.js
+/packages/pet-core/src/data/art-revisions.js
+/apps/desktop/lib/save-owner-lock.js
+/apps/desktop/game/

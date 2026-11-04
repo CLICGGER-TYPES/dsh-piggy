@@ -113,7 +113,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 | `routes.js` | HTTP 接口：`/dsh-piggy/state`（取快照）、`/dsh-piggy/act`（所有操作，body `{action, ...}`）、`/dsh-piggy/art`、`/dsh-piggy/ext/*` |
 | `packages/pet-core/src/` | **领域库**：`data/`（数值表）、`core/`（纯函数规则）。根目录 `core.js` / `data.js` 只是再导出 |
 | `store/` | 存档读写（原子写）、迁移、扩展运行时 `ext-runtime.js`、运行日志 `journal.js` |
-| `src/client/` | 面板前端源码（原生 JS + DOM，不用框架）→ `npm run build` 打成根目录 `client.js`（**产物要提交**） |
+| `src/client/` | 面板前端源码（原生 JS + DOM，不用框架）→ `npm run build` 打成根目录 `client.js`（**产物不提交**） |
 | `extensions/` | 可下载扩展（`blindbox` `gacha` `farm` `mine`）+ 在线目录 `registry.json` / `registry-gitee.json` |
 | `assets/` | 立绘 SVG（形态、皮肤、动作、App 图标） |
 | `apps/desktop/` | 桌面外壳（Electron）：`main.js`、`preload.cjs`、`lib/`、`renderer/`、打包脚本 |
@@ -190,7 +190,7 @@ node node_modules/electron/install.js
 
 1. 开工：`git status` 干净、`git pull` 到最新 `main`。多人 / 多 agent 同时做时，每人一个分支 + `git worktree`，做完合回 `main` 后删掉分支和工作目录（别再堆一堆旧分支）。
 2. 改 bug：**先写能复现的失败测试**，再修。新功能覆盖正常路径和边界。
-3. 改了 `src/client/` 一定 `npm run build`，把新的 `client.js` 一起提交（`test/bundle.test.js` 会检查它和源码一致）。
+3. 改了 `src/client/` 一定 `npm run build`；`client.js` 不提交（`test/bundle.test.js` 会在构建后检查它和源码一致）。
 4. `npm run build && npm test && npm run typecheck` 全绿。
 5. **界面改动要在真实环境看**：网页版起一个隔离 DSH 实例（第 8 节），桌面版启动真窗口截图看像素；只看代码或只量坐标不算验收。
 6. 提交：中文、一个提交只做一件事、不加 AI 署名（不要 `Co-Authored-By: Claude/AI`）、用户能感知的变化写进 `CHANGELOG.md`、功能变了同步改 `README.md` 和玩家文档。

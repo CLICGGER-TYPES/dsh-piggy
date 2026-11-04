@@ -13,7 +13,7 @@
 |---|---|
 | `packages/pet-core/src/` | 养成规则（`data/` 数值表、`core/` 纯函数），两种形态共用 |
 | `store/`、`index.js`、`routes.js`、`snapshot.js` | 存档、HTTP 路由、给面板的快照 |
-| `src/client/` | 面板界面（构建成 `client.js`，**改了源码要 `npm run build` 并提交 `client.js`**） |
+| `src/client/` | 面板界面（构建成 `client.js`，**改了源码要 `npm run build`；产物不提交**） |
 | `src/extensions/farm/` | 菜园服务端源码（构建成 `extensions/farm/server.js`，**不要手改产物**；下载协议仍是三个文件 + assets） |
 | `apps/desktop/` | 桌面外壳（主进程、preload、打包配置） |
 | `extensions/<key>/` | 在线扩展（菜园、矿洞、扭蛋、盲盒），玩家下载安装 |
