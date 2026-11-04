@@ -40,7 +40,7 @@ export function clampBounds(bounds, area) {
 /**
  * 内容变了：**盯住猪贴着的那两条窗口边**，窗口往另一边长。
  *
- * 页面把猪钉在锚边上固定 16px（见 renderer/shell.js 的 pinPig），所以只要锚边在屏幕上
+ * 页面把猪钉在锚边上固定 16px（见 renderer/shell-anchor.js 的 pinPig），所以只要锚边在屏幕上
  * 不动，猪就一像素不动 —— 不需要推算猪的位置，也就没有「按上一次报告推算」带来的漂移。
  * 锚点由面板朝哪边开决定：面板在上 → 锚下边；面板在下 → 锚上边；横向同理。
  *

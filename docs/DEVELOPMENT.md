@@ -59,7 +59,7 @@ npm run dist:mac
 | 游戏包（`src/client/desktop/`，打进 `client.js`） | 量猪和面板占多大、把内容钉在窗口锚边、收起时给气泡和面板留位置、窗口摆哪（开关面板不挪、换大小保持脚底、启动复位）、哪里可点 / Windows 鼠标穿透判断、桌面专用样式、去掉原生提示框 |
 | 桌面程序（`apps/desktop/`） | 透明置顶窗口、`piggy://` 文件服务、托盘、开机启动、导入存档、游戏包和外壳的下载与切换、内置 emoji 字体文件；以及几个基础动作：`place`（设窗口位置大小 + 可点区域，2px 容差）、`setHit`（穿透开关）、`beginDrag/dragHeartbeat/endDrag`（拖动跟鼠标、只夹猪）、几何推送（窗口、所在屏和所有屏的工作区） |
 
-- 加载顺序：`renderer/index.html` → `loader.js` 载入 `client.js`；游戏包导出了 `desktop` 模块就调用它，否则退回冻结的 `renderer/shell.js`（给回退到老游戏包的人用）。
+- 加载顺序：`renderer/index.html` → `loader.js` 载入 `client.js`；游戏包导出了 `desktop` 模块就调用它，否则退回冻结的 `renderer/shell.js`（装配入口，量框/锚边/上报逻辑在同目录的 `shell-*.js` 模块里，给回退到老游戏包的人用）。
 - **改窗口行为先改游戏包**。只有需要新的基础动作时才动桌面程序，并给 `desktop.version` 加一、游戏包里做好兼容判断。
 - 内置 emoji 字体（10MB）留在桌面程序里，避免每次热更新都多下 10MB；用它的样式规则在游戏包里。
 
