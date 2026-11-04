@@ -11,6 +11,7 @@ import { PIG_ART_ASSETS } from '../../packages/pet-core/src/data/art-assets.js'
 import { PIG_ART_REVISIONS } from '../../packages/pet-core/src/data/art-revisions.js'
 import { builtinArtPath } from './art-style.js'
 import { customArtVersion } from './custom-art.js'
+import { normalizeFrames, normalizeRevision } from './art-frames.js'
 import { ART_RESOURCE_SCHEMA, LEGACY_NAMESPACE, createArtResourceRegistryBase, sealArtResourceRegistry } from './art-resources.js'
 import { ACTION_PACKS } from './packs.generated.js'
 
@@ -37,14 +38,7 @@ function resourceKey(value, label) {
 
 /** @param {unknown} value @returns {string} */
 function revisionString(value) {
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value) || value < 0 || !Number.isInteger(value)) throw new Error('[dsh-piggy] invalid art resource revision')
-    return String(value)
-  }
-  if (typeof value !== 'string' || value === '' || value.length > 128 || !/^[A-Za-z0-9._-]+$/.test(value)) {
-    throw new Error('[dsh-piggy] invalid art resource revision')
-  }
-  return value
+  return normalizeRevision(value)
 }
 
 /** @param {unknown} value @returns {import('./art-resources.js').ArtResourceSource} */
@@ -155,7 +149,7 @@ function normalizeFallback(value) {
 function buildDescriptor(declaration, namespace, pack, packRevision) {
   if (declaration === null || typeof declaration !== 'object') throw new Error('[dsh-piggy] art resource must be an object')
   for (const name of Object.keys(declaration)) {
-    if (!['key', 'kind', 'source', 'revision', 'frame', 'duration', 'eligibility', 'fallback', 'sound'].includes(name)) {
+    if (!['key', 'kind', 'source', 'frames', 'revision', 'frame', 'duration', 'eligibility', 'fallback', 'sound'].includes(name)) {
       throw new Error('[dsh-piggy] unsupported art resource field: ' + name)
     }
   }
@@ -164,8 +158,13 @@ function buildDescriptor(declaration, namespace, pack, packRevision) {
   const key = resourceKey(declaration.key, 'key')
   const kind = declaration.kind ?? 'art'
   if (!['art', 'action', 'skin'].includes(kind)) throw new Error('[dsh-piggy] unsupported art resource kind')
-  const source = normalizeSource(declaration.source)
-  const revision = source.scheme === 'builtin'
+  const frames = normalizeFrames(declaration.frames)
+  if (frames !== null && declaration.source !== undefined) throw new Error('[dsh-piggy] art resource source and frames are mutually exclusive')
+  if (frames === null && declaration.source === undefined) throw new Error('[dsh-piggy] art resource needs source or frames')
+  if (frames !== null && kind !== 'action') throw new Error('[dsh-piggy] art resource frames are only valid for art actions')
+  if (frames !== null && declaration.frame !== undefined) throw new Error('[dsh-piggy] art resource frames cannot declare bounds')
+  const source = frames === null ? normalizeSource(declaration.source) : null
+  const revision = source !== null && source.scheme === 'builtin'
     ? PIG_ART_REVISIONS[source.key] ?? ''
     : revisionString(declaration.revision === undefined ? packRevision : declaration.revision)
   if (revision === '') throw new Error('[dsh-piggy] art resource needs a non-empty revision')
@@ -178,6 +177,10 @@ function buildDescriptor(declaration, namespace, pack, packRevision) {
   }
   if (kind === 'action' && duration === null) throw new Error('[dsh-piggy] art action needs a duration')
   if (kind !== 'action' && duration !== null) throw new Error('[dsh-piggy] duration is only valid for art actions')
+  if (frames !== null) {
+    const total = frames.reduce((sum, frame) => sum + frame.durationMs, 0)
+    if (total !== duration) throw new Error('[dsh-piggy] art action frame durations must add up to duration')
+  }
 
   const eligibility = normalizeEligibility(declaration.eligibility)
   if (kind !== 'action' && eligibility !== null) throw new Error('[dsh-piggy] eligibility is only valid for art actions')
@@ -194,6 +197,7 @@ function buildDescriptor(declaration, namespace, pack, packRevision) {
     kind: kind,
     source: source,
     frame: normalizeFrame(declaration.frame),
+    frames: frames,
     duration: duration,
     eligibility: eligibility,
     fallback: fallback,
@@ -220,6 +224,7 @@ function legacyDescriptor(key) {
       kind: 'art',
       source: Object.freeze({ scheme: 'builtin', key: key, path: path }),
       frame: null,
+      frames: null,
       duration: null,
       eligibility: null,
       fallback: null,
@@ -236,6 +241,7 @@ function legacyDescriptor(key) {
       kind: 'art',
       source: Object.freeze({ scheme: 'custom', key: key, path: key }),
       frame: null,
+      frames: null,
       duration: null,
       eligibility: null,
       fallback: null,
@@ -250,6 +256,7 @@ function legacyDescriptor(key) {
     kind: 'art',
     source: Object.freeze({ scheme: 'legacy', path: key + '.svg' }),
     frame: null,
+    frames: null,
     duration: null,
     eligibility: null,
     fallback: null,
@@ -313,6 +320,9 @@ export function resolveArtSource(key, registry) {
 export function artSource(key, registry) {
   return resolveArtSource(key, registry).url
 }
+
+/** Frame helpers live in art-frames.js; re-exported here as the public adapter. */
+export { artFrameUrl, normalizeFrames, resolveActionFrame } from './art-frames.js'
 
 /** Exact legacy table lookup retained for compatibility. */
 export function hasBuiltinArt(key) {

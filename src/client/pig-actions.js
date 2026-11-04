@@ -1,6 +1,6 @@
 // @ts-check
 /** 普通猪的两帧微动作；结束后由唯一选图入口重读状态，避免旧计时覆盖新状态。 */
-import { artResourcesForPig, defaultArtResources, resolveArtResource } from './art-path.js'
+import { artFrameUrl, artResourcesForPig, defaultArtResources, resolveActionFrame, resolveArtResource } from './art-path.js'
 import { confirmPetSnap } from './pet-snap.js'
 
 const PLAYERS = new WeakMap()
@@ -84,12 +84,21 @@ export function attachPigActions(c) {
   const ready = new Set()
   /** @type {import('./art-resources.js').ResolvedArtResource | null} */
   let active = null, frameTimer = null, blinkTimer = null
+  let frameIndex = -1
   let disposed = false
   const isBlocked = () => disposed || c.isStopped() || c.isDragging() || document.hidden === true || c.pig.closest?.('[data-dragging="true"]') != null
-  const clearFrame = () => { clock.clearTimeout(frameTimer); frameTimer = null; active = null; c.pig.removeAttribute?.('data-micro-action') }
+  const clearFrame = () => {
+    clock.clearTimeout(frameTimer)
+    frameTimer = null
+    active = null
+    frameIndex = -1
+    c.pig.removeAttribute?.('data-micro-action')
+  }
   function currentResource() {
     if (active !== null && (isBlocked() || !matchesPigActionEligibility(c.pig, active.descriptor.eligibility))) clearFrame()
-    return active
+    if (active === null) return null
+    if (active.descriptor.frames === null) return active
+    return resolveActionFrame(active, frameIndex)
   }
   function currentArt() {
     const entry = currentResource()
@@ -121,6 +130,8 @@ export function attachPigActions(c) {
     if (target.descriptor.key === 'blink' && active !== null) return false
     clearFrame()
     active = target
+    const frames = target.descriptor.frames
+    frameIndex = frames === null ? -1 : 0
     // 2026-10-13 只暂停当前动效（CSS 里限定 :not([data-react])）；animation:none 会把呼吸中途的位置重置，实测跳 6.8px。
     c.pig.setAttribute?.('data-micro-action', target.descriptor.key)
     c.render()
@@ -130,7 +141,23 @@ export function attachPigActions(c) {
       const cue = sound.includes('/') ? sound.slice(sound.lastIndexOf('/') + 1) : sound
       c.audio.play(cue)
     }
-    frameTimer = clock.setTimeout(() => { clearFrame(); c.render() }, target.descriptor.duration ?? 0)
+    if (frames === null) {
+      frameTimer = clock.setTimeout(() => { clearFrame(); c.render() }, target.descriptor.duration ?? 0)
+    } else {
+      const schedule = (/** @type {number} */ index) => {
+        frameTimer = clock.setTimeout(() => {
+          frameTimer = null
+          // 防御被抢占后仍执行旧回调；正常路径 clearFrame 已经清掉计时器。
+          if (active !== target) return
+          if (index + 1 >= frames.length) { clearFrame(); c.render(); return }
+          frameIndex = index + 1
+          c.render()
+          // render 可能因隐藏/拖动/eligibility 变化调用 clearFrame；此时不能再排下一帧。
+          if (active === target) schedule(index + 1)
+        }, frames[index].durationMs)
+      }
+      schedule(0)
+    }
     return true
   }
   function scheduleBlink() {
@@ -159,9 +186,17 @@ export function attachPigActions(c) {
     return image.decode().then(() => true)
   })
   for (const entry of artResources.list({ kind: 'action' })) {
-    preload(entry.url).then(loaded => {
-      if (!disposed && loaded !== false) ready.add(entry.cacheKey)
-    }).catch(error => console.error('小猪动作图片解码失败', entry.descriptor.key, error))
+    const frames = entry.descriptor.frames
+    // 单图动作保持原来的 preload 调用与完成时机；帧动作等整段都解码成功才算 ready。
+    if (frames === null) {
+      preload(entry.url).then(loaded => {
+        if (!disposed && loaded !== false) ready.add(entry.cacheKey)
+      }).catch(error => console.error('小猪动作图片解码失败', entry.descriptor.key, error))
+    } else {
+      Promise.all(frames.map(frame => preload(artFrameUrl(frame)))).then(results => {
+        if (!disposed && results.every(loaded => loaded !== false)) ready.add(entry.cacheKey)
+      }).catch(error => console.error('小猪动作图片解码失败', entry.descriptor.key, error))
+    }
   }
   document.addEventListener?.('visibilitychange', visibility)
   // 指针捕获设在 .dp-scene 上（index.js），pointercancel / lostpointercapture 的 target 是它而不是

@@ -35,6 +35,8 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  *   moodNot?: readonly string[],
  *   party?: boolean,
  * }} ArtEligibility
+ * @typedef {{ path: string, revision: string, durationMs: number }} ArtFrame
+ * @typedef {{ path: string, revision: string, durationMs?: number }} ArtFrameInput
  * @typedef {{ namespace: string, pack: string, key: string, revision?: string | number }} ArtResourceRefInput
  * @typedef {{ namespace: string, pack: string, key: string, revision: string }} ArtResourceRef
  * @typedef {{
@@ -43,8 +45,9 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  *   key: string,
  *   revision: string,
  *   kind: ArtResourceKind,
- *   source: ArtResourceSource,
+ *   source: ArtResourceSource | null,
  *   frame: readonly [number, number, number] | null,
+ *   frames: readonly ArtFrame[] | null,
  *   duration: number | null,
  *   eligibility: ArtEligibility | null,
  *   fallback: ArtResourceRef | null,
@@ -65,7 +68,8 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  * @typedef {{
  *   key: string,
  *   kind?: ArtResourceKind,
- *   source: ArtResourceSourceInput,
+ *   source?: ArtResourceSourceInput,
+ *   frames?: readonly ArtFrameInput[],
  *   revision?: string | number,
  *   frame?: readonly [number, number, number] | null,
  *   duration?: number,
@@ -111,6 +115,10 @@ function idOf(descriptor) {
 
 /** @param {ArtResourceDescriptor} descriptor */
 function urlOf(descriptor) {
+  if (descriptor.source === null) {
+    const frame = descriptor.frames?.[0]
+    return frame === undefined ? '' : ART_URL + frame.path + (frame.revision === '' ? '' : '?v=' + frame.revision)
+  }
   return ART_URL + descriptor.source.path + (descriptor.revision === '' ? '' : '?v=' + descriptor.revision)
 }
 
@@ -122,6 +130,7 @@ function registeredCacheKey(descriptor) {
 /** @param {ArtResourceDescriptor} descriptor */
 function artKeyOf(descriptor) {
   const source = descriptor.source
+  if (source === null) return descriptor.key
   if (source.scheme === 'builtin' || source.scheme === 'custom') return source.key
   if (source.scheme === 'path') return handleOf(descriptor.namespace, descriptor.pack, descriptor.key)
   return descriptor.key
@@ -135,7 +144,7 @@ function artKeyOf(descriptor) {
 function resolved(descriptor, legacy) {
   const id = idOf(descriptor)
   const url = urlOf(descriptor)
-  const scheme = descriptor.source.scheme
+  const scheme = descriptor.source?.scheme ?? 'path'
   return Object.freeze({
     descriptor: descriptor,
     ref: Object.freeze({

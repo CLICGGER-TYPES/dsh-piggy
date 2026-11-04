@@ -1,7 +1,9 @@
 // @ts-check
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import { buildArtRevisions } from '../../../scripts/build-art-revisions.mjs'
 import { PIG_ART_REVISIONS } from '../../../packages/pet-core/src/data/art-revisions.js'
@@ -34,4 +36,24 @@ test('sound route only accepts sound pack paths', () => {
   assert.equal(artFile({}, 'sounds/sfx/boom.mp3'), null)
   assert.equal(artFile({}, 'sounds/../secret.ogg'), null)
   assert.equal(artFile({}, 'sounds/sfx/missing.ogg'), null)
+})
+
+test('action frame route serves generated frame paths and rejects escapes', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dsh-piggy-frames-'))
+  try {
+    const frames = join(dir, 'actions/base/wave')
+    mkdirSync(frames, { recursive: true })
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    writeFileSync(join(frames, '00.png'), png)
+    const file = artFile({}, 'actions/base/wave/00.png', dir)
+    assert.deepEqual(file?.body, png)
+    assert.equal(file?.type, 'image/png')
+    assert.equal(file?.custom, false)
+    assert.equal(artFile({}, 'actions/base/wave/01.png', dir), null, '跳号/缺文件不会伪造 200')
+    assert.equal(artFile({}, 'actions/base/wave/../secret.png', dir), null)
+    assert.equal(artFile({}, 'actions/base/wave/00.svg', dir), null)
+    assert.equal(artFile({}, 'actions/base/wave/000.png', dir), null)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })

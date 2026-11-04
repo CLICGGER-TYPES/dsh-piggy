@@ -1,7 +1,8 @@
 // 普通猪微动作的假时钟验收：抢占、状态变化与取消都不能复活旧帧。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { attachPigActions, pigActionArt, playPigPet, canPlayPigAction } from '../../../src/client/pig-actions.js'
+import { attachPigActions, pigActionArt, pigActionResource, playPigPet, canPlayPigAction } from '../../../src/client/pig-actions.js'
+import { createArtResourceRegistry } from '../../../src/client/art-path.js'
 
 /** 一个只记监听器的假节点：能注入事件，也能查监听挂在谁身上。 */
 function listenerBag() {
@@ -43,6 +44,62 @@ async function fixture(random = () => 0) {
     now = end
   }
   return { pig, scene, attrs, player, advance, timers, drag: (value = true) => { dragging = value },
+    visibility: () => globalThis.document.fire('visibilitychange') }
+}
+
+/** Frame-sequence fixture: fake registry, fake clock, render log and preload log. */
+async function frameFixture() {
+  const attrs = { 'data-art': 'piglet', 'data-mood': 'fine' }
+  const scene = listenerBag()
+  const pig = Object.assign(listenerBag(), {
+    parentNode: scene,
+    getAttribute: key => attrs[key] || null,
+    setAttribute(key, value) { attrs[key] = value },
+    removeAttribute(key) { delete attrs[key] },
+  })
+  let now = 0, sequence = 0
+  const timers = new Map()
+  const clock = {
+    setTimeout(fn, ms) { const id = ++sequence; timers.set(id, { fn, at: now + ms }); return id },
+    clearTimeout(id) { timers.delete(id) },
+  }
+  globalThis.document = Object.assign(listenerBag(), { hidden: false })
+  const registry = createArtResourceRegistry({ parent: null })
+  registry.registerPack({
+    namespace: 'helper', pack: 'frames', revision: '1',
+    resources: [
+      {
+        key: 'wave', kind: 'action', duration: 180,
+        frames: [
+          { path: 'actions/helper/wave/00.png', revision: 'rev-0', durationMs: 50 },
+          { path: 'actions/helper/wave/01.png', revision: 'rev-1', durationMs: 60 },
+          { path: 'actions/helper/wave/02.png', revision: 'rev-2', durationMs: 70 },
+        ],
+      },
+      {
+        key: 'plain', kind: 'action', duration: 100,
+        source: { scheme: 'path', path: 'pigs/base/piglet/idle.png' },
+      },
+    ],
+  })
+  const renders = []
+  const preloaded = []
+  const player = attachPigActions({ pig, clock, random: () => 0,
+    preload: async src => { preloaded.push(src) },
+    isStopped: () => false, isDragging: () => false, artResources: registry,
+    render() { renders.push(pigActionResource(pig)?.url ?? null) } })
+  await Promise.resolve()
+  await Promise.resolve()
+  function advance(ms) {
+    const end = now + ms
+    for (;;) {
+      const next = [...timers].filter(([, t]) => t.at <= end).sort((a, b) => a[1].at - b[1].at)[0]
+      if (!next) break
+      now = next[1].at; timers.delete(next[0]); next[1].fn()
+    }
+    now = end
+  }
+  return { pig, player, registry, renders, preloaded, advance, timers,
     visibility: () => globalThis.document.fire('visibilitychange') }
 }
 
@@ -191,4 +248,72 @@ test('拖动受阻期间仍排下一次眨眼，恢复后不靠 observer 兜底�
     f.player.dispose()
     assert.equal(f.timers.size, 0)
   } finally { globalThis.MutationObserver = savedObserver }
+})
+
+test('帧序列按 durations 切帧，每次换图只 render 一次，预加载整段', async () => {
+  const f = await frameFixture()
+  try {
+    assert.deepEqual(f.preloaded, [
+      '/dsh-piggy/art/actions/helper/wave/00.png?v=rev-0',
+      '/dsh-piggy/art/actions/helper/wave/01.png?v=rev-1',
+      '/dsh-piggy/art/actions/helper/wave/02.png?v=rev-2',
+      '/dsh-piggy/art/pigs/base/piglet/idle.png?v=1',
+    ])
+    assert.equal(f.player.play('wave'), true)
+    assert.deepEqual(f.renders, ['/dsh-piggy/art/actions/helper/wave/00.png?v=rev-0'])
+    assert.equal(pigActionResource(f.pig)?.descriptor.duration, 50)
+    f.advance(49)
+    assert.equal(f.renders.length, 1)
+    f.advance(1)
+    assert.deepEqual(f.renders, [
+      '/dsh-piggy/art/actions/helper/wave/00.png?v=rev-0',
+      '/dsh-piggy/art/actions/helper/wave/01.png?v=rev-1',
+    ])
+    f.advance(60)
+    assert.equal(pigActionResource(f.pig)?.url, '/dsh-piggy/art/actions/helper/wave/02.png?v=rev-2')
+    f.advance(69)
+    assert.equal(f.renders.length, 3, '最后一帧在自己的时长内保持')
+    f.advance(1)
+    assert.equal(f.renders.length, 4, '整段结束再 render 一次回到静态图')
+    assert.equal(f.renders[3], null)
+    assert.equal(pigActionArt(f.pig), null)
+    assert.equal(f.pig.getAttribute('data-micro-action'), null)
+  } finally { f.player.dispose() }
+})
+
+test('帧序列取消/隐藏会停掉帧计时器并回到静态图', async () => {
+  const f = await frameFixture()
+  try {
+    f.player.play('wave')
+    f.advance(50)
+    assert.equal(pigActionResource(f.pig)?.url, '/dsh-piggy/art/actions/helper/wave/01.png?v=rev-1')
+    f.player.cancel()
+    assert.equal(pigActionResource(f.pig), null)
+    assert.equal(f.timers.size, 0, '取消同时收掉帧计时器和眨眼排期')
+    f.advance(1000)
+    assert.equal(pigActionResource(f.pig), null)
+
+    f.player.play('wave')
+    f.advance(50)
+    document.hidden = true
+    f.visibility()
+    assert.equal(pigActionResource(f.pig), null)
+    assert.equal(f.timers.size, 0, '隐藏期间不跑帧计时器')
+    f.advance(1000)
+    assert.equal(pigActionResource(f.pig), null)
+  } finally { f.player.dispose() }
+})
+
+test('帧序列被新动作抢占后旧帧计时器不再推进', async () => {
+  const f = await frameFixture()
+  try {
+    f.player.play('wave')
+    f.advance(50)
+    assert.equal(f.player.play('plain'), true)
+    assert.equal(pigActionResource(f.pig)?.url, '/dsh-piggy/art/pigs/base/piglet/idle.png?v=1')
+    const count = f.renders.length
+    f.advance(500)
+    assert.equal(f.renders.length, count + 1, '旧帧计时器不能继续换图；只有 plain 结束那次 render')
+    assert.equal(pigActionResource(f.pig), null)
+  } finally { f.player.dispose() }
 })
