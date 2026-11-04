@@ -18,8 +18,11 @@ export const HELPER_PLOTS_PER_WORKER = 4
 export const HELPER_SHARE = 0.9
 /** 历史常量：旧六小时封仓窗口。自然托管没有工作时间预算，结算不再读它。 */
 export const HELPER_WINDOW = 6 * 3600000
-/** 旧农具档 2026-10-14 用户拍板从商店下架：不再出售，存档里的 barn 字段保留但不再参与配方。 */
-export const HELPER_PRICES = { hire: 2500, level: [0, 2000, 6000] }
+/**
+ * 雇佣价（2026-11-04 用户拍板）：首雇和追加都是 1500/只，最多 5 只。
+ * `level` 只为旧导出形状保留，旧「管地数」升级档不再出售，也不参与任何结算。
+ */
+export const HELPER_PRICES = { hire: 1500, additional: 1500, level: [0, 2000, 6000] }
 /** 一次结算最多处理多少件农活：防坏存档把扩展卡死；正常存档受种子数量限制，远到不了这个数。 */
 const MAX_STEPS = 100000
 
@@ -84,6 +87,13 @@ export const helperCount = data => Object.values(data.helper.stock).reduce((sum,
 export const helperHarvestWorkers = data => (Array.isArray(data.helper.workers) ? data.helper.workers : []).filter(worker => worker.role === 'harvest').length
 /** 帮工覆盖的地块数：4 × 收菜帮工只数，封顶已开垦数；没雇就是 0。 */
 export const helperPlots = data => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS_PER_WORKER * helperHarvestWorkers(data)) : 0
+/**
+ * 新雇一只的默认角色：自动排班、且现有收菜帮工已经把已开垦地铺满时去巡逻（本阶段巡逻没有收益，
+ * 这样至少不会白占一块早就有人管的地）；其余情况都先当收菜。手动排班一律收菜。
+ */
+function helperDefaultRole(data) {
+  return data.helper.schedule === 'auto' && helperPlots(data) >= data.unlocked ? 'patrol' : 'harvest'
+}
 
 /** 托管地的随机源：同一块地、作物、时刻、季数永远给出同一串数，view 反复结算不会改将来的收成。 */
 const helperRandom = (...parts) => stableRandom('helper', ...parts)
@@ -252,34 +262,60 @@ export function helperPlotView(data, index, state) {
 }
 export function helperShelf(data, balance) {
   const helper = data.helper
-  // 农具档（旧帮工仓库）2026-10-14 起下架，只卖管地数一档。
-  const level = helper.hired ? helper.level + 1 : null
-  const price = helper.hired ? HELPER_PRICES.level[level] : HELPER_PRICES.hire
-  if (price === undefined) return []
-  const label = helper.hired ? ['帮工猪', '熟练帮工', '老练帮工'][level] : '雇帮工猪'
-  const note = helper.hired ? '管 ' + HELPER_PLOTS[level] + ' 块地' : '管 ' + HELPER_PLOTS[0] + ' 块地'
-  return [{ key: helper.hired ? 'helper-level' : 'helper-hire', emoji: '🐷', label, note, price, disabled: balance < price, pick: null }]
+  // 2026-11-04 用户拍板：首雇 1500，之后每只追加也是 1500，最多 5 只；满 5 只就不产条目。
+  // 旧的「管地数」升级档（helper-level）和农具档（helper-barn）都不再出售。
+  if (!helper.hired) {
+    const price = HELPER_PRICES.hire
+    return [{ key: 'helper-hire', emoji: '🐷', label: '雇帮工猪', note: '管 ' + HELPER_PLOTS_PER_WORKER + ' 块地', price, disabled: balance < price, pick: null }]
+  }
+  if (helper.workers.length >= HELPER_MAX) return []
+  const price = HELPER_PRICES.additional
+  return [{ key: 'helper-additional', emoji: '🐷', label: '再雇一只帮工猪', note: '收菜 ' + HELPER_PLOTS_PER_WORKER + ' 块地 / 可改巡逻', price, disabled: balance < price, pick: null }]
 }
 export function helperBuy(data, payload, api) {
   const helper = data.helper
   const kind = String(payload?.item).replace('helper-', '')
-  if (kind === 'hire') {
-    if (helper.hired) return { ok: false, reason: 'owned' }
-    if (!purse(api).spend(HELPER_PRICES.hire, 'helper')) return { ok: false, reason: 'poor' }
-    helper.hired = true
-    helper.enabled = true
-    // 首雇补齐 workers（hired ⇔ 至少一只）。旧档/旧测试用 level 表达已买的档位，这里按等级补 1/2/4 只；
-    // 新档 level 恒为 0，只有 1 只。Slice 1 会换成 1500/只的追加雇佣，不再读 level。
-    helper.workers = helperWorkerList(helper.level)
-    helper.lastAt = api.now
-  } else {
-    // 农具档已下架：helper-barn 一律拒，别再让玩家买到没有效果的档位。
-    if (kind !== 'level' || !helper.hired) return { ok: false, reason: 'locked' }
-    // v7 起覆盖只看 workers，旧「管地数」档不再改变任何效果：Slice 0 先拒绝且不扣钱，
-    // 不让玩家花 2000/6000 买一个空升级（Slice 1 会把它换成追加雇佣/角色按钮）。
+  if (kind !== 'hire' && kind !== 'additional') {
+    // 旧「管地数」升级（helper-level）和农具档（helper-barn）：一律拒绝，且绝不扣钱。
     return { ok: false, reason: 'unavailable' }
   }
+  if (kind === 'additional') {
+    if (!helper.hired) return { ok: false, reason: 'locked' }
+    if (helper.workers.length >= HELPER_MAX) return { ok: false, reason: 'limit' }
+  } else if (helper.hired) return { ok: false, reason: 'owned' }
+  const price = kind === 'hire' ? HELPER_PRICES.hire : HELPER_PRICES.additional
+  if (!purse(api).spend(price, 'helper')) return { ok: false, reason: 'poor' }
+  // 默认角色要在加进名单前算：helperPlots 反映现有收菜帮工的覆盖。
+  const role = helperDefaultRole(data)
+  helper.workers.push({ id: helper.workers.length + 1, role, locked: false, hiredAt: Number.isFinite(api?.now) ? api.now : null })
+  helper.hired = true
+  helper.enabled = true
+  // 首雇从当下开始托管；追加不移动检查点（入口已结算到 api.now，新管区从当下开始）。
+  if (kind === 'hire') helper.lastAt = api.now
   return { ok: true }
+}
+/** 改一只帮工的角色（收菜 / 巡逻）：成功即锁定，自动排班以后也不会再改它。非法 id / role 一律 unavailable。 */
+export function setHelperRole(data, payload, api) {
+  const helper = data.helper
+  const role = payload?.role
+  if (role !== 'harvest' && role !== 'patrol') return { ok: false, reason: 'unavailable' }
+  const id = Number(payload?.id)
+  const worker = Number.isInteger(id) ? helper.workers.find(entry => entry.id === id) : undefined
+  if (worker === undefined) return { ok: false, reason: 'unavailable' }
+  if (worker.role === role) return { ok: false, reason: 'already' }
+  worker.role = role
+  worker.locked = true
+  // 覆盖分片变了：入口已经结算到 now；全巡逻时也把检查点钉在当下，改回收菜不追溯那段空档。
+  if (helper.enabled && Number.isFinite(api?.now)) helper.lastAt = Number.isFinite(helper.lastAt) ? Math.max(helper.lastAt, api.now) : api.now
+  return { ok: true, role }
+}
+/** 排班只影响以后雇佣的默认角色；auto 不会清掉已经锁定的帮工，manual 也不会。 */
+export function setHelperSchedule(data, payload) {
+  const mode = payload?.mode
+  if (mode !== 'auto' && mode !== 'manual') return { ok: false, reason: 'unavailable' }
+  if (data.helper.schedule === mode) return { ok: false, reason: 'already' }
+  data.helper.schedule = mode
+  return { ok: true, mode }
 }
 
 /** 在动作入口已结算到 api.now 后切换整个帮工托管；暂停时保留较新的检查点。 */

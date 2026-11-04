@@ -1,13 +1,22 @@
 # 路线图与待办
 
-## 2026-11-04 菜园多帮工 Slice 0：v7 数据模型（源码候选，未发布）
+## 2026-11-04 菜园多帮工 Slice 1：追加雇佣 / 角色 / 排班（源码候选，未发布）
+
+- 雇佣统一 **1500/只**：`hire` 首雇 1 只，`hireAdditional` 追加到最多 5 只；`HELPER_PRICES = { hire: 1500, additional: 1500, level: [0, 2000, 6000] }`，`level` 只为旧导出形状保留。旧 `helper-level` 升级仍返回 `unavailable` 且不扣钱。
+- 新动作 `setHelperRole { id, role }`（只认 harvest/patrol，成功即 `locked=true`）和 `setHelperSchedule { mode }`（auto/manual，只影响以后雇佣，不清已有 `locked`）。
+- 新雇默认角色：自动排班且收菜覆盖已铺满已开垦地 → 巡逻，否则收菜；手动排班一律收菜。
+- 商店按状态产出 `helper-hire` / `helper-additional`（1500/只），满 5 只不产出帮工条目，不再产出 `helper-level`。
+- 全巡逻期间结算把 `lastAt` 推进到当前，`harvest → patrol → harvest` 不追溯收获/补种；覆盖仍按收菜只数连续分片。
+- 服务端新增导出 `HELPER_MAX`、`HELPER_PLOTS_PER_WORKER`；farm 仍 `4.3.0`、经典版 `3.2.2`，candidate registry 与 `store/official-extensions.json` 的哈希已按新 server 字节刷新。没有 UI/动画/精力/偷窃，未打包、未上传、未发版。
+
+## 2026-11-04 菜园多帮工 Slice 0：v7 数据模型（历史）
 
 - 只做数据模型：`FARM_DATA_VERSION` 6 → 7，`helper.workers[]`（1–5 只，`role` 收菜/巡逻）与 `helper.schedule` 落档；旧字段全部保留。
 - 旧档按 level 0/1/2 补 1/2/4 只收菜帮工，覆盖仍是 4/8/16 块；巡逻不占地。迁移不结算、不补 XP。
 - 覆盖改为「4 × 收菜帮工只数」；合并按数量取 max（≤5）、角色取结算更晚一侧、`locked` 取 OR、帮工仓相加。
 - `view.helper` 新增 `count/max/canHire/hirePrice/schedule/workers[]`，旧字段不变；经典版只用旧字段，无需改 client。
 - 没有新动作、商店条目、UI、精力、偷窃或动画。`extensions/farm/client.js` 字节未变（client SHA 仍为 `b2a1aa42…`）。
-- 旧「管地数」升级（helper-level）条目保留，但购买返回 `unavailable` 且不扣钱——`level` 已不影响覆盖，先堵住花钱买空升级；Slice 1 再替换成追加雇佣/角色。
+- 旧「管地数」升级（helper-level）条目当时保留，但购买返回 `unavailable` 且不扣钱——`level` 已不影响覆盖，先堵住花钱买空升级；Slice 1 已把它换成 1500/只的追加雇佣（见上节）。
 - 版本/哈希仅为源码候选同步：farm `4.3.0`、经典版 `3.2.2`，已写入 candidate registry 与 `store/official-extensions.json`；公开 4.2.1 / Gitee 4.2.0 身份不变，未上传、未打包、未发版。附录：Slice 1 才做追加雇佣/改角色/排班动作与商店，Slice 3 才发版。
 
 ## 2026-11-01 成就第二期（PR38 已合入）

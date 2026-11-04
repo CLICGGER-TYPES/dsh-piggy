@@ -226,7 +226,7 @@ var HELPER_MAX = 5;
 var HELPER_PLOTS_PER_WORKER = 4;
 var HELPER_SHARE = 0.9;
 var HELPER_WINDOW = 6 * 36e5;
-var HELPER_PRICES = { hire: 2500, level: [0, 2e3, 6e3] };
+var HELPER_PRICES = { hire: 1500, additional: 1500, level: [0, 2e3, 6e3] };
 var MAX_STEPS = 1e5;
 function helperRecipe(key, level) {
   const crop = cropFor(key);
@@ -282,6 +282,9 @@ function normalizeHelper(data) {
 var helperCount = (data) => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0);
 var helperHarvestWorkers = (data) => (Array.isArray(data.helper.workers) ? data.helper.workers : []).filter((worker) => worker.role === "harvest").length;
 var helperPlots = (data) => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS_PER_WORKER * helperHarvestWorkers(data)) : 0;
+function helperDefaultRole(data) {
+  return data.helper.schedule === "auto" && helperPlots(data) >= data.unlocked ? "patrol" : "harvest";
+}
 var helperRandom = (...parts) => stableRandom("helper", ...parts);
 function keepClean(plot, at, index) {
   if (!isObject(plot.pests)) plot.pests = { weed: null, bug: null, dry: null };
@@ -443,28 +446,52 @@ function helperPlotView(data, index, state) {
 }
 function helperShelf(data, balance) {
   const helper = data.helper;
-  const level = helper.hired ? helper.level + 1 : null;
-  const price = helper.hired ? HELPER_PRICES.level[level] : HELPER_PRICES.hire;
-  if (price === void 0) return [];
-  const label = helper.hired ? ["帮工猪", "熟练帮工", "老练帮工"][level] : "雇帮工猪";
-  const note = helper.hired ? "管 " + HELPER_PLOTS[level] + " 块地" : "管 " + HELPER_PLOTS[0] + " 块地";
-  return [{ key: helper.hired ? "helper-level" : "helper-hire", emoji: "🐷", label, note, price, disabled: balance < price, pick: null }];
+  if (!helper.hired) {
+    const price2 = HELPER_PRICES.hire;
+    return [{ key: "helper-hire", emoji: "🐷", label: "雇帮工猪", note: "管 " + HELPER_PLOTS_PER_WORKER + " 块地", price: price2, disabled: balance < price2, pick: null }];
+  }
+  if (helper.workers.length >= HELPER_MAX) return [];
+  const price = HELPER_PRICES.additional;
+  return [{ key: "helper-additional", emoji: "🐷", label: "再雇一只帮工猪", note: "收菜 " + HELPER_PLOTS_PER_WORKER + " 块地 / 可改巡逻", price, disabled: balance < price, pick: null }];
 }
 function helperBuy(data, payload, api) {
   const helper = data.helper;
   const kind = String(payload?.item).replace("helper-", "");
-  if (kind === "hire") {
-    if (helper.hired) return { ok: false, reason: "owned" };
-    if (!purse(api).spend(HELPER_PRICES.hire, "helper")) return { ok: false, reason: "poor" };
-    helper.hired = true;
-    helper.enabled = true;
-    helper.workers = helperWorkerList(helper.level);
-    helper.lastAt = api.now;
-  } else {
-    if (kind !== "level" || !helper.hired) return { ok: false, reason: "locked" };
+  if (kind !== "hire" && kind !== "additional") {
     return { ok: false, reason: "unavailable" };
   }
+  if (kind === "additional") {
+    if (!helper.hired) return { ok: false, reason: "locked" };
+    if (helper.workers.length >= HELPER_MAX) return { ok: false, reason: "limit" };
+  } else if (helper.hired) return { ok: false, reason: "owned" };
+  const price = kind === "hire" ? HELPER_PRICES.hire : HELPER_PRICES.additional;
+  if (!purse(api).spend(price, "helper")) return { ok: false, reason: "poor" };
+  const role = helperDefaultRole(data);
+  helper.workers.push({ id: helper.workers.length + 1, role, locked: false, hiredAt: Number.isFinite(api?.now) ? api.now : null });
+  helper.hired = true;
+  helper.enabled = true;
+  if (kind === "hire") helper.lastAt = api.now;
   return { ok: true };
+}
+function setHelperRole(data, payload, api) {
+  const helper = data.helper;
+  const role = payload?.role;
+  if (role !== "harvest" && role !== "patrol") return { ok: false, reason: "unavailable" };
+  const id = Number(payload?.id);
+  const worker = Number.isInteger(id) ? helper.workers.find((entry) => entry.id === id) : void 0;
+  if (worker === void 0) return { ok: false, reason: "unavailable" };
+  if (worker.role === role) return { ok: false, reason: "already" };
+  worker.role = role;
+  worker.locked = true;
+  if (helper.enabled && Number.isFinite(api?.now)) helper.lastAt = Number.isFinite(helper.lastAt) ? Math.max(helper.lastAt, api.now) : api.now;
+  return { ok: true, role };
+}
+function setHelperSchedule(data, payload) {
+  const mode = payload?.mode;
+  if (mode !== "auto" && mode !== "manual") return { ok: false, reason: "unavailable" };
+  if (data.helper.schedule === mode) return { ok: false, reason: "already" };
+  data.helper.schedule = mode;
+  return { ok: true, mode };
 }
 function toggleHelper(data, payload, api) {
   const helper = data.helper;
@@ -725,6 +752,9 @@ var actions = {
   }
 };
 actions.hire = (data, payload, api) => helperBuy(data, { item: "helper-hire" }, api);
+actions.hireAdditional = (data, payload, api) => helperBuy(data, { item: "helper-additional" }, api);
+actions.setHelperRole = (data, payload, api) => setHelperRole(data, payload, api);
+actions.setHelperSchedule = (data, payload) => setHelperSchedule(data, payload);
 actions.upgrade = (data, payload, api) => helperBuy(data, { item: "helper-" + payload?.kind }, api);
 actions.collect = (data) => collectHelper(data);
 actions.toggleHelper = (data, payload, api) => toggleHelper(data, payload, api);
@@ -1017,7 +1047,9 @@ export {
   EXP_CAP,
   EXP_PER_LEVEL,
   FERTILIZERS,
+  HELPER_MAX,
   HELPER_PLOTS,
+  HELPER_PLOTS_PER_WORKER,
   HELPER_PRICES,
   HELPER_SHARE,
   HELPER_WINDOW,

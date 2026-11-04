@@ -2,7 +2,7 @@
 // 菜园动作：商店、开垦、第一课、种/照料/收/铲、一键动作、卖菜和做饭。
 // 每个动作只改传进来的 data 和宿主 api；事务、迁移和帮工结算由 server.js 的入口统一包住。
 import { CARE_EXP, CROPS, HOUR_MS, LESSON, PESTS, PLOTS, RECLAIM_PRICE } from './data.js'
-import { collectHelper, helperBuy, toggleHelper } from './helper.js'
+import { collectHelper, helperBuy, setHelperRole, setHelperSchedule, toggleHelper } from './helper.js'
 import { purse, tire } from './host.js'
 import { newGround } from './migration.js'
 import { amountFor, availablePlot, batchAction, carePlot, clearPlot, harvestPlot, lessonAt, levelNow, owns, plantPlot, plotAction, sayHarvest } from './plot-rules.js'
@@ -142,6 +142,9 @@ export const actions = {
 }
 // 旧动作别名和收仓：保持面板老按钮与既有调用可用。
 actions.hire = (data, payload, api) => helperBuy(data, { item: 'helper-hire' }, api)
+actions.hireAdditional = (data, payload, api) => helperBuy(data, { item: 'helper-additional' }, api)
+actions.setHelperRole = (data, payload, api) => setHelperRole(data, payload, api)
+actions.setHelperSchedule = (data, payload) => setHelperSchedule(data, payload)
 actions.upgrade = (data, payload, api) => helperBuy(data, { item: 'helper-' + payload?.kind }, api)
 actions.collect = data => collectHelper(data)
 actions.toggleHelper = (data, payload, api) => toggleHelper(data, payload, api)
