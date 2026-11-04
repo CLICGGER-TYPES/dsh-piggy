@@ -145,6 +145,9 @@ function readConfig(ui, api, box) {
 }
 
 export function renderCloudSaveSettings(ui, section) {
+  // DSH owner mode has no /dsh-piggy/cloud/settings route; the complete-archive
+  // section below is the supported entry and this flat form stays hidden.
+  if (typeof window !== 'undefined' && /** @type {any} */ (window).__dshPiggyOwnerMode === true) return
   const api = cloudApi()
   if (api === null || typeof api.get !== 'function' || typeof api.set !== 'function' || typeof api.test !== 'function') return
   const setting = section(ui, '云存档', '连接 Git 仓库；首次同步会另行确认')

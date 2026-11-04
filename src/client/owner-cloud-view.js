@@ -27,7 +27,7 @@ function gardenSummary(garden) {
  * Same summary structure as the local complete-archive import preview.
  * @param {HTMLElement} box
  * @param {{preview:{summary:any,warnings:string[]}, acknowledgeWarnings:boolean, switching:boolean, busy:string,
- *   onToggleWarnings:(checked:boolean)=>void, onCancel:()=>void, onImport:()=>void}} options
+ *   restartAfterImport?:boolean, onToggleWarnings:(checked:boolean)=>void, onCancel:()=>void, onImport:()=>void}} options
  */
 export function renderOwnerCloudPreview(box, options) {
   const { preview, acknowledgeWarnings, switching, busy } = options
@@ -59,7 +59,9 @@ export function renderOwnerCloudPreview(box, options) {
   summaryRow(box, '背包', inventoryCount === null ? '未记录' : `${inventoryCount} 件物品`)
   summaryRow(box, '菜园', gardenSummary(shared.garden))
   box.appendChild(el('p', 'dp-dim', '本机显示与声音偏好保留在此设备，不随云端存档覆盖。'))
-  box.appendChild(el('p', 'dp-dim', '恢复会建立独立存档副本并切换到新副本；当前存档保留，完成后应用会重启。'))
+  box.appendChild(el('p', 'dp-dim', options.restartAfterImport === false
+    ? '恢复会建立独立存档副本并切换到新副本；当前存档保留，DSH 不会重启。'
+    : '恢复会建立独立存档副本并切换到新副本；当前存档保留，完成后应用会重启。'))
   for (const warning of preview.warnings) {
     box.appendChild(el('div', 'dp-alert dp-legacy', warning))
   }

@@ -1,30 +1,26 @@
 // @ts-check
 /**
- * Desktop-only complete-owner-archive cloud sync.
+ * Complete-owner-archive cloud sync.
  *
  * The flat cloud-save settings above only configure a Git repository. This
- * section is the explicit first-sync/restore flow for an OwnerDocument: the
- * user chooses a direction, cloud restore always shows a preview first, and
- * the remote history is read-only because the host exposes no per-commit
- * restore route.
+ * section is the explicit restore flow for an OwnerDocument: cloud restore
+ * always shows a preview first, and remote history is read-only because the
+ * host exposes no per-commit restore route.
+ *
+ * Desktop exposes the bridge on the desktop shell. The DSH web page injects
+ * `__dshPiggyOwnerCloud`; it can only restore cloud-to-local and switches
+ * owners in-process instead of restarting the app.
  */
-import { button, el } from './dom.js'
-import { desktopShell } from './desktop-shell.js'
+import { el } from './dom.js'
+import { resolveOwnerCloudBinding } from './owner-cloud-bridge.js'
+import { renderDesktopDirections } from './owner-cloud-desktop.js'
+import { DSH_REASON_TEXT, renderDshRestoreEntry, renderDshUnavailable } from './owner-cloud-dsh.js'
+import { describeFailure, normalizeCommit, normalizeStatus, REASON_TEXT } from './owner-cloud-state.js'
 import { renderOwnerCloudHistory, renderOwnerCloudPreview } from './owner-cloud-view.js'
 
-const UPLOADING = '正在上传完整档…'
-const READING = '正在读取云端存档…'
+const POLL_PAUSE_MS = 60_000
 
-/** Conflict codes are hints, not retryable transport failures. */
-const REASON_TEXT = Object.freeze({
-  'remote-has-history': '云端这个分支已有其他完整档历史，不能直接上传覆盖；请换一个空分支，或改为从云端恢复。',
-  'remote-owner-mismatch': '云端存档属于另一份完整档，不能与当前完整档混用。',
-  'remote-branch-empty': '云端这个分支还没有完整档；可以先上传本机完整档。',
-  'remote-advanced': '云端已经有更新的存档，本机没有覆盖它。请先在另一台设备完成同步后再试。',
-  'first-sync-required': '这个完整档还没有首次同步记录；请先完成一次首次同步。',
-})
-
-/** @typedef {{available:boolean, ready:boolean, enabled:boolean, branch:string}} OwnerCloudStatus */
+/** @typedef {{available:boolean, ready:boolean, enabled:boolean, branch:string, code:string|null, reason:string}} OwnerCloudStatus */
 /** @typedef {{hash?:string, at?:string, subject?:string, manual?:boolean}} OwnerCloudCommit */
 /** @typedef {{ok:boolean, manual?:OwnerCloudCommit|null, auto?:OwnerCloudCommit[], reason?:string}} OwnerCloudHistory */
 /** @typedef {{token:string, summary:any, warnings:string[]}} OwnerCloudPreview */
@@ -50,20 +46,16 @@ const state = {
   error: '',
   /** @type {string|null} */
   errorCode: null,
+  /** @type {'desktop'|'dsh'} */
+  transport: 'desktop',
+  restartAfterImport: true,
   switching: false,
+  /** Result unknown after a restore request: never retry the same token. */
+  unknown: false,
+  notice: '',
   /** @type {any} */
   ui: null,
   generation: 0,
-}
-
-/** The owner bridge only exists in the desktop shell; DSH and old shells have no ownerStatus. */
-function ownerCloudApi() {
-  const api = desktopShell()?.cloudSave
-  return api !== null && typeof api === 'object' &&
-    typeof api.ownerStatus === 'function' &&
-    typeof api.firstSync === 'function' &&
-    typeof api.importFirstSync === 'function' &&
-    typeof api.ownerHistory === 'function' ? api : null
 }
 
 function rerender() {
@@ -74,51 +66,37 @@ function reasonOf(result) {
   return typeof result?.reason === 'string' && result.reason !== '' ? result.reason : ''
 }
 
-function friendlyReason(reason, fallback) {
-  if (reason === '') return fallback
-  return REASON_TEXT[reason] ?? reason
-}
-
 function clearError() {
   state.error = ''
   state.errorKind = ''
   state.errorCode = null
+  state.unknown = false
 }
 
 function setFailure(result, fallback) {
-  const reason = reasonOf(result)
-  state.error = friendlyReason(reason, fallback)
-  state.errorKind = Object.hasOwn(REASON_TEXT, reason) ? 'legacy' : 'dead'
-  state.errorCode = reason === '' ? null : reason
+  const described = describeFailure(state.transport, result, fallback)
+  state.error = described.text
+  state.errorKind = Object.hasOwn(REASON_TEXT, reasonOf(result)) ? 'legacy' : 'dead'
+  state.errorCode = described.code
 }
 
-function setOperationError(text) {
+function setOperationError(text, code = null) {
   state.error = text
   state.errorKind = 'dead'
-  state.errorCode = null
+  state.errorCode = code
 }
 
-function normalizeStatus(result) {
-  if (result === null || typeof result !== 'object' || result.available !== true) {
-    return { available: false, ready: false, enabled: false, branch: 'main' }
-  }
-  return {
-    available: true,
-    ready: result.ready === true,
-    enabled: result.enabled === true,
-    branch: typeof result.branch === 'string' && result.branch !== '' ? result.branch : 'main',
-  }
-}
-
-/** Cache status: the panel repaints every four seconds and must not poll IPC each time. */
+/** Cache status: the panel repaints every four seconds and must not poll each time. */
 async function requestStatus(ui) {
   if (state.statusPromise !== null || state.switching) return
-  const api = ownerCloudApi()
-  if (api === null) return
+  const binding = resolveOwnerCloudBinding()
+  if (binding === null) return
+  state.transport = binding.transport
+  state.restartAfterImport = binding.restartAfterImport
   const generation = state.generation
   const promise = (async () => {
     try {
-      return normalizeStatus(await api.ownerStatus())
+      return normalizeStatus(await binding.api.ownerStatus())
     } catch {
       return normalizeStatus(null)
     }
@@ -132,16 +110,6 @@ async function requestStatus(ui) {
   if (status.available && status.ready) void requestHistory(ui)
 }
 
-function normalizeCommit(value) {
-  if (value === null || typeof value !== 'object') return null
-  return {
-    hash: typeof value.hash === 'string' ? value.hash : '',
-    at: typeof value.at === 'string' ? value.at : '',
-    subject: typeof value.subject === 'string' ? value.subject : '',
-    manual: value.manual === true,
-  }
-}
-
 /** History is immutable for this paint; only a first sync or a branch change refreshes it. */
 async function requestHistory(ui) {
   const status = state.status
@@ -152,16 +120,14 @@ async function requestHistory(ui) {
     state.historyBranch = status.branch
   }
   if (state.history !== null) return
-  const api = ownerCloudApi()
-  if (api === null) return
+  const binding = resolveOwnerCloudBinding()
+  if (binding === null) return
   const branch = status.branch
   const generation = state.generation
   const promise = (async () => {
     try {
-      const result = await api.ownerHistory(branch)
-      if (result?.ok !== true) {
-        return { ok: false, reason: friendlyReason(reasonOf(result), '云端历史暂时无法读取') }
-      }
+      const result = await binding.api.ownerHistory(branch)
+      if (result?.ok !== true) return { ok: false, reason: describeFailure(state.transport, result, '云端历史暂时无法读取').text }
       const manual = normalizeCommit(result.manual)
       const auto = Array.isArray(result.auto)
         ? result.auto.map(normalizeCommit).filter(commit => commit !== null)
@@ -179,19 +145,29 @@ async function requestHistory(ui) {
   if (state.ui === ui) rerender()
 }
 
+function pausePolling() {
+  if (typeof window !== 'undefined') /** @type {any} */ (window).__dshPiggyPollPauseUntil = Date.now() + POLL_PAUSE_MS
+}
+
+function resumePolling() {
+  if (typeof window !== 'undefined') delete /** @type {any} */ (window).__dshPiggyPollPauseUntil
+}
+
 async function startFirstSync(ui, direction) {
-  if (state.busy !== '' || state.switching) return
-  const api = ownerCloudApi()
-  if (api === null) return
+  if (state.busy !== '' || state.switching || state.unknown) return
+  if (state.transport === 'dsh' && direction !== 'cloud-to-local') return
+  const binding = resolveOwnerCloudBinding()
+  if (binding === null) return
   state.busy = direction === 'local-to-cloud' ? 'upload' : 'download'
   state.preview = null
   state.acknowledgeWarnings = false
+  state.notice = ''
   clearError()
   rerender()
 
   let result = null
   try {
-    result = await api.firstSync(direction)
+    result = await binding.api.firstSync(direction)
   } catch (error) {
     setOperationError((direction === 'local-to-cloud' ? '上传没有完成：' : '读取云端存档没有完成：') +
       (error instanceof Error ? error.message : '请稍后重试'))
@@ -209,7 +185,7 @@ async function startFirstSync(ui, direction) {
   }
 
   if (direction === 'local-to-cloud') {
-    const current = state.status ?? { available: true, ready: false, enabled: true, branch: 'main' }
+    const current = state.status ?? { available: true, ready: false, enabled: true, branch: 'main', code: null, reason: '' }
     state.status = { ...current, available: true, ready: true, enabled: true }
     state.history = null
     state.historyBranch = null
@@ -238,31 +214,62 @@ async function startFirstSync(ui, direction) {
 async function importPreview(ui) {
   if (state.busy !== '' || state.switching || state.preview === null) return
   if (state.preview.warnings.length > 0 && !state.acknowledgeWarnings) return
-  const api = ownerCloudApi()
-  if (api === null) return
+  const binding = resolveOwnerCloudBinding()
+  if (binding === null) return
   const token = state.preview.token
+  const dsh = state.transport === 'dsh'
   state.busy = 'import'
   clearError()
   rerender()
+  if (dsh) pausePolling()
 
   let result = null
   try {
-    result = await api.importFirstSync(token, { acceptWarnings: state.acknowledgeWarnings === true })
+    result = await binding.api.importFirstSync(token, { acceptWarnings: state.acknowledgeWarnings === true })
   } catch (error) {
-    setOperationError('恢复没有完成：' + (error instanceof Error ? error.message : '请稍后重试'))
+    if (dsh) {
+      state.unknown = true
+      setOperationError(DSH_REASON_TEXT.unknown, 'unknown')
+    } else {
+      setOperationError('恢复没有完成：' + (error instanceof Error ? error.message : '请稍后重试'))
+    }
+  } finally {
+    if (dsh) resumePolling()
   }
   state.busy = ''
+  if (dsh && state.switching) return
   if (result?.ok !== true) {
     if (result !== null) {
-      const prefix = result.imported === true ? '副本已建立，但没有切换。' : '恢复没有完成。'
-      setOperationError(prefix + (reasonOf(result) || '当前存档保持不变'))
+      if (dsh && result.unknown === true) {
+        state.unknown = true
+        setFailure(result, '恢复请求的结果未知')
+      } else {
+        const described = describeFailure(state.transport, result, '当前存档保持不变')
+        const prefix = result.imported === true ? '副本已建立，但没有切换。' : '恢复没有完成。'
+        setOperationError(prefix + described.text, described.code)
+      }
     }
     state.preview = null
     state.acknowledgeWarnings = false
     rerender()
     return
   }
-  // The host saves the current archive, switches to the restored copy and restarts.
+
+  if (dsh) {
+    const current = state.status ?? { available: true, ready: true, enabled: true, branch: 'main', code: null, reason: '' }
+    state.preview = null
+    state.acknowledgeWarnings = false
+    clearError()
+    state.status = { ...current, available: true, enabled: true, ready: true }
+    state.history = null
+    state.historyBranch = state.status.branch
+    state.notice = '已切换到新副本，正在刷新…'
+    rerender()
+    ui.refresh?.()
+    void requestHistory(ui)
+    return
+  }
+  // The desktop host saves the current archive, switches to the restored copy and restarts.
   state.switching = true
   rerender()
 }
@@ -275,61 +282,71 @@ function clearPreview(ui) {
   rerender()
 }
 
-function renderDirections(ui, box, status) {
-  box.appendChild(el('p', 'dp-dim', '首次同步要手动选择方向；不会自动覆盖云端或本机。'))
-  if (!status.enabled) {
-    box.appendChild(el('div', 'dp-alert dp-legacy', '先在上面的「云存档」启用并填写仓库地址，才能做首次同步。'))
-  }
-  const actions = el('div', 'dp-actions')
-  const upload = button('dp-mini dp-btn-wide', { 'data-owner-cloud-first-sync': 'local-to-cloud' }, () => {
-    void startFirstSync(ui, 'local-to-cloud')
-  })
-  upload.textContent = state.busy === 'upload' ? UPLOADING : '本机完整档上传到云端'
-  upload.disabled = state.busy !== '' || !status.enabled
-  actions.appendChild(upload)
-  const download = button('dp-btn dp-btn-wide', { 'data-owner-cloud-first-sync': 'cloud-to-local' }, () => {
-    void startFirstSync(ui, 'cloud-to-local')
-  })
-  download.textContent = state.busy === 'download' ? READING : '从云端恢复到本机副本'
-  download.disabled = state.busy !== '' || !status.enabled
-  actions.appendChild(download)
-  box.appendChild(actions)
+/** Manual re-probe after a transient failure; no automatic retry loop. */
+function retryStatus(ui) {
+  state.generation += 1
+  state.statusPromise = null
+  state.status = null
+  state.history = null
+  state.historyBranch = null
+  state.notice = ''
+  clearError()
+  rerender()
+  void requestStatus(ui)
 }
 
 /**
  * Called on each settings paint. Module state keeps status, history and the
  * preview token between the panel's timed repaints, so polling does not send
- * duplicate IPC or drop the warning acknowledgement.
+ * duplicate requests or drop the warning acknowledgement.
  * @param {any} ui
  * @param {(ui:any,title:string,note:string)=>{box:HTMLElement,head:HTMLElement}} section
  */
 export function renderOwnerCloudSaveSettings(ui, section) {
   state.ui = ui
-  // DSH, the web page, old shells and legacy single-pig saves have no owner cloud bridge.
-  if (ownerCloudApi() === null) return
+  const binding = resolveOwnerCloudBinding()
+  if (binding === null) return
+  state.transport = binding.transport
+  state.restartAfterImport = binding.restartAfterImport
   if (state.status === null) {
     void requestStatus(ui)
     const loading = section(ui, '完整档云同步', '整份完整档：所有小猪与共享资产')
     loading.box.appendChild(el('p', 'dp-dim', '正在读取完整档云同步…'))
     return
   }
-  if (state.status.available !== true) return
+  if (state.status.available !== true) {
+    if (state.transport !== 'dsh') return
+    const offline = section(ui, '完整档云同步', '整份完整档：所有小猪与共享资产；只在本机可用')
+    renderDshUnavailable(offline.box, state.status, () => retryStatus(ui))
+    return
+  }
 
   const status = state.status
-  const setting = section(ui, '完整档云同步', '整份完整档：所有小猪与共享资产；只同步这一份')
+  const dsh = state.transport === 'dsh'
+  const setting = section(ui, '完整档云同步', dsh
+    ? '整份完整档：所有小猪与共享资产；从云端恢复到新副本'
+    : '整份完整档：所有小猪与共享资产；只同步这一份')
   const box = setting.box
 
   const stateKey = state.switching ? 'switching' : status.ready ? 'connected' : status.enabled ? 'pending' : 'disconnected'
-  const stateLabel = state.switching ? '正在切换' : status.ready ? '已连接' : status.enabled ? '待首次同步' : '未连接'
+  const stateLabel = state.switching ? '正在切换' : status.ready ? '已连接'
+    : dsh ? (status.enabled ? '待从云端恢复' : '未配置') : (status.enabled ? '待首次同步' : '未连接')
   const summary = el('div', 'dp-cloud-summary')
   summary.setAttribute('data-owner-cloud-status', stateKey)
   summary.appendChild(el('b', null, stateLabel))
   summary.appendChild(el('span', 'dp-cloud-note', '分支 · ' + status.branch))
   summary.appendChild(el('span', 'dp-cloud-note', state.switching
     ? '正在保存当前存档并切换；应用会自动重启。'
-    : status.ready ? '自动同步已启用' : status.enabled ? '尚未完成首次同步' : '先在上面的「云存档」启用'))
+    : status.ready ? '自动同步已启用'
+      : dsh ? (status.enabled ? '尚未从云端恢复' : '在 DSH 插件配置里启用 ownerCloud')
+        : status.enabled ? '尚未完成首次同步' : '先在上面的「云存档」启用'))
   box.appendChild(summary)
 
+  if (state.notice !== '') {
+    const notice = el('div', 'dp-cloud-status', state.notice)
+    notice.setAttribute('data-owner-cloud-notice', 'true')
+    box.appendChild(notice)
+  }
   if (state.error !== '') {
     const alert = el('div', state.errorKind === 'legacy' ? 'dp-alert dp-legacy' : 'dp-alert dp-dead', state.error)
     if (state.errorCode !== null) alert.setAttribute('data-owner-cloud-error', state.errorCode)
@@ -342,6 +359,7 @@ export function renderOwnerCloudSaveSettings(ui, section) {
       acknowledgeWarnings: state.acknowledgeWarnings,
       switching: state.switching,
       busy: state.busy,
+      restartAfterImport: state.restartAfterImport,
       onToggleWarnings: checked => {
         state.acknowledgeWarnings = checked
         rerender()
@@ -351,8 +369,21 @@ export function renderOwnerCloudSaveSettings(ui, section) {
     })
     return
   }
+  if (dsh) {
+    renderDshRestoreEntry(box, status, {
+      busy: state.busy,
+      unknown: state.unknown,
+      onRestore: () => { void startFirstSync(ui, 'cloud-to-local') },
+      onCheck: () => retryStatus(ui),
+    })
+    if (status.ready) {
+      if (state.history === null && state.historyPromise === null) void requestHistory(ui)
+      renderOwnerCloudHistory(box, state.history)
+    }
+    return
+  }
   if (!status.ready) {
-    renderDirections(ui, box, status)
+    renderDesktopDirections(box, status, state.busy, direction => { void startFirstSync(ui, direction) })
     return
   }
   renderOwnerCloudHistory(box, state.history)
