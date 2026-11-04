@@ -351,3 +351,22 @@ export function quantizeKey(box) {
 export function pigDisplayAtCursor(screen) {
   return screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
 }
+
+/**
+ * 新猪第一次摆放时，如果和别的宠物窗口落在同一个位置，就向左错开。
+ * 只处理几乎完全重合（±8px）的情况；用户自己把猪拖到一起不会被反复推开。
+ * @param {{x:number,y:number,width:number,height:number}} bounds
+ * @param {Array<{x:number,y:number,width:number,height:number}>} others
+ * @param {{x:number,y:number,width:number,height:number}} area
+ * @param {number} [step]
+ */
+export function staggerPetBounds(bounds, others, area, step = 380) {
+  let x = bounds.x
+  let guard = 0
+  const overlaps = () => others.some(other => Math.abs(other.x - x) <= 8 && Math.abs(other.y - bounds.y) <= 8)
+  while (overlaps() && guard < 8 && x > area.x) {
+    x = Math.max(area.x, x - step)
+    guard += 1
+  }
+  return x === bounds.x ? bounds : { ...bounds, x }
+}
