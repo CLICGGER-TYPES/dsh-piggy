@@ -23,6 +23,7 @@ import {
   hasArtResource,
   hasBuiltinArt,
   normalizeArtKey,
+  resolveActionFrame,
   resolveArtResource,
 } from '../../../src/client/art-path.js'
 import { refreshCustomArt } from '../../../src/client/custom-art.js'
@@ -247,6 +248,90 @@ test('a private action pack plays through the normal player without a new branch
   } finally {
     playerA.dispose()
     playerB.dispose()
+    globalThis.document = savedDocument
+  }
+})
+
+test('a frames action resolves per-frame URLs/revisions and rejects bad generated metadata', () => {
+  const registry = createArtResourceRegistry({ parent: null })
+  const resource = {
+    key: 'wave', kind: 'action', duration: 180,
+    frames: [
+      { path: 'actions/helper/wave/00.png', revision: 'rev-0', durationMs: 50 },
+      { path: 'actions/helper/wave/01.png', revision: 'rev-1', durationMs: 60 },
+      { path: 'actions/helper/wave/02.webp', revision: 'rev-2', durationMs: 70 },
+    ],
+  }
+  registry.registerPack({ namespace: 'helper', pack: 'frames', revision: '1', resources: [resource] })
+  const entry = registry.resolveRef({ namespace: 'helper', pack: 'frames', key: 'wave' })
+  assert.ok(entry)
+  assert.equal(entry.descriptor.source, null)
+  assert.equal(entry.descriptor.duration, 180)
+  assert.deepEqual(entry.descriptor.frames?.map(frame => [frame.path, frame.revision, frame.durationMs]), [
+    ['actions/helper/wave/00.png', 'rev-0', 50],
+    ['actions/helper/wave/01.png', 'rev-1', 60],
+    ['actions/helper/wave/02.webp', 'rev-2', 70],
+  ])
+  assert.equal(entry.url, '/dsh-piggy/art/actions/helper/wave/00.png?v=rev-0')
+  assert.equal(entry.artKey, 'wave')
+  const frame = resolveActionFrame(entry, 1)
+  assert.equal(frame?.url, '/dsh-piggy/art/actions/helper/wave/01.png?v=rev-1')
+  assert.equal(frame?.descriptor.source?.path, 'actions/helper/wave/01.png')
+  assert.equal(frame?.descriptor.frames, null)
+  assert.equal(frame?.descriptor.duration, 60)
+  assert.equal(frame?.legacy, true, 'a frame is not a separate registry entry')
+  assert.equal(resolveActionFrame(entry, 3), null)
+
+  const register = (/** @type {any} */ override) => createArtResourceRegistry({ parent: null }).registerPack({
+    namespace: 'helper', pack: 'frames', revision: '1', resources: [{ ...resource, ...override }],
+  })
+  assert.throws(() => register({ duration: 999 }), /frame durations must add up/)
+  assert.throws(() => register({ frames: [{ path: '../escape.png', revision: 'x', durationMs: 50 }, resource.frames[1]] }), /invalid art frame path/)
+  assert.throws(() => register({ frame: [1, 2, 3] }), /cannot declare bounds/)
+  assert.throws(() => register({ frames: [resource.frames[0]] }), /2–48 entries/)
+})
+
+test('a playing frame action writes each current frame through the art context', async () => {
+  const registry = createArtResourceRegistry()
+  registry.registerPack({
+    namespace: 'helper', pack: 'frames', revision: '1',
+    resources: [{
+      key: 'wave', kind: 'action', duration: 180,
+      frames: [
+        { path: 'actions/helper/wave/00.png', revision: 'rev-0', durationMs: 50 },
+        { path: 'actions/helper/wave/01.png', revision: 'rev-1', durationMs: 60 },
+        { path: 'actions/helper/wave/02.png', revision: 'rev-2', durationMs: 70 },
+      ],
+    }],
+  })
+  const savedDocument = globalThis.document
+  globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} }
+  const pig = attributePig()
+  const image = artImage()
+  const timer = timerFixture()
+  const { createArtContext } = await import('../../../src/client/art.js')
+  const art = createArtContext({ pig, image, artResources: registry })
+  const player = attachPigActions({
+    pig, clock: timer.clock, preload: async () => {}, isStopped: () => false, isDragging: () => false,
+    render: () => art.sync(), artResources: registry,
+  })
+  try {
+    await Promise.resolve()
+    await Promise.resolve()
+    const entry = registry.resolveRef({ namespace: 'helper', pack: 'frames', key: 'wave' })
+    assert.ok(entry)
+    assert.equal(playPigAction(pig, entry), true)
+    assert.equal(image.src, '/dsh-piggy/art/actions/helper/wave/00.png?v=rev-0')
+    timer.advance(50)
+    assert.equal(image.src, '/dsh-piggy/art/actions/helper/wave/01.png?v=rev-1')
+    timer.advance(60)
+    assert.equal(image.src, '/dsh-piggy/art/actions/helper/wave/02.png?v=rev-2')
+    timer.advance(70)
+    assert.equal(image.src, artSource('piglet'), 'the final frame restores the static artwork')
+    assert.equal(pigActionResource(pig), null)
+  } finally {
+    player.dispose()
+    art.dispose()
     globalThis.document = savedDocument
   }
 })

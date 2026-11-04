@@ -22,6 +22,13 @@ const ACTION_FIELDS = new Set(['key', 'kind', 'source', 'durationMs', 'frame', '
 const SOURCE_SCHEMES = new Set(['builtin', 'custom', 'path'])
 const MAX_PACK_FILES = 256
 const MAX_PACK_BYTES = 6 * 1024 * 1024
+const FRAME_FILE = /^(\d{2})\.(png|webp)$/
+const MIN_FRAMES = 2
+const MAX_FRAMES = 48
+const MAX_FRAME_BYTES = 128 * 1024
+const MAX_FRAME_EDGE = 512
+const MAX_FRAME_MS = 60_000
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
 /** @param {string} path @param {string} label @param {string[]} problems */
 function readJson(path, label, problems) {
@@ -70,8 +77,177 @@ function checkEligibility(value, label, problems) {
   if (value.party !== undefined && typeof value.party !== 'boolean') problems.push(`${label}.party: 必须是布尔值`)
 }
 
-/** @param {any} action @param {string} label @param {string[]} problems */
-function checkAction(action, label, problems) {
+/** @param {Buffer} body @param {string} ext @returns {{ width: number, height: number } | null} */
+function imageSize(body, ext) {
+  if (ext === 'png') {
+    if (body.length < 24 || !body.subarray(0, 8).equals(PNG_MAGIC)) return null
+    if (body.subarray(12, 16).toString('ascii') !== 'IHDR') return null
+    return { width: body.readUInt32BE(16), height: body.readUInt32BE(20) }
+  }
+  if (body.length < 30
+    || body.subarray(0, 4).toString('ascii') !== 'RIFF'
+    || body.subarray(8, 12).toString('ascii') !== 'WEBP') return null
+  const chunk = body.subarray(12, 16).toString('ascii')
+  if (chunk === 'VP8X') {
+    return { width: body.readUIntLE(24, 3) + 1, height: body.readUIntLE(27, 3) + 1 }
+  }
+  if (chunk === 'VP8L') {
+    if (body[20] !== 0x2f) return null
+    const bits = body.readUInt32LE(21)
+    return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 }
+  }
+  if (chunk === 'VP8 ') {
+    if (body[23] !== 0x9d || body[24] !== 0x01 || body[25] !== 0x2a) return null
+    return { width: body.readUInt16LE(26) & 0x3fff, height: body.readUInt16LE(28) & 0x3fff }
+  }
+  return null
+}
+
+/**
+ * Turn `fps` or `durationsMs` into one integer duration per frame. The
+ * cumulative rounding keeps the sum exactly `round(count * 1000 / fps)`, so a
+ * 12fps three-frame action is 83+84+83 = 250ms rather than 249 or 251.
+ * @param {any} value
+ * @param {number} count
+ * @param {string} at
+ * @param {string[]} problems
+ * @returns {{ durations: number[], total: number } | null}
+ */
+function frameTiming(value, count, at, problems) {
+  if (!onlyFields(value, new Set(['fps', 'durationsMs']), `${at}.frames`, problems)) return null
+  const hasFps = value.fps !== undefined
+  const hasDurations = value.durationsMs !== undefined
+  if (hasFps === hasDurations) {
+    problems.push(`${at}.frames: 需要 fps 或 durationsMs 之一（不能同时写）`)
+    return null
+  }
+  if (hasFps) {
+    if (!Number.isInteger(value.fps) || value.fps < 1 || value.fps > 60) {
+      problems.push(`${at}.frames.fps: 必须是 1–60 的整数`)
+      return null
+    }
+    /** @type {number[]} */
+    const durations = []
+    let previous = 0
+    for (let index = 0; index < count; index += 1) {
+      const boundary = Math.round((index + 1) * 1000 / value.fps)
+      durations.push(boundary - previous)
+      previous = boundary
+    }
+    return { durations, total: previous }
+  }
+  if (!Array.isArray(value.durationsMs)) {
+    problems.push(`${at}.frames.durationsMs: 必须是数组`)
+    return null
+  }
+  if (value.durationsMs.length !== count) {
+    problems.push(`${at}.frames.durationsMs: 有 ${value.durationsMs.length} 项，但帧文件有 ${count} 张`)
+    return null
+  }
+  /** @type {number[]} */
+  const durations = []
+  let total = 0
+  value.durationsMs.forEach((/** @type {any} */ ms, /** @type {number} */ index) => {
+    if (!Number.isInteger(ms) || ms <= 0 || ms > MAX_FRAME_MS) {
+      problems.push(`${at}.frames.durationsMs[${index}]: 必须是 1–${MAX_FRAME_MS} 的整数毫秒`)
+      return
+    }
+    durations.push(ms)
+    total += ms
+  })
+  return durations.length === count ? { durations, total } : null
+}
+
+/**
+ * Validate one frame sequence and return its generated metadata. Files live in
+ * `assets/actions/<dir>/<key>/00.png` (or `.webp`); only per-frame content
+ * revisions and computed durations are emitted, never authored bounds.
+ * @param {any} action
+ * @param {string} at
+ * @param {string} dir
+ * @param {string} dirPath
+ * @param {string[]} problems
+ * @returns {Array<{ path: string, revision: string, durationMs: number }> | null}
+ */
+function checkFrames(action, at, dir, dirPath, problems) {
+  const frameDir = join(dirPath, action.key)
+  if (!existsSync(frameDir) || !statSync(frameDir).isDirectory()) {
+    problems.push(`${at}.frames: 找不到帧目录 assets/actions/${dir}/${action.key}`)
+    return null
+  }
+  /** @type {Array<{ name: string, index: number, ext: string }>} */
+  const entries = []
+  for (const name of readdirSync(frameDir).sort()) {
+    const info = statSync(join(frameDir, name))
+    if (info.isDirectory()) {
+      problems.push(`${at}.frames: 帧目录里不能再有子目录 "${name}"`)
+      continue
+    }
+    const match = FRAME_FILE.exec(name)
+    if (match === null) {
+      problems.push(`${at}.frames: 不认识的帧文件 "${name}"（应为 00.png …，2 位连续）`)
+      continue
+    }
+    entries.push({ name, index: Number(match[1]), ext: match[2] })
+  }
+  if (entries.length === 0) {
+    problems.push(`${at}.frames: 帧目录里没有 00.png`)
+    return null
+  }
+  if (entries.length < MIN_FRAMES) problems.push(`${at}.frames: 至少需要 ${MIN_FRAMES} 帧，当前只有 ${entries.length} 帧`)
+  if (entries.length > MAX_FRAMES) problems.push(`${at}.frames: 最多 ${MAX_FRAMES} 帧，当前有 ${entries.length} 帧`)
+  const ext = entries[0].ext
+  const timing = frameTiming(action.frames, entries.length, at, problems)
+  /** @type {Array<{ path: string, revision: string, durationMs: number }>} */
+  const frames = []
+  entries.forEach((entry, position) => {
+    if (entry.index !== position) {
+      problems.push(`${at}.frames: 帧序号必须从 00 连续，缺少 ${String(position).padStart(2, '0')}.${ext}`)
+      return
+    }
+    if (entry.ext !== ext) {
+      problems.push(`${at}.frames: ${entry.name} 与 ${entries[0].name} 扩展名不一致，一个动作只能用一种格式`)
+      return
+    }
+    const path = join(frameDir, entry.name)
+    const info = statSync(path)
+    if (info.size > MAX_FRAME_BYTES) {
+      problems.push(`${at}.frames: ${entry.name} 有 ${info.size} B，超过单帧上限 ${MAX_FRAME_BYTES} B`)
+      return
+    }
+    const body = readFileSync(path)
+    const size = imageSize(body, entry.ext)
+    if (size === null) {
+      problems.push(`${at}.frames: ${entry.name} 内容不是有效的 ${entry.ext.toUpperCase()}`)
+      return
+    }
+    if (Math.max(size.width, size.height) > MAX_FRAME_EDGE) {
+      problems.push(`${at}.frames: ${entry.name} 是 ${size.width}×${size.height}，长边超过 ${MAX_FRAME_EDGE}`)
+      return
+    }
+    frames.push({
+      path: `actions/${dir}/${action.key}/${entry.name}`,
+      revision: createHash('sha256').update(body).digest('hex').slice(0, 12),
+      durationMs: timing === null ? 0 : timing.durations[position],
+    })
+  })
+  if (timing === null) return null
+  if (frames.length !== entries.length) return null
+  if (action.durationMs !== timing.total) {
+    problems.push(`${at}.durationMs: 是 ${action.durationMs}ms，但 ${entries.length} 帧总时长为 ${timing.total}ms`)
+  }
+  return frames
+}
+
+/**
+ * @param {any} action
+ * @param {string} label
+ * @param {string[]} problems
+ * @param {string} dir
+ * @param {string} dirPath
+ * @returns {{ action: any, frames: Array<{ path: string, revision: string, durationMs: number }> | null } | null}
+ */
+function checkAction(action, label, problems, dir, dirPath) {
   if (!onlyFields(action, ACTION_FIELDS, label, problems)) return null
   if (typeof action.key !== 'string' || !KEY.test(action.key)) {
     problems.push(`${label}.key: 必须匹配 ^[a-z][a-z0-9-]{0,47}$`)
@@ -79,32 +255,47 @@ function checkAction(action, label, problems) {
   }
   const at = `${label}(${action.key})`
   if (action.kind !== 'action') problems.push(`${at}.kind: 只能是 "action"`)
-  if (action.frames !== undefined || action.frame !== undefined) {
-    problems.push(`${at}.frames: 帧序列尚未接入（M2）；当前只支持单图动作`)
-  }
-  if (!isRecord(action.source)) {
-    problems.push(`${at}.source: 必须是对象`)
-  } else {
-    onlyFields(action.source, new Set(['scheme', 'key', 'path']), `${at}.source`, problems)
-    if (!SOURCE_SCHEMES.has(action.source.scheme)) {
-      problems.push(`${at}.source.scheme: 只能是 builtin / custom / path`)
-    } else if (action.source.scheme === 'builtin') {
-      if (typeof action.source.key !== 'string' || !Object.hasOwn(PIG_ART_ASSETS, action.source.key)) {
-        problems.push(`${at}.source.key: 内置素材表里没有 "${action.source.key}"`)
-      }
-    } else if (action.source.scheme === 'path') {
-      const path = action.source.path
-      if (typeof path !== 'string' || path.startsWith('/') || path.includes('..') || path.includes('\\')
-        || path.includes('?') || path.includes('#') || !/\.(?:png|webp|svg)$/.test(path)) {
-        problems.push(`${at}.source.path: 必须是安全的相对图片路径`)
-      }
-    } else if (typeof action.source.key !== 'string' || !/^custom-[a-z0-9-]{1,41}$/.test(action.source.key)) {
-      problems.push(`${at}.source.key: custom key 必须匹配 custom-<短名>`)
-    }
+  if (action.frame !== undefined) {
+    problems.push(`${at}.frame: 不要手写取景/命中框；帧序列元数据由生成器计算`)
   }
   if (!Number.isInteger(action.durationMs) || action.durationMs <= 0) {
     problems.push(`${at}.durationMs: 必须是正整数毫秒`)
   }
+  const hasFrames = action.frames !== undefined
+  if (hasFrames && action.source !== undefined) {
+    problems.push(`${at}: source 与 frames 只能二选一`)
+  }
+  if (hasFrames && action.motion !== undefined) {
+    problems.push(`${at}: motion 与 frames 只能二选一`)
+  }
+  if (!hasFrames && action.source === undefined) {
+    problems.push(`${at}: 需要 source（单图）或 frames（帧序列）`)
+  }
+  if (!hasFrames) {
+    if (!isRecord(action.source)) {
+      problems.push(`${at}.source: 必须是对象`)
+    } else {
+      onlyFields(action.source, new Set(['scheme', 'key', 'path']), `${at}.source`, problems)
+      if (!SOURCE_SCHEMES.has(action.source.scheme)) {
+        problems.push(`${at}.source.scheme: 只能是 builtin / custom / path`)
+      } else if (action.source.scheme === 'builtin') {
+        if (typeof action.source.key !== 'string' || !Object.hasOwn(PIG_ART_ASSETS, action.source.key)) {
+          problems.push(`${at}.source.key: 内置素材表里没有 "${action.source.key}"`)
+        }
+      } else if (action.source.scheme === 'path') {
+        const path = action.source.path
+        if (typeof path !== 'string' || path.startsWith('/') || path.includes('..') || path.includes('\\')
+          || path.includes('?') || path.includes('#') || !/\.(?:png|webp|svg)$/.test(path)) {
+          problems.push(`${at}.source.path: 必须是安全的相对图片路径`)
+        }
+      } else if (typeof action.source.key !== 'string' || !/^custom-[a-z0-9-]{1,41}$/.test(action.source.key)) {
+        problems.push(`${at}.source.key: custom key 必须匹配 custom-<短名>`)
+      }
+    }
+  }
+  /** @type {Array<{ path: string, revision: string, durationMs: number }> | null} */
+  let frames = null
+  if (hasFrames) frames = checkFrames(action, at, dir, dirPath, problems)
   checkEligibility(action.eligibility, `${at}.eligibility`, problems)
   if (action.trigger !== undefined) {
     if (!onlyFields(action.trigger, new Set(['on']), `${at}.trigger`, problems)) {
@@ -122,7 +313,7 @@ function checkAction(action, label, problems) {
   if (action.fallback !== undefined && !isRecord(action.fallback) && typeof action.fallback !== 'string') {
     problems.push(`${at}.fallback: 必须是字符串或引用对象`)
   }
-  return action
+  return { action, frames }
 }
 
 /**
@@ -174,23 +365,25 @@ export function loadActionPacks(root, options = {}) {
     const resources = []
     manifest.actions.forEach((/** @type {any} */ action, /** @type {number} */ index) => {
       const label = `${relative(root, manifestPath)} actions[${index}]`
-      const checked = checkAction(action, label, problems)
+      const checked = checkAction(action, label, problems, dir, dirPath)
       if (checked === null) return
-      const handle = `${packId}/${checked.key}`
+      const declared = checked.action
+      const handle = `${packId}/${declared.key}`
       if (seenKeys.has(handle)) problems.push(`${label}.key: 动作 "${handle}" 重复`)
       seenKeys.set(handle, true)
       /** @type {any} */
       const resource = {
-        key: checked.key,
+        key: declared.key,
         kind: 'action',
-        source: checked.source,
-        duration: checked.durationMs,
+        duration: declared.durationMs,
       }
-      if (checked.eligibility !== undefined) resource.eligibility = checked.eligibility
-      if (checked.fallback !== undefined) resource.fallback = checked.fallback
-      if (checked.sound !== undefined) resource.sound = checked.sound
+      if (checked.frames === null) resource.source = declared.source
+      else resource.frames = checked.frames
+      if (declared.eligibility !== undefined) resource.eligibility = declared.eligibility
+      if (declared.fallback !== undefined) resource.fallback = declared.fallback
+      if (declared.sound !== undefined) resource.sound = declared.sound
       resources.push(resource)
-      if (checked.trigger !== undefined) triggers[`${packId}/${checked.key}`] = Object.freeze({ ...checked.trigger })
+      if (declared.trigger !== undefined) triggers[`${packId}/${declared.key}`] = Object.freeze({ ...declared.trigger })
     })
     packs.push({ namespace: 'dsh-piggy', pack: packId, revision, resources })
     // 体积预算：只算 pack 目录里的普通文件。

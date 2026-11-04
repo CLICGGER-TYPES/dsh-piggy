@@ -1,29 +1,34 @@
 // @ts-check
 /** Classified PNG artwork and compatibility aliases. */
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { PIG_ART_ASSETS } from '../packages/pet-core/src/data/art-assets.js'
 import { customSkinArt } from './skin-pack.js'
 const ART_ROUTE = '/dsh-piggy/art'
 const PIG_ART_PATHS = new Set(Object.values(PIG_ART_ASSETS))
 // 场景插画与小猪立绘分开登记；只开放实际随包分发的文件，不扩大任意路径读取范围。
 const FISHING_ART_PATHS = new Set(['scene-river', 'scene-pond', 'scene-reef', 'scene-night', 'fight-tug', 'crucian-result', 'bobber'].map(name => `fishing/${name}.png`))
+// 帧序列只开放生成器写出的固定形状：actions/<包目录>/<动作 key>/<两位帧号>.(png|webp)。
+const ACTION_FRAME = /^actions\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\/\d{2}\.(?:png|webp)$/
 
 /** 按名字读一张面板素材；只认随包分发的立绘/反馈图、导入皮肤和动作帧。 */
-export function artFile(store, name) {
+export function artFile(store, name, assetsRoot) {
   const flat = /^(?:[a-z][a-z0-9-]{0,63}\.(?:svg|png)|feedback\/[a-z][a-z0-9-]{0,63}\.png)$/.test(name)
   const imported = /^custom-[a-z0-9-]{1,41}$/.test(name)
   const petFrame = name === 'animations/piglet-pet/reference.webp' || name === 'animations/pet-hand/hand.webp'
   const sound = /^sounds\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\.(?:ogg|wav)$/.test(name)
-  if (!PIG_ART_PATHS.has(name) && !FISHING_ART_PATHS.has(name) && !flat && !imported && !petFrame && !sound) return null
+  const actionFrame = ACTION_FRAME.test(name)
+  if (!PIG_ART_PATHS.has(name) && !FISHING_ART_PATHS.has(name) && !flat && !imported && !petFrame && !sound && !actionFrame) return null
   try {
     const custom = name.startsWith('custom-') ? customSkinArt(store.filePath, name) : null
     const key = name.replace(/\.(?:svg|png)$/, '')
     const path = PIG_ART_ASSETS[key] ?? name
-    const body = custom ?? readFileSync(new URL('../assets/' + path, import.meta.url))
+    const body = custom ?? readFileSync(assetsRoot === undefined ? new URL('../assets/' + path, import.meta.url) : join(assetsRoot, path))
     const png = body.subarray(0, 8).toString('hex') === '89504e470d0a1a0a'
+    const webp = body.length >= 12 && body.subarray(0, 4).toString('ascii') === 'RIFF' && body.subarray(8, 12).toString('ascii') === 'WEBP'
     return {
       body,
-      type: sound ? (name.endsWith('.ogg') ? 'audio/ogg' : 'audio/wav') : petFrame ? 'image/webp' : png ? 'image/png' : 'image/svg+xml; charset=utf-8',
+      type: sound ? (name.endsWith('.ogg') ? 'audio/ogg' : 'audio/wav') : petFrame || webp ? 'image/webp' : png ? 'image/png' : 'image/svg+xml; charset=utf-8',
       custom: custom !== null,
     }
   } catch { return null }
