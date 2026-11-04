@@ -109,6 +109,9 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     startOwnerLan: options => request('owner-lan:start', [options ?? {}]),
     createOwnerLanInvitation: pigId => request('owner-lan:invite', [pigId]),
     stopOwnerLan: () => request('owner-lan:stop'),
+    ownerLanJoin: options => request('owner-lan-client:join', [options ?? {}]),
+    ownerLanJoinStatus: () => request('owner-lan-client:status'),
+    ownerLanLeave: () => request('owner-lan-client:leave'),
     store: { journal: { record: (...args) => { void request('record', args).catch(() => {}) } } },
     dispose() {
       if (closing) return closing

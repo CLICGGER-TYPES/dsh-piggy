@@ -32,6 +32,7 @@ import { renderStudyTab } from './tabs/study.js'
 import { renderSkinsTab } from './tabs/skins.js'
 import { renderSettingsTab } from './tabs/settings.js'
 import { captureCloudSettingsUiState, cloudSettingsDraftOpen, restoreCloudSettingsUiState } from './tabs/cloud-save.js'
+import { ownerNetworkDraftOpen } from './owner-network.js'
 import { renderExtensionsTab } from './tabs/extensions.js'
 import { renderDownloadedApp } from './ext-apps.js'
 import { applyExtensions, enabledTabs } from './extensions.js'
@@ -359,7 +360,7 @@ export function createPanel(ctx) {
         if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return false
         if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return false
         // Replacing a focused input drops the caret (including IME composition).
-        if (ctx.tab === 'settings' && (cloudSettingsDraftOpen() || document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true' || document.activeElement?.getAttribute?.('data-bubble-scale') === 'true')) return false
+        if (ctx.tab === 'settings' && (cloudSettingsDraftOpen() || ownerNetworkDraftOpen() || document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true' || document.activeElement?.getAttribute?.('data-bubble-scale') === 'true')) return false
         if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return false
         if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return false
         // The QTE and waiting animation own their DOM until the phase changes.

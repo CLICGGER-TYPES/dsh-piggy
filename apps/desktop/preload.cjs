@@ -189,15 +189,22 @@ contextBridge.exposeInMainWorld('piggyShell', {
     },
     addAndSelect: () => ipcRenderer.invoke('piggy:owner-pigs:add-and-select'),
   },
-  /** 面板专用的 owner 私有 LAN 会话；只有调用 start() 才启动服务。 */
+  /**
+   * 面板专用的 owner 私有 LAN 会话；只有调用 start() 才启动服务。
+   * 第一版加入侧只读：join 只接收一条 `piggy://IP:端口#邀请码` 字符串。
+   */
   ownerNetwork: {
     status: () => ipcRenderer.invoke('piggy:owner-network:status'),
+    addresses: () => ipcRenderer.invoke('piggy:owner-network:addresses'),
     start: options => ipcRenderer.invoke('piggy:owner-network:start', {
-      listenAddress: options?.listenAddress,
-      advertisedHost: options?.advertisedHost,
+      listenAddress: typeof options?.listenAddress === 'string' ? options.listenAddress : '',
+      advertisedHost: typeof options?.advertisedHost === 'string' ? options.advertisedHost : '',
     }),
-    invite: pigId => ipcRenderer.invoke('piggy:owner-network:invite', String(pigId)),
+    invite: pigId => ipcRenderer.invoke('piggy:owner-network:invite', typeof pigId === 'string' ? pigId : ''),
     stop: () => ipcRenderer.invoke('piggy:owner-network:stop'),
+    join: link => ipcRenderer.invoke('piggy:owner-network:join', typeof link === 'string' ? link.slice(0, 512) : ''),
+    joinStatus: () => ipcRenderer.invoke('piggy:owner-network:join-status'),
+    leave: () => ipcRenderer.invoke('piggy:owner-network:join-leave'),
   },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),

@@ -4363,48 +4363,48 @@
     } };
   }
   var STATE_OF = /* @__PURE__ */ new WeakMap();
-  function publicRegistry(state6, readonly) {
+  function publicRegistry(state7, readonly) {
     const api = {
       readonly,
       registerPack: readonly ? function() {
         throw new Error("[dsh-piggy] the default art resource registry is read-only");
-      } : state6.registerPack,
+      } : state7.registerPack,
       resolve: function(value) {
-        if (typeof value === "string") return state6.resolveString(value);
-        if (value !== null && typeof value === "object") return state6.resolveRef(value);
+        if (typeof value === "string") return state7.resolveString(value);
+        if (value !== null && typeof value === "object") return state7.resolveRef(value);
         return null;
       },
-      resolveRef: state6.resolveRef,
-      resolveString: state6.resolveString,
+      resolveRef: state7.resolveRef,
+      resolveString: state7.resolveString,
       list: function(options) {
         const kind = options?.kind;
         const includeParent = options?.includeParent !== false;
         const found = /* @__PURE__ */ new Map();
-        for (const descriptor of state6.records.values()) {
+        for (const descriptor of state7.records.values()) {
           if (kind !== void 0 && descriptor.kind !== kind) continue;
           found.set(idOf(descriptor), resolved(descriptor, false));
         }
-        if (includeParent && state6.parent !== null) {
-          for (const entry of state6.parent.list({ kind, includeParent: true })) {
+        if (includeParent && state7.parent !== null) {
+          for (const entry of state7.parent.list({ kind, includeParent: true })) {
             if (!found.has(entry.id)) found.set(entry.id, entry);
           }
         }
         return Object.freeze([...found.values()]);
       },
       has: function(value) {
-        const entry = typeof value === "string" ? state6.resolveString(value) : state6.resolveRef(value);
+        const entry = typeof value === "string" ? state7.resolveString(value) : state7.resolveRef(value);
         return entry !== null && entry.exists;
       },
-      subscribe: state6.subscribe
+      subscribe: state7.subscribe
     };
-    STATE_OF.set(api, state6);
+    STATE_OF.set(api, state7);
     return Object.freeze(api);
   }
   function sealArtResourceRegistry(registry2) {
-    const state6 = STATE_OF.get(registry2);
-    if (state6 === void 0) throw new Error("[dsh-piggy] unknown art resource registry");
-    state6.lock();
-    return publicRegistry(state6, true);
+    const state7 = STATE_OF.get(registry2);
+    if (state7 === void 0) throw new Error("[dsh-piggy] unknown art resource registry");
+    state7.lock();
+    return publicRegistry(state7, true);
   }
   function createArtResourceRegistryBase(options) {
     if (typeof options.buildDescriptor !== "function") throw new Error("[dsh-piggy] art resource builder is required");
@@ -4839,62 +4839,62 @@
       )
     };
   }
-  function writeSkinContacts(state6) {
-    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state6));
+  function writeSkinContacts(state7) {
+    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state7));
     listeners2.forEach((fn) => fn());
   }
   function effectiveSkinContact(art) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return null;
-    const state6 = readSkinContacts();
-    if (state6.overrides[art] !== void 0) return state6.overrides[art];
-    if (state6.auto[art] === true) return null;
-    return state6.declared[art] ?? null;
+    const state7 = readSkinContacts();
+    if (state7.overrides[art] !== void 0) return state7.overrides[art];
+    if (state7.auto[art] === true) return null;
+    return state7.declared[art] ?? null;
   }
   function skinContactSource(art) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return "auto";
-    const state6 = readSkinContacts();
-    if (state6.overrides[art] !== void 0) return "local";
-    if (state6.auto[art] === true) return "auto";
-    if (state6.declared[art] !== void 0) return "pack";
+    const state7 = readSkinContacts();
+    if (state7.overrides[art] !== void 0) return "local";
+    if (state7.auto[art] === true) return "auto";
+    if (state7.declared[art] !== void 0) return "pack";
     return "auto";
   }
   function setSkinContactOverride(art, contact) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
-    const state6 = readSkinContacts();
-    if (contact === null) delete state6.overrides[art];
+    const state7 = readSkinContacts();
+    if (contact === null) delete state7.overrides[art];
     else {
       const value = normalizeSkinContact(contact);
       if (value === null) return false;
-      state6.overrides[art] = value;
-      delete state6.auto[art];
+      state7.overrides[art] = value;
+      delete state7.auto[art];
     }
-    writeSkinContacts(state6);
+    writeSkinContacts(state7);
     return true;
   }
   function setDeclaredSkinContact(art, contact) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
     const value = normalizeSkinContact(contact);
     if (value === null) return false;
-    const state6 = readSkinContacts();
-    const current3 = state6.declared[art];
-    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state6.auto[art] !== true) return true;
-    state6.declared[art] = value;
-    delete state6.auto[art];
-    writeSkinContacts(state6);
+    const state7 = readSkinContacts();
+    const current3 = state7.declared[art];
+    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state7.auto[art] !== true) return true;
+    state7.declared[art] = value;
+    delete state7.auto[art];
+    writeSkinContacts(state7);
     return true;
   }
   function clearSkinContact(art) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
-    const state6 = readSkinContacts();
-    delete state6.overrides[art];
-    delete state6.declared[art];
-    state6.auto[art] = true;
-    writeSkinContacts(state6);
+    const state7 = readSkinContacts();
+    delete state7.overrides[art];
+    delete state7.declared[art];
+    state7.auto[art] = true;
+    writeSkinContacts(state7);
     return true;
   }
   function syncDeclaredSkinContacts(skins) {
     const entries2 = Array.isArray(skins?.entries) ? skins.entries : [];
-    const state6 = readSkinContacts();
+    const state7 = readSkinContacts();
     let changed = false;
     for (const entry of entries2) {
       if (entry === null || typeof entry !== "object") continue;
@@ -4902,17 +4902,17 @@
       if (typeof art !== "string" || !ART_KEY2.test(art)) continue;
       const contact = normalizeSkinContact(entry.contact);
       if (contact !== null) {
-        if (state6.auto[art] === true) continue;
-        const current3 = state6.declared[art];
+        if (state7.auto[art] === true) continue;
+        const current3 = state7.declared[art];
         if (current3 !== void 0 && current3.x === contact.x && current3.y === contact.y) continue;
-        state6.declared[art] = contact;
+        state7.declared[art] = contact;
         changed = true;
-      } else if (state6.auto[art] !== true && state6.declared[art] !== void 0 && entry.contactStated === true) {
-        delete state6.declared[art];
+      } else if (state7.auto[art] !== true && state7.declared[art] !== void 0 && entry.contactStated === true) {
+        delete state7.declared[art];
         changed = true;
       }
     }
-    if (changed) writeSkinContacts(state6);
+    if (changed) writeSkinContacts(state7);
     return changed;
   }
   function onSkinContactChange(fn) {
@@ -4977,9 +4977,9 @@
   }
   function renewSkinContactPreview() {
     if (previewOwner === null) return false;
-    const now2 = Date.now();
-    if (now2 - previewSentAt < PET_PREVIEW_RENEW_MS) return false;
-    previewSentAt = now2;
+    const now3 = Date.now();
+    if (now3 - previewSentAt < PET_PREVIEW_RENEW_MS) return false;
+    previewSentAt = now3;
     sendPreview(previewOwner, "press");
     return true;
   }
@@ -5171,10 +5171,10 @@
   var STATES = ["connecting", "connected", "reconnecting", "disconnected", "merging"];
   function normalizeLink(raw) {
     const link = obj(raw);
-    const state6 = str(link.state, "");
-    if (!STATES.includes(state6)) return null;
+    const state7 = str(link.state, "");
+    if (!STATES.includes(state7)) return null;
     return {
-      state: state6,
+      state: state7,
       lastAt: num(link.lastAt, 0),
       queued: num(link.queued, 0),
       merged: link.merged === true,
@@ -5809,14 +5809,14 @@
         return;
       }
       var p = getView().pomodoro;
-      var now2 = Date.now();
+      var now3 = Date.now();
       if (p && p !== seen) {
         seen = p;
-        endsAt = resync(endsAt, p.active ? now2 + p.secondsLeft * 1e3 : 0);
-        breakEndsAt = resync(breakEndsAt, !p.active && p.breakSecondsLeft > 0 ? now2 + p.breakSecondsLeft * 1e3 : 0);
+        endsAt = resync(endsAt, p.active ? now3 + p.secondsLeft * 1e3 : 0);
+        breakEndsAt = resync(breakEndsAt, !p.active && p.breakSecondsLeft > 0 ? now3 + p.breakSecondsLeft * 1e3 : 0);
       }
       if (endsAt > 0) {
-        var left = Math.max(0, Math.ceil((endsAt - now2) / 1e3));
+        var left = Math.max(0, Math.ceil((endsAt - now3) / 1e3));
         var text = "\u{1F345} " + clockText(left);
         if (pill.getAttribute("data-pomo") === "on") pill.textContent = text;
         var clock = content.querySelector(".dp-pomo-clock");
@@ -5827,7 +5827,7 @@
         }
       }
       if (breakEndsAt > 0) {
-        var rest = Math.max(0, Math.ceil((breakEndsAt - now2) / 1e3));
+        var rest = Math.max(0, Math.ceil((breakEndsAt - now3) / 1e3));
         var note3 = content.querySelector("[data-pomo-break]");
         if (note3 !== null) note3.textContent = "\u2615 \u4F11\u606F " + clockText(rest) + "\uFF08\u4E5F\u53EF\u4EE5\u76F4\u63A5\u5F00\u4E0B\u4E00\u4E2A\uFF09";
         if (rest === 0) breakEndsAt = 0;
@@ -6606,10 +6606,10 @@
   function externalLinkOf(view) {
     const raw = isObj(view) ? view.link : null;
     if (!isObj(raw)) return null;
-    const state6 = str(raw.state, "");
-    if (!["connecting", "connected", "reconnecting", "disconnected", "merging"].includes(state6)) return null;
+    const state7 = str(raw.state, "");
+    if (!["connecting", "connected", "reconnecting", "disconnected", "merging"].includes(state7)) return null;
     return {
-      state: state6,
+      state: state7,
       lastAt: num(raw.lastAt, 0),
       queued: num(raw.queued, 0),
       merged: raw.merged === true,
@@ -6984,6 +6984,7 @@
       saves: bridge2.saves,
       ownerArchives: bridge2.ownerArchives,
       ownerPigs: bridge2.ownerPigs,
+      ownerNetwork: bridge2.ownerNetwork,
       ext: bridge2.ext,
       fullscreen: bridge2.fullscreen,
       external: bridge2.external ?? null,
@@ -7981,9 +7982,9 @@
       const next = ui.homePage + (delta > 0 ? 1 : -1);
       if (next < 0 || next >= pages) return;
       event.preventDefault();
-      const now2 = Date.now();
-      if (now2 < wheelLock) return;
-      wheelLock = now2 + 450;
+      const now3 = Date.now();
+      if (now3 < wheelLock) return;
+      wheelLock = now3 + 450;
       showPage(next);
     }, { passive: false });
     var version = el("div", "dp-version", "v" + (ui.view.version === "" ? "\u672A\u77E5" : ui.view.version));
@@ -8403,7 +8404,7 @@
     let contact = null;
     let previewHeld = false, previewUntil = 0;
     let referenceFrames = [];
-    const now2 = () => performance.now();
+    const now3 = () => performance.now();
     const allowed = () => !disposed && !document.hidden && !c.isStopped() && effectiveFeelMode() === "full" && c.canPlay() && (!active2 || capturedArt === c.pig.getAttribute("data-art")) && c.pig.getAttribute("data-feel-flip") !== "true";
     function measure() {
       const image = c.pigArt;
@@ -8500,7 +8501,7 @@
       stopAt = Infinity;
       canvas.hidden = false;
       cancelAnimationFrame(raf3);
-      start2 = now2();
+      start2 = now3();
       frame3 = 0;
       draw();
       raf3 = requestAnimationFrame(tick);
@@ -8509,7 +8510,7 @@
     function release() {
       if (!active2 || !held) return;
       held = false;
-      stopAt = Math.max(1, Math.ceil((now2() - start2) / SNAP_CYCLE_MS)) * SNAP_CYCLE_MS;
+      stopAt = Math.max(1, Math.ceil((now3() - start2) / SNAP_CYCLE_MS)) * SNAP_CYCLE_MS;
     }
     function confirm() {
       if (held && active2) return true;
@@ -8567,7 +8568,7 @@
           if (!press()) return;
           previewHeld = true;
         }
-        previewUntil = now2() + PET_PREVIEW_LEASE_MS;
+        previewUntil = now3() + PET_PREVIEW_LEASE_MS;
         return;
       }
       if (!previewHeld) return;
@@ -8826,20 +8827,20 @@
   function choose(options, hour) {
     return options[Math.abs(Math.floor(hour)) % options.length];
   }
-  function feedbackArtFor(state6) {
-    if (STAGE_ART[state6.stage]) return choose(STAGE_ART[state6.stage], state6.hour);
-    if (state6.party === true) return BIRTHDAY_ART;
-    if (state6.base && state6.base !== "piglet") return null;
-    if (REACTION_ART[state6.reaction]) return choose(REACTION_ART[state6.reaction], state6.hour);
-    if (state6.mood === "sick") return ILLNESS_ART[state6.illness ?? ""] ? choose(ILLNESS_ART[state6.illness ?? ""], state6.hour) : null;
-    if (state6.mood === "dirty" || state6.mood === "hungry") return null;
-    if (state6.activityKind === "work") return WORK_ART[state6.activityKey] ?? null;
-    if (state6.activityKind === "study") return choose(STUDY_ART, state6.hour);
-    if (state6.activityKind === "interest") return choose(INTEREST_ART[state6.activityKey] ?? INTEREST_ART.other, state6.hour);
-    if (state6.activityKind === "fishing") return "fishing";
-    if (state6.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state6.hour) : null;
-    if (IDLE_ART[state6.idle]) return choose(IDLE_ART[state6.idle], state6.hour);
-    if (MOOD_ART[state6.mood]) return choose(MOOD_ART[state6.mood], state6.hour);
+  function feedbackArtFor(state7) {
+    if (STAGE_ART[state7.stage]) return choose(STAGE_ART[state7.stage], state7.hour);
+    if (state7.party === true) return BIRTHDAY_ART;
+    if (state7.base && state7.base !== "piglet") return null;
+    if (REACTION_ART[state7.reaction]) return choose(REACTION_ART[state7.reaction], state7.hour);
+    if (state7.mood === "sick") return ILLNESS_ART[state7.illness ?? ""] ? choose(ILLNESS_ART[state7.illness ?? ""], state7.hour) : null;
+    if (state7.mood === "dirty" || state7.mood === "hungry") return null;
+    if (state7.activityKind === "work") return WORK_ART[state7.activityKey] ?? null;
+    if (state7.activityKind === "study") return choose(STUDY_ART, state7.hour);
+    if (state7.activityKind === "interest") return choose(INTEREST_ART[state7.activityKey] ?? INTEREST_ART.other, state7.hour);
+    if (state7.activityKind === "fishing") return "fishing";
+    if (state7.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state7.hour) : null;
+    if (IDLE_ART[state7.idle]) return choose(IDLE_ART[state7.idle], state7.hour);
+    if (MOOD_ART[state7.mood]) return choose(MOOD_ART[state7.mood], state7.hour);
     return null;
   }
 
@@ -9407,9 +9408,9 @@
 
   // src/client/log-export.js
   var EXPORT_URL = "/dsh-piggy/logs/export";
-  function fileName(now2 = /* @__PURE__ */ new Date()) {
+  function fileName(now3 = /* @__PURE__ */ new Date()) {
     const pad = (value, width) => String(value).padStart(width, "0");
-    return `dsh-piggy-log-${now2.getFullYear()}${pad(now2.getMonth() + 1, 2)}${pad(now2.getDate(), 2)}-${pad(now2.getHours(), 2)}${pad(now2.getMinutes(), 2)}.txt`;
+    return `dsh-piggy-log-${now3.getFullYear()}${pad(now3.getMonth() + 1, 2)}${pad(now3.getDate(), 2)}-${pad(now3.getHours(), 2)}${pad(now3.getMinutes(), 2)}.txt`;
   }
   var isCancel = (error) => error?.name === "AbortError" || error?.name === "NotAllowedError";
   async function saveViaShell(name, text) {
@@ -9568,9 +9569,9 @@
     } catch {
     }
   }
-  function registerVoice(state6, source, gain, filter2) {
-    const voice = { source, gain, filter: filter2, state: state6, done: false };
-    state6.active.add(voice);
+  function registerVoice(state7, source, gain, filter2) {
+    const voice = { source, gain, filter: filter2, state: state7, done: false };
+    state7.active.add(voice);
     voices += 1;
     source.onended = function() {
       retireVoice(voice);
@@ -9588,7 +9589,7 @@
     }
     return buffer;
   }
-  function startTone(ctx, destination, spec, start2, volume, state6) {
+  function startTone(ctx, destination, spec, start2, volume, state7) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const duration = spec.ms / 1e3;
@@ -9601,7 +9602,7 @@
     gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
     osc.connect(gain);
     gain.connect(destination);
-    const voice = registerVoice(state6, osc, gain, null);
+    const voice = registerVoice(state7, osc, gain, null);
     try {
       osc.start(start2);
       osc.stop(start2 + duration + 0.02);
@@ -9611,7 +9612,7 @@
     }
     return voice;
   }
-  function startNoise(ctx, destination, spec, start2, volume, state6) {
+  function startNoise(ctx, destination, spec, start2, volume, state7) {
     const source = ctx.createBufferSource();
     const filter2 = ctx.createBiquadFilter();
     const gain = ctx.createGain();
@@ -9626,7 +9627,7 @@
     source.connect(filter2);
     filter2.connect(gain);
     gain.connect(destination);
-    const voice = registerVoice(state6, source, gain, filter2);
+    const voice = registerVoice(state7, source, gain, filter2);
     try {
       source.start(start2);
       source.stop(start2 + duration + 0.01);
@@ -9636,46 +9637,46 @@
     }
     return voice;
   }
-  function startRecipe(state6, recipe, volume) {
+  function startRecipe(state7, recipe, volume) {
     if (device === null) return false;
     const ctx = device.context;
     const start2 = ctx.currentTime + 5e-3;
     const created = [];
     try {
       for (let i = 0; i < recipe.tones.length; i += 1) {
-        created.push(startTone(ctx, device.master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume, state6));
+        created.push(startTone(ctx, device.master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume, state7));
       }
-      if (recipe.noise !== void 0) created.push(startNoise(ctx, device.master, recipe.noise, start2, volume, state6));
+      if (recipe.noise !== void 0) created.push(startNoise(ctx, device.master, recipe.noise, start2, volume, state7));
       return true;
     } catch {
       for (let i = 0; i < created.length; i += 1) retireVoice(created[i]);
       return false;
     }
   }
-  function stopState(state6) {
-    const active2 = Array.from(state6.active);
+  function stopState(state7) {
+    const active2 = Array.from(state7.active);
     for (let i = 0; i < active2.length; i += 1) retireVoice(active2[i]);
   }
-  function playChannel(state6, key2, options) {
-    if (state6.disposed) return false;
+  function playChannel(state7, key2, options) {
+    if (state7.disposed) return false;
     const recipe = RECIPES[key2];
     if (recipe === void 0) return false;
     const settings = soundSettings();
     if (!settings.on) return false;
-    if (!allowedRole() || state6.quiet() === true) return false;
-    const now2 = Date.now();
-    if (now2 - (state6.lastAt[key2] ?? 0) < AUDIO_DEBOUNCE_MS) return false;
+    if (!allowedRole() || state7.quiet() === true) return false;
+    const now3 = Date.now();
+    if (now3 - (state7.lastAt[key2] ?? 0) < AUDIO_DEBOUNCE_MS) return false;
     if (voices >= AUDIO_VOICE_BUDGET) return false;
     if (ensureDevice() === null) return false;
     const level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
     const volume = level * (options?.soft === true ? 0.65 : 1);
-    if (!startRecipe(state6, recipe, volume)) return false;
-    state6.lastAt[key2] = now2;
+    if (!startRecipe(state7, recipe, volume)) return false;
+    state7.lastAt[key2] = now3;
     return true;
   }
   function createAudioChannel(options) {
     const opts = options ?? {};
-    const state6 = {
+    const state7 = {
       quiet: typeof opts.isQuiet === "function" ? opts.isQuiet : function() {
         return false;
       },
@@ -9685,35 +9686,35 @@
     };
     const channel = {
       get disposed() {
-        return state6.disposed;
+        return state7.disposed;
       },
       isQuiet: function() {
-        return state6.quiet() === true;
+        return state7.quiet() === true;
       },
       /** Legacy configureSound seam; presentation channels bind at creation instead. */
       setQuiet: function(check) {
-        if (typeof check === "function" && !state6.disposed) state6.quiet = check;
+        if (typeof check === "function" && !state7.disposed) state7.quiet = check;
         return channel;
       },
       play: function(key2, playOptions) {
-        return playChannel(state6, key2, playOptions);
+        return playChannel(state7, key2, playOptions);
       },
       unlock: function() {
-        if (state6.disposed) return null;
+        if (state7.disposed) return null;
         if (!soundSettings().on) return null;
         return ensureDevice();
       },
       stop: function() {
-        stopState(state6);
+        stopState(state7);
       },
       dispose: function() {
-        if (state6.disposed) return;
-        state6.disposed = true;
-        stopState(state6);
+        if (state7.disposed) return;
+        state7.disposed = true;
+        stopState(state7);
         channels.delete(channel);
       }
     };
-    states.set(channel, state6);
+    states.set(channel, state7);
     channels.add(channel);
     return channel;
   }
@@ -10785,7 +10786,7 @@
     const active2 = doc?.activeElement;
     const focusAttr = ["data-cloud-provider", "data-cloud-remote", "data-cloud-branch", "data-cloud-advanced-summary"].find((attr) => active2 && content.contains(active2) && active2.hasAttribute?.(attr)) || null;
     const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
-    const state6 = {
+    const state7 = {
       focusAttr,
       advancedOpen: details2 ? details2.open === true : advancedOpen,
       focusSignature: active2 && content.contains(active2) ? {
@@ -10800,7 +10801,7 @@
         /** @type {HTMLInputElement|HTMLSelectElement} */
         active2
       );
-      state6.value = field3.value;
+      state7.value = field3.value;
     }
     if (focusAttr && active2?.tagName === "INPUT") {
       const input = (
@@ -10808,34 +10809,34 @@
         active2
       );
       if (typeof input.selectionStart === "number" && typeof input.selectionEnd === "number") {
-        state6.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection };
+        state7.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection };
       }
     }
-    return state6;
+    return state7;
   }
-  function restoreCloudSettingsUiState(content, state6) {
-    if (!state6) return;
+  function restoreCloudSettingsUiState(content, state7) {
+    if (!state7) return;
     const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
     if (details2) {
-      details2.open = state6.advancedOpen;
-      advancedOpen = state6.advancedOpen;
+      details2.open = state7.advancedOpen;
+      advancedOpen = state7.advancedOpen;
     }
     const focusable = Array.from(content.querySelectorAll("button, input, select, summary"));
-    const directTarget = state6.focusAttr ? focusable.find((node) => node.hasAttribute?.(state6.focusAttr)) : void 0;
-    const signatureMatches = state6.focusSignature ? focusable.filter((node) => node.tagName === state6.focusSignature.tagName && (typeof node.className === "string" ? node.className : "") === state6.focusSignature.className && node.getAttribute?.("aria-label") === state6.focusSignature.ariaLabel && JSON.stringify(cloudDataAttributes(node).map((attr) => attr.name)) === JSON.stringify(state6.focusSignature.dataAttributes.map((attr) => attr.name))) : [];
-    const exactSignatureMatches = signatureMatches.filter((node) => JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state6.focusSignature?.dataAttributes));
+    const directTarget = state7.focusAttr ? focusable.find((node) => node.hasAttribute?.(state7.focusAttr)) : void 0;
+    const signatureMatches = state7.focusSignature ? focusable.filter((node) => node.tagName === state7.focusSignature.tagName && (typeof node.className === "string" ? node.className : "") === state7.focusSignature.className && node.getAttribute?.("aria-label") === state7.focusSignature.ariaLabel && JSON.stringify(cloudDataAttributes(node).map((attr) => attr.name)) === JSON.stringify(state7.focusSignature.dataAttributes.map((attr) => attr.name))) : [];
+    const exactSignatureMatches = signatureMatches.filter((node) => JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state7.focusSignature?.dataAttributes));
     const target = directTarget || (exactSignatureMatches.length === 1 ? exactSignatureMatches[0] : signatureMatches.length === 1 ? signatureMatches[0] : void 0);
     if (!target) return;
-    if (state6.value !== void 0 && (target.tagName === "INPUT" || target.tagName === "SELECT")) {
+    if (state7.value !== void 0 && (target.tagName === "INPUT" || target.tagName === "SELECT")) {
       const field3 = (
         /** @type {HTMLInputElement|HTMLSelectElement} */
         target
       );
-      field3.value = state6.value;
+      field3.value = state7.value;
       if (draft2 !== null) {
-        if (state6.focusAttr === "data-cloud-provider") draft2.provider = state6.value;
-        else if (state6.focusAttr === "data-cloud-remote") draft2.remote = state6.value;
-        else if (state6.focusAttr === "data-cloud-branch") draft2.branch = state6.value;
+        if (state7.focusAttr === "data-cloud-provider") draft2.provider = state7.value;
+        else if (state7.focusAttr === "data-cloud-remote") draft2.remote = state7.value;
+        else if (state7.focusAttr === "data-cloud-branch") draft2.branch = state7.value;
       }
     }
     const element = (
@@ -10848,12 +10849,12 @@
       const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
       if (!disabled && doc && "activeElement" in doc) Reflect.set(doc, "activeElement", target);
     }
-    if (state6.selection && target.tagName === "INPUT") {
+    if (state7.selection && target.tagName === "INPUT") {
       const input = (
         /** @type {HTMLInputElement} */
         target
       );
-      if (typeof input.setSelectionRange === "function") input.setSelectionRange(state6.selection.start, state6.selection.end, state6.selection.direction || "none");
+      if (typeof input.setSelectionRange === "function") input.setSelectionRange(state7.selection.start, state7.selection.end, state7.selection.direction || "none");
     }
   }
   function cloudApi() {
@@ -11731,6 +11732,625 @@
     renderOwnerCloudHistory(box, state3.history);
   }
 
+  // src/client/owner-network-bridge.js
+  var METHODS = ["status", "addresses", "start", "stop", "invite", "join", "joinStatus", "leave"];
+  function isOwnerNetworkApi(value) {
+    return value !== null && typeof value === "object" && METHODS.every((name) => typeof value[name] === "function");
+  }
+  function resolveOwnerNetworkBinding() {
+    const desktop2 = desktopShell()?.ownerNetwork;
+    if (isOwnerNetworkApi(desktop2)) return { api: desktop2, transport: "desktop" };
+    const dsh = typeof window === "undefined" ? null : (
+      /** @type {any} */
+      window.__dshPiggyOwnerNetwork
+    );
+    if (isOwnerNetworkApi(dsh)) return { api: dsh, transport: "dsh" };
+    return null;
+  }
+
+  // src/client/owner-network-view.js
+  var STAGE_LABELS2 = Object.freeze({ box: "\u7EB8\u76D2", piglet: "\u5E7C\u5E74\u732A", young: "\u9752\u5E74\u732A", middle: "\u6210\u5E74\u732A" });
+  var REASON_TEXT2 = Object.freeze({
+    "invite-format-invalid": "\u9080\u8BF7\u4E32\u683C\u5F0F\u4E0D\u5BF9\uFF1A\u5E94\u4E3A piggy://IP:\u7AEF\u53E3#\u9080\u8BF7\u7801",
+    "invite-address-invalid": "\u9080\u8BF7\u4E32\u91CC\u7684\u5730\u5740\u4E0D\u662F IPv4",
+    "invite-address-not-private": "\u53EA\u80FD\u52A0\u5165\u5C40\u57DF\u7F51\u79C1\u6709\u5730\u5740\uFF08192.168.x.x\u300110.x.x.x\u3001172.16\u201331.x.x\uFF09",
+    "invite-port-invalid": "\u9080\u8BF7\u4E32\u91CC\u7684\u7AEF\u53E3\u65E0\u6548\uFF081\u201365535\uFF09",
+    "invite-code-invalid": "\u9080\u8BF7\u7801\u5E94\u4E3A 64 \u4F4D\u5C0F\u5199\u5341\u516D\u8FDB\u5236\uFF0C\u8BF7\u91CD\u65B0\u590D\u5236",
+    "join-https-unsupported": "\u7B2C\u4E00\u7248\u4E0D\u80FD\u52A0\u5165\u52A0\u5BC6\u4E3B\u673A\uFF1B\u8BF7\u8BA9\u5BF9\u65B9\u5173\u95ED TLS \u540E\u7528\u5C40\u57DF\u7F51\u5730\u5740\u8FDE\u63A5",
+    "join-self": "\u4E0D\u80FD\u52A0\u5165\u81EA\u5DF1\uFF1A\u8FD9\u6761\u9080\u8BF7\u6765\u81EA\u672C\u673A",
+    "unreachable": "\u8FDE\u63A5\u5DF2\u65AD\u5F00\uFF1A\u5BF9\u65B9\u53EF\u80FD\u5DF2\u505C\u6B62\u8054\u673A\u6216\u66F4\u6362\u4E86\u5730\u5740",
+    "session-expired": "\u8FDE\u63A5\u7A7A\u95F2\u8FC7\u671F\uFF0C\u8BF7\u8BA9\u5BF9\u65B9\u91CD\u65B0\u751F\u6210\u9080\u8BF7\u4E32",
+    "invitation-invalid-or-expired": "\u9080\u8BF7\u7801\u65E0\u6548\u6216\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u8BA9\u5BF9\u65B9\u91CD\u65B0\u751F\u6210",
+    "pair-rate-limited": "\u5C1D\u8BD5\u592A\u9891\u7E41\uFF0C\u8BF7\u7B49\u4E00\u5206\u949F\u518D\u8BD5",
+    "session-limit": "\u5BF9\u65B9\u5DF2\u8FDE\u6EE1 8 \u53F0\u8BBE\u5907",
+    "invited-target-unavailable": "\u88AB\u9080\u8BF7\u7684\u5C0F\u732A\u5DF2\u4E0D\u5728\u5BF9\u65B9\u7684\u5B8C\u6574\u6863\u91CC",
+    "forbidden": "\u5730\u5740\u548C\u5BF9\u65B9\u7684\u76D1\u542C\u5730\u5740\u4E0D\u4E00\u81F4\uFF08Host \u6821\u9A8C\u672A\u901A\u8FC7\uFF09",
+    "pig-target-not-found": "\u6240\u9009\u5C0F\u732A\u4E0D\u5728\u5F53\u524D\u5B8C\u6574\u6863",
+    "owner-network-not-running": "\u8BF7\u5148\u5F00\u542F\u672C\u673A\u8054\u673A",
+    "owner-network-disabled": "\u5F53\u524D\u914D\u7F6E\u672A\u5141\u8BB8\u8054\u673A"
+  });
+  function reasonText2(reason, fallback) {
+    const code = typeof reason === "string" ? reason.trim() : "";
+    if (code === "") return fallback;
+    if (Object.hasOwn(REASON_TEXT2, code)) return REASON_TEXT2[code];
+    if (/fetch failed|econnrefused|enetunreach|ehostunreach|timeout|timed out|network/iu.test(code)) {
+      return "\u8FDE\u4E0D\u4E0A\uFF1A\u786E\u8BA4\u540C\u4E00\u5C40\u57DF\u7F51\u3001\u5730\u5740\u7AEF\u53E3\u6B63\u786E\u3001\u5BF9\u65B9\u5DF2\u5F00\u542F\u8054\u673A\u3001\u7CFB\u7EDF\u9632\u706B\u5899\u5DF2\u653E\u884C";
+    }
+    return code.length <= 200 ? code : fallback;
+  }
+  function normalizeStatus4(result) {
+    if (result?.ok !== true || result.available !== true) {
+      return {
+        ok: false,
+        available: false,
+        reason: typeof result?.reason === "string" && result.reason !== "" ? result.reason : "\u672C\u673A\u8054\u673A\u6682\u4E0D\u53EF\u7528"
+      };
+    }
+    return {
+      ok: true,
+      available: true,
+      ownerId: typeof result.ownerId === "string" ? result.ownerId : "",
+      pigId: typeof result.pigId === "string" ? result.pigId : "",
+      running: result.running === true,
+      host: typeof result.host === "string" ? result.host : "",
+      port: Number.isSafeInteger(result.port) ? result.port : 0,
+      protocol: typeof result.protocol === "string" ? result.protocol : "http",
+      pairedClients: Number.isSafeInteger(result.pairedClients) ? result.pairedClients : 0
+    };
+  }
+  function normalizeAddresses(result) {
+    if (result?.ok !== true || !Array.isArray(result.addresses)) {
+      return { ok: false, addresses: [], reason: reasonText2(result?.reason, "\u65E0\u6CD5\u8BFB\u53D6\u672C\u673A\u7F51\u7EDC\u5730\u5740") };
+    }
+    const addresses = result.addresses.filter((item) => item !== null && typeof item === "object" && typeof item.address === "string" && (item.kind === "loopback" || item.kind === "private" || item.kind === "link-local")).map((item) => ({
+      address: item.address,
+      interface: typeof item.interface === "string" ? item.interface : "",
+      kind: item.kind
+    }));
+    return { ok: true, addresses, lanAvailable: addresses.some((item) => item.kind !== "loopback") };
+  }
+  function selectedAddress(state7) {
+    const list = state7.addresses?.ok === true ? state7.addresses.addresses : [];
+    if (state7.address !== "" && list.some((item) => item.address === state7.address)) return state7.address;
+    const lan = list.find((item) => item.kind !== "loopback");
+    return lan !== void 0 ? lan.address : list[0]?.address ?? "";
+  }
+  function addressLabel(item) {
+    const where = item.kind === "loopback" ? "\u4EC5\u672C\u673A" : item.interface || "\u5C40\u57DF\u7F51";
+    return `${item.address} \xB7 ${where}`;
+  }
+  function renderIdle(box, state7, handlers) {
+    if (state7.addresses === null) {
+      box.box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u672C\u673A\u7F51\u7EDC\u5730\u5740\u2026"));
+      return;
+    }
+    if (state7.addresses.ok !== true) {
+      box.box.appendChild(el("p", "dp-dim", state7.addresses.reason || "\u65E0\u6CD5\u8BFB\u53D6\u672C\u673A\u7F51\u7EDC\u5730\u5740"));
+      const retry3 = button("dp-mini", { "data-lan-addresses-retry": "true" }, () => {
+        handlers.retryAddresses();
+      });
+      retry3.textContent = "\u91CD\u65B0\u8BFB\u53D6";
+      const actions3 = el("div", "dp-lan-actions");
+      actions3.appendChild(retry3);
+      box.box.appendChild(actions3);
+      return;
+    }
+    if (state7.addresses.addresses.length === 0) {
+      box.box.appendChild(el("p", "dp-dim", "\u8FD9\u53F0\u8BBE\u5907\u6CA1\u6709\u53EF\u7528\u7684\u5C40\u57DF\u7F51\u5730\u5740\uFF1B\u8BF7\u5148\u8FDE\u63A5 Wi-Fi \u6216\u7F51\u7EBF"));
+      return;
+    }
+    const chosen = selectedAddress(state7);
+    const field3 = el("label", "dp-lan-field");
+    field3.appendChild(el("span", "dp-dim", "\u76D1\u542C\u5730\u5740"));
+    const select2 = (
+      /** @type {HTMLSelectElement} */
+      el("select", "dp-setting-field")
+    );
+    select2.setAttribute("data-lan-address", "true");
+    select2.setAttribute("aria-label", "\u8054\u673A\u76D1\u542C\u5730\u5740");
+    for (const item of state7.addresses.addresses) {
+      const option = el("option", null, addressLabel(item));
+      option.setAttribute("value", item.address);
+      select2.appendChild(option);
+    }
+    select2.value = chosen;
+    select2.addEventListener("change", () => {
+      handlers.setAddress(select2.value);
+    });
+    field3.appendChild(select2);
+    box.box.appendChild(field3);
+    if (state7.addresses.lanAvailable !== true) {
+      box.box.appendChild(el("p", "dp-dim", "\u53EA\u627E\u5230 127.0.0.1\uFF1A\u5176\u4ED6\u8BBE\u5907\u6682\u65F6\u8FDE\u4E0D\u8FDB\u6765"));
+    }
+    const actions2 = el("div", "dp-lan-actions");
+    const start2 = button("dp-mini", { "data-lan-start": "true" }, () => {
+      void handlers.start();
+    });
+    start2.textContent = state7.busy === "start" ? "\u6B63\u5728\u5F00\u542F\u2026" : "\u5F00\u542F\u8054\u673A";
+    start2.disabled = state7.busy !== "" || chosen === "";
+    actions2.appendChild(start2);
+    box.box.appendChild(actions2);
+    box.box.appendChild(el("p", "dp-dim", "\u672A\u52A0\u5BC6\uFF0C\u53EA\u5EFA\u8BAE\u5728\u53EF\u4FE1\u5C40\u57DF\u7F51\u4F7F\u7528\uFF1B\u516C\u7F51\u5730\u5740\u4E0D\u63D0\u4F9B\u3002"));
+  }
+  function renderRunning(box, state7, handlers) {
+    const host2 = state7.status.host !== "" ? state7.status.host : "127.0.0.1";
+    const protocol = state7.status.protocol === "https" ? "HTTPS" : "HTTP";
+    const address = el("div", "dp-lan-card");
+    address.appendChild(el("b", null, `${host2}:${state7.status.port}`));
+    address.appendChild(el("small", "dp-dim", `${protocol} \xB7 \u5DF2\u914D\u5BF9 ${state7.status.pairedClients} \u53F0`));
+    box.box.appendChild(address);
+    box.box.appendChild(el("p", "dp-dim", "\u7AEF\u53E3\u6BCF\u6B21\u5F00\u542F\u90FD\u53EF\u80FD\u53D8\u5316\uFF1B\u7A7A\u95F2 30 \u5206\u949F\u7684\u5BF9\u7AEF\u4F1A\u81EA\u52A8\u65AD\u5F00\u3002"));
+    const actions2 = el("div", "dp-lan-actions");
+    const invite = button("dp-mini", { "data-lan-invite": "true" }, () => {
+      void handlers.invite();
+    });
+    invite.textContent = state7.busy === "invite" ? "\u6B63\u5728\u751F\u6210\u2026" : "\u751F\u6210\u9080\u8BF7\u4E32";
+    invite.disabled = state7.busy !== "";
+    actions2.appendChild(invite);
+    const stop = button("dp-mini dp-mini-plain", { "data-lan-stop": "true" }, () => {
+      void handlers.stop();
+    });
+    stop.textContent = state7.busy === "stop" ? "\u6B63\u5728\u505C\u6B62\u2026" : "\u505C\u6B62\u8054\u673A";
+    stop.disabled = state7.busy !== "";
+    actions2.appendChild(stop);
+    box.box.appendChild(actions2);
+    if (state7.invite !== null) {
+      const remaining = Math.max(0, Math.ceil((state7.invite.expiresAt - Date.now()) / 1e3));
+      box.box.appendChild(el("p", "dp-dim", `\u9080\u8BF7\u4E32\uFF08${remaining} \u79D2\u540E\u8FC7\u671F\uFF0C\u53EA\u80FD\u7528\u4E00\u6B21\uFF09`));
+      const code = el("div", "dp-lan-invite", state7.invite.link);
+      code.setAttribute("data-lan-invite-code", "true");
+      box.box.appendChild(code);
+      const copyActions = el("div", "dp-lan-actions");
+      const copy = button("dp-mini", { "data-lan-copy": "true" }, () => {
+        void handlers.copyInvite();
+      });
+      copy.textContent = "\u590D\u5236\u9080\u8BF7\u4E32";
+      copyActions.appendChild(copy);
+      box.box.appendChild(copyActions);
+    }
+  }
+  function peerStage(peer) {
+    if (peer?.hatched === false) return "\u672A\u5B75\u5316";
+    const stage2 = typeof peer?.stage === "string" ? STAGE_LABELS2[peer.stage] : "";
+    return stage2 || "\u6210\u957F\u4E2D";
+  }
+  function peerName(peer) {
+    return typeof peer?.name === "string" && peer.name.trim() !== "" ? peer.name : "\u672A\u547D\u540D\u5C0F\u732A";
+  }
+  function renderJoin(box, state7, handlers) {
+    const joinBox = el("div", "dp-lan-join");
+    const title = el("div", "dp-lan-join-head");
+    title.appendChild(el("b", null, "\u52A0\u5165\u53E6\u4E00\u53F0\u8BBE\u5907"));
+    title.appendChild(el("small", "dp-dim", "\u53EA\u8BFB\u9884\u89C8"));
+    joinBox.appendChild(title);
+    if (state7.join !== null) {
+      const peer = state7.join.peer;
+      const where = state7.join.address !== "" ? `${state7.join.address}:${state7.join.port}` : "\u5BF9\u65B9\u8BBE\u5907";
+      const summary = el("div", "dp-lan-card");
+      summary.setAttribute("data-lan-joined", "true");
+      summary.appendChild(el("b", null, `\u5DF2\u8FDE\u63A5 ${where}`));
+      summary.appendChild(el("small", "dp-dim", `\u76EE\u6807\u300C${peerName(peer)}\u300D\xB7 ${peerStage(peer)}`));
+      joinBox.appendChild(summary);
+      if (state7.join.connected === false) {
+        joinBox.appendChild(el("p", "dp-lan-error", state7.join.reason || "\u8FDE\u63A5\u5DF2\u65AD\u5F00"));
+        joinBox.appendChild(el("p", "dp-dim", "\u9080\u8BF7\u4E32\u4E00\u6B21\u6709\u6548\uFF1B\u8BF7\u8BA9\u5BF9\u65B9\u91CD\u65B0\u751F\u6210\u540E\u518D\u52A0\u5165\u3002"));
+      } else {
+        joinBox.appendChild(el("p", "dp-dim", "\u53EA\u8BFB\uFF1A\u53EF\u4EE5\u770B\u5230\u5BF9\u65B9\u5C0F\u732A\u7684\u540D\u5B57\u548C\u6210\u957F\uFF0C\u4E0D\u4F1A\u64CD\u4F5C\u5BF9\u65B9\u7684\u732A\u3002"));
+      }
+      const actions3 = el("div", "dp-lan-actions");
+      const leave = button("dp-mini dp-mini-plain", { "data-lan-leave": "true" }, () => {
+        void handlers.leave();
+      });
+      leave.textContent = state7.busy === "leave" ? "\u6B63\u5728\u65AD\u5F00\u2026" : "\u65AD\u5F00";
+      leave.disabled = state7.busy !== "";
+      actions3.appendChild(leave);
+      joinBox.appendChild(actions3);
+      box.box.appendChild(joinBox);
+      return;
+    }
+    if (state7.busy === "join") {
+      joinBox.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8FDE\u63A5\u2026"));
+      box.box.appendChild(joinBox);
+      return;
+    }
+    const field3 = el("label", "dp-lan-field");
+    field3.appendChild(el("span", "dp-dim", "\u9080\u8BF7\u4E32"));
+    let joinButton = null;
+    const input = (
+      /** @type {HTMLInputElement} */
+      el("input", "dp-setting-field dp-lan-input")
+    );
+    input.type = "text";
+    input.value = state7.draft;
+    input.placeholder = "piggy://192.168.1.20:53421#\u9080\u8BF7\u7801";
+    input.setAttribute("data-lan-join-input", "true");
+    input.setAttribute("aria-label", "\u9080\u8BF7\u4E32");
+    input.setAttribute("spellcheck", "false");
+    input.addEventListener("input", () => {
+      handlers.setDraft(input.value);
+      if (joinButton !== null) joinButton.disabled = input.value.trim() === "" || state7.busy !== "";
+    });
+    input.addEventListener("focus", () => {
+      handlers.setInputFocused(true);
+    });
+    input.addEventListener("blur", () => {
+      handlers.setInputFocused(false);
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault?.();
+        void handlers.join();
+      }
+    });
+    field3.appendChild(input);
+    joinBox.appendChild(field3);
+    const actions2 = el("div", "dp-lan-actions");
+    const join = button("dp-mini", { "data-lan-join": "true" }, () => {
+      void handlers.join();
+    });
+    join.textContent = "\u52A0\u5165";
+    join.disabled = state7.draft.trim() === "" || state7.busy !== "";
+    joinButton = join;
+    actions2.appendChild(join);
+    joinBox.appendChild(actions2);
+    joinBox.appendChild(el("p", "dp-dim", "\u7C98\u8D34\u5BF9\u65B9\u590D\u5236\u7684\u6574\u6761\u9080\u8BF7\u4E32\u3002\u7B2C\u4E00\u7248\u53EA\u8BFB\uFF0C\u4E14\u53EA\u652F\u6301\u5C40\u57DF\u7F51\u672A\u52A0\u5BC6\u8FDE\u63A5\u3002"));
+    box.box.appendChild(joinBox);
+  }
+
+  // src/client/owner-network.js
+  var STATUS_TTL_MS = 8e3;
+  var ADDRESS_TTL_MS = 3e4;
+  var JOIN_TTL_MS = 8e3;
+  var INVITE_TTL_MS = 6e4;
+  var state4 = {
+    /** @type {any} */
+    ui: null,
+    generation: 0,
+    /** @type {any} */
+    status: null,
+    statusAt: 0,
+    /** @type {Promise<any>|null} */
+    statusPromise: null,
+    /** @type {{ok:boolean, addresses:Array<any>, lanAvailable?:boolean, reason?:string}|null} */
+    addresses: null,
+    addressesAt: 0,
+    /** @type {Promise<any>|null} */
+    addressesPromise: null,
+    /** @type {string} */
+    address: "",
+    /** @type {{link:string, code:string, host:string, port:number, protocol:string, expiresAt:number}|null} */
+    invite: null,
+    /** @type {{peer:any, address:string, port:number, connected:boolean, reason?:string}|null} */
+    join: null,
+    joinAt: 0,
+    /** @type {Promise<any>|null} */
+    joinPromise: null,
+    /** @type {''|'start'|'stop'|'invite'|'join'|'leave'} */
+    busy: "",
+    draft: "",
+    inputFocused: false,
+    error: "",
+    notice: ""
+  };
+  function now() {
+    return Date.now();
+  }
+  function rerender6() {
+    state4.ui?.renderContent?.();
+  }
+  function shortReason(error, fallback) {
+    const message3 = error instanceof Error ? error.message : "";
+    return message3 !== "" && message3.length <= 200 ? message3 : fallback;
+  }
+  function clearFeedback() {
+    state4.error = "";
+    state4.notice = "";
+  }
+  async function requestStatus4(ui) {
+    if (state4.statusPromise !== null) return;
+    const binding = resolveOwnerNetworkBinding();
+    if (binding === null) return;
+    const generation = state4.generation;
+    const promise = (async () => {
+      try {
+        return normalizeStatus4(await binding.api.status());
+      } catch (error) {
+        return normalizeStatus4({ ok: false, reason: shortReason(error, "\u672C\u673A\u8054\u673A\u72B6\u6001\u8BFB\u53D6\u5931\u8D25") });
+      }
+    })();
+    state4.statusPromise = promise;
+    const status2 = await promise;
+    if (state4.statusPromise === promise) state4.statusPromise = null;
+    if (generation !== state4.generation) return;
+    state4.status = status2;
+    state4.statusAt = now();
+    if (status2.available !== true) {
+      state4.invite = null;
+      if (state4.join !== null) {
+        state4.join = null;
+        try {
+          await binding.api.leave();
+        } catch {
+        }
+      }
+    }
+    if (state4.ui === ui) rerender6();
+  }
+  async function requestAddresses(ui) {
+    if (state4.addressesPromise !== null) return;
+    const binding = resolveOwnerNetworkBinding();
+    if (binding === null) return;
+    const generation = state4.generation;
+    const promise = (async () => {
+      try {
+        return normalizeAddresses(await binding.api.addresses());
+      } catch (error) {
+        return { ok: false, addresses: [], reason: shortReason(error, "\u65E0\u6CD5\u8BFB\u53D6\u672C\u673A\u7F51\u7EDC\u5730\u5740") };
+      }
+    })();
+    state4.addressesPromise = promise;
+    const addresses = await promise;
+    if (state4.addressesPromise === promise) state4.addressesPromise = null;
+    if (generation !== state4.generation) return;
+    state4.addresses = addresses;
+    state4.addressesAt = now();
+    if (state4.ui === ui) rerender6();
+  }
+  async function requestJoinStatus(ui) {
+    if (state4.joinPromise !== null || state4.join === null) return;
+    const binding = resolveOwnerNetworkBinding();
+    if (binding === null) return;
+    const generation = state4.generation;
+    const promise = (async () => {
+      try {
+        return await binding.api.joinStatus();
+      } catch (error) {
+        return { ok: true, joining: true, connected: false, reason: shortReason(error, "unreachable") };
+      }
+    })();
+    state4.joinPromise = promise;
+    const result = await promise;
+    if (state4.joinPromise === promise) state4.joinPromise = null;
+    if (generation !== state4.generation || state4.join === null) return;
+    state4.joinAt = now();
+    if (result?.joining === false) {
+      const reason = typeof result.reason === "string" ? result.reason : "";
+      state4.join = null;
+      if (reason !== "") state4.error = reasonText2(reason, "\u8FDE\u63A5\u5DF2\u65AD\u5F00");
+    } else {
+      const peer = result?.peer;
+      if (peer !== null && typeof peer === "object") state4.join.peer = peer;
+      state4.join.connected = result?.connected !== false;
+      if (state4.join.connected) state4.join.reason = "";
+      else state4.join.reason = reasonText2(result?.reason, "\u8FDE\u63A5\u5DF2\u65AD\u5F00");
+    }
+    if (state4.ui === ui) rerender6();
+  }
+  function ownerNetworkDraftOpen() {
+    return state4.draft.trim() !== "" || state4.inputFocused;
+  }
+  function inviteLink(host2, port, code) {
+    return `piggy://${host2}:${port}#${code}`;
+  }
+  async function startHost(ui) {
+    if (state4.busy !== "") return;
+    const binding = resolveOwnerNetworkBinding();
+    const address = selectedAddress(state4);
+    if (binding === null || address === "") return;
+    state4.busy = "start";
+    clearFeedback();
+    rerender6();
+    let result = null;
+    try {
+      result = await binding.api.start({ listenAddress: address });
+    } catch (error) {
+      state4.error = reasonText2(shortReason(error, ""), "\u5F00\u542F\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+    }
+    state4.busy = "";
+    if (result !== null) {
+      if (result?.ok === true) {
+        state4.status = { ...normalizeStatus4({ ok: true, available: true, ...state4.status, ...result }) };
+        state4.statusAt = now();
+        state4.notice = "\u8054\u673A\u5DF2\u5F00\u542F\uFF1B\u628A\u9080\u8BF7\u4E32\u53D1\u7ED9\u540C\u4E00\u5C40\u57DF\u7F51\u7684\u53E6\u4E00\u53F0\u8BBE\u5907";
+      } else {
+        state4.error = reasonText2(result?.reason, "\u5F00\u542F\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+      }
+    }
+    state4.statusAt = 0;
+    rerender6();
+  }
+  async function stopHost(ui) {
+    if (state4.busy !== "") return;
+    const binding = resolveOwnerNetworkBinding();
+    if (binding === null) return;
+    state4.busy = "stop";
+    clearFeedback();
+    rerender6();
+    let result = null;
+    try {
+      result = await binding.api.stop();
+    } catch (error) {
+      state4.error = shortReason(error, "\u505C\u6B62\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+    }
+    state4.busy = "";
+    state4.invite = null;
+    if (result !== null) {
+      if (result?.ok === true) {
+        state4.status = { ...normalizeStatus4({ ok: true, available: true, ...state4.status }), running: false, pairedClients: 0 };
+        state4.notice = "\u8054\u673A\u5DF2\u505C\u6B62\uFF1B\u7AEF\u53E3\u4F1A\u91CA\u653E\uFF0C\u91CD\u65B0\u5F00\u542F\u540E\u9700\u8981\u65B0\u7684\u9080\u8BF7\u4E32";
+      } else {
+        state4.error = reasonText2(result?.reason, "\u505C\u6B62\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+      }
+    }
+    state4.statusAt = 0;
+    rerender6();
+  }
+  async function createInvite(ui) {
+    if (state4.busy !== "" || state4.status === null) return;
+    const binding = resolveOwnerNetworkBinding();
+    if (binding === null) return;
+    const pigId = typeof state4.status.pigId === "string" ? state4.status.pigId : "";
+    if (pigId === "") {
+      state4.error = "\u5F53\u524D\u5B8C\u6574\u6863\u6CA1\u6709\u53EF\u7528\u7684\u5C0F\u732A";
+      rerender6();
+      return;
+    }
+    state4.busy = "invite";
+    clearFeedback();
+    state4.invite = null;
+    rerender6();
+    let result = null;
+    try {
+      result = await binding.api.invite(pigId);
+    } catch (error) {
+      state4.error = shortReason(error, "\u65E0\u6CD5\u751F\u6210\u9080\u8BF7");
+    }
+    state4.busy = "";
+    if (result !== null) {
+      if (result?.ok === true && typeof result.invitation === "string") {
+        const host2 = typeof result.host === "string" && result.host !== "" ? result.host : state4.status.host;
+        const port = Number.isSafeInteger(result.port) ? result.port : state4.status.port;
+        const expiresAt = Number.isFinite(result.expiresAt) ? result.expiresAt : now() + INVITE_TTL_MS;
+        state4.invite = {
+          link: inviteLink(host2, port, result.invitation),
+          code: result.invitation,
+          host: host2,
+          port,
+          protocol: typeof result.protocol === "string" ? result.protocol : state4.status.protocol,
+          expiresAt
+        };
+      } else {
+        state4.error = reasonText2(result?.reason, "\u65E0\u6CD5\u751F\u6210\u9080\u8BF7");
+      }
+    }
+    rerender6();
+  }
+  async function copyInvite(ui) {
+    if (state4.invite === null) return;
+    const text = state4.invite.link;
+    let copied = false;
+    try {
+      const clipboard = typeof navigator === "undefined" ? null : navigator.clipboard;
+      if (clipboard !== void 0 && clipboard !== null && typeof clipboard.writeText === "function") {
+        await clipboard.writeText(text);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+    state4.notice = copied ? "\u9080\u8BF7\u4E32\u5DF2\u590D\u5236" : "\u590D\u5236\u5931\u8D25\uFF1A\u8BF7\u9009\u4E2D\u9080\u8BF7\u4E32\u624B\u52A8\u590D\u5236\uFF08Ctrl+C\uFF09";
+    state4.error = "";
+    rerender6();
+  }
+  async function joinPeer(ui) {
+    if (state4.busy !== "" || state4.join !== null) return;
+    const link = state4.draft.trim();
+    if (link === "") return;
+    const binding = resolveOwnerNetworkBinding();
+    if (binding === null) return;
+    state4.busy = "join";
+    clearFeedback();
+    rerender6();
+    let result = null;
+    try {
+      result = await binding.api.join(link);
+    } catch (error) {
+      state4.error = reasonText2(shortReason(error, ""), "\u52A0\u5165\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+    }
+    state4.busy = "";
+    if (result !== null) {
+      if (result?.ok === true) {
+        const peer = result.peer !== null && typeof result.peer === "object" ? result.peer : {};
+        const endpoint = result.endpoint !== null && typeof result.endpoint === "object" ? result.endpoint : {};
+        state4.join = {
+          peer,
+          address: typeof endpoint.address === "string" ? endpoint.address : "",
+          port: Number.isSafeInteger(endpoint.port) ? endpoint.port : 0,
+          connected: true
+        };
+        state4.joinAt = now();
+        state4.draft = "";
+        state4.inputFocused = false;
+        state4.notice = "\u5DF2\u8FDE\u63A5\uFF1B\u7B2C\u4E00\u7248\u53EA\u8BFB\uFF0C\u4E0D\u4F1A\u64CD\u4F5C\u5BF9\u65B9\u7684\u732A";
+      } else {
+        state4.error = reasonText2(result?.reason, "\u52A0\u5165\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+      }
+    }
+    rerender6();
+  }
+  async function leavePeer(ui) {
+    if (state4.busy !== "") return;
+    const binding = resolveOwnerNetworkBinding();
+    state4.busy = "leave";
+    clearFeedback();
+    rerender6();
+    try {
+      await binding?.api.leave();
+    } catch {
+    }
+    state4.busy = "";
+    state4.join = null;
+    state4.notice = "\u5DF2\u5728\u672C\u673A\u65AD\u5F00";
+    rerender6();
+  }
+  function renderOwnerNetworkSettings(ui, section2) {
+    state4.ui = ui;
+    if (resolveOwnerNetworkBinding() === null) return;
+    if (state4.status === null || now() - state4.statusAt > STATUS_TTL_MS) void requestStatus4(ui);
+    if (state4.status === null) {
+      const loading4 = section2(ui, "\u5C40\u57DF\u7F51\u8054\u673A", "\u540C\u4E00\u5C40\u57DF\u7F51\u7684\u53E6\u4E00\u53F0\u8BBE\u5907\u53EF\u4EE5\u53EA\u8BFB\u67E5\u770B\u8FD9\u53EA\u732A");
+      loading4.box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u672C\u673A\u8054\u673A\u72B6\u6001\u2026"));
+      return;
+    }
+    if (state4.status.available !== true) {
+      const box2 = section2(ui, "\u5C40\u57DF\u7F51\u8054\u673A", "\u540C\u4E00\u5C40\u57DF\u7F51\u7684\u53E6\u4E00\u53F0\u8BBE\u5907\u53EF\u4EE5\u53EA\u8BFB\u67E5\u770B\u8FD9\u53EA\u732A");
+      box2.box.appendChild(el("p", "dp-dim", state4.status.reason || "\u672C\u673A\u8054\u673A\u6682\u4E0D\u53EF\u7528"));
+      return;
+    }
+    const running = state4.status.running === true;
+    if (!running) state4.invite = null;
+    if (state4.invite !== null && state4.invite.expiresAt <= now()) state4.invite = null;
+    if (state4.status.available === true && (state4.addresses === null || now() - state4.addressesAt > ADDRESS_TTL_MS)) {
+      void requestAddresses(ui);
+    }
+    if (state4.join !== null && state4.join.connected && now() - state4.joinAt > JOIN_TTL_MS) void requestJoinStatus(ui);
+    const note3 = running ? `\u8FD0\u884C\u4E2D \xB7 \u5DF2\u914D\u5BF9 ${state4.status.pairedClients} \u53F0` : "\u540C\u4E00\u5C40\u57DF\u7F51\u7684\u53E6\u4E00\u53F0\u8BBE\u5907\u53EF\u4EE5\u53EA\u8BFB\u67E5\u770B\u8FD9\u53EA\u732A\uFF1B\u9ED8\u8BA4\u5173\u95ED\uFF0C\u9700\u8981\u624B\u52A8\u5F00\u542F";
+    const box = section2(ui, "\u5C40\u57DF\u7F51\u8054\u673A", note3);
+    const badge2 = el("small", "dp-lan-badge", running ? "\u8FD0\u884C\u4E2D" : "\u672A\u5F00\u542F");
+    box.head.appendChild(badge2);
+    if (state4.notice !== "") box.box.appendChild(el("div", "dp-lan-status", state4.notice));
+    if (state4.error !== "") {
+      const alert2 = el("div", "dp-lan-error", state4.error);
+      alert2.setAttribute("data-lan-error", "true");
+      box.box.appendChild(alert2);
+    }
+    const handlers = {
+      start: () => startHost(ui),
+      stop: () => stopHost(ui),
+      invite: () => createInvite(ui),
+      copyInvite: () => copyInvite(ui),
+      join: () => joinPeer(ui),
+      leave: () => leavePeer(ui),
+      setAddress: (value) => {
+        state4.address = value;
+      },
+      setDraft: (value) => {
+        state4.draft = value;
+      },
+      setInputFocused: (value) => {
+        state4.inputFocused = value;
+      },
+      retryAddresses: () => {
+        state4.addresses = null;
+        state4.addressesAt = 0;
+        rerender6();
+      }
+    };
+    if (running) renderRunning(box, state4, handlers);
+    else renderIdle(box, state4, handlers);
+    renderJoin(box, state4, handlers);
+  }
+
   // src/client/external-ui.js
   function createOverlay(ui, options) {
     const overlay = el("div", "dp-save-overlay dp-ext-overlay");
@@ -11921,15 +12541,15 @@
     }
     card2.appendChild(rowNode);
   }
-  function renderExternalCard(ui, section2, state6, handlers) {
-    const status2 = state6.status;
+  function renderExternalCard(ui, section2, state7, handlers) {
+    const status2 = state7.status;
     const entry = section2(ui, "\u5916\u90E8\u684C\u5BA0");
     const box = entry.box;
     box.setAttribute("data-external-pet", "true");
-    const busy5 = state6.busy === true;
+    const busy5 = state7.busy === true;
     if (status2 === null) {
-      statusLine(box, state6.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state6.error === "" ? "warn" : "warn");
-      if (state6.error !== "") note2(box, state6.error, true);
+      statusLine(box, state7.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state7.error === "" ? "warn" : "warn");
+      if (state7.error !== "") note2(box, state7.error, true);
       cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
       return;
     }
@@ -12007,17 +12627,17 @@
       { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 }
     ]);
   }
-  function renderManageDialog(ui, state6, handlers, view) {
+  function renderManageDialog(ui, state7, handlers, view) {
     const dialog = view.dialog;
     dialog.setAttribute("data-external-dialog", "manage");
     dialog.appendChild(el("b", "dp-ext-title", "\u7BA1\u7406\u684C\u9762\u8FDE\u63A5"));
-    const status2 = state6.status;
+    const status2 = state7.status;
     const target = status2?.target ?? null;
     row(dialog, "\u684C\u9762\u732A", summaryLine(target));
     row(dialog, "\u5185\u5D4C\u732A", status2?.pigState === "merged" ? "\u5DF2\u5408\u5E76\u5E76\u9000\u5F79" : status2?.pigState === "paused" ? "\u6682\u5B58\u4E2D\uFF0C\u4E0D\u997F\u4E0D\u75C5" : "\u6CA1\u6709\u5185\u5D4C\u732A");
     row(dialog, "\u8FDE\u63A5", status2?.connection === "connected" ? "\u5DF2\u8FDE\u63A5" : "\u6CA1\u8FDE\u4E0A");
     if (status2 !== null && status2.queued > 0) row(dialog, "\u5DE5\u4F5C\u961F\u5217", status2.queued + " \u6761");
-    if (state6.manageStep === "discard") {
+    if (state7.manageStep === "discard") {
       note2(dialog, "\u8FD8\u6709 " + status2.queued + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230");
       note2(dialog, "\u73B0\u5728\u5207\u56DE\uFF0C\u8FD9 " + status2.queued + " \u6761\u4F1A\u7559\u5728 outbox\uFF0C\u4E0D\u4F1A\u518D\u5582\u7ED9\u684C\u9762\u732A\u3002", true);
       actions(dialog, [
@@ -12056,14 +12676,14 @@
 
   // src/client/external-result.js
   var backupName = (backups, key2) => typeof backups?.[key2] === "string" && backups[key2] !== "" ? backups[key2] : "\u2014";
-  function renderCommitting(dialog, state6, handlers) {
+  function renderCommitting(dialog, state7, handlers) {
     heading(dialog, "\u6B63\u5728\u5408\u5E76\u2026");
     note2(dialog, "\u684C\u9762\u7248\u4F1A\u5F39\u51FA\u4E00\u4E2A\u786E\u8BA4\u6846\uFF0C\u8BF7\u5728\u90A3\u8FB9\u70B9\u300C\u5141\u8BB8\u5408\u5E76\u300D\u3002");
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     actions(dialog, [{ key: "commit-cancel", label: "\u53D6\u6D88", onPick: handlers.dismiss, disabled: false }]);
   }
-  function renderSuccess(dialog, state6, handlers) {
-    const result = state6.result?.result ?? { name: "", level: 0, coins: 0, items: 0, badges: 0 };
+  function renderSuccess(dialog, state7, handlers) {
+    const result = state7.result?.result ?? { name: "", level: 0, coins: 0, items: 0, badges: 0 };
     heading(dialog, "\u5408\u5E76\u5B8C\u6210");
     if (result.name === "") {
       note2(dialog, "\u684C\u9762\u7248\u6CA1\u6709\u8FD4\u56DE\u6700\u7EC8\u6458\u8981\uFF0C\u8BF7\u5173\u95ED\u540E\u5237\u65B0\u9762\u677F\u786E\u8BA4\uFF1B\u5907\u4EFD\u540D\u89C1\u4E0B\u3002", true);
@@ -12073,33 +12693,33 @@
       dialog.appendChild(line6);
     }
     dialog.appendChild(el("b", "dp-ext-group-head", "\u672C\u6B21\u5907\u4EFD\uFF1A"));
-    row(dialog, "\u684C\u9762", backupName(state6.result?.backups, "target"));
-    row(dialog, "\u5185\u5D4C", backupName(state6.result?.backups, "source"));
-    if (state6.result?.cleanup === "failed") note2(dialog, "\u65E7\u5408\u5E76\u5907\u4EFD\u6CA1\u6E05\u7406\u6389\uFF0C\u4E0D\u5F71\u54CD\u8FD9\u6B21\u5408\u5E76\uFF0C\u4E0B\u6B21\u4F1A\u518D\u8BD5\u3002", true);
+    row(dialog, "\u684C\u9762", backupName(state7.result?.backups, "target"));
+    row(dialog, "\u5185\u5D4C", backupName(state7.result?.backups, "source"));
+    if (state7.result?.cleanup === "failed") note2(dialog, "\u65E7\u5408\u5E76\u5907\u4EFD\u6CA1\u6E05\u7406\u6389\uFF0C\u4E0D\u5F71\u54CD\u8FD9\u6B21\u5408\u5E76\uFF0C\u4E0B\u6B21\u4F1A\u518D\u8BD5\u3002", true);
     else note2(dialog, "\u66F4\u65E9\u7684\u5408\u5E76\u5907\u4EFD\u5DF2\u6E05\u7406\uFF0C\u53EA\u4FDD\u7559\u8FD9\u4E00\u6B21\u3002\u624B\u52A8\u5907\u4EFD\u4E0D\u4F1A\u88AB\u6E05\u7406\u3002");
     note2(dialog, "DSH \u7684\u5DE5\u4F5C\u73B0\u5728\u4F1A\u5582\u7ED9\u684C\u9762\u732A\u3002");
     actions(dialog, [
       { key: "success-done", label: "\u597D\u7684", onPick: handlers.done },
-      { key: "success-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, onPick: handlers.rollback, disabled: state6.busy === true }
+      { key: "success-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, onPick: handlers.rollback, disabled: state7.busy === true }
     ]);
   }
-  function renderFailure(dialog, state6, handlers) {
-    heading(dialog, state6.result?.status === "retire-failed" ? "\u684C\u5BA0\u5DF2\u5408\u5E76" : "\u5408\u5E76\u6CA1\u6709\u5B8C\u6210");
-    const code = state6.error === "" ? state6.result?.status ?? "unknown" : state6.error;
+  function renderFailure(dialog, state7, handlers) {
+    heading(dialog, state7.result?.status === "retire-failed" ? "\u684C\u5BA0\u5DF2\u5408\u5E76" : "\u5408\u5E76\u6CA1\u6709\u5B8C\u6210");
+    const code = state7.error === "" ? state7.result?.status ?? "unknown" : state7.error;
     note2(dialog, reasonText(code), true);
     if (code === "retire-failed") note2(dialog, "\u684C\u9762\u732A\u5DF2\u7ECF\u5408\u5E76\u6210\u529F\uFF1B\u5185\u5D4C\u732A\u9000\u5F79\u6CA1\u5B8C\u6210\uFF0C\u4F1A\u4FDD\u6301\u5916\u90E8\u6A21\u5F0F\u91CD\u8BD5\uFF0C\u4E0D\u4F1A\u91CD\u65B0\u6253\u5F00\u5185\u5D4C\u732A\u3002");
     if (code === "backup-failed") note2(dialog, "\u6CA1\u6709\u6539\u52A8\u4EFB\u4F55\u5B58\u6863\u3002");
     if (code === "declined") note2(dialog, "\u4E24\u8FB9\u90FD\u6CA1\u6709\u6539\u52A8\u3002");
     if (code === "tx-failed") note2(dialog, "\u684C\u9762\u732A\u5DF2\u6062\u590D\u5230\u5408\u5E76\u524D\uFF1B\u65B0\u5907\u4EFD\u4FDD\u7559\u3002");
     if (code === "cleanup-failed") note2(dialog, "\u5408\u5E76\u5DF2\u6210\u529F\uFF0C\u65E7\u5907\u4EFD\u7A0D\u540E\u518D\u6E05\u7406\u3002");
-    for (const error of state6.result?.errors ?? []) note2(dialog, error.path + "\uFF1A" + (error.reason === "" ? "\u4E0D\u5408\u6CD5" : error.reason), true);
+    for (const error of state7.result?.errors ?? []) note2(dialog, error.path + "\uFF1A" + (error.reason === "" ? "\u4E0D\u5408\u6CD5" : error.reason), true);
     actions(dialog, [
       { key: "failure-close", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "failure-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.retry, disabled: state6.busy === true }
+      { key: "failure-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.retry, disabled: state7.busy === true }
     ]);
   }
-  function renderWithdraw(dialog, state6, handlers) {
-    const status2 = state6.status;
+  function renderWithdraw(dialog, state7, handlers) {
+    const status2 = state7.status;
     if (status2 !== null && status2.merged) {
       heading(dialog, "\u5207\u56DE\u5185\u5D4C\u732A\uFF1F");
       note2(dialog, "\u5185\u5D4C\u732A\u5DF2\u7ECF\u5408\u5E76\u5230\u684C\u5BA0\u5E76\u9000\u5F79\uFF08\u4E0D\u5728\u9ED8\u8BA4\u5B58\u6863\u8DEF\u5F84\uFF09\u3002");
@@ -12112,7 +12732,7 @@
       ]);
       return;
     }
-    if (state6.withdrawDiscard === true) {
+    if (state7.withdrawDiscard === true) {
       heading(dialog, "\u8FD8\u6709 " + (status2?.queued ?? 0) + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230");
       note2(dialog, "\u73B0\u5728\u5207\u56DE\uFF0C\u8FD9 " + (status2?.queued ?? 0) + " \u6761\u4F1A\u7559\u5728 outbox\uFF0C\u4E0D\u4F1A\u518D\u5582\u7ED9\u684C\u9762\u732A\u3002");
       actions(dialog, [
@@ -12128,53 +12748,53 @@
     if ((status2?.queued ?? 0) > 0) note2(dialog, "\u8FD8\u6709 " + status2.queued + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230\uFF1B\u5207\u56DE\u524D\u4F1A\u8BA9\u4F60\u786E\u8BA4\u3002", true);
     actions(dialog, [
       { key: "withdraw-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "withdraw-go", label: "\u5207\u56DE", primary: true, onPick: () => handlers.withdrawNow(false), disabled: state6.busy === true }
+      { key: "withdraw-go", label: "\u5207\u56DE", primary: true, onPick: () => handlers.withdrawNow(false), disabled: state7.busy === true }
     ]);
   }
-  function renderRollbackConfirm(dialog, state6, handlers) {
+  function renderRollbackConfirm(dialog, state7, handlers) {
     heading(dialog, "\u64A4\u9500\u5408\u5E76\uFF1F");
     note2(dialog, "\u5C06\u628A\u684C\u9762\u732A\u548C DSH \u5185\u5D4C\u732A\u90FD\u6062\u590D\u5230\u5408\u5E76\u524D\u7684\u5B58\u6863\u3002\u5408\u5E76\u540E\u65B0\u589E\u7684\u8FDB\u5EA6\u4F1A\u4E22\u5931\u3002");
     note2(dialog, "\u5408\u5E76\u65F6\u4ECE\u5185\u5D4C\u732A\u590D\u5236\u8FC7\u6765\u7684\u76AE\u80A4\u4F1A\u64A4\u56DE\uFF1B\u5408\u5E76\u540E\u65B0\u5BFC\u5165\u7684\u76AE\u80A4\u4FDD\u7559\u3002");
     note2(dialog, "\u684C\u9762\u5408\u5E76\u540E\u7684\u5B58\u6863\u4F1A\u5148\u53E6\u5B58\u4E00\u4EFD\u5907\u4EFD\uFF0C\u4E0D\u4F1A\u65E0\u58F0\u4E22\u6389\u3002");
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     actions(dialog, [
       { key: "rollback-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "rollback-go", label: "\u786E\u8BA4\u64A4\u9500", primary: true, onPick: handlers.rollbackGo, disabled: state6.busy === true }
+      { key: "rollback-go", label: "\u786E\u8BA4\u64A4\u9500", primary: true, onPick: handlers.rollbackGo, disabled: state7.busy === true }
     ]);
   }
   function renderRollingBack(dialog) {
     heading(dialog, "\u6B63\u5728\u64A4\u9500\u2026");
     note2(dialog, "\u5148\u628A\u684C\u9762\u5408\u5E76\u540E\u7684\u5B58\u6863\u53E6\u5B58\u4E00\u4EFD\uFF0C\u518D\u6062\u590D\u4E24\u8FB9\uFF1B\u4E0D\u8981\u64CD\u4F5C\u3002");
   }
-  function renderRollbackPartial(dialog, state6, handlers) {
+  function renderRollbackPartial(dialog, state7, handlers) {
     heading(dialog, "\u90E8\u5206\u64A4\u9500");
-    const restored = state6.result?.restored ?? { target: false, source: false };
+    const restored = state7.result?.restored ?? { target: false, source: false };
     note2(dialog, (restored.target ? "\u684C\u9762\u732A\u5DF2\u6062\u590D\u3002" : "\u684C\u9762\u732A\u6CA1\u6062\u590D\u3002") + (restored.source ? "\u5185\u5D4C\u732A\u5DF2\u6062\u590D\u3002" : "\u5185\u5D4C\u732A\u6CA1\u6062\u590D\u3002"), true);
-    row(dialog, "\u684C\u9762\u5907\u4EFD", backupName(state6.result?.backups, "target"));
-    row(dialog, "\u5185\u5D4C\u5907\u4EFD", backupName(state6.result?.backups, "source"));
+    row(dialog, "\u684C\u9762\u5907\u4EFD", backupName(state7.result?.backups, "target"));
+    row(dialog, "\u5185\u5D4C\u5907\u4EFD", backupName(state7.result?.backups, "source"));
     note2(dialog, "\u91CD\u8BD5\u53EA\u4F1A\u8865\u6CA1\u6062\u590D\u7684\u4E00\u8FB9\uFF0C\u4E0D\u4F1A\u91CD\u590D\u8986\u76D6\u5DF2\u7ECF\u6062\u590D\u7684\u4E00\u8FB9\u3002");
     actions(dialog, [
       { key: "partial-close", label: "\u5173\u95ED", onPick: handlers.close },
-      { key: "partial-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.rollbackGo, disabled: state6.busy === true }
+      { key: "partial-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.rollbackGo, disabled: state7.busy === true }
     ]);
   }
-  function renderRecoverConfirm(dialog, state6, handlers) {
+  function renderRecoverConfirm(dialog, state7, handlers) {
     heading(dialog, "\u53EA\u6062\u590D\u5185\u5D4C\u732A\uFF1F");
     note2(dialog, "\u4F1A\u4ECE DSH \u672C\u5730\u5907\u4EFD\u6062\u590D\u5408\u5E76\u524D\u7684\u5185\u5D4C\u732A\uFF0C\u684C\u9762\u732A\u4FDD\u6301\u5408\u5E76\u540E\u7684\u6837\u5B50\uFF08\u4F1A\u51FA\u73B0\u4E24\u53EA\u76F8\u4F3C\u7684\u732A\uFF09\u3002");
     note2(dialog, "\u5148\u628A\u5907\u4EFD\u6062\u590D\u5230\u4E34\u65F6\u4F4D\u7F6E\u5E76\u6821\u9A8C\uFF0C\u518D\u653E\u56DE state.json\uFF1B\u5931\u8D25\u4F1A\u4FDD\u7559\u9000\u5F79\u6807\u8BB0\u3002");
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     actions(dialog, [
       { key: "recover-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "recover-go", label: "\u6062\u590D\u5185\u5D4C\u732A", primary: true, onPick: handlers.recoverGo, disabled: state6.busy === true }
+      { key: "recover-go", label: "\u6062\u590D\u5185\u5D4C\u732A", primary: true, onPick: handlers.recoverGo, disabled: state7.busy === true }
     ]);
   }
-  function renderWithdrawChanged(dialog, state6, handlers) {
+  function renderWithdrawChanged(dialog, state7, handlers) {
     heading(dialog, "\u6682\u5B58\u671F\u95F4\u5B58\u6863\u88AB\u6539\u8FC7");
     note2(dialog, "\u5207\u56DE\u4F1A\u6309\u6B63\u5E38\u79BB\u7EBF\u7ED3\u7B97\uFF0C\u53EF\u80FD\u53D8\u997F\u3001\u751F\u75C5\u3002\u5185\u5D4C\u732A\u4E0D\u4F1A\u6309\u6682\u5B58\u65F6\u523B\u540E\u79FB\u65F6\u95F4\u3002", true);
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     actions(dialog, [
       { key: "withdraw-changed-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "withdraw-changed-go", label: "\u4ECD\u8981\u5207\u56DE", primary: true, onPick: handlers.withdrawChangedGo, disabled: state6.busy === true }
+      { key: "withdraw-changed-go", label: "\u4ECD\u8981\u5207\u56DE", primary: true, onPick: handlers.withdrawChangedGo, disabled: state7.busy === true }
     ]);
   }
 
@@ -12248,8 +12868,8 @@
   function errorFor(errors, group) {
     return Object.keys(errors).filter((key2) => group === "look" ? key2 === "look" : group === "personality" ? key2 === "personality" : key2 === "preferences").map((key2) => errors[key2])[0] ?? "";
   }
-  function pickerGroup(dialog, state6, handlers, preview2, group, label) {
-    const choices = state6.choices[group];
+  function pickerGroup(dialog, state7, handlers, preview2, group, label) {
+    const choices = state7.choices[group];
     const wrap2 = el("div", "dp-ext-group");
     const head = el("div", "dp-ext-group-head");
     head.appendChild(el("b", null, label));
@@ -12283,15 +12903,15 @@
       });
     }
     wrap2.appendChild(line6);
-    if (choices.pick === "custom") renderEditor(wrap2, preview2, state6, handlers, group);
-    const error = errorFor(validateChoices(preview2, state6.choices).errors, group);
+    if (choices.pick === "custom") renderEditor(wrap2, preview2, state7, handlers, group);
+    const error = errorFor(validateChoices(preview2, state7.choices).errors, group);
     const flag = el("span", "dp-ext-flag", error);
     flag.setAttribute("data-external-flag-for", group);
     wrap2.appendChild(flag);
     dialog.appendChild(wrap2);
   }
-  function renderEditor(wrap2, preview2, state6, handlers, group) {
-    const choices = state6.choices[group];
+  function renderEditor(wrap2, preview2, state7, handlers, group) {
+    const choices = state7.choices[group];
     const editors = preview2.editors ?? {};
     if (group === "look") {
       const forms = optionsOf(editors.look?.form);
@@ -12389,8 +13009,8 @@
       handlers.sync?.();
     } });
   }
-  function nameGroup(dialog, state6, handlers, preview2) {
-    const choices = state6.choices.name;
+  function nameGroup(dialog, state7, handlers, preview2) {
+    const choices = state7.choices.name;
     const wrap2 = el("div", "dp-ext-group");
     const head = el("div", "dp-ext-group-head");
     head.appendChild(el("b", null, "\u540D\u5B57"));
@@ -12415,12 +13035,12 @@
         handlers.sync?.();
       } });
     }
-    const flag = el("span", "dp-ext-flag", validateChoices(preview2, state6.choices).errors.name ?? "");
+    const flag = el("span", "dp-ext-flag", validateChoices(preview2, state7.choices).errors.name ?? "");
     flag.setAttribute("data-external-flag-for", "name");
     wrap2.appendChild(flag);
     dialog.appendChild(wrap2);
   }
-  function conflictGroup(dialog, state6, handlers, conflict) {
+  function conflictGroup(dialog, state7, handlers, conflict) {
     const wrap2 = el("div", "dp-ext-group");
     wrap2.setAttribute("data-external-conflict", conflict.key);
     const head = el("div", "dp-ext-group-head");
@@ -12432,9 +13052,9 @@
       choiceRow(line6, {
         key: pick,
         label: pick === "target" ? "\u4FDD\u7559\u684C\u5BA0" : "\u7528\u5185\u5D4C\u732A",
-        checked: state6.choices.conflicts[conflict.key] === pick,
+        checked: state7.choices.conflicts[conflict.key] === pick,
         onPick: () => {
-          state6.choices.conflicts[conflict.key] = pick;
+          state7.choices.conflicts[conflict.key] = pick;
           handlers.refresh();
         }
       });
@@ -12442,7 +13062,7 @@
     wrap2.appendChild(line6);
     dialog.appendChild(wrap2);
   }
-  function unknownSourceGroup(dialog, state6, handlers, conflict) {
+  function unknownSourceGroup(dialog, state7, handlers, conflict) {
     const wrap2 = el("div", "dp-ext-group");
     wrap2.setAttribute("data-external-unknown-source", "true");
     wrap2.appendChild(el("b", "dp-ext-group-head", "\u5185\u5D4C\u5B58\u6863\u6709\u5F53\u524D\u7248\u672C\u4E0D\u8BA4\u8BC6\u7684\u5B57\u6BB5"));
@@ -12453,9 +13073,9 @@
       choiceRow(line6, {
         key: option,
         label: option === "discard" ? "\u4E22\u5F03\u8FD9\u4E9B\u5B57\u6BB5" : option === "abort" ? "\u4E2D\u6B62\u5408\u5E76" : option,
-        checked: state6.choices.unknownSource === option,
+        checked: state7.choices.unknownSource === option,
         onPick: () => {
-          state6.choices.unknownSource = option;
+          state7.choices.unknownSource = option;
           handlers.refresh();
         }
       });
@@ -12463,7 +13083,7 @@
     wrap2.appendChild(line6);
     dialog.appendChild(wrap2);
   }
-  function duplicateGroup(dialog, state6, handlers, preview2) {
+  function duplicateGroup(dialog, state7, handlers, preview2) {
     const wrap2 = el("div", "dp-ext-group");
     wrap2.setAttribute("data-external-duplicate", "true");
     wrap2.appendChild(el("b", "dp-ext-group-head", "\u7591\u4F3C\u540C\u4E00\u4EFD\u5B58\u6863\u7684\u526F\u672C"));
@@ -12473,9 +13093,9 @@
       choiceRow(line6, {
         key: pick,
         label: pick === "target" ? "\u53EA\u4FDD\u7559\u684C\u5BA0" : pick === "source" ? "\u53EA\u4FDD\u7559\u5185\u5D4C\u732A" : "\u4ECD\u7136\u5408\u5E76",
-        checked: state6.choices.duplicate === pick,
+        checked: state7.choices.duplicate === pick,
         onPick: () => {
-          state6.choices.duplicate = pick;
+          state7.choices.duplicate = pick;
           handlers.refresh();
         }
       });
@@ -12491,15 +13111,15 @@
     if (typeof names.source === "string" && names.source !== "") row(dialog, "\u5185\u5D4C\u5907\u4EFD", names.source);
     if (preview2.sourceBackup !== "") row(dialog, "\u5185\u5D4C\u5907\u4EFD", preview2.sourceBackup);
   }
-  function renderPreview(dialog, state6, handlers) {
-    const preview2 = state6.preview;
+  function renderPreview(dialog, state7, handlers) {
+    const preview2 = state7.preview;
     if (preview2 === null) {
       heading(dialog, "\u5408\u5E76\u9884\u89C8");
       note2(dialog, "\u8FD8\u6CA1\u62FF\u5230\u9884\u89C8\uFF0C\u8BF7\u91CD\u65B0\u8FDE\u63A5\u3002", true);
       actions(dialog, [{ key: "preview-close", label: "\u5173\u95ED", onPick: handlers.close }]);
       return;
     }
-    heading(dialog, mergeTitle(state6.status));
+    heading(dialog, mergeTitle(state7.status));
     if (preview2.expiresAt > 0) {
       const left = Math.max(0, Math.round((preview2.expiresAt - Date.now()) / 1e3));
       note2(dialog, "\u9884\u89C8 " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + " \u540E\u8FC7\u671F\uFF1B\u8FC7\u671F\u4F1A\u81EA\u52A8\u53D6\u6D88\u5E76\u6062\u590D\u5185\u5D4C\u732A\u3002");
@@ -12512,21 +13132,21 @@
       "Lv." + result.level + " \xB7 " + result.days + " \u5929 \xB7 \u{1FA99}" + formatNumber(result.coins) + " \xB7 \u{1F392}" + result.items + " \xB7 \u{1F3C5}" + result.badges
     ));
     dialog.appendChild(resultNode);
-    nameGroup(dialog, state6, handlers, preview2);
-    pickerGroup(dialog, state6, handlers, preview2, "look", "\u6837\u5B50");
-    pickerGroup(dialog, state6, handlers, preview2, "personality", "\u6027\u683C");
-    pickerGroup(dialog, state6, handlers, preview2, "preferences", "\u504F\u597D");
+    nameGroup(dialog, state7, handlers, preview2);
+    pickerGroup(dialog, state7, handlers, preview2, "look", "\u6837\u5B50");
+    pickerGroup(dialog, state7, handlers, preview2, "personality", "\u6027\u683C");
+    pickerGroup(dialog, state7, handlers, preview2, "preferences", "\u504F\u597D");
     const unknownConflict = preview2.conflicts.find((conflict) => conflict.key === "unknownSource");
     if (preview2.conflicts.length > 0) {
       dialog.appendChild(el("b", "dp-ext-group-head", "\u9700\u8981\u4F60\u51B3\u5B9A"));
       for (const conflict of preview2.conflicts) {
         if (conflict.key === "unknownSource") continue;
         if (conflict.level === "warning") note2(dialog, conflict.label + "\uFF1A" + conflict.message, true);
-        else conflictGroup(dialog, state6, handlers, conflict);
+        else conflictGroup(dialog, state7, handlers, conflict);
       }
     }
-    if (unknownConflict !== void 0) unknownSourceGroup(dialog, state6, handlers, unknownConflict);
-    if (preview2.duplicate !== null) duplicateGroup(dialog, state6, handlers, preview2);
+    if (unknownConflict !== void 0) unknownSourceGroup(dialog, state7, handlers, unknownConflict);
+    if (preview2.duplicate !== null) duplicateGroup(dialog, state7, handlers, preview2);
     if (preview2.autoMerge.length > 0) {
       dialog.appendChild(el("b", "dp-ext-group-head", "\u81EA\u52A8\u5408\u5E76"));
       const list = el("ul", "dp-ext-list");
@@ -12537,17 +13157,17 @@
       note2(dialog, "\u5FBD\u7AE0\u65B0\u589E " + result.newBadges + " \u679A\uFF1B\u56FE\u9274\u65B0\u589E " + result.newDex + " \u79CD\uFF1B\u65E5\u8BB0\u65B0\u589E " + result.newDiary + " \u7BC7\u3002");
     }
     for (const warning2 of preview2.warnings) note2(dialog, warning2, true);
-    if (validateChoices(preview2, state6.choices).errors.unknownSource !== void 0 && unknownConflict === void 0) {
-      note2(dialog, validateChoices(preview2, state6.choices).errors.unknownSource, true);
+    if (validateChoices(preview2, state7.choices).errors.unknownSource !== void 0 && unknownConflict === void 0) {
+      note2(dialog, validateChoices(preview2, state7.choices).errors.unknownSource, true);
     }
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     backupNote(dialog, preview2);
-    const submitted = el("button", "dp-mini", actionsLabel(state6));
+    const submitted = el("button", "dp-mini", actionsLabel(state7));
     submitted.setAttribute("data-external-submit", "true");
-    submitted.disabled = !validateChoices(preview2, state6.choices).ok || state6.busy === true;
+    submitted.disabled = !validateChoices(preview2, state7.choices).ok || state7.busy === true;
     handlers.sync = function syncValidity() {
-      const found = validateChoices(preview2, state6.choices);
-      submitted.disabled = !found.ok || state6.busy === true;
+      const found = validateChoices(preview2, state7.choices);
+      submitted.disabled = !found.ok || state7.busy === true;
       for (const key2 of ["name", "look", "personality", "preferences"]) {
         const node = dialog.querySelector?.('[data-external-flag-for="' + key2 + '"]');
         if (node) node.textContent = found.errors[key2] ?? "";
@@ -12568,9 +13188,9 @@
     grid.appendChild(submitted);
     dialog.appendChild(grid);
   }
-  function actionsLabel(state6) {
-    if (state6.busy) return "\u6B63\u5728\u63D0\u4EA4\u2026";
-    return state6.preview !== null && pigKind(state6.status?.local) === "alive" && pigKind(state6.status?.target) !== "alive" ? "\u5F00\u59CB\u642C" : "\u5F00\u59CB\u5408\u5E76";
+  function actionsLabel(state7) {
+    if (state7.busy) return "\u6B63\u5728\u63D0\u4EA4\u2026";
+    return state7.preview !== null && pigKind(state7.status?.local) === "alive" && pigKind(state7.status?.target) !== "alive" ? "\u5F00\u59CB\u642C" : "\u5F00\u59CB\u5408\u5E76";
   }
   function mergeTitle(status2) {
     return pigKind(status2?.local) === "alive" && pigKind(status2?.target) !== "alive" ? "\u642C\u5230\u684C\u5BA0" : "\u5408\u5E76\u9884\u89C8";
@@ -13161,10 +13781,10 @@
   }
 
   // src/client/external-wizard.js
-  function renderDetectError(dialog, state6, handlers) {
-    const desktop2 = state6.status?.desktop;
+  function renderDetectError(dialog, state7, handlers) {
+    const desktop2 = state7.status?.desktop;
     heading(dialog, desktop2?.found ? desktop2.enabled ? "\u684C\u9762\u7248\u5DF2\u5C31\u7EEA" : "\u684C\u9762\u7248\u8FD8\u6CA1\u51C6\u5907\u597D" : "\u6CA1\u627E\u5230\u684C\u9762\u4E0A\u7684\u5C0F\u732A");
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     const steps = el("ol", "dp-ext-list");
     [
       "\u684C\u9762\u7248\u548C DSH \u5728\u540C\u4E00\u53F0\u7535\u8111\u4E0A\u8FD0\u884C",
@@ -13172,21 +13792,21 @@
       "\u684C\u9762\u7248\u6CA1\u6709\u505C\u5728\u5B58\u6863\u5BFC\u5165/\u5408\u5E76\u4E2D"
     ].forEach((text) => steps.appendChild(el("li", null, text)));
     dialog.appendChild(steps);
-    if (state6.error === "disabled" || state6.status?.desktop.reason === "external-disabled") note2(dialog, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002");
-    if (state6.error === "no-pair" || state6.error === "pair-not-offered") note2(dialog, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u9700\u8981\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
+    if (state7.error === "disabled" || state7.status?.desktop.reason === "external-disabled") note2(dialog, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002");
+    if (state7.error === "no-pair" || state7.error === "pair-not-offered") note2(dialog, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u9700\u8981\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
     actions(dialog, [
       { key: "detect-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "detect-retry", label: "\u91CD\u65B0\u68C0\u6D4B", primary: true, disabled: state6.busy === true, onPick: handlers.recheck }
+      { key: "detect-retry", label: "\u91CD\u65B0\u68C0\u6D4B", primary: true, disabled: state7.busy === true, onPick: handlers.recheck }
     ]);
   }
-  function renderChoose(dialog, state6, handlers) {
-    const status2 = state6.status;
+  function renderChoose(dialog, state7, handlers) {
+    const status2 = state7.status;
     const options = mergeOptions(status2.target, status2.local);
     heading(dialog, "\u8FDE\u63A5\u684C\u9762\u732A");
     row(dialog, "\u684C\u9762\u4E0A\u7684\u732A", summaryLine(status2.target));
     row(dialog, "DSH \u91CC\u7684\u732A", summaryLine(status2.local));
     dialog.appendChild(el("b", "dp-ext-group-head", "\u600E\u4E48\u5904\u7406\uFF1F"));
-    const mode = state6.mode;
+    const mode = state7.mode;
     choiceRow(dialog, {
       key: "connect",
       label: "\u53EA\u628A\u5DE5\u4F5C\u548C\u9762\u677F\u4EA4\u7ED9\u684C\u9762\u732A",
@@ -13210,17 +13830,17 @@
       onPick: () => handlers.setMode("cancel")
     });
     if (options.note !== "") note2(dialog, options.note);
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     actions(dialog, [
-      { key: "choose-back", label: "\u4E0A\u4E00\u6B65", onPick: handlers.backToDetect, disabled: state6.busy === true },
-      { key: "choose-next", label: "\u4E0B\u4E00\u6B65", primary: true, onPick: handlers.chooseNext, disabled: state6.busy === true || mode === "merge" && !options.canMerge }
+      { key: "choose-back", label: "\u4E0A\u4E00\u6B65", onPick: handlers.backToDetect, disabled: state7.busy === true },
+      { key: "choose-next", label: "\u4E0B\u4E00\u6B65", primary: true, onPick: handlers.chooseNext, disabled: state7.busy === true || mode === "merge" && !options.canMerge }
     ]);
   }
-  function renderBlockers(dialog, state6, handlers) {
+  function renderBlockers(dialog, state7, handlers) {
     heading(dialog, "\u5408\u5E76\u524D\u8981\u5148\u7ED3\u675F\u8FD9\u4E9B");
-    const blockers = state6.blockers ?? [];
+    const blockers = state7.blockers ?? [];
     if (blockers.length === 0) {
-      note2(dialog, reasonText(state6.error === "" ? "blocked-activity" : state6.error), true);
+      note2(dialog, reasonText(state7.error === "" ? "blocked-activity" : state7.error), true);
     }
     for (const blocker of blockers) {
       const block = el("div", "dp-ext-block");
@@ -13249,14 +13869,14 @@
       block.appendChild(rowNode);
       dialog.appendChild(block);
     }
-    if (state6.error !== "" && blockers.length > 0) note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "" && blockers.length > 0) note2(dialog, reasonText(state7.error), true);
     actions(dialog, [
       { key: "blocked-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "blocked-recheck", label: "\u91CD\u65B0\u68C0\u67E5", primary: true, disabled: state6.busy === true, onPick: handlers.recheck }
+      { key: "blocked-recheck", label: "\u91CD\u65B0\u68C0\u67E5", primary: true, disabled: state7.busy === true, onPick: handlers.recheck }
     ]);
   }
-  function renderForceConfirm(dialog, state6, handlers) {
-    const blocker = state6.terminate;
+  function renderForceConfirm(dialog, state7, handlers) {
+    const blocker = state7.terminate;
     if (blocker === null || blocker === void 0) {
       heading(dialog, "\u8FD9\u9879\u6D3B\u52A8\u5DF2\u7ECF\u5904\u7406\u8FC7\u4E86");
       note2(dialog, "\u91CD\u65B0\u68C0\u67E5\u4E00\u4E0B\u4E24\u8FB9\u7684\u72B6\u6001\u3002");
@@ -13267,10 +13887,10 @@
     const copy = blockerCopy(blocker);
     note2(dialog, copy.title);
     note2(dialog, blocker.side === "target" ? "\u8FD9\u4E00\u6B65\u4F1A\u5728\u684C\u9762\u7248\u4E0A\u6267\u884C\uFF0C\u6267\u884C\u5B8C\u91CD\u65B0\u68C0\u67E5\u3002" : "\u8FD9\u4E00\u6B65\u4F1A\u5728 DSH \u7684\u5185\u5D4C\u732A\u4E0A\u6267\u884C\uFF0C\u6267\u884C\u5B8C\u91CD\u65B0\u68C0\u67E5\u3002");
-    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
+    if (state7.error !== "") note2(dialog, reasonText(state7.error), true);
     actions(dialog, [
       { key: "force-cancel", label: "\u53D6\u6D88", onPick: handlers.cancelForce },
-      { key: "force-go", label: "\u5F3A\u5236\u7ED3\u675F", primary: true, disabled: state6.busy === true, onPick: handlers.force }
+      { key: "force-go", label: "\u5F3A\u5236\u7ED3\u675F", primary: true, disabled: state7.busy === true, onPick: handlers.force }
     ]);
   }
 
@@ -13384,32 +14004,32 @@
 
   // src/client/external-desktop.js
   var states2 = /* @__PURE__ */ new WeakMap();
-  function redraw(state6) {
-    if (state6.ui?.tab === "settings") state6.ui.renderContent();
+  function redraw(state7) {
+    if (state7.ui?.tab === "settings") state7.ui.renderContent();
   }
-  function accept(state6, value) {
+  function accept(state7, value) {
     if (value === null || typeof value !== "object") return;
-    state6.value = value;
-    state6.failed = value.ok === false || Boolean(value.error);
+    state7.value = value;
+    state7.failed = value.ok === false || Boolean(value.error);
   }
   function stateFor(api, ui) {
-    let state6 = states2.get(api);
-    if (state6 === void 0) {
-      state6 = { value: null, failed: false, loading: true, busy: false, ui };
-      states2.set(api, state6);
+    let state7 = states2.get(api);
+    if (state7 === void 0) {
+      state7 = { value: null, failed: false, loading: true, busy: false, ui };
+      states2.set(api, state7);
       api.onStatus?.((value) => {
-        accept(state6, value);
-        redraw(state6);
+        accept(state7, value);
+        redraw(state7);
       });
-      Promise.resolve().then(() => api.get()).then((value) => accept(state6, value)).catch(() => {
-        state6.failed = true;
+      Promise.resolve().then(() => api.get()).then((value) => accept(state7, value)).catch(() => {
+        state7.failed = true;
       }).finally(() => {
-        state6.loading = false;
-        redraw(state6);
+        state7.loading = false;
+        redraw(state7);
       });
     }
-    state6.ui = ui;
-    return state6;
+    state7.ui = ui;
+    return state7;
   }
   function renderExternalDesktopSettings(ui, section2, api) {
     const setting = section2(ui, "\u5916\u90E8\u8FDE\u63A5", "\u5141\u8BB8\u672C\u673A\u7684 DSH \u548C\u5176\u4ED6 agent \u628A\u771F\u5B9E\u5DE5\u4F5C\u6295\u7ED9\u8FD9\u53EA\u732A\uFF0C\u5E76\u5728 DSH \u9762\u677F\u91CC\u7167\u987E\u5B83");
@@ -13418,30 +14038,30 @@
       setting.box.appendChild(el("small", "dp-dim", "\u66F4\u65B0\u684C\u9762\u5916\u58F3\u540E\u53EF\u7528"));
       return;
     }
-    const state6 = stateFor(api, ui);
-    const enabled = state6.value?.enabled === true;
+    const state7 = stateFor(api, ui);
+    const enabled = state7.value?.enabled === true;
     const toggle = button("dp-switch", { "data-external-allow": String(!enabled), "aria-pressed": String(enabled), "aria-label": "\u5141\u8BB8 DSH \u8054\u52A8" }, async () => {
-      if (state6.busy || state6.loading) return;
-      state6.busy = true;
-      redraw(state6);
+      if (state7.busy || state7.loading) return;
+      state7.busy = true;
+      redraw(state7);
       try {
-        accept(state6, await api.set(!enabled));
+        accept(state7, await api.set(!enabled));
       } catch {
-        state6.failed = true;
+        state7.failed = true;
       } finally {
-        state6.busy = false;
-        redraw(state6);
+        state7.busy = false;
+        redraw(state7);
       }
     });
-    toggle.disabled = state6.busy || state6.loading;
+    toggle.disabled = state7.busy || state7.loading;
     toggle.appendChild(el("span", "dp-switch-knob"));
     toggle.appendChild(el("span", "dp-switch-text", enabled ? "\u5F00" : "\u5173"));
     setting.head.appendChild(toggle);
     let text = "\u5F53\u524D\u5173\u95ED\uFF1B\u6253\u5F00\u540E\u53EF\u5728 DSH \u8BBE\u7F6E\u4E2D\u8FDE\u63A5\u8FD9\u53EA\u732A";
-    if (state6.loading) text = "\u6B63\u5728\u8BFB\u53D6\u2026";
-    else if (state6.busy) text = "\u6B63\u5728\u5207\u6362\u2026";
-    else if (state6.failed) text = "\u8054\u52A8\u8BBE\u7F6E\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5\uFF1B\u8BE6\u7EC6\u539F\u56E0\u53EF\u5728\u65E5\u5FD7\u4E2D\u67E5\u770B";
-    else if (enabled && state6.value?.running === true) text = "\u5DF2\u5141\u8BB8\u5916\u90E8\u8054\u52A8\uFF1B\u53EA\u5141\u8BB8\u8FD9\u53F0\u7535\u8111\u8FDE\u63A5";
+    if (state7.loading) text = "\u6B63\u5728\u8BFB\u53D6\u2026";
+    else if (state7.busy) text = "\u6B63\u5728\u5207\u6362\u2026";
+    else if (state7.failed) text = "\u8054\u52A8\u8BBE\u7F6E\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5\uFF1B\u8BE6\u7EC6\u539F\u56E0\u53EF\u5728\u65E5\u5FD7\u4E2D\u67E5\u770B";
+    else if (enabled && state7.value?.running === true) text = "\u5DF2\u5141\u8BB8\u5916\u90E8\u8054\u52A8\uFF1B\u53EA\u5141\u8BB8\u8FD9\u53F0\u7535\u8111\u8FDE\u63A5";
     else if (enabled) text = "\u5DF2\u5F00\u542F\u8BB8\u53EF\uFF0C\u4F46\u8FDE\u63A5\u670D\u52A1\u5C1A\u672A\u5C31\u7EEA\uFF0C\u8BF7\u91CD\u8BD5";
     setting.box.appendChild(el("small", "dp-dim", text));
   }
@@ -13494,6 +14114,7 @@
     renderOwnerPigSettings(ui, section);
     renderCloudSaveSettings(ui, section);
     renderOwnerCloudSaveSettings(ui, section);
+    renderOwnerNetworkSettings(ui, section);
     if (desktopShell() === null && stageShell() === null) renderExternalPetSettings(ui, section);
     else renderExternalDesktopSettings(ui, section, desktopShell()?.external ?? stageShell()?.external);
     const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
@@ -13828,10 +14449,10 @@
     const f = fish3.feel || {};
     return { speed: f.speed || 1, burst: f.burst || 0, burstScale: f.burstScale || 1, drift: f.drift || 0, jitter: f.jitter || 0, zone: f.zone || 1, hold: f.hold || 1 };
   }
-  function surgeOf(s, feel2, now2, dt) {
+  function surgeOf(s, feel2, now3, dt) {
     if ((s.burstLeft || 0) > 0) s.burstLeft -= dt;
     else if (feel2.burst > 0 && Math.random() < feel2.burst * dt / 16) s.burstLeft = 260 + Math.random() * 240;
-    const wobble = 1 + feel2.jitter * Math.sin(now2 / 380 + (s.phase || 0));
+    const wobble = 1 + feel2.jitter * Math.sin(now3 / 380 + (s.phase || 0));
     return feel2.speed * wobble * ((s.burstLeft || 0) > 0 ? feel2.burstScale : 1);
   }
   function renderFight(ui, fish3, root = ui.content) {
@@ -13984,12 +14605,12 @@
       }, 380);
     }
     const feel2 = feelOf(fish3);
-    function tick(now2) {
+    function tick(now3) {
       if (!stillOpen(ui)) return finish(false);
-      if (!s.startedAt) s.startedAt = now2;
-      const dt = s.last ? Math.min(50, now2 - s.last) : 16;
-      s.last = now2;
-      if (!s.locked) s.angle += dt * s.rotationsPerSecond * 0.36 * surgeOf(s, feel2, now2, dt);
+      if (!s.startedAt) s.startedAt = now3;
+      const dt = s.last ? Math.min(50, now3 - s.last) : 16;
+      s.last = now3;
+      if (!s.locked) s.angle += dt * s.rotationsPerSecond * 0.36 * surgeOf(s, feel2, now3, dt);
       const circles = Math.floor(s.angle / 360);
       if (!s.locked && circles > s.completedCircles) {
         s.misses += circles - s.completedCircles;
@@ -14042,7 +14663,7 @@
     stage2.appendChild(hint);
     root.appendChild(stage2);
     holdControls(stage2, s);
-    function moveFish(dt, now2) {
+    function moveFish(dt, now3) {
       s.wait -= dt;
       if (s.wait <= 0) {
         const calm = fish3.behavior === "smooth";
@@ -14050,12 +14671,12 @@
         s.target = Math.max(8, Math.min(BAR_HEIGHT - 8, target));
         s.wait = (calm ? 900 : Math.max(250, 900 - d * 6)) / feel2.speed;
       }
-      s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * surgeOf(s, feel2, now2, dt));
+      s.fishY += (s.target - s.fishY) * Math.min(1, dt * (18e-4 + d * 5e-5) * surgeOf(s, feel2, now3, dt));
     }
-    function tick(now2) {
+    function tick(now3) {
       if (!stillOpen(ui)) return finish(false);
-      const dt = s.last ? Math.min(50, now2 - s.last) : 16;
-      s.last = now2;
+      const dt = s.last ? Math.min(50, now3 - s.last) : 16;
+      s.last = now3;
       s.vel = Math.max(-0.5, Math.min(0.5, s.vel + (s.holding ? 16e-4 : -13e-4) * dt));
       s.zone += s.vel * dt;
       if (s.zone < 0) {
@@ -14066,7 +14687,7 @@
         s.zone = BAR_HEIGHT - s.zoneH;
         s.vel = Math.min(0, s.vel);
       }
-      moveFish(dt, now2);
+      moveFish(dt, now3);
       const inside2 = s.fishY >= s.zone && s.fishY <= s.zone + s.zoneH;
       s.progress = Math.max(0, Math.min(100, s.progress + (inside2 ? 0.028 / FIGHT_LENGTH : -0.022 - d * 1e-4) * dt));
       zone.style.bottom = s.zone + "px";
@@ -14100,22 +14721,22 @@
     gauge.style.background = `linear-gradient(90deg,#dce8e9 0 30%,#6bd47b 30% ${snap - 13}%,#ffd45d ${snap - 13}% ${snap}%,#e05a5a ${snap}%)`;
     const pin = el("b");
     gauge.appendChild(pin);
-    const state6 = el("div", "dp-fish-pull-state");
+    const state7 = el("div", "dp-fish-pull-state");
     const meter2 = el("div", "dp-fish-hmeter");
     const fill = el("i");
     meter2.appendChild(fill);
     stage2.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
     stage2.appendChild(line6);
     stage2.appendChild(gauge);
-    stage2.appendChild(state6);
+    stage2.appendChild(state7);
     stage2.appendChild(meter2);
     stage2.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
     root.appendChild(stage2);
     holdControls(stage2, s);
-    function tick(now2) {
+    function tick(now3) {
       if (!stillOpen(ui)) return finish(false);
-      const dt = s.last ? Math.min(50, now2 - s.last) : 16;
-      s.last = now2;
+      const dt = s.last ? Math.min(50, now3 - s.last) : 16;
+      s.last = now3;
       s.surgeCd -= dt;
       if (s.surgeCd <= 0) {
         s.surge = (10 + d * 0.28) * feel2.speed * (feel2.burst > 0.015 ? 1.25 : 1);
@@ -14133,7 +14754,7 @@
       pin.style.left = s.tension + "%";
       rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
       fill.style.width = 100 - Math.max(0, s.distance) + "%";
-      state6.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
+      state7.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
       stage2.setAttribute("data-tension", s.tension.toFixed(0));
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
@@ -14296,10 +14917,10 @@
     const fishing = ui.view.fishing;
     const box = accordion("rod", "dp-fish-rod-sec", "\u{1F3A3}", "\u9C7C\u7AFF", fishing.rod.label);
     const body = el("div", "dp-fish-sec-body");
-    const now2 = el("div", "dp-fish-rodnow");
-    now2.appendChild(el("span", null, fishing.rod.emoji + " " + fishing.rod.label));
-    now2.appendChild(el("small", null, "\u73B0\u5728\u7528\u7684"));
-    body.appendChild(now2);
+    const now3 = el("div", "dp-fish-rodnow");
+    now3.appendChild(el("span", null, fishing.rod.emoji + " " + fishing.rod.label));
+    now3.appendChild(el("small", null, "\u73B0\u5728\u7528\u7684"));
+    body.appendChild(now3);
     if (fishing.nextRod) {
       const coins = ui.view.pig?.coins ?? 0;
       const up = button("dp-mini", { "data-fish-rod": fishing.nextRod.key || String(fishing.nextRod.level) }, function() {
@@ -14459,32 +15080,32 @@
     mark.appendChild(fishImage("bobber.png", "dp-fish-bobber-img"));
     water.appendChild(mark);
     root.appendChild(water);
-    const state6 = el("div", "dp-fish-wait-state");
+    const state7 = el("div", "dp-fish-wait-state");
     const line6 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
-    state6.appendChild(line6);
-    state6.appendChild(el("small", null, "\u76EF\u4F4F\u6D6E\u6F02\uFF0C\u54AC\u94A9\u65F6\u70B9\u51FB"));
-    root.appendChild(state6);
+    state7.appendChild(line6);
+    state7.appendChild(el("small", null, "\u76EF\u4F4F\u6D6E\u6F02\uFF0C\u54AC\u94A9\u65F6\u70B9\u51FB"));
+    root.appendChild(state7);
     let nextNibble = Date.now() + 1500 + Math.random() * 2500;
     let nibbleUntil = 0;
     waitUi = ui;
     function tick() {
       if (waitUi !== ui) return;
-      const now2 = Date.now();
-      if (now2 < pending2.bitesAt - 900 && now2 >= nextNibble) {
-        nibbleUntil = now2 + 420;
-        nextNibble = now2 + 1800 + Math.random() * 3200;
+      const now3 = Date.now();
+      if (now3 < pending2.bitesAt - 900 && now3 >= nextNibble) {
+        nibbleUntil = now3 + 420;
+        nextNibble = now3 + 1800 + Math.random() * 3200;
         water.setAttribute("data-nibble", "true");
         line6.textContent = Math.random() < 0.5 ? "\u6D6E\u6F02\u52A8\u4E86\u4E00\u4E0B\u2026" : "\u5495\u561F\uFF0C\u5192\u4E86\u4E2A\u6CE1\u2026";
-      } else if (nibbleUntil > 0 && now2 > nibbleUntil + 900) {
+      } else if (nibbleUntil > 0 && now3 > nibbleUntil + 900) {
         nibbleUntil = 0;
         water.setAttribute("data-nibble", "false");
         line6.textContent = "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026";
       }
-      if (now2 >= pending2.bitesAt && now2 <= pending2.hookUntil) {
+      if (now3 >= pending2.bitesAt && now3 <= pending2.hookUntil) {
         mark.textContent = "\u2757";
         line6.textContent = "\u4E0A\u94A9\u4E86\uFF01\u5FEB\u70B9\uFF01";
         water.setAttribute("data-bite", "true");
-      } else if (now2 > pending2.hookUntil) {
+      } else if (now3 > pending2.hookUntil) {
         stopWait();
         ui.send("fishHook");
         return;
@@ -14662,8 +15283,8 @@
   var CAKE_KEY = "dsh-piggy:cake";
   var PARTY_MS = 15e3;
   function today() {
-    var now2 = /* @__PURE__ */ new Date();
-    return now2.getFullYear() + "-" + (now2.getMonth() + 1) + "-" + now2.getDate();
+    var now3 = /* @__PURE__ */ new Date();
+    return now3.getFullYear() + "-" + (now3.getMonth() + 1) + "-" + now3.getDate();
   }
   function cakeTakenToday() {
     return readStore(CAKE_KEY) === today();
@@ -15271,6 +15892,21 @@
     ".dp-cloud-value{font-size:10px;line-height:1.35;color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-word}",
     ".dp-cloud-note,.dp-cloud-status{font-size:10px;line-height:1.45;color:var(--ac-text-muted);overflow-wrap:anywhere}",
     ".dp-cloud-error{color:var(--ac-error)}",
+    // 局域网联机：复用云存档那组表单/摘要的尺寸，只加等宽邀请串和分隔线。
+    ".dp-lan-badge{font-size:9.5px;font-weight:700;color:var(--ac-text-muted)}",
+    ".dp-lan-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}",
+    ".dp-lan-field{display:grid;gap:4px;font-size:10px;margin-top:8px}",
+    ".dp-lan-input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}",
+    ".dp-lan-card{display:grid;gap:3px;margin-top:8px;padding:8px 9px;border:1px solid var(--ac-border-light);border-radius:9px;background:var(--ac-bg-content)}",
+    ".dp-lan-card b{font-size:11px;color:var(--ac-text);overflow-wrap:anywhere}",
+    ".dp-lan-invite{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1.45;",
+    "margin:6px 0;padding:7px 8px;border:1px solid var(--ac-border-light);border-radius:8px;",
+    "background:var(--ac-bg-input);color:var(--ac-text-body);overflow-wrap:anywhere;word-break:break-all;user-select:text}",
+    ".dp-lan-status{font-size:10px;line-height:1.45;color:var(--ac-success);overflow-wrap:anywhere}",
+    ".dp-lan-error{font-size:10px;line-height:1.45;color:var(--ac-error);overflow-wrap:anywhere}",
+    ".dp-lan-join{display:grid;gap:5px;margin-top:11px;padding-top:9px;border-top:1px dashed var(--ac-border-light)}",
+    ".dp-lan-join-head{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}",
+    ".dp-lan-join-head b{font-size:11px;color:var(--ac-text)}",
     /* ---------- segmented control ---------- */
     ".dp-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:9px}",
     ".dp-seg button{font:inherit;font-size:10.5px;font-weight:600;color:var(--ac-text-muted);",
@@ -17884,17 +18520,17 @@
     };
   }
   async function cachedLatest(fetchLatest, store) {
-    const now2 = store.now ? store.now() : Date.now();
+    const now3 = store.now ? store.now() : Date.now();
     let saved = null;
     try {
       saved = JSON.parse(store.read(LATEST_CACHE_KEY) || "null");
     } catch {
       saved = null;
     }
-    if (saved !== null && typeof saved.at === "number" && now2 - saved.at < LATEST_CACHE_MS) return saved.release ?? null;
+    if (saved !== null && typeof saved.at === "number" && now3 - saved.at < LATEST_CACHE_MS) return saved.release ?? null;
     try {
       const release = await fetchLatest();
-      store.write(LATEST_CACHE_KEY, JSON.stringify({ at: now2, release }));
+      store.write(LATEST_CACHE_KEY, JSON.stringify({ at: now3, release }));
       return release;
     } catch (error) {
       if (saved !== null) return saved.release ?? null;
@@ -17952,10 +18588,10 @@
       npm: {}
     };
   }
-  var state4 = freshState(null);
+  var state5 = freshState(null);
   function stateFor2(ui) {
-    if (state4.ui !== ui) state4 = freshState(ui);
-    return state4;
+    if (state5.ui !== ui) state5 = freshState(ui);
+    return state5;
   }
   function channelName() {
     return CHANNEL.name === "gitee" ? "Gitee" : "GitHub";
@@ -18214,7 +18850,7 @@
     }, function(error) {
       s.npm[version] = { state: "error", message: error instanceof Error ? error.message : "\u6CA1\u8FDE\u4E0A npm" };
     }).then(function() {
-      if (state4 === s && ui.tab === "update" && s.pick === version) ui.renderContent();
+      if (state5 === s && ui.tab === "update" && s.pick === version) ui.renderContent();
     });
   }
   function pageButton(text, page, empty, version) {
@@ -18231,7 +18867,7 @@
   }
 
   // src/client/tabs/update.js
-  var state5 = {
+  var state6 = {
     current: null,
     list: null,
     error: null,
@@ -18258,52 +18894,52 @@
   }
   function refresh(ui, fresh) {
     var shell2 = updatesBridge();
-    if (shell2 === null || state5.loading) return;
-    state5.loading = true;
-    state5.error = null;
-    if (!state5.listening) {
-      state5.listening = true;
+    if (shell2 === null || state6.loading) return;
+    state6.loading = true;
+    state6.error = null;
+    if (!state6.listening) {
+      state6.listening = true;
       shell2.updates.onProgress(function(fraction) {
-        state5.fraction = fraction;
+        state6.fraction = fraction;
         ui.renderContent();
       });
     }
-    if (shell2.shellUpdates && !state5.shellListening) {
-      state5.shellListening = true;
+    if (shell2.shellUpdates && !state6.shellListening) {
+      state6.shellListening = true;
       shell2.shellUpdates.onProgress(function(fraction) {
-        state5.shellFraction = fraction;
+        state6.shellFraction = fraction;
         ui.renderContent();
       });
     }
     Promise.all([shell2.updates.current(), shell2.updates.list(fresh === true), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
-      state5.current = got[0];
-      if (got[1] && got[1].ok) state5.list = got[1].releases;
-      else state5.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
-      state5.shellStatus = got[2];
+      state6.current = got[0];
+      if (got[1] && got[1].ok) state6.list = got[1].releases;
+      else state6.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
+      state6.shellStatus = got[2];
     }, function() {
-      state5.error = "\u6CA1\u95EE\u5230";
+      state6.error = "\u6CA1\u95EE\u5230";
     }).then(function() {
-      state5.loading = false;
+      state6.loading = false;
       ui.renderContent();
     });
   }
   function downloadShell(ui, version) {
     var shell2 = updatesBridge();
-    if (!shell2 || !shell2.shellUpdates || state5.shellBusy) return;
-    state5.shellBusy = true;
-    state5.shellFraction = 0;
-    state5.shellMessage = null;
+    if (!shell2 || !shell2.shellUpdates || state6.shellBusy) return;
+    state6.shellBusy = true;
+    state6.shellFraction = 0;
+    state6.shellMessage = null;
     ui.renderContent();
     shell2.shellUpdates.download(version).then(function(result) {
       if (result.ok) {
-        state5.shellReady = result.version;
-        state5.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
-      } else state5.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
-      state5.shellBusy = false;
+        state6.shellReady = result.version;
+        state6.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
+      } else state6.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
+      state6.shellBusy = false;
       ui.renderContent();
     }, function(error) {
-      state5.shellBusy = false;
-      state5.shellMessage = String(error);
+      state6.shellBusy = false;
+      state6.shellMessage = String(error);
       ui.renderContent();
     });
   }
@@ -18312,7 +18948,7 @@
     if (!shell2 || !shell2.shellUpdates) return;
     shell2.shellUpdates.install().then(function(result) {
       if (!result.ok) {
-        state5.shellMessage = result.reason;
+        state6.shellMessage = result.reason;
         ui.renderContent();
       }
     });
@@ -18327,24 +18963,24 @@
   function install(ui, version) {
     var shell2 = updatesBridge();
     if (shell2 === null) return;
-    state5.busy = version;
-    state5.fraction = 0;
-    state5.message = null;
+    state6.busy = version;
+    state6.fraction = 0;
+    state6.message = null;
     ui.renderContent();
     shell2.updates.install(version).then(function(result) {
-      state5.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state5.busy = null;
+      state6.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state6.busy = null;
       ui.renderContent();
     });
   }
   function rollback2(ui) {
     var shell2 = updatesBridge();
     if (shell2 === null) return;
-    state5.busy = "rollback";
+    state6.busy = "rollback";
     ui.renderContent();
     shell2.updates.rollback().then(function(result) {
-      state5.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state5.busy = null;
+      state6.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state6.busy = null;
       ui.renderContent();
     });
   }
@@ -18353,25 +18989,25 @@
       renderDshUpdate(ui);
       return;
     }
-    if (state5.current === null && state5.list === null && state5.error === null) refresh(ui);
-    var cur = state5.current;
+    if (state6.current === null && state6.list === null && state6.error === null) refresh(ui);
+    var cur = state6.current;
     var head = el("div", "dp-pick dp-tile-card dp-update-now");
     var top = el("div", "dp-update-top");
     top.appendChild(el("div", "dp-pick-head", cur === null ? "\u6B63\u5728\u770B\u73B0\u5728\u7684\u7248\u672C\u2026" : "\u6E38\u620F v" + cur.version + (cur.bundled ? "\uFF08\u5B89\u88C5\u5305\u81EA\u5E26\uFF09" : "")));
     head.appendChild(top);
     if (cur !== null) head.appendChild(el("div", "dp-dim", "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \xB7 \u6E38\u620F\u73A9\u6CD5\u548C\u7A97\u53E3\u529F\u80FD\u5206\u522B\u66F4\u65B0"));
-    var previewCount = state5.list === null ? 0 : state5.list.filter(function(r) {
+    var previewCount = state6.list === null ? 0 : state6.list.filter(function(r) {
       return r.prerelease;
     }).length;
     if (previewCount > 0) head.appendChild(el("div", "dp-dim", "\u5217\u8868\u91CC\u8FD8\u6709 " + previewCount + " \u4E2A\u6D4B\u8BD5\u7248\uFF1A\u4E0D\u4F1A\u63D0\u9192\uFF0C\u60F3\u8BD5\u7684\u8BDD\u5728\u4E0B\u9762\u70B9\u5F00\u624B\u52A8\u5B89\u88C5\u3002"));
-    if (state5.message !== null) head.appendChild(el("div", "dp-req", state5.message));
+    if (state6.message !== null) head.appendChild(el("div", "dp-req", state6.message));
     var again = button("dp-mini dp-update-refresh", { "data-update-refresh": "" }, function() {
-      state5.message = null;
-      state5.shellMessage = null;
+      state6.message = null;
+      state6.shellMessage = null;
       refresh(ui, true);
     });
-    again.textContent = state5.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
-    again.disabled = state5.loading || state5.busy !== null || state5.shellBusy;
+    again.textContent = state6.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
+    again.disabled = state6.loading || state6.busy !== null || state6.shellBusy;
     top.appendChild(again);
     var eligible = function(r) {
       return !r.prerelease;
@@ -18379,34 +19015,34 @@
     var shellOf = function(r) {
       return r.latestShell || r.manifest && r.manifest.shellVersion || null;
     };
-    var shellRelease = state5.list === null || cur === null ? null : state5.list.find(function(r) {
+    var shellRelease = state6.list === null || cur === null ? null : state6.list.find(function(r) {
       return eligible(r) && shellOf(r) !== null && compareVersions(shellOf(r), cur.shell) > 0;
     }) || null;
     if (shellRelease !== null) {
       var shellVersion = shellOf(shellRelease);
-      var mode = state5.shellStatus && state5.shellStatus.mode;
+      var mode = state6.shellStatus && state6.shellStatus.mode;
       if (shellRelease.prerelease && compareVersions(cur.shell, "0.2.5") < 0) mode = "preview-manual";
-      var required = compareVersions(cur.shell, "0.2.0") < 0 || state5.list.some(function(r) {
+      var required = compareVersions(cur.shell, "0.2.0") < 0 || state6.list.some(function(r) {
         return eligible(r) && r.blocked === "shell" && compareVersions(r.version, cur.version) > 0;
       });
       head.appendChild(el("div", required ? "dp-req" : "dp-dim", required ? "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \u2192 v" + shellVersion + "\uFF1A\u65B0\u7248\u672C\u6E38\u620F\u9700\u8981\u5B83" : "\u684C\u9762\u5916\u58F3\u6709\u53EF\u9009\u66F4\u65B0 v" + shellVersion + "\uFF0C\u4E0D\u66F4\u65B0\u4E5F\u80FD\u6B63\u5E38\u73A9"));
       if (compareVersions(cur.shell, "0.2.0") < 0) head.appendChild(el("div", "dp-dim", "\u4F60\u7684\u684C\u9762\u5916\u58F3\u662F\u94FA\u6EE1\u5168\u5C4F\u7684\u65E7\u7248\uFF0C\u4F1A\u5361\u3001\u4F1A\u95EA\uFF1B\u65B0\u5916\u58F3\u53EA\u6846\u4F4F\u732A\u548C\u9762\u677F\u3002\u8BF7\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305\u8986\u76D6\u5B89\u88C5\uFF0C\u5B58\u6863\u4E0D\u4F1A\u4E22\u3002"));
       if (mode !== "automatic" && required) head.appendChild(el("div", "dp-dim", shellManualReason(mode)));
-      if (state5.shellMessage !== null) head.appendChild(el("div", "dp-req", state5.shellMessage));
-      if (state5.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state5.shellFraction * 100) + "%"));
+      if (state6.shellMessage !== null) head.appendChild(el("div", "dp-req", state6.shellMessage));
+      if (state6.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state6.shellFraction * 100) + "%"));
       var shellGo = button(required ? "dp-btn dp-btn-wide" : "dp-mini", { "data-update-shell": shellRelease.version }, function() {
         if (mode !== "automatic") updatesBridge().openPage(shellRelease.page);
-        else if (state5.shellReady === shellVersion) installShell(ui);
+        else if (state6.shellReady === shellVersion) installShell(ui);
         else downloadShell(ui, shellVersion);
       });
-      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state5.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
-      shellGo.disabled = state5.shellBusy || state5.busy !== null;
+      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state6.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
+      shellGo.disabled = state6.shellBusy || state6.busy !== null;
       head.appendChild(shellGo);
     }
-    if (state5.busy !== null && state5.message === null) {
-      head.appendChild(el("div", "dp-dim", state5.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state5.fraction * 100) + "%"));
+    if (state6.busy !== null && state6.message === null) {
+      head.appendChild(el("div", "dp-dim", state6.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state6.fraction * 100) + "%"));
     }
-    var latest = state5.list === null ? null : state5.list.find(function(r) {
+    var latest = state6.list === null ? null : state6.list.find(function(r) {
       return r.blocked === null && eligible(r);
     }) || null;
     if (latest !== null && cur !== null && compareVersions(latest.version, cur.version) > 0) {
@@ -18414,28 +19050,28 @@
         install(ui, latest.version);
       });
       up.textContent = "\u2B06\uFE0F \u66F4\u65B0\u5230\u6700\u65B0 v" + latest.version;
-      up.disabled = state5.busy !== null;
+      up.disabled = state6.busy !== null;
       head.appendChild(up);
     } else if (latest !== null) {
       head.appendChild(el("div", "dp-req dp-req-ok", "\u2713 \u5DF2\u7ECF\u662F\u6700\u65B0"));
     }
     ui.content.appendChild(head);
-    if (state5.loading && state5.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
-    if (state5.error !== null) {
-      ui.content.appendChild(el("div", "dp-empty", state5.error));
+    if (state6.loading && state6.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
+    if (state6.error !== null) {
+      ui.content.appendChild(el("div", "dp-empty", state6.error));
       var again = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
         refresh(ui, true);
       });
       again.textContent = "\u518D\u8BD5\u4E00\u6B21";
       ui.content.appendChild(again);
     }
-    if (state5.list !== null) renderList(ui, state5.list);
+    if (state6.list !== null) renderList(ui, state6.list);
     if (cur !== null && cur.previous !== null) {
       var back = button("dp-btn dp-btn-wide dp-update-back", { "data-update-rollback": "" }, function() {
         rollback2(ui);
       });
       back.textContent = "\u21A9\uFE0F \u56DE\u5230\u4E0A\u4E00\u4E2A\u7248\u672C v" + cur.previous;
-      back.disabled = state5.busy !== null;
+      back.disabled = state6.busy !== null;
       ui.content.appendChild(back);
     }
   }
@@ -18470,11 +19106,11 @@
   function renderGroup(ui, group, newestStable) {
     var key2 = group.base;
     var head = group.stable ?? group.previews[0];
-    var open = state5.pick === key2;
+    var open = state6.pick === key2;
     var box = el("div", "dp-rel");
     box.setAttribute("data-release-group", key2);
     var row2 = button("dp-rel-head", { "data-release": head.version }, function() {
-      state5.pick = open ? null : key2;
+      state6.pick = open ? null : key2;
       ui.renderContent();
     });
     row2.appendChild(el("b", null, "v" + key2));
@@ -18497,9 +19133,9 @@
         for (var q = 0; q < group.previews.length; q += 1) body.appendChild(previewRow(ui, group.previews[q]));
       } else if (group.previews.length > 0) {
         var pre = el("div", "dp-rel-pre");
-        var showing = state5.previews === key2;
+        var showing = state6.previews === key2;
         var toggle = button("dp-mini dp-mini-plain", { "data-previews": key2 }, function() {
-          state5.previews = showing ? null : key2;
+          state6.previews = showing ? null : key2;
           ui.renderContent();
         });
         toggle.textContent = (showing ? "\u25BE " : "\u25B8 ") + "\u6D4B\u8BD5\u7248 " + group.previews.length + " \u4E2A \xB7 \u624B\u52A8\u5B89\u88C5";
@@ -18527,11 +19163,11 @@
       else install(ui, release.version);
     });
     go.textContent = release.current ? "\u6B63\u5728\u7528" : release.blocked === "shell" ? "\u9700\u8981\u65B0\u5916\u58F3" : release.blocked === "save" ? "\u6362\u4E0D\u4E86" : "\u5B89\u88C5\u6D4B\u8BD5\u7248";
-    go.disabled = release.current || release.blocked === "save" || state5.busy !== null;
+    go.disabled = release.current || release.blocked === "save" || state6.busy !== null;
     row2.appendChild(go);
     box.appendChild(row2);
     var shell2 = release.latestShell || release.manifest && release.manifest.shellVersion;
-    if (shell2 && state5.current && compareVersions(shell2, state5.current.shell) > 0) {
+    if (shell2 && state6.current && compareVersions(shell2, state6.current.shell) > 0) {
       box.appendChild(el("div", "dp-dim", "\u914D\u5957\u684C\u9762\u5916\u58F3 v" + shell2 + "\uFF1B\u53EA\u6362\u6E38\u620F\u5305\u4E0D\u4F1A\u66F4\u65B0\u7A97\u53E3\u529F\u80FD\u3002"));
       var desktop2 = button("dp-mini", { "data-preview-shell": release.version }, function() {
         updatesBridge().openPage(release.page);
@@ -18558,15 +19194,15 @@
       go.disabled = true;
     } else if (release.blocked === "shell") {
       box.appendChild(el("div", "dp-req", "\u2717 \u6E38\u620F v" + release.version + " \u8981\u6C42\u684C\u9762\u5916\u58F3\u81F3\u5C11 v" + release.minShell));
-      go.textContent = state5.shellStatus && state5.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
-      if (state5.shellStatus && state5.shellStatus.mode === "automatic") go.disabled = true;
+      go.textContent = state6.shellStatus && state6.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
+      if (state6.shellStatus && state6.shellStatus.mode === "automatic") go.disabled = true;
     } else if (release.blocked === "save") {
       box.appendChild(el("div", "dp-req", "\u2717 \u5B58\u6863\u592A\u65B0\uFF0C\u8FD9\u4E2A\u7248\u672C\u8BFB\u4E0D\u4E86"));
       go.textContent = "\u6362\u4E0D\u4E86";
       go.disabled = true;
     } else {
       go.textContent = "\u6362\u5230\u8FD9\u4E2A\u7248\u672C";
-      go.disabled = state5.busy !== null;
+      go.disabled = state6.busy !== null;
     }
     box.appendChild(go);
     return box;
@@ -19718,7 +20354,7 @@
       processPending(ctx, showPigLine);
       if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === "status") return false;
       if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === "card") return false;
-      if (ctx.tab === "settings" && (cloudSettingsDraftOpen() || document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true" || document.activeElement?.getAttribute?.("data-bubble-scale") === "true")) return false;
+      if (ctx.tab === "settings" && (cloudSettingsDraftOpen() || ownerNetworkDraftOpen() || document.activeElement?.getAttribute?.("data-proxy-address") === "true" || document.activeElement?.getAttribute?.("data-pig-scale") === "true" || document.activeElement?.getAttribute?.("data-bubble-scale") === "true")) return false;
       if (ctx.tab === "dex" && document.activeElement?.getAttribute?.("data-dex-search") === "items") return false;
       if ((ctx.extBig || String(ctx.tab).startsWith("ext:")) && document.activeElement?.matches?.(".fm-quantity")) return false;
       var currentFishing = ctx.view.fishing.pending;
@@ -19903,16 +20539,16 @@
   function union(...boxes) {
     return bounds(boxes.flatMap(corners));
   }
-  function transformed(box, pivot, state6) {
-    const radians = state6.rotate * Math.PI / 180;
+  function transformed(box, pivot, state7) {
+    const radians = state7.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners(box).map((point) => {
-      const x = (point.x - pivot.x) * state6.scaleX;
-      const y = (point.y - pivot.y) * state6.scaleY;
+      const x = (point.x - pivot.x) * state7.scaleX;
+      const y = (point.y - pivot.y) * state7.scaleY;
       return {
         x: pivot.x + x * cos - y * sin,
-        y: pivot.y + x * sin + y * cos + state6.dy
+        y: pivot.y + x * sin + y * cos + state7.dy
       };
     });
   }
@@ -20428,27 +21064,27 @@
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
   }
-  function keyframeCorners(box, pivot, state6) {
-    const radians = state6.rotate * Math.PI / 180;
+  function keyframeCorners(box, pivot, state7) {
+    const radians = state7.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners2(box).map((point) => {
-      const x = (point.x - pivot.x) * state6.scaleX;
-      const y = (point.y - pivot.y) * state6.scaleY;
-      if (state6.translateFirst) {
+      const x = (point.x - pivot.x) * state7.scaleX;
+      const y = (point.y - pivot.y) * state7.scaleY;
+      if (state7.translateFirst) {
         return {
-          x: pivot.x + (x + state6.x) * cos - (y + state6.y) * sin,
-          y: pivot.y + (x + state6.x) * sin + (y + state6.y) * cos
+          x: pivot.x + (x + state7.x) * cos - (y + state7.y) * sin,
+          y: pivot.y + (x + state7.x) * sin + (y + state7.y) * cos
         };
       }
       return {
-        x: pivot.x + x * cos - y * sin + state6.x,
-        y: pivot.y + x * sin + y * cos + state6.y
+        x: pivot.x + x * cos - y * sin + state7.x,
+        y: pivot.y + x * sin + y * cos + state7.y
       };
     });
   }
   function keyframeEnvelope(states3, box, pivot) {
-    return boundsOf(states3.flatMap((state6) => keyframeCorners(box, pivot, state6)));
+    return boundsOf(states3.flatMap((state7) => keyframeCorners(box, pivot, state7)));
   }
   function motionEnvelope(name) {
     if (name === "dp-spin") return spinEnvelope;
@@ -20529,7 +21165,7 @@
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.01;
   }
   function createMeasure(env) {
-    const state6 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
+    const state7 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
     function boxes(host2) {
       const pigNode = host2.querySelector(".dp-pig");
@@ -20571,8 +21207,8 @@
       if (reserves && pigNode !== null) {
         const above = geometry === null ? bubbleSize2.height : geometry.window.y + anchors.headTop.y - geometry.workArea.y - PAD;
         const want = Math.max(0, Math.min(bubbleSize2.height, Math.round(above)));
-        if (state6.bubbleHeight === null || Math.abs(want - state6.bubbleHeight) >= STEP * 2) state6.bubbleHeight = want;
-        const height = state6.bubbleHeight;
+        if (state7.bubbleHeight === null || Math.abs(want - state7.bubbleHeight) >= STEP * 2) state7.bubbleHeight = want;
+        const height = state7.bubbleHeight;
         const zoneLeft = host2.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: anchors.headTop.y - height, r: zoneLeft + bubbleSize2.width, b: anchors.headTop.y };
       }
@@ -20683,14 +21319,14 @@
     }
     function pin(host2, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
-      const shift = { x: state6.shift.x + state6.anchor.x, y: state6.shift.y + state6.anchor.y };
+      const shift = { x: state7.shift.x + state7.anchor.x, y: state7.shift.y + state7.anchor.y };
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
       else want.right = Math.round(contentBox.right - hostBox.x - hostBox.width + PAD - shift.x) + "px";
       if (side.vertical === "top") want.top = Math.round(hostBox.y - contentBox.top + PAD + shift.y) + "px";
       else want.bottom = Math.round(contentBox.bottom - hostBox.y - hostBox.height + PAD - shift.y) + "px";
       const key2 = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
-      if (key2 === state6.pinned) return;
-      state6.pinned = key2;
+      if (key2 === state7.pinned) return;
+      state7.pinned = key2;
       host2.style.left = want.left;
       host2.style.right = want.right;
       host2.style.top = want.top;
@@ -20711,7 +21347,7 @@
     }
     function fitWindow(content, win) {
       if (win && (content.width !== win.width || content.height !== win.height)) {
-        state6.anchor = { x: 0, y: 0 };
+        state7.anchor = { x: 0, y: 0 };
       }
     }
     function fitBubble(host2, geometry) {
@@ -20748,7 +21384,7 @@
       if (below && bubble.getAttribute("data-bubble-side") !== "below") bubble.setAttribute("data-bubble-side", "below");
       else if (!below && bubble.hasAttribute("data-bubble-side")) bubble.removeAttribute("data-bubble-side");
     }
-    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state6 };
+    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state7 };
   }
 
   // src/client/desktop/place.js
@@ -20986,7 +21622,7 @@
   }
 
   // src/client/desktop/slide.js
-  function commitSlide(host2, state6, slide) {
+  function commitSlide(host2, state7, slide) {
     const x = Number(slide?.x) || 0;
     const y = Number(slide?.y) || 0;
     if (host2 !== null && (x !== 0 || y !== 0)) {
@@ -20994,9 +21630,9 @@
       host2.style.bottom = (parseFloat(host2.style.bottom) || 0) - y + "px";
     }
     if (host2 !== null) host2.style.translate = "";
-    state6.anchor = { x: state6.anchor.x + state6.shift.x + x, y: state6.anchor.y + state6.shift.y + y };
-    state6.shift = { x: 0, y: 0 };
-    state6.pinned = "";
+    state7.anchor = { x: state7.anchor.x + state7.shift.x + x, y: state7.anchor.y + state7.shift.y + y };
+    state7.shift = { x: 0, y: 0 };
+    state7.pinned = "";
   }
 
   // src/client/desktop/layout-controller.js
@@ -21606,14 +22242,14 @@
   }
 
   // src/client/feel/velocity.js
-  function recentVelocity(samples, now2, options) {
+  function recentVelocity(samples, now3, options) {
     const tailMs = options?.tailMs ?? FEEL.throwTailMs;
     const idleMs = options?.idleMs ?? FEEL.throwIdleMs;
     if (!Array.isArray(samples) || samples.length < 2) return { vx: 0, vy: 0 };
     const last = samples[samples.length - 1];
     const previous = samples[samples.length - 2];
     if (!last || !previous || !Number.isFinite(last.t) || !Number.isFinite(previous.t)) return { vx: 0, vy: 0 };
-    if (now2 - last.t > idleMs) return { vx: 0, vy: 0 };
+    if (now3 - last.t > idleMs) return { vx: 0, vy: 0 };
     const dt = (last.t - previous.t) / 1e3;
     if (dt <= 0 || dt > tailMs / 1e3) return { vx: 0, vy: 0 };
     return { vx: (last.x - previous.x) / dt, vy: (last.y - previous.y) / dt };
@@ -21748,25 +22384,25 @@
     function onPointerMove(event) {
       if (drag === null) return;
       const screen = pointerScreen(event);
-      const now2 = performance.now();
+      const now3 = performance.now();
       const net = Math.hypot(screen.x - drag.startX, screen.y - drag.startY);
       drag.lastClientX = event.clientX;
       drag.lastClientY = event.clientY;
-      drag.samples.push({ t: now2, x: screen.x, y: screen.y });
-      while (drag.samples.length > 16 || drag.samples.length > 2 && now2 - drag.samples[0].t > 240) drag.samples.shift();
+      drag.samples.push({ t: now3, x: screen.x, y: screen.y });
+      while (drag.samples.length > 16 || drag.samples.length > 2 && now3 - drag.samples[0].t > 240) drag.samples.shift();
       if (!drag.started && net < FEEL.dragPx) {
         const step = Math.hypot(screen.x - drag.lastScreenX, screen.y - drag.lastScreenY);
         drag.lastScreenX = screen.x;
         drag.lastScreenY = screen.y;
-        if (now2 - drag.pathStart > FEEL.strokeWindowMs) {
+        if (now3 - drag.pathStart > FEEL.strokeWindowMs) {
           drag.path = 0;
-          drag.pathStart = now2;
+          drag.pathStart = now3;
         }
         drag.path += step;
-        if (drag.path >= FEEL.strokePx && now2 - drag.lastStroke > FEEL.strokeCooldownMs) {
+        if (drag.path >= FEEL.strokePx && now3 - drag.lastStroke > FEEL.strokeCooldownMs) {
           drag.path = 0;
-          drag.pathStart = now2;
-          drag.lastStroke = now2;
+          drag.pathStart = now3;
+          drag.lastStroke = now3;
           drag.patted = true;
           playAudioCue(c.audio, "purr");
           const view = c.getView();
@@ -22332,11 +22968,11 @@
     return Math.max(min, Math.min(max, value));
   }
   function createFlightRunner(c) {
-    let state6 = null;
+    let state7 = null;
     function finish(result) {
-      const current3 = state6;
+      const current3 = state7;
       if (current3 === null) return;
-      state6 = null;
+      state7 = null;
       if (current3.raf) cancelAnimationFrame(current3.raf);
       try {
         current3.shell.flight.finish?.({
@@ -22351,11 +22987,11 @@
       c.host.style.translate = "";
       if (result !== null) c.onFinish(result);
     }
-    function step(now2) {
-      if (state6 === null) return;
-      const current3 = state6;
-      const dt = Math.min(50, Math.max(0, now2 - current3.lastTime));
-      current3.lastTime = now2;
+    function step(now3) {
+      if (state7 === null) return;
+      const current3 = state7;
+      const dt = Math.min(50, Math.max(0, now3 - current3.lastTime));
+      current3.lastTime = now3;
       const events = current3.body.advance(dt);
       let dizzy = current3.dizzy === true;
       let landSpeed = 0;
@@ -22410,7 +23046,7 @@
           artMargin: artMarginFor(start2.pig.width),
           visual: start2.visual
         });
-        state6 = {
+        state7 = {
           body,
           start: start2,
           shell: shell2,
@@ -22429,21 +23065,21 @@
       },
       /** 空中接住：停住并重定家，不播放落地冲击。 */
       catch: function() {
-        if (state6 === null) return false;
-        state6.body.stop();
+        if (state7 === null) return false;
+        state7.body.stop();
         finish(null);
         return true;
       },
       cancel: function() {
-        if (state6 === null) return;
-        state6.body.stop();
+        if (state7 === null) return;
+        state7.body.stop();
         finish(null);
       },
       isFlying: function() {
-        return state6 !== null;
+        return state7 !== null;
       },
       setScale: function(value) {
-        if (state6 !== null) state6.scale = value;
+        if (state7 !== null) state7.scale = value;
       },
       dispose: function() {
         finish(null);
@@ -22683,19 +23319,19 @@
   };
 
   // node_modules/motion-dom/dist/es/frameloop/sync-time.mjs
-  var now;
+  var now2;
   function clearTime() {
-    now = void 0;
+    now2 = void 0;
   }
   var time = {
     now: () => {
-      if (now === void 0) {
+      if (now2 === void 0) {
         time.set(frameData.isProcessing || MotionGlobalConfig.useManualTiming ? frameData.timestamp : performance.now());
       }
-      return now;
+      return now2;
     },
     set: (newTime) => {
-      now = newTime;
+      now2 = newTime;
       queueMicrotask(clearTime);
     }
   };
@@ -23225,7 +23861,7 @@
 
   // node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
-  function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state6 = {
+  function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state7 = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
@@ -23240,22 +23876,22 @@
     const { setup, read: read2, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
-      const timestamp = useManualTiming ? state6.timestamp : performance.now();
+      const timestamp = useManualTiming ? state7.timestamp : performance.now();
       runNextFrame = false;
       if (!useManualTiming) {
-        state6.delta = useDefaultElapsed ? 1e3 / 60 : Math.max(Math.min(timestamp - state6.timestamp, maxElapsed), 1);
+        state7.delta = useDefaultElapsed ? 1e3 / 60 : Math.max(Math.min(timestamp - state7.timestamp, maxElapsed), 1);
       }
-      state6.timestamp = timestamp;
-      state6.isProcessing = true;
-      setup.process(state6);
-      read2.process(state6);
-      resolveKeyframes.process(state6);
-      preUpdate.process(state6);
-      update.process(state6);
-      preRender.process(state6);
-      render.process(state6);
-      postRender.process(state6);
-      state6.isProcessing = false;
+      state7.timestamp = timestamp;
+      state7.isProcessing = true;
+      setup.process(state7);
+      read2.process(state7);
+      resolveKeyframes.process(state7);
+      preUpdate.process(state7);
+      update.process(state7);
+      preRender.process(state7);
+      render.process(state7);
+      postRender.process(state7);
+      state7.isProcessing = false;
       if (runNextFrame && allowKeepAlive) {
         useDefaultElapsed = false;
         scheduleNextBatch(processBatch);
@@ -23264,7 +23900,7 @@
     const wake = () => {
       runNextFrame = true;
       useDefaultElapsed = true;
-      if (!state6.isProcessing) {
+      if (!state7.isProcessing) {
         scheduleNextBatch(processBatch);
       }
     };
@@ -23282,7 +23918,7 @@
         steps[stepsOrder[i]].cancel(process2);
       }
     };
-    return { schedule: schedule3, cancel: cancel2, state: state6, steps };
+    return { schedule: schedule3, cancel: cancel2, state: state7, steps };
   }
 
   // node_modules/motion-dom/dist/es/frameloop/frame.mjs
@@ -23316,12 +23952,12 @@
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
-    let state6 = generator.next(duration);
-    keyframes2?.push(state6.value);
-    while (!state6.done && duration < maxDuration) {
+    let state7 = generator.next(duration);
+    keyframes2?.push(state7.value);
+    while (!state7.done && duration < maxDuration) {
       duration += timeStep;
-      state6 = generator.next(duration);
-      keyframes2?.push(state6.value);
+      state7 = generator.next(duration);
+      keyframes2?.push(state7.value);
     }
     return duration >= maxDuration ? Infinity : duration;
   }
@@ -23487,7 +24123,7 @@
     } : optionsOrVisualDuration;
     const origin = options.keyframes[0];
     const target = options.keyframes[options.keyframes.length - 1];
-    const state6 = { done: false, value: origin };
+    const state7 = { done: false, value: origin };
     const { stiffness, damping, mass, duration, isResolvedFromDuration, isTimeDefined } = getSpringOptions({ ...options });
     const inheritVelocity = (velocity) => isTimeDefined ? 0 : -millisecondsToSeconds(velocity);
     const dampingRatio = damping / (2 * Math.sqrt(stiffness * mass));
@@ -23570,7 +24206,7 @@
         if (!(options.restSpeed && options.restDelta))
           setRestThresholds();
         generator.calculatedDuration = calculatedDuration;
-        state6.done = false;
+        state7.done = false;
         update();
       },
       velocity: (t) => secondsToMilliseconds(resolveVelocity(t)),
@@ -23578,12 +24214,12 @@
         const current3 = resolveSpring(t);
         if (!isResolvedFromDuration) {
           const currentVelocity = secondsToMilliseconds(resolveVelocity(t));
-          state6.done = Math.abs(currentVelocity) <= s.restSpeed && Math.abs(s.target - current3) <= s.restDelta;
+          state7.done = Math.abs(currentVelocity) <= s.restSpeed && Math.abs(s.target - current3) <= s.restDelta;
         } else {
-          state6.done = t >= duration;
+          state7.done = t >= duration;
         }
-        state6.value = state6.done ? s.target : current3;
-        return state6;
+        state7.value = state7.done ? s.target : current3;
+        return state7;
       },
       toString: () => {
         const easingDuration = Math.min(calcGeneratorDuration(generator), maxGeneratorDuration);
@@ -23606,7 +24242,7 @@
   // node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
-    const state6 = {
+    const state7 = {
       done: false,
       value: origin
     };
@@ -23626,17 +24262,17 @@
     const calcDelta = (t) => -amplitude * Math.exp(-t / timeConstant);
     const applyFriction = (t) => {
       const delta = calcDelta(t);
-      state6.done = Math.abs(delta) <= restDelta;
-      state6.value = state6.done ? target : target + delta;
+      state7.done = Math.abs(delta) <= restDelta;
+      state7.value = state7.done ? target : target + delta;
     };
     let timeReachedBoundary;
     let spring$1;
     const checkCatchBoundary = (t) => {
-      if (!isOutOfBounds(state6.value))
+      if (!isOutOfBounds(state7.value))
         return;
       timeReachedBoundary = t;
       spring$1 = spring({
-        keyframes: [state6.value, nearestBoundary(state6.value)],
+        keyframes: [state7.value, nearestBoundary(state7.value)],
         /**
          * The friction curve is target + calcDelta(t), so its exact
          * derivative is -calcDelta(t) / timeConstant in units/ms,
@@ -23663,7 +24299,7 @@
           return spring$1.next(t - timeReachedBoundary);
         } else {
           !hasUpdatedFrame && applyFriction(t);
-          return state6;
+          return state7;
         }
       }
     };
@@ -23741,7 +24377,7 @@
   }
   function keyframes({ duration = 300, keyframes: keyframeValues, times, ease: ease2 = "easeInOut" }) {
     const easingFunctions = isEasingArray(ease2) ? ease2.map(easingDefinitionToFunction) : easingDefinitionToFunction(ease2) || easeInOut;
-    const state6 = {
+    const state7 = {
       done: false,
       value: keyframeValues[0]
     };
@@ -23751,9 +24387,9 @@
       return {
         calculatedDuration: duration,
         next: (t) => {
-          state6.value = mixer ? mixer(easingFunctions(duration > 0 ? clamp3(0, 1, t / duration) : 1)) : target;
-          state6.done = t >= duration;
-          return state6;
+          state7.value = mixer ? mixer(easingFunctions(duration > 0 ? clamp3(0, 1, t / duration) : 1)) : target;
+          state7.done = t >= duration;
+          return state7;
         }
       };
     }
@@ -23769,9 +24405,9 @@
     return {
       calculatedDuration: duration,
       next: (t) => {
-        state6.value = mapTimeToKeyframe(t);
-        state6.done = t >= duration;
-        return state6;
+        state7.value = mapTimeToKeyframe(t);
+        state7.done = t >= duration;
+        return state7;
       }
     };
   }
@@ -23813,7 +24449,7 @@
 
   // node_modules/motion-dom/dist/es/animation/utils/resolve-start-time.mjs
   var MAX_START_DELAY = 40;
-  var resolveStartTime = (startTime, now2) => now2 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now2 : startTime;
+  var resolveStartTime = (startTime, now3) => now3 - startTime > MAX_START_DELAY && !MotionGlobalConfig.useManualTiming ? now3 : startTime;
 
   // node_modules/motion-dom/dist/es/animation/utils/notify-inspector.mjs
   function baseRecord(kind, animation) {
@@ -23966,22 +24602,22 @@
       if (this.state === "finished" && this.holdTime === null) {
         this.currentTime = totalDuration;
       }
-      const state6 = this.generate(this.currentTime, isInDelayPhase);
-      let { done } = state6;
+      const state7 = this.generate(this.currentTime, isInDelayPhase);
+      let { done } = state7;
       if (!isInDelayPhase && calculatedDuration !== null) {
         done = this.playbackSpeed >= 0 ? this.currentTime >= totalDuration : this.currentTime <= 0;
       }
       const isAnimationFinished = this.holdTime === null && (this.state === "finished" || this.state === "running" && done);
       if (isAnimationFinished && type !== inertia) {
-        state6.value = getFinalKeyframe(keyframes2, this.options, finalKeyframe, this.speed);
+        state7.value = getFinalKeyframe(keyframes2, this.options, finalKeyframe, this.speed);
       }
       if (onUpdate) {
-        onUpdate(state6.value);
+        onUpdate(state7.value);
       }
       if (isAnimationFinished) {
         this.finish();
       }
-      return state6;
+      return state7;
     }
     /**
      * This animation's time, including delay, at a timestamp.
@@ -24030,17 +24666,17 @@
         }
         elapsed = clamp3(0, 1, iterationProgress) * resolvedDuration;
       }
-      let state6;
+      let state7;
       if (isInDelayPhase) {
         this.delayState.value = keyframes2[0];
-        state6 = this.delayState;
+        state7 = this.delayState;
       } else {
-        state6 = frameGenerator.next(elapsed);
+        state7 = frameGenerator.next(elapsed);
       }
       if (mixKeyframes && !isInDelayPhase) {
-        state6.value = mixKeyframes(state6.value);
+        state7.value = mixKeyframes(state7.value);
       }
-      return state6;
+      return state7;
     }
     /**
      * Allows the returned animation to be awaited or promise-chained. Currently
@@ -24106,14 +24742,14 @@
         this.driver = driver((timestamp) => this.tick(timestamp));
       }
       this.options.onPlay?.();
-      const now2 = this.driver.now();
+      const now3 = this.driver.now();
       if (this.state === "finished") {
         this.updateFinished();
-        this.startTime = now2;
+        this.startTime = now3;
       } else if (this.holdTime !== null) {
-        this.startTime = now2 - this.holdTime / (this.playbackSpeed || 1);
+        this.startTime = now3 - this.holdTime / (this.playbackSpeed || 1);
       } else if (!this.startTime) {
-        this.startTime = startTime ?? (this.pendingStartTime = now2);
+        this.startTime = startTime ?? (this.pendingStartTime = now3);
       }
       if (this.state === "finished" && this.speed < 0) {
         this.startTime += this.calculatedDuration;
@@ -24809,8 +25445,8 @@
       if (this.isStopped)
         return;
       this.isStopped = true;
-      const { state: state6 } = this;
-      if (state6 === "idle" || state6 === "finished") {
+      const { state: state7 } = this;
+      if (state7 === "idle" || state7 === "finished") {
         return;
       }
       if (this.updateMotionValue) {
@@ -24949,8 +25585,8 @@
      * The value now, as WAAPI doesn't set the motion value while it runs.
      */
     liveValue() {
-      const { state: state6 } = this;
-      if (state6 === "running" || state6 === "paused") {
+      const { state: state7 } = this;
+      if (state7 === "running" || state7 === "paused") {
         return this.sample(this.elapsed());
       }
     }
@@ -25235,8 +25871,8 @@
      * Whether this is running, or paused, on the compositor.
      */
     isAccelerated() {
-      const { group, state: state6 } = this;
-      return group?.tracks.has(this) && !group.isJS && this.canAccelerate && (state6 === "running" || state6 === "paused");
+      const { group, state: state7 } = this;
+      return group?.tracks.has(this) && !group.isJS && this.canAccelerate && (state7 === "running" || state7 === "paused");
     }
     /**
      * The value now, while this runs on the compositor and so doesn't
@@ -25290,8 +25926,8 @@
      * Write the current value, and velocity, to the motion value.
      */
     sync() {
-      const now2 = time.now();
-      this.options.motionValue.setWithVelocity(this.sampleAt(now2 - sampleDelta, true), this.sampleAt(now2, true), sampleDelta);
+      const now3 = time.now();
+      this.options.motionValue.setWithVelocity(this.sampleAt(now3 - sampleDelta, true), this.sampleAt(now3, true), sampleDelta);
     }
     play() {
       if (this.isStopped)
@@ -25497,8 +26133,8 @@
         easing: easing || "linear"
       });
     };
-    const animate2 = (now2) => {
-      let end = now2;
+    const animate2 = (now3) => {
+      let end = now3;
       let cycle = 0;
       let cycleStart = 0;
       const moving = [];
@@ -25510,7 +26146,7 @@
         byKey.set(track.name, track);
         const [trackEnd, trackCycle] = track.timing();
         const isHeld = trackEnd === Infinity;
-        built.set(track, [track.at(now2), track.speed, isHeld]);
+        built.set(track, [track.at(now3), track.speed, isHeld]);
         if (isHeld) {
           track.sync();
           continue;
@@ -25544,14 +26180,14 @@
       stop(false);
       const tween = !cycle && getTween(moving);
       try {
-        if (tween && tween[1] > now2) {
+        if (tween && tween[1] > now3) {
           const [from, to, easing] = tween;
-          add(run(moving, from, to, void 0, void 0, easing), from - now2, to - from);
-        } else if (end > now2) {
-          add(run(moving, now2, end), 0, end - now2);
+          add(run(moving, from, to, void 0, void 0, easing), from - now3, to - from);
+        } else if (end > now3) {
+          add(run(moving, now3, end), 0, end - now3);
           ends.forEach((trackEnd) => trackEnd < end - 1 && add(element.animate(null, {
-            duration: trackEnd - now2
-          }), 0, trackEnd - now2));
+            duration: trackEnd - now3
+          }), 0, trackEnd - now3));
         }
         if (cycle) {
           const from = cycleStart + Math.floor((end - cycleStart) / cycle) * cycle;
@@ -25563,7 +26199,7 @@
              * that runs before it.
              */
             fill: "forwards"
-          }, end), end - now2);
+          }, end), end - now3);
         }
       } catch {
         return;
@@ -25571,15 +26207,15 @@
       segments.length || stop();
       return true;
     };
-    const retime = (now2) => {
+    const retime = (now3) => {
       let elapsed;
       let rate = 0;
       for (const track of tracks) {
-        const state6 = built.get(track);
-        if (!state6)
+        const state7 = built.get(track);
+        if (!state7)
           return false;
-        const [builtTime, builtSpeed, wasHeld] = state6;
-        const trackTime = track.at(now2);
+        const [builtTime, builtSpeed, wasHeld] = state7;
+        const trackTime = track.at(now3);
         const isHeld = track.timing()[0] === Infinity;
         if (wasHeld) {
           if (isHeld && trackTime === builtTime)
@@ -25611,7 +26247,7 @@
         const local = elapsed - offset;
         if (rate) {
           animation.playbackRate = rate;
-          animation.startTime = now2 - local / rate;
+          animation.startTime = now3 - local / rate;
         } else {
           animation.pause();
           animation.currentTime = local;
@@ -25620,12 +26256,12 @@
       return true;
     };
     const build = () => {
-      const now2 = time.now();
+      const now3 = time.now();
       if (!group.isJS) {
         group.isFinishing = true;
         tracks.forEach((track) => {
           const [trackEnd, trackCycle] = track.timing();
-          if (track.state === "running" && track.speed > 0 && !trackCycle && trackEnd <= now2 + 1) {
+          if (track.state === "running" && track.speed > 0 && !trackCycle && trackEnd <= now3 + 1) {
             track.complete();
             statics[track.name] = read(owner, track.name);
             built.has(track) || (needsBuild = true);
@@ -25634,8 +26270,8 @@
         group.isFinishing = false;
       }
       isScheduled2 = false;
-      tracks.forEach(({ state: state6 }, track) => {
-        if (state6 === "idle" || state6 === "finished")
+      tracks.forEach(({ state: state7 }, track) => {
+        if (state7 === "idle" || state7 === "finished")
           tracks.delete(track);
       });
       if (!tracks.size) {
@@ -25655,13 +26291,13 @@
       const shouldBuild = needsBuild;
       const churned = hasChurned;
       needsBuild = hasChurned = false;
-      if (shouldBuild || !retime(now2)) {
+      if (shouldBuild || !retime(now3)) {
         if (churned) {
-          if (now2 - lastChurn < churnWindow)
+          if (now3 - lastChurn < churnWindow)
             return group.demote();
-          lastChurn = now2;
+          lastChurn = now3;
         }
-        if (!animate2(now2))
+        if (!animate2(now3))
           return group.demote();
       }
     };
@@ -26711,13 +27347,13 @@
           remove();
       };
     };
-    const { test: test2, read: read2, get, flush: flush2, state: state6 } = subjectEffect;
+    const { test: test2, read: read2, get, flush: flush2, state: state7 } = subjectEffect;
     return Object.assign(effect, {
       test: test2,
       read: read2,
       get,
       flush: flush2,
-      state: state6
+      state: state7
     });
   }
 
@@ -26812,12 +27448,12 @@
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
-      const state6 = stateCache.get(subject2) ?? new MotionValueState(step);
-      stateCache.set(subject2, state6);
+      const state7 = stateCache.get(subject2) ?? new MotionValueState(step);
+      stateCache.set(subject2, state7);
       const subscriptions = [];
       for (const key2 in values) {
         const value = values[key2];
-        const remove = addValue(subject2, state6, key2, value);
+        const remove = addValue(subject2, state7, key2, value);
         subscriptions.push(remove);
       }
       return () => {
@@ -26834,9 +27470,9 @@
 
   // node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
-  function buildTransform2(state6) {
+  function buildTransform2(state7) {
     let transform = "";
-    const { transformKeys: keys = [], transformValues: values = {} } = state6;
+    const { transformKeys: keys = [], transformValues: values = {} } = state7;
     for (let i = 0; i < keys.length; i++) {
       const key2 = keys[i];
       const value = values[key2].getCurrent();
@@ -26847,7 +27483,7 @@
         transform += (transform && " ") + (openers[key2] || (openers[key2] = (translateAlias[key2] || key2) + "(")) + getValueAsType(value, transformValueTypes[key2]) + ")";
       }
     }
-    const pathRotation = state6.get("pathRotation")?.get();
+    const pathRotation = state7.get("pathRotation")?.get();
     if (pathRotation) {
       transform += (transform && " ") + "rotate(" + getValueAsType(pathRotation, transformValueTypes.pathRotation) + ")";
     }
@@ -26856,39 +27492,39 @@
 
   // node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
-  var styleValue = (state6, key2) => getValueAsType(state6.get(key2)?.get(), numberValueTypes[key2]);
-  var addStyleValue = (element, state6, key2, value) => {
+  var styleValue = (state7, key2) => getValueAsType(state7.get(key2)?.get(), numberValueTypes[key2]);
+  var addStyleValue = (element, state7, key2, value) => {
     let render = void 0;
     let computed = void 0;
     if (transformProps.has(key2)) {
       if (key2 !== "pathRotation") {
-        const keys = state6.transformKeys ?? (state6.transformKeys = []);
-        (state6.transformValues ?? (state6.transformValues = {}))[key2] = value;
+        const keys = state7.transformKeys ?? (state7.transformKeys = []);
+        (state7.transformValues ?? (state7.transformValues = {}))[key2] = value;
         if (!keys.includes(key2)) {
           keys.push(key2);
           keys.sort((a, b) => transformPropOrder.indexOf(a) - transformPropOrder.indexOf(b));
         }
       }
-      if (!state6.get("transform")) {
-        if (!isHTMLElement(element) && !state6.get("transformBox")) {
-          addStyleValue(element, state6, "transformBox", new MotionValue("fill-box"));
+      if (!state7.get("transform")) {
+        if (!isHTMLElement(element) && !state7.get("transformBox")) {
+          addStyleValue(element, state7, "transformBox", new MotionValue("fill-box"));
         }
-        state6.set("transform", new MotionValue("none"), () => {
+        state7.set("transform", new MotionValue("none"), () => {
           transformGroups.get(element)?.check();
-          element.style.transform = buildTransform2(state6);
+          element.style.transform = buildTransform2(state7);
         });
       }
-      computed = state6.get("transform");
+      computed = state7.get("transform");
     } else if (originProps.has(key2)) {
-      if (!state6.get("transformOrigin")) {
-        state6.set("transformOrigin", new MotionValue(""), () => {
-          const originX = styleValue(state6, "originX") ?? "50%";
-          const originY = styleValue(state6, "originY") ?? "50%";
-          const originZ = styleValue(state6, "originZ") ?? 0;
+      if (!state7.get("transformOrigin")) {
+        state7.set("transformOrigin", new MotionValue(""), () => {
+          const originX = styleValue(state7, "originX") ?? "50%";
+          const originY = styleValue(state7, "originY") ?? "50%";
+          const originZ = styleValue(state7, "originZ") ?? 0;
           element.style.transformOrigin = `${originX} ${originY} ${originZ}`;
         });
       }
-      computed = state6.get("transformOrigin");
+      computed = state7.get("transformOrigin");
     } else if (isCSSVar(key2)) {
       render = () => {
         element.style.setProperty(key2, value.getCurrent());
@@ -26898,7 +27534,7 @@
         element.style[key2] = getValueAsType(value.getCurrent(), numberValueTypes[key2]);
       };
     }
-    return state6.set(key2, value, render, computed);
+    return state7.set(key2, value, render, computed);
   };
   var isStyleSubject = (subject2) => isHTMLElement(subject2) || isSVGElement(subject2);
   var readStyleValue = (element, key2) => {
@@ -26934,7 +27570,7 @@
     const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), name) || Object.getOwnPropertyDescriptor(element, name);
     return descriptor && typeof descriptor.set === "function";
   }
-  var addAttrValue = (element, state6, key2, value, name = key2) => {
+  var addAttrValue = (element, state7, key2, value, name = key2) => {
     const isProp = canSetAsProperty(element, name);
     if (!isProp && (name.startsWith("data") || name.startsWith("aria"))) {
       name = camelToDash(name);
@@ -26950,36 +27586,36 @@
         element.setAttribute(name, String(v));
       }
     };
-    return state6.set(key2, value, render);
+    return state7.set(key2, value, render);
   };
 
   // node_modules/motion-dom/dist/es/effects/svg/index.mjs
-  function addSVGPathValue(element, state6, key2, value) {
+  function addSVGPathValue(element, state7, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
-      return state6.set(key2, value, () => {
+      return state7.set(key2, value, () => {
         const offset = value.get();
         element.setAttribute("stroke-dashoffset", `${-offset}`);
       });
     } else {
-      if (!state6.get("stroke-dasharray")) {
-        state6.set("stroke-dasharray", new MotionValue("1 1"), () => {
-          const pathLength = state6.get("pathLength")?.get() ?? 1;
-          const pathSpacing = state6.get("pathSpacing")?.get();
+      if (!state7.get("stroke-dasharray")) {
+        state7.set("stroke-dasharray", new MotionValue("1 1"), () => {
+          const pathLength = state7.get("pathLength")?.get() ?? 1;
+          const pathSpacing = state7.get("pathSpacing")?.get();
           element.setAttribute("stroke-dasharray", `${pathLength} ${pathSpacing ?? 1 - Number(pathLength)}`);
         });
       }
-      return state6.set(key2, value, void 0, state6.get("stroke-dasharray"));
+      return state7.set(key2, value, void 0, state7.get("stroke-dasharray"));
     }
   }
-  var addSVGValue = (element, state6, key2, value) => {
+  var addSVGValue = (element, state7, key2, value) => {
     if (key2.startsWith("path")) {
-      return addSVGPathValue(element, state6, key2, value);
+      return addSVGPathValue(element, state7, key2, value);
     } else if (key2.startsWith("attr")) {
-      return addAttrValue(element, state6, key2, value, convertAttrKey(key2));
+      return addAttrValue(element, state7, key2, value, convertAttrKey(key2));
     }
     const handler2 = transformProps.has(key2) || originProps.has(key2) || isCSSVar(key2) || key2 in element.style ? addStyleValue : addAttrValue;
-    return handler2(element, state6, key2, value);
+    return handler2(element, state7, key2, value);
   };
   var readSVGValue = (element, key2) => {
     if (transformProps.has(key2)) {
@@ -27058,8 +27694,8 @@
   }
 
   // node_modules/motion-dom/dist/es/effects/prop/index.mjs
-  var propEffect = /* @__PURE__ */ createEffect((subject2, state6, key2, value) => {
-    return state6.set(key2, value, () => {
+  var propEffect = /* @__PURE__ */ createEffect((subject2, state7, key2, value) => {
+    return state7.set(key2, value, () => {
       subject2[key2] = value.get();
     });
   }, {
@@ -27139,8 +27775,8 @@
       }
       const elapsed = Math.round(timestamp - this.startTime) - delay;
       const t = this.currentTime = Math.max(0, elapsed);
-      const state6 = this.generator.next(t);
-      const value = elapsed < 0 ? options.keyframes[0] : state6.value;
+      const state7 = this.generator.next(t);
+      const value = elapsed < 0 ? options.keyframes[0] : state7.value;
       if (retargeted) {
         this.hasNextTarget = false;
         const { keyframes: keyframes2 } = options;
@@ -27155,7 +27791,7 @@
       if (this.state !== "running")
         return;
       onUpdate?.(value);
-      if (state6.done && elapsed >= 0 && !retargeted && !this.hasNextTarget && this.state === "running") {
+      if (state7.done && elapsed >= 0 && !retargeted && !this.hasNextTarget && this.state === "running") {
         this.notifyFinished();
         this.teardown();
         this.state = "finished";
@@ -28368,7 +29004,7 @@
   function createPresentationContext(options) {
     const opts = options ?? {};
     const root = opts.root ?? null;
-    const state6 = opts.state ?? {};
+    const state7 = opts.state ?? {};
     const transport = opts.transport ?? {};
     let identity = normalizeIdentity(opts.identity);
     const parts = opts.parts ?? createScene({ root });
@@ -28381,18 +29017,18 @@
     let disposed = false;
     let birthday = null;
     function getView() {
-      if (typeof state6.getView === "function") return state6.getView();
+      if (typeof state7.getView === "function") return state7.getView();
       return null;
     }
     function isStopped() {
       if (disposed) return true;
-      return typeof state6.isStopped === "function" ? state6.isStopped() === true : false;
+      return typeof state7.isStopped === "function" ? state7.isStopped() === true : false;
     }
     function isAway() {
-      return typeof state6.isAway === "function" ? state6.isAway() === true : false;
+      return typeof state7.isAway === "function" ? state7.isAway() === true : false;
     }
     function isQuiet() {
-      return typeof state6.isQuiet === "function" ? state6.isQuiet() === true : false;
+      return typeof state7.isQuiet === "function" ? state7.isQuiet() === true : false;
     }
     function bindIdentity(value) {
       let next;
@@ -28448,7 +29084,7 @@
       audio,
       effects: effects2,
       feel: feel2,
-      state: state6,
+      state: state7,
       transport,
       get identity() {
         return identity;
@@ -30188,7 +30824,7 @@
     keepFlags(body, flags);
     return failure2(reason === "" ? "conflict" : reason, reason === "" ? OWNER_CLOUD_REASONS.conflict : reason, flags);
   }
-  function normalizeStatus4(body) {
+  function normalizeStatus5(body) {
     if (body === null || typeof body !== "object" || body.ok !== true) {
       return unavailable("bad-response", OWNER_CLOUD_REASONS.unsupported);
     }
@@ -30228,7 +30864,7 @@
         const mapped = thrownFailure(response, false);
         return { ok: false, available: false, code: mapped.code, reason: mapped.reason };
       }
-      if (successBody(response)) return normalizeStatus4(response.body);
+      if (successBody(response)) return normalizeStatus5(response.body);
       return { ...responseFailure(response), available: false };
     }
     async function firstSync(direction) {
