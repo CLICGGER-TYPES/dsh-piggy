@@ -124,21 +124,22 @@
 最多同时开 `MAX_PIG_WINDOWS = 4` 只（主猪优先，其余按 roster 顺序）。每只猪：
 
 1. `host.openPigSession(pigId)` 拿一个 worker session token；
-2. 创建独立 pet window，URL 带 `?pig=<pigId>`，preload 参数带 `--piggy-role=pet --piggy-pig=<pigId>`，主猪再加 `--piggy-primary=1`；
+2. 创建独立 pet window，URL 带 `?pig=<pigId>`，preload 参数带 `--piggy-role=pet --piggy-pig=<pigId>`，主猪再加 `--piggy-primary=1`；首启只横向错开（380px 一格，小屏按可用宽度收窄；实测展开窗口约 364×328），避免纵向顶到工作区上沿触发另一块屏的贴边换算；
 3. 在 `pigSessions` 里登记 `pigId -> token`，`game-protocol` 用它把 `/dsh-piggy/*` 请求路由到对应 session；同一窗口的请求也可以从 `Referer` 的 `?pig=` 解析；
 4. 每只猪的状态（`petAsked`、`placedShape`、`dragSession`、`hitTimer`、`showGate`、`resizeShape` 等）收在 `apps/desktop/lib/pet-instance.js` 的实例里，不再共用 main.js 单例。
 
 快照定向：worker 的 `snapshot` 事件带 session token，主进程只发给 token 对应的窗口；无 token（默认会话/面板动作）发给主猪。未知或已关闭 token 直接丢弃，不广播。
 
+面板只有一个窗口，但会改绑到右键的那只猪：`openPanel(pig, pet)` 把面板目标切到该猪；面板页面按 `?pig=<pigId>` 路由 API，所以目标变化时重建面板窗口（`panel-window` 的 `url` 支持函数），不是只改一个变量。面板的几何、跟随、失焦收起、`pig-fx`/`pet-raise` 都跟当前目标走。目标猪窗口关闭时面板收起并回落主猪；主猪关闭也收起面板。点第二只猪的右键会把同一个面板切到它，不需要 preload 新协议。
+
 第一版明确限制：
 
-- **面板只服务主猪**。第二只猪右键只聚焦/置顶，不弹独立面板；主猪窗口关闭后本进程不再提供面板（重启恢复）。
-- **托盘、全屏、恢复、`second-instance` 以主猪为准**。托盘“藏起来/叫出来”会同时处理所有可见猪窗口；全屏只探测主猪所在屏，隐藏时把所有可见猪窗口一起藏；恢复只复位主猪。
-- **`window.json` 只记主猪**。每只猪的屏幕位置仍由游戏包按 `dsh-piggy:desktop-pig:<pigId>` 存在页面 localStorage；非主猪没有窗口级兜底位置。
+- **托盘、全屏、恢复、`second-instance` 仍以主猪为准**。托盘“藏起来/叫出来”会同时处理所有可见猪窗口；全屏只探测主猪所在屏，隐藏时把所有可见猪窗口一起藏；恢复只复位主猪。主猪关闭后不自动把第二只升为主猪，因此这些入口在本进程内不可用，直到重启。
+- **`window.json` 只记主猪**。每只猪的屏幕位置仍由游戏包按 `dsh-piggy:desktop-pig:<pigId>` 存在页面 localStorage；非主猪没有窗口级兜底位置，重开时靠自己的 scoped 键恢复。
 - **Linux 显示器重建只冷重建主猪窗口**；其他猪窗口只做工作区夹取。主猪窗口重建后 `always-on-top-changed` 监听不会自动重挂（沿用旧行为）。
 - 旧 shell、旧游戏包、v15 单猪、roster 只有 1 只或任一 session 创建失败时，直接退回原来的单窗口/默认 session。
 
-第一版关闭窗口的行为：一只 pet window 关闭时只销毁自己的 registry 映射、drag/hit 状态和 worker session；主猪关闭时同时收起面板；全部猪窗口关完后写日志并等待原有托盘/退出路径。
+第一版关闭窗口的行为：一只 pet window 关闭时只销毁自己的 registry 映射、drag/hit 状态和 worker session；关闭的是面板当前目标或主猪时同时收起面板；全部猪窗口关完后写日志并等待原有托盘/退出路径。
 
 ### OwnerDocument 完整档云同步服务
 

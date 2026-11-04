@@ -78,6 +78,28 @@ test('a non-primary pig neither reads nor writes the legacy key', () => {
   assert.deepEqual(JSON.parse(memory.get(pigScreenKey('pig-friend'))), { v: 3, area: AREA[0], x: 355, y: 245 })
 })
 
+test('a non-primary pig reopens at its own scoped home even after the primary moved the legacy key', () => {
+  memory.clear()
+  const win = { x: 300, y: 200, width: 304, height: 204 }
+  const at = { x: 40, y: 30 }
+  const friend = createPlacement({ pigId: 'pig-friend', primary: false })
+  placeAt(friend, win, at)
+  const friendHome = friend.home()
+  const savedFriend = memory.get(pigScreenKey('pig-friend'))
+
+  // 主猪后来搬家，旧键换了位置；非主猪重开不能跟着旧键走。
+  const main = createPlacement({ pigId: 'pig-main', primary: true })
+  placeAt(main, { x: 1100, y: 600 }, { x: 10, y: 20 })
+  assert.notEqual(memory.get(LEGACY_KEY), savedFriend)
+
+  const friendAgain = createPlacement({ pigId: 'pig-friend', primary: false })
+  friendAgain.decide(report(304, 204, { x: 228, y: 120 }), { x: 100, y: 100, width: 304, height: 204 }, AREA)
+  assert.deepEqual(friendAgain.home(), friendHome)
+  friendAgain.persist(AREA)
+  assert.equal(memory.get(pigScreenKey('pig-friend')), savedFriend)
+  assert.equal(memory.get(LEGACY_KEY), memory.get(pigScreenKey('pig-main')), 'legacy still mirrors the primary only')
+})
+
 test('no pigId keeps the legacy single-pig key (old shells and the web page)', () => {
   memory.clear()
   const single = createPlacement()
