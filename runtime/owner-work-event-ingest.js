@@ -21,6 +21,7 @@ import { removeWorkFile, writeWorkJson } from './work-files.js'
  *     pruneTo:(nowMs:number)=>void,
  *     assertCapacity:()=>void,
  *     writeEventReceipt:(receipt:any)=>void,
+ *     sources:()=>any[],
  *   },
  *   persistence:{
  *     withOwnerWorkLock:(action:()=>any)=>any,
@@ -120,5 +121,5 @@ export function createOwnerWorkEventIngest(deps) {
     })
   }
 
-  return { acceptWorkEvent }
+  return { acceptWorkEvent, sources: ledger.sources }
 }

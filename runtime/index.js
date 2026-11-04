@@ -10,6 +10,7 @@ import { MERGE_RULES_VERSION, mergeSummary } from '../core.js'
 import { artFile } from '../store/art-route.js'
 import { registerGameRoutes } from '../routes.js'
 import { openWorkLedger } from './work-ledger.js'
+import { summarizeWorkSources } from './work-ledger-summary.js'
 import { acquireGameLock } from './owner-lock.js'
 import {
   SESSION_SCOPE, SESSION_TRANSPORT, bindRuntimeSession, createSessionBinding,
@@ -303,6 +304,9 @@ export function createGameRuntime(options) {
     },
     targetInstalled() {
       return store.ext?.installedKeys?.() ?? []
+    },
+    workEventSources() {
+      return summarizeWorkSources(readReceipts())
     },
     acceptWorkEvent(event, binding) {
       guards.assertAccepting()
