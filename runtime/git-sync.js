@@ -10,126 +10,25 @@
  *   meta.json   { schemaVersion, stateVersion, lastSeenAt, device, exportedAt }
  *
  * 为什么要单独一个仓库：存档含名字、称呼、回忆，必须私有；放在源码仓库里既污染历史也容易误公开。
+ *
+ * 子模块分工：进程执行/常量在 git-sync-process.js，提交节奏在 git-sync-commit.js，
+ * 只读历史/分支在 git-sync-history.js；本文件保留公共导出和队列编排。
  */
-import { execFile } from 'node:child_process'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { promisify } from 'node:util'
 
-const run = promisify(execFile)
+import { commitMessage } from './git-sync-commit.js'
+import { createGitHistory } from './git-sync-history.js'
+import {
+  DEFAULT_GIT_TIMEOUT_MS, MAX_QUEUED_GIT_OPERATIONS, META_FILE, META_SCHEMA, SAVE_FILE,
+  boundedTimeout, defaultGit, defaultGitBinary, safeGitDetail,
+} from './git-sync-process.js'
 
-/** 数据仓库里两个固定文件名。 */
-export const SAVE_FILE = 'save.zip'
-export const META_FILE = 'meta.json'
-
-/** meta.json 的当前结构版本；改字段时加。 */
-export const META_SCHEMA = 1
-
-/** 运行中两次提交之间至少隔这么久（默认 10 分钟，见设计稿 §5）。 */
-export const DEFAULT_DEBOUNCE_MS = 10 * 60 * 1000
-
-/** Network Git must not keep shutdown or the plugin process alive indefinitely. */
-export const DEFAULT_GIT_TIMEOUT_MS = 30_000
-export const MAX_GIT_TIMEOUT_MS = 120_000
-export const MAX_QUEUED_GIT_OPERATIONS = 8
-
-function boundedTimeout(value) {
-  return Number.isFinite(value) && value > 0 ? Math.min(value, MAX_GIT_TIMEOUT_MS) : DEFAULT_GIT_TIMEOUT_MS
-}
-
-function safeGitDetail(error) {
-  const raw = `${error?.stderr ?? ''}\n${error?.stdout ?? ''}\n${error?.message ?? ''}`
-  const safe = raw
-    .replace(/(?:https?|ssh|git):\/\/[^\s'"<>]+/giu, '[remote]')
-    .replace(/\b[^\s/@:]+@[^\s/:]+:[^\s]+/gu, '[remote]')
-    .trim()
-    .split(/\r?\n/u)
-    .filter(Boolean)
-  return safe.find(line => /^(?:fatal|error|remote):/iu.test(line)) ?? safe.at(-1) ?? 'unknown Git error'
-}
-
-function gitFailure(error, command, timeoutMs) {
-  const timedOut = error?.killed === true || error?.signal === 'SIGKILL' || error?.code === 'ETIMEDOUT'
-  if (error?.code === 'ENOENT') return Object.assign(new Error('git is not installed or not available on PATH'), { code: 'GIT_MISSING' })
-  return Object.assign(new Error(timedOut
-    ? `git ${command} timed out after ${timeoutMs} ms`
-    : `git ${command} failed: ${safeGitDetail(error)}`), { code: timedOut ? 'GIT_TIMEOUT' : 'GIT_FAILED' })
-}
-
-/**
- * Read-only remote probe used by the settings screen. It never calls ensure(),
- * initializes a repository, changes an origin, or reads/writes a save archive.
- * @param {{remote:string,cwd:string,git?:(args:string[],options:{cwd:string,sslVerify?:boolean,timeoutMs?:number})=>Promise<{stdout:string,stderr:string}>,timeoutMs?:number}} input
- */
-export async function testGitRemote({ remote, cwd, git = defaultGit, timeoutMs = 15_000 }) {
-  try {
-    await git(['ls-remote', '--symref', remote, 'HEAD'], { cwd, timeoutMs: boundedTimeout(timeoutMs) })
-    return { ok: true }
-  } catch (error) {
-    const code = /** @type {any} */ (error)?.code
-    const reason = code === 'GIT_TIMEOUT' ? '连接超时' : code === 'GIT_MISSING' ? '当前环境没有可用的 Git' : '无法连接，请检查地址和本机 Git 凭据配置'
-    return { ok: false, reason }
-  }
-}
-
-/**
- * 默认的 git 执行器：不读交互式输入，避免在无人值守时卡住。
- * @param {string[]} args
- * @param {{ cwd: string, sslVerify?: boolean, timeoutMs?: number }} options
- */
-export async function defaultGit(args, { cwd, sslVerify = true, timeoutMs: requestedTimeoutMs = DEFAULT_GIT_TIMEOUT_MS }) {
-  const timeoutMs = boundedTimeout(requestedTimeoutMs)
-  const full = sslVerify ? ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', ...args]
-    : ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', '-c', 'http.sslVerify=false', ...args]
-  try {
-    const result = await run('git', full, { cwd, windowsHide: true, timeout: timeoutMs, killSignal: 'SIGKILL',
-      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' } })
-    return { stdout: result.stdout, stderr: result.stderr }
-  } catch (error) { throw gitFailure(error, args[0] ?? 'command', timeoutMs) }
-}
-
-/**
- * 取二进制（`git show <ref>:save.zip`）用的执行器；文本执行器会按 utf8 解码，不能拿来读 zip。
- * @param {string[]} args
- * @param {{ cwd: string, sslVerify?: boolean, timeoutMs?: number }} options
- * @returns {Promise<Buffer>}
- */
-export async function defaultGitBinary(args, { cwd, sslVerify = true, timeoutMs: requestedTimeoutMs = DEFAULT_GIT_TIMEOUT_MS }) {
-  const timeoutMs = boundedTimeout(requestedTimeoutMs)
-  const full = sslVerify ? ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', ...args]
-    : ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', '-c', 'http.sslVerify=false', ...args]
-  try {
-    const result = await run('git', full, {
-      cwd, windowsHide: true, encoding: 'buffer', maxBuffer: 64 * 1024 * 1024,
-      timeout: timeoutMs, killSignal: 'SIGKILL',
-      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' },
-    })
-    return /** @type {Buffer} */ (result.stdout)
-  } catch (error) { throw gitFailure(error, args[0] ?? 'command', timeoutMs) }
-}
-
-/**
- * 现在该不该提交。纯函数，单测直接算边界。
- * @param {{ lastCommitAt?: number, now: number, debounceMs?: number, dirty?: boolean }} input
- */
-export function shouldCommit({ lastCommitAt = 0, now, debounceMs = DEFAULT_DEBOUNCE_MS, dirty = true }) {
-  if (!dirty) return false
-  return now - lastCommitAt >= debounceMs
-}
-
-/**
- * 提交信息：一行，方便 git log 扫。
- * @param {{lastSeenAt?: number | null, level?: number | null, coins?: number | null}} meta
- * @param {boolean} [manual]
- */
-export function commitMessage({ lastSeenAt, level, coins }, manual = false) {
-  const at = new Date(lastSeenAt || Date.now())
-  const pad = value => String(value).padStart(2, '0')
-  const iso = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
-  const lv = typeof level === 'number' && Number.isFinite(level) ? `Lv.${level}` : 'Lv.?'
-  const money = typeof coins === 'number' && Number.isFinite(coins) ? `${coins}c` : '?c'
-  return `${manual ? 'save-manual' : 'save'}: ${iso} ${lv} ${money}`
-}
+export {
+  DEFAULT_DEBOUNCE_MS, DEFAULT_GIT_TIMEOUT_MS, MAX_GIT_TIMEOUT_MS, MAX_QUEUED_GIT_OPERATIONS,
+  META_FILE, META_SCHEMA, SAVE_FILE, defaultGit, defaultGitBinary, testGitRemote,
+} from './git-sync-process.js'
+export { commitMessage, shouldCommit } from './git-sync-commit.js'
 
 /**
  * @param {object} options
@@ -202,6 +101,10 @@ export function createGitSync(options) {
     return worktree
   }
 
+  const historyOps = createGitHistory({
+    exec, execBinary, ensure: ensureUnlocked, branch, parse, importFiles,
+  })
+
   async function readMetaUnlocked() {
     try {
       return JSON.parse(await readFile(join(worktree, META_FILE), 'utf8'))
@@ -255,20 +158,6 @@ export function createGitSync(options) {
     await exec(['push', '-q', 'origin', branch])
   }
 
-  /** Return the exact remote branch head without updating the local worktree. */
-  async function readRemoteHeadUnlocked(targetBranch = branch) {
-    const name = String(targetBranch ?? '').trim()
-    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
-    await ensureUnlocked()
-    const { stdout } = await exec(['ls-remote', '--heads', 'origin', name])
-    const ref = `refs/heads/${name}`
-    const line = stdout.split(/\r?\n/u).find(item => item.trim().split('\t')[1] === ref)
-    if (line === undefined) return null
-    const head = line.trim().split('\t')[0]
-    if (!/^[a-f0-9]{40,64}$/iu.test(head)) throw new Error('git-sync: remote branch head is invalid')
-    return head.toLowerCase()
-  }
-
   /**
    * Create a normal fast-forward commit only if the remote head is still the caller's acknowledged base.
    * Unlike pushSnapshotUnlocked this path never resets the local branch to a newer remote head.
@@ -279,7 +168,7 @@ export function createGitSync(options) {
       throw new Error('git-sync: expected remote head is invalid')
     }
     await ensureUnlocked()
-    const actualHead = await readRemoteHeadUnlocked(branch)
+    const actualHead = await historyOps.readRemoteHead(branch)
     if (actualHead !== expectedHead) return { ok: false, reason: 'remote-advanced', remoteHead: actualHead }
 
     let localHead = null
@@ -312,11 +201,11 @@ export function createGitSync(options) {
     }
     try { await pushUnlocked() }
     catch (error) {
-      const latest = await readRemoteHeadUnlocked(branch).catch(() => actualHead)
+      const latest = await historyOps.readRemoteHead(branch).catch(() => actualHead)
       if (latest !== actualHead) return { ok: false, reason: 'remote-advanced', remoteHead: latest }
       throw error
     }
-    const remoteHead = await readRemoteHeadUnlocked(branch)
+    const remoteHead = await historyOps.readRemoteHead(branch)
     if (remoteHead === null) return { ok: false, reason: 'remote-branch-missing', remoteHead: null }
     if (remoteHead !== localHead) return { ok: false, reason: 'remote-advanced', remoteHead }
     return { ok: true, remoteHead: localHead, committed: committed !== null, pushed: true }
@@ -373,93 +262,6 @@ export function createGitSync(options) {
     return { meta, committed }
   }
 
-  /**
-   * 设置页的存档列表：最后一次手动提交 + 最近 limit 次自动提交。
-   * 只读当前分支的提交历史，不切工作树。
-   */
-  /**
-   * 读某一次提交里的存档（列表里选中哪条就读哪条）。
-   * @param {{branch:string, hash:string}} target
-   */
-  async function readCommitSaveUnlocked({ branch: targetBranch, hash }) {
-    const name = String(targetBranch ?? '').trim()
-    const commit = String(hash ?? '').trim()
-    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
-    if (!/^[0-9a-f]{7,40}$/u.test(commit)) throw new Error('git-sync: 提交号不合法')
-    await ensureUnlocked()
-    await exec(['fetch', '-q', 'origin', name])
-    const meta = JSON.parse(await exec(['show', `${commit}:${META_FILE}`]).then(r => r.stdout))
-    const buffer = await execBinary(['show', `${commit}:${SAVE_FILE}`])
-    return { meta, buffer }
-  }
-
-  /** 手动拉取指定提交。 */
-  async function applyCommitUnlocked(target) {
-    const { meta, buffer } = await readCommitSaveUnlocked(target)
-    const parsed = await parse(SAVE_FILE, buffer)
-    const result = await importFiles(parsed.files)
-    return { applied: true, meta, summary: parsed.summary, result }
-  }
-  async function historyUnlocked(targetBranch = branch, limit = 10) {
-    const name = String(targetBranch ?? '').trim()
-    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
-    await ensureUnlocked()
-    await exec(['fetch', '-q', 'origin', name])
-    const { stdout } = await exec(['log', `origin/${name}`, '--format=%H%x09%cI%x09%s', '-n', '80'])
-    const items = []
-    for (const line of stdout.split(/\r?\n/u)) {
-      if (line.trim() === '') continue
-      const [hash, at, subject] = line.split('\t')
-      if (!subject) continue
-      const manual = subject.startsWith('save-manual:')
-      if (manual || subject.startsWith('save:')) items.push({ hash, at, subject, manual })
-    }
-    return {
-      manual: items.find(item => item.manual) ?? null,
-      auto: items.filter(item => !item.manual).slice(0, limit),
-    }
-  }
-  /** 远端有哪些存档分支（设置页下拉框用）。 */
-  async function listBranchesUnlocked() {
-    await ensureUnlocked()
-    const { stdout } = await exec(['ls-remote', '--heads', 'origin'])
-    return stdout
-      .split(/\r?\n/u)
-      .map(line => line.trim())
-      .filter(Boolean)
-      .map(line => line.split('\t')[1] ?? '')
-      .filter(ref => ref.startsWith('refs/heads/'))
-      .map(ref => ref.slice('refs/heads/'.length))
-      .sort()
-  }
-
-  /**
-   * 直接把某个远端分支的存档读出来（不切分支、不动工作树）。
-   * 设置页的「从云端拉取」选哪个分支就读哪个。
-   * @param {string} targetBranch
-   */
-  async function readBranchSaveUnlocked(targetBranch) {
-    const name = String(targetBranch ?? '').trim()
-    if (!/^[\w.\-/]+$/u.test(name)) throw new Error('git-sync: 分支名不合法')
-    await ensureUnlocked()
-    await exec(['fetch', '-q', 'origin', name])
-    const metaRaw = await exec(['show', `origin/${name}:${META_FILE}`]).then(r => r.stdout)
-    const meta = JSON.parse(metaRaw)
-    const buffer = await execBinary(['show', `origin/${name}:${SAVE_FILE}`])
-    return { meta, buffer }
-  }
-
-  /**
-   * 手动拉取：读分支 → 解析 → 交给运行时替换。不判断新旧，用户点的就是要覆盖。
-   * @param {string} targetBranch
-   */
-  async function applyBranchUnlocked(targetBranch) {
-    const { meta, buffer } = await readBranchSaveUnlocked(targetBranch)
-    const parsed = await parse(SAVE_FILE, buffer)
-    const result = await importFiles(parsed.files)
-    return { applied: true, meta, summary: parsed.summary, result }
-  }
-
   const sequenceApi = Object.freeze({
     ensure: ensureUnlocked,
     readMeta: readMetaUnlocked,
@@ -470,14 +272,14 @@ export function createGitSync(options) {
     pull: pullUnlocked,
     pullIfNewer: pullIfNewerUnlocked,
     pushSnapshot: pushSnapshotUnlocked,
-    listBranches: listBranchesUnlocked,
-    readBranchSave: readBranchSaveUnlocked,
-    readRemoteHead: readRemoteHeadUnlocked,
+    listBranches: historyOps.listBranches,
+    readBranchSave: historyOps.readBranchSave,
+    readRemoteHead: historyOps.readRemoteHead,
     pushSnapshotFromHead: pushSnapshotFromHeadUnlocked,
-    applyBranch: applyBranchUnlocked,
-    history: historyUnlocked,
-    readCommitSave: readCommitSaveUnlocked,
-    applyCommit: applyCommitUnlocked,
+    applyBranch: historyOps.applyBranch,
+    history: historyOps.history,
+    readCommitSave: historyOps.readCommitSave,
+    applyCommit: historyOps.applyCommit,
   })
 
   const enqueueMethod = method => (...args) => serialize(() => method(...args))
@@ -508,14 +310,14 @@ export function createGitSync(options) {
     pull: enqueueMethod(pullUnlocked),
     pullIfNewer: enqueueMethod(pullIfNewerUnlocked),
     pushSnapshot: enqueueMethod(pushSnapshotUnlocked),
-    listBranches: enqueueMethod(listBranchesUnlocked),
-    readBranchSave: enqueueMethod(readBranchSaveUnlocked),
-    readRemoteHead: enqueueMethod(readRemoteHeadUnlocked),
+    listBranches: enqueueMethod(historyOps.listBranches),
+    readBranchSave: enqueueMethod(historyOps.readBranchSave),
+    readRemoteHead: enqueueMethod(historyOps.readRemoteHead),
     pushSnapshotFromHead: enqueueMethod(pushSnapshotFromHeadUnlocked),
-    applyBranch: enqueueMethod(applyBranchUnlocked),
-    history: enqueueMethod(historyUnlocked),
-    readCommitSave: enqueueMethod(readCommitSaveUnlocked),
-    applyCommit: enqueueMethod(applyCommitUnlocked),
+    applyBranch: enqueueMethod(historyOps.applyBranch),
+    history: enqueueMethod(historyOps.history),
+    readCommitSave: enqueueMethod(historyOps.readCommitSave),
+    applyCommit: enqueueMethod(historyOps.applyCommit),
     sequence,
     drain: () => queueTail,
     close,
