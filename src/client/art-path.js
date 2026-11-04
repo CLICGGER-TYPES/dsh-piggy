@@ -12,20 +12,13 @@ import { PIG_ART_REVISIONS } from '../../packages/pet-core/src/data/art-revision
 import { builtinArtPath } from './art-style.js'
 import { customArtVersion } from './custom-art.js'
 import { ART_RESOURCE_SCHEMA, LEGACY_NAMESPACE, createArtResourceRegistryBase, sealArtResourceRegistry } from './art-resources.js'
+import { ACTION_PACKS } from './packs.generated.js'
 
 const TOKEN = /^[a-z0-9][a-z0-9._-]{0,63}$/
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/
 const CUSTOM_KEY = /^custom-[a-z0-9-]{1,41}$/
 const SOURCE_PATH = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}\.(?:png|svg|webp)$/
 const SAFE_ART_STRING = /^[A-Za-z0-9._/@-]+$/
-const LEGACY_ELIGIBILITY = Object.freeze({
-  art: 'piglet',
-  stageNot: Object.freeze(['box', 'grave', 'dead-day']),
-  absent: Object.freeze(['activity', 'idle', 'illness']),
-  moodNot: Object.freeze(['sick', 'dirty', 'sleepy', 'dead', 'hungry', 'lonely']),
-  react: Object.freeze([]),
-  party: false,
-})
 
 /** @param {unknown} value @param {string} label @returns {string} */
 function token(value, label) {
@@ -252,30 +245,9 @@ function legacyDescriptor(key) {
   })
 }
 
-const DEFAULT_ACTION_PACK = Object.freeze({
-  namespace: LEGACY_NAMESPACE,
-  pack: 'actions',
-  revision: '1',
-  resources: Object.freeze([
-    Object.freeze({
-      key: 'blink',
-      kind: 'action',
-      source: Object.freeze({ scheme: 'builtin', key: 'piglet-blink' }),
-      duration: 100,
-      eligibility: LEGACY_ELIGIBILITY,
-    }),
-    Object.freeze({
-      key: 'shy-pet',
-      kind: 'action',
-      source: Object.freeze({ scheme: 'builtin', key: 'piglet-shy-pet' }),
-      duration: 420,
-      eligibility: Object.freeze({ ...LEGACY_ELIGIBILITY, react: Object.freeze(['', 'pet']) }),
-    }),
-  ]),
-})
-
 const defaultState = createArtResourceRegistryBase({ parent: null, legacy: legacyDescriptor, buildDescriptor })
-defaultState.registerPack(DEFAULT_ACTION_PACK)
+// 动作包的唯一来源是 assets/actions/*/pack.json；构建时生成 ACTION_PACKS。
+for (const pack of ACTION_PACKS) defaultState.registerPack(pack)
 /** Read-only default registry: built-in actions plus the exact legacy adapter. */
 export const defaultArtResources = sealArtResourceRegistry(defaultState)
 

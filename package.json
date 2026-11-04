@@ -53,6 +53,8 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
+    "assets:sync": "node scripts/build-asset-packs.mjs",
+    "check:assets": "node scripts/check-assets.mjs",
     "prepack": "npm run build",
     "typecheck": "node scripts/typecheck.mjs",
     "test": "node scripts/test.mjs",

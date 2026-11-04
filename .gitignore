@@ -28,3 +28,6 @@ apps/desktop/build/optional-extensions.generated.nsh
 /packages/pet-core/src/data/art-revisions.js
 /apps/desktop/lib/save-owner-lock.js
 /apps/desktop/game/
+
+# Generated action/sound pack module
+/src/client/packs.generated.js
