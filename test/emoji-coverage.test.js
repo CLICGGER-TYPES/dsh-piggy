@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { brotliDecompressSync } from 'node:zlib'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const SOURCES = ['src/client', 'packages/pet-core/src', 'store', 'extensions', 'data.js', 'core.js', 'snapshot.js']
+const SOURCES = ['src/client', 'src/host', 'packages/pet-core/src', 'store', 'extensions', 'data.js', 'core.js', 'snapshot.js']
 // 跟 tools/slim-emoji-font.py 收字的范围一致；肤色修饰符不单独显示，不查。
 const PICTO = /[\u{1F000}-\u{1FAFF}]/gu
 const KNOWN_TAGS = ['cmap', 'head', 'hhea', 'hmtx', 'maxp', 'name', 'OS/2', 'post', 'cvt ', 'fpgm', 'glyf', 'loca', 'prep', 'CFF ', 'VORG', 'EBDT', 'EBLC', 'gasp', 'hdmx', 'kern', 'LTSH', 'PCLT', 'VDMX', 'vhea', 'vmtx', 'BASE', 'GDEF', 'GPOS', 'GSUB', 'EBSC', 'JSTF', 'MATH', 'CBDT', 'CBLC', 'COLR', 'CPAL', 'SVG ', 'sbix', 'acnt', 'avar', 'bdat', 'bloc', 'bsln', 'cvar', 'fdsc', 'feat', 'fmtx', 'fvar', 'gvar', 'hsty', 'just', 'lcar', 'mort', 'morx', 'opbd', 'prop', 'trak', 'Zapf', 'Silf', 'Glat', 'Gloc', 'Feat', 'Sill']

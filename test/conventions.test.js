@@ -80,6 +80,7 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
     new URL('routes.js', packageRoot),
     new URL('store.js', packageRoot),
     new URL('render.js', packageRoot),
+    ...jsFiles(new URL('src/host/', packageRoot)),
     ...jsFiles(new URL('data/', coreRoot)),
     ...jsFiles(new URL('core/', coreRoot)),
     ...jsFiles(new URL('store/', packageRoot)),
@@ -96,7 +97,8 @@ test('源码和单文件扩展遵守行数上限及已登记的窄范围例外',
 })
 
 test('源码、外壳模块和在线扩展的规则文件开头都有 // @ts-check', () => {
-  const files = [...jsFiles(new URL('src/extensions/', packageRoot)),
+  const files = [...jsFiles(new URL('src/host/', packageRoot)),
+    ...jsFiles(new URL('src/extensions/', packageRoot)),
     ...jsFiles(new URL('apps/desktop/lib/', packageRoot)), new URL('apps/desktop/main.js', packageRoot),
     ...jsFiles(new URL('extensions/', packageRoot)).filter(url => url.pathname.endsWith('server.js'))]
   const offenders = files.filter(url => !isGeneratedFarmServer(url) && !read(url).startsWith('// @ts-check')).map(shortName)
