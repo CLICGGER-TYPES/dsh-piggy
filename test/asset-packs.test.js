@@ -6,13 +6,14 @@ import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
 import { buildAssetPacks, checkAssets, loadActionPacks } from '../scripts/asset-packs.mjs'
 import { ACTION_PACKS } from '../src/client/packs.generated.js'
 import { defaultArtResources } from '../src/client/art-path.js'
 
-const root = new URL('..', import.meta.url).pathname
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 /** @param {string} key @param {Record<string, unknown>} [overrides] */
 function action(key, overrides = {}) {
