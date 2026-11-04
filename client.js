@@ -2464,7 +2464,7 @@
   ]);
 
   // packages/pet-core/src/data/daily.js
-  var reward = (coins, items = []) => Object.freeze({ coins, items: Object.freeze(items.map(([key2, count2]) => Object.freeze({ key: key2, count: count2 }))) });
+  var reward = (coins, items = []) => Object.freeze({ coins, items: Object.freeze(items.map(([key2, count3]) => Object.freeze({ key: key2, count: count3 }))) });
   var SIGN_IN_REWARDS = Object.freeze([
     reward(0, [["apple", 3], ["soap", 2]]),
     reward(100),
@@ -4363,48 +4363,48 @@
     } };
   }
   var STATE_OF = /* @__PURE__ */ new WeakMap();
-  function publicRegistry(state5, readonly) {
+  function publicRegistry(state6, readonly) {
     const api = {
       readonly,
       registerPack: readonly ? function() {
         throw new Error("[dsh-piggy] the default art resource registry is read-only");
-      } : state5.registerPack,
+      } : state6.registerPack,
       resolve: function(value) {
-        if (typeof value === "string") return state5.resolveString(value);
-        if (value !== null && typeof value === "object") return state5.resolveRef(value);
+        if (typeof value === "string") return state6.resolveString(value);
+        if (value !== null && typeof value === "object") return state6.resolveRef(value);
         return null;
       },
-      resolveRef: state5.resolveRef,
-      resolveString: state5.resolveString,
+      resolveRef: state6.resolveRef,
+      resolveString: state6.resolveString,
       list: function(options) {
         const kind = options?.kind;
         const includeParent = options?.includeParent !== false;
         const found = /* @__PURE__ */ new Map();
-        for (const descriptor of state5.records.values()) {
+        for (const descriptor of state6.records.values()) {
           if (kind !== void 0 && descriptor.kind !== kind) continue;
           found.set(idOf(descriptor), resolved(descriptor, false));
         }
-        if (includeParent && state5.parent !== null) {
-          for (const entry of state5.parent.list({ kind, includeParent: true })) {
+        if (includeParent && state6.parent !== null) {
+          for (const entry of state6.parent.list({ kind, includeParent: true })) {
             if (!found.has(entry.id)) found.set(entry.id, entry);
           }
         }
         return Object.freeze([...found.values()]);
       },
       has: function(value) {
-        const entry = typeof value === "string" ? state5.resolveString(value) : state5.resolveRef(value);
+        const entry = typeof value === "string" ? state6.resolveString(value) : state6.resolveRef(value);
         return entry !== null && entry.exists;
       },
-      subscribe: state5.subscribe
+      subscribe: state6.subscribe
     };
-    STATE_OF.set(api, state5);
+    STATE_OF.set(api, state6);
     return Object.freeze(api);
   }
   function sealArtResourceRegistry(registry2) {
-    const state5 = STATE_OF.get(registry2);
-    if (state5 === void 0) throw new Error("[dsh-piggy] unknown art resource registry");
-    state5.lock();
-    return publicRegistry(state5, true);
+    const state6 = STATE_OF.get(registry2);
+    if (state6 === void 0) throw new Error("[dsh-piggy] unknown art resource registry");
+    state6.lock();
+    return publicRegistry(state6, true);
   }
   function createArtResourceRegistryBase(options) {
     if (typeof options.buildDescriptor !== "function") throw new Error("[dsh-piggy] art resource builder is required");
@@ -4839,62 +4839,62 @@
       )
     };
   }
-  function writeSkinContacts(state5) {
-    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state5));
+  function writeSkinContacts(state6) {
+    writeStore(SKIN_CONTACT_KEY, JSON.stringify(state6));
     listeners2.forEach((fn) => fn());
   }
   function effectiveSkinContact(art) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return null;
-    const state5 = readSkinContacts();
-    if (state5.overrides[art] !== void 0) return state5.overrides[art];
-    if (state5.auto[art] === true) return null;
-    return state5.declared[art] ?? null;
+    const state6 = readSkinContacts();
+    if (state6.overrides[art] !== void 0) return state6.overrides[art];
+    if (state6.auto[art] === true) return null;
+    return state6.declared[art] ?? null;
   }
   function skinContactSource(art) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return "auto";
-    const state5 = readSkinContacts();
-    if (state5.overrides[art] !== void 0) return "local";
-    if (state5.auto[art] === true) return "auto";
-    if (state5.declared[art] !== void 0) return "pack";
+    const state6 = readSkinContacts();
+    if (state6.overrides[art] !== void 0) return "local";
+    if (state6.auto[art] === true) return "auto";
+    if (state6.declared[art] !== void 0) return "pack";
     return "auto";
   }
   function setSkinContactOverride(art, contact) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
-    const state5 = readSkinContacts();
-    if (contact === null) delete state5.overrides[art];
+    const state6 = readSkinContacts();
+    if (contact === null) delete state6.overrides[art];
     else {
       const value = normalizeSkinContact(contact);
       if (value === null) return false;
-      state5.overrides[art] = value;
-      delete state5.auto[art];
+      state6.overrides[art] = value;
+      delete state6.auto[art];
     }
-    writeSkinContacts(state5);
+    writeSkinContacts(state6);
     return true;
   }
   function setDeclaredSkinContact(art, contact) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
     const value = normalizeSkinContact(contact);
     if (value === null) return false;
-    const state5 = readSkinContacts();
-    const current3 = state5.declared[art];
-    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state5.auto[art] !== true) return true;
-    state5.declared[art] = value;
-    delete state5.auto[art];
-    writeSkinContacts(state5);
+    const state6 = readSkinContacts();
+    const current3 = state6.declared[art];
+    if (current3 !== void 0 && current3.x === value.x && current3.y === value.y && state6.auto[art] !== true) return true;
+    state6.declared[art] = value;
+    delete state6.auto[art];
+    writeSkinContacts(state6);
     return true;
   }
   function clearSkinContact(art) {
     if (typeof art !== "string" || !ART_KEY2.test(art)) return false;
-    const state5 = readSkinContacts();
-    delete state5.overrides[art];
-    delete state5.declared[art];
-    state5.auto[art] = true;
-    writeSkinContacts(state5);
+    const state6 = readSkinContacts();
+    delete state6.overrides[art];
+    delete state6.declared[art];
+    state6.auto[art] = true;
+    writeSkinContacts(state6);
     return true;
   }
   function syncDeclaredSkinContacts(skins) {
     const entries2 = Array.isArray(skins?.entries) ? skins.entries : [];
-    const state5 = readSkinContacts();
+    const state6 = readSkinContacts();
     let changed = false;
     for (const entry of entries2) {
       if (entry === null || typeof entry !== "object") continue;
@@ -4902,17 +4902,17 @@
       if (typeof art !== "string" || !ART_KEY2.test(art)) continue;
       const contact = normalizeSkinContact(entry.contact);
       if (contact !== null) {
-        if (state5.auto[art] === true) continue;
-        const current3 = state5.declared[art];
+        if (state6.auto[art] === true) continue;
+        const current3 = state6.declared[art];
         if (current3 !== void 0 && current3.x === contact.x && current3.y === contact.y) continue;
-        state5.declared[art] = contact;
+        state6.declared[art] = contact;
         changed = true;
-      } else if (state5.auto[art] !== true && state5.declared[art] !== void 0 && entry.contactStated === true) {
-        delete state5.declared[art];
+      } else if (state6.auto[art] !== true && state6.declared[art] !== void 0 && entry.contactStated === true) {
+        delete state6.declared[art];
         changed = true;
       }
     }
-    if (changed) writeSkinContacts(state5);
+    if (changed) writeSkinContacts(state6);
     return changed;
   }
   function onSkinContactChange(fn) {
@@ -5171,10 +5171,10 @@
   var STATES = ["connecting", "connected", "reconnecting", "disconnected", "merging"];
   function normalizeLink(raw) {
     const link = obj(raw);
-    const state5 = str(link.state, "");
-    if (!STATES.includes(state5)) return null;
+    const state6 = str(link.state, "");
+    if (!STATES.includes(state6)) return null;
     return {
-      state: state5,
+      state: state6,
       lastAt: num(link.lastAt, 0),
       queued: num(link.queued, 0),
       merged: link.merged === true,
@@ -6606,10 +6606,10 @@
   function externalLinkOf(view) {
     const raw = isObj(view) ? view.link : null;
     if (!isObj(raw)) return null;
-    const state5 = str(raw.state, "");
-    if (!["connecting", "connected", "reconnecting", "disconnected", "merging"].includes(state5)) return null;
+    const state6 = str(raw.state, "");
+    if (!["connecting", "connected", "reconnecting", "disconnected", "merging"].includes(state6)) return null;
     return {
-      state: state5,
+      state: state6,
       lastAt: num(raw.lastAt, 0),
       queued: num(raw.queued, 0),
       merged: raw.merged === true,
@@ -8817,20 +8817,20 @@
   function choose(options, hour) {
     return options[Math.abs(Math.floor(hour)) % options.length];
   }
-  function feedbackArtFor(state5) {
-    if (STAGE_ART[state5.stage]) return choose(STAGE_ART[state5.stage], state5.hour);
-    if (state5.party === true) return BIRTHDAY_ART;
-    if (state5.base && state5.base !== "piglet") return null;
-    if (REACTION_ART[state5.reaction]) return choose(REACTION_ART[state5.reaction], state5.hour);
-    if (state5.mood === "sick") return ILLNESS_ART[state5.illness ?? ""] ? choose(ILLNESS_ART[state5.illness ?? ""], state5.hour) : null;
-    if (state5.mood === "dirty" || state5.mood === "hungry") return null;
-    if (state5.activityKind === "work") return WORK_ART[state5.activityKey] ?? null;
-    if (state5.activityKind === "study") return choose(STUDY_ART, state5.hour);
-    if (state5.activityKind === "interest") return choose(INTEREST_ART[state5.activityKey] ?? INTEREST_ART.other, state5.hour);
-    if (state5.activityKind === "fishing") return "fishing";
-    if (state5.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state5.hour) : null;
-    if (IDLE_ART[state5.idle]) return choose(IDLE_ART[state5.idle], state5.hour);
-    if (MOOD_ART[state5.mood]) return choose(MOOD_ART[state5.mood], state5.hour);
+  function feedbackArtFor(state6) {
+    if (STAGE_ART[state6.stage]) return choose(STAGE_ART[state6.stage], state6.hour);
+    if (state6.party === true) return BIRTHDAY_ART;
+    if (state6.base && state6.base !== "piglet") return null;
+    if (REACTION_ART[state6.reaction]) return choose(REACTION_ART[state6.reaction], state6.hour);
+    if (state6.mood === "sick") return ILLNESS_ART[state6.illness ?? ""] ? choose(ILLNESS_ART[state6.illness ?? ""], state6.hour) : null;
+    if (state6.mood === "dirty" || state6.mood === "hungry") return null;
+    if (state6.activityKind === "work") return WORK_ART[state6.activityKey] ?? null;
+    if (state6.activityKind === "study") return choose(STUDY_ART, state6.hour);
+    if (state6.activityKind === "interest") return choose(INTEREST_ART[state6.activityKey] ?? INTEREST_ART.other, state6.hour);
+    if (state6.activityKind === "fishing") return "fishing";
+    if (state6.activityKind === "trip") return TRIP_ART.length ? choose(TRIP_ART, state6.hour) : null;
+    if (IDLE_ART[state6.idle]) return choose(IDLE_ART[state6.idle], state6.hour);
+    if (MOOD_ART[state6.mood]) return choose(MOOD_ART[state6.mood], state6.hour);
     return null;
   }
 
@@ -9559,9 +9559,9 @@
     } catch {
     }
   }
-  function registerVoice(state5, source, gain, filter2) {
-    const voice = { source, gain, filter: filter2, state: state5, done: false };
-    state5.active.add(voice);
+  function registerVoice(state6, source, gain, filter2) {
+    const voice = { source, gain, filter: filter2, state: state6, done: false };
+    state6.active.add(voice);
     voices += 1;
     source.onended = function() {
       retireVoice(voice);
@@ -9579,7 +9579,7 @@
     }
     return buffer;
   }
-  function startTone(ctx, destination, spec, start2, volume, state5) {
+  function startTone(ctx, destination, spec, start2, volume, state6) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const duration = spec.ms / 1e3;
@@ -9592,7 +9592,7 @@
     gain.gain.exponentialRampToValueAtTime(1e-4, start2 + duration);
     osc.connect(gain);
     gain.connect(destination);
-    const voice = registerVoice(state5, osc, gain, null);
+    const voice = registerVoice(state6, osc, gain, null);
     try {
       osc.start(start2);
       osc.stop(start2 + duration + 0.02);
@@ -9602,7 +9602,7 @@
     }
     return voice;
   }
-  function startNoise(ctx, destination, spec, start2, volume, state5) {
+  function startNoise(ctx, destination, spec, start2, volume, state6) {
     const source = ctx.createBufferSource();
     const filter2 = ctx.createBiquadFilter();
     const gain = ctx.createGain();
@@ -9617,7 +9617,7 @@
     source.connect(filter2);
     filter2.connect(gain);
     gain.connect(destination);
-    const voice = registerVoice(state5, source, gain, filter2);
+    const voice = registerVoice(state6, source, gain, filter2);
     try {
       source.start(start2);
       source.stop(start2 + duration + 0.01);
@@ -9627,46 +9627,46 @@
     }
     return voice;
   }
-  function startRecipe(state5, recipe, volume) {
+  function startRecipe(state6, recipe, volume) {
     if (device === null) return false;
     const ctx = device.context;
     const start2 = ctx.currentTime + 5e-3;
     const created = [];
     try {
       for (let i = 0; i < recipe.tones.length; i += 1) {
-        created.push(startTone(ctx, device.master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume, state5));
+        created.push(startTone(ctx, device.master, recipe.tones[i], start2 + (recipe.tones[i].delay ?? 0) / 1e3, volume, state6));
       }
-      if (recipe.noise !== void 0) created.push(startNoise(ctx, device.master, recipe.noise, start2, volume, state5));
+      if (recipe.noise !== void 0) created.push(startNoise(ctx, device.master, recipe.noise, start2, volume, state6));
       return true;
     } catch {
       for (let i = 0; i < created.length; i += 1) retireVoice(created[i]);
       return false;
     }
   }
-  function stopState(state5) {
-    const active2 = Array.from(state5.active);
+  function stopState(state6) {
+    const active2 = Array.from(state6.active);
     for (let i = 0; i < active2.length; i += 1) retireVoice(active2[i]);
   }
-  function playChannel(state5, key2, options) {
-    if (state5.disposed) return false;
+  function playChannel(state6, key2, options) {
+    if (state6.disposed) return false;
     const recipe = RECIPES[key2];
     if (recipe === void 0) return false;
     const settings = soundSettings();
     if (!settings.on) return false;
-    if (!allowedRole() || state5.quiet() === true) return false;
+    if (!allowedRole() || state6.quiet() === true) return false;
     const now2 = Date.now();
-    if (now2 - (state5.lastAt[key2] ?? 0) < AUDIO_DEBOUNCE_MS) return false;
+    if (now2 - (state6.lastAt[key2] ?? 0) < AUDIO_DEBOUNCE_MS) return false;
     if (voices >= AUDIO_VOICE_BUDGET) return false;
     if (ensureDevice() === null) return false;
     const level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2];
     const volume = level * (options?.soft === true ? 0.65 : 1);
-    if (!startRecipe(state5, recipe, volume)) return false;
-    state5.lastAt[key2] = now2;
+    if (!startRecipe(state6, recipe, volume)) return false;
+    state6.lastAt[key2] = now2;
     return true;
   }
   function createAudioChannel(options) {
     const opts = options ?? {};
-    const state5 = {
+    const state6 = {
       quiet: typeof opts.isQuiet === "function" ? opts.isQuiet : function() {
         return false;
       },
@@ -9676,35 +9676,35 @@
     };
     const channel = {
       get disposed() {
-        return state5.disposed;
+        return state6.disposed;
       },
       isQuiet: function() {
-        return state5.quiet() === true;
+        return state6.quiet() === true;
       },
       /** Legacy configureSound seam; presentation channels bind at creation instead. */
       setQuiet: function(check) {
-        if (typeof check === "function" && !state5.disposed) state5.quiet = check;
+        if (typeof check === "function" && !state6.disposed) state6.quiet = check;
         return channel;
       },
       play: function(key2, playOptions) {
-        return playChannel(state5, key2, playOptions);
+        return playChannel(state6, key2, playOptions);
       },
       unlock: function() {
-        if (state5.disposed) return null;
+        if (state6.disposed) return null;
         if (!soundSettings().on) return null;
         return ensureDevice();
       },
       stop: function() {
-        stopState(state5);
+        stopState(state6);
       },
       dispose: function() {
-        if (state5.disposed) return;
-        state5.disposed = true;
-        stopState(state5);
+        if (state6.disposed) return;
+        state6.disposed = true;
+        stopState(state6);
         channels.delete(channel);
       }
     };
-    states.set(channel, state5);
+    states.set(channel, state6);
     channels.add(channel);
     return channel;
   }
@@ -10776,7 +10776,7 @@
     const active2 = doc?.activeElement;
     const focusAttr = ["data-cloud-provider", "data-cloud-remote", "data-cloud-branch", "data-cloud-advanced-summary"].find((attr) => active2 && content.contains(active2) && active2.hasAttribute?.(attr)) || null;
     const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
-    const state5 = {
+    const state6 = {
       focusAttr,
       advancedOpen: details2 ? details2.open === true : advancedOpen,
       focusSignature: active2 && content.contains(active2) ? {
@@ -10791,7 +10791,7 @@
         /** @type {HTMLInputElement|HTMLSelectElement} */
         active2
       );
-      state5.value = field3.value;
+      state6.value = field3.value;
     }
     if (focusAttr && active2?.tagName === "INPUT") {
       const input = (
@@ -10799,34 +10799,34 @@
         active2
       );
       if (typeof input.selectionStart === "number" && typeof input.selectionEnd === "number") {
-        state5.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection };
+        state6.selection = { start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection };
       }
     }
-    return state5;
+    return state6;
   }
-  function restoreCloudSettingsUiState(content, state5) {
-    if (!state5) return;
+  function restoreCloudSettingsUiState(content, state6) {
+    if (!state6) return;
     const details2 = Array.from(content.querySelectorAll("details")).find((node) => typeof node.className === "string" && node.className.split(/\s+/).includes("dp-cloud-advanced"));
     if (details2) {
-      details2.open = state5.advancedOpen;
-      advancedOpen = state5.advancedOpen;
+      details2.open = state6.advancedOpen;
+      advancedOpen = state6.advancedOpen;
     }
     const focusable = Array.from(content.querySelectorAll("button, input, select, summary"));
-    const directTarget = state5.focusAttr ? focusable.find((node) => node.hasAttribute?.(state5.focusAttr)) : void 0;
-    const signatureMatches = state5.focusSignature ? focusable.filter((node) => node.tagName === state5.focusSignature.tagName && (typeof node.className === "string" ? node.className : "") === state5.focusSignature.className && node.getAttribute?.("aria-label") === state5.focusSignature.ariaLabel && JSON.stringify(cloudDataAttributes(node).map((attr) => attr.name)) === JSON.stringify(state5.focusSignature.dataAttributes.map((attr) => attr.name))) : [];
-    const exactSignatureMatches = signatureMatches.filter((node) => JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state5.focusSignature?.dataAttributes));
+    const directTarget = state6.focusAttr ? focusable.find((node) => node.hasAttribute?.(state6.focusAttr)) : void 0;
+    const signatureMatches = state6.focusSignature ? focusable.filter((node) => node.tagName === state6.focusSignature.tagName && (typeof node.className === "string" ? node.className : "") === state6.focusSignature.className && node.getAttribute?.("aria-label") === state6.focusSignature.ariaLabel && JSON.stringify(cloudDataAttributes(node).map((attr) => attr.name)) === JSON.stringify(state6.focusSignature.dataAttributes.map((attr) => attr.name))) : [];
+    const exactSignatureMatches = signatureMatches.filter((node) => JSON.stringify(cloudDataAttributes(node)) === JSON.stringify(state6.focusSignature?.dataAttributes));
     const target = directTarget || (exactSignatureMatches.length === 1 ? exactSignatureMatches[0] : signatureMatches.length === 1 ? signatureMatches[0] : void 0);
     if (!target) return;
-    if (state5.value !== void 0 && (target.tagName === "INPUT" || target.tagName === "SELECT")) {
+    if (state6.value !== void 0 && (target.tagName === "INPUT" || target.tagName === "SELECT")) {
       const field3 = (
         /** @type {HTMLInputElement|HTMLSelectElement} */
         target
       );
-      field3.value = state5.value;
+      field3.value = state6.value;
       if (draft2 !== null) {
-        if (state5.focusAttr === "data-cloud-provider") draft2.provider = state5.value;
-        else if (state5.focusAttr === "data-cloud-remote") draft2.remote = state5.value;
-        else if (state5.focusAttr === "data-cloud-branch") draft2.branch = state5.value;
+        if (state6.focusAttr === "data-cloud-provider") draft2.provider = state6.value;
+        else if (state6.focusAttr === "data-cloud-remote") draft2.remote = state6.value;
+        else if (state6.focusAttr === "data-cloud-branch") draft2.branch = state6.value;
       }
     }
     const element = (
@@ -10839,12 +10839,12 @@
       const doc = content.ownerDocument || (typeof document === "undefined" ? null : document);
       if (!disabled && doc && "activeElement" in doc) Reflect.set(doc, "activeElement", target);
     }
-    if (state5.selection && target.tagName === "INPUT") {
+    if (state6.selection && target.tagName === "INPUT") {
       const input = (
         /** @type {HTMLInputElement} */
         target
       );
-      if (typeof input.setSelectionRange === "function") input.setSelectionRange(state5.selection.start, state5.selection.end, state5.selection.direction || "none");
+      if (typeof input.setSelectionRange === "function") input.setSelectionRange(state6.selection.start, state6.selection.end, state6.selection.direction || "none");
     }
   }
   function cloudApi() {
@@ -11101,6 +11101,426 @@
     statusBox(box, message2, failed);
   }
 
+  // src/client/owner-cloud-view.js
+  var IMPORTING2 = "\u6B63\u5728\u4FDD\u5B58\u5E76\u5207\u6362\u2026";
+  function summaryRow2(parent, label, value) {
+    const row2 = el("div", "dp-set-head");
+    row2.appendChild(el("b", null, label));
+    row2.appendChild(el("small", "dp-dim", value));
+    parent.appendChild(row2);
+  }
+  function count2(value) {
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  }
+  function gardenSummary2(garden) {
+    if (!garden || typeof garden !== "object") return "\u672A\u5305\u542B\u83DC\u56ED\u6570\u636E";
+    const unlocked = count2(garden.unlocked), planted = count2(garden.planted);
+    if (unlocked === null && planted === null) return "\u5DF2\u5305\u542B\u83DC\u56ED\u8D44\u6599";
+    return `\u5DF2\u5F00\u57A6 ${unlocked ?? "\u2014"} \u5757 \xB7 \u79CD\u690D\u4E2D ${planted ?? "\u2014"} \u5757`;
+  }
+  function renderOwnerCloudPreview(box, options) {
+    const { preview: preview2, acknowledgeWarnings, switching, busy: busy5 } = options;
+    box.appendChild(el("b", "dp-shelf", "\u4E91\u7AEF\u5B8C\u6574\u6863\u9884\u89C8"));
+    const summary = preview2.summary ?? {};
+    const pigs = Array.isArray(summary.pigs) ? summary.pigs : [];
+    const pigCount = count2(summary.pigCount) ?? pigs.length;
+    const pigTitle = el("b", "dp-set-head", `\u5305\u542B ${pigCount} \u53EA\u5C0F\u732A`);
+    box.appendChild(pigTitle);
+    for (const [index, pig] of pigs.entries()) {
+      const name = typeof pig?.name === "string" && pig.name.trim() ? pig.name : `\u5C0F\u732A ${index + 1}`;
+      const details2 = [];
+      const ageMs = typeof pig?.ageMs === "number" && Number.isFinite(pig.ageMs) && pig.ageMs >= 0 ? pig.ageMs : null;
+      const xp = count2(pig?.xp);
+      const weight = typeof pig?.weightG === "number" && Number.isFinite(pig.weightG) && pig.weightG >= 0 ? pig.weightG : null;
+      if (ageMs !== null) details2.push(`\u6210\u957F ${(ageMs / 864e5).toFixed(1)} \u5929`);
+      if (xp !== null) details2.push(`\u7ECF\u9A8C ${xp}`);
+      if (weight !== null) details2.push(`\u4F53\u91CD ${weight} \u514B`);
+      if (count2(pig?.wornCount) !== null) details2.push(`\u7A7F\u6234 ${pig.wornCount} \u4EF6`);
+      summaryRow2(box, name, details2.length ? details2.join(" \xB7 ") : "\u5305\u542B\u72EC\u7ACB\u6210\u957F\u4E0E\u6570\u503C");
+    }
+    if (pigCount > pigs.length) box.appendChild(el("p", "dp-dim", `\u5217\u8868\u663E\u793A\u524D ${pigs.length} \u53EA\uFF1B\u5176\u4F59 ${pigCount - pigs.length} \u53EA\u4E5F\u5305\u542B\u5728\u5B8C\u6574\u6863\u4E2D\u3002`));
+    box.appendChild(el("b", "dp-set-head", "\u5171\u4EAB\u8D44\u4EA7"));
+    const shared = summary.shared ?? {};
+    const coins = typeof shared.coins === "number" && Number.isFinite(shared.coins) ? new Intl.NumberFormat("zh-CN").format(shared.coins) : "\u672A\u8BB0\u5F55";
+    summaryRow2(box, "\u91D1\u5E01", coins);
+    const inventoryCount = count2(shared.inventoryCount);
+    summaryRow2(box, "\u80CC\u5305", inventoryCount === null ? "\u672A\u8BB0\u5F55" : `${inventoryCount} \u4EF6\u7269\u54C1`);
+    summaryRow2(box, "\u83DC\u56ED", gardenSummary2(shared.garden));
+    box.appendChild(el("p", "dp-dim", "\u672C\u673A\u663E\u793A\u4E0E\u58F0\u97F3\u504F\u597D\u4FDD\u7559\u5728\u6B64\u8BBE\u5907\uFF0C\u4E0D\u968F\u4E91\u7AEF\u5B58\u6863\u8986\u76D6\u3002"));
+    box.appendChild(el("p", "dp-dim", "\u6062\u590D\u4F1A\u5EFA\u7ACB\u72EC\u7ACB\u5B58\u6863\u526F\u672C\u5E76\u5207\u6362\u5230\u65B0\u526F\u672C\uFF1B\u5F53\u524D\u5B58\u6863\u4FDD\u7559\uFF0C\u5B8C\u6210\u540E\u5E94\u7528\u4F1A\u91CD\u542F\u3002"));
+    for (const warning2 of preview2.warnings) {
+      box.appendChild(el("div", "dp-alert dp-legacy", warning2));
+    }
+    if (preview2.warnings.length > 0) {
+      const label = el("label", "dp-dim");
+      const check = (
+        /** @type {HTMLInputElement} */
+        el("input")
+      );
+      check.type = "checkbox";
+      check.style.cssText = "width:auto;margin:0 6px 0 0;accent-color:var(--animal-primary)";
+      check.checked = acknowledgeWarnings;
+      check.disabled = switching || busy5 !== "";
+      check.setAttribute("data-owner-cloud-warnings", "true");
+      check.addEventListener("change", () => {
+        options.onToggleWarnings(check.checked === true);
+      });
+      label.appendChild(check);
+      label.appendChild(el("span", null, "\u6211\u5DF2\u9605\u8BFB\u63D0\u793A\uFF0C\u4ECD\u8981\u6062\u590D"));
+      box.appendChild(label);
+    }
+    const actions2 = el("div", "dp-actions");
+    const cancel2 = button("dp-btn", { "data-owner-cloud-preview-cancel": "true" }, () => {
+      options.onCancel();
+    });
+    cancel2.textContent = "\u53D6\u6D88";
+    cancel2.disabled = switching || busy5 !== "";
+    actions2.appendChild(cancel2);
+    const confirm = button("dp-mini", { "data-owner-cloud-import": "true" }, () => {
+      options.onImport();
+    });
+    confirm.textContent = switching || busy5 === "import" ? IMPORTING2 : "\u6062\u590D\u5E76\u5207\u6362";
+    confirm.disabled = switching || busy5 !== "" || preview2.warnings.length > 0 && !acknowledgeWarnings;
+    actions2.appendChild(confirm);
+    box.appendChild(actions2);
+  }
+  function shortHash(value) {
+    return typeof value === "string" && value !== "" ? value.slice(0, 7) : "\u672A\u8BB0\u5F55";
+  }
+  function shortTime(value) {
+    if (typeof value !== "string" || value === "") return "\u672A\u8BB0\u5F55";
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "\u672A\u8BB0\u5F55";
+    const pad = (number2) => String(number2).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+  function renderOwnerCloudHistory(box, history) {
+    box.appendChild(el("b", "dp-shelf", "\u4E91\u7AEF\u5386\u53F2"));
+    if (history === null) {
+      box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u4E91\u7AEF\u5386\u53F2\u2026"));
+      return;
+    }
+    if (history.ok !== true) {
+      box.appendChild(el("p", "dp-dim", history.reason || "\u4E91\u7AEF\u5386\u53F2\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6"));
+      return;
+    }
+    const items = [];
+    if (history.manual) items.push(history.manual);
+    for (const item of history.auto ?? []) items.push(item);
+    if (items.length === 0) {
+      box.appendChild(el("p", "dp-dim", "\u4E91\u7AEF\u8FD8\u6CA1\u6709\u53EF\u663E\u793A\u7684\u5B58\u6863\u5386\u53F2"));
+      return;
+    }
+    const list = el("div", "dp-list");
+    for (const item of items) {
+      const row2 = el("div", "dp-item");
+      row2.setAttribute("data-owner-cloud-history", "true");
+      const grow = el("div", "dp-grow");
+      grow.appendChild(el("div", null, item.subject || "\u672A\u547D\u540D\u5B58\u6863"));
+      grow.appendChild(el("div", "dp-dim", `${shortTime(item.at)} \xB7 ${shortHash(item.hash)}`));
+      row2.appendChild(grow);
+      if (item.manual) row2.appendChild(el("span", "dp-dim", "\u624B\u52A8"));
+      list.appendChild(row2);
+    }
+    box.appendChild(list);
+  }
+
+  // src/client/owner-cloud-save.js
+  var UPLOADING = "\u6B63\u5728\u4E0A\u4F20\u5B8C\u6574\u6863\u2026";
+  var READING = "\u6B63\u5728\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u2026";
+  var REASON_TEXT = Object.freeze({
+    "remote-has-history": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u5DF2\u6709\u5176\u4ED6\u5B8C\u6574\u6863\u5386\u53F2\uFF0C\u4E0D\u80FD\u76F4\u63A5\u4E0A\u4F20\u8986\u76D6\uFF1B\u8BF7\u6362\u4E00\u4E2A\u7A7A\u5206\u652F\uFF0C\u6216\u6539\u4E3A\u4ECE\u4E91\u7AEF\u6062\u590D\u3002",
+    "remote-owner-mismatch": "\u4E91\u7AEF\u5B58\u6863\u5C5E\u4E8E\u53E6\u4E00\u4EFD\u5B8C\u6574\u6863\uFF0C\u4E0D\u80FD\u4E0E\u5F53\u524D\u5B8C\u6574\u6863\u6DF7\u7528\u3002",
+    "remote-branch-empty": "\u4E91\u7AEF\u8FD9\u4E2A\u5206\u652F\u8FD8\u6CA1\u6709\u5B8C\u6574\u6863\uFF1B\u53EF\u4EE5\u5148\u4E0A\u4F20\u672C\u673A\u5B8C\u6574\u6863\u3002",
+    "remote-advanced": "\u4E91\u7AEF\u5DF2\u7ECF\u6709\u66F4\u65B0\u7684\u5B58\u6863\uFF0C\u672C\u673A\u6CA1\u6709\u8986\u76D6\u5B83\u3002\u8BF7\u5148\u5728\u53E6\u4E00\u53F0\u8BBE\u5907\u5B8C\u6210\u540C\u6B65\u540E\u518D\u8BD5\u3002",
+    "first-sync-required": "\u8FD9\u4E2A\u5B8C\u6574\u6863\u8FD8\u6CA1\u6709\u9996\u6B21\u540C\u6B65\u8BB0\u5F55\uFF1B\u8BF7\u5148\u5B8C\u6210\u4E00\u6B21\u9996\u6B21\u540C\u6B65\u3002"
+  });
+  var state3 = {
+    /** @type {OwnerCloudStatus|null} */
+    status: null,
+    /** @type {Promise<OwnerCloudStatus>|null} */
+    statusPromise: null,
+    /** @type {OwnerCloudHistory|null} */
+    history: null,
+    /** @type {Promise<OwnerCloudHistory>|null} */
+    historyPromise: null,
+    /** @type {string|null} */
+    historyBranch: null,
+    /** @type {OwnerCloudPreview|null} */
+    preview: null,
+    acknowledgeWarnings: false,
+    /** @type {''|'upload'|'download'|'import'} */
+    busy: "",
+    /** @type {''|'legacy'|'dead'} */
+    errorKind: "",
+    error: "",
+    /** @type {string|null} */
+    errorCode: null,
+    switching: false,
+    /** @type {any} */
+    ui: null,
+    generation: 0
+  };
+  function ownerCloudApi() {
+    const api = desktopShell()?.cloudSave;
+    return api !== null && typeof api === "object" && typeof api.ownerStatus === "function" && typeof api.firstSync === "function" && typeof api.importFirstSync === "function" && typeof api.ownerHistory === "function" ? api : null;
+  }
+  function rerender5() {
+    state3.ui?.renderContent?.();
+  }
+  function reasonOf2(result) {
+    return typeof result?.reason === "string" && result.reason !== "" ? result.reason : "";
+  }
+  function friendlyReason(reason, fallback) {
+    if (reason === "") return fallback;
+    return REASON_TEXT[reason] ?? reason;
+  }
+  function clearError() {
+    state3.error = "";
+    state3.errorKind = "";
+    state3.errorCode = null;
+  }
+  function setFailure(result, fallback) {
+    const reason = reasonOf2(result);
+    state3.error = friendlyReason(reason, fallback);
+    state3.errorKind = Object.hasOwn(REASON_TEXT, reason) ? "legacy" : "dead";
+    state3.errorCode = reason === "" ? null : reason;
+  }
+  function setOperationError(text) {
+    state3.error = text;
+    state3.errorKind = "dead";
+    state3.errorCode = null;
+  }
+  function normalizeStatus3(result) {
+    if (result === null || typeof result !== "object" || result.available !== true) {
+      return { available: false, ready: false, enabled: false, branch: "main" };
+    }
+    return {
+      available: true,
+      ready: result.ready === true,
+      enabled: result.enabled === true,
+      branch: typeof result.branch === "string" && result.branch !== "" ? result.branch : "main"
+    };
+  }
+  async function requestStatus3(ui) {
+    if (state3.statusPromise !== null || state3.switching) return;
+    const api = ownerCloudApi();
+    if (api === null) return;
+    const generation = state3.generation;
+    const promise = (async () => {
+      try {
+        return normalizeStatus3(await api.ownerStatus());
+      } catch {
+        return normalizeStatus3(null);
+      }
+    })();
+    state3.statusPromise = promise;
+    const status2 = await promise;
+    if (state3.statusPromise === promise) state3.statusPromise = null;
+    if (generation !== state3.generation || state3.switching) return;
+    state3.status = status2;
+    if (state3.ui === ui) rerender5();
+    if (status2.available && status2.ready) void requestHistory(ui);
+  }
+  function normalizeCommit(value) {
+    if (value === null || typeof value !== "object") return null;
+    return {
+      hash: typeof value.hash === "string" ? value.hash : "",
+      at: typeof value.at === "string" ? value.at : "",
+      subject: typeof value.subject === "string" ? value.subject : "",
+      manual: value.manual === true
+    };
+  }
+  async function requestHistory(ui) {
+    const status2 = state3.status;
+    if (status2 === null || !status2.available || !status2.ready || state3.switching) return;
+    if (state3.historyPromise !== null) return;
+    if (state3.historyBranch !== status2.branch) {
+      state3.history = null;
+      state3.historyBranch = status2.branch;
+    }
+    if (state3.history !== null) return;
+    const api = ownerCloudApi();
+    if (api === null) return;
+    const branch = status2.branch;
+    const generation = state3.generation;
+    const promise = (async () => {
+      try {
+        const result = await api.ownerHistory(branch);
+        if (result?.ok !== true) {
+          return { ok: false, reason: friendlyReason(reasonOf2(result), "\u4E91\u7AEF\u5386\u53F2\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6") };
+        }
+        const manual = normalizeCommit(result.manual);
+        const auto2 = Array.isArray(result.auto) ? result.auto.map(normalizeCommit).filter((commit2) => commit2 !== null) : [];
+        return { ok: true, manual, auto: auto2 };
+      } catch {
+        return { ok: false, reason: "\u4E91\u7AEF\u5386\u53F2\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6" };
+      }
+    })();
+    state3.historyPromise = promise;
+    const history = await promise;
+    if (state3.historyPromise === promise) state3.historyPromise = null;
+    if (generation !== state3.generation || state3.switching || state3.historyBranch !== branch) return;
+    state3.history = history;
+    if (state3.ui === ui) rerender5();
+  }
+  async function startFirstSync(ui, direction) {
+    if (state3.busy !== "" || state3.switching) return;
+    const api = ownerCloudApi();
+    if (api === null) return;
+    state3.busy = direction === "local-to-cloud" ? "upload" : "download";
+    state3.preview = null;
+    state3.acknowledgeWarnings = false;
+    clearError();
+    rerender5();
+    let result = null;
+    try {
+      result = await api.firstSync(direction);
+    } catch (error) {
+      setOperationError((direction === "local-to-cloud" ? "\u4E0A\u4F20\u6CA1\u6709\u5B8C\u6210\uFF1A" : "\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u6CA1\u6709\u5B8C\u6210\uFF1A") + (error instanceof Error ? error.message : "\u8BF7\u7A0D\u540E\u91CD\u8BD5"));
+    }
+    if (state3.switching) return;
+    state3.busy = "";
+    if (result === null) {
+      rerender5();
+      return;
+    }
+    if (result?.ok !== true) {
+      setFailure(result, direction === "local-to-cloud" ? "\u4E0A\u4F20\u6CA1\u6709\u5B8C\u6210" : "\u8BFB\u53D6\u4E91\u7AEF\u5B58\u6863\u6CA1\u6709\u5B8C\u6210");
+      rerender5();
+      return;
+    }
+    if (direction === "local-to-cloud") {
+      const current3 = state3.status ?? { available: true, ready: false, enabled: true, branch: "main" };
+      state3.status = { ...current3, available: true, ready: true, enabled: true };
+      state3.history = null;
+      state3.historyBranch = null;
+      rerender5();
+      void requestHistory(ui);
+      return;
+    }
+    const token2 = typeof result.token === "string" ? result.token : "";
+    if (token2 === "" || result.summary === null || typeof result.summary !== "object") {
+      setOperationError("\u4E91\u7AEF\u9884\u89C8\u683C\u5F0F\u4E0D\u6B63\u786E\uFF1B\u5F53\u524D\u5B58\u6863\u6CA1\u6709\u6539\u53D8");
+      rerender5();
+      return;
+    }
+    state3.preview = {
+      token: token2,
+      summary: result.summary,
+      warnings: Array.isArray(result.warnings) ? result.warnings.filter((warning2) => typeof warning2 === "string") : []
+    };
+    state3.acknowledgeWarnings = false;
+    rerender5();
+  }
+  async function importPreview(ui) {
+    if (state3.busy !== "" || state3.switching || state3.preview === null) return;
+    if (state3.preview.warnings.length > 0 && !state3.acknowledgeWarnings) return;
+    const api = ownerCloudApi();
+    if (api === null) return;
+    const token2 = state3.preview.token;
+    state3.busy = "import";
+    clearError();
+    rerender5();
+    let result = null;
+    try {
+      result = await api.importFirstSync(token2, { acceptWarnings: state3.acknowledgeWarnings === true });
+    } catch (error) {
+      setOperationError("\u6062\u590D\u6CA1\u6709\u5B8C\u6210\uFF1A" + (error instanceof Error ? error.message : "\u8BF7\u7A0D\u540E\u91CD\u8BD5"));
+    }
+    state3.busy = "";
+    if (result?.ok !== true) {
+      if (result !== null) {
+        const prefix = result.imported === true ? "\u526F\u672C\u5DF2\u5EFA\u7ACB\uFF0C\u4F46\u6CA1\u6709\u5207\u6362\u3002" : "\u6062\u590D\u6CA1\u6709\u5B8C\u6210\u3002";
+        setOperationError(prefix + (reasonOf2(result) || "\u5F53\u524D\u5B58\u6863\u4FDD\u6301\u4E0D\u53D8"));
+      }
+      state3.preview = null;
+      state3.acknowledgeWarnings = false;
+      rerender5();
+      return;
+    }
+    state3.switching = true;
+    rerender5();
+  }
+  function clearPreview(ui) {
+    if (state3.switching) return;
+    state3.preview = null;
+    state3.acknowledgeWarnings = false;
+    clearError();
+    rerender5();
+  }
+  function renderDirections(ui, box, status2) {
+    box.appendChild(el("p", "dp-dim", "\u9996\u6B21\u540C\u6B65\u8981\u624B\u52A8\u9009\u62E9\u65B9\u5411\uFF1B\u4E0D\u4F1A\u81EA\u52A8\u8986\u76D6\u4E91\u7AEF\u6216\u672C\u673A\u3002"));
+    if (!status2.enabled) {
+      box.appendChild(el("div", "dp-alert dp-legacy", "\u5148\u5728\u4E0A\u9762\u7684\u300C\u4E91\u5B58\u6863\u300D\u542F\u7528\u5E76\u586B\u5199\u4ED3\u5E93\u5730\u5740\uFF0C\u624D\u80FD\u505A\u9996\u6B21\u540C\u6B65\u3002"));
+    }
+    const actions2 = el("div", "dp-actions");
+    const upload = button("dp-mini dp-btn-wide", { "data-owner-cloud-first-sync": "local-to-cloud" }, () => {
+      void startFirstSync(ui, "local-to-cloud");
+    });
+    upload.textContent = state3.busy === "upload" ? UPLOADING : "\u672C\u673A\u5B8C\u6574\u6863\u4E0A\u4F20\u5230\u4E91\u7AEF";
+    upload.disabled = state3.busy !== "" || !status2.enabled;
+    actions2.appendChild(upload);
+    const download2 = button("dp-btn dp-btn-wide", { "data-owner-cloud-first-sync": "cloud-to-local" }, () => {
+      void startFirstSync(ui, "cloud-to-local");
+    });
+    download2.textContent = state3.busy === "download" ? READING : "\u4ECE\u4E91\u7AEF\u6062\u590D\u5230\u672C\u673A\u526F\u672C";
+    download2.disabled = state3.busy !== "" || !status2.enabled;
+    actions2.appendChild(download2);
+    box.appendChild(actions2);
+  }
+  function renderOwnerCloudSaveSettings(ui, section2) {
+    state3.ui = ui;
+    if (ownerCloudApi() === null) return;
+    if (state3.status === null) {
+      void requestStatus3(ui);
+      const loading4 = section2(ui, "\u5B8C\u6574\u6863\u4E91\u540C\u6B65", "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7");
+      loading4.box.appendChild(el("p", "dp-dim", "\u6B63\u5728\u8BFB\u53D6\u5B8C\u6574\u6863\u4E91\u540C\u6B65\u2026"));
+      return;
+    }
+    if (state3.status.available !== true) return;
+    const status2 = state3.status;
+    const setting = section2(ui, "\u5B8C\u6574\u6863\u4E91\u540C\u6B65", "\u6574\u4EFD\u5B8C\u6574\u6863\uFF1A\u6240\u6709\u5C0F\u732A\u4E0E\u5171\u4EAB\u8D44\u4EA7\uFF1B\u53EA\u540C\u6B65\u8FD9\u4E00\u4EFD");
+    const box = setting.box;
+    const stateKey = state3.switching ? "switching" : status2.ready ? "connected" : status2.enabled ? "pending" : "disconnected";
+    const stateLabel = state3.switching ? "\u6B63\u5728\u5207\u6362" : status2.ready ? "\u5DF2\u8FDE\u63A5" : status2.enabled ? "\u5F85\u9996\u6B21\u540C\u6B65" : "\u672A\u8FDE\u63A5";
+    const summary = el("div", "dp-cloud-summary");
+    summary.setAttribute("data-owner-cloud-status", stateKey);
+    summary.appendChild(el("b", null, stateLabel));
+    summary.appendChild(el("span", "dp-cloud-note", "\u5206\u652F \xB7 " + status2.branch));
+    summary.appendChild(el("span", "dp-cloud-note", state3.switching ? "\u6B63\u5728\u4FDD\u5B58\u5F53\u524D\u5B58\u6863\u5E76\u5207\u6362\uFF1B\u5E94\u7528\u4F1A\u81EA\u52A8\u91CD\u542F\u3002" : status2.ready ? "\u81EA\u52A8\u540C\u6B65\u5DF2\u542F\u7528" : status2.enabled ? "\u5C1A\u672A\u5B8C\u6210\u9996\u6B21\u540C\u6B65" : "\u5148\u5728\u4E0A\u9762\u7684\u300C\u4E91\u5B58\u6863\u300D\u542F\u7528"));
+    box.appendChild(summary);
+    if (state3.error !== "") {
+      const alert2 = el("div", state3.errorKind === "legacy" ? "dp-alert dp-legacy" : "dp-alert dp-dead", state3.error);
+      if (state3.errorCode !== null) alert2.setAttribute("data-owner-cloud-error", state3.errorCode);
+      box.appendChild(alert2);
+    }
+    if (state3.preview !== null) {
+      renderOwnerCloudPreview(box, {
+        preview: state3.preview,
+        acknowledgeWarnings: state3.acknowledgeWarnings,
+        switching: state3.switching,
+        busy: state3.busy,
+        onToggleWarnings: (checked) => {
+          state3.acknowledgeWarnings = checked;
+          rerender5();
+        },
+        onCancel: () => {
+          clearPreview(ui);
+        },
+        onImport: () => {
+          void importPreview(ui);
+        }
+      });
+      return;
+    }
+    if (!status2.ready) {
+      renderDirections(ui, box, status2);
+      return;
+    }
+    renderOwnerCloudHistory(box, state3.history);
+  }
+
   // src/client/external-ui.js
   function createOverlay(ui, options) {
     const overlay = el("div", "dp-save-overlay dp-ext-overlay");
@@ -11291,15 +11711,15 @@
     }
     card2.appendChild(rowNode);
   }
-  function renderExternalCard(ui, section2, state5, handlers) {
-    const status2 = state5.status;
+  function renderExternalCard(ui, section2, state6, handlers) {
+    const status2 = state6.status;
     const entry = section2(ui, "\u5916\u90E8\u684C\u5BA0");
     const box = entry.box;
     box.setAttribute("data-external-pet", "true");
-    const busy5 = state5.busy === true;
+    const busy5 = state6.busy === true;
     if (status2 === null) {
-      statusLine(box, state5.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state5.error === "" ? "warn" : "warn");
-      if (state5.error !== "") note2(box, state5.error, true);
+      statusLine(box, state6.error === "" ? "\u6B63\u5728\u68C0\u67E5\u684C\u9762\u7248\u2026" : "\u8BFB\u4E0D\u5230\u5916\u90E8\u684C\u5BA0\u72B6\u6001", state6.error === "" ? "warn" : "warn");
+      if (state6.error !== "") note2(box, state6.error, true);
       cardActions(box, [{ key: "recheck", label: "\u91CD\u65B0\u68C0\u6D4B", onPick: handlers.recheck, disabled: busy5, wide: true }]);
       return;
     }
@@ -11377,17 +11797,17 @@
       { key: "manage", label: "\u7BA1\u7406", onPick: handlers.manage, disabled: busy5 }
     ]);
   }
-  function renderManageDialog(ui, state5, handlers, view) {
+  function renderManageDialog(ui, state6, handlers, view) {
     const dialog = view.dialog;
     dialog.setAttribute("data-external-dialog", "manage");
     dialog.appendChild(el("b", "dp-ext-title", "\u7BA1\u7406\u684C\u9762\u8FDE\u63A5"));
-    const status2 = state5.status;
+    const status2 = state6.status;
     const target = status2?.target ?? null;
     row(dialog, "\u684C\u9762\u732A", summaryLine(target));
     row(dialog, "\u5185\u5D4C\u732A", status2?.pigState === "merged" ? "\u5DF2\u5408\u5E76\u5E76\u9000\u5F79" : status2?.pigState === "paused" ? "\u6682\u5B58\u4E2D\uFF0C\u4E0D\u997F\u4E0D\u75C5" : "\u6CA1\u6709\u5185\u5D4C\u732A");
     row(dialog, "\u8FDE\u63A5", status2?.connection === "connected" ? "\u5DF2\u8FDE\u63A5" : "\u6CA1\u8FDE\u4E0A");
     if (status2 !== null && status2.queued > 0) row(dialog, "\u5DE5\u4F5C\u961F\u5217", status2.queued + " \u6761");
-    if (state5.manageStep === "discard") {
+    if (state6.manageStep === "discard") {
       note2(dialog, "\u8FD8\u6709 " + status2.queued + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230");
       note2(dialog, "\u73B0\u5728\u5207\u56DE\uFF0C\u8FD9 " + status2.queued + " \u6761\u4F1A\u7559\u5728 outbox\uFF0C\u4E0D\u4F1A\u518D\u5582\u7ED9\u684C\u9762\u732A\u3002", true);
       actions(dialog, [
@@ -11426,14 +11846,14 @@
 
   // src/client/external-result.js
   var backupName = (backups, key2) => typeof backups?.[key2] === "string" && backups[key2] !== "" ? backups[key2] : "\u2014";
-  function renderCommitting(dialog, state5, handlers) {
+  function renderCommitting(dialog, state6, handlers) {
     heading(dialog, "\u6B63\u5728\u5408\u5E76\u2026");
     note2(dialog, "\u684C\u9762\u7248\u4F1A\u5F39\u51FA\u4E00\u4E2A\u786E\u8BA4\u6846\uFF0C\u8BF7\u5728\u90A3\u8FB9\u70B9\u300C\u5141\u8BB8\u5408\u5E76\u300D\u3002");
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     actions(dialog, [{ key: "commit-cancel", label: "\u53D6\u6D88", onPick: handlers.dismiss, disabled: false }]);
   }
-  function renderSuccess(dialog, state5, handlers) {
-    const result = state5.result?.result ?? { name: "", level: 0, coins: 0, items: 0, badges: 0 };
+  function renderSuccess(dialog, state6, handlers) {
+    const result = state6.result?.result ?? { name: "", level: 0, coins: 0, items: 0, badges: 0 };
     heading(dialog, "\u5408\u5E76\u5B8C\u6210");
     if (result.name === "") {
       note2(dialog, "\u684C\u9762\u7248\u6CA1\u6709\u8FD4\u56DE\u6700\u7EC8\u6458\u8981\uFF0C\u8BF7\u5173\u95ED\u540E\u5237\u65B0\u9762\u677F\u786E\u8BA4\uFF1B\u5907\u4EFD\u540D\u89C1\u4E0B\u3002", true);
@@ -11443,33 +11863,33 @@
       dialog.appendChild(line6);
     }
     dialog.appendChild(el("b", "dp-ext-group-head", "\u672C\u6B21\u5907\u4EFD\uFF1A"));
-    row(dialog, "\u684C\u9762", backupName(state5.result?.backups, "target"));
-    row(dialog, "\u5185\u5D4C", backupName(state5.result?.backups, "source"));
-    if (state5.result?.cleanup === "failed") note2(dialog, "\u65E7\u5408\u5E76\u5907\u4EFD\u6CA1\u6E05\u7406\u6389\uFF0C\u4E0D\u5F71\u54CD\u8FD9\u6B21\u5408\u5E76\uFF0C\u4E0B\u6B21\u4F1A\u518D\u8BD5\u3002", true);
+    row(dialog, "\u684C\u9762", backupName(state6.result?.backups, "target"));
+    row(dialog, "\u5185\u5D4C", backupName(state6.result?.backups, "source"));
+    if (state6.result?.cleanup === "failed") note2(dialog, "\u65E7\u5408\u5E76\u5907\u4EFD\u6CA1\u6E05\u7406\u6389\uFF0C\u4E0D\u5F71\u54CD\u8FD9\u6B21\u5408\u5E76\uFF0C\u4E0B\u6B21\u4F1A\u518D\u8BD5\u3002", true);
     else note2(dialog, "\u66F4\u65E9\u7684\u5408\u5E76\u5907\u4EFD\u5DF2\u6E05\u7406\uFF0C\u53EA\u4FDD\u7559\u8FD9\u4E00\u6B21\u3002\u624B\u52A8\u5907\u4EFD\u4E0D\u4F1A\u88AB\u6E05\u7406\u3002");
     note2(dialog, "DSH \u7684\u5DE5\u4F5C\u73B0\u5728\u4F1A\u5582\u7ED9\u684C\u9762\u732A\u3002");
     actions(dialog, [
       { key: "success-done", label: "\u597D\u7684", onPick: handlers.done },
-      { key: "success-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, onPick: handlers.rollback, disabled: state5.busy === true }
+      { key: "success-rollback", label: "\u64A4\u9500\u5408\u5E76", primary: true, onPick: handlers.rollback, disabled: state6.busy === true }
     ]);
   }
-  function renderFailure(dialog, state5, handlers) {
-    heading(dialog, state5.result?.status === "retire-failed" ? "\u684C\u5BA0\u5DF2\u5408\u5E76" : "\u5408\u5E76\u6CA1\u6709\u5B8C\u6210");
-    const code = state5.error === "" ? state5.result?.status ?? "unknown" : state5.error;
+  function renderFailure(dialog, state6, handlers) {
+    heading(dialog, state6.result?.status === "retire-failed" ? "\u684C\u5BA0\u5DF2\u5408\u5E76" : "\u5408\u5E76\u6CA1\u6709\u5B8C\u6210");
+    const code = state6.error === "" ? state6.result?.status ?? "unknown" : state6.error;
     note2(dialog, reasonText(code), true);
     if (code === "retire-failed") note2(dialog, "\u684C\u9762\u732A\u5DF2\u7ECF\u5408\u5E76\u6210\u529F\uFF1B\u5185\u5D4C\u732A\u9000\u5F79\u6CA1\u5B8C\u6210\uFF0C\u4F1A\u4FDD\u6301\u5916\u90E8\u6A21\u5F0F\u91CD\u8BD5\uFF0C\u4E0D\u4F1A\u91CD\u65B0\u6253\u5F00\u5185\u5D4C\u732A\u3002");
     if (code === "backup-failed") note2(dialog, "\u6CA1\u6709\u6539\u52A8\u4EFB\u4F55\u5B58\u6863\u3002");
     if (code === "declined") note2(dialog, "\u4E24\u8FB9\u90FD\u6CA1\u6709\u6539\u52A8\u3002");
     if (code === "tx-failed") note2(dialog, "\u684C\u9762\u732A\u5DF2\u6062\u590D\u5230\u5408\u5E76\u524D\uFF1B\u65B0\u5907\u4EFD\u4FDD\u7559\u3002");
     if (code === "cleanup-failed") note2(dialog, "\u5408\u5E76\u5DF2\u6210\u529F\uFF0C\u65E7\u5907\u4EFD\u7A0D\u540E\u518D\u6E05\u7406\u3002");
-    for (const error of state5.result?.errors ?? []) note2(dialog, error.path + "\uFF1A" + (error.reason === "" ? "\u4E0D\u5408\u6CD5" : error.reason), true);
+    for (const error of state6.result?.errors ?? []) note2(dialog, error.path + "\uFF1A" + (error.reason === "" ? "\u4E0D\u5408\u6CD5" : error.reason), true);
     actions(dialog, [
       { key: "failure-close", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "failure-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.retry, disabled: state5.busy === true }
+      { key: "failure-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.retry, disabled: state6.busy === true }
     ]);
   }
-  function renderWithdraw(dialog, state5, handlers) {
-    const status2 = state5.status;
+  function renderWithdraw(dialog, state6, handlers) {
+    const status2 = state6.status;
     if (status2 !== null && status2.merged) {
       heading(dialog, "\u5207\u56DE\u5185\u5D4C\u732A\uFF1F");
       note2(dialog, "\u5185\u5D4C\u732A\u5DF2\u7ECF\u5408\u5E76\u5230\u684C\u5BA0\u5E76\u9000\u5F79\uFF08\u4E0D\u5728\u9ED8\u8BA4\u5B58\u6863\u8DEF\u5F84\uFF09\u3002");
@@ -11482,7 +11902,7 @@
       ]);
       return;
     }
-    if (state5.withdrawDiscard === true) {
+    if (state6.withdrawDiscard === true) {
       heading(dialog, "\u8FD8\u6709 " + (status2?.queued ?? 0) + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230");
       note2(dialog, "\u73B0\u5728\u5207\u56DE\uFF0C\u8FD9 " + (status2?.queued ?? 0) + " \u6761\u4F1A\u7559\u5728 outbox\uFF0C\u4E0D\u4F1A\u518D\u5582\u7ED9\u684C\u9762\u732A\u3002");
       actions(dialog, [
@@ -11498,53 +11918,53 @@
     if ((status2?.queued ?? 0) > 0) note2(dialog, "\u8FD8\u6709 " + status2.queued + " \u6761\u5DE5\u4F5C\u6CA1\u9001\u5230\uFF1B\u5207\u56DE\u524D\u4F1A\u8BA9\u4F60\u786E\u8BA4\u3002", true);
     actions(dialog, [
       { key: "withdraw-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "withdraw-go", label: "\u5207\u56DE", primary: true, onPick: () => handlers.withdrawNow(false), disabled: state5.busy === true }
+      { key: "withdraw-go", label: "\u5207\u56DE", primary: true, onPick: () => handlers.withdrawNow(false), disabled: state6.busy === true }
     ]);
   }
-  function renderRollbackConfirm(dialog, state5, handlers) {
+  function renderRollbackConfirm(dialog, state6, handlers) {
     heading(dialog, "\u64A4\u9500\u5408\u5E76\uFF1F");
     note2(dialog, "\u5C06\u628A\u684C\u9762\u732A\u548C DSH \u5185\u5D4C\u732A\u90FD\u6062\u590D\u5230\u5408\u5E76\u524D\u7684\u5B58\u6863\u3002\u5408\u5E76\u540E\u65B0\u589E\u7684\u8FDB\u5EA6\u4F1A\u4E22\u5931\u3002");
     note2(dialog, "\u5408\u5E76\u65F6\u4ECE\u5185\u5D4C\u732A\u590D\u5236\u8FC7\u6765\u7684\u76AE\u80A4\u4F1A\u64A4\u56DE\uFF1B\u5408\u5E76\u540E\u65B0\u5BFC\u5165\u7684\u76AE\u80A4\u4FDD\u7559\u3002");
     note2(dialog, "\u684C\u9762\u5408\u5E76\u540E\u7684\u5B58\u6863\u4F1A\u5148\u53E6\u5B58\u4E00\u4EFD\u5907\u4EFD\uFF0C\u4E0D\u4F1A\u65E0\u58F0\u4E22\u6389\u3002");
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     actions(dialog, [
       { key: "rollback-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "rollback-go", label: "\u786E\u8BA4\u64A4\u9500", primary: true, onPick: handlers.rollbackGo, disabled: state5.busy === true }
+      { key: "rollback-go", label: "\u786E\u8BA4\u64A4\u9500", primary: true, onPick: handlers.rollbackGo, disabled: state6.busy === true }
     ]);
   }
   function renderRollingBack(dialog) {
     heading(dialog, "\u6B63\u5728\u64A4\u9500\u2026");
     note2(dialog, "\u5148\u628A\u684C\u9762\u5408\u5E76\u540E\u7684\u5B58\u6863\u53E6\u5B58\u4E00\u4EFD\uFF0C\u518D\u6062\u590D\u4E24\u8FB9\uFF1B\u4E0D\u8981\u64CD\u4F5C\u3002");
   }
-  function renderRollbackPartial(dialog, state5, handlers) {
+  function renderRollbackPartial(dialog, state6, handlers) {
     heading(dialog, "\u90E8\u5206\u64A4\u9500");
-    const restored = state5.result?.restored ?? { target: false, source: false };
+    const restored = state6.result?.restored ?? { target: false, source: false };
     note2(dialog, (restored.target ? "\u684C\u9762\u732A\u5DF2\u6062\u590D\u3002" : "\u684C\u9762\u732A\u6CA1\u6062\u590D\u3002") + (restored.source ? "\u5185\u5D4C\u732A\u5DF2\u6062\u590D\u3002" : "\u5185\u5D4C\u732A\u6CA1\u6062\u590D\u3002"), true);
-    row(dialog, "\u684C\u9762\u5907\u4EFD", backupName(state5.result?.backups, "target"));
-    row(dialog, "\u5185\u5D4C\u5907\u4EFD", backupName(state5.result?.backups, "source"));
+    row(dialog, "\u684C\u9762\u5907\u4EFD", backupName(state6.result?.backups, "target"));
+    row(dialog, "\u5185\u5D4C\u5907\u4EFD", backupName(state6.result?.backups, "source"));
     note2(dialog, "\u91CD\u8BD5\u53EA\u4F1A\u8865\u6CA1\u6062\u590D\u7684\u4E00\u8FB9\uFF0C\u4E0D\u4F1A\u91CD\u590D\u8986\u76D6\u5DF2\u7ECF\u6062\u590D\u7684\u4E00\u8FB9\u3002");
     actions(dialog, [
       { key: "partial-close", label: "\u5173\u95ED", onPick: handlers.close },
-      { key: "partial-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.rollbackGo, disabled: state5.busy === true }
+      { key: "partial-retry", label: "\u91CD\u8BD5", primary: true, onPick: handlers.rollbackGo, disabled: state6.busy === true }
     ]);
   }
-  function renderRecoverConfirm(dialog, state5, handlers) {
+  function renderRecoverConfirm(dialog, state6, handlers) {
     heading(dialog, "\u53EA\u6062\u590D\u5185\u5D4C\u732A\uFF1F");
     note2(dialog, "\u4F1A\u4ECE DSH \u672C\u5730\u5907\u4EFD\u6062\u590D\u5408\u5E76\u524D\u7684\u5185\u5D4C\u732A\uFF0C\u684C\u9762\u732A\u4FDD\u6301\u5408\u5E76\u540E\u7684\u6837\u5B50\uFF08\u4F1A\u51FA\u73B0\u4E24\u53EA\u76F8\u4F3C\u7684\u732A\uFF09\u3002");
     note2(dialog, "\u5148\u628A\u5907\u4EFD\u6062\u590D\u5230\u4E34\u65F6\u4F4D\u7F6E\u5E76\u6821\u9A8C\uFF0C\u518D\u653E\u56DE state.json\uFF1B\u5931\u8D25\u4F1A\u4FDD\u7559\u9000\u5F79\u6807\u8BB0\u3002");
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     actions(dialog, [
       { key: "recover-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "recover-go", label: "\u6062\u590D\u5185\u5D4C\u732A", primary: true, onPick: handlers.recoverGo, disabled: state5.busy === true }
+      { key: "recover-go", label: "\u6062\u590D\u5185\u5D4C\u732A", primary: true, onPick: handlers.recoverGo, disabled: state6.busy === true }
     ]);
   }
-  function renderWithdrawChanged(dialog, state5, handlers) {
+  function renderWithdrawChanged(dialog, state6, handlers) {
     heading(dialog, "\u6682\u5B58\u671F\u95F4\u5B58\u6863\u88AB\u6539\u8FC7");
     note2(dialog, "\u5207\u56DE\u4F1A\u6309\u6B63\u5E38\u79BB\u7EBF\u7ED3\u7B97\uFF0C\u53EF\u80FD\u53D8\u997F\u3001\u751F\u75C5\u3002\u5185\u5D4C\u732A\u4E0D\u4F1A\u6309\u6682\u5B58\u65F6\u523B\u540E\u79FB\u65F6\u95F4\u3002", true);
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     actions(dialog, [
       { key: "withdraw-changed-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "withdraw-changed-go", label: "\u4ECD\u8981\u5207\u56DE", primary: true, onPick: handlers.withdrawChangedGo, disabled: state5.busy === true }
+      { key: "withdraw-changed-go", label: "\u4ECD\u8981\u5207\u56DE", primary: true, onPick: handlers.withdrawChangedGo, disabled: state6.busy === true }
     ]);
   }
 
@@ -11618,8 +12038,8 @@
   function errorFor(errors, group) {
     return Object.keys(errors).filter((key2) => group === "look" ? key2 === "look" : group === "personality" ? key2 === "personality" : key2 === "preferences").map((key2) => errors[key2])[0] ?? "";
   }
-  function pickerGroup(dialog, state5, handlers, preview2, group, label) {
-    const choices = state5.choices[group];
+  function pickerGroup(dialog, state6, handlers, preview2, group, label) {
+    const choices = state6.choices[group];
     const wrap2 = el("div", "dp-ext-group");
     const head = el("div", "dp-ext-group-head");
     head.appendChild(el("b", null, label));
@@ -11653,15 +12073,15 @@
       });
     }
     wrap2.appendChild(line6);
-    if (choices.pick === "custom") renderEditor(wrap2, preview2, state5, handlers, group);
-    const error = errorFor(validateChoices(preview2, state5.choices).errors, group);
+    if (choices.pick === "custom") renderEditor(wrap2, preview2, state6, handlers, group);
+    const error = errorFor(validateChoices(preview2, state6.choices).errors, group);
     const flag = el("span", "dp-ext-flag", error);
     flag.setAttribute("data-external-flag-for", group);
     wrap2.appendChild(flag);
     dialog.appendChild(wrap2);
   }
-  function renderEditor(wrap2, preview2, state5, handlers, group) {
-    const choices = state5.choices[group];
+  function renderEditor(wrap2, preview2, state6, handlers, group) {
+    const choices = state6.choices[group];
     const editors = preview2.editors ?? {};
     if (group === "look") {
       const forms = optionsOf(editors.look?.form);
@@ -11759,8 +12179,8 @@
       handlers.sync?.();
     } });
   }
-  function nameGroup(dialog, state5, handlers, preview2) {
-    const choices = state5.choices.name;
+  function nameGroup(dialog, state6, handlers, preview2) {
+    const choices = state6.choices.name;
     const wrap2 = el("div", "dp-ext-group");
     const head = el("div", "dp-ext-group-head");
     head.appendChild(el("b", null, "\u540D\u5B57"));
@@ -11785,12 +12205,12 @@
         handlers.sync?.();
       } });
     }
-    const flag = el("span", "dp-ext-flag", validateChoices(preview2, state5.choices).errors.name ?? "");
+    const flag = el("span", "dp-ext-flag", validateChoices(preview2, state6.choices).errors.name ?? "");
     flag.setAttribute("data-external-flag-for", "name");
     wrap2.appendChild(flag);
     dialog.appendChild(wrap2);
   }
-  function conflictGroup(dialog, state5, handlers, conflict) {
+  function conflictGroup(dialog, state6, handlers, conflict) {
     const wrap2 = el("div", "dp-ext-group");
     wrap2.setAttribute("data-external-conflict", conflict.key);
     const head = el("div", "dp-ext-group-head");
@@ -11802,9 +12222,9 @@
       choiceRow(line6, {
         key: pick,
         label: pick === "target" ? "\u4FDD\u7559\u684C\u5BA0" : "\u7528\u5185\u5D4C\u732A",
-        checked: state5.choices.conflicts[conflict.key] === pick,
+        checked: state6.choices.conflicts[conflict.key] === pick,
         onPick: () => {
-          state5.choices.conflicts[conflict.key] = pick;
+          state6.choices.conflicts[conflict.key] = pick;
           handlers.refresh();
         }
       });
@@ -11812,7 +12232,7 @@
     wrap2.appendChild(line6);
     dialog.appendChild(wrap2);
   }
-  function unknownSourceGroup(dialog, state5, handlers, conflict) {
+  function unknownSourceGroup(dialog, state6, handlers, conflict) {
     const wrap2 = el("div", "dp-ext-group");
     wrap2.setAttribute("data-external-unknown-source", "true");
     wrap2.appendChild(el("b", "dp-ext-group-head", "\u5185\u5D4C\u5B58\u6863\u6709\u5F53\u524D\u7248\u672C\u4E0D\u8BA4\u8BC6\u7684\u5B57\u6BB5"));
@@ -11823,9 +12243,9 @@
       choiceRow(line6, {
         key: option,
         label: option === "discard" ? "\u4E22\u5F03\u8FD9\u4E9B\u5B57\u6BB5" : option === "abort" ? "\u4E2D\u6B62\u5408\u5E76" : option,
-        checked: state5.choices.unknownSource === option,
+        checked: state6.choices.unknownSource === option,
         onPick: () => {
-          state5.choices.unknownSource = option;
+          state6.choices.unknownSource = option;
           handlers.refresh();
         }
       });
@@ -11833,7 +12253,7 @@
     wrap2.appendChild(line6);
     dialog.appendChild(wrap2);
   }
-  function duplicateGroup(dialog, state5, handlers, preview2) {
+  function duplicateGroup(dialog, state6, handlers, preview2) {
     const wrap2 = el("div", "dp-ext-group");
     wrap2.setAttribute("data-external-duplicate", "true");
     wrap2.appendChild(el("b", "dp-ext-group-head", "\u7591\u4F3C\u540C\u4E00\u4EFD\u5B58\u6863\u7684\u526F\u672C"));
@@ -11843,9 +12263,9 @@
       choiceRow(line6, {
         key: pick,
         label: pick === "target" ? "\u53EA\u4FDD\u7559\u684C\u5BA0" : pick === "source" ? "\u53EA\u4FDD\u7559\u5185\u5D4C\u732A" : "\u4ECD\u7136\u5408\u5E76",
-        checked: state5.choices.duplicate === pick,
+        checked: state6.choices.duplicate === pick,
         onPick: () => {
-          state5.choices.duplicate = pick;
+          state6.choices.duplicate = pick;
           handlers.refresh();
         }
       });
@@ -11861,15 +12281,15 @@
     if (typeof names.source === "string" && names.source !== "") row(dialog, "\u5185\u5D4C\u5907\u4EFD", names.source);
     if (preview2.sourceBackup !== "") row(dialog, "\u5185\u5D4C\u5907\u4EFD", preview2.sourceBackup);
   }
-  function renderPreview(dialog, state5, handlers) {
-    const preview2 = state5.preview;
+  function renderPreview(dialog, state6, handlers) {
+    const preview2 = state6.preview;
     if (preview2 === null) {
       heading(dialog, "\u5408\u5E76\u9884\u89C8");
       note2(dialog, "\u8FD8\u6CA1\u62FF\u5230\u9884\u89C8\uFF0C\u8BF7\u91CD\u65B0\u8FDE\u63A5\u3002", true);
       actions(dialog, [{ key: "preview-close", label: "\u5173\u95ED", onPick: handlers.close }]);
       return;
     }
-    heading(dialog, mergeTitle(state5.status));
+    heading(dialog, mergeTitle(state6.status));
     if (preview2.expiresAt > 0) {
       const left = Math.max(0, Math.round((preview2.expiresAt - Date.now()) / 1e3));
       note2(dialog, "\u9884\u89C8 " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + " \u540E\u8FC7\u671F\uFF1B\u8FC7\u671F\u4F1A\u81EA\u52A8\u53D6\u6D88\u5E76\u6062\u590D\u5185\u5D4C\u732A\u3002");
@@ -11882,21 +12302,21 @@
       "Lv." + result.level + " \xB7 " + result.days + " \u5929 \xB7 \u{1FA99}" + formatNumber(result.coins) + " \xB7 \u{1F392}" + result.items + " \xB7 \u{1F3C5}" + result.badges
     ));
     dialog.appendChild(resultNode);
-    nameGroup(dialog, state5, handlers, preview2);
-    pickerGroup(dialog, state5, handlers, preview2, "look", "\u6837\u5B50");
-    pickerGroup(dialog, state5, handlers, preview2, "personality", "\u6027\u683C");
-    pickerGroup(dialog, state5, handlers, preview2, "preferences", "\u504F\u597D");
+    nameGroup(dialog, state6, handlers, preview2);
+    pickerGroup(dialog, state6, handlers, preview2, "look", "\u6837\u5B50");
+    pickerGroup(dialog, state6, handlers, preview2, "personality", "\u6027\u683C");
+    pickerGroup(dialog, state6, handlers, preview2, "preferences", "\u504F\u597D");
     const unknownConflict = preview2.conflicts.find((conflict) => conflict.key === "unknownSource");
     if (preview2.conflicts.length > 0) {
       dialog.appendChild(el("b", "dp-ext-group-head", "\u9700\u8981\u4F60\u51B3\u5B9A"));
       for (const conflict of preview2.conflicts) {
         if (conflict.key === "unknownSource") continue;
         if (conflict.level === "warning") note2(dialog, conflict.label + "\uFF1A" + conflict.message, true);
-        else conflictGroup(dialog, state5, handlers, conflict);
+        else conflictGroup(dialog, state6, handlers, conflict);
       }
     }
-    if (unknownConflict !== void 0) unknownSourceGroup(dialog, state5, handlers, unknownConflict);
-    if (preview2.duplicate !== null) duplicateGroup(dialog, state5, handlers, preview2);
+    if (unknownConflict !== void 0) unknownSourceGroup(dialog, state6, handlers, unknownConflict);
+    if (preview2.duplicate !== null) duplicateGroup(dialog, state6, handlers, preview2);
     if (preview2.autoMerge.length > 0) {
       dialog.appendChild(el("b", "dp-ext-group-head", "\u81EA\u52A8\u5408\u5E76"));
       const list = el("ul", "dp-ext-list");
@@ -11907,17 +12327,17 @@
       note2(dialog, "\u5FBD\u7AE0\u65B0\u589E " + result.newBadges + " \u679A\uFF1B\u56FE\u9274\u65B0\u589E " + result.newDex + " \u79CD\uFF1B\u65E5\u8BB0\u65B0\u589E " + result.newDiary + " \u7BC7\u3002");
     }
     for (const warning2 of preview2.warnings) note2(dialog, warning2, true);
-    if (validateChoices(preview2, state5.choices).errors.unknownSource !== void 0 && unknownConflict === void 0) {
-      note2(dialog, validateChoices(preview2, state5.choices).errors.unknownSource, true);
+    if (validateChoices(preview2, state6.choices).errors.unknownSource !== void 0 && unknownConflict === void 0) {
+      note2(dialog, validateChoices(preview2, state6.choices).errors.unknownSource, true);
     }
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     backupNote(dialog, preview2);
-    const submitted = el("button", "dp-mini", actionsLabel(state5));
+    const submitted = el("button", "dp-mini", actionsLabel(state6));
     submitted.setAttribute("data-external-submit", "true");
-    submitted.disabled = !validateChoices(preview2, state5.choices).ok || state5.busy === true;
+    submitted.disabled = !validateChoices(preview2, state6.choices).ok || state6.busy === true;
     handlers.sync = function syncValidity() {
-      const found = validateChoices(preview2, state5.choices);
-      submitted.disabled = !found.ok || state5.busy === true;
+      const found = validateChoices(preview2, state6.choices);
+      submitted.disabled = !found.ok || state6.busy === true;
       for (const key2 of ["name", "look", "personality", "preferences"]) {
         const node = dialog.querySelector?.('[data-external-flag-for="' + key2 + '"]');
         if (node) node.textContent = found.errors[key2] ?? "";
@@ -11938,9 +12358,9 @@
     grid.appendChild(submitted);
     dialog.appendChild(grid);
   }
-  function actionsLabel(state5) {
-    if (state5.busy) return "\u6B63\u5728\u63D0\u4EA4\u2026";
-    return state5.preview !== null && pigKind(state5.status?.local) === "alive" && pigKind(state5.status?.target) !== "alive" ? "\u5F00\u59CB\u642C" : "\u5F00\u59CB\u5408\u5E76";
+  function actionsLabel(state6) {
+    if (state6.busy) return "\u6B63\u5728\u63D0\u4EA4\u2026";
+    return state6.preview !== null && pigKind(state6.status?.local) === "alive" && pigKind(state6.status?.target) !== "alive" ? "\u5F00\u59CB\u642C" : "\u5F00\u59CB\u5408\u5E76";
   }
   function mergeTitle(status2) {
     return pigKind(status2?.local) === "alive" && pigKind(status2?.target) !== "alive" ? "\u642C\u5230\u684C\u5BA0" : "\u5408\u5E76\u9884\u89C8";
@@ -12531,10 +12951,10 @@
   }
 
   // src/client/external-wizard.js
-  function renderDetectError(dialog, state5, handlers) {
-    const desktop2 = state5.status?.desktop;
+  function renderDetectError(dialog, state6, handlers) {
+    const desktop2 = state6.status?.desktop;
     heading(dialog, desktop2?.found ? desktop2.enabled ? "\u684C\u9762\u7248\u5DF2\u5C31\u7EEA" : "\u684C\u9762\u7248\u8FD8\u6CA1\u51C6\u5907\u597D" : "\u6CA1\u627E\u5230\u684C\u9762\u4E0A\u7684\u5C0F\u732A");
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     const steps = el("ol", "dp-ext-list");
     [
       "\u684C\u9762\u7248\u548C DSH \u5728\u540C\u4E00\u53F0\u7535\u8111\u4E0A\u8FD0\u884C",
@@ -12542,21 +12962,21 @@
       "\u684C\u9762\u7248\u6CA1\u6709\u505C\u5728\u5B58\u6863\u5BFC\u5165/\u5408\u5E76\u4E2D"
     ].forEach((text) => steps.appendChild(el("li", null, text)));
     dialog.appendChild(steps);
-    if (state5.error === "disabled" || state5.status?.desktop.reason === "external-disabled") note2(dialog, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002");
-    if (state5.error === "no-pair" || state5.error === "pair-not-offered") note2(dialog, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u9700\u8981\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
+    if (state6.error === "disabled" || state6.status?.desktop.reason === "external-disabled") note2(dialog, "\u684C\u9762\u7248\u5728\u8FD0\u884C\uFF0C\u4F46\u6CA1\u5F00\u8054\u52A8\u3002");
+    if (state6.error === "no-pair" || state6.error === "pair-not-offered") note2(dialog, "\u684C\u9762\u7248\u53EA\u5F00\u4E86\u5DE5\u4F5C\u63A5\u53E3\uFF0C\u9700\u8981\u5728\u684C\u9762\u8BBE\u7F6E\u91CC\u5141\u8BB8 DSH \u8054\u52A8\u3002");
     actions(dialog, [
       { key: "detect-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "detect-retry", label: "\u91CD\u65B0\u68C0\u6D4B", primary: true, disabled: state5.busy === true, onPick: handlers.recheck }
+      { key: "detect-retry", label: "\u91CD\u65B0\u68C0\u6D4B", primary: true, disabled: state6.busy === true, onPick: handlers.recheck }
     ]);
   }
-  function renderChoose(dialog, state5, handlers) {
-    const status2 = state5.status;
+  function renderChoose(dialog, state6, handlers) {
+    const status2 = state6.status;
     const options = mergeOptions(status2.target, status2.local);
     heading(dialog, "\u8FDE\u63A5\u684C\u9762\u732A");
     row(dialog, "\u684C\u9762\u4E0A\u7684\u732A", summaryLine(status2.target));
     row(dialog, "DSH \u91CC\u7684\u732A", summaryLine(status2.local));
     dialog.appendChild(el("b", "dp-ext-group-head", "\u600E\u4E48\u5904\u7406\uFF1F"));
-    const mode = state5.mode;
+    const mode = state6.mode;
     choiceRow(dialog, {
       key: "connect",
       label: "\u53EA\u628A\u5DE5\u4F5C\u548C\u9762\u677F\u4EA4\u7ED9\u684C\u9762\u732A",
@@ -12580,17 +13000,17 @@
       onPick: () => handlers.setMode("cancel")
     });
     if (options.note !== "") note2(dialog, options.note);
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     actions(dialog, [
-      { key: "choose-back", label: "\u4E0A\u4E00\u6B65", onPick: handlers.backToDetect, disabled: state5.busy === true },
-      { key: "choose-next", label: "\u4E0B\u4E00\u6B65", primary: true, onPick: handlers.chooseNext, disabled: state5.busy === true || mode === "merge" && !options.canMerge }
+      { key: "choose-back", label: "\u4E0A\u4E00\u6B65", onPick: handlers.backToDetect, disabled: state6.busy === true },
+      { key: "choose-next", label: "\u4E0B\u4E00\u6B65", primary: true, onPick: handlers.chooseNext, disabled: state6.busy === true || mode === "merge" && !options.canMerge }
     ]);
   }
-  function renderBlockers(dialog, state5, handlers) {
+  function renderBlockers(dialog, state6, handlers) {
     heading(dialog, "\u5408\u5E76\u524D\u8981\u5148\u7ED3\u675F\u8FD9\u4E9B");
-    const blockers = state5.blockers ?? [];
+    const blockers = state6.blockers ?? [];
     if (blockers.length === 0) {
-      note2(dialog, reasonText(state5.error === "" ? "blocked-activity" : state5.error), true);
+      note2(dialog, reasonText(state6.error === "" ? "blocked-activity" : state6.error), true);
     }
     for (const blocker of blockers) {
       const block = el("div", "dp-ext-block");
@@ -12619,14 +13039,14 @@
       block.appendChild(rowNode);
       dialog.appendChild(block);
     }
-    if (state5.error !== "" && blockers.length > 0) note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "" && blockers.length > 0) note2(dialog, reasonText(state6.error), true);
     actions(dialog, [
       { key: "blocked-cancel", label: "\u53D6\u6D88", onPick: handlers.close },
-      { key: "blocked-recheck", label: "\u91CD\u65B0\u68C0\u67E5", primary: true, disabled: state5.busy === true, onPick: handlers.recheck }
+      { key: "blocked-recheck", label: "\u91CD\u65B0\u68C0\u67E5", primary: true, disabled: state6.busy === true, onPick: handlers.recheck }
     ]);
   }
-  function renderForceConfirm(dialog, state5, handlers) {
-    const blocker = state5.terminate;
+  function renderForceConfirm(dialog, state6, handlers) {
+    const blocker = state6.terminate;
     if (blocker === null || blocker === void 0) {
       heading(dialog, "\u8FD9\u9879\u6D3B\u52A8\u5DF2\u7ECF\u5904\u7406\u8FC7\u4E86");
       note2(dialog, "\u91CD\u65B0\u68C0\u67E5\u4E00\u4E0B\u4E24\u8FB9\u7684\u72B6\u6001\u3002");
@@ -12637,10 +13057,10 @@
     const copy = blockerCopy(blocker);
     note2(dialog, copy.title);
     note2(dialog, blocker.side === "target" ? "\u8FD9\u4E00\u6B65\u4F1A\u5728\u684C\u9762\u7248\u4E0A\u6267\u884C\uFF0C\u6267\u884C\u5B8C\u91CD\u65B0\u68C0\u67E5\u3002" : "\u8FD9\u4E00\u6B65\u4F1A\u5728 DSH \u7684\u5185\u5D4C\u732A\u4E0A\u6267\u884C\uFF0C\u6267\u884C\u5B8C\u91CD\u65B0\u68C0\u67E5\u3002");
-    if (state5.error !== "") note2(dialog, reasonText(state5.error), true);
+    if (state6.error !== "") note2(dialog, reasonText(state6.error), true);
     actions(dialog, [
       { key: "force-cancel", label: "\u53D6\u6D88", onPick: handlers.cancelForce },
-      { key: "force-go", label: "\u5F3A\u5236\u7ED3\u675F", primary: true, disabled: state5.busy === true, onPick: handlers.force }
+      { key: "force-go", label: "\u5F3A\u5236\u7ED3\u675F", primary: true, disabled: state6.busy === true, onPick: handlers.force }
     ]);
   }
 
@@ -12754,32 +13174,32 @@
 
   // src/client/external-desktop.js
   var states2 = /* @__PURE__ */ new WeakMap();
-  function redraw(state5) {
-    if (state5.ui?.tab === "settings") state5.ui.renderContent();
+  function redraw(state6) {
+    if (state6.ui?.tab === "settings") state6.ui.renderContent();
   }
-  function accept(state5, value) {
+  function accept(state6, value) {
     if (value === null || typeof value !== "object") return;
-    state5.value = value;
-    state5.failed = value.ok === false || Boolean(value.error);
+    state6.value = value;
+    state6.failed = value.ok === false || Boolean(value.error);
   }
   function stateFor(api, ui) {
-    let state5 = states2.get(api);
-    if (state5 === void 0) {
-      state5 = { value: null, failed: false, loading: true, busy: false, ui };
-      states2.set(api, state5);
+    let state6 = states2.get(api);
+    if (state6 === void 0) {
+      state6 = { value: null, failed: false, loading: true, busy: false, ui };
+      states2.set(api, state6);
       api.onStatus?.((value) => {
-        accept(state5, value);
-        redraw(state5);
+        accept(state6, value);
+        redraw(state6);
       });
-      Promise.resolve().then(() => api.get()).then((value) => accept(state5, value)).catch(() => {
-        state5.failed = true;
+      Promise.resolve().then(() => api.get()).then((value) => accept(state6, value)).catch(() => {
+        state6.failed = true;
       }).finally(() => {
-        state5.loading = false;
-        redraw(state5);
+        state6.loading = false;
+        redraw(state6);
       });
     }
-    state5.ui = ui;
-    return state5;
+    state6.ui = ui;
+    return state6;
   }
   function renderExternalDesktopSettings(ui, section2, api) {
     const setting = section2(ui, "\u5916\u90E8\u8FDE\u63A5", "\u5141\u8BB8\u672C\u673A\u7684 DSH \u548C\u5176\u4ED6 agent \u628A\u771F\u5B9E\u5DE5\u4F5C\u6295\u7ED9\u8FD9\u53EA\u732A\uFF0C\u5E76\u5728 DSH \u9762\u677F\u91CC\u7167\u987E\u5B83");
@@ -12788,30 +13208,30 @@
       setting.box.appendChild(el("small", "dp-dim", "\u66F4\u65B0\u684C\u9762\u5916\u58F3\u540E\u53EF\u7528"));
       return;
     }
-    const state5 = stateFor(api, ui);
-    const enabled = state5.value?.enabled === true;
+    const state6 = stateFor(api, ui);
+    const enabled = state6.value?.enabled === true;
     const toggle = button("dp-switch", { "data-external-allow": String(!enabled), "aria-pressed": String(enabled), "aria-label": "\u5141\u8BB8 DSH \u8054\u52A8" }, async () => {
-      if (state5.busy || state5.loading) return;
-      state5.busy = true;
-      redraw(state5);
+      if (state6.busy || state6.loading) return;
+      state6.busy = true;
+      redraw(state6);
       try {
-        accept(state5, await api.set(!enabled));
+        accept(state6, await api.set(!enabled));
       } catch {
-        state5.failed = true;
+        state6.failed = true;
       } finally {
-        state5.busy = false;
-        redraw(state5);
+        state6.busy = false;
+        redraw(state6);
       }
     });
-    toggle.disabled = state5.busy || state5.loading;
+    toggle.disabled = state6.busy || state6.loading;
     toggle.appendChild(el("span", "dp-switch-knob"));
     toggle.appendChild(el("span", "dp-switch-text", enabled ? "\u5F00" : "\u5173"));
     setting.head.appendChild(toggle);
     let text = "\u5F53\u524D\u5173\u95ED\uFF1B\u6253\u5F00\u540E\u53EF\u5728 DSH \u8BBE\u7F6E\u4E2D\u8FDE\u63A5\u8FD9\u53EA\u732A";
-    if (state5.loading) text = "\u6B63\u5728\u8BFB\u53D6\u2026";
-    else if (state5.busy) text = "\u6B63\u5728\u5207\u6362\u2026";
-    else if (state5.failed) text = "\u8054\u52A8\u8BBE\u7F6E\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5\uFF1B\u8BE6\u7EC6\u539F\u56E0\u53EF\u5728\u65E5\u5FD7\u4E2D\u67E5\u770B";
-    else if (enabled && state5.value?.running === true) text = "\u5DF2\u5141\u8BB8\u5916\u90E8\u8054\u52A8\uFF1B\u53EA\u5141\u8BB8\u8FD9\u53F0\u7535\u8111\u8FDE\u63A5";
+    if (state6.loading) text = "\u6B63\u5728\u8BFB\u53D6\u2026";
+    else if (state6.busy) text = "\u6B63\u5728\u5207\u6362\u2026";
+    else if (state6.failed) text = "\u8054\u52A8\u8BBE\u7F6E\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5\uFF1B\u8BE6\u7EC6\u539F\u56E0\u53EF\u5728\u65E5\u5FD7\u4E2D\u67E5\u770B";
+    else if (enabled && state6.value?.running === true) text = "\u5DF2\u5141\u8BB8\u5916\u90E8\u8054\u52A8\uFF1B\u53EA\u5141\u8BB8\u8FD9\u53F0\u7535\u8111\u8FDE\u63A5";
     else if (enabled) text = "\u5DF2\u5F00\u542F\u8BB8\u53EF\uFF0C\u4F46\u8FDE\u63A5\u670D\u52A1\u5C1A\u672A\u5C31\u7EEA\uFF0C\u8BF7\u91CD\u8BD5";
     setting.box.appendChild(el("small", "dp-dim", text));
   }
@@ -12863,6 +13283,7 @@
     renderSaveTransferSettings(ui, section);
     renderOwnerPigSettings(ui, section);
     renderCloudSaveSettings(ui, section);
+    renderOwnerCloudSaveSettings(ui, section);
     if (desktopShell() === null && stageShell() === null) renderExternalPetSettings(ui, section);
     else renderExternalDesktopSettings(ui, section, desktopShell()?.external ?? stageShell()?.external);
     const size = section(ui, "\u5C0F\u732A\u5927\u5C0F", "\u666E\u901A\u732A\u3001\u76AE\u80A4\u548C\u7761\u59FF\u4E00\u8D77\u8C03\u6574\uFF1B\u53EA\u6539\u8FD9\u53F0\u8BBE\u5907\uFF0C\u4E0D\u6539\u5B58\u6863");
@@ -13469,14 +13890,14 @@
     gauge.style.background = `linear-gradient(90deg,#dce8e9 0 30%,#6bd47b 30% ${snap - 13}%,#ffd45d ${snap - 13}% ${snap}%,#e05a5a ${snap}%)`;
     const pin = el("b");
     gauge.appendChild(pin);
-    const state5 = el("div", "dp-fish-pull-state");
+    const state6 = el("div", "dp-fish-pull-state");
     const meter2 = el("div", "dp-fish-hmeter");
     const fill = el("i");
     meter2.appendChild(fill);
     stage2.appendChild(el("div", "dp-fish-qte-title", fish3.emoji + "\u3000\u54AC\u7D27\u4E86\uFF01"));
     stage2.appendChild(line6);
     stage2.appendChild(gauge);
-    stage2.appendChild(state5);
+    stage2.appendChild(state6);
     stage2.appendChild(meter2);
     stage2.appendChild(el("div", "dp-fish-help", "\u6309\u4F4F\uFF08\u6216\u7A7A\u683C\uFF09\u6536\u7EBF\uFF0C\u677E\u5F00\u653E\u7EBF \xB7 \u9C7C\u53D1\u529B\u65F6\u677E\u4E00\u677E"));
     root.appendChild(stage2);
@@ -13502,7 +13923,7 @@
       pin.style.left = s.tension + "%";
       rod.style.transform = s.holding ? "rotate(-12deg)" : "none";
       fill.style.width = 100 - Math.max(0, s.distance) + "%";
-      state5.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
+      state6.textContent = (s.surge > 2 ? fish3.emoji + " \u53D1\u529B\u4E86\uFF01" : s.tension < 30 ? "\u592A\u677E\u4E86\uFF01" : s.tension >= snap ? "\u8981\u65AD\u4E86\uFF01" : sweet ? "\u7A33\uFF01\u6536\u5F97\u5FEB" : "\u6536\u7EBF\u4E2D") + " \xB7 \u79BB\u5CB8 " + Math.max(0, s.distance).toFixed(0) + " \u7C73";
       stage2.setAttribute("data-tension", s.tension.toFixed(0));
       if (s.tension >= 100) return finish(false);
       if (s.loose > 2600) return finish(false);
@@ -13828,11 +14249,11 @@
     mark.appendChild(fishImage("bobber.png", "dp-fish-bobber-img"));
     water.appendChild(mark);
     root.appendChild(water);
-    const state5 = el("div", "dp-fish-wait-state");
+    const state6 = el("div", "dp-fish-wait-state");
     const line6 = el("b", null, "\u5B89\u9759\u7B49\u9C7C\u54AC\u94A9\u2026");
-    state5.appendChild(line6);
-    state5.appendChild(el("small", null, "\u76EF\u4F4F\u6D6E\u6F02\uFF0C\u54AC\u94A9\u65F6\u70B9\u51FB"));
-    root.appendChild(state5);
+    state6.appendChild(line6);
+    state6.appendChild(el("small", null, "\u76EF\u4F4F\u6D6E\u6F02\uFF0C\u54AC\u94A9\u65F6\u70B9\u51FB"));
+    root.appendChild(state6);
     let nextNibble = Date.now() + 1500 + Math.random() * 2500;
     let nibbleUntil = 0;
     waitUi = ui;
@@ -15579,7 +16000,7 @@
     for (var k = 0; k < CONSUMABLES.length; k += 1) {
       (function(kind) {
         var items = ownedOf(ui, kind);
-        var count2 = items.reduce(function(sum, item) {
+        var count3 = items.reduce(function(sum, item) {
           return sum + num(ui.view.inventory[item.key], 0);
         }, 0);
         var hasFree = items.some(function(item) {
@@ -15590,8 +16011,8 @@
           emoji: parts[0],
           label: parts[1],
           color: SHELF_COLOR[kind] ?? "blue",
-          badge: count2 > 0 ? String(count2) : "",
-          dim: count2 === 0 && !hasFree,
+          badge: count3 > 0 ? String(count3) : "",
+          dim: count3 === 0 && !hasFree,
           tag: items.some(function(item) {
             return item.needed;
           }) ? "\u9700\u8981" : "",
@@ -16110,7 +16531,7 @@
   }
 
   // src/client/tabs/dex-holo.js
-  var stars = (count2) => "\u2605".repeat(Math.max(0, Number(count2) || 0));
+  var stars = (count3) => "\u2605".repeat(Math.max(0, Number(count3) || 0));
   function card(entry, large, onPick) {
     const acquired = entry.acquired === true;
     const node = button("dp-holo" + (large ? " dp-holo-large" : ""), { "data-s": String(entry.stars), "data-missing": String(!acquired), "data-dex-entry": entry.key }, onPick);
@@ -17321,10 +17742,10 @@
       npm: {}
     };
   }
-  var state3 = freshState(null);
+  var state4 = freshState(null);
   function stateFor2(ui) {
-    if (state3.ui !== ui) state3 = freshState(ui);
-    return state3;
+    if (state4.ui !== ui) state4 = freshState(ui);
+    return state4;
   }
   function channelName() {
     return CHANNEL.name === "gitee" ? "Gitee" : "GitHub";
@@ -17583,7 +18004,7 @@
     }, function(error) {
       s.npm[version] = { state: "error", message: error instanceof Error ? error.message : "\u6CA1\u8FDE\u4E0A npm" };
     }).then(function() {
-      if (state3 === s && ui.tab === "update" && s.pick === version) ui.renderContent();
+      if (state4 === s && ui.tab === "update" && s.pick === version) ui.renderContent();
     });
   }
   function pageButton(text, page, empty, version) {
@@ -17600,7 +18021,7 @@
   }
 
   // src/client/tabs/update.js
-  var state4 = {
+  var state5 = {
     current: null,
     list: null,
     error: null,
@@ -17627,52 +18048,52 @@
   }
   function refresh(ui, fresh) {
     var shell2 = updatesBridge();
-    if (shell2 === null || state4.loading) return;
-    state4.loading = true;
-    state4.error = null;
-    if (!state4.listening) {
-      state4.listening = true;
+    if (shell2 === null || state5.loading) return;
+    state5.loading = true;
+    state5.error = null;
+    if (!state5.listening) {
+      state5.listening = true;
       shell2.updates.onProgress(function(fraction) {
-        state4.fraction = fraction;
+        state5.fraction = fraction;
         ui.renderContent();
       });
     }
-    if (shell2.shellUpdates && !state4.shellListening) {
-      state4.shellListening = true;
+    if (shell2.shellUpdates && !state5.shellListening) {
+      state5.shellListening = true;
       shell2.shellUpdates.onProgress(function(fraction) {
-        state4.shellFraction = fraction;
+        state5.shellFraction = fraction;
         ui.renderContent();
       });
     }
     Promise.all([shell2.updates.current(), shell2.updates.list(fresh === true), shell2.shellUpdates ? shell2.shellUpdates.status() : null]).then(function(got) {
-      state4.current = got[0];
-      if (got[1] && got[1].ok) state4.list = got[1].releases;
-      else state4.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
-      state4.shellStatus = got[2];
+      state5.current = got[0];
+      if (got[1] && got[1].ok) state5.list = got[1].releases;
+      else state5.error = got[1] && got[1].reason || "\u6CA1\u95EE\u5230";
+      state5.shellStatus = got[2];
     }, function() {
-      state4.error = "\u6CA1\u95EE\u5230";
+      state5.error = "\u6CA1\u95EE\u5230";
     }).then(function() {
-      state4.loading = false;
+      state5.loading = false;
       ui.renderContent();
     });
   }
   function downloadShell(ui, version) {
     var shell2 = updatesBridge();
-    if (!shell2 || !shell2.shellUpdates || state4.shellBusy) return;
-    state4.shellBusy = true;
-    state4.shellFraction = 0;
-    state4.shellMessage = null;
+    if (!shell2 || !shell2.shellUpdates || state5.shellBusy) return;
+    state5.shellBusy = true;
+    state5.shellFraction = 0;
+    state5.shellMessage = null;
     ui.renderContent();
     shell2.shellUpdates.download(version).then(function(result) {
       if (result.ok) {
-        state4.shellReady = result.version;
-        state4.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
-      } else state4.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
-      state4.shellBusy = false;
+        state5.shellReady = result.version;
+        state5.shellMessage = "\u5916\u58F3\u5DF2\u4E0B\u8F7D\uFF0C\u91CD\u542F\u732A\u732A\u540E\u5B89\u88C5\u3002\u5B58\u6863\u4F1A\u5148\u5907\u4EFD\u3002";
+      } else state5.shellMessage = result.reason || "\u5916\u58F3\u4E0B\u8F7D\u5931\u8D25";
+      state5.shellBusy = false;
       ui.renderContent();
     }, function(error) {
-      state4.shellBusy = false;
-      state4.shellMessage = String(error);
+      state5.shellBusy = false;
+      state5.shellMessage = String(error);
       ui.renderContent();
     });
   }
@@ -17681,7 +18102,7 @@
     if (!shell2 || !shell2.shellUpdates) return;
     shell2.shellUpdates.install().then(function(result) {
       if (!result.ok) {
-        state4.shellMessage = result.reason;
+        state5.shellMessage = result.reason;
         ui.renderContent();
       }
     });
@@ -17696,24 +18117,24 @@
   function install(ui, version) {
     var shell2 = updatesBridge();
     if (shell2 === null) return;
-    state4.busy = version;
-    state4.fraction = 0;
-    state4.message = null;
+    state5.busy = version;
+    state5.fraction = 0;
+    state5.message = null;
     ui.renderContent();
     shell2.updates.install(version).then(function(result) {
-      state4.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state4.busy = null;
+      state5.message = result.ok ? "\u6362\u597D\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state5.busy = null;
       ui.renderContent();
     });
   }
   function rollback2(ui) {
     var shell2 = updatesBridge();
     if (shell2 === null) return;
-    state4.busy = "rollback";
+    state5.busy = "rollback";
     ui.renderContent();
     shell2.updates.rollback().then(function(result) {
-      state4.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
-      if (!result.ok) state4.busy = null;
+      state5.message = result.ok ? "\u56DE\u53BB\u4E86\uFF0C\u732A\u9A6C\u4E0A\u56DE\u6765\u2026" : result.reason;
+      if (!result.ok) state5.busy = null;
       ui.renderContent();
     });
   }
@@ -17722,25 +18143,25 @@
       renderDshUpdate(ui);
       return;
     }
-    if (state4.current === null && state4.list === null && state4.error === null) refresh(ui);
-    var cur = state4.current;
+    if (state5.current === null && state5.list === null && state5.error === null) refresh(ui);
+    var cur = state5.current;
     var head = el("div", "dp-pick dp-tile-card dp-update-now");
     var top = el("div", "dp-update-top");
     top.appendChild(el("div", "dp-pick-head", cur === null ? "\u6B63\u5728\u770B\u73B0\u5728\u7684\u7248\u672C\u2026" : "\u6E38\u620F v" + cur.version + (cur.bundled ? "\uFF08\u5B89\u88C5\u5305\u81EA\u5E26\uFF09" : "")));
     head.appendChild(top);
     if (cur !== null) head.appendChild(el("div", "dp-dim", "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \xB7 \u6E38\u620F\u73A9\u6CD5\u548C\u7A97\u53E3\u529F\u80FD\u5206\u522B\u66F4\u65B0"));
-    var previewCount = state4.list === null ? 0 : state4.list.filter(function(r) {
+    var previewCount = state5.list === null ? 0 : state5.list.filter(function(r) {
       return r.prerelease;
     }).length;
     if (previewCount > 0) head.appendChild(el("div", "dp-dim", "\u5217\u8868\u91CC\u8FD8\u6709 " + previewCount + " \u4E2A\u6D4B\u8BD5\u7248\uFF1A\u4E0D\u4F1A\u63D0\u9192\uFF0C\u60F3\u8BD5\u7684\u8BDD\u5728\u4E0B\u9762\u70B9\u5F00\u624B\u52A8\u5B89\u88C5\u3002"));
-    if (state4.message !== null) head.appendChild(el("div", "dp-req", state4.message));
+    if (state5.message !== null) head.appendChild(el("div", "dp-req", state5.message));
     var again = button("dp-mini dp-update-refresh", { "data-update-refresh": "" }, function() {
-      state4.message = null;
-      state4.shellMessage = null;
+      state5.message = null;
+      state5.shellMessage = null;
       refresh(ui, true);
     });
-    again.textContent = state4.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
-    again.disabled = state4.loading || state4.busy !== null || state4.shellBusy;
+    again.textContent = state5.loading ? "\u6B63\u5728\u5237\u65B0\u2026" : "\u{1F504} \u5237\u65B0";
+    again.disabled = state5.loading || state5.busy !== null || state5.shellBusy;
     top.appendChild(again);
     var eligible = function(r) {
       return !r.prerelease;
@@ -17748,34 +18169,34 @@
     var shellOf = function(r) {
       return r.latestShell || r.manifest && r.manifest.shellVersion || null;
     };
-    var shellRelease = state4.list === null || cur === null ? null : state4.list.find(function(r) {
+    var shellRelease = state5.list === null || cur === null ? null : state5.list.find(function(r) {
       return eligible(r) && shellOf(r) !== null && compareVersions(shellOf(r), cur.shell) > 0;
     }) || null;
     if (shellRelease !== null) {
       var shellVersion = shellOf(shellRelease);
-      var mode = state4.shellStatus && state4.shellStatus.mode;
+      var mode = state5.shellStatus && state5.shellStatus.mode;
       if (shellRelease.prerelease && compareVersions(cur.shell, "0.2.5") < 0) mode = "preview-manual";
-      var required = compareVersions(cur.shell, "0.2.0") < 0 || state4.list.some(function(r) {
+      var required = compareVersions(cur.shell, "0.2.0") < 0 || state5.list.some(function(r) {
         return eligible(r) && r.blocked === "shell" && compareVersions(r.version, cur.version) > 0;
       });
       head.appendChild(el("div", required ? "dp-req" : "dp-dim", required ? "\u684C\u9762\u5916\u58F3 v" + cur.shell + " \u2192 v" + shellVersion + "\uFF1A\u65B0\u7248\u672C\u6E38\u620F\u9700\u8981\u5B83" : "\u684C\u9762\u5916\u58F3\u6709\u53EF\u9009\u66F4\u65B0 v" + shellVersion + "\uFF0C\u4E0D\u66F4\u65B0\u4E5F\u80FD\u6B63\u5E38\u73A9"));
       if (compareVersions(cur.shell, "0.2.0") < 0) head.appendChild(el("div", "dp-dim", "\u4F60\u7684\u684C\u9762\u5916\u58F3\u662F\u94FA\u6EE1\u5168\u5C4F\u7684\u65E7\u7248\uFF0C\u4F1A\u5361\u3001\u4F1A\u95EA\uFF1B\u65B0\u5916\u58F3\u53EA\u6846\u4F4F\u732A\u548C\u9762\u677F\u3002\u8BF7\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305\u8986\u76D6\u5B89\u88C5\uFF0C\u5B58\u6863\u4E0D\u4F1A\u4E22\u3002"));
       if (mode !== "automatic" && required) head.appendChild(el("div", "dp-dim", shellManualReason(mode)));
-      if (state4.shellMessage !== null) head.appendChild(el("div", "dp-req", state4.shellMessage));
-      if (state4.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state4.shellFraction * 100) + "%"));
+      if (state5.shellMessage !== null) head.appendChild(el("div", "dp-req", state5.shellMessage));
+      if (state5.shellBusy) head.appendChild(el("div", "dp-dim", "\u6B63\u5728\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 " + Math.round(state5.shellFraction * 100) + "%"));
       var shellGo = button(required ? "dp-btn dp-btn-wide" : "dp-mini", { "data-update-shell": shellRelease.version }, function() {
         if (mode !== "automatic") updatesBridge().openPage(shellRelease.page);
-        else if (state4.shellReady === shellVersion) installShell(ui);
+        else if (state5.shellReady === shellVersion) installShell(ui);
         else downloadShell(ui, shellVersion);
       });
-      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state4.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
-      shellGo.disabled = state4.shellBusy || state4.busy !== null;
+      shellGo.textContent = mode !== "automatic" ? "\u6253\u5F00\u53D1\u5E03\u9875\u4E0B\u8F7D" : state5.shellReady === shellVersion ? "\u91CD\u542F\u5E76\u5B89\u88C5\u684C\u9762\u5916\u58F3" : "\u4E0B\u8F7D\u684C\u9762\u5916\u58F3 v" + shellVersion;
+      shellGo.disabled = state5.shellBusy || state5.busy !== null;
       head.appendChild(shellGo);
     }
-    if (state4.busy !== null && state4.message === null) {
-      head.appendChild(el("div", "dp-dim", state4.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state4.fraction * 100) + "%"));
+    if (state5.busy !== null && state5.message === null) {
+      head.appendChild(el("div", "dp-dim", state5.busy === "rollback" ? "\u6B63\u5728\u6362\u56DE\u53BB\u2026" : "\u4E0B\u8F7D\u4E2D " + Math.round(state5.fraction * 100) + "%"));
     }
-    var latest = state4.list === null ? null : state4.list.find(function(r) {
+    var latest = state5.list === null ? null : state5.list.find(function(r) {
       return r.blocked === null && eligible(r);
     }) || null;
     if (latest !== null && cur !== null && compareVersions(latest.version, cur.version) > 0) {
@@ -17783,28 +18204,28 @@
         install(ui, latest.version);
       });
       up.textContent = "\u2B06\uFE0F \u66F4\u65B0\u5230\u6700\u65B0 v" + latest.version;
-      up.disabled = state4.busy !== null;
+      up.disabled = state5.busy !== null;
       head.appendChild(up);
     } else if (latest !== null) {
       head.appendChild(el("div", "dp-req dp-req-ok", "\u2713 \u5DF2\u7ECF\u662F\u6700\u65B0"));
     }
     ui.content.appendChild(head);
-    if (state4.loading && state4.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
-    if (state4.error !== null) {
-      ui.content.appendChild(el("div", "dp-empty", state4.error));
+    if (state5.loading && state5.list === null) ui.content.appendChild(el("div", "dp-empty", "\u6B63\u5728\u95EE GitHub\u2026"));
+    if (state5.error !== null) {
+      ui.content.appendChild(el("div", "dp-empty", state5.error));
       var again = button("dp-btn dp-btn-wide", { "data-update-retry": "" }, function() {
         refresh(ui, true);
       });
       again.textContent = "\u518D\u8BD5\u4E00\u6B21";
       ui.content.appendChild(again);
     }
-    if (state4.list !== null) renderList(ui, state4.list);
+    if (state5.list !== null) renderList(ui, state5.list);
     if (cur !== null && cur.previous !== null) {
       var back = button("dp-btn dp-btn-wide dp-update-back", { "data-update-rollback": "" }, function() {
         rollback2(ui);
       });
       back.textContent = "\u21A9\uFE0F \u56DE\u5230\u4E0A\u4E00\u4E2A\u7248\u672C v" + cur.previous;
-      back.disabled = state4.busy !== null;
+      back.disabled = state5.busy !== null;
       ui.content.appendChild(back);
     }
   }
@@ -17839,11 +18260,11 @@
   function renderGroup(ui, group, newestStable) {
     var key2 = group.base;
     var head = group.stable ?? group.previews[0];
-    var open = state4.pick === key2;
+    var open = state5.pick === key2;
     var box = el("div", "dp-rel");
     box.setAttribute("data-release-group", key2);
     var row2 = button("dp-rel-head", { "data-release": head.version }, function() {
-      state4.pick = open ? null : key2;
+      state5.pick = open ? null : key2;
       ui.renderContent();
     });
     row2.appendChild(el("b", null, "v" + key2));
@@ -17866,9 +18287,9 @@
         for (var q = 0; q < group.previews.length; q += 1) body.appendChild(previewRow(ui, group.previews[q]));
       } else if (group.previews.length > 0) {
         var pre = el("div", "dp-rel-pre");
-        var showing = state4.previews === key2;
+        var showing = state5.previews === key2;
         var toggle = button("dp-mini dp-mini-plain", { "data-previews": key2 }, function() {
-          state4.previews = showing ? null : key2;
+          state5.previews = showing ? null : key2;
           ui.renderContent();
         });
         toggle.textContent = (showing ? "\u25BE " : "\u25B8 ") + "\u6D4B\u8BD5\u7248 " + group.previews.length + " \u4E2A \xB7 \u624B\u52A8\u5B89\u88C5";
@@ -17896,11 +18317,11 @@
       else install(ui, release.version);
     });
     go.textContent = release.current ? "\u6B63\u5728\u7528" : release.blocked === "shell" ? "\u9700\u8981\u65B0\u5916\u58F3" : release.blocked === "save" ? "\u6362\u4E0D\u4E86" : "\u5B89\u88C5\u6D4B\u8BD5\u7248";
-    go.disabled = release.current || release.blocked === "save" || state4.busy !== null;
+    go.disabled = release.current || release.blocked === "save" || state5.busy !== null;
     row2.appendChild(go);
     box.appendChild(row2);
     var shell2 = release.latestShell || release.manifest && release.manifest.shellVersion;
-    if (shell2 && state4.current && compareVersions(shell2, state4.current.shell) > 0) {
+    if (shell2 && state5.current && compareVersions(shell2, state5.current.shell) > 0) {
       box.appendChild(el("div", "dp-dim", "\u914D\u5957\u684C\u9762\u5916\u58F3 v" + shell2 + "\uFF1B\u53EA\u6362\u6E38\u620F\u5305\u4E0D\u4F1A\u66F4\u65B0\u7A97\u53E3\u529F\u80FD\u3002"));
       var desktop2 = button("dp-mini", { "data-preview-shell": release.version }, function() {
         updatesBridge().openPage(release.page);
@@ -17927,15 +18348,15 @@
       go.disabled = true;
     } else if (release.blocked === "shell") {
       box.appendChild(el("div", "dp-req", "\u2717 \u6E38\u620F v" + release.version + " \u8981\u6C42\u684C\u9762\u5916\u58F3\u81F3\u5C11 v" + release.minShell));
-      go.textContent = state4.shellStatus && state4.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
-      if (state4.shellStatus && state4.shellStatus.mode === "automatic") go.disabled = true;
+      go.textContent = state5.shellStatus && state5.shellStatus.mode === "automatic" ? "\u5148\u66F4\u65B0\u4E0A\u9762\u7684\u684C\u9762\u5916\u58F3" : "\u53BB\u4E0B\u8F7D\u65B0\u5B89\u88C5\u5305";
+      if (state5.shellStatus && state5.shellStatus.mode === "automatic") go.disabled = true;
     } else if (release.blocked === "save") {
       box.appendChild(el("div", "dp-req", "\u2717 \u5B58\u6863\u592A\u65B0\uFF0C\u8FD9\u4E2A\u7248\u672C\u8BFB\u4E0D\u4E86"));
       go.textContent = "\u6362\u4E0D\u4E86";
       go.disabled = true;
     } else {
       go.textContent = "\u6362\u5230\u8FD9\u4E2A\u7248\u672C";
-      go.disabled = state4.busy !== null;
+      go.disabled = state5.busy !== null;
     }
     box.appendChild(go);
     return box;
@@ -19272,16 +19693,16 @@
   function union(...boxes) {
     return bounds(boxes.flatMap(corners));
   }
-  function transformed(box, pivot, state5) {
-    const radians = state5.rotate * Math.PI / 180;
+  function transformed(box, pivot, state6) {
+    const radians = state6.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners(box).map((point) => {
-      const x = (point.x - pivot.x) * state5.scaleX;
-      const y = (point.y - pivot.y) * state5.scaleY;
+      const x = (point.x - pivot.x) * state6.scaleX;
+      const y = (point.y - pivot.y) * state6.scaleY;
       return {
         x: pivot.x + x * cos - y * sin,
-        y: pivot.y + x * sin + y * cos + state5.dy
+        y: pivot.y + x * sin + y * cos + state6.dy
       };
     });
   }
@@ -19797,27 +20218,27 @@
       ...scaledCorners(box, pivot, PIG_MOTION.jumpLandingScale)
     ]);
   }
-  function keyframeCorners(box, pivot, state5) {
-    const radians = state5.rotate * Math.PI / 180;
+  function keyframeCorners(box, pivot, state6) {
+    const radians = state6.rotate * Math.PI / 180;
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
     return corners2(box).map((point) => {
-      const x = (point.x - pivot.x) * state5.scaleX;
-      const y = (point.y - pivot.y) * state5.scaleY;
-      if (state5.translateFirst) {
+      const x = (point.x - pivot.x) * state6.scaleX;
+      const y = (point.y - pivot.y) * state6.scaleY;
+      if (state6.translateFirst) {
         return {
-          x: pivot.x + (x + state5.x) * cos - (y + state5.y) * sin,
-          y: pivot.y + (x + state5.x) * sin + (y + state5.y) * cos
+          x: pivot.x + (x + state6.x) * cos - (y + state6.y) * sin,
+          y: pivot.y + (x + state6.x) * sin + (y + state6.y) * cos
         };
       }
       return {
-        x: pivot.x + x * cos - y * sin + state5.x,
-        y: pivot.y + x * sin + y * cos + state5.y
+        x: pivot.x + x * cos - y * sin + state6.x,
+        y: pivot.y + x * sin + y * cos + state6.y
       };
     });
   }
   function keyframeEnvelope(states3, box, pivot) {
-    return boundsOf(states3.flatMap((state5) => keyframeCorners(box, pivot, state5)));
+    return boundsOf(states3.flatMap((state6) => keyframeCorners(box, pivot, state6)));
   }
   function motionEnvelope(name) {
     if (name === "dp-spin") return spinEnvelope;
@@ -19898,7 +20319,7 @@
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0.01;
   }
   function createMeasure(env) {
-    const state5 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
+    const state6 = { pinned: "", bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } };
     const reserves = env.platform !== "darwin";
     function boxes(host2) {
       const pigNode = host2.querySelector(".dp-pig");
@@ -19940,8 +20361,8 @@
       if (reserves && pigNode !== null) {
         const above = geometry === null ? bubbleSize2.height : geometry.window.y + anchors.headTop.y - geometry.workArea.y - PAD;
         const want = Math.max(0, Math.min(bubbleSize2.height, Math.round(above)));
-        if (state5.bubbleHeight === null || Math.abs(want - state5.bubbleHeight) >= STEP * 2) state5.bubbleHeight = want;
-        const height = state5.bubbleHeight;
+        if (state6.bubbleHeight === null || Math.abs(want - state6.bubbleHeight) >= STEP * 2) state6.bubbleHeight = want;
+        const height = state6.bubbleHeight;
         const zoneLeft = host2.getAttribute("data-panel-side") === "right" ? hostBox.x : hostBox.x + hostBox.width - bubbleSize2.width;
         if (height > 0) bubbleZone = { x: zoneLeft, y: anchors.headTop.y - height, r: zoneLeft + bubbleSize2.width, b: anchors.headTop.y };
       }
@@ -20052,14 +20473,14 @@
     }
     function pin(host2, side, hostBox, contentBox) {
       const want = { left: "auto", right: "auto", top: "auto", bottom: "auto" };
-      const shift = { x: state5.shift.x + state5.anchor.x, y: state5.shift.y + state5.anchor.y };
+      const shift = { x: state6.shift.x + state6.anchor.x, y: state6.shift.y + state6.anchor.y };
       if (side.horizontal === "left") want.left = Math.round(hostBox.x - contentBox.left + PAD + shift.x) + "px";
       else want.right = Math.round(contentBox.right - hostBox.x - hostBox.width + PAD - shift.x) + "px";
       if (side.vertical === "top") want.top = Math.round(hostBox.y - contentBox.top + PAD + shift.y) + "px";
       else want.bottom = Math.round(contentBox.bottom - hostBox.y - hostBox.height + PAD - shift.y) + "px";
       const key2 = [side.vertical, side.horizontal, want.left, want.right, want.top, want.bottom].join("|");
-      if (key2 === state5.pinned) return;
-      state5.pinned = key2;
+      if (key2 === state6.pinned) return;
+      state6.pinned = key2;
       host2.style.left = want.left;
       host2.style.right = want.right;
       host2.style.top = want.top;
@@ -20080,7 +20501,7 @@
     }
     function fitWindow(content, win) {
       if (win && (content.width !== win.width || content.height !== win.height)) {
-        state5.anchor = { x: 0, y: 0 };
+        state6.anchor = { x: 0, y: 0 };
       }
     }
     function fitBubble(host2, geometry) {
@@ -20117,7 +20538,7 @@
       if (below && bubble.getAttribute("data-bubble-side") !== "below") bubble.setAttribute("data-bubble-side", "below");
       else if (!below && bubble.hasAttribute("data-bubble-side")) bubble.removeAttribute("data-bubble-side");
     }
-    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state5 };
+    return { boxes, sides, pin, keyOf, fitWindow, fitBubble, state: state6 };
   }
 
   // src/client/desktop/place.js
@@ -20355,7 +20776,7 @@
   }
 
   // src/client/desktop/slide.js
-  function commitSlide(host2, state5, slide) {
+  function commitSlide(host2, state6, slide) {
     const x = Number(slide?.x) || 0;
     const y = Number(slide?.y) || 0;
     if (host2 !== null && (x !== 0 || y !== 0)) {
@@ -20363,9 +20784,9 @@
       host2.style.bottom = (parseFloat(host2.style.bottom) || 0) - y + "px";
     }
     if (host2 !== null) host2.style.translate = "";
-    state5.anchor = { x: state5.anchor.x + state5.shift.x + x, y: state5.anchor.y + state5.shift.y + y };
-    state5.shift = { x: 0, y: 0 };
-    state5.pinned = "";
+    state6.anchor = { x: state6.anchor.x + state6.shift.x + x, y: state6.anchor.y + state6.shift.y + y };
+    state6.shift = { x: 0, y: 0 };
+    state6.pinned = "";
   }
 
   // src/client/desktop/layout-controller.js
@@ -21390,9 +21811,9 @@
       }
       applyReact(kind, ms);
     }
-    function burst(emojis, count2) {
+    function burst(emojis, count3) {
       if (disposed) return;
-      for (var i = 0; i < (count2 || 1); i += 1) {
+      for (var i = 0; i < (count3 || 1); i += 1) {
         (function(index) {
           later(function() {
             if (isStopped()) return;
@@ -21701,11 +22122,11 @@
     return Math.max(min, Math.min(max, value));
   }
   function createFlightRunner(c) {
-    let state5 = null;
+    let state6 = null;
     function finish(result) {
-      const current3 = state5;
+      const current3 = state6;
       if (current3 === null) return;
-      state5 = null;
+      state6 = null;
       if (current3.raf) cancelAnimationFrame(current3.raf);
       try {
         current3.shell.flight.finish?.({
@@ -21721,8 +22142,8 @@
       if (result !== null) c.onFinish(result);
     }
     function step(now2) {
-      if (state5 === null) return;
-      const current3 = state5;
+      if (state6 === null) return;
+      const current3 = state6;
       const dt = Math.min(50, Math.max(0, now2 - current3.lastTime));
       current3.lastTime = now2;
       const events = current3.body.advance(dt);
@@ -21779,7 +22200,7 @@
           artMargin: artMarginFor(start2.pig.width),
           visual: start2.visual
         });
-        state5 = {
+        state6 = {
           body,
           start: start2,
           shell: shell2,
@@ -21798,21 +22219,21 @@
       },
       /** 空中接住：停住并重定家，不播放落地冲击。 */
       catch: function() {
-        if (state5 === null) return false;
-        state5.body.stop();
+        if (state6 === null) return false;
+        state6.body.stop();
         finish(null);
         return true;
       },
       cancel: function() {
-        if (state5 === null) return;
-        state5.body.stop();
+        if (state6 === null) return;
+        state6.body.stop();
         finish(null);
       },
       isFlying: function() {
-        return state5 !== null;
+        return state6 !== null;
       },
       setScale: function(value) {
-        if (state5 !== null) state5.scale = value;
+        if (state6 !== null) state6.scale = value;
       },
       dispose: function() {
         finish(null);
@@ -22594,7 +23015,7 @@
 
   // node_modules/motion-dom/dist/es/frameloop/batcher.mjs
   var maxElapsed = 40;
-  function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state5 = {
+  function createRenderBatcher(scheduleNextBatch, allowKeepAlive, state6 = {
     delta: 0,
     timestamp: 0,
     isProcessing: false
@@ -22609,22 +23030,22 @@
     const { setup, read: read2, resolveKeyframes, preUpdate, update, preRender, render, postRender } = steps;
     const processBatch = () => {
       const useManualTiming = MotionGlobalConfig.useManualTiming;
-      const timestamp = useManualTiming ? state5.timestamp : performance.now();
+      const timestamp = useManualTiming ? state6.timestamp : performance.now();
       runNextFrame = false;
       if (!useManualTiming) {
-        state5.delta = useDefaultElapsed ? 1e3 / 60 : Math.max(Math.min(timestamp - state5.timestamp, maxElapsed), 1);
+        state6.delta = useDefaultElapsed ? 1e3 / 60 : Math.max(Math.min(timestamp - state6.timestamp, maxElapsed), 1);
       }
-      state5.timestamp = timestamp;
-      state5.isProcessing = true;
-      setup.process(state5);
-      read2.process(state5);
-      resolveKeyframes.process(state5);
-      preUpdate.process(state5);
-      update.process(state5);
-      preRender.process(state5);
-      render.process(state5);
-      postRender.process(state5);
-      state5.isProcessing = false;
+      state6.timestamp = timestamp;
+      state6.isProcessing = true;
+      setup.process(state6);
+      read2.process(state6);
+      resolveKeyframes.process(state6);
+      preUpdate.process(state6);
+      update.process(state6);
+      preRender.process(state6);
+      render.process(state6);
+      postRender.process(state6);
+      state6.isProcessing = false;
       if (runNextFrame && allowKeepAlive) {
         useDefaultElapsed = false;
         scheduleNextBatch(processBatch);
@@ -22633,7 +23054,7 @@
     const wake = () => {
       runNextFrame = true;
       useDefaultElapsed = true;
-      if (!state5.isProcessing) {
+      if (!state6.isProcessing) {
         scheduleNextBatch(processBatch);
       }
     };
@@ -22651,7 +23072,7 @@
         steps[stepsOrder[i]].cancel(process2);
       }
     };
-    return { schedule: schedule3, cancel: cancel2, state: state5, steps };
+    return { schedule: schedule3, cancel: cancel2, state: state6, steps };
   }
 
   // node_modules/motion-dom/dist/es/frameloop/frame.mjs
@@ -22685,12 +23106,12 @@
   var maxGeneratorDuration = 2e4;
   function calcGeneratorDuration(generator, timeStep = 50, maxDuration = maxGeneratorDuration, keyframes2) {
     let duration = 0;
-    let state5 = generator.next(duration);
-    keyframes2?.push(state5.value);
-    while (!state5.done && duration < maxDuration) {
+    let state6 = generator.next(duration);
+    keyframes2?.push(state6.value);
+    while (!state6.done && duration < maxDuration) {
       duration += timeStep;
-      state5 = generator.next(duration);
-      keyframes2?.push(state5.value);
+      state6 = generator.next(duration);
+      keyframes2?.push(state6.value);
     }
     return duration >= maxDuration ? Infinity : duration;
   }
@@ -22856,7 +23277,7 @@
     } : optionsOrVisualDuration;
     const origin = options.keyframes[0];
     const target = options.keyframes[options.keyframes.length - 1];
-    const state5 = { done: false, value: origin };
+    const state6 = { done: false, value: origin };
     const { stiffness, damping, mass, duration, isResolvedFromDuration, isTimeDefined } = getSpringOptions({ ...options });
     const inheritVelocity = (velocity) => isTimeDefined ? 0 : -millisecondsToSeconds(velocity);
     const dampingRatio = damping / (2 * Math.sqrt(stiffness * mass));
@@ -22939,7 +23360,7 @@
         if (!(options.restSpeed && options.restDelta))
           setRestThresholds();
         generator.calculatedDuration = calculatedDuration;
-        state5.done = false;
+        state6.done = false;
         update();
       },
       velocity: (t) => secondsToMilliseconds(resolveVelocity(t)),
@@ -22947,12 +23368,12 @@
         const current3 = resolveSpring(t);
         if (!isResolvedFromDuration) {
           const currentVelocity = secondsToMilliseconds(resolveVelocity(t));
-          state5.done = Math.abs(currentVelocity) <= s.restSpeed && Math.abs(s.target - current3) <= s.restDelta;
+          state6.done = Math.abs(currentVelocity) <= s.restSpeed && Math.abs(s.target - current3) <= s.restDelta;
         } else {
-          state5.done = t >= duration;
+          state6.done = t >= duration;
         }
-        state5.value = state5.done ? s.target : current3;
-        return state5;
+        state6.value = state6.done ? s.target : current3;
+        return state6;
       },
       toString: () => {
         const easingDuration = Math.min(calcGeneratorDuration(generator), maxGeneratorDuration);
@@ -22975,7 +23396,7 @@
   // node_modules/motion-dom/dist/es/animation/generators/inertia.mjs
   function inertia({ keyframes: keyframes2, velocity = 0, power = 0.8, timeConstant = 325, bounceDamping = 10, bounceStiffness = 500, modifyTarget, min, max, restDelta = 0.5, restSpeed }) {
     const origin = keyframes2[0];
-    const state5 = {
+    const state6 = {
       done: false,
       value: origin
     };
@@ -22995,17 +23416,17 @@
     const calcDelta = (t) => -amplitude * Math.exp(-t / timeConstant);
     const applyFriction = (t) => {
       const delta = calcDelta(t);
-      state5.done = Math.abs(delta) <= restDelta;
-      state5.value = state5.done ? target : target + delta;
+      state6.done = Math.abs(delta) <= restDelta;
+      state6.value = state6.done ? target : target + delta;
     };
     let timeReachedBoundary;
     let spring$1;
     const checkCatchBoundary = (t) => {
-      if (!isOutOfBounds(state5.value))
+      if (!isOutOfBounds(state6.value))
         return;
       timeReachedBoundary = t;
       spring$1 = spring({
-        keyframes: [state5.value, nearestBoundary(state5.value)],
+        keyframes: [state6.value, nearestBoundary(state6.value)],
         /**
          * The friction curve is target + calcDelta(t), so its exact
          * derivative is -calcDelta(t) / timeConstant in units/ms,
@@ -23032,7 +23453,7 @@
           return spring$1.next(t - timeReachedBoundary);
         } else {
           !hasUpdatedFrame && applyFriction(t);
-          return state5;
+          return state6;
         }
       }
     };
@@ -23110,7 +23531,7 @@
   }
   function keyframes({ duration = 300, keyframes: keyframeValues, times, ease: ease2 = "easeInOut" }) {
     const easingFunctions = isEasingArray(ease2) ? ease2.map(easingDefinitionToFunction) : easingDefinitionToFunction(ease2) || easeInOut;
-    const state5 = {
+    const state6 = {
       done: false,
       value: keyframeValues[0]
     };
@@ -23120,9 +23541,9 @@
       return {
         calculatedDuration: duration,
         next: (t) => {
-          state5.value = mixer ? mixer(easingFunctions(duration > 0 ? clamp3(0, 1, t / duration) : 1)) : target;
-          state5.done = t >= duration;
-          return state5;
+          state6.value = mixer ? mixer(easingFunctions(duration > 0 ? clamp3(0, 1, t / duration) : 1)) : target;
+          state6.done = t >= duration;
+          return state6;
         }
       };
     }
@@ -23138,9 +23559,9 @@
     return {
       calculatedDuration: duration,
       next: (t) => {
-        state5.value = mapTimeToKeyframe(t);
-        state5.done = t >= duration;
-        return state5;
+        state6.value = mapTimeToKeyframe(t);
+        state6.done = t >= duration;
+        return state6;
       }
     };
   }
@@ -23335,22 +23756,22 @@
       if (this.state === "finished" && this.holdTime === null) {
         this.currentTime = totalDuration;
       }
-      const state5 = this.generate(this.currentTime, isInDelayPhase);
-      let { done } = state5;
+      const state6 = this.generate(this.currentTime, isInDelayPhase);
+      let { done } = state6;
       if (!isInDelayPhase && calculatedDuration !== null) {
         done = this.playbackSpeed >= 0 ? this.currentTime >= totalDuration : this.currentTime <= 0;
       }
       const isAnimationFinished = this.holdTime === null && (this.state === "finished" || this.state === "running" && done);
       if (isAnimationFinished && type !== inertia) {
-        state5.value = getFinalKeyframe(keyframes2, this.options, finalKeyframe, this.speed);
+        state6.value = getFinalKeyframe(keyframes2, this.options, finalKeyframe, this.speed);
       }
       if (onUpdate) {
-        onUpdate(state5.value);
+        onUpdate(state6.value);
       }
       if (isAnimationFinished) {
         this.finish();
       }
-      return state5;
+      return state6;
     }
     /**
      * This animation's time, including delay, at a timestamp.
@@ -23399,17 +23820,17 @@
         }
         elapsed = clamp3(0, 1, iterationProgress) * resolvedDuration;
       }
-      let state5;
+      let state6;
       if (isInDelayPhase) {
         this.delayState.value = keyframes2[0];
-        state5 = this.delayState;
+        state6 = this.delayState;
       } else {
-        state5 = frameGenerator.next(elapsed);
+        state6 = frameGenerator.next(elapsed);
       }
       if (mixKeyframes && !isInDelayPhase) {
-        state5.value = mixKeyframes(state5.value);
+        state6.value = mixKeyframes(state6.value);
       }
-      return state5;
+      return state6;
     }
     /**
      * Allows the returned animation to be awaited or promise-chained. Currently
@@ -24178,8 +24599,8 @@
       if (this.isStopped)
         return;
       this.isStopped = true;
-      const { state: state5 } = this;
-      if (state5 === "idle" || state5 === "finished") {
+      const { state: state6 } = this;
+      if (state6 === "idle" || state6 === "finished") {
         return;
       }
       if (this.updateMotionValue) {
@@ -24318,8 +24739,8 @@
      * The value now, as WAAPI doesn't set the motion value while it runs.
      */
     liveValue() {
-      const { state: state5 } = this;
-      if (state5 === "running" || state5 === "paused") {
+      const { state: state6 } = this;
+      if (state6 === "running" || state6 === "paused") {
         return this.sample(this.elapsed());
       }
     }
@@ -24604,8 +25025,8 @@
      * Whether this is running, or paused, on the compositor.
      */
     isAccelerated() {
-      const { group, state: state5 } = this;
-      return group?.tracks.has(this) && !group.isJS && this.canAccelerate && (state5 === "running" || state5 === "paused");
+      const { group, state: state6 } = this;
+      return group?.tracks.has(this) && !group.isJS && this.canAccelerate && (state6 === "running" || state6 === "paused");
     }
     /**
      * The value now, while this runs on the compositor and so doesn't
@@ -24944,10 +25365,10 @@
       let elapsed;
       let rate = 0;
       for (const track of tracks) {
-        const state5 = built.get(track);
-        if (!state5)
+        const state6 = built.get(track);
+        if (!state6)
           return false;
-        const [builtTime, builtSpeed, wasHeld] = state5;
+        const [builtTime, builtSpeed, wasHeld] = state6;
         const trackTime = track.at(now2);
         const isHeld = track.timing()[0] === Infinity;
         if (wasHeld) {
@@ -25003,8 +25424,8 @@
         group.isFinishing = false;
       }
       isScheduled2 = false;
-      tracks.forEach(({ state: state5 }, track) => {
-        if (state5 === "idle" || state5 === "finished")
+      tracks.forEach(({ state: state6 }, track) => {
+        if (state6 === "idle" || state6 === "finished")
           tracks.delete(track);
       });
       if (!tracks.size) {
@@ -26080,13 +26501,13 @@
           remove();
       };
     };
-    const { test: test2, read: read2, get, flush: flush2, state: state5 } = subjectEffect;
+    const { test: test2, read: read2, get, flush: flush2, state: state6 } = subjectEffect;
     return Object.assign(effect, {
       test: test2,
       read: read2,
       get,
       flush: flush2,
-      state: state5
+      state: state6
     });
   }
 
@@ -26181,12 +26602,12 @@
   function createEffect(addValue, { step, ...options } = {}) {
     const stateCache = /* @__PURE__ */ new WeakMap();
     const effect = (subject2, values) => {
-      const state5 = stateCache.get(subject2) ?? new MotionValueState(step);
-      stateCache.set(subject2, state5);
+      const state6 = stateCache.get(subject2) ?? new MotionValueState(step);
+      stateCache.set(subject2, state6);
       const subscriptions = [];
       for (const key2 in values) {
         const value = values[key2];
-        const remove = addValue(subject2, state5, key2, value);
+        const remove = addValue(subject2, state6, key2, value);
         subscriptions.push(remove);
       }
       return () => {
@@ -26203,9 +26624,9 @@
 
   // node_modules/motion-dom/dist/es/effects/style/transform.mjs
   var openers = {};
-  function buildTransform2(state5) {
+  function buildTransform2(state6) {
     let transform = "";
-    const { transformKeys: keys = [], transformValues: values = {} } = state5;
+    const { transformKeys: keys = [], transformValues: values = {} } = state6;
     for (let i = 0; i < keys.length; i++) {
       const key2 = keys[i];
       const value = values[key2].getCurrent();
@@ -26216,7 +26637,7 @@
         transform += (transform && " ") + (openers[key2] || (openers[key2] = (translateAlias[key2] || key2) + "(")) + getValueAsType(value, transformValueTypes[key2]) + ")";
       }
     }
-    const pathRotation = state5.get("pathRotation")?.get();
+    const pathRotation = state6.get("pathRotation")?.get();
     if (pathRotation) {
       transform += (transform && " ") + "rotate(" + getValueAsType(pathRotation, transformValueTypes.pathRotation) + ")";
     }
@@ -26225,39 +26646,39 @@
 
   // node_modules/motion-dom/dist/es/effects/style/index.mjs
   var originProps = /* @__PURE__ */ new Set(["originX", "originY", "originZ"]);
-  var styleValue = (state5, key2) => getValueAsType(state5.get(key2)?.get(), numberValueTypes[key2]);
-  var addStyleValue = (element, state5, key2, value) => {
+  var styleValue = (state6, key2) => getValueAsType(state6.get(key2)?.get(), numberValueTypes[key2]);
+  var addStyleValue = (element, state6, key2, value) => {
     let render = void 0;
     let computed = void 0;
     if (transformProps.has(key2)) {
       if (key2 !== "pathRotation") {
-        const keys = state5.transformKeys ?? (state5.transformKeys = []);
-        (state5.transformValues ?? (state5.transformValues = {}))[key2] = value;
+        const keys = state6.transformKeys ?? (state6.transformKeys = []);
+        (state6.transformValues ?? (state6.transformValues = {}))[key2] = value;
         if (!keys.includes(key2)) {
           keys.push(key2);
           keys.sort((a, b) => transformPropOrder.indexOf(a) - transformPropOrder.indexOf(b));
         }
       }
-      if (!state5.get("transform")) {
-        if (!isHTMLElement(element) && !state5.get("transformBox")) {
-          addStyleValue(element, state5, "transformBox", new MotionValue("fill-box"));
+      if (!state6.get("transform")) {
+        if (!isHTMLElement(element) && !state6.get("transformBox")) {
+          addStyleValue(element, state6, "transformBox", new MotionValue("fill-box"));
         }
-        state5.set("transform", new MotionValue("none"), () => {
+        state6.set("transform", new MotionValue("none"), () => {
           transformGroups.get(element)?.check();
-          element.style.transform = buildTransform2(state5);
+          element.style.transform = buildTransform2(state6);
         });
       }
-      computed = state5.get("transform");
+      computed = state6.get("transform");
     } else if (originProps.has(key2)) {
-      if (!state5.get("transformOrigin")) {
-        state5.set("transformOrigin", new MotionValue(""), () => {
-          const originX = styleValue(state5, "originX") ?? "50%";
-          const originY = styleValue(state5, "originY") ?? "50%";
-          const originZ = styleValue(state5, "originZ") ?? 0;
+      if (!state6.get("transformOrigin")) {
+        state6.set("transformOrigin", new MotionValue(""), () => {
+          const originX = styleValue(state6, "originX") ?? "50%";
+          const originY = styleValue(state6, "originY") ?? "50%";
+          const originZ = styleValue(state6, "originZ") ?? 0;
           element.style.transformOrigin = `${originX} ${originY} ${originZ}`;
         });
       }
-      computed = state5.get("transformOrigin");
+      computed = state6.get("transformOrigin");
     } else if (isCSSVar(key2)) {
       render = () => {
         element.style.setProperty(key2, value.getCurrent());
@@ -26267,7 +26688,7 @@
         element.style[key2] = getValueAsType(value.getCurrent(), numberValueTypes[key2]);
       };
     }
-    return state5.set(key2, value, render, computed);
+    return state6.set(key2, value, render, computed);
   };
   var isStyleSubject = (subject2) => isHTMLElement(subject2) || isSVGElement(subject2);
   var readStyleValue = (element, key2) => {
@@ -26303,7 +26724,7 @@
     const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), name) || Object.getOwnPropertyDescriptor(element, name);
     return descriptor && typeof descriptor.set === "function";
   }
-  var addAttrValue = (element, state5, key2, value, name = key2) => {
+  var addAttrValue = (element, state6, key2, value, name = key2) => {
     const isProp = canSetAsProperty(element, name);
     if (!isProp && (name.startsWith("data") || name.startsWith("aria"))) {
       name = camelToDash(name);
@@ -26319,36 +26740,36 @@
         element.setAttribute(name, String(v));
       }
     };
-    return state5.set(key2, value, render);
+    return state6.set(key2, value, render);
   };
 
   // node_modules/motion-dom/dist/es/effects/svg/index.mjs
-  function addSVGPathValue(element, state5, key2, value) {
+  function addSVGPathValue(element, state6, key2, value) {
     frame2.render(() => element.setAttribute("pathLength", "1"));
     if (key2 === "pathOffset") {
-      return state5.set(key2, value, () => {
+      return state6.set(key2, value, () => {
         const offset = value.get();
         element.setAttribute("stroke-dashoffset", `${-offset}`);
       });
     } else {
-      if (!state5.get("stroke-dasharray")) {
-        state5.set("stroke-dasharray", new MotionValue("1 1"), () => {
-          const pathLength = state5.get("pathLength")?.get() ?? 1;
-          const pathSpacing = state5.get("pathSpacing")?.get();
+      if (!state6.get("stroke-dasharray")) {
+        state6.set("stroke-dasharray", new MotionValue("1 1"), () => {
+          const pathLength = state6.get("pathLength")?.get() ?? 1;
+          const pathSpacing = state6.get("pathSpacing")?.get();
           element.setAttribute("stroke-dasharray", `${pathLength} ${pathSpacing ?? 1 - Number(pathLength)}`);
         });
       }
-      return state5.set(key2, value, void 0, state5.get("stroke-dasharray"));
+      return state6.set(key2, value, void 0, state6.get("stroke-dasharray"));
     }
   }
-  var addSVGValue = (element, state5, key2, value) => {
+  var addSVGValue = (element, state6, key2, value) => {
     if (key2.startsWith("path")) {
-      return addSVGPathValue(element, state5, key2, value);
+      return addSVGPathValue(element, state6, key2, value);
     } else if (key2.startsWith("attr")) {
-      return addAttrValue(element, state5, key2, value, convertAttrKey(key2));
+      return addAttrValue(element, state6, key2, value, convertAttrKey(key2));
     }
     const handler2 = transformProps.has(key2) || originProps.has(key2) || isCSSVar(key2) || key2 in element.style ? addStyleValue : addAttrValue;
-    return handler2(element, state5, key2, value);
+    return handler2(element, state6, key2, value);
   };
   var readSVGValue = (element, key2) => {
     if (transformProps.has(key2)) {
@@ -26427,8 +26848,8 @@
   }
 
   // node_modules/motion-dom/dist/es/effects/prop/index.mjs
-  var propEffect = /* @__PURE__ */ createEffect((subject2, state5, key2, value) => {
-    return state5.set(key2, value, () => {
+  var propEffect = /* @__PURE__ */ createEffect((subject2, state6, key2, value) => {
+    return state6.set(key2, value, () => {
       subject2[key2] = value.get();
     });
   }, {
@@ -26508,8 +26929,8 @@
       }
       const elapsed = Math.round(timestamp - this.startTime) - delay;
       const t = this.currentTime = Math.max(0, elapsed);
-      const state5 = this.generator.next(t);
-      const value = elapsed < 0 ? options.keyframes[0] : state5.value;
+      const state6 = this.generator.next(t);
+      const value = elapsed < 0 ? options.keyframes[0] : state6.value;
       if (retargeted) {
         this.hasNextTarget = false;
         const { keyframes: keyframes2 } = options;
@@ -26524,7 +26945,7 @@
       if (this.state !== "running")
         return;
       onUpdate?.(value);
-      if (state5.done && elapsed >= 0 && !retargeted && !this.hasNextTarget && this.state === "running") {
+      if (state6.done && elapsed >= 0 && !retargeted && !this.hasNextTarget && this.state === "running") {
         this.notifyFinished();
         this.teardown();
         this.state = "finished";
@@ -27367,8 +27788,8 @@
       motor.impulse(clamp5(amount, 0, FEEL.squashMax));
       settle.begin();
     }
-    function burstDust(count2) {
-      deps.burst(["\u{1F4A8}", "\u{1F4A8}", "\u2728"], Math.max(1, Math.round(count2 * (mode === "soft" ? 0.5 : 1))));
+    function burstDust(count3) {
+      deps.burst(["\u{1F4A8}", "\u{1F4A8}", "\u2728"], Math.max(1, Math.round(count3 * (mode === "soft" ? 0.5 : 1))));
     }
     function releasePig(options) {
       if (!enabled()) return "off";
@@ -27737,7 +28158,7 @@
   function createPresentationContext(options) {
     const opts = options ?? {};
     const root = opts.root ?? null;
-    const state5 = opts.state ?? {};
+    const state6 = opts.state ?? {};
     const transport = opts.transport ?? {};
     let identity = normalizeIdentity(opts.identity);
     const parts = opts.parts ?? createScene({ root });
@@ -27750,18 +28171,18 @@
     let disposed = false;
     let birthday = null;
     function getView() {
-      if (typeof state5.getView === "function") return state5.getView();
+      if (typeof state6.getView === "function") return state6.getView();
       return null;
     }
     function isStopped() {
       if (disposed) return true;
-      return typeof state5.isStopped === "function" ? state5.isStopped() === true : false;
+      return typeof state6.isStopped === "function" ? state6.isStopped() === true : false;
     }
     function isAway() {
-      return typeof state5.isAway === "function" ? state5.isAway() === true : false;
+      return typeof state6.isAway === "function" ? state6.isAway() === true : false;
     }
     function isQuiet() {
-      return typeof state5.isQuiet === "function" ? state5.isQuiet() === true : false;
+      return typeof state6.isQuiet === "function" ? state6.isQuiet() === true : false;
     }
     function bindIdentity(value) {
       let next;
@@ -27817,7 +28238,7 @@
       audio,
       effects: effects2,
       feel: feel2,
-      state: state5,
+      state: state6,
       transport,
       get identity() {
         return identity;
