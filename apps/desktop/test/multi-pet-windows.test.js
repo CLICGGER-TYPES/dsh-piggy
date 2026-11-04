@@ -16,7 +16,10 @@ import { dragHeartbeatExpired } from '../lib/drag-watchdog.js'
 import { validDragOrigin } from '../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../lib/window-show.js'
 import { auxiliaryWindowOptions } from '../lib/auxiliary-window.js'
+import { panelAnchorFor, panelBoundsFor, panelContentRect, panelReferenceFor, panelViewportSize, pigScreenBox, PANEL_FALLBACK } from '../lib/panel-geometry.js'
+import { panelToggleAction } from '../lib/panel-toggle.js'
 import { createPetWindow } from '../lib/pet-window.js'
+import { createPanelWindow } from '../lib/panel-window.js'
 import { createPetRegistry, createPetState } from '../lib/pet-instance.js'
 import { createStartupTrace } from '../lib/startup-trace.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
@@ -26,17 +29,20 @@ const AREA = { x: 0, y: 0, width: 1920, height: 1040 }
 const SHAPE = [{ x: 20, y: 20, width: 80, height: 80 }]
 const PIG = { x: 20, y: 20, width: 56, height: 56 }
 
-async function harness() {
+async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
   const windows = []
+  const panelWindows = []
   const handlers = new Map()
   const intervals = []
   const sent = []
   const closeCalls = []
   const closedPanel = []
+  let panelWindow = null
   let cursor = { x: 0, y: 0 }
   let nextId = 10
 
   class WindowStub {
+    static getFocusedWindow() { return null }
     constructor(options) {
       this.id = windows.length + 1
       this.options = options
@@ -73,19 +79,66 @@ async function harness() {
     close() { this.destroyed = true; this.events.get('closed')?.() }
   }
 
+  class PanelWindowStub {
+    constructor(options) {
+      this.options = options
+      this.bounds = { x: options.x ?? 0, y: options.y ?? 0, width: options.width ?? 292, height: options.height ?? 420 }
+      this.destroyed = false
+      this.visible = false
+      this.shape = []
+      this.ignoresMouse = false
+      this.events = new Map()
+      this.contentsEvents = new Map()
+      this.sent = []
+      this.webContents = {
+        id: nextId++,
+        on: (event, callback) => this.contentsEvents.set(event, callback),
+        setFrameRate() {},
+        openDevTools() {},
+        send: (...args) => this.sent.push(args),
+      }
+      panelWindows.push(this)
+    }
+    isDestroyed() { return this.destroyed }
+    isVisible() { return this.visible }
+    getBounds() { return { ...this.bounds } }
+    setBounds(next) { this.bounds = { ...next } }
+    setShape(rects) { this.shape = JSON.parse(JSON.stringify(rects)) }
+    setIgnoreMouseEvents(ignore) { this.ignoresMouse = ignore }
+    setAlwaysOnTop() {}
+    setVisibleOnAllWorkspaces() {}
+    isAlwaysOnTop() { return true }
+    isFocused() { return false }
+    loadURL(url) { this.url = url; this.loaded = true }
+    once(event, callback) { this.events.set(event, callback) }
+    on(event, callback) { this.events.set(event, callback) }
+    showInactive() { this.visible = true }
+    hide() { this.visible = false }
+    moveTop() {}
+    focus() {}
+    destroy() {
+      this.destroyed = true
+      this.visible = false
+    }
+    loadedPage() { this.contentsEvents.get('did-finish-load')?.() }
+  }
+
   const display = { workArea: AREA, bounds: AREA, scaleFactor: 1, displayFrequency: 60, id: 1 }
   const pets = createPetRegistry()
-  const primary = createPetState({ pigId: 'pig-a', token: 'token-a', primary: true, multiPig: true })
-  const second = createPetState({ pigId: 'pig-b', token: 'token-b', multiPig: true })
-  pets.add(primary)
-  pets.add(second)
+  const states = pigIds.map((pigId, index) => createPetState({
+    pigId, token: `token-${String.fromCharCode(97 + index)}`, primary: index === 0, multiPig: true,
+  }))
+  for (const pet of states) pets.add(pet)
+  const primary = states[0]
+  const second = states[1] ?? null
 
   const sandbox = {
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin,
     SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions, createPetWindow,
     process: { platform: 'linux', env: {} }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
-    pigSessions: new Map([['pig-a', 'token-a'], ['pig-b', 'token-b']]), quitting: false,
+    ...(panel ? {} : { panelTarget: null }),
+    pigSessions: new Map(states.map(pet => [pet.pigId, pet.token])), quitting: false,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
     startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,
     readWindowState: async () => null, pigDisplay: () => display, join: (...parts) => parts.join('/'),
@@ -97,12 +150,22 @@ async function harness() {
     log() {},
     followPig() {}, reanchorPanel() {}, scheduleWindowStateSave() {},
     closePanel: why => closedPanel.push(why), ensurePanelWindow() {},
+    ...(panel ? {
+      createPanelWindow, panelContentRect, panelViewportSize, panelAnchorFor, panelBoundsFor,
+      panelReferenceFor, panelToggleAction, pigScreenBox, PANEL_FALLBACK,
+      panelWindow: null,
+      getPanelWindow: () => panelWindow?.current() ?? null,
+      fromPage: event => pets.bySender(event?.sender) !== null || panelWindow?.current()?.webContents === event?.sender,
+      extensionWindow: { current: () => null, owns: () => false },
+      extensionLayer: { isFocused: () => false, sync() {} },
+      toPages() {},
+    } : {}),
     startupInputTrace: createStartupTrace(() => {}),
     ipcMain: { on: (channel, callback) => handlers.set(channel, callback) },
     desktopRuntime: {
       getHost: () => ({ closePigSession: token => { closeCalls.push(token); return Promise.resolve({ ok: true }) } }),
     },
-    a: primary, b: second, sent,
+    sent,
   }
   sandbox.desktopLifecycle = desktopLifecycleStateAdapter(sandbox)
   const context = createContext(sandbox)
@@ -117,8 +180,24 @@ async function harness() {
   runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(fromPet, fromPetEnd), context)
   runInContext(source.slice(engineStart, engineEnd), context)
-  await runInContext('createPigWindow(a)', context)
-  await runInContext('createPigWindow(b)', context)
+  if (panel) {
+    const panelStart = source.indexOf('let panelOpen = false')
+    const panelEnd = source.indexOf('\n/** Where the DSH plugin keeps its pig', panelStart)
+    assert.ok(panelStart > 0 && panelEnd > panelStart, '必须加载生产面板组合根')
+    runInContext(source.slice(panelStart, panelEnd), context)
+    panelWindow = createPanelWindow({
+      BrowserWindow: PanelWindowStub,
+      options: { x: 0, y: 0, width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, show: false },
+      url: () => runInContext('panelUrl()', context),
+      log() {},
+      onCreated: () => runInContext('panelViewCreated()', context),
+    })
+    sandbox.panelWindow = panelWindow
+    runInContext('ensurePanelWindow()', context)
+  }
+  for (let index = 0; index < states.length; index += 1) {
+    await runInContext(`createPigWindow(pets.all()[${index}])`, context)
+  }
 
   const send = (window, channel, payload) => {
     const event = { sender: window.webContents, returnValue: undefined }
@@ -126,7 +205,11 @@ async function harness() {
     return event.returnValue
   }
   return {
-    windows, pets, primary, second, closeCalls, closedPanel, context,
+    windows, panelWindows, pets, states, primary, second, closeCalls, closedPanel, context,
+    panelUrl: () => panelWindow?.current()?.url ?? null,
+    panelWindow: () => panelWindow?.current() ?? null,
+    panelOpen: () => runInContext('panelOpen', context),
+    panelTargetId: () => runInContext('panelTargetPet()?.pigId ?? null', context),
     send,
     place: (window, request) => send(window, 'piggy:place', request),
     content: (window, value) => send(window, 'piggy:content', value),
@@ -165,6 +248,187 @@ test('两只 pet 窗口的 content/place 各自算自己的窗口，互不覆盖
   // 快照状态也分开了：A 的内容不会写进 B 的 lastContent。
   assert.notDeepEqual(shell.primary.lastContent, shell.second.lastContent)
 })
+
+test('四只 pet 窗口按 roster 顺序 cascade 不重叠，content/place 各自独立', async () => {
+  const shell = await harness({ pigIds: ['pig-a', 'pig-b', 'pig-c', 'pig-d'] })
+  assert.equal(shell.windows.length, 4)
+  const ids = ['pig-a', 'pig-b', 'pig-c', 'pig-d']
+  for (const [index, window] of shell.windows.entries()) {
+    assert.match(window.url, new RegExp(`index\\.html\\?pig=${ids[index]}$`))
+    assert.equal(window.options.webPreferences.additionalArguments.includes('--piggy-primary=1'), index === 0)
+  }
+  // 首启空窗口两两不相交（cascade 步长要盖过兜底窗口尺寸）。
+  for (let left = 0; left < shell.windows.length; left += 1) {
+    for (let right = left + 1; right < shell.windows.length; right += 1) {
+      const a = shell.windows[left].getBounds()
+      const b = shell.windows[right].getBounds()
+      const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
+      const overlapY = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)
+      assert.ok(overlapX <= 0 || overlapY <= 0, `windows ${left}/${right} overlap: ${JSON.stringify([a, b])}`)
+    }
+  }
+
+  const spots = [
+    { x: 100, y: 120, width: 320, height: 300 },
+    { x: 600, y: 120, width: 300, height: 280 },
+    { x: 100, y: 600, width: 300, height: 280 },
+    { x: 600, y: 600, width: 300, height: 280 },
+  ]
+  for (const [index, window] of shell.windows.entries()) {
+    shell.place(window, { bounds: spots[index], shape: SHAPE, pig: PIG })
+  }
+  for (const [index, window] of shell.windows.entries()) assert.deepEqual(window.getBounds(), spots[index])
+
+  // 第三只上报内容只改自己的窗口。
+  const before = shell.windows.map(window => window.getBounds())
+  shell.content(shell.windows[2], { width: 220, height: 240, pigWindow: { x: 20, y: 20 }, pig: { width: 56, height: 56 }, pigNow: { x: 20, y: 20 } })
+  assert.notDeepEqual(shell.windows[2].getBounds(), before[2])
+  for (const index of [0, 1, 3]) assert.deepEqual(shell.windows[index].getBounds(), before[index])
+  for (const [index, pet] of shell.states.entries()) assert.equal(shell.pets.byPig(pet.pigId), pet, `registry keeps ${index}`)
+})
+
+test('四只猪的拖动与命中互不串，贴边只动自己', async () => {
+  const shell = await harness({ pigIds: ['pig-a', 'pig-b', 'pig-c', 'pig-d'] })
+  const [a, b, c, d] = shell.windows
+  const spots = [
+    { x: 100, y: 120, width: 320, height: 300 },
+    { x: 600, y: 120, width: 300, height: 280 },
+    { x: 100, y: 600, width: 300, height: 280 },
+    { x: 600, y: 600, width: 300, height: 280 },
+  ]
+  for (const [index, window] of shell.windows.entries()) {
+    shell.place(window, { bounds: spots[index], shape: SHAPE, hitShape: SHAPE, pig: PIG })
+  }
+
+  shell.cursor(120, 140)
+  shell.poll()
+  assert.deepEqual([a.ignoresMouse, b.ignoresMouse, c.ignoresMouse, d.ignoresMouse], [false, true, true, true])
+  shell.cursor(620, 620)
+  shell.poll()
+  assert.deepEqual([a.ignoresMouse, b.ignoresMouse, c.ignoresMouse, d.ignoresMouse], [true, true, true, false])
+
+  shell.cursor(120, 140)
+  shell.dragStart(a, PIG)
+  assert.notEqual(shell.primary.dragSession, null)
+  for (const pet of [shell.second, shell.states[2], shell.states[3]]) assert.equal(pet.dragSession, null)
+
+  const untouched = [b, c, d].map(window => window.getBounds())
+  shell.cursor(160, 170)
+  shell.dragHeartbeat(a)
+  assert.deepEqual(a.getBounds(), { x: 140, y: 150, width: 320, height: 300 })
+  assert.deepEqual([b, c, d].map(window => window.getBounds()), untouched)
+
+  // 拖到屏幕外沿：只夹取 A，其它三只窗口和命中都不变。
+  shell.cursor(-40, -30)
+  shell.dragHeartbeat(a)
+  assert.deepEqual([b, c, d].map(window => window.getBounds()), untouched)
+  shell.dragEnd(a)
+  assert.equal(shell.primary.dragSession, null)
+  assert.deepEqual([b, c, d].map(window => window.getBounds()), untouched)
+  shell.cursor(620, 620)
+  shell.poll()
+  assert.deepEqual([a.ignoresMouse, b.ignoresMouse, c.ignoresMouse, d.ignoresMouse], [true, true, true, false])
+})
+
+test('关闭第三只只释放自己的 session，主猪关闭不自动扶正其他猪', async () => {
+  const shell = await harness({ pigIds: ['pig-a', 'pig-b', 'pig-c', 'pig-d'] })
+  const [a, b, c, d] = shell.windows
+  const untouched = [a, b, d].map(window => window.getBounds())
+  c.close()
+  assert.deepEqual(shell.closeCalls, ['token-c'])
+  assert.equal(shell.pets.byPig('pig-c'), null)
+  assert.equal(shell.pets.bySender(c.webContents), null)
+  assert.equal(shell.pets.size(), 3)
+  assert.deepEqual([a, b, d].map(window => window.getBounds()), untouched)
+  assert.equal(shell.place(c, { bounds: { x: 10, y: 10, width: 100, height: 100 } }), null)
+
+  a.close()
+  assert.deepEqual(shell.closeCalls, ['token-c', 'token-a'])
+  assert.equal(shell.pets.primary(), null, '第一版不把第二只自动升为主猪')
+  assert.deepEqual(shell.closedPanel, ['pet-closed'])
+  assert.deepEqual([b, d].map(window => window.getBounds()), [untouched[1], untouched[2]])
+})
+
+
+test('右键第二只把同一个面板改绑到它，切回主猪后恢复默认面板页', async () => {
+  const shell = await harness({ pigIds: ['pig-a', 'pig-b', 'pig-c'], panel: true })
+  const [a, b] = shell.windows
+  assert.match(shell.panelUrl(), /index\.html\?pig=pig-a$/, '冷启动面板仍按主猪加载')
+
+  shell.place(b, { bounds: { x: 600, y: 400, width: 300, height: 280 }, shape: SHAPE, pig: PIG })
+  const aBefore = a.getBounds()
+  a.sent.length = 0
+  b.sent.length = 0
+  shell.send(b, 'piggy:panel:toggle', { open: true, pig: { x: 20, y: 20, width: 56, height: 56 } })
+  assert.equal(shell.panelOpen(), true)
+  assert.equal(shell.panelTargetId(), 'pig-b')
+  assert.match(shell.panelUrl(), /index\.html\?pig=pig-b$/, '面板页面必须按第二只猪的 session 重新加载')
+  assert.equal(shell.panelWindows.length, 2, '旧主猪面板页被销毁，而不是只换位置')
+  assert.equal(a.sent.some(([channel, message]) => channel === 'piggy:panel' && message.type === 'open'), false)
+  assert.deepEqual(a.getBounds(), aBefore)
+
+  const panel = shell.panelWindow()
+  panel.loadedPage()
+  shell.send(panel, 'piggy:panel:size', { width: 292, height: 370, fixedViewport: true })
+  assert.equal(panel.visible, true)
+  assert.equal(b.sent.some(([channel, message]) => channel === 'piggy:panel' && message.type === 'open'), true)
+  const nearB = panel.getBounds()
+  assert.ok(nearB.y >= 400 + 20 + 56 || nearB.y + nearB.height <= 400 + 20, `面板贴在第二只猪的上方或下方: ${JSON.stringify(nearB)}`)
+
+  shell.place(b, { bounds: { x: 300, y: 100, width: 300, height: 280 }, shape: SHAPE, pig: PIG })
+  assert.notDeepEqual(panel.getBounds(), nearB, '面板跟随它服务的那只猪')
+  assert.deepEqual(a.getBounds(), aBefore, '主猪窗口不被第二只猪的面板拖动')
+
+  a.sent.length = 0
+  shell.send(a, 'piggy:panel:toggle', { open: true, pig: { x: 20, y: 20, width: 56, height: 56 } })
+  assert.equal(shell.panelTargetId(), 'pig-a')
+  assert.match(shell.panelUrl(), /index\.html\?pig=pig-a$/, '切回主猪按主猪 session 加载')
+  assert.equal(shell.panelWindows.length, 3)
+  const back = shell.panelWindow()
+  back.loadedPage()
+  shell.send(back, 'piggy:panel:size', { width: 292, height: 370, fixedViewport: true })
+  assert.equal(back.visible, true)
+  assert.equal(a.sent.some(([channel, message]) => channel === 'piggy:panel' && message.type === 'open'), true)
+})
+
+test('关掉面板服务的那只猪会收起面板，主猪和其他猪不受影响', async () => {
+  const shell = await harness({ pigIds: ['pig-a', 'pig-b', 'pig-c'], panel: true })
+  const [a, b, c] = shell.windows
+  shell.place(b, { bounds: { x: 600, y: 400, width: 300, height: 280 }, shape: SHAPE, pig: PIG })
+  shell.send(b, 'piggy:panel:toggle', { open: true, pig: { x: 20, y: 20, width: 56, height: 56 } })
+  const panel = shell.panelWindow()
+  panel.loadedPage()
+  shell.send(panel, 'piggy:panel:size', { width: 292, height: 370, fixedViewport: true })
+  assert.equal(panel.visible, true)
+
+  const untouched = [a, c].map(window => window.getBounds())
+  b.close()
+  assert.equal(shell.panelOpen(), false)
+  assert.equal(panel.visible, false)
+  assert.equal(shell.panelTargetId(), 'pig-a', '目标关闭后回落到还活着的主猪')
+  assert.deepEqual(shell.closeCalls, ['token-b'])
+  assert.deepEqual([a, c].map(window => window.getBounds()), untouched)
+})
+
+test('主猪关闭会收起面板；第一版不把第二只自动升为主猪', async () => {
+  const shell = await harness({ pigIds: ['pig-a', 'pig-b'], panel: true })
+  const [a, b] = shell.windows
+  shell.place(b, { bounds: { x: 600, y: 400, width: 300, height: 280 }, shape: SHAPE, pig: PIG })
+  shell.send(b, 'piggy:panel:toggle', { open: true, pig: { x: 20, y: 20, width: 56, height: 56 } })
+  const panel = shell.panelWindow()
+  panel.loadedPage()
+  shell.send(panel, 'piggy:panel:size', { width: 292, height: 370, fixedViewport: true })
+  assert.equal(panel.visible, true)
+
+  const bBefore = b.getBounds()
+  a.close()
+  assert.equal(shell.panelOpen(), false)
+  assert.equal(panel.visible, false)
+  assert.equal(shell.pets.primary(), null)
+  assert.equal(shell.pets.byPig('pig-b'), shell.second)
+  assert.deepEqual(b.getBounds(), bBefore)
+})
+
 
 test('一只猪拖动时，另一只的拖动会话和窗口都不动', async () => {
   const shell = await harness()

@@ -6,7 +6,7 @@
  * @param {{
  *   BrowserWindow: new (options:any)=>any,
  *   options: any,
- *   url: string,
+ *   url: string | (() => string),
  *   frameCap?: number,
  *   devTools?: boolean,
  *   log: (...parts:any[])=>any,
@@ -27,7 +27,7 @@ export function createPanelWindow(deps) {
     current = window
     deps.onCreated?.(window)
     if ((deps.frameCap ?? 0) > 0) window.webContents.setFrameRate(deps.frameCap)
-    window.loadURL(deps.url)
+    window.loadURL(typeof deps.url === 'function' ? deps.url() : deps.url)
     window.webContents.on('did-finish-load', () => {
       if (current !== window) return
       ready = true

@@ -319,16 +319,12 @@ const panelWindow = createPanelWindow({
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
       additionalArguments: ['--piggy-role=panel'] },
   },
-  url: 'piggy://app/index.html',
+  // 面板页面按 ?pig= 路由到对应 worker session；换猪时重建面板窗口。
+  url: () => panelUrl(),
   frameCap: FRAME_CAP,
   devTools: process.env.PIGGY_DEVTOOLS === '1',
   log,
-  onCreated: () => {
-    panelAsked = null
-    panelShapeKey = ''
-    panelHasNativeShape = false
-    extensionLayer.sync()
-  },
+  onCreated: () => panelViewCreated(),
   onReady: () => {
     if (panelOpen && panelAnchor !== null) sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
   },
@@ -706,10 +702,15 @@ async function createPigWindow(pet, override = null) {
   const width = saved === null ? FALLBACK_CONTENT.width + WINDOW_PADDING * 2 : saved.width
   const height = saved === null ? FALLBACK_CONTENT.height + WINDOW_PADDING * 2 : saved.height
   const anchorRight = saved === null ? 18 : null
-  // 多猪首启错开：28px 不够，窗口几乎叠在一起；每只副猪向左上挪 140px。
-  const stagger = pet.primary ? 0 : Math.max(0, pets.all().indexOf(pet)) * 140
+  // 多猪首启错开：只横向排开。纵向错开会把后面的窗口顶到工作区上沿，
+  // 页面在 y=0 处会触发贴边/视觉范围换算，反而把猪挤到另一块屏；横向排不受影响。
+  // 步长取 380px（实测展开窗口约 364×328），小屏按可用宽度收窄，4 只仍尽量不重叠。
+  const cascadeSteps = Math.max(1, pets.all().length - 1)
+  const cascadeRoom = Math.max(0, area.width - width - anchorRight)
+  const staggerStep = Math.max(140, Math.min(380, Math.floor(cascadeRoom / cascadeSteps)))
+  const stagger = pet.primary ? 0 : Math.max(0, pets.all().indexOf(pet)) * staggerStep
   const start = saved === null
-    ? clampBounds({ x: area.x + area.width - width - anchorRight - stagger, y: area.y + area.height - height - anchorRight - stagger, width, height }, area)
+    ? clampBounds({ x: area.x + area.width - width - anchorRight - stagger, y: area.y + area.height - height - anchorRight, width, height }, area)
     : clampBounds({ ...saved, width, height }, area)
   pet.petAsked = { ...start }
   pet.resizeShape ??= createResizeShape(() => pet.window, rects => applyShape(pet, rects), () => screen.getDisplayMatching(pet.window.getBounds()).scaleFactor)
@@ -819,9 +820,14 @@ function handlePetWindowClosed(pet) {
   pet.window = null
   pet.webContentsId = null
   closePetSession(pet)
+  // 面板正服务这只猪：它没了，面板也收起，下一次右键按还活着的那只重开。
+  if (panelTarget === pet) {
+    panelTarget = null
+    closePanel('pet-closed')
+  }
   if (pet.primary) {
     closePanel('pet-closed')
-    log('primary pet window closed; panel unavailable until restart')
+    log('primary pet window closed; panel closed, tray/recover stay primary-only')
   }
   if (pets.all().length === 0) {
     closePanel('all-pets-closed')
@@ -907,7 +913,7 @@ async function createPetWindows() {
       }
       log('multi-pig enabled', JSON.stringify({
         pigs: plan, max: MAX_PIG_WINDOWS, primary: primaryId,
-        limits: ['panel:primary-only', 'tray:primary', 'fullscreen:primary-probe', 'recover:primary', 'second-instance:primary'],
+        limits: ['panel:retarget-on-context-menu', 'tray:primary', 'fullscreen:primary-probe', 'recover:primary', 'second-instance:primary'],
       }))
     }
   }
@@ -1390,6 +1396,13 @@ let panelShapeKey = ''
 let panelHasNativeShape = false
 /** 最近一次给面板窗口设的位置：没变就不再 setBounds。 */
 let panelAsked = null
+/**
+ * 面板当前服务哪只猪。null = 沿用主猪；多猪时右键第二只把面板改绑到它。
+ * 面板页面按 ?pig= 路由 worker session，所以换猪必须换页面（见 openPanel）。
+ */
+let panelTarget = null
+/** 当前面板页面按哪个 pigId 加载；null 表示默认会话（主猪的旧路径）。 */
+let panelLoadedPigId = null
 
 let stateTimer = null
 /** 存档变了：两个窗口都刷新（合并 30ms 内的多次，一次动作可能连发几个请求）。 */
@@ -1398,9 +1411,24 @@ function announceStateChanged() {
   stateTimer = setTimeout(() => { stateTimer = null; toPages('piggy:state-changed') }, 30)
 }
 
+/** 面板服务的那只猪：改绑目标还活着就用它，否则回主猪。 */
+function panelTargetPet() {
+  if (panelTarget !== null && pets.all().includes(panelTarget)) {
+    const window = panelTarget.window
+    if (window !== null && window !== undefined && !window.isDestroyed()) return panelTarget
+  }
+  return primaryPet()
+}
+
+/** 面板页面 URL：带 ?pig= 时 game-protocol 把请求路由到这只猪的 session。 */
+function panelUrl() {
+  const pigId = panelTargetPet()?.pigId ?? null
+  return pigId === null ? 'piggy://app/index.html' : `piggy://app/index.html?pig=${encodeURIComponent(pigId)}`
+}
+
 /** 主猪在屏幕上的框（拖到屏幕边时加上猪在窗口里滑出去的那一截）。 */
 function pigOnScreen() {
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   if (pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelPig === null) return null
   return pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelPig, pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
 }
@@ -1415,7 +1443,7 @@ function decidePanelAnchor() {
 
 /** 面板窗口该在哪：每次都从猪现在在哪直接算（见 lib/panel-geometry.js 文件头）。 */
 function panelBounds() {
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   const pig = panelReferenceOnScreen()
   if (pig === null || panelAnchor === null) return null
   return panelBoundsFor(pig, panelAnchor, panelViewportSize(panelAnchor, panelSize, panelFixedViewport),
@@ -1423,7 +1451,7 @@ function panelBounds() {
 }
 
 function panelReferenceOnScreen() {
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   const pig = pigOnScreen()
   if (pig === null || pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelSpeech === null) return pig
   const speech = pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelSpeech,
@@ -1464,6 +1492,24 @@ function startPanelHit() {
   panelHitTimer.unref?.()
 }
 
+/** 面板页面换猪/重建后，旧的尺寸、位置和命中缓存全部作废。 */
+function resetPanelView() {
+  panelShape.cancel()
+  panelShapeKey = ''
+  panelHasNativeShape = false
+  panelAsked = null
+  panelSize = null
+  panelFixedViewport = false
+  stopPanelHit()
+}
+
+/** panel-window 的 onCreated：记录这次页面是按哪只猪加载的。 */
+function panelViewCreated() {
+  resetPanelView()
+  panelLoadedPigId = panelTargetPet()?.pigId ?? null
+  extensionLayer.sync()
+}
+
 /**
  * 把猪窗口抬到面板窗口上面（用户 2026-10-08 反馈）。
  * 两个窗口同为 floating 置顶，点面板时系统把面板抬到最上，猪的动作和气泡被盖住；
@@ -1472,14 +1518,14 @@ function startPanelHit() {
  */
 function raisePetAbovePanel() {
   if (extensionLayer.isFocused()) return
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   if (pet === null || pet.window === null || pet.window.isDestroyed() || !pet.window.isVisible()) return
   // 置顶标记仍为 true 时，菜单也可能被其他应用盖住；先抬菜单，再抬猪。
   if (getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible()) getPanelWindow().moveTop()
   pet.window.moveTop()
 }
 
-/** 第二只猪右键：第一版不弹独立面板，只把它叫到前面。 */
+/** 右键第二只时也把它叫到前面：置顶窗口也要先可见。 */
 function focusPetWindow(pet) {
   const window = pet?.window
   if (window === null || window === undefined || window.isDestroyed()) return
@@ -1493,16 +1539,17 @@ function ensurePanelWindow() {
 }
 
 /**
- * 焦点离开了主猪窗口或面板窗口：如果也没落到另一个上，就是点到别处了。
+ * 焦点离开了面板服务的那只猪或面板窗口：如果也没落到另一个上，就是点到别处了。
  * 面板打开时不抢焦点（见 placePanel），焦点多半还在猪窗口上，所以两个窗口的失焦都要听。
- * 第一版面板只服务主猪：焦点落到第二只猪也算「点到别处」。
+ * 多猪时焦点落到别的猪也算「点到别处」。
  */
 function panelFocusLeft() {
   if (!panelOpen) return
   setTimeout(() => {
     if (!panelOpen) return
     const focused = BrowserWindow.getFocusedWindow()
-    if (focused !== null && (focused === getPetWindow() || focused === getPanelWindow() || focused === extensionWindow.current())) return
+    const pet = panelTargetPet()
+    if (focused !== null && (focused === pet?.window || focused === getPanelWindow() || focused === extensionWindow.current())) return
     // 原生窗口重新映射时焦点可能暂空，指针仍在真实面板内不能算外部点击。
     if (focused === null && panelAnchor && panelSize && getPanelWindow() && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible()) {
       const bounds = getPanelWindow().getBounds()
@@ -1545,15 +1592,27 @@ function placePanel() {
     //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
     getPanelWindow().showInactive()
     raisePetAbovePanel()
-    log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical }))
-    const pet = primaryPet()
+    log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical, pigId: panelTargetPet()?.pigId ?? null }))
+    const pet = panelTargetPet()
     if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'open' })
   }
 }
 
-function openPanel(pig) {
-  const pet = primaryPet()
+/**
+ * 开面板，并把面板改绑到这只猪。
+ * 面板页面的 API 请求按 URL 的 ?pig= 路由；已加载的页面不是这只猪时重建面板窗口
+ * （不是改一个变量：否则面板会贴在新猪旁边却显示旧猪的数据）。
+ */
+function openPanel(pig, pet = panelTargetPet()) {
   if (pet === null) return
+  const targetPigId = pet.pigId ?? null
+  if (getPanelWindow() !== null && panelLoadedPigId !== targetPigId) {
+    if (panelOpen) closePanel('retarget')
+    panelWindow.destroy()
+    resetPanelView()
+    panelOpen = false
+  }
+  panelTarget = pet
   if (Number.isFinite(pig?.x) && Number.isFinite(pig?.y) && pig?.width > 0 && pig?.height > 0) {
     pet.panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
   }
@@ -1577,21 +1636,21 @@ function closePanel(why) {
   stopPanelHit()
   if (getPanelWindow() !== null && !getPanelWindow().isDestroyed()) getPanelWindow().hide()
   sendPanel({ type: 'closed' })
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'closed' })
   log('panel closed', why)
 }
 
-/** 主猪窗口挪了（拖动、散步、贴边修正）：面板按猪的新位置重摆，不重新挑朝向（松手后再挑）。 */
+/** 面板服务的那只猪挪了（拖动、散步、贴边修正）：面板按它的新位置重摆，不重新挑朝向（松手后再挑）。 */
 function followPig(pet = primaryPet()) {
-  if (pet === null || !pet.primary) return
+  if (pet === null || pet !== panelTargetPet()) return
   if (!panelOpen || getPanelWindow() === null || getPanelWindow().isDestroyed() || !getPanelWindow().isVisible()) return
   placePanel()
 }
 
 /** 拖完 / 散步完：猪到了新地方，重新决定面板朝哪边开（放不下就换边）。 */
 function reanchorPanel(pet = primaryPet()) {
-  if (pet === null || !pet.primary) return
+  if (pet === null || pet !== panelTargetPet()) return
   if (!panelOpen) return
   const next = decidePanelAnchor()
   if (next === null) return
@@ -1601,18 +1660,21 @@ function reanchorPanel(pet = primaryPet()) {
   placePanel()
 }
 
-/** 猪页面：右键开/关面板（带上猪在窗口里的框）。第二只猪第一版只聚焦/置顶。 */
+/** 猪页面：右键开/关面板（带上猪在窗口里的框）。多猪时把同一个面板改绑到当前这只。 */
 ipcMain.on('piggy:panel:toggle', (event, request) => {
   const pet = petForEvent(event)
   if (pet === null) return
-  if (!pet.primary) {
+  const serving = panelOpen && panelTargetPet() === pet
+  if (panelOpen && !serving) {
+    // 另一只猪的面板开着：右键谁就切到谁，不先收起再等第二次点击。
     focusPetWindow(pet)
-    log('panel toggle ignored for secondary pig', pet.pigId ?? 'legacy')
+    openPanel(request?.pig, pet)
+    log('panel retargeted', pet.pigId ?? 'legacy')
     return
   }
   const action = panelToggleAction({ requestedOpen: request?.open === true, isOpen: panelOpen,
     isVisible: getPanelWindow() !== null && !getPanelWindow().isDestroyed() && getPanelWindow().isVisible() })
-  if (action === 'open') openPanel(request.pig)
+  if (action === 'open') openPanel(request?.pig, pet)
   else if (action === 'close') closePanel('pet')
   else {
     // 首次加载期间复按只保持打开意图；回传状态，免得猪页面误以为已经关闭。
@@ -1640,17 +1702,17 @@ ipcMain.on('piggy:panel:size', (event, size) => {
 })
 /** 任一页面：收起面板（面板里点了收起、点外面自动收起）。 */
 ipcMain.on('piggy:panel:close', event => { if (fromPage(event)) closePanel('page') })
-/** 面板页面里对猪的反应（喂食时猪的动作、冒气泡）：转给主猪窗口去演。 */
+/** 面板页面里对猪的反应（喂食时猪的动作、冒气泡）：转给面板当前服务的那只猪窗口去演。 */
 // 猪窗口自己冒气泡（签到、点猪的反应）时也抬一次，跟面板转来的反应一样（用户 2026-10-10：气泡被面板盖住）。
 ipcMain.on('piggy:pet-raise', event => {
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   if (!fromPage(event) || pet === null || event.sender !== pet.window?.webContents) return
   raisePetAbovePanel()
 })
 
 ipcMain.on('piggy:pig-fx', (event, fx) => {
   if (!fromPage(event) || (event.sender !== getPanelWindow()?.webContents && !extensionWindow.owns(event.sender))) return
-  const pet = primaryPet()
+  const pet = panelTargetPet()
   if (pet === null || pet.window === null || pet.window.isDestroyed() || typeof fx?.name !== 'string') return
   pet.window.webContents.send('piggy:pig-fx', { name: fx.name, args: Array.isArray(fx.args) ? fx.args : [] })
   raisePetAbovePanel()

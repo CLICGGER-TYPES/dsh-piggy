@@ -55,6 +55,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
     createPetWindow, pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
+    panelTarget: null,
     pigSessions: new Map(), quitting: false,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
     startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,

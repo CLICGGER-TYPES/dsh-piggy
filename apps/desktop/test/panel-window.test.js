@@ -85,3 +85,20 @@ test('panel-window owns one current window and resets readiness across renderer 
   assert.equal(panel.isReady(), false)
   assert.equal(second.isDestroyed(), true)
 })
+
+test('panel-window resolves a function url every time it creates a window', () => {
+  FakeWindow.created = []
+  let pig = 'pig-a'
+  const panel = createPanelWindow({
+    BrowserWindow: FakeWindow,
+    options: { show: false },
+    url: () => `piggy://app/index.html?pig=${pig}`,
+    log() {},
+  })
+  const first = panel.ensure()
+  assert.equal(first.url, 'piggy://app/index.html?pig=pig-a')
+  panel.destroy(first)
+  pig = 'pig-b'
+  const second = panel.ensure()
+  assert.equal(second.url, 'piggy://app/index.html?pig=pig-b')
+})
