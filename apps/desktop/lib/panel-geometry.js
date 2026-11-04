@@ -7,7 +7,7 @@
  * （setBounds 还没生效就读），分数缩放下还带 1px 取整误差，每帧丢一点，一秒几十帧累加下来
  * 面板被猪越甩越远（用户 2026-10-07 录屏：面板落在原地附近，猪已经拖到屏幕另一头）。
  *
- * 尺寸常量和游戏包 src/client/constants.js 的同名常量必须一致（test/panel-geometry.test.js 核对）。
+ * 尺寸常量和游戏包 src/client/constants.js 的同名常量必须一致（test/unit/client/panel-geometry.test.js 核对）。
  */
 
 import { desktopViewportBounds } from './window-geometry.js'

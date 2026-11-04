@@ -21,7 +21,7 @@
 依赖只能从外向内：`data/` → `core/` → `store/` → 组装层 → `src/client/`。
 
 `data/` 和 `core/` 在 `packages/pet-core/src/` 下，是 DSH 插件和以后独立版共用的库（`@dsh-piggy/core`），
-根目录 `core.js` / `data.js` 只做再导出。库的边界由 `test/core-boundary.test.js` 守住。
+根目录 `core.js` / `data.js` 只做再导出。库的边界由 `test/unit/core/core-boundary.test.js` 守住。
 
 | 目录 | 职责 | 禁止 |
 |---|---|---|
@@ -35,7 +35,7 @@
 - 随机数用 `core/random.js`（种子存在 `state.seed`），领域层禁止 `Math.random()`。
 - 改存档结构：`core/upgrades.js` 表尾加一级 + `STATE_VERSION` +1 + 迁移测试。
 - 数值集中在 `data/`，不许在逻辑里写裸数字。
-- **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
+- **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/unit/core/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
 - 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 直接写单文件时允许 600 行，不能靠压行或删注释满足上限。
 - 菜园服务端是**源码拆分 + 单文件分发**：规则在 `src/extensions/farm/`（data / pure / plot-rules / helper / migration / actions / view / server 组装），每个源模块 ≤400 行、要 `// @ts-check` 并过 `npm run typecheck`；`extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 生成，不手改。生成的单文件不压行、不引运行时依赖，下载协议仍是 manifest.json / server.js / client.js + assets。
 - 菜园客户端已拆为 `src/extensions/farm/client/` 下的状态工厂、宿主适配、交互、花园视图和商店视图模块；`scripts/build-farm-client.mjs` 仍生成唯一的 `extensions/farm/client.js` 下载文件。生成客户端由 freshness 与单文件分发测试守卫，作者源码模块仍受普通 400 行限制。受限候选的 freshness 2/2 与 typecheck exit 0；独立 UI 验收尚待完成，完整套件未重跑。桌面旧 `src/client/desktop/index.js` 401 行例外已移除：几何协调、输入归属和 renderer 生命周期分别由 controller 模块持有，入口文件只保留兼容门面。旧存档拆分、live facade 与混合容器 adapter 已拆到独立的 `store/legacy-projection.js`、`store/legacy-facade.js`、`store/legacy-mixed-adapter.js`（另有内部 brand/helper）；owner transaction 与 target lifecycle 分置于 `store/owner-resources.js` 和 `store/owner-targets.js`；store API 命令组分置于 `store/api-actions.js`、`store/api-fishing.js`、`store/api-inventory.js`、`store/api-profile.js`、`store/api-lifecycle.js`。这些新模块都受普通 400 行守卫约束；MODSPLIT02 相关 focused checks 45/45 通过，完整套件未重跑。`store/api.js` 保留原有属性 getter 和 API 方法顺序。菜园购买和铲除确认的焦点管理仍随单文件客户端下载；当前扩展协议不加载额外模块，本轮不扩张协议，也不靠压行满足守卫。其余普通源码仍为 400 行，其他单文件扩展仍为 600 行。
@@ -75,17 +75,18 @@
 - 持久化数据带 `STATE_VERSION`；结构一变就加迁移函数 + 迁移测试。
 - 旧存档必须能自动迁移，不丢数据。
 - 写文件原子化：临时文件 → `fsync` → `rename`（`store/state-file.js`）。
-- **产物新鲜度**：根 `client.js` 必须与 `src/client/` 一致，由 `test/bundle.test.js` 守住；`extensions/farm/client.js` 必须与 `src/extensions/farm/client/` 一致，由 `test/farm-client-distribution.test.js` 守住；`extensions/farm/server.js` 必须与 `src/extensions/farm/` 一致，由 `test/farm-server-distribution.test.js` 守住。
+- **产物新鲜度**：根 `client.js` 必须与 `src/client/` 一致，由 `test/unit/host/bundle.test.js` 守住；`extensions/farm/client.js` 必须与 `src/extensions/farm/client/` 一致，由 `test/unit/client/farm-client-distribution.test.js` 守住；`extensions/farm/server.js` 必须与 `src/extensions/farm/` 一致，由 `test/unit/host/farm-server-distribution.test.js` 守住。
 
 ## 测试
 
+- 测试按 `test/unit/core/`、`test/unit/host/`、`test/unit/client/` 与 `test/integration/` 分层；新测试放对应层，夹具仍放 `test/helpers/` 与 `test/fixtures/`。
 - 修 bug 先写能复现的失败测试，再修代码。
 - 新逻辑覆盖正常路径 + 边界（空值、0、上限、极端时间跨度）。
 - 测试不依赖真实时钟、网络、执行顺序。
 - **UI 改动必须在真实浏览器确认**（浏览器打开 `tools/preview.html`，或桌面版里看），测试通过 ≠ 显示正确。
 - **桌面窗口/拖动改动必须真鼠标拖 + 录屏逐帧看**（[desktop-architecture.md](guides/desktop-architecture.md)「怎么验收」），只比起止坐标会漏掉中间的跳动。
-- 能静态守住的规范写成测试（`test/conventions.test.js`、`lines-guard`、`achievements-guard`、`extensions-registry`），别只写在文档里。
-- 提交前 `node --test` 全绿。
+- 能静态守住的规范写成测试（`test/unit/host/conventions.test.js`、`test/unit/core/lines-guard.test.js`、`test/unit/core/achievements-guard.test.js`、`test/unit/host/extensions-registry.test.js`），别只写在文档里。
+- 提交前 `npm test` 全绿。
 
 ## 注释
 

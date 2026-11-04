@@ -129,7 +129,7 @@ These are different limits on purpose:
 
 ## Tests
 
-`test/audio-context.test.js` authors explicit A/B channels and presentation
+`test/unit/client/audio-context.test.js` authors explicit A/B channels and presentation
 instances for independent debounce/quiet, A-only stop/dispose, one shared
 context, the device-wide voice budget, OFF/role/unavailable-context behaviour,
 idempotent reset and the normal-path wiring. The developer did **not** execute

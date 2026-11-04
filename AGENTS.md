@@ -19,6 +19,7 @@
 | `extensions/<key>/` | 在线扩展（菜园、矿洞、扭蛋、盲盒），玩家下载安装 |
 | `release/` | 发布相关：`candidates/` 是未晋级的在线扩展目录，`extension-variants/` 是手动导入变体；规则见 [release/README.md](release/README.md) |
 | `assets/` | 游戏里的图和字体；每类放哪、怎么命名、出处见 [docs/ASSETS.md](docs/ASSETS.md)（新增素材要登记，测试会查） |
+| `test/` | 分层测试：`unit/core/` 纯规则、`unit/host/` 宿主与运行时、`unit/client/` 客户端、`integration/` 跨进程；夹具在 `helpers/`、`fixtures/` |
 | `docs/` | 文档；`docs/ROADMAP.md` 是**唯一的待办清单**，`docs/numbers/` 是用户确认过的数值单，`docs/archive/` 是历史文档（不再更新） |
 
 ## 红线（必须先问用户）

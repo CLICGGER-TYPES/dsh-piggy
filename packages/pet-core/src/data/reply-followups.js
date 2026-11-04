@@ -18,7 +18,7 @@
  * 优先用当前性格那一句，性格没有专属句（旧存档、对话途中换性格、未知性格）时用通用句。
  *
  * 数量守卫：144 个回复分支 = 144 句通用 + 580 句性格，共 724 句；
- * 原句、按钮文字、适用性格都对得上现有 LINES。见 test/reply-followups.test.js。
+ * 原句、按钮文字、适用性格都对得上现有 LINES。见 test/unit/core/reply-followups.test.js。
  *
  * @module dsh-piggy/data/reply-followups
  */

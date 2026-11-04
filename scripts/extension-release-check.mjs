@@ -4,7 +4,7 @@
  * 全部成功后才允许把候选目录晋级为公开目录；本脚本不上传、不修改目录、不推送。
  *
  * 目录选择顺序：存在 release/candidates/extensions/registry*.json 时先查候选，
- * 没有候选才查公开的 extensions/registry*.json（和 test/extensions-registry.test.js 一致）。
+ * 没有候选才查公开的 extensions/registry*.json（和 test/unit/host/extensions-registry.test.js 一致）。
  * 0.36.1 起新宿主只下整包，所以现代扩展只回读 bundle；minGame < 0.36.1 的旧宿主
  * 仍逐件下载，必须另外回读 files 里的代码和图片，整包有效不能证明旧链路可用。
  *

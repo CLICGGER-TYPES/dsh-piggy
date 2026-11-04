@@ -68,7 +68,7 @@ export function settleFloorMs(state, fromMs) {
  * 把已结算水位抬到 ms；只增不减。
  *
  * **唯二**允许把水位写小的写入点在 core/state.js，都是刻意的「重置时间线」，别处一律走这个
- * 函数（回归守卫见 test/offline-feed.test.js 的「P3-D：settledUpTo 只增不减」与「往下写水位的
+ * 函数（回归守卫见 test/unit/core/offline-feed.test.js 的「P3-D：settledUpTo 只增不减」与「往下写水位的
  * 赋值点只有 state.js 的两处重置」）：
  *   1. `ageFromNow` 年龄归零 —— 旧时间线整个丢掉，水位归到当下；
  *   2. 调试页 `applyDevPatch` 的 `__advanceMs` 快进 —— 假装这段真的流过，水位跟着退回去，

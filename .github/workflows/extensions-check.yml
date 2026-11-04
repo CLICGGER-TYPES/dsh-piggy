@@ -7,8 +7,8 @@ on:
       - release/candidates/extensions/registry.json
       - release/candidates/extensions/registry-gitee.json
       - scripts/extension-release-check.mjs
-      - test/extension-release-check.test.js
-      - test/extensions-registry.test.js
+      - test/unit/host/extension-release-check.test.js
+      - test/unit/host/extensions-registry.test.js
       - .github/workflows/extensions-check.yml
   push:
     branches: [main]
@@ -18,8 +18,8 @@ on:
       - release/candidates/extensions/registry.json
       - release/candidates/extensions/registry-gitee.json
       - scripts/extension-release-check.mjs
-      - test/extension-release-check.test.js
-      - test/extensions-registry.test.js
+      - test/unit/host/extension-release-check.test.js
+      - test/unit/host/extensions-registry.test.js
       - .github/workflows/extensions-check.yml
   workflow_dispatch:
     inputs:
@@ -55,7 +55,7 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund esbuild@0.28.2
           npm run build
       - name: Verify checker fixtures and source candidate consistency
-        run: node --test test/extension-release-check.test.js test/extensions-registry.test.js
+        run: node --test test/unit/host/extension-release-check.test.js test/unit/host/extensions-registry.test.js
       - name: Verify published GitHub attachments for source changes
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         shell: bash

@@ -135,4 +135,4 @@ F04 只支持「一张已审核姿势 + 计时」的单姿势动作：`duration`
 
 ## 测试
 
-`test/art-resources.test.js` 是作者编写的 17 条回归说明，覆盖默认 URL 兼容、动作包、命名空间/revision 区分、原子注册、冻结、私有动作播放隔离、fallback、descriptor frame、未知兜底、普通挂载转发、皮肤归一化，以及 F04R 的排队旧选择失效、同 revision 元数据替换、同 URL frame 替换/移除和只读父表合同。开发卡只授权编写，不授权执行；独立 V04 在冻结源码上运行它和 6 个 presentation 测试。
+`test/unit/host/art-resources.test.js` 是作者编写的 17 条回归说明，覆盖默认 URL 兼容、动作包、命名空间/revision 区分、原子注册、冻结、私有动作播放隔离、fallback、descriptor frame、未知兜底、普通挂载转发、皮肤归一化，以及 F04R 的排队旧选择失效、同 revision 元数据替换、同 URL frame 替换/移除和只读父表合同。开发卡只授权编写，不授权执行；独立 V04 在冻结源码上运行它和 6 个 presentation 测试。

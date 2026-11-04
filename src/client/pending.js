@@ -54,7 +54,7 @@ export function processPending(ctx, showPigLine, pending = ctx.view.pending) {
   // 同批奖励和台词一次展示，不能在 render 后用领取回执抹掉台词/回复。
   var ordered = pending.slice().sort(function (a, b) {
     // 正常快照本来就是按 id 递增的；合并/晚到的消息可能乱序，不能因为先看到
-    // 更大的 id 就把更小的接话当成旧的丢掉（见 test/client.test.js 的轮到晚到用例）。
+    // 更大的 id 就把更小的接话当成旧的丢掉（见 test/unit/client/client.test.js 的轮到晚到用例）。
     return (a.id || 0) - (b.id || 0) || (a.at || 0) - (b.at || 0)
   })
   var hasReward = pigSide && ordered.some(function (event) {

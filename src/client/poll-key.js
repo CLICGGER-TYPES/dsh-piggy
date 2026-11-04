@@ -12,7 +12,7 @@
  *   - 剩余时间按分钟向上取整（shortTime）——量化后画出来的分钟数一模一样；
  *   - 进度按整百分比画（悬停卡进度条，`Math.round(progress * 100)`）。
  * 没写表的字段一律原样比：表里漏了只会让短路少生效（照旧每 4 秒重画一次），不会画错。
- * test/poll-key.test.js 用真的 farm.view() 前后 4 秒的快照守住这一点。
+ * test/unit/client/poll-key.test.js 用真的 farm.view() 前后 4 秒的快照守住这一点。
  *
  * 表为什么在宿主里：改菜园的 client.js / server.js 要重新发一个扩展包（玩家得等下载），
  * 而 600 行的硬上限也放不下（CONVENTIONS §文件行数）；宿主跟着游戏更新，改这里就能生效。

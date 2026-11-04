@@ -2,7 +2,7 @@
  * 挂载 DSH 客户端的公共测试挂具（C1 起）：假 DOM + 假 window/fetch，
  * 把构建出来的 client.js 当浏览器那样跑起来。
  *
- * 从 test/dev-coverage.test.js 里抽出来，番茄钟等界面测试共用。
+ * 从 test/unit/client/dev-coverage.test.js 里抽出来，番茄钟等界面测试共用。
  */
 
 import assert from 'node:assert/strict'

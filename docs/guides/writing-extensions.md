@@ -179,7 +179,7 @@ export default {
 | 扭蛋 `gacha` | 幸运值、序号取高；记录按桌宠在前拼起来，最多 30 条；里程碑（抽数/金色/机器）两边累计相加；免费那一抽按天：今天任一边抽过，合并后今天不再免费；最近一次取 id 更大的 |
 | 盲盒 `blindbox` | 摆件潜能取高（最多 6）；凭证、抽数相加；每个卡池的保底水位取高；序号取高，最近一次取 id 更大的 |
 
-写钩子的通用做法：先把两边各自过一遍你自己的 `normalize`（旧版本数据先迁移），再按「资产相加、进度取高、局内上下文整套选一边」合并，最后再过一次 `normalize` 并把数量夹到游戏上限。金样例和不变量测试照 `test/ext-merge-official.test.js`：真实存档形状、入参不变、同输入同输出、未知新版本拒绝、上限不超。
+写钩子的通用做法：先把两边各自过一遍你自己的 `normalize`（旧版本数据先迁移），再按「资产相加、进度取高、局内上下文整套选一边」合并，最后再过一次 `normalize` 并把数量夹到游戏上限。金样例和不变量测试照 `test/unit/host/ext-merge-official.test.js`：真实存档形状、入参不变、同输入同输出、未知新版本拒绝、上限不超。
 
 ## client.js
 
@@ -212,11 +212,11 @@ export default {
 
 ## 本地测试
 
-- **规则**：写 `test/<key>.test.js`，直接 `import` 扩展的 `server.js`，用假 `api` 调动作（照 `test/farm.test.js`）。数值单里的数字写成断言。
-- **页面**：`test/farm.test.js` 后半有用 `fakeDom` 跑 `client.js` 的例子。
+- **规则**：写 `test/unit/host/<key>.test.js`（扩展规则）或 `test/unit/client/<key>.test.js`（界面），直接 `import` 扩展的 `server.js`，用假 `api` 调动作（照 `test/unit/host/farm.test.js`）。数值单里的数字写成断言。
+- **页面**：`test/unit/host/farm.test.js` 后半有用 `fakeDom` 跑 `client.js` 的例子。
 - **整条链路**（下载、校验、安装、事务）：照 `test/helpers/extension-achievements.js`，用 `createExtRuntime` + 假 `fetch` + `registryUrl`。
 - **真机看界面**：桌面版的扩展装在存档旁边的 `extensions/<key>/`，可以把文件拷进去替换后重启看效果（存档里要已经装过这个扩展）。
-- `npm test` 里的 `test/extensions-registry.test.js` 会检查文件齐全、manifest 合规、目录条目和文件一致、动作都是函数。
+- `npm test` 里的 `test/unit/host/extensions-registry.test.js` 会检查文件齐全、manifest 合规、目录条目和文件一致、动作都是函数。
 
 ## 发版
 
