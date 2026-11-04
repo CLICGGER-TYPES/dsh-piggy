@@ -120,9 +120,9 @@ test('外壳的面板尺寸常量和游戏包 constants.js 一致', () => {
   assert.equal(PANEL_FALLBACK.width, constants.PANEL_WIDTH)
 })
 
-test('main.js 不再在面板窗口回读位置上累加增量', () => {
-  const main = readFileSync(new URL('../apps/desktop/main.js', import.meta.url), 'utf8')
-  const positioning = main.slice(main.indexOf('function panelBounds()'), main.indexOf('function sendPanel('))
+test('面板定位不再在窗口回读位置上累加增量', () => {
+  const source = readFileSync(new URL('../apps/desktop/lib/panel-controller.js', import.meta.url), 'utf8')
+  const positioning = source.slice(source.indexOf('function panelBounds()'), source.indexOf('function panelReferenceOnScreen('))
   assert.doesNotMatch(positioning, /panelWin\.getBounds\(\)/)
   assert.match(positioning, /panelBoundsFor\(pig, panelAnchor/)
 })
