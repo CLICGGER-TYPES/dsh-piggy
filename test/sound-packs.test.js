@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
 import { buildSoundPacks, loadSoundPacks } from '../scripts/asset-packs.mjs'
-import { RECIPES, SOUND_KEYS } from '../src/client/sounds.js'
+import { RECIPES, SOUND_FILES, SOUND_KEYS } from '../src/client/sounds.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
@@ -59,18 +59,42 @@ test('合成配方通过校验', () => withFixture({
   assert.deepEqual(report.recipes, { wag: { tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 0.3 }] } })
 }))
 
-test('坏参数、重复 key、未接入的音频文件都会被指出', () => withFixture({
+test('坏参数、重复 key、坏音频文件都会被指出', () => withFixture({
   pack: 'sfx',
   revision: 1,
   sounds: [
     { key: 'wag', synth: { tones: [{ type: 'sine', from: 440, to: 660, ms: 80, gain: 2 }] } },
     { key: 'wag', synth: { tones: [] } },
-    { key: 'yip', file: 'yip.ogg' },
+    { key: 'yip', file: 'yip.ogg', durationMs: 400 },
+    { key: 'bark', file: 'bark.ogg', durationMs: 400 },
   ],
 }, dir => {
   const report = loadSoundPacks(dir)
   const text = report.problems.join('\n')
   assert.match(text, /tones\[0\]\.gain: 必须在 0–1 之间/)
   assert.match(text, /音效 "wag" 重复/)
-  assert.match(text, /file: 音频文件尚未接入（M2b）/)
+  assert.match(text, /file: 找不到 assets\/sounds\/sfx\/yip\.ogg/)
+  assert.match(text, /file: 找不到 assets\/sounds\/sfx\/bark\.ogg/)
 }))
+
+test('文件音效生成 URL、大小与哈希，synth 与 file 互斥', () => withFixture({
+  pack: 'sfx',
+  revision: 1,
+  sounds: [
+    { key: 'wag', file: 'wag.ogg', durationMs: 420, gain: 0.9, debounceMs: 0, fallback: 'synth:tap' },
+  ],
+}, dir => {
+  const packDir = join(dir, 'assets/sounds/sfx')
+  writeFileSync(join(packDir, 'wag.ogg'), Buffer.concat([Buffer.from('OggS'), Buffer.alloc(64)]))
+  const report = loadSoundPacks(dir)
+  assert.deepEqual(report.problems, [])
+  assert.equal(report.files.wag.url.startsWith('sounds/sfx/wag.ogg?v='), true)
+  assert.equal(report.files.wag.durationMs, 420)
+  assert.equal(report.files.wag.gain, 0.9)
+  assert.equal(report.files.wag.fallback, 'synth:tap')
+  assert.match(report.files.wag.revision, /^[0-9a-f]{12}$/)
+}))
+
+test('内置音效仍只有合成配方', () => {
+  assert.deepEqual(SOUND_FILES, {})
+})

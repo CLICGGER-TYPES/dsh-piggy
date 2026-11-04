@@ -11,7 +11,8 @@
 /** 0/1/2 三档音量（轻/中/响）。 */
 export const VOLUME_GAIN = Object.freeze([0.32, 0.55, 0.82])
 
-import { SOUND_RECIPES } from './sounds.generated.js'
+import { SOUND_FILES, SOUND_RECIPES } from './sounds.generated.js'
+export { SOUND_FILES }
 
 /** @typedef {{ type: string, from: number, to: number, ms: number, gain: number, delay?: number, sweep?: string }} Tone */
 

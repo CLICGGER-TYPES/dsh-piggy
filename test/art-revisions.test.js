@@ -29,3 +29,9 @@ test('content-version queries do not change artwork framing or legacy PNG aliase
     assert.equal(artFile({}, key + '.svg').type, 'image/png')
   }
 })
+
+test('sound route only accepts sound pack paths', () => {
+  assert.equal(artFile({}, 'sounds/sfx/boom.mp3'), null)
+  assert.equal(artFile({}, 'sounds/../secret.ogg'), null)
+  assert.equal(artFile({}, 'sounds/sfx/missing.ogg'), null)
+})

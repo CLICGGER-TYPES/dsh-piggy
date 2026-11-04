@@ -208,6 +208,7 @@ test('a private action pack plays through the normal player without a new branch
     resources: [{
       key: 'sweep', kind: 'action', source: { scheme: 'path', path: 'pigs/helper/sweep.png' },
       duration: 250,
+      sound: 'sweep',
       eligibility: { art: 'piglet', stageNot: ['box', 'grave', 'dead-day'], absent: ['activity', 'idle', 'illness'], party: false, react: [] },
     }],
   })
@@ -216,9 +217,11 @@ test('a private action pack plays through the normal player without a new branch
   const first = attributePig()
   const second = attributePig()
   const timer = timerFixture()
+  const cues = []
   const playerA = attachPigActions({
     pig: first, clock: timer.clock, preload: async () => {}, isStopped: () => false, isDragging: () => false,
     render() {}, artResources: registry,
+    audio: { play(key) { cues.push(key); return true } },
   })
   const playerB = attachPigActions({
     pig: second, clock: timer.clock, preload: async () => {}, isStopped: () => false, isDragging: () => false,
@@ -230,6 +233,7 @@ test('a private action pack plays through the normal player without a new branch
     const resolved = registry.resolveRef({ namespace: 'helper', pack: 'work', key: 'sweep' })
     assert.ok(resolved)
     assert.equal(playerA.play(resolved), true)
+    assert.deepEqual(cues, ['sweep'], 'action sound goes through the presentation channel')
     assert.equal(pigActionArt(first), 'helper/work/sweep')
     assert.equal(pigActionResource(first)?.cacheKey, resolved.cacheKey)
     assert.equal(pigActionArt(second), null, 'a played action never leaks to another pig')

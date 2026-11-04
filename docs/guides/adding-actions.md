@@ -42,11 +42,11 @@ npm run build
 | `durationMs` | 是 | 正整数；播放器计时 |
 | `eligibility` | 否 | `art` / `stageNot` / `absent` / `react` / `moodNot` / `party` |
 | `trigger` | 否 | `pet` / `feed` / `play` / `tap` / `idle` / `manual`；M2 才自动绑定 |
-| `sound` | 否 | `sfx/<key>` 或同包 `<key>`；M2 才播放 |
+| `sound` | 否 | 动作播放时通过当前窗口通道播放的音效 key |
 | `motion` | 否 | 引用已有 `dp-*` CSS 动效；与帧序列二选一 |
 | `fallback` | 否 | 找不到时回退的动作 |
 
-不要写 `frames`：M1 会直接报“帧序列尚未接入”，避免素材被静默忽略。
+不要写 `frames`：当前会直接报“帧序列尚未接入”，避免素材被静默忽略。
 
 ## 包
 
@@ -67,7 +67,6 @@ src/client/packs.generated.js: 已过期；运行 npm run assets:sync
 ## 现在还没有的
 
 - 帧序列 / GIF / 图集：M2。
-- 每个动作独立音效：M2。
 - 第三方动作包：M3，后置。
 
 新增这些之前，先只加单图动作；不要复制播放器分支。

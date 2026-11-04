@@ -13,7 +13,8 @@ export function artFile(store, name) {
   const flat = /^(?:[a-z][a-z0-9-]{0,63}\.(?:svg|png)|feedback\/[a-z][a-z0-9-]{0,63}\.png)$/.test(name)
   const imported = /^custom-[a-z0-9-]{1,41}$/.test(name)
   const petFrame = name === 'animations/piglet-pet/reference.webp' || name === 'animations/pet-hand/hand.webp'
-  if (!PIG_ART_PATHS.has(name) && !FISHING_ART_PATHS.has(name) && !flat && !imported && !petFrame) return null
+  const sound = /^sounds\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\.(?:ogg|wav)$/.test(name)
+  if (!PIG_ART_PATHS.has(name) && !FISHING_ART_PATHS.has(name) && !flat && !imported && !petFrame && !sound) return null
   try {
     const custom = name.startsWith('custom-') ? customSkinArt(store.filePath, name) : null
     const key = name.replace(/\.(?:svg|png)$/, '')
@@ -22,7 +23,7 @@ export function artFile(store, name) {
     const png = body.subarray(0, 8).toString('hex') === '89504e470d0a1a0a'
     return {
       body,
-      type: petFrame ? 'image/webp' : png ? 'image/png' : 'image/svg+xml; charset=utf-8',
+      type: sound ? (name.endsWith('.ogg') ? 'audio/ogg' : 'audio/wav') : petFrame ? 'image/webp' : png ? 'image/png' : 'image/svg+xml; charset=utf-8',
       custom: custom !== null,
     }
   } catch { return null }

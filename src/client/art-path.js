@@ -97,6 +97,15 @@ function normalizeFrame(value) {
   return Object.freeze(/** @type {[number, number, number]} */ ([frame[0], frame[1], frame[2]]))
 }
 
+/** @param {unknown} value @returns {string | null} */
+function normalizeSound(value) {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'string' || !/^[a-z0-9-]+(?:\/[a-z0-9-]+)?$/.test(value)) {
+    throw new Error('[dsh-piggy] invalid art action sound')
+  }
+  return value
+}
+
 /** @param {unknown} value @returns {import('./art-resources.js').ArtEligibility | null} */
 function normalizeEligibility(value) {
   if (value === undefined || value === null) return null
@@ -146,7 +155,7 @@ function normalizeFallback(value) {
 function buildDescriptor(declaration, namespace, pack, packRevision) {
   if (declaration === null || typeof declaration !== 'object') throw new Error('[dsh-piggy] art resource must be an object')
   for (const name of Object.keys(declaration)) {
-    if (!['key', 'kind', 'source', 'revision', 'frame', 'duration', 'eligibility', 'fallback'].includes(name)) {
+    if (!['key', 'kind', 'source', 'revision', 'frame', 'duration', 'eligibility', 'fallback', 'sound'].includes(name)) {
       throw new Error('[dsh-piggy] unsupported art resource field: ' + name)
     }
   }
@@ -174,6 +183,8 @@ function buildDescriptor(declaration, namespace, pack, packRevision) {
   if (kind !== 'action' && eligibility !== null) throw new Error('[dsh-piggy] eligibility is only valid for art actions')
   const fallback = normalizeFallback(declaration.fallback)
   if (kind !== 'action' && fallback !== null) throw new Error('[dsh-piggy] fallback is only valid for art actions')
+  const sound = normalizeSound(declaration.sound)
+  if (kind !== 'action' && sound !== null) throw new Error('[dsh-piggy] sound is only valid for art actions')
 
   return Object.freeze({
     namespace: ns,
@@ -186,6 +197,7 @@ function buildDescriptor(declaration, namespace, pack, packRevision) {
     duration: duration,
     eligibility: eligibility,
     fallback: fallback,
+    ...(sound === null ? {} : { sound: sound }),
     schema: ART_RESOURCE_SCHEMA,
   })
 }

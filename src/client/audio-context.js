@@ -10,9 +10,10 @@
  * mountGame 路径由 presentation-context 显式创建并传递 channel。
  * @module dsh-piggy/client/audio-context
  */
+import { ART_URL } from './constants.js'
 import { desktopRole } from './desktop-shell.js'
 import { soundSettings } from './feel/settings.js'
-import { RECIPES, VOLUME_GAIN } from './sounds.js'
+import { RECIPES, SOUND_FILES, VOLUME_GAIN } from './sounds.js'
 
 /** 同一通道、同一配方的最短重复间隔（沿用旧模块级去抖）。 */
 export const AUDIO_DEBOUNCE_MS = 60
@@ -21,7 +22,7 @@ export const AUDIO_VOICE_BUDGET = 3
 
 /** @typedef {{ context: any, master: any, compressor: any }} Device */
 /** @typedef {{ source: any, gain: any, filter: any, state: ChannelState, done: boolean }} Voice */
-/** @typedef {{ quiet: () => boolean, lastAt: Record<string, number>, active: Set<Voice>, disposed: boolean }} ChannelState */
+/** @typedef {{ quiet: () => boolean, lastAt: Record<string, number>, active: Set<Voice>, disposed: boolean, files: Record<string, any> }} ChannelState */
 
 /** @type {Device|null} */
 let device = null
@@ -32,6 +33,9 @@ const channels = new Set()
 const states = new WeakMap()
 /** @type {any} */
 let defaultChannel = null
+/** 每台设备一份解码缓存：key → AudioBuffer | Promise | null（失败）。 */
+/** @type {WeakMap<Device, Map<string, any>>} */
+const fileBuffers = new WeakMap()
 
 /** 面板窗口、扩展窗口不响；网页版没有 role，按猪窗口算。 */
 function allowedRole() {
@@ -189,28 +193,108 @@ function stopState(state) {
   for (let i = 0; i < active.length; i += 1) retireVoice(active[i])
 }
 
+/** @param {Device} device @returns {Map<string, any>} */
+function bufferCache(device) {
+  let cache = fileBuffers.get(device)
+  if (cache === undefined) {
+    cache = new Map()
+    fileBuffers.set(device, cache)
+  }
+  return cache
+}
+
+/** 文件音效：解码后的 AudioBuffer 直接起一个声部。 */
+/** @param {ChannelState} state @param {any} buffer @param {number} volume */
+function startBuffer(state, buffer, volume) {
+  if (device === null) return false
+  const ctx = device.context
+  const source = ctx.createBufferSource()
+  const gain = ctx.createGain()
+  source.buffer = buffer
+  gain.gain.value = volume
+  source.connect(gain)
+  gain.connect(device.master)
+  const voice = registerVoice(state, source, gain, null)
+  try {
+    source.start(ctx.currentTime + 0.005)
+  } catch {
+    retireVoice(voice)
+    return false
+  }
+  return true
+}
+
+/**
+ * 懒加载并解码一个文件音效；同一设备同一 key 只请求一次。
+ * 解码失败缓存 null，后续直接走 synth 回退，不反复请求坏文件。
+ * @param {Device} device
+ * @param {string} key
+ * @param {{ url: string }} entry
+ */
+function loadSoundFile(device, key, entry) {
+  const cache = bufferCache(device)
+  if (cache.has(key)) return
+  const pending = (async function () {
+    if (typeof fetch !== 'function' || typeof device.context.decodeAudioData !== 'function') return null
+    try {
+      const response = await fetch(ART_URL + entry.url)
+      if (response === null || response === undefined || response.ok !== true) return null
+      const body = await response.arrayBuffer()
+      const buffer = await device.context.decodeAudioData(body)
+      return buffer ?? null
+    } catch {
+      return null
+    }
+  })()
+  cache.set(key, pending)
+  pending.then(function (buffer) { cache.set(key, buffer) }, function () { cache.set(key, null) })
+}
+
 /** @param {ChannelState} state @param {string} key @param {{ soft?: boolean }|undefined} options */
 function playChannel(state, key, options) {
   if (state.disposed) return false
+  const fileEntry = (state.files ?? SOUND_FILES)[key]
   const recipe = RECIPES[key]
-  if (recipe === undefined) return false
+  if (fileEntry === undefined && recipe === undefined) return false
   const settings = soundSettings()
   if (!settings.on) return false
   if (!allowedRole() || state.quiet() === true) return false
   const now = Date.now()
-  if (now - (state.lastAt[key] ?? 0) < AUDIO_DEBOUNCE_MS) return false
+  const debounce = fileEntry?.debounceMs ?? AUDIO_DEBOUNCE_MS
+  if (now - (state.lastAt[key] ?? 0) < debounce) return false
   if (voices >= AUDIO_VOICE_BUDGET) return false
-  if (ensureDevice() === null) return false
+  if (ensureDevice() === null || device === null) return false
   const level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2]
-  const volume = level * (options?.soft === true ? 0.65 : 1)
-  if (!startRecipe(state, recipe, volume)) return false
+  const soft = options?.soft === true ? 0.65 : 1
+  if (fileEntry !== undefined) {
+    const cached = bufferCache(device).get(key)
+    if (cached !== undefined && cached !== null && typeof cached.then !== 'function') {
+      if (startBuffer(state, cached, level * (fileEntry.gain ?? 1) * soft)) {
+        state.lastAt[key] = now
+        return true
+      }
+    } else if (cached === undefined) {
+      loadSoundFile(device, key, fileEntry)
+    }
+    // 首次播放、解码中或文件损坏：先用 synth 回退，别让动作完全没声音。
+    const fallbackKey = typeof fileEntry.fallback === 'string'
+      ? fileEntry.fallback.replace(/^synth:/, '') : ''
+    const fallback = (fallbackKey !== '' ? RECIPES[fallbackKey] : undefined) ?? recipe
+    if (fallback !== undefined && startRecipe(state, fallback, level * soft)) {
+      state.lastAt[key] = now
+      return true
+    }
+    return false
+  }
+  if (recipe === undefined) return false
+  if (!startRecipe(state, recipe, level * soft)) return false
   state.lastAt[key] = now
   return true
 }
 
 /**
  * One explicit audio owner, normally one presentation instance.
- * @param {{ isQuiet?: () => boolean }} [options]
+ * @param {{ isQuiet?: () => boolean, soundFiles?: Record<string, any> }} [options]
  */
 export function createAudioChannel(options) {
   const opts = options ?? {}
@@ -220,6 +304,7 @@ export function createAudioChannel(options) {
     lastAt: Object.create(null),
     active: new Set(),
     disposed: false,
+    files: opts.soundFiles ?? SOUND_FILES,
   }
   const channel = {
     get disposed() { return state.disposed },
