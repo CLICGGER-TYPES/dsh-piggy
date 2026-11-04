@@ -7,6 +7,20 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+## [0.37.2-rc.9] — 2026-11-04 · 联机有效期、Windows 重启与结构收尾
+
+配套桌面外壳 0.6.8-rc.7，存档仍为 v15；菜园仍为 4.5.0 / 经典版 3.2.4。本次为 GitHub RC/pre-release；不发布 Gitee，npm 由维护者手动处理。
+
+- 局域网联机的一次性邀请从 60 秒延长到 3 分钟，服务端与面板兜底同步。
+- 修复 Windows portable 在新增小猪/切换完整档后不自动重启：重启改用 PORTABLE_EXECUTABLE_FILE 指向的原始 exe，不再拉起 %TEMP% 解包副本。
+- Windows 实机验收：单猪启动/孵化/面板/正常退出/重开保留存档通过；双猪窗口、roster、共享金币通过。
+- 桌面主进程、owner runtime、file/archive、runtime/dsh 组合根完成拆分，行为不变。
+- 动作包改为 assets/actions/*/pack.json 单一来源，新增 check:assets / assets:sync；音效配方数据化，支持 ogg/wav 文件、合成回退和动作绑定音效。
+- 生成物 client.js、farm client/server、art-revisions、save-owner-lock 移出 git，改由构建生成。
+- 修复 Windows 混合 DPI 命中换算、日历/礼物误触摸摸；桌面与客户端回归通过。
+
+已知限制：多窗口真实 GUI 只做了 Linux/Windows VM；macOS、真实跨设备 LAN/云、360、Windows 混合 DPI 双屏仍未验收；TLS/公网未实现。
+
 ## [0.37.2-rc.8] — 2026-11-04 · 多帮工、巡逻偷窃与多窗口
 
 配套桌面外壳 0.6.8-rc.6，存档仍为 v15；菜园数据升到 v9，内置菜园扩展 4.5.0 / 经典版 3.2.4。本次为 GitHub RC/pre-release；不发布 Gitee，npm 由维护者手动处理。
