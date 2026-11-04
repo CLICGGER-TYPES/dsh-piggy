@@ -100,6 +100,32 @@ test('注册音效包：完整 key 和省略 pack 的短名都可解析', async 
   assert.equal(hasExtensionSound('ext-demo/sfx/beep'), false, 'dispose 注销全部扩展音效')
 })
 
+test('试听 handle：优先复用已注册 key，未注册时取 pack.json 的第一个音效', async () => {
+  const routes = demoRoutes()
+  const cachedFetch = fakeFetch(routes)
+  const runtime = createExtensionSoundRuntime({
+    target: eventTarget(), fetch: cachedFetch.fetch, play: () => true,
+  })
+  const ext = extension(KEY, 'sfx')
+  try {
+    await runtime.sync([ext])
+    const packJsonCalls = () => cachedFetch.calls.filter(call => call.url.endsWith('/pack.json')).length
+    assert.equal(packJsonCalls(), 1)
+    assert.equal(await runtime.previewKey(ext, ext.assetPacks.sounds[0]), 'ext-demo/sfx/beep')
+    assert.equal(packJsonCalls(), 1, '已注册时不再请求 pack.json')
+
+    const fresh = createExtensionSoundRuntime({ target: eventTarget(), fetch: fakeFetch(routes).fetch, play: () => true })
+    assert.equal(await fresh.previewKey(ext, ext.assetPacks.sounds[0]), 'ext-demo/sfx/beep', '未注册时补取')
+    assert.equal(await fresh.previewKey({ ...ext, on: false }, ext.assetPacks.sounds[0]), '', '停用不试听')
+    fresh.dispose()
+    const broken = createExtensionSoundRuntime({ target: eventTarget(), fetch: fakeFetch({}).fetch, play: () => true })
+    assert.equal(await broken.previewKey(ext, ext.assetPacks.sounds[0]), '', '坏包静默')
+    broken.dispose()
+  } finally {
+    runtime.dispose()
+  }
+})
+
 test('dsh-piggy:sound 只播放已注册的 ext- key；停用/卸载/恢复走同一生命周期', async () => {
   const target = eventTarget()
   const played = []

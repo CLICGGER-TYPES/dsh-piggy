@@ -94,6 +94,13 @@ export const CSS_TILES = [
   '.dp-ext-intro{font-size:10.5px;line-height:1.5;color:var(--ac-text-2);margin:0 0 4px}',
   '.dp-ext-emoji{font-size:20px;line-height:1;margin-right:2px}',
   '.dp-ext-note{margin-top:6px;font-size:10px;font-weight:700;color:#c7781a}',
+  // 扩展卡片的只读素材包摘要：两行小字 + 右侧小小试播/试听，不抢开关和删除。
+  '.dp-ext-assets{display:grid;gap:4px;margin-top:7px;padding-top:7px;border-top:1.5px dashed var(--ac-border-light)}',
+  '.dp-ext-asset{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0;font-size:10px;line-height:1.35;color:var(--ac-text-2)}',
+  '.dp-ext-asset-line{min-width:0;font-weight:700;color:var(--ac-text)}',
+  '.dp-ext-asset-off{flex:none;font-weight:800;color:#c7781a}',
+  '.dp-ext-asset-play{flex:none;margin-left:auto;padding:2px 9px;font-size:9.5px;box-shadow:none}',
+  '.dp-ext-asset-packs{flex:1 1 100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px}',
   '.dp-ext-later{margin-top:12px;text-align:center;font-size:10px;color:var(--ac-text-2)}',
   '.dp-ext-section{display:flex;align-items:center;justify-content:space-between;margin:12px 2px 6px;font-size:11px;font-weight:800;color:var(--ac-text-2);letter-spacing:.04em}',
   '.dp-ext-actions{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-top:8px;flex-wrap:wrap}',

@@ -137,6 +137,36 @@ test('dsh-piggy:action 只播放已注册的 ext- handle', async () => {
   assert.equal(target.handlers[EXT_ACTION_EVENT]?.length ?? 0, 0)
 })
 
+test('试播 handle：优先复用已注册缓存，未注册时取 pack.json 的第一个动作', async () => {
+  const routes = demoRoutes()
+  const cachedFetch = fakeFetch(routes)
+  const runtime = createExtensionActionRuntime({
+    registry: createArtResourceRegistry(), target: eventTarget(), fetch: cachedFetch.fetch, play: () => true,
+  })
+  const ext = extension(KEY, 'wave')
+  try {
+    await runtime.sync([ext])
+    const packJsonCalls = () => cachedFetch.calls.filter(call => call.url.endsWith('/pack.json')).length
+    assert.equal(packJsonCalls(), 1)
+    assert.equal(await runtime.previewKey(ext, ext.assetPacks.actions[0]), 'ext-demo/wave/hello')
+    assert.equal(packJsonCalls(), 1, '已注册时不再请求 pack.json')
+
+    const fresh = createExtensionActionRuntime({
+      registry: createArtResourceRegistry(), target: eventTarget(), fetch: fakeFetch(routes).fetch, play: () => true,
+    })
+    assert.equal(await fresh.previewKey(ext, ext.assetPacks.actions[0]), 'ext-demo/wave/hello', '未注册时补取')
+    assert.equal(await fresh.previewKey({ ...ext, on: false }, ext.assetPacks.actions[0]), '', '停用不试播')
+    fresh.dispose()
+    const broken = createExtensionActionRuntime({
+      registry: createArtResourceRegistry(), target: eventTarget(), fetch: fakeFetch({}).fetch, play: () => true,
+    })
+    assert.equal(await broken.previewKey(ext, ext.assetPacks.actions[0]), '', '坏包静默')
+    broken.dispose()
+  } finally {
+    runtime.dispose()
+  }
+})
+
 test('卸载/停用后事件不再播放，第一方动作不受影响', async () => {
   const registry = createArtResourceRegistry()
   const target = eventTarget()

@@ -235,8 +235,9 @@ export function mountGame(mountOptions) {
 
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)
       ctx.petShy = function () { playPigPet(pig) } // 摸猪害羞：本窗口直接播；面板窗口里 attachLife 是 null，wireSplit 会换成转发（PIG_FX: petShy）
-      // 第三方动作/音效入口：先装本窗口播放器，面板/大界面接着由 wireSplit 换成转发。
+      // 第三方动作/音效入口：先装本窗口播放器，面板/大界面接着由 wireSplit 换成转发；ctx.extAssets 供扩展卡试播复用注册缓存。
       extRuntime = attachExtensionRuntimes({ ctx: ctx, pig: pig, registry: presentation.artResources, audio: presentation.audio, target: typeof document === 'undefined' ? null : document })
+      ctx.extAssets = extRuntime
       // 调试页「立绘」：指定一张反馈图、做指定的小动作。桌面版面板窗口里 wireSplit 会把它们换成转给猪窗口。
       ctx.previewArt = function (name) { art.forceFeedbackArt(name); art.sync() }
       ctx.cancelNap = function () { if (ctx.life) ctx.life.cancelNap() }

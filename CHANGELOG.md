@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 扩展卡片只读展示第三方动作/音效包的数量与包名（最多 3 个，超出 `+N`），可试播/试听；扩展停用或素材包不可用时标「不可用」并隐藏按钮，旧快照整块隐藏。
+
 ## [0.37.2-rc.13] — 2026-11-04 · 帧动作与结构收尾
 
 配套桌面外壳 0.6.8-rc.10，存档仍为 v15。
