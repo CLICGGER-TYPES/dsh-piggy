@@ -105,12 +105,13 @@ test('rotated artwork transforms ink corners instead of cropping the rotated can
   near(collectPigHitRects(host)[0], { x: 164, y: 100, width: 64, height: 32 })
 }))
 
-test('sleep uses its own 1.2:1 contain box and ignores the hidden standing image', () => fixture(({ host, pig, image }) => {
+test('sleep uses its own 1.2:1 contain box, clipped to the pig box, and ignores the hidden standing image', () => fixture(({ host, pig, image }) => {
   const standing = image([0, 0, 1, 1])
   standing.computed.visibility = 'hidden'
   const sleep = image([0, 0, 1, 1], { sleep: true, width: 256, height: 128, box: rect(80, 100, 192, 160) })
   pig.setAttribute('data-walk', 'right')
-  near(collectPigHitRects(host)[0], { x: 80, y: 132, width: 192, height: 96 })
+  // 睡姿图比猪盒宽 20%（左右各出 10%），输入只认猪盒里的那一段。
+  near(collectPigHitRects(host)[0], { x: 100, y: 132, width: 128, height: 96 })
   sleep.computed.opacity = '0'
   assert.deepEqual(collectHitRects(host), [])
   sleep.computed.opacity = '1'; pig.hidden = true
@@ -139,6 +140,63 @@ test('visible speech/gift controls remain input but take priority over overlappi
   assert.equal(hitsPig(host, point(110, 110, gift)), false)
   gift.hidden = true; bubble.hidden = true
   assert.equal(hitsRects(collectHitRects(host), point(110, 90)), false)
+}))
+
+test('transparent container padding is not input; only visible text and graphics are reported', () => fixture(({ host, make }) => {
+  const hud = make('dp-hud', rect(0, 0, 120, 80), host)
+  const name = make('', rect(8, 8, 50, 14), hud); name.textContent = '猪猪'
+  const pomo = make('dp-pomo', rect(0, 150, 60, 16), host); pomo.textContent = '🍅 25:00'
+  const card = make('dp-card', rect(200, 200, 100, 100), host)
+  const button = make('button', rect(210, 210, 44, 20), card); button.tagName = 'button'
+  make('div', rect(210, 240, 80, 50), card) // 正文不是控件
+  const shape = collectHitRects(host)
+  const boxes = shape.map(({ x, y, width, height }) => ({ x, y, width, height }))
+  assert.deepEqual(boxes, [
+    { x: 8, y: 8, width: 50, height: 14 },
+    { x: 0, y: 150, width: 60, height: 16 },
+    { x: 210, y: 210, width: 44, height: 20 },
+  ])
+  assert.equal(hitsRects(shape, point(20, 10)), true, '可见文字仍可点')
+  assert.equal(hitsRects(shape, point(30, 158)), true, '番茄钟这类直接写在容器上的文字仍可点')
+  assert.equal(hitsRects(shape, point(110, 70)), false, 'hud 的透明内边距不算命中')
+  assert.equal(hitsRects(shape, point(290, 290)), false, '面板正文/内边距不再整盒上报')
+  assert.equal(hitsRects(shape, point(220, 215)), true, '面板里的按钮仍可点')
+}))
+
+test('an explicit data-hit container opts its whole box back in', () => fixture(({ host, make }) => {
+  const hud = make('dp-hud', rect(0, 0, 120, 80), host)
+  make('', rect(8, 8, 50, 14), hud).textContent = '猪猪'
+  const boxes = collectHitRects(host).map(({ x, y, width, height }) => ({ x, y, width, height }))
+  assert.deepEqual(boxes, [{ x: 8, y: 8, width: 50, height: 14 }], '默认只报文字')
+  // 假 DOM 的 matches 不认属性选择器，这里按真实选择器语义补上 data-hit。
+  const plain = hud.matches.bind(hud)
+  hud.setAttribute('data-hit', '')
+  hud.matches = selector => (selector === '[data-hit]' ? true : plain(selector))
+  assert.equal(hitsRects(collectHitRects(host), point(110, 70)), true, '白名单恢复整盒')
+}))
+
+test('a text-only daily button blocks petting even without a native button tag', () => fixture(({ host, image, make }) => {  image([0, 0, 1, 1])
+  const daily = make('dp-daily', rect(110, 110, 40, 30), host); daily.textContent = '📅'
+  assert.equal(hitsPig(host, point(120, 120, daily)), false)
+  daily.hidden = true
+  assert.equal(hitsPig(host, point(120, 120)), true, '控件消失后原来的猪墨迹照常可摸')
+}))
+
+test('dress slots are clipped to the pig box so a tall hat cannot claim the calendar area', () => fixture(({ host, pig, make }) => {
+  const hat = make('dp-slot', rect(115, 80, 40, 60), pig); hat.textContent = '🎩'
+  const boxes = collectPigHitRects(host).map(({ x, y, width, height }) => ({ x, y, width, height }))
+  assert.deepEqual(boxes, [{ x: 115, y: 100, width: 40, height: 40 }])
+  assert.equal(hitsPig(host, point(120, 90)), false, '帽子上半截在猪盒外，不算命中')
+  assert.equal(hitsPig(host, point(120, 110)), true)
+}))
+
+test('a target outside the scene subtree never counts as the pig', () => fixture(({ host, image, make }) => {
+  image([0, 0, 1, 1])
+  const scene = make('dp-scene', rect(0, 0, 800, 600), host)
+  host.querySelector = selector => selector === '.dp-scene' ? scene : null
+  const stray = make('div', rect(150, 150, 20, 20), host)
+  assert.equal(hitsPig(host, point(160, 160, stray)), false, '宿主页面别的节点不算摸猪')
+  assert.equal(hitsPig(host, point(160, 160)), true, '没有 target 时仍按墨迹命中')
 }))
 
 test('input-only animation reports follow ink, deduplicate and pause during native capture', () => fixture(({ host, image }) => {
