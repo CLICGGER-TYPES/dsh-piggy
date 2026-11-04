@@ -28,12 +28,27 @@ async function serveFile(fetchFile, root, rel) {
 /**
  * Renderer requests opt into one pig with `?pig=<pigId>`. The id labels the
  * target; callers still have to map it to an issued worker session token.
- * @param {{ url: string }} request
+ * Pet windows are loaded as `index.html?pig=<id>`; same-origin fetches from
+ * that page carry the query in `Referer` even though `/dsh-piggy/*` URLs
+ * themselves do not. Both are accepted so an old game package (whose
+ * client.js predates the explicit query) still routes to the right pig.
+ * @param {{ url: string, referrer?: string, headers?: { get?: (name: string) => string | null } }} request
  * @returns {string|null}
  */
 export function pigIdFromRequest(request) {
+  const direct = pigIdFromUrl(request?.url)
+  if (direct !== null) return direct
+  const referer = request?.headers?.get?.('referer')
+  const fromHeader = typeof referer === 'string' ? pigIdFromUrl(referer) : null
+  if (fromHeader !== null) return fromHeader
+  return pigIdFromUrl(request?.referrer)
+}
+
+/** @param {unknown} value */
+function pigIdFromUrl(value) {
+  if (typeof value !== 'string') return null
   try {
-    const pigId = new URL(request.url).searchParams.get('pig')
+    const pigId = new URL(value).searchParams.get('pig')
     return typeof pigId === 'string' && pigId !== '' ? pigId : null
   } catch { return null }
 }
@@ -44,7 +59,7 @@ export function pigIdFromRequest(request) {
  * the runtime's default session. An unknown pig fails instead of silently
  * acting on the default pig.
  * @param {Map<string, string> | ((pigId: string) => string | null | undefined)} sessions
- * @returns {(request: { url: string }) => string|null}
+ * @returns {(request: { url: string, referrer?: string, headers?: { get?: (name: string) => string | null } }) => string|null}
  */
 export function createSessionResolver(sessions) {
   return request => {

@@ -11,6 +11,7 @@ import { validDragOrigin } from '../../lib/drag-origin.js'
 import { SHOW_FALLBACK_MS, createShowGate } from '../../lib/window-show.js'
 import { auxiliaryWindowOptions } from '../../lib/auxiliary-window.js'
 import { createPetWindow } from '../../lib/pet-window.js'
+import { createPetRegistry, createPetState } from '../../lib/pet-instance.js'
 import { createStartupTrace } from '../../lib/startup-trace.js'
 import { desktopLifecycleStateAdapter } from './desktop-lifecycle-adapter.js'
 
@@ -23,7 +24,7 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   const display = { workArea: area, bounds: area, scaleFactor, displayFrequency: 60 }
   const state = { bounds: null, cursor: { x: 0, y: 0 }, destroyed: false, now: 1000, ignoresMouse: false }
   const frames = [], ended = []
-  const webContents = { on: (event, callback) => pageEvents.set(event, callback), setFrameRate() {}, send: (...args) => sent.push(args),
+  const webContents = { id: 1, on: (event, callback) => pageEvents.set(event, callback), setFrameRate() {}, send: (...args) => sent.push(args),
     ...(frameSubscription ? { isDestroyed:()=>false, beginFrameSubscription:fn=>frames.push(fn), endFrameSubscription:()=>ended.push(true) } : {}) }
   class WindowStub {
     constructor(options) {
@@ -47,18 +48,22 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
     once(event, callback) { windowEvents.set(event, callback) }
     on(event, callback) { windowEvents.set(event, callback) }
   }
-  const petWindow = createPetWindow({ BrowserWindow: WindowStub })
+  const pets = createPetRegistry()
+  const primary = createPetState({ primary: true })
+  pets.add(primary)
   const sandbox = {
     ...geometry, createResizeShape, pointerHitsShape, dragHeartbeatExpired, validDragOrigin, SHOW_FALLBACK_MS, createShowGate, auxiliaryWindowOptions,
     process: { platform, env }, BrowserWindow: WindowStub, FRAME_CAP: 0, HERE: '.',
-    petWindow, getPetWindow: petWindow.current, quitting: false, petAsked: null, panelPig: null, dragStats: null,
+    createPetWindow, pets, primaryPet: () => pets.primary(), getPetWindow: () => pets.primary()?.window ?? null,
+    pigSessions: new Map(), quitting: false,
     BOUNDS_TOLERANCE: 2, FALLBACK_CONTENT: { width: 132, height: 152 },
+    startupUpdateToken: null, startupSetupComplete: false, startupRendererLoaded: false, startupWindowWasVisible: false,
     readWindowState: () => null, pigDisplay: () => display, join: (...parts) => parts.join('/'),
     screen: { getCursorScreenPoint: () => state.cursor, getAllDisplays: () => [display],
       getDisplayMatching: () => display, getDisplayNearestPoint: () => display, getPrimaryDisplay: () => display },
     setInterval: (callback, delay) => { const timer = { callback, delay, active: true }; intervals.push(timer); return timer },
     clearInterval: timer => { if (timer) timer.active = false },
-    setTimeout() {}, log() {}, followPig() {}, scheduleWindowStateSave() {}, reanchorPanel() {},
+    setTimeout() {}, log() {}, followPig() {}, scheduleWindowStateSave() {}, reanchorPanel() {}, closePanel() {}, ensurePanelWindow() {},
     startupInputTrace: createStartupTrace(() => {}, () => state.now),
     ipcMain: { on: (channel, callback) => handlers.set(channel, callback) },
     Date: { now: () => state.now },
@@ -68,15 +73,16 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
   const traceStart = source.indexOf('function startupApiErrorKind(error)')
   const traceEnd = source.indexOf('\nasync function flushLogs', traceStart)
   const fromPet = source.indexOf('function fromPet(event)')
-  runInContext(source.slice(fromPet, source.indexOf('\n/**', fromPet)), context)
+  const fromPetEnd = source.indexOf('\n/** 发给所有窗口的页面', fromPet)
   const start = source.indexOf('function workAreaFor(bounds)')
   const end = source.indexOf('\n// ---------------------------------------------------------------------------\n// 面板窗口', start)
-  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && start > 0 && end > start, '必须加载生产诊断、窗口和鼠标入口')
+  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet && start > 0 && end > start, '必须加载生产诊断、窗口和鼠标入口')
   runInContext(source.slice(traceStart, traceEnd), context)
+  runInContext(source.slice(fromPet, fromPetEnd), context)
   runInContext(source.slice(start, end), context)
   await runInContext('createWindow()', context)
   return {
-    mouse, shapes, sent, intervals, state,
+    mouse, shapes, sent, intervals, state, pets, primary,
     recreate: () => runInContext('createWindow()', context),
     send(channel, payload, sender = webContents) {
       const event = { sender, returnValue: undefined }
@@ -84,12 +90,12 @@ export async function mouseHarness({ platform = 'win32', env = {}, frameSubscrip
       return event.returnValue
     },
     poll() { for (const timer of intervals.filter(timer => timer.active && timer.delay === 16)) timer.callback() },
-    tickDrag() { runInContext('dragTick()', context) },
+    tickDrag() { runInContext('dragTick(primaryPet())', context) },
     point(x, y) { state.cursor = { x: state.bounds.x + x, y: state.bounds.y + y } },
     close() { state.destroyed = true; windowEvents.get('closed')() },
     crash() { pageEvents.get('render-process-gone')({}, { reason: 'crashed' }) },
-    dragging: () => runInContext('dragSession !== null', context),
-    ownership: () => JSON.parse(runInContext('JSON.stringify({dragShapeActive, flightShapeActive, flightSlide})', context)),
+    dragging: () => primary.dragSession !== null,
+    ownership: () => ({ dragShapeActive: primary.dragShapeActive, flightShapeActive: primary.flightShapeActive, flightSlide: primary.flightSlide }),
     frames, ended,
     present() { frames.at(-1)({getSize:()=>({width:state.bounds.width,height:state.bounds.height})}) },
   }

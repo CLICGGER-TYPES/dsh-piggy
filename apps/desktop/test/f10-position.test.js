@@ -89,7 +89,7 @@ test('显示器变化要主动告诉游戏包：窗口没挪动也得推几何',
   assert.match(main, /screen\.on\('display-added'/)
   assert.match(main, /screen\.on\('display-removed'/)
   const reclamp = main.slice(main.indexOf('const reclamp ='), main.indexOf("screen.on('display-metrics-changed'"))
-  assert.match(reclamp, /pushGeometry\(\)/, '无条件推几何')
+  assert.match(reclamp, /pushGeometry\(pet\)/, '无条件推几何')
   assert.match(reclamp, /log\('display'/, '记一行，导出日志里能看见是哪块屏、变了什么')
 })
 
@@ -98,8 +98,8 @@ test('窗口位置必须在构造时就给，不能先建再挪（Electron 自�
   // Electron 源码 shell/browser/native_window_views.cc 里写着：构造时不给 x/y 的话，
   // HWND 会先按主屏 DPI 建在 (0,0)、之后再挪，副屏上会「缩水」（secondary-creation
   // deflation symptom）。所以 start 必须摊进构造参数。
-  const ownerCall = main.indexOf('petWindow.create({')
-  const create = main.slice(ownerCall, main.indexOf("url: 'piggy://app/index.html'", ownerCall))
+  const ownerCall = main.indexOf('pet.owner.create({')
+  const create = main.slice(ownerCall, main.indexOf('url,', ownerCall))
   assert.match(create, /options:\s*\{\s*\.\.\.start/, '创建时就带上算好的 x/y/width/height')
 })
 

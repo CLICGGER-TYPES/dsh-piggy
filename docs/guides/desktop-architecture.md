@@ -8,7 +8,7 @@
 
 | 窗口 | 里面有什么 | 谁决定它在哪、多大 |
 |---|---|---|
-| **猪窗口**（`petWindow.current()`，role=`pet`） | 只有猪、气泡、签到/打工小道具 | 游戏包算（`src/client/desktop/`），外壳照做（`piggy:place`）；拖动中由外壳按鼠标算（`dragTick`） |
+| **猪窗口**（每只猪一个 `pet-window`，role=`pet`） | 只有猪、气泡、签到/打工小道具 | 游戏包算（`src/client/desktop/`），外壳照做（`piggy:place`）；拖动中由外壳按鼠标算（`dragTick`） |
 | **面板窗口**（`panelWin`，role=`panel`） | 只有面板（名牌 + 卡片） | 外壳按猪的位置算（`apps/desktop/lib/panel-geometry.js`），页面只报自己多大 |
 
 页面怎么知道自己在哪个窗口：`window.piggyShell.role`（preload 从启动参数 `--piggy-role=panel` 读）。
@@ -111,7 +111,34 @@
 `window.piggyShell.ownerPigs.status/list/select(pigId)/addAndSelect()` 由 `apps/desktop/lib/ipc/owner-pigs.js`
 注册，统一执行 `fromPanelOnly` 校验。渲染器只能请求选一个当前 OwnerDocument roster 中已经存在的 `pigId`，或请求主进程新建并选择；不能传 ownerId、owner 文档路径、猪本体或共享资源。新 ID 由主进程生成。新增猪在运行时按既有 `core/egg.js:layEgg` 建未孵化纸盒，再经 `splitLegacyState(...).body` 只持久化猪本体；coins、inventory、菜园等仍留在 owner resources。
 
-切换和新增都复用 `owner-archive-selection.json` 的 pending/active 选择与 lifecycle 保存、重启、失败回滚。该桥只对带 `OWNER_PIG_RUNTIME_API_VERSION` 能力的 OwnerDocument 游戏包开放；默认 v15 单猪运行时与 DSH 插件的固定 `pigId` 配置不因此改变。当前没有接入多猪页面；已有服务按选中目标重启现有宿主，这既没有实现多只桌面窗口并行显示，也不把并行显示从用户目标中排除。
+切换和新增都复用 `owner-archive-selection.json` 的 pending/active 选择与 lifecycle 保存、重启、失败回滚。该桥只对带 `OWNER_PIG_RUNTIME_API_VERSION` 能力的 OwnerDocument 游戏包开放；默认 v15 单猪运行时与 DSH 插件的固定 `pigId` 配置不因此改变。多只桌面窗口并行显示见下一节。
+
+### 桌面多宠物窗口（第一版）
+
+外壳启动时在 `apps/desktop/main.js` 里读 `host.listOwnerPigs()`，只有同时满足以下条件才开多窗口：
+
+- 当前游戏包 `OWNER_PIG_RUNTIME_API_VERSION === 1`；
+- 当前有显式 OwnerDocument，且 roster 属于同一 `ownerId`；
+- roster 里包含当前选中的 pigId，且至少有 2 只猪。
+
+最多同时开 `MAX_PIG_WINDOWS = 4` 只（主猪优先，其余按 roster 顺序）。每只猪：
+
+1. `host.openPigSession(pigId)` 拿一个 worker session token；
+2. 创建独立 pet window，URL 带 `?pig=<pigId>`，preload 参数带 `--piggy-role=pet --piggy-pig=<pigId>`，主猪再加 `--piggy-primary=1`；
+3. 在 `pigSessions` 里登记 `pigId -> token`，`game-protocol` 用它把 `/dsh-piggy/*` 请求路由到对应 session；同一窗口的请求也可以从 `Referer` 的 `?pig=` 解析；
+4. 每只猪的状态（`petAsked`、`placedShape`、`dragSession`、`hitTimer`、`showGate`、`resizeShape` 等）收在 `apps/desktop/lib/pet-instance.js` 的实例里，不再共用 main.js 单例。
+
+快照定向：worker 的 `snapshot` 事件带 session token，主进程只发给 token 对应的窗口；无 token（默认会话/面板动作）发给主猪。未知或已关闭 token 直接丢弃，不广播。
+
+第一版明确限制：
+
+- **面板只服务主猪**。第二只猪右键只聚焦/置顶，不弹独立面板；主猪窗口关闭后本进程不再提供面板（重启恢复）。
+- **托盘、全屏、恢复、`second-instance` 以主猪为准**。托盘“藏起来/叫出来”会同时处理所有可见猪窗口；全屏只探测主猪所在屏，隐藏时把所有可见猪窗口一起藏；恢复只复位主猪。
+- **`window.json` 只记主猪**。每只猪的屏幕位置仍由游戏包按 `dsh-piggy:desktop-pig:<pigId>` 存在页面 localStorage；非主猪没有窗口级兜底位置。
+- **Linux 显示器重建只冷重建主猪窗口**；其他猪窗口只做工作区夹取。主猪窗口重建后 `always-on-top-changed` 监听不会自动重挂（沿用旧行为）。
+- 旧 shell、旧游戏包、v15 单猪、roster 只有 1 只或任一 session 创建失败时，直接退回原来的单窗口/默认 session。
+
+第一版关闭窗口的行为：一只 pet window 关闭时只销毁自己的 registry 映射、drag/hit 状态和 worker session；主猪关闭时同时收起面板；全部猪窗口关完后写日志并等待原有托盘/退出路径。
 
 ### OwnerDocument 完整档云同步服务
 
@@ -164,7 +191,7 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 
 主进程的 `panel-window.js` 拥有单一面板 `BrowserWindow` 句柄和 renderer 就绪状态；`main.js` 通过 getter 获取当前窗口。面板开关、位置/大小、shape/hit 区域、焦点和菜单布局仍由 `main.js` 组合现有模块处理，窗口创建或 Linux 显示器重建也走同一所有者。
 
-主进程的 `pet-window.js` 唯一持有猪 `BrowserWindow` 句柄，并将 ready、页面加载、加载失败、renderer 退出与关闭事件只交给当前窗口。`main.js` 通过 live getter 装配它；Linux 显示器重建替换当前句柄后，旧窗口的迟到事件不会影响新窗口。窗口位置、显示门、drag、flight 和 shape 算法仍由组合根处理。
+主进程的 `pet-window.js` 是**每一只猪**的 `BrowserWindow` 句柄所有者；`main.js` 为每只猪各建一个 owner，并将 ready、页面加载、加载失败、renderer 退出与关闭事件只交给当前窗口。`apps/desktop/lib/pet-instance.js` 持有每只猪的 `petAsked`、shape、drag、hit、showGate 和 `resizeShape`；`getPetWindow()` 只表示主猪窗口，面板/托盘/全屏/恢复仍以它为准。Linux 显示器重建第一版只替换主猪句柄，旧窗口的迟到事件不会影响新窗口；其他猪窗口只做工作区夹取。窗口位置、显示门、drag、flight 和 shape 算法仍由组合根处理。
 
 `desktop-runtime.js` 唯一持有后台 host、版本服务及其启动 Promise。`main.js` 仍按原 `whenReady` 顺序执行数据迁移、代理与更新器、版本服务、首次游戏下载、host、协议和窗口装配；它不再保存这些句柄的第二份状态。关闭流程等待启动 Promise 后重新通过 `getShutdownResources()` 读取当前句柄，再按 `desktop-lifecycle.js` 原有顺序关闭。
 

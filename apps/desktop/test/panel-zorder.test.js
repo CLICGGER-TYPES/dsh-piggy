@@ -26,8 +26,10 @@ function fixture({ isPanelVisible = true, isExtensionFocused = false } = {}) {
     setBounds: () => calls.push('bounds'),
     showInactive() { this.visible = true; calls.push('show') },
   }
+  const pet = { primary: true, pigId: 'pig-a', window: win, panelPig: { x: 0, y: 0, width: 56, height: 56 }, panelSpeech: null, dragSession: null, petAsked: { x: 10, y: 20, width: 132, height: 152 }, lastDragSlide: { x: 0, y: 0 } }
   const context = {
-    getPetWindow: () => win, getPanelWindow: () => panelWin, extensionLayer: { isFocused: () => isExtensionFocused },
+    getPetWindow: () => win, primaryPet: () => pet, pets: { all: () => [pet], primary: () => pet },
+    getPanelWindow: () => panelWin, extensionLayer: { isFocused: () => isExtensionFocused },
     process: { platform: 'win32' }, panelOpen: true,
     panelFixedViewport: false, panelHasNativeShape: false,
     panelBounds: () => ({ x: 10, y: 20, width: 292, height: 520 }),

@@ -170,7 +170,7 @@ test('第二个进程拿不到单实例锁时先同步写日志再退出', () =>
 })
 
 test('第二次启动时第一个进程的日志能对上前一个进程的 pid 和 host 状态', () => {
-  assert.match(MAIN, /'second instance'[\s\S]{0,400}pid: process\.pid[\s\S]{0,200}host: desktopRuntime\.getHost\(\) !== null[\s\S]{0,200}window: getPetWindow\(\) !== null[\s\S]{0,200}visible: getPetWindow\(\)\?\.isVisible\?\.\(\) === true[\s\S]{0,200}showPending: showGate\?\.pending === true/)
+  assert.match(MAIN, /'second instance'[\s\S]{0,400}pid: process\.pid[\s\S]{0,200}host: desktopRuntime\.getHost\(\) !== null[\s\S]{0,200}window: pet\?\.window !== null[\s\S]{0,200}visible: pet\?\.window\?\.isVisible\?\.\(\) === true[\s\S]{0,200}showPending: pet\?\.showGate\?\.pending === true/)
 })
 
 test('显示门一直不开时日志能区分卡在哪一步', () => {

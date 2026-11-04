@@ -20845,6 +20845,29 @@
     const pigId = typeof shell2?.pigId === "string" && PIG_ID_PATTERN2.test(shell2.pigId) ? shell2.pigId : null;
     return { pigId, primary: pigId !== null && shell2.primary === true };
   }
+  function scopeFetchToPig(pigId) {
+    if (pigId === null || typeof window === "undefined" || typeof window.fetch !== "function") return;
+    const scoped = (
+      /** @type {any} */
+      window
+    );
+    if (scoped.__piggyFetchPig === pigId) return;
+    const original = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      try {
+        const raw = typeof input === "string" ? input : input instanceof Request ? input.url : input instanceof URL ? input.href : String(input);
+        const url = new URL(raw, window.location.href);
+        if (url.origin === window.location.origin && url.pathname.startsWith("/dsh-piggy/") && !url.searchParams.has("pig")) {
+          url.searchParams.set("pig", pigId);
+          if (input instanceof Request) return original(new Request(url.href, input), init);
+          return original(url.href, init);
+        }
+      } catch {
+      }
+      return original(input, init);
+    };
+    scoped.__piggyFetchPig = pigId;
+  }
   var installed2 = false;
   var started = false;
   var installing = false;
@@ -20909,6 +20932,7 @@
       }
       if (petController === null) {
         const { pigId, primary } = pigContext(shell2);
+        scopeFetchToPig(pigId);
         petController = createPetController({
           shell: shell2,
           documentObject: document,
