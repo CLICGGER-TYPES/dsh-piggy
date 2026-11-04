@@ -13,13 +13,13 @@ export function view(data, api) {
   settleHelper(d, api.now)
   const wallet = purse(api), balance = wallet.balance() + d.refund
   const level = levelOf(d.exp)
-  const managed = helperPlots(d)
+  const managed = helperPlots(d, api.now)
   const plots = d.plots.map((plot, index) => {
     if (index >= d.unlocked) return { index, wild: true, next: index === d.unlocked }
     const state = plotState(plot, api.now)
     if (state === null || state.empty) return { index, empty: true, stubble: state?.stubble || false, pests: state?.pests || [], helper: index < managed }
     const crop = cropFor(state.crop)
-    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state) }
+    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state, api.now) }
   })
   const tally = test => plots.filter(test).length
   const counts = { ripe: tally(plot => plot.ripe), pests: tally(plot => plot.pests?.length > 0), withered: tally(plot => plot.withered), empty: tally(plot => plot.empty) }
@@ -39,7 +39,7 @@ export function view(data, api) {
     fert: FERTILIZERS.map(fert => ({ key: fert.key, label: fert.label, hours: fert.hours, price: fert.price, count: amountFor(d, 'fert', fert.key) })),
     seeds,
     harvest: CROPS.map(crop => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, 'harvest', crop.key), sell: crop.sell, food: crop.food ?? null, foodLabel: crop.foodLabel ?? null })),
-    helper: helperView(d),
+    helper: helperView(d, api.now),
     shelf: {
       key: 'farm', label: '菜园商店', emoji: '🌱', color: 'green', currency: { label: wallet.currency.label, emoji: wallet.currency.emoji, balance },
       items: [

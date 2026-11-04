@@ -3,9 +3,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import mine, { CHECKPOINTS, HELPER_SPEEDS, pickaxeFor } from '../extensions/mine/server.js'
-import farm, { CROPS } from '../extensions/farm/server.js'
+import farm, { CROPS, setHelperEnergy } from '../extensions/farm/server.js'
 import { RODS } from '../data.js'
 import { autoFishingPerHour, farmHelperPerHour, fishingPerHour, mineHelperPerHour, simulateMine } from '../tools/economy-sim.mjs'
+setHelperEnergy(false)
 const NOW = 1800000000000
 function api() { return { now: NOW, wallet: { currency: {}, balance: () => 100000, spend: () => true }, say() {}, exert() {}, emit() {} } }
 // Explicit expected totals for four, eight or sixteen successful harvests; the focused farm tests cover fractional carry.

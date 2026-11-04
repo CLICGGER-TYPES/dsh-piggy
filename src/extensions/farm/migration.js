@@ -1,5 +1,5 @@
 // @ts-check
-// 存档迁移与归一化：3.x -> 4.0 -> 7，补齐地块、仓库、帮工（v7：workers/schedule）和第一课字段。
+// 存档迁移与归一化：3.x -> 4.0 -> 8，补齐地块、仓库、帮工（v7：workers/schedule；v8：shiftAt/resting/idle）和第一课字段。
 // 迁移只补数据、退款，不跑动作；动作入口会先 normalize 再结算，保证旧存档可重复读。
 import { EXP_CAP, OLD_FERTILIZER, OLD_HELPER_BARN_PRICES, OLD_SPRINKLER, OLD_YIELD, PLOTS, START_PLOTS } from './data.js'
 import { normalizeHelper, settleHelper } from './helper.js'
@@ -51,7 +51,7 @@ export function normalize(data, now = Date.now()) {
   })
   for (const field of ['seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert']) if (!isObject(data[field])) data[field] = {}
   data.exp = Math.min(EXP_CAP, count(data.exp)); data.refund = count(data.refund); data.helperBarnRefund = count(data.helperBarnRefund)
-  normalizeHelper(data)
+  normalizeHelper(data, now)
   refundOldBarn(data)
   const known = count(data.version) >= 5, raw = known && isObject(data.onboarding) ? data.onboarding : null
   if (!known) data.onboarding = lessonProgress(data) ? lessonDone(true) : { step: 'offer', rewarded: false, legacy: false, plantedAt: null, wateredAt: null }
@@ -65,7 +65,8 @@ export function normalize(data, now = Date.now()) {
     data.helper.enabled = data.helper.hired === true
     data.helper.xpQuarterRemainder = 0
     if (data.helper.hired && !Number.isFinite(now)) throw new Error('帮工存档迁移缺少有效时间，未推进检查点。')
-    settleHelper(data, now, { awardExperience: false })
+    // v5 迁移按旧自然托管语义结算（不受 v8 精力/睡觉影响）；v7→v8 只补字段，不结算。
+    settleHelper(data, now, { awardExperience: false, energy: false })
     data.helper.enabled = data.helper.hired === true
     data.helper.xpQuarterRemainder = 0
     if (data.helper.hired && Number.isFinite(now)) {
@@ -78,7 +79,7 @@ export function normalize(data, now = Date.now()) {
       data.helper.xpEligibleAt = null
     }
   }
-  data.version = Math.max(7, count(data.version))
+  data.version = Math.max(8, count(data.version))
   return data
 }
 /** 新开垦的地：至少有杂草，多数长草；旧存档不补这些东西。 */

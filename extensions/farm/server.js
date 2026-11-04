@@ -220,71 +220,167 @@ function sayHarvest(result) {
   return result.level ? head + "菜园升到 " + result.level + " 级了！" : head;
 }
 
-// src/extensions/farm/helper.js
+// src/extensions/farm/helper-energy.js
 var HELPER_PLOTS = [4, 8, 16];
 var HELPER_MAX = 5;
 var HELPER_PLOTS_PER_WORKER = 4;
 var HELPER_SHARE = 0.9;
 var HELPER_WINDOW = 6 * 36e5;
 var HELPER_PRICES = { hire: 1500, additional: 1500, level: [0, 2e3, 6e3] };
-var MAX_STEPS = 1e5;
-function helperRecipe(key, level) {
-  const crop = cropFor(key);
-  if (!crop) return null;
-  const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours;
-  const cap = Math.min(400, manual * 0.92), target = Math.min(400, manual * HELPER_SHARE);
-  let best = null, make = (batches, y, degraded) => {
-    const net = (y * crop.sell - crop.price) * batches / 6;
-    return { yield: y, intervalMs: HELPER_WINDOW / batches, net, itemsPerHour: y * batches / 6, batches, share: manual > 0 ? net / manual : 0, degraded: degraded === true };
-  }, gap = (net) => Math.abs(net - manual * HELPER_SHARE);
-  for (let batches = 1; batches <= 60; batches += 1) {
-    const y = Math.round((target * 6 / batches + crop.price) / crop.sell), net = (y * crop.sell - crop.price) * batches / 6, ok = y >= 1 && y <= crop.yield;
-    if (ok && net >= manual * 0.85 && net <= cap) return make(batches, y, false);
-    if (ok && net > 0 && net <= cap && (!best || gap(net) < gap(best.net))) best = make(batches, y, true);
-  }
-  return best ?? make(1, 1, true);
+var HELPER_WORK_MS = 3 * HOUR_MS;
+var HELPER_REST_MS = 2 * HOUR_MS;
+var HELPER_REST_AT = 0.2;
+var HELPER_WORK_WINDOW_MS = HELPER_WORK_MS * (1 - HELPER_REST_AT);
+var HELPER_REST_WINDOW_MS = HELPER_REST_MS * (1 - HELPER_REST_AT);
+var HELPER_CYCLE_MS = HELPER_WORK_WINDOW_MS + HELPER_REST_WINDOW_MS;
+var HELPER_STAGGER_MS = HELPER_WORK_MS / 6;
+var energyOn = true;
+function setHelperEnergy(on) {
+  energyOn = on !== false;
+}
+var helperEnergyEnabled = () => energyOn;
+var clamp01 = (value) => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+var finiteOr = (value, fallback) => Number.isFinite(value) ? value : fallback;
+function helperShiftOffset(roleIndex) {
+  return Math.min(HELPER_WORK_WINDOW_MS - 1, Math.max(0, count(roleIndex) * HELPER_STAGGER_MS));
+}
+function helperPhaseAt(worker, at) {
+  const shiftAt = worker?.shiftAt;
+  if (!Number.isFinite(shiftAt)) return 0;
+  const raw = (at - shiftAt) % HELPER_CYCLE_MS;
+  return raw < 0 ? raw + HELPER_CYCLE_MS : raw;
+}
+function helperWorkingAt(worker, at) {
+  return helperPhaseAt(worker, at) < HELPER_WORK_WINDOW_MS;
+}
+function helperEnergyAt(worker, at) {
+  const phase = helperPhaseAt(worker, at);
+  return phase < HELPER_WORK_WINDOW_MS ? 1 - phase / HELPER_WORK_MS : HELPER_REST_AT + (phase - HELPER_WORK_WINDOW_MS) / HELPER_REST_MS;
+}
+function helperNextWorkAt(worker, at) {
+  const phase = helperPhaseAt(worker, at);
+  return phase < HELPER_WORK_WINDOW_MS ? at : at + (HELPER_CYCLE_MS - phase);
+}
+function helperRestEnergyAt(worker, at) {
+  const start = finiteOr(worker?.shiftAt, at);
+  return clamp01(HELPER_REST_AT + (at - start) / HELPER_REST_MS);
+}
+function helperPatrolOnDuty(data, at = Date.now()) {
+  if (!data.helper.enabled) return 0;
+  return (data.helper.workers || []).filter((worker) => worker.role === "patrol" && worker.resting !== true && worker.idle !== true && helperWorkingAt(worker, at)).length;
+}
+function helperRestAnchor(at, energy) {
+  return at - (Math.max(HELPER_REST_AT, clamp01(energy)) - HELPER_REST_AT) * HELPER_REST_MS;
+}
+function helperWorkAnchor(at, energy) {
+  return at - (1 - Math.max(HELPER_REST_AT, clamp01(energy))) * HELPER_WORK_MS;
 }
 var helperWorkersForLevel = (level) => HELPER_PLOTS[Math.min(2, count(level))] / HELPER_PLOTS_PER_WORKER;
-function helperWorkerList(level = 0) {
+function helperWorkerList(level = 0, anchor = null) {
   const n = Math.max(1, Math.min(HELPER_MAX, helperWorkersForLevel(level)));
-  return Array.from({ length: n }, (_, index) => ({ id: index + 1, role: "harvest", locked: false, hiredAt: null }));
-}
-function normalizeHelper(data) {
-  const raw = isObject(data.helper) ? data.helper : {};
-  const level = Math.min(2, count(raw.level));
-  const barn = Math.min(3, count(raw.barn));
-  let workers = (Array.isArray(raw.workers) ? raw.workers : []).filter(isObject).slice(0, HELPER_MAX).map((worker, index) => ({
+  return Array.from({ length: n }, (_, index) => ({
     id: index + 1,
-    // 连续重编号：id 只给 UI/动作定位，别信存档里的旧 id
-    role: worker.role === "patrol" ? "patrol" : "harvest",
-    locked: worker.locked === true,
-    hiredAt: Number.isFinite(worker.hiredAt) ? worker.hiredAt : null
+    role: "harvest",
+    locked: false,
+    hiredAt: null,
+    shiftAt: Number.isFinite(anchor) ? anchor - helperShiftOffset(index) : null,
+    resting: false,
+    idle: false
   }));
-  if (raw.hired === true && workers.length === 0) workers = helperWorkerList(level);
-  const hired = workers.length > 0;
-  data.helper = {
-    hired,
-    enabled: hired && raw.enabled !== false,
-    xpQuarterRemainder: Math.min(3, count(raw.xpQuarterRemainder)),
-    xpEligibleAt: Number.isFinite(raw.xpEligibleAt) ? raw.xpEligibleAt : null,
-    level,
-    barn,
-    lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
-    usedMs: 0,
-    cursor: count(raw.cursor) % PLOTS,
-    pending: null,
-    targets: Array.from({ length: PLOTS }, (_, index) => cropFor(raw.targets?.[index]) ? raw.targets[index] : null),
-    stock: Object.fromEntries(CROPS.map((crop) => [crop.key, count(raw.stock?.[crop.key])])),
-    schedule: raw.schedule === "manual" ? "manual" : "auto",
-    workers
-  };
 }
-var helperCount = (data) => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0);
+function helperWorkerEnergy(data, worker, at) {
+  if (!data.helper.enabled || worker.resting === true || worker.idle === true) return helperRestEnergyAt(worker, at);
+  return helperEnergyAt(worker, at);
+}
+
+// src/extensions/farm/helper-coverage.js
 var helperHarvestWorkers = (data) => (Array.isArray(data.helper.workers) ? data.helper.workers : []).filter((worker) => worker.role === "harvest").length;
-var helperPlots = (data) => data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS_PER_WORKER * helperHarvestWorkers(data)) : 0;
-function helperDefaultRole(data) {
-  return data.helper.schedule === "auto" && helperPlots(data) >= data.unlocked ? "patrol" : "harvest";
+function helperFullPlots(data) {
+  return data.helper.hired ? Math.min(data.unlocked, HELPER_PLOTS_PER_WORKER * helperHarvestWorkers(data)) : 0;
 }
+function helperTargetCropFor(data, index) {
+  const plot = data.plots[index];
+  const growing = cropFor(plot?.crop);
+  if (growing !== null) return growing;
+  return cropFor(data.helper.targets?.[index]);
+}
+function helperHasWork(data) {
+  const full = helperFullPlots(data);
+  for (let index = 0; index < full; index += 1) {
+    const plot = data.plots[index];
+    if (cropFor(plot?.crop) !== null) return true;
+    const target = helperTargetCropFor(data, index);
+    if (target !== null && amountFor(data, "seeds", target.key) > 0) return true;
+  }
+  return false;
+}
+function helperWorkerOnDuty(data, worker, at, hasWork = helperHasWork(data)) {
+  if (!data.helper.enabled || worker.resting === true || worker.idle === true) return false;
+  if (!helperEnergyEnabled()) return true;
+  if (!hasWork) return false;
+  return helperWorkingAt(worker, at);
+}
+function plotWorkRank(data, index) {
+  const plot = data.plots[index];
+  if (cropFor(plot?.crop) !== null) return 0;
+  const target = helperTargetCropFor(data, index);
+  return target !== null && amountFor(data, "seeds", target.key) > 0 ? 1 : 2;
+}
+function helperAssignments(data, at = Date.now()) {
+  if (!helperEnergyEnabled()) return helperLegacyAssignments(data);
+  const workers = Array.isArray(data.helper.workers) ? data.helper.workers : [];
+  const harvest = workers.filter((worker) => worker.role === "harvest");
+  const full = helperFullPlots(data);
+  const empty = { total: 0, covered: /* @__PURE__ */ new Set(), plots: /* @__PURE__ */ new Map(), onDuty: [] };
+  if (!data.helper.hired || full === 0) return empty;
+  const hasWork = helperHasWork(data);
+  const onDuty = hasWork ? harvest.filter((worker) => helperWorkerOnDuty(data, worker, at, true)) : [];
+  const total = Math.min(full, HELPER_PLOTS_PER_WORKER * onDuty.length);
+  if (total === 0) return empty;
+  const candidates = Array.from({ length: full }, (_, index) => index).sort((left, right) => plotWorkRank(data, left) - plotWorkRank(data, right) || left - right);
+  const plots = new Map(onDuty.map((worker) => [worker.id, []]));
+  let cursor = 0;
+  while (cursor < total) {
+    for (const worker of onDuty) {
+      if (cursor >= total) break;
+      const index = candidates[cursor];
+      cursor += 1;
+      plots.get(worker.id).push(index);
+    }
+  }
+  return { total, covered: new Set(candidates.slice(0, total)), plots, onDuty };
+}
+function helperLegacyAssignments(data) {
+  const workers = Array.isArray(data.helper.workers) ? data.helper.workers : [];
+  const harvest = workers.filter((worker) => worker.role === "harvest");
+  const full = helperFullPlots(data);
+  const empty = { total: 0, covered: /* @__PURE__ */ new Set(), plots: /* @__PURE__ */ new Map(), onDuty: [] };
+  if (!data.helper.hired || full === 0) return empty;
+  const plots = /* @__PURE__ */ new Map();
+  let offset = 0;
+  for (const worker of harvest) {
+    const count2 = Math.max(0, Math.min(HELPER_PLOTS_PER_WORKER, full - offset));
+    plots.set(worker.id, Array.from({ length: count2 }, (_, index) => offset + index));
+    offset += count2;
+  }
+  const total = Math.min(full, offset);
+  return { total, covered: new Set(Array.from({ length: total }, (_, index) => index)), plots, onDuty: harvest };
+}
+function helperPlots(data, at = Date.now()) {
+  return helperAssignments(data, at).total;
+}
+function helperWorkerState(data, worker, at, hasWork = helperHasWork(data), busy = false) {
+  if (!data.helper.enabled) return "paused";
+  if (!helperEnergyEnabled()) return busy ? "working" : "idle";
+  if (worker.resting === true || worker.idle === true) return "resting";
+  if (!hasWork) return "resting";
+  if (!helperWorkingAt(worker, at)) return "resting";
+  if (helperEnergyAt(worker, at) <= HELPER_REST_AT) return "resting";
+  return busy ? "working" : "idle";
+}
+
+// src/extensions/farm/helper-settle.js
+var MAX_STEPS = 1e5;
 var helperRandom = (...parts) => stableRandom("helper", ...parts);
 function keepClean(plot, at, index) {
   if (!isObject(plot.pests)) plot.pests = { weed: null, bug: null, dry: null };
@@ -294,7 +390,7 @@ function keepClean(plot, at, index) {
     plot.pests[kind] = nextPest(at, helperRandom("pest", index, kind, plot.crop, plot.plantedAt, at));
   }
 }
-function nextEvent(data, helper, managed, at, now, blocked) {
+function nextEventLegacy(data, helper, managed, at, now, blocked) {
   let pick = null;
   for (let offset = 0; offset < managed; offset += 1) {
     const index = (helper.cursor + offset) % managed;
@@ -306,6 +402,41 @@ function nextEvent(data, helper, managed, at, now, blocked) {
     if (pick === null || when < pick.when) pick = { when, index, crop };
   }
   return pick;
+}
+function nextEventDynamic(data, at, now, blocked, coverage) {
+  let pick = null;
+  for (const index of coverage.covered) {
+    if (blocked.has(index)) continue;
+    const plot = data.plots[index];
+    const crop = cropFor(plot?.fallow === true || plot?.withered === true ? null : plot?.crop);
+    const when = crop === null ? at : Math.max(at, ripeAt(plot, crop));
+    if (when > now) continue;
+    if (when > at && !helperAssignments(data, when).covered.has(index)) continue;
+    if (pick === null || when < pick.when) pick = { when, index, crop };
+  }
+  return pick;
+}
+function nextCoverageAt(data, at, now) {
+  if (!helperEnergyEnabled() || at >= now) return null;
+  const before = helperAssignments(data, at).onDuty.length;
+  const harvest = (data.helper.workers || []).filter((worker) => worker.role === "harvest");
+  const horizon = Math.min(now, at + HELPER_CYCLE_MS + 1);
+  const points = /* @__PURE__ */ new Set();
+  for (const worker of harvest) {
+    if (worker.resting === true || worker.idle === true) continue;
+    let cursor = at;
+    for (let step = 0; step < 6; step += 1) {
+      const phase = helperPhaseAt(worker, cursor);
+      const delta = phase < HELPER_WORK_WINDOW_MS ? HELPER_WORK_WINDOW_MS - phase : HELPER_CYCLE_MS - phase;
+      cursor += Math.max(1, delta);
+      if (cursor > horizon) break;
+      points.add(cursor);
+    }
+  }
+  for (const point of [...points].sort((left, right) => left - right)) {
+    if (helperAssignments(data, point).onDuty.length > before) return point;
+  }
+  return null;
 }
 function awardHelperExperience(data, helper, crop, eventAt) {
   if (Number.isFinite(helper.xpEligibleAt) && eventAt <= helper.xpEligibleAt) return;
@@ -349,8 +480,8 @@ function plantHere(data, helper, managed, next, at, blocked) {
   keepClean(data.plots[index], at, index);
   helper.cursor = (index + 1) % managed;
 }
-function tidy(data, managed, now) {
-  for (let index = 0; index < managed; index += 1) {
+function tidy(data, now, indices) {
+  for (const index of indices) {
     let plot = data.plots[index];
     if (plot?.withered) data.plots[index] = plot = null;
     if (plot === null) continue;
@@ -362,25 +493,68 @@ function tidy(data, managed, now) {
     keepClean(plot, now, index);
   }
 }
-function settlePlots(data, helper, managed, start, now, awardExperience) {
-  for (let index = 0; index < managed; index += 1) {
+var allIndices = (data) => Array.from({ length: helperFullPlots(data) }, (_, index) => index);
+function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
+  for (const index of allIndices(data)) {
     const crop = cropFor(data.plots[index]?.crop);
     if (crop !== null) helper.targets[index] = crop.key;
   }
   const blocked = /* @__PURE__ */ new Set();
   let at = start;
+  let coverage = useEnergy ? helperAssignments(data, at) : null;
   let step = 0;
   for (; step < MAX_STEPS; step += 1) {
-    const next = nextEvent(data, helper, managed, at, now, blocked);
-    if (next === null) break;
-    at = Math.max(at, next.when);
-    if (next.crop === null) plantHere(data, helper, managed, next, at, blocked);
-    else harvestHere(data, helper, managed, { at: next.when, index: next.index, crop: next.crop }, awardExperience);
+    const managed2 = useEnergy ? coverage.total : helperLegacyAssignments(data).total;
+    const next = useEnergy ? nextEventDynamic(data, at, now, blocked, coverage) : nextEventLegacy(data, helper, managed2, at, now, blocked);
+    if (next === null) {
+      const wake = useEnergy ? nextCoverageAt(data, at, now) : null;
+      if (wake !== null && wake > at) {
+        at = wake;
+        coverage = helperAssignments(data, at);
+        continue;
+      }
+      break;
+    }
+    if (next.when > at) {
+      at = next.when;
+      coverage = helperAssignments(data, at);
+    }
+    if (useEnergy && !coverage.covered.has(next.index)) {
+      const wake = nextCoverageAt(data, at, now);
+      if (wake === null || wake <= at) break;
+      at = wake;
+      coverage = helperAssignments(data, at);
+      continue;
+    }
+    const effectiveManaged = Math.max(1, useEnergy ? coverage.total : managed2);
+    if (next.crop === null) plantHere(data, helper, effectiveManaged, next, at, blocked);
+    else harvestHere(data, helper, effectiveManaged, { at: next.when, index: next.index, crop: next.crop }, awardExperience);
   }
-  if (step === MAX_STEPS && nextEvent(data, helper, managed, at, now, blocked) !== null) throw new Error("菜园离线农活过多，未推进结算时间；请联系维护者检查存档。");
-  tidy(data, managed, now);
+  const managed = useEnergy ? coverage.total : helperLegacyAssignments(data).total;
+  const remaining = useEnergy ? nextEventDynamic(data, at, now, blocked, coverage) : nextEventLegacy(data, helper, managed, at, now, blocked);
+  if (step === MAX_STEPS && remaining !== null) throw new Error("菜园离线农活过多，未推进结算时间；请联系维护者检查存档。");
+  const covered = useEnergy ? helperAssignments(data, now).covered : new Set(allIndices(data));
+  tidy(data, now, [...covered]);
 }
-function settleHelper(data, now, { awardExperience = true } = {}) {
+function sleepWorkers(data, from, now, recovering) {
+  for (const worker of data.helper.workers) {
+    if (worker.resting === true) continue;
+    if (worker.idle === true) continue;
+    const energy = recovering && now > from ? Math.max(0, Math.min(1, helperEnergyAt(worker, from) + (now - from) / HELPER_REST_MS)) : helperEnergyAt(worker, now);
+    worker.idle = true;
+    worker.shiftAt = helperRestAnchor(now, energy);
+  }
+}
+function wakeSleepers(data, now) {
+  for (const worker of data.helper.workers) {
+    if (worker.idle !== true || worker.resting === true) continue;
+    const energy = helperRestEnergyAt(worker, now);
+    if (energy <= HELPER_REST_AT) continue;
+    worker.idle = false;
+    worker.shiftAt = helperWorkAnchor(now, energy);
+  }
+}
+function settleHelper(data, now, { awardExperience = true, energy = helperEnergyEnabled() } = {}) {
   if (weatherAt(now) === "rain") for (const plot of data.plots) {
     if (plot?.fallow) plot.pests.dry = null;
     else if (plot?.pests?.dry <= now) plot.pests.dry = droughtAt(now);
@@ -390,27 +564,97 @@ function settleHelper(data, now, { awardExperience = true } = {}) {
   const start = helper.lastAt ?? now;
   if (now < start) return;
   if (!helper.enabled) return;
-  const managed = helperPlots(data);
-  if (managed === 0) {
-    if (helper.hired === true) helper.lastAt = now;
+  const useEnergy = energy === true;
+  const workStart = useEnergy ? helperHasWork(data) : true;
+  const workNow = useEnergy ? helperHasWork(data) : true;
+  if (useEnergy && workNow) wakeSleepers(data, now);
+  if (useEnergy && !workStart && !workNow) {
+    sleepWorkers(data, start, now, true);
+    helper.lastAt = now;
     return;
   }
-  settlePlots(data, helper, managed, start, now, awardExperience);
+  settlePlots(data, helper, start, now, awardExperience, useEnergy);
+  if (useEnergy) {
+    if (helperHasWork(data)) wakeSleepers(data, now);
+    else sleepWorkers(data, now, now, false);
+  }
   helper.lastAt = now;
 }
-function helperView(data) {
+
+// src/extensions/farm/helper.js
+function normalizeHelper(data, now = Date.now()) {
+  const raw = isObject(data.helper) ? data.helper : {};
+  const level = Math.min(2, count(raw.level));
+  const barn = Math.min(3, count(raw.barn));
+  const anchor = finiteOr(raw.lastAt, now);
+  const seen = { harvest: 0, patrol: 0 };
+  let workers = (Array.isArray(raw.workers) ? raw.workers : []).filter(isObject).slice(0, HELPER_MAX).map((worker, index) => {
+    const role = worker.role === "patrol" ? "patrol" : "harvest";
+    const roleIndex = seen[role]++;
+    return {
+      id: index + 1,
+      // 连续重编号：id 只给 UI/动作定位，别信存档里的旧 id
+      role,
+      locked: worker.locked === true,
+      hiredAt: Number.isFinite(worker.hiredAt) ? worker.hiredAt : null,
+      shiftAt: Number.isFinite(worker.shiftAt) ? worker.shiftAt : Number.isFinite(anchor) ? anchor - helperShiftOffset(roleIndex) : null,
+      resting: worker.resting === true,
+      idle: worker.idle === true
+    };
+  });
+  if (raw.hired === true && workers.length === 0) workers = helperWorkerList(level, anchor);
+  const hired = workers.length > 0;
+  data.helper = {
+    hired,
+    enabled: hired && raw.enabled !== false,
+    xpQuarterRemainder: Math.min(3, count(raw.xpQuarterRemainder)),
+    xpEligibleAt: Number.isFinite(raw.xpEligibleAt) ? raw.xpEligibleAt : null,
+    level,
+    barn,
+    lastAt: Number.isFinite(raw.lastAt) ? raw.lastAt : null,
+    usedMs: 0,
+    cursor: count(raw.cursor) % PLOTS,
+    pending: null,
+    targets: Array.from({ length: PLOTS }, (_, index) => cropFor(raw.targets?.[index]) ? raw.targets[index] : null),
+    stock: Object.fromEntries(CROPS.map((crop) => [crop.key, count(raw.stock?.[crop.key])])),
+    schedule: raw.schedule === "manual" ? "manual" : "auto",
+    workers
+  };
+}
+var helperCount = (data) => Object.values(data.helper.stock).reduce((sum, n) => sum + Number(n), 0);
+function helperView(data, now = Date.now()) {
   const helper = data.helper;
-  const managed = helperPlots(data);
-  const missing = helper.targets.slice(0, managed).filter((key, index) => key && (!data.plots[index] || data.plots[index].fallow) && amountFor(data, "seeds", key) === 0);
-  const seedless = managed > 0 && !data.plots.slice(0, managed).some((plot) => cropFor(plot?.crop)) && !helper.targets.slice(0, managed).some((key) => key && amountFor(data, "seeds", key) > 0);
+  if (!Number.isFinite(now)) now = Date.now();
+  const assignments = helperAssignments(data, now);
+  const managed = assignments.total;
+  const capacity = helperFullPlots(data);
+  const hasWork = helperHasWork(data);
+  const diagnosticPlots = Math.max(managed, capacity);
+  const missing = helper.targets.slice(0, diagnosticPlots).filter((key, index) => key && (!data.plots[index] || data.plots[index].fallow) && amountFor(data, "seeds", key) === 0);
+  const seedless = diagnosticPlots > 0 && !data.plots.slice(0, diagnosticPlots).some((plot) => cropFor(plot?.crop)) && !helper.targets.slice(0, diagnosticPlots).some((key) => key && amountFor(data, "seeds", key) > 0);
   const workers = [];
-  let offset = 0;
+  let onDuty = 0;
+  let resting = 0;
+  let restUntil = null;
+  let energySum = 0;
   for (const worker of helper.workers) {
     const role = worker.role === "patrol" ? "patrol" : "harvest";
-    const plotCount = role === "harvest" ? Math.max(0, Math.min(HELPER_PLOTS_PER_WORKER, managed - offset)) : 0;
-    const plots = Array.from({ length: plotCount }, (_, index) => offset + index);
-    offset += plotCount;
-    const working = plots.some((index) => cropFor(data.plots[index]?.crop) !== null);
+    const plots = assignments.plots.get(worker.id) ?? [];
+    const plotCount = role === "harvest" ? plots.length : 0;
+    const onDutyNow = helperWorkerOnDuty(data, worker, now, hasWork);
+    const hasPlotWork = role === "harvest" && plots.some((index) => cropFor(data.plots[index]?.crop) !== null || helperTargetCropFor(data, index) !== null && amountFor(data, "seeds", helperTargetCropFor(data, index).key) > 0);
+    const state = helperWorkerState(data, worker, now, hasWork, hasPlotWork);
+    const energy = Math.max(0, Math.min(1, helperWorkerEnergy(data, worker, now)));
+    const working = onDutyNow;
+    const status = !helper.enabled ? "paused" : state === "resting" ? "resting" : role === "patrol" ? "patrol" : hasPlotWork ? "working" : "idle";
+    const restRemainingMs = state === "resting" ? Math.max(0, Math.round((1 - energy) * HELPER_REST_MS)) : 0;
+    const workRemainingMs = state === "working" ? Math.max(0, Math.round((energy - HELPER_REST_AT) * HELPER_WORK_MS)) : 0;
+    if (onDutyNow) onDuty += 1;
+    if (state === "resting") {
+      resting += 1;
+      if (restRemainingMs > 0) restUntil = restUntil === null ? now + restRemainingMs : Math.min(restUntil, now + restRemainingMs);
+    }
+    energySum += energy;
     workers.push({
       id: worker.id,
       role,
@@ -418,7 +662,15 @@ function helperView(data) {
       locked: worker.locked === true,
       plots,
       plotCount,
-      status: !helper.enabled ? "paused" : role === "patrol" ? "patrol" : working ? "working" : "idle"
+      status,
+      state,
+      working,
+      energy: Math.round(energy * 1e3) / 1e3,
+      restRemainingMs,
+      workRemainingMs,
+      shiftAt: worker.shiftAt,
+      resting: worker.resting === true,
+      idle: worker.idle === true
     });
   }
   return {
@@ -437,12 +689,33 @@ function helperView(data) {
     canHire: helper.workers.length < HELPER_MAX,
     hirePrice: HELPER_PRICES.hire,
     schedule: helper.schedule,
+    onDuty,
+    resting,
+    restUntil,
+    activePlots: managed,
+    energy: workers.length === 0 ? 0 : Math.round(energySum / workers.length * 1e3) / 1e3,
     workers
   };
 }
-function helperPlotView(data, index, state) {
-  if (!data.helper.enabled || index >= helperPlots(data) || state === null || state.ripe || state.withered) return {};
+function helperPlotView(data, index, state, now = Date.now()) {
+  if (!data.helper.enabled || index >= helperPlots(data, now) || state === null || state.ripe || state.withered) return {};
   return { helperNote: "帮工照料中", pests: [] };
+}
+function helperRecipe(key, level) {
+  const crop = cropFor(key);
+  if (!crop) return null;
+  const manual = HELPER_PLOTS[level] * (crop.yield * crop.sell - crop.price) / crop.hours;
+  const cap = Math.min(400, manual * 0.92), target = Math.min(400, manual * HELPER_SHARE);
+  let best = null, make = (batches, y, degraded) => {
+    const net = (y * crop.sell - crop.price) * batches / 6;
+    return { yield: y, intervalMs: HELPER_WINDOW / batches, net, itemsPerHour: y * batches / 6, batches, share: manual > 0 ? net / manual : 0, degraded: degraded === true };
+  }, gap = (net) => Math.abs(net - manual * HELPER_SHARE);
+  for (let batches = 1; batches <= 60; batches += 1) {
+    const y = Math.round((target * 6 / batches + crop.price) / crop.sell), net = (y * crop.sell - crop.price) * batches / 6, ok = y >= 1 && y <= crop.yield;
+    if (ok && net >= manual * 0.85 && net <= cap) return make(batches, y, false);
+    if (ok && net > 0 && net <= cap && (!best || gap(net) < gap(best.net))) best = make(batches, y, true);
+  }
+  return best ?? make(1, 1, true);
 }
 function helperShelf(data, balance) {
   const helper = data.helper;
@@ -466,12 +739,25 @@ function helperBuy(data, payload, api) {
   } else if (helper.hired) return { ok: false, reason: "owned" };
   const price = kind === "hire" ? HELPER_PRICES.hire : HELPER_PRICES.additional;
   if (!purse(api).spend(price, "helper")) return { ok: false, reason: "poor" };
-  const role = helperDefaultRole(data);
-  helper.workers.push({ id: helper.workers.length + 1, role, locked: false, hiredAt: Number.isFinite(api?.now) ? api.now : null });
+  const now = Number.isFinite(api?.now) ? api.now : Date.now();
+  const role = helperDefaultRole(data, now);
+  const roleIndex = helper.workers.filter((worker) => worker.role === role).length;
+  helper.workers.push({
+    id: helper.workers.length + 1,
+    role,
+    locked: false,
+    hiredAt: Number.isFinite(api?.now) ? api.now : null,
+    shiftAt: now - helperShiftOffset(roleIndex),
+    resting: false,
+    idle: false
+  });
   helper.hired = true;
   helper.enabled = true;
   if (kind === "hire") helper.lastAt = api.now;
   return { ok: true };
+}
+function helperDefaultRole(data, now = Date.now()) {
+  return data.helper.schedule === "auto" && helperPlots(data, now) >= data.unlocked ? "patrol" : "harvest";
 }
 function setHelperRole(data, payload, api) {
   const helper = data.helper;
@@ -493,12 +779,64 @@ function setHelperSchedule(data, payload) {
   data.helper.schedule = mode;
   return { ok: true, mode };
 }
+function setHelperRest(data, payload, api) {
+  const helper = data.helper;
+  const id = Number(payload?.id);
+  const worker = Number.isInteger(id) ? helper.workers.find((entry) => entry.id === id) : void 0;
+  if (worker === void 0) return { ok: false, reason: "unavailable" };
+  const wanted = typeof payload?.resting === "boolean" ? payload.resting : payload?.rest;
+  if (typeof wanted !== "boolean") return { ok: false, reason: "unavailable" };
+  const now = Number.isFinite(api?.now) ? api.now : Date.now();
+  if (wanted) {
+    if (worker.resting === true) return { ok: false, reason: "already" };
+    worker.resting = true;
+    worker.idle = false;
+    worker.shiftAt = helperRestAnchor(now, helperWorkerEnergy(data, worker, now));
+  } else {
+    if (worker.resting !== true) return { ok: false, reason: "already" };
+    const energy = helperRestEnergyAt(worker, now);
+    if (energy <= HELPER_REST_AT) return { ok: false, reason: "too-tired" };
+    worker.resting = false;
+    if (helperHasWork(data)) {
+      worker.idle = false;
+      worker.shiftAt = helperWorkAnchor(now, energy);
+    } else {
+      worker.idle = true;
+      worker.shiftAt = helperRestAnchor(now, energy);
+    }
+  }
+  if (helper.enabled && Number.isFinite(api?.now)) helper.lastAt = Number.isFinite(helper.lastAt) ? Math.max(helper.lastAt, api.now) : api.now;
+  return { ok: true, resting: worker.resting };
+}
 function toggleHelper(data, payload, api) {
   const helper = data.helper;
   if (!helper.hired) return { ok: false, reason: "locked" };
   if (typeof payload?.enabled !== "boolean") return { ok: false, reason: "unavailable" };
   if (payload.enabled === helper.enabled) return { ok: false, reason: "already" };
-  helper.enabled = payload.enabled;
+  const now = Number.isFinite(api?.now) ? api.now : Date.now();
+  if (payload.enabled === false) {
+    for (const worker of helper.workers) {
+      if (worker.resting === true) continue;
+      const energy = helperWorkerEnergy(data, worker, now);
+      worker.idle = false;
+      worker.shiftAt = helperRestAnchor(now, energy);
+    }
+    helper.enabled = false;
+  } else {
+    helper.enabled = true;
+    const hasWork = helperHasWork(data);
+    for (const worker of helper.workers) {
+      if (worker.resting === true) continue;
+      const energy = helperRestEnergyAt(worker, now);
+      if (hasWork && energy > HELPER_REST_AT) {
+        worker.idle = false;
+        worker.shiftAt = helperWorkAnchor(now, energy);
+      } else {
+        worker.idle = true;
+        worker.shiftAt = helperRestAnchor(now, energy);
+      }
+    }
+  }
   if (Number.isFinite(api?.now)) helper.lastAt = Number.isFinite(helper.lastAt) ? Math.max(helper.lastAt, api.now) : api.now;
   return { ok: true, enabled: helper.enabled };
 }
@@ -569,7 +907,7 @@ function normalize(data, now = Date.now()) {
   data.exp = Math.min(EXP_CAP, count(data.exp));
   data.refund = count(data.refund);
   data.helperBarnRefund = count(data.helperBarnRefund);
-  normalizeHelper(data);
+  normalizeHelper(data, now);
   refundOldBarn(data);
   const known = count(data.version) >= 5, raw = known && isObject(data.onboarding) ? data.onboarding : null;
   if (!known) data.onboarding = lessonProgress(data) ? lessonDone(true) : { step: "offer", rewarded: false, legacy: false, plantedAt: null, wateredAt: null };
@@ -580,7 +918,7 @@ function normalize(data, now = Date.now()) {
     data.helper.enabled = data.helper.hired === true;
     data.helper.xpQuarterRemainder = 0;
     if (data.helper.hired && !Number.isFinite(now)) throw new Error("帮工存档迁移缺少有效时间，未推进检查点。");
-    settleHelper(data, now, { awardExperience: false });
+    settleHelper(data, now, { awardExperience: false, energy: false });
     data.helper.enabled = data.helper.hired === true;
     data.helper.xpQuarterRemainder = 0;
     if (data.helper.hired && Number.isFinite(now)) {
@@ -592,7 +930,7 @@ function normalize(data, now = Date.now()) {
       data.helper.xpEligibleAt = null;
     }
   }
-  data.version = Math.max(7, count(data.version));
+  data.version = Math.max(8, count(data.version));
   return data;
 }
 function newGround() {
@@ -755,12 +1093,13 @@ actions.hire = (data, payload, api) => helperBuy(data, { item: "helper-hire" }, 
 actions.hireAdditional = (data, payload, api) => helperBuy(data, { item: "helper-additional" }, api);
 actions.setHelperRole = (data, payload, api) => setHelperRole(data, payload, api);
 actions.setHelperSchedule = (data, payload) => setHelperSchedule(data, payload);
+actions.setHelperRest = (data, payload, api) => setHelperRest(data, payload, api);
 actions.upgrade = (data, payload, api) => helperBuy(data, { item: "helper-" + payload?.kind }, api);
 actions.collect = (data) => collectHelper(data);
 actions.toggleHelper = (data, payload, api) => toggleHelper(data, payload, api);
 
 // src/extensions/farm/merge.js
-var FARM_DATA_VERSION = 7;
+var FARM_DATA_VERSION = 8;
 var KNOWN = /* @__PURE__ */ new Set([
   "version",
   "unlocked",
@@ -855,7 +1194,10 @@ function mergeHelper(out, t, s) {
       role: pick.role === "patrol" ? "patrol" : "harvest",
       // 角色跟「结算更晚」的一侧
       locked: primary?.locked === true || secondary?.locked === true,
-      hiredAt: Number.isFinite(pick.hiredAt) ? pick.hiredAt : null
+      hiredAt: Number.isFinite(pick.hiredAt) ? pick.hiredAt : null,
+      shiftAt: Number.isFinite(pick.shiftAt) ? pick.shiftAt : null,
+      resting: pick.resting === true,
+      idle: pick.idle === true
     });
   }
   const hired = workers.length > 0;
@@ -923,7 +1265,7 @@ function mergeStates(targetData, sourceData, now = Date.now()) {
   for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value;
   const unknown = Object.keys(s).filter((key) => !KNOWN.has(key));
   if (unknown.length > 0) warnings.push("菜园：内嵌猪有当前版本不认识的字段（" + unknown.slice(0, 6).join("、") + "），没有合并");
-  normalize(out);
+  normalize(out, now);
   out.unlocked = Math.max(START_PLOTS, Math.min(PLOTS, out.unlocked));
   for (let index = out.unlocked; index < PLOTS; index += 1) out.plots[index] = null;
   return { data: out, warnings, conflicts: [] };
@@ -935,13 +1277,13 @@ function view(data, api) {
   settleHelper(d, api.now);
   const wallet = purse(api), balance = wallet.balance() + d.refund;
   const level = levelOf(d.exp);
-  const managed = helperPlots(d);
+  const managed = helperPlots(d, api.now);
   const plots = d.plots.map((plot, index) => {
     if (index >= d.unlocked) return { index, wild: true, next: index === d.unlocked };
     const state = plotState(plot, api.now);
     if (state === null || state.empty) return { index, empty: true, stubble: state?.stubble || false, pests: state?.pests || [], helper: index < managed };
     const crop = cropFor(state.crop);
-    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state) };
+    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state, api.now) };
   });
   const tally = (test) => plots.filter(test).length;
   const counts = { ripe: tally((plot) => plot.ripe), pests: tally((plot) => plot.pests?.length > 0), withered: tally((plot) => plot.withered), empty: tally((plot) => plot.empty) };
@@ -985,7 +1327,7 @@ function view(data, api) {
     fert: FERTILIZERS.map((fert) => ({ key: fert.key, label: fert.label, hours: fert.hours, price: fert.price, count: amountFor(d, "fert", fert.key) })),
     seeds,
     harvest: CROPS.map((crop) => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, "harvest", crop.key), sell: crop.sell, food: crop.food ?? null, foodLabel: crop.foodLabel ?? null })),
-    helper: helperView(d),
+    helper: helperView(d, api.now),
     shelf: {
       key: "farm",
       label: "菜园商店",
@@ -1047,12 +1389,18 @@ export {
   EXP_CAP,
   EXP_PER_LEVEL,
   FERTILIZERS,
+  HELPER_CYCLE_MS,
   HELPER_MAX,
   HELPER_PLOTS,
   HELPER_PLOTS_PER_WORKER,
   HELPER_PRICES,
+  HELPER_REST_AT,
+  HELPER_REST_MS,
   HELPER_SHARE,
+  HELPER_STAGGER_MS,
   HELPER_WINDOW,
+  HELPER_WORK_MS,
+  HELPER_WORK_WINDOW_MS,
   LESSON,
   OLD_HELPER_BARN_PRICES,
   PESTS,
@@ -1065,11 +1413,16 @@ export {
   TOOLS,
   cropFor,
   server_default as default,
+  helperEnergyAt,
+  helperNextWorkAt,
+  helperPatrolOnDuty,
   helperRecipe,
+  helperWorkingAt,
   levelOf,
   normalize,
   plotState,
   progress,
+  setHelperEnergy,
   setRandom,
   settleHelper,
   weatherAt

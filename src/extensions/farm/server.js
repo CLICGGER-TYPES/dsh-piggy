@@ -9,7 +9,7 @@
 // extensions/farm/server.js 由 scripts/build-farm-server.mjs 生成，不要手改。
 import { actions } from './actions.js'
 import { CROPS, START_PLOTS } from './data.js'
-import { HELPER_MAX, HELPER_PLOTS, HELPER_PLOTS_PER_WORKER, HELPER_PRICES, HELPER_SHARE, HELPER_WINDOW, helperRecipe, settleHelper } from './helper.js'
+import { HELPER_CYCLE_MS, HELPER_MAX, HELPER_PLOTS, HELPER_PLOTS_PER_WORKER, HELPER_PRICES, HELPER_REST_AT, HELPER_REST_MS, HELPER_SHARE, HELPER_STAGGER_MS, HELPER_WINDOW, HELPER_WORK_MS, HELPER_WORK_WINDOW_MS, helperEnergyAt, helperNextWorkAt, helperPatrolOnDuty, helperRecipe, helperWorkingAt, settleHelper, setHelperEnergy } from './helper.js'
 import { payRefund } from './host.js'
 import { mergeStates } from './merge.js'
 import { newGround, normalize } from './migration.js'
@@ -19,7 +19,7 @@ import { view } from './view.js'
 export { CARE_EXP, CROPS, EXP_CAP, EXP_PER_LEVEL, EXERT, FERTILIZERS, LESSON, OLD_HELPER_BARN_PRICES, PEST_LOSS, PEST_MS, PESTS, PLOTS, RECLAIM_PRICE, STAGES, START_PLOTS, TOOLS } from './data.js'
 export { cropFor, levelOf, plotState, setRandom, weatherAt } from './pure.js'
 export { normalize } from './migration.js'
-export { HELPER_MAX, HELPER_PLOTS, HELPER_PLOTS_PER_WORKER, HELPER_PRICES, HELPER_SHARE, HELPER_WINDOW, helperRecipe, settleHelper } from './helper.js'
+export { HELPER_CYCLE_MS, HELPER_MAX, HELPER_PLOTS, HELPER_PLOTS_PER_WORKER, HELPER_PRICES, HELPER_REST_AT, HELPER_REST_MS, HELPER_STAGGER_MS, HELPER_SHARE, HELPER_WINDOW, HELPER_WORK_MS, HELPER_WORK_WINDOW_MS, helperEnergyAt, helperNextWorkAt, helperPatrolOnDuty, helperRecipe, helperWorkingAt, setHelperEnergy, settleHelper } from './helper.js'
 
 /** 历史收获次数按「收了一次」算，不按作物个数；旧存档也先 normalize 再统计。 */
 export function progress(data) {

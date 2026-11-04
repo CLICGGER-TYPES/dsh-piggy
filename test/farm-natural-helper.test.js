@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { beforeEach, test } from 'node:test'
 
 import farm, {
-  CROPS, HELPER_PLOTS, PLOTS, START_PLOTS, normalize, plotState, setRandom, weatherAt,
+  CROPS, HELPER_PLOTS, PLOTS, START_PLOTS, normalize, plotState, setHelperEnergy, setRandom, weatherAt,
 } from '../extensions/farm/server.js'
 
 const H = 3600000
@@ -66,7 +66,7 @@ const growingShape = data => ({
   plots: data.plots.map(plot => (plot === null ? null : { crop: plot.crop, season: plot.season, plantedAt: plot.plantedAt, boostMs: plot.boostMs, roll: plot.roll })),
 })
 
-beforeEach(() => setRandom(() => 0.5))
+beforeEach(() => { setHelperEnergy(false); setRandom(() => 0.5) })
 
 test('六块小白菜同刻种：25 分钟六块都在长、2 小时一块没收，18 小时同刻收六块并按现有种子补种', () => {
   const t = api()
@@ -300,7 +300,7 @@ test('v5 迁移先按旧规则收成熟作物且不补 XP，再写 v7 checkpoint
   }
   const migrationAt = T0 + H
   const once = normalize(structuredClone(raw), migrationAt)
-  assert.equal(once.version, 7, 'v5 迁移输出当前 v7')
+  assert.equal(once.version, 8, 'v5 迁移输出当前 v8')
   assert.equal(once.helper.enabled, true, '旧雇用档默认继续托管')
   assert.equal(once.helper.xpQuarterRemainder, 0, '迁移不带入旧版不存在的 XP 余数')
   assert.equal(once.helper.xpEligibleAt, migrationAt, '首次新规则 XP 从迁移 checkpoint 之后开始')
@@ -346,7 +346,7 @@ test('v5 未来 checkpoint 前的旧成熟事件不补 XP，checkpoint 后的新
     onboarding: { step: 'done', rewarded: true, legacy: false, plantedAt: null, wateredAt: null },
   }
   const data = normalize(structuredClone(raw), T0 + 20 * H)
-  assert.equal(data.version, 7)
+  assert.equal(data.version, 8)
   assert.equal(data.helper.lastAt, T0 + 30 * H, '迁移保留已有未来 checkpoint')
   assert.equal(data.helper.xpEligibleAt, T0 + 30 * H, '旧成熟事件须等到 future checkpoint 才能结算')
   assert.equal(data.exp, 200, '迁移时不追补历史 XP')
@@ -384,7 +384,7 @@ test('回退旧扩展安全：存档形状不变，同一份数据不会藏着�
   t.api.now = T0 + 14 * H
   farm.actions.buy(data, { item: 'nothing' }, t.api)
   assert.deepEqual(Object.keys(data.helper).sort(), ['barn', 'cursor', 'enabled', 'hired', 'lastAt', 'level', 'pending', 'schedule', 'stock', 'targets', 'usedMs', 'workers', 'xpEligibleAt', 'xpQuarterRemainder'])
-  assert.equal(data.version, 7)
+  assert.equal(data.version, 8)
   assert.equal(data.helper.pending, null)
   assert.equal(data.helper.usedMs, 0)
   assert.equal(data.helper.enabled, true)
