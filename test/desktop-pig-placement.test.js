@@ -8,6 +8,8 @@ import { createPlacement, pigScreenKey } from '../src/client/desktop/place.js'
 
 const memory = new Map()
 globalThis.localStorage = {
+  get length() { return memory.size },
+  key: index => [...memory.keys()][index] ?? null,
   getItem: key => (memory.has(key) ? memory.get(key) : null),
   setItem: (key, value) => { memory.set(key, String(value)) },
   removeItem: key => { memory.delete(key) },
@@ -201,4 +203,18 @@ test('new pigs without a saved home use their slot offset and stay deterministic
   const noSlot = createPlacement({ pigId: 'pig-no-slot', primary: false })
   noSlot.decide(report(304, 204, at), win, AREA)
   assert.deepEqual(noSlot.home(), foot(win, at), 'no slot keeps the old bounds fallback')
+})
+
+test('旧版本把两只猪存到同一位置时，pigId 较大的一只改用槽位默认值', () => {
+  memory.clear()
+  const same = JSON.stringify({ v: 3, area: AREA[0], x: 648, y: 246 })
+  memory.set(pigScreenKey('pig-a'), same)
+  memory.set(pigScreenKey('pig-z'), same)
+  const earlier = createPlacement({ pigId: 'pig-a', primary: false, slot: 1 })
+  earlier.decide(report(304, 204, { x: 228, y: 120 }), { x: 646, y: 246, width: 364, height: 332 }, AREA)
+  assert.deepEqual(earlier.home(), { x: 648, y: 275 }, 'pigId 较小的保留旧位置')
+
+  const later = createPlacement({ pigId: 'pig-z', primary: false, slot: 2 })
+  later.decide(report(304, 204, { x: 228, y: 120 }), { x: 646, y: 246, width: 364, height: 332 }, AREA)
+  assert.deepEqual(later.home(), { x: 1115, y: 996 }, '重复位置改用 slot 2')
 })
