@@ -19,6 +19,7 @@ const TOKEN = /^[a-z0-9][a-z0-9._-]{0,63}$/
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/
 const CUSTOM_KEY = /^custom-[a-z0-9-]{1,41}$/
 const SOURCE_PATH = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}\.(?:png|svg|webp)$/
+const EXT_SOURCE_PATH = /^ext\/[a-z0-9-]{2,24}\/actions\/[a-z][a-z0-9-]{0,31}\/[a-z0-9][a-z0-9._/-]*\.(?:png|webp)$/
 const SAFE_ART_STRING = /^[A-Za-z0-9._/@-]+$/
 
 /** @param {unknown} value @param {string} label @returns {string} */
@@ -66,6 +67,13 @@ function normalizeSource(value) {
       throw new Error('[dsh-piggy] invalid art resource path')
     }
     return Object.freeze({ scheme: 'path', path: source.path })
+  }
+  if (source.scheme === 'ext') {
+    if (typeof source.path !== 'string' || !EXT_SOURCE_PATH.test(source.path)
+      || source.path.includes('..') || source.path.includes('//')) {
+      throw new Error('[dsh-piggy] invalid external art resource path')
+    }
+    return Object.freeze({ scheme: 'ext', path: source.path })
   }
   throw new Error('[dsh-piggy] unsupported art resource source scheme')
 }

@@ -13,6 +13,7 @@
  * @module dsh-piggy/client/art-resources
  */
 import { ART_URL } from './constants.js'
+import { artKeyOf, artPathUrl, handleOf, idOf, registeredCacheKey } from './art-resource-identity.js'
 
 /** Internal descriptor schema number. Never written to saves. */
 export const ART_RESOURCE_SCHEMA = 1
@@ -24,9 +25,9 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
 
 /**
  * @typedef {'art' | 'action' | 'skin'} ArtResourceKind
- * @typedef {'builtin' | 'custom' | 'path' | 'legacy'} ArtSourceScheme
- * @typedef {{ scheme: 'builtin', key: string } | { scheme: 'custom', key: string } | { scheme: 'path', path: string }} ArtResourceSourceInput
- * @typedef {{ scheme: 'builtin', key: string, path: string } | { scheme: 'custom', key: string, path: string } | { scheme: 'path', path: string } | { scheme: 'legacy', path: string }} ArtResourceSource
+ * @typedef {'builtin' | 'custom' | 'path' | 'ext' | 'legacy'} ArtSourceScheme
+ * @typedef {{ scheme: 'builtin', key: string } | { scheme: 'custom', key: string } | { scheme: 'path', path: string } | { scheme: 'ext', path: string }} ArtResourceSourceInput
+ * @typedef {{ scheme: 'builtin', key: string, path: string } | { scheme: 'custom', key: string, path: string } | { scheme: 'path', path: string } | { scheme: 'ext', path: string } | { scheme: 'legacy', path: string }} ArtResourceSource
  * @typedef {{
  *   art?: string,
  *   stageNot?: readonly string[],
@@ -87,11 +88,13 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  *     previousRevision: string | null,
  *     cacheKey: string,
  *     previousCacheKey: string | null,
+ *     removed?: boolean,
  *   }[],
  * }} ArtResourceChange
  * @typedef {{
  *   readonly: boolean,
  *   registerPack: (pack: ArtResourcePackInput, options?: { replace?: boolean }) => readonly ArtResourceDescriptor[],
+ *   unregisterPack: (namespace: string, pack: string) => readonly ArtResourceDescriptor[],
  *   resolve: (value: string | ArtResourceRefInput) => ResolvedArtResource | null,
  *   resolveRef: (ref: ArtResourceRefInput) => ResolvedArtResource | null,
  *   resolveString: (value: string) => ResolvedArtResource | null,
@@ -103,37 +106,14 @@ const HANDLE = /^([a-z0-9][a-z0-9._-]{0,63})\/([a-z0-9][a-z0-9._-]{0,63})\/([A-Z
  * @typedef {ReturnType<typeof createState>} RegistryState
  */
 
-/** @param {string} namespace @param {string} pack @param {string} key */
-function handleOf(namespace, pack, key) {
-  return namespace + '/' + pack + '/' + key
-}
-
-/** @param {ArtResourceDescriptor} descriptor */
-function idOf(descriptor) {
-  return handleOf(descriptor.namespace, descriptor.pack, descriptor.key)
-}
-
 /** @param {ArtResourceDescriptor} descriptor */
 function urlOf(descriptor) {
   if (descriptor.source === null) {
     const frame = descriptor.frames?.[0]
-    return frame === undefined ? '' : ART_URL + frame.path + (frame.revision === '' ? '' : '?v=' + frame.revision)
+    return frame === undefined ? '' : artPathUrl(frame.path, frame.revision)
   }
+  if (descriptor.source.scheme === 'ext') return artPathUrl(descriptor.source.path, descriptor.revision)
   return ART_URL + descriptor.source.path + (descriptor.revision === '' ? '' : '?v=' + descriptor.revision)
-}
-
-/** @param {ArtResourceDescriptor} descriptor */
-function registeredCacheKey(descriptor) {
-  return idOf(descriptor) + '@' + descriptor.revision
-}
-
-/** @param {ArtResourceDescriptor} descriptor */
-function artKeyOf(descriptor) {
-  const source = descriptor.source
-  if (source === null) return descriptor.key
-  if (source.scheme === 'builtin' || source.scheme === 'custom') return source.key
-  if (source.scheme === 'path') return handleOf(descriptor.namespace, descriptor.pack, descriptor.key)
-  return descriptor.key
 }
 
 /**
@@ -292,7 +272,44 @@ function createState(parent, legacy, buildDescriptor) {
     return Object.freeze([...prepared.values()])
   }
 
-  return { registerPack, resolveRef, resolveString, subscribe, records, parent, lock: function () { locked = true } }
+  /**
+   * Remove every resource in one namespace/pack. Used when an extension is
+   * disabled, updated or uninstalled; first-party packs are never in a child
+   * registry, so this cannot touch them.
+   * @param {string} namespace
+   * @param {string} pack
+   * @returns {readonly ArtResourceDescriptor[]}
+   */
+  function unregisterPack(namespace, pack) {
+    if (locked) throw new Error('[dsh-piggy] art resource registry is locked')
+    if (typeof namespace !== 'string' || typeof pack !== 'string' || namespace === '' || pack === '') {
+      throw new Error('[dsh-piggy] art resource pack needs namespace/pack')
+    }
+    /** @type {ArtResourceDescriptor[]} */
+    const removed = []
+    for (const [handle, descriptor] of records) {
+      if (descriptor.namespace !== namespace || descriptor.pack !== pack) continue
+      removed.push(descriptor)
+      records.delete(handle)
+    }
+    if (removed.length === 0) return Object.freeze([])
+    rebuildShortKeys()
+    notify(Object.freeze({
+      namespace: namespace,
+      pack: pack,
+      changes: Object.freeze(removed.map(descriptor => Object.freeze({
+        key: descriptor.key,
+        revision: '',
+        previousRevision: descriptor.revision,
+        cacheKey: '',
+        previousCacheKey: registeredCacheKey(descriptor),
+        removed: true,
+      }))),
+    }))
+    return Object.freeze(removed)
+  }
+
+  return { registerPack, unregisterPack, resolveRef, resolveString, subscribe, records, parent, lock: function () { locked = true } }
 }
 
 /** @type {WeakMap<ArtResourceRegistry, RegistryState>} */
@@ -306,6 +323,9 @@ function publicRegistry(state, readonly) {
     registerPack: readonly
       ? function () { throw new Error('[dsh-piggy] the default art resource registry is read-only') }
       : state.registerPack,
+    unregisterPack: readonly
+      ? function () { throw new Error('[dsh-piggy] the default art resource registry is read-only') }
+      : state.unregisterPack,
     resolve: function (value) {
       if (typeof value === 'string') return state.resolveString(value)
       if (value !== null && typeof value === 'object') return state.resolveRef(value)
