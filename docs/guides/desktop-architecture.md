@@ -174,6 +174,7 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 | `apps/desktop/lib/desktop-runtime.js` | 唯一持有主进程游戏 host、版本服务及各自启动中的 Promise；组合根仍决定启动顺序，lifecycle 等待 pending 后通过 live getter 读取已就绪句柄 |
 | `apps/desktop/lib/ipc/updates.js` | 更新/外壳更新 IPC 注册（`piggy:updates:*`、`piggy:shell:*`）；`releases` 状态归此模块 |
 | `apps/desktop/lib/ipc/system.js` | 系统类 IPC 注册：外部连接、退出/导出/打开、全屏和代理；状态仍由 `main.js` 持有 |
+| `apps/desktop/lib/ipc/work-sources.js` | 面板专用的「最近投递」只读 IPC；worker 失败或旧运行时统一回空列表 |
 | `apps/desktop/lib/background-host.js`、`runtime-worker.js` | 游戏 Worker 的异步代理、路由和快照转发 |
 | `apps/desktop/lib/background-versions.js`、`versions-worker.js` | 更新 Worker、Chromium 下载衔接和版本操作 |
 | `apps/desktop/lib/fullscreen.js`、`fullscreen-worker.js` | 全屏偏好及 Windows 后台探测器 |

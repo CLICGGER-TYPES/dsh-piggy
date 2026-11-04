@@ -59,6 +59,19 @@ export const CSS_EXTERNAL = [
   '.dp-ext-block small{display:block;margin-top:2px;font-size:10px;line-height:1.5;color:var(--ac-text-2)}',
   '.dp-ext-block-actions{display:flex;gap:6px;margin-top:6px}',
   '.dp-ext-block-actions .dp-mini,.dp-ext-block-actions .dp-btn{flex:1;justify-content:center;font-size:10px;padding:4px 6px}',
+  /* ---------- settings: recent agent deliveries (read-only) ---------- */
+  '.dp-work-sources{margin-top:9px;padding-top:8px;border-top:1.5px dashed var(--ac-border-light)}',
+  '.dp-work-sources-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}',
+  '.dp-work-sources-head b{font-size:11px;color:var(--ac-text)}',
+  '.dp-work-sources-head small{flex:none;font-size:9px;color:var(--ac-text-2);white-space:nowrap}',
+  '.dp-work-sources-list{display:grid;gap:6px;margin-top:5px}',
+  '.dp-work-source{display:grid;gap:1px;min-width:0}',
+  '.dp-work-source+.dp-work-source{padding-top:6px;border-top:1px solid var(--ac-border-light)}',
+  '.dp-work-source-name{display:flex;align-items:baseline;gap:6px;min-width:0}',
+  '.dp-work-source-name b{flex:1 1 auto;min-width:0;font-size:10.5px;line-height:1.4;color:var(--ac-text);overflow-wrap:anywhere}',
+  '.dp-work-source-name small{flex:none;font-size:9.5px;line-height:1.4;color:var(--ac-text-2);white-space:nowrap}',
+  '.dp-work-source-meta{font-size:9.5px;line-height:1.45;color:var(--ac-text-2);overflow-wrap:anywhere}',
+  '.dp-work-sources-empty{display:block;margin-top:3px;font-size:9.5px;line-height:1.45;color:var(--ac-text-2)}',
 
   /* ---------- radio cards (two pigs / identity / conflicts) ---------- */
   '.dp-ext-choice{display:flex;align-items:flex-start;gap:6px;width:100%;box-sizing:border-box;margin:6px 0 0;',

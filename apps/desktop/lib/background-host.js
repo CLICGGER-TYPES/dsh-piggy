@@ -95,6 +95,8 @@ export async function startBackgroundHost(gameDir, statePath, options = {}) {
     /** @param {string} token */
     closePigSession: token => request('close-session', [token]),
     acceptWorkEvent: event => request('acceptWorkEvent', [event]),
+    /** 最近 7 天按来源聚合的工作收据；旧游戏包由 worker 返回 ok:false。 */
+    workEventSources: () => request('work-event-sources'),
     listOwnerPigs: () => request('owner:list-pigs'),
     createOwnerPig: pigId => request('owner:create-pig', [pigId]),
     metadata: () => request('metadata'),

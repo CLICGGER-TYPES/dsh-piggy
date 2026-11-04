@@ -112,10 +112,14 @@ test('桌面后台为唯一写者，两路并发提交同一事件只应用一�
     const work = event({ at: Date.now() })
     const results = await Promise.all([host.acceptWorkEvent(work), host.acceptWorkEvent(work)])
     assert.deepEqual(results.map(result => result.status), ['applied', 'duplicate'])
+    const sources = await host.workEventSources()
+    assert.equal(sources.ok, true)
+    assert.deepEqual(sources.sources.map(entry => [entry.source, entry.count]), [['test-agent', 1]])
     assert.equal((await host.handle('GET', '/dsh-piggy/state')).status, 200)
     await host.dispose()
     host = await startBackgroundHost(ROOT, statePath)
     assert.equal((await host.acceptWorkEvent(work)).status, 'duplicate')
+    assert.deepEqual((await host.workEventSources()).sources.map(entry => entry.count), [1])
   } finally { await host?.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })
 

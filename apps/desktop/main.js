@@ -67,6 +67,7 @@ import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
 import { registerOwnerArchiveIpc } from './lib/ipc/owner-archive.js'
 import { registerOwnerPigsIpc } from './lib/ipc/owner-pigs.js'
 import { registerOwnerNetworkIpc } from './lib/ipc/owner-network.js'
+import { registerWorkSourcesIpc } from './lib/ipc/work-sources.js'
 import { registerPanelIpc } from './lib/ipc/panel.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
 import { createOwnerCloudReadyStore } from './lib/owner-cloud-ready.js'
@@ -900,6 +901,8 @@ registerExternalIpc({
   getExternalManager: () => externalManager,
   toPages,
 })
+// 设置 → 外部连接 → 最近投递：只给面板窗口，只读来源聚合。
+registerWorkSourcesIpc({ ipcMain, fromPanelOnly, getHost: () => desktopRuntime.getHost() })
 
 // ---- 更新 App（页面里的 tabs/update.js）通过这几个口子调用 ----
 registerUpdatesIpc({
