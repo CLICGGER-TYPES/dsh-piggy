@@ -149,7 +149,7 @@ owner cloud first-sync 与历史读取仍注册给面板 IPC。OwnerDocument 模
 
 ### OwnerDocument 私有 LAN 会话候选
 
-`window.piggyShell.ownerNetwork.status/start({listenAddress})/invite(pigId)/stop()` 是面板专用的桌面服务 API；页面不能传 OwnerDocument 路径或 ownerId。服务只对显式 OwnerDocument runtime 提供，默认不启动。没有 TLS 材料时只允许具体私有 IPv4；`0.0.0.0` 始终拒绝。有有效证书/密钥时，服务可使用 HTTPS 绑定一个具体地址。桌面 worker 从 userData 的 `owner-network/tls.key` 和 `tls.crt` 读取证书，文件必须属于当前用户且 POSIX 权限为 0600。一次性 60 秒邀请由 trusted panel 按已有 roster 的 pigId 生成，配对后 bearer token 在服务端固定绑定一个 session/target；后续请求不接受 pigId/ownerId 字段。
+`window.piggyShell.ownerNetwork.status/start({listenAddress})/invite(pigId)/stop()` 是面板专用的桌面服务 API；页面不能传 OwnerDocument 路径或 ownerId。服务只对显式 OwnerDocument runtime 提供，默认不启动。没有 TLS 材料时只允许具体私有 IPv4；`0.0.0.0` 始终拒绝。有有效证书/密钥时，服务可使用 HTTPS 绑定一个具体地址。桌面 worker 从 userData 的 `owner-network/tls.key` 和 `tls.crt` 读取证书，文件必须属于当前用户且 POSIX 权限为 0600。一次性 3 分钟邀请由 trusted panel 按已有 roster 的 pigId 生成，配对后 bearer token 在服务端固定绑定一个 session/target；后续请求不接受 pigId/ownerId 字段。
 
 `runtime/owner-lan-server.js` 和 `runtime/owner-lan-client.js` 提供有界 JSON 的 `/v1/pair`、`/v1/session`、`/v1/state`、白名单 `/v1/command`/`/v1/action` 和 session close。每 session 有序号和 requestId 去重，断线后可用内存 token 查询 nextSequence 并重试同一请求；runtime 进程停止会撤销所有 session、token 和内存回执，需重新配对。一个 listener 绑定一份 OwnerDocument；被邀请客户端可操作该 owner roster 中指定的猪，不能带入另一台设备的 owner 文档或存档。
 
