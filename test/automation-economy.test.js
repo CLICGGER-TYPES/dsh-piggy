@@ -3,7 +3,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import mine, { CHECKPOINTS, HELPER_SPEEDS, pickaxeFor } from '../extensions/mine/server.js'
-import farm, { CROPS, setHelperEnergy } from '../extensions/farm/server.js'
+import farm, { setTheft,  CROPS, setHelperEnergy } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import { RODS } from '../data.js'
 import { autoFishingPerHour, farmHelperPerHour, fishingPerHour, mineHelperPerHour, simulateMine } from '../tools/economy-sim.mjs'
 setHelperEnergy(false)

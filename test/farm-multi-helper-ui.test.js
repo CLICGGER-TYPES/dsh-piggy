@@ -4,7 +4,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import farm, { setHelperEnergy } from '../extensions/farm/server.js'
+import farm, { setTheft,  setHelperEnergy } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 import { api, establishedFarm, plain, renderFarm } from './helpers/farm-ui.js'
 
@@ -41,7 +43,7 @@ test('帮工页签：总览 N/5 + 总覆盖块数，每只一行带角色徽章�
   const badges = ui.all('data-role')
   assert.deepEqual(badges.map(node => node.textContent), ['收菜', '巡逻'])
   assert.match(ui.text(), /收 4 块/)
-  assert.match(ui.text(), /不占地/)
+  assert.match(ui.text(), /守 1 区 · 0–3 号地/)
 
   const buttons = ui.all('data-farm-role')
   assert.deepEqual(buttons.map(node => node.getAttribute('data-farm-role')), ['patrol', 'harvest'])

@@ -1,10 +1,11 @@
 // @ts-check
-// 存档迁移与归一化：3.x -> 4.0 -> 8，补齐地块、仓库、帮工（v7：workers/schedule；v8：shiftAt/resting/idle）和第一课字段。
-// 迁移只补数据、退款，不跑动作；动作入口会先 normalize 再结算，保证旧存档可重复读。
+// 存档迁移与归一化：3.x -> 4.0 -> 8 -> 9，补齐地块、仓库、帮工（v7：workers/schedule；v8：shiftAt/resting/idle）
+// 和第一课字段；v9 补顶层 theft 游标和地块 loss。迁移只补数据、退款，不跑动作（也不结算偷窃）。
 import { EXP_CAP, OLD_FERTILIZER, OLD_HELPER_BARN_PRICES, OLD_SPRINKLER, OLD_YIELD, PLOTS, START_PLOTS } from './data.js'
 import { normalizeHelper, settleHelper } from './helper.js'
 import { lessonDone, lessonProgress } from './plot-rules.js'
 import { count, cropFor, isObject, randomValue } from './pure.js'
+import { lossValue, normalizeTheft } from './theft.js'
 
 /** 3.x → 4.0（normalize 随后统一升到 7）：地数至少 6 块；地里的作物当作长完、按旧产量进仓库；旧洒水器、旧肥料退菜币；大水壶换成喷雾桶。 */
 function migrate(data) {
@@ -47,6 +48,10 @@ export function normalize(data, now = Date.now()) {
     if (plot.fallow === true) return { fallow: true, stubble: plot.stubble === true, pests: { dry: plot.pests?.dry === 0 ? 0 : null, weed: plot.pests?.weed === 0 ? 0 : null } }
     if (plot.withered === true) return cropFor(plot.crop) ? { crop: plot.crop, withered: true } : null
     if (!cropFor(plot.crop) || !Number.isFinite(plot.plantedAt) || !isObject(plot.pests)) return null
+    // v9：偷窃损失是 0–0.9 的比例；坏值当 0，0 不写字段（保持旧形状）。
+    const loss = lossValue(plot.loss)
+    if (loss > 0) return { ...plot, loss }
+    if ('loss' in plot) { const clean = { ...plot }; delete clean.loss; return clean }
     return plot
   })
   for (const field of ['seeds', 'harvest', 'acquired', 'harvests', 'tools', 'fert']) if (!isObject(data[field])) data[field] = {}
@@ -66,7 +71,7 @@ export function normalize(data, now = Date.now()) {
     data.helper.xpQuarterRemainder = 0
     if (data.helper.hired && !Number.isFinite(now)) throw new Error('帮工存档迁移缺少有效时间，未推进检查点。')
     // v5 迁移按旧自然托管语义结算（不受 v8 精力/睡觉影响）；v7→v8 只补字段，不结算。
-    settleHelper(data, now, { awardExperience: false, energy: false })
+    settleHelper(data, now, { awardExperience: false, energy: false, theft: false })
     data.helper.enabled = data.helper.hired === true
     data.helper.xpQuarterRemainder = 0
     if (data.helper.hired && Number.isFinite(now)) {
@@ -79,7 +84,8 @@ export function normalize(data, now = Date.now()) {
       data.helper.xpEligibleAt = null
     }
   }
-  data.version = Math.max(8, count(data.version))
+  normalizeTheft(data, now)
+  data.version = Math.max(9, count(data.version))
   return data
 }
 /** 新开垦的地：至少有杂草，多数长草；旧存档不补这些东西。 */

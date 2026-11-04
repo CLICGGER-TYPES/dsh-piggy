@@ -9,6 +9,9 @@ import {
   helperEnergyAt, helperEnergyEnabled, helperPhaseAt, helperRestAnchor, helperRestEnergyAt, helperWorkAnchor,
 } from './helper-energy.js'
 import { helperAssignments, helperFullPlots, helperHasWork, helperLegacyAssignments } from './helper-coverage.js'
+import {
+  THEFT_LOOKBACK_MS, alignTheft, hasTheftTargets, resolveTheft, settleTheftOnly, skipTheftClock, theftEnabled,
+} from './theft.js'
 
 /** 一次结算最多处理多少件农活：防坏存档把扩展卡死；正常存档受种子数量限制，远到不了这个数。 */
 const MAX_STEPS = 100000
@@ -146,7 +149,7 @@ const allIndices = data => Array.from({ length: helperFullPlots(data) }, (_, ind
  * 结算主循环：按成熟时刻一件件处理，同刻按 cursor 排队。收成用真实的成熟时刻（离线多久就补多少轮），
  * 补种用结算时钟且不早于 lastAt：没雇帮工的那段不会掉出“追溯种上”的果。
  */
-function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
+function settlePlots(data, helper, start, now, awardExperience, useEnergy, theft) {
   // 托管地在长什么就认下什么：玩家自己种的作物也归帮工按原样补种。
   for (const index of allIndices(data)) {
     const crop = cropFor(data.plots[index]?.crop)
@@ -155,15 +158,33 @@ function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
   const blocked = new Set() // 这一轮种不了的地（缺种子 / 没指定作物）：别让结算空转
   let at = start
   let coverage = useEnergy ? helperAssignments(data, at) : null
+  // 偷窃和农活同一条时间线：先到先处理，同刻偷窃优先；绝不能作为收完再补一刀的后处理。
+  const dueTheft = () => {
+    if (!theft) return null
+    const cursor = data.theft?.at
+    return Number.isFinite(cursor) && cursor <= now ? Math.max(cursor, at) : null
+  }
+  let theftAt = dueTheft()
   let step = 0
   for (; step < MAX_STEPS; step += 1) {
     const managed = useEnergy ? coverage.total : helperLegacyAssignments(data).total
     const next = useEnergy
       ? nextEventDynamic(data, at, now, blocked, coverage)
       : nextEventLegacy(data, helper, managed, at, now, blocked)
+    // 偷窃早于下一件农活（或没有农活）就先偷：损失只影响产量，不改成熟时刻。
+    if (theftAt !== null && (next === null || theftAt <= next.when)) {
+      if (theftAt > at) { at = theftAt; coverage = helperAssignments(data, at) }
+      resolveTheft(data, theftAt)
+      theftAt = dueTheft()
+      continue
+    }
     if (next === null) {
       const wake = useEnergy ? nextCoverageAt(data, at, now) : null
-      if (wake !== null && wake > at) { at = wake; coverage = helperAssignments(data, at); continue }
+      if (wake !== null && wake > at) {
+        // 跳到下次有人在岗的时刻也不能跨过偷窃：把目标夹到 theft.at。
+        const target = theftAt !== null ? Math.min(wake, theftAt) : wake
+        if (target > at) { at = target; coverage = helperAssignments(data, at); continue }
+      }
       break
     }
     if (next.when > at) {
@@ -184,14 +205,16 @@ function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
   // 不静默丢弃超大离线存档的剩余农活：失败由宿主事务回滚，lastAt 不会被推进。
   const managed = useEnergy ? coverage.total : helperLegacyAssignments(data).total
   const remaining = useEnergy ? nextEventDynamic(data, at, now, blocked, coverage) : nextEventLegacy(data, helper, managed, at, now, blocked)
-  if (step === MAX_STEPS && remaining !== null) throw new Error('菜园离线农活过多，未推进结算时间；请联系维护者检查存档。')
+  if (step === MAX_STEPS && (remaining !== null || dueTheft() !== null)) throw new Error('菜园离线农活过多，未推进结算时间；请联系维护者检查存档。')
   const covered = useEnergy ? helperAssignments(data, now).covered : new Set(allIndices(data))
   tidy(data, now, [...covered])
 }
 
 /** 把一批 worker 切到「没活睡觉」：只补数据，不发货；休息锚点从当前精力续上。 */
-function sleepWorkers(data, from, now, recovering) {
+function sleepWorkers(data, from, now, recovering, keepPatrol = false) {
   for (const worker of data.helper.workers) {
+    // 田里还有可偷的作物时，巡逻不按「没活睡觉」处理：守夜是他们唯一的活。
+    if (keepPatrol && worker.role === 'patrol') continue
     if (worker.resting === true) continue // 手动休息优先级更高，锚点已经在休息段
     if (worker.idle === true) continue // 已经睡着：shiftAt 就是休息锚点，别覆盖进度
     const energy = recovering && now > from
@@ -218,7 +241,7 @@ function wakeSleepers(data, now) {
  * 只按存档里真实的 plantedAt / boostMs / season 推进；lastAt 只进不退，回拨那一段不重算、不重发。
  * v8：只结算在岗覆盖；没活干就睡，来活且精力 ≥20% 再醒；暂停时直接 return。
  */
-export function settleHelper(data, now, { awardExperience = true, energy = helperEnergyEnabled() } = {}) {
+export function settleHelper(data, now, { awardExperience = true, energy = helperEnergyEnabled(), theft = theftEnabled() } = {}) {
   // 雨把已经干的地浇湿；view 在副本结算，动作时写回，下一次旱灾推到下一个晴天。
   if (weatherAt(now) === 'rain') for (const plot of data.plots) {
     if (plot?.fallow) plot.pests.dry = null
@@ -228,22 +251,42 @@ export function settleHelper(data, now, { awardExperience = true, energy = helpe
   if (!Number.isFinite(now)) return
   const start = helper.lastAt ?? now
   if (now < start) return
-  if (!helper.enabled) return
+  const theftOn = theft === true && data.theft !== undefined
+  // 没雇帮工：没有农活可结算，只走偷窃自己的游标。
+  if (!helper.hired) {
+    if (theftOn) settleTheftOnly(data, now)
+    return
+  }
+  // 暂停：偷窃也暂停，事件游标快进到 now 之后，恢复不补。
+  if (!helper.enabled) {
+    if (theftOn) skipTheftClock(data, now)
+    return
+  }
+  // 离线只回看 72h；游标落在 lastAt 之前的（merge / 回拨）直接跳过，不回填。
+  if (theftOn) alignTheft(data, Math.max(start, now - THEFT_LOOKBACK_MS))
   const useEnergy = energy === true
   const workStart = useEnergy ? helperHasWork(data) : true
   const workNow = useEnergy ? helperHasWork(data) : true
   // 有活就先叫醒上一轮睡着的帮工（≥20%）；否则它们会以 idle 状态错过这次结算。
   if (useEnergy && workNow) wakeSleepers(data, now)
   // 整段都没活：直接睡过去，精力按休息速率恢复；没有农活可结算。
+  // 但田里还有作物时偷窃照常发生，巡逻也不该因为「收菜池没活」而睡觉。
   if (useEnergy && !workStart && !workNow) {
-    sleepWorkers(data, start, now, true)
+    const guard = theftOn && hasTheftTargets(data)
+    if (theftOn) settleTheftOnly(data, now)
+    if (guard) wakeSleepers(data, now)
+    sleepWorkers(data, start, now, true, guard)
     helper.lastAt = now
     return
   }
-  settlePlots(data, helper, start, now, awardExperience, useEnergy)
+  settlePlots(data, helper, start, now, awardExperience, useEnergy, theftOn)
   if (useEnergy) {
+    const guard = theftOn && hasTheftTargets(data)
     if (helperHasWork(data)) wakeSleepers(data, now)
-    else sleepWorkers(data, now, now, false)
+    else {
+      if (guard) wakeSleepers(data, now)
+      sleepWorkers(data, now, now, false, guard)
+    }
   }
   helper.lastAt = now
 }

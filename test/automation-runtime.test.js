@@ -3,7 +3,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import mine from '../extensions/mine/server.js'
-import farm from '../extensions/farm/server.js'
+import farm, { setTheft } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import { setupExtensions } from './helpers/extension-achievements.js'
 
 test('帮工动作失败整笔撤回；删除只清自己的帮工和仓、按汇率结清钱包', async () => {

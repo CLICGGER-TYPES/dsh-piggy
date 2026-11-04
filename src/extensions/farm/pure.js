@@ -62,16 +62,20 @@ export const pestOn = (plot, crop, kind, at) => (kind !== 'dry' || weatherAt(at)
 /** 这块地现在的样子（纯函数，不改存档）。 */
 export function plotState(plot, now) {
   if (plot === null) return null
-  if (plot.fallow) return { empty: true, stubble: plot.stubble, pests: PESTS.filter(kind => plot.pests[kind] === 0 && (kind !== 'dry' || weatherAt(now) !== 'rain')), ripe: false, withered: false }
-  if (plot.withered) return { crop: plot.crop, stage: 'withered', withered: true, pests: [], ripe: false, progress: 0, remainingMs: 0, yield: 0 }
+  if (plot.fallow) return { empty: true, stubble: plot.stubble, pests: PESTS.filter(kind => plot.pests[kind] === 0 && (kind !== 'dry' || weatherAt(now) !== 'rain')), ripe: false, withered: false, loss: 0 }
+  if (plot.withered) return { crop: plot.crop, stage: 'withered', withered: true, pests: [], ripe: false, progress: 0, remainingMs: 0, yield: 0, loss: 0 }
   const crop = cropFor(plot.crop)
   if (crop === null) return null
   const age = ageOf(plot, crop, now)
   const index = STAGE_AT.filter(threshold => age >= threshold).length - 1
   const ripe = age >= 1
   const pests = PESTS.filter(kind => pestOn(plot, crop, kind, now))
+  // 偷窃损失是一个比例：先扣虫害/干旱，再乘 (1 - loss)；至少留 1 个，重损也不会归零。
+  const loss = Number.isFinite(plot.loss) ? Math.max(0, Math.min(0.9, plot.loss)) : 0
+  const base = Math.max(1, crop.yield + plot.roll - PEST_LOSS * pests.length)
   return { crop: crop.key, stage: STAGES[index], ripe, withered: false, season: plot.season, seasons: crop.seasons, pests,
-    progress: age, remainingMs: ripe ? 0 : Math.max(0, ripeAt(plot, crop) - now), yield: ripe ? Math.max(1, crop.yield + plot.roll - PEST_LOSS * pests.length) : 0 }
+    progress: age, remainingMs: ripe ? 0 : Math.max(0, ripeAt(plot, crop) - now), loss,
+    yield: ripe ? Math.max(1, Math.round(base * (1 - loss))) : 0 }
 }
 /** 等级：从总经验算出来。解 level(level − 1) ≤ exp / 50 得闭式；浮点误差最多一级，下面修正回来。 */
 export function levelOf(exp) {

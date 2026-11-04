@@ -6,7 +6,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-import farm from '../extensions/farm/server.js'
+import farm, { setTheft } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 import { H, T0, api, establishedFarm, plain, renderFarm } from './helpers/farm-ui.js'
 

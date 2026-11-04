@@ -4,11 +4,13 @@
 import assert from 'node:assert/strict'
 import { beforeEach, test } from 'node:test'
 
-import farm, {
+import farm, { setTheft,
   CROPS, HELPER_CYCLE_MS, HELPER_PLOTS_PER_WORKER, HELPER_REST_AT, HELPER_REST_MS, HELPER_WORK_MS,
   HELPER_WORK_WINDOW_MS, PLOTS, helperEnergyAt, helperNextWorkAt, helperWorkingAt, normalize,
   setHelperEnergy, setRandom, weatherAt,
 } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 const H = 3600000
 const MIN = 60000
@@ -271,7 +273,7 @@ test('v7 → v8：只补 shiftAt/resting/idle，不结算、不补 XP；normaliz
     onboarding: { step: 'done', rewarded: true, legacy: false, plantedAt: null, wateredAt: null },
   }
   const migrated = normalize(structuredClone(raw), T0)
-  assert.equal(migrated.version, 8)
+  assert.equal(migrated.version, 9)
   assert.equal(migrated.exp, 200, '迁移不补经验')
   assert.equal(migrated.helper.stock.radish, 7)
   assert.equal(migrated.helper.lastAt, T0 - 5 * H, '迁移不结算、不推进检查点')
@@ -282,7 +284,7 @@ test('v7 → v8：只补 shiftAt/resting/idle，不结算、不补 XP；normaliz
   assert.equal(bad.helper.workers[0].shiftAt, T0 - 5 * H, '坏 shiftAt 从 lastAt/now 补')
 })
 
-test('merge：版本 8，shiftAt/resting 逐 id 取 context，locked OR，v>8 抛错', () => {
+test('merge：版本 9，shiftAt/resting 逐 id 取 context，locked OR，v>9 抛错', () => {
   const target = bare([worker(1, 'harvest', T0 - H), worker(2, 'harvest', T0, { resting: true })], { unlocked: 8 })
   target.helper.lastAt = T0 - 2 * H
   const source = bare([worker(1, 'harvest', T0 - 3 * H), worker(2, 'patrol', T0 - 4 * H)], { unlocked: 8 })
@@ -291,12 +293,12 @@ test('merge：版本 8，shiftAt/resting 逐 id 取 context，locked OR，v>8 �
   source.helper.workers[1].resting = true
 
   const merged = farm.mergeStates(target, source, T0).data
-  assert.equal(merged.version, 8)
+  assert.equal(merged.version, 9)
   assert.equal(merged.helper.workers.length, 2)
   assert.deepEqual(merged.helper.workers.map(entry => entry.shiftAt), [T0 - 3 * H, T0 - 4 * H], '锚点跟 context（source 结算更晚）')
   assert.equal(merged.helper.workers[1].resting, true, 'resting 跟 context')
   assert.equal(merged.helper.workers[0].locked, true, 'locked 两边 OR')
   assert.equal(merged.helper.workers[1].role, 'patrol', 'role 跟 context')
 
-  assert.throws(() => farm.mergeStates({ ...target, version: 9 }, source, T0), /比当前扩展新/)
+  assert.throws(() => farm.mergeStates({ ...target, version: 10 }, source, T0), /比当前扩展新/)
 })
