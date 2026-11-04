@@ -7,7 +7,7 @@ import {
   ACTION_FIELDS, ASSET_KEY, MAX_ACTION_MS, MAX_ACTIONS_PER_PACK, MAX_EXTENSION_PACK_BYTES,
   MAX_EXTENSION_PACK_FILES, MAX_FRAME_BYTES, MAX_PACK_BYTES, MAX_PACK_FILES, MAX_PACK_JSON_BYTES,
   MAX_SOUND_BYTES, MAX_SOUND_MS, MAX_SOUNDS_PER_PACK, PACK_ID, SOUND_FIELDS, SOUND_REF, TRIGGERS,
-  checkEligibility, checkFrameFiles, checkPathName, checkSynth, declaredAssetPacks, frameTiming, inRange,
+  assetPackBase, checkEligibility, checkFrameFiles, checkPathName, checkSynth, declaredAssetPacks, frameTiming, inRange,
   isAssetPackPath, isRecord, onlyFields, readJson,
 } from './ext-asset-schema.js'
 
@@ -129,12 +129,18 @@ function checkSound(sound, body, label, problems) {
 
 /** @param {string} key @param {string} pack @param {number} entries @param {number} frames @param {number} files @param {number} bytes */
 export function actionSummary(key, pack, entries, frames, files, bytes) {
-  return { pack, namespace: 'ext-' + key, entries, frames, files, bytes }
+  return {
+    kind: 'actions', pack, namespace: 'ext-' + key, base: assetPackBase(key, 'actions', pack),
+    entries, frames, files, bytes, available: true,
+  }
 }
 
 /** @param {string} key @param {string} pack @param {number} entries @param {number} files @param {number} bytes */
 export function soundSummary(key, pack, entries, files, bytes) {
-  return { pack, namespace: 'ext-' + key, entries, files, bytes }
+  return {
+    kind: 'sounds', pack, namespace: 'ext-' + key, base: assetPackBase(key, 'sounds', pack),
+    entries, files, bytes, available: true,
+  }
 }
 
 /** @param {string[]} problems */

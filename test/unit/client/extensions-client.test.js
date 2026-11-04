@@ -14,6 +14,27 @@ function openExtensions(dom) {
   findByAttr(contentOf(dom), 'data-open-extensions', 'true').fire('click')
 }
 
+test('素材包摘要只做归一化：保留 kind/基址/可用状态，旧宿主缺字段时不报错', () => {
+  const [entry] = normalizeExtensions([{
+    key: 'assetpack', label: '素材扩展', on: true, installed: true, builtin: false,
+    assetPacks: {
+      actions: [{ kind: 'actions', pack: 'wave', namespace: 'ext-assetpack', base: '/dsh-piggy/ext/assetpack/actions/wave/', entries: 1, frames: 2, files: 3, bytes: 99, available: true }],
+      sounds: [{ pack: 'sfx', namespace: 'ext-assetpack', entries: 1, files: 2, bytes: 10 }],
+    },
+  }])
+  assert.deepEqual(entry.assetPacks.actions[0], {
+    kind: 'actions', pack: 'wave', namespace: 'ext-assetpack',
+    base: '/dsh-piggy/ext/assetpack/actions/wave/',
+    entries: 1, frames: 2, files: 3, bytes: 99, available: true,
+  })
+  // 老宿主没有 kind/base/available：按列表种类补 kind，可用状态保持宽松。
+  assert.equal(entry.assetPacks.sounds[0].kind, 'sounds')
+  assert.equal(entry.assetPacks.sounds[0].base, '')
+  assert.equal(entry.assetPacks.sounds[0].available, true)
+  const [old] = normalizeExtensions([{ key: 'old', label: '旧扩展', on: true }])
+  assert.deepEqual(old.assetPacks, { actions: [], sounds: [] })
+})
+
 test('主菜单没有「扩展」方块；全部打开时番茄钟、钓鱼都在', async () => {
   const { dom } = await mount({ status: { ...SNAPSHOT, extensions: ext(true, true) } })
   openPanel(dom)

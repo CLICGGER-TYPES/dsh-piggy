@@ -38,6 +38,10 @@ export const MAX_SOUND_MS = 1500
 
 export const PACK_ID = /^[a-z][a-z0-9-]{0,31}$/
 export const ASSET_KEY = /^[a-z][a-z0-9-]{0,47}$/
+/** 素材包在宿主里的只读基址；key/pack 都已被 schema 限制为小写安全字符。 */
+export function assetPackBase(key, kind, pack) {
+  return `/dsh-piggy/ext/${key}/${kind}/${pack}/`
+}
 export const FRAME_FILE = /^(\d{2})\.(png|webp)$/
 export const SOUND_FILE = /^([a-z][a-z0-9-]{0,47})\.(ogg|wav)$/
 export const SOUND_REF = /^(?:[a-z][a-z0-9-]{0,31}\/)?[a-z][a-z0-9-]{0,47}$/

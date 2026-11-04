@@ -127,5 +127,6 @@ export function createExtRuntime(store, options) {
     installedKeys: loader.installedKeys,
     clientScript: views.clientScript,
     assetFile: views.assetFile,
+    assetPackFile: views.assetPackFile,
   }
 }

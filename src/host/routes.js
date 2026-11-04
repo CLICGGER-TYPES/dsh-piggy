@@ -14,6 +14,7 @@ import { installSkinPack } from '../../store/skin-pack.js'
 import { registerArtRoute } from '../../store/art-route.js'
 import { createExtRuntime } from '../../store/ext-runtime.js'
 import { registerExtImportRoute } from '../../store/ext-import-route.js'
+import { registerExtRoutes } from './ext-routes.js'
 
 const STATE_ROUTE = '/dsh-piggy/state'
 const ACT_ROUTE = '/dsh-piggy/act'
@@ -251,46 +252,6 @@ function registerActRoute(webServer, store) {
 }
 
 /**
- * 扩展的 GET：在线目录（?force=1 重新读）、下载扩展的面板脚本和图片。
- *   GET /dsh-piggy/extensions/online
- *   GET /dsh-piggy/ext/<key>/client.js
- *   GET /dsh-piggy/ext/<key>/assets/<name>
- */
-function registerExtRoutes(webServer, store) {
-  const offOnline = webServer.register({
-    kind: 'exact', path: '/dsh-piggy/extensions/online',
-    handler: async (req, res) => {
-      try {
-        const force = String(req.url ?? '').includes('force=1')
-        sendJson(res, 200, await store.ext.onlineView(force), { 'cache-control': 'no-store' })
-      } catch (error) {
-        sendJson(res, 200, { error: error instanceof Error ? error.message : String(error), entries: [] })
-      }
-    },
-  })
-  const offScript = webServer.register({
-    kind: 'prefix', path: '/dsh-piggy/ext',
-    handler: async (req, res) => {
-      const path = String(req.url ?? '').split('?')[0]
-      const image = /^\/dsh-piggy\/ext\/([a-z0-9-]+)\/assets\/([a-z0-9.-]+)$/.exec(path)
-      if (image !== null) {
-        // 地址带 ?v=版本，扩展更新就换地址，所以可以放心缓存。
-        const file = store.ext.assetFile(image[1], image[2])
-        if (file === null) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('not found') }
-        res.writeHead(200, { 'content-type': file.type, 'cache-control': 'max-age=86400' })
-        return res.end(file.body)
-      }
-      const match = /^\/dsh-piggy\/ext\/([a-z0-9-]+)\/client\.js$/.exec(path)
-      const script = match === null ? null : store.ext.clientScript(match[1])
-      if (script === null) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('not found') }
-      res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'no-store' })
-      res.end(script)
-    },
-  })
-  return () => { offOnline(); offScript() }
-}
-
-/**
  * GET /dsh-piggy/emoji.woff2 — 网页版自带的那套 emoji 字体。
  *
  * 只发这一个固定文件名，请求里带什么都改不了它读哪个文件。
@@ -384,7 +345,7 @@ export function registerGameRoutes(webServer, store, options = {}) {
       disposers.push(registerArtRoute(webServer, store, sendJson))
       disposers.push(registerSkinRoute(webServer, store))
       disposers.push(registerActRoute(webServer, store))
-      disposers.push(registerExtRoutes(webServer, store))
+      disposers.push(registerExtRoutes(webServer, store, sendJson))
       disposers.push(registerExtImportRoute(webServer, store, snapshot))
       disposers.push(registerLogRoutes(webServer, store))
       disposers.push(registerEmojiRoute(webServer))

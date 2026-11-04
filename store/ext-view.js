@@ -13,6 +13,7 @@ import { join } from 'node:path'
 
 import { extensionOn } from '../core.js'
 import { apiFor } from './ext-api.js'
+import { readAssetPackFile } from './ext-asset-file.js'
 import { ASSET_NAME, ASSET_TYPES, assetNames } from './ext-files.js'
 
 /**
@@ -57,5 +58,12 @@ export function createViews(deps) {
     try { return { body: readFileSync(join(deps.root(), key, 'assets', name)), type: ASSET_TYPES[name.split('.').pop() ?? ''] } } catch { return null }
   }
 
-  return { views, shelves, dex, clientScript, assetFile }
+  /** 扩展素材包里的文件（GET /dsh-piggy/ext/<key>/actions|sounds/<pack>/<file>）。 */
+  function assetPackFile(key, kind, pack, file) {
+    const entry = deps.loaded.get(key)
+    if (!deps.keyPattern.test(key) || entry === undefined) return { ok: false, status: 404 }
+    return readAssetPackFile(deps.root(), entry, key, kind, pack, file)
+  }
+
+  return { views, shelves, dex, clientScript, assetFile, assetPackFile }
 }
