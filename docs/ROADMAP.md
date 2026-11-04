@@ -1,5 +1,15 @@
 # 路线图与待办
 
+## 2026-11-04 菜园多帮工 Slice 0：v7 数据模型（源码候选，未发布）
+
+- 只做数据模型：`FARM_DATA_VERSION` 6 → 7，`helper.workers[]`（1–5 只，`role` 收菜/巡逻）与 `helper.schedule` 落档；旧字段全部保留。
+- 旧档按 level 0/1/2 补 1/2/4 只收菜帮工，覆盖仍是 4/8/16 块；巡逻不占地。迁移不结算、不补 XP。
+- 覆盖改为「4 × 收菜帮工只数」；合并按数量取 max（≤5）、角色取结算更晚一侧、`locked` 取 OR、帮工仓相加。
+- `view.helper` 新增 `count/max/canHire/hirePrice/schedule/workers[]`，旧字段不变；经典版只用旧字段，无需改 client。
+- 没有新动作、商店条目、UI、精力、偷窃或动画。`extensions/farm/client.js` 字节未变（client SHA 仍为 `b2a1aa42…`）。
+- 旧「管地数」升级（helper-level）条目保留，但购买返回 `unavailable` 且不扣钱——`level` 已不影响覆盖，先堵住花钱买空升级；Slice 1 再替换成追加雇佣/角色。
+- 版本/哈希仅为源码候选同步：farm `4.3.0`、经典版 `3.2.2`，已写入 candidate registry 与 `store/official-extensions.json`；公开 4.2.1 / Gitee 4.2.0 身份不变，未上传、未打包、未发版。附录：Slice 1 才做追加雇佣/改角色/排班动作与商店，Slice 3 才发版。
+
 ## 2026-11-01 成就第二期（PR38 已合入）
 
 - 新增六项成就，复用鱼类/纪念品图鉴、鱼获累计、菜园收获事件和矿洞最高层数；最多展示 34 项。具体条件、兼容边界及隔离试玩见 [设计说明](design/achievements-phase-two.md)。

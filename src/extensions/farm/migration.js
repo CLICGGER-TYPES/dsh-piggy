@@ -1,12 +1,12 @@
 // @ts-check
-// 存档迁移与归一化：3.x -> 4.0 -> 6，补齐地块、仓库、帮工和第一课字段。
+// 存档迁移与归一化：3.x -> 4.0 -> 7，补齐地块、仓库、帮工（v7：workers/schedule）和第一课字段。
 // 迁移只补数据、退款，不跑动作；动作入口会先 normalize 再结算，保证旧存档可重复读。
 import { EXP_CAP, OLD_FERTILIZER, OLD_HELPER_BARN_PRICES, OLD_SPRINKLER, OLD_YIELD, PLOTS, START_PLOTS } from './data.js'
 import { normalizeHelper, settleHelper } from './helper.js'
 import { lessonDone, lessonProgress } from './plot-rules.js'
 import { count, cropFor, isObject, randomValue } from './pure.js'
 
-/** 3.x → 4.0（normalize 随后统一升到 6）：地数至少 6 块；地里的作物当作长完、按旧产量进仓库；旧洒水器、旧肥料退菜币；大水壶换成喷雾桶。 */
+/** 3.x → 4.0（normalize 随后统一升到 7）：地数至少 6 块；地里的作物当作长完、按旧产量进仓库；旧洒水器、旧肥料退菜币；大水壶换成喷雾桶。 */
 function migrate(data) {
   const oldPlots = Array.isArray(data.plots) ? data.plots : []
   const harvest = isObject(data.harvest) ? data.harvest : {}
@@ -78,7 +78,7 @@ export function normalize(data, now = Date.now()) {
       data.helper.xpEligibleAt = null
     }
   }
-  data.version = Math.max(6, count(data.version))
+  data.version = Math.max(7, count(data.version))
   return data
 }
 /** 新开垦的地：至少有杂草，多数长草；旧存档不补这些东西。 */

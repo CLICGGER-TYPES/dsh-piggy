@@ -91,7 +91,7 @@ test('the three-file download installs in an isolated directory and runs the tut
     store.ext = runtime
     await runtime.ready
     assert.equal((await runtime.install('farm')).ok, true)
-    assert.equal(store.state.extData.farm.version, 6)
+    assert.equal(store.state.extData.farm.version, 7)
     assert.equal(store.state.extData.farm.onboarding.step, 'offer')
     assert.equal(store.state.extData.farm.onboarding.legacy, false)
 
