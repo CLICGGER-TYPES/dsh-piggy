@@ -102,7 +102,8 @@ function normalizeFrame(value) {
 /** @param {unknown} value @returns {string | null} */
 function normalizeSound(value) {
   if (value === undefined || value === null) return null
-  if (typeof value !== 'string' || !/^[a-z0-9-]+(?:\/[a-z0-9-]+)?$/.test(value)) {
+  // 第一方 `sfx/tap` 一段包名；第三方音效是 `ext-<key>/<pack>/<sound>` 两段前缀。
+  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*){0,2}$/.test(value)) {
     throw new Error('[dsh-piggy] invalid art action sound')
   }
   return value

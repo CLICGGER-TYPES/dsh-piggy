@@ -7,4 +7,4 @@
  * @module dsh-piggy/client/pig-fx
  */
 
-export var PIG_FX = ['flash', 'react', 'burst', 'showBubble', 'transform', 'previewArt', 'idleNow', 'walkNow', 'birthdayNow', 'petShy', 'playAction', 'cancelNap']
+export var PIG_FX = ['flash', 'react', 'burst', 'showBubble', 'transform', 'previewArt', 'idleNow', 'walkNow', 'birthdayNow', 'petShy', 'playAction', 'playSound', 'cancelNap']

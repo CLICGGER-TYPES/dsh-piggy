@@ -12,8 +12,15 @@
  */
 import { ART_URL } from './constants.js'
 import { desktopRole } from './desktop-shell.js'
+import { createExtensionSoundPlayer } from './ext-sound-play.js'
+import { extensionFallbackRecipe, resolveExtensionSound } from './ext-sound-registry.js'
 import { soundSettings } from './feel/settings.js'
 import { RECIPES, SOUND_FILES, VOLUME_GAIN } from './sounds.js'
+
+export {
+  clearExtensionSounds, hasExtensionSound, registerExtensionSoundPack,
+  resolveExtensionSound, unregisterExtensionSoundPack,
+} from './ext-sound-registry.js'
 
 /** 同一通道、同一配方的最短重复间隔（沿用旧模块级去抖）。 */
 export const AUDIO_DEBOUNCE_MS = 60
@@ -33,7 +40,7 @@ const channels = new Set()
 const states = new WeakMap()
 /** @type {any} */
 let defaultChannel = null
-/** 每台设备一份解码缓存：key → AudioBuffer | Promise | null（失败）。 */
+/** 每台设备一份解码缓存：cacheKey → AudioBuffer | Promise | null（失败）。 */
 /** @type {WeakMap<Device, Map<string, any>>} */
 const fileBuffers = new WeakMap()
 
@@ -225,8 +232,9 @@ function startBuffer(state, buffer, volume) {
 }
 
 /**
- * 懒加载并解码一个文件音效；同一设备同一 key 只请求一次。
+ * 懒加载并解码一个文件音效；同一设备同一 cacheKey 只请求一次。
  * 解码失败缓存 null，后续直接走 synth 回退，不反复请求坏文件。
+ * 第一方 URL 相对 ART_URL；扩展音效是 `/dsh-piggy/ext/...` 绝对路径。
  * @param {Device} device
  * @param {string} key
  * @param {{ url: string }} entry
@@ -237,7 +245,8 @@ function loadSoundFile(device, key, entry) {
   const pending = (async function () {
     if (typeof fetch !== 'function' || typeof device.context.decodeAudioData !== 'function') return null
     try {
-      const response = await fetch(ART_URL + entry.url)
+      const url = entry.url.startsWith('/') ? entry.url : ART_URL + entry.url
+      const response = await fetch(url)
       if (response === null || response === undefined || response.ok !== true) return null
       const body = await response.arrayBuffer()
       const buffer = await device.context.decodeAudioData(body)
@@ -250,22 +259,34 @@ function loadSoundFile(device, key, entry) {
   pending.then(function (buffer) { cache.set(key, buffer) }, function () { cache.set(key, null) })
 }
 
+const playExtensionSound = createExtensionSoundPlayer({
+  getDevice: function () { return device },
+  cache: bufferCache,
+  load: loadSoundFile,
+  buffer: startBuffer,
+  recipe: startRecipe,
+  fallback: extensionFallbackRecipe,
+})
+
 /** @param {ChannelState} state @param {string} key @param {{ soft?: boolean }|undefined} options */
 function playChannel(state, key, options) {
   if (state.disposed) return false
   const fileEntry = (state.files ?? SOUND_FILES)[key]
   const recipe = RECIPES[key]
-  if (fileEntry === undefined && recipe === undefined) return false
+  // 第一方先查；扩展只在前两者都不存在时参与，且只认 ext- 前缀。
+  const extEntry = fileEntry === undefined && recipe === undefined ? resolveExtensionSound(key) : null
+  if (fileEntry === undefined && recipe === undefined && extEntry === null) return false
   const settings = soundSettings()
   if (!settings.on) return false
   if (!allowedRole() || state.quiet() === true) return false
   const now = Date.now()
-  const debounce = fileEntry?.debounceMs ?? AUDIO_DEBOUNCE_MS
+  const debounce = fileEntry?.debounceMs ?? extEntry?.debounceMs ?? AUDIO_DEBOUNCE_MS
   if (now - (state.lastAt[key] ?? 0) < debounce) return false
   if (voices >= AUDIO_VOICE_BUDGET) return false
   if (ensureDevice() === null || device === null) return false
   const level = VOLUME_GAIN[settings.volume] ?? VOLUME_GAIN[2]
   const soft = options?.soft === true ? 0.65 : 1
+  if (extEntry !== null) return playExtensionSound(state, key, extEntry, level, soft, now)
   if (fileEntry !== undefined) {
     const cached = bufferCache(device).get(key)
     if (cached !== undefined && cached !== null && typeof cached.then !== 'function') {
