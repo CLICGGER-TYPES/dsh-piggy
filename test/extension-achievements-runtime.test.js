@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { achievementsView, migrate } from '../core.js'
 import { ACHIEVEMENTS } from '../data.js'
-import farm from '../extensions/farm/server.js'
+import farm, { setTheft } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import mine, { generateMap, hitsNeeded } from '../extensions/mine/server.js'
 import gacha from '../extensions/gacha/server.js'
 import blindbox, { CATALOG } from '../extensions/blindbox/server.js'

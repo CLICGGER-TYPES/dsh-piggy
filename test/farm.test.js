@@ -5,10 +5,12 @@ import { readFileSync } from 'node:fs'
 import { test, beforeEach } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import farm, {
+import farm, { setTheft,
   CROPS, EXP_CAP, EXP_PER_LEVEL, FERTILIZERS, PEST_LOSS, PEST_MS, PLOTS, RECLAIM_PRICE, START_PLOTS, TOOLS,
   levelOf, normalize, plotState, setHelperEnergy, setRandom, weatherAt, HELPER_PLOTS, HELPER_WINDOW, helperRecipe,
 } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 // 既有 4.0 熟地存档用于旧行为回归；开荒另有独立测试。
 function establishedFarm() { return Object.assign(farm.init(), { plots: Array(18).fill(null) }) }
@@ -352,7 +354,7 @@ test('3.x 老存档：地至少 6 块、地里作物按旧产量进仓库、洒�
   }
   const t = fakeApi(0)
   farm.actions.buy(old, { item: 'nothing' }, t.api)
-  assert.equal(old.version, 8)
+  assert.equal(old.version, 9)
   assert.equal(old.unlocked, 6)
   assert.equal(old.harvest.pumpkin, 2)
   assert.equal(old.harvest.carrot, 1 + 4)

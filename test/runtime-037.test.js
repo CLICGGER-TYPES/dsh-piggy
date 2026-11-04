@@ -8,7 +8,9 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { hatchEgg } from '../core.js'
 import { createGameRuntime } from '../runtime/index.js'
-import farm from '../extensions/farm/server.js'
+import farm, { setTheft } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 const NOW = Date.UTC(2026, 9, 15, 12)
 const DAY = 86_400_000

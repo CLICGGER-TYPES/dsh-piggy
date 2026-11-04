@@ -68,7 +68,9 @@
       '.fm-helper-panel{display:grid;gap:8px}.fm-helper-card{display:grid;gap:6px;min-width:0;padding:8px;border:1px solid var(--animal-border);border-radius:var(--ac-radius-card,16px);background:var(--animal-bg-content)}.fm-helper-status,.fm-helper-storage,.fm-helper-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.fm-helper-status-main{display:flex;align-items:center;gap:8px;min-width:0}.fm-helper-status-icon{width:34px;height:34px;flex:none}.fm-helper-copy{display:grid;gap:2px;min-width:0}.fm-helper-copy>b{font-size:13px;color:var(--animal-text)}.fm-helper-copy>small{font-size:11px;color:var(--animal-text-body)}.fm-helper-badge,.fm-helper-price{border-radius:var(--ac-pill,50px);padding:4px 8px;font-size:10px;white-space:nowrap;background:var(--ac-warning-bg,#fff2c9);color:var(--animal-text)}.fm-helper-badge[data-enabled="true"]{background:var(--ac-primary-bg,#d7f5ef)}.fm-helper-price{font-weight:800}.fm-helper-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;padding:8px 10px;text-align:left}.fm-helper-toggle-copy{display:grid;gap:2px}.fm-helper-toggle-copy>b{font-size:12px;color:var(--animal-text)}.fm-helper-toggle-copy>small,.fm-helper-footer{font-size:10px;color:var(--animal-text-body)}.fm-helper-switch{position:relative;display:block;width:40px;height:24px;flex:none;border-radius:var(--ac-pill,50px);background:var(--ac-border,#c4b89e);transition:background .16s var(--animal-ease)}.fm-helper-switch>i{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--ac-bg-content,#fff8e3);transition:transform .16s var(--animal-ease)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch{background:var(--animal-primary)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch>i{transform:translateX(16px)}.fm-helper-action{justify-self:end;flex:none;min-height:30px;padding:4px 10px;font-size:11px}.fm-helper-footer{line-height:1.45;padding:0 2px;text-align:center}',
       '.fm-helper-workers{display:grid;gap:6px;min-width:0}.fm-helper-worker{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0;padding:6px 8px;border:1px solid var(--ac-border-light,#e5dcc6);border-radius:var(--ac-radius-sm,12px);background:var(--animal-bg,#f8f8f0)}.fm-helper-worker-id{flex:none;font-size:12px;font-weight:800;color:var(--animal-text)}.fm-role-badge{flex:none;border-radius:var(--ac-pill,50px);padding:3px 8px;font-size:10px;line-height:1.4;white-space:nowrap;background:var(--ac-primary-bg,#d7f5ef);color:var(--animal-text)}.fm-role-badge[data-role="patrol"]{background:var(--ac-warning-bg,#fff2c9)}.fm-helper-worker-plots{flex:1 1 auto;min-width:0;font-size:11px;color:var(--animal-text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fm-role-btn{flex:none;margin-left:auto;min-height:28px;padding:3px 10px;font-size:11px;white-space:nowrap}.fm-helper-warning{font-size:11px;line-height:1.45;padding:2px 2px 0;color:var(--animal-text)}',
       '.fm-helper-hint{font-size:10px;line-height:1.45;padding:0 2px;color:var(--animal-text-body)}.fm-energy{flex:1 0 100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px;min-width:0}.fm-energy-track{grid-column:1/-1;display:block;height:6px;border-radius:var(--ac-pill,50px);background:var(--ac-border-light,#e5dcc6);overflow:hidden}.fm-energy-track>i{display:block;height:100%;border-radius:inherit;background:var(--ac-success,#87c96d)}.fm-energy[data-state="patrol"] .fm-energy-track>i{background:var(--animal-primary)}.fm-energy[data-state="resting"] .fm-energy-track>i{background:var(--ac-warning,#e0a03a)}.fm-energy[data-state="idle"] .fm-energy-track>i{background:var(--ac-text-disabled,#a99d86)}.fm-energy[data-state="paused"]{opacity:.6}.fm-energy[data-state="paused"] .fm-energy-track>i{background:var(--ac-border,#c4b89e)}.fm-energy-copy{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:10px;line-height:1.35;color:var(--animal-text-body);min-width:0}.fm-energy-copy>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fm-energy-copy>.fm-energy-state{font-weight:800;color:var(--animal-text)}.fm-energy[data-state="resting"] .fm-energy-state{color:var(--ac-warning,#b7791f)}.fm-helper-worker-acts{display:flex;align-items:center;gap:6px;flex:none;margin-left:auto}.fm-helper-worker-acts .fm-role-btn{margin-left:0}.fm .fm-helper-rest{min-height:28px;padding:3px 10px;font-size:11px;white-space:nowrap}.fm-helper-schedule{display:grid;gap:6px}.fm-helper-schedule-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}.fm .fm-helper-schedule-btn{min-height:30px;padding:4px 8px;font-size:11px}.fm-helper-schedule-btn[aria-pressed="true"]{background:var(--ac-primary-bg,#d7f5ef);border-color:var(--animal-primary)}.fm-helper-schedule-btn:disabled{opacity:.65}.fm-helper-schedule-current{font-size:10px;color:var(--animal-text-body)}.fm-helper-schedule-note{font-size:10px;line-height:1.45;color:var(--animal-text-body)}',
-      '.fm-s-detail{position:relative}.fm-s-detail[data-has-action]>small{padding-right:98px}.fm-s-detail .fm-s-acts{position:absolute;right:4px;bottom:4px;display:block;padding:0;max-width:48%}.fm .fm-s-detail .fm-main{min-height:30px;font-size:12px;padding:4px 8px;display:block;white-space:normal}.fm-s-detail .fm-main>small{display:none}.fm:not(.fm-big) .fm-dock-btn{min-height:56px;padding:4px;gap:2px}.fm:not(.fm-big) .fm-dock-btn>img{width:32px;height:32px}.fm .fm-s-field .fm-plot[data-farm-target="true"],.fm .fm-s-field .fm-plot:focus-visible{outline:none;box-shadow:none;border:0}.fm .fm-plot[data-farm-target="true"]::before,.fm .fm-plot:focus-visible::before{content:"";position:absolute;inset:-3px;box-sizing:border-box;border:2px solid var(--ac-bg-input,#fffbe7);border-radius:8px;box-shadow:inset 0 0 0 2px var(--animal-primary);mask:linear-gradient(var(--animal-primary) 0 0) left top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right bottom/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) left bottom/12px 12px no-repeat;pointer-events:none;z-index:1}.fm-bubble{z-index:2}'
+      '.fm-s-detail{position:relative}.fm-s-detail[data-has-action]>small{padding-right:98px}.fm-s-detail .fm-s-acts{position:absolute;right:4px;bottom:4px;display:block;padding:0;max-width:48%}.fm .fm-s-detail .fm-main{min-height:30px;font-size:12px;padding:4px 8px;display:block;white-space:normal}.fm-s-detail .fm-main>small{display:none}.fm:not(.fm-big) .fm-dock-btn{min-height:56px;padding:4px;gap:2px}.fm:not(.fm-big) .fm-dock-btn>img{width:32px;height:32px}.fm .fm-s-field .fm-plot[data-farm-target="true"],.fm .fm-s-field .fm-plot:focus-visible{outline:none;box-shadow:none;border:0}.fm .fm-plot[data-farm-target="true"]::before,.fm .fm-plot:focus-visible::before{content:"";position:absolute;inset:-3px;box-sizing:border-box;border:2px solid var(--ac-bg-input,#fffbe7);border-radius:8px;box-shadow:inset 0 0 0 2px var(--animal-primary);mask:linear-gradient(var(--animal-primary) 0 0) left top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right bottom/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) left bottom/12px 12px no-repeat;pointer-events:none;z-index:1}.fm-bubble{z-index:2}',
+      '.fm-patrol{display:grid;gap:6px;min-width:0}.fm-patrol-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}.fm-patrol-count{font-size:10px;font-weight:800;color:var(--animal-text);white-space:nowrap}.fm-patrol-zones{display:flex;flex-wrap:wrap;gap:4px;min-width:0}.fm-patrol-zone{display:grid;gap:1px;min-width:0;padding:4px 6px;border:1px solid var(--ac-border-light,#e5dcc6);border-radius:var(--ac-radius-sm,12px);font-size:10px;line-height:1.3;background:var(--animal-bg,#f8f8f0)}.fm-patrol-zone[data-guarded="true"]{background:var(--ac-primary-bg,#d7f5ef);border-color:var(--animal-primary)}.fm-patrol-zone[data-guarded="false"]{background:var(--ac-warning-bg,#fff2c9)}.fm-patrol-zone b{font-size:10px;color:var(--animal-text)}.fm-patrol-zone small{font-size:9px;color:var(--animal-text-body)}.fm-patrol-zone .fm-patrol-state{font-weight:800;color:var(--animal-text)}.fm-patrol-event{font-size:10px;line-height:1.4;color:var(--animal-text-body)}.fm-plot-guard{position:absolute;left:3px;top:3px;z-index:2;padding:0 4px;border-radius:var(--ac-pill,50px);font-size:9px;line-height:14px;background:var(--ac-primary-bg,#d7f5ef);color:var(--animal-text);pointer-events:none}.fm-plot-loss{font-size:9px;color:var(--ac-warning,#b7791f)}@media(max-width:420px){.fm-patrol-zone{flex:1 1 calc(50% - 4px)}}',
+      '.fm-patrol[data-paused="true"]{opacity:.72}'
     ].join("");
     const cssArt = { "ui-slot": true, "ui-button": true, "ui-main": true, "ui-note": true, "ui-small-plank": true, "ui-big-toolbar": true, "ui-big-topbar": true, "ui-exp-frame": true, "progress-track": true, "progress-fill": true, "shop-title": true, "buy-title": true, "pack-title": true, "shop-tab": true, "shop-tab-active": true, "shop-item": true, "shop-item-locked": true, "pack-slot": true, "pack-slot-selected": true, "info-row": true, "stepper-field": true, "btn-confirm": true, "btn-cancel": true, "status-chip": true, "status-chip-active": true, "big-sign-expand": true, "card-tail": true, "stepper-plus": true, "stepper-minus": true };
     const controlArt = { "lock-badge": "redraw-lock.webp", "weed": "paper-weed.png", "withered": "paper-stubble.png" };
@@ -595,9 +597,16 @@
       });
       if (state.tip && state.tipPlot === index && Date.now() - state.tipAt < 2400) renderTip(app, card);
       if (plot.empty) return card;
+      if (plot.guarded === true && plot.withered !== true) {
+        var guard = modules.host.put(card, app.el("span", "fm-plot-guard", "\u5B88"));
+        guard.setAttribute("aria-hidden", "true");
+        card.setAttribute("data-farm-guard", "true");
+        card.setAttribute("aria-label", plotLabel(plot) + " \u6709\u4EBA\u5B88");
+      }
+      if (plot.lossPercent > 0) card.setAttribute("data-farm-loss", String(plot.lossPercent));
       modules.host.put(card, modules.host.img(app, "fm-crop", modules.events.cropArt(plot), plot.emoji));
       if (modules.events.pestsOf(plot).indexOf("weed") >= 0) modules.host.put(card, modules.host.img(app, "fm-pest", "weed")).setAttribute("data-pest", "weed");
-      var chip = plot.ripe ? "\u6536 " + plot.yield + " \u4E2A" : plot.withered ? "\u67AF\u4E86" : "";
+      var chip = plot.ripe ? "\u6536 " + plot.yield + " \u4E2A" + (plot.lossPercent > 0 ? " \xB7 \u2212" + plot.lossPercent + "%" : "") : plot.withered ? "\u67AF\u4E86" : "";
       if (chip) modules.host.put(card, app.el("span", "fm-chip", chip));
       return card;
     }
@@ -847,6 +856,8 @@
       var track = modules.host.put(line, app.el("span", "fm-s-track"));
       modules.host.put(track, app.el("i")).style.width = Math.round(progress * 100) + "%";
       var text = on ? on.canPlant ? "\u8BFE\u5185" + on.seed.label + " \xD7" + on.seed.count : on.canHarvest ? "\u70B9\u4E3B\u6309\u94AE\u6536\u83B7" : on.canWater ? "\u6D47\u6C34\u540E 2 \u5206\u949F\u6210\u719F" : "\u8FD8\u5269 " + modules.events.shortTime(on.remainingMs) : plot.empty ? "\u5148\u9009\u79CD\u5B50 / \u53BB\u5546\u5E97\u4E70" : plot.ripe ? "\u6536 " + plot.yield + " \u4E2A \xB7 \u7B49\u4E3B\u6309\u94AE" : plot.withered ? "\u7528\u94C1\u9539\u94F2\u6389" : (plot.helper && data.helper && data.helper.continuous ? "\u5E2E\u5DE5\u7167\u6599 \xB7 " : "") + "\u8FD8\u5269 " + modules.events.shortTime(plot.remainingMs);
+      if (!on && plot && !plot.wild && Number.isInteger(plot.zone)) text += " \xB7 \u5DE1\u903B\u533A " + (plot.zone + 1) + "\uFF08" + plot.zoneFrom + "\u2013" + plot.zoneTo + " \u53F7\u5730\uFF09\xB7 " + (plot.guarded === true ? "\u6709\u4EBA\u5B88" : "\u65E0\u4EBA\u770B\u5B88");
+      if (!on && plot && plot.lossPercent > 0) text += " \xB7 " + plot.lossNote;
       modules.host.put(box, app.el("small", null, text));
       return box;
     }
@@ -996,6 +1007,71 @@
       if (worker.status === "idle") return "\u7BA1\u533A\u6CA1\u6D3B\uFF0C\u5148\u6B47\u7740";
       return worker.workRemainingMs > 0 ? "\u8FD8\u5269 " + shortTime(worker.workRemainingMs) : "\u7CBE\u529B\u5145\u8DB3";
     }
+    function theftKind(event) {
+      if (event.kind === "bird") return "\u9E1F";
+      return event.heavy === true ? "\u91CE\u732A" : "\u5C0F\u5077\u732A";
+    }
+    function theftTime(data, at) {
+      var diff = Math.max(0, (Number.isFinite(data.now) ? data.now : Date.now()) - at);
+      return diff < 6e4 ? "\u521A\u521A" : modules.events.shortTime(diff) + "\u524D";
+    }
+    function theftEventText(data, event) {
+      var when = theftTime(data, event.at);
+      var place = event.plot + 1 + " \u53F7\u5730";
+      if (event.blocked === true) return "\u6700\u8FD1\uFF1A" + when + " \xB7 " + (event.patrolId ? "#" + event.patrolId : "\u5DE1\u903B") + " \u8D76\u8D70\u4E86" + theftKind(event) + "\uFF08" + place + "\uFF09";
+      var who = event.kind === "bird" ? "\u9E1F" : event.heavy === true ? "\u91CE\u732A" : "\u5C0F\u5077\u732A";
+      var verb = event.kind === "bird" ? "\u5544\u4E86" : "\u62F1\u4E86";
+      return "\u6700\u8FD1\uFF1A" + when + " \xB7 " + who + verb + " " + place + "\uFF0C\u5C11\u6536 " + Math.round((event.loss || 0) * 100) + "%";
+    }
+    function theftRecent(app, panel, data) {
+      var latest = data.theft && data.theft.latest;
+      if (!latest) return;
+      modules.host.put(panel, app.el("small", "fm-patrol-event", theftEventText(data, latest)));
+    }
+    function patrolZoneWord(zone) {
+      if (zone.state === "guarded") return "\u6709\u4EBA\u5B88";
+      if (zone.state === "resting") return "\u4F11\u606F\u4E2D";
+      if (zone.state === "idle") return "\u5F85\u547D";
+      if (zone.state === "paused") return "\u65E0\u4EBA\u5B88";
+      return "\u65E0\u5DE1\u903B";
+    }
+    function helperPatrol(app, panel, data) {
+      var theft = data.theft;
+      if (!theft || !Array.isArray(theft.zones)) return;
+      var card = modules.host.put(panel, app.el("div", "fm-helper-card fm-patrol"));
+      card.setAttribute("data-farm-patrol", "zones");
+      card.setAttribute("data-paused", String(theft.paused === true));
+      var head = modules.host.put(card, app.el("div", "fm-patrol-head"));
+      modules.host.put(head, app.el("b", "fm-helper-label", "\u5DE1\u903B\u8986\u76D6"));
+      modules.host.put(head, app.el("span", "fm-patrol-count", (theft.guardedZones || 0) + "/" + (theft.totalZones || 0) + " \u533A\u6709\u4EBA\u5B88"));
+      var zones = modules.host.put(card, app.el("div", "fm-patrol-zones"));
+      zones.setAttribute("role", "list");
+      zones.setAttribute("aria-label", "\u5DE1\u903B\u533A\u8986\u76D6");
+      theft.zones.forEach(function(zone) {
+        var word = patrolZoneWord(zone);
+        var pill = modules.host.put(zones, app.el("div", "fm-patrol-zone"));
+        pill.setAttribute("role", "listitem");
+        pill.setAttribute("data-farm-patrol-zone", String(zone.index));
+        pill.setAttribute("data-guarded", String(zone.guarded === true));
+        pill.setAttribute("aria-label", zone.label + "\uFF0C" + zone.from + " \u5230 " + zone.to + " \u53F7\u5730\uFF0C" + word + (zone.patrolId !== null ? "\uFF0C\u5DE1\u903B #" + zone.patrolId : ""));
+        modules.host.put(pill, app.el("b", null, zone.label));
+        modules.host.put(pill, app.el("small", null, zone.from + "\u2013" + zone.to));
+        modules.host.put(pill, app.el("small", "fm-patrol-state", word));
+      });
+      if ((theft.patrols || 0) === 0) {
+        modules.host.put(card, app.el("small", "fm-helper-warning", "\u6CA1\u6709\u5DE1\u903B\u5E2E\u5DE5"));
+        modules.host.put(card, app.el("small", "fm-helper-hint", "\u628A\u4E00\u53EA\u6539\u6210\u5DE1\u903B\u53EF\u4EE5\u5B88 4 \u5757\u5730\uFF1B\u4F11\u606F\u65F6\u90A3\u533A\u6CA1\u4EBA\u3002"));
+      } else if (theft.patrols > theft.totalZones) {
+        modules.host.put(card, app.el("small", "fm-helper-warning", "\u5DE1\u903B\u5E2E\u5DE5\u6BD4\u5DE1\u903B\u533A\u591A\uFF0C\u591A\u51FA\u7684\u4E0D\u4F1A\u63D0\u9AD8\u9632\u5FA1"));
+        modules.host.put(card, app.el("small", "fm-helper-hint", "\u591A\u51FA\u7684\u5DE1\u903B\u6539\u56DE\u6536\u83DC\u66F4\u5212\u7B97\u3002"));
+      } else if (theft.paused) {
+        modules.host.put(card, app.el("small", "fm-helper-hint", "\u6258\u7BA1\u6682\u505C \xB7 \u5077\u7A83\u4E5F\u6682\u505C\uFF1B\u6062\u590D\u540E\u4E0D\u8865\u3002"));
+      } else if (theft.guardedZones === 0) {
+        modules.host.put(card, app.el("small", "fm-helper-hint", "\u5DE1\u903B\u90FD\u5728\u4F11\u606F\uFF0C\u7530\u91CC\u6682\u65F6\u6CA1\u4EBA\u5B88\u3002"));
+      }
+      modules.host.put(card, app.el("small", "fm-patrol-event", theft.latest ? theftEventText(data, theft.latest) : "\u6700\u8FD1\u6CA1\u6709\u5077\u7A83"));
+      modules.host.put(card, app.el("small", "fm-helper-hint", "\u5DE1\u903B\u53EA\u5B88\u81EA\u5DF1\u7684\u533A\uFF1B\u4F11\u606F\u65F6\u90A3\u533A\u6CA1\u4EBA\uFF0C\u4F1A\u76F4\u63A5\u88AB\u5077\u3002\u5373\u4F7F\u5728\u5C97\uFF0C\u4E5F\u6709 5% \u6982\u7387\u88AB\u5077\uFF1B\u65E0\u4EBA\u5B88\u65F6\u8FD8\u4F1A\u5076\u53D1\u91CD\u635F\u3002"));
+    }
     function helperSchedule(app, panel, schedule) {
       var current = schedule === "manual" ? "manual" : "auto";
       var card = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-schedule"));
@@ -1041,6 +1117,7 @@
       panel.setAttribute("aria-label", "\u5E2E\u5DE5\u6258\u7BA1");
       helperStatus(app, panel, "\u5E2E\u5DE5\u732A", "\u5DF2\u96C7\u7528 \xB7 \u7BA1 " + helper.plots + " \u5757\u5730", enabled);
       helperToggle(app, panel, enabled);
+      theftRecent(app, panel, data);
       var upgrade = items.find(function(item) {
         return item.key === "helper-level";
       });
@@ -1092,6 +1169,7 @@
       );
       helperToggle(app, panel, enabled);
       helperSchedule(app, panel, helper.schedule);
+      helperPatrol(app, panel, data);
       if (harvest === 0) {
         modules.host.put(panel, app.el("small", "fm-helper-warning", "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536"));
         modules.host.put(panel, app.el("small", "fm-helper-hint", "\u5DE1\u903B\u5E2E\u5DE5\u4E0D\u5360\u5730\uFF1B\u81F3\u5C11\u7559\u4E00\u53EA\u6536\u83DC\u5E2E\u5DE5\u624D\u4F1A\u81EA\u52A8\u6536\u83B7\u3002"));
@@ -1115,7 +1193,7 @@
         modules.host.put(row, app.el("b", "fm-helper-worker-id", "#" + worker.id));
         var badge = modules.host.put(row, app.el("span", "fm-role-badge", worker.roleLabel || (worker.role === "patrol" ? "\u5DE1\u903B" : "\u6536\u83DC")));
         badge.setAttribute("data-role", worker.role === "patrol" ? "patrol" : "harvest");
-        modules.host.put(row, app.el("span", "fm-helper-worker-plots", worker.role === "patrol" ? "\u4E0D\u5360\u5730" : "\u6536 " + (worker.plotCount || 0) + " \u5757"));
+        modules.host.put(row, app.el("span", "fm-helper-worker-plots", worker.role === "patrol" ? Number.isInteger(worker.zone) ? "\u5B88 " + (worker.zone + 1) + " \u533A \xB7 " + worker.zoneFrom + "\u2013" + worker.zoneTo + " \u53F7\u5730" : worker.maneuver === true ? "\u673A\u52A8\uFF08\u65E0\u7A7A\u95F2\u533A\uFF09" : "\u4E0D\u5360\u5730" : "\u6536 " + (worker.plotCount || 0) + " \u5757"));
         var acts = modules.host.put(row, app.el("div", "fm-helper-worker-acts"));
         var manualRest = worker.resting === true;
         if (worker.status !== "paused" && (manualRest || worker.status !== "resting")) {

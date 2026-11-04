@@ -14,6 +14,7 @@ import {
   helperAssignments, helperFullPlots, helperHasWork, helperPlots, helperTargetCropFor,
   helperWorkerOnDuty, helperWorkerState,
 } from './helper-coverage.js'
+import { patrolZoneCount, patrolZoneRange, zoneGuardState } from './helper-patrol.js'
 import { settleHelper } from './helper-settle.js'
 
 export {
@@ -95,6 +96,8 @@ export function helperView(data, now = Date.now()) {
   let resting = 0
   let restUntil = null
   let energySum = 0
+  let patrolIndex = 0
+  const zoneTotal = patrolZoneCount(data)
   for (const worker of helper.workers) {
     const role = worker.role === 'patrol' ? 'patrol' : 'harvest'
     const plots = assignments.plots.get(worker.id) ?? []
@@ -108,6 +111,17 @@ export function helperView(data, now = Date.now()) {
     const status = !helper.enabled ? 'paused' : state === 'resting' ? 'resting' : role === 'patrol' ? 'patrol' : hasPlotWork ? 'working' : 'idle'
     const restRemainingMs = state === 'resting' ? Math.max(0, Math.round((1 - energy) * HELPER_REST_MS)) : 0
     const workRemainingMs = state === 'working' ? Math.max(0, Math.round((energy - HELPER_REST_AT) * HELPER_WORK_MS)) : 0
+    // 巡逻按序号固定分区：第 1 只守 1 区；超出的只是机动，不提高防御。
+    let zone = null, zoneFrom = null, zoneTo = null, guarding = false, maneuver = false
+    if (role === 'patrol') {
+      const index = patrolIndex
+      patrolIndex += 1
+      if (index < zoneTotal) {
+        const range = patrolZoneRange(data, index)
+        zone = index; zoneFrom = range.from; zoneTo = range.to
+        guarding = zoneGuardState(data, index, now) === 'guarded'
+      } else maneuver = true
+    }
     if (onDutyNow) onDuty += 1
     if (state === 'resting') {
       resting += 1
@@ -118,6 +132,7 @@ export function helperView(data, now = Date.now()) {
       id: worker.id, role, roleLabel: role === 'harvest' ? '收菜' : '巡逻', locked: worker.locked === true,
       plots, plotCount, status, state, working, energy: Math.round(energy * 1000) / 1000,
       restRemainingMs, workRemainingMs, shiftAt: worker.shiftAt, resting: worker.resting === true, idle: worker.idle === true,
+      zone, zoneFrom, zoneTo, guarding, maneuver,
     })
   }
   return { hired: helper.hired, enabled: helper.enabled, plots: managed, stored: helperCount(data), usedHours: helper.usedMs / 3600000,
@@ -128,8 +143,11 @@ export function helperView(data, now = Date.now()) {
     energy: workers.length === 0 ? 0 : Math.round(energySum / workers.length * 1000) / 1000,
     workers }
 }
-/** 托管地照常按真实时间长大：只多一句「帮工在看着」，不改 progress / remainingMs / stage（view.js 已经铺好真实值）。 */
+/** 托管地照常按真实时间长大：只多一句「帮工在看着」，不改 progress / remainingMs / stage（view.js 已经铺好真实值）。
+ * 被偷过的地优先报损失（成熟地也要说），经典版直接读 helperNote。 */
 export function helperPlotView(data, index, state, now = Date.now()) {
+  const loss = state?.loss ?? 0
+  if (loss > 0) return { helperNote: '被偷过，少收 ' + Math.round(loss * 100) + '%' }
   if (!data.helper.enabled || index >= helperPlots(data, now) || state === null || state.ripe || state.withered) return {}
   return { helperNote: '帮工照料中', pests: [] }
 }

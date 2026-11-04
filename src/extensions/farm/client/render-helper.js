@@ -68,6 +68,80 @@ export function createFarmHelperRenderer(state, modules) {
       return worker.workRemainingMs > 0 ? '还剩 ' + shortTime(worker.workRemainingMs) : '精力充足'
   }
 
+  /** 最近一次偷窃 / 被赶走的文案；没有就写「最近没有偷窃」。 */
+  function theftKind(event) {
+      if (event.kind === 'bird') return '鸟'
+      return event.heavy === true ? '野猪' : '小偷猪'
+  }
+
+  function theftTime(data, at) {
+      var diff = Math.max(0, (Number.isFinite(data.now) ? data.now : Date.now()) - at)
+      return diff < 60000 ? '刚刚' : modules.events.shortTime(diff) + '前'
+  }
+
+  function theftEventText(data, event) {
+      var when = theftTime(data, event.at)
+      var place = (event.plot + 1) + ' 号地'
+      if (event.blocked === true) return '最近：' + when + ' · ' + (event.patrolId ? '#' + event.patrolId : '巡逻') + ' 赶走了' + theftKind(event) + '（' + place + '）'
+      var who = event.kind === 'bird' ? '鸟' : event.heavy === true ? '野猪' : '小偷猪'
+      var verb = event.kind === 'bird' ? '啄了' : '拱了'
+      return '最近：' + when + ' · ' + who + verb + ' ' + place + '，少收 ' + Math.round((event.loss || 0) * 100) + '%'
+  }
+
+  function theftRecent(app, panel, data) {
+      var latest = data.theft && data.theft.latest
+      if (!latest) return
+      modules.host.put(panel, app.el('small', 'fm-patrol-event', theftEventText(data, latest)))
+  }
+
+  /** 区 pill 的状态词：颜色之外必须有文字，屏幕阅读器也读 aria-label。 */
+  function patrolZoneWord(zone) {
+      if (zone.state === 'guarded') return '有人守'
+      if (zone.state === 'resting') return '休息中'
+      if (zone.state === 'idle') return '待命'
+      if (zone.state === 'paused') return '无人守'
+      return '无巡逻'
+  }
+
+  /** 巡逻覆盖卡：每区状态、有人守/无人守、休息/机动提醒、最近事件。纯 CSS，无新素材。 */
+  function helperPatrol(app, panel, data) {
+      var theft = data.theft
+      if (!theft || !Array.isArray(theft.zones)) return
+      var card = modules.host.put(panel, app.el('div', 'fm-helper-card fm-patrol'))
+      card.setAttribute('data-farm-patrol', 'zones')
+      card.setAttribute('data-paused', String(theft.paused === true))
+      var head = modules.host.put(card, app.el('div', 'fm-patrol-head'))
+      modules.host.put(head, app.el('b', 'fm-helper-label', '巡逻覆盖'))
+      modules.host.put(head, app.el('span', 'fm-patrol-count', (theft.guardedZones || 0) + '/' + (theft.totalZones || 0) + ' 区有人守'))
+      var zones = modules.host.put(card, app.el('div', 'fm-patrol-zones'))
+      zones.setAttribute('role', 'list')
+      zones.setAttribute('aria-label', '巡逻区覆盖')
+      theft.zones.forEach(function (zone) {
+        var word = patrolZoneWord(zone)
+        var pill = modules.host.put(zones, app.el('div', 'fm-patrol-zone'))
+        pill.setAttribute('role', 'listitem')
+        pill.setAttribute('data-farm-patrol-zone', String(zone.index))
+        pill.setAttribute('data-guarded', String(zone.guarded === true))
+        pill.setAttribute('aria-label', zone.label + '，' + zone.from + ' 到 ' + zone.to + ' 号地，' + word + (zone.patrolId !== null ? '，巡逻 #' + zone.patrolId : ''))
+        modules.host.put(pill, app.el('b', null, zone.label))
+        modules.host.put(pill, app.el('small', null, zone.from + '–' + zone.to))
+        modules.host.put(pill, app.el('small', 'fm-patrol-state', word))
+      })
+      if ((theft.patrols || 0) === 0) {
+        modules.host.put(card, app.el('small', 'fm-helper-warning', '没有巡逻帮工'))
+        modules.host.put(card, app.el('small', 'fm-helper-hint', '把一只改成巡逻可以守 4 块地；休息时那区没人。'))
+      } else if (theft.patrols > theft.totalZones) {
+        modules.host.put(card, app.el('small', 'fm-helper-warning', '巡逻帮工比巡逻区多，多出的不会提高防御'))
+        modules.host.put(card, app.el('small', 'fm-helper-hint', '多出的巡逻改回收菜更划算。'))
+      } else if (theft.paused) {
+        modules.host.put(card, app.el('small', 'fm-helper-hint', '托管暂停 · 偷窃也暂停；恢复后不补。'))
+      } else if (theft.guardedZones === 0) {
+        modules.host.put(card, app.el('small', 'fm-helper-hint', '巡逻都在休息，田里暂时没人守。'))
+      }
+      modules.host.put(card, app.el('small', 'fm-patrol-event', theft.latest ? theftEventText(data, theft.latest) : '最近没有偷窃'))
+      modules.host.put(card, app.el('small', 'fm-helper-hint', '巡逻只守自己的区；休息时那区没人，会直接被偷。即使在岗，也有 5% 概率被偷；无人守时还会偶发重损。'))
+  }
+
   /** 排班卡：auto 自动错峰、manual 可逐只休息；只影响以后雇佣的默认角色。 */
   function helperSchedule(app, panel, schedule) {
       var current = schedule === 'manual' ? 'manual' : 'auto'
@@ -117,6 +191,7 @@ export function createFarmHelperRenderer(state, modules) {
       var panel = modules.host.put(box, app.el('section', 'fm-helper-panel')); panel.setAttribute('aria-label', '帮工托管')
       helperStatus(app, panel, '帮工猪', '已雇用 · 管 ' + helper.plots + ' 块地', enabled)
       helperToggle(app, panel, enabled)
+      theftRecent(app, panel, data)
 
       var upgrade = items.find(function (item) { return item.key === 'helper-level' })
       if (upgrade) {
@@ -150,6 +225,7 @@ export function createFarmHelperRenderer(state, modules) {
         '收菜 ' + harvest + ' 只 · 巡逻 ' + patrol + ' 只 · 在岗 ' + onDuty + ' / 休息 ' + restingCount + ' · 共管 ' + helper.plots + ' 块地', enabled)
       helperToggle(app, panel, enabled)
       helperSchedule(app, panel, helper.schedule)
+      helperPatrol(app, panel, data)
 
       if (harvest === 0) {
         modules.host.put(panel, app.el('small', 'fm-helper-warning', '没有收菜帮工，菜不会自动收'))
@@ -170,7 +246,9 @@ export function createFarmHelperRenderer(state, modules) {
         modules.host.put(row, app.el('b', 'fm-helper-worker-id', '#' + worker.id))
         var badge = modules.host.put(row, app.el('span', 'fm-role-badge', worker.roleLabel || (worker.role === 'patrol' ? '巡逻' : '收菜')))
         badge.setAttribute('data-role', worker.role === 'patrol' ? 'patrol' : 'harvest')
-        modules.host.put(row, app.el('span', 'fm-helper-worker-plots', worker.role === 'patrol' ? '不占地' : '收 ' + (worker.plotCount || 0) + ' 块'))
+        modules.host.put(row, app.el('span', 'fm-helper-worker-plots', worker.role === 'patrol'
+          ? (Number.isInteger(worker.zone) ? '守 ' + (worker.zone + 1) + ' 区 · ' + worker.zoneFrom + '–' + worker.zoneTo + ' 号地' : worker.maneuver === true ? '机动（无空闲区）' : '不占地')
+          : '收 ' + (worker.plotCount || 0) + ' 块'))
 
         var acts = modules.host.put(row, app.el('div', 'fm-helper-worker-acts'))
         var manualRest = worker.resting === true

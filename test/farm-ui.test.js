@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test, beforeEach } from 'node:test'
 
-import farm, { PEST_MS, setRandom } from '../extensions/farm/server.js'
+import farm, { setTheft,  PEST_MS, setRandom } from '../extensions/farm/server.js'
+
+setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 
 import { establishedFarm, api, renderFarm, plain, H, T0 } from './helpers/farm-ui.js'
 function openTools(ui) {

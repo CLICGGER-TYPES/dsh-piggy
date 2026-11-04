@@ -118,14 +118,16 @@ var ripeAt = (plot, crop) => plot.plantedAt - plot.boostMs + seasonMs(crop);
 var pestOn = (plot, crop, kind, at) => (kind !== "dry" || weatherAt(at) !== "rain") && (kind === "dry" ? droughtAt(plot.pests[kind]) : plot.pests[kind]) <= Math.min(at, ripeAt(plot, crop));
 function plotState(plot, now) {
   if (plot === null) return null;
-  if (plot.fallow) return { empty: true, stubble: plot.stubble, pests: PESTS.filter((kind) => plot.pests[kind] === 0 && (kind !== "dry" || weatherAt(now) !== "rain")), ripe: false, withered: false };
-  if (plot.withered) return { crop: plot.crop, stage: "withered", withered: true, pests: [], ripe: false, progress: 0, remainingMs: 0, yield: 0 };
+  if (plot.fallow) return { empty: true, stubble: plot.stubble, pests: PESTS.filter((kind) => plot.pests[kind] === 0 && (kind !== "dry" || weatherAt(now) !== "rain")), ripe: false, withered: false, loss: 0 };
+  if (plot.withered) return { crop: plot.crop, stage: "withered", withered: true, pests: [], ripe: false, progress: 0, remainingMs: 0, yield: 0, loss: 0 };
   const crop = cropFor(plot.crop);
   if (crop === null) return null;
   const age = ageOf(plot, crop, now);
   const index = STAGE_AT.filter((threshold) => age >= threshold).length - 1;
   const ripe = age >= 1;
   const pests = PESTS.filter((kind) => pestOn(plot, crop, kind, now));
+  const loss = Number.isFinite(plot.loss) ? Math.max(0, Math.min(0.9, plot.loss)) : 0;
+  const base = Math.max(1, crop.yield + plot.roll - PEST_LOSS * pests.length);
   return {
     crop: crop.key,
     stage: STAGES[index],
@@ -136,7 +138,8 @@ function plotState(plot, now) {
     pests,
     progress: age,
     remainingMs: ripe ? 0 : Math.max(0, ripeAt(plot, crop) - now),
-    yield: ripe ? Math.max(1, crop.yield + plot.roll - PEST_LOSS * pests.length) : 0
+    loss,
+    yield: ripe ? Math.max(1, Math.round(base * (1 - loss))) : 0
   };
 }
 function levelOf(exp) {
@@ -379,6 +382,241 @@ function helperWorkerState(data, worker, at, hasWork = helperHasWork(data), busy
   return busy ? "working" : "idle";
 }
 
+// src/extensions/farm/helper-patrol.js
+var HELPER_PATROL_ZONE_PLOTS = 4;
+var patrolZoneOf = (index) => Math.floor(Math.max(0, Number(index) || 0) / HELPER_PATROL_ZONE_PLOTS);
+var patrolZoneCount = (data) => Math.max(1, Math.ceil(Math.max(1, Number(data?.unlocked) || 1) / HELPER_PATROL_ZONE_PLOTS));
+var helperPatrolWorkers = (data) => (Array.isArray(data?.helper?.workers) ? data.helper.workers : []).filter((worker) => worker.role === "patrol");
+function patrolOwnerOfZone(data, zone) {
+  const index = Math.floor(Number(zone));
+  if (!Number.isSafeInteger(index) || index < 0 || index >= patrolZoneCount(data)) return null;
+  return helperPatrolWorkers(data)[index] ?? null;
+}
+function patrolZoneRange(data, zone) {
+  const from = Math.max(0, Number(zone) || 0) * HELPER_PATROL_ZONE_PLOTS;
+  const to = Math.min(Math.max(1, Number(data?.unlocked) || 1), from + HELPER_PATROL_ZONE_PLOTS) - 1;
+  return { from, to, count: Math.max(0, to - from + 1) };
+}
+function patrolZones(data) {
+  const total = patrolZoneCount(data);
+  const patrols = helperPatrolWorkers(data);
+  return Array.from({ length: total }, (_, zone) => {
+    const owner = patrols[zone] ?? null;
+    const { from, to, count: count2 } = patrolZoneRange(data, zone);
+    return { index: zone, label: zone + 1 + " 区", from, to, count: count2, patrolId: owner === null ? null : owner.id };
+  });
+}
+function zoneGuardState(data, zone, at) {
+  const owner = patrolOwnerOfZone(data, zone);
+  if (owner === null) return "unassigned";
+  if (!data?.helper?.hired || !data?.helper?.enabled) return "paused";
+  if (owner.resting === true) return "resting";
+  if (owner.idle === true) return "idle";
+  if (!helperEnergyEnabled()) return "guarded";
+  return helperWorkingAt(owner, at) ? "guarded" : "resting";
+}
+var zoneGuardedAt = (data, zone, at) => zoneGuardState(data, zone, at) === "guarded";
+
+// src/extensions/farm/theft.js
+var THEFT_GAP_NO_HELPER = [12 * HOUR_MS, 24 * HOUR_MS];
+var THEFT_GAP_HELPER = [6 * HOUR_MS, 10 * HOUR_MS];
+var THEFT_LOOKBACK_MS = 72 * HOUR_MS;
+var THEFT_MAX_EVENTS = 240;
+var THEFT_LOG_MAX = 5;
+var THEFT_GUARD_CHANCE = 0.05;
+var THEFT_HEAVY_CHANCE = 0.03;
+var THEFT_NORMAL_LOSS = [0.2, 0.3];
+var THEFT_HEAVY_LOSS = [0.8, 0.9];
+var THEFT_LOSS_CAP = 0.9;
+var THEFT_SOON_MS = 2 * HOUR_MS;
+var MIN_GAP_MS = 6e4;
+var theftOn = true;
+function setTheft(on) {
+  theftOn = on !== false;
+}
+var theftEnabled = () => theftOn;
+var theftRandom = (name, seq, at) => stableRandom("farm-theft", name, seq, at);
+var round2 = (value) => Math.round(value * 100) / 100;
+var lossValue = (value) => Number.isFinite(value) ? Math.max(0, Math.min(THEFT_LOSS_CAP, round2(value))) : 0;
+function theftGapRange(data) {
+  return data?.helper?.hired === true ? THEFT_GAP_HELPER : THEFT_GAP_NO_HELPER;
+}
+var minGap = (data) => theftGapRange(data)[0];
+function nextTheftAt(data, from, seq = 0) {
+  const [min, max] = theftGapRange(data);
+  const r = theftRandom("gap", seq, from)();
+  const gap = Math.max(MIN_GAP_MS, Math.round((min + r * (max - min)) / MIN_GAP_MS) * MIN_GAP_MS);
+  return from + gap;
+}
+function theftView(data, now = Date.now()) {
+  const at = Number.isFinite(now) ? now : Date.now();
+  const hired = data?.helper?.hired === true;
+  const enabled = data?.helper?.enabled === true;
+  const zones = patrolZones(data).map((zone) => {
+    const state = zoneGuardState(data, zone.index, at);
+    return { ...zone, state, guarded: state === "guarded" };
+  });
+  const log = Array.isArray(data?.theft?.log) ? data.theft.log.slice(0, THEFT_LOG_MAX) : [];
+  return {
+    enabled: !hired || enabled,
+    paused: hired && !enabled,
+    patrols: helperPatrolWorkers(data).length,
+    guardedZones: zones.filter((zone) => zone.guarded).length,
+    totalZones: zones.length,
+    zones,
+    log,
+    latest: log[0] ?? null
+  };
+}
+function hasTheftTargets(data) {
+  const unlocked = Math.max(0, Math.min(PLOTS, Number(data?.unlocked) || 0));
+  for (let index = 0; index < unlocked; index += 1) {
+    const plot = data.plots?.[index];
+    if (!isObject(plot) || plot.fallow === true || plot.withered === true) continue;
+    if (cropFor(plot.crop) === null) continue;
+    if (lossValue(plot.loss) >= THEFT_LOSS_CAP) continue;
+    return true;
+  }
+  return false;
+}
+function pickTheftTarget(data, at, seq) {
+  const unlocked = Math.max(0, Math.min(PLOTS, Number(data?.unlocked) || 0));
+  const tiers = [[], [], []];
+  for (let index = 0; index < unlocked; index += 1) {
+    const plot = data.plots?.[index];
+    if (!isObject(plot) || plot.fallow === true || plot.withered === true) continue;
+    if (cropFor(plot.crop) === null) continue;
+    if (lossValue(plot.loss) >= THEFT_LOSS_CAP) continue;
+    const state = plotState(plot, at);
+    if (state === null || state.empty === true || state.withered === true) continue;
+    const tier = state.ripe === true ? 0 : state.remainingMs > 0 && state.remainingMs <= THEFT_SOON_MS ? 1 : 2;
+    tiers[tier].push({ index, crop: plot.crop, tier });
+  }
+  const candidates = tiers.find((list) => list.length > 0);
+  if (candidates === void 0) return null;
+  const pick = Math.min(candidates.length - 1, Math.floor(theftRandom("target", seq, at)() * candidates.length));
+  return candidates[pick];
+}
+function applyTheftLoss(data, index, loss) {
+  const plot = data.plots?.[index];
+  if (!isObject(plot)) return 0;
+  const next = lossValue(lossValue(plot.loss) + loss);
+  if (next > 0) plot.loss = next;
+  else delete plot.loss;
+  return next;
+}
+function pushTheftLog(data, event) {
+  if (!Array.isArray(data.theft.log)) data.theft.log = [];
+  data.theft.log.unshift(event);
+  data.theft.log.length = Math.min(data.theft.log.length, THEFT_LOG_MAX);
+}
+function advanceTheft(data, at) {
+  const theft = data.theft;
+  theft.seq = count(theft.seq) + 1;
+  theft.at = nextTheftAt(data, at, theft.seq);
+}
+function resolveTheft(data, at) {
+  const theft = data.theft;
+  const seq = count(theft.seq);
+  const target = pickTheftTarget(data, at, seq);
+  if (target === null) {
+    advanceTheft(data, at);
+    return null;
+  }
+  const zone = patrolZoneOf(target.index);
+  const guarded = zoneGuardedAt(data, zone, at);
+  const kind = target.tier <= 1 ? theftRandom("kind", seq, at)() < 0.6 ? "bird" : "pig" : "pig";
+  let blocked = false;
+  let heavy = false;
+  let loss = 0;
+  if (guarded) blocked = theftRandom("guard", seq, at)() >= THEFT_GUARD_CHANCE;
+  if (!blocked) {
+    if (!guarded && theftRandom("heavy", seq, at)() < THEFT_HEAVY_CHANCE) {
+      loss = THEFT_HEAVY_LOSS[0] + theftRandom("heavy-loss", seq, at)() * (THEFT_HEAVY_LOSS[1] - THEFT_HEAVY_LOSS[0]);
+      heavy = true;
+    } else {
+      loss = THEFT_NORMAL_LOSS[0] + theftRandom("normal", seq, at)() * (THEFT_NORMAL_LOSS[1] - THEFT_NORMAL_LOSS[0]);
+    }
+    loss = Math.max(1, Math.round(loss * 100)) / 100;
+    applyTheftLoss(data, target.index, loss);
+  }
+  const event = {
+    seq,
+    at,
+    kind,
+    plot: target.index,
+    zone,
+    crop: target.crop,
+    patrolId: patrolOwnerOfZone(data, zone)?.id ?? null,
+    guarded,
+    blocked,
+    loss: blocked ? 0 : loss,
+    heavy
+  };
+  pushTheftLog(data, event);
+  advanceTheft(data, at);
+  return event;
+}
+function alignTheft(data, floor) {
+  const theft = data?.theft;
+  if (!isObject(theft) || !Number.isFinite(theft.at) || !Number.isFinite(floor)) return;
+  let guard = 0;
+  while (theft.at < floor) {
+    if (guard++ > 512) {
+      theft.seq = count(theft.seq) + 1;
+      theft.at = floor + minGap(data);
+      return;
+    }
+    advanceTheft(data, theft.at);
+  }
+}
+function settleTheftOnly(data, now) {
+  const theft = data?.theft;
+  if (!isObject(theft) || !Number.isFinite(theft.at) || !Number.isFinite(now)) return;
+  alignTheft(data, now - THEFT_LOOKBACK_MS);
+  let guard = 0;
+  while (theft.at <= now) {
+    if (guard++ >= THEFT_MAX_EVENTS) throw new Error("菜园偷窃事件过多，未推进结算时间；请联系维护者检查存档。");
+    resolveTheft(data, theft.at);
+  }
+}
+function skipTheftClock(data, now) {
+  const theft = data?.theft;
+  if (!isObject(theft) || !Number.isFinite(theft.at) || !Number.isFinite(now)) return;
+  alignTheft(data, now);
+  if (theft.at <= now) {
+    theft.seq = count(theft.seq) + 1;
+    theft.at = nextTheftAt(data, now, theft.seq);
+  }
+}
+function cleanEvent(raw) {
+  if (!isObject(raw) || !Number.isFinite(raw.at)) return null;
+  const plot = Math.floor(Number(raw.plot));
+  if (!Number.isSafeInteger(plot) || plot < 0 || plot >= PLOTS) return null;
+  return {
+    seq: count(raw.seq),
+    at: raw.at,
+    kind: raw.kind === "bird" ? "bird" : "pig",
+    plot,
+    zone: Number.isFinite(raw.zone) ? Math.max(0, Math.floor(raw.zone)) : patrolZoneOf(plot),
+    crop: typeof raw.crop === "string" ? raw.crop : null,
+    patrolId: Number.isSafeInteger(raw.patrolId) && raw.patrolId > 0 ? raw.patrolId : null,
+    guarded: raw.guarded === true,
+    blocked: raw.blocked === true,
+    loss: lossValue(raw.loss),
+    heavy: raw.heavy === true
+  };
+}
+function normalizeTheft(data, now = Date.now()) {
+  if (!theftOn) return;
+  const at = Number.isFinite(now) ? now : Date.now();
+  const raw = isObject(data.theft) ? data.theft : {};
+  const seq = Math.max(0, Math.floor(Number(raw.seq)) || 0);
+  const next = Number.isFinite(raw.at) ? raw.at : nextTheftAt(data, at, seq);
+  const log = Array.isArray(raw.log) ? raw.log.map(cleanEvent).filter(Boolean).slice(0, THEFT_LOG_MAX) : [];
+  data.theft = { at: next, seq, log };
+}
+
 // src/extensions/farm/helper-settle.js
 var MAX_STEPS = 1e5;
 var helperRandom = (...parts) => stableRandom("helper", ...parts);
@@ -494,7 +732,7 @@ function tidy(data, now, indices) {
   }
 }
 var allIndices = (data) => Array.from({ length: helperFullPlots(data) }, (_, index) => index);
-function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
+function settlePlots(data, helper, start, now, awardExperience, useEnergy, theft) {
   for (const index of allIndices(data)) {
     const crop = cropFor(data.plots[index]?.crop);
     if (crop !== null) helper.targets[index] = crop.key;
@@ -502,16 +740,34 @@ function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
   const blocked = /* @__PURE__ */ new Set();
   let at = start;
   let coverage = useEnergy ? helperAssignments(data, at) : null;
+  const dueTheft = () => {
+    if (!theft) return null;
+    const cursor = data.theft?.at;
+    return Number.isFinite(cursor) && cursor <= now ? Math.max(cursor, at) : null;
+  };
+  let theftAt = dueTheft();
   let step = 0;
   for (; step < MAX_STEPS; step += 1) {
     const managed2 = useEnergy ? coverage.total : helperLegacyAssignments(data).total;
     const next = useEnergy ? nextEventDynamic(data, at, now, blocked, coverage) : nextEventLegacy(data, helper, managed2, at, now, blocked);
+    if (theftAt !== null && (next === null || theftAt <= next.when)) {
+      if (theftAt > at) {
+        at = theftAt;
+        coverage = helperAssignments(data, at);
+      }
+      resolveTheft(data, theftAt);
+      theftAt = dueTheft();
+      continue;
+    }
     if (next === null) {
       const wake = useEnergy ? nextCoverageAt(data, at, now) : null;
       if (wake !== null && wake > at) {
-        at = wake;
-        coverage = helperAssignments(data, at);
-        continue;
+        const target = theftAt !== null ? Math.min(wake, theftAt) : wake;
+        if (target > at) {
+          at = target;
+          coverage = helperAssignments(data, at);
+          continue;
+        }
       }
       break;
     }
@@ -532,12 +788,13 @@ function settlePlots(data, helper, start, now, awardExperience, useEnergy) {
   }
   const managed = useEnergy ? coverage.total : helperLegacyAssignments(data).total;
   const remaining = useEnergy ? nextEventDynamic(data, at, now, blocked, coverage) : nextEventLegacy(data, helper, managed, at, now, blocked);
-  if (step === MAX_STEPS && remaining !== null) throw new Error("菜园离线农活过多，未推进结算时间；请联系维护者检查存档。");
+  if (step === MAX_STEPS && (remaining !== null || dueTheft() !== null)) throw new Error("菜园离线农活过多，未推进结算时间；请联系维护者检查存档。");
   const covered = useEnergy ? helperAssignments(data, now).covered : new Set(allIndices(data));
   tidy(data, now, [...covered]);
 }
-function sleepWorkers(data, from, now, recovering) {
+function sleepWorkers(data, from, now, recovering, keepPatrol = false) {
   for (const worker of data.helper.workers) {
+    if (keepPatrol && worker.role === "patrol") continue;
     if (worker.resting === true) continue;
     if (worker.idle === true) continue;
     const energy = recovering && now > from ? Math.max(0, Math.min(1, helperEnergyAt(worker, from) + (now - from) / HELPER_REST_MS)) : helperEnergyAt(worker, now);
@@ -554,7 +811,7 @@ function wakeSleepers(data, now) {
     worker.shiftAt = helperWorkAnchor(now, energy);
   }
 }
-function settleHelper(data, now, { awardExperience = true, energy = helperEnergyEnabled() } = {}) {
+function settleHelper(data, now, { awardExperience = true, energy = helperEnergyEnabled(), theft = theftEnabled() } = {}) {
   if (weatherAt(now) === "rain") for (const plot of data.plots) {
     if (plot?.fallow) plot.pests.dry = null;
     else if (plot?.pests?.dry <= now) plot.pests.dry = droughtAt(now);
@@ -563,20 +820,36 @@ function settleHelper(data, now, { awardExperience = true, energy = helperEnergy
   if (!Number.isFinite(now)) return;
   const start = helper.lastAt ?? now;
   if (now < start) return;
-  if (!helper.enabled) return;
+  const theftOn2 = theft === true && data.theft !== void 0;
+  if (!helper.hired) {
+    if (theftOn2) settleTheftOnly(data, now);
+    return;
+  }
+  if (!helper.enabled) {
+    if (theftOn2) skipTheftClock(data, now);
+    return;
+  }
+  if (theftOn2) alignTheft(data, Math.max(start, now - THEFT_LOOKBACK_MS));
   const useEnergy = energy === true;
   const workStart = useEnergy ? helperHasWork(data) : true;
   const workNow = useEnergy ? helperHasWork(data) : true;
   if (useEnergy && workNow) wakeSleepers(data, now);
   if (useEnergy && !workStart && !workNow) {
-    sleepWorkers(data, start, now, true);
+    const guard = theftOn2 && hasTheftTargets(data);
+    if (theftOn2) settleTheftOnly(data, now);
+    if (guard) wakeSleepers(data, now);
+    sleepWorkers(data, start, now, true, guard);
     helper.lastAt = now;
     return;
   }
-  settlePlots(data, helper, start, now, awardExperience, useEnergy);
+  settlePlots(data, helper, start, now, awardExperience, useEnergy, theftOn2);
   if (useEnergy) {
+    const guard = theftOn2 && hasTheftTargets(data);
     if (helperHasWork(data)) wakeSleepers(data, now);
-    else sleepWorkers(data, now, now, false);
+    else {
+      if (guard) wakeSleepers(data, now);
+      sleepWorkers(data, now, now, false, guard);
+    }
   }
   helper.lastAt = now;
 }
@@ -637,6 +910,8 @@ function helperView(data, now = Date.now()) {
   let resting = 0;
   let restUntil = null;
   let energySum = 0;
+  let patrolIndex = 0;
+  const zoneTotal = patrolZoneCount(data);
   for (const worker of helper.workers) {
     const role = worker.role === "patrol" ? "patrol" : "harvest";
     const plots = assignments.plots.get(worker.id) ?? [];
@@ -649,6 +924,18 @@ function helperView(data, now = Date.now()) {
     const status = !helper.enabled ? "paused" : state === "resting" ? "resting" : role === "patrol" ? "patrol" : hasPlotWork ? "working" : "idle";
     const restRemainingMs = state === "resting" ? Math.max(0, Math.round((1 - energy) * HELPER_REST_MS)) : 0;
     const workRemainingMs = state === "working" ? Math.max(0, Math.round((energy - HELPER_REST_AT) * HELPER_WORK_MS)) : 0;
+    let zone = null, zoneFrom = null, zoneTo = null, guarding = false, maneuver = false;
+    if (role === "patrol") {
+      const index = patrolIndex;
+      patrolIndex += 1;
+      if (index < zoneTotal) {
+        const range = patrolZoneRange(data, index);
+        zone = index;
+        zoneFrom = range.from;
+        zoneTo = range.to;
+        guarding = zoneGuardState(data, index, now) === "guarded";
+      } else maneuver = true;
+    }
     if (onDutyNow) onDuty += 1;
     if (state === "resting") {
       resting += 1;
@@ -670,7 +957,12 @@ function helperView(data, now = Date.now()) {
       workRemainingMs,
       shiftAt: worker.shiftAt,
       resting: worker.resting === true,
-      idle: worker.idle === true
+      idle: worker.idle === true,
+      zone,
+      zoneFrom,
+      zoneTo,
+      guarding,
+      maneuver
     });
   }
   return {
@@ -698,6 +990,8 @@ function helperView(data, now = Date.now()) {
   };
 }
 function helperPlotView(data, index, state, now = Date.now()) {
+  const loss = state?.loss ?? 0;
+  if (loss > 0) return { helperNote: "被偷过，少收 " + Math.round(loss * 100) + "%" };
   if (!data.helper.enabled || index >= helperPlots(data, now) || state === null || state.ripe || state.withered) return {};
   return { helperNote: "帮工照料中", pests: [] };
 }
@@ -901,6 +1195,13 @@ function normalize(data, now = Date.now()) {
     if (plot.fallow === true) return { fallow: true, stubble: plot.stubble === true, pests: { dry: plot.pests?.dry === 0 ? 0 : null, weed: plot.pests?.weed === 0 ? 0 : null } };
     if (plot.withered === true) return cropFor(plot.crop) ? { crop: plot.crop, withered: true } : null;
     if (!cropFor(plot.crop) || !Number.isFinite(plot.plantedAt) || !isObject(plot.pests)) return null;
+    const loss = lossValue(plot.loss);
+    if (loss > 0) return { ...plot, loss };
+    if ("loss" in plot) {
+      const clean = { ...plot };
+      delete clean.loss;
+      return clean;
+    }
     return plot;
   });
   for (const field of ["seeds", "harvest", "acquired", "harvests", "tools", "fert"]) if (!isObject(data[field])) data[field] = {};
@@ -918,7 +1219,7 @@ function normalize(data, now = Date.now()) {
     data.helper.enabled = data.helper.hired === true;
     data.helper.xpQuarterRemainder = 0;
     if (data.helper.hired && !Number.isFinite(now)) throw new Error("帮工存档迁移缺少有效时间，未推进检查点。");
-    settleHelper(data, now, { awardExperience: false, energy: false });
+    settleHelper(data, now, { awardExperience: false, energy: false, theft: false });
     data.helper.enabled = data.helper.hired === true;
     data.helper.xpQuarterRemainder = 0;
     if (data.helper.hired && Number.isFinite(now)) {
@@ -930,7 +1231,8 @@ function normalize(data, now = Date.now()) {
       data.helper.xpEligibleAt = null;
     }
   }
-  data.version = Math.max(8, count(data.version));
+  normalizeTheft(data, now);
+  data.version = Math.max(9, count(data.version));
   return data;
 }
 function newGround() {
@@ -1099,7 +1401,7 @@ actions.collect = (data) => collectHelper(data);
 actions.toggleHelper = (data, payload, api) => toggleHelper(data, payload, api);
 
 // src/extensions/farm/merge.js
-var FARM_DATA_VERSION = 8;
+var FARM_DATA_VERSION = 9;
 var KNOWN = /* @__PURE__ */ new Set([
   "version",
   "unlocked",
@@ -1115,7 +1417,8 @@ var KNOWN = /* @__PURE__ */ new Set([
   "helperBarnRefund",
   "helperBarnRefunded",
   "helper",
-  "onboarding"
+  "onboarding",
+  "theft"
 ]);
 var SAFE = Number.MAX_SAFE_INTEGER;
 var safeKey = (key) => key !== "__proto__" && key !== "constructor" && key !== "prototype";
@@ -1157,13 +1460,15 @@ function cleanPlot(plot) {
   const crop = cropFor(plot.crop);
   if (crop === null) return null;
   const pest = (kind) => Number.isFinite(plot.pests?.[kind]) ? plot.pests[kind] : null;
+  const loss = Number.isFinite(plot.loss) ? Math.max(0, Math.min(0.9, Math.round(plot.loss * 100) / 100)) : 0;
   return {
     crop: crop.key,
     season: Math.max(1, Math.min(crop.seasons, Math.floor(Number(plot.season)) || 1)),
     plantedAt: plot.plantedAt,
     boostMs: Number.isFinite(plot.boostMs) ? Math.max(0, plot.boostMs) : 0,
     roll: Number.isFinite(plot.roll) ? Math.max(-3, Math.min(2, Math.floor(plot.roll))) : 0,
-    pests: { weed: pest("weed"), bug: pest("bug"), dry: pest("dry") }
+    pests: { weed: pest("weed"), bug: pest("bug"), dry: pest("dry") },
+    ...loss > 0 ? { loss } : {}
   };
 }
 function pickPlot(target, source, now) {
@@ -1218,6 +1523,35 @@ function mergeHelper(out, t, s) {
     workers
   };
 }
+function pickTheftContext(target, source) {
+  const settledAt = (helper) => Number.isFinite(helper.lastAt) ? helper.lastAt : -Infinity;
+  const t = settledAt(target.helper), s = settledAt(source.helper);
+  if (t !== s) return s > t ? source : target;
+  const ta = Number.isFinite(target.theft?.at) ? target.theft.at : -Infinity;
+  const sa = Number.isFinite(source.theft?.at) ? source.theft.at : -Infinity;
+  if (ta !== sa) return sa > ta ? source : target;
+  return (source.theft?.seq ?? 0) > (target.theft?.seq ?? 0) ? source : target;
+}
+function mergeTheftLog(left, right) {
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const event of [...left ?? [], ...right ?? []]) {
+    if (!isObject(event) || !Number.isFinite(event.at)) continue;
+    const key = event.at + "|" + event.plot + "|" + event.kind;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ ...event });
+  }
+  return out.sort((a, b) => b.at - a.at).slice(0, 5);
+}
+function mergeTheft(out, t, s) {
+  const ctx = pickTheftContext(t, s);
+  out.theft = {
+    at: Number.isFinite(ctx.theft?.at) ? ctx.theft.at : null,
+    seq: Math.max(t.theft?.seq ?? 0, s.theft?.seq ?? 0),
+    log: mergeTheftLog(t.theft?.log, s.theft?.log)
+  };
+}
 function mergeLesson(out, t, s, warnings) {
   const done = t.step === "done" ? t : s.step === "done" ? s : null;
   if (done !== null) {
@@ -1261,6 +1595,7 @@ function mergeStates(targetData, sourceData, now = Date.now()) {
   }
   for (const map of [t.tools, s.tools]) for (const [key, value] of Object.entries(map)) if (value === true && safeKey(key)) out.tools[key] = true;
   mergeHelper(out, t.helper, s.helper);
+  mergeTheft(out, t, s);
   mergeLesson(out, t.onboarding, s.onboarding, warnings);
   for (const [key, value] of Object.entries(t)) if (!KNOWN.has(key) && safeKey(key)) out[key] = value;
   const unknown = Object.keys(s).filter((key) => !KNOWN.has(key));
@@ -1272,18 +1607,56 @@ function mergeStates(targetData, sourceData, now = Date.now()) {
 }
 
 // src/extensions/farm/view.js
+function theftLossNote(event, loss) {
+  const who = event === void 0 ? "被偷过" : event.kind === "bird" ? "被鸟啄过" : event.heavy ? "被野猪拱过" : "被小偷猪拱过";
+  return who + " · 少收 " + Math.round(loss * 100) + "%";
+}
 function view(data, api) {
   const d = normalize(structuredClone(data), api.now);
   settleHelper(d, api.now);
   const wallet = purse(api), balance = wallet.balance() + d.refund;
   const level = levelOf(d.exp);
   const managed = helperPlots(d, api.now);
+  const zoneTotal = patrolZoneCount(d);
+  const guarded = (index) => patrolZoneOf(index) < zoneTotal && zoneGuardedAt(d, patrolZoneOf(index), api.now);
+  const lossEvents = /* @__PURE__ */ new Map();
+  for (const event of d.theft?.log ?? []) if (event.loss > 0 && !lossEvents.has(event.plot)) lossEvents.set(event.plot, event);
   const plots = d.plots.map((plot, index) => {
     if (index >= d.unlocked) return { index, wild: true, next: index === d.unlocked };
     const state = plotState(plot, api.now);
-    if (state === null || state.empty) return { index, empty: true, stubble: state?.stubble || false, pests: state?.pests || [], helper: index < managed };
+    if (state === null || state.empty) {
+      const zone2 = patrolZoneOf(index);
+      const range2 = patrolZoneRange(d, zone2);
+      return {
+        index,
+        empty: true,
+        stubble: state?.stubble || false,
+        pests: state?.pests || [],
+        helper: index < managed,
+        zone: zone2,
+        zoneFrom: range2.from,
+        zoneTo: range2.to,
+        guarded: guarded(index)
+      };
+    }
     const crop = cropFor(state.crop);
-    return { index, ...state, label: crop.label, emoji: crop.emoji, helper: index < managed, ...helperPlotView(d, index, state, api.now) };
+    const zone = patrolZoneOf(index);
+    const range = patrolZoneRange(d, zone);
+    const loss = state.loss ?? 0;
+    return {
+      index,
+      ...state,
+      label: crop.label,
+      emoji: crop.emoji,
+      helper: index < managed,
+      zone,
+      zoneFrom: range.from,
+      zoneTo: range.to,
+      guarded: guarded(index),
+      lossPercent: Math.round(loss * 100),
+      lossNote: loss > 0 ? theftLossNote(lossEvents.get(index), loss) : null,
+      ...helperPlotView(d, index, state, api.now)
+    };
   });
   const tally = (test) => plots.filter(test).length;
   const counts = { ripe: tally((plot) => plot.ripe), pests: tally((plot) => plot.pests?.length > 0), withered: tally((plot) => plot.withered), empty: tally((plot) => plot.empty) };
@@ -1328,6 +1701,7 @@ function view(data, api) {
     seeds,
     harvest: CROPS.map((crop) => ({ key: crop.key, emoji: crop.emoji, label: crop.label, count: amountFor(d, "harvest", crop.key), sell: crop.sell, food: crop.food ?? null, foodLabel: crop.foodLabel ?? null })),
     helper: helperView(d, api.now),
+    theft: theftView(d, api.now),
     shelf: {
       key: "farm",
       label: "菜园商店",
@@ -1391,6 +1765,7 @@ export {
   FERTILIZERS,
   HELPER_CYCLE_MS,
   HELPER_MAX,
+  HELPER_PATROL_ZONE_PLOTS,
   HELPER_PLOTS,
   HELPER_PLOTS_PER_WORKER,
   HELPER_PRICES,
@@ -1410,20 +1785,50 @@ export {
   RECLAIM_PRICE,
   STAGES,
   START_PLOTS,
+  THEFT_GAP_HELPER,
+  THEFT_GAP_NO_HELPER,
+  THEFT_GUARD_CHANCE,
+  THEFT_HEAVY_CHANCE,
+  THEFT_HEAVY_LOSS,
+  THEFT_LOG_MAX,
+  THEFT_LOOKBACK_MS,
+  THEFT_LOSS_CAP,
+  THEFT_MAX_EVENTS,
+  THEFT_NORMAL_LOSS,
+  THEFT_SOON_MS,
   TOOLS,
+  alignTheft,
   cropFor,
   server_default as default,
+  hasTheftTargets,
   helperEnergyAt,
   helperNextWorkAt,
   helperPatrolOnDuty,
+  helperPatrolWorkers,
   helperRecipe,
   helperWorkingAt,
   levelOf,
+  nextTheftAt,
   normalize,
+  normalizeTheft,
+  patrolOwnerOfZone,
+  patrolZoneCount,
+  patrolZoneOf,
+  patrolZoneRange,
+  patrolZones,
+  pickTheftTarget,
   plotState,
   progress,
+  resolveTheft,
   setHelperEnergy,
   setRandom,
+  setTheft,
   settleHelper,
-  weatherAt
+  settleTheftOnly,
+  skipTheftClock,
+  theftEnabled,
+  theftView,
+  weatherAt,
+  zoneGuardState,
+  zoneGuardedAt
 };
