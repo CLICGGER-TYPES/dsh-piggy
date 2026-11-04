@@ -106,6 +106,7 @@
 - PR42 的 `piggy://` 协议路由抽离已随 PR43 集成进入 main，当前模块为 `apps/desktop/lib/game-protocol.js`。双平台 CI 均为 2,425 项，Linux 2,413 通过/12 跳过、Windows 2,420 通过/5 跳过，零失败。c566 候选的隔离 Linux VM 有限真实 UI 覆盖包括孵化、面板、菜园、商店、工具和种子流程；Windows 记录来自较早的 0f1884c 候选，不能算作 c566 的 Windows UI 验收。
 - [PR43](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/43) QA 操作库已合入 main；CI 中 Linux 标准库契约 9/9 通过，15 个 Python 源文件 AST 检查通过。独立执行者用 r6 原型通过真实 native input 点击 DSH Continue，Notice 消失并进入下一页。键入、滚轮、拖拽和桌面 hatch 未在该次 UI 中验证；此项不代表完整 DSH/OpenCode 或 Windows 原生 UI 验收。
 - 当前 main 尚未把窗口与启动编排整体移出 `main.js`；面板与猪窗口句柄分别由 `panel-window.js`、`pet-window.js` 单一持有，装配与几何/交互算法仍在组合根。
+- 2026-11-04 ARCH01 已把面板控制、全屏、桌面服务、猪 roster、显示器监听、owner 运行时探测等拆到 `apps/desktop/lib/`，`main.js` 从 2241 行降到 1490 行；启动 `whenReady` 编排仍留在组合根，下一刀是窗口管理。
 
 ## 2026-11-02 MAIN02 主进程退出生命周期拆分（PR44 已合入）
 

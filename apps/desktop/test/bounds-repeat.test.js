@@ -19,7 +19,7 @@ function windowHarness(offset = { x: 0, y: 0, width: 1, height: 1 }) {
   const context = {
     BOUNDS_TOLERANCE: 2,
     primaryPet: () => pet,
-    followPig: () => effects.push('follow'), scheduleWindowStateSave: () => effects.push('save'),
+    panel: { followPig: () => effects.push('follow') }, scheduleWindowStateSave: () => effects.push('save'),
     pushGeometry: () => effects.push('geometry'), log() {},
   }
   runInNewContext(source.slice(start, end), context)

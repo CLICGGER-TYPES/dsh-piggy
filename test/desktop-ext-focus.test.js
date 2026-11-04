@@ -5,14 +5,19 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { attachAutoCollapse } from '../src/client/auto-collapse.js'
 
-const source = readFileSync(new URL('../apps/desktop/main.js', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../apps/desktop/lib/panel-controller.js', import.meta.url), 'utf8')
 test('面板焦点去大农场不发送外部失焦，去别的应用仍发送', () => {
   const emitted = [], extWin = {}, panelWin = {}, win = {}
   let focused = extWin
   const body = source.slice(source.indexOf('function panelFocusLeft()'), source.indexOf('/** 把面板窗口放到该在的地方'))
-  const check = runInNewContext(body + '\npanelFocusLeft', { panelOpen: true, panelAnchor: null, panelSize: null, win, getPetWindow: () => win, panelTargetPet: () => win, getPanelWindow: () => panelWin,
+  const deps = {
+    BrowserWindow: { getFocusedWindow: () => focused },
+    getPanelWindow: () => panelWin,
     extensionWindow: { current: () => extWin },
-    BrowserWindow: { getFocusedWindow: () => focused }, setTimeout: callback => callback(), sendPanel: message => emitted.push(message) })
+    screen: { getCursorScreenPoint: () => ({ x: 0, y: 0 }) },
+  }
+  const check = runInNewContext(body + '\npanelFocusLeft', { panelOpen: true, panelAnchor: null, panelSize: null, win, panelTargetPet: () => win, deps,
+    scheduleTimeout: callback => callback(), sendPanel: message => emitted.push(message), pointerHitsShape: () => false, panelContentRect: () => ({}) })
   check()
   assert.equal(emitted.length, 0)
   focused = null

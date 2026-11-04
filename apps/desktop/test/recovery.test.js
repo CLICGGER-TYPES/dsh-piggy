@@ -32,7 +32,7 @@ test('the shell fallback puts the current window inside the primary work area be
 })
 
 test('both tray implementations expose the same plain recovery label and scoped renderer callback', () => {
-  const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const main = readFileSync(new URL('../lib/desktop-services.js', import.meta.url), 'utf8')
   const desktopTray = readFileSync(new URL('../lib/tray.js', import.meta.url), 'utf8')
   const stageSystem = readFileSync(new URL('../stage/system.js', import.meta.url), 'utf8')
   const preload = readFileSync(new URL('../preload.cjs', import.meta.url), 'utf8')

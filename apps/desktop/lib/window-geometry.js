@@ -346,3 +346,8 @@ export function shapeRects(content, boxes) {
 export function quantizeKey(box) {
   return [even(box.x), even(box.y), even(box.width), even(box.height)].join(',')
 }
+
+/** 鼠标此刻所在的显示器：猪启动时就落在你刚双击的那块屏。 */
+export function pigDisplayAtCursor(screen) {
+  return screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+}

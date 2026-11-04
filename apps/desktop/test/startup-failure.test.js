@@ -63,9 +63,9 @@ test('main.js routes startup, page-load and pre-visible renderer failures throug
   const petWindow = readFileSync(new URL('../lib/pet-window.js', import.meta.url), 'utf8')
   assert.match(source, /async function handleStartupFailure\(error\)[\s\S]{0,900}versions\.failStartup\(token\)/)
   const readyStart = source.indexOf('app.whenReady().then(async () => {')
-  const captureStart = source.indexOf('async function captureForCheck', readyStart)
-  assert.ok(readyStart >= 0 && captureStart > readyStart, 'the production ready handler remains identifiable')
-  const readyFlow = source.slice(readyStart, captureStart)
+  const readyEnd = source.indexOf('}).catch(handleStartupFailure)', readyStart) + '}).catch(handleStartupFailure)'.length
+  assert.ok(readyStart >= 0 && readyEnd > readyStart, 'the production ready handler remains identifiable')
+  const readyFlow = source.slice(readyStart, readyEnd)
   assert.match(readyFlow, /\.catch\(handleStartupFailure\)/)
   assert.match(readyFlow, /ownerArchiveSelectionStore\.commitPending\(\)/, 'owner selection commits only after startup setup completes')
   assert.match(source, /await restorePreviousOwnerSelectionAndRestart\(error\)/, 'a pending owner switch keeps its existing recovery path')
