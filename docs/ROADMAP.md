@@ -1,5 +1,13 @@
 # 路线图与待办
 
+## 2026-11-04 菜园多帮工 Slice 2：帮工页签与多只文案（源码候选，未发布）
+
+- 商店「帮工」页签改为总览 + 列表：帮工 `N/5`、收菜/巡逻只数与总覆盖块数；每只一行（`#id`、角色徽章、覆盖块数、`改收菜/改巡逻`），全局托管开关、帮工仓和页脚原样保留。
+- 已雇且未满 5 只时，面板内提供 `helper-additional` 追加雇佣入口（1500/只）；满 5 只不显示，旧 `helper-level` 升级卡片不再渲染。角色按钮用 `data-farm-role` + `data-farm-helper-id` 发 `setHelperRole`，`already` 静默、`unavailable` 轻提示。
+- 工具抽屉文案支持多只（`帮工 ×N · 收 X 块`）；全巡逻显示「没有收菜帮工，菜不会自动收」并进入帮工页；单只仍用旧文案。地块说明继续用 `plot.helper && helper.continuous`，不改结算。
+- 旧服务端没有 `helper.workers` 时退回原单帮工卡片；经典版 client 不改。只复用现有 `fm-` / `--ac-*`，新增列表与角色按钮样式，纵向堆叠、无新动画。
+- farm 仍 `4.3.0`：client 更新为 `f98f3872ba0b452b602e00b0dcad5cc8d764d7fedee97d5a49db3ad5752a218f`，candidate registry、`store/official-extensions.json` 与 bundle SHA 已按新字节刷新；未打包、未上传、未发版。
+
 ## 2026-11-04 菜园多帮工 Slice 1：追加雇佣 / 角色 / 排班（源码候选，未发布）
 
 - 雇佣统一 **1500/只**：`hire` 首雇 1 只，`hireAdditional` 追加到最多 5 只；`HELPER_PRICES = { hire: 1500, additional: 1500, level: [0, 2000, 6000] }`，`level` 只为旧导出形状保留。旧 `helper-level` 升级仍返回 `unavailable` 且不扣钱。

@@ -66,6 +66,7 @@
       "@media(max-width:820px){.fm-b-body{display:flex;flex-direction:column;flex:none;min-height:auto}.fm-b-stage,.fm-b-controls{flex:none;width:100%}.fm-big .fm-s-scene{min-height:640px;flex:none}.fm-big .fm-s-field{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;aspect-ratio:.725;max-width:100%;min-height:540px}.fm-big .fm-exp{width:32px}}@media(prefers-reduced-motion:reduce){.fm *{animation:none!important;transition:none!important}.fm-plot[data-farm-fx]::after{opacity:0!important}.fm-s-scene[data-farm-fx]::after{opacity:0!important}.fm-toast{opacity:1}}",
       ".dp-content:has(>.fm[data-farm-integrated]){scrollbar-gutter:stable}.fm-big{scrollbar-gutter:stable}.dp-content:has(>.fm[data-farm-integrated]>.fm-pop)>.dp-drill,.dp-content:has(>.fm[data-farm-integrated]>.fm-mask)>.dp-drill,.fm:has(>.fm-pop)>.fm-s-header,.fm:has(>.fm-mask)>.fm-s-header{display:none}",
       '.fm-helper-panel{display:grid;gap:8px}.fm-helper-card{display:grid;gap:6px;min-width:0;padding:8px;border:1px solid var(--animal-border);border-radius:var(--ac-radius-card,16px);background:var(--animal-bg-content)}.fm-helper-status,.fm-helper-storage,.fm-helper-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.fm-helper-status-main{display:flex;align-items:center;gap:8px;min-width:0}.fm-helper-status-icon{width:34px;height:34px;flex:none}.fm-helper-copy{display:grid;gap:2px;min-width:0}.fm-helper-copy>b{font-size:13px;color:var(--animal-text)}.fm-helper-copy>small{font-size:11px;color:var(--animal-text-body)}.fm-helper-badge,.fm-helper-price{border-radius:var(--ac-pill,50px);padding:4px 8px;font-size:10px;white-space:nowrap;background:var(--ac-warning-bg,#fff2c9);color:var(--animal-text)}.fm-helper-badge[data-enabled="true"]{background:var(--ac-primary-bg,#d7f5ef)}.fm-helper-price{font-weight:800}.fm-helper-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;padding:8px 10px;text-align:left}.fm-helper-toggle-copy{display:grid;gap:2px}.fm-helper-toggle-copy>b{font-size:12px;color:var(--animal-text)}.fm-helper-toggle-copy>small,.fm-helper-footer{font-size:10px;color:var(--animal-text-body)}.fm-helper-switch{position:relative;display:block;width:40px;height:24px;flex:none;border-radius:var(--ac-pill,50px);background:var(--ac-border,#c4b89e);transition:background .16s var(--animal-ease)}.fm-helper-switch>i{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--ac-bg-content,#fff8e3);transition:transform .16s var(--animal-ease)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch{background:var(--animal-primary)}.fm-helper-toggle[aria-checked="true"] .fm-helper-switch>i{transform:translateX(16px)}.fm-helper-action{justify-self:end;flex:none;min-height:30px;padding:4px 10px;font-size:11px}.fm-helper-footer{line-height:1.45;padding:0 2px;text-align:center}',
+      '.fm-helper-workers{display:grid;gap:6px;min-width:0}.fm-helper-worker{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0;padding:6px 8px;border:1px solid var(--ac-border-light,#e5dcc6);border-radius:var(--ac-radius-sm,12px);background:var(--animal-bg,#f8f8f0)}.fm-helper-worker-id{flex:none;font-size:12px;font-weight:800;color:var(--animal-text)}.fm-role-badge{flex:none;border-radius:var(--ac-pill,50px);padding:3px 8px;font-size:10px;line-height:1.4;white-space:nowrap;background:var(--ac-primary-bg,#d7f5ef);color:var(--animal-text)}.fm-role-badge[data-role="patrol"]{background:var(--ac-warning-bg,#fff2c9)}.fm-helper-worker-plots{flex:1 1 auto;min-width:0;font-size:11px;color:var(--animal-text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fm-role-btn{flex:none;margin-left:auto;min-height:28px;padding:3px 10px;font-size:11px;white-space:nowrap}.fm-helper-warning{font-size:11px;line-height:1.45;padding:2px 2px 0;color:var(--animal-text)}',
       '.fm-s-detail{position:relative}.fm-s-detail[data-has-action]>small{padding-right:98px}.fm-s-detail .fm-s-acts{position:absolute;right:4px;bottom:4px;display:block;padding:0;max-width:48%}.fm .fm-s-detail .fm-main{min-height:30px;font-size:12px;padding:4px 8px;display:block;white-space:normal}.fm-s-detail .fm-main>small{display:none}.fm:not(.fm-big) .fm-dock-btn{min-height:56px;padding:4px;gap:2px}.fm:not(.fm-big) .fm-dock-btn>img{width:32px;height:32px}.fm .fm-s-field .fm-plot[data-farm-target="true"],.fm .fm-s-field .fm-plot:focus-visible{outline:none;box-shadow:none;border:0}.fm .fm-plot[data-farm-target="true"]::before,.fm .fm-plot:focus-visible::before{content:"";position:absolute;inset:-3px;box-sizing:border-box;border:2px solid var(--ac-bg-input,#fffbe7);border-radius:8px;box-shadow:inset 0 0 0 2px var(--animal-primary);mask:linear-gradient(var(--animal-primary) 0 0) left top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right top/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) right bottom/12px 12px no-repeat,linear-gradient(var(--animal-primary) 0 0) left bottom/12px 12px no-repeat;pointer-events:none;z-index:1}.fm-bubble{z-index:2}'
     ].join("");
     const cssArt = { "ui-slot": true, "ui-button": true, "ui-main": true, "ui-note": true, "ui-small-plank": true, "ui-big-toolbar": true, "ui-big-topbar": true, "ui-exp-frame": true, "progress-track": true, "progress-fill": true, "shop-title": true, "buy-title": true, "pack-title": true, "shop-tab": true, "shop-tab-active": true, "shop-item": true, "shop-item-locked": true, "pack-slot": true, "pack-slot-selected": true, "info-row": true, "stepper-field": true, "btn-confirm": true, "btn-cancel": true, "status-chip": true, "status-chip-active": true, "big-sign-expand": true, "card-tail": true, "stepper-plus": true, "stepper-minus": true };
@@ -446,17 +447,38 @@
         if (trigger) trigger.focus();
       }
     }
+    function setRole(app, id, role) {
+      if (state.inflight) return null;
+      var result = sendAction(app, "setHelperRole", { id, role });
+      if (result && typeof result.then === "function") result.then(function(next) {
+        if (!next || next.ok !== false) return;
+        if (next.reason === "already") return;
+        if (next.reason === "unavailable") say(app, "\u8FD9\u53EA\u5E2E\u5DE5\u73B0\u5728\u6362\u4E0D\u4E86\u89D2\u8272");
+      });
+      return result;
+    }
+    function helperCount(helper) {
+      return Number(helper.count) || (Array.isArray(helper.workers) ? helper.workers.length : 1);
+    }
     function helperText(helper) {
-      return !helper.hired ? "\u96C7\u5E2E\u5DE5\u732A" : helper.full ? "\u5E2E\u5DE5\u4ED3\u5E93\u6EE1\u4E86" : helper.stored > 0 ? "\u5E2E\u5DE5\u6536\u4E86 " + helper.stored + " \u4E2A" : !helper.enabled ? "\u5E2E\u5DE5\u5DF2\u6682\u505C" : helper.missing.length ? "\u7F3A" + helper.missing.join("\u3001") + "\u79CD\u5B50" : helper.seedless ? "\u5E2E\u5DE5\u6CA1\u79CD\u5B50" : "\u5E2E\u5DE5 \xB7 " + helper.plots + " \u5757\u5730";
+      if (!helper.hired) return "\u96C7\u5E2E\u5DE5\u732A";
+      if (helper.full) return "\u5E2E\u5DE5\u4ED3\u5E93\u6EE1\u4E86";
+      if (helper.stored > 0) return "\u5E2E\u5DE5\u6536\u4E86 " + helper.stored + " \u4E2A";
+      if (!helper.enabled) return "\u5E2E\u5DE5\u5DF2\u6682\u505C";
+      if (helper.missing.length) return "\u7F3A" + helper.missing.join("\u3001") + "\u79CD\u5B50";
+      if (helper.seedless) return "\u5E2E\u5DE5\u6CA1\u79CD\u5B50";
+      if (helper.plots === 0) return "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536";
+      return helperCount(helper) > 1 ? "\u5E2E\u5DE5 \xD7" + helperCount(helper) + " \xB7 \u6536 " + helper.plots + " \u5757" : "\u5E2E\u5DE5 \xB7 " + helper.plots + " \u5757\u5730";
     }
     function helperClick(app, helper) {
       if (!helper.hired) return sendAction(app, "hire", {});
       if (helper.stored > 0 || helper.full) return sendAction(app, "collect", {});
       if (!helper.enabled) return goShop(app, "helper");
       if (helper.missing.length || helper.seedless) return goShop(app, "seed");
-      say(app, "\u5E2E\u5DE5\u6B63\u5728\u7167\u987E " + helper.plots + " \u5757\u5730");
+      if (helper.plots === 0) return goShop(app, "helper");
+      say(app, helperCount(helper) > 1 ? "\u5E2E\u5DE5 \xD7" + helperCount(helper) + " \u6B63\u5728\u7167\u987E " + helper.plots + " \u5757\u5730" : "\u5E2E\u5DE5\u6B63\u5728\u7167\u987E " + helper.plots + " \u5757\u5730");
     }
-    return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick };
+    return { say, pageKey, scrollNode, rememberScroll, restoreScroll, watchScroll, goPage, closePage, goShop, goBag, shortTime, owns, seedOf, firstSeed, seedInHand, pestsOf, pestText, cropArt, survey, validPlot, syncHand, sendAction, setRole, act, clickPlot, finishAction, bindKeyboard, focusDescriptor, inDialog, syncModalFocus, helperText, helperClick };
   }
 
   // src/extensions/farm/client/render-garden.js
@@ -915,18 +937,7 @@
       });
       return node;
     }
-    function renderHelperControls(app, data, box, items) {
-      var helper = data.helper, enabled = helper.enabled === true;
-      var panel = modules.host.put(box, app.el("section", "fm-helper-panel"));
-      panel.setAttribute("aria-label", "\u5E2E\u5DE5\u6258\u7BA1");
-      var status = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-status"));
-      var main = modules.host.put(status, app.el("div", "fm-helper-status-main"));
-      modules.host.put(main, modules.host.img(app, "fm-helper-status-icon", "tab-icon-helper"));
-      var copy = modules.host.put(main, app.el("div", "fm-helper-copy"));
-      modules.host.put(copy, app.el("b", null, "\u5E2E\u5DE5\u732A"));
-      modules.host.put(copy, app.el("small", null, "\u5DF2\u96C7\u7528 \xB7 \u7BA1 " + helper.plots + " \u5757\u5730"));
-      var badge = modules.host.put(status, app.el("span", "fm-helper-badge", enabled ? "\u6B63\u5728\u6258\u7BA1" : "\u5DF2\u6682\u505C"));
-      badge.setAttribute("data-enabled", String(enabled));
+    function helperToggle(app, panel, enabled) {
       var toggle = modules.host.put(panel, app.button("dp-btn fm-helper-card fm-helper-toggle", {
         type: "button",
         role: "switch",
@@ -945,6 +956,38 @@
       switchTrack.setAttribute("aria-hidden", "true");
       modules.host.put(switchTrack, app.el("i"));
       toggle.disabled = !!state.inflight;
+      return toggle;
+    }
+    function helperStorage(app, panel, helper) {
+      var storage = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-storage"));
+      var storageCopy = modules.host.put(storage, app.el("div", "fm-helper-copy"));
+      modules.host.put(storageCopy, app.el("b", null, "\u5E2E\u5DE5\u4ED3"));
+      modules.host.put(storageCopy, app.el("small", null, helper.stored > 0 ? helper.stored + " \u4E2A\u5F85\u9886\u53D6 \xB7 \u5E93\u5B58\u4F1A\u4FDD\u7559" : "\u6682\u65F6\u6CA1\u6709\u5F85\u9886\u53D6"));
+      if (helper.stored > 0) modules.host.put(storage, modules.host.button(app, "fm-helper-action", { "data-farm-helper-storage": "open" }, "\u53BB\u80CC\u5305", function() {
+        modules.events.goBag(app, "crop");
+      }));
+      return storage;
+    }
+    function helperFooter(app, panel, enabled) {
+      modules.host.put(panel, app.el("small", "fm-helper-footer", enabled ? "\u5E2E\u5DE5\u7167\u6599\u3001\u6536\u83B7\u540E\u5165\u4ED3\u5E76\u6309\u73B0\u6709\u79CD\u5B50\u8865\u79CD\uFF1B\u4F5C\u7269\u6309\u539F\u65F6\u95F4\u81EA\u7136\u751F\u957F\u3002" : "\u6682\u505C\u65F6\u7167\u6599\u3001\u6536\u83B7\u4E0E\u8865\u79CD\u505C\u6B62\uFF1B\u4F5C\u7269\u81EA\u7136\u751F\u957F\uFF0C\u5E2E\u5DE5\u4ED3\u5E93\u5B58\u4ECD\u53EF\u9886\u53D6\u3002"));
+    }
+    function helperStatus(app, panel, title, note, enabled) {
+      var status = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-status"));
+      var main = modules.host.put(status, app.el("div", "fm-helper-status-main"));
+      modules.host.put(main, modules.host.img(app, "fm-helper-status-icon", "tab-icon-helper"));
+      var copy = modules.host.put(main, app.el("div", "fm-helper-copy"));
+      modules.host.put(copy, app.el("b", null, title));
+      modules.host.put(copy, app.el("small", null, note));
+      var badge = modules.host.put(status, app.el("span", "fm-helper-badge", enabled ? "\u6B63\u5728\u6258\u7BA1" : "\u5DF2\u6682\u505C"));
+      badge.setAttribute("data-enabled", String(enabled));
+      return status;
+    }
+    function renderHelperSingle(app, data, box, items) {
+      var helper = data.helper, enabled = helper.enabled === true;
+      var panel = modules.host.put(box, app.el("section", "fm-helper-panel"));
+      panel.setAttribute("aria-label", "\u5E2E\u5DE5\u6258\u7BA1");
+      helperStatus(app, panel, "\u5E2E\u5DE5\u732A", "\u5DF2\u96C7\u7528 \xB7 \u7BA1 " + helper.plots + " \u5757\u5730", enabled);
+      helperToggle(app, panel, enabled);
       var upgrade = items.find(function(item) {
         return item.key === "helper-level";
       });
@@ -963,14 +1006,78 @@
         }));
         upgradeButton.setAttribute("aria-disabled", String(!!upgrade.disabled));
       }
-      var storage = modules.host.put(panel, app.el("div", "fm-helper-card fm-helper-storage"));
-      var storageCopy = modules.host.put(storage, app.el("div", "fm-helper-copy"));
-      modules.host.put(storageCopy, app.el("b", null, "\u5E2E\u5DE5\u4ED3"));
-      modules.host.put(storageCopy, app.el("small", null, helper.stored > 0 ? helper.stored + " \u4E2A\u5F85\u9886\u53D6 \xB7 \u5E93\u5B58\u4F1A\u4FDD\u7559" : "\u6682\u65F6\u6CA1\u6709\u5F85\u9886\u53D6"));
-      if (helper.stored > 0) modules.host.put(storage, modules.host.button(app, "fm-helper-action", { "data-farm-helper-storage": "open" }, "\u53BB\u80CC\u5305", function() {
-        modules.events.goBag(app, "crop");
-      }));
-      modules.host.put(panel, app.el("small", "fm-helper-footer", enabled ? "\u5E2E\u5DE5\u7167\u6599\u3001\u6536\u83B7\u540E\u5165\u4ED3\u5E76\u6309\u73B0\u6709\u79CD\u5B50\u8865\u79CD\uFF1B\u4F5C\u7269\u6309\u539F\u65F6\u95F4\u81EA\u7136\u751F\u957F\u3002" : "\u6682\u505C\u65F6\u7167\u6599\u3001\u6536\u83B7\u4E0E\u8865\u79CD\u505C\u6B62\uFF1B\u4F5C\u7269\u81EA\u7136\u751F\u957F\uFF0C\u5E2E\u5DE5\u4ED3\u5E93\u5B58\u4ECD\u53EF\u9886\u53D6\u3002"));
+      helperStorage(app, panel, helper);
+      helperFooter(app, panel, enabled);
+    }
+    function renderHelperCrew(app, data, box, items) {
+      var helper = data.helper, enabled = helper.enabled === true, workers = helper.workers;
+      var max = helper.max || 5;
+      var patrol = workers.filter(function(worker) {
+        return worker.role === "patrol";
+      }).length;
+      var harvest = workers.length - patrol;
+      var panel = modules.host.put(box, app.el("section", "fm-helper-panel"));
+      panel.setAttribute("aria-label", "\u5E2E\u5DE5\u6258\u7BA1");
+      helperStatus(
+        app,
+        panel,
+        "\u5E2E\u5DE5 " + workers.length + "/" + max,
+        "\u6536\u83DC " + harvest + " \u53EA \xB7 \u5DE1\u903B " + patrol + " \u53EA \xB7 \u5171\u7BA1 " + helper.plots + " \u5757\u5730",
+        enabled
+      );
+      var list = modules.host.put(panel, app.el("div", "fm-helper-workers"));
+      list.setAttribute("role", "list");
+      list.setAttribute("aria-label", "\u5E2E\u5DE5\u5217\u8868");
+      workers.forEach(function(worker) {
+        var row = modules.host.put(list, app.el("div", "fm-helper-worker"));
+        row.setAttribute("role", "listitem");
+        row.setAttribute("data-farm-helper-worker", String(worker.id));
+        modules.host.put(row, app.el("b", "fm-helper-worker-id", "#" + worker.id));
+        var badge = modules.host.put(row, app.el("span", "fm-role-badge", worker.roleLabel || (worker.role === "patrol" ? "\u5DE1\u903B" : "\u6536\u83DC")));
+        badge.setAttribute("data-role", worker.role === "patrol" ? "patrol" : "harvest");
+        modules.host.put(row, app.el("span", "fm-helper-worker-plots", worker.role === "patrol" ? "\u4E0D\u5360\u5730" : "\u6536 " + (worker.plotCount || 0) + " \u5757"));
+        var target = worker.role === "patrol" ? "harvest" : "patrol";
+        var button = modules.host.put(row, modules.host.button(app, "fm-role-btn", {
+          type: "button",
+          "data-farm-role": target,
+          "data-farm-helper-id": String(worker.id),
+          "aria-label": "\u628A #" + worker.id + " \u5E2E\u5DE5\u6539\u6210" + (target === "harvest" ? "\u6536\u83DC" : "\u5DE1\u903B"),
+          "aria-disabled": String(!!state.inflight)
+        }, target === "harvest" ? "\u6539\u6536\u83DC" : "\u6539\u5DE1\u903B", function() {
+          if (state.inflight) return;
+          modules.events.rememberScroll(app, modules.events.pageKey(app));
+          modules.events.setRole(app, worker.id, target);
+        }));
+        button.disabled = !!state.inflight;
+      });
+      if (helper.plots === 0) modules.host.put(panel, app.el("small", "fm-helper-warning", "\u6CA1\u6709\u6536\u83DC\u5E2E\u5DE5\uFF0C\u83DC\u4E0D\u4F1A\u81EA\u52A8\u6536"));
+      helperToggle(app, panel, enabled);
+      var additional = items.find(function(item) {
+        return item.key === "helper-additional";
+      });
+      if (additional) {
+        var hireCard = modules.host.put(panel, app.el("div", "fm-helper-card"));
+        var hireHead = modules.host.put(hireCard, app.el("div", "fm-helper-card-head"));
+        modules.host.put(hireHead, app.el("b", "fm-helper-label", "\u518D\u96C7\u4E00\u53EA\u5E2E\u5DE5\u732A"));
+        modules.host.put(hireHead, app.el("span", "fm-helper-price", additional.price.toLocaleString("zh-CN") + " \u83DC\u5E01"));
+        modules.host.put(hireCard, app.el("small", "fm-helper-desc", "\u9ED8\u8BA4\u6536\u83DC 4 \u5757\u5730\uFF0C\u96C7\u6765\u540E\u53EF\u968F\u65F6\u6539\u6210\u5DE1\u903B\u3002"));
+        var hireButton = modules.host.put(hireCard, modules.host.button(app, "fm-helper-action", { "data-farm-item": additional.key, "aria-label": "\u8FFD\u52A0\u96C7\u4F63\u5E2E\u5DE5\u732A" }, "\u53BB\u96C7\u4F63", function() {
+          if (state.inflight) return;
+          modules.events.rememberScroll(app, modules.events.pageKey(app));
+          state.purchase = additional;
+          state.quantity = 1;
+          state.modalReturn = { attr: "data-farm-item", value: additional.key };
+          app.rerender();
+        }));
+        hireButton.setAttribute("aria-disabled", String(!!state.inflight || !!additional.disabled));
+        hireButton.disabled = !!state.inflight;
+      }
+      helperStorage(app, panel, helper);
+      helperFooter(app, panel, enabled);
+    }
+    function renderHelperControls(app, data, box, items) {
+      if (Array.isArray(data.helper.workers) && data.helper.workers.length) return renderHelperCrew(app, data, box, items);
+      return renderHelperSingle(app, data, box, items);
     }
     function renderShop(app, data, box) {
       var wallet = modules.host.put(box, app.el("div", "fm-shop-wallet"));
@@ -989,8 +1096,11 @@
       });
       var items = shopItems(data);
       if (state.shopTab === "helper" && data.helper && data.helper.hired) renderHelperControls(app, data, box, items);
+      var crew = data.helper && data.helper.hired && Array.isArray(data.helper.workers) && data.helper.workers.length > 0;
       var visibleItems = items.filter(function(item) {
-        return item.category === state.shopTab && !(state.shopTab === "helper" && data.helper && data.helper.hired && item.key === "helper-level");
+        if (item.category !== state.shopTab) return false;
+        if (!(state.shopTab === "helper" && data.helper && data.helper.hired)) return true;
+        return item.key !== "helper-level" && !(crew && item.key === "helper-additional");
       });
       if (visibleItems.length) {
         var grid = modules.host.put(box, app.el("div", "dp-tiles fm-tiles"));
