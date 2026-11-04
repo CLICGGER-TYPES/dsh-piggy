@@ -25,6 +25,8 @@ import { createPetRoster } from '../lib/pet-roster.js'
 import { registerPanelIpc } from '../lib/ipc/panel.js'
 import { createPetRegistry, createPetState } from '../lib/pet-instance.js'
 import { createStartupTrace } from '../lib/startup-trace.js'
+import { createWindowManager } from '../lib/window-manager.js'
+import { createWindowSurface } from '../lib/window-surface.js'
 import { desktopLifecycleStateAdapter } from './helpers/desktop-lifecycle-adapter.js'
 
 const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
@@ -178,12 +180,9 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
   const traceEnd = source.indexOf('\nasync function flushLogs', traceStart)
   const fromPet = source.indexOf('function fromPet(event)')
   const fromPetEnd = source.indexOf('\n/** 发给所有窗口的页面', fromPet)
-  const engineStart = source.indexOf('function workAreaFor(bounds)')
-  const engineEnd = source.indexOf('\n// 面板窗口：', engineStart)
-  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet && engineStart > 0 && engineEnd > engineStart)
+  assert.ok(traceStart > 0 && traceEnd > traceStart && fromPet > 0 && fromPetEnd > fromPet)
   runInContext(source.slice(traceStart, traceEnd), context)
   runInContext(source.slice(fromPet, fromPetEnd), context)
-  runInContext(source.slice(engineStart, engineEnd), context)
   let panelController = null
   if (panel) {
     panelController = createPanelController({
@@ -226,8 +225,44 @@ async function harness({ pigIds = ['pig-a', 'pig-b'], panel = false } = {}) {
     sandbox.panelWindow = panelWindow
     panelController.ensure()
   }
+  const surface = createWindowSurface({
+    screen: sandbox.screen, platform: 'linux', env: {}, panel: sandbox.panel,
+    scheduleWindowStateSave: sandbox.scheduleWindowStateSave, log: sandbox.log,
+    startupInputTrace: sandbox.startupInputTrace,
+    traceSetIgnoreMouseEvents: (...args) => sandbox.traceSetIgnoreMouseEvents(...args),
+  })
+  const manager = createWindowManager({
+    BrowserWindow: WindowStub, screen: sandbox.screen, pets, primaryPet: sandbox.primaryPet,
+    panel: sandbox.panel, panelWindow: sandbox.panelWindow ?? { destroy() {}, forget() {} },
+    getPanelWindow: sandbox.getPanelWindow ?? (() => null),
+    desktopLifecycle: sandbox.desktopLifecycle, desktopRuntime: sandbox.desktopRuntime, pigSessions: sandbox.pigSessions,
+    platform: 'linux', env: {}, preloadPath: 'preload.cjs', frameCap: 0, log: sandbox.log,
+    startupInputTrace: sandbox.startupInputTrace, readWindowState: sandbox.readWindowState, surface,
+    setTimeout: sandbox.setTimeout, setInterval: sandbox.setInterval, clearInterval: sandbox.clearInterval,
+    stopDrag: pet => sandbox.stopDrag(pet),
+    confirmUpdateStartupIfReady() {},
+    onRendererLoaded: () => { sandbox.startupRendererLoaded = true },
+    onPrimaryWindowShown: window => { sandbox.startupWindowWasVisible = window.isVisible() },
+    handleStartupFailure: async () => {},
+    getCaptureCheck: () => async () => {},
+  })
+  Object.assign(sandbox, {
+    createWindow: manager.createWindow, createPigWindow: manager.createPigWindow,
+    closePetSession: manager.closePetSession, rebuildLinuxViews: manager.rebuildLinuxViews,
+    showPigWindow: manager.showPigWindow,
+    applyBounds: surface.applyBounds, applyFlightBounds: surface.applyFlightBounds,
+    applyShape: surface.applyShape, refreshHit: surface.refreshHit,
+    setHit: surface.setHit, setLegacyHit: surface.setLegacyHit, setPassthroughMode: surface.setPassthroughMode,
+    isMouseRect: surface.isMouseRect, isMouseShape: surface.isMouseShape, isPlaceRequest: surface.isPlaceRequest,
+    shiftedShape: surface.shiftedShape, workAreaFor: surface.workAreaFor, pushGeometry: surface.pushGeometry,
+    geometryOf: surface.geometryOf, currentSeq: surface.currentSeq, SKIP_NATIVE_SHAPE: surface.skipNativeShape,
+  })
+  const engineStart = source.indexOf("ipcMain.on('piggy:content'")
+  const engineEnd = source.indexOf('\n// 面板窗口：', engineStart)
+  assert.ok(engineStart > 0 && engineEnd > engineStart)
+  runInContext(source.slice(engineStart, engineEnd), context)
   for (let index = 0; index < states.length; index += 1) {
-    await runInContext(`createPigWindow(pets.all()[${index}])`, context)
+    await manager.createPigWindow(pets.all()[index])
   }
 
   const send = (window, channel, payload) => {

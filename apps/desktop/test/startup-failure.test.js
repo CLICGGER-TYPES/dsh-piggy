@@ -60,6 +60,7 @@ test('a dialog that cannot open still leaves a log line', async () => {
 
 test('main.js routes startup, page-load and pre-visible renderer failures through update recovery', () => {
   const source = readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+  const windowManager = readFileSync(new URL('../lib/window-manager.js', import.meta.url), 'utf8')
   const petWindow = readFileSync(new URL('../lib/pet-window.js', import.meta.url), 'utf8')
   assert.match(source, /async function handleStartupFailure\(error\)[\s\S]{0,900}versions\.failStartup\(token\)/)
   const readyStart = source.indexOf('app.whenReady().then(async () => {')
@@ -73,8 +74,8 @@ test('main.js routes startup, page-load and pre-visible renderer failures throug
   assert.ok(!/\.catch\(error => \{ log\('startup failed', String\(error\)\); app\.quit\(\) \}\)/.test(source),
     'the old silent log-and-quit path must be gone')
   assert.match(petWindow, /webContents\.on\('did-fail-load'/, 'the window owner must forward page-load failure events')
-  assert.match(source, /onDidFailLoad:[\s\S]{0,500}handleStartupFailure/, 'a page that never loads must enter the same recovery path')
-  assert.match(source, /await handleStartupFailure\(new Error\(pageCrashReason\(details\)\)\)/, 'a pre-visible renderer crash must enter the same recovery path')
+  assert.match(windowManager, /onDidFailLoad:[\s\S]{0,500}deps\.handleStartupFailure/, 'a page that never loads must enter the same recovery path')
+  assert.match(windowManager, /await deps\.handleStartupFailure\(new Error\(pageCrashReason\(details\)\)\)/, 'a pre-visible renderer crash must enter the same recovery path')
   assert.match(source, /startupSetupComplete = true[\s\S]{0,240}confirmUpdateStartupIfReady\(\)/)
 })
 
