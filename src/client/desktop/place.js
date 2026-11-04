@@ -60,7 +60,7 @@ function horizontalSpan(point, areas, fallback) {
 }
 
 /**
- * @param {{pigId?: string|null, primary?: boolean, platform?: string}} [options]
+ * @param {{pigId?: string|null, primary?: boolean, platform?: string, slot?: number|null}} [options]
  *   pigId 合法时位置写各窗口自己的键；primary 额外读写旧单猪键（舞台兼容 + 首次迁移）。
  *   旧外壳没有 pigId，仍只用旧键。
  */
@@ -70,6 +70,7 @@ export function createPlacement(options = {}) {
   // 多猪主猪：写自己的键，同时继续写旧键，舞台/旧页面读到的还是主猪的家。
   // 非主猪：只碰 scoped 键。没有 pigId：只碰旧键（旧外壳/网页版）。
   const writesLegacy = scopedKey === null || primary
+  const slot = Number.isInteger(options.slot) && options.slot >= 0 && options.slot <= 3 ? options.slot : 0
   /** 猪脚底中心的屏幕点；还不知道就是 null。 */
   let home = null
   /** 存档里读出来、还没换算成家的位置（v2 旧格式存的是左上角，要等知道猪多大才能换算）。 */
@@ -122,6 +123,18 @@ export function createPlacement(options = {}) {
     return { x: Math.round(point.x), y: Math.round(point.y) }
   }
 
+  /** 新猪没有旧位置：按窗口槽位从右侧排开，页面每一轮都算同一个家。 */
+  function defaultHome(pigSize, areas) {
+    const list = Array.isArray(areas) ? areas : []
+    if (slot <= 0 || list.length === 0) return null
+    const area = /** @type {any} */ (list[0])
+    const x = Math.round(Math.max(area.x + pigSize.width / 2, Math.min(
+      area.x + area.width - 18 - pigSize.width / 2 - slot * 380,
+      area.x + area.width - pigSize.width / 2,
+    )))
+    return { x, y: Math.round(Math.max(area.y + pigSize.height, area.y + area.height - 18)) }
+  }
+
   function clampInto(point, area) {
     return {
       x: Math.max(area.x, Math.min(point.x, area.x + area.width - 1)),
@@ -165,8 +178,12 @@ export function createPlacement(options = {}) {
     lastPigSize = pigSize
     if (pending === undefined) pending = readSaved()
     if (home === null) {
-      home = pending !== null ? homeFromSaved(pending, pigSize, areas)
-        : screenFeet(bounds, { ...report.pigNow, ...pigSize })
+      if (pending !== null) {
+        home = homeFromSaved(pending, pigSize, areas)
+      } else {
+        home = defaultHome(pigSize, areas)
+        if (home === null) home = screenFeet(bounds, { ...report.pigNow, ...pigSize })
+      }
       pending = null
     }
     // 家不在任何一块屏上（拔了显示器、改了分辨率）：落到最近那块屏里，整只猪看得见。

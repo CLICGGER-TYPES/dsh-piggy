@@ -21,6 +21,9 @@ const requestedPigId = argumentValue('--piggy-pig=')
 const pigId = requestedPigId !== null && PIG_ID_PATTERN.test(requestedPigId) ? requestedPigId : null
 /** 主猪（面板、舞台兼容都跟着它走）；只有 pigId 合法时才可能为 true。 */
 const primary = pigId !== null && argv.includes('--piggy-primary=1')
+/** 多猪窗口的默认摆放槽位（0–3）；新猪没有旧位置时按它错开。 */
+const requestedSlot = argumentValue('--piggy-slot=')
+const slot = pigId !== null && requestedSlot !== null && /^[0-3]$/.test(requestedSlot) ? Number(requestedSlot) : null
 
 /** 恢复事件只接受主屏 DIP 工作区；坏载荷不交给页面。 */
 function recoveryWorkArea(value) {
@@ -216,6 +219,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 多猪（外壳 MULTIPIGWIN02 起）：这个宠物窗口的 pigId 与是否主猪；旧外壳是 null/false。 */
   pigId,
   primary,
+  slot,
   /** 只有 pigId 合法时才暴露，旧外壳/无参数时页面按单猪处理。 */
   ...(pigId !== null ? { multiPig: true } : {}),
   /** 扩展的大窗口（外壳 0.6.5 起）：open(key) 开（已开着就拿到前面），close() 只有大窗口自己能叫。 */
