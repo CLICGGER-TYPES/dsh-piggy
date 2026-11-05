@@ -60,7 +60,7 @@ dsh plugin --profile web add dsh-piggy
 | Linux | `AppImage`，添加执行权限后运行 |
 | macOS | Apple 芯片选 `arm64.dmg`，Intel 选 `x64.dmg` |
 
-macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/2c571e9aaecc)。
+macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
 
 ## 玩法
 

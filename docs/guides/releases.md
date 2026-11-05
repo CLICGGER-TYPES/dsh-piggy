@@ -20,7 +20,7 @@ RC 只更新 `rc` 标签，不改变稳定入口；预览版默认折叠在更�
 | 渠道 | 内容 |
 |---|---|
 | GitHub | 全平台安装包、便携版、游戏包、farm/classic 扩展、`SHA256SUMS` |
-| [夸克网盘](https://pan.quark.cn/s/2c571e9aaecc) | Windows 安装包与便携版，国内手动下载 |
+| [夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d) | Windows 安装包与便携版，国内手动下载 |
 | Gitee | 不再发布新版本；历史附件只作回退 |
 
 GitHub Release 的资产以 `SHA256SUMS` 为准。Windows 安装器另附五项默认不选的离线扩展，不会覆盖已有版本。

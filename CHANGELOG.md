@@ -26,7 +26,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 - 装扮穿戴功能撤下：背包不再有已穿戴入口，猪身上不再绘制旧存档 worn 装扮，图鉴道具去掉装扮分类；旧存档数据和宿主接口保留，后续可恢复。
 - 续期 owner LAN 本地 TLS 测试证书，修复全量测试在证书过期时卡住的问题。
 
-已知限制：Windows 混合 DPI 双屏、macOS、真实跨设备 LAN/云、360 未验收；Linux 桌面使用 XWayland 以保留窗口绝对定位。本次为 GitHub RC/pre-release；npm 由维护者手动发布。
+已知限制：Windows 混合 DPI 双屏、macOS、真实跨设备 LAN/云、360 未验收；Linux 桌面使用 XWayland 以保留窗口绝对定位。本次为 GitHub RC/pre-release；npm 由维护者手动发布。国内备用下载：[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)（含 v0.37.1 与 v0.37.2-rc.15）。
 
 ## [0.37.2-rc.14] — 2026-11-05 · 第三方素材包完成
 
