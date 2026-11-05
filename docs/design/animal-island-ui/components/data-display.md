@@ -851,7 +851,7 @@ event. The drag commits on release anywhere inside the panel, header included; r
 
 Time popup selector; value is a plain `HH:mm:ss` string. The value is still date-free, but parsing, formatting and
 serialization go through dayjs on a fixed internal anchor date (`2000-01-01`), so `format` speaks the same language
-as DatePicker and Time (see [ADR 0007](../../adr/0007-timepicker-date-layer.md)). The trigger follows the Input visual
+as DatePicker and Time (see [ADR 0007](https://github.com/guokaigdg/animal-island-ui/blob/main/docs/adr/0007-timepicker-date-layer.md)). The trigger follows the Input visual
 spec (cream pill, no border); the panel holds three scrollable columns (时 / 分 / 秒) plus a footer.
 
 **`format` tokens.** dayjs core time tokens (`HH` / `mm` / `ss` / `h` / `A` …) and `[literal]` escapes render;

@@ -543,7 +543,7 @@ Controlled dropdown selector; click the trigger to open, and options support ↑
 ## DatePicker
 
 Calendar popup date selector; value is a plain `YYYY-MM-DD` string (the panel's date arithmetic runs on dayjs, see
-[ADR 0005](../../adr/0005-dayjs-as-the-date-layer.md)). The trigger
+[ADR 0005](https://github.com/guokaigdg/animal-island-ui/blob/main/docs/adr/0005-dayjs-as-the-date-layer.md)). The trigger
 follows the Input visual spec; the popup panel is a cream card with month/year/date three-level switching.
 
 **Trigger (matches Input):**
