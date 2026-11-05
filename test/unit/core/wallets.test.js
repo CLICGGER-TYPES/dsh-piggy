@@ -5,8 +5,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { exchangeCurrency, hatchEgg, installExtension, migrate, openWallet, removeExtension, walletsView } from '../../../core.js'
-import { EXCHANGE } from '../../../data.js'
+import { exchangeCurrency, hatchEgg, installExtension, migrate, openWallet, removeExtension, walletsView } from '../../../src/host/core.js'
+import { EXCHANGE } from '../../../src/host/data.js'
 import { runExtensionAction } from '../../../store/ext-actions.js'
 import { fakeDom, findByAttr } from '../../helpers/bundle.js'
 

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * 桌面版的宿主：直接用插件自己的存档（store.js）和路由（routes.js），
+ * 桌面版的宿主：直接用插件自己的存档（src/host/store.js）和路由（src/host/routes.js），
  * 只是把 DSH 的 webServer 换成一张路由表，由 Electron 的自定义协议转进来。
  * 不开任何端口。纯 Node，不依赖 Electron，测试可以直接跑。
  * @module dsh-piggy-desktop/host
@@ -8,6 +8,11 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+
+/** New game packages keep host modules under src/host; old ones had them at the root. */
+function hostDir(gameDir) {
+  return existsSync(join(gameDir, 'src/host/environment.js')) ? 'src/host' : ''
+}
 
 /**
  * Load the game from `gameDir` and serve its routes.
@@ -17,10 +22,10 @@ import { pathToFileURL } from 'node:url'
  *   ownerDocument?:import('./owner-document-config.js').OwnerDocumentConfig }} [options]
  */
 async function startLegacyHost(gameDir, statePath, options = {}) {
-  const load = name => import(pathToFileURL(join(gameDir, name)).href)
-  const { createStore } = await load('store.js')
-  const { registerRoutes } = await load('routes.js')
-  const { environmentNote } = await load('environment.js')
+  const hostAt = name => import(pathToFileURL(join(gameDir, hostDir(gameDir), name)).href)
+  const { createStore } = await hostAt('store.js')
+  const { registerRoutes } = await hostAt('routes.js')
+  const { environmentNote } = await hostAt('environment.js')
   const store = createStore(statePath)
   // 桌面版的日志表头和外壳版本一起记，导出时一眼看出是哪一版外壳。
   store.journal?.header?.(environmentNote({
@@ -75,12 +80,13 @@ async function startLegacyHost(gameDir, statePath, options = {}) {
 }
 
 export async function startHost(gameDir, statePath, options = {}) {
+  const hostAt = pathToFileURL(join(gameDir, hostDir(gameDir), 'environment.js')).href
   if (options.ownerDocument !== undefined) {
     if (!existsSync(join(gameDir, 'runtime/index.js'))) {
       throw new Error('owner-document opt-in requires a game package with runtime/index.js')
     }
     const { createGameRuntime } = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
-    const { environmentNote } = await import(pathToFileURL(join(gameDir, 'environment.js')).href)
+    const { environmentNote } = await import(hostAt)
     const ownerOptions = options.ownerDocument
     return createGameRuntime({
       ...options,
@@ -96,7 +102,7 @@ export async function startHost(gameDir, statePath, options = {}) {
   }
   if (!existsSync(join(gameDir, 'runtime/index.js'))) return startLegacyHost(gameDir, statePath, options)
   const { createGameRuntime } = await import(pathToFileURL(join(gameDir, 'runtime/index.js')).href)
-  const { environmentNote } = await import(pathToFileURL(join(gameDir, 'environment.js')).href)
+  const { environmentNote } = await import(hostAt)
   const runtime = createGameRuntime({ ...options, statePath, journalHeader: environmentNote({
     运行形态: '桌面版', 存档路径: statePath, Node: process.version,
     ...(typeof process.versions.electron === 'string' ? { Electron: process.versions.electron } : {}),

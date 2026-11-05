@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { adopt, applyDevPatch, buy, hatchEgg, migrate, useItem } from '../../../core.js'
-import { xpForLevel } from '../../../data.js'
+import { adopt, applyDevPatch, buy, hatchEgg, migrate, useItem } from '../../../src/host/core.js'
+import { xpForLevel } from '../../../src/host/data.js'
 import { dexView } from '../../../packages/pet-core/src/core/dex.js'
 
 const NOW = 1_800_000_000_000

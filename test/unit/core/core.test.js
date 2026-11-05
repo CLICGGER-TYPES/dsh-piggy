@@ -67,8 +67,8 @@ import {
   wearItem,
   takeOff,
   workSecondsLeft,
-} from '../../../core.js'
-import { DEFAULT_TOY, DRESS_SLOTS, ILLNESS_CHAINS, illnessStageMs, illnessAt, interestByKey, INTERESTS, MEDICINES, rarityByKey, subjectByKey, xpForLevel } from '../../../data.js'
+} from '../../../src/host/core.js'
+import { DEFAULT_TOY, DRESS_SLOTS, ILLNESS_CHAINS, illnessStageMs, illnessAt, interestByKey, INTERESTS, MEDICINES, rarityByKey, subjectByKey, xpForLevel } from '../../../src/host/data.js'
 
 const T0 = 1_700_000_000_000
 const MIN = 60_000

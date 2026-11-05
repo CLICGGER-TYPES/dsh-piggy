@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../../core.js'
-import { registerRoutes } from '../../../routes.js'
-import { createStore } from '../../../store.js'
+import { hatchEgg } from '../../../src/host/core.js'
+import { registerRoutes } from '../../../src/host/routes.js'
+import { createStore } from '../../../src/host/store.js'
 
 /** 一个最小的宿主：注册路由，然后像 HTTP 一样调用它们。 */
 function boot() {

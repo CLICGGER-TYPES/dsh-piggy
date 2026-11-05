@@ -4,8 +4,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { adopt, achievementsView, hatchEgg, migrate, settleAchievements } from '../../../core.js'
-import { FISH, ALL_SOUVENIRS } from '../../../data.js'
+import { adopt, achievementsView, hatchEgg, migrate, settleAchievements } from '../../../src/host/core.js'
+import { FISH, ALL_SOUVENIRS } from '../../../src/host/data.js'
 import farm, { setTheft,  CROPS } from '../../../extensions/farm/server.js'
 
 setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开

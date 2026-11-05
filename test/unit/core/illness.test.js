@@ -6,8 +6,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, adopt, decay, doctorFee, hatchEgg, migrate, onsetRisks, seeDoctor, useItem, awayBlockedReason, startWork } from '../../../core.js'
-import { CHAIN_INDEX, ILLNESS_CHAINS, ILLNESS_ONSET, MAX, REVIVE_ITEM, itemByKey } from '../../../data.js'
+import { act, adopt, decay, doctorFee, hatchEgg, migrate, onsetRisks, seeDoctor, useItem, awayBlockedReason, startWork } from '../../../src/host/core.js'
+import { CHAIN_INDEX, ILLNESS_CHAINS, ILLNESS_ONSET, MAX, REVIVE_ITEM, itemByKey } from '../../../src/host/data.js'
 import { finishWork, finishStudy } from '../../../packages/pet-core/src/core/settlement.js'
 import { catchIllness, die, rollForIllness, worsen } from '../../../packages/pet-core/src/core/illness.js'
 

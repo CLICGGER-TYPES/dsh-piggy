@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../core.js'
+import { hatchEgg } from '../../src/host/core.js'
 import { createOwnerCloudSync } from '../../runtime/owner-cloud-sync.js'
 import { inspectOwnerDocumentFile, writeOwnerDocumentFile } from '../../runtime/owner-document-file.js'
 import { defaultGit } from '../../runtime/git-sync.js'

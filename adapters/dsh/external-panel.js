@@ -10,7 +10,7 @@
 
 import { randomUUID } from 'node:crypto'
 
-import { renderAbout } from '../../render.js'
+import { renderAbout } from '../../src/host/render.js'
 import { createPairClient } from './external-client.js'
 import { PAIR_ACTION_SET, PAIR_COMMAND_SET, commandVerb } from '../../runtime/pair-actions.js'
 

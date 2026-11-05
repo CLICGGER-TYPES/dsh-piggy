@@ -16,7 +16,7 @@ import { normalizeStatus } from '../../src/client/external-api.js'
 import { detectDesktop } from '../../adapters/dsh/external-discovery.js'
 import { createOutbox, OUTBOX_LIMITS } from '../../adapters/dsh/external-outbox.js'
 import { cleanupDsOldMerges, recoverRetirement, writeDsHistory } from '../../adapters/dsh/external-merge.js'
-import { hatchEgg, migrate } from '../../core.js'
+import { hatchEgg, migrate } from '../../src/host/core.js'
 import { stateFingerprint } from '../../adapters/dsh/external-files.js'
 
 const BASE = 1_800_000_000_000

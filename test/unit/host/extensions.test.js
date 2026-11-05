@@ -12,8 +12,8 @@ import {
   ensureExtensions, extensionOn, extensionsView, hatchEgg, installExtension, migrate, setExtension, startAutoFishing, startPomodoro,
 } from '../../../packages/pet-core/src/core.js'
 import { EXTENSIONS, FISH, extensionForAction } from '../../../packages/pet-core/src/data.js'
-import { createStore } from '../../../store.js'
-import { snapshot } from '../../../snapshot.js'
+import { createStore } from '../../../src/host/store.js'
+import { snapshot } from '../../../src/host/snapshot.js'
 
 const NOW = new Date(2026, 9, 5, 10, 0).getTime()
 const MIN = 60_000

@@ -10,9 +10,9 @@ import { test } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { act, adopt, buy, crown, formStageView, formsView, hatchEgg, migrate, revive, signContract, useItem } from '../../../core.js'
-import { KIND_ORDER, itemByKey, xpForLevel } from '../../../data.js'
-import { createStore } from '../../../store.js'
+import { act, adopt, buy, crown, formStageView, formsView, hatchEgg, migrate, revive, signContract, useItem } from '../../../src/host/core.js'
+import { KIND_ORDER, itemByKey, xpForLevel } from '../../../src/host/data.js'
+import { createStore } from '../../../src/host/store.js'
 const NOW = 1_800_000_000_000
 function ready(level = 40) {
   const state = hatchEgg(NOW)

@@ -1,6 +1,6 @@
 // @ts-check
 /** Progress is staged alongside money/inventory; refusal never commits either. */
-import { ensureExtensions, extensionOn, recordExtensionEvent, settleAchievements, validateExtensionEvent } from '../core.js'
+import { ensureExtensions, extensionOn, recordExtensionEvent, settleAchievements, validateExtensionEvent } from '../src/host/core.js'
 import { EXTENSION_EVENT_LIMITS } from '../packages/pet-core/src/data/extension-events.js'
 import { apiFor } from './ext-api.js'
 

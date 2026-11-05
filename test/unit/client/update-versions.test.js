@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { fakeDom } from '../../helpers/bundle.js'
-import { CHANNEL } from '../../../channel.js'
+import { CHANNEL } from '../../../src/host/channel.js'
 import { createUpdateNotice } from '../../../src/client/update-notice.js'
 import { gameReleases, gameTag, renderDshUpdate } from '../../../src/client/tabs/update-versions.js'
 import { renderUpdateTab } from '../../../src/client/tabs/update.js'

@@ -4,9 +4,9 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { createStore } from '../../../store.js'
-import { achievementsView, JOBS } from '../../../core.js'
-import { snapshot } from '../../../snapshot.js'
+import { createStore } from '../../../src/host/store.js'
+import { achievementsView, JOBS } from '../../../src/host/core.js'
+import { snapshot } from '../../../src/host/snapshot.js'
 const NOW=1_800_000_000_000
 
 test('real successful actions persist badges; rejected care and polling never count twice', () => {

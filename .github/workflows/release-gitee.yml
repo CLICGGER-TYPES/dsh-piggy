@@ -57,7 +57,7 @@ jobs:
           node scripts/set-channel.mjs gitee
           npm run build
           node apps/desktop/scripts/release-game.mjs dist-game
-          node scripts/scan-channel.mjs gitee client.js channel.js store dist-game
+          node scripts/scan-channel.mjs gitee client.js src/host/channel.js store dist-game
       - name: 写 Gitee 发布说明
         run: |
           node scripts/release-notes.mjs "$TAG" > dist-game/notes.md

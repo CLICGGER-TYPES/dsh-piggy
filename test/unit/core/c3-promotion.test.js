@@ -1,8 +1,8 @@
 // @ts-check
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { crown, hatchEgg, migrate, useItem } from '../../../core.js'
-import { FORMS, KIND_ORDER, SHOP, itemByKey, xpForLevel } from '../../../data.js'
+import { crown, hatchEgg, migrate, useItem } from '../../../src/host/core.js'
+import { FORMS, KIND_ORDER, SHOP, itemByKey, xpForLevel } from '../../../src/host/data.js'
 
 const NOW = 1_800_000_000_000
 

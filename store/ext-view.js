@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { extensionOn } from '../core.js'
+import { extensionOn } from '../src/host/core.js'
 import { apiFor } from './ext-api.js'
 import { readAssetPackFile } from './ext-asset-file.js'
 import { ASSET_NAME, ASSET_TYPES, assetNames } from './ext-files.js'

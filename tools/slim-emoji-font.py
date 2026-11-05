@@ -4,7 +4,7 @@ Gitee 发行版附件单个不能超过 100MB，整套 Noto Color Emoji（约 10
 所以只在打 Gitee 包的 CI 里原地替换 apps/desktop/renderer/piggy-emoji.ttf（GitHub 包不跑这一步，仍带整套）。
 renderer/index.html 的 unicode-range 不用改：字体里没有的字，浏览器会自动交给下一个字体（系统 emoji）。
 
-收哪些字：src/client、packages/pet-core/src、store、extensions 和 data/core/snapshot 里出现的所有 emoji，
+收哪些字：src/client、src/host、src/extensions、packages/pet-core/src、store、extensions 里出现的所有 emoji，
 再加常用笑脸（U+1F600–1F64F）和爱心，以及组合用的 ZWJ / 变体选择符 / 键帽。
 用法：python tools/slim-emoji-font.py   （需要 fonttools；本机用 uv run --with fonttools python ...）
 """
@@ -16,7 +16,7 @@ from fontTools.ttLib import TTFont
 
 ROOT = Path(__file__).resolve().parent.parent
 FONT = ROOT / 'apps/desktop/renderer/piggy-emoji.ttf'
-SOURCES = ['src/client', 'packages/pet-core/src', 'store', 'extensions', 'data.js', 'core.js', 'snapshot.js']
+SOURCES = ['src/client', 'src/host', 'src/extensions', 'packages/pet-core/src', 'store', 'extensions']
 PICTO = re.compile(r'[\U0001F000-\U0001FAFF←-⯿⌀-⏿〰〽㊗㊙]')
 
 codes = set()

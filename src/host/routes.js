@@ -3,13 +3,12 @@
  * HTTP 路由：面板读的快照、面板发的动作，以及手绘精灵图。
  *
  * 路由只做分发与序列化，不算业务规则 —— 每个动作都转发给 store（见 docs/CONVENTIONS.md）。
- * 实现在 src/host/；根目录 routes.js 只保留同名导出的兼容门面。
  * @module dsh-piggy/host/routes
  */
 import { readFileSync } from 'node:fs'
 
 import { PACKAGE_VERSION, snapshot } from './snapshot.js'
-import { extensionForAction } from '../../core.js'
+import { extensionForAction } from './core.js'
 import { installSkinPack } from '../../store/skin-pack.js'
 import { registerArtRoute } from '../../store/art-route.js'
 import { createExtRuntime } from '../../store/ext-runtime.js'

@@ -23,11 +23,11 @@ target 当成多猪/联机功能已经完成。
 
 | 位置 | 作用 | F02 后 |
 |---|---|---|
-| `store.js:createStore` | 打开一份旧 v15 存档，建立 owner 权威 + 一个 legacy target，持有 live facade、节流保存、flush/dispose、installCommittedState | 走 `createOwnerResources` + `mountLegacyTarget`；一个 owner 事务提交 resources+body；仍只有一个保存计时器/文件 |
+| `src/host/store.js:createStore` | 打开一份旧 v15 存档，建立 owner 权威 + 一个 legacy target，持有 live facade、节流保存、flush/dispose、installCommittedState | 走 `createOwnerResources` + `mountLegacyTarget`；一个 owner 事务提交 resources+body；仍只有一个保存计时器/文件 |
 | `store/api.js` | 喂食/洗澡/玩耍、工作/学习/旅行、购买/使用、钓鱼、扩展开关、改名、hatch/reset/adopt 等 | 命令方法经 `commands.runFor` -> `store.mutate` -> owner 事务；feed/freshen/rename/drainPending 也进入同一事务；hatch/reset/adopt 走 owner 整份替换后事务结算 |
 | `store/target-context.js` | 显式 owner/target/scope、注入时钟、replaceState、assertScope | 新入口直接持有 OwnerAuthority/PigTarget；旧 `{getState,setState,now}` 入口保留给直接 createApi |
 | `store/command-context.js` | `runFor`/`readFor`、scope 校验 | 仍只把显式 scope 命令送进 commit；commit 现在是 owner 事务；内部 execute 仍收到 `(state, commandScope)` |
-| `snapshot.js` | 面板轮询读快照，内部调用 `store.freshen()` | 仍走同一 `store.freshen()`；读结算在一个 owner 事务里完成 |
+| `src/host/snapshot.js` | 面板轮询读快照，内部调用 `store.freshen()` | 仍走同一 `store.freshen()`；读结算在一个 owner 事务里完成 |
 | `runtime/index.js` | 包装 store 方法、epoch、exclusive、重开运行时 | 公共方法名/返回不变；重开重建 store+owner 上下文 |
 | `store/ext-actions.js`、`ext-load.js`、`ext-install.js` | 扩展动作/安装通过 `store.mutate`；扩展仍整份克隆/恢复 | 公共 `mutate` 仍单参数；整份克隆进入 owner 事务。扩展逐字段归属仍是 F06 |
 | `runtime/work-ledger.js` | 工作事件 WAL 直接计算并 `installCommittedState` | 文件/WAL 事务不变；安装整份状态经 owner replace，不新增第二写入器 |
@@ -122,7 +122,7 @@ target 当成多猪/联机功能已经完成。
   仍不重新结算、不排保存，并保留传入对象的身份。
 - 存档版本仍 schema 15、farm 5；没有新增字段、迁移、`petId`/`ownerId`、默认资源
   或初始金币逻辑。
-- 桌面 IPC、`routes.js`、`snapshot.js`、`client.js`、扩展协议、`packages/pet-core`
+- 桌面 IPC、`src/host/routes.js`、`src/host/snapshot.js`、`client.js`、扩展协议、`packages/pet-core`
   规则和素材均未改动；本指南只随源码树发布。
 
 ## 6. 未实现/未收敛项

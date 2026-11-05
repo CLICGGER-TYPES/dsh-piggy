@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { hatchEgg, mood, touch } from '../../../core.js'
+import { hatchEgg, mood, touch } from '../../../src/host/core.js'
 
 const now = 1800000000000
 for (const minutes of [31, 120, 1440]) {

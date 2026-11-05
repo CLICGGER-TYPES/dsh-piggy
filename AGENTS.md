@@ -6,13 +6,13 @@
 
 **dsh-piggy**：一只养在桌面上的小猪（复刻 QQ 宠物的玩法，界面是动森 NookPhone 风格）。同一份代码两种形态：
 
-- **DSH 插件**（网页面板）：根目录 `index.js` / `src/host/` / `store/` 是宿主（`routes.js` 等根文件是兼容门面），`src/client/` 打包成 `client.js`。
+- **DSH 插件**（网页面板）：根目录 `index.js` / `src/host/` / `store/` 是宿主（`src/host/routes.js` 等实现都在 `src/host/`），`src/client/` 打包成 `client.js`。
 - **桌面版**（Electron）：`apps/desktop/` 是外壳，内置一份游戏包（Gitee 的 Windows 安装包除外：首次启动下载，见 HANDOFF 9.4）；游戏包可单独热更新，外壳要下载安装包更新。
 
 | 目录 | 内容 |
 |---|---|
 | `packages/pet-core/src/` | 养成规则（`data/` 数值表、`core/` 纯函数），两种形态共用 |
-| `store/`、`src/host/` | 存档、HTTP 路由、给面板的快照；根目录 `index.js` 是插件入口，`routes.js` / `snapshot.js` 是兼容门面 |
+| `store/`、`src/host/` | 存档、HTTP 路由、给面板的快照；根目录 `index.js` 是插件入口，其余宿主实现都在 `src/host/` |
 | `src/client/` | 面板界面（构建成 `client.js`，**改了源码要 `npm run build`；产物不提交**） |
 | `src/extensions/farm/` | 菜园服务端源码（构建成 `extensions/farm/server.js`，**不要手改产物**；下载协议仍是三个文件 + assets） |
 | `apps/desktop/` | 桌面外壳（主进程、preload、打包配置） |

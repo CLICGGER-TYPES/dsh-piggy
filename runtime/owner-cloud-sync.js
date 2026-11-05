@@ -3,7 +3,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
 
-import { STATE_VERSION } from '../core.js'
+import { STATE_VERSION } from '../src/host/core.js'
 import { createOwnerDocumentArchiveImporter, exportOwnerDocumentArchive } from './owner-document-archive.js'
 import { createGitSync } from './git-sync.js'
 import { readZip } from './save-zip.js'

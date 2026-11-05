@@ -12,7 +12,7 @@
 import { button, el } from '../dom.js'
 import { compareVersions } from '../update-notice.js'
 import { fetchNpmVersion } from './update-npm.js'
-import { CHANNEL } from '../../../channel.js'
+import { CHANNEL } from '../../host/channel.js'
 
 /**
  * One panel, one list: re-entering the tab keeps it; 刷新 asks again.

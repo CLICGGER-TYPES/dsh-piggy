@@ -9,7 +9,7 @@
  * @module dsh-piggy/adapters/dsh/external-prepare
  */
 
-import { abandonPomodoro, callOffActivity, keepFish, mergeSummary } from '../../core.js'
+import { abandonPomodoro, callOffActivity, keepFish, mergeSummary } from '../../src/host/core.js'
 import { SESSION_BOUNDARY, persistenceIssue, sessionOf } from '../../runtime/session-context.js'
 import { readStateFile, writeStateFile } from '../../store/state-file.js'
 import { readConfig, stateFingerprint } from './external-files.js'

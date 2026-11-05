@@ -14,7 +14,7 @@ import { CHANNEL } from './channel.js'
 
 function readPackageVersion() {
   try {
-    const parsed = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+    const parsed = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
     return typeof parsed.version === 'string' ? parsed.version : 'unknown'
   } catch (error) {
     console.warn(`[dsh-piggy] package version unavailable: ${error instanceof Error ? error.message : String(error)}`)

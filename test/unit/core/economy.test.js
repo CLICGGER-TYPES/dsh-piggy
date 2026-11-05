@@ -9,8 +9,8 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { earnCoins, economyView, ensureEconomy, exert, hatchEgg, installExtension, migrate, refundCoins, removeExtension, spendCoins } from '../../../core.js'
-import { EXT_EARN_PER_ACTION, LEDGER } from '../../../data.js'
+import { earnCoins, economyView, ensureEconomy, exert, hatchEgg, installExtension, migrate, refundCoins, removeExtension, spendCoins } from '../../../src/host/core.js'
+import { EXT_EARN_PER_ACTION, LEDGER } from '../../../src/host/data.js'
 import { runExtensionAction } from '../../../store/ext-actions.js'
 
 const DAY = 86_400_000
@@ -160,8 +160,7 @@ test('nothing outside core/economy.js changes coins with += or -=', () => {
     }
   }
   for (const dir of ['packages/pet-core/src', 'store']) walk(join(root, dir))
-  for (const file of ['index.js', 'routes.js', 'snapshot.js', 'commands.js',
-    'src/host/routes.js', 'src/host/snapshot.js', 'src/host/commands.js']) {
+  for (const file of ['index.js', 'src/host/store.js', 'src/host/routes.js', 'src/host/snapshot.js', 'src/host/commands.js']) {
     if (/\bcoins\s*[-+]=/.test(readFileSync(join(root, file), 'utf8'))) offenders.push(file)
   }
   assert.deepEqual(offenders, [], 'use earnCoins / spendCoins / refundCoins so the ledger stays right')

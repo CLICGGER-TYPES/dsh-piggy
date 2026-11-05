@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import {
   DYNAMIC_MAP_RULES, MERGE_RULES, MERGE_RULES_VERSION, MergeError, assertMergeable, mergeReceipts, mergeSaveStates,
   mergeSummary, migrate, hatchEgg, missingMergeRules, resumeSuspendedPig, suspensionFingerprint, dayKeyFor,
-} from '../../../core.js'
+} from '../../../src/host/core.js'
 import { ACHIEVEMENTS, FISH } from '../../../packages/pet-core/src/data.js'
 import { emptyMergeTarget } from '../../../runtime/merge-source.js'
 

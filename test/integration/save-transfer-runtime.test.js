@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../core.js'
+import { hatchEgg } from '../../src/host/core.js'
 import { createGameRuntime } from '../../runtime/index.js'
 import { createSaveArchive } from '../../runtime/save-archive.js'
 

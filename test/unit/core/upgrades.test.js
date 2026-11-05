@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { STATE_VERSION, layEgg, levelFor, levelProgress, migrate } from '../../../core.js'
+import { STATE_VERSION, layEgg, levelFor, levelProgress, migrate } from '../../../src/host/core.js'
 import { readStateFile } from '../../../store/state-file.js'
 import { UPGRADES } from '../../../packages/pet-core/src/core/upgrades.js'
 

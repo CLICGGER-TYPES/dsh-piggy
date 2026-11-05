@@ -3,4 +3,4 @@
 export { name, inject, apply } from './adapters/dsh/index.js'
 export { dispatch, performAction } from './src/host/commands.js'
 export { snapshot } from './src/host/snapshot.js'
-export { JOBS, MAX, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRAIT_ORDER, TRIPS, jobByKey } from './data.js'
+export { JOBS, MAX, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRAIT_ORDER, TRIPS, jobByKey } from './src/host/data.js'

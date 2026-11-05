@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { ageFromNow, applyDevPatch, awayBlockedReason, decay, doctorFee, hatchEgg, lifeStageFor, migrate, onsetRisks, seeDoctor, THRESHOLDS, SHOP, REVIVE_ITEM } from '../../../core.js'
+import { ageFromNow, applyDevPatch, awayBlockedReason, decay, doctorFee, hatchEgg, lifeStageFor, migrate, onsetRisks, seeDoctor, THRESHOLDS, SHOP, REVIVE_ITEM } from '../../../src/host/core.js'
 import { CHAIN_INDEX } from '../../../packages/pet-core/src/data/illness.js'
 import { raiseSettledUpTo } from '../../../packages/pet-core/src/core/clock.js'
 import { emptyOfflineMeals, finishOfflineMeals, offlineSustainMs, pickOfflineItem, OFFLINE_NEEDS } from '../../../packages/pet-core/src/core/offline-feed.js'
@@ -161,7 +161,7 @@ test('返工3 A1：出生时刻在将来（快机器上孵的猪）——回拨�
 })
 
 test('返工3 A1：冻结期间有进行中的活动，解冻后只结算一次、工资只发一份', async () => {
-  const { startWork } = await import('../../../core.js')
+  const { startWork } = await import('../../../src/host/core.js')
   const pig = wellFed()
   decay(pig, START + 2 * DAY, never)
   startWork(pig, 'bricks', START + 2 * DAY)
@@ -314,7 +314,7 @@ test('先吃完食物后继续衰减，鱼饵 / 药品 / 王冠不消耗', () =>
   assert.ok(pig.pending.some(entry => entry.text.includes('苹果×1') && entry.text.includes('背包里没吃的了')))
 })
 test('离线发生在外出过程中也可吃背包食物，手动喂食同样放行', async () => {
-  const { act, startWork } = await import('../../../core.js')
+  const { act, startWork } = await import('../../../src/host/core.js')
   const pig = pigWithFood()
   startWork(pig, 'bricks', START)
   pig.satiety = 26

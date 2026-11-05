@@ -13,7 +13,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { createApi } from '../../../store/api.js'
-import { createStore } from '../../../store.js'
+import { createStore } from '../../../src/host/store.js'
 import { createOwnerResources } from '../../../store/owner-resources.js'
 import { createCommandContext } from '../../../store/command-context.js'
 import { OWNER_RESOURCE_PATHS, PIG_BODY_PATHS, createApplicationContext } from '../../../store/target-context.js'

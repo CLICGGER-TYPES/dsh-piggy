@@ -2,7 +2,7 @@
 /** 共享的二进制路由；预览只解析，不写目标存档。 */
 import { randomUUID } from 'node:crypto'
 import { createSaveArchive, parseSaveArchive } from './save-archive.js'
-import { PACKAGE_VERSION } from '../snapshot.js'
+import { PACKAGE_VERSION } from '../src/host/snapshot.js'
 
 const LIMIT = 32 * 1024 * 1024
 const TTL = 10 * 60 * 1000

@@ -107,17 +107,17 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 | 路径 | 是什么 |
 |---|---|
-| `index.js` | DSH 插件入口：注册路由（`routes.js`）、斜杠命令 `/pig`（`commands.js`）、客户端脚本 |
-| `snapshot.js` | 把存档整理成面板用的「快照」（客户端只读快照，不自己算规则） |
-| `environment.js` | 版本号与环境说明（日志表头用）；`PACKAGE_VERSION` 的唯一定义处 |
-| `routes.js` | HTTP 接口：`/dsh-piggy/state`（取快照）、`/dsh-piggy/act`（所有操作，body `{action, ...}`）、`/dsh-piggy/art`、`/dsh-piggy/ext/*` |
-| `packages/pet-core/src/` | **领域库**：`data/`（数值表）、`core/`（纯函数规则）。根目录 `core.js` / `data.js` 只是再导出 |
+| `index.js` | DSH 插件入口：注册路由（`src/host/routes.js`）、斜杠命令 `/pig`（`src/host/commands.js`）、客户端脚本 |
+| `src/host/snapshot.js` | 把存档整理成面板用的「快照」（客户端只读快照，不自己算规则） |
+| `src/host/environment.js` | 版本号与环境说明（日志表头用）；`PACKAGE_VERSION` 的唯一定义处 |
+| `src/host/routes.js` | HTTP 接口：`/dsh-piggy/state`（取快照）、`/dsh-piggy/act`（所有操作，body `{action, ...}`）、`/dsh-piggy/art`、`/dsh-piggy/ext/*` |
+| `packages/pet-core/src/` | **领域库**：`data/`（数值表）、`core/`（纯函数规则）。`src/host/core.js` / `src/host/data.js` 只是再导出 |
 | `store/` | 存档读写（原子写）、迁移、扩展运行时 `ext-runtime.js`、运行日志 `journal.js` |
 | `src/client/` | 面板前端源码（原生 JS + DOM，不用框架）→ `npm run build` 打成根目录 `client.js`（**产物不提交**） |
 | `extensions/` | 可下载扩展（`blindbox` `gacha` `farm` `mine`）+ 在线目录 `registry.json` / `registry-gitee.json` |
 | `assets/` | 立绘 SVG（形态、皮肤、动作、App 图标） |
 | `apps/desktop/` | 桌面外壳（Electron）：`main.js`、`preload.cjs`、`lib/`、`renderer/`、打包脚本 |
-| `channels/` + `channel.js` | 发布渠道（github / gitee）的地址，见第 9.4 节 |
+| `channels/` + `src/host/channel.js` | 发布渠道（github / gitee）的地址，见第 9.4 节 |
 | `packages/dsh-plugin-piggy/` | npm 别名包（给社区目录检索用，只依赖 `dsh-piggy`） |
 | `cordis.patch.yml` | DSH 加载插件用的配置层；`name` 必须和 package.json 的 `name` 一致 |
 | `docs/` | 文档；`docs/ROADMAP.md` 路线图和待办，`docs/numbers/` 用户确认过的数值单，`docs/ASSETS.md` 素材总表，`docs/archive/` 历史文档（旧交接、各轮任务卡） |
@@ -130,7 +130,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 ### 4.1 分层（硬规定，见 [CONVENTIONS](CONVENTIONS.md)）
 
-依赖只能从外向内：`data/` → `core/` → `store/` → 组装层（`index.js` `snapshot.js` `routes.js` `commands.js`）→ `src/client/`。
+依赖只能从外向内：`data/` → `core/` → `store/` → 组装层（`index.js` `src/host/snapshot.js` `src/host/routes.js` `src/host/commands.js`）→ `src/client/`。
 
 - `core/` 是纯函数 `(state, ..., nowMs) => result`：**时间作参数传入，随机数用 `core/random.js`（种子在 `state.seed`），禁止 `Math.random()` / `Date.now()`**。
 - 数值都在 `data/`，逻辑里不写裸数字。
@@ -294,7 +294,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 ### 9.4 两个发布渠道（GitHub / Gitee）
 
 - 规则：**GitHub 那套保持原样；Gitee 是独立的一套**——Gitee 发出去的游戏包和外壳，检查更新、下载游戏包、在线扩展只走 gitee.com，不能依赖 GitHub（用户明确要求）。
-- 地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 复制成 `channel.js` 和 `apps/desktop/lib/channel.js`。**仓库里提交的永远是 github**（`test/unit/host/channel.test.js` 守着）。
+- 地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 复制成 `src/host/channel.js` 和 `apps/desktop/lib/channel.js`。**仓库里提交的永远是 github**（`test/unit/host/channel.test.js` 守着）。
 - Gitee 工作流先用默认渠道跑测试，再切 gitee 打包，构建后用 `scripts/scan-channel.mjs` 扫描，发现 GitHub 地址就失败。
 - Gitee 限制：发行版附件**单个 ≤ 100MiB（104,857,600 字节，实测）**、单仓库附件**总量 ≤ 1GB**。所以 Gitee 安装包另有瘦身：`apps/desktop/electron-builder.gitee.cjs`（最大压缩、只留中英文语言包）、`tools/slim-emoji-font.py`（emoji 字体只留用到的）。**Gitee 只发 Windows 安装包**（用户 2026-10-10：「gitee 不发 linux 和 mac 了」），Linux / macOS 只在 GitHub；游戏包照样每版都发，已装 Gitee 版的 Linux / mac 外壳仍能在 App 里更新游戏。当前大小（0.35.0 / 外壳 0.6.4）：Windows 92.7MiB（**不带游戏**，见下）。0.35.0 是最后一个在 Gitee 带 Linux / mac 安装包的版本，下次发版的清理步骤会把它们当旧安装包删掉。超限的文件 CI 不上传并给警告。发版后自动删除旧版本的安装包附件（游戏包保留）。
 - **Gitee 一律从维护者本机推**（用户 2026-10-07 定）：GitHub Actions 不再碰 Gitee（机房连 Gitee 经常卡死或被重置，旧流程的清理步骤还在上传失败时删了旧安装包，Gitee 一段时间没有安装包可下）。

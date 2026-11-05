@@ -4,10 +4,10 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import { startBackgroundHost } from '../lib/background-host.js'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
@@ -19,9 +19,10 @@ function writeLegacyGame(directory) {
   const gameDir = join(directory, 'legacy-game')
   mkdirSync(gameDir)
   writeFileSync(join(gameDir, 'package.json'), '{"type":"module"}')
-  // 旧包没有 runtime/index.js；仍使用仓库内真实 Store、路由及环境模块。
+  // 旧包没有 runtime/index.js，宿主模块也放在包根目录；仍使用仓库内真实
+  // Store、路由及环境模块，验证桌面宿主的旧包回退加载路径。
   for (const [file, name] of [['store.js', 'createStore'], ['routes.js', 'registerRoutes'], ['environment.js', 'environmentNote']]) {
-    const origin = new URL('../../../' + file, import.meta.url).href
+    const origin = new URL('../../../src/host/' + file, import.meta.url).href
     writeFileSync(join(gameDir, file), `export { ${name} } from ${JSON.stringify(origin)}\n`)
   }
   return gameDir
@@ -31,7 +32,8 @@ function writeGameWithPending(directory) {
   const gameDir = join(directory, 'game')
   mkdirSync(join(gameDir, 'runtime'), { recursive: true })
   writeFileSync(join(gameDir, 'package.json'), '{"type":"module"}')
-  for (const file of ['environment.js', 'runtime/local-server.js']) {
+  for (const file of ['src/host/environment.js', 'runtime/local-server.js']) {
+    mkdirSync(dirname(join(gameDir, file)), { recursive: true })
     writeFileSync(join(gameDir, file), `export * from ${JSON.stringify(new URL('../../../' + file, import.meta.url).href)}\n`)
   }
   // migrate 会清除落盘 pending；须由真实命令在 Worker 内生成尚未被快照消费的消息。
@@ -50,7 +52,8 @@ test('Worker 只转移 Buffer、Uint8Array 和 DataView 的有效字节，不泄
   const directory = temp(), gameDir = join(directory, 'game')
   mkdirSync(join(gameDir, 'runtime'), { recursive: true })
   writeFileSync(join(gameDir, 'package.json'), '{"type":"module"}')
-  writeFileSync(join(gameDir, 'environment.js'), 'export const environmentNote = () => ({})')
+  mkdirSync(join(gameDir, 'src', 'host'), { recursive: true })
+  writeFileSync(join(gameDir, 'src/host/environment.js'), 'export const environmentNote = () => ({})')
   // 池化 Buffer 和共享视图都带偏移；第二次读取会暴露错误转移原存储的实现。
   writeFileSync(join(gameDir, 'runtime/index.js'), `
     const backing = Buffer.allocUnsafe(64).fill(0xa7)

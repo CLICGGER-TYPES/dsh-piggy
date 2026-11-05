@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {hatchEgg,migrate,rename,profileView} from '../../../core.js'
+import {hatchEgg,migrate,rename,profileView} from '../../../src/host/core.js'
 import {PIG,SNAPSHOT,mount,openPanel,contentOf,findByAttr} from '../../helpers/bundle.js'
 
 test('居民卡输入上限5字；新名字保存同限，旧档长名字保留',async()=>{

@@ -5,7 +5,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { test } from 'node:test'
 import { feedbackArtFor } from '../../../src/client/feedback-art.js'
 import { syncSleepArt } from '../../../src/client/art.js'
-import { registerRoutes } from '../../../routes.js'
+import { registerRoutes } from '../../../src/host/routes.js'
 
 const base = { stage: 'piglet', base: 'piglet', mood: 'fine', reaction: '', idle: '', activityKind: '', activityKey: '', hour: 0 }
 

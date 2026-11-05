@@ -1675,10 +1675,10 @@ test('real routes: clicking a reply shows the approved follow-up for that line',
   const { mkdtempSync, rmSync, writeFileSync } = await import('node:fs')
   const { tmpdir } = await import('node:os')
   const { join } = await import('node:path')
-  const { createStore } = await import('../../../store.js')
-  const { registerRoutes } = await import('../../../routes.js')
-  const core = await import('../../../core.js')
-  const { LINES } = await import('../../../data.js')
+  const { createStore } = await import('../../../src/host/store.js')
+  const { registerRoutes } = await import('../../../src/host/routes.js')
+  const core = await import('../../../src/host/core.js')
+  const { LINES } = await import('../../../src/host/data.js')
   const dir = mkdtempSync(join(tmpdir(), 'piggy-client-reply-'))
   const statePath = join(dir, 'state.json')
   const now = Date.now()
@@ -2368,8 +2368,8 @@ test('the desktop app gets a 退出 tile that asks the shell to close, and DSH d
 })
 
 test('both item-based forms are represented in the form data used by the dex', async () => {
-  const { formsView, hatchEgg } = await import('../../../core.js')
-  const { xpForLevel } = await import('../../../data.js')
+  const { formsView, hatchEgg } = await import('../../../src/host/core.js')
+  const { xpForLevel } = await import('../../../src/host/data.js')
   const state = hatchEgg(1_800_000_000_000)
   Object.assign(state, { xp: xpForLevel(40), traits: { intel: 0, strong: 20, charm: 20 }, happiness: 10 })
   state.stats.plays = 20

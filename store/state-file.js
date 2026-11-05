@@ -9,7 +9,7 @@ import { homedir } from 'node:os'
 import { isDeepStrictEqual } from 'node:util'
 import { dirname, join, resolve } from 'node:path'
 
-import { STATE_VERSION, migrate } from '../core.js'
+import { STATE_VERSION, migrate } from '../src/host/core.js'
 
 /** 存档这一层的日志往日志本里记一份；没有日志本（测试）就只留 console。 */
 function report(journal, event) {

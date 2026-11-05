@@ -16,9 +16,9 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { apply, dispatch, snapshot } from '../../../index.js'
-import { registerRoutes } from '../../../routes.js'
-import { JOBS, SHOP, ensureDaily, hatchEgg, layEgg } from '../../../core.js'
-import { DEFAULT_TOY, xpForLevel } from '../../../data.js'
+import { registerRoutes } from '../../../src/host/routes.js'
+import { JOBS, SHOP, ensureDaily, hatchEgg, layEgg } from '../../../src/host/core.js'
+import { DEFAULT_TOY, xpForLevel } from '../../../src/host/data.js'
 
 const MIN = 60_000
 

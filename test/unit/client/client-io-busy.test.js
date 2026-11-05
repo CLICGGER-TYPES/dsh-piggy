@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg, migrate } from '../../../core.js'
+import { hatchEgg, migrate } from '../../../src/host/core.js'
 import { createGameRuntime } from '../../../runtime/index.js'
 import { createIo } from '../../../src/client/io.js'
 

@@ -3,8 +3,8 @@ import { test } from 'node:test'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { hatchEgg, say, mood } from '../../../core.js'
-import { createStore } from '../../../store.js'
+import { hatchEgg, say, mood } from '../../../src/host/core.js'
+import { createStore } from '../../../src/host/store.js'
 import { createIo } from '../../../src/client/io.js'
 
 test('store reply uses the host clock to refresh activity without a touch operation', () => {

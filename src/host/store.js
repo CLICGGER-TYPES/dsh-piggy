@@ -18,12 +18,12 @@
 import { dirname } from 'node:path'
 
 import { settleAchievements } from './core.js'
-import { createApi } from './store/api.js'
-import { createCommandContext } from './store/command-context.js'
-import { createOwnerResources, isExplicitRefusal } from './store/owner-resources.js'
-import { createApplicationContext } from './store/target-context.js'
-import { createJournal } from './store/journal.js'
-import { defaultStatePath, dshHome, moveLegacySaveDir, readStateFile, writeStateFile } from './store/state-file.js'
+import { createApi } from '../../store/api.js'
+import { createCommandContext } from '../../store/command-context.js'
+import { createOwnerResources, isExplicitRefusal } from '../../store/owner-resources.js'
+import { createApplicationContext } from '../../store/target-context.js'
+import { createJournal } from '../../store/journal.js'
+import { defaultStatePath, dshHome, moveLegacySaveDir, readStateFile, writeStateFile } from '../../store/state-file.js'
 
 export { defaultStatePath, dshHome, moveLegacySaveDir }
 
@@ -49,11 +49,11 @@ const isThenable = value => value !== null &&
  * @param {Function} [options.setTimer] - injectable scheduler.
  * @param {Function} [options.clearTimer] - injectable canceller.
  * @param {object} [options.journal] - 自定义日志本（测试或桌面外壳用）。
- * @param {import('./store/owner-resources.js').OwnerAuthority} [options.ownerAuthority] - explicit OwnerDocument owner
- * @param {import('./store/owner-resources.js').PigTarget} [options.pigTarget] - target already registered with ownerAuthority
- * @param {(target: import('./store/owner-resources.js').PigTarget) => void} [options.persistOwnerDocument] - synchronous owner-document CAS writer
- * @param {(target: import('./store/owner-resources.js').PigTarget, next: Record<string, unknown>|null) => void|(() => void)} [options.replaceState] - optional target-scoped lifecycle replacement; may return an undo for settle failure
- * @param {(target: import('./store/owner-resources.js').PigTarget) => object|null} [options.readState] - optional isolated live-state read adapter
+ * @param {import('../../store/owner-resources.js').OwnerAuthority} [options.ownerAuthority] - explicit OwnerDocument owner
+ * @param {import('../../store/owner-resources.js').PigTarget} [options.pigTarget] - target already registered with ownerAuthority
+ * @param {(target: import('../../store/owner-resources.js').PigTarget) => void} [options.persistOwnerDocument] - synchronous owner-document CAS writer
+ * @param {(target: import('../../store/owner-resources.js').PigTarget, next: Record<string, unknown>|null) => void|(() => void)} [options.replaceState] - optional target-scoped lifecycle replacement; may return an undo for settle failure
+ * @param {(target: import('../../store/owner-resources.js').PigTarget) => object|null} [options.readState] - optional isolated live-state read adapter
  * @param {{kind:string,targets?:number,ownerId?:string}} [options.persistence] - explicit persistence capability metadata
  */
 export function createStore(filePath = defaultStatePath(), options = {}) {
@@ -127,7 +127,7 @@ export function createStore(filePath = defaultStatePath(), options = {}) {
    * 结算成就，然后只排原来的一个节流保存。公共 store.mutate 仍只给回调一个
    * live flat state 参数。
    * @param {(state: object) => object} fn
-   * @param {import('./store/command-context.js').CommandRunOptions} [options]
+   * @param {import('../../store/command-context.js').CommandRunOptions} [options]
    * @returns {object}
    */
   function commit(fn, options = {}) {

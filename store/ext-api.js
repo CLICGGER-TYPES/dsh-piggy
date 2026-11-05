@@ -1,6 +1,6 @@
 // @ts-check
-import { announce, earnCoins, exert, extensionSource, openWallet, spendCoins, walletBalance, walletEarn, walletSpend } from '../core.js'
-import { BOX_TICKET, EXT_EARN_PER_ACTION, itemByKey } from '../data.js'
+import { announce, earnCoins, exert, extensionSource, openWallet, spendCoins, walletBalance, walletEarn, walletSpend } from '../src/host/core.js'
+import { BOX_TICKET, EXT_EARN_PER_ACTION, itemByKey } from '../src/host/data.js'
 import { EXTENSION_EVENT_VERSION } from '../packages/pet-core/src/data/extension-events.js'
 /**
  * 给扩展用的口子：只能花钱、挣钱、给东西、说话；数据只能动自己的那份。

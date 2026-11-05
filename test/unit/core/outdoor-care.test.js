@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, decay, ensureFishing, hatchEgg, startAutoFishing, startStudy, startTrip, startWork } from '../../../core.js'
-import { JOBS } from '../../../data.js'
+import { act, decay, ensureFishing, hatchEgg, startAutoFishing, startStudy, startTrip, startWork } from '../../../src/host/core.js'
+import { JOBS } from '../../../src/host/data.js'
 
 const T0 = 1_700_000_000_000
 const MIN = 60_000

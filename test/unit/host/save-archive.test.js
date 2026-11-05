@@ -1,5 +1,5 @@
 import test from 'node:test'
-import { STATE_VERSION, hatchEgg, layEgg } from '../../../core.js'
+import { STATE_VERSION, hatchEgg, layEgg } from '../../../src/host/core.js'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

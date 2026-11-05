@@ -2,7 +2,7 @@
 /** 游戏状态与工作收据一起提交；失败事务恢复前不接受下一次游戏操作。 */
 import { mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { feed, settleAchievements } from '../core.js'
+import { feed, settleAchievements } from '../src/host/core.js'
 import { writeStateFile } from '../store/state-file.js'
 import { readWorkJson, removeWorkFile, syncDirectory, writeWorkJson } from './work-files.js'
 import { WORK_EVENT_WINDOW_MS, validateWorkEvent, workError, workEventKey } from './work-events.js'

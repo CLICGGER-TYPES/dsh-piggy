@@ -2,7 +2,7 @@
 import { artSource } from '../../../src/client/art-path.js'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { achievementsView, hatchEgg, installExtension, recordExtensionEvent, removeExtension, settleAchievements } from '../../../core.js'
+import { achievementsView, hatchEgg, installExtension, recordExtensionEvent, removeExtension, settleAchievements } from '../../../src/host/core.js'
 import { SNAPSHOT, contentOf, findByAttr, findByClass, mount, openPanel } from '../../helpers/bundle.js'
 const NOW=1_800_000_000_000
 

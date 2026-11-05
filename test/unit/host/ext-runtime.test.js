@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg, removeExtension, installExtension, extensionOn } from '../../../core.js'
-import { createStore } from '../../../store.js'
+import { hatchEgg, removeExtension, installExtension, extensionOn } from '../../../src/host/core.js'
+import { createStore } from '../../../src/host/store.js'
 import { createJournal } from '../../../store/journal.js'
 import { createExtRuntime, versionAtLeast } from '../../../store/ext-runtime.js'
 

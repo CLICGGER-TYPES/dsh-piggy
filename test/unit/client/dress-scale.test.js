@@ -202,7 +202,7 @@ test('no call site writes --pig-size or --pig-scale on its own', () => {
   // 两半必须同一个函数写：漏一处就会「猪变大了、帽子还是 15px」。
   const files = [
     'src/client/panel.js', 'src/client/tabs/settings.js', 'src/client/recover.js',
-    'src/client/index.js', 'render.js',
+    'src/client/index.js', 'src/host/render.js',
   ]
   const write = /setProperty\??\.?\(\s*'--pig-(size|scale)'/g
   for (const file of files) {

@@ -7,7 +7,7 @@ import { Readable } from 'node:stream'
 import { request as httpsRequest } from 'node:https'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../core.js'
+import { hatchEgg } from '../../src/host/core.js'
 import { createGameRuntime } from '../../runtime/index.js'
 import { splitLegacyState } from '../../store/legacy-projection.js'
 import { apply } from '../../adapters/dsh/index.js'

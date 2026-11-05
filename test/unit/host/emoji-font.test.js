@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { registerRoutes } from '../../../routes.js'
+import { registerRoutes } from '../../../src/host/routes.js'
 import { SNAPSHOT, contentOf, findByAttr, mount, openPanel } from '../../helpers/bundle.js'
 
 const FONT = new URL('../../../assets/piggy-emoji.woff2', import.meta.url)

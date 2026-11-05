@@ -8,9 +8,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import { buildFarmServer } from '../../../scripts/build-farm-server.mjs'
-import { createStore } from '../../../store.js'
+import { createStore } from '../../../src/host/store.js'
 import { createExtRuntime } from '../../../store/ext-runtime.js'
 import { createJournal } from '../../../store/journal.js'
 

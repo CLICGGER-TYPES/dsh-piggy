@@ -1,6 +1,6 @@
 // @ts-check
 /** Owner work event 的接入：在 owner 事务里结算，再用 WAL + document CAS 提交收据。 */
-import { feed, settleAchievements } from '../core.js'
+import { feed, settleAchievements } from '../src/host/core.js'
 import { serializeOwnerDocument } from '../store/owner-document.js'
 import { writeOwnerDocumentFile } from './owner-document-file.js'
 import { sha256 } from './owner-runtime-json.js'

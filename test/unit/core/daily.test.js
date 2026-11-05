@@ -11,8 +11,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { hatchEgg, layEgg } from '../../../core.js'
-import { DIARY_BOOK, GIFT_TABLE, ONLINE_GIFT, SIGN_IN_CYCLE, SIGN_IN_REWARDS } from '../../../data.js'
+import { hatchEgg, layEgg } from '../../../src/host/core.js'
+import { DIARY_BOOK, GIFT_TABLE, ONLINE_GIFT, SIGN_IN_CYCLE, SIGN_IN_REWARDS } from '../../../src/host/data.js'
 import { canSignIn, dayKeyFor, ensureDaily, giftBucketIndex, openGift, recordOnline, signIn } from '../../../packages/pet-core/src/core/daily.js'
 import { rollerFor } from '../../../packages/pet-core/src/core/random.js'
 import { composeDiary, diaryGroupFor, diaryView, ensureDiary, noteToday, writeDiaryIfNewDay } from '../../../packages/pet-core/src/core/diary.js'

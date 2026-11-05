@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdirSync, realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 
-import { dispatch } from '../commands.js'
+import { dispatch } from '../src/host/commands.js'
 import { createOwnerDocumentStore } from '../store/owner-document-store.js'
 import { projectOwnerDocumentToLegacyV15 } from '../store/owner-document.js'
 import { createOwnerResources } from '../store/owner-resources.js'

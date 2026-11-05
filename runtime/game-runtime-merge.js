@@ -6,8 +6,8 @@
  * 同一个 body 里一致提交或回滚，不能先改 store.state 再 flush。这里只依赖
  * 组合根提供的 exclusive 和会话检查，不直接读写文件。
  */
-import { STORE_INTERNALS } from '../store.js'
-import { abandonPomodoro, callOffActivity, keepFish } from '../core.js'
+import { STORE_INTERNALS } from '../src/host/store.js'
+import { abandonPomodoro, callOffActivity, keepFish } from '../src/host/core.js'
 import { persistenceIssue } from './session-context.js'
 
 /**

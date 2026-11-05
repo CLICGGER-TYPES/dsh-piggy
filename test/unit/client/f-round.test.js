@@ -5,7 +5,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { CSS } from '../../../src/client/styles.js'
 import { SNAPSHOT, contentOf, findByAttr, findByClass, hostOf, mount, openPanel, sceneOf, settle } from '../../helpers/bundle.js'
-import { hatchEgg, startInterest, decay } from '../../../core.js'
+import { hatchEgg, startInterest, decay } from '../../../src/host/core.js'
 
 test('every composed CSS rule closes before another ordinary rule begins', () => {
   const stack = []

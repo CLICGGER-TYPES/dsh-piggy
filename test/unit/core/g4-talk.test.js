@@ -2,8 +2,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, buy, chat, hatchEgg, holidayFor, pickLine, slotFor } from '../../../core.js'
-import { LINES, MORE_LINES } from '../../../data.js'
+import { act, buy, chat, hatchEgg, holidayFor, pickLine, slotFor } from '../../../src/host/core.js'
+import { LINES, MORE_LINES } from '../../../src/host/data.js'
 
 /** 本地时间的某一刻。 */
 const at = (y, mo, d, h, mi = 0) => new Date(y, mo - 1, d, h, mi).getTime()

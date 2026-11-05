@@ -9,8 +9,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { decay, hatchEgg, startWork } from '../../../core.js'
-import { JOBS } from '../../../data.js'
+import { decay, hatchEgg, startWork } from '../../../src/host/core.js'
+import { JOBS } from '../../../src/host/data.js'
 import { roll } from '../../../packages/pet-core/src/core/random.js'
 
 const T0 = 1_700_000_000_000

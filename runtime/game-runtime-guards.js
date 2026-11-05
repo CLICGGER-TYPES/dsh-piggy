@@ -6,7 +6,7 @@
  * prepare/flush，正常运行时也不能因此产生写入。会话只认本运行时自己发放的
  * 那一份绑定，不复用同路径的别的猪或运行时。
  */
-import { STORE_INTERNALS } from '../store.js'
+import { STORE_INTERNALS } from '../src/host/store.js'
 import {
   SESSION_BOUNDARY, SessionBoundaryError, assertApplicationUsable, assertLiveSession,
 } from './session-context.js'

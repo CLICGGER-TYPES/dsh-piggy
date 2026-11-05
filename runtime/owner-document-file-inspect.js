@@ -10,7 +10,7 @@ import { lstatSync, mkdirSync, readFileSync, realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { TextDecoder } from 'node:util'
 
-import { STATE_VERSION } from '../core.js'
+import { STATE_VERSION } from '../src/host/core.js'
 import { OWNER_DOCUMENT_VERSION, validateOwnerDocument } from '../store/owner-document.js'
 
 export const HASH_PATTERN = /^[a-f0-9]{64}$/

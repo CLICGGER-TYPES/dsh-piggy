@@ -17,7 +17,7 @@ import {
   takeOff as coreTakeOff,
   exchangeCurrency as coreExchange,
   sayAfter as coreSayAfter,
-} from '../core.js'
+} from '../src/host/core.js'
 
 /** @typedef {import('./api.js').ApiRuntime} ApiRuntime */
 

@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { dirname, join } from 'node:path'
 import { inflateRawSync } from 'node:zlib'
 
-import { REQUIRED_SKIN_SCENES, SKIN_SCENES, skinByKey } from '../data.js'
+import { REQUIRED_SKIN_SCENES, SKIN_SCENES, skinByKey } from '../src/host/data.js'
 import { normalizeSkinContact } from '../packages/pet-core/src/core/skins.js'
 
 const MAX_ZIP = 2 * 1024 * 1024

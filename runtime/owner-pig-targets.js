@@ -1,6 +1,6 @@
 // @ts-check
 /** Owner target 的管理面：注册、列举和新建猪只；共享资源始终留在 owner 权威里。 */
-import { layEgg } from '../core.js'
+import { layEgg } from '../src/host/core.js'
 import { createOwnerDocumentStore } from '../store/owner-document-store.js'
 import { splitLegacyState } from '../store/legacy-projection.js'
 import { isRecord } from './owner-runtime-json.js'

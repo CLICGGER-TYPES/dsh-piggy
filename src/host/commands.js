@@ -3,13 +3,12 @@
  * 斜杠命令与拒绝话术。
  *
  * 只读取状态与数值表，不算业务规则（见 docs/CONVENTIONS.md）。
- * 实现在 src/host/；根目录 commands.js 只保留同名导出的兼容门面。
  * @module dsh-piggy/host/commands
  */
 
-import { ACTIONS, JOBS, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRAIT_ORDER, TRIPS, buy, feed, hatch } from '../../core.js'
-import { FORMS, INTERESTS, formByKey, jobByKey, stageForNextLesson } from '../../data.js'
-import { renderAbout, renderAction, renderBuy, renderHatch, renderNoPig, renderStatus, renderStudyReport, renderTooSoon, renderTripReport, renderUse, renderWeigh, renderWorkRefusal, renderWorkReport } from '../../render.js'
+import { ACTIONS, JOBS, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRAIT_ORDER, TRIPS, buy, feed, hatch } from './core.js'
+import { FORMS, INTERESTS, formByKey, jobByKey, stageForNextLesson } from './data.js'
+import { renderAbout, renderAction, renderBuy, renderHatch, renderNoPig, renderStatus, renderStudyReport, renderTooSoon, renderTripReport, renderUse, renderWeigh, renderWorkRefusal, renderWorkReport } from './render.js'
 
 const str = value => (typeof value === 'string' ? value : '')
 

@@ -7,8 +7,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { hatchEgg, migrate, replyToLine, say, setCatchphrase, setOwnerName } from '../../../core.js'
-import { LINES, PERSONALITIES, REPLY_FOLLOWUPS, REPLY_HAPPINESS } from '../../../data.js'
+import { hatchEgg, migrate, replyToLine, say, setCatchphrase, setOwnerName } from '../../../src/host/core.js'
+import { LINES, PERSONALITIES, REPLY_FOLLOWUPS, REPLY_HAPPINESS } from '../../../src/host/data.js'
 import { ensureDialogue, replyFollowup } from '../../../packages/pet-core/src/core/lines.js'
 
 const T0 = 1_700_000_000_000

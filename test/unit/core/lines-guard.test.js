@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { DATED_HOLIDAYS, LINES, OWNER_TOKEN, PET_PARTS, SOLAR_HOLIDAYS, TALK_SLOTS } from '../../../data.js'
+import { DATED_HOLIDAYS, LINES, OWNER_TOKEN, PET_PARTS, SOLAR_HOLIDAYS, TALK_SLOTS } from '../../../src/host/data.js'
 
 /** 一句台词最多几个字（`[主人]` 按 2 个字算）：气泡宽 268px、两行，主人称呼最长 12 个字也放得下。 */
 const LINE_MAX_CHARS = 30

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg, STATE_VERSION } from '../../../core.js'
+import { hatchEgg, STATE_VERSION } from '../../../src/host/core.js'
 import { exportLegacySaveArchiveAsOwnerDocumentArchive, exportOwnerDocumentArchive, createOwnerDocumentArchiveImporter, OWNER_ARCHIVE_MANIFEST, OWNER_DOCUMENT_ENTRY, OWNER_RECEIPTS_ENTRY } from '../../../runtime/owner-document-archive.js'
 import { createSaveArchive } from '../../../runtime/save-archive.js'
 import { readZip, makeZip } from '../../../runtime/save-zip.js'

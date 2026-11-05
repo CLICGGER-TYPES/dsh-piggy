@@ -1,7 +1,8 @@
 // @ts-check
 /**
- * 发布渠道：GitHub（默认）。scripts/set-channel.mjs 把这个文件复制成根目录的 channel.js
- * 和 apps/desktop/lib/channel.js，游戏和桌面外壳的更新、下载、在线扩展地址都从那里取。
+ * 发布渠道：GitHub（默认）。scripts/set-channel.mjs 把 channels/<渠道>.js 复制成
+ * src/host/channel.js 和 apps/desktop/lib/channel.js，游戏和桌面外壳的更新、下载、
+ * 在线扩展地址都从那里取。
  * @module dsh-piggy/channel
  */
 export const CHANNEL = {

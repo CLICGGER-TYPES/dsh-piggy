@@ -1,9 +1,9 @@
 // @ts-check
 import assert from 'node:assert/strict'
-import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../core.js'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../src/host/core.js'
 import { test } from 'node:test'
-import { ACHIEVEMENTS, FISH } from '../../../data.js'
-import { adopt, hatchEgg, migrate, reset, settleAchievements, achievementsView } from '../../../core.js'
+import { ACHIEVEMENTS, FISH } from '../../../src/host/data.js'
+import { adopt, hatchEgg, migrate, reset, settleAchievements, achievementsView } from '../../../src/host/core.js'
 const NOW = 1_800_000_000_000
 const entry = (state, key) => achievementsView(state).find(item => item.key === key)
 

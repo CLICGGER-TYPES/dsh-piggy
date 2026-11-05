@@ -5,8 +5,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { hatchEgg, layEgg, migrate, pickLine, profileView, setCatchphrase, setMotto, zodiacFor } from '../../../core.js'
-import { PERSONALITIES } from '../../../data.js'
+import { hatchEgg, layEgg, migrate, pickLine, profileView, setCatchphrase, setMotto, zodiacFor } from '../../../src/host/core.js'
+import { PERSONALITIES } from '../../../src/host/data.js'
 
 const T0 = Date.parse('2026-09-30T10:00:00')
 

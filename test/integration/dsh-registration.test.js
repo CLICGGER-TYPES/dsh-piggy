@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { apply } from '../../adapters/dsh/index.js'
-import { hatchEgg, migrate } from '../../core.js'
+import { hatchEgg, migrate } from '../../src/host/core.js'
 import { readStateFile } from '../../store/state-file.js'
 import { createSourceBackup } from '../../adapters/dsh/external-merge.js'
 import { configPath, stateFingerprint, writeConfig } from '../../adapters/dsh/external-files.js'

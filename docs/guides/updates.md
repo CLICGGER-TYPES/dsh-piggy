@@ -16,7 +16,7 @@ DSH 插件不能安全地重写用户本地仓库，所以它只读发布页列�
 
 ## DSH 插件：查看版本和手动安装
 
-DSH 插件形态的「设置 → 更新」会读 `channel.js` 选定的发布页列表：GitHub 渠道读 GitHub Releases，Gitee 渠道读 Gitee Releases。列表只收游戏版本，草稿和 `ext-<key>-<版本>` 扩展发行版会被过滤掉。
+DSH 插件形态的「设置 → 更新」会读 `src/host/channel.js` 选定的发布页列表：GitHub 渠道读 GitHub Releases，Gitee 渠道读 Gitee Releases。列表只收游戏版本，草稿和 `ext-<key>-<版本>` 扩展发行版会被过滤掉。
 
 这条链路**不自动跟版**：列表来自发布页，不是 npm 的 dist-tags；DSH 不会后台升级插件，也不会因为 npm 上的 `latest` 变了就换掉你现在用的版本。装哪一版、什么时候换，都由你在自己的 DSH 里执行命令决定，页面只给命令和发布页入口。
 

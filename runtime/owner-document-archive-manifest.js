@@ -6,12 +6,12 @@
  */
 import { createHash } from 'node:crypto'
 
-import { itemByKey, skinByKey } from '../data.js'
+import { itemByKey, skinByKey } from '../src/host/data.js'
 import { MERGE_RULES_VERSION } from '../packages/pet-core/src/core/merge-rules.js'
 import { REQUIRED_SKIN_SCENES, SKIN_SCENES } from '../packages/pet-core/src/data/skins.js'
 import { STATE_VERSION } from '../packages/pet-core/src/core/constants.js'
 import { OWNER_DOCUMENT_VERSION, ownerDocumentFromLegacyV15, parseOwnerDocument, projectOwnerDocumentToLegacyV15, validateOwnerDocument } from '../store/owner-document.js'
-import { PACKAGE_VERSION } from '../snapshot.js'
+import { PACKAGE_VERSION } from '../src/host/snapshot.js'
 import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 import { readZip, makeZip } from './save-zip.js'
 import { validateWorkEvent, workEventKey } from './work-events.js'

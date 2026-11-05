@@ -8,9 +8,9 @@ import { test } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { adopt, callOffActivity, crown, decay, formStageView, formsView, hatchEgg, lifeStageFor, levelFor, migrate, revive, startWork, STATE_VERSION } from '../../../core.js'
-import { xpForLevel } from '../../../data.js'
-import { createStore } from '../../../store.js'
+import { adopt, callOffActivity, crown, decay, formStageView, formsView, hatchEgg, lifeStageFor, levelFor, migrate, revive, startWork, STATE_VERSION } from '../../../src/host/core.js'
+import { xpForLevel } from '../../../src/host/data.js'
+import { createStore } from '../../../src/host/store.js'
 const NOW = 1_800_000_000_000
 const DAY = 86_400_000
 const king = state => formsView(state).forms.find(form => form.key === 'king')

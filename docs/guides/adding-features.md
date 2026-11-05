@@ -81,7 +81,7 @@
 ### 3.6 联网
 
 - 不新增对第三方服务的请求，除非用户同意（设计稿里写清连哪、发什么、失败怎么办）。不上传玩家数据。
-- 地址走发布渠道（`channel.js`：GitHub / Gitee 两套），**Gitee 渠道不能依赖 GitHub**。
+- 地址走发布渠道（`src/host/channel.js`：GitHub / Gitee 两套），**Gitee 渠道不能依赖 GitHub**。
 - 请求由宿主（Node 端）发、带超时和重试，失败要在界面上说清楚，不能卡住或静默失败（参考扩展下载 `store/ext-runtime.js`）。
 
 ---

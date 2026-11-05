@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url'
 
 /** Everything the desktop host imports, plus what the page loads. */
 export const GAME_FILES = [
-  'package.json', 'core.js', 'data.js', 'store.js', 'store', 'routes.js', 'snapshot.js', 'environment.js', 'runtime', 'commands.js', 'render.js', 'src/host',
-  'packages/pet-core/package.json', 'packages/pet-core/src', 'client.js', 'assets', 'channel.js',
+  'package.json', 'src/host', 'store', 'runtime',
+  'packages/pet-core/package.json', 'packages/pet-core/src', 'client.js', 'assets',
   // 小猪立绘改自 Noto Emoji（Apache 2.0）：许可要跟着素材一起分发
   'THIRD-PARTY.md', 'LICENSE-noto-emoji.txt',
 ]
@@ -26,7 +26,7 @@ export function packGame(root, out) {
     cpSync(from, join(out, entry), { recursive: true })
   }
   // Gitee 渠道：包里的 package.json 主页 / 仓库 / 问题反馈也换成 Gitee，包里不留 GitHub 地址。
-  const channel = readFileSync(join(root, 'channel.js'), 'utf8')
+  const channel = readFileSync(join(root, 'src/host/channel.js'), 'utf8')
   const repoPage = channel.match(/repoPage:\s*'([^']+)'/)?.[1]
   if (/name:\s*'gitee'/.test(channel) && repoPage) {
     const file = join(out, 'package.json')

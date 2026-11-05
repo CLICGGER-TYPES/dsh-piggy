@@ -2,7 +2,7 @@
 /** Background release checks shared by the desktop app and the DSH client. */
 
 import { readStore, writeStore } from './storage.js'
-import { CHANNEL } from '../../channel.js'
+import { CHANNEL } from '../host/channel.js'
 
 const READ_KEY = 'dsh-piggy:update-read'
 const NOTIFIED_KEY = 'dsh-piggy:update-notified'
