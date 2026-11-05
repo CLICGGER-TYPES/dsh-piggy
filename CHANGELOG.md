@@ -7,6 +7,18 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+## [0.37.2-rc.14] — 2026-11-05 · 第三方素材包完成
+
+配套桌面外壳 0.6.8-rc.10，存档仍为 v15。
+
+- 第三方素材包完整链路：manifest assetPacks、安装校验/回滚/卸载、actions/sounds 静态路由、动作与音效注册/播放、扩展卡片试播试听。
+- 第三方动作支持单图 source 与帧序列，trigger.on 支持 pet/feed/play/tap 自动触发。
+- 命名空间固定 ext-<扩展 key>，不能覆盖第一方；路径逃逸、符号链接、大小写冲突、超尺寸/超大小全部拒绝。
+- README 改版与贡献者/致谢恢复；发布前检查清单加入贡献者/贴图核对。
+- 测试目录分层、main.js/shell.js 拆分、M2c 帧动作继续包含。
+
+已知限制：Windows 混合 DPI 双屏、macOS、真实跨设备 LAN/云、360 未验收；Gitee 未发布。
+
 - 扩展卡片只读展示第三方动作/音效包的数量与包名（最多 3 个，超出 `+N`），可试播/试听；扩展停用或素材包不可用时标「不可用」并隐藏按钮，旧快照整块隐藏。
 
 ## [0.37.2-rc.13] — 2026-11-04 · 帧动作与结构收尾
