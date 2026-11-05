@@ -6,10 +6,7 @@ export const CSS_DEX = [
   '.dp-dex-sections .dp-tile{gap:3px}',
   '.dp-dex-tile-art{display:flex;align-items:center;justify-content:center;width:100%;height:100%}',
   '.dp-dex-tile-art .dp-dex-art{width:42px;height:42px}',
-  '.dp-dex-progress{display:block;width:42px;height:3px;margin-top:1px;border-radius:4px;overflow:hidden;',
-  'background:rgba(61,52,40,.12)}',
-  '.dp-dex-progress i{display:block;height:100%;border-radius:inherit;background:var(--tile-c,var(--ac-primary));',
-  'transition:width .25s var(--ac-ease)}',
+
 
   // Forms and skins: three genuinely small collectible cards.
   '.dp-dex-flash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;perspective:700px}',

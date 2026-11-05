@@ -73,11 +73,6 @@ function renderSections(ui) {
       data: { 'data-dex-section': section.key },
       onPick: function () { drillTo(ui, 'dex', section.key) },
     })
-    const progress = el('span', 'dp-dex-progress')
-    const fill = el('i')
-    fill.style.width = (entries.length === 0 ? 0 : Math.round(got / entries.length * 100)) + '%'
-    progress.appendChild(fill)
-    node.appendChild(progress)
     tiles.push(node)
   }
   for (const section of ui.view.extDex ?? []) {
@@ -87,10 +82,7 @@ function renderSections(ui) {
     const node = tile({ emoji: section.emoji, label: section.label, color: section.color || 'orange',
       note: got + '/' + entries.length, data: { 'data-dex-section': key },
       onPick: function () { drillTo(ui, 'dex', key) } })
-    const progress = el('span', 'dp-dex-progress')
-    const fill = el('i')
-    fill.style.width = (entries.length === 0 ? 0 : Math.round(got / entries.length * 100)) + '%'
-    progress.appendChild(fill); node.appendChild(progress); tiles.push(node)
+    tiles.push(node)
   }
   const pager = pagedTiles(ui, 'dex', tiles, { rows: 3 })
   pager.className += ' dp-dex-sections'

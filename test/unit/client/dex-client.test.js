@@ -46,7 +46,7 @@ test('C4 the 图鉴 replaces 加冕 in the same home slot and exposes five secti
   for (const key of ['forms', 'skins', 'fish', 'items', 'souvenirs']) {
     const section = findByAttr(contentOf(dom), 'data-dex-section', key)
     assert.notEqual(section, undefined, key)
-    assert.notEqual(findByClass(section, 'dp-dex-progress'), undefined, key + ' progress')
+    assert.equal(findByClass(section, 'dp-dex-progress'), undefined, key + ' no progress bar')
   }
 })
 
