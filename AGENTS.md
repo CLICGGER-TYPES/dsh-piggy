@@ -7,7 +7,9 @@
 **dsh-piggy**：一只养在桌面上的小猪（复刻 QQ 宠物的玩法，界面是动森 NookPhone 风格）。同一份代码两种形态：
 
 - **DSH 插件**（网页面板）：根目录 `index.js` / `src/host/` / `store/` 是宿主（`src/host/routes.js` 等实现都在 `src/host/`），`src/client/` 打包成 `client.js`。
-- **桌面版**（Electron）：`apps/desktop/` 是外壳，内置一份游戏包（Gitee 的 Windows 安装包除外：首次启动下载，见 HANDOFF 9.4）；游戏包可单独热更新，外壳要下载安装包更新。
+- **桌面版**（Electron）：`apps/desktop/` 是外壳，内置一份游戏包（旧 Gitee Windows 安装包除外：首次启动从 Gitee 下载，见 HANDOFF 9.4；新版本不再走 Gitee）；游戏包可单独热更新，外壳要下载安装包更新。
+
+根目录源码只有 `index.js`；宿主实现全部在 `src/host/`。不要再往根目录加 `.js`，`test/unit/host/conventions.test.js` 会拦。
 
 | 目录 | 内容 |
 |---|---|
@@ -28,15 +30,16 @@
    「规则改了」不等于可以顺手改界面。
 2. **大功能先出完整设计**给用户确认再整体做；修 bug 的版本只修 bug，不夹带新功能、不「预留」半成品。
 3. **提交信息不署 AI 名字**（不加 Co-Authored-By 等）。格式见 [CONVENTIONS.md](docs/CONVENTIONS.md)「Git」。
-4. **发版**：用户验收通过后才发；发版前 CHANGELOG 写好该版小节、README 同步（文字和截图）；GitHub、Gitee 两个渠道都要齐；**Gitee 一律从维护者本机推**（`scripts/gitee-publish.sh`），不让 GitHub Actions 往 Gitee 推。
+4. **发版**：用户验收通过后才发；发版前按 [docs/guides/releases.md](docs/guides/releases.md) 的检查单过一遍：CHANGELOG 该版小节、README 文字和截图、贡献者表、素材出处与许可、版本/tag 一致。GitHub Release 和 npm 是当前渠道；Gitee 不再发布新版本，历史附件只作回退。
    **npm 由维护者确认发布**；可信发布工作流默认只读检查，只有维护者明确选择 `publish` 才能执行，不能未经授权代发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
-5. **不提交凭据**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。
+5. **不提交凭据，也不提交本机路径**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。文档、manifest、PROVENANCE 里不要写 `/home/...`、`/zyx/...`、`C:\Users\...` 这类本机绝对路径，用 `<local-workspace>/...`、`<artwork-workspace>/...` 或仓库相对路径。`test/fixtures/owner-lan-tls/test-only.key` 只是测试私钥，不是生产凭据，但也不要换成真实密钥。
 6. **emoji**：本项目以 emoji 为主——界面图标、物品、气泡、特效、游戏数据都可以用 emoji，参考项目里「不许用 emoji 当图标」之类的规定不适用。
    **不许用 emoji 的是给用户的回复和汇报**（聊天里说明进度、总结时不用）。代码注释、日志、提交信息也不用（见 CONVENTIONS）。
 7. **参考项目和本项目冲突时，一律以本项目现在的做法为准**（设计系统、组件库、动效库都是）。
-8. 改存档结构必须加迁移（`core/upgrades.js` + `STATE_VERSION` + 迁移测试），旧存档不能丢数据。
+8. 改存档结构必须加迁移（`packages/pet-core/src/core/upgrades.js` + `STATE_VERSION` + 迁移测试），旧存档不能丢数据。
 9. **需要图就直接用 AI 出**：立绘、动作图、图标都可以用你自带的生图工具（如 codex 的 `image_gen`）出，不用手画、不用描成 SVG。
    交**透明底 PNG**（离线抠底，不靠运行时滤镜）、缩到显示尺寸约 2 倍（立绘长边 ≤ 256px）、记 `PROVENANCE.md`；**图要用户过目才进 `assets/`**。
+   新素材必须在 [LICENSE-ASSETS.md](LICENSE-ASSETS.md) 的目录表登记许可：AI 生成的场景/道具默认 CC BY 4.0，Noto 衍生猪图 Apache 2.0，字体 OFL 1.1；不能只写 `PROVENANCE.md` 不写许可，也不能把用户只授权本项目使用的东西写成开源。
    规格见 [adding-features.md](docs/guides/adding-features.md) 3.5。
    **后续小游戏出图默认清爽平涂纸感**：用户已选定菜园 A 作为场景与物件的画风基准，按 [game-style.md](docs/art/game-style.md) 与其中已确认参考图执行；不据此改动已批准的布局或小猪结构。
    **小猪、形态、皮肤、动作只有一套无描边平涂画风**：2026-10-13 用户要求去掉黑色描边和画风设置，181张由旧版 1:1 重画。按 [pig-style.md](docs/art/pig-style.md) 保存逐字提示词、分类素材并逐图自查；不擅自换耳型、姿势、服饰或道具。先出样图给用户看，通过后再批量制作。
@@ -106,7 +109,12 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | 了解现状、发版流程、测试机 | [docs/HANDOFF.md](docs/HANDOFF.md) |
 | **现在该做什么、有什么待用户决定、已知问题** | [docs/ROADMAP.md](docs/ROADMAP.md)（做完一项就更新它） |
 | 加图、找图、图的出处 | [docs/ASSETS.md](docs/ASSETS.md) |
+| **素材许可、哪些能再分发** | [LICENSE-ASSETS.md](LICENSE-ASSETS.md) |
+| 第三方参考、运行时依赖、商标 | [THIRD-PARTY.md](THIRD-PARTY.md) |
 | **做任何新功能**（新玩法、音效、动画、走路、动图、联网……）：流程、放哪、预留的扩展点、完工清单 | [docs/guides/adding-features.md](docs/guides/adding-features.md) |
+| 加动作、音效素材包（pack.json、单图/帧序列、试播） | [docs/guides/adding-actions.md](docs/guides/adding-actions.md)、[docs/guides/adding-sounds.md](docs/guides/adding-sounds.md) |
+| 第三方素材包格式、安装与校验 | [docs/design/asset-packs-m3.md](docs/design/asset-packs-m3.md) |
+| 多 agent / 外部桌宠 | [docs/guides/multi-agent-pet.md](docs/guides/multi-agent-pet.md)、[docs/guides/external-pet.md](docs/guides/external-pet.md) |
 | 编码规范、提交格式 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
 | 写/改在线扩展 | [docs/guides/writing-extensions.md](docs/guides/writing-extensions.md) |
 | **动钱、动数值**（金币进出、扩展币钱包、收入区间；改完跑 `node tools/economy-sim.mjs`） | [docs/design/economy.md](docs/design/economy.md)、[docs/numbers/J1-economy.md](docs/numbers/J1-economy.md) |
@@ -120,4 +128,5 @@ cd apps/desktop && npm install && npm start           # 跑桌面版
 | **参考过哪些项目**（玩法、卡片、界面、动效库……各自许可和能怎么用；做新东西先查） | [docs/guides/references.md](docs/guides/references.md) |
 | 立绘、皮肤（可以直接 AI 出图，规格见 adding-features 3.5） | [docs/ART-SPEC.md](docs/ART-SPEC.md)、[docs/guides/skin-pack-format.md](docs/guides/skin-pack-format.md) |
 | 画「千奇百怪的小猪」（猪 + emoji 主题） | [docs/design/pig-kitchen-art.md](docs/design/pig-kitchen-art.md)（规范、许可、验收；图要用户确认） |
-| 开发环境、打包、Gitee 渠道 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| 开发环境、打包、发布渠道 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| 发布渠道、版本与发布前检查单 | [docs/guides/releases.md](docs/guides/releases.md) |

@@ -2,6 +2,8 @@
 
 `assets/` 每个文件按本页登记；`test/unit/host/assets-registry.test.js` 检查漏登记和空登记。当前只有一套无描边平涂透明 PNG，2026-10-13 由旧版 1:1 重画。
 
+素材许可按目录单独授权，**不自动适用代码的 MIT**：小猪图 Apache 2.0，AI 生成场景/道具 CC BY 4.0，字体 OFL 1.1。完整表见 [LICENSE-ASSETS.md](../LICENSE-ASSETS.md)。
+
 ## 桌面应用标识
 
 2026-10-27 用户指定后续安装器、桌面/开始菜单快捷方式与应用图标使用其提供的猪脸图片。原图和哈希见[图标出处](../apps/desktop/artwork/PROVENANCE.md)；`apps/desktop/build/icon.png` 为512px应用图标，`icon.ico` 为Windows六档图标，`tray.png` 为64px托盘图标。只等比缩放和透明补方，不改图中五官或颜色；此项为桌面打包资源，不属于下列游戏立绘。
@@ -17,7 +19,7 @@
 | 猪主题徽章 | `pigs/badges/badge-pig-<key>.png` | 28 | 成就与扩展成就 |
 | 来源清单 | `pigs/manifest.json`、`pigs/PROVENANCE.md` | — | 版本、逐字提示词、原图和成品哈希、离线处理步骤 |
 | 主菜单图标 | `ui-*.svg` | 15 | 历史未使用素材，保留现状 |
-| 字体 | `piggy-emoji.woff2` | 1 | 网页 emoji 子集，Noto Color Emoji / OFL |
+| 字体 | `piggy-emoji.woff2` | 1 | 网页 emoji 子集，Noto Color Emoji / OFL；许可见 `piggy-emoji-LICENSE.txt` |
 
 共183张 PNG，长边不超过256px，总计 1,831,815 字节。透明背景保留，原图不进游戏包。
 
@@ -50,7 +52,6 @@ fishing/PROVENANCE.md
 animations/pet-hand/*.webp
 animations/pet-hand/manifest.json
 animations/pet-hand/PROVENANCE.md
-animations/piglet-pet/*.webp
 animations/piglet-pet/manifest.json
 animations/piglet-pet/PROVENANCE.md
 pigs/base/*/*.png
@@ -67,15 +68,16 @@ sounds/*/pack.json
 PROVENANCE.md
 ui-*.svg
 piggy-emoji.woff2
+piggy-emoji-LICENSE.txt
 ```
 
 - 菜园第4轮：已审 farm-v4-fix4 场景/UI V2接入扩展；来源、加工规则和逐图哈希见 extensions/farm/PROVENANCE.md、fix4-art-pack.json，原稿与提示词保留在项目素材工作区。
 
 - 菜园整体重画（4.0.8，未发布）：大农场 B、小农场 C1，新增 7 张花叶/木纹/控件图片；出处、逐图哈希见 extensions/farm/PROVENANCE.md、redraw-art-pack.json。其余容器、标题、按钮采用原生 CSS。
 
-## 普通猪摸摸动画（候选，2026-10-21）
+## 普通猪摸摸动画（历史，2026-10-21）
 
-v07直接复用用户提供的原GIF：五帧112×112、每帧60ms，排成560×112无损 `animations/piglet-pet/reference.webp`，10,368字节，五格RGBA与GIF完全一致。包含手和猪，运行时固定比例播放；关闭小手改用原idle.png。此前重制图集均保留在研究备份，不再随游戏加载。来源与哈希见对应PROVENANCE.md和manifest.json，详见[实现与验证](design/pet-hand-snap.md)。
+v07 曾直接复用用户提供的原 GIF：五帧 112×112、每帧 60ms，排成 560×112 无损 `animations/piglet-pet/reference.webp`，10,368 字节，五格 RGBA 与 GIF 完全一致。该图集是原 GIF 的逐像素帧，权利链不属于本项目；2026-11-05 起已从仓库和发布包移除，`manifest.json` / `PROVENANCE.md` 只保留历史哈希和出处，不再登记为可分发素材。当前运行时使用 `animations/pet-hand/hand.webp`（AI 生成的独立手层）叠加原猪立绘，关闭小手时回到原 `idle.png`。详见[实现与验证](design/pet-hand-snap.md)。
 
 ## 高清独立摸摸手（2026-10-22，已审核9%受压候选）
 

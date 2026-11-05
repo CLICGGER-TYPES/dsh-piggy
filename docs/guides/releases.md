@@ -10,7 +10,7 @@
 | 菜园扩展 | 4.0.10 | 4.5.0；经典版 3.2.4 |
 
 - 稳定版：[GitHub v0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
-- 当前预览版：[GitHub v0.37.2-rc.11](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.11)
+- 当前预览版：[GitHub v0.37.2-rc.14](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.14)
 - 全部版本与逐版本变更：[Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases) / [CHANGELOG](../../CHANGELOG.md)
 
 RC 只更新 `rc` 标签，不改变稳定入口；预览版默认折叠在更新列表里，不弹气泡、不亮红点，也不会自动安装。
@@ -35,7 +35,7 @@ GitHub Release 的资产以 `SHA256SUMS` 为准。Windows 安装器另附五项�
 dsh plugin --profile web add dsh-piggy
 
 # 精确预览版
-dsh plugin --profile web add dsh-piggy@0.37.2-rc.11
+dsh plugin --profile web add dsh-piggy@0.37.2-rc.14
 ```
 
 npm 由维护者按版本手动发布，GitHub Release 与 npm 可能相差一段时间。DSH 插件不会自动跟随 npm 升级，装哪一版由你决定。
@@ -69,8 +69,10 @@ Windows 安装版和 Linux AppImage 支持 App 内下载并重启安装外壳；
 
 - [ ] 新 PR 作者是否进入 README 贡献者表
 - [ ] 新贴图/素材是否写了出处、PROVENANCE 和致谢
+- [ ] 新素材是否在 [LICENSE-ASSETS.md](../../LICENSE-ASSETS.md) 登记许可；AI 图、Noto 衍生猪图、字体是否用了正确许可
+- [ ] 仓库当前树是否没有本机绝对路径（`/home/`、`/zyx/`、`C:\Users\`）；旧提交里的历史路径是否需要单独处理
 - [ ] CHANGELOG 是否提到对应贡献
 - [ ] README 主图是否为当前版本实拍，不混用旧版本截图
 - [ ] 游戏版本、桌面外壳版本、tag 三者一致
 - [ ] Release 资产齐全，并上传 farm/classic 扩展与 `SHA256SUMS`
-- [ ] npm 主包与别名包版本一致，`rc` 标签手动发布
+- [ ] npm 主包与别名包版本一致，`rc` 标签手动发布；包内包含 `LICENSE-ASSETS.md`、字体许可和素材

@@ -166,7 +166,7 @@ export function createExternalPanel(options) {
       const allowed = /^[a-z][a-z0-9-]{0,63}(?:\.(?:svg|png))?$/.test(name) ||
         /^custom-[a-z0-9-]{1,41}(?:\.(?:png|svg))?$/.test(name) ||
         /^feedback\/[a-z][a-z0-9-]{0,63}\.png$/.test(name) ||
-        name === 'animations/piglet-pet/reference.webp' || name === 'animations/pet-hand/hand.webp'
+        name === 'animations/pet-hand/hand.webp'
       if (!allowed) return null
       try {
         const response = await withPair(() => client.art(name))

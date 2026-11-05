@@ -1,4 +1,4 @@
-本项目的小猪立绘（assets/piglet.svg 及在它基础上改画的各张猪图）参照 Noto Emoji 的 🐖（U+1F416）重绘，
+本项目的小猪立绘（assets/pigs/**/*.png 及在它们基础上改画的各张猪图）参照 Noto Emoji 的 🐖（U+1F416）重绘，
 属于 Noto Emoji 图片素材的衍生作品。Noto Emoji 的图片素材按 Apache License 2.0 授权，原始声明和许可全文如下。
 来源：https://github.com/googlefonts/noto-emoji （2D/svg/emoji_u1f416.svg）
 

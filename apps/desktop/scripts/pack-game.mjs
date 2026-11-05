@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url'
 export const GAME_FILES = [
   'package.json', 'src/host', 'store', 'runtime',
   'packages/pet-core/package.json', 'packages/pet-core/src', 'client.js', 'assets',
-  // 小猪立绘改自 Noto Emoji（Apache 2.0）：许可要跟着素材一起分发
-  'THIRD-PARTY.md', 'LICENSE-noto-emoji.txt',
+  // 素材许可要跟着游戏包一起分发：代码 MIT、猪图 Apache 2.0、AI 图 CC BY 4.0、字体 OFL
+  'THIRD-PARTY.md', 'LICENSE', 'LICENSE-ASSETS.md', 'LICENSE-noto-emoji.txt',
 ]
 
 /** Copy the game files from the repo root into `out`. */
