@@ -82,20 +82,6 @@ for (const [action, daily, line] of [
   })
 }
 
-test('an old save can take off its worn scarf and hat without a dress shop shelf', async () => {
-  const scarf = { key: 'scarf', label: '围巾', emoji: '🧣', kind: 'dress', slot: 'neck', worn: true, owned: true }
-  const hat = { key: 'strawhat', label: '草帽', emoji: '👒', kind: 'dress', slot: 'head', worn: true, owned: true }
-  const { dom, calls } = await mount({ status: { ...SNAPSHOT, dress: [scarf, hat], shop: [scarf, hat] } })
-  openPanel(dom, 'bag')
-  assert.equal(findByAttr(contentOf(dom), 'data-bag', 'dress'), undefined)
-  findByAttr(contentOf(dom), 'data-pager-dot', 'bag:1').fire('click')
-  findByAttr(contentOf(dom), 'data-bag', 'worn').fire('click')
-  assert.match(contentOf(dom).allText(), /围巾.*脱下.*草帽.*脱下/)
-  findByAttr(contentOf(dom), 'data-take-off', 'scarf').fire('click')
-  await settle()
-  assert.deepEqual(JSON.parse(calls.at(-1).body), { action: 'wear', item: 'scarf', on: false })
-})
-
 test('dex skin action sits in a spaced, centered row', async () => {
   const skin = { key: 'skin-angel', label: '天使猪', emoji: '😇', art: 'skin-angel', acquired: true, count: 1, description: '云朵上的猪' }
   const { dom } = await mount({ status: { ...SNAPSHOT, dex: { forms: [], skins: [skin], fish: [], items: [], souvenirs: [] },

@@ -13,7 +13,7 @@ import { renderHoloSection } from './dex-holo.js'
 const SECTIONS = []
 const ITEM_KINDS = [
   ['found', '已发现'], ['all', '全部'], ['food', '食物'], ['bath', '洗浴'], ['toy', '玩具'],
-  ['medicine', '药品'], ['promotion', '晋升'], ['dress', '装扮'],
+  ['medicine', '药品'], ['promotion', '晋升'],
 ]
 
 /** Register or replace one collection category. */
@@ -41,7 +41,7 @@ export function renderDexTab(ui) {
   if (ext) { renderExtPlain(ui, ext); return }
   const section = SECTIONS.find(entry => entry.key === picked)
   if (section === undefined) return drillTo(ui, 'dex', null)
-  const entries = ui.view.dex[section.key] ?? []
+  const entries = (ui.view.dex[section.key] ?? []).filter(entry => section.key !== 'items' || entry.kind !== 'dress')
   if (section.key === 'achievements') return renderAchievements(ui, entries)
   const detail = entries.find(entry => entry.key === ui.drill.pick)
   if (detail !== undefined) return renderDetail(ui, section, detail)
@@ -65,7 +65,7 @@ function renderSections(ui) {
   const off = offParts(ui.view).dexSections
   for (const section of SECTIONS) {
     if (off.has(section.key)) continue // 扩展关掉了（比如钓鱼）：这一页先不出现，收集记录保留
-    const entries = ui.view.dex[section.key] ?? []
+    const entries = (ui.view.dex[section.key] ?? []).filter(entry => section.key !== 'items' || entry.kind !== 'dress')
     const got = entries.filter(entry => entry.acquired).length
     const node = tile({
       emoji: section.emoji, label: section.label, color: section.color,

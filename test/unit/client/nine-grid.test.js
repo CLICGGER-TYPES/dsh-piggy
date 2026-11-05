@@ -25,10 +25,9 @@ test('打工/学习固定九宫格，背包和旅行放不下时按主屏分页'
   const pages = contentOf(bag.dom).querySelectorAll('.dp-pager-page')
   assert.equal(pages.length, 2, '背包放不下就分 2 页')
   assert.equal(pages[0].children.length, 9, '第一页 9 格')
-  assert.equal(pages[1].children.length, 2, '第二页已穿戴 + 钱包')
+  assert.equal(pages[1].children.length, 1, '第二页只有钱包')
   assert.equal(contentOf(bag.dom).querySelectorAll('.dp-home-dot').length, 2, '两页各有圆点')
   assert.ok(findByAttr(contentOf(bag.dom), 'data-bag', 'bait'), '鱼饵在第一页')
-  assert.ok(findByAttr(contentOf(bag.dom), 'data-bag', 'worn'), '已穿戴在第二页')
   assert.ok(findByAttr(contentOf(bag.dom), 'data-bag', 'wallet'), '钱包在第二页')
 
   const trips = Array.from({ length: 12 }, (_, index) => ({

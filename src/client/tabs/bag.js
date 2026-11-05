@@ -25,7 +25,6 @@ var STAT_SHELVES = ['food', 'bath', 'toy', 'medicine']
 
 /** The non-shelf categories: what they are called and how they look. */
 var EXTRA = {
-  worn: { emoji: '👕', label: '已穿戴', color: 'pink' },
   diary: { emoji: '📔', label: '日记', color: 'brown' },
   souvenir: { emoji: '🎁', label: '纪念品', color: 'blue' },
   fish: { emoji: '🐟', label: '鱼篓', color: 'teal' },
@@ -39,8 +38,7 @@ function shortDay(day) {
 
 export function renderBagTab(ui) {
   var open = ui.drill.bag
-  if (open === 'worn') renderWorn(ui)
-  else if (open === 'diary') renderDiary(ui)
+  if (open === 'diary') renderDiary(ui)
   else if (open === 'souvenir') renderSouvenirs(ui)
   else if (open === 'fish') renderFish(ui)
   else if (open === 'wallet') renderWallets(ui)
@@ -59,8 +57,8 @@ function ownedOf(ui, kind) {
 
 function renderCategories(ui) {
   var tiles = []
-  // 前 9 格是 6 个消耗品货架 + 日记 / 纪念品 / 鱼篓；已穿戴和钱包多出来，
-  // 跟主屏一样翻到第 2 页，不再另做「更多」层。
+  // 前 9 格是 6 个消耗品货架 + 日记 / 纪念品 / 鱼篓；钱包多出来，
+  // 跟主屏一样翻到第 2 页。
   CONSUMABLES.forEach(function (kind) {
     var items = ownedOf(ui, kind)
     var count = items.reduce(function (sum, item) { return sum + num(ui.view.inventory[item.key], 0) }, 0)
@@ -75,7 +73,7 @@ function renderCategories(ui) {
     }))
   })
   var counts = bagCounts(ui)
-  ;['diary', 'souvenir', 'fish', 'worn', 'wallet'].forEach(function (key) {
+  ;['diary', 'souvenir', 'fish', 'wallet'].forEach(function (key) {
     var spec = EXTRA[key]
     tiles.push(tile({
       emoji: spec.emoji, label: spec.label, color: spec.color,
@@ -89,30 +87,10 @@ function renderCategories(ui) {
 
 function bagCounts(ui) {
   return {
-    worn: ui.view.dress.filter(function (item) { return item.worn }).length,
     diary: ui.view.diary.length,
     souvenir: ui.view.pig.souvenirs.length,
     fish: ui.view.fishing.bag.length,
     wallet: (ui.view.wallets || []).length,
-  }
-}
-
-function renderWorn(ui) {
-  var worn = ui.view.dress.filter(function (item) { return item.worn })
-  drillHeader(ui, 'bag', '👕 已穿戴', worn.length + ' 件')
-  if (worn.length === 0) { ui.content.appendChild(el('div', 'dp-empty', '现在没有穿戴装扮')); return }
-  for (var i = 0; i < worn.length; i += 1) {
-    (function (item) {
-      var row = el('div', 'dp-item')
-      row.appendChild(el('span', 'dp-item-emoji', item.emoji))
-      row.appendChild(el('span', 'dp-grow', item.label + (item.slotLabel ? ' · ' + item.slotLabel : '')))
-      var off = button('dp-mini', { 'data-take-off': item.key }, function () {
-        ui.send('wear', { item: item.key, on: false })
-      })
-      off.textContent = '脱下'
-      row.appendChild(off)
-      ui.content.appendChild(row)
-    })(worn[i])
   }
 }
 
