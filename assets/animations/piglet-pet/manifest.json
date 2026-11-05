@@ -1,5 +1,7 @@
 {
   "revision": "original-gif-v07",
+  "distribution_status": "metadata-only",
+  "distribution_note": "reference.webp removed on 2026-11-05: the source GIF is not licensed for redistribution. This manifest is a historical record only.",
   "source": "research/blender-piglet-20261020/reference-motion-20261021/user-reference.gif",
   "source_sha256": "64bb1ab1895df6a0912d62623557bb5081ea3c6d3ebfd798065b2ab5379c01e1",
   "frame_size": [

@@ -60,13 +60,15 @@ manifest 覆盖 192 条资源；提交的 `production-index.json` 只保留 8 �
 
 `animation:piglet-pet` 的出处边界：该条历史 manifest 记录的原始 GIF 是仓库外的研究资料，在固定基线仓库中不存在，无法按仓库路径解析；索引因此只链接仓库内现有的 `assets/animations/piglet-pet/manifest.json` 和 `assets/animations/piglet-pet/PROVENANCE.md`，不提供也不声称存在可访问的原稿。索引移除不可解析的可选 `sourceRef` 只是字段清理，不改变该资源既有审核状态，也不表示任何新的批准。
 
+2026-11-05 许可收口：`assets/animations/piglet-pet/reference.webp` 是原 GIF 的逐像素帧图集，权利链不属于本项目，已从仓库和发布包移除，且不授予再分发许可。`production-index.json` 保留 2026-10-28 基线的历史记录（其中 `path` 指向当时的文件），当前仓库只保留 `manifest.json` / `PROVENANCE.md`；不要把该条当成可分发资源。
+
 样例覆盖：3 条去腮红幼年猪（含 review 绑定与 `supersedes`）、1 条 `pending` 猪动作、1 条 `reviewed` 徽章、1 条钓鱼场景、2 个动画图集。其余资源仍由 manifest 与实际文件散列支持；需要全量核对时按同一算法重新生成，不把 192 条都提交成台账。
 
 已核对：
 
 - 猪 manifest 183/183 条路径与文件 SHA256 一致；
 - 钓鱼 7/7 条 `export_sha256` 与实际文件一致；
-- 动画 2/2 个文件散列与 manifest 一致；
+- 动画 2/2 个文件散列与 manifest 一致（2026-10-28 基线；其中 `piglet-pet` 图集已于 2026-11-05 移除）；
 - art key 183/183、revision 前缀 183/183 一致。
 
 不在本索引范围：字体 `piggy-emoji.woff2`、历史 `ui-*.svg`、桌面图标/托盘、扩展美术包（各自有 manifest）、`docs/art/reviews` 下的历史审图图、仓库外的原稿和未批准候选。它们需要各自的出处记录，不能拿本索引冒充全覆盖。

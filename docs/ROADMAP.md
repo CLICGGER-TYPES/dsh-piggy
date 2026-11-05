@@ -207,7 +207,7 @@
 - 用户要求先验收实际安装图标，再开始RC发布与夸克交付准备。候选游戏0.37.2-rc.4 / 外壳0.6.8-rc.3；尚未创建标签或发布npm、GitHub、Gitee、夸克。
 - 修正正式Windows发行工作流仍走旧打包命令的遗漏：完整NSIS采用五项离线配置，便携版单独打包，检查更新清单指向NSIS；安装器和卸载程序显式采用指定ICO。
 - 云端Windows验收覆盖Shell实际解码安装文件/应用/卸载程序/桌面与开始菜单快捷方式，以及原生桌面、开始菜单和托盘截图；原有16项安装器验收保留。Linux直接AppImage与真实DSH的17项重新验收，均不用本地物理GUI或新建本地VM。
-- 统一审阅与待交付文件：`/zyx/agents/codex/deliverables/piggy-review/rc4-preparation-20261027/`；过程日志放独立piggy-work目录。实际截图、受测源码、原始报告及SHA256统一保存；开始菜单/托盘XAML不可访问性通过实际截图与原生操作逐图复核，不冒充UIA自动通过。
+- 统一审阅与待交付文件：`<artwork-workspace>/deliverables/piggy-review/rc4-preparation-20261027/`；过程日志放独立piggy-work目录。实际截图、受测源码、原始报告及SHA256统一保存；开始菜单/托盘XAML不可访问性通过实际截图与原生操作逐图复核，不冒充UIA自动通过。
 - 公开扩展目录继续保留已发布版本，五项候选包逐件对照暂存目录哈希；经典菜园3.1.2是独立手动导入变体，不进入安装器五项选择。先发布附件并回读核验，再提升公开目录。
 - [Windows安装器40494946162](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40494946162)18项通过，受测源码2ddfe7f；实际安装器/应用/卸载程序/桌面及开始菜单快捷方式Shell图标一致，桌面/开始菜单/托盘实拍逐图通过。两类系统XAML无法由UIA读取的限制已如实记录，不影响真实鼠标与抓屏验收。
 - [Linux直接AppImage与DSH40493209873](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40493209873)17项通过，受测131018a、pageerror0；[CI40494621188](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40494621188)每平台2226项，Windows2222通过/4跳过、Linux2214通过/12跳过，零失败。干净构建与提交产物一致检查已接入CI和发布流程；本次client.js仅统一依赖路径注释，执行代码不变，最终与云端受测bundle逐字节一致。
@@ -240,7 +240,7 @@
 - 已完成：安装器PR [#22](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/22)已合并，保留20/21；工程验收源码5ab135d，合并58cb3dd。公开版本号未改，不创建新RC、不上传夸克。
 - [Windows/Linux回归](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40468911150)：每平台2068项，Windows2064通过/4平台跳过，Linux2056通过/12平台跳过，零失败；构建、类型检查通过。
 - [Windows原生验收](https://github.com/CLICGGER-TYPES/dsh-piggy/actions/runs/40468906846)：完整安装器构建成功，14项流程通过，覆盖全不选、单选、全选、返回保留勾选、取消、覆盖改选、重启、已有扩展版本/进度、默认piggy路径迁移、首次孵化和卸载保档。实际安装版使用不可连接代理；仅原生鼠标输入，可访问树只读定位。人工查看默认/单选/全选及孵化后菜单截图，五项完整显示。测试环境Windows Server 2025单屏100%，不据此声称混合DPI或macOS通过。
-- 证据与工程安装包：`/zyx/agents/codex/deliverables/piggy-work/windows-installer-20261027/`；用户审阅文件统一放`/zyx/agents/codex/deliverables/piggy-review/windows-installer-20261027/`。本轮未操作个人游玩存档、未启动本地测试VM。后续新RC、夸克交付按用户要求另议。
+- 证据与工程安装包：`<artwork-workspace>/deliverables/piggy-work/windows-installer-20261027/`；用户审阅文件统一放`<artwork-workspace>/deliverables/piggy-review/windows-installer-20261027/`。本轮未操作个人游玩存档、未启动本地测试VM。后续新RC、夸克交付按用户要求另议。
 
 ## 2026-10-27 桌面默认数据目录整理（代码修复，未发布）
 
@@ -259,7 +259,7 @@
 - Gitee新5件公开下载SHA256验证通过，旧RC2两个安装器和rc.yml已移除；旧游戏包和在线扩展继续保留。夸克历史现14版本/75文件，其中6版本有完整Windows双包；[历史下载](https://pan.quark.cn/s/a4484e98dec8)。Quark不作为自动更新二进制源。
 - 边界：用户原始Windows500%自动消失/双击无响应尚未同条件复现，不因恢复入口可用而结案；macOS、混合DPI多屏、实时系统缩放切换未完成原生验收。Gitee瘦安装包未另做原生首次下载验收。六款新猪与钓鱼新动作继续暂缓。
 - 本轮自建Windows克隆及其磁盘/NVRAM/TPM、Linux私有应用和临时文件已清理；原Windows保持关闭、原Linux保持运行。用户本地试用实例按其要求启动了上次同步版本，未自动替换为RC3。
-- 完整证据：`/zyx/agents/codex/deliverables/piggy-work/rc3-20261026/QA.md`、`github-digests-final.json`、`npm-published-verified.json`、`gitee-published.json`、`gitee-cleanup-verified.json`及两份cleanup.json。
+- 完整证据：`<artwork-workspace>/deliverables/piggy-work/rc3-20261026/QA.md`、`github-digests-final.json`、`npm-published-verified.json`、`gitee-published.json`、`gitee-cleanup-verified.json`及两份cleanup.json。
 
 - 补充：RC3 已同步[夸克预发布 Windows 完整版](https://pan.quark.cn/s/62eefaa3c173)，共10文件，远端名称/大小与8个官方附件校验值已核对。另以独立 DSH_HOME 直接安装公开 npm 精确版本，在 Linux VM 真实 DSH 0.2.1-rc.2 中完成激活、背包喂食、带回复台词接话、浏览器刷新和宿主重启；口头禅旧默认迁移与物品消耗保留通过，浏览器 pageerror 0。回复前置条件为私有存档饱食90与台词历史，随后喂食和回复均用原生鼠标，不伪造响应。证据 `deliverables/piggy-work/dsh-public-rc3-20261026/`。
 
@@ -272,7 +272,7 @@
 - [x] 用户要求旧国内版本归档夸克；13 个版本、68 个文件、1,006,745,458 字节上传完成并逐目录核对名称/大小，其中 5 个版本有完整 Windows 两包。位置 `piggy/历史版本/国内旧版归档-20261026`，[下载](https://pan.quark.cn/s/a4484e98dec8)。早期已无安装器的版本不虚称完整安装版；旧游戏包是现有瘦安装器首次启动依赖，继续保留在 Gitee。
 - README 区分 Gitee 当前 RC 安装器与 GitHub/夸克正式版入口。Gitee 桌面更新模块实际刷新可列出 rc.2，兼容性检查未阻止安装；测试版仍需手动展开，不新增 RC 推送策略。
 - 游戏 `0.37.2-rc.2`，外壳 `0.6.8-rc.1`，存档 v15。本轮未新增 Windows 原生安装器验收。
-- 发布、下载校验、备份及清理证据：`/zyx/agents/codex/deliverables/piggy-work/gitee-rc2-20261026/`；以 `published.json` 和 `cleanup-verified.json` 为完成凭据。
+- 发布、下载校验、备份及清理证据：`<artwork-workspace>/deliverables/piggy-work/gitee-rc2-20261026/`；以 `published.json` 和 `cleanup-verified.json` 为完成凭据。
 
 ## 后续安排（2026-10-26）
 
@@ -296,12 +296,12 @@ npm双包可信发布、README整理、rc.2 DSH网页激活修复已完成，不
 - [x] GitHub三平台构建成功；14个附件下载核对SHA256及更新清单SHA512。npm包与CI包逐字节一致，所有VM受测文件一致，仅npm自动多带一份docs/README.md。335个游戏文件核对，唯一差异为编译器模块路径注释。
 - [x] 外壳代码/版本仍0.6.8-rc.1，存档v15。新生成安装器本轮未再原生安装验收；本轮原生界面验收仅DSH网页。不切Gitee或网盘。
 - 发布：https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.2
-- 证据：`/zyx/agents/codex/deliverables/piggy-work/release-rc2-20261025/`；审阅：`/zyx/agents/codex/deliverables/piggy-review/rc-0.37.2-rc.2/`。
+- 证据：`<artwork-workspace>/deliverables/piggy-work/release-rc2-20261025/`；审阅：`<artwork-workspace>/deliverables/piggy-review/rc-0.37.2-rc.2/`。
 
 
 ## 2026-10-25 DSH网页RC激活失败反馈（rc.2已修复发布）
 
-- [x] 用户已更正为浏览器激活失败，其他插件的服务端未激活提示与猪无关。实际npm rc.1在Linux VM浏览器复现，原因为Cordis Context被当作舞台选项读取stage。修复提交30296b2（fix/dsh-client-activation-20261025），1889测试/类型检查、VM激活/右键面板/刷新通过。已发布GitHub及npm双包0.37.2-rc.2；公开rc.1不改写，GitHub发布说明保留已知问题。证据：`/zyx/agents/codex/deliverables/piggy-work/dsh-activation-20261025/REPORT.md`。
+- [x] 用户已更正为浏览器激活失败，其他插件的服务端未激活提示与猪无关。实际npm rc.1在Linux VM浏览器复现，原因为Cordis Context被当作舞台选项读取stage。修复提交30296b2（fix/dsh-client-activation-20261025），1889测试/类型检查、VM激活/右键面板/刷新通过。已发布GitHub及npm双包0.37.2-rc.2；公开rc.1不改写，GitHub发布说明保留已知问题。证据：`<artwork-workspace>/deliverables/piggy-work/dsh-activation-20261025/REPORT.md`。
 
 ## 正式版 0.37.1 / 外壳 0.6.7（2026-10-21）
 

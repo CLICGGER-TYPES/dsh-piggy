@@ -60,6 +60,6 @@ node --test apps/desktop/test/desktop-stage-geometry.test.js apps/desktop/test/d
 
 - 仓库：apps/desktop/{launcher.js,stage/{main,bootstrap,present,lease,geometry}.js}；src/client/stage-{bridge,shell,position}.js。
 - 修正承接报告：/tmp/piggy-next-20261023/stage-fix-report.md，仅作定位线索，结论已对照源码。
-- 早期实验：/zyx/agents/codex/deliverables/piggy-tonight-20261022/stage-experiment/evidence/ASSESSMENT.md。
+- 早期实验：<artwork-workspace>/deliverables/piggy-tonight-20261022/stage-experiment/evidence/ASSESSMENT.md。
 - Electron 官方 [setShape](https://www.electronjs.org/docs/latest/api/base-window#winsetshaperects-windows-linux-experimental)：形状同时约束绘制与输入。
 - Electron 官方 [setIgnoreMouseEvents](https://www.electronjs.org/docs/latest/api/base-window#winsetignoremouseeventsignore-options)：鼠标穿透与键盘焦点的差别，以及平台应用时机。

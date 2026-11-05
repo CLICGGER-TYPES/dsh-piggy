@@ -30,4 +30,4 @@ Linux截图上方另有虚拟机原先已运行的测试猪；本次使用独立
 200%胖猪打工图在旧定位逻辑下，方形布局盒仍在屏内，实际立绘右侧却被裁掉。现按两套最大可见宽度共同预留并限制中心位置，放大或拖到边缘时整体向内夹回；同一尺寸换动作、皮肤或画风不再因此移动。最终Linux和Windows均完整显示尾巴及电脑，补充了定位回归测试。
 
 原尺寸截图、连接检查结果与逐帧源文件：
-`/zyx/codex/dsh-piggy-artwork/no-outline/2026-10-11/runtime-qa/`。
+`<artwork-workspace>/dsh-piggy-artwork/no-outline/2026-10-11/runtime-qa/`。

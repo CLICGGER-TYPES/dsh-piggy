@@ -22,11 +22,19 @@ SOFTWARE.
 
 ---
 
+The MIT license above covers the source code and documentation in this
+repository. Artwork, fonts and other assets are licensed separately; see
+LICENSE-ASSETS.md. In particular, the pig artwork under assets/pigs/ is
+derived from Noto Emoji (https://github.com/googlefonts/noto-emoji),
+Copyright 2013 Google LLC, and is distributed under the Apache License 2.0;
+see LICENSE-noto-emoji.txt. Noto Color Emoji font files are distributed under
+the SIL Open Font License 1.1; see assets/piggy-emoji-LICENSE.txt and
+apps/desktop/renderer/piggy-emoji-LICENSE.txt.
+
 The game mechanics implemented here (attribute thresholds, the three illness
 chains, the nine school subjects, job and item ideas) were derived from a
 reverse-engineering effort of QQ 宠物 (怀旧服 v1.2.4) published at
 https://github.com/xuemian168/qqpet_automation. Only numeric values, subject
 and illness *names* were reused; no original code or artwork is included in
-this package. The two sprite SVGs under assets/ are original vector redraws
-supplied by the project author. QQ 宠物 is a trademark of Tencent; this project
-is independent and unaffiliated, and is not authorised by Tencent.
+this package. QQ 宠物 is a trademark of Tencent; this project is independent
+and unaffiliated, and is not authorised by Tencent.

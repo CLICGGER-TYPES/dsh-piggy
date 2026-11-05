@@ -79,6 +79,8 @@ npm run dist:mac
 
 ### Gitee 渠道
 
+> 2026-11-05 起 Gitee 不再发布新版本，历史附件只作旧安装器回退。本节保留旧渠道的维护说明，不再作为发版要求。
+
 Gitee（[clicgger/dsh-piggy](https://gitee.com/clicgger/dsh-piggy)）是独立的一套发行：Gitee 发出去的游戏包和桌面外壳里，检查更新、下载游戏包、在线扩展都只走 gitee.com，不依赖 GitHub。
 
 - **渠道**：地址集中在 `channels/github.js`、`channels/gitee.js`；`node scripts/set-channel.mjs <github|gitee>` 把选中的复制成 `src/host/channel.js`（游戏）和 `apps/desktop/lib/channel.js`（外壳）。仓库里提交的永远是 github，`test/unit/host/channel.test.js` 守着。

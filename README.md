@@ -126,4 +126,11 @@ npm run typecheck
 
 **不同状态的小猪图**（`assets/pigs/feedback/`）的灵感来自 [PigHub](https://pighub.top/) 上的猪猪图片：以那里的猪猪为参考，由 AI（OpenAI 图像生成，codex 操作）重新画成本项目的样子，没有直接复制原图。谢谢 PigHub 和图片作者！如果你是原图作者，觉得侵犯了你的权利或不喜欢这样使用，请[开 issue](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 告诉我们，我们会删除相关图片。
 
-视觉风格参考 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)，玩法数值参考资料见 [THIRD-PARTY.md](THIRD-PARTY.md)。项目采用 [MIT License](LICENSE)；小猪立绘改自 [Noto Emoji](https://github.com/googlefonts/noto-emoji) 的 🐖，按 Apache 2.0 发布（见 [THIRD-PARTY.md](THIRD-PARTY.md)）。
+**代码与文档**采用 [MIT License](LICENSE)。**素材按目录单独许可，不自动适用 MIT**，完整表见 [LICENSE-ASSETS.md](LICENSE-ASSETS.md)：
+
+- 小猪立绘、形态、皮肤、徽章、反馈图：改自 [Noto Emoji](https://github.com/googlefonts/noto-emoji) 的 🐖，按 **Apache 2.0** 发布（[LICENSE-noto-emoji.txt](LICENSE-noto-emoji.txt)）。
+- 钓鱼、菜园、矿洞、摸摸手等 AI 生成场景/道具：按 **CC BY 4.0** 发布。
+- Noto Color Emoji 字体及网页子集：**OFL 1.1**。
+- 用户提供的原摸摸 GIF：权利链不属于本项目，**不随仓库/发布包分发，也不授予再分发许可**；游戏使用拆出的 AI 生成独立手层。
+
+视觉风格参考 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)，玩法数值参考资料见 [THIRD-PARTY.md](THIRD-PARTY.md)。第三方依赖、参考项目和商标说明也在 [THIRD-PARTY.md](THIRD-PARTY.md)。

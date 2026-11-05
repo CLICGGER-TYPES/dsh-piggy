@@ -1,12 +1,12 @@
 # H 轮任务书（2026-10-05）
 
 > 分工：**Claude 写任务书和验收，Codex 实现**（用户 2026-10-05：「你把任务下分出来……让他去给你搞，然后你验收，你验收过了就喊我验收」）。
-> 工作区：`/zyx/DSH/workspaces/dsh-pig-h`，分支 `feat/h-round`（从 v0.30.0 的 main 拉出）。**全部做完、验收通过才发版。**
+> 工作区：`<local-workspace>/dsh-pig-h`，分支 `feat/h-round`（从 v0.30.0 的 main 拉出）。**全部做完、验收通过才发版。**
 > 一次只做一个任务；做完一个就提交（中文提交说明，**不署 AI**），然后在终端里说「H? 做完了」，等 Claude 验收后再做下一个。
 
 ## 共同规矩（每个任务都要遵守）
 
-- 构建：`DSH_PIG_ESBUILD=/zyx/codex/dsh-piggy-shell-update/node_modules/esbuild/lib/main.js npm run build`；`npm test`、`npm run typecheck` 必须全绿。新逻辑先写测试。
+- 构建：`DSH_PIG_ESBUILD=<artwork-workspace>/dsh-piggy-shell-update/node_modules/esbuild/lib/main.js npm run build`；`npm test`、`npm run typecheck` 必须全绿。新逻辑先写测试。
 - `client.js` 是构建产物，改了 `src/client/*` 必须重新 build 并提交 `client.js`。
 - 文件不超过 400 行（`test/conventions.test.js` 会查）；`src/client/panel.js`、`src/client/normalize.js` 已经 400 行，往里加东西要先拆或用「改原行」的方式。
 - 代码注释写中文、不用 emoji；跟周围代码的写法、命名保持一致。

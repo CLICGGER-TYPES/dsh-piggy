@@ -78,7 +78,7 @@
 - 新 emoji 要重新裁网页版字体：`uv run --with fonttools --with brotli python tools/slim-emoji-font.py --web-out assets/piggy-emoji.woff2`（`test/unit/host/emoji-coverage.test.js` 会提醒）。
 - CHANGELOG「Unreleased」写清楚；J2、本页、`docs/ROADMAP.md` 同步。
 - 提交信息用中文、不加 AI 署名；**不要发版、不要推标签**，开 PR 给 Claude 验收。
-- **界面自测在虚拟机里做**（用户 2026-10-09）：用维护者电脑上的 Linux、Windows 测试虚拟机（账号地址问维护者，不进仓库），别在维护者正用的桌面上开窗口。四种状态截图放 `/zyx/DSH/workspaces/dsh/k1-automation-review/round-2/`，在 PR 描述写路径，写清楚测了什么、没测什么。测完把虚拟机关掉。Claude 最后再在虚拟机里验收一遍。
+- **界面自测在虚拟机里做**（用户 2026-10-09）：用维护者电脑上的 Linux、Windows 测试虚拟机（账号地址问维护者，不进仓库），别在维护者正用的桌面上开窗口。四种状态截图放 `<local-workspace>/dsh/k1-automation-review/round-2/`，在 PR 描述写路径，写清楚测了什么、没测什么。测完把虚拟机关掉。Claude 最后再在虚拟机里验收一遍。
 
 ## 五、验收标准（Claude 验收时逐条对）
 
@@ -93,4 +93,4 @@
 
 第二轮八条已通过，补修管理地块进度：显示帮工批次而非手动缺水；旧超长计时校正到 J2 周期，空仓休息显示「接着干」，保留跨仓期进度。数值、扩展 2.1.0、存档版本 12 不变。新增哈密瓜跨两仓期 / 一天、葡萄、手动浇水 / 收获、空仓状态测试；截图在仓库外 round-3。
 
-专项结果：构建、826 项测试、类型检查通过；两台测试 VM 实测空仓休息与续工，连续两个六小时分别累计收 1 / 2 个哈密瓜，管理地块无缺水提示。截图在 /zyx/DSH/workspaces/dsh/k1-automation-review/round-3/，未提交仓库。
+专项结果：构建、826 项测试、类型检查通过；两台测试 VM 实测空仓休息与续工，连续两个六小时分别累计收 1 / 2 个哈密瓜，管理地块无缺水提示。截图在 <local-workspace>/dsh/k1-automation-review/round-3/，未提交仓库。

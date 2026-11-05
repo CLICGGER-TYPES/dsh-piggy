@@ -7,7 +7,7 @@
 
 用户已定：调试=连点版本号 7 次解锁；番茄钟=小奖励+猪陪伴；鱼=进背包可喂可卖+图鉴；换肤立绘用户自己找，Claude 出 SVG 规范。
 
-现状（已核对代码，仓库 `/zyx/DSH/workspaces/dsh-pig`，main=b797012，存档 v12）：
+现状（已核对代码，仓库 `<local-workspace>/dsh-pig`，main=b797012，存档 v12）：
 - 调试：`src/client/index.js:332-366` Ctrl+Shift+D 开关，`writeStore(DEV_KEY)` 写 localStorage **永久记住** → 用户看到"没关"。`window.dshPigDev.on()` 也能直接开。调试页 `src/client/tabs/dev.js` 没有形态（猪猪王）入口。
 - 形态：`packages/pet-core/src/data/evolution.js` 的 `FORMS`（仅 king）；主屏 `TABS` 里有 `crown` App（`src/client/constants.js:41`，`src/client/tabs/crown.js`）。
 - PR #3（1nuoiscute，OPEN）：给 FORMS 加 `via` 字段，恶魔猪走商店「📜 契约」→背包使用，条件不齐不消耗；10 张 SVG。
@@ -27,7 +27,7 @@
 | C8 | 六款角色外观：厨师／宇航员职业解锁，侦探／天使／海盗／巫师内置皮肤 | Codex | C6；用户 2026-10-03 确认 2 职业 + 4 皮肤 |
 
 协作规则（沿用 `docs/archive/tasks/README.md`，以下为本轮补充）：
-- DSH 在原目录 main 直接提交；Codex 用 worktree `/zyx/DSH/workspaces/dsh-pig-codex` 分支 `codex/next`，每卡完成 rebase 到 main 再快进合入。
+- DSH 在原目录 main 直接提交；Codex 用 worktree `<local-workspace>/dsh-pig-codex` 分支 `codex/next`，每卡完成 rebase 到 main 再快进合入。
 - **本轮不升存档版本**：新字段一律 `ensureXxx(state)` 补默认值（参考 `core/lines.js` 的 `ensureDialogue`）。确需升版本只能由 Codex 做，且先在卡里写明。
 - 提交**不加任何 AI 署名行**；外部贡献者（PR #3）的作者/Co-Authored-By 保留。
 - 每卡：先写会红的测试再改；改完 `npm run build && npm test && npm run typecheck` 全绿；**README 和 CHANGELOG 同步更新**；界面截图存 `docs/screenshots/c<N>-*.png`（Playwright + `/usr/bin/chromium` 截隔离实例 3082，不碰用户 3080 的 dsh）。
@@ -175,7 +175,7 @@ my-skin.zip
 
 ### 给 DSH agent
 ```
-你在 dsh-piggy 仓库 /zyx/DSH/workspaces/dsh-pig 的 main 上工作。先读 docs/archive/tasks/README.md 和 docs/archive/tasks/C-round.md（本轮任务卡），按顺序做 C1 → C2 → C4（C4 要等 Codex 的 C3 合进 main 再开工，开工前 git log --oneline -15 确认）。
+你在 dsh-piggy 仓库 <local-workspace>/dsh-pig 的 main 上工作。先读 docs/archive/tasks/README.md 和 docs/archive/tasks/C-round.md（本轮任务卡），按顺序做 C1 → C2 → C4（C4 要等 Codex 的 C3 合进 main 再开工，开工前 git log --oneline -15 确认）。
 硬规则：
 - 每卡先写会红的测试，再改代码；完成后 npm run build && npm test && npm run typecheck 全绿。
 - 只 git add 自己改的文件，不要 git add -A；不要碰 codex/* 和 claude/* 分支；提交信息 feat(pig)/fix(pig) 开头，不加任何 AI 署名行。
@@ -189,7 +189,7 @@ my-skin.zip
 
 ### 给 Codex
 ```
-你在 dsh-piggy 仓库工作。先建 worktree：git -C /zyx/DSH/workspaces/dsh-pig worktree add /zyx/DSH/workspaces/dsh-pig-codex -b codex/next main，之后都在 /zyx/DSH/workspaces/dsh-pig-codex 里干活。先读 docs/archive/tasks/README.md、docs/archive/tasks/C-round.md、docs/ART-SPEC.md、docs/CONVENTIONS.md。
+你在 dsh-piggy 仓库工作。先建 worktree：git -C <local-workspace>/dsh-pig worktree add <local-workspace>/dsh-pig-codex -b codex/next main，之后都在 <local-workspace>/dsh-pig-codex 里干活。先读 docs/archive/tasks/README.md、docs/archive/tasks/C-round.md、docs/ART-SPEC.md、docs/CONVENTIONS.md。
 顺序：C3 → C5 → C6（C7 等我给图再做）。
 C3 第一步：gh pr checkout 3 拿到 PR #3（作者 1nuoiscute）的提交，保留原作者，在其上按卡改成「王冠/契约都是商店道具」。
 每卡完成：npm run build && npm test && npm run typecheck 全绿 → git rebase main → 在主目录 git merge --ff-only codex/next 合进 main（DSH agent 也在 main 上提交，冲突你解决，不要覆盖他们的改动）。
@@ -222,7 +222,7 @@ C3 第一步：gh pr checkout 3 拿到 PR #3（作者 1nuoiscute）的提交，�
 - `npm run build && npm test`：**328 / 328 通过**（新增 `test/dev-coverage.test.js` 11 条，
   改写 `test/client.test.js` 里 2 条 B1 时代的旧断言 —— 它们还在测 Ctrl+Shift+D）
 - `npm run typecheck`：**0 错误**
-- 真机验收（隔离实例 3082，`DSH_HOME=/zyx/DSH/workspaces/.dsh-home-test`，Playwright + `/usr/bin/chromium`）：
+- 真机验收（隔离实例 3082，`DSH_HOME=<local-workspace>/.dsh-home-test`，Playwright + `/usr/bin/chromium`）：
 
   | 验收项 | 实测 |
   |---|---|
@@ -346,7 +346,7 @@ C3 第一步：gh pr checkout 3 拿到 PR #3（作者 1nuoiscute）的提交，�
   可选：① 推一个 `v0.25.2`（或 0.25.1 的补丁版）标签，CI 会产出
   `dsh-piggy-portable-<版本>.exe`；② 在 Windows 机器上进 `apps/desktop` 跑 `npm install && npm run dist:win`。
   要哪种我照做（推标签需要你点头）。
-- 截图/日志：`/zyx/DSH/workspaces/.piggy-desktop.log`、窗口日志在 `PIGGY_USERDATA/piggy.log`（临时目录，未入库）
+- 截图/日志：`<local-workspace>/.piggy-desktop.log`、窗口日志在 `PIGGY_USERDATA/piggy.log`（临时目录，未入库）
 
 
 ### D1 返工（DSH agent，2026-10-01）：第 1 条修好；第 2 条（拖动）通过；第 3 条左上角展开**仍未通过**

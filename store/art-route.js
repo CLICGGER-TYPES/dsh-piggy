@@ -15,7 +15,7 @@ const ACTION_FRAME = /^actions\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\/\d{2
 export function artFile(store, name, assetsRoot) {
   const flat = /^(?:[a-z][a-z0-9-]{0,63}\.(?:svg|png)|feedback\/[a-z][a-z0-9-]{0,63}\.png)$/.test(name)
   const imported = /^custom-[a-z0-9-]{1,41}$/.test(name)
-  const petFrame = name === 'animations/piglet-pet/reference.webp' || name === 'animations/pet-hand/hand.webp'
+  const petFrame = name === 'animations/pet-hand/hand.webp'
   const sound = /^sounds\/[a-z][a-z0-9-]{0,31}\/[a-z][a-z0-9-]{0,47}\.(?:ogg|wav)$/.test(name)
   const actionFrame = ACTION_FRAME.test(name)
   if (!PIG_ART_PATHS.has(name) && !FISHING_ART_PATHS.has(name) && !flat && !imported && !petFrame && !sound && !actionFrame) return null

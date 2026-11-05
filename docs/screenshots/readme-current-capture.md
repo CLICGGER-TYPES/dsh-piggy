@@ -32,7 +32,7 @@
 | readme-rc4-windows-desktop.png | `cf9a7cbd6d09e2b177de73e399e9f0db1fd0b6cd15e5d8e0a4c19d719447d09e` |
 | readme-rc4-windows-start.png | `28db32b69c40cb794a4b19d5df80c1714f3418f1c50344f79e1d37cc404fce5f` |
 
-Windows18项原生流程通过；Linux真实AppImage与DSH17项通过。双平台各2226项检查零失败。macOS、混合DPI多屏没有本轮原生结论；便携版仅构建与哈希检查，未新增本轮原生启动验收。候选附件与截图统一审阅目录：`/zyx/agents/codex/deliverables/piggy-review/rc4-preparation-20261027/`。
+Windows18项原生流程通过；Linux真实AppImage与DSH17项通过。双平台各2226项检查零失败。macOS、混合DPI多屏没有本轮原生结论；便携版仅构建与哈希检查，未新增本轮原生启动验收。候选附件与截图统一审阅目录：`<artwork-workspace>/deliverables/piggy-review/rc4-preparation-20261027/`。
 
 
 ## 2026-10-27 RC5 自然托管候选验收（历史记录）

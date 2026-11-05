@@ -24,6 +24,6 @@
 
 用户发现默认图只有单侧残缺腮红，明确要求去掉；两次imagegen局部修正均发生轮廓偏差，弃用，未进入资源目录。随后用户明确选择“脚本精确去腮红，保留原图”。本次仅处理幼年猪idle、blink和shy-pet三张现有PNG：分别替换152、169、168个腮红像素，以本图周围肤色填充，透明通道、256×256画布和所有区域外像素逐像素不变；鼻子、内耳、眼睛、腿、尾巴和姿势不变。
 
-原稿仍可从已发布b4e47a8提交的同路径恢复；原始/成品SHA256、局部边界与像素数见manifest的retouch记录。逐像素验证与可复现脚本保存在制作工作区 `/zyx/agents/codex/deliverables/piggy-work/pig-no-blush-20261027/`，审阅副本在固定piggy-review目录。此用户授权仅适用于去腮红修复，不改变其他形象/服饰的原生出图要求。共用的art key与旧URL别名保持不变。
+原稿仍可从已发布b4e47a8提交的同路径恢复；原始/成品SHA256、局部边界与像素数见manifest的retouch记录。逐像素验证与可复现脚本保存在制作工作区 `<artwork-workspace>/deliverables/piggy-work/pig-no-blush-20261027/`，审阅副本在固定piggy-review目录。此用户授权仅适用于去腮红修复，不改变其他形象/服饰的原生出图要求。共用的art key与旧URL别名保持不变。
 
 同轮核对发现桌面应用图标与托盘图标也使用同一单侧腮红。按同一用户授权精确去掉 `apps/desktop/build/icon.png` 的704像素和 `tray.png` 的15像素；原尺寸、透明通道及区域外像素逐字节不变。原稿、SHA256和像素边界见同一制作工作区 `icon-pixel-verification.json`，审图页另列两组前后对照；历史设计稿/截图不覆盖。
