@@ -48,6 +48,8 @@ export const CSS_CARD = [
   'border-radius:50%;border:2px solid var(--vc-line);background:#fffbe7}',
   '.dp-vcard-edit:hover{background:var(--ac-hover)}',
   '.dp-vcard-input{flex:1;min-width:0;padding:3px 9px;font-size:11px}',
+  '.dp-vcard-row .dp-vcard-select{flex:1;min-width:0}',
+  '.dp-vcard-row .dp-vcard-date{width:48px;height:26px;border-radius:8px;padding:0 4px;text-align:center}',
   // In-place editing: the two buttons stay as small as the pencil they replace.
   '.dp-vcard-row .dp-mini,.dp-vcard-nameline .dp-mini{flex:none;padding:3px 9px;font-size:10px;box-shadow:none}',
   '[data-dsh-pig] .dp-vcard-row .dp-mini.dp-mini-plain,[data-dsh-pig] .dp-vcard-nameline .dp-mini.dp-mini-plain{background:#fffbe7;color:var(--ac-text);border:2px solid var(--vc-line);box-shadow:none}',

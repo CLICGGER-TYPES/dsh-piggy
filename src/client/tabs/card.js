@@ -44,9 +44,11 @@ export function renderCardTab(ui) {
   top.appendChild(who)
   card.appendChild(top)
 
-  card.appendChild(field('生日', profile.birthday))
+  if (profile.birthdayParts !== null) card.appendChild(editableProfileField(ui, profile, 'birthday'))
+  else card.appendChild(field('生日', profile.birthday))
   if (profile.zodiac !== null) card.appendChild(field('星座', profile.zodiac.emoji + ' ' + profile.zodiac.label))
-  if (profile.personality !== null) card.appendChild(field('性格', profile.personality.emoji + ' ' + profile.personality.label))
+  if (profile.personality !== null && profile.personalities.length) card.appendChild(editableProfileField(ui, profile, 'personality'))
+  else if (profile.personality !== null) card.appendChild(field('性格', profile.personality.emoji + ' ' + profile.personality.label))
   var forms = ui.view.forms
   var worn = forms === null ? null : forms.forms.find(function (f) { return f.current }) || null
   if (worn !== null) card.appendChild(field('形态', worn.emoji + ' ' + worn.label))
@@ -54,8 +56,6 @@ export function renderCardTab(ui) {
   card.appendChild(editableField(ui, 'owner', '叫你', ui.view.dialogue.ownerName))
   card.appendChild(editableField(ui, 'catchphrase', '口头禅', profile.catchphrase))
   card.appendChild(editableField(ui, 'motto', '签名', profile.motto))
-
-  if (profile.birthdayParts !== null && profile.personalities.length) card.appendChild(profileEditor(ui, profile))
 
   var c = profile.counts
   card.appendChild(el('div', 'dp-vcard-foot',
@@ -141,23 +141,61 @@ function appendEditor(ui, parent, key) {
 }
 
 /**
- * 自由修改性格、生日，点「保存」才应用。
- * 平时只显示一个入口按钮；点开以后草稿留在 ui.profileDraft，轮询不重画（同 cardEdit）。
+ * 生日/性格和「叫你」「口头禅」一样：平时是一行值，鼠标移上去行尾出铅笔，
+ * 点铅笔只就地改这一项；保存后才发 editProfile。
  */
-function profileEditor(ui, profile) {
-  var box = el('div', 'dp-vcard-row dp-vcard-once')
-  var draft = ui.profileDraft
-  if (!draft) {
-    var open = button('dp-mini', { 'data-card-once': 'open' }, function () {
-      ui.profileDraft = { personality: profile.personality ? profile.personality.key : profile.personalities[0].key, month: profile.birthdayParts.month, day: profile.birthdayParts.day }
-      ui.renderContent()
-    })
-    open.textContent = '✏️ 改性格和生日'
-    box.appendChild(open)
-    return box
+function editableProfileField(ui, profile, key) {
+  var editing = ui.cardEdit !== null && ui.cardEdit.field === key
+  var row = el('div', 'dp-vcard-row')
+  row.appendChild(el('span', 'dp-vcard-label', (key === 'birthday' ? '生日' : '性格') + '：'))
+  if (editing) {
+    if (key === 'birthday') appendBirthdayEditor(ui, row)
+    else appendPersonalityEditor(ui, row, profile)
+    return row
   }
-  var pick = /** @type {HTMLSelectElement} */ (el('select', 'dp-setting-field'))
-  pick.setAttribute('data-card-once', 'personality')
+  var value = key === 'birthday'
+    ? profile.birthday
+    : profile.personality.emoji + ' ' + profile.personality.label
+  row.appendChild(el('span', 'dp-vcard-value', value))
+  var btn = button('dp-vcard-edit', { 'data-card-edit': key }, function () {
+    ui.cardEdit = key === 'birthday'
+      ? { field: 'birthday', month: profile.birthdayParts.month, day: profile.birthdayParts.day }
+      : { field: 'personality', personality: profile.personality.key }
+    ui.renderContent()
+  })
+  btn.textContent = '✏️'
+  btn.title = key === 'birthday' ? '改生日' : '改性格'
+  row.appendChild(btn)
+  return row
+}
+
+/** 生日：两个数字框 + 好/算了，只发 month/day。 */
+function appendBirthdayEditor(ui, row) {
+  var draft = ui.cardEdit
+  var number = function (key, max, value) {
+    var input = /** @type {HTMLInputElement} */ (el('input', 'dp-input dp-vcard-date'))
+    input.type = 'number'
+    input.min = '1'
+    input.max = String(max)
+    input.value = String(value)
+    input.setAttribute('data-card-input', 'birthday-' + key)
+    input.addEventListener('input', function () { draft[key] = Number(input.value) })
+    return input
+  }
+  row.appendChild(number('month', 12, draft.month))
+  row.appendChild(el('span', null, '月'))
+  row.appendChild(number('day', 31, draft.day))
+  row.appendChild(el('span', null, '日'))
+  appendProfileActions(ui, row, 'birthday', function () {
+    ui.send('editProfile', { month: draft.month, day: draft.day })
+  })
+}
+
+/** 性格：下拉 + 好/算了，只发 personality。 */
+function appendPersonalityEditor(ui, row, profile) {
+  var draft = ui.cardEdit
+  var pick = /** @type {HTMLSelectElement} */ (el('select', 'dp-vcard-select'))
+  pick.setAttribute('data-card-input', 'personality')
   profile.personalities.forEach(function (p) {
     var option = /** @type {HTMLOptionElement} */ (el('option', null, p.emoji + ' ' + p.label))
     option.value = p.key
@@ -165,37 +203,24 @@ function profileEditor(ui, profile) {
   })
   pick.value = draft.personality
   pick.addEventListener('change', function () { draft.personality = pick.value })
-  var number = function (key, max, value) {
-    var input = /** @type {HTMLInputElement} */ (el('input', 'dp-input dp-vcard-date'))
-    input.type = 'number'
-    input.min = '1'
-    input.max = String(max)
-    input.value = String(value)
-    input.setAttribute('data-card-once', key)
-    input.addEventListener('input', function () { draft[key] = Number(input.value) })
-    return input
-  }
-  var line = function () { var row = el('div', 'dp-vcard-once-line'); box.appendChild(row); return row }
-  var first = line()
-  first.appendChild(el('span', 'dp-vcard-label', '性格：'))
-  first.appendChild(pick)
-  var second = line()
-  second.appendChild(el('span', 'dp-vcard-label', '生日：'))
-  second.appendChild(number('month', 12, draft.month))
-  second.appendChild(el('span', null, '月'))
-  second.appendChild(number('day', 31, draft.day))
-  second.appendChild(el('span', null, '日'))
-  var third = line()
-  var save = button('dp-mini', { 'data-card-once': 'save' }, function () {
-    var change = ui.profileDraft
-    ui.profileDraft = null
-    ui.send('editProfile', { personality: change.personality, month: change.month, day: change.day })
+  row.appendChild(pick)
+  appendProfileActions(ui, row, 'personality', function () {
+    ui.send('editProfile', { personality: draft.personality })
+  })
+}
+
+function appendProfileActions(ui, row, key, save) {
+  var ok = button('dp-mini', { 'data-card-save': key }, function () {
+    ui.cardEdit = null
+    save()
     ui.renderContent()
   })
-  save.textContent = '保存'
-  var cancel = button('dp-mini dp-mini-plain', { 'data-card-once': 'cancel' }, function () { ui.profileDraft = null; ui.renderContent() })
+  ok.textContent = '好'
+  var cancel = button('dp-mini dp-mini-plain', { 'data-card-cancel': key }, function () {
+    ui.cardEdit = null
+    ui.renderContent()
+  })
   cancel.textContent = '算了'
-  third.appendChild(save)
-  third.appendChild(cancel)
-  return box
+  row.appendChild(ok)
+  row.appendChild(cancel)
 }
