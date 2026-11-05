@@ -387,8 +387,22 @@
       240,
       209
     ],
-    "sha256": "6254178b7ef88136ecc2cb252800abdef93ce04349c3d936b37925b94aaeeafb",
-    "bytes": 5937
+    "sha256": "dc8b20f2a106882ec4a82a3145694cb973300dbceff7290214581038502d4e78",
+    "bytes": 5578,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "6254178b7ef88136ecc2cb252800abdef93ce04349c3d936b37925b94aaeeafb",
+      "changedPixels": 134,
+      "changedBounds": [
+        97,
+        150,
+        114,
+        159
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "piglet-play",
@@ -416,8 +430,22 @@
       240,
       223
     ],
-    "sha256": "f9242fc126e3614578409b5a03e4643fb8efa719cfdaba60e87ba43f8f5b7988",
-    "bytes": 6384
+    "sha256": "df328d7238acbfc90fe94355929bd43620e4d35cbe7fc8d3cf4b75dc39552893",
+    "bytes": 6092,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "f9242fc126e3614578409b5a03e4643fb8efa719cfdaba60e87ba43f8f5b7988",
+      "changedPixels": 114,
+      "changedBounds": [
+        108,
+        121,
+        122,
+        132
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "piglet-sleep",
@@ -2098,8 +2126,22 @@
       240,
       209
     ],
-    "sha256": "4cd672524e43bbe2d90f4d097330fab5472157f065f31ac9f30b3b7445208959",
-    "bytes": 5498
+    "sha256": "a911689fe5bbfd2f27c2e1de97c458af8a845511cc19693d2f5df0c632b8e912",
+    "bytes": 5162,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "4cd672524e43bbe2d90f4d097330fab5472157f065f31ac9f30b3b7445208959",
+      "changedPixels": 120,
+      "changedBounds": [
+        88,
+        131,
+        104,
+        141
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "career-chef-bathe",
@@ -3316,8 +3358,22 @@
       240,
       185
     ],
-    "sha256": "493f5ec577076e320581712ba1b59cf5155b3ad4aea10be408aa4d068a4fb04c",
-    "bytes": 5701
+    "sha256": "3e4a3c83cd394f43eac629f8a0bc8c0271347d34fa0a3c97326b1c3b52c24a24",
+    "bytes": 5465,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "493f5ec577076e320581712ba1b59cf5155b3ad4aea10be408aa4d068a4fb04c",
+      "changedPixels": 87,
+      "changedBounds": [
+        111,
+        136,
+        124,
+        144
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "feedback/allergy",
@@ -3519,8 +3575,22 @@
       221,
       240
     ],
-    "sha256": "35f572dc53516d3e3f87ae07dc788205e6255a6542def76984e2924bc0e42f23",
-    "bytes": 7115
+    "sha256": "94275d37ea173159b0a4d0d92411c072e251c3c2d7723dc9be487ce53b0aafa4",
+    "bytes": 6691,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "35f572dc53516d3e3f87ae07dc788205e6255a6542def76984e2924bc0e42f23",
+      "changedPixels": 186,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-blindbox-six",
@@ -3548,8 +3618,22 @@
       221,
       240
     ],
-    "sha256": "6223da3506eec9b53a833db30b4e7158c41dbcf8bd7fdcfbca0089302f3d1d15",
-    "bytes": 7258
+    "sha256": "8a9d82858b4e8cee3db10514edeac75e87159d3fd93f869dd7e6dffe5ca1bba7",
+    "bytes": 6831,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "6223da3506eec9b53a833db30b4e7158c41dbcf8bd7fdcfbca0089302f3d1d15",
+      "changedPixels": 197,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-blindbox-ten",
@@ -3577,8 +3661,22 @@
       221,
       240
     ],
-    "sha256": "0c2d076bfd61a4b8346fae96d61dd0d7ff48f275f020b5b434e822cf9a5cafd3",
-    "bytes": 6854
+    "sha256": "207cd1fbbad6c4a25f002f8cd0159aaee38aba369d97c20a488c879cba3c6cde",
+    "bytes": 6408,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "0c2d076bfd61a4b8346fae96d61dd0d7ff48f275f020b5b434e822cf9a5cafd3",
+      "changedPixels": 204,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-clean-ten",
@@ -3606,8 +3704,22 @@
       221,
       240
     ],
-    "sha256": "6003eb8595a0114bc2a4f10ef8de92f55370083cb499aaf8723b54a7a9f8ae1e",
-    "bytes": 7525
+    "sha256": "6aac10b335525a65705859503535fd7bc464de866a8b8194261ef7370eb1c2ea",
+    "bytes": 6985,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "6003eb8595a0114bc2a4f10ef8de92f55370083cb499aaf8723b54a7a9f8ae1e",
+      "changedPixels": 203,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-devil",
@@ -3635,8 +3747,22 @@
       221,
       240
     ],
-    "sha256": "89cb8d3e629f7ddb0a1f97e369f58d1b909be172dc6f8b770e0eedc9b3ac6f20",
-    "bytes": 6869
+    "sha256": "759ea3240b1f49e2eca702cfca018992a7fe0dda1806a03282d01f50a65e83df",
+    "bytes": 6429,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "89cb8d3e629f7ddb0a1f97e369f58d1b909be172dc6f8b770e0eedc9b3ac6f20",
+      "changedPixels": 203,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-farm-first",
@@ -3664,8 +3790,22 @@
       221,
       240
     ],
-    "sha256": "5d1652cb0fe0b366c006db7db102807f9c067c19d87fa6412be22eb0f8e18d9c",
-    "bytes": 8923
+    "sha256": "d2c6a01eaaf10168b84263bebed51c83e2c218ec713be993094d0d907a2d8324",
+    "bytes": 8553,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "5d1652cb0fe0b366c006db7db102807f9c067c19d87fa6412be22eb0f8e18d9c",
+      "changedPixels": 187,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-farm-five",
@@ -3693,8 +3833,22 @@
       221,
       240
     ],
-    "sha256": "deb83c643582330ac97db11033e71b1f6f1f36b31ed19449d464cebd70289121",
-    "bytes": 8387
+    "sha256": "6c2138781db28596c3023342ca369e69a53f921b9d3199a8392bcd47a91ac7e1",
+    "bytes": 8078,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "deb83c643582330ac97db11033e71b1f6f1f36b31ed19449d464cebd70289121",
+      "changedPixels": 197,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-farm-ten",
@@ -3722,8 +3876,22 @@
       221,
       240
     ],
-    "sha256": "0149eff1441305451a3124ca3d29d6da3db706a3c328306341270a5d0746db5f",
-    "bytes": 9133
+    "sha256": "4a1b369802fee683654660d383a8120dd4d2bad9a583d58cb187aeae81da35fb",
+    "bytes": 8773,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "0149eff1441305451a3124ca3d29d6da3db706a3c328306341270a5d0746db5f",
+      "changedPixels": 197,
+      "changedBounds": [
+        52,
+        107,
+        110,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-first-class",
@@ -3751,8 +3919,22 @@
       221,
       240
     ],
-    "sha256": "12a7524937d8eca9feb53d4bb762dc262e6e1f2425901410470700989158b3db",
-    "bytes": 7320
+    "sha256": "039f7d58d6edb332bb80db30b14ef4f8c43223de26bd1b04bd4201fc2a479305",
+    "bytes": 6836,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "12a7524937d8eca9feb53d4bb762dc262e6e1f2425901410470700989158b3db",
+      "changedPixels": 200,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-first-fish",
@@ -3780,8 +3962,22 @@
       221,
       240
     ],
-    "sha256": "b61fec5ff7ff0aa912b00b2800b5119a89031168f94675a5c65c792bcee2980b",
-    "bytes": 7274
+    "sha256": "60c4b36de893e3c3510a70a060e442c77d4f6337841f97fb43c406eaba31d9fc",
+    "bytes": 6923,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "b61fec5ff7ff0aa912b00b2800b5119a89031168f94675a5c65c792bcee2980b",
+      "changedPixels": 201,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-first-job",
@@ -3809,8 +4005,22 @@
       221,
       240
     ],
-    "sha256": "e905051473a8f99a3973ba0506eb274cb966c8f18ca301f99ac1560b6b4576b8",
-    "bytes": 7142
+    "sha256": "1ae5283ed0e2a9b6d6438c9199211b801fcfead4a771bc868e6a5c079e71936e",
+    "bytes": 6625,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "e905051473a8f99a3973ba0506eb274cb966c8f18ca301f99ac1560b6b4576b8",
+      "changedPixels": 186,
+      "changedBounds": [
+        51,
+        108,
+        109,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-first-meal",
@@ -3838,8 +4048,22 @@
       221,
       240
     ],
-    "sha256": "e5fbc9564601711c561f3b9ac984a8ff232d13167215d24fcb7fe0f1eaf78f74",
-    "bytes": 8402
+    "sha256": "ac78f61f7d7f7e0b351097d7710edfec1eca649b51a77be89725422aeaaadf3b",
+    "bytes": 7904,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "e5fbc9564601711c561f3b9ac984a8ff232d13167215d24fcb7fe0f1eaf78f74",
+      "changedPixels": 209,
+      "changedBounds": [
+        50,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-first-trip",
@@ -3867,8 +4091,22 @@
       221,
       240
     ],
-    "sha256": "f8ac4b6899d005a69c4b3afec3daba4a08b04d55205eee29c734e977120be7d0",
-    "bytes": 7790
+    "sha256": "355de739679d6615f6be4af3109c65a545b0dad566714b1f1faff2faad97f4fd",
+    "bytes": 7368,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "f8ac4b6899d005a69c4b3afec3daba4a08b04d55205eee29c734e977120be7d0",
+      "changedPixels": 197,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-fish-five",
@@ -3896,8 +4134,22 @@
       221,
       240
     ],
-    "sha256": "5c35eb850433d9f4b11ac7fa32a9e73eade765412b86b0fab5c1f437a768b41b",
-    "bytes": 8672
+    "sha256": "221d5402d958dc4c33c83dea4dab315404a4dd94e9a38a03f169325191a45a61",
+    "bytes": 8276,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "5c35eb850433d9f4b11ac7fa32a9e73eade765412b86b0fab5c1f437a768b41b",
+      "changedPixels": 210,
+      "changedBounds": [
+        50,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-gacha-first",
@@ -3925,8 +4177,22 @@
       221,
       240
     ],
-    "sha256": "a57d94f99dd98483cc431d2ee102dd7339c3c4380c60f5d924b1ea7be2719ac4",
-    "bytes": 9483
+    "sha256": "fa8df1b93d89f7da188dae0040ca251edc846df64bb37d89e7b47542fd962c1d",
+    "bytes": 9080,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "a57d94f99dd98483cc431d2ee102dd7339c3c4380c60f5d924b1ea7be2719ac4",
+      "changedPixels": 199,
+      "changedBounds": [
+        52,
+        107,
+        111,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-gacha-gold",
@@ -3954,8 +4220,22 @@
       221,
       240
     ],
-    "sha256": "4996ffc1006d64524fc439699a40db6473256941ab0f1c81d565e54570de0835",
-    "bytes": 9877
+    "sha256": "7fc930f27d6618a85371f49b521ede038d19de12e3579c83b9d2d24acef97c52",
+    "bytes": 9509,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "4996ffc1006d64524fc439699a40db6473256941ab0f1c81d565e54570de0835",
+      "changedPixels": 190,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-gacha-machines",
@@ -3983,8 +4263,22 @@
       225,
       240
     ],
-    "sha256": "77f0da6b8e330448cbce45dcd1f60a76bcddc739495e0742d4cb4f3e938ed223",
-    "bytes": 8951
+    "sha256": "4c85b07e6de3ca6bbf8a503fa9bb7e214d350aac535e33fa4021bec3817d6d9e",
+    "bytes": 8665,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "77f0da6b8e330448cbce45dcd1f60a76bcddc739495e0742d4cb4f3e938ed223",
+      "changedPixels": 225,
+      "changedBounds": [
+        47,
+        107,
+        107,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-grown-up",
@@ -4012,8 +4306,22 @@
       221,
       240
     ],
-    "sha256": "b71a0daf69f47008702409e93bf5c04c9e1984269c6958eb72ce3ebb7f83ebd3",
-    "bytes": 10488
+    "sha256": "7fdd716c029c08b3c6ea70ce0689ed2e22e96baf451a6a4ff6ecc95c2ee2fab2",
+    "bytes": 10092,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "b71a0daf69f47008702409e93bf5c04c9e1984269c6958eb72ce3ebb7f83ebd3",
+      "changedPixels": 185,
+      "changedBounds": [
+        52,
+        108,
+        111,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-jobs-ten",
@@ -4041,8 +4349,22 @@
       221,
       240
     ],
-    "sha256": "97ddd9e832b89f0bf987204759102db153d1c7383aebaea9becc5bf074495862",
-    "bytes": 7175
+    "sha256": "4d5305893fca8f8bb122a33e03a5f6c9f89b7ce6234f910a17e1259ba7738800",
+    "bytes": 6748,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "97ddd9e832b89f0bf987204759102db153d1c7383aebaea9becc5bf074495862",
+      "changedPixels": 193,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-king",
@@ -4070,8 +4392,22 @@
       221,
       240
     ],
-    "sha256": "0eafa52396a100015c3b494e65d79a152ca0e2f38bb841a803a103dfcd4ec0c7",
-    "bytes": 7125
+    "sha256": "5366fd81f1bf350c79be7e6496cb157715a7a574386085363672eb014c27e115",
+    "bytes": 6680,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "0eafa52396a100015c3b494e65d79a152ca0e2f38bb841a803a103dfcd4ec0c7",
+      "changedPixels": 195,
+      "changedBounds": [
+        51,
+        108,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-mine-deep",
@@ -4099,8 +4435,22 @@
       221,
       240
     ],
-    "sha256": "d94d942494c182da3351982c51ffbbc8cfd2e93ab94169f2d1ddaabc68a49f20",
-    "bytes": 9417
+    "sha256": "46523ea745608ba7793b7212c9537743251609e874754c90be5a23ee4db9c32a",
+    "bytes": 9209,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "d94d942494c182da3351982c51ffbbc8cfd2e93ab94169f2d1ddaabc68a49f20",
+      "changedPixels": 201,
+      "changedBounds": [
+        52,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-mine-first",
@@ -4128,8 +4478,22 @@
       221,
       240
     ],
-    "sha256": "c0ff5e419ad4b70b23e7b1c2658632b0cbbb6d27a238aca57af26f88d1cb5abd",
-    "bytes": 9734
+    "sha256": "3a88f49b36ec1183348d6fb336ee2ba5aa39857c49dcac0977cd203f02c4e307",
+    "bytes": 9340,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "c0ff5e419ad4b70b23e7b1c2658632b0cbbb6d27a238aca57af26f88d1cb5abd",
+      "changedPixels": 206,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-mine-fossils",
@@ -4157,8 +4521,22 @@
       221,
       240
     ],
-    "sha256": "c5a8a6273d0bbe7789b7067478155cdb8caf88231da48bb8ff4ac5221bf22224",
-    "bytes": 10526
+    "sha256": "27ea2273cd94769bed7d5a54f64f1b211a1fc67997f4eb6efa706137058fd915",
+    "bytes": 10213,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "c5a8a6273d0bbe7789b7067478155cdb8caf88231da48bb8ff4ac5221bf22224",
+      "changedPixels": 222,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-pet-hundred",
@@ -4186,8 +4564,22 @@
       221,
       240
     ],
-    "sha256": "d44a2084eebab0f35727f4e8dd0404bc22b1ff2572f3166d1b6cb36ce02bc09c",
-    "bytes": 7334
+    "sha256": "53f626447d8e145da28265500bf9f9955711ce1388848057f444a0dfc554b2b7",
+    "bytes": 6743,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "d44a2084eebab0f35727f4e8dd0404bc22b1ff2572f3166d1b6cb36ce02bc09c",
+      "changedPixels": 195,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-play-twenty",
@@ -4215,8 +4607,22 @@
       221,
       240
     ],
-    "sha256": "d1bcbd208fe4b4682d86b348f6fb556b4f3fbddb44cea8a0877881f5eb453298",
-    "bytes": 8487
+    "sha256": "c5fce0d35e1e20299b33a5daf0b66b0d7720748360d0defbbaaf4cc993fbbf18",
+    "bytes": 8034,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "d1bcbd208fe4b4682d86b348f6fb556b4f3fbddb44cea8a0877881f5eb453298",
+      "changedPixels": 203,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-souvenirs-three",
@@ -4244,8 +4650,22 @@
       221,
       240
     ],
-    "sha256": "7ea9125dab52ca633cc8212b2573428877c9054753257b94b99dfad9e38fc895",
-    "bytes": 6815
+    "sha256": "b26d3286cdeee4c3a80d008a566d7c05ad744257ccb93cc12986f9b188e1247d",
+    "bytes": 6431,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "7ea9125dab52ca633cc8212b2573428877c9054753257b94b99dfad9e38fc895",
+      "changedPixels": 185,
+      "changedBounds": [
+        51,
+        107,
+        109,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-trips-ten",
@@ -4273,8 +4693,22 @@
       221,
       240
     ],
-    "sha256": "7a993658b2971d5d6a2f17b552628f2a615660f0f75a7b13dd38b34cdcabeb50",
-    "bytes": 8868
+    "sha256": "cca7d8485c278d050842d37210ccdbdfac4ba2dc7d73411387921bb0bf293401",
+    "bytes": 8425,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "7a993658b2971d5d6a2f17b552628f2a615660f0f75a7b13dd38b34cdcabeb50",
+      "changedPixels": 200,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        117
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "feedback/collection-check",
@@ -5230,8 +5664,22 @@
       221,
       240
     ],
-    "sha256": "8eb8387ce16f7fc71cdb5769720d0ec677026224cf16b76df12f0f127683e06d",
-    "bytes": 8456
+    "sha256": "3ddb3972cb178ae1f7125ddc662df65d2e6a6d00be279b50bd722fea0b6f57ad",
+    "bytes": 8042,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "8eb8387ce16f7fc71cdb5769720d0ec677026224cf16b76df12f0f127683e06d",
+      "changedPixels": 211,
+      "changedBounds": [
+        51,
+        107,
+        110,
+        118
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "feedback/death-day",
@@ -5384,8 +5832,22 @@
       228,
       240
     ],
-    "sha256": "43e1049042b1478ad6d6b6006d2759d5c6d250d91918b861955e2adf54e40087",
-    "bytes": 9630
+    "sha256": "57bc0c0d9af502af9d6650041a90ecdc6adadf1dc92ac97b927389b062e87737",
+    "bytes": 23219,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "43e1049042b1478ad6d6b6006d2759d5c6d250d91918b861955e2adf54e40087",
+      "changedPixels": 105,
+      "changedBounds": [
+        96,
+        118,
+        110,
+        127
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-fish-hundred",
@@ -5421,8 +5883,22 @@
       228,
       240
     ],
-    "sha256": "fd952ae4a9c0478e540ad5b8ccd2c86204707ef9b846beb02a755ee391d1869e",
-    "bytes": 10571
+    "sha256": "d869c22e55c6185c9470b8b722166094c774f603cd1f5c8682038415c59a15cf",
+    "bytes": 25599,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "fd952ae4a9c0478e540ad5b8ccd2c86204707ef9b846beb02a755ee391d1869e",
+      "changedPixels": 97,
+      "changedBounds": [
+        95,
+        118,
+        109,
+        126
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-souvenirs-ten",
@@ -5458,8 +5934,22 @@
       228,
       240
     ],
-    "sha256": "51936117880e66faf840c61f9a4a0fd0ddcddbc8d57e9e529834e3e52c401121",
-    "bytes": 8392
+    "sha256": "f550b5dc039227d93835bb870648809c78045e166ead4e4f1077c7014fcb00a8",
+    "bytes": 8180,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "51936117880e66faf840c61f9a4a0fd0ddcddbc8d57e9e529834e3e52c401121",
+      "changedPixels": 94,
+      "changedBounds": [
+        97,
+        118,
+        110,
+        127
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-farm-hundred",
@@ -5495,8 +5985,22 @@
       228,
       240
     ],
-    "sha256": "19fe9583ef16ce680835b5e15a1adb0b9b63bad0d5718d703a50a4faadbf1c48",
-    "bytes": 8560
+    "sha256": "839d5c48927c73dfe1b910c08d7605e70df3c2b6462f3506019edd9386f67669",
+    "bytes": 8411,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "19fe9583ef16ce680835b5e15a1adb0b9b63bad0d5718d703a50a4faadbf1c48",
+      "changedPixels": 100,
+      "changedBounds": [
+        97,
+        118,
+        110,
+        127
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-farm-fifteen",
@@ -5532,8 +6036,22 @@
       228,
       240
     ],
-    "sha256": "3213559ddfa036b51604ff855576a16453743521bda95d67aa5fa2db1dca8014",
-    "bytes": 9513
+    "sha256": "f505d0d1eebc200dc021a0ca78da4861d7a1b91a7052fe5e5f1a97d6988b06c2",
+    "bytes": 23217,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "3213559ddfa036b51604ff855576a16453743521bda95d67aa5fa2db1dca8014",
+      "changedPixels": 101,
+      "changedBounds": [
+        96,
+        118,
+        110,
+        127
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   },
   {
     "key": "badge-pig-mine-twenty",
@@ -5569,7 +6087,21 @@
       227,
       240
     ],
-    "sha256": "000a57b81b31d86366ee90d86e0b8f527a6d6bd9eabf2d3d34fe94273be8439c",
-    "bytes": 9282
+    "sha256": "fa07da7ebbdb959b6622b2dc34e2c839d196605c4bf6e8b9026ce726fec1087d",
+    "bytes": 9277,
+    "retouch": {
+      "date": "2026-11-05",
+      "operation": "user-authorized-blush-and-highlight-removal",
+      "beforeSha256": "000a57b81b31d86366ee90d86e0b8f527a6d6bd9eabf2d3d34fe94273be8439c",
+      "changedPixels": 92,
+      "changedBounds": [
+        97,
+        119,
+        110,
+        127
+      ],
+      "alphaUnchanged": true,
+      "outsideMaskUnchanged": true
+    }
   }
 ]
