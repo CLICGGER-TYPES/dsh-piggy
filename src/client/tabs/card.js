@@ -146,7 +146,7 @@ function appendEditor(ui, parent, key) {
  */
 function editableProfileField(ui, profile, key) {
   var editing = ui.cardEdit !== null && ui.cardEdit.field === key
-  var row = el('div', 'dp-vcard-row')
+  var row = el('div', 'dp-vcard-row' + (editing && key === 'birthday' ? ' dp-vcard-birthday' : ''))
   row.appendChild(el('span', 'dp-vcard-label', (key === 'birthday' ? '生日' : '性格') + '：'))
   if (editing) {
     if (key === 'birthday') appendBirthdayEditor(ui, row)
@@ -182,11 +182,17 @@ function appendBirthdayEditor(ui, row) {
     input.addEventListener('input', function () { draft[key] = Number(input.value) })
     return input
   }
-  row.appendChild(number('month', 12, draft.month))
-  row.appendChild(el('span', null, '月'))
-  row.appendChild(number('day', 31, draft.day))
-  row.appendChild(el('span', null, '日'))
-  appendProfileActions(ui, row, 'birthday', function () {
+  // 日期框要能看清数字：单独一行放两个大输入框，好/算了另起一行，
+  // 避免和标签、按钮挤在同一行把框压到二十几像素。
+  var fields = el('div', 'dp-vcard-date-fields')
+  fields.appendChild(number('month', 12, draft.month))
+  fields.appendChild(el('span', null, '月'))
+  fields.appendChild(number('day', 31, draft.day))
+  fields.appendChild(el('span', null, '日'))
+  row.appendChild(fields)
+  var actions = el('div', 'dp-vcard-edit-actions')
+  row.appendChild(actions)
+  appendProfileActions(ui, actions, 'birthday', function () {
     ui.send('editProfile', { month: draft.month, day: draft.day })
   })
 }

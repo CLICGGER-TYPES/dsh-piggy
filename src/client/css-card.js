@@ -49,7 +49,13 @@ export const CSS_CARD = [
   '.dp-vcard-edit:hover{background:var(--ac-hover)}',
   '.dp-vcard-input{flex:1;min-width:0;padding:3px 9px;font-size:11px}',
   '.dp-vcard-row .dp-vcard-select{flex:1;min-width:0}',
-  '.dp-vcard-row .dp-vcard-date{width:48px;height:26px;border-radius:8px;padding:0 4px;text-align:center}',
+  // 生日编辑：日期框单独一行，64×32 固定宽度；好/算了换到下一行，避免挤窄输入框。
+  '.dp-vcard-birthday{flex-wrap:wrap}',
+  '.dp-vcard-date-fields{display:flex;align-items:center;gap:6px;flex:1;min-width:0}',
+  '.dp-vcard-row .dp-vcard-date{flex:0 0 64px;width:64px;height:32px;box-sizing:border-box;',
+  'border-radius:9px;padding:0 6px;text-align:center;font-size:13px;font-weight:700;appearance:textfield}',
+  '.dp-vcard-row .dp-vcard-date::-webkit-inner-spin-button,.dp-vcard-row .dp-vcard-date::-webkit-outer-spin-button{appearance:none;margin:0}',
+  '.dp-vcard-edit-actions{display:flex;gap:6px;flex:0 0 100%;box-sizing:border-box;padding-left:50px;margin-top:6px}',
   // In-place editing: the two buttons stay as small as the pencil they replace.
   '.dp-vcard-row .dp-mini,.dp-vcard-nameline .dp-mini{flex:none;padding:3px 9px;font-size:10px;box-shadow:none}',
   '[data-dsh-pig] .dp-vcard-row .dp-mini.dp-mini-plain,[data-dsh-pig] .dp-vcard-nameline .dp-mini.dp-mini-plain{background:#fffbe7;color:var(--ac-text);border:2px solid var(--vc-line);box-shadow:none}',
