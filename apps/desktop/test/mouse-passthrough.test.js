@@ -93,11 +93,20 @@ for (const options of PLATFORMS) {
   })
 }
 
+test('Wayland 原生窗口始终保持可交互，不设置鼠标穿透', async () => {
+  const shell = await mouseHarness({ platform: 'linux', env: { PIGGY_WAYLAND: '1' } })
+  shell.send('piggy:place', PLACE)
+  shell.point(500, 500)
+  shell.poll()
+  assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false })
+  assert.equal(shell.state.ignoresMouse, false)
+})
+
 test('Linux 现代游戏从未报 hitShape 时，place 后用可见轮廓恢复点击', async () => {
   const shell = await mouseHarness({ platform: 'linux' })
   // 页面只报绘制 shape，没有独立 hitShape；旧逻辑会让 setHit 永远早退，窗口停在穿透态。
   shell.send('piggy:place', { bounds: BOUNDS, shape: DRAW, pig: PIG })
-  shell.point(10, 10)
+  shell.point(110, 130)
   shell.poll()
   assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false })
   shell.point(500, 500)

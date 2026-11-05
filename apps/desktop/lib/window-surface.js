@@ -35,6 +35,12 @@ export function createWindowSurface(deps) {
   const SKIP_NATIVE_SHAPE = deps.platform === 'win32' && deps.env.PIGGY_SHAPE !== '1'
   /** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
   const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || deps.platform === 'darwin'
+  /**
+   * 原生 Wayland 不支持 X11 的 setIgnoreMouseEvents 语义：启动时设成 true 后，
+   * 窗口会一直收不到点击。Wayland 下保持窗口可交互，透明区域由窗口管理器处理；
+   * 这也是 PIGGY_WAYLAND=1 与 XWayland 回退的分界。
+   */
+  const NATIVE_WAYLAND = deps.platform === 'linux' && deps.env.PIGGY_WAYLAND === '1'
   let geometrySeq = 0
   /** 同一种换算错误只记一次，避免 16ms 轮询刷日志。 */
   let hitProblem = ''
@@ -106,10 +112,23 @@ export function createWindowSurface(deps) {
 
   function setHit(pet, hit, source = 'hit-state') {
     const window = pet?.window
+    if (NATIVE_WAYLAND) {
+      if (window === null || window === undefined || window.isDestroyed()) return
+      // Wayland 没有 X11 的输入区语义：永远不要把自己设成鼠标穿透。
+      if (pet.passthroughHit === true && pet.passthroughForward === false) return
+      pet.passthroughHit = true
+      pet.passthroughForward = false
+      deps.traceSetIgnoreMouseEvents('pet', pet.passthroughMode, source, false, false,
+        () => window.setIgnoreMouseEvents(false, { forward: false }))
+      return
+    }
     // Linux 的原生绘制轮廓就是可见猪/面板本身，不是 Windows 那种带透明留白的整窗；
     // 页面偶尔报空 hitShape 时用它兜底，避免窗口永久停在 1x1 的鼠标穿透区。
+    const pig = pet.panelPig
     const hasLinuxShape = deps.platform === 'linux' && pet.passthroughMode === 'modern'
-      && pet.fallbackArmed === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
+      && pet.fallbackArmed === true && !pet.flightShapeActive && !pet.dragShapeActive
+      && pig !== null && pig !== undefined && [pig.x, pig.y, pig.width, pig.height].every(Number.isFinite)
+      && pig.width > 0 && pig.height > 0
     if ((!MOUSE_PASSTHROUGH && pet.placedHitShape === null && !hasLinuxShape) || window === null || window === undefined || window.isDestroyed()) return
     const forward = pet.passthroughMode === 'legacy' && MOUSE_PASSTHROUGH
     if (hit === pet.passthroughHit && forward === pet.passthroughForward) return
@@ -167,20 +186,23 @@ export function createWindowSurface(deps) {
     if (pet.hitPending && Date.now() - pet.hitPendingAt >= HIT_PENDING_MS) pet.hitPending = false
     if (pet.hitPending) { setHit(pet, false, 'placement-pending'); return }
     // 页面报过独立输入面后，缺 hitShape 时不再拿含透明预留的绘制轮廓兜底。
-    // Linux 例外：原生绘制轮廓就是可见猪/面板本身，空 hitShape 时用它恢复点击，
-    // 否则一次空上报会让窗口永久停在 1x1 的鼠标穿透区。
+    // Linux 例外：setShape 已经把窗口裁成可见猪/面板，原生绘制轮廓本身就是精确输入面；
+    // 页面的 hitShape 在换位/启动时可能为空或陈旧，继续信它会让窗口停在 1x1 穿透区。
     const preciseHit = Array.isArray(pet.placedHitShape) && pet.placedHitShape.length > 0 ? pet.placedHitShape : null
-    const linuxFallback = deps.platform === 'linux' && pet.passthroughMode === 'modern'
-      && pet.fallbackArmed === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
-      ? pet.placedShape : null
-    if (preciseHit === null && pet.hasPlacedHitShape === true && linuxFallback === null) {
+    const pig = pet.panelPig
+    const linuxPig = deps.platform === 'linux' && pet.passthroughMode === 'modern'
+      && pet.fallbackArmed === true && !pet.flightShapeActive && !pet.dragShapeActive
+      && pig !== null && pig !== undefined && [pig.x, pig.y, pig.width, pig.height].every(Number.isFinite)
+      && pig.width > 0 && pig.height > 0 ? [{ ...pig }] : null
+    if (linuxPig === null && preciseHit === null && pet.hasPlacedHitShape === true) {
       setHit(pet, false, 'missing-hit-shape')
       return
     }
     const bounds = window.getBounds()
     // 只有旧契约把动作整窗绘制区域也当输入；新契约不能让透明预留抢走桌面点击。
-    const baseShape = preciseHit ?? linuxFallback ?? pet.placedHitShape ?? pet.placedShape
-    const shape = preciseHit === null && linuxFallback === null && (pet.flightShapeActive || pet.dragShapeActive)
+    const baseShape = linuxPig ?? preciseHit ?? pet.placedHitShape ?? pet.placedShape
+    const linuxFallbackActive = linuxPig !== null
+    const shape = !linuxFallbackActive && preciseHit === null && (pet.flightShapeActive || pet.dragShapeActive)
       ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
       : shiftedShape(baseShape, pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : pet.flightSlide)
     const { hit, problem } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window, shape })
