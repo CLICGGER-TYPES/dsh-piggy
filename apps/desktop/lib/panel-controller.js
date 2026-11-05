@@ -255,6 +255,9 @@ export function createPanelController(deps) {
       // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
       //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
       deps.getPanelWindow().showInactive()
+      // Wayland/XWayland 下 showInactive 的面板不进焦点链，点桌面不会触发 blur，
+      // “点别处收起面板”就失效。这里只在 Wayland 会话补一次 focus；纯 X11 保持原行为。
+      if (deps.platform === 'linux' && process.env.WAYLAND_DISPLAY) deps.getPanelWindow().focus()
       raisePetAbovePanel()
       deps.log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical, pigId: panelTargetPet()?.pigId ?? null }))
       const pet = panelTargetPet()
