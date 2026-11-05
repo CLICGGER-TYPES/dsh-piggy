@@ -372,6 +372,14 @@ test('拒绝与目标版本不一致的游戏清单', { timeout: 10_000 }, async
   assert.deepEqual(await stagedEntries(root), [])
 })
 
+test('游戏清单版本允许带 v 前缀，按去掉前缀后的版本比较', { timeout: 10_000 }, async t => {
+  const { versions, root } = await setup(t)
+  const prepared = await versions.prepareInstall({ ...release, manifest: { ...release.manifest, version: 'v0.38.0' } })
+  assert.equal(prepared.version, release.version)
+  await versions.discardPrepared(prepared)
+  assert.deepEqual(await stagedEntries(root), [])
+})
+
 test('同包提交可复用已有目录，回退读取最终存档而不激活旧 schema', { timeout: 10_000 }, async t => {
   const { versions, root, statePath } = await setup(t)
   assert.equal((await versions.commitInstall(await versions.prepareInstall(release))).ok, true)
