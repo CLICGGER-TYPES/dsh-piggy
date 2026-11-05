@@ -33,7 +33,7 @@
 
 | 项目 | 许可 | 能怎么用 | 用在哪 |
 |---|---|---|---|
-| [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui)（动森风格组件库，[在线演示](https://guokaigdg.github.io/animal-island-ui/)） | MIT | 可引用（设计变量、组件规格、CSS 写法）；**不引入它的 React 组件库** | 全部 `--ac-*` 设计变量；**居民卡**照它的 Card `pattern-*`（点点底纹、同色描边，`src/client/css-card.js`）；表单、按钮规格。做新组件先查它，见 [界面规范](ui-style.md) |
+| [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui)（动森风格组件库，[在线演示](https://guokaigdg.github.io/animal-island-ui/)） | MIT | 可引用（设计变量、组件规格、CSS 写法）；**不引入它的 React 组件库**；上游 `docs/design-system/` 已离线复制到 `docs/design/animal-island-ui/` | 全部 `--ac-*` 设计变量；**居民卡**照它的 Card `pattern-*`（点点底纹、同色描边，`src/client/css-card.js`），resident-card 的性格下拉照 Select 触发器；表单、按钮规格。做新组件先查本地副本，见 [界面规范](ui-style.md) |
 | 《集合啦！动物森友会》NookPhone、居民卡（游戏） | 商业游戏 | 只参考感觉 | 主菜单九宫格 App 方块、居民卡的「简介卡」感觉；不用任何原版素材 |
 | 闪卡（`src/client/css-holo.js`） | 本项目自己写的 | — | 盲盒摆件和扩展图鉴的闪卡：渐变底、斜向流光、悬停跟随倾斜 |
 

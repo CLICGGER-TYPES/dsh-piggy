@@ -8,7 +8,7 @@
 - 用户提供的原摸摸 GIF：权利链不属于本项目，**不随仓库/发布包分发，也不授予再分发许可**。
 
 完整目录表和署名方式见 [LICENSE-ASSETS.md](LICENSE-ASSETS.md)。下面列出参考、依赖或提及的第三方内容。
-没有复制任何第三方代码、文档或游戏原版素材——用到的数值与名称属于事实性数据。
+除下面明确标注的 MIT 设计文档离线副本外，没有复制第三方代码或游戏原版素材——用到的数值与名称属于事实性数据。
 
 ## 设计参考资料
 
@@ -16,7 +16,7 @@
 |---|---|---|
 | [xuemian168/qqpet_automation](https://github.com/xuemian168/qqpet_automation) | MIT（其原创部分） | 只参考**数值与名称**：属性阈值、三条疾病链的名称与分期、九门科目名、部分物品名。其源代码、数据文件结构与本项目不同，未复制 |
 | [ice-cream-headache/ice-cream-headache.github.io](https://github.com/ice-cream-headache/ice-cream-headache.github.io) | MIT | 只参考**界面截图**（宠物在上、奶油色图标栏在下、带标签的属性条）。截图未随本包分发 |
-| [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui) | MIT | 参考设计 token 与 Button、Title、Modal、Tabs、Card、Badge、Progress 外观；菜园 4.0.8 沿用 Modal 的有机 clip-path 几何，以原生 DOM/CSS 实现，无 React 依赖 |
+| [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui) | MIT | 参考设计 token 与 Button、Title、Modal、Tabs、Card、Badge、Progress、Input、Select 外观；菜园 4.0.8 沿用 Modal 的有机 clip-path 几何，以原生 DOM/CSS 实现，无 React 依赖。`docs/design/animal-island-ui/` 是上游 `docs/design-system/` 的离线副本（3.0.0 / `02fa9da`），许可原文见该目录 `LICENSE` |
 
 ## 运行时依赖
 
