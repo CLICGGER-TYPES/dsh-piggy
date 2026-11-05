@@ -31,7 +31,9 @@ for (const options of PLATFORMS) {
     shell.send('piggy:place', { hitShape: [] })
     shell.point(110, 130)
     shell.poll()
-    assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false })
+    // Linux 的原生绘制轮廓就是可见猪/面板，空 hitShape 时用它兜底恢复点击；
+    // Windows/macOS 仍保持穿透，不能让透明预留抢走桌面点击。
+    assert.deepEqual(shell.mouse.at(-1), { ignore: options.platform !== 'linux', forward: false })
     assert.deepEqual(shell.shapes, usesNativeShape ? [DRAW] : [])
   })
 
