@@ -1,5 +1,8 @@
 // @ts-check
 export const CSS_ACHIEVEMENTS = `
+.dp-ach-controls{margin-bottom:8px}
+.dp-ach-controls .dp-ach-options{display:flex}
+.dp-ach-count{font-size:11px;color:var(--ac-text-muted);margin:8px 0 12px}
 .dp-ach-intro{font-size:12px;line-height:1.7;color:var(--ac-ink-soft,#756c60);padding:3px 0 12px}
 .dp-ach-group{font-size:12px;font-weight:800;margin:16px 0 8px;color:var(--ac-ink,#514341)}
 .dp-ach-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
