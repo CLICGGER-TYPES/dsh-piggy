@@ -61,6 +61,7 @@ function renderStages(ui) {
   // keep offering one the host has never heard of.
   var stageList = ui.view.stages.length > 0 ? ui.view.stages : STAGES
   var grid = tileGrid()
+  grid.className += ' dp-nine-grid'
   for (var s = 0; s < stageList.length; s += 1) {
     (function (entry, index) {
       var locked = entry.unlocked === false

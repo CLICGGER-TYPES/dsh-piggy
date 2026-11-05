@@ -43,6 +43,7 @@ export function renderWorkTab(ui) {
 /** The top layer: one tile per skill, with how many of its jobs the pig can do. */
 function renderSkills(ui) {
   var grid = tileGrid()
+  grid.className += ' dp-nine-grid'
   for (var s = 0; s < SKILLS.length; s += 1) {
     (function (skill) {
       var open = ui.view.jobs.filter(function (job) { return job.trait === skill.key && job.qualified }).length

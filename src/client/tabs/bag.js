@@ -14,7 +14,9 @@ import { careEffectLine, drillHeader, drillTo, statStrip, tile, tileGrid } from 
 import { SHELF_COLOR, shelfParts } from './shop.js'
 import { walletBar } from '../wallet.js'
 
-/** The consumable shelves, in shop order. */
+/** 背包首页只放 8 个主分类 + 「更多」，正好九宫格；鱼饵/已穿戴/钱包收进更多。 */
+var PRIMARY_SHELVES = ['food', 'bath', 'toy', 'medicine', 'promotion']
+/** 所有消耗品货架，子页和首页共用（含收进「更多」的鱼饵）。 */
 var CONSUMABLES = KIND_ORDER
 
 /** 这三个货架的东西用了就是一次照料（喂食 / 洗澡 / 玩耍），和状态页原来的按钮一样。 */
@@ -39,7 +41,8 @@ function shortDay(day) {
 
 export function renderBagTab(ui) {
   var open = ui.drill.bag
-  if (open === 'worn') renderWorn(ui)
+  if (open === 'more') renderMore(ui)
+  else if (open === 'worn') renderWorn(ui)
   else if (open === 'diary') renderDiary(ui)
   else if (open === 'souvenir') renderSouvenirs(ui)
   else if (open === 'fish') renderFish(ui)
@@ -59,40 +62,72 @@ function ownedOf(ui, kind) {
 
 function renderCategories(ui) {
   var grid = tileGrid()
-  for (var k = 0; k < CONSUMABLES.length; k += 1) {
-    (function (kind) {
-      var items = ownedOf(ui, kind)
-      var count = items.reduce(function (sum, item) { return sum + num(ui.view.inventory[item.key], 0) }, 0)
-      var hasFree = items.some(function (item) { return item.default === true })
-      var parts = shelfParts(kind)
-      grid.appendChild(tile({
-        emoji: parts[0], label: parts[1], color: SHELF_COLOR[kind] ?? 'blue',
-        badge: count > 0 ? String(count) : '', dim: count === 0 && !hasFree,
-        tag: items.some(function (item) { return item.needed }) ? '需要' : '',
-        data: { 'data-bag': kind },
-        onPick: function () { drillTo(ui, 'bag', kind) },
-      }))
-    })(CONSUMABLES[k])
-  }
-  var counts = {
+  grid.className += ' dp-nine-grid'
+  // 首页固定 9 格：8 个主分类 + 更多。鱼饵/已穿戴/钱包在「更多」里，避免变成 4 行。
+  PRIMARY_SHELVES.forEach(function (kind) {
+    var items = ownedOf(ui, kind)
+    var count = items.reduce(function (sum, item) { return sum + num(ui.view.inventory[item.key], 0) }, 0)
+    var hasFree = items.some(function (item) { return item.default === true })
+    var parts = shelfParts(kind)
+    grid.appendChild(tile({
+      emoji: parts[0], label: parts[1], color: SHELF_COLOR[kind] ?? 'blue',
+      badge: count > 0 ? String(count) : '', dim: count === 0 && !hasFree,
+      tag: items.some(function (item) { return item.needed }) ? '需要' : '',
+      data: { 'data-bag': kind },
+      onPick: function () { drillTo(ui, 'bag', kind) },
+    }))
+  })
+  var counts = bagCounts(ui)
+  ;['diary', 'souvenir', 'fish'].forEach(function (key) {
+    var spec = EXTRA[key]
+    grid.appendChild(tile({
+      emoji: spec.emoji, label: spec.label, color: spec.color,
+      badge: counts[key] > 0 ? String(counts[key]) : '', dim: counts[key] === 0,
+      data: { 'data-bag': key },
+      onPick: function () { drillTo(ui, 'bag', key) },
+    }))
+  })
+  grid.appendChild(tile({
+    emoji: '📦', label: '更多', color: 'brown',
+    data: { 'data-bag': 'more' },
+    onPick: function () { drillTo(ui, 'bag', 'more') },
+  }))
+  ui.content.appendChild(grid)
+}
+
+function bagCounts(ui) {
+  return {
     worn: ui.view.dress.filter(function (item) { return item.worn }).length,
     diary: ui.view.diary.length,
     souvenir: ui.view.pig.souvenirs.length,
     fish: ui.view.fishing.bag.length,
     wallet: (ui.view.wallets || []).length,
   }
-  for (var key in EXTRA) {
-    (function (category) {
-      if ((category === 'worn' || category === 'wallet') && counts[category] === 0) return
-      var spec = EXTRA[category]
-      grid.appendChild(tile({
-        emoji: spec.emoji, label: spec.label, color: spec.color,
-        badge: counts[category] > 0 ? String(counts[category]) : '', dim: counts[category] === 0,
-        data: { 'data-bag': category },
-        onPick: function () { drillTo(ui, 'bag', category) },
-      }))
-    })(key)
-  }
+}
+
+/** 「更多」：鱼饵、已穿戴、钱包，保持首页九宫格不变成四行。 */
+function renderMore(ui) {
+  drillHeader(ui, 'bag', '📦 更多', '')
+  var grid = tileGrid()
+  var bait = ownedOf(ui, 'bait')
+  var baitCount = bait.reduce(function (sum, item) { return sum + num(ui.view.inventory[item.key], 0) }, 0)
+  var baitParts = shelfParts('bait')
+  grid.appendChild(tile({
+    emoji: baitParts[0], label: baitParts[1], color: SHELF_COLOR.bait,
+    badge: baitCount > 0 ? String(baitCount) : '', dim: baitCount === 0,
+    data: { 'data-bag': 'bait' },
+    onPick: function () { drillTo(ui, 'bag', 'bait') },
+  }))
+  var counts = bagCounts(ui)
+  ;['worn', 'wallet'].forEach(function (key) {
+    var spec = EXTRA[key]
+    grid.appendChild(tile({
+      emoji: spec.emoji, label: spec.label, color: spec.color,
+      badge: counts[key] > 0 ? String(counts[key]) : '', dim: counts[key] === 0,
+      data: { 'data-bag': key },
+      onPick: function () { drillTo(ui, 'bag', key) },
+    }))
+  })
   ui.content.appendChild(grid)
 }
 

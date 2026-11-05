@@ -65,8 +65,8 @@ export const CSS_CARD = [
   // 菜单至少 170px，不然只显示得下一个字；滚动条也收细，别把选项再挤窄。
   '.dp-vcard-select-menu{position:absolute;left:0;right:auto;top:calc(100% + 5px);z-index:20;',
   'width:100%;min-width:170px;max-width:calc(100vw - 24px);max-height:168px;overflow-y:auto;padding:6px;',
-  'background:#ffeea0;border:2px solid #e8dcc8;border-radius:18px;',
-  'box-shadow:0 6px 14px rgba(61,52,40,.16);scrollbar-width:thin;scrollbar-color:#d4c4a8 transparent;',
+  'background:#fff6d8;border:2px solid var(--ac-border-light);border-radius:18px;',
+  'box-shadow:0 6px 14px rgba(61,52,40,.12);scrollbar-width:thin;scrollbar-color:#d4c4a8 transparent;',
   'animation:dp-vcard-menu-in .16s var(--ac-ease)}',
   '.dp-vcard-select-menu::-webkit-scrollbar{width:6px}',
   '.dp-vcard-select-menu::-webkit-scrollbar-thumb{background:#d4c4a8;border-radius:3px}',
@@ -75,7 +75,7 @@ export const CSS_CARD = [
   '.dp-vcard-select-option{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;',
   'border:0;border-radius:10px;background:transparent;color:var(--ac-text-body);font:inherit;',
   'font-size:11.5px;font-weight:600;text-align:left;cursor:pointer}',
-  '.dp-vcard-select-option:hover,.dp-vcard-select-option[data-active="true"]{background:rgba(255,204,0,.4);font-weight:700}',
+  '.dp-vcard-select-option:hover,.dp-vcard-select-option[data-active="true"]{background:rgba(255,204,0,.24);font-weight:700}',
   '.dp-vcard-select-emoji{flex:none;width:16px;text-align:center}',
   '.dp-vcard-select-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   // 生日编辑：日期框保持 50×28 的小尺寸；好/算了放得下就同行，放不下自动换行。
