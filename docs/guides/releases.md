@@ -70,7 +70,7 @@ Windows 安装版和 Linux AppImage 支持 App 内下载并重启安装外壳；
 - [ ] 新 PR 作者是否进入 README 贡献者表
 - [ ] 新贴图/素材是否写了出处、PROVENANCE 和致谢
 - [ ] 新素材是否在 [LICENSE-ASSETS.md](../../LICENSE-ASSETS.md) 登记许可；AI 图、Noto 衍生猪图、字体是否用了正确许可
-- [ ] 仓库当前树是否没有本机绝对路径（`/home/`、`/zyx/`、`C:\Users\`）；旧提交里的历史路径是否需要单独处理
+- [ ] 仓库当前树是否没有本机绝对路径（Linux home、Windows Users、挂载点）；旧提交里的历史路径是否需要单独处理
 - [ ] CHANGELOG 是否提到对应贡献
 - [ ] README 主图是否为当前版本实拍，不混用旧版本截图
 - [ ] 游戏版本、桌面外壳版本、tag 三者一致

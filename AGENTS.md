@@ -32,7 +32,7 @@
 3. **提交信息不署 AI 名字**（不加 Co-Authored-By 等）。格式见 [CONVENTIONS.md](docs/CONVENTIONS.md)「Git」。
 4. **发版**：用户验收通过后才发；发版前按 [docs/guides/releases.md](docs/guides/releases.md) 的检查单过一遍：CHANGELOG 该版小节、README 文字和截图、贡献者表、素材出处与许可、版本/tag 一致。GitHub Release 和 npm 是当前渠道；Gitee 不再发布新版本，历史附件只作回退。
    **npm 由维护者确认发布**；可信发布工作流默认只读检查，只有维护者明确选择 `publish` 才能执行，不能未经授权代发。步骤见 [HANDOFF.md](docs/HANDOFF.md) 第 9 节。
-5. **不提交凭据，也不提交本机路径**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。文档、manifest、PROVENANCE 里不要写 `/home/...`、`/zyx/...`、`C:\Users\...` 这类本机绝对路径，用 `<local-workspace>/...`、`<artwork-workspace>/...` 或仓库相对路径。`test/fixtures/owner-lan-tls/test-only.key` 只是测试私钥，不是生产凭据，但也不要换成真实密钥。
+5. **不提交凭据，也不提交本机路径**：令牌（如 `GITEE_TOKEN`）由维护者在命令里给，不写进任何文件；测试机账号密码不进仓库。文档、manifest、PROVENANCE 里不要写本机绝对路径（Linux 的 home 目录、Windows 的 Users 目录、挂载点等），用 `<local-workspace>/...`、`<artwork-workspace>/...` 或仓库相对路径。`test/fixtures/owner-lan-tls/test-only.key` 只是测试私钥，不是生产凭据，但也不要换成真实密钥。
 6. **emoji**：本项目以 emoji 为主——界面图标、物品、气泡、特效、游戏数据都可以用 emoji，参考项目里「不许用 emoji 当图标」之类的规定不适用。
    **不许用 emoji 的是给用户的回复和汇报**（聊天里说明进度、总结时不用）。代码注释、日志、提交信息也不用（见 CONVENTIONS）。
 7. **参考项目和本项目冲突时，一律以本项目现在的做法为准**（设计系统、组件库、动效库都是）。
