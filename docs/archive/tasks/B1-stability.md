@@ -45,7 +45,7 @@
 - [~] **不做（用户 2026-10-01：本地插件没必要搞权限）** ~~`/dsh-pig/act` 没有鉴权~~：任何网页都能 POST `reset/dev/giveAll`。
   **方案（已调研，代码未动，等 Claude / 用户过目）**
 
-  宿主侧现状（查过 `/zyx/DSH/deepseek-harness`）：
+  宿主侧现状（查过 `<local-workspace>/deepseek-harness`）：
   - `packages/host/webserver` 只做 node:http 路由注册，文件头自述「knows no harness concepts」，
     `register({ kind, path, handler })` 没有 filter/中间件位，**没有给插件路由的鉴权钩子**。
   - 宿主自己的浏览器会话鉴权在 `packages/client/connection/src/browser-auth.ts`（HMAC 签名的

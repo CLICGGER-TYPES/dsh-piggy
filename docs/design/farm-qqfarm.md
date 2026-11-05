@@ -6,7 +6,7 @@
 
 参考资料（本机）：
 
-| 内容 | 位置（`/zyx/DSH/workspaces/dsh-piggy/design-refs/qqpet/` 下） |
+| 内容 | 位置（`<local-workspace>/dsh-piggy/design-refs/qqpet/` 下） |
 |---|---|
 | 作物、种子、化肥原始数据 | `resources/pet/qqfarm/com/MyFarm/data/xml/Crop.xml`、`seed.xml`、`props.xml` |
 | 原版逻辑（qqpet 改过的 ActionScript） | `tools/qqfarm/src/com/MyFarm/`（生长、灾害：`view/InstallFace.as`；照料、收获：`control/FarmlandControl.as`；开垦：`control/ReclamationControl.as`） |

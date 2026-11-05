@@ -7,7 +7,7 @@
 
 受 Google Emoji Kitchen 启发：**整只 🐖（侧面全身）和一个 emoji 主题「融合」**，比如西瓜猪、幽灵猪、宇航员猪。
 Emoji Kitchen 只有 🐷 猪脸、没有整只猪，而且它的图是 Google 的、没有开源许可——**只能借它的点子，不能照描它的图**。
-它的 365 种 🐷 组合总览放在维护者本机（`/zyx/DSH/workspaces/dsh-piggy/research/emoji-kitchen/`），只当灵感看。
+它的 365 种 🐷 组合总览放在维护者本机（`<local-workspace>/dsh-piggy/research/emoji-kitchen/`），只当灵感看。
 
 ## 2. 许可（最重要，违反就整张作废）
 

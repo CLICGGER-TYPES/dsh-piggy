@@ -49,7 +49,7 @@ export const CATALOG_FILE = 'catalog.json'
 export const STRINGS_FILE = 'strings.json'
 export const GENERATED_NSH = 'optional-extensions.generated.nsh'
 
-/** 页面文案（英文字段名）：UI 样稿 /zyx/agents/codex/deliverables/piggy-review/windows-installer-20261027/index.html。 */
+/** 页面文案（英文字段名）：UI 样稿 <artwork-workspace>/deliverables/piggy-review/windows-installer-20261027/index.html。 */
 export const PAGE_STRINGS = {
   title: '选择附加扩展',
   subtitle: '可以只安装小猪，扩展以后仍能在游戏设置里添加。',

@@ -28,6 +28,6 @@
 
 立绘规格改为**统一可见高度**，参照现有默认猪，不再按最长边。离线工具用 Pillow / CairoSVG 测量 38 张反馈图和 109 张内置 SVG、睡姿 PNG；元数据同时覆盖放大、缩小与居中。导入皮肤加载后按相同高度测量。睡姿保留原有宽盒，修正缩放时的居中方式。原图文件不变。
 
-本地原生 Electron 实测：同一比例下猪递 97.875px、饥饿图 97.876px、猪猪王 98.723px、睡姿 97.738px；基准 97.538px，误差最大 1.186px（SVG 原生栅格化的采样差异）。截图在 `/zyx/codex/dsh-piggy-artwork/settings-review/`。当前已复查睡姿居中。
+本地原生 Electron 实测：同一比例下猪递 97.875px、饥饿图 97.876px、猪猪王 98.723px、睡姿 97.738px；基准 97.538px，误差最大 1.186px（SVG 原生栅格化的采样差异）。截图在 `<artwork-workspace>/dsh-piggy-artwork/settings-review/`。当前已复查睡姿居中。
 
-本轮原生 Electron 控件实测：170% 点加号为 180%，点减号回到 170%；直接输入 300% 后猪窗口尺寸变量为 204px。代理下拉切换 HTTP 后输入、应用和测试连接成功。截图：`/zyx/codex/dsh-piggy-artwork/settings-review/size-controls-v2.png`、`/zyx/codex/dsh-piggy-artwork/settings-review/proxy-settings-v2.png`。
+本轮原生 Electron 控件实测：170% 点加号为 180%，点减号回到 170%；直接输入 300% 后猪窗口尺寸变量为 204px。代理下拉切换 HTTP 后输入、应用和测试连接成功。截图：`<artwork-workspace>/dsh-piggy-artwork/settings-review/size-controls-v2.png`、`<artwork-workspace>/dsh-piggy-artwork/settings-review/proxy-settings-v2.png`。

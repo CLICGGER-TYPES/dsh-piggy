@@ -8,15 +8,15 @@
 
 2026-10-26 补充：RC3 已同步[夸克预发布下载](https://pan.quark.cn/s/62eefaa3c173)，Windows 完整安装版/便携版、4 个可选扩展、游戏包和说明/校验清单共10文件；核对远端名称大小，8个发布附件与 GitHub 校验值一致。正式版与历史归档入口保留。公开 npm RC3 在隔离真实 DSH 中补测激活、喂食、原生鼠标回复接话、刷新与宿主重启通过；详见 ROADMAP。证据 `deliverables/piggy-work/quark-rc3-20261026/`。
 
-2026-10-26：0.37.2-rc.3 / 外壳0.6.8-rc.2已在GitHub、Gitee和npm双包rc发布，标签b4e47a8，存档v15；默认split、stage可选。2027项中2015通过/12平台跳过，build/typecheck通过，Linux实际AppImage及GitHub Windows安装升级/存档保留/两种窗口模式已验收。Gitee瘦安装包仅构建与公开下载校验；macOS、混合DPI多屏、实时系统缩放及真实Windows反馈继续跟踪。Gitee仅留最新安装器，旧国内版本14目录/75文件已归档夸克；原始游戏依赖包/扩展仍保留。用户本地仅按要求启动上次同步版本，未自动换RC3。证据目录 `/zyx/agents/codex/deliverables/piggy-work/rc3-20261026/`；当前结论以ROADMAP顶部为准。
+2026-10-26：0.37.2-rc.3 / 外壳0.6.8-rc.2已在GitHub、Gitee和npm双包rc发布，标签b4e47a8，存档v15；默认split、stage可选。2027项中2015通过/12平台跳过，build/typecheck通过，Linux实际AppImage及GitHub Windows安装升级/存档保留/两种窗口模式已验收。Gitee瘦安装包仅构建与公开下载校验；macOS、混合DPI多屏、实时系统缩放及真实Windows反馈继续跟踪。Gitee仅留最新安装器，旧国内版本14目录/75文件已归档夸克；原始游戏依赖包/扩展仍保留。用户本地仅按要求启动上次同步版本，未自动换RC3。证据目录 `<artwork-workspace>/deliverables/piggy-work/rc3-20261026/`；当前结论以ROADMAP顶部为准。
 
 2026-10-25 礼包侧边方案已获用户确认并实装：讲话时待领礼包向工作区内侧摆放，讲话结束回头顶；跨到期按住仅固定按钮至点击后，不延长讲话。修前原生跨到期0领取、按钮提前上移约62px；修后Linux split/stage、100%/200%共5个场景均单次领取、0 touch/pet、猪脚底不动；Windows125%按住跨到期领取并消失通过。1755项及类型检查通过。本地已备份同档同步，仍split、菜园4.1.5，PID711908；仅CLI文件/启动日志核对物理预览，未做物理GUI/CDP验收。未公开发布。
 
-2026-10-25 12:36收尾：已备份同档同步启动诊断与当前游戏候选，本地仍split、菜园4.1.5，PID663785；复制期间存档逐字节不变、身份字段保留、两页加载日志正常，未做物理GUI/CDP测试。备份 `/zyx/agents/codex/deliverables/piggy-work/local-sync-20261025/123606-maintenance-farm-4.1.5/`。完整官方Windows包外网阻断冷启动、原生孵化/菜单已通过，临时防火墙规则已清理；npm账号只读检查E401，可信发布未绑定/未启用。1752项及类型检查通过，未提交/公开发布。
+2026-10-25 12:36收尾：已备份同档同步启动诊断与当前游戏候选，本地仍split、菜园4.1.5，PID663785；复制期间存档逐字节不变、身份字段保留、两页加载日志正常，未做物理GUI/CDP测试。备份 `<artwork-workspace>/deliverables/piggy-work/local-sync-20261025/123606-maintenance-farm-4.1.5/`。完整官方Windows包外网阻断冷启动、原生孵化/菜单已通过，临时防火墙规则已清理；npm账号只读检查E401，可信发布未绑定/未启用。1752项及类型检查通过，未提交/公开发布。
 
-2026-10-25 用户要求六款新猪/钓鱼先等，其他先做。三个PI任务均经火山ARK完成：启动诊断补缺、只读气泡审计、npm发布候选；root原生VM复核后发现并修过早弹框失败，Windows125%缺模块错误框与日志/重复启动已验证。舞台底边往返18px偏移已修0，Linux常规/200%扩展及Windows125%穿透、拖后释放、键盘交还/扩展操作通过；六轮资源采样只支持单屏有限结论，多屏和完整回归仍未完成，默认split。签到回执候选仅在隔离副本把待领礼包移到侧边，已提审，生产未改。发布候选未启用、账号未改、未发包。最新证据和待办见ROADMAP当前汇总及 `/zyx/agents/codex/deliverables/piggy-work/remaining-20261025/`。
+2026-10-25 用户要求六款新猪/钓鱼先等，其他先做。三个PI任务均经火山ARK完成：启动诊断补缺、只读气泡审计、npm发布候选；root原生VM复核后发现并修过早弹框失败，Windows125%缺模块错误框与日志/重复启动已验证。舞台底边往返18px偏移已修0，Linux常规/200%扩展及Windows125%穿透、拖后释放、键盘交还/扩展操作通过；六轮资源采样只支持单屏有限结论，多屏和完整回归仍未完成，默认split。签到回执候选仅在隔离副本把待领礼包移到侧边，已提审，生产未改。发布候选未启用、账号未改、未发包。最新证据和待办见ROADMAP当前汇总及 `<artwork-workspace>/deliverables/piggy-work/remaining-20261025/`。
 
-本地已于11:53备份后同档同步4.1.5并重启，PID556098；复制期间存档不变、身份信息保留、两页启动日志通过。首次重启遇会话更新后的失效X认证文件，改用当前Xwayland认证后启动成功；仅CLI文件/日志核对，未做物理GUI/CDP测试。备份：`/zyx/agents/codex/deliverables/piggy-work/local-sync-20261025/115302-farm-4.1.5`。
+本地已于11:53备份后同档同步4.1.5并重启，PID556098；复制期间存档不变、身份信息保留、两页启动日志通过。首次重启遇会话更新后的失效X认证文件，改用当前Xwayland认证后启动成功；仅CLI文件/日志核对，未做物理GUI/CDP测试。备份：`<artwork-workspace>/deliverables/piggy-work/local-sync-20261025/115302-farm-4.1.5`。
 
 2026-10-25 菜园4.1.5候选：用户接受4.1.4主体，仅要求小农场三个图文入口稍小、选地回到A原型四角短标。小农场导航图片40→32px、实测高度75.19→62.19px；抽屉11个工具与大农场导航仍40px。选地/键盘焦点改为四角浅底青色标记，取消整圈蓝框。Linux VM原生选地、工具展开、背包往返与大农场通过，页面错误0；全仓1715项和类型检查通过。当前Windows未重验；未公开发布。
 
@@ -99,9 +99,9 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 
 ## 3. 仓库与目录
 
-本机总目录 `/zyx/DSH/workspaces/dsh-piggy/`（见同目录 README）：`code/` 代码、`skins-source/` 皮肤原稿、`feedback/` 用户报错截图录屏、`videos/` 宣传片工程、`design-refs/qqpet-ref/` QQ 宠物参考图（数值和疾病链的设计来源）、`archive/` 旧分支备份和历史快照。
+本机总目录 `<local-workspace>/dsh-piggy/`（见同目录 README）：`code/` 代码、`skins-source/` 皮肤原稿、`feedback/` 用户报错截图录屏、`videos/` 宣传片工程、`design-refs/qqpet-ref/` QQ 宠物参考图（数值和疾病链的设计来源）、`archive/` 旧分支备份和历史快照。
 
-> ⚠️ `/zyx/DSH/workspaces/dsh-pig` 是指向 `code/` 的旧链接，本机 DSH 已改成直接加载 `code/`（`~/.dsh/profiles/web/package.json` 里 `"dsh-piggy": "link:/zyx/DSH/workspaces/dsh-piggy/code"`）。
+> ⚠️ `<local-workspace>/dsh-pig` 是指向 `code/` 的旧链接，本机 DSH 已改成直接加载 `code/`（`~/.dsh/profiles/web/package.json` 里 `"dsh-piggy": "link:<local-workspace>/dsh-piggy/code"`）。
 
 `code/` 里主要的东西：
 
@@ -172,7 +172,7 @@ DSH 面板浏览器实测在用户授权后使用 Playwright 1.63 + Chromium hea
 ## 5. 开发环境
 
 ```bash
-cd /zyx/DSH/workspaces/dsh-piggy/code
+cd <local-workspace>/dsh-piggy/code
 # 构建工具不写进依赖清单（--no-save），装一次即可
 npm install --no-save --package-lock=false esbuild@0.28.2 typescript@5.9.3 @types/node@20.19.43
 # 桌面版依赖
@@ -182,7 +182,7 @@ node node_modules/electron/install.js
 ```
 
 - 项目运行要求 Node ≥ 20；本轮主机全量验证使用 Node 26.11.1，Linux CLI 与 Windows 11 CLI 使用 Node 24.21.0，Linux GUI 环境系统 Node 22。没有框架、没有 TypeScript 编译：JS + JSDoc + `// @ts-check`，`npm run typecheck` 用 tsc 只做检查。
-- 本机 DSH 源码在 `/zyx/DSH/deepseek-harness`（`master` 分支，2026-10-06 更新到 0.2.1-alpha.1；更新后要 `pnpm install && pnpm build`）。
+- 本机 DSH 源码在 `<local-workspace>/deepseek-harness`（`master` 分支，2026-10-06 更新到 0.2.1-alpha.1；更新后要 `pnpm install && pnpm build`）。
 
 ---
 
@@ -219,8 +219,8 @@ node node_modules/electron/install.js
 
 ```bash
 # 复制一份 DSH_HOME，把 profile 里的 dsh-piggy 链到要测的代码
-cp -a ~/.dsh /tmp/pig-home && ln -sfn /zyx/DSH/workspaces/dsh-piggy/code /tmp/pig-home/profiles/web/node_modules/dsh-piggy
-cd /zyx/DSH/deepseek-harness && DSH_HOME=/tmp/pig-home node --import tsx/esm apps/cli/src/bin.ts web --no-open --port 3087
+cp -a ~/.dsh /tmp/pig-home && ln -sfn <local-workspace>/dsh-piggy/code /tmp/pig-home/profiles/web/node_modules/dsh-piggy
+cd <local-workspace>/deepseek-harness && DSH_HOME=/tmp/pig-home node --import tsx/esm apps/cli/src/bin.ts web --no-open --port 3087
 # 日志第一行给出带 token 的地址
 ```
 - 用户自己的 DSH 一般跑在 3080 端口（终端里 `pnpm dsh web`），测试用 3084 以上的端口。
@@ -378,7 +378,7 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 
 菜园4.1.0和经典3.1.1共用v5数据服务端；新宿主在导入前拒绝会误迁移v5数据的3.1.0/4.0.x旧包。当前工作树未发版，正式发布前必须先确定含此保护的游戏版本，并把两种菜园的`minGame`同步到该版本，再生成目录/官方哈希/扩展包；不能将新菜园先发布给没有此保护的旧宿主。首课已确认数值见[农场首课数值](numbers/farm-onboarding.md)。服务端改`src/extensions/farm/`后跑`npm run build`，不要手改生成的`extensions/farm/server.js`。
 
-> 2026-10-24 本地同步：用户明确要求同步后，已备份原游戏包、扩展和存档，更新物理机现有 codex-preview 游戏包并重启同一存档；菜园4.1.0、藏猪方块0.2.6已同步，钓鱼与回复/外出照顾更新随游戏包载入。仅核对文件哈希、进程与启动日志，未在物理机进行GUI/CDP测试。搏斗动作草稿未纳入。备份位于 `/zyx/agents/codex/deliverables/piggy-work/local-sync-20261024/175056`。
+> 2026-10-24 本地同步：用户明确要求同步后，已备份原游戏包、扩展和存档，更新物理机现有 codex-preview 游戏包并重启同一存档；菜园4.1.0、藏猪方块0.2.6已同步，钓鱼与回复/外出照顾更新随游戏包载入。仅核对文件哈希、进程与启动日志，未在物理机进行GUI/CDP测试。搏斗动作草稿未纳入。备份位于 `<artwork-workspace>/deliverables/piggy-work/local-sync-20261024/175056`。
 
 > 2026-10-24 菜园复验：用户指出4.1.0原型还原与鼠标操作均不合格，撤回此前菜园验收结论。4.1.1修正地块选择、主按钮直接照料、工具层收起、页面切换滚动、短面板购买框裁切与纸感工具。Linux VM 100/125/200%原生输入验证，窗口高度不够时使用单层外部滚动；尚未重跑此版Windows UI。界面对照页沿用 deliverables/piggy-review/designs.html。新素材出处见扩展paper-tools-art-pack.json。正式发布前minGame配套保护约束仍有效。
 
@@ -388,4 +388,4 @@ PIGGY_GAME_PIN=<game-pin.json>            # 首次下载用的清单（scripts/w
 
 > 本轮复验补充：常用/高级工具图标28px、商店页签18px；控件普通/悬停/按下/选中状态已原生鼠标核对。锁定工具和缺少肥料分别跳对应货架；买种子主操作显式回种子货架。125%/200%分别走通大小窗口的选地、工具、购买取消、返回，低高度保留单层滚动。未同步本地。
 
-> 2026-10-24 19:40 用户明确要求本地同步：菜园4.1.2与扩展窗口工作区尺寸修复已同档重启codex-preview。同步前完整备份 `/zyx/agents/codex/deliverables/piggy-work/local-sync-20261024/194009`；仅同步菜园扩展与游戏包，核对文件SHA和启动日志，未在物理机执行GUI/CDP测试。未正式发布。
+> 2026-10-24 19:40 用户明确要求本地同步：菜园4.1.2与扩展窗口工作区尺寸修复已同档重启codex-preview。同步前完整备份 `<artwork-workspace>/deliverables/piggy-work/local-sync-20261024/194009`；仅同步菜园扩展与游戏包，核对文件SHA和启动日志，未在物理机执行GUI/CDP测试。未正式发布。

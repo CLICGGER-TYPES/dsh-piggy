@@ -11,7 +11,7 @@
 
 以后每次生图，先在这里新增一条记录，再调用生成工具。记录原样提示词、参考图文件、生成工具与已知版本、输出文件、审图结果和修改原因；每一轮单独留档，不把后来的整理稿写成旧提示词。正式素材只用用户确认的版本，废稿保留在素材工作区供对照。
 
-工作区原始参考：`/zyx/DSH/workspaces/dsh-piggy/feedback/`。工作区审图包：`/zyx/codex/dsh-piggy-artwork/feedback-static-svg/ai-drafts/selected-png/` 和 `/zyx/codex/dsh-piggy-artwork/sleep-mat/`。这些路径是本机定位信息，不是仓库资源；跨机器时优先使用仓库内的已确认 PNG。
+工作区原始参考：`<local-workspace>/dsh-piggy/feedback/`。工作区审图包：`<artwork-workspace>/dsh-piggy-artwork/feedback-static-svg/ai-drafts/selected-png/` 和 `<artwork-workspace>/dsh-piggy-artwork/sleep-mat/`。这些路径是本机定位信息，不是仓库资源；跨机器时优先使用仓库内的已确认 PNG。
 
 ## 新一轮记录格式
 

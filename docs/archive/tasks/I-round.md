@@ -157,7 +157,7 @@
 桌面版：
 
 ```bash
-cd /zyx/DSH/workspaces/dsh-piggy/code/apps/desktop
+cd <local-workspace>/dsh-piggy/code/apps/desktop
 npm start                 # 窗口没出来就换 npm start -- --ozone-platform=x11
 ```
 

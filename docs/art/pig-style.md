@@ -26,10 +26,10 @@
 
 ### 用户审图入口与结构返修标记（2026-10-24 用户确认）
 
-- 给用户看的当前图片和 HTML 统一维护在 `/zyx/agents/codex/deliverables/piggy-review/`，入口为 `index.html`，修订对照为 `comparison.html`。图片按角色/动作放入 `images/`、`originals/`，旧版对照预览放 `before/`；不在此目录混入提示词、生成日志、失败稿、测试报告或脚本。
+- 给用户看的当前图片和 HTML 统一维护在 `<artwork-workspace>/deliverables/piggy-review/`，入口为 `index.html`，修订对照为 `comparison.html`。图片按角色/动作放入 `images/`、`originals/`，旧版对照预览放 `before/`；不在此目录混入提示词、生成日志、失败稿、测试报告或脚本。
 - 生成原稿、历史版本和自查材料留在工作区；通过 `tools/art-review/publish.py` 发布审图副本，不靠搬动或覆盖已确认原稿来整理目录。
 - 每张当前图都提供“结构有问题，需要修改”复选框，勾选表示需要返修，并提供可选问题描述。勾选、取消和备注均直接自动保存；不要求用户导出、上传或复制清单。
-- 使用 `tools/art-review/server.py` 提供本地入口 `http://127.0.0.1:9388/`。问题清单保存在 `/zyx/agents/codex/deliverables/piggy-work/review-state/structure-issues.json`，当前图片登记在同目录 `registry.json`；后续处理时 agent 自行读取勾选项及备注，对照图片 SHA256 确认版本。
+- 使用 `tools/art-review/server.py` 提供本地入口 `http://127.0.0.1:9388/`。问题清单保存在 `<artwork-workspace>/deliverables/piggy-work/review-state/structure-issues.json`，当前图片登记在同目录 `registry.json`；后续处理时 agent 自行读取勾选项及备注，对照图片 SHA256 确认版本。
 - agent 用 `python tools/art-review/read-issues.py` 直接读取当前勾选及备注；发布审图页后需确保本地服务仍在运行。
 - 当前图的标识和 SHA256 一起保存，换图后保留旧版问题记录并标为非当前，不能误把旧图意见套到新图。对照页复选框针对修订后的图。
 - 审图功能用独立测试清单验证勾选、备注、刷新恢复和跨页同步；不向真实用户的问题清单写入验收数据。GUI 测试仍只在虚拟机。
@@ -37,7 +37,7 @@
 
 ## 目录和分类
 
-完整素材工作区：`/zyx/codex/dsh-piggy-artwork/style-unification/<日期>/`
+完整素材工作区：`<artwork-workspace>/dsh-piggy-artwork/style-unification/<日期>/`
 
 | 目录 | 内容 |
 | --- | --- |
@@ -68,7 +68,7 @@
 
 用户指出桌椅打工图的结构错误，全部改为猪在地上操作电脑。统一用 piglet-work-floor-v1 作母图：肚子贴地、完整凸圆背，两只短前蹄自然搭笔记本键盘，后蹄收在臀下；不画桌、椅、凳或直立人形躯干。各形态只调整体型和皮肤身份，胖猪保留大肚小脸。旧桌椅版本停用。
 
-本轮全素材审图索引：`/zyx/codex/dsh-piggy-artwork/style-unification/2026-10-10/review/all-pigs-review.html`。覆盖现有176项及5份补充稿，均先交用户一次挑问题，不自动接入游戏。
+本轮全素材审图索引：`<artwork-workspace>/dsh-piggy-artwork/style-unification/2026-10-10/review/all-pigs-review.html`。覆盖现有176项及5份补充稿，均先交用户一次挑问题，不自动接入游戏。
 
 ### 当时的短腿与蹄子纠正
 

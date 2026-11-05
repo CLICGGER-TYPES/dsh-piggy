@@ -46,8 +46,8 @@
 ## 协作规则
 
 1. **两边在不同目录干活**，避免 `git add` 把对方做了一半的东西提交进去：
-   - DSH agent：原目录 `/zyx/DSH/workspaces/dsh-pig`，直接在 `main` 上提交（DSH 加载的就是这个目录）
-   - Claude：worktree `/zyx/DSH/workspaces/dsh-pig-claude`，分支 `claude/core`；每完成一块、测试全绿后由 Claude **rebase 到最新 main 再快进合入**，冲突由 Claude 解决
+   - DSH agent：原目录 `<local-workspace>/dsh-pig`，直接在 `main` 上提交（DSH 加载的就是这个目录）
+   - Claude：worktree `<local-workspace>/dsh-pig-claude`，分支 `claude/core`；每完成一块、测试全绿后由 Claude **rebase 到最新 main 再快进合入**，冲突由 Claude 解决
    - DSH agent **不要**合并、rebase 或改动 `claude/*` 分支
 2. 开工前 `git log --oneline -10` 看最近有什么合进来了。
 3. 一张卡一段连续提交，提交信息 `fix(pig)` / `feat(pig)` 开头，写清改了什么、为什么。**只 `git add` 自己改的文件，不用 `git add -A`**。
@@ -80,7 +80,7 @@ TEST_DSH_HOME=/tmp/dsh-piggy-e-test
 mkdir -p "$TEST_DSH_HOME"
 cp -a ~/.dsh/profiles ~/.dsh/llm-deepseek ~/.dsh/storages ~/.dsh/dsh-piggy "$TEST_DSH_HOME"/
 # 将 "$TEST_DSH_HOME/profiles/web/node_modules/dsh-piggy" 指向当前任务 worktree
-cd /zyx/DSH/deepseek-harness
+cd <local-workspace>/deepseek-harness
 DSH_HOME="$TEST_DSH_HOME" pnpm dsh web --no-open --port 3084
 ```
 

@@ -2,9 +2,9 @@
 
 2026-10-22 用户确认 `card-draw-concept-v5` 的单抽概念（薄卡从卡列中抽出、卡面由磨砂变清晰），并要求按同一语言补齐卡池与十连。概念图与审稿记录：
 
-- 已批概念：`/zyx/agents/DSH/workspaces/dsh-piggy/tasks/results/next-iteration-20261021/review-20261022/card-draw-concept-v5.png`
+- 已批概念：`<local-workspace>/dsh-piggy/tasks/results/next-iteration-20261021/review-20261022/card-draw-concept-v5.png`
   （SHA-256 `51d0bc2524f2aee4181adbf0ca4d64a075595af08029848a6375d2fc0b696c3a`）
-- 独立动效预览（只作参考，不进扩展）：`/zyx/agents/codex/deliverables/piggy-plan-20261022/card-preview/`
+- 独立动效预览（只作参考，不进扩展）：`<artwork-workspace>/deliverables/piggy-plan-20261022/card-preview/`
 - 设计记录：`docs/design/next-iteration-20261021.md`「盲盒独立采用 RhineLabUI 视觉」小节。
 
 ## 本版实际使用的东西

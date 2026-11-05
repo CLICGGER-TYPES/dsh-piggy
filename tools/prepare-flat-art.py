@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export the approved flat (no-outline) redraws as the game's only pig artwork.
 
-uv run --with pillow python tools/prepare-flat-art.py /zyx/codex/dsh-piggy-artwork/face-restore/2026-10-12
+uv run --with pillow python tools/prepare-flat-art.py <artwork-workspace>/dsh-piggy-artwork/face-restore/2026-10-12
 2026-10-13: the user kept only the no-outline style (redrawn 1:1 from the pre-0.35 art) and dropped the outlined set.
 Originals, every version and the review records stay outside the repository.
 """

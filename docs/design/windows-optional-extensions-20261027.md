@@ -1,6 +1,6 @@
 # Windows安装器可选扩展方案
 
-用户2026-10-27要求新Windows安装器提供扩展可选附加项。交互样稿：/zyx/agents/codex/deliverables/piggy-review/windows-installer-20261027/index.html。
+用户2026-10-27要求新Windows安装器提供扩展可选附加项。交互样稿：<artwork-workspace>/deliverables/piggy-review/windows-installer-20261027/index.html。
 
 范围：现有NSIS安装目录页之后提供五个默认不勾选的选项：菜园、矿洞、盲盒、扭蛋、藏猪方块；内置番茄钟/钓鱼不重复列。经典菜园是同key兼容变体，继续手动导入，不同时自动装两份。
 

@@ -29,7 +29,7 @@
 
 ## 原稿、逐字提示词与导出
 
-- 当前平涂原稿与所有生成版本：素材工作区 `face-restore/2026-10-12/`；旧版历史原稿：`/zyx/codex/dsh-piggy-artwork/style-unification/2026-10-09/`、`2026-10-10/`。
+- 当前平涂原稿与所有生成版本：素材工作区 `face-restore/2026-10-12/`；旧版历史原稿：`<artwork-workspace>/dsh-piggy-artwork/style-unification/2026-10-09/`、`2026-10-10/`。
 - 旧游戏素材备份：上述工作区 `2026-10-10/references/legacy-game-art/`，不随 npm 包发布。
 - 逐字提示词：仓库 `docs/art-prompts/flat-pigs/`；参考/完整 job 还保存在工作区。
 - 导出：`tools/prepare-flat-art.py`；尺寸校准：`tools/measure-feedback-framing.py`。

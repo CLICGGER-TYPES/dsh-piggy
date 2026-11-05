@@ -1,7 +1,7 @@
 [
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/garden-background.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-47d95d8b-6cc7-4093-b2f8-ec4067eacdf9.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/garden-background.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-47d95d8b-6cc7-4093-b2f8-ec4067eacdf9.png",
     "tool": "builtin image_gen",
     "sha256": "e99590bb5d9e7d2c2772905a961b65660357fa0f7bca3cad265497e07421fd7f",
     "source_sha256": "e99590bb5d9e7d2c2772905a961b65660357fa0f7bca3cad265497e07421fd7f",
@@ -10,10 +10,10 @@
       1024
     ],
     "mode": "RGB",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/background-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/background-prompt.txt"
     ],
     "pixel_editing": false,
     "prompt_texts": [
@@ -28,8 +28,8 @@
     "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
   },
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/soil-patch.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-6c708a35-7002-49df-8998-9e27768e718b.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/soil-patch.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-6c708a35-7002-49df-8998-9e27768e718b.png",
     "tool": "builtin image_gen",
     "sha256": "82a9809989579e3f887eb3b6cc757836d9fe55b3f8f28391eab87c74640d4258",
     "source_sha256": "82a9809989579e3f887eb3b6cc757836d9fe55b3f8f28391eab87c74640d4258",
@@ -38,11 +38,11 @@
       1254
     ],
     "mode": "RGBA",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/plot-prompt.txt",
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/plot-repair-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/plot-prompt.txt",
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/plot-repair-prompt.txt"
     ],
     "pixel_editing": false,
     "alpha_range": [
@@ -75,8 +75,8 @@
     "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
   },
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-seed.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-242cf136-5570-41c4-8170-b5296f1336ee.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-seed.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-242cf136-5570-41c4-8170-b5296f1336ee.png",
     "tool": "builtin image_gen",
     "sha256": "2943fabdd16c8b247b7afa73b3084c74e7395e33d981b1677eb29cf99db94cc6",
     "source_sha256": "2943fabdd16c8b247b7afa73b3084c74e7395e33d981b1677eb29cf99db94cc6",
@@ -85,10 +85,10 @@
       1254
     ],
     "mode": "RGBA",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-seed-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-seed-prompt.txt"
     ],
     "pixel_editing": false,
     "alpha_range": [
@@ -120,8 +120,8 @@
     "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
   },
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-seedling.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-d74e79d5-3710-467b-b21f-25410d39108c.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-seedling.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-d74e79d5-3710-467b-b21f-25410d39108c.png",
     "tool": "builtin image_gen",
     "sha256": "9006edf1d118366ebf3703fb0a930f9bc8bca01bd42bd02162114cc162e8a780",
     "source_sha256": "9006edf1d118366ebf3703fb0a930f9bc8bca01bd42bd02162114cc162e8a780",
@@ -130,10 +130,10 @@
       1374
     ],
     "mode": "RGBA",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-seedling-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-seedling-prompt.txt"
     ],
     "pixel_editing": false,
     "alpha_range": [
@@ -165,8 +165,8 @@
     "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
   },
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-ripe.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-f62fa259-82bd-4af4-8118-d20214b63ef5.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/scallion-ripe.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-f62fa259-82bd-4af4-8118-d20214b63ef5.png",
     "tool": "builtin image_gen",
     "sha256": "167c632e7c2bdb53dec90c9fd9f496b2b375a2c1d1a89e5f48efacc28a0e0724",
     "source_sha256": "167c632e7c2bdb53dec90c9fd9f496b2b375a2c1d1a89e5f48efacc28a0e0724",
@@ -175,10 +175,10 @@
       1374
     ],
     "mode": "RGBA",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-ripe-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/scallion-ripe-prompt.txt"
     ],
     "pixel_editing": false,
     "alpha_range": [
@@ -210,8 +210,8 @@
     "processing": "Proportional LANCZOS resize only. No crop/recolor/alpha repair."
   },
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/paper-weed.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-c292dbad-c648-40e1-87cc-a098b2984abe.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/paper-weed.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-c292dbad-c648-40e1-87cc-a098b2984abe.png",
     "tool": "builtin image_gen",
     "sha256": "8c9da04a743a6cb71b944df82923f0986342f1059ce12524af6c40ee56a89fa0",
     "source_sha256": "8c9da04a743a6cb71b944df82923f0986342f1059ce12524af6c40ee56a89fa0",
@@ -220,10 +220,10 @@
       1254
     ],
     "mode": "RGBA",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-weed-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-weed-prompt.txt"
     ],
     "pixel_editing": false,
     "alpha_range": [
@@ -255,8 +255,8 @@
     "processing": "Proportional LANCZOS resize only; no crop/recolor/alpha repair."
   },
   {
-    "file": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/paper-stubble.png",
-    "source": "/home/clicgger/.codex/generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-60f980d3-4c06-40b3-ad0e-10521c57b318.png",
+    "file": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/paper-stubble.png",
+    "source": "generated_images/01a16c40-2e03-7eb3-95ee-f662e6070d47/exec-60f980d3-4c06-40b3-ad0e-10521c57b318.png",
     "tool": "builtin image_gen",
     "sha256": "0add838fc5df9628d332ea6f3d928cbd5c5cad113f43dc97714774b08af070cd",
     "source_sha256": "0add838fc5df9628d332ea6f3d928cbd5c5cad113f43dc97714774b08af070cd",
@@ -265,11 +265,11 @@
       1254
     ],
     "mode": "RGBA",
-    "reference": "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
+    "reference": "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/revised/direction-a-flat-paper.png",
     "reference_sha256": "4ca8d0e1f75c2f49ad6dd9e3d466b2ed639140a9603aa9eb6d283ecaffa27089",
     "prompts": [
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-stubble-prompt.txt",
-      "/zyx/agents/codex/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-stubble-repair-prompt.txt"
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-stubble-prompt.txt",
+      "<artwork-workspace>/deliverables/piggy-work/iteration-20261024/designs/farm/assets/sources/paper-stubble-repair-prompt.txt"
     ],
     "pixel_editing": false,
     "alpha_range": [
