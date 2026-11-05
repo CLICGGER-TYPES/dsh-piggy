@@ -43,3 +43,19 @@ test('打工/学习固定九宫格，背包和旅行放不下时按主屏分页'
   assert.equal(travelPages[1].children.length, 3, '旅行第二页 3 格')
   assert.equal(contentOf(travel.dom).querySelectorAll('.dp-home-dot').length, 2, '旅行两页各有圆点')
 })
+
+test('兴趣超过 9 个也按九宫格分页', async () => {
+  const subject = { key: 'chinese', label: '语文', emoji: '📖', lessons: 0, stageKey: '', available: true, affordable: true }
+  const interests = Array.from({ length: 18 }, (_, index) => ({
+    key: 'interest-' + index, label: '兴趣' + index, emoji: '🎨', traitLabel: '魅力', traitEmoji: '✨',
+    minutes: 30, cost: 40, gain: 2, certificate: '证', certificateAfter: 5, times: 0, affordable: true,
+  }))
+  const { dom } = await mount({ status: { ...SNAPSHOT, subjects: [subject], interests } })
+  openPanel(dom, 'study')
+  findByAttr(contentOf(dom), 'data-stage', 'interest').fire('click')
+  const pages = contentOf(dom).querySelectorAll('.dp-pager-page')
+  assert.equal(pages.length, 2, '18 个兴趣分 2 页')
+  assert.equal(pages[0].children.length, 9, '第一页 9 格')
+  assert.equal(pages[1].children.length, 9, '第二页 9 格')
+  assert.equal(contentOf(dom).querySelectorAll('.dp-home-dot').length, 2, '两页圆点')
+})
