@@ -304,10 +304,10 @@ test('U24-7 result uses actual fish facts and each fish art when available', asy
   assert.equal(findByClass(contentOf(two.dom), 'dp-fish-result-img').src, '/dsh-piggy/art/fishing/fish/fish_carp.png?v=4f090310d0cf')
   assert.match(contentOf(two.dom).allText(), /鲤鱼.*★★☆☆.*33\.2 cm.*12/)
 
-  const sardine = { id: 'res-3', key: 'fish_sardine', label: '沙丁鱼', emoji: '🐟', rarity: 'common', sizeCm: 12.1, price: 14, phase: 'caught' }
-  const three = await mount({ status: status({ rod, spots, pending: sardine }) })
+  const flounder = { id: 'res-3', key: 'fish_flounder', label: '比目鱼', emoji: '🐟', rarity: 'uncommon', sizeCm: 36.1, price: 50, phase: 'caught' }
+  const three = await mount({ status: status({ rod, spots, pending: flounder }) })
   openPanel(three.dom, 'fishing')
-  assert.equal(findByAttr(contentOf(three.dom), 'data-fish-result', 'fish_sardine').getAttribute('data-fish-result-art'), 'emoji', '没有插画的鱼回退 emoji')
+  assert.equal(findByAttr(contentOf(three.dom), 'data-fish-result', 'fish_flounder').getAttribute('data-fish-result-art'), 'emoji', '没有插画的鱼回退 emoji')
   assert.equal(findByClass(contentOf(three.dom), 'dp-fish-result-img'), undefined)
 })
 

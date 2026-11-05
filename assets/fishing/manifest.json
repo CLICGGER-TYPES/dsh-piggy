@@ -427,5 +427,505 @@
     ],
     "export_sha256": "dacdd0b90f6e750fe16841ec24b0ca5a54514730fdbf70a14cd969dc3af7f3a5",
     "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_sardine",
+    "kind": "fish",
+    "label": "沙丁鱼",
+    "source": "<grok-imagegen>/fish_fish_sardine.jpg",
+    "prompt": "独立一条沙丁鱼插画，small slender silver-blue sardine, forked tail；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_sardine.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "a92fb0d82954a775afd4886dd6eb669614c28e11106bd010cf737cf67b14126a",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "5a4094be93051c7d8da40609a0ad2e9d3f5eba80d0cf892e291c6647c6523246",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_mackerel",
+    "kind": "fish",
+    "label": "青花鱼",
+    "source": "<grok-imagegen>/fish_fish_mackerel.jpg",
+    "prompt": "独立一条青花鱼插画，blue-green mackerel with wavy dark stripes and silver belly；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_mackerel.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "b360d952a8ea2c28584f37e9a80e24a82c06e2cb56117c73a8176f86d2a98720",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "5090c44c413a0058b6be84e917765bfdb416339375642c57ba750adffa41a1aa",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_eel",
+    "kind": "fish",
+    "label": "鳗鱼",
+    "source": "<grok-imagegen>/fish_fish_eel.jpg",
+    "prompt": "独立一条鳗鱼插画，long slender gray-brown eel with small fins；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_eel.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "6afe8429e42502074942fde5ef08617165945386233190a5280cde3aab54c61e",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "16dca3629adb25b7e37fee266ad9fb703c71976b685b850ebe40862b801c7e2f",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_sturgeon",
+    "kind": "fish",
+    "label": "鲟鱼",
+    "source": "<grok-imagegen>/fish_fish_sturgeon.jpg",
+    "prompt": "独立一条鲟鱼插画，long ancient gray sturgeon with bony scutes, pointed snout and barbels；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_sturgeon.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "4cfea72339ea0069d72710e2e62084c6fcf6433e13b030b29ffd27eb26d0abb5",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "335ca8f7e2d95f1652d6c12277388c0d152b29237fccec31b5ddc729bde88c27",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_loach",
+    "kind": "fish",
+    "label": "泥鳅",
+    "source": "<grok-imagegen>/fish_fish_loach.jpg",
+    "prompt": "独立一条泥鳅插画，small slender yellow-brown loach with whiskers；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_loach.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "b77ae90503efff24f595eab1ebfa22c1abccd16390bf7e70e8a121aecd5184f3",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "76e5840d643a8374055abde357a4743e502368b91b0b48b78bfbb1aa655c76dc",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_perch",
+    "kind": "fish",
+    "label": "河鲈",
+    "source": "<grok-imagegen>/fish_fish_perch.jpg",
+    "prompt": "独立一条河鲈插画，olive-green perch with dark vertical stripes and spiny dorsal；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_perch.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "90b156a8983a363f20656874ee21b652acf2e148cda9ff99ba814aaf8efb725a",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "c98ed84db3a462e29c4da484d4a60f1d2b53f055eb0ae33224909444fc71baa4",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_anchovy",
+    "kind": "fish",
+    "label": "鳀鱼",
+    "source": "<grok-imagegen>/fish_fish_anchovy.jpg",
+    "prompt": "独立一条鳀鱼插画，tiny slender silver-blue anchovy with pointed snout；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_anchovy.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "100d110433446ff1bde55037f45e779ff6eedefe5cb8f256ea0bdc62b011f7b9",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "ec075904971fbbf212f331e477bb3af10bb30cb3b2ff85b9b3a586d892e35319",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_bream",
+    "kind": "fish",
+    "label": "鳊鱼",
+    "source": "<grok-imagegen>/fish_fish_bream.jpg",
+    "prompt": "独立一条鳊鱼插画，deep flat silver bream with small head；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_bream.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "f5de58eeb9a74b566aa1f975ad3b541a8171a994626d7308e6d262b1181ec217",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "61db8963e2ce7f38127fd4a9b3684afc14ae0781f795fc52194db5cc607ab3be",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_ricefield_eel",
+    "kind": "fish",
+    "label": "黄鳝",
+    "source": "<grok-imagegen>/fish_fish_ricefield_eel.jpg",
+    "prompt": "独立一条黄鳝插画，long yellow-brown ricefield eel；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_ricefield_eel.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "2b4f9e52c40229aed8c8de57c37a3b81aafb50a092503e052b7b1904be632c6d",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "22b57582f3cb3a2a44231dd34f5f149dcad8c0241e7c8318f1aeb53697081790",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_crayfish",
+    "kind": "fish",
+    "label": "小龙虾",
+    "source": "<grok-imagegen>/fish_fish_crayfish.jpg",
+    "prompt": "独立一条小龙虾插画，warm red-orange crayfish with two claws；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_crayfish.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "f057f6adec34212ca32f4da994dde41c663c28623193d8eda71d9b4bf130bb99",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "53a3b722d3ae7376ec4e68c700b3bc081c3f691e9f377b707590684159787586",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_trout",
+    "kind": "fish",
+    "label": "虹鳟",
+    "source": "<grok-imagegen>/fish_fish_trout.jpg",
+    "prompt": "独立一条虹鳟插画，silver trout with a pink-red side stripe and small dark spots；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_trout.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "1510a0897cd19bf712f5ef5cd7a512a2b429f7a36d207a106308c6e8ff203894",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "ca7561afc4f97c8475f367a73fbcb15a3a7831afa38c5ff93d1becd33690798e",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_icefish",
+    "kind": "fish",
+    "label": "银鱼",
+    "source": "<grok-imagegen>/fish_fish_icefish.jpg",
+    "prompt": "独立一条银鱼插画，tiny slender translucent white icefish；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_icefish.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "cdd1758852954eba2e3cd77a0c28a7d619c26f20536c83ac98d81c697027090b",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "522b6c300b550bf6c2f31b25bd8dead064a3f73da8ad6fd941e3590f74230e4b",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_silver_carp",
+    "kind": "fish",
+    "label": "鲢鱼",
+    "source": "<grok-imagegen>/fish_fish_silver_carp.jpg",
+    "prompt": "独立一条鲢鱼插画，deep silver-white silver carp with a small head；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_silver_carp.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "781a55c4ebe50fea3fee5f8363260cbc76ecba46917ee9f153c621b80c7e8ebf",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "9e380f420c28d624807d877f0b01ebd1ef8e37582faa95e790bc55a24e20109e",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_mandarin",
+    "kind": "fish",
+    "label": "鳜鱼",
+    "source": "<grok-imagegen>/fish_fish_mandarin.jpg",
+    "prompt": "独立一条鳜鱼插画，yellowish-brown mandarin fish with dark blotches and spiny dorsal；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_mandarin.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "c74b5aa56d9dc7fc6039bb2bb2c61657a7a3d96a50b289c7cc0d784db91c6f82",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "ce7f8ab8773d42e03b1478109192790d6d9b0148ae4b34ce46519171b610486a",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_grass_carp",
+    "kind": "fish",
+    "label": "草鱼",
+    "source": "<grok-imagegen>/fish_fish_grass_carp.jpg",
+    "prompt": "独立一条草鱼插画，long silver-green grass carp；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_grass_carp.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "0d829cdecdaebd0cc853316205faa88f45d139ec6eaaf058f742b38e509da312",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "4bd3fd6b42180c493dfa09b6262938ebf9c1f142c3eeed2f488348f4ea39d94c",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_goldfish",
+    "kind": "fish",
+    "label": "金鱼",
+    "source": "<grok-imagegen>/fish_fish_goldfish.jpg",
+    "prompt": "独立一条金鱼插画，round warm orange-red goldfish with flowing tail；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_goldfish.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "396e9378e294d13db7d81be12f2e8e45a43d75133e902f564c455041fbac36b9",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "78f40f43d62de6346fe137467afe2f911bc0fb1d6f7d1e5a99946c1d4e179362",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_crab",
+    "kind": "fish",
+    "label": "大闸蟹",
+    "source": "<grok-imagegen>/fish_fish_crab.jpg",
+    "prompt": "独立一条大闸蟹插画，green-brown hairy crab with two claws；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_crab.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "7000d377c18baaeb0767bb7c4fc2ef5b544e2fee431e4bc37036bcb28a3013ff",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "d5c3ffc0398328bdadc9cfa7fc6dbd04e34f3f426be6f283d62ec920fbe72f82",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_pike",
+    "kind": "fish",
+    "label": "狗鱼",
+    "source": "<grok-imagegen>/fish_fish_pike.jpg",
+    "prompt": "独立一条狗鱼插画，long green-brown pike with duckbill snout and spots；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_pike.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "8a51cd726554fae644deb0c9171d5f7b7996ac82d2955c68ca3e444a3cd0d19c",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "1fc470b0eaa6325aa95f7a13a735f9b04339eea4c5247295c67ad8b7e68e6ca3",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_lake_shadow",
+    "kind": "fish",
+    "label": "湖中巨影",
+    "source": "<grok-imagegen>/fish_fish_lake_shadow.jpg",
+    "prompt": "独立一条湖中巨影插画，huge mysterious dark blue-gray fish, still one complete fish；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_lake_shadow.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "b336a242f3a7c7179002e06da09a469b132a7e0a977bca3b3e52757e905c5839",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "7a31313fd120af404641ff9469b62df40d10a63da830cf5e863c872b4d32a6a3",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_paddlefish",
+    "kind": "fish",
+    "label": "白鲟",
+    "source": "<grok-imagegen>/fish_fish_paddlefish.jpg",
+    "prompt": "独立一条白鲟插画，long gray paddlefish with a paddle-shaped snout；温暖轻巧绘本游戏平涂，低饱和，软阴影，无厚黑描边、无3D、无油亮、无金属。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_paddlefish.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "72bb0578fcad928ba31620f28e1933a751461c4213c90c2bed5d16b024755927",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "8b343b58288847fab984606d59554786be068e6d8c85e82609ec34e05832f99f",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
   }
 ]
