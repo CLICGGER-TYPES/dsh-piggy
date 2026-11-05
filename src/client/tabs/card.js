@@ -16,7 +16,17 @@ import { button, el } from '../dom.js'
 /** How long each editable field may be (mirrors data/profile.js). */
 var LIMITS = { catchphrase: 6, motto: 24, name: PET_NAME_MAX, owner: 12 }
 
+/** 性格菜单的「点外面收起」监听；每次重画前先摘掉，避免挂着旧 DOM。 */
+var menuCleanup = null
+
+function detachMenu() {
+  if (menuCleanup === null) return
+  menuCleanup()
+  menuCleanup = null
+}
+
 export function renderCardTab(ui) {
+  detachMenu()
   var p = ui.view.pig
   var profile = ui.view.profile
   if (p === null) return
@@ -197,25 +207,78 @@ function appendBirthdayEditor(ui, row) {
   })
 }
 
-/** 性格：下拉 + 好/算了，只发 personality。 */
+/**
+ * 性格：自绘下拉。原生 select 的弹出列表在 Electron 里会在鼠标松开时收掉，
+ * 用户只能按住拖选；这里用卡片内的列表，点开后会一直留着。
+ */
 function appendPersonalityEditor(ui, row, profile) {
   var draft = ui.cardEdit
-  var pick = /** @type {HTMLSelectElement} */ (el('select', 'dp-vcard-select'))
-  pick.setAttribute('data-card-input', 'personality')
-  profile.personalities.forEach(function (p) {
-    var option = /** @type {HTMLOptionElement} */ (el('option', null, p.emoji + ' ' + p.label))
-    option.value = p.key
-    pick.appendChild(option)
-  })
-  pick.value = draft.personality
-  pick.addEventListener('change', function () { draft.personality = pick.value })
-  // 包一层放自绘 chevron：原生 select 的箭头不受控，和卡片风格对不上。
+  var current = profile.personalities[0]
+  profile.personalities.forEach(function (p) { if (p.key === draft.personality) current = p })
   var wrap = el('span', 'dp-vcard-select-wrap')
-  wrap.appendChild(pick)
+  var trigger = button('dp-vcard-select', {
+    'data-card-input': 'personality',
+    'aria-haspopup': 'listbox',
+    'aria-expanded': draft.menuOpen === true ? 'true' : 'false'
+  }, function () {
+    draft.menuOpen = draft.menuOpen !== true
+    ui.renderContent()
+  })
+  trigger.appendChild(el('span', 'dp-vcard-select-value', current.emoji + ' ' + current.label))
+  trigger.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return
+    event.preventDefault()
+    draft.menuOpen = false
+    ui.renderContent()
+  })
+  wrap.appendChild(trigger)
+  if (draft.menuOpen === true) {
+    var menu = el('div', 'dp-vcard-select-menu')
+    menu.setAttribute('role', 'listbox')
+    menu.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      draft.menuOpen = false
+      ui.renderContent()
+    })
+    profile.personalities.forEach(function (p) {
+      var option = button('dp-vcard-select-option', {
+        'data-card-option': p.key,
+        role: 'option',
+        'aria-selected': p.key === draft.personality ? 'true' : 'false'
+      }, function () {
+        draft.personality = p.key
+        draft.menuOpen = false
+        ui.renderContent()
+      })
+      if (p.key === draft.personality) option.setAttribute('data-active', 'true')
+      option.appendChild(el('span', 'dp-vcard-select-emoji', p.emoji))
+      option.appendChild(el('span', 'dp-vcard-select-label', p.label))
+      menu.appendChild(option)
+    })
+    wrap.appendChild(menu)
+    bindMenuDismiss(ui, row, draft)
+  }
   row.appendChild(wrap)
   appendProfileActions(ui, row, 'personality', function () {
     ui.send('editProfile', { personality: draft.personality })
   })
+}
+
+/** 点菜单和这一行之外的地方收起；点「好/算了」不拦，照常保存。 */
+function bindMenuDismiss(ui, row, draft) {
+  detachMenu()
+  var doc = (ui.content && ui.content.ownerDocument) || (typeof document === 'undefined' ? null : document)
+  if (doc === null || typeof doc.addEventListener !== 'function') return
+  var onDown = function (event) {
+    var target = event.target
+    if (typeof row.contains === 'function' && row.contains(target)) return
+    draft.menuOpen = false
+    detachMenu()
+    ui.renderContent()
+  }
+  doc.addEventListener('pointerdown', onDown, true)
+  menuCleanup = function () { doc.removeEventListener('pointerdown', onDown, true) }
 }
 
 function appendProfileActions(ui, row, key, save) {
