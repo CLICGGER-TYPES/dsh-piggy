@@ -209,7 +209,10 @@ function appendPersonalityEditor(ui, row, profile) {
   })
   pick.value = draft.personality
   pick.addEventListener('change', function () { draft.personality = pick.value })
-  row.appendChild(pick)
+  // 包一层放自绘 chevron：原生 select 的箭头不受控，和卡片风格对不上。
+  var wrap = el('span', 'dp-vcard-select-wrap')
+  wrap.appendChild(pick)
+  row.appendChild(wrap)
   appendProfileActions(ui, row, 'personality', function () {
     ui.send('editProfile', { personality: draft.personality })
   })

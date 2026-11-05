@@ -48,14 +48,27 @@ export const CSS_CARD = [
   'border-radius:50%;border:2px solid var(--vc-line);background:#fffbe7}',
   '.dp-vcard-edit:hover{background:var(--ac-hover)}',
   '.dp-vcard-input{flex:1;min-width:0;padding:3px 9px;font-size:11px}',
-  '.dp-vcard-row .dp-vcard-select{flex:1;min-width:0}',
-  // 生日编辑：日期框单独一行，64×32 固定宽度；好/算了换到下一行，避免挤窄输入框。
+  // 性格下拉：照 animal-island-ui Select 的触发器——奶油底、2px 暖边框、
+  // 12px 圆角、自绘 chevron，不要浏览器默认的白底灰箭头。
+  '.dp-vcard-select-wrap{position:relative;display:flex;flex:1;min-width:0}',
+  '.dp-vcard-select-wrap::after{content:"";position:absolute;right:12px;top:50%;width:7px;height:7px;',
+  'border-right:2px solid var(--ac-text-2);border-bottom:2px solid var(--ac-text-2);',
+  'transform:translateY(-70%) rotate(45deg);pointer-events:none}',
+  '.dp-vcard-row .dp-vcard-select{flex:1;min-width:0;height:30px;box-sizing:border-box;appearance:none;',
+  '-webkit-appearance:none;padding:0 28px 0 12px;border:2px solid var(--ac-border-light);border-radius:12px;',
+  'background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;font-size:11.5px;font-weight:700;',
+  'line-height:26px;cursor:pointer;transition:border-color .2s var(--ac-ease),box-shadow .2s var(--ac-ease)}',
+  '.dp-vcard-row .dp-vcard-select:hover{border-color:var(--ac-border-hover)}',
+  '.dp-vcard-row .dp-vcard-select:focus{outline:none;border-color:var(--ac-primary);',
+  'box-shadow:0 0 0 3px rgba(25,200,185,.16)}',
+  '.dp-vcard-select option{background:var(--ac-bg-input);color:var(--ac-text-body)}',
+  // 生日编辑：日期框保持 50×28 的小尺寸；好/算了放得下就同行，放不下自动换行。
   '.dp-vcard-birthday{flex-wrap:wrap}',
-  '.dp-vcard-date-fields{display:flex;align-items:center;gap:6px;flex:1;min-width:0}',
+  '.dp-vcard-date-fields{display:flex;align-items:center;gap:6px;flex:none}',
   // 保留 number 输入框的上下箭头：之前用户就是用箭头选月/日的。
-  '.dp-vcard-row .dp-vcard-date{flex:0 0 64px;width:64px;height:32px;box-sizing:border-box;',
-  'border-radius:9px;padding:0 4px;text-align:center;font-size:13px;font-weight:700;user-select:text}',
-  '.dp-vcard-edit-actions{display:flex;gap:6px;flex:0 0 100%;box-sizing:border-box;padding-left:50px;margin-top:6px}',
+  '.dp-vcard-row .dp-vcard-date{flex:0 0 50px;width:50px;height:28px;box-sizing:border-box;',
+  'border-radius:9px;padding:0 4px;text-align:center;font-size:12px;font-weight:700;user-select:text}',
+  '.dp-vcard-edit-actions{display:flex;gap:6px;margin-left:auto}',
   // In-place editing: the two buttons stay as small as the pencil they replace.
   '.dp-vcard-row .dp-mini,.dp-vcard-nameline .dp-mini{flex:none;padding:3px 9px;font-size:10px;box-shadow:none}',
   '[data-dsh-pig] .dp-vcard-row .dp-mini.dp-mini-plain,[data-dsh-pig] .dp-vcard-nameline .dp-mini.dp-mini-plain{background:#fffbe7;color:var(--ac-text);border:2px solid var(--vc-line);box-shadow:none}',
