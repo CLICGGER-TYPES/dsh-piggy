@@ -103,7 +103,11 @@ export function createWindowSurface(deps) {
 
   function setHit(pet, hit, source = 'hit-state') {
     const window = pet?.window
-    if ((!MOUSE_PASSTHROUGH && pet.placedHitShape === null) || window === null || window === undefined || window.isDestroyed()) return
+    // Linux 的原生绘制轮廓就是可见猪/面板本身，不是 Windows 那种带透明留白的整窗；
+    // 页面偶尔报空 hitShape 时用它兜底，避免窗口永久停在 1x1 的鼠标穿透区。
+    const hasLinuxShape = deps.platform === 'linux' && pet.passthroughMode === 'modern'
+      && pet.hasPlacedHitShape === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
+    if ((!MOUSE_PASSTHROUGH && pet.placedHitShape === null && !hasLinuxShape) || window === null || window === undefined || window.isDestroyed()) return
     const forward = pet.passthroughMode === 'legacy' && MOUSE_PASSTHROUGH
     if (hit === pet.passthroughHit && forward === pet.passthroughForward) return
     pet.passthroughHit = hit
@@ -160,15 +164,22 @@ export function createWindowSurface(deps) {
     if (pet.hitPending && Date.now() - pet.hitPendingAt >= HIT_PENDING_MS) pet.hitPending = false
     if (pet.hitPending) { setHit(pet, false, 'placement-pending'); return }
     // 页面报过独立输入面后，缺 hitShape 时不再拿含透明预留的绘制轮廓兜底。
-    if (pet.placedHitShape === null && pet.hasPlacedHitShape === true) {
+    // Linux 例外：原生绘制轮廓就是可见猪/面板本身，空 hitShape 时用它恢复点击，
+    // 否则一次空上报会让窗口永久停在 1x1 的鼠标穿透区。
+    const preciseHit = Array.isArray(pet.placedHitShape) && pet.placedHitShape.length > 0 ? pet.placedHitShape : null
+    const linuxFallback = deps.platform === 'linux' && pet.passthroughMode === 'modern'
+      && pet.hasPlacedHitShape === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
+      ? pet.placedShape : null
+    if (preciseHit === null && pet.hasPlacedHitShape === true && linuxFallback === null) {
       setHit(pet, false, 'missing-hit-shape')
       return
     }
     const bounds = window.getBounds()
     // 只有旧契约把动作整窗绘制区域也当输入；新契约不能让透明预留抢走桌面点击。
-    const shape = pet.placedHitShape === null && (pet.flightShapeActive || pet.dragShapeActive)
+    const baseShape = preciseHit ?? linuxFallback ?? pet.placedHitShape ?? pet.placedShape
+    const shape = preciseHit === null && linuxFallback === null && (pet.flightShapeActive || pet.dragShapeActive)
       ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
-      : shiftedShape(pet.placedHitShape ?? pet.placedShape, pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : pet.flightSlide)
+      : shiftedShape(baseShape, pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : pet.flightSlide)
     const { hit, problem } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window, shape })
     if (problem !== hitProblem) {
       hitProblem = problem
