@@ -36,11 +36,11 @@ export function createWindowSurface(deps) {
   /** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
   const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || deps.platform === 'darwin'
   /**
-   * 原生 Wayland 不支持 X11 的 setIgnoreMouseEvents 语义：启动时设成 true 后，
-   * 窗口会一直收不到点击。Wayland 下保持窗口可交互，透明区域由窗口管理器处理；
-   * 这也是 PIGGY_WAYLAND=1 与 XWayland 回退的分界。
+   * Wayland 桌面（原生 Wayland 或 XWayland）不支持 X11 的 setIgnoreMouseEvents 语义：
+   * 启动时设成 true 后，窗口会一直收不到点击。Wayland 会话下保持窗口可交互，
+   * 透明区域由窗口管理器/原生 shape 处理；纯 X11 会话仍走精确命中。
    */
-  const NATIVE_WAYLAND = deps.platform === 'linux' && deps.env.PIGGY_WAYLAND === '1'
+  const ALWAYS_INTERACTIVE = deps.platform === 'linux' && Boolean(deps.env.WAYLAND_DISPLAY)
   let geometrySeq = 0
   /** 同一种换算错误只记一次，避免 16ms 轮询刷日志。 */
   let hitProblem = ''
@@ -112,9 +112,9 @@ export function createWindowSurface(deps) {
 
   function setHit(pet, hit, source = 'hit-state') {
     const window = pet?.window
-    if (NATIVE_WAYLAND) {
+    if (ALWAYS_INTERACTIVE) {
       if (window === null || window === undefined || window.isDestroyed()) return
-      // Wayland 没有 X11 的输入区语义：永远不要把自己设成鼠标穿透。
+      // Wayland 会话没有可靠的 X11 输入区语义：永远不要把自己设成鼠标穿透。
       if (pet.passthroughHit === true && pet.passthroughForward === false) return
       pet.passthroughHit = true
       pet.passthroughForward = false

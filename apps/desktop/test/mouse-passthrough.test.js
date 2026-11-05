@@ -93,8 +93,8 @@ for (const options of PLATFORMS) {
   })
 }
 
-test('Wayland 原生窗口始终保持可交互，不设置鼠标穿透', async () => {
-  const shell = await mouseHarness({ platform: 'linux', env: { PIGGY_WAYLAND: '1' } })
+test('Wayland 会话（原生或 XWayland）始终保持可交互，不设置鼠标穿透', async () => {
+  const shell = await mouseHarness({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' } })
   shell.send('piggy:place', PLACE)
   shell.point(500, 500)
   shell.poll()
