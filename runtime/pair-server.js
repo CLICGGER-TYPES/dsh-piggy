@@ -12,7 +12,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 
-import { mergeSummary } from '../core.js'
+import { mergeSummary } from '../src/host/core.js'
 import { secureDirectory } from './local-server.js'
 import { PAIR_ACTION_SET, PAIR_COMMAND_SET, PAIR_COMMAND_VERBS, PREPARE_TARGETS, commandVerb } from './pair-actions.js'
 import { createMergeService } from './merge-service.js'

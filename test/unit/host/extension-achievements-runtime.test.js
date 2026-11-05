@@ -3,15 +3,15 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { achievementsView, migrate } from '../../../core.js'
-import { ACHIEVEMENTS } from '../../../data.js'
+import { achievementsView, migrate } from '../../../src/host/core.js'
+import { ACHIEVEMENTS } from '../../../src/host/data.js'
 import farm, { setTheft } from '../../../extensions/farm/server.js'
 
 setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
 import mine, { generateMap, hitsNeeded } from '../../../extensions/mine/server.js'
 import gacha from '../../../extensions/gacha/server.js'
 import blindbox, { CATALOG } from '../../../extensions/blindbox/server.js'
-import { snapshot } from '../../../snapshot.js'
+import { snapshot } from '../../../src/host/snapshot.js'
 import { KEYS, NOW, setupExtensions } from '../../helpers/extension-achievements.js'
 const entry = (state, key) => achievementsView(state).find(item => item.key === key)
 

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../core.js'
+import { hatchEgg } from '../../src/host/core.js'
 import { startOwnerLanServer, createOwnerLanClient } from '../../runtime/owner-lan-server.js'
 import { createGameRuntime } from '../../runtime/index.js'
 import { splitLegacyState } from '../../store/legacy-projection.js'

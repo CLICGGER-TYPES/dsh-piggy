@@ -17,7 +17,7 @@
  */
 import { dirname, join } from 'node:path'
 
-import { CHANNEL } from '../channel.js'
+import { CHANNEL } from '../src/host/channel.js'
 import { createCatalog } from './ext-catalog.js'
 import { createDownloads } from './ext-download.js'
 import { createInstaller } from './ext-install.js'

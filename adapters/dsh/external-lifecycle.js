@@ -8,7 +8,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 
-import { mergeSummary, migrate, resumeSuspendedPig } from '../../core.js'
+import { mergeSummary, migrate, resumeSuspendedPig } from '../../src/host/core.js'
 import { createSaveArchive } from '../../runtime/save-archive.js'
 import { SESSION_BOUNDARY, sessionOf } from '../../runtime/session-context.js'
 import { readStateFile, writeStateFile } from '../../store/state-file.js'

@@ -6,10 +6,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { careFactor, dayKeyFor, decay, feed, hatchEgg, layEgg, levelFor, lifeStageFor, migrate } from '../../../core.js'
-import { DSH_GROWTH_DAILY_CAP, GROWTH_PER_HOUR, MAX_LEVEL, xpForLevel } from '../../../data.js'
+import { careFactor, dayKeyFor, decay, feed, hatchEgg, layEgg, levelFor, lifeStageFor, migrate } from '../../../src/host/core.js'
+import { DSH_GROWTH_DAILY_CAP, GROWTH_PER_HOUR, MAX_LEVEL, xpForLevel } from '../../../src/host/data.js'
 import { finishWork } from '../../../packages/pet-core/src/core/settlement.js'
-import { JOBS } from '../../../data.js'
+import { JOBS } from '../../../src/host/data.js'
 
 const T0 = Date.parse('2026-10-01T09:00:00')
 const HOUR = 3_600_000

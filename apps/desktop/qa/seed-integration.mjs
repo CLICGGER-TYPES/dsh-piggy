@@ -2,8 +2,8 @@
 /** Private prelaunch fixtures for exact-package QA; never reads personal state. */
 import { cpSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { hatchEgg } from '../../../core.js'
-import { LINES, LINE_MEMORY } from '../../../data.js'
+import { hatchEgg } from '../../../src/host/core.js'
+import { LINES, LINE_MEMORY } from '../../../src/host/data.js'
 
 // Optional third argument selects an additional farm-v5 fixture. It is applied
 // only to this private profile before any desktop/DSH process starts. The

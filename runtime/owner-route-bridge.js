@@ -1,6 +1,6 @@
 // @ts-check
 /** Owner 路由桥：把已绑定 session 的 store 投影成旧 routes，并拒绝扁平存档/云操作。 */
-import { registerGameRoutes } from '../routes.js'
+import { registerGameRoutes } from '../src/host/routes.js'
 
 const OWNER_MODE_REFUSAL_PATHS = [
   '/dsh-piggy/save/export', '/dsh-piggy/save/preview', '/dsh-piggy/save/import',

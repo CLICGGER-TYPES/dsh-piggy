@@ -108,12 +108,12 @@ class StoreInventory: food, commodity, medicine, background
 ### 4.1 模块职责
 
 ```
-data.js     静态游戏表，只有数据没有行为
-             疾病链 · 9 门课 · 3 学段 · 4 个目的地 · 工作 · 商店 · 阈值
-core.js     纯状态机，无 IO、无 ctx、无自带时钟
-             每个函数都接收 nowMs 参数 → 整个游戏模型可单测、不用等
-store.js    持久化：原子写 + 节流；把 core 的纯函数接到磁盘
-render.js   所有文案与 ASCII 立绘（命令、HTTP、测试共用一份声音）
+src/host/data.js     静态游戏表，只有数据没有行为
+                     疾病链 · 9 门课 · 3 学段 · 4 个目的地 · 工作 · 商店 · 阈值
+src/host/core.js     纯状态机，无 IO、无 ctx、无自带时钟
+                     每个函数都接收 nowMs 参数 → 整个游戏模型可单测、不用等
+src/host/store.js    持久化：原子写 + 节流；把 core 的纯函数接到磁盘
+src/host/render.js   所有文案与 ASCII 立绘（命令、HTTP、测试共用一份声音）
 index.js    宿主半边：事件接线 + /pig 命令 + state/act 两个路由
 client.js   客户端半边：手写 __ModuleLoader__ 脚本 + DOM + 动画 + 面板
 ```

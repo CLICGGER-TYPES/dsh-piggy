@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../../core.js'
-import { registerGameRoutes } from '../../../routes.js'
-import { createStore } from '../../../store.js'
+import { hatchEgg } from '../../../src/host/core.js'
+import { registerGameRoutes } from '../../../src/host/routes.js'
+import { createStore } from '../../../src/host/store.js'
 import { makeBundle } from '../../../store/ext-import.js'
 import { createExtRuntime } from '../../../store/ext-runtime.js'
 

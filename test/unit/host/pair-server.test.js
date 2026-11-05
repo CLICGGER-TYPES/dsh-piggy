@@ -12,7 +12,7 @@ import { startPairServer } from '../../../runtime/pair-server.js'
 import { createSaveArchive } from '../../../runtime/save-archive.js'
 import { cleanupOldMerges } from '../../../runtime/merge-backup.js'
 import { makeZip, readZip } from '../../../runtime/save-zip.js'
-import { hatchEgg, migrate } from '../../../core.js'
+import { hatchEgg, migrate } from '../../../src/host/core.js'
 
 const BASE = 1_800_000_000_000
 const temp = () => mkdtempSync(join(tmpdir(), 'piggy-pair-'))

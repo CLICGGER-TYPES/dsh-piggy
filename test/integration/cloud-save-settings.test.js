@@ -7,7 +7,7 @@ import { test } from 'node:test'
 import { DEFAULT_CLOUD_SETTINGS, normalizeCloudSaveSettings, readCloudSaveSettings, writeCloudSaveSettings } from '../../runtime/cloud-save-settings.js'
 import { testGitRemote } from '../../runtime/git-sync.js'
 import { createGameRuntime } from '../../runtime/index.js'
-import { hatchEgg } from '../../core.js'
+import { hatchEgg } from '../../src/host/core.js'
 
 const temp = () => mkdtempSync(join(tmpdir(), 'piggy-cloud-settings-'))
 

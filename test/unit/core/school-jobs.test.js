@@ -6,8 +6,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { decay, hatchEgg, jobFacts, migrate, startStudy, startWork, studyView } from '../../../core.js'
-import { JOBS, SUBJECTS, jobByKey, jobRequirement, stageForNextLesson, subjectByKey, xpForLevel } from '../../../data.js'
+import { decay, hatchEgg, jobFacts, migrate, startStudy, startWork, studyView } from '../../../src/host/core.js'
+import { JOBS, SUBJECTS, jobByKey, jobRequirement, stageForNextLesson, subjectByKey, xpForLevel } from '../../../src/host/data.js'
 import { finishInterest, finishStudy, finishWork } from '../../../packages/pet-core/src/core/settlement.js'
 
 const T0 = Date.parse('2026-10-01T09:00:00')

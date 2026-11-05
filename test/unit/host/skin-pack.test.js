@@ -105,8 +105,8 @@ test('skin import accepts a raw ZIP body and a base64 body, and explains nested 
   const { mkdtempSync, readFileSync, rmSync } = await import('node:fs')
   const { tmpdir } = await import('node:os')
   const { join } = await import('node:path')
-  const { createStore } = await import('../../../store.js')
-  const { registerRoutes } = await import('../../../routes.js')
+  const { createStore } = await import('../../../src/host/store.js')
+  const { registerRoutes } = await import('../../../src/host/routes.js')
   const dir = mkdtempSync(join(tmpdir(), 'dsh-piggy-skin-'))
   const store = createStore(join(dir, 'state.json'))
   const routes = {}

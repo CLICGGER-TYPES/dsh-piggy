@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 
 import mine, { CHECKPOINTS, FLOORS, HELPER_RATES, HELPER_SPEEDS, ORES, generateMap, hitsNeeded, pickaxeFor } from '../extensions/mine/server.js'
 import { CROPS, HELPER_PLOTS } from '../extensions/farm/server.js'
-import { FISH, RODS, SHOP } from '../data.js'
+import { FISH, RODS, SHOP } from '../src/host/data.js'
 import { FISH_WEIGHT } from '../packages/pet-core/src/core/fishing.js'
 import { AUTO_FISH_INTERVAL, AUTO_FISH_GEAR, AUTO_FISH_SUCCESS_FACTOR } from '../packages/pet-core/src/data/fishing-auto.js'
 

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
 import { commitMergeSync, recoverMergeSync, restoreMergeFilesSync, rollbackCopiedSkinsSync } from '../../../runtime/merge-transaction.js'
-import { hatchEgg, migrate } from '../../../core.js'
+import { hatchEgg, migrate } from '../../../src/host/core.js'
 
 const NOW = 1_800_000_000_000
 const temp = () => mkdtempSync(join(tmpdir(), 'piggy-tx-'))

@@ -8,7 +8,7 @@ import { artSource } from '../art-path.js'
 import { button, el } from '../dom.js'
 import { drillHeader } from '../widgets.js'
 import { updatesBridge } from './update.js'
-import { CHANNEL } from '../../../channel.js'
+import { CHANNEL } from '../../host/channel.js'
 
 export const GUIDE_URL = CHANNEL.blobBase + '/docs/guides/creating-skins.md'
 export const EXAMPLE_URL = CHANNEL.rawBase + '/docs/examples/skin-pack-example.zip'

@@ -255,7 +255,7 @@ xdg-open tools/style-check.html
 
 画好的文件放到 `assets/`，文件名照上表。放进去之后告诉我，我：
 
-1. 接进代码（`data.js` 里每个状态加一行 `art: '文件名'`）
+1. 接进代码（`packages/pet-core/src/data/` 里每个状态加一行 `art: '文件名'`）
 2. 跑测试
 3. 在真实浏览器里逐张核对尺寸和位置
 4. 截图给你看

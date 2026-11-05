@@ -20,7 +20,7 @@ import {
   touch as coreTouch,
   writeDiaryIfNewDay as coreWriteDiary,
   extensionOn as coreExtensionOn,
-} from '../core.js'
+} from '../src/host/core.js'
 
 /** @typedef {import('./api.js').ApiRuntime} ApiRuntime */
 

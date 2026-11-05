@@ -5,8 +5,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, applyDevPatch, chat, hatchEgg, setOwnerName, setQuiet, startWork } from '../../../core.js'
-import { LINES, xpForLevel } from '../../../data.js'
+import { act, applyDevPatch, chat, hatchEgg, setOwnerName, setQuiet, startWork } from '../../../src/host/core.js'
+import { LINES, xpForLevel } from '../../../src/host/data.js'
 import { finishTrip, finishWork } from '../../../packages/pet-core/src/core/settlement.js'
 import { grow } from '../../../packages/pet-core/src/core/growth.js'
 

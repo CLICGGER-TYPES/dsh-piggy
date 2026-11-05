@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { createGameRuntime } from '../../../runtime/index.js'
 import { startPairServer } from '../../../runtime/pair-server.js'
 import { createSaveArchive } from '../../../runtime/save-archive.js'
-import { hatchEgg, migrate } from '../../../core.js'
+import { hatchEgg, migrate } from '../../../src/host/core.js'
 
 const NOW = 1_800_000_000_000
 const temp = () => mkdtempSync(join(tmpdir(), 'piggy-hook-'))

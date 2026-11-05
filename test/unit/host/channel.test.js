@@ -2,13 +2,14 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { CHANNEL as ACTIVE } from '../../../channel.js'
+import { CHANNEL as ACTIVE } from '../../../src/host/channel.js'
 import { CHANNEL as GITHUB } from '../../../channels/github.js'
 import { CHANNEL as GITEE } from '../../../channels/gitee.js'
 
 test('仓库里提交的渠道是 github（GitHub 现有行为不变）', () => {
   assert.equal(ACTIVE.name, 'github')
   assert.deepEqual(ACTIVE, GITHUB)
+  assert.equal(readFileSync(new URL('../../../src/host/channel.js', import.meta.url), 'utf8'), readFileSync(new URL('../../../channels/github.js', import.meta.url), 'utf8'))
   assert.equal(readFileSync(new URL('../../../apps/desktop/lib/channel.js', import.meta.url), 'utf8'), readFileSync(new URL('../../../channels/github.js', import.meta.url), 'utf8'))
 })
 

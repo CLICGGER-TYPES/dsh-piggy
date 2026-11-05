@@ -10,8 +10,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { createGameRuntime } from '../../runtime/index.js'
 import { openWorkLedger } from '../../runtime/work-ledger.js'
 import { acquireGameLock } from '../../runtime/owner-lock.js'
-import { createStore } from '../../store.js'
-import { hatchEgg } from '../../core.js'
+import { createStore } from '../../src/host/store.js'
+import { hatchEgg } from '../../src/host/core.js'
 import { startBackgroundHost } from '../../apps/desktop/lib/background-host.js'
 import { shellLifecycle } from '../helpers/shell-lifecycle.js'
 
@@ -120,8 +120,9 @@ test('B 模拟 Windows rename 拒绝覆盖空锁目录，仍能回收并取得�
 test('B Worker 真实死亡后 before-quit 能结束主进程退出流程', async () => {
   const directory = temp(), gameDir = join(directory, 'game')
   fs.mkdirSync(join(gameDir, 'runtime'), { recursive: true })
+  fs.mkdirSync(join(gameDir, 'src', 'host'), { recursive: true })
   fs.writeFileSync(join(gameDir, 'package.json'), '{"type":"module"}')
-  fs.writeFileSync(join(gameDir, 'environment.js'), 'export const environmentNote = () => ({})')
+  fs.writeFileSync(join(gameDir, 'src/host/environment.js'), 'export const environmentNote = () => ({})')
   fs.writeFileSync(join(gameDir, 'runtime/index.js'), `export const createGameRuntime = () => ({
     handle() { process.exit(23) }, dispose() {}, record() {}
   })`)

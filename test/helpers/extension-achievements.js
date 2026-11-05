@@ -3,10 +3,10 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { createStore } from '../../store.js'
+import { createStore } from '../../src/host/store.js'
 import { createJournal } from '../../store/journal.js'
 import { createExtRuntime } from '../../store/ext-runtime.js'
-import { hatchEgg } from '../../core.js'
+import { hatchEgg } from '../../src/host/core.js'
 /** 用当前游戏版本装扩展：扩展的 minGame 跟着游戏升，写死旧版本会被拒装。 */
 const GAME_VERSION = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version
 export const NOW = 1_800_000_000_000

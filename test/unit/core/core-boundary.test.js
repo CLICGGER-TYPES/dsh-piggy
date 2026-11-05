@@ -72,8 +72,8 @@ test('pet-core only imports from inside itself', () => {
 
 test('the plugin barrels re-export the library unchanged', async () => {
   const library = await import('../../../packages/pet-core/src/index.js')
-  const pluginCore = await import('../../../core.js')
-  const pluginData = await import('../../../data.js')
+  const pluginCore = await import('../../../src/host/core.js')
+  const pluginData = await import('../../../src/host/data.js')
   for (const [name, value] of Object.entries({ ...pluginCore, ...pluginData })) {
     assert.equal(library[name], value, `${name} must be the library's own binding`)
   }

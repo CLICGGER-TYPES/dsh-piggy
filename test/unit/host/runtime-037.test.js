@@ -1,12 +1,12 @@
 // @ts-check
 /** 0.37 迁移、离线结算、真实路由和工作事件提交的整合回归。 */
 import assert from 'node:assert/strict'
-import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../core.js'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../src/host/core.js'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import { createGameRuntime } from '../../../runtime/index.js'
 import farm, { setTheft } from '../../../extensions/farm/server.js'
 

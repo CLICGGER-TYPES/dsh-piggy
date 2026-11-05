@@ -12,7 +12,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { MERGE_RULES_VERSION, MergeError, STATE_VERSION, duplicateOf, mergeSaveStates, mergeSummary, missingMergeRules } from '../core.js'
+import { MERGE_RULES_VERSION, MergeError, STATE_VERSION, duplicateOf, mergeSaveStates, mergeSummary, missingMergeRules } from '../src/host/core.js'
 import { archiveSkinHashes, emptyMergeTarget, mapSkinFiles, safeSourceBackup, skinHashes } from './merge-source.js'
 import { assertMergedReceipts, assertMergedState } from '../packages/pet-core/src/core/merge-validate.js'
 import { createMergeBackup, cleanupOldMerges, readMergeHistory, registerCommittedMerge, registerPendingBackup, markRolledBack, verifyBackup, writeMergeRecord } from './merge-backup.js'

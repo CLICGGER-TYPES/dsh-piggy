@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import { createGameRuntime } from '../../../runtime/index.js'
 import { inspectOwnerDocumentFile, writeOwnerDocumentFile } from '../../../runtime/owner-document-file.js'
 import { writeWorkJson } from '../../../runtime/work-files.js'

@@ -19,7 +19,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { createStore } from '../../../store.js'
+import { createStore } from '../../../src/host/store.js'
 import { SNAPSHOT, PIG, contentOf, findByAttr, hostOf, mount, openPanel, sceneOf, settle } from '../../helpers/bundle.js'
 
 const readClientFile = name => readFileSync(new URL('../../../src/client/' + name, import.meta.url), 'utf8')

@@ -2,8 +2,8 @@
 /** 宿主自动钓鱼：新旧行程、仓位、补饵、重启和离线结算走真实领域函数。 */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../core.js'
-import { buyFishingAutomation, callOffActivity, collectAutoFish, decay, ensureFishing, finishActivity, grantFish, hatchEgg, migrate, startAutoFishing } from '../../../core.js'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../src/host/core.js'
+import { buyFishingAutomation, callOffActivity, collectAutoFish, decay, ensureFishing, finishActivity, grantFish, hatchEgg, migrate, startAutoFishing } from '../../../src/host/core.js'
 import { settleAutoFishing } from '../../../packages/pet-core/src/core/fishing-auto.js'
 const NOW = new Date(2026, 9, 9, 12).getTime()
 const fresh = () => { const state = hatchEgg(NOW); state.coins = 100000; state.inventory.bait_worm = 100; return state }

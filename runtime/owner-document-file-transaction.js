@@ -9,7 +9,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { lstatSync, mkdirSync, readdirSync, rmdirSync, unlinkSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { migrate, STATE_VERSION } from '../core.js'
+import { migrate, STATE_VERSION } from '../src/host/core.js'
 import { ownerDocumentFromLegacyV15, serializeOwnerDocument, validateOwnerDocument } from '../store/owner-document.js'
 import {
   HASH_PATTERN, assertExpectedRevision, assertPlainTarget, assertStableIdentity, canonicalFilePath, decodeJson,

@@ -9,7 +9,7 @@ import { lstatSync, readdirSync, realpathSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 
 import { projectOwnerDocumentToLegacyV15, serializeOwnerDocument } from '../store/owner-document.js'
-import { PACKAGE_VERSION } from '../snapshot.js'
+import { PACKAGE_VERSION } from '../src/host/snapshot.js'
 import {
   ID_PATTERN, OWNER_ARCHIVE_FORMAT, OWNER_ARCHIVE_MANIFEST, OWNER_ARCHIVE_VERSION, OWNER_DOCUMENT_ENTRY,
   OWNER_RECEIPTS_ENTRY, allowedSidecar, assertOwnerReferences, isRecord, parseLegacyArchive, parseOwnerArchive,

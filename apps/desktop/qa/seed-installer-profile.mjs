@@ -2,7 +2,7 @@
 /** Isolated native-installer fixture; never reads personal profiles. */
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import gacha from '../../../extensions/gacha/server.js'
 const [profile, root] = process.argv.slice(2)
 mkdirSync(profile, { recursive: true })

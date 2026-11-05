@@ -6,7 +6,7 @@ import mine, { CHECKPOINTS, HELPER_SPEEDS, pickaxeFor } from '../../../extension
 import farm, { setTheft,  CROPS, setHelperEnergy } from '../../../extensions/farm/server.js'
 
 setTheft(false) // 旧用例默认关闭偷窃；巡逻/偷窃规则与 UI 在新文件里单独开
-import { RODS } from '../../../data.js'
+import { RODS } from '../../../src/host/data.js'
 import { autoFishingPerHour, farmHelperPerHour, fishingPerHour, mineHelperPerHour, simulateMine } from '../../../tools/economy-sim.mjs'
 setHelperEnergy(false)
 const NOW = 1800000000000

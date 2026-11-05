@@ -8,7 +8,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { ensureSkins, registerCustomSkin, skinView } from '../../../core.js'
+import { ensureSkins, registerCustomSkin, skinView } from '../../../src/host/core.js'
 import { normalizeSkins } from '../../../src/client/normalize-skins.js'
 import { petPose, framedPetBounds } from '../../../src/client/pet-snap-geometry.js'
 import {
@@ -120,7 +120,7 @@ test('garbage or foreign local data falls back to the automatic estimate', () =>
 })
 
 test('the save keeps a valid pack contact and never drops the skin for a broken one', async () => {
-  const { hatchEgg } = await import('../../../core.js')
+  const { hatchEgg } = await import('../../../src/host/core.js')
   const now = 1_800_000_000_000
   const state = hatchEgg(now)
   const scenes = ['idle', 'eat', 'bathe', 'play', 'pet']

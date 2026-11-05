@@ -14,7 +14,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { extensionOn, openWallet } from '../core.js'
+import { extensionOn, openWallet } from '../src/host/core.js'
 import { backfillExtensionEvents, runExtensionAction } from './ext-actions.js'
 import { assetNames } from './ext-files.js'
 import { assetPackSummaryFromDisk } from './ext-asset-packs.js'

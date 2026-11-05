@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {buy, useItem, hatchEgg, bodyWeightClass, bodyWeightView, ensureBodyWeight, idealWeightG, settleWeight, formStageView, migrate} from '../../../core.js'
-import {SHOP} from '../../../data.js'
+import {buy, useItem, hatchEgg, bodyWeightClass, bodyWeightView, ensureBodyWeight, idealWeightG, settleWeight, formStageView, migrate} from '../../../src/host/core.js'
+import {SHOP} from '../../../src/host/data.js'
 const NOW = 1800000000000
 const keys = ['body-normal','body-round','body-fat','body-lock','body-reset']
 function pig() {

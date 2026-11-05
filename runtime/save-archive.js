@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { migrate } from '../core.js'
+import { migrate } from '../src/host/core.js'
 import { STATE_VERSION } from '../packages/pet-core/src/core/constants.js'
 import { MERGE_RULES_VERSION } from '../packages/pet-core/src/core/merge-rules.js'
 import { levelFor } from '../packages/pet-core/src/core/clock.js'

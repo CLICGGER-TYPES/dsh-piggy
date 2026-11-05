@@ -14,7 +14,7 @@ import {
   rename as coreRename,
   reset as coreReset,
   setTimeScale as coreSetTimeScale,
-} from '../core.js'
+} from '../src/host/core.js'
 
 /** @typedef {import('./api.js').ApiRuntime} ApiRuntime */
 

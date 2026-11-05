@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import { ownerDocumentFromLegacyV15 } from '../../../store/owner-document.js'
 import { writeOwnerDocumentFile } from '../../../runtime/owner-document-file.js'
 import { createOwnerArchiveSelectionStore } from '../lib/owner-archive-selection.js'

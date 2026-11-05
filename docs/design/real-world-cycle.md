@@ -26,7 +26,7 @@
 | 病程四期为 24/36/48/72 小时，自愈率 25%/12%/5%/0% | 睡眠收益不能把药物与医生架空；阶段 4 不靠睡眠自愈。`packages/pet-core/src/data/illness.js` |
 | 签到日界 06:00，钓鱼按宿主本地小时划分 | 统一到选定城市的 IANA 时区；城市变更时保护每日奖励。`core/clock.js`、`core/fishing.js` |
 | 设置页仅有图标选项，主屏与状态页已有提醒位置 | 扩展现有入口，不新建一套平行面板。`src/client/tabs/settings.js`、`home.js`、`status.js` |
-| DSH 插件和桌面版共用核心与路由，桌面版经自定义协议转发 | 天气请求应在宿主侧服务层完成，客户端只消费同源快照。`routes.js`、`apps/desktop/lib/host.js` |
+| DSH 插件和桌面版共用核心与路由，桌面版经自定义协议转发 | 天气请求应在宿主侧服务层完成，客户端只消费同源快照。`src/host/routes.js`、`apps/desktop/lib/host.js` |
 
 Claude 的 `docs/archive/HANDOFF-2026-10-03.md` 记录：C1–C8 已发布、存档 v12，装扮入口仍暂时隐藏；新系统应保留既有存档和当前界面决定，不挤占未来家园/社区的实现范围。交接记录与 `docs/CONVENTIONS.md` 对“新增存档字段是否升版本”口径不一致；实现前要统一规则，任何持久结构变化至少要有旧档迁移与测试。
 

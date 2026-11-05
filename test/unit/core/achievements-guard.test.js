@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { ACHIEVEMENTS } from '../../../data.js'
+import { ACHIEVEMENTS } from '../../../src/host/data.js'
 import { EXTENSION_ACHIEVEMENTS } from '../../../packages/pet-core/src/data/extension-achievements.js'
 import { EXTENSION_EVENTS } from '../../../packages/pet-core/src/data/extension-events.js'
 

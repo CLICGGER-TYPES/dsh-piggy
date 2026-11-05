@@ -6,7 +6,7 @@
  * @module dsh-piggy/adapters/dsh/external-support
  */
 
-import { mergeBlockers } from '../../core.js'
+import { mergeBlockers } from '../../src/host/core.js'
 
 const integer = value => (Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0)
 

@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url'
 import { createGameRuntime } from '../../../runtime/index.js'
 import { validateWorkEvent, WORK_EVENT_TYPES, WORK_EVENT_WINDOW_MS } from '../../../runtime/work-events.js'
 import { openWorkLedger } from '../../../runtime/work-ledger.js'
-import { createStore } from '../../../store.js'
-import { hatchEgg, feed, settleAchievements } from '../../../core.js'
+import { createStore } from '../../../src/host/store.js'
+import { hatchEgg, feed, settleAchievements } from '../../../src/host/core.js'
 import { startBackgroundHost } from '../../../apps/desktop/lib/background-host.js'
 
 const NOW = 1_800_000_000_000

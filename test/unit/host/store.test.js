@@ -12,10 +12,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { hatchEgg, startWork, STATE_VERSION } from '../../../core.js'
-import { createStore, moveLegacySaveDir } from '../../../store.js'
+import { hatchEgg, startWork, STATE_VERSION } from '../../../src/host/core.js'
+import { createStore, moveLegacySaveDir } from '../../../src/host/store.js'
 import { writeDiaryIfNewDay } from '../../../packages/pet-core/src/core/diary.js'
-import { DIARY_BOOK } from '../../../data.js'
+import { DIARY_BOOK } from '../../../src/host/data.js'
 
 /** 某一组日记，主人称呼按默认的「主人」。 */
 const pages = group => DIARY_BOOK[group].map(text => text.split('[主人]').join('主人'))

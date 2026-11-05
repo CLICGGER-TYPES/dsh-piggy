@@ -7,4 +7,4 @@
  * @module dsh-piggy/data
  */
 
-export * from './packages/pet-core/src/data.js'
+export * from '../../packages/pet-core/src/data.js'

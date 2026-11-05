@@ -3,13 +3,12 @@
  * 面板快照：把状态序列化成界面读的那一份形状。
  *
  * 只读取状态与数值表，不算业务规则（见 docs/CONVENTIONS.md）。
- * 实现在 src/host/；根目录 snapshot.js 只保留同名导出的兼容门面。
  * @module dsh-piggy/host/snapshot
  */
-import { PACKAGE_VERSION } from '../../environment.js'
-import { achievementsView, disabledParts, extensionsView, tripUnlocked } from '../../core.js'
-import { ACTIONS, ACTION_ORDER, bodyWeightView, careAllowedWhileAway, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from '../../core.js'
-import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SHORT_SHIFT_MINUTES, SIGN_IN_CYCLE, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from '../../data.js'
+import { PACKAGE_VERSION } from './environment.js'
+import { achievementsView, disabledParts, extensionsView, tripUnlocked } from './core.js'
+import { ACTIONS, ACTION_ORDER, bodyWeightView, careAllowedWhileAway, doctorFee, fishingView, profileView, jobFacts, JOBS, LIFE_STAGES, MAX, REVIVE_ITEM, SCHOOL_STAGES, SHOP, SUBJECTS, TRAITS, TRIPS, actionCooldownSeconds, activitySecondsLeft, adopt, ageDays, dexView, formStageView, formsView, awayBlockedReason, careView, courseView, currentIllness, dailyView, economyView, walletsView, daysToNextStage, diaryView, dressView, formatWeight, pomodoroView, hasSoul, healthPercent, isPigBirthday, interestView, inventoryView, levelProgress, lifeStageFor, mood, reset, skinView, studyView, traitView } from './core.js'
+import { CERTIFICATE_AFTER, DEFAULT_OWNER_NAME, INTERESTS, SHORT_SHIFT_MINUTES, SIGN_IN_CYCLE, jobChecklist, jobRequirement, rarityByKey, souvenirPrice, traitBonus, tripRequirement } from './data.js'
 
 /** 版本号只有一个来源：environment.js（它也是导出日志表头的那一份）。 */
 export { PACKAGE_VERSION }

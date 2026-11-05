@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {hatchEgg,migrate,pickLine,profileView,editProfile,say,replyToLine} from '../../../core.js'
-import {PERSONALITIES,LINES,LINE_MEMORY,REPLY_HAPPINESS} from '../../../data.js'
+import {hatchEgg,migrate,pickLine,profileView,editProfile,say,replyToLine} from '../../../src/host/core.js'
+import {PERSONALITIES,LINES,LINE_MEMORY,REPLY_HAPPINESS} from '../../../src/host/data.js'
 const now=1800000000000
 const make=personality=>{const s=hatchEgg(now);s.personality=personality;s.catchphrase='';return s}
 

@@ -7,7 +7,7 @@
  *
  * @module dsh-piggy/adapters/dsh/external-status
  */
-import { mergeSummary } from '../../core.js'
+import { mergeSummary } from '../../src/host/core.js'
 import { readStateFile } from '../../store/state-file.js'
 
 /** 摘要是否一样：只比紧凑摘要里的字段，变了才写配置，别每 4 秒写一次盘。 */

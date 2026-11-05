@@ -21,7 +21,7 @@ import {
   selectSkin as coreSelectSkin,
   registerCustomSkin as coreRegisterCustomSkin,
   sayAfter as coreSayAfter,
-} from '../core.js'
+} from '../src/host/core.js'
 
 /** @typedef {import('./api.js').ApiRuntime} ApiRuntime */
 

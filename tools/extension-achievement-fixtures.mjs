@@ -6,7 +6,7 @@ import farm, { CROPS } from '../extensions/farm/server.js'
 import mine from '../extensions/mine/server.js'
 import gacha from '../extensions/gacha/server.js'
 import blindbox, { CATALOG } from '../extensions/blindbox/server.js'
-import { recordExtensionEvent } from '../core.js'
+import { recordExtensionEvent } from '../src/host/core.js'
 import { generateMap } from '../extensions/mine/server.js'
 const modules = { farm, mine, gacha, blindbox }
 

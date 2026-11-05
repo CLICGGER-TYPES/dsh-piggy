@@ -1,6 +1,6 @@
 // @ts-check
 /** Owner 会话注册与 target 作用域视图：session 只认本运行时、本代、本 target。 */
-import { STORE_INTERNALS } from '../store.js'
+import { STORE_INTERNALS } from '../src/host/store.js'
 import { composeLegacyState, splitLegacyState } from '../store/legacy-projection.js'
 import {
   SESSION_BOUNDARY,

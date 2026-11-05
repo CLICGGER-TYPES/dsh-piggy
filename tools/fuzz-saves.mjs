@@ -366,11 +366,11 @@ function mutateExtension(rng, tree) {
 
 async function workerMain() {
   const { migrate, STATE_VERSION, decay, recordOnline, writeDiaryIfNewDay, settlePomodoro, extensionOn,
-    act, buy, startWork, startStudy, startInterest, startTrip, hatch, chat, signIn, useItem, seeDoctor } = await import('../core.js')
+    act, buy, startWork, startStudy, startInterest, startTrip, hatch, chat, signIn, useItem, seeDoctor } = await import('../src/host/core.js')
   const { SHOP, JOBS, SUBJECTS, INTERESTS, TRIPS, itemByKey, subjectByKey, TRAIT_ORDER, BOX_TICKET } = await import('../packages/pet-core/src/data.js')
   const { MEMORY_LIMIT } = await import('../packages/pet-core/src/core/constants.js')
   const { readStateFile } = await import('../store/state-file.js')
-  const { snapshot } = await import('../snapshot.js')
+  const { snapshot } = await import('../src/host/snapshot.js')
   const farm = (await import('../extensions/farm/server.js')).default
   const farmMod = await import('../extensions/farm/server.js')
   const mine = (await import('../extensions/mine/server.js')).default

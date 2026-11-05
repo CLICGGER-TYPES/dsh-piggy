@@ -1,6 +1,6 @@
 // @ts-check
 /** 为一个已注册 PigTarget 生成旧 createApi 形状的 owner-document Store facade。 */
-import { createStore } from '../store.js'
+import { createStore } from '../src/host/store.js'
 import { composeLegacyState, splitLegacyState } from './legacy-projection.js'
 
 /**

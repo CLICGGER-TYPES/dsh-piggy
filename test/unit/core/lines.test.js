@@ -5,8 +5,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { act, hatchEgg, pickLine, replyToLine, say } from '../../../core.js'
-import { LINES, LINE_SCENES, REPLY_HAPPINESS } from '../../../data.js'
+import { act, hatchEgg, pickLine, replyToLine, say } from '../../../src/host/core.js'
+import { LINES, LINE_SCENES, REPLY_HAPPINESS } from '../../../src/host/data.js'
 import { announce } from '../../../packages/pet-core/src/core/effects.js'
 
 const T0 = 1_700_000_000_000
@@ -84,7 +84,7 @@ test('care actions make the pig speak', () => {
 })
 
 test('a valid reply records interaction without adding a pet or a wake line', async () => {
-  const { mood } = await import('../../../core.js')
+  const { mood } = await import('../../../src/host/core.js')
   const now = T0 + 31 * 60_000
   const pig = hatchEgg(T0)
   pig.personality = 'peppy'

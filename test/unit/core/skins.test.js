@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { ensureSkins, formStageView, hatchEgg, migrate, registerCustomSkin, selectSkin } from '../../../core.js'
-import { SKINS, xpForLevel } from '../../../data.js'
+import { ensureSkins, formStageView, hatchEgg, migrate, registerCustomSkin, selectSkin } from '../../../src/host/core.js'
+import { SKINS, xpForLevel } from '../../../src/host/data.js'
 
 const NOW = 1_800_000_000_000
 

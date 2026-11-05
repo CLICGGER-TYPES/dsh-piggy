@@ -21,7 +21,7 @@ DSH 宿主回调 ──> work-observer ──> embedded runtime.acceptWorkEvent(
                               └──> external controller.enqueue ──> outbox ──> 桌面 work endpoint
 DSH 斜杠命令 ──> embedded runtime.dispatchCommand(verb, input, session)
               └─> external panel.command ──> 桌面 /pair/command ──> runtime.dispatchCommand
-DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ──> routes.js ──> store
+DSH 面板路由 ──> embedded runtime.handle(/dsh-piggy/state|act|...) ──> src/host/routes.js ──> store
               └─> external panel proxy ──> 桌面 /pair/state|act ──> runtime.handle
 合并 ──> DSH external prepare(activity|pomodoro|fishing)
        ├─ 运行中：embedded runtime.prepareMerge(target, session) ──> owner 事务

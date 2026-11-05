@@ -1,15 +1,15 @@
 import { PIG_ART_ASSETS } from '../../../packages/pet-core/src/data/art-assets.js'
 // @ts-check
 import assert from 'node:assert/strict'
-import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../core.js'
+import { STATE_VERSION as CURRENT_STATE_VERSION } from '../../../src/host/core.js'
 import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
   act, applyDevPatch, bodyWeightClass, bodyWeightView, decay,
   ensureBodyWeight, formStageView, hatchEgg, idealWeightG, migrate,
   reducePlayWeight, reduceWorkWeight, settleWeight,
-} from '../../../core.js'
-import { WEIGHT_RULES, xpForLevel } from '../../../data.js'
+} from '../../../src/host/core.js'
+import { WEIGHT_RULES, xpForLevel } from '../../../src/host/data.js'
 
 const NOW = 1_800_000_000_000
 const DAY = 86_400_000

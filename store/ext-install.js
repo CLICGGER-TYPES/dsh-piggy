@@ -18,7 +18,7 @@
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
-import { installExtension, openWallet, removeExtension } from '../core.js'
+import { installExtension, openWallet, removeExtension } from '../src/host/core.js'
 import { isExtensionFile } from './ext-files.js'
 import { validateAssetPackFiles } from './ext-asset-packs.js'
 import { LOCAL_MARK, makeImporter } from './ext-import.js'

@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createGameRuntime } from '../../../runtime/index.js'
 import { startWorkEventServer } from '../../../runtime/local-server.js'
-import { hatchEgg } from '../../../core.js'
+import { hatchEgg } from '../../../src/host/core.js'
 import { startBackgroundHost } from '../../../apps/desktop/lib/background-host.js'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
