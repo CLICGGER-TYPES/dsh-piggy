@@ -1,5 +1,11 @@
 # 路线图与待办
 
+## 2026-11-06 macOS 暂停发布
+
+- 用户确认先不维护 macOS，后面有人接手再说。`release.yml` 去掉 macOS 构建，下一版起只发 Windows/Linux；最后一个 macOS 安装包是 `v0.37.2-rc.15`，历史 Release 未删除。
+- 保留 `apps/desktop/package.json` 的 mac 构建配置和全部代码；README、发布指南、桌面安装页标注暂停，并写明恢复方式。
+- 未改 CI 测试矩阵（本来只有 Ubuntu/Windows），未改旧版本资产。
+
 ## 2026-11-05 联机房间：多猪同屏（源码候选，未发布）
 
 - 桌面版主屏新增「联机」App：创建房间 / 输入房间码加入；成功后打开独立的房间窗口（`piggy://room/room.html`，role=room），奶油底、可缩放，最小 520×360。

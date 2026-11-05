@@ -50,7 +50,7 @@ DSH 插件形态的「设置 → 更新」会读 `src/host/channel.js` 选定的
 
 ## 桌面外壳
 
-`apps/desktop/package.json` 的版本号是外壳版本，例如 `0.3.0`。外壳负责 Electron、窗口、托盘、预加载桥和本地更新器。Windows EXE、Linux AppImage 和 macOS App 都属于这一层。
+`apps/desktop/package.json` 的版本号是外壳版本，例如 `0.3.0`。外壳负责 Electron、窗口、托盘、预加载桥和本地更新器。Windows EXE、Linux AppImage 和 macOS App 都属于这一层；macOS 从 2026-11-06 起暂停发布，不再提供新的外壳包。
 
 游戏包负责布局、可点区域和桌面样式，外壳负责实际窗口操作、光标命中采样及系统接入（见开发文档「桌面程序和游戏包怎么分工」）。游戏包内的布局修复可以热更新；外壳的线程、文件服务或系统接入修复需要更新安装包。
 
@@ -61,7 +61,7 @@ DSH 插件形态的「设置 → 更新」会读 `src/host/channel.js` 选定的
 | Windows 安装版（setup.exe） | 在更新 App 下载，完成后点击“重启并安装” |
 | Linux AppImage | 在更新 App 下载，完成后点击“重启并安装”；AppImage 所在目录需可写 |
 | Windows 便携版（portable.exe） | 更新 App 说明原因并打开发布页；下载后替换旧 EXE |
-| macOS 未签名 DMG | 更新 App 说明尚未签名并打开发布页；下载后替换应用 |
+| macOS 未签名 DMG（旧版） | 更新 App 说明尚未签名并打开发布页；下载后替换应用。新版本不再构建 macOS 外壳 |
 
 支持应用内更新的外壳下载完整安装包，不使用差分下载，以避免主线程处理差分数据。下载流量相应增加，完整性校验和 Windows 发布者签名判断保留。
 

@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/CLICGGER-TYPES/dsh-piggy/releases"><img src="https://img.shields.io/github/v/release/CLICGGER-TYPES/dsh-piggy?include_prereleases&label=release" alt="release"></a>
   <a href="https://www.npmjs.com/package/dsh-piggy"><img src="https://img.shields.io/npm/v/dsh-piggy?label=npm" alt="npm"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-2f6f4e" alt="platform">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-2f6f4e" alt="platform">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/CLICGGER-TYPES/dsh-piggy" alt="license"></a>
 </p>
 
@@ -59,9 +59,8 @@ dsh plugin --profile web add dsh-piggy
 |---|---|
 | Windows | `setup.exe` 安装版，或 `portable.exe` 便携版 |
 | Linux | `AppImage`，添加执行权限后运行 |
-| macOS | Apple 芯片选 `arm64.dmg`，Intel 选 `x64.dmg` |
 
-macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
+macOS 版本暂停构建：最后一个可用版本见历史 [Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases)（`v0.37.2-rc.15` 及更早），代码和构建配置保留，欢迎后续维护者接手。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
 
 ## 玩法
 
