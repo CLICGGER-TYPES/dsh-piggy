@@ -88,7 +88,7 @@ test('an old save can take off its worn scarf and hat without a dress shop shelf
   const { dom, calls } = await mount({ status: { ...SNAPSHOT, dress: [scarf, hat], shop: [scarf, hat] } })
   openPanel(dom, 'bag')
   assert.equal(findByAttr(contentOf(dom), 'data-bag', 'dress'), undefined)
-  findByAttr(contentOf(dom), 'data-bag', 'more').fire('click')
+  findByAttr(contentOf(dom), 'data-pager-dot', 'bag:1').fire('click')
   findByAttr(contentOf(dom), 'data-bag', 'worn').fire('click')
   assert.match(contentOf(dom).allText(), /围巾.*脱下.*草帽.*脱下/)
   findByAttr(contentOf(dom), 'data-take-off', 'scarf').fire('click')

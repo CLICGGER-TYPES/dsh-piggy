@@ -45,6 +45,10 @@ export const CSS_TILES = [
   '.dp-nine-grid{grid-template-rows:repeat(3,minmax(67px,auto))}',
   '.dp-home-clip{overflow:hidden;touch-action:pan-y}.dp-home-track{display:flex;transition:transform .25s ease;will-change:transform}',
   '.dp-home-page{box-sizing:border-box;flex:0 0 100%;grid-template-rows:repeat(3,72px);align-content:start}.dp-home-page[data-active="false"]{pointer-events:none}',
+  // 普通页签的分页九宫格：每页固定 3 行，左右拖/滚轮/圆点切换。
+  '.dp-pager{display:flex;flex-direction:column}',
+  '.dp-pager-page{box-sizing:border-box;flex:0 0 100%;align-content:start}',
+  '.dp-pager-page[data-active="false"]{pointer-events:none}',
   '.dp-home-dots{display:flex;justify-content:center;gap:8px;margin:9px 0 2px}.dp-home-dot{width:9px;height:9px;padding:0;border:1.5px solid var(--ac-primary);border-radius:50%;background:transparent;cursor:pointer}.dp-home-dot[aria-pressed="true"]{background:var(--ac-primary)}',
   '@media (prefers-reduced-motion:reduce){.dp-home-track{transition:none}}',
 

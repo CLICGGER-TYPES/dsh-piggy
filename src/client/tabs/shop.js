@@ -10,7 +10,7 @@ import { KIND_ORDER, KIND_TITLE, shelfOf } from '../constants.js'
 import { animatePurchase } from '../interaction-motion.js'
 import { button, el } from '../dom.js'
 import { num } from '../values.js'
-import { drillHeader, drillTo, tile, tileGrid } from '../widgets.js'
+import { drillHeader, drillTo, pagedTiles, tile } from '../widgets.js'
 
 /** One colour per shelf, so the inner layer still says which shelf it is. */
 export var SHELF_COLOR = { food: 'red', bath: 'teal', toy: 'yellow', bait: 'blue', medicine: 'green', revive: 'purple', promotion: 'blue' }
@@ -38,28 +38,28 @@ export function renderShopTab(ui) {
   }
   var parts = shelfParts(shelf)
   drillHeader(ui, 'shop', parts[0] + ' ' + parts[1], coins)
-  var grid = tileGrid()
+  var tiles = []
   var items = ui.view.shop.filter(function (item) { return shelfOf(item.kind) === shelf })
   var boughtTile = null
   for (var i = 0; i < items.length; i += 1) {
     var node = itemTile(ui, items[i], SHELF_COLOR[shelf])
-    grid.appendChild(node)
+    tiles.push(node)
     if (items[i].key === ui.justBought) boughtTile = node
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'shop:' + shelf, tiles))
   if (boughtTile !== null) animatePurchase(boughtTile)
 }
 
 /** The top layer; its title row (with the money) is the app header. */
 function renderShelves(ui) {
-  var grid = tileGrid()
+  var tiles = []
   for (var k = 0; k < KIND_ORDER.length; k += 1) {
     (function (kind) {
       var items = ui.view.shop.filter(function (item) { return shelfOf(item.kind) === kind })
       if (items.length === 0) return
       var parts = shelfParts(kind)
       var needed = items.some(function (item) { return item.needed })
-      grid.appendChild(tile({
+      tiles.push(tile({
         emoji: parts[0], label: parts[1], color: SHELF_COLOR[kind] ?? 'blue',
         tag: needed ? '需要' : '',
         data: { 'data-shelf': kind },
@@ -68,12 +68,12 @@ function renderShelves(ui) {
     })(KIND_ORDER[k])
   }
   for (const shelf of ui.view.extShelves ?? []) {
-    grid.appendChild(tile({ emoji: shelf.emoji, label: shelf.label, color: shelf.color || 'orange',
+    tiles.push(tile({ emoji: shelf.emoji, label: shelf.label, color: shelf.color || 'orange',
       // 跟内置货架一样只写名字；不用金币买的才在下面注明货币。
       note: shelf.currency && shelf.currency.label !== '金币' ? shelf.currency.label : undefined, data: { 'data-shelf': 'ext:' + shelf.extension },
       onPick: function () { drillTo(ui, 'shop', 'ext:' + shelf.extension) } }))
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'shop', tiles))
 }
 
 /** 下载扩展自己的商品，购买仍由扩展的 buy 动作结算。 */

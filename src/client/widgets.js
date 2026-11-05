@@ -100,6 +100,106 @@ export function tileGrid() {
 }
 
 /**
+ * 九宫格放不下时按主屏那样分页：每页 9 个，底部小圆点 + 左右拖 / 滚轮切换。
+ * 同一个 key 的页码记在 ui.pagerPage 上，轮询重画后还停在原页。
+ * @param {any} ui
+ * @param {string} key
+ * @param {HTMLElement[]} tiles
+ */
+export function pagedTiles(ui, key, tiles) {
+  var size = 9
+  var pages = Math.max(1, Math.ceil(tiles.length / size))
+  if (!ui.pagerPage) ui.pagerPage = Object.create(null)
+  var active = Math.max(0, Math.min(pages - 1, ui.pagerPage[key] ?? 0))
+  var clip = el('div', 'dp-home-clip')
+  var track = el('div', 'dp-home-track')
+  var grids = []
+  var dots = []
+  for (var page = 0; page < pages; page += 1) {
+    var grid = tileGrid()
+    grid.className += ' dp-pager-page'
+    grid.setAttribute('data-pager-page', String(page))
+    var slice = tiles.slice(page * size, page * size + size)
+    for (var i = 0; i < slice.length; i += 1) grid.appendChild(slice[i])
+    grids.push(grid)
+    track.appendChild(grid)
+  }
+  clip.appendChild(track)
+  var dotRow = null
+  if (pages > 1) {
+    dotRow = el('div', 'dp-home-dots')
+    for (var p = 0; p < pages; p += 1) {
+      (function (index) {
+        var dot = button('dp-home-dot', { 'data-pager-dot': key + ':' + index, 'aria-label': '第 ' + (index + 1) + ' 页' }, function () { showPage(index) })
+        dots.push(dot)
+        dotRow.appendChild(dot)
+      })(p)
+    }
+  }
+  function showPage(next) {
+    active = Math.max(0, Math.min(pages - 1, next))
+    ui.pagerPage[key] = active
+    track.style.transform = 'translateX(-' + active * 100 + '%)'
+    grids.forEach(function (grid, index) {
+      grid.setAttribute('data-active', String(index === active))
+      grid.setAttribute('aria-hidden', String(index !== active))
+      grid.inert = index !== active
+    })
+    dots.forEach(function (dot, index) { dot.setAttribute('aria-pressed', String(index === active)) })
+  }
+  showPage(active)
+  var drag = null
+  var swallowClick = false
+  clip.addEventListener('pointerdown', function (event) {
+    if (pages < 2 || (event.pointerType === 'mouse' && event.button !== 0)) return
+    drag = { x: event.clientX, y: event.clientY, id: event.pointerId, moved: false }
+  })
+  clip.addEventListener('pointermove', function (event) {
+    if (drag === null || event.pointerId !== drag.id) return
+    var dx = event.clientX - drag.x
+    if (!drag.moved) {
+      if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(event.clientY - drag.y)) return
+      drag.moved = true
+      clip.setPointerCapture?.(event.pointerId)
+      track.style.transition = 'none'
+    }
+    var atEdge = (active === 0 && dx > 0) || (active === pages - 1 && dx < 0)
+    track.style.transform = 'translateX(calc(-' + active * 100 + '% + ' + (atEdge ? dx / 3 : dx) + 'px))'
+  })
+  function endDrag(event) {
+    if (drag === null || event.pointerId !== drag.id) return
+    var dx = event.clientX - drag.x
+    var moved = drag.moved || Math.abs(dx) > 40
+    drag = null
+    track.style.transition = ''
+    if (!moved) return
+    swallowClick = true
+    setTimeout(function () { swallowClick = false }, 0)
+    showPage(Math.abs(dx) > 40 ? active + (dx < 0 ? 1 : -1) : active)
+  }
+  clip.addEventListener('pointerup', endDrag)
+  clip.addEventListener('pointercancel', function (event) { if (drag !== null) { drag.moved = true; endDrag(event) } })
+  clip.addEventListener('click', function (event) { if (swallowClick) { event.stopPropagation(); event.preventDefault() } }, true)
+  var wheelLock = 0
+  clip.addEventListener('wheel', function (event) {
+    if (pages < 2) return
+    var delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+    if (Math.abs(delta) < 4) return
+    var next = active + (delta > 0 ? 1 : -1)
+    if (next < 0 || next >= pages) return
+    event.preventDefault()
+    var now = Date.now()
+    if (now < wheelLock) return
+    wheelLock = now + 450
+    showPage(next)
+  }, { passive: false })
+  var wrap = el('div', 'dp-pager')
+  wrap.appendChild(clip)
+  if (dotRow !== null) wrap.appendChild(dotRow)
+  return wrap
+}
+
+/**
  * One tile: a coloured rounded square with a big emoji, one short line under
  * it, an optional second line, a count in the top-right corner and a small
  * tag in the top-left. `soft` is the paler second-layer look.

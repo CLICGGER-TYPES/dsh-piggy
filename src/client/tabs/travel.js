@@ -9,7 +9,7 @@
 import { el } from '../dom.js'
 import { formatMinutes } from '../format.js'
 import { canStart, renderSwitchAsk, startOrSwitch } from '../switch-activity.js'
-import { tile, tileGrid } from '../widgets.js'
+import { pagedTiles, tile } from '../widgets.js'
 
 /** One colour per destination, so the grid still reads like a map. */
 var TRIP_COLOR = {
@@ -24,10 +24,10 @@ export function renderTravelTab(ui) {
     ui.content.appendChild(el('div', 'dp-empty', '宿主还没提供目的地。'))
     return
   }
-  var grid = tileGrid()
+  var tiles = []
   for (var i = 0; i < ui.view.trips.length; i += 1) {
     (function (trip) {
-      grid.appendChild(tile({
+      tiles.push(tile({
         emoji: trip.emoji, label: trip.label, color: TRIP_COLOR[trip.key] ?? 'blue', soft: true,
         note: formatMinutes(trip.minutes) + ' · ' + trip.cost + '🪙',
         tag: trip.locked ? '🔒' : '',
@@ -38,5 +38,5 @@ export function renderTravelTab(ui) {
       }))
     })(ui.view.trips[i])
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'travel', tiles))
 }
