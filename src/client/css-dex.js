@@ -6,6 +6,10 @@ export const CSS_DEX = [
   '.dp-dex-sections .dp-tile{gap:3px}',
   '.dp-dex-tile-art{display:flex;align-items:center;justify-content:center;width:100%;height:100%}',
   '.dp-dex-tile-art .dp-dex-art{width:42px;height:42px}',
+  // 未解锁的鱼只留剪影：能看出轮廓，但不提前泄漏颜色和花纹。
+  '.dp-tile[data-dex-fish="true"][data-locked="true"] .dp-tile-icon{filter:none;opacity:1;box-shadow:none}',
+  '.dp-tile[data-dex-fish="true"][data-locked="true"] .dp-dex-art,',
+  '.dp-tile[data-dex-fish="true"][data-locked="true"] .dp-tile-e{filter:brightness(0);opacity:.32}',
 
 
   // Forms and skins: three genuinely small collectible cards.

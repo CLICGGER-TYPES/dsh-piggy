@@ -127,6 +127,8 @@ function collectionTile(ui, section, entry) {
       ? (FISH_RARITY[entry.rarity] || '')
       : (entry.rarityLabel ? entry.rarityEmoji + entry.rarityLabel : (entry.kindLabel || '')))
     : '未发现'
+  const attrs = { 'data-dex-entry': entry.key }
+  if (section.key === 'fish') attrs['data-dex-fish'] = 'true'
   return tile({
     emoji: entry.emoji || '❔',
     icon: art ?? undefined,
@@ -136,8 +138,9 @@ function collectionTile(ui, section, entry) {
     note: note,
     badge: entry.acquired && entry.count > 1 ? '×' + entry.count : '',
     tag: entry.acquired ? '' : '🔒',
-    dim: !entry.acquired,
-    data: { 'data-dex-entry': entry.key },
+    locked: !entry.acquired,
+    dim: !entry.acquired && section.key !== 'fish',
+    data: attrs,
     onPick: function () { openDetail(ui, entry.key) },
   })
 }

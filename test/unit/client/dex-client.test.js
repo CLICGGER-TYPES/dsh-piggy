@@ -177,4 +177,7 @@ test('C5 fish tiles use the fish art and fall back to emoji when absent', async 
   const sardine = findByAttr(contentOf(dom), 'data-dex-entry', 'fish_sardine')
   assert.equal(findByClass(sardine, 'dp-dex-art'), undefined)
   assert.match(sardine.allText(), /沙丁鱼|未知鱼类/)
+  assert.equal(sardine.getAttribute('data-locked'), 'true')
+  assert.equal(sardine.getAttribute('data-dex-fish'), 'true')
+  assert.equal(sardine.getAttribute('data-dim'), null, '鱼用剪影而不是整体变淡')
 })
