@@ -1,5 +1,14 @@
 # 路线图与待办
 
+## 2026-11-05 联机房间：多猪同屏（源码候选，未发布）
+
+- 桌面版主屏新增「联机」App：创建房间 / 输入房间码加入；成功后打开独立的房间窗口（`piggy://room/room.html`，role=room），奶油底、可缩放，最小 520×360。
+- 房间只中继外观（名字、等级、阶段、立绘或 emoji）、位置、朝向和 `摸摸/挥手/跳一下`；不共享存档、金币、背包、状态。主机离开即关房。
+- 房间码 4 位（去掉 0/O/1/I），显示为 `PIG-XXXX`；UDP 47823 广播发现，防火墙挡住时可粘贴 `piggy://<私有 IPv4>:<端口>#PIG-XXXX`。服务端内存上限 32 只，界面不写死人数。
+- IPC 分级：只有面板能建房/加入，只有房间窗口能移动/发表情；关闭房间窗口等同离开。
+- 验收：类型检查、构建、13 项房间单测/集成；本机两个真实实例加入、移动同步、2 只和 7 只猪同屏、离开与关房流程。未做真实跨设备 Wi-Fi、Windows 防火墙和公网验收。
+- 文件：`apps/desktop/lib/room-*.js`、`apps/desktop/lib/ipc/room.js`、`apps/desktop/renderer/room.*`、`src/client/tabs/room.js`、`docs/design/room-multiplayer.md`。
+
 ## 2026-11-04 菜园帮工精力 / 休息 E1（源码候选，未发布，无 UI）
 
 - 存档 v8：`helper.workers[]` 新增 `shiftAt`（班次锚点）、`resting`（手动休息）、`idle`（没活睡觉）；精力不落盘，由 `(now - shiftAt)` 纯函数算。

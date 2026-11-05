@@ -6,7 +6,7 @@
  */
 import { renderEmptyPanel, renderUnhatchedPig } from './panel-empty.js'
 import { syncPigArt, syncSleepArt } from './art.js'
-import { DEV_TAB, OPEN_KEY, QUIT_TAB, TABS, UPDATE_TAB } from './constants.js'
+import { DEV_TAB, OPEN_KEY, QUIT_TAB, ROOM_TAB, TABS, UPDATE_TAB } from './constants.js'
 import { button, el } from './dom.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
 import { processPending } from './pending.js'
@@ -31,6 +31,8 @@ import { renderStatusTab } from './tabs/status.js'
 import { renderStudyTab } from './tabs/study.js'
 import { renderSkinsTab } from './tabs/skins.js'
 import { renderSettingsTab } from './tabs/settings.js'
+import { renderRoomTab } from './tabs/room.js'
+import { roomBridge } from './room-bridge.js'
 import { captureCloudSettingsUiState, cloudSettingsDraftOpen, restoreCloudSettingsUiState } from './tabs/cloud-save.js'
 import { ownerNetworkDraftOpen } from './owner-network.js'
 import { renderExtensionsTab } from './tabs/extensions.js'
@@ -191,7 +193,11 @@ export function createPanel(ctx) {
 
         // B9: home first; every app's top layer gets a 「‹」 back (inside a category it goes up a layer).
         var shell = updatesBridge()
-        var apps = orderHomeApps(enabledTabs(ctx, TABS).concat([UPDATE_TAB], shell !== null && shell.quit ? [QUIT_TAB] : [], externalDevTabs(ctx)))
+        var apps = orderHomeApps(enabledTabs(ctx, TABS).concat(
+          [UPDATE_TAB],
+          roomBridge() !== null ? [ROOM_TAB] : [],
+          shell !== null && shell.quit ? [QUIT_TAB] : [],
+          externalDevTabs(ctx)))
         if (ctx.tab === 'home') {
           renderHome(ctx, apps.filter(function (a) { return a.key !== 'update' && a.key !== 'extensions' })) // 更新、扩展入口在设置里
           ctx.fitPanel()
@@ -214,6 +220,7 @@ export function createPanel(ctx) {
         else if (ctx.tab === 'dev') renderDevTab(ctx)
         else if (ctx.tab === 'update') renderUpdateTab(ctx)
         else if (ctx.tab === 'settings') renderSettingsTab(ctx)
+        else if (ctx.tab === 'room') renderRoomTab(ctx)
         else if (ctx.tab === 'extensions' || String(ctx.tab).startsWith('ext:')) renderExtensionsTab(ctx) // ext:<key> 是下载扩展的 App
         else renderBagTab(ctx)
 
@@ -352,6 +359,7 @@ export function createPanel(ctx) {
         if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return false
         // Replacing a focused input drops the caret (including IME composition).
         if (ctx.tab === 'settings' && (cloudSettingsDraftOpen() || ownerNetworkDraftOpen() || document.activeElement?.getAttribute?.('data-proxy-address') === 'true' || document.activeElement?.getAttribute?.('data-pig-scale') === 'true' || document.activeElement?.getAttribute?.('data-bubble-scale') === 'true')) return false
+        if (ctx.tab === 'room' && document.activeElement?.getAttribute?.('data-room-input') === 'true') return false
         if (ctx.tab === 'dex' && document.activeElement?.getAttribute?.('data-dex-search') === 'items') return false
         if ((ctx.extBig || String(ctx.tab).startsWith('ext:')) && document.activeElement?.matches?.('.fm-quantity')) return false
         // The QTE and waiting animation own their DOM until the phase changes.

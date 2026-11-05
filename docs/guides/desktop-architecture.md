@@ -156,6 +156,15 @@ owner cloud first-sync 与历史读取仍注册给面板 IPC。OwnerDocument 模
 
 DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/dsh-piggy/owner/pigs`、`/pigs/:pigId/state|act|command`、`/network/status|start|invite|stop`、`/cloud/status|first-sync|history`。猪 ID 只在当前 owner roster 内定位数据；每个 state/act/command 请求单独创建并处置绑定 session，不使用进程级 active target。`ownerNetwork.enabled` 缺省关闭，且即使开启配置也必须显式调用本地 `POST /network/start` 才监听；TLS 文件放在 `<ownerDocumentPath>.network/tls.key` 与 `tls.crt`，均需私有权限。控制路由、邀请发放与 TLS 服务只做过隔离 Node/loopback HTTPS 契约测试，没有真实 DSH、多设备 LAN 或公网部署验收。仍未实现房间/邀请 UI、自动发现、长期设备身份、跨进程回执，以及不同 owner 各自带猪进入同一场景。
 
+### 联机房间（多猪同屏，2026-11-05 源码候选）
+
+- 主屏「联机」App 只在桌面版出现；大厅/房间状态画在 368px 面板里，真正的草地场景在独立房间窗口。
+- 房间窗口加载 `piggy://room/room.html`，是**独立页面**，不加载游戏包；只用 `window.piggyShell.room` 与主进程通信。窗口用普通标题栏、可缩放、最小 520×360，关闭等于离开房间。
+- 房间服务是内存中继，不读写存档：`runtime` 之外的 `apps/desktop/lib/room-server.js` 保存玩家外观、位置、朝向和表情；`room-client.js` 长轮询；`room-discovery.js` 用 UDP 47823 广播房间码；`room-manager.js` 管建房/加入/离开和 50ms 移动节流。
+- 协议：`POST /v1/room/join|state|update|leave`，JSON、4 KiB 上限、无 query、无 `Origin`；join 用房间码，其余用 Bearer token（服务端只存 SHA-256）。玩家 30 秒无请求移除，房主离开关房。
+- 面板 IPC：`piggy:room:status|host|join|open|leave|copy`；房间窗口 IPC：`piggy:room:state|move|emote|leave|copy`。主进程推送 `piggy:room:update|closed`。所有 handler 都核对发送窗口。
+- 设计说明与已知边界见 [room-multiplayer.md](../design/room-multiplayer.md)。
+
 ### 旧消息（只给老游戏包，别删）
 
 | 通道 | 给谁 | 什么时候能删 |
@@ -183,6 +192,9 @@ DSHLANPUBLIC01 候选的 DSH opt-in 控制路由仅接受 loopback 请求：`/ds
 | `apps/desktop/lib/fullscreen.js`、`fullscreen-worker.js` | 全屏偏好及 Windows 后台探测器 |
 | `apps/desktop/lib/signature-worker.js` | Windows 外壳安装包签名校验 |
 | `apps/desktop/lib/panel-geometry.js` | 面板窗口摆哪（纯函数，有单测） |
+| `apps/desktop/lib/room-manager.js` | 联机房间：建房/加入、长轮询、移动节流、离开 |
+| `apps/desktop/lib/room-server.js`、`room-client.js`、`room-discovery.js` | 内存房间中继、长轮询客户端、UDP 房间码发现 |
+| `apps/desktop/lib/room-window.js`、`renderer/room.*` | 房间窗口所有权与独立页面 |
 | `apps/desktop/lib/window-geometry.js` | 拖动时窗口怎么跟鼠标、夹在哪些屏里 |
 | `apps/desktop/preload.cjs` | `window.piggyShell` |
 | `src/client/desktop/index.js` | 兼容门面：保留 `version/install/start` 和 pet/panel/ext 角色分派 |

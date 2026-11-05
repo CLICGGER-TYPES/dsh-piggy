@@ -2,6 +2,8 @@
 
 状态：F06 会话边界已实现；LANTRANSPORT01 在独立候选增加显式配对的私有 LAN owner session 服务，尚未合并或做产品 UI/跨设备验收。本文保留 loopback/OwnerDocument 边界并区分当前 LAN 候选与仍未实现的公网责任；它不把公网、房间、稳定网络身份或完整联机写成已完成。
 
+2026-11-05 补充：桌面版的「联机房间」是独立的内存中继（`apps/desktop/lib/room-server.js`），只同步每位玩家自己的外观摘要、位置和表情；它不打开 owner session、不共享 owner 文档、不改变本文的会话边界。房间协议、发现和窗口见 [desktop-architecture.md](desktop-architecture.md) 与 [room-multiplayer.md](../design/room-multiplayer.md)。
+
 ## 1. 为什么要有这一层
 
 F02 已经建立“同一主人共用资源、每只猪本体独立”的写入权威，F03/F05 已经把

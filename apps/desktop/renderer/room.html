@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'">
+  <title>联机 · 猪猪房间</title>
+  <link rel="stylesheet" href="room.css">
+</head>
+<body>
+  <div class="room">
+    <header class="bar">
+      <div class="status"><span class="dot" id="dot"></span><b id="status-text">准备中</b></div>
+      <div class="code" id="code-wrap" hidden>
+        <span id="code">PIG-</span>
+        <button type="button" id="copy">复制</button>
+      </div>
+      <span class="grow"></span>
+      <button type="button" class="ghost" id="leave">离开房间</button>
+    </header>
+
+    <main class="stage" id="stage">
+      <div class="sky">
+        <span class="cloud a">☁️</span>
+        <span class="cloud b">☁️</span>
+        <span class="sun">🌤️</span>
+        <p class="hint" id="hint">拖动你的小猪，或按 ← → 走一走</p>
+      </div>
+      <div class="grass">
+        <div class="hills"></div>
+        <div class="pigs" id="pigs"></div>
+      </div>
+    </main>
+
+    <footer class="actions">
+      <button type="button" class="primary" data-emote="pat">摸摸</button>
+      <button type="button" class="secondary" data-emote="wave">挥手</button>
+      <span class="tip">点一只猪也能摸摸它</span>
+      <span class="grow"></span>
+      <span class="toast" id="toast" hidden></span>
+    </footer>
+  </div>
+  <script src="room.js"></script>
+</body>
+</html>

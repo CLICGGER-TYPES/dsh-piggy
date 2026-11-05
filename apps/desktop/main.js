@@ -18,7 +18,7 @@ import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
+import { BrowserWindow, Menu, Tray, app, clipboard, dialog, ipcMain, nativeImage, net, protocol, screen, session, shell } from 'electron'
 import updaterPackage from 'electron-updater'
 
 import { startBackgroundHost } from './lib/background-host.js'
@@ -34,6 +34,8 @@ import { createShellUpdates, shellUpdateMode } from './lib/shell-update.js'
 import { PANEL_FALLBACK } from './lib/panel-geometry.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
 import { createExtensionWindow } from './lib/extension-window.js'
+import { createRoomWindow } from './lib/room-window.js'
+import { createRoomManager } from './lib/room-manager.js'
 import { createPanelWindow } from './lib/panel-window.js'
 import { createPanelController } from './lib/panel-controller.js'
 import { createFullscreenController } from './lib/fullscreen-controller.js'
@@ -65,6 +67,7 @@ import { registerCloudSaveIpc } from './lib/ipc/cloud-save.js'
 import { registerOwnerArchiveIpc } from './lib/ipc/owner-archive.js'
 import { registerOwnerPigsIpc } from './lib/ipc/owner-pigs.js'
 import { registerOwnerNetworkIpc } from './lib/ipc/owner-network.js'
+import { registerRoomIpc } from './lib/ipc/room.js'
 import { registerWorkSourcesIpc } from './lib/ipc/work-sources.js'
 import { registerPanelIpc } from './lib/ipc/panel.js'
 import { createCloudSaveConfigStore } from './lib/cloud-save-config.js'
@@ -284,6 +287,29 @@ panel = createPanelController({
   pets, primaryPet, getPetWindow, extensionWindow, extensionLayer, ipcMain,
   petForEvent, fromPage, toPages, log, traceSetIgnoreMouseEvents,
 })
+/** 联机房间：独立页面 + 内存中继；关闭窗口等同于离开房间。 */
+const roomWindow = createRoomWindow({
+  BrowserWindow,
+  screen,
+  preload: join(HERE, 'preload.cjs'),
+  url: 'piggy://room/room.html',
+  icon: join(HERE, 'build', 'icon.png'),
+  log,
+  onClose: () => { void roomManager.leave('window-closed') },
+})
+const roomManager = createRoomManager({
+  log,
+  onUpdate: snapshot => {
+    roomWindow.send('piggy:room:update', snapshot)
+    const panelWin = getPanelWindow()
+    if (panelWin !== null && !panelWin.isDestroyed()) panelWin.webContents.send('piggy:room:update', snapshot)
+  },
+  onClosed: detail => {
+    roomWindow.close()
+    const panelWin = getPanelWindow()
+    if (panelWin !== null && !panelWin.isDestroyed()) panelWin.webContents.send('piggy:room:closed', detail)
+  },
+})
 /** 主进程关闭/退出状态统一由 lifecycle 持有；资源句柄在实际关闭时动态读取。 */
 const desktopLifecycle = createDesktopLifecycle({
   app, dialog, log, stopDrag: () => stopDrag(), relaunch,
@@ -291,7 +317,8 @@ const desktopLifecycle = createDesktopLifecycle({
   clearInterval, clearTimeout,
   getResources: () => ({ ...desktopRuntime.getShutdownResources(), shellUpdates, proxySettings, fullscreenWatch: fullscreen.watch(),
     externalManager, autostart, exportWrites, topGuardTimer: fullscreen.topGuardTimer(), displayWatchTimer, hitTimer: primaryPet()?.hitTimer ?? null,
-    hitTimers: pets.all().map(pet => pet.hitTimer), stateTimer: panel.pendingStateTimer(), flushWindowState, flushLogs }),
+    hitTimers: pets.all().map(pet => pet.hitTimer), stateTimer: panel.pendingStateTimer(), flushWindowState, flushLogs,
+    roomManager, roomWindow }),
   setExternalManager: manager => { externalManager = manager },
   setHitTimer: timer => { const pet = primaryPet(); if (pet !== null) pet.hitTimer = timer },
 })
@@ -567,6 +594,11 @@ const ownerNetworkManager = createOwnerNetworkManager({
   log,
 })
 registerOwnerNetworkIpc({ ipcMain, fromPanelOnly, manager: ownerNetworkManager })
+
+registerRoomIpc({
+  ipcMain, fromPanelOnly, manager: roomManager, roomWindow, clipboard,
+  fromRoom: event => !desktopLifecycle.quitting && roomWindow.owns(event.sender),
+})
 
 registerFullscreenIpc({
   ipcMain, fromPage,
