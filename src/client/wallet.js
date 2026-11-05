@@ -17,6 +17,10 @@ export var CSS_WALLET = [
   // 兑换方向 + 滑条。滑条用原生 range，accent-color 跟着主色走。
   '.dp-wallet-seg{grid-template-columns:repeat(2,minmax(0,1fr));margin:1px 0 3px}',
   '.dp-wallet-slider{display:flex;align-items:center;gap:8px;width:100%}',
+  '.dp-wallet-amount-row{display:flex;align-items:center;gap:5px;min-width:0;font-size:10.5px;font-weight:700;color:var(--ac-text-body)}',
+  '.dp-wallet-amount-label{color:var(--ac-text-2)}',
+  '.dp-wallet-amount{flex:none;width:54px;height:26px;padding:2px 4px;text-align:center;font-size:11px;font-weight:700}',
+  '.dp-wallet-amount-unit{color:var(--ac-text-2)}',
   '.dp-wallet-range{appearance:none;-webkit-appearance:none;flex:1;min-width:0;height:24px;margin:0;background:transparent;cursor:pointer}',
   '.dp-wallet-range:focus-visible{outline:2px solid var(--ac-primary);outline-offset:2px;border-radius:999px}',
   '.dp-wallet-range::-webkit-slider-runnable-track{height:8px;border-radius:999px;',
@@ -26,7 +30,7 @@ export var CSS_WALLET = [
   '.dp-wallet-range::-moz-range-track{height:8px;border-radius:999px;background:var(--ac-border-light)}',
   '.dp-wallet-range::-moz-range-progress{height:8px;border-radius:999px;background:var(--ac-primary)}',
   '.dp-wallet-range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--ac-primary);border:2px solid #fff}',
-  '.dp-wallet-summary{font-size:11px;font-weight:800;color:var(--ac-text);text-align:center;min-height:16px;line-height:1.4}',
+  '.dp-wallet-summary{flex:1;min-width:0;font-size:10.5px;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
   '.dp-wallet-note{font-size:9.5px;font-weight:600;color:var(--ac-text-2);text-align:center;line-height:1.4}',
   '.dp-wallet-go{width:100%;justify-self:stretch}',
 ].join('')
@@ -98,9 +102,20 @@ export function walletBar(ui, wallet, options) {
   slider.appendChild(all)
   box.appendChild(slider)
 
-  var summary = el('div', 'dp-wallet-summary')
+  var amountRow = el('div', 'dp-wallet-amount-row')
+  amountRow.appendChild(el('span', 'dp-wallet-amount-label', '数量'))
+  var amountInput = /** @type {HTMLInputElement} */ (el('input', 'dp-input dp-wallet-amount'))
+  amountInput.type = 'number'
+  amountInput.min = '0'
+  amountInput.step = '1'
+  amountInput.setAttribute('data-wallet-amount', wallet.key)
+  amountInput.setAttribute('aria-label', '兑换数量')
+  amountRow.appendChild(amountInput)
+  amountRow.appendChild(el('span', 'dp-wallet-amount-unit', wallet.label))
+  var summary = el('b', 'dp-wallet-summary')
+  amountRow.appendChild(summary)
+  box.appendChild(amountRow)
   var note = el('div', 'dp-wallet-note')
-  box.appendChild(summary)
   box.appendChild(note)
   var go = button('dp-mini dp-wallet-go', { 'data-wallet-exchange': wallet.key }, function () {
     var amount = Math.floor(Number(range.value) || 0)
@@ -112,24 +127,26 @@ export function walletBar(ui, wallet, options) {
     ui.send('exchange', { key: wallet.key, direction: direction, amount: amount })
   }
 
-  function sync() {
+  function sync(skipInput) {
     var max = maxFor(dir)
     range.max = String(max)
+    amountInput.max = String(max)
     var amount = Math.min(max, Math.max(0, Math.floor(Number(range.value) || 0)))
     range.value = String(amount)
+    if (skipInput !== true) amountInput.value = String(amount)
     range.disabled = max <= 0
     all.disabled = max <= 0
     range.style.setProperty('--wallet-fill', (max > 0 ? Math.round(amount / max * 100) : 0) + '%')
     if (dir === 'toGold') {
       var gold = Math.floor(amount * wallet.rate)
       note.textContent = '1 ' + wallet.label + ' = ' + wallet.rate + ' 🪙'
-      summary.textContent = amount + ' ' + wallet.label + ' → 🪙 ' + gold
+      summary.textContent = '→ 🪙 ' + gold
       go.textContent = '兑换 🪙 ' + gold
       go.disabled = amount <= 0 || gold <= 0
     } else {
       var cost = Math.ceil(amount * wallet.buyRate - 1e-9)
       note.textContent = '1 ' + wallet.label + ' = ' + wallet.buyRate + ' 🪙（含 5% 手续费）'
-      summary.textContent = '🪙 ' + cost + ' → ' + amount + ' ' + wallet.label
+      summary.textContent = '· 花 🪙 ' + cost
       go.textContent = '兑换 ' + amount + ' ' + wallet.label
       go.disabled = amount <= 0 || cost > coins
     }
@@ -151,6 +168,25 @@ export function walletBar(ui, wallet, options) {
   range.max = String(initial)
   range.value = String(dir === 'toGold' ? initial : Math.min(10, initial))
   range.addEventListener('input', sync)
+  amountInput.addEventListener('input', function () {
+    if (amountInput.value === '') {
+      range.value = '0'
+      sync(true)
+      return
+    }
+    var raw = Number(amountInput.value)
+    if (!Number.isFinite(raw)) return
+    var next = Math.floor(raw)
+    if (next < 0) next = 0
+    var max = maxFor(dir)
+    if (next > max) {
+      next = max
+      amountInput.value = String(max)
+    }
+    range.value = String(next)
+    sync(true)
+  })
+  amountInput.addEventListener('blur', function () { sync() })
   sync()
   return box
 }
