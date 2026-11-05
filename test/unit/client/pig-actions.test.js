@@ -178,9 +178,13 @@ test('shared web/desktop selection restores current illness instead of captured 
   f.advance(8000); syncPigArt(f.pig, image, null)
   assert.match(new URL(image.src, 'https://example.test').pathname, /piglet\/blink.png$/)
   f.attrs['data-mood'] = 'sick'; f.attrs['data-illness'] = 'skin:1'
-  syncPigArt(f.pig, image, null); assert.match(new URL(image.src, 'https://example.test').pathname, /feedback\/allergy.png$/)
+  // 2026-11-05 皮肤病的全身红点图已撤下，回退当前立绘，不再切到 feedback/allergy。
+  syncPigArt(f.pig, image, null)
+  const sickPath = new URL(image.src, 'https://example.test').pathname
+  assert.doesNotMatch(sickPath, /feedback\/allergy\.png$/)
+  assert.match(sickPath, /pigs\//)
   f.advance(100); syncPigArt(f.pig, image, null)
-  assert.match(new URL(image.src, 'https://example.test').pathname, /feedback\/allergy.png$/)
+  assert.doesNotMatch(new URL(image.src, 'https://example.test').pathname, /feedback\/allergy\.png$/)
   f.player.dispose()
 })
 

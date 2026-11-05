@@ -35,10 +35,10 @@ test('审定图片按真实状态切换，已有皮肤保留自己的立绘', ()
     [{ ...base, activityKind: 'study' }, 'study-book'],
     [{ ...base, activityKind: 'fishing' }, 'fishing'],
     [{ ...base, activityKind: 'interest', activityKey: 'fitness' }, 'collection-fitness'],
-    // 生病按病种和阶段：发烧是感冒第 2 期，红疹是皮肤病，晕是头晕；咳嗽、肠胃没图。
+    // 生病按病种和阶段：发烧是感冒第 2 期，晕是头晕；皮肤病已撤下红点图，回退原立绘。
     [{ ...base, mood: 'sick', illness: 'cold:2' }, 'collection-fever'],
     [{ ...base, mood: 'sick', illness: 'cold:1' }, 'runny-nose'],
-    [{ ...base, mood: 'sick', illness: 'skin:1' }, 'allergy'],
+    [{ ...base, mood: 'sick', illness: 'skin:1' }, null],
     [{ ...base, mood: 'sick', illness: 'dizzy:1' }, 'faint'],
     [{ ...base, mood: 'sick', illness: 'cough:1' }, null],
     [{ ...base, mood: 'sick', illness: 'cold:4' }, null],

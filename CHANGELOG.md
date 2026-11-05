@@ -11,6 +11,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 - 代码与文档保持 MIT；新增 `LICENSE-ASSETS.md`，明确小猪图 Apache 2.0、AI 生成场景/道具 CC BY 4.0、字体 OFL 1.1；用户提供的原摸摸 GIF 帧图集移出仓库和发布包。
 - 清理仓库中的本机绝对路径；发布前检查加入路径与素材许可核对。
 - 补更新包版本 `v` 前缀的边界测试。
+- 撤下皮肤病全身红点反馈图（太吓人），先回退原立绘；待换可爱版后再接回。
 
 ## [0.37.2-rc.14] — 2026-11-05 · 第三方素材包完成
 

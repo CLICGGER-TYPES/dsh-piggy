@@ -91,6 +91,9 @@ export function createWindowSurface(deps) {
       pet.hitPendingAt = Date.now()
       setHit(pet, false, 'placement-pending')
     }
+    // Linux 现代游戏：页面可能一直不上报 hitShape（或只报空），这里标记允许用原生可见轮廓兜底，
+    // 否则 setIgnoreMouseEvents(true) 会一直停在 1x1 输入区。旧游戏没有 bounds 的 place 不会走到这里。
+    if (why === 'place' && deps.platform === 'linux' && pet.passthroughMode === 'modern') pet.fallbackArmed = true
     window.setBounds(next)
     pet.petAsked = { ...next }
     deps.panel.followPig(pet)
@@ -106,7 +109,7 @@ export function createWindowSurface(deps) {
     // Linux 的原生绘制轮廓就是可见猪/面板本身，不是 Windows 那种带透明留白的整窗；
     // 页面偶尔报空 hitShape 时用它兜底，避免窗口永久停在 1x1 的鼠标穿透区。
     const hasLinuxShape = deps.platform === 'linux' && pet.passthroughMode === 'modern'
-      && pet.hasPlacedHitShape === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
+      && pet.fallbackArmed === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
     if ((!MOUSE_PASSTHROUGH && pet.placedHitShape === null && !hasLinuxShape) || window === null || window === undefined || window.isDestroyed()) return
     const forward = pet.passthroughMode === 'legacy' && MOUSE_PASSTHROUGH
     if (hit === pet.passthroughHit && forward === pet.passthroughForward) return
@@ -168,7 +171,7 @@ export function createWindowSurface(deps) {
     // 否则一次空上报会让窗口永久停在 1x1 的鼠标穿透区。
     const preciseHit = Array.isArray(pet.placedHitShape) && pet.placedHitShape.length > 0 ? pet.placedHitShape : null
     const linuxFallback = deps.platform === 'linux' && pet.passthroughMode === 'modern'
-      && pet.hasPlacedHitShape === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
+      && pet.fallbackArmed === true && Array.isArray(pet.placedShape) && pet.placedShape.length > 0
       ? pet.placedShape : null
     if (preciseHit === null && pet.hasPlacedHitShape === true && linuxFallback === null) {
       setHit(pet, false, 'missing-hit-shape')

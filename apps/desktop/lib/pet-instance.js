@@ -32,6 +32,7 @@ export const MAX_PIG_WINDOWS = 4
  * @property {boolean} hasPlacedShape
  * @property {any[]|null} placedHitShape
  * @property {boolean} hasPlacedHitShape
+ * @property {boolean} fallbackArmed
  * @property {boolean} hitPending
  * @property {boolean} staggerPending
  * @property {number} hitPendingAt
@@ -78,6 +79,7 @@ export function createPetState(identity = {}) {
     hasPlacedShape: false,
     placedHitShape: null,
     hasPlacedHitShape: false,
+    fallbackArmed: false,
     hitPending: false,
     hitPendingAt: 0,
     staggerPending: false,

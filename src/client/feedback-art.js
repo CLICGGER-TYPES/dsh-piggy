@@ -10,10 +10,10 @@ const MOOD_ART = {
   lonely: ['lie-flat'],
 }
 
-/** 生病按「病种:阶段」选图；没列出的病（咳嗽、肠胃、病危）保持原立绘加病色。 */
+/** 生病按「病种:阶段」选图；没列出的病（咳嗽、肠胃、病危、皮肤病）保持原立绘加病色。 */
 const ILLNESS_ART = {
   'cold:1': ['runny-nose'], 'cold:2': ['collection-fever'], 'cold:3': ['runny-nose'],
-  'skin:1': ['allergy'], 'skin:2': ['allergy'], 'skin:3': ['allergy'], 'skin:4': ['allergy'],
+  // 2026-11-05 用户要求撤下全身红点图（太吓人），皮肤病先回退原立绘；后面换可爱版再接回。
   'dizzy:1': ['faint'], 'dizzy:2': ['faint'], 'dizzy:3': ['faint'],
 }
 
@@ -54,7 +54,7 @@ export const FEEDBACK_ART_TABLES = Object.freeze({
 })
 
 /** 审定过但暂时不用的图（用户 2026-10-09：待定或不合适），留在仓库里备用。 */
-export const UNUSED_FEEDBACK_ART = Object.freeze(['collection-badge', 'collection-check', 'collection-cage', 'suspended', 'twitch',
+export const UNUSED_FEEDBACK_ART = Object.freeze(['allergy', 'collection-badge', 'collection-check', 'collection-cage', 'suspended', 'twitch',
   // 2026-10-21：脏和饿保留原猪，苍蝇和食物想象泡独立显示。
   'collection-mosquito', 'hungry',
   // 2026-10-18：困了/睡着改用当前皮肤自己的 sleep 图，不再用这张反馈图。
