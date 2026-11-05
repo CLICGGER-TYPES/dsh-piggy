@@ -8,7 +8,7 @@
  */
 
 import { button, el } from '../dom.js'
-import { drillHeader, drillTo, tile, tileGrid } from '../widgets.js'
+import { drillHeader, drillTo, pagedTiles, tile, tileGrid } from '../widgets.js'
 import { canStart, renderSwitchAsk, startOrSwitch } from '../switch-activity.js'
 
 /** The three skills, in the order QQ Pet lists its traits, each with its colour. */
@@ -27,7 +27,7 @@ export function renderWorkTab(ui) {
   // Older hosts send no trait per job: one list of every job, no skill layer.
   var bySkill = ui.view.jobs.some(function (job) { return job.trait !== '' })
   if (!bySkill) {
-    renderJobs(ui, ui.view.jobs, 'orange')
+    renderJobs(ui, ui.view.jobs, 'orange', 'all')
     return
   }
   var skill = SKILLS.find(function (entry) { return entry.key === ui.drill.work })
@@ -37,12 +37,13 @@ export function renderWorkTab(ui) {
   }
   var chosen = skill
   drillHeader(ui, 'work', chosen.emoji + ' ' + chosen.label, '')
-  renderJobs(ui, ui.view.jobs.filter(function (job) { return job.trait === chosen.key }), chosen.color)
+  renderJobs(ui, ui.view.jobs.filter(function (job) { return job.trait === chosen.key }), chosen.color, chosen.key)
 }
 
 /** The top layer: one tile per skill, with how many of its jobs the pig can do. */
 function renderSkills(ui) {
   var grid = tileGrid()
+  grid.className += ' dp-nine-grid'
   for (var s = 0; s < SKILLS.length; s += 1) {
     (function (skill) {
       var open = ui.view.jobs.filter(function (job) { return job.trait === skill.key && job.qualified }).length
@@ -58,15 +59,15 @@ function renderSkills(ui) {
 }
 
 /** Job tiles; the picked job stays visible under the scrolling list. */
-function renderJobs(ui, jobs, color) {
-  var grid = tileGrid()
+function renderJobs(ui, jobs, color, pagerKey) {
+  var tiles = []
   var picked = null
   for (var i = 0; i < jobs.length; i += 1) {
     (function (job) {
       var active = ui.drill.pick === job.key
       if (active) picked = job
       var locked = job.qualified === false
-      grid.appendChild(tile({
+      tiles.push(tile({
         emoji: job.emoji, label: job.label, color: color, soft: true, active: active,
         note: job.minutes + '分·' + job.coins + '🪙',
         tag: locked ? '🔒' : '', dim: locked,
@@ -78,7 +79,7 @@ function renderJobs(ui, jobs, color) {
       }))
     })(jobs[i])
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'work:' + pagerKey, tiles))
   if (picked !== null) {
     ui.footer.appendChild(jobDetails(ui, picked))
     ui.footer.hidden = false

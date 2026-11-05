@@ -995,7 +995,7 @@ test('the bag tab lists the diary newest-first, folded until tapped', async () =
 // #10 — fields the panel silently dropped
 // ===========================================================================
 
-test('装扮 is temporarily absent from the shop and bag, while worn items stay on the pig', async () => {
+test('装扮功能已撤下：商店/背包不再有入口，旧存档的 worn 也不画到猪身上', async () => {
   const scarf = {
     key: 'scarf', label: '围巾', emoji: '🧣', price: 30, kind: 'dress', tier: null, level: 1,
     owned: true, unlocked: true, worn: true, slot: 'neck', blurb: '', affordable: false, needed: false,
@@ -1003,11 +1003,12 @@ test('装扮 is temporarily absent from the shop and bag, while worn items stay 
   const { registration, dom } = await loadClient({ status: { ...SNAPSHOT, shop: [...SNAPSHOT.shop, scarf], dress: [scarf] } })
   registration.factory(() => {}).apply({})
   await settle()
-  assert.notEqual(findByAttr(hostOf(dom), 'data-slot', 'neck'), undefined, 'worn item survives')
+  assert.equal(findByAttr(hostOf(dom), 'data-slot', 'neck'), undefined, 'old worn item is not drawn')
   openPanel(dom)
   pickTab(dom, 'shop')
   assert.equal(findByAttr(contentOf(dom), 'data-shelf', 'dress'), undefined)
   pickTab(dom, 'bag')
+  assert.equal(findByAttr(contentOf(dom), 'data-bag', 'worn'), undefined)
   assert.equal(findByAttr(contentOf(dom), 'data-bag', 'dress'), undefined)
 })
 
@@ -1101,7 +1102,7 @@ test('the status tab shows labelled bars, traits and the care buttons', async ()
   assert.ok(play.allText().includes('37'), play.allText())
 })
 
-test('a worn 装扮 is drawn on the pig at its slot, not printed on the name plate', async () => {
+test('旧存档里的 worn 装扮不再画到猪身上', async () => {
   const { registration, dom } = await loadClient({
     status: {
       ...SNAPSHOT,
@@ -1114,11 +1115,9 @@ test('a worn 装扮 is drawn on the pig at its slot, not printed on the name pla
   registration.factory(() => {}).apply({})
   await settle()
 
-  const worn = findByAttr(hostOf(dom), 'data-slot', 'neck')
-  assert.notEqual(worn, undefined, 'the scarf hangs on the neck anchor')
-  assert.equal(worn.allText(), '🧣')
-  assert.equal(findByAttr(hostOf(dom), 'data-slot', 'head'), undefined, 'an unworn hat is not drawn')
-  assert.ok(!findByClass(hostOf(dom), 'dp-hud').allText().includes('🧣'), 'and the name plate stays clean')
+  assert.equal(findByAttr(hostOf(dom), 'data-slot', 'neck'), undefined, 'the old scarf is not drawn')
+  assert.equal(findByAttr(hostOf(dom), 'data-slot', 'head'), undefined, 'the old hat is not drawn')
+  assert.ok(!findByClass(hostOf(dom), 'dp-hud').allText().includes('🧣'), 'the name plate stays clean')
 })
 
 test('the work tab lists jobs and sending the pig out POSTs the job', async () => {

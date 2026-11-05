@@ -19,7 +19,10 @@
 视觉规范的源头是 [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui)（MIT）的 `docs/design-system/`，
 本项目的 `--ac-*` 设计变量就是照它的 `css-variables.md` 抄过来的（见 `docs/DESIGN.md` 5.4）。**要做项目里还没有的界面元素时，先去查它有没有对应的规格，照规格做，不要自己发明样式。**
 
-| 文件 | 看什么 |
+仓库内已有一份 MIT 许可的离线副本：[`docs/design/animal-island-ui/`](../design/animal-island-ui/)（2026-11-05 从上游 `3.0.0` / `02fa9da` 复制）。
+优先查本地副本；它的 `VENDORED.md` 写了变量映射和更新方式。**只查规格，不引入 React 或 `animal-island-ui` 包。**
+
+| 文件（相对 `docs/design/animal-island-ui/`） | 看什么 |
 |---|---|
 | `README.md` | 设计系统总览 |
 | `design-rules.md` | **七条设计法则 + 十几条硬规则 + 反模式速查**（动手前必读） |

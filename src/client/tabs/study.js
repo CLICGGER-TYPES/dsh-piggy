@@ -10,7 +10,7 @@
 
 import { STAGES } from '../constants.js'
 import { el } from '../dom.js'
-import { drillHeader, drillTo, tile, tileGrid } from '../widgets.js'
+import { drillHeader, drillTo, pagedTiles, tile, tileGrid } from '../widgets.js'
 import { canStart, renderSwitchAsk, startOrSwitch } from '../switch-activity.js'
 
 /** The drill key that opens the interest courses instead of a stage. */
@@ -61,6 +61,7 @@ function renderStages(ui) {
   // keep offering one the host has never heard of.
   var stageList = ui.view.stages.length > 0 ? ui.view.stages : STAGES
   var grid = tileGrid()
+  grid.className += ' dp-nine-grid'
   for (var s = 0; s < stageList.length; s += 1) {
     (function (entry, index) {
       var locked = entry.unlocked === false
@@ -117,13 +118,14 @@ function renderSubjects(ui, stage) {
 function renderInterests(ui) {
   var after = ui.view.interests[0].certificateAfter
   drillHeader(ui, 'study', '🎯 兴趣', after > 0 ? '上满 ' + after + ' 次拿证' : '')
-  var grid = tileGrid()
+  var tiles = []
   for (var n = 0; n < ui.view.interests.length; n += 1) {
     (function (entry) {
       var note = entry.cost + ' 🪙 · 约 ' + entry.minutes + ' 分钟后 ' + entry.traitLabel + ' +' + entry.gain
       var badge = entry.certificate === '' ? '' : (entry.certified ? '📜' : entry.times + '/' + entry.certificateAfter)
-      grid.appendChild(tile({
-        emoji: entry.emoji, label: entry.label, color: INTEREST_COLOR, soft: true, note: note, badge: badge,
+      tiles.push(tile({
+        emoji: entry.emoji, label: entry.label, color: INTEREST_COLOR, soft: true, note: note,
+        noteClass: 'dp-tile-note-2', badge: badge,
         disabled: !canStart(ui),
         dim: !entry.affordable,
         data: { 'data-interest': entry.key },
@@ -131,5 +133,5 @@ function renderInterests(ui) {
       }))
     })(ui.view.interests[n])
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'study:interest', tiles, { rows: 3 }))
 }

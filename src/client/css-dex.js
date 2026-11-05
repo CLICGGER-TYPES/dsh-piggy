@@ -2,12 +2,15 @@
 /** C4 图鉴：小闪卡、动森式博物馆格与紧凑道具目录。 */
 
 export const CSS_DEX = [
-  // Category dashboard: existing app tiles plus a thin museum-style progress rail.
+  // Category dashboard and every collection page use the same tile spec.
   '.dp-dex-sections .dp-tile{gap:3px}',
-  '.dp-dex-progress{display:block;width:42px;height:3px;margin-top:1px;border-radius:4px;overflow:hidden;',
-  'background:rgba(61,52,40,.12)}',
-  '.dp-dex-progress i{display:block;height:100%;border-radius:inherit;background:var(--tile-c,var(--ac-primary));',
-  'transition:width .25s var(--ac-ease)}',
+  '.dp-dex-tile-art{display:flex;align-items:center;justify-content:center;width:100%;height:100%}',
+  '.dp-dex-tile-art .dp-dex-art{width:42px;height:42px}',
+  // 未解锁的鱼只留剪影：能看出轮廓，但不提前泄漏颜色和花纹。
+  '.dp-tile[data-dex-fish="true"][data-locked="true"] .dp-tile-icon{filter:none;opacity:1;box-shadow:none}',
+  '.dp-tile[data-dex-fish="true"][data-locked="true"] .dp-dex-art,',
+  '.dp-tile[data-dex-fish="true"][data-locked="true"] .dp-tile-e{filter:brightness(0);opacity:.32}',
+
 
   // Forms and skins: three genuinely small collectible cards.
   '.dp-dex-flash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;perspective:700px}',

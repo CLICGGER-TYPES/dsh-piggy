@@ -11,9 +11,9 @@ const NOW = new Date(2026, 9, 2, 19, 0).getTime()
 const fresh = () => { const state = hatchEgg(NOW); state.inventory.bait_worm = 40; return state }
 
 test('fish table: the 15 C5 fish plus 25 new ones (J1), every fish lives in one of the four spots', () => {
-  assert.equal(FISH.length, 40)
-  assert.deepEqual(Object.fromEntries(['river', 'lake', 'sea', 'night'].map(spot => [spot, FISH.filter(f => f.spot === spot).length])), { river: 12, lake: 10, sea: 11, night: 7 })
-  assert.deepEqual(FISH.filter(f => f.rarity === 'legend').map(f => f.label), ['月影鱼', '湖中巨影', '小鲸鲨', '夜之鲸'])
+  assert.equal(FISH.length, 100)
+  assert.deepEqual(Object.fromEntries(['river', 'lake', 'sea', 'night'].map(spot => [spot, FISH.filter(f => f.spot === spot).length])), { river: 25, lake: 25, sea: 25, night: 25 })
+  assert.deepEqual(FISH.filter(f => f.rarity === 'legend').map(f => f.label), ['月影鱼', '湖中巨影', '小鲸鲨', '夜之鲸', '河神鱼', '湖心月', '海神鲸', '深渊王鱼'])
   assert.ok(FISH.filter(f => f.spot === 'night').every(f => f.times.length === 1 && f.times[0] === 'night'), 'the night pond only has night fish')
   for (const fish of FISH) {
     assert.match(fish.key, /^fish_/)

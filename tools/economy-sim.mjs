@@ -15,6 +15,18 @@ import { FISH_WEIGHT } from '../packages/pet-core/src/core/fishing.js'
 import { AUTO_FISH_INTERVAL, AUTO_FISH_GEAR, AUTO_FISH_SUCCESS_FACTOR } from '../packages/pet-core/src/data/fishing-auto.js'
 
 export const ACTIONS_PER_HOUR = 1800
+/** 40 种时代各钓点各稀有度的数量；鱼表扩到 100 种后按这个比例分摊总权重。 */
+const FISH_BASE_COUNT = {
+  river: { common: 7, uncommon: 3, rare: 2, legend: 0 },
+  lake: { common: 4, uncommon: 4, rare: 1, legend: 1 },
+  sea: { common: 5, uncommon: 4, rare: 1, legend: 1 },
+  night: { common: 2, uncommon: 1, rare: 2, legend: 2 },
+}
+function fishWeight(fish, pool) {
+  const count = pool.reduce((sum, entry) => sum + (entry.rarity === fish.rarity ? 1 : 0), 0)
+  const base = (FISH_BASE_COUNT[fish.spot]?.[fish.rarity] ?? 0) || 1
+  return FISH_WEIGHT[fish.rarity] * (base / (count || 1))
+}
 /** 一点饱食值多少金币（面包：32 点 10 金币）。 */
 export const FOOD_PER_POINT = 10 / 32
 
@@ -146,7 +158,7 @@ export function autoFishingPerHour({ rodLevel, spot, baitKey = 'bait_worm', peri
     const pool = FISH.filter(fish => fish.spot === spot && fish.times.includes(value))
     if (pool.length === 0) return { net: 0, catches: 0 }
     const boost = bait.rarityBoost ?? 0
-    const weights = pool.map(fish => FISH_WEIGHT[fish.rarity] * (fish.rarity === 'legend' ? 1.9 * (1 + boost * 3) * rod.rare : fish.rarity === 'rare' ? 1.45 * (1 + boost * 2) * rod.rare : fish.rarity === 'uncommon' ? 1.225 * (1 + boost) : 1))
+    const weights = pool.map(fish => fishWeight(fish, pool) * (fish.rarity === 'legend' ? 1.9 * (1 + boost * 3) * rod.rare : fish.rarity === 'rare' ? 1.45 * (1 + boost * 2) * rod.rare : fish.rarity === 'uncommon' ? 1.225 * (1 + boost) : 1))
     const sum = weights.reduce((total, weight) => total + weight, 0)
     let earned = 0, catches = 0
     for (const [index, fish] of pool.entries()) {
@@ -202,10 +214,11 @@ export function fishingPerHour(rodLevel, spot, baitKey = 'bait_worm') {
   const periods = ['early', 'noon', 'evening', 'night'].filter(period => FISH.some(fish => fish.spot === spot && fish.times.includes(period)))
   let total = 0
   for (const period of periods) {
-    const pool = FISH.filter(fish => fish.spot === spot && fish.times.includes(period)).map(fish => {
+    const fishPool = FISH.filter(fish => fish.spot === spot && fish.times.includes(period))
+    const pool = fishPool.map(fish => {
       // 抛竿力度按界面固定的 0.5 算（src/client/tabs/fishing.js）。
       const rare = fish.rarity === 'legend' ? (1 + 0.5 * 2) * (1 + boost * 3) * rod.rare : fish.rarity === 'rare' ? (1 + 0.5) * (1 + boost * 2) * rod.rare : fish.rarity === 'uncommon' ? (1 + 0.5 * 0.5) * (1 + boost) : 1
-      return { fish, weight: FISH_WEIGHT[fish.rarity] * rare }
+      return { fish, weight: fishWeight(fish, fishPool) * rare }
     })
     const sum = pool.reduce((a, entry) => a + entry.weight, 0)
     let value = 0, seconds = 0

@@ -67,9 +67,22 @@ export function spotOpen(spotKey, nowMs) {
 
 /** 这个钓点、这个时段能钓到的鱼，按稀有度、抛竿力度、鱼饵、鱼竿配权重；没有鱼返回 null。 */
 export function weightedFish(nowMs, power, next, baitBoost = 0, spotKey = 'river', rodRare = 1) {
-  const entries = FISH.filter(fish => fish.spot === spotKey && fish.times.includes(fishingPeriod(nowMs))).map(fish => ({
+  const candidates = FISH.filter(fish => fish.spot === spotKey && fish.times.includes(fishingPeriod(nowMs)))
+  // 鱼从 40 种扩到 100 种后，按「钓点 × 稀有度」分摊权重：每个钓点某稀有度的
+  // 总权重仍然等于原来 40 种时代，避免图鉴变多、某个钓点的出金率跟着涨。
+  // 数字是 40 种时各钓点各稀有度的数量；原来没有的稀有度按 1 保底，保证新鱼能出现。
+  const BASE_COUNT = {
+    river: { common: 7, uncommon: 3, rare: 2, legend: 0 },
+    lake: { common: 4, uncommon: 4, rare: 1, legend: 1 },
+    sea: { common: 5, uncommon: 4, rare: 1, legend: 1 },
+    night: { common: 2, uncommon: 1, rare: 2, legend: 2 },
+  }
+  const counts = {}
+  for (const fish of candidates) counts[fish.rarity] = (counts[fish.rarity] ?? 0) + 1
+  const entries = candidates.map(fish => ({
     fish,
-    weight: FISH_WEIGHT[fish.rarity] * (fish.rarity === 'legend' ? 1 + power * 2 : fish.rarity === 'rare' ? 1 + power : fish.rarity === 'uncommon' ? 1 + power * 0.5 : 1)
+    weight: FISH_WEIGHT[fish.rarity] * ((BASE_COUNT[spotKey]?.[fish.rarity] ?? 0) || 1) / (counts[fish.rarity] || 1)
+      * (fish.rarity === 'legend' ? 1 + power * 2 : fish.rarity === 'rare' ? 1 + power : fish.rarity === 'uncommon' ? 1 + power * 0.5 : 1)
       * (fish.rarity === 'legend' ? 1 + baitBoost * 3 : fish.rarity === 'rare' ? 1 + baitBoost * 2 : fish.rarity === 'uncommon' ? 1 + baitBoost : 1)
       * (fish.rarity === 'legend' || fish.rarity === 'rare' ? rodRare : 1),
   }))

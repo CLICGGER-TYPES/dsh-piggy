@@ -47,6 +47,7 @@
 
 ```assets
 fishing/*.png
+fishing/fish/*.png
 fishing/manifest.json
 fishing/PROVENANCE.md
 animations/pet-hand/*.webp
@@ -85,7 +86,7 @@ v07 曾直接复用用户提供的原 GIF：五帧 112×112、每帧 60ms，排�
 
 ## 小游戏纸感与钓鱼候选（2026-10-24）
 
-后续小游戏默认采用用户选定的清爽平涂纸感，见 [game-style.md](art/game-style.md) 与已确认参考图。菜园七份分层素材及来源见 `extensions/farm/paper-art-pack.json`；钓鱼四处钓点、独立浮漂、宽版搏斗插画和鲫鱼结果图见 [fishing/PROVENANCE.md](../assets/fishing/PROVENANCE.md)。文字、按钮、进度和游戏规则独立实现。
+后续小游戏默认采用用户选定的清爽平涂纸感，见 [game-style.md](art/game-style.md) 与已确认参考图。菜园七份分层素材及来源见 `extensions/farm/paper-art-pack.json`；钓鱼四处钓点、独立浮漂、宽版搏斗插画、10 种鱼的图鉴/结果插画见 [fishing/PROVENANCE.md](../assets/fishing/PROVENANCE.md)。文字、按钮、进度和游戏规则独立实现。
 
 菜园4.1.1补充六张 `paper-{glove,seed-bag,watering-can,shovel,backpack,shop}.png` 工具图标；见扩展 `paper-tools-art-pack.json` 的原生出处与哈希，沿用已确认菜园A参考。
 

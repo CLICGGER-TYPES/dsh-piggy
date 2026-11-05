@@ -6,9 +6,17 @@
  * @module dsh-piggy/client/tabs/travel
  */
 
-import { button, el } from '../dom.js'
+import { el } from '../dom.js'
 import { formatMinutes } from '../format.js'
 import { canStart, renderSwitchAsk, startOrSwitch } from '../switch-activity.js'
+import { pagedTiles, tile } from '../widgets.js'
+
+/** One colour per destination, so the grid still reads like a map. */
+var TRIP_COLOR = {
+  park: 'green', funfair: 'pink', zoo: 'orange', suburb: 'lime',
+  aquarium: 'blue', bambooforest: 'teal', mountain: 'brown', hotspring: 'red',
+  snowpeak: 'blue', sea: 'teal', desert: 'yellow', oldtown: 'brown',
+}
 
 export function renderTravelTab(ui) {
   renderSwitchAsk(ui)
@@ -16,24 +24,19 @@ export function renderTravelTab(ui) {
     ui.content.appendChild(el('div', 'dp-empty', '宿主还没提供目的地。'))
     return
   }
-  var list = el('div', 'dp-list')
+  var tiles = []
   for (var i = 0; i < ui.view.trips.length; i += 1) {
     (function (trip) {
-      var row = el('div', 'dp-item')
-      row.appendChild(el('span', null, trip.emoji))
-      var grow = el('div', 'dp-grow')
-      grow.appendChild(el('div', null, trip.label))
-      grow.appendChild(el('div', 'dp-dim', formatMinutes(trip.minutes) + ' · ' + trip.cost + ' 🪙'
-        + (trip.bestRarity ? ' · 可带回 ' + trip.bestRarityEmoji + trip.bestRarity : '')))
-      if (trip.locked) grow.appendChild(el('div', 'dp-dim', '🔒 ' + trip.locked + '才能去'))
-      row.appendChild(grow)
-      var go = button('dp-mini', { 'data-trip': trip.key }, function () { startOrSwitch(ui, '旅行（' + trip.label + '）', 'trip', { trip: trip.key }) })
-      go.textContent = '出发'
-      go.disabled = !canStart(ui) || !trip.affordable || trip.locked !== ''
-      row.appendChild(go)
-      list.appendChild(row)
+      tiles.push(tile({
+        emoji: trip.emoji, label: trip.label, color: TRIP_COLOR[trip.key] ?? 'blue', soft: true,
+        note: formatMinutes(trip.minutes) + ' · ' + trip.cost + '🪙',
+        tag: trip.locked ? '🔒' : '',
+        dim: trip.locked !== '' || !trip.affordable,
+        disabled: !canStart(ui) || !trip.affordable || trip.locked !== '',
+        data: { 'data-trip': trip.key },
+        onPick: function () { startOrSwitch(ui, '旅行（' + trip.label + '）', 'trip', { trip: trip.key }) },
+      }))
     })(ui.view.trips[i])
   }
-  ui.content.appendChild(list)
-
+  ui.content.appendChild(pagedTiles(ui, 'travel', tiles, { rows: 3 }))
 }

@@ -10,11 +10,11 @@
 import { KIND_ORDER, shelfOf } from '../constants.js'
 import { button, el } from '../dom.js'
 import { num } from '../values.js'
-import { careEffectLine, drillHeader, drillTo, statStrip, tile, tileGrid } from '../widgets.js'
+import { careEffectLine, drillHeader, drillTo, pagedTiles, statStrip, tile } from '../widgets.js'
 import { SHELF_COLOR, shelfParts } from './shop.js'
 import { walletBar } from '../wallet.js'
 
-/** The consumable shelves, in shop order. */
+/** 所有消耗品货架，子页和首页共用。 */
 var CONSUMABLES = KIND_ORDER
 
 /** 这三个货架的东西用了就是一次照料（喂食 / 洗澡 / 玩耍），和状态页原来的按钮一样。 */
@@ -25,7 +25,6 @@ var STAT_SHELVES = ['food', 'bath', 'toy', 'medicine']
 
 /** The non-shelf categories: what they are called and how they look. */
 var EXTRA = {
-  worn: { emoji: '👕', label: '已穿戴', color: 'pink' },
   diary: { emoji: '📔', label: '日记', color: 'brown' },
   souvenir: { emoji: '🎁', label: '纪念品', color: 'blue' },
   fish: { emoji: '🐟', label: '鱼篓', color: 'teal' },
@@ -39,8 +38,7 @@ function shortDay(day) {
 
 export function renderBagTab(ui) {
   var open = ui.drill.bag
-  if (open === 'worn') renderWorn(ui)
-  else if (open === 'diary') renderDiary(ui)
+  if (open === 'diary') renderDiary(ui)
   else if (open === 'souvenir') renderSouvenirs(ui)
   else if (open === 'fish') renderFish(ui)
   else if (open === 'wallet') renderWallets(ui)
@@ -58,60 +56,41 @@ function ownedOf(ui, kind) {
 }
 
 function renderCategories(ui) {
-  var grid = tileGrid()
-  for (var k = 0; k < CONSUMABLES.length; k += 1) {
-    (function (kind) {
-      var items = ownedOf(ui, kind)
-      var count = items.reduce(function (sum, item) { return sum + num(ui.view.inventory[item.key], 0) }, 0)
-      var hasFree = items.some(function (item) { return item.default === true })
-      var parts = shelfParts(kind)
-      grid.appendChild(tile({
-        emoji: parts[0], label: parts[1], color: SHELF_COLOR[kind] ?? 'blue',
-        badge: count > 0 ? String(count) : '', dim: count === 0 && !hasFree,
-        tag: items.some(function (item) { return item.needed }) ? '需要' : '',
-        data: { 'data-bag': kind },
-        onPick: function () { drillTo(ui, 'bag', kind) },
-      }))
-    })(CONSUMABLES[k])
-  }
-  var counts = {
-    worn: ui.view.dress.filter(function (item) { return item.worn }).length,
+  var tiles = []
+  // 前 9 格是 6 个消耗品货架 + 日记 / 纪念品 / 鱼篓；钱包多出来，
+  // 跟主屏一样翻到第 2 页。
+  CONSUMABLES.forEach(function (kind) {
+    var items = ownedOf(ui, kind)
+    var count = items.reduce(function (sum, item) { return sum + num(ui.view.inventory[item.key], 0) }, 0)
+    var hasFree = items.some(function (item) { return item.default === true })
+    var parts = shelfParts(kind)
+    tiles.push(tile({
+      emoji: parts[0], label: parts[1], color: SHELF_COLOR[kind] ?? 'blue',
+      badge: count > 0 ? String(count) : '', dim: count === 0 && !hasFree,
+      tag: items.some(function (item) { return item.needed }) ? '需要' : '',
+      data: { 'data-bag': kind },
+      onPick: function () { drillTo(ui, 'bag', kind) },
+    }))
+  })
+  var counts = bagCounts(ui)
+  ;['diary', 'souvenir', 'fish', 'wallet'].forEach(function (key) {
+    var spec = EXTRA[key]
+    tiles.push(tile({
+      emoji: spec.emoji, label: spec.label, color: spec.color,
+      badge: counts[key] > 0 ? String(counts[key]) : '', dim: counts[key] === 0,
+      data: { 'data-bag': key },
+      onPick: function () { drillTo(ui, 'bag', key) },
+    }))
+  })
+  ui.content.appendChild(pagedTiles(ui, 'bag', tiles, { rows: 3 }))
+}
+
+function bagCounts(ui) {
+  return {
     diary: ui.view.diary.length,
     souvenir: ui.view.pig.souvenirs.length,
     fish: ui.view.fishing.bag.length,
     wallet: (ui.view.wallets || []).length,
-  }
-  for (var key in EXTRA) {
-    (function (category) {
-      if ((category === 'worn' || category === 'wallet') && counts[category] === 0) return
-      var spec = EXTRA[category]
-      grid.appendChild(tile({
-        emoji: spec.emoji, label: spec.label, color: spec.color,
-        badge: counts[category] > 0 ? String(counts[category]) : '', dim: counts[category] === 0,
-        data: { 'data-bag': category },
-        onPick: function () { drillTo(ui, 'bag', category) },
-      }))
-    })(key)
-  }
-  ui.content.appendChild(grid)
-}
-
-function renderWorn(ui) {
-  var worn = ui.view.dress.filter(function (item) { return item.worn })
-  drillHeader(ui, 'bag', '👕 已穿戴', worn.length + ' 件')
-  if (worn.length === 0) { ui.content.appendChild(el('div', 'dp-empty', '现在没有穿戴装扮')); return }
-  for (var i = 0; i < worn.length; i += 1) {
-    (function (item) {
-      var row = el('div', 'dp-item')
-      row.appendChild(el('span', 'dp-item-emoji', item.emoji))
-      row.appendChild(el('span', 'dp-grow', item.label + (item.slotLabel ? ' · ' + item.slotLabel : '')))
-      var off = button('dp-mini', { 'data-take-off': item.key }, function () {
-        ui.send('wear', { item: item.key, on: false })
-      })
-      off.textContent = '脱下'
-      row.appendChild(off)
-      ui.content.appendChild(row)
-    })(worn[i])
   }
 }
 
@@ -155,10 +134,10 @@ function renderItems(ui, kind) {
     }
     return
   }
-  var grid = tileGrid()
+  var tiles = []
   for (var i = 0; i < items.length; i += 1) {
     (function (item) {
-      grid.appendChild(tile({
+      tiles.push(tile({
         emoji: item.emoji, label: item.label, color: SHELF_COLOR[kind] ?? 'blue', soft: true,
         badge: item.default === true ? '免费' : '×' + num(ui.view.inventory[item.key], 0), tag: item.needed ? '需要' : '',
         note: action !== undefined ? careEffectLine(action, item) : item.kind === 'promotion' || item.kind === 'body' ? item.useLabel : '',
@@ -168,7 +147,7 @@ function renderItems(ui, kind) {
       }))
     })(items[i])
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'bag:' + kind, tiles))
 }
 
 /** 照料记录的展开状态挂在 ui.drill 上：只是这一屏的样子，不发送、不存档。 */
@@ -202,13 +181,13 @@ function renderDiary(ui) {
     ui.content.appendChild(el('div', 'dp-empty', '还没有日记'))
     return
   }
-  var grid = tileGrid()
+  var tiles = []
   var picked = null
   for (var d = 0; d < ui.view.diary.length; d += 1) {
     (function (entry) {
       var active = ui.drill.pick === entry.day
       if (active) picked = entry
-      grid.appendChild(tile({
+      tiles.push(tile({
         emoji: '📔', label: shortDay(entry.day), color: EXTRA.diary.color, soft: true, active: active,
         data: { 'data-diary': entry.day },
         onPick: function () {
@@ -218,7 +197,7 @@ function renderDiary(ui) {
       }))
     })(ui.view.diary[d])
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'bag:diary', tiles))
   if (picked === null) return
   var body = diaryBody(picked)
   var notes = diaryCareNotes(picked)
@@ -256,14 +235,14 @@ function renderSouvenirs(ui) {
     ui.content.appendChild(el('div', 'dp-empty', '收藏册还空着'))
     return
   }
-  var grid = tileGrid()
+  var tiles = []
   var picked = null
   for (var s = 0; s < list.length; s += 1) {
     (function (entry, index) {
       var id = entry.key + '#' + index
       var active = ui.drill.pick === id
       if (active) picked = entry
-      grid.appendChild(tile({
+      tiles.push(tile({
         emoji: entry.emoji, label: entry.label, color: EXTRA.souvenir.color, soft: true, active: active,
         note: entry.rarityEmoji + entry.rarityLabel,
         data: { 'data-souvenir': id },
@@ -274,7 +253,7 @@ function renderSouvenirs(ui) {
       }))
     })(list[s], s)
   }
-  ui.content.appendChild(grid)
+  ui.content.appendChild(pagedTiles(ui, 'bag:souvenir', tiles))
   if (picked === null) return
   var story = el('div', 'dp-pick dp-tile-card')
   story.appendChild(el('div', 'dp-pick-head', picked.emoji + ' ' + picked.label

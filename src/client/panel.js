@@ -280,17 +280,8 @@ export function createPanel(ctx) {
           ctx.host.setAttribute('data-unhatched', 'false')
           ctx.pokeHint.hidden = true
           ctx.soul.hidden = ctx.view.pig.soul !== true || pigStage.key === 'grave'
-          // 装扮挂在猪身上（见 .dp-slot），名字牌上不再重复一遍。
+          // 装扮功能暂停：旧存档里的 worn 数据保留，但不再画到猪身上。
           ctx.dressSlots.textContent = ''
-          for (var wd = 0; wd < ctx.view.dress.length; wd += 1) {
-            var piece = ctx.view.dress[wd]
-            if (!piece.worn || piece.slot === '') continue
-            // 加冕后的样子自带王冠披风，盖住的位置不挂装扮（东西还在背包里）。
-            if (pigStage.hides.indexOf(piece.slot) >= 0) continue
-            var node = el('span', 'dp-slot', piece.emoji)
-            node.setAttribute('data-slot', piece.slot)
-            ctx.dressSlots.appendChild(node)
-          }
           ctx.hudName.textContent = ctx.view.pig.name
             + ' Lv.' + ctx.view.pig.level.level
             + ' · ' + pigStage.label

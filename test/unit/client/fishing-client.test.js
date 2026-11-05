@@ -282,27 +282,33 @@ test('U24-7 fight keeps all three games and the current spot without auto stock 
   }
 })
 
-test('U24-7 result uses actual fish facts, crucian art only for crucian, and keeps the bag action', async () => {
-  const crucian = { id: 'res-1', key: 'fish_crucian', label: '鲫鱼', emoji: '🐟', rarity: 'common', sizeCm: 18.4, price: 8, phase: 'caught' }
+test('U24-7 result uses actual fish facts and each fish art when available', async () => {
+  const crucian = { id: 'res-1', key: 'fish_crucian', label: '鲫鱼', emoji: '🐟', art: 'fish/fish_crucian.png', rarity: 'common', sizeCm: 18.4, price: 8, phase: 'caught' }
   const one = await mount({ status: status({ rod, spots, pending: crucian }) })
   openPanel(one.dom, 'fishing')
   const content = contentOf(one.dom)
   assert.match(content.allText(), /鲫鱼.*18\.4 cm.*8/)
   assert.match(content.allText(), /★☆☆☆/)
   const card = findByAttr(content, 'data-fish-result', 'fish_crucian')
-  assert.equal(card.getAttribute('data-fish-result-art'), 'crucian')
+  assert.equal(card.getAttribute('data-fish-result-art'), 'art')
   assert.notEqual(findByClass(content, 'dp-fish-result-img'), undefined)
-  assert.equal(findByClass(content, 'dp-fish-result-img').src, '/dsh-piggy/art/fishing/crucian-result.png?v=5c1d10fba07b')
+  assert.equal(findByClass(content, 'dp-fish-result-img').src, '/dsh-piggy/art/fishing/fish/fish_crucian.png?v=5c1d10fba07b')
   const keep = findByAttr(content, 'data-fish', 'keep')
   assert.notEqual(keep, undefined)
   assert.notEqual(findByClass(content, 'dp-fish-keep'), undefined)
 
-  const carp = { id: 'res-2', key: 'fish_carp', label: '鲤鱼', emoji: '🐟', rarity: 'uncommon', sizeCm: 33.2, price: 12, phase: 'caught' }
+  const carp = { id: 'res-2', key: 'fish_carp', label: '鲤鱼', emoji: '🐟', art: 'fish/fish_carp.png', rarity: 'uncommon', sizeCm: 33.2, price: 12, phase: 'caught' }
   const two = await mount({ status: status({ rod, spots, pending: carp }) })
   openPanel(two.dom, 'fishing')
-  assert.equal(findByAttr(contentOf(two.dom), 'data-fish-result', 'fish_carp').getAttribute('data-fish-result-art'), 'emoji')
-  assert.equal(findByClass(contentOf(two.dom), 'dp-fish-result-img'), undefined)
+  assert.equal(findByAttr(contentOf(two.dom), 'data-fish-result', 'fish_carp').getAttribute('data-fish-result-art'), 'art')
+  assert.equal(findByClass(contentOf(two.dom), 'dp-fish-result-img').src, '/dsh-piggy/art/fishing/fish/fish_carp.png?v=4f090310d0cf')
   assert.match(contentOf(two.dom).allText(), /鲤鱼.*★★☆☆.*33\.2 cm.*12/)
+
+  const mystery = { id: 'res-3', key: 'fish_mystery', label: '神秘鱼', emoji: '🐟', rarity: 'uncommon', sizeCm: 36.1, price: 50, phase: 'caught' }
+  const three = await mount({ status: status({ rod, spots, pending: mystery }) })
+  openPanel(three.dom, 'fishing')
+  assert.equal(findByAttr(contentOf(three.dom), 'data-fish-result', 'fish_mystery').getAttribute('data-fish-result-art'), 'emoji', '未知鱼回退 emoji')
+  assert.equal(findByClass(contentOf(three.dom), 'dp-fish-result-img'), undefined)
 })
 
 test('U24-7 auto expanded shows bait, stock, choices, upgrades and the actual reason', async () => {

@@ -41,8 +41,19 @@ export const CSS_TILES = [
 
   // The grid: three columns that can never be widened by their content.
   '.dp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;padding:4px 2px 2px}',
+  // 打工/学习第一层内容少也固定占 3 行，面板高度和商店的九宫格一致。
+  '.dp-nine-grid{grid-template-rows:repeat(3,minmax(67px,auto))}',
   '.dp-home-clip{overflow:hidden;touch-action:pan-y}.dp-home-track{display:flex;transition:transform .25s ease;will-change:transform}',
   '.dp-home-page{box-sizing:border-box;flex:0 0 100%;grid-template-rows:repeat(3,72px);align-content:start}.dp-home-page[data-active="false"]{pointer-events:none}',
+  // 普通页签的分页九宫格：每页固定 3 行，左右拖/滚轮/圆点切换。
+  '.dp-pager{display:flex;flex-direction:column}',
+  '.dp-pager-page{box-sizing:border-box;flex:0 0 100%;align-content:start}',
+  '.dp-pager-page[data-active="false"]{pointer-events:none}',
+  '.dp-pager-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 2px}',
+  '.dp-pager-arrow{width:24px;height:24px;padding:0;border:1.5px solid var(--ac-border-light);border-radius:50%;',
+  'background:var(--ac-bg-input);color:var(--ac-text);font:inherit;font-size:14px;line-height:1;cursor:pointer}',
+  '.dp-pager-arrow:disabled{opacity:.35;cursor:default}',
+  '.dp-pager-count{font-size:9.5px;font-weight:700;color:var(--ac-text-2);letter-spacing:.04em}',
   '.dp-home-dots{display:flex;justify-content:center;gap:8px;margin:9px 0 2px}.dp-home-dot{width:9px;height:9px;padding:0;border:1.5px solid var(--ac-primary);border-radius:50%;background:transparent;cursor:pointer}.dp-home-dot[aria-pressed="true"]{background:var(--ac-primary)}',
   '@media (prefers-reduced-motion:reduce){.dp-home-track{transition:none}}',
 
@@ -146,6 +157,8 @@ export const CSS_TILES = [
   '.dp-tile-n,.dp-tile-note{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}',
   '.dp-tile-n{font-size:10.5px;font-weight:700}',
   '.dp-tile-note{font-size:9.5px;font-weight:600;color:var(--ac-text-2);margin-top:-2px}',
+  '.dp-tile-note-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;',
+  'line-height:1.25;text-align:center;overflow:hidden}',
   // Corner marks on the square: a count top-right, a word top-left.
   '.dp-tile-badge,.dp-tile-tag{position:absolute;top:-5px;font-size:9px;font-weight:800;line-height:1;',
   'padding:3px 5px;border-radius:var(--ac-pill);white-space:nowrap;border:2px solid var(--ac-bg)}',

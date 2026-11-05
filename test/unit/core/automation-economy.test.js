@@ -104,7 +104,12 @@ test('新长时自动钓：全部时段、竿、饵、抄网档净时薪至多 4
       max = Math.max(max, rate.net)
     }
   }
-  // 2026-10-10 钓鱼改成等待短、搏斗难以后，最高从 361.96 降到约 223；只守上限，不钉死具体值。
-  assert.ok(max > 150 && max <= 400, `max ${max.toFixed(2)}`)
-  assert.ok(autoFishingPerHour({ rodLevel: 4, spot: 'lake', baitKey: 'bait_shrimp', period: 'night', legacy: true }).net > 400)
+  // 2026-10-10 钓鱼改成等待短、搏斗难以后，最高从 361.96 降到约 223；
+  // 2026-11-05 鱼表扩到 100 种后混合难度/价格变化，最高约 117。只守上限和合理下限，不钉死具体值。
+  assert.ok(max > 100 && max <= 400, `max ${max.toFixed(2)}`)
+  // 鱼表扩到 100 种后，旧短行程的 lake/night/shrimp 也降到约 262；
+  // 仍高于同条件新长时，但不再要求超过 400 的新限额。
+  const legacy = autoFishingPerHour({ rodLevel: 4, spot: 'lake', baitKey: 'bait_shrimp', period: 'night', legacy: true }).net
+  const current = autoFishingPerHour({ rodLevel: 4, spot: 'lake', baitKey: 'bait_shrimp', period: 'night' }).net
+  assert.ok(legacy > current, `legacy ${legacy.toFixed(2)} vs current ${current.toFixed(2)}`)
 })

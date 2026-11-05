@@ -4,6 +4,7 @@
  * U24-7 按用户确认的概念稿整理排版：钓点风景、鱼饵、主按钮，再把换钓点 / 鱼竿 / 自动钓鱼收成折叠项。
  * 玩法、数值和动作都还在宿主：这里只决定怎么画。
  */
+import { fishByKey } from '../../../packages/pet-core/src/data/fish.js'
 import { fishingArtUrl } from '../fishing-art.js'
 import { button, el } from '../dom.js'
 import { fightActive, renderFight, resetFightResolve, stopFight } from './fishing-fight.js'
@@ -19,7 +20,6 @@ const caf = id => { if (typeof cancelAnimationFrame === 'function') cancelAnimat
 
 /** 概念稿里的水域名和游戏钓点对得上：湖用 pond，海边用 reef。 */
 const SCENE_FILE = { river: 'scene-river.png', lake: 'scene-pond.png', sea: 'scene-reef.png', night: 'scene-night.png' }
-const CRUCIAN_ART = 'crucian-result.png'
 /** 稀有度 → 星星（沿用现有四格，不加「满星」之类的说法）。 */
 const STARS = { common: 1, uncommon: 2, rare: 3, legend: 4 }
 
@@ -312,10 +312,11 @@ function renderResult(ui, fish) {
   contextLine(ui, root)
   const card = el('div', 'dp-fish-result')
   card.setAttribute('data-fish-result', fish.key)
-  card.setAttribute('data-fish-result-art', fish.key === 'fish_crucian' ? 'crucian' : 'emoji')
+  const artName = fish.art || fishByKey(fish.key)?.art || ''
+  card.setAttribute('data-fish-result-art', artName ? 'art' : 'emoji')
   const art = el('div', 'dp-fish-result-art')
   art.appendChild(el('span', 'dp-fish-result-emoji', fish.emoji))
-  if (fish.key === 'fish_crucian') art.appendChild(fishImage(CRUCIAN_ART, 'dp-fish-result-img'))
+  if (artName) art.appendChild(fishImage(artName, 'dp-fish-result-img'))
   card.appendChild(art)
   card.appendChild(el('b', 'dp-fish-result-title', '钓到了 ' + fish.label + '！'))
   const stars = STARS[fish.rarity] ?? 1

@@ -92,7 +92,7 @@ test('bad wallets in the save are dropped; an out-of-range rate is refused', () 
   assert.equal(openWallet(loaded, 'mine', { label: '矿', emoji: '⛏️', rate: EXCHANGE.maxRate * 2 }), null)
 })
 
-test('the wallet bar shows the balance and what each button gets you', async () => {
+test('the wallet bar shows the balance and converts by dragging one slider', async () => {
   const { document } = fakeDom()
   globalThis.document = document
   const { walletBar } = await import('../../../src/client/wallet.js')
@@ -101,9 +101,30 @@ test('the wallet bar shows the balance and what each button gets you', async () 
   const [wallet] = walletsView(farmWithCoins(150))
   const bar = walletBar(ui, wallet)
   assert.match(bar.allText(), /150\s+菜币/)
-  assert.equal(findByAttr(bar, 'data-wallet-out', 'all').textContent, '全部 150 → 🪙 75')
-  assert.equal(findByAttr(bar, 'data-wallet-in', '100').textContent, '🪙 53 → 100')
-  assert.equal(findByAttr(bar, 'data-wallet-in', '1000').disabled, true, 'not enough gold')
-  findByAttr(bar, 'data-wallet-out', '100').fire('click')
+
+  const range = findByAttr(bar, 'data-wallet-range', 'farm')
+  const amount = findByAttr(bar, 'data-wallet-amount', 'farm')
+  assert.equal(range.max, '150', '最多把 150 菜币全换掉')
+  assert.equal(range.value, '150')
+  assert.equal(amount.value, '150')
+  assert.match(bar.allText(), /→ 🪙 75/)
+  assert.equal(findByAttr(bar, 'data-wallet-exchange', 'farm').textContent, '兑换 🪙 75')
+
+  amount.value = '100'
+  amount.fire('input')
+  assert.equal(range.value, '100', '填数字也能同步滑条')
+  assert.match(bar.allText(), /→ 🪙 50/)
+  findByAttr(bar, 'data-wallet-exchange', 'farm').fire('click')
   assert.deepEqual(sent, [{ action: 'exchange', body: { key: 'farm', direction: 'toGold', amount: 100 } }])
+
+  findByAttr(bar, 'data-wallet-dir', 'fromGold').fire('click')
+  assert.equal(range.max, '114', '60 金币按 0.525 最多换 114 菜币')
+  assert.equal(range.value, '10', '换币默认 10 个')
+  assert.equal(amount.value, '10')
+  assert.match(bar.allText(), /· 花 🪙 6/)
+  amount.value = '50'
+  amount.fire('input')
+  assert.equal(range.value, '50', '填 50 个也能同步')
+  findByAttr(bar, 'data-wallet-exchange', 'farm').fire('click')
+  assert.deepEqual(sent.at(-1), { action: 'exchange', body: { key: 'farm', direction: 'fromGold', amount: 50 } })
 })
