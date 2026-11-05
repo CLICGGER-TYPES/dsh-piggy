@@ -241,6 +241,7 @@ function appendPersonalityEditor(ui, row, profile) {
       draft.menuOpen = false
       ui.renderContent()
     })
+    var activeOption = null
     profile.personalities.forEach(function (p) {
       var option = button('dp-vcard-select-option', {
         'data-card-option': p.key,
@@ -251,12 +252,24 @@ function appendPersonalityEditor(ui, row, profile) {
         draft.menuOpen = false
         ui.renderContent()
       })
-      if (p.key === draft.personality) option.setAttribute('data-active', 'true')
+      if (p.key === draft.personality) {
+        option.setAttribute('data-active', 'true')
+        activeOption = option
+      }
       option.appendChild(el('span', 'dp-vcard-select-emoji', p.emoji))
       option.appendChild(el('span', 'dp-vcard-select-label', p.label))
       menu.appendChild(option)
     })
     wrap.appendChild(menu)
+    // 展开时把当前性格滚到菜单中间，省得每次从「元气」开始找。
+    // 这时 row 还没挂到文档上，offsetTop 是 0；等本轮渲染结束再滚。
+    if (activeOption !== null) {
+      setTimeout(function () {
+        if (typeof activeOption.offsetTop === 'number' && typeof menu.scrollTop === 'number') {
+          menu.scrollTop = Math.max(0, activeOption.offsetTop - 56)
+        }
+      }, 0)
+    }
     bindMenuDismiss(ui, row, draft)
   }
   row.appendChild(wrap)
