@@ -14,7 +14,7 @@ function fish(value) {
   const entry = obj(value)
   const difficulty = num(entry.difficulty, 1)
   return {
-    id: str(entry.id, ''), key: str(entry.key, ''), label: str(entry.label, '鱼'), emoji: str(entry.emoji, '🐟'),
+    id: str(entry.id, ''), key: str(entry.key, ''), label: str(entry.label, '鱼'), emoji: str(entry.emoji, '🐟'), art: str(entry.art, ''),
     rarity: str(entry.rarity, 'common'), behavior: str(entry.behavior, 'smooth'), difficulty,
     sizeCm: num(entry.sizeCm, 0), price: num(entry.price, 0), phase: str(entry.phase, ''),
     castPower: num(entry.castPower, 0), bitesAt: num(entry.bitesAt, 0), hookUntil: num(entry.hookUntil, 0), expiresAt: num(entry.expiresAt, 0),

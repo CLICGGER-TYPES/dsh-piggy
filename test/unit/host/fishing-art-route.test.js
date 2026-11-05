@@ -9,7 +9,7 @@ test('钓鱼场景与透明插画实际可读取，元数据与导出一致，�
   let handler
   registerArtRoute({ register(route) { handler = route.handler } }, {}, (res, code) => { res.code = code })
   const manifest = JSON.parse(readFileSync(new URL('../../../assets/fishing/manifest.json', import.meta.url), 'utf8'))
-  assert.equal(manifest.length, 7)
+  assert.equal(manifest.length, 17)
   assert.deepEqual(Object.keys(FISHING_ART_HASHES).sort(), manifest.map(e => e.output).sort())
   for (const entry of manifest) {
     const res = { writeHead(code, headers) { this.code = code; this.headers = headers }, end(body) { this.body = body } }

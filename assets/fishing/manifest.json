@@ -177,5 +177,255 @@
     ],
     "export_sha256": "20f02ec455c4e7832c1d35d35255aad04132bcd4538218fdd4a2e632e744f6b4",
     "processing": "Proportional LANCZOS resize only; no crop, recolor or alpha repair."
+  },
+  {
+    "name": "fish_crucian",
+    "kind": "fish",
+    "label": "鲫鱼",
+    "source": "crucian-result.png",
+    "prompt": "独立一条鲫鱼插画，透明背景正方形画布，鱼头左尾右，宽扁侧身、正常单尾与背鳍胸鳍腹鳍，低饱和银灰和灰褐、奶油灰腹部；温暖轻巧绘本游戏平涂。只画鱼，完整居中留边，无背景、文字、UI、水、线、阴影。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_crucian.png",
+    "size": [
+      512,
+      512
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "5c1d10fba07b109db86c0a00256dbd83ddc34afc8edfbf879f7d689a13e43d37",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "5c1d10fba07b109db86c0a00256dbd83ddc34afc8edfbf879f7d689a13e43d37",
+    "processing": "Copied from the existing crucian result art; no crop, recolor or alpha repair."
+  },
+  {
+    "name": "fish_carp",
+    "kind": "fish",
+    "label": "鲤鱼",
+    "source": "<grok-imagegen>/fish_carp-grok.jpg",
+    "prompt": "独立一条鲤鱼插画，鱼头左尾右，完整单尾与背鳍胸鳍腹鳍，低饱和暖灰、青灰和淡金、奶油灰腹部；温暖轻巧绘本游戏平涂，无金属金、无写实油亮。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_carp.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "e3c5295f42c24a0f657f003ff018124cac05fb0b5118ce1b0e4a2fbf46421e7b",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "4f090310d0cf208fccd37216c57bc767458a88043d5323bc2a91d6824a60f94b",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_salmon",
+    "kind": "fish",
+    "label": "鲑鱼",
+    "source": "<grok-imagegen>/fish_salmon-grok.jpg",
+    "prompt": "独立一条鲑鱼插画，鱼头左尾右，银灰身体、淡橙粉腹部和侧线，鳍柔和灰橙；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_salmon.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "66f13a9c7a7f1c9ce8964805eea537d3a2c66aa5133be9eb7b3ca44727989073",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "e75de3e651620ae4ea06dd4638540375aa28961807c8fc9553bfa693066fcfea",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_tuna",
+    "kind": "fish",
+    "label": "金枪鱼",
+    "source": "<grok-imagegen>/fish_tuna-grok.jpg",
+    "prompt": "独立一条金枪鱼插画，鱼头左尾右，深蓝灰背、银灰腹、鱼雷形身体和小黄鳍；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_tuna.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "26d391cedacc855979a25c8075819eaf65c011aba4e3500323d1262d158a67ed",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "e287ec75116459a861ec60122266b3763b1c01c1cd0debf044cc3f0cec876da2",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_koi",
+    "kind": "fish",
+    "label": "黄金锦鲤",
+    "source": "<grok-imagegen>/fish_koi-grok.jpg",
+    "prompt": "独立一条黄金锦鲤插画，鱼头左尾右，奶油金底、柔和橙色斑块、长尾长鳍和小须；温暖轻巧绘本游戏平涂，不要金属金。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_koi.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "3f704f2afbebe7cc3998a25660aa3262bad4137b05a4c1a11738427469bd032a",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "dfa6a0136c8405c89df9a992839db83217a543e3d3928d694ac8ca114a44fc83",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_puffer",
+    "kind": "fish",
+    "label": "河豚",
+    "source": "<grok-imagegen>/fish_puffer-grok.jpg",
+    "prompt": "独立一只圆滚滚河豚插画，奶白和淡棕身体、细小软刺、小鳍、圆眼；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_puffer.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "ece3337b559dc677425f8bdfe40a939701d5a924f76450f919243142f70ebd95",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "61bb4841715dbe466272a80e88278a7abfc3223d4e01abf0188344888b3e1f25",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_catfish",
+    "kind": "fish",
+    "label": "鲶鱼",
+    "source": "<grok-imagegen>/fish_catfish-grok.jpg",
+    "prompt": "独立一条鲶鱼插画，灰棕扁头、长须、圆尾，鱼头左尾右；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_catfish.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "22d5836343ea35efae3d20ce551aeb499e9196db2f2ee0f2c45874634271bc6e",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "89ada5d695445cc1800bb07d7287c8afe449d4ce47fb7846a221bd73b8b9864b",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_octopus",
+    "kind": "fish",
+    "label": "章鱼",
+    "source": "<grok-imagegen>/fish_octopus-grok.jpg",
+    "prompt": "独立一只小章鱼插画，暖橙红色、圆头、八条触手、圆眼；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画章鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_octopus.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "4200eb25ce3e8ea339d7234838ef85f547721e6a8fb283869717f6bc6209b401",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "d9798fcf2b07466957a8c0f9aa69b83da0db2338a08e58f09cae43d9fbe3a7aa",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_whale_shark",
+    "kind": "fish",
+    "label": "小鲸鲨",
+    "source": "<grok-imagegen>/fish_whale_shark-grok.jpg",
+    "prompt": "独立一条小鲸鲨插画，蓝灰色、浅色斑点、宽嘴、温和表情，鱼头左尾右；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_whale_shark.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "afa459a99ec2c81007ee96a08100302324c0889ab981b4db198bb4c65934d468",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "6f1dd373b53ad7c20bf476a9950b2a0f5eea9cc1f7c0b25193f4ac82d44c9992",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "fish_moon",
+    "kind": "fish",
+    "label": "月影鱼",
+    "source": "<grok-imagegen>/fish_moon-grok.jpg",
+    "prompt": "独立一条幻想月影鱼插画，淡银蓝、月牙形尾、半透明感长鳍，不发光；温暖轻巧绘本游戏平涂。纯品红 #FF00FF 平背景，只画鱼，完整居中留边。",
+    "self_check": "已实际查看：透明背景、鱼完整居中；无文字、UI、水、线、阴影。",
+    "output": "fish/fish_moon.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "1767af610e1057a2ec707a044b23e012139167ef1a8bd23ea8220df4615c370f",
+    "export_size": [
+      512,
+      512
+    ],
+    "export_sha256": "dacdd0b90f6e750fe16841ec24b0ca5a54514730fdbf70a14cd969dc3af7f3a5",
+    "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
   }
 ]

@@ -14,7 +14,7 @@
 | `docs/`、`README.md`、`CHANGELOG.md`、`THIRD-PARTY.md`、`AGENTS.md`、`cordis.patch.yml` | 文档、清单、配置 | **MIT** | 文中引用的第三方内容按各自许可；截图见下 |
 | `assets/pigs/**/*.png`、`extensions/pig-puzzle/assets/pig.png`、`docs/examples/skin-pack/*.png` | 小猪立绘、形态、皮肤、徽章、反馈图、示例皮肤 | **Apache-2.0** | 改自 Noto Emoji 🐖；见下方「小猪立绘」 |
 | `assets/pigs/manifest.json`、`assets/pigs/**/*.md` | 小猪素材清单与出处 | **MIT** | 记录本身按文档许可；记录的图片按上一行 |
-| `assets/fishing/*.png` | 钓鱼场景、浮漂、搏斗、鲫鱼结果 | **CC BY 4.0** | AI 生成，用户审定 |
+| `assets/fishing/**/*.png` | 钓鱼场景、浮漂、搏斗、鱼图鉴/结果插画 | **CC BY 4.0** | AI 生成，用户审定 |
 | `assets/fishing/*.json`、`assets/fishing/*.md` | 钓鱼素材清单与出处 | **MIT** | |
 | `assets/animations/pet-hand/*.webp` | 高清独立手五帧图集 | **CC BY 4.0** | AI 生成，用户审定 |
 | `assets/animations/pet-hand/*.json`、`*.md` | 手层清单与出处 | **MIT** | |
@@ -49,7 +49,7 @@
 下面这些由项目 AI 出图流程生成、经用户审定的场景和道具，按
 [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/) 发布：
 
-- `assets/fishing/*.png`
+- `assets/fishing/**/*.png`
 - `assets/animations/pet-hand/*.webp`
 - `extensions/farm/assets/**`
 - `extensions/mine/assets/**`

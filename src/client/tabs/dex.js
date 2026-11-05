@@ -4,6 +4,7 @@
 import { offParts } from '../extensions.js'
 import { shelfOf } from '../constants.js'
 import { artSource } from '../art-path.js'
+import { fishingArtUrl } from '../fishing-art.js'
 import { button, el, sideScroller } from '../dom.js'
 import { chubbySkinNote } from '../skin-note.js'
 import { drillHeader, drillTo, pagedTiles, tile } from '../widgets.js'
@@ -106,11 +107,25 @@ function renderCollection(ui, section, entries) {
 }
 
 /** 图鉴子页统一用和商店/背包一样的方块；有立绘的用立绘，没有的用 emoji。 */
+const FISH_RARITY = { common: '普通', uncommon: '少见', rare: '稀有', legend: '传说' }
+
 function collectionTile(ui, section, entry) {
-  const art = entry.art ? el('span', 'dp-dex-tile-art') : null
-  if (art !== null) appendArt(art, entry, false)
+  let art = null
+  if (entry.art) {
+    art = el('span', 'dp-dex-tile-art')
+    if (section.key === 'fish') {
+      const img = el('img', 'dp-dex-art')
+      img.src = fishingArtUrl(entry.art)
+      img.alt = entry.acquired ? entry.label : ''
+      art.appendChild(img)
+    } else {
+      appendArt(art, entry, false)
+    }
+  }
   const note = entry.acquired
-    ? (entry.rarityLabel ? entry.rarityEmoji + entry.rarityLabel : (entry.kindLabel || ''))
+    ? (section.key === 'fish'
+      ? (FISH_RARITY[entry.rarity] || '')
+      : (entry.rarityLabel ? entry.rarityEmoji + entry.rarityLabel : (entry.kindLabel || '')))
     : '未发现'
   return tile({
     emoji: entry.emoji || '❔',

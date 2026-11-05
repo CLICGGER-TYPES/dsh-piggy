@@ -161,3 +161,20 @@ test('C4 a long catalogue uses the found-first view and a compact pager', async 
   findByAttr(contentOf(dom), 'data-pager-next', 'dex:items').fire('click')
   assert.equal(findByClass(contentOf(dom), 'dp-pager-count').allText().trim(), '2 / 12')
 })
+
+test('C5 fish tiles use the fish art and fall back to emoji when absent', async () => {
+  const fish = [
+    { key: 'fish_carp', label: '鲤鱼', emoji: '🐟', art: 'fish/fish_carp.png', rarity: 'uncommon', acquired: true, count: 1, maxSizeCm: 33.2 },
+    { key: 'fish_sardine', label: '沙丁鱼', emoji: '🐟', art: '', rarity: 'common', acquired: false, count: 0, maxSizeCm: null },
+  ]
+  const { dom } = await mount({ status: { ...SNAPSHOT, dex: { ...DEX, fish } } })
+  openPanel(dom, 'dex')
+  findByAttr(contentOf(dom), 'data-dex-section', 'fish').fire('click')
+  const carp = findByAttr(contentOf(dom), 'data-dex-entry', 'fish_carp')
+  assert.equal(findByClass(carp, 'dp-dex-art').src, '/dsh-piggy/art/fishing/fish/fish_carp.png?v=4f090310d0cf')
+  assert.match(carp.allText(), /鲤鱼/)
+  assert.match(carp.allText(), /少见/)
+  const sardine = findByAttr(contentOf(dom), 'data-dex-entry', 'fish_sardine')
+  assert.equal(findByClass(sardine, 'dp-dex-art'), undefined)
+  assert.match(sardine.allText(), /沙丁鱼|未知鱼类/)
+})

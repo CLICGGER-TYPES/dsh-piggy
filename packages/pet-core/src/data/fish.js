@@ -4,8 +4,10 @@
  * Times are local clock periods: early/noon/evening/night. 每条鱼住在一个钓点（spot）。
  */
 
+import { FISH_ART } from './fish-art.js'
+
 const fish = (key, label, emoji, spot, rarity, times, behavior, difficulty, minCm, maxCm, price) =>
-  Object.freeze({ key, label, emoji, spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price })
+  Object.freeze({ key, label, emoji, art: FISH_ART[key] ?? '', spot, rarity, times: Object.freeze(times), behavior, difficulty, minCm, maxCm, price })
 const ALL_DAY = ['early', 'noon', 'evening', 'night']
 
 export const FISH = Object.freeze([
