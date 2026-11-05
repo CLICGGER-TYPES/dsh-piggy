@@ -87,13 +87,14 @@ test('C4 opening a locked card reveals a riddle, while an unlocked card reveals 
   assert.match(unlocked.allText(), /获得 2 次/)
 })
 
-test('C4 items use a searchable filtered catalogue instead of flash cards', async () => {
+test('C4 items use a searchable filtered tile grid, found first', async () => {
   const { dom } = await mount({ status: { ...SNAPSHOT, dex: DEX } })
   openPanel(dom, 'dex')
   findByAttr(contentOf(dom), 'data-dex-section', 'items').fire('click')
   assert.notEqual(findByAttr(contentOf(dom), 'data-dex-search', 'items'), undefined)
   assert.notEqual(findByClass(contentOf(dom), 'dp-pager-page'), undefined)
   assert.equal(findByClass(contentOf(dom), 'dp-dex-flash-grid'), undefined)
+  assert.equal(findByAttr(contentOf(dom), 'data-dex-entry', 'crown'), undefined, '默认只看已发现')
 
   const search = findByAttr(contentOf(dom), 'data-dex-search', 'items')
   search.value = '苹果'
@@ -103,6 +104,7 @@ test('C4 items use a searchable filtered catalogue instead of flash cards', asyn
 
   search.value = ''
   search.fire('input')
+  findByAttr(contentOf(dom), 'data-dex-filter', 'all').fire('click')
   findByAttr(contentOf(dom), 'data-dex-filter', 'promotion').fire('click')
   assert.equal(findByAttr(contentOf(dom), 'data-dex-entry', 'apple'), undefined)
   assert.notEqual(findByAttr(contentOf(dom), 'data-dex-entry', 'crown'), undefined)
@@ -139,4 +141,23 @@ test('C4 a host without dex data degrades to empty sections', async () => {
   assert.match(contentOf(dom).allText(), /形态/)
   findByAttr(contentOf(dom), 'data-dex-section', 'fish').fire('click')
   assert.match(contentOf(dom).allText(), /还没有/)
+})
+
+test('C4 a long catalogue uses the found-first view and a compact pager', async () => {
+  const items = Array.from({ length: 108 }, (_, index) => ({
+    key: 'item-' + index, label: '道具' + index, emoji: '🍎', kind: 'food', kindLabel: '食物',
+    acquired: index < 37, firstAt: index < 37 ? 1_800_000_000_000 : null, count: index < 37 ? 1 : 0,
+  }))
+  const { dom } = await mount({ status: { ...SNAPSHOT, dex: { ...DEX, items } } })
+  openPanel(dom, 'dex')
+  findByAttr(contentOf(dom), 'data-dex-section', 'items').fire('click')
+  assert.equal(contentOf(dom).querySelectorAll('.dp-home-dot').length, 5, '37 件已发现分 5 页')
+  assert.equal(contentOf(dom).querySelectorAll('.dp-pager-bar').length, 0, '5 页以内仍用圆点')
+
+  findByAttr(contentOf(dom), 'data-dex-filter', 'all').fire('click')
+  assert.equal(contentOf(dom).querySelectorAll('.dp-home-dot').length, 0, '12 页不再铺 12 个圆点')
+  assert.equal(contentOf(dom).querySelectorAll('.dp-pager-bar').length, 1, '长列表收成紧凑翻页条')
+  assert.equal(findByClass(contentOf(dom), 'dp-pager-count').allText().trim(), '1 / 12')
+  findByAttr(contentOf(dom), 'data-pager-next', 'dex:items').fire('click')
+  assert.equal(findByClass(contentOf(dom), 'dp-pager-count').allText().trim(), '2 / 12')
 })

@@ -12,8 +12,8 @@ import { renderHoloSection } from './dex-holo.js'
 
 const SECTIONS = []
 const ITEM_KINDS = [
-  ['all', '全部'], ['food', '食物'], ['bath', '洗浴'], ['toy', '玩具'], ['medicine', '药品'],
-  ['promotion', '晋升'], ['dress', '装扮'],
+  ['found', '已发现'], ['all', '全部'], ['food', '食物'], ['bath', '洗浴'], ['toy', '玩具'],
+  ['medicine', '药品'], ['promotion', '晋升'], ['dress', '装扮'],
 ]
 
 /** Register or replace one collection category. */
@@ -144,10 +144,10 @@ function renderCatalogue(ui, section, entries) {
   search.setAttribute('data-dex-search', 'items')
   controls.appendChild(search)
   const filters = el('div', 'dp-dex-filters')
-  const active = ui.drill.dexFilter ?? 'all'
+  const active = ui.drill.dexFilter ?? 'found'
   const available = new Set(entries.map(entry => shelfOf(entry.kind)))
   for (const [key, label] of ITEM_KINDS) {
-    if (key !== 'all' && !available.has(key)) continue
+    if (key !== 'all' && key !== 'found' && !available.has(key)) continue
     const filter = button('dp-dex-filter', { 'data-dex-filter': key }, function () {
       ui.drill.dexFilter = key
       ui.drill.pick = null
@@ -164,7 +164,8 @@ function renderCatalogue(ui, section, entries) {
 
   const query = String(ui.drill.dexQuery ?? '').trim().toLowerCase()
   const visible = entries.filter(entry => {
-    if (active !== 'all' && shelfOf(entry.kind) !== active) return false
+    if (active === 'found' && !entry.acquired) return false
+    if (active !== 'all' && active !== 'found' && shelfOf(entry.kind) !== active) return false
     const searchable = entry.acquired ? entry.label.toLowerCase() : ('未知' + entry.kindLabel).toLowerCase()
     return query === '' || searchable.includes(query)
   })

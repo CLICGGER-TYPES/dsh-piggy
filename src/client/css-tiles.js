@@ -49,6 +49,11 @@ export const CSS_TILES = [
   '.dp-pager{display:flex;flex-direction:column}',
   '.dp-pager-page{box-sizing:border-box;flex:0 0 100%;align-content:start}',
   '.dp-pager-page[data-active="false"]{pointer-events:none}',
+  '.dp-pager-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 2px}',
+  '.dp-pager-arrow{width:24px;height:24px;padding:0;border:1.5px solid var(--ac-border-light);border-radius:50%;',
+  'background:var(--ac-bg-input);color:var(--ac-text);font:inherit;font-size:14px;line-height:1;cursor:pointer}',
+  '.dp-pager-arrow:disabled{opacity:.35;cursor:default}',
+  '.dp-pager-count{font-size:9.5px;font-weight:700;color:var(--ac-text-2);letter-spacing:.04em}',
   '.dp-home-dots{display:flex;justify-content:center;gap:8px;margin:9px 0 2px}.dp-home-dot{width:9px;height:9px;padding:0;border:1.5px solid var(--ac-primary);border-radius:50%;background:transparent;cursor:pointer}.dp-home-dot[aria-pressed="true"]{background:var(--ac-primary)}',
   '@media (prefers-reduced-motion:reduce){.dp-home-track{transition:none}}',
 

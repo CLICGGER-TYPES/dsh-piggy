@@ -128,14 +128,30 @@ export function pagedTiles(ui, key, tiles, options) {
   }
   clip.appendChild(track)
   var dotRow = null
+  var prevBtn = null
+  var nextBtn = null
+  var countLabel = null
   if (pages > 1) {
-    dotRow = el('div', 'dp-home-dots')
-    for (var p = 0; p < pages; p += 1) {
-      (function (index) {
-        var dot = button('dp-home-dot', { 'data-pager-dot': key + ':' + index, 'aria-label': '第 ' + (index + 1) + ' 页' }, function () { showPage(index) })
-        dots.push(dot)
-        dotRow.appendChild(dot)
-      })(p)
+    if (pages > 6) {
+      // 长列表不铺十几个圆点，收成「‹ 1 / 12 ›」。
+      dotRow = el('div', 'dp-pager-bar')
+      prevBtn = button('dp-pager-arrow', { 'data-pager-prev': key, 'aria-label': '上一页' }, function () { showPage(active - 1) })
+      prevBtn.textContent = '‹'
+      countLabel = el('span', 'dp-pager-count')
+      nextBtn = button('dp-pager-arrow', { 'data-pager-next': key, 'aria-label': '下一页' }, function () { showPage(active + 1) })
+      nextBtn.textContent = '›'
+      dotRow.appendChild(prevBtn)
+      dotRow.appendChild(countLabel)
+      dotRow.appendChild(nextBtn)
+    } else {
+      dotRow = el('div', 'dp-home-dots')
+      for (var p = 0; p < pages; p += 1) {
+        (function (index) {
+          var dot = button('dp-home-dot', { 'data-pager-dot': key + ':' + index, 'aria-label': '第 ' + (index + 1) + ' 页' }, function () { showPage(index) })
+          dots.push(dot)
+          dotRow.appendChild(dot)
+        })(p)
+      }
     }
   }
   function showPage(next) {
@@ -148,6 +164,9 @@ export function pagedTiles(ui, key, tiles, options) {
       grid.inert = index !== active
     })
     dots.forEach(function (dot, index) { dot.setAttribute('aria-pressed', String(index === active)) })
+    if (countLabel !== null) countLabel.textContent = (active + 1) + ' / ' + pages
+    if (prevBtn !== null) prevBtn.disabled = active === 0
+    if (nextBtn !== null) nextBtn.disabled = active === pages - 1
   }
   showPage(active)
   var drag = null
