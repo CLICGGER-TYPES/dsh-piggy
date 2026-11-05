@@ -6,7 +6,7 @@ import { shelfOf } from '../constants.js'
 import { artSource } from '../art-path.js'
 import { button, el, sideScroller } from '../dom.js'
 import { chubbySkinNote } from '../skin-note.js'
-import { drillHeader, drillTo, tile, tileGrid } from '../widgets.js'
+import { drillHeader, drillTo, pagedTiles, tile } from '../widgets.js'
 import { renderAchievements } from './achievements.js'
 import { renderHoloSection } from './dex-holo.js'
 
@@ -61,8 +61,7 @@ function renderExtPlain(ui, ext) {
 }
 
 function renderSections(ui) {
-  const grid = tileGrid()
-  grid.className += ' dp-dex-sections'
+  const tiles = []
   const off = offParts(ui.view).dexSections
   for (const section of SECTIONS) {
     if (off.has(section.key)) continue // 扩展关掉了（比如钓鱼）：这一页先不出现，收集记录保留
@@ -79,7 +78,7 @@ function renderSections(ui) {
     fill.style.width = (entries.length === 0 ? 0 : Math.round(got / entries.length * 100)) + '%'
     progress.appendChild(fill)
     node.appendChild(progress)
-    grid.appendChild(node)
+    tiles.push(node)
   }
   for (const section of ui.view.extDex ?? []) {
     const entries = section.entries ?? []
@@ -91,9 +90,11 @@ function renderSections(ui) {
     const progress = el('span', 'dp-dex-progress')
     const fill = el('i')
     fill.style.width = (entries.length === 0 ? 0 : Math.round(got / entries.length * 100)) + '%'
-    progress.appendChild(fill); node.appendChild(progress); grid.appendChild(node)
+    progress.appendChild(fill); node.appendChild(progress); tiles.push(node)
   }
-  ui.content.appendChild(grid)
+  const pager = pagedTiles(ui, 'dex', tiles, { rows: 3 })
+  pager.className += ' dp-dex-sections'
+  ui.content.appendChild(pager)
 }
 
 function renderEntries(ui, section, entries) {
@@ -103,47 +104,38 @@ function renderEntries(ui, section, entries) {
     ui.content.appendChild(el('div', 'dp-empty', '这一页还没有收录内容'))
     return
   }
-  if (section.key === 'forms' || section.key === 'skins') renderFlashShelf(ui, section, entries)
-  else if (section.key === 'items') renderCatalogue(ui, entries)
-  else renderMuseum(ui, section, entries)
+  if (section.key === 'items') renderCatalogue(ui, section, entries)
+  else renderCollection(ui, section, entries)
 }
 
-function renderFlashShelf(ui, section, entries) {
-  const grid = el('div', 'dp-dex-flash-grid')
-  for (const entry of entries) grid.appendChild(flashCard(ui, section, entry))
-  ui.content.appendChild(grid)
+function renderCollection(ui, section, entries) {
+  const tiles = entries.map(entry => collectionTile(ui, section, entry))
+  ui.content.appendChild(pagedTiles(ui, 'dex:' + section.key, tiles))
 }
 
-function flashCard(ui, section, entry) {
-  const classes = ['dp-dex-card']
-  if (entry.acquired) classes.push('dp-dex-card-foil')
-  else classes.push('dp-dex-card-locked')
-  const card = button(classes.join(' '), { 'data-dex-entry': entry.key }, function () { openDetail(ui, entry.key) })
-  const art = el('span', 'dp-dex-artbox')
-  appendArt(art, entry, true)
-  if (!entry.acquired) art.appendChild(el('span', 'dp-dex-lock', '🔒'))
-  card.appendChild(art)
-  card.appendChild(el('span', 'dp-dex-caption', entry.acquired ? entry.label : '未知' + section.label))
-  if (entry.acquired) tilt(card)
-  return card
+/** 图鉴子页统一用和商店/背包一样的方块；有立绘的用立绘，没有的用 emoji。 */
+function collectionTile(ui, section, entry) {
+  const art = entry.art ? el('span', 'dp-dex-tile-art') : null
+  if (art !== null) appendArt(art, entry, false)
+  const note = entry.acquired
+    ? (entry.rarityLabel ? entry.rarityEmoji + entry.rarityLabel : (entry.kindLabel || ''))
+    : '未发现'
+  return tile({
+    emoji: entry.emoji || '❔',
+    icon: art ?? undefined,
+    label: entry.acquired ? entry.label : '未知' + section.label,
+    color: section.color || 'blue',
+    soft: true,
+    note: note,
+    badge: entry.acquired && entry.count > 1 ? '×' + entry.count : '',
+    tag: entry.acquired ? '' : '🔒',
+    dim: !entry.acquired,
+    data: { 'data-dex-entry': entry.key },
+    onPick: function () { openDetail(ui, entry.key) },
+  })
 }
 
-function renderMuseum(ui, section, entries) {
-  const grid = el('div', 'dp-dex-museum')
-  for (const entry of entries) {
-    const card = button('dp-dex-museum-item' + (entry.acquired ? '' : ' dp-dex-museum-locked'),
-      { 'data-dex-entry': entry.key }, function () { openDetail(ui, entry.key) })
-    const art = el('span', 'dp-dex-museum-art')
-    appendArt(art, entry, false)
-    if (!entry.acquired) art.appendChild(el('span', 'dp-dex-museum-lock', '🔒'))
-    card.appendChild(art)
-    card.appendChild(el('span', 'dp-dex-museum-name', entry.acquired ? entry.label : '未知' + section.label))
-    grid.appendChild(card)
-  }
-  ui.content.appendChild(grid)
-}
-
-function renderCatalogue(ui, entries) {
+function renderCatalogue(ui, section, entries) {
   const controls = el('div', 'dp-dex-catalog-tools')
   const search = /** @type {HTMLInputElement} */ (el('input', 'dp-input dp-dex-search'))
   search.type = 'search'
@@ -159,6 +151,7 @@ function renderCatalogue(ui, entries) {
     const filter = button('dp-dex-filter', { 'data-dex-filter': key }, function () {
       ui.drill.dexFilter = key
       ui.drill.pick = null
+      if (ui.pagerPage) ui.pagerPage['dex:items'] = 0
       ui.renderContent()
     })
     filter.textContent = label
@@ -170,36 +163,25 @@ function renderCatalogue(ui, entries) {
   sideScroller(filters, filters.querySelector ? filters.querySelector('[data-active="true"]') : null)
 
   const query = String(ui.drill.dexQuery ?? '').trim().toLowerCase()
-  const list = el('div', 'dp-dex-catalog')
-  for (const entry of entries) {
-    if (active !== 'all' && shelfOf(entry.kind) !== active) continue
+  const visible = entries.filter(entry => {
+    if (active !== 'all' && shelfOf(entry.kind) !== active) return false
     const searchable = entry.acquired ? entry.label.toLowerCase() : ('未知' + entry.kindLabel).toLowerCase()
-    if (query !== '' && !searchable.includes(query)) continue
-    list.appendChild(catalogueRow(ui, entry))
-  }
-  ui.content.appendChild(list)
+    return query === '' || searchable.includes(query)
+  })
+  const tiles = visible.map(entry => collectionTile(ui, section, entry))
+  ui.content.appendChild(pagedTiles(ui, 'dex:items', tiles))
   search.addEventListener('input', function () {
     ui.drill.dexQuery = search.value
-    const needle = search.value.trim().toLowerCase()
-    for (const row of list.children) {
-      const hidden = needle !== '' && !String(row.getAttribute('data-search-text') ?? '').includes(needle)
-      if (hidden) row.setAttribute('data-search-hidden', 'true')
-      else row.removeAttribute('data-search-hidden')
+    ui.drill.pick = null
+    if (ui.pagerPage) ui.pagerPage['dex:items'] = 0
+    ui.renderContent()
+    const next = ui.content.querySelector?.('[data-dex-search="items"]')
+    if (next !== null && next !== undefined) {
+      next.focus?.()
+      const end = String(next.value ?? '').length
+      next.setSelectionRange?.(end, end)
     }
   })
-}
-
-function catalogueRow(ui, entry) {
-  const row = button('dp-dex-row' + (entry.acquired ? '' : ' dp-dex-row-locked'),
-    { 'data-dex-entry': entry.key, 'data-search-text': entry.acquired ? entry.label.toLowerCase() : ('未知' + entry.kindLabel).toLowerCase() },
-    function () { openDetail(ui, entry.key) })
-  row.appendChild(el('span', 'dp-dex-row-emoji', entry.acquired ? entry.emoji : '◆'))
-  const copy = el('span', 'dp-dex-row-text')
-  copy.appendChild(el('b', null, entry.acquired ? entry.label : '未知道具'))
-  copy.appendChild(el('small', null, entry.kindLabel || '其他'))
-  row.appendChild(copy)
-  row.appendChild(el('span', 'dp-dex-row-count', entry.acquired ? '×' + entry.count : '🔒'))
-  return row
 }
 
 function renderDetail(ui, section, entry) {

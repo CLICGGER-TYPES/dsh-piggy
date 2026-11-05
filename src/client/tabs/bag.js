@@ -84,7 +84,7 @@ function renderCategories(ui) {
       onPick: function () { drillTo(ui, 'bag', key) },
     }))
   })
-  ui.content.appendChild(pagedTiles(ui, 'bag', tiles))
+  ui.content.appendChild(pagedTiles(ui, 'bag', tiles, { rows: 3 }))
 }
 
 function bagCounts(ui) {

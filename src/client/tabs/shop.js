@@ -73,7 +73,7 @@ function renderShelves(ui) {
       note: shelf.currency && shelf.currency.label !== '金币' ? shelf.currency.label : undefined, data: { 'data-shelf': 'ext:' + shelf.extension },
       onPick: function () { drillTo(ui, 'shop', 'ext:' + shelf.extension) } }))
   }
-  ui.content.appendChild(pagedTiles(ui, 'shop', tiles))
+  ui.content.appendChild(pagedTiles(ui, 'shop', tiles, { rows: 3 }))
 }
 
 /** 下载扩展自己的商品，购买仍由扩展的 buy 动作结算。 */

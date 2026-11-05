@@ -119,12 +119,14 @@ function renderInterests(ui) {
   var after = ui.view.interests[0].certificateAfter
   drillHeader(ui, 'study', '🎯 兴趣', after > 0 ? '上满 ' + after + ' 次拿证' : '')
   var grid = tileGrid()
+  grid.className += ' dp-nine-grid'
   for (var n = 0; n < ui.view.interests.length; n += 1) {
     (function (entry) {
       var note = entry.cost + ' 🪙 · 约 ' + entry.minutes + ' 分钟后 ' + entry.traitLabel + ' +' + entry.gain
       var badge = entry.certificate === '' ? '' : (entry.certified ? '📜' : entry.times + '/' + entry.certificateAfter)
       grid.appendChild(tile({
-        emoji: entry.emoji, label: entry.label, color: INTEREST_COLOR, soft: true, note: note, badge: badge,
+        emoji: entry.emoji, label: entry.label, color: INTEREST_COLOR, soft: true, note: note,
+        noteClass: 'dp-tile-note-2', badge: badge,
         disabled: !canStart(ui),
         dim: !entry.affordable,
         data: { 'data-interest': entry.key },

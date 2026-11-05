@@ -105,8 +105,9 @@ export function tileGrid() {
  * @param {any} ui
  * @param {string} key
  * @param {HTMLElement[]} tiles
+ * @param {{rows?: number}} [options] - rows: 3 时每页固定占 3 行（菜单页）
  */
-export function pagedTiles(ui, key, tiles) {
+export function pagedTiles(ui, key, tiles, options) {
   var size = 9
   var pages = Math.max(1, Math.ceil(tiles.length / size))
   if (!ui.pagerPage) ui.pagerPage = Object.create(null)
@@ -118,6 +119,7 @@ export function pagedTiles(ui, key, tiles) {
   for (var page = 0; page < pages; page += 1) {
     var grid = tileGrid()
     grid.className += ' dp-pager-page'
+    if (options && options.rows === 3) grid.className += ' dp-nine-grid'
     grid.setAttribute('data-pager-page', String(page))
     var slice = tiles.slice(page * size, page * size + size)
     for (var i = 0; i < slice.length; i += 1) grid.appendChild(slice[i])
@@ -205,7 +207,7 @@ export function pagedTiles(ui, key, tiles) {
  * tag in the top-left. `soft` is the paler second-layer look.
  * @param {{ emoji: string, icon?: HTMLElement, label: string, color: string, note?: string, badge?: string, tag?: string,
  *   soft?: boolean, locked?: boolean, dim?: boolean, disabled?: boolean, active?: boolean,
- *   data?: Record<string, string>, onPick: () => void }} spec
+ *   noteClass?: string, data?: Record<string, string>, onPick: () => void }} spec
  */
 export function tile(spec) {
   var node = button('dp-tile' + (spec.soft ? ' dp-tile-soft' : ''), spec.data ?? {}, function () { spec.onPick() })
@@ -220,7 +222,7 @@ export function tile(spec) {
   if (spec.tag) icon.appendChild(el('b', 'dp-tile-tag', spec.tag))
   node.appendChild(icon)
   node.appendChild(el('span', 'dp-tile-n', spec.label))
-  if (spec.note) node.appendChild(el('span', 'dp-tile-note', spec.note))
+  if (spec.note) node.appendChild(el('span', 'dp-tile-note' + (spec.noteClass ? ' ' + spec.noteClass : ''), spec.note))
   return node
 }
 

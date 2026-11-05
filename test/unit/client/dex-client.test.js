@@ -56,15 +56,16 @@ test('C4 form shelf uses SVG flash cards and keeps exact requirements secret', a
   findByAttr(contentOf(dom), 'data-dex-section', 'forms').fire('click')
   const king = findByAttr(contentOf(dom), 'data-dex-entry', 'king')
   const devil = findByAttr(contentOf(dom), 'data-dex-entry', 'devil')
-  assert.notEqual(findByClass(contentOf(dom), 'dp-dex-flash-grid'), undefined)
-  assert.match(king.className, /dp-dex-card-locked/)
-  assert.doesNotMatch(king.className, /dp-dex-card-foil/)
+  assert.notEqual(findByClass(contentOf(dom), 'dp-pager-page'), undefined)
+  assert.equal(findByClass(contentOf(dom), 'dp-dex-flash-grid'), undefined)
+  assert.match(king.className, /dp-tile/)
+  assert.equal(king.getAttribute('data-dim'), 'true')
   assert.equal(findByClass(king, 'dp-dex-art').src, artSource('pig-king'))
   assert.match(king.allText(), /🔒/)
   assert.doesNotMatch(king.allText(), /猪猪王|等级|魅力|40\/40|12\/20/)
   assert.equal(findByClass(devil, 'dp-dex-art').src, artSource('pig-devil'))
   assert.match(devil.allText(), /恶魔猪/)
-  assert.match(devil.className, /dp-dex-card-foil/)
+  assert.equal(devil.getAttribute('data-dim'), null)
 })
 
 test('C4 opening a locked card reveals a riddle, while an unlocked card reveals its story', async () => {
@@ -91,14 +92,14 @@ test('C4 items use a searchable filtered catalogue instead of flash cards', asyn
   openPanel(dom, 'dex')
   findByAttr(contentOf(dom), 'data-dex-section', 'items').fire('click')
   assert.notEqual(findByAttr(contentOf(dom), 'data-dex-search', 'items'), undefined)
-  assert.notEqual(findByClass(contentOf(dom), 'dp-dex-catalog'), undefined)
+  assert.notEqual(findByClass(contentOf(dom), 'dp-pager-page'), undefined)
   assert.equal(findByClass(contentOf(dom), 'dp-dex-flash-grid'), undefined)
 
   const search = findByAttr(contentOf(dom), 'data-dex-search', 'items')
   search.value = '苹果'
   search.fire('input')
-  assert.equal(findByAttr(contentOf(dom), 'data-dex-entry', 'apple').getAttribute('data-search-hidden'), null)
-  assert.equal(findByAttr(contentOf(dom), 'data-dex-entry', 'crown').getAttribute('data-search-hidden'), 'true')
+  assert.notEqual(findByAttr(contentOf(dom), 'data-dex-entry', 'apple'), undefined)
+  assert.equal(findByAttr(contentOf(dom), 'data-dex-entry', 'crown'), undefined)
 
   search.value = ''
   search.fire('input')
@@ -115,19 +116,21 @@ test('search input keeps its focused node through a status poll', async () => {
   const search = findByAttr(contentOf(dom), 'data-dex-search', 'items')
   search.value = '苹果'
   search.fire('input')
-  globalThis.document.activeElement = search
+  const nextSearch = findByAttr(contentOf(dom), 'data-dex-search', 'items')
+  globalThis.document.activeElement = nextSearch
 
   await poll()
-  assert.equal(findByAttr(contentOf(dom), 'data-dex-search', 'items'), search)
-  assert.equal(search.value, '苹果')
+  assert.equal(findByAttr(contentOf(dom), 'data-dex-search', 'items'), nextSearch)
+  assert.equal(nextSearch.value, '苹果')
 })
 
-test('C4 souvenirs use the compact museum grid', async () => {
+test('C4 souvenirs use the shared tile grid', async () => {
   const { dom } = await mount({ status: { ...SNAPSHOT, dex: DEX } })
   openPanel(dom, 'dex')
   findByAttr(contentOf(dom), 'data-dex-section', 'souvenirs').fire('click')
-  assert.notEqual(findByClass(contentOf(dom), 'dp-dex-museum'), undefined)
-  assert.equal(findByClass(contentOf(dom), 'dp-dex-flash-grid'), undefined)
+  assert.equal(findByClass(contentOf(dom), 'dp-dex-museum'), undefined)
+  assert.notEqual(findByClass(contentOf(dom), 'dp-pager-page'), undefined)
+  assert.notEqual(findByAttr(contentOf(dom), 'data-dex-entry', 'shell'), undefined)
 })
 
 test('C4 a host without dex data degrades to empty sections', async () => {

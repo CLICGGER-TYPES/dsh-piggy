@@ -152,6 +152,8 @@ export const CSS_TILES = [
   '.dp-tile-n,.dp-tile-note{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}',
   '.dp-tile-n{font-size:10.5px;font-weight:700}',
   '.dp-tile-note{font-size:9.5px;font-weight:600;color:var(--ac-text-2);margin-top:-2px}',
+  '.dp-tile-note-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;',
+  'line-height:1.25;text-align:center;overflow:hidden}',
   // Corner marks on the square: a count top-right, a word top-left.
   '.dp-tile-badge,.dp-tile-tag{position:absolute;top:-5px;font-size:9px;font-weight:800;line-height:1;',
   'padding:3px 5px;border-radius:var(--ac-pill);white-space:nowrap;border:2px solid var(--ac-bg)}',

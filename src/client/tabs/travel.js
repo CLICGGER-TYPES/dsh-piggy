@@ -38,5 +38,5 @@ export function renderTravelTab(ui) {
       }))
     })(ui.view.trips[i])
   }
-  ui.content.appendChild(pagedTiles(ui, 'travel', tiles))
+  ui.content.appendChild(pagedTiles(ui, 'travel', tiles, { rows: 3 }))
 }
