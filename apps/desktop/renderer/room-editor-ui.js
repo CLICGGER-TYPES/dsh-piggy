@@ -1,5 +1,5 @@
 // @ts-check
-/** 联机房间边界编辑器的菜单条、模式按钮、底部提示和右侧对象面板。 */
+/** 联机房间边界编辑器的菜单条、模式按钮和底部提示。 */
 ;(function () {
   var SHAPE_LABELS = {
     node: '边界节点',
@@ -24,17 +24,9 @@
   function create(options) {
     var bar = options.bar
     var status = options.status
-    var objectPanel = options.objectPanel
-    var objectList = options.objectList
-    var objectCount = options.objectCount
-    var objectPin = options.objectPin
-    var objectFlip = options.objectFlip
     var menuTriggers = bar ? Array.prototype.slice.call(bar.querySelectorAll('[data-menu]')) : []
     var mapTrigger = bar ? bar.querySelector('[data-menu="map"]') : null
     var objectTrigger = bar ? bar.querySelector('[data-menu="object"]') : null
-    var panelSide = 'right'
-    var panelPinned = false
-    var flipTimer = null
 
     function setStatus(text) {
       if (!status) return
@@ -98,59 +90,6 @@
       if (objectTrigger) objectTrigger.textContent = (SHAPE_LABELS[shape] || SHAPE_LABELS.node) + ' ▾'
       setStatus(statusText(shape, mode))
     }
-    function applyPanelSide() { if (objectPanel) objectPanel.setAttribute('data-side', panelSide) }
-    function clearFlip() {
-      if (flipTimer !== null) clearTimeout(flipTimer)
-      flipTimer = null
-    }
-    function flipPanel() {
-      panelSide = panelSide === 'right' ? 'left' : 'right'
-      applyPanelSide()
-    }
-    function setPanelVisible(visible) {
-      if (!objectPanel) return
-      if (visible) {
-        objectPanel.removeAttribute('hidden')
-        applyPanelSide()
-      } else {
-        objectPanel.setAttribute('hidden', '')
-        clearFlip()
-      }
-    }
-    function renderPanel(area) {
-      if (!objectPanel || !objectList || !objectCount) return
-      objectCount.textContent = '障碍 ' + area.blockers.length
-      objectList.textContent = ''
-      var outerRow = document.createElement('div')
-      outerRow.className = 'object-row'
-      var outerLabel = document.createElement('span')
-      outerLabel.className = 'object-label object-boundary'
-      outerLabel.textContent = '外边界'
-      outerRow.appendChild(outerLabel)
-      objectList.appendChild(outerRow)
-      area.blockers.forEach(function (blocker, index) {
-        var row = document.createElement('div')
-        row.className = 'object-row' + (blocker.hidden === true ? ' is-hidden' : '')
-        var label = document.createElement('span')
-        label.className = 'object-label'
-        var name = blocker.type === 'rect' ? '矩形障碍' : blocker.type === 'circle' ? '圆形障碍' : '手绘障碍'
-        label.textContent = name + ' ' + (index + 1)
-        row.appendChild(label)
-        var eye = document.createElement('button')
-        eye.type = 'button'
-        eye.textContent = blocker.hidden === true ? '显' : '隐'
-        eye.title = blocker.hidden === true ? '显示障碍' : '隐藏障碍'
-        eye.addEventListener('click', function () { options.onToggleBlocker(index) })
-        row.appendChild(eye)
-        var trash = document.createElement('button')
-        trash.type = 'button'
-        trash.textContent = '删'
-        trash.title = '删除障碍'
-        trash.addEventListener('click', function () { options.onDeleteBlocker(index) })
-        row.appendChild(trash)
-        objectList.appendChild(row)
-      })
-    }
 
     menuTriggers.forEach(function (trigger) {
       trigger.addEventListener('click', function (event) {
@@ -193,29 +132,10 @@
         options.onAction(action)
       })
     })
-    objectPanel?.addEventListener('pointerenter', function () {
-      if (panelPinned || !options.isPointTool()) return
-      clearFlip()
-      flipTimer = setTimeout(function () {
-        flipTimer = null
-        flipPanel()
-      }, 450)
-    })
-    objectPanel?.addEventListener('pointerleave', clearFlip)
-    objectPin?.addEventListener('click', function () {
-      panelPinned = !panelPinned
-      objectPin.setAttribute('aria-pressed', String(panelPinned))
-      objectPin.textContent = panelPinned ? '解' : '锁'
-      objectPin.title = panelPinned ? '解锁面板' : '锁定面板'
-      if (panelPinned) clearFlip()
-    })
-    objectFlip?.addEventListener('click', function () { clearFlip(); flipPanel() })
 
     return {
       anyMenuOpen: anyMenuOpen,
       closeMenus: closeMenus,
-      renderPanel: renderPanel,
-      setPanelVisible: setPanelVisible,
       setState: setState,
       setStatus: setStatus,
       setUndoEnabled: setUndoEnabled,

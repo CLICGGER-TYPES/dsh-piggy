@@ -87,15 +87,6 @@
       window.addEventListener('pointerup', end)
     }
 
-    function toggleHidden(index) {
-      var area = options.getArea()
-      var blocker = area.blockers[index]
-      if (!blocker) return
-      options.pushHistory()
-      blocker.hidden = blocker.hidden !== true
-      options.commit()
-      options.render()
-    }
     function remove(index) {
       var area = options.getArea()
       if (!area.blockers[index]) return
@@ -132,7 +123,6 @@
       select: select,
       selectedIndex: selectedIndex,
       startDrag: startDrag,
-      toggleHidden: toggleHidden,
     }
   }
 

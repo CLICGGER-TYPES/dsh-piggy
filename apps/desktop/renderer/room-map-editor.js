@@ -100,7 +100,6 @@
     }).join(' '))
     renderBlockers()
     renderHandles()
-    ui.renderPanel(area)
   }
   function setStatus(text) { ui.setStatus(text) }
   function switchScene(next) {
@@ -287,7 +286,6 @@
     open = true
     editor.hidden = false
     if (bar) bar.removeAttribute('hidden')
-    ui.setPanelVisible(true)
     ui.closeMenus()
     ui.updateMapMenu(scene)
     document.body.setAttribute('data-editing', 'true')
@@ -311,7 +309,6 @@
     clearPreview()
     editor.hidden = true
     if (bar) bar.setAttribute('hidden', '')
-    ui.setPanelVisible(false)
     ui.closeMenus()
     ui.setStatus('')
     document.body.removeAttribute('data-editing')
@@ -373,18 +370,10 @@
   ui = editorUi.create({
     bar: bar,
     status: document.getElementById('editor-status'),
-    objectPanel: document.getElementById('object-panel'),
-    objectList: document.getElementById('object-list'),
-    objectCount: document.getElementById('object-count'),
-    objectPin: document.getElementById('object-pin'),
-    objectFlip: document.getElementById('object-flip'),
-    isPointTool: function () { return open && mode === 'create' },
     onShape: setShape,
     onMode: setMode,
     onScene: switchScene,
     onAction: runAction,
-    onToggleBlocker: blockerEdit.toggleHidden,
-    onDeleteBlocker: blockerEdit.remove,
   })
   ui.setUndoEnabled(false)
   editButton?.addEventListener('click', function () { if (open) closeEditor(); else openEditor() })
