@@ -17,6 +17,7 @@
   var sceneButtons = sceneSwitch ? Array.prototype.slice.call(sceneSwitch.querySelectorAll('button[data-scene]')) : []
   var SCENE_KEY = 'dsh-piggy:room-scene'
   var scene = 'pen'
+  var roomScene = /** @type {any} */ (window).PiggyRoomScene
 
   /** @type {any} */
   var snapshot = null
@@ -53,9 +54,15 @@
     scene = next === 'room' ? 'room' : 'pen'
     stage.setAttribute('data-scene', scene)
     document.body.setAttribute('data-scene', scene)
+    var p = roomScene.clampWalk(scene, local.x, local.y)
+    local.x = p.x
+    local.y = p.y
     sceneButtons.forEach(function (button) {
       button.setAttribute('aria-pressed', String(button.getAttribute('data-scene') === scene))
     })
+    roomScene.updateWalkZone(scene)
+    roomScene.showWalkZone()
+    if (snapshot !== null && selfId !== null) render(snapshot)
     try { localStorage.setItem(SCENE_KEY, scene) } catch { /* localStorage 不可用就只改本次 */ }
   }
 
@@ -94,10 +101,12 @@
   }
 
   function setLocal(x, y, facing) {
-    local.x = Math.min(0.96, Math.max(0.04, x))
-    local.y = Math.min(1, Math.max(0, y))
+    var p = roomScene.clampWalk(scene, x, y)
+    local.x = p.x
+    local.y = p.y
     local.facing = facing < 0 ? -1 : 1
     lastLocalAt = Date.now()
+    roomScene.showWalkZone(1800)
     var self = currentSelf()
     if (self !== null) updatePig(self)
     scheduleSend()
@@ -150,12 +159,14 @@
     if (node === undefined) node = createPig(player)
     var parts = pigParts.get(player.id)
     var isSelf = player.id === selfId
-    var y = isSelf ? local.y : (Number.isFinite(Number(player.y)) ? Math.min(1, Math.max(0, Number(player.y))) : 0.2)
+    var rawY = isSelf ? local.y : (Number.isFinite(Number(player.y)) ? Number(player.y) : 0.2)
+    var p = roomScene.clampWalk(scene, isSelf ? local.x : player.x, rawY)
+    var y = p.y
     var depth = 1 - y
     var size = Math.max(0.75, Math.min(1.35, Number(player.size) || 1))
     var scale = 0.84 + depth * 0.18
     node.classList.toggle('self', isSelf)
-    node.style.left = ((isSelf ? local.x : player.x) * 100) + '%'
+    node.style.left = (p.x * 100) + '%'
     node.setAttribute('data-y', y.toFixed(2))
     node.style.bottom = (8 + y * 32) + '%'
     node.style.zIndex = String(100 - Math.round(y * 100))
@@ -283,6 +294,7 @@
     if (id === selfId) {
       event.preventDefault()
       hideHint()
+      roomScene.showWalkZone(2200)
     }
   })
 
@@ -319,6 +331,7 @@
     if (target && target.tagName === 'INPUT') return
     event.preventDefault()
     hideHint()
+    roomScene.showWalkZone(1800)
     var step = event.shiftKey ? 0.08 : 0.035
     var x = local.x
     var y = local.y

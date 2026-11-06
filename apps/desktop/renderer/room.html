@@ -23,6 +23,9 @@
     </header>
 
     <main class="stage" id="stage" data-scene="pen">
+      <svg class="walk-zone" id="walk-zone" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polygon id="walk-zone-shape" points="10,92 90,92 74,69.6 26,69.6"></polygon>
+      </svg>
       <div class="sky">
         <span class="cloud a">☁️</span>
         <span class="cloud b">☁️</span>
@@ -43,6 +46,7 @@
       <span class="toast" id="toast" hidden></span>
     </footer>
   </div>
+  <script src="room-scene.js"></script>
   <script src="room.js"></script>
 </body>
 </html>
