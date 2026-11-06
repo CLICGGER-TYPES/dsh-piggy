@@ -14,7 +14,7 @@ import {
   STATE_VERSION, abandonPomodoro, applyDevPatch, chat, decay, ensurePomodoro,
   hatchEgg, layEgg, migrate, pomodoroView, settlePomodoro, startPomodoro,
 } from '../../../packages/pet-core/src/core.js'
-import { POMODORO_MINUTES, POMODORO_REWARD } from '../../../packages/pet-core/src/data.js'
+import { POMODORO_MAX_MINUTES, POMODORO_MINUTES, POMODORO_REWARD } from '../../../packages/pet-core/src/data.js'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -176,14 +176,16 @@ test('正在专注 / 不在家 / 纸盒 / 走了都不能再开一个', () => {
   assert.equal(startPomodoro(dead, 25, at(10)).reason, 'dead')
 })
 
-test('只认 15/25/45 分钟', () => {
-  const state = piggy()
+test('预设 15/25/45，也接受 1–180 的自定义整数分钟', () => {
   for (const minutes of POMODORO_MINUTES) {
-    const fresh = piggy()
-    assert.equal(startPomodoro(fresh, minutes, at(10)).ok, true, `${minutes} 分钟该能开`)
+    assert.equal(startPomodoro(piggy(), minutes, at(10)).ok, true, `${minutes} 分钟该能开`)
   }
-  assert.equal(startPomodoro(state, 20, at(10)).reason, 'minutes')
-  assert.equal(startPomodoro(state, 0, at(10)).reason, 'minutes')
+  for (const minutes of [1, 20, 30, 90, POMODORO_MAX_MINUTES]) {
+    assert.equal(startPomodoro(piggy(), minutes, at(10)).ok, true, `${minutes} 分钟自定义该能开`)
+  }
+  for (const minutes of [0, -1, POMODORO_MAX_MINUTES + 1, Number.NaN]) {
+    assert.equal(startPomodoro(piggy(), minutes, at(10)).reason, 'minutes', `${minutes} 分钟该拒绝`)
+  }
 })
 
 test('时间往前走（decay）不会把番茄钟弄丢：还在跑，到点由下次结算收', () => {
@@ -266,6 +268,21 @@ test('点 25 分钟会发 pomodoro 动作', async () => {
   await settle()
   const post = JSON.parse(String(calls.filter(call => call.method === 'POST').at(-1).body))
   assert.deepEqual(post, { action: 'pomodoro', minutes: 25 })
+})
+
+test('自定义时长：打开输入、填入 30 分钟并发出 pomodoro 动作', async () => {
+  const { dom, calls } = await openPomodoro({ ...SNAPSHOT, pomodoro: POMO_OFF }, {
+    actResult: { ...SNAPSHOT, pomodoro: { ...POMO_OFF, active: true, minutes: 30, secondsLeft: 1800 } },
+  })
+  findByAttr(contentOf(dom), 'data-pomo-custom-toggle', 'true').fire('click')
+  const input = /** @type {any} */ (findByAttr(contentOf(dom), 'data-pomo-custom-input', 'true'))
+  assert.ok(input, '打开自定义后要有分钟输入框')
+  input.value = '30'
+  input.fire('input')
+  findByAttr(contentOf(dom), 'data-pomo-custom-start', 'true').fire('click')
+  await settle()
+  const post = JSON.parse(String(calls.filter(call => call.method === 'POST').at(-1).body))
+  assert.deepEqual(post, { action: 'pomodoro', minutes: 30 })
 })
 
 test('专注中：猪头顶挂着剩余时间，页面上是倒计时和放弃', async () => {
