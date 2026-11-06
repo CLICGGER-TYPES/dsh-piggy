@@ -220,7 +220,7 @@ test('U24-7 ready layout: scenic hero, bait counts, closed sections and the teal
   assert.match(findByAttr(content, 'data-fish-section', 'rod').allText(), /竹竿/)
   const cast = findByAttr(content, 'data-fish', 'cast')
   assert.equal(cast.disabled, false)
-  assert.match(cast.textContent, /抛竿/)
+  assert.match(cast.allText(), /抛竿/)
   assert.notEqual(findByClass(content, 'dp-fish-cast'), undefined)
 })
 

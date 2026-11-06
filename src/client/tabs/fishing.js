@@ -82,7 +82,8 @@ function accordion(key, className, emoji, label, value) {
   box.setAttribute('data-fish-section', key)
   if (openSections[key]) { box.open = true; box.setAttribute('open', '') }
   const summary = el('summary', 'dp-fish-summary')
-  summary.appendChild(el('span', 'dp-fish-summary-main', emoji + ' ' + label))
+  summary.appendChild(el('span', 'dp-fish-summary-icon', emoji))
+  summary.appendChild(el('span', 'dp-fish-summary-main', label))
   if (value) summary.appendChild(el('span', 'dp-fish-summary-value', value))
   summary.appendChild(el('span', 'dp-fish-chev', '⌄'))
   box.appendChild(summary)
@@ -212,12 +213,20 @@ function currentBaitState(ui) {
 function renderHero(ui) {
   const spot = currentSpot(ui)
   const hero = el('section', 'dp-fish-hero')
+  const art = sceneArt(spot, 'dp-fish-hero-art')
+  const shade = el('div', 'dp-fish-hero-shade')
   const cap = el('div', 'dp-fish-hero-cap')
   cap.appendChild(el('span', 'dp-fish-kicker', '当前钓点'))
   cap.appendChild(el('b', 'dp-fish-spot-name', spot.label))
-  if (spot.open === false) cap.appendChild(el('span', 'dp-fish-tag', '晚上才开'))
-  hero.appendChild(cap)
-  hero.appendChild(sceneArt(spot, 'dp-fish-hero-art'))
+  shade.appendChild(cap)
+  const meta = el('div', 'dp-fish-hero-meta')
+  if (spot.kinds) meta.appendChild(el('span', 'dp-fish-chip', spot.kinds + ' 种鱼'))
+  const bag = Array.isArray(ui.view.fishing.bag) ? ui.view.fishing.bag.length : 0
+  if (bag > 0) meta.appendChild(el('span', 'dp-fish-chip', '🧺 ' + bag + ' 条'))
+  if (spot.open === false) meta.appendChild(el('span', 'dp-fish-chip dp-fish-chip-warn', '晚上才开'))
+  if (meta.children.length > 0) shade.appendChild(meta)
+  art.appendChild(shade)
+  hero.appendChild(art)
   ui.content.appendChild(hero)
   return spot
 }
@@ -258,15 +267,27 @@ function renderReady(ui) {
     const care = button('dp-mini dp-fish-care', { 'data-fish-care': 'feed' }, function () { ui.select('status') })
     care.textContent = '去状态页喂食 →'
     ui.content.appendChild(care)
-  } else if (baitState.selected === null) ui.content.appendChild(el('div', 'dp-fish-blocked', '没有鱼饵了，先去商店的鱼饵货架买。'))
-  else if (closed) ui.content.appendChild(el('div', 'dp-fish-blocked', '这个钓点现在没有开，换个钓点或等晚上。'))
+  } else if (baitState.selected === null) {
+    const empty = el('div', 'dp-fish-empty')
+    empty.appendChild(el('span', 'dp-fish-empty-copy', '🪱 没有鱼饵了'))
+    const shop = button('dp-mini', { 'data-fish-shop': 'bait' }, function () { ui.select('shop') })
+    shop.textContent = '去商店'
+    empty.appendChild(shop)
+    ui.content.appendChild(empty)
+  } else if (closed) ui.content.appendChild(el('div', 'dp-fish-blocked', '这个钓点现在没有开，换个钓点或等晚上。'))
   const cast = button('dp-btn dp-btn-wide dp-fish-cast', { 'data-fish': 'cast' }, function () { ui.send('fishCast', { power: .5, bait: selectedBait }) })
-  cast.textContent = hungry ? '🍚 喂食后才能抛竿' : '🎣 抛竿'
+  const castLabel = el('b', null, hungry ? '🍚 喂食后才能抛竿' : '🎣 抛竿')
+  const chosen = baitState.baits.find(item => item.key === baitState.selected)
+  const castNote = el('small', null, hungry ? '先照顾好小猪' : chosen ? '用 ' + baitLabel(chosen) + ' ×1' : '先选鱼饵')
+  cast.appendChild(castLabel)
+  cast.appendChild(castNote)
   cast.disabled = baitState.selected === null || hungry || closed
   ui.content.appendChild(cast)
-  ui.content.appendChild(renderSpotSection(ui))
-  ui.content.appendChild(renderRodSection(ui))
-  ui.content.appendChild(renderAutoSection(ui, baitState))
+  const more = el('div', 'dp-fish-more')
+  more.appendChild(renderSpotSection(ui))
+  more.appendChild(renderRodSection(ui))
+  more.appendChild(renderAutoSection(ui, baitState))
+  ui.content.appendChild(more)
 }
 
 function renderWaiting(ui, pending) {
