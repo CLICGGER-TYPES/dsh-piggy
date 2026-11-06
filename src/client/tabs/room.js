@@ -137,7 +137,7 @@ function renderLobby(ui, bridge) {
         generation += 1
         cached = result
         fetchedAt = Date.now()
-        Promise.resolve(bridge.open()).catch(function () {})
+        // 创建后先留在面板：让房主先复制房间码/邀请串，准备好再手动进房间。
       } else {
         notice = typeof result?.reason === 'string' ? result.reason : '创建房间失败'
       }

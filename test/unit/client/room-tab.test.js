@@ -9,7 +9,7 @@ test('联机页：在没有房间时显示创建/加入，点击创建会带上�
   const dom = fakeDom()
   const previousDocument = globalThis.document
   const previousWindow = globalThis.window
-  const calls = { host: 0, profile: null }
+  const calls = { host: 0, profile: null, open: 0 }
   /** @type {any} */
   const room = {
     status: async () => ({ ok: true, inRoom: false }),
@@ -19,7 +19,7 @@ test('联机页：在没有房间时显示创建/加入，点击创建会带上�
       return { ok: true, inRoom: true, code: '7K2M', selfId: 'p1', players: [{ id: 'p1', name: '猪猪', level: 60, host: true }] }
     },
     join: async () => ({ ok: true }),
-    open: async () => ({ ok: true }),
+    open: async () => { calls.open += 1; return { ok: true } },
     leave: async () => ({ ok: true }),
     copy: async () => ({ ok: true }),
     onUpdate() {},
@@ -47,6 +47,7 @@ test('联机页：在没有房间时显示创建/加入，点击创建会带上�
     assert.equal(calls.profile.level, 60)
     assert.equal(calls.profile.emoji, '🐖')
     assert.ok(Math.abs(calls.profile.size - 68 / 60) < 0.0001)
+    assert.equal(calls.open, 0, '创建房间后不自动打开房间窗口')
   } finally {
     globalThis.document = previousDocument
     globalThis.window = previousWindow

@@ -265,13 +265,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   background: rgba(114, 93, 66, .12);
 }
 
-.pig.self .body::before {
-  content: "";
-  position: absolute;
-  inset: -6px -8px -2px;
-  border-radius: 46%;
-  border: 2px dashed rgba(25, 200, 185, .5);
-}
+/* 自己的猪只靠名牌上的「· 你」和可拖动光标区分，不再画虚线圈。 */
 
 .pig.emote-wave .body { animation: wave .5s ease-in-out 3; }
 .pig.emote-jump .body { animation: jump .42s ease-in-out 3; }
