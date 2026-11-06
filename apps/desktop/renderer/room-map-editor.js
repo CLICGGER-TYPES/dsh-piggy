@@ -13,15 +13,7 @@
   var previewPoly = /** @type {any} */ (document.getElementById('editor-preview-poly'))
   var editButton = document.getElementById('edit-map')
   var bar = document.querySelector('.map-editor-bar')
-  var hint = document.querySelector('.map-editor-hint')
-  var objectPanel = document.getElementById('object-panel')
-  var objectList = document.getElementById('object-list')
-  var objectCount = document.getElementById('object-count')
-  var objectPin = document.getElementById('object-pin')
-  var objectFlip = document.getElementById('object-flip')
-  var panelSide = 'right'
-  var panelPinned = false
-  var flipTimer = null
+  var ui = /** @type {any} */ (null)
   var SVG = 'http://www.w3.org/2000/svg'
   var open = false
   var scene = 'pen'
@@ -102,77 +94,26 @@
     }).join(' '))
     renderBlockers()
     renderHandles()
-    renderPanel()
+    ui.renderPanel(area)
   }
   function isPointTool() {
     return tool === 'add' || tool === 'rect' || tool === 'circle' || tool === 'lasso'
   }
-  function applyPanelSide() { if (objectPanel) objectPanel.setAttribute('data-side', panelSide) }
-  function flipPanel() {
-    panelSide = panelSide === 'right' ? 'left' : 'right'
-    applyPanelSide()
+  function setStatus(text) { ui.setStatus(text) }
+  function switchScene(next) {
+    if (next !== 'pen' && next !== 'room') return
+    var target = /** @type {any} */ (document.querySelector('#scene-switch [data-scene="' + next + '"]'))
+    if (target) target.click()
+    scene = next
+    area = api.getArea(scene)
+    history = []
+    ui.updateMapMenu(scene)
+    render()
+    setTool(tool)
   }
-  function clearFlip() {
-    if (flipTimer !== null) clearTimeout(flipTimer)
-    flipTimer = null
-  }
-  function renderPanel() {
-    if (!objectPanel || !objectList || !objectCount) return
-    objectCount.textContent = '障碍 ' + area.blockers.length
-    objectList.textContent = ''
-    var outerRow = document.createElement('div')
-    outerRow.className = 'object-row'
-    var outerLabel = document.createElement('span')
-    outerLabel.className = 'object-label object-boundary'
-    outerLabel.textContent = '外边界'
-    outerRow.appendChild(outerLabel)
-    objectList.appendChild(outerRow)
-    area.blockers.forEach(function (blocker, index) {
-      var row = document.createElement('div')
-      row.className = 'object-row' + (blocker.hidden === true ? ' is-hidden' : '')
-      var label = document.createElement('span')
-      label.className = 'object-label'
-      var name = blocker.type === 'rect' ? '矩形障碍' : blocker.type === 'circle' ? '圆形障碍' : '手绘障碍'
-      label.textContent = name + ' ' + (index + 1)
-      row.appendChild(label)
-      var eye = document.createElement('button')
-      eye.type = 'button'
-      eye.textContent = blocker.hidden === true ? '显' : '隐'
-      eye.title = blocker.hidden === true ? '显示障碍' : '隐藏障碍'
-      eye.addEventListener('click', function () {
-        pushHistory()
-        blocker.hidden = blocker.hidden !== true
-        commit()
-        render()
-      })
-      row.appendChild(eye)
-      var trash = document.createElement('button')
-      trash.type = 'button'
-      trash.textContent = '删'
-      trash.title = '删除障碍'
-      trash.addEventListener('click', function () {
-        pushHistory()
-        area.blockers.splice(index, 1)
-        commit()
-        render()
-      })
-      row.appendChild(trash)
-      objectList.appendChild(row)
-    })
-  }
-
   function setTool(next) {
     tool = next
-    var buttons = bar.querySelectorAll('[data-edit-tool]')
-    for (var i = 0; i < buttons.length; i += 1) {
-      buttons[i].setAttribute('aria-pressed', String(buttons[i].getAttribute('data-edit-tool') === tool))
-    }
-    hint.textContent = tool === 'add'
-      ? '点地面加边界点；切到「拖边界」调整节点。'
-      : tool === 'outer' ? '拖动小圆点调整边界；完成后关闭。'
-        : tool === 'delete' ? '点节点或障碍删除；至少保留 3 个边界点。'
-          : tool === 'rect' ? '在地面上拖出一个矩形障碍。'
-            : tool === 'circle' ? '在地面上拖出一个圆形障碍。' : '按住拖动，手绘一个任意形状的障碍。'
+    ui.setTool(tool)
   }
   function hitBlocker(x, y) {
     for (var i = area.blockers.length - 1; i >= 0; i -= 1) {
@@ -227,7 +168,7 @@
   }
   function removeVertex(index) {
     if (area.outer.length <= 3) {
-      hint.textContent = '至少保留 3 个边界点。'
+      setStatus('至少保留 3 个边界点。')
       setTimeout(function () { setTool(tool) }, 1600)
       return
     }
@@ -239,7 +180,8 @@
 
   function startVertex(event, index) {
     if (!open) return
-    if (tool === 'delete') { removeVertex(index); return }
+    if (tool === 'delete-node') { removeVertex(index); return }
+    if (tool !== 'outer') return
     pushHistory()
     drag = { index: index }
     function move(moveEvent) {
@@ -258,6 +200,7 @@
   }
   function surfaceDown(event) {
     if (!open) return
+    if (ui.anyMenuOpen()) { ui.closeMenus(); return }
     var target = /** @type {any} */ (event.target)
     if (target.closest && target.closest('.map-editor-bar, .map-handle')) return
     var point = pointAt(event)
@@ -268,7 +211,8 @@
       render()
       return
     }
-    if (tool === 'delete') {
+    if (tool === 'outer' || tool === 'delete-node') return
+    if (tool === 'delete-blocker') {
       var index = hitBlocker(point.x, point.y)
       if (index >= 0) {
         pushHistory()
@@ -333,8 +277,9 @@
     open = true
     editor.hidden = false
     if (bar) bar.removeAttribute('hidden')
-    if (objectPanel) objectPanel.removeAttribute('hidden')
-    applyPanelSide()
+    ui.setPanelVisible(true)
+    ui.closeMenus()
+    ui.updateMapMenu(scene)
     document.body.setAttribute('data-editing', 'true')
     editButton?.setAttribute('aria-pressed', 'true')
     if (editButton) editButton.textContent = '完成'
@@ -349,8 +294,9 @@
     clearPreview()
     editor.hidden = true
     if (bar) bar.setAttribute('hidden', '')
-    if (objectPanel) objectPanel.setAttribute('hidden', '')
-    clearFlip()
+    ui.setPanelVisible(false)
+    ui.closeMenus()
+    ui.setStatus('')
     document.body.removeAttribute('data-editing')
     editButton?.setAttribute('aria-pressed', 'false')
     if (editButton) editButton.textContent = '边界'
@@ -358,42 +304,59 @@
     window.dispatchEvent(new Event('piggy-room-area-changed'))
     api.showWalkZone(2200)
   }
-  objectPanel?.addEventListener('pointerenter', function () {
-    if (!open || panelPinned || !isPointTool()) return
-    clearFlip()
-    flipTimer = setTimeout(function () {
-      flipTimer = null
-      flipPanel()
-    }, 450)
+  function toggleBlocker(index) {
+    if (!area.blockers[index]) return
+    pushHistory()
+    area.blockers[index].hidden = area.blockers[index].hidden !== true
+    commit()
+    render()
+  }
+  function deleteBlocker(index) {
+    if (!area.blockers[index]) return
+    pushHistory()
+    area.blockers.splice(index, 1)
+    commit()
+    render()
+  }
+  function runAction(action) {
+    if (action === 'done') { closeEditor(); return }
+    if (action === 'undo') {
+      if (history.length === 0) return
+      area = history.pop()
+      commit()
+      render()
+      setTool(tool)
+      return
+    }
+    if (action === 'reset') {
+      area = api.resetArea(scene)
+      history = []
+      render()
+      setTool(tool)
+      window.dispatchEvent(new Event('piggy-room-area-changed'))
+    }
+  }
+
+  var editorUi = /** @type {any} */ (window).PiggyRoomEditorUI
+  if (!editorUi) return
+  ui = editorUi.create({
+    bar: bar,
+    status: document.getElementById('editor-status'),
+    objectPanel: document.getElementById('object-panel'),
+    objectList: document.getElementById('object-list'),
+    objectCount: document.getElementById('object-count'),
+    objectPin: document.getElementById('object-pin'),
+    objectFlip: document.getElementById('object-flip'),
+    isPointTool: function () { return open && isPointTool() },
+    onTool: setTool,
+    onScene: switchScene,
+    onAction: runAction,
+    onToggleBlocker: toggleBlocker,
+    onDeleteBlocker: deleteBlocker,
   })
-  objectPanel?.addEventListener('pointerleave', clearFlip)
-  objectPin?.addEventListener('click', function () {
-    panelPinned = !panelPinned
-    objectPin.setAttribute('aria-pressed', String(panelPinned))
-    objectPin.textContent = panelPinned ? '解' : '锁'
-    objectPin.title = panelPinned ? '解锁面板' : '锁定面板'
-    if (panelPinned) clearFlip()
-  })
-  objectFlip?.addEventListener('click', function () { clearFlip(); flipPanel() })
   editButton?.addEventListener('click', function () { if (open) closeEditor(); else openEditor() })
   editor?.addEventListener('pointerdown', surfaceDown)
   editor?.addEventListener('pointermove', surfaceMove)
   editor?.addEventListener('pointerup', surfaceUp)
   editor?.addEventListener('pointercancel', function () { drawing = null; clearPreview() })
-  bar?.querySelectorAll('[data-edit-tool]').forEach(function (button) {
-    button.addEventListener('click', function () { setTool(button.getAttribute('data-edit-tool')) })
-  })
-  bar?.querySelector('[data-edit-action="undo"]')?.addEventListener('click', function () {
-    if (history.length === 0) return
-    area = history.pop()
-    commit()
-    render()
-  })
-  bar?.querySelector('[data-edit-action="reset"]')?.addEventListener('click', function () {
-    area = api.resetArea(scene)
-    history = []
-    render()
-    window.dispatchEvent(new Event('piggy-room-area-changed'))
-  })
-  bar?.querySelector('[data-edit-action="done"]')?.addEventListener('click', closeEditor)
 })()

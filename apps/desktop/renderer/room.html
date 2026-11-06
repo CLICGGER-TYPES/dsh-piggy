@@ -22,16 +22,39 @@
       <button type="button" class="ghost" id="edit-map">边界</button>
       <button type="button" class="ghost" id="leave">离开房间</button>
       <div class="map-editor-bar" id="map-editor-bar" hidden>
-        <button type="button" data-edit-tool="add" aria-pressed="true">添加节点</button>
-        <button type="button" data-edit-tool="outer" aria-pressed="false">拖边界</button>
-        <button type="button" data-edit-tool="rect" aria-pressed="false">矩形障碍</button>
-        <button type="button" data-edit-tool="circle" aria-pressed="false">圆形障碍</button>
-        <button type="button" data-edit-tool="lasso" aria-pressed="false">手绘障碍</button>
-        <button type="button" data-edit-tool="delete" aria-pressed="false">删除</button>
-        <button type="button" data-edit-action="undo">撤销</button>
-        <button type="button" data-edit-action="reset">恢复默认</button>
-        <button type="button" data-edit-action="done">完成</button>
-        <span class="map-editor-hint">点地面加边界点，拖动圆点调整；选障碍工具拖出范围。</span>
+        <span class="map-editor-title">边界编辑器</span>
+        <div class="menu-item" data-menu-wrap="map">
+          <button type="button" class="menu-trigger" data-menu="map" aria-haspopup="true" aria-expanded="false">地图 · 猪圈 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="map" hidden>
+            <button type="button" data-map-scene="pen" aria-current="true">猪圈</button>
+            <button type="button" data-map-scene="room">房间</button>
+          </div>
+        </div>
+        <div class="menu-item" data-menu-wrap="new">
+          <button type="button" class="menu-trigger" data-menu="new" aria-haspopup="true" aria-expanded="false">新建 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="new" hidden>
+            <button type="button" data-edit-tool="add" aria-pressed="true">边界节点</button>
+            <button type="button" data-edit-tool="rect" aria-pressed="false">矩形障碍</button>
+            <button type="button" data-edit-tool="circle" aria-pressed="false">圆形障碍</button>
+            <button type="button" data-edit-tool="lasso" aria-pressed="false">手绘障碍</button>
+          </div>
+        </div>
+        <div class="menu-item" data-menu-wrap="edit">
+          <button type="button" class="menu-trigger" data-menu="edit" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="edit" hidden>
+            <button type="button" data-edit-tool="outer" aria-pressed="false">拖动边界节点</button>
+            <button type="button" data-edit-action="undo">撤销</button>
+            <button type="button" data-edit-action="reset">恢复默认</button>
+          </div>
+        </div>
+        <div class="menu-item" data-menu-wrap="delete">
+          <button type="button" class="menu-trigger" data-menu="delete" aria-haspopup="true" aria-expanded="false">删除 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="delete" hidden>
+            <button type="button" data-edit-tool="delete-node" aria-pressed="false">删除节点</button>
+            <button type="button" data-edit-tool="delete-blocker" aria-pressed="false">删除障碍</button>
+          </div>
+        </div>
+        <button type="button" class="editor-done" data-edit-action="done">完成</button>
       </div>
     </header>
 
@@ -74,12 +97,14 @@
       <button type="button" class="primary" data-emote="pat">摸摸</button>
       <button type="button" class="secondary" data-emote="wave">挥手</button>
       <span class="tip">点一只猪也能摸摸它</span>
+      <span class="editor-status" id="editor-status" hidden></span>
       <span class="grow"></span>
       <span class="toast" id="toast" hidden></span>
     </footer>
   </div>
   <script src="room-scene.js"></script>
   <script src="room.js"></script>
+  <script src="room-editor-ui.js"></script>
   <script src="room-map-editor.js"></script>
 </body>
 </html>
