@@ -8,7 +8,7 @@ import { fishByKey } from '../../../packages/pet-core/src/data/fish.js'
 import { button, el } from '../dom.js'
 import { fightActive, renderFight, resetFightResolve, stopFight } from './fishing-fight.js'
 import { renderFishingReady, renderAutoStock, resetFishingGear } from './fishing-ready.js'
-import { currentSpot, fishImage, sceneArt } from './fishing-scene.js'
+import { currentSpot, fishImage, mascotArt, sceneArt } from './fishing-scene.js'
 import { renderSwitchAsk } from '../switch-activity.js'
 
 let lastUi = null
@@ -57,7 +57,10 @@ function renderWaiting(ui, pending) {
     if (Date.now() < pending.bitesAt) { line.textContent = nibbleUntil > Date.now() ? '只是试探，还没咬实…' : '还没上钩，继续等…'; return }
     ui.send('fishHook')
   })
-  water.appendChild(sceneArt(spot, 'dp-fish-water-art'))
+  const art = sceneArt(spot, 'dp-fish-water-art')
+  const mascot = mascotArt(spot)
+  if (mascot) art.appendChild(mascot)
+  water.appendChild(art)
   const mark = el('span', 'dp-fish-bobber')
   mark.appendChild(fishImage('bobber.png', 'dp-fish-bobber-img'))
   water.appendChild(mark)

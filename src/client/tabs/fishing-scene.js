@@ -31,3 +31,15 @@ export function sceneArt(spot, className) {
   art.appendChild(fishImage(SCENE_FILE[spot.key] ?? SCENE_FILE.river, 'dp-fish-art-img'))
   return art
 }
+
+/** 小河场景里的甲板小猪；等待咬钩也沿用同一套定位。 */
+export function mascotArt(spot) {
+  if (spot.key !== 'river') return null
+  const mascot = el('div', 'dp-fish-mascot')
+  const img = /** @type {HTMLImageElement} */ (el('img', 'dp-fish-mascot-img'))
+  img.src = fishingArtUrl('deck-pig.png')
+  img.alt = ''
+  img.setAttribute('aria-hidden', 'true')
+  mascot.appendChild(img)
+  return mascot
+}

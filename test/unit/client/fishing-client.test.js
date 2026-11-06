@@ -271,6 +271,8 @@ test('U24-7 waiting keeps only current spot/rod and the float, never auto stock 
   const content = contentOf(dom)
   assert.match(content.allText(), /当前：小河 · 竹竿/)
   assert.match(content.allText(), /安静等鱼咬钩/)
+  assert.notEqual(findByClass(content, 'dp-fish-mascot'), undefined)
+  assert.equal(findByClass(content, 'dp-fish-mascot-img').src, '/dsh-piggy/art/fishing/deck-pig.png?v=472e9a6bf626')
   const water = findByAttr(content, 'data-fish', 'hook')
   assert.notEqual(water, undefined)
   assert.notEqual(findByClass(content, 'dp-fish-bobber'), undefined)
