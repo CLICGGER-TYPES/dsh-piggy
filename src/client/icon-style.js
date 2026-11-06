@@ -19,6 +19,18 @@ export function iconStyle() {
 
 /** Missing bundled files fall back to the device's Emoji. */
 export function appIcon(key, emoji, className) {
+  if (key === 'room') {
+    const img = /** @type {HTMLImageElement} */ (el('img', className + ' dp-tile-svg dp-room-icon'))
+    img.src = ART_URL + 'ui-room.png'
+    img.alt = ''
+    img.setAttribute('aria-hidden', 'true')
+    img.setAttribute('data-room-icon', 'pair')
+    img.addEventListener('error', function () {
+      const replacement = el('span', className, emoji)
+      img.parentNode?.replaceChild(replacement, img)
+    })
+    return img
+  }
   if (iconStyle() !== 'built-in' || !BUNDLED.has(key)) return el('span', className, emoji)
   const img = /** @type {HTMLImageElement} */ (el('img', className + ' dp-tile-svg'))
   img.src = ART_URL + 'ui-' + key + '.svg'
