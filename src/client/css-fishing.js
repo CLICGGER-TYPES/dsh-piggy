@@ -20,7 +20,7 @@ export const CSS_FISHING = `
 .dp-fish-scene-bottom{position:absolute;z-index:3;right:9px;bottom:26px;display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
 .dp-fish-scene-pill{padding:3px 8px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:#5e6f4f;font-size:9px;font-weight:800;line-height:1.4}
 .dp-fish-scene-warn{background:#ffe4b8;color:#8f5123}
-.dp-fish-dock{position:relative;z-index:2;margin:-18px 4px 0;padding:9px 12px 12px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content);box-shadow:0 6px 14px rgba(61,52,40,.10)}
+.dp-fish-dock{position:relative;z-index:2;margin:-18px 0 0;padding:9px 12px 12px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content);box-shadow:0 6px 14px rgba(61,52,40,.10)}
 .dp-fish-dock-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 1px 6px;min-height:16px;font-size:11px;color:var(--ac-text)}
 .dp-fish-dock-head b{font-weight:800}
 .dp-fish-dock-note{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;font-weight:700;color:var(--ac-text-2)}
