@@ -71,13 +71,14 @@ export function createRoomClient({ baseUrl, code, profile, clientId = randomUUID
     })
   }
 
-  /** @param {{x?:number,facing?:number,emote?:string,targetId?:string}} [options] */
-  function update({ x, facing, emote = '', targetId = '' } = {}) {
+  /** @param {{x?:number,y?:number,facing?:number,emote?:string,targetId?:string}} [options] */
+  function update({ x, y, facing, emote = '', targetId = '' } = {}) {
     return serialize(async () => {
       rev += 1
       const result = await request('/v1/room/update', {
         rev,
         x: Number(x),
+        y: Number(y),
         facing: Number(facing) < 0 ? -1 : 1,
         emote: typeof emote === 'string' ? emote : '',
         targetId: typeof targetId === 'string' ? targetId : '',

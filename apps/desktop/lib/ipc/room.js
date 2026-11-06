@@ -30,9 +30,9 @@ export function registerRoomIpc({ ipcMain, fromPanelOnly, fromRoom, manager, roo
     return { ok: true }
   }))
 
-  ipcMain.handle('piggy:room:move', room((event, x, facing) => manager.move(x, facing)))
+  ipcMain.handle('piggy:room:move', room((event, x, y, facing) => manager.move(x, y, facing)))
 
-  ipcMain.handle('piggy:room:emote', room((event, name, targetId, x, facing) => manager.emote(name, targetId, x, facing)))
+  ipcMain.handle('piggy:room:emote', room((event, name, targetId, x, y, facing) => manager.emote(name, targetId, x, y, facing)))
 
   ipcMain.handle('piggy:room:leave', either(() => manager.leave('left')))
 

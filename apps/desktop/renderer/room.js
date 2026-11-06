@@ -27,7 +27,7 @@
   var pigParts = new Map()
   /** @type {Map<string, number>} */
   var lastEmote = new Map()
-  var local = { x: 0.5, facing: 1 }
+  var local = { x: 0.5, y: 0.2, facing: 1 }
   var lastLocalAt = 0
   var dragging = null
   var sendTimer = null
@@ -78,7 +78,7 @@
   function sendPosition() {
     if (pending) return
     pending = true
-    Promise.resolve(room.move(local.x, local.facing)).catch(function () {}).then(function () {
+    Promise.resolve(room.move(local.x, local.y, local.facing)).catch(function () {}).then(function () {
       pending = false
       if (Date.now() - lastLocalAt < 80) scheduleSend()
     })
@@ -93,19 +93,13 @@
     }, 50)
   }
 
-  function setLocal(x, facing) {
+  function setLocal(x, y, facing) {
     local.x = Math.min(0.96, Math.max(0.04, x))
+    local.y = Math.min(1, Math.max(0, y))
     local.facing = facing < 0 ? -1 : 1
     lastLocalAt = Date.now()
     var self = currentSelf()
-    if (self !== null) {
-      var node = nodes.get(self.id)
-      if (node !== undefined) {
-        node.style.left = (local.x * 100) + '%'
-        var img = node.querySelector('img')
-        if (img !== null) img.style.transform = local.facing < 0 ? 'scaleX(-1)' : ''
-      }
-    }
+    if (self !== null) updatePig(self)
     scheduleSend()
   }
 
@@ -151,24 +145,27 @@
     return node
   }
 
-  function updatePig(player, row) {
+  function updatePig(player) {
     var node = nodes.get(player.id)
     if (node === undefined) node = createPig(player)
     var parts = pigParts.get(player.id)
-    node.classList.toggle('self', player.id === selfId)
-    node.style.left = ((player.id === selfId ? local.x : player.x) * 100) + '%'
-    var depth = row === 0 ? 1.02 : row === 1 ? 0.92 : 0.84
+    var isSelf = player.id === selfId
+    var y = isSelf ? local.y : (Number.isFinite(Number(player.y)) ? Math.min(1, Math.max(0, Number(player.y))) : 0.2)
+    var depth = 1 - y
     var size = Math.max(0.75, Math.min(1.35, Number(player.size) || 1))
-    node.setAttribute('data-row', String(row))
-    node.style.bottom = (8 + row * 13) + '%'
-    node.style.zIndex = String(10 - row)
-    node.style.setProperty('--s', String(size * depth))
-    node.style.setProperty('--sh', row === 0 ? '1' : row === 1 ? '.9' : '.8')
-    node.style.setProperty('--shadow-op', row === 0 ? '.9' : row === 1 ? '.75' : '.6')
+    var scale = 0.84 + depth * 0.18
+    node.classList.toggle('self', isSelf)
+    node.style.left = ((isSelf ? local.x : player.x) * 100) + '%'
+    node.setAttribute('data-y', y.toFixed(2))
+    node.style.bottom = (8 + y * 32) + '%'
+    node.style.zIndex = String(100 - Math.round(y * 100))
+    node.style.setProperty('--s', String(size * scale))
+    node.style.setProperty('--sh', String(0.8 + depth * 0.2))
+    node.style.setProperty('--shadow-op', String(0.6 + depth * 0.3))
     parts.name.textContent = player.name
     parts.level.textContent = ' Lv.' + player.level
-    parts.mark.textContent = player.host ? ' 👑' : (player.id === selfId ? ' · 你' : '')
-    parts.mark.className = player.host ? 'host' : (player.id === selfId ? 'you' : '')
+    parts.mark.textContent = player.host ? ' 👑' : (isSelf ? ' · 你' : '')
+    parts.mark.className = player.host ? 'host' : (isSelf ? 'you' : '')
     var source = artUrl(player.art)
     if (source === '') {
       parts.img.hidden = true
@@ -182,11 +179,7 @@
         parts.img.src = source
       }
     }
-    if (player.id === selfId) {
-      parts.img.style.transform = local.facing < 0 ? 'scaleX(-1)' : ''
-    } else {
-      parts.img.style.transform = player.facing < 0 ? 'scaleX(-1)' : ''
-    }
+    parts.img.style.transform = (isSelf ? local.facing : player.facing) < 0 ? 'scaleX(-1)' : ''
   }
 
   function playEmote(player) {
@@ -245,8 +238,7 @@
           local.facing = player.facing
         }
       }
-      var row = player.id === selfId ? 0 : 1 + (i % 2)
-      updatePig(player, row)
+      updatePig(player)
       playEmote(player)
     }
     for (var id of Array.from(nodes.keys())) {
@@ -272,12 +264,12 @@
     hideHint()
     var self = currentSelf()
     if (self === null) return
-    Promise.resolve(room.emote('pat', id, local.x, local.facing)).catch(function () {})
+    Promise.resolve(room.emote('pat', id, local.x, local.y, local.facing)).catch(function () {})
   }
 
   function wave() {
     hideHint()
-    Promise.resolve(room.emote('wave', '', local.x, local.facing)).catch(function () {})
+    Promise.resolve(room.emote('wave', '', local.x, local.y, local.facing)).catch(function () {})
   }
 
   stage.addEventListener('pointerdown', function (event) {
@@ -299,8 +291,11 @@
     if (Math.abs(event.clientX - dragging.startX) > 4 || Math.abs(event.clientY - dragging.startY) > 4) dragging.moved = true
     if (dragging.id !== selfId) return
     var rect = stage.getBoundingClientRect()
-    if (rect.width <= 0) return
-    setLocal((event.clientX - rect.left) / rect.width, event.clientX < dragging.startX ? -1 : 1)
+    if (rect.width <= 0 || rect.height <= 0) return
+    var x = (event.clientX - rect.left) / rect.width
+    var screenY = (event.clientY - rect.top) / rect.height
+    var y = Math.min(1, Math.max(0, (0.95 - screenY) / 0.55))
+    setLocal(x, y, event.clientX < dragging.startX ? -1 : 1)
   })
 
   function endDrag(event) {
@@ -309,7 +304,7 @@
     dragging = null
     if (finished.id === selfId && finished.moved) {
       var self = currentSelf()
-      if (self !== null) setLocal(local.x, local.facing)
+      if (self !== null) setLocal(local.x, local.y, local.facing)
     } else if (!finished.moved) {
       pat(finished.id)
     }
@@ -319,13 +314,17 @@
   stage.addEventListener('pointercancel', endDrag)
 
   document.addEventListener('keydown', function (event) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(event.key) < 0) return
     var target = /** @type {any} */ (event.target)
     if (target && target.tagName === 'INPUT') return
     event.preventDefault()
     hideHint()
     var step = event.shiftKey ? 0.08 : 0.035
-    setLocal(local.x + (event.key === 'ArrowRight' ? step : -step), event.key === 'ArrowRight' ? 1 : -1)
+    var x = local.x
+    var y = local.y
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') x += event.key === 'ArrowRight' ? step : -step
+    else y += event.key === 'ArrowUp' ? step : -step
+    setLocal(x, y, event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : local.facing)
   })
 
   var buttons = document.querySelectorAll('[data-emote]')

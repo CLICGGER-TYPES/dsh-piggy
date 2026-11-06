@@ -31,15 +31,16 @@ test('房间服务：两位玩家加入、长轮询、移动、摸摸、离开',
 
     const beforeMove = roster.body.version
     const moveWait = first.wait(beforeMove)
-    const moved = await second.update({ x: 0.82, facing: -1 })
+    const moved = await second.update({ x: 0.82, y: 0.42, facing: -1 })
     assert.equal(moved.status, 200)
     const afterMove = await moveWait
     const guest = afterMove.body.players.find(player => player.id === joinedB.playerId)
     assert.equal(guest.x, 0.82)
+    assert.equal(guest.y, 0.42)
     assert.equal(guest.facing, -1)
 
     const patWait = second.wait(afterMove.body.version)
-    const pat = await first.update({ x: 0.2, facing: 1, emote: 'pat', targetId: joinedB.playerId })
+    const pat = await first.update({ x: 0.2, y: 0.3, facing: 1, emote: 'pat', targetId: joinedB.playerId })
     assert.equal(pat.status, 200)
     const afterPat = await patWait
     const host = afterPat.body.players.find(player => player.id === joinedA.playerId)

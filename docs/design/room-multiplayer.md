@@ -34,7 +34,7 @@ HTTP/1.1，绑定具体私有 IPv4，随机端口。请求体上限 4 KiB，只�
 |---|---|---|
 | `POST /v1/room/join` | 房间码 | `{ clientId, code, profile }` → token、自己的 playerId、玩家列表、版本号 |
 | `POST /v1/room/state` | Bearer | `{ since }`，长轮询最多 15 秒；版本变化立即返回 |
-| `POST /v1/room/update` | Bearer | `{ rev, x, facing, emote, targetId }`；位置 0..1，节流 30ms |
+| `POST /v1/room/update` | Bearer | `{ rev, x, y, facing, emote, targetId }`；x/y 都是 0..1，y 控制前后排，节流 30ms |
 | `POST /v1/room/leave` | Bearer | 离开房间 |
 
 - token 32 字节随机数，服务端只存 SHA-256；不写磁盘。
@@ -59,7 +59,7 @@ HTTP/1.1，绑定具体私有 IPv4，随机端口。请求体上限 4 KiB，只�
 - 创建或加入成功后，主进程打开一扇 `piggy://room/room.html` 的房间窗口（role=room），
   默认 760×500、最小 520×360、居中、可缩放，奶油底。
 - 房间窗口里：顶部状态和房间码、草地上所有猪、名字/等级/房主标记、
-  底部「摸摸 / 挥手 / 离开房间」；自己的猪可以拖动或用方向键移动。
+  底部「摸摸 / 挥手 / 离开房间」；自己的猪可以在 2.5D 地面拖动，或用方向键移动（上下控制前后排）。
 - 窗口关闭等同于离开房间；面板里的联机页仍可再次创建/加入。
 - 房间窗口是独立页面，不加载游戏包；只通过 `window.piggyShell.room` 与主进程通信。
 

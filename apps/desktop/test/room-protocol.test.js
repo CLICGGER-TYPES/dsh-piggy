@@ -39,10 +39,11 @@ test('玩家外观只保留房间需要的字段，并对长度/路径做边界�
 })
 
 test('位置与表情只接受房间支持的取值', () => {
-  assert.deepEqual(normalizePosition(-3, -1), { x: 0, facing: -1 })
-  assert.deepEqual(normalizePosition(3, 1), { x: 1, facing: 1 })
-  assert.deepEqual(normalizePosition(0.4567, 0), { x: 0.457, facing: 1 })
-  assert.throws(() => normalizePosition(Number.NaN, 1))
+  assert.deepEqual(normalizePosition(-3, -1, -1), { x: 0, y: 0, facing: -1 })
+  assert.deepEqual(normalizePosition(3, 2, 1), { x: 1, y: 1, facing: 1 })
+  assert.deepEqual(normalizePosition(0.4567, 0.2, 0), { x: 0.457, y: 0.2, facing: 1 })
+  assert.throws(() => normalizePosition(Number.NaN, 0.2, 1))
+  assert.throws(() => normalizePosition(0.5, Number.NaN, 1))
   assert.equal(normalizeEmote('wave'), 'wave')
   assert.equal(normalizeEmote('pat'), 'pat')
   assert.equal(normalizeEmote('explode'), '')
@@ -75,11 +76,12 @@ test('房间广播地址按网卡子网计算，发现报文格式固定', () =>
 test('公开玩家视图不包含 token 或 clientId', () => {
   const view = publicPlayer({
     id: 'p1', clientId: 'private', token: 'secret', name: '猪猪', level: 9,
-    stage: 'piglet', art: '', emoji: '🐖', size: 1, label: '', x: 0.5, facing: 1,
+    stage: 'piglet', art: '', emoji: '🐖', size: 1, label: '', x: 0.5, y: 0.3, facing: 1,
     emote: '', emoteTarget: null, emoteAt: 0, host: true,
   })
   assert.equal(view.id, 'p1')
   assert.equal(view.host, true)
+  assert.equal(view.y, 0.3)
   assert.equal('token' in view, false)
   assert.equal('clientId' in view, false)
 })

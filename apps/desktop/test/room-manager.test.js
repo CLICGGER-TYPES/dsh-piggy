@@ -66,12 +66,12 @@ test('建房：用局域网地址起服务，移动节流上报，离开时关�
   assert.equal(snapshots.length, 1)
   assert.equal(snapshots[0].players[0].name, '猪猪')
 
-  assert.equal(manager.move(0.72, -1).ok, true)
+  assert.equal(manager.move(0.72, 0.35, -1).ok, true)
   await wait(90)
   assert.equal(client.calls.updates.length, 1)
-  assert.deepEqual(client.calls.updates[0], { x: 0.72, facing: -1 })
+  assert.deepEqual(client.calls.updates[0], { x: 0.72, y: 0.35, facing: -1 })
 
-  const emoted = await manager.emote('wave', '', 0.72, -1)
+  const emoted = await manager.emote('wave', '', 0.72, 0.35, -1)
   assert.equal(emoted.ok, true)
   assert.equal(client.calls.updates[1].emote, 'wave')
 

@@ -151,7 +151,7 @@ export function createRoomManager(deps = {}) {
         const pending = current.pendingMove
         current.pendingMove = null
         current.moveBusy = true
-        try { await current.client.update({ x: pending.x, facing: pending.facing }) }
+        try { await current.client.update({ x: pending.x, y: pending.y, facing: pending.facing }) }
         catch { /* 下一次移动会补上最新位置 */ }
         current.moveBusy = false
       }
@@ -232,26 +232,26 @@ export function createRoomManager(deps = {}) {
     }
   }
 
-  function move(x, facing) {
+  function move(x, y, facing) {
     const current = session
     if (current === null || current.stopped) return { ok: false, reason: '不在房间里' }
     let position
-    try { position = normalizePosition(x, facing) } catch (error) { return { ok: false, reason: messageOf(error, '位置无效') } }
+    try { position = normalizePosition(x, y, facing) } catch (error) { return { ok: false, reason: messageOf(error, '位置无效') } }
     current.pendingMove = position
     startMoves(current)
     return { ok: true }
   }
 
-  async function emote(name, targetId, x, facing) {
+  async function emote(name, targetId, x, y, facing) {
     const current = session
     if (current === null || current.stopped) return { ok: false, reason: '不在房间里' }
     const emote = normalizeEmote(name)
     if (emote === '') return { ok: false, reason: '表情无效' }
     let position
-    try { position = normalizePosition(x, facing) } catch (error) { return { ok: false, reason: messageOf(error, '位置无效') } }
+    try { position = normalizePosition(x, y, facing) } catch (error) { return { ok: false, reason: messageOf(error, '位置无效') } }
     try {
       const result = await current.client.update({
-        x: position.x, facing: position.facing, emote,
+        x: position.x, y: position.y, facing: position.facing, emote,
         targetId: typeof targetId === 'string' ? targetId : '',
       })
       if (result.status !== 200 || result.body?.ok !== true) return { ok: false, reason: typeof result.body?.reason === 'string' ? result.body.reason : '表情没发出去' }

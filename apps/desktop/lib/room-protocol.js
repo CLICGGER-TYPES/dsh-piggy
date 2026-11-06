@@ -56,15 +56,18 @@ export function normalizeClientId(value) {
 }
 
 /**
- * 位置统一成草地上的 0..1；y 不开放，猪都站在同一条地平线上。
+ * 位置统一成房间地面上的 0..1：x 左右，y 前后（0 最前、1 最后）。
  * @param {unknown} x
+ * @param {unknown} y
  * @param {unknown} facing
  */
-export function normalizePosition(x, facing) {
+export function normalizePosition(x, y, facing) {
   const nx = Number(x)
-  if (!Number.isFinite(nx)) throw new TypeError('room position is invalid')
+  const ny = Number(y)
+  if (!Number.isFinite(nx) || !Number.isFinite(ny)) throw new TypeError('room position is invalid')
   return {
     x: Math.round(Math.min(1, Math.max(0, nx)) * 1000) / 1000,
+    y: Math.round(Math.min(1, Math.max(0, ny)) * 1000) / 1000,
     facing: Number(facing) < 0 ? -1 : 1,
   }
 }
@@ -110,6 +113,7 @@ export function publicPlayer(player) {
     size: player.size,
     label: player.label,
     x: player.x,
+    y: Number.isFinite(Number(player.y)) ? Math.min(1, Math.max(0, Number(player.y))) : 0.2,
     facing: player.facing,
     row: player.row === 1 || player.row === 2 ? player.row : 0,
     emote: player.emote,

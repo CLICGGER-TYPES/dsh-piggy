@@ -219,6 +219,7 @@ export async function startRoomServer(options) {
       const player = {
         id, clientId, token, ...profile,
         x: spawnX(players.size),
+        y: 0.15 + (players.size % 3) * 0.14,
         row: players.size % 3,
         facing: 1,
         emote: '', emoteTarget: null, emoteAt: 0,
@@ -256,19 +257,20 @@ export async function startRoomServer(options) {
   function update(request, response) {
     const { player } = findPlayer(request)
     return readJson(request).then(input => {
-      if (!exactKeys(input, ['rev', 'x', 'facing', 'emote', 'targetId'])) throw fail(400, 'update-shape-invalid')
+      if (!exactKeys(input, ['rev', 'x', 'y', 'facing', 'emote', 'targetId'])) throw fail(400, 'update-shape-invalid')
       if (!Number.isSafeInteger(input.rev) || input.rev < 0) throw fail(400, 'update-shape-invalid')
       if (input.rev <= player.rev) return send(response, 200, { ok: true, version })
-      const position = normalizePosition(input.x, input.facing)
+      const position = normalizePosition(input.x, input.y, input.facing)
       const emote = normalizeEmote(input.emote)
       const targetId = typeof input.targetId === 'string' ? input.targetId : ''
       if (emote !== '' && targetId !== '' && ![...players.values()].some(candidate => candidate.id === targetId)) {
         throw fail(400, 'emote-target-invalid')
       }
-      const changed = Math.abs(position.x - player.x) > 0.0005 || position.facing !== player.facing ||
+      const changed = Math.abs(position.x - player.x) > 0.0005 || Math.abs(position.y - player.y) > 0.0005 || position.facing !== player.facing ||
         emote !== '' || player.emote !== ''
       player.rev = input.rev
       player.x = position.x
+      player.y = position.y
       player.facing = position.facing
       if (emote !== '') {
         player.emote = emote
