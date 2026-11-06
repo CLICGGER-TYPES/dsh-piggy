@@ -108,12 +108,13 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: linear-gradient(#fdf8e8 0%, #eef6df 62%, #dcefc4 100%);
+  background: url('/dsh-piggy/art/room-pen.png') center 62% / cover no-repeat, linear-gradient(#fdf8e8 0%, #eef6df 62%, #dcefc4 100%);
 }
 
 .sky { position: absolute; inset: 0 0 34% 0; }
 
 .sun {
+  display: none;
   position: absolute;
   right: 9%;
   top: 10%;
@@ -122,6 +123,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 }
 
 .cloud {
+  display: none;
   position: absolute;
   font-size: 30px;
   opacity: .5;
@@ -160,11 +162,12 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   right: 0;
   bottom: 0;
   height: 34%;
-  background: linear-gradient(#cfe8b8, #b6dba0);
-  border-top: 3px solid #bfddab;
+  background: transparent;
+  border-top: 0;
 }
 
 .hills {
+  display: none;
   position: absolute;
   inset: -14px 0 auto 0;
   height: 26px;

@@ -69,9 +69,12 @@ sounds/*/pack.json
 PROVENANCE.md
 ui-*.svg
 room-lobby.png
+room-pen.png
 piggy-emoji.woff2
 piggy-emoji-LICENSE.txt
 ```
+
+- 联机房间猪圈：`assets/room-pen.png`，低木栅栏、水槽和干草，中间留空给实时小猪；Grok `image_gen` 生成，用户 2026-11-06 确认“好看”，来源与许可见 `LICENSE-ASSETS.md`、`assets/PROVENANCE.md`。
 
 - 联机大厅插画：`assets/room-lobby.png`，两只小猪；取自用户确认的 2026-11-05 大厅原型 `01-lobby.png`，裁切并调整猪脚颜色，来源与许可见 `LICENSE-ASSETS.md`、`assets/PROVENANCE.md`。
 
