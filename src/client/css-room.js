@@ -10,7 +10,7 @@ export const CSS_ROOM = [
   '.dp-room-pig-b{transform:scaleX(-1)}',
   '.dp-room-pig-c{filter:hue-rotate(32deg) saturate(.95)}',
   '.dp-room-pig-c img{filter:drop-shadow(0 3px 3px rgba(114,93,66,.14))}',
-  '.dp-room-hero-art{display:block;width:100%;max-height:154px;object-fit:contain;margin:-2px auto 0}',
+  '.dp-room-hero-art{display:block;width:100%;max-height:154px;aspect-ratio:640/285;object-fit:contain;margin:-2px auto 0}',
   '.dp-room-intro{margin:4px 0 0;font-size:11.5px;line-height:1.5;color:var(--ac-text-2)}',
   '.dp-room-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 10px}',
   '.dp-room-actions .dp-mini{min-height:34px;font-size:12px}',
