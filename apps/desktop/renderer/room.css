@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Piggy Emoji";
+  src: url("/dsh-piggy/emoji.woff2") format("woff2");
+  font-display: swap;
+}
+
 /* 联机房间窗口：奶油底、薄荷青、暖棕字，和面板同一套颜色。 */
 :root {
   --cream: #f7f3df;
@@ -21,7 +27,7 @@ html, body {
   overflow: hidden;
   background: var(--cream);
   color: var(--brown);
-  font-family: "Nunito", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: "Piggy Emoji", "Nunito", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   user-select: none;
 }
 
