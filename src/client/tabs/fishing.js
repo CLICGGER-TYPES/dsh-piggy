@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * 钓鱼 App：选鱼饵 → 抛竿 → 等咬钩 → 搏斗（三种玩法随机一种，见 fishing-fight.js）→ 结果。
- * 准备页在 fishing-ready.js：钓点场景 → 浮起鱼饵坞 → 一排钓点/鱼竿/自动入口。
+ * 准备页在 fishing-ready.js：钓点场景 → 独立鱼饵卡 → 一排钓点/鱼竿/自动入口。
  * 玩法、数值和动作都还在宿主：这里只决定怎么画。
  */
 import { fishByKey } from '../../../packages/pet-core/src/data/fish.js'

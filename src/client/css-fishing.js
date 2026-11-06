@@ -1,13 +1,13 @@
 // @ts-check
 /**
- * 钓鱼页样式（2026-11-06 重做）：钓点场景、浮起鱼饵坞、底部三个入口。
+ * 钓鱼页样式（2026-11-06 重做）：钓点场景、独立鱼饵卡、底部三个入口。
  * 奶油底、棕色字、米色细边、青色主按钮；窄面板用容器查询缩场景和鱼饵。
  */
 export const CSS_FISHING = `
 .dp-fish-bobber-img{display:block;width:38px;height:52px;object-fit:contain}
 [data-art-loaded=true]>.dp-fish-art-fallback,[data-art-loaded=true]>.dp-fish-fight-fallback,[data-art-loaded=true]>.dp-fish-result-emoji{visibility:hidden}
 .dp-fish{container-type:inline-size;container-name:fishing;display:flex;flex-direction:column;gap:0;min-width:0}
-.dp-fish-scene{position:relative;height:178px;overflow:hidden;border:2px solid var(--ac-border-light);border-radius:20px;background:linear-gradient(160deg,#e4f2e2,#c9e8df)}
+.dp-fish-scene{position:relative;height:160px;overflow:hidden;border:2px solid var(--ac-border-light);border-radius:20px;background:linear-gradient(160deg,#e4f2e2,#c9e8df)}
 .dp-fish-art{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:13px;background:linear-gradient(160deg,#dff8f3,#bfeef0)}
 .dp-fish-art-fallback{font-size:34px;line-height:1;filter:drop-shadow(0 2px 0 rgba(61,52,40,.14))}
 .dp-fish-art-img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
@@ -17,10 +17,10 @@ export const CSS_FISHING = `
 .dp-fish-scene-top{position:absolute;z-index:3;top:8px;left:8px;right:8px;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
 .dp-fish-loc-pill{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:var(--ac-text);font-size:11px;font-weight:800;line-height:1.2}
 .dp-fish-loc-icon{font-size:10px;line-height:1}
-.dp-fish-scene-bottom{position:absolute;z-index:3;right:9px;bottom:26px;display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
+.dp-fish-scene-bottom{position:absolute;z-index:3;right:9px;bottom:8px;display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
 .dp-fish-scene-pill{padding:3px 8px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:#5e6f4f;font-size:9px;font-weight:800;line-height:1.4}
 .dp-fish-scene-warn{background:#ffe4b8;color:#8f5123}
-.dp-fish-dock{position:relative;z-index:2;margin:-18px 0 0;padding:9px 12px 12px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content);box-shadow:0 6px 14px rgba(61,52,40,.10)}
+.dp-fish-dock{position:relative;z-index:2;margin:8px 0 0;padding:9px 12px 12px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content)}
 .dp-fish-dock-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 1px 6px;min-height:16px;font-size:11px;color:var(--ac-text)}
 .dp-fish-dock-head b{font-weight:800}
 .dp-fish-dock-note{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;font-weight:700;color:var(--ac-text-2)}
@@ -45,7 +45,7 @@ export const CSS_FISHING = `
 .dp-fish-cast:hover:not(:disabled),.dp-fish-keep:hover:not(:disabled){background:var(--ac-primary-hover);transform:translateY(-1px);box-shadow:0 5px 0 var(--ac-primary-active)}
 .dp-fish-cast:active:not(:disabled),.dp-fish-keep:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--ac-primary-active)}
 .dp-fish-cast:disabled{background:var(--ac-bg-disabled);color:var(--ac-text-disabled);border-color:var(--ac-border-light);box-shadow:none;cursor:not-allowed}
-.dp-fish-gear{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 4px 0}
+.dp-fish-gear{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0 0}
 .dp-fish-gear-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0;border:0;background:none;color:var(--ac-text-2);font:inherit;cursor:pointer}
 .dp-fish-gear-icon{display:grid;place-items:center;width:44px;height:44px;border:2px solid var(--ac-border-light);border-radius:50%;background:var(--ac-bg-content);font-size:20px;line-height:1;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease),transform .15s var(--ac-ease),box-shadow .15s var(--ac-ease)}
 .dp-fish-gear-label{font-size:9.5px;font-weight:700;line-height:1.2}
@@ -53,7 +53,7 @@ export const CSS_FISHING = `
 .dp-fish-gear-btn[aria-pressed=true] .dp-fish-gear-icon{border-color:var(--ac-primary);background:var(--ac-primary-bg);box-shadow:inset 0 0 0 1px var(--ac-primary),0 2px 0 var(--ac-primary)}
 .dp-fish-gear-btn:hover .dp-fish-gear-icon{border-color:var(--ac-border-hover);transform:translateY(-1px)}
 .dp-fish-gear-btn:focus-visible{outline:2px solid var(--ac-primary);outline-offset:2px;border-radius:12px}
-.dp-fish-gear-panel{margin:8px 2px 0;padding:9px 10px 10px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);animation:dp-fish-rise .18s var(--ac-ease)}
+.dp-fish-gear-panel{margin:8px 0 0;padding:9px 10px 10px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);animation:dp-fish-rise .18s var(--ac-ease)}
 @keyframes dp-fish-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .dp-fish-gear-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 7px}
 .dp-fish-gear-head b{font-size:11.5px;font-weight:800;color:var(--ac-text)}

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * 钓鱼准备页：钓点场景 → 浮起鱼饵坞 → 底部钓点/鱼竿/自动三个入口。
+ * 钓鱼准备页：钓点场景 → 独立鱼饵卡 → 底部钓点/鱼竿/自动三个入口。
  * 入口共用一张设置卡，展开后自动滚到可见位置；收起回到原来的滚动位置。
  */
 import { button, el } from '../dom.js'
@@ -48,7 +48,7 @@ function renderHero(ui) {
   ui.content.appendChild(hero)
 }
 
-/** 鱼饵坞：三颗圆形鱼饵，数量只出现一次；选中的有薄荷环和对勾。 */
+/** 鱼饵卡：三颗圆形鱼饵，数量只出现一次；选中的有薄荷环和对勾。 */
 function renderDock(ui, baitState) {
   const spot = currentSpot(ui)
   const hungry = (ui.view.pig?.satiety ?? 0) < 1
