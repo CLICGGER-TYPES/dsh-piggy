@@ -30,6 +30,7 @@
   var lastEmote = new Map()
   var local = { x: 0.5, y: 0.2, facing: 1 }
   var lastLocalAt = 0
+  var controls = /** @type {any} */ (null)
   var dragging = null
   var sendTimer = null
   var pending = false
@@ -101,12 +102,15 @@
   }
 
   function setLocal(x, y, facing) {
+    var beforeX = local.x
+    var beforeY = local.y
     var p = roomScene.moveInside(scene, local.x, local.y, x, y)
     local.x = p.x
     local.y = p.y
     local.facing = facing < 0 ? -1 : 1
     lastLocalAt = Date.now()
     roomScene.showWalkZone(1800)
+    if (controls && Math.abs(p.x - beforeX) + Math.abs(p.y - beforeY) > 0.0001) controls.markWalking()
     var self = currentSelf()
     if (self !== null) updatePig(self)
     scheduleSend()
@@ -166,6 +170,7 @@
     var size = Math.max(0.75, Math.min(1.35, Number(player.size) || 1))
     var scale = 0.84 + depth * 0.18
     node.classList.toggle('self', isSelf)
+    node.classList.toggle('walking', isSelf && controls !== null && controls.walking())
     node.style.left = (p.x * 100) + '%'
     node.setAttribute('data-y', y.toFixed(2))
     node.style.bottom = (2 + y * 96) + '%'
@@ -325,20 +330,16 @@
   stage.addEventListener('pointerup', endDrag)
   stage.addEventListener('pointercancel', endDrag)
 
-  document.addEventListener('keydown', function (event) {
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(event.key) < 0) return
-    var target = /** @type {any} */ (event.target)
-    if (target && target.tagName === 'INPUT') return
-    event.preventDefault()
-    hideHint()
-    roomScene.showWalkZone(1800)
-    var step = event.shiftKey ? 0.08 : 0.035
-    var x = local.x
-    var y = local.y
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') x += event.key === 'ArrowRight' ? step : -step
-    else y += event.key === 'ArrowUp' ? step : -step
-    setLocal(x, y, event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : local.facing)
-  })
+  var walkControls = /** @type {any} */ (window).PiggyRoomWalkControls
+  if (walkControls) {
+    controls = walkControls.create({
+      isEditing: function () { return document.body.hasAttribute('data-editing') },
+      hideHint: hideHint,
+      getLocal: function () { return local },
+      setLocal: setLocal,
+      getSelfNode: function () { return selfId === null ? null : nodes.get(selfId) },
+    })
+  }
 
   var buttons = document.querySelectorAll('[data-emote]')
   for (var i = 0; i < buttons.length; i += 1) {
