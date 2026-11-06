@@ -4,8 +4,8 @@
   var walkZone = document.getElementById('walk-zone')
   var walkShape = document.getElementById('walk-zone-shape')
   var walkTimer = null
-  var FRONT = 0.88
-  var BACK = 0.30
+  var FRONT = 0.98
+  var BACK = 0.02
   var SPAN = FRONT - BACK
   /** 屏幕坐标（x 0..1 左到右，y 0..1 上到下）里圈出的整块地面；家具再单独挡。 */
   var AREAS = {
@@ -72,6 +72,18 @@
         var cx = Number(b.cx), cy = Number(b.cy), r = Number(b.r)
         if (![cx, cy, r].every(Number.isFinite) || r <= 0) continue
         blockers.push({ type: 'circle', cx: cx, cy: cy, r: r })
+      } else if (b.type === 'polygon') {
+        var rawPoints = Array.isArray(b.points) ? b.points : []
+        if (rawPoints.length < 3) continue
+        var polygon = []
+        for (var k = 0; k < rawPoints.length; k += 1) {
+          var q = rawPoints[k]
+          if (!Array.isArray(q) || q.length < 2) { polygon = []; break }
+          var qx = Number(q[0]), qy = Number(q[1])
+          if (!Number.isFinite(qx) || !Number.isFinite(qy)) { polygon = []; break }
+          polygon.push([Math.min(1, Math.max(0, qx)), Math.min(1, Math.max(0, qy))])
+        }
+        if (polygon.length >= 3) blockers.push({ type: 'polygon', points: polygon })
       }
     }
     return { outer: points, blockers: blockers }
@@ -133,9 +145,14 @@
       var b = list[i]
       if (b.type === 'rect') {
         if (x > b.x0 - 0.08 && x < b.x1 + 0.08 && y > b.y0 - 0.06 && y < b.y1 + 0.06) return true
-      } else {
+      } else if (b.type === 'circle') {
         var dx = x - b.cx, dy = y - b.cy
         if (dx * dx + dy * dy < (b.r + 0.08) * (b.r + 0.08)) return true
+      } else if (b.type === 'polygon') {
+        if (inPolygon(b.points, x, y)) return true
+        // 用猪身宽度做一点外扩，避免脚站在障碍边上、身体压进去。
+        if (inPolygon(b.points, x + 0.04, y) || inPolygon(b.points, x - 0.04, y) ||
+          inPolygon(b.points, x, y + 0.03) || inPolygon(b.points, x, y - 0.03)) return true
       }
     }
     return false

@@ -168,7 +168,7 @@
     node.classList.toggle('self', isSelf)
     node.style.left = (p.x * 100) + '%'
     node.setAttribute('data-y', y.toFixed(2))
-    node.style.bottom = (12 + y * 58) + '%'
+    node.style.bottom = (2 + y * 96) + '%'
     node.style.zIndex = String(100 - Math.round(y * 100))
     node.style.setProperty('--s', String(size * scale))
     node.style.setProperty('--sh', String(0.8 + depth * 0.2))
