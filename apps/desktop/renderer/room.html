@@ -45,7 +45,29 @@
         <button type="button" class="mode-button" data-edit-mode="edit" aria-pressed="false">编辑</button>
         <button type="button" class="mode-button" data-edit-mode="delete" aria-pressed="false">删除</button>
         <button type="button" class="mode-button editor-undo" data-edit-action="undo" title="撤销上一步">撤销</button>
+        <button type="button" class="editor-help-button" data-editor-help title="快捷键" aria-haspopup="true" aria-expanded="false" aria-controls="editor-help">?</button>
         <button type="button" class="editor-done" data-edit-action="done">完成</button>
+      </div>
+      <div class="editor-help" id="editor-help" hidden>
+        <div class="editor-help-head">
+          <b>快捷键</b>
+          <button type="button" data-help-close aria-label="关闭">×</button>
+        </div>
+        <div class="editor-help-grid">
+          <span><kbd>V</kbd> 编辑 / 选择</span>
+          <span><kbd>N</kbd> 新建</span>
+          <span><kbd>E</kbd> 删除</span>
+          <span><kbd>1</kbd> 边界节点</span>
+          <span><kbd>2</kbd> 矩形障碍</span>
+          <span><kbd>3</kbd> 圆形障碍</span>
+          <span><kbd>4</kbd> 手绘障碍</span>
+          <span><kbd>Del</kbd> 删除选中</span>
+          <span><kbd>Ctrl/⌘ Z</kbd> 撤销</span>
+          <span><kbd>Ctrl/⌘ ⇧ Z</kbd> 重做</span>
+          <span><kbd>Esc</kbd> 取消 / 关闭</span>
+          <span><kbd>Enter</kbd> 闭合手绘</span>
+        </div>
+        <p>编辑时拖四角白点 = 等比例缩放；拖粉色小方块 = 改形状；拖障碍内部 = 整体移动。</p>
       </div>
     </header>
 
@@ -90,6 +112,8 @@
   <script src="room-editor-ui.js"></script>
   <script src="room-editor-blockers.js"></script>
   <script src="room-editor-pen.js"></script>
+  <script src="room-editor-draw.js"></script>
+  <script src="room-editor-history.js"></script>
   <script src="room-map-editor.js"></script>
 </body>
 </html>

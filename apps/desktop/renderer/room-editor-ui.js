@@ -13,11 +13,11 @@
     if (mode === 'delete') return '删除：点边界节点或场景障碍删除；边界至少保留 3 个节点。'
     if (mode === 'edit') {
       if (shape === 'node') return '编辑 · 边界节点：拖小圆点调整边界。'
-      return '编辑 · ' + name + '：拖障碍移动，拖小方块改形状。'
+      return '编辑 · ' + name + '：拖障碍移动；拖四角白点等比例缩放；拖粉点改形状。'
     }
     if (shape === 'node') return '新建 · 边界节点：点地面加边界点，已有节点可直接拖。'
     if (shape === 'rect') return '新建 · 矩形障碍：在地面上拖出一个矩形。'
-    if (shape === 'circle') return '新建 · 圆形障碍：在地面上拖出一个圆形。'
+    if (shape === 'circle') return '新建 · 圆形障碍：从左上往右下拖出一个圆形。'
     return '新建 · 手绘障碍：点地面加节点，点第一个点或双击闭合；按住 Shift 拉直线。'
   }
 
@@ -27,6 +27,9 @@
     var menuTriggers = bar ? Array.prototype.slice.call(bar.querySelectorAll('[data-menu]')) : []
     var mapTrigger = bar ? bar.querySelector('[data-menu="map"]') : null
     var objectTrigger = bar ? bar.querySelector('[data-menu="object"]') : null
+    var helpButton = bar ? bar.querySelector('[data-editor-help]') : null
+    var helpPanel = document.getElementById('editor-help')
+    var helpVisible = false
 
     function setStatus(text) {
       if (!status) return
@@ -71,6 +74,19 @@
       }
       return false
     }
+    function helpOpen() { return helpVisible }
+    function closeHelp() {
+      helpVisible = false
+      if (helpPanel) helpPanel.setAttribute('hidden', '')
+      if (helpButton) helpButton.setAttribute('aria-expanded', 'false')
+    }
+    function toggleHelp() {
+      if (helpVisible) { closeHelp(); return }
+      closeMenus()
+      helpVisible = true
+      if (helpPanel) helpPanel.removeAttribute('hidden')
+      if (helpButton) helpButton.setAttribute('aria-expanded', 'true')
+    }
     function updateMapMenu(scene) {
       if (!bar) return
       bar.querySelectorAll('[data-map-scene]').forEach(function (button) {
@@ -99,13 +115,56 @@
       })
     })
     document.addEventListener('pointerdown', function (event) {
-      if (!anyMenuOpen()) return
       var target = /** @type {any} */ (event.target)
-      if (target && target.closest && target.closest('.menu-item')) return
-      closeMenus()
+      if (anyMenuOpen() && !(target && target.closest && target.closest('.menu-item'))) closeMenus()
+      if (helpVisible && !(target && target.closest && target.closest('.editor-help, [data-editor-help]'))) closeHelp()
     })
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && anyMenuOpen()) closeMenus()
+      if (!options.isOpen()) return
+      var target = /** @type {any} */ (event.target)
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+      if (event.key === 'Escape') {
+        if (anyMenuOpen()) closeMenus()
+        else if (helpVisible) closeHelp()
+        else if (options.onEscape) options.onEscape()
+        return
+      }
+      if (event.key === '?') {
+        event.preventDefault()
+        toggleHelp()
+        return
+      }
+      if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+        var combo = event.key.toLowerCase()
+        if (combo === 'z') {
+          event.preventDefault()
+          closeMenus()
+          options.onAction(event.shiftKey ? 'redo' : 'undo')
+        } else if (combo === 'y') {
+          event.preventDefault()
+          closeMenus()
+          options.onAction('redo')
+        }
+        return
+      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      var key = event.key.toLowerCase()
+      if (key === 'v') { event.preventDefault(); closeMenus(); options.onMode('edit'); return }
+      if (key === 'n') { event.preventDefault(); closeMenus(); options.onMode('create'); return }
+      if (key === 'e') { event.preventDefault(); closeMenus(); options.onMode('delete'); return }
+      var shape = { '1': 'node', '2': 'rect', '3': 'circle', '4': 'lasso' }[event.key]
+      if (shape) { event.preventDefault(); closeMenus(); options.onShape(shape); return }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault()
+        closeMenus()
+        if (options.onDelete) options.onDelete()
+      }
+    })
+    helpButton?.addEventListener('click', function () {
+      toggleHelp()
+    })
+    helpPanel?.querySelectorAll('[data-help-close]').forEach(function (button) {
+      button.addEventListener('click', closeHelp)
     })
     bar?.querySelectorAll('[data-map-scene]').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -135,7 +194,9 @@
 
     return {
       anyMenuOpen: anyMenuOpen,
+      closeHelp: closeHelp,
       closeMenus: closeMenus,
+      helpOpen: helpOpen,
       setState: setState,
       setStatus: setStatus,
       setUndoEnabled: setUndoEnabled,
