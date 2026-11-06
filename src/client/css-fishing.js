@@ -20,7 +20,7 @@ export const CSS_FISHING = `
 .dp-fish-scene-bottom{position:absolute;z-index:3;right:9px;bottom:8px;display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
 .dp-fish-scene-pill{padding:3px 8px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:#5e6f4f;font-size:9px;font-weight:800;line-height:1.4}
 .dp-fish-scene-warn{background:#ffe4b8;color:#8f5123}
-.dp-fish-mascot{position:absolute;z-index:2;left:25%;top:21.5%;width:27.7%;aspect-ratio:222/130;overflow:hidden;pointer-events:none;transform:scaleX(-1);filter:drop-shadow(0 2px 2px rgba(61,52,40,.18))}
+.dp-fish-mascot{position:absolute;z-index:2;left:25%;top:20.5%;width:27.7%;aspect-ratio:222/130;overflow:hidden;pointer-events:none;transform:scaleX(-1);filter:drop-shadow(0 2px 2px rgba(61,52,40,.18))}
 .dp-fish-mascot-img{display:block;width:100%;height:100%}
 
 .dp-fish-dock{position:relative;z-index:2;margin:6px 0 0;padding:6px 9px 7px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content)}

@@ -2680,12 +2680,12 @@
   },
   {
     "name": "scene-river-deck",
-    "source": "<artwork-workspace>/dsh-piggy/fishing/scene-river-deck-long.jpg",
-    "prompt": "Call image_edit exactly once. Use this reference image: assets/fishing/scene-river-deck.png\n\nKeep the exact same cozy flat-vector river scene, composition, palette, left bank, rocks, grass, water and lighting. Modify ONLY the wooden shore deck on the left bank: extend the deck to the RIGHT along the bank, making it about 1.5 times longer than in the reference, with a longer flat empty wooden surface. The deck must stay small and integrated into the left bank, not become a giant foreground pier. Keep the same plank style and warm wood color.\n\nLeave the longer deck surface completely empty, with enough room for a small pig to stand comfortably. Keep the rest of the scene as close to the reference as possible. Same flat no-outline style, soft muted colors, no texture, no harsh shadows.\n\nNo characters, no pig, no people, no fish, no text, no UI, no border, no watermark. Full opaque background. Keep the same 817×704 aspect ratio as the reference. Return the image; I will handle the rest.",
+    "source": "<artwork-workspace>/dsh-piggy/fishing/scene-river-deck-long2.jpg",
+    "prompt": "Call image_edit exactly once. Use this reference image: assets/fishing/scene-river-deck.png\n\nKeep the exact same cozy flat-vector river scene, palette, left bank, rocks, grass, water and lighting. Modify ONLY the wooden shore deck on the left bank: extend the deck much further to the RIGHT along the bank, so it becomes about 1.4 times longer than in the reference and reaches roughly two-thirds of the image width. Make the flat empty wooden surface generously long, with plenty of room for a small pig to stand well inside the planks. Keep the deck integrated into the left bank and keep the water to the right of the deck open for fishing; do not turn it into a giant foreground pier.\n\nKeep the same plank style and warm wood color. Leave the deck surface completely empty. Keep the rest of the scene as close to the reference as possible. Same flat no-outline style, soft muted colors, no texture, no harsh shadows.\n\nNo characters, no pig, no people, no fish, no text, no UI, no border, no watermark. Full opaque background. Keep the same 817×704 aspect ratio as the reference. Return the image; I will handle the rest.",
     "references": [
       "assets/fishing/scene-river-deck.png"
     ],
-    "self_check": "已实际查看：左侧岸边木甲板比上一版更长，甲板面留空可站小猪；右侧仍是水面，无角色、鱼、文字或UI。",
+    "self_check": "已实际查看：左侧岸边木甲板再次向右加长到约画面三分之二，甲板面留空可站小猪；右侧仍留水面，无角色、鱼、文字或UI。",
     "output": "scene-river-deck.png",
     "size": [
       1088,
@@ -2693,13 +2693,13 @@
     ],
     "mode": "RGB",
     "alpha_extrema": null,
-    "sha256": "c89095ce8bc5bd24a3c4eb86ac3ab8c4138184ed31b3fad56a261c9f635326f3",
+    "sha256": "4e8b21f2daa1cd42f4da40ba6e03eb83c6cf5864acc8c14f6c00ad4408f8808a",
     "source_bytes_identical": true,
     "export_size": [
       817,
       704
     ],
-    "export_sha256": "d0e7c09cf039fce17109375d5a907ffe3d0de4314f7461d7d1de78dd8380cdb0",
+    "export_sha256": "c39987562e886762724b7e3f230d50db8a7f612f7a255fc8f54e52d73dd141a3",
     "processing": "从 1088×944 生成图居中裁成 1088×938（约 1.16:1）后等比缩到 817×704；不调色、不合成。"
   },
   {

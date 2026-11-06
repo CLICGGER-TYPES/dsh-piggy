@@ -222,7 +222,7 @@ test('U24-7 ready layout: scenic hero, bait counts, collapsed gear entries and t
   assert.match(content.allText(), /小河/)
   assert.notEqual(findByAttr(content, 'data-fish-scene', 'river'), undefined)
   assert.notEqual(findByClass(content, 'dp-fish-hero-art'), undefined)
-  assert.equal(findByClass(content, 'dp-fish-art-img').src, '/dsh-piggy/art/fishing/scene-river-deck.png?v=d0e7c09cf039')
+  assert.equal(findByClass(content, 'dp-fish-art-img').src, '/dsh-piggy/art/fishing/scene-river-deck.png?v=c39987562e88')
   assert.notEqual(findByClass(content, 'dp-fish-mascot'), undefined)
   assert.equal(findByClass(content, 'dp-fish-mascot-img').src, '/dsh-piggy/art/fishing/deck-pig.png?v=472e9a6bf626')
   const worm = findByAttr(content, 'data-fish-bait', 'bait_worm')

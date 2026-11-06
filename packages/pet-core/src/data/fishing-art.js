@@ -3,7 +3,7 @@
 /** @type {Readonly<Record<string,string>>} */
 export const FISHING_ART_HASHES = Object.freeze({
   "scene-river.png": "20bf68ad2766",
-  "scene-river-deck.png": "d0e7c09cf039",
+  "scene-river-deck.png": "c39987562e88",
   "deck-pig.png": "472e9a6bf626",
   "scene-pond.png": "b35a83086d81",
   "scene-reef.png": "bb16bf30c0ec",
