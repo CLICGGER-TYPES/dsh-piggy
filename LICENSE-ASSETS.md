@@ -15,6 +15,7 @@
 | `assets/pigs/**/*.png`、`extensions/pig-puzzle/assets/pig.png`、`docs/examples/skin-pack/*.png` | 小猪立绘、形态、皮肤、徽章、反馈图、示例皮肤 | **Apache-2.0** | 改自 Noto Emoji 🐖；见下方「小猪立绘」 |
 | `assets/pigs/manifest.json`、`assets/pigs/**/*.md` | 小猪素材清单与出处 | **MIT** | 记录本身按文档许可；记录的图片按上一行 |
 | `assets/fishing/**/*.png` | 钓鱼场景、浮漂、搏斗、鱼图鉴/结果插画 | **CC BY 4.0** | AI 生成，用户审定 |
+| `assets/fishing/deck-pig.png` | 钓鱼页木甲板上的小猪（由 Apache-2.0 反馈图裁切/清理） | **Apache-2.0** | 见下方「小猪立绘」 |
 | `assets/fishing/*.json`、`assets/fishing/*.md` | 钓鱼素材清单与出处 | **MIT** | |
 | `assets/animations/pet-hand/*.webp` | 高清独立手五帧图集 | **CC BY 4.0** | AI 生成，用户审定 |
 | `assets/animations/pet-hand/*.json`、`*.md` | 手层清单与出处 | **MIT** | |

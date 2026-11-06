@@ -9,7 +9,7 @@ const ART_ROUTE = '/dsh-piggy/art'
 const PIG_ART_PATHS = new Set(Object.values(PIG_ART_ASSETS))
 // 场景插画与小猪立绘分开登记；只开放实际随包分发的文件，不扩大任意路径读取范围。
 const FISHING_ART_PATHS = new Set([
-  ...['scene-river', 'scene-river-deck', 'scene-pond', 'scene-reef', 'scene-night', 'fight-tug', 'crucian-result', 'bobber'].map(name => `fishing/${name}.png`),
+  ...['scene-river', 'scene-river-deck', 'deck-pig', 'scene-pond', 'scene-reef', 'scene-night', 'fight-tug', 'crucian-result', 'bobber'].map(name => `fishing/${name}.png`),
   ...Object.values(FISH_ART).map(path => `fishing/${path}`),
 ])
 // 帧序列只开放生成器写出的固定形状：actions/<包目录>/<动作 key>/<两位帧号>.(png|webp)。

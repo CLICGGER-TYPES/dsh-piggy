@@ -2701,5 +2701,33 @@
     ],
     "export_sha256": "8cd7bc01444ba82988cadfb9f17c4cc1c9fc1de04c8f3d0ce31eae9f2304a338",
     "processing": "从 1408×704 生成图左侧裁出 817×704（约 1.16:1，匹配钓鱼卡片），等比导出 PNG；不调色、不合成。"
+  },
+  {
+    "name": "deck-pig",
+    "source": "assets/pigs/feedback/fishing.png",
+    "prompt": "Derived from the built-in feedback/fishing art: crop the large pig to 222×130 starting at (16,93), remove the small companion pig and the two white bubbles above the head, fill the flower area with the pig skin color #FCCDAC. No structural redraw; kept as a fishing-scene prop.",
+    "references": [
+      "assets/pigs/feedback/fishing.png"
+    ],
+    "self_check": "已实际查看：大猪完整、无小伴猪和白色气泡，透明背景；鱼竿和猪脚完整，甲板叠层用。",
+    "method": "derived from feedback/fishing (Apache-2.0), crop + local white-bubble cleanup",
+    "output": "deck-pig.png",
+    "size": [
+      222,
+      130
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "6da9e58f77a6526b2f0637df7c6a47d32f5cbd086466acae36bed4b64c691874",
+    "source_bytes_identical": false,
+    "export_size": [
+      222,
+      130
+    ],
+    "export_sha256": "472e9a6bf6262c2b8e67b3511c97a4e58fe4b0ecba1cca671e75f2052abc2952",
+    "processing": "Crop 222×130+16+93 from feedback/fishing; erase two white bubbles and fill the flower area with skin #FCCDAC; no structural redraw."
   }
 ]

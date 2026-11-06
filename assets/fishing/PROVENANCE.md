@@ -12,3 +12,7 @@
 ## 小河左岸木甲板（2026-11-06）
 
 按用户要求，用 Grok `image_edit` 以 `scene-river.png` 为参考重出小河场景，只在左侧岸边加一块小型木甲板，保留原来的水面、右岸和配色。生成原图 1408×704，从左侧裁出 817×704（约 1.16:1，匹配钓鱼卡片）导出 `scene-river-deck.png`；不调色、不合成。甲板上的小猪复用现有 `assets/pigs/feedback/fishing.png`，只取大猪部分，不新增角色素材。逐字提示词、源 SHA 与导出 SHA 见 `manifest.json`。
+
+## 甲板小猪（2026-11-06）
+
+从 `assets/pigs/feedback/fishing.png` 裁出大猪 222×130+16+93，去掉小伴猪和头顶两个白色气泡，把原花朵位置用肤色 `#FCCDAC` 补平；只作为钓鱼页甲板叠层。源图按 Apache-2.0，见 `LICENSE-ASSETS.md`；逐字处理记录和 SHA 见 `manifest.json`。
