@@ -524,11 +524,48 @@ body[data-editing="true"] .bar {
 
 .map-editor-bar .menu-trigger:hover { background: rgba(114, 93, 66, .07); }
 
-.map-editor-bar .menu-trigger[aria-expanded="true"],
-.menu-item[data-active="true"] .menu-trigger {
+.map-editor-bar .object-trigger {
+  border-color: var(--line);
+  background: var(--cream-2);
+}
+
+.map-editor-bar .object-trigger:hover {
+  border-color: rgba(25, 200, 185, .45);
+  background: var(--mint-soft);
+  color: var(--mint-dark);
+}
+
+.map-editor-bar .menu-trigger[aria-expanded="true"] {
   border-color: rgba(25, 200, 185, .35);
   background: var(--mint-soft);
   color: var(--mint-dark);
+}
+
+.map-editor-bar .mode-button {
+  flex: none;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--brown-soft);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.map-editor-bar .mode-button:hover { background: rgba(114, 93, 66, .07); }
+
+.map-editor-bar .mode-button[aria-pressed="true"] {
+  border-color: rgba(25, 200, 185, .45);
+  background: var(--mint-soft);
+  color: var(--mint-dark);
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 3px 4px;
+  background: var(--line);
 }
 
 .menu-dropdown {

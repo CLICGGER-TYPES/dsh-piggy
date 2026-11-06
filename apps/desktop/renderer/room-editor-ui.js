@@ -1,14 +1,24 @@
 // @ts-check
-/** 联机房间边界编辑器的菜单条、底部提示和右侧对象面板。 */
+/** 联机房间边界编辑器的菜单条、模式按钮、底部提示和右侧对象面板。 */
 ;(function () {
-  var LABELS = {
-    add: '新建 · 边界节点：点地面加边界点。',
-    outer: '编辑 · 拖动边界节点：拖小圆点调整边界。',
-    'delete-node': '删除 · 节点：点边界节点删除，至少保留 3 个。',
-    'delete-blocker': '删除 · 障碍：点场景里的障碍删除。',
-    rect: '新建 · 矩形障碍：在地面上拖出一个矩形。',
-    circle: '新建 · 圆形障碍：在地面上拖出一个圆形。',
-    lasso: '新建 · 手绘障碍：按住拖动，画任意形状。',
+  var SHAPE_LABELS = {
+    node: '边界节点',
+    rect: '矩形障碍',
+    circle: '圆形障碍',
+    lasso: '手绘障碍',
+  }
+
+  function statusText(shape, mode) {
+    var name = SHAPE_LABELS[shape] || SHAPE_LABELS.node
+    if (mode === 'delete') return '删除：点边界节点或场景障碍删除；边界至少保留 3 个节点。'
+    if (mode === 'edit') {
+      if (shape === 'node') return '编辑 · 边界节点：拖小圆点调整边界。'
+      return '编辑 · ' + name + '：拖动场景里的障碍移动位置。'
+    }
+    if (shape === 'node') return '新建 · 边界节点：点地面加边界点。'
+    if (shape === 'rect') return '新建 · 矩形障碍：在地面上拖出一个矩形。'
+    if (shape === 'circle') return '新建 · 圆形障碍：在地面上拖出一个圆形。'
+    return '新建 · 手绘障碍：按住拖动，画任意形状。'
   }
 
   function create(options) {
@@ -21,6 +31,7 @@
     var objectFlip = options.objectFlip
     var menuTriggers = bar ? Array.prototype.slice.call(bar.querySelectorAll('[data-menu]')) : []
     var mapTrigger = bar ? bar.querySelector('[data-menu="map"]') : null
+    var objectTrigger = bar ? bar.querySelector('[data-menu="object"]') : null
     var panelSide = 'right'
     var panelPinned = false
     var flipTimer = null
@@ -69,25 +80,17 @@
       })
       if (mapTrigger) mapTrigger.textContent = '地图 · ' + (scene === 'room' ? '房间' : '猪圈') + ' ▾'
     }
-    function updateMenuState() {
-      if (!bar) return
-      bar.querySelectorAll('[data-edit-tool]').forEach(function (button) {
-        var active = button.getAttribute('aria-pressed') === 'true'
-        var item = button.closest('.menu-item')
-        if (item && active) item.setAttribute('data-active', 'true')
-      })
-      bar.querySelectorAll('.menu-item').forEach(function (item) {
-        if (!item.querySelector('[data-edit-tool][aria-pressed="true"]')) item.removeAttribute('data-active')
-      })
-    }
-    function setTool(tool) {
+    function setState(shape, mode) {
       if (bar) {
-        bar.querySelectorAll('[data-edit-tool]').forEach(function (button) {
-          button.setAttribute('aria-pressed', String(button.getAttribute('data-edit-tool') === tool))
+        bar.querySelectorAll('[data-object]').forEach(function (button) {
+          button.setAttribute('aria-pressed', String(button.getAttribute('data-object') === shape))
+        })
+        bar.querySelectorAll('[data-edit-mode]').forEach(function (button) {
+          button.setAttribute('aria-pressed', String(button.getAttribute('data-edit-mode') === mode))
         })
       }
-      updateMenuState()
-      setStatus(LABELS[tool] || '')
+      if (objectTrigger) objectTrigger.textContent = (SHAPE_LABELS[shape] || SHAPE_LABELS.node) + ' ▾'
+      setStatus(statusText(shape, mode))
     }
     function applyPanelSide() { if (objectPanel) objectPanel.setAttribute('data-side', panelSide) }
     function clearFlip() {
@@ -165,9 +168,15 @@
         options.onScene(button.getAttribute('data-map-scene'))
       })
     })
-    bar?.querySelectorAll('[data-edit-tool]').forEach(function (button) {
+    bar?.querySelectorAll('[data-object]').forEach(function (button) {
       button.addEventListener('click', function () {
-        options.onTool(button.getAttribute('data-edit-tool'))
+        options.onShape(button.getAttribute('data-object'))
+        closeMenus()
+      })
+    })
+    bar?.querySelectorAll('[data-edit-mode]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        options.onMode(button.getAttribute('data-edit-mode'))
         closeMenus()
       })
     })
@@ -201,8 +210,8 @@
       closeMenus: closeMenus,
       renderPanel: renderPanel,
       setPanelVisible: setPanelVisible,
+      setState: setState,
       setStatus: setStatus,
-      setTool: setTool,
       updateMapMenu: updateMapMenu,
     }
   }

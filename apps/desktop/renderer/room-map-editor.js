@@ -17,7 +17,8 @@
   var SVG = 'http://www.w3.org/2000/svg'
   var open = false
   var scene = 'pen'
-  var tool = 'add'
+  var shape = 'node'
+  var mode = 'create'
   var area = null
   var history = []
   var drag = null
@@ -96,9 +97,6 @@
     renderHandles()
     ui.renderPanel(area)
   }
-  function isPointTool() {
-    return tool === 'add' || tool === 'rect' || tool === 'circle' || tool === 'lasso'
-  }
   function setStatus(text) { ui.setStatus(text) }
   function switchScene(next) {
     if (next !== 'pen' && next !== 'room') return
@@ -108,27 +106,38 @@
     area = api.getArea(scene)
     history = []
     ui.updateMapMenu(scene)
+    ui.setState(shape, mode)
     render()
-    setTool(tool)
   }
-  function setTool(next) {
-    tool = next
-    ui.setTool(tool)
+  function setShape(next) {
+    if (['node', 'rect', 'circle', 'lasso'].indexOf(next) < 0) return
+    shape = next
+    drawing = null
+    clearPreview()
+    ui.setState(shape, mode)
   }
-  function hitBlocker(x, y) {
-    for (var i = area.blockers.length - 1; i >= 0; i -= 1) {
-      var b = area.blockers[i]
-      if (b.type === 'rect') {
-        if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return i
-      } else if (b.type === 'circle') {
-        var dx = x - b.cx
-        var dy = y - b.cy
-        if (dx * dx + dy * dy <= b.r * b.r) return i
-      } else if (b.type === 'polygon') {
-        if (api.inPolygon(b.points, x, y)) return i
-      }
+  function setMode(next) {
+    if (['create', 'edit', 'delete'].indexOf(next) < 0) return
+    mode = next
+    drawing = null
+    clearPreview()
+    ui.setState(shape, mode)
+  }
+  function startBlockerDrag(index, startPoint) {
+    var source = clone(area.blockers[index])
+    pushHistory()
+    function move(moveEvent) {
+      var point = pointAt(moveEvent)
+      area.blockers[index] = api.shiftBlocker(source, point.x - startPoint.x, point.y - startPoint.y)
+      render()
     }
-    return -1
+    function end() {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+      commit()
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', end)
   }
   function clearPreview() {
     previewRect.setAttribute('hidden', '')
@@ -169,7 +178,7 @@
   function removeVertex(index) {
     if (area.outer.length <= 3) {
       setStatus('至少保留 3 个边界点。')
-      setTimeout(function () { setTool(tool) }, 1600)
+      setTimeout(function () { ui.setState(shape, mode) }, 1600)
       return
     }
     pushHistory()
@@ -180,8 +189,8 @@
 
   function startVertex(event, index) {
     if (!open) return
-    if (tool === 'delete-node') { removeVertex(index); return }
-    if (tool !== 'outer') return
+    if (mode === 'delete') { removeVertex(index); return }
+    if (mode !== 'edit' || shape !== 'node') return
     pushHistory()
     drag = { index: index }
     function move(moveEvent) {
@@ -204,16 +213,23 @@
     var target = /** @type {any} */ (event.target)
     if (target.closest && target.closest('.map-editor-bar, .map-handle')) return
     var point = pointAt(event)
-    if (tool === 'add') {
-      pushHistory()
-      area.outer.push([point.x, point.y])
-      commit()
-      render()
+    if (mode === 'create') {
+      if (shape === 'node') {
+        pushHistory()
+        area.outer.push([point.x, point.y])
+        commit()
+        render()
+        return
+      }
+      drawing = shape === 'rect'
+        ? { type: 'rect', x0: point.x, y0: point.y }
+        : shape === 'circle' ? { type: 'circle', cx: point.x, cy: point.y } : { type: 'lasso', points: [[point.x, point.y]] }
+      updatePreview(point)
+      try { editor.setPointerCapture(event.pointerId) } catch { /* 旧内核 */ }
       return
     }
-    if (tool === 'outer' || tool === 'delete-node') return
-    if (tool === 'delete-blocker') {
-      var index = hitBlocker(point.x, point.y)
+    if (mode === 'delete') {
+      var index = api.hitBlocker(area, point.x, point.y)
       if (index >= 0) {
         pushHistory()
         area.blockers.splice(index, 1)
@@ -222,11 +238,10 @@
       }
       return
     }
-    drawing = tool === 'rect'
-      ? { type: 'rect', x0: point.x, y0: point.y }
-      : tool === 'circle' ? { type: 'circle', cx: point.x, cy: point.y } : { type: 'lasso', points: [[point.x, point.y]] }
-    updatePreview(point)
-    try { editor.setPointerCapture(event.pointerId) } catch { /* 旧内核 */ }
+    if (mode === 'edit' && shape !== 'node') {
+      var editIndex = api.hitBlocker(area, point.x, point.y)
+      if (editIndex >= 0) startBlockerDrag(editIndex, point)
+    }
   }
   function surfaceMove(event) {
     if (!open || drawing === null) return
@@ -283,7 +298,9 @@
     document.body.setAttribute('data-editing', 'true')
     editButton?.setAttribute('aria-pressed', 'true')
     if (editButton) editButton.textContent = '完成'
-    setTool('add')
+    shape = 'node'
+    mode = 'create'
+    ui.setState(shape, mode)
     render()
   }
   function closeEditor() {
@@ -325,14 +342,12 @@
       area = history.pop()
       commit()
       render()
-      setTool(tool)
       return
     }
     if (action === 'reset') {
       area = api.resetArea(scene)
       history = []
       render()
-      setTool(tool)
       window.dispatchEvent(new Event('piggy-room-area-changed'))
     }
   }
@@ -347,8 +362,9 @@
     objectCount: document.getElementById('object-count'),
     objectPin: document.getElementById('object-pin'),
     objectFlip: document.getElementById('object-flip'),
-    isPointTool: function () { return open && isPointTool() },
-    onTool: setTool,
+    isPointTool: function () { return open && mode === 'create' },
+    onShape: setShape,
+    onMode: setMode,
     onScene: switchScene,
     onAction: runAction,
     onToggleBlocker: toggleBlocker,

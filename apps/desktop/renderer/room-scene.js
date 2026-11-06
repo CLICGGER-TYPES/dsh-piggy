@@ -147,6 +147,51 @@
     return inside
   }
 
+  function hitBlocker(areaData, x, y) {
+    for (var i = areaData.blockers.length - 1; i >= 0; i -= 1) {
+      var b = areaData.blockers[i]
+      if (b.type === 'rect') {
+        if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return i
+      } else if (b.type === 'circle') {
+        var dx = x - b.cx
+        var dy = y - b.cy
+        if (dx * dx + dy * dy <= b.r * b.r) return i
+      } else if (b.type === 'polygon') {
+        if (inPolygon(b.points, x, y)) return i
+      }
+    }
+    return -1
+  }
+
+  function shiftBlocker(source, dx, dy) {
+    var next = clone(source)
+    if (next.type === 'rect') {
+      dx = Math.min(1 - next.x1, Math.max(-next.x0, dx))
+      dy = Math.min(1 - next.y1, Math.max(-next.y0, dy))
+      next.x0 += dx
+      next.x1 += dx
+      next.y0 += dy
+      next.y1 += dy
+    } else if (next.type === 'circle') {
+      dx = Math.min(1 - next.cx, Math.max(-next.cx, dx))
+      dy = Math.min(1 - next.cy, Math.max(-next.cy, dy))
+      next.cx += dx
+      next.cy += dy
+    } else {
+      var minX = 1, maxX = 0, minY = 1, maxY = 0
+      next.points.forEach(function (point) {
+        minX = Math.min(minX, point[0])
+        maxX = Math.max(maxX, point[0])
+        minY = Math.min(minY, point[1])
+        maxY = Math.max(maxY, point[1])
+      })
+      dx = Math.min(1 - maxX, Math.max(-minX, dx))
+      dy = Math.min(1 - maxY, Math.max(-minY, dy))
+      next.points = next.points.map(function (point) { return [point[0] + dx, point[1] + dy] })
+    }
+    return next
+  }
+
   function blocked(scene, x, y) {
     var list = area(scene).blockers
     for (var i = 0; i < list.length; i += 1) {
@@ -227,6 +272,8 @@
     screenFromDepth: screenFromDepth,
     canStand: canStand,
     inPolygon: inPolygon,
+    hitBlocker: hitBlocker,
+    shiftBlocker: shiftBlocker,
     resolveWalk: resolveWalk,
     moveInside: moveInside,
     updateWalkZone: updateWalkZone,

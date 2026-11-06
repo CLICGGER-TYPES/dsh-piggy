@@ -28,32 +28,23 @@
           <div class="menu-dropdown" data-menu-panel="map" hidden>
             <button type="button" data-map-scene="pen" aria-current="true">猪圈</button>
             <button type="button" data-map-scene="room">房间</button>
-          </div>
-        </div>
-        <div class="menu-item" data-menu-wrap="new">
-          <button type="button" class="menu-trigger" data-menu="new" aria-haspopup="true" aria-expanded="false">新建 ▾</button>
-          <div class="menu-dropdown" data-menu-panel="new" hidden>
-            <button type="button" data-edit-tool="add" aria-pressed="true">边界节点</button>
-            <button type="button" data-edit-tool="rect" aria-pressed="false">矩形障碍</button>
-            <button type="button" data-edit-tool="circle" aria-pressed="false">圆形障碍</button>
-            <button type="button" data-edit-tool="lasso" aria-pressed="false">手绘障碍</button>
-          </div>
-        </div>
-        <div class="menu-item" data-menu-wrap="edit">
-          <button type="button" class="menu-trigger" data-menu="edit" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
-          <div class="menu-dropdown" data-menu-panel="edit" hidden>
-            <button type="button" data-edit-tool="outer" aria-pressed="false">拖动边界节点</button>
+            <div class="menu-sep"></div>
             <button type="button" data-edit-action="undo">撤销</button>
             <button type="button" data-edit-action="reset">恢复默认</button>
           </div>
         </div>
-        <div class="menu-item" data-menu-wrap="delete">
-          <button type="button" class="menu-trigger" data-menu="delete" aria-haspopup="true" aria-expanded="false">删除 ▾</button>
-          <div class="menu-dropdown" data-menu-panel="delete" hidden>
-            <button type="button" data-edit-tool="delete-node" aria-pressed="false">删除节点</button>
-            <button type="button" data-edit-tool="delete-blocker" aria-pressed="false">删除障碍</button>
+        <div class="menu-item" data-menu-wrap="object">
+          <button type="button" class="menu-trigger object-trigger" data-menu="object" aria-haspopup="true" aria-expanded="false">边界节点 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="object" hidden>
+            <button type="button" data-object="node" aria-pressed="true">边界节点</button>
+            <button type="button" data-object="rect" aria-pressed="false">矩形障碍</button>
+            <button type="button" data-object="circle" aria-pressed="false">圆形障碍</button>
+            <button type="button" data-object="lasso" aria-pressed="false">手绘障碍</button>
           </div>
         </div>
+        <button type="button" class="mode-button" data-edit-mode="create" aria-pressed="true">新建</button>
+        <button type="button" class="mode-button" data-edit-mode="edit" aria-pressed="false">编辑</button>
+        <button type="button" class="mode-button" data-edit-mode="delete" aria-pressed="false">删除</button>
         <button type="button" class="editor-done" data-edit-action="done">完成</button>
       </div>
     </header>
