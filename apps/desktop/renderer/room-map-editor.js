@@ -74,6 +74,11 @@
         event.stopPropagation()
         startVertex(event, index)
       })
+      handle.addEventListener('contextmenu', function (event) {
+        event.preventDefault()
+        event.stopPropagation()
+        removeVertex(index)
+      })
       handles.appendChild(handle)
     })
   }
@@ -92,7 +97,7 @@
     }
     hint.textContent = tool === 'outer'
       ? '点地面加边界点，拖动圆点调整；完成后关闭。'
-      : tool === 'delete' ? '点一个障碍把它删掉。'
+      : tool === 'delete' ? '点节点或障碍删除；至少保留 3 个边界点。'
         : tool === 'rect' ? '在地面上拖出一个矩形障碍。' : '在地面上拖出一个圆形障碍。'
   }
   function hitBlocker(x, y) {
@@ -135,8 +140,21 @@
       previewRect.setAttribute('hidden', '')
     }
   }
+  function removeVertex(index) {
+    if (area.outer.length <= 3) {
+      hint.textContent = '至少保留 3 个边界点。'
+      setTimeout(function () { setTool(tool) }, 1600)
+      return
+    }
+    pushHistory()
+    area.outer.splice(index, 1)
+    commit()
+    render()
+  }
+
   function startVertex(event, index) {
     if (!open) return
+    if (tool === 'delete') { removeVertex(index); return }
     pushHistory()
     drag = { index: index }
     function move(moveEvent) {
