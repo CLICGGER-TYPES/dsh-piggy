@@ -106,28 +106,23 @@ function errorLine(ui, text) {
 }
 
 function renderLobby(ui, bridge) {
-  const pig = ui.view?.pig
   const hero = el('div', 'dp-room-hero')
-  const row = el('div', 'dp-room-pigs')
-  let art = ''
-  try {
-    const source = artSource(pig?.stage?.art)
-    art = source.startsWith('/dsh-piggy/art/') ? source : ''
-  } catch { art = '' }
+  const banner = /** @type {HTMLImageElement} */ (el('img', 'dp-room-hero-art'))
+  banner.src = '/dsh-piggy/art/room-lobby.png'
+  banner.alt = ''
+  banner.draggable = false
+  const fallback = el('div', 'dp-room-pigs')
   ;['a', 'b', 'c'].forEach(function (tone) {
-    const wrap = el('span', 'dp-room-pig dp-room-pig-' + tone)
-    if (art !== '') {
-      const img = /** @type {HTMLImageElement} */ (el('img', null))
-      img.src = art
-      img.alt = ''
-      img.addEventListener('error', function () { img.hidden = true })
-      wrap.appendChild(img)
-    } else {
-      wrap.textContent = '🐖'
-    }
-    row.appendChild(wrap)
+    const wrap = el('span', 'dp-room-pig dp-room-pig-' + tone, '🐖')
+    fallback.appendChild(wrap)
   })
-  hero.appendChild(row)
+  fallback.hidden = true
+  banner.addEventListener('error', function () {
+    banner.hidden = true
+    fallback.hidden = false
+  })
+  hero.appendChild(banner)
+  hero.appendChild(fallback)
   hero.appendChild(el('p', 'dp-room-intro', '同一个房间里的猪会一起出现在草地上。'))
   ui.content.appendChild(hero)
 

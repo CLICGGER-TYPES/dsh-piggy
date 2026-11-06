@@ -15,3 +15,13 @@
 ## 2026-10-10 黑色轮廓 PNG 迁移
 
 本页以上为历史睡姿记录。当前全部猪素材按类型放在assets/pigs/，详见[pigs/PROVENANCE.md](pigs/PROVENANCE.md)及manifest.json；原尺寸图与历史版本保存在仓库外。
+
+
+## 联机大厅插画（2026-11-06）
+
+`assets/room-lobby.png` 取自 2026-11-05 联机大厅原型 `01-lobby.png` 上方两只小猪的插画区域，
+原型由 OpenAI Codex `image_gen` 生成、用户看过并确认“最开始夸的那个就可以”。2026-11-06 在
+工作区 `work/20261106-piggy-room-art` 裁掉标题/按钮、把深色猪蹄调成身体同色、缩到 640×285，
+没有重画或改变构图。按 **CC BY 4.0** 随本项目分发。
+
+同日另有一版 Grok `image_gen` 五猪横幅，用户认为不好看，未进仓库、未进发布包。

@@ -68,9 +68,12 @@ actions/*/pack.json
 sounds/*/pack.json
 PROVENANCE.md
 ui-*.svg
+room-lobby.png
 piggy-emoji.woff2
 piggy-emoji-LICENSE.txt
 ```
+
+- 联机大厅插画：`assets/room-lobby.png`，两只小猪；取自用户确认的 2026-11-05 大厅原型 `01-lobby.png`，裁切并调整猪脚颜色，来源与许可见 `LICENSE-ASSETS.md`、`assets/PROVENANCE.md`。
 
 - 菜园第4轮：已审 farm-v4-fix4 场景/UI V2接入扩展；来源、加工规则和逐图哈希见 extensions/farm/PROVENANCE.md、fix4-art-pack.json，原稿与提示词保留在项目素材工作区。
 
