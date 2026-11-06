@@ -255,7 +255,8 @@ test('主屏有番茄钟 App，点进去是三个时长', async () => {
   for (const minutes of POMODORO_MINUTES) {
     assert.notEqual(findByAttr(contentOf(dom), 'data-pomo-start', String(minutes)), undefined, `${minutes} 分钟按钮`)
   }
-  assert.ok(contentOf(dom).allText().includes('每完成一个 +8 🪙'), contentOf(dom).allText())
+  assert.ok(contentOf(dom).allText().includes('+8 🪙'), contentOf(dom).allText())
+  assert.ok(contentOf(dom).allText().includes('+6 💗'), contentOf(dom).allText())
   assert.ok(!contentOf(dom).allText().includes('每天前'), '不再写每天上限')
 })
 

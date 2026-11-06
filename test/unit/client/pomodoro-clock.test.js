@@ -29,7 +29,7 @@ test('the countdown ticks every second between polls, and asks for a refresh at 
       now += 1000
     }
     assert.deepEqual(seen, ['🍅 0:03', '🍅 0:02', '🍅 0:01', '🍅 0:00'], 'one step per second, no jumps')
-    assert.equal(clock.textContent, '🍅 0:00', 'the big clock in the App follows too')
+    assert.equal(clock.textContent, '0:00', 'the big clock in the App follows too')
     assert.equal(refreshed, 1, 'reaching zero asks the host to settle right away, once')
   } finally {
     Date.now = realNow
