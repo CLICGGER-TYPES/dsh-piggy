@@ -7,6 +7,9 @@
   var FRONT = 0.98
   var BACK = 0.02
   var SPAN = FRONT - BACK
+  // 猪脚下方阴影的半宽/半高，碰撞只按这块阴影算，不按整只猪。
+  var SHADOW_X = 0.045
+  var SHADOW_Y = 0.016
   /** 屏幕坐标（x 0..1 左到右，y 0..1 上到下）里圈出的整块地面；家具再单独挡。 */
   var AREAS = {
     room: {
@@ -232,23 +235,26 @@
       var b = list[i]
       if (b.hidden === true) continue
       if (b.type === 'rect') {
-        if (x > b.x0 - 0.08 && x < b.x1 + 0.08 && y > b.y0 - 0.06 && y < b.y1 + 0.06) return true
+        if (x + SHADOW_X > b.x0 && x - SHADOW_X < b.x1 && y + SHADOW_Y > b.y0 && y - SHADOW_Y < b.y1) return true
       } else if (b.type === 'circle') {
-        var dx = x - b.cx, dy = y - b.cy
-        if (dx * dx + dy * dy < (b.r + 0.08) * (b.r + 0.08)) return true
+        var nx = (x - b.cx) / Math.max(0.001, b.r + SHADOW_X)
+        var ny = (y - b.cy) / Math.max(0.001, b.r + SHADOW_Y)
+        if (nx * nx + ny * ny < 1) return true
       } else if (b.type === 'polygon') {
         if (inPolygon(b.points, x, y)) return true
-        // 用猪身宽度做一点外扩，避免脚站在障碍边上、身体压进去。
-        if (inPolygon(b.points, x + 0.04, y) || inPolygon(b.points, x - 0.04, y) ||
-          inPolygon(b.points, x, y + 0.03) || inPolygon(b.points, x, y - 0.03)) return true
+        if (inPolygon(b.points, x + SHADOW_X, y) || inPolygon(b.points, x - SHADOW_X, y) ||
+          inPolygon(b.points, x, y + SHADOW_Y) || inPolygon(b.points, x, y - SHADOW_Y)) return true
       }
     }
     return false
   }
 
   function canStand(scene, x, y) {
-    if (x < 0 || x > 1 || y < 0 || y > 1) return false
-    if (!inPolygon(area(scene).outer, x, y)) return false
+    if (x - SHADOW_X < 0 || x + SHADOW_X > 1 || y - SHADOW_Y < 0 || y + SHADOW_Y > 1) return false
+    var outer = area(scene).outer
+    if (!inPolygon(outer, x, y)) return false
+    if (!inPolygon(outer, x - SHADOW_X, y) || !inPolygon(outer, x + SHADOW_X, y) ||
+      !inPolygon(outer, x, y - SHADOW_Y) || !inPolygon(outer, x, y + SHADOW_Y)) return false
     return !blocked(scene, x, y)
   }
 

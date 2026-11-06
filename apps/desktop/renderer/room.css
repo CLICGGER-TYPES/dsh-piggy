@@ -282,6 +282,8 @@ body[data-editing="true"] .bar {
 }
 
 .pig img {
+  position: relative;
+  top: 10.5%;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -322,7 +324,7 @@ body[data-editing="true"] .bar {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: 2px;
+  bottom: calc(-5px * var(--sh, 1));
   width: calc(66% * var(--sh, 1));
   height: calc(10px * var(--sh, 1));
   transform: translateX(-50%);
