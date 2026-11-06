@@ -389,3 +389,125 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   .actions button { min-width: 64px; padding: 7px 12px; }
   .pig { width: 106px; height: 136px; }
 }
+
+
+/* ---------- 地图边界编辑器 ---------- */
+.map-editor {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  touch-action: none;
+  cursor: crosshair;
+  background: rgba(255, 250, 240, .04);
+}
+
+.map-editor[hidden] { display: none !important; }
+
+.map-editor-svg [hidden] { display: none !important; }
+
+.map-editor-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#editor-outer {
+  fill: rgba(25, 200, 185, .08);
+  stroke: var(--mint);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.editor-blocker {
+  fill: rgba(244, 184, 197, .28);
+  stroke: #d97c8e;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+#editor-preview-rect, #editor-preview-circle {
+  fill: rgba(25, 200, 185, .12);
+  stroke: var(--mint);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-editor-handles { position: absolute; inset: 0; pointer-events: none; }
+
+.map-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid var(--mint);
+  border-radius: 50%;
+  background: var(--cream-2);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: grab;
+  box-shadow: 0 1px 4px rgba(114, 93, 66, .25);
+}
+
+.map-handle:active { cursor: grabbing; }
+
+.map-editor-bar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 250, 240, .97);
+  box-shadow: var(--shadow);
+}
+
+.map-editor-bar button {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 2px solid var(--line);
+  background: var(--cream-2);
+  box-shadow: none;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.map-editor-bar button[aria-pressed="true"] {
+  border-color: var(--mint-dark);
+  background: var(--mint);
+  color: #fff;
+}
+
+.map-editor-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  z-index: 2;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, .92);
+  color: var(--brown-soft);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+body[data-editing="true"] .scene-switch,
+body[data-editing="true"] #leave,
+body[data-editing="true"] .actions [data-emote],
+body[data-editing="true"] .tip {
+  pointer-events: none;
+  opacity: .4;
+}
+
+body[data-editing="true"] .walk-zone { opacity: 0; }

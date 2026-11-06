@@ -41,6 +41,75 @@
     },
   }
 
+  var STORAGE_KEY = 'dsh-piggy:room-walk-areas'
+  var DEFAULTS = JSON.parse(JSON.stringify(AREAS))
+
+  function clone(value) { return JSON.parse(JSON.stringify(value)) }
+
+  function normalizeArea(input) {
+    if (input === null || typeof input !== 'object') return null
+    var outer = Array.isArray(input.outer) ? input.outer : []
+    if (outer.length < 3) return null
+    var points = []
+    for (var i = 0; i < outer.length; i += 1) {
+      var p = outer[i]
+      if (!Array.isArray(p) || p.length < 2) return null
+      var x = Number(p[0])
+      var y = Number(p[1])
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null
+      points.push([Math.min(1, Math.max(0, x)), Math.min(1, Math.max(0, y))])
+    }
+    var blockers = []
+    var raw = Array.isArray(input.blockers) ? input.blockers : []
+    for (var j = 0; j < raw.length; j += 1) {
+      var b = raw[j]
+      if (b === null || typeof b !== 'object') continue
+      if (b.type === 'rect') {
+        var x0 = Number(b.x0), x1 = Number(b.x1), y0 = Number(b.y0), y1 = Number(b.y1)
+        if (![x0, x1, y0, y1].every(Number.isFinite)) continue
+        blockers.push({ type: 'rect', x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: Math.min(y0, y1), y1: Math.max(y0, y1) })
+      } else if (b.type === 'circle') {
+        var cx = Number(b.cx), cy = Number(b.cy), r = Number(b.r)
+        if (![cx, cy, r].every(Number.isFinite) || r <= 0) continue
+        blockers.push({ type: 'circle', cx: cx, cy: cy, r: r })
+      }
+    }
+    return { outer: points, blockers: blockers }
+  }
+
+  function loadSaved() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+      if (raw === null || typeof raw !== 'object') return
+      ;['pen', 'room'].forEach(function (key) {
+        var next = normalizeArea(raw[key])
+        if (next !== null) AREAS[key] = next
+      })
+    } catch { /* 自定义数据坏了就用默认 */ }
+  }
+
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ pen: AREAS.pen, room: AREAS.room })) } catch { /* 存不了就只改本次 */ }
+  }
+
+  function getArea(scene) { return clone(area(scene)) }
+
+  function setArea(scene, input) {
+    var next = normalizeArea(input)
+    if (next === null) return false
+    AREAS[scene] = next
+    persist()
+    updateWalkZone(scene)
+    return true
+  }
+
+  function resetArea(scene) {
+    AREAS[scene] = clone(DEFAULTS[scene])
+    persist()
+    updateWalkZone(scene)
+    return getArea(scene)
+  }
+
   function area(scene) { return AREAS[scene] || AREAS.pen }
   function clamp01(v) { return Math.min(1, Math.max(0, v)) }
 
@@ -126,6 +195,7 @@
     }, ms || 2600)
   }
 
+  loadSaved()
   ;/** @type {any} */ (window).PiggyRoomScene = {
     depthFromScreen: depthFromScreen,
     screenFromDepth: screenFromDepth,
@@ -134,5 +204,8 @@
     moveInside: moveInside,
     updateWalkZone: updateWalkZone,
     showWalkZone: showWalkZone,
+    getArea: getArea,
+    setArea: setArea,
+    resetArea: resetArea,
   }
 })()

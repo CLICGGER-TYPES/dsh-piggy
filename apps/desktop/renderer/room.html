@@ -19,6 +19,7 @@
         <button type="button" data-scene="pen" aria-pressed="true">猪圈</button>
         <button type="button" data-scene="room" aria-pressed="false">房间</button>
       </div>
+      <button type="button" class="ghost" id="edit-map">边界</button>
       <button type="button" class="ghost" id="leave">离开房间</button>
     </header>
 
@@ -36,6 +37,25 @@
         <div class="hills"></div>
         <div class="pigs" id="pigs"></div>
       </div>
+      <div class="map-editor" id="map-editor" hidden>
+        <svg class="map-editor-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polygon id="editor-outer"></polygon>
+          <g id="editor-blockers"></g>
+          <rect id="editor-preview-rect" hidden></rect>
+          <circle id="editor-preview-circle" hidden></circle>
+        </svg>
+        <div class="map-editor-handles" id="map-editor-handles"></div>
+        <div class="map-editor-bar">
+          <button type="button" data-edit-tool="outer" aria-pressed="true">外边界</button>
+          <button type="button" data-edit-tool="rect" aria-pressed="false">矩形障碍</button>
+          <button type="button" data-edit-tool="circle" aria-pressed="false">圆形障碍</button>
+          <button type="button" data-edit-tool="delete" aria-pressed="false">删除</button>
+          <button type="button" data-edit-action="undo">撤销</button>
+          <button type="button" data-edit-action="reset">恢复默认</button>
+          <button type="button" data-edit-action="done">完成</button>
+        </div>
+        <p class="map-editor-hint">点地面加边界点，拖动圆点调整；选障碍工具拖出范围。</p>
+      </div>
     </main>
 
     <footer class="actions">
@@ -48,5 +68,6 @@
   </div>
   <script src="room-scene.js"></script>
   <script src="room.js"></script>
+  <script src="room-map-editor.js"></script>
 </body>
 </html>

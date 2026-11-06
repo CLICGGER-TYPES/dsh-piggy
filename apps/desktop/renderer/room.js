@@ -367,6 +367,15 @@
     })
   })
 
+  window.addEventListener('piggy-room-area-changed', function () {
+    if (snapshot !== null) render(snapshot)
+    var p = roomScene.resolveWalk(scene, local.x, local.y)
+    local.x = p.x
+    local.y = p.y
+    var self = currentSelf()
+    if (self !== null) updatePig(self)
+  })
+
   if (typeof room.onUpdate === 'function') room.onUpdate(render)
   if (typeof room.onClosed === 'function') {
     room.onClosed(function (detail) {
