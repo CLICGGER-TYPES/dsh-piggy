@@ -54,7 +54,7 @@
     scene = next === 'room' ? 'room' : 'pen'
     stage.setAttribute('data-scene', scene)
     document.body.setAttribute('data-scene', scene)
-    var p = roomScene.clampWalk(scene, local.x, local.y)
+    var p = roomScene.resolveWalk(scene, local.x, local.y)
     local.x = p.x
     local.y = p.y
     sceneButtons.forEach(function (button) {
@@ -101,7 +101,7 @@
   }
 
   function setLocal(x, y, facing) {
-    var p = roomScene.clampWalk(scene, x, y)
+    var p = roomScene.moveInside(scene, local.x, local.y, x, y)
     local.x = p.x
     local.y = p.y
     local.facing = facing < 0 ? -1 : 1
@@ -160,7 +160,7 @@
     var parts = pigParts.get(player.id)
     var isSelf = player.id === selfId
     var rawY = isSelf ? local.y : (Number.isFinite(Number(player.y)) ? Number(player.y) : 0.2)
-    var p = roomScene.clampWalk(scene, isSelf ? local.x : player.x, rawY)
+    var p = isSelf ? { x: local.x, y: local.y } : roomScene.resolveWalk(scene, player.x, rawY)
     var y = p.y
     var depth = 1 - y
     var size = Math.max(0.75, Math.min(1.35, Number(player.size) || 1))
@@ -168,7 +168,7 @@
     node.classList.toggle('self', isSelf)
     node.style.left = (p.x * 100) + '%'
     node.setAttribute('data-y', y.toFixed(2))
-    node.style.bottom = (8 + y * 32) + '%'
+    node.style.bottom = (12 + y * 58) + '%'
     node.style.zIndex = String(100 - Math.round(y * 100))
     node.style.setProperty('--s', String(size * scale))
     node.style.setProperty('--sh', String(0.8 + depth * 0.2))
@@ -306,7 +306,7 @@
     if (rect.width <= 0 || rect.height <= 0) return
     var x = (event.clientX - rect.left) / rect.width
     var screenY = (event.clientY - rect.top) / rect.height
-    var y = Math.min(1, Math.max(0, (0.95 - screenY) / 0.55))
+    var y = roomScene.depthFromScreen(screenY)
     setLocal(x, y, event.clientX < dragging.startX ? -1 : 1)
   })
 
