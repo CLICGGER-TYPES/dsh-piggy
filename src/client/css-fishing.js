@@ -20,7 +20,7 @@ export const CSS_FISHING = `
 .dp-fish-scene-bottom{position:absolute;z-index:3;right:9px;bottom:8px;display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
 .dp-fish-scene-pill{padding:3px 8px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:#5e6f4f;font-size:9px;font-weight:800;line-height:1.4}
 .dp-fish-scene-warn{background:#ffe4b8;color:#8f5123}
-.dp-fish-mascot{position:absolute;z-index:2;left:27.6%;top:22%;width:27.7%;aspect-ratio:222/130;overflow:hidden;pointer-events:none;transform:scaleX(-1);filter:drop-shadow(0 2px 2px rgba(61,52,40,.18))}
+.dp-fish-mascot{position:absolute;z-index:2;left:25%;top:21.5%;width:27.7%;aspect-ratio:222/130;overflow:hidden;pointer-events:none;transform:scaleX(-1);filter:drop-shadow(0 2px 2px rgba(61,52,40,.18))}
 .dp-fish-mascot-img{display:block;width:100%;height:100%}
 
 .dp-fish-dock{position:relative;z-index:2;margin:6px 0 0;padding:6px 9px 7px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content)}
@@ -46,14 +46,13 @@ export const CSS_FISHING = `
 .dp-fish-cast:hover:not(:disabled),.dp-fish-keep:hover:not(:disabled){background:var(--ac-primary-hover);transform:translateY(-1px);box-shadow:0 5px 0 var(--ac-primary-active)}
 .dp-fish-cast:active:not(:disabled),.dp-fish-keep:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--ac-primary-active)}
 .dp-fish-cast:disabled{background:var(--ac-bg-disabled);color:var(--ac-text-disabled);border-color:var(--ac-border-light);box-shadow:none;cursor:not-allowed}
-.dp-fish-gear{display:flex;justify-content:center;gap:30px;margin:6px 0 0}
-.dp-fish-gear-btn{display:flex;flex:0 0 auto;flex-direction:column;align-items:center;gap:3px;padding:2px 0;border:0;background:none;color:var(--ac-text-2);font:inherit;cursor:pointer}
-.dp-fish-gear-icon{display:grid;place-items:center;width:32px;height:32px;border:2px solid var(--ac-border-light);border-radius:50%;background:var(--ac-bg-content);font-size:16px;line-height:1;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease),transform .15s var(--ac-ease),box-shadow .15s var(--ac-ease)}
-.dp-fish-gear-label{font-size:8.5px;font-weight:700;line-height:1.2}
-.dp-fish-gear-btn[aria-pressed=true]{color:var(--ac-text)}
-.dp-fish-gear-btn[aria-pressed=true] .dp-fish-gear-icon{border-color:var(--ac-primary);background:var(--ac-primary-bg);box-shadow:inset 0 0 0 1px var(--ac-primary),0 2px 0 var(--ac-primary)}
-.dp-fish-gear-btn:hover .dp-fish-gear-icon{border-color:var(--ac-border-hover);transform:translateY(-1px)}
-.dp-fish-gear-btn:focus-visible{outline:2px solid var(--ac-primary);outline-offset:2px;border-radius:12px}
+.dp-fish-gear{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 0}
+.dp-fish-gear-btn{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 10px;border:2px solid var(--ac-border-light);border-radius:999px;background:var(--ac-bg-content);color:var(--ac-text-body);font:inherit;font-size:9.5px;font-weight:700;line-height:1;cursor:pointer;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease),box-shadow .15s var(--ac-ease)}
+.dp-fish-gear-icon{display:inline-block;font-size:13px;line-height:1}
+.dp-fish-gear-value{white-space:nowrap}
+.dp-fish-gear-btn[aria-pressed=true]{background:var(--ac-primary-bg);border-color:var(--ac-primary);color:var(--ac-text);box-shadow:0 2px 0 var(--ac-primary)}
+.dp-fish-gear-btn:hover{border-color:var(--ac-border-hover)}
+.dp-fish-gear-btn:focus-visible{outline:2px solid var(--ac-primary);outline-offset:2px}
 .dp-fish-gear-panel{margin:8px 0 0;padding:9px 10px 10px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);animation:dp-fish-rise .18s var(--ac-ease)}
 @keyframes dp-fish-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .dp-fish-gear-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 7px}
@@ -145,6 +144,6 @@ export const CSS_FISHING = `
 .dp-fish-stars{font-size:17px;letter-spacing:3px;color:#e8b400}
 .dp-fish-facts{font-size:12px;font-weight:700;color:var(--ac-text-body)}
 .dp-fish-away{display:flex;align-items:center;justify-content:center;padding:18px 0 8px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);font-size:58px;line-height:1;margin-bottom:8px}
-@container fishing (max-width:235px){.dp-fish-gear{gap:20px}.dp-fish-scene{height:200px}.dp-fish-bait{width:44px}.dp-fish-bait em{font-size:20px}.dp-fish-gear-icon{width:30px;height:30px;font-size:15px}.dp-fish-spots{grid-template-columns:minmax(0,1fr)}.dp-fish-cast{min-height:30px;min-width:104px;padding:0 14px;font-size:12px}.dp-fish-keep{min-height:34px;font-size:13px}}
-@media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber,.dp-fish-gear-panel{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait,.dp-fish-gear-icon{transition:none!important}}
+@container fishing (max-width:235px){.dp-fish-gear{gap:6px}.dp-fish-scene{height:200px}.dp-fish-bait{width:44px}.dp-fish-bait em{font-size:20px}.dp-fish-gear-btn{min-height:26px;padding:0 8px;font-size:9px}.dp-fish-gear-icon{font-size:12px}.dp-fish-spots{grid-template-columns:minmax(0,1fr)}.dp-fish-cast{min-height:30px;min-width:104px;padding:0 14px;font-size:12px}.dp-fish-keep{min-height:34px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber,.dp-fish-gear-panel{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait,.dp-fish-gear-btn{transition:none!important}}
 `

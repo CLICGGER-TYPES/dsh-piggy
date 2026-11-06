@@ -217,7 +217,7 @@ function renderAutoPanel(ui, baitState) {
   return body
 }
 
-function gearButton(ui, key, emoji, label) {
+function gearButton(ui, key, emoji, value, label) {
   const active = openGear === key
   const btn = button('dp-fish-gear-btn', {
     'data-fish-gear': key,
@@ -237,7 +237,7 @@ function gearButton(ui, key, emoji, label) {
     }
   })
   btn.appendChild(el('span', 'dp-fish-gear-icon', emoji))
-  btn.appendChild(el('span', 'dp-fish-gear-label', label))
+  btn.appendChild(el('span', 'dp-fish-gear-value', value))
   return btn
 }
 
@@ -264,10 +264,12 @@ function gearPanel(ui, key, baitState) {
 }
 
 function renderGear(ui, baitState) {
+  const fishing = ui.view.fishing
+  const spot = currentSpot(ui)
   const row = el('div', 'dp-fish-gear')
-  row.appendChild(gearButton(ui, 'spot', '📍', '钓点'))
-  row.appendChild(gearButton(ui, 'rod', '🎣', '鱼竿'))
-  row.appendChild(gearButton(ui, 'auto', '🐷', '自动'))
+  row.appendChild(gearButton(ui, 'spot', '📍', spot.label, '钓点，' + spot.label))
+  row.appendChild(gearButton(ui, 'rod', '🎣', fishing.rod.label, '鱼竿，' + fishing.rod.label))
+  row.appendChild(gearButton(ui, 'auto', '🐷', '自动', '自动钓鱼'))
   ui.content.appendChild(row)
   if (openGear !== null) ui.content.appendChild(gearPanel(ui, openGear, baitState))
 }
