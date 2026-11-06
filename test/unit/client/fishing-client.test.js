@@ -222,7 +222,9 @@ test('U24-7 ready layout: scenic hero, bait counts, collapsed gear entries and t
   assert.match(content.allText(), /小河/)
   assert.notEqual(findByAttr(content, 'data-fish-scene', 'river'), undefined)
   assert.notEqual(findByClass(content, 'dp-fish-hero-art'), undefined)
-  assert.equal(findByClass(content, 'dp-fish-art-img').src, '/dsh-piggy/art/fishing/scene-river.png?v=20bf68ad2766')
+  assert.equal(findByClass(content, 'dp-fish-art-img').src, '/dsh-piggy/art/fishing/scene-river-deck.png?v=8cd7bc01444b')
+  assert.notEqual(findByClass(content, 'dp-fish-mascot'), undefined)
+  assert.equal(findByClass(content, 'dp-fish-mascot-img').src, '/dsh-piggy/art/pigs/feedback/fishing.png?v=6da9e58f77a6')
   const worm = findByAttr(content, 'data-fish-bait', 'bait_worm')
   assert.equal(worm.getAttribute('aria-pressed'), 'true')
   assert.match(worm.getAttribute('aria-label'), /蚯蚓/)
@@ -362,6 +364,7 @@ test('U24-7 empty, locked and closed spots explain what is off', async () => {
   openPanel(closed.dom, 'fishing')
   assert.match(contentOf(closed.dom).allText(), /晚上才开/)
   assert.equal(findByAttr(contentOf(closed.dom), 'data-fish', 'cast').disabled, true)
+  assert.equal(findByClass(contentOf(closed.dom), 'dp-fish-mascot'), undefined)
 })
 
 test('U24-7 away keeps the activity line and the auto-basket collect, without auto choices', async () => {

@@ -6,7 +6,7 @@ import { fishingArtUrl } from '../fishing-art.js'
 import { el } from '../dom.js'
 
 /** 概念稿里的水域名和游戏钓点对得上：湖用 pond，海边用 reef。 */
-const SCENE_FILE = { river: 'scene-river.png', lake: 'scene-pond.png', sea: 'scene-reef.png', night: 'scene-night.png' }
+const SCENE_FILE = { river: 'scene-river-deck.png', lake: 'scene-pond.png', sea: 'scene-reef.png', night: 'scene-night.png' }
 
 /** 图片没到位也不留一个破图：底下的 emoji 兜底一直画着，加载成功才盖上去。 */
 export function fishImage(name, className) {

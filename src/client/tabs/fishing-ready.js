@@ -5,6 +5,7 @@
  */
 import { button, el } from '../dom.js'
 import { canStart, startOrSwitch } from '../switch-activity.js'
+import { artSource } from '../art-path.js'
 import { currentSpot, sceneArt } from './fishing-scene.js'
 
 let selectedBait = null
@@ -44,6 +45,16 @@ function renderHero(ui) {
   if (bag > 0) bottom.appendChild(el('span', 'dp-fish-scene-pill', '🧺 ' + bag + ' 条'))
   if (spot.open === false) bottom.appendChild(el('span', 'dp-fish-scene-pill dp-fish-scene-warn', '晚上才开'))
   if (bottom.children.length > 0) art.appendChild(bottom)
+  if (spot.key === 'river') {
+    // 小河场景左侧有木甲板；把小猪放在甲板上，鱼竿朝水面。
+    const mascot = el('div', 'dp-fish-mascot')
+    const img = /** @type {HTMLImageElement} */ (el('img', 'dp-fish-mascot-img'))
+    img.src = artSource('feedback/fishing')
+    img.alt = ''
+    img.setAttribute('aria-hidden', 'true')
+    mascot.appendChild(img)
+    art.appendChild(mascot)
+  }
   hero.appendChild(art)
   ui.content.appendChild(hero)
 }

@@ -2677,5 +2677,29 @@
     ],
     "export_sha256": "cd0b8c7710dc1eaffc23c7b58e0af79095f55b12e5ac5576aab102a9c50ee607",
     "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "scene-river-deck",
+    "source": "<artwork-workspace>/dsh-piggy/fishing/scene-river-deck.jpg",
+    "prompt": "Call image_edit exactly once. Use this reference image: assets/fishing/scene-river.png\n\nKeep the same cozy flat-vector river fishing scene, composition, palette, lighting and illustration style as the reference. Modify ONLY the left grassy bank: add a small wooden shore deck / low platform built into the bank, with a few warm honey-brown wooden planks and two short rounded posts, extending just slightly over the water. The deck must be SMALL and integrated into the bank, on the left side — not a large foreground pier, not a platform in the middle of the river.\n\nLeave the flat deck surface empty, with enough room for a small pig to sit or stand. Keep the rest of the scene (calm teal water, right bank, rounded stones, grasses, pale sky) as close to the reference as possible. Same flat no-outline style, soft muted colors, no texture, no harsh shadows.\n\nNo characters, no pig, no people, no fish, no text, no UI, no border, no watermark. Full opaque background. Keep the same wide 2:1 aspect as the reference. Return the image; I will handle the rest.",
+    "references": [
+      "assets/fishing/scene-river.png"
+    ],
+    "self_check": "已实际查看：左侧岸边长出小型木甲板，甲板面留空可站小猪；右侧仍是水面，无角色、鱼、文字或UI。",
+    "output": "scene-river-deck.png",
+    "size": [
+      1408,
+      704
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "sha256": "70ec898f8e1ed21d6d3bf510385986bd14a50a3191965c1408b957763df994c8",
+    "source_bytes_identical": true,
+    "export_size": [
+      817,
+      704
+    ],
+    "export_sha256": "8cd7bc01444ba82988cadfb9f17c4cc1c9fc1de04c8f3d0ce31eae9f2304a338",
+    "processing": "从 1408×704 生成图左侧裁出 817×704（约 1.16:1，匹配钓鱼卡片），等比导出 PNG；不调色、不合成。"
   }
 ]
