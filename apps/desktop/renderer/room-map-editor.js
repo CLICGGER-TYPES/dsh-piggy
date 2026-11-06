@@ -235,6 +235,7 @@
     history = []
     open = true
     editor.hidden = false
+    if (bar) bar.removeAttribute('hidden')
     document.body.setAttribute('data-editing', 'true')
     editButton?.setAttribute('aria-pressed', 'true')
     if (editButton) editButton.textContent = '完成'
@@ -248,6 +249,7 @@
     drawing = null
     clearPreview()
     editor.hidden = true
+    if (bar) bar.setAttribute('hidden', '')
     document.body.removeAttribute('data-editing')
     editButton?.setAttribute('aria-pressed', 'false')
     if (editButton) editButton.textContent = '边界'
