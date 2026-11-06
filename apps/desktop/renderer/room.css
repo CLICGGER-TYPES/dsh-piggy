@@ -444,6 +444,11 @@ body[data-editing="true"] .bar {
   vector-effect: non-scaling-stroke;
 }
 
+.editor-blocker.is-selected {
+  fill: rgba(244, 184, 197, .42);
+  stroke-width: 2.5;
+}
+
 #editor-preview-rect, #editor-preview-circle, #editor-preview-poly {
   fill: rgba(25, 200, 185, .12);
   stroke: var(--mint);
@@ -482,6 +487,58 @@ body[data-editing="true"] .bar {
 
 .map-handle:active { cursor: grabbing; }
 .map-handle:active::after { transform: scale(1.15); }
+
+.blocker-handle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.blocker-handle::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border: 2px solid #d97c8e;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(114, 93, 66, .25);
+}
+
+.blocker-handle:active { cursor: grabbing; }
+.blocker-handle:active::after { transform: scale(1.15); }
+
+.pen-points {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pen-point {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--mint-dark);
+  box-shadow: 0 1px 3px rgba(114, 93, 66, .25);
+  transform: translate(-50%, -50%);
+}
+
+.pen-point.is-first {
+  width: 11px;
+  height: 11px;
+  background: var(--mint);
+}
 
 .map-editor-bar {
   display: flex;
@@ -560,6 +617,24 @@ body[data-editing="true"] .bar {
   border-color: rgba(25, 200, 185, .45);
   background: var(--mint-soft);
   color: var(--mint-dark);
+}
+
+.map-editor-bar .editor-undo {
+  border-color: var(--line);
+  background: var(--cream-2);
+  color: var(--brown);
+}
+
+.map-editor-bar .editor-undo:not(:disabled):hover {
+  border-color: rgba(25, 200, 185, .45);
+  background: var(--mint-soft);
+  color: var(--mint-dark);
+}
+
+.map-editor-bar .editor-undo:disabled {
+  opacity: .35;
+  cursor: default;
+  background: transparent;
 }
 
 .menu-sep {

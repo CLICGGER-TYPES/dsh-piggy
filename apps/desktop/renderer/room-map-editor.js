@@ -14,6 +14,8 @@
   var editButton = document.getElementById('edit-map')
   var bar = document.querySelector('.map-editor-bar')
   var ui = /** @type {any} */ (null)
+  var blockerEdit = /** @type {any} */ (null)
+  var pen = /** @type {any} */ (null)
   var SVG = 'http://www.w3.org/2000/svg'
   var open = false
   var scene = 'pen'
@@ -36,6 +38,7 @@
   function pushHistory() {
     history.push(clone(area))
     if (history.length > 40) history.shift()
+    if (ui) ui.setUndoEnabled(true)
   }
   function commit() {
     api.setArea(scene, area)
@@ -43,7 +46,7 @@
   }
   function renderBlockers() {
     blockers.textContent = ''
-    area.blockers.forEach(function (blocker) {
+    area.blockers.forEach(function (blocker, index) {
       var node
       if (blocker.type === 'rect') {
         node = document.createElementNS(SVG, 'rect')
@@ -62,7 +65,8 @@
           return (point[0] * 100).toFixed(2) + ',' + (point[1] * 100).toFixed(2)
         }).join(' '))
       }
-      node.setAttribute('class', 'editor-blocker' + (blocker.hidden === true ? ' is-hidden' : ''))
+      var selected = blockerEdit !== null && blockerEdit.selectedIndex() === index
+      node.setAttribute('class', 'editor-blocker' + (blocker.hidden === true ? ' is-hidden' : '') + (selected ? ' is-selected' : ''))
       blockers.appendChild(node)
     })
   }
@@ -88,6 +92,7 @@
       })
       handles.appendChild(handle)
     })
+    if (blockerEdit) blockerEdit.render()
   }
   function render() {
     outer.setAttribute('points', area.outer.map(function (point) {
@@ -105,6 +110,9 @@
     scene = next
     area = api.getArea(scene)
     history = []
+    if (pen) pen.cancel()
+    if (blockerEdit) blockerEdit.clear()
+    ui.setUndoEnabled(false)
     ui.updateMapMenu(scene)
     ui.setState(shape, mode)
     render()
@@ -113,31 +121,21 @@
     if (['node', 'rect', 'circle', 'lasso'].indexOf(next) < 0) return
     shape = next
     drawing = null
+    if (pen) pen.cancel()
+    if (blockerEdit) blockerEdit.clear()
     clearPreview()
     ui.setState(shape, mode)
+    render()
   }
   function setMode(next) {
     if (['create', 'edit', 'delete'].indexOf(next) < 0) return
     mode = next
     drawing = null
+    if (pen) pen.cancel()
+    if (blockerEdit) blockerEdit.clear()
     clearPreview()
     ui.setState(shape, mode)
-  }
-  function startBlockerDrag(index, startPoint) {
-    var source = clone(area.blockers[index])
-    pushHistory()
-    function move(moveEvent) {
-      var point = pointAt(moveEvent)
-      area.blockers[index] = api.shiftBlocker(source, point.x - startPoint.x, point.y - startPoint.y)
-      render()
-    }
-    function end() {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', end)
-      commit()
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', end)
+    render()
   }
   function clearPreview() {
     previewRect.setAttribute('hidden', '')
@@ -166,13 +164,6 @@
       previewCircle.removeAttribute('hidden')
       previewRect.setAttribute('hidden', '')
       previewPoly.setAttribute('hidden', '')
-    } else {
-      previewPoly.setAttribute('points', drawing.points.map(function (point) {
-        return (point[0] * 100).toFixed(2) + ',' + (point[1] * 100).toFixed(2)
-      }).join(' '))
-      previewPoly.removeAttribute('hidden')
-      previewRect.setAttribute('hidden', '')
-      previewCircle.setAttribute('hidden', '')
     }
   }
   function removeVertex(index) {
@@ -191,10 +182,11 @@
     if (!open) return
     if (mode === 'delete') { removeVertex(index); return }
     if (mode !== 'edit' || shape !== 'node') return
-    pushHistory()
+    var moved = false
     drag = { index: index }
     function move(moveEvent) {
       if (drag === null) return
+      if (!moved) { pushHistory(); moved = true }
       var point = pointAt(moveEvent)
       area.outer[drag.index] = [point.x, point.y]
       render()
@@ -202,7 +194,10 @@
     function end() {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', end)
-      if (drag !== null) { drag = null; commit() }
+      if (drag !== null) {
+        drag = null
+        if (moved) commit()
+      }
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', end)
@@ -211,7 +206,7 @@
     if (!open) return
     if (ui.anyMenuOpen()) { ui.closeMenus(); return }
     var target = /** @type {any} */ (event.target)
-    if (target.closest && target.closest('.map-editor-bar, .map-handle')) return
+    if (target.closest && target.closest('.map-editor-bar, .map-handle, .blocker-handle')) return
     var point = pointAt(event)
     if (mode === 'create') {
       if (shape === 'node') {
@@ -221,35 +216,42 @@
         render()
         return
       }
+      if (shape === 'lasso') {
+        pen.pointerDown(event, point)
+        return
+      }
       drawing = shape === 'rect'
         ? { type: 'rect', x0: point.x, y0: point.y }
-        : shape === 'circle' ? { type: 'circle', cx: point.x, cy: point.y } : { type: 'lasso', points: [[point.x, point.y]] }
+        : { type: 'circle', cx: point.x, cy: point.y }
       updatePreview(point)
       try { editor.setPointerCapture(event.pointerId) } catch { /* 旧内核 */ }
       return
     }
     if (mode === 'delete') {
       var index = api.hitBlocker(area, point.x, point.y)
-      if (index >= 0) {
-        pushHistory()
-        area.blockers.splice(index, 1)
-        commit()
-        render()
-      }
+      if (index >= 0) blockerEdit.remove(index)
       return
     }
     if (mode === 'edit' && shape !== 'node') {
       var editIndex = api.hitBlocker(area, point.x, point.y)
-      if (editIndex >= 0) startBlockerDrag(editIndex, point)
+      if (editIndex >= 0) {
+        blockerEdit.select(editIndex)
+        render()
+        blockerEdit.startDrag(editIndex, point)
+      } else {
+        blockerEdit.clear()
+        render()
+      }
     }
   }
   function surfaceMove(event) {
-    if (!open || drawing === null) return
+    if (!open) return
     var point = pointAt(event)
-    if (drawing.type === 'lasso') {
-      var last = drawing.points[drawing.points.length - 1]
-      if (Math.abs(point.x - last[0]) + Math.abs(point.y - last[1]) > 0.008) drawing.points.push([point.x, point.y])
+    if (pen.active()) {
+      pen.pointerMove(event, point)
+      return
     }
+    if (drawing === null) return
     updatePreview(point)
   }
   function surfaceUp(event) {
@@ -273,13 +275,6 @@
       if (r < 0.015) return
       pushHistory()
       area.blockers.push({ type: 'circle', cx: current.cx, cy: current.cy, r: r })
-    } else {
-      var points = current.points
-      var minX = 1, maxX = 0, minY = 1, maxY = 0
-      points.forEach(function (p) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]) })
-      if (points.length < 3 || maxX - minX < 0.02 || maxY - minY < 0.02) return
-      pushHistory()
-      area.blockers.push({ type: 'polygon', points: points })
     }
     commit()
     render()
@@ -300,6 +295,9 @@
     if (editButton) editButton.textContent = '完成'
     shape = 'node'
     mode = 'create'
+    pen.cancel()
+    blockerEdit.clear()
+    ui.setUndoEnabled(false)
     ui.setState(shape, mode)
     render()
   }
@@ -308,6 +306,8 @@
     open = false
     drag = null
     drawing = null
+    pen.cancel()
+    blockerEdit.clear()
     clearPreview()
     editor.hidden = true
     if (bar) bar.setAttribute('hidden', '')
@@ -321,25 +321,14 @@
     window.dispatchEvent(new Event('piggy-room-area-changed'))
     api.showWalkZone(2200)
   }
-  function toggleBlocker(index) {
-    if (!area.blockers[index]) return
-    pushHistory()
-    area.blockers[index].hidden = area.blockers[index].hidden !== true
-    commit()
-    render()
-  }
-  function deleteBlocker(index) {
-    if (!area.blockers[index]) return
-    pushHistory()
-    area.blockers.splice(index, 1)
-    commit()
-    render()
-  }
   function runAction(action) {
     if (action === 'done') { closeEditor(); return }
     if (action === 'undo') {
       if (history.length === 0) return
       area = history.pop()
+      pen.cancel()
+      blockerEdit.clear()
+      ui.setUndoEnabled(history.length > 0)
       commit()
       render()
       return
@@ -347,13 +336,40 @@
     if (action === 'reset') {
       area = api.resetArea(scene)
       history = []
+      pen.cancel()
+      blockerEdit.clear()
+      ui.setUndoEnabled(false)
       render()
       window.dispatchEvent(new Event('piggy-room-area-changed'))
     }
   }
 
+  function addPenPolygon(points) {
+    if (!Array.isArray(points) || points.length < 3) return
+    pushHistory()
+    area.blockers.push({ type: 'polygon', points: points })
+    commit()
+    render()
+  }
+
+  var penFactory = /** @type {any} */ (window).PiggyRoomEditorPen
+  var blockerFactory = /** @type {any} */ (window).PiggyRoomEditorBlockers
   var editorUi = /** @type {any} */ (window).PiggyRoomEditorUI
-  if (!editorUi) return
+  if (!penFactory || !blockerFactory || !editorUi) return
+  pen = penFactory.create({
+    addPolygon: addPenPolygon,
+    isMenuOpen: function () { return ui !== null && ui.anyMenuOpen() },
+  })
+  blockerEdit = blockerFactory.create({
+    handles: handles,
+    getArea: function () { return area },
+    isActive: function () { return open && mode === 'edit' && shape !== 'node' },
+    pushHistory: pushHistory,
+    commit: commit,
+    render: render,
+    pointAt: pointAt,
+    shiftBlocker: api.shiftBlocker,
+  })
   ui = editorUi.create({
     bar: bar,
     status: document.getElementById('editor-status'),
@@ -367,9 +383,10 @@
     onMode: setMode,
     onScene: switchScene,
     onAction: runAction,
-    onToggleBlocker: toggleBlocker,
-    onDeleteBlocker: deleteBlocker,
+    onToggleBlocker: blockerEdit.toggleHidden,
+    onDeleteBlocker: blockerEdit.remove,
   })
+  ui.setUndoEnabled(false)
   editButton?.addEventListener('click', function () { if (open) closeEditor(); else openEditor() })
   editor?.addEventListener('pointerdown', surfaceDown)
   editor?.addEventListener('pointermove', surfaceMove)

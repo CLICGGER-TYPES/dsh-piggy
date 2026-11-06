@@ -13,12 +13,12 @@
     if (mode === 'delete') return '删除：点边界节点或场景障碍删除；边界至少保留 3 个节点。'
     if (mode === 'edit') {
       if (shape === 'node') return '编辑 · 边界节点：拖小圆点调整边界。'
-      return '编辑 · ' + name + '：拖动场景里的障碍移动位置。'
+      return '编辑 · ' + name + '：拖障碍移动，拖小方块改形状。'
     }
     if (shape === 'node') return '新建 · 边界节点：点地面加边界点。'
     if (shape === 'rect') return '新建 · 矩形障碍：在地面上拖出一个矩形。'
     if (shape === 'circle') return '新建 · 圆形障碍：在地面上拖出一个圆形。'
-    return '新建 · 手绘障碍：按住拖动，画任意形状。'
+    return '新建 · 手绘障碍：点地面加节点，点第一个点或双击闭合；按住 Shift 拉直线。'
   }
 
   function create(options) {
@@ -40,6 +40,12 @@
       if (!status) return
       status.textContent = text
       status.hidden = text === ''
+    }
+    function setUndoEnabled(enabled) {
+      if (!bar) return
+      bar.querySelectorAll('[data-edit-action="undo"]').forEach(function (button) {
+        button.disabled = !enabled
+      })
     }
     function menuPanel(name) {
       return bar ? bar.querySelector('[data-menu-panel="' + name + '"]') : null
@@ -212,6 +218,7 @@
       setPanelVisible: setPanelVisible,
       setState: setState,
       setStatus: setStatus,
+      setUndoEnabled: setUndoEnabled,
       updateMapMenu: updateMapMenu,
     }
   }

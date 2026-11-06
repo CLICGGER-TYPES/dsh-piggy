@@ -29,7 +29,6 @@
             <button type="button" data-map-scene="pen" aria-current="true">猪圈</button>
             <button type="button" data-map-scene="room">房间</button>
             <div class="menu-sep"></div>
-            <button type="button" data-edit-action="undo">撤销</button>
             <button type="button" data-edit-action="reset">恢复默认</button>
           </div>
         </div>
@@ -45,6 +44,7 @@
         <button type="button" class="mode-button" data-edit-mode="create" aria-pressed="true">新建</button>
         <button type="button" class="mode-button" data-edit-mode="edit" aria-pressed="false">编辑</button>
         <button type="button" class="mode-button" data-edit-mode="delete" aria-pressed="false">删除</button>
+        <button type="button" class="mode-button editor-undo" data-edit-action="undo" title="撤销上一步">撤销</button>
         <button type="button" class="editor-done" data-edit-action="done">完成</button>
       </div>
     </header>
@@ -72,6 +72,7 @@
           <polygon id="editor-preview-poly" hidden></polygon>
         </svg>
         <div class="map-editor-handles" id="map-editor-handles"></div>
+        <div class="pen-points" id="editor-pen-points"></div>
       </div>
       <div class="object-panel" id="object-panel" data-side="right" hidden>
         <div class="object-head">
@@ -96,6 +97,8 @@
   <script src="room-scene.js"></script>
   <script src="room.js"></script>
   <script src="room-editor-ui.js"></script>
+  <script src="room-editor-blockers.js"></script>
+  <script src="room-editor-pen.js"></script>
   <script src="room-map-editor.js"></script>
 </body>
 </html>
