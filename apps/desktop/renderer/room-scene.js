@@ -147,6 +147,40 @@
     return inside
   }
 
+  /** 新边界点插到最近的那条边里，保持闭合顺序，避免直接接在末尾拉出尖角。 */
+  function findOuterInsertIndex(areaData, x, y, aspect) {
+    var points = areaData.outer
+    var i
+    for (i = 0; i < points.length; i += 1) {
+      if (Math.abs(points[i][0] - x) + Math.abs(points[i][1] - y) < 0.012) return -1
+    }
+    var scale = Number(aspect) > 0 ? Number(aspect) : 1
+    var px = x * scale
+    var py = y
+    var best = points.length
+    var bestDistance = Infinity
+    for (i = 0; i < points.length; i += 1) {
+      var a = points[i]
+      var b = points[(i + 1) % points.length]
+      var ax = a[0] * scale
+      var ay = a[1]
+      var bx = b[0] * scale
+      var by = b[1]
+      var dx = bx - ax
+      var dy = by - ay
+      var length = dx * dx + dy * dy
+      var t = length === 0 ? 0 : Math.min(1, Math.max(0, ((px - ax) * dx + (py - ay) * dy) / length))
+      var qx = ax + dx * t
+      var qy = ay + dy * t
+      var distance = (px - qx) * (px - qx) + (py - qy) * (py - qy)
+      if (distance < bestDistance) {
+        bestDistance = distance
+        best = i + 1
+      }
+    }
+    return best
+  }
+
   function hitBlocker(areaData, x, y) {
     for (var i = areaData.blockers.length - 1; i >= 0; i -= 1) {
       var b = areaData.blockers[i]
@@ -272,6 +306,7 @@
     screenFromDepth: screenFromDepth,
     canStand: canStand,
     inPolygon: inPolygon,
+    findOuterInsertIndex: findOuterInsertIndex,
     hitBlocker: hitBlocker,
     shiftBlocker: shiftBlocker,
     resolveWalk: resolveWalk,

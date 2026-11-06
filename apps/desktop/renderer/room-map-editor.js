@@ -180,7 +180,6 @@
   function startVertex(event, index) {
     if (!open) return
     if (mode === 'delete') { removeVertex(index); return }
-    if (mode !== 'edit' || shape !== 'node') return
     var moved = false
     drag = { index: index }
     function move(moveEvent) {
@@ -209,10 +208,14 @@
     var point = pointAt(event)
     if (mode === 'create') {
       if (shape === 'node') {
-        pushHistory()
-        area.outer.push([point.x, point.y])
-        commit()
-        render()
+        var box = stage.getBoundingClientRect()
+        var insertAt = api.findOuterInsertIndex(area, point.x, point.y, box.width / Math.max(1, box.height))
+        if (insertAt >= 0) {
+          pushHistory()
+          area.outer.splice(insertAt, 0, [point.x, point.y])
+          commit()
+          render()
+        }
         return
       }
       if (shape === 'lasso') {

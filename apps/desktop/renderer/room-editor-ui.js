@@ -15,7 +15,7 @@
       if (shape === 'node') return '编辑 · 边界节点：拖小圆点调整边界。'
       return '编辑 · ' + name + '：拖障碍移动，拖小方块改形状。'
     }
-    if (shape === 'node') return '新建 · 边界节点：点地面加边界点。'
+    if (shape === 'node') return '新建 · 边界节点：点地面加边界点，已有节点可直接拖。'
     if (shape === 'rect') return '新建 · 矩形障碍：在地面上拖出一个矩形。'
     if (shape === 'circle') return '新建 · 圆形障碍：在地面上拖出一个圆形。'
     return '新建 · 手绘障碍：点地面加节点，点第一个点或双击闭合；按住 Shift 拉直线。'
