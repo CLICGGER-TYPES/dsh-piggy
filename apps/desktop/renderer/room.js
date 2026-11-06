@@ -13,6 +13,10 @@
   var toastEl = document.getElementById('toast')
   var copyButton = document.getElementById('copy')
   var leaveButton = document.getElementById('leave')
+  var sceneSwitch = document.getElementById('scene-switch')
+  var sceneButtons = sceneSwitch ? Array.prototype.slice.call(sceneSwitch.querySelectorAll('button[data-scene]')) : []
+  var SCENE_KEY = 'dsh-piggy:room-scene'
+  var scene = 'pen'
 
   /** @type {any} */
   var snapshot = null
@@ -44,6 +48,24 @@
   }
 
   function hideHint() { hint.classList.add('gone') }
+
+  function applyScene(next) {
+    scene = next === 'room' ? 'room' : 'pen'
+    stage.setAttribute('data-scene', scene)
+    document.body.setAttribute('data-scene', scene)
+    sceneButtons.forEach(function (button) {
+      button.setAttribute('aria-pressed', String(button.getAttribute('data-scene') === scene))
+    })
+    try { localStorage.setItem(SCENE_KEY, scene) } catch { /* localStorage 不可用就只改本次 */ }
+  }
+
+  try {
+    if (localStorage.getItem(SCENE_KEY) === 'room') scene = 'room'
+  } catch { /* 用默认猪圈 */ }
+  applyScene(scene)
+  sceneButtons.forEach(function (button) {
+    button.addEventListener('click', function () { applyScene(button.getAttribute('data-scene')) })
+  })
 
   function currentSelf() {
     if (snapshot === null || !Array.isArray(snapshot.players)) return null
@@ -129,16 +151,20 @@
     return node
   }
 
-  function updatePig(player) {
+  function updatePig(player, row) {
     var node = nodes.get(player.id)
     if (node === undefined) node = createPig(player)
     var parts = pigParts.get(player.id)
     node.classList.toggle('self', player.id === selfId)
     node.style.left = ((player.id === selfId ? local.x : player.x) * 100) + '%'
-    var row = player.row === 1 || player.row === 2 ? player.row : 0
-    node.style.bottom = (6 + row * 18) + 'px'
+    var depth = row === 0 ? 1.02 : row === 1 ? 0.92 : 0.84
+    var size = Math.max(0.75, Math.min(1.35, Number(player.size) || 1))
+    node.setAttribute('data-row', String(row))
+    node.style.bottom = (8 + row * 13) + '%'
     node.style.zIndex = String(10 - row)
-    node.style.setProperty('--s', String(Math.max(0.75, Math.min(1.35, Number(player.size) || 1))))
+    node.style.setProperty('--s', String(size * depth))
+    node.style.setProperty('--sh', row === 0 ? '1' : row === 1 ? '.9' : '.8')
+    node.style.setProperty('--shadow-op', row === 0 ? '.9' : row === 1 ? '.75' : '.6')
     parts.name.textContent = player.name
     parts.level.textContent = ' Lv.' + player.level
     parts.mark.textContent = player.host ? ' 👑' : (player.id === selfId ? ' · 你' : '')
@@ -219,7 +245,8 @@
           local.facing = player.facing
         }
       }
-      updatePig(player)
+      var row = player.id === selfId ? 0 : 1 + (i % 2)
+      updatePig(player, row)
       playEmote(player)
     }
     for (var id of Array.from(nodes.keys())) {

@@ -25,6 +25,8 @@
 | `release/extension-variants/**/*.webp` | 手动导入扩展变体的素材 | **CC BY 4.0** | 与已发布扩展同源 |
 | `apps/desktop/artwork/*.png`、`apps/desktop/build/icon.png`、`icon.ico`、`tray.png` | 桌面应用图标与托盘图 | **CC BY 4.0** | 用户提供猪脸原图，只做等比缩放/透明补方 |
 | `assets/room-pen.png` | 联机房间猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
+| `assets/room-pen-25d.png` | 联机 2.5D 猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
+| `assets/room-room-25d.png` | 联机 2.5D 房间背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
 | `assets/room-lobby.png` | 联机大厅两只小猪插画 | **CC BY 4.0** | 从用户确认的 Codex image_gen 原型裁切，用户选定 |
 | `assets/ui-*.svg` | 历史未使用 UI 图标 | **MIT** | 项目原创矢量图 |
 | `assets/piggy-emoji.woff2` | 网页 emoji 子集字体 | **OFL-1.1** | Noto Color Emoji 子集，见 `assets/piggy-emoji-LICENSE.txt` |
