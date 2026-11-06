@@ -73,6 +73,7 @@ room-pen.png
 room-pen-25d.png
 room-room-25d.png
 ui-room.png
+ui-pig-puzzle.png
 piggy-emoji.woff2
 piggy-emoji-LICENSE.txt
 ```
@@ -81,6 +82,7 @@ piggy-emoji-LICENSE.txt
 - 联机 2.5D 猪圈：`assets/room-pen-25d.png`，等距草地、小屋、池塘和木栅栏，2D 猪纸片人站在草地上；Grok `image_gen` 生成，用户 2026-11-06 确认。
 - 联机 2.5D 房间：`assets/room-room-25d.png`，等距室内木地板、书桌/沙发/书架/窗，2D 猪纸片人；Grok `image_gen` 生成，用户 2026-11-06 确认。
 - 联机入口图标：`assets/ui-room.png`，由 `pigs/base/piglet/idle.png` 合成前后两只猪；Apache-2.0，见 `LICENSE-ASSETS.md`。
+- 藏猪方块入口图标：`assets/ui-pig-puzzle.png`，由小猪立绘加一堵墙，墙挡住猪的后半截；Apache-2.0。
 
 - 联机大厅插画：`assets/room-lobby.png`，两只小猪；取自用户确认的 2026-11-05 大厅原型 `01-lobby.png`，裁切并调整猪脚颜色，来源与许可见 `LICENSE-ASSETS.md`、`assets/PROVENANCE.md`。
 

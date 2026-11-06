@@ -17,20 +17,24 @@ export function iconStyle() {
   return 'system'
 }
 
+/** 少数入口用专门的 PNG（双猪、藏猪方块），失败时回退 emoji。 */
+function customIcon(file, iconClass, attr, value, emoji, className) {
+  const img = /** @type {HTMLImageElement} */ (el('img', className + ' dp-tile-svg ' + iconClass))
+  img.src = ART_URL + file
+  img.alt = ''
+  img.setAttribute('aria-hidden', 'true')
+  img.setAttribute(attr, value)
+  img.addEventListener('error', function () {
+    const replacement = el('span', className, emoji)
+    img.parentNode?.replaceChild(replacement, img)
+  })
+  return img
+}
+
 /** Missing bundled files fall back to the device's Emoji. */
 export function appIcon(key, emoji, className) {
-  if (key === 'room') {
-    const img = /** @type {HTMLImageElement} */ (el('img', className + ' dp-tile-svg dp-room-icon'))
-    img.src = ART_URL + 'ui-room.png'
-    img.alt = ''
-    img.setAttribute('aria-hidden', 'true')
-    img.setAttribute('data-room-icon', 'pair')
-    img.addEventListener('error', function () {
-      const replacement = el('span', className, emoji)
-      img.parentNode?.replaceChild(replacement, img)
-    })
-    return img
-  }
+  if (key === 'room') return customIcon('ui-room.png', 'dp-room-icon', 'data-room-icon', 'pair', emoji, className)
+  if (key === 'ext:pig-puzzle') return customIcon('ui-pig-puzzle.png', 'dp-pig-puzzle-icon', 'data-pig-puzzle-icon', 'wall', emoji, className)
   if (iconStyle() !== 'built-in' || !BUNDLED.has(key)) return el('span', className, emoji)
   const img = /** @type {HTMLImageElement} */ (el('img', className + ' dp-tile-svg'))
   img.src = ART_URL + 'ui-' + key + '.svg'
