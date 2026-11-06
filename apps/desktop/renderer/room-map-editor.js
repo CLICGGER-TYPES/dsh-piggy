@@ -14,6 +14,14 @@
   var editButton = document.getElementById('edit-map')
   var bar = document.querySelector('.map-editor-bar')
   var hint = document.querySelector('.map-editor-hint')
+  var objectPanel = document.getElementById('object-panel')
+  var objectList = document.getElementById('object-list')
+  var objectCount = document.getElementById('object-count')
+  var objectPin = document.getElementById('object-pin')
+  var objectFlip = document.getElementById('object-flip')
+  var panelSide = 'right'
+  var panelPinned = false
+  var flipTimer = null
   var SVG = 'http://www.w3.org/2000/svg'
   var open = false
   var scene = 'pen'
@@ -25,16 +33,6 @@
 
   function clone(value) { return JSON.parse(JSON.stringify(value)) }
   function currentScene() { return stage.getAttribute('data-scene') === 'room' ? 'room' : 'pen' }
-  function inPolygon(points, x, y) {
-    var inside = false
-    for (var i = 0, j = points.length - 1; i < points.length; j = i++) {
-      var xi = points[i][0], yi = points[i][1]
-      var xj = points[j][0], yj = points[j][1]
-      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside
-    }
-    return inside
-  }
-
   function pointAt(event) {
     var rect = stage.getBoundingClientRect()
     return {
@@ -71,7 +69,7 @@
           return (point[0] * 100).toFixed(2) + ',' + (point[1] * 100).toFixed(2)
         }).join(' '))
       }
-      node.setAttribute('class', 'editor-blocker')
+      node.setAttribute('class', 'editor-blocker' + (blocker.hidden === true ? ' is-hidden' : ''))
       blockers.appendChild(node)
     })
   }
@@ -104,7 +102,65 @@
     }).join(' '))
     renderBlockers()
     renderHandles()
+    renderPanel()
   }
+  function isPointTool() {
+    return tool === 'add' || tool === 'rect' || tool === 'circle' || tool === 'lasso'
+  }
+  function applyPanelSide() { if (objectPanel) objectPanel.setAttribute('data-side', panelSide) }
+  function flipPanel() {
+    panelSide = panelSide === 'right' ? 'left' : 'right'
+    applyPanelSide()
+  }
+  function clearFlip() {
+    if (flipTimer !== null) clearTimeout(flipTimer)
+    flipTimer = null
+  }
+  function renderPanel() {
+    if (!objectPanel || !objectList || !objectCount) return
+    objectCount.textContent = '障碍 ' + area.blockers.length
+    objectList.textContent = ''
+    var outerRow = document.createElement('div')
+    outerRow.className = 'object-row'
+    var outerLabel = document.createElement('span')
+    outerLabel.className = 'object-label object-boundary'
+    outerLabel.textContent = '外边界'
+    outerRow.appendChild(outerLabel)
+    objectList.appendChild(outerRow)
+    area.blockers.forEach(function (blocker, index) {
+      var row = document.createElement('div')
+      row.className = 'object-row' + (blocker.hidden === true ? ' is-hidden' : '')
+      var label = document.createElement('span')
+      label.className = 'object-label'
+      var name = blocker.type === 'rect' ? '矩形障碍' : blocker.type === 'circle' ? '圆形障碍' : '手绘障碍'
+      label.textContent = name + ' ' + (index + 1)
+      row.appendChild(label)
+      var eye = document.createElement('button')
+      eye.type = 'button'
+      eye.textContent = blocker.hidden === true ? '显' : '隐'
+      eye.title = blocker.hidden === true ? '显示障碍' : '隐藏障碍'
+      eye.addEventListener('click', function () {
+        pushHistory()
+        blocker.hidden = blocker.hidden !== true
+        commit()
+        render()
+      })
+      row.appendChild(eye)
+      var trash = document.createElement('button')
+      trash.type = 'button'
+      trash.textContent = '删'
+      trash.title = '删除障碍'
+      trash.addEventListener('click', function () {
+        pushHistory()
+        area.blockers.splice(index, 1)
+        commit()
+        render()
+      })
+      row.appendChild(trash)
+      objectList.appendChild(row)
+    })
+  }
+
   function setTool(next) {
     tool = next
     var buttons = bar.querySelectorAll('[data-edit-tool]')
@@ -128,7 +184,7 @@
         var dy = y - b.cy
         if (dx * dx + dy * dy <= b.r * b.r) return i
       } else if (b.type === 'polygon') {
-        if (inPolygon(b.points, x, y)) return i
+        if (api.inPolygon(b.points, x, y)) return i
       }
     }
     return -1
@@ -277,6 +333,8 @@
     open = true
     editor.hidden = false
     if (bar) bar.removeAttribute('hidden')
+    if (objectPanel) objectPanel.removeAttribute('hidden')
+    applyPanelSide()
     document.body.setAttribute('data-editing', 'true')
     editButton?.setAttribute('aria-pressed', 'true')
     if (editButton) editButton.textContent = '完成'
@@ -291,6 +349,8 @@
     clearPreview()
     editor.hidden = true
     if (bar) bar.setAttribute('hidden', '')
+    if (objectPanel) objectPanel.setAttribute('hidden', '')
+    clearFlip()
     document.body.removeAttribute('data-editing')
     editButton?.setAttribute('aria-pressed', 'false')
     if (editButton) editButton.textContent = '边界'
@@ -298,6 +358,23 @@
     window.dispatchEvent(new Event('piggy-room-area-changed'))
     api.showWalkZone(2200)
   }
+  objectPanel?.addEventListener('pointerenter', function () {
+    if (!open || panelPinned || !isPointTool()) return
+    clearFlip()
+    flipTimer = setTimeout(function () {
+      flipTimer = null
+      flipPanel()
+    }, 450)
+  })
+  objectPanel?.addEventListener('pointerleave', clearFlip)
+  objectPin?.addEventListener('click', function () {
+    panelPinned = !panelPinned
+    objectPin.setAttribute('aria-pressed', String(panelPinned))
+    objectPin.textContent = panelPinned ? '解' : '锁'
+    objectPin.title = panelPinned ? '解锁面板' : '锁定面板'
+    if (panelPinned) clearFlip()
+  })
+  objectFlip?.addEventListener('click', function () { clearFlip(); flipPanel() })
   editButton?.addEventListener('click', function () { if (open) closeEditor(); else openEditor() })
   editor?.addEventListener('pointerdown', surfaceDown)
   editor?.addEventListener('pointermove', surfaceMove)

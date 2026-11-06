@@ -67,11 +67,15 @@
       if (b.type === 'rect') {
         var x0 = Number(b.x0), x1 = Number(b.x1), y0 = Number(b.y0), y1 = Number(b.y1)
         if (![x0, x1, y0, y1].every(Number.isFinite)) continue
-        blockers.push({ type: 'rect', x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: Math.min(y0, y1), y1: Math.max(y0, y1) })
+        var rect = { type: 'rect', x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: Math.min(y0, y1), y1: Math.max(y0, y1) }
+        if (b.hidden === true) rect.hidden = true
+        blockers.push(rect)
       } else if (b.type === 'circle') {
         var cx = Number(b.cx), cy = Number(b.cy), r = Number(b.r)
         if (![cx, cy, r].every(Number.isFinite) || r <= 0) continue
-        blockers.push({ type: 'circle', cx: cx, cy: cy, r: r })
+        var circle = { type: 'circle', cx: cx, cy: cy, r: r }
+        if (b.hidden === true) circle.hidden = true
+        blockers.push(circle)
       } else if (b.type === 'polygon') {
         var rawPoints = Array.isArray(b.points) ? b.points : []
         if (rawPoints.length < 3) continue
@@ -83,7 +87,11 @@
           if (!Number.isFinite(qx) || !Number.isFinite(qy)) { polygon = []; break }
           polygon.push([Math.min(1, Math.max(0, qx)), Math.min(1, Math.max(0, qy))])
         }
-        if (polygon.length >= 3) blockers.push({ type: 'polygon', points: polygon })
+        if (polygon.length >= 3) {
+          var poly = { type: 'polygon', points: polygon }
+          if (b.hidden === true) poly.hidden = true
+          blockers.push(poly)
+        }
       }
     }
     return { outer: points, blockers: blockers }
@@ -143,6 +151,7 @@
     var list = area(scene).blockers
     for (var i = 0; i < list.length; i += 1) {
       var b = list[i]
+      if (b.hidden === true) continue
       if (b.type === 'rect') {
         if (x > b.x0 - 0.08 && x < b.x1 + 0.08 && y > b.y0 - 0.06 && y < b.y1 + 0.06) return true
       } else if (b.type === 'circle') {
@@ -217,6 +226,7 @@
     depthFromScreen: depthFromScreen,
     screenFromDepth: screenFromDepth,
     canStand: canStand,
+    inPolygon: inPolygon,
     resolveWalk: resolveWalk,
     moveInside: moveInside,
     updateWalkZone: updateWalkZone,
