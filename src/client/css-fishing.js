@@ -37,11 +37,9 @@ export const CSS_FISHING = `
 .dp-fish-bait-count{position:absolute;right:-2px;bottom:-2px;min-width:16px;height:16px;padding:0 3px;border:1.5px solid var(--ac-border-light);border-radius:999px;background:var(--ac-bg-content);color:var(--ac-text-body);font-size:8px;font-weight:800;line-height:13px;text-align:center}
 .dp-fish-bait[aria-pressed=true] .dp-fish-bait-count{border-color:var(--ac-primary);background:var(--ac-primary);color:#fff}
 .dp-fish-bait-check{position:absolute;top:-2px;right:-2px;display:grid;place-items:center;width:14px;height:14px;border-radius:50%;background:var(--ac-primary);color:#fff;font-size:8px;font-weight:900;line-height:1;box-shadow:0 0 0 2px var(--ac-bg-content)}
-.dp-fish-cast,.dp-fish-keep{display:block;width:100%;min-height:46px;border:2px solid var(--ac-primary-active);border-radius:var(--ac-pill);background:var(--ac-primary);color:#fff;font:inherit;font-size:15px;font-weight:800;letter-spacing:.08em;box-shadow:0 4px 0 var(--ac-primary-active);cursor:pointer;touch-action:manipulation;transition:transform .15s var(--ac-ease),box-shadow .15s var(--ac-ease),background .15s var(--ac-ease)}
-.dp-fish-cast{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:36px;margin-top:6px;padding:4px 10px}
-.dp-fish-cast b{font-size:13px;font-weight:800;letter-spacing:.08em;line-height:1.1}
-.dp-fish-cast small{font-size:8px;font-weight:700;letter-spacing:0;line-height:1.1;color:rgba(255,250,240,.82)}
-.dp-fish-cast:disabled small{color:var(--ac-text-disabled)}
+.dp-fish-cast,.dp-fish-keep{display:block;min-height:46px;border:2px solid var(--ac-primary-active);border-radius:var(--ac-pill);background:var(--ac-primary);color:#fff;font:inherit;font-size:15px;font-weight:800;letter-spacing:.08em;box-shadow:0 4px 0 var(--ac-primary-active);cursor:pointer;touch-action:manipulation;transition:transform .15s var(--ac-ease),box-shadow .15s var(--ac-ease),background .15s var(--ac-ease)}
+.dp-fish-cast{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;width:max-content;min-width:116px;min-height:32px;margin:6px auto 0;padding:0 18px;font-size:12.5px;letter-spacing:.06em}
+.dp-fish-keep{width:100%}
 .dp-fish-cast:hover:not(:disabled),.dp-fish-keep:hover:not(:disabled){background:var(--ac-primary-hover);transform:translateY(-1px);box-shadow:0 5px 0 var(--ac-primary-active)}
 .dp-fish-cast:active:not(:disabled),.dp-fish-keep:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--ac-primary-active)}
 .dp-fish-cast:disabled{background:var(--ac-bg-disabled);color:var(--ac-text-disabled);border-color:var(--ac-border-light);box-shadow:none;cursor:not-allowed}
@@ -144,6 +142,6 @@ export const CSS_FISHING = `
 .dp-fish-stars{font-size:17px;letter-spacing:3px;color:#e8b400}
 .dp-fish-facts{font-size:12px;font-weight:700;color:var(--ac-text-body)}
 .dp-fish-away{display:flex;align-items:center;justify-content:center;padding:18px 0 8px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);font-size:58px;line-height:1;margin-bottom:8px}
-@container fishing (max-width:235px){.dp-fish-scene{height:200px}.dp-fish-bait{width:44px}.dp-fish-bait em{font-size:20px}.dp-fish-gear-icon{width:30px;height:30px;font-size:15px}.dp-fish-spots{grid-template-columns:minmax(0,1fr)}.dp-fish-cast,.dp-fish-keep{min-height:34px;font-size:13px}.dp-fish-cast b{font-size:12.5px}}
+@container fishing (max-width:235px){.dp-fish-scene{height:200px}.dp-fish-bait{width:44px}.dp-fish-bait em{font-size:20px}.dp-fish-gear-icon{width:30px;height:30px;font-size:15px}.dp-fish-spots{grid-template-columns:minmax(0,1fr)}.dp-fish-cast{min-height:30px;min-width:104px;padding:0 14px;font-size:12px}.dp-fish-keep{min-height:34px;font-size:13px}}
 @media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber,.dp-fish-gear-panel{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait,.dp-fish-gear-icon{transition:none!important}}
 `

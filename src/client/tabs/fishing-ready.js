@@ -88,13 +88,13 @@ function renderDock(ui, baitState) {
     choices.appendChild(choice)
   }
   dock.appendChild(choices)
-  const cast = button('dp-btn dp-btn-wide dp-fish-cast', { 'data-fish': 'cast' }, function () {
+  const cast = button('dp-btn dp-fish-cast', { 'data-fish': 'cast' }, function () {
     ui.send('fishCast', { power: .5, bait: selectedBait })
   })
   const castLabel = hungry ? '先喂食' : closed ? '晚上才开' : baitState.selected === null ? '没有鱼饵' : '抛竿'
   const castNote = hungry ? '饱食为 0' : closed ? '换个钓点或等晚上' : chosen ? baitLabel(chosen) + ' ×1' : '去商店买鱼饵'
-  cast.appendChild(el('b', null, castLabel))
-  cast.appendChild(el('small', null, castNote))
+  cast.textContent = castLabel === '抛竿' ? '🎣 抛竿' : castLabel
+  cast.setAttribute('aria-label', castLabel + '，' + castNote)
   cast.disabled = baitState.selected === null || hungry || closed
   dock.appendChild(cast)
   ui.content.appendChild(dock)
