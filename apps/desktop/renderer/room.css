@@ -272,23 +272,16 @@ body[data-editing="true"] .bar {
 .pig.self { cursor: grab; }
 .pig.self:active { cursor: grabbing; }
 
-/* 纸片人走路：只晃立绘/emoji，阴影保持贴地。 */
-.pig.walking img,
-.pig.walking .emoji {
-  animation: paper-walk .3s ease-in-out infinite;
-}
-
-.pig.walking img { transform-origin: 50% 89.5%; }
-.pig.walking .emoji { transform-origin: 50% 100%; }
-
+/* 纸片人走路：只晃身体，阴影单独留在脚下。 */
 @keyframes paper-walk {
-  0% { rotate: -2.4deg; translate: 0 0; }
-  50% { rotate: 2.4deg; translate: 0 -1px; }
-  100% { rotate: -2.4deg; translate: 0 0; }
+  0% { transform: rotate(-3.2deg) translateX(-1px); }
+  50% { transform: rotate(3.2deg) translateX(1px); }
+  100% { transform: rotate(-3.2deg) translateX(-1px); }
 }
 
 .pig .body {
   position: relative;
+  z-index: 2;
   width: calc(96px * var(--s, 1));
   height: calc(96px * var(--s, 1));
   display: grid;
@@ -335,17 +328,19 @@ body[data-editing="true"] .bar {
 .pig .tag .you { color: var(--mint-dark); font-weight: 800; }
 .pig .tag .host { color: #c8873a; }
 
-.pig .body::after {
+.pig::after {
   content: "";
   position: absolute;
   left: 50%;
   bottom: calc(-5px * var(--sh, 1));
-  width: calc(66% * var(--sh, 1));
+  z-index: 1;
+  width: calc(63.36px * var(--s, 1) * var(--sh, 1));
   height: calc(10px * var(--sh, 1));
   transform: translateX(-50%);
   border-radius: 50%;
   background: rgba(114, 93, 66, .16);
   opacity: var(--shadow-op, .8);
+  pointer-events: none;
 }
 
 /* 自己的猪只靠名牌上的「· 你」和可拖动光标区分，不再画虚线圈。 */
@@ -353,6 +348,7 @@ body[data-editing="true"] .bar {
 .pig.emote-wave .body { animation: wave .5s ease-in-out 3; }
 .pig.emote-jump .body { animation: jump .42s ease-in-out 3; }
 .pig.emote-pat .body { animation: pat .4s ease-in-out 4; }
+.pig.walking .body { animation: paper-walk .32s ease-in-out infinite; }
 
 @keyframes wave {
   0%, 100% { transform: rotate(0); }
