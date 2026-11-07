@@ -255,6 +255,28 @@ body[data-editing="true"] .bar {
   inset: 0;
 }
 
+/* 场景前景层：按物体底部的深度插在猪中间，猪走到后面会被挡住。 */
+.scene-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+body[data-scene="pen"] .scene-layer[data-layer-scene="room"],
+body[data-scene="room"] .scene-layer[data-layer-scene="pen"] {
+  display: none;
+}
+
+#layer-pen-tree { z-index: 39; }
+#layer-room-bookshelf { z-index: 66; }
+#layer-room-desk { z-index: 57; }
+#layer-room-sofa { z-index: 76; }
+
 .pig {
   position: absolute;
   bottom: 6px;

@@ -29,6 +29,7 @@
 | `assets/room-pen.png` | 联机房间猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
 | `assets/room-pen-25d.png` | 联机 2.5D 猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
 | `assets/room-room-25d.png` | 联机 2.5D 房间背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
+| `assets/room-pen-tree.webp`、`assets/room-room-bookshelf.webp`、`assets/room-room-desk.webp`、`assets/room-room-sofa.webp` | 联机场景前景遮挡层（从已审定背景切出） | **CC BY 4.0** | 来源同对应场景背景 |
 | `assets/room-lobby.png` | 联机大厅两只小猪插画 | **CC BY 4.0** | 从用户确认的 Codex image_gen 原型裁切，用户选定 |
 | `assets/ui-*.svg` | 历史未使用 UI 图标 | **MIT** | 项目原创矢量图 |
 | `assets/piggy-emoji.woff2` | 网页 emoji 子集字体 | **OFL-1.1** | Noto Color Emoji 子集，见 `assets/piggy-emoji-LICENSE.txt` |
