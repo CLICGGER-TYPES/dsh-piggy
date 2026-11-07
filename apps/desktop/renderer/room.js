@@ -18,6 +18,8 @@
   var SCENE_KEY = 'dsh-piggy:room-scene'
   var scene = 'pen'
   var roomScene = /** @type {any} */ (window).PiggyRoomScene
+  var sceneItems = /** @type {any} */ (window).PiggyRoomSceneItems
+  if (sceneItems) sceneItems.mount(pigs)
 
   /** @type {any} */
   var snapshot = null

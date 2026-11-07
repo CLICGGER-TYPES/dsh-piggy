@@ -272,11 +272,6 @@ body[data-scene="room"] .scene-layer[data-layer-scene="pen"] {
   display: none;
 }
 
-#layer-pen-tree { z-index: 39; }
-#layer-room-bookshelf { z-index: 66; }
-#layer-room-desk { z-index: 57; }
-#layer-room-sofa { z-index: 76; }
-
 .pig {
   position: absolute;
   bottom: 6px;
