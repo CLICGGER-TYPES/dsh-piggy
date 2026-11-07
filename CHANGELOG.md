@@ -7,6 +7,14 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+---
+
+## [0.37.2] — 2026-11-07 · 联机房间与 2.5D 场景
+
+配套桌面外壳 0.6.8，存档仍为 v15。
+
+本轮把联机房间、2.5D 猪圈/房间和地图边界编辑器带进正式版：桌面版可以创建/加入 4 位房间码，多只猪同屏走动、遮挡和互动；布置与边界数据存在本机。
+
 - 根目录源码收进 `src/host/`，根目录只留 `index.js`；`package.json` exports/files 与桌面打包清单同步，新增根目录守卫测试。
 - 代码与文档保持 MIT；新增 `LICENSE-ASSETS.md`，明确小猪图 Apache 2.0、AI 生成场景/道具 CC BY 4.0、字体 OFL 1.1；用户提供的原摸摸 GIF 帧图集移出仓库和发布包。
 - 清理仓库中的本机绝对路径；发布前检查加入路径与素材许可核对。
@@ -42,6 +50,13 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 - 联机入口图标改成前后两只小猪：`assets/ui-room.png` 由小猪立绘合成，主屏方块和页签标题共用。
 - 藏猪方块入口图标改成一只小猪被墙挡住后半截：`assets/ui-pig-puzzle.png`，主屏方块和扩展标题共用。
 - 新增六款小猪皮肤：邮差猪、园丁猪、雨衣猪、画家猪、消防员猪、音乐家猪；每款 11 个动作。邮差猪完成快递员工作解锁，园丁猪完成园丁工作解锁，其余四款直接可用。
+
+### 测试与致谢
+
+- 本轮还验证了 2.5D 纸雕房间、纸雕布置编辑器、沙发落地校准和 2D 等距锚点模型；这些是独立原型，不随安装包发布。测试结论：锚点、占格和深度排序应作为资产与房间坐标的一部分统一处理，不在运行时用 xyz 滑块硬调。
+- 感谢参与联机房间、2.5D 场景、地图边界编辑器、纸雕编辑器和等距锚点测试的各位，也感谢所有提交代码、画作、测试和反馈的朋友：[@1nuoiscute](https://github.com/1nuoiscute)、[@anupamme](https://github.com/anupamme)、[@Skipanic](https://github.com/Skipanic)、[@tetezi](https://github.com/tetezi)、[@WolalaQAQ](https://github.com/WolalaQAQ)、[@Flappy-Boy](https://github.com/Flappy-Boy)。
+
+已知限制：Windows 混合 DPI 双屏、macOS、真实跨设备 LAN/云、360 安全软件未验收；Linux 桌面使用 XWayland 以保留窗口绝对定位。npm 由维护者手动发布。国内备用下载：[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
 
 ## [0.37.2-rc.15] — 2026-11-05 · 面板统一与 100 种鱼
 

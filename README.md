@@ -49,7 +49,7 @@ dsh plugin --profile web add dsh-piggy
 
 安装后重启 DSH 并刷新页面。也可以安装别名包 [`dsh-plugin-piggy`](https://www.npmjs.com/package/dsh-plugin-piggy)，同一个 profile 只需装其中一个。
 
-> 不带版本号安装 npm `latest`。想用预览版请显式指定版本，例如 `dsh-piggy@0.37.2-rc.15`；npm 标签和 GitHub Release 可能不同步，以发布页为准。
+> 不带版本号安装 npm `latest`。想固定版本请显式指定，例如 `dsh-piggy@0.37.2`；npm 标签和 GitHub Release 可能不同步，以发布页为准。
 
 ### 桌面版
 
@@ -96,9 +96,9 @@ npm run typecheck
 
 ## 版本与发布
 
-- 稳定版：游戏 0.37.1 / 桌面外壳 0.6.7。
-- 预览版：游戏 0.37.2-rc.15 / 桌面外壳 0.6.8-rc.11。
-- npm `latest` 目前仍是 0.37.0；`rc` 标签由维护者手动发布。
+- 稳定版：游戏 0.37.2 / 桌面外壳 0.6.8。
+- 预览版：暂无；上一预览为 0.37.2-rc.15 / 0.6.8-rc.11。
+- npm `latest` 目前仍是 0.37.0，需维护者手动更新；`rc` 标签同理。
 - Gitee 不再发布新版本；历史附件只作回退。
 
 发布页、校验文件和国内渠道见[发布渠道说明](docs/guides/releases.md)，逐版本变更见 [CHANGELOG](CHANGELOG.md)。

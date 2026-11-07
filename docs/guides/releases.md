@@ -4,16 +4,16 @@
 
 | 部分 | 稳定版 | 预览版 |
 |---|---|---|
-| 游戏与 DSH 插件 | 0.37.1 | 0.37.2-rc.15 |
-| 桌面外壳 | 0.6.7 | 0.6.8-rc.11 |
+| 游戏与 DSH 插件 | 0.37.2 | — |
+| 桌面外壳 | 0.6.8 | — |
 | npm | `latest` 0.37.0 | `rc` 由维护者手动发布 |
 | 菜园扩展 | 4.0.10 | 4.5.0；经典版 3.2.4 |
 
-- 稳定版：[GitHub v0.37.1](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.1)
-- 当前预览版：[GitHub v0.37.2-rc.15](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.15)
+- 稳定版：[GitHub v0.37.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2)
+- 上一预览版：[GitHub v0.37.2-rc.15](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.15)
 - 全部版本与逐版本变更：[Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases) / [CHANGELOG](../../CHANGELOG.md)
 
-RC 只更新 `rc` 标签，不改变稳定入口；预览版默认折叠在更新列表里，不弹气泡、不亮红点，也不会自动安装。
+预览版（RC）只更新 `rc` 标签，不改变稳定入口；预览版默认折叠在更新列表里，不弹气泡、不亮红点，也不会自动安装。
 
 ## 下载
 
@@ -36,8 +36,8 @@ macOS 版本从 2026-11-06 起暂停构建：没有签名，也没有能长期�
 # 稳定版
 dsh plugin --profile web add dsh-piggy
 
-# 精确预览版
-dsh plugin --profile web add dsh-piggy@0.37.2-rc.15
+# 固定版本（npm 发布后）
+dsh plugin --profile web add dsh-piggy@0.37.2
 ```
 
 npm 由维护者按版本手动发布，GitHub Release 与 npm 可能相差一段时间。DSH 插件不会自动跟随 npm 升级，装哪一版由你决定。
