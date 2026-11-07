@@ -276,27 +276,7 @@
     return { x: 0.5, y: 0.15 }
   }
 
-  /** 单轴移动撞边时，沿着边找一点最近的可行位置，避免顶住不动。 */
-  function slideMove(scene, fromX, fromY, toX, toY) {
-    var horizontal = Math.abs(toX - fromX) >= Math.abs(toY - fromY)
-    for (var i = 1; i <= 3; i += 1) {
-      var step = 0.012 * i
-      if (horizontal) {
-        var up = Math.min(1, toY + step)
-        if (canStand(scene, toX, screenFromDepth(up))) return { x: toX, y: up }
-        var down = Math.max(0, toY - step)
-        if (canStand(scene, toX, screenFromDepth(down))) return { x: toX, y: down }
-      } else {
-        var right = Math.min(1, toX + step)
-        if (canStand(scene, right, screenFromDepth(toY))) return { x: right, y: toY }
-        var left = Math.max(0, toX - step)
-        if (canStand(scene, left, screenFromDepth(toY))) return { x: left, y: toY }
-      }
-    }
-    return null
-  }
-
-  /** 从 from 走到 to；撞边界/家具时沿边滑动到离目标最近的可站点。 */
+  /** 从 from 走到 to；撞边界/家具时沿 x 或 y 滑动，单轴顶住就停。 */
   function moveInside(scene, fromX, fromY, toX, toY) {
     var fx = clamp01(Number(fromX))
     var fy = clamp01(Number(fromY))
@@ -306,9 +286,7 @@
     if (canStand(scene, tx, screenFromDepth(ty))) return { x: tx, y: ty }
     if (Math.abs(tx - fx) > 0.000001 && canStand(scene, tx, fsy)) return { x: tx, y: fy }
     if (Math.abs(ty - fy) > 0.000001 && canStand(scene, fx, screenFromDepth(ty))) return { x: fx, y: ty }
-    var slide = slideMove(scene, fx, fy, tx, ty)
-    if (slide !== null) return slide
-    return resolveWalk(scene, tx, screenFromDepth(ty))
+    return resolveWalk(scene, fx, fy)
   }
 
   function updateWalkZone(scene) {

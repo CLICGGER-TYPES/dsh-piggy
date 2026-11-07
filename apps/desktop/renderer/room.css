@@ -265,7 +265,7 @@ body[data-editing="true"] .bar {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  transition: left .18s ease-out, bottom .18s ease-out;
+  transition: left .06s linear, bottom .06s linear;
   touch-action: none;
 }
 
