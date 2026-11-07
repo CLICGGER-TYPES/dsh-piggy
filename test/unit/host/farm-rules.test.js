@@ -233,9 +233,12 @@ test('3.x 存档迁移不凭空补出已开垦地（全为空地，无荒草留�
   assert.equal(old.plots.filter(plot => plot && plot.fallow).length, 0, '不能凭空长出荒地')
 
   setRandom(() => 0.5)
-  const fresh = farm.init()
+  const realNow = Date.now
+  Date.now = () => SUNNY
+  let fresh
+  try { fresh = farm.init() } finally { Date.now = realNow }
   assert.equal(fresh.unlocked, START_PLOTS)
-  assert.ok(fresh.plots.slice(0, START_PLOTS).every(plot => plot.fallow === true && plot.pests.dry === 0), '只有新开局才生成荒地；新地保留 dry:0 哨兵')
+  assert.ok(fresh.plots.slice(0, START_PLOTS).every(plot => plot.fallow === true && plot.pests.dry === 0), '只有新开局才生成荒地；晴天新地保留 dry:0 哨兵')
   assert.ok(fresh.plots.slice(START_PLOTS).every(plot => plot === null))
 
   const small = normalize({ version: 3, unlocked: 2, plots: [], seeds: {}, harvest: {}, acquired: {}, tools: {}, helper: {} })
