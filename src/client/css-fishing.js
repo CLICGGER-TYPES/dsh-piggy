@@ -1,70 +1,97 @@
 // @ts-check
 /**
- * 钓鱼页样式（U24-7）：奶油底、棕色字、米色细边、青色主按钮。
- * 布局按用户确认的两张概念稿：292px 三列鱼饵，窄屏改成三行；搏斗圆盘跟着容器缩，不再固定 178px 顶出去。
+ * 钓鱼页样式（2026-11-06 重做）：钓点场景、独立鱼饵卡、底部三个入口。
+ * 奶油底、棕色字、米色细边、青色主按钮；窄面板用容器查询缩场景和鱼饵。
  */
 export const CSS_FISHING = `
 .dp-fish-bobber-img{display:block;width:38px;height:52px;object-fit:contain}
 [data-art-loaded=true]>.dp-fish-art-fallback,[data-art-loaded=true]>.dp-fish-fight-fallback,[data-art-loaded=true]>.dp-fish-result-emoji{visibility:hidden}
-.dp-fish{container-type:inline-size;container-name:fishing;display:flex;flex-direction:column;gap:8px;min-width:0}
-.dp-fish-hero{display:grid;gap:4px;padding:6px 8px 7px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content)}
-.dp-fish-hero-cap{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
-.dp-fish-kicker{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--ac-text-2)}
-.dp-fish-spot-name{font-size:19px;font-weight:800;letter-spacing:.04em;color:var(--ac-text)}
-.dp-fish-tag{font-size:9.5px;font-weight:700;color:#9a6b1f}
+.dp-fish{container-type:inline-size;container-name:fishing;display:flex;flex-direction:column;gap:0;min-width:0}
+.dp-fish-scene{position:relative;height:226px;overflow:hidden;border:2px solid var(--ac-border-light);border-radius:20px;background:linear-gradient(160deg,#e4f2e2,#c9e8df)}
 .dp-fish-art{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:13px;background:linear-gradient(160deg,#dff8f3,#bfeef0)}
 .dp-fish-art-fallback{font-size:34px;line-height:1;filter:drop-shadow(0 2px 0 rgba(61,52,40,.14))}
 .dp-fish-art-img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
 [data-dsh-pig] .dp-fish-art-img[hidden],[data-dsh-pig] .dp-fish-result-img[hidden],[data-dsh-pig] .dp-fish-fight-img[hidden]{display:none}
-.dp-fish-hero-art{height:60px}
-.dp-fish-panel{padding:6px 9px 7px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content)}
-.dp-fish-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin:0 1px 5px;font-size:12px;color:var(--ac-text)}
-.dp-fish-head b{font-weight:800}
-.dp-fish-head-note{max-width:58%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:600;color:var(--ac-text-2)}
-.dp-fish-baits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.dp-fish-bait{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;gap:3px;min-width:0;padding:6px 4px;border:2px solid var(--ac-border-light);border-radius:14px;background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;cursor:pointer;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease)}
-.dp-fish-bait em{font-style:normal;font-size:24px;line-height:1.1}
-.dp-fish-bait-text{display:flex;align-items:baseline;justify-content:center;gap:4px;min-width:0;max-width:100%}
-.dp-fish-bait b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700;color:var(--ac-text)}
-.dp-fish-bait small{white-space:nowrap;font-size:10px;font-weight:700;color:var(--ac-text-2)}
-.dp-fish-bait[aria-pressed=true]{border-color:var(--ac-primary);background:var(--ac-primary-bg);box-shadow:inset 0 0 0 1px var(--ac-primary)}
-.dp-fish-bait:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}
-.dp-fish-bait:disabled{opacity:.55;background:var(--ac-bg-disabled);cursor:not-allowed}
-.dp-fish-blocked{margin:0;padding:8px 10px;border-radius:12px;background:#fff1df;color:#8f5123;font-size:11px;font-weight:700;line-height:1.5}
-.dp-fish-care{align-self:flex-start;margin:0}
-.dp-fish-cast,.dp-fish-keep{display:block;width:100%;min-height:46px;border:2px solid var(--ac-primary-active);border-radius:var(--ac-pill);background:var(--ac-primary);color:#fff;font:inherit;font-size:15px;font-weight:800;letter-spacing:.08em;box-shadow:0 4px 0 var(--ac-primary-active);cursor:pointer;touch-action:manipulation;transition:transform .15s var(--ac-ease),box-shadow .15s var(--ac-ease),background .15s var(--ac-ease)}
+.dp-fish-hero-art{height:100%;border-radius:0}
+.dp-fish-scene-art{width:100%;height:100%;border-radius:0}
+.dp-fish-scene-top{position:absolute;z-index:3;top:8px;left:8px;right:8px;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
+.dp-fish-loc-pill{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:var(--ac-text);font-size:11px;font-weight:800;line-height:1.2}
+.dp-fish-loc-icon{font-size:10px;line-height:1}
+.dp-fish-scene-bottom{position:absolute;z-index:3;right:9px;bottom:8px;display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
+.dp-fish-scene-pill{padding:3px 8px;border-radius:999px;background:rgba(255,250,240,.94);box-shadow:0 1px 3px rgba(61,52,40,.12);color:#5e6f4f;font-size:9px;font-weight:800;line-height:1.4}
+.dp-fish-scene-warn{background:#ffe4b8;color:#8f5123}
+.dp-fish-mascot{position:absolute;z-index:2;left:32%;top:27%;width:27.7%;aspect-ratio:222/130;overflow:hidden;pointer-events:none;transform:scaleX(-1);filter:drop-shadow(0 2px 2px rgba(61,52,40,.18))}
+.dp-fish-mascot-img{display:block;width:100%;height:100%}
+
+.dp-fish-dock{position:relative;z-index:2;margin:6px 0 0;padding:6px 9px 7px;border:2px solid var(--ac-border-light);border-radius:20px;background:var(--ac-bg-content)}
+.dp-fish-dock-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 1px 3px;min-height:12px;font-size:9.5px;color:var(--ac-text)}
+.dp-fish-dock-head b{font-weight:800}
+.dp-fish-dock-note{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;font-weight:700;color:var(--ac-text-2)}
+.dp-fish-dock-shop{flex:none;padding:1px 7px;border:0;border-radius:999px;background:var(--ac-primary-bg);color:var(--ac-primary-active);font:inherit;font-size:8.5px;font-weight:800;cursor:pointer}
+.dp-fish-warn{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 7px;padding:5px 8px;border-radius:11px;background:#fff1df;color:#8f5123;font-size:10px;font-weight:700;line-height:1.35}
+.dp-fish-warn .dp-mini{flex:none;margin:0;padding:3px 8px;font-size:9.5px}
+.dp-fish-baits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-items:center;gap:8px}
+.dp-fish-bait{position:relative;display:grid;place-items:center;width:48px;max-width:100%;aspect-ratio:1;padding:0;border:2px solid #f0d6c4;border-radius:50%;background:#fff7ef;color:var(--ac-text);font:inherit;cursor:pointer;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease),transform .15s var(--ac-ease)}
+.dp-fish-bait em{font-style:normal;font-size:21px;line-height:1;transform:translateY(-1px)}
+.dp-fish-bait[aria-pressed=true]{border-color:var(--ac-primary);background:var(--ac-primary-bg);box-shadow:inset 0 0 0 2px var(--ac-primary)}
+.dp-fish-bait:hover:not(:disabled){transform:translateY(-1px)}
+.dp-fish-bait:focus-visible{outline:2px solid var(--ac-primary);outline-offset:2px}
+.dp-fish-bait:disabled{opacity:.45;filter:grayscale(.4);cursor:not-allowed}
+.dp-fish-bait-count{position:absolute;right:-2px;bottom:-2px;min-width:16px;height:16px;padding:0 3px;border:1.5px solid var(--ac-border-light);border-radius:999px;background:var(--ac-bg-content);color:var(--ac-text-body);font-size:8px;font-weight:800;line-height:13px;text-align:center}
+.dp-fish-bait[aria-pressed=true] .dp-fish-bait-count{border-color:var(--ac-primary);background:var(--ac-primary);color:#fff}
+.dp-fish-bait-check{position:absolute;top:-2px;right:-2px;display:grid;place-items:center;width:14px;height:14px;border-radius:50%;background:var(--ac-primary);color:#fff;font-size:8px;font-weight:900;line-height:1;box-shadow:0 0 0 2px var(--ac-bg-content)}
+.dp-fish-cast,.dp-fish-keep{display:block;min-height:46px;border:2px solid var(--ac-primary-active);border-radius:var(--ac-pill);background:var(--ac-primary);color:#fff;font:inherit;font-size:15px;font-weight:800;letter-spacing:.08em;box-shadow:0 4px 0 var(--ac-primary-active);cursor:pointer;touch-action:manipulation;transition:transform .15s var(--ac-ease),box-shadow .15s var(--ac-ease),background .15s var(--ac-ease)}
+.dp-fish-cast{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;width:max-content;min-width:116px;min-height:32px;margin:6px auto 0;padding:0 18px;font-size:12.5px;letter-spacing:.06em}
+.dp-fish-keep{width:100%}
 .dp-fish-cast:hover:not(:disabled),.dp-fish-keep:hover:not(:disabled){background:var(--ac-primary-hover);transform:translateY(-1px);box-shadow:0 5px 0 var(--ac-primary-active)}
 .dp-fish-cast:active:not(:disabled),.dp-fish-keep:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--ac-primary-active)}
 .dp-fish-cast:disabled{background:var(--ac-bg-disabled);color:var(--ac-text-disabled);border-color:var(--ac-border-light);box-shadow:none;cursor:not-allowed}
-.dp-fish-sec{overflow:hidden;border:2px solid var(--ac-border-light);border-radius:16px;background:var(--ac-bg-content)}
-.dp-fish-summary{display:flex;align-items:center;gap:6px;min-height:32px;padding:5px 10px;list-style:none;color:var(--ac-text);font-size:11px;font-weight:800;cursor:pointer}
-.dp-fish-summary::-webkit-details-marker{display:none}
-.dp-fish-summary:focus-visible{outline:2px solid var(--ac-primary);outline-offset:-2px}
-.dp-fish-summary-main{display:flex;align-items:center;gap:6px;min-width:0}
-.dp-fish-summary-value{margin-left:auto;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:700;color:var(--ac-text-2)}
-.dp-fish-chev{flex:none;font-size:13px;line-height:1;color:var(--ac-text-2);transition:transform .2s var(--ac-ease)}
-.dp-fish-sec[open] .dp-fish-chev{transform:rotate(180deg)}
-.dp-fish-sec-body{display:grid;gap:7px;padding:0 9px 9px}
-.dp-fish-spots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.dp-fish-spot{display:grid;justify-items:center;gap:1px;min-width:0;padding:6px 2px;border:2px solid var(--ac-border-light);border-radius:14px;background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;cursor:pointer}
-.dp-fish-spot em{font-style:normal;font-size:20px;line-height:1.1}
-.dp-fish-spot b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:700;color:var(--ac-text)}
-.dp-fish-spot small{font-size:9.5px;font-weight:600;color:var(--ac-text-2);white-space:nowrap}
+.dp-fish-gear{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 0}
+.dp-fish-gear-btn{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 10px;border:2px solid var(--ac-border-light);border-radius:999px;background:var(--ac-bg-content);color:var(--ac-text-body);font:inherit;font-size:9.5px;font-weight:700;line-height:1;cursor:pointer;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease),box-shadow .15s var(--ac-ease)}
+.dp-fish-gear-icon{display:inline-block;font-size:13px;line-height:1}
+.dp-fish-gear-value{white-space:nowrap}
+.dp-fish-gear-btn[aria-pressed=true]{background:var(--ac-primary-bg);border-color:var(--ac-primary);color:var(--ac-text);box-shadow:0 2px 0 var(--ac-primary)}
+.dp-fish-gear-btn:hover{border-color:var(--ac-border-hover)}
+.dp-fish-gear-btn:focus-visible{outline:2px solid var(--ac-primary);outline-offset:2px}
+.dp-fish-gear-panel{margin:8px 0 0;padding:9px 10px 10px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);animation:dp-fish-rise .18s var(--ac-ease)}
+@keyframes dp-fish-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.dp-fish-gear-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 7px}
+.dp-fish-gear-head b{font-size:11.5px;font-weight:800;color:var(--ac-text)}
+.dp-fish-gear-close{padding:1px 2px;border:0;background:none;color:var(--ac-text-2);font:inherit;font-size:9.5px;font-weight:700;cursor:pointer}
+.dp-fish-gear-close:hover{color:var(--ac-text)}
+.dp-fish-spots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.dp-fish-spot{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:7px;min-width:0;padding:7px 8px;border:2px solid var(--ac-border-light);border-radius:14px;background:var(--ac-bg-input);color:var(--ac-text-body);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s var(--ac-ease),background .15s var(--ac-ease)}
+.dp-fish-spot em{font-style:normal;font-size:20px;line-height:1}
+.dp-fish-spot-text{display:grid;gap:1px;min-width:0}
+.dp-fish-spot b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:800;color:var(--ac-text)}
+.dp-fish-spot small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;font-weight:600;color:var(--ac-text-2)}
 .dp-fish-spot[aria-pressed=true]{background:var(--ac-primary-bg);border-color:var(--ac-primary);box-shadow:0 2px 0 var(--ac-primary)}
 .dp-fish-spot:disabled{opacity:.55;cursor:not-allowed}
 .dp-fish-spot:focus-visible{outline:2px solid var(--ac-primary);outline-offset:1px}
+.dp-fish-rod-panel{display:grid;gap:7px}
+.dp-fish-rod-panel .dp-mini{width:100%}
 .dp-fish-rodnow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:10px;background:var(--ac-bg-input);font-size:11px;font-weight:800;color:var(--ac-text)}
 .dp-fish-rodnow small{font-size:10px;font-weight:600;color:var(--ac-text-2)}
 .dp-fish-note{margin:0;font-size:10px;line-height:1.5;font-weight:600;color:var(--ac-text-2)}
-.dp-fish-stock{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:10.5px;font-weight:700;color:var(--ac-text-body)}
-.dp-fish-stock .dp-mini{margin-left:auto}
+.dp-fish-auto{display:grid;gap:7px}
 .dp-fish-auto-bait{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:10px;background:var(--ac-bg-input);font-size:10.5px;font-weight:700;color:var(--ac-text-body)}
 .dp-fish-auto-bait b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ac-text)}
-.dp-fish-auto-row{display:grid;gap:6px}
-.dp-fish-auto-go{width:100%;padding:7px 10px;font-size:11px}
-.dp-fish-auto .dp-mini[data-fish-upgrade]{width:100%;font-size:10.5px}
+.dp-fish-stock{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:10.5px;font-weight:700;color:var(--ac-text-body)}
+.dp-fish-stock .dp-mini{margin-left:auto}
+.dp-fish-auto-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.dp-fish-auto-go{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;min-height:38px;padding:5px 4px;line-height:1.2}
+.dp-fish-auto-go b{font-size:11px;font-weight:800}
+.dp-fish-auto-go small{font-size:8.5px;font-weight:700;color:var(--ac-text-2);white-space:nowrap}
+.dp-fish-auto-go:disabled small{color:var(--ac-text-disabled)}
+.dp-fish-auto-head{margin-top:1px;font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--ac-text-2)}
+.dp-fish-buy{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:32px;padding:5px 9px;border:2px solid var(--ac-border-light);border-radius:12px;background:var(--ac-bg-input);color:var(--ac-text);font:inherit;font-size:10px;font-weight:700;text-align:left;cursor:pointer}
+.dp-fish-buy b{flex:none;font-size:9.5px;font-weight:800;color:var(--ac-text-body)}
+.dp-fish-buy:disabled{opacity:.55;cursor:not-allowed}
 .dp-fish-why{font-size:10px;font-weight:700;line-height:1.45;color:var(--ac-error)}
-.dp-fish-context{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 10px;border:2px solid var(--ac-border-light);border-radius:11px;background:var(--ac-bg-content);color:var(--ac-text-body);font-size:10.5px;font-weight:700;text-align:center}
+.dp-fish-panel{padding:8px 10px 9px;border:2px solid var(--ac-border-light);border-radius:16px;background:var(--ac-bg-content)}
+.dp-fish-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin:0 1px 5px;font-size:12px;color:var(--ac-text)}
+.dp-fish-head b{font-weight:800}
+.dp-fish-context{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 10px;border:2px solid var(--ac-border-light);border-radius:11px;background:var(--ac-bg-content);color:var(--ac-text-body);font-size:10.5px;font-weight:700;text-align:center;margin-bottom:8px}
 .dp-fish-water{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:230px;padding:0;overflow:hidden;border:2px solid var(--ac-border-light);border-radius:18px;background:linear-gradient(#d8f7ff 0 34%,#62c9e8 35% 70%,#2f9cc4 71%);cursor:pointer;touch-action:manipulation}
 .dp-fish-water-art{position:absolute;inset:0;width:auto;height:auto;border-radius:0}
 .dp-fish-water-art .dp-fish-art-fallback{font-size:46px;opacity:.9}
@@ -72,13 +99,13 @@ export const CSS_FISHING = `
 .dp-fish-waiting[data-bite=true]{box-shadow:inset 0 0 0 4px var(--ac-warning)}
 .dp-fish-waiting[data-bite=true] .dp-fish-bobber{animation:dp-fish-bite .18s ease-in-out infinite alternate}
 .dp-fish-waiting[data-nibble=true] .dp-fish-bobber{animation:dp-fish-nibble .42s ease-in-out}
-.dp-fish-wait-state{display:grid;justify-items:center;gap:2px;text-align:center}
+.dp-fish-wait-state{display:grid;justify-items:center;gap:2px;margin-top:8px;text-align:center}
 .dp-fish-wait-state b{font-size:14px;font-weight:800;color:var(--ac-text)}
 .dp-fish-wait-state small{font-size:10px;font-weight:600;color:var(--ac-text-2)}
 @keyframes dp-fish-bob{50%{transform:translateY(5px)}}
 @keyframes dp-fish-bite{to{transform:scale(1.2) rotate(7deg)}}
 @keyframes dp-fish-nibble{0%,100%{transform:translateY(0)}30%{transform:translateY(5px) rotate(-6deg)}60%{transform:translateY(-2px) rotate(4deg)}}
-.dp-fish-fight-art{position:relative;display:flex;align-items:center;justify-content:center;height:82px;overflow:hidden;border:2px solid var(--ac-border-light);border-radius:16px;background:var(--ac-bg-content)}
+.dp-fish-fight-art{position:relative;display:flex;align-items:center;justify-content:center;height:82px;margin-bottom:8px;overflow:hidden;border:2px solid var(--ac-border-light);border-radius:16px;background:var(--ac-bg-content)}
 .dp-fish-fight-fallback{font-size:28px;line-height:1;filter:drop-shadow(0 2px 0 rgba(61,52,40,.14))}
 .dp-fish-fight-img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
 .dp-fish-qte{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;min-height:0;padding:12px 10px 10px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);color:var(--ac-text);box-sizing:border-box;cursor:pointer;touch-action:manipulation;outline:0}
@@ -116,7 +143,7 @@ export const CSS_FISHING = `
 .dp-fish-result-title{font-size:15px;font-weight:800;color:var(--ac-text)}
 .dp-fish-stars{font-size:17px;letter-spacing:3px;color:#e8b400}
 .dp-fish-facts{font-size:12px;font-weight:700;color:var(--ac-text-body)}
-.dp-fish-away{display:flex;align-items:center;justify-content:center;padding:18px 0 8px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);font-size:58px;line-height:1}
-@container fishing (max-width:235px){.dp-fish-hero-art{height:60px}.dp-fish-baits{grid-template-columns:minmax(0,1fr);gap:6px}.dp-fish-bait{grid-template-columns:auto minmax(0,1fr);justify-items:start;align-items:center;gap:8px;padding:7px 10px}.dp-fish-bait em{font-size:24px}.dp-fish-bait-text{justify-content:flex-start}.dp-fish-spots{grid-template-columns:repeat(2,minmax(0,1fr))}.dp-fish-fight-art{height:68px}.dp-fish-spot-name{font-size:17px}.dp-fish-cast,.dp-fish-keep{min-height:42px;font-size:14px}}
-@media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait{transition:none!important}}
+.dp-fish-away{display:flex;align-items:center;justify-content:center;padding:18px 0 8px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);font-size:58px;line-height:1;margin-bottom:8px}
+@container fishing (max-width:235px){.dp-fish-gear{gap:6px}.dp-fish-scene{height:200px}.dp-fish-bait{width:44px}.dp-fish-bait em{font-size:20px}.dp-fish-gear-btn{min-height:26px;padding:0 8px;font-size:9px}.dp-fish-gear-icon{font-size:12px}.dp-fish-spots{grid-template-columns:minmax(0,1fr)}.dp-fish-cast{min-height:30px;min-width:104px;padding:0 14px;font-size:12px}.dp-fish-keep{min-height:34px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber,.dp-fish-gear-panel{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait,.dp-fish-gear-btn{transition:none!important}}
 `

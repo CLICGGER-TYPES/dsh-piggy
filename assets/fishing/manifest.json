@@ -2677,5 +2677,57 @@
     ],
     "export_sha256": "cd0b8c7710dc1eaffc23c7b58e0af79095f55b12e5ac5576aab102a9c50ee607",
     "processing": "Grok image_gen on solid #FF00FF background; rembg background removal; trim to content; proportional resize to 460px; centered on 512x512 transparent canvas."
+  },
+  {
+    "name": "scene-river-deck",
+    "source": "<artwork-workspace>/dsh-piggy/fishing/scene-river-deck-forward.jpg",
+    "prompt": "Call image_edit exactly once. Use this reference image: assets/fishing/scene-river-deck.png\n\nKeep the exact same cozy flat-vector river scene, palette, left bank, rocks, grass, water and lighting. Reshape ONLY the wooden shore deck: remove the long horizontal extension that runs to the right along the bank, and instead make the deck project FORWARD from the left bank into the water, toward the viewer / lower-right foreground. It should read as a small wooden pier pointing diagonally into the river, with a wide flat rectangular plank surface, roughly 1.3–1.5 times as long as it is wide. The front/near end should reach about two-thirds of the image width and about three-quarters of the image height, leaving open water to the right and below.\n\nKeep the deck small and integrated into the left bank — not a giant foreground platform covering the whole bottom. Leave the flat deck surface completely empty, with generous room for a small pig to stand at the near/front part. Keep the same warm wood planks and two short posts.\n\nKeep the rest of the scene as close to the reference as possible. Same flat no-outline style, soft muted colors, no texture, no harsh shadows. No characters, no pig, no people, no fish, no text, no UI, no border, no watermark. Full opaque background. Keep the same 817×704 aspect ratio. Return the image; I will handle the rest.",
+    "references": [
+      "assets/fishing/scene-river-deck.png"
+    ],
+    "self_check": "已实际查看：木甲板改成从左侧岸边向水面/前方伸出的斜向小码头，甲板面留空可站小猪；右侧和下方保留水面，无角色、鱼、文字或UI。",
+    "output": "scene-river-deck.png",
+    "size": [
+      1104,
+      944
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "sha256": "2a423c107185f5db502f4d4f97533e03553219c869c51911517ab32e102d6d7e",
+    "source_bytes_identical": true,
+    "export_size": [
+      817,
+      704
+    ],
+    "export_sha256": "7ab6616cbf016048619256a854a94c5ecbbb2cc06c5dbe4120fa4d85718d7968",
+    "processing": "从 1104×944 生成图居中裁成 1095×944（约 1.16:1）后等比缩到 817×704；不调色、不合成。"
+  },
+  {
+    "name": "deck-pig",
+    "source": "assets/pigs/feedback/fishing.png",
+    "prompt": "Derived from the built-in feedback/fishing art: crop the large pig to 222×130 starting at (16,93), remove the small companion pig and the two white bubbles above the head, fill the flower area with the pig skin color #FCCDAC. No structural redraw; kept as a fishing-scene prop.",
+    "references": [
+      "assets/pigs/feedback/fishing.png"
+    ],
+    "self_check": "已实际查看：大猪完整、无小伴猪和白色气泡，透明背景；鱼竿和猪脚完整，甲板叠层用。",
+    "method": "derived from feedback/fishing (Apache-2.0), crop + local white-bubble cleanup",
+    "output": "deck-pig.png",
+    "size": [
+      222,
+      130
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "sha256": "6da9e58f77a6526b2f0637df7c6a47d32f5cbd086466acae36bed4b64c691874",
+    "source_bytes_identical": false,
+    "export_size": [
+      222,
+      130
+    ],
+    "export_sha256": "472e9a6bf6262c2b8e67b3511c97a4e58fe4b0ecba1cca671e75f2052abc2952",
+    "processing": "Crop 222×130+16+93 from feedback/fishing; erase two white bubbles and fill the flower area with skin #FCCDAC; no structural redraw."
   }
 ]

@@ -15,6 +15,9 @@
 | `assets/pigs/**/*.png`、`extensions/pig-puzzle/assets/pig.png`、`docs/examples/skin-pack/*.png` | 小猪立绘、形态、皮肤、徽章、反馈图、示例皮肤 | **Apache-2.0** | 改自 Noto Emoji 🐖；见下方「小猪立绘」 |
 | `assets/pigs/manifest.json`、`assets/pigs/**/*.md` | 小猪素材清单与出处 | **MIT** | 记录本身按文档许可；记录的图片按上一行 |
 | `assets/fishing/**/*.png` | 钓鱼场景、浮漂、搏斗、鱼图鉴/结果插画 | **CC BY 4.0** | AI 生成，用户审定 |
+| `assets/fishing/deck-pig.png` | 钓鱼页木甲板上的小猪（由 Apache-2.0 反馈图裁切/清理） | **Apache-2.0** | 见下方「小猪立绘」 |
+| `assets/ui-room.png` | 联机入口的前后两只猪图标（由小猪立绘合成） | **Apache-2.0** | 见下方「小猪立绘」 |
+| `assets/ui-pig-puzzle.png` | 藏猪方块入口图标（小猪立绘 + 项目原创墙） | **Apache-2.0** | 见下方「小猪立绘」 |
 | `assets/fishing/*.json`、`assets/fishing/*.md` | 钓鱼素材清单与出处 | **MIT** | |
 | `assets/animations/pet-hand/*.webp` | 高清独立手五帧图集 | **CC BY 4.0** | AI 生成，用户审定 |
 | `assets/animations/pet-hand/*.json`、`*.md` | 手层清单与出处 | **MIT** | |
@@ -23,6 +26,11 @@
 | `extensions/mine/assets/**` | 矿洞场景、矿物、工具、UI 图 | **CC BY 4.0** | AI 生成，用户审定 |
 | `release/extension-variants/**/*.webp` | 手动导入扩展变体的素材 | **CC BY 4.0** | 与已发布扩展同源 |
 | `apps/desktop/artwork/*.png`、`apps/desktop/build/icon.png`、`icon.ico`、`tray.png` | 桌面应用图标与托盘图 | **CC BY 4.0** | 用户提供猪脸原图，只做等比缩放/透明补方 |
+| `assets/room-pen.png` | 联机房间猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
+| `assets/room-pen-25d.png` | 联机 2.5D 猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
+| `assets/room-room-25d.png` | 联机 2.5D 房间背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
+| `assets/room-pen-tree.webp`、`assets/pen-house.webp`、`assets/pen-pond.webp`、`assets/pen-bush-*.webp`、`assets/pen-fence-front.webp`、`assets/room-room-bookshelf.webp`、`assets/room-room-desk.webp`、`assets/room-room-sofa.webp` | 联机场景前景物品/遮挡层（从已审定背景切出） | **CC BY 4.0** | 来源同对应场景背景 |
+| `assets/room-lobby.png` | 联机大厅两只小猪插画 | **CC BY 4.0** | 从用户确认的 Codex image_gen 原型裁切，用户选定 |
 | `assets/ui-*.svg` | 历史未使用 UI 图标 | **MIT** | 项目原创矢量图 |
 | `assets/piggy-emoji.woff2` | 网页 emoji 子集字体 | **OFL-1.1** | Noto Color Emoji 子集，见 `assets/piggy-emoji-LICENSE.txt` |
 | `apps/desktop/renderer/piggy-emoji.ttf` | 桌面 emoji 整套字体 | **OFL-1.1** | 见 `apps/desktop/renderer/piggy-emoji-LICENSE.txt` |

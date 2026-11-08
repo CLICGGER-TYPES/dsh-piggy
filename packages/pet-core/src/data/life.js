@@ -38,11 +38,11 @@ export const LIFE_STAGES = Object.freeze([
     line: '刚从纸盒里蹦出来，圆头圆脑',
   }),
   Object.freeze({
-    key: 'young', label: '青年猪', emoji: '🐖', size: 60, fromLevel: 10,
+    key: 'young', label: '青年猪', emoji: '🐖', art: 'piglet', size: 60, fromLevel: 10,
     line: '长开了，走路带风',
   }),
   Object.freeze({
-    key: 'middle', label: '成年猪', emoji: '🐖', size: 68, fromLevel: 40,
+    key: 'middle', label: '成年猪', emoji: '🐖', art: 'piglet', size: 68, fromLevel: 40,
     line: '很有分量，会一屁股坐住你的椅子',
   }),
 ])

@@ -38,3 +38,11 @@
 - 像素验证：透明通道不变，掩膜外 RGB 逐像素不变；改动范围均在脸颊。逐图前后 SHA-256、改动像素数和边界见 `manifest.json` 的 `retouch` 字段。
 - 3 张徽章（`badge-pig-farm-fifteen`、`badge-pig-fish-hundred`、`badge-pig-fish-twenty`）因编辑后为 257 色，保留 RGBA 编码以避免调色板量化改动掩膜外像素；其余徽章按精确调色板 PNG 重编码，像素不变。
 - 藏猪方块棋子本轮暂不修改：改动扩展素材需要升 `pig-puzzle` 版本并重发扩展，留到下一批处理。
+
+## 六款新猪皮肤（2026-10-24 审图，2026-11-06 接入）
+
+邮差猪、园丁猪、雨衣猪、画家猪、消防员猪、音乐家猪，每只 11 个动作，共 66 张。原稿为审图工作区
+`<artwork-workspace>/deliverables/piggy-review/originals/<角色>/` 的 1254×1254 透明 PNG，经
+`tools/prepare-pig-art.py` 同一套导出流程缩到 256×256。源图/成品 SHA-256 与边界见 `manifest.json`；
+审图页为 `index.html`，2026-11-06 用户确认接入。逐字提示词未保存在当前工作区，见
+`docs/art-prompts/flat-pigs/six-new-pigs-20261024.md` 的说明。按本目录既有 **Apache-2.0** 小猪素材许可分发。

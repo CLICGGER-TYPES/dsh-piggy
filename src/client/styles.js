@@ -15,6 +15,8 @@ import { CSS_SKINS } from './css-skins.js'
 import { CSS_HOLO } from './css-holo.js'
 import { CSS_WALLET } from './wallet.js'
 import { CSS_EXTERNAL } from './external-css.js'
+import { CSS_POMODORO } from './css-pomodoro.js'
+import { CSS_ROOM } from './css-room.js'
 
 /** The whole stylesheet, in the order it must be applied. */
-export const CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS + CSS_WALLET + CSS_EXTERNAL
+export const CSS = CSS_BASE + CSS_TABS + CSS_TILES + CSS_CARD + CSS_DEX + CSS_FISHING + CSS_SKINS + CSS_HOLO + CSS_ACHIEVEMENTS + CSS_WALLET + CSS_EXTERNAL + CSS_ROOM + CSS_POMODORO

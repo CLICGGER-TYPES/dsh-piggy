@@ -111,3 +111,36 @@ test('developer career button unlocks and selects its art in one patch', () => {
   findByAttr(content, 'data-dev', 'skin:chef').fire('click')
   assert.deepEqual(sent.at(-1), { action: 'dev', payload: { patch: { skin: 'chef' } } })
 })
+
+test('six new pig skins have all eleven action PNGs; two unlock from jobs, four are free', () => {
+  const scenes = ['idle', 'eat', 'bathe', 'play', 'pet', 'relaxed', 'work', 'study', 'trip', 'fish', 'sleep']
+  const expected = new Map([
+    ['postman', 'courier'], ['gardener', 'gardener'],
+    ['raincoat', null], ['painter', null], ['firefighter', null], ['musician', null],
+  ])
+  for (const [key, job] of expected) {
+    const skin = SKINS.find(entry => entry.key === key)
+    assert.ok(skin, key)
+    assert.equal(skin.unlockJob ?? null, job)
+    assert.deepEqual([...skin.scenes], scenes)
+    for (const action of scenes) {
+      const suffix = action === 'idle' ? '' : '-' + action
+      const asset = PIG_ART_ASSETS[skin.art + suffix]
+      assert.ok(asset, `${key} ${action} asset`)
+      const png = readFileSync(new URL('../../../assets/' + asset, import.meta.url))
+      assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
+    }
+  }
+
+  const state = hatchEgg(NOW)
+  for (const key of ['raincoat', 'painter', 'firefighter', 'musician']) {
+    assert.equal(selectSkin(state, key, NOW).ok, true, key)
+  }
+  assert.equal(selectSkin(state, 'postman', NOW).reason, 'locked')
+  assert.equal(selectSkin(state, 'gardener', NOW).reason, 'locked')
+  finishWork(state, { key: 'courier', startedAt: NOW, endsAt: NOW + 120 * 60_000 }, NOW + 120 * 60_000, () => 1)
+  finishWork(state, { key: 'gardener', startedAt: NOW, endsAt: NOW + 120 * 60_000 }, NOW + 120 * 60_000, () => 1)
+  assert.equal(selectSkin(state, 'postman', NOW).ok, true)
+  assert.equal(selectSkin(state, 'gardener', NOW).ok, true)
+  assert.equal(formStageView(state, NOW).art, 'skin-gardener')
+})

@@ -11,6 +11,8 @@
  * @property {any} proxySettings
  * @property {any} fullscreenWatch
  * @property {any} externalManager
+ * @property {any} [roomManager]
+ * @property {any} [roomWindow]
  * @property {any} autostart
  * @property {Set<Promise<any>>} exportWrites
  * @property {any} topGuardTimer
@@ -70,6 +72,7 @@ export function createDesktopLifecycle(deps) {
     shellClosing = (async () => {
       await Promise.all([fullscreenStopping, keepShellUpdates ? undefined : resources.shellUpdates?.close(), resources.flushWindowState(),
         resources.proxySettings?.flush(), resources.fullscreenWatch?.flush(), resources.autostart.flush(),
+        resources.roomManager?.dispose?.(), resources.roomWindow?.close?.(),
         Promise.allSettled([...resources.exportWrites])])
       try { await deps.getResources().versions?.close() } catch (error) { deps.log('versions shutdown failed', String(error)) }
       await resources.flushLogs()

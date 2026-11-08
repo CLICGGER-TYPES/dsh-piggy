@@ -45,7 +45,12 @@ export function createPomodoroClock(getView, pill, content, refresh, isStopped) 
       var text = '🍅 ' + clockText(left)
       if (pill.getAttribute('data-pomo') === 'on') pill.textContent = text
       var clock = content.querySelector('.dp-pomo-clock')
-      if (clock !== null) clock.textContent = text
+      if (clock !== null) clock.textContent = clockText(left)
+      var ring = /** @type {HTMLElement|null} */ (content.querySelector('.dp-pomo-ring'))
+      if (ring !== null && p && p.active) {
+        var total = Math.max(1, p.minutes * 60)
+        ring.style.setProperty('--pomo-progress', Math.max(0, Math.min(100, Math.round((1 - left / total) * 100))) + '%')
+      }
       if (left === 0) {
         endsAt = 0
         refresh()
@@ -54,7 +59,7 @@ export function createPomodoroClock(getView, pill, content, refresh, isStopped) 
     if (breakEndsAt > 0) {
       var rest = Math.max(0, Math.ceil((breakEndsAt - now) / 1000))
       var note = content.querySelector('[data-pomo-break]')
-      if (note !== null) note.textContent = '☕ 休息 ' + clockText(rest) + '（也可以直接开下一个）'
+      if (note !== null) note.textContent = '☕ 休息 ' + clockText(rest) + ' · 也可以直接开下一个'
       if (rest === 0) breakEndsAt = 0
     }
   }

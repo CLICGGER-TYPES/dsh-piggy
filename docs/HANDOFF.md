@@ -1,5 +1,8 @@
 # dsh-piggy 维护交接文档（2026-11-03 更新；最新已公开 RC6，RC7/外壳 RC5 准备中）
 
+2026-11-06 macOS 暂停发布：用户确认先不维护 macOS，后面有人接手再说。`.github/workflows/release.yml` 已去掉 macOS 构建矩阵，下一版起只发 Windows/Linux 安装包；最后一个可用 macOS 包是 `v0.37.2-rc.15`（以及更早的历史 Releases，未删除）。`apps/desktop/package.json` 的 mac 构建配置、代码和历史文档保留；README、下载页、桌面安装页和发布说明已标注暂停。恢复时把 release workflow 的 mac job 加回，并重新做签名/实机验收。
+
+
 2026-11-03 RC7准备：发布源基线为已合并 main `7b42b94ba4571354657fb3ddd3e9c525a9c3dc53`，目标游戏 `0.37.2-rc.7`、桌面外壳 `0.6.8-rc.5`。本分支只更新发布版本元数据与说明，不改玩法；尚未合并、打 tag 或生成 Release。用户本轮只授权 GitHub RC；Gitee已取消，npm包仍由维护者另行确认，不在本轮发布。Windows只有部分代表流程证据、360告警未知，PR60 TLS/DSH接线不包含于该版本。资产和发布手顺见下文9.2。
 
 2026-10-28 D01 G0：开发基线取 `749f4cbac0e7114b60845c095c9b0e16e25a8442`，产品行为冻结在 RC5 `9e58204893646e547ca35ab1588f48d5c1a15893`；最新发布状态、候选恢复与 T01 边界以 [ROADMAP](ROADMAP.md) 顶部为准。G0 快照排除 `.git`、`node_modules`、生成构建目录和个人配置，保留随源码提交的生成文件；旧组织树不整体覆盖，文件级归属见 D01 任务记录。

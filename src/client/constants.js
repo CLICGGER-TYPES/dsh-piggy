@@ -73,6 +73,8 @@ export const DEV_TAB = { key: 'dev', label: '调试', emoji: '🔧' }
 
 /** 桌面版可热更新；DSH 里只提示 GitHub 有新版本。 */
 export const UPDATE_TAB = { key: 'update', label: '更新', emoji: '🔄' }
+/** 桌面版独有：局域网房间，多只猪同屏。 */
+export const ROOM_TAB = { key: 'room', label: '联机', emoji: '🐖' }
 /** 桌面版独有：关掉桌面上的猪（存档会先存好）。 */
 export const QUIT_TAB = { key: 'quit', label: '退出', emoji: '👋' }
 

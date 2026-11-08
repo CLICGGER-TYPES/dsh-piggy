@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import { PIG_ART_ASSETS } from '../../../packages/pet-core/src/data/art-assets.js'
 import {
   ACTIONS,
   ACTION_ORDER,
@@ -167,6 +168,11 @@ test('the body follows the level: 幼年, 青年 from Lv10, 成年 from Lv40', (
   pig.xp = xpForLevel(60) * 10
   assert.equal(lifeStageFor(pig, T0).key, 'middle', 'there is no stage after grown-up')
   assert.equal(LIFE_STAGES.some(stage => stage.key === 'elder'), false, 'no elderly stage any more')
+  // 默认皮肤的三个可玩阶段都必须有 PNG；青年/成年复用基础猪立绘，由 stage.size 放大。
+  for (const stage of LIFE_STAGES.filter(entry => entry.box !== true)) {
+    assert.equal(typeof stage.art, 'string', `${stage.key} needs base art`)
+    assert.ok(PIG_ART_ASSETS[stage.art], `${stage.key} art ${stage.art} must exist`)
+  }
   // Every stage has its own size, so the pig literally grows.
   const sizes = LIFE_STAGES.map(stage => stage.size)
   assert.equal(new Set(sizes).size, sizes.length, 'no two stages share a size')

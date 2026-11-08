@@ -914,7 +914,7 @@ test('the devil is signed for, not crowned: 加冕 refuses it and the contract d
         assert.deepEqual(used.missing.map(row => row.key), ['plays'])
         assert.equal(used.inventory.contract, 1, 'a refused contract stays in the bag')
         assert.equal(used.forms.current, null)
-        assert.equal(used.pig.stage.art, null)
+        assert.equal(used.pig.stage.art, 'piglet', 'a refused contract keeps the default base art')
       } else {
         assert.equal(used.forms.current, 'devil')
         assert.equal(used.pig.stage.art, 'pig-devil')

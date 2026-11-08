@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'">
+  <title>联机 · 猪猪房间</title>
+  <link rel="stylesheet" href="room.css">
+</head>
+<body>
+  <div class="room">
+    <header class="bar">
+      <div class="status"><span class="dot" id="dot"></span><b id="status-text">准备中</b></div>
+      <div class="code" id="code-wrap" hidden>
+        <span id="code">PIG-</span>
+        <button type="button" id="copy">复制</button>
+      </div>
+      <span class="grow"></span>
+      <div class="scene-switch" id="scene-switch" role="group" aria-label="场景">
+        <button type="button" data-scene="pen" aria-pressed="true">猪圈</button>
+        <button type="button" data-scene="room" aria-pressed="false">房间</button>
+      </div>
+      <button type="button" class="ghost" id="edit-map">边界</button>
+      <button type="button" class="ghost" id="leave">离开房间</button>
+      <div class="map-editor-bar" id="map-editor-bar" hidden>
+        <span class="map-editor-title">边界编辑器</span>
+        <div class="menu-item" data-menu-wrap="map">
+          <button type="button" class="menu-trigger" data-menu="map" aria-haspopup="true" aria-expanded="false">地图 · 猪圈 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="map" hidden>
+            <button type="button" data-map-scene="pen" aria-current="true">猪圈</button>
+            <button type="button" data-map-scene="room">房间</button>
+            <div class="menu-sep"></div>
+            <button type="button" data-edit-action="reset">恢复默认</button>
+          </div>
+        </div>
+        <div class="menu-item" data-menu-wrap="object">
+          <button type="button" class="menu-trigger object-trigger" data-menu="object" aria-haspopup="true" aria-expanded="false">边界节点 ▾</button>
+          <div class="menu-dropdown" data-menu-panel="object" hidden>
+            <button type="button" data-object="node" aria-pressed="true">边界节点</button>
+            <button type="button" data-object="rect" aria-pressed="false">矩形障碍</button>
+            <button type="button" data-object="circle" aria-pressed="false">圆形障碍</button>
+            <button type="button" data-object="lasso" aria-pressed="false">手绘障碍</button>
+          </div>
+        </div>
+        <button type="button" class="mode-button" data-edit-mode="create" aria-pressed="true">新建</button>
+        <button type="button" class="mode-button" data-edit-mode="edit" aria-pressed="false">编辑</button>
+        <button type="button" class="mode-button" data-edit-mode="delete" aria-pressed="false">删除</button>
+        <button type="button" class="mode-button editor-undo" data-edit-action="undo" title="撤销上一步">撤销</button>
+        <button type="button" class="editor-help-button" data-editor-help title="快捷键" aria-haspopup="true" aria-expanded="false" aria-controls="editor-help">?</button>
+        <button type="button" class="editor-done" data-edit-action="done">完成</button>
+      </div>
+      <div class="editor-help" id="editor-help" hidden>
+        <div class="editor-help-head">
+          <b>快捷键</b>
+          <button type="button" data-help-close aria-label="关闭">×</button>
+        </div>
+        <div class="editor-help-grid">
+          <span><kbd>V</kbd> 编辑 / 选择</span>
+          <span><kbd>N</kbd> 新建</span>
+          <span><kbd>E</kbd> 删除</span>
+          <span><kbd>1</kbd> 边界节点</span>
+          <span><kbd>2</kbd> 矩形障碍</span>
+          <span><kbd>3</kbd> 圆形障碍</span>
+          <span><kbd>4</kbd> 手绘障碍</span>
+          <span><kbd>Del</kbd> 删除选中</span>
+          <span><kbd>Ctrl/⌘ Z</kbd> 撤销</span>
+          <span><kbd>Ctrl/⌘ ⇧ Z</kbd> 重做</span>
+          <span><kbd>Esc</kbd> 取消 / 关闭</span>
+          <span><kbd>Enter</kbd> 闭合手绘</span>
+        </div>
+        <p>编辑时拖四角白点 = 等比例缩放；拖粉色小方块 = 改形状；拖障碍内部 = 整体移动。</p>
+      </div>
+    </header>
+
+    <main class="stage" id="stage" data-scene="pen">
+      <svg class="walk-zone" id="walk-zone" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polygon id="walk-zone-shape" points="10,92 90,92 74,69.6 26,69.6"></polygon>
+      </svg>
+      <div class="sky">
+        <span class="cloud a">☁️</span>
+        <span class="cloud b">☁️</span>
+        <span class="sun">🌤️</span>
+        <p class="hint" id="hint">拖动你的小猪，或按方向键 / WASD 走一走</p>
+      </div>
+      <div class="grass">
+        <div class="hills"></div>
+        <div class="pigs" id="pigs"></div>
+      </div>
+      <div class="map-editor" id="map-editor" hidden>
+        <svg class="map-editor-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polygon id="editor-outer"></polygon>
+          <g id="editor-blockers"></g>
+          <rect id="editor-preview-rect" hidden></rect>
+          <circle id="editor-preview-circle" hidden></circle>
+          <polygon id="editor-preview-poly" hidden></polygon>
+        </svg>
+        <div class="map-editor-handles" id="map-editor-handles"></div>
+        <div class="pen-points" id="editor-pen-points"></div>
+      </div>
+    </main>
+
+    <footer class="actions">
+      <button type="button" class="primary" data-emote="pat">摸摸</button>
+      <button type="button" class="secondary" data-emote="wave">挥手</button>
+      <span class="tip">点一只猪也能摸摸它</span>
+      <span class="editor-status" id="editor-status" hidden></span>
+      <span class="grow"></span>
+      <span class="toast" id="toast" hidden></span>
+    </footer>
+  </div>
+  <script src="room-scene.js"></script>
+  <script src="room-scene-items.js"></script>
+  <script src="room-walk-controls.js"></script>
+  <script src="room.js"></script>
+  <script src="room-editor-ui.js"></script>
+  <script src="room-editor-blockers.js"></script>
+  <script src="room-editor-pen.js"></script>
+  <script src="room-editor-draw.js"></script>
+  <script src="room-editor-history.js"></script>
+  <script src="room-map-editor.js"></script>
+</body>
+</html>

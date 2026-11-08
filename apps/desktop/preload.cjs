@@ -6,7 +6,10 @@ const MAX_SAVE_BYTES = 128 * 1024 * 1024
 let geometry = null
 /** 这个页面在哪个窗口里：猪窗口（pet）还是面板窗口（panel，外壳 0.6.0 起）。 */
 const argv = typeof process === 'undefined' ? [] : process.argv
-const role = argv.includes('--piggy-role=panel') ? 'panel' : argv.includes('--piggy-role=ext') ? 'ext' : 'pet'
+const role = argv.includes('--piggy-role=panel') ? 'panel'
+  : argv.includes('--piggy-role=ext') ? 'ext'
+    : argv.includes('--piggy-role=room') ? 'room'
+      : 'pet'
 /** 扩展大窗口（role=ext，外壳 0.6.5 起）显示的是哪个扩展。 */
 const extKey = role === 'ext' ? (argv.find(arg => arg.startsWith('--piggy-ext=')) || '').slice('--piggy-ext='.length) : null
 
@@ -24,6 +27,20 @@ const primary = pigId !== null && argv.includes('--piggy-primary=1')
 /** 多猪窗口的默认摆放槽位（0–3）；新猪没有旧位置时按它错开。 */
 const requestedSlot = argumentValue('--piggy-slot=')
 const slot = pigId !== null && requestedSlot !== null && /^[0-3]$/.test(requestedSlot) ? Number(requestedSlot) : null
+
+/** 房间只收外观摘要；主进程会再校验一次，这里先挡住超长字段。 */
+function roomProfile(value) {
+  const profile = value !== null && typeof value === 'object' ? value : {}
+  return {
+    name: typeof profile.name === 'string' ? profile.name.slice(0, 80) : '',
+    level: Number(profile.level) || 0,
+    stage: typeof profile.stage === 'string' ? profile.stage.slice(0, 40) : '',
+    art: typeof profile.art === 'string' ? profile.art.slice(0, 240) : '',
+    emoji: typeof profile.emoji === 'string' ? profile.emoji.slice(0, 8) : '',
+    size: Number(profile.size) || 1,
+    label: typeof profile.label === 'string' ? profile.label.slice(0, 40) : '',
+  }
+}
 
 /** 恢复事件只接受主屏 DIP 工作区；坏载荷不交给页面。 */
 function recoveryWorkArea(value) {
@@ -211,9 +228,27 @@ contextBridge.exposeInMainWorld('piggyShell', {
     joinStatus: () => ipcRenderer.invoke('piggy:owner-network:join-status'),
     leave: () => ipcRenderer.invoke('piggy:owner-network:join-leave'),
   },
+  /**
+   * 联机房间（外壳 0.6.8 起）：面板建房/加入，房间窗口移动/发表情。
+   * 房间只同步外观和位置，不传存档。
+   */
+  room: {
+    status: () => ipcRenderer.invoke('piggy:room:status'),
+    host: profile => ipcRenderer.invoke('piggy:room:host', roomProfile(profile)),
+    join: (input, profile) => ipcRenderer.invoke('piggy:room:join',
+      typeof input === 'string' ? input.slice(0, 512) : '', roomProfile(profile)),
+    open: () => ipcRenderer.invoke('piggy:room:open'),
+    move: (x, y, facing) => ipcRenderer.invoke('piggy:room:move', Number(x) || 0, Number(y) || 0, Number(facing) < 0 ? -1 : 1),
+    emote: (name, targetId, x, y, facing) => ipcRenderer.invoke('piggy:room:emote', String(name),
+      typeof targetId === 'string' ? targetId.slice(0, 80) : '', Number(x) || 0, Number(y) || 0, Number(facing) < 0 ? -1 : 1),
+    leave: () => ipcRenderer.invoke('piggy:room:leave'),
+    copy: () => ipcRenderer.invoke('piggy:room:copy'),
+    onUpdate: callback => { ipcRenderer.on('piggy:room:update', (event, snapshot) => callback(snapshot)) },
+    onClosed: callback => { ipcRenderer.on('piggy:room:closed', (event, detail) => callback(detail)) },
+  },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),
-  /** 这个页面在哪个窗口里：'pet'、'panel'，或者扩展的大窗口 'ext'（外壳 0.6.5 起）。 */
+  /** 这个页面在哪个窗口里：'pet'、'panel'、扩展的大窗口 'ext'，或联机房间 'room'。 */
   role,
   extKey,
   /** 多猪（外壳 MULTIPIGWIN02 起）：这个宠物窗口的 pigId 与是否主猪；旧外壳是 null/false。 */

@@ -45,7 +45,15 @@ function reportSize() {
 function schedule() {
   if (scheduled) return
   scheduled = true
-  requestAnimationFrame(function () { scheduled = false; reportSize() })
+  const run = function () {
+    if (!scheduled) return
+    scheduled = false
+    reportSize()
+  }
+  // 透明面板窗口在 showInactive 之前是隐藏的；隐藏窗口的 rAF 会被 Chromium 节流，
+  // 第一次尺寸报不出去就会卡在 fallback 外框，等下一次内容变化才显示完整面板。
+  requestAnimationFrame(run)
+  setTimeout(run, 16)
 }
 
 /**
@@ -105,5 +113,8 @@ export function startPanel() {
     new MutationObserver(schedule).observe(h, { subtree: true, childList: true, attributes: true, characterData: true })
   }
   window.addEventListener('resize', schedule)
+  // 图片没有预设尺寸时会在加载完成后把卡片撑高；load 不冒泡，用捕获阶段补一次测量。
+  window.addEventListener('load', schedule, true)
+  if (typeof ResizeObserver === 'function') new ResizeObserver(schedule).observe(h)
   schedule()
 }

@@ -14,14 +14,14 @@
 |---|---|---:|---|
 | 阶段与普通猪 | `pigs/base/<角色>/<动作>.png` | 9 | 普通猪、老年猪 |
 | 体型与形态 | `pigs/forms/<角色>/<动作>.png` | 41 | 圆猪、胖猪、猪猪王、恶魔猪 |
-| 皮肤与职业 | `pigs/skins/<角色>/<动作>.png` | 67 | 薄荷、厨师、宇航员、侦探、天使、海盗、巫师 |
+| 皮肤与职业 | `pigs/skins/<角色>/<动作>.png` | 133 | 薄荷、厨师、宇航员、侦探、天使、海盗、巫师，以及 2026-10-24 六款新猪 |
 | 反馈场景 | `pigs/feedback/<名字>.png` | 38 | 状态、反应、病种、生日、寻访等 |
-| 猪主题徽章 | `pigs/badges/badge-pig-<key>.png` | 28 | 成就与扩展成就 |
+| 猪主题徽章 | `pigs/badges/badge-pig-<key>.png` | 34 | 成就与扩展成就 |
 | 来源清单 | `pigs/manifest.json`、`pigs/PROVENANCE.md` | — | 版本、逐字提示词、原图和成品哈希、离线处理步骤 |
 | 主菜单图标 | `ui-*.svg` | 15 | 历史未使用素材，保留现状 |
 | 字体 | `piggy-emoji.woff2` | 1 | 网页 emoji 子集，Noto Color Emoji / OFL；许可见 `piggy-emoji-LICENSE.txt` |
 
-共183张 PNG，长边不超过256px，总计 1,831,815 字节。透明背景保留，原图不进游戏包。
+共255张 PNG，长边不超过256px，总计 2,450,984 字节。透明背景保留，原图不进游戏包。
 
 数据中的 `art` key 不变，统一通过 `packages/pet-core/src/data/art-assets.js` 对应分类路径。主猪、睡姿、换肤、图鉴、居民卡、徽章与盲盒寻访都使用同一份映射。旧内置 SVG / 平铺 PNG URL 保留路由别名，返回当前 PNG；不再复制旧图到游戏目录。
 
@@ -68,9 +68,34 @@ actions/*/pack.json
 sounds/*/pack.json
 PROVENANCE.md
 ui-*.svg
+room-lobby.png
+room-pen.png
+room-pen-25d.png
+room-room-25d.png
+room-pen-tree.webp
+pen-house.webp
+pen-pond.webp
+pen-bush-left.webp
+pen-bush-bottomleft.webp
+pen-bush-bottomright.webp
+pen-fence-front.webp
+room-room-bookshelf.webp
+room-room-desk.webp
+room-room-sofa.webp
+ui-room.png
+ui-pig-puzzle.png
 piggy-emoji.woff2
 piggy-emoji-LICENSE.txt
 ```
+
+- 联机房间猪圈：`assets/room-pen.png`，低木栅栏、水槽和干草，中间留空给实时小猪；Grok `image_gen` 生成，用户 2026-11-06 确认“好看”，来源与许可见 `LICENSE-ASSETS.md`、`assets/PROVENANCE.md`。
+- 联机 2.5D 猪圈：`assets/room-pen-25d.png`，等距草地、小屋、池塘和木栅栏，2D 猪纸片人站在草地上；Grok `image_gen` 生成，用户 2026-11-06 确认。
+- 联机 2.5D 房间：`assets/room-room-25d.png`，等距室内木地板、书桌/沙发/书架/窗，2D 猪纸片人；Grok `image_gen` 生成，用户 2026-11-06 确认。
+- 联机房间前景遮挡层：`assets/room-pen-tree.webp`、`pen-house.webp`、`pen-pond.webp`、`pen-bush-*.webp`、`pen-fence-front.webp`、`room-room-bookshelf.webp`、`room-room-desk.webp`、`room-room-sofa.webp`，从对应 2.5D 场景按物体底边切出，按深度和猪排序；CC BY 4.0。
+- 联机入口图标：`assets/ui-room.png`，由 `pigs/base/piglet/idle.png` 合成前后两只猪；Apache-2.0，见 `LICENSE-ASSETS.md`。
+- 藏猪方块入口图标：`assets/ui-pig-puzzle.png`，由小猪立绘加一堵墙，墙挡住猪的后半截；Apache-2.0。
+
+- 联机大厅插画：`assets/room-lobby.png`，两只小猪；取自用户确认的 2026-11-05 大厅原型 `01-lobby.png`，裁切并调整猪脚颜色，来源与许可见 `LICENSE-ASSETS.md`、`assets/PROVENANCE.md`。
 
 - 菜园第4轮：已审 farm-v4-fix4 场景/UI V2接入扩展；来源、加工规则和逐图哈希见 extensions/farm/PROVENANCE.md、fix4-art-pack.json，原稿与提示词保留在项目素材工作区。
 

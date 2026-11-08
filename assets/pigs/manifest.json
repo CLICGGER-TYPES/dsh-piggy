@@ -6103,5 +6103,1853 @@
       "alphaUnchanged": true,
       "outsideMaskUnchanged": true
     }
+  },
+  {
+    "key": "skin-postman",
+    "path": "pigs/skins/skin-postman/idle.png",
+    "actor": "skin-postman",
+    "action": "idle",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "c5ab3b54fcfafd5b6f09aa298e975af56d68568ecb56917e986c066c2e873574",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      70,
+      121,
+      1212,
+      1176
+    ],
+    "bounds": [
+      16,
+      24,
+      240,
+      231
+    ],
+    "sha256": "08939cf45dba83782bf4de3edf468bfc8c4c10f822d1e47db66c20025c50b950",
+    "bytes": 7926
+  },
+  {
+    "key": "skin-postman-eat",
+    "path": "pigs/skins/skin-postman/eat.png",
+    "actor": "skin-postman",
+    "action": "eat",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "a2161516284947a176006fb2f8a76719874d14d4b35caabc4f1b5905174a3437",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      71,
+      257,
+      1194,
+      1101
+    ],
+    "bounds": [
+      16,
+      44,
+      240,
+      212
+    ],
+    "sha256": "d89061b6bf160b1a1d4ea4c359b1fed7f9e097726382fb38467d0324d6b18e21",
+    "bytes": 9191
+  },
+  {
+    "key": "skin-postman-bathe",
+    "path": "pigs/skins/skin-postman/bathe.png",
+    "actor": "skin-postman",
+    "action": "bathe",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "31cc2989dd7fa38f7affc9e2eabd324c1fdc58c126320d235bd90915e29cd5d2",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      73,
+      276,
+      1217,
+      1103
+    ],
+    "bounds": [
+      16,
+      47,
+      240,
+      209
+    ],
+    "sha256": "13095d296f0189eba36a5a0524825989ef1fbee23fc08d8d68d6d6a0b2adaf27",
+    "bytes": 7301
+  },
+  {
+    "key": "skin-postman-play",
+    "path": "pigs/skins/skin-postman/play.png",
+    "actor": "skin-postman",
+    "action": "play",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "021b87286a4e8dfe8a0605a2761ffb1f4b3878f40b57ea4f5ebaa53160d60e7b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      51,
+      163,
+      1211,
+      1091
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      217
+    ],
+    "sha256": "087cbc6bea21ce20e589068b8e0fabd005a2a12f697fdc5ae64665ec0fde25f0",
+    "bytes": 8424
+  },
+  {
+    "key": "skin-postman-pet",
+    "path": "pigs/skins/skin-postman/pet.png",
+    "actor": "skin-postman",
+    "action": "pet",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "f6f37835822140d54eb0218ef16ee9b0e7174ea6e6efcb274d5086b414e996c1",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      56,
+      122,
+      1219,
+      1157
+    ],
+    "bounds": [
+      16,
+      28,
+      240,
+      227
+    ],
+    "sha256": "2b2a7f012d32149fd51db8b12fa82d0ad3affc6512900f0e6e41aa190a91f3f9",
+    "bytes": 9117
+  },
+  {
+    "key": "skin-postman-relaxed",
+    "path": "pigs/skins/skin-postman/relaxed.png",
+    "actor": "skin-postman",
+    "action": "relaxed",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "1f48d1dcf59184d70430d03a8065c68fbaa81af1e04a8c3d26dda0b706abce17",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      68,
+      123,
+      1214,
+      1167
+    ],
+    "bounds": [
+      16,
+      26,
+      240,
+      230
+    ],
+    "sha256": "977e78fdbdb2e9ae230d9893e5f0f62af4a9270891966ba3da894d74c8ca712c",
+    "bytes": 7719
+  },
+  {
+    "key": "skin-postman-work",
+    "path": "pigs/skins/skin-postman/work.png",
+    "actor": "skin-postman",
+    "action": "work",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "c922be51eaa8ff18a81dbdf305740af28a2c33736f46b72e0deace20428a2723",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      33,
+      253,
+      1221,
+      1073
+    ],
+    "bounds": [
+      16,
+      50,
+      240,
+      205
+    ],
+    "sha256": "c06e8656b6f70d1eb5e8ac61e473bb4e9891842b64c770135dffd8b05b5d887a",
+    "bytes": 7438
+  },
+  {
+    "key": "skin-postman-study",
+    "path": "pigs/skins/skin-postman/study.png",
+    "actor": "skin-postman",
+    "action": "study",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "ba292e2f0f95dfd8dc88a5139c32b02f832bcd5b75372441e63fd96ab8dfed37",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      30,
+      210,
+      1213,
+      1131
+    ],
+    "bounds": [
+      16,
+      41,
+      240,
+      215
+    ],
+    "sha256": "571a4ae0543e5b9c537b89a878e5ecfaea5516ea128613d49841e75bb3c7b2fd",
+    "bytes": 9513
+  },
+  {
+    "key": "skin-postman-trip",
+    "path": "pigs/skins/skin-postman/trip.png",
+    "actor": "skin-postman",
+    "action": "trip",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "9dd78fad9d87d02dd5da51cb1b426f5f3eb70074daec954c5d7425fd42af8740",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      63,
+      133,
+      1213,
+      1128
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      225
+    ],
+    "sha256": "f493ea821903e223901bcf7219498b38901161addfeb5c52beefc08d7df3b71e",
+    "bytes": 8523
+  },
+  {
+    "key": "skin-postman-fish",
+    "path": "pigs/skins/skin-postman/fish.png",
+    "actor": "skin-postman",
+    "action": "fish",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "d41183ca8abd9e39e9af5a72dc7ba876efa3693da28acc7962c9b324f98a6388",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      45,
+      224,
+      1209,
+      1084
+    ],
+    "bounds": [
+      16,
+      45,
+      240,
+      210
+    ],
+    "sha256": "b11dadc3a6065cbc4fa6796e1b3745d1bf8e4687990ba57abb99496aa74927d3",
+    "bytes": 8547
+  },
+  {
+    "key": "skin-postman-sleep",
+    "path": "pigs/skins/skin-postman/sleep.png",
+    "actor": "skin-postman",
+    "action": "sleep",
+    "version": "postman-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "db4f0cf4bb363745ed5150c989347aed956d3a3c9da10569f24b675a21d320bb",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      27,
+      338,
+      1243,
+      1047
+    ],
+    "bounds": [
+      16,
+      62,
+      240,
+      193
+    ],
+    "sha256": "4a7e46d5de7e469a64d37ffa6b0c22d04950b1a8f78736a94b28cdfdfaed4871",
+    "bytes": 6614
+  },
+  {
+    "key": "skin-gardener",
+    "path": "pigs/skins/skin-gardener/idle.png",
+    "actor": "skin-gardener",
+    "action": "idle",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "b860d3036d79dc7147504ce999b2c9a906018fb618184bcdc701e0c0409c5c3a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      81,
+      165,
+      1208,
+      1138
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      224
+    ],
+    "sha256": "01383ceef438b0cd3614e8fdd213a4ec36b4d4e36393ff11376364680a97cecb",
+    "bytes": 8142
+  },
+  {
+    "key": "skin-gardener-eat",
+    "path": "pigs/skins/skin-gardener/eat.png",
+    "actor": "skin-gardener",
+    "action": "eat",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "f02583ee2ddf6285514453c66f0258165936f0b39c2aef9b35e0ed1ed2169a43",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      37,
+      239,
+      1220,
+      1047
+    ],
+    "bounds": [
+      16,
+      51,
+      240,
+      204
+    ],
+    "sha256": "bd89fc914584df3494e9a8b82144bebc87f86e60036b52b8e07974ab2dfb4aa6",
+    "bytes": 7629
+  },
+  {
+    "key": "skin-gardener-bathe",
+    "path": "pigs/skins/skin-gardener/bathe.png",
+    "actor": "skin-gardener",
+    "action": "bathe",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "3b7195413995ab80693c36245ac48f554766d283929618d034bef1412d1d7e26",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      25,
+      267,
+      1230,
+      1086
+    ],
+    "bounds": [
+      16,
+      52,
+      240,
+      204
+    ],
+    "sha256": "491bf0f947cf5f8ec77ed87533ab63636141cd98f6811857843f13583023003d",
+    "bytes": 7160
+  },
+  {
+    "key": "skin-gardener-play",
+    "path": "pigs/skins/skin-gardener/play.png",
+    "actor": "skin-gardener",
+    "action": "play",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "a97b61702d5071e88f58feb34b671954c75f1d57e65a073080cd2c8d218ea7fb",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      107,
+      182,
+      1212,
+      1108
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "dea9b6d8228d7ec42c33d633669ffc3650f9ede548889080c2db31402d049f4e",
+    "bytes": 7645
+  },
+  {
+    "key": "skin-gardener-pet",
+    "path": "pigs/skins/skin-gardener/pet.png",
+    "actor": "skin-gardener",
+    "action": "pet",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "6d10a152fd6f210ea7d5f544f2cfb31c352191be17210e8705b6c3beef740d2d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      77,
+      160,
+      1209,
+      1134
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      224
+    ],
+    "sha256": "f93af61ea7614c49c2e96ad9f4404dc5722242bd4343605cca860b02128544da",
+    "bytes": 9745
+  },
+  {
+    "key": "skin-gardener-relaxed",
+    "path": "pigs/skins/skin-gardener/relaxed.png",
+    "actor": "skin-gardener",
+    "action": "relaxed",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "7e60a4a37fcf6ca5974a746371764021d1503fe1456d41f603af8ce489f34eec",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      77,
+      163,
+      1210,
+      1136
+    ],
+    "bounds": [
+      16,
+      32,
+      240,
+      224
+    ],
+    "sha256": "e2bd9adf00fdbf26f631bf4f5a7a40fb7c6c56b4f71d03611c2bd73729847430",
+    "bytes": 7533
+  },
+  {
+    "key": "skin-gardener-work",
+    "path": "pigs/skins/skin-gardener/work.png",
+    "actor": "skin-gardener",
+    "action": "work",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "da7d5ba9ccb4aefc9c9761e7a52829f40cabacb1fbd0e0eb43e0f98a114b8b35",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      28,
+      267,
+      1231,
+      998
+    ],
+    "bounds": [
+      16,
+      60,
+      240,
+      196
+    ],
+    "sha256": "0fb60655e40633c90c5f7878d54bcbec95fd3b60d3a9c7edd8b32fac29fb4bf4",
+    "bytes": 7756
+  },
+  {
+    "key": "skin-gardener-study",
+    "path": "pigs/skins/skin-gardener/study.png",
+    "actor": "skin-gardener",
+    "action": "study",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "c165e5411f2dbd5b7a40664b7de3d9f1ab3b79d230659236dad4935a66d2caf1",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      22,
+      155,
+      1239,
+      1181
+    ],
+    "bounds": [
+      16,
+      33,
+      240,
+      222
+    ],
+    "sha256": "43688ca5721523921e1b367a66879c8ca0de1542e1994d0dafc17542af1aed0c",
+    "bytes": 9236
+  },
+  {
+    "key": "skin-gardener-trip",
+    "path": "pigs/skins/skin-gardener/trip.png",
+    "actor": "skin-gardener",
+    "action": "trip",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "f2df554a5c358ef6d65534c1f72632e64ee65ceb99bb11a426dbb5349a70937c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      37,
+      155,
+      1230,
+      1100
+    ],
+    "bounds": [
+      16,
+      39,
+      240,
+      216
+    ],
+    "sha256": "c3165ea48743ffaab9687d42e70d578a6cf3bbcd1bcac5398e5f8a725f34a95c",
+    "bytes": 8289
+  },
+  {
+    "key": "skin-gardener-fish",
+    "path": "pigs/skins/skin-gardener/fish.png",
+    "actor": "skin-gardener",
+    "action": "fish",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "966a2ed229a9fa1661b3092b51a31f525be98a5d08cc9c6111f073a8c7ab9a7e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      43,
+      224,
+      1225,
+      1033
+    ],
+    "bounds": [
+      16,
+      51,
+      240,
+      204
+    ],
+    "sha256": "a3af05f7ceab1635dc07760e380fb1b726ab347b3d0aea5b8964381388902121",
+    "bytes": 7937
+  },
+  {
+    "key": "skin-gardener-sleep",
+    "path": "pigs/skins/skin-gardener/sleep.png",
+    "actor": "skin-gardener",
+    "action": "sleep",
+    "version": "gardener-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "7916d484537d0d8e15557a244d6d26850493d4e0608d74309522a6161dc618f0",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      17,
+      363,
+      1243,
+      1024
+    ],
+    "bounds": [
+      16,
+      67,
+      240,
+      188
+    ],
+    "sha256": "bad95e8f854e8b7f8c1a1337c502490708ce4a4b02170d9d825a60117258bc69",
+    "bytes": 6272
+  },
+  {
+    "key": "skin-raincoat",
+    "path": "pigs/skins/skin-raincoat/idle.png",
+    "actor": "skin-raincoat",
+    "action": "idle",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "b39205e6581ff90924d4215c60a7eb67626c583709179ee459864fe8719bde4e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      85,
+      173,
+      1201,
+      1106
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      221
+    ],
+    "sha256": "df6d1612cfdddcb22656a3a7399f5b5a9ab36d70b05e7d34add65ddd2e658b5e",
+    "bytes": 6486
+  },
+  {
+    "key": "skin-raincoat-eat",
+    "path": "pigs/skins/skin-raincoat/eat.png",
+    "actor": "skin-raincoat",
+    "action": "eat",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "8bee0db27dc9999457cbcbfda06dcf446c961a9370d150c36730ff14802115f1",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      44,
+      298,
+      1226,
+      1070
+    ],
+    "bounds": [
+      16,
+      55,
+      240,
+      201
+    ],
+    "sha256": "c04b9ef27a3c2b5e9e3712059369ce8d5537b430c55cb4ead5ce31e6856ed357",
+    "bytes": 6578
+  },
+  {
+    "key": "skin-raincoat-bathe",
+    "path": "pigs/skins/skin-raincoat/bathe.png",
+    "actor": "skin-raincoat",
+    "action": "bathe",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "4f1a36816071e50ddde289357852b5de5b91058d0933aca33dbeb6afe6a1721a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      102,
+      276,
+      1197,
+      1067
+    ],
+    "bounds": [
+      16,
+      47,
+      240,
+      209
+    ],
+    "sha256": "aa6a01759c291efafc303aee2fd35c0509991afe28457af63cd986d08124a31b",
+    "bytes": 6972
+  },
+  {
+    "key": "skin-raincoat-play",
+    "path": "pigs/skins/skin-raincoat/play.png",
+    "actor": "skin-raincoat",
+    "action": "play",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "331961f90c7ce8ef8d277b972bff1f810dbb43342332097e447e9efe75bb4a76",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      79,
+      204,
+      1228,
+      1148
+    ],
+    "bounds": [
+      16,
+      36,
+      240,
+      220
+    ],
+    "sha256": "a9af47495da28d1d9c36c930fb6e5c577a4eab67297af2613752dc665fccc8be",
+    "bytes": 7499
+  },
+  {
+    "key": "skin-raincoat-pet",
+    "path": "pigs/skins/skin-raincoat/pet.png",
+    "actor": "skin-raincoat",
+    "action": "pet",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "72b18c4be482e7a7b51d2ff520e21ed00505dcf1803f569cde14c42451c23a0f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      71,
+      206,
+      1210,
+      1119
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      218
+    ],
+    "sha256": "4ccd79fd8edf1041b8ef71dfa198427fb499333732eda48dcf585c61909e8645",
+    "bytes": 7466
+  },
+  {
+    "key": "skin-raincoat-relaxed",
+    "path": "pigs/skins/skin-raincoat/relaxed.png",
+    "actor": "skin-raincoat",
+    "action": "relaxed",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "d5f88d1dbc4ed76f41b3f66cdc37f594e5b022fa8a7e2e43383e3e144792ab2e",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      81,
+      197,
+      1198,
+      1106
+    ],
+    "bounds": [
+      16,
+      37,
+      240,
+      219
+    ],
+    "sha256": "332ed9d25d08569259786539758969e180d51f838c5cc1e8a2b8d35c15e56cbe",
+    "bytes": 7183
+  },
+  {
+    "key": "skin-raincoat-work",
+    "path": "pigs/skins/skin-raincoat/work.png",
+    "actor": "skin-raincoat",
+    "action": "work",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "88ec4d102c1f3fdd7186e46ba119370c35c7271534551b7e2ae6450caf6a2238",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      40,
+      330,
+      1234,
+      1016
+    ],
+    "bounds": [
+      16,
+      63,
+      240,
+      192
+    ],
+    "sha256": "ba45166e62218cc2eb844a215b8a7becb9625d11608597c6eb1be7d5e4a07d46",
+    "bytes": 6270
+  },
+  {
+    "key": "skin-raincoat-study",
+    "path": "pigs/skins/skin-raincoat/study.png",
+    "actor": "skin-raincoat",
+    "action": "study",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "4aab7f4372ea08d032eaa975d8076cde7e86f4ae9a21d6ebc1b4921924864bc4",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      61,
+      184,
+      1220,
+      1157
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "77a7b63fd59b48b6cec783ebf3c2617f1ba645977cd80691131b9c2b30a12258",
+    "bytes": 8167
+  },
+  {
+    "key": "skin-raincoat-trip",
+    "path": "pigs/skins/skin-raincoat/trip.png",
+    "actor": "skin-raincoat",
+    "action": "trip",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "eebea21e051f040b433df5d9802eae3b1efe72959201f44851dfb14fcc4cc840",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      86,
+      181,
+      1203,
+      1087
+    ],
+    "bounds": [
+      16,
+      37,
+      240,
+      219
+    ],
+    "sha256": "ae44203ff1272f09274972515984f39ee9e8a32c956fb0ee996c0b55d50d8782",
+    "bytes": 8372
+  },
+  {
+    "key": "skin-raincoat-fish",
+    "path": "pigs/skins/skin-raincoat/fish.png",
+    "actor": "skin-raincoat",
+    "action": "fish",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "39b47ee7867008bfdd7d436accdace63fa117aad2f56956426ab5708b41b4a5b",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      62,
+      290,
+      1207,
+      1065
+    ],
+    "bounds": [
+      16,
+      52,
+      240,
+      204
+    ],
+    "sha256": "5d5d6165d79b49c51dccac2b9ee53477cdd885aab7f3c89c6909a0939e566585",
+    "bytes": 7189
+  },
+  {
+    "key": "skin-raincoat-sleep",
+    "path": "pigs/skins/skin-raincoat/sleep.png",
+    "actor": "skin-raincoat",
+    "action": "sleep",
+    "version": "raincoat-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "0e049bf63873f03551f31d37131a004bf8a7eaa3409c035e117c0e8c519e23e7",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      110,
+      513,
+      1239,
+      1098
+    ],
+    "bounds": [
+      16,
+      70,
+      240,
+      186
+    ],
+    "sha256": "1e13ac5f8777e6ffd44d118b233364675770c2be96de8cb00127ac2077fdc29d",
+    "bytes": 5601
+  },
+  {
+    "key": "skin-painter",
+    "path": "pigs/skins/skin-painter/idle.png",
+    "actor": "skin-painter",
+    "action": "idle",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "1679ddfa655e95f1c984551530d55a82e34579d519b65ef62a0d3aae24b75d33",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      97,
+      202,
+      1211,
+      1129
+    ],
+    "bounds": [
+      16,
+      35,
+      240,
+      221
+    ],
+    "sha256": "f14ec47f44d5bc03ecfb1aa96877e9e5620e32b7849522d56aa7d597c7400a1e",
+    "bytes": 8140
+  },
+  {
+    "key": "skin-painter-eat",
+    "path": "pigs/skins/skin-painter/eat.png",
+    "actor": "skin-painter",
+    "action": "eat",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "6aeeb3700e1f3f7f2fee30f80e574bbd2ea7a7220d98beb0669393c2b6339426",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      56,
+      286,
+      1217,
+      1074
+    ],
+    "bounds": [
+      16,
+      52,
+      240,
+      204
+    ],
+    "sha256": "180c13712a5d05a0f8d2b7830a9a5323947b7c68081ecd8e369ec6a761218ade",
+    "bytes": 6977
+  },
+  {
+    "key": "skin-painter-bathe",
+    "path": "pigs/skins/skin-painter/bathe.png",
+    "actor": "skin-painter",
+    "action": "bathe",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "b486da6a26183b370766c5ee4ba20ae9c8b2d9b8e6ebb1594a585f0bcf97ec06",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      83,
+      268,
+      1224,
+      1090
+    ],
+    "bounds": [
+      16,
+      47,
+      240,
+      208
+    ],
+    "sha256": "5e8bb52be2549b1df1318be46c83cf52795d8821aae3643b7678305fd9c199e6",
+    "bytes": 8731
+  },
+  {
+    "key": "skin-painter-play",
+    "path": "pigs/skins/skin-painter/play.png",
+    "actor": "skin-painter",
+    "action": "play",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "1dc84aff64c60354eb2218cc8435160310f93747c2990c16cc77f0e49c29b28d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      48,
+      218,
+      1228,
+      1137
+    ],
+    "bounds": [
+      16,
+      41,
+      240,
+      215
+    ],
+    "sha256": "680af9ba68f58b2a3bd0f28044f772d4c2d56f10494989fb16f25114ed0cb519",
+    "bytes": 7276
+  },
+  {
+    "key": "skin-painter-pet",
+    "path": "pigs/skins/skin-painter/pet.png",
+    "actor": "skin-painter",
+    "action": "pet",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "cb2849164907f9f02badae89d48f3f474e557b4cda5b44245c0f9903fd9f8aa6",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      62,
+      194,
+      1217,
+      1102
+    ],
+    "bounds": [
+      16,
+      40,
+      240,
+      216
+    ],
+    "sha256": "72749c8d81a3ca93787ec1fe745722f82bb88a29e66ed84d6aca210e8670b83f",
+    "bytes": 7252
+  },
+  {
+    "key": "skin-painter-relaxed",
+    "path": "pigs/skins/skin-painter/relaxed.png",
+    "actor": "skin-painter",
+    "action": "relaxed",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "9045302b748afdd3c15cc4b562191b6f1e0f6f647e7f7bd645c0611cba127de2",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      61,
+      207,
+      1218,
+      1119
+    ],
+    "bounds": [
+      16,
+      39,
+      240,
+      216
+    ],
+    "sha256": "a340f1c212a41b160494132e309a59ea414d26934d20bdc8ddda1905740c3eb7",
+    "bytes": 7221
+  },
+  {
+    "key": "skin-painter-work",
+    "path": "pigs/skins/skin-painter/work.png",
+    "actor": "skin-painter",
+    "action": "work",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "8eeab07e5e92c6694b1dcb08ac185540a995ee63ec44158527c85c9e499e9925",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      72,
+      395,
+      1197,
+      995
+    ],
+    "bounds": [
+      16,
+      68,
+      240,
+      187
+    ],
+    "sha256": "c067af1e59c7fe2e0db552316ac6d30b67059d0a0780b55454602924f4b3de9e",
+    "bytes": 6388
+  },
+  {
+    "key": "skin-painter-study",
+    "path": "pigs/skins/skin-painter/study.png",
+    "actor": "skin-painter",
+    "action": "study",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "6fbf6ac794c80d824a1ee9b88181f2dc2c5522fb146f7780d284d81f37c80ff3",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      58,
+      195,
+      1226,
+      1165
+    ],
+    "bounds": [
+      16,
+      35,
+      240,
+      221
+    ],
+    "sha256": "eb198717b20da3f6149485835d91d84937669f33da71eda670a39eee3eab09dc",
+    "bytes": 8467
+  },
+  {
+    "key": "skin-painter-trip",
+    "path": "pigs/skins/skin-painter/trip.png",
+    "actor": "skin-painter",
+    "action": "trip",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "efc15de5a3dbe14523c9963b39b36beb2c1f1e0b335e3e60128579c477ff48da",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      50,
+      207,
+      1224,
+      1097
+    ],
+    "bounds": [
+      16,
+      43,
+      240,
+      213
+    ],
+    "sha256": "d64f268f2a8a2b0b87f7a6d28b4691d7f802eb0588b2f92adc787e854df387f6",
+    "bytes": 8117
+  },
+  {
+    "key": "skin-painter-fish",
+    "path": "pigs/skins/skin-painter/fish.png",
+    "actor": "skin-painter",
+    "action": "fish",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "fdae23391b4b03247e8f9f305352f48f4831f71e8f411d4cca43ec5d900ce60f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      40,
+      271,
+      1220,
+      1031
+    ],
+    "bounds": [
+      16,
+      56,
+      240,
+      200
+    ],
+    "sha256": "9f48bb776c54b10b31a0fed6daa06cdb7d20601db43eceac26b6d2cd6fcdf495",
+    "bytes": 9556
+  },
+  {
+    "key": "skin-painter-sleep",
+    "path": "pigs/skins/skin-painter/sleep.png",
+    "actor": "skin-painter",
+    "action": "sleep",
+    "version": "painter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "2caf840783134725b92a44164a4a9ddbc63a26e7f1fed628d814774c1e5823a3",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      21,
+      349,
+      1240,
+      979
+    ],
+    "bounds": [
+      16,
+      70,
+      240,
+      186
+    ],
+    "sha256": "acb03aea43bc3313d15114f733c21da3c973883aa41c245492e2e042d51b6ead",
+    "bytes": 5171
+  },
+  {
+    "key": "skin-firefighter",
+    "path": "pigs/skins/skin-firefighter/idle.png",
+    "actor": "skin-firefighter",
+    "action": "idle",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "0502e195b4d6927a2084c43209f45922e92f6bd2608cd43c64a810bc99d7879a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      103,
+      132,
+      1181,
+      1139
+    ],
+    "bounds": [
+      16,
+      23,
+      240,
+      232
+    ],
+    "sha256": "198c5dd7e6a9c55e682ecaecd0340495581f2dd132dcbeacfc186ed92a449107",
+    "bytes": 9759
+  },
+  {
+    "key": "skin-firefighter-eat",
+    "path": "pigs/skins/skin-firefighter/eat.png",
+    "actor": "skin-firefighter",
+    "action": "eat",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "e0b22b22413c9fac281322a7633ccaa02dd5426e093e3302ea445bc39b17d146",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      63,
+      288,
+      1218,
+      1055
+    ],
+    "bounds": [
+      16,
+      53,
+      240,
+      202
+    ],
+    "sha256": "01fa08fecc7f4627e1957d49d27b8b14ef0aa100e254681899671f24a25e6c05",
+    "bytes": 8354
+  },
+  {
+    "key": "skin-firefighter-bathe",
+    "path": "pigs/skins/skin-firefighter/bathe.png",
+    "actor": "skin-firefighter",
+    "action": "bathe",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "488cf47a4a3f2e07da7d6c4a085ecf4740a1db456e8b82afb9a951bbb65e7c46",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      60,
+      319,
+      1223,
+      1099
+    ],
+    "bounds": [
+      16,
+      53,
+      240,
+      203
+    ],
+    "sha256": "db2453e8cac948dc5fb31ce044de20fdbc026966aa923b61e6a16d65d742796e",
+    "bytes": 7237
+  },
+  {
+    "key": "skin-firefighter-play",
+    "path": "pigs/skins/skin-firefighter/play.png",
+    "actor": "skin-firefighter",
+    "action": "play",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "716bd6366df84d527d7479546ed89ccc50eb4f4d6f4f27c617319978abe9d50d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      79,
+      150,
+      1203,
+      1162
+    ],
+    "bounds": [
+      16,
+      27,
+      240,
+      229
+    ],
+    "sha256": "6c27627d0c978848dae8d7504f00b5387f703327c310fd411ce0e8c3cae01e1f",
+    "bytes": 9566
+  },
+  {
+    "key": "skin-firefighter-pet",
+    "path": "pigs/skins/skin-firefighter/pet.png",
+    "actor": "skin-firefighter",
+    "action": "pet",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "83a9a699ec965e97b11422027b27953fd8d01bf3c51057df789527efcfde12ae",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      71,
+      138,
+      1207,
+      1134
+    ],
+    "bounds": [
+      16,
+      30,
+      240,
+      226
+    ],
+    "sha256": "9c46c220341cdc0ac38c24de393a34783b55b2501503e13a3cd316fee3c47565",
+    "bytes": 8462
+  },
+  {
+    "key": "skin-firefighter-relaxed",
+    "path": "pigs/skins/skin-firefighter/relaxed.png",
+    "actor": "skin-firefighter",
+    "action": "relaxed",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "1f484bdebdddfbf07841cbd60645bfa0f5404ec4b17a055c9968693baf2b2174",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      84,
+      149,
+      1207,
+      1127
+    ],
+    "bounds": [
+      16,
+      30,
+      240,
+      225
+    ],
+    "sha256": "55382a30673bfb52f34e6215cfdc73df2d75196e45bad4843df7c4e925a174e2",
+    "bytes": 8874
+  },
+  {
+    "key": "skin-firefighter-work",
+    "path": "pigs/skins/skin-firefighter/work.png",
+    "actor": "skin-firefighter",
+    "action": "work",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "d55fe4ffa4bffc21b0a1221186531606aec50cfb5a942fe1787e0fff546a6ff7",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      54,
+      332,
+      1209,
+      1033
+    ],
+    "bounds": [
+      16,
+      60,
+      240,
+      196
+    ],
+    "sha256": "c367f8cc1f19588323bab8aa2dfb7fa275ec776866f17aa315af57406c26da5b",
+    "bytes": 7708
+  },
+  {
+    "key": "skin-firefighter-study",
+    "path": "pigs/skins/skin-firefighter/study.png",
+    "actor": "skin-firefighter",
+    "action": "study",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "bbfad01add90cace3c3dcece751c2c2565e03d9d3142ad162e0c700955bb098c",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      95,
+      157,
+      1216,
+      1160
+    ],
+    "bounds": [
+      16,
+      28,
+      240,
+      228
+    ],
+    "sha256": "35be94bd983571aa33c7758aa741708e949b7e2ac1101b54d7fba90caf935449",
+    "bytes": 9986
+  },
+  {
+    "key": "skin-firefighter-trip",
+    "path": "pigs/skins/skin-firefighter/trip.png",
+    "actor": "skin-firefighter",
+    "action": "trip",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "61539dc9a0142de5aa7c208f84e340511afef15b4eba381376ce8edd8a122b4f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      107,
+      157,
+      1216,
+      1112
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      224
+    ],
+    "sha256": "b23186355bb6ef42bfb17538c1de8a1f7f8b95630a09e0a4775374fffcf45406",
+    "bytes": 9050
+  },
+  {
+    "key": "skin-firefighter-fish",
+    "path": "pigs/skins/skin-firefighter/fish.png",
+    "actor": "skin-firefighter",
+    "action": "fish",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "31d8fb1170394c5e391339315dc60305158b14cf7dd7a016b8ea9501e67d320a",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      68,
+      266,
+      1212,
+      1036
+    ],
+    "bounds": [
+      16,
+      52,
+      240,
+      203
+    ],
+    "sha256": "b3e71317bde4b6822399e7d504652b69dbcd57c8fcd2b7b5f361116f70aeca72",
+    "bytes": 8450
+  },
+  {
+    "key": "skin-firefighter-sleep",
+    "path": "pigs/skins/skin-firefighter/sleep.png",
+    "actor": "skin-firefighter",
+    "action": "sleep",
+    "version": "firefighter-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "67ce3d82e638fd7f7ee112999be77ace9cd067b0d39283a707be9f363485911d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      43,
+      448,
+      1215,
+      1016
+    ],
+    "bounds": [
+      16,
+      73,
+      240,
+      182
+    ],
+    "sha256": "f773ec42a76ba1f7fe2759370d56e7407fa78583cfa6e17c0ea7525945e5b74b",
+    "bytes": 6770
+  },
+  {
+    "key": "skin-musician",
+    "path": "pigs/skins/skin-musician/idle.png",
+    "actor": "skin-musician",
+    "action": "idle",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "5b0554524151b8e39e010af25e50bc71d3af5dae26303b407a469d478e05fbcd",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      78,
+      148,
+      1201,
+      1118
+    ],
+    "bounds": [
+      16,
+      31,
+      240,
+      224
+    ],
+    "sha256": "62dcfbd1034695198ade9db86283ccdb221daec318d48449fb4527667b480f0e",
+    "bytes": 9001
+  },
+  {
+    "key": "skin-musician-eat",
+    "path": "pigs/skins/skin-musician/eat.png",
+    "actor": "skin-musician",
+    "action": "eat",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "33d3b38429de3e1437d718e5a080a47ab061888b48f787b1968f31f384f28fc3",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      53,
+      256,
+      1221,
+      1055
+    ],
+    "bounds": [
+      16,
+      51,
+      240,
+      204
+    ],
+    "sha256": "c64f65ff810c26801626cc6d1de26a8eba4faab6cbc54dfc3c45a9c8a2e7531b",
+    "bytes": 8784
+  },
+  {
+    "key": "skin-musician-bathe",
+    "path": "pigs/skins/skin-musician/bathe.png",
+    "actor": "skin-musician",
+    "action": "bathe",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "a17ddf6ea3886ee4d204d6f9f27bee63c6b29c61b6bc3656b1e8bb5e537f0e9f",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      58,
+      334,
+      1214,
+      1078
+    ],
+    "bounds": [
+      16,
+      56,
+      240,
+      200
+    ],
+    "sha256": "619175311bfada53f0f5644c3bc6bd2217e157a3c66925aaa666eaa6f287ab78",
+    "bytes": 7266
+  },
+  {
+    "key": "skin-musician-play",
+    "path": "pigs/skins/skin-musician/play.png",
+    "actor": "skin-musician",
+    "action": "play",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "cdff84f7d6dbb40721922055dc3fb6de8b02ed123de98526b013d1713c0cb91d",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      54,
+      199,
+      1226,
+      1178
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      221
+    ],
+    "sha256": "a65a6b8b9e9fb92bf9a417cb4f51fdcff6d0124dc373756a9ffe80a47bdca2b3",
+    "bytes": 8405
+  },
+  {
+    "key": "skin-musician-pet",
+    "path": "pigs/skins/skin-musician/pet.png",
+    "actor": "skin-musician",
+    "action": "pet",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "6027b6a8ba40f686c4b6e5bc7fe0da33ce58f95140a6b48a3d0a5a47f5e4edfd",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      69,
+      170,
+      1196,
+      1118
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "72e03f38a90be11fb4dfce72135d087cf05f1c13890e120e8997b3e0ef2c38ca",
+    "bytes": 9179
+  },
+  {
+    "key": "skin-musician-relaxed",
+    "path": "pigs/skins/skin-musician/relaxed.png",
+    "actor": "skin-musician",
+    "action": "relaxed",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "7171834fc632085cb95d1bda9bbda1b07243bfe0b920d3bc59530478a23795d7",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      69,
+      170,
+      1197,
+      1119
+    ],
+    "bounds": [
+      16,
+      34,
+      240,
+      222
+    ],
+    "sha256": "4d20f2524ee2eab3b5861d81d6208201553d5bb581c6b04455d162aa90f580ba",
+    "bytes": 10137
+  },
+  {
+    "key": "skin-musician-work",
+    "path": "pigs/skins/skin-musician/work.png",
+    "actor": "skin-musician",
+    "action": "work",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "0a64be3ae535160b1b226978c8b89f96fd266d559aed5527f336219dffacd5ae",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      65,
+      366,
+      1208,
+      997
+    ],
+    "bounds": [
+      16,
+      66,
+      240,
+      190
+    ],
+    "sha256": "c64ccd991010b8871254cbd1a2b40a8dddd85cc16f57d165ec44d41484a21edc",
+    "bytes": 7030
+  },
+  {
+    "key": "skin-musician-study",
+    "path": "pigs/skins/skin-musician/study.png",
+    "actor": "skin-musician",
+    "action": "study",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "111b469c373c452fe2e71d838ffa9395ca714f1d12f79271c3d0c82c02501e78",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      34,
+      243,
+      1236,
+      1121
+    ],
+    "bounds": [
+      16,
+      46,
+      240,
+      210
+    ],
+    "sha256": "642fc2728b77abb2a105c267e12d16fa3a9da6bae705c047ea32702e310ea2bb",
+    "bytes": 8611
+  },
+  {
+    "key": "skin-musician-trip",
+    "path": "pigs/skins/skin-musician/trip.png",
+    "actor": "skin-musician",
+    "action": "trip",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "2cf2a9636f05c1804be3abd2e4702fec05b821baae867de0efaf8f4d616c5de0",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      71,
+      179,
+      1201,
+      1085
+    ],
+    "bounds": [
+      16,
+      38,
+      240,
+      218
+    ],
+    "sha256": "08eb8b2c9494a59f1fff8b7ae6aa1e6e2059ec7447f4d720721af9899ef7e2e2",
+    "bytes": 8737
+  },
+  {
+    "key": "skin-musician-fish",
+    "path": "pigs/skins/skin-musician/fish.png",
+    "actor": "skin-musician",
+    "action": "fish",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "7c9ce8ccc80dd2e710fec9a550d2eadab5a750e220fd5de040a4fb47af978a88",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      20,
+      250,
+      1232,
+      1017
+    ],
+    "bounds": [
+      16,
+      57,
+      240,
+      199
+    ],
+    "sha256": "2901aa5fca59cd349acbd81fbc63e9635b9d2b4c6a7e04f2b7261a45fc173381",
+    "bytes": 8439
+  },
+  {
+    "key": "skin-musician-sleep",
+    "path": "pigs/skins/skin-musician/sleep.png",
+    "actor": "skin-musician",
+    "action": "sleep",
+    "version": "musician-review-20261024",
+    "tool": "image_gen",
+    "prompt": "docs/art-prompts/flat-pigs/six-new-pigs-20261024.md",
+    "sourceSha256": "ec89ed1716ba2546e2fb146eb04f4c9d341cd4e8e15fe0a9d88dd30ded1f42de",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "sourceBounds": [
+      31,
+      424,
+      1227,
+      1037
+    ],
+    "bounds": [
+      16,
+      70,
+      240,
+      185
+    ],
+    "sha256": "e43fb031cb679a8757307a216afd386f330487e40a6d876f77e3aba5b72a7e86",
+    "bytes": 7521
   }
 ]

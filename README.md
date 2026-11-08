@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/CLICGGER-TYPES/dsh-piggy/releases"><img src="https://img.shields.io/github/v/release/CLICGGER-TYPES/dsh-piggy?include_prereleases&label=release" alt="release"></a>
   <a href="https://www.npmjs.com/package/dsh-piggy"><img src="https://img.shields.io/npm/v/dsh-piggy?label=npm" alt="npm"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-2f6f4e" alt="platform">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-2f6f4e" alt="platform">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/CLICGGER-TYPES/dsh-piggy" alt="license"></a>
 </p>
 
@@ -23,6 +23,7 @@
 - **菜园**：29 种作物、18 块地，按真实时间生长；浇水、除草、杀虫、施肥、多季收获，可雇帮工并安排巡逻。
 - **小游戏**：20 层矿洞、盲盒与扭蛋、40 种鱼的钓鱼、番茄钟。
 - **桌面多猪**：最多 4 个宠物窗口，共享同一 owner 的金币、背包和菜园。
+- **联机房间（桌面版）**：同一局域网创建/加入房间，多位玩家各带一只猪同屏；只同步外观、位置和表情，不动存档。
 - **本地优先**：存档在你自己机器上；云同步和局域网联机都默认关闭，需要时显式开启。
 - **可扩展**：皮肤包、动作/音效素材包、在线扩展，都有格式校验和回退。
 
@@ -48,7 +49,7 @@ dsh plugin --profile web add dsh-piggy
 
 安装后重启 DSH 并刷新页面。也可以安装别名包 [`dsh-plugin-piggy`](https://www.npmjs.com/package/dsh-plugin-piggy)，同一个 profile 只需装其中一个。
 
-> 不带版本号安装 npm `latest`。想用预览版请显式指定版本，例如 `dsh-piggy@0.37.2-rc.15`；npm 标签和 GitHub Release 可能不同步，以发布页为准。
+> 不带版本号安装 npm `latest`。想固定版本请显式指定，例如 `dsh-piggy@0.37.2`；npm 标签和 GitHub Release 可能不同步，以发布页为准。
 
 ### 桌面版
 
@@ -58,9 +59,8 @@ dsh plugin --profile web add dsh-piggy
 |---|---|
 | Windows | `setup.exe` 安装版，或 `portable.exe` 便携版 |
 | Linux | `AppImage`，添加执行权限后运行 |
-| macOS | Apple 芯片选 `arm64.dmg`，Intel 选 `x64.dmg` |
 
-macOS 包暂未签名，第一次打开请在访达中右键应用并选择“打开”。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
+macOS 版本暂停构建：最后一个可用版本见历史 [Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases)（`v0.37.2-rc.15` 及更早），代码和构建配置保留，欢迎后续维护者接手。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
 
 ## 玩法
 
@@ -96,9 +96,9 @@ npm run typecheck
 
 ## 版本与发布
 
-- 稳定版：游戏 0.37.1 / 桌面外壳 0.6.7。
-- 预览版：游戏 0.37.2-rc.15 / 桌面外壳 0.6.8-rc.11。
-- npm `latest` 目前仍是 0.37.0；`rc` 标签由维护者手动发布。
+- 稳定版：游戏 0.37.2 / 桌面外壳 0.6.8。
+- 预览版：暂无；上一预览为 0.37.2-rc.15 / 0.6.8-rc.11。
+- npm `latest` 目前仍是 0.37.0，需维护者手动更新；`rc` 标签同理。
 - Gitee 不再发布新版本；历史附件只作回退。
 
 发布页、校验文件和国内渠道见[发布渠道说明](docs/guides/releases.md)，逐版本变更见 [CHANGELOG](CHANGELOG.md)。

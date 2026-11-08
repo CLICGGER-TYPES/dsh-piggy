@@ -13,7 +13,7 @@
  */
 
 import {
-  MAX, POMODORO_BREAK_MINUTES, POMODORO_MAX_MINUTES, POMODORO_MINUTES,
+  MAX, POMODORO_BREAK_MINUTES, POMODORO_MAX_MINUTES, POMODORO_MIN_MINUTES, POMODORO_MINUTES,
   POMODORO_REWARD,
 } from '../data.js'
 import { dayKeyFor } from './clock.js'
@@ -92,7 +92,7 @@ export function awayFromPomodoro(state, nowMs) {
 /**
  * Start a focus session. The pig goes quiet for its duration.
  * @param {object} state
- * @param {number} minutes - one of POMODORO_MINUTES
+ * @param {number} minutes - any whole minute from POMODORO_MIN_MINUTES to POMODORO_MAX_MINUTES
  * @param {number} nowMs
  */
 export function startPomodoro(state, minutes, nowMs) {
@@ -101,8 +101,10 @@ export function startPomodoro(state, minutes, nowMs) {
   settlePomodoro(state, nowMs)
   const blocked = awayFromPomodoro(state, nowMs)
   if (blocked !== null) return { ok: false, reason: blocked }
-  const wanted = Math.round(minutes)
-  if (!POMODORO_MINUTES.includes(wanted)) return { ok: false, reason: 'minutes' }
+  const wanted = Math.round(Number(minutes))
+  if (!Number.isFinite(wanted) || wanted < POMODORO_MIN_MINUTES || wanted > POMODORO_MAX_MINUTES) {
+    return { ok: false, reason: 'minutes' }
+  }
 
   const p = rollPomodoroDay(state, nowMs)
   const dialogue = ensureDialogue(state)

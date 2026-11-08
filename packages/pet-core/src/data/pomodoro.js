@@ -10,6 +10,9 @@
 /** Offered focus lengths, in minutes. */
 export const POMODORO_MINUTES = Object.freeze([15, 25, 45])
 
+/** Custom sessions accept any whole minute in [MIN, MAX]. */
+export const POMODORO_MIN_MINUTES = 1
+
 /** Rest after a finished pomodoro — shown by the app, skippable by starting another. */
 export const POMODORO_BREAK_MINUTES = 5
 

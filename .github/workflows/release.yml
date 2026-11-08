@@ -1,7 +1,7 @@
 # 发版：推一个 v* 标签（版本号要和根目录 package.json 的 version 一样），自动：
 #   1. 跑测试
 #   2. 生成桌面版热更新用的游戏包 game-<版本>.json.gz + manifest
-#   3. 在 Linux 上打 AppImage、在 Windows 上打安装包和免安装版、在 macOS 上打 dmg（未签名）
+#   3. 在 Linux 上打 AppImage、在 Windows 上打安装包和免安装版（macOS 暂停构建）
 #   4. 一同发布 Windows/Linux 外壳更新清单，供新版本的桌面版点击更新
 # GitHub 产物挂到这个标签的 Release；npm 主包与别名包由维护者随后手动发布。
 name: release
@@ -54,9 +54,9 @@ jobs:
           ### 下载
           - **Windows**：`dsh-piggy-setup-*.exe`（安装版）或 `dsh-piggy-portable-*.exe`（免安装，双击就跑）
           - **Linux**：`dsh-piggy-*.AppImage`（加执行权限后双击）
-          - **macOS**：`dsh-piggy-*-arm64.dmg`（M 系列芯片）或 `-x64.dmg`（Intel）。没有签名，第一次打开要在「访达」里**右键 → 打开**；或者终端执行 `xattr -dr com.apple.quarantine /Applications/dsh-piggy.app`
+          - **macOS**：本版起暂停构建；最后一个可用版本见历史 Releases，代码保留，欢迎后续维护者接手。
           - **DSH 插件**：按上方精确版本指引安装，装完重启 DSH 并刷新页面
-          - 已装桌面版的：「设置 → 更新」可升级游戏包；新安装的 Windows 安装版和 Linux AppImage 也能升级桌面外壳。Windows 便携版、未签名 macOS 版需从本页手动下载。
+          - 已装桌面版的：「设置 → 更新」可升级游戏包；新安装的 Windows 安装版和 Linux AppImage 也能升级桌面外壳。Windows 便携版需从本页手动下载。
           NOTES
       - name: 建 Release 并上传游戏包
         env: { GH_TOKEN: '${{ github.token }}' }
@@ -74,8 +74,6 @@ jobs:
             target: --linux
           - os: windows-latest
             target: --win
-          - os: macos-latest
-            target: --mac
     runs-on: ${{ matrix.os }}
     defaults:
       run: { working-directory: apps/desktop }
@@ -120,6 +118,6 @@ jobs:
           if [[ "${{ matrix.target }}" == "--win" ]]; then test -s "dist/${update_channel}.yml"; fi
           if [[ "${{ matrix.target }}" == "--linux" ]]; then test -s "dist/${update_channel}-linux.yml"; fi
           shopt -s nullglob
-          files=(dist/*.AppImage dist/*.exe dist/*.dmg "dist/${update_channel}"*.yml)
+          files=(dist/*.AppImage dist/*.exe "dist/${update_channel}"*.yml)
           test "${#files[@]}" -gt 0
           gh release upload "$TAG" "${files[@]}" --clobber
