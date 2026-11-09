@@ -180,7 +180,7 @@ function renderItems(ui, kind) {
         data: { 'data-use': item.key },
         // 朋友的猪：走联机照顾；自己的猪：和以前一样发喂食/洗澡/玩耍。
         onPick: function () {
-          if (target !== null) careFriend(ui, target, action ?? (kind === 'medicine' ? 'medicine' : 'use'), item.key)
+          if (target !== null) careFriend(ui, target, action ?? (kind === 'medicine' ? 'medicine' : 'use'), item)
           else ui.send(action ?? 'use', { item: item.key })
         },
       })
@@ -191,23 +191,49 @@ function renderItems(ui, kind) {
   ui.content.appendChild(pagedTiles(ui, 'bag:' + kind, tiles))
 }
 
+/** 和本地猪一样：先在本地面板/猪身上生效，再把数据发给对方本机确认。 */
+function optimisticFriendCare(ui, action, item) {
+  var view = ui.friendView
+  if (!view || !view.pig || !item) return null
+  var key = action === 'feed' ? 'satiety' : action === 'bathe' ? 'cleanliness' : action === 'play' ? 'happiness' : null
+  if (key === null) return null
+  var gain = Number(item[key])
+  if (!Number.isFinite(gain) || gain <= 0) return null
+  var before = Number(view.pig[key]) || 0
+  var next = Math.max(0, Math.min(100, Math.round(before + gain)))
+  view.pig[key] = next
+  if (ui.friend && ui.friend.care) ui.friend.care[key] = next
+  return { key, before }
+}
+
 /** 用自己背包里的东西照顾朋友的猪；成功后回朋友状态页。 */
-function careFriend(ui, target, action, itemKey) {
+function careFriend(ui, target, action, item) {
   var shell = typeof window !== 'undefined' ? (/** @type {any} */ (window)).piggyShell : null
   if (!shell || !shell.friend || typeof shell.friend.care !== 'function') {
     ui.toast('联机照顾暂不可用')
     return
   }
-  Promise.resolve(shell.friend.care(target.id, action, itemKey)).then(function (result) {
+  var rollback = optimisticFriendCare(ui, action, item)
+  Promise.resolve(shell.friend.care(target.id, action, item.key)).then(function (result) {
     if (result && result.ok === true) {
       ui.careTarget = null
-      ui.toast(result.message || '照顾成功')
+      // 不在成功时弹「帮忙照顾」式回执：猪和面板已经先动了。
       ui.select('status')
       if (typeof ui.refresh === 'function') ui.refresh()
     } else {
+      if (rollback && ui.friendView && ui.friendView.pig) {
+        ui.friendView.pig[rollback.key] = rollback.before
+        if (ui.friend && ui.friend.care) ui.friend.care[rollback.key] = rollback.before
+      }
       ui.toast(result && typeof result.reason === 'string' ? result.reason : '照顾失败，请再试一次')
     }
-  }).catch(function () { ui.toast('照顾失败，请再试一次') })
+  }).catch(function () {
+    if (rollback && ui.friendView && ui.friendView.pig) {
+      ui.friendView.pig[rollback.key] = rollback.before
+      if (ui.friend && ui.friend.care) ui.friend.care[rollback.key] = rollback.before
+    }
+    ui.toast('照顾失败，请再试一次')
+  })
 }
 
 /** 照料记录的展开状态挂在 ui.drill 上：只是这一屏的样子，不发送、不存档。 */

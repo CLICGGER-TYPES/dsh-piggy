@@ -76,7 +76,6 @@ function renderCareActions(ui) {
           if (friendApi === null || typeof friendApi.pat !== 'function') { ui.toast('联机摸摸暂不可用'); return }
           Promise.resolve(friendApi.pat(ui.friend.id)).then(function (result) {
             if (result && result.ok === false) ui.toast(result.reason || '摸不到')
-            else ui.toast('摸摸到了')
           }).catch(function () { ui.toast('摸不到') })
           return
         }
