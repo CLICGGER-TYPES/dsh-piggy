@@ -22,6 +22,11 @@
 - 验收：类型检查、构建、13 项房间单测/集成；本机两个真实实例加入、移动同步、2 只和 7 只猪同屏、离开与关房流程。未做真实跨设备 Wi-Fi、Windows 防火墙和公网验收。
 - 文件：`apps/desktop/lib/room-*.js`、`apps/desktop/lib/ipc/room.js`、`apps/desktop/renderer/room.*`、`src/client/tabs/room.js`、`docs/design/room-multiplayer.md`。
 
+## 2026-11-05 成就列表浏览（待上游评审）
+
+- 已实现全部／已获得／未获得筛选、跨分类的快达成排序，以及详情返回恢复浏览位置；复用现有徽章与分段按钮。
+- 构建、类型检查与成就／图鉴／bundle 相关 17 项测试通过，隔离浏览器交互通过。行为边界见 [设计说明](design/achievement-browser.md)。
+
 ## 2026-11-04 菜园帮工精力 / 休息 E1（源码候选，未发布，无 UI）
 
 - 存档 v8：`helper.workers[]` 新增 `shiftAt`（班次锚点）、`resting`（手动休息）、`idle`（没活睡觉）；精力不落盘，由 `(now - shiftAt)` 纯函数算。

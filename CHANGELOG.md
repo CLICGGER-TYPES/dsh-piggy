@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 成就图鉴支持全部／已获得／未获得筛选，以及按完成比例的「快达成优先」排序；从详情返回时恢复筛选、排序和列表位置。
+
 ---
 
 ## [0.37.2] — 2026-11-07 · 联机房间与 2.5D 场景
