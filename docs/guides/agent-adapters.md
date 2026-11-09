@@ -94,11 +94,11 @@ node runtime/serve.mjs --work-events --state-path=/absolute/path/to/state.json -
 
 DSH 的存档默认位置、斜杠命令和五类工作计数保持原样。DSH 回调目前没有已核实的持久事件 ID，因此适配器为每次观测分配身份，不宣称能够识别宿主重复发出的两个回调。
 
-本文对 OpenCode 插件的结构与行为固定分析 [WolalaQAQ/opencode-piggy](https://github.com/WolalaQAQ/opencode-piggy) 提交 `d8296b3b795b50c7070c0630fa049f07765a3f82`。该提交实现的是运行在 OpenCode V2 服务（2.0.26 或以上）里的自包含插件：订阅服务端公共事件，把真实工作映射成带稳定 ID 的工作事件，先写入插件自己的持久发件箱，再通过 dsh-piggy 的本机 HTTP 接口 `POST /events` 投递。插件不注册模型工具、不改模型上下文，也没有独立桥进程或 `runtime-adapter.js` 生命周期；游戏本体不导入 OpenCode 插件，也不管理插件进程。Desktop 和 TUI 连接同一个 OpenCode 服务时共用同一个插件，不需要按客户端分别安装。
+本文对 OpenCode 插件的结构与行为分析 [WolalaQAQ/opencode-piggy](https://github.com/WolalaQAQ/opencode-piggy) 0.2.0 正式版（提交 `f7d30599968fe2cd5b4611725144e2fd0dc346cb`）。该版本实现的是运行在 OpenCode V2 服务（2.0.26 或以上）里的自包含插件：订阅服务端公共事件，把真实工作映射成带稳定 ID 的工作事件，先写入插件自己的持久发件箱，再通过 dsh-piggy 的本机 HTTP 接口 `POST /events` 投递。插件不注册模型工具、不改模型上下文，也没有独立桥进程或 `runtime-adapter.js` 生命周期；游戏本体不导入 OpenCode 插件，也不管理插件进程。Desktop 和 TUI 连接同一个 OpenCode 服务时共用同一个插件，不需要按客户端分别安装。
 
-安装、配置、离线包和排障以 upstream 的[插件使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)、[Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 和 OpenCode 官方的[插件文档](https://opencode.ai/docs/plugins/)为准。上述固定提交的实现入口为 [direct-client.js](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/packages/opencode-piggy/direct-client.js)、[game-endpoint.js](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/packages/opencode-piggy/game-endpoint.js) 和 [paths.js](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/packages/opencode-piggy/paths.js)。旧版文档提到的独立桥和 `runtime-adapter.js` 是早期原型，不属于本文固定分析的提交。
+安装、配置、离线包和排障以 upstream 的[插件使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)、[Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 和 OpenCode 官方的[插件文档](https://opencode.ai/docs/plugins/)为准。上述 0.2.0 版本的实现入口为 [direct-client.js](https://github.com/WolalaQAQ/opencode-piggy/blob/f7d30599968fe2cd5b4611725144e2fd0dc346cb/packages/opencode-piggy/direct-client.js)、[game-endpoint.js](https://github.com/WolalaQAQ/opencode-piggy/blob/f7d30599968fe2cd5b4611725144e2fd0dc346cb/packages/opencode-piggy/game-endpoint.js) 和 [paths.js](https://github.com/WolalaQAQ/opencode-piggy/blob/f7d30599968fe2cd5b4611725144e2fd0dc346cb/packages/opencode-piggy/paths.js)。旧版文档提到的独立桥和 `runtime-adapter.js` 是早期原型，不属于本文分析的 0.2.0 版本。
 
-### 稳定发现契约（rc.9）
+### 稳定发现契约（rc.9 / OpenCode 插件 0.2.0）
 
 桌面版默认把工作接口发现文件放在桌面的 `piggy` 数据目录：
 
@@ -108,8 +108,8 @@ DSH 的存档默认位置、斜杠命令和五类工作计数保持原样。DSH 
 | macOS | `~/Library/Application Support/piggy/work-endpoint` |
 | Linux | `${XDG_DATA_HOME:-~/.local/share}/piggy/work-endpoint`（仅绝对路径的 `XDG_DATA_HOME` 生效） |
 
-上面固定提交的插件在未设置选项时，仍先查 `<配置根目录>/dsh-piggy/work-endpoint`，再查 `<配置根目录>/dsh-piggy-desktop/work-endpoint`（Linux 配置根目录为 `${XDG_CONFIG_HOME:-~/.config}`）。所以三个平台都用默认值时，插件不会自动发现 RC6 桌面新建的 `piggy/work-endpoint`。这是对固定版本源码的静态对比，不是在真实界面复现的 bug，也不代表 Windows 已通过或失败。
+0.2.0 起，插件在未设置选项时按以下顺序发现工作接口目录：`PIGGY_USERDATA/work-endpoint` → 官方默认数据目录 `piggy/work-endpoint`（Windows `%APPDATA%\piggy\work-endpoint`、macOS `~/Library/Application Support/piggy/work-endpoint`、Linux `${XDG_DATA_HOME:-~/.local/share}/piggy/work-endpoint`，仅绝对路径的 `XDG_DATA_HOME` 生效）→ 旧配置目录 `dsh-piggy/work-endpoint` → `dsh-piggy-desktop/work-endpoint`。因此 0.2.0 及以上的插件在三个平台都能直接发现当前桌面版新建的 `piggy/work-endpoint`，不需要额外配置；0.2.0 之前的固定版本才会落回旧配置目录。
 
-需要在插件配置里把 `gameDirectory` 指向桌面实际的 `work-endpoint` 目录（`endpoint.json` 所在目录），不要指向 `state.json` 或它的上级 userData。写法见 upstream 的[配置游戏目录与队列](https://github.com/WolalaQAQ/opencode-piggy/blob/d8296b3b795b50c7070c0630fa049f07765a3f82/docs/guides/opencode.md#配置游戏目录与队列)；只使用其中已有的选项，不另造命令行参数。另一种已实现的方式是给桌面和 **OpenCode 服务进程**设置同一个 `PIGGY_USERDATA`（指向 userData 目录本身，即 `work-endpoint` 的父目录），插件会读取 `$PIGGY_USERDATA/work-endpoint`；只在启动桌面的终端里设置不会影响已经运行的 OpenCode 服务。
+0.2.0 之前的固定版本，或需要指向非默认目录时，才需要在插件配置里把 `gameDirectory` 指向桌面实际的 `work-endpoint` 目录（`endpoint.json` 所在目录），不要指向 `state.json` 或它的上级 userData。写法见 upstream 的[配置游戏目录与队列](https://github.com/WolalaQAQ/opencode-piggy/blob/f7d30599968fe2cd5b4611725144e2fd0dc346cb/docs/guides/opencode.md#配置游戏目录与队列)；只使用其中已有的选项，不另造命令行参数。另一种已实现的方式是给桌面和 **OpenCode 服务进程**设置同一个 `PIGGY_USERDATA`（指向 userData 目录本身，即 `work-endpoint` 的父目录），插件会读取 `$PIGGY_USERDATA/work-endpoint`；只在启动桌面的终端里设置不会影响已经运行的 OpenCode 服务。
 
-不要通过移动、复制或软链个人存档，也不要伪造 `endpoint.json` 或令牌来绕过目录问题。本仓库不改第三方代码；固定版本插件若默认路径不同，显式设置 `gameDirectory` 即可，不能靠移动或复制存档绕过。OpenCode 说明仅基于上述固定提交的源码静态分析，不代表已完成 OpenCode 实机或 UI 验收。
+不要通过移动、复制或软链个人存档，也不要伪造 `endpoint.json` 或令牌来绕过目录问题。本仓库不改第三方代码；0.2.0 之前的插件若默认路径不同，显式设置 `gameDirectory` 即可，不能靠移动或复制存档绕过。OpenCode 说明基于上述 0.2.0 版本的源码静态分析，不代表已完成 OpenCode 实机或 UI 验收。
