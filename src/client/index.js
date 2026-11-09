@@ -152,6 +152,7 @@ export function mountGame(mountOptions) {
         friend: null,
         friendView: null,
         friendMode: false,
+        friendOptimistic: null,
         content: content,
         footer: footer,
         scene: scene,

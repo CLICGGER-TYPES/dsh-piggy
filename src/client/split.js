@@ -20,6 +20,21 @@ import { stageShell } from './stage-shell.js'
 /** 面板窗口里会转给猪窗口的反应（参数都能直接过进程边界）。 */
 export { PIG_FX, stageShell }
 
+/** 朋友照顾先在本机生效：目标确认值追上来之前，别让旧房间快照把面板数字盖回去。 */
+function friendViewWithOptimistic(ctx, player) {
+  var view = friendViewOf(ctx.view, player)
+  var pending = ctx.friendOptimistic
+  if (pending === null || pending === undefined || pending.id !== player.id || view.pig === null) return view
+  var age = Date.now() - pending.at
+  var current = Number(view.pig[pending.key]) || 0
+  if (age > 8000 || current >= pending.value) {
+    ctx.friendOptimistic = null
+    return view
+  }
+  view.pig[pending.key] = Math.max(current, pending.value)
+  return view
+}
+
 /**
  * @param {any} ctx 挂载后的上下文（index.js 的 ctx）
  * @param {{ refresh: () => void, isFishing: () => boolean }} hooks
@@ -75,7 +90,7 @@ export function wireSplit(ctx, hooks) {
         ctx.host.removeAttribute?.('data-friend')
       } else {
         ctx.friend = next
-        ctx.friendView = friendViewOf(ctx.view, next)
+        ctx.friendView = friendViewWithOptimistic(ctx, next)
       }
       if (ctx.tab === 'status' || ctx.tab === 'card') ctx.renderContent()
     })
@@ -94,14 +109,20 @@ export function wireSplit(ctx, hooks) {
       else ctx.fitPanel()
       shell.syncGeometry()
     } else if (message.type === 'friend' && message.player !== null && typeof message.player === 'object') {
+      const previous = ctx.friend
+      const sameFriend = previous !== null && previous !== undefined && previous.id === message.player.id
+      const keepTab = sameFriend && (ctx.tab === 'status' || ctx.tab === 'card' || ctx.tab === 'friend-home'
+        || (ctx.tab === 'bag' && ctx.careTarget !== null))
       ctx.friend = message.player
-      ctx.friendView = friendViewOf(ctx.view, message.player)
-      ctx.friendFromTab = ctx.tab
+      ctx.friendView = friendViewWithOptimistic(ctx, message.player)
+      if (!sameFriend) ctx.friendFromTab = ctx.tab
+      if (!keepTab) {
+        ctx.careTarget = null
+        ctx.tab = 'friend-home'
+      }
       ctx.friendMode = true
       ctx.friendWindow = message.dedicated === true
-      ctx.careTarget = null
       ctx.host.setAttribute('data-friend', 'true')
-      ctx.tab = 'friend-home'
       ctx.renderContent()
       ctx.fitPanel()
     } else if (message.type === 'closed') {

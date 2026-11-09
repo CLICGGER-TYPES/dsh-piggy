@@ -203,7 +203,7 @@ function optimisticFriendCare(ui, action, item) {
   var next = Math.max(0, Math.min(100, Math.round(before + gain)))
   view.pig[key] = next
   if (ui.friend && ui.friend.care) ui.friend.care[key] = next
-  return { key, before }
+  return { key, before, value: next }
 }
 
 /** 用自己背包里的东西照顾朋友的猪；成功后回朋友状态页。 */
@@ -214,6 +214,7 @@ function careFriend(ui, target, action, item) {
     return
   }
   var rollback = optimisticFriendCare(ui, action, item)
+  if (rollback !== null) ui.friendOptimistic = { id: ui.friend.id, key: rollback.key, value: rollback.value, at: Date.now() }
   Promise.resolve(shell.friend.care(target.id, action, item.key)).then(function (result) {
     if (result && result.ok === true) {
       ui.careTarget = null
@@ -225,6 +226,7 @@ function careFriend(ui, target, action, item) {
         ui.friendView.pig[rollback.key] = rollback.before
         if (ui.friend && ui.friend.care) ui.friend.care[rollback.key] = rollback.before
       }
+      ui.friendOptimistic = null
       ui.toast(result && typeof result.reason === 'string' ? result.reason : '照顾失败，请再试一次')
     }
   }).catch(function () {
@@ -232,6 +234,7 @@ function careFriend(ui, target, action, item) {
       ui.friendView.pig[rollback.key] = rollback.before
       if (ui.friend && ui.friend.care) ui.friend.care[rollback.key] = rollback.before
     }
+    ui.friendOptimistic = null
     ui.toast('照顾失败，请再试一次')
   })
 }
