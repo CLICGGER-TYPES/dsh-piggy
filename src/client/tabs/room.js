@@ -74,6 +74,16 @@ function refresh(ui, bridge) {
   })
 }
 
+function actionOf(ui, key) {
+  const action = ui.view?.actions?.[key] ?? {}
+  const wait = Number(action.waitSeconds)
+  return {
+    ready: action.ready !== false,
+    waitSeconds: Number.isFinite(wait) ? Math.max(0, Math.min(3600, Math.round(wait))) : 0,
+    blocked: action.blocked === 'away' || action.blocked === 'hungry' ? action.blocked : null,
+  }
+}
+
 function profileOf(ui) {
   const pig = ui.view?.pig
   const stage = pig?.stage
@@ -97,6 +107,7 @@ function profileOf(ui) {
       cleanliness: Number(pig?.cleanliness) || 0,
       happiness: Number(pig?.happiness) || 0,
     },
+    actions: Object.fromEntries(['feed', 'bathe', 'play', 'pet'].map(key => [key, actionOf(ui, key)])),
     status: {
       level: pig?.level ?? null,
       health: Number(pig?.health) || 0,

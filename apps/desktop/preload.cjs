@@ -45,6 +45,7 @@ function roomProfile(value) {
     care: Object.fromEntries(['satiety', 'cleanliness', 'happiness'].map(key => [
       key, Number.isFinite(Number(profile.care?.[key])) ? Number(profile.care[key]) : 60,
     ])),
+    actions: profile.actions,
     status: profile.status,
     card: profile.card,
   }

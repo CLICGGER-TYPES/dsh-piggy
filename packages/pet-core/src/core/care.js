@@ -116,7 +116,7 @@ export function applySettledCare(state, { action, nowMs, itemKey, spend = true, 
   let item = null
   if (shelf !== undefined) {
     item = guest
-      ? (careItems(shelf).find(entry => entry.key === itemKey) ?? null)
+      ? guestCareEntry(action, itemKey).item
       : resolveCareItem(state, shelf, itemKey)
     if (item === null) return { ok: false, reason: 'no-item', kind: shelf }
     if (spend && item.default !== true) {
@@ -208,25 +208,28 @@ export function applyGuestMedicine(state, itemKey, nowMs) {
   }
 }
 
-/** 客人先扣自己背包里的一个物品；真正送出前调用。 */
-export function takeCareItem(state, action, itemKey) {
+/** 客人的物品查找和主猪共用同一份货架/药品数据，只是不碰目标背包。 */
+function guestCareEntry(action, itemKey) {
   if (action === 'medicine') {
     const item = itemByKey(itemKey)
-    if (item === null || item.kind !== 'medicine') return { ok: false, reason: 'no-item' }
-    const have = state.inventory?.[item.key] ?? 0
-    if (have <= 0) return { ok: false, reason: 'empty' }
-    state.inventory = { ...(state.inventory ?? {}) }
-    if (have > 1) state.inventory[item.key] = have - 1
-    else delete state.inventory[item.key]
-    return { ok: true, item: item.key, default: false }
+    return { shelf: 'medicine', item: item !== null && item.kind === 'medicine' ? item : null }
   }
   const shelf = CARE_KIND[action]
-  if (shelf === undefined) return { ok: false, reason: 'unknown' }
-  const item = careItems(shelf).find(entry => entry.key === itemKey)
-  if (item === null || item === undefined) return { ok: false, reason: 'no-item', kind: shelf }
+  if (shelf === undefined) return { shelf: null, item: null }
+  return { shelf, item: careItems(shelf).find(entry => entry.key === itemKey) ?? null }
+}
+
+/** 客人先扣自己背包里的一个物品；真正送出前调用。 */
+export function takeCareItem(state, action, itemKey) {
+  const found = guestCareEntry(action, itemKey)
+  if (found.shelf === null) return { ok: false, reason: 'unknown' }
+  if (found.item === null) {
+    return { ok: false, reason: 'no-item', ...(action === 'medicine' ? {} : { kind: found.shelf }) }
+  }
+  const item = found.item
   if (item.default !== true) {
     const have = state.inventory?.[item.key] ?? 0
-    if (have <= 0) return { ok: false, reason: 'empty', kind: shelf }
+    if (have <= 0) return { ok: false, reason: 'empty', ...(action === 'medicine' ? {} : { kind: found.shelf }) }
     state.inventory = { ...(state.inventory ?? {}) }
     if (have > 1) state.inventory[item.key] = have - 1
     else delete state.inventory[item.key]
@@ -236,22 +239,16 @@ export function takeCareItem(state, action, itemKey) {
 
 /** 对方没收到 / 拒绝时，把客人扣掉的物品还回去。 */
 export function refundCareItem(state, action, itemKey) {
-  if (action === 'medicine') {
-    const item = itemByKey(itemKey)
-    if (item === null || item.kind !== 'medicine') return { ok: false, reason: 'no-item' }
-    state.inventory = { ...(state.inventory ?? {}) }
-    state.inventory[item.key] = (state.inventory[item.key] ?? 0) + 1
-    return { ok: true, item: item.key }
+  const found = guestCareEntry(action, itemKey)
+  if (found.shelf === null) return { ok: false, reason: 'unknown' }
+  if (found.item === null) {
+    return { ok: false, reason: 'no-item', ...(action === 'medicine' ? {} : { kind: found.shelf }) }
   }
-  const shelf = CARE_KIND[action]
-  if (shelf === undefined) return { ok: false, reason: 'unknown' }
-  const item = careItems(shelf).find(entry => entry.key === itemKey)
-  if (item === null || item === undefined) return { ok: false, reason: 'no-item', kind: shelf }
-  if (item.default !== true) {
+  if (found.item.default !== true) {
     state.inventory = { ...(state.inventory ?? {}) }
-    state.inventory[item.key] = (state.inventory[item.key] ?? 0) + 1
+    state.inventory[found.item.key] = (state.inventory[found.item.key] ?? 0) + 1
   }
-  return { ok: true, item: item.key }
+  return { ok: true, item: found.item.key }
 }
 
 export function careOptions(state, action) {

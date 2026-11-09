@@ -152,7 +152,9 @@ function renderItems(ui, kind) {
   if (STAT_SHELVES.indexOf(kind) >= 0) statStrip(ui)
   var items = ownedOf(ui, kind)
   var action = CARE_ACTION[kind]
-  var hungry = target === null && kind === 'toy' && ui.view.actions.play?.blocked === 'hungry'
+  // 本地猪用本机 actions；朋友的猪用进入背包时带过来的朋友 actions。
+  var actions = target?.actions ?? ui.view.actions
+  var hungry = kind === 'toy' && actions?.play?.blocked === 'hungry'
   if (items.length === 0) {
     ui.content.appendChild(el('div', 'dp-empty', '空的'))
     // 状态页的喂食 / 洗澡 / 玩耍跳过来时如果空了，给一个直接去商店对应货架的入口。

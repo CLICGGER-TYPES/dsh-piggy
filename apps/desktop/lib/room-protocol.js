@@ -102,8 +102,24 @@ function publicCard(value) {
 /**
  * 玩家外观摘要。只用于房间显示，不是存档，也不包含 owner/pig 身份。
  * @param {unknown} value
- * @returns {{name:string,level:number,stage:string,art:string,emoji:string,size:number,label:string,mood:string,moodLabel:string,care:{satiety:number,cleanliness:number,happiness:number},status:any,card:any}}
+ * @returns {{name:string,level:number,stage:string,art:string,emoji:string,size:number,label:string,mood:string,moodLabel:string,care:{satiety:number,cleanliness:number,happiness:number},actions:any,status:any,card:any}}
  */
+/** 朋友面板的照顾按钮只看这几项就绪状态；不传别的行动或存档字段。 */
+function publicActions(value) {
+  const input = record(value)
+  const out = {}
+  for (const key of ['feed', 'bathe', 'play', 'pet']) {
+    const source = input?.[key] !== null && typeof input?.[key] === 'object' && !Array.isArray(input[key]) ? input[key] : {}
+    const wait = Number(source.waitSeconds)
+    out[key] = {
+      ready: source.ready !== false,
+      waitSeconds: Number.isFinite(wait) ? Math.min(3600, Math.max(0, Math.round(wait))) : 0,
+      blocked: source.blocked === 'away' || source.blocked === 'hungry' ? source.blocked : null,
+    }
+  }
+  return out
+}
+
 export function normalizeProfile(value) {
   const input = record(value)
   if (input === null) throw new TypeError('room profile must be an object')
@@ -122,11 +138,12 @@ export function normalizeProfile(value) {
     return Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 60
   }
   const care = { satiety: careValue('satiety'), cleanliness: careValue('cleanliness'), happiness: careValue('happiness') }
+  const actions = publicActions(input.actions)
   const mood = cleanText(input.mood, 24)
   const moodLabel = cleanText(input.moodLabel, 24)
   const status = publicStatus(input.status)
   const card = publicCard(input.card)
-  return { name, level, stage, art, emoji, size, label, care, mood, moodLabel, status, card }
+  return { name, level, stage, art, emoji, size, label, care, actions, mood, moodLabel, status, card }
 }
 
 /** @param {unknown} value */
