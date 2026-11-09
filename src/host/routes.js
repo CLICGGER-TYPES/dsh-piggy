@@ -77,6 +77,10 @@ const OPERATIONS = {
   bathe: (store, body) => store.act('bathe', str(body.item)),
   play: (store, body) => store.act('play', str(body.item)),
   pet: (store, body) => store.act('pet', str(body.part)),
+  // 联机照顾：客人先扣自己的物品，目标主人只应用效果、不扣目标背包。
+  takeCareItem: (store, body) => store.takeCareItem(str(body.op), str(body.item)),
+  refundCareItem: (store, body) => store.refundCareItem(str(body.op), str(body.item)),
+  guestCare: (store, body) => store.guestCare(str(body.op), str(body.item)),
   // 拿起/抛出/戳一下：刷新活跃时间，让睡着的猪醒过来；不消耗物品。
   touch: store => store.touch(),
   // Answer the pig's latest line: `line` is the message id, `index` the button.
@@ -239,6 +243,7 @@ function registerActRoute(webServer, store) {
           need: result.need,
           have: result.have,
           message: result.message,
+          care: result.care,
         }, { 'cache-control': 'no-store' })
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error)

@@ -40,7 +40,7 @@ export function renderCardTab(ui) {
   var avatar = el('div', 'dp-vcard-avatar')
   if (p.stage.art !== null) {
     var img = /** @type {HTMLImageElement} */ (el('img', 'dp-vcard-img'))
-    img.src = artSource(p.stage.art)
+    img.src = typeof p.artUrl === 'string' && p.artUrl !== '' ? p.artUrl : artSource(p.stage.art)
     img.alt = ''
     avatar.appendChild(img)
   } else {
@@ -62,14 +62,16 @@ export function renderCardTab(ui) {
   var forms = ui.view.forms
   var worn = forms === null ? null : forms.forms.find(function (f) { return f.current }) || null
   if (worn !== null) card.appendChild(field('形态', worn.emoji + ' ' + worn.label))
-  // 猪怎么称呼你从状态页挪到这里改；名字在上面名字旁边的蜡笔改。
-  card.appendChild(editableField(ui, 'owner', '叫你', ui.view.dialogue.ownerName))
+  // 朋友卡只读：不显示「叫你」这种主人关系。
+  if (!ui.friendMode) card.appendChild(editableField(ui, 'owner', '叫你', ui.view.dialogue.ownerName))
   card.appendChild(editableField(ui, 'catchphrase', '口头禅', profile.catchphrase))
   card.appendChild(editableField(ui, 'motto', '签名', profile.motto))
 
   var c = profile.counts
-  card.appendChild(el('div', 'dp-vcard-foot',
-    '养了 ' + c.days + ' 天 · 证书 ' + c.certificates + ' · 纪念品 ' + c.souvenirs + ' · 毕业 ' + c.graduations))
+  if (c !== null && c !== undefined) {
+    card.appendChild(el('div', 'dp-vcard-foot',
+      '养了 ' + c.days + ' 天 · 证书 ' + c.certificates + ' · 纪念品 ' + c.souvenirs + ' · 毕业 ' + c.graduations))
+  }
   ui.content.appendChild(card)
 }
 
@@ -86,6 +88,7 @@ function field(label, value) {
  * bubble rather than a pill: it is the pig talking.
  */
 function editableField(ui, key, label, value) {
+  if (ui.friendMode) return field(label, value)
   var editing = ui.cardEdit !== null && ui.cardEdit.field === key
   var row = el('div', 'dp-vcard-row' + (key === 'motto' ? ' dp-vcard-motto-row' : ''))
   row.appendChild(el('span', 'dp-vcard-label', label + '：'))
@@ -105,6 +108,10 @@ function editableField(ui, key, label, value) {
  */
 function nameLine(ui, p) {
   var line = el('div', 'dp-vcard-nameline')
+  if (ui.friendMode) {
+    line.appendChild(el('b', 'dp-vcard-name', p.name))
+    return line
+  }
   if (ui.cardEdit !== null && ui.cardEdit.field === 'name') {
     appendEditor(ui, line, 'name')
     return line
@@ -155,6 +162,10 @@ function appendEditor(ui, parent, key) {
  * 点铅笔只就地改这一项；保存后才发 editProfile。
  */
 function editableProfileField(ui, profile, key) {
+  if (ui.friendMode) {
+    var value = key === 'birthday' ? profile.birthday : profile.personality.emoji + ' ' + profile.personality.label
+    return field(key === 'birthday' ? '生日' : '性格', value)
+  }
   var editing = ui.cardEdit !== null && ui.cardEdit.field === key
   var row = el('div', 'dp-vcard-row' + (editing && key === 'birthday' ? ' dp-vcard-birthday' : ''))
   row.appendChild(el('span', 'dp-vcard-label', (key === 'birthday' ? '生日' : '性格') + '：'))

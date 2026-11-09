@@ -8,6 +8,7 @@ import { createServer } from 'node:http'
 import { isIP } from 'node:net'
 
 import { ownerNetworkAddressKind } from './owner-network-addresses.js'
+import { createRoomCare } from './room-care.js'
 import { normalizeRoomCode } from './room-code.js'
 import {
   ROOM_IDLE_MS, ROOM_MAX_BODY, ROOM_MAX_PLAYERS, ROOM_STATE_HOLD_MS,
@@ -108,6 +109,14 @@ export async function startRoomServer(options) {
   let port = 0
   let version = 1
   let hostId = null
+  /** 最近 32 条照顾意图/结果：长轮询广播，客户端按 nonce 去重。 */
+  const careEvents = []
+  const careResults = []
+  const roomCare = createRoomCare({
+    players, careEvents, careResults, now, bump, send, fail, readJson, exactKeys, randomUUID,
+    findPlayer: request => findPlayer(request),
+    version: () => version,
+  })
   let notifyTimer = null
   let sweeper = null
 
@@ -164,6 +173,8 @@ export async function startRoomServer(options) {
       players: [...players.values()]
         .sort((left, right) => left.joinedAt - right.joinedAt)
         .map(publicPlayer),
+      careEvents: careEvents.slice(-32),
+      careResults: careResults.slice(-32),
     }
   }
 
@@ -303,6 +314,8 @@ export async function startRoomServer(options) {
     if (request.method === 'POST' && path === '/v1/room/join') return join(request, response)
     if (request.method === 'POST' && path === '/v1/room/state') return state(request, response)
     if (request.method === 'POST' && path === '/v1/room/update') return update(request, response)
+    if (request.method === 'POST' && path === '/v1/room/care') return roomCare.care(request, response)
+    if (request.method === 'POST' && path === '/v1/room/care-result') return roomCare.careResult(request, response)
     if (request.method === 'POST' && path === '/v1/room/leave') return leave(request, response)
     throw fail(404, 'not-found')
   }
@@ -356,6 +369,8 @@ export async function startRoomServer(options) {
       await Promise.allSettled([...requests])
       players.clear()
       joinAttempts.clear()
+      careEvents.length = 0
+      careResults.length = 0
     })().catch(error => { closePromise = undefined; throw error })
     return closePromise
   }

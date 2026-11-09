@@ -9,6 +9,7 @@ export const ROOM_MAX_PLAYERS = 32
 export const ROOM_MAX_NAME = 24
 export const ROOM_MAX_BODY = 4096
 export const ROOM_EMOTES = Object.freeze(['wave', 'pat', 'jump'])
+export const ROOM_CARE_OPS = Object.freeze(['feed', 'bathe', 'play', 'medicine'])
 export const ROOM_STATE_HOLD_MS = 15_000
 export const ROOM_IDLE_MS = 30_000
 export const ROOM_UPDATE_MIN_MS = 30
@@ -30,10 +31,78 @@ function cleanText(value, max) {
   return [...text].slice(0, max).join('')
 }
 
+function whole(value, min, max, fallback) {
+  const number = Number(value)
+  return Number.isFinite(number) ? Math.min(max, Math.max(min, Math.round(number))) : fallback
+}
+
+function publicLevel(value) {
+  const input = record(value)
+  const level = whole(input?.level, 1, 999, 1)
+  return {
+    level,
+    percent: whole(input?.percent, 0, 100, 0),
+    toNext: whole(input?.toNext, 0, 1e9, 0),
+    maxed: input?.maxed === true,
+    titleEmoji: cleanText(input?.titleEmoji, 8),
+    titleLabel: cleanText(input?.titleLabel, 16),
+  }
+}
+
+function publicStatus(value) {
+  const input = record(value)
+  const traits = record(input?.traits)
+  const body = record(input?.bodyWeight)
+  return {
+    level: publicLevel(input?.level),
+    health: whole(input?.health, 0, 9, 5),
+    healthPercent: whole(input?.healthPercent, 0, 100, 100),
+    maxHealth: whole(input?.maxHealth, 1, 9, 5),
+    traits: {
+      intel: whole(traits?.intel, 0, 999, 0),
+      charm: whole(traits?.charm, 0, 999, 0),
+      strong: whole(traits?.strong, 0, 999, 0),
+    },
+    weight: cleanText(input?.weight, 32),
+    bodyWeight: body === null ? null : { label: cleanText(body.label, 24), locked: body.locked === true },
+    mood: cleanText(input?.mood, 24),
+    moodLabel: cleanText(input?.moodLabel, 24),
+    illness: (() => {
+      const ill = record(input?.illness)
+      if (ill === null) return null
+      return {
+        name: cleanText(ill.name, 24), stage: whole(ill.stage, 1, 4, 1),
+        cure: cleanText(ill.cure, 24), cureKey: cleanText(ill.cureKey, 40),
+        cureEmoji: cleanText(ill.cureEmoji, 8), doctorFee: whole(ill.doctorFee, 0, 1e9, 0),
+      }
+    })(),
+  }
+}
+
+function publicCard(value) {
+  const input = record(value)
+  const zodiac = record(input?.zodiac)
+  const personality = record(input?.personality)
+  const counts = record(input?.counts)
+  return {
+    birthday: cleanText(input?.birthday, 32),
+    zodiac: zodiac === null ? null : { emoji: cleanText(zodiac.emoji, 8), label: cleanText(zodiac.label, 16) },
+    personality: personality === null ? null : { emoji: cleanText(personality.emoji, 8), label: cleanText(personality.label, 16) },
+    catchphrase: cleanText(input?.catchphrase, 32),
+    motto: cleanText(input?.motto, 80),
+    counts: counts === null ? null : {
+      days: whole(counts.days, 0, 1e9, 0),
+      certificates: whole(counts.certificates, 0, 1e9, 0),
+      souvenirs: whole(counts.souvenirs, 0, 1e9, 0),
+      graduations: whole(counts.graduations, 0, 1e9, 0),
+    },
+  }
+}
+
 /**
  * 玩家外观摘要。只用于房间显示，不是存档，也不包含 owner/pig 身份。
  * @param {unknown} value
- * @returns {{name:string,level:number,stage:string,art:string,emoji:string,size:number,label:string}}
+ * @returns {{name:string,level:number,stage:string,art:string,emoji:string,size:number,label:string,mood:string,moodLabel:string,care:{satiety:number,cleanliness:number,happiness:number},status:any,card:any}}
  */
 export function normalizeProfile(value) {
   const input = record(value)
@@ -47,7 +116,17 @@ export function normalizeProfile(value) {
   const emoji = cleanText(input.emoji, 8) || '🐖'
   const size = Number.isFinite(Number(input.size)) ? Math.min(1.6, Math.max(0.5, Number(input.size))) : 1
   const label = cleanText(input.label, 16)
-  return { name, level, stage, art, emoji, size, label }
+  const careInput = input.care !== null && typeof input.care === 'object' && !Array.isArray(input.care) ? input.care : {}
+  const careValue = key => {
+    const value = Number(careInput[key])
+    return Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 60
+  }
+  const care = { satiety: careValue('satiety'), cleanliness: careValue('cleanliness'), happiness: careValue('happiness') }
+  const mood = cleanText(input.mood, 24)
+  const moodLabel = cleanText(input.moodLabel, 24)
+  const status = publicStatus(input.status)
+  const card = publicCard(input.card)
+  return { name, level, stage, art, emoji, size, label, care, mood, moodLabel, status, card }
 }
 
 /** @param {unknown} value */
@@ -75,6 +154,40 @@ export function normalizePosition(x, y, facing) {
 /** @param {unknown} value */
 export function normalizeEmote(value) {
   return typeof value === 'string' && ROOM_EMOTES.includes(value) ? value : ''
+}
+
+const ITEM_KEY = /^[a-z0-9-]{1,48}$/u
+const CARE_NONCE = /^[A-Za-z0-9._:-]{1,80}$/u
+
+/**
+ * 联机照顾意图：谁、用哪个物品、对谁做哪种照顾。
+ * @param {unknown} value
+ */
+export function normalizeCareIntent(value) {
+  const input = record(value)
+  if (input === null) throw new TypeError('care must be an object')
+  const targetId = typeof input.targetId === 'string' ? input.targetId : ''
+  const itemKey = typeof input.itemKey === 'string' ? input.itemKey : ''
+  const op = typeof input.op === 'string' ? input.op : ''
+  const nonce = typeof input.nonce === 'string' ? input.nonce : ''
+  if (targetId === '' || targetId.length > 80) throw new TypeError('care target is invalid')
+  if (!ITEM_KEY.test(itemKey)) throw new TypeError('care item is invalid')
+  if (!ROOM_CARE_OPS.includes(op)) throw new TypeError('care op is invalid')
+  if (!CARE_NONCE.test(nonce)) throw new TypeError('care nonce is invalid')
+  return { targetId, itemKey, op, nonce }
+}
+
+/** 三位状态只用于公开照顾；不接受别的字段。 */
+export function normalizeCareStats(value) {
+  const input = record(value)
+  if (input === null) return null
+  const out = {}
+  for (const key of ['satiety', 'cleanliness', 'happiness']) {
+    const number = Number(input[key])
+    if (!Number.isFinite(number)) return null
+    out[key] = Math.min(100, Math.max(0, Math.round(number)))
+  }
+  return out
 }
 
 /**
@@ -112,6 +225,11 @@ export function publicPlayer(player) {
     emoji: player.emoji,
     size: player.size,
     label: player.label,
+    mood: player.mood,
+    moodLabel: player.moodLabel,
+    care: player.care,
+    status: player.status,
+    card: player.card,
     x: player.x,
     y: Number.isFinite(Number(player.y)) ? Math.min(1, Math.max(0, Number(player.y))) : 0.2,
     facing: player.facing,

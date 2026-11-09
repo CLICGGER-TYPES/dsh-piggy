@@ -143,7 +143,25 @@ export const CSS_FISHING = `
 .dp-fish-result-title{font-size:15px;font-weight:800;color:var(--ac-text)}
 .dp-fish-stars{font-size:17px;letter-spacing:3px;color:#e8b400}
 .dp-fish-facts{font-size:12px;font-weight:700;color:var(--ac-text-body)}
+.dp-fish-list{display:grid;gap:7px}
+.dp-fish-row{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:2px solid var(--ac-border-light);border-radius:16px;background:linear-gradient(180deg,#fffdf8,#fff9ef);box-shadow:0 1px 0 rgba(61,52,40,.04);transition:transform .16s var(--ac-ease),box-shadow .16s var(--ac-ease)}
+.dp-fish-row:hover{transform:translateY(-1px);box-shadow:0 3px 0 rgba(61,52,40,.06)}
+.dp-fish-row-emoji{position:relative;overflow:hidden;width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:14px;border:1.5px solid #cfe7df;background:radial-gradient(circle at 35% 25%,#f0fbf7,#d7efe8);font-size:24px;line-height:1;box-shadow:inset 0 -3px 0 rgba(94,143,129,.12)}
+.dp-fish-row-emoji::after{content:'';position:absolute;top:6px;right:6px;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:-7px 7px 0 -1px rgba(255,255,255,.55)}
+.dp-fish-row[data-rarity="uncommon"] .dp-fish-row-emoji{border-color:#cfe3f3;background:radial-gradient(circle at 35% 25%,#f2f9ff,#dcecfb)}
+.dp-fish-row[data-rarity="rare"] .dp-fish-row-emoji{border-color:#ddd0f5;background:radial-gradient(circle at 35% 25%,#f8f2ff,#e9defb)}
+.dp-fish-row[data-rarity="legend"] .dp-fish-row-emoji{border-color:#f2d98c;background:radial-gradient(circle at 35% 25%,#fffbea,#ffefbb)}
+.dp-fish-row-main{flex:1;min-width:0;display:grid;gap:3px}
+.dp-fish-name{display:flex;align-items:center;gap:6px;min-width:0}
+.dp-fish-name b{font-size:12px;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-fish-mini-stars{flex:none;font-size:8px;letter-spacing:-.4px;line-height:1;color:#d9a83f;background:#fff4d6;border-radius:999px;padding:2px 5px}
+.dp-fish-row .dp-fish-facts{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:9px;color:var(--ac-text-2)}
+.dp-fish-big{font-size:8px;font-weight:800;line-height:1.5;padding:0 6px;border-radius:999px;background:#ffe8cf;color:#a8612d}
+.dp-fish-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
+.dp-fish-actions .dp-mini.dp-fish-sell{background:#f4c968;border-color:#d9a83f;color:#6d4a1f;box-shadow:0 3px 0 0 #d9a83f}
+.dp-fish-actions .dp-mini.dp-fish-sell:hover:not(:disabled){background:#f7d47e;box-shadow:0 4px 0 0 #d9a83f}
+.dp-fish-actions .dp-mini.dp-fish-sell:active:not(:disabled){box-shadow:0 1px 0 0 #d9a83f}
 .dp-fish-away{display:flex;align-items:center;justify-content:center;padding:18px 0 8px;border:2px solid var(--ac-border-light);border-radius:18px;background:var(--ac-bg-content);font-size:58px;line-height:1;margin-bottom:8px}
 @container fishing (max-width:235px){.dp-fish-gear{gap:6px}.dp-fish-scene{height:200px}.dp-fish-bait{width:44px}.dp-fish-bait em{font-size:20px}.dp-fish-gear-btn{min-height:26px;padding:0 8px;font-size:9px}.dp-fish-gear-icon{font-size:12px}.dp-fish-spots{grid-template-columns:minmax(0,1fr)}.dp-fish-cast{min-height:30px;min-width:104px;padding:0 14px;font-size:12px}.dp-fish-keep{min-height:34px;font-size:13px}}
-@media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber,.dp-fish-gear-panel{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait,.dp-fish-gear-btn{transition:none!important}}
+@media (prefers-reduced-motion:reduce){.dp-fish-bobber,.dp-fish-waiting[data-bite=true] .dp-fish-bobber,.dp-fish-waiting[data-nibble=true] .dp-fish-bobber,.dp-fish-gear-panel{animation:none!important}.dp-fish-chev,.dp-fish-cast,.dp-fish-keep,.dp-fish-bait,.dp-fish-gear-btn,.dp-fish-row{transition:none!important}}
 `

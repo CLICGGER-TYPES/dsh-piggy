@@ -10,9 +10,10 @@
 import { KIND_ORDER, shelfOf } from '../constants.js'
 import { button, el } from '../dom.js'
 import { num } from '../values.js'
-import { careEffectLine, drillHeader, drillTo, pagedTiles, statStrip, tile } from '../widgets.js'
+import { drillHeader, drillTo, pagedTiles, statStrip, tile } from '../widgets.js'
 import { SHELF_COLOR, shelfParts } from './shop.js'
 import { walletBar } from '../wallet.js'
+import { attachItemHover } from '../item-hover.js'
 
 /** 所有消耗品货架，子页和首页共用。 */
 var CONSUMABLES = KIND_ORDER
@@ -94,33 +95,64 @@ function bagCounts(ui) {
   }
 }
 
+var FISH_STARS = { common: 1, uncommon: 2, rare: 3, legend: 4 }
+
+/** 和 feedFish 的结算一致：最多 +60 饱食；写成玩家一眼能算的加值。 */
+function fishGain(price) {
+  var gain = Math.min(60, num(price, 0) / 2)
+  return Number.isInteger(gain) ? String(gain) : gain.toFixed(1)
+}
+
 function renderFish(ui) {
   const list = ui.view.fishing.bag
-  drillHeader(ui, 'bag', '🐟 鱼篓', list.length + ' 条')
+  const total = list.reduce(function (sum, fish) { return sum + num(fish.price, 0) }, 0)
+  drillHeader(ui, 'bag', '🐟 鱼篓', list.length + ' 条' + (list.length > 0 ? ' · 🪙 ' + total : ''))
   if (list.length === 0) { ui.content.appendChild(el('div', 'dp-empty', '鱼篓还是空的')); return }
+  var rows = el('div', 'dp-fish-list')
   for (var i = 0; i < list.length; i += 1) {
     (function (fish) {
-      var card = el('div', 'dp-pick dp-tile-card')
-      card.appendChild(el('div', 'dp-pick-head', fish.emoji + ' ' + fish.label))
-      card.appendChild(el('div', null, fish.sizeCm.toFixed(1) + ' cm · 🪙 ' + fish.price))
-      var actions = el('div', 'dp-dev-row')
-      var feed = button('dp-mini', { 'data-fish-feed': fish.id }, function () { ui.send('fishFeed', { id: fish.id }) })
-      feed.textContent = '🍽 喂'
-      var sell = button('dp-mini', { 'data-fish-sell': fish.id }, function () { ui.send('fishSell', { id: fish.id }) })
-      sell.textContent = '🪙 卖'
-      actions.appendChild(feed); actions.appendChild(sell); card.appendChild(actions); ui.content.appendChild(card)
+      var row = el('div', 'dp-fish-row')
+      row.setAttribute('data-rarity', fish.rarity || 'common')
+      row.appendChild(el('span', 'dp-fish-row-emoji', fish.emoji || '🐟'))
+      var main = el('div', 'dp-fish-row-main')
+      var nameLine = el('div', 'dp-fish-name')
+      nameLine.appendChild(el('b', null, fish.label))
+      var stars = FISH_STARS[fish.rarity] ?? 1
+      nameLine.appendChild(el('span', 'dp-fish-mini-stars', '★'.repeat(stars) + '☆'.repeat(4 - stars)))
+      main.appendChild(nameLine)
+      var facts = el('div', 'dp-fish-facts')
+      facts.appendChild(el('span', 'dp-fish-size', fish.sizeCm.toFixed(1) + ' cm'))
+      if (Number(fish.maxCm) > 0 && fish.sizeCm >= fish.maxCm * 0.85) facts.appendChild(el('span', 'dp-fish-big', '大个的！'))
+      main.appendChild(facts)
+      var actions = el('div', 'dp-fish-actions')
+      var feed = button('dp-mini dp-fish-feed', {
+        'data-fish-feed': fish.id,
+        title: '喂食，饱食 +' + fishGain(fish.price),
+      }, function () { ui.send('fishFeed', { id: fish.id }) })
+      feed.textContent = '🍽 喂 +' + fishGain(fish.price)
+      var sell = button('dp-mini dp-fish-sell', {
+        'data-fish-sell': fish.id,
+        title: '卖出，得到 ' + fish.price + ' 金币',
+      }, function () { ui.send('fishSell', { id: fish.id }) })
+      sell.textContent = '🪙 卖 +' + fish.price
+      actions.appendChild(feed); actions.appendChild(sell); main.appendChild(actions)
+      row.appendChild(main)
+      rows.appendChild(row)
     })(list[i])
   }
+  ui.content.appendChild(rows)
 }
 
 /** A consumable shelf: tap an item to use it. */
 function renderItems(ui, kind) {
   var parts = shelfParts(kind)
-  drillHeader(ui, 'bag', parts[0] + ' ' + parts[1], '点一下就用')
+  var target = ui.careTarget ?? null
+  drillHeader(ui, 'bag', parts[0] + ' ' + parts[1], target === null ? '点一下就用' : '给 ' + target.name)
   // 只有用了会改状态的货架才看状态（G 批次反馈：背包首页不要状态条）。
   if (STAT_SHELVES.indexOf(kind) >= 0) statStrip(ui)
   var items = ownedOf(ui, kind)
   var action = CARE_ACTION[kind]
+  var hungry = target === null && kind === 'toy' && ui.view.actions.play?.blocked === 'hungry'
   if (items.length === 0) {
     ui.content.appendChild(el('div', 'dp-empty', '空的'))
     // 状态页的喂食 / 洗澡 / 玩耍跳过来时如果空了，给一个直接去商店对应货架的入口。
@@ -137,17 +169,43 @@ function renderItems(ui, kind) {
   var tiles = []
   for (var i = 0; i < items.length; i += 1) {
     (function (item) {
-      tiles.push(tile({
+      var node = tile({
         emoji: item.emoji, label: item.label, color: SHELF_COLOR[kind] ?? 'blue', soft: true,
-        badge: item.default === true ? '免费' : '×' + num(ui.view.inventory[item.key], 0), tag: item.needed ? '需要' : '',
-        note: action !== undefined ? careEffectLine(action, item) : item.kind === 'promotion' || item.kind === 'body' ? item.useLabel : '',
+        badge: item.default === true ? '免费' : '×' + num(ui.view.inventory[item.key], 0),
+        tag: target !== null && target.illness && target.illness.cureKey === item.key ? '对症' : (item.needed ? '需要' : ''),
+        note: hungry ? '太饿了，先吃点东西' : item.kind === 'promotion' || item.kind === 'body' ? item.useLabel : '',
+        disabled: hungry,
         data: { 'data-use': item.key },
-        // 照料货架发喂食 / 洗澡 / 玩耍本身（猪的动作和台词都对得上），其他货架照旧「使用」。
-        onPick: function () { ui.send(action ?? 'use', { item: item.key }) },
-      }))
+        // 朋友的猪：走联机照顾；自己的猪：和以前一样发喂食/洗澡/玩耍。
+        onPick: function () {
+          if (target !== null) careFriend(ui, target, action ?? (kind === 'medicine' ? 'medicine' : 'use'), item.key)
+          else ui.send(action ?? 'use', { item: item.key })
+        },
+      })
+      attachItemHover(ui, node, { ...item, kind: item.kind ?? kind }, 'bag')
+      tiles.push(node)
     })(items[i])
   }
   ui.content.appendChild(pagedTiles(ui, 'bag:' + kind, tiles))
+}
+
+/** 用自己背包里的东西照顾朋友的猪；成功后回朋友状态页。 */
+function careFriend(ui, target, action, itemKey) {
+  var shell = typeof window !== 'undefined' ? (/** @type {any} */ (window)).piggyShell : null
+  if (!shell || !shell.friend || typeof shell.friend.care !== 'function') {
+    ui.toast('联机照顾暂不可用')
+    return
+  }
+  Promise.resolve(shell.friend.care(target.id, action, itemKey)).then(function (result) {
+    if (result && result.ok === true) {
+      ui.careTarget = null
+      ui.toast(result.message || '照顾成功')
+      ui.select('status')
+      if (typeof ui.refresh === 'function') ui.refresh()
+    } else {
+      ui.toast(result && typeof result.reason === 'string' ? result.reason : '照顾没送出去')
+    }
+  }).catch(function () { ui.toast('照顾没送出去') })
 }
 
 /** 照料记录的展开状态挂在 ui.drill 上：只是这一屏的样子，不发送、不存档。 */

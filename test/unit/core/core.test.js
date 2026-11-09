@@ -316,6 +316,16 @@ test('care actions apply effects and spend items without cooldowns', () => {
 // inventory categories for exactly this reason.
 // ===========================================================================
 
+test('a hungry pig refuses to play, even with the free toy', () => {
+  const pig = hatchEgg(T0)
+  pig.satiety = 0
+  assert.equal(actionReady(pig, 'play', T0), false)
+  assert.deepEqual(act(pig, 'play', T0), { ok: false, reason: 'hungry' })
+  pig.satiety = THRESHOLDS.hungry
+  assert.equal(actionReady(pig, 'play', T0), true)
+  assert.equal(act(pig, 'play', T0).ok, true)
+})
+
 test('feeding, washing and playing each need something from their own shelf', () => {
   const pig = hatchEgg(T0)
   assert.equal(pig.inventory.apple, undefined)

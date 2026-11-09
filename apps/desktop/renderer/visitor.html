@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'">
+  <title>朋友的小猪</title>
+  <link rel="stylesheet" href="visitor.css">
+</head>
+<body>
+  <div class="vp" id="visitor">
+    <div class="vp-toast" id="toast" hidden></div>
+    <button type="button" class="vp-pig" id="pig" aria-label="摸摸朋友的小猪">
+      <img id="art" alt="" draggable="false">
+      <span class="vp-emoji" id="emoji" hidden>🐖</span>
+      <span class="vp-pat" id="pat" hidden>摸摸</span>
+    </button>
+    <div class="vp-tag">
+      <b id="name">小猪</b>
+      <span id="level">Lv.1</span>
+    </div>
+  </div>
+  <script src="visitor.js"></script>
+</body>
+</html>

@@ -9,7 +9,8 @@ const argv = typeof process === 'undefined' ? [] : process.argv
 const role = argv.includes('--piggy-role=panel') ? 'panel'
   : argv.includes('--piggy-role=ext') ? 'ext'
     : argv.includes('--piggy-role=room') ? 'room'
-      : 'pet'
+      : argv.includes('--piggy-role=visitor') ? 'visitor'
+        : 'pet'
 /** 扩展大窗口（role=ext，外壳 0.6.5 起）显示的是哪个扩展。 */
 const extKey = role === 'ext' ? (argv.find(arg => arg.startsWith('--piggy-ext=')) || '').slice('--piggy-ext='.length) : null
 
@@ -39,6 +40,13 @@ function roomProfile(value) {
     emoji: typeof profile.emoji === 'string' ? profile.emoji.slice(0, 8) : '',
     size: Number(profile.size) || 1,
     label: typeof profile.label === 'string' ? profile.label.slice(0, 40) : '',
+    mood: typeof profile.mood === 'string' ? profile.mood.slice(0, 24) : '',
+    moodLabel: typeof profile.moodLabel === 'string' ? profile.moodLabel.slice(0, 24) : '',
+    care: Object.fromEntries(['satiety', 'cleanliness', 'happiness'].map(key => [
+      key, Number.isFinite(Number(profile.care?.[key])) ? Number(profile.care[key]) : 60,
+    ])),
+    status: profile.status,
+    card: profile.card,
   }
 }
 
@@ -245,6 +253,28 @@ contextBridge.exposeInMainWorld('piggyShell', {
     copy: () => ipcRenderer.invoke('piggy:room:copy'),
     onUpdate: callback => { ipcRenderer.on('piggy:room:update', (event, snapshot) => callback(snapshot)) },
     onClosed: callback => { ipcRenderer.on('piggy:room:closed', (event, detail) => callback(detail)) },
+  },
+  /** 面板里的朋友猪：用自己背包照顾；只发意图，不写对方存档。 */
+  friend: {
+    care: (targetId, action, itemKey) => ipcRenderer.invoke('piggy:friend:care', String(targetId), String(action), String(itemKey)),
+    onCareResult: callback => { ipcRenderer.on('piggy:friend:care-result', (event, result) => callback(result)) },
+  },
+  /** 桌面上的朋友猪：只读资料、摸摸和照顾入口；不碰游戏存档。 */
+  visitor: {
+    get: () => ipcRenderer.invoke('piggy:visitor:get'),
+    onUpdate: callback => { ipcRenderer.on('piggy:visitor:update', (event, player) => callback(player)) },
+    pat: () => ipcRenderer.invoke('piggy:visitor:pat'),
+    view: rect => ipcRenderer.invoke('piggy:visitor:view', rect),
+    items: () => ipcRenderer.invoke('piggy:visitor:items'),
+    size: rect => ipcRenderer.send('piggy:visitor:size', rect),
+    care: (action, itemKey) => ipcRenderer.invoke('piggy:visitor:care', String(action), String(itemKey)),
+    onCareResult: callback => { ipcRenderer.on('piggy:visitor:care-result', (event, result) => callback(result)) },
+    menu: () => ipcRenderer.send('piggy:visitor:menu'),
+    expand: open => ipcRenderer.send('piggy:visitor:expand', open === true),
+    dragStart: () => ipcRenderer.send('piggy:visitor:drag-start'),
+    dragEnd: () => ipcRenderer.send('piggy:visitor:drag-end'),
+    onMenuClose: callback => { ipcRenderer.on('piggy:visitor:menu-close', () => callback()) },
+    close: () => ipcRenderer.send('piggy:visitor:close'),
   },
   /** 主屏「退出」：存好档再关。 */
   quit: () => ipcRenderer.invoke('piggy:quit'),

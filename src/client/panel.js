@@ -5,10 +5,13 @@
  * @module dsh-piggy/client/panel
  */
 import { renderEmptyPanel, renderUnhatchedPig } from './panel-empty.js'
+import { renderFriendAny } from './panel-friend.js'
 import { syncPigArt, syncSleepArt } from './art.js'
 import { DEV_TAB, OPEN_KEY, QUIT_TAB, ROOM_TAB, TABS, UPDATE_TAB } from './constants.js'
 import { button, el } from './dom.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
+import { hideItemHover, restoreItemHover } from './item-hover.js'
+import { attachPanelBack } from './panel-back.js'
 import { processPending } from './pending.js'
 import { splitSetOpen, stageShell } from './split.js'
 import { normalize } from './normalize.js'
@@ -48,8 +51,10 @@ import { restoreHover } from './hover-restore.js'
 import { preserveFarmTriggerFocus } from './farm-trigger-focus.js'
 import { externalActionsBlocked, externalDevTabs, externalRenderBlocked, isExternalMode, syncExternalPanel } from './external-link.js'
 export function createPanel(ctx) {
+      ctx.panelWindow = desktopRole() === 'panel'
       var pointerRepaint = attachPointerRepaint(ctx.host, window)
       const renderHold = createRenderHold(ctx.card)
+      attachPanelBack(ctx)
       var AWAY_LINE = {
         work: '在忙',
         study: '在念书',
@@ -58,7 +63,7 @@ export function createPanel(ctx) {
       }
       function setOpen(next) {
         if (splitSetOpen(ctx, next)) return
-        if (!next) { closeFishing(ctx); if (ctx.isOpen) animatePanelClose(ctx) }
+        if (!next) { hideItemHover(ctx); closeFishing(ctx); if (ctx.isOpen) animatePanelClose(ctx) }
         ctx.isOpen = next
         ctx.host.setAttribute('data-open', next ? 'true' : 'false')
         // Collapsed must be the pig and *nothing else*. One switch hides the
@@ -74,6 +79,13 @@ export function createPanel(ctx) {
           renderContent()
           ctx.fitPanel()
           animatePanelOpen(ctx)
+          if (typeof ctx.refresh === 'function') {
+            if (ctx.__refreshSoon && typeof window.clearTimeout === 'function') window.clearTimeout(ctx.__refreshSoon)
+            ctx.__refreshSoon = window.setTimeout(function () {
+              ctx.__refreshSoon = null
+              if (ctx.isOpen) ctx.refresh()
+            }, 180)
+          }
         } else {
           // Back to the default anchor so the next open starts from a clean
           // slate. `auto` (not '') keeps the stylesheet's bottom from re-applying
@@ -87,11 +99,11 @@ export function createPanel(ctx) {
         desktopShell()?.syncGeometry?.()
         stageShell()?.syncGeometry?.()
       }
-
       function select(next) {
         var previous = ctx.tab
         // C4 replaced the old 加冕 App. Bookmarks and stale callers land in 图鉴.
         if (next === 'crown') next = 'dex'
+        hideItemHover(ctx)
         // 桌面版「退出」不是页签：直接让外壳存档关窗。
         if (next === 'quit') {
           var desk = updatesBridge()
@@ -99,6 +111,8 @@ export function createPanel(ctx) {
           return
         }
         if (next === 'update') ctx.updateNotice?.markRead()
+        if (next !== 'bag') ctx.careTarget = null
+        if (ctx.friend !== null && next !== 'status' && next !== 'card' && next !== 'friend-home' && !(next === 'bag' && ctx.careTarget != null)) { ctx.friend = null; ctx.friendView = null; ctx.friendMode = false; ctx.careTarget = null; ctx.host.removeAttribute?.('data-friend') }
         ctx.tab = next
         ctx.picker = null
         // Opening a tile tab always starts at its top layer.
@@ -107,10 +121,16 @@ export function createPanel(ctx) {
         if (previous !== next) {
           ctx.content.scrollTop = 0
           if (ctx.isOpen) animateAppEntry(ctx.content)
+          if (typeof ctx.refresh === 'function') {
+            if (ctx.__refreshSoon && typeof window.clearTimeout === 'function') window.clearTimeout(ctx.__refreshSoon)
+            ctx.__refreshSoon = window.setTimeout(function () {
+              ctx.__refreshSoon = null
+              if (ctx.isOpen) ctx.refresh()
+            }, 180)
+          }
         }
         for (var k in ctx.icons) ctx.icons[k].setAttribute('data-active', k === ctx.tab ? 'true' : 'false')
       }
-
       /**
        * Repaint the panel body, keeping the reader's place.
        *
@@ -167,6 +187,7 @@ export function createPanel(ctx) {
         })
         ctx.justBought = null
         restoreHover(ctx.content) // 重绘把扩展节点上的悬停（菜园的悬停卡）一起换掉了：指针还在原处就补发一次 mousemove，见 hover-restore.js
+        restoreItemHover(ctx)
       }
       function paintContent() {
         ctx.content.textContent = ''
@@ -176,7 +197,6 @@ export function createPanel(ctx) {
           ctx.icons[TABS[k].key].setAttribute('data-active', TABS[k].key === ctx.tab ? 'true' : 'false')
         }
         if (ctx.host.getAttribute('data-open') !== 'true') return
-
         // Only the host-version warning sits above every tab; the pig's own
         // banners (away / sick / gone) live on the status tab (B9).
         if (ctx.view.legacy) {
@@ -185,13 +205,12 @@ export function createPanel(ctx) {
           legacy.appendChild(el('div', null, '金币、健康、打工、商店这些是新增的，重启 dsh（不是刷新页面）之后才会出现。'))
           ctx.content.appendChild(legacy)
         }
+        if (renderFriendAny(ctx)) return
         if (renderEmptyPanel(ctx)) return
-
         // 扩展的大界面（大窗口里，或网页里铺满）：只画它，不要页头。
         var bigView = Boolean(ctx.extBig) && ctx.tab === 'ext:' + ctx.extBig
         ctx.host.setAttribute('data-ext-view', bigView ? 'big' : '')
         if (bigView) { renderDownloadedApp(ctx, ctx.extBig, 'big'); return }
-
         // B9: home first; every app's top layer gets a 「‹」 back (inside a category it goes up a layer).
         var shell = updatesBridge()
         var apps = orderHomeApps(enabledTabs(ctx, TABS).concat(
@@ -207,7 +226,6 @@ export function createPanel(ctx) {
         var drilled = ctx.tab in ctx.drill && ctx.drill[ctx.tab] !== null
         var app = apps.find(function (entry) { return entry.key === ctx.tab })
         if (app !== undefined && !drilled) appHeader(ctx, app, ctx.tab === 'shop' ? '🪙 ' + ctx.view.pig.coins : '')
-
         if (ctx.tab === 'status') renderStatusTab(ctx)
         else if (ctx.tab === 'card') renderCardTab(ctx)
         else if (ctx.tab === 'dex') renderDexTab(ctx)
@@ -224,11 +242,9 @@ export function createPanel(ctx) {
         else if (ctx.tab === 'room') renderRoomTab(ctx)
         else if (ctx.tab === 'extensions' || String(ctx.tab).startsWith('ext:')) renderExtensionsTab(ctx) // ext:<key> 是下载扩展的 App
         else renderBagTab(ctx)
-
         // Every tab is a different height: refit after each render, not only on open.
         ctx.fitPanel()
       }
-
       function render(next) { // 返回值＝这轮到底把内容区画出来了没有：几处早退都返回 false，轮询据此决定要不要重试
         if (pointerRepaint.defer(render, next)) return true
         var previousFishing = ctx.view?.fishing?.pending
@@ -261,7 +277,6 @@ export function createPanel(ctx) {
           ctx.work.setAttribute('data-kind', ctx.view.activity.kind)
           ctx.work.title = (AWAY_LINE[ctx.view.activity.kind] ?? '在外面') + '：' + ctx.view.activity.label
         }
-
         if (ctx.view.hatched !== true) {
           renderUnhatchedPig(ctx)
         } else {
@@ -305,7 +320,6 @@ export function createPanel(ctx) {
           }
           ctx.lastStage = pigStage.key
         }
-
         // 番茄钟（C2）：专注中挂在猪立绘右上角。data-pomo 让气泡收起后知道该不该放
         // 回来；气泡正说着就先不显示 —— 两者位置挨着，宁可角标让位。
         var pomo = ctx.view.pomodoro
@@ -316,7 +330,6 @@ export function createPanel(ctx) {
         // 番茄钟结束的通知只在猪窗口发（拆窗口后两边都在渲染，不然会弹两次）。
         if (desktopRole() !== 'panel' && desktopRole() !== 'ext') noticePomodoro(pomo)
         if (typeof ctx.pomoTick === 'function') ctx.pomoTick()
-
         // 猪头上的日常提示：能签到就先显示签到，否则显示礼包。
         // 点一下直接领；点击不再冒泡到场景，免得同时被当成摸猪/拖动。
         var daily = ctx.view.daily
@@ -333,7 +346,6 @@ export function createPanel(ctx) {
           // 免得每 4 秒重绘都往上挂一个 listener。
           ctx.dailyHint.setAttribute('data-action', dailyAction)
         }
-
         // Alerts on the icon bar itself, so a collapsed pig still warns.
         // The study icon lights when there is a course to take right now:
         // idle, the stage on screen is unlocked, and it still has a subject.
@@ -352,9 +364,7 @@ export function createPanel(ctx) {
         ctx.icons.shop.setAttribute('data-alert', ctx.view.pig !== null && ctx.view.pig.illness !== null ? 'true' : 'false')
         ctx.icons.dex.setAttribute('data-alert', 'false')
         ctx.icons.travel.setAttribute('data-alert', ctx.view.pig !== null && ctx.view.pig.coins >= 400 ? 'true' : 'false')
-
         processPending(ctx, showPigLine)
-
         // Typing a new name: a repaint would drop the input and its focus.
         if ((ctx.ownerEdit !== null || ctx.pigNameEdit !== null) && ctx.tab === 'status') return false
         if ((ctx.cardEdit !== null || ctx.profileDraft) && ctx.tab === 'card') return false

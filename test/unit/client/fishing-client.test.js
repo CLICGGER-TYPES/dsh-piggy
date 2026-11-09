@@ -183,6 +183,8 @@ test('C5 fish bag exposes feed and sell on each individual catch', async () => {
   openPanel(dom, 'bag')
   findByAttr(contentOf(dom), 'data-bag', 'fish').fire('click')
   assert.match(contentOf(dom).allText(), /黄金锦鲤.*70\.5 cm.*220/)
+  assert.match(findByAttr(contentOf(dom), 'data-fish-feed', caught.id).allText(), /喂 \+60/)
+  assert.match(findByAttr(contentOf(dom), 'data-fish-sell', caught.id).allText(), /卖 \+220/)
   findByAttr(contentOf(dom), 'data-fish-feed', caught.id).fire('click')
   await settle()
   assert.deepEqual(JSON.parse(calls.at(-1).body), { action: 'fishFeed', id: caught.id })

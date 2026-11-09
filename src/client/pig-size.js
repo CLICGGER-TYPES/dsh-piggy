@@ -9,6 +9,8 @@
 import { readStore, writeStore } from './storage.js'
 
 export const PIG_SIZE_KEY = 'dsh-piggy:pig-size'
+/** 本机猪盒的实际 CSS 边长：朋友猪窗口读它来保持和本地猪一样大。 */
+export const PIG_DISPLAY_SIZE_KEY = 'dsh-piggy:pig-display-size'
 const OLD_SCALE = { small: .85, standard: 1, large: 1.3, extra: 1.7, 48: .85, 56: 1, 72: 1.3, 96: 1.7 }
 
 export function pigSize() {
@@ -42,6 +44,7 @@ export function applyPigBox(host, width) {
   if (typeof style?.setProperty !== 'function') return
   style.setProperty('--pig-size', width + 'px')
   style.setProperty('--pig-scale', String(pigSize()))
+  writeStore(PIG_DISPLAY_SIZE_KEY, String(width))
 }
 
 /** 按生命阶段的默认体型 + 本机显示比例写上面两个变量。 @param {any} host @param {number} stageSize */

@@ -14,6 +14,7 @@
  */
 import { auxiliaryWindowOptions } from './lib/auxiliary-window.js'
 import { spawn } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -35,6 +36,8 @@ import { PANEL_FALLBACK } from './lib/panel-geometry.js'
 import { createExtensionLayer } from './lib/extension-layer.js'
 import { createExtensionWindow } from './lib/extension-window.js'
 import { createRoomWindow } from './lib/room-window.js'
+import { createVisitorRoster } from './lib/visitor-window.js'
+import { createFriendPanels } from './lib/friend-panels.js'
 import { createRoomManager } from './lib/room-manager.js'
 import { createPanelWindow } from './lib/panel-window.js'
 import { createPanelController } from './lib/panel-controller.js'
@@ -297,15 +300,123 @@ const roomWindow = createRoomWindow({
   log,
   onClose: () => { void roomManager.leave('window-closed') },
 })
+const visitorRoster = createVisitorRoster({
+  BrowserWindow,
+  screen,
+  preload: join(HERE, 'preload.cjs'),
+  url: 'piggy://app/visitor.html',
+  icon: join(HERE, 'build', 'icon.png'),
+  log,
+  // 朋友猪被拖动时，它的面板跟着走。
+  onMoved: (id, bounds) => friendPanels.reposition(id, bounds),
+})
+const friendPanels = createFriendPanels({
+  BrowserWindow,
+  screen,
+  preload: join(HERE, 'preload.cjs'),
+  url: 'piggy://app/index.html',
+  log,
+})
+
+/** 联机照顾：目标侧去重、客人侧待确认（超时退款）。 */
+const roomCareSeen = new Set()
+const roomCarePending = new Map()
+
+async function localHostAction(action, payload = {}) {
+  const host = desktopRuntime.getHost()
+  if (host === null || typeof host.handle !== 'function') return { ok: false, reason: '宿主还没准备好' }
+  try {
+    const pet = primaryPet()
+    const token = pet !== null && typeof pet.pigId === 'string' ? pigSessions.get(pet.pigId) : undefined
+    const out = await host.handle('POST', '/dsh-piggy/act', Buffer.from(JSON.stringify({ action, ...payload })), token)
+    const body = typeof out?.body === 'string' ? JSON.parse(out.body) : out?.body
+    return body !== null && typeof body === 'object' ? body : { ok: false, reason: '宿主没有返回结果' }
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : '宿主动作失败' }
+  }
+}
+
+async function localSnapshot() {
+  const host = desktopRuntime.getHost()
+  if (host === null || typeof host.handle !== 'function') return null
+  try {
+    const pet = primaryPet()
+    const token = pet !== null && typeof pet.pigId === 'string' ? pigSessions.get(pet.pigId) : undefined
+    const out = await host.handle('GET', '/dsh-piggy/state', undefined, token)
+    const body = typeof out?.body === 'string' ? JSON.parse(out.body) : out?.body
+    return body !== null && typeof body === 'object' ? body : null
+  } catch {
+    return null
+  }
+}
+
+function notifyCareSender(pending, message) {
+  const sender = pending?.sender
+  if (sender === null || sender === undefined || sender.isDestroyed?.() === true) return
+  try {
+    sender.send('piggy:visitor:care-result', { ok: pending.ok === true, message })
+    sender.send('piggy:friend:care-result', { ok: pending.ok === true, message })
+  } catch { /* 窗口已经关了 */ }
+}
+
+async function refundCare(pending, message) {
+  if (pending === null) return
+  await localHostAction('refundCareItem', { op: pending.action, item: pending.itemKey })
+  pending.ok = false
+  notifyCareSender(pending, message)
+}
+
+async function handleRoomCare(snapshot) {
+  const events = Array.isArray(snapshot?.careEvents) ? snapshot.careEvents : []
+  for (const event of events) {
+    if (event === null || typeof event !== 'object') continue
+    if (event.targetId !== snapshot.selfId) continue
+    const key = String(event.from) + ':' + String(event.nonce)
+    if (roomCareSeen.has(key)) continue
+    roomCareSeen.add(key)
+    if (roomCareSeen.size > 256) roomCareSeen.delete(roomCareSeen.values().next().value)
+    const result = await localHostAction('guestCare', { op: event.op, item: event.itemKey })
+    await roomManager.careResult({
+      targetId: snapshot.selfId, nonce: event.nonce,
+      ok: result.ok === true,
+      reason: typeof result.reason === 'string' ? result.reason : '',
+      care: result.care ?? null,
+    })
+  }
+}
+
+async function handleRoomCareResults(snapshot) {
+  const results = Array.isArray(snapshot?.careResults) ? snapshot.careResults : []
+  for (const result of results) {
+    if (result === null || typeof result !== 'object') continue
+    const pending = roomCarePending.get(result.nonce)
+    if (pending === undefined) continue
+    if (result.targetId !== pending.targetId) continue
+    roomCarePending.delete(result.nonce)
+    if (pending.timer) clearTimeout(pending.timer)
+    if (result.ok === true) {
+      pending.ok = true
+      notifyCareSender(pending, '照顾成功')
+    } else {
+      await refundCare(pending, '对方没有收到，东西已退回')
+    }
+  }
+}
 const roomManager = createRoomManager({
   log,
   onUpdate: snapshot => {
     roomWindow.send('piggy:room:update', snapshot)
+    visitorRoster.sync(snapshot.players, snapshot.selfId)
+    friendPanels.sync(snapshot.players, snapshot.selfId)
+    void handleRoomCare(snapshot)
+    void handleRoomCareResults(snapshot)
     const panelWin = getPanelWindow()
     if (panelWin !== null && !panelWin.isDestroyed()) panelWin.webContents.send('piggy:room:update', snapshot)
   },
   onClosed: detail => {
     roomWindow.close()
+    visitorRoster.closeAll()
+    friendPanels.closeAll()
     const panelWin = getPanelWindow()
     if (panelWin !== null && !panelWin.isDestroyed()) panelWin.webContents.send('piggy:room:closed', detail)
   },
@@ -487,7 +598,7 @@ registerGeometryIpc({
 registerDragIpc({ ipcMain, engine: dragEngine })
 
 // 面板窗口：开关、贴猪几何、命中区域、z 序都在 lib/panel-controller.js，IPC 在 lib/ipc/panel.js。
-registerPanelIpc({ ipcMain, fromPage, getPanelWindow, extensionWindow, panel })
+registerPanelIpc({ ipcMain, fromPage, getPanelWindow, extensionWindow, friendPanels, panel })
 const captureForCheck = createCaptureCheck({ app, getPetWindow, primaryPet })
 
 /** 启动时的单猪/多猪计划；实现见 lib/pet-roster.js。 */
@@ -599,6 +710,77 @@ registerRoomIpc({
   ipcMain, fromPanelOnly, manager: roomManager, roomWindow, clipboard,
   fromRoom: event => !desktopLifecycle.quitting && roomWindow.owns(event.sender),
 })
+
+ipcMain.handle('piggy:visitor:get', event => visitorRoster.playerForEvent(event))
+ipcMain.handle('piggy:visitor:pat', event => {
+  const player = visitorRoster.playerForEvent(event)
+  if (player === null) return { ok: false, reason: '来源不对' }
+  if (roomManager.status().inRoom === true) void roomManager.emote('pat', player.id, 0.5, 0.2, 1)
+  return { ok: true }
+})
+ipcMain.handle('piggy:visitor:view', (event, rect) => {
+  const player = visitorRoster.playerForEvent(event)
+  if (player === null) return { ok: false, reason: '来源不对' }
+  friendPanels.open(player, visitorRoster.pigRectForEvent(event, rect))
+  return { ok: true }
+})
+ipcMain.handle('piggy:visitor:items', async event => {
+  if (visitorRoster.playerForEvent(event) === null) return null
+  const state = await localSnapshot()
+  return state !== null && state.care !== null && typeof state.care === 'object' ? state.care : null
+})
+async function requestFriendCare(sender, targetId, action, itemKey) {
+  if (roomManager.status().inRoom !== true) return { ok: false, reason: '先和朋友联机才能照顾' }
+  const op = String(action)
+  const item = String(itemKey)
+  if (!['feed', 'bathe', 'play', 'medicine'].includes(op)) return { ok: false, reason: '照顾动作不对' }
+  const spend = await localHostAction('takeCareItem', { op, item })
+  if (spend.ok !== true) return { ok: false, reason: spend.reason === 'empty' ? '背包里没有了' : '这件物品用不了' }
+  const nonce = randomUUID()
+  const pending = { targetId: String(targetId), itemKey: item, action: op, nonce, sender, timer: null, ok: false }
+  pending.timer = setTimeout(() => {
+    if (!roomCarePending.has(nonce)) return
+    roomCarePending.delete(nonce)
+    void refundCare(pending, '对方没有回应，东西已退回')
+  }, 8000)
+  pending.timer.unref?.()
+  roomCarePending.set(nonce, pending)
+  const sent = await roomManager.care({ targetId: pending.targetId, itemKey: item, op, nonce })
+  if (sent.ok !== true) {
+    roomCarePending.delete(nonce)
+    if (pending.timer) clearTimeout(pending.timer)
+    await refundCare(pending, '照顾没发出去，东西已退回')
+    return { ok: false, reason: sent.reason || '照顾没发出去' }
+  }
+  return { ok: true, message: '已经送过去了' }
+}
+
+ipcMain.handle('piggy:visitor:care', async (event, action, itemKey) => {
+  const player = visitorRoster.playerForEvent(event)
+  if (player === null) return { ok: false, reason: '来源不对' }
+  return requestFriendCare(event.sender, player.id, action, itemKey)
+})
+ipcMain.handle('piggy:friend:care', async (event, targetId, action, itemKey) => {
+  if (!fromPanelOnly(event) && !friendPanels.owns(event.sender)) return { ok: false, reason: '来源不对' }
+  const status = roomManager.status()
+  const target = Array.isArray(status.players) ? status.players.find(player => player.id === targetId) : null
+  if (target === null || target === undefined) return { ok: false, reason: '朋友已经不在线了' }
+  return requestFriendCare(event.sender, target.id, action, itemKey)
+})
+ipcMain.on('piggy:visitor:size', (event, rect) => { visitorRoster.setPigRect(event, rect) })
+ipcMain.on('piggy:visitor:menu', event => {
+  if (visitorRoster.playerForEvent(event) !== null) visitorRoster.closeMenusExcept(event.sender)
+})
+ipcMain.on('piggy:visitor:expand', (event, open) => {
+  if (visitorRoster.playerForEvent(event) !== null) visitorRoster.setExpanded(event.sender, open === true)
+})
+ipcMain.on('piggy:visitor:drag-start', event => {
+  if (visitorRoster.playerForEvent(event) !== null) visitorRoster.startDrag(event.sender)
+})
+ipcMain.on('piggy:visitor:drag-end', event => {
+  if (visitorRoster.playerForEvent(event) !== null) visitorRoster.endDrag(event.sender)
+})
+ipcMain.on('piggy:visitor:close', event => { visitorRoster.closeForEvent(event) })
 
 registerFullscreenIpc({
   ipcMain, fromPage,
@@ -721,6 +903,13 @@ app.whenReady().then(async () => {
   if (desktopLifecycle.quitting) return
   // 隐藏预加载，不调用 show/focus；首次右键不再等待创建窗口和加载客户端。
   panel.ensure()
+  if (process.env.PIGGY_VISITOR_DEMO === '1') {
+    visitorRoster.demo(Number(process.env.PIGGY_VISITOR_DEMO_COUNT) || 1)
+    // 演示实例自己的猪窗口收起来，只留朋友猪；否则会出现未拆的纸盒/重复猪。
+    for (const pet of pets.all()) {
+      try { if (pet.window !== null && !pet.window.isDestroyed()) pet.window.hide() } catch { /* 窗口还没建好 */ }
+    }
+  }
   if (ownerDocumentConfig === null) {
     externalManager = createExternalManager({
       userData: app.getPath('userData'), host: desktopRuntime.getHost(), appVersion: app.getVersion(), log,
