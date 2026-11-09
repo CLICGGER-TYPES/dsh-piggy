@@ -37,6 +37,12 @@
   var sendTimer = null
   var pending = false
   var toastTimer = null
+  var NICKNAME_KEY = 'dsh-piggy:show-nicknames'
+  function applyNickname() {
+    try { document.documentElement.setAttribute('data-show-nick', localStorage.getItem(NICKNAME_KEY) === 'off' ? 'false' : 'true') } catch (error) { /* private mode */ }
+  }
+  applyNickname()
+  window.addEventListener('storage', function (event) { if (event.key === NICKNAME_KEY) applyNickname() })
 
   if (room === null) {
     statusText.textContent = '联机不可用'

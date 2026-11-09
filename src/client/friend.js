@@ -13,12 +13,13 @@ import { playPigPet } from './pig-actions.js'
 import { createPresentationContext } from './presentation-context.js'
 import { syncPigArt } from './art.js'
 import { readStore } from './storage.js'
+import { attachNicknamePreference, nicknameEnabled } from './nickname.js'
 
 /** 朋友窗口的固定样式：只留猪和名牌，面板/金币/健康都藏起来。 */
 var FRIEND_CSS = [
   'html[data-piggy-role="friend"],html[data-piggy-role="friend"] body{background:transparent!important}',
   'html[data-piggy-role="friend"] [data-dsh-pig]{position:absolute!important;right:6px!important;bottom:6px!important;left:auto!important;top:auto!important;width:max-content!important;height:auto!important;pointer-events:auto!important}',
-  'html[data-piggy-role="friend"] .dp-card,html[data-piggy-role="friend"] .dp-bar,html[data-piggy-role="friend"] .dp-hud-coins,html[data-piggy-role="friend"] .dp-hud-health{display:none!important}',
+  'html[data-piggy-role="friend"] .dp-card,html[data-piggy-role="friend"] .dp-bar,html[data-piggy-role="friend"] .dp-hud{display:none!important}',
   'html[data-piggy-role="friend"] .dp-hud{position:relative!important;inset:auto!important;margin-top:4px!important;justify-content:center!important}',
   'html[data-piggy-role="friend"] .dp-scene{height:calc(var(--pig-size) + 10px)!important;min-height:0!important}',
 ].join('\n')
@@ -82,9 +83,8 @@ export function mountFriend(options = {}) {
     artResources: null,
   })
   var parts = presentation.parts
-  var { host, pig, pigArt, pigEmoji, hudName, hudCoins, hudHealth, bubble } = parts
-  if (hudCoins !== null) hudCoins.style.display = 'none'
-  if (hudHealth !== null) hudHealth.style.display = 'none'
+  var { host, pig, pigArt, pigEmoji, nick, bubble } = parts
+  if (nick !== null) { nick.hidden = !nicknameEnabled(); nick.textContent = view.pig?.name ?? '' }
   host.setAttribute('data-friend-actor', 'true')
   parts.scene.title = '左键摸摸 · 右键打开菜单 · 拖动可移动'
   applyPigSize(host)
@@ -125,7 +125,7 @@ export function mountFriend(options = {}) {
     view.dialogue = { ...(view.dialogue ?? {}), quiet: false }
     view.pending = []
     applyPigSize(host)
-    if (hudName !== null) hudName.textContent = player.name ?? '小猪'
+    if (nick !== null) { nick.textContent = player.name ?? '小猪'; nick.hidden = !nicknameEnabled() }
     syncPigArt(pig, pigArt, pigEmoji)
     document.title = (player.name ?? '小猪') + ' · 朋友的猪'
     reportPigRect()
@@ -200,6 +200,9 @@ export function mountFriend(options = {}) {
     feel: feel,
   })
 
+  var stopNickname = attachNicknamePreference(function () {
+    if (nick !== null) nick.hidden = !nicknameEnabled()
+  })
   if (typeof api.onUpdate === 'function') api.onUpdate(apply)
   if (typeof api.get === 'function') Promise.resolve(api.get()).then(apply).catch(function () {})
   window.addEventListener('resize', reportPigRect)
@@ -207,6 +210,7 @@ export function mountFriend(options = {}) {
 
   return function () {
     stopped = true
+    stopNickname()
     life.dispose()
     window.removeEventListener('resize', reportPigRect)
     presentation.dispose()

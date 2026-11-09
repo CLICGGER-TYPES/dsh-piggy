@@ -13,6 +13,7 @@ import { emojiStyle, hasBundledEmoji, setEmojiStyle, applyEmojiStyle } from '../
 import { pigSize, setPigSize, syncPigSize } from '../pig-size.js'
 import { applyBubbleSize, setBubbleSize } from '../bubble-size.js'
 import { setWalk, walkEnabled } from '../life.js'
+import { nicknameEnabled, setNicknameEnabled } from '../nickname.js'
 import { exportLogs } from '../log-export.js'
 import { feelMode, setFeelMode, soundSettings, setSoundSettings } from '../feel/settings.js'
 import { unlockSound } from '../sound.js'
@@ -170,6 +171,16 @@ export function renderSettingsTab(ui) {
   handToggle.appendChild(el('span', 'dp-switch-knob'))
   handToggle.appendChild(el('span', 'dp-switch-text', handOn ? '开' : '关'))
   hand.head.appendChild(handToggle)
+
+  const nickOn = nicknameEnabled()
+  const nick = section(ui, '显示昵称', '桌面猪和朋友猪头顶显示名字；只改这台设备')
+  const nickToggle = button('dp-switch', { 'data-nickname': nickOn ? 'on' : 'off', 'aria-pressed': String(nickOn), 'aria-label': '显示昵称' }, function () {
+    setNicknameEnabled(!nicknameEnabled())
+    ui.renderContent()
+  })
+  nickToggle.appendChild(el('span', 'dp-switch-knob'))
+  nickToggle.appendChild(el('span', 'dp-switch-text', nickOn ? '开' : '关'))
+  nick.head.appendChild(nickToggle)
 
   // 音效：默认关；打开后才有声音。免打扰时不响（核心状态，见 index）。
   const soundPrefs = soundSettings()

@@ -70,7 +70,7 @@ export const CSS_BASE = [
   // how a collapsed panel ended up showing the icon bar and the hud while
   // every `el.hidden === true` assertion still passed.
   '[data-dsh-pig] .dp-card[hidden],[data-dsh-pig] .dp-bar[hidden],',
-  '[data-dsh-pig] .dp-content[hidden],[data-dsh-pig] .dp-hud[hidden],',
+  '[data-dsh-pig] .dp-content[hidden],[data-dsh-pig] .dp-hud[hidden],[data-dsh-pig] .dp-nick[hidden],',
   '[data-dsh-pig] .dp-bubble[hidden],[data-dsh-pig] .dp-scene[hidden],',
   '[data-dsh-pig] .dp-work[hidden],[data-dsh-pig] .dp-soul[hidden],',
   '[data-dsh-pig] .dp-poke-hint[hidden],[data-dsh-pig] .dp-daily[hidden],',
@@ -323,6 +323,7 @@ export const CSS_BASE = [
   'background:var(--ac-bg);border:2px solid var(--ac-border-light);padding:5px 10px;',
   'border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-sm)}',
   '.dp-hud b{font-weight:700}',
+  '.dp-nick{position:absolute;left:50%;bottom:2px;z-index:6;transform:translateX(-50%);max-width:calc(var(--pig-size) + 34px);padding:1px 8px;border:2px solid var(--ac-border-light);border-radius:999px;background:rgba(255,250,240,.96);font-size:9.5px;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 0 rgba(61,52,40,.06);pointer-events:none}',
 
   // A drawn sprite is sized by the same variable as the emoji, so growing up
   // works identically either way.

@@ -14,7 +14,7 @@ import { CSS } from './styles.js'
 import { ACT_URL, ART_URL, CARE_LABEL, DEV_TAB, KIND_ORDER, KIND_TITLE, MOUNTED, MODES, NO_ITEM_LINE, OPEN_KEY, PANEL_GAP, PANEL_MARGIN, PANEL_MIN_HEIGHT, PANEL_WIDTH, PIG_PADDING_X, POLL_MS, POSITION_KEY, SCENE_RESERVE, STAGES, STATE_URL, TABS } from './constants.js'
 import { button, el, meter } from './dom.js'
 import { normalize } from './normalize.js'
-import { desktopShell } from './desktop-shell.js'
+import { desktopRole, desktopShell } from './desktop-shell.js'
 import { wireSplit } from './split.js'
 import { attachAutoCollapse } from './auto-collapse.js'
 import { readPosition } from './position.js'
@@ -35,6 +35,7 @@ import { stageShell } from './stage-shell.js'
 import { createStageBridge } from './stage-bridge.js'
 import { bindRecovery } from './recover.js'
 import { attachSizePreference } from './pig-size.js'
+import { attachNicknamePreference, nicknameEnabled } from './nickname.js'
 import { attachBubbleSizePreference } from './bubble-size.js'
 import { createBoxPoke } from './box-poke.js'
 export function mountGame(mountOptions) {
@@ -83,7 +84,7 @@ export function mountGame(mountOptions) {
         identity: identity,
       })
       var parts = presentation.parts
-      var { host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
+      var { host, card, scene, hud, hudName, hudCoins, hudHealth, nick, bubble, work, prop,
         progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, itemHover, content, footer, linkBar, linkNote } = parts
       // 桌面版外壳：用时现取（外壳脚本比 client 先跑，但晚到也不能当网页版 —— 那样拖动
       // 只挪页面里的猪、窗口不跟）。
@@ -117,6 +118,7 @@ export function mountGame(mountOptions) {
         () => view.hatched ? view.pig?.stage : view.boxStage,
         syncGeometry)
       var stopBubbleSizePreference = attachBubbleSizePreference(host, syncGeometry)
+      var stopNicknamePreference = attachNicknamePreference(syncNickname)
       var tab = 'home'
       var stage = 'primary'
       // 用户自己点过学段之后，轮询就不许再替他改（B1 的「默认学段」只在没选过时生效）。
@@ -211,6 +213,13 @@ export function mountGame(mountOptions) {
         get feel() { return feel },
         get devMode() { return devMode },
       }
+      function syncNickname() {
+        if (nick === null || nick === undefined) return
+        var show = desktopRole() === 'pet' && nicknameEnabled() && view.hatched === true && view.pig !== null
+        nick.hidden = !show
+        if (show) nick.textContent = view.pig.name
+      }
+
       var layout = createLayout(ctx)
       var panel = createPanel(ctx)
       ctx.select = panel.select
@@ -220,7 +229,7 @@ export function mountGame(mountOptions) {
       ctx.clampPig = layout.clampPig
       var renderPanel = panel.render, renderContent = panel.renderContent, extRuntime = null
       // 每次重画后对齐第三方动作/音效包；画的是面板，注册的是各窗口共用的表。
-      var render = function (next) { var painted = renderPanel(next); if (extRuntime !== null) extRuntime.sync(ctx.view?.extensions); return painted }
+      var render = function (next) { var painted = renderPanel(next); if (extRuntime !== null) extRuntime.sync(ctx.view?.extensions); syncNickname(); return painted }
       var setOpen = panel.setOpen, select = panel.select
       var fitPanel = layout.fitPanel, clampPig = layout.clampPig
       var paintBar = layout.paintBar, buildIcon = layout.buildIcon
@@ -357,6 +366,7 @@ export function mountGame(mountOptions) {
         panel.dispose()
         stopSizePreference()
         stopBubbleSizePreference()
+        stopNicknamePreference()
         stopRecovery()
         updateNotice.stop()
         stopResize()

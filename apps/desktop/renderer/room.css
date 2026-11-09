@@ -360,6 +360,9 @@ body[data-scene="room"] .scene-layer[data-layer-scene="pen"] {
   pointer-events: none;
 }
 
+/* 设置里关掉昵称时，联机房间的名牌一起隐藏。 */
+html[data-show-nick="false"] .pig .tag { display: none !important; }
+
 /* 自己的猪只靠名牌上的「· 你」和可拖动光标区分，不再画虚线圈。 */
 
 .pig.emote-wave .body { animation: wave .5s ease-in-out 3; }

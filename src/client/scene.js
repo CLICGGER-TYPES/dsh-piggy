@@ -47,6 +47,8 @@ var card = el('div', 'dp-card')
 var scene = el('div', 'dp-scene')
 
 var hud = el('div', 'dp-hud')
+var nick = el('div', 'dp-nick')
+nick.hidden = true
 var hudName = el('div', null, '猪猪')
 var hudCoins = el('div', null, '🪙 0')
 var hudHealth = el('div', null, '💚 5/5')
@@ -54,6 +56,7 @@ hud.appendChild(hudName)
 hud.appendChild(hudCoins)
 hud.appendChild(hudHealth)
 scene.appendChild(hud)
+scene.appendChild(nick)
 
 var bubble = el('div', 'dp-bubble', '')
 bubble.hidden = true
@@ -175,5 +178,5 @@ if (root !== null) {
   }, { once: true })
 }
 
-  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, itemHover, content, footer, linkBar, linkNote }
+  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, nick, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, itemHover, content, footer, linkBar, linkNote }
 }
