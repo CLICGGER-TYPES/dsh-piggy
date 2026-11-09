@@ -8,12 +8,12 @@
 
 import { auxiliaryWindowOptions } from './auxiliary-window.js'
 
-const WINDOW_WIDTH = 150
-const WINDOW_HEIGHT = 160
-const WINDOW_EXPANDED_HEIGHT = 160
+const WINDOW_WIDTH = 220
+const WINDOW_HEIGHT = 240
+const WINDOW_EXPANDED_HEIGHT = 240
 const WINDOW_GAP = 12
 /** 还没收到页面量好的猪框之前：150x160 窗口里猪按钮的默认位置。 */
-const DEFAULT_PIG_RECT = Object.freeze({ x: 27, y: 30, width: 96, height: 100 })
+const DEFAULT_PIG_RECT = Object.freeze({ x: 62, y: 70, width: 96, height: 100 })
 
 /**
  * @param {{
@@ -80,7 +80,7 @@ export function createVisitorRoster(options) {
         preload: options.preload,
         contextIsolation: true,
         sandbox: true,
-        additionalArguments: ['--piggy-role=visitor', '--piggy-visitor=' + player.id],
+        additionalArguments: ['--piggy-role=friend', '--piggy-visitor=' + player.id],
       },
     })
     const entry = { window: win, player, slot }

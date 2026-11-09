@@ -389,6 +389,7 @@ export function mountGame(mountOptions) {
 }
 
 export { desktop }
+export { mountFriend } from './friend.js'
 
 /** 保留原单文件插件的返回形状，宿主加载逻辑留在适配器中。 */
 export function createClientPlugin() {

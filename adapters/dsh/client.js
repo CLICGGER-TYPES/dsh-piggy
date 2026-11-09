@@ -1,9 +1,9 @@
 // @ts-check
 /** DSH 仍加载原来的单文件入口；桌面宿主直接使用同一界面挂载函数。 */
-import { mountGame, desktop, createClientPlugin } from '../../src/client/index.js'
+import { mountGame, mountFriend, desktop, createClientPlugin } from '../../src/client/index.js'
 import { createDshOwnerCloudClient } from './owner-cloud-client.js'
 
-const game = { mount: mountGame, desktop }
+const game = { mount: mountGame, mountFriend, desktop }
 ;/** @type {any} */ (window).piggyGame = game
 const requestCloudSettings = async (method, path, value) => {
   try {

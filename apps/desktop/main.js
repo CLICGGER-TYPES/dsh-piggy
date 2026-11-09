@@ -304,7 +304,7 @@ const visitorRoster = createVisitorRoster({
   BrowserWindow,
   screen,
   preload: join(HERE, 'preload.cjs'),
-  url: 'piggy://app/visitor.html',
+  url: 'piggy://app/index.html',
   icon: join(HERE, 'build', 'icon.png'),
   log,
   // 朋友猪被拖动时，它的面板跟着走。

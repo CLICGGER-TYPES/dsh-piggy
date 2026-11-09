@@ -24,6 +24,12 @@
   var script = document.createElement('script')
   script.onload = function () {
     var game = w.piggyGame
+    // 朋友猪：同一份游戏包，数据源换成房间资料；旧游戏包回退到轻量 visitor 页。
+    if (w.piggyShell && w.piggyShell.role === 'friend') {
+      if (game && typeof game.mountFriend === 'function') { game.mountFriend(); return }
+      w.location.replace('visitor.html')
+      return
+    }
     if (game && game.desktop && typeof game.mount === 'function') {
       document.documentElement.setAttribute('data-piggy-desktop', String(game.desktop.version || 1))
       game.desktop.install(w.piggyShell)

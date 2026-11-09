@@ -6,7 +6,8 @@ const MAX_SAVE_BYTES = 128 * 1024 * 1024
 let geometry = null
 /** 这个页面在哪个窗口里：猪窗口（pet）还是面板窗口（panel，外壳 0.6.0 起）。 */
 const argv = typeof process === 'undefined' ? [] : process.argv
-const role = argv.includes('--piggy-role=panel') ? 'panel'
+const role = argv.includes('--piggy-role=friend') ? 'friend'
+  : argv.includes('--piggy-role=panel') ? 'panel'
   : argv.includes('--piggy-role=ext') ? 'ext'
     : argv.includes('--piggy-role=room') ? 'room'
       : argv.includes('--piggy-role=visitor') ? 'visitor'
