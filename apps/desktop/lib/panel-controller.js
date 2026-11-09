@@ -10,7 +10,6 @@ import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, panelContentRect, panel
 import { panelToggleAction } from './panel-toggle.js'
 import { pointerHitsShape } from './pointer-hit.js'
 import { createResizeShape } from './resize-shape.js'
-
 /**
  * @param {{
  *   panelWindow: ReturnType<typeof import('./panel-window.js').createPanelWindow>,
@@ -38,7 +37,6 @@ export function createPanelController(deps) {
   const scheduleTimeout = deps.setTimeout ?? setTimeout
   const scheduleInterval = deps.setInterval ?? setInterval
   const clearTimer = deps.clearInterval ?? clearInterval
-
   /** 面板现在开着没有（用户眼里的「开」，窗口可能还在等页面报尺寸）。 */
   let panelOpen = false
   /** 这次面板朝哪边开、最高多高：打开时定一次，拖动松手后重新定。 */
@@ -59,14 +57,16 @@ export function createPanelController(deps) {
   let panelTarget = null
   /** 当前面板页面按哪个 pigId 加载；null 表示默认会话（主猪的旧路径）。 */
   let panelLoadedPigId = null
-
+  /** 页面还没 ready 时先记着：ready 后再把朋友资料发过去。 */
+  let pendingFriend = null
+  /** 朋友猪打开面板时用它的桌面窗口当锚点，不依赖本地猪的 panelPig。 */
+  let friendAnchor = null
   let stateTimer = null
   /** 存档变了：两个窗口都刷新（合并 30ms 内的多次，一次动作可能连发几个请求）。 */
   function announceStateChanged() {
     if (stateTimer !== null) return
     stateTimer = scheduleTimeout(() => { stateTimer = null; deps.toPages('piggy:state-changed') }, 30)
   }
-
   /** 面板服务的那只猪：改绑目标还活着就用它，否则回主猪。 */
   function panelTargetPet() {
     if (panelTarget !== null && deps.pets.all().includes(panelTarget)) {
@@ -75,20 +75,18 @@ export function createPanelController(deps) {
     }
     return deps.primaryPet()
   }
-
   /** 面板页面 URL：带 ?pig= 时 game-protocol 把请求路由到这只猪的 session。 */
   function panelUrl() {
     const pigId = panelTargetPet()?.pigId ?? null
     return pigId === null ? 'piggy://app/index.html' : `piggy://app/index.html?pig=${encodeURIComponent(pigId)}`
   }
-
   /** 主猪在屏幕上的框（拖到屏幕边时加上猪在窗口里滑出去的那一截）。 */
   function pigOnScreen() {
+    if (friendAnchor !== null) return friendAnchor
     const pet = panelTargetPet()
     if (pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelPig === null) return null
     return pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelPig, pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
   }
-
   /** 按猪现在的位置决定面板朝哪边开、最高多高。 */
   function decidePanelAnchor() {
     const pig = panelReferenceOnScreen()
@@ -96,7 +94,6 @@ export function createPanelController(deps) {
     return panelAnchorFor(pig, deps.screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea,
       panelSize?.width ?? PANEL_FALLBACK.width, panelAnchor?.horizontal)
   }
-
   /** 面板窗口该在哪：每次都从猪现在在哪直接算（见 lib/panel-geometry.js 文件头）。 */
   function panelBounds() {
     const pet = panelTargetPet()
@@ -105,8 +102,8 @@ export function createPanelController(deps) {
     return panelBoundsFor(pig, panelAnchor, panelViewportSize(panelAnchor, panelSize, panelFixedViewport),
       pet?.dragSession !== null && pet?.dragSession !== undefined ? deps.screen.getAllDisplays().map(display => display.workArea) : null)
   }
-
   function panelReferenceOnScreen() {
+    if (friendAnchor !== null) return friendAnchor
     const pet = panelTargetPet()
     const pig = pigOnScreen()
     if (pig === null || pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelSpeech === null) return pig
@@ -114,12 +111,10 @@ export function createPanelController(deps) {
       pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
     return panelReferenceFor(pig, speech)
   }
-
   function sendPanel(message) {
     const target = deps.getPanelWindow()
     if (target !== null && !target.isDestroyed() && deps.panelWindow.isReady()) target.webContents.send('piggy:panel', message)
   }
-
   /** 固定外框只让实际卡片和名牌接收点击，透明预留区继续点到桌面。 */
   function refreshPanelHit() {
     if (!panelFixedViewport || !panelOpen || !panelAnchor || !deps.getPanelWindow() || deps.getPanelWindow().isDestroyed() || !deps.getPanelWindow().isVisible()) return
@@ -133,24 +128,20 @@ export function createPanelController(deps) {
     deps.traceSetIgnoreMouseEvents('panel', 'panel', 'panel-hit', !hit, true,
       () => deps.getPanelWindow().setIgnoreMouseEvents(!hit, { forward: true }))
   }
-
   const panelShape = createResizeShape(() => deps.getPanelWindow(), rects => {
     if (deps.getPanelWindow() && !deps.getPanelWindow().isDestroyed() && deps.platform !== 'darwin') deps.getPanelWindow().setShape(rects)
   }, () => deps.screen.getDisplayMatching(deps.getPanelWindow().getBounds()).scaleFactor)
-
   function stopPanelHit() {
     if (panelHitTimer !== null) clearTimer(panelHitTimer)
     panelHitTimer = null
     panelHit = null
   }
-
   function startPanelHit() {
     if (deps.platform !== 'darwin' || !panelFixedViewport || !panelOpen || panelHitTimer !== null) return
     refreshPanelHit()
     panelHitTimer = scheduleInterval(refreshPanelHit, 16)
     panelHitTimer.unref?.()
   }
-
   /** 面板页面换猪/重建后，旧的尺寸、位置和命中缓存全部作废。 */
   function resetPanelView() {
     panelShape.cancel()
@@ -161,19 +152,32 @@ export function createPanelController(deps) {
     panelFixedViewport = false
     stopPanelHit()
   }
-
   /** panel-window 的 onCreated：记录这次页面是按哪只猪加载的。 */
   function panelViewCreated() {
     resetPanelView()
     panelLoadedPigId = panelTargetPet()?.pigId ?? null
     deps.extensionLayer.sync()
   }
-
   /** panel-window 的 onReady：页面加载完时把打开状态补给它。 */
   function handleReady() {
     if (panelOpen && panelAnchor !== null) sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
+    if (panelOpen && pendingFriend !== null) {
+      sendPanel({ type: 'friend', player: pendingFriend })
+      pendingFriend = null
+    }
   }
-
+  /** 打开面板并切到朋友猪状态/居民卡（页面 ready 后补发）。 */
+  function openFriend(player, anchor = null) {
+    friendAnchor = anchor !== null && Number.isFinite(anchor?.x) && Number.isFinite(anchor?.y) && anchor.width > 0 && anchor.height > 0
+      ? { x: anchor.x, y: anchor.y, width: anchor.width, height: anchor.height }
+      : null
+    pendingFriend = player
+    openPanel(null, panelTargetPet())
+    if (panelOpen && deps.panelWindow.isReady()) {
+      sendPanel({ type: 'friend', player })
+      pendingFriend = null
+    }
+  }
   /**
    * 把猪窗口抬到面板窗口上面（用户 2026-10-08 反馈）。
    * 两个窗口同为 floating 置顶，点面板时系统把面板抬到最上，猪的动作和气泡被盖住；
@@ -188,7 +192,6 @@ export function createPanelController(deps) {
     if (deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed() && deps.getPanelWindow().isVisible()) deps.getPanelWindow().moveTop()
     pet.window.moveTop()
   }
-
   /** 右键第二只时也把它叫到前面：置顶窗口也要先可见。 */
   function focusPetWindow(pet) {
     const window = pet?.window
@@ -197,11 +200,9 @@ export function createPanelController(deps) {
     window.moveTop()
     window.focus?.()
   }
-
   function ensurePanelWindow() {
     return deps.panelWindow.ensure()
   }
-
   /**
    * 焦点离开了面板服务的那只猪或面板窗口：如果也没落到另一个上，就是点到别处了。
    * 面板打开时不抢焦点（见 placePanel），焦点多半还在猪窗口上，所以两个窗口的失焦都要听。
@@ -222,7 +223,6 @@ export function createPanelController(deps) {
       sendPanel({ type: 'blur', toPet: false })
     }, 0)
   }
-
   /** 把面板窗口放到该在的地方；第一次有尺寸时才显示（免得先闪一个空窗口）。 */
   function placePanel() {
     if (!panelOpen || deps.getPanelWindow() === null || deps.getPanelWindow().isDestroyed()) return
@@ -264,7 +264,6 @@ export function createPanelController(deps) {
       if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'open' })
     }
   }
-
   /**
    * 开面板，并把面板改绑到这只猪。
    * 面板页面的 API 请求按 URL 的 ?pig= 路由；已加载的页面不是这只猪时重建面板窗口
@@ -272,6 +271,7 @@ export function createPanelController(deps) {
    */
   function openPanel(pig, pet = panelTargetPet()) {
     if (pet === null) return
+    if (pig !== null && pig !== undefined) friendAnchor = null
     const targetPigId = pet.pigId ?? null
     if (deps.getPanelWindow() !== null && panelLoadedPigId !== targetPigId) {
       if (panelOpen) closePanel('retarget')
@@ -283,7 +283,7 @@ export function createPanelController(deps) {
     if (Number.isFinite(pig?.x) && Number.isFinite(pig?.y) && pig?.width > 0 && pig?.height > 0) {
       pet.panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
     }
-    if (pet.panelPig === null) return
+    if (pet.panelPig === null && friendAnchor === null) return
     ensurePanelWindow()
     panelOpen = true
     startPanelHit()
@@ -297,6 +297,8 @@ export function createPanelController(deps) {
 
   function closePanel(why) {
     if (!panelOpen) return
+    pendingFriend = null
+    friendAnchor = null
     panelOpen = false
     panelShape.cancel()
     panelShapeKey = ''
@@ -384,6 +386,7 @@ export function createPanelController(deps) {
     focusLeft: panelFocusLeft,
     ensure: ensurePanelWindow,
     open: openPanel,
+    openFriend,
     close: closePanel,
     followPig,
     reanchorPanel,

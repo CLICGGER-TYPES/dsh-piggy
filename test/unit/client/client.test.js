@@ -1129,7 +1129,8 @@ test('the work tab lists jobs and sending the pig out POSTs the job', async () =
 
   const text = contentOf(dom).allText()
   assert.ok(text.includes('打零工'), text)
-  assert.ok(text.includes('12'), text)
+  assert.ok(!text.includes('15分·'), 'job time/pay moved into the hover card')
+  assert.ok(findByClass(hostOf(dom), 'dp-item-hover'), 'the hover card element exists')
 
   sendJob(dom, 'odd')
   await settle()
@@ -1169,13 +1170,13 @@ test('a job behind a trait gate says what it needs instead of just greying out',
   openPanel(dom)
   pickTab(dom, 'work')
 
-  // The row stays short (owner, 2026-10-01): a padlock, time and pay. What
-  // the gate wants lives behind 详情, not in a pile of text on the row.
-  // B9: a job is a tile — a padlock, time and pay. What the gate wants lives
-  // in the details under the grid, not in a pile of text on the tile.
+  // The tile stays short: padlock + name. Time/pay and the gate live in the
+  // hover card and the 详情 footer, not in a pile of text on the tile.
   let text = contentOf(dom).allText()
-  assert.ok(text.includes('120分·480🪙'), text)
-  assert.ok(findByAttr(contentOf(dom), 'data-job-tile', 'tutor').allText().includes('🔒'))
+  let tutorTile = findByAttr(contentOf(dom), 'data-job-tile', 'tutor')
+  assert.ok(!tutorTile.allText().includes('120分'), tutorTile.allText())
+  assert.ok(tutorTile.allText().includes('🔒'))
+  assert.ok(findByClass(hostOf(dom), 'dp-item-hover'), 'the hover card element exists')
   assert.ok(!text.includes('智力 10'), 'the gate is not spelled out on the tile')
   tap(dom, 'data-job-tile', 'tutor')
   text = cardOf(dom).allText()
@@ -1222,7 +1223,8 @@ test('interest courses live in the study tab, not in a new stat panel', async ()
   const text = contentOf(dom).allText()
   assert.ok(text.includes('摄影'), text)
   assert.ok(text.includes('健身'), text)
-  assert.ok(text.includes('35 🪙'), 'an interest without a certificate shows its price')
+  assert.ok(!text.includes('35 🪙'), 'price moved into the hover card')
+  assert.ok(findByClass(hostOf(dom), 'dp-item-hover'), 'the hover card element exists')
   // 兴趣 pays into the three existing traits — no new bars, no percentages.
   pickTab(dom, 'status')
   const status = contentOf(dom).allText()
@@ -1412,6 +1414,26 @@ test('the bag tab lists owned items with a use button', async () => {
   const post = net.calls.find(call => call.method === 'POST')
   // G 批次：背包里吃东西就是一次喂食（长体重、会胀气、猪会说话），发的是 feed。
   assert.deepEqual(JSON.parse(post.body), { action: 'feed', item: 'apple' })
+})
+
+test('right-click inside the panel goes back one drilled page', async () => {
+  const { registration, dom } = await loadClient()
+  registration.factory(() => {}).apply({})
+  await settle()
+  openPanel(dom)
+  pickTab(dom, 'bag')
+  tap(dom, 'data-bag', 'food')
+  assert.notEqual(findByAttr(contentOf(dom), 'data-back', 'bag'), undefined, 'inside the food shelf')
+
+  let prevented = false
+  cardOf(dom).fire('contextmenu', { preventDefault() { prevented = true } })
+  assert.equal(prevented, true, 'the native menu is suppressed')
+  assert.equal(findByAttr(contentOf(dom), 'data-back', 'bag'), undefined, 'back at the bag home')
+  assert.notEqual(findByAttr(contentOf(dom), 'data-bag', 'food'), undefined)
+
+  // At the root there is nowhere to go; right-click must stay harmless.
+  cardOf(dom).fire('contextmenu', { preventDefault() {} })
+  assert.equal(findByAttr(contentOf(dom), 'data-back', 'bag'), undefined)
 })
 
 test('an empty bag says so instead of showing nothing', async () => {
@@ -2082,16 +2104,18 @@ test('the study tab is stage tiles; inside one, each subject shows where it stan
   assert.equal(findByAttr(contentOf(dom), 'data-subject', 'chinese'), undefined, 'subjects live inside a stage')
 
   tap(dom, 'data-stage', 'primary')
-  text = contentOf(dom).allText()
-  assert.ok(text.includes('✓ 毕业'), `语文 has finished 小学: ${text}`)
-  assert.ok(text.includes('0/9 节'), `数学 is in 小学: ${text}`)
+  var chinese = findByAttr(contentOf(dom), 'data-subject', 'chinese')
+  var mathematics = findByAttr(contentOf(dom), 'data-subject', 'mathematics')
+  assert.equal(chinese.getAttribute('data-standing'), 'done', '语文 has finished 小学')
+  assert.equal(mathematics.getAttribute('data-progress'), '0/9 节', '数学 is in 小学')
 
   tap(dom, 'data-back', 'study')
   tap(dom, 'data-stage', 'middle')
-  text = contentOf(dom).allText()
-  assert.ok(text.includes('3/11 节'), `语文 is 3 lessons into 中学: ${text}`)
-  assert.ok(text.includes('🔒 小学'), `数学 has not reached 中学: ${text}`)
-  assert.equal(findByAttr(contentOf(dom), 'data-subject', 'mathematics').disabled, true, 'a subject that has not reached 中学 cannot be taken there')
+  chinese = findByAttr(contentOf(dom), 'data-subject', 'chinese')
+  mathematics = findByAttr(contentOf(dom), 'data-subject', 'mathematics')
+  assert.equal(chinese.getAttribute('data-progress'), '3/11 节', '语文 is 3 lessons into 中学')
+  assert.equal(mathematics.getAttribute('data-standing'), 'ahead', '数学 has not reached 中学')
+  assert.equal(mathematics.disabled, true, 'a subject that has not reached 中学 cannot be taken there')
 
   tap(dom, 'data-subject', 'chinese')
   await settle()

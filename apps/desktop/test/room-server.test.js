@@ -105,3 +105,40 @@ test('房主离开会关闭房间，其余客户端收到 room-closed', async ()
     await server.close()
   }
 })
+
+test('联机照顾：客人发意图，目标回结果并更新公开状态', async () => {
+  const server = await startRoomServer({ code: '7K2M', listenAddress: '127.0.0.1' })
+  const baseUrl = `http://127.0.0.1:${server.status().port}`
+  const host = createRoomClient({ baseUrl, code: '7K2M', profile: PROFILE_A })
+  const guest = createRoomClient({ baseUrl, code: '7K2M', profile: PROFILE_B })
+  try {
+    const joinedHost = await host.join()
+    const joinedGuest = await guest.join()
+    const resultWait = guest.wait(joinedGuest.version)
+    const care = await guest.care({ targetId: joinedHost.playerId, itemKey: 'cake', op: 'feed', nonce: 'nonce-1' })
+    assert.equal(care.status, 200)
+
+    const delivered = await host.wait(joinedHost.version)
+    const event = delivered.body.careEvents.find(entry => entry.nonce === 'nonce-1')
+    assert.equal(event.targetId, joinedHost.playerId)
+    assert.equal(event.itemKey, 'cake')
+    assert.equal(event.op, 'feed')
+    assert.equal(event.from, joinedGuest.playerId)
+
+    const ack = await host.careResult({
+      targetId: joinedHost.playerId, nonce: 'nonce-1', ok: true, reason: '',
+      care: { satiety: 88, cleanliness: 40, happiness: 55 },
+    })
+    assert.equal(ack.status, 200)
+    const result = await resultWait
+    assert.equal(result.status, 200)
+    assert.equal(result.body.careResults[0].nonce, 'nonce-1')
+    assert.equal(result.body.careResults[0].ok, true)
+    const hostPlayer = result.body.players.find(player => player.id === joinedHost.playerId)
+    assert.deepEqual(hostPlayer.care, { satiety: 88, cleanliness: 40, happiness: 55 })
+  } finally {
+    await host.close().catch(() => {})
+    await guest.close().catch(() => {})
+    await server.close()
+  }
+})

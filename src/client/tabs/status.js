@@ -14,7 +14,7 @@ import { externalActionsBlocked } from '../external-link.js'
 export function renderStatusTab(ui) {
   var p = ui.view.pig
   if (p === null) return
-  renderBanners(ui)
+  if (!ui.friendMode) renderBanners(ui)
   var lv = p.level
   labelledBar(ui, '⭐ Lv.' + lv.level + ' ' + lv.titleEmoji + lv.titleLabel, lv.maxed ? 100 : lv.percent,
     lv.maxed ? '满级' : '还差 ' + Math.ceil(lv.toNext) + ' 成长', 'dp-level')
@@ -30,6 +30,11 @@ export function renderStatusTab(ui) {
   ui.content.appendChild(traits)
 
   renderWeight(ui, p)
+  if (ui.friendMode) {
+    renderIllnessAlert(ui)
+    renderCareActions(ui)
+    return
+  }
 
   // 签到进度：一行小字，不抢注意力（礼包攒着的时候顺带说一句）。
   var daily = ui.view.daily
@@ -40,18 +45,41 @@ export function renderStatusTab(ui) {
     + (daily.unclaimed > 0 ? ' · 🎁 ' + daily.unclaimed : '')))
   ui.content.appendChild(dailyLine)
 
+  renderCareActions(ui)
 
+  if (p.memories.length > 0) {
+    ui.content.appendChild(el('div', 'dp-memo', p.memories.slice(-3).join('\n')))
+  }
+}
+
+/**
+ * 本地猪和朋友的猪共用同一套照顾按钮。
+ * 就绪状态来自 ui.view.actions（朋友来自房间资料），物品数量来自本机背包：
+ * 朋友照顾消耗的是客人的物品，所以 care 仍用本机 view。
+ */
+function renderCareActions(ui) {
+  var friend = ui.friendMode === true
   var grid = el('div', 'dp-actions')
-  // 外部模式断线/合并中：照顾按钮置灰，只留顶部「重新连接」（设计 4.9）。
-  var locked = externalActionsBlocked(ui.view)
-  for (var i = 0; i < MODES.length; i += 1) {
+  var keys = friend ? ['feed', 'bathe', 'play'] : MODES
+  var locked = friend ? false : externalActionsBlocked(ui.view)
+  var care = ui.view.care ?? {}
+  var actions = ui.view.actions ?? {}
+  // 点击发生在 renderFriendPanel 恢复本地 view 之后：这里先把朋友的 illness 和 actions 抓住。
+  var illness = friend ? ui.view.pig.illness : null
+  for (var i = 0; i < keys.length; i += 1) {
     (function (key) {
-      var info = ui.view.actions[key]
-      var shelf = ui.view.care[key] ?? []
-      var needsItem = shelf.length > 0
-      var btn = button('dp-btn', { 'data-action': key }, function () {
-        // 喂食、洗澡、玩耍都要用东西：直接跳到背包对应的货架（G 批次），
-        // 不再在这里维护一份物品列表。摸摸不用东西，直接摸。
+      var info = actions[key] ?? { ready: true, waitSeconds: 0, blocked: null }
+      var shelf = Array.isArray(care[key]) ? care[key] : []
+      var btn = button('dp-btn', friend ? { 'data-friend-care': key } : { 'data-action': key }, function () {
+        if (friend) {
+          ui.careTarget = { id: ui.friend.id, name: ui.friend.name, illness, actions }
+          ui.select('bag')
+          ui.drill.from = 'status'
+          drillTo(ui, 'bag', BAG_SHELF[key])
+          return
+        }
+        // 喂食、洗澡、玩耍都要用东西：直接跳到背包对应的货架；
+        // 摸摸不用东西，直接摸。
         if (BAG_SHELF[key] !== undefined) {
           ui.select('bag')
           ui.drill.from = 'status'
@@ -62,30 +90,47 @@ export function renderStatusTab(ui) {
       })
       btn.appendChild(el('span', null, CARE_LABEL[key][1]))
       btn.appendChild(el('span', null, CARE_LABEL[key][0]))
-      if (needsItem) btn.appendChild(el('span', 'dp-count', String(shelf.length)))
-      // Trust but verify: a dead pig cannot be cared for even if the host
-      // forgot to clear its readiness flags.
+      if (shelf.length > 0) btn.appendChild(el('span', 'dp-count', String(shelf.length)))
+      var dead = friend ? ui.view.pig?.dead === true : ui.view.dead
       if (locked) {
         btn.disabled = true
         btn.appendChild(el('span', 'dp-wait', '先连接'))
-      } else if (!info.ready || ui.view.dead) {
+      } else if (info.ready === false || dead) {
         btn.disabled = true
-        if (ui.view.dead) btn.appendChild(el('span', 'dp-wait', '—'))
+        if (dead) btn.appendChild(el('span', 'dp-wait', '—'))
         else if (info.waitSeconds > 0) btn.appendChild(el('span', 'dp-wait', info.waitSeconds + 's'))
         else if (info.blocked === 'away') btn.appendChild(el('span', 'dp-wait', '不在家'))
+        else if (info.blocked === 'hungry') btn.appendChild(el('span', 'dp-wait', '太饿了'))
       }
       grid.appendChild(btn)
-    })(MODES[i])
+    })(keys[i])
+  }
+  if (friend) {
+    var medicine = button('dp-btn', { 'data-friend-care': 'medicine' }, function () {
+      ui.careTarget = { id: ui.friend.id, name: ui.friend.name, illness, actions }
+      ui.select('bag')
+      ui.drill.from = 'status'
+      drillTo(ui, 'bag', 'medicine')
+    })
+    medicine.appendChild(el('span', null, '💊'))
+    medicine.appendChild(el('span', null, '药品'))
+    grid.appendChild(medicine)
   }
   ui.content.appendChild(grid)
+}
 
-  if (p.memories.length > 0) {
-    ui.content.appendChild(el('div', 'dp-memo', p.memories.slice(-3).join('\n')))
-  }
+/** 朋友猪的疾病提示和本地猪用同一份 illness 数据。 */
+function renderIllnessAlert(ui) {
+  var illness = ui.view.pig.illness
+  if (illness === null || illness === undefined) return
+  var alert = el('div', 'dp-alert dp-sick')
+  alert.appendChild(el('b', null, '🤒 ' + illness.name + '（第 ' + illness.stage + '/4 期）'))
+  alert.appendChild(el('div', null, '需要「' + (illness.cureEmoji || '💊') + illness.cure + '」—— 吃错药会加重'))
+  ui.content.appendChild(alert)
 }
 
 /** 状态页的照料按钮跳到背包的哪个货架。 */
-var BAG_SHELF = { feed: 'food', bathe: 'bath', play: 'toy' }
+var BAG_SHELF = { feed: 'food', bathe: 'bath', play: 'toy', medicine: 'medicine' }
 
 /** 体重一行小字：多重、什么体型。 */
 function renderWeight(ui, p) {

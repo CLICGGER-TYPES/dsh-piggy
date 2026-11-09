@@ -140,6 +140,8 @@ scene.appendChild(pig)
 scene.title = '左键摸摸 · 右键打开面板 · 拖动可移动'
 
 var bar = el('div', 'dp-bar')
+var itemHover = el('div', 'dp-item-hover')
+itemHover.hidden = true
 
 // 外部桌宠的连接标签和断线提示：挂在面板内容上方，所有页签都能看到。
 // 内嵌模式隐藏，面板布局和以前一致（见 external-link.js）。
@@ -160,6 +162,7 @@ card.appendChild(linkNote)
 card.appendChild(content)
 card.appendChild(footer)
 card.appendChild(bar)
+card.appendChild(itemHover)
 host.appendChild(card)
 host.appendChild(scene)
 if (root !== null) {
@@ -172,5 +175,5 @@ if (root !== null) {
   }, { once: true })
 }
 
-  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote }
+  return { font, style, host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop, progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, itemHover, content, footer, linkBar, linkNote }
 }

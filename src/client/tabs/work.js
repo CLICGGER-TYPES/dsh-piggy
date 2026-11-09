@@ -8,6 +8,8 @@
  */
 
 import { button, el } from '../dom.js'
+import { attachActivityHover } from '../item-hover.js'
+import { formatMinutes } from '../format.js'
 import { drillHeader, drillTo, pagedTiles, tile, tileGrid } from '../widgets.js'
 import { canStart, renderSwitchAsk, startOrSwitch } from '../switch-activity.js'
 
@@ -67,22 +69,38 @@ function renderJobs(ui, jobs, color, pagerKey) {
       var active = ui.drill.pick === job.key
       if (active) picked = job
       var locked = job.qualified === false
-      tiles.push(tile({
+      var node = tile({
         emoji: job.emoji, label: job.label, color: color, soft: true, active: active,
-        note: job.minutes + '分·' + job.coins + '🪙',
         tag: locked ? '🔒' : '', dim: locked,
         data: { 'data-job-tile': job.key },
         onPick: function () {
           ui.drill.pick = active ? null : job.key
           ui.renderContent()
         },
-      }))
+      })
+      attachActivityHover(ui, node, jobHoverConfig(job), 'job:' + job.key)
+      tiles.push(node)
     })(jobs[i])
   }
   ui.content.appendChild(pagedTiles(ui, 'work:' + pagerKey, tiles))
   if (picked !== null) {
     ui.footer.appendChild(jobDetails(ui, picked))
     ui.footer.hidden = false
+  }
+}
+
+function jobHoverConfig(job) {
+  var rows = [
+    { label: '时长', value: formatMinutes(job.minutes) },
+    { label: '报酬', value: '+' + job.coins + ' 🪙' },
+    { label: '加成', value: job.traitEmoji + ' ' + job.traitLabel + ' +' + job.traitPoints + (job.payPercent > 0 ? ' · 报酬 +' + job.payPercent + '%' : '') },
+    { label: '消耗', value: '饱食 ' + job.satiety + ' · 清洁 ' + job.cleanliness },
+  ]
+  return {
+    emoji: job.emoji, label: job.label, kind: '工作 · ' + job.traitLabel,
+    rows: rows,
+    // 工作面板本身很矮，卡片要压在 132px 内；完整门槛点开详情看页脚。
+    price: job.qualified ? (job.available ? '可出发' : '不在家') : '还差条件',
   }
 }
 

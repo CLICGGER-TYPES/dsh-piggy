@@ -6,6 +6,8 @@
  */
 import {
   act as coreAct,
+  applyGuestCare as coreApplyGuestCare,
+  applyGuestMedicine as coreApplyGuestMedicine,
   callOffActivity as coreCallOff,
   decay,
   feed as coreFeed,
@@ -18,6 +20,8 @@ import {
   startTrip as coreStartTrip,
   startWork as coreStartWork,
   touch as coreTouch,
+  takeCareItem as coreTakeCareItem,
+  refundCareItem as coreRefundCareItem,
   writeDiaryIfNewDay as coreWriteDiary,
   extensionOn as coreExtensionOn,
 } from '../src/host/core.js'
@@ -82,6 +86,17 @@ export function createApiActions(runtime) {
 
     /** Apply one care action with its cooldown, spending `itemKey` when given. */
     act: (action, itemKey) => mutate(live => coreAct(live, action, now(), itemKey)),
+
+    /** Guest care: apply a friend's item to this pig without spending this pig's bag. */
+    guestCare: (action, itemKey) => mutate(live => action === 'medicine'
+      ? coreApplyGuestMedicine(live, itemKey, now())
+      : coreApplyGuestCare(live, action, now(), itemKey)),
+
+    /** Guest side: take one item from the local bag before sending the care intent. */
+    takeCareItem: (action, itemKey) => mutate(live => coreTakeCareItem(live, action, itemKey)),
+
+    /** Guest side: give it back if the target never accepted it. */
+    refundCareItem: (action, itemKey) => mutate(live => coreRefundCareItem(live, action, itemKey)),
 
     /** 拿起/抛出/戳一下：只刷新活跃时间，不消耗物品、不加心情。 */
     touch: () => mutate(live => coreTouch(live, now())),

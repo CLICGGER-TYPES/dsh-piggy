@@ -41,14 +41,16 @@ test('interest points arrive when the lesson ends, not when it starts', () => {
   assert.equal(pig.traits.charm, before + 2)
 })
 
-test('interest tile states the wait and reward, and an active lesson shows time left', async () => {
+test('interest tile keeps only the name and progress; wait/reward live in the hover card', async () => {
   const interest = { key: 'photography', label: '摄影', emoji: '📷', traitLabel: '魅力', minutes: 30,
     cost: 40, gain: 2, certificate: '摄影证', certificateAfter: 5, times: 0, affordable: true }
   const options = { status: { ...SNAPSHOT, interests: [interest], subjects: [{ key: 'chinese', label: '语文', emoji: '📖', lessons: 0, affordable: true }] } }
   const { dom } = await mount(options)
   openPanel(dom, 'study')
   findByAttr(contentOf(dom), 'data-stage', 'interest').fire('click')
-  assert.match(contentOf(dom).allText(), /约 30 分钟后 魅力 \+2/)
+  const tile = findByAttr(contentOf(dom), 'data-interest', 'photography')
+  assert.ok(!tile.allText().includes('约 30 分钟后'), tile.allText())
+  assert.ok(findByClass(hostOf(dom), 'dp-item-hover'), 'the hover card element exists')
 
   options.status = { ...options.status, activity: { kind: 'interest', key: 'photography', label: '兴趣·摄影', emoji: '📷', secondsLeft: 1250, progress: 30 } }
   const { dom: active } = await mount({ status: options.status })

@@ -212,6 +212,11 @@ export function createIo(ctx) {
 
       async function refresh() {
         if (ctx.stopped) return
+        // 悬停卡打开/等待出现时先不轮询：4 秒重绘会把用户正在看的东西换掉。
+        // 移开/收起后下一轮恢复；动作触发的 piggy:state-changed 不受影响。
+        if (ctx.itemHover && (ctx.itemHover.__pending === true || ctx.itemHover.__shown === true)) return
+        if (typeof document !== 'undefined' && document.hidden === true) return
+        if (ctx.panelWindow === true && ctx.isOpen !== true && ctx.__polledOnce === true) return
         // Owner switching unmounts the old runtime for a moment. A short,
         // self-expiring pause keeps the four-second poll from flashing
         // "connection lost" while restore is in flight.
@@ -230,6 +235,7 @@ export function createIo(ctx) {
             throw new Error('HTTP ' + res.status)
           }
           var next = await res.json()
+          ctx.__polledOnce = true
           // 忙碌且没带快照（外层面板的占位正文）：同样保留当前画面，别把面板清成「没有猪」。
           if (busyResponse(res.status, next) && !(isObj(next) && 'pig' in next)) return
           // An action landed while this poll was in flight: its result is newer
@@ -293,5 +299,10 @@ export function createIo(ctx) {
   // 面板每次重画都会按服务端取整后的秒数写一遍，紧接着让秒针按本地时间覆盖回来（同一帧，不闪）。
   ctx.pomoTick = createPomodoroClock(function () { return ctx.view }, ctx.pomoHint, ctx.content, refresh,
     function () { return ctx.stopped === true }).tick
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden !== true) refresh()
+    })
+  }
   return { send: send, refresh: refresh }
 }

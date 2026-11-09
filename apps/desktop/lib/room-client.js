@@ -88,6 +88,26 @@ export function createRoomClient({ baseUrl, code, profile, clientId = randomUUID
     })
   }
 
+  function care({ targetId, itemKey, op, nonce }) {
+    return serialize(async () => {
+      const result = await request('/v1/room/care', {
+        targetId: String(targetId), itemKey: String(itemKey), op: String(op), nonce: String(nonce),
+      }, true)
+      if (result.status === 200 && Number.isSafeInteger(result.body.version)) version = result.body.version
+      return result
+    })
+  }
+
+  function careResult({ targetId, nonce, ok, reason = '', care = null }) {
+    return serialize(async () => {
+      const result = await request('/v1/room/care-result', {
+        targetId: String(targetId), nonce: String(nonce), ok: ok === true, reason: String(reason), care,
+      }, true)
+      if (result.status === 200 && Number.isSafeInteger(result.body.version)) version = result.body.version
+      return result
+    })
+  }
+
   function leave() {
     return serialize(async () => {
       if (token === null) return { status: 200, body: { ok: true } }
@@ -105,6 +125,8 @@ export function createRoomClient({ baseUrl, code, profile, clientId = randomUUID
     join,
     wait,
     update,
+    care,
+    careResult,
     leave,
     close: () => leave().catch(() => ({ status: 0, body: { ok: false } })),
   })

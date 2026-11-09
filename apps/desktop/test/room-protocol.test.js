@@ -29,6 +29,21 @@ test('玩家外观只保留房间需要的字段，并对长度/路径做边界�
   assert.deepEqual(profile, {
     name: '猪猪 大王', level: 60, stage: 'piglet',
     art: 'pigs/base/piglet/idle.png?v=abc123', emoji: '🐖', size: 1.6, label: '小猪',
+    mood: '', moodLabel: '',
+    care: { satiety: 60, cleanliness: 60, happiness: 60 },
+    actions: {
+      feed: { ready: true, waitSeconds: 0, blocked: null },
+      bathe: { ready: true, waitSeconds: 0, blocked: null },
+      play: { ready: true, waitSeconds: 0, blocked: null },
+      pet: { ready: true, waitSeconds: 0, blocked: null },
+    },
+    status: {
+      level: { level: 1, percent: 0, toNext: 0, maxed: false, titleEmoji: '', titleLabel: '' },
+      health: 5, healthPercent: 100, maxHealth: 5,
+      traits: { intel: 0, charm: 0, strong: 0 },
+      weight: '', bodyWeight: null, mood: '', moodLabel: '', illness: null,
+    },
+    card: { birthday: '', zodiac: null, personality: null, catchphrase: '', motto: '', counts: null },
   })
   assert.throws(() => normalizeProfile({ name: '   ', level: 1 }))
   assert.throws(() => normalizeProfile({ name: '猪', level: 0 }))
@@ -36,6 +51,19 @@ test('玩家外观只保留房间需要的字段，并对长度/路径做边界�
   assert.equal(normalizeProfile({ name: '猪', level: 1, art: '../../etc/passwd' }).art, '')
   assert.equal(normalizeProfile({ name: '猪', level: 1, art: 'custom-mine' }).art, 'custom-mine')
   assert.equal(normalizeProfile({ name: '猪', level: 1, stage: 'BAD STAGE' }).stage, 'piglet')
+  const actions = normalizeProfile({
+    name: '猪', level: 1,
+    actions: {
+      feed: { ready: false, waitSeconds: 9999, blocked: 'away' },
+      play: { ready: false, waitSeconds: 3, blocked: 'hungry' },
+      bathe: { ready: false, waitSeconds: 2, blocked: 'nonsense' },
+      pet: { ready: true, waitSeconds: 4, blocked: 'away' },
+    },
+  }).actions
+  assert.deepEqual(actions.feed, { ready: false, waitSeconds: 3600, blocked: 'away' })
+  assert.deepEqual(actions.play, { ready: false, waitSeconds: 3, blocked: 'hungry' })
+  assert.deepEqual(actions.bathe, { ready: false, waitSeconds: 2, blocked: null })
+  assert.deepEqual(actions.pet, { ready: true, waitSeconds: 4, blocked: 'away' })
 })
 
 test('位置与表情只接受房间支持的取值', () => {

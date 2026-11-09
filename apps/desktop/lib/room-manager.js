@@ -70,6 +70,8 @@ export function createRoomManager(deps = {}) {
       version: body.version,
       room: body.room,
       players: body.players,
+      careEvents: body.careEvents ?? [],
+      careResults: body.careResults ?? [],
       endpoint: { address: session.address, port: session.port },
     }
     onUpdate(snapshot)
@@ -261,6 +263,34 @@ export function createRoomManager(deps = {}) {
     }
   }
 
+  async function care({ targetId, itemKey, op, nonce }) {
+    const current = session
+    if (current === null || current.stopped) return { ok: false, reason: '不在房间里' }
+    try {
+      const result = await current.client.care({ targetId, itemKey, op, nonce })
+      if (result.status !== 200 || result.body?.ok !== true) {
+        return { ok: false, reason: typeof result.body?.reason === 'string' ? result.body.reason : '照顾没发出去' }
+      }
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, reason: messageOf(error, '照顾没发出去') }
+    }
+  }
+
+  async function careResult({ targetId, nonce, ok, reason = '', care = null }) {
+    const current = session
+    if (current === null || current.stopped) return { ok: false, reason: '不在房间里' }
+    try {
+      const result = await current.client.careResult({ targetId, nonce, ok, reason, care })
+      if (result.status !== 200 || result.body?.ok !== true) {
+        return { ok: false, reason: typeof result.body?.reason === 'string' ? result.body.reason : '照顾结果没发出去' }
+      }
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, reason: messageOf(error, '照顾结果没发出去') }
+    }
+  }
+
   async function leave(reason = 'left') {
     const current = session
     if (current === null) return { ok: true }
@@ -288,6 +318,8 @@ export function createRoomManager(deps = {}) {
     join,
     move,
     emote,
+    care,
+    careResult,
     leave,
     status,
     dispose: () => leave('quit'),

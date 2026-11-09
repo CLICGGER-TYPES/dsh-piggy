@@ -4,9 +4,9 @@
  * The pet and its app panel use raw DOM. Host values pass through normalize()
  * before rendering. Framework loaders call mountGame through their own adapter.
  */
-
 import { attachDailyPlacement } from './daily-placement.js'
 import { createIo } from './io.js'
+import { hideItemHover } from './item-hover.js'
 import { installCapture, record } from './journal.js'
 import { createLayout } from './layout.js'
 import { createPanel } from './panel.js'
@@ -52,7 +52,6 @@ export function mountGame(mountOptions) {
         console.warn('[dsh-piggy] 已存在实例，跳过重复挂载')
         return () => {}
       }
-
       // Nunito + Noto Sans SC, per the design system's standalone recipe. The
       // request is non-blocking (`display=swap`) and the token font stack falls
       // back to system faces, so an offline or blocked load degrades quietly
@@ -66,7 +65,6 @@ export function mountGame(mountOptions) {
       function feelShell() { return desktopShell() ?? stageShell()?.feelShell?.() ?? null }
       function moveShell() { return desktopShell() ?? stageShell()?.moveShell?.() ?? null }
       function syncGeometry() { desktopShell()?.syncGeometry?.(); stageShell()?.syncGeometry?.() }
-
       // The normal mount consumes the same presentation factory exposed for
       // intentionally created fixtures. State and transport are explicit
       // bindings; `send` is assigned after the panel/io context exists, but all
@@ -86,7 +84,7 @@ export function mountGame(mountOptions) {
       })
       var parts = presentation.parts
       var { host, card, scene, hud, hudName, hudCoins, hudHealth, bubble, work, prop,
-        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, content, footer, linkBar, linkNote } = parts
+        progressWrap, progressFill, pokeHint, dailyHint, pomoHint, soul, pigArt, pigSleep, pigEmoji, pig, pigHold, pigBody, dressSlots, bar, itemHover, content, footer, linkBar, linkNote } = parts
       // 桌面版外壳：用时现取（外壳脚本比 client 先跑，但晚到也不能当网页版 —— 那样拖动
       // 只挪页面里的猪、窗口不跟）。
       var deskShell = desktopShell()
@@ -103,13 +101,11 @@ export function mountGame(mountOptions) {
         host.style.right = 'auto'
         host.style.bottom = 'auto'
       }
-
       // Keep the pig itself on screen — and nothing more. There used to be a
       // composer-avoidance floor here that forced the widget above the input box:
       // it existed because the wrapper swallowed clicks aimed at the send button.
       // `pointer-events:none` solves that properly now, so the clamp only ever
       // stopped the user from parking their pet where they wanted it.
-
       /**
        * Place the panel so it is fully on screen, wherever the pig has been
        * parked. The pig itself is never moved by this: the panel is absolutely
@@ -153,6 +149,9 @@ export function mountGame(mountOptions) {
       var ctx = {
         host: host,
         card: card,
+        friend: null,
+        friendView: null,
+        friendMode: false,
         content: content,
         footer: footer,
         scene: scene,
@@ -174,7 +173,7 @@ export function mountGame(mountOptions) {
         pigEmoji: pigEmoji,
         pig: pig,
         dressSlots: dressSlots,
-        bar: bar, linkBar: linkBar, linkNote: linkNote,
+        bar: bar, itemHover: itemHover, linkBar: linkBar, linkNote: linkNote,
         icons: icons,
         flash: flash,
         react: react,
@@ -231,6 +230,7 @@ export function mountGame(mountOptions) {
       ctx.render = render; ctx.renderContent = renderContent
       ctx.setOpen = setOpen
       ctx.fitPanel = fitPanel
+      ctx.content.addEventListener('scroll', function () { hideItemHover(ctx) }, { passive: true })
       ctx.flash = flash
 
       var updateNotice = attachUpdateNotice(ctx, updatesBridge)

@@ -12,6 +12,7 @@
  */
 import { autoCollapseEnabled } from './auto-collapse.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
+import { friendViewOf } from './friend-view.js'
 import { closeFishing } from './tabs/fishing.js'
 import { PIG_FX } from './pig-fx.js'
 import { stageShell } from './stage-shell.js'
@@ -61,14 +62,55 @@ export function wireSplit(ctx, hooks) {
     if (ctx.extBig) ctx.tab = 'ext:' + ctx.extBig
     return role
   }
+  if (shell.room !== null && typeof shell.room === 'object' && typeof shell.room.onUpdate === 'function') {
+    shell.room.onUpdate(function (snapshot) {
+      if (ctx.friend === null || !Array.isArray(snapshot?.players)) return
+      var next = snapshot.players.find(function (player) { return player.id === ctx.friend.id })
+      if (next === undefined) {
+        ctx.friend = null
+        ctx.friendView = null
+        ctx.friendMode = false
+        ctx.friendWindow = false
+        ctx.careTarget = null
+        ctx.host.removeAttribute?.('data-friend')
+      } else {
+        ctx.friend = next
+        ctx.friendView = friendViewOf(ctx.view, next)
+      }
+      if (ctx.tab === 'status' || ctx.tab === 'card') ctx.renderContent()
+    })
+  }
   shell.panel.on(function (message) {
     if (message === null || typeof message !== 'object') return
     if (message.type === 'open') {
+      ctx.friend = null
+      ctx.friendView = null
+      ctx.friendMode = false
+      ctx.friendWindow = message.dedicated === true
+      ctx.careTarget = null
+      ctx.host.removeAttribute?.('data-friend')
       shell.setAnchor({ vertical: message.vertical === 'below' ? 'below' : 'above', maxHeight: Number(message.maxHeight) || 520 })
       if (!ctx.isOpen) ctx.setOpen(true)
       else ctx.fitPanel()
       shell.syncGeometry()
+    } else if (message.type === 'friend' && message.player !== null && typeof message.player === 'object') {
+      ctx.friend = message.player
+      ctx.friendView = friendViewOf(ctx.view, message.player)
+      ctx.friendFromTab = ctx.tab
+      ctx.friendMode = true
+      ctx.friendWindow = message.dedicated === true
+      ctx.careTarget = null
+      ctx.host.setAttribute('data-friend', 'true')
+      ctx.tab = 'friend-home'
+      ctx.renderContent()
+      ctx.fitPanel()
     } else if (message.type === 'closed') {
+      ctx.friend = null
+      ctx.friendView = null
+      ctx.friendMode = false
+      ctx.friendWindow = false
+      ctx.careTarget = null
+      ctx.host.removeAttribute?.('data-friend')
       if (ctx.isOpen) ctx.setOpen(false)
     } else if (message.type === 'blur') {
       // 焦点到了猪身上（摸猪、拖猪）不收；到了别的程序上，按「点外面自动收起」的设置来。

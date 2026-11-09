@@ -23,12 +23,15 @@ export function orderHomeApps(apps) {
   return apps.slice().sort((a, b) => rank(a.key) - rank(b.key))
 }
 
-/** The home screen: who the pig is, its money, and one tile per app. */
-export function renderHome(ui, apps) {
-  var p = ui.view.pig
+/** The home screen: who the pig is, its money, and one tile per app.
+ *  options.view 用别的猪的 view（朋友菜单）；options.trailing 换掉金币位置；
+ *  options.alerts=false 不显示本机猪的提醒。 */
+export function renderHome(ui, apps, options = {}) {
+  var p = (options.view ?? ui.view).pig
   var head = el('div', 'dp-title')
   head.appendChild(el('b', null, p.name + ' Lv.' + p.level.level))
-  head.appendChild(el('span', null, '🪙 ' + p.coins))
+  if (options.trailing !== undefined && options.trailing !== null) head.appendChild(options.trailing)
+  else if (options.coins !== false) head.appendChild(el('span', null, '🪙 ' + p.coins))
   ui.content.appendChild(head)
   const pages = Math.max(1, Math.ceil(apps.length / 9))
   ui.homePage = Math.max(0, Math.min(pages - 1, ui.homePage ?? 0))
@@ -40,13 +43,15 @@ export function renderHome(ui, apps) {
   for (let page = 0; page < pages; page += 1) {
     const grid = tileGrid()
     grid.className += ' dp-home-page'
+    // 朋友菜单只有两个入口：保留主屏的格子/翻页逻辑，但不要空着的三行高度。
+    if (options.compact === true) grid.style.gridTemplateRows = 'auto'
     grid.setAttribute('data-home-page', String(page))
     for (const app of apps.slice(page * 9, page * 9 + 9)) {
       grid.appendChild(tile({
         emoji: app.emoji, icon: appIcon(app.key, app.emoji, 'dp-tile-e'), label: app.label, color: APP_COLOR[app.key] ?? 'blue',
         // 更新入口收进了设置：有新正式版时设置格子冒红点（G 批次）。
-        tag: app.key === 'update' || app.key === 'settings' ? '' : alertFor(ui, app.key),
-        badge: app.key === 'settings' ? (alertFor(ui, 'update') || (extensionUpdateAvailable(ui) ? '!' : '')) : '',
+        tag: options.alerts === false || app.key === 'update' || app.key === 'settings' ? '' : alertFor(ui, app.key),
+        badge: options.alerts === false ? '' : app.key === 'settings' ? (alertFor(ui, 'update') || (extensionUpdateAvailable(ui) ? '!' : '')) : '',
         data: { 'data-app': app.key },
         onPick: function () { ui.select(app.key) },
       }))

@@ -6,11 +6,11 @@
  * @module dsh-piggy/core/care
  */
 
-import { CARE_KIND, ILLNESS_ONSET, PET_PARTS, careItems } from '../data.js'
+import { CARE_KIND, ILLNESS_ONSET, PET_PARTS, THRESHOLDS, careItems, itemByKey } from '../data.js'
 import { ACTIONS, DIET } from './constants.js'
 import { applyEffects, remember } from './effects.js'
 import { growFromRealWork } from './growth.js'
-import { rollForOverfeeding } from './illness.js'
+import { medicate, rollForOverfeeding } from './illness.js'
 import { ensureDialogue, say } from './lines.js'
 import { notePet } from './talk.js'
 import { decay } from './settlement.js'
@@ -69,7 +69,20 @@ export function actionCooldownSeconds(state, action, nowMs) {
   return remaining <= 0 ? 0 : Math.ceil(remaining / 1000)
 }
 
-export const actionReady = (state, action, nowMs) => actionCooldownSeconds(state, action, nowMs) === 0
+export const actionReady = (state, action, nowMs) => actionCooldownSeconds(state, action, nowMs) === 0 && careBlockedReason(state, action) === null
+
+/**
+ * 有些照料不是“有道具就能做”：饿着肚子不能玩。
+ * 阈值用界面自己的「饿了」线，饱食低于它时状态页和背包都会显示「太饿了」。
+ * @param {any} state
+ * @param {string} action
+ * @returns {'hungry'|null}
+ */
+export function careBlockedReason(state, action) {
+  if (action !== 'play' || state === null || state === undefined) return null
+  const satiety = Number(state.satiety)
+  return Number.isFinite(satiety) && satiety < THRESHOLDS.hungry ? 'hungry' : null
+}
 
 /**
  * 照料一次。`itemKey` 是要用的物品；摸摸时它是摸的部位（head、belly……，见 PET_PARTS）。
@@ -82,13 +95,17 @@ export function act(state, action, nowMs, itemKey) {
   decay(state, nowMs)
   if (state.dead) return { ok: false, reason: 'dead' }
   if (state.activity !== null && action !== 'pet' && !careAllowedWhileAway(action)) return { ok: false, reason: 'away' }
+  const blocked = careBlockedReason(state, action)
+  if (blocked !== null) return { ok: false, reason: blocked }
 
   return applySettledCare(state, { action, nowMs, itemKey })
 }
 
 /** 已推进到发生时刻的照料，离线结算复用同一套消费与效果，避免递归推进时钟。 */
-export function applySettledCare(state, { action, nowMs, itemKey }) {
+export function applySettledCare(state, { action, nowMs, itemKey, spend = true, guest = false }) {
   const spec = ACTIONS[action]
+  const blocked = careBlockedReason(state, action)
+  if (blocked !== null) return { ok: false, reason: blocked }
   const wait = actionCooldownSeconds(state, action, nowMs)
   if (wait > 0) return { ok: false, reason: 'cooldown', wait }
 
@@ -98,9 +115,11 @@ export function applySettledCare(state, { action, nowMs, itemKey }) {
   const shelf = CARE_KIND[action]
   let item = null
   if (shelf !== undefined) {
-    item = resolveCareItem(state, shelf, itemKey)
+    item = guest
+      ? guestCareEntry(action, itemKey).item
+      : resolveCareItem(state, shelf, itemKey)
     if (item === null) return { ok: false, reason: 'no-item', kind: shelf }
-    if (item.default !== true) {
+    if (spend && item.default !== true) {
       const left = (state.inventory?.[item.key] ?? 0) - 1
       state.inventory = { ...(state.inventory ?? {}) }
       if (left > 0) state.inventory[item.key] = left
@@ -133,7 +152,7 @@ export function applySettledCare(state, { action, nowMs, itemKey }) {
   const grew = action === 'feed' && RANK[bodyWeightClass(state)] > RANK[bodyBefore]
   say(state, grew ? 'bodyChange' : scene, nowMs)
   noteToday(state, action)
-  return { ok: true, item: item === null ? null : item.key, spent: item !== null && item.default !== true }
+  return { ok: true, item: item === null ? null : item.key, spent: spend && item !== null && item.default !== true }
 }
 
 /**
@@ -165,6 +184,73 @@ export function careEffects(item, spec) {
 }
 
 /** What each care action could be done with right now, and how many are left. */
+/** 朋友用自己的物品照顾这只猪：不扣主人背包，效果按物品静态数据算。 */
+export function applyGuestCare(state, action, nowMs, itemKey) {
+  const result = applySettledCare(state, { action, nowMs, itemKey, spend: false, guest: true })
+  if (result.ok !== true) return result
+  return {
+    ...result,
+    care: { satiety: state.satiety, cleanliness: state.cleanliness, happiness: state.happiness },
+  }
+}
+
+/** 朋友用自己的药品照顾这只猪：按目标当前疾病结算，不扣目标背包。 */
+export function applyGuestMedicine(state, itemKey, nowMs) {
+  const item = itemByKey(itemKey)
+  if (item === null || item.kind !== 'medicine') return { ok: false, reason: 'no-item' }
+  if (state === null || state === undefined) return { ok: false, reason: 'absent' }
+  if (state.dead) return { ok: false, reason: 'dead' }
+  const result = medicate(state, item, nowMs)
+  return {
+    ...result,
+    item: item.key,
+    care: { satiety: state.satiety, cleanliness: state.cleanliness, happiness: state.happiness },
+  }
+}
+
+/** 客人的物品查找和主猪共用同一份货架/药品数据，只是不碰目标背包。 */
+function guestCareEntry(action, itemKey) {
+  if (action === 'medicine') {
+    const item = itemByKey(itemKey)
+    return { shelf: 'medicine', item: item !== null && item.kind === 'medicine' ? item : null }
+  }
+  const shelf = CARE_KIND[action]
+  if (shelf === undefined) return { shelf: null, item: null }
+  return { shelf, item: careItems(shelf).find(entry => entry.key === itemKey) ?? null }
+}
+
+/** 客人先扣自己背包里的一个物品；真正送出前调用。 */
+export function takeCareItem(state, action, itemKey) {
+  const found = guestCareEntry(action, itemKey)
+  if (found.shelf === null) return { ok: false, reason: 'unknown' }
+  if (found.item === null) {
+    return { ok: false, reason: 'no-item', ...(action === 'medicine' ? {} : { kind: found.shelf }) }
+  }
+  const item = found.item
+  if (item.default !== true) {
+    const have = state.inventory?.[item.key] ?? 0
+    if (have <= 0) return { ok: false, reason: 'empty', ...(action === 'medicine' ? {} : { kind: found.shelf }) }
+    state.inventory = { ...(state.inventory ?? {}) }
+    if (have > 1) state.inventory[item.key] = have - 1
+    else delete state.inventory[item.key]
+  }
+  return { ok: true, item: item.key, default: item.default === true }
+}
+
+/** 对方没收到 / 拒绝时，把客人扣掉的物品还回去。 */
+export function refundCareItem(state, action, itemKey) {
+  const found = guestCareEntry(action, itemKey)
+  if (found.shelf === null) return { ok: false, reason: 'unknown' }
+  if (found.item === null) {
+    return { ok: false, reason: 'no-item', ...(action === 'medicine' ? {} : { kind: found.shelf }) }
+  }
+  if (found.item.default !== true) {
+    state.inventory = { ...(state.inventory ?? {}) }
+    state.inventory[found.item.key] = (state.inventory[found.item.key] ?? 0) + 1
+  }
+  return { ok: true, item: found.item.key }
+}
+
 export function careOptions(state, action) {
   const kind = CARE_KIND[action]
   if (kind === undefined) return []

@@ -24,7 +24,8 @@ let subscribed = false
 function signature(value) {
   if (value === null || typeof value !== 'object') return ''
   const players = Array.isArray(value.players)
-    ? value.players.map(player => [player.id, player.name, player.level, player.x, player.host].join(':')).join(',')
+    ? value.players.map(player => [player.id, player.name, player.level, player.x, player.host,
+      player.care?.satiety, player.care?.cleanliness, player.care?.happiness].join(':')).join(',')
     : ''
   return [value.inRoom, value.hosting, value.code, value.selfId, players].join('|')
 }
@@ -73,6 +74,16 @@ function refresh(ui, bridge) {
   })
 }
 
+function actionOf(ui, key) {
+  const action = ui.view?.actions?.[key] ?? {}
+  const wait = Number(action.waitSeconds)
+  return {
+    ready: action.ready !== false,
+    waitSeconds: Number.isFinite(wait) ? Math.max(0, Math.min(3600, Math.round(wait))) : 0,
+    blocked: action.blocked === 'away' || action.blocked === 'hungry' ? action.blocked : null,
+  }
+}
+
 function profileOf(ui) {
   const pig = ui.view?.pig
   const stage = pig?.stage
@@ -89,6 +100,34 @@ function profileOf(ui) {
     emoji: typeof stage?.emoji === 'string' ? stage.emoji : '🐖',
     size: Number.isFinite(Number(stage?.size)) && Number(stage?.size) > 0 ? Number(stage.size) / 60 : 1,
     label: stage?.label ?? '',
+    mood: typeof pig?.mood === 'string' ? pig.mood : '',
+    moodLabel: typeof pig?.moodLabel === 'string' ? pig.moodLabel : '',
+    care: {
+      satiety: Number(pig?.satiety) || 0,
+      cleanliness: Number(pig?.cleanliness) || 0,
+      happiness: Number(pig?.happiness) || 0,
+    },
+    actions: Object.fromEntries(['feed', 'bathe', 'play', 'pet'].map(key => [key, actionOf(ui, key)])),
+    status: {
+      level: pig?.level ?? null,
+      health: Number(pig?.health) || 0,
+      healthPercent: Number(pig?.healthPercent) || 0,
+      maxHealth: Number(ui.view?.maxHealth) || 5,
+      traits: pig?.traits ?? null,
+      weight: typeof pig?.weight === 'string' ? pig.weight : '',
+      bodyWeight: pig?.bodyWeight ?? null,
+      mood: typeof pig?.mood === 'string' ? pig.mood : '',
+      moodLabel: typeof pig?.moodLabel === 'string' ? pig.moodLabel : '',
+      illness: pig?.illness ?? null,
+    },
+    card: {
+      birthday: typeof ui.view?.profile?.birthday === 'string' ? ui.view.profile.birthday : '',
+      zodiac: ui.view?.profile?.zodiac ?? null,
+      personality: ui.view?.profile?.personality ?? null,
+      catchphrase: typeof ui.view?.profile?.catchphrase === 'string' ? ui.view.profile.catchphrase : '',
+      motto: typeof ui.view?.profile?.motto === 'string' ? ui.view.profile.motto : '',
+      counts: ui.view?.profile?.counts ?? null,
+    },
   }
 }
 
@@ -123,7 +162,7 @@ function renderLobby(ui, bridge) {
   })
   hero.appendChild(banner)
   hero.appendChild(fallback)
-  hero.appendChild(el('p', 'dp-room-intro', '同一个房间里的猪会一起出现在草地上。'))
+  hero.appendChild(el('p', 'dp-room-intro', '联机后，朋友的猪会直接出现在你的桌面上。'))
   ui.content.appendChild(hero)
 
   const actions = el('div', 'dp-room-actions')
@@ -184,7 +223,6 @@ function renderLobby(ui, bridge) {
           cached = result
           fetchedAt = Date.now()
           joinMode = false
-          Promise.resolve(bridge.open()).catch(function () {})
         } else {
           notice = typeof result?.reason === 'string' ? result.reason : '加入房间失败'
         }
@@ -248,11 +286,6 @@ function renderRoom(ui, bridge, status) {
   ui.content.appendChild(card)
 
   const actions = el('div', 'dp-room-actions')
-  const open = button('dp-mini dp-room-open', { 'data-room-open': 'true' }, function () {
-    Promise.resolve(bridge.open()).catch(function () {})
-  })
-  open.textContent = '打开联机窗口'
-  actions.appendChild(open)
   const leave = button('dp-mini dp-mini-plain', { 'data-room-leave': 'true' }, function () {
     if (busy) return
     busy = true
@@ -272,7 +305,7 @@ function renderRoom(ui, bridge, status) {
   leave.textContent = '离开房间'
   actions.appendChild(leave)
   ui.content.appendChild(actions)
-  ui.content.appendChild(el('p', 'dp-room-note', '关闭联机窗口也会离开房间'))
+  ui.content.appendChild(el('p', 'dp-room-note', '朋友的猪会待在你的桌面上；离开联机会一起收起'))
   errorLine(ui, notice)
 }
 

@@ -11,6 +11,7 @@ import { animatePurchase } from '../interaction-motion.js'
 import { button, el } from '../dom.js'
 import { num } from '../values.js'
 import { drillHeader, drillTo, pagedTiles, tile } from '../widgets.js'
+import { attachItemHover } from '../item-hover.js'
 
 /** One colour per shelf, so the inner layer still says which shelf it is. */
 export var SHELF_COLOR = { food: 'red', bath: 'teal', toy: 'yellow', bait: 'blue', medicine: 'green', revive: 'purple', promotion: 'blue' }
@@ -129,5 +130,6 @@ function itemTile(ui, item, color) {
     onPick: function () { ui.send('buy', { item: item.key }) },
   })
   if (item.kind === 'body') node.setAttribute('aria-description', item.blurb)
+  attachItemHover(ui, node, item, 'shop')
   return node
 }
