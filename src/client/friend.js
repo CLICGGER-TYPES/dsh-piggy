@@ -86,6 +86,7 @@ export function mountFriend(options = {}) {
   if (hudCoins !== null) hudCoins.style.display = 'none'
   if (hudHealth !== null) hudHealth.style.display = 'none'
   host.setAttribute('data-friend-actor', 'true')
+  parts.scene.title = '左键摸摸 · 右键打开菜单 · 拖动可移动'
   applyPigSize(host)
   var showBubble = /** @type {(text:string, ms?:number)=>void} */ (presentation.effects.showBubble)
   var burst = /** @type {(fx:string[], count:number)=>void} */ (presentation.effects.burst)

@@ -205,9 +205,9 @@ function careFriend(ui, target, action, itemKey) {
       ui.select('status')
       if (typeof ui.refresh === 'function') ui.refresh()
     } else {
-      ui.toast(result && typeof result.reason === 'string' ? result.reason : '照顾没送出去')
+      ui.toast(result && typeof result.reason === 'string' ? result.reason : '照顾失败，请再试一次')
     }
-  }).catch(function () { ui.toast('照顾没送出去') })
+  }).catch(function () { ui.toast('照顾失败，请再试一次') })
 }
 
 /** 照料记录的展开状态挂在 ui.drill 上：只是这一屏的样子，不发送、不存档。 */

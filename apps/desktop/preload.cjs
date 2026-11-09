@@ -259,6 +259,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 面板里的朋友猪：用自己背包照顾；只发意图，不写对方存档。 */
   friend: {
     care: (targetId, action, itemKey) => ipcRenderer.invoke('piggy:friend:care', String(targetId), String(action), String(itemKey)),
+    pat: targetId => ipcRenderer.invoke('piggy:friend:pat', String(targetId)),
     onCareResult: callback => { ipcRenderer.on('piggy:friend:care-result', (event, result) => callback(result)) },
   },
   /** 桌面上的朋友猪：只读资料、摸摸和照顾入口；不碰游戏存档。 */

@@ -752,7 +752,7 @@ async function requestFriendCare(sender, targetId, action, itemKey) {
     await refundCare(pending, '照顾没发出去，东西已退回')
     return { ok: false, reason: sent.reason || '照顾没发出去' }
   }
-  return { ok: true, message: '已经送过去了' }
+  return { ok: true, message: '已经照顾好了' }
 }
 
 ipcMain.handle('piggy:visitor:care', async (event, action, itemKey) => {
@@ -766,6 +766,19 @@ ipcMain.handle('piggy:friend:care', async (event, targetId, action, itemKey) => 
   const target = Array.isArray(status.players) ? status.players.find(player => player.id === targetId) : null
   if (target === null || target === undefined) return { ok: false, reason: '朋友已经不在线了' }
   return requestFriendCare(event.sender, target.id, action, itemKey)
+})
+// 朋友面板的「摸摸」：只发房间里的摸摸表情，不写对方存档。
+ipcMain.handle('piggy:friend:pat', async (event, targetId) => {
+  if (!fromPanelOnly(event) && !friendPanels.owns(event.sender)) return { ok: false, reason: '来源不对' }
+  const status = roomManager.status()
+  if (status.inRoom !== true) return { ok: false, reason: '不在房间里' }
+  const target = Array.isArray(status.players) ? status.players.find(player => player.id === targetId) : null
+  if (target === null || target === undefined) return { ok: false, reason: '朋友已经不在线了' }
+  const x = Number.isFinite(Number(target.x)) ? Number(target.x) : 0.5
+  const y = Number.isFinite(Number(target.y)) ? Number(target.y) : 0.2
+  const facing = target.facing === -1 ? -1 : 1
+  const result = await roomManager.emote('pat', target.id, x, y, facing)
+  return result && result.ok === false ? result : { ok: true }
 })
 ipcMain.on('piggy:visitor:size', (event, rect) => { visitorRoster.setPigRect(event, rect) })
 ipcMain.on('piggy:visitor:menu', event => {

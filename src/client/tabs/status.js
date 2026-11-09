@@ -60,7 +60,7 @@ export function renderStatusTab(ui) {
 function renderCareActions(ui) {
   var friend = ui.friendMode === true
   var grid = el('div', 'dp-actions')
-  var keys = friend ? ['feed', 'bathe', 'play'] : MODES
+  var keys = friend ? ['feed', 'bathe', 'play', 'pet'] : MODES
   var locked = friend ? false : externalActionsBlocked(ui.view)
   var care = ui.view.care ?? {}
   var actions = ui.view.actions ?? {}
@@ -71,6 +71,15 @@ function renderCareActions(ui) {
       var info = actions[key] ?? { ready: true, waitSeconds: 0, blocked: null }
       var shelf = Array.isArray(care[key]) ? care[key] : []
       var btn = button('dp-btn', friend ? { 'data-friend-care': key } : { 'data-action': key }, function () {
+        if (friend && key === 'pet') {
+          var friendApi = typeof window !== 'undefined' ? (/** @type {any} */ (window)).piggyShell?.friend : null
+          if (friendApi === null || typeof friendApi.pat !== 'function') { ui.toast('联机摸摸暂不可用'); return }
+          Promise.resolve(friendApi.pat(ui.friend.id)).then(function (result) {
+            if (result && result.ok === false) ui.toast(result.reason || '摸不到')
+            else ui.toast('摸摸到了')
+          }).catch(function () { ui.toast('摸不到') })
+          return
+        }
         if (friend) {
           ui.careTarget = { id: ui.friend.id, name: ui.friend.name, illness, actions }
           ui.select('bag')
