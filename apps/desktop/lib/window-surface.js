@@ -35,6 +35,8 @@ export function createWindowSurface(deps) {
   const SKIP_NATIVE_SHAPE = deps.platform === 'win32' && deps.env.PIGGY_SHAPE !== '1'
   /** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
   const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || deps.platform === 'darwin'
+  /** Wayland/XWayland 的 setIgnoreMouseEvents 不可靠：紧凑窗口始终保持可点。 */
+  const ALWAYS_INTERACTIVE = deps.platform === 'linux' && Boolean(deps.env.WAYLAND_DISPLAY)
   let geometrySeq = 0
   /** 同一种换算错误只记一次，避免 16ms 轮询刷日志。 */
   let hitProblem = ''
@@ -106,7 +108,16 @@ export function createWindowSurface(deps) {
 
   function setHit(pet, hit, source = 'hit-state') {
     const window = pet?.window
-    // Wayland 也走光标轮询：透明预留不裁 shape，只切换鼠标穿透；轮询能在光标回到猪身上时恢复可点。
+    if (ALWAYS_INTERACTIVE) {
+      if (window === null || window === undefined || window.isDestroyed()) return
+      // 不设穿透：Wayland 上设过一次 true 后可能再也恢复不了点击；紧凑窗口的透明区很小。
+      if (pet.passthroughHit === true && pet.passthroughForward === false) return
+      pet.passthroughHit = true
+      pet.passthroughForward = false
+      deps.traceSetIgnoreMouseEvents('pet', pet.passthroughMode, source, false, false,
+        () => window.setIgnoreMouseEvents(false, { forward: false }))
+      return
+    }
     // Linux 的原生绘制轮廓就是可见猪/面板本身，不是 Windows 那种带透明留白的整窗；
     // 页面偶尔报空 hitShape 时用它兜底，避免窗口永久停在 1x1 的鼠标穿透区。
     const pig = pet.panelPig

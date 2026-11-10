@@ -79,12 +79,14 @@ function visible(node) {
 }
 
 /**
- * @param {{ platform: string, geometry: () => any }} env
+ * @param {{ platform: string, compact?: boolean, geometry: () => any }} env
  */
 export function createMeasure(env) {
   /** shift：窗口被夹回工作区时，整块内容在窗口里反向挪多少（猪的屏幕位置不变，只裁掉透明留白）。 */
   const state = { pinned: '', bubbleHeight: null, shift: { x: 0, y: 0 }, anchor: { x: 0, y: 0 } }
-  const reserves = env.platform !== 'darwin'
+  // Wayland 不能可靠地切换鼠标穿透：窗口只包住看得见的内容，保持可点。
+  const compact = env.compact === true
+  const reserves = env.platform !== 'darwin' && !compact
 
   /** @param {any} host */
   function boxes(host) {
@@ -156,7 +158,8 @@ export function createMeasure(env) {
         }
       }
     }
-    const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone])
+    // 紧凑窗口必须把真实气泡算进外框；非紧凑模式的气泡由固定预留区覆盖。
+    const outline = rects.concat(bubbleZone === null ? [] : [bubbleZone], compact ? bubbleRects : [])
     // 猪窗口用一块**固定大小**的框：猪头上留气泡区、左边留签到小气泡和打工道具、两侧留摸猪时飘的爱心。
     // 框只跟猪的大小有关，冒气泡、飘爱心、出道具都不改窗口大小（改大小就有一帧画在旧位置，Windows 上最明显）。
     if (pigNode !== null) {
@@ -173,9 +176,12 @@ export function createMeasure(env) {
       // bubble, which extends left of the pig by up to 192px. The collapsed
       // 272px reserve is measured from pigRight, so it reaches only
       // 272 - pigWidth pixels left of the pig and fails for wider pigs.
-      const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT * speechScale : Infinity
-      outline.push({ x: Math.min(pigBox.x + pigBox.width - bubbleSize.width, openBubbleLeft, pigBox.x - artMargin), y: anchors.headTop.y - bubbleSize.height - 24,
-        r: pigBox.x + pigBox.width + artMargin, b: anchors.feet.y + bubbleSize.height + 10 })
+      // 紧凑模式不预留这块：真实气泡出现时直接进外框，不会留下大片透明区。
+      if (!compact) {
+        const openBubbleLeft = reserves ? pigBox.x - OPEN_BUBBLE_LEFT * speechScale : Infinity
+        outline.push({ x: Math.min(pigBox.x + pigBox.width - bubbleSize.width, openBubbleLeft, pigBox.x - artMargin), y: anchors.headTop.y - bubbleSize.height - 24,
+          r: pigBox.x + pigBox.width + artMargin, b: anchors.feet.y + bubbleSize.height + 10 })
+      }
       // Reserve the whole rotation once, independent of the active action. macOS
       // has no native shape, so keep its window footprint until passthrough is addressed.
       if (reserves) {

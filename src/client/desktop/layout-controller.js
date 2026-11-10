@@ -30,7 +30,7 @@ export function createLayoutController(deps) {
     return typeof shell.geometry === 'function' ? shell.geometry() : null
   }
 
-  const measure = createMeasure({ platform: shell.platform || '', geometry })
+  const measure = createMeasure({ platform: shell.platform || '', compact: shell.compactWindow === true, geometry })
   // One pet per window: stay on getHost's single root, but save under this window's pigId.
   const placement = createPlacement({ pigId: deps.pigId ?? null, primary: deps.primary === true, slot: deps.slot ?? null })
 

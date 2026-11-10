@@ -112,19 +112,25 @@ export function createVisitorRoster(options) {
     const entry = { window: win, player, slot, shapeRect: { x: DEFAULT_PIG_RECT.x - 8, y: DEFAULT_PIG_RECT.y - 8, width: DEFAULT_PIG_RECT.width + 16, height: DEFAULT_PIG_RECT.height + 16 } }
     win.setAlwaysOnTop(true, 'floating')
     win.setMenuBarVisibility(false)
-    // 透明区域不抢桌面点击：光标在猪/名牌/气泡 shape 外时让窗口穿透。
-    entry.hitTimer = setInterval(() => {
-      if (win.isDestroyed()) return
-      const bounds = win.getBounds()
-      const shape = entry.shapeRect ?? { x: 0, y: 0, width: bounds.width, height: bounds.height }
-      const point = options.screen.getCursorScreenPoint()
-      const inside = point.x >= bounds.x + shape.x && point.x < bounds.x + shape.x + shape.width
-        && point.y >= bounds.y + shape.y && point.y < bounds.y + shape.y + shape.height
-      if (entry.hit === inside) return
-      entry.hit = inside
-      win.setIgnoreMouseEvents(!inside, { forward: true })
-    }, 16)
-    entry.hitTimer.unref?.()
+    if (process.platform === 'linux' && process.env.WAYLAND_DISPLAY) {
+      // Wayland/XWayland 上 setIgnoreMouseEvents 设过 true 后可能恢复不了点击；
+      // 朋友窗口先保持可交互，透明区牺牲一点，不能再出现「整只猪点不到」。
+      win.setIgnoreMouseEvents(false, { forward: false })
+    } else {
+      // 透明区域不抢桌面点击：光标在猪/名牌/气泡 shape 外时让窗口穿透。
+      entry.hitTimer = setInterval(() => {
+        if (win.isDestroyed()) return
+        const bounds = win.getBounds()
+        const shape = entry.shapeRect ?? { x: 0, y: 0, width: bounds.width, height: bounds.height }
+        const point = options.screen.getCursorScreenPoint()
+        const inside = point.x >= bounds.x + shape.x && point.x < bounds.x + shape.x + shape.width
+          && point.y >= bounds.y + shape.y && point.y < bounds.y + shape.y + shape.height
+        if (entry.hit === inside) return
+        entry.hit = inside
+        win.setIgnoreMouseEvents(!inside, { forward: true })
+      }, 16)
+      entry.hitTimer.unref?.()
+    }
     win.once('ready-to-show', () => {
       if (!win.isDestroyed()) win.showInactive()
     })
