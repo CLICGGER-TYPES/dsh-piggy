@@ -93,13 +93,16 @@ for (const options of PLATFORMS) {
   })
 }
 
-test('Wayland 会话（原生或 XWayland）始终保持可交互，不设置鼠标穿透', async () => {
+test('Wayland/XWayland 也按光标命中切换：猪可点，透明区穿透', async () => {
   const shell = await mouseHarness({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' } })
   shell.send('piggy:place', PLACE)
-  shell.point(500, 500)
+  shell.point(110, 130)
   shell.poll()
   assert.deepEqual(shell.mouse.at(-1), { ignore: false, forward: false })
-  assert.equal(shell.state.ignoresMouse, false)
+  shell.point(500, 500)
+  shell.poll()
+  assert.deepEqual(shell.mouse.at(-1), { ignore: true, forward: false })
+  assert.equal(shell.state.ignoresMouse, true)
 })
 
 test('Linux 现代游戏从未报 hitShape 时，place 后用可见轮廓恢复点击', async () => {
