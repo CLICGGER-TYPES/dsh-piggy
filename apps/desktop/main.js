@@ -412,6 +412,10 @@ const roomManager = createRoomManager({
     void handleRoomCareResults(snapshot)
     const panelWin = getPanelWindow()
     if (panelWin !== null && !panelWin.isDestroyed()) panelWin.webContents.send('piggy:room:update', snapshot)
+    for (const pet of pets.all()) {
+      const win = pet.window
+      if (win !== null && win !== undefined && !win.isDestroyed()) win.webContents.send('piggy:room:update', snapshot)
+    }
   },
   onClosed: detail => {
     roomWindow.close()
@@ -419,6 +423,10 @@ const roomManager = createRoomManager({
     friendPanels.closeAll()
     const panelWin = getPanelWindow()
     if (panelWin !== null && !panelWin.isDestroyed()) panelWin.webContents.send('piggy:room:closed', detail)
+    for (const pet of pets.all()) {
+      const win = pet.window
+      if (win !== null && win !== undefined && !win.isDestroyed()) win.webContents.send('piggy:room:closed', detail)
+    }
   },
 })
 /** 主进程关闭/退出状态统一由 lifecycle 持有；资源句柄在实际关闭时动态读取。 */

@@ -213,11 +213,22 @@ export function mountGame(mountOptions) {
         get feel() { return feel },
         get devMode() { return devMode },
       }
+      var inRoom = false
       function syncNickname() {
         if (nick === null || nick === undefined) return
-        var show = desktopRole() === 'pet' && nicknameEnabled() && view.hatched === true && view.pig !== null
+        var show = desktopRole() === 'pet' && inRoom && nicknameEnabled() && view.hatched === true && view.pig !== null
         nick.hidden = !show
         if (show) nick.textContent = view.pig.name
+      }
+      var roomBridge = typeof window !== 'undefined' ? (/** @type {any} */ (window)).piggyShell?.room : null
+      if (roomBridge !== null && roomBridge !== undefined) {
+        if (typeof roomBridge.onUpdate === 'function') roomBridge.onUpdate(function () {
+          if (!inRoom) { inRoom = true; syncNickname() }
+        })
+        if (typeof roomBridge.onClosed === 'function') roomBridge.onClosed(function () {
+          inRoom = false
+          syncNickname()
+        })
       }
 
       var layout = createLayout(ctx)
