@@ -24,6 +24,7 @@ const DEFAULT_PIG_RECT = Object.freeze({ x: 62, y: 70, width: 96, height: 100 })
  *   icon?: string,
  *   log?: (...parts:any[])=>void,
  *   onMoved?: (id: string, bounds: {x:number,y:number,width:number,height:number}) => void,
+ *   avoid?: () => {x:number,y:number,width:number,height:number}|null,
  * }} options
  */
 export function createVisitorRoster(options) {
@@ -41,13 +42,31 @@ export function createVisitorRoster(options) {
     }
   }
 
+  function intersects(a, b) {
+    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
+  }
+
   function slotBounds(slot) {
-    const area = displayArea()
+    const avoid = options.avoid?.() ?? null
+    const area = avoid === null ? displayArea() : options.screen.getDisplayMatching(avoid).workArea
     const usable = Math.max(1, Math.floor((area.width - 48) / (WINDOW_WIDTH + WINDOW_GAP)))
     const col = slot % usable
     const row = Math.floor(slot / usable)
-    const x = Math.max(area.x + 12, area.x + area.width - WINDOW_WIDTH - 12 - col * (WINDOW_WIDTH + WINDOW_GAP))
-    const y = Math.max(area.y + 12, area.y + area.height - WINDOW_HEIGHT - 12 - row * 46)
+    let x = Math.max(area.x + 12, area.x + area.width - WINDOW_WIDTH - 12 - col * (WINDOW_WIDTH + WINDOW_GAP))
+    let y = Math.max(area.y + 12, area.y + area.height - WINDOW_HEIGHT - 12 - row * 46)
+    // 别一开始就压在主猪窗口上：优先往主猪左边排，没地方再往上。
+    if (avoid !== null && intersects({ x, y, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, avoid)) {
+      const left = avoid.x - WINDOW_WIDTH - WINDOW_GAP
+      if (left >= area.x + 12) {
+        x = left - col * (WINDOW_WIDTH + WINDOW_GAP)
+        y = Math.max(area.y + 12, Math.min(area.y + area.height - WINDOW_HEIGHT - 12, avoid.y + avoid.height - WINDOW_HEIGHT))
+      } else {
+        x = Math.max(area.x + 12, Math.min(area.x + area.width - WINDOW_WIDTH - 12, avoid.x))
+        y = avoid.y - WINDOW_HEIGHT - WINDOW_GAP
+      }
+    }
+    x = Math.max(area.x + 12, Math.min(area.x + area.width - WINDOW_WIDTH - 12, x))
+    y = Math.max(area.y + 12, Math.min(area.y + area.height - WINDOW_HEIGHT - 12, y))
     return { x, y, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }
   }
 

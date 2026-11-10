@@ -309,6 +309,11 @@ const visitorRoster = createVisitorRoster({
   log,
   // 朋友猪被拖动时，它的面板跟着走。
   onMoved: (id, bounds) => friendPanels.reposition(id, bounds),
+  // 初始位置避开主猪窗口，别一上来就挡住自己的猪。
+  avoid: () => {
+    const pet = getPetWindow()
+    return pet !== null && !pet.isDestroyed() ? pet.getBounds() : null
+  },
 })
 const friendPanels = createFriendPanels({
   BrowserWindow,
