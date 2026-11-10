@@ -225,11 +225,15 @@ export function createWindowSurface(deps) {
     pet.petAsked = { ...next }
   }
 
-  /** 原生 shape 仍负责绘制裁剪；不能用更小的输入区域裁掉动作和特效。 */
+  /** 原生 shape 负责绘制裁剪；Wayland 没有 setIgnoreMouseEvents，输入区也只能靠它。 */
   function applyShape(pet, rects) {
     const window = pet?.window
     if (SKIP_NATIVE_SHAPE || window === null || window === undefined || window.isDestroyed() || deps.platform === 'darwin' || typeof window.setShape !== 'function') return
-    window.setShape(rects)
+    // Wayland 下窗口始终可交互，透明预留必须从原生 shape 里去掉，否则会挡住浏览器等程序。
+    // 页面的 hitShape 已包含猪/气泡/当前动作的可见范围；没有时才退回绘制 shape。
+    const native = ALWAYS_INTERACTIVE && Array.isArray(pet.placedHitShape) && pet.placedHitShape.length > 0
+      ? pet.placedHitShape : rects
+    window.setShape(native)
     if (pet.placedHitShape !== null) {
       // 原生绘制提交后重新应用独立输入，不能仅凭上次的命中布尔值跳过。
       pet.passthroughForward = null

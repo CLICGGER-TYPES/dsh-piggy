@@ -102,9 +102,23 @@ export function createVisitorRoster(options) {
         additionalArguments: ['--piggy-role=friend', '--piggy-visitor=' + player.id],
       },
     })
-    const entry = { window: win, player, slot }
+    const entry = { window: win, player, slot, shapeRect: { x: DEFAULT_PIG_RECT.x - 8, y: DEFAULT_PIG_RECT.y - 8, width: DEFAULT_PIG_RECT.width + 16, height: DEFAULT_PIG_RECT.height + 36 } }
     win.setAlwaysOnTop(true, 'floating')
     win.setMenuBarVisibility(false)
+    applyShape(entry)
+    // 透明区域不抢桌面点击：光标在猪/名牌/气泡 shape 外时让窗口穿透。
+    entry.hitTimer = setInterval(() => {
+      if (win.isDestroyed()) return
+      const bounds = win.getBounds()
+      const shape = entry.shapeRect ?? { x: 0, y: 0, width: bounds.width, height: bounds.height }
+      const point = options.screen.getCursorScreenPoint()
+      const inside = point.x >= bounds.x + shape.x && point.x < bounds.x + shape.x + shape.width
+        && point.y >= bounds.y + shape.y && point.y < bounds.y + shape.y + shape.height
+      if (entry.hit === inside) return
+      entry.hit = inside
+      win.setIgnoreMouseEvents(!inside, { forward: true })
+    }, 16)
+    entry.hitTimer.unref?.()
     win.once('ready-to-show', () => {
       if (!win.isDestroyed()) win.showInactive()
     })
@@ -127,6 +141,8 @@ export function createVisitorRoster(options) {
     if (entry === undefined) return
     if (entry.dragTimer) clearInterval(entry.dragTimer)
     entry.dragTimer = null
+    if (entry.hitTimer) clearInterval(entry.hitTimer)
+    entry.hitTimer = null
     const win = entry.window
     entries.delete(entry.player.id)
     order = order.filter(id => id !== entry.player.id)
@@ -212,6 +228,28 @@ export function createVisitorRoster(options) {
     }
   }
 
+  function sanitizeShape(shape) {
+    const x = Number(shape?.x)
+    const y = Number(shape?.y)
+    const width = Number(shape?.width)
+    const height = Number(shape?.height)
+    if (![x, y, width, height].every(Number.isFinite) || width < 1 || height < 1) return null
+    return { x, y, width, height }
+  }
+
+  /** 窗口 shape：只保留猪/名牌/气泡，透明区域不抢其他程序的点击。 */
+  function applyShape(entry) {
+    const win = entry.window
+    if (win === null || win.isDestroyed() || typeof win.setShape !== 'function' || entry.shapeRect === null) return
+    const bounds = win.getBounds()
+    const rect = entry.shapeRect
+    const x = Math.max(0, Math.min(bounds.width - 1, Math.floor(rect.x)))
+    const y = Math.max(0, Math.min(bounds.height - 1, Math.floor(rect.y)))
+    const width = Math.max(1, Math.min(bounds.width - x, Math.ceil(rect.width)))
+    const height = Math.max(1, Math.min(bounds.height - y, Math.ceil(rect.height)))
+    try { win.setShape([{ x, y, width, height }]) } catch { /* 老外壳不支持 */ }
+  }
+
   /** 朋友面板要贴猪：给的是猪按钮的屏幕框，不是整扇透明窗口。 */
   function boundsForEvent(event) {
     for (const entry of entries.values()) {
@@ -232,6 +270,8 @@ export function createVisitorRoster(options) {
       const height = Number(rect?.height)
       if ([x, y, width, height].every(Number.isFinite) && width > 0 && height > 0) {
         entry.pigRect = { x, y, width, height }
+        entry.shapeRect = sanitizeShape(rect?.shape)
+        applyShape(entry)
       }
       return pigRectFor(entry)
     }
@@ -248,6 +288,8 @@ export function createVisitorRoster(options) {
     for (const entry of entries.values()) {
       if (entry.window === null || entry.window.isDestroyed() || entry.window.webContents !== sender) continue
       entry.pigRect = { x, y, width, height }
+      entry.shapeRect = sanitizeShape(rect?.shape)
+      applyShape(entry)
       options.onMoved?.(entry.player.id, pigRectFor(entry))
       return true
     }

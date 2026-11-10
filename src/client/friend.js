@@ -154,11 +154,23 @@ export function mountFriend(options = {}) {
     reportPigRect()
   }
 
-  /** 面板贴着猪本体：把真实猪框报给主进程，而不是整扇透明窗口。 */
+  function unionRect(a, b) {
+    var left = Math.min(a.x, b.x)
+    var top = Math.min(a.y, b.y)
+    var right = Math.max(a.x + a.width, b.x + b.width)
+    var bottom = Math.max(a.y + a.height, b.y + b.height)
+    return { x: left, y: top, width: right - left, height: bottom - top }
+  }
+
+  /** 面板贴着猪本体；shape 只覆盖猪/名牌/气泡，透明区域交给桌面点。 */
   function reportPigRect() {
     if (typeof api.size !== 'function') return
     var rect = pig.getBoundingClientRect()
-    api.size({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    var shape = { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+    if (nick !== null && !nick.hidden) shape = unionRect(shape, nick.getBoundingClientRect())
+    if (bubble !== null && !bubble.hidden) shape = unionRect(shape, bubble.getBoundingClientRect())
+    shape = { x: Math.max(0, shape.x - 4), y: Math.max(0, shape.y - 4), width: shape.width + 8, height: shape.height + 8 }
+    api.size({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, shape })
   }
 
   function endDrag(commit) {
@@ -236,12 +248,18 @@ export function mountFriend(options = {}) {
   if (typeof api.onUpdate === 'function') api.onUpdate(apply)
   if (typeof api.get === 'function') Promise.resolve(api.get()).then(apply).catch(function () {})
   window.addEventListener('resize', reportPigRect)
+  var shapeObserver = typeof MutationObserver === 'function' ? new MutationObserver(reportPigRect) : null
+  if (shapeObserver !== null && bubble !== null && nick !== null) {
+    shapeObserver.observe(bubble, { attributes: true, attributeFilter: ['hidden', 'style'] })
+    shapeObserver.observe(nick, { attributes: true, attributeFilter: ['hidden'] })
+  }
   setTimeout(reportPigRect, 0)
 
   return function () {
     stopped = true
     stopNickname()
     window.removeEventListener('storage', onSizeChange)
+    shapeObserver?.disconnect()
     life.dispose()
     window.removeEventListener('resize', reportPigRect)
     presentation.dispose()
