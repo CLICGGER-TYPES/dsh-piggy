@@ -11,7 +11,7 @@ import { normalize } from './normalize.js'
 import { friendViewOf } from './friend-view.js'
 import { playPigPet } from './pig-actions.js'
 import { createPresentationContext } from './presentation-context.js'
-import { syncPigArt } from './art.js'
+import { syncPigArt, syncSleepArt } from './art.js'
 import { readStore } from './storage.js'
 import { PIG_DISPLAY_SIZE_KEY } from './pig-size.js'
 import { attachNicknamePreference, nicknameEnabled } from './nickname.js'
@@ -23,6 +23,7 @@ var FRIEND_CSS = [
   'html[data-piggy-role="friend"] .dp-card,html[data-piggy-role="friend"] .dp-bar,html[data-piggy-role="friend"] .dp-hud{display:none!important}',
   'html[data-piggy-role="friend"] .dp-hud{position:relative!important;inset:auto!important;margin-top:4px!important;justify-content:center!important}',
   'html[data-piggy-role="friend"] .dp-scene{height:calc(var(--pig-size) + 10px)!important;min-height:0!important}',
+  'html[data-piggy-role="friend"] .dp-bubble{max-width:200px!important}',
 ].join('\n')
 
 function mountStyle() {
@@ -36,7 +37,7 @@ function mountStyle() {
 /** 和本机猪一样大：宠物页把实际猪盒边长写进同一个 origin 的 localStorage。 */
 function localPigSize() {
   var size = Number(readStore('dsh-piggy:pig-display-size'))
-  return Number.isFinite(size) && size >= 40 ? Math.min(128, size) : 64
+  return Number.isFinite(size) && size >= 40 ? Math.min(200, size) : 64
 }
 
 function applyPigSize(host) {
@@ -84,7 +85,7 @@ export function mountFriend(options = {}) {
     artResources: null,
   })
   var parts = presentation.parts
-  var { host, pig, pigArt, pigEmoji, nick, bubble } = parts
+  var { host, pig, pigArt, pigSleep, pigEmoji, nick, bubble } = parts
   if (nick !== null) { nick.hidden = !nicknameEnabled(); nick.textContent = view.pig?.name ?? '' }
   host.setAttribute('data-friend-actor', 'true')
   parts.scene.title = '左键摸摸 · 右键打开菜单 · 拖动可移动'
@@ -96,6 +97,8 @@ export function mountFriend(options = {}) {
   function friendLine(reason) {
     var card = view.profile ?? {}
     var pig = view.pig
+    // 本机猪的 time 台词由 core 判定今天该不该说；朋友没有完整台词状态，先保持安静。
+    if (reason === 'time') return ''
     if (reason === 'enter') {
       if (typeof card.catchphrase === 'string' && card.catchphrase !== '') return card.catchphrase
       return '我是' + (pig?.name ?? '小猪')
@@ -111,10 +114,15 @@ export function mountFriend(options = {}) {
     if (action === 'pet') {
       if (typeof api.pat === 'function') Promise.resolve(api.pat()).catch(function () {})
       playPigPet(pig)
+      // 皮肤/形态没有 shy-pet 资源，用同一套反应粒子兜底；默认猪不叠两层。
+      if (view.pig?.stage?.art !== 'piglet') presentation.effects.flash('pet')
       if (Math.random() < 0.35) showBubble('摸摸～', 1800)
       return
     }
-    if (action === 'chat') showBubble(friendLine(extra?.reason), 2800)
+    if (action === 'chat') {
+      var line = friendLine(extra?.reason)
+      if (line !== '') showBubble(line, 2800)
+    }
   }
 
   function apply(player) {
@@ -127,6 +135,20 @@ export function mountFriend(options = {}) {
     view.pending = []
     applyPigSize(host)
     if (nick !== null) { nick.textContent = player.name ?? '小猪'; nick.hidden = !nicknameEnabled() }
+    var stage = view.pig?.stage
+    if (stage !== null && stage !== undefined) {
+      syncSleepArt(stage.art || '', stage.artScenes || [], pigSleep)
+      pig.setAttribute('data-stage', stage.key || '')
+      pig.setAttribute('data-art', stage.art || '')
+      pig.setAttribute('data-art-actions', stage.actionArt ? 'true' : 'false')
+      pig.setAttribute('data-art-scenes', (stage.artScenes || []).join(','))
+      pig.setAttribute('data-mood', view.pig.mood || '')
+      var illness = view.pig.illness
+      pig.setAttribute('data-illness', illness && illness.chainKey ? illness.chainKey + ':' + illness.stage : '')
+      pig.setAttribute('data-activity', '')
+      pig.setAttribute('data-activity-key', '')
+      pigEmoji.textContent = stage.emoji || '🐖'
+    }
     syncPigArt(pig, pigArt, pigEmoji)
     document.title = (player.name ?? '小猪') + ' · 朋友的猪'
     reportPigRect()

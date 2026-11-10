@@ -3,6 +3,10 @@
  * 把房间里的朋友资料拼成一份「和本地猪同形状」的只读 view。
  * 面板的 status / card 渲染函数直接用它，不再维护第二套朋友 UI。
  */
+import { builtinKeyForPath } from './art-style.js'
+
+/** 朋友立绘可能缺某个场景；art.js 还会用 hasArtResource 兜底。 */
+const FRIEND_SCENES = Object.freeze(['eat', 'bathe', 'play', 'pet', 'relaxed', 'work', 'study', 'trip', 'fish', 'sleep'])
 
 function number(value, fallback) {
   const n = Number(value)
@@ -33,6 +37,7 @@ export function friendViewOf(view, friend) {
     : { level: number(friend?.level, 1), percent: 0, toNext: 0, maxed: false, titleEmoji: '', titleLabel: '' }
   const care = friend?.care && typeof friend.care === 'object' ? friend.care : {}
   const art = typeof friend?.art === 'string' && friend.art !== '' ? friend.art : null
+  const artKey = art === null ? null : builtinKeyForPath(art)
   return {
     ...view,
     // 朋友的行动状态来自房间资料；care 仍用本机 view 的背包，因为照顾消耗客人的物品。
@@ -48,7 +53,10 @@ export function friendViewOf(view, friend) {
         key: typeof friend?.stage === 'string' ? friend.stage : 'piglet',
         label: typeof friend?.label === 'string' ? friend.label : '',
         emoji: typeof friend?.emoji === 'string' ? friend.emoji : '🐖',
-        art,
+        art: artKey,
+        actionArt: artKey !== null,
+        artScenes: FRIEND_SCENES,
+        artUrl: art === null ? '' : '/dsh-piggy/art/' + art,
       },
       level,
       satiety: number(care.satiety, 60),

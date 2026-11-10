@@ -72,6 +72,7 @@ function publicStatus(value) {
       if (ill === null) return null
       return {
         name: cleanText(ill.name, 24), stage: whole(ill.stage, 1, 4, 1),
+        chainKey: cleanText(ill.chainKey, 24),
         cure: cleanText(ill.cure, 24), cureKey: cleanText(ill.cureKey, 40),
         cureEmoji: cleanText(ill.cureEmoji, 8), doctorFee: whole(ill.doctorFee, 0, 1e9, 0),
       }
