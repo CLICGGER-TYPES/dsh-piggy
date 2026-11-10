@@ -12,8 +12,8 @@ const WINDOW_WIDTH = 220
 const WINDOW_HEIGHT = 240
 const WINDOW_EXPANDED_HEIGHT = 240
 const WINDOW_GAP = 12
-/** 还没收到页面量好的猪框之前：150x160 窗口里猪按钮的默认位置。 */
-const DEFAULT_PIG_RECT = Object.freeze({ x: 62, y: 70, width: 96, height: 100 })
+/** 还没收到页面量好的猪框之前：按 220x240 朋友窗口里猪+名牌的布局给一个安全默认值。 */
+const DEFAULT_PIG_RECT = Object.freeze({ x: 121, y: 115, width: 93, height: 119 })
 
 /**
  * @param {{
@@ -109,7 +109,7 @@ export function createVisitorRoster(options) {
         additionalArguments: ['--piggy-role=friend', '--piggy-visitor=' + player.id],
       },
     })
-    const entry = { window: win, player, slot, shapeRect: { x: DEFAULT_PIG_RECT.x - 8, y: DEFAULT_PIG_RECT.y - 8, width: DEFAULT_PIG_RECT.width + 16, height: DEFAULT_PIG_RECT.height + 36 } }
+    const entry = { window: win, player, slot, shapeRect: { x: DEFAULT_PIG_RECT.x - 8, y: DEFAULT_PIG_RECT.y - 8, width: DEFAULT_PIG_RECT.width + 16, height: DEFAULT_PIG_RECT.height + 16 } }
     win.setAlwaysOnTop(true, 'floating')
     win.setMenuBarVisibility(false)
     // 透明区域不抢桌面点击：光标在猪/名牌/气泡 shape 外时让窗口穿透。

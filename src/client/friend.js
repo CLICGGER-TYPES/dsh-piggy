@@ -71,6 +71,7 @@ export function mountFriend(options = {}) {
   var dragging = false
   var drag = null
   var suppressClick = false
+  var reportQueued = false
 
   var presentation = createPresentationContext({
     root: options.root ?? null,
@@ -91,6 +92,7 @@ export function mountFriend(options = {}) {
     if (nick === null) return
     nick.hidden = !nicknameEnabled()
     host.setAttribute('data-nick-shown', nick.hidden ? 'false' : 'true')
+    scheduleReport()
   }
   if (nick !== null) { nick.textContent = view.pig?.name ?? ''; applyNickname() }
   host.setAttribute('data-friend-actor', 'true')
@@ -168,15 +170,25 @@ export function mountFriend(options = {}) {
     return { x: left, y: top, width: right - left, height: bottom - top }
   }
 
-  /** 面板贴着猪本体；shape 只覆盖猪/名牌/气泡，透明区域交给桌面点。 */
+  /** 面板贴着猪本体；shape 只覆盖猪/名牌/气泡，透明区域交给桌面点。
+   *  用 host 的布局框而不是会呼吸/浮动的图片框，避免 hit 区域每帧抖动。 */
   function reportPigRect() {
     if (typeof api.size !== 'function') return
     var rect = pig.getBoundingClientRect()
-    var shape = { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-    if (nick !== null && !nick.hidden) shape = unionRect(shape, nick.getBoundingClientRect())
+    var hostRect = host.getBoundingClientRect()
+    var shape = { x: hostRect.x, y: hostRect.y, width: hostRect.width, height: hostRect.height }
     if (bubble !== null && !bubble.hidden) shape = unionRect(shape, bubble.getBoundingClientRect())
     shape = { x: Math.max(0, shape.x - 4), y: Math.max(0, shape.y - 4), width: shape.width + 8, height: shape.height + 8 }
     api.size({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, shape })
+  }
+
+  function scheduleReport() {
+    if (stopped || reportQueued) return
+    reportQueued = true
+    requestAnimationFrame(function () {
+      reportQueued = false
+      if (!stopped) reportPigRect()
+    })
   }
 
   function endDrag(commit) {
@@ -246,26 +258,34 @@ export function mountFriend(options = {}) {
   function onSizeChange(event) {
     if (event.key !== PIG_DISPLAY_SIZE_KEY && event.key !== 'dsh-piggy:pig-size') return
     applyPigSize(host)
-    setTimeout(reportPigRect, 0)
+    scheduleReport()
   }
   window.addEventListener('storage', onSizeChange)
   if (typeof api.onUpdate === 'function') api.onUpdate(apply)
   if (typeof api.get === 'function') Promise.resolve(api.get()).then(apply).catch(function () {})
-  window.addEventListener('resize', reportPigRect)
-  var shapeObserver = typeof MutationObserver === 'function' ? new MutationObserver(reportPigRect) : null
+  window.addEventListener('resize', scheduleReport)
+  var shapeObserver = typeof MutationObserver === 'function' ? new MutationObserver(scheduleReport) : null
   if (shapeObserver !== null && bubble !== null && nick !== null) {
-    shapeObserver.observe(bubble, { attributes: true, attributeFilter: ['hidden', 'style'] })
-    shapeObserver.observe(nick, { attributes: true, attributeFilter: ['hidden'] })
+    shapeObserver.observe(bubble, { attributes: true, attributeFilter: ['hidden', 'style'], characterData: true, subtree: true, childList: true })
+    shapeObserver.observe(nick, { attributes: true, attributeFilter: ['hidden'], characterData: true, subtree: true })
   }
-  setTimeout(reportPigRect, 0)
+  // 首帧布局（--pig-size）和图片加载都可能晚于 mount；用布局观察兜住，不能只报一次。
+  var layoutObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(scheduleReport) : null
+  if (layoutObserver !== null) layoutObserver.observe(host)
+  var reportFrame = requestAnimationFrame(function () {
+    reportFrame = requestAnimationFrame(scheduleReport)
+  })
+  setTimeout(scheduleReport, 120)
 
   return function () {
     stopped = true
     stopNickname()
     window.removeEventListener('storage', onSizeChange)
     shapeObserver?.disconnect()
+    layoutObserver?.disconnect()
+    cancelAnimationFrame(reportFrame)
     life.dispose()
-    window.removeEventListener('resize', reportPigRect)
+    window.removeEventListener('resize', scheduleReport)
     presentation.dispose()
   }
 }

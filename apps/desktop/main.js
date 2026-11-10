@@ -793,7 +793,7 @@ ipcMain.handle('piggy:friend:pat', async (event, targetId) => {
   const result = await roomManager.emote('pat', target.id, x, y, facing)
   return result && result.ok === false ? result : { ok: true }
 })
-ipcMain.on('piggy:visitor:size', (event, rect) => { visitorRoster.setPigRect(event, rect) })
+ipcMain.on('piggy:visitor:size', (event, rect) => { visitorRoster.setPigRect(event.sender, rect) })
 ipcMain.on('piggy:visitor:menu', event => {
   if (visitorRoster.playerForEvent(event) !== null) visitorRoster.closeMenusExcept(event.sender)
 })
