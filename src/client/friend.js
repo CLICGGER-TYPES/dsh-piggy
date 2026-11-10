@@ -13,6 +13,7 @@ import { playPigPet } from './pig-actions.js'
 import { createPresentationContext } from './presentation-context.js'
 import { syncPigArt } from './art.js'
 import { readStore } from './storage.js'
+import { PIG_DISPLAY_SIZE_KEY } from './pig-size.js'
 import { attachNicknamePreference, nicknameEnabled } from './nickname.js'
 
 /** 朋友窗口的固定样式：只留猪和名牌，面板/金币/健康都藏起来。 */
@@ -203,6 +204,13 @@ export function mountFriend(options = {}) {
   var stopNickname = attachNicknamePreference(function () {
     if (nick !== null) nick.hidden = !nicknameEnabled()
   })
+  // 本机猪改大小后，朋友猪立刻跟着变；只读这台设备的显示尺寸，不改对方资料。
+  function onSizeChange(event) {
+    if (event.key !== PIG_DISPLAY_SIZE_KEY && event.key !== 'dsh-piggy:pig-size') return
+    applyPigSize(host)
+    setTimeout(reportPigRect, 0)
+  }
+  window.addEventListener('storage', onSizeChange)
   if (typeof api.onUpdate === 'function') api.onUpdate(apply)
   if (typeof api.get === 'function') Promise.resolve(api.get()).then(apply).catch(function () {})
   window.addEventListener('resize', reportPigRect)
@@ -211,6 +219,7 @@ export function mountFriend(options = {}) {
   return function () {
     stopped = true
     stopNickname()
+    window.removeEventListener('storage', onSizeChange)
     life.dispose()
     window.removeEventListener('resize', reportPigRect)
     presentation.dispose()
