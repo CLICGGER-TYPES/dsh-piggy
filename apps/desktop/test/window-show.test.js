@@ -25,7 +25,7 @@ test('Linux 等第一次 content 才显示，几何和形状先摆好', () => {
 })
 
 test('Linux 页面一直不报内容时超时兜底显示', () => {
-  const gate = createShowGate({ platform: 'linux', timeoutMs: 2000 })
+  const gate = createShowGate({ platform: 'linux', timeoutMs: 2000, now: () => 0 })
   assert.equal(gate.readyToShow(100), false)
   assert.equal(gate.timeout(2099), false)
   assert.equal(gate.timeout(2100), true)
@@ -61,7 +61,7 @@ test('超时时间可以注入，默认 2 秒', () => {
 test('status 说清显示门在等哪一步（只读诊断）', () => {
   const gate = createShowGate({ platform: 'linux', timeoutMs: 2000, now: () => 0 })
   assert.deepEqual(gate.status(0), {
-    ready: false, content: false, shown: false, pending: true, deferred: true, deadline: null, waiting: 'ready-to-show',
+    ready: false, content: false, shown: false, pending: true, deferred: true, deadline: 2000, waiting: 'ready-to-show',
   })
   assert.equal(gate.readyToShow(0), false)
   assert.equal(gate.status(100).waiting, 'content')
@@ -83,8 +83,13 @@ test('status 不改显示状态：反复读和只看日志一样', () => {
   })
 })
 
-test('ready-to-show 一直不来时显示门永远 pending：只记诊断，不替它强推', () => {
-  for (const platform of ['win32', 'linux']) {
+test('Linux ready-to-show 一直不来时超时兜底显示，其它平台不强推', () => {
+  const linux = createShowGate({ platform: 'linux', timeoutMs: 2000, now: () => 0 })
+  assert.equal(linux.timeout(1999), false)
+  assert.equal(linux.timeout(2000), true)
+  assert.equal(linux.pending, false)
+  assert.equal(linux.status(2000).waiting, null)
+  for (const platform of ['win32', 'darwin']) {
     const gate = createShowGate({ platform, timeoutMs: 2000, now: () => 0 })
     assert.equal(gate.timeout(60000), false)
     assert.equal(gate.pending, true)

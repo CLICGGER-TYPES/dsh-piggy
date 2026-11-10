@@ -23,7 +23,9 @@ export function createShowGate({ platform, timeoutMs = SHOW_FALLBACK_MS, now = (
   let ready = false
   let contentReady = false
   let shown = false
-  let deadline = null
+  // 超时从建门时开始算：ready-to-show 本身也可能永远不来（隐藏的透明窗口在部分
+  // Wayland/无合成器环境里不触发首帧），不能让兜底跟着一起卡死。
+  let deadline = now() + timeoutMs
 
   function claim() {
     if (shown) return false
@@ -35,7 +37,8 @@ export function createShowGate({ platform, timeoutMs = SHOW_FALLBACK_MS, now = (
     /** ready-to-show 到了：非 Linux 立刻显示；Linux 等第一次 content。 */
     readyToShow(at = now()) {
       ready = true
-      deadline = at + timeoutMs
+      // ready-to-show 晚到时，内容等待窗口从它到达时重新计时，避免刚 ready 就被旧 deadline 强推。
+      deadline = Math.max(deadline, at + timeoutMs)
       if (!defer) return claim()
       return contentReady ? claim() : false
     },
@@ -47,7 +50,8 @@ export function createShowGate({ platform, timeoutMs = SHOW_FALLBACK_MS, now = (
     },
     /** 页面一直没报内容：超时后仍然显示。 */
     timeout(at = now()) {
-      if (!ready || shown || deadline === null || at < deadline) return false
+      // 只在 Linux 兜底：其它平台 ready-to-show 到了就直接显示，不需要也不应该强推。
+      if (!defer || shown || at < deadline) return false
       return claim()
     },
     /** 还没显示。 */
@@ -61,8 +65,9 @@ export function createShowGate({ platform, timeoutMs = SHOW_FALLBACK_MS, now = (
     status(at = now()) {
       let waiting = null
       if (!shown) {
-        if (!ready) waiting = 'ready-to-show'
-        else if (defer && !contentReady) waiting = deadline !== null && at >= deadline ? 'timeout-fallback' : 'content'
+        if (defer && at >= deadline) waiting = 'timeout-fallback'
+        else if (!ready) waiting = 'ready-to-show'
+        else if (defer && !contentReady) waiting = 'content'
       }
       return { ready, content: contentReady, shown, pending: !shown, deferred: defer, deadline, waiting }
     },

@@ -114,6 +114,13 @@ export function createWindowManager(deps) {
         if (deps.frameCap > 0) window.webContents.setFrameRate(deps.frameCap)
         // Linux 先等页面报真实内容和形状再显示，避免 rootless Xwayland 旧尺寸缓冲 SIGSEGV。
         pet.showGate = createShowGate({ platform: deps.platform })
+        // 兜底显示从建窗时就开始计时：不能等 ready-to-show，否则它不来就永远不显示。
+        scheduleTimeout(() => {
+          if (pet.window === window && pet.showGate !== null && pet.showGate.timeout()) {
+            deps.log('show fallback', JSON.stringify(pet.showGate.status()))
+            showPigWindow(pet)
+          }
+        }, SHOW_FALLBACK_MS)?.unref?.()
         deps.startupInputTrace.begin()
         if (deps.surface.mousePassthrough) {
           deps.surface.setPassthroughMode(pet, 'unknown', 'pet-window-configure')
@@ -139,13 +146,6 @@ export function createWindowManager(deps) {
         scheduleTimeout(() => { if (pet.window === window) pet.savedPigScreen = null }, 3000)
         deps.log('ready-to-show', pet.pigId ?? 'legacy')
         if (pet.showGate !== null && pet.showGate.readyToShow()) showPigWindow(pet)
-        // 页面一直不报内容：兜底显示，不能永远不出现。
-        scheduleTimeout(() => {
-          if (pet.window === window && pet.showGate !== null && pet.showGate.timeout()) {
-            deps.log('show fallback', JSON.stringify(pet.showGate.status()))
-            showPigWindow(pet)
-          }
-        }, SHOW_FALLBACK_MS).unref?.()
       },
       onDidFinishLoad: () => {
         deps.onRendererLoaded()

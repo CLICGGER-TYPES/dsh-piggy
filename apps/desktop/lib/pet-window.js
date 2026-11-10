@@ -30,10 +30,12 @@ export function createPetWindow(deps) {
       current = null
       input.onClosed?.(window)
     })
-    window.loadURL(input.url)
+    // 先挂 ready-to-show 再加载：piggy:// 页面可能命中缓存，晚挂会错过首次绘制事件，
+    // Linux 上窗口就一直停在 show:false（屏幕不显示、renderer 的 screenX 也一直是 0）。
     window.once('ready-to-show', event => {
       if (current === window) input.onReadyToShow?.(window, event)
     })
+    window.loadURL(input.url)
     window.webContents.on('did-finish-load', event => {
       if (current === window) input.onDidFinishLoad?.(window, event)
     })
