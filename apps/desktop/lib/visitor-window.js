@@ -54,16 +54,23 @@ export function createVisitorRoster(options) {
     const row = Math.floor(slot / usable)
     let x = Math.max(area.x + 12, area.x + area.width - WINDOW_WIDTH - 12 - col * (WINDOW_WIDTH + WINDOW_GAP))
     let y = Math.max(area.y + 12, area.y + area.height - WINDOW_HEIGHT - 12 - row * 46)
-    // 别一开始就压在主猪窗口上：优先往主猪左边排，没地方再往上。
-    if (avoid !== null && intersects({ x, y, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, avoid)) {
-      const left = avoid.x - WINDOW_WIDTH - WINDOW_GAP
-      if (left >= area.x + 12) {
-        x = left - col * (WINDOW_WIDTH + WINDOW_GAP)
-        y = Math.max(area.y + 12, Math.min(area.y + area.height - WINDOW_HEIGHT - 12, avoid.y + avoid.height - WINDOW_HEIGHT))
-      } else {
-        x = Math.max(area.x + 12, Math.min(area.x + area.width - WINDOW_WIDTH - 12, avoid.x))
-        y = avoid.y - WINDOW_HEIGHT - WINDOW_GAP
+    const obstacles = []
+    if (avoid !== null) obstacles.push(avoid)
+    for (const entry of entries.values()) {
+      if (entry.window !== null && entry.window !== undefined && !entry.window.isDestroyed()) obstacles.push(entry.window.getBounds())
+    }
+    // 和主猪/已有朋友窗口重叠就往左让；左边没地方再往上让，保证每只猪和名牌都完整可见。
+    let guard = 0
+    while (guard < 24) {
+      const candidate = { x, y, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }
+      if (!obstacles.some(other => intersects(candidate, other))) break
+      x -= WINDOW_WIDTH + WINDOW_GAP
+      if (x < area.x + 12) {
+        x = area.x + 12
+        y -= WINDOW_HEIGHT + WINDOW_GAP
+        if (y < area.y + 12) break
       }
+      guard += 1
     }
     x = Math.max(area.x + 12, Math.min(area.x + area.width - WINDOW_WIDTH - 12, x))
     y = Math.max(area.y + 12, Math.min(area.y + area.height - WINDOW_HEIGHT - 12, y))
@@ -105,7 +112,6 @@ export function createVisitorRoster(options) {
     const entry = { window: win, player, slot, shapeRect: { x: DEFAULT_PIG_RECT.x - 8, y: DEFAULT_PIG_RECT.y - 8, width: DEFAULT_PIG_RECT.width + 16, height: DEFAULT_PIG_RECT.height + 36 } }
     win.setAlwaysOnTop(true, 'floating')
     win.setMenuBarVisibility(false)
-    applyShape(entry)
     // 透明区域不抢桌面点击：光标在猪/名牌/气泡 shape 外时让窗口穿透。
     entry.hitTimer = setInterval(() => {
       if (win.isDestroyed()) return
@@ -237,19 +243,6 @@ export function createVisitorRoster(options) {
     return { x, y, width, height }
   }
 
-  /** 窗口 shape：只保留猪/名牌/气泡，透明区域不抢其他程序的点击。 */
-  function applyShape(entry) {
-    const win = entry.window
-    if (win === null || win.isDestroyed() || typeof win.setShape !== 'function' || entry.shapeRect === null) return
-    const bounds = win.getBounds()
-    const rect = entry.shapeRect
-    const x = Math.max(0, Math.min(bounds.width - 1, Math.floor(rect.x)))
-    const y = Math.max(0, Math.min(bounds.height - 1, Math.floor(rect.y)))
-    const width = Math.max(1, Math.min(bounds.width - x, Math.ceil(rect.width)))
-    const height = Math.max(1, Math.min(bounds.height - y, Math.ceil(rect.height)))
-    try { win.setShape([{ x, y, width, height }]) } catch { /* 老外壳不支持 */ }
-  }
-
   /** 朋友面板要贴猪：给的是猪按钮的屏幕框，不是整扇透明窗口。 */
   function boundsForEvent(event) {
     for (const entry of entries.values()) {
@@ -271,7 +264,6 @@ export function createVisitorRoster(options) {
       if ([x, y, width, height].every(Number.isFinite) && width > 0 && height > 0) {
         entry.pigRect = { x, y, width, height }
         entry.shapeRect = sanitizeShape(rect?.shape)
-        applyShape(entry)
       }
       return pigRectFor(entry)
     }
@@ -289,7 +281,6 @@ export function createVisitorRoster(options) {
       if (entry.window === null || entry.window.isDestroyed() || entry.window.webContents !== sender) continue
       entry.pigRect = { x, y, width, height }
       entry.shapeRect = sanitizeShape(rect?.shape)
-      applyShape(entry)
       options.onMoved?.(entry.player.id, pigRectFor(entry))
       return true
     }
