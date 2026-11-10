@@ -23,6 +23,7 @@ var FRIEND_CSS = [
   'html[data-piggy-role="friend"] .dp-card,html[data-piggy-role="friend"] .dp-bar,html[data-piggy-role="friend"] .dp-hud{display:none!important}',
   'html[data-piggy-role="friend"] .dp-hud{position:relative!important;inset:auto!important;margin-top:4px!important;justify-content:center!important}',
   'html[data-piggy-role="friend"] .dp-scene{height:calc(var(--pig-size) + 10px)!important;min-height:0!important}',
+  'html[data-piggy-role="friend"] [data-dsh-pig][data-nick-shown="true"] .dp-scene{height:calc(var(--pig-size) + 38px)!important;padding-bottom:34px!important}',
   'html[data-piggy-role="friend"] .dp-bubble{max-width:200px!important}',
 ].join('\n')
 
@@ -86,7 +87,12 @@ export function mountFriend(options = {}) {
   })
   var parts = presentation.parts
   var { host, pig, pigArt, pigSleep, pigEmoji, nick, bubble } = parts
-  if (nick !== null) { nick.hidden = !nicknameEnabled(); nick.textContent = view.pig?.name ?? '' }
+  function applyNickname() {
+    if (nick === null) return
+    nick.hidden = !nicknameEnabled()
+    host.setAttribute('data-nick-shown', nick.hidden ? 'false' : 'true')
+  }
+  if (nick !== null) { nick.textContent = view.pig?.name ?? ''; applyNickname() }
   host.setAttribute('data-friend-actor', 'true')
   parts.scene.title = '左键摸摸 · 右键打开菜单 · 拖动可移动'
   applyPigSize(host)
@@ -134,7 +140,7 @@ export function mountFriend(options = {}) {
     view.dialogue = { ...(view.dialogue ?? {}), quiet: false }
     view.pending = []
     applyPigSize(host)
-    if (nick !== null) { nick.textContent = player.name ?? '小猪'; nick.hidden = !nicknameEnabled() }
+    if (nick !== null) { nick.textContent = player.name ?? '小猪'; applyNickname() }
     var stage = view.pig?.stage
     if (stage !== null && stage !== undefined) {
       syncSleepArt(stage.art || '', stage.artScenes || [], pigSleep)
@@ -235,9 +241,7 @@ export function mountFriend(options = {}) {
     feel: feel,
   })
 
-  var stopNickname = attachNicknamePreference(function () {
-    if (nick !== null) nick.hidden = !nicknameEnabled()
-  })
+  var stopNickname = attachNicknamePreference(applyNickname)
   // 本机猪改大小后，朋友猪立刻跟着变；只读这台设备的显示尺寸，不改对方资料。
   function onSizeChange(event) {
     if (event.key !== PIG_DISPLAY_SIZE_KEY && event.key !== 'dsh-piggy:pig-size') return

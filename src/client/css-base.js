@@ -323,7 +323,8 @@ export const CSS_BASE = [
   'background:var(--ac-bg);border:2px solid var(--ac-border-light);padding:5px 10px;',
   'border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-sm)}',
   '.dp-hud b{font-weight:700}',
-  '.dp-nick{position:absolute;left:50%;bottom:2px;z-index:6;transform:translateX(-50%);max-width:calc(var(--pig-size) + 34px);padding:1px 8px;border:2px solid var(--ac-border-light);border-radius:999px;background:rgba(255,250,240,.96);font-size:9.5px;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 0 rgba(61,52,40,.06);pointer-events:none}',
+  '.dp-nick{position:absolute;left:50%;bottom:1px;z-index:6;transform:translateX(-50%);max-width:calc(var(--pig-size) + 44px);padding:2px 10px;border:2px solid var(--ac-border-light);border-radius:999px;background:rgba(255,250,240,.96);font-size:10px;line-height:1.3;font-weight:800;color:var(--ac-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 0 rgba(61,52,40,.06);pointer-events:none}',
+  '[data-dsh-pig][data-nick-shown="true"] .dp-scene{padding-bottom:34px}',
 
   // A drawn sprite is sized by the same variable as the emoji, so growing up
   // works identically either way.

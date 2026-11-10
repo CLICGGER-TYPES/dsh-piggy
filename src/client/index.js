@@ -218,6 +218,7 @@ export function mountGame(mountOptions) {
         if (nick === null || nick === undefined) return
         var show = desktopRole() === 'pet' && inRoom && nicknameEnabled() && view.hatched === true && view.pig !== null
         nick.hidden = !show
+        host.setAttribute('data-nick-shown', show ? 'true' : 'false')
         if (show) nick.textContent = view.pig.name
       }
       var roomBridge = typeof window !== 'undefined' ? (/** @type {any} */ (window)).piggyShell?.room : null
