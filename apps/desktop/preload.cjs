@@ -133,8 +133,6 @@ contextBridge.exposeInMainWorld('piggyShell', {
   moveBy: (dx, dy) => ipcRenderer.send('piggy:move', { dx: Number(dx) || 0, dy: Number(dy) || 0 }),
   /** 平台：macOS 没有 setShape，收起时不能预留透明区域（会挡住桌面点击）。 */
   platform: typeof process === 'undefined' ? '' : process.platform,
-  /** 固定窗口 + 原生 shape 在 Wayland 上更稳；紧凑窗口保留开关但默认关闭。 */
-  compactWindow: false,
   /** Wayland/XWayland：按下时先铺满原生 shape，避免 pet-snap/抬手被紧 shape 裁掉。 */
   wayland: typeof process !== 'undefined' && process.platform === 'linux' && Boolean(process.env?.WAYLAND_DISPLAY),
   /** 主进程推来的窗口/工作区几何：面板朝屏幕里侧开要用。 */
