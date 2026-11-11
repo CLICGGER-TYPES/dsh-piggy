@@ -16,6 +16,9 @@ import { attachItemHover } from '../item-hover.js'
 /** One colour per shelf, so the inner layer still says which shelf it is. */
 export var SHELF_COLOR = { food: 'red', bath: 'teal', toy: 'yellow', bait: 'blue', medicine: 'green', revive: 'purple', promotion: 'blue' }
 
+/** 只保留有明确衣服落点的四个槽；neck/back 旧物品先停用，存档数据不删。 */
+export var ACTIVE_DRESS_SLOTS = Object.freeze(['head', 'face', 'body', 'feet'])
+
 /** A shelf title 「<emoji> 食物」 split into its emoji and its name. */
 export function shelfParts(kind) {
   var title = KIND_TITLE[kind] ?? kind
@@ -41,6 +44,7 @@ export function renderShopTab(ui) {
   drillHeader(ui, 'shop', parts[0] + ' ' + parts[1], coins)
   var tiles = []
   var items = ui.view.shop.filter(function (item) { return shelfOf(item.kind) === shelf })
+  if (shelf === 'dress') items = items.filter(function (item) { return ACTIVE_DRESS_SLOTS.indexOf(item.slot) >= 0 })
   var boughtTile = null
   for (var i = 0; i < items.length; i += 1) {
     var node = itemTile(ui, items[i], SHELF_COLOR[shelf])
