@@ -107,6 +107,9 @@ export function createDragEngine(deps) {
     if (pet === null) return
     if (given != null && (!isMouseRect(given) || given.width <= 0 || given.height <= 0)) return
     stopDrag(pet)
+    // 每次拖动都必须重新铺整窗形状；上一次拖动若没等到页面 place，dragShapeActive
+    // 会一直为 true，下一次拖动沿用旧的小 shape，pet-snap/抬手动画就被裁掉。
+    pet.dragShapeActive = false
     const bounds = pet.window.getBounds()
     // A1：页面可能延迟到移动 4px 才发 drag:start，带上 pointerdown 的屏幕坐标当起点。
     // 快速甩动时第一帧就可能离 pointerdown 上百像素，不能按 32px 拒绝；

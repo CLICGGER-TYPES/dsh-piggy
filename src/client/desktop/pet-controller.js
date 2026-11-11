@@ -34,7 +34,9 @@ export function createPetController(deps) {
   function dragging() {
     const scene = host()?.querySelector('.dp-scene')
     // Pressing keeps the old held appearance; only a started window drag owns geometry.
-    return scene != null && scene.getAttribute('data-window-dragging') === 'true'
+    // Wayland 紧凑窗口按下就暂停布局：先把整窗 shape 铺满，避免 pet-snap 被旧的紧 shape 裁掉。
+    return scene != null && (scene.getAttribute('data-window-dragging') === 'true'
+      || (deps.shell?.compactWindow === true && scene.getAttribute('data-dragging') === 'true'))
   }
 
   const input = createInputController({
