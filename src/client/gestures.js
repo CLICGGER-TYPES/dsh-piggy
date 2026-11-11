@@ -146,7 +146,7 @@ export function attachGestures(c) {
     // Wayland 紧凑窗口：按下就把原生 shape 铺满整窗，pet-snap/抬手动画先有空间演；
     // 否则 shape 会在拖动开始的那几帧把猪/手裁掉，看起来像抽一下。
     const shell = c.desktopShell()
-    if (shell?.compactWindow === true && typeof shell.setShape === 'function') {
+    if (shell?.wayland === true && typeof shell.setShape === 'function') {
       shell.setShape([{ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }])
     }
     c.scene.setPointerCapture?.(event.pointerId)
