@@ -77,41 +77,59 @@ function renderShelves(ui) {
   ui.content.appendChild(pagedTiles(ui, 'shop', tiles, { rows: 3 }))
 }
 
-/** 下载扩展自己的商品，购买仍由扩展的 buy 动作结算。 */
+/** 下载扩展自己的商品，购买仍由扩展的 buy 动作结算。
+ *  和内置商店同一套 3×3 分页 + 悬停卡；新增扩展只要声明 shelf 就自动复用。 */
 function renderExtShelf(ui, shelf) {
   const currency = shelf.currency ?? { label: '货币', emoji: '🪙', balance: 0 }
   drillHeader(ui, 'shop', shelf.emoji + ' ' + shelf.label, currency.emoji + ' ' + currency.balance)
   ui.content.appendChild(el('div', 'dp-ext-shelf-note', '用' + currency.label + '买 · ' + currency.emoji + ' 余额 ' + currency.balance))
-  const list = el('div', 'dp-ext-goods')
-  for (const item of shelf.items ?? []) {
-    const row = el('div', 'dp-ext-good')
-    row.appendChild(el('span', 'dp-ext-good-emoji', item.emoji))
-    const copy = el('div', 'dp-ext-good-copy')
-    copy.appendChild(el('b', null, item.label)); copy.appendChild(el('small', null, item.note))
-    row.appendChild(copy)
-    const hasPick = Array.isArray(item.pick)
-    const buy = button('dp-mini', { 'data-ext-buy': item.key }, function () {
-      if (hasPick) { ui.drill.pick = ui.drill.pick === item.key ? null : item.key; ui.renderContent(); return }
-      ui.send('ext', { key: shelf.extension, op: 'buy', data: { item: item.key, pick: null } })
-    })
-    buy.textContent = item.price + ' ' + currency.emoji
-    buy.disabled = item.disabled === true
-    row.appendChild(buy)
-    if (hasPick && ui.drill.pick === item.key) {
-      const choices = el('div', 'dp-ext-picks')
-      for (const pick of item.pick) {
-        const choose = button('dp-mini dp-mini-plain', { 'data-ext-pick': pick.key }, function () {
-          ui.drill.pick = null
-          ui.send('ext', { key: shelf.extension, op: 'buy', data: { item: item.key, pick: pick.key } })
-        })
-        choose.textContent = pick.emoji + ' ' + pick.label
-        choices.appendChild(choose)
-      }
-      row.appendChild(choices)
-    }
-    list.appendChild(row)
+  const items = Array.isArray(shelf.items) ? shelf.items : []
+  if (items.length === 0) {
+    ui.content.appendChild(el('div', 'dp-empty', '这个货架还空着。'))
+    return
   }
-  ui.content.appendChild(list)
+  const tiles = []
+  for (const item of items) {
+    const hasPick = Array.isArray(item.pick)
+    const node = tile({
+      emoji: item.emoji || '📦', label: item.label, color: shelf.color || 'orange', soft: true,
+      note: item.price + ' ' + currency.emoji,
+      badge: hasPick ? '可选' : '',
+      dim: item.disabled === true,
+      disabled: item.disabled === true,
+      data: { 'data-ext-buy': item.key, 'data-ext-item': item.key, 'aria-disabled': String(item.disabled === true) },
+      onPick: function () {
+        if (hasPick) {
+          ui.drill.pick = ui.drill.pick === item.key ? null : item.key
+          ui.renderContent()
+          return
+        }
+        ui.send('ext', { key: shelf.extension, op: 'buy', data: { item: item.key, pick: null } })
+      },
+    })
+    attachItemHover(ui, node, {
+      ...item, kind: 'ext', kindLabel: shelf.label,
+      currency, balance: currency.balance,
+    }, 'shop')
+    tiles.push(node)
+  }
+  ui.content.appendChild(pagedTiles(ui, 'ext:' + shelf.extension, tiles, { rows: 3 }))
+  const picked = items.find(item => Array.isArray(item.pick) && ui.drill.pick === item.key)
+  if (picked !== undefined) {
+    const box = el('div', 'dp-pick dp-ext-pick-box')
+    box.appendChild(el('div', 'dp-pick-head', '选择要兑换的' + picked.label))
+    const row = el('div', 'dp-ext-picks')
+    for (const choice of picked.pick) {
+      const choose = button('dp-mini dp-mini-plain', { 'data-ext-pick': choice.key }, function () {
+        ui.drill.pick = null
+        ui.send('ext', { key: shelf.extension, op: 'buy', data: { item: picked.key, pick: choice.key } })
+      })
+      choose.textContent = (choice.emoji ? choice.emoji + ' ' : '') + choice.label
+      row.appendChild(choose)
+    }
+    box.appendChild(row)
+    ui.content.appendChild(box)
+  }
 }
 
 /** A thing on the shelf: tap to buy. 家当 says 已拥有 or the level it waits for. */

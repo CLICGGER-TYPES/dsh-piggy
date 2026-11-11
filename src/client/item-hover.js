@@ -25,6 +25,7 @@ function isConsumable(kind) {
 }
 
 function kindText(item) {
+  if (item.kind === 'ext') return item.kindLabel || '扩展商品'
   var base = KIND_LABEL[item.kind] || item.kind || ''
   if (item.default === true) return base + ' · 默认'
   if (item.kind === 'dress') return base + ' · 永久'
@@ -99,6 +100,11 @@ function addInfoRow(box, label, value, tone) {
 }
 
 function descriptionFor(item, full) {
+  if (item.kind === 'ext') {
+    if (typeof item.note === 'string' && item.note !== '') return item.note
+    if (typeof item.blurb === 'string' && item.blurb !== '') return item.blurb
+    return ''
+  }
   if (item.kind === 'bait') {
     return Number(full.rarityBoost) > 0 ? '钓鱼时自动消耗，更容易钓到稀有鱼' : '钓鱼时自动消耗'
   }
@@ -119,6 +125,15 @@ function actionFor(ui, item, full, context, count) {
   var coins = ui.view.pig ? Number(ui.view.pig.coins) : NaN
   if (context === 'shop') {
     var tail = ''
+    if (item.kind === 'ext') {
+      var balance = Number(item.balance)
+      var symbol = (item.currency && item.currency.emoji) || '🪙'
+      if (Number.isFinite(price) && price > 0 && Number.isFinite(balance)) {
+        tail = balance >= price ? ' · 买后剩 ' + (balance - price) + ' ' + symbol : ' · 还差 ' + (price - balance) + ' ' + symbol
+      }
+      if (item.disabled === true) return '暂时不能购买' + tail
+      return '购买后放入扩展背包' + tail
+    }
     if (Number.isFinite(price) && price > 0 && Number.isFinite(coins)) {
       tail = coins >= price ? ' · 买后剩 ' + (coins - price) : ' · 还差 ' + (price - coins)
     } else if (item.affordable === false) {
