@@ -1,0 +1,42 @@
+[Unit]
+Description=dsh-piggy room server
+Documentation=https://github.com/CLICGGER-TYPES/dsh-piggy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dsh-piggy
+Group=dsh-piggy
+# 按实际部署修改 --public-url、--code 和证书路径。
+# 反代模式（推荐）：只监听回环，由 Caddy/Nginx 终止 TLS。
+ExecStart=/usr/local/bin/dsh-piggy-room-server --public-url https://piggy.example.com --code 7K2M
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+LimitNOFILE=4096
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

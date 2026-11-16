@@ -1,5 +1,7 @@
 # dsh-piggy 独立房间服务器
 
+> 公网独立部署推荐 Rust 版 `apps/room-server-rs/`（单二进制、不依赖 Node.js）；本目录保留 Node 版作为桌面内置 host 和回退方案。
+
 一个不依赖 Electron / 桌面版的内存房间服务器。一个进程托管一个房间，玩家进出不关房，`Ctrl-C`/SIGTERM 才停。
 
 需要 Node.js 20+；没有第三方依赖，不用 `npm install`。
