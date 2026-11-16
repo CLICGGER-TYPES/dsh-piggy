@@ -222,7 +222,7 @@ export function createFarmHelperRenderer(state, modules) {
       var sleeping = workers.filter(function (worker) { return worker.idle === true }).length
       var panel = modules.host.put(box, app.el('section', 'fm-helper-panel')); panel.setAttribute('aria-label', '帮工托管')
       helperStatus(app, panel, '帮工 ' + workers.length + '/' + max,
-        '收菜 ' + harvest + ' 只 · 巡逻 ' + patrol + ' 只 · 在岗 ' + onDuty + ' / 休息 ' + restingCount + ' · 共管 ' + helper.plots + ' 块地', enabled)
+        '收菜 ' + harvest + ' 只 · 巡逻 ' + patrol + ' 只 · 在岗 ' + onDuty + ' / 休息 ' + restingCount + ' · 共管 ' + helper.plots + (helper.plots < data.unlocked ? '/' + data.unlocked : '') + ' 块地', enabled)
       helperToggle(app, panel, enabled)
       helperSchedule(app, panel, helper.schedule)
       helperPatrol(app, panel, data)
@@ -291,6 +291,17 @@ export function createFarmHelperRenderer(state, modules) {
         modules.host.put(copy, app.el('span', 'fm-energy-state', helperStatusWord(worker)))
         modules.host.put(copy, app.el('span', 'fm-energy-value', percent + '% · ' + helperEnergyNote(worker)))
       })
+
+      if (helper.plots < data.unlocked) {
+        var patrolCount = helper.workers.filter(function (worker) { return worker.role === 'patrol' }).length
+        var coverageHint = ''
+        if (helper.count < helper.max) {
+          coverageHint = '再雇 1 只收菜帮工，覆盖可到 ' + Math.min(data.unlocked, helper.plots + helper.perWorker) + ' 块（当前 ' + helper.plots + '/' + data.unlocked + '）。'
+        } else if (patrolCount > 0) {
+          coverageHint = '有 ' + patrolCount + ' 只巡逻帮工；改成收菜可多覆盖 ' + Math.min(patrolCount * helper.perWorker, data.unlocked - helper.plots) + ' 块。'
+        }
+        if (coverageHint !== '') modules.host.put(panel, app.el('small', 'fm-helper-hint', coverageHint))
+      }
 
       var additional = items.find(function (item) { return item.key === 'helper-additional' })
       if (additional) {

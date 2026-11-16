@@ -176,9 +176,9 @@ test('各渠道目录校验官方文件身份、渠道下载地址和同版本�
   assert.equal(githubFarm?.bundle?.sha256, 'bde53852c08f3cb28d5a7155a6efa30988336df2f80be6f96c41fecea86d7fa0')
   assert.equal(Object.keys(githubFarm?.files ?? {}).length, 287)
   assert.equal(githubFarm?.files?.['client.js']?.sha256, '72b64888f96633773c2a83cff15e7ea3fe987d3c3baf3e2c19204b0d8f09d5f3', 'public farm 4.2.1 keeps its released client identity')
-  assert.equal(githubCandidateFarm?.version, '4.5.0', 'the unuploaded source candidate uses a fresh version')
+  assert.equal(githubCandidateFarm?.version, '4.5.1', 'the unuploaded source candidate uses a fresh version')
   assert.equal(githubCandidateFarm?.minGame, '0.37.2')
-  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, 'fc3489948f992c02c9cb24030779fe4f5048e5cff39acf492035b3cac1393500', 'farm 4.5.0 candidate carries the patrol/theft UI client')
+  assert.equal(githubCandidateFarm?.files?.['client.js']?.sha256, '526d5e333ef4a789d9fe61bb5f7539344902dbf3f2f595338e66e22139bd8443', 'farm 4.5.1 candidate carries the helper coverage hint client')
   assert.equal(Object.keys(githubCandidateFarm?.files ?? {}).length, 287)
   for (const name of Object.keys(githubFarm?.files ?? {}).filter(name => name.startsWith('assets/'))) {
     assert.equal(githubCandidateFarm?.files?.[name]?.sha256, githubFarm?.files?.[name]?.sha256, 'the 4.5.0 patrol rules keep ' + name)

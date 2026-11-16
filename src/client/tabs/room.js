@@ -17,6 +17,9 @@ let generation = 0
 let activeUi = null
 let joinMode = false
 let focusJoin = false
+let publicMode = false
+let publicUrl = ''
+let focusPublic = false
 let busy = false
 let notice = ''
 let subscribed = false
@@ -134,7 +137,7 @@ function profileOf(ui) {
 function statusLine(ui) {
   const line = el('div', 'dp-room-status')
   line.appendChild(el('i', 'dp-room-dot'))
-  line.appendChild(el('span', null, '同一局域网 · 和好友一起玩'))
+  line.appendChild(el('span', null, '局域网 / 公网服务器 · 和好友一起玩'))
   ui.content.appendChild(line)
 }
 
@@ -168,9 +171,10 @@ function renderLobby(ui, bridge) {
   const actions = el('div', 'dp-room-actions')
   const create = button('dp-mini dp-room-create', { 'data-room-create': 'true' }, function () {
     if (busy) return
+    if (publicMode && publicUrl.trim() === '') { notice = '先填公网地址，或收起公网服务器'; ui.renderContent(); return }
     busy = true
     notice = ''
-    Promise.resolve(bridge.host(profileOf(ui))).then(function (result) {
+    Promise.resolve(bridge.host(profileOf(ui), { publicUrl: publicMode ? publicUrl.trim() : '' })).then(function (result) {
       busy = false
       if (result?.ok === true) {
         generation += 1
@@ -200,12 +204,46 @@ function renderLobby(ui, bridge) {
   actions.appendChild(joinToggle)
   ui.content.appendChild(actions)
 
+  const publicToggle = button('dp-room-public-toggle', { 'data-room-public-toggle': 'true' }, function () {
+    publicMode = !publicMode
+    focusPublic = publicMode
+    notice = ''
+    ui.renderContent()
+  })
+  publicToggle.textContent = publicMode ? '收起公网服务器' : '公网服务器（可选）'
+  ui.content.appendChild(publicToggle)
+
+  if (publicMode) {
+    const form = el('div', 'dp-room-public-form')
+    const label = el('label', null, '对外地址')
+    const input = /** @type {HTMLInputElement} */ (el('input', 'dp-room-input'))
+    input.type = 'url'
+    input.maxLength = 512
+    input.value = publicUrl
+    input.placeholder = 'https://piggy.example.com'
+    input.autocomplete = 'off'
+    input.spellcheck = false
+    input.setAttribute('data-room-public-input', 'true')
+    input.setAttribute('aria-label', '公网地址')
+    input.addEventListener('input', function () { publicUrl = input.value })
+    input.addEventListener('focus', function () { focusPublic = false })
+    input.addEventListener('blur', function () { publicUrl = input.value })
+    form.appendChild(label)
+    form.appendChild(input)
+    form.appendChild(el('p', 'dp-room-public-hint', '域名默认按 HTTPS 反向代理处理，本机监听 127.0.0.1:47824；公网 IP 直连请填 http://IP:端口。填好后创建房间，会生成可粘贴的邀请串。'))
+    ui.content.appendChild(form)
+    if (focusPublic) {
+      focusPublic = false
+      setTimeout(function () { try { input.focus() } catch { /* 面板可能已经关了 */ } }, 0)
+    }
+  }
+
   if (joinMode) {
     const form = el('div', 'dp-room-form')
     const input = /** @type {HTMLInputElement} */ (el('input', 'dp-room-input'))
     input.type = 'text'
     input.maxLength = 512
-    input.placeholder = '输入房间码，例如 7K2M'
+    input.placeholder = '房间码，或 https://域名/#PIG-7K2M'
     input.autocomplete = 'off'
     input.spellcheck = false
     input.setAttribute('data-room-input', 'true')
@@ -236,7 +274,7 @@ function renderLobby(ui, bridge) {
     submit.textContent = busy ? '加入中…' : '加入'
     form.appendChild(submit)
     ui.content.appendChild(form)
-    ui.content.appendChild(el('p', 'dp-room-note', '也可以粘贴完整邀请串 piggy://…'))
+    ui.content.appendChild(el('p', 'dp-room-note', '也可以粘贴完整邀请串：piggy://…、piggys://… 或 https://…/#房间码'))
     if (focusJoin) {
       focusJoin = false
       setTimeout(function () { try { input.focus() } catch { /* 面板可能已经关了 */ } }, 0)
@@ -257,19 +295,28 @@ function renderRoom(ui, bridge, status) {
   const codeRow = el('div', 'dp-room-code-row')
   const code = el('span', 'dp-room-code', 'PIG-' + status.code)
   codeRow.appendChild(code)
+  const invite = typeof status.invite === 'string' ? status.invite : ''
   const copy = button('dp-mini dp-mini-plain dp-room-copy', { 'data-room-copy': 'true' }, function () {
     Promise.resolve(bridge.copy()).then(function (result) {
-      notice = result?.ok === true ? '房间码已复制' : '复制失败'
+      notice = result?.ok === true ? (result.invite === true ? '邀请串已复制' : '房间码已复制') : '复制失败'
       ui.renderContent()
     }).catch(function () {
       notice = '复制失败'
       ui.renderContent()
     })
   })
-  copy.textContent = '复制'
+  copy.textContent = invite !== '' ? '复制邀请' : '复制'
   codeRow.appendChild(copy)
   card.appendChild(codeRow)
-  card.appendChild(el('p', 'dp-room-hint', '同一局域网的朋友输入这个房间码就能加入'))
+  if (invite !== '') {
+    card.appendChild(el('p', 'dp-room-hint', '朋友粘贴这条邀请串加入'))
+    card.appendChild(el('div', 'dp-room-invite', invite))
+    if (status.localPort > 0) {
+      card.appendChild(el('p', 'dp-room-hint', '本机中继端口 ' + status.localPort + '；反向代理指到这个端口，对外地址保持 ' + status.publicUrl))
+    }
+  } else {
+    card.appendChild(el('p', 'dp-room-hint', '同一局域网的朋友输入这个房间码就能加入'))
+  }
 
   const players = Array.isArray(status.players) ? status.players : []
   const list = el('div', 'dp-room-players')
@@ -310,6 +357,7 @@ function renderRoom(ui, bridge, status) {
 }
 
 export function renderRoomTab(ui) {
+  if (activeUi !== ui) fetchedAt = 0
   activeUi = ui
   const bridge = roomBridge()
   if (bridge === null) {

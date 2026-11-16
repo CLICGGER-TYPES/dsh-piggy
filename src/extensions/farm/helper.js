@@ -137,7 +137,7 @@ export function helperView(data, now = Date.now()) {
   }
   return { hired: helper.hired, enabled: helper.enabled, plots: managed, stored: helperCount(data), usedHours: helper.usedMs / 3600000,
     capacityHours: null, full: false, continuous: helper.enabled, seedless, missing: [...new Set(missing)].map(key => cropFor(key).label),
-    count: helper.workers.length, max: HELPER_MAX, canHire: helper.workers.length < HELPER_MAX,
+    count: helper.workers.length, max: HELPER_MAX, perWorker: HELPER_PLOTS_PER_WORKER, canHire: helper.workers.length < HELPER_MAX,
     hirePrice: HELPER_PRICES.hire, schedule: helper.schedule,
     onDuty, resting, restUntil, activePlots: managed,
     energy: workers.length === 0 ? 0 : Math.round(energySum / workers.length * 1000) / 1000,

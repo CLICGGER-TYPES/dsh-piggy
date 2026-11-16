@@ -135,16 +135,27 @@ test('status 只返回白名单字段，邀请码与 token 不随状态外泄', 
   assert.equal(JSON.stringify(status).includes(CODE), false)
 })
 
-test('加入只读：解析单条邀请串、拒绝公网/https/坏码、成功后摘要不含 token', async () => {
+test('加入只读：解析局域网/公网/域名/HTTPS 邀请串、拒绝坏码、成功后摘要不含 token', async () => {
   const host = fakeHost()
   const manager = makeManager(host)
 
   assert.deepEqual(parseOwnerNetworkInvite(LINK), {
-    ok: true, address: '192.168.1.20', port: 53421, invitation: CODE, baseUrl: 'http://192.168.1.20:53421',
+    ok: true, address: '192.168.1.20', port: 53421, invitation: CODE,
+    protocol: 'http', baseUrl: 'http://192.168.1.20:53421',
   })
-  assert.equal(parseOwnerNetworkInvite(`https://192.168.1.20:53421#${CODE}`).reason, 'join-https-unsupported')
-  assert.equal(parseOwnerNetworkInvite(`piggy://example.local:53421#${CODE}`).reason, 'invite-address-invalid')
-  assert.equal(parseOwnerNetworkInvite(`piggy://192.0.2.8:53421#${CODE}`).reason, 'invite-address-not-private')
+  assert.deepEqual(parseOwnerNetworkInvite(`https://192.168.1.20:53421#${CODE}`), {
+    ok: true, address: '192.168.1.20', port: 53421, invitation: CODE,
+    protocol: 'https', baseUrl: 'https://192.168.1.20:53421',
+  })
+  assert.deepEqual(parseOwnerNetworkInvite(`piggys://piggy.example.com:443#${CODE}`), {
+    ok: true, address: 'piggy.example.com', port: 443, invitation: CODE,
+    protocol: 'https', baseUrl: 'https://piggy.example.com:443',
+  })
+  assert.deepEqual(parseOwnerNetworkInvite(`piggy://192.0.2.8:53421#${CODE}`), {
+    ok: true, address: '192.0.2.8', port: 53421, invitation: CODE,
+    protocol: 'http', baseUrl: 'http://192.0.2.8:53421',
+  })
+  assert.equal(parseOwnerNetworkInvite(`piggy://999.1.1.1:53421#${CODE}`).reason, 'invite-address-invalid')
   assert.equal(parseOwnerNetworkInvite(`piggy://192.168.1.20:0#${CODE}`).reason, 'invite-port-invalid')
   assert.equal(parseOwnerNetworkInvite(`piggy://192.168.1.20:70000#${CODE}`).reason, 'invite-port-invalid')
   assert.equal(parseOwnerNetworkInvite(`piggy://192.168.1.20:53421#${'a'.repeat(63)}`).reason, 'invite-code-invalid')
@@ -233,4 +244,16 @@ test('owner network IPC is panel-only for listener, address enumeration and read
   assert.deepEqual(await call('join-status', { panel: true }), { ok: true, joining: false })
   assert.deepEqual(await call('join-leave', { panel: true }), { ok: true, joining: false })
   assert.deepEqual(calls, ['addresses', ['start', ''], ['join', ''], ['join', LINK], ['invite', 'pig-a'], 'join-status', 'join-leave'])
+})
+
+test('公网 HTTPS 邀请串按 https baseUrl 加入只读会话', async () => {
+  const host = fakeHost()
+  const manager = makeManager(host)
+  const link = `piggys://piggy.example.com:443#${CODE}`
+  const joined = await manager.join(link)
+  assert.equal(joined.ok, true)
+  assert.deepEqual(host.calls.find(call => Array.isArray(call) && call[0] === 'join'), ['join',
+    { baseUrl: 'https://piggy.example.com:443', invitation: CODE }])
+  assert.deepEqual(joined.endpoint, { address: 'piggy.example.com', port: 443 })
+  await manager.joinLeave()
 })

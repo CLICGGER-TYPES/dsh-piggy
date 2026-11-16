@@ -331,6 +331,7 @@ export const CSS_TABS = [
   '100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}',
   '.dp-fx{position:absolute;z-index:1;pointer-events:none;font-size:17px;',
   'animation:dp-rise 1.1s ease-out forwards}',
+  '.dp-eat-bite{position:absolute;z-index:7;pointer-events:none;display:block}',
   '@keyframes dp-rise{0%{opacity:0;transform:translate(var(--dx0,0),4px) scale(.5)}18%{opacity:1}',
   '100%{opacity:0;transform:translate(var(--dx,0),-56px) scale(1.15)}}',
   // 提示条插在面板最上面、把内容往下推，不再浮在面板上压住标题和第一排图标（用户 2026-10-05 反馈）。

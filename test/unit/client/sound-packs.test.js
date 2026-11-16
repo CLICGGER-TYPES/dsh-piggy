@@ -33,8 +33,8 @@ test('sounds.generated.js 与 pack.json 同步', () => {
   assert.equal(actual, expected, '运行 npm run assets:sync')
 })
 
-test('10 个内置配方数值保持不变', () => {
-  assert.deepEqual(SOUND_KEYS, ['tap', 'lift', 'toss', 'bounce', 'land-soft', 'land-hard', 'dizzy', 'purr', 'flip', 'catch'])
+test('12 个内置配方数值保持不变', () => {
+  assert.deepEqual(SOUND_KEYS, ['tap', 'lift', 'toss', 'bounce', 'land-soft', 'land-hard', 'dizzy', 'purr', 'flip', 'catch', 'chomp', 'gulp'])
   assert.deepEqual(RECIPES, {
     tap: { tones: [{ type: 'sine', from: 660, to: 520, ms: 70, gain: 0.35 }] },
     lift: { tones: [{ type: 'triangle', from: 340, to: 760, ms: 110, gain: 0.4 }] },
@@ -46,6 +46,8 @@ test('10 个内置配方数值保持不变', () => {
     purr: { tones: [{ type: 'sawtooth', from: 72, to: 62, ms: 280, gain: 0.28 }] },
     flip: { tones: [], noise: { from: 2400, to: 700, ms: 90, gain: 0.22, type: 'highpass' } },
     catch: { tones: [{ type: 'square', from: 460, to: 380, ms: 70, gain: 0.28 }] },
+    chomp: { tones: [{ type: 'triangle', from: 180, to: 90, ms: 80, gain: 0.3 }], noise: { from: 1800, to: 500, ms: 80, gain: 0.4, type: 'bandpass' } },
+    gulp: { tones: [{ type: 'sine', from: 210, to: 85, ms: 120, gain: 0.3 }, { type: 'sine', from: 150, to: 70, ms: 120, gain: 0.22, delay: 80 }] },
   })
 })
 

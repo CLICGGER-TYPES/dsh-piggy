@@ -38,7 +38,7 @@ test('帮工页签：总览 N/5 + 总覆盖块数，每只一行带角色徽章�
   const { data, clock } = crew(2, ['harvest', 'patrol'])
   const ui = openHelperShop(farm.view(data, clock))
   assert.match(ui.text(), /帮工 2\/5/)
-  assert.match(ui.text(), /共管 4 块地/)
+  assert.match(ui.text(), /共管 4\/18 块地/)
   assert.equal(ui.all('data-farm-helper-worker').length, 2)
   const badges = ui.all('data-role')
   assert.deepEqual(badges.map(node => node.textContent), ['收菜', '巡逻'])
@@ -110,4 +110,21 @@ test('旧服务端没有 workers：退回原单帮工卡片，不渲染角色按
   assert.match(ui.text(), /已雇用 · 管 4 块地/)
   assert.match(ui.text(), /帮工仓/)
   assert.match(ui.text(), /托管开关/)
+})
+
+test('18 块地：4 只时提示再雇 1 只；5 只里有巡逻时提示改收菜', () => {
+  const four = crew(4)
+  let ui = openHelperShop(farm.view(four.data, four.clock))
+  assert.match(ui.text(), /再雇 1 只收菜帮工，覆盖可到 18 块（当前 16\/18）/)
+
+  const mixed = crew(5, ['harvest', 'harvest', 'harvest', 'harvest', 'patrol'])
+  ui = openHelperShop(farm.view(mixed.data, mixed.clock))
+  assert.match(ui.text(), /帮工 5\/5/)
+  assert.match(ui.text(), /有 1 只巡逻帮工/)
+  assert.match(ui.text(), /改成收菜可多覆盖 2 块/)
+
+  const all = crew(5)
+  ui = openHelperShop(farm.view(all.data, all.clock))
+  assert.match(ui.text(), /共管 18 块地/)
+  assert.doesNotMatch(ui.text(), /再雇 1 只收菜帮工/)
 })

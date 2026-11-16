@@ -78,7 +78,7 @@ export async function defaultGit(args, { cwd, sslVerify = true, timeoutMs: reque
     : ['-c', 'user.name=dsh-piggy', '-c', 'user.email=dsh-piggy@localhost', '-c', 'http.sslVerify=false', ...args]
   try {
     const result = await run('git', full, { cwd, windowsHide: true, timeout: timeoutMs, killSignal: 'SIGKILL',
-      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' } })
+      env: { ...process.env, LC_ALL: 'C', LANG: 'C', GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' } })
     return { stdout: result.stdout, stderr: result.stderr }
   } catch (error) { throw gitFailure(error, args[0] ?? 'command', timeoutMs) }
 }
@@ -97,7 +97,7 @@ export async function defaultGitBinary(args, { cwd, sslVerify = true, timeoutMs:
     const result = await run('git', full, {
       cwd, windowsHide: true, encoding: 'buffer', maxBuffer: 64 * 1024 * 1024,
       timeout: timeoutMs, killSignal: 'SIGKILL',
-      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' },
+      env: { ...process.env, LC_ALL: 'C', LANG: 'C', GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' },
     })
     return /** @type {Buffer} */ (result.stdout)
   } catch (error) { throw gitFailure(error, args[0] ?? 'command', timeoutMs) }

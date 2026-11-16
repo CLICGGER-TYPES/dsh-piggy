@@ -1,21 +1,18 @@
 // @ts-check
 /** 房间客户端：配对、长轮询、位置/表情更新。token 只留在闭包里。 */
 import { randomUUID } from 'node:crypto'
-import { isIP } from 'node:net'
 
-import { ownerNetworkAddressKind } from './owner-network-addresses.js'
 import { normalizeRoomCode } from './room-code.js'
-import { normalizeProfile } from './room-protocol.js'
+import { normalizeProfile, validRoomHost } from './room-protocol.js'
 
 /**
  * @param {{baseUrl:string,code:string,profile:any,clientId?:string,fetch?:typeof globalThis.fetch}} options
  */
 export function createRoomClient({ baseUrl, code, profile, clientId = randomUUID(), fetch = globalThis.fetch }) {
   const base = new URL(baseUrl)
-  const kind = ownerNetworkAddressKind(base.hostname)
-  const valid = base.protocol === 'http:' && isIP(base.hostname) === 4 && (kind === 'loopback' || kind === 'private' || kind === 'link-local')
+  const valid = (base.protocol === 'http:' || base.protocol === 'https:') && validRoomHost(base.hostname)
   if (!valid || base.username !== '' || base.password !== '' || base.search !== '' || base.hash !== '' || base.pathname !== '/') {
-    throw new TypeError('room client requires a private IPv4 HTTP endpoint')
+    throw new TypeError('room client requires an HTTP or HTTPS endpoint with a valid host')
   }
   const roomCode = normalizeRoomCode(code)
   if (roomCode === null) throw new TypeError('room client code is invalid')

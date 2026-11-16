@@ -11,6 +11,8 @@
     { "key": "dizzy", "synth": { "tones": [{ "type": "sine", "from": 720, "to": 560, "ms": 150, "gain": 0.32 }, { "type": "sine", "from": 640, "to": 480, "ms": 180, "gain": 0.3, "delay": 130 }] } },
     { "key": "purr", "synth": { "tones": [{ "type": "sawtooth", "from": 72, "to": 62, "ms": 280, "gain": 0.28 }] } },
     { "key": "flip", "synth": { "tones": [], "noise": { "from": 2400, "to": 700, "ms": 90, "gain": 0.22, "type": "highpass" } } },
-    { "key": "catch", "synth": { "tones": [{ "type": "square", "from": 460, "to": 380, "ms": 70, "gain": 0.28 }] } }
+    { "key": "catch", "synth": { "tones": [{ "type": "square", "from": 460, "to": 380, "ms": 70, "gain": 0.28 }] } },
+    { "key": "chomp", "synth": { "tones": [{ "type": "triangle", "from": 180, "to": 90, "ms": 80, "gain": 0.3 }], "noise": { "from": 1800, "to": 500, "ms": 80, "gain": 0.4, "type": "bandpass" } } },
+    { "key": "gulp", "synth": { "tones": [{ "type": "sine", "from": 210, "to": 85, "ms": 120, "gain": 0.3 }, { "type": "sine", "from": 150, "to": 70, "ms": 120, "gain": 0.22, "delay": 80 }] } }
   ]
 }

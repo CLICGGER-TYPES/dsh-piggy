@@ -21,7 +21,7 @@ export function registerRoomIpc({ ipcMain, fromPanelOnly, fromRoom, manager, roo
 
   ipcMain.handle('piggy:room:status', either(() => manager.status()))
 
-  ipcMain.handle('piggy:room:host', panel((event, profile) => manager.host(profile)))
+  ipcMain.handle('piggy:room:host', panel((event, profile, options) => manager.host(profile, options)))
 
   ipcMain.handle('piggy:room:join', panel((event, input, profile) => manager.join(input, profile)))
 
@@ -40,9 +40,11 @@ export function registerRoomIpc({ ipcMain, fromPanelOnly, fromRoom, manager, roo
     if (clipboard === undefined || typeof clipboard.writeText !== 'function') return { ok: false, reason: '剪贴板不可用' }
     const status = manager.status()
     if (status?.inRoom !== true || typeof status.code !== 'string') return { ok: false, reason: '不在房间里' }
+    const invite = typeof status.invite === 'string' && status.invite !== '' ? status.invite : ''
+    const text = invite !== '' ? invite : formatRoomCode(status.code)
     try {
-      clipboard.writeText(formatRoomCode(status.code))
-      return { ok: true, code: formatRoomCode(status.code) }
+      clipboard.writeText(text)
+      return { ok: true, code: formatRoomCode(status.code), invite: invite !== '' }
     } catch {
       return { ok: false, reason: '复制失败' }
     }

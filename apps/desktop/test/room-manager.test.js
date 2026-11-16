@@ -137,3 +137,74 @@ test('没有局域网地址或没有找到房间时给出可读原因', async ()
   assert.equal(joined.ok, false)
   assert.match(joined.reason, /没有找到/)
 })
+
+test('公网域名：回环监听 + 反向代理 Host，生成 HTTPS 邀请串，不走局域网发现', async () => {
+  let started = null
+  let discovery = 0
+  const manager = createRoomManager({
+    startServer: async options => {
+      started = options
+      return { status: () => ({ running: true, port: 51234, code: options.code }), close: async () => {} }
+    },
+    startDiscovery: async () => { discovery += 1; return { close: () => {} } },
+    createClient: options => {
+      assert.equal(options.baseUrl, 'http://127.0.0.1:51234')
+      return fakeClient()
+    },
+  })
+  const hosted = await manager.host(PROFILE, { publicUrl: 'https://piggy.example.com' })
+  assert.equal(hosted.ok, true)
+  assert.equal(started.listenAddress, '127.0.0.1')
+  assert.equal(started.port, 47824)
+  assert.equal(started.advertisedHost, 'piggy.example.com')
+  assert.equal(started.advertisedPort, 443)
+  assert.equal(started.allowPublic, true)
+  assert.equal(started.trustProxy, true)
+  assert.equal(discovery, 0)
+  assert.equal(hosted.publicUrl, 'https://piggy.example.com')
+  assert.equal(hosted.invite, `https://piggy.example.com/#PIG-${hosted.code}`)
+  assert.equal(hosted.localPort, 51234)
+  await manager.leave()
+})
+
+test('公网 IPv4 直连：监听所有网卡，邀请串带回公网地址和端口', async () => {
+  let started = null
+  const manager = createRoomManager({
+    startServer: async options => {
+      started = options
+      return { status: () => ({ running: true, port: 47824, code: options.code }), close: async () => {} }
+    },
+    createClient: () => fakeClient(),
+  })
+  const hosted = await manager.host(PROFILE, { publicUrl: 'http://203.0.113.8:47824' })
+  assert.equal(hosted.ok, true)
+  assert.equal(started.listenAddress, '0.0.0.0')
+  assert.equal(started.port, 47824)
+  assert.equal(started.advertisedHost, '203.0.113.8')
+  assert.equal(started.advertisedPort, 47824)
+  assert.equal(started.allowPublic, true)
+  assert.equal(started.trustProxy, false)
+  assert.equal(hosted.invite, `http://203.0.113.8:47824/#PIG-${hosted.code}`)
+  await manager.leave()
+})
+
+test('公网地址格式错误时给出可读原因；HTTPS 邀请串按 https 连接', async () => {
+  const manager = createRoomManager({
+    startServer: async () => ({ status: () => ({ running: true, port: 5000 }), close: async () => {} }),
+    createClient: () => fakeClient(),
+  })
+  const bad = await manager.host(PROFILE, { publicUrl: 'https://piggy.example.com/path' })
+  assert.equal(bad.ok, false)
+  assert.match(bad.reason, /公网地址/)
+
+  const joined = createRoomManager({
+    findHost: async () => { throw new Error('不该走发现') },
+    createClient: options => {
+      assert.equal(options.baseUrl, 'https://piggy.example.com:443')
+      return fakeClient()
+    },
+  })
+  const result = await joined.join('https://piggy.example.com/#PIG-7K2M', PROFILE)
+  assert.equal(result.ok, true)
+  await joined.leave()
+})

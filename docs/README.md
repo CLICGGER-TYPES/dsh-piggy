@@ -6,6 +6,7 @@
 
 - [怎么玩：操作、App 与养成规则](guides/gameplay.md)
 - [桌面版安装与存档](guides/desktop.md)
+- [自建公网联机服务器（不同网络的朋友一起玩）](guides/public-room-server.md)
 - [更新机制：游戏包与桌面外壳](guides/updates.md)
 - [换肤与导入自定义皮肤](guides/skins.md)
 - [制作自己的皮肤](guides/creating-skins.md)
@@ -28,6 +29,7 @@
 - [界面规范：面板、按钮、扩展页面](guides/ui-style.md)
 - [动效、渲染和配色：先用成熟的库（Motion / GSAP / PixiJS / Three.js / Rough.js / mo.js / Chroma.js 怎么选）](guides/motion-libraries.md)
 - [桌面版架构与 IPC 参考](guides/desktop-architecture.md)
+- [独立房间服务器（无 Electron，公网长期开房）](../apps/room-server/README.md)
 
 ## 项目资料
 

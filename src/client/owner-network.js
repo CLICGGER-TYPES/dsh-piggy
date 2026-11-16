@@ -167,7 +167,7 @@ async function startHost(ui) {
     if (result?.ok === true) {
       state.status = { ...normalizeStatus({ ok: true, available: true, ...state.status, ...result }) }
       state.statusAt = now()
-      state.notice = '联机已开启；把邀请串发给同一局域网的另一台设备'
+      state.notice = '联机已开启；把邀请串发给另一台设备（局域网或公网）'
     } else {
       state.error = reasonText(result?.reason, '开启失败，请稍后重试')
     }
@@ -309,12 +309,12 @@ export function renderOwnerNetworkSettings(ui, section) {
 
   if (state.status === null || now() - state.statusAt > STATUS_TTL_MS) void requestStatus(ui)
   if (state.status === null) {
-    const loading = section(ui, '局域网联机', '同一局域网的另一台设备可以只读查看这只猪')
+    const loading = section(ui, '局域网联机', '另一台设备可以只读查看这只猪（局域网或公网）')
     loading.box.appendChild(el('p', 'dp-dim', '正在读取本机联机状态…'))
     return
   }
   if (state.status.available !== true) {
-    const box = section(ui, '局域网联机', '同一局域网的另一台设备可以只读查看这只猪')
+    const box = section(ui, '局域网联机', '另一台设备可以只读查看这只猪（局域网或公网）')
     box.box.appendChild(el('p', 'dp-dim', state.status.reason || '本机联机暂不可用'))
     return
   }
@@ -329,7 +329,7 @@ export function renderOwnerNetworkSettings(ui, section) {
 
   const note = running
     ? `运行中 · 已配对 ${state.status.pairedClients} 台`
-    : '同一局域网的另一台设备可以只读查看这只猪；默认关闭，需要手动开启'
+    : '另一台设备可以只读查看这只猪；默认关闭，需要手动开启'
   const box = section(ui, '局域网联机', note)
   const badge = el('small', 'dp-lan-badge', running ? '运行中' : '未开启')
   box.head.appendChild(badge)

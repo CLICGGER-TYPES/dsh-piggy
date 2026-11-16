@@ -54,7 +54,7 @@ test('工作中：每只一行有精力条、状态词、百分比和休息按�
   assert.match(ui.text(), /工作中/)
   assert.match(ui.text(), /还剩/)
   assert.match(ui.text(), /在岗 1 \/ 休息 0/)
-  assert.match(ui.text(), /共管 4 块地/)
+  assert.match(ui.text(), /共管 4\/18 块地/)
 
   const rest = ui.find('data-farm-rest', 'rest')
   assert.ok(rest, '在岗帮工要能手动休息')

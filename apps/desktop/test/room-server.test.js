@@ -1,5 +1,6 @@
 // @ts-check
 import assert from 'node:assert/strict'
+import { request as httpRequest } from 'node:http'
 import { test } from 'node:test'
 
 import { createRoomClient } from '../lib/room-client.js'
@@ -139,6 +140,89 @@ test('联机照顾：客人发意图，目标回结果并更新公开状态', as
   } finally {
     await host.close().catch(() => {})
     await guest.close().catch(() => {})
+    await server.close()
+  }
+})
+
+function publicJoin(port, headers, clientId = 'public-client') {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest({
+      host: '127.0.0.1', port, method: 'POST', path: '/v1/room/join',
+      headers: { 'content-type': 'application/json', ...headers },
+    }, response => {
+      const chunks = []
+      response.on('data', chunk => chunks.push(chunk))
+      response.once('end', () => {
+        let body = null
+        try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { /* keep null */ }
+        resolve({ status: response.statusCode, body })
+      })
+    })
+    request.once('error', reject)
+    request.end(JSON.stringify({ clientId, code: '7K2M', profile: PROFILE_A }))
+  })
+}
+
+test('公网域名：接受反向代理 Host / X-Forwarded-Host，拒绝陌生 Host', async () => {
+  const server = await startRoomServer({
+    code: '7K2M', listenAddress: '127.0.0.1',
+    advertisedHost: 'piggy.example.com', advertisedPort: 443,
+    allowPublic: true, trustProxy: true,
+  })
+  const port = server.status().port
+  try {
+    const direct = await publicJoin(port, { host: 'piggy.example.com' })
+    assert.equal(direct.status, 200)
+    assert.equal(direct.body.ok, true)
+
+    const forwarded = await publicJoin(port, {
+      host: `127.0.0.1:${port}`,
+      'x-forwarded-host': 'piggy.example.com:443',
+      'x-forwarded-proto': 'https',
+    }, 'public-client-2')
+    assert.equal(forwarded.status, 200)
+    assert.equal(forwarded.body.ok, true)
+
+    const upper = await publicJoin(port, { host: 'PIGGY.EXAMPLE.COM' }, 'public-client-3')
+    assert.equal(upper.status, 200)
+
+    const hostile = await publicJoin(port, { host: 'evil.example.com' }, 'public-client-4')
+    assert.equal(hostile.status, 403)
+    assert.equal(hostile.body.reason, 'forbidden')
+  } finally {
+    await server.close()
+  }
+})
+
+test('公网监听必须显式 allowPublic；通配监听配 explicit host 可加入', async () => {
+  await assert.rejects(startRoomServer({ code: '7K2M', listenAddress: '0.0.0.0' }), /allowPublic/)
+  const server = await startRoomServer({
+    code: '7K2M', listenAddress: '0.0.0.0',
+    advertisedHost: '127.0.0.1', allowPublic: true,
+  })
+  try {
+    assert.equal(server.status().host, '127.0.0.1')
+    const joined = await publicJoin(server.status().port, { host: `127.0.0.1:${server.status().port}` })
+    assert.equal(joined.status, 200)
+    assert.equal(joined.body.ok, true)
+  } finally {
+    await server.close()
+  }
+})
+
+test('域名客户端：createRoomClient 可以用 localhost 主机名加入', async () => {
+  const server = await startRoomServer({ code: '7K2M', listenAddress: '127.0.0.1', advertisedHost: 'localhost' })
+  const client = createRoomClient({
+    baseUrl: `http://localhost:${server.status().port}`,
+    code: '7K2M',
+    profile: PROFILE_A,
+  })
+  try {
+    const joined = await client.join()
+    assert.equal(joined.players.length, 1)
+    assert.equal(joined.players[0].name, '猪猪')
+  } finally {
+    await client.close().catch(() => {})
     await server.close()
   }
 })

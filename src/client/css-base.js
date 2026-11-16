@@ -281,7 +281,7 @@ export const CSS_BASE = [
   '.dp-pig[data-mood="dead"]{animation:none}'
   ,'.dp-pig[data-mood="dead"] .dp-pig-img,.dp-pig[data-mood="dead"] .dp-pig-emoji{filter:grayscale(1) drop-shadow(0 4px 6px rgba(61,52,40,.28))}',
   '.dp-pig[data-react]{animation-duration:.85s;animation-iteration-count:1}',
-  '.dp-pig[data-react="feed"]{animation-name:dp-feed-hop}',
+  '.dp-pig[data-react="feed"]{animation:none}',
   '.dp-pig[data-react="bathe"]{animation-name:dp-wobble;animation-duration:1.05s}',
   '.dp-pig[data-react="play"]{animation-name:dp-play-hop;animation-duration:.9s}',
   '.dp-pig[data-react="away"]{animation-name:dp-jump;animation-duration:.9s}',

@@ -77,13 +77,25 @@ test('位置与表情只接受房间支持的取值', () => {
   assert.equal(normalizeEmote('explode'), '')
 })
 
-test('加入输入支持房间码和完整邀请串，拒绝公网地址', () => {
+test('加入输入支持房间码、局域网/公网地址、域名和 HTTPS 邀请串', () => {
   assert.deepEqual(parseRoomInput('7K2M'), { ok: true, code: '7K2M' })
   assert.equal(parseRoomInput('PIG-0000').ok, false)
   assert.deepEqual(parseRoomInput('piggy://192.168.1.20:53421#PIG-7K2M'),
-    { ok: true, code: '7K2M', address: '192.168.1.20', port: 53421 })
-  assert.equal(parseRoomInput('piggy://8.8.8.8:53421#PIG-7K2M').ok, false)
+    { ok: true, code: '7K2M', address: '192.168.1.20', port: 53421, protocol: 'http' })
+  assert.deepEqual(parseRoomInput('piggy://8.8.8.8:53421#PIG-7K2M'),
+    { ok: true, code: '7K2M', address: '8.8.8.8', port: 53421, protocol: 'http' })
+  assert.deepEqual(parseRoomInput('piggys://piggy.example.com:443#PIG-7K2M'),
+    { ok: true, code: '7K2M', address: 'piggy.example.com', port: 443, protocol: 'https' })
+  assert.deepEqual(parseRoomInput('https://piggy.example.com/#PIG-7K2M'),
+    { ok: true, code: '7K2M', address: 'piggy.example.com', port: 443, protocol: 'https' })
+  assert.deepEqual(parseRoomInput('http://203.0.113.8:47824/#PIG-7K2M'),
+    { ok: true, code: '7K2M', address: '203.0.113.8', port: 47824, protocol: 'http' })
   assert.equal(parseRoomInput('piggy://192.168.1.20:99999#PIG-7K2M').ok, false)
+  assert.equal(parseRoomInput('piggy://999.1.1.1:53421#PIG-7K2M').ok, false)
+  assert.equal(parseRoomInput('https://piggy.example.com/path/#PIG-7K2M').ok, false)
+  assert.equal(parseRoomInput('http://0.0.0.0:47824/#PIG-7K2M').ok, false)
+  assert.equal(parseRoomInput('http://255.255.255.255:47824/#PIG-7K2M').ok, false)
+  assert.equal(parseRoomInput('https://user:pass@piggy.example.com/#PIG-7K2M').ok, false)
 })
 
 test('房间广播地址按网卡子网计算，发现报文格式固定', () => {

@@ -246,7 +246,10 @@ contextBridge.exposeInMainWorld('piggyShell', {
    */
   room: {
     status: () => ipcRenderer.invoke('piggy:room:status'),
-    host: profile => ipcRenderer.invoke('piggy:room:host', roomProfile(profile)),
+    host: (profile, options) => ipcRenderer.invoke('piggy:room:host', roomProfile(profile), {
+      publicUrl: typeof options?.publicUrl === 'string' ? options.publicUrl.slice(0, 512) : '',
+      port: Number.isSafeInteger(options?.port) ? options.port : 0,
+    }),
     join: (input, profile) => ipcRenderer.invoke('piggy:room:join',
       typeof input === 'string' ? input.slice(0, 512) : '', roomProfile(profile)),
     open: () => ipcRenderer.invoke('piggy:room:open'),

@@ -5,14 +5,15 @@
  */
 import { networkInterfaces as systemNetworkInterfaces } from 'node:os'
 
-import { enumerateOwnerNetworkAddresses } from './owner-network-addresses.js'
+import { enumerateOwnerNetworkAddresses, ownerNetworkAddressKind } from './owner-network-addresses.js'
 import { generateRoomCode, normalizeRoomCode } from './room-code.js'
 import { createRoomClient } from './room-client.js'
 import { startRoomDiscovery } from './room-discovery.js'
 import { startRoomServer } from './room-server.js'
-import { normalizeEmote, normalizePosition, normalizeProfile, parseRoomInput } from './room-protocol.js'
+import { normalizeEmote, normalizePosition, normalizeProfile, parseRoomInput, validRoomHost } from './room-protocol.js'
 
 const MOVE_INTERVAL_MS = 50
+const DEFAULT_PUBLIC_PORT = 47824
 
 function messageOf(error, fallback) {
   return error instanceof Error && error.message !== '' ? error.message : fallback
@@ -20,6 +21,29 @@ function messageOf(error, fallback) {
 
 function delay(ms) {
   return new Promise(resolve => { const timer = setTimeout(resolve, ms); timer.unref?.() })
+}
+
+function isIpv4(value) {
+  return typeof value === 'string' && /^\d{1,3}(?:\.\d{1,3}){3}$/u.test(value)
+}
+
+/**
+ * 解析手动填写的公网地址：只接受 http(s)://host[:port]/，不要路径、查询或账号。
+ * @param {unknown} value
+ */
+export function parseRoomPublicUrl(value) {
+  if (typeof value !== 'string' || value.trim() === '') return null
+  let url
+  try { url = new URL(value.trim()) } catch { return null }
+  if ((url.protocol !== 'http:' && url.protocol !== 'https:') ||
+      url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '' ||
+      (url.pathname !== '/' && url.pathname !== '')) return null
+  const host = url.hostname.toLowerCase()
+  if (!validRoomHost(host)) return null
+  const protocol = url.protocol === 'https:' ? 'https' : 'http'
+  const port = url.port === '' ? (protocol === 'https' ? 443 : 80) : Number(url.port)
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) return null
+  return { protocol, host, port, origin: url.origin }
 }
 
 /**
@@ -73,6 +97,9 @@ export function createRoomManager(deps = {}) {
       careEvents: body.careEvents ?? [],
       careResults: body.careResults ?? [],
       endpoint: { address: session.address, port: session.port },
+      publicUrl: session.publicUrl ?? '',
+      invite: session.invite ?? '',
+      localPort: session.localPort ?? 0,
     }
     onUpdate(snapshot)
   }
@@ -162,12 +189,47 @@ export function createRoomManager(deps = {}) {
     current.moveTimer.unref?.()
   }
 
-  async function host(profile) {
+  async function host(profile, options = {}) {
     if (session !== null) return { ok: false, reason: '已经在房间里了' }
     let normalized
     try { normalized = normalizeProfile(profile) } catch (error) { return { ok: false, reason: messageOf(error, '小猪资料不完整') } }
-    const lan = lanAddress()
-    if (lan === null) return { ok: false, reason: '没有找到可用的局域网地址，请先连上 Wi-Fi 或网线' }
+    const publicUrl = options.publicUrl === undefined || options.publicUrl === ''
+      ? null
+      : parseRoomPublicUrl(options.publicUrl)
+    if (options.publicUrl !== undefined && options.publicUrl !== '' && publicUrl === null) {
+      return { ok: false, reason: '公网地址格式不对：填 https://域名 或 http://公网IP:端口，不要带路径' }
+    }
+    let listenAddress = ''
+    let listenPort = 0
+    let advertisedHost = ''
+    let advertisedPort = null
+    let allowPublic = false
+    let trustProxy = false
+    if (publicUrl === null) {
+      const lan = lanAddress()
+      if (lan === null) return { ok: false, reason: '没有找到可用的局域网地址，请先连上 Wi-Fi 或网线；公网服务器请填写对外地址' }
+      listenAddress = lan.address
+      advertisedHost = lan.address
+    } else {
+      const kind = ownerNetworkAddressKind(publicUrl.host)
+      advertisedHost = publicUrl.host
+      advertisedPort = publicUrl.port
+      if (kind === 'private' || kind === 'loopback' || kind === 'link-local') {
+        listenAddress = publicUrl.host
+        listenPort = publicUrl.port
+      } else if (isIpv4(publicUrl.host) && publicUrl.protocol === 'http') {
+        // 公网 IPv4 直连：监听所有网卡；用户自行处理防火墙、端口和访问控制。
+        listenAddress = '0.0.0.0'
+        listenPort = Number.isSafeInteger(options.port) && options.port > 0 ? options.port : publicUrl.port
+        allowPublic = true
+      } else {
+        // 域名或 HTTPS 公网 IP 默认走 TLS 反向代理：本机监听回环，代理转到这个固定端口。
+        listenAddress = '127.0.0.1'
+        listenPort = Number.isSafeInteger(options.port) && options.port > 0 ? options.port : DEFAULT_PUBLIC_PORT
+        allowPublic = true
+        trustProxy = true
+      }
+    }
     const code = generateRoomCode()
     /** @type {any} */
     let server = null
@@ -176,18 +238,26 @@ export function createRoomManager(deps = {}) {
     /** @type {any} */
     let client = null
     try {
-      server = await startServer({ code, listenAddress: lan.address, log })
+      server = await startServer({
+        code, listenAddress, port: listenPort,
+        advertisedHost, advertisedPort, allowPublic, trustProxy, log,
+      })
       const port = server.status().port
-      discovery = await startDiscovery({ code, httpPort: port, advertisedHost: lan.address })
-      client = createClient({ baseUrl: `http://${lan.address}:${port}`, code, profile: normalized })
+      const localAddress = listenAddress === '0.0.0.0' ? '127.0.0.1' : listenAddress
+      if (publicUrl === null) {
+        discovery = await startDiscovery({ code, httpPort: port, advertisedHost: localAddress })
+      }
+      client = createClient({ baseUrl: `http://${localAddress}:${port}`, code, profile: normalized })
       const joined = await client.join()
       session = {
         role: 'host', code, server, discovery, client,
-        selfId: joined.playerId, version: joined.version, address: lan.address, port,
+        selfId: joined.playerId, version: joined.version, address: localAddress, port,
+        localPort: port, publicUrl: publicUrl?.origin ?? '',
+        invite: publicUrl === null ? '' : `${publicUrl.origin}/#PIG-${code}`,
         stopped: false, moveTimer: null, moveBusy: false, pendingMove: null,
       }
       startLoop(session, joined)
-      log('room hosted', code, lan.address + ':' + port)
+      log('room hosted', code, localAddress + ':' + port, publicUrl?.origin ?? 'lan')
       return { ok: true, ...snapshot }
     } catch (error) {
       try { await client?.close() } catch { /* 未加入 */ }
@@ -215,7 +285,7 @@ export function createRoomManager(deps = {}) {
       endpoint = await findHost(parsed.code)
       if (endpoint === null) return { ok: false, reason: '没有找到这个房间，确认在同一 Wi-Fi 下，或粘贴完整邀请串' }
     }
-    const client = createClient({ baseUrl: `http://${endpoint.address}:${endpoint.port}`, code: parsed.code, profile: normalized })
+    const client = createClient({ baseUrl: `${parsed.protocol ?? 'http'}://${endpoint.address}:${endpoint.port}`, code: parsed.code, profile: normalized })
     try {
       const joined = await client.join()
       session = {

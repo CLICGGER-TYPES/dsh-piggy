@@ -10,12 +10,11 @@ import { button, el } from './dom.js'
 const STAGE_LABELS = Object.freeze({ box: '纸盒', piglet: '幼年猪', young: '青年猪', middle: '成年猪' })
 
 const REASON_TEXT = Object.freeze({
-  'invite-format-invalid': '邀请串格式不对：应为 piggy://IP:端口#邀请码',
-  'invite-address-invalid': '邀请串里的地址不是 IPv4',
-  'invite-address-not-private': '只能加入局域网私有地址（192.168.x.x、10.x.x.x、172.16–31.x.x）',
+  'invite-format-invalid': '邀请串格式不对：应为 piggy://主机:端口#邀请码、piggys://… 或 https://…/#邀请码',
+  'invite-address-invalid': '邀请串里的服务器地址不对：填 IPv4、域名或 localhost',
+  'invite-address-not-private': '这个旧版邀请串只支持局域网地址，请让对方重新生成',
   'invite-port-invalid': '邀请串里的端口无效（1–65535）',
   'invite-code-invalid': '邀请码应为 64 位小写十六进制，请重新复制',
-  'join-https-unsupported': '第一版不能加入加密主机；请让对方关闭 TLS 后用局域网地址连接',
   'join-self': '不能加入自己：这条邀请来自本机',
   'unreachable': '连接已断开：对方可能已停止联机或更换了地址',
   'session-expired': '连接空闲过期，请让对方重新生成邀请串',
@@ -35,7 +34,7 @@ export function reasonText(reason, fallback) {
   if (code === '') return fallback
   if (Object.hasOwn(REASON_TEXT, code)) return REASON_TEXT[code]
   if (/fetch failed|econnrefused|enetunreach|ehostunreach|timeout|timed out|network/iu.test(code)) {
-    return '连不上：确认同一局域网、地址端口正确、对方已开启联机、系统防火墙已放行'
+    return '连不上：确认地址/域名和端口正确、对方已开启联机、系统防火墙和证书已放行'
   }
   return code.length <= 200 ? code : fallback
 }
@@ -227,7 +226,7 @@ export function renderJoin(box, state, handlers) {
   const input = /** @type {HTMLInputElement} */ (el('input', 'dp-setting-field dp-lan-input'))
   input.type = 'text'
   input.value = state.draft
-  input.placeholder = 'piggy://192.168.1.20:53421#邀请码'
+  input.placeholder = 'piggy://192.168.1.20:53421#邀请码 或 https://域名/#邀请码'
   input.setAttribute('data-lan-join-input', 'true')
   input.setAttribute('aria-label', '邀请串')
   input.setAttribute('spellcheck', 'false')
@@ -251,6 +250,6 @@ export function renderJoin(box, state, handlers) {
   joinButton = join
   actions.appendChild(join)
   joinBox.appendChild(actions)
-  joinBox.appendChild(el('p', 'dp-dim', '粘贴对方复制的整条邀请串。第一版只读，且只支持局域网未加密连接。'))
+  joinBox.appendChild(el('p', 'dp-dim', '粘贴对方复制的整条邀请串；支持 HTTP 和 HTTPS。自建公网服务器请自行处理证书、防火墙和访问控制。只读，不会操作对方的猪。'))
   box.box.appendChild(joinBox)
 }

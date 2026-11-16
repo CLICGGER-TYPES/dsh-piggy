@@ -37,4 +37,11 @@ export const CSS_ROOM = [
   '.dp-room-player-tag{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--ac-primary-bg);color:var(--ac-primary-active);font-size:9.5px;font-weight:700}',
   '.dp-room-player-tag.host{background:#fdf0d2;color:#a57420}',
   '.dp-room-player.more{justify-content:center;font-size:10.5px;color:var(--ac-text-2)}',
+  '.dp-room-public-toggle{display:block;margin:-2px auto 8px;padding:2px 8px;border:0;background:transparent;color:var(--ac-primary-active);font-size:10.5px;line-height:1.4;text-decoration:underline;text-underline-offset:2px;cursor:pointer}',
+  '.dp-room-public-toggle:hover{color:var(--ac-primary)}',
+  '.dp-room-public-form{display:grid;gap:5px;margin:0 0 10px;padding:8px 10px;border:2px solid var(--ac-border-light);border-radius:14px;background:var(--ac-bg-input)}',
+  '.dp-room-public-form label{font-size:10.5px;color:var(--ac-text-2)}',
+  '.dp-room-public-form .dp-room-input{width:100%}',
+  '.dp-room-public-hint{margin:0;font-size:9.5px;line-height:1.45;color:var(--ac-text-2)}',
+  '.dp-room-invite{margin:6px 0 2px;padding:7px 9px;border:1.5px solid var(--ac-border-light);border-radius:12px;background:var(--ac-bg-content);color:var(--ac-text);font-size:10px;line-height:1.45;word-break:break-all}',
 ].join('')

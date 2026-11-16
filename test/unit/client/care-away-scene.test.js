@@ -45,10 +45,10 @@ test('feeding while away leaves the ongoing activity pose alone', () => {
   assert.equal(pig.getAttribute('data-activity'), 'work')
 })
 
-test('feeding at home still plays its own reaction', () => {
+test('feeding at home keeps the pig art unchanged', () => {
   const { pig, effects } = effectsWith(() => false)
   effects.flash('feed', { item: 'apple' })
-  assert.equal(pig.getAttribute('data-react'), 'feed')
+  assert.equal(pig.getAttribute('data-react'), null)
 })
 
 test('the shell wires the away state into the feedback layer', async () => {

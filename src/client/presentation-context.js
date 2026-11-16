@@ -110,6 +110,7 @@ export function createPresentationContext(options) {
     pomoHint: parts.pomoHint,
     root: root,
     art: art,
+    audio: audio,
     isStopped: isStopped,
     isAway: isAway,
   })

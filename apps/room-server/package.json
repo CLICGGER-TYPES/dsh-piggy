@@ -1,0 +1,16 @@
+{
+  "name": "@dsh-piggy/room-server",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Standalone in-memory room server for dsh-piggy.",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "dsh-piggy-room-server": "./server.mjs"
+  },
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

@@ -4,10 +4,10 @@
 
 | 部分 | 稳定版 | 预览版 |
 |---|---|---|
-| 游戏与 DSH 插件 | 0.37.2 | — |
-| 桌面外壳 | 0.6.8 | — |
+| 游戏与 DSH 插件 | 0.37.2 | 0.37.3-rc.2 |
+| 桌面外壳 | 0.6.8 | 0.6.9-rc.2 |
 | npm | `latest` 0.37.0 | `rc` 由维护者手动发布 |
-| 菜园扩展 | 4.0.10 | 4.5.0；经典版 3.2.4 |
+| 菜园扩展 | 4.0.10 | 4.5.1；经典版 3.2.5 |
 
 - 稳定版：[GitHub v0.37.2](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2)
 - 上一预览版：[GitHub v0.37.2-rc.15](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.15)

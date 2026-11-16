@@ -5,12 +5,12 @@
  */
 import { isAbsolute } from 'node:path'
 import { networkInterfaces as systemNetworkInterfaces } from 'node:os'
-import { isIP } from 'node:net'
 
-import { enumerateOwnerNetworkAddresses, ownerNetworkAddressKind } from './owner-network-addresses.js'
+import { enumerateOwnerNetworkAddresses } from './owner-network-addresses.js'
+import { validRoomHost } from './room-protocol.js'
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u
-const INVITE_LINK = /^piggy:\/\/([^/?#\s]+):(\d{1,5})#([^#\s]+)$/u
+const INVITE_LINK = /^(piggy|piggys):\/\/([^/?#\s]+):(\d{1,5})#([^#\s]+)$/u
 const INVITE_CODE = /^[a-f0-9]{64}$/u
 
 function sameSelection(config, active) {
@@ -49,24 +49,45 @@ function peerSummary(value) {
 }
 
 /**
- * 解析单条邀请串：`piggy://<私有 IPv4>:<端口>#<64 位邀请码>`。
- * 只接受具体私有 IPv4（含回环，便于同机自测），拒绝主机名、网段、公网和 https。
+ * 解析单条邀请串：
+ * - `piggy://<host>:<port>#<64 位邀请码>`（HTTP）
+ * - `piggys://<host>:<port>#<64 位邀请码>`（HTTPS）
+ * - `http(s)://<host>[:port]/#<64 位邀请码>`
+ *
+ * host 可以是私有/公网 IPv4、域名或 localhost；公网和 TLS 由用户自行部署并
+ * 承担安全责任。地址仍然只接受具体主机，不接受网段、通配和账号。
  * @param {unknown} link
  */
 export function parseOwnerNetworkInvite(link) {
   const text = typeof link === 'string' ? link.trim() : ''
   if (text === '') return { ok: false, reason: 'invite-format-invalid' }
-  if (/^https:\/\//iu.test(text)) return { ok: false, reason: 'join-https-unsupported' }
+  let protocol = 'http'
+  let address = ''
+  let portText = ''
+  let invitation = ''
   const match = INVITE_LINK.exec(text)
-  if (match === null) return { ok: false, reason: 'invite-format-invalid' }
-  const address = match[1], portText = match[2], invitation = match[3]
-  if (isIP(address) !== 4) return { ok: false, reason: 'invite-address-invalid' }
-  const kind = ownerNetworkAddressKind(address)
-  if (kind === null || kind === 'public') return { ok: false, reason: 'invite-address-not-private' }
+  if (match !== null) {
+    protocol = match[1].toLowerCase() === 'piggys' ? 'https' : 'http'
+    address = match[2].toLowerCase()
+    portText = match[3]
+    invitation = match[4]
+  } else if (/^https?:\/\//iu.test(text)) {
+    let url
+    try { url = new URL(text) } catch { return { ok: false, reason: 'invite-format-invalid' } }
+    if (url.username !== '' || url.password !== '' || url.search !== '' || url.hash === '' ||
+        (url.pathname !== '/' && url.pathname !== '')) return { ok: false, reason: 'invite-format-invalid' }
+    protocol = url.protocol === 'https:' ? 'https' : 'http'
+    address = url.hostname.toLowerCase()
+    portText = url.port === '' ? (protocol === 'https' ? '443' : '80') : url.port
+    invitation = url.hash.slice(1)
+  } else {
+    return { ok: false, reason: 'invite-format-invalid' }
+  }
+  if (!validRoomHost(address)) return { ok: false, reason: 'invite-address-invalid' }
   const port = Number(portText)
   if (!Number.isSafeInteger(port) || port < 1 || port > 65535) return { ok: false, reason: 'invite-port-invalid' }
   if (!INVITE_CODE.test(invitation)) return { ok: false, reason: 'invite-code-invalid' }
-  return { ok: true, address, port, invitation, baseUrl: `http://${address}:${port}` }
+  return { ok: true, address, port, invitation, protocol, baseUrl: `${protocol}://${address}:${port}` }
 }
 
 /**
@@ -76,7 +97,7 @@ export function parseOwnerNetworkInvite(link) {
 export function createOwnerNetworkManager(deps) {
   const networkInterfaces = deps.networkInterfaces ?? systemNetworkInterfaces
   const now = deps.now ?? Date.now
-  /** @type {{address:string,port:number,peer:any,connected:boolean,joinedAt:number}|null} */
+  /** @type {{address:string,port:number,protocol:string,peer:any,connected:boolean,joinedAt:number}|null} */
   let joinState = null
 
   function context() {
@@ -222,7 +243,7 @@ export function createOwnerNetworkManager(deps) {
       // 失败原因可能来自对端；只保留可读的一行，不回传 token。
       return { ok: false, reason }
     }
-    joinState = { address: parsed.address, port: parsed.port,
+    joinState = { address: parsed.address, port: parsed.port, protocol: parsed.protocol,
       peer: peerSummary(result?.peer ?? result), connected: true, joinedAt: now() }
     return joinSnapshot()
   }

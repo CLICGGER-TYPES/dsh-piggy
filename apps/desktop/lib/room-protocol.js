@@ -2,7 +2,6 @@
 /** 房间协议里跨进程 / 跨设备共用的字段校验。 */
 import { isIP } from 'node:net'
 
-import { ownerNetworkAddressKind } from './owner-network-addresses.js'
 import { normalizeRoomCode } from './room-code.js'
 
 export const ROOM_MAX_PLAYERS = 32
@@ -17,7 +16,26 @@ export const ROOM_UPDATE_MIN_MS = 30
 const CLIENT_ID = /^[A-Za-z0-9_.:-]{1,80}$/u
 const STAGE = /^[a-z][a-z0-9-]{0,31}$/u
 const ART = /^(?:pigs\/[A-Za-z0-9._/-]{1,160}\.(?:png|webp)|custom-[a-z0-9-]{1,41})(?:\?v=[a-f0-9]{1,32})?$/u
-const INVITE = /^piggy:\/\/([^/?#\s]+):(\d{1,5})#([^#\s]+)$/u
+const INVITE = /^(piggy|piggys):\/\/([^/?#\s]+):(\d{1,5})#([^#\s]+)$/u
+const HOSTNAME = /^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$/u
+
+/**
+ * 房间地址允许 IPv4、域名和 localhost；不接受 IPv6、通配地址和纯数字伪 IPv4。
+ * @param {unknown} value
+ */
+export function validRoomHost(value) {
+  if (typeof value !== 'string') return false
+  const host = value.trim().toLowerCase()
+  if (host === '' || host.length > 253) return false
+  if (isIP(host) === 4) {
+    const first = Number(host.split('.')[0])
+    return first > 0 && first < 224
+  }
+  if (isIP(host) !== 0) return false
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/u.test(host)) return false
+  if (host.includes('..')) return false
+  return HOSTNAME.test(host)
+}
 
 /** @param {unknown} value @returns {Record<string, any>|null} */
 function record(value) {
@@ -209,23 +227,43 @@ export function normalizeCareStats(value) {
 }
 
 /**
- * 加入输入：房间码，或完整邀请串 `piggy://<私有 IPv4>:<端口>#<房间码>`。
+ * 加入输入：房间码，或完整邀请串。
+ *
+ * 支持 `piggy://host:port#CODE`（HTTP）、`piggys://host:port#CODE`（HTTPS）、
+ * 以及 `http(s)://host[:port]/#CODE`。host 可以是局域网/公网 IPv4、域名或
+ * localhost；域名和公网地址由用户自行部署并承担安全责任。
+ *
  * @param {unknown} value
- * @returns {{ok:false,reason:string}|{ok:true,code:string,address?:string,port?:number}}
+ * @returns {{ok:false,reason:string}|{ok:true,code:string,address?:string,port?:number,protocol?:'http'|'https'}}
  */
 export function parseRoomInput(value) {
   const text = typeof value === 'string' ? value.trim() : ''
   if (text === '') return { ok: false, reason: '请输入房间码' }
-  if (/^piggy:\/\//iu.test(text)) {
+  if (/^(?:piggy|piggys):\/\//iu.test(text)) {
     const match = INVITE.exec(text)
     if (match === null) return { ok: false, reason: '邀请串格式不对' }
-    const address = match[1]
-    const port = Number(match[2])
-    const code = normalizeRoomCode(match[3])
-    if (isIP(address) !== 4 || ownerNetworkAddressKind(address) === 'public') return { ok: false, reason: '邀请串里不是局域网地址' }
+    const protocol = match[1].toLowerCase() === 'piggys' ? 'https' : 'http'
+    const address = match[2].toLowerCase()
+    const port = Number(match[3])
+    const code = normalizeRoomCode(match[4])
+    if (!validRoomHost(address)) return { ok: false, reason: '邀请串里的服务器地址不对' }
     if (!Number.isSafeInteger(port) || port < 1 || port > 65535) return { ok: false, reason: '邀请串端口不对' }
     if (code === null) return { ok: false, reason: '邀请串里的房间码不对' }
-    return { ok: true, code, address, port }
+    return { ok: true, code, address, port, protocol }
+  }
+  if (/^https?:\/\//iu.test(text)) {
+    let url
+    try { url = new URL(text) } catch { return { ok: false, reason: '邀请串格式不对' } }
+    if (url.username !== '' || url.password !== '' || url.search !== '' || url.hash === '' ||
+        (url.pathname !== '/' && url.pathname !== '')) return { ok: false, reason: '邀请串格式不对' }
+    const address = url.hostname.toLowerCase()
+    const protocol = url.protocol === 'https:' ? 'https' : 'http'
+    const port = url.port === '' ? (protocol === 'https' ? 443 : 80) : Number(url.port)
+    const code = normalizeRoomCode(url.hash.slice(1))
+    if (!validRoomHost(address)) return { ok: false, reason: '邀请串里的服务器地址不对' }
+    if (!Number.isSafeInteger(port) || port < 1 || port > 65535) return { ok: false, reason: '邀请串端口不对' }
+    if (code === null) return { ok: false, reason: '邀请串里的房间码不对' }
+    return { ok: true, code, address, port, protocol }
   }
   const code = normalizeRoomCode(text)
   if (code === null) return { ok: false, reason: '房间码是 4 位，例如 7K2M' }

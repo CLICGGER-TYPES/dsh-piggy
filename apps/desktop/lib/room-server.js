@@ -5,23 +5,23 @@
  */
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
+import { createServer as createHttpsServer } from 'node:https'
 import { isIP } from 'node:net'
 
 import { ownerNetworkAddressKind } from './owner-network-addresses.js'
 import { createRoomCare } from './room-care.js'
 import { normalizeRoomCode } from './room-code.js'
+import { normalizeRoomTls } from './room-tls.js'
 import {
   ROOM_IDLE_MS, ROOM_MAX_BODY, ROOM_MAX_PLAYERS, ROOM_STATE_HOLD_MS,
-  normalizeClientId, normalizeEmote, normalizePosition, normalizeProfile, publicPlayer,
+  normalizeClientId, normalizeEmote, normalizePosition, normalizeProfile, publicPlayer, validRoomHost,
 } from './room-protocol.js'
 
 const MAX_JOIN_WINDOW_MS = 60_000
 const MAX_JOIN_ATTEMPTS = 20
-
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
-
 function send(response, status, body) {
   response.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
@@ -30,7 +30,6 @@ function send(response, status, body) {
   })
   response.end(JSON.stringify(body))
 }
-
 function fail(status, reason) {
   return Object.assign(new Error(reason), { status, code: reason })
 }
@@ -79,20 +78,23 @@ function authToken(request) {
   return match[1]
 }
 
-/**
- * @param {{code:string,listenAddress:string,advertisedHost?:string,now?:()=>number,log?:(...parts:any[])=>void}} options
- */
 export async function startRoomServer(options) {
   const code = normalizeRoomCode(options.code)
   if (code === null) throw new Error('room code is invalid')
   const listenAddress = options.listenAddress
   const kind = ownerNetworkAddressKind(listenAddress)
-  if (isIP(listenAddress) !== 4 || (kind !== 'loopback' && kind !== 'private' && kind !== 'link-local')) {
-    throw new Error('room listener requires a private IPv4 address')
+  if (isIP(listenAddress) !== 4 || ((listenAddress === '0.0.0.0' || kind === 'public') && options.allowPublic !== true)) {
+    throw new Error('room listener requires a private/loopback IPv4, or allowPublic for a public address')
   }
-  const advertisedHost = options.advertisedHost ?? listenAddress
-  if (isIP(advertisedHost) !== 4) throw new Error('room advertised host must be an IPv4 address')
-
+  const advertisedHost = typeof options.advertisedHost === 'string' ? options.advertisedHost.toLowerCase() : listenAddress
+  if (!validRoomHost(advertisedHost)) throw new Error('room advertised host must be an IPv4 address or hostname')
+  const advertisedPort = options.advertisedPort ?? null
+  const listenPort = options.port ?? 0
+  if (advertisedPort !== null && (!Number.isSafeInteger(advertisedPort) || advertisedPort < 1 || advertisedPort > 65535)) throw new Error('room advertised port is invalid')
+  if (!Number.isSafeInteger(listenPort) || listenPort < 0 || listenPort > 65535) throw new Error('room listen port is invalid')
+  const trustProxy = options.trustProxy === true
+  const persistent = options.persistent === true
+  const tls = normalizeRoomTls(options.tls)
   const now = options.now ?? Date.now
   const log = options.log ?? (() => {})
   const codeHash = Buffer.from(sha256(code), 'hex')
@@ -119,20 +121,27 @@ export async function startRoomServer(options) {
   })
   let notifyTimer = null
   let sweeper = null
-
-  const expectedHosts = () => [`${advertisedHost}:${port}`, `127.0.0.1:${port}`]
-
+  const expectedHosts = () => {
+    const externalPort = advertisedPort ?? port
+    const hosts = [`${advertisedHost}:${externalPort}`, `${advertisedHost}:${port}`, `127.0.0.1:${port}`, `localhost:${port}`]
+    if (externalPort === 80 || externalPort === 443) hosts.push(advertisedHost)
+    if (port === 80 || port === 443) hosts.push(advertisedHost, '127.0.0.1', 'localhost')
+    return hosts
+  }
   function checkEnvelope(request) {
     if (closing) throw fail(503, 'room-closed')
     let hostCount = 0
     let originCount = 0
+    let forwardedCount = 0
     for (let index = 0; index < request.rawHeaders.length; index += 2) {
       const name = request.rawHeaders[index].toLowerCase()
       if (name === 'host') hostCount += 1
       if (name === 'origin') originCount += 1
+      if (name === 'x-forwarded-host') forwardedCount += 1
     }
-    const hosts = expectedHosts()
-    if (hostCount !== 1 || !hosts.includes(String(request.headers.host ?? '')) || originCount !== 0) throw fail(403, 'forbidden')
+    const forwardedHost = trustProxy && forwardedCount === 1 ? String(request.headers['x-forwarded-host'] ?? '') : ''
+    const host = (forwardedHost !== '' ? forwardedHost : String(request.headers.host ?? '')).toLowerCase()
+    if (hostCount !== 1 || !expectedHosts().includes(host) || originCount !== 0) throw fail(403, 'forbidden')
     const url = String(request.url ?? '')
     if (url.includes('?') || url.includes('#')) throw fail(400, 'query-not-allowed')
   }
@@ -234,7 +243,7 @@ export async function startRoomServer(options) {
         row: players.size % 3,
         facing: 1,
         emote: '', emoteTarget: null, emoteAt: 0,
-        host: players.size === 0,
+        host: persistent !== true && players.size === 0,
         joinedAt: now(), lastSeenAt: now(), rev: 0,
       }
       if (player.host) hostId = id
@@ -330,13 +339,15 @@ export async function startRoomServer(options) {
     requests.add(task)
   }
 
-  const server = createServer({ maxHeaderSize: 16 * 1024 }, handleRequest)
+  const server = tls === null
+    ? createServer({ maxHeaderSize: 16 * 1024 }, handleRequest)
+    : createHttpsServer({ key: tls.key, cert: tls.cert, maxHeaderSize: 16 * 1024 }, handleRequest)
   server.requestTimeout = 20_000
   server.headersTimeout = 20_000
   server.timeout = 20_000
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(0, listenAddress, () => { server.off('error', reject); resolve(undefined) })
+    server.listen(listenPort, listenAddress, () => { server.off('error', reject); resolve(undefined) })
   })
   const address = server.address()
   if (!address || typeof address === 'string') {
@@ -377,7 +388,9 @@ export async function startRoomServer(options) {
 
   return Object.freeze({
     status() {
-      return { running: !closing, host: advertisedHost, listenAddress, port, code, players: players.size, reason: closing ? closeReason : '' }
+      return { running: !closing, host: advertisedHost, listenAddress, port, advertisedPort: advertisedPort ?? port,
+        protocol: tls === null ? 'http' : 'https', persistent, code, players: players.size,
+        reason: closing ? closeReason : '' }
     },
     close,
     /** 只给测试和本机窗口读；不含 token。 */
