@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * 生成内置素材缓存版本、面板 client.js，以及菜园扩展的单文件客户端和服务端。
+ * 生成内置素材缓存版本、面板 client.js，以及菜园/左轮扩展的单文件客户端和菜园服务端。
  *
- * 菜园 server.js 必须单文件下载，源码却在 src/extensions/farm/；这里复用两个
+ * 菜园 server.js 和左轮 client.js 必须单文件下载，源码却在 src/extensions/；这里复用
  * 构建函数，避免 npm run build 只更新其中一个产物。
  *
  * 用法：npm run build
@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { buildClient } from './build-client.mjs'
 import { buildFarmClient } from './build-farm-client.mjs'
 import { buildFarmServer } from './build-farm-server.mjs'
+import { buildRouletteClient } from './build-roulette-client.mjs'
 import { buildArtRevisions } from './build-art-revisions.mjs'
 import { buildAssetPacks, buildSoundPacks } from './asset-packs.mjs'
 
@@ -30,6 +31,7 @@ const outputs = [
   ['client.js', await buildClient()],
   ['extensions/farm/client.js', await buildFarmClient()],
   ['extensions/farm/server.js', await buildFarmServer()],
+  ['extensions/roulette/client.js', await buildRouletteClient()],
 ]
 for (const [name, text] of outputs) {
   const path = join(packageRoot, name)

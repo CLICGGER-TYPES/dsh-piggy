@@ -6,11 +6,11 @@
 
 | 通用规范 | 本项目 | 为什么 |
 |---|---|---|
-| 文件 ≤ 约 400 行 | 普通源码、外壳模块（`apps/desktop/lib/`）和直接编写的下载扩展遵守；后者因协议只下载单文件允许 ≤600 行。菜园 `client.js` / `server.js` 从 `src/extensions/farm/` 模块生成，作者模块均 ≤400 行；**豁免**：构建产物根 `client.js` 与 `extensions/farm/{client,server}.js`（须有生成横幅）、外壳主进程 `apps/desktop/main.js`（约 740 行，Electron 全局接线；拖动和几何 IPC 已拆到 `lib/drag-engine.js`、`lib/geometry-ipc.js`） | 根 `client.js` 和菜园单文件都是 esbuild 产物；`main.js` 里窗口、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
-
-
-窄范围例外（当前行数即硬上限，不允许再增长；拆文件留到 RC 之后）：`src/client/effects.js` 473（吃饭 canvas 动效）、`src/client/index.js` 424（客户端主接线，预先存在）、`apps/desktop/renderer/room.js` 406（旧外壳渲染器）。| 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留**；在线扩展注释里的 ★（星级）保留 | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
+| 文件 ≤ 约 400 行 | 普通源码、外壳模块（`apps/desktop/lib/`）和直接编写的下载扩展遵守；后者因协议只下载单文件允许 ≤600 行。菜园 `client.js` / `server.js` 从 `src/extensions/farm/` 模块生成，左轮轮盘 `client.js` 从 `src/extensions/roulette/client/` 生成，作者模块均 ≤400 行；**豁免**：构建产物根 `client.js`、`extensions/farm/{client,server}.js` 与 `extensions/roulette/client.js`（须有生成横幅）、外壳主进程 `apps/desktop/main.js`（约 740 行，Electron 全局接线；拖动和几何 IPC 已拆到 `lib/drag-engine.js`、`lib/geometry-ipc.js`） | 根 `client.js` 和菜园/左轮单文件都是 esbuild 产物；`main.js` 里窗口、面板、IPC 共用一堆 Electron 全局对象，拆分要重新做两个平台的真机验收 |
+| 注释/标识符/日志不用 emoji | 代码里不用；**游戏数据、界面文案、CHANGELOG、README 保留**；在线扩展注释里的 ★（星级）保留 | 这个项目就是用 emoji 做的，`data/` 里的 emoji 是内容不是装饰 |
 | 不引入构建步骤 | **允许**，用于面板插件和菜园客户端/服务端的单文件产物 | DSH 的面板按 classic `<script src>` 加载 `client.js`，扩展下载协议只收单个 farm `client.js` / `server.js`；源码拆分后由 esbuild 生成，运行时不加载额外模块 |
+
+窄范围例外（当前行数即硬上限，不允许再增长；拆文件留到 RC 之后）：`src/client/effects.js` 473（吃饭 canvas 动效）、`src/client/index.js` 424（客户端主接线，预先存在）、`apps/desktop/renderer/room.js` 406（旧外壳渲染器）。
 
 ## 先读哪些
 
@@ -40,7 +40,7 @@
 - **金币只能走 `core/economy.js`**（`earnCoins` / `spendCoins` / `refundCoins`，写上来源）：账本靠它记，`test/unit/core/economy.test.js` 拦着直接 `coins +=` / `-=`。规则见 [经济体系](design/economy.md)。
 - 普通源码超过 400 行、或开始承担第二种职责，就拆。下载扩展的 client.js / server.js 直接写单文件时允许 600 行，不能靠压行或删注释满足上限。
 - 菜园服务端是**源码拆分 + 单文件分发**：规则在 `src/extensions/farm/`（data / pure / plot-rules / helper / migration / actions / view / server 组装），每个源模块 ≤400 行、要 `// @ts-check` 并过 `npm run typecheck`；`extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 生成，不手改。生成的单文件不压行、不引运行时依赖，下载协议仍是 manifest.json / server.js / client.js + assets。
-- 菜园客户端已拆为 `src/extensions/farm/client/` 下的状态工厂、宿主适配、交互、花园视图和商店视图模块；`scripts/build-farm-client.mjs` 仍生成唯一的 `extensions/farm/client.js` 下载文件。生成客户端由 freshness 与单文件分发测试守卫，作者源码模块仍受普通 400 行限制。受限候选的 freshness 2/2 与 typecheck exit 0；独立 UI 验收尚待完成，完整套件未重跑。桌面旧 `src/client/desktop/index.js` 401 行例外已移除：几何协调、输入归属和 renderer 生命周期分别由 controller 模块持有，入口文件只保留兼容门面。旧存档拆分、live facade 与混合容器 adapter 已拆到独立的 `store/legacy-projection.js`、`store/legacy-facade.js`、`store/legacy-mixed-adapter.js`（另有内部 brand/helper）；owner transaction 与 target lifecycle 分置于 `store/owner-resources.js` 和 `store/owner-targets.js`；store API 命令组分置于 `store/api-actions.js`、`store/api-fishing.js`、`store/api-inventory.js`、`store/api-profile.js`、`store/api-lifecycle.js`。这些新模块都受普通 400 行守卫约束；MODSPLIT02 相关 focused checks 45/45 通过，完整套件未重跑。`store/api.js` 保留原有属性 getter 和 API 方法顺序。菜园购买和铲除确认的焦点管理仍随单文件客户端下载；当前扩展协议不加载额外模块，本轮不扩张协议，也不靠压行满足守卫。其余普通源码仍为 400 行，其他单文件扩展仍为 600 行。
+- 菜园客户端已拆为 `src/extensions/farm/client/` 下的状态工厂、宿主适配、交互、花园视图和商店视图模块；`scripts/build-farm-client.mjs` 仍生成唯一的 `extensions/farm/client.js` 下载文件。生成客户端由 freshness 与单文件分发测试守卫，作者源码模块仍受普通 400 行限制。左轮轮盘客户端同理：源码在 `src/extensions/roulette/client/`，`scripts/build-roulette-client.mjs` 生成 `extensions/roulette/client.js`，作者模块同样受 400 行限制，生成物由定向测试校验字节一致。受限候选的 freshness 2/2 与 typecheck exit 0；独立 UI 验收尚待完成，完整套件未重跑。桌面旧 `src/client/desktop/index.js` 401 行例外已移除：几何协调、输入归属和 renderer 生命周期分别由 controller 模块持有，入口文件只保留兼容门面。旧存档拆分、live facade 与混合容器 adapter 已拆到独立的 `store/legacy-projection.js`、`store/legacy-facade.js`、`store/legacy-mixed-adapter.js`（另有内部 brand/helper）；owner transaction 与 target lifecycle 分置于 `store/owner-resources.js` 和 `store/owner-targets.js`；store API 命令组分置于 `store/api-actions.js`、`store/api-fishing.js`、`store/api-inventory.js`、`store/api-profile.js`、`store/api-lifecycle.js`。这些新模块都受普通 400 行守卫约束；MODSPLIT02 相关 focused checks 45/45 通过，完整套件未重跑。`store/api.js` 保留原有属性 getter 和 API 方法顺序。菜园购买和铲除确认的焦点管理仍随单文件客户端下载；当前扩展协议不加载额外模块，本轮不扩张协议，也不靠压行满足守卫。其余普通源码仍为 400 行，其他单文件扩展仍为 600 行。
 
 ## 命名
 

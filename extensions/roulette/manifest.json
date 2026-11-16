@@ -1,0 +1,19 @@
+{
+  "key": "roulette",
+  "label": "左轮轮盘",
+  "emoji": "🔫",
+  "version": "0.1.0",
+  "minGame": "0.37.3",
+  "description": "经典 6 巢 1 发、1 条命、三局两胜的 AI 1v1 左轮轮盘：下注后亲手把子弹装进弹巢孔，再选择转轮、不开枪或对自己开枪。本地演示金币，不读写主存档金币；好友联机与 4v4 入口先锁定。",
+  "app": {
+    "emoji": "🔫",
+    "label": "左轮轮盘"
+  },
+  "assets": [
+    "bullet-v1.webp",
+    "chip-v1.webp",
+    "cylinder-v1.webp",
+    "revolver-v2.webp",
+    "table-v1.webp"
+  ]
+}

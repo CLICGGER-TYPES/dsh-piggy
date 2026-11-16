@@ -24,9 +24,11 @@ extensions/<key>/
   页面里用 `app.asset('bg.webp')` 拿地址。菜园、矿洞的素材原稿和切图脚本在总目录 `art-source/ext-ui/`。
 - 三个文件各 ≤ 512KB（宿主拒绝更大的）。**运行时的 `server.js` 不能引别的文件**，也不能 `import` 游戏代码——
   它只能通过下面的 `api` 碰主存档。
-- 菜园是官方特例：服务端源码拆在 `src/extensions/farm/`（每个模块 ≤400 行、要 `// @ts-check`），
+- 菜园是生成式特例：服务端源码拆在 `src/extensions/farm/`（每个模块 ≤400 行、要 `// @ts-check`），
   `extensions/farm/server.js` 由 `node scripts/build-farm-server.mjs` 从源码生成，**不要手改**；`npm run build`
-  会先构建面板 `client.js` 再构建它。下载协议没有变，仍是这三个文件加 `assets/`。其他扩展直接写单文件（≤600 行）。
+  会先构建面板 `client.js` 再构建它。左轮轮盘客户端同理：作者源码在 `src/extensions/roulette/client/`，
+  `extensions/roulette/client.js` 由 `node scripts/build-roulette-client.mjs` 生成，也不要手改。
+  下载协议没有变，仍是这三个文件加 `assets/`。其他扩展直接写单文件（≤600 行）。
 
 ## manifest.json
 
@@ -372,6 +374,7 @@ document.dispatchEvent(new CustomEvent('dsh-piggy:sound', {
 - **整条链路**（下载、校验、安装、事务）：照 `test/helpers/extension-achievements.js`，用 `createExtRuntime` + 假 `fetch` + `registryUrl`。
 - **真机看界面**：桌面版的扩展装在存档旁边的 `extensions/<key>/`，可以把文件拷进去替换后重启看效果（存档里要已经装过这个扩展）。
 - `npm test` 里的 `test/unit/host/extensions-registry.test.js` 会检查文件齐全、manifest 合规、目录条目和文件一致、动作都是函数。
+- 还没登记在线目录的开发中扩展，在 `extensions/<key>/` 放一个 `.dev` 占位文件；目录一致性检查会跳过它，但仍检查三件套、manifest 和 server 导出。发布前删掉 `.dev`，再按下面「发版」生成目录条目和 `.piggyext`。
 
 ## 发版
 

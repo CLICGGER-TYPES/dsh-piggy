@@ -24,6 +24,7 @@
 | `extensions/farm/assets/**` | 菜园场景、作物、工具、UI 图 | **CC BY 4.0** | AI 生成，用户审定 |
 | `extensions/farm/*.json`、`extensions/farm/*.md` | 菜园清单、出处与代码数据 | **MIT** | |
 | `extensions/mine/assets/**` | 矿洞场景、矿物、工具、UI 图 | **CC BY 4.0** | AI 生成，用户审定 |
+| `extensions/roulette/assets/**` | 左轮轮盘牌桌、弹巢、左轮、子弹、筹码 | **CC BY 4.0** | Grok image_gen 生成，用户审定；见扩展 `PROVENANCE.md` |
 | `release/extension-variants/**/*.webp` | 手动导入扩展变体的素材 | **CC BY 4.0** | 与已发布扩展同源 |
 | `apps/desktop/artwork/*.png`、`apps/desktop/build/icon.png`、`icon.ico`、`tray.png` | 桌面应用图标与托盘图 | **CC BY 4.0** | 用户提供猪脸原图，只做等比缩放/透明补方 |
 | `assets/room-pen.png` | 联机房间猪圈背景 | **CC BY 4.0** | Grok image_gen 生成，用户审定 |
@@ -61,6 +62,7 @@
 - `assets/animations/pet-hand/*.webp`
 - `extensions/farm/assets/**`
 - `extensions/mine/assets/**`
+- `extensions/roulette/assets/**`
 - `release/extension-variants/**/*.webp`
 
 你可以复制、修改、再分发，包括商用，条件是保留署名和许可链接。建议署名：

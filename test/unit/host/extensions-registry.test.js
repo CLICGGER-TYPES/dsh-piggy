@@ -26,6 +26,10 @@ const MAX_FILE_BYTES = 512 * 1024
 const gameVersion = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')).version
 
 const folders = readdirSync(ROOT, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name)
+// 开发中的扩展放一个 .dev 占位：仍检查三件套/manifest/server 导出，但不要求先有在线目录条目。
+// 发布前删除 .dev，再按 extension-entry.mjs 生成目录、官方清单和 .piggyext。
+const devFolders = new Set(folders.filter(key => existsSync(new URL(key + '/.dev', ROOT))))
+const publishedFolders = folders.filter(key => !devFolders.has(key))
 const published = JSON.parse(readFileSync(new URL('registry.json', ROOT), 'utf8'))
 const publishedGitee = JSON.parse(readFileSync(new URL('registry-gitee.json', ROOT), 'utf8'))
 const candidateUrl = new URL('../../../release/candidates/extensions/registry.json', import.meta.url)
@@ -61,7 +65,7 @@ test('每个扩展目录三件套齐全，manifest 合规', () => {
 })
 
 test('候选目录（没有候选时为公开目录）与源码版本、文案、全部文件校验值一致', () => {
-  for (const key of folders) {
+  for (const key of publishedFolders) {
     const entry = registry.extensions.find(candidate => candidate.key === key)
     assert.ok(entry, 'registry.json 里没有 ' + key + '：node scripts/extension-entry.mjs ' + key)
     const { app, assets, ...manifest } = manifestOf(key)
@@ -79,7 +83,7 @@ test('候选目录（没有候选时为公开目录）与源码版本、文案�
     }
   }
   const downloads = registry.extensions.filter(entry => entry.builtin !== true).map(entry => entry.key).sort()
-  assert.deepEqual(downloads, [...folders].sort(), '目录里的下载扩展和 extensions/ 下的文件夹要一一对应')
+  assert.deepEqual(downloads, [...publishedFolders].sort(), '目录里的下载扩展和 extensions/ 下的文件夹要一一对应（.dev 开发扩展除外）')
 })
 
 test('目录里的内置扩展就是游戏数据表里的内置扩展', () => {
