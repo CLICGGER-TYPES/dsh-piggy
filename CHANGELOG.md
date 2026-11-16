@@ -7,6 +7,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ## [Unreleased]
 
+- 桌面版（macOS）：猪在别的桌面空间时右键打开面板，面板出现在猪所在的空间。以前面板窗口是启动时预建的，系统把它绑在创建时的空间上，切到别的空间后打开会显示在旧空间。
+
 ---
 
 ## [0.37.3-rc.1] — 2026-11-09 · 联机朋友猪与面板

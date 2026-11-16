@@ -252,6 +252,12 @@ export function createPanelController(deps) {
       panelAsked = next
     }
     if (panelSize !== null && !deps.getPanelWindow().isVisible()) {
+      // macOS：面板窗口是启动时预建的，系统把它绑在创建时的那个桌面空间上。用户把猪拖到
+      // 别的空间再右键，面板会显示在旧空间（2026-11-16 反馈：猪在桌面 2，面板出现在桌面 1）。
+      // 显示前先加入所有空间，它就会出现在当前空间；收起时再还原（见 closePanel）。
+      // 必须 skipTransformProcessType：不跳过时 Electron 会 DockHide/DockShow，切换应用的激活
+      // 策略，窗口和 Dock 每次闪一下，面板刚显示就因失活被收起，点外面也收不起来。
+      if (deps.platform === 'darwin') deps.getPanelWindow().setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
       // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
       //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
       deps.getPanelWindow().showInactive()
@@ -303,7 +309,11 @@ export function createPanelController(deps) {
     panelShape.cancel()
     panelShapeKey = ''
     stopPanelHit()
-    if (deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed()) deps.getPanelWindow().hide()
+    if (deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed()) {
+      deps.getPanelWindow().hide()
+      // 收起后离开「所有空间」，下次显示再按当时所在的空间重新加入。
+      if (deps.platform === 'darwin') deps.getPanelWindow().setVisibleOnAllWorkspaces(false, { visibleOnFullScreen: false, skipTransformProcessType: true })
+    }
     sendPanel({ type: 'closed' })
     const pet = panelTargetPet()
     if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'closed' })
