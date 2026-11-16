@@ -6,6 +6,8 @@ const MAX_SAVE_BYTES = 128 * 1024 * 1024
 let geometry = null
 /** 这个页面在哪个窗口里：猪窗口（pet）还是面板窗口（panel，外壳 0.6.0 起）。 */
 const argv = typeof process === 'undefined' ? [] : process.argv
+/** niri 下窗口位置回读是 0,0：主进程会把虚拟位置推过来，这里同步给页面的 screenX/screenY。 */
+const niriSession = argv.includes('--piggy-niri=1')
 const role = argv.includes('--piggy-role=friend') ? 'friend'
   : argv.includes('--piggy-role=panel') ? 'panel'
   : argv.includes('--piggy-role=ext') ? 'ext'
@@ -29,6 +31,60 @@ const primary = pigId !== null && argv.includes('--piggy-primary=1')
 /** 多猪窗口的默认摆放槽位（0–3）；新猪没有旧位置时按它错开。 */
 const requestedSlot = argumentValue('--piggy-slot=')
 const slot = pigId !== null && requestedSlot !== null && /^[0-3]$/.test(requestedSlot) ? Number(requestedSlot) : null
+
+/** 主进程推来的几何：先更新 niri 虚拟原点，再给页面读。 */
+function rememberGeometry(next) {
+  if (next === null || next === undefined || next.window === undefined) return
+  geometry = next
+  if (niriSession) setNiriOrigin(next.window.x, next.window.y)
+}
+
+/**
+ * 页面主世界的 screenX/screenY 覆盖。niri 浮窗被合成器移动后，Electron 回读
+ * 位置仍是 0,0；游戏包的布局闭环会用 screenX 和主进程几何对账，必须让两边一致。
+ */
+function setNiriOrigin(x, y) {
+  if (!niriSession || !Number.isFinite(x) || !Number.isFinite(y)) return
+  try {
+    contextBridge.executeInMainWorld({
+      func: origin => {
+        const key = Symbol.for('piggy.niri.origin')
+        window[key] = { x: origin.x, y: origin.y }
+      },
+      args: [{ x, y }],
+    })
+  } catch { /* 覆盖不了就退回 Electron 原生值，至少不会崩 */ }
+}
+
+if (niriSession) {
+  try {
+    contextBridge.executeInMainWorld({
+      func: () => {
+        const key = Symbol.for('piggy.niri.origin')
+        window[key] = { x: 0, y: 0 }
+        const define = (name, axis) => {
+          try {
+            Object.defineProperty(window, name, {
+              configurable: true,
+              enumerable: true,
+              get() {
+                const origin = window[Symbol.for('piggy.niri.origin')]
+                return origin !== null && origin !== undefined && Number.isFinite(origin[axis]) ? Math.round(origin[axis]) : 0
+              },
+              set() {},
+            })
+          } catch { /* 原生属性不可覆盖时保持原行为 */ }
+        }
+        define('screenX', 'x')
+        define('screenY', 'y')
+      },
+    })
+  } catch { /* 老 Electron 没有 executeInMainWorld */ }
+  // 主进程每次 pushGeometry 都会发；先于页面自己的 onGeometry 订阅注册。
+  ipcRenderer.on('piggy:geometry', (event, info) => {
+    if (info !== null && info !== undefined && info.window !== undefined) setNiriOrigin(info.window.x, info.window.y)
+  })
+}
 
 /** 房间只收外观摘要；主进程会再校验一次，这里先挡住超长字段。 */
 function roomProfile(value) {
@@ -105,7 +161,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   setContent: (content, immediate = false) => {
     if (!immediate) { ipcRenderer.send('piggy:content', content); return }
     const next = ipcRenderer.sendSync('piggy:content', { ...content, immediate: true })
-    if (next && next.window && next.workArea) geometry = next
+    if (next && next.window && next.workArea) rememberGeometry(next)
   },
   /** Windows 穿透模式：鼠标进出猪/面板时告诉主进程要不要接点击。 */
   setHit: hit => ipcRenderer.send('piggy:hit', hit === true),
@@ -117,14 +173,14 @@ contextBridge.exposeInMainWorld('piggyShell', {
   /** 新游戏包：页面算好窗口位置大小和可点区域，主进程照做，同步返回新几何。 */
   place: request => {
     const next = ipcRenderer.sendSync('piggy:place', request)
-    if (next && next.window && next.workArea) geometry = next
+    if (next && next.window && next.workArea) rememberGeometry(next)
     return next
   },
   dragHeartbeat: () => ipcRenderer.send('piggy:drag:heartbeat'),
   /** 同步返回松手后的几何：最后一帧 slide 必须和页面重定家在同一拍算完。 */
   endDrag: release => {
     const next = ipcRenderer.sendSync('piggy:drag:end', release ?? null)
-    if (next && next.window && next.workArea) geometry = next
+    if (next && next.window && next.workArea) rememberGeometry(next)
     return next
   },
   /** A2 抛掷（外壳 0.6.8 起）：页面算好窗口位置，主进程只 setBounds；旧游戏包不会调用。 */
@@ -142,7 +198,7 @@ contextBridge.exposeInMainWorld('piggyShell', {
   onGeometry: callback => {
     ipcRenderer.on('piggy:geometry', (event, info) => {
       if ((info?.seq ?? 0) < (geometry?.seq ?? 0)) return
-      geometry = info
+      rememberGeometry(info)
       callback(info)
     })
   },

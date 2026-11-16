@@ -6,6 +6,7 @@
  * @param {{
  *   BrowserWindow: new (options:any)=>any,
  *   options: any,
+ *   title?: string,
  *   url: string | (() => string),
  *   frameCap?: number,
  *   devTools?: boolean,
@@ -25,6 +26,14 @@ export function createPanelWindow(deps) {
     ready = false
     const window = new deps.BrowserWindow(deps.options)
     current = window
+    if (typeof deps.title === 'string' && deps.title !== '' && typeof window.setTitle === 'function') {
+      const title = deps.title
+      window.setTitle(title)
+      window.on?.('page-title-updated', event => {
+        event.preventDefault?.()
+        if (typeof window.getTitle !== 'function' || window.getTitle() !== title) window.setTitle(title)
+      })
+    }
     deps.onCreated?.(window)
     if ((deps.frameCap ?? 0) > 0) window.webContents.setFrameRate(deps.frameCap)
     window.loadURL(typeof deps.url === 'function' ? deps.url() : deps.url)

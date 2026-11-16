@@ -7,6 +7,7 @@
  * Electron 对象、屏、面板和日志都由调用方经 deps 传入。
  */
 import { cursorHitsWindow } from './hit-physical.js'
+import { createNiriPetWindow } from './niri-pet-window.js'
 
 /** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
 const BOUNDS_TOLERANCE = 2
@@ -23,9 +24,20 @@ const HIT_PENDING_MS = 600
  *   log: (...parts: any[]) => any,
  *   startupInputTrace: { record: (key: string, label: string, detail: string) => void },
  *   traceSetIgnoreMouseEvents: (role: string, mode: string, source: string, ignore: boolean, forward: boolean | 'omitted', invoke: () => void) => void,
+ *   niri?: ReturnType<typeof import('./niri-client.js').createNiriWindow> | null,
+ *   setTimeout?: typeof globalThis.setTimeout,
+ *   clearTimeout?: typeof globalThis.clearTimeout,
  * }} deps
  */
 export function createWindowSurface(deps) {
+  const niriPet = createNiriPetWindow({
+    niri: deps.niri ?? null,
+    log: deps.log,
+    pushGeometry: pet => pushGeometry(pet),
+    setTimeout: deps.setTimeout,
+    clearTimeout: deps.clearTimeout,
+  })
+  const niriEnabled = niriPet.enabled
   /**
    * Windows 上不用 setShape，改用鼠标穿透：现代游戏由主进程轮询命中，旧游戏由页面上报。
    * setShape 在 Windows 上是 SetWindowRgn，开关面板时可点区域整块变化，透明分层窗口会闪一下白
@@ -50,16 +62,20 @@ export function createWindowSurface(deps) {
   function pushGeometry(pet) {
     const window = pet?.window
     if (window === null || window === undefined || window.isDestroyed()) return
-    const bounds = window.getBounds()
+    const bounds = niriPet.read(pet)
     window.webContents.send('piggy:geometry', geometryOf(bounds, pet, ++geometrySeq))
   }
 
   /** 窗口、它所在屏的工作区、所有屏的工作区：游戏包里的桌面逻辑按这些自己算窗口摆哪。 */
   function geometryOf(bounds, pet = null, seq = geometrySeq) {
     const displays = deps.screen.getAllDisplays()
+    // niri 下页面手里的 screenX/screenY 由 preload 虚拟成这个位置；位置只信 petAsked。
+    const virtual = niriEnabled && pet?.petAsked !== null && pet?.petAsked !== undefined
+      && Number.isFinite(pet.petAsked.x) && Number.isFinite(pet.petAsked.y)
+      ? { ...bounds, x: pet.petAsked.x, y: pet.petAsked.y } : bounds
     return {
-      window: bounds,
-      workArea: workAreaFor(bounds),
+      window: virtual,
+      workArea: workAreaFor(virtual),
       workAreas: displays.map(display => display.workArea),
       // 显示器清单（含每块屏的缩放）：Windows 125%/150% 下的问题一直只能靠 2px 容差硬扛，
       // 把这些发给游戏包，日志里才能看出「是哪块屏、什么缩放」。
@@ -78,7 +94,11 @@ export function createWindowSurface(deps) {
   function applyBounds(pet, next, why) {
     const window = pet?.window
     if (window === null || window === undefined || window.isDestroyed()) return null
-    const before = window.getBounds()
+    const niriOn = deps.niri?.enabled === true
+    const read = window.getBounds()
+    const before = niriOn && pet.petAsked !== null && pet.petAsked !== undefined
+      && Number.isFinite(pet.petAsked.x) && Number.isFinite(pet.petAsked.y)
+      ? { ...read, x: pet.petAsked.x, y: pet.petAsked.y } : read
     const delta = { x: next.x - before.x, y: next.y - before.y, width: next.width - before.width, height: next.height - before.height }
     // 分数缩放回读可能比请求大 1px；目标没变时不要每个拖动 tick 重设同一窗口。
     // 新目标仍用零容差，保证 1px 鼠标位移可达；真实外部偏移超出容差时继续纠正。
@@ -96,7 +116,16 @@ export function createWindowSurface(deps) {
     // Linux 现代游戏：页面可能一直不上报 hitShape（或只报空），这里标记允许用原生可见轮廓兜底，
     // 否则 setIgnoreMouseEvents(true) 会一直停在 1x1 输入区。旧游戏没有 bounds 的 place 不会走到这里。
     if (why === 'place' && deps.platform === 'linux' && pet.passthroughMode === 'modern') pet.fallbackArmed = true
-    window.setBounds(next)
+    if (niriOn) {
+      // niri 只认尺寸；位置必须走 move-floating-window（见 lib/niri-window.js）。
+      if (Math.abs(delta.width) > 0 || Math.abs(delta.height) > 0) {
+        const current = window.getBounds()
+        window.setBounds({ x: current.x, y: current.y, width: next.width, height: next.height })
+      }
+      niriPet.moveTo(pet, next)
+    } else {
+      window.setBounds(next)
+    }
     pet.petAsked = { ...next }
     deps.panel.followPig(pet)
     // 拖动时每秒要挪几十次：别每次都写日志（Windows 上同步写盘会卡住主进程）。
@@ -213,11 +242,12 @@ export function createWindowSurface(deps) {
   function applyFlightBounds(pet, x, y) {
     const window = pet?.window
     if (window === null || window === undefined || window.isDestroyed()) return
-    const size = pet.petAsked ?? window.getBounds()
+    const size = pet.petAsked ?? niriPet.read(pet)
     const next = { x: Math.round(x), y: Math.round(y), width: size.width, height: size.height }
     if (pet.petAsked !== null && pet.petAsked.x === next.x && pet.petAsked.y === next.y
       && pet.petAsked.width === next.width && pet.petAsked.height === next.height) return
-    window.setBounds(next)
+    if (niriEnabled) niriPet.moveTo(pet, next)
+    else window.setBounds(next)
     pet.petAsked = { ...next }
   }
 
@@ -249,6 +279,14 @@ export function createWindowSurface(deps) {
     pushGeometry,
     geometryOf,
     workAreaFor,
+    readBounds: niriPet.read,
+    syncPetFromNiri: niriPet.sync,
+    attachNiri: niriPet.attach,
+    holdForNiri: niriPet.hold,
+    resetNiri: niriPet.reset,
+    flushNiri: niriPet.flush,
+    flushNiriSync: niriPet.flushSync,
+    niriEnabled,
     currentSeq: () => geometrySeq,
     skipNativeShape: SKIP_NATIVE_SHAPE,
     mousePassthrough: MOUSE_PASSTHROUGH,

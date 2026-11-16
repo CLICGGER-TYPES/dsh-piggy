@@ -14,11 +14,12 @@ const DEBOUNCE_MS = 800
  * @param {{
  *   getWindow: () => any,
  *   getPigOffset: () => ({ x: number, y: number } | null | undefined),
+ *   getBounds?: () => ({ x: number, y: number, width: number, height: number } | null | undefined),
  *   userDataDir: string,
  *   debounceMs?: number,
  * }} options
  */
-export function createWindowState({ getWindow, getPigOffset, userDataDir, debounceMs = DEBOUNCE_MS }) {
+export function createWindowState({ getWindow, getPigOffset, getBounds, userDataDir, debounceMs = DEBOUNCE_MS }) {
   const file = join(userDataDir, 'window.json')
   let timer = null
   let writing = Promise.resolve()
@@ -35,7 +36,8 @@ export function createWindowState({ getWindow, getPigOffset, userDataDir, deboun
   function save() {
     const win = getWindow()
     if (win === null || win === undefined || win.isDestroyed()) return writing
-    const bounds = win.getBounds()
+    const bounds = (typeof getBounds === 'function' ? getBounds() : null) ?? win.getBounds()
+    if (bounds === null || bounds === undefined || ![bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite)) return writing
     // 坐标仍在窗口线程采样，异步写者只接收快照，不回读 Electron 对象。
     const pigWindow = getPigOffset()
     const pigSnapshot = pigWindow === null || pigWindow === undefined

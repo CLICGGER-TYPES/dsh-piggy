@@ -11,6 +11,7 @@ export function createPetWindow(deps) {
   /**
    * @param {{
    *   options:any,
+   *   title?: string,
    *   url:string,
    *   configure?:(window:any)=>void,
    *   afterLoad?:(window:any)=>void,
@@ -24,6 +25,15 @@ export function createPetWindow(deps) {
   function create(input) {
     const window = new deps.BrowserWindow(input.options)
     current = window
+    // 稳定标题是 niri 认窗口的锚点：页面 <title> 不能把它改掉。
+    if (typeof input.title === 'string' && input.title !== '' && typeof window.setTitle === 'function') {
+      const title = input.title
+      window.setTitle(title)
+      window.on?.('page-title-updated', event => {
+        event.preventDefault?.()
+        if (typeof window.getTitle !== 'function' || window.getTitle() !== title) window.setTitle(title)
+      })
+    }
     input.configure?.(window)
     window.once('closed', () => {
       if (current !== window) return

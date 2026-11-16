@@ -11,6 +11,7 @@ import { MIN_WINDOW, WINDOW_PADDING, clampBounds, pigDisplayAtCursor } from './w
 import { auxiliaryWindowOptions } from './auxiliary-window.js'
 import { SHOW_FALLBACK_MS, createShowGate } from './window-show.js'
 import { pageCrashReason } from './startup-failure.js'
+import { petWindowTitle } from './niri-window.js'
 
 /** 页面还没报内容框之前的兜底尺寸：折叠的猪 + 留白。 */
 const FALLBACK_CONTENT = { width: 132, height: 152 }
@@ -88,6 +89,8 @@ export function createWindowManager(deps) {
       ? clampBounds({ x: area.x + area.width - width - anchorRight - stagger, y: area.y + area.height - height - anchorRight, width, height }, area)
       : clampBounds({ ...saved, width, height }, area)
     pet.petAsked = { ...start }
+    pet.niriTitle = petWindowTitle(pet.pigId, pet.primary === true)
+    const niriArguments = deps.surface.niriEnabled === true ? ['--piggy-niri=1'] : []
     pet.resizeShape ??= createResizeShape(() => pet.window, rects => deps.surface.applyShape(pet, rects), () => deps.screen.getDisplayMatching(pet.window.getBounds()).scaleFactor)
     pet.owner ??= createPetWindow({ BrowserWindow: deps.BrowserWindow })
     let startupPageFailureReported = false
@@ -95,19 +98,23 @@ export function createWindowManager(deps) {
     const pigArguments = pet.pigId === null ? []
       : ['--piggy-role=pet', `--piggy-pig=${pet.pigId}`, ...(pet.primary ? ['--piggy-primary=1'] : []), `--piggy-slot=${Math.max(0, deps.pets.all().indexOf(pet))}`]
     pet.owner.create({
+      title: pet.niriTitle,
       options: {
         ...start,
+        title: pet.niriTitle,
         transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
         alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
         ...auxiliaryWindowOptions(deps.platform),
         backgroundColor: '#00000000',
         // 后台页也要维持 rAF 测量/形状上报频率，避免猪慢半拍或窗口移动后画面滞留。
         webPreferences: { preload: deps.preloadPath, contextIsolation: true, sandbox: true, backgroundThrottling: false,
-          ...(pigArguments.length === 0 ? {} : { additionalArguments: pigArguments }) },
+          ...(pigArguments.length === 0 && niriArguments.length === 0 ? {} : { additionalArguments: [...pigArguments, ...niriArguments] }) },
       },
       url,
       configure: window => {
         pet.window = window
+        // 新窗口意味着旧的 niri 窗口 id 已经作废。
+        deps.surface.resetNiri(pet)
         pet.webContentsId = Number.isInteger(window.webContents?.id) ? window.webContents.id : null
         deps.pets.bindWindow(pet)
         window.setAlwaysOnTop(true, 'floating')
@@ -224,8 +231,11 @@ export function createWindowManager(deps) {
   function showPigWindow(pet) {
     const window = pet?.window
     if (window === null || window === undefined || window.isDestroyed() || window.isVisible()) return
+    // niri 浮窗创建时不会落在请求位置：先透明显示，等 attachNiri 搬到位再恢复 opacity。
+    deps.surface.holdForNiri(pet)
     window.showInactive()
-    deps.log('shown', pet.pigId ?? 'legacy', JSON.stringify(window.getBounds()), window.isVisible())
+    deps.surface.attachNiri(pet)
+    deps.log('shown', pet.pigId ?? 'legacy', JSON.stringify(deps.surface.readBounds(pet)), window.isVisible())
     if (pet.primary) deps.onPrimaryWindowShown(window)
   }
 

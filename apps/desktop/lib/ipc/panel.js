@@ -22,7 +22,10 @@ export function registerPanelIpc(deps) {
   /** 任一页面：收起面板（面板里点了收起、点外面自动收起）。朋友面板只关自己那一扇。 */
   deps.ipcMain.on('piggy:panel:close', event => {
     if (deps.friendPanels?.owns?.(event.sender)) { deps.friendPanels.closeSender(event.sender); return }
-    if (deps.fromPage(event)) deps.panel.close('page')
+    if (!deps.fromPage(event)) return
+    const panelWindow = deps.getPanelWindow()
+    const fromPanel = event.sender === panelWindow?.webContents
+    deps.panel.close(fromPanel ? 'page' : 'page-pet')
   })
   /** 面板页面里对猪的反应（喂食时猪的动作、冒气泡）：转给面板当前服务的那只猪窗口去演。 */
   // 猪窗口自己冒气泡（签到、点猪的反应）时也抬一次，跟面板转来的反应一样（用户 2026-10-10：气泡被面板盖住）。

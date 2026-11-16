@@ -11,6 +11,7 @@ import { desktopViewportBounds } from './window-geometry.js'
  *   rebuildLinuxViews: () => Promise<any>,
  *   applyBounds: (pet: any, bounds: any, why: string) => any,
  *   pushGeometry: (pet: any) => void,
+ *   readBounds?: (pet: any) => any,
  *   log: (...parts: any[]) => any,
  *   platform: string,
  *   setInterval?: typeof globalThis.setInterval,
@@ -30,7 +31,7 @@ export function createDisplayWatch(deps) {
     for (const pet of deps.pets.all()) {
       const window = pet.window
       if (window === null || window.isDestroyed()) continue
-      deps.applyBounds(pet, desktopViewportBounds(window.getBounds(), areas), 'display')
+      deps.applyBounds(pet, desktopViewportBounds(deps.readBounds === undefined ? window.getBounds() : deps.readBounds(pet), areas), 'display')
       deps.pushGeometry(pet)
     }
     deps.log('display', why, JSON.stringify(detail ?? {}))

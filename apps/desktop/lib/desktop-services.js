@@ -28,6 +28,7 @@ import { createDesktopTray } from './tray.js'
  *   screen: any,
  *   stopDrag: (pet: any) => void,
  *   applyBounds: (pet: any, bounds: any, why: string) => any,
+ *   readBounds?: (pet: any) => any,
  *   panel: { close: (why: string) => void },
  * }} deps
  */
@@ -91,7 +92,7 @@ export function createDesktopServices(deps) {
     pet.savedPigScreen = null
     pet.restingPigScreen = null
     pet.window.showInactive()
-    deps.applyBounds(pet, recoverBounds(pet.window.getBounds(), payload.workArea), 'recover')
+    deps.applyBounds(pet, recoverBounds(deps.readBounds === undefined ? pet.window.getBounds() : deps.readBounds(pet), payload.workArea), 'recover')
     pet.window.webContents.send('piggy:recover', payload)
     deps.log('recover', JSON.stringify({ ...payload, pigId: pet.pigId }))
   }

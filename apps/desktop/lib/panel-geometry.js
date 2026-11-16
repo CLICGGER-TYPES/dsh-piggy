@@ -103,6 +103,55 @@ export function panelBoundsFor(pig, anchor, size, dragAreas = null) {
   return { x, y, width, height }
 }
 
+/** 两块矩形重叠面积。 */
+function overlapArea(left, right) {
+  const width = Math.max(0, Math.min(left.x + left.width, right.x + right.width) - Math.max(left.x, right.x))
+  const height = Math.max(0, Math.min(left.y + left.height, right.y + right.height) - Math.max(left.y, right.y))
+  return width * height
+}
+
+/** 面板和猪至少在一个方向上隔开 `gap`。 */
+function separatedByGap(bounds, pig, gap) {
+  const horizontal = Math.max(bounds.x - (pig.x + pig.width), pig.x - (bounds.x + bounds.width))
+  const vertical = Math.max(bounds.y - (pig.y + pig.height), pig.y - (bounds.y + bounds.height))
+  return horizontal >= gap || vertical >= gap
+}
+
+/** 面板夹进工作区；和 panelBoundsFor 的边距保持一致。 */
+function clampPanel(bounds, area) {
+  const x = Math.max(area.x + PANEL_MARGIN, Math.min(Math.round(bounds.x), area.x + area.width - bounds.width - PANEL_MARGIN))
+  const y = Math.max(area.y, Math.min(Math.round(bounds.y), area.y + area.height - bounds.height))
+  return { x, y, width: bounds.width, height: bounds.height }
+}
+
+/**
+ * niri 下兜底：面板算出来的位置如果压住猪（或离猪不足 PANEL_GAP），在上下左右
+ * 四个方向里找一个放得下且不盖猪的位置。正常情况（上方/下方贴边）原样返回。
+ * GNOME 路径不调用，保持原行为。
+ *
+ * @param {Rect} bounds
+ * @param {Rect} pig
+ * @param {Rect} area
+ * @param {number} [gap]
+ * @returns {Rect}
+ */
+export function panelBoundsClearOfPig(bounds, pig, area, gap = PANEL_GAP) {
+  if (separatedByGap(bounds, pig, gap)) return bounds
+  const centerX = Math.round(pig.x + pig.width / 2 - bounds.width / 2)
+  const centerY = Math.round(pig.y + pig.height / 2 - bounds.height / 2)
+  const candidates = [
+    { x: bounds.x, y: pig.y - gap - bounds.height },
+    { x: bounds.x, y: pig.y + pig.height + gap },
+    { x: pig.x - gap - bounds.width, y: centerY },
+    { x: pig.x + pig.width + gap, y: centerY },
+    { x: centerX, y: pig.y - gap - bounds.height },
+    { x: centerX, y: pig.y + pig.height + gap },
+  ].map(candidate => clampPanel({ ...candidate, width: bounds.width, height: bounds.height }, area))
+  const clear = candidates.find(candidate => separatedByGap(candidate, pig, gap))
+  if (clear !== undefined) return clear
+  return candidates.reduce((best, candidate) => overlapArea(candidate, pig) < overlapArea(best, pig) ? candidate : best, bounds)
+}
+
 /** 固定透明外框：切页只改变卡片高度，不挪原生窗口。旧游戏包保持原尺寸协议。 */
 export function panelViewportSize(anchor, size, fixed = false) {
   if (!fixed || size === null) return size

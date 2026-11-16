@@ -5,10 +5,11 @@
  * 窗口句柄仍由 lib/panel-window.js 唯一持有；这里只持有面板自身的状态机，
  * 通过 deps 读取主进程的窗口、猪和全局日志入口。逻辑从 main.js 原样搬来。
  */
-import { cursorHitsWindow } from './hit-physical.js'
-import { PANEL_FALLBACK, panelAnchorFor, panelBoundsFor, panelContentRect, panelReferenceFor, panelViewportSize, pigScreenBox } from './panel-geometry.js'
+import { createNiriPanelWindow } from './niri-panel-window.js'
+import { createPanelInput } from './panel-input.js'
+import { createPanelPlacement } from './panel-placement.js'
+import { panelContentRect } from './panel-geometry.js'
 import { panelToggleAction } from './panel-toggle.js'
-import { pointerHitsShape } from './pointer-hit.js'
 import { createResizeShape } from './resize-shape.js'
 /**
  * @param {{
@@ -28,7 +29,11 @@ import { createResizeShape } from './resize-shape.js'
  *   toPages: (channel: string, ...args: any[]) => void,
  *   log: (...parts: any[]) => any,
  *   traceSetIgnoreMouseEvents: (role: string, mode: string, source: string, ignore: boolean, forward: boolean | 'omitted', invoke: () => void) => void,
+ *   niri?: ReturnType<typeof import('./niri-client.js').createNiriWindow> | null,
+ *   readBounds?: (pet: any) => { x: number, y: number, width: number, height: number },
+ *   syncPet?: (pet: any) => any,
  *   setTimeout?: typeof globalThis.setTimeout,
+ *   clearTimeout?: typeof globalThis.clearTimeout,
  *   setInterval?: typeof globalThis.setInterval,
  *   clearInterval?: typeof globalThis.clearInterval,
  * }} deps
@@ -37,6 +42,30 @@ export function createPanelController(deps) {
   const scheduleTimeout = deps.setTimeout ?? setTimeout
   const scheduleInterval = deps.setInterval ?? setInterval
   const clearTimer = deps.clearInterval ?? clearInterval
+  const panelNiri = createNiriPanelWindow({
+    niri: deps.niri ?? null,
+    getPanelWindow: deps.getPanelWindow,
+    log: deps.log,
+    setTimeout: deps.setTimeout,
+    clearTimeout: deps.clearTimeout,
+  })
+  const niriEnabled = panelNiri.enabled
+  const placement = createPanelPlacement({ screen: deps.screen, readBounds: deps.readBounds, niriEnabled })
+  const panelInput = createPanelInput({
+    getPanelWindow: deps.getPanelWindow,
+    screen: deps.screen,
+    platform: deps.platform,
+    BrowserWindow: deps.BrowserWindow,
+    targetPet: panelTargetPet,
+    extensionWindow: deps.extensionWindow,
+    scheduleTimeout,
+    setInterval: scheduleInterval,
+    clearInterval: clearTimer,
+    traceSetIgnoreMouseEvents: deps.traceSetIgnoreMouseEvents,
+    sendBlur: () => sendPanel({ type: 'blur', toPet: false }),
+    state: () => ({ open: panelOpen, fixed: panelFixedViewport, anchor: panelAnchor, size: panelSize }),
+    recentlyShown: () => niriEnabled && panelShownAt > 0 && Date.now() - panelShownAt < 400,
+  })
   /** 面板现在开着没有（用户眼里的「开」，窗口可能还在等页面报尺寸）。 */
   let panelOpen = false
   /** 这次面板朝哪边开、最高多高：打开时定一次，拖动松手后重新定。 */
@@ -44,12 +73,12 @@ export function createPanelController(deps) {
   /** 面板页面最近报的尺寸。 */
   let panelSize = null
   let panelFixedViewport = false
-  let panelHitTimer = null
-  let panelHit = null
   let panelShapeKey = ''
   let panelHasNativeShape = false
   /** 最近一次给面板窗口设的位置：没变就不再 setBounds。 */
   let panelAsked = null
+  /** 最近一次真正显示面板的时间：niri 显示新窗口抢焦点时，猪页会立刻发自动收起。 */
+  let panelShownAt = 0
   /**
    * 面板当前服务哪只猪。null = 沿用主猪；多猪时右键第二只把面板改绑到它。
    * 面板页面按 ?pig= 路由 worker session，所以换猪必须换页面（见 openPanel）。
@@ -80,68 +109,14 @@ export function createPanelController(deps) {
     const pigId = panelTargetPet()?.pigId ?? null
     return pigId === null ? 'piggy://app/index.html' : `piggy://app/index.html?pig=${encodeURIComponent(pigId)}`
   }
-  /** 主猪在屏幕上的框（拖到屏幕边时加上猪在窗口里滑出去的那一截）。 */
-  function pigOnScreen() {
-    if (friendAnchor !== null) return friendAnchor
-    const pet = panelTargetPet()
-    if (pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelPig === null) return null
-    return pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelPig, pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
-  }
-  /** 按猪现在的位置决定面板朝哪边开、最高多高。 */
-  function decidePanelAnchor() {
-    const pig = panelReferenceOnScreen()
-    if (pig === null) return null
-    return panelAnchorFor(pig, deps.screen.getDisplayNearestPoint({ x: Math.round(pig.x + pig.width / 2), y: Math.round(pig.y + pig.height / 2) }).workArea,
-      panelSize?.width ?? PANEL_FALLBACK.width, panelAnchor?.horizontal)
-  }
-  /** 面板窗口该在哪：每次都从猪现在在哪直接算（见 lib/panel-geometry.js 文件头）。 */
-  function panelBounds() {
-    const pet = panelTargetPet()
-    const pig = panelReferenceOnScreen()
-    if (pig === null || panelAnchor === null) return null
-    return panelBoundsFor(pig, panelAnchor, panelViewportSize(panelAnchor, panelSize, panelFixedViewport),
-      pet?.dragSession !== null && pet?.dragSession !== undefined ? deps.screen.getAllDisplays().map(display => display.workArea) : null)
-  }
-  function panelReferenceOnScreen() {
-    if (friendAnchor !== null) return friendAnchor
-    const pet = panelTargetPet()
-    const pig = pigOnScreen()
-    if (pig === null || pet === null || pet.window === null || pet.window.isDestroyed() || pet.panelSpeech === null) return pig
-    const speech = pigScreenBox(pet.petAsked, pet.window.getBounds(), pet.panelSpeech,
-      pet.dragSession !== null ? { dragging: true, slide: pet.lastDragSlide } : {})
-    return panelReferenceFor(pig, speech)
-  }
   function sendPanel(message) {
     const target = deps.getPanelWindow()
     if (target !== null && !target.isDestroyed() && deps.panelWindow.isReady()) target.webContents.send('piggy:panel', message)
   }
-  /** 固定外框只让实际卡片和名牌接收点击，透明预留区继续点到桌面。 */
-  function refreshPanelHit() {
-    if (!panelFixedViewport || !panelOpen || !panelAnchor || !deps.getPanelWindow() || deps.getPanelWindow().isDestroyed() || !deps.getPanelWindow().isVisible()) return
-    const window = deps.getPanelWindow()
-    const bounds = window.getBounds()
-    // 和猪窗口同一套换算：Windows 跨屏按物理像素，其它平台保持 DIP 相减。
-    const { hit } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window,
-      shape: [panelContentRect(bounds, panelAnchor, panelSize)] })
-    if (hit === panelHit) return
-    panelHit = hit
-    deps.traceSetIgnoreMouseEvents('panel', 'panel', 'panel-hit', !hit, true,
-      () => deps.getPanelWindow().setIgnoreMouseEvents(!hit, { forward: true }))
-  }
+
   const panelShape = createResizeShape(() => deps.getPanelWindow(), rects => {
     if (deps.getPanelWindow() && !deps.getPanelWindow().isDestroyed() && deps.platform !== 'darwin') deps.getPanelWindow().setShape(rects)
   }, () => deps.screen.getDisplayMatching(deps.getPanelWindow().getBounds()).scaleFactor)
-  function stopPanelHit() {
-    if (panelHitTimer !== null) clearTimer(panelHitTimer)
-    panelHitTimer = null
-    panelHit = null
-  }
-  function startPanelHit() {
-    if (deps.platform !== 'darwin' || !panelFixedViewport || !panelOpen || panelHitTimer !== null) return
-    refreshPanelHit()
-    panelHitTimer = scheduleInterval(refreshPanelHit, 16)
-    panelHitTimer.unref?.()
-  }
   /** 面板页面换猪/重建后，旧的尺寸、位置和命中缓存全部作废。 */
   function resetPanelView() {
     panelShape.cancel()
@@ -150,7 +125,8 @@ export function createPanelController(deps) {
     panelAsked = null
     panelSize = null
     panelFixedViewport = false
-    stopPanelHit()
+    panelNiri.reset()
+    panelInput.stop()
   }
   /** panel-window 的 onCreated：记录这次页面是按哪只猪加载的。 */
   function panelViewCreated() {
@@ -203,30 +179,10 @@ export function createPanelController(deps) {
   function ensurePanelWindow() {
     return deps.panelWindow.ensure()
   }
-  /**
-   * 焦点离开了面板服务的那只猪或面板窗口：如果也没落到另一个上，就是点到别处了。
-   * 面板打开时不抢焦点（见 placePanel），焦点多半还在猪窗口上，所以两个窗口的失焦都要听。
-   * 多猪时焦点落到别的猪也算「点到别处」。
-   */
-  function panelFocusLeft() {
-    if (!panelOpen) return
-    scheduleTimeout(() => {
-      if (!panelOpen) return
-      const focused = deps.BrowserWindow.getFocusedWindow()
-      const pet = panelTargetPet()
-      if (focused !== null && (focused === pet?.window || focused === deps.getPanelWindow() || focused === deps.extensionWindow.current())) return
-      // 原生窗口重新映射时焦点可能暂空，指针仍在真实面板内不能算外部点击。
-      if (focused === null && panelAnchor && panelSize && deps.getPanelWindow() && !deps.getPanelWindow().isDestroyed() && deps.getPanelWindow().isVisible()) {
-        const bounds = deps.getPanelWindow().getBounds()
-        if (pointerHitsShape(deps.screen.getCursorScreenPoint(), bounds, [panelContentRect(bounds, panelAnchor, panelSize)])) return
-      }
-      sendPanel({ type: 'blur', toPet: false })
-    }, 0)
-  }
   /** 把面板窗口放到该在的地方；第一次有尺寸时才显示（免得先闪一个空窗口）。 */
   function placePanel() {
     if (!panelOpen || deps.getPanelWindow() === null || deps.getPanelWindow().isDestroyed()) return
-    const next = panelBounds()
+    const next = placement.bounds(panelTargetPet(), friendAnchor, panelAnchor, panelSize, panelFixedViewport)
     if (next === null) return
     // 切页、拖动后换边及可用高度变化都从同一份内容框计算轮廓。
     if (deps.platform !== 'darwin') {
@@ -246,22 +202,47 @@ export function createPanelController(deps) {
         panelHasNativeShape = false
       }
     }
-    if (panelAsked === null || panelAsked.x !== next.x || panelAsked.y !== next.y
+    const window = deps.getPanelWindow()
+    const firstShow = panelSize !== null && !window.isVisible()
+    if (niriEnabled) {
+      const sizeChanged = panelAsked === null || panelAsked.width !== next.width || panelAsked.height !== next.height
+      if (sizeChanged) {
+        // niri 会应用尺寸，位置仍由 move-floating-window 负责。
+        const read = window.getBounds()
+        window.setBounds({ x: read.x, y: read.y, width: next.width, height: next.height })
+      }
+      if (firstShow) {
+        // 先透明，等 niri 把面板搬离默认位置再显示；否则会先在猪身上闪一下。
+        panelNiri.hold()
+      } else {
+        panelNiri.moveTo(next)
+      }
+      panelAsked = next
+    } else if (panelAsked === null || panelAsked.x !== next.x || panelAsked.y !== next.y
       || panelAsked.width !== next.width || panelAsked.height !== next.height) {
-      deps.getPanelWindow().setBounds(next)
+      window.setBounds(next)
       panelAsked = next
     }
-    if (panelSize !== null && !deps.getPanelWindow().isVisible()) {
+    if (firstShow) {
       // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
       //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
-      deps.getPanelWindow().showInactive()
+      window.showInactive()
       // Wayland/XWayland 下 showInactive 的面板不进焦点链，点桌面不会触发 blur，
       // “点别处收起面板”就失效。这里只在 Wayland 会话补一次 focus；纯 X11 保持原行为。
-      if (deps.platform === 'linux' && process.env.WAYLAND_DISPLAY) deps.getPanelWindow().focus()
+      // niri 例外：focus() 会先让猪窗口 blur，游戏包的自动收起立刻把刚开的面板关掉。
+      if (!niriEnabled && deps.platform === 'linux' && process.env.WAYLAND_DISPLAY) window.focus()
       raisePetAbovePanel()
       deps.log('panel shown', JSON.stringify({ bounds: next, anchor: panelAnchor?.vertical, pigId: panelTargetPet()?.pigId ?? null }))
       const pet = panelTargetPet()
-      if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'open' })
+      const notifyPet = () => {
+        if (panelOpen && pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'open' })
+      }
+      // niri 显示新窗口时可能抢一次焦点，猪窗口的 blur 会触发游戏包的自动收起。
+      // 把「面板已打开」的回声晚 60ms 发，让 blur 先走完（此时 isOpen 仍是 false）。
+      if (niriEnabled) scheduleTimeout(notifyPet, 60)?.unref?.()
+      else notifyPet()
+      if (niriEnabled) panelNiri.sync(next)
+      panelShownAt = Date.now()
     }
   }
   /**
@@ -286,10 +267,12 @@ export function createPanelController(deps) {
     if (pet.panelPig === null && friendAnchor === null) return
     ensurePanelWindow()
     panelOpen = true
-    startPanelHit()
+    panelInput.start()
+    // niri 下用真实窗口位置开面板；用户可能用 Mod+拖拽在合成器里挪过猪。
+    if (friendAnchor === null && typeof deps.syncPet === 'function') deps.syncPet(pet)
     // 每次打开都按默认规则重新挑对齐边（保持对齐只在拖完重定时用）
     panelAnchor = null
-    panelAnchor = decidePanelAnchor()
+    panelAnchor = placement.decideAnchor(panelTargetPet(), friendAnchor, panelSize, undefined)
     if (panelAnchor === null) return
     sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
     placePanel()
@@ -297,12 +280,20 @@ export function createPanelController(deps) {
 
   function closePanel(why) {
     if (!panelOpen) return
+    // niri 显示新窗口时会抢一次焦点；猪页的 blur 自动收起会在面板刚显示的头几百毫秒
+    // 发来 close。面板页在换页/重映射时也可能回一声。这个不是用户点击外部，忽略一次。
+    if ((why === 'page' || why === 'page-pet') && niriEnabled && panelShownAt > 0 && Date.now() - panelShownAt < 400) {
+      deps.log('panel close ignored after focus steal', JSON.stringify({ age: Date.now() - panelShownAt, from: why }))
+      return
+    }
+    panelShownAt = 0
     pendingFriend = null
     friendAnchor = null
     panelOpen = false
     panelShape.cancel()
     panelShapeKey = ''
-    stopPanelHit()
+    panelNiri.cancel()
+    panelInput.stop()
     if (deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed()) deps.getPanelWindow().hide()
     sendPanel({ type: 'closed' })
     const pet = panelTargetPet()
@@ -321,7 +312,8 @@ export function createPanelController(deps) {
   function reanchorPanel(pet = deps.primaryPet()) {
     if (pet === null || pet !== panelTargetPet()) return
     if (!panelOpen) return
-    const next = decidePanelAnchor()
+    if (niriEnabled) panelNiri.refresh()
+    const next = placement.decideAnchor(panelTargetPet(), friendAnchor, panelSize, panelAnchor?.horizontal)
     if (next === null) return
     const changed = panelAnchor === null || next.vertical !== panelAnchor.vertical || next.maxHeight !== panelAnchor.maxHeight
     panelAnchor = next
@@ -343,15 +335,17 @@ export function createPanelController(deps) {
     if (!(width > 0) || !(height > 0)) return
     panelSize = { width: Math.ceil(width), height: Math.ceil(height) }
     // 新 preload 透传第三个参数；旧游戏包/旧 preload 自动沿用可变外框。
-    panelFixedViewport = size.fixedViewport === true
-    if (panelFixedViewport) startPanelHit()
+    // niri 下固定透明外框会在卡片上方留一条透明区，XWayland 可能渲染成黑条；
+    // 让窗口直接按内容尺寸走，位置由 niri move-floating-window 负责。
+    panelFixedViewport = size.fixedViewport === true && !niriEnabled
+    if (panelFixedViewport) panelInput.start()
     else {
-      stopPanelHit()
+      panelInput.stop()
       deps.traceSetIgnoreMouseEvents('panel', 'panel', 'panel-variable-viewport', false, 'omitted',
         () => deps.getPanelWindow().setIgnoreMouseEvents(false))
     }
     placePanel()
-    if (deps.platform === 'darwin') refreshPanelHit()
+    if (deps.platform === 'darwin') panelInput.refresh()
   }
 
   /** 猪页面：右键开/关面板（带上猪在窗口里的框）。多猪时把同一个面板改绑到当前这只。 */
@@ -383,7 +377,7 @@ export function createPanelController(deps) {
     url: panelUrl,
     viewCreated: panelViewCreated,
     handleReady,
-    focusLeft: panelFocusLeft,
+    focusLeft: panelInput.focusLeft,
     ensure: ensurePanelWindow,
     open: openPanel,
     openFriend,

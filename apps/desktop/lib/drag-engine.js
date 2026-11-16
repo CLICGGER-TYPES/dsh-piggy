@@ -61,11 +61,11 @@ export function createDragEngine(deps) {
     // 用起始窗口的大小去 setBounds 会把窗口来回改大改小，猪就一抽一抽的。
     const pig = pet.dragSession.pig ?? { ...(pet.lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }), ...pet.lastPigSize }
     // 窗口大小用请求值，不用回读值（见 petAsked 的说明）
-    const wanted = dragPigBounds(pet.petAsked ?? window.getBounds(), pig, pet.dragSession.pigScreen, pet.dragSession.cursor, cursor, areas, pet.dragSession.visual)
+    const wanted = dragPigBounds(pet.petAsked ?? deps.surface.readBounds(pet), pig, pet.dragSession.pigScreen, pet.dragSession.cursor, cursor, areas, pet.dragSession.visual)
     if (!pet.dragShapeActive) {
       pet.dragShapeActive = true
       if (!skipNativeShape) {
-        const bounds = window.getBounds()
+        const bounds = deps.surface.readBounds(pet)
         applyShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
       }
       refreshHit(pet)
@@ -110,7 +110,10 @@ export function createDragEngine(deps) {
     // 每次拖动都必须重新铺整窗形状；上一次拖动若没等到页面 place，dragShapeActive
     // 会一直为 true，下一次拖动沿用旧的小 shape，pet-snap/抬手动画就被裁掉。
     pet.dragShapeActive = false
-    const bounds = pet.window.getBounds()
+    // niri 浮窗的位置回读是 0,0：按下时先查合成器里的真实位置，写回 petAsked，
+    // 之后所有帧都从这个真实起点算增量，不能拿 0,0 当起点。
+    deps.surface.syncPetFromNiri?.(pet)
+    const bounds = deps.surface.readBounds(pet)
     // A1：页面可能延迟到移动 4px 才发 drag:start，带上 pointerdown 的屏幕坐标当起点。
     // 快速甩动时第一帧就可能离 pointerdown 上百像素，不能按 32px 拒绝；
     // 只拒绝非有限值、超出 512px 或不在当前屏工作区内的坏消息。
@@ -182,7 +185,11 @@ export function createDragEngine(deps) {
     // 主进程的光标是最新值，最后一帧用它算 slide。
     dragTick(pet)
     if (pet.dragSession !== null) {
-      const bounds = pet.window === null || pet.window.isDestroyed() ? null : pet.window.getBounds()
+      // 把合并队列里最后几帧的位移同步发完，再查 niri 真位置；否则松手后
+      // window.json / 面板锚点会比实际窗口少走最后一小段。
+      deps.surface.flushNiriSync?.()
+      deps.surface.syncPetFromNiri?.(pet)
+      const bounds = pet.window === null || pet.window.isDestroyed() ? null : deps.surface.readBounds(pet)
       // 猪在窗口里的位置：页面给了就用它，没给就用上次量到的（和 dragTick 同一套兜底）。
       const pig = pet.dragSession.pig ?? pet.lastPigWindow ?? { x: WINDOW_PADDING, y: WINDOW_PADDING }
       const startWindow = { x: pet.dragSession.pigScreen.x - pig.x, y: pet.dragSession.pigScreen.y - pig.y }
@@ -195,7 +202,8 @@ export function createDragEngine(deps) {
     pet.restingPigScreen = null
     deps.panel.reanchorPanel(pet)
     // 页面紧接着要读几何重定家：把最后一帧 slide 一起同步返回，避免 send/sendSync 乱序。
-    event.returnValue = geometryOf(pet.window?.getBounds() ?? { x: 0, y: 0, width: 0, height: 0 }, pet)
+    event.returnValue = geometryOf(pet.window === null || pet.window.isDestroyed()
+      ? { x: 0, y: 0, width: 0, height: 0 } : deps.surface.readBounds(pet), pet)
   }
 
   return { refreshRateAt, dragTick, stopDrag, startDrag, heartbeatDrag, endDrag }

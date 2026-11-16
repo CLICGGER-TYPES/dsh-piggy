@@ -48,7 +48,7 @@ export function registerGeometryIpc(deps) {
     const window = pet.window
     setLegacyHit(pet, undefined, 'piggy:content')
     const anchor = { vertical: content?.anchor?.vertical === 'top' ? 'top' : 'bottom', horizontal: content?.anchor?.horizontal === 'left' ? 'left' : 'right' }
-    const bounds = window.getBounds()
+    const bounds = deps.surface.readBounds(pet)
     const pigWindow = { x: Number(content?.pigWindow?.x), y: Number(content?.pigWindow?.y) }
     const hasPigWindow = Number.isFinite(pigWindow.x) && Number.isFinite(pigWindow.y)
     const pigSize = Number(content?.pig?.width) > 0 && Number(content?.pig?.height) > 0
@@ -104,8 +104,9 @@ export function registerGeometryIpc(deps) {
     if (hasPigWindow) pet.lastPigWindow = pigWindow
     pet.lastPigSize = pigSize
     // 记下「猪在屏幕上哪儿」：实机核对展开面板时它有没有动（日志里是 DIP 坐标）。
-    const pigOnScreen = hasPigWindow ? { x: window.getBounds().x + pigWindow.x, y: window.getBounds().y + pigWindow.y } : null
-    deps.log('content', JSON.stringify({ pigId: pet.pigId, window: window.getBounds(), anchor, panelOpen, pigOnScreen, target: pet.restingPigScreen, moved }))
+    const pigWindowBounds = deps.surface.readBounds(pet)
+    const pigOnScreen = hasPigWindow ? { x: pigWindowBounds.x + pigWindow.x, y: pigWindowBounds.y + pigWindow.y } : null
+    deps.log('content', JSON.stringify({ pigId: pet.pigId, window: pigWindowBounds, anchor, panelOpen, pigOnScreen, target: pet.restingPigScreen, moved }))
     const shape = Array.isArray(content.shape) ? content.shape : []
     applyShape(pet, shape.slice(0, 64).map(r => ({
       x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
@@ -114,7 +115,7 @@ export function registerGeometryIpc(deps) {
     if (pet.showGate !== null && pet.showGate.content()) deps.showPigWindow(pet)
     pet.lastShape = shape
     if (content?.immediate === true) {
-      const current = window.getBounds()
+      const current = deps.surface.readBounds(pet)
       event.returnValue = { window: current, workArea: workAreaFor(current), seq: currentSeq() }
     }
   })
@@ -143,7 +144,7 @@ export function registerGeometryIpc(deps) {
     // moving the window or restoring a stale precise drawing shape.
     const reading = request.bounds === undefined && request.shape === undefined && request.hitShape === undefined && request.pig === undefined
     if (reading || pet.dragSession !== null) {
-      event.returnValue = geometryOf(window.getBounds(), pet)
+      event.returnValue = geometryOf(deps.surface.readBounds(pet), pet)
       return
     }
     // 动画可单独更新真实输入；不能因此结束尚未提交新画面的整窗绘制保护。
@@ -155,7 +156,7 @@ export function registerGeometryIpc(deps) {
       pet.hasPlacedHitShape = true
       pet.hitPending = false
       refreshHit(pet)
-      event.returnValue = geometryOf(window.getBounds(), pet)
+      event.returnValue = geometryOf(deps.surface.readBounds(pet), pet)
       return
     }
     const b = request?.bounds
@@ -165,7 +166,7 @@ export function registerGeometryIpc(deps) {
       if (pet.staggerPending) {
         const others = deps.pets.all()
           .filter(other => other !== pet && other.window !== null && other.window !== undefined && !other.window.isDestroyed())
-          .map(other => other.window.getBounds())
+          .map(other => deps.surface.readBounds(other))
         next = staggerPetBounds(next, others, deps.screen.getDisplayMatching(next).workArea)
         pet.staggerPending = false
       }
@@ -175,13 +176,13 @@ export function registerGeometryIpc(deps) {
       // commitSlide transfers translate into layout without changing the window
       // size. Keep the old backing frame whole until the new layout is painted,
       // just as on resize; otherwise its new precise shape clips the old pig.
-      pet.resizeShape?.begin(window.getBounds(), true)
+      pet.resizeShape?.begin(deps.surface.readBounds(pet), true)
     }
     // setBounds 是异步的（X11 要等 ConfigureNotify 回来），紧跟其后的 getBounds() 可能还是旧值。
     // 页面拿这个旧值做闭环核对，就会算出假偏差、再照着它挪窗口 —— 用户看到的「越修越偏」。
     // 这里把「请求值 vs 立刻回读值」的差记下来，先把机制钉死。
     if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
-      const after = window.getBounds()
+      const after = deps.surface.readBounds(pet)
       if (Math.abs(after.x - Math.round(b.x)) > 1 || Math.abs(after.y - Math.round(b.y)) > 1) {
         deps.log('place-stale', JSON.stringify({ pigId: pet.pigId, asked: { x: Math.round(b.x), y: Math.round(b.y) }, read: after }))
       }
@@ -230,7 +231,7 @@ export function registerGeometryIpc(deps) {
       if (speechChanged) deps.panel.reanchorPanel(pet)
       else if (panelPigChanged) deps.panel.followPig(pet)
     }
-    event.returnValue = geometryOf(window.getBounds(), pet)
+    event.returnValue = geometryOf(deps.surface.readBounds(pet), pet)
   })
 
   /**
@@ -257,7 +258,7 @@ export function registerGeometryIpc(deps) {
       // 只扩大绘制：逐帧 setShape 会刷空透明窗口，输入仍跟随当前立绘区域。
       // 落地/接住后页面会发 place，恢复精确绘制形状。
       if (!skipNativeShape) {
-        const bounds = pet.window.getBounds()
+        const bounds = deps.surface.readBounds(pet)
         applyShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
       }
     }
@@ -280,7 +281,7 @@ export function registerGeometryIpc(deps) {
     const dy = Number(delta?.dy)
     if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return
     pet.restingPigScreen = null
-    applyBounds(pet, moveAcrossDisplays(pet.window.getBounds(), dx, dy, deps.screen.getAllDisplays().map(display => display.workArea)), 'move')
+    applyBounds(pet, moveAcrossDisplays(deps.surface.readBounds(pet), dx, dy, deps.screen.getAllDisplays().map(display => display.workArea)), 'move')
     if (pet.primary) deps.panel.reanchorPanel(pet)
   })
 

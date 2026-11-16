@@ -13,7 +13,7 @@
  * - 存档在 userData/state.json，默认数据目录名为 piggy，跟 DSH 里那只各养各的；托盘里可以导入。
  */
 import { auxiliaryWindowOptions } from './lib/auxiliary-window.js'
-import { spawn } from 'node:child_process'
+import { execFile, execFileSync, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -59,6 +59,8 @@ import { createDragEngine, registerDragIpc } from './lib/drag-engine.js'
 import { registerGeometryIpc } from './lib/geometry-ipc.js'
 import { appendJournalSync, journalLine } from './lib/startup-journal.js'
 import { createWindowState } from './lib/window-state.js'
+import { detectNiri, PANEL_TITLE } from './lib/niri-window.js'
+import { createNiriWindow } from './lib/niri-client.js'
 import { createDesktopLifecycle } from './lib/desktop-lifecycle.js'
 import { createOwnerArchiveSelectionStore } from './lib/owner-archive-selection.js'
 import { createOwnerArchiveManager } from './lib/owner-archive-manager.js'
@@ -147,6 +149,36 @@ function traceSetIgnoreMouseEvents(role, mode, source, ignore, forward, invoke) 
 async function flushLogs() {
   let writing
   do { writing = logWriting; await writing } while (writing !== logWriting)
+}
+
+/**
+ * niri（XWayland）窗口适配：只读查询真实浮窗位置，移动走 move-floating-window。
+ * 非 niri 会话返回 null，后面所有窗口路径保持原样。
+ */
+const niriSession = detectNiri(process.env, { platform: process.platform })
+const niri = niriSession.enabled
+  ? createNiriWindow({
+    socket: niriSession.socket,
+    env: process.env,
+    getDisplays: () => screen.getAllDisplays(),
+    execFile,
+    execFileSync,
+    setTimeout,
+    clearTimeout,
+    log: (...parts) => { void log('niri', ...parts) },
+  })
+  : null
+const NIRI_ARGS = niri?.enabled === true ? ['--piggy-niri=1'] : []
+
+/** 面板在 surface 装配前就要用到读窗口位置的函数：surface 之后赋值，调用时已就绪。 */
+/** @type {ReturnType<typeof import('./lib/window-surface.js').createWindowSurface> | null} */
+let surface = null
+function readPetBounds(pet) {
+  if (pet === null || pet === undefined || pet.window === null || pet.window === undefined) return { x: 0, y: 0, width: 0, height: 0 }
+  return surface === null ? pet.window.getBounds() : surface.readBounds(pet)
+}
+function syncPetBounds(pet) {
+  return surface === null ? null : surface.syncPetFromNiri(pet)
 }
 
 /** 游戏宿主的日志本；宿主起来之前是 null。 */
@@ -253,13 +285,15 @@ const panelWindow = createPanelWindow({
   BrowserWindow,
   options: {
     width: PANEL_FALLBACK.width, height: PANEL_FALLBACK.height, x: 0, y: 0,
+    title: PANEL_TITLE,
     transparent: true, frame: false, resizable: false, movable: false, hasShadow: false,
     alwaysOnTop: true, skipTaskbar: true, focusable: true, show: false,
     ...auxiliaryWindowOptions(process.platform),
     backgroundColor: '#00000000',
     webPreferences: { preload: join(HERE, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false,
-      additionalArguments: ['--piggy-role=panel'] },
+      additionalArguments: ['--piggy-role=panel', ...NIRI_ARGS] },
   },
+  title: PANEL_TITLE,
   // 面板页面按 ?pig= 路由到对应 worker session；换猪时重建面板窗口。
   url: () => panel.url(),
   frameCap: FRAME_CAP,
@@ -289,6 +323,7 @@ panel = createPanelController({
   panelWindow, getPanelWindow, screen, BrowserWindow, platform: process.platform,
   pets, primaryPet, getPetWindow, extensionWindow, extensionLayer, ipcMain,
   petForEvent, fromPage, toPages, log, traceSetIgnoreMouseEvents,
+  niri, readBounds: readPetBounds, syncPet: syncPetBounds,
 })
 /** 联机房间：独立页面 + 内存中继；关闭窗口等同于离开房间。 */
 const roomWindow = createRoomWindow({
@@ -441,7 +476,7 @@ const desktopLifecycle = createDesktopLifecycle({
   clearInterval, clearTimeout,
   getResources: () => ({ ...desktopRuntime.getShutdownResources(), shellUpdates, proxySettings, fullscreenWatch: fullscreen.watch(),
     externalManager, autostart, exportWrites, topGuardTimer: fullscreen.topGuardTimer(), displayWatchTimer, hitTimer: primaryPet()?.hitTimer ?? null,
-    hitTimers: pets.all().map(pet => pet.hitTimer), stateTimer: panel.pendingStateTimer(), flushWindowState, flushLogs,
+    hitTimers: pets.all().map(pet => pet.hitTimer), stateTimer: panel.pendingStateTimer(), flushWindowState: flushWindowStateWithNiri, flushLogs,
     roomManager, roomWindow }),
   setExternalManager: manager => { externalManager = manager },
   setHitTimer: timer => { const pet = primaryPet(); if (pet !== null) pet.hitTimer = timer },
@@ -528,6 +563,12 @@ function registerProtocol(gameDir) {
 const windowState = createWindowState({
   getWindow: () => getPetWindow(),
   getPigOffset: () => primaryPet()?.lastPigWindow,
+  // niri 下 getBounds() 的位置是 0,0，必须存应用手里的真实/虚拟屏幕位置。
+  getBounds: () => {
+    const pet = primaryPet()
+    if (pet === null || pet.window === null || pet.window === undefined || pet.window.isDestroyed()) return null
+    return readPetBounds(pet)
+  },
   userDataDir: app.getPath('userData'),
 })
 const {
@@ -535,10 +576,21 @@ const {
   flush: flushWindowState, schedule: scheduleWindowStateSave,
 } = windowState
 
+/** 退出写 window.json 前，把 niri 下的最终窗口位置对账一次。 */
+function flushWindowStateWithNiri() {
+  const pet = primaryPet()
+  if (pet !== null && surface !== null) {
+    surface.flushNiriSync()
+    surface.syncPetFromNiri(pet)
+  }
+  return flushWindowState()
+}
+
 /** 窗口几何与输入面；实现见 lib/window-surface.js。 */
-const surface = createWindowSurface({
+surface = createWindowSurface({
   screen, platform: process.platform, env: process.env, panel,
   scheduleWindowStateSave, log, startupInputTrace, traceSetIgnoreMouseEvents,
+  niri, setTimeout, clearTimeout,
 })
 dragEngine = createDragEngine({
   screen, pets, petForEvent, panel, log, surface,
@@ -634,7 +686,7 @@ const services = createDesktopServices({
   app, dialog, Tray, Menu, nativeImage,
   iconPath: join(HERE, 'build', 'tray.png'),
   log, statePath, desktopLifecycle, getPetWindow, primaryPet, pets, screen,
-  stopDrag, applyBounds, panel,
+  stopDrag, applyBounds, readBounds: readPetBounds, panel,
 })
 const { tray, autostart, recoverPig, backupSave } = services
 
@@ -834,6 +886,7 @@ app.whenReady().then(async () => {
   await proxySettings.init()
   if (desktopLifecycle.quitting) return
   log('start', app.getVersion(), process.platform, process.env.XDG_SESSION_TYPE ?? '')
+  log('niri env', JSON.stringify({ desktop: process.env.XDG_CURRENT_DESKTOP ?? '', socket: process.env.NIRI_SOCKET ?? '', runtime: process.env.XDG_RUNTIME_DIR ?? '' }))
   shellUpdates = createShellUpdates({
     mode: shellUpdateMode({ platform: process.platform, packaged: app.isPackaged,
       portable: Boolean(process.env.PORTABLE_EXECUTABLE_FILE), appImage: process.env.APPIMAGE }),
@@ -958,7 +1011,7 @@ app.whenReady().then(async () => {
   // 页面手里的 workAreas 就会一直用旧的那份（分辨率变了但窗口刚好没动 → 用的是旧工作区）。
   const displayWatch = createDisplayWatch({
     screen, pets, isQuitting: () => desktopLifecycle.quitting, rebuildLinuxViews,
-    applyBounds, pushGeometry, log, platform: process.platform,
+    applyBounds, pushGeometry, log, platform: process.platform, readBounds: readPetBounds,
   })
   displayWatchTimer = displayWatch.start()
   for (const pet of pets.all()) pushGeometry(pet)
