@@ -14,7 +14,7 @@
  * Electron 的 display.bounds 补上。eDP 1.5x、HDMI 1.0x 都按窗口所在输出分别换算。
  */
 import { existsSync as nodeExistsSync, readdirSync as nodeReaddirSync, statSync as nodeStatSync } from 'node:fs'
-import { join } from 'node:path'
+import { posix as pathPosix } from 'node:path'
 
 export const NIRI_APP_ID = 'dsh-piggy-desktop'
 /** 主猪窗口标题；多猪用 `dsh-piggy-pet-<pigId>`。 */
@@ -76,7 +76,7 @@ export function findSocket(env = {}, io = {}) {
   for (const entry of Array.isArray(entries) ? entries : []) {
     const name = String(entry?.name ?? '')
     if (!SOCKET_PATTERN.test(name)) continue
-    const path = join(dir, name)
+    const path = pathPosix.join(dir, name)
     try {
       const info = stat(path)
       found.push({ path, mtime: Number(info?.mtimeMs) || 0 })
