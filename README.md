@@ -120,6 +120,7 @@ npm run typecheck
 | [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；按游戏能力控制 Windows 鼠标转发（[#19](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/19)），异步外壳 I/O 与更新生命周期（[#15](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/15)）、Windows 菜单与小猪窗口层级恢复及回归测试（[#21](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/21)）；提出并参与可选 DSH 外部桌宠方向讨论（[#14](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/14)）；并协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)） |
 | [@Flappy-Boy](https://github.com/Flappy-Boy) | 反馈更新说明滚动回顶、菜园快速点击丢操作、矿洞连续挖掘站位异常，并提供复现步骤（[#16](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/16)、[#17](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/17)、[#18](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/18)） |
 | [@shpgy-shpgy](https://github.com/shpgy-shpgy) | macOS 多桌面空间下面板跟随猪所在空间（[#143](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/143)）；反馈藏猪方块左右键交互（[#140](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/140)） |
+| [@CitrusIce](https://github.com/CitrusIce) | 提出桌面版连接公网联机服务器的需求（[#141](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/141)） |
 
 欢迎画猪、报问题或贡献代码。当前立绘只有一套无描边平涂画风，原有形象与制作要求见[小猪画风](docs/art/pig-style.md)。可以先开 Issue 交流，也欢迎 Fork 项目，养一只符合自己喜好的猪。想加玩法、想画猪、想报 bug 都欢迎：到 [Issues](https://github.com/CLICGGER-TYPES/dsh-piggy/issues) 说一声，或直接提 [Pull Request](https://github.com/CLICGGER-TYPES/dsh-piggy/pulls)。合并进来的贡献会记在这张表里。
 
