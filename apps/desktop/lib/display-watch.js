@@ -12,6 +12,8 @@ import { desktopViewportBounds } from './window-geometry.js'
  *   applyBounds: (pet: any, bounds: any, why: string) => any,
  *   pushGeometry: (pet: any) => void,
  *   readBounds?: (pet: any) => any,
+ *   workAreas?: () => Array<{x:number,y:number,width:number,height:number}>,
+ *   invalidate?: () => void,
  *   log: (...parts: any[]) => any,
  *   platform: string,
  *   setInterval?: typeof globalThis.setInterval,
@@ -27,7 +29,9 @@ export function createDisplayWatch(deps) {
   const reclamp = (why, detail) => {
     if (deps.isQuitting() || deps.pets.all().length === 0) return
     if (displayRebuild.changed() || displayRebuild.busy()) return
-    const areas = deps.screen.getAllDisplays().map(display => display.workArea)
+    const areas = typeof deps.workAreas === 'function'
+      ? deps.workAreas()
+      : deps.screen.getAllDisplays().map(display => display.workArea)
     for (const pet of deps.pets.all()) {
       const window = pet.window
       if (window === null || window.isDestroyed()) continue
@@ -40,10 +44,11 @@ export function createDisplayWatch(deps) {
   /** 注册显示器事件与兜底定时器；返回定时器句柄（退出时由 lifecycle 清理）。 */
   function start() {
     deps.screen.on('display-metrics-changed', (event, display, changedMetrics) => {
+      deps.invalidate?.()
       reclamp('metrics-changed', { id: display?.id, scale: display?.scaleFactor, workArea: display?.workArea, changed: changedMetrics })
     })
-    deps.screen.on('display-added', (event, display) => reclamp('added', { id: display?.id, bounds: display?.bounds, scale: display?.scaleFactor }))
-    deps.screen.on('display-removed', (event, display) => reclamp('removed', { id: display?.id, bounds: display?.bounds }))
+    deps.screen.on('display-added', (event, display) => { deps.invalidate?.(); reclamp('added', { id: display?.id, bounds: display?.bounds, scale: display?.scaleFactor }) })
+    deps.screen.on('display-removed', (event, display) => { deps.invalidate?.(); reclamp('removed', { id: display?.id, bounds: display?.bounds }) })
     // 兜底对账：显示器事件在个别平台/驱动下会漏（Shimeji 干脆每 5 秒轮询一次，因为 AWT 没有事件）。
     // 我们订阅了事件，再每 10 秒比一次工作区列表，不一样就当作「显示器变了」处理一次。
     let lastDisplayKey = ''

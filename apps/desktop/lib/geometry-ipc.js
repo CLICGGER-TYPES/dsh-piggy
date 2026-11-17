@@ -7,6 +7,7 @@
  * Electron、屏、猪 registry 和日志都由组合根经 deps 传入，通道名和返回时机保持不变。
  */
 import { MIN_WINDOW, contentBoundsForPig, moveAcrossDisplays, resizedPigScreenPoint, staggerPetBounds } from './window-geometry.js'
+import { pigVisibleBox } from './panel-geometry.js'
 
 /**
  * @param {{
@@ -23,7 +24,7 @@ import { MIN_WINDOW, contentBoundsForPig, moveAcrossDisplays, resizedPigScreenPo
  */
 export function registerGeometryIpc(deps) {
   const {
-    applyBounds, applyFlightBounds, applyShape, refreshHit, setLegacyHit, setHit,
+    applyBounds, applyFlightBounds, applyShape, applyInputShape, refreshHit, setLegacyHit, setHit,
     setPassthroughMode, isMouseShape, isPlaceRequest, pushGeometry,
     geometryOf, workAreaFor, currentSeq, skipNativeShape,
   } = deps.surface
@@ -92,7 +93,7 @@ export function registerGeometryIpc(deps) {
           ? resizedPigScreenPoint(pet.restingPigScreen ?? pigBefore, pet.lastPigSize, pigSize)
           : (pet.restingPigScreen ?? pigBefore)
       if (sizeChanged && pet.restingPigScreen !== null) pet.restingPigScreen = target
-      const area = deps.screen.getDisplayNearestPoint(target).workArea
+      const area = deps.surface.workAreaAt(target)
       moved = applyBounds(pet, contentBoundsForPig({
         width, height, pigWindow: { ...pigWindow, ...pigSize }, panelOpen,
         allowPanelOverflow: sizeChanged,
@@ -112,6 +113,8 @@ export function registerGeometryIpc(deps) {
       x: Math.max(0, Math.round(Number(r.x) || 0)), y: Math.max(0, Math.round(Number(r.y) || 0)),
       width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
     })))
+    const inputShape = Array.isArray(content.hitShape) ? content.hitShape : shape
+    applyInputShape(pet, inputShape)
     if (pet.showGate !== null && pet.showGate.content()) deps.showPigWindow(pet)
     pet.lastShape = shape
     if (content?.immediate === true) {
@@ -156,6 +159,7 @@ export function registerGeometryIpc(deps) {
       pet.hasPlacedHitShape = true
       pet.hitPending = false
       refreshHit(pet)
+      applyInputShape(pet, pet.placedHitShape)
       event.returnValue = geometryOf(deps.surface.readBounds(pet), pet)
       return
     }
@@ -219,6 +223,11 @@ export function registerGeometryIpc(deps) {
       panelPigChanged = pet.panelPig === null || pet.panelPig.x !== pig.x || pet.panelPig.y !== pig.y || pet.panelPig.width !== pig.width || pet.panelPig.height !== pig.height
       pet.panelPig = { x: pig.x, y: pig.y, width: pig.width, height: pig.height }
     }
+    // 面板避让用「猪盒 + 附近真实可见输入」：耳朵、脚和帽子常越出布局盒，
+    // 只用布局盒会让面板压住一小截猪（用户右键时看到「面板挡住整只猪」）。
+    // 优先用绘制 shape（含动作立绘的外接余量），再补几像素给呼吸/待机缩放。
+    pet.panelPigVisible = pet.panelPig === null ? null
+      : pigVisibleBox(pet.panelPig, pet.placedShape ?? pet.placedHitShape, 4)
     let speechChanged = false
     if (Object.hasOwn(request, 'speech')) {
       const s = request.speech
@@ -231,6 +240,9 @@ export function registerGeometryIpc(deps) {
       if (speechChanged) deps.panel.reanchorPanel(pet)
       else if (panelPigChanged) deps.panel.followPig(pet)
     }
+    // 输入区域最后设：前面的 refreshHit/尺寸变化可能触发 setIgnoreMouseEvents(false)，
+    // 那会把 Chromium 的 ShapeInput 复位成整窗。niri 下用页面报的 hitShape 收窄。
+    applyInputShape(pet, pet.placedHitShape ?? request.hitShape)
     event.returnValue = geometryOf(deps.surface.readBounds(pet), pet)
   })
 
@@ -260,6 +272,7 @@ export function registerGeometryIpc(deps) {
       if (!skipNativeShape) {
         const bounds = deps.surface.readBounds(pet)
         applyShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
+        applyInputShape(pet, [{ x: 0, y: 0, width: bounds.width, height: bounds.height }])
       }
     }
     refreshHit(pet)
@@ -281,7 +294,7 @@ export function registerGeometryIpc(deps) {
     const dy = Number(delta?.dy)
     if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) return
     pet.restingPigScreen = null
-    applyBounds(pet, moveAcrossDisplays(deps.surface.readBounds(pet), dx, dy, deps.screen.getAllDisplays().map(display => display.workArea)), 'move')
+    applyBounds(pet, moveAcrossDisplays(deps.surface.readBounds(pet), dx, dy, deps.surface.workAreas()), 'move')
     if (pet.primary) deps.panel.reanchorPanel(pet)
   })
 
@@ -295,5 +308,6 @@ export function registerGeometryIpc(deps) {
       x: Math.round(Number(r.x) || 0), y: Math.round(Number(r.y) || 0),
       width: Math.max(0, Math.round(Number(r.width) || 0)), height: Math.max(0, Math.round(Number(r.height) || 0)),
     })))
+    applyInputShape(pet, rects)
   })
 }

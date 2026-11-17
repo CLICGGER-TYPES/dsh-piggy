@@ -5,13 +5,13 @@
  * 与 lib/niri-window.js 的纯解析/坐标换算分离，方便单测和守住 400 行上限。
  */
 import { execFile as nodeExecFile, execFileSync as nodeExecFileSync } from 'node:child_process'
-import { chooseWindow, displayAtPoint, displayForOutput, parseOutputs, parseWindows, parseWorkspaces, screenWindows } from './niri-window.js'
+import { chooseWindow, niriWorkAreas, outputAtPoint, parseOutputs, parseWindows, parseWorkspaces, screenWindows } from './niri-window.js'
 
 /** @typedef {{ x: number, y: number, width: number, height: number }} Rect */
 /** @typedef {{ title: string, appId?: string, id: number | null, rect: Rect | null, scale: number,
  *   windowSize: { width: number, height: number } | null, output: string | null, isFloating: boolean,
  *   widthHint?: number, heightHint?: number }} NiriHandle */
-const MOVE_INTERVAL_MS = 33
+const MOVE_INTERVAL_MS = 16
 
 function parseJson(text) {
   try { return JSON.parse(String(text)) } catch { return null }
@@ -52,6 +52,9 @@ export function createNiriWindow(options) {
   let inflight = Promise.resolve()
   let outputCache = null
   let outputCacheAt = 0
+  let windowsCache = null
+  let windowsCacheAt = 0
+  const WINDOWS_CACHE_MS = 80
   let lastError = ''
 
   function queryJson(args) {
@@ -80,23 +83,77 @@ export function createNiriWindow(options) {
     return outputCache
   }
 
-  /** Electron 屏对应哪块 niri 输出（跨屏移动要先用 move-window-to-monitor）。 */
-  function outputNameForDisplay(display) {
-    if (display === null || display === undefined) return null
+  /** 显示器/缩放变化后强制下次重新读输出。 */
+  function invalidate() {
+    outputCache = null
+    outputCacheAt = 0
+    windowsCache = null
+    windowsCacheAt = 0
+  }
+
+  /** niri 输出的工作区（全局逻辑 DIP）；拿不到时返回空数组，调用方回退 Electron。 */
+  function workAreas() {
+    const { outputs } = outputsAndWorkspaces()
+    return niriWorkAreas(outputs, getDisplays())
+  }
+
+  /** 目标点落在哪块 niri 输出：优先用输出逻辑布局，不再依赖 Electron 的 display.bounds。 */
+  function outputAt(point) {
+    const { outputs } = outputsAndWorkspaces()
+    const found = outputAtPoint(outputs, getDisplays(), point)
+    return found === null ? null : found.name
+  }
+
+  /**
+   * 旧版本把窗口位置按物理像素写进了 window.json。niri 现在统一用逻辑像素（DIP）；
+   * 启动时若保存点不在任何输出里，就按各输出的 scale 折回逻辑坐标，避免猪跑到屏幕外。
+   * @param {{x:number,y:number,width?:number,height?:number,pig?:{x:number,y:number}}|null} saved
+   */
+  function normalizeSaved(saved) {
+    if (saved === null || saved === undefined || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) return saved
+    const areas = workAreas()
+    if (areas.length === 0) return saved
+    const inside = point => areas.some(area => point.x >= area.x && point.x < area.x + area.width
+      && point.y >= area.y && point.y < area.y + area.height)
+    if (inside(saved)) return saved
+    const { outputs } = outputsAndWorkspaces()
     const displays = getDisplays()
-    for (const [name, output] of Object.entries(outputsAndWorkspaces().outputs)) {
-      const matched = displayForOutput(output, displays)
-      if (matched !== null && (matched.id === display.id || (matched.bounds.x === display.bounds.x && matched.bounds.y === display.bounds.y))) return name
+    for (const [name, output] of Object.entries(outputs)) {
+      const logical = output?.logical ?? {}
+      const scale = Number(logical.scale) || 1
+      if (!Number.isFinite(logical.x) || !Number.isFinite(logical.y) || scale === 1) continue
+      const display = displays.find(item => item?.bounds !== undefined
+        && Math.abs(Number(item.bounds.width) - Number(logical.width)) <= 12
+        && Math.abs(Number(item.bounds.height) - Number(logical.height)) <= 12)
+      const originX = Number(display?.bounds?.x) || 0
+      const originY = Number(display?.bounds?.y) || 0
+      const candidate = {
+        ...saved,
+        x: logical.x + (saved.x - originX) / scale,
+        y: logical.y + (saved.y - originY) / scale,
+      }
+      if (!inside(candidate)) continue
+      if (saved.pig !== undefined && saved.pig !== null && Number.isFinite(saved.pig.x) && Number.isFinite(saved.pig.y)) {
+        candidate.pig = {
+          x: logical.x + (saved.pig.x - originX) / scale,
+          y: logical.y + (saved.pig.y - originY) / scale,
+        }
+      }
+      log('niri saved bounds normalized', JSON.stringify({ from: { x: saved.x, y: saved.y }, to: { x: candidate.x, y: candidate.y }, output: name }))
+      return candidate
     }
-    return null
+    return saved
   }
 
   /** @returns {ReturnType<typeof screenWindows>} */
   function readWindows() {
+    if (windowsCache !== null && now() - windowsCacheAt < WINDOWS_CACHE_MS) return windowsCache
     const raw = parseWindows(queryJson(['windows']) ?? [])
-    if (raw.length === 0) return []
+    if (raw.length === 0) { windowsCache = []; windowsCacheAt = now(); return windowsCache }
     const { outputs, workspaces } = outputsAndWorkspaces()
-    return screenWindows(raw, outputs, workspaces, getDisplays())
+    windowsCache = screenWindows(raw, outputs, workspaces, getDisplays())
+    windowsCacheAt = now()
+    return windowsCache
   }
 
   /** @param {{ title: string, appId?: string, width?: number, height?: number, tolerance?: number }} query */
@@ -185,6 +242,8 @@ export function createNiriWindow(options) {
   function moveToMonitor(id, outputName) {
     try {
       execFileSync('niri', ['msg', 'action', 'move-window-to-monitor', '--id', String(id), outputName], { env, timeout: 3000 })
+      windowsCache = null
+      windowsCacheAt = 0
       return true
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -202,6 +261,7 @@ export function createNiriWindow(options) {
     timer = null
     const moves = takeMoves(value => Math.round(value))
     if (moves.length === 0) return inflight
+    if (process.env.PIGGY_NIRI_DEBUG === '1') log('niri flush', JSON.stringify(moves))
     const jobs = moves.map(move => new Promise(resolve => {
       execFile('niri', moveArgs(move.id, move.dx, move.dy), { env, timeout: 3000 }, error => {
         if (error) {
@@ -223,6 +283,7 @@ export function createNiriWindow(options) {
     if (timer !== null) clearTimer(timer)
     timer = null
     const moves = takeMoves(value => Math.round(value))
+    if (process.env.PIGGY_NIRI_DEBUG === '1' && moves.length > 0) log('niri flush sync', JSON.stringify(moves))
     for (const move of moves) {
       try {
         execFileSync('niri', moveArgs(move.id, move.dx, move.dy), { env, timeout: 3000 })
@@ -234,11 +295,13 @@ export function createNiriWindow(options) {
         }
       }
     }
+    windowsCache = null
+    windowsCacheAt = 0
   }
 
   /**
-   * 把窗口移动到物理坐标 next（增量 = next − 上次已知位置）。只改位置；尺寸仍由
-   * Electron `setBounds` 负责。
+   * 把窗口移动到逻辑坐标 next（DIP；和 Electron BrowserWindow/光标同一套坐标）。
+   * 位置用 `move-floating-window` 的相对增量；尺寸仍由 Electron `setBounds` 负责。
    * @param {NiriHandle} handle
    * @param {{ x: number, y: number, width?: number, height?: number }} next
    */
@@ -247,24 +310,21 @@ export function createNiriWindow(options) {
     if (!Number.isFinite(next.x) || !Number.isFinite(next.y)) return false
     const width = Number.isFinite(next.width) ? Number(next.width) : handle.rect.width
     const height = Number.isFinite(next.height) ? Number(next.height) : handle.rect.height
-    const targetDisplay = displayAtPoint(getDisplays(), { x: next.x + width / 2, y: next.y + height / 2 })
-    if (targetDisplay !== null && handle.output !== null) {
-      const targetOutput = outputNameForDisplay(targetDisplay)
-      if (targetOutput !== null && targetOutput !== handle.output) {
-        flushIdSync(handle.id)
-        if (moveToMonitor(handle.id, targetOutput)) {
-          // 搬完输出后窗口会被放到新屏的浮动默认位置，必须重新读一次真实坐标再算增量。
-          if (refresh(handle) === null) return false
-        }
+    const targetOutput = outputAt({ x: next.x + width / 2, y: next.y + height / 2 })
+    if (targetOutput !== null && handle.output !== null && targetOutput !== handle.output) {
+      flushIdSync(handle.id)
+      if (moveToMonitor(handle.id, targetOutput)) {
+        // 搬完输出后窗口会被放到新屏的浮动默认位置，必须重新读一次真实坐标再算增量。
+        if (refresh(handle) === null) return false
       }
     }
     const dx = next.x - handle.rect.x
     const dy = next.y - handle.rect.y
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return false
-    const scale = Number(handle.scale) || 1
+    // 全部逻辑像素：不要再除输出 scale。混合 DPI 下除一次会让窗口只走 1/1.5。
     const current = pending.get(handle.id) ?? { x: 0, y: 0 }
-    current.x += dx / scale
-    current.y += dy / scale
+    current.x += dx
+    current.y += dy
     pending.set(handle.id, current)
     handle.rect = { ...handle.rect, x: next.x, y: next.y }
     schedule()
@@ -289,6 +349,10 @@ export function createNiriWindow(options) {
     watch,
     refresh,
     readWindows,
+    workAreas,
+    outputAt,
+    normalizeSaved,
+    invalidate,
     moveTo,
     moveBy,
     flush,

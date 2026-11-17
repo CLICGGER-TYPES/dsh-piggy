@@ -194,7 +194,7 @@ export function attachGestures(c) {
 
     const shell = c.desktopShell()
     if (shell !== null) {
-      if (typeof shell.beginDrag === 'function') shell.dragHeartbeat?.()
+      if (typeof shell.beginDrag === 'function') shell.dragHeartbeat?.({ x: event.clientX, y: event.clientY })
       else if (typeof shell.moveBy === 'function' && drag.legacy) {
         const stepX = screen.x - drag.lastX
         const stepY = screen.y - drag.lastY

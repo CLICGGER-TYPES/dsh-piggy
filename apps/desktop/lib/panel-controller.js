@@ -8,6 +8,8 @@
 import { createNiriPanelWindow } from './niri-panel-window.js'
 import { createPanelInput } from './panel-input.js'
 import { createPanelPlacement } from './panel-placement.js'
+import { createPanelToggleGuard } from './panel-toggle-guard.js'
+import { createStateAnnouncer } from './panel-state-announce.js'
 import { panelContentRect } from './panel-geometry.js'
 import { panelToggleAction } from './panel-toggle.js'
 import { createResizeShape } from './resize-shape.js'
@@ -31,17 +33,21 @@ import { createResizeShape } from './resize-shape.js'
  *   traceSetIgnoreMouseEvents: (role: string, mode: string, source: string, ignore: boolean, forward: boolean | 'omitted', invoke: () => void) => void,
  *   niri?: ReturnType<typeof import('./niri-client.js').createNiriWindow> | null,
  *   readBounds?: (pet: any) => { x: number, y: number, width: number, height: number },
+ *   workAreaAt?: (point: {x:number,y:number}) => {x:number,y:number,width:number,height:number},
+ *   workAreas?: () => Array<{x:number,y:number,width:number,height:number}>,
  *   syncPet?: (pet: any) => any,
  *   setTimeout?: typeof globalThis.setTimeout,
  *   clearTimeout?: typeof globalThis.clearTimeout,
  *   setInterval?: typeof globalThis.setInterval,
  *   clearInterval?: typeof globalThis.clearInterval,
+ *   now?: () => number,
  * }} deps
  */
 export function createPanelController(deps) {
   const scheduleTimeout = deps.setTimeout ?? setTimeout
   const scheduleInterval = deps.setInterval ?? setInterval
   const clearTimer = deps.clearInterval ?? clearInterval
+  const now = deps.now ?? Date.now
   const panelNiri = createNiriPanelWindow({
     niri: deps.niri ?? null,
     getPanelWindow: deps.getPanelWindow,
@@ -50,7 +56,9 @@ export function createPanelController(deps) {
     clearTimeout: deps.clearTimeout,
   })
   const niriEnabled = panelNiri.enabled
-  const placement = createPanelPlacement({ screen: deps.screen, readBounds: deps.readBounds, niriEnabled })
+  const toggleGuard = createPanelToggleGuard({ now, log: deps.log })
+  const stateAnnouncer = createStateAnnouncer({ scheduleTimeout, toPages: deps.toPages })
+  const placement = createPanelPlacement({ screen: deps.screen, readBounds: deps.readBounds, niriEnabled, workAreaAt: deps.workAreaAt, workAreas: deps.workAreas })
   const panelInput = createPanelInput({
     getPanelWindow: deps.getPanelWindow,
     screen: deps.screen,
@@ -90,12 +98,6 @@ export function createPanelController(deps) {
   let pendingFriend = null
   /** 朋友猪打开面板时用它的桌面窗口当锚点，不依赖本地猪的 panelPig。 */
   let friendAnchor = null
-  let stateTimer = null
-  /** 存档变了：两个窗口都刷新（合并 30ms 内的多次，一次动作可能连发几个请求）。 */
-  function announceStateChanged() {
-    if (stateTimer !== null) return
-    stateTimer = scheduleTimeout(() => { stateTimer = null; deps.toPages('piggy:state-changed') }, 30)
-  }
   /** 面板服务的那只猪：改绑目标还活着就用它，否则回主猪。 */
   function panelTargetPet() {
     if (panelTarget !== null && deps.pets.all().includes(panelTarget)) {
@@ -113,7 +115,6 @@ export function createPanelController(deps) {
     const target = deps.getPanelWindow()
     if (target !== null && !target.isDestroyed() && deps.panelWindow.isReady()) target.webContents.send('piggy:panel', message)
   }
-
   const panelShape = createResizeShape(() => deps.getPanelWindow(), rects => {
     if (deps.getPanelWindow() && !deps.getPanelWindow().isDestroyed() && deps.platform !== 'darwin') deps.getPanelWindow().setShape(rects)
   }, () => deps.screen.getDisplayMatching(deps.getPanelWindow().getBounds()).scaleFactor)
@@ -280,7 +281,6 @@ export function createPanelController(deps) {
     sendPanel({ type: 'open', vertical: panelAnchor.vertical, maxHeight: panelAnchor.maxHeight })
     placePanel()
   }
-
   function closePanel(why) {
     if (!panelOpen) return
     // niri 显示新窗口时会抢一次焦点；猪页的 blur 自动收起会在面板刚显示的头几百毫秒
@@ -290,6 +290,8 @@ export function createPanelController(deps) {
       return
     }
     panelShownAt = 0
+    const closedPet = panelTargetPet()
+    if (why === 'pet') toggleGuard.closed(closedPet)
     pendingFriend = null
     friendAnchor = null
     panelOpen = false
@@ -306,14 +308,12 @@ export function createPanelController(deps) {
     if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'closed' })
     deps.log('panel closed', why)
   }
-
   /** 面板服务的那只猪挪了（拖动、散步、贴边修正）：面板按它的新位置重摆，不重新挑朝向（松手后再挑）。 */
   function followPig(pet = deps.primaryPet()) {
     if (pet === null || pet !== panelTargetPet()) return
     if (!panelOpen || deps.getPanelWindow() === null || deps.getPanelWindow().isDestroyed() || !deps.getPanelWindow().isVisible()) return
     placePanel()
   }
-
   /** 拖完 / 散步完：猪到了新地方，重新决定面板朝哪边开（放不下就换边）。 */
   function reanchorPanel(pet = deps.primaryPet()) {
     if (pet === null || pet !== panelTargetPet()) return
@@ -326,7 +326,6 @@ export function createPanelController(deps) {
     if (changed) sendPanel({ type: 'open', vertical: next.vertical, maxHeight: next.maxHeight })
     placePanel()
   }
-
   /** 一只猪窗口真的关了：面板正服务它时收起，目标回落到还活着的主猪。 */
   function forgetTarget(pet) {
     if (panelTarget !== pet) return
@@ -368,6 +367,7 @@ export function createPanelController(deps) {
     }
     const action = panelToggleAction({ requestedOpen: request?.open === true, isOpen: panelOpen,
       isVisible: deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed() && deps.getPanelWindow().isVisible() })
+    if (action === 'open' && toggleGuard.ignoreOpen(pet)) return
     if (action === 'open') openPanel(request?.pig, pet)
     else if (action === 'close') closePanel('pet')
     else {
@@ -394,7 +394,7 @@ export function createPanelController(deps) {
     forgetTarget,
     setSize: setPanelSize,
     toggle: togglePanel,
-    announceStateChanged,
-    pendingStateTimer: () => stateTimer,
+    announceStateChanged: stateAnnouncer.announce,
+    pendingStateTimer: stateAnnouncer.pending,
   }
 }

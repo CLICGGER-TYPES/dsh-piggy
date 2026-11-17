@@ -24,6 +24,8 @@ export function createNiriPanelWindow(deps) {
   let handle = null
   let timer = null
   let attempts = 0
+  let failed = false
+  let failedAt = 0
   let opacityHeld = false
   /** 最近一次要去的物理位置；重试定时器必须用最新目标，不能用第一次的闭包。 */
   let target = null
@@ -63,6 +65,8 @@ export function createNiriPanelWindow(deps) {
     if (timer !== null) clearTimer(timer)
     timer = null
     attempts = 0
+    failed = false
+    failedAt = 0
     target = null
     restoreOpacity()
   }
@@ -80,8 +84,8 @@ export function createNiriPanelWindow(deps) {
   }
 
   /**
-   * 跨输出后 niri/XWayland 可能仍按旧输出的 scale 换算窗口尺寸（292 物理变成 194 逻辑）。
-   * 先按目标物理尺寸提交一次，再按回读比例补偿，保证面板在目标屏上视觉大小不变。
+   * 跨输出后窗口尺寸理应按逻辑像素保持一致；若 niri 回读仍差几像素，
+   * 再按目标 DIP 尺寸提交一次（不要再乘/除 scale，坐标已经统一为 DIP）。
    */
   function reapplySize(next) {
     const window = deps.getPanelWindow()
@@ -91,13 +95,7 @@ export function createNiriPanelWindow(deps) {
     window.setBounds({ x: read.x, y: read.y, width: next.width, height: next.height })
     if (niri.refresh(current) === null) return
     if (Math.abs(current.rect.width - next.width) <= 2 && Math.abs(current.rect.height - next.height) <= 2) return
-    const scale = Number(current.scale) || 1
-    const ratioX = read.width / Math.max(1, current.rect.width)
-    const ratioY = read.height / Math.max(1, current.rect.height)
-    window.setBounds({
-      x: read.x, y: read.y,
-      width: Math.round(next.width * ratioX / scale), height: Math.round(next.height * ratioY / scale),
-    })
+    window.setBounds({ x: read.x, y: read.y, width: next.width, height: next.height })
     niri.refresh(current)
   }
 
@@ -107,7 +105,16 @@ export function createNiriPanelWindow(deps) {
    */
   function sync(next) {
     if (!enabled) return
-    if (next !== null && next !== undefined) target = next
+    if (next !== null && next !== undefined) {
+      if (failed && target !== null && target !== undefined
+        && Math.abs(next.x - target.x) < 2 && Math.abs(next.y - target.y) < 2) {
+        // 失败后不要每次 place 都同步查 niri；1 秒后再试一次，避免日志/主线程风暴。
+        if (Date.now() - failedAt < 1000) return
+        failed = false
+        attempts = 0
+      }
+      target = next
+    }
     if (target === null || target === undefined) return
     const current = handleFor()
     const window = deps.getPanelWindow()
@@ -116,8 +123,10 @@ export function createNiriPanelWindow(deps) {
     if (found === null) {
       attempts += 1
       if (attempts > 10) {
+        if (!failed) deps.log('panel niri window not found', JSON.stringify({ attempts, asked: target }))
+        failed = true
+        failedAt = Date.now()
         restoreOpacity()
-        deps.log('panel niri window not found', JSON.stringify({ attempts, asked: target }))
         return
       }
       if (timer === null) {
@@ -130,6 +139,8 @@ export function createNiriPanelWindow(deps) {
       return
     }
     attempts = 0
+    failed = false
+    failedAt = 0
     const beforeOutput = current.output
     niri.moveTo(current, target)
     const crossed = current.output !== beforeOutput

@@ -7,7 +7,7 @@
  */
 import { createResizeShape } from './resize-shape.js'
 import { createPetWindow } from './pet-window.js'
-import { MIN_WINDOW, WINDOW_PADDING, clampBounds, pigDisplayAtCursor } from './window-geometry.js'
+import { MIN_WINDOW, WINDOW_PADDING, clampBounds } from './window-geometry.js'
 import { auxiliaryWindowOptions } from './auxiliary-window.js'
 import { SHOW_FALLBACK_MS, createShowGate } from './window-show.js'
 import { pageCrashReason } from './startup-failure.js'
@@ -63,18 +63,20 @@ export function createWindowManager(deps) {
    */
   async function createPigWindow(pet, override = null) {
     if (pet === null || pet === undefined || deps.desktopLifecycle.quitting) return
-    const saved = override ?? (pet.primary ? await deps.readWindowState() : null)
+    const rawSaved = override ?? (pet.primary ? await deps.readWindowState() : null)
+    // niri：旧 window.json 存的是物理像素，统一坐标后先折回逻辑像素。
+    const saved = rawSaved === null ? null : deps.surface.normalizeSavedBounds(rawSaved)
     // 新猪第一次由页面摆放时，如果和已有宠物窗口重合，主进程会再错开一次。
     pet.staggerPending = saved === null && pet.primary !== true
     if (deps.desktopLifecycle.quitting) return
     pet.savedPigScreen = saved !== null && Number.isFinite(saved.pig?.x) && Number.isFinite(saved.pig?.y) ? { x: saved.pig.x, y: saved.pig.y } : null
     if (pet.savedPigScreen !== null) {
       // 显示器拔掉或换了分辨率：猪至少要整只留在某块屏上。
-      const pigArea = deps.screen.getDisplayNearestPoint(pet.savedPigScreen).workArea
+      const pigArea = deps.surface.workAreaAt(pet.savedPigScreen)
       const box = clampBounds({ ...pet.savedPigScreen, width: MIN_WINDOW.width, height: MIN_WINDOW.height }, pigArea)
       pet.savedPigScreen = { x: box.x, y: box.y }
     }
-    const area = saved === null ? pigDisplayAtCursor(deps.screen).workArea : deps.screen.getDisplayMatching(saved).workArea
+    const area = saved === null ? deps.surface.workAreaAt(deps.screen.getCursorScreenPoint()) : deps.surface.workAreaFor(saved)
     const width = saved === null ? FALLBACK_CONTENT.width + WINDOW_PADDING * 2 : saved.width
     const height = saved === null ? FALLBACK_CONTENT.height + WINDOW_PADDING * 2 : saved.height
     const anchorRight = saved === null ? 18 : null

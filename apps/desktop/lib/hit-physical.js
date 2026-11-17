@@ -146,6 +146,8 @@ function nativeWindowLocalCursor(screenApi, win, cursor, content, dpr, viewport)
 /**
  * 光标是否落在窗口内 shape 上（shape 用窗口局部逻辑坐标）。
  * Windows 走物理换算；其它平台光标和窗口在同一 DIP 坐标系，保持原来的相减。
+ * `bounds` 可由调用方覆盖：niri 下 Electron 的 `getBounds()` 位置恒为 0,0，
+ * 必须传合成器里的真实/虚拟窗口矩形，否则命中会按左上角算。
  * @param {{
  *   platform: string,
  *   screen: any,
@@ -154,14 +156,15 @@ function nativeWindowLocalCursor(screenApi, win, cursor, content, dpr, viewport)
  *   cursor?: any,
  *   dpr?: number|null,
  *   viewport?: any,
+ *   bounds?: {x:number,y:number,width:number,height:number}|null,
  * }} input
  * @returns {{hit:boolean, problem:string}}
  */
-export function cursorHitsWindow({ platform, screen, window, shape, cursor = null, dpr = null, viewport = null }) {
-  const bounds = window.getBounds()
+export function cursorHitsWindow({ platform, screen, window, shape, cursor = null, dpr = null, viewport = null, bounds = null }) {
+  const nativeBounds = bounds !== null && isRect(bounds) ? bounds : window.getBounds()
   const point = cursor ?? screen.getCursorScreenPoint()
-  if (platform !== 'win32') return { hit: pointerHitsShape(point, bounds, shape), problem: '' }
-  const content = typeof window.getContentBounds === 'function' ? window.getContentBounds() : bounds
+  if (platform !== 'win32') return { hit: pointerHitsShape(point, nativeBounds, shape), problem: '' }
+  const content = typeof window.getContentBounds === 'function' ? window.getContentBounds() : nativeBounds
   const local = nativeWindowLocalCursor(screen, window, point, content, dpr, viewport)
   if (local.cursor === null) return { hit: false, problem: local.problem }
   const origin = { x: 0, y: 0, width: local.width, height: local.height }

@@ -8,6 +8,7 @@
  */
 import { cursorHitsWindow } from './hit-physical.js'
 import { createNiriPetWindow } from './niri-pet-window.js'
+import { createX11InputShape } from './x11-input-shape.js'
 
 /** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
 const BOUNDS_TOLERANCE = 2
@@ -39,6 +40,15 @@ export function createWindowSurface(deps) {
   })
   const niriEnabled = niriPet.enabled
   /**
+   * niri/XWayland 的 `setShape` 只裁绘制（ShapeBounding），ShapeInput 仍是整窗；
+   * 透明块会挡住桌面。用最小 X11 客户端直接设输入区域（见 lib/x11-input-shape.js）。
+   * 连接失败时退回「整窗可交互」，不阻塞其它平台。
+   */
+  const inputShape = niriEnabled && deps.platform === 'linux' && typeof deps.env.DISPLAY === 'string' && deps.env.DISPLAY !== ''
+    ? createX11InputShape({ display: deps.env.DISPLAY, log: message => deps.log('input shape', message) })
+    : null
+  const shapedInput = inputShape?.enabled === true
+  /**
    * Windows 上不用 setShape，改用鼠标穿透：现代游戏由主进程轮询命中，旧游戏由页面上报。
    * setShape 在 Windows 上是 SetWindowRgn，开关面板时可点区域整块变化，透明分层窗口会闪一下白
    * （用户 2026-10-05：装了 0.2.5 右键开关菜单仍闪白屏）。穿透模式下窗口区域从不变化。
@@ -47,7 +57,10 @@ export function createWindowSurface(deps) {
   const SKIP_NATIVE_SHAPE = deps.platform === 'win32' && deps.env.PIGGY_SHAPE !== '1'
   /** macOS 没有 setShape；独立输入区域也可叠加在 Linux 的保守绘制裁剪之上。 */
   const MOUSE_PASSTHROUGH = SKIP_NATIVE_SHAPE || deps.platform === 'darwin'
-  /** Wayland/XWayland 的 setIgnoreMouseEvents 不可靠：紧凑窗口始终保持可点。 */
+  /**
+   * Wayland/XWayland 的 setIgnoreMouseEvents 不可靠：紧凑窗口始终保持可点。
+   * niri 有 X11 输入区域时也保持可点，让 ShapeInput 决定哪里能点；其余 Wayland 保持原样。
+   */
   const ALWAYS_INTERACTIVE = deps.platform === 'linux' && Boolean(deps.env.WAYLAND_DISPLAY)
   let geometrySeq = 0
   /** 同一种换算错误只记一次，避免 16ms 轮询刷日志。 */
@@ -55,7 +68,43 @@ export function createWindowSurface(deps) {
 
   /** 这块窗口落在哪块屏上，就用那块屏的工作区。 */
   function workAreaFor(bounds) {
+    if (niriEnabled) {
+      const areas = workAreas()
+      if (areas.length > 0) {
+        const point = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+        return areas.find(area => point.x >= area.x && point.x < area.x + area.width
+          && point.y >= area.y && point.y < area.y + area.height) ?? nearestArea(point, areas)
+      }
+    }
     return deps.screen.getDisplayMatching(bounds).workArea
+  }
+
+  /** niri 下用输出的逻辑布局（DIP）；其它平台用 Electron 的 display.workArea。 */
+  function workAreas() {
+    if (!niriEnabled) return deps.screen.getAllDisplays().map(display => display.workArea)
+    const areas = typeof deps.niri.workAreas === 'function' ? deps.niri.workAreas() : null
+    return Array.isArray(areas) && areas.length > 0
+      ? areas : deps.screen.getAllDisplays().map(display => display.workArea)
+  }
+
+  /** 指定点所在的工作区（面板/拖动锚点用）。 */
+  function workAreaAt(point) {
+    const areas = workAreas()
+    if (!Array.isArray(areas) || areas.length === 0) return deps.screen.getDisplayNearestPoint(point).workArea
+    return areas.find(area => point.x >= area.x && point.x < area.x + area.width
+      && point.y >= area.y && point.y < area.y + area.height) ?? nearestArea(point, areas)
+  }
+
+  function nearestArea(point, areas) {
+    let best = areas[0]
+    let bestDistance = Infinity
+    for (const area of areas) {
+      const dx = point.x - (area.x + area.width / 2)
+      const dy = point.y - (area.y + area.height / 2)
+      const distance = dx * dx + dy * dy
+      if (distance < bestDistance) { bestDistance = distance; best = area }
+    }
+    return best
   }
 
   /** 把窗口几何推给页面：面板要朝屏幕里侧开。 */
@@ -73,10 +122,11 @@ export function createWindowSurface(deps) {
     const virtual = niriEnabled && pet?.petAsked !== null && pet?.petAsked !== undefined
       && Number.isFinite(pet.petAsked.x) && Number.isFinite(pet.petAsked.y)
       ? { ...bounds, x: pet.petAsked.x, y: pet.petAsked.y } : bounds
+    const areas = workAreas()
     return {
       window: virtual,
       workArea: workAreaFor(virtual),
-      workAreas: displays.map(display => display.workArea),
+      workAreas: areas,
       // 显示器清单（含每块屏的缩放）：Windows 125%/150% 下的问题一直只能靠 2px 容差硬扛，
       // 把这些发给游戏包，日志里才能看出「是哪块屏、什么缩放」。
       displays: displays.map(display => ({ id: display.id, label: display.label,
@@ -223,14 +273,14 @@ export function createWindowSurface(deps) {
       setHit(pet, false, 'missing-hit-shape')
       return
     }
-    const bounds = window.getBounds()
+    const bounds = niriEnabled ? niriPet.read(pet) : window.getBounds()
     // 只有旧契约把动作整窗绘制区域也当输入；新契约不能让透明预留抢走桌面点击。
     const baseShape = linuxPig ?? preciseHit ?? pet.placedHitShape ?? pet.placedShape
     const linuxFallbackActive = linuxPig !== null
     const shape = !linuxFallbackActive && preciseHit === null && (pet.flightShapeActive || pet.dragShapeActive)
       ? [{ x: 0, y: 0, width: bounds.width, height: bounds.height }]
       : shiftedShape(baseShape, pet.flightShapeActive ? pet.flightSlide : pet.dragShapeActive ? pet.lastDragSlide : pet.flightSlide)
-    const { hit, problem } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window, shape })
+    const { hit, problem } = cursorHitsWindow({ platform: deps.platform, screen: deps.screen, window, shape, bounds })
     if (problem !== hitProblem) {
       hitProblem = problem
       if (problem !== '') deps.log('hit conversion rejected', problem)
@@ -264,10 +314,27 @@ export function createWindowSurface(deps) {
     }
   }
 
+  /**
+   * niri/XWayland：单独设 ShapeInput。rects 用窗口局部 DIP，按输出 scale 换成 X11 物理像素。
+   * 和绘制 shape 分开：绘制要多留气泡/动作区，输入只认真正可见的猪和控件。
+   */
+  function applyInputShape(pet, rects) {
+    const window = pet?.window
+    if (!shapedInput || inputShape === null || window === null || window === undefined || window.isDestroyed()) return false
+    if (!Array.isArray(rects) || rects.length === 0) return false
+    // X Shape 用窗口像素（物理像素），页面 hitShape 是 DIP；按窗口所在输出的 scale 换算。
+    // xwayland-satellite 再把 X 像素折回 Wayland surface 坐标。
+    const handleScale = Number(pet.niriHandle?.scale)
+    const scale = Number.isFinite(handleScale) && handleScale > 0
+      ? handleScale : (Number(deps.screen.getDisplayMatching(window.getBounds()).scaleFactor) || 1)
+    return inputShape.set(window, rects, scale)
+  }
+
   return {
     applyBounds,
     applyFlightBounds,
     applyShape,
+    applyInputShape,
     refreshHit,
     setHit,
     setPassthroughMode,
@@ -279,8 +346,12 @@ export function createWindowSurface(deps) {
     pushGeometry,
     geometryOf,
     workAreaFor,
+    workAreas,
+    workAreaAt,
     readBounds: niriPet.read,
     syncPetFromNiri: niriPet.sync,
+    normalizeSavedBounds: bounds => niriEnabled && typeof deps.niri.normalizeSaved === 'function'
+      ? deps.niri.normalizeSaved(bounds) : bounds,
     attachNiri: niriPet.attach,
     holdForNiri: niriPet.hold,
     resetNiri: niriPet.reset,

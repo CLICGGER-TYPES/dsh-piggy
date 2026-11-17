@@ -324,6 +324,8 @@ panel = createPanelController({
   pets, primaryPet, getPetWindow, extensionWindow, extensionLayer, ipcMain,
   petForEvent, fromPage, toPages, log, traceSetIgnoreMouseEvents,
   niri, readBounds: readPetBounds, syncPet: syncPetBounds,
+  workAreaAt: point => surface === null ? screen.getDisplayNearestPoint(point).workArea : surface.workAreaAt(point),
+  workAreas: () => surface === null ? screen.getAllDisplays().map(display => display.workArea) : surface.workAreas(),
 })
 /** 联机房间：独立页面 + 内存中继；关闭窗口等同于离开房间。 */
 const roomWindow = createRoomWindow({
@@ -1006,12 +1008,22 @@ app.whenReady().then(async () => {
   // 用户机器上到底是什么显示器、什么缩放：以前日志里没有，Windows 的问题只能靠猜。
   log('displays', JSON.stringify(screen.getAllDisplays().map(display => ({ id: display.id, label: display.label,
     bounds: display.bounds, workArea: display.workArea, scale: display.scaleFactor, internal: display.internal }))))
+  if (process.env.PIGGY_CURSOR_DEBUG === '1') {
+    // 排查 XWayland 混合 DPI：光标 API 到底返回 DIP 还是物理像素。只在显式开启时刷日志。
+    const timer = setInterval(() => {
+      log('cursor probe', JSON.stringify({ point: screen.getCursorScreenPoint(),
+        displays: screen.getAllDisplays().map(display => ({ id: display.id, x: display.bounds.x, y: display.bounds.y,
+          width: display.bounds.width, height: display.bounds.height, scale: display.scaleFactor })) }))
+    }, 1000)
+    timer.unref?.()
+  }
   // The window follows its screen's work area when it changes (taskbar moved, resolution changed).
   // 显式告诉游戏包「显示器变了」：applyBounds 有 2px 死区，窗口不需要挪的时候它不会推几何，
   // 页面手里的 workAreas 就会一直用旧的那份（分辨率变了但窗口刚好没动 → 用的是旧工作区）。
   const displayWatch = createDisplayWatch({
     screen, pets, isQuitting: () => desktopLifecycle.quitting, rebuildLinuxViews,
     applyBounds, pushGeometry, log, platform: process.platform, readBounds: readPetBounds,
+    workAreas: () => surface.workAreas(), invalidate: () => niri?.invalidate(),
   })
   displayWatchTimer = displayWatch.start()
   for (const pet of pets.all()) pushGeometry(pet)

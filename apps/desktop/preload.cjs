@@ -176,7 +176,9 @@ contextBridge.exposeInMainWorld('piggyShell', {
     if (next && next.window && next.workArea) rememberGeometry(next)
     return next
   },
-  dragHeartbeat: () => ipcRenderer.send('piggy:drag:heartbeat'),
+  dragHeartbeat: point => ipcRenderer.send('piggy:drag:heartbeat', point === null || point === undefined ? null : {
+    x: Number(point.x) || 0, y: Number(point.y) || 0,
+  }),
   /** 同步返回松手后的几何：最后一帧 slide 必须和页面重定家在同一拍算完。 */
   endDrag: release => {
     const next = ipcRenderer.sendSync('piggy:drag:end', release ?? null)

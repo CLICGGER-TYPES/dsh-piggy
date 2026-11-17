@@ -5,10 +5,10 @@ import { test } from 'node:test'
 
 import {
   PANEL_TITLE, PET_TITLE, chooseWindow, detectNiri, findSocket,
-  petWindowTitle, screenWindows,
+  niriWorkAreas, outputAtPoint, petWindowTitle, screenWindows,
 } from '../lib/niri-window.js'
 import { createNiriWindow } from '../lib/niri-client.js'
-import { panelBoundsClearOfPig } from '../lib/panel-geometry.js'
+import { panelBoundsClearOfPig, pigVisibleBox } from '../lib/panel-geometry.js'
 import { createWindowSurface } from '../lib/window-surface.js'
 import { createPanelController } from '../lib/panel-controller.js'
 import { createDragEngine } from '../lib/drag-engine.js'
@@ -85,7 +85,7 @@ test('findSocket：NIRI_SOCKET 优先，否则扫 XDG_RUNTIME_DIR 取最新 sock
   assert.equal(findSocket({}, io), null)
 })
 
-test('screenWindows：按输出 scale 把 niri 逻辑坐标换成 X11 物理坐标', () => {
+test('screenWindows：niri 逻辑坐标直接作为 DIP，不再乘输出 scale', () => {
   const windows = screenWindows([
     rawWindow(),
     rawWindow({ id: 11, title: 'on-edp', workspace_id: 1, layout: { tile_pos_in_workspace_view: [871.3333333333334, 70], window_size: [835, 890] } }),
@@ -96,9 +96,18 @@ test('screenWindows：按输出 scale 把 niri 逻辑坐标换成 X11 物理坐�
   assert.deepEqual(windows[0].rect, { x: 100, y: 50, width: 368, height: 344 })
   assert.equal(windows[0].scale, 1)
   assert.equal(windows[0].isFloating, true)
-  assert.deepEqual(windows[1].rect, { x: 3227, y: 105, width: 1253, height: 1335 })
+  assert.deepEqual(windows[1].rect, { x: 2791, y: 70, width: 835, height: 890 })
   assert.equal(windows[1].scale, 1.5)
   assert.equal(windows[1].output, 'eDP-1')
+})
+
+test('niriWorkAreas / outputAtPoint：输出逻辑矩形用于工作区和跨屏判定', () => {
+  assert.deepEqual(niriWorkAreas(OUTPUTS, DISPLAYS), [
+    { x: 0, y: 0, width: 1920, height: 1080 },
+    { x: 1920, y: 0, width: 1706, height: 960 },
+  ])
+  assert.equal(outputAtPoint(OUTPUTS, DISPLAYS, { x: 100, y: 100 })?.name, 'HDMI-A-1')
+  assert.equal(outputAtPoint(OUTPUTS, DISPLAYS, { x: 2000, y: 100 })?.name, 'eDP-1')
 })
 
 test('chooseWindow：title 优先，其次按物理尺寸兜底；app_id 必须匹配', () => {
@@ -114,7 +123,7 @@ test('chooseWindow：title 优先，其次按物理尺寸兜底；app_id 必须�
   assert.equal(chooseWindow(list, { title: 'missing', appId: 'dsh-piggy-desktop', width: 999, height: 999 }), null)
 })
 
-test('createNiriWindow：移动增量按输出 scale 合并，正负参数格式正确', () => {
+test('createNiriWindow：逻辑像素增量合并，正负参数格式正确', () => {
   const queries = {
     windows: [rawWindow({ id: 30, title: PANEL_TITLE, workspace_id: 1, layout: { tile_pos_in_workspace_view: [871.3333333333334, 70], window_size: [292, 420] } })],
     outputs: OUTPUTS,
@@ -137,18 +146,18 @@ test('createNiriWindow：移动增量按输出 scale 合并，正负参数格式
   const found = client.refresh(handle)
   assert.equal(found?.id, 30)
   assert.equal(handle.scale, 1.5)
-  assert.deepEqual(handle.rect, { x: 3227, y: 105, width: 438, height: 630 })
-  // 物理 +30/+15 = 逻辑 +20/+10
-  client.moveTo(handle, { x: 3257, y: 120 })
-  client.moveTo(handle, { x: 3260, y: 125 })
+  assert.deepEqual(handle.rect, { x: 2791, y: 70, width: 292, height: 420 })
+  // 逻辑坐标 +30/+15 原样发给 niri，不再除 scale。
+  client.moveTo(handle, { x: 2821, y: 85 })
+  client.moveTo(handle, { x: 2824, y: 90 })
   assert.equal(client.pending(), 1)
   assert.equal(writes.length, 0)
   client.flushSync()
   assert.equal(writes.length, 1)
-  assert.deepEqual(writes[0].args, ['msg', 'action', 'move-floating-window', '--id', '30', '-x', '+22', '-y', '+13'])
-  client.moveTo(handle, { x: 3240, y: 120 })
+  assert.deepEqual(writes[0].args, ['msg', 'action', 'move-floating-window', '--id', '30', '-x', '+33', '-y', '+20'])
+  client.moveTo(handle, { x: 2804, y: 85 })
   client.flushSync()
-  assert.deepEqual(writes[1].args, ['msg', 'action', 'move-floating-window', '--id', '30', '-x=-13', '-y=-3'])
+  assert.deepEqual(writes[1].args, ['msg', 'action', 'move-floating-window', '--id', '30', '-x=-20', '-y=-5'])
   client.close()
 })
 
@@ -189,6 +198,16 @@ test('createNiriWindow：目标在另一块屏时先 move-window-to-monitor，�
   client.flushSync()
   assert.deepEqual(actions.at(-1).args, ['msg', 'action', 'move-floating-window', '--id', '40', '-x', '+500', '-y', '+300'])
   client.close()
+})
+
+test('pigVisibleBox：把耳朵/脚等越出布局盒的可见输入并入面板避让框', () => {
+  const pig = { x: 100, y: 100, width: 54, height: 54 }
+  assert.deepEqual(pigVisibleBox(pig, []), pig)
+  const visible = pigVisibleBox(pig, [
+    { x: 96, y: 92, width: 64, height: 70 },
+    { x: 400, y: 400, width: 10, height: 10 },
+  ])
+  assert.deepEqual(visible, { x: 96, y: 92, width: 64, height: 70 })
 })
 
 test('panelBoundsClearOfPig：面板压住猪时换到上下左右，且保持 PANEL_GAP', () => {
@@ -232,6 +251,9 @@ function fakeNiri(initialRect = { x: 200, y: 100, width: 368, height: 344 }, sta
       if (stateful) current = { ...handle.rect }
       return true
     },
+    workAreas: () => [{ x: 0, y: 0, width: 1920, height: 1080 }],
+    outputAt: () => 'HDMI-A-1',
+    normalizeSaved: saved => saved,
     flush() { return Promise.resolve() },
     flushSync() {},
   }
@@ -349,6 +371,50 @@ test('panel-controller：niri 下面板按真实猪位置贴边移动，不盖�
   assert.equal(panelWindow.visible, true)
 })
 
+test('panel-controller：同一击关闭后 350ms 内不再被猪页重新打开', () => {
+  const screen = screenStub()
+  const niri = fakeNiri({ x: 500, y: 400, width: 292, height: 420 })
+  const panelWindow = {
+    visible: false,
+    bounds: { x: 0, y: 0, width: 292, height: 420 },
+    isDestroyed: () => false,
+    isVisible() { return this.visible },
+    getBounds() { return { ...this.bounds } },
+    setBounds() {}, setOpacity() {}, showInactive() { this.visible = true }, hide() { this.visible = false },
+    focus() {}, moveTop() {}, setShape() {}, setIgnoreMouseEvents() {}, webContents: { send() {} },
+  }
+  const petWindow = { isDestroyed: () => false, isVisible: () => true, getBounds: () => ({ x: 500, y: 400, width: 368, height: 344 }),
+    setIgnoreMouseEvents() {}, showInactive() {}, moveTop() {}, focus() {}, webContents: { send() {} } }
+  const pet = { pigId: null, primary: true, window: petWindow, panelPig: { x: 222, y: 28, width: 68, height: 68 },
+    panelSpeech: null, petAsked: { x: 500, y: 400, width: 368, height: 344 }, dragSession: null, lastDragSlide: { x: 0, y: 0 } }
+  const logs = []
+  let clock = 1000
+  const controller = createPanelController({
+    panelWindow: { isReady: () => true, ensure: () => panelWindow, destroy() {}, forget() {} },
+    getPanelWindow: () => panelWindow,
+    screen, BrowserWindow: { getFocusedWindow: () => null }, platform: 'linux',
+    pets: { all: () => [pet], primary: () => pet }, primaryPet: () => pet, getPetWindow: () => petWindow,
+    extensionWindow: { current: () => null }, extensionLayer: { isFocused: () => false, sync() {} },
+    ipcMain: { on() {} }, petForEvent: () => pet, fromPage: () => true, toPages() {}, log: (...parts) => logs.push(parts.join(' ')),
+    traceSetIgnoreMouseEvents() {}, niri, readBounds: p => p.petAsked, syncPet() {},
+    setTimeout: callback => { callback(); return 1 }, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
+    now: () => clock,
+  })
+  const event = { sender: petWindow.webContents }
+  controller.open({ x: 222, y: 28, width: 68, height: 68 }, pet)
+  assert.equal(controller.isOpen(), true)
+  clock = 1100
+  controller.close('pet')
+  assert.equal(controller.isOpen(), false)
+  clock = 1300
+  controller.toggle(event, { open: true, pig: { x: 222, y: 28, width: 68, height: 68 } })
+  assert.equal(controller.isOpen(), false, '同一次点击的重新 open 要被忽略')
+  clock = 1600
+  controller.toggle(event, { open: true, pig: { x: 222, y: 28, width: 68, height: 68 } })
+  assert.equal(controller.isOpen(), true, '超过 350ms 后正常打开')
+  assert.ok(logs.some(line => line.includes('same-click')), logs.join('\n'))
+})
+
 test('drag-engine：niri 下从真实窗口位置起算，拖动增量走 move-floating-window', () => {
   const screen = screenStub()
   let cursor = { x: 600, y: 450 }
@@ -384,15 +450,18 @@ test('drag-engine：niri 下从真实窗口位置起算，拖动增量走 move-f
   const event = { sender: win.webContents, returnValue: null }
   engine.startDrag(event, {
     x: 222, y: 28, width: 68, height: 68,
-    slide: true, origin: { x: 600, y: 450 },
+    // niri 页面报的是窗口局部坐标：100+500=600，50+400=450 正好是主进程光标。
+    slide: true, origin: { x: 100, y: 50 },
   })
+  assert.equal(pet.dragSession.cursor.x, 600)
+  assert.equal(pet.dragSession.cursor.y, 450)
   assert.equal(pet.dragSession.pigScreen.x, 722)
   assert.equal(pet.dragSession.pigScreen.y, 428)
   cursor = { x: 630, y: 470 }
-  engine.heartbeatDrag(event)
+  engine.heartbeatDrag(event, { x: 130, y: 70 })
   assert.deepEqual(niri.moves.at(-1), { x: 530, y: 420, width: 368, height: 344 })
   assert.equal(surface.readBounds(pet).x, 530)
-  engine.endDrag(event)
+  engine.endDrag(event, { x: 130, y: 70 })
   assert.equal(pet.petAsked.x, 530, '松手后 petAsked 来自 niri 真实位置')
   assert.equal(event.returnValue.window.x, 530)
   assert.equal(intervals.length, 1)

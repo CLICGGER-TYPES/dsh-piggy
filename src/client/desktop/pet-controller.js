@@ -153,8 +153,8 @@ export function createPetController(deps) {
                 ? { x: origin.x, y: origin.y } : undefined,
             })
           },
-          dragHeartbeat() {
-            if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat()
+          dragHeartbeat(point) {
+            if (typeof shell.dragHeartbeat === 'function') shell.dragHeartbeat(point ?? null)
           },
           endDrag(release) {
             if (typeof shell.endDrag !== 'function') return

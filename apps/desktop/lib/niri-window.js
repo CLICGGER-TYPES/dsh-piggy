@@ -9,9 +9,10 @@
  *   - `chooseWindow`：按稳定 title 优先、尺寸兜底认窗口。
  * 真正的 CLI 查询/移动在 lib/niri-client.js。
  *
- * 坐标：niri 的 `tile_pos_in_workspace_view` / `window_size` 是输出内**逻辑**坐标；
- * XWayland/Electron 是**物理**像素。物理 = 逻辑 × 输出 scale，输出原点再用
- * Electron 的 display.bounds 补上。eDP 1.5x、HDMI 1.0x 都按窗口所在输出分别换算。
+ * 坐标：niri 的 `tile_pos_in_workspace_view` / `window_size` 是**逻辑**坐标（DIP），
+ * Electron 的 BrowserWindow / screen / 光标也用 DIP。两边可以直接相减；
+ * 不要再乘输出 scale（2026-11-16 第一版按物理像素换算，混合 DPI 下窗口尺寸和
+ * 面板锚点会整体错位）。输出原点用 `outputs[name].logical.x/y` 拼成全局逻辑坐标。
  */
 import { existsSync as nodeExistsSync, readdirSync as nodeReaddirSync, statSync as nodeStatSync } from 'node:fs'
 import { posix as pathPosix } from 'node:path'
@@ -103,8 +104,9 @@ export function parseWorkspaces(value) {
     && Number.isFinite(Number(item.id)) && typeof item.output === 'string') : []
 }
 
-/** 一块 niri 输出对应哪块 Electron 屏：先按逻辑尺寸×scale 匹配物理尺寸，再用
- * `internal`（eDP/LVDS 内置屏）消歧。找不到就返回 null，调用方跳过这扇窗。
+/** 一块 niri 输出对应哪块 Electron 屏：先按逻辑尺寸匹配（DIP），
+ * 再兼容旧 Electron 把 bounds 报成物理像素的情况；最后用 `internal` 消歧。
+ * 找不到就返回 null，调用方跳过这扇窗。
  * @param {NiriOutput} output
  * @param {any[]} displays
  */
@@ -114,20 +116,81 @@ export function displayForOutput(output, displays) {
   const width = Number(logical.width) || 0
   const height = Number(logical.height) || 0
   if (width <= 0 || height <= 0 || !Array.isArray(displays)) return null
-  const wantWidth = width * scale
-  const wantHeight = height * scale
+  const physicalWidth = width * scale
+  const physicalHeight = height * scale
   const candidates = displays
     .filter(display => display?.bounds !== undefined)
-    .map(display => ({
-      display,
-      score: Math.abs(Number(display.bounds.width) - wantWidth) + Math.abs(Number(display.bounds.height) - wantHeight),
-    }))
+    .map(display => {
+      const bounds = display.bounds
+      const factor = Number(display.scaleFactor) || 1
+      // DIP 尺寸（正常）优先；再试 bounds×scaleFactor（旧版把 DIP 当物理报）。
+      const dipScore = Math.abs(Number(bounds.width) - width) + Math.abs(Number(bounds.height) - height)
+      const physicalScore = Math.abs(Number(bounds.width) * factor - physicalWidth)
+        + Math.abs(Number(bounds.height) * factor - physicalHeight)
+      return { display, score: Math.min(dipScore, physicalScore) }
+    })
     .filter(item => item.score <= 12)
     .sort((left, right) => left.score - right.score)
   if (candidates.length === 0) return displays.length === 1 ? displays[0] : null
   const internal = /^(eDP|LVDS|DSI|edp)/i.test(String(output.name ?? ''))
   const exact = candidates.find(item => item.display.internal === internal)
   return (exact ?? candidates[0]).display
+}
+
+/**
+ * 输出在全局逻辑（DIP）坐标里的矩形。niri 的 `logical.x/y` 就是输出在布局里的
+ * 位置；缺字段时才退回 Electron 的 display.bounds。
+ * @param {string} name
+ * @param {NiriOutput} output
+ * @param {any[]} displays
+ * @returns {Rect|null}
+ */
+export function outputLogicalRect(name, output, displays) {
+  const logical = output?.logical ?? {}
+  const width = Number(logical.width) || 0
+  const height = Number(logical.height) || 0
+  if (width <= 0 || height <= 0) return null
+  if (Number.isFinite(logical.x) && Number.isFinite(logical.y)) {
+    return { x: Number(logical.x), y: Number(logical.y), width, height }
+  }
+  const display = displayForOutput(output, displays)
+  if (display === null) return null
+  return { x: Number(display.bounds.x) || 0, y: Number(display.bounds.y) || 0, width, height }
+}
+
+/**
+ * niri 会话的可用工作区（DIP）。niri 不替 client 预留顶栏，浮窗可以铺满整块输出；
+ * 用输出逻辑矩形而不是 Electron 的 workArea，避免混合 DPI 下原点差一截。
+ * @param {Record<string, NiriOutput>} outputs
+ * @param {any[]} displays
+ * @returns {Rect[]}
+ */
+export function niriWorkAreas(outputs, displays) {
+  const list = []
+  for (const [name, output] of Object.entries(outputs ?? {})) {
+    const rect = outputLogicalRect(name, output, displays)
+    if (rect !== null) list.push(rect)
+  }
+  return list
+}
+
+/** 点落在哪块输出（全局 DIP）；不落在任何输出时取中心最近的一块。 */
+export function outputAtPoint(outputs, displays, point) {
+  if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null
+  let nearest = null
+  let nearestDistance = Infinity
+  for (const [name, output] of Object.entries(outputs ?? {})) {
+    const rect = outputLogicalRect(name, output, displays)
+    if (rect === null) continue
+    if (point.x >= rect.x && point.x < rect.x + rect.width && point.y >= rect.y && point.y < rect.y + rect.height) {
+      return { name, rect }
+    }
+    const dx = point.x - (rect.x + rect.width / 2)
+    const dy = point.y - (rect.y + rect.height / 2)
+    const distance = dx * dx + dy * dy
+    if (distance < nearestDistance) { nearestDistance = distance; nearest = { name, rect } }
+  }
+  return nearest
 }
 
 /** 目标中心点落在哪块屏（不落在任何屏里就返回 null，不跨屏硬搬）。 */
@@ -155,16 +218,18 @@ export function screenWindows(windows, outputs, workspaces, displays) {
     if (!Array.isArray(position) || position.length < 2 || !position.slice(0, 2).every(Number.isFinite)) continue
     if (!Array.isArray(size) || size.length < 2 || !size.slice(0, 2).every(Number.isFinite)) continue
     const workspace = workspaceById.get(Number(window.workspace_id))
-    const output = workspace === undefined ? null : outputs[workspace.output]
+    const outputName = workspace === undefined ? null : workspace.output
+    const output = outputName === null ? undefined : outputs[workspace.output]
     if (output === null || output === undefined) continue
-    const display = displayForOutput(output, displays)
-    if (display === null) continue
+    const origin = outputLogicalRect(outputName, output, displays)
+    if (origin === null) continue
     const scale = Number(output.logical?.scale) || 1
+    // 位置和尺寸都是逻辑像素（DIP），和 Electron 的 BrowserWindow/光标同一套坐标。
     const rect = {
-      x: Math.round(Number(display.bounds.x) + Number(position[0]) * scale),
-      y: Math.round(Number(display.bounds.y) + Number(position[1]) * scale),
-      width: Math.max(1, Math.round(Number(size[0]) * scale)),
-      height: Math.max(1, Math.round(Number(size[1]) * scale)),
+      x: Math.round(origin.x + Number(position[0])),
+      y: Math.round(origin.y + Number(position[1])),
+      width: Math.max(1, Math.round(Number(size[0]))),
+      height: Math.max(1, Math.round(Number(size[1]))),
     }
     list.push({
       id: Number(window.id),

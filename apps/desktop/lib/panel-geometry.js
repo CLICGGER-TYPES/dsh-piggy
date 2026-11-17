@@ -46,6 +46,29 @@ export function pigScreenBox(asked, read, pig, options = {}) {
   return { x: at.x + pig.x + slide.x, y: at.y + pig.y + slide.y, width: pig.width, height: pig.height }
 }
 
+/**
+ * 面板贴猪用的可见框：猪的布局盒 + 附近真实可见的输入矩形（耳朵/脚/帽子会越出布局盒）。
+ * 只合并离猪盒不远的矩形，避免把气泡预留区和远处的控件也算进来。
+ * @param {Rect} pig
+ * @param {Rect[]|null|undefined} hitShape
+ * @param {number} [pad]
+ * @returns {Rect}
+ */
+export function pigVisibleBox(pig, hitShape, pad = 0) {
+  if (pig === null || pig === undefined) return pig
+  const reach = Math.max(8, Math.round(Math.max(pig.width, pig.height) * 0.4))
+  const near = { x: pig.x - reach, y: pig.y - reach, width: pig.width + reach * 2, height: pig.height + reach * 2 }
+  let left = pig.x, top = pig.y, right = pig.x + pig.width, bottom = pig.y + pig.height
+  for (const rect of Array.isArray(hitShape) ? hitShape : []) {
+    if (![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)) continue
+    if (rect.x + rect.width < near.x || rect.x > near.x + near.width
+      || rect.y + rect.height < near.y || rect.y > near.y + near.height) continue
+    left = Math.min(left, rect.x); top = Math.min(top, rect.y)
+    right = Math.max(right, rect.x + rect.width); bottom = Math.max(bottom, rect.y + rect.height)
+  }
+  return { x: left - pad, y: top - pad, width: right - left + pad * 2, height: bottom - top + pad * 2 }
+}
+
 /** Speech can occupy the approved below-pig position. Only panel placement
  * uses this exclusion; the real pig box and its saved foot point never grow.
  * @param {Rect} pig @param {Rect|null} speech
