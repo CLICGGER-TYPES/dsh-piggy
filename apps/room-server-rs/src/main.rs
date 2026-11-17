@@ -1,4 +1,6 @@
-use dsh_piggy_room_server::cli::{parse_args, parse_public_url, validate, PublicUrl, HELP};
+use dsh_piggy_room_server::cli::{
+    parse_args, parse_public_url, validate, version_text, PublicUrl, HELP,
+};
 use dsh_piggy_room_server::room_code::{format_room_code, generate_room_code, normalize_room_code};
 use dsh_piggy_room_server::server::{start_server, ServerOptions};
 use dsh_piggy_room_server::tls::TlsMaterials;
@@ -31,6 +33,10 @@ async fn run() -> Result<(), String> {
     let args = parse_args(&argv)?;
     if args.help {
         print!("{HELP}");
+        return Ok(());
+    }
+    if args.version {
+        println!("{}", version_text());
         return Ok(());
     }
     let public_url = parse_public_url(&args.public_url)?;

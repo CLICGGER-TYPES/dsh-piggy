@@ -30,6 +30,8 @@
 - [动效、渲染和配色：先用成熟的库（Motion / GSAP / PixiJS / Three.js / Rough.js / mo.js / Chroma.js 怎么选）](guides/motion-libraries.md)
 - [桌面版架构与 IPC 参考](guides/desktop-architecture.md)
 - [独立房间服务器（无 Electron，公网长期开房）](../apps/room-server/README.md)
+- [Rust 独立房间服务器：预编译下载与部署](../apps/room-server-rs/README.md)
+- [房间服务器发布流程（维护者）](guides/room-server-release.md)
 
 ## 项目资料
 

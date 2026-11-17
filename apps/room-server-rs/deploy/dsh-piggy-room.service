@@ -1,6 +1,6 @@
 [Unit]
 Description=dsh-piggy room server
-Documentation=https://github.com/CLICGGER-TYPES/dsh-piggy
+Documentation=https://github.com/CLICGGER-TYPES/dsh-piggy/blob/main/apps/room-server-rs/README.md
 After=network-online.target
 Wants=network-online.target
 

@@ -1,0 +1,5 @@
+# Caddy 反代示例：Caddy 自动申请/续期 TLS 证书。
+# 把 piggy.example.com 换成你的域名，DNS 先解析到这台服务器。
+piggy.example.com {
+	reverse_proxy 127.0.0.1:47824
+}

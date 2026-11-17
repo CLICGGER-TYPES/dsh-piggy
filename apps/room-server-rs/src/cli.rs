@@ -8,6 +8,21 @@ use crate::util::{is_safe_integer, js_number_from_str};
 pub const DEFAULT_LISTEN: &str = "127.0.0.1";
 pub const DEFAULT_PORT: u16 = 47_824;
 
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// 发布流水线可通过 `DSH_PIGGY_ROOM_SERVER_BUILD` 注入目标平台和提交号；
+/// 本地 `cargo build` 不设置时只显示 crate 版本。
+const BUILD_INFO: Option<&str> = option_env!("DSH_PIGGY_ROOM_SERVER_BUILD");
+
+pub fn version_text() -> String {
+    match BUILD_INFO {
+        Some(build) if !build.is_empty() => {
+            format!("dsh-piggy-room-server {VERSION} ({build})")
+        }
+        _ => format!("dsh-piggy-room-server {VERSION}"),
+    }
+}
+
 pub const HELP: &str = "\
 dsh-piggy 独立房间服务器
 
@@ -25,6 +40,7 @@ dsh-piggy 独立房间服务器
   --allow-public         监听 0.0.0.0 或公网 IP 时必须显式打开
   --trust-proxy          采信反向代理的 X-Forwarded-Host（HTTPS 反代默认开启）
   --no-persistent        最后一位玩家离开后关闭房间（默认不关）
+  -V, --version          显示版本
   -h, --help             显示帮助
 
 示例：
@@ -52,6 +68,7 @@ pub struct Args {
     pub trust_proxy: bool,
     pub persistent: bool,
     pub help: bool,
+    pub version: bool,
 }
 
 impl Default for Args {
@@ -67,6 +84,7 @@ impl Default for Args {
             trust_proxy: false,
             persistent: true,
             help: false,
+            version: false,
         }
     }
 }
@@ -97,6 +115,8 @@ struct Cli {
     trust_proxy: bool,
     #[arg(long = "no-persistent", action = ArgAction::SetTrue)]
     no_persistent: bool,
+    #[arg(short = 'V', long = "version", action = ArgAction::SetTrue)]
+    version: bool,
     #[arg(short = 'h', long = "help", action = ArgAction::SetTrue)]
     help: bool,
 }
@@ -129,6 +149,7 @@ pub fn parse_args(argv: &[String]) -> Result<Args, String> {
     args.trust_proxy = cli.trust_proxy;
     args.persistent = !cli.no_persistent;
     args.help = cli.help;
+    args.version = cli.version;
     Ok(args)
 }
 
@@ -235,6 +256,15 @@ mod tests {
         assert!(parsed.persistent);
         assert!(!parsed.allow_public);
         assert!(!parsed.help);
+        assert!(!parsed.version);
+    }
+
+    #[test]
+    fn version_flag_and_text() {
+        assert!(parse_args(&args(&["--version"])).expect("version").version);
+        assert!(parse_args(&args(&["-V"])).expect("version short").version);
+        assert!(version_text().contains(env!("CARGO_PKG_VERSION")));
+        assert!(version_text().starts_with("dsh-piggy-room-server "));
     }
 
     #[test]

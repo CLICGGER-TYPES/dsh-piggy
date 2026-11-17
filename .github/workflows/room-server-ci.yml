@@ -1,0 +1,122 @@
+# Rust 独立房间服务器的常规 CI：格式、测试、release 构建、打包冒烟。
+# 只在 apps/room-server-rs 或相关 workflow 变更时运行，不影响桌面/游戏 CI。
+name: room-server-ci
+
+on:
+  pull_request:
+    paths:
+      - 'apps/room-server-rs/**'
+      - 'LICENSE'
+      - '.github/workflows/room-server-ci.yml'
+      - '.github/workflows/room-server-release.yml'
+  push:
+    branches: [main, 'review/**']
+    paths:
+      - 'apps/room-server-rs/**'
+      - 'LICENSE'
+      - '.github/workflows/room-server-ci.yml'
+      - '.github/workflows/room-server-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: room-server-ci-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  rust:
+    name: Rust fmt / test / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/room-server-rs
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/room-server-rs -> target
+      - name: 格式检查
+        run: cargo fmt --all -- --check
+      - name: 单元 + 集成测试
+        run: cargo test --locked
+      - name: release 构建
+        run: cargo build --release --locked
+      - name: 二进制自检
+        run: |
+          ./target/release/dsh-piggy-room-server --version
+          ./target/release/dsh-piggy-room-server --help | head -5
+      - name: 打包脚本冒烟
+        run: |
+          version="$(cargo metadata --locked --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.name == "dsh-piggy-room-server") | .version')"
+          test -n "$version"
+          bash scripts/package-release.sh x86_64-unknown-linux-gnu "$version" dist
+          ( cd dist && sha256sum -- *.tar.gz > SHA256SUMS && sha256sum -c SHA256SUMS )
+      - uses: actions/upload-artifact@v4
+        with:
+          name: room-server-ci-package
+          path: apps/room-server-rs/dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  # PR 不跑交叉编译，避免每个 PR 都下载 zig；main / 手动触发时验证 aarch64。
+  aarch64-check:
+    name: Rust aarch64 build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.1
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild@0.24.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/room-server-rs -> target
+          key: aarch64-zigbuild
+      - name: aarch64 release 构建
+        working-directory: apps/room-server-rs
+        run: cargo zigbuild --locked --release --target aarch64-unknown-linux-gnu.2.17
+
+  # 验证 Dockerfile 仍可构建；只构建 amd64、不推送。
+  docker:
+    name: Docker build (no push)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: apps/room-server-rs
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: dsh-piggy-room-server:ci
+          cache-from: type=gha,scope=room-server-docker
+          cache-to: type=gha,mode=max,scope=room-server-docker
+      - name: 容器入口自检
+        run: docker run --rm dsh-piggy-room-server:ci --version

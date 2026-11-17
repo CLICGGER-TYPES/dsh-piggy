@@ -15,6 +15,8 @@
 
 预览版（RC）只更新 `rc` 标签，不改变稳定入口；预览版默认折叠在更新列表里，不弹气泡、不亮红点，也不会自动安装。
 
+> 独立房间服务器（`apps/room-server-rs`）使用单独的 `room-server-v*` 发布标签，不随游戏版本；预编译包和部署说明见 [房间服务器 README](../../apps/room-server-rs/README.md)，维护者流程见 [房间服务器发布](room-server-release.md)。
+
 ## 下载
 
 | 渠道 | 内容 |

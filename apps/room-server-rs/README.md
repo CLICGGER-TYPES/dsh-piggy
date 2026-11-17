@@ -7,6 +7,47 @@
 - 公网长期部署推荐使用本目录；仓库里的 Node 版 `apps/room-server/server.mjs` 保留为桌面内置 host 和回退方案。
 - 没有数据库；进程重启后玩家列表、房间码和照顾事件都会清空。
 
+## 下载预编译版本（Linux）
+
+GitHub Release 的 `room-server-v*` 标签提供 Linux 预编译包，服务器不需要安装 Rust：
+
+| 平台 | 文件 |
+|---|---|
+| Linux x86_64（glibc 2.17+） | `dsh-piggy-room-server-<version>-linux-x86_64.tar.gz` |
+| Linux aarch64（glibc 2.17+） | `dsh-piggy-room-server-<version>-linux-aarch64.tar.gz` |
+| 校验和 | `SHA256SUMS` |
+
+发布页：<https://github.com/CLICGGER-TYPES/dsh-piggy/releases>
+
+```bash
+VERSION=0.1.0
+ARCH=x86_64   # ARM 服务器改成 aarch64
+BASE=https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/room-server-v$VERSION
+
+curl -fLO "$BASE/dsh-piggy-room-server-$VERSION-linux-$ARCH.tar.gz"
+curl -fLO "$BASE/SHA256SUMS"
+sha256sum -c --ignore-missing SHA256SUMS
+tar -xzf "dsh-piggy-room-server-$VERSION-linux-$ARCH.tar.gz"
+
+sudo install -m 0755 \
+  "dsh-piggy-room-server-$VERSION-linux-$ARCH/dsh-piggy-room-server" \
+  /usr/local/bin/
+dsh-piggy-room-server --version
+dsh-piggy-room-server --help
+```
+
+包内包含二进制、README、CHANGELOG、LICENSE 和 `deploy/` 示例（systemd、Caddy、Nginx）。预编译包用 zigbuild 以 glibc 2.17 为基线，面向常见 x86_64 / aarch64 Linux；Alpine/musl 请用 Docker 镜像或从源码构建。
+
+## 版本
+
+`dsh-piggy-room-server --version` 输出 crate 版本；发布流水线会通过 `DSH_PIGGY_ROOM_SERVER_BUILD` 注入目标平台和提交号：
+
+```text
+dsh-piggy-room-server 0.1.0 (x86_64-unknown-linux-gnu@<commit>)
+```
+
+房间服务器版本与游戏 / 桌面版独立：`Cargo.toml` 的版本对应 `room-server-v<version>` 标签。维护者发布流程见 [docs/guides/room-server-release.md](https://github.com/CLICGGER-TYPES/dsh-piggy/blob/main/docs/guides/room-server-release.md)。
+
 ## 构建
 
 需要 Rust 1.85+（已在 Rust 1.97 验证），不依赖 Node.js、OpenSSL 或系统 TLS 库。
@@ -15,8 +56,8 @@
 
 ```bash
 cd apps/room-server-rs
-cargo test
-cargo build --release
+cargo test --locked
+cargo build --release --locked
 ```
 
 产物：
@@ -31,6 +72,18 @@ apps/room-server-rs/target/release/dsh-piggy-room-server
 sudo install -m 0755 target/release/dsh-piggy-room-server /usr/local/bin/
 dsh-piggy-room-server --help
 ```
+
+### 交叉构建 aarch64（可选）
+
+发布包用 `cargo-zigbuild` + zig 构建，目标 glibc 2.17：
+
+```bash
+rustup target add aarch64-unknown-linux-gnu
+cargo install --locked cargo-zigbuild --version 0.24.1   # 只需一次
+cargo zigbuild --release --locked --target aarch64-unknown-linux-gnu.2.17
+```
+
+产物在 `target/aarch64-unknown-linux-gnu/release/dsh-piggy-room-server`，可以用 `scripts/package-release.sh` 打包。x86_64 同理，把 target 换成 `x86_64-unknown-linux-gnu.2.17`。
 
 ## 快速开始
 
@@ -86,6 +139,7 @@ dsh-piggy-room-server \
 | `--allow-public` | 监听 `0.0.0.0` 或公网 IP 时必须显式打开 |
 | `--trust-proxy` | 采信反代的 `X-Forwarded-Host`；HTTPS 反代模式默认开启 |
 | `--no-persistent` | 第一位玩家成为房主，房主离开后关闭房间（默认不关） |
+| `-V`, `--version` | 显示版本和构建目标 |
 | `-h`, `--help` | 帮助 |
 
 监听地址只接受具体 IPv4 或 `0.0.0.0`；`0.0.0.0` 和公网 IP 必须同时有 `--public-url` 和 `--allow-public`。HTTPS 公网地址没有证书时只能监听 `127.0.0.1` 给反代；HTTP 公网地址不能同时配 TLS 证书。
@@ -135,7 +189,7 @@ server {
 
 ## systemd
 
-示例单元在 `deploy/dsh-piggy-room.service`。部署步骤：
+示例单元在 `deploy/dsh-piggy-room.service`。部署步骤（源码构建用 `target/release/`，预编译包用解压后的目录）：
 
 ```bash
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin dsh-piggy
@@ -148,6 +202,17 @@ sudo journalctl -u dsh-piggy-room -f
 ```
 
 默认单元只监听 `127.0.0.1:47824`，适合放在 Caddy/Nginx 后面。直接 HTTPS 时把 `ExecStart` 改成带 `--listen 0.0.0.0 --port 8443 --tls-cert ... --tls-key ... --allow-public` 的形式，并确认 `dsh-piggy` 用户能读取证书和私钥。
+
+`deploy/Caddyfile` 和 `deploy/nginx.conf` 是可直接改域名使用的最小反代示例。
+
+升级二进制（房间是内存状态，重启会清空当前房间码和玩家）：
+
+```bash
+sudo systemctl stop dsh-piggy-room
+sudo install -m 0755 dsh-piggy-room-server /usr/local/bin/
+sudo systemctl start dsh-piggy-room
+dsh-piggy-room-server --version
+```
 
 ## Docker
 
@@ -180,7 +245,15 @@ docker run --rm \
   --allow-public
 ```
 
-容器以 `dsh-piggy`（UID 10001）运行；没有数据卷，也没有需要持久化的文件。
+容器以 `dsh-piggy`（UID 10001）运行；没有数据卷，也没有需要持久化的文件。直接 HTTPS 时，挂载的证书和私钥必须对该 UID 可读（Let's Encrypt 的 `live/` 默认只有 root 可读）；做不到就继续用反代模式。
+
+发布流水线可以在维护者开启 GHCR 推送后提供同版本镜像：
+
+```bash
+docker pull ghcr.io/clicgger-types/dsh-piggy-room-server:0.1.0
+```
+
+开启推送时会构建并推送 `linux/amd64` 和 `linux/arm64`；未开启推送时只构建 amd64 作为验证。
 
 ## 启动输出与日志
 
@@ -230,10 +303,12 @@ ok / code / invite / listen / publicUrl / protocol / persistent / tls
 ## 开发与测试
 
 ```bash
-cargo fmt --check
-cargo test
-cargo build --release
+cargo fmt --all -- --check
+cargo test --locked
+cargo build --release --locked
 ```
+
+CI（`.github/workflows/room-server-ci.yml`）在 `apps/room-server-rs/**` 变更时跑同一组检查，并在 main 上额外做 aarch64 zigbuild 构建和 Docker 构建验证。发布 workflow 只在 `room-server-v*` 标签或手动触发时运行。
 
 测试覆盖：
 
@@ -247,7 +322,7 @@ cargo build --release
 apps/room-server-rs/
   src/
     main.rs        CLI、启动 JSON、信号
-    cli.rs         参数解析与启动校验
+    cli.rs         参数解析、版本与启动校验
     server.rs      HTTP/HTTPS 监听、信封校验、路由
     room.rs        房间状态、令牌、长轮询、限流、清理
     protocol.rs    profile/位置/表情/照顾字段归一化
@@ -255,6 +330,8 @@ apps/room-server-rs/
     tls.rs         PEM 证书/私钥加载
     util.rs        JS 兼容的字符串/数字处理、时间、UUID
   tests/           集成测试与测试 TLS 材料
-  deploy/          systemd 示例
+  deploy/          systemd、Caddy、Nginx、发布说明模板
+  scripts/         预编译打包
+  CHANGELOG.md     服务器独立版本变更
   Dockerfile       多阶段构建
 ```

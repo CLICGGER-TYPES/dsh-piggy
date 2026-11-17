@@ -13,11 +13,28 @@
 
 服务器只需要 Rust 工具链（1.85+）；不需要 `npm install`，也不依赖系统 OpenSSL。
 
+不想在服务器上装 Rust 的话，GitHub Release 的 `room-server-v*` 标签提供 Linux x86_64 / aarch64 预编译包和 `SHA256SUMS`：
+
+```bash
+VERSION=0.1.0
+ARCH=x86_64   # ARM 服务器改成 aarch64
+BASE=https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/room-server-v$VERSION
+curl -fLO "$BASE/dsh-piggy-room-server-$VERSION-linux-$ARCH.tar.gz"
+curl -fLO "$BASE/SHA256SUMS"
+sha256sum -c --ignore-missing SHA256SUMS
+tar -xzf "dsh-piggy-room-server-$VERSION-linux-$ARCH.tar.gz"
+sudo install -m 0755 \
+  "dsh-piggy-room-server-$VERSION-linux-$ARCH/dsh-piggy-room-server" \
+  /usr/local/bin/
+```
+
+预编译包的下载、校验、systemd 和 Docker 完整命令见 [房间服务器 README](../../apps/room-server-rs/README.md)。
+
 从仓库根目录构建：
 
 ```bash
 cd apps/room-server-rs
-cargo build --release
+cargo build --release --locked
 ```
 
 产物是 `apps/room-server-rs/target/release/dsh-piggy-room-server`，可以安装到 `/usr/local/bin/` 后直接运行。
