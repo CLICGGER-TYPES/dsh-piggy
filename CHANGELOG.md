@@ -9,6 +9,20 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ---
 
+## [0.37.3-rc.3] — 2026-11-17 · niri 适配与 issue 收尾
+
+配套桌面外壳 0.6.9-rc.3，存档仍为 v15。
+
+- 桌面版新增 niri（XWayland）适配：猪窗口拖动改用 niri 的真实浮窗位置和 `move-floating-window`，不再依赖被忽略的 `setBounds`/`getBounds`；右键面板按猪的可见框贴边，保持间距，不覆盖猪。GNOME、Windows、macOS 仍走原路径。
+- 新增 Rust 独立公网房间服务器源码 `apps/room-server-rs/`，协议与 Node 版对齐；Node 版继续作为桌面内置 host 和回退方案。
+- `#140` 藏猪方块继续是左键放猪、右键排除；触屏/键盘的标记模式条不会改变桌面鼠标左键行为。
+- `#141` 公网联机、`#139` 菜园帮工覆盖继续随本版 RC 提供；菜园候选仍为 4.5.1 / 经典 3.2.5。
+- `#142` macOS 多桌面空间：面板显示前加入所有空间、收起后还原，猪拖到别的桌面后右键面板跟随到猪所在空间（#143）。macOS 安装包与实机验收仍然暂停。
+
+### 致谢
+
+感谢 [@WolalaQAQ](https://github.com/WolalaQAQ) 持续跟进菜园帮工覆盖问题；感谢 [@shpgy-shpgy](https://github.com/shpgy-shpgy) 提交 macOS 面板桌面空间修复（#143）；感谢参与公网联机测试的朋友。
+
 ## [0.37.3-rc.2] — 2026-11-16 · 公网联机、独立房间服务器与吃饭动效
 
 配套桌面外壳 0.6.9-rc.2，存档仍为 v15。

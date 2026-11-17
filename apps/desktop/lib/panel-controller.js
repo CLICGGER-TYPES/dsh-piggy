@@ -224,6 +224,9 @@ export function createPanelController(deps) {
       panelAsked = next
     }
     if (firstShow) {
+      // macOS：预建面板绑在创建时的桌面空间；显示前加入所有空间，收起还原（closePanel）。
+      // skipTransformProcessType 避免 Dock 闪烁和面板刚显示就失活。
+      if (deps.platform === 'darwin') window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
       // 不抢焦点：GNOME 会把「抢焦点」变成一条「dsh-piggy is ready」的通知，每开一次面板弹一次
       //（2026-10-07 虚拟机录像里看到）。点进面板时它自然会拿到焦点。
       window.showInactive()
@@ -294,7 +297,10 @@ export function createPanelController(deps) {
     panelShapeKey = ''
     panelNiri.cancel()
     panelInput.stop()
-    if (deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed()) deps.getPanelWindow().hide()
+    if (deps.getPanelWindow() !== null && !deps.getPanelWindow().isDestroyed()) {
+      deps.getPanelWindow().hide()
+      if (deps.platform === 'darwin') deps.getPanelWindow().setVisibleOnAllWorkspaces(false, { visibleOnFullScreen: false, skipTransformProcessType: true })
+    }
     sendPanel({ type: 'closed' })
     const pet = panelTargetPet()
     if (pet !== null && pet.window !== null && !pet.window.isDestroyed()) pet.window.webContents.send('piggy:panel', { type: 'closed' })
