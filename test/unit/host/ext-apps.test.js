@@ -42,6 +42,57 @@ test('openShop opens the extension shelf and the back button returns to the exte
   delete globalThis.window
 })
 
+test('big window exposes the room game channel stamped with the extension key; panel and web do not', async () => {
+  const { document } = fakeDom()
+  globalThis.document = document
+  const games = []
+  globalThis.window = {
+    piggyShell: {
+      moveBy() {},
+      room: {
+        status: async () => ({ ok: true, inRoom: true }),
+        host: async () => ({ ok: true }),
+        join: async () => ({ ok: true }),
+        game: async (seq, ext, op, data) => { games.push({ seq, ext, op, data }); return { ok: true, version: 2 } },
+        onUpdate() {},
+        onClosed() {},
+        leave: async () => ({ ok: true }),
+        copy: async () => ({ ok: true }),
+      },
+    },
+  }
+  const { renderDownloadedApp } = await import('../../../src/client/ext-apps.js?room-game')
+  const ui = {
+    tab: 'ext:roulette', content: document.createElement('div'),
+    view: { extensions: [{ key: 'roulette', version: '1.0.0' }], extViews: { roulette: {} } },
+    renderContent() {}, send() {},
+  }
+  let app = null
+  renderDownloadedApp(ui, 'roulette', 'big')
+  window.dshPiggyExtensions.register('roulette', { render(given) { app = given } })
+  renderDownloadedApp(ui, 'roulette', 'big')
+  assert.equal(typeof app.room, 'object')
+  assert.equal((await app.room.status()).inRoom, true)
+  await app.room.send(3, 'action', { op: 'arm' })
+  assert.deepEqual(games, [{ seq: 3, ext: 'roulette', op: 'action', data: { op: 'arm' } }])
+
+  let panelApp = null
+  renderDownloadedApp(ui, 'roulette')
+  window.dshPiggyExtensions.register('roulette', { render(given) { panelApp = given } })
+  renderDownloadedApp(ui, 'roulette')
+  assert.equal(panelApp.room, undefined, 'panel mode keeps the room channel out')
+
+  delete globalThis.window
+  globalThis.window = /** @type {any} */ ({})
+  let webApp = null
+  renderDownloadedApp(ui, 'roulette', 'big')
+  window.dshPiggyExtensions.register('roulette', { render(given) { webApp = given } })
+  renderDownloadedApp(ui, 'roulette', 'big')
+  assert.equal(webApp.room, undefined, 'web big view has no desktop room channel')
+  delete globalThis.window
+  delete globalThis.document
+})
+
 test('switching extension versions restores the matching implementation, including late script loads', async () => {
   const { document } = fakeDom()
   globalThis.document = document

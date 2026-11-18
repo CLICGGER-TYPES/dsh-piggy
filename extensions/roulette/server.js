@@ -93,6 +93,7 @@ function newData() {
     vaultDay: '',
     seq: 0,
     handSeq: 0,
+    online: { paid: {}, fees: {}, settled: {} },
     settings: { lives: 1, format: 'single', loadCount: 1, stake: 1000, ai: 'always' },
     match: null,
   }
@@ -475,6 +476,50 @@ export default {
       shoot(data, api, 'ai', random)
       data.seq += 1
       return { ok: true }
+    },
+
+    /** 联机钱包：底注、让枪费、结算与取消退款，按 matchId 幂等。 */
+    'online-wallet'(data, payload, api) {
+      normalize(data)
+      const info = payload !== null && typeof payload === 'object' ? payload : {}
+      const matchId = typeof info.matchId === 'string' && info.matchId !== '' && info.matchId.length <= 64 ? info.matchId : ''
+      if (matchId === '') return { ok: false, reason: 'bad-match' }
+      if (data.online === null || typeof data.online !== 'object') data.online = { paid: {}, fees: {}, settled: {} }
+      const ledger = data.online
+      for (const key of ['paid', 'fees', 'settled']) {
+        if (ledger[key] === null || typeof ledger[key] !== 'object') ledger[key] = {}
+      }
+      if (ledger.settled[matchId] !== undefined) return { ok: true, duplicate: true }
+      if (info.kind === 'stake' || info.kind === 'fee') {
+        const cap = info.kind === 'stake' ? STAKE_MAX : Math.ceil(STAKE_MAX * PASS_RATE)
+        const amount = clampInt(info.amount, 1, cap, 0)
+        const id = info.kind === 'stake' ? clampInt(info.handId, 1, 999, 0) : clampInt(info.id, 1, Number.MAX_SAFE_INTEGER, 0)
+        if (amount === 0 || id === 0) return { ok: false, reason: 'bad-pay' }
+        const bucket = info.kind === 'stake' ? ledger.paid : ledger.fees
+        const key = info.kind === 'stake' ? matchId + ':' + id + ':stake' : matchId + ':fee:' + id
+        if (bucket[key] !== undefined) return { ok: true, duplicate: true }
+        if (!api.spend(amount, info.kind === 'stake' ? 'roulette-online-bet' : 'roulette-online-pass')) return { ok: false, reason: 'poor' }
+        bucket[key] = amount
+        return { ok: true }
+      }
+      if (info.kind === 'settle') {
+        if (info.winner === 'you') api.earn(clampInt(info.pot, 0, STAKE_MAX * 20, 0), 'roulette-online-win')
+        ledger.settled[matchId] = info.winner === 'you' ? 'you' : 'them'
+        return { ok: true }
+      }
+      if (info.kind === 'refund') {
+        let refund = 0
+        for (const key of Object.keys(ledger.paid)) {
+          if (key.startsWith(matchId + ':')) { refund += ledger.paid[key]; delete ledger.paid[key] }
+        }
+        for (const key of Object.keys(ledger.fees)) {
+          if (key.startsWith(matchId + ':')) { refund += ledger.fees[key]; delete ledger.fees[key] }
+        }
+        if (refund > 0) api.earn(refund, 'roulette-refund')
+        ledger.settled[matchId] = 'cancelled'
+        return { ok: true }
+      }
+      return { ok: false, reason: 'bad-kind' }
     },
 
     leave(data, payload, api) {

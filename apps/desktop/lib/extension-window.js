@@ -6,7 +6,7 @@
 import { extensionWindowGeometry } from './extension-window-geometry.js'
 
 /** 扩展键对应的窗口标题；新扩展要在大窗口里显示时在这里登记。 */
-export const EXT_TITLES = { farm: '菜园 · 大农场' }
+export const EXT_TITLES = { farm: '菜园 · 大农场', roulette: '左轮轮盘' }
 
 /**
  * @param {{

@@ -226,3 +226,65 @@ test('域名客户端：createRoomClient 可以用 localhost 主机名加入', a
     await server.close()
   }
 })
+
+test('游戏事件：from 由 token 推导、seq 幂等、长轮询唤醒、room 声明 host 权威', async () => {
+  const server = await startRoomServer({ code: '7K2M', listenAddress: '127.0.0.1' })
+  const baseUrl = `http://127.0.0.1:${server.status().port}`
+  const host = createRoomClient({ baseUrl, code: '7K2M', profile: PROFILE_A })
+  const guest = createRoomClient({ baseUrl, code: '7K2M', profile: PROFILE_B })
+  try {
+    const joinedHost = await host.join()
+    const joinedGuest = await guest.join()
+    assert.deepEqual(joinedGuest.room.caps, ['game'])
+    assert.equal(joinedGuest.room.authority, 'host')
+
+    const wake = host.wait(joinedGuest.version)
+    const sent = await guest.game({ seq: 1, ext: 'roulette', op: 'action', data: { op: 'arm', from: joinedHost.playerId } })
+    assert.equal(sent.status, 200)
+    assert.equal(sent.body.ok, true)
+    assert.equal(sent.body.duplicate, undefined)
+    const after = await wake
+    assert.equal(after.status, 200)
+    assert.equal(after.body.gameEvents.length, 1)
+    assert.equal(after.body.gameEvents[0].from, joinedGuest.playerId)
+    assert.equal(after.body.gameEvents[0].ext, 'roulette')
+    assert.equal(after.body.gameEvents[0].data.from, joinedHost.playerId)
+
+    const duplicate = await guest.game({ seq: 1, ext: 'roulette', op: 'action', data: { op: 'arm' } })
+    assert.equal(duplicate.status, 200)
+    assert.equal(duplicate.body.duplicate, true)
+    assert.equal(server.snapshot().gameEvents.length, 1)
+
+    const badSeq = await guest.game({ seq: 0, ext: 'roulette', op: 'action', data: {} })
+    assert.equal(badSeq.status, 400)
+    const badExt = await guest.game({ seq: 2, ext: 'Roulette!', op: 'action', data: {} })
+    assert.equal(badExt.status, 400)
+    const badOp = await guest.game({ seq: 2, ext: 'roulette', op: '9arm', data: {} })
+    assert.equal(badOp.status, 400)
+    const oversized = Object.fromEntries(Array.from({ length: 10 }, (_, index) => ['k' + index, 'x'.repeat(200)]))
+    const tooLarge = await guest.game({ seq: 2, ext: 'roulette', op: 'action', data: oversized })
+    assert.equal(tooLarge.status, 413)
+  } finally {
+    await host.close()
+    await guest.close().catch(() => {})
+    await server.close()
+  }
+})
+
+test('游戏事件：同一玩家超过每秒 20 条被限速', async () => {
+  const server = await startRoomServer({ code: '7K2M', listenAddress: '127.0.0.1' })
+  const baseUrl = `http://127.0.0.1:${server.status().port}`
+  const client = createRoomClient({ baseUrl, code: '7K2M', profile: PROFILE_A })
+  try {
+    await client.join()
+    let limited = 0
+    for (let index = 1; index <= 22; index += 1) {
+      const result = await client.game({ seq: index, ext: 'roulette', op: 'action', data: {} })
+      if (result.status === 429) limited += 1
+    }
+    assert.equal(limited > 0, true)
+  } finally {
+    await client.close().catch(() => {})
+    await server.close()
+  }
+})

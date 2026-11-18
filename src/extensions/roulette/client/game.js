@@ -9,6 +9,7 @@
 
 import { createAiRunner } from './ai.js'
 import { createArm } from './arm.js'
+import { createUiActions } from './ui-actions.js'
 
 export const CHAMBERS = 6
 export const CHAMBER_X = [0, 39, 39, 0, -38, -38]
@@ -96,6 +97,7 @@ export function createGame(options = {}) {
     }
   }
 
+  const uiActions = createUiActions({ ui, rerender })
   const ai = createAiRunner({ ui, later, send, rerender })
   const arm = createArm({ ui, chambers: CHAMBERS, cancel, later, send, rerender, toast })
 
@@ -197,6 +199,13 @@ export function createGame(options = {}) {
     rerender()
   }
 
+  /** 切到另一个页面；好友联机入口用它进联机大厅。 */
+  function showPage(next) {
+    ui.page = next
+    ui.flash = ''
+    rerender()
+  }
+
   function leaveTable() {
     const match = data().match
     send('leave', { handId: match === null ? undefined : match.handId })
@@ -241,17 +250,6 @@ export function createGame(options = {}) {
       return
     }
     ui.leaveConfirm = true
-    rerender()
-  }
-
-  function cancelLeave() {
-    ui.leaveConfirm = false
-    rerender()
-  }
-
-  function retryAi() {
-    ui.aiKey = ''
-    ui.aiError = false
     rerender()
   }
 
@@ -372,10 +370,10 @@ export function createGame(options = {}) {
     data,
     sync,
     enterTable,
+    showPage,
     leaveTable,
     requestLeave,
-    cancelLeave,
-    retryAi,
+    ...uiActions,
     start,
     next,
     setNextLoad,

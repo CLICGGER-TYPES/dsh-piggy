@@ -316,6 +316,19 @@ contextBridge.exposeInMainWorld('piggyShell', {
       typeof targetId === 'string' ? targetId.slice(0, 80) : '', Number(x) || 0, Number(y) || 0, Number(facing) < 0 ? -1 : 1),
     leave: () => ipcRenderer.invoke('piggy:room:leave'),
     copy: () => ipcRenderer.invoke('piggy:room:copy'),
+    /** 扩展大窗口的游戏消息（外壳 0.6.8 起）：服务端校验格式、大小和速率。 */
+    game: (seq, ext, op, data) => {
+      let payload = {}
+      try {
+        if (data !== null && typeof data === 'object' && !Array.isArray(data) && JSON.stringify(data).length <= 4096) payload = data
+      } catch { payload = {} }
+      return ipcRenderer.invoke('piggy:room:game', {
+        seq: Number.isSafeInteger(seq) && seq > 0 ? seq : 0,
+        ext: typeof ext === 'string' ? ext.slice(0, 32) : '',
+        op: typeof op === 'string' ? op.slice(0, 32) : '',
+        data: payload,
+      })
+    },
     onUpdate: callback => { ipcRenderer.on('piggy:room:update', (event, snapshot) => callback(snapshot)) },
     onClosed: callback => { ipcRenderer.on('piggy:room:closed', (event, detail) => callback(detail)) },
   },

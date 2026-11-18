@@ -9,17 +9,20 @@ const DENIED = { ok: false, reason: '来源不对' }
  *   ipcMain: any,
  *   fromPanelOnly: (event:any)=>boolean,
  *   fromRoom: (event:any)=>boolean,
+ *   fromExt: (event:any)=>boolean,
  *   manager: any,
  *   roomWindow: { open: ()=>any },
  *   clipboard?: { writeText: (text:string)=>void },
  * }} options
  */
-export function registerRoomIpc({ ipcMain, fromPanelOnly, fromRoom, manager, roomWindow, clipboard }) {
+export function registerRoomIpc({ ipcMain, fromPanelOnly, fromRoom, fromExt, manager, roomWindow, clipboard }) {
   const panel = handler => (event, ...args) => fromPanelOnly(event) ? handler(event, ...args) : DENIED
   const room = handler => (event, ...args) => fromRoom(event) ? handler(event, ...args) : DENIED
-  const either = handler => (event, ...args) => (fromPanelOnly(event) || fromRoom(event)) ? handler(event, ...args) : DENIED
+  // 扩展大窗口（联机牌桌）只拿到查询、游戏消息、离开和复制邀请；建房/加入仍归面板。
+  const ext = handler => (event, ...args) => fromExt(event) ? handler(event, ...args) : DENIED
+  const shared = handler => (event, ...args) => (fromPanelOnly(event) || fromRoom(event) || fromExt(event)) ? handler(event, ...args) : DENIED
 
-  ipcMain.handle('piggy:room:status', either(() => manager.status()))
+  ipcMain.handle('piggy:room:status', shared(() => manager.status()))
 
   ipcMain.handle('piggy:room:host', panel((event, profile, options) => manager.host(profile, options)))
 
@@ -34,9 +37,11 @@ export function registerRoomIpc({ ipcMain, fromPanelOnly, fromRoom, manager, roo
 
   ipcMain.handle('piggy:room:emote', room((event, name, targetId, x, y, facing) => manager.emote(name, targetId, x, y, facing)))
 
-  ipcMain.handle('piggy:room:leave', either(() => manager.leave('left')))
+  ipcMain.handle('piggy:room:game', ext((event, input) => manager.game(input)))
 
-  ipcMain.handle('piggy:room:copy', either(async () => {
+  ipcMain.handle('piggy:room:leave', shared(() => manager.leave('left')))
+
+  ipcMain.handle('piggy:room:copy', shared(async () => {
     if (clipboard === undefined || typeof clipboard.writeText !== 'function') return { ok: false, reason: '剪贴板不可用' }
     const status = manager.status()
     if (status?.inRoom !== true || typeof status.code !== 'string') return { ok: false, reason: '不在房间里' }

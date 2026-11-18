@@ -23,6 +23,65 @@ pub const ROOM_STATE_HOLD: Duration = Duration::from_secs(15);
 pub const ROOM_IDLE: Duration = Duration::from_millis(30_000);
 pub const MAX_JOIN_WINDOW: Duration = Duration::from_secs(60);
 pub const MAX_JOIN_ATTEMPTS: u32 = 20;
+pub const ROOM_GAME_MAX_DATA: usize = 1536;
+pub const ROOM_GAME_RATE_WINDOW: Duration = Duration::from_secs(1);
+pub const ROOM_GAME_RATE_LIMIT: u32 = 20;
+
+fn valid_game_key(value: &str, op: bool) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.is_empty() || bytes.len() > 32 {
+        return false;
+    }
+    if op && !bytes[0].is_ascii_lowercase() {
+        return false;
+    }
+    bytes.iter().enumerate().all(|(index, byte)| {
+        byte.is_ascii_lowercase()
+            || byte.is_ascii_digit()
+            || (*byte == b'-' && (!op || index > 0))
+    })
+}
+
+fn valid_game_value(value: &Value, depth: usize) -> bool {
+    if depth > 4 {
+        return false;
+    }
+    match value {
+        Value::Null | Value::Bool(_) | Value::Number(_) => true,
+        Value::String(text) => text.len() <= 256,
+        Value::Array(items) => items.len() <= 32 && items.iter().all(|item| valid_game_value(item, depth + 1)),
+        Value::Object(map) => {
+            map.len() <= 32
+                && map
+                    .iter()
+                    .all(|(key, item)| key.len() <= 32 && valid_game_value(item, depth + 1))
+        }
+    }
+}
+
+fn append_game_locked(
+    inner: &mut Inner,
+    from: String,
+    ext: &str,
+    op: &str,
+    data: Value,
+    at: u64,
+) -> u64 {
+    let id = inner.next_game_event_id;
+    inner.next_game_event_id += 1;
+    inner.game_events.push_back(GameEvent {
+        id,
+        from,
+        ext: ext.to_string(),
+        op: op.to_string(),
+        data,
+        at,
+    });
+    while inner.game_events.len() > 32 {
+        inner.game_events.pop_front();
+    }
+    id
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct ApiError {
@@ -59,6 +118,7 @@ pub struct RoomOptions {
     pub actual_port: u16,
     pub persistent: bool,
     pub trust_proxy: bool,
+    pub authority: bool,
     pub join_limit: Option<JoinLimit>,
     pub log: bool,
 }
@@ -80,6 +140,26 @@ pub struct Player {
     pub joined_at: u64,
     pub last_seen_at: u64,
     pub rev: u64,
+    pub game_seq: u64,
+    pub game_window: Option<(Instant, u32)>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GameEvent {
+    pub id: u64,
+    pub from: String,
+    pub ext: String,
+    pub op: String,
+    pub data: Value,
+    pub at: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct GameAction {
+    pub seq: u64,
+    pub ext: String,
+    pub op: String,
+    pub data: Value,
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +197,7 @@ pub enum StateOutcome {
     Closed(String),
 }
 
+#[derive(Debug, Clone)]
 struct RateEntry {
     window_started: Instant,
     count: u32,
@@ -138,6 +219,9 @@ struct Inner {
     players: Vec<Player>,
     care_events: VecDeque<CareEvent>,
     care_results: VecDeque<CareResult>,
+    game_events: VecDeque<GameEvent>,
+    next_game_event_id: u64,
+    authority: bool,
     join_attempts: HashMap<String, RateEntry>,
     join_order: VecDeque<String>,
     polls: HashMap<u64, Poll>,
@@ -178,6 +262,7 @@ impl Room {
         let mut hasher = Sha256::new();
         hasher.update(code.as_bytes());
         let code_hash: [u8; 32] = hasher.finalize().into();
+        let authority = options.authority;
         Ok(Arc::new(Self {
             options,
             code,
@@ -189,6 +274,9 @@ impl Room {
                 players: Vec::new(),
                 care_events: VecDeque::new(),
                 care_results: VecDeque::new(),
+                game_events: VecDeque::new(),
+                next_game_event_id: 1,
+                authority,
                 join_attempts: HashMap::new(),
                 join_order: VecDeque::new(),
                 polls: HashMap::new(),
@@ -329,6 +417,8 @@ impl Room {
             joined_at: now,
             last_seen_at: now,
             rev: 0,
+            game_seq: 0,
+            game_window: None,
         };
         if host {
             inner.host_id = Some(id.clone());
@@ -509,6 +599,157 @@ impl Room {
             self.spawn_flush();
         }
         Ok(json!({ "ok": true, "version": version }))
+    }
+
+    /// 校验并返回一条待处理动作；校验通过但 seq 已经处理过时返回 None。
+    pub fn check_game(&self, player_id: &str, input: &Value) -> Result<Option<GameAction>, ApiError> {
+        if !exact_keys(input, &["seq", "ext", "op", "data"]) {
+            return Err(ApiError::new(400, "game-shape-invalid"));
+        }
+        let Some(seq) = json_safe_integer(input.get("seq").unwrap_or(&Value::Null)) else {
+            return Err(ApiError::new(400, "game-seq-invalid"));
+        };
+        if seq == 0 {
+            return Err(ApiError::new(400, "game-seq-invalid"));
+        }
+        let Some(ext) = input.get("ext").and_then(Value::as_str) else {
+            return Err(ApiError::new(400, "game-ext-invalid"));
+        };
+        if !valid_game_key(ext, false) {
+            return Err(ApiError::new(400, "game-ext-invalid"));
+        }
+        let Some(op) = input.get("op").and_then(Value::as_str) else {
+            return Err(ApiError::new(400, "game-op-invalid"));
+        };
+        if !valid_game_key(op, true) {
+            return Err(ApiError::new(400, "game-op-invalid"));
+        }
+        let Some(data) = input.get("data") else {
+            return Err(ApiError::new(400, "game-data-invalid"));
+        };
+        if !data.is_object() || !valid_game_value(data, 0) {
+            return Err(ApiError::new(400, "game-data-invalid"));
+        }
+        if serde_json::to_vec(data).map(|bytes| bytes.len()).unwrap_or(usize::MAX) > ROOM_GAME_MAX_DATA {
+            return Err(ApiError::new(413, "game-data-too-large"));
+        }
+        let mut inner = self.inner.lock().expect("room lock");
+        if inner.closing {
+            return Err(ApiError::new(503, "room-closed"));
+        }
+        let Some(index) = inner.players.iter().position(|player| player.id == player_id) else {
+            return Err(ApiError::new(401, "unauthorized"));
+        };
+        let window = inner.players[index].game_window;
+        let entry = match window {
+            Some((started, count)) if started.elapsed() < ROOM_GAME_RATE_WINDOW => {
+                if count >= ROOM_GAME_RATE_LIMIT {
+                    return Err(ApiError::new(429, "game-rate-limited"));
+                }
+                (started, count + 1)
+            }
+            _ => (Instant::now(), 1),
+        };
+        inner.players[index].game_window = Some(entry);
+        if seq <= inner.players[index].game_seq {
+            return Ok(None);
+        }
+        Ok(Some(GameAction {
+            seq,
+            ext: ext.to_string(),
+            op: op.to_string(),
+            data: data.clone(),
+        }))
+    }
+
+    /// 房主权威模式：记录玩家 seq 并把动作作为事件广播。
+    pub fn accept_game(self: &Arc<Self>, player_id: &str, action: &GameAction) -> Result<Value, ApiError> {
+        let now = now_ms();
+        let mut inner = self.inner.lock().expect("room lock");
+        if inner.closing {
+            return Err(ApiError::new(503, "room-closed"));
+        }
+        let Some(index) = inner.players.iter().position(|player| player.id == player_id) else {
+            return Err(ApiError::new(401, "unauthorized"));
+        };
+        if action.seq <= inner.players[index].game_seq {
+            let version = inner.version;
+            return Ok(json!({ "ok": true, "duplicate": true, "version": version }));
+        }
+        inner.players[index].game_seq = action.seq;
+        let event_id = append_game_locked(
+            &mut inner,
+            player_id.to_string(),
+            &action.ext,
+            &action.op,
+            action.data.clone(),
+            now,
+        );
+        let scheduled = bump_locked(&mut inner);
+        let version = inner.version;
+        drop(inner);
+        if scheduled {
+            self.spawn_flush();
+        }
+        Ok(json!({ "ok": true, "version": version, "eventId": event_id }))
+    }
+
+    /// 公网权威模式：动作已转给权威并成功，只推进玩家 seq。
+    pub fn accept_seq(&self, player_id: &str, seq: u64) -> Result<bool, ApiError> {
+        let mut inner = self.inner.lock().expect("room lock");
+        if inner.closing {
+            return Err(ApiError::new(503, "room-closed"));
+        }
+        let Some(index) = inner.players.iter().position(|player| player.id == player_id) else {
+            return Err(ApiError::new(401, "unauthorized"));
+        };
+        if seq <= inner.players[index].game_seq {
+            return Ok(false);
+        }
+        inner.players[index].game_seq = seq;
+        Ok(true)
+    }
+
+    pub fn game(self: &Arc<Self>, player_id: &str, input: &Value) -> Result<Value, ApiError> {
+        match self.check_game(player_id, input)? {
+            Some(action) => self.accept_game(player_id, &action),
+            None => {
+                let version = self.inner.lock().expect("room lock").version;
+                Ok(json!({ "ok": true, "duplicate": true, "version": version }))
+            }
+        }
+    }
+
+    /// 公网权威进程产生的事件；from 由权威决定，不再取玩家 token。
+    pub fn append_authority(
+        self: &Arc<Self>,
+        from: &str,
+        ext: &str,
+        op: &str,
+        data: Value,
+    ) -> Result<Value, ApiError> {
+        if !valid_game_key(ext, false) || !valid_game_key(op, true) {
+            return Err(ApiError::new(400, "authority-event-invalid"));
+        }
+        if !data.is_object() || !valid_game_value(&data, 0) {
+            return Err(ApiError::new(400, "authority-event-invalid"));
+        }
+        if serde_json::to_vec(&data).map(|bytes| bytes.len()).unwrap_or(usize::MAX) > ROOM_GAME_MAX_DATA {
+            return Err(ApiError::new(413, "authority-event-too-large"));
+        }
+        let now = now_ms();
+        let mut inner = self.inner.lock().expect("room lock");
+        if inner.closing {
+            return Err(ApiError::new(503, "room-closed"));
+        }
+        let event_id = append_game_locked(&mut inner, from.to_string(), ext, op, data, now);
+        let scheduled = bump_locked(&mut inner);
+        let version = inner.version;
+        drop(inner);
+        if scheduled {
+            self.spawn_flush();
+        }
+        Ok(json!({ "ok": true, "version": version, "eventId": event_id }))
     }
 
     pub fn care(self: &Arc<Self>, player_id: &str, input: &Value) -> Result<Value, ApiError> {
@@ -714,6 +955,7 @@ impl Room {
             inner.players.clear();
             inner.care_events.clear();
             inner.care_results.clear();
+            inner.game_events.clear();
             inner.join_attempts.clear();
             inner.join_order.clear();
         }
@@ -841,10 +1083,24 @@ fn body_locked(code: &str, inner: &Inner) -> Value {
             "code": code,
             "version": inner.version,
             "hostId": inner.host_id,
+            "caps": ["game"],
+            "authority": if inner.authority { "server" } else { "host" },
         },
         "players": players.iter().map(|player| public_player(player)).collect::<Vec<_>>(),
         "careEvents": inner.care_events.iter().map(care_event_json).collect::<Vec<_>>(),
         "careResults": inner.care_results.iter().map(care_result_json).collect::<Vec<_>>(),
+        "gameEvents": inner.game_events.iter().map(game_event_json).collect::<Vec<_>>(),
+    })
+}
+
+fn game_event_json(event: &GameEvent) -> Value {
+    json!({
+        "id": event.id,
+        "from": event.from,
+        "ext": event.ext,
+        "op": event.op,
+        "data": event.data,
+        "at": event.at,
     })
 }
 
@@ -935,6 +1191,7 @@ mod tests {
                 actual_port: 47824,
                 persistent,
                 trust_proxy: false,
+                authority: false,
                 join_limit: None,
                 log: false,
             },

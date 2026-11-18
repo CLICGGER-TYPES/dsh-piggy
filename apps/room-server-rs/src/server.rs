@@ -36,6 +36,9 @@ pub struct ServerOptions {
     pub allow_public: bool,
     pub trust_proxy: bool,
     pub persistent: bool,
+    pub authority: bool,
+    pub authority_url: Option<String>,
+    pub authority_secret: Option<String>,
     pub tls: Option<TlsMaterials>,
     pub log: bool,
     pub join_limit: Option<JoinLimit>,
@@ -52,6 +55,9 @@ impl Default for ServerOptions {
             allow_public: false,
             trust_proxy: false,
             persistent: true,
+            authority: false,
+            authority_url: None,
+            authority_secret: None,
             tls: None,
             log: false,
             join_limit: Some(JoinLimit::default()),
@@ -91,12 +97,49 @@ impl ServerHandle {
     }
 }
 
+struct Authority {
+    url: String,
+    secret: String,
+    client: reqwest::Client,
+}
+
 struct App {
     room: Arc<Room>,
+    authority: Option<Arc<Authority>>,
+}
+
+fn build_authority(options: &ServerOptions) -> Result<Option<Arc<Authority>>, String> {
+    match (&options.authority_url, &options.authority_secret) {
+        (None, None) => Ok(None),
+        (Some(url), Some(secret)) => {
+            if secret.chars().count() < 16 {
+                return Err("authority secret must be at least 16 characters".to_string());
+            }
+            let parsed = url::Url::parse(url).map_err(|_| "authority url is invalid".to_string())?;
+            if parsed.scheme() != "http" && parsed.scheme() != "https" {
+                return Err("authority url must be http or https".to_string());
+            }
+            if !matches!(parsed.host_str(), Some("127.0.0.1") | Some("localhost") | Some("::1")) {
+                return Err("authority must listen on loopback".to_string());
+            }
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(5))
+                .build()
+                .map_err(|_| "authority client failed".to_string())?;
+            Ok(Some(Arc::new(Authority {
+                url: url.clone(),
+                secret: secret.clone(),
+                client,
+            })))
+        }
+        _ => Err("--authority-url and --authority-secret must be provided together".to_string()),
+    }
 }
 
 pub async fn start_server(options: ServerOptions) -> Result<ServerHandle, String> {
     validate_listener(&options)?;
+    let authority = build_authority(&options)?;
+    let authority_enabled = authority.is_some();
     let tls_acceptor = match options.tls.as_ref() {
         Some(materials) => Some(build_acceptor(materials)?),
         None => None,
@@ -128,6 +171,7 @@ pub async fn start_server(options: ServerOptions) -> Result<ServerHandle, String
             actual_port: port,
             persistent: options.persistent,
             trust_proxy: options.trust_proxy,
+            authority: authority_enabled,
             join_limit: options.join_limit,
             log: options.log,
         },
@@ -135,7 +179,7 @@ pub async fn start_server(options: ServerOptions) -> Result<ServerHandle, String
     )?;
     let router = Router::new()
         .fallback(handle_request)
-        .with_state(Arc::new(App { room: room.clone() }));
+        .with_state(Arc::new(App { room: room.clone(), authority }));
     let task = tokio::spawn(run_accept_loop(
         listener,
         tls_acceptor,
@@ -278,6 +322,7 @@ async fn handle_request(
         "/v1/room/update" => update(app, request).await,
         "/v1/room/care" => care(app, request).await,
         "/v1/room/care-result" => care_result(app, request).await,
+        "/v1/room/game" => game(app, request).await,
         "/v1/room/leave" => leave(app, request).await,
         _ => error_response(ApiError::new(404, "not-found")),
     }
@@ -435,6 +480,87 @@ async fn care_result(app: Arc<App>, request: Request<Body>) -> Response {
         Ok(body) => json_response(StatusCode::OK, &body),
         Err(error) => error_response(error),
     }
+}
+
+async fn game(app: Arc<App>, request: Request<Body>) -> Response {
+    let token = match auth_token(&request) {
+        Ok(token) => token,
+        Err(error) => return error_response(error),
+    };
+    let player_id = match app.room.authenticate(&token) {
+        Ok(player_id) => player_id,
+        Err(error) => return error_response(error),
+    };
+    let input = match read_json(request).await {
+        Ok(input) => input,
+        Err(error) => return error_response(error),
+    };
+    let Some(authority) = app.authority.clone() else {
+        return match app.room.game(&player_id, &input) {
+            Ok(body) => json_response(StatusCode::OK, &body),
+            Err(error) => error_response(error),
+        };
+    };
+    let action = match app.room.check_game(&player_id, &input) {
+        Ok(Some(action)) => action,
+        Ok(None) => {
+            let version = app.room.snapshot()["version"].clone();
+            return json_response(StatusCode::OK, &json!({ "ok": true, "duplicate": true, "version": version }));
+        }
+        Err(error) => return error_response(error),
+    };
+    let payload = json!({
+        "room": app.room.code(),
+        "from": player_id,
+        "seq": action.seq,
+        "ext": action.ext.clone(),
+        "op": action.op.clone(),
+        "data": action.data.clone(),
+    });
+    let response = authority
+        .client
+        .post(&authority.url)
+        .header("x-room-authority", &authority.secret)
+        .json(&payload)
+        .send()
+        .await;
+    let body = match response {
+        Ok(response) if response.status().is_success() => {
+            match response.json::<Value>().await {
+                Ok(body) => body,
+                Err(_) => return error_response(ApiError::new(502, "authority-bad-response")),
+            }
+        }
+        Ok(_) => return error_response(ApiError::new(400, "authority-rejected")),
+        Err(_) => return error_response(ApiError::new(502, "authority-unavailable")),
+    };
+    if body.get("ok") != Some(&Value::Bool(true)) {
+        return error_response(ApiError::new(400, "authority-rejected"));
+    }
+    let events = body.get("events").and_then(Value::as_array).cloned().unwrap_or_default();
+    if events.len() > 16 {
+        return error_response(ApiError::new(502, "authority-bad-response"));
+    }
+    match app.room.accept_seq(&player_id, action.seq) {
+        Ok(true) => {}
+        Ok(false) => {
+            let version = app.room.snapshot()["version"].clone();
+            return json_response(StatusCode::OK, &json!({ "ok": true, "duplicate": true, "version": version }));
+        }
+        Err(error) => return error_response(error),
+    }
+    let mut last = json!({ "ok": true, "version": app.room.snapshot()["version"].clone() });
+    for event in events {
+        let from = event.get("from").and_then(Value::as_str).unwrap_or("authority");
+        let ext = event.get("ext").and_then(Value::as_str).unwrap_or(&action.ext);
+        let op = event.get("op").and_then(Value::as_str).unwrap_or("event");
+        let data = event.get("data").cloned().unwrap_or_else(|| json!({}));
+        match app.room.append_authority(from, ext, op, data) {
+            Ok(value) => last = value,
+            Err(error) => return error_response(error),
+        }
+    }
+    json_response(StatusCode::OK, &last)
 }
 
 async fn leave(app: Arc<App>, request: Request<Body>) -> Response {

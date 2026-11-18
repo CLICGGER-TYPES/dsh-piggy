@@ -853,3 +853,173 @@ async fn trust_proxy_uses_forwarded_host_only_when_enabled() {
     assert_eq!(status, 403, "{response}");
     server.close().await;
 }
+
+#[tokio::test]
+async fn game_events_flow_and_limits() {
+    let server = TestServer::start_default().await;
+    let (status, host) = server.join("client-host", "猪猪").await;
+    assert_eq!(status, 200);
+    let (status, guest) = server.join("client-guest", "团子").await;
+    assert_eq!(status, 200);
+    assert_eq!(guest["room"]["caps"], json!(["game"]));
+    assert_eq!(guest["room"]["authority"], json!("host"));
+    let host_token = host["token"].as_str().expect("host token");
+    let guest_token = guest["token"].as_str().expect("guest token");
+    let host_id = host["playerId"].as_str().expect("host id");
+    let guest_id = guest["playerId"].as_str().expect("guest id");
+
+    let (status, sent) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 1, "ext": "roulette", "op": "action", "data": { "op": "arm", "from": host_id } }),
+        )
+        .await;
+    assert_eq!(status, 200);
+    assert_eq!(sent["ok"], true);
+    assert!(sent["eventId"].as_u64().is_some());
+
+    let (status, state) = server
+        .post_auth("/v1/room/state", host_token, &json!({ "since": 0 }))
+        .await;
+    assert_eq!(status, 200);
+    let events = state["gameEvents"].as_array().expect("game events");
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["from"], json!(guest_id));
+    assert_eq!(events[0]["ext"], json!("roulette"));
+    assert_eq!(events[0]["data"]["from"], json!(host_id));
+
+    let (status, duplicate) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 1, "ext": "roulette", "op": "action", "data": {} }),
+        )
+        .await;
+    assert_eq!(status, 200);
+    assert_eq!(duplicate["duplicate"], true);
+
+    let (status, _) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 0, "ext": "roulette", "op": "action", "data": {} }),
+        )
+        .await;
+    assert_eq!(status, 400);
+    let (status, _) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 2, "ext": "Roulette!", "op": "action", "data": {} }),
+        )
+        .await;
+    assert_eq!(status, 400);
+    let big = json!({ "text": "x".repeat(1600) });
+    let (status, _) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 2, "ext": "roulette", "op": "action", "data": big }),
+        )
+        .await;
+    assert_eq!(status, 400);
+    let oversized: serde_json::Map<String, Value> = (0..10)
+        .map(|index| (format!("k{index}"), json!("x".repeat(200))))
+        .collect();
+    let (status, _) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 2, "ext": "roulette", "op": "action", "data": oversized }),
+        )
+        .await;
+    assert_eq!(status, 413);
+
+    let mut limited = false;
+    for seq in 2..24 {
+        let (status, _) = server
+            .post_auth(
+                "/v1/room/game",
+                guest_token,
+                &json!({ "seq": seq, "ext": "roulette", "op": "action", "data": {} }),
+            )
+            .await;
+        if status == 429 {
+            limited = true;
+            break;
+        }
+    }
+    assert!(limited);
+    server.close().await;
+}
+
+#[tokio::test]
+async fn authority_mode_forwards_actions_and_broadcasts_events() {
+    use axum::extract::Json;
+    use axum::http::HeaderMap;
+    use axum::routing::post;
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("authority listener");
+    let address = listener.local_addr().expect("authority address");
+    let app = axum::Router::new().route(
+        "/v1/game",
+        post(|headers: HeaderMap, Json(body): Json<Value>| async move {
+            assert_eq!(
+                headers.get("x-room-authority").and_then(|value| value.to_str().ok()),
+                Some("test-secret-0123456789")
+            );
+            assert_eq!(body["ext"], json!("roulette"));
+            Json(json!({
+                "ok": true,
+                "events": [
+                    { "from": "authority", "ext": "roulette", "op": "snapshot", "data": { "rev": 7, "stage": "choice" } }
+                ]
+            }))
+        }),
+    );
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+
+    let mut options = ServerOptions::default();
+    options.authority_url = Some(format!("http://{address}/v1/game"));
+    options.authority_secret = Some("test-secret-0123456789".to_string());
+    let server = TestServer::start(options).await;
+    let (status, host) = server.join("client-host", "猪猪").await;
+    assert_eq!(status, 200);
+    assert_eq!(host["room"]["authority"], json!("server"));
+    let token = host["token"].as_str().expect("token");
+
+    let (status, body) = server
+        .post_auth(
+            "/v1/room/game",
+            token,
+            &json!({ "seq": 1, "ext": "roulette", "op": "action", "data": { "op": "arm" } }),
+        )
+        .await;
+    assert_eq!(status, 200);
+    assert_eq!(body["ok"], true);
+    let (status, state) = server
+        .post_auth("/v1/room/state", token, &json!({ "since": 0 }))
+        .await;
+    assert_eq!(status, 200);
+    let events = state["gameEvents"].as_array().expect("events");
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["from"], json!("authority"));
+    assert_eq!(events[0]["op"], json!("snapshot"));
+    assert_eq!(events[0]["data"]["rev"], json!(7));
+
+    let (status, duplicate) = server
+        .post_auth(
+            "/v1/room/game",
+            token,
+            &json!({ "seq": 1, "ext": "roulette", "op": "action", "data": {} }),
+        )
+        .await;
+    assert_eq!(status, 200);
+    assert_eq!(duplicate["duplicate"], true);
+    server.close().await;
+}

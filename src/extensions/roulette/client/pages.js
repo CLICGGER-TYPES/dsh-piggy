@@ -35,10 +35,13 @@ export function renderLobby(app, game) {
   menu.appendChild(modeRow(app, {
     op: 'friend-mode',
     name: '好友联机',
-    note: '需要宿主房间接口',
-    locked: true,
+    note: '1v1 · 房主开局',
     asset: 'chip-v1.webp',
-    onClick: function () { game.notify('好友联机需要宿主房间接口，下一阶段接入') },
+    onClick: function () {
+      // 房间通道只在桌面版大窗口里给；面板里先开大窗口。
+      if (!app.room && typeof app.openBig === 'function') { app.openBig(); return }
+      game.showPage('online')
+    },
   }))
   menu.appendChild(modeRow(app, {
     op: 'four-mode',
@@ -67,12 +70,12 @@ function lifeDots(app, count, max) {
   return lives
 }
 
-function renderLives(app, data) {
+export function renderLives(app, data, opponentName) {
   const match = data.match
   const max = data.settings.lives
   const row = app.el('div', 'rt-livesbar')
   const ai = app.el('div', 'rt-lives-side rt-lives-ai')
-  ai.appendChild(app.el('b', null, '侦探猪'))
+  ai.appendChild(app.el('b', null, opponentName ?? '侦探猪'))
   ai.appendChild(lifeDots(app, match ? match.livesAi : 0, max))
   row.appendChild(ai)
   row.appendChild(app.el('span', 'rt-lives-score', match ? match.winsAi + ' : ' + match.winsYou : '0 : 0'))
@@ -83,7 +86,7 @@ function renderLives(app, data) {
   return row
 }
 
-function renderMeta(app, data) {
+export function renderMeta(app, data) {
   const match = data.match
   const row = app.el('div', 'rt-meta')
   const left = app.el('div', 'rt-meta-left')
@@ -101,7 +104,7 @@ function renderMeta(app, data) {
   return row
 }
 
-function renderBoard(app, game, data) {
+export function renderBoard(app, game, data, canArm) {
   const match = data.match
   const ui = game.ui
   let className = 'rt-board'
@@ -122,7 +125,7 @@ function renderBoard(app, game, data) {
     primer.style.setProperty('--y', CHAMBER_Y[ui.primer] + 'px')
     wrap.appendChild(primer)
   }
-  const armed = match !== null && match.stage === 'arming' && !ui.spinning
+  const armed = canArm !== false && match !== null && match.stage === 'arming' && !ui.spinning
   for (let index = 0; index < 6; index += 1) {
     const hole = app.button('rt-hole', {
       'data-chamber': String(index),
@@ -292,11 +295,11 @@ export function renderTable(app, game) {
     game.requestLeave()
   }))
   root.appendChild(renderMeta(app, data))
-  root.appendChild(renderLives(app, data))
+  root.appendChild(renderLives(app, data, '侦探猪'))
   if (match !== null && match.stage === 'matchOver') {
     root.appendChild(renderResult(app, match))
   } else {
-    root.appendChild(renderBoard(app, game, data))
+    root.appendChild(renderBoard(app, game, data, true))
     const status = app.el('div', 'rt-status', statusText(match))
     status.setAttribute('role', 'status')
     status.setAttribute('aria-live', 'polite')

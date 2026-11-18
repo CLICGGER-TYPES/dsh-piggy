@@ -40,6 +40,8 @@ dsh-piggy 独立房间服务器
   --allow-public         监听 0.0.0.0 或公网 IP 时必须显式打开
   --trust-proxy          采信反向代理的 X-Forwarded-Host（HTTPS 反代默认开启）
   --no-persistent        最后一位玩家离开后关闭房间（默认不关）
+  --authority-url <URL>  本机权威进程的完整接口地址，例如 http://127.0.0.1:47825/v1/game
+  --authority-secret <密钥> 权威进程共享密钥（至少 16 字符）
   -V, --version          显示版本
   -h, --help             显示帮助
 
@@ -67,6 +69,8 @@ pub struct Args {
     pub allow_public: bool,
     pub trust_proxy: bool,
     pub persistent: bool,
+    pub authority_url: String,
+    pub authority_secret: String,
     pub help: bool,
     pub version: bool,
 }
@@ -83,6 +87,8 @@ impl Default for Args {
             allow_public: false,
             trust_proxy: false,
             persistent: true,
+            authority_url: String::new(),
+            authority_secret: String::new(),
             help: false,
             version: false,
         }
@@ -115,6 +121,10 @@ struct Cli {
     trust_proxy: bool,
     #[arg(long = "no-persistent", action = ArgAction::SetTrue)]
     no_persistent: bool,
+    #[arg(long = "authority-url", value_name = "URL")]
+    authority_url: Option<String>,
+    #[arg(long = "authority-secret", value_name = "密钥")]
+    authority_secret: Option<String>,
     #[arg(short = 'V', long = "version", action = ArgAction::SetTrue)]
     version: bool,
     #[arg(short = 'h', long = "help", action = ArgAction::SetTrue)]
@@ -148,6 +158,12 @@ pub fn parse_args(argv: &[String]) -> Result<Args, String> {
     args.allow_public = cli.allow_public;
     args.trust_proxy = cli.trust_proxy;
     args.persistent = !cli.no_persistent;
+    if let Some(value) = cli.authority_url {
+        args.authority_url = value;
+    }
+    if let Some(value) = cli.authority_secret {
+        args.authority_secret = value;
+    }
     args.help = cli.help;
     args.version = cli.version;
     Ok(args)

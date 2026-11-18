@@ -458,6 +458,8 @@ const roomManager = createRoomManager({
       const win = pet.window
       if (win !== null && win !== undefined && !win.isDestroyed()) win.webContents.send('piggy:room:update', snapshot)
     }
+    const extWin = extensionWindow.current()
+    if (extWin !== null && !extWin.isDestroyed()) extWin.webContents.send('piggy:room:update', snapshot)
   },
   onClosed: detail => {
     roomWindow.close()
@@ -469,6 +471,8 @@ const roomManager = createRoomManager({
       const win = pet.window
       if (win !== null && win !== undefined && !win.isDestroyed()) win.webContents.send('piggy:room:closed', detail)
     }
+    const extWin = extensionWindow.current()
+    if (extWin !== null && !extWin.isDestroyed()) extWin.webContents.send('piggy:room:closed', detail)
   },
 })
 /** 主进程关闭/退出状态统一由 lifecycle 持有；资源句柄在实际关闭时动态读取。 */
@@ -776,6 +780,7 @@ registerOwnerNetworkIpc({ ipcMain, fromPanelOnly, manager: ownerNetworkManager }
 registerRoomIpc({
   ipcMain, fromPanelOnly, manager: roomManager, roomWindow, clipboard,
   fromRoom: event => !desktopLifecycle.quitting && roomWindow.owns(event.sender),
+  fromExt: event => fromExt(event),
 })
 
 ipcMain.handle('piggy:visitor:get', event => visitorRoster.playerForEvent(event))
