@@ -1,82 +1,81 @@
 // @ts-check
 /**
- * 左轮轮盘的本地对局状态机（AI 1v1、三局两胜、6 巢 1 发）。
+ * 左轮轮盘客户端控制器。
  *
- * 所有金币、AI 金库和比分都只活在这个闭包里，不写主存档，也不调用 app.send；
- * 宿主轮询重绘时由 render 读同一份状态，所以规则子页、装弹页和牌桌能互相返回。
- * 计时用注入的 schedule，测试可以手动推进，不依赖真实时钟。
+ * 权威对局在扩展服务端（extensions/roulette/server.js），这里只做三件事：
+ * 读 app.data 画界面、把点击变成 app.send、保留装弹/转轮/火光这些瞬时动画。
+ * 子弹位置不会出现在 app.data 里，客户端拿不到。
  */
 
-export const STAKE_MIN = 500
-export const STAKE_MAX = 10000
-export const STAKE_STEP = 500
-export const CHAMBERS = 6
-export const CHAMBER_X = [0, 33, 33, 0, -32, -32]
-export const CHAMBER_Y = [-32, -15, 17, 34, 17, -15]
+import { createAiRunner } from './ai.js'
+import { createArm } from './arm.js'
 
-/** 演示局初始值：金币是玩家自己的，金库是 AI 的。 */
-export function createState() {
-  return {
-    page: 'lobby',
-    stage: 'idle',
-    rulesFrom: 'lobby',
-    stake: 1000,
-    coins: 12500,
-    vault: 100000,
-    matched: 0,
-    pot: 0,
-    you: 0,
-    ai: 0,
-    round: 1,
-    bullet: -1,
-    chamber: 0,
-    primer: -1,
-    primerPop: false,
-    arming: false,
-    pendingFresh: false,
-    settled: false,
-    spinning: false,
-    flash: '',
-    outcome: '',
-    status: '先下注，再开始。转轮结果不会提前显示。',
-    toast: '',
-  }
+export const CHAMBERS = 6
+export const CHAMBER_X = [0, 39, 39, 0, -38, -38]
+export const CHAMBER_Y = [-38, -18, 20, 40, 20, -18]
+export const LOAD_MIN = 1
+export const LOAD_MAX = 5
+export const LIVES_OPTIONS = [1, 3]
+export const STAKE_LEVELS = [100, 500, 1000, 5000]
+export const STAKE_MIN = 100
+export const STAKE_MAX = 10000
+export const AI_STRATEGIES = [
+  { key: 'always', label: '莽夫' },
+  { key: 'expected', label: '期望值' },
+  { key: 'bluff', label: '随机诈唬' },
+  { key: 'bayes', label: '贝叶斯' },
+  { key: 'monteCarlo', label: '蒙特卡洛' },
+]
+export const PASS_RATE = 0.5
+
+const EMPTY = {
+  coins: 0,
+  vault: 0,
+  settings: { lives: 1, format: 'single', loadCount: 1, stake: 1000, ai: 'always' },
+  seq: 0,
+  passRate: PASS_RATE,
+  match: null,
 }
 
-/** 金额按原型用千分位；只有展示层用，不参与结算。 */
 export function money(value) {
   return Math.round(Number(value) || 0).toLocaleString('en-US')
 }
 
-/** AI 金库配注上限：1%，向下取整到百位，最低 500。 */
-export function aiCap(vault) {
-  return Math.max(STAKE_MIN, Math.floor((Number(vault) || 0) * 0.01 / 100) * 100)
-}
-
-/** 这一场实际锁定的底注；高出配注上限的部分不扣。 */
-export function matchStake(state) {
-  return Math.min(state.stake, aiCap(state.vault))
-}
-
 /**
  * @param {{
+ *   app?: any,
+ *   getApp?: () => any,
  *   rerender?: () => void,
- *   random?: () => number,
  *   schedule?: (fn: () => void, ms: number) => any,
  *   cancel?: (id: any) => void,
  * }} [options]
  */
 export function createGame(options = {}) {
-  const state = createState()
+  const getApp = options.getApp ?? (() => options.app)
   const rerender = options.rerender ?? function () {}
-  const random = options.random ?? Math.random
   const schedule = options.schedule ?? ((fn, ms) => setTimeout(fn, ms))
   const cancel = options.cancel ?? (id => clearTimeout(id))
   const timers = []
   let toastTimer = null
 
-  function commit() {
-    rerender()
+  const ui = {
+    page: 'lobby',
+    rulesFrom: 'lobby',
+    toast: '',
+    arming: false,
+    spinning: false,
+    primer: -1,
+    primerPop: false,
+    flash: '',
+    lastSeq: -1,
+    aiKey: '',
+    aiError: false,
+    nextLoad: null,
+    leaveConfirm: false,
+    armTimer: null,
+    armPending: false,
+    armUncertain: false,
+    armToken: 0,
   }
 
   function later(fn, ms) {
@@ -97,304 +96,300 @@ export function createGame(options = {}) {
     }
   }
 
+  const ai = createAiRunner({ ui, later, send, rerender })
+  const arm = createArm({ ui, chambers: CHAMBERS, cancel, later, send, rerender, toast })
+
+  function data() {
+    const app = getApp()
+    const value = app && app.data
+    if (!value || typeof value !== 'object' || value.settings === undefined) return EMPTY
+    return value
+  }
+
+  function app() {
+    return getApp()
+  }
+
+  function seq() {
+    const value = data().seq
+    return Number.isInteger(value) ? value : 0
+  }
+
+  function send(op, payload) {
+    const current = app()
+    if (!current || typeof current.send !== 'function') {
+      toast('宿主没有连接，暂时不能行动')
+      return null
+    }
+    return current.send(op, Object.assign({}, payload ?? {}, { seq: seq() }))
+  }
+
   function toast(text) {
-    state.toast = text
+    ui.toast = text
     if (toastTimer !== null) cancel(toastTimer)
     toastTimer = schedule(function () {
       toastTimer = null
-      state.toast = ''
-      commit()
+      ui.toast = ''
+      rerender()
     }, 1900)
   }
 
-  function randomChamber() {
-    const value = Math.floor(Number(random()) * CHAMBERS)
-    return Math.max(0, Math.min(CHAMBERS - 1, value))
+  function notify(text) {
+    toast(text)
+    rerender()
   }
 
-  function resetMatch() {
-    stopTimers()
-    state.stage = 'idle'
-    state.you = 0
-    state.ai = 0
-    state.round = 1
-    state.matched = 0
-    state.pot = 0
-    state.bullet = -1
-    state.chamber = 0
-    state.primer = -1
-    state.primerPop = false
-    state.arming = false
-    state.pendingFresh = false
-    state.settled = false
-    state.spinning = false
-    state.flash = ''
-    state.outcome = ''
-    state.status = '先下注，再开始。转轮结果不会提前显示。'
-    state.toast = ''
+  function clearFlash(ms) {
+    later(function () {
+      ui.flash = ''
+      rerender()
+    }, ms)
+  }
+
+  /** 每次宿主重绘时同步服务端快照，并按 lastEvent 触发一次动画。 */
+  function sync() {
+    const value = data()
+    if (!Number.isInteger(value.seq)) return
+    if (ui.lastSeq !== value.seq) {
+      ui.lastSeq = value.seq
+      ui.leaveConfirm = false
+      ui.nextLoad = null
+      if (ui.armTimer !== null) {
+        cancel(ui.armTimer)
+        ui.armTimer = null
+      }
+      ui.arming = false
+      ui.spinning = false
+      ui.primer = -1
+      ui.primerPop = false
+      ui.armPending = false
+      ui.armUncertain = false
+      const match = value.match
+      if (match !== null) {
+        if (match.lastEvent === 'hit' && match.lastShooter === 'you') {
+          ui.flash = 'live'
+          clearFlash(450)
+        } else if (match.lastEvent === 'blank' && match.lastShooter === 'you') {
+          ui.flash = 'blank'
+          clearFlash(450)
+        }
+        if (match.lastEvent === 'armed' || match.lastEvent === 'reload') {
+          ui.spinning = false
+          ui.arming = false
+        }
+      }
+    }
+    const match = value.match
+    if (match !== null && match.stage === 'ai') {
+      // seq 必须进 key：AI 让枪后玩家再让枪，弹巢和剩余子弹可能完全没变，
+      // 只靠 hand/round/chamber/turn/bulletsLeft 会误判成同一次 AI 回合而卡住。
+      const key = value.seq + ':' + match.handId + ':' + match.round + ':' + match.chamber + ':' + match.turn + ':' + match.bulletsLeft
+      if (ui.aiKey !== key) {
+        ui.aiKey = key
+        ui.aiError = false
+        ai.schedule(key, 0)
+      }
+    }
   }
 
   function enterTable() {
-    resetMatch()
-    state.page = 'table'
-    commit()
+    ui.page = 'table'
+    rerender()
   }
 
   function leaveTable() {
-    // 只有新一场的第 1 局、还没开枪时装弹退出才退款；第 2/3 局离开按本场作废。
-    const refund = state.pot > 0 && !state.settled && state.round === 1 && state.you === 0 && state.ai === 0 &&
-      (state.page === 'loading' || state.stage === 'arming')
-    const forfeit = state.pot > 0 && !state.settled && !refund
-    if (refund) state.coins += state.matched
-    resetMatch()
-    state.page = 'lobby'
-    if (refund) toast('已取消装弹，底注退回')
-    else if (forfeit) toast('已退出牌桌，本场作废')
-    else toast('已回到大厅')
-    commit()
+    const match = data().match
+    send('leave', { handId: match === null ? undefined : match.handId })
+    stopTimers()
+    arm.reset()
+    ui.page = 'lobby'
+    ui.flash = ''
+    ui.aiKey = ''
+    ui.aiError = false
+    ui.nextLoad = null
+    ui.leaveConfirm = false
+    toast('已回到大厅')
+    rerender()
   }
 
-  function backToTable() {
-    if (state.page !== 'loading') return
-    state.page = 'table'
-    state.stage = state.pendingFresh ? 'idle' : 'roundOver'
-    state.pendingFresh = false
-    state.status = state.stage === 'idle'
-      ? '先下注，再开始。转轮结果不会提前显示。'
-      : '本局结束。点「下一局」继续。'
-    commit()
-  }
-
-  function openRules(from) {
-    state.rulesFrom = from || state.page
-    state.page = 'rules'
-    commit()
-  }
-
-  function closeRules() {
-    const back = state.rulesFrom === 'rules' ? 'lobby' : state.rulesFrom
-    state.page = back
-    state.rulesFrom = 'lobby'
-    commit()
-  }
-
-  function setStake(delta) {
-    if (state.page !== 'table' || state.stage !== 'idle') return
-    state.stake = Math.max(STAKE_MIN, Math.min(STAKE_MAX, state.stake + delta))
-    commit()
-  }
-
-  function startMatch() {
-    if (state.stage !== 'idle' && state.stage !== 'roundOver' && state.stage !== 'matchOver') return
-    const fresh = state.stage === 'idle' || state.stage === 'matchOver'
-    if (fresh) {
-      state.you = 0
-      state.ai = 0
-      state.round = 1
-      state.matched = 0
-      state.pot = 0
-      state.bullet = -1
-      state.chamber = 0
-      state.primer = -1
-      state.primerPop = false
-      state.arming = false
-      state.spinning = false
-      state.flash = ''
-      state.settled = false
-      state.outcome = ''
-    }
-    state.pendingFresh = fresh
-    state.page = 'loading'
-    commit()
-  }
-
-  function beginLoad(auto) {
-    if (state.page !== 'loading') return
-    if (state.pendingFresh) {
-      const need = matchStake(state)
-      if (state.coins < need) {
-        toast('金币不足')
-        commit()
-        return
-      }
-      state.matched = need
-      state.coins -= need
-      state.pot = need * 2
-      state.pendingFresh = false
-    }
-    if (state.pot <= 0) {
-      toast('先下注')
-      commit()
+  /** 返回大厅前先确认：装弹后退出是认输，底池归 AI。 */
+  function requestLeave() {
+    const match = data().match
+    if (match === null || match.stage === 'matchOver') {
+      leaveTable()
       return
     }
-    state.page = 'table'
-    state.stage = 'arming'
-    state.arming = true
-    state.bullet = -1
-    state.chamber = 0
-    state.primer = -1
-    state.primerPop = false
-    state.spinning = false
-    state.flash = ''
-    state.outcome = ''
-    state.status = auto ? '系统随机装弹…' : '点一个弹孔，把子弹装进去。'
-    commit()
-    if (auto) {
-      later(function () {
-        if (state.stage === 'arming') seat(randomChamber())
-      }, 520)
-    }
-  }
-
-  function seat(index) {
-    if (state.stage !== 'arming' || !state.arming) return
-    if (!Number.isInteger(index) || index < 0 || index >= CHAMBERS) return
-    state.arming = false
-    state.bullet = index
-    // 不转轮直接开枪时，玩家选的孔就是准星下的孔；转轮会重新随机。
-    state.chamber = index
-    state.primer = index
-    state.primerPop = true
-    state.stage = 'ready'
-    state.status = '第 ' + (index + 1) + ' 巢已装弹 · 直接开枪按该孔，或转轮。'
-    toast('第 ' + (index + 1) + ' 巢已装弹')
-    commit()
-    later(function () {
-      if (state.primer !== index) return
-      state.primerPop = false
-      commit()
-    }, 320)
-  }
-
-  function randomArm() {
-    if (state.stage !== 'arming' || !state.arming) return
-    seat(randomChamber())
-  }
-  function spin() {
-    if (state.stage !== 'ready') return
-    state.stage = 'spinning'
-    state.spinning = true
-    state.primer = -1
-    state.primerPop = false
-    state.status = '转轮中… 子弹位置不会显示。'
-    commit()
-    later(function () {
-      state.bullet = randomChamber()
-      state.chamber = 0
-      state.spinning = false
-      state.stage = 'choice'
-      state.status = '转轮完成。你先手：对自己开枪，或不开枪。'
-      commit()
-    }, 950)
-  }
-
-  function flash(live) {
-    state.flash = live ? 'live' : 'blank'
-    later(function () {
-      state.flash = ''
-      commit()
-    }, 450)
-  }
-
-  function finishRound(winner) {
-    if (winner === 'you') state.you += 1
-    else state.ai += 1
-    if (state.you >= 2 || state.ai >= 2) {
-      if (state.you >= 2) {
-        state.vault = Math.max(0, state.vault - state.matched)
-        state.coins += state.pot
-        state.outcome = 'win'
-        state.status = '你赢下整场，拿走底池 ' + money(state.pot) + '。'
-      } else {
-        state.vault += state.matched
-        state.outcome = 'lose'
-        state.status = 'AI 赢下整场。底池进了 AI 金库。'
-      }
-      state.settled = true
-      state.stage = 'matchOver'
-      toast(state.outcome === 'win' ? '整场胜利' : '整场结束')
-    } else {
-      state.round += 1
-      state.stage = 'roundOver'
-      state.status = '本局结束。比分 ' + state.you + ' : ' + state.ai + '。点「下一局」继续。'
-      toast('本局结束')
-    }
-    commit()
-  }
-
-  function fire(shooter) {
-    if (shooter === 'you' && state.stage !== 'ready' && state.stage !== 'choice') return
-    if (shooter === 'ai' && state.stage !== 'ai') return
-    if (state.chamber === state.bullet) {
-      state.primer = -1
-      state.primerPop = false
-      flash(true)
-      state.status = '中弹！'
-      finishRound(shooter === 'you' ? 'ai' : 'you')
+    // 装弹请求已经发出、回包还没到：此时服务端可能已经进入 choice，
+    // 不能拿旧的 arming 快照当“免费取消”，先挡住。
+    if (ui.armPending) {
+      notify('装弹请求提交中，稍等一下')
       return
     }
-    flash(false)
-    state.chamber = (state.chamber + 1) % CHAMBERS
-    state.primer = -1
-    state.primerPop = false
-    if (shooter === 'you') {
-      state.stage = 'ai'
-      state.status = '空枪。你把枪交给 AI。'
-      commit()
-      later(aiTurn, 650)
+    // 还在装弹动画里（arm 尚未发出）：取消动画，仍按装弹前退出全额退。
+    if (ui.arming && ui.armTimer !== null) {
+      cancel(ui.armTimer)
+      ui.armTimer = null
+      ui.arming = false
+      ui.spinning = false
+      ui.primer = -1
+      ui.primerPop = false
+      leaveTable()
       return
     }
-    state.stage = 'choice'
-    state.status = 'AI 空枪。枪回到你手里。'
-    commit()
+    if (match.stage === 'arming' && match.round === 1 && !ui.armUncertain) {
+      leaveTable()
+      return
+    }
+    ui.leaveConfirm = true
+    rerender()
   }
 
-  function aiTurn() {
-    if (state.stage !== 'ai') return
-    state.spinning = true
-    state.primer = -1
-    state.primerPop = false
-    state.status = 'AI 转轮…'
-    commit()
-    later(function () {
-      state.bullet = randomChamber()
-      state.chamber = 0
-      state.spinning = false
-      fire('ai')
-    }, 900)
+  function cancelLeave() {
+    ui.leaveConfirm = false
+    rerender()
+  }
+
+  function retryAi() {
+    ui.aiKey = ''
+    ui.aiError = false
+    rerender()
+  }
+
+  function start() {
+    const value = data()
+    // 服务端还有一场没结算（例如上一次离开请求失败）时，先回到牌桌，
+    // 不能因为金币不够底注把人挡在大厅里；matchOver 要正常开新一场。
+    if (value.match !== null && value.match.stage !== 'matchOver') {
+      ui.page = 'table'
+      ui.leaveConfirm = false
+      ui.nextLoad = null
+      arm.reset()
+      rerender()
+      return
+    }
+    if (value.coins < value.settings.stake) {
+      notify('金币不够本局底注')
+      return
+    }
+    send('start')
+    ui.page = 'table'
+    ui.aiKey = ''
+    ui.aiError = false
+    ui.leaveConfirm = false
+    ui.nextLoad = null
+    arm.reset()
+    rerender()
+  }
+
+  function next() {
+    const value = data()
+    if (value.coins < value.settings.stake) {
+      notify('金币不够下一局底注')
+      return
+    }
+    const loadCount = ui.nextLoad ?? value.settings.loadCount
+    send('next', { loadCount: loadCount })
+    ui.aiKey = ''
+    ui.aiError = false
+    arm.reset()
+    rerender()
+  }
+
+  function setNextLoad(value) {
+    const count = Math.floor(Number(value))
+    if (!Number.isInteger(count) || count < LOAD_MIN || count > LOAD_MAX) {
+      notify('装弹数 ' + LOAD_MIN + '–' + LOAD_MAX + ' 发')
+      return false
+    }
+    ui.nextLoad = count
+    rerender()
+    return true
+  }
+
+  function config(patch) {
+    send('config', patch)
+    rerender()
+  }
+
+  function setStake(value) {
+    const amount = Math.floor(Number(value))
+    if (!Number.isInteger(amount) || amount < STAKE_MIN || amount > STAKE_MAX) {
+      notify('底注范围 ' + money(STAKE_MIN) + '–' + money(STAKE_MAX))
+      return false
+    }
+    config({ stake: amount })
+    return true
+  }
+
+  function load(index) {
+    const match = data().match
+    if (match === null || match.stage !== 'arming') return
+    arm.load(index)
+  }
+
+  function randomLoad() {
+    arm.load(Math.floor(Math.random() * CHAMBERS))
+  }
+
+  function fire() {
+    const match = data().match
+    if (match === null || match.stage !== 'choice' || match.turn !== 'you') return
+    send('fire')
+    rerender()
   }
 
   function pass() {
-    if (state.stage !== 'ready' && state.stage !== 'choice') return
-    state.stage = 'ai'
-    state.primer = -1
-    state.primerPop = false
-    state.status = '你选择不开枪。枪交给 AI。'
-    commit()
-    later(aiTurn, 500)
+    const value = data()
+    const match = value.match
+    if (match === null || match.stage !== 'choice' || match.turn !== 'you') return
+    if (match.mustShoot === 'you') {
+      notify('回让后必须开枪')
+      return
+    }
+    const fee = Math.max(1, Math.ceil(value.settings.stake * (value.passRate || PASS_RATE)))
+    if (value.coins < fee) {
+      notify('金币不够让枪费 ' + money(fee))
+      return
+    }
+    send('pass')
+    rerender()
+  }
+
+  function openRules(from) {
+    ui.rulesFrom = from || ui.page
+    ui.page = 'rules'
+    rerender()
+  }
+
+  function closeRules() {
+    ui.page = ui.rulesFrom === 'rules' ? 'lobby' : ui.rulesFrom
+    ui.rulesFrom = 'lobby'
+    rerender()
   }
 
   return {
-    state,
-    later,
-    notify: function (text) {
-      toast(text)
-      commit()
-    },
+    ui,
+    data,
+    sync,
     enterTable,
     leaveTable,
-    backToTable,
-    openRules,
-    closeRules,
+    requestLeave,
+    cancelLeave,
+    retryAi,
+    start,
+    next,
+    setNextLoad,
+    config,
     setStake,
-    startMatch,
-    beginLoad,
-    seat,
-    randomArm,
-    spin,
+    load,
+    randomLoad,
     fire,
     pass,
-    aiTurn,
+    openRules,
+    closeRules,
+    notify,
+    toast,
     stopTimers,
+    seq,
   }
 }

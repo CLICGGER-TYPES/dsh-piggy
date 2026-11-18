@@ -1,4 +1,4 @@
-// 左轮轮盘 0.1.0：manifest/素材/宿主加载/面板流程和本地规则状态机的定向测试。
+// 左轮轮盘 0.2.0：manifest/素材/宿主加载/面板流程和真实金币动作。
 import assert from 'node:assert/strict'
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
 import roulette from '../../../extensions/roulette/server.js'
-import { aiCap, createGame, matchStake, money, STAKE_MAX, STAKE_MIN } from '../../../src/extensions/roulette/client/game.js'
 import { buildRouletteClient } from '../../../scripts/build-roulette-client.mjs'
 import { createExtRuntime, versionAtLeast } from '../../../store/ext-runtime.js'
 import { mountRoulette } from '../../helpers/roulette.js'
@@ -17,49 +16,24 @@ const REPO_PATH = fileURLToPath(new URL('../../../', import.meta.url))
 const MANIFEST = JSON.parse(readFileSync(new URL('manifest.json', ROOT), 'utf8'))
 const GAME_VERSION = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')).version
 
-function clockwork() {
-  const tasks = []
-  let next = 0
-  return {
-    tasks,
-    schedule(fn, ms) {
-      next += 1
-      tasks.push({ id: next, fn, ms, canceled: false })
-      return next
-    },
-    cancel(id) {
-      const task = tasks.find(entry => entry.id === id)
-      if (task) task.canceled = true
-    },
-    runNext(ms) {
-      const task = tasks.find(entry => !entry.canceled && (ms === undefined || entry.ms === ms))
-      assert.ok(task, '应该有一个待执行的计时器')
-      task.canceled = true
-      task.fn()
-    },
-    stop() {
-      for (const task of tasks) task.canceled = true
-    },
-  }
-}
-
 test('manifest、素材和生成产物符合扩展契约', async () => {
   assert.equal(MANIFEST.key, 'roulette')
   assert.equal(MANIFEST.label, '左轮轮盘')
-  assert.equal(MANIFEST.version, '0.1.0')
-  assert.match(MANIFEST.minGame, /^\d+\.\d+\.\d+$/)
+  assert.equal(MANIFEST.version, '0.2.0')
+  assert.equal(MANIFEST.minGame, '0.37.3')
   assert.ok(versionAtLeast(GAME_VERSION, MANIFEST.minGame), 'minGame 不能高于当前游戏版本')
   assert.equal(MANIFEST.app.label, '左轮轮盘')
   assert.equal(typeof MANIFEST.emoji, 'string')
-  assert.equal(typeof MANIFEST.description, 'string')
+  assert.match(MANIFEST.description, /真实金币/)
 
   const assets = [...MANIFEST.assets].sort()
   assert.deepEqual(assets, [
-    'bullet-v1.webp',
+    'bullet-base-v4.webp',
+    'bullet-side-v4.webp',
     'chip-v1.webp',
-    'cylinder-v1.webp',
-    'revolver-v2.webp',
-    'table-v1.webp',
+    'cylinder-v4.webp',
+    'revolver-v6.webp',
+    'table-v2.webp',
   ])
   assert.deepEqual(readdirSync(new URL('assets/', ROOT)).sort(), assets, 'assets 目录和 manifest 清单要一一对应')
   for (const name of assets) {
@@ -72,8 +46,11 @@ test('manifest、素材和生成产物符合扩展契约', async () => {
   }
 
   assert.equal(typeof roulette.actions, 'object')
-  assert.equal(typeof roulette.view, 'function')
-  assert.deepEqual(roulette.view(), { localDemo: true })
+  const init = roulette.init()
+  const view = roulette.view(init, { coins: () => 12500, now: 0 })
+  assert.equal(view.coins, 12500)
+  assert.equal(view.settings.stake, 1000)
+  assert.equal(view.match, null)
 
   const clientUrl = new URL('client.js', ROOT)
   const client = readFileSync(clientUrl, 'utf8')
@@ -95,11 +72,11 @@ test('manifest、素材和生成产物符合扩展契约', async () => {
   assert.equal(generated, client, 'client.js 与 src/extensions/roulette/client/ 不一致，请重新构建')
 })
 
-test('现有扩展宿主能加载 roulette，并读出 client.js 与素材', async () => {
+test('现有扩展宿主能加载 roulette，并读出 client.js、素材和真实金币视图', async () => {
   const dir = mkdtempSync(join(REPO_PATH, '.roulette-ext-test-'))
   try {
     cpSync(ROOT_PATH, join(dir, 'extensions', 'roulette'), { recursive: true })
-    const state = { extData: { roulette: {} }, extensions: { roulette: true }, wallets: {} }
+    const state = { coins: 12500, extData: { roulette: roulette.init() }, extensions: { roulette: true }, wallets: {} }
     const store = {
       filePath: join(dir, 'state.json'),
       state,
@@ -111,260 +88,491 @@ test('现有扩展宿主能加载 roulette，并读出 client.js 与素材', asy
     const entry = runtime.list(state).find(item => item.key === 'roulette')
     assert.ok(entry, '宿主没有列出 roulette')
     assert.equal(entry.error, null)
-    assert.equal(entry.version, '0.1.0')
+    assert.equal(entry.version, '0.2.0')
     assert.equal(entry.app.label, '左轮轮盘')
-    assert.deepEqual(runtime.views(state).roulette, { localDemo: true })
+    const view = runtime.views(state).roulette
+    assert.equal(view.coins, 12500)
+    assert.equal(view.settings.lives, 1)
+    assert.equal(view.match, null)
 
     const script = runtime.clientScript('roulette')
     assert.match(script, /dshPiggyExtensions\.register\(['"]roulette['"]/)
-    const asset = runtime.assetFile('roulette', 'cylinder-v1.webp')
+    const asset = runtime.assetFile('roulette', 'cylinder-v4.webp')
     assert.equal(asset.type, 'image/webp')
     assert.ok(asset.body.length > 0)
+
+    const started = runtime.act('roulette', 'start', { seq: 0 })
+    assert.equal(started.ok, true)
+    assert.equal(state.coins, 11500, '真实宿主动作要扣玩家底注')
+    assert.equal(state.extData.roulette.match.stage, 'arming')
+    assert.equal(runtime.views(state).roulette.match.stage, 'arming')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
 })
 
-test('面板：大堂入口、装弹页、六个可点弹孔和底火位置', () => {
+test('面板：大堂设置、真实金币和开始对局', () => {
   const m = mountRoulette()
   assert.match(m.text(), /AI 对战/)
   assert.match(m.text(), /好友联机/)
-  assert.match(m.text(), /4v4 阵营/)
-  assert.match(m.text(), /经典 6 巢/)
+  assert.match(m.text(), /4 人桌/)
+  assert.match(m.text(), /12,500/)
   assert.match(m.text(), /100,000/)
+  assert.match(m.text(), /三局两胜/)
   assert.equal(m.images().length > 0, true)
   for (const image of m.images()) {
     assert.match(image.src, /^\/dsh-piggy\/ext\/roulette\/assets\/[a-z0-9-]+\.webp$/)
   }
 
-  m.click('data-op', 'friend-mode')
-  assert.match(m.text(), /好友联机需要宿主房间接口/)
-  assert.doesNotMatch(m.text(), /开始对局/)
+  m.click('data-op', 'lives-3')
+  assert.equal(m.data.settings.lives, 3)
+  m.click('data-op', 'format-bestOf3')
+  assert.equal(m.data.settings.format, 'bestOf3')
+  m.click('data-op', 'load-5')
+  assert.equal(m.data.settings.loadCount, 5)
+  m.click('data-op', 'stake-5000')
+  assert.equal(m.data.settings.stake, 5000)
+  assert.match(m.text(), /5,000/)
 
   m.click('data-op', 'enter-ai')
-  assert.match(m.text(), /第 1 局/)
-  assert.match(m.text(), /配注上限 1,000/)
-  assert.match(m.text(), /金币 12,500/)
-  assert.match(m.text(), /开始对局/)
-
-  m.click('data-op', 'start')
-  assert.match(m.text(), /装弹/)
-  assert.match(m.text(), /底注/)
-  assert.match(m.text(), /1,000/)
+  assert.equal(m.data.match.stage, 'arming')
+  assert.equal(m.wallet.coins, 7500)
+  assert.equal(m.data.match.pot, 10000)
+  assert.match(m.text(), /装 5 发/)
   assert.match(m.text(), /底池/)
-  assert.match(m.text(), /2,000/)
-  assert.match(m.text(), /随机装弹/)
-  assert.match(m.text(), /返回大厅/)
-
-  m.click('data-op', 'load-now')
-  const board = m.byClass('rt-board')
-  assert.ok(m.hasClass(board, 'rt-board-arming'))
-  const holes = m.all('data-chamber')
-  assert.equal(holes.length, 6)
-  assert.equal(holes.every(hole => hole.disabled === false), true)
-
-  m.click('data-chamber', '2')
-  const primer = m.byClass('rt-primer-show')
-  assert.ok(primer, '底火应该落在选中的孔')
-  assert.equal(primer.style.getPropertyValue('--x'), '33px')
-  assert.equal(primer.style.getPropertyValue('--y'), '17px')
-  assert.match(m.text(), /第 3 巢已装弹/)
-  assert.match(m.text(), /金币 11,500/)
-  assert.equal(m.all('data-chamber').every(hole => hole.disabled === true), true)
-
-  // 不转轮直接开枪，按玩家选的孔结算：第 3 巢是实弹，AI 赢下本局。
-  m.click('data-op', 'shoot')
-  assert.match(m.text(), /本局结束/)
-  assert.match(m.text(), /0 : 1/)
-  assert.match(m.text(), /下一局/)
-  assert.equal(m.byClass('rt-primer-show'), null, '实弹打出去后底火不能留在弹巢里')
+  assert.match(m.text(), /10,000/)
 })
 
-test('面板：转轮后隐藏底火，空枪换手，规则页返回保留牌桌', () => {
+test('面板：装弹后强制转轮，装弹数变成剩余子弹', () => {
   const m = mountRoulette()
   m.click('data-op', 'enter-ai')
-  m.click('data-op', 'start')
-  m.click('data-op', 'load-now')
-  m.click('data-chamber', '2')
-  m.click('data-op', 'spin')
-  assert.match(m.text(), /转轮中/)
+  m.click('data-op', 'load-random')
+  // 只推进装弹动画（700ms），不推进 AI
+  m.runTimers(1)
+  assert.equal(m.data.match.bullets.length, 1)
+  assert.ok(['choice', 'ai'].includes(m.data.match.stage))
   assert.equal(m.all('data-chamber').length, 6)
-  assert.equal(m.byClass('rt-primer-show'), null)
+  assert.equal(m.all('data-chamber').every(hole => hole.disabled === true), true, '装弹完成后弹孔不能再点')
+})
 
+test('面板：AI 回合自动开枪', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  m.click('data-op', 'load-random')
   m.runTimers()
-  assert.match(m.text(), /转轮完成/)
-  assert.ok(m.find('data-op', 'shoot'))
-  assert.equal(m.byClass('rt-primer-show'), null)
+  assert.equal(m.data.match.lastShooter, 'ai')
+  assert.ok(['blank', 'hit'].includes(m.data.match.lastEvent))
+})
+
+test('面板：AI 让枪后玩家回让，AI 被迫开枪', () => {
+  const m = mountRoulette({ random: () => 0.9 })
+  m.app.send('config', { ai: 'bluff', seq: m.data.seq })
+  m.sync()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'ai'
+  match.turn = 'ai'
+  match.bulletCount = 1
+  match.bullets = [0]
+  match.chamber = 0
+  match.livesYou = 1
+  match.livesAi = 1
+  m.sync()
+  m.runTimers(1)
+  assert.equal(m.data.match.lastEvent, 'ai-pass')
+  assert.equal(m.data.match.stage, 'choice')
+
+  m.click('data-op', 'pass')
+  assert.equal(m.data.match.stage, 'ai')
+  assert.equal(m.data.match.chamber, 0, '回让不消耗弹巢')
+  assert.equal(m.data.match.mustShoot, 'ai', '先让枪的 AI 被回让后必须开枪')
+  m.runTimers(1)
+  assert.equal(m.data.match.lastShooter, 'ai')
+  assert.equal(m.data.match.mustShoot, '')
+  assert.equal(m.data.match.stage, 'matchOver')
+  assert.equal(m.data.match.outcome, 'win')
+})
+
+test('面板：玩家被回让后让枪按钮禁用，只能开枪', () => {
+  const m = mountRoulette({ random: () => 0.9 })
+  m.app.send('config', { ai: 'bluff', seq: m.data.seq })
+  m.sync()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'choice'
+  match.turn = 'you'
+  match.bulletCount = 1
+  match.bullets = [0]
+  match.chamber = 0
+  match.livesYou = 1
+  match.livesAi = 1
+  m.sync()
+  m.click('data-op', 'pass')
+  assert.equal(m.data.match.passBy, 'you')
+  m.runTimers(1)
+  assert.equal(m.data.match.mustShoot, 'you')
+  assert.equal(m.data.match.stage, 'choice')
+  assert.match(m.text(), /对手回让，你必须开枪/)
+  const passBtn = m.find('data-op', 'pass')
+  assert.equal(passBtn.disabled, true, '回让后让枪按钮禁用')
+  passBtn.fire('click')
+  assert.match(m.text(), /回让后必须开枪/)
+  m.click('data-op', 'shoot')
+  assert.equal(m.data.match.mustShoot, '')
+  assert.equal(m.data.match.stage, 'matchOver')
+})
+
+test('面板：可切换 AI 策略', () => {
+  const m = mountRoulette()
+  const select = m.byClass('rt-select')
+  assert.ok(select, '设置里要有 AI 策略选择')
+  assert.match(m.text(), /蒙特卡洛/)
+  select.value = 'bluff'
+  select.fire('change')
+  assert.equal(m.data.settings.ai, 'bluff')
+})
+
+test('面板：自定义底注校验范围，金币不足不进牌桌', () => {
+  const m = mountRoulette()
+  const input = m.byClass('rt-stake-input')
+  assert.ok(input, '设置里要有自定义底注输入框')
+  input.value = '2500'
+  m.click('data-op', 'stake-custom')
+  assert.equal(m.data.settings.stake, 2500)
+
+  m.byClass('rt-stake-input').value = '50'
+  m.click('data-op', 'stake-custom')
+  assert.equal(m.data.settings.stake, 2500)
+  assert.match(m.text(), /底注范围/)
+
+  const poor = mountRoulette({ coins: 50 })
+  poor.click('data-op', 'enter-ai')
+  assert.equal(poor.data.match, null)
+  assert.match(poor.text(), /金币不够本局底注/)
+  assert.match(poor.text(), /AI 对战/)
+})
+
+test('面板：开枪中弹结算、金币和整场结果', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'choice'
+  match.turn = 'you'
+  match.bulletCount = 1
+  match.bullets = [match.chamber]
+  match.livesYou = 1
+  match.livesAi = 1
+  m.sync()
 
   m.click('data-op', 'shoot')
-  assert.match(m.text(), /空枪/)
-  m.runTimers()
-  assert.match(m.text(), /AI 空枪/)
-  assert.match(m.text(), /0 : 0/)
+  assert.equal(m.data.match.stage, 'matchOver')
+  assert.equal(m.data.match.outcome, 'lose')
+  assert.equal(m.data.match.livesYou, 0)
+  assert.match(m.text(), /AI 赢了/)
+  assert.match(m.text(), /-1,000/)
+  assert.match(m.text(), /本场净付/)
+  assert.equal(m.wallet.coins, 11500, '输掉底注后不退款')
+})
 
+test('面板：让枪付 50% 给对手并换手', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'choice'
+  match.turn = 'you'
+  match.matchedYou = 1000
+  match.matchedAi = 1000
+  m.sync()
+  const before = m.wallet.coins
+
+  m.click('data-op', 'pass')
+  assert.equal(m.wallet.coins, before - 500)
+  assert.equal(m.data.vault, 99500)
+  assert.equal(m.data.match.lastEvent, 'you-pass')
+  assert.equal(m.data.match.turn, 'ai')
+  assert.match(m.text(), /AI 回合/)
+})
+
+test('面板：装弹前返回大厅退底注；规则页返回保留牌桌', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  assert.equal(m.wallet.coins, 11500)
+  m.click('aria-label', '返回大厅')
+  assert.equal(m.wallet.coins, 12500)
+  assert.match(m.text(), /AI 对战/)
+
+  m.click('data-op', 'enter-ai')
   m.click('data-op', 'rules')
-  assert.match(m.text(), /经典俄罗斯轮盘/)
-  assert.match(m.text(), /6 个弹巢/)
-  assert.match(m.text(), /本地演示金币/)
+  assert.match(m.text(), /左轮轮盘规则/)
+  assert.match(m.text(), /让枪/)
   m.click('data-op', 'rules-back')
   assert.match(m.text(), /第 1 局/)
-  assert.match(m.text(), /AI 空枪/)
-  assert.match(m.text(), /0 : 0/)
-  assert.match(m.text(), /底注/)
 })
 
-test('面板：装弹中返回大厅退回底注，再进牌桌金币恢复', () => {
+test('规则：装弹、转轮、让枪和真钱结算都写进面板', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'rules')
+  const text = m.text()
+  assert.match(text, /装 1-5 发/)
+  assert.match(text, /强制转轮/)
+  assert.match(text, /50%/)
+  assert.match(text, /真实金币/)
+  assert.match(text, /先赢 2 局/)
+})
+
+test('面板：装弹态显示待装发数，底火使用 bullet-base 素材', () => {
   const m = mountRoulette()
   m.click('data-op', 'enter-ai')
-  m.click('data-op', 'start')
-  m.click('data-op', 'load-now')
-  assert.match(m.text(), /金币 11,500/)
-  m.click('aria-label', '返回大厅')
-  assert.match(m.text(), /AI 对战/)
-  assert.doesNotMatch(m.text(), /第 1 局/)
+  assert.match(m.text(), /待装/)
+  assert.doesNotMatch(m.text(), /0 \/ 1 发/)
 
-  m.click('data-op', 'enter-ai')
-  assert.match(m.text(), /金币 12,500/)
-  assert.match(m.text(), /第 1 局/)
+  m.find('data-chamber', '0').fire('click')
+  const primer = m.images().find(image => image.src.includes('bullet-base-v4.webp'))
+  assert.ok(primer, '装弹动画要使用 bullet-base-v4.webp')
+  assert.ok(m.hasClass(primer, 'rt-primer-show'))
+  m.runTimers()
+  assert.notEqual(m.data.match.stage, 'arming')
 })
 
-test('规则：配注上限、底注夹取、直接开枪、转轮空枪、结算与退款', () => {
-  assert.equal(aiCap(100000), 1000)
-  assert.equal(aiCap(40000), 500)
-  assert.equal(aiCap(200000), 2000)
-  const sample = { stake: 10000, vault: 100000 }
-  assert.equal(matchStake(sample), 1000)
-  assert.equal(money(12345), '12,345')
+test('面板：玩家赢下整场，结算卡显示净赢金额', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'ai'
+  match.turn = 'ai'
+  match.bulletCount = 1
+  match.bullets = [match.chamber]
+  match.livesYou = 1
+  match.livesAi = 1
+  m.sync()
+  m.runTimers()
 
-  const stakeClock = clockwork()
-  const stakeGame = createGame({ rerender() {}, schedule: stakeClock.schedule, cancel: stakeClock.cancel })
-  stakeGame.enterTable()
-  stakeGame.setStake(-500)
-  assert.equal(stakeGame.state.stake, 500)
-  stakeGame.setStake(-500)
-  assert.equal(stakeGame.state.stake, STAKE_MIN)
-  stakeGame.setStake(100000)
-  assert.equal(stakeGame.state.stake, STAKE_MAX)
-  stakeGame.stopTimers()
-  stakeClock.stop()
+  assert.equal(m.data.match.stage, 'matchOver')
+  assert.equal(m.data.match.outcome, 'win')
+  assert.match(m.text(), /你赢了/)
+  assert.match(m.text(), /\+1,000/)
+  assert.match(m.text(), /本场净收/)
+  assert.match(m.text(), /底池 2,000/)
+  assert.equal(m.wallet.coins, 13500, '12500 - 1000 底注 + 2000 底池')
+})
 
-  const directClock = clockwork()
-  const direct = createGame({ rerender() {}, random: () => 0.5, schedule: directClock.schedule, cancel: directClock.cancel })
-  direct.enterTable()
-  direct.setStake(-500)
-  direct.startMatch()
-  direct.beginLoad(false)
-  assert.equal(direct.state.page, 'table')
-  assert.equal(direct.state.stage, 'arming')
-  assert.equal(direct.state.matched, 500)
-  assert.equal(direct.state.pot, 1000)
-  assert.equal(direct.state.coins, 12000)
-  direct.seat(4)
-  assert.equal(direct.state.chamber, 4, '不转轮时准星就在玩家选的孔')
-  direct.fire('you')
-  assert.equal(direct.state.stage, 'roundOver')
-  assert.equal(direct.state.ai, 1)
-  assert.equal(direct.state.you, 0)
-  direct.stopTimers()
-  directClock.stop()
+test('面板：AI 让枪费进底池，结算净额和“入池”文案一致', () => {
+  const m = mountRoulette({ random: () => 0.9 })
+  m.app.send('config', { ai: 'bluff', seq: m.data.seq })
+  m.sync()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'ai'
+  match.turn = 'ai'
+  match.bulletCount = 1
+  match.bullets = [match.chamber]
+  match.livesYou = 1
+  match.livesAi = 1
+  m.sync()
+  m.runTimers(1)
+  assert.equal(m.data.match.lastEvent, 'ai-pass')
+  assert.equal(m.data.match.pot, 2500, 'AI 让枪费 500 进底池')
+  assert.equal(m.wallet.coins, 11500, 'AI 让枪费不直接给玩家')
 
-  const spinClock = clockwork()
-  const spin = createGame({ rerender() {}, random: () => 0.5, schedule: spinClock.schedule, cancel: spinClock.cancel })
-  spin.enterTable()
-  spin.startMatch()
-  spin.beginLoad(false)
-  spin.seat(0)
-  spin.spin()
-  assert.equal(spin.state.stage, 'spinning')
-  spinClock.runNext(950)
-  assert.equal(spin.state.stage, 'choice')
-  assert.equal(spin.state.bullet, 3)
-  assert.equal(spin.state.chamber, 0)
-  assert.equal(spin.state.primer, -1)
-  spin.fire('you')
-  assert.equal(spin.state.stage, 'ai')
-  assert.equal(spin.state.chamber, 1)
-  spinClock.runNext(650)
-  assert.equal(spin.state.spinning, true)
-  spinClock.runNext(900)
-  assert.equal(spin.state.stage, 'choice')
-  assert.equal(spin.state.ai, 0)
-  assert.equal(spin.state.you, 0)
-  spin.stopTimers()
-  spinClock.stop()
+  m.data.settings.ai = 'always'
+  match.stage = 'ai'
+  match.turn = 'ai'
+  m.sync()
+  m.runTimers(1)
+  assert.equal(m.data.match.stage, 'matchOver')
+  assert.equal(m.data.match.outcome, 'win')
+  assert.equal(m.wallet.coins, 14000, '12500 - 1000 底注 + 2500 底池')
+  assert.match(m.text(), /\+1,500/)
+  assert.match(m.text(), /本场净收/)
+  assert.match(m.text(), /底池 2,500/)
+  assert.match(m.text(), /AI 让枪入池 500/)
+  assert.doesNotMatch(m.text(), /让枪收/)
+})
 
-  const winClock = clockwork()
-  const win = createGame({ rerender() {}, schedule: winClock.schedule, cancel: winClock.cancel })
-  win.state.you = 1
-  win.state.matched = 1000
-  win.state.pot = 2000
-  win.state.vault = 100000
-  win.state.coins = 11500
-  win.state.stage = 'ai'
-  win.state.bullet = 1
-  win.state.chamber = 1
-  win.fire('ai')
-  assert.equal(win.state.stage, 'matchOver')
-  assert.equal(win.state.you, 2)
-  assert.equal(win.state.vault, 99000)
-  assert.equal(win.state.coins, 13500)
-  assert.equal(win.state.outcome, 'win')
-  assert.equal(win.state.settled, true)
-  win.stopTimers()
-  winClock.stop()
+test('面板：对局中返回先确认，继续打不退出，确认后按认输处理', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'choice'
+  match.turn = 'you'
+  m.sync()
 
-  const loseClock = clockwork()
-  const lose = createGame({ rerender() {}, schedule: loseClock.schedule, cancel: loseClock.cancel })
-  lose.state.ai = 1
-  lose.state.matched = 1000
-  lose.state.pot = 2000
-  lose.state.vault = 100000
-  lose.state.coins = 11500
-  lose.state.stage = 'ready'
-  lose.state.bullet = 2
-  lose.state.chamber = 2
-  lose.fire('you')
-  assert.equal(lose.state.stage, 'matchOver')
-  assert.equal(lose.state.ai, 2)
-  assert.equal(lose.state.vault, 101000)
-  assert.equal(lose.state.coins, 11500)
-  assert.equal(lose.state.outcome, 'lose')
-  assert.equal(lose.state.settled, true)
-  lose.stopTimers()
-  loseClock.stop()
+  m.click('aria-label', '返回大厅')
+  assert.match(m.text(), /确认离开牌桌/)
+  assert.equal(m.data.match !== null, true, '确认框出现时对局还在')
 
-  const refundClock = clockwork()
-  const refund = createGame({ rerender() {}, schedule: refundClock.schedule, cancel: refundClock.cancel })
-  refund.enterTable()
-  refund.startMatch()
-  refund.beginLoad(false)
-  assert.equal(refund.state.coins, 11500)
-  assert.equal(refund.state.stage, 'arming')
-  refund.leaveTable()
-  assert.equal(refund.state.coins, 12500)
-  assert.equal(refund.state.page, 'lobby')
-  assert.equal(refund.state.pot, 0)
-  assert.equal(refund.state.matched, 0)
-  refund.stopTimers()
-  refundClock.stop()
+  m.click('data-op', 'cancel-leave')
+  assert.equal(m.data.match !== null, true)
+  assert.doesNotMatch(m.text(), /确认离开牌桌/)
 
-  // 第 2 局装弹页退出时不能把整场底注退回；本场作废，金币保持已扣状态。
-  const midClock = clockwork()
-  const mid = createGame({ rerender() {}, schedule: midClock.schedule, cancel: midClock.cancel })
-  mid.enterTable()
-  mid.state.round = 2
-  mid.state.you = 1
-  mid.state.ai = 0
-  mid.state.coins = 11500
-  mid.state.matched = 1000
-  mid.state.pot = 2000
-  mid.state.page = 'loading'
-  mid.state.stage = 'loading'
-  mid.state.pendingFresh = false
-  mid.leaveTable()
-  assert.equal(mid.state.coins, 11500, '中途退出不退整场底注')
-  assert.equal(mid.state.page, 'lobby')
-  assert.equal(mid.state.pot, 0)
-  mid.stopTimers()
-  midClock.stop()
+  m.click('aria-label', '返回大厅')
+  m.click('data-op', 'confirm-leave')
+  assert.equal(m.data.match, null)
+  assert.equal(m.wallet.coins, 11500, '已装弹退出不退底注')
+  assert.match(m.text(), /已回到大厅/)
+})
+
+test('面板：三局两胜下一局可以重新选装弹数', () => {
+  const m = mountRoulette({ coins: 20000 })
+  m.app.send('config', { seq: m.data.seq, format: 'bestOf3', stake: 1000 })
+  m.sync()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'roundOver'
+  match.round = 1
+  match.winsYou = 1
+  m.sync()
+
+  assert.ok(m.find('data-op', 'next-load-3'), '下一局要能重新选装弹数')
+  m.click('data-op', 'next-load-3')
+  assert.equal(m.find('data-op', 'next-load-3').getAttribute('aria-pressed'), 'true')
+  m.click('data-op', 'next')
+  assert.equal(m.data.match.bulletCount, 3)
+  assert.equal(m.data.settings.loadCount, 3)
+  assert.equal(m.data.match.stage, 'arming')
+})
+
+test('面板：AI 请求失败会重试，最终给重试按钮，恢复后能继续', async () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'ai'
+  match.turn = 'ai'
+  match.bulletCount = 1
+  match.bullets = []
+  match.chamber = 0
+  const original = m.app.send
+  m.app.send = function (op, payload) {
+    if (op === 'ai') return Promise.resolve(null)
+    return original.call(m.app, op, payload)
+  }
+  m.sync()
+
+  async function fire(ms) {
+    const task = m.timers.find(entry => !entry.canceled && entry.ms === ms)
+    assert.ok(task, '找不到 ' + ms + 'ms 定时器')
+    task.canceled = true
+    task.fn()
+    await Promise.resolve()
+    await Promise.resolve()
+  }
+  await fire(900)
+  await fire(1200)
+  await fire(1800)
+  await fire(2500)
+  assert.match(m.text(), /AI 行动重试/)
+  assert.equal(m.data.match.stage, 'ai')
+
+  m.app.send = original
+  m.click('data-op', 'ai-retry')
+  await fire(900)
+  assert.notEqual(m.data.match.stage, 'ai')
+  assert.equal(m.data.match.lastShooter, 'ai')
+})
+
+test('面板：结算后点再来一场，会开新的一场', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const first = m.data.match.handId
+  const match = m.data.match
+  match.stage = 'ai'
+  match.turn = 'ai'
+  match.bulletCount = 1
+  match.bullets = [match.chamber]
+  match.livesYou = 1
+  match.livesAi = 1
+  m.sync()
+  m.runTimers()
+  assert.equal(m.data.match.stage, 'matchOver')
+
+  m.click('data-op', 'again')
+  assert.equal(m.data.match.stage, 'arming')
+  assert.equal(m.data.match.handId, first + 1, '再来一场要开新的一场，不能原地重绘')
+  assert.equal(m.data.match.round, 1)
+  assert.equal(m.wallet.coins, 12500, '赢下 2,000 底池后再扣 1,000 新底注')
+})
+
+test('面板：装弹动画中返回，取消装弹并全额退款', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  assert.equal(m.wallet.coins, 11500)
+  m.find('data-chamber', '0').fire('click')
+  // 700ms 装弹动画还没结束，arm 还没发出去
+  m.click('aria-label', '返回大厅')
+  assert.equal(m.data.match, null)
+  assert.equal(m.wallet.coins, 12500, '装弹请求未发出前退出要全额退')
+  assert.match(m.text(), /已回到大厅/)
+})
+
+test('面板：arm 已发出但回包未到，返回先挡住，不能静默判负', async () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const original = m.app.send
+  let resolveArm = null
+  m.app.send = function (op, payload) {
+    if (op === 'arm') return new Promise(resolve => { resolveArm = resolve })
+    return original.call(m.app, op, payload)
+  }
+  m.find('data-chamber', '0').fire('click')
+  const armTimer = m.timers.find(entry => !entry.canceled && entry.ms === 700)
+  assert.ok(armTimer, '装弹动画定时器应该在')
+  armTimer.canceled = true
+  armTimer.fn()
+  assert.equal(m.wallet.coins, 11500)
+
+  m.click('aria-label', '返回大厅')
+  assert.match(m.text(), /装弹请求提交中/)
+  assert.notEqual(m.data.match, null, '回包没到之前不能判负')
+  assert.equal(m.wallet.coins, 11500)
+
+  resolveArm({ ok: false, reason: 'stale' })
+  await Promise.resolve()
+  await Promise.resolve()
+  assert.match(m.text(), /装弹没送到/)
+  assert.notEqual(m.data.match, null)
+})
+
+test('面板：金币不够让枪费时禁用按钮并提示', () => {
+  const m = mountRoulette({ coins: 1000 })
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'choice'
+  match.turn = 'you'
+  match.matchedYou = 1000
+  m.sync()
+  assert.equal(m.wallet.coins, 0)
+  const passBtn = m.find('data-op', 'pass')
+  assert.equal(passBtn.disabled, true)
+  passBtn.fire('click')
+  assert.equal(m.data.match.stage, 'choice')
+  assert.equal(m.wallet.coins, 0)
+  assert.match(m.text(), /金币不够让枪费 500/)
+})
+
+test('面板：比分数值跟左右标签一致（左侦探猪、右你）', () => {
+  const m = mountRoulette()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'matchOver'
+  match.winsYou = 0
+  match.winsAi = 1
+  match.outcome = 'lose'
+  m.sync()
+  // 左边是 AI「侦探猪」，右边是玩家「你」；AI 赢一局时比分应为 1 : 0。
+  assert.equal(m.byClass('rt-lives-score').textContent, '1 : 0')
+})
+
+test('面板：三局两胜的系列比分和本局结束文案也按左侦探猪、右你', () => {
+  const m = mountRoulette()
+  m.app.send('config', { seq: m.data.seq, format: 'bestOf3', stake: 1000 })
+  m.sync()
+  m.click('data-op', 'enter-ai')
+  const match = m.data.match
+  match.stage = 'roundOver'
+  match.round = 1
+  match.winsYou = 1
+  match.winsAi = 0
+  m.sync()
+  assert.equal(m.byClass('rt-meta-score').textContent, '0 : 1')
+  assert.match(m.text(), /本局结束，比分 0 : 1/)
 })

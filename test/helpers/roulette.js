@@ -1,14 +1,15 @@
 // 左轮轮盘面板测试挂具：用仓库里的假 DOM 跑真正的 extensions/roulette/client.js。
-// 计时器是可推进的假定时器，随机数固定为 0.5，测试不依赖真实时钟。
+// app.send 直接调用扩展服务端 actions，app.data 用 view 回吐，测试的是真实规则。
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 
+import roulette from '../../extensions/roulette/server.js'
 import { fakeDom } from './bundle.js'
 
 export const CLIENT_URL = new URL('../../extensions/roulette/client.js', import.meta.url)
 
-export function mountRoulette() {
+export function mountRoulette(options = {}) {
   const dom = fakeDom()
   const timers = []
   let nextTimer = 0
@@ -43,8 +44,27 @@ export function mountRoulette() {
   })
   assert.equal(typeof render, 'function', 'client.js 应该注册 roulette 的 render')
 
+  const data = roulette.init()
+  const wallet = { coins: options.coins ?? 12500 }
+  const random = options.random ?? (() => 0.5)
+  const api = {
+    now: 0,
+    coins: () => wallet.coins,
+    spend(n) {
+      const amount = Math.max(0, Math.floor(Number(n) || 0))
+      if (wallet.coins < amount) return false
+      wallet.coins -= amount
+      return true
+    },
+    earn(n) {
+      const amount = Math.min(Math.max(0, Math.floor(Number(n) || 0)), 1000000)
+      wallet.coins += amount
+      return amount
+    },
+  }
+
   const app = {
-    data: { localDemo: true },
+    data: roulette.view(data, api),
     content: dom.body,
     el(tag, className, text) {
       const node = dom.document.createElement(tag)
@@ -64,8 +84,11 @@ export function mountRoulette() {
     pigArt() {
       return null
     },
-    send() {
-      throw new Error('左轮轮盘是本地演示，不应该调用 app.send')
+    send(op, payload) {
+      const handler = roulette.actions[op]
+      assert.ok(handler, '未知动作 ' + op)
+      handler(data, payload ?? {}, api, random)
+      app.data = roulette.view(data, api)
     },
     rerender() {
       dom.body.children.length = 0
@@ -111,11 +134,18 @@ export function mountRoulette() {
       task.fn()
     }
   }
+  function sync() {
+    app.data = roulette.view(data, api)
+    app.rerender()
+  }
 
   render(app)
   return {
     dom,
     app,
+    data,
+    wallet,
+    api,
     timers,
     render,
     find,
@@ -123,6 +153,7 @@ export function mountRoulette() {
     byClass,
     click,
     runTimers,
+    sync,
     text: () => dom.body.allText(),
     hasClass(node, name) {
       return String(node.className).split(/\s+/).includes(name)
