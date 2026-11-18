@@ -67,17 +67,18 @@ export function mapMatch(data, view, seat) {
   }
 }
 
-function roomLine(app, room) {
+function roomLine(app, online, room) {
   const box = app.el('div', 'rt-room')
   const head = app.el('div', 'rt-room-head')
+  const hostId = online.hostId()
   head.appendChild(app.el('span', 'rt-room-code', room.code ?? ''))
-  head.appendChild(app.el('span', 'rt-badge', room.authority === 'server' ? '公网服务器权威' : '房主客户端权威'))
+  head.appendChild(app.el('span', 'rt-badge', room.authority === 'server' ? '公网服务器权威' : hostId === '' ? '没有开局权威' : '房主客户端权威'))
   box.appendChild(head)
   const players = Array.isArray(room.players) ? room.players : []
   for (const player of players) {
     const row = app.el('div', 'rt-player' + (player.id === room.selfId ? ' rt-player-self' : ''))
     row.appendChild(app.el('b', null, (player.name ?? '小猪') + (player.id === room.selfId ? '（你）' : '')))
-    row.appendChild(app.el('span', 'rt-tiny', player.host ? '房主' : '客人'))
+    row.appendChild(app.el('span', 'rt-tiny', player.id === hostId ? '房主' : '客人'))
     box.appendChild(row)
   }
   return box
@@ -103,11 +104,19 @@ export function renderOnlineLobby(app, online, game) {
     root.appendChild(footer(app, { onRules: function () { game.openRules('online') }, note: '真实金币 · 各扣各的' }))
     return root
   }
-  root.appendChild(roomLine(app, room))
+  root.appendChild(roomLine(app, online, room))
   const players = Array.isArray(room.players) ? room.players : []
   const other = players.find(player => player.id !== room.selfId) ?? null
   if (players.length > 2) {
     root.appendChild(app.el('p', 'rt-online-note', '房间里超过两个人。联机 1v1 只支持两人，请其他人先离开。'))
+    root.appendChild(footer(app, { onRules: function () { game.openRules('online') }, note: '真实金币 · 各扣各的' }))
+    return root
+  }
+  if (online.hostId() === '') {
+    const missing = app.el('div', 'rt-empty')
+    missing.appendChild(app.el('p', null, '这个房间没有开局权威。'))
+    missing.appendChild(app.el('p', 'rt-tiny', '公网房间服务器需要配置权威进程；局域网请让房主建房。'))
+    root.appendChild(missing)
     root.appendChild(footer(app, { onRules: function () { game.openRules('online') }, note: '真实金币 · 各扣各的' }))
     return root
   }

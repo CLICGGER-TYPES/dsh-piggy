@@ -18,7 +18,12 @@ export function createAuthority({ now = Date.now, random = Math.random, silenceM
     if (typeof data.guestId !== 'string' || data.guestId === '' || data.guestId === from) return null
     if (data.settings === null || typeof data.settings !== 'object') return null
     const existing = matches.get(room)
-    if (existing && existing.state.stage !== 'matchOver') return null
+    if (existing && existing.state.stage !== 'matchOver') {
+      // 房间服务器不会通知离房；双方都走了就没人再发心跳，沉默满 20 秒视为旧对局已死，
+      // 让新的房主能开局，而不是被旧对局卡到 30 分钟 TTL。
+      if (now() - existing.at < silenceMs) return null
+      matches.delete(room)
+    }
     const state = createMatch({
       matchId: data.matchId,
       hostId: from,
@@ -59,6 +64,9 @@ export function createAuthority({ now = Date.now, random = Math.random, silenceM
     if (!Number.isSafeInteger(seq) || seq <= 0) return { ok: false, reason: 'bad-seq' }
     if (ext !== 'roulette') return { ok: false, reason: 'bad-ext' }
     if (op === 'create') {
+      // 只接受房间服务器标记的创建者。必须显式 owner:true：旧版房间服务器不带该字段时
+      // 拒绝开局，避免升级一半时任意房客都能指定底注强行开局。
+      if (body.owner !== true) return { ok: false, reason: 'not-owner' }
       return create(room, from, data) ?? { ok: false, reason: 'create-rejected' }
     }
     const entry = matches.get(room)

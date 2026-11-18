@@ -2,13 +2,11 @@
 /**
  * 联机对局的房间会话：绑定宿主房间通道、消费权威事件、房主权威状态机、
  * 钱包动作与心跳。界面状态由 online-game 持有，这里只改其中的房间/对局字段。
- *
- * - 局域网 authority='host'：房主大窗口跑 online.js，收到双方 action 后广播脱敏事件。
- * - 公网 authority='server'：只发 action、收事件，客户端不跑规则。
- * 关窗即结束：对手靠心跳超时判定离开，不做重连。
+ * 局域网 authority='host' 由房主大窗口跑 online.js 并广播；公网 authority='server' 只收发事件；关窗即结束，靠心跳超时判离开，不做重连。
  */
 
 import { applyAction, createMatch, initialEvent, passFee, publicView } from '../online.js'
+import { clearRoomUi } from './match-state.js'
 
 export const PING_MS = 5000
 export const SILENCE_MS = 20000
@@ -95,8 +93,8 @@ export function createOnlineSession(deps) {
   }
 
   function onClosed() {
-    stopHeartbeat()
-    ui.room = null
+    resetState()
+    clearRoomUi(ui)
     ui.error = '联机房间已关闭'
     rerender()
   }
@@ -110,6 +108,7 @@ export function createOnlineSession(deps) {
     }
     ui.room = snapshot
     ui.roomError = ''
+    ui.error = ui.error === '联机房间已关闭' ? '' : ui.error
     selfId = typeof snapshot.selfId === 'string' ? snapshot.selfId : ''
     const events = Array.isArray(snapshot.gameEvents) ? snapshot.gameEvents : []
     if (baselineId === null) {
@@ -189,7 +188,7 @@ export function createOnlineSession(deps) {
   }
 
   function applyView(view, op, data) {
-    if (!isObject(view)) return
+    if (!isObject(view) || seatOf(view) === '') return
     ui.matchView = view
     ui.matchId = typeof view.matchId === 'string' ? view.matchId : ui.matchId
     if (seatOf(view) !== '') mySeat = seatOf(view)
@@ -379,6 +378,12 @@ export function createOnlineSession(deps) {
 
   function enterTable() { ui.page = 'table'; startHeartbeat() }
 
+  function resetState() {
+    rules = null
+    mySeat = ''
+    stopHeartbeat()
+  }
+
   return {
     sync: bind,
     refresh,
@@ -390,11 +395,6 @@ export function createOnlineSession(deps) {
     authority,
     active: () => active(ui.matchView),
     terminal: () => terminal(ui.matchView),
-    otherId,
-    reset() {
-      rules = null
-      mySeat = ''
-      stopHeartbeat()
-    },
+    reset: resetState,
   }
 }

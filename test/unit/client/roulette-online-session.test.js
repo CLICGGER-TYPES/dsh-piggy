@@ -266,3 +266,40 @@ test('房主心跳超时：替客人发 leave，事件广播出去', async () =>
   assert.equal(wallet.calls.at(-1)[1].kind, 'settle')
   assert.equal(wallet.calls.at(-1)[1].winner, 'you')
 })
+
+test('旁观者：不应用别人的对局视图，也不扣底注', async () => {
+  const ui = createUi()
+  const timers = fakeTimers()
+  const wallet = createWallet()
+  const room = fakeRoom({ hosting: false, selfId: 'stranger-9', authority: 'host' })
+  wallet.app.room = room
+  const session = createOnlineSession({
+    ui, getApp: () => wallet.app, rerender() {},
+    schedule: timers.schedule, cancel: timers.cancel, now: timers.now,
+  })
+  session.sync()
+  await settleMicrotasks()
+  const state = createMatch({ matchId: 'm-old', hostId: 'host-1', guestId: 'guest-1', stake: 500, lives: 1, format: 'single', loadCount: 1 })
+  room.push([{ id: 1, from: 'host-1', ext: 'roulette', op: 'match-start', data: { op: 'match-start', view: publicView(state) } }])
+  await settleMicrotasks()
+  assert.equal(ui.matchView, null, '不是自己的对局不能进界面')
+  assert.deepEqual(wallet.calls, [], '更不能扣旁观者的底注')
+  assert.equal(session.active(), false)
+})
+
+test('关房：清掉当前对局，重进后不会被旧对局挡住', async () => {
+  const { ui, room, session } = hostSetup()
+  session.sync()
+  await settleMicrotasks()
+  room.push([{
+    id: 1, from: 'host-1', ext: 'roulette', op: 'create',
+    data: { matchId: 'm5', guestId: 'guest-1', settings: { lives: 1, format: 'single', stake: 1000, loadCount: 1 } },
+  }])
+  await settleMicrotasks()
+  assert.equal(ui.matchView.stage, 'arming')
+  room.listeners.closed()
+  assert.equal(ui.room, null)
+  assert.equal(ui.matchView, null)
+  assert.equal(ui.waiting, false)
+  assert.equal(session.active(), false)
+})

@@ -719,6 +719,17 @@
     return { ok: true, events: [{ op, view: publicView(state) }] };
   }
 
+  // src/extensions/roulette/client/match-state.js
+  function clearRoomUi(ui) {
+    ui.room = null;
+    ui.matchView = null;
+    ui.matchId = "";
+    ui.waiting = false;
+    ui.settled = "";
+    ui.net = null;
+    ui.opponentGone = false;
+  }
+
   // src/extensions/roulette/client/online-session.js
   var PING_MS = 5e3;
   var SILENCE_MS = 2e4;
@@ -785,8 +796,8 @@
       }
     }
     function onClosed() {
-      stopHeartbeat();
-      ui.room = null;
+      resetState();
+      clearRoomUi(ui);
       ui.error = "\u8054\u673A\u623F\u95F4\u5DF2\u5173\u95ED";
       rerender();
     }
@@ -799,6 +810,7 @@
       }
       ui.room = snapshot;
       ui.roomError = "";
+      ui.error = ui.error === "\u8054\u673A\u623F\u95F4\u5DF2\u5173\u95ED" ? "" : ui.error;
       selfId = typeof snapshot.selfId === "string" ? snapshot.selfId : "";
       const events = Array.isArray(snapshot.gameEvents) ? snapshot.gameEvents : [];
       if (baselineId === null) {
@@ -872,7 +884,7 @@
       }
     }
     function applyView(view, op, data) {
-      if (!isObject(view)) return;
+      if (!isObject(view) || seatOf2(view) === "") return;
       ui.matchView = view;
       ui.matchId = typeof view.matchId === "string" ? view.matchId : ui.matchId;
       if (seatOf2(view) !== "") mySeat = seatOf2(view);
@@ -1049,6 +1061,11 @@
       ui.page = "table";
       startHeartbeat();
     }
+    function resetState() {
+      rules = null;
+      mySeat = "";
+      stopHeartbeat();
+    }
     return {
       sync: bind,
       refresh,
@@ -1060,12 +1077,7 @@
       authority,
       active: () => active(ui.matchView),
       terminal: () => terminal(ui.matchView),
-      otherId,
-      reset() {
-        rules = null;
-        mySeat = "";
-        stopHeartbeat();
-      }
+      reset: resetState
     };
   }
 
@@ -1110,11 +1122,20 @@
     function opponent() {
       return players().find((player) => player.id !== ui.room?.selfId) ?? null;
     }
+    function hostId() {
+      if (ui.room === null) return "";
+      if (ui.room.hosting === true) return typeof ui.room.selfId === "string" ? ui.room.selfId : "";
+      const list = players();
+      const flagged = list.find((player) => player.host === true);
+      if (flagged !== void 0) {
+        if (ui.room.authority !== "server" && flagged.id === ui.room.selfId) return "";
+        return flagged.id;
+      }
+      if (ui.room.authority === "server" && list.length > 0) return list[0].id;
+      return "";
+    }
     function roomHost() {
-      if (ui.room === null) return false;
-      if (ui.room.hosting === true) return true;
-      const me = players().find((player) => player.id === ui.room.selfId);
-      return me !== void 0 && me.host === true;
+      return ui.room !== null && hostId() === ui.room.selfId;
     }
     function openLobby() {
       session.sync();
@@ -1267,6 +1288,7 @@
       confirmLeave,
       players,
       opponent,
+      hostId,
       roomHost
     };
   }
@@ -1828,17 +1850,18 @@
       }
     };
   }
-  function roomLine(app, room) {
+  function roomLine(app, online2, room) {
     const box = app.el("div", "rt-room");
     const head = app.el("div", "rt-room-head");
+    const hostId = online2.hostId();
     head.appendChild(app.el("span", "rt-room-code", room.code ?? ""));
-    head.appendChild(app.el("span", "rt-badge", room.authority === "server" ? "\u516C\u7F51\u670D\u52A1\u5668\u6743\u5A01" : "\u623F\u4E3B\u5BA2\u6237\u7AEF\u6743\u5A01"));
+    head.appendChild(app.el("span", "rt-badge", room.authority === "server" ? "\u516C\u7F51\u670D\u52A1\u5668\u6743\u5A01" : hostId === "" ? "\u6CA1\u6709\u5F00\u5C40\u6743\u5A01" : "\u623F\u4E3B\u5BA2\u6237\u7AEF\u6743\u5A01"));
     box.appendChild(head);
     const players = Array.isArray(room.players) ? room.players : [];
     for (const player of players) {
       const row = app.el("div", "rt-player" + (player.id === room.selfId ? " rt-player-self" : ""));
       row.appendChild(app.el("b", null, (player.name ?? "\u5C0F\u732A") + (player.id === room.selfId ? "\uFF08\u4F60\uFF09" : "")));
-      row.appendChild(app.el("span", "rt-tiny", player.host ? "\u623F\u4E3B" : "\u5BA2\u4EBA"));
+      row.appendChild(app.el("span", "rt-tiny", player.id === hostId ? "\u623F\u4E3B" : "\u5BA2\u4EBA"));
       box.appendChild(row);
     }
     return box;
@@ -1863,11 +1886,21 @@
       }, note: "\u771F\u5B9E\u91D1\u5E01 \xB7 \u5404\u6263\u5404\u7684" }));
       return root;
     }
-    root.appendChild(roomLine(app, room));
+    root.appendChild(roomLine(app, online2, room));
     const players = Array.isArray(room.players) ? room.players : [];
     const other = players.find((player) => player.id !== room.selfId) ?? null;
     if (players.length > 2) {
       root.appendChild(app.el("p", "rt-online-note", "\u623F\u95F4\u91CC\u8D85\u8FC7\u4E24\u4E2A\u4EBA\u3002\u8054\u673A 1v1 \u53EA\u652F\u6301\u4E24\u4EBA\uFF0C\u8BF7\u5176\u4ED6\u4EBA\u5148\u79BB\u5F00\u3002"));
+      root.appendChild(footer(app, { onRules: function() {
+        game2.openRules("online");
+      }, note: "\u771F\u5B9E\u91D1\u5E01 \xB7 \u5404\u6263\u5404\u7684" }));
+      return root;
+    }
+    if (online2.hostId() === "") {
+      const missing = app.el("div", "rt-empty");
+      missing.appendChild(app.el("p", null, "\u8FD9\u4E2A\u623F\u95F4\u6CA1\u6709\u5F00\u5C40\u6743\u5A01\u3002"));
+      missing.appendChild(app.el("p", "rt-tiny", "\u516C\u7F51\u623F\u95F4\u670D\u52A1\u5668\u9700\u8981\u914D\u7F6E\u6743\u5A01\u8FDB\u7A0B\uFF1B\u5C40\u57DF\u7F51\u8BF7\u8BA9\u623F\u4E3B\u5EFA\u623F\u3002"));
+      root.appendChild(missing);
       root.appendChild(footer(app, { onRules: function() {
         game2.openRules("online");
       }, note: "\u771F\u5B9E\u91D1\u5E01 \xB7 \u5404\u6263\u5404\u7684" }));

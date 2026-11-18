@@ -7,7 +7,7 @@ import { startAuthority } from '../authority.mjs'
 
 function createBody(overrides = {}) {
   return {
-    room: 'PIG-7K2M', from: 'host-1', seq: 1, ext: 'roulette', op: 'create',
+    room: 'PIG-7K2M', from: 'host-1', owner: true, seq: 1, ext: 'roulette', op: 'create',
     data: {
       matchId: 'm1', guestId: 'guest-1',
       settings: { lives: 1, format: 'single', stake: 1000, loadCount: 2 },
@@ -77,11 +77,62 @@ test('权威核心：一方心跳沉默 20 秒，权威替对手判认输并结�
   })).ok, true, '对局结束后的再来一场应被接受')
 })
 
+test('权威核心：旧对局沉默 20 秒后，新房主可以重新开局', () => {
+  let clock = 1000
+  const authority = createAuthority({ now: () => clock })
+  assert.equal(authority.handle(createBody()).ok, true)
+  const settings = { lives: 1, format: 'single', stake: 1000, loadCount: 1 }
+  clock += 19000
+  assert.equal(authority.handle(createBody({
+    from: 'owner-2', seq: 2,
+    data: { matchId: 'm2', guestId: 'guest-2', settings },
+  })).reason, 'create-rejected', '还没满 20 秒不能覆盖')
+  clock += 2000
+  const late = authority.handle(createBody({
+    from: 'owner-2', seq: 3,
+    data: { matchId: 'm2', guestId: 'guest-2', settings },
+  }))
+  assert.equal(late.ok, true, '沉默 21 秒后旧对局应被覆盖')
+  assert.equal(late.events[0].data.view.hostId, 'owner-2')
+})
+
+test('权威核心：旧对局还有心跳时，新房主不能覆盖', () => {
+  let clock = 1000
+  const authority = createAuthority({ now: () => clock })
+  assert.equal(authority.handle(createBody()).ok, true)
+  clock += 15000
+  assert.equal(authority.handle({
+    room: 'PIG-7K2M', from: 'host-1', seq: 2, ext: 'roulette', op: 'ping', data: {},
+  }).ok, true)
+  const settings = { lives: 1, format: 'single', stake: 1000, loadCount: 1 }
+  clock += 19000
+  assert.equal(authority.handle(createBody({
+    from: 'owner-2', seq: 4,
+    data: { matchId: 'm2', guestId: 'guest-2', settings },
+  })).reason, 'create-rejected', '距离上次心跳不到 20 秒')
+  clock += 2000
+  assert.equal(authority.handle(createBody({
+    from: 'owner-2', seq: 5,
+    data: { matchId: 'm2', guestId: 'guest-2', settings },
+  })).ok, true, '心跳停止满 20 秒后可以覆盖')
+})
+
 test('权威核心：无对局、错误房间、错误扩展被拒绝', () => {
   const authority = createAuthority()
   assert.equal(authority.handle(createBody({ room: '' })).ok, false)
   assert.equal(authority.handle(createBody({ ext: 'farm' })).reason, 'bad-ext')
   assert.equal(authority.handle({ room: 'PIG-XXXX', from: 'a', seq: 1, ext: 'roulette', op: 'snapshot', data: {} }).reason, 'no-match')
+})
+
+test('权威核心：只有房间创建者能开局，缺少 owner 一律拒绝', () => {
+  const authority = createAuthority()
+  assert.equal(authority.handle(createBody({ from: 'guest-1', owner: false })).reason, 'not-owner')
+  assert.equal(authority.handle(createBody({ owner: false })).reason, 'not-owner')
+  assert.equal(authority.handle(createBody({ owner: undefined })).reason, 'not-owner', '旧版房间服务器不带 owner 时必须拒绝')
+  assert.equal(authority.handle(createBody({ owner: null })).reason, 'not-owner')
+  assert.equal(authority.handle(createBody({ owner: 0 })).reason, 'not-owner')
+  assert.equal(authority.handle(createBody({ owner: 'false' })).reason, 'not-owner')
+  assert.equal(authority.handle(createBody()).ok, true)
 })
 
 test('权威 HTTP：密钥、建房和动作走真实请求', async () => {

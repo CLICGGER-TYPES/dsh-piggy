@@ -139,6 +139,8 @@ dsh-piggy-room-server \
 | `--allow-public` | 监听 `0.0.0.0` 或公网 IP 时必须显式打开 |
 | `--trust-proxy` | 采信反代的 `X-Forwarded-Host`；HTTPS 反代模式默认开启 |
 | `--no-persistent` | 第一位玩家成为房主，房主离开后关闭房间（默认不关） |
+| `--authority-url <URL>` | 本机权威进程的完整接口地址，例如 `http://127.0.0.1:47825/v1/game`；不配时公网房间没有开局权威，左轮不能开局 |
+| `--authority-secret <密钥>` | 权威进程共享密钥，至少 16 字符，与权威进程的 `--secret` 一致 |
 | `-V`, `--version` | 显示版本和构建目标 |
 | `-h`, `--help` | 帮助 |
 

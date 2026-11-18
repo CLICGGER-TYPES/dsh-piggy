@@ -326,6 +326,18 @@ impl Room {
         body_locked(&self.code, &inner)
     }
 
+    /// 房间的创建者：按加入顺序的第一位玩家。持久房间没有 host 标记，
+    /// 左轮靠它决定谁能开局；排序必须与快照里给客户端的 players 顺序一致（joined_at）。
+    pub fn is_owner(&self, player_id: &str) -> bool {
+        let inner = self.inner.lock().expect("room lock");
+        inner
+            .players
+            .iter()
+            .min_by_key(|player| player.joined_at)
+            .map(|player| player.id == player_id)
+            .unwrap_or(false)
+    }
+
     pub fn check_host(&self, host: &str) -> bool {
         self.expected_hosts.iter().any(|expected| expected == host)
     }
@@ -383,9 +395,10 @@ impl Room {
         let token = hex::encode(random_bytes_32());
         let key = sha256_bytes(token.as_bytes());
         let id = random_uuid_v4();
-        let now = now_ms();
 
         let mut inner = self.inner.lock().expect("room lock");
+        // 时间戳在锁内采样：插入顺序与 joined_at 顺序一致，房主判定和客户端看到的顺序不会相反。
+        let now = now_ms();
         if inner.closing {
             return Err(ApiError::new(503, "room-closed"));
         }

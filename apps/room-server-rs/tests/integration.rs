@@ -972,10 +972,11 @@ async fn authority_mode_forwards_actions_and_broadcasts_events() {
                 Some("test-secret-0123456789")
             );
             assert_eq!(body["ext"], json!("roulette"));
+            let owner = body["owner"].clone();
             Json(json!({
                 "ok": true,
                 "events": [
-                    { "from": "authority", "ext": "roulette", "op": "snapshot", "data": { "rev": 7, "stage": "choice" } }
+                    { "from": "authority", "ext": "roulette", "op": "snapshot", "data": { "rev": 7, "stage": "choice", "owner": owner } }
                 ]
             }))
         }),
@@ -1011,6 +1012,29 @@ async fn authority_mode_forwards_actions_and_broadcasts_events() {
     assert_eq!(events[0]["from"], json!("authority"));
     assert_eq!(events[0]["op"], json!("snapshot"));
     assert_eq!(events[0]["data"]["rev"], json!(7));
+    assert_eq!(events[0]["data"]["owner"], json!(true), "第一位玩家是创建者");
+
+    let (status, guest) = server.join("client-guest", "客猪").await;
+    assert_eq!(status, 200);
+    let guest_token = guest["token"].as_str().expect("guest token");
+    let (status, _) = server
+        .post_auth(
+            "/v1/room/game",
+            guest_token,
+            &json!({ "seq": 1, "ext": "roulette", "op": "action", "data": { "op": "arm" } }),
+        )
+        .await;
+    assert_eq!(status, 200);
+    let (status, state) = server
+        .post_auth("/v1/room/state", token, &json!({ "since": 0 }))
+        .await;
+    assert_eq!(status, 200);
+    let events = state["gameEvents"].as_array().expect("events");
+    assert_eq!(
+        events.last().expect("guest event")["data"]["owner"],
+        json!(false),
+        "后加入的玩家不是创建者"
+    );
 
     let (status, duplicate) = server
         .post_auth(

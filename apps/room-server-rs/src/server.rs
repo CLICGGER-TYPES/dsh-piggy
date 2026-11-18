@@ -512,6 +512,7 @@ async fn game(app: Arc<App>, request: Request<Body>) -> Response {
     let payload = json!({
         "room": app.room.code(),
         "from": player_id,
+        "owner": app.room.is_owner(&player_id),
         "seq": action.seq,
         "ext": action.ext.clone(),
         "op": action.op.clone(),

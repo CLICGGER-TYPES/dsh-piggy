@@ -56,12 +56,25 @@ export function createOnline(deps) {
     return players().find(player => player.id !== ui.room?.selfId) ?? null
   }
 
-  /** 公网房间的房主由房间服务器指定（players[].host），本地房间则看 hosting。 */
+  /** 当前房间的开局权威：本机建房是自己；服务器权威按 host 标记/第一位；外部无权威房间的 host 标记不算。 */
+  function hostId() {
+    if (ui.room === null) return ''
+    if (ui.room.hosting === true) return typeof ui.room.selfId === 'string' ? ui.room.selfId : ''
+    const list = players()
+    const flagged = list.find(player => player.host === true)
+    if (flagged !== undefined) {
+      // 外部房间的 host 标记只表示房间生命周期（第一位/离开即关房），不代表这个客户端跑权威。
+      // 自己带标记却不是本机建房时没有客户端权威，按无权威处理，别再给出会卡住的建房按钮。
+      if (ui.room.authority !== 'server' && flagged.id === ui.room.selfId) return ''
+      return flagged.id
+    }
+    // 只有服务器权威房间才按第一位兜底；没有权威又没人跑规则的房间不能给出创建者。
+    if (ui.room.authority === 'server' && list.length > 0) return list[0].id
+    return ''
+  }
+
   function roomHost() {
-    if (ui.room === null) return false
-    if (ui.room.hosting === true) return true
-    const me = players().find(player => player.id === ui.room.selfId)
-    return me !== undefined && me.host === true
+    return ui.room !== null && hostId() === ui.room.selfId
   }
 
   function openLobby() {
@@ -231,6 +244,7 @@ export function createOnline(deps) {
     confirmLeave,
     players,
     opponent,
+    hostId,
     roomHost,
   }
 }
