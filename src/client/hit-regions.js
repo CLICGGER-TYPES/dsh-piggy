@@ -15,6 +15,8 @@ const BLOCK_PET = '.dp-bubble,.dp-card,.dp-daily,button,a,input,select,textarea,
 const HINT_CONTAINERS = '.dp-hud,.dp-work,.dp-pomo,.dp-poke-hint'
 const PANEL_CARD = '.dp-card'
 const INTERACTIVE = 'button,a,input,select,textarea,[role="button"],[data-hit]'
+/** @type {WeakMap<object, number[]>} */
+const lastImageInk = new WeakMap()
 
 const parentElement = node => node.parentElement ?? (node.parentNode?.nodeType === 9 ? null : node.parentNode)
 /** 父节点隐藏/透明时，子节点即使自身可见也不能取得输入。 @param {any} node */
@@ -92,6 +94,18 @@ function imageInk(node) {
     width: naturalWidth * fit / width, height: naturalHeight * fit / height }
   const ink = framedInkBox(contained, bounds)
   return [ink.x, ink.y, ink.x + ink.width, ink.y + ink.height]
+}
+
+/** 换图时浏览器可能仍画着上一张；用上一张的墨迹和当前元素的几何做命中。@param {any} node */
+function visibleImageInk(node) {
+  if (!node.getAttribute('src') || (node.complete !== false && node.naturalWidth === 0)) {
+    lastImageInk.delete(node)
+    return undefined
+  }
+  if (node.complete === false) return lastImageInk.get(node)
+  const ink = imageInk(node)
+  lastImageInk.set(node, ink)
+  return ink
 }
 
 /** 字框只量当前文字，不退回透明的猪/装扮祖先。 */
@@ -177,8 +191,9 @@ export function collectPigHitRects(host) {
   for (const node of host.querySelectorAll(PIG_PARTS)) {
     if (!isVisible(node)) continue
     const image = node.matches?.('.dp-pig-img,.dp-pig-sleep')
-    if (image && (!node.getAttribute('src') || node.complete === false || node.naturalWidth === 0)) continue
-    const rect = image ? inkRect(node, imageInk(node)) : textRect(node)
+    const ink = image ? visibleImageInk(node) : undefined
+    if (image && ink === undefined) continue
+    const rect = ink === undefined ? textRect(node) : inkRect(node, ink)
     if (rect === null) continue
     // 睡姿比猪盒宽 20%，帽子/披风也会顶出边界；裁掉盒外那段，避免压到日历/礼包。
     const clipped = node.matches?.('.dp-pig-sleep,.dp-slot') ? clipRect(rect, pigBoxFor(node)) : rect
