@@ -2139,6 +2139,9 @@
   var CSS = [
     ".rt{position:relative;box-sizing:border-box;height:var(--ext-panel-height,505px);padding:2px 2px 3px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;display:flex;flex-direction:column;color:var(--ac-text,#794f27);font-size:12px;line-height:1.35}",
     ".rt *{box-sizing:border-box}",
+    ".rt-big{height:100vh;padding:16px 24px 20px}",
+    // 大窗口里，大堂/规则/联机大厅这类单列表单保持可读宽度居中；牌桌仍铺满。
+    ".rt-big .rt-lobby,.rt-big .rt-rules,.rt-big .rt-online{width:min(100%,620px);margin-left:auto;margin-right:auto}",
     ".rt-page{position:relative;display:flex;flex-direction:column;gap:4px;flex-shrink:0}",
     ".rt-head{display:flex;align-items:center;gap:7px;min-height:30px}",
     ".rt-back{display:flex;align-items:center;justify-content:center;height:26px;min-width:52px;flex-shrink:0;padding:0 8px 0 15px;border-radius:var(--ac-pill,50px);border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text,#794f27);font:inherit;font-size:10px;font-weight:700;line-height:1;box-shadow:var(--ac-shadow-sm,0 2px 4px rgba(61,52,40,.06));cursor:pointer;position:relative}",
@@ -2401,7 +2404,7 @@
     activeApp = app;
     const current = ensureGame();
     current.sync();
-    const shell = app.el("div", "rt");
+    const shell = app.el("div", app.mode === "big" ? "rt rt-big" : "rt");
     shell.appendChild(pageNode(app, current));
     if (current.ui.toast) shell.appendChild(toastNode(app, current.ui.toast));
     app.content.appendChild(shell);

@@ -66,7 +66,11 @@ export function fitPanelWindow(ctx) {
   ctx.host.setAttribute('data-panel-vertical', vertical)
   ctx.host.setAttribute('data-panel-side', 'left')
   const hudHeight = ctx.hud && !ctx.hud.hidden ? (ctx.hud.offsetHeight || 0) + 6 : 0
-  ctx.card.style.maxHeight = Math.max(120, Math.round(anchor.maxHeight - hudHeight)) + 'px'
+  // 主进程给的 maxHeight 是「这一侧理论上能放多高」；窗口实际可能被摆得更矮
+  // （例如 piggy:panel:size 还没到、或固定外框被屏幕夹过）。按实际视口再收一次，
+  // 否则高内容扩展会把卡片顶到窗口外，返回按钮直接看不见。
+  const viewport = Math.min(anchor.maxHeight, window.innerHeight || anchor.maxHeight)
+  ctx.card.style.maxHeight = Math.max(120, Math.round(viewport - hudHeight)) + 'px'
   schedule()
 }
 

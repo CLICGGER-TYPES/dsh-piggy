@@ -66,7 +66,7 @@ function render(app) {
   activeApp = app
   const current = ensureGame()
   current.sync()
-  const shell = app.el('div', 'rt')
+  const shell = app.el('div', app.mode === 'big' ? 'rt rt-big' : 'rt')
   shell.appendChild(pageNode(app, current))
   if (current.ui.toast) shell.appendChild(toastNode(app, current.ui.toast))
   app.content.appendChild(shell)
