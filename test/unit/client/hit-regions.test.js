@@ -88,6 +88,37 @@ test('contain and current zoom/translation map the measured wide PNG exactly onc
   assert.equal(hitsPig(host, point(70, 180)), true)
 }))
 
+test('a pending sprite swap preserves the last loaded ink until the new sprite settles', () => fixture(({ host, image }) => {
+  const node = image([.375, .375, .625, .625])
+  assert.equal(hitsPig(host, point(164, 164)), true)
+
+  node.src = '/dsh-piggy/art/pigs/base/piglet/idle.png'
+  node.complete = false
+  node.naturalWidth = 0
+  assert.equal(hitsPig(host, point(164, 164)), true)
+  assert.equal(hitsPig(host, point(120, 120)), false)
+  node.rect = rect(130, 100, 128, 128)
+  assert.deepEqual(collectHitRects(host), [{ x: 178, y: 148, width: 32, height: 32 }])
+
+  node.hidden = true
+  assert.deepEqual(collectHitRects(host), [])
+  node.hidden = false
+  node.complete = true
+  assert.deepEqual(collectHitRects(host), [])
+  node.complete = false
+  assert.deepEqual(collectHitRects(host), [])
+  node.complete = true
+  node.naturalWidth = 128
+  assert.equal(hitsPig(host, point(150, 125)), true)
+}))
+
+test('an image with no loaded sprite does not claim clicks while loading', () => fixture(({ host, image }) => {
+  const node = image([0, 0, 1, 1])
+  node.complete = false
+  node.naturalWidth = 0
+  assert.deepEqual(collectHitRects(host), [])
+}))
+
 test('asymmetric ink follows the rendered mirror, including a physical body flip', () => fixture(({ host, pig, image }) => {
   const node = image([0, .25, .25, .75])
   near(collectPigHitRects(host)[0], { x: 100, y: 132, width: 32, height: 64 })
