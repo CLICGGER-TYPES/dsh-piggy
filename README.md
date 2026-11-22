@@ -81,7 +81,7 @@ macOS 版本暂停构建：最后一个可用版本见历史 [Releases](https://
 | [多 agent 共用一只桌宠](docs/guides/multi-agent-pet.md) | 工作事件投递、发现、429 退避 |
 | [皮肤制作](docs/guides/creating-skins.md) | 自定义 PNG/SVG 皮肤 |
 | [新增动作](docs/guides/adding-actions.md) / [新增音效](docs/guides/adding-sounds.md) | 素材包格式与校验 |
-| [发布渠道与历史版本](docs/guides/releases.md) | 稳定版、RC、npm、夸克、Gitee |
+| [发布渠道与历史版本](docs/guides/releases.md) | 稳定版、RC、npm、夸克（原 Gitee） |
 
 ## 开发
 
@@ -99,7 +99,7 @@ npm run typecheck
 - 稳定版：游戏 0.37.2 / 桌面外壳 0.6.8。
 - 预览版：0.37.3-rc.4 / 0.6.9-rc.3；上一预览为 0.37.3-rc.3 / 0.6.9-rc.3。
 - npm `latest` 目前仍是 0.37.0，需维护者手动更新；`rc` 标签同理。
-- Gitee 不再发布新版本；历史附件只作回退。
+- 国内 Windows 渠道已从 Gitee 迁移到夸克网盘；Gitee 不再发布新版本，历史附件只作回退。
 
 发布页、校验文件和国内渠道见[发布渠道说明](docs/guides/releases.md)，逐版本变更见 [CHANGELOG](CHANGELOG.md)。
 

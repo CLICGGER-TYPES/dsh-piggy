@@ -23,7 +23,7 @@
 |---|---|
 | GitHub | Windows / Linux 安装包、便携版、游戏包、farm/classic 扩展、`SHA256SUMS` |
 | [夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d) | Windows 安装包与便携版，国内手动下载 |
-| Gitee | 不再发布新版本；历史附件只作回退 |
+| Gitee（已迁移到夸克） | 国内 Windows 渠道改用夸克网盘；Gitee 不再推送新版本，历史附件只作回退 |
 
 GitHub Release 的资产以 `SHA256SUMS` 为准。Windows 安装器另附五项默认不选的离线扩展，不会覆盖已有版本。
 
@@ -60,7 +60,7 @@ Windows 安装版和 Linux AppImage 支持 App 内下载并重启安装外壳；
 - RC4 国内原始包：<https://pan.quark.cn/s/a1712a93536c>
 - 历史 Gitee 附件仅供旧安装器回退，不代表当前版本。
 
-历史安装器首次启动依赖的游戏包仍保留在 Gitee；新版本不再上传 Gitee。
+历史安装器首次启动依赖的游戏包仍保留在 Gitee；新版本不再上传 Gitee。国内 Windows 下载请走夸克网盘；`release-gitee.yml` 只保留构建，不再推送新版本。
 
 ## 验收边界
 
