@@ -9,7 +9,7 @@ import {
 } from '../lib/niri-window.js'
 import { createNiriWindow } from '../lib/niri-client.js'
 import { panelBoundsClearOfPig, pigVisibleBox } from '../lib/panel-geometry.js'
-import { createWindowSurface } from '../lib/window-surface.js'
+import { createWindowSurface, wantsInputShape } from '../lib/window-surface.js'
 import { createPanelController } from '../lib/panel-controller.js'
 import { createDragEngine } from '../lib/drag-engine.js'
 
@@ -472,3 +472,13 @@ test('drag-engine：niri 下从真实窗口位置起算，拖动增量走 move-f
 })
 
 
+
+test('wantsInputShape：niri 与 GNOME Wayland XWayland 都设输入区域，可用环境变量回退', () => {
+  const base = { DISPLAY: ':0', WAYLAND_DISPLAY: 'wayland-0' }
+  assert.equal(wantsInputShape('linux', base, true), true)
+  assert.equal(wantsInputShape('linux', base, false), true, 'GNOME Wayland 的 XWayland 也要透明区穿透')
+  assert.equal(wantsInputShape('linux', { DISPLAY: ':0' }, false), false, '纯 X11 保持原行为')
+  assert.equal(wantsInputShape('linux', { ...base, PIGGY_INPUT_SHAPE: '0' }, true), false)
+  assert.equal(wantsInputShape('linux', { WAYLAND_DISPLAY: 'wayland-0' }, true), false, '没有 DISPLAY 时不能设 X Shape')
+  assert.equal(wantsInputShape('darwin', base, true), false)
+})

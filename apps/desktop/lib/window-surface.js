@@ -10,6 +10,20 @@ import { cursorHitsWindow } from './hit-physical.js'
 import { createNiriPetWindow } from './niri-pet-window.js'
 import { createX11InputShape } from './x11-input-shape.js'
 
+/**
+ * 要不要用 X11 ShapeInput 让透明区穿透。
+ * - 只在 Linux + 有 DISPLAY 时；
+ * - niri 或 Wayland 会话里的 XWayland 窗口需要（GNOME Wayland 也有旧问题）；
+ * - PIGGY_INPUT_SHAPE=0 强制关闭，便于回滚。
+ * @param {string} platform @param {Record<string, string|undefined>} env @param {boolean} niriEnabled
+ */
+export function wantsInputShape(platform, env, niriEnabled) {
+  if (platform !== 'linux') return false
+  if (String(env.PIGGY_INPUT_SHAPE ?? '') === '0') return false
+  if (typeof env.DISPLAY !== 'string' || env.DISPLAY === '') return false
+  return niriEnabled || Boolean(env.WAYLAND_DISPLAY)
+}
+
 /** 非拖动时，窗口位置/大小差这么多以内就不改（见 applyBounds）。 */
 const BOUNDS_TOLERANCE = 2
 /** 换位置后最多等这么久的新 hitShape；页面不再上报时恢复按当前形状命中，不能永久不可点。 */
@@ -40,11 +54,12 @@ export function createWindowSurface(deps) {
   })
   const niriEnabled = niriPet.enabled
   /**
-   * niri/XWayland 的 `setShape` 只裁绘制（ShapeBounding），ShapeInput 仍是整窗；
+   * X11/XWayland 的 `setShape` 只裁绘制（ShapeBounding），ShapeInput 仍是整窗；
    * 透明块会挡住桌面。用最小 X11 客户端直接设输入区域（见 lib/x11-input-shape.js）。
+   * niri 和 GNOME Wayland 下的 XWayland 都启用；PIGGY_INPUT_SHAPE=0 可一键退回整窗可交互。
    * 连接失败时退回「整窗可交互」，不阻塞其它平台。
    */
-  const inputShape = niriEnabled && deps.platform === 'linux' && typeof deps.env.DISPLAY === 'string' && deps.env.DISPLAY !== ''
+  const inputShape = wantsInputShape(deps.platform, deps.env, niriEnabled)
     ? createX11InputShape({ display: deps.env.DISPLAY, log: message => deps.log('input shape', message) })
     : null
   const shapedInput = inputShape?.enabled === true
