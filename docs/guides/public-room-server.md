@@ -16,7 +16,7 @@
 不想在服务器上装 Rust 的话，GitHub Release 的 `room-server-v*` 标签提供 Linux x86_64 / aarch64 预编译包和 `SHA256SUMS`：
 
 ```bash
-VERSION=0.1.0
+VERSION=0.2.0   # 0.2.0 预编译包发布前可先从源码构建
 ARCH=x86_64   # ARM 服务器改成 aarch64
 BASE=https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/room-server-v$VERSION
 curl -fLO "$BASE/dsh-piggy-room-server-$VERSION-linux-$ARCH.tar.gz"
@@ -74,7 +74,7 @@ dsh-piggy-room-server --public-url https://piggy.example.com:8443 \
 - `--code 7K2M` 固定房间码；不填每次启动随机；
 - `--port 0` 使用随机端口，启动 JSON 里的 `listen` 是实际端口；
 - `--no-persistent` 第一位玩家成为房主，房主离开就关房；
-- `--authority-url http://127.0.0.1:47825/v1/game` 加 `--authority-secret <密钥>` 指向本机权威进程；公网左轮靠它判局，不配就没有开局权威；
+- `--authority-url http://127.0.0.1:47825/v1/game` 加 `--authority-secret <密钥>` 指向本机权威进程；公网左轮靠它判局，不配就没有开局权威（权威参数从房间服务器 0.2.0 起提供，已发布的 0.1.0 预编译包没有）；
 - 权威进程自己用 `--secret <同一个密钥>`（或环境变量 `ROOM_AUTHORITY_SECRET`）启动，只监听 `127.0.0.1`，由房间服务器转发；
 - 一个进程一个房间；多个房间用不同端口/进程；
 - 完整参数、TLS、systemd 和 Docker 示例见 `apps/room-server-rs/README.md`。

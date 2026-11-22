@@ -20,7 +20,7 @@ GitHub Release 的 `room-server-v*` 标签提供 Linux 预编译包，服务器�
 发布页：<https://github.com/CLICGGER-TYPES/dsh-piggy/releases>
 
 ```bash
-VERSION=0.1.0
+VERSION=0.2.0   # 0.2.0 预编译包发布前可先从源码构建（见下文）
 ARCH=x86_64   # ARM 服务器改成 aarch64
 BASE=https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/room-server-v$VERSION
 
@@ -43,7 +43,7 @@ dsh-piggy-room-server --help
 `dsh-piggy-room-server --version` 输出 crate 版本；发布流水线会通过 `DSH_PIGGY_ROOM_SERVER_BUILD` 注入目标平台和提交号：
 
 ```text
-dsh-piggy-room-server 0.1.0 (x86_64-unknown-linux-gnu@<commit>)
+dsh-piggy-room-server 0.2.0 (x86_64-unknown-linux-gnu@<commit>)
 ```
 
 房间服务器版本与游戏 / 桌面版独立：`Cargo.toml` 的版本对应 `room-server-v<version>` 标签。维护者发布流程见 [docs/guides/room-server-release.md](https://github.com/CLICGGER-TYPES/dsh-piggy/blob/main/docs/guides/room-server-release.md)。
@@ -252,7 +252,7 @@ docker run --rm \
 发布流水线可以在维护者开启 GHCR 推送后提供同版本镜像：
 
 ```bash
-docker pull ghcr.io/clicgger-types/dsh-piggy-room-server:0.1.0
+docker pull ghcr.io/clicgger-types/dsh-piggy-room-server:0.2.0
 ```
 
 开启推送时会构建并推送 `linux/amd64` 和 `linux/arm64`；未开启推送时只构建 amd64 作为验证。
