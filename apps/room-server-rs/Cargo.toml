@@ -1,6 +1,6 @@
 [package]
 name = "dsh-piggy-room-server"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
 description = "Standalone in-memory room server for dsh-piggy"
@@ -22,6 +22,7 @@ hex = "0.4"
 hyper = { version = "1", features = ["http1", "server"] }
 hyper-util = { version = "0.1", features = ["service", "tokio"] }
 rand = "0.8"
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 rustls-pemfile = "1"
 serde = { version = "1", features = ["derive"] }
@@ -34,4 +35,3 @@ tower = { version = "0.5", features = ["util"] }
 url = "2"
 
 [dev-dependencies]
-reqwest = { version = "0.13", default-features = false, features = ["json"] }

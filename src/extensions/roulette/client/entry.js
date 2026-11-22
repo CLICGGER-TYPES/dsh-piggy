@@ -1,16 +1,18 @@
 // @ts-check
 /**
- * 下载扩展入口：注入样式，首次渲染时创建一局本地游戏，再按 page 画大堂、
- * 牌桌、装弹页或规则页。游戏对象挂在闭包里，宿主轮询重绘不会重置对局。
+ * 下载扩展入口：注入样式，首次渲染时创建客户端控制器，再按 game.ui.page
+ * 画大堂、牌桌或规则页。每次宿主重绘都会 sync 一次服务端快照。
  */
 
 import { createGame } from './game.js'
-import { renderLoading, renderLobby, renderRules } from './pages.js'
-import { renderTable } from './table.js'
+import { createOnline } from './online-game.js'
+import { renderOnlineLobby, renderOnlineTable } from './online-pages.js'
+import { renderLobby, renderRules, renderTable } from './pages.js'
 import { CSS } from './styles.js'
 
 const STYLE_ID = 'dsh-piggy-roulette-style'
 let game = null
+let online = null
 let activeApp = null
 
 function style() {
@@ -28,6 +30,13 @@ function style() {
 function ensureGame() {
   if (game !== null) return game
   game = createGame({
+    getApp: function () { return activeApp },
+    rerender: function () {
+      if (activeApp !== null && typeof activeApp.rerender === 'function') activeApp.rerender()
+    },
+  })
+  online = createOnline({
+    getApp: function () { return activeApp },
     rerender: function () {
       if (activeApp !== null && typeof activeApp.rerender === 'function') activeApp.rerender()
     },
@@ -35,16 +44,18 @@ function ensureGame() {
   return game
 }
 
-function pageNode(app, game) {
-  const page = game.state.page
-  if (page === 'table') return renderTable(app, game)
-  if (page === 'loading') return renderLoading(app, game)
-  if (page === 'rules') return renderRules(app, game)
-  return renderLobby(app, game)
+function pageNode(app, current) {
+  if (current.ui.page === 'online') {
+    online.sync()
+    return online.ui.page === 'table' ? renderOnlineTable(app, online, current) : renderOnlineLobby(app, online, current)
+  }
+  if (current.ui.page === 'table') return renderTable(app, current)
+  if (current.ui.page === 'rules') return renderRules(app, current)
+  return renderLobby(app, current)
 }
 
-function toastNode(app, current) {
-  const node = app.el('div', 'rt-toast', current.toast)
+function toastNode(app, text) {
+  const node = app.el('div', 'rt-toast', text)
   node.setAttribute('role', 'status')
   node.setAttribute('aria-live', 'polite')
   return node
@@ -54,9 +65,10 @@ function render(app) {
   style()
   activeApp = app
   const current = ensureGame()
-  const shell = app.el('div', 'rt')
+  current.sync()
+  const shell = app.el('div', app.mode === 'big' ? 'rt rt-big' : 'rt')
   shell.appendChild(pageNode(app, current))
-  if (current.state.toast) shell.appendChild(toastNode(app, current.state))
+  if (current.ui.toast) shell.appendChild(toastNode(app, current.ui.toast))
   app.content.appendChild(shell)
 }
 

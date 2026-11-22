@@ -11,14 +11,14 @@ function wait(ms) {
 }
 
 function fakeClient(options = {}) {
-  const calls = { updates: [], left: 0, closed: 0 }
+  const calls = { updates: [], games: [], left: 0, closed: 0 }
   return {
     calls,
     async join() {
       if (options.joinError) throw new Error(options.joinError)
       return {
         ok: true, playerId: 'self', version: 1,
-        room: { code: options.code ?? '7K2M', hostId: 'self', version: 1 },
+        room: { code: options.code ?? '7K2M', hostId: 'self', version: 1, caps: ['game'], authority: 'host' },
         players: [{ id: 'self', name: '猪猪', level: 60, host: true, x: 0.5, facing: 1, emote: '', emoteTarget: null, emoteAt: 0 }],
       }
     },
@@ -29,6 +29,11 @@ function fakeClient(options = {}) {
     async update(payload) {
       calls.updates.push(payload)
       return { status: 200, body: { ok: true, version: 2 } }
+    },
+    async game(payload) {
+      calls.games.push(payload)
+      if (options.gameError) return { status: 400, body: { ok: false, reason: options.gameError } }
+      return { status: 200, body: { ok: true, version: 7, eventId: 3 } }
     },
     async leave() { calls.left += 1; return { status: 200, body: { ok: true } } },
     async close() { calls.closed += 1 },
@@ -186,6 +191,38 @@ test('公网 IPv4 直连：监听所有网卡，邀请串带回公网地址和�
   assert.equal(started.trustProxy, false)
   assert.equal(hosted.invite, `http://203.0.113.8:47824/#PIG-${hosted.code}`)
   await manager.leave()
+})
+
+test('游戏消息转发给房间客户端；房间能力与权威进快照；不在房间时报错', async () => {
+  const client = fakeClient()
+  const manager = createRoomManager({
+    findHost: async () => ({ address: '192.168.1.30', port: 5000 }),
+    createClient: () => client,
+  })
+  const joined = await manager.join('7K2M', PROFILE)
+  assert.equal(joined.ok, true)
+  assert.deepEqual(joined.caps, ['game'])
+  assert.equal(joined.authority, 'host')
+  assert.deepEqual(joined.gameEvents, [])
+
+  const sent = await manager.game({ seq: 1, ext: 'roulette', op: 'action', data: { op: 'arm' } })
+  assert.deepEqual(sent, { ok: true, duplicate: false, version: 7, eventId: 3 })
+  assert.deepEqual(client.calls.games[0], { seq: 1, ext: 'roulette', op: 'action', data: { op: 'arm' } })
+  await manager.leave()
+
+  const outside = createRoomManager({})
+  const rejected = await outside.game({ seq: 1, ext: 'roulette', op: 'action', data: {} })
+  assert.equal(rejected.ok, false)
+  assert.match(rejected.reason, /不在房间/)
+
+  const failing = createRoomManager({
+    findHost: async () => ({ address: '192.168.1.30', port: 5000 }),
+    createClient: () => fakeClient({ gameError: 'game-rate-limited' }),
+  })
+  await failing.join('7K2M', PROFILE)
+  const limited = await failing.game({ seq: 1, ext: 'roulette', op: 'action', data: {} })
+  assert.deepEqual(limited, { ok: false, reason: 'game-rate-limited' })
+  await failing.leave()
 })
 
 test('公网地址格式错误时给出可读原因；HTTPS 邀请串按 https 连接', async () => {

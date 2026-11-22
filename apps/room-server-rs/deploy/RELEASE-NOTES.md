@@ -6,6 +6,7 @@
 - 发布标签：`{{TAG}}`
 - 源码提交：`{{COMMIT}}`
 - 协议：HTTP/1.1；`join / state / update / care / care-result / leave` 与现有桌面客户端兼容
+- 联机对局：`--authority-url` / `--authority-secret` 把房间游戏事件转给 `room-authority`，支持左轮 1v1 开局（0.2.0 起；不配权威只能进房、不能开局）
 - 状态：进程内存，无数据库；重启后玩家列表、房间码和照顾事件清空
 
 ### 下载

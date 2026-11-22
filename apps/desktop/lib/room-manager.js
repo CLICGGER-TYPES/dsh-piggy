@@ -5,12 +5,14 @@
  */
 import { networkInterfaces as systemNetworkInterfaces } from 'node:os'
 
-import { enumerateOwnerNetworkAddresses, ownerNetworkAddressKind } from './owner-network-addresses.js'
+import { ownerNetworkAddressKind } from './owner-network-addresses.js'
+import { preferredLanAddress } from './room-lan-address.js'
 import { generateRoomCode, normalizeRoomCode } from './room-code.js'
 import { createRoomClient } from './room-client.js'
 import { startRoomDiscovery } from './room-discovery.js'
 import { startRoomServer } from './room-server.js'
-import { normalizeEmote, normalizePosition, normalizeProfile, parseRoomInput, validRoomHost } from './room-protocol.js'
+import { normalizeEmote, normalizePosition, normalizeProfile, parseRoomInput } from './room-protocol.js'
+import { isIpv4, parseRoomPublicUrl } from './room-public-url.js'
 
 const MOVE_INTERVAL_MS = 50
 const DEFAULT_PUBLIC_PORT = 47824
@@ -21,29 +23,6 @@ function messageOf(error, fallback) {
 
 function delay(ms) {
   return new Promise(resolve => { const timer = setTimeout(resolve, ms); timer.unref?.() })
-}
-
-function isIpv4(value) {
-  return typeof value === 'string' && /^\d{1,3}(?:\.\d{1,3}){3}$/u.test(value)
-}
-
-/**
- * 解析手动填写的公网地址：只接受 http(s)://host[:port]/，不要路径、查询或账号。
- * @param {unknown} value
- */
-export function parseRoomPublicUrl(value) {
-  if (typeof value !== 'string' || value.trim() === '') return null
-  let url
-  try { url = new URL(value.trim()) } catch { return null }
-  if ((url.protocol !== 'http:' && url.protocol !== 'https:') ||
-      url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '' ||
-      (url.pathname !== '/' && url.pathname !== '')) return null
-  const host = url.hostname.toLowerCase()
-  if (!validRoomHost(host)) return null
-  const protocol = url.protocol === 'https:' ? 'https' : 'http'
-  const port = url.port === '' ? (protocol === 'https' ? 443 : 80) : Number(url.port)
-  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) return null
-  return { protocol, host, port, origin: url.origin }
 }
 
 /**
@@ -75,14 +54,6 @@ export function createRoomManager(deps = {}) {
   /** @type {any} */
   let snapshot = null
 
-  function lanAddress() {
-    const list = enumerateOwnerNetworkAddresses((deps.networkInterfaces ?? systemNetworkInterfaces)())
-    const usable = list.filter(entry => entry.kind === 'private' || entry.kind === 'link-local')
-    // 有虚拟机/容器网桥时优先物理网卡，避免房间建在别人连不进来的网段。
-    const physical = usable.find(entry => !/^(?:docker|veth|virbr|br-|vmnet|vboxnet|tailscale|zt)/iu.test(entry.interface))
-    return physical ?? usable[0] ?? null
-  }
-
   function publish(body) {
     if (session === null) return
     snapshot = {
@@ -93,9 +64,12 @@ export function createRoomManager(deps = {}) {
       selfId: session.selfId,
       version: body.version,
       room: body.room,
+      caps: Array.isArray(body.room?.caps) ? body.room.caps : [],
+      authority: typeof body.room?.authority === 'string' ? body.room.authority : '',
       players: body.players,
       careEvents: body.careEvents ?? [],
       careResults: body.careResults ?? [],
+      gameEvents: Array.isArray(body.gameEvents) ? body.gameEvents : [],
       endpoint: { address: session.address, port: session.port },
       publicUrl: session.publicUrl ?? '',
       invite: session.invite ?? '',
@@ -206,7 +180,7 @@ export function createRoomManager(deps = {}) {
     let allowPublic = false
     let trustProxy = false
     if (publicUrl === null) {
-      const lan = lanAddress()
+      const lan = preferredLanAddress((deps.networkInterfaces ?? systemNetworkInterfaces)())
       if (lan === null) return { ok: false, reason: '没有找到可用的局域网地址，请先连上 Wi-Fi 或网线；公网服务器请填写对外地址' }
       listenAddress = lan.address
       advertisedHost = lan.address
@@ -361,6 +335,31 @@ export function createRoomManager(deps = {}) {
     }
   }
 
+  /** 扩展的游戏消息：只转发，不解析；格式和大小由房间服务端校验。 */
+  async function game(input) {
+    const current = session
+    if (current === null || current.stopped) return { ok: false, reason: '不在房间里' }
+    if (typeof current.client.game !== 'function') return { ok: false, reason: '这版联机不支持游戏通道' }
+    try {
+      const result = await current.client.game({
+        seq: input?.seq, ext: input?.ext, op: input?.op,
+        data: input?.data !== null && typeof input?.data === 'object' && !Array.isArray(input.data) ? input.data : {},
+      })
+      if (result.status !== 200 || result.body?.ok !== true) {
+        return { ok: false, reason: typeof result.body?.reason === 'string' ? result.body.reason : '游戏消息没发出去' }
+      }
+      if (Number.isSafeInteger(result.body.version)) current.version = result.body.version
+      return {
+        ok: true,
+        duplicate: result.body.duplicate === true,
+        version: result.body.version,
+        eventId: Number.isSafeInteger(result.body.eventId) ? result.body.eventId : null,
+      }
+    } catch (error) {
+      return { ok: false, reason: messageOf(error, '游戏消息没发出去') }
+    }
+  }
+
   async function leave(reason = 'left') {
     const current = session
     if (current === null) return { ok: true }
@@ -390,6 +389,7 @@ export function createRoomManager(deps = {}) {
     emote,
     care,
     careResult,
+    game,
     leave,
     status,
     dispose: () => leave('quit'),

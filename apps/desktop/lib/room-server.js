@@ -3,80 +3,24 @@
  * 内存房间中继：只保存玩家外观、位置和表情，不读写任何存档。
  * 主机进程持有一份；房间关闭即全部丢弃。
  */
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
 import { isIP } from 'node:net'
 
 import { ownerNetworkAddressKind } from './owner-network-addresses.js'
 import { createRoomCare } from './room-care.js'
+import { createRoomGame } from './room-game.js'
+import { authToken, exactKeys, fail, readJson, send, sha256, spawnX } from './room-http.js'
 import { normalizeRoomCode } from './room-code.js'
 import { normalizeRoomTls } from './room-tls.js'
 import {
-  ROOM_IDLE_MS, ROOM_MAX_BODY, ROOM_MAX_PLAYERS, ROOM_STATE_HOLD_MS,
+  ROOM_IDLE_MS, ROOM_MAX_PLAYERS, ROOM_STATE_HOLD_MS,
   normalizeClientId, normalizeEmote, normalizePosition, normalizeProfile, publicPlayer, validRoomHost,
 } from './room-protocol.js'
 
 const MAX_JOIN_WINDOW_MS = 60_000
 const MAX_JOIN_ATTEMPTS = 20
-function sha256(value) {
-  return createHash('sha256').update(value).digest('hex')
-}
-function send(response, status, body) {
-  response.writeHead(status, {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store',
-    'x-content-type-options': 'nosniff',
-  })
-  response.end(JSON.stringify(body))
-}
-function fail(status, reason) {
-  return Object.assign(new Error(reason), { status, code: reason })
-}
-
-function exactKeys(value, keys) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) &&
-    Object.keys(value).sort().join(',') === [...keys].sort().join(',')
-}
-
-/** 新玩家先站中间，之后左右交替排开，避免所有猪叠在同一个点。 */
-function spawnX(index) {
-  if (index === 0) return 0.5
-  const side = index % 2 === 1 ? 1 : -1
-  const step = Math.ceil(index / 2)
-  return Math.round(Math.min(0.92, Math.max(0.08, 0.5 + side * step * 0.16)) * 1000) / 1000
-}
-
-async function readJson(request) {
-  let contentTypes = 0
-  for (let index = 0; index < request.rawHeaders.length; index += 2) {
-    if (request.rawHeaders[index].toLowerCase() === 'content-type') contentTypes += 1
-  }
-  if (contentTypes !== 1) throw fail(415, 'json-required')
-  if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/iu.test(request.headers['content-type'] ?? '')) throw fail(415, 'json-required')
-  const chunks = []
-  let size = 0
-  for await (const chunk of request) {
-    size += chunk.length
-    if (size > ROOM_MAX_BODY) throw fail(413, 'body-too-large')
-    chunks.push(chunk)
-  }
-  try {
-    const value = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('not an object')
-    return value
-  } catch { throw fail(400, 'invalid-json') }
-}
-
-function authToken(request) {
-  const raw = request.rawHeaders
-  let count = 0
-  for (let index = 0; index < raw.length; index += 2) if (raw[index].toLowerCase() === 'authorization') count += 1
-  if (count !== 1 || typeof request.headers.authorization !== 'string') throw fail(401, 'unauthorized')
-  const match = /^Bearer ([a-f0-9]{64})$/u.exec(request.headers.authorization)
-  if (match === null) throw fail(401, 'unauthorized')
-  return match[1]
-}
 
 export async function startRoomServer(options) {
   const code = normalizeRoomCode(options.code)
@@ -118,6 +62,11 @@ export async function startRoomServer(options) {
     players, careEvents, careResults, now, bump, send, fail, readJson, exactKeys, randomUUID,
     findPlayer: request => findPlayer(request),
     version: () => version,
+  })
+  const roomGame = createRoomGame({
+    now, send, fail, readJson, exactKeys,
+    findPlayer: request => findPlayer(request),
+    bump, version: () => version,
   })
   let notifyTimer = null
   let sweeper = null
@@ -171,7 +120,7 @@ export async function startRoomServer(options) {
   }
 
   function view() {
-    return { code, version, hostId }
+    return { code, version, hostId, caps: ['game'], authority: 'host' }
   }
 
   function body() {
@@ -184,6 +133,7 @@ export async function startRoomServer(options) {
         .map(publicPlayer),
       careEvents: careEvents.slice(-32),
       careResults: careResults.slice(-32),
+      gameEvents: roomGame.eventsView(),
     }
   }
 
@@ -325,6 +275,7 @@ export async function startRoomServer(options) {
     if (request.method === 'POST' && path === '/v1/room/update') return update(request, response)
     if (request.method === 'POST' && path === '/v1/room/care') return roomCare.care(request, response)
     if (request.method === 'POST' && path === '/v1/room/care-result') return roomCare.careResult(request, response)
+    if (request.method === 'POST' && path === '/v1/room/game') return roomGame.game(request, response)
     if (request.method === 'POST' && path === '/v1/room/leave') return leave(request, response)
     throw fail(404, 'not-found')
   }

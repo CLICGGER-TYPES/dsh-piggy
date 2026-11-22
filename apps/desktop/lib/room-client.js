@@ -105,6 +105,16 @@ export function createRoomClient({ baseUrl, code, profile, clientId = randomUUID
     })
   }
 
+  function game({ seq, ext, op, data = {} }) {
+    return serialize(async () => {
+      const result = await request('/v1/room/game', {
+        seq: Number(seq), ext: String(ext), op: String(op), data,
+      }, true)
+      if (result.status === 200 && Number.isSafeInteger(result.body.version)) version = result.body.version
+      return result
+    })
+  }
+
   function leave() {
     return serialize(async () => {
       if (token === null) return { status: 200, body: { ok: true } }
@@ -124,6 +134,7 @@ export function createRoomClient({ baseUrl, code, profile, clientId = randomUUID
     update,
     care,
     careResult,
+    game,
     leave,
     close: () => leave().catch(() => ({ status: 0, body: { ok: false } })),
   })

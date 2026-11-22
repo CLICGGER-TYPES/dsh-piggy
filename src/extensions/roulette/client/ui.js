@@ -29,21 +29,29 @@ export function vaultPill(app, state) {
   return pill
 }
 
+export function coinPill(app, state) {
+  const pill = app.el('div', 'rt-vault rt-wallet')
+  pill.setAttribute('aria-label', '金币 ' + money(state.coins))
+  pill.appendChild(coin())
+  pill.appendChild(app.el('b', null, money(state.coins)))
+  return pill
+}
+
 /**
- * 子页标题：可选的返回按钮 + 标题 + 副标题 + 金库。
+ * 子页标题：可选的返回按钮 + 标题 + 副标题 + 金币。
  */
 export function pageHead(app, state, title, sub, backLabel, onBack) {
   const head = app.el('header', 'rt-head')
   if (typeof onBack === 'function') {
     const back = app.button('rt-back', { 'aria-label': backLabel || '返回' }, onBack)
-    back.textContent = (backLabel || '').replace(/^返回/, '') || '返回'
+    back.textContent = '返回'
     head.appendChild(back)
   }
   const brand = app.el('div', 'rt-brand')
   brand.appendChild(app.el('div', 'rt-title', title))
   if (sub) brand.appendChild(app.el('div', 'rt-sub', sub))
   head.appendChild(brand)
-  head.appendChild(vaultPill(app, state))
+  head.appendChild(coinPill(app, state))
   return head
 }
 
@@ -54,14 +62,13 @@ export function action(app, className, attrs, label, onClick) {
   return node
 }
 
-export function pigAvatar(app, className) {
-  const art = typeof app.pigArt === 'function' ? app.pigArt() : null
-  if (!art) return app.el('span', className, '🐖')
-  const node = app.el('img', className)
-  node.src = art
-  node.alt = ''
+/** 设置/装弹用的单选小胶囊。 */
+export function chip(app, label, active, onClick, attrs) {
+  const node = action(app, 'dp-mini rt-chip' + (active ? ' rt-chip-on' : ''), attrs || {}, label, onClick)
+  node.setAttribute('aria-pressed', active ? 'true' : 'false')
   return node
 }
+
 
 /**
  * 大厅玩法行。locked 的行仍然可点，只负责提示需要宿主房间接口。
@@ -103,20 +110,5 @@ export function footer(app, options) {
   if (typeof options.extra === 'function') row.appendChild(options.extra())
   row.appendChild(app.el('span', 'rt-spacer'))
   row.appendChild(app.el('span', 'rt-tiny', options.note || '单局底池'))
-  return row
-}
-
-export function ammoBadge(app) {
-  const badge = app.el('div', 'rt-ammo')
-  badge.appendChild(assetImage(app, 'bullet-v1.webp', 'rt-ammo-icon'))
-  badge.appendChild(app.el('b', null, '1'))
-  badge.appendChild(app.el('span', null, '/ 6 巢'))
-  return badge
-}
-
-export function detailRow(app, text, boldText, className) {
-  const row = app.el('div', className || 'rt-detail')
-  if (text) row.appendChild(app.el('span', null, text))
-  if (boldText) row.appendChild(app.el('b', null, boldText))
   return row
 }

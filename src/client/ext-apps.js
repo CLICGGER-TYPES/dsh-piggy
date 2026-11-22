@@ -16,6 +16,7 @@ import { walletBar } from './wallet.js'
 import { applyAssetFrame, applyModalAssetFrame } from './asset-background.js'
 import { artSource } from './art-path.js'
 import { desktopRole, desktopShell } from './desktop-shell.js'
+import { roomBridge } from './room-bridge.js'
 import { openBigTarget, stageShell } from './stage-shell.js'
 
 /** @type {Record<string, any>} */
@@ -78,6 +79,22 @@ export function closeBigApp(ui) {
   ui.renderContent()
 }
 
+/** 扩展的游戏通道：只在大窗口里给（面板窗口没有联机权限）。 */
+function roomGameBridge(key, big) {
+  if (!big) return undefined
+  var room = roomBridge()
+  if (room === null || typeof room.game !== 'function') return undefined
+  return {
+    status: function () { return room.status() },
+    // 游戏消息自动带上扩展 key；seq 由扩展自己按玩家递增。
+    send: function (seq, op, data) { return room.game(seq, key, op, data || {}) },
+    onUpdate: function (callback) { room.onUpdate(callback) },
+    onClosed: function (callback) { room.onClosed(callback) },
+    leave: function () { return room.leave() },
+    copy: function () { return room.copy() },
+  }
+}
+
 /** 下载扩展的 App 页；mode 'big' 是它的大界面（见 openBigApp）。 */
 export function renderDownloadedApp(ui, key, mode) {
   var big = mode === 'big'
@@ -109,6 +126,8 @@ export function renderDownloadedApp(ui, key, mode) {
       openBig: big || (desktopShell() !== null && !(desktopShell().ext && typeof desktopShell().ext.open === 'function')) ? undefined : function () { openBigApp(ui, key) },
       closeBig: big ? function () { closeBigApp(ui) } : undefined,
       send: function (op, payload) { return ui.send('ext', { key: key, op: op, data: payload || {} }) },
+      // 联机牌桌（外壳 0.6.8 起）：大窗口里才有；gameEvents 是最近 32 条，扩展按 event.id 去重。
+      room: roomGameBridge(key, big),
       walletContent: wallet ? function () { return walletBar(ui, wallet, { open: true }) } : undefined,
       el: el,
       button: button,

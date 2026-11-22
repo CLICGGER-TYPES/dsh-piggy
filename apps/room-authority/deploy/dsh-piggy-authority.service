@@ -1,0 +1,43 @@
+[Unit]
+Description=dsh-piggy room authority
+Documentation=https://github.com/CLICGGER-TYPES/dsh-piggy/blob/main/apps/room-authority/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dsh-piggy
+Group=dsh-piggy
+# 按实际部署修改源码路径和 node 路径；密钥由 EnvironmentFile 提供，不要写进命令行。
+WorkingDirectory=/opt/dsh-piggy
+EnvironmentFile=/etc/dsh-piggy/authority.env
+ExecStart=/usr/bin/node /opt/dsh-piggy/apps/room-authority/authority.mjs --port 47825
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+LimitNOFILE=4096
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

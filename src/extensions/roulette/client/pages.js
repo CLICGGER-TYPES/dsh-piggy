@@ -1,145 +1,343 @@
 // @ts-check
 /**
- * 大堂、装弹页和规则页。牌桌在 table.js，三个页面共用同一份 game 状态，
- * 所以从规则页返回时不会重开对局。
+ * 大堂、牌桌和规则页。所有金币/对局数字来自服务端 view（app.data），
+ * 本地只读 game.ui 里的装弹/转轮/火光动画状态。
  */
 
-import { matchStake, money } from './game.js'
-import { action, ammoBadge, assetImage, footer, modeRow, pageHead, vaultPill } from './ui.js'
+import { CHAMBER_X, CHAMBER_Y, LOAD_MAX, LOAD_MIN, money } from './game.js'
+import { settingsBlock } from './settings.js'
+import { action, assetImage, chip, coinPill, footer, modeRow, pageHead } from './ui.js'
 
 export function renderLobby(app, game) {
-  const state = game.state
+  const data = game.data()
   const root = app.el('div', 'rt-page rt-lobby')
 
   const top = app.el('div', 'rt-topline')
-  top.appendChild(app.el('span', 'rt-kicker', '经典 6 巢 · 1 条命 · 三局两胜'))
+  top.appendChild(app.el('span', 'rt-kicker', '6 巢 · 真实金币 · 玩具轮盘'))
   top.appendChild(app.el('span', 'rt-spacer'))
-  top.appendChild(vaultPill(app, state))
+  top.appendChild(coinPill(app, data))
   root.appendChild(top)
 
   const hero = app.el('div', 'rt-hero')
   hero.appendChild(app.el('div', 'rt-hero-glow'))
-  hero.appendChild(assetImage(app, 'table-v1.webp', 'rt-hero-table'))
-  hero.appendChild(assetImage(app, 'revolver-v2.webp', 'rt-hero-gun'))
+  hero.appendChild(assetImage(app, 'table-v2.webp', 'rt-hero-table'))
+  hero.appendChild(assetImage(app, 'revolver-v6.webp', 'rt-hero-gun'))
   hero.appendChild(assetImage(app, 'chip-v1.webp', 'rt-hero-chip rt-hero-chip-a'))
   hero.appendChild(assetImage(app, 'chip-v1.webp', 'rt-hero-chip rt-hero-chip-b'))
-  const badge = ammoBadge(app)
-  badge.className += ' rt-hero-ammo'
-  hero.appendChild(badge)
+  hero.appendChild(app.el('span', 'rt-hero-tag', 'AI 对战 · 1 对 1'))
   root.appendChild(hero)
 
-  root.appendChild(app.el('div', 'rt-menu-label', '选择玩法'))
-  const menu = app.el('div', 'rt-menu')
-  menu.appendChild(modeRow(app, {
-    op: 'enter-ai',
-    name: 'AI 对战',
-    note: '单局底池 · AI 从金库配注',
-    primary: true,
-    asset: 'cylinder-v1.webp',
-    onClick: function () { game.enterTable() },
+  root.appendChild(action(app, 'dp-btn rt-primary rt-wide rt-enter', { 'data-op': 'enter-ai' }, '进入牌桌', function () {
+    game.start()
   }))
+
+  const menu = app.el('div', 'rt-menu')
   menu.appendChild(modeRow(app, {
     op: 'friend-mode',
     name: '好友联机',
-    note: '需要宿主房间接口',
-    locked: true,
+    note: '1v1 · 房主开局',
     asset: 'chip-v1.webp',
-    onClick: function () { game.notify('好友联机需要宿主房间接口，下一阶段接入') },
+    onClick: function () {
+      // 房间通道只在桌面版大窗口里给；面板里先开大窗口。
+      if (!app.room && typeof app.openBig === 'function') { app.openBig(); return }
+      game.showPage('online')
+    },
   }))
   menu.appendChild(modeRow(app, {
-    op: 'team-mode',
-    name: '4v4 阵营',
-    note: '单局淘汰 · 后续开放',
+    op: 'four-mode',
+    name: '4 人桌',
+    note: '同批设计 · 下一阶段接入',
     locked: true,
     grid: true,
-    onClick: function () { game.notify('4v4 需要宿主房间接口，下一阶段接入') },
+    onClick: function () { game.notify('4 人桌需要宿主房间接口，下一阶段接入') },
   }))
   root.appendChild(menu)
 
+  root.appendChild(settingsBlock(app, game, data))
+
   root.appendChild(footer(app, {
     onRules: function () { game.openRules('lobby') },
-    note: '金币 ' + money(state.coins) + ' · 本地演示',
+    note: '真实金币 · 底池归赢家',
   }))
   return root
 }
 
-export function renderLoading(app, game) {
-  const state = game.state
-  const root = app.el('div', 'rt-page rt-loading')
-  root.appendChild(pageHead(app, state, '装弹', '第 ' + state.round + ' 局 · 三局两胜', '返回牌桌', function () {
-    game.backToTable()
+function lifeDots(app, count, max) {
+  const lives = app.el('span', 'rt-lives')
+  for (let index = 0; index < max; index += 1) {
+    lives.appendChild(app.el('i', index < count ? 'rt-life rt-life-on' : 'rt-life'))
+  }
+  return lives
+}
+
+export function renderLives(app, data, opponentName) {
+  const match = data.match
+  const max = data.settings.lives
+  const row = app.el('div', 'rt-livesbar')
+  const ai = app.el('div', 'rt-lives-side rt-lives-ai')
+  ai.appendChild(app.el('b', null, opponentName ?? '侦探猪'))
+  ai.appendChild(lifeDots(app, match ? match.livesAi : 0, max))
+  row.appendChild(ai)
+  row.appendChild(app.el('span', 'rt-lives-score', match ? match.winsAi + ' : ' + match.winsYou : '0 : 0'))
+  const you = app.el('div', 'rt-lives-side rt-lives-you')
+  you.appendChild(lifeDots(app, match ? match.livesYou : 0, max))
+  you.appendChild(app.el('b', null, '你'))
+  row.appendChild(you)
+  return row
+}
+
+export function renderMeta(app, data) {
+  const match = data.match
+  const row = app.el('div', 'rt-meta')
+  const left = app.el('div', 'rt-meta-left')
+  left.appendChild(app.el('span', 'rt-meta-tag', match ? '第 ' + match.round + ' 局' : '未开局'))
+  left.appendChild(app.el('span', 'rt-meta-tag', data.settings.format === 'bestOf3' ? '三局两胜' : '单局'))
+  if (match && data.settings.format === 'bestOf3') {
+    left.appendChild(app.el('span', 'rt-meta-tag rt-meta-score', match.winsAi + ' : ' + match.winsYou))
+  }
+  row.appendChild(left)
+  const pot = app.el('div', 'rt-pot')
+  pot.appendChild(assetImage(app, 'chip-v1.webp', 'rt-pot-chip'))
+  pot.appendChild(app.el('span', null, '底池'))
+  pot.appendChild(app.el('b', null, money(match ? match.pot : 0)))
+  row.appendChild(pot)
+  return row
+}
+
+export function renderBoard(app, game, data, canArm) {
+  const match = data.match
+  const ui = game.ui
+  let className = 'rt-board'
+  if (match && match.stage === 'arming') className += ' rt-board-arming'
+  if (ui.flash === 'live') className += ' rt-board-fire rt-board-live'
+  else if (ui.flash === 'blank') className += ' rt-board-fire'
+  const board = app.el('div', className)
+  board.setAttribute('role', 'group')
+  board.setAttribute('aria-label', '六孔弹巢')
+
+  board.appendChild(assetImage(app, 'table-v2.webp', 'rt-board-table'))
+
+  const wrap = app.el('div', ui.spinning ? 'rt-cyl-wrap rt-cyl-spin' : 'rt-cyl-wrap')
+  wrap.appendChild(assetImage(app, 'cylinder-v4.webp', 'rt-cyl'))
+  if (ui.primer >= 0) {
+    const primer = assetImage(app, 'bullet-base-v4.webp', ui.primerPop ? 'rt-primer rt-primer-show' : 'rt-primer rt-primer-on')
+    primer.style.setProperty('--x', CHAMBER_X[ui.primer] + 'px')
+    primer.style.setProperty('--y', CHAMBER_Y[ui.primer] + 'px')
+    wrap.appendChild(primer)
+  }
+  const armed = canArm !== false && match !== null && match.stage === 'arming' && !ui.spinning
+  for (let index = 0; index < 6; index += 1) {
+    const hole = app.button('rt-hole', {
+      'data-chamber': String(index),
+      'aria-label': '第 ' + (index + 1) + ' 巢' + (armed ? '，点这里装弹' : ''),
+      'aria-disabled': armed ? 'false' : 'true',
+    }, function () { game.load(index) })
+    hole.disabled = !armed
+    hole.style.setProperty('--x', CHAMBER_X[index] + 'px')
+    hole.style.setProperty('--y', CHAMBER_Y[index] + 'px')
+    wrap.appendChild(hole)
+  }
+  board.appendChild(wrap)
+  board.appendChild(app.el('div', 'rt-flash'))
+  if (match && match.stage !== 'roundOver') {
+    const badge = app.el('div', 'rt-ammo rt-board-ammo')
+    badge.appendChild(assetImage(app, 'bullet-side-v4.webp', 'rt-ammo-icon'))
+    if (match.stage === 'arming') {
+      badge.appendChild(app.el('b', null, String(match.bulletCount)))
+      badge.appendChild(app.el('span', null, '发 · 待装'))
+    } else {
+      badge.appendChild(app.el('b', null, String(match.bulletsLeft)))
+      badge.appendChild(app.el('span', null, '/ ' + match.bulletCount + ' 发'))
+    }
+    board.appendChild(badge)
+  }
+  return board
+}
+
+function statusText(match) {
+  if (match === null) return '选择设置后开始对局。'
+  if (match.stage === 'arming') return '装 ' + match.bulletCount + ' 发。点一个弹孔，随后强制转轮。'
+  if (match.stage === 'ai') {
+    if (match.mustShoot === 'ai') return 'AI 被回让，必须开枪…'
+    if (match.passBy === 'you') return '你已让枪，等 AI 决定。'
+    return 'AI 回合…'
+  }
+  if (match.stage === 'choice') {
+    if (match.mustShoot === 'you') return '对手回让，你必须开枪。'
+    if (match.passBy === 'ai') return 'AI 已让枪：开枪，或回让让它开枪。'
+    return match.turn === 'you' ? '轮到你：对自己开枪，或让枪。' : 'AI 回合…'
+  }
+  if (match.stage === 'roundOver') return '本局结束，比分 ' + match.winsAi + ' : ' + match.winsYou + '。点「下一局」继续。'
+  if (match.stage === 'matchOver') return match.outcome === 'win' ? '你赢下整场，底池已结算。' : 'AI 赢下整场，底池已结算。'
+  if (match.lastEvent === 'hit') return '中弹！'
+  if (match.lastEvent === 'blank') return '空枪，换手。'
+  return '准备中…'
+}
+
+/**
+ * 本场真实金币净变化：底池收入 - 累计下注 - 玩家让枪费。
+ * AI 的让枪费进底池，赢了才随底池拿到，所以不再单独加到净额里。
+ */
+function matchNet(match) {
+  return (match.outcome === 'win' ? match.pot : 0) - (match.paidYou || 0) - (match.feesYou || 0)
+}
+
+function renderResult(app, match) {
+  const net = matchNet(match)
+  const win = match.outcome === 'win'
+  const card = app.el('div', 'rt-result ' + (net >= 0 ? 'rt-result-win' : 'rt-result-lose'))
+  card.appendChild(app.el('div', 'rt-result-kicker', '本场结束'))
+  card.appendChild(app.el('div', 'rt-result-title', win ? '你赢了' : 'AI 赢了'))
+  card.appendChild(app.el('div', 'rt-result-net', (net > 0 ? '+' : net < 0 ? '-' : '') + money(Math.abs(net))))
+  card.appendChild(app.el('div', 'rt-result-label', net > 0 ? '本场净收' : net < 0 ? '本场净付' : '本场打平'))
+  const meta = app.el('div', 'rt-result-meta')
+  meta.appendChild(app.el('span', null, '底池 ' + money(match.pot)))
+  meta.appendChild(app.el('span', null, '下注 ' + money(match.paidYou)))
+  if (match.feesYou > 0) meta.appendChild(app.el('span', null, '让枪付 ' + money(match.feesYou)))
+  if (match.feesAi > 0) meta.appendChild(app.el('span', null, 'AI 让枪入池 ' + money(match.feesAi)))
+  card.appendChild(meta)
+  return card
+}
+
+function renderDock(app, game, data) {
+  const match = data.match
+  const dock = app.el('div', 'rt-dock')
+  if (match === null) {
+    dock.appendChild(action(app, 'dp-btn rt-primary rt-wide', { 'data-op': 'start' }, '开始 AI 对战', function () {
+      game.start()
+    }))
+    return dock
+  }
+  if (game.ui.leaveConfirm) {
+    const confirm = app.el('div', 'rt-confirm')
+    confirm.appendChild(app.el('b', null, '确认离开牌桌？'))
+    confirm.appendChild(app.el('p', null, match.stage === 'arming'
+      ? '前面累积的底池会归 AI 金库，已下的底注不退。'
+      : '本场视为认输，底池归 AI 金库，已下的底注不退。'))
+    dock.appendChild(confirm)
+    const buttons = app.el('div', 'rt-actions')
+    buttons.appendChild(action(app, 'dp-btn rt-primary rt-wide', { 'data-op': 'cancel-leave' }, '继续打', function () {
+      game.cancelLeave()
+    }))
+    buttons.appendChild(action(app, 'dp-btn rt-danger rt-wide', { 'data-op': 'confirm-leave' }, '确认离开', function () {
+      game.leaveTable()
+    }))
+    dock.appendChild(buttons)
+    return dock
+  }
+  const info = app.el('div', 'rt-bet')
+  info.appendChild(app.el('span', 'rt-bet-label', '底注'))
+  info.appendChild(app.el('b', 'rt-stake', money(match.matchedYou)))
+  info.appendChild(app.el('span', 'rt-bet-label', '· 本局 AI 配注'))
+  info.appendChild(app.el('b', 'rt-stake', money(match.matchedAi)))
+  dock.appendChild(info)
+
+  const actions = app.el('div', 'rt-actions')
+  function primary(label, op, handler, disabled) {
+    const node = action(app, 'dp-btn rt-primary rt-wide', { 'data-op': op }, label, handler)
+    if (disabled) node.disabled = true
+    actions.appendChild(node)
+    return node
+  }
+  if (match.stage === 'arming') {
+    primary('随机装弹', 'load-random', function () { game.randomLoad() })
+    actions.appendChild(app.el('div', 'rt-hint', '也可以直接点弹孔 · 装完强制转轮'))
+  } else if (match.stage === 'choice') {
+    actions.appendChild(action(app, 'dp-btn rt-danger', { 'data-op': 'shoot' }, '对自己开枪', function () { game.fire() }))
+    const fee = Math.max(1, Math.ceil(match.matchedYou * (data.passRate || 0.5)))
+    const forced = match.mustShoot === 'you'
+    const passBtn = action(app, 'dp-btn', { 'data-op': 'pass' }, '让枪 · 付 ' + money(fee), function () { game.pass() })
+    if (forced || data.coins < fee) passBtn.disabled = true
+    actions.appendChild(passBtn)
+    const hint = forced
+      ? '对手回让，你只能开枪'
+      : data.coins < fee
+        ? '金币不够让枪费，只能开枪'
+        : match.passBy === 'ai'
+          ? '回让会让枪回到 AI，它必须开枪'
+          : '让枪费直接给 AI，本回合结束'
+    actions.appendChild(app.el('div', 'rt-hint', hint))
+  } else if (match.stage === 'ai') {
+    if (game.ui.aiError) {
+      primary('AI 行动重试', 'ai-retry', function () { game.retryAi() })
+      actions.appendChild(app.el('div', 'rt-hint', 'AI 行动没送到宿主，点重试'))
+    } else {
+      primary('AI 回合…', 'ai-wait', function () {}, true)
+      actions.appendChild(app.el('div', 'rt-hint', 'AI 不知道子弹位置'))
+    }
+  } else if (match.stage === 'roundOver') {
+    const load = app.el('div', 'rt-next-load')
+    load.appendChild(app.el('span', 'rt-bet-label', '下一局装弹'))
+    const row = app.el('div', 'rt-chips')
+    const current = game.ui.nextLoad ?? data.settings.loadCount
+    for (let value = LOAD_MIN; value <= LOAD_MAX; value += 1) {
+      row.appendChild(chip(app, value + ' 发', current === value, function () {
+        game.setNextLoad(value)
+      }, { 'data-op': 'next-load-' + value }))
+    }
+    load.appendChild(row)
+    actions.appendChild(load)
+    primary('下一局', 'next', function () { game.next() })
+  } else if (match.stage === 'matchOver') {
+    primary('再来一场', 'again', function () { game.start() })
+    actions.appendChild(app.el('div', 'rt-hint', match.outcome === 'win' ? '底池已结算 · 金币已到账' : '底池归 AI · 已下底注不退'))
+  }
+  dock.appendChild(actions)
+  return dock
+}
+
+export function renderTable(app, game) {
+  const data = game.data()
+  const match = data.match
+  const root = app.el('div', 'rt-page rt-table')
+  const sub = match === null ? '未开局' : '第 ' + match.round + ' 局 · ' + (data.settings.format === 'bestOf3' ? '三局两胜' : '单局')
+  root.appendChild(pageHead(app, data, 'AI 对战', sub, '返回大厅', function () {
+    game.requestLeave()
   }))
-
-  const stage = app.el('div', 'rt-gun-stage')
-  const wrap = app.el('div', 'rt-gun-wrap')
-  wrap.appendChild(assetImage(app, 'revolver-v2.webp', 'rt-gun-img'))
-  const ring = app.el('div', 'rt-gun-ring')
-  for (let index = 0; index < 6; index += 1) ring.appendChild(app.el('i'))
-  wrap.appendChild(ring)
-  stage.appendChild(wrap)
-  const bullet = app.button('rt-gun-bullet', { 'data-op': 'load-bullet', 'aria-label': '装弹' }, function () {
-    game.beginLoad(false)
-  })
-  bullet.appendChild(assetImage(app, 'bullet-v1.webp', 'rt-gun-bullet-icon'))
-  bullet.appendChild(app.el('span', null, '装弹'))
-  stage.appendChild(bullet)
-  root.appendChild(stage)
-
-  const pot = state.pendingFresh ? matchStake(state) * 2 : state.pot
-  const bet = app.el('div', 'rt-bet-pill')
-  bet.appendChild(app.el('span', null, '底注'))
-  bet.appendChild(app.el('b', null, money(state.stake)))
-  bet.appendChild(app.el('span', null, '· 底池'))
-  bet.appendChild(app.el('b', null, money(pot)))
-  root.appendChild(bet)
-  root.appendChild(app.el('div', 'rt-load-hint', '点「装弹」后在弹巢上点一个孔；也可以让系统随机。返回大厅会取消本场，装弹前不扣钱。'))
-
-  const actions = app.el('div', 'rt-actions rt-actions-two')
-  actions.appendChild(action(app, 'dp-btn rt-primary', { 'data-op': 'load-now' }, '装弹', function () {
-    game.beginLoad(false)
-  }))
-  actions.appendChild(action(app, 'dp-btn', { 'data-op': 'load-random' }, '随机装弹', function () {
-    game.beginLoad(true)
-  }))
-  root.appendChild(actions)
-
+  root.appendChild(renderMeta(app, data))
+  root.appendChild(renderLives(app, data, '侦探猪'))
+  if (match !== null && match.stage === 'matchOver') {
+    root.appendChild(renderResult(app, match))
+  } else {
+    root.appendChild(renderBoard(app, game, data, true))
+    const status = app.el('div', 'rt-status', statusText(match))
+    status.setAttribute('role', 'status')
+    status.setAttribute('aria-live', 'polite')
+    root.appendChild(status)
+  }
+  root.appendChild(renderDock(app, game, data))
   root.appendChild(footer(app, {
-    onRules: function () { game.openRules('loading') },
-    extra: function () {
-      return action(app, 'rt-link', { 'data-op': 'leave-lobby', 'aria-label': '返回大厅并取消本场' }, '返回大厅', function () {
-        game.leaveTable()
-      })
-    },
-    note: '金币 ' + money(state.coins),
+    onRules: function () { game.openRules('table') },
+    note: '真实金币 · 让枪付 50%',
   }))
   return root
 }
 
 export function renderRules(app, game) {
-  const state = game.state
+  const data = game.data()
   const root = app.el('div', 'rt-page rt-rules')
-  root.appendChild(pageHead(app, state, '规则', '经典 6 巢 · 1 条命', '返回', function () {
+  root.appendChild(pageHead(app, data, '规则', '6 巢 · 1/3 命 · 单局或三局两胜', '返回', function () {
     game.closeRules()
   }))
-
   const card = app.el('div', 'rt-rules-card')
-  card.appendChild(app.el('h2', null, '经典俄罗斯轮盘'))
+  card.appendChild(app.el('h2', null, '左轮轮盘规则'))
   const list = app.el('ul')
   ;[
-    '6 个弹巢，1 发实弹，1 条命。每局开始先装弹，再选择是否转轮。',
-    '转轮会重新随机子弹位置并隐藏底火；不转轮直接开枪，按你装弹时选的孔结算。',
-    '空枪换手；中弹输掉本局。先赢 2 局的人拿走底池。',
-    'AI 只在对战模式参战，按金库 1% 等额配注；超出部分原路退回。',
-    '好友联机 / 4v4 需要宿主房间接口，当前只锁定入口，不假装已支持。',
-    '本扩展使用本地演示金币，不读写主存档金币；关闭扩展后本场数据不保留。',
+    '6 个弹巢。每局开局自己选装 1-5 发，单局内子弹不增加。',
+    '装完强制转轮，子弹位置随机化，双方都不知道最终位置。',
+    '每局先手随机；空枪换手；中弹扣 1 条命。',
+    '1 条命：中弹即输。3 条命：装 1 发中弹后重装继续；装多发则继续打当前弹巢，子弹打完再重装。',
+    '让枪：玩家付当前底注 50% 给 AI；AI 让枪付 50% 进底池。本回合结束，对手不用开枪。',
+    '回让：对手让枪后你再让，枪回到先让的人手里，他这一手必须开枪。',
+    '单局或三局两胜。三局两胜每局下注、底池累积，先赢 2 局者拿走全部底池。',
+    'AI 按金库上限配注，跟不起就少配；5 档策略（莽夫 / 期望值 / 随机诈唬 / 贝叶斯 / 蒙特卡洛）都只读公开量，不知道子弹位置；中弹概率≥75% 时都会让枪。',
+    '真实金币结算：输的钱进 AI 金库，赢的钱从 AI 金库出。',
   ].forEach(function (line) {
     list.appendChild(app.el('li', null, line))
   })
   card.appendChild(list)
-  card.appendChild(app.el('p', 'rt-rules-note', '装弹页和牌桌都能点「规则」；从规则返回时，牌桌的底注、比分和弹巢状态不变。'))
   root.appendChild(card)
-
-  const label = state.rulesFrom === 'table' ? '返回牌桌' : state.rulesFrom === 'loading' ? '返回装弹' : '返回大厅'
+  const label = game.ui.rulesFrom === 'table' ? '返回牌桌' : '返回大厅'
   root.appendChild(action(app, 'dp-btn rt-primary rt-wide', { 'data-op': 'rules-back' }, label, function () {
     game.closeRules()
   }))

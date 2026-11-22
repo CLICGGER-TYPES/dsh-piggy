@@ -1,9 +1,9 @@
 // @ts-check
-import { announce, earnCoins, exert, extensionSource, openWallet, spendCoins, walletBalance, walletEarn, walletSpend } from '../src/host/core.js'
+import { announce, earnCoins, ensureEconomy, exert, extensionSource, openWallet, refundCoins, spendCoins, walletBalance, walletEarn, walletSpend } from '../src/host/core.js'
 import { BOX_TICKET, EXT_EARN_PER_ACTION, itemByKey } from '../src/host/data.js'
 import { EXTENSION_EVENT_VERSION } from '../packages/pet-core/src/data/extension-events.js'
 /**
- * 给扩展用的口子：只能花钱、挣钱、给东西、说话；数据只能动自己的那份。
+ * 给扩展用的口子：只能花钱、挣钱、退钱、给东西、说话；数据只能动自己的那份。
  * 金币一律走 core/economy.js 记账，来源强制记在 `ext.<扩展名>.` 下（docs/guides/writing-extensions.md「经济」）。
  * 一次动作最多挣 EXT_EARN_PER_ACTION，写错的扩展冲不垮经济。
  * 声明了货币（manifest.economy.currency）的扩展还有 api.wallet：自己的币，钱包放在宿主，删扩展时按汇率换成金币。
@@ -39,6 +39,19 @@ export function apiFor(state, key, options) {
       if (n <= 0) return 0
       earned += n
       return earnCoins(state, n, extensionSource(state, key, source), nowMs)
+    },
+    /**
+     * 退钱：把之前花在这项上的金币退回来，冲掉原来的支出、不算收入（经济报表不会虚增）。
+     * 最多退这项还没退完的部分，多给只退能退的；返回实际退了多少。sink 要和当时花出去的名字一致。
+     */
+    refund: (amount, sink = 'refund') => {
+      const n = Math.floor(Number(amount))
+      if (!(n > 0)) return 0
+      const source = extensionSource(state, key, sink)
+      const refundable = ensureEconomy(state).totals[source]?.out ?? 0
+      const real = Math.min(n, refundable)
+      if (real <= 0) return 0
+      return refundCoins(state, real, source, nowMs)
     },
     /** 「玩会累」：主动玩一下扣一点饱食（data/economy.js 的建议值），最多一次 5 点。 */
     exert: points => exert(state, Math.min(5, Math.max(0, Number(points) || 0))),
