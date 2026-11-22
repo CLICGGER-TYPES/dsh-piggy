@@ -36,9 +36,7 @@ fn valid_game_key(value: &str, op: bool) -> bool {
         return false;
     }
     bytes.iter().enumerate().all(|(index, byte)| {
-        byte.is_ascii_lowercase()
-            || byte.is_ascii_digit()
-            || (*byte == b'-' && (!op || index > 0))
+        byte.is_ascii_lowercase() || byte.is_ascii_digit() || (*byte == b'-' && (!op || index > 0))
     })
 }
 
@@ -49,7 +47,9 @@ fn valid_game_value(value: &Value, depth: usize) -> bool {
     match value {
         Value::Null | Value::Bool(_) | Value::Number(_) => true,
         Value::String(text) => text.len() <= 256,
-        Value::Array(items) => items.len() <= 32 && items.iter().all(|item| valid_game_value(item, depth + 1)),
+        Value::Array(items) => {
+            items.len() <= 32 && items.iter().all(|item| valid_game_value(item, depth + 1))
+        }
         Value::Object(map) => {
             map.len() <= 32
                 && map
@@ -615,7 +615,11 @@ impl Room {
     }
 
     /// 校验并返回一条待处理动作；校验通过但 seq 已经处理过时返回 None。
-    pub fn check_game(&self, player_id: &str, input: &Value) -> Result<Option<GameAction>, ApiError> {
+    pub fn check_game(
+        &self,
+        player_id: &str,
+        input: &Value,
+    ) -> Result<Option<GameAction>, ApiError> {
         if !exact_keys(input, &["seq", "ext", "op", "data"]) {
             return Err(ApiError::new(400, "game-shape-invalid"));
         }
@@ -643,14 +647,22 @@ impl Room {
         if !data.is_object() || !valid_game_value(data, 0) {
             return Err(ApiError::new(400, "game-data-invalid"));
         }
-        if serde_json::to_vec(data).map(|bytes| bytes.len()).unwrap_or(usize::MAX) > ROOM_GAME_MAX_DATA {
+        if serde_json::to_vec(data)
+            .map(|bytes| bytes.len())
+            .unwrap_or(usize::MAX)
+            > ROOM_GAME_MAX_DATA
+        {
             return Err(ApiError::new(413, "game-data-too-large"));
         }
         let mut inner = self.inner.lock().expect("room lock");
         if inner.closing {
             return Err(ApiError::new(503, "room-closed"));
         }
-        let Some(index) = inner.players.iter().position(|player| player.id == player_id) else {
+        let Some(index) = inner
+            .players
+            .iter()
+            .position(|player| player.id == player_id)
+        else {
             return Err(ApiError::new(401, "unauthorized"));
         };
         let window = inner.players[index].game_window;
@@ -676,13 +688,21 @@ impl Room {
     }
 
     /// 房主权威模式：记录玩家 seq 并把动作作为事件广播。
-    pub fn accept_game(self: &Arc<Self>, player_id: &str, action: &GameAction) -> Result<Value, ApiError> {
+    pub fn accept_game(
+        self: &Arc<Self>,
+        player_id: &str,
+        action: &GameAction,
+    ) -> Result<Value, ApiError> {
         let now = now_ms();
         let mut inner = self.inner.lock().expect("room lock");
         if inner.closing {
             return Err(ApiError::new(503, "room-closed"));
         }
-        let Some(index) = inner.players.iter().position(|player| player.id == player_id) else {
+        let Some(index) = inner
+            .players
+            .iter()
+            .position(|player| player.id == player_id)
+        else {
             return Err(ApiError::new(401, "unauthorized"));
         };
         if action.seq <= inner.players[index].game_seq {
@@ -713,7 +733,11 @@ impl Room {
         if inner.closing {
             return Err(ApiError::new(503, "room-closed"));
         }
-        let Some(index) = inner.players.iter().position(|player| player.id == player_id) else {
+        let Some(index) = inner
+            .players
+            .iter()
+            .position(|player| player.id == player_id)
+        else {
             return Err(ApiError::new(401, "unauthorized"));
         };
         if seq <= inner.players[index].game_seq {
@@ -747,7 +771,11 @@ impl Room {
         if !data.is_object() || !valid_game_value(&data, 0) {
             return Err(ApiError::new(400, "authority-event-invalid"));
         }
-        if serde_json::to_vec(&data).map(|bytes| bytes.len()).unwrap_or(usize::MAX) > ROOM_GAME_MAX_DATA {
+        if serde_json::to_vec(&data)
+            .map(|bytes| bytes.len())
+            .unwrap_or(usize::MAX)
+            > ROOM_GAME_MAX_DATA
+        {
             return Err(ApiError::new(413, "authority-event-too-large"));
         }
         let now = now_ms();

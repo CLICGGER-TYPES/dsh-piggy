@@ -91,8 +91,16 @@ async fn run() -> Result<(), String> {
         trust_proxy,
         persistent: args.persistent,
         authority: !args.authority_url.is_empty(),
-        authority_url: if args.authority_url.is_empty() { None } else { Some(args.authority_url.clone()) },
-        authority_secret: if args.authority_secret.is_empty() { None } else { Some(args.authority_secret.clone()) },
+        authority_url: if args.authority_url.is_empty() {
+            None
+        } else {
+            Some(args.authority_url.clone())
+        },
+        authority_secret: if args.authority_secret.is_empty() {
+            None
+        } else {
+            Some(args.authority_secret.clone())
+        },
         tls,
         log: true,
         join_limit: Some(Default::default()),

@@ -1012,7 +1012,11 @@ async fn authority_mode_forwards_actions_and_broadcasts_events() {
     assert_eq!(events[0]["from"], json!("authority"));
     assert_eq!(events[0]["op"], json!("snapshot"));
     assert_eq!(events[0]["data"]["rev"], json!(7));
-    assert_eq!(events[0]["data"]["owner"], json!(true), "第一位玩家是创建者");
+    assert_eq!(
+        events[0]["data"]["owner"],
+        json!(true),
+        "第一位玩家是创建者"
+    );
 
     let (status, guest) = server.join("client-guest", "客猪").await;
     assert_eq!(status, 200);

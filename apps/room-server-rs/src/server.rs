@@ -115,11 +115,15 @@ fn build_authority(options: &ServerOptions) -> Result<Option<Arc<Authority>>, St
             if secret.chars().count() < 16 {
                 return Err("authority secret must be at least 16 characters".to_string());
             }
-            let parsed = url::Url::parse(url).map_err(|_| "authority url is invalid".to_string())?;
+            let parsed =
+                url::Url::parse(url).map_err(|_| "authority url is invalid".to_string())?;
             if parsed.scheme() != "http" && parsed.scheme() != "https" {
                 return Err("authority url must be http or https".to_string());
             }
-            if !matches!(parsed.host_str(), Some("127.0.0.1") | Some("localhost") | Some("::1")) {
+            if !matches!(
+                parsed.host_str(),
+                Some("127.0.0.1") | Some("localhost") | Some("::1")
+            ) {
                 return Err("authority must listen on loopback".to_string());
             }
             let client = reqwest::Client::builder()
@@ -179,7 +183,10 @@ pub async fn start_server(options: ServerOptions) -> Result<ServerHandle, String
     )?;
     let router = Router::new()
         .fallback(handle_request)
-        .with_state(Arc::new(App { room: room.clone(), authority }));
+        .with_state(Arc::new(App {
+            room: room.clone(),
+            authority,
+        }));
     let task = tokio::spawn(run_accept_loop(
         listener,
         tls_acceptor,
@@ -505,7 +512,10 @@ async fn game(app: Arc<App>, request: Request<Body>) -> Response {
         Ok(Some(action)) => action,
         Ok(None) => {
             let version = app.room.snapshot()["version"].clone();
-            return json_response(StatusCode::OK, &json!({ "ok": true, "duplicate": true, "version": version }));
+            return json_response(
+                StatusCode::OK,
+                &json!({ "ok": true, "duplicate": true, "version": version }),
+            );
         }
         Err(error) => return error_response(error),
     };
@@ -526,19 +536,21 @@ async fn game(app: Arc<App>, request: Request<Body>) -> Response {
         .send()
         .await;
     let body = match response {
-        Ok(response) if response.status().is_success() => {
-            match response.json::<Value>().await {
-                Ok(body) => body,
-                Err(_) => return error_response(ApiError::new(502, "authority-bad-response")),
-            }
-        }
+        Ok(response) if response.status().is_success() => match response.json::<Value>().await {
+            Ok(body) => body,
+            Err(_) => return error_response(ApiError::new(502, "authority-bad-response")),
+        },
         Ok(_) => return error_response(ApiError::new(400, "authority-rejected")),
         Err(_) => return error_response(ApiError::new(502, "authority-unavailable")),
     };
     if body.get("ok") != Some(&Value::Bool(true)) {
         return error_response(ApiError::new(400, "authority-rejected"));
     }
-    let events = body.get("events").and_then(Value::as_array).cloned().unwrap_or_default();
+    let events = body
+        .get("events")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     if events.len() > 16 {
         return error_response(ApiError::new(502, "authority-bad-response"));
     }
@@ -546,14 +558,23 @@ async fn game(app: Arc<App>, request: Request<Body>) -> Response {
         Ok(true) => {}
         Ok(false) => {
             let version = app.room.snapshot()["version"].clone();
-            return json_response(StatusCode::OK, &json!({ "ok": true, "duplicate": true, "version": version }));
+            return json_response(
+                StatusCode::OK,
+                &json!({ "ok": true, "duplicate": true, "version": version }),
+            );
         }
         Err(error) => return error_response(error),
     }
     let mut last = json!({ "ok": true, "version": app.room.snapshot()["version"].clone() });
     for event in events {
-        let from = event.get("from").and_then(Value::as_str).unwrap_or("authority");
-        let ext = event.get("ext").and_then(Value::as_str).unwrap_or(&action.ext);
+        let from = event
+            .get("from")
+            .and_then(Value::as_str)
+            .unwrap_or("authority");
+        let ext = event
+            .get("ext")
+            .and_then(Value::as_str)
+            .unwrap_or(&action.ext);
         let op = event.get("op").and_then(Value::as_str).unwrap_or("event");
         let data = event.get("data").cloned().unwrap_or_else(|| json!({}));
         match app.room.append_authority(from, ext, op, data) {
