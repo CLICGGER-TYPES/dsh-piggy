@@ -6,21 +6,30 @@ import { test } from 'node:test'
 import roulette from '../../../extensions/roulette/server.js'
 
 function walletApi(coins) {
-  const wallet = { coins }
+  const wallet = { coins, spent: {} }
   return {
     wallet,
     api: {
       now: 0,
       coins: () => wallet.coins,
-      spend(n) {
+      spend(n, sink = 'spend') {
         const amount = Math.max(0, Math.floor(Number(n) || 0))
         if (wallet.coins < amount) return false
         wallet.coins -= amount
+        wallet.spent[sink] = (wallet.spent[sink] ?? 0) + amount
         return true
       },
       earn(n) {
         wallet.coins += Math.max(0, Math.floor(Number(n) || 0))
         return n
+      },
+      refund(n, sink = 'refund') {
+        const have = wallet.spent[sink] ?? 0
+        const real = Math.min(Math.max(0, Math.floor(Number(n) || 0)), have)
+        if (real <= 0) return 0
+        wallet.coins += real
+        wallet.spent[sink] = have - real
+        return real
       },
     },
   }
@@ -58,6 +67,8 @@ test('取消退款只退本场已扣的底注和让枪费', () => {
   assert.equal(wallet.coins, 2500)
   assert.equal(pay({ kind: 'refund', matchId: 'm1' }).ok, true)
   assert.equal(wallet.coins, 4000, '只退 m1 的 1000 底注 + 500 让枪费')
+  assert.equal(wallet.spent['roulette-online-bet'], 1000, 'm2 的底注还在')
+  assert.equal(wallet.spent['roulette-online-pass'], 0, '让枪费已按原去处冲减')
   assert.equal(pay({ kind: 'refund', matchId: 'm1' }).duplicate, true)
   assert.equal(wallet.coins, 4000)
   assert.equal(pay({ kind: 'refund', matchId: 'm2' }).ok, true)

@@ -508,14 +508,16 @@ export default {
         return { ok: true }
       }
       if (info.kind === 'refund') {
-        let refund = 0
+        let paid = 0, fees = 0
         for (const key of Object.keys(ledger.paid)) {
-          if (key.startsWith(matchId + ':')) { refund += ledger.paid[key]; delete ledger.paid[key] }
+          if (key.startsWith(matchId + ':')) { paid += ledger.paid[key]; delete ledger.paid[key] }
         }
         for (const key of Object.keys(ledger.fees)) {
-          if (key.startsWith(matchId + ':')) { refund += ledger.fees[key]; delete ledger.fees[key] }
+          if (key.startsWith(matchId + ':')) { fees += ledger.fees[key]; delete ledger.fees[key] }
         }
-        if (refund > 0) api.earn(refund, 'roulette-refund')
+        // 按原来的去处分别退，冲掉支出而不是记成收入。
+        if (paid > 0) api.refund(paid, 'roulette-online-bet')
+        if (fees > 0) api.refund(fees, 'roulette-online-pass')
         ledger.settled[matchId] = 'cancelled'
         return { ok: true }
       }
@@ -545,7 +547,7 @@ export default {
       // 只有第一局还没装弹时才是无损失取消；第二/三局装弹前退出
       // 必须把前面累积的底池判给 AI，否则这部分钱会凭空消失。
       if (match.round === 1 && match.stage === 'arming') {
-        api.earn(match.matchedYou, 'roulette-refund')
+        api.refund(match.matchedYou, 'roulette-bet')
         data.vault += match.matchedAi
         data.match = null
         data.seq += 1

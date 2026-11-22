@@ -29,6 +29,13 @@ function wallet(initial = 12500, now = 0) {
       state.log.push(['earn', amount, source])
       return amount
     },
+    refund(n, sink) {
+      const amount = Math.max(0, Math.floor(Number(n) || 0))
+      if (amount === 0) return 0
+      state.coins += amount
+      state.log.push(['refund', amount, sink])
+      return amount
+    },
   }
   return { state, api }
 }

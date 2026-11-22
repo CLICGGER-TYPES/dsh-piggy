@@ -299,6 +299,7 @@ test('面板：装弹前返回大厅退底注；规则页返回保留牌桌', ()
   assert.equal(m.wallet.coins, 11500)
   m.click('aria-label', '返回大厅')
   assert.equal(m.wallet.coins, 12500)
+  assert.equal(m.wallet.spent['roulette-bet'], 0, '底注按原去处退，不记成收入')
   assert.match(m.text(), /AI 对战/)
 
   m.click('data-op', 'enter-ai')

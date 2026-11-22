@@ -45,21 +45,30 @@ export function mountRoulette(options = {}) {
   assert.equal(typeof render, 'function', 'client.js 应该注册 roulette 的 render')
 
   const data = roulette.init()
-  const wallet = { coins: options.coins ?? 12500 }
+  const wallet = { coins: options.coins ?? 12500, spent: {} }
   const random = options.random ?? (() => 0.5)
   const api = {
     now: 0,
     coins: () => wallet.coins,
-    spend(n) {
+    spend(n, sink = 'spend') {
       const amount = Math.max(0, Math.floor(Number(n) || 0))
       if (wallet.coins < amount) return false
       wallet.coins -= amount
+      wallet.spent[sink] = (wallet.spent[sink] ?? 0) + amount
       return true
     },
     earn(n) {
       const amount = Math.min(Math.max(0, Math.floor(Number(n) || 0)), 1000000)
       wallet.coins += amount
       return amount
+    },
+    refund(n, sink = 'refund') {
+      const have = wallet.spent[sink] ?? 0
+      const real = Math.min(Math.max(0, Math.floor(Number(n) || 0)), have)
+      if (real <= 0) return 0
+      wallet.coins += real
+      wallet.spent[sink] = have - real
+      return real
     },
   }
 
