@@ -10248,5 +10248,18 @@
       "client.js": "3776884376670b4ca23ee3a3412b362641174de205db808ccf58c097fcb2a6b7",
       "assets/pig.png": "aa4ad4da35bb09320070cfeb3c779728f1681287ae2948e43eea1130416fb0e8"
     }
+  },
+  "roulette": {
+    "0.2.0": {
+      "manifest.json": "fbf0b8cc000efb9be6dd7746f7de0d6116026a0fc01ec82d51c976288fe02470",
+      "server.js": "74db646a210eaccd528327058151b762ee7720201e5985df213b421b3255ac18",
+      "client.js": "ca42336b5299edcfe456e3a9bb769d69d6774deaa9bcc8972bad6ced8b237d37",
+      "assets/bullet-base-v4.webp": "847a780bcf21d8529eafc9fe191949e9ca9e8f930e29b2b554cbbea43ac33755",
+      "assets/bullet-side-v4.webp": "202401a0b5088f8630477f3a5a98b1ae9699ac1f87443c28629e6ddfd54d05a5",
+      "assets/chip-v1.webp": "08a8c450e5ab47f482a1c4d2be5e415674446eb59704045090a0f92320b194f3",
+      "assets/cylinder-v4.webp": "280e9e120bc8bc8f9011b89b8b27886d2b2c5e91421f46cd399f65f8a70bda5a",
+      "assets/revolver-v6.webp": "8a4565faa2953eed256f223cfecf2ff7adde0556788e75d19b4940f6ac902322",
+      "assets/table-v2.webp": "c999bc86c3612cbf413fde161817561a12038cb1b84d9d5bac0c332128cedf97"
+    }
   }
 }
