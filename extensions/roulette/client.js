@@ -45,16 +45,22 @@
       ui.primer = -1;
       ui.armPending = false;
       ui.armUncertain = false;
+      ui.loaded = false;
       ui.armToken += 1;
     }
     function load(index) {
-      if (ui.arming || ui.armPending) return;
+      if (ui.arming || ui.armPending || ui.spinning) return;
       const hole = Number.isInteger(index) ? index : Math.floor(Math.random() * chambers);
+      ui.primer = Math.max(0, Math.min(chambers - 1, hole));
+      ui.primerPop = true;
+      ui.loaded = true;
+      rerender();
+    }
+    function spin() {
+      if (ui.arming || ui.armPending || !ui.loaded) return;
       const token = ++ui.armToken;
       ui.arming = true;
       ui.spinning = true;
-      ui.primer = Math.max(0, Math.min(chambers - 1, hole));
-      ui.primerPop = true;
       rerender();
       ui.armTimer = later(function() {
         ui.armTimer = null;
@@ -65,6 +71,7 @@
         ui.spinning = false;
         ui.primerPop = false;
         ui.primer = -1;
+        ui.loaded = false;
         rerender();
         later(function() {
           if (ui.armToken !== token || !ui.armPending) return;
@@ -79,7 +86,8 @@
             if (next && next.ok === false) {
               ui.armPending = false;
               ui.armUncertain = false;
-              toast("\u88C5\u5F39\u6CA1\u9001\u5230\uFF0C\u70B9\u5F39\u5B54\u91CD\u8BD5");
+              ui.loaded = true;
+              toast("\u88C5\u5F39\u6CA1\u9001\u5230\uFF0C\u518D\u70B9\u5F00\u59CB\u8F6C");
               rerender();
             }
           }, function() {
@@ -87,7 +95,7 @@
         }
       }, 700);
     }
-    return { reset, load };
+    return { reset, load, spin };
   }
 
   // src/extensions/roulette/client/ui-actions.js
@@ -148,6 +156,7 @@
       toast: "",
       arming: false,
       spinning: false,
+      loaded: false,
       primer: -1,
       primerPop: false,
       flash: "",
@@ -379,6 +388,11 @@
     function randomLoad() {
       arm.load(Math.floor(Math.random() * CHAMBERS));
     }
+    function spin() {
+      const match = data().match;
+      if (match === null || match.stage !== "arming") return;
+      arm.spin();
+    }
     function fire() {
       const match = data().match;
       if (match === null || match.stage !== "choice" || match.turn !== "you") return;
@@ -427,6 +441,7 @@
       setStake,
       load,
       randomLoad,
+      spin,
       fire,
       pass,
       openRules,
@@ -1486,7 +1501,7 @@
     hero.appendChild(app.el("span", "rt-hero-tag", "AI \u5BF9\u6218 \xB7 1 \u5BF9 1"));
     root.appendChild(hero);
     root.appendChild(action(app, "dp-btn rt-primary rt-wide rt-enter", { "data-op": "enter-ai" }, "\u8FDB\u5165\u724C\u684C", function() {
-      game2.start();
+      game2.enterTable();
     }));
     const menu = app.el("div", "rt-menu");
     menu.appendChild(modeRow(app, {
@@ -1513,7 +1528,6 @@
       }
     }));
     root.appendChild(menu);
-    root.appendChild(settingsBlock(app, game2, data));
     root.appendChild(footer(app, {
       onRules: function() {
         game2.openRules("lobby");
@@ -1612,7 +1626,7 @@
   }
   function statusText(match) {
     if (match === null) return "\u9009\u62E9\u8BBE\u7F6E\u540E\u5F00\u59CB\u5BF9\u5C40\u3002";
-    if (match.stage === "arming") return "\u88C5 " + match.bulletCount + " \u53D1\u3002\u70B9\u4E00\u4E2A\u5F39\u5B54\uFF0C\u968F\u540E\u5F3A\u5236\u8F6C\u8F6E\u3002";
+    if (match.stage === "arming") return "\u70B9\u4E00\u4E2A\u5F39\u5B54\u88C5 " + match.bulletCount + " \u53D1\uFF0C\u88C5\u597D\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u3002";
     if (match.stage === "ai") {
       if (match.mustShoot === "ai") return "AI \u88AB\u56DE\u8BA9\uFF0C\u5FC5\u987B\u5F00\u67AA\u2026";
       if (match.passBy === "you") return "\u4F60\u5DF2\u8BA9\u67AA\uFF0C\u7B49 AI \u51B3\u5B9A\u3002";
@@ -1689,7 +1703,10 @@
       primary("\u968F\u673A\u88C5\u5F39", "load-random", function() {
         game2.randomLoad();
       });
-      actions.appendChild(app.el("div", "rt-hint", "\u4E5F\u53EF\u4EE5\u76F4\u63A5\u70B9\u5F39\u5B54 \xB7 \u88C5\u5B8C\u5F3A\u5236\u8F6C\u8F6E"));
+      primary("\u5F00\u59CB\u8F6C", "spin", function() {
+        game2.spin();
+      }, !game2.ui.loaded || game2.ui.spinning);
+      actions.appendChild(app.el("div", "rt-hint", game2.ui.loaded ? "\u5B50\u5F39\u5DF2\u653E\u8FDB\u5F39\u69FD\uFF0C\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u624D\u8F6C\u8F6E" : "\u70B9\u4E00\u4E2A\u5F39\u5B54\u88C5\u5F39\uFF0C\u88C5\u597D\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D"));
     } else if (match.stage === "choice") {
       actions.appendChild(action(app, "dp-btn rt-danger", { "data-op": "shoot" }, "\u5BF9\u81EA\u5DF1\u5F00\u67AA", function() {
         game2.fire();
@@ -1748,7 +1765,9 @@
     }));
     root.appendChild(renderMeta(app, data));
     root.appendChild(renderLives(app, data, "\u4FA6\u63A2\u732A"));
-    if (match !== null && match.stage === "matchOver") {
+    if (match === null) {
+      root.appendChild(settingsBlock(app, game2, data));
+    } else if (match.stage === "matchOver") {
       root.appendChild(renderResult(app, match));
     } else {
       root.appendChild(renderBoard(app, game2, data, true));
@@ -1777,7 +1796,7 @@
     const list = app.el("ul");
     [
       "6 \u4E2A\u5F39\u5DE2\u3002\u6BCF\u5C40\u5F00\u5C40\u81EA\u5DF1\u9009\u88C5 1-5 \u53D1\uFF0C\u5355\u5C40\u5185\u5B50\u5F39\u4E0D\u589E\u52A0\u3002",
-      "\u88C5\u5B8C\u5F3A\u5236\u8F6C\u8F6E\uFF0C\u5B50\u5F39\u4F4D\u7F6E\u968F\u673A\u5316\uFF0C\u53CC\u65B9\u90FD\u4E0D\u77E5\u9053\u6700\u7EC8\u4F4D\u7F6E\u3002",
+      "\u88C5\u597D\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u624D\u8F6C\u8F6E\uFF0C\u5B50\u5F39\u4F4D\u7F6E\u968F\u673A\u5316\uFF0C\u53CC\u65B9\u90FD\u4E0D\u77E5\u9053\u6700\u7EC8\u4F4D\u7F6E\u3002",
       "\u6BCF\u5C40\u5148\u624B\u968F\u673A\uFF1B\u7A7A\u67AA\u6362\u624B\uFF1B\u4E2D\u5F39\u6263 1 \u6761\u547D\u3002",
       "1 \u6761\u547D\uFF1A\u4E2D\u5F39\u5373\u8F93\u30023 \u6761\u547D\uFF1A\u88C5 1 \u53D1\u4E2D\u5F39\u540E\u91CD\u88C5\u7EE7\u7EED\uFF1B\u88C5\u591A\u53D1\u5219\u7EE7\u7EED\u6253\u5F53\u524D\u5F39\u5DE2\uFF0C\u5B50\u5F39\u6253\u5B8C\u518D\u91CD\u88C5\u3002",
       "\u8BA9\u67AA\uFF1A\u73A9\u5BB6\u4ED8\u5F53\u524D\u5E95\u6CE8 50% \u7ED9 AI\uFF1BAI \u8BA9\u67AA\u4ED8 50% \u8FDB\u5E95\u6C60\u3002\u672C\u56DE\u5408\u7ED3\u675F\uFF0C\u5BF9\u624B\u4E0D\u7528\u5F00\u67AA\u3002",
@@ -2137,12 +2156,12 @@
 
   // src/extensions/roulette/client/styles.js
   var CSS = [
-    ".rt{position:relative;box-sizing:border-box;height:var(--ext-panel-height,505px);padding:2px 2px 3px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;display:flex;flex-direction:column;color:var(--ac-text,#794f27);font-size:12px;line-height:1.35}",
+    ".rt{position:relative;box-sizing:border-box;padding:2px 2px 3px;overscroll-behavior:contain;display:flex;flex-direction:column;color:var(--ac-text,#794f27);font-size:12px;line-height:1.35}",
     ".rt *{box-sizing:border-box}",
-    ".rt-big{height:100vh;padding:16px 24px 20px}",
+    ".rt-big{height:100vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:16px 24px 20px}",
     // 大窗口里，大堂/规则/联机大厅这类单列表单保持可读宽度居中；牌桌仍铺满。
     ".rt-big .rt-lobby,.rt-big .rt-rules,.rt-big .rt-online{width:min(100%,620px);margin-left:auto;margin-right:auto}",
-    ".rt-page{position:relative;display:flex;flex-direction:column;gap:4px;flex-shrink:0}",
+    ".rt-page{position:relative;display:flex;flex-direction:column;gap:10px;flex-shrink:0}",
     ".rt-head{display:flex;align-items:center;gap:7px;min-height:30px}",
     ".rt-back{display:flex;align-items:center;justify-content:center;height:26px;min-width:52px;flex-shrink:0;padding:0 8px 0 15px;border-radius:var(--ac-pill,50px);border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text,#794f27);font:inherit;font-size:10px;font-weight:700;line-height:1;box-shadow:var(--ac-shadow-sm,0 2px 4px rgba(61,52,40,.06));cursor:pointer;position:relative}",
     '.rt-back:before{content:"";position:absolute;left:7px;top:9px;width:6px;height:6px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}',
@@ -2172,7 +2191,7 @@
     ".rt-ammo b{font-size:10px;color:var(--ac-text,#794f27)}",
     ".rt-hero .rt-ammo{position:absolute;right:8px;bottom:8px;z-index:4}",
     ".rt-menu-label{font-size:9px;letter-spacing:.12em;color:var(--ac-text-muted,#8a7b66);font-weight:700;padding:0 2px 1px}",
-    ".rt-menu{display:grid;gap:6px}",
+    ".rt-menu{display:grid;gap:8px}",
     ".rt-mode{display:flex;align-items:center;gap:8px;width:100%;min-height:50px;padding:6px 9px;border:2px solid var(--ac-border-light,#e5dcc6);border-radius:15px;background:var(--ac-bg-input,#fffbe7);color:var(--ac-text,#794f27);text-align:left;font:inherit;cursor:pointer;box-shadow:var(--ac-shadow-sm,0 2px 4px rgba(61,52,40,.06));transition:all .16s var(--ac-ease,ease)}",
     ".rt-mode:hover:not(:disabled){transform:translateY(-1px);border-color:var(--ac-border-hover,#a89878);box-shadow:var(--ac-shadow,0 3px 10px rgba(61,52,40,.1))}",
     ".rt-mode:active:not(:disabled){transform:translateY(1px);box-shadow:none}",
@@ -2262,7 +2281,7 @@
     ".rt-board-fire .rt-cyl-wrap{animation:rt-kick .32s ease-out both}",
     ".rt-cyl-spin{animation:rt-spin .9s cubic-bezier(.4,0,.2,1)}",
     ".rt-status{min-height:16px;text-align:center;font-size:10.5px;line-height:16px;color:var(--ac-text-body,#725d42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}",
-    ".rt-dock{display:grid;gap:6px;padding:8px;border-radius:16px;background:var(--ac-bg-input,#fffbe7);border:2px solid var(--ac-border-light,#e5dcc6)}",
+    ".rt-dock{display:grid;gap:10px;padding:10px;border-radius:16px;background:var(--ac-bg-input,#fffbe7);border:2px solid var(--ac-border-light,#e5dcc6)}",
     ".rt-bet{display:flex;align-items:center;gap:4px;min-height:28px}",
     ".rt-bet-label{font-size:9px;color:var(--ac-text-muted,#8a7b66);flex-shrink:0}",
     ".rt-step{width:28px;height:28px;padding:0;border-radius:50%;border:2px solid var(--ac-border,#c4b89e);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text,#794f27);font:inherit;font-size:16px;line-height:1;font-weight:700;display:grid;place-items:center;box-shadow:var(--ac-shadow-sm,0 2px 4px rgba(61,52,40,.06));cursor:pointer}",
@@ -2272,7 +2291,7 @@
     ".rt-bet-note{margin-left:auto;text-align:right;font-size:8.5px;line-height:1.25;color:var(--ac-text-muted,#8a7b66);max-width:126px}",
     ".rt-bet-note b{color:var(--ac-text-body,#725d42)}",
     ".rt-warn{color:#b55146;font-weight:700}",
-    ".rt-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:center;min-height:40px}",
+    ".rt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:center;min-height:40px}",
     ".rt-actions .dp-btn{min-height:40px;font-size:12px;padding:5px 8px;min-width:0;white-space:nowrap}",
     ".rt-wide{grid-column:span 2}",
     ".rt-primary.dp-btn{background:var(--ac-primary,#19c8b9);border-color:var(--ac-primary,#19c8b9);color:#fff;box-shadow:0 5px 0 var(--ac-primary-active,#0f9c91),inset 0 1px 0 rgba(255,255,255,.25);font-size:13px;font-weight:600;min-height:45px;border-radius:var(--ac-pill,50px)}",
@@ -2283,7 +2302,7 @@
     ".rt-danger.dp-btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #c94444,inset 0 1px 0 rgba(255,255,255,.2)}",
     ".rt-hint{grid-column:span 2;text-align:center;font-size:8.5px;line-height:1.3;color:var(--ac-text-muted,#8a7b66);padding:0 2px}",
     ".rt-next-load{grid-column:span 2;display:grid;gap:4px}",
-    ".rt-next-load .rt-chips{display:flex;gap:4px;flex:1;min-width:0}",
+    ".rt-next-load .rt-chips{display:flex;gap:6px;flex:1;min-width:0}",
     ".rt-next-load .rt-chip{flex:1 1 0;min-width:0;padding-left:2px;padding-right:2px}",
     ".rt-confirm{display:flex;flex-direction:column;gap:4px;text-align:center;padding:2px}",
     ".rt-confirm b{font-size:13px;color:#b55146}",
@@ -2325,10 +2344,10 @@
     ".rt-toast{position:absolute;left:8px;right:8px;bottom:8px;z-index:30;padding:7px 11px;border-radius:12px;background:var(--ac-text,#794f27);color:#fff8e8;font-size:10.5px;line-height:1.4;text-align:center;box-shadow:var(--ac-shadow,0 3px 10px rgba(61,52,40,.1));pointer-events:none}",
     ".rt-toast[hidden]{display:none!important}",
     ".rt [hidden]{display:none!important}",
-    ".rt-settings{display:grid;gap:7px;margin-top:8px}",
+    ".rt-settings{display:grid;gap:10px;margin-top:10px}",
     ".rt-setting{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
     ".rt-setting-label{width:30px;flex:0 0 30px;font-size:9.5px;font-weight:800;color:var(--ac-text-muted,#8a7b66)}",
-    ".rt-chips{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0}",
+    ".rt-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}",
     ".rt-stake-custom{display:flex;gap:4px;flex:0 0 auto;width:calc(100% - 38px);margin-left:38px}",
     ".rt-stake-input{flex:1;min-width:0;padding:4px 7px;border:2px solid var(--ac-border-light,#e5dcc6);border-radius:9px;background:var(--ac-bg-input,#fffbe7);color:var(--ac-text-body,#725d42);font:inherit;font-size:10px;font-weight:700}",
     ".rt-stake-input::placeholder{color:var(--ac-text-muted,#8a7b66);font-weight:600}",
@@ -2353,6 +2372,7 @@
   var game = null;
   var online = null;
   var activeApp = null;
+  var scroll = { key: "", top: 0 };
   function style() {
     const existing = typeof document.getElementById === "function" ? document.getElementById(STYLE_ID) : null;
     if (existing) {
@@ -2399,6 +2419,10 @@
     node.setAttribute("aria-live", "polite");
     return node;
   }
+  function pageKey(current) {
+    if (current.ui.page === "online") return "online:" + (online !== null ? online.ui.page : "lobby");
+    return current.ui.page;
+  }
   function render(app) {
     style();
     activeApp = app;
@@ -2407,7 +2431,13 @@
     const shell = app.el("div", app.mode === "big" ? "rt rt-big" : "rt");
     shell.appendChild(pageNode(app, current));
     if (current.ui.toast) shell.appendChild(toastNode(app, current.ui.toast));
+    const key = pageKey(current);
+    if (scroll.key !== key) scroll = { key, top: 0 };
+    shell.addEventListener("scroll", function() {
+      scroll = { key, top: shell.scrollTop };
+    });
     app.content.appendChild(shell);
+    if (scroll.top > 0) shell.scrollTop = scroll.top;
   }
   function register() {
     const host = (

@@ -74,6 +74,7 @@ export function mountRoulette(options = {}) {
 
   const app = {
     data: roulette.view(data, api),
+    mode: options.mode ?? 'panel',
     content: dom.body,
     el(tag, className, text) {
       const node = dom.document.createElement(tag)

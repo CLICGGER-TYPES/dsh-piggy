@@ -28,7 +28,7 @@ export function renderLobby(app, game) {
   root.appendChild(hero)
 
   root.appendChild(action(app, 'dp-btn rt-primary rt-wide rt-enter', { 'data-op': 'enter-ai' }, '进入牌桌', function () {
-    game.start()
+    game.enterTable()
   }))
 
   const menu = app.el('div', 'rt-menu')
@@ -52,8 +52,6 @@ export function renderLobby(app, game) {
     onClick: function () { game.notify('4 人桌需要宿主房间接口，下一阶段接入') },
   }))
   root.appendChild(menu)
-
-  root.appendChild(settingsBlock(app, game, data))
 
   root.appendChild(footer(app, {
     onRules: function () { game.openRules('lobby') },
@@ -156,7 +154,7 @@ export function renderBoard(app, game, data, canArm) {
 
 function statusText(match) {
   if (match === null) return '选择设置后开始对局。'
-  if (match.stage === 'arming') return '装 ' + match.bulletCount + ' 发。点一个弹孔，随后强制转轮。'
+  if (match.stage === 'arming') return '点一个弹孔装 ' + match.bulletCount + ' 发，装好后按「开始转」。'
   if (match.stage === 'ai') {
     if (match.mustShoot === 'ai') return 'AI 被回让，必须开枪…'
     if (match.passBy === 'you') return '你已让枪，等 AI 决定。'
@@ -241,7 +239,10 @@ function renderDock(app, game, data) {
   }
   if (match.stage === 'arming') {
     primary('随机装弹', 'load-random', function () { game.randomLoad() })
-    actions.appendChild(app.el('div', 'rt-hint', '也可以直接点弹孔 · 装完强制转轮'))
+    primary('开始转', 'spin', function () { game.spin() }, !game.ui.loaded || game.ui.spinning)
+    actions.appendChild(app.el('div', 'rt-hint', game.ui.loaded
+      ? '子弹已放进弹槽，按「开始转」才转轮'
+      : '点一个弹孔装弹，装好后按「开始转」'))
   } else if (match.stage === 'choice') {
     actions.appendChild(action(app, 'dp-btn rt-danger', { 'data-op': 'shoot' }, '对自己开枪', function () { game.fire() }))
     const fee = Math.max(1, Math.ceil(match.matchedYou * (data.passRate || 0.5)))
@@ -296,7 +297,10 @@ export function renderTable(app, game) {
   }))
   root.appendChild(renderMeta(app, data))
   root.appendChild(renderLives(app, data, '侦探猪'))
-  if (match !== null && match.stage === 'matchOver') {
+  if (match === null) {
+    // 大堂只留入口；命数、底注、AI 这些设置进入牌桌后再配。
+    root.appendChild(settingsBlock(app, game, data))
+  } else if (match.stage === 'matchOver') {
     root.appendChild(renderResult(app, match))
   } else {
     root.appendChild(renderBoard(app, game, data, true))
@@ -324,7 +328,7 @@ export function renderRules(app, game) {
   const list = app.el('ul')
   ;[
     '6 个弹巢。每局开局自己选装 1-5 发，单局内子弹不增加。',
-    '装完强制转轮，子弹位置随机化，双方都不知道最终位置。',
+    '装好后按「开始转」才转轮，子弹位置随机化，双方都不知道最终位置。',
     '每局先手随机；空枪换手；中弹扣 1 条命。',
     '1 条命：中弹即输。3 条命：装 1 发中弹后重装继续；装多发则继续打当前弹巢，子弹打完再重装。',
     '让枪：玩家付当前底注 50% 给 AI；AI 让枪付 50% 进底池。本回合结束，对手不用开枪。',

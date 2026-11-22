@@ -14,6 +14,8 @@ const STYLE_ID = 'dsh-piggy-roulette-style'
 let game = null
 let online = null
 let activeApp = null
+/** 宿主每次重绘都会重建 .rt；记住同一页面的滚动位置，别让玩家一往下滑就弹回顶部。 */
+let scroll = { key: '', top: 0 }
 
 function style() {
   const existing = typeof document.getElementById === 'function' ? document.getElementById(STYLE_ID) : null
@@ -61,6 +63,11 @@ function toastNode(app, text) {
   return node
 }
 
+function pageKey(current) {
+  if (current.ui.page === 'online') return 'online:' + (online !== null ? online.ui.page : 'lobby')
+  return current.ui.page
+}
+
 function render(app) {
   style()
   activeApp = app
@@ -69,7 +76,13 @@ function render(app) {
   const shell = app.el('div', app.mode === 'big' ? 'rt rt-big' : 'rt')
   shell.appendChild(pageNode(app, current))
   if (current.ui.toast) shell.appendChild(toastNode(app, current.ui.toast))
+  const key = pageKey(current)
+  if (scroll.key !== key) scroll = { key: key, top: 0 }
+  shell.addEventListener('scroll', function () {
+    scroll = { key: key, top: shell.scrollTop }
+  })
   app.content.appendChild(shell)
+  if (scroll.top > 0) shell.scrollTop = scroll.top
 }
 
 function register() {

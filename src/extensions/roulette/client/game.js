@@ -65,6 +65,7 @@ export function createGame(options = {}) {
     toast: '',
     arming: false,
     spinning: false,
+    loaded: false,
     primer: -1,
     primerPop: false,
     flash: '',
@@ -328,6 +329,11 @@ export function createGame(options = {}) {
   function randomLoad() {
     arm.load(Math.floor(Math.random() * CHAMBERS))
   }
+  function spin() {
+    const match = data().match
+    if (match === null || match.stage !== 'arming') return
+    arm.spin()
+  }
 
   function fire() {
     const match = data().match
@@ -381,6 +387,7 @@ export function createGame(options = {}) {
     setStake,
     load,
     randomLoad,
+    spin,
     fire,
     pass,
     openRules,

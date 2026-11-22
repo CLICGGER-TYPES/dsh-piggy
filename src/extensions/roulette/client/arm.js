@@ -31,17 +31,26 @@ export function createArm(deps) {
     ui.primer = -1
     ui.armPending = false
     ui.armUncertain = false
+    ui.loaded = false
     ui.armToken += 1
   }
 
+  /** 只把子弹放进去：更新弹槽状态，不转、不计时。 */
   function load(index) {
-    if (ui.arming || ui.armPending) return
+    if (ui.arming || ui.armPending || ui.spinning) return
     const hole = Number.isInteger(index) ? index : Math.floor(Math.random() * chambers)
+    ui.primer = Math.max(0, Math.min(chambers - 1, hole))
+    ui.primerPop = true
+    ui.loaded = true
+    rerender()
+  }
+
+  /** 玩家按「开始转」后才转轮并提交 arm；装弹本身不会走到这里。 */
+  function spin() {
+    if (ui.arming || ui.armPending || !ui.loaded) return
     const token = ++ui.armToken
     ui.arming = true
     ui.spinning = true
-    ui.primer = Math.max(0, Math.min(chambers - 1, hole))
-    ui.primerPop = true
     rerender()
     ui.armTimer = later(function () {
       ui.armTimer = null
@@ -52,6 +61,7 @@ export function createArm(deps) {
       ui.spinning = false
       ui.primerPop = false
       ui.primer = -1
+      ui.loaded = false
       rerender()
       later(function () {
         if (ui.armToken !== token || !ui.armPending) return
@@ -66,7 +76,8 @@ export function createArm(deps) {
           if (next && next.ok === false) {
             ui.armPending = false
             ui.armUncertain = false
-            toast('装弹没送到，点弹孔重试')
+            ui.loaded = true
+            toast('装弹没送到，再点开始转')
             rerender()
           }
         }, function () {})
@@ -74,5 +85,5 @@ export function createArm(deps) {
     }, 700)
   }
 
-  return { reset, load }
+  return { reset, load, spin }
 }
