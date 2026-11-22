@@ -43,17 +43,35 @@ export function petWindowTitle(pigId, primary = false) {
  * @typedef {{ title: string, appId?: string, width?: number, height?: number, tolerance?: number }} WindowQuery
  */
 
-/** 只接受 niri 会话；`PIGGY_NIRI=1/0` 可强制打开/关闭（测试和排查用）。 */
+/**
+ * 只接受真正的 niri 会话：`PIGGY_NIRI=1` 强制打开，或 XDG_CURRENT_DESKTOP 含 niri
+ * **且** NIRI_SOCKET 指向的 socket 存在、能连上。GNOME 里残留的 NIRI_SOCKET 不能把
+ * 整条 niri 适配带进来；`PIGGY_NIRI=0` 可强制关闭。
+ * options.canConnect(socket) 由调用方注入真实探测；单测可替换。
+ */
 export function detectNiri(env = {}, options = {}) {
   const platform = options.platform ?? process.platform
   const forced = String(env.PIGGY_NIRI ?? '')
   if (forced === '0' || forced.toLowerCase() === 'false') return { enabled: false, socket: null, reason: 'disabled' }
   if (platform !== 'linux') return { enabled: false, socket: null, reason: 'platform' }
   const desktop = String(env.XDG_CURRENT_DESKTOP ?? '').toLowerCase()
-  const hint = forced === '1' || desktop.includes('niri') || Boolean(env.NIRI_SOCKET)
-  if (!hint) return { enabled: false, socket: null, reason: 'not-niri' }
-  const socket = findSocket(env, options.io)
+  if (forced !== '1' && !env.WAYLAND_DISPLAY) return { enabled: false, socket: null, reason: 'not-wayland' }
+  const explicit = typeof env.NIRI_SOCKET === 'string' ? env.NIRI_SOCKET : ''
+  let socket = null
+  if (forced === '1') {
+    socket = findSocket(env, options.io)
+  } else if (!desktop.includes('niri')) {
+    return { enabled: false, socket: null, reason: 'not-niri' }
+  } else if (explicit === '') {
+    return { enabled: false, socket: null, reason: 'no-socket-env' }
+  } else {
+    const exists = options.io?.existsSync ?? nodeExistsSync
+    if (!exists(explicit)) return { enabled: false, socket: null, reason: 'no-socket' }
+    socket = explicit
+  }
   if (socket === null) return { enabled: false, socket: null, reason: 'no-socket' }
+  const canConnect = options.canConnect
+  if (typeof canConnect === 'function' && canConnect(socket) !== true) return { enabled: false, socket: null, reason: 'socket-unreachable' }
   return { enabled: true, socket, reason: 'ok' }
 }
 

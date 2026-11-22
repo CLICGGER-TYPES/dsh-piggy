@@ -155,7 +155,18 @@ async function flushLogs() {
  * niri（XWayland）窗口适配：只读查询真实浮窗位置，移动走 move-floating-window。
  * 非 niri 会话返回 null，后面所有窗口路径保持原样。
  */
-const niriSession = detectNiri(process.env, { platform: process.platform })
+const niriSession = detectNiri(process.env, {
+  platform: process.platform,
+  // GNOME 里可能继承到旧的 NIRI_SOCKET；真的连一次 niri IPC 才认。
+  canConnect: socket => {
+    try {
+      execFileSync('niri', ['msg', 'version'], {
+        env: { ...process.env, NIRI_SOCKET: socket }, timeout: 1500, stdio: 'ignore',
+      })
+      return true
+    } catch { return false }
+  },
+})
 const niri = niriSession.enabled
   ? createNiriWindow({
     socket: niriSession.socket,

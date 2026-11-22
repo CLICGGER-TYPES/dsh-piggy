@@ -50,23 +50,27 @@ test('niri 标题：主猪稳定，多猪带 pigId', () => {
   assert.equal(PANEL_TITLE, 'dsh-piggy-panel')
 })
 
-test('detectNiri：只在 Linux + niri 会话且找得到 socket 时启用', () => {
-  const io = {
-    readdirSync: () => [{ name: 'niri.wayland-1.100.sock' }, { name: 'pipewire-0' }],
-    statSync: () => ({ mtimeMs: 10 }),
-    existsSync: () => true,
-  }
-  const base = { XDG_RUNTIME_DIR: '/run/user/1000' }
-  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri' }, { platform: 'linux', io }).enabled, true)
-  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'GNOME:ubuntu' }, { platform: 'linux', io }).enabled, false)
-  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'GNOME', NIRI_SOCKET: '/run/user/1000/niri.sock' }, { platform: 'linux', io }).enabled, true)
-  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri' }, { platform: 'darwin', io }).enabled, false)
-  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri', PIGGY_NIRI: '0' }, { platform: 'linux', io }).enabled, false)
-  assert.equal(detectNiri({ ...base, PIGGY_NIRI: '1' }, { platform: 'linux', io }).enabled, true)
-  const missing = { readdirSync: () => [], statSync: () => ({ mtimeMs: 0 }), existsSync: () => false }
-  const result = detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri' }, { platform: 'linux', io: missing })
-  assert.equal(result.enabled, false)
-  assert.equal(result.reason, 'no-socket')
+test('detectNiri：只认显式 PIGGY_NIRI=1 或 niri 会话里的真 socket', () => {
+  const io = { existsSync: () => true, readdirSync: () => [{ name: 'niri.wayland-1.100.sock' }], statSync: () => ({ mtimeMs: 10 }) }
+  const base = { XDG_RUNTIME_DIR: '/run/user/1000', WAYLAND_DISPLAY: 'wayland-0' }
+  const detect = (env, extra = {}) => detectNiri(env, { platform: 'linux', io, ...extra })
+
+  const niri = detect({ ...base, XDG_CURRENT_DESKTOP: 'niri', NIRI_SOCKET: '/run/user/1000/niri.wayland-1.100.sock' }, { canConnect: () => true })
+  assert.deepEqual(niri, { enabled: true, socket: '/run/user/1000/niri.wayland-1.100.sock', reason: 'ok' })
+
+  const gnome = detect({ ...base, XDG_CURRENT_DESKTOP: 'GNOME:ubuntu', NIRI_SOCKET: '/run/user/1000/niri.stale.sock' }, { canConnect: () => true })
+  assert.equal(gnome.enabled, false, 'GNOME 里残留 NIRI_SOCKET 不能进 niri 模式')
+  assert.equal(gnome.reason, 'not-niri')
+
+  assert.deepEqual(detect({ ...base, XDG_CURRENT_DESKTOP: 'GNOME', NIRI_SOCKET: '/run/user/1000/niri.sock' }), { enabled: false, socket: null, reason: 'not-niri' })
+  assert.equal(detect({ XDG_CURRENT_DESKTOP: 'niri', NIRI_SOCKET: '/run/user/1000/niri.sock', XDG_RUNTIME_DIR: '/run/user/1000' }).reason, 'not-wayland')
+  assert.equal(detect({ ...base, XDG_CURRENT_DESKTOP: 'niri' }).reason, 'no-socket-env')
+  assert.equal(detect({ ...base, XDG_CURRENT_DESKTOP: 'niri', NIRI_SOCKET: '/run/user/1000/niri.sock' }, { io: { existsSync: () => false } }).reason, 'no-socket')
+  assert.equal(detect({ ...base, XDG_CURRENT_DESKTOP: 'niri', NIRI_SOCKET: '/run/user/1000/niri.sock' }, { canConnect: () => false }).reason, 'socket-unreachable')
+  assert.equal(detect({ ...base, XDG_CURRENT_DESKTOP: 'niri', PIGGY_NIRI: '0' }, { canConnect: () => true }).enabled, false)
+  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri', PIGGY_NIRI: '1' }, { platform: 'linux', io }).enabled, true, 'PIGGY_NIRI=1 仍可强制')
+  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri' }, { platform: 'darwin', io }).reason, 'platform')
+  assert.equal(detectNiri({ ...base, XDG_CURRENT_DESKTOP: 'niri' }, { platform: 'win32', io }).reason, 'platform')
 })
 
 test('findSocket：NIRI_SOCKET 优先，否则扫 XDG_RUNTIME_DIR 取最新 socket', () => {
