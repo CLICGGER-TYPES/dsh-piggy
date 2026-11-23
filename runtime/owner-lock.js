@@ -92,12 +92,22 @@ function compareIdentity(expected, actual) {
   return 'unknown'
 }
 
+/** BSD/macOS ps etime：0:42 / 12:34 / 1:02:03 / 3-04:05:06；解析失败返回 null。 */
+export function parsePsEtime(text, now = Date.now()) {
+  const match = /^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+)$/.exec(String(text).trim())
+  if (match === null) return null
+  const days = Number(match[1] ?? 0), hours = Number(match[2] ?? 0)
+  const minutes = Number(match[3]), seconds = Number(match[4])
+  if (![days, hours, minutes, seconds].every(Number.isFinite)) return null
+  return now - ((days * 86400) + (hours * 3600) + (minutes * 60) + seconds) * 1000
+}
+
 /**
  * @typedef {{alive:boolean,name?:string,execPath?:string,startedAt?:number,token?:string}} ProcessProbe
  * Linux 从 /proc 取；macOS/Windows 用系统命令。取不到就只回报“活着”。
- * @param {number} pid @param {NodeJS.Platform} [platform] @returns {ProcessProbe}
+ * @param {number} pid @param {NodeJS.Platform} [platform] @param {{log?:(level:'warn',message:string,fields?:Record<string,any>)=>void}} [options] @returns {ProcessProbe}
  */
-export function probeProcess(pid, platform = process.platform) {
+export function probeProcess(pid, platform = process.platform, options = {}) {
   if (!Number.isSafeInteger(pid) || pid <= 0) return { alive: false }
   try {
     process.kill(pid, 0)
@@ -125,12 +135,12 @@ export function probeProcess(pid, platform = process.platform) {
       }
     }
     if (platform === 'darwin') {
-      const out = spawnSync('ps', ['-p', String(pid), '-o', 'etimes=', '-o', 'comm='], { encoding: 'utf8', timeout: 2000 })
-      const [elapsed, comm] = String(out.stdout ?? '').trim().split(/\s+/, 2)
-      if (out.status === 0 && Number.isFinite(Number(elapsed))) {
-        const startedAt = Date.now() - Number(elapsed) * 1000
-        return { alive: true, name: comm ?? '', startedAt, token: `ps:${comm ?? ''}` }
-      }
+      const out = spawnSync('ps', ['-p', String(pid), '-o', 'etime=', '-o', 'comm='], { encoding: 'utf8', timeout: 2000 })
+      const text = String(out.stdout ?? '').trim()
+      const split = /^(\S+)\s+(.*)$/.exec(text)
+      const startedAt = out.status === 0 && split !== null ? parsePsEtime(split[1]) : null
+      if (startedAt !== null) return { alive: true, name: split[2], startedAt }
+      options.log?.('warn', 'macOS ps etime 解析失败，运行时锁退化为 alive-only', { pid, output: text.slice(0, 120) })
       return { alive: true }
     }
     if (platform === 'win32') {
@@ -203,7 +213,7 @@ function preserveStale(fixed, name, owner, options) {
  */
 export function acquireGameLock(statePath, options = {}) {
   const fixed = `${statePath}.runtime.lock`
-  const probe = options.probe ?? (pid => probeProcess(pid))
+  const probe = options.probe ?? (pid => probeProcess(pid, process.platform, { log }))
   const now = options.now ?? (() => Date.now())
   const log = options.log ?? (() => {})
   const nonce = randomBytes(16).toString('hex')

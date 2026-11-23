@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { test } from 'node:test'
 
-import { acquireGameLock } from '../../../runtime/owner-lock.js'
+import { acquireGameLock, parsePsEtime } from '../../../runtime/owner-lock.js'
 
 const REPO = fileURLToPath(new URL('../../../runtime/owner-lock.js', import.meta.url))
 
@@ -144,4 +144,21 @@ test('并发回收过期锁只有一个成功', async t => {
   assert.equal(results.filter(result => result.code === 0).length, 1, JSON.stringify(results))
   assert.equal(results.filter(result => result.code !== 0).length, 1)
   assert.match(results.find(result => result.code !== 0).out, /OWNER_LOCK_LIVE/)
+})
+
+test('macOS ps etime 四种形态解析成 startedAt；失败返回 null', () => {
+  const now = 1_800_000_000_000
+  for (const [text, seconds] of [['0:42', 42], ['12:34', 754], ['1:02:03', 3723], ['3-04:05:06', 273_906]]) {
+    const startedAt = parsePsEtime(text, now)
+    assert.ok(Math.abs((now - startedAt) - seconds * 1000) < 5000, text)
+  }
+  assert.equal(parsePsEtime('nonsense', now), null)
+})
+
+test('探活没有稳定字段时只能 unknown，不能回收', t => {
+  const { statePath } = setup(t)
+  publish(statePath, { pid: 4245, identity: { startedAt: 1_000_000 } })
+  assert.throws(() => acquireGameLock(statePath, {
+    probe: probeWith({ 4245: { alive: true } }),
+  }), error => error.code === 'OWNER_LOCK_LIVE')
 })
