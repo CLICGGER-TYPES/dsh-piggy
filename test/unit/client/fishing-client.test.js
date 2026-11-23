@@ -503,3 +503,31 @@ test('确认框的分钟数随轮询就地更新，不重建节点', async () =>
   assert.match(title.allText(), /还有 1 分钟/, '60 → 59 仍是 1 分钟')
   assert.equal(calls.filter(call => call.method === 'POST').length, beforePosts, '确认前不能发动作')
 })
+
+test('真实 /state 回放：静置期间钓鱼页节点不重建，金币变化才重画', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  const real = states.filter(state => state.activity?.kind === 'work').slice(0, 8)
+  assert.ok(real.length >= 5)
+  let current = real[0]
+  const { dom, intervals, calls } = await mount({ fetch: async () => ({ ok: true, status: 200, async json() { return current } }) })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  const auto = findByClass(contentOf(dom), 'dp-fish-auto')
+  assert.ok(go && auto)
+  for (let index = 1; index < real.length; index += 1) {
+    current = real[index]
+    await poll.fn()
+    assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, `真实样本 ${index}：按钮节点保持`)
+    assert.equal(findByClass(contentOf(dom), 'dp-fish-auto'), auto, `真实样本 ${index}：自动面板保持`)
+  }
+  assert.equal(calls.filter(call => call.method === 'POST').length, 0, '静置不能有动作 POST')
+  current = structuredClone(real.at(-1))
+  current.pig.coins += 1
+  await poll.fn()
+  assert.notEqual(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '金币变化要重画')
+})

@@ -66,14 +66,30 @@ function foldViews(views) {
  * @param {any} snapshot 宿主 /state 的正文（JSON.parse 之后）
  * @returns {string}
  */
-/** 顶层里每秒都在变、但界面有本地时钟的字段。 */
+/** 打工时每拍都会涨、但主面板不显示的经验/体重阈值。 */
+var PIG_RULES = { xp: function () { return 0 } }
+var LEVEL_RULES = { xp: function () { return 0 }, toNext: function () { return 0 }, percent: function () { return 0 } }
+var BODY_RULES = { idealG: function () { return 0 }, roundAtG: function () { return 0 }, fatAtG: function () { return 0 } }
+
+/** 顶层里持续变化、但界面要么有本地时钟、要么根本不显示的字段。 */
 var SNAPSHOT_RULES = {
   activity: {
-    // 倒计时由 index.js 的 1 秒本地时钟刷新，不能因为秒数变化重画整个页面。
+    // 倒计时由 io.js 的就地更新改文本；进度条也由短路分支直接改宽度。
     secondsLeft: function () { return 0 },
-    // 进度条按整百分比画。
-    progress: function (percent) { return Math.round(percent * 100) },
+    progress: function () { return 0 },
   },
+  // 打工/上学时 xp 每拍涨 0.1，但主面板不显示 xp，只有升级时 level 才该重画。
+  pig: PIG_RULES,
+  daily: { onlineMinutes: function () { return 0 } },
+}
+
+/** pig 有嵌套规则，fold 一次只能吃一层。 */
+function foldPig(pig) {
+  if (pig === null || typeof pig !== 'object') return pig
+  var out = fold(pig, PIG_RULES)
+  if (out.levelInfo !== null && typeof out.levelInfo === 'object') out.levelInfo = fold(out.levelInfo, LEVEL_RULES)
+  if (out.bodyWeight !== null && typeof out.bodyWeight === 'object') out.bodyWeight = fold(out.bodyWeight, BODY_RULES)
+  return out
 }
 
 export function pollKey(snapshot) {
@@ -81,5 +97,7 @@ export function pollKey(snapshot) {
   var copy = Object.assign({}, snapshot)
   copy.extViews = foldViews(snapshot.extViews)
   if (snapshot.activity !== null && typeof snapshot.activity === 'object') copy.activity = fold(snapshot.activity, SNAPSHOT_RULES.activity)
+  if (snapshot.pig !== null && typeof snapshot.pig === 'object') copy.pig = foldPig(snapshot.pig)
+  if (snapshot.daily !== null && typeof snapshot.daily === 'object') copy.daily = fold(snapshot.daily, SNAPSHOT_RULES.daily)
   return JSON.stringify(copy)
 }

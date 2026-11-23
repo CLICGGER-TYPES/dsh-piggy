@@ -97,10 +97,21 @@ test('没有 extViews 或不是对象也不炸', () => {
   assert.equal(typeof pollKey('x'), 'string')
 })
 
-test('活动倒计时和进度按界面精度比较：秒数变化不触发重绘，百分比变化才触发', () => {
+test('活动倒计时和进度都不触发整页重绘（进度条由短路分支就地更新）', () => {
   const base = { ...SNAPSHOT, activity: { kind: 'work', label: '打工', secondsLeft: 600, progress: .42 } }
   const later = { ...base, activity: { ...base.activity, secondsLeft: 596, progress: .421 } }
   assert.equal(pollKey(later), pollKey(base), '秒数/小数进度不该重画整页')
   const real = { ...base, activity: { ...base.activity, secondsLeft: 596, progress: .5 } }
-  assert.notEqual(pollKey(real), pollKey(base), '进度跨过整百分比仍要更新')
+  assert.equal(pollKey(real), pollKey(base), '进度条由 io 短路更新，不再触发整页重画')
+})
+
+test('真实 /state 序列：静置相邻快照的指纹完全一致', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  assert.ok(states.length >= 20, '至少 20 个连续真实快照')
+  for (let index = 1; index < states.length; index += 1) assert.equal(pollKey(states[index]), pollKey(states[index - 1]), `第 ${index} 对相邻快照`)
+  const changed = structuredClone(states[0])
+  changed.pig.coins += 1
+  assert.notEqual(pollKey(changed), pollKey(states[0]), '金币变了仍要重画')
 })

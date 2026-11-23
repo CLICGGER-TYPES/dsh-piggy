@@ -281,6 +281,8 @@ export function createIo(ctx) {
             }
           }
           // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
+          var progressFill = ctx.progressFill
+          if (progressFill && next.activity) progressFill.style.width = next.activity.progress + '%'
           var leftNode = ctx.content?.querySelectorAll?.('.dp-activity-left')[0]
           if (leftNode && next.activity) leftNode.textContent = '还有 ' + next.activity.secondsLeft + ' 秒'
           // 「改去」确认框里的分钟数也是 activity 派生的；短路时同样就地更新。
