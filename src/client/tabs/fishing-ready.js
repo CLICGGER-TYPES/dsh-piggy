@@ -205,12 +205,20 @@ function renderAutoPanel(ui, baitState) {
     buy.appendChild(el('b', null, '🪙 ' + upgrade.price))
     buy.className += ' dp-coin-gated'
     buy.setAttribute('data-price', String(upgrade.price))
+    buy.setAttribute('data-label', upgrade.label)
     buy.disabled = (ui.view.pig?.coins ?? 0) < upgrade.price
     if (buy.disabled) blockedUpgrades.push(upgrade.label + '要 ' + upgrade.price + ' 金币')
     body.appendChild(buy)
   }
-  if (reasons.length > 0) body.appendChild(el('span', 'dp-fish-why', '点不了：' + reasons[0] + '。'))
-  else if (blockedUpgrades.length > 0) body.appendChild(el('span', 'dp-fish-why', '金币不够：' + blockedUpgrades[0] + '。'))
+  var why = el('span', 'dp-fish-why')
+  if (reasons.length > 0) {
+    why.setAttribute('data-why-kind', 'blocked')
+    why.textContent = '点不了：' + reasons[0] + '。'
+  } else if (blockedUpgrades.length > 0) {
+    why.setAttribute('data-why-kind', 'coins')
+    why.textContent = '金币不够：' + blockedUpgrades[0] + '。'
+  } else { why.hidden = true }
+  body.appendChild(why)
   return body
 }
 

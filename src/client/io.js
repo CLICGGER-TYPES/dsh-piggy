@@ -282,9 +282,20 @@ export function createIo(ctx) {
             }
           }
           // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
-          // 金币驱动的按钮只改 disabled，不重画整页。
+          // 金币驱动的文本/按钮就地更新，不重画整页。
+          if (ctx.hudCoins && next.pig && Number.isFinite(Number(next.pig.coins))) ctx.hudCoins.textContent = '🪙 ' + Number(next.pig.coins)
           var gated = ctx.content?.querySelectorAll?.('.dp-coin-gated') ?? []
           for (var gi = 0; gi < gated.length; gi += 1) gated[gi].disabled = (next.pig?.coins ?? 0) < Number(gated[gi].getAttribute('data-price'))
+          var why = ctx.content?.querySelectorAll?.('.dp-fish-why')[0]
+          if (why && why.getAttribute('data-why-kind') === 'coins') {
+            var blockedNow = []
+            for (var bi = 0; bi < gated.length; bi += 1) if (gated[bi].getAttribute('data-fish-upgrade') !== null && gated[bi].disabled) blockedNow.push(gated[bi])
+            if (blockedNow.length === 0) { why.hidden = true; why.textContent = '' }
+            else {
+              why.hidden = false
+              why.textContent = '金币不够：' + blockedNow[0].getAttribute('data-label') + '要 ' + blockedNow[0].getAttribute('data-price') + ' 金币。'
+            }
+          }
           var progressFill = ctx.progressFill
           if (progressFill && next.activity) progressFill.style.width = next.activity.progress + '%'
           var leftNode = ctx.content?.querySelectorAll?.('.dp-activity-left')[0]

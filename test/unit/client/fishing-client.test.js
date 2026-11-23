@@ -600,4 +600,6 @@ test('金币变化只就地改升级按钮 disabled，不换节点、不丢焦�
   assert.equal(findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), buy, '升级按钮身份保持')
   assert.equal(buy.disabled, false, '金币够了就地解锁')
   assert.equal(globalThis.document.activeElement, go, '焦点仍在原按钮')
+  assert.match(findByClass(dom.body, 'dp-hud').allText(), /1500/, '顶栏金币要就地更新')
+  assert.equal(findByClass(contentOf(dom), 'dp-fish-why').hidden, true, '金币够了要撤掉「金币不够」')
 })
