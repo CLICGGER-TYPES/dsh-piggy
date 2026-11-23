@@ -10,7 +10,7 @@ import { el } from './dom.js'
 import { normalizePending } from './normalize.js'
 import { processPending } from './pending.js'
 import { createPomodoroClock } from './pomodoro-clock.js'
-import { pollKey } from './poll-key.js'
+import { pollKeyForPage } from './poll-key.js'
 import { record } from './journal.js'
 import { isObj, num, str } from './values.js'
 import { externalActionsBlocked, externalBlockedMessage, isExternalMode } from './external-link.js'
@@ -268,7 +268,7 @@ export function createIo(ctx) {
           // 快照「画面上」没变就不重画：整块内容（菜园一屏 160 个节点、52 张图）拆了重建是白干，
           // 顺手还会把悬停卡、开着的弹层抹掉。指纹按显示精度压过（见 poll-key.js）。
           // 状态页显示「还差成长/等级百分比」；按当前标签页决定要不要把成长值算进指纹。
-          var key = pollKey(next, { showGrowth: ctx.tab === 'status', fishing: ctx.tab === 'fishing' })
+          var key = pollKeyForPage(next, ctx.tab)
           if (key !== paintedKey) {
             // 记账必须等 render 说「真的画了」：焦点在改名框 / 图鉴搜索框 / 菜园购买数量框时，
             // render 会早退（不重画内容区），早退返回 false —— 这时把指纹打回 null，

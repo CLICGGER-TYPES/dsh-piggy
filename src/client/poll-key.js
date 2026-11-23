@@ -92,6 +92,18 @@ function foldPig(pig, showGrowth) {
   return out
 }
 
+/** 哪个标签页把成长/活动派生值算进指纹：一处登记，别逐页补。 */
+export var POLL_PAGE_RULES = Object.freeze({
+  status: { showGrowth: true },
+  dev: { showGrowth: true },
+  fishing: { fishing: true },
+})
+
+/** @param {any} snapshot @param {string} tab */
+export function pollKeyForPage(snapshot, tab) {
+  return pollKey(snapshot, POLL_PAGE_RULES[tab] ?? {})
+}
+
 export function pollKey(snapshot, options = {}) {
   if (snapshot === null || typeof snapshot !== 'object') return String(snapshot)
   var copy = Object.assign({}, snapshot)
