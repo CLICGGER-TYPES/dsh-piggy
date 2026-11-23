@@ -84,20 +84,21 @@ var SNAPSHOT_RULES = {
 }
 
 /** pig 有嵌套规则，fold 一次只能吃一层。 */
-function foldPig(pig) {
+function foldPig(pig, showGrowth) {
   if (pig === null || typeof pig !== 'object') return pig
-  var out = fold(pig, PIG_RULES)
-  if (out.levelInfo !== null && typeof out.levelInfo === 'object') out.levelInfo = fold(out.levelInfo, LEVEL_RULES)
+  var out = showGrowth ? Object.assign({}, pig) : fold(pig, PIG_RULES)
+  if (!showGrowth && out.levelInfo !== null && typeof out.levelInfo === 'object') out.levelInfo = fold(out.levelInfo, LEVEL_RULES)
   if (out.bodyWeight !== null && typeof out.bodyWeight === 'object') out.bodyWeight = fold(out.bodyWeight, BODY_RULES)
   return out
 }
 
-export function pollKey(snapshot) {
+export function pollKey(snapshot, options = {}) {
   if (snapshot === null || typeof snapshot !== 'object') return String(snapshot)
   var copy = Object.assign({}, snapshot)
+  var showGrowth = options.showGrowth === true
   copy.extViews = foldViews(snapshot.extViews)
   if (snapshot.activity !== null && typeof snapshot.activity === 'object') copy.activity = fold(snapshot.activity, SNAPSHOT_RULES.activity)
-  if (snapshot.pig !== null && typeof snapshot.pig === 'object') copy.pig = foldPig(snapshot.pig)
+  if (snapshot.pig !== null && typeof snapshot.pig === 'object') copy.pig = foldPig(snapshot.pig, showGrowth)
   if (snapshot.daily !== null && typeof snapshot.daily === 'object') copy.daily = fold(snapshot.daily, SNAPSHOT_RULES.daily)
   return JSON.stringify(copy)
 }

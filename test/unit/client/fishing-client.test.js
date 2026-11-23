@@ -469,6 +469,7 @@ test('活动倒计时轮询只改「还有 N 秒」文本，不换节点', async
   const { dom, intervals } = await mount({ status: away })
   openPanel(dom, 'status')
   const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn() // 进页后的补画一拍
   const node = findByAttr(contentOf(dom), 'data-activity-left', '')
   assert.ok(node)
   assert.match(node.allText(), /600/)
@@ -530,4 +531,24 @@ test('真实 /state 回放：静置期间钓鱼页节点不重建，金币变化
   current.pig.coins += 1
   await poll.fn()
   assert.notEqual(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '金币变化要重画')
+})
+
+test('status 页的成长值仍按真实 /state 更新，不被全局折叠冻住', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  const real = states.filter(state => state.activity?.kind === 'work')
+  let current = real[0]
+  const { dom, intervals } = await mount({ fetch: async () => ({ ok: true, status: 200, async json() { return current } }) })
+  openPanel(dom, 'status')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const before = contentOf(dom).allText().match(/还差 \d+ 成长/)?.[0]
+  assert.ok(before)
+  const meter = findByClass(contentOf(dom), 'dp-level')
+  const beforeWidth = meter.children[0].style.width
+  current = real.at(-1)
+  await poll.fn()
+  assert.notEqual(contentOf(dom).allText().match(/还差 \d+ 成长/)?.[0], before, '成长值要跟着 xp 变')
+  assert.notEqual(findByClass(contentOf(dom), 'dp-level').children[0].style.width, beforeWidth, '等级条百分比要变')
 })
