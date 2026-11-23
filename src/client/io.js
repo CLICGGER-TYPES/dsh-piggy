@@ -283,6 +283,12 @@ export function createIo(ctx) {
           // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
           var leftNode = ctx.content?.querySelectorAll?.('.dp-activity-left')[0]
           if (leftNode && next.activity) leftNode.textContent = '还有 ' + next.activity.secondsLeft + ' 秒'
+          // 「改去」确认框里的分钟数也是 activity 派生的；短路时同样就地更新。
+          var switchTitle = ctx.content?.querySelectorAll?.('.dp-switch-title')[0]
+          if (switchTitle && next.activity) {
+            var minutes = Math.max(1, Math.ceil(next.activity.secondsLeft / 60))
+            switchTitle.textContent = '猪正在' + String(next.activity.label).replace(/^兴趣·/, '学') + '（还有 ' + minutes + ' 分钟）'
+          }
           if (hostDown) {
             hostDown = false
             record('info', 'poll', '宿主恢复响应')

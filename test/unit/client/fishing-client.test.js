@@ -477,3 +477,29 @@ test('活动倒计时轮询只改「还有 N 秒」文本，不换节点', async
   assert.equal(findByAttr(contentOf(dom), 'data-activity-left', ''), node, '倒计时节点保持')
   assert.match(node.allText(), /596/)
 })
+
+test('确认框的分钟数随轮询就地更新，不重建节点', async () => {
+  const away = status()
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 61, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  const { dom, intervals, calls } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  await intervals.find(interval => interval.delay === 4000).fn()
+  findByAttr(contentOf(dom), 'data-fish-auto', '30').fire('click')
+  await settle()
+  const title = findByClass(contentOf(dom), 'dp-switch-title')
+  assert.ok(title, '确认框打开')
+  assert.match(title.allText(), /还有 2 分钟/)
+  const beforePosts = calls.filter(call => call.method === 'POST').length
+
+  away.activity.secondsLeft = 57
+  await intervals.find(interval => interval.delay === 4000).fn()
+  assert.equal(findByClass(contentOf(dom), 'dp-switch-title'), title, '确认框节点保持')
+  assert.match(title.allText(), /还有 1 分钟/, '61 → 57 要跨档到 1 分钟')
+  away.activity.secondsLeft = 59
+  await intervals.find(interval => interval.delay === 4000).fn()
+  assert.match(title.allText(), /还有 1 分钟/, '60 → 59 仍是 1 分钟')
+  assert.equal(calls.filter(call => call.method === 'POST').length, beforePosts, '确认前不能发动作')
+})
