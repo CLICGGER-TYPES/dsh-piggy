@@ -88,6 +88,28 @@ test('C5 home has a one-click cast and keeps both auto choices', async () => {
   assert.notEqual(findByAttr(contentOf(dom), 'data-fish-auto', '60'), undefined)
 })
 
+test('人不在家时点自动钓鱼会先问「改去」，不能静默丢掉', async () => {
+  const away = status({ automation: { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [] } })
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  const { dom, calls } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  findByAttr(contentOf(dom), 'data-fish-auto', '30').fire('click')
+  await settle()
+  assert.equal(calls.filter(call => call.method === 'POST').length, 0, '确认前不能直接出发')
+  const go = findByAttr(contentOf(dom), 'data-switch-go', 'fishAuto')
+  assert.notEqual(go, undefined, '应该出现「改去自动钓鱼」确认')
+  assert.match(contentOf(dom).allText(), /猪正在打工/)
+  go.fire('click')
+  await settle()
+  await settle()
+  const posts = calls.filter(call => call.method === 'POST').map(call => JSON.parse(call.body).action)
+  assert.deepEqual(posts, ['calloff', 'fishAuto'])
+})
+
 test('fishing lets the player choose bait; no bait disables casting', async () => {
   const shrimp = { key: 'bait_shrimp', kind: 'bait', label: '鲜虾鱼饵', emoji: '🦐', price: 15 }
   const { dom, calls } = await mount({ status: { ...status(), shop: [...status().shop, shrimp],

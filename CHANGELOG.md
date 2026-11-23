@@ -5,6 +5,12 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 
 ---
 
+## [Unreleased]
+
+- 修复：猪在外打工/上学时，点「自动钓鱼」只重画页面、不弹「改去」确认，看起来像界面一直刷新且始终不出发（#146）。
+
+---
+
 ## [0.37.3-rc.4] — 2026-11-22 · 左轮轮盘 0.2.0 与联机
 
 配套桌面外壳 0.6.9-rc.3，存档仍为 v15。

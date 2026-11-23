@@ -23,7 +23,8 @@ export function startOrSwitch(ui, label, action, payload) {
   if (ui.view.activity === null) { ui.send(action, payload); return }
   ui.switchAsk = { label: label, action: action, payload: payload }
   ui.renderContent()
-  if (ui.content) ui.content.scrollTop = 0
+  const scroller = ui.scrollContent ?? ui.content
+  if (scroller) scroller.scrollTop = 0
 }
 
 /** 叫回来会损失什么。 */
