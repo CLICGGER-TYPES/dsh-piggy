@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import { dirname } from 'node:path'
 import { mkdirSync, readFileSync, unlinkSync } from 'node:fs'
+import { createJournal } from '../store/journal.js'
 import { STORE_INTERNALS, createStore } from '../src/host/store.js'
 import { dispatch } from '../src/host/commands.js'
 import { snapshot } from '../src/host/snapshot.js'
@@ -63,7 +64,22 @@ export function createGameRuntime(options) {
     })
   }
   mkdirSync(dirname(options.statePath), { recursive: true })
-  const release = acquireGameLock(options.statePath)
+  // 锁失败时运行时还没创建，没有常规 journal；先单独开一份日志把 pid/进程身份/锁路径写下来。
+  const lockJournal = createJournal({ dir: dirname(options.statePath), now: options.now })
+  let release
+  try {
+    release = acquireGameLock(options.statePath, {
+      now: options.now,
+      log: (level, message, fields) => lockJournal.record(level, 'runtime-lock', message, fields),
+    })
+  } catch (error) {
+    lockJournal.record('error', 'runtime-lock', '运行时锁获取失败', {
+      code: error?.code ?? '', lockPath: error?.lockPath ?? options.statePath + '.runtime.lock',
+      ownerPid: error?.ownerPid ?? '', processName: error?.processName ?? '', processPath: error?.processPath ?? '',
+      decision: error?.decision ?? '', reason: error instanceof Error ? error.message : String(error),
+    })
+    throw error
+  }
   let ledger
   /** @type {ReturnType<typeof createStore>} */
   let store

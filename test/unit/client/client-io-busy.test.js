@@ -106,6 +106,17 @@ test('真正的 503 故障仍然按断线处理：不吞、不画', async () => 
   } finally { restore() }
 })
 
+test('路由整组没注册（404）时给出可执行的清锁提示', async () => {
+  const restore = windowStub()
+  try {
+    serve([{ status: 404, ok: false, body: { error: 'not found' } }])
+    const { ctx, io } = context()
+    await io.refresh()
+    assert.equal(ctx.bubbles.length, 1)
+    assert.match(ctx.bubbles[0], /state\.json\.runtime\.lock/)
+  } finally { restore() }
+})
+
 test('外层面板「桌面忙」的占位正文（200、没有快照）不清空面板', async () => {
   const restore = windowStub()
   try {
