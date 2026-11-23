@@ -280,6 +280,9 @@ export function createIo(ctx) {
               throw error
             }
           }
+          // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
+          var leftNode = ctx.content?.querySelectorAll?.('.dp-activity-left')[0]
+          if (leftNode && next.activity) leftNode.textContent = '还有 ' + next.activity.secondsLeft + ' 秒'
           if (hostDown) {
             hostDown = false
             record('info', 'poll', '宿主恢复响应')

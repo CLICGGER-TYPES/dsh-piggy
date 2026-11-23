@@ -66,9 +66,20 @@ function foldViews(views) {
  * @param {any} snapshot 宿主 /state 的正文（JSON.parse 之后）
  * @returns {string}
  */
+/** 顶层里每秒都在变、但界面有本地时钟的字段。 */
+var SNAPSHOT_RULES = {
+  activity: {
+    // 倒计时由 index.js 的 1 秒本地时钟刷新，不能因为秒数变化重画整个页面。
+    secondsLeft: function () { return 0 },
+    // 进度条按整百分比画。
+    progress: function (percent) { return Math.round(percent * 100) },
+  },
+}
+
 export function pollKey(snapshot) {
   if (snapshot === null || typeof snapshot !== 'object') return String(snapshot)
   var copy = Object.assign({}, snapshot)
   copy.extViews = foldViews(snapshot.extViews)
+  if (snapshot.activity !== null && typeof snapshot.activity === 'object') copy.activity = fold(snapshot.activity, SNAPSHOT_RULES.activity)
   return JSON.stringify(copy)
 }

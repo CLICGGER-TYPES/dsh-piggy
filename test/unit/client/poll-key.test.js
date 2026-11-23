@@ -96,3 +96,11 @@ test('没有 extViews 或不是对象也不炸', () => {
   assert.equal(typeof pollKey({ extViews: null }), 'string')
   assert.equal(typeof pollKey('x'), 'string')
 })
+
+test('活动倒计时和进度按界面精度比较：秒数变化不触发重绘，百分比变化才触发', () => {
+  const base = { ...SNAPSHOT, activity: { kind: 'work', label: '打工', secondsLeft: 600, progress: .42 } }
+  const later = { ...base, activity: { ...base.activity, secondsLeft: 596, progress: .421 } }
+  assert.equal(pollKey(later), pollKey(base), '秒数/小数进度不该重画整页')
+  const real = { ...base, activity: { ...base.activity, secondsLeft: 596, progress: .5 } }
+  assert.notEqual(pollKey(real), pollKey(base), '进度跨过整百分比仍要更新')
+})

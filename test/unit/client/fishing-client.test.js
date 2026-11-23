@@ -429,3 +429,51 @@ test('U24-7 closing a hooked fight resolves it exactly once', async () => {
   assert.equal(posts.length, 1)
   assert.deepEqual(JSON.parse(posts[0].body), { action: 'fishResolve', success: false })
 })
+
+test('静置轮询：活动倒计时变化不重建钓鱼页控件，真实变化才更新', async () => {
+  const away = status({ automation: { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [] } })
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  away.inventory = { ...away.inventory, bait_shrimp: 20 }
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  assert.ok(poll, '有 4 秒轮询')
+  // 进页后的第一次轮询会补画一次（paintedKey 还是空）；基线从这一拍之后开始量。
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  const panel = findByClass(contentOf(dom), 'dp-fish-auto')
+  contentOf(dom).scrollTop = 40
+
+  for (let beat = 0; beat < 3; beat += 1) {
+    away.activity.secondsLeft -= 4
+    await poll.fn()
+  }
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '倒计时变化不能换掉时长按钮')
+  assert.equal(findByClass(contentOf(dom), 'dp-fish-auto'), panel, '自动面板节点保持')
+  assert.equal(contentOf(dom).scrollTop, 40, '静置轮询不能把滚动位置清掉')
+
+  away.inventory = { ...away.inventory, bait_worm: 30 }
+  await poll.fn()
+  assert.match(contentOf(dom).allText(), /蚯蚓.*30/, '饵料数真的变了要更新')
+})
+
+test('活动倒计时轮询只改「还有 N 秒」文本，不换节点', async () => {
+  const away = status()
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'status')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  const node = findByAttr(contentOf(dom), 'data-activity-left', '')
+  assert.ok(node)
+  assert.match(node.allText(), /600/)
+  away.activity.secondsLeft = 596
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-activity-left', ''), node, '倒计时节点保持')
+  assert.match(node.allText(), /596/)
+})
