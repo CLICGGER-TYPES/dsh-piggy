@@ -8,6 +8,8 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 ## [Unreleased]
 
 - 修复：猪在外打工/上学时，点「自动钓鱼」只重画页面、不弹「改去」确认，看起来像界面一直刷新且始终不出发（#146）。
+- 修复：Windows 非正常退出后 PID 被系统复用，运行时把无关进程当成活锁，导致 `/dsh-piggy/*` 整组 404、界面一直「连不上宿主」。锁现在记录进程启动时间/可执行路径并双重校验；过期锁 rename 到 `.stale-<时间戳>` 留证。
+- 前端遇到 `/state` 404 时提示「退出 DSH 后删除 state.json.runtime.lock 再启动」。
 
 ---
 

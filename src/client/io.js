@@ -286,7 +286,10 @@ export function createIo(ctx) {
           }
         } catch (error) {
           if (ctx.stopped) return
-          ctx.showBubble('连接不上宿主', 4000)
+          var notRegistered = error instanceof Error && error.message === 'HTTP 404'
+          ctx.showBubble(notRegistered
+            ? '连不上宿主：若刚异常退出，退出 DSH 后删 state.json.runtime.lock 再启动'
+            : '连接不上宿主', 6000)
           // 轮询每几秒一次，断线时只记「刚开始连不上」和「恢复了」两条，别刷屏。
           if (!hostDown) {
             hostDown = true
