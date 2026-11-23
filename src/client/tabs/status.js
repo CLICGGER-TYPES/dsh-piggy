@@ -220,7 +220,9 @@ function renderBanners(ui) {
   } else if (ui.view.pig !== null && ui.view.activity !== null) {
     var away = el('div', 'dp-alert dp-work')
     away.appendChild(el('b', null, ui.view.activity.emoji + ' 在外面：' + ui.view.activity.label))
-    away.appendChild(el('div', null, '还有 ' + ui.view.activity.secondsLeft + ' 秒'))
+    var left = el('div', 'dp-activity-left', '还有 ' + ui.view.activity.secondsLeft + ' 秒')
+    left.setAttribute('data-activity-left', '')
+    away.appendChild(left)
     ui.content.appendChild(away)
     var wrap = el('div', 'dp-actions')
     var call = button('dp-btn dp-btn-wide', { 'data-action': 'calloff' }, function () { ui.send('calloff') })

@@ -96,3 +96,32 @@ test('没有 extViews 或不是对象也不炸', () => {
   assert.equal(typeof pollKey({ extViews: null }), 'string')
   assert.equal(typeof pollKey('x'), 'string')
 })
+
+test('活动倒计时和进度都不触发整页重绘（进度条由短路分支就地更新）', () => {
+  const base = { ...SNAPSHOT, activity: { kind: 'work', label: '打工', secondsLeft: 600, progress: .42 } }
+  const later = { ...base, activity: { ...base.activity, secondsLeft: 596, progress: .421 } }
+  assert.equal(pollKey(later), pollKey(base), '秒数/小数进度不该重画整页')
+  const real = { ...base, activity: { ...base.activity, secondsLeft: 596, progress: .5 } }
+  assert.equal(pollKey(real), pollKey(base), '进度条由 io 短路更新，不再触发整页重画')
+})
+
+test('真实 /state 序列：静置相邻快照的指纹完全一致', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  assert.ok(states.length >= 20, '至少 20 个连续真实快照')
+  for (let index = 1; index < states.length; index += 1) assert.equal(pollKey(states[index]), pollKey(states[index - 1]), `第 ${index} 对相邻快照`)
+  const changed = structuredClone(states[0])
+  changed.pig.coins += 1
+  assert.notEqual(pollKey(changed), pollKey(states[0]), '金币变了仍要重画')
+})
+
+test('钓鱼页只按可见集比较：清洁度变化不重画，金币/饵料变化仍重画', () => {
+  const base = { ...SNAPSHOT, pig: { ...SNAPSHOT.pig, cleanliness: 89, coins: 100 }, inventory: { bait_worm: 40 } }
+  const cleaner = structuredClone(base); cleaner.pig.cleanliness = 88
+  assert.equal(pollKey(cleaner, { fishing: true }), pollKey(base, { fishing: true }), '清洁度不在钓鱼页显示')
+  const richer = structuredClone(base); richer.pig.coins += 1
+  assert.equal(pollKey(richer, { fishing: true }), pollKey(base, { fishing: true }), '金币由短路就地改 disabled')
+  const bait = structuredClone(base); bait.inventory.bait_worm -= 1
+  assert.notEqual(pollKey(bait, { fishing: true }), pollKey(base, { fishing: true }), '饵料要重画')
+})

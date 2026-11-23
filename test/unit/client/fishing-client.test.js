@@ -429,3 +429,208 @@ test('U24-7 closing a hooked fight resolves it exactly once', async () => {
   assert.equal(posts.length, 1)
   assert.deepEqual(JSON.parse(posts[0].body), { action: 'fishResolve', success: false })
 })
+
+test('静置轮询：活动倒计时变化不重建钓鱼页控件，真实变化才更新', async () => {
+  const away = status({ automation: { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [] } })
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  away.inventory = { ...away.inventory, bait_shrimp: 20 }
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  assert.ok(poll, '有 4 秒轮询')
+  // 进页后的第一次轮询会补画一次（paintedKey 还是空）；基线从这一拍之后开始量。
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  const panel = findByClass(contentOf(dom), 'dp-fish-auto')
+  contentOf(dom).scrollTop = 40
+
+  for (let beat = 0; beat < 3; beat += 1) {
+    away.activity.secondsLeft -= 4
+    await poll.fn()
+  }
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '倒计时变化不能换掉时长按钮')
+  assert.equal(findByClass(contentOf(dom), 'dp-fish-auto'), panel, '自动面板节点保持')
+  assert.equal(contentOf(dom).scrollTop, 40, '静置轮询不能把滚动位置清掉')
+
+  away.inventory = { ...away.inventory, bait_worm: 30 }
+  await poll.fn()
+  assert.match(contentOf(dom).allText(), /蚯蚓.*30/, '饵料数真的变了要更新')
+})
+
+test('活动倒计时轮询只改「还有 N 秒」文本，不换节点', async () => {
+  const away = status()
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'status')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn() // 进页后的补画一拍
+  const node = findByAttr(contentOf(dom), 'data-activity-left', '')
+  assert.ok(node)
+  assert.match(node.allText(), /600/)
+  away.activity.secondsLeft = 596
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-activity-left', ''), node, '倒计时节点保持')
+  assert.match(node.allText(), /596/)
+})
+
+test('确认框的分钟数随轮询就地更新，不重建节点', async () => {
+  const away = status()
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 61, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  const { dom, intervals, calls } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  await intervals.find(interval => interval.delay === 4000).fn()
+  findByAttr(contentOf(dom), 'data-fish-auto', '30').fire('click')
+  await settle()
+  const title = findByClass(contentOf(dom), 'dp-switch-title')
+  assert.ok(title, '确认框打开')
+  assert.match(title.allText(), /还有 2 分钟/)
+  const beforePosts = calls.filter(call => call.method === 'POST').length
+
+  away.activity.secondsLeft = 57
+  await intervals.find(interval => interval.delay === 4000).fn()
+  assert.equal(findByClass(contentOf(dom), 'dp-switch-title'), title, '确认框节点保持')
+  assert.match(title.allText(), /还有 1 分钟/, '61 → 57 要跨档到 1 分钟')
+  away.activity.secondsLeft = 59
+  await intervals.find(interval => interval.delay === 4000).fn()
+  assert.match(title.allText(), /还有 1 分钟/, '60 → 59 仍是 1 分钟')
+  assert.equal(calls.filter(call => call.method === 'POST').length, beforePosts, '确认前不能发动作')
+})
+
+test('真实 /state 回放：静置和金币变化都不重建钓鱼页节点', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  const real = states.filter(state => state.activity?.kind === 'work').slice(0, 8)
+  assert.ok(real.length >= 5)
+  let current = real[0]
+  const { dom, intervals, calls } = await mount({ fetch: async () => ({ ok: true, status: 200, async json() { return current } }) })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  const auto = findByClass(contentOf(dom), 'dp-fish-auto')
+  assert.ok(go && auto)
+  for (let index = 1; index < real.length; index += 1) {
+    current = real[index]
+    await poll.fn()
+    assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, `真实样本 ${index}：按钮节点保持`)
+    assert.equal(findByClass(contentOf(dom), 'dp-fish-auto'), auto, `真实样本 ${index}：自动面板保持`)
+  }
+  assert.equal(calls.filter(call => call.method === 'POST').length, 0, '静置不能有动作 POST')
+  current = structuredClone(real.at(-1))
+  current.pig.coins += 1
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '金币变化只就地改 disabled，不重画')
+})
+
+test('status 页的成长值仍按真实 /state 更新，不被全局折叠冻住', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  const real = states.filter(state => state.activity?.kind === 'work')
+  let current = real[0]
+  const { dom, intervals } = await mount({ fetch: async () => ({ ok: true, status: 200, async json() { return current } }) })
+  openPanel(dom, 'status')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const before = contentOf(dom).allText().match(/还差 \d+ 成长/)?.[0]
+  assert.ok(before)
+  const meter = findByClass(contentOf(dom), 'dp-level')
+  const beforeWidth = meter.children[0].style.width
+  current = real.at(-1)
+  await poll.fn()
+  assert.notEqual(contentOf(dom).allText().match(/还差 \d+ 成长/)?.[0], before, '成长值要跟着 xp 变')
+  assert.notEqual(findByClass(contentOf(dom), 'dp-level').children[0].style.width, beforeWidth, '等级条百分比要变')
+})
+
+test('真实值变化时钓鱼页无关按钮不换、焦点不掉', async () => {
+  const away = status()
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  away.pig = { ...away.pig, cleanliness: 89 }
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  go.focus()
+  away.pig.cleanliness = 88
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '清洁度不在钓鱼页显示，按钮身份保持不变')
+  assert.equal(globalThis.document.activeElement, go, '焦点保持')
+
+  away.inventory = { ...away.inventory, bait_worm: 30 }
+  await poll.fn()
+  const next = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  assert.ok(next)
+  assert.equal(globalThis.document.activeElement, next, '真变化重画后焦点也要回到同一控件')
+})
+
+test('金币变化时余额、提示、钓点/钓竿/升级可用态全部就地跟上', async () => {
+  const nextRod = { level: 2, label: '玻璃竿', emoji: '🎣', price: 800 }
+  const automation = { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [{ kind: 'duration', label: '2 小时自动钓', price: 1500 }] }
+  async function openGearWithCoins(gear, read, initialDisabled) {
+    const view = status({ rod, nextRod, spots, automation })
+    view.pig = { ...view.pig, coins: 1499 }
+    const { dom, intervals } = await mount({ status: view })
+    openPanel(dom, 'fishing')
+    openGear(contentOf(dom), gear)
+    const poll = intervals.find(interval => interval.delay === 4000)
+    await poll.fn()
+    const first = read(dom)
+    assert.equal(findByClass(dom.body, 'dp-hud').allText().includes('1499'), true, gear + ' 初始余额')
+    assert.equal(first.disabled, initialDisabled, gear + ' 1499 时的可用态')
+    view.pig.coins = 1500
+    await poll.fn()
+    assert.equal(findByClass(dom.body, 'dp-hud').allText().includes('1500'), true, gear + ' 余额升到 1500')
+    assert.equal(read(dom), first, gear + ' 金币跨档不换节点')
+    return { dom, view, poll, first, read }
+  }
+
+  // 钓点：湖 1500。
+  {
+    const ctx = await openGearWithCoins('spot', dom => findByAttr(contentOf(dom), 'data-fish-spot', 'lake'), true)
+    assert.equal(ctx.first.disabled, false, '1500 的湖解锁')
+    ctx.view.pig.coins = 1400
+    await ctx.poll.fn()
+    assert.equal(ctx.read(ctx.dom).disabled, true, '余额下降后湖锁回去')
+  }
+  // 鱼竿：玻璃竿 800，两个方向都够。
+  {
+    const ctx = await openGearWithCoins('rod', dom => findByAttr(contentOf(dom), 'data-fish-rod', '2'), false)
+    assert.equal(ctx.first.disabled, false, '800 的玻璃竿可用')
+    ctx.view.pig.coins = 700
+    await ctx.poll.fn()
+    assert.equal(ctx.read(ctx.dom).disabled, true, '余额降到 700 后玻璃竿锁回去')
+  }
+  // 自动升级：2 小时 1500 + 「金币不够」提示；按钮身份与焦点保持。
+  {
+    const ctx = await openGearWithCoins('auto', dom => findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), true)
+    const go = findByAttr(contentOf(ctx.dom), 'data-fish-auto', '30')
+    go.focus()
+    assert.equal(ctx.first.disabled, false, '1500 的升级解锁')
+    const whyAfter = findByClass(contentOf(ctx.dom), 'dp-fish-why')
+    assert.equal(whyAfter.hidden, true, '金币够了要撤掉「金币不够」')
+    ctx.view.pig.coins = 1400
+    await ctx.poll.fn()
+    assert.equal(ctx.read(ctx.dom).disabled, true, '余额下降后升级锁回去')
+    assert.equal(findByAttr(contentOf(ctx.dom), 'data-fish-auto', '30'), go, '30 分钟按钮身份保持')
+    assert.equal(globalThis.document.activeElement, go, '焦点仍在原按钮')
+    const why = findByClass(contentOf(ctx.dom), 'dp-fish-why')
+    assert.equal(why.hidden, false)
+    assert.match(why.allText(), /金币不够.*2 小时自动钓要 1500 金币/)
+  }
+})

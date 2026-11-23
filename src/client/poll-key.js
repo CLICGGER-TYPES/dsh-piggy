@@ -66,9 +66,56 @@ function foldViews(views) {
  * @param {any} snapshot 宿主 /state 的正文（JSON.parse 之后）
  * @returns {string}
  */
-export function pollKey(snapshot) {
+/** 打工时每拍都会涨、但主面板不显示的经验/体重阈值。 */
+var PIG_RULES = { xp: function () { return 0 } }
+var LEVEL_RULES = { xp: function () { return 0 }, toNext: function () { return 0 }, percent: function () { return 0 } }
+var BODY_RULES = { idealG: function () { return 0 }, roundAtG: function () { return 0 }, fatAtG: function () { return 0 } }
+
+/** 顶层里持续变化、但界面要么有本地时钟、要么根本不显示的字段。 */
+var SNAPSHOT_RULES = {
+  activity: {
+    // 倒计时由 io.js 的就地更新改文本；进度条也由短路分支直接改宽度。
+    secondsLeft: function () { return 0 },
+    progress: function () { return 0 },
+  },
+  // 打工/上学时 xp 每拍涨 0.1，但主面板不显示 xp，只有升级时 level 才该重画。
+  pig: PIG_RULES,
+  daily: { onlineMinutes: function () { return 0 } },
+}
+
+/** pig 有嵌套规则，fold 一次只能吃一层。 */
+function foldPig(pig, showGrowth) {
+  if (pig === null || typeof pig !== 'object') return pig
+  var out = showGrowth ? Object.assign({}, pig) : fold(pig, PIG_RULES)
+  if (!showGrowth && out.levelInfo !== null && typeof out.levelInfo === 'object') out.levelInfo = fold(out.levelInfo, LEVEL_RULES)
+  if (out.bodyWeight !== null && typeof out.bodyWeight === 'object') out.bodyWeight = fold(out.bodyWeight, BODY_RULES)
+  return out
+}
+
+/** 哪个标签页把成长/活动派生值算进指纹：一处登记，别逐页补。 */
+export var POLL_PAGE_RULES = Object.freeze({
+  status: { showGrowth: true },
+  dev: { showGrowth: true },
+  fishing: { fishing: true },
+})
+
+/** @param {any} snapshot @param {string} tab */
+export function pollKeyForPage(snapshot, tab) {
+  return pollKey(snapshot, POLL_PAGE_RULES[tab] ?? {})
+}
+
+export function pollKey(snapshot, options = {}) {
   if (snapshot === null || typeof snapshot !== 'object') return String(snapshot)
   var copy = Object.assign({}, snapshot)
+  var showGrowth = options.showGrowth === true
+  var fishingView = options.fishing === true
   copy.extViews = foldViews(snapshot.extViews)
+  if (snapshot.activity !== null && typeof snapshot.activity === 'object') copy.activity = fold(snapshot.activity, SNAPSHOT_RULES.activity)
+  if (snapshot.pig !== null && typeof snapshot.pig === 'object') {
+    copy.pig = fishingView
+      ? { satiety: Number(snapshot.pig.satiety) < 1 ? 0 : 1 }
+      : foldPig(snapshot.pig, showGrowth)
+  }
+  if (snapshot.daily !== null && typeof snapshot.daily === 'object') copy.daily = fold(snapshot.daily, SNAPSHOT_RULES.daily)
   return JSON.stringify(copy)
 }

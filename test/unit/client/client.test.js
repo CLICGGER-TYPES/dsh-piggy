@@ -2570,3 +2570,54 @@ test('按住设置开关时收到轮询快照不替换按钮，松开后的点�
   assert.equal(requests.length, 1)
   assert.equal(JSON.parse(String(requests[0].body)).on, false)
 })
+
+test('学习页的「改去」分钟横幅也随短路轮询更新', async () => {
+  const stage = { key: 'primary', label: '小学', emoji: '📚', minutes: 20, tuition: 10, gain: 1, from: 0, upTo: 9, unlocked: true, subjects: ['chinese'], progress: null }
+  const subject = { key: 'chinese', label: '语文', emoji: '📖', traitLabel: '智力', traitEmoji: '🧠', lessons: 12,
+    stage: { key: 'primary', label: '小学', emoji: '📚' }, nextGraduation: null, minutes: 20, tuition: 10, gain: 1, secondaryGain: 0, available: true, affordable: true }
+  const status = { ...SNAPSHOT, stages: [stage], subjects: [subject], canGoOut: false, awayBlocked: 'away',
+    activity: { kind: 'work', label: '打工', secondsLeft: 61, cost: 0, progress: .2 } }
+  const { registration, dom } = await loadClient({ status })
+  let poll = null
+  const realSetInterval = globalThis.window.setInterval
+  globalThis.window.setInterval = fn => { poll = fn; return 1 }
+  try {
+    registration.factory(() => {}).apply({})
+    await settle()
+    openPanel(dom)
+    pickTab(dom, 'study')
+    tap(dom, 'data-stage', 'primary')
+    tap(dom, 'data-subject', 'chinese')
+    await settle()
+    const title = findByClass(contentOf(dom), 'dp-switch-title')
+    assert.ok(title)
+    assert.match(title.allText(), /还有 2 分钟/)
+    status.activity.secondsLeft = 57
+    await poll()
+    assert.equal(findByClass(contentOf(dom), 'dp-switch-title'), title)
+    assert.match(title.allText(), /还有 1 分钟/)
+  } finally { globalThis.window.setInterval = realSetInterval }
+})
+
+test('开发者数值页的「还差成长」也随真实序列更新', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { gunzipSync } = await import('node:zlib')
+  const states = JSON.parse(gunzipSync(await readFile(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
+  const status = structuredClone(states[0])
+  status.pig.levelInfo.toNext = 473
+  const { registration, dom } = await loadClient({ status })
+  let poll = null
+  const realSetInterval = globalThis.window.setInterval
+  globalThis.window.setInterval = fn => { poll = fn; return 1 }
+  try {
+    registration.factory(() => {}).apply({})
+    await settle()
+    openPanel(dom, 'home')
+    for (let i = 0; i < 7; i += 1) findByAttr(contentOf(dom), 'data-version', 'true').fire('click')
+    pickTab(dom, 'dev')
+    assert.match(contentOf(dom).allText(), /还差 473/)
+    status.pig.levelInfo.toNext = 471
+    await poll()
+    assert.match(contentOf(dom).allText(), /还差 471/, 'dev 数值页不能停在旧成长值')
+  } finally { globalThis.window.setInterval = realSetInterval }
+})

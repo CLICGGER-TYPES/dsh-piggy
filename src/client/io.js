@@ -10,7 +10,7 @@ import { el } from './dom.js'
 import { normalizePending } from './normalize.js'
 import { processPending } from './pending.js'
 import { createPomodoroClock } from './pomodoro-clock.js'
-import { pollKey } from './poll-key.js'
+import { pollKeyForPage } from './poll-key.js'
 import { record } from './journal.js'
 import { isObj, num, str } from './values.js'
 import { externalActionsBlocked, externalBlockedMessage, isExternalMode } from './external-link.js'
@@ -267,7 +267,8 @@ export function createIo(ctx) {
           }
           // 快照「画面上」没变就不重画：整块内容（菜园一屏 160 个节点、52 张图）拆了重建是白干，
           // 顺手还会把悬停卡、开着的弹层抹掉。指纹按显示精度压过（见 poll-key.js）。
-          var key = pollKey(next)
+          // 状态页显示「还差成长/等级百分比」；按当前标签页决定要不要把成长值算进指纹。
+          var key = pollKeyForPage(next, ctx.tab)
           if (key !== paintedKey) {
             // 记账必须等 render 说「真的画了」：焦点在改名框 / 图鉴搜索框 / 菜园购买数量框时，
             // render 会早退（不重画内容区），早退返回 false —— 这时把指纹打回 null，
@@ -279,6 +280,33 @@ export function createIo(ctx) {
               paintedKey = null
               throw error
             }
+          }
+          // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
+          // 金币驱动的文本/按钮就地更新，不重画整页。
+          if (ctx.hudCoins && next.pig && Number.isFinite(Number(next.pig.coins))) ctx.hudCoins.textContent = '🪙 ' + Number(next.pig.coins)
+          // 旅行图标的价格提示也是金币派生的，短路时一起更新。
+          if (ctx.icons?.travel && next.pig !== null) ctx.icons.travel.setAttribute('data-alert', next.pig.coins >= 400 ? 'true' : 'false')
+          var gated = ctx.content?.querySelectorAll?.('.dp-coin-gated') ?? []
+          for (var gi = 0; gi < gated.length; gi += 1) gated[gi].disabled = (next.pig?.coins ?? 0) < Number(gated[gi].getAttribute('data-price'))
+          var why = ctx.content?.querySelectorAll?.('.dp-fish-why')[0]
+          if (why && why.getAttribute('data-why-kind') === 'coins') {
+            var blockedNow = []
+            for (var bi = 0; bi < gated.length; bi += 1) if (gated[bi].getAttribute('data-fish-upgrade') !== null && gated[bi].disabled) blockedNow.push(gated[bi])
+            if (blockedNow.length === 0) { why.hidden = true; why.textContent = '' }
+            else {
+              why.hidden = false
+              why.textContent = '金币不够：' + blockedNow[0].getAttribute('data-label') + '要 ' + blockedNow[0].getAttribute('data-price') + ' 金币。'
+            }
+          }
+          var progressFill = ctx.progressFill
+          if (progressFill && next.activity) progressFill.style.width = next.activity.progress + '%'
+          var leftNode = ctx.content?.querySelectorAll?.('.dp-activity-left')[0]
+          if (leftNode && next.activity) leftNode.textContent = '还有 ' + next.activity.secondsLeft + ' 秒'
+          // 「改去」确认框里的分钟数也是 activity 派生的；短路时同样就地更新。
+          var switchTitle = ctx.content?.querySelectorAll?.('.dp-switch-title')[0]
+          if (switchTitle && next.activity) {
+            var minutes = Math.max(1, Math.ceil(next.activity.secondsLeft / 60))
+            switchTitle.textContent = '猪正在' + String(next.activity.label).replace(/^兴趣·/, '学') + '（还有 ' + minutes + ' 分钟）'
           }
           if (hostDown) {
             hostDown = false

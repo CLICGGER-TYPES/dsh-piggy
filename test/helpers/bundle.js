@@ -87,6 +87,8 @@ export function fakeDom() {
 
     /** 真元素上就有 click()；下载兜底会用 <a>.click()。 */
     click() { this.fire('click') }
+    focus() { if (typeof document !== 'undefined') document.activeElement = this }
+    blur() { if (typeof document !== 'undefined' && document.activeElement === this) document.activeElement = null }
 
     allText() { return [this.textContent, ...this.children.map(c => c.allText())].join(' ') }
     walk(visit) { visit(this); for (const child of this.children) child.walk(visit) }

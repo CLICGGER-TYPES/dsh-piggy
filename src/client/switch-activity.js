@@ -42,7 +42,7 @@ export function renderSwitchAsk(ui) {
   if (activity === null) { ui.switchAsk = null; return }
   var box = el('div', 'dp-alert dp-switch-ask')
   var left = Math.max(1, Math.ceil(activity.secondsLeft / 60))
-  box.appendChild(el('b', null, '猪正在' + activity.label.replace(/^兴趣·/, '学') + '（还有 ' + left + ' 分钟）'))
+  box.appendChild(el('b', 'dp-switch-title', '猪正在' + activity.label.replace(/^兴趣·/, '学') + '（还有 ' + left + ' 分钟）'))
   var loss = lossOf(activity)
   box.appendChild(el('div', null, '要结束它，改去' + ask.label + '吗？' + (loss ? loss + '。' : '')))
   var row = el('div', 'dp-switch-ask-row')
