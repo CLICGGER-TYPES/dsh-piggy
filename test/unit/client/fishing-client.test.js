@@ -552,3 +552,28 @@ test('status 页的成长值仍按真实 /state 更新，不被全局折叠冻�
   assert.notEqual(contentOf(dom).allText().match(/还差 \d+ 成长/)?.[0], before, '成长值要跟着 xp 变')
   assert.notEqual(findByClass(contentOf(dom), 'dp-level').children[0].style.width, beforeWidth, '等级条百分比要变')
 })
+
+test('真实值变化时钓鱼页无关按钮不换、焦点不掉', async () => {
+  const away = status()
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  away.pig = { ...away.pig, cleanliness: 89 }
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  go.focus()
+  away.pig.cleanliness = 88
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '清洁度不在钓鱼页显示，按钮身份保持不变')
+  assert.equal(globalThis.document.activeElement, go, '焦点保持')
+
+  away.inventory = { ...away.inventory, bait_worm: 30 }
+  await poll.fn()
+  const next = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  assert.ok(next)
+  assert.equal(globalThis.document.activeElement, next, '真变化重画后焦点也要回到同一控件')
+})
