@@ -270,6 +270,12 @@ export function renderFishingReady(ui) {
   const content = el('div', 'dp-fish')
   scroller.appendChild(content)
   const view = { ...ui, content, scrollContent: scroller }
+  // 出发确认（「猪正在打工，改去自动钓鱼吗？」）存在真正的 ui 上，不在这个
+  // 只用来限定 .dp-fish 容器的浅拷贝上；不透传的话，点自动出发会静默丢掉。
+  Object.defineProperty(view, 'switchAsk', {
+    get: function () { return ui.switchAsk },
+    set: function (value) { ui.switchAsk = value },
+  })
   renderHero(view)
   const baitState = currentBaitState(view)
   renderDock(view, baitState)
