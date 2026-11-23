@@ -505,7 +505,7 @@ test('确认框的分钟数随轮询就地更新，不重建节点', async () =>
   assert.equal(calls.filter(call => call.method === 'POST').length, beforePosts, '确认前不能发动作')
 })
 
-test('真实 /state 回放：静置期间钓鱼页节点不重建，金币变化才重画', async () => {
+test('真实 /state 回放：静置和金币变化都不重建钓鱼页节点', async () => {
   const { readFileSync } = await import('node:fs')
   const { gunzipSync } = await import('node:zlib')
   const states = JSON.parse(gunzipSync(readFileSync(new URL('../../fixtures/poll-idle-states.json.gz', import.meta.url))).toString('utf8'))
@@ -530,7 +530,7 @@ test('真实 /state 回放：静置期间钓鱼页节点不重建，金币变化
   current = structuredClone(real.at(-1))
   current.pig.coins += 1
   await poll.fn()
-  assert.notEqual(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '金币变化要重画')
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '金币变化只就地改 disabled，不重画')
 })
 
 test('status 页的成长值仍按真实 /state 更新，不被全局折叠冻住', async () => {
@@ -576,4 +576,28 @@ test('真实值变化时钓鱼页无关按钮不换、焦点不掉', async () =>
   const next = findByAttr(contentOf(dom), 'data-fish-auto', '30')
   assert.ok(next)
   assert.equal(globalThis.document.activeElement, next, '真变化重画后焦点也要回到同一控件')
+})
+
+test('金币变化只就地改升级按钮 disabled，不换节点、不丢焦点', async () => {
+  const away = status({ automation: { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [{ kind: 'duration', label: '2 小时自动钓', price: 1500 }] } })
+  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
+  away.canGoOut = false
+  away.awayBlocked = 'away'
+  away.pig = { ...away.pig, coins: 1499 }
+  const { dom, intervals } = await mount({ status: away })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  const buy = findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration')
+  go.focus()
+  assert.equal(buy.disabled, true)
+  away.pig.coins = 1500
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '30 分钟按钮身份保持')
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), buy, '升级按钮身份保持')
+  assert.equal(buy.disabled, false, '金币够了就地解锁')
+  assert.equal(globalThis.document.activeElement, go, '焦点仍在原按钮')
 })

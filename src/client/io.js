@@ -282,6 +282,9 @@ export function createIo(ctx) {
             }
           }
           // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
+          // 金币驱动的按钮只改 disabled，不重画整页。
+          var gated = ctx.content?.querySelectorAll?.('.dp-coin-gated') ?? []
+          for (var gi = 0; gi < gated.length; gi += 1) gated[gi].disabled = (next.pig?.coins ?? 0) < Number(gated[gi].getAttribute('data-price'))
           var progressFill = ctx.progressFill
           if (progressFill && next.activity) progressFill.style.width = next.activity.progress + '%'
           var leftNode = ctx.content?.querySelectorAll?.('.dp-activity-left')[0]

@@ -113,7 +113,7 @@ export function pollKey(snapshot, options = {}) {
   if (snapshot.activity !== null && typeof snapshot.activity === 'object') copy.activity = fold(snapshot.activity, SNAPSHOT_RULES.activity)
   if (snapshot.pig !== null && typeof snapshot.pig === 'object') {
     copy.pig = fishingView
-      ? { coins: snapshot.pig.coins, satiety: Number(snapshot.pig.satiety) < 1 ? 0 : 1 }
+      ? { satiety: Number(snapshot.pig.satiety) < 1 ? 0 : 1 }
       : foldPig(snapshot.pig, showGrowth)
   }
   if (snapshot.daily !== null && typeof snapshot.daily === 'object') copy.daily = fold(snapshot.daily, SNAPSHOT_RULES.daily)

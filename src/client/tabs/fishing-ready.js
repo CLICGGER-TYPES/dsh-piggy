@@ -117,6 +117,8 @@ function renderSpotPanel(ui) {
     text.appendChild(el('b', null, entry.label))
     text.appendChild(el('small', null, !entry.unlocked ? '🪙 ' + entry.price + ' 开' : !entry.open ? '晚上才开' : entry.kinds + ' 种鱼'))
     pick.appendChild(text)
+    pick.className += ' dp-coin-gated'
+    pick.setAttribute('data-price', String(entry.unlocked ? 0 : entry.price))
     pick.disabled = !entry.unlocked && coins < entry.price
     spots.appendChild(pick)
   }
@@ -134,6 +136,8 @@ function renderRodPanel(ui) {
   if (fishing.nextRod) {
     const coins = ui.view.pig?.coins ?? 0
     const up = button('dp-mini', { 'data-fish-rod': fishing.nextRod.key || String(fishing.nextRod.level) }, function () { ui.send('fishRod') })
+    up.className += ' dp-coin-gated'
+    up.setAttribute('data-price', String(fishing.nextRod.price))
     up.textContent = '换' + fishing.nextRod.label + ' · 🪙 ' + fishing.nextRod.price
     up.disabled = coins < fishing.nextRod.price
     body.appendChild(up)
@@ -199,6 +203,8 @@ function renderAutoPanel(ui, baitState) {
     const buy = button('dp-fish-buy', { 'data-fish-upgrade': upgrade.kind }, () => ui.send('fishAutomation', { kind: upgrade.kind }))
     buy.appendChild(el('span', null, upgrade.label))
     buy.appendChild(el('b', null, '🪙 ' + upgrade.price))
+    buy.className += ' dp-coin-gated'
+    buy.setAttribute('data-price', String(upgrade.price))
     buy.disabled = (ui.view.pig?.coins ?? 0) < upgrade.price
     if (buy.disabled) blockedUpgrades.push(upgrade.label + '要 ' + upgrade.price + ' 金币')
     body.appendChild(buy)

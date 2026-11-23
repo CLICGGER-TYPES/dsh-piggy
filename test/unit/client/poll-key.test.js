@@ -121,7 +121,7 @@ test('钓鱼页只按可见集比较：清洁度变化不重画，金币/饵料�
   const cleaner = structuredClone(base); cleaner.pig.cleanliness = 88
   assert.equal(pollKey(cleaner, { fishing: true }), pollKey(base, { fishing: true }), '清洁度不在钓鱼页显示')
   const richer = structuredClone(base); richer.pig.coins += 1
-  assert.notEqual(pollKey(richer, { fishing: true }), pollKey(base, { fishing: true }), '金币要重画')
+  assert.equal(pollKey(richer, { fishing: true }), pollKey(base, { fishing: true }), '金币由短路就地改 disabled')
   const bait = structuredClone(base); bait.inventory.bait_worm -= 1
   assert.notEqual(pollKey(bait, { fishing: true }), pollKey(base, { fishing: true }), '饵料要重画')
 })
