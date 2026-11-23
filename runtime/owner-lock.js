@@ -58,7 +58,10 @@ function samePath(left, right) {
   return normal(left) === normal(right)
 }
 
-/** 锁里记的身份 vs 进程现在真实身份。返回 live / reused / unknown。 */
+/** 锁里记的身份 vs 进程现在真实身份。返回 live / reused / unknown。
+ * 稳定字段（启动时间、可执行路径）优先；token 只在前两者都不可比较时辅助判活，
+ * 且只在两边同源时比较。token 抖动/一侧缺失一律 unknown，不能据此回收活锁。
+ */
 function compareIdentity(expected, actual) {
   if (actual?.alive !== true) return 'reused'
   const owner = identityOf(expected)
@@ -68,25 +71,25 @@ function compareIdentity(expected, actual) {
     if (label === '') return 'unknown'
     return RUNTIME_NAME.test(label) ? 'live' : 'reused'
   }
-  let compared = false
-  if (owner.token !== undefined && typeof actual.token === 'string' && actual.token !== '') {
-    compared = true
-    if (owner.token !== actual.token) return 'reused'
-  }
+  let stable = false
   if (owner.startedAt !== undefined && Number.isFinite(actual.startedAt)) {
-    compared = true
+    stable = true
     if (Math.abs(owner.startedAt - actual.startedAt) > START_TOLERANCE_MS) return 'reused'
   }
   const pathMatch = samePath(owner.execPath, actual.execPath)
   if (pathMatch !== null) {
-    compared = true
+    stable = true
     if (!pathMatch) return 'reused'
   }
-  if (!compared && owner.name !== undefined && typeof actual.name === 'string' && actual.name !== '') {
-    compared = true
-    if (owner.name.toLowerCase() !== actual.name.toLowerCase()) return 'reused'
+  if (stable) return 'live'
+  const ownerToken = owner.token ?? ''
+  const actualToken = typeof actual.token === 'string' ? actual.token : ''
+  if (ownerToken !== '' && actualToken !== '') {
+    const source = token => token.split(':', 1)[0]
+    if (source(ownerToken) !== source(actualToken)) return 'unknown'
+    return ownerToken === actualToken ? 'live' : 'unknown'
   }
-  return compared ? 'live' : 'unknown'
+  return 'unknown'
 }
 
 /**
@@ -126,7 +129,7 @@ export function probeProcess(pid, platform = process.platform) {
       const [elapsed, comm] = String(out.stdout ?? '').trim().split(/\s+/, 2)
       if (out.status === 0 && Number.isFinite(Number(elapsed))) {
         const startedAt = Date.now() - Number(elapsed) * 1000
-        return { alive: true, name: comm ?? '', startedAt, token: `ps:${comm ?? ''}:${Math.round(startedAt / 1000)}` }
+        return { alive: true, name: comm ?? '', startedAt, token: `ps:${comm ?? ''}` }
       }
       return { alive: true }
     }
@@ -138,7 +141,7 @@ export function probeProcess(pid, platform = process.platform) {
         const [when, execPath] = String(out.stdout ?? '').trim().split('|')
         const startedAt = Date.parse(when)
         if (Number.isFinite(startedAt)) {
-          return { alive: true, name: execPath ? basename(execPath) : '', ...(execPath ? { execPath } : {}), startedAt, token: `win:${when}:${execPath ?? ''}` }
+          return { alive: true, name: execPath ? basename(execPath) : '', ...(execPath ? { execPath } : {}), startedAt, ...(execPath ? { token: `win:${when}:${execPath}` } : {}) }
         }
       }
       return { alive: true }

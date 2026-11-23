@@ -104,3 +104,44 @@ test('并发获取只有一个成功', async t => {
   assert.equal(refused.length, 1)
   assert.match(refused[0].out, /OWNER_LOCK_LIVE/)
 })
+
+test('token 抖动不能把活锁判回收', t => {
+  const { statePath } = setup(t)
+  publish(statePath, {
+    pid: 4243,
+    identity: { token: 'ps:node', startedAt: 1_000_000, execPath: '/usr/bin/node' },
+  })
+  const options = {
+    probe: probeWith({ 4243: { alive: true, token: 'ps:node', startedAt: 1_001_200, execPath: '/usr/bin/node' } }),
+  }
+  assert.throws(() => acquireGameLock(statePath, options), error => error.code === 'OWNER_LOCK_LIVE')
+
+  const { statePath: second } = setup(t)
+  publish(second, { pid: 4244, identity: { token: 'ps:node:1' } })
+  assert.throws(() => acquireGameLock(second, {
+    probe: probeWith({ 4244: { alive: true, token: 'ps:node:2' } }),
+  }), error => error.code === 'OWNER_LOCK_LIVE', 'token 不同但无稳定字段时只能 unknown，不能回收')
+})
+
+test('并发回收过期锁只有一个成功', async t => {
+  const { statePath } = setup(t)
+  publish(statePath, {
+    pid: process.pid,
+    identity: { token: 'old-owner', startedAt: 1, execPath: '/old/runtime' },
+  })
+  const url = pathToFileURL(REPO).href
+  const script = `import { acquireGameLock } from ${JSON.stringify(url)};
+    try { const release = acquireGameLock(${JSON.stringify(statePath)}); console.log('OK');
+      setTimeout(() => { try { release() } catch {} ; process.exit(0) }, 3000) }
+    catch (error) { console.log('ERR:' + (error.code ?? error.message)); process.exit(1) }`
+  const start = () => new Promise(resolve => {
+    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] })
+    let out = ''
+    child.stdout.on('data', chunk => { out += chunk })
+    child.on('close', code => resolve({ code, out: out.trim() }))
+  })
+  const results = await Promise.all([start(), start()])
+  assert.equal(results.filter(result => result.code === 0).length, 1, JSON.stringify(results))
+  assert.equal(results.filter(result => result.code !== 0).length, 1)
+  assert.match(results.find(result => result.code !== 0).out, /OWNER_LOCK_LIVE/)
+})
