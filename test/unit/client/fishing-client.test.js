@@ -578,28 +578,59 @@ test('真实值变化时钓鱼页无关按钮不换、焦点不掉', async () =>
   assert.equal(globalThis.document.activeElement, next, '真变化重画后焦点也要回到同一控件')
 })
 
-test('金币变化只就地改升级按钮 disabled，不换节点、不丢焦点', async () => {
-  const away = status({ automation: { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
-    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [{ kind: 'duration', label: '2 小时自动钓', price: 1500 }] } })
-  away.activity = { kind: 'work', label: '打工', secondsLeft: 600, cost: 0, progress: .2 }
-  away.canGoOut = false
-  away.awayBlocked = 'away'
-  away.pig = { ...away.pig, coins: 1499 }
-  const { dom, intervals } = await mount({ status: away })
-  openPanel(dom, 'fishing')
-  openGear(contentOf(dom), 'auto')
-  const poll = intervals.find(interval => interval.delay === 4000)
-  await poll.fn()
-  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
-  const buy = findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration')
-  go.focus()
-  assert.equal(buy.disabled, true)
-  away.pig.coins = 1500
-  await poll.fn()
-  assert.equal(findByAttr(contentOf(dom), 'data-fish-auto', '30'), go, '30 分钟按钮身份保持')
-  assert.equal(findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), buy, '升级按钮身份保持')
-  assert.equal(buy.disabled, false, '金币够了就地解锁')
-  assert.equal(globalThis.document.activeElement, go, '焦点仍在原按钮')
-  assert.match(findByClass(dom.body, 'dp-hud').allText(), /1500/, '顶栏金币要就地更新')
-  assert.equal(findByClass(contentOf(dom), 'dp-fish-why').hidden, true, '金币够了要撤掉「金币不够」')
+test('金币变化时余额、提示、钓点/钓竿/升级可用态全部就地跟上', async () => {
+  const nextRod = { level: 2, label: '玻璃竿', emoji: '🎣', price: 800 }
+  const automation = { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [{ kind: 'duration', label: '2 小时自动钓', price: 1500 }] }
+  async function openGearWithCoins(gear, read, initialDisabled) {
+    const view = status({ rod, nextRod, spots, automation })
+    view.pig = { ...view.pig, coins: 1499 }
+    const { dom, intervals } = await mount({ status: view })
+    openPanel(dom, 'fishing')
+    openGear(contentOf(dom), gear)
+    const poll = intervals.find(interval => interval.delay === 4000)
+    await poll.fn()
+    const first = read(dom)
+    assert.equal(findByClass(dom.body, 'dp-hud').allText().includes('1499'), true, gear + ' 初始余额')
+    assert.equal(first.disabled, initialDisabled, gear + ' 1499 时的可用态')
+    view.pig.coins = 1500
+    await poll.fn()
+    assert.equal(findByClass(dom.body, 'dp-hud').allText().includes('1500'), true, gear + ' 余额升到 1500')
+    assert.equal(read(dom), first, gear + ' 金币跨档不换节点')
+    return { dom, view, poll, first, read }
+  }
+
+  // 钓点：湖 1500。
+  {
+    const ctx = await openGearWithCoins('spot', dom => findByAttr(contentOf(dom), 'data-fish-spot', 'lake'), true)
+    assert.equal(ctx.first.disabled, false, '1500 的湖解锁')
+    ctx.view.pig.coins = 1400
+    await ctx.poll.fn()
+    assert.equal(ctx.read(ctx.dom).disabled, true, '余额下降后湖锁回去')
+  }
+  // 鱼竿：玻璃竿 800，两个方向都够。
+  {
+    const ctx = await openGearWithCoins('rod', dom => findByAttr(contentOf(dom), 'data-fish-rod', '2'), false)
+    assert.equal(ctx.first.disabled, false, '800 的玻璃竿可用')
+    ctx.view.pig.coins = 700
+    await ctx.poll.fn()
+    assert.equal(ctx.read(ctx.dom).disabled, true, '余额降到 700 后玻璃竿锁回去')
+  }
+  // 自动升级：2 小时 1500 + 「金币不够」提示；按钮身份与焦点保持。
+  {
+    const ctx = await openGearWithCoins('auto', dom => findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), true)
+    const go = findByAttr(contentOf(ctx.dom), 'data-fish-auto', '30')
+    go.focus()
+    assert.equal(ctx.first.disabled, false, '1500 的升级解锁')
+    const whyAfter = findByClass(contentOf(ctx.dom), 'dp-fish-why')
+    assert.equal(whyAfter.hidden, true, '金币够了要撤掉「金币不够」')
+    ctx.view.pig.coins = 1400
+    await ctx.poll.fn()
+    assert.equal(ctx.read(ctx.dom).disabled, true, '余额下降后升级锁回去')
+    assert.equal(findByAttr(contentOf(ctx.dom), 'data-fish-auto', '30'), go, '30 分钟按钮身份保持')
+    assert.equal(globalThis.document.activeElement, go, '焦点仍在原按钮')
+    const why = findByClass(contentOf(ctx.dom), 'dp-fish-why')
+    assert.equal(why.hidden, false)
+    assert.match(why.allText(), /金币不够.*2 小时自动钓要 1500 金币/)
+  }
 })

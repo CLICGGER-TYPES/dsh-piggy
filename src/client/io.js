@@ -284,6 +284,8 @@ export function createIo(ctx) {
           // 活动倒计时不再触发整页重画，只就地改「还有 N 秒」这一行。
           // 金币驱动的文本/按钮就地更新，不重画整页。
           if (ctx.hudCoins && next.pig && Number.isFinite(Number(next.pig.coins))) ctx.hudCoins.textContent = '🪙 ' + Number(next.pig.coins)
+          // 旅行图标的价格提示也是金币派生的，短路时一起更新。
+          if (ctx.icons?.travel && next.pig !== null) ctx.icons.travel.setAttribute('data-alert', next.pig.coins >= 400 ? 'true' : 'false')
           var gated = ctx.content?.querySelectorAll?.('.dp-coin-gated') ?? []
           for (var gi = 0; gi < gated.length; gi += 1) gated[gi].disabled = (next.pig?.coins ?? 0) < Number(gated[gi].getAttribute('data-price'))
           var why = ctx.content?.querySelectorAll?.('.dp-fish-why')[0]
