@@ -634,3 +634,36 @@ test('金币变化时余额、提示、钓点/钓竿/升级可用态全部就地
     assert.match(why.allText(), /金币不够.*2 小时自动钓要 1500 金币/)
   }
 })
+
+test('页面加载时金币够用、之后跌回不够，也要补上「金币不够」提示', async () => {
+  const cheapRod = { ...rod, nextRod: { level: 2, label: '玻璃竿', emoji: '🎣', price: 800 } }
+  const view = status({ rod: cheapRod, spots, automation: { unlocked: false, stored: 0, usedHours: 0, full: false, baitLimit: 0,
+    choices: [{ minutes: 30, attempts: 10 }, { minutes: 60, attempts: 20 }], upgrades: [{ kind: 'duration', label: '2 小时自动钓', price: 1500 }] } })
+  view.pig = { ...view.pig, coins: 2000 }
+  const { dom, intervals } = await mount({ status: view })
+  openPanel(dom, 'fishing')
+  openGear(contentOf(dom), 'auto')
+  const poll = intervals.find(interval => interval.delay === 4000)
+  await poll.fn()
+  const why = findByClass(contentOf(dom), 'dp-fish-why')
+  assert.equal(why.hidden, true, '金币够时提示隐藏（节点仍在）')
+  const go = findByAttr(contentOf(dom), 'data-fish-auto', '30')
+  const buy = findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration')
+  go.focus()
+  view.pig.coins = 1400
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), buy, '按钮身份保持')
+  assert.equal(buy.disabled, true, '金币不够时按钮禁用')
+  assert.equal(why.hidden, false, '金币不够时要补出提示')
+  assert.equal(why.getAttribute('data-why-kind'), 'coins')
+  assert.match(why.allText(), /金币不够.*2 小时自动钓要 1500 金币/)
+  assert.equal(globalThis.document.activeElement, go, '焦点仍在原按钮')
+
+  // 回到全部买得起：提示就地隐藏，不重建节点（原「已知限制」的重建已不存在）。
+  view.pig.coins = 2000
+  await poll.fn()
+  assert.equal(findByAttr(contentOf(dom), 'data-fish-upgrade', 'duration'), buy, '回到够用时也不换节点')
+  assert.equal(buy.disabled, false)
+  assert.equal(why.hidden, true, '够用时提示隐藏')
+  assert.equal(globalThis.document.activeElement, go, '焦点保持')
+})

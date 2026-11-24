@@ -288,13 +288,16 @@ export function createIo(ctx) {
           if (ctx.icons?.travel && next.pig !== null) ctx.icons.travel.setAttribute('data-alert', next.pig.coins >= 400 ? 'true' : 'false')
           var gated = ctx.content?.querySelectorAll?.('.dp-coin-gated') ?? []
           for (var gi = 0; gi < gated.length; gi += 1) gated[gi].disabled = (next.pig?.coins ?? 0) < Number(gated[gi].getAttribute('data-price'))
+          // 「金币不够」提示不只从有到无：页面加载时金币够、之后跌回不够，也要补出来。
+          // 其它原因（鱼饵不够、鱼篓满等）由整页重画负责，这里不覆盖。
           var why = ctx.content?.querySelectorAll?.('.dp-fish-why')[0]
-          if (why && why.getAttribute('data-why-kind') === 'coins') {
+          if (why && why.getAttribute('data-why-kind') !== 'blocked') {
             var blockedNow = []
             for (var bi = 0; bi < gated.length; bi += 1) if (gated[bi].getAttribute('data-fish-upgrade') !== null && gated[bi].disabled) blockedNow.push(gated[bi])
             if (blockedNow.length === 0) { why.hidden = true; why.textContent = '' }
             else {
               why.hidden = false
+              why.setAttribute('data-why-kind', 'coins')
               why.textContent = '金币不够：' + blockedNow[0].getAttribute('data-label') + '要 ' + blockedNow[0].getAttribute('data-price') + ' 金币。'
             }
           }
