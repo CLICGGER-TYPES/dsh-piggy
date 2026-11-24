@@ -125,3 +125,18 @@ test('钓鱼页只按可见集比较：清洁度变化不重画，金币/饵料�
   const bait = structuredClone(base); bait.inventory.bait_worm -= 1
   assert.notEqual(pollKey(bait, { fishing: true }), pollKey(base, { fishing: true }), '饵料要重画')
 })
+
+test('钓鱼页忽略金币派生的可买标记与记忆，商店页仍按金币重建', () => {
+  const base = structuredClone(SNAPSHOT)
+  base.pig = { ...base.pig, coins: 2000, memories: ['[10:00] 出门搬砖'] }
+  base.shop = [{ key: 'bait_worm', kind: 'bait', price: 5, affordable: true }]
+  base.trips = [{ key: 'beach', price: 400, affordable: true }]
+  const poorer = structuredClone(base)
+  poorer.pig.coins = 100
+  poorer.pig.memories = ['[10:00] 出门搬砖', '[10:05] 领到工钱']
+  poorer.shop[0].affordable = false
+  poorer.trips[0].affordable = false
+
+  assert.equal(pollKey(poorer, { fishing: true }), pollKey(base, { fishing: true }), '钓鱼页不显示可买标记/记忆')
+  assert.notEqual(pollKey(poorer), pollKey(base), '其它页仍按金币更新')
+})

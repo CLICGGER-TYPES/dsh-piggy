@@ -113,8 +113,17 @@ export function pollKey(snapshot, options = {}) {
   if (snapshot.activity !== null && typeof snapshot.activity === 'object') copy.activity = fold(snapshot.activity, SNAPSHOT_RULES.activity)
   if (snapshot.pig !== null && typeof snapshot.pig === 'object') {
     copy.pig = fishingView
-      ? { satiety: Number(snapshot.pig.satiety) < 1 ? 0 : 1 }
+      // 钓鱼页不显示成长、记忆或余额；金币跨过商店/旅行价格档时不该重建。
+      ? { satiety: Number(snapshot.pig.satiety) < 1 ? 0 : 1, memories: [] }
       : foldPig(snapshot.pig, showGrowth)
+  }
+  if (fishingView) {
+    // 金币只影响商店/旅行的「买得起」；钓鱼页不显示这两个列表的可买状态。
+    var flattenAffordable = function (entry) {
+      return entry !== null && typeof entry === 'object' ? Object.assign({}, entry, { affordable: true }) : entry
+    }
+    if (Array.isArray(snapshot.shop)) copy.shop = snapshot.shop.map(flattenAffordable)
+    if (Array.isArray(snapshot.trips)) copy.trips = snapshot.trips.map(flattenAffordable)
   }
   if (snapshot.daily !== null && typeof snapshot.daily === 'object') copy.daily = fold(snapshot.daily, SNAPSHOT_RULES.daily)
   return JSON.stringify(copy)
