@@ -3695,48 +3695,48 @@
       "key": "roulette",
       "label": "左轮轮盘",
       "emoji": "🔫",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "minGame": "0.37.3",
       "description": "6 巢左轮：每局自选装 1-5 发，强制转轮，1/3 命、单局或三局两胜；AI 按金库上限配注，5 档策略，真实金币结算。好友联机 1v1（房主或公网权威）；4 人桌下一阶段接入。",
       "bundle": {
-        "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/ext-roulette-0.2.0.piggyext",
-        "sha256": "088bf6da00239d869349e5038c59408e700a26548b7b42f54ed1c20421328fb0"
+        "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/ext-roulette-0.2.1.piggyext",
+        "sha256": "c4ccdd4766e7546e3792e679349b06b5e2b6a9984f40e8732bc3ff20068ea2ae"
       },
       "files": {
         "manifest.json": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/manifest.json",
-          "sha256": "fbf0b8cc000efb9be6dd7746f7de0d6116026a0fc01ec82d51c976288fe02470"
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/manifest.json",
+          "sha256": "954eba3cf8e7e668e455650689fef80a736a04e13a6503320aee0d5325064067"
         },
         "server.js": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/server.js",
-          "sha256": "74db646a210eaccd528327058151b762ee7720201e5985df213b421b3255ac18"
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/server.js",
+          "sha256": "3fc5afccae0d195acdfb6d92d4af56c1075dee0c74f9818735a1e3646cd3b85f"
         },
         "client.js": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/client.js",
-          "sha256": "ca42336b5299edcfe456e3a9bb769d69d6774deaa9bcc8972bad6ced8b237d37"
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/client.js",
+          "sha256": "f85f728124e534d8ea8f46fbef1ae040200bb93e5cf18380318a398d0721c451"
         },
         "assets/bullet-base-v4.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/bullet-base-v4.webp",
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/bullet-base-v4.webp",
           "sha256": "847a780bcf21d8529eafc9fe191949e9ca9e8f930e29b2b554cbbea43ac33755"
         },
         "assets/bullet-side-v4.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/bullet-side-v4.webp",
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/bullet-side-v4.webp",
           "sha256": "202401a0b5088f8630477f3a5a98b1ae9699ac1f87443c28629e6ddfd54d05a5"
         },
         "assets/chip-v1.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/chip-v1.webp",
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/chip-v1.webp",
           "sha256": "08a8c450e5ab47f482a1c4d2be5e415674446eb59704045090a0f92320b194f3"
         },
         "assets/cylinder-v4.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/cylinder-v4.webp",
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/cylinder-v4.webp",
           "sha256": "280e9e120bc8bc8f9011b89b8b27886d2b2c5e91421f46cd399f65f8a70bda5a"
         },
         "assets/revolver-v6.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/revolver-v6.webp",
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/revolver-v6.webp",
           "sha256": "8a4565faa2953eed256f223cfecf2ff7adde0556788e75d19b4940f6ac902322"
         },
         "assets/table-v2.webp": {
-          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.0/table-v2.webp",
+          "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.1/table-v2.webp",
           "sha256": "c999bc86c3612cbf413fde161817561a12038cb1b84d9d5bac0c332128cedf97"
         }
       }

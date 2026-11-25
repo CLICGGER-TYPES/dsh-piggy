@@ -1609,7 +1609,8 @@
     board.appendChild(assetImage(app, "table-v2.webp", "rt-board-table"));
     const wrap = app.el("div", ui.spinning ? "rt-cyl-wrap rt-cyl-spin" : "rt-cyl-wrap");
     wrap.appendChild(assetImage(app, "cylinder-v4.webp", "rt-cyl"));
-    for (const index of ui.holes) {
+    const holes = Array.isArray(ui.holes) ? ui.holes : [];
+    for (const index of holes) {
       const primer = assetImage(app, "bullet-base-v4.webp", "rt-primer rt-primer-on");
       primer.style.setProperty("--x", CHAMBER_X[index] + "px");
       primer.style.setProperty("--y", CHAMBER_Y[index] + "px");
@@ -1635,7 +1636,7 @@
       const badge = app.el("div", "rt-ammo rt-board-ammo");
       badge.appendChild(assetImage(app, "bullet-side-v4.webp", "rt-ammo-icon"));
       if (match.stage === "arming") {
-        badge.appendChild(app.el("b", null, String(ui.holes.length)));
+        badge.appendChild(app.el("b", null, String(holes.length)));
         badge.appendChild(app.el("span", null, "/ " + match.bulletCount + " \u53D1"));
       } else {
         badge.appendChild(app.el("b", null, String(match.bulletsLeft)));

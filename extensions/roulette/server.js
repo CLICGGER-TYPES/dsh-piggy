@@ -6,7 +6,6 @@
  * 子弹位置全部存在 extData；客户端只发动作，view 回吐可以公开的快照。
  * 子弹数组绝不进 view，客户端拿不到实弹位置。
  */
-
 export const CHAMBERS = 6
 export const LOAD_MIN = 1
 export const LOAD_MAX = 5
@@ -22,7 +21,6 @@ export const VAULT_INIT = 100000
 export const VAULT_FLOOR = 10000
 export const VAULT_REFILL = 50000
 export const AI_STRATEGIES = ['always', 'expected', 'bluff', 'bayes', 'monteCarlo']
-
 /** 本地日（06:00 换日），和扭蛋扩展保持同一口径。 */
 function dayKey(now) {
   const date = new Date(now)
@@ -429,16 +427,9 @@ export default {
       if (stale) return stale
       const match = data.match
       if (match === null || match.stage !== 'arming') return { ok: false, reason: 'not-arming' }
-      const holes = payload !== null && typeof payload === 'object' && Array.isArray(payload.holes) ? payload.holes : null
-      if (holes !== null) {
-        const valid = holes.length === match.bulletCount
-          && holes.every(index => Number.isInteger(index) && index >= 0 && index < CHAMBERS)
-          && new Set(holes).size === holes.length
-        if (!valid) return { ok: false, reason: 'bad-holes' }
-        match.bullets = holes.slice().sort((a, b) => a - b)
-      } else {
-        match.bullets = shuffle(CHAMBERS, random).slice(0, match.bulletCount)
-      }
+      const holes = Array.isArray(payload && payload.holes) ? payload.holes : null
+      if (holes !== null && (holes.length !== match.bulletCount || !holes.every(index => Number.isInteger(index) && index >= 0 && index < CHAMBERS) || new Set(holes).size !== holes.length)) return { ok: false, reason: 'bad-holes' }
+      match.bullets = holes === null ? shuffle(CHAMBERS, random).slice(0, match.bulletCount) : holes.slice().sort((a, b) => a - b)
       match.chamber = randomInt(CHAMBERS, random)
       match.fired = 0
       match.turn = random() < 0.5 ? 'you' : 'ai'

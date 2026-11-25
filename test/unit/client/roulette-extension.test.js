@@ -30,7 +30,7 @@ function startMatch(m) {
 test('manifest、素材和生成产物符合扩展契约', async () => {
   assert.equal(MANIFEST.key, 'roulette')
   assert.equal(MANIFEST.label, '左轮轮盘')
-  assert.equal(MANIFEST.version, '0.2.0')
+  assert.equal(MANIFEST.version, '0.2.1')
   assert.equal(MANIFEST.minGame, '0.37.3')
   assert.ok(versionAtLeast(GAME_VERSION, MANIFEST.minGame), 'minGame 不能高于当前游戏版本')
   assert.equal(MANIFEST.app.label, '左轮轮盘')
@@ -99,7 +99,7 @@ test('现有扩展宿主能加载 roulette，并读出 client.js、素材和真�
     const entry = runtime.list(state).find(item => item.key === 'roulette')
     assert.ok(entry, '宿主没有列出 roulette')
     assert.equal(entry.error, null)
-    assert.equal(entry.version, '0.2.0')
+    assert.equal(entry.version, '0.2.1')
     assert.equal(entry.app.label, '左轮轮盘')
     const view = runtime.views(state).roulette
     assert.equal(view.coins, 12500)
