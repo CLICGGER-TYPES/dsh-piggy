@@ -36,13 +36,20 @@ const add = (login, pr) => {
   if (Number.isInteger(pr) && pr > 0) people.get(login).add(pr)
 }
 
-// CHANGELOG 里的 [@名字](https://github.com/名字) 链接。
-for (const match of body.matchAll(/\(https:\/\/github\.com\/([A-Za-z0-9-]+)\)/g)) add(match[1])
+// CHANGELOG 里的 [@名字](https://github.com/名字) 链接；同一行里紧挨着的 #N 就是对应 PR。
+for (const line of body.split('\n')) {
+  for (const match of line.matchAll(/\[@([A-Za-z0-9-]+)\]\(https:\/\/github\.com\/\1\)/g)) {
+    const before = line.slice(Math.max(0, match.index - 12), match.index)
+    const after = line.slice(match.index + match[0].length, match.index + match[0].length + 32)
+    const number = /#(\d+)[^#\n]{0,6}$/.exec(before)?.[1] ?? /^[^#\n]{0,24}#(\d+)/.exec(after)?.[1]
+    add(match[1], number === undefined ? undefined : Number(number))
+  }
+}
 
 // 上一个 v* 标签（必须是当前 tag 的祖先），只统计这一版新增的提交。
 function previousTag(tag) {
   try {
-    const tags = execFileSync('git', ['-C', root, 'tag', '--merged', tag, '--list', 'v[0-9]*', '--sort=-v:refname'], { encoding: 'utf8' })
+    const tags = execFileSync('git', ['-C', root, 'tag', '--merged', tag, '--list', 'v[0-9]*', '--sort=-v:refname'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .trim().split('\n').filter(Boolean).filter(name => name !== tag)
     return tags[0] ?? null
   } catch { return null }
@@ -51,7 +58,7 @@ try {
   const tag = `v${version}`
   const previous = previousTag(tag)
   const range = previous === null ? tag : `${previous}..${tag}`
-  const commits = execFileSync('git', ['-C', root, 'log', '--format=%an%x1f%ae%x1f%s', range], { encoding: 'utf8' })
+  const commits = execFileSync('git', ['-C', root, 'log', '--format=%an%x1f%ae%x1f%s', range], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
     .trim().split('\n').filter(Boolean)
   for (const line of commits) {
     const [name, email, subject] = line.split('\x1f')
