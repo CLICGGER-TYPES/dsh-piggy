@@ -655,3 +655,8 @@ test('大窗：宿主重绘保留当前页面的滚动位置', () => {
   m.click('data-op', 'enter-ai')
   assert.equal(m.byClass('rt').scrollTop, 0, '换页从顶部开始')
 })
+
+test('扩展样式：子页有自己的返回时隐藏外壳 drill-back', () => {
+  const client = readFileSync(new URL('client.js', ROOT), 'utf8')
+  assert.ok(client.includes('body:has(.rt-back) .dp-drill-back{display:none!important}'))
+})

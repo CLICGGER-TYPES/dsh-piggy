@@ -13,6 +13,8 @@ export const CSS = [
   '.rt-page{position:relative;display:flex;flex-direction:column;gap:10px;flex-shrink:0}',
   '.rt-head{display:flex;align-items:center;gap:7px;min-height:30px}',
   '.rt-back{display:flex;align-items:center;justify-content:center;height:26px;min-width:52px;flex-shrink:0;padding:0 8px 0 15px;border-radius:var(--ac-pill,50px);border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text,#794f27);font:inherit;font-size:10px;font-weight:700;line-height:1;box-shadow:var(--ac-shadow-sm,0 2px 4px rgba(61,52,40,.06));cursor:pointer;position:relative}',
+  // 子页自己画了「返回」时，隐藏外壳的圆形 drill-back，避免两个返回入口叠在左上角。
+  'body:has(.rt-back) .dp-drill-back{display:none!important}',
   '.rt-back:before{content:"";position:absolute;left:7px;top:9px;width:6px;height:6px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}',
   '.rt-back:hover{border-color:var(--ac-primary,#19c8b9);color:var(--ac-primary-active,#11a89b)}',
   '.rt-brand{min-width:0;flex:1}',
