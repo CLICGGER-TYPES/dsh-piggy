@@ -23,14 +23,30 @@ export function syncDirectory(directory) {
   try { fsyncSync(descriptor) } finally { closeSync(descriptor) }
 }
 
-export function writeWorkJson(path, value, onPublished = () => {}) {
+/**
+ * @param {string} path
+ * @param {unknown} value
+ * @param {(() => void)|{onPublished?:() => void,writeFileSync?:typeof writeFileSync,fsyncSync?:typeof fsyncSync}} [onPublishedOrOptions]
+ */
+export function writeWorkJson(path, value, onPublishedOrOptions = () => {}) {
+  const options = typeof onPublishedOrOptions === 'object' && onPublishedOrOptions !== null ? onPublishedOrOptions : {}
+  const onPublished = typeof onPublishedOrOptions === 'function' ? onPublishedOrOptions : (options.onPublished ?? (() => {}))
+  const write = options.writeFileSync ?? writeFileSync
+  const sync = options.fsyncSync ?? fsyncSync
   const temporary = `${path}.${randomBytes(8).toString('hex')}.tmp`
   const descriptor = openSync(temporary, 'wx', 0o600)
-  try { writeFileSync(descriptor, JSON.stringify(value)); fsyncSync(descriptor) }
-  finally { closeSync(descriptor) }
-  try { renameSync(temporary, path) }
-  catch (error) {
-    // 清理失败不能掩盖发布失败的原始错误。
+  let closed = false
+  try {
+    write(descriptor, JSON.stringify(value))
+    sync(descriptor)
+    closeSync(descriptor)
+    closed = true
+    renameSync(temporary, path)
+  } catch (error) {
+    // 先关句柄再删临时文件（Windows 未关句柄无法 unlink），清理失败不能掩盖原始错误。
+    if (!closed) {
+      try { closeSync(descriptor) } catch { /* 保留原始错误 */ }
+    }
     try { unlinkSync(temporary) } catch { /* 保留原始错误 */ }
     throw error
   }

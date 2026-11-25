@@ -355,3 +355,76 @@ test('invalid rollback snapshot leaves the current target and journal untouched'
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('recover cleans up interrupted atomicWrite temp files while still rejecting unknown entries', () => {
+  const directory = fixtureDir()
+  try {
+    const path = join(directory, 'owner-document.json')
+    const initial = writeOwnerDocumentFile({ filePath: path, document: documentFixture(), expectedRevision: 'missing' })
+    const oldBytes = readFileSync(path)
+
+    // 复现真实 ENOSPC 现场：precommit 已写 owner.json 与 old.bin，new.bin 写入中途留下 0 字节 .tmp。
+    const precommitTx = transactionDirectory(path)
+    mkdirSync(precommitTx, { mode: 0o700 })
+    writeFileSync(join(precommitTx, 'owner.json'), JSON.stringify({
+      version: 1,
+      targetPath: resolve(path),
+      token: 'ef'.repeat(16),
+      expectedRevision: sha256(oldBytes),
+    }))
+    writeFileSync(join(precommitTx, 'old.bin'), oldBytes)
+    writeFileSync(join(precommitTx, 'new.bin.2916.1795581512523.tmp'), '')
+    assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: false, precommitCleaned: true })
+    assert.equal(existsSync(precommitTx), false)
+    assert.deepEqual(readFileSync(path), oldBytes)
+
+    // 写 owner.json 中途崩溃：仅残留 owner.json.*.tmp 时可作为空 precommit 清理。
+    mkdirSync(precommitTx, { mode: 0o700 })
+    writeFileSync(join(precommitTx, 'owner.json.2916.1795581512523.deadbeef.tmp'), '')
+    assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: false, emptyPrecommitCleaned: true })
+    assert.equal(existsSync(precommitTx), false)
+
+    // committed 阶段若残留旧 journal.json.*.tmp 同样可安全清理。
+    const nextDocument = structuredClone(initial.document)
+    nextDocument.resources.coins = 888
+    const nextBytes = Buffer.from(serializeOwnerDocument(nextDocument))
+    const committedTx = writeTransactionFixture(path, {
+      phase: 'committed',
+      oldBytes,
+      newBytes: nextBytes,
+      expectedRevision: sha256(oldBytes),
+    })
+    writeFileSync(join(committedTx, 'journal.json.2916.1795581512524.0123abcd.tmp'), '{half')
+    writeFileSync(path, nextBytes)
+    assert.deepEqual(recoverOwnerDocumentTransaction(path), { recovered: false, committedCleanup: true })
+    assert.equal(existsSync(committedTx), false)
+    assert.deepEqual(readFileSync(path), nextBytes)
+
+    // 未知文件或伪装成 .tmp 名称的子目录仍必须拒绝并保留现场。
+    const foreignTx = transactionDirectory(path)
+    mkdirSync(foreignTx, { mode: 0o700 })
+    writeFileSync(join(foreignTx, 'owner.json'), JSON.stringify({
+      version: 1,
+      targetPath: resolve(path),
+      token: '12'.repeat(16),
+      expectedRevision: sha256(nextBytes),
+    }))
+    mkdirSync(join(foreignTx, 'new.bin.2916.1795581512525.tmp'))
+    assert.throws(() => recoverOwnerDocumentTransaction(path), /unknown files; evidence preserved/)
+    assert.equal(existsSync(foreignTx), true)
+    rmSync(foreignTx, { recursive: true, force: true })
+
+    mkdirSync(foreignTx, { mode: 0o700 })
+    writeFileSync(join(foreignTx, 'owner.json'), JSON.stringify({
+      version: 1,
+      targetPath: resolve(path),
+      token: '34'.repeat(16),
+      expectedRevision: sha256(nextBytes),
+    }))
+    writeFileSync(join(foreignTx, 'foreign.bin.2916.1795581512526.tmp'), '')
+    assert.throws(() => recoverOwnerDocumentTransaction(path), /unknown files; evidence preserved/)
+    assert.equal(existsSync(foreignTx), true)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
