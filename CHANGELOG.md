@@ -20,6 +20,7 @@ All notable changes to `dsh-pig`. Versions follow the plugin's own
 - 修复：Windows 非正常退出后 PID 被系统复用，运行时把无关进程当成活锁，导致 `/dsh-piggy/*` 整组 404、界面一直「连不上宿主」。锁现在记录进程启动时间/可执行路径并双重校验；过期锁 rename 到 `.stale-<时间戳>` 留证。
 - 前端遇到 `/state` 404 时提示「退出 DSH 后删除 state.json.runtime.lock 再启动」。
 - 修复：打工/上学倒计时每 4 秒变化会让钓鱼准备页整页重建（时长按钮、自动面板节点被换掉，看起来一直在刷新）。倒计时改为本地 1 秒时钟就地更新，轮询指纹按分钟/整百分比比较；饵料数、阶段等真实变化仍正常更新。
+- 修复：小猪切换立绘期间的点击穿透（#144，[@WolalaQAQ](https://github.com/WolalaQAQ)）。
 
 ---
 
