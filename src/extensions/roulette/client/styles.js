@@ -133,6 +133,7 @@ export const CSS = [
   '.rt-cyl-spin{animation:rt-spin .9s cubic-bezier(.4,0,.2,1)}',
   '.rt-cyl-rotated{transform:rotate(60deg)}',
   '.rt-hole-loaded{opacity:1}',
+  '.rt-cyl-hide-bullets .rt-hole-bullet{opacity:0}',
   '.rt-hole-bullet{position:absolute;inset:5px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 30%,#fff4c7 0,#e5b454 45%,#9a6925 75%,#6d4615 100%);box-shadow:inset 0 -2px 3px rgba(80,45,10,.5),0 1px 2px rgba(61,52,40,.3)}',
   '.rt-status{min-height:16px;text-align:center;font-size:10.5px;line-height:16px;color:var(--ac-text-body,#725d42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}',
   '.rt-dock{display:grid;gap:10px;padding:10px;border-radius:16px;background:var(--ac-bg-input,#fffbe7);border:2px solid var(--ac-border-light,#e5dcc6)}',

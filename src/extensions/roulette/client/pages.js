@@ -116,7 +116,7 @@ export function renderBoard(app, game, data, canArm) {
   board.appendChild(assetImage(app, 'table-v2.webp', 'rt-board-table'))
 
   const rotated = match !== null && match.stage !== 'arming'
-  const wrap = app.el('div', 'rt-cyl-wrap' + (ui.spinning ? ' rt-cyl-spin' : rotated ? ' rt-cyl-rotated' : ''))
+  const wrap = app.el('div', 'rt-cyl-wrap' + (ui.spinning ? ' rt-cyl-spin' : rotated ? ' rt-cyl-rotated' : '') + (ui.spinHide ? ' rt-cyl-hide-bullets' : ''))
   wrap.appendChild(assetImage(app, 'cylinder-v4.webp', 'rt-cyl'))
   const holes = Array.isArray(ui.holes) ? ui.holes : []
   // 转完之后保留已装孔位，子弹标记画在孔内，跟着整个弹巢一起转；下一局装弹/其它动作清空。

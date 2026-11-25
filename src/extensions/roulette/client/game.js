@@ -66,6 +66,7 @@ export function createGame(options = {}) {
     arming: false,
     spinning: false,
     loaded: false,
+    spinHide: false,
     holes: [],
     armedHoles: [],
     flash: '',

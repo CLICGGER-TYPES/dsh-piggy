@@ -28,6 +28,7 @@ export function createArm(deps) {
     }
     ui.arming = false
     ui.spinning = false
+    ui.spinHide = false
     ui.holes = []
     ui.armedHoles = []
     ui.armPending = false
@@ -79,6 +80,7 @@ export function createArm(deps) {
     const token = ++ui.armToken
     ui.arming = true
     ui.spinning = true
+    ui.spinHide = true
     rerender()
     ui.armTimer = later(function () {
       ui.armTimer = null
@@ -89,6 +91,11 @@ export function createArm(deps) {
       ui.spinning = false
       ui.loaded = false
       rerender()
+      later(function () {
+        if (ui.armToken !== token) return
+        ui.spinHide = false
+        rerender()
+      }, 250)
       later(function () {
         if (ui.armToken !== token || !ui.armPending) return
         ui.armPending = false
