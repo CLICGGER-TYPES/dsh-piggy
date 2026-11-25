@@ -42,6 +42,7 @@
       ui.arming = false;
       ui.spinning = false;
       ui.holes = [];
+      ui.armedHoles = [];
       ui.armPending = false;
       ui.armUncertain = false;
       ui.loaded = false;
@@ -179,6 +180,7 @@
       spinning: false,
       loaded: false,
       holes: [],
+      armedHoles: [],
       flash: "",
       lastSeq: -1,
       aiKey: "",
@@ -265,10 +267,11 @@
         }
         ui.arming = false;
         ui.spinning = false;
-        ui.holes = [];
         ui.armPending = false;
         ui.armUncertain = false;
         const match2 = value.match;
+        ui.armedHoles = match2 !== null && (match2.lastEvent === "armed" || match2.lastEvent === "reload") ? ui.holes.length > 0 ? ui.holes.slice() : ui.armedHoles : [];
+        ui.holes = [];
         if (match2 !== null) {
           if (match2.lastEvent === "hit" && match2.lastShooter === "you") {
             ui.flash = "live";
@@ -1607,15 +1610,11 @@
     board.setAttribute("role", "group");
     board.setAttribute("aria-label", "\u516D\u5B54\u5F39\u5DE2");
     board.appendChild(assetImage(app, "table-v2.webp", "rt-board-table"));
-    const wrap = app.el("div", ui.spinning ? "rt-cyl-wrap rt-cyl-spin" : "rt-cyl-wrap");
+    const rotated = match !== null && match.stage !== "arming";
+    const wrap = app.el("div", "rt-cyl-wrap" + (ui.spinning ? " rt-cyl-spin" : rotated ? " rt-cyl-rotated" : ""));
     wrap.appendChild(assetImage(app, "cylinder-v4.webp", "rt-cyl"));
     const holes = Array.isArray(ui.holes) ? ui.holes : [];
-    for (const index of holes) {
-      const primer = assetImage(app, "bullet-base-v4.webp", "rt-primer rt-primer-on");
-      primer.style.setProperty("--x", CHAMBER_X[index] + "px");
-      primer.style.setProperty("--y", CHAMBER_Y[index] + "px");
-      wrap.appendChild(primer);
-    }
+    const shown = match !== null && match.stage === "arming" ? holes : Array.isArray(ui.armedHoles) ? ui.armedHoles : [];
     const armed = canArm !== false && match !== null && match.stage === "arming" && !ui.spinning;
     for (let index = 0; index < 6; index += 1) {
       const hole = app.button("rt-hole", {
@@ -1628,6 +1627,12 @@
       hole.disabled = !armed;
       hole.style.setProperty("--x", CHAMBER_X[index] + "px");
       hole.style.setProperty("--y", CHAMBER_Y[index] + "px");
+      if (shown.includes(index)) {
+        hole.className += " rt-hole-loaded";
+        const bullet = app.el("span", "rt-hole-bullet");
+        bullet.setAttribute("aria-hidden", "true");
+        hole.appendChild(bullet);
+      }
       wrap.appendChild(hole);
     }
     board.appendChild(wrap);
@@ -2289,7 +2294,7 @@
     ".rt-pot{display:flex;align-items:center;gap:4px;padding:2px 9px 2px 4px;border-radius:var(--ac-pill,50px);background:var(--ac-bg-input,#fffbe7);border:2px solid var(--ac-border-light,#e5dcc6);font-size:9px;color:var(--ac-text-body,#725d42);white-space:nowrap}",
     ".rt-pot img{width:19px;height:19px;display:block;filter:drop-shadow(0 1px 1px rgba(91,66,38,.18))}",
     ".rt-pot b{font-size:12px;color:var(--ac-text,#794f27);font-variant-numeric:tabular-nums}",
-    ".rt-cyl-wrap{position:relative;z-index:3;width:150px;height:150px;display:grid;place-items:center}",
+    ".rt-cyl-wrap{position:relative;z-index:3;width:150px;height:150px;display:grid;place-items:center;transition:transform .25s ease}",
     ".rt-cyl{position:relative;z-index:1;width:150px;display:block;filter:drop-shadow(0 7px 6px rgba(91,66,38,.18))}",
     ".rt-primer{position:absolute;z-index:5;left:calc(50% + var(--x,0px));top:calc(50% + var(--y,0px));width:24px;height:24px;margin:-12px;object-fit:contain;pointer-events:none;opacity:0;filter:drop-shadow(0 1px 1px rgba(91,66,38,.25))}",
     ".rt-primer-show{opacity:1;animation:rt-seat .28s cubic-bezier(.4,0,.2,1) both}",
@@ -2305,6 +2310,9 @@
     ".rt-board-live .rt-flash{background:radial-gradient(circle at 50% 48%,#ffe0d6,rgba(217,107,95,.55) 36%,rgba(217,107,95,0) 70%)}",
     ".rt-board-fire .rt-cyl-wrap{animation:rt-kick .32s ease-out both}",
     ".rt-cyl-spin{animation:rt-spin .9s cubic-bezier(.4,0,.2,1)}",
+    ".rt-cyl-rotated{transform:rotate(60deg)}",
+    ".rt-hole-loaded{opacity:1}",
+    ".rt-hole-bullet{position:absolute;inset:5px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 30%,#fff4c7 0,#e5b454 45%,#9a6925 75%,#6d4615 100%);box-shadow:inset 0 -2px 3px rgba(80,45,10,.5),0 1px 2px rgba(61,52,40,.3)}",
     ".rt-status{min-height:16px;text-align:center;font-size:10.5px;line-height:16px;color:var(--ac-text-body,#725d42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}",
     ".rt-dock{display:grid;gap:10px;padding:10px;border-radius:16px;background:var(--ac-bg-input,#fffbe7);border:2px solid var(--ac-border-light,#e5dcc6)}",
     ".rt-bet{display:flex;align-items:center;gap:4px;min-height:28px}",
@@ -2389,7 +2397,7 @@
     "@keyframes rt-flash{0%{opacity:0}18%{opacity:.9}100%{opacity:0}}",
     "@keyframes rt-kick{0%{transform:translateY(0) rotate(0)}35%{transform:translateY(-4px) rotate(2deg)}100%{transform:translateY(0) rotate(0)}}",
     "@keyframes rt-ring{to{transform:rotate(360deg)}}",
-    "@media (prefers-reduced-motion:reduce){.rt-cyl-spin,.rt-gun-ring,.rt-board-fire .rt-flash,.rt-board-fire .rt-cyl-wrap,.rt-primer-show,.rt-board-arming .rt-hole{animation:none}}"
+    "@media (prefers-reduced-motion:reduce){.rt-cyl-wrap{transition:none}.rt-cyl-spin,.rt-gun-ring,.rt-board-fire .rt-flash,.rt-board-fire .rt-cyl-wrap,.rt-primer-show,.rt-board-arming .rt-hole{animation:none}}"
   ].join("\n");
 
   // src/extensions/roulette/client/entry.js

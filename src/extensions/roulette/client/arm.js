@@ -29,6 +29,7 @@ export function createArm(deps) {
     ui.arming = false
     ui.spinning = false
     ui.holes = []
+    ui.armedHoles = []
     ui.armPending = false
     ui.armUncertain = false
     ui.loaded = false

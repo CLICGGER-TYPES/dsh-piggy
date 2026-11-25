@@ -115,15 +115,12 @@ export function renderBoard(app, game, data, canArm) {
 
   board.appendChild(assetImage(app, 'table-v2.webp', 'rt-board-table'))
 
-  const wrap = app.el('div', ui.spinning ? 'rt-cyl-wrap rt-cyl-spin' : 'rt-cyl-wrap')
+  const rotated = match !== null && match.stage !== 'arming'
+  const wrap = app.el('div', 'rt-cyl-wrap' + (ui.spinning ? ' rt-cyl-spin' : rotated ? ' rt-cyl-rotated' : ''))
   wrap.appendChild(assetImage(app, 'cylinder-v4.webp', 'rt-cyl'))
   const holes = Array.isArray(ui.holes) ? ui.holes : []
-  for (const index of holes) {
-    const primer = assetImage(app, 'bullet-base-v4.webp', 'rt-primer rt-primer-on')
-    primer.style.setProperty('--x', CHAMBER_X[index] + 'px')
-    primer.style.setProperty('--y', CHAMBER_Y[index] + 'px')
-    wrap.appendChild(primer)
-  }
+  // 转完之后保留已装孔位，子弹标记画在孔内，跟着整个弹巢一起转；下一局装弹/其它动作清空。
+  const shown = match !== null && match.stage === 'arming' ? holes : (Array.isArray(ui.armedHoles) ? ui.armedHoles : [])
   const armed = canArm !== false && match !== null && match.stage === 'arming' && !ui.spinning
   for (let index = 0; index < 6; index += 1) {
     const hole = app.button('rt-hole', {
@@ -134,6 +131,12 @@ export function renderBoard(app, game, data, canArm) {
     hole.disabled = !armed
     hole.style.setProperty('--x', CHAMBER_X[index] + 'px')
     hole.style.setProperty('--y', CHAMBER_Y[index] + 'px')
+    if (shown.includes(index)) {
+      hole.className += ' rt-hole-loaded'
+      const bullet = app.el('span', 'rt-hole-bullet')
+      bullet.setAttribute('aria-hidden', 'true')
+      hole.appendChild(bullet)
+    }
     wrap.appendChild(hole)
   }
   board.appendChild(wrap)

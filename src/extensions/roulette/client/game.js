@@ -67,6 +67,7 @@ export function createGame(options = {}) {
     spinning: false,
     loaded: false,
     holes: [],
+    armedHoles: [],
     flash: '',
     lastSeq: -1,
     aiKey: '',
@@ -162,10 +163,11 @@ export function createGame(options = {}) {
       }
       ui.arming = false
       ui.spinning = false
-      ui.holes = []
       ui.armPending = false
       ui.armUncertain = false
       const match = value.match
+      ui.armedHoles = match !== null && (match.lastEvent === 'armed' || match.lastEvent === 'reload') ? (ui.holes.length > 0 ? ui.holes.slice() : ui.armedHoles) : []
+      ui.holes = []
       if (match !== null) {
         if (match.lastEvent === 'hit' && match.lastShooter === 'you') {
           ui.flash = 'live'

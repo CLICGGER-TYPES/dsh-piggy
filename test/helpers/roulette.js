@@ -123,6 +123,13 @@ export function mountRoulette(options = {}) {
     })
     return out
   }
+  function allClass(name) {
+    const out = []
+    walk(node => {
+      if (String(node.className).split(/\s+/).includes(name)) out.push(node)
+    })
+    return out
+  }
   function byClass(name) {
     let found = null
     walk(node => {
@@ -161,6 +168,7 @@ export function mountRoulette(options = {}) {
     find,
     all,
     byClass,
+    allClass,
     click,
     runTimers,
     sync,
