@@ -429,7 +429,16 @@ export default {
       if (stale) return stale
       const match = data.match
       if (match === null || match.stage !== 'arming') return { ok: false, reason: 'not-arming' }
-      match.bullets = shuffle(CHAMBERS, random).slice(0, match.bulletCount)
+      const holes = payload !== null && typeof payload === 'object' && Array.isArray(payload.holes) ? payload.holes : null
+      if (holes !== null) {
+        const valid = holes.length === match.bulletCount
+          && holes.every(index => Number.isInteger(index) && index >= 0 && index < CHAMBERS)
+          && new Set(holes).size === holes.length
+        if (!valid) return { ok: false, reason: 'bad-holes' }
+        match.bullets = holes.slice().sort((a, b) => a - b)
+      } else {
+        match.bullets = shuffle(CHAMBERS, random).slice(0, match.bulletCount)
+      }
       match.chamber = randomInt(CHAMBERS, random)
       match.fired = 0
       match.turn = random() < 0.5 ? 'you' : 'ai'

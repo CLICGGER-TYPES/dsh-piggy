@@ -127,6 +127,25 @@ test('arm 强制转轮：装弹数正确、位置不重复、先手只能是你�
   assert.equal(data.match.stage === 'choice' ? 'you' : 'ai', data.match.turn)
 })
 
+test('arm 接受客户端孔位：数量、去重、范围都校验，随机装弹仍可用', () => {
+  const { data, api } = started({ loadCount: 3 })
+  const result = roulette.actions.arm(data, { seq: data.seq, holes: [4, 0, 2] }, api, () => 0.5)
+  assert.equal(result.ok, true)
+  assert.deepEqual(data.match.bullets, [0, 2, 4], '服务端实际弹位就是玩家点的孔位')
+  assert.equal(data.match.bullets.length, 3)
+
+  const short = started({ loadCount: 3 })
+  assert.equal(roulette.actions.arm(short.data, { seq: short.data.seq, holes: [0, 1] }, short.api, () => 0.5).reason, 'bad-holes')
+  const duplicate = started({ loadCount: 3 })
+  assert.equal(roulette.actions.arm(duplicate.data, { seq: duplicate.data.seq, holes: [0, 0, 1] }, duplicate.api, () => 0.5).reason, 'bad-holes')
+  const outOfRange = started({ loadCount: 3 })
+  assert.equal(roulette.actions.arm(outOfRange.data, { seq: outOfRange.data.seq, holes: [0, 1, 6] }, outOfRange.api, () => 0.5).reason, 'bad-holes')
+
+  const random = started({ loadCount: 3 })
+  assert.equal(roulette.actions.arm(random.data, { seq: random.data.seq }, random.api, () => 0.5).ok, true)
+  assert.equal(new Set(random.data.match.bullets).size, 3)
+})
+
 test('空枪换手并推进一格', () => {
   const { data, api } = started()
   setMatch(data, { stage: 'choice', turn: 'you', bulletCount: 1, bullets: [3], chamber: 0, livesYou: 1, livesAi: 1 })

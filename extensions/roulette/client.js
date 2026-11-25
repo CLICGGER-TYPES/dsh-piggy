@@ -33,7 +33,7 @@
 
   // src/extensions/roulette/client/arm.js
   function createArm(deps) {
-    const { ui, chambers, cancel, later, send, rerender, toast } = deps;
+    const { ui, chambers, loadCount, cancel, later, send, rerender, toast } = deps;
     function reset() {
       if (ui.armTimer !== null) {
         cancel(ui.armTimer);
@@ -41,19 +41,42 @@
       }
       ui.arming = false;
       ui.spinning = false;
-      ui.primerPop = false;
-      ui.primer = -1;
+      ui.holes = [];
       ui.armPending = false;
       ui.armUncertain = false;
       ui.loaded = false;
       ui.armToken += 1;
     }
+    function maxHoles() {
+      const value = Math.floor(Number(loadCount()));
+      return Number.isInteger(value) && value > 0 ? Math.min(chambers, value) : 1;
+    }
     function load(index) {
       if (ui.arming || ui.armPending || ui.spinning) return;
-      const hole = Number.isInteger(index) ? index : Math.floor(Math.random() * chambers);
-      ui.primer = Math.max(0, Math.min(chambers - 1, hole));
-      ui.primerPop = true;
-      ui.loaded = true;
+      const hole = Number.isInteger(index) ? Math.max(0, Math.min(chambers - 1, index)) : null;
+      if (hole === null) return;
+      const at = ui.holes.indexOf(hole);
+      if (at >= 0) ui.holes.splice(at, 1);
+      else if (ui.holes.length >= maxHoles()) {
+        toast("\u672C\u5C40\u6700\u591A " + maxHoles() + " \u53D1");
+        return;
+      } else ui.holes.push(hole);
+      ui.holes.sort((a, b) => a - b);
+      ui.loaded = ui.holes.length === maxHoles();
+      rerender();
+    }
+    function random() {
+      if (ui.arming || ui.armPending || ui.spinning) return;
+      const pool = [];
+      for (let index = 0; index < chambers; index += 1) pool.push(index);
+      for (let index = pool.length - 1; index > 0; index -= 1) {
+        const pick = Math.floor(Math.random() * (index + 1));
+        const swap = pool[index];
+        pool[index] = pool[pick];
+        pool[pick] = swap;
+      }
+      ui.holes = pool.slice(0, maxHoles()).sort((a, b) => a - b);
+      ui.loaded = ui.holes.length === maxHoles();
       rerender();
     }
     function spin() {
@@ -66,11 +89,9 @@
         ui.armTimer = null;
         if (ui.armToken !== token) return;
         ui.armPending = true;
-        const result = send("arm");
+        const result = send("arm", { holes: ui.holes.slice() });
         ui.arming = false;
         ui.spinning = false;
-        ui.primerPop = false;
-        ui.primer = -1;
         ui.loaded = false;
         rerender();
         later(function() {
@@ -86,7 +107,7 @@
             if (next && next.ok === false) {
               ui.armPending = false;
               ui.armUncertain = false;
-              ui.loaded = true;
+              ui.loaded = ui.holes.length === maxHoles();
               toast("\u88C5\u5F39\u6CA1\u9001\u5230\uFF0C\u518D\u70B9\u5F00\u59CB\u8F6C");
               rerender();
             }
@@ -95,7 +116,7 @@
         }
       }, 700);
     }
-    return { reset, load, spin };
+    return { reset, load, random, spin };
   }
 
   // src/extensions/roulette/client/ui-actions.js
@@ -157,8 +178,7 @@
       arming: false,
       spinning: false,
       loaded: false,
-      primer: -1,
-      primerPop: false,
+      holes: [],
       flash: "",
       lastSeq: -1,
       aiKey: "",
@@ -188,7 +208,10 @@
     }
     const uiActions = createUiActions({ ui, rerender });
     const ai = createAiRunner({ ui, later, send, rerender });
-    const arm = createArm({ ui, chambers: CHAMBERS, cancel, later, send, rerender, toast });
+    const arm = createArm({ ui, chambers: CHAMBERS, loadCount: function() {
+      const m = data().match;
+      return m === null ? 1 : m.bulletCount;
+    }, cancel, later, send, rerender, toast });
     function data() {
       const app2 = getApp();
       const value = app2 && app2.data;
@@ -242,8 +265,7 @@
         }
         ui.arming = false;
         ui.spinning = false;
-        ui.primer = -1;
-        ui.primerPop = false;
+        ui.holes = [];
         ui.armPending = false;
         ui.armUncertain = false;
         const match2 = value.match;
@@ -309,8 +331,7 @@
         ui.armTimer = null;
         ui.arming = false;
         ui.spinning = false;
-        ui.primer = -1;
-        ui.primerPop = false;
+        ui.holes = [];
         leaveTable();
         return;
       }
@@ -386,7 +407,7 @@
       arm.load(index);
     }
     function randomLoad() {
-      arm.load(Math.floor(Math.random() * CHAMBERS));
+      arm.random();
     }
     function spin() {
       const match = data().match;
@@ -1588,10 +1609,10 @@
     board.appendChild(assetImage(app, "table-v2.webp", "rt-board-table"));
     const wrap = app.el("div", ui.spinning ? "rt-cyl-wrap rt-cyl-spin" : "rt-cyl-wrap");
     wrap.appendChild(assetImage(app, "cylinder-v4.webp", "rt-cyl"));
-    if (ui.primer >= 0) {
-      const primer = assetImage(app, "bullet-base-v4.webp", ui.primerPop ? "rt-primer rt-primer-show" : "rt-primer rt-primer-on");
-      primer.style.setProperty("--x", CHAMBER_X[ui.primer] + "px");
-      primer.style.setProperty("--y", CHAMBER_Y[ui.primer] + "px");
+    for (const index of ui.holes) {
+      const primer = assetImage(app, "bullet-base-v4.webp", "rt-primer rt-primer-on");
+      primer.style.setProperty("--x", CHAMBER_X[index] + "px");
+      primer.style.setProperty("--y", CHAMBER_Y[index] + "px");
       wrap.appendChild(primer);
     }
     const armed = canArm !== false && match !== null && match.stage === "arming" && !ui.spinning;
@@ -1614,8 +1635,8 @@
       const badge = app.el("div", "rt-ammo rt-board-ammo");
       badge.appendChild(assetImage(app, "bullet-side-v4.webp", "rt-ammo-icon"));
       if (match.stage === "arming") {
-        badge.appendChild(app.el("b", null, String(match.bulletCount)));
-        badge.appendChild(app.el("span", null, "\u53D1 \xB7 \u5F85\u88C5"));
+        badge.appendChild(app.el("b", null, String(ui.holes.length)));
+        badge.appendChild(app.el("span", null, "/ " + match.bulletCount + " \u53D1"));
       } else {
         badge.appendChild(app.el("b", null, String(match.bulletsLeft)));
         badge.appendChild(app.el("span", null, "/ " + match.bulletCount + " \u53D1"));
@@ -1626,7 +1647,7 @@
   }
   function statusText(match) {
     if (match === null) return "\u9009\u62E9\u8BBE\u7F6E\u540E\u5F00\u59CB\u5BF9\u5C40\u3002";
-    if (match.stage === "arming") return "\u70B9\u4E00\u4E2A\u5F39\u5B54\u88C5 " + match.bulletCount + " \u53D1\uFF0C\u88C5\u597D\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u3002";
+    if (match.stage === "arming") return "\u70B9\u5F39\u5B54\u88C5\u5F39\uFF0C\u4E00\u4E2A\u5B54\u4E00\u53D1\uFF1B\u672C\u5C40 " + match.bulletCount + " \u53D1\uFF0C\u88C5\u6EE1\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u3002";
     if (match.stage === "ai") {
       if (match.mustShoot === "ai") return "AI \u88AB\u56DE\u8BA9\uFF0C\u5FC5\u987B\u5F00\u67AA\u2026";
       if (match.passBy === "you") return "\u4F60\u5DF2\u8BA9\u67AA\uFF0C\u7B49 AI \u51B3\u5B9A\u3002";
@@ -1705,8 +1726,9 @@
       });
       primary("\u5F00\u59CB\u8F6C", "spin", function() {
         game2.spin();
-      }, !game2.ui.loaded || game2.ui.spinning);
-      actions.appendChild(app.el("div", "rt-hint", game2.ui.loaded ? "\u5B50\u5F39\u5DF2\u653E\u8FDB\u5F39\u69FD\uFF0C\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u624D\u8F6C\u8F6E" : "\u70B9\u4E00\u4E2A\u5F39\u5B54\u88C5\u5F39\uFF0C\u88C5\u597D\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D"));
+      }, game2.ui.holes.length !== match.bulletCount || game2.ui.spinning);
+      const left = Math.max(0, match.bulletCount - game2.ui.holes.length);
+      actions.appendChild(app.el("div", "rt-hint", left === 0 ? "\u5DF2\u88C5 " + game2.ui.holes.length + "/" + match.bulletCount + " \u53D1\uFF0C\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u624D\u8F6C\u8F6E" : "\u5DF2\u88C5 " + game2.ui.holes.length + "/" + match.bulletCount + " \u53D1\uFF0C\u8FD8\u5DEE " + left + " \u53D1"));
     } else if (match.stage === "choice") {
       actions.appendChild(action(app, "dp-btn rt-danger", { "data-op": "shoot" }, "\u5BF9\u81EA\u5DF1\u5F00\u67AA", function() {
         game2.fire();

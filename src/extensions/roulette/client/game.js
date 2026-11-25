@@ -66,8 +66,7 @@ export function createGame(options = {}) {
     arming: false,
     spinning: false,
     loaded: false,
-    primer: -1,
-    primerPop: false,
+    holes: [],
     flash: '',
     lastSeq: -1,
     aiKey: '',
@@ -100,7 +99,7 @@ export function createGame(options = {}) {
 
   const uiActions = createUiActions({ ui, rerender })
   const ai = createAiRunner({ ui, later, send, rerender })
-  const arm = createArm({ ui, chambers: CHAMBERS, cancel, later, send, rerender, toast })
+  const arm = createArm({ ui, chambers: CHAMBERS, loadCount: function () { const m = data().match; return m === null ? 1 : m.bulletCount }, cancel, later, send, rerender, toast })
 
   function data() {
     const app = getApp()
@@ -163,8 +162,7 @@ export function createGame(options = {}) {
       }
       ui.arming = false
       ui.spinning = false
-      ui.primer = -1
-      ui.primerPop = false
+      ui.holes = []
       ui.armPending = false
       ui.armUncertain = false
       const match = value.match
@@ -241,8 +239,7 @@ export function createGame(options = {}) {
       ui.armTimer = null
       ui.arming = false
       ui.spinning = false
-      ui.primer = -1
-      ui.primerPop = false
+      ui.holes = []
       leaveTable()
       return
     }
@@ -327,7 +324,7 @@ export function createGame(options = {}) {
   }
 
   function randomLoad() {
-    arm.load(Math.floor(Math.random() * CHAMBERS))
+    arm.random()
   }
   function spin() {
     const match = data().match

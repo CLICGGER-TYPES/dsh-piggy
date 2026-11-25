@@ -153,7 +153,7 @@ test('面板：大堂设置、真实金币和开始对局', () => {
   assert.equal(m.data.match.stage, 'arming')
   assert.equal(m.wallet.coins, 7500)
   assert.equal(m.data.match.pot, 10000)
-  assert.match(m.text(), /装 5 发/)
+  assert.match(m.text(), /本局 5 发/)
   assert.match(m.text(), /底池/)
   assert.match(m.text(), /10,000/)
 })
@@ -179,17 +179,17 @@ test('面板：装弹不转轮，按开始转才转并变成剩余子弹', () =>
   assert.equal(m.all('data-chamber').every(hole => hole.disabled === true), true, '装弹完成后弹孔不能再点')
 })
 
-test('面板：装 1-5 发都只落弹，不自动转', () => {
+test('面板：装 1-5 发要点不同弹孔，一个孔一发，不自动转', () => {
   for (const count of [1, 2, 3, 4, 5]) {
     const m = mountRoulette()
     enterTable(m)
     m.click('data-op', 'load-' + count)
     m.click('data-op', 'start')
     assert.equal(m.data.settings.loadCount, count)
-    m.find('data-chamber', '0').fire('click')
+    for (let index = 0; index < count; index += 1) m.find('data-chamber', String(index)).fire('click')
     assert.equal(m.data.match.stage, 'arming', count + ' 发：装弹后仍在装弹阶段')
     assert.equal(m.timers.filter(entry => !entry.canceled && entry.ms === 700).length, 0, count + ' 发：不能自己启动转轮定时器')
-    assert.match(m.text(), /开始转/)
+    assert.match(m.text(), new RegExp('已装 ' + count + '/' + count + ' 发'))
   }
 })
 
@@ -363,20 +363,39 @@ test('规则：装弹、转轮、让枪和真钱结算都写进面板', () => {
   assert.match(text, /先赢 2 局/)
 })
 
-test('面板：装弹态显示待装发数，底火使用 bullet-base 素材', () => {
+test('面板：装弹数按孔位实时显示，底火使用 bullet-base 素材', () => {
   const m = mountRoulette()
   startMatch(m)
-  assert.match(m.text(), /待装/)
-  assert.doesNotMatch(m.text(), /0 \/ 1 发/)
+  assert.match(m.text(), /0\/1 发/)
 
   m.find('data-chamber', '0').fire('click')
+  assert.match(m.text(), /1\/1 发/)
   const primer = m.images().find(image => image.src.includes('bullet-base-v4.webp'))
   assert.ok(primer, '装弹要使用 bullet-base-v4.webp')
-  assert.ok(m.hasClass(primer, 'rt-primer-show'))
+  assert.ok(m.hasClass(primer, 'rt-primer-on'))
   assert.equal(m.data.match.stage, 'arming', '放子弹本身不转轮')
   m.click('data-op', 'spin')
   m.runTimers()
   assert.notEqual(m.data.match.stage, 'arming')
+})
+
+test('面板：五发点五个不同孔，每个孔一发；同孔再点取出；开始转提交孔位', () => {
+  const m = mountRoulette()
+  enterTable(m)
+  m.click('data-op', 'load-5')
+  m.click('data-op', 'start')
+  for (const index of [0, 1, 2, 3, 4]) m.find('data-chamber', String(index)).fire('click')
+  assert.match(m.text(), /5\/5 发/)
+  assert.equal(m.images().filter(image => image.src.includes('bullet-base-v4.webp')).length, 5)
+  const spin = m.find('data-op', 'spin')
+  assert.equal(spin.disabled, false)
+  m.find('data-chamber', '2').fire('click')
+  assert.equal(m.images().filter(image => image.src.includes('bullet-base-v4.webp')).length, 4, '同一个孔再点一次要取出')
+  assert.equal(m.find('data-op', 'spin').disabled, true)
+  m.find('data-chamber', '2').fire('click')
+  m.click('data-op', 'spin')
+  m.runTimers(1)
+  assert.equal(m.data.match.bullets.join(","), "0,1,2,3,4")
 })
 
 test('面板：玩家赢下整场，结算卡显示净赢金额', () => {

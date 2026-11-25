@@ -117,10 +117,10 @@ export function renderBoard(app, game, data, canArm) {
 
   const wrap = app.el('div', ui.spinning ? 'rt-cyl-wrap rt-cyl-spin' : 'rt-cyl-wrap')
   wrap.appendChild(assetImage(app, 'cylinder-v4.webp', 'rt-cyl'))
-  if (ui.primer >= 0) {
-    const primer = assetImage(app, 'bullet-base-v4.webp', ui.primerPop ? 'rt-primer rt-primer-show' : 'rt-primer rt-primer-on')
-    primer.style.setProperty('--x', CHAMBER_X[ui.primer] + 'px')
-    primer.style.setProperty('--y', CHAMBER_Y[ui.primer] + 'px')
+  for (const index of ui.holes) {
+    const primer = assetImage(app, 'bullet-base-v4.webp', 'rt-primer rt-primer-on')
+    primer.style.setProperty('--x', CHAMBER_X[index] + 'px')
+    primer.style.setProperty('--y', CHAMBER_Y[index] + 'px')
     wrap.appendChild(primer)
   }
   const armed = canArm !== false && match !== null && match.stage === 'arming' && !ui.spinning
@@ -141,8 +141,8 @@ export function renderBoard(app, game, data, canArm) {
     const badge = app.el('div', 'rt-ammo rt-board-ammo')
     badge.appendChild(assetImage(app, 'bullet-side-v4.webp', 'rt-ammo-icon'))
     if (match.stage === 'arming') {
-      badge.appendChild(app.el('b', null, String(match.bulletCount)))
-      badge.appendChild(app.el('span', null, '发 · 待装'))
+      badge.appendChild(app.el('b', null, String(ui.holes.length)))
+      badge.appendChild(app.el('span', null, '/ ' + match.bulletCount + ' 发'))
     } else {
       badge.appendChild(app.el('b', null, String(match.bulletsLeft)))
       badge.appendChild(app.el('span', null, '/ ' + match.bulletCount + ' 发'))
@@ -154,7 +154,7 @@ export function renderBoard(app, game, data, canArm) {
 
 function statusText(match) {
   if (match === null) return '选择设置后开始对局。'
-  if (match.stage === 'arming') return '点一个弹孔装 ' + match.bulletCount + ' 发，装好后按「开始转」。'
+  if (match.stage === 'arming') return '点弹孔装弹，一个孔一发；本局 ' + match.bulletCount + ' 发，装满后按「开始转」。'
   if (match.stage === 'ai') {
     if (match.mustShoot === 'ai') return 'AI 被回让，必须开枪…'
     if (match.passBy === 'you') return '你已让枪，等 AI 决定。'
@@ -239,10 +239,11 @@ function renderDock(app, game, data) {
   }
   if (match.stage === 'arming') {
     primary('随机装弹', 'load-random', function () { game.randomLoad() })
-    primary('开始转', 'spin', function () { game.spin() }, !game.ui.loaded || game.ui.spinning)
-    actions.appendChild(app.el('div', 'rt-hint', game.ui.loaded
-      ? '子弹已放进弹槽，按「开始转」才转轮'
-      : '点一个弹孔装弹，装好后按「开始转」'))
+    primary('开始转', 'spin', function () { game.spin() }, game.ui.holes.length !== match.bulletCount || game.ui.spinning)
+    const left = Math.max(0, match.bulletCount - game.ui.holes.length)
+    actions.appendChild(app.el('div', 'rt-hint', left === 0
+      ? '已装 ' + game.ui.holes.length + '/' + match.bulletCount + ' 发，按「开始转」才转轮'
+      : '已装 ' + game.ui.holes.length + '/' + match.bulletCount + ' 发，还差 ' + left + ' 发'))
   } else if (match.stage === 'choice') {
     actions.appendChild(action(app, 'dp-btn rt-danger', { 'data-op': 'shoot' }, '对自己开枪', function () { game.fire() }))
     const fee = Math.max(1, Math.ceil(match.matchedYou * (data.passRate || 0.5)))
