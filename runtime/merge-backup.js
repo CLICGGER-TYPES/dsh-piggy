@@ -9,9 +9,10 @@
  */
 
 import { createHash } from 'node:crypto'
-import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, unlinkSync, writeSync } from 'node:fs'
+import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, rmSync, unlinkSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
+import { atomicWrite } from './merge-transaction.js'
 import { createSaveArchive, parseSaveArchive } from './save-archive.js'
 
 const HISTORY_VERSION = 1
@@ -30,20 +31,6 @@ function syncDirectory(directory) {
   try { descriptor = openSync(directory, 'r'); fsyncSync(descriptor) }
   catch (error) { if (!['EINVAL', 'ENOTSUP', 'EISDIR', 'EPERM'].includes(error.code)) throw error }
   finally { if (descriptor !== undefined) closeSync(descriptor) }
-}
-
-function atomicWrite(file, bytes, mode = 0o600) {
-  mkdirSync(dirname(file), { recursive: true, mode: 0o700 })
-  const temp = `${file}.${process.pid}.${Date.now()}.tmp`
-  const descriptor = openSync(temp, 'wx', mode)
-  try { writeSync(descriptor, bytes); fsyncSync(descriptor) }
-  finally { closeSync(descriptor) }
-  try { renameSync(temp, file) }
-  catch (error) {
-    try { unlinkSync(temp) } catch { /* keep the original error */ }
-    throw error
-  }
-  syncDirectory(dirname(file))
 }
 
 /** 合并备份的时间戳与 mergeId8；成功页显示实际文件名，不手写示例。 */

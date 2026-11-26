@@ -9,6 +9,7 @@
  * @module dsh-piggy/runtime/merge-transaction
  */
 
+import { randomBytes } from 'node:crypto'
 import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, unlinkSync, writeSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
@@ -18,15 +19,35 @@ import { syncDirectory, writeWorkJson } from './work-files.js'
 const PREFIX = '.piggy-merge-'
 const JOURNAL = 'journal.json'
 
-function atomicWrite(file, bytes, mode = 0o600) {
+/**
+ * 原子写文件：先写临时文件并刷盘，再 rename 覆盖。
+ * 任一步骤失败都必须先关闭句柄再删临时文件（Windows 未关句柄直接 unlink 会失败），
+ * 避免 ENOSPC 等错误把半截 .tmp 留在事务目录里阻塞后续恢复。
+ * @param {string} file
+ * @param {Buffer|string} bytes
+ * @param {number|{mode?:number,writeSync?:(fd:number,data:Buffer)=>number,fsyncSync?:(fd:number)=>void}} [modeOrOptions]
+ */
+function atomicWrite(file, bytes, modeOrOptions = 0o600) {
+  const options = typeof modeOrOptions === 'object' && modeOrOptions !== null ? modeOrOptions : {}
+  const mode = typeof modeOrOptions === 'number' ? modeOrOptions : (options.mode ?? 0o600)
+  const write = options.writeSync ?? writeSync
+  const sync = options.fsyncSync ?? fsyncSync
+  const payload = typeof bytes === 'string' ? Buffer.from(bytes, 'utf8') : bytes
   mkdirSync(dirname(file), { recursive: true, mode: mode === 0o600 ? 0o700 : 0o755 })
-  const temp = `${file}.${process.pid}.${Date.now()}.tmp`
+  const temp = `${file}.${process.pid}.${Date.now()}.${randomBytes(4).toString('hex')}.tmp`
   const descriptor = openSync(temp, 'wx', mode)
-  try { writeSync(descriptor, bytes); fsyncSync(descriptor) }
-  finally { closeSync(descriptor) }
-  try { renameSync(temp, file) }
-  catch (error) {
-    try { unlinkSync(temp) } catch { /* keep the original error */ }
+  let closed = false
+  try {
+    write(descriptor, payload)
+    sync(descriptor)
+    closeSync(descriptor)
+    closed = true
+    renameSync(temp, file)
+  } catch (error) {
+    if (!closed) {
+      try { closeSync(descriptor) } catch { /* 保留原始写入错误 */ }
+    }
+    try { unlinkSync(temp) } catch { /* 保留原始写入错误 */ }
     throw error
   }
   syncDirectory(dirname(file))

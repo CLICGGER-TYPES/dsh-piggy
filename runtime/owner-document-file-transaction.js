@@ -25,6 +25,8 @@ const OWNER_MARKER = 'owner.json'
 const JOURNAL = 'journal.json'
 const OLD_BYTES = 'old.bin'
 const NEW_BYTES = 'new.bin'
+const STAGED_TEMP_PATTERN = /^(?:owner\.json|old\.bin|new\.bin|journal\.json)\.\d+\.\d+(?:\.[a-f0-9]+)?\.tmp$/
+const OWNER_MARKER_TEMP_PATTERN = /^owner\.json\.\d+\.\d+(?:\.[a-f0-9]+)?\.tmp$/
 
 /** @typedef {{document:import('../store/owner-document.js').OwnerDocument, revision:string, cleanupDeferred:boolean}} WriteResult */
 
@@ -72,17 +74,31 @@ function currentRevision(filePath) {
   return raw === null ? 'missing' : sha256(raw)
 }
 
+/** @param {string} filePath */
+function isRegularFile(filePath) {
+  let stat
+  try { stat = lstatSync(filePath) } catch (error) { if (errorCode(error) === 'ENOENT') return false; throw error }
+  return !stat.isSymbolicLink() && stat.isFile()
+}
+
 /**
  * 删除已验证事务目录时总把 journal 留到最后：若清理中断，recover 仍能辨别提交状态。
+ * 只允许核心事务文件及本模块 atomicWrite 中断留下的普通 .tmp 文件，其他未知项一律保留现场。
  * @param {string} tx
  * @param {string} filePath
  */
 function cleanupTransactionDirectory(tx, filePath) {
   const allowed = new Set([OWNER_MARKER, OLD_BYTES, NEW_BYTES, JOURNAL])
-  if (readdirSync(tx).some(name => !allowed.has(name))) {
+  const tempFiles = []
+  for (const name of readdirSync(tx)) {
+    if (allowed.has(name)) continue
+    if (STAGED_TEMP_PATTERN.test(name) && isRegularFile(join(tx, name))) {
+      tempFiles.push(name)
+      continue
+    }
     throw new Error('owner document transaction contains unknown files; evidence preserved')
   }
-  for (const name of [OLD_BYTES, NEW_BYTES, OWNER_MARKER]) {
+  for (const name of [...tempFiles, OLD_BYTES, NEW_BYTES, OWNER_MARKER]) {
     const file = join(tx, name)
     if (readRegularFile(file) !== null) unlinkSync(file)
   }
@@ -105,7 +121,10 @@ function recoverLocked(filePath) {
   if (journalRaw === null) {
     const ownerRaw = readTransactionJson(join(tx, OWNER_MARKER))
     if (ownerRaw === null) {
-      if (readdirSync(tx).length === 0) {
+      const entries = readdirSync(tx)
+      if (entries.every(name => OWNER_MARKER_TEMP_PATTERN.test(name) && isRegularFile(join(tx, name)))) {
+        for (const name of entries) unlinkSync(join(tx, name))
+        if (entries.length > 0) syncDirectory(tx)
         rmdirSync(tx)
         syncDirectory(dirname(filePath))
         return { recovered: false, emptyPrecommitCleaned: true }

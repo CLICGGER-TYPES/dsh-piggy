@@ -3,11 +3,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { commitMergeSync, recoverMergeSync, restoreMergeFilesSync, rollbackCopiedSkinsSync } from '../../../runtime/merge-transaction.js'
+import { atomicWrite, commitMergeSync, recoverMergeSync, restoreMergeFilesSync, rollbackCopiedSkinsSync } from '../../../runtime/merge-transaction.js'
+import { writeWorkJson } from '../../../runtime/work-files.js'
 import { hatchEgg, migrate } from '../../../src/host/core.js'
 
 const NOW = 1_800_000_000_000
@@ -121,5 +122,41 @@ test('从备份恢复 state/receipts 不整目录替换', () => {
     assert.equal(JSON.parse(readFileSync(statePath, 'utf8')).name, state('restored').name)
     assert.equal(existsSync(join(dir, 'skins', 'custom-keep.png')), true)
     assert.equal(existsSync(dirname(statePath)), true)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('atomicWrite 在 writeSync 或 fsyncSync 抛 ENOSPC 时关闭句柄并清理残留 .tmp', () => {
+  const dir = temp()
+  const target = join(dir, 'new.bin')
+  try {
+    writeFileSync(target, 'old')
+    const enospc = Object.assign(new Error('ENOSPC: no space left on device, write'), { code: 'ENOSPC' })
+    assert.throws(() => atomicWrite(target, Buffer.from('next'), {
+      writeSync: () => { throw enospc },
+    }), error => error === enospc)
+    assert.deepEqual(readdirSync(dir), ['new.bin'])
+    assert.equal(readFileSync(target, 'utf8'), 'old')
+
+    const syncErr = Object.assign(new Error('EIO: fsync failed'), { code: 'EIO' })
+    assert.throws(() => atomicWrite(target, Buffer.from('next'), {
+      fsyncSync: () => { throw syncErr },
+    }), error => error === syncErr)
+    assert.deepEqual(readdirSync(dir), ['new.bin'])
+    assert.equal(readFileSync(target, 'utf8'), 'old')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('writeWorkJson 在写入或刷盘失败时清理残留 .tmp 且不触发 onPublished', () => {
+  const dir = temp()
+  const target = join(dir, 'journal.json')
+  try {
+    let published = false
+    const enospc = Object.assign(new Error('ENOSPC: no space left on device, write'), { code: 'ENOSPC' })
+    assert.throws(() => writeWorkJson(target, { version: 1 }, {
+      onPublished: () => { published = true },
+      writeFileSync: () => { throw enospc },
+    }), error => error === enospc)
+    assert.equal(published, false)
+    assert.deepEqual(readdirSync(dir), [])
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
