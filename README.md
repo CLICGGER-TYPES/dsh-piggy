@@ -60,6 +60,8 @@ dsh plugin --profile web add dsh-piggy
 | Windows | `setup.exe` 安装版，或 `portable.exe` 便携版 |
 | Linux | `AppImage`，添加执行权限后运行 |
 
+> Linux 提示：桌面版默认用 XWayland 启动，以保证小猪始终置顶；GNOME 等 Wayland 原生桌面不认 `alwaysOnTop`，猪虽然在自己的画布内也会被最大化窗口盖住。启动参数与排查见[桌面版指南](docs/guides/desktop.md#linux-与-wayland-的置顶)。
+
 macOS 版本暂停构建：最后一个可用版本见历史 [Releases](https://github.com/CLICGGER-TYPES/dsh-piggy/releases)（`v0.37.2-rc.15` 及更早），代码和构建配置保留，欢迎后续维护者接手。国内 Windows 用户可使用[夸克网盘](https://pan.quark.cn/s/0ef88e5bda2d)。
 
 ## 玩法

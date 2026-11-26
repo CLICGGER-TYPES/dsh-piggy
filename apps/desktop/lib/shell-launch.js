@@ -2,6 +2,23 @@
 /** 外壳重启与 Wayland → X11 的平台选择。 */
 
 /**
+ * 这个进程实际是不是 Wayland 客户端（决定 alwaysOnTop 能不能靠合成器生效）。
+ *
+ * `ensureX11()` 会把默认的 Wayland 启动再拉一次 X11，那个进程 argv 末尾就带
+ * `--ozone-platform=x11`；只有显式 `PIGGY_WAYLAND=1` / `--ozone-platform=wayland`
+ * 才是原生 Wayland。GNOME 不认 Wayland 客户端的置顶，只有 niri 有专门通道
+ * （见 lib/niri-window.js），所以这个判断也决定启动期告警。
+ *
+ * @param {{ platform: string, env?: Record<string, string | undefined>, argv?: string[] }} options
+ */
+export function runsOnWaylandClient({ platform, env = {}, argv = [] }) {
+  if (platform !== 'linux') return false
+  const explicit = argv.filter(arg => typeof arg === 'string' && arg.startsWith('--ozone-platform=')).at(-1)
+  if (explicit !== undefined) return explicit === '--ozone-platform=wayland'
+  return Boolean(env.WAYLAND_DISPLAY)
+}
+
+/**
  * @param {{
  *   app: any,
  *   spawnProcess: (...args: any[]) => any,

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { createShellLaunch } from '../lib/shell-launch.js'
+import { createShellLaunch, runsOnWaylandClient } from '../lib/shell-launch.js'
 
 /** @param {Record<string, string | undefined>} env */
 function fixture(env = {}, platform = 'win32') {
@@ -45,4 +45,22 @@ test('Wayland 启动仍手动拉起 X11 副本', () => {
   assert.equal(spawns[0][0], 'C:\\Temp\\extracted\\dsh-piggy.exe')
   assert.deepEqual(spawns[0][1], ['--flag', '--ozone-platform=x11'])
   assert.deepEqual(calls, [{ exit: 0 }])
+})
+
+
+test('置顶告警只对真正跑 Wayland 客户端的 Linux 进程生效', () => {
+  // 默认 Wayland 启动会被 ensureX11 拉起来的 X11 副本带 --ozone-platform=x11，不能再告警。
+  assert.equal(runsOnWaylandClient({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' }, argv: ['dsh-piggy'] }), true)
+  assert.equal(runsOnWaylandClient({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' },
+    argv: ['dsh-piggy', '--ozone-platform=x11'] }), false)
+  assert.equal(runsOnWaylandClient({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0', PIGGY_WAYLAND: '1' },
+    argv: ['dsh-piggy', '--ozone-platform=wayland'] }), true)
+  // 后出现的 flag 才是 Electron 实际用的；两个都给时按最后一个算。
+  assert.equal(runsOnWaylandClient({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' },
+    argv: ['dsh-piggy', '--ozone-platform=wayland', '--ozone-platform=x11'] }), false)
+  assert.equal(runsOnWaylandClient({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' },
+    argv: ['dsh-piggy', '--ozone-platform=x11', '--ozone-platform=wayland'] }), true)
+  // 纯 X11 桌面（没有 WAYLAND_DISPLAY）和 Windows/macOS 不该告警。
+  assert.equal(runsOnWaylandClient({ platform: 'linux', env: {}, argv: ['dsh-piggy'] }), false)
+  assert.equal(runsOnWaylandClient({ platform: 'win32', env: { WAYLAND_DISPLAY: 'wayland-0' }, argv: [] }), false)
 })
