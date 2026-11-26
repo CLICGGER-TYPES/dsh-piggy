@@ -47,7 +47,7 @@ import { createDisplayWatch } from './lib/display-watch.js'
 import { createMergeConfirm } from './lib/merge-confirm.js'
 import { createPetRoster } from './lib/pet-roster.js'
 import { createCaptureCheck } from './lib/capture-check.js'
-import { createShellLaunch } from './lib/shell-launch.js'
+import { createShellLaunch, runsOnWaylandClient } from './lib/shell-launch.js'
 import { hasOwnerArchiveRuntime, hasOwnerPigRuntime, hasOwnerCloudRuntime, hasOwnerLanRuntime, runtimeOwnerConfig, notifyOwnerArchiveSwitchFailed } from './lib/owner-runtime.js'
 import { MAX_PIG_WINDOWS, createPetRegistry, createPetState } from './lib/pet-instance.js'
 import { createExternalManager } from './lib/external.js'
@@ -180,6 +180,25 @@ const niri = niriSession.enabled
   })
   : null
 const NIRI_ARGS = niri?.enabled === true ? ['--piggy-niri=1'] : []
+
+/**
+ * GNOME（以及除 niri 外的 Wayland 合成器）不认 Wayland 客户端的 alwaysOnTop：
+ * 窗口 map 了、猪也在自己的画布内，但会被最大化的窗口整块盖住（2026-11-26 实测，
+ * 同一只猪换 XWayland 就立刻可见）。这里只告警 + 给启动建议，不改默认后端。
+ */
+function warnWaylandAlwaysOnTopUnsupported() {
+  if (process.platform !== 'linux' || niriSession.enabled === true) return
+  if (!runsOnWaylandClient({ platform: process.platform, env: process.env, argv: process.argv })) return
+  const message = 'warning: Wayland 下 alwaysOnTop 不生效，桌宠会被最大化窗口遮挡；建议用 XWayland 启动（不要设 PIGGY_WAYLAND=1，或加 --ozone-platform=x11）'
+  void log(message, JSON.stringify({
+    session: process.env.XDG_SESSION_TYPE ?? '',
+    desktop: process.env.XDG_CURRENT_DESKTOP ?? '',
+    ozone: app.commandLine?.getSwitchValue?.('ozone-platform') ?? '',
+    niri: false, // 走到这里 niri 一定没启用（见上面的 early return）
+    suggestion: '--ozone-platform=x11',
+  }))
+  try { hostJournal?.record?.('warn', 'shell', message) } catch { /* 日志不许反过来把猪弄挂 */ }
+}
 
 /** 面板在 surface 装配前就要用到读窗口位置的函数：surface 之后赋值，调用时已就绪。 */
 /** @type {ReturnType<typeof import('./lib/window-surface.js').createWindowSurface> | null} */
@@ -995,6 +1014,7 @@ app.whenReady().then(async () => {
   if (desktopLifecycle.quitting) return
   hostJournal = /** @type {any} */ (desktopRuntime.getHost())?.store?.journal ?? null
   hostJournal?.record?.('info', 'shell', `桌面外壳 ${app.getVersion()} · 游戏包 ${gameDir}`)
+  warnWaylandAlwaysOnTopUnsupported()
   registerProtocol(gameDir)
   await petRoster.createPetWindows()
   if (desktopLifecycle.quitting) return

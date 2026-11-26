@@ -13,6 +13,18 @@
 
 Linux GNOME 默认可能不显示托盘图标，可安装 AppIndicator 扩展，也可从主菜单点击“退出”。
 
+## Linux 与 Wayland 的置顶
+
+Linux 桌面版默认在 XWayland 下启动（外壳会带 `--ozone-platform=x11`），这样小猪能保持置顶、也能自己裁掉透明区。只有显式设置 `PIGGY_WAYLAND=1`（或在命令行加 `--ozone-platform=wayland`）才会用 Wayland 原生。
+
+GNOME 等合成器不认 Wayland 客户端的 `alwaysOnTop`：窗口 map 了、`pigBox` 也在自己的画布内，但会被最大化的编辑器/浏览器整块盖住（2026-11-26 实测，同一只猪换 XWayland 后立刻可见）。仓库里只有 niri 有专门的置顶通道（`apps/desktop/lib/niri-window.js`），其他 Wayland 桌面没有。这种情况下外壳会在 `piggy.log` 和游戏日志里写一条：
+
+```
+warning: Wayland 下 alwaysOnTop 不生效，桌宠会被最大化窗口遮挡；建议用 XWayland 启动（不要设 PIGGY_WAYLAND=1，或加 --ozone-platform=x11）
+```
+
+看到猪“消失”时先确认启动参数：去掉 `PIGGY_WAYLAND=1`（或加 `--ozone-platform=x11`）重启即可置顶；必须用 Wayland 原生的话，目前只有 niri 能保证置顶。
+
 ## 拖动小猪
 
 按住小猪即可在桌面上拖动，一直拖到屏幕边上都跟着鼠标走。面板是单独一个窗口（桌面外壳 0.6.0 起），贴在小猪上方或下方——哪边放得下就开在哪边；面板展开时也能拖，面板会跟着小猪移动，松开后按新位置重新选打开方向。开关面板、切 App、冒气泡都不会挪动小猪。点到桌面别处时面板自动收起（可在设置里关掉）。

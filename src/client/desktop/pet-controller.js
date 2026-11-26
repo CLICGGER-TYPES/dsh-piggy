@@ -27,6 +27,7 @@ export function createPetController(deps) {
   let tooltipsInstalled = false
   let observerInstalled = false
   let resizeListenerInstalled = false
+  let moveListenerInstalled = false
   let pointerupListenerInstalled = false
   let intervalId = null
 
@@ -214,6 +215,15 @@ export function createPetController(deps) {
       if (!resizeListenerInstalled) {
         deps.windowObject.addEventListener('resize', layout.schedule)
         resizeListenerInstalled = true
+      }
+      // Wayland 上合成器挪窗不一定给页面 resize；窗口一回来 / 页面重新可见就重排一次，
+      // 挂机后从隐藏恢复也能立刻把猪收回窗口内（布局自己还有 1s 心跳兜底）。
+      if (!moveListenerInstalled) {
+        deps.windowObject.addEventListener('move', layout.schedule)
+        deps.documentObject.addEventListener?.('visibilitychange', layout.schedule)
+        const screenObject = /** @type {any} */ (deps.windowObject).screen
+        screenObject?.addEventListener?.('change', layout.schedule)
+        moveListenerInstalled = true
       }
       if (!pointerupListenerInstalled) {
         deps.windowObject.addEventListener('pointerup', layout.schedule)
