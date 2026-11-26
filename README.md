@@ -109,19 +109,19 @@ npm run typecheck
 
 ## 贡献者
 
-这个项目有一半是玩家帮忙做出来的，谢谢每一位交出代码、画作和想法的朋友（按首次贡献时间排序）：
+这个项目有一半是玩家帮忙做出来的，谢谢每一位交出代码、画作和想法的朋友（按对项目的贡献与活跃度排序）：
 
 | 贡献者 | 贡献 |
 |---|---|
-| [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)）；六项进阶成就与六枚互动徽章贴图（[#38](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/38)，含后续高光与站姿重绘）；成就列表筛选与快达成排序（[#136](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/136)）；早期截图链接修正与 Windows 入门文档（[#1](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/1)） |
-| [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题 |
-| [@tetezi](https://github.com/tetezi) | 面板动作时猪窗口置顶、右键不误摸、脏和生病状态的苍蝇/病毒图标、恢复桌面版状态变色与心情优先级调整，附回归测试（[#8](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/8)，随 [#9](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/9) 合入） |
 | [@WolalaQAQ](https://github.com/WolalaQAQ) | 运行时与 DSH 适配器拆分、工作事件接口、持久去重和事务恢复，以及后续可靠性补丁；按游戏能力控制 Windows 鼠标转发（[#19](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/19)），异步外壳 I/O 与更新生命周期（[#15](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/15)）、Windows 菜单与小猪窗口层级恢复及回归测试（[#21](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/21)）；提出并参与可选 DSH 外部桌宠方向讨论（[#14](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/14)）；并协助完成 Windows、DSH 和 OpenCode 独立复核（[#12](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/12)、[#13](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/13)）；修复小猪切换立绘期间的点击穿透（[#144](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/144)）；修复磁盘满等写入失败在事务目录留下 `.tmp` 导致启动卡死（[#150](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/150)） |
-| [@Flappy-Boy](https://github.com/Flappy-Boy) | 反馈更新说明滚动回顶、菜园快速点击丢操作、矿洞连续挖掘站位异常，并提供复现步骤（[#16](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/16)、[#17](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/17)、[#18](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/18)） |
+| [@1nuoiscute](https://github.com/1nuoiscute) | 猪猪王原型与恶魔猪形态、肥猪体型和胖胖猪动作立绘；十六项成就与小猪徽章系统（[#6](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/6)）；扩展公共进度事件与十二项扩展成就（[#7](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/7)）；六项进阶成就与六枚互动徽章贴图（[#38](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/38)，含后续高光与站姿重绘）；成就列表筛选与快达成排序（[#136](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/136)）；早期截图链接修正与 Windows 入门文档（[#1](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/1)） |
 | [@Skipanic](https://github.com/Skipanic) | 云存档改用 git 同步的设计（[#34](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/34)）与推送、手动提交、按提交恢复实现（[#35](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/35)）；为完整档云同步方向提供建议 |
 | [@shpgy-shpgy](https://github.com/shpgy-shpgy) | 提交 macOS 多桌面空间下面板跟随猪所在空间的方案（[#143](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/143)，由维护者实现并随 0.37.3-rc.3 发布）；反馈藏猪方块左右键交互（[#140](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/140)） |
-| [@CitrusIce](https://github.com/CitrusIce) | 提出桌面版连接公网联机服务器的需求（[#141](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/141)） |
+| [@tetezi](https://github.com/tetezi) | 面板动作时猪窗口置顶、右键不误摸、脏和生病状态的苍蝇/病毒图标、恢复桌面版状态变色与心情优先级调整，附回归测试（[#8](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/8)，随 [#9](https://github.com/CLICGGER-TYPES/dsh-piggy/pull/9) 合入） |
+| [@Flappy-Boy](https://github.com/Flappy-Boy) | 反馈更新说明滚动回顶、菜园快速点击丢操作、矿洞连续挖掘站位异常，并提供复现步骤（[#16](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/16)、[#17](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/17)、[#18](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/18)） |
 | [@wally8-8](https://github.com/wally8-8) | 反馈钓鱼内容不能自动触发的问题（[#146](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/146)） |
+| [@CitrusIce](https://github.com/CitrusIce) | 提出桌面版连接公网联机服务器的需求（[#141](https://github.com/CLICGGER-TYPES/dsh-piggy/issues/141)） |
+| [@anupamme](https://github.com/anupamme) | 报告桌面版更新依赖的安全问题 |
 
 最近更新：2026-11-26。
 
