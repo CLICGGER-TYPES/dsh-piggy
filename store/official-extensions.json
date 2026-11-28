@@ -10271,6 +10271,32 @@
       "assets/cylinder-v4.webp": "280e9e120bc8bc8f9011b89b8b27886d2b2c5e91421f46cd399f65f8a70bda5a",
       "assets/revolver-v6.webp": "8a4565faa2953eed256f223cfecf2ff7adde0556788e75d19b4940f6ac902322",
       "assets/table-v2.webp": "c999bc86c3612cbf413fde161817561a12038cb1b84d9d5bac0c332128cedf97"
+    },
+    "0.2.2": {
+      "manifest.json": "ee4449a37a8823609686b0d6870b3a0cf19537bad6ce39c325aa002582038d2a",
+      "server.js": "3fc5afccae0d195acdfb6d92d4af56c1075dee0c74f9818735a1e3646cd3b85f",
+      "client.js": "23018afd7c14f01d052e99a597e5579cc601d25d9b4a948df8046b3586c2846e",
+      "assets/bullet-base-v4.webp": "847a780bcf21d8529eafc9fe191949e9ca9e8f930e29b2b554cbbea43ac33755",
+      "assets/bullet-side-v4.webp": "202401a0b5088f8630477f3a5a98b1ae9699ac1f87443c28629e6ddfd54d05a5",
+      "assets/chip-v1.webp": "08a8c450e5ab47f482a1c4d2be5e415674446eb59704045090a0f92320b194f3",
+      "assets/cylinder-v4.webp": "280e9e120bc8bc8f9011b89b8b27886d2b2c5e91421f46cd399f65f8a70bda5a",
+      "assets/revolver-smoke-3b.png": "dc0b50a860f3e6ce317265ba0a92ee3b795b4d113a5137a3f8a8e5d61fc728cb",
+      "assets/revolver-spun-2c.png": "761e3a30d5b9486922604c712bfd30de8b4d741566e273343933631b2ee9e74f",
+      "assets/revolver-v6.webp": "8a4565faa2953eed256f223cfecf2ff7adde0556788e75d19b4940f6ac902322",
+      "assets/table-v2.webp": "c999bc86c3612cbf413fde161817561a12038cb1b84d9d5bac0c332128cedf97"
+    },
+    "0.2.3": {
+      "manifest.json": "105cd0151cfc8cda06fb1756ebaf73f09fd7c1acca0b2a2c0a9552f91b641c38",
+      "server.js": "3fc5afccae0d195acdfb6d92d4af56c1075dee0c74f9818735a1e3646cd3b85f",
+      "client.js": "f898ed44154ac5698d7c103b41585efe5bcacdeb12ce6ed27ca21bccc5ffbb99",
+      "assets/bullet-base-v4.webp": "847a780bcf21d8529eafc9fe191949e9ca9e8f930e29b2b554cbbea43ac33755",
+      "assets/bullet-side-v4.webp": "202401a0b5088f8630477f3a5a98b1ae9699ac1f87443c28629e6ddfd54d05a5",
+      "assets/chip-v1.webp": "08a8c450e5ab47f482a1c4d2be5e415674446eb59704045090a0f92320b194f3",
+      "assets/cylinder-v4.webp": "280e9e120bc8bc8f9011b89b8b27886d2b2c5e91421f46cd399f65f8a70bda5a",
+      "assets/revolver-smoke-3b.png": "dc0b50a860f3e6ce317265ba0a92ee3b795b4d113a5137a3f8a8e5d61fc728cb",
+      "assets/revolver-spun-2c.png": "761e3a30d5b9486922604c712bfd30de8b4d741566e273343933631b2ee9e74f",
+      "assets/revolver-v6.webp": "8a4565faa2953eed256f223cfecf2ff7adde0556788e75d19b4940f6ac902322",
+      "assets/table-v2.webp": "c999bc86c3612cbf413fde161817561a12038cb1b84d9d5bac0c332128cedf97"
     }
   }
 }

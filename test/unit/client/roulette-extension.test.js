@@ -16,10 +16,17 @@ const REPO_PATH = fileURLToPath(new URL('../../../', import.meta.url))
 const MANIFEST = JSON.parse(readFileSync(new URL('manifest.json', ROOT), 'utf8'))
 const GAME_VERSION = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')).version
 
-/** 进牌桌只切页；先在大堂按钮上配好设置，再点开始。 */
+/** 合并后扩展默认打开就是牌桌；设置直接在顶栏改，再点开始。 */
 function enterTable(m) {
-  m.click('data-op', 'enter-ai')
+  assert.ok(m.byClass('rt-table'), '默认就在牌桌')
   assert.equal(m.data.match, null, '进牌桌不自动开局')
+  const toggle = m.find('data-op', 'settings-toggle')
+  if (toggle && toggle.getAttribute('aria-expanded') === 'false') toggle.fire('click')
+}
+/** 中途退出走右上角「认输离开」，不再有大厅可回。 */
+function forfeit(m) {
+  m.click('data-op', 'more')
+  m.click('data-op', 'forfeit')
 }
 function startMatch(m) {
   enterTable(m)
@@ -30,7 +37,7 @@ function startMatch(m) {
 test('manifest、素材和生成产物符合扩展契约', async () => {
   assert.equal(MANIFEST.key, 'roulette')
   assert.equal(MANIFEST.label, '左轮轮盘')
-  assert.equal(MANIFEST.version, '0.2.1')
+  assert.equal(MANIFEST.version, '0.2.3')
   assert.equal(MANIFEST.minGame, '0.37.3')
   assert.ok(versionAtLeast(GAME_VERSION, MANIFEST.minGame), 'minGame 不能高于当前游戏版本')
   assert.equal(MANIFEST.app.label, '左轮轮盘')
@@ -43,6 +50,8 @@ test('manifest、素材和生成产物符合扩展契约', async () => {
     'bullet-side-v4.webp',
     'chip-v1.webp',
     'cylinder-v4.webp',
+    'revolver-smoke-3b.png',
+    'revolver-spun-2c.png',
     'revolver-v6.webp',
     'table-v2.webp',
   ])
@@ -52,8 +61,16 @@ test('manifest、素材和生成产物符合扩展契约', async () => {
     assert.ok(existsSync(url), '缺素材 ' + name)
     const file = readFileSync(url)
     assert.ok(file.length > 0 && file.length <= 512 * 1024, name + ' 大小不对')
-    assert.equal(file.subarray(0, 4).toString(), 'RIFF')
-    assert.equal(file.subarray(8, 12).toString(), 'WEBP')
+    if (name.endsWith('.png')) {
+      assert.equal(file.subarray(1, 4).toString(), 'PNG', name + ' 不是 PNG')
+      // 900×465 RGBA：IHDR 宽高和颜色类型都要和素材说明一致。
+      assert.equal(file.readUInt32BE(16), 900, name + ' 宽不对')
+      assert.equal(file.readUInt32BE(20), 465, name + ' 高不对')
+      assert.equal(file[25], 6, name + ' 不是 RGBA')
+    } else {
+      assert.equal(file.subarray(0, 4).toString(), 'RIFF')
+      assert.equal(file.subarray(8, 12).toString(), 'WEBP')
+    }
   }
 
   assert.equal(typeof roulette.actions, 'object')
@@ -99,7 +116,7 @@ test('现有扩展宿主能加载 roulette，并读出 client.js、素材和真�
     const entry = runtime.list(state).find(item => item.key === 'roulette')
     assert.ok(entry, '宿主没有列出 roulette')
     assert.equal(entry.error, null)
-    assert.equal(entry.version, '0.2.1')
+    assert.equal(entry.version, '0.2.3')
     assert.equal(entry.app.label, '左轮轮盘')
     const view = runtime.views(state).roulette
     assert.equal(view.coins, 12500)
@@ -122,22 +139,25 @@ test('现有扩展宿主能加载 roulette，并读出 client.js、素材和真�
   }
 })
 
-test('面板：大堂设置、真实金币和开始对局', () => {
+test('面板：合并后直接到牌桌，设置摘要和右上角入口都在', () => {
   const m = mountRoulette()
+  assert.ok(m.byClass('rt-table'), '默认打开就是牌桌')
   assert.match(m.text(), /AI 对战/)
-  assert.match(m.text(), /好友联机/)
-  assert.match(m.text(), /4 人桌/)
   assert.match(m.text(), /12,500/)
   assert.equal(m.images().length > 0, true)
   for (const image of m.images()) {
-    assert.match(image.src, /^\/dsh-piggy\/ext\/roulette\/assets\/[a-z0-9-]+\.webp$/)
+    assert.match(image.src, /^\/dsh-piggy\/ext\/roulette\/assets\/[a-z0-9-]+\.(webp|png)$/)
   }
-  assert.doesNotMatch(m.text(), /命数/, '大堂只留入口，不摆牌桌设置')
-  assert.doesNotMatch(m.text(), /底注/)
-
-  enterTable(m)
-  assert.match(m.text(), /命数/)
+  assert.match(m.text(), /命数 1/, '设置摘要直接露出命数')
+  assert.match(m.text(), /底注 1,000/)
+  assert.doesNotMatch(m.text(), /100,000/, '设置默认收起，展开后才露金库')
+  m.click('data-op', 'settings-toggle')
   assert.match(m.text(), /100,000/)
+
+  m.click('data-op', 'more')
+  assert.match(m.text(), /好友联机/)
+  assert.match(m.text(), /4 人桌/)
+  assert.match(m.text(), /规则/)
   assert.match(m.text(), /三局两胜/)
   m.click('data-op', 'lives-3')
   assert.equal(m.data.settings.lives, 3)
@@ -156,6 +176,28 @@ test('面板：大堂设置、真实金币和开始对局', () => {
   assert.match(m.text(), /本局 5 发/)
   assert.match(m.text(), /底池/)
   assert.match(m.text(), /10,000/)
+})
+
+test('面板：旧大厅入口全部收进右上角，逐项可达', () => {
+  const m = mountRoulette()
+  // 好友联机：没有房间通道时先交给宿主开大窗口，不丢入口。
+  m.click('data-op', 'more')
+  assert.ok(m.find('data-op', 'friend-mode'), '好友联机入口还在')
+  assert.equal(m.find('data-op', 'friend-mode').getAttribute('aria-disabled'), 'false')
+  // 4 人桌保留禁用态和说明。
+  assert.ok(m.find('data-op', 'four-mode'), '4 人桌入口还在')
+  assert.equal(m.find('data-op', 'four-mode').getAttribute('aria-disabled'), 'true')
+  m.click('data-op', 'four-mode')
+  assert.match(m.text(), /4 人桌需要宿主房间接口/)
+  // 规则：从浮层进规则页，再回牌桌。
+  m.click('data-op', 'more')
+  m.click('data-op', 'rules')
+  assert.match(m.text(), /左轮轮盘规则/)
+  m.click('data-op', 'rules-back')
+  assert.match(m.text(), /AI 对战/)
+  assert.ok(m.byClass('rt-table'), '规则返回还是同一张牌桌')
+  // 兜底的小字规则入口也还在。
+  assert.ok(m.find('data-op', 'rules'))
 })
 
 test('面板：装弹不转轮，按开始转才转并变成剩余子弹', () => {
@@ -177,6 +219,37 @@ test('面板：装弹不转轮，按开始转才转并变成剩余子弹', () =>
   assert.ok(['choice', 'ai'].includes(m.data.match.stage))
   assert.equal(m.all('data-chamber').length, 6)
   assert.equal(m.all('data-chamber').every(hole => hole.disabled === true), true, '装弹完成后弹孔不能再点')
+})
+
+test('面板：枪身图按转轮停稳、开枪后换图，装弹和换局回到静态底图', () => {
+  const m = mountRoulette()
+  enterTable(m)
+  assert.equal(m.find('data-gun-state', 'idle') !== null, true, '未开局用静态底图')
+  assert.equal(m.find('data-gun-art', 'revolver-v6.webp') !== null, true)
+
+  m.click('data-op', 'start')
+  assert.equal(m.find('data-gun-state', 'idle') !== null, true, '装弹阶段仍是静态底图')
+
+  m.click('data-op', 'load-random')
+  m.click('data-op', 'spin')
+  m.runTimers(1)
+  assert.equal(m.find('data-gun-state', 'spun') !== null, true, '转轮停稳换 2c')
+  assert.equal(m.find('data-gun-art', 'revolver-spun-2c.png') !== null, true)
+  assert.equal(m.find('data-gun-art', 'revolver-v6.webp'), null, '同一时刻只显示一张枪身图')
+
+  // 让这一枪打空，枪身进入「开枪后」；AI 回合也保持烟痕。
+  const match = m.data.match
+  match.stage = 'choice'
+  match.turn = 'you'
+  match.chamber = 0
+  match.bullets = [1]
+  m.sync()
+  m.click('data-op', 'shoot')
+  assert.equal(m.data.match.lastEvent, 'blank')
+  assert.equal(m.find('data-gun-state', 'spent') !== null, true, '开过枪换 3b')
+  assert.equal(m.find('data-gun-art', 'revolver-smoke-3b.png') !== null, true)
+  m.runTimers()
+  assert.equal(m.find('data-gun-state', 'spent') !== null, true, 'AI 回合仍显示烟痕')
 })
 
 test('面板：装 1-5 发要点不同弹孔，一个孔一发，不自动转', () => {
@@ -335,11 +408,11 @@ test('面板：让枪付 50% 给对手并换手', () => {
   assert.match(m.text(), /AI 回合/)
 })
 
-test('面板：装弹前返回大厅退底注；规则页返回保留牌桌', () => {
+test('面板：装弹前认输离开退底注；规则页返回保留牌桌', () => {
   const m = mountRoulette()
   startMatch(m)
   assert.equal(m.wallet.coins, 11500)
-  m.click('aria-label', '返回大厅')
+  forfeit(m)
   assert.equal(m.wallet.coins, 12500)
   assert.equal(m.wallet.spent['roulette-bet'], 0, '底注按原去处退，不记成收入')
   assert.match(m.text(), /AI 对战/)
@@ -453,7 +526,7 @@ test('面板：AI 让枪费进底池，结算净额和“入池”文案一致',
   assert.doesNotMatch(m.text(), /让枪收/)
 })
 
-test('面板：对局中返回先确认，继续打不退出，确认后按认输处理', () => {
+test('面板：对局中认输离开先确认，继续打不退出，确认后按认输处理', () => {
   const m = mountRoulette()
   startMatch(m)
   const match = m.data.match
@@ -461,7 +534,7 @@ test('面板：对局中返回先确认，继续打不退出，确认后按认�
   match.turn = 'you'
   m.sync()
 
-  m.click('aria-label', '返回大厅')
+  forfeit(m)
   assert.match(m.text(), /确认离开牌桌/)
   assert.equal(m.data.match !== null, true, '确认框出现时对局还在')
 
@@ -469,11 +542,11 @@ test('面板：对局中返回先确认，继续打不退出，确认后按认�
   assert.equal(m.data.match !== null, true)
   assert.doesNotMatch(m.text(), /确认离开牌桌/)
 
-  m.click('aria-label', '返回大厅')
+  forfeit(m)
   m.click('data-op', 'confirm-leave')
   assert.equal(m.data.match, null)
   assert.equal(m.wallet.coins, 11500, '已装弹退出不退底注')
-  assert.match(m.text(), /已回到大厅/)
+  assert.match(m.text(), /已离开牌桌/)
 })
 
 test('面板：三局两胜下一局可以重新选装弹数', () => {
@@ -562,10 +635,10 @@ test('面板：装了弹但还没按开始转就返回，取消并全额退款',
   assert.equal(m.wallet.coins, 11500)
   m.find('data-chamber', '0').fire('click')
   // 还没有按开始转，arm 没发出去
-  m.click('aria-label', '返回大厅')
+  forfeit(m)
   assert.equal(m.data.match, null)
   assert.equal(m.wallet.coins, 12500, '装弹请求未发出前退出要全额退')
-  assert.match(m.text(), /已回到大厅/)
+  assert.match(m.text(), /已离开牌桌/)
 })
 
 test('面板：arm 已发出但回包未到，返回先挡住，不能静默判负', async () => {
@@ -586,7 +659,7 @@ test('面板：arm 已发出但回包未到，返回先挡住，不能静默判�
   armTimer.fn()
   assert.equal(m.wallet.coins, 11500)
 
-  m.click('aria-label', '返回大厅')
+  forfeit(m)
   assert.match(m.text(), /装弹请求提交中/)
   assert.notEqual(m.data.match, null, '回包没到之前不能判负')
   assert.equal(m.wallet.coins, 11500)
@@ -652,7 +725,7 @@ test('大窗：宿主重绘保留当前页面的滚动位置', () => {
   m.sync()
   assert.equal(m.byClass('rt').scrollTop, 42, '同一页重绘不能跳回顶部')
 
-  m.click('data-op', 'enter-ai')
+  m.click('data-op', 'rules')
   assert.equal(m.byClass('rt').scrollTop, 0, '换页从顶部开始')
 })
 

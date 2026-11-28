@@ -5,60 +5,8 @@
  */
 
 import { CHAMBER_X, CHAMBER_Y, LOAD_MAX, LOAD_MIN, money } from './game.js'
-import { settingsBlock } from './settings.js'
-import { action, assetImage, chip, coinPill, footer, modeRow, pageHead } from './ui.js'
-
-export function renderLobby(app, game) {
-  const data = game.data()
-  const root = app.el('div', 'rt-page rt-lobby')
-
-  const top = app.el('div', 'rt-topline')
-  top.appendChild(app.el('span', 'rt-kicker', '6 巢 · 真实金币 · 玩具轮盘'))
-  top.appendChild(app.el('span', 'rt-spacer'))
-  top.appendChild(coinPill(app, data))
-  root.appendChild(top)
-
-  const hero = app.el('div', 'rt-hero')
-  hero.appendChild(app.el('div', 'rt-hero-glow'))
-  hero.appendChild(assetImage(app, 'table-v2.webp', 'rt-hero-table'))
-  hero.appendChild(assetImage(app, 'revolver-v6.webp', 'rt-hero-gun'))
-  hero.appendChild(assetImage(app, 'chip-v1.webp', 'rt-hero-chip rt-hero-chip-a'))
-  hero.appendChild(assetImage(app, 'chip-v1.webp', 'rt-hero-chip rt-hero-chip-b'))
-  hero.appendChild(app.el('span', 'rt-hero-tag', 'AI 对战 · 1 对 1'))
-  root.appendChild(hero)
-
-  root.appendChild(action(app, 'dp-btn rt-primary rt-wide rt-enter', { 'data-op': 'enter-ai' }, '进入牌桌', function () {
-    game.enterTable()
-  }))
-
-  const menu = app.el('div', 'rt-menu')
-  menu.appendChild(modeRow(app, {
-    op: 'friend-mode',
-    name: '好友联机',
-    note: '1v1 · 房主开局',
-    asset: 'chip-v1.webp',
-    onClick: function () {
-      // 房间通道只在桌面版大窗口里给；面板里先开大窗口。
-      if (!app.room && typeof app.openBig === 'function') { app.openBig(); return }
-      game.showPage('online')
-    },
-  }))
-  menu.appendChild(modeRow(app, {
-    op: 'four-mode',
-    name: '4 人桌',
-    note: '同批设计 · 下一阶段接入',
-    locked: true,
-    grid: true,
-    onClick: function () { game.notify('4 人桌需要宿主房间接口，下一阶段接入') },
-  }))
-  root.appendChild(menu)
-
-  root.appendChild(footer(app, {
-    onRules: function () { game.openRules('lobby') },
-    note: '真实金币 · 底池归赢家',
-  }))
-  return root
-}
+import { renderMore, renderSettingsBar, renderTop } from './topbar.js'
+import { action, assetImage, chip, footer, pageHead } from './ui.js'
 
 function lifeDots(app, count, max) {
   const lives = app.el('span', 'rt-lives')
@@ -82,6 +30,42 @@ export function renderLives(app, data, opponentName) {
   you.appendChild(app.el('b', null, '你'))
   row.appendChild(you)
   return row
+}
+
+/**
+ * 牌桌顶部的整枪状态图。三张图同一画布：revolver-v6 是静态底图，
+ * 转轮停稳换成带薄荷弧光的 2c，开过枪换成带烟痕的 3b；弹巢特写
+ * cylinder-v4 仍在下面做可点底图，两者互不替代。
+ */
+const GUN_ART = {
+  idle: { asset: 'revolver-v6.webp', label: '转轮前', note: '弹巢未转' },
+  spun: { asset: 'revolver-spun-2c.png', label: '转轮已停', note: '下一枪未知' },
+  spent: { asset: 'revolver-smoke-3b.png', label: '已开枪', note: '弹巢留烟' },
+}
+
+/** 只看本局进度，不读子弹位置：装弹中→底图，停轮→2c，本局开过枪→3b。 */
+export function gunState(game, match) {
+  if (match === null || match.stage === 'arming' || match.stage === 'idle') return 'idle'
+  if (match.round > 0 && game.ui.firedRound === match.round) return 'spent'
+  return 'spun'
+}
+
+export function renderGun(app, game, data) {
+  const match = data.match
+  const state = gunState(game, match)
+  const art = GUN_ART[state]
+  const stage = app.el('div', 'rt-gun-strip rt-gun-' + state)
+  stage.setAttribute('data-gun-state', state)
+  stage.setAttribute('role', 'img')
+  stage.setAttribute('aria-label', '枪身状态：' + (match === null ? '准备开局' : art.label) + '，' + (match === null ? '选装弹后开始' : art.note))
+  const img = assetImage(app, art.asset, 'rt-gun-strip-img')
+  img.setAttribute('data-gun-art', art.asset)
+  stage.appendChild(img)
+  const tag = app.el('div', 'rt-gun-tag')
+  tag.appendChild(app.el('b', null, match === null ? '准备开局' : art.label))
+  tag.appendChild(app.el('span', null, match === null ? '选装弹后开始' : art.note))
+  stage.appendChild(tag)
+  return stage
 }
 
 export function renderMeta(app, data) {
@@ -296,15 +280,19 @@ export function renderTable(app, game) {
   const data = game.data()
   const match = data.match
   const root = app.el('div', 'rt-page rt-table')
-  const sub = match === null ? '未开局' : '第 ' + match.round + ' 局 · ' + (data.settings.format === 'bestOf3' ? '三局两胜' : '单局')
-  root.appendChild(pageHead(app, data, 'AI 对战', sub, '返回大厅', function () {
-    game.requestLeave()
-  }))
-  root.appendChild(renderMeta(app, data))
-  root.appendChild(renderLives(app, data, '侦探猪'))
+  root.appendChild(renderTop(app, game, data))
+  const setbar = renderSettingsBar(app, game, data)
+  if (setbar) root.appendChild(setbar)
+  // 整枪状态图放在弹巢特写上方，换图不改变装弹和孔位交互。
+  root.appendChild(renderGun(app, game, data))
   if (match === null) {
-    // 大堂只留入口；命数、底注、AI 这些设置进入牌桌后再配。
-    root.appendChild(settingsBlock(app, game, data))
+    // 设置条已经画在顶栏；未开局不摆命数/底池，先把开始按钮露出来。
+  } else {
+    root.appendChild(renderMeta(app, data))
+    root.appendChild(renderLives(app, data, '侦探猪'))
+  }
+  if (match === null) {
+    // 开始按钮在下面的 dock。
   } else if (match.stage === 'matchOver') {
     root.appendChild(renderResult(app, match))
   } else {
@@ -319,6 +307,8 @@ export function renderTable(app, game) {
     onRules: function () { game.openRules('table') },
     note: '真实金币 · 让枪付 50%',
   }))
+  const more = renderMore(app, game, data)
+  if (more) root.appendChild(more)
   return root
 }
 
@@ -346,7 +336,7 @@ export function renderRules(app, game) {
   })
   card.appendChild(list)
   root.appendChild(card)
-  const label = game.ui.rulesFrom === 'table' ? '返回牌桌' : '返回大厅'
+  const label = '返回牌桌'
   root.appendChild(action(app, 'dp-btn rt-primary rt-wide', { 'data-op': 'rules-back' }, label, function () {
     game.closeRules()
   }))

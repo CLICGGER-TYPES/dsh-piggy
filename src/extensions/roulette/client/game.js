@@ -1,14 +1,12 @@
 // @ts-check
 /**
- * 左轮轮盘客户端控制器。
- *
- * 权威对局在扩展服务端（extensions/roulette/server.js），这里只做三件事：
- * 读 app.data 画界面、把点击变成 app.send、保留装弹/转轮/火光这些瞬时动画。
- * 子弹位置不会出现在 app.data 里，客户端拿不到。
+ * 左轮轮盘客户端控制器：读 app.data 画界面、把点击变成 app.send、保留装弹/转轮/火光动画。
+ * 权威对局在扩展服务端（extensions/roulette/server.js）；子弹位置不进 app.data，客户端拿不到。
  */
 
 import { createAiRunner } from './ai.js'
 import { createArm } from './arm.js'
+import { trackGunState } from './match-state.js'
 import { createUiActions } from './ui-actions.js'
 
 export const CHAMBERS = 6
@@ -60,8 +58,9 @@ export function createGame(options = {}) {
   let toastTimer = null
 
   const ui = {
-    page: 'lobby',
-    rulesFrom: 'lobby',
+    page: 'table',
+    rulesFrom: 'table',
+    menu: false, settingsOpen: false,
     toast: '',
     arming: false,
     spinning: false,
@@ -69,7 +68,7 @@ export function createGame(options = {}) {
     spinHide: false,
     holes: [],
     armedHoles: [],
-    flash: '',
+    flash: '', firedRound: 0,
     lastSeq: -1,
     aiKey: '',
     aiError: false,
@@ -169,6 +168,7 @@ export function createGame(options = {}) {
       const match = value.match
       ui.armedHoles = match !== null && (match.lastEvent === 'armed' || match.lastEvent === 'reload') ? (ui.holes.length > 0 ? ui.holes.slice() : ui.armedHoles) : []
       ui.holes = []
+      trackGunState(ui, match)
       if (match !== null) {
         if (match.lastEvent === 'hit' && match.lastShooter === 'you') {
           ui.flash = 'live'
@@ -185,8 +185,7 @@ export function createGame(options = {}) {
     }
     const match = value.match
     if (match !== null && match.stage === 'ai') {
-      // seq 必须进 key：AI 让枪后玩家再让枪，弹巢和剩余子弹可能完全没变，
-      // 只靠 hand/round/chamber/turn/bulletsLeft 会误判成同一次 AI 回合而卡住。
+      // seq 进 key：AI 让枪后玩家再让，弹巢/剩余子弹可能没变，否则会误判同一回合。
       const key = value.seq + ':' + match.handId + ':' + match.round + ':' + match.chamber + ':' + match.turn + ':' + match.bulletsLeft
       if (ui.aiKey !== key) {
         ui.aiKey = key
@@ -204,6 +203,7 @@ export function createGame(options = {}) {
   /** 切到另一个页面；好友联机入口用它进联机大厅。 */
   function showPage(next) {
     ui.page = next
+    ui.menu = false
     ui.flash = ''
     rerender()
   }
@@ -213,13 +213,13 @@ export function createGame(options = {}) {
     send('leave', { handId: match === null ? undefined : match.handId })
     stopTimers()
     arm.reset()
-    ui.page = 'lobby'
+    ui.page = 'table'
     ui.flash = ''
     ui.aiKey = ''
     ui.aiError = false
     ui.nextLoad = null
     ui.leaveConfirm = false
-    toast('已回到大厅')
+    toast('已离开牌桌')
     rerender()
   }
 
@@ -230,8 +230,7 @@ export function createGame(options = {}) {
       leaveTable()
       return
     }
-    // 装弹请求已经发出、回包还没到：此时服务端可能已经进入 choice，
-    // 不能拿旧的 arming 快照当“免费取消”，先挡住。
+    // 装弹请求已发出、回包未到：服务端可能已进 choice，不能拿旧 arming 快照免费取消。
     if (ui.armPending) {
       notify('装弹请求提交中，稍等一下')
       return
@@ -256,8 +255,7 @@ export function createGame(options = {}) {
 
   function start() {
     const value = data()
-    // 服务端还有一场没结算（例如上一次离开请求失败）时，先回到牌桌，
-    // 不能因为金币不够底注把人挡在大厅里；matchOver 要正常开新一场。
+    // 旧一场没结算（例如上次离开失败）时先回牌桌；金币不够也不能挡，matchOver 正常开新一场。
     if (value.match !== null && value.match.stage !== 'matchOver') {
       ui.page = 'table'
       ui.leaveConfirm = false
@@ -362,12 +360,13 @@ export function createGame(options = {}) {
   function openRules(from) {
     ui.rulesFrom = from || ui.page
     ui.page = 'rules'
+    ui.menu = false
     rerender()
   }
 
   function closeRules() {
-    ui.page = ui.rulesFrom === 'rules' ? 'lobby' : ui.rulesFrom
-    ui.rulesFrom = 'lobby'
+    ui.page = ui.rulesFrom === 'rules' ? 'table' : ui.rulesFrom
+    ui.rulesFrom = 'table'
     rerender()
   }
 
