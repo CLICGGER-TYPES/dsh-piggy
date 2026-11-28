@@ -15,3 +15,21 @@ JSON 包括：同层控件/标签/气泡/进度条重叠对及面积、装饰覆
 `passed`：至少一个实际可见页面，所有计数为0。`failed`：发现布局问题。`incomplete`：连接失败、读取失败或没有可见内容。后两种退出码均为1；没有页面绝不算通过。不要把本地伪造宿主预览或检测器校验样例当作实机验收。
 
 场景内组件用现有语义类识别。新增标签、进度条、装饰或图标应声明 `data-layout-label`、`data-layout-progress`、`data-layout-decoration`、`data-layout-icon`，并为新的附属对象补明确归属；仅靠文字猜测对象归属容易误判。
+
+## 静态子集门禁（npm test）
+
+完整审计要连真实 CDP 页面；为了在无桌面的 `npm test` / CI 里也守住最容易回归的两条，仓库增加了静态子集：
+
+```sh
+node tools/layout-lint.mjs        # npm run lint:layout，打印当前违例
+node tools/layout-lint.mjs --write-baseline
+```
+
+- 阈值：`tools/layout-metrics.mjs` 的 `MIN_TEXT_PADDING = 6`（和本指南素材内边距的普通场景 6px / 大场景 8px 同口径）、`MIN_CONTROL_GAP = 4`。改小阈值等于掩盖违例，`test/unit/client/layout-rules.test.js` 会盯住。
+- 范围：`src/client/css-*.js` 与 `src/extensions/*/client/styles.js`；只检查自己声明了上下 `padding` 的带底/带框可点文本控件，和 flex/grid 操作区的 `gap`。只补横向 padding 的继承子规则不误伤。
+- 基线：`tools/layout-baseline.json` 是 2026-11-28 的当前违例快照；测试只拦“新增违例”，已存在的紧凑控件先记录不改，避免为了变绿偷偷降阈值或大改用户已接受的布局。修好一条后可重新生成基线。
+- 这是静态子集，不检查遮挡、命中、裁切、字重和真实字号，也不能代替上面的 CDP 实机审计。
+
+## 文案预算
+
+`test/helpers/copy-budget.js`（`npm run lint:copy`）用现有假 DOM 把左轮轮盘所有可渲染界面挂起来，统计每条直接文本的中文字数，单条上限 18；规则页长文排除。`test/unit/client/copy-budget.test.js` 跑同一套口径，超预算直接失败。

@@ -108,20 +108,20 @@ export function renderOnlineLobby(app, online, game) {
   const players = Array.isArray(room.players) ? room.players : []
   const other = players.find(player => player.id !== room.selfId) ?? null
   if (players.length > 2) {
-    root.appendChild(app.el('p', 'rt-online-note', '房间里超过两个人。联机 1v1 只支持两人，请其他人先离开。'))
+    root.appendChild(app.el('p', 'rt-online-note', '联机 1v1 只支持两人，请其他人先离开。'))
     root.appendChild(footer(app, { onRules: function () { game.openRules('online') }, note: '真实金币 · 各扣各的' }))
     return root
   }
   if (online.hostId() === '') {
     const missing = app.el('div', 'rt-empty')
     missing.appendChild(app.el('p', null, '这个房间没有开局权威。'))
-    missing.appendChild(app.el('p', 'rt-tiny', '公网房间服务器需要配置权威进程；局域网请让房主建房。'))
+    missing.appendChild(app.el('p', 'rt-tiny', '公网需权威进程，局域网请房主建房。'))
     root.appendChild(missing)
     root.appendChild(footer(app, { onRules: function () { game.openRules('online') }, note: '真实金币 · 各扣各的' }))
     return root
   }
   if (other === null) {
-    root.appendChild(app.el('p', 'rt-online-note', '等另一位朋友进房间。两个人都到了才能开局。'))
+    root.appendChild(app.el('p', 'rt-online-note', '等另一位朋友进房间后开局。'))
     root.appendChild(action(app, 'dp-btn rt-wide', { 'data-op': 'online-refresh' }, '刷新', function () {
       online.refresh()
     }))
@@ -176,7 +176,7 @@ function hostSettings(app, online, data) {
     box.appendChild(app.el('p', 'rt-online-note', '金币不够本局底注。'))
   }
   box.appendChild(start)
-  box.appendChild(app.el('p', 'rt-tiny', '开局后双方各扣本局底注；中途关闭大窗口即结束对局。'))
+  box.appendChild(app.el('p', 'rt-tiny', '开局各扣底注；关大窗口即结束。'))
   return box
 }
 

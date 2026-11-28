@@ -142,7 +142,7 @@ export function renderBoard(app, game, data, canArm) {
 
 function statusText(match) {
   if (match === null) return '选择设置后开始对局。'
-  if (match.stage === 'arming') return '点弹孔装弹，一个孔一发；本局 ' + match.bulletCount + ' 发，装满后按「开始转」。'
+  if (match.stage === 'arming') return '本局 ' + match.bulletCount + ' 发；装满后按「开始转」。'
   if (match.stage === 'ai') {
     if (match.mustShoot === 'ai') return 'AI 被回让，必须开枪…'
     if (match.passBy === 'you') return '你已让枪，等 AI 决定。'

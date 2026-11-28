@@ -1,0 +1,166 @@
+{
+  "generatedAt": "2026-11-28",
+  "thresholds": {
+    "MIN_TEXT_PADDING": 6,
+    "MIN_CONTROL_GAP": 4
+  },
+  "count": 26,
+  "violations": [
+    {
+      "file": "src/client/css-dex.js",
+      "selector": ".dp-dex-card",
+      "metric": "padding-bottom",
+      "value": 4
+    },
+    {
+      "file": "src/client/css-dex.js",
+      "selector": ".dp-dex-card",
+      "metric": "padding-top",
+      "value": 4
+    },
+    {
+      "file": "src/client/css-dex.js",
+      "selector": ".dp-dex-filter",
+      "metric": "padding-bottom",
+      "value": 3
+    },
+    {
+      "file": "src/client/css-dex.js",
+      "selector": ".dp-dex-filter",
+      "metric": "padding-top",
+      "value": 3
+    },
+    {
+      "file": "src/client/css-dex.js",
+      "selector": ".dp-dex-row",
+      "metric": "padding-bottom",
+      "value": 5
+    },
+    {
+      "file": "src/client/css-dex.js",
+      "selector": ".dp-dex-row",
+      "metric": "padding-top",
+      "value": 5
+    },
+    {
+      "file": "src/client/css-holo.js",
+      "selector": ".dp-holo",
+      "metric": "padding-bottom",
+      "value": 4
+    },
+    {
+      "file": "src/client/css-holo.js",
+      "selector": ".dp-holo",
+      "metric": "padding-top",
+      "value": 4
+    },
+    {
+      "file": "src/client/css-pomodoro.js",
+      "selector": ".dp-pomo-break-pill",
+      "metric": "padding-bottom",
+      "value": 4
+    },
+    {
+      "file": "src/client/css-pomodoro.js",
+      "selector": ".dp-pomo-break-pill",
+      "metric": "padding-top",
+      "value": 4
+    },
+    {
+      "file": "src/client/css-pomodoro.js",
+      "selector": ".dp-pomo-chip",
+      "metric": "padding-bottom",
+      "value": 3
+    },
+    {
+      "file": "src/client/css-pomodoro.js",
+      "selector": ".dp-pomo-chip",
+      "metric": "padding-top",
+      "value": 3
+    },
+    {
+      "file": "src/client/css-tabs.js",
+      "selector": ".dp-cancel",
+      "metric": "padding-bottom",
+      "value": 5
+    },
+    {
+      "file": "src/client/css-tabs.js",
+      "selector": ".dp-cancel",
+      "metric": "padding-top",
+      "value": 5
+    },
+    {
+      "file": "src/client/css-tabs.js",
+      "selector": ".dp-diary-care-toggle",
+      "metric": "padding-bottom",
+      "value": 5
+    },
+    {
+      "file": "src/client/css-tabs.js",
+      "selector": ".dp-diary-care-toggle",
+      "metric": "padding-top",
+      "value": 5
+    },
+    {
+      "file": "src/client/css-tiles.js",
+      "selector": ".dp-dev-tab",
+      "metric": "padding-bottom",
+      "value": 3
+    },
+    {
+      "file": "src/client/css-tiles.js",
+      "selector": ".dp-dev-tab",
+      "metric": "padding-top",
+      "value": 3
+    },
+    {
+      "file": "src/client/css-tiles.js",
+      "selector": ".dp-ih-chip",
+      "metric": "padding-bottom",
+      "value": 2
+    },
+    {
+      "file": "src/client/css-tiles.js",
+      "selector": ".dp-ih-chip",
+      "metric": "padding-top",
+      "value": 2
+    },
+    {
+      "file": "src/extensions/roulette/client/styles.js",
+      "selector": ".rt-bet-pill",
+      "metric": "padding-bottom",
+      "value": 3
+    },
+    {
+      "file": "src/extensions/roulette/client/styles.js",
+      "selector": ".rt-bet-pill",
+      "metric": "padding-top",
+      "value": 3
+    },
+    {
+      "file": "src/extensions/roulette/client/styles.js",
+      "selector": ".rt-chip",
+      "metric": "padding-bottom",
+      "value": 5
+    },
+    {
+      "file": "src/extensions/roulette/client/styles.js",
+      "selector": ".rt-chip",
+      "metric": "padding-top",
+      "value": 5
+    },
+    {
+      "file": "src/extensions/roulette/client/styles.js",
+      "selector": ".rt-gun-bullet",
+      "metric": "padding-bottom",
+      "value": 3
+    },
+    {
+      "file": "src/extensions/roulette/client/styles.js",
+      "selector": ".rt-gun-bullet",
+      "metric": "padding-top",
+      "value": 3
+    }
+  ]
+}

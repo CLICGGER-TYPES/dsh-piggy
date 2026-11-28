@@ -3700,7 +3700,7 @@
       "description": "6 巢左轮：每局自选装 1-5 发，强制转轮，1/3 命、单局或三局两胜；AI 按金库上限配注，5 档策略，真实金币结算。好友联机 1v1（房主或公网权威）；4 人桌下一阶段接入。",
       "bundle": {
         "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.3/ext-roulette-0.2.3.piggyext",
-        "sha256": "aa727b484040ac2e6db5b4ab0025e455f39548234e3cf9b26996ca9ba99f8ad1"
+        "sha256": "e4f030fa8eb4af0a25e2acc9308edad8cdc263e501a3b87ecbdb1e7dbb8b4098"
       },
       "files": {
         "manifest.json": {
@@ -3713,7 +3713,7 @@
         },
         "client.js": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.3/client.js",
-          "sha256": "f898ed44154ac5698d7c103b41585efe5bcacdeb12ce6ed27ca21bccc5ffbb99"
+          "sha256": "d04ab1f8704f4145fe34e33edb94d001543a5c9126c9ddb45db591ca01cb5b7c"
         },
         "assets/bullet-base-v4.webp": {
           "url": "https://github.com/CLICGGER-TYPES/dsh-piggy/releases/download/ext-roulette-0.2.3/bullet-base-v4.webp",
