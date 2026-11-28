@@ -31,6 +31,7 @@
 `revolver-spun-2c.png` 和 `revolver-smoke-3b.png` 是 Codex 内置 `image_gen.imagegen` 在 `revolver-v6.webp` 上做的局部修订，900 × 465 RGBA 透明 PNG，生成说明和逐像素对比见 `work/roulette-spent/notes.md`。两张都只改弹巢附近：2c 加两笔薄荷弧光，3b 加一缕灰烟和一点擦痕；弹巢外接矩形以外的像素保持原图（notes 记录矩形外变化 0 像素）。
 
 - 大小：`revolver-spun-2c.png` 257,730 B；`revolver-smoke-3b.png` 257,477 B。
+- sha256：`revolver-spun-2c.png` `761e3a30d5b9486922604c712bfd30de8b4d741566e273343933631b2ee9e74f`；`revolver-smoke-3b.png` `dc0b50a860f3e6ce317265ba0a92ee3b795b4d113a5137a3f8a8e5d61fc728cb`。同一组哈希登记在 `release/candidates/extensions/registry.json`、`registry-gitee.json` 与 `store/official-extensions.json`。
 - 用途：牌桌顶部整枪状态图。转轮停稳显示 2c，本局开过枪显示 3b；`revolver-v6.webp` 仍是静态底图，`cylinder-v4.webp` 仍是可点弹巢特写。
 - 牌桌先前的 6 张图出处和生成命令不变。
 
