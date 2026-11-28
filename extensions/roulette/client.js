@@ -1723,7 +1723,7 @@
   }
   function statusText(match) {
     if (match === null) return "\u9009\u62E9\u8BBE\u7F6E\u540E\u5F00\u59CB\u5BF9\u5C40\u3002";
-    if (match.stage === "arming") return "\u70B9\u5F39\u5B54\u88C5\u5F39\uFF0C\u4E00\u4E2A\u5B54\u4E00\u53D1\uFF1B\u672C\u5C40 " + match.bulletCount + " \u53D1\uFF0C\u88C5\u6EE1\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u3002";
+    if (match.stage === "arming") return "\u672C\u5C40 " + match.bulletCount + " \u53D1\uFF1B\u88C5\u6EE1\u540E\u6309\u300C\u5F00\u59CB\u8F6C\u300D\u3002";
     if (match.stage === "ai") {
       if (match.mustShoot === "ai") return "AI \u88AB\u56DE\u8BA9\uFF0C\u5FC5\u987B\u5F00\u67AA\u2026";
       if (match.passBy === "you") return "\u4F60\u5DF2\u8BA9\u67AA\uFF0C\u7B49 AI \u51B3\u5B9A\u3002";
@@ -2011,7 +2011,7 @@
     const players = Array.isArray(room.players) ? room.players : [];
     const other = players.find((player) => player.id !== room.selfId) ?? null;
     if (players.length > 2) {
-      root.appendChild(app.el("p", "rt-online-note", "\u623F\u95F4\u91CC\u8D85\u8FC7\u4E24\u4E2A\u4EBA\u3002\u8054\u673A 1v1 \u53EA\u652F\u6301\u4E24\u4EBA\uFF0C\u8BF7\u5176\u4ED6\u4EBA\u5148\u79BB\u5F00\u3002"));
+      root.appendChild(app.el("p", "rt-online-note", "\u8054\u673A 1v1 \u53EA\u652F\u6301\u4E24\u4EBA\uFF0C\u8BF7\u5176\u4ED6\u4EBA\u5148\u79BB\u5F00\u3002"));
       root.appendChild(footer(app, { onRules: function() {
         game2.openRules("online");
       }, note: "\u771F\u5B9E\u91D1\u5E01 \xB7 \u5404\u6263\u5404\u7684" }));
@@ -2020,7 +2020,7 @@
     if (online2.hostId() === "") {
       const missing = app.el("div", "rt-empty");
       missing.appendChild(app.el("p", null, "\u8FD9\u4E2A\u623F\u95F4\u6CA1\u6709\u5F00\u5C40\u6743\u5A01\u3002"));
-      missing.appendChild(app.el("p", "rt-tiny", "\u516C\u7F51\u623F\u95F4\u670D\u52A1\u5668\u9700\u8981\u914D\u7F6E\u6743\u5A01\u8FDB\u7A0B\uFF1B\u5C40\u57DF\u7F51\u8BF7\u8BA9\u623F\u4E3B\u5EFA\u623F\u3002"));
+      missing.appendChild(app.el("p", "rt-tiny", "\u516C\u7F51\u9700\u6743\u5A01\u8FDB\u7A0B\uFF0C\u5C40\u57DF\u7F51\u8BF7\u623F\u4E3B\u5EFA\u623F\u3002"));
       root.appendChild(missing);
       root.appendChild(footer(app, { onRules: function() {
         game2.openRules("online");
@@ -2028,7 +2028,7 @@
       return root;
     }
     if (other === null) {
-      root.appendChild(app.el("p", "rt-online-note", "\u7B49\u53E6\u4E00\u4F4D\u670B\u53CB\u8FDB\u623F\u95F4\u3002\u4E24\u4E2A\u4EBA\u90FD\u5230\u4E86\u624D\u80FD\u5F00\u5C40\u3002"));
+      root.appendChild(app.el("p", "rt-online-note", "\u7B49\u53E6\u4E00\u4F4D\u670B\u53CB\u8FDB\u623F\u95F4\u540E\u5F00\u5C40\u3002"));
       root.appendChild(action(app, "dp-btn rt-wide", { "data-op": "online-refresh" }, "\u5237\u65B0", function() {
         online2.refresh();
       }));
@@ -2085,7 +2085,7 @@
       box.appendChild(app.el("p", "rt-online-note", "\u91D1\u5E01\u4E0D\u591F\u672C\u5C40\u5E95\u6CE8\u3002"));
     }
     box.appendChild(start);
-    box.appendChild(app.el("p", "rt-tiny", "\u5F00\u5C40\u540E\u53CC\u65B9\u5404\u6263\u672C\u5C40\u5E95\u6CE8\uFF1B\u4E2D\u9014\u5173\u95ED\u5927\u7A97\u53E3\u5373\u7ED3\u675F\u5BF9\u5C40\u3002"));
+    box.appendChild(app.el("p", "rt-tiny", "\u5F00\u5C40\u5404\u6263\u5E95\u6CE8\uFF1B\u5173\u5927\u7A97\u53E3\u5373\u7ED3\u675F\u3002"));
     return box;
   }
   function renderOnlineResult(app, online2, view, seat) {
@@ -2284,7 +2284,7 @@
     '.rt-more[aria-expanded="true"]{background:var(--ac-primary-bg,#e6f9f6);border-color:var(--ac-primary,#19c8b9);color:var(--ac-primary-active,#11a89b)}',
     ".rt-menu-pop{position:absolute;z-index:40;top:36px;right:0;width:206px;display:grid;gap:5px;padding:7px;border-radius:14px;border:2px solid var(--ac-border,#c4b89e);background:var(--ac-bg-input,#fffbe7);box-shadow:0 8px 22px rgba(61,52,40,.2)}",
     ".rt-menu-title{font-size:8.5px;font-weight:800;letter-spacing:.12em;color:var(--ac-text-muted,#8a7b66);padding:1px 3px 3px}",
-    ".rt-menu-item{display:flex;align-items:center;gap:7px;width:100%;min-height:38px;padding:5px 8px;border-radius:10px;border:1.5px solid transparent;background:transparent;color:var(--ac-text,#794f27);text-align:left;font:inherit;cursor:pointer}",
+    ".rt-menu-item{display:flex;align-items:center;gap:7px;width:100%;min-height:38px;padding:6px 8px;border-radius:10px;border:1.5px solid transparent;background:transparent;color:var(--ac-text,#794f27);text-align:left;font:inherit;cursor:pointer}",
     ".rt-menu-item:hover{background:var(--ac-primary-bg,#e6f9f6);border-color:#b9e6df}",
     ".rt-menu-item:focus-visible{outline:2px solid var(--ac-primary,#19c8b9);outline-offset:1px}",
     ".rt-menu-locked{opacity:.62;cursor:not-allowed}",
@@ -2296,8 +2296,8 @@
     '.rt-menu-lock:before{content:"";position:absolute;left:1px;top:-6px;width:3px;height:6px;border:2px solid var(--ac-text-2,#9f927d);border-bottom:0;border-radius:4px 4px 0 0}',
     ".rt-setbar-wrap{display:grid;gap:0}",
     ".rt-setbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:6px 7px;border-radius:13px;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7)}",
-    ".rt-set-pill{padding:3px 7px;border-radius:8px;background:#f4efdf;font-size:8.5px;font-weight:700;color:var(--ac-text-body,#725d42);white-space:nowrap}",
-    ".rt-set-toggle{margin-left:auto;padding:4px 9px;border-radius:9px;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text-body,#725d42);font:inherit;font-size:9px;font-weight:800;cursor:pointer}",
+    ".rt-set-pill{padding:6px 7px;border-radius:8px;background:#f4efdf;font-size:8.5px;font-weight:700;color:var(--ac-text-body,#725d42);white-space:nowrap}",
+    ".rt-set-toggle{margin-left:auto;padding:6px 9px;border-radius:9px;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text-body,#725d42);font:inherit;font-size:9px;font-weight:800;cursor:pointer}",
     ".rt-set-toggle:hover{border-color:var(--ac-primary,#19c8b9);color:var(--ac-primary-active,#11a89b)}",
     ".rt-setbar-wrap .rt-settings{margin-top:7px}",
     ".rt-topline{display:flex;align-items:center;gap:6px;min-height:26px}",

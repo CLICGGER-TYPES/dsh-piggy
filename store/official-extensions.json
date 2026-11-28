@@ -10288,7 +10288,7 @@
     "0.2.3": {
       "manifest.json": "105cd0151cfc8cda06fb1756ebaf73f09fd7c1acca0b2a2c0a9552f91b641c38",
       "server.js": "3fc5afccae0d195acdfb6d92d4af56c1075dee0c74f9818735a1e3646cd3b85f",
-      "client.js": "f898ed44154ac5698d7c103b41585efe5bcacdeb12ce6ed27ca21bccc5ffbb99",
+      "client.js": "d04ab1f8704f4145fe34e33edb94d001543a5c9126c9ddb45db591ca01cb5b7c",
       "assets/bullet-base-v4.webp": "847a780bcf21d8529eafc9fe191949e9ca9e8f930e29b2b554cbbea43ac33755",
       "assets/bullet-side-v4.webp": "202401a0b5088f8630477f3a5a98b1ae9699ac1f87443c28629e6ddfd54d05a5",
       "assets/chip-v1.webp": "08a8c450e5ab47f482a1c4d2be5e415674446eb59704045090a0f92320b194f3",
