@@ -9,6 +9,7 @@
 
 import { createAiRunner } from './ai.js'
 import { createArm } from './arm.js'
+import { trackGunState } from './match-state.js'
 import { createUiActions } from './ui-actions.js'
 
 export const CHAMBERS = 6
@@ -69,7 +70,7 @@ export function createGame(options = {}) {
     spinHide: false,
     holes: [],
     armedHoles: [],
-    flash: '',
+    flash: '', firedRound: 0,
     lastSeq: -1,
     aiKey: '',
     aiError: false,
@@ -169,6 +170,7 @@ export function createGame(options = {}) {
       const match = value.match
       ui.armedHoles = match !== null && (match.lastEvent === 'armed' || match.lastEvent === 'reload') ? (ui.holes.length > 0 ? ui.holes.slice() : ui.armedHoles) : []
       ui.holes = []
+      trackGunState(ui, match)
       if (match !== null) {
         if (match.lastEvent === 'hit' && match.lastShooter === 'you') {
           ui.flash = 'live'
@@ -185,8 +187,7 @@ export function createGame(options = {}) {
     }
     const match = value.match
     if (match !== null && match.stage === 'ai') {
-      // seq 必须进 key：AI 让枪后玩家再让枪，弹巢和剩余子弹可能完全没变，
-      // 只靠 hand/round/chamber/turn/bulletsLeft 会误判成同一次 AI 回合而卡住。
+      // seq 进 key：AI 让枪后玩家再让，弹巢/剩余子弹可能没变，否则会误判同一回合。
       const key = value.seq + ':' + match.handId + ':' + match.round + ':' + match.chamber + ':' + match.turn + ':' + match.bulletsLeft
       if (ui.aiKey !== key) {
         ui.aiKey = key
@@ -230,8 +231,7 @@ export function createGame(options = {}) {
       leaveTable()
       return
     }
-    // 装弹请求已经发出、回包还没到：此时服务端可能已经进入 choice，
-    // 不能拿旧的 arming 快照当“免费取消”，先挡住。
+    // 装弹请求已发出、回包未到：服务端可能已进 choice，不能拿旧 arming 快照免费取消。
     if (ui.armPending) {
       notify('装弹请求提交中，稍等一下')
       return

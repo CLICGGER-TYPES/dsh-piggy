@@ -84,6 +84,42 @@ export function renderLives(app, data, opponentName) {
   return row
 }
 
+/**
+ * 牌桌顶部的整枪状态图。三张图同一画布：revolver-v6 是静态底图，
+ * 转轮停稳换成带薄荷弧光的 2c，开过枪换成带烟痕的 3b；弹巢特写
+ * cylinder-v4 仍在下面做可点底图，两者互不替代。
+ */
+const GUN_ART = {
+  idle: { asset: 'revolver-v6.webp', label: '转轮前', note: '弹巢未转' },
+  spun: { asset: 'revolver-spun-2c.png', label: '转轮已停', note: '下一枪未知' },
+  spent: { asset: 'revolver-smoke-3b.png', label: '已开枪', note: '弹巢留烟' },
+}
+
+/** 只看本局进度，不读子弹位置：装弹中→底图，停轮→2c，本局开过枪→3b。 */
+export function gunState(game, match) {
+  if (match === null || match.stage === 'arming' || match.stage === 'idle') return 'idle'
+  if (match.round > 0 && game.ui.firedRound === match.round) return 'spent'
+  return 'spun'
+}
+
+export function renderGun(app, game, data) {
+  const match = data.match
+  const state = gunState(game, match)
+  const art = GUN_ART[state]
+  const stage = app.el('div', 'rt-gun-strip rt-gun-' + state)
+  stage.setAttribute('data-gun-state', state)
+  stage.setAttribute('role', 'img')
+  stage.setAttribute('aria-label', '枪身状态：' + (match === null ? '未开局' : art.label) + '，' + (match === null ? '进牌桌后装弹' : art.note))
+  const img = assetImage(app, art.asset, 'rt-gun-strip-img')
+  img.setAttribute('data-gun-art', art.asset)
+  stage.appendChild(img)
+  const tag = app.el('div', 'rt-gun-tag')
+  tag.appendChild(app.el('b', null, match === null ? '未开局' : art.label))
+  tag.appendChild(app.el('span', null, match === null ? '进牌桌后选装弹' : art.note))
+  stage.appendChild(tag)
+  return stage
+}
+
 export function renderMeta(app, data) {
   const match = data.match
   const row = app.el('div', 'rt-meta')
@@ -302,6 +338,8 @@ export function renderTable(app, game) {
   }))
   root.appendChild(renderMeta(app, data))
   root.appendChild(renderLives(app, data, '侦探猪'))
+  // 整枪状态图放在弹巢特写上方，换图不改变装弹和孔位交互。
+  root.appendChild(renderGun(app, game, data))
   if (match === null) {
     // 大堂只留入口；命数、底注、AI 这些设置进入牌桌后再配。
     root.appendChild(settingsBlock(app, game, data))

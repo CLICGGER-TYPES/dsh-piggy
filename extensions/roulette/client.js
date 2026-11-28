@@ -127,6 +127,21 @@
     return { reset, load, random, spin };
   }
 
+  // src/extensions/roulette/client/match-state.js
+  function trackGunState(ui, match) {
+    if (match === null || match.stage === "arming") ui.firedRound = 0;
+    else if (match.lastEvent === "hit" || match.lastEvent === "blank") ui.firedRound = match.round;
+  }
+  function clearRoomUi(ui) {
+    ui.room = null;
+    ui.matchView = null;
+    ui.matchId = "";
+    ui.waiting = false;
+    ui.settled = "";
+    ui.net = null;
+    ui.opponentGone = false;
+  }
+
   // src/extensions/roulette/client/ui-actions.js
   function createUiActions({ ui, rerender }) {
     return {
@@ -190,6 +205,7 @@
       holes: [],
       armedHoles: [],
       flash: "",
+      firedRound: 0,
       lastSeq: -1,
       aiKey: "",
       aiError: false,
@@ -280,6 +296,7 @@
         const match2 = value.match;
         ui.armedHoles = match2 !== null && (match2.lastEvent === "armed" || match2.lastEvent === "reload") ? ui.holes.length > 0 ? ui.holes.slice() : ui.armedHoles : [];
         ui.holes = [];
+        trackGunState(ui, match2);
         if (match2 !== null) {
           if (match2.lastEvent === "hit" && match2.lastShooter === "you") {
             ui.flash = "live";
@@ -764,17 +781,6 @@
     }
     state.lastSeq[from] = input.seq;
     return { ok: true, events: [{ op, view: publicView(state) }] };
-  }
-
-  // src/extensions/roulette/client/match-state.js
-  function clearRoomUi(ui) {
-    ui.room = null;
-    ui.matchView = null;
-    ui.matchId = "";
-    ui.waiting = false;
-    ui.settled = "";
-    ui.net = null;
-    ui.opponentGone = false;
   }
 
   // src/extensions/roulette/client/online-session.js
@@ -1590,6 +1596,33 @@
     row.appendChild(you);
     return row;
   }
+  var GUN_ART = {
+    idle: { asset: "revolver-v6.webp", label: "\u8F6C\u8F6E\u524D", note: "\u5F39\u5DE2\u672A\u8F6C" },
+    spun: { asset: "revolver-spun-2c.png", label: "\u8F6C\u8F6E\u5DF2\u505C", note: "\u4E0B\u4E00\u67AA\u672A\u77E5" },
+    spent: { asset: "revolver-smoke-3b.png", label: "\u5DF2\u5F00\u67AA", note: "\u5F39\u5DE2\u7559\u70DF" }
+  };
+  function gunState(game2, match) {
+    if (match === null || match.stage === "arming" || match.stage === "idle") return "idle";
+    if (match.round > 0 && game2.ui.firedRound === match.round) return "spent";
+    return "spun";
+  }
+  function renderGun(app, game2, data) {
+    const match = data.match;
+    const state = gunState(game2, match);
+    const art = GUN_ART[state];
+    const stage = app.el("div", "rt-gun-strip rt-gun-" + state);
+    stage.setAttribute("data-gun-state", state);
+    stage.setAttribute("role", "img");
+    stage.setAttribute("aria-label", "\u67AA\u8EAB\u72B6\u6001\uFF1A" + (match === null ? "\u672A\u5F00\u5C40" : art.label) + "\uFF0C" + (match === null ? "\u8FDB\u724C\u684C\u540E\u88C5\u5F39" : art.note));
+    const img = assetImage(app, art.asset, "rt-gun-strip-img");
+    img.setAttribute("data-gun-art", art.asset);
+    stage.appendChild(img);
+    const tag = app.el("div", "rt-gun-tag");
+    tag.appendChild(app.el("b", null, match === null ? "\u672A\u5F00\u5C40" : art.label));
+    tag.appendChild(app.el("span", null, match === null ? "\u8FDB\u724C\u684C\u540E\u9009\u88C5\u5F39" : art.note));
+    stage.appendChild(tag);
+    return stage;
+  }
   function renderMeta(app, data) {
     const match = data.match;
     const row = app.el("div", "rt-meta");
@@ -1801,6 +1834,7 @@
     }));
     root.appendChild(renderMeta(app, data));
     root.appendChild(renderLives(app, data, "\u4FA6\u63A2\u732A"));
+    root.appendChild(renderGun(app, game2, data));
     if (match === null) {
       root.appendChild(settingsBlock(app, game2, data));
     } else if (match.stage === "matchOver") {
@@ -2273,6 +2307,13 @@
     ".rt-meta-tag{padding:3px 8px;border-radius:8px;border:1.5px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);font-size:9px;font-weight:700;color:var(--ac-text-body,#725d42);white-space:nowrap}",
     ".rt-meta-score{color:var(--ac-primary-active,#11a89b)}",
     ".rt-livesbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:0 4px;min-height:24px}",
+    ".rt-gun-strip{position:relative;height:96px;flex-shrink:0;border-radius:17px;overflow:hidden;border:2px solid var(--ac-border-light,#e5dcc6);background:radial-gradient(circle at 42% 34%,#fffef8 0%,#e8fbf6 55%,#d3f4ed 100%);display:grid;place-items:center}",
+    '.rt-gun-strip:before{content:"";position:absolute;inset:7px;border:1px dashed rgba(15,156,145,.22);border-radius:11px;pointer-events:none}',
+    ".rt-gun-strip-img{position:relative;z-index:2;width:176px;height:auto;display:block;transform:rotate(-3deg);filter:drop-shadow(0 5px 4px rgba(91,66,38,.18))}",
+    ".rt-gun-tag{position:absolute;z-index:3;left:7px;bottom:6px;display:flex;align-items:baseline;gap:4px;padding:2px 8px;border-radius:9px;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);font-size:9px;color:var(--ac-text-body,#725d42)}",
+    ".rt-gun-tag b{font-size:9.5px;color:var(--ac-text,#794f27)}",
+    ".rt-gun-tag span{font-size:8.5px;color:var(--ac-text-muted,#8a7b66)}",
+    ".rt-gun-spent{background:radial-gradient(circle at 42% 34%,#fffaf4 0%,#f4efe4 58%,#e5ddcc 100%)}",
     ".rt-lives-side{display:flex;align-items:center;gap:4px;min-width:0;font-size:10px;color:var(--ac-text,#794f27)}",
     ".rt-lives-you{justify-content:flex-end}",
     ".rt-lives-score{font-size:11px;font-weight:800;color:var(--ac-text,#794f27);font-variant-numeric:tabular-nums}",
