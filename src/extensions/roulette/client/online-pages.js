@@ -87,8 +87,8 @@ function roomLine(app, online, room) {
 export function renderOnlineLobby(app, online, game) {
   const data = game.data()
   const root = app.el('div', 'rt-page rt-online')
-  root.appendChild(pageHead(app, data, '好友联机', '1v1 · 同一房间', '返回大厅', function () {
-    game.showPage('lobby')
+  root.appendChild(pageHead(app, data, '好友联机', '1v1 · 同一房间', '返回牌桌', function () {
+    game.showPage('table')
   }))
   const room = online.ui.room
   if (room === null) {
@@ -288,7 +288,7 @@ function renderOnlineDock(app, online, view, seat, data, opponentName) {
       actions.appendChild(app.el('div', 'rt-hint', '对手还在房间里就能直接开新一场'))
     } else {
       primary('等房主再来一场', 'online-again-wait', function () {}, true)
-      actions.appendChild(app.el('div', 'rt-hint', '想退出可以点上方返回大厅'))
+      actions.appendChild(app.el('div', 'rt-hint', '想退出可以点上方返回联机大厅'))
     }
   }
   dock.appendChild(actions)
@@ -300,7 +300,7 @@ export function renderOnlineTable(app, online, game) {
   const view = online.ui.matchView
   if (!isObject(view)) {
     const root = app.el('div', 'rt-page rt-online')
-    root.appendChild(pageHead(app, data, '联机牌桌', '1v1', '返回大厅', function () { online.back() }))
+    root.appendChild(pageHead(app, data, '联机牌桌', '1v1', '返回联机大厅', function () { online.back() }))
     root.appendChild(app.el('p', 'rt-online-note', '还没有进行中的对局。'))
     root.appendChild(action(app, 'dp-btn rt-primary rt-wide', { 'data-op': 'online-back-lobby' }, '回到联机大厅', function () {
       online.back()
@@ -314,7 +314,7 @@ export function renderOnlineTable(app, online, game) {
   const mapped = mapMatch(data, view, seat)
   const root = app.el('div', 'rt-page rt-table rt-online-table')
   const sub = '第 ' + view.round + ' 局 · ' + (view.settings.format === 'bestOf3' ? '三局两胜' : '单局') + ' · 对手 ' + opponentName
-  root.appendChild(pageHead(app, data, '联机牌桌', sub, '返回大厅', function () { online.requestLeave() }))
+  root.appendChild(pageHead(app, data, '联机牌桌', sub, '返回联机大厅', function () { online.requestLeave() }))
   root.appendChild(renderMeta(app, mapped))
   root.appendChild(renderLives(app, mapped, opponentName))
   if (view.stage === 'matchOver') {

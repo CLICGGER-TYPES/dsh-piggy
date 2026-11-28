@@ -5,6 +5,12 @@ import { test } from 'node:test'
 
 import { mountRoulette } from '../../helpers/roulette.js'
 
+/** 合并后好友联机入口在右上角「更多」里。 */
+function openOnline(ui) {
+  ui.click('data-op', 'more')
+  ui.click('data-op', 'friend-mode')
+}
+
 function fakeRoom(options = {}) {
   const sent = []
   const listeners = {}
@@ -43,7 +49,7 @@ test('好友联机：大厅显示房间与设置，房主建房后进入牌桌�
   const ui = mountRoulette({ coins: 5000 })
   const room = fakeRoom()
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.match(ui.text(), /PIG-7K2M/)
@@ -73,7 +79,7 @@ test('公网持久房间：没有 host 标记时，按加入顺序第一位当�
     players: [{ id: 'host-1', name: '联机A', host: false }, { id: 'guest-1', name: '联机B', host: false }],
   })
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.match(ui.text(), /联机A（你） 房主/)
@@ -92,7 +98,7 @@ test('公网持久房间：第二位玩家只等待，不能自己建房', async
     players: [{ id: 'host-1', name: '联机A', host: false }, { id: 'guest-1', name: '联机B', host: false }],
   })
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.match(ui.text(), /联机A 房主/)
@@ -108,7 +114,7 @@ test('没有开局权威的房间：徽标与提示一致，两个人都没有�
     players: [{ id: 'host-1', name: '联机A', host: false }, { id: 'guest-1', name: '联机B', host: false }],
   })
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.equal(ui.byClass('rt-badge').textContent, '没有开局权威')
@@ -121,7 +127,7 @@ test('关房后重新入房：不再残留“联机房间已关闭”', async ()
   const ui = mountRoulette({ coins: 5000 })
   const room = fakeRoom()
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   room.listeners.closed()
@@ -139,7 +145,7 @@ test('没配权威的非持久房间：第一位玩家也不显示建房按钮',
     players: [{ id: 'host-1', name: '联机A', host: true }, { id: 'guest-1', name: '联机B', host: false }],
   })
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.equal(ui.byClass('rt-badge').textContent, '没有开局权威')
@@ -154,7 +160,7 @@ test('没配权威的持久房间：只有一个人也先提示没有权威', as
     players: [{ id: 'host-1', name: '联机A', host: false }],
   })
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.match(ui.text(), /这个房间没有开局权威。/)
@@ -165,7 +171,7 @@ test('局域网客人：房主带标记时继续等房主，不显示无权威�
   const ui = mountRoulette({ coins: 5000 })
   const room = fakeRoom({ hosting: false, selfId: 'guest-1', authority: 'host' })
   ui.app.room = room
-  ui.click('data-op', 'friend-mode')
+  openOnline(ui)
   await Promise.resolve()
   await Promise.resolve()
   assert.match(ui.text(), /等房主设置并创建牌桌/)

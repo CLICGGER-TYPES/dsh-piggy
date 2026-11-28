@@ -7,7 +7,7 @@
 import { createGame } from './game.js'
 import { createOnline } from './online-game.js'
 import { renderOnlineLobby, renderOnlineTable } from './online-pages.js'
-import { renderLobby, renderRules, renderTable } from './pages.js'
+import { renderRules, renderTable } from './pages.js'
 import { CSS } from './styles.js'
 
 const STYLE_ID = 'dsh-piggy-roulette-style'
@@ -51,9 +51,8 @@ function pageNode(app, current) {
     online.sync()
     return online.ui.page === 'table' ? renderOnlineTable(app, online, current) : renderOnlineLobby(app, online, current)
   }
-  if (current.ui.page === 'table') return renderTable(app, current)
   if (current.ui.page === 'rules') return renderRules(app, current)
-  return renderLobby(app, current)
+  return renderTable(app, current)
 }
 
 function toastNode(app, text) {

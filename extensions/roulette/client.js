@@ -153,6 +153,19 @@
         ui.aiKey = "";
         ui.aiError = false;
         rerender();
+      },
+      toggleMenu() {
+        ui.menu = !ui.menu;
+        rerender();
+      },
+      closeMenu() {
+        if (!ui.menu) return;
+        ui.menu = false;
+        rerender();
+      },
+      toggleSettings() {
+        ui.settingsOpen = !ui.settingsOpen;
+        rerender();
       }
     };
   }
@@ -195,8 +208,10 @@
     const timers = [];
     let toastTimer = null;
     const ui = {
-      page: "lobby",
-      rulesFrom: "lobby",
+      page: "table",
+      rulesFrom: "table",
+      menu: false,
+      settingsOpen: false,
       toast: "",
       arming: false,
       spinning: false,
@@ -327,6 +342,7 @@
     }
     function showPage(next2) {
       ui.page = next2;
+      ui.menu = false;
       ui.flash = "";
       rerender();
     }
@@ -335,13 +351,13 @@
       send("leave", { handId: match === null ? void 0 : match.handId });
       stopTimers();
       arm.reset();
-      ui.page = "lobby";
+      ui.page = "table";
       ui.flash = "";
       ui.aiKey = "";
       ui.aiError = false;
       ui.nextLoad = null;
       ui.leaveConfirm = false;
-      toast("\u5DF2\u56DE\u5230\u5927\u5385");
+      toast("\u5DF2\u79BB\u5F00\u724C\u684C");
       rerender();
     }
     function requestLeave() {
@@ -467,11 +483,12 @@
     function openRules(from) {
       ui.rulesFrom = from || ui.page;
       ui.page = "rules";
+      ui.menu = false;
       rerender();
     }
     function closeRules() {
-      ui.page = ui.rulesFrom === "rules" ? "lobby" : ui.rulesFrom;
-      ui.rulesFrom = "lobby";
+      ui.page = ui.rulesFrom === "rules" ? "table" : ui.rulesFrom;
+      ui.rulesFrom = "table";
       rerender();
     }
     return {
@@ -1398,33 +1415,6 @@
     node.setAttribute("aria-pressed", active ? "true" : "false");
     return node;
   }
-  function modeRow(app, options) {
-    let className = "rt-mode";
-    if (options.primary) className += " rt-mode-primary";
-    if (options.locked) className += " rt-mode-locked";
-    const node = app.button(className, {
-      "data-op": options.op,
-      "aria-disabled": options.locked ? "true" : "false",
-      "aria-label": options.name + "\uFF0C" + options.note
-    }, options.onClick);
-    const medal = app.el("span", options.grid ? "rt-medal rt-medal-grid" : "rt-medal");
-    if (options.grid) {
-      for (let index = 0; index < 4; index += 1) medal.appendChild(app.el("i"));
-    } else if (options.asset) {
-      medal.appendChild(assetImage(app, options.asset, "rt-medal-img"));
-    } else if (options.emoji) {
-      medal.textContent = options.emoji;
-    }
-    node.appendChild(medal);
-    const copy = app.el("span", "rt-mode-copy");
-    copy.appendChild(app.el("span", "rt-mode-name", options.name));
-    copy.appendChild(app.el("span", "rt-mode-note", options.note));
-    node.appendChild(copy);
-    const side = app.el("span", "rt-mode-side");
-    side.appendChild(app.el("span", options.locked ? "rt-lock" : "rt-chev"));
-    node.appendChild(side);
-    return node;
-  }
   function footer(app, options) {
     const row = app.el("div", "rt-foot");
     const rules = app.button("rt-link", { "data-op": "rules", "aria-label": "\u770B\u89C4\u5219" }, options.onRules);
@@ -1521,59 +1511,98 @@
     return box;
   }
 
-  // src/extensions/roulette/client/pages.js
-  function renderLobby(app, game2) {
-    const data = game2.data();
-    const root = app.el("div", "rt-page rt-lobby");
-    const top = app.el("div", "rt-topline");
-    top.appendChild(app.el("span", "rt-kicker", "6 \u5DE2 \xB7 \u771F\u5B9E\u91D1\u5E01 \xB7 \u73A9\u5177\u8F6E\u76D8"));
-    top.appendChild(app.el("span", "rt-spacer"));
-    top.appendChild(coinPill(app, data));
-    root.appendChild(top);
-    const hero = app.el("div", "rt-hero");
-    hero.appendChild(app.el("div", "rt-hero-glow"));
-    hero.appendChild(assetImage(app, "table-v2.webp", "rt-hero-table"));
-    hero.appendChild(assetImage(app, "revolver-v6.webp", "rt-hero-gun"));
-    hero.appendChild(assetImage(app, "chip-v1.webp", "rt-hero-chip rt-hero-chip-a"));
-    hero.appendChild(assetImage(app, "chip-v1.webp", "rt-hero-chip rt-hero-chip-b"));
-    hero.appendChild(app.el("span", "rt-hero-tag", "AI \u5BF9\u6218 \xB7 1 \u5BF9 1"));
-    root.appendChild(hero);
-    root.appendChild(action(app, "dp-btn rt-primary rt-wide rt-enter", { "data-op": "enter-ai" }, "\u8FDB\u5165\u724C\u684C", function() {
-      game2.enterTable();
-    }));
-    const menu = app.el("div", "rt-menu");
-    menu.appendChild(modeRow(app, {
-      op: "friend-mode",
-      name: "\u597D\u53CB\u8054\u673A",
-      note: "1v1 \xB7 \u623F\u4E3B\u5F00\u5C40",
-      asset: "chip-v1.webp",
-      onClick: function() {
-        if (!app.room && typeof app.openBig === "function") {
-          app.openBig();
-          return;
-        }
-        game2.showPage("online");
-      }
-    }));
-    menu.appendChild(modeRow(app, {
-      op: "four-mode",
-      name: "4 \u4EBA\u684C",
-      note: "\u540C\u6279\u8BBE\u8BA1 \xB7 \u4E0B\u4E00\u9636\u6BB5\u63A5\u5165",
-      locked: true,
-      grid: true,
-      onClick: function() {
-        game2.notify("4 \u4EBA\u684C\u9700\u8981\u5BBF\u4E3B\u623F\u95F4\u63A5\u53E3\uFF0C\u4E0B\u4E00\u9636\u6BB5\u63A5\u5165");
-      }
-    }));
-    root.appendChild(menu);
-    root.appendChild(footer(app, {
-      onRules: function() {
-        game2.openRules("lobby");
-      },
-      note: "\u771F\u5B9E\u91D1\u5E01 \xB7 \u5E95\u6C60\u5F52\u8D62\u5BB6"
-    }));
-    return root;
+  // src/extensions/roulette/client/topbar.js
+  var AI_LABEL = Object.fromEntries(AI_STRATEGIES.map((strategy) => [strategy.key, strategy.label]));
+  function renderTop(app, game2, data) {
+    const match = data.match;
+    const head = app.el("header", "rt-head rt-top");
+    const brand = app.el("div", "rt-brand");
+    brand.appendChild(app.el("div", "rt-title", "AI \u5BF9\u6218"));
+    brand.appendChild(app.el("div", "rt-sub", match === null ? "AI \u5BF9\u6218 \xB7 \u5148\u770B\u8BBE\u7F6E\u518D\u5F00\u5C40" : "AI \u5BF9\u6218 \xB7 \u7B2C " + match.round + " \u5C40 \xB7 " + (data.settings.format === "bestOf3" ? "\u4E09\u5C40\u4E24\u80DC" : "\u5355\u5C40")));
+    head.appendChild(brand);
+    head.appendChild(coinPill(app, data));
+    const more = action(app, "rt-more", {
+      "data-op": "more",
+      "aria-label": "\u66F4\u591A\u5165\u53E3",
+      "aria-expanded": game2.ui.menu ? "true" : "false"
+    }, "\u22EF", function() {
+      game2.toggleMenu();
+    });
+    head.appendChild(more);
+    return head;
   }
+  function menuItem(app, name, note, op, onClick, options = {}) {
+    const node = app.button("rt-menu-item" + (options.locked ? " rt-menu-locked" : "") + (options.danger ? " rt-menu-danger" : ""), {
+      "data-op": op,
+      "aria-label": name + "\uFF0C" + note,
+      "aria-disabled": options.locked ? "true" : "false"
+    }, onClick);
+    const copy = app.el("span", "rt-menu-copy");
+    copy.appendChild(app.el("b", null, name));
+    copy.appendChild(app.el("span", null, note));
+    node.appendChild(copy);
+    if (options.locked) node.appendChild(app.el("span", "rt-menu-lock"));
+    return node;
+  }
+  function renderMore(app, game2, data) {
+    if (!game2.ui.menu) return null;
+    const match = data.match;
+    const pop = app.el("div", "rt-menu-pop");
+    pop.setAttribute("role", "menu");
+    pop.setAttribute("aria-label", "\u66F4\u591A\u5165\u53E3");
+    pop.appendChild(app.el("span", "rt-menu-title", "\u66F4\u591A"));
+    pop.appendChild(menuItem(app, "\u597D\u53CB\u8054\u673A", "1v1 \xB7 \u623F\u4E3B\u5F00\u5C40", "friend-mode", function() {
+      game2.toggleMenu();
+      if (!app.room && typeof app.openBig === "function") {
+        app.openBig();
+        return;
+      }
+      game2.showPage("online");
+    }));
+    pop.appendChild(menuItem(app, "4 \u4EBA\u684C", "\u4E0B\u4E00\u9636\u6BB5\u63A5\u5165", "four-mode", function() {
+      game2.notify("4 \u4EBA\u684C\u9700\u8981\u5BBF\u4E3B\u623F\u95F4\u63A5\u53E3\uFF0C\u4E0B\u4E00\u9636\u6BB5\u63A5\u5165");
+    }, { locked: true }));
+    pop.appendChild(menuItem(app, "\u89C4\u5219", "\u88C5\u5F39 / \u8F6C\u8F6E / \u8BA9\u67AA / \u7ED3\u7B97", "rules", function() {
+      game2.openRules("table");
+    }));
+    if (match !== null && match.stage !== "matchOver") {
+      pop.appendChild(menuItem(app, "\u8BA4\u8F93\u79BB\u5F00", "\u672C\u573A\u5E95\u6C60\u5F52 AI", "forfeit", function() {
+        game2.closeMenu();
+        game2.requestLeave();
+      }, { danger: true }));
+    }
+    return pop;
+  }
+  function renderSettingsBar(app, game2, data) {
+    if (data.match !== null) return null;
+    const box = app.el("div", "rt-setbar-wrap");
+    const bar = app.el("div", "rt-setbar");
+    const s = data.settings;
+    const summary = [
+      "\u547D\u6570 " + s.lives,
+      s.format === "bestOf3" ? "\u4E09\u5C40\u4E24\u80DC" : "\u5355\u5C40",
+      "\u88C5\u5F39 " + s.loadCount + " \u53D1",
+      "\u5E95\u6CE8 " + money(s.stake),
+      AI_LABEL[s.ai] ?? s.ai
+    ];
+    summary.forEach(function(text) {
+      bar.appendChild(app.el("span", "rt-set-pill", text));
+    });
+    const toggle = app.button("rt-set-toggle", {
+      "data-op": "settings-toggle",
+      "aria-expanded": game2.ui.settingsOpen ? "true" : "false",
+      "aria-label": game2.ui.settingsOpen ? "\u6536\u8D77\u8BBE\u7F6E" : "\u5C55\u5F00\u8BBE\u7F6E"
+    }, function() {
+      game2.toggleSettings();
+    });
+    toggle.textContent = game2.ui.settingsOpen ? "\u6536\u8D77" : "\u8BBE\u7F6E";
+    bar.appendChild(toggle);
+    box.appendChild(bar);
+    if (game2.ui.settingsOpen) box.appendChild(settingsBlock(app, game2, data));
+    return box;
+  }
+
+  // src/extensions/roulette/client/pages.js
   function lifeDots(app, count, max) {
     const lives = app.el("span", "rt-lives");
     for (let index = 0; index < max; index += 1) {
@@ -1613,13 +1642,13 @@
     const stage = app.el("div", "rt-gun-strip rt-gun-" + state);
     stage.setAttribute("data-gun-state", state);
     stage.setAttribute("role", "img");
-    stage.setAttribute("aria-label", "\u67AA\u8EAB\u72B6\u6001\uFF1A" + (match === null ? "\u672A\u5F00\u5C40" : art.label) + "\uFF0C" + (match === null ? "\u8FDB\u724C\u684C\u540E\u88C5\u5F39" : art.note));
+    stage.setAttribute("aria-label", "\u67AA\u8EAB\u72B6\u6001\uFF1A" + (match === null ? "\u51C6\u5907\u5F00\u5C40" : art.label) + "\uFF0C" + (match === null ? "\u9009\u88C5\u5F39\u540E\u5F00\u59CB" : art.note));
     const img = assetImage(app, art.asset, "rt-gun-strip-img");
     img.setAttribute("data-gun-art", art.asset);
     stage.appendChild(img);
     const tag = app.el("div", "rt-gun-tag");
-    tag.appendChild(app.el("b", null, match === null ? "\u672A\u5F00\u5C40" : art.label));
-    tag.appendChild(app.el("span", null, match === null ? "\u8FDB\u724C\u684C\u540E\u9009\u88C5\u5F39" : art.note));
+    tag.appendChild(app.el("b", null, match === null ? "\u51C6\u5907\u5F00\u5C40" : art.label));
+    tag.appendChild(app.el("span", null, match === null ? "\u9009\u88C5\u5F39\u540E\u5F00\u59CB" : art.note));
     stage.appendChild(tag);
     return stage;
   }
@@ -1828,15 +1857,16 @@
     const data = game2.data();
     const match = data.match;
     const root = app.el("div", "rt-page rt-table");
-    const sub = match === null ? "\u672A\u5F00\u5C40" : "\u7B2C " + match.round + " \u5C40 \xB7 " + (data.settings.format === "bestOf3" ? "\u4E09\u5C40\u4E24\u80DC" : "\u5355\u5C40");
-    root.appendChild(pageHead(app, data, "AI \u5BF9\u6218", sub, "\u8FD4\u56DE\u5927\u5385", function() {
-      game2.requestLeave();
-    }));
-    root.appendChild(renderMeta(app, data));
-    root.appendChild(renderLives(app, data, "\u4FA6\u63A2\u732A"));
+    root.appendChild(renderTop(app, game2, data));
+    const setbar = renderSettingsBar(app, game2, data);
+    if (setbar) root.appendChild(setbar);
     root.appendChild(renderGun(app, game2, data));
     if (match === null) {
-      root.appendChild(settingsBlock(app, game2, data));
+    } else {
+      root.appendChild(renderMeta(app, data));
+      root.appendChild(renderLives(app, data, "\u4FA6\u63A2\u732A"));
+    }
+    if (match === null) {
     } else if (match.stage === "matchOver") {
       root.appendChild(renderResult(app, match));
     } else {
@@ -1853,6 +1883,8 @@
       },
       note: "\u771F\u5B9E\u91D1\u5E01 \xB7 \u8BA9\u67AA\u4ED8 50%"
     }));
+    const more = renderMore(app, game2, data);
+    if (more) root.appendChild(more);
     return root;
   }
   function renderRules(app, game2) {
@@ -1879,7 +1911,7 @@
     });
     card.appendChild(list);
     root.appendChild(card);
-    const label = game2.ui.rulesFrom === "table" ? "\u8FD4\u56DE\u724C\u684C" : "\u8FD4\u56DE\u5927\u5385";
+    const label = "\u8FD4\u56DE\u724C\u684C";
     root.appendChild(action(app, "dp-btn rt-primary rt-wide", { "data-op": "rules-back" }, label, function() {
       game2.closeRules();
     }));
@@ -1958,8 +1990,8 @@
   function renderOnlineLobby(app, online2, game2) {
     const data = game2.data();
     const root = app.el("div", "rt-page rt-online");
-    root.appendChild(pageHead(app, data, "\u597D\u53CB\u8054\u673A", "1v1 \xB7 \u540C\u4E00\u623F\u95F4", "\u8FD4\u56DE\u5927\u5385", function() {
-      game2.showPage("lobby");
+    root.appendChild(pageHead(app, data, "\u597D\u53CB\u8054\u673A", "1v1 \xB7 \u540C\u4E00\u623F\u95F4", "\u8FD4\u56DE\u724C\u684C", function() {
+      game2.showPage("table");
     }));
     const room = online2.ui.room;
     if (room === null) {
@@ -2170,7 +2202,7 @@
       } else {
         primary("\u7B49\u623F\u4E3B\u518D\u6765\u4E00\u573A", "online-again-wait", function() {
         }, true);
-        actions.appendChild(app.el("div", "rt-hint", "\u60F3\u9000\u51FA\u53EF\u4EE5\u70B9\u4E0A\u65B9\u8FD4\u56DE\u5927\u5385"));
+        actions.appendChild(app.el("div", "rt-hint", "\u60F3\u9000\u51FA\u53EF\u4EE5\u70B9\u4E0A\u65B9\u8FD4\u56DE\u8054\u673A\u5927\u5385"));
       }
     }
     dock.appendChild(actions);
@@ -2181,7 +2213,7 @@
     const view = online2.ui.matchView;
     if (!isObject2(view)) {
       const root2 = app.el("div", "rt-page rt-online");
-      root2.appendChild(pageHead(app, data, "\u8054\u673A\u724C\u684C", "1v1", "\u8FD4\u56DE\u5927\u5385", function() {
+      root2.appendChild(pageHead(app, data, "\u8054\u673A\u724C\u684C", "1v1", "\u8FD4\u56DE\u8054\u673A\u5927\u5385", function() {
         online2.back();
       }));
       root2.appendChild(app.el("p", "rt-online-note", "\u8FD8\u6CA1\u6709\u8FDB\u884C\u4E2D\u7684\u5BF9\u5C40\u3002"));
@@ -2197,7 +2229,7 @@
     const mapped = mapMatch(data, view, seat);
     const root = app.el("div", "rt-page rt-table rt-online-table");
     const sub = "\u7B2C " + view.round + " \u5C40 \xB7 " + (view.settings.format === "bestOf3" ? "\u4E09\u5C40\u4E24\u80DC" : "\u5355\u5C40") + " \xB7 \u5BF9\u624B " + opponentName;
-    root.appendChild(pageHead(app, data, "\u8054\u673A\u724C\u684C", sub, "\u8FD4\u56DE\u5927\u5385", function() {
+    root.appendChild(pageHead(app, data, "\u8054\u673A\u724C\u684C", sub, "\u8FD4\u56DE\u8054\u673A\u5927\u5385", function() {
       online2.requestLeave();
     }));
     root.appendChild(renderMeta(app, mapped));
@@ -2246,6 +2278,28 @@
     ".rt-vault b{font-size:10px;color:var(--ac-text,#794f27)}",
     ".rt-coin{width:10px;height:10px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f8df9e,#d9a441 60%,#b7791f);border:1px solid #b7791f;position:relative}",
     '.rt-coin:after{content:"";position:absolute;left:2px;top:2px;width:2px;height:4px;border-radius:50%;background:#fff6d8;transform:rotate(24deg)}',
+    ".rt-more{flex-shrink:0;width:28px;height:28px;padding:0;border-radius:50%;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text,#794f27);font:inherit;font-size:17px;line-height:1;font-weight:800;display:grid;place-items:center;cursor:pointer;position:relative;z-index:41}",
+    ".rt-more:hover{border-color:var(--ac-primary,#19c8b9);color:var(--ac-primary-active,#11a89b)}",
+    ".rt-more:focus-visible{outline:2px solid var(--ac-primary,#19c8b9);outline-offset:1px}",
+    '.rt-more[aria-expanded="true"]{background:var(--ac-primary-bg,#e6f9f6);border-color:var(--ac-primary,#19c8b9);color:var(--ac-primary-active,#11a89b)}',
+    ".rt-menu-pop{position:absolute;z-index:40;top:36px;right:0;width:206px;display:grid;gap:5px;padding:7px;border-radius:14px;border:2px solid var(--ac-border,#c4b89e);background:var(--ac-bg-input,#fffbe7);box-shadow:0 8px 22px rgba(61,52,40,.2)}",
+    ".rt-menu-title{font-size:8.5px;font-weight:800;letter-spacing:.12em;color:var(--ac-text-muted,#8a7b66);padding:1px 3px 3px}",
+    ".rt-menu-item{display:flex;align-items:center;gap:7px;width:100%;min-height:38px;padding:5px 8px;border-radius:10px;border:1.5px solid transparent;background:transparent;color:var(--ac-text,#794f27);text-align:left;font:inherit;cursor:pointer}",
+    ".rt-menu-item:hover{background:var(--ac-primary-bg,#e6f9f6);border-color:#b9e6df}",
+    ".rt-menu-item:focus-visible{outline:2px solid var(--ac-primary,#19c8b9);outline-offset:1px}",
+    ".rt-menu-locked{opacity:.62;cursor:not-allowed}",
+    ".rt-menu-danger .rt-menu-copy b{color:#b55146}",
+    ".rt-menu-copy{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}",
+    ".rt-menu-copy b{font-size:11px;font-weight:800;line-height:1.15}",
+    ".rt-menu-copy span{font-size:8.5px;line-height:1.25;color:var(--ac-text-muted,#8a7b66);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".rt-menu-lock{flex-shrink:0;width:9px;height:7px;border:2px solid var(--ac-text-2,#9f927d);border-radius:2px;position:relative}",
+    '.rt-menu-lock:before{content:"";position:absolute;left:1px;top:-6px;width:3px;height:6px;border:2px solid var(--ac-text-2,#9f927d);border-bottom:0;border-radius:4px 4px 0 0}',
+    ".rt-setbar-wrap{display:grid;gap:0}",
+    ".rt-setbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:6px 7px;border-radius:13px;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7)}",
+    ".rt-set-pill{padding:3px 7px;border-radius:8px;background:#f4efdf;font-size:8.5px;font-weight:700;color:var(--ac-text-body,#725d42);white-space:nowrap}",
+    ".rt-set-toggle{margin-left:auto;padding:4px 9px;border-radius:9px;border:2px solid var(--ac-border-light,#e5dcc6);background:var(--ac-bg-input,#fffbe7);color:var(--ac-text-body,#725d42);font:inherit;font-size:9px;font-weight:800;cursor:pointer}",
+    ".rt-set-toggle:hover{border-color:var(--ac-primary,#19c8b9);color:var(--ac-primary-active,#11a89b)}",
+    ".rt-setbar-wrap .rt-settings{margin-top:7px}",
     ".rt-topline{display:flex;align-items:center;gap:6px;min-height:26px}",
     ".rt-kicker{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--ac-text-muted,#8a7b66);padding-left:2px}",
     ".rt-hero{position:relative;height:170px;flex-shrink:0;border-radius:17px;overflow:hidden;border:2px solid var(--ac-border-light,#e5dcc6);background:radial-gradient(circle at 42% 34%,#fffef8 0%,#e8fbf6 48%,#d3f4ed 100%);display:grid;place-items:center}",
@@ -2492,9 +2546,8 @@
       online.sync();
       return online.ui.page === "table" ? renderOnlineTable(app, online, current) : renderOnlineLobby(app, online, current);
     }
-    if (current.ui.page === "table") return renderTable(app, current);
     if (current.ui.page === "rules") return renderRules(app, current);
-    return renderLobby(app, current);
+    return renderTable(app, current);
   }
   function toastNode(app, text) {
     const node = app.el("div", "rt-toast", text);

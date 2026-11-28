@@ -1,10 +1,7 @@
 // @ts-check
 /**
- * 左轮轮盘客户端控制器。
- *
- * 权威对局在扩展服务端（extensions/roulette/server.js），这里只做三件事：
- * 读 app.data 画界面、把点击变成 app.send、保留装弹/转轮/火光这些瞬时动画。
- * 子弹位置不会出现在 app.data 里，客户端拿不到。
+ * 左轮轮盘客户端控制器：读 app.data 画界面、把点击变成 app.send、保留装弹/转轮/火光动画。
+ * 权威对局在扩展服务端（extensions/roulette/server.js）；子弹位置不进 app.data，客户端拿不到。
  */
 
 import { createAiRunner } from './ai.js'
@@ -61,8 +58,9 @@ export function createGame(options = {}) {
   let toastTimer = null
 
   const ui = {
-    page: 'lobby',
-    rulesFrom: 'lobby',
+    page: 'table',
+    rulesFrom: 'table',
+    menu: false, settingsOpen: false,
     toast: '',
     arming: false,
     spinning: false,
@@ -205,6 +203,7 @@ export function createGame(options = {}) {
   /** 切到另一个页面；好友联机入口用它进联机大厅。 */
   function showPage(next) {
     ui.page = next
+    ui.menu = false
     ui.flash = ''
     rerender()
   }
@@ -214,13 +213,13 @@ export function createGame(options = {}) {
     send('leave', { handId: match === null ? undefined : match.handId })
     stopTimers()
     arm.reset()
-    ui.page = 'lobby'
+    ui.page = 'table'
     ui.flash = ''
     ui.aiKey = ''
     ui.aiError = false
     ui.nextLoad = null
     ui.leaveConfirm = false
-    toast('已回到大厅')
+    toast('已离开牌桌')
     rerender()
   }
 
@@ -256,8 +255,7 @@ export function createGame(options = {}) {
 
   function start() {
     const value = data()
-    // 服务端还有一场没结算（例如上一次离开请求失败）时，先回到牌桌，
-    // 不能因为金币不够底注把人挡在大厅里；matchOver 要正常开新一场。
+    // 旧一场没结算（例如上次离开失败）时先回牌桌；金币不够也不能挡，matchOver 正常开新一场。
     if (value.match !== null && value.match.stage !== 'matchOver') {
       ui.page = 'table'
       ui.leaveConfirm = false
@@ -362,12 +360,13 @@ export function createGame(options = {}) {
   function openRules(from) {
     ui.rulesFrom = from || ui.page
     ui.page = 'rules'
+    ui.menu = false
     rerender()
   }
 
   function closeRules() {
-    ui.page = ui.rulesFrom === 'rules' ? 'lobby' : ui.rulesFrom
-    ui.rulesFrom = 'lobby'
+    ui.page = ui.rulesFrom === 'rules' ? 'table' : ui.rulesFrom
+    ui.rulesFrom = 'table'
     rerender()
   }
 
